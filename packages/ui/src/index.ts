@@ -61,6 +61,7 @@ import './data/descriptions/index.js'
 import './data/timeline/index.js'
 import './data/list/index.js'
 import './data/carousel/index.js'
+import './data/tree/index.js'
 
 export { OASButton } from './basic/button/oas-button.js'
 export type { ButtonType, ButtonSize } from './basic/button/oas-button.js'
@@ -131,3 +132,4 @@ export { OASDescriptions, OASDescriptionsItem } from './data/descriptions/index.
 export { OASTimeline, OASTimelineItem } from './data/timeline/index.js'
 export { OASList, OASListItem } from './data/list/index.js'
 export { OASCarousel } from './data/carousel/oas-carousel.js'
+export { OASTree, type TreeNode } from './data/tree/index.js'
