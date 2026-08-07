@@ -48,7 +48,7 @@ export class OASDescriptions extends OASElement {
 
   protected override update(): void {
     this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr('title', '')
-    const itemsEl = this.shadow.querySelector('[part="items"]')
+    const itemsEl = this.shadow.querySelector<HTMLElement>('[part="items"]')
     if (!itemsEl) return
     const column = this.getAttr('column', '3')
     itemsEl.setAttribute('data-column', column)
