@@ -48,6 +48,15 @@
   --oas-ease-out: cubic-bezier(0.2, 0, 0.2, 1);
   --oas-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 
+  --oas-z-dropdown: 1000;
+  --oas-z-sticky: 1020;
+  --oas-z-fixed: 1030;
+  --oas-z-overlay: 1040;
+  --oas-z-modal: 1050;
+  --oas-z-message: 1060;
+  --oas-z-toast: 1070;
+  --oas-z-tooltip: 1080;
+
   --oas-focus-ring: 0 0 0 2px color-mix(in srgb, var(--oas-color-primary) 30%, transparent);
 }
 
