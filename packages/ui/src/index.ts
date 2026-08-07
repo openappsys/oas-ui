@@ -19,6 +19,7 @@ import './form/auto-complete/index.js'
 import './form/cascader/index.js'
 import './form/tree-select/index.js'
 import './form/form/index.js'
+import './feedback/message/index.js'
 
 export { OASButton } from './basic/button/oas-button.js'
 export type { ButtonType, ButtonSize } from './basic/button/oas-button.js'
