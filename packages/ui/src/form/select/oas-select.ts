@@ -243,13 +243,14 @@ export class OASSelect extends OASElement {
   }
 
   private renderListbox(): void {
-    if (!this.listbox) return
-    this.listbox.innerHTML = ''
+    const listbox = this.listbox
+    if (!listbox) return
+    listbox.innerHTML = ''
     if (this.options.length === 0) {
       const empty = document.createElement('div')
       empty.className = 'empty'
       empty.textContent = '暂无数据'
-      this.listbox.appendChild(empty)
+      listbox.appendChild(empty)
       return
     }
     const values = this.currentValues()
@@ -275,7 +276,7 @@ export class OASSelect extends OASElement {
         this.activeIndex = idx
         this.renderListbox()
       })
-      this.listbox.appendChild(row)
+      listbox.appendChild(row)
     })
   }
 
