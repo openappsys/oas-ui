@@ -23,10 +23,11 @@ export class OASGridItem extends OASElement {
 
   protected override update(): void {
     const span = Number(this.getAttr('span', '24')) || 24
-    this.style.gridColumn = `span ${span}`
     const offset = Number(this.getAttr('offset', '0')) || 0
     if (offset > 0) {
-      this.style.marginLeft = `calc((100% / ${span}) * ${offset})`
+      this.style.gridColumn = `${offset + 1} / span ${span}`
+    } else {
+      this.style.gridColumn = `span ${span}`
     }
   }
 }

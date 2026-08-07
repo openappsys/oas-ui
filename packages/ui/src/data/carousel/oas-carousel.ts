@@ -96,6 +96,8 @@ export class OASCarousel extends OASElement {
   private goto(index: number): void {
     if (this.count === 0) return
     const next = (index + this.count) % this.count
+    const current = Number(this.getAttr('index', '0')) || 0
+    if (next === current) return
     this.setAttribute('index', String(next))
     this.emit('change', { index: next })
     this.update()

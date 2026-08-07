@@ -46,7 +46,17 @@ describe('OASMenu', () => {
   it('方向键导航移动 active', () => {
     const el = mount()
     el.shadowRoot!.querySelector('[role="menu"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    expect(items(el)[0]!.classList.contains('active')).toBe(true)
+  })
+
+  it('ArrowDown 连续移动，Enter 选中', () => {
+    const el = mount()
+    const menu = el.shadowRoot!.querySelector('[role="menu"]')!
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
     expect(items(el)[1]!.classList.contains('active')).toBe(true)
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    expect(el.getAttribute('value')).toBe('about')
   })
 
   it('disabled 项不可选', async () => {

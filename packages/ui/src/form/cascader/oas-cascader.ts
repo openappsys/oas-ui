@@ -122,6 +122,8 @@ export class OASCascader extends OASElement {
   private options: CascaderOption[] = []
   private openState = false
   private activePath: string[] = []
+  private activePanel = 0
+  private activeRow = 0
 
   protected override render(): void {
     this.shadow.innerHTML = `
@@ -133,15 +135,28 @@ export class OASCascader extends OASElement {
             <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
-        <div class="dropdown" part="dropdown"></div>
+        <div class="dropdown" part="dropdown" tabindex="-1"></div>
       </div>
     `
     this.triggerEl = this.shadow.querySelector('.trigger')
     this.dropdown = this.shadow.querySelector('.dropdown')
+    this.dropdown?.addEventListener('keydown', (e: KeyboardEvent) => this.handleDropdownKey(e))
     this.triggerEl?.addEventListener('click', () => this.toggle())
     this.triggerEl?.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'Escape') this.openState = false
-      this.syncDropdown()
+      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        if (!this.openState) {
+          this.openState = true
+          this.activePath = this.currentPath()
+          this.activePanel = 0
+          this.activeRow = 0
+          this.renderPanels()
+        }
+        this.syncDropdown()
+      } else if (e.key === 'Escape') {
+        this.openState = false
+        this.syncDropdown()
+      }
     })
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
     this.update()
@@ -155,7 +170,11 @@ export class OASCascader extends OASElement {
   private toggle(): void {
     if (this.hasAttr('disabled')) return
     this.openState = !this.openState
-    if (this.openState) this.activePath = this.currentPath()
+    if (this.openState) {
+      this.activePath = this.currentPath()
+      this.activePanel = 0
+      this.activeRow = 0
+    }
     this.renderPanels()
     this.syncDropdown()
   }
@@ -164,8 +183,12 @@ export class OASCascader extends OASElement {
     if (!this.dropdown || !this.triggerEl) return
     this.dropdown.classList.toggle('open', this.openState)
     this.triggerEl.setAttribute('aria-expanded', String(this.openState))
-    if (this.openState) document.addEventListener('click', this.handleOutsideClick)
-    else document.removeEventListener('click', this.handleOutsideClick)
+    if (this.openState) {
+      document.addEventListener('click', this.handleOutsideClick)
+      this.dropdown.focus()
+    } else {
+      document.removeEventListener('click', this.handleOutsideClick)
+    }
   }
 
   private handleOutsideClick = (e: MouseEvent): void => {
@@ -196,12 +219,14 @@ export class OASCascader extends OASElement {
     }
   }
 
+  private panelsData: CascaderOption[][] = []
+
   private renderPanels(): void {
     const dropdown = this.dropdown
     if (!dropdown) return
     dropdown.innerHTML = ''
-    const panels = this.buildPanels()
-    panels.forEach((list, depth) => {
+    this.panelsData = this.buildPanels()
+    this.panelsData.forEach((list, depth) => {
       const panel = document.createElement('div')
       panel.className = 'panel'
       panel.setAttribute('part', 'panel')
@@ -224,6 +249,8 @@ export class OASCascader extends OASElement {
             if (option.disabled) return
             this.activePath[depth] = option.value
             this.activePath.length = depth + 1
+            this.activePanel = depth + 1
+            this.activeRow = 0
             this.renderPanels()
             this.syncTrigger()
             if (this.hasAttr('change-on-select')) this.commit(this.activePath)
@@ -240,6 +267,80 @@ export class OASCascader extends OASElement {
       }
       dropdown.appendChild(panel)
     })
+    this.focusPanel()
+  }
+
+  private focusPanel(): void {
+    const panel = this.dropdown?.querySelectorAll<HTMLElement>('.panel')[this.activePanel]
+    if (!panel) return
+    const rows = [...panel.querySelectorAll<HTMLElement>('.option')]
+    const enabled = rows.filter((r) => r.getAttribute('aria-disabled') !== 'true')
+    const target = enabled[Math.min(this.activeRow, enabled.length - 1)] ?? enabled[0]
+    for (const r of rows) r.classList.remove('active')
+    if (target) {
+      target.classList.add('active')
+      target.scrollIntoView?.({ block: 'nearest' })
+    }
+  }
+
+  private handleDropdownKey(e: KeyboardEvent): void {
+    const panels = this.panelsData
+    if (panels.length === 0) return
+    const panel = panels[this.activePanel]
+    if (!panel) return
+    const enabled = panel.map((o, idx) => (o.disabled ? -1 : idx)).filter((i) => i >= 0)
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      const cur = enabled.indexOf(this.activeRow)
+      this.activeRow = enabled[(cur + 1) % enabled.length] ?? enabled[0] ?? 0
+      this.focusPanel()
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      const cur = enabled.indexOf(this.activeRow)
+      this.activeRow = enabled[(cur - 1 + enabled.length) % enabled.length] ?? enabled[enabled.length - 1] ?? 0
+      this.focusPanel()
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      const option = panel[this.activeRow]
+      if (option?.children?.length) {
+        this.activePath[this.activePanel] = option.value
+        this.activePath.length = this.activePanel + 1
+        this.activePanel += 1
+        this.activeRow = 0
+        this.renderPanels()
+        this.syncTrigger()
+      }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      if (this.activePanel > 0) {
+        this.activePanel -= 1
+        this.activeRow = 0
+        this.activePath.length = this.activePanel
+        this.focusPanel()
+      } else {
+        this.openState = false
+        this.syncDropdown()
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const option = panel[this.activeRow]
+      if (!option || option.disabled) return
+      if (option.children?.length) {
+        this.activePath[this.activePanel] = option.value
+        this.activePath.length = this.activePanel + 1
+        this.activePanel += 1
+        this.activeRow = 0
+        this.renderPanels()
+        this.syncTrigger()
+      } else {
+        this.activePath[this.activePanel] = option.value
+        this.activePath.length = this.activePanel + 1
+        this.commit(this.activePath)
+      }
+    } else if (e.key === 'Escape') {
+      this.openState = false
+      this.syncDropdown()
+    }
   }
 
   private buildPanels(): CascaderOption[][] {

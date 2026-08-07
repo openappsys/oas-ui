@@ -125,12 +125,20 @@ export class OASMenu extends OASElement {
     if (enabled.length === 0) return
     if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
       e.preventDefault()
-      const cur = enabled.findIndex((i) => i >= this.activeIndex)
-      this.activeIndex = enabled[(cur + 1) % enabled.length]!
+      if (this.activeIndex < 0) {
+        this.activeIndex = enabled[0]!
+      } else {
+        const cur = enabled.indexOf(this.activeIndex)
+        this.activeIndex = enabled[(cur + 1) % enabled.length]!
+      }
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
       e.preventDefault()
-      const cur = enabled.findIndex((i) => i >= this.activeIndex)
-      this.activeIndex = enabled[(cur - 1 + enabled.length) % enabled.length]!
+      if (this.activeIndex < 0) {
+        this.activeIndex = enabled[enabled.length - 1]!
+      } else {
+        const cur = enabled.indexOf(this.activeIndex)
+        this.activeIndex = enabled[(cur - 1 + enabled.length) % enabled.length]!
+      }
     } else if (e.key === 'Enter' && this.activeIndex >= 0) {
       e.preventDefault()
       this.select(this.itemsList[this.activeIndex]!)
