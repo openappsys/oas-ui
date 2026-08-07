@@ -9,7 +9,11 @@ export default defineConfig({
     sidebar: [
       {
         text: '指南',
-        items: [{ text: '快速开始', link: '/guide/getting-started' }],
+        items: [
+          { text: '快速开始', link: '/guide/getting-started' },
+          { text: '主题与自定义', link: '/guide/theming' },
+          { text: '无障碍（A11y）', link: '/guide/accessibility' },
+        ],
       },
       {
         text: '基础组件',
