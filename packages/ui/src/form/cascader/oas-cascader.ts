@@ -1,0 +1,294 @@
+import { OASElement } from '@oas-ui/core'
+
+interface CascaderOption {
+  label: string
+  value: string
+  children?: CascaderOption[]
+  disabled?: boolean
+}
+
+const STYLE = `
+:host {
+  display: inline-block;
+  font-family: inherit;
+  width: 240px;
+}
+.wrapper {
+  position: relative;
+}
+.trigger {
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--oas-control-height-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-2);
+  padding: 0 var(--oas-space-3);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  font-size: var(--oas-font-size-md);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--oas-transition-fast) var(--oas-ease-out),
+    box-shadow var(--oas-transition-fast) var(--oas-ease-out);
+}
+.trigger:hover {
+  border-color: var(--oas-color-primary);
+}
+.trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.trigger[aria-expanded='true'] {
+  border-color: var(--oas-color-primary);
+}
+.trigger[disabled] {
+  cursor: not-allowed;
+  background: var(--oas-color-bg-disabled);
+  color: var(--oas-color-text-disabled);
+}
+.placeholder {
+  color: var(--oas-color-text-secondary);
+}
+.chevron {
+  transition: transform var(--oas-transition-fast) var(--oas-ease-out);
+}
+.trigger[aria-expanded='true'] .chevron {
+  transform: rotate(180deg);
+}
+.dropdown {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  left: 0;
+  background: var(--oas-color-bg);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  display: none;
+}
+.dropdown.open {
+  display: flex;
+}
+.panel {
+  min-width: 120px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: var(--oas-space-1);
+}
+.panel + .panel {
+  border-left: 1px solid var(--oas-color-border);
+}
+.option {
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-radius: var(--oas-radius-sm);
+  cursor: pointer;
+  font-size: var(--oas-font-size-md);
+  color: var(--oas-color-text-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.option:hover {
+  background: var(--oas-color-bg-hover);
+}
+.option.active {
+  background: var(--oas-color-primary);
+  color: #fff;
+}
+.option[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.arrow {
+  margin-left: var(--oas-space-2);
+  font-size: var(--oas-font-size-xs);
+  color: inherit;
+  opacity: 0.7;
+}
+`
+
+export class OASCascader extends OASElement {
+  static override get observedAttributes(): string[] {
+    return ['value', 'placeholder', 'options', 'disabled', 'change-on-select', 'show-all-levels']
+  }
+
+  private triggerEl: HTMLButtonElement | null = null
+  private dropdown: HTMLElement | null = null
+  private options: CascaderOption[] = []
+  private openState = false
+  private activePath: string[] = []
+
+  protected override render(): void {
+    this.shadow.innerHTML = `
+      <style>${STYLE}</style>
+      <div class="wrapper" part="wrapper">
+        <button class="trigger" part="trigger" type="button" role="combobox" aria-haspopup="true" aria-expanded="false">
+          <span class="value" part="value"></span>
+          <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="dropdown" part="dropdown"></div>
+      </div>
+    `
+    this.triggerEl = this.shadow.querySelector('.trigger')
+    this.dropdown = this.shadow.querySelector('.dropdown')
+    this.triggerEl?.addEventListener('click', () => this.toggle())
+    this.triggerEl?.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Escape') this.openState = false
+      this.syncDropdown()
+    })
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+    this.update()
+  }
+
+  protected override update(): void {
+    this.parseOptions()
+    this.syncTrigger()
+  }
+
+  private toggle(): void {
+    if (this.hasAttr('disabled')) return
+    this.openState = !this.openState
+    if (this.openState) this.activePath = this.currentPath()
+    this.renderPanels()
+    this.syncDropdown()
+  }
+
+  private syncDropdown(): void {
+    if (!this.dropdown || !this.triggerEl) return
+    this.dropdown.classList.toggle('open', this.openState)
+    this.triggerEl.setAttribute('aria-expanded', String(this.openState))
+    if (this.openState) document.addEventListener('click', this.handleOutsideClick)
+    else document.removeEventListener('click', this.handleOutsideClick)
+  }
+
+  private handleOutsideClick = (e: MouseEvent): void => {
+    const path = e.composedPath()
+    if (!path.includes(this) && !path.some((n) => n instanceof Node && this.shadow.contains(n))) {
+      this.openState = false
+    }
+    this.syncDropdown()
+  }
+
+  private parseOptions(): void {
+    try {
+      const parsed = JSON.parse(this.getAttr('options', '[]'))
+      this.options = Array.isArray(parsed)
+        ? parsed.filter((o): o is CascaderOption => o && typeof o.value === 'string')
+        : []
+    } catch {
+      this.options = []
+    }
+  }
+
+  private currentPath(): string[] {
+    try {
+      const parsed = JSON.parse(this.getAttr('value', '[]'))
+      return Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string') : []
+    } catch {
+      return []
+    }
+  }
+
+  private renderPanels(): void {
+    const dropdown = this.dropdown
+    if (!dropdown) return
+    dropdown.innerHTML = ''
+    const panels = this.buildPanels()
+    panels.forEach((list, depth) => {
+      const panel = document.createElement('div')
+      panel.className = 'panel'
+      panel.setAttribute('part', 'panel')
+      const selected = this.activePath[depth]
+      for (const option of list) {
+        const row = document.createElement('div')
+        row.className = 'option'
+        row.setAttribute('role', 'option')
+        row.setAttribute('aria-selected', String(option.value === selected))
+        row.setAttribute('aria-disabled', String(option.disabled ?? false))
+        const label = document.createElement('span')
+        label.textContent = option.label
+        row.appendChild(label)
+        if (option.children && option.children.length > 0) {
+          const arrow = document.createElement('span')
+          arrow.className = 'arrow'
+          arrow.textContent = '›'
+          row.appendChild(arrow)
+          row.addEventListener('click', () => {
+            if (option.disabled) return
+            this.activePath[depth] = option.value
+            this.activePath.length = depth + 1
+            this.renderPanels()
+            this.syncTrigger()
+            if (this.hasAttr('change-on-select')) this.commit(this.activePath)
+          })
+        } else {
+          row.addEventListener('click', () => {
+            if (option.disabled) return
+            this.activePath[depth] = option.value
+            this.activePath.length = depth + 1
+            this.commit(this.activePath)
+          })
+        }
+        panel.appendChild(row)
+      }
+      dropdown.appendChild(panel)
+    })
+  }
+
+  private buildPanels(): CascaderOption[][] {
+    const panels: CascaderOption[][] = []
+    let current: CascaderOption[] = this.options
+    for (let depth = 0; depth <= this.activePath.length; depth++) {
+      panels.push(current)
+      const selected = this.activePath[depth]
+      if (selected === undefined) break
+      const node = current.find((o) => o.value === selected)
+      if (!node?.children?.length) break
+      current = node.children
+    }
+    return panels
+  }
+
+  private commit(path: string[]): void {
+    this.setAttribute('value', JSON.stringify(path))
+    this.emit('change', { value: path })
+    this.openState = false
+    this.syncDropdown()
+    this.syncTrigger()
+  }
+
+  private syncTrigger(): void {
+    if (!this.triggerEl) return
+    const placeholder = this.getAttr('placeholder', '请选择')
+    const valueEl = this.triggerEl.querySelector<HTMLElement>('.value')!
+    const path = this.currentPath()
+    this.triggerEl.disabled = this.hasAttr('disabled')
+
+    if (path.length === 0) {
+      valueEl.innerHTML = ''
+      const ph = document.createElement('span')
+      ph.className = 'placeholder'
+      ph.textContent = placeholder
+      valueEl.appendChild(ph)
+      return
+    }
+
+    const labels: string[] = []
+    let current: CascaderOption[] = this.options
+    for (const value of path) {
+      const node = current.find((o) => o.value === value)
+      if (!node) break
+      labels.push(node.label)
+      if (!node.children?.length) break
+      current = node.children
+    }
+    valueEl.textContent = labels.join(' / ')
+  }
+}
