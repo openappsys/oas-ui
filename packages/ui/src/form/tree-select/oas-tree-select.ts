@@ -160,7 +160,7 @@ interface FlatNode {
 
 export class OASTreeSelect extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'placeholder', 'options', 'disabled', 'multiple']
+    return ['value', 'placeholder', 'options', 'disabled', 'multiple', 'expanded']
   }
 
   private triggerEl: HTMLButtonElement | null = null

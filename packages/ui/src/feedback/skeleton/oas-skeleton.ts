@@ -51,22 +51,33 @@ export class OASSkeleton extends OASElement {
   }
 
   protected override render(): void {
-    const rows = Math.max(1, Number(this.getAttr('rows', '3')) || 3)
-    const lines = Array.from({ length: rows }, () => '<span part="line"></span>').join('')
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      <div class="block" part="block" ${this.hasAttr('active') ? 'class="block active"' : ''}>
-        ${this.hasAttr('avatar') ? '<span part="avatar"></span>' : ''}
-        ${this.hasAttr('title') ? '<span part="title"></span>' : ''}
-        ${lines}
-      </div>
+      <div class="block" part="block"></div>
     `
     this.update()
   }
 
   protected override update(): void {
-    const block = this.shadow.querySelector('[part="block"]')
+    const block = this.shadow.querySelector<HTMLElement>('[part="block"]')
     if (!block) return
     block.classList.toggle('active', this.hasAttr('active'))
+    const rows = Math.max(1, Number(this.getAttr('rows', '3')) || 3)
+    block.innerHTML = ''
+    if (this.hasAttr('avatar')) {
+      const a = document.createElement('span')
+      a.setAttribute('part', 'avatar')
+      block.appendChild(a)
+    }
+    if (this.hasAttr('title')) {
+      const t = document.createElement('span')
+      t.setAttribute('part', 'title')
+      block.appendChild(t)
+    }
+    for (let i = 0; i < rows; i++) {
+      const l = document.createElement('span')
+      l.setAttribute('part', 'line')
+      block.appendChild(l)
+    }
   }
 }

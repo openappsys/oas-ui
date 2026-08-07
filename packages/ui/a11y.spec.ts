@@ -19,7 +19,7 @@ test.describe('无障碍审计（axe，零严重违规）', () => {
     test(`无严重违规：${page}`, async ({ page: p }) => {
       await p.goto(page, { waitUntil: 'networkidle' })
       const results = await new AxeBuilder({ page: p })
-        .include('.demo')
+        .include('.demo-block')
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
         .analyze()
       const serious = results.violations.filter((v) => ['critical', 'serious'].includes(v.impact ?? ''))

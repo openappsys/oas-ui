@@ -79,7 +79,7 @@ svg {
 
 export class OASInputNumber extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'min', 'max', 'step', 'disabled', 'precision']
+    return ['value', 'min', 'max', 'step', 'disabled', 'precision', 'label']
   }
 
   private input: HTMLInputElement | null = null
@@ -121,6 +121,9 @@ export class OASInputNumber extends OASElement {
     i.max = max
     i.step = step
     i.disabled = disabled
+    if (!i.getAttribute('aria-label')) {
+      i.setAttribute('aria-label', this.getAttr('label', '数字输入框'))
+    }
     this.syncControls()
   }
 

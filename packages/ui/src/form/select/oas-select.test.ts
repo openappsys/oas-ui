@@ -96,4 +96,25 @@ describe('OASSelect', () => {
     expect(trigger(el)).toBe(btn)
     expect(trigger(el).textContent).toContain('橙子')
   })
+
+  it('searchable：显示搜索框，输入过滤选项', () => {
+    const el = mount({ searchable: '' })
+    open(el)
+    const searchInput = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    expect(searchInput.hidden).toBe(false)
+    searchInput.value = '香'
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+    const options = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    expect(options.length).toBe(1)
+    expect(options[0]!.textContent).toContain('香蕉')
+  })
+
+  it('searchable：无匹配时显示空态', () => {
+    const el = mount({ searchable: '' })
+    open(el)
+    const searchInput = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    searchInput.value = '不存在的'
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.shadowRoot!.textContent).toContain('无匹配选项')
+  })
 })

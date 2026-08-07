@@ -4,26 +4,33 @@
 
 ## 类型
 
-<div class="demo">
+<DemoBlock title="链接类型">
   <oas-link href="#">默认链接</oas-link>
   <oas-link href="#" type="primary">主要链接</oas-link>
   <oas-link href="#" type="success">成功链接</oas-link>
   <oas-link href="#" type="warning">警告链接</oas-link>
   <oas-link href="#" type="danger">危险链接</oas-link>
-</div>
+</DemoBlock>
 
 ## 下划线
 
-<div class="demo">
+<DemoBlock title="下划线控制">
   <oas-link href="#">有下划线</oas-link>
   <oas-link href="#" underline="false">无下划线</oas-link>
-</div>
+</DemoBlock>
 
-## 禁用
+## 禁用与新窗口
 
-<div class="demo">
+<DemoBlock title="禁用与 target">
   <oas-link href="#" disabled>禁用链接</oas-link>
-</div>
+  <oas-link href="https://example.com" target="_blank" type="primary">新窗口打开</oas-link>
+</DemoBlock>
+
+## 事件
+
+<DemoBlock title="点击事件">
+  <oas-link href="#" type="primary" onclick="console.log('link clicked')">点击链接（控制台）</oas-link>
+</DemoBlock>
 
 ## API
 

@@ -41,7 +41,7 @@ export class OASSplitter extends OASElement {
       <style>${STYLE}</style>
       <div class="pane" part="pane-left"><slot name="left"><slot></slot></slot></div>
       <div class="splitter" part="splitter" tabindex="0" role="separator" aria-orientation="vertical" aria-label="调整面板宽度"></div>
-      <div class="pane" part="pane-right"></div>
+      <div class="pane" part="pane-right"><slot name="right"></slot></div>
     `
     this.leftPane = this.shadow.querySelector('.pane:first-of-type') as HTMLElement
     this.rightPane = this.shadow.querySelector('.pane:last-of-type') as HTMLElement

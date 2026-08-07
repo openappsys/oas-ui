@@ -99,6 +99,24 @@ const STYLE = `
 .dropdown.open {
   display: block;
 }
+.search-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--oas-control-height-md);
+  margin-bottom: var(--oas-space-1);
+  padding: 0 var(--oas-space-2);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-sm);
+  font-size: var(--oas-font-size-md);
+  font-family: inherit;
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+}
+.search-input:focus {
+  outline: none;
+  border-color: var(--oas-color-primary);
+  box-shadow: var(--oas-focus-ring);
+}
 .listbox {
   max-height: 240px;
   overflow-y: auto;
@@ -162,6 +180,7 @@ export class OASSelect extends OASElement {
           </svg>
         </button>
         <div class="dropdown" part="dropdown">
+          <input class="search-input" part="search-input" type="text" aria-label="搜索选项" hidden />
           <div class="listbox" part="listbox" role="listbox"></div>
         </div>
       </div>
@@ -169,6 +188,13 @@ export class OASSelect extends OASElement {
     this.triggerEl = this.shadow.querySelector('.trigger')
     this.dropdown = this.shadow.querySelector('.dropdown')
     this.listbox = this.shadow.querySelector('.listbox')
+
+    this.shadow.querySelector<HTMLInputElement>('.search-input')?.addEventListener('input', (e) => {
+      const v = (e.target as HTMLInputElement).value.toLowerCase()
+      const searchInput = this.shadow.querySelector<HTMLInputElement>('.search-input')
+      if (searchInput) searchInput.setAttribute('data-query', v)
+      this.renderListbox()
+    })
 
     this.triggerEl?.addEventListener('click', () => this.toggle())
     this.triggerEl?.addEventListener('keydown', (e: KeyboardEvent) => this.handleTriggerKey(e))
@@ -192,6 +218,13 @@ export class OASSelect extends OASElement {
     if (!this.dropdown || !this.triggerEl) return
     this.dropdown.classList.toggle('open', this.openState)
     this.triggerEl.setAttribute('aria-expanded', String(this.openState))
+    const searchInput = this.shadow.querySelector<HTMLInputElement>('.search-input')
+    if (searchInput) {
+      searchInput.hidden = !this.hasAttr('searchable')
+      if (this.openState && this.hasAttr('searchable')) {
+        searchInput.focus()
+      }
+    }
     if (this.openState) {
       document.addEventListener('click', this.handleOutsideClick)
       const current = this.currentValues()
@@ -246,15 +279,17 @@ export class OASSelect extends OASElement {
     const listbox = this.listbox
     if (!listbox) return
     listbox.innerHTML = ''
-    if (this.options.length === 0) {
+    const query = (this.shadow.querySelector<HTMLInputElement>('.search-input')?.getAttribute('data-query') ?? '').toLowerCase()
+    const visible = query ? this.options.filter((o) => o.label.toLowerCase().includes(query)) : this.options
+    if (visible.length === 0) {
       const empty = document.createElement('div')
       empty.className = 'empty'
-      empty.textContent = '暂无数据'
+      empty.textContent = query ? '无匹配选项' : '暂无数据'
       listbox.appendChild(empty)
       return
     }
     const values = this.currentValues()
-    this.options.forEach((option, idx) => {
+    visible.forEach((option, idx) => {
       const row = document.createElement('div')
       row.className = 'option'
       row.setAttribute('part', 'option')
@@ -328,6 +363,9 @@ export class OASSelect extends OASElement {
     const valueEl = this.triggerEl.querySelector<HTMLElement>('.value')!
 
     this.triggerEl.disabled = disabled
+    if (!this.triggerEl.getAttribute('aria-label')) {
+      this.triggerEl.setAttribute('aria-label', placeholder)
+    }
 
     if (values.length === 0) {
       valueEl.innerHTML = ''

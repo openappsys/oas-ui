@@ -27,11 +27,13 @@ const STYLE = `
 }
 .row[data-selected='true'] {
   background: var(--oas-color-primary-soft, rgba(24, 144, 255, 0.1));
-  color: var(--oas-color-primary);
+  color: var(--oas-color-primary-active);
 }
 .row[data-disabled='true'] {
-  opacity: 0.5;
   pointer-events: none;
+}
+.row[data-disabled='true'] .label {
+  color: var(--oas-color-text-secondary);
 }
 .toggle {
   width: 20px;

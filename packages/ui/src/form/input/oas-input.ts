@@ -65,7 +65,7 @@ input:disabled:hover {
 
 export class OASInput extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'placeholder', 'type', 'disabled', 'readonly', 'clearable']
+    return ['value', 'placeholder', 'type', 'disabled', 'readonly', 'clearable', 'label']
   }
 
   private inputEl: HTMLInputElement | null = null
@@ -115,6 +115,9 @@ export class OASInput extends OASElement {
     i.type = type
     i.disabled = disabled
     i.readOnly = readonly
+    if (!i.getAttribute('aria-label')) {
+      i.setAttribute('aria-label', this.getAttr('label', placeholder) || '输入框')
+    }
     if (this.clearBtn) this.clearBtn.hidden = !(clearable && i.value !== '')
   }
 

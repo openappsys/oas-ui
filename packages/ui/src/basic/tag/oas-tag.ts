@@ -39,7 +39,7 @@ const STYLE = `
 .tag.info {
   border-color: color-mix(in srgb, var(--oas-color-primary) 40%, transparent);
   background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
-  color: var(--oas-color-primary);
+  color: var(--oas-color-primary-active);
 }
 .tag.primary {
   background: var(--oas-color-primary);

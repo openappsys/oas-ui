@@ -1,34 +1,72 @@
 # Radio 单选框
 
-原生 `<input type="radio">` 增强。
+原生 `<input type="radio">` 增强，支持单选组与受控 value。
 
 ## 基础用法
 
-<div class="demo">
+<DemoBlock title="基础用法">
   <oas-radio checked>选项一</oas-radio>
   <oas-radio>选项二</oas-radio>
-</div>
+</DemoBlock>
 
-## 单选框组
+## 单选组
 
-<div class="demo">
-  <oas-radio-group value="a">
-    <oas-radio value="a">微信</oas-radio>
-    <oas-radio value="b">支付宝</oas-radio>
-    <oas-radio value="c">银联</oas-radio>
+<DemoBlock title="单选组（radio-group）">
+  <oas-radio-group value="wechat">
+    <span slot="label">选择支付方式</span>
+    <oas-radio value="wechat">微信支付</oas-radio>
+    <oas-radio value="alipay">支付宝</oas-radio>
+    <oas-radio value="card">银行卡</oas-radio>
   </oas-radio-group>
-</div>
+</DemoBlock>
+
+组通过 `value` 受控，子项 `value` 作为选项标识；组会统一管理单选互斥。
+
+## 禁用
+
+<DemoBlock title="禁用">
+  <oas-radio-group disabled value="a">
+    <oas-radio value="a">已选且禁用</oas-radio>
+    <oas-radio value="b">禁用</oas-radio>
+    <oas-radio value="c">禁用</oas-radio>
+  </oas-radio-group>
+</DemoBlock>
+
+## 事件
+
+<DemoBlock title="切换事件">
+  <oas-radio-group id="radio-event" value="a">
+    <oas-radio value="a">选项 A</oas-radio>
+    <oas-radio value="b">选项 B</oas-radio>
+    <oas-radio value="c">选项 C</oas-radio>
+  </oas-radio-group>
+  <span id="radio-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 120px"></span>
+</DemoBlock>
+
+监听 `oas-change`：单项派发 `detail: { checked, value }`，组派发 `detail: { value }`。
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  const group = document.getElementById('radio-event')
+  const out = document.getElementById('radio-output')
+  group?.addEventListener('oas-change', (e) => {
+    out.textContent = `oas-change: ${e.detail.value}`
+  })
+})
+</script>
 
 ## API
 
 | 属性 | 说明 | 默认值 |
 |---|---|---|
 | `checked` | 是否选中 | `false` |
-| `value` | 值标识 | — |
+| `value` | 选项标识 | 无 |
 | `disabled` | 禁用 | `false` |
+| `name` | 原生分组名（组内自动管理） | 无 |
 
-Group 属性：`value`（单值）。
+`oas-radio-group`：`value`（选中值）、`disabled`，支持 `slot="label"` 设置组标题。
 
 | 事件 | 说明 |
 |---|---|
-| `oas-change` | 变化，`detail: { checked, value }` |
+| `oas-change` | 变化，`detail: { checked, value }`；组为 `detail: { value }` |

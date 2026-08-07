@@ -22,6 +22,8 @@ describe('OASSpin', () => {
     document.body.appendChild(el)
     const indicator = el.shadowRoot!.querySelector('[part="indicator"]')!
     expect(indicator.getAttribute('role')).toBe('status')
+    expect(el.getAttribute('aria-busy')).toBe('false')
+    el.setAttribute('spinning', '')
     expect(el.getAttribute('aria-busy')).toBe('true')
   })
 

@@ -4,31 +4,31 @@
 
 ## 水平
 
-<div class="demo">
+<DemoBlock title="基础分割线">
   <oas-divider></oas-divider>
-</div>
+</DemoBlock>
 
 ## 带内容
 
-<div class="demo">
+<DemoBlock title="内容位置">
   <oas-divider>文字</oas-divider>
   <oas-divider content-position="left">左对齐</oas-divider>
   <oas-divider content-position="right">右对齐</oas-divider>
-</div>
+</DemoBlock>
 
 ## 虚线
 
-<div class="demo">
+<DemoBlock title="虚线">
   <oas-divider dashed></oas-divider>
-</div>
+</DemoBlock>
 
 ## 垂直
 
-<div class="demo">
-  文本
+<DemoBlock title="垂直分割线">
+  <span>文本</span>
   <oas-divider direction="vertical"></oas-divider>
-  文本
-</div>
+  <span>文本</span>
+</DemoBlock>
 
 ## API
 

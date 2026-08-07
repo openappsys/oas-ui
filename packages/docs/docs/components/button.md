@@ -4,33 +4,36 @@
 
 ## 类型
 
-<div class="demo">
+<DemoBlock title="按钮类型">
   <oas-button>默认按钮</oas-button>
   <oas-button type="primary">主要按钮</oas-button>
   <oas-button type="success">成功按钮</oas-button>
   <oas-button type="warning">警告按钮</oas-button>
   <oas-button type="danger">危险按钮</oas-button>
   <oas-button type="text">文字按钮</oas-button>
-</div>
-
-```html
-<oas-button type="primary">主要按钮</oas-button>
-```
+</DemoBlock>
 
 ## 尺寸
 
-<div class="demo">
+<DemoBlock title="三种尺寸">
   <oas-button size="small">小按钮</oas-button>
   <oas-button size="medium">中按钮</oas-button>
   <oas-button size="large">大按钮</oas-button>
-</div>
+</DemoBlock>
 
 ## 禁用与加载
 
-<div class="demo">
+<DemoBlock title="禁用与加载态">
   <oas-button disabled>禁用</oas-button>
   <oas-button type="primary" loading>加载中</oas-button>
-</div>
+  <oas-button type="success" loading>提交中</oas-button>
+</DemoBlock>
+
+## 事件
+
+<DemoBlock title="点击事件">
+  <oas-button type="primary" onclick="console.log('oas-click', event)">点击我</oas-button>
+</DemoBlock>
 
 ## API
 

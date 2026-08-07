@@ -30,11 +30,12 @@ const STYLE = `
 `
 
 export class OASLayout extends OASElement {
+  private observer: MutationObserver | null = null
+
   protected override render(): void {
-    const hasSider = this.querySelector('oas-sider') !== null
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      <div class="struct" part="root" data-has-sider="${hasSider}">
+      <div class="struct" part="root" data-has-sider="false">
         <slot name="header"></slot>
         <div class="main">
           <div class="sider-part" part="sider"><slot name="sider"></slot></div>
@@ -43,5 +44,17 @@ export class OASLayout extends OASElement {
         </div>
       </div>
     `
+    this.observer = new MutationObserver(() => this.update())
+    this.observer.observe(this, { childList: true, subtree: false })
+    this.onCleanup(() => this.observer?.disconnect())
+    this.update()
+  }
+
+  protected override update(): void {
+    const struct = this.shadow.querySelector<HTMLElement>('.struct')
+    if (!struct) return
+    const hasSider = this.querySelector('oas-sider') !== null
+    struct.classList.toggle('has-sider', hasSider)
+    struct.setAttribute('data-has-sider', String(hasSider))
   }
 }

@@ -1,20 +1,42 @@
 # Switch 开关
 
-基于 `role="switch"` 的可切换按钮。
+`role="switch"` 的开关按钮。
 
 ## 基础用法
 
-<div class="demo">
+<DemoBlock title="基础用法">
   <oas-switch></oas-switch>
   <oas-switch checked></oas-switch>
-</div>
+</DemoBlock>
 
 ## 禁用与加载
 
-<div class="demo">
+<DemoBlock title="disabled / loading">
   <oas-switch disabled checked></oas-switch>
   <oas-switch loading checked></oas-switch>
-</div>
+</DemoBlock>
+
+`loading` 显示加载动画并阻止切换，用于异步提交场景。
+
+## 事件
+
+<DemoBlock title="切换事件">
+  <oas-switch id="switch-event" checked></oas-switch>
+  <span id="switch-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 120px"></span>
+</DemoBlock>
+
+监听 `oas-change`（`detail: { checked }`）：
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  const el = document.getElementById('switch-event')
+  const out = document.getElementById('switch-output')
+  el?.addEventListener('oas-change', (e) => {
+    out.textContent = `oas-change: ${e.detail.checked}`
+  })
+})
+</script>
 
 ## API
 
@@ -22,8 +44,8 @@
 |---|---|---|
 | `checked` | 是否开启 | `false` |
 | `disabled` | 禁用 | `false` |
-| `loading` | 加载态（禁止切换） | `false` |
+| `loading` | 加载态，阻止切换 | `false` |
 
 | 事件 | 说明 |
 |---|---|
-| `oas-change` | 变化，`detail: { checked }` |
+| `oas-change` | 切换，`detail: { checked }` |

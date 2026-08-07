@@ -4,28 +4,33 @@
 
 ## 用法
 
-<div class="demo">
+<DemoBlock title="常用图标">
   <oas-icon name="check"></oas-icon>
   <oas-icon name="close"></oas-icon>
   <oas-icon name="search" color="var(--oas-color-primary)"></oas-icon>
   <oas-icon name="star" color="var(--oas-color-warning)"></oas-icon>
   <oas-icon name="user"></oas-icon>
   <oas-icon name="heart" color="var(--oas-color-danger)"></oas-icon>
-</div>
-
-```html
-<oas-icon name="check"></oas-icon>
-<oas-icon name="search" size="24" color="var(--oas-color-primary)"></oas-icon>
-```
+  <oas-icon name="gear" color="var(--oas-color-success)"></oas-icon>
+</DemoBlock>
 
 ## 尺寸与颜色
 
-<div class="demo">
+<DemoBlock title="尺寸与颜色">
   <oas-icon name="check" size="16"></oas-icon>
   <oas-icon name="check" size="24"></oas-icon>
   <oas-icon name="check" size="32"></oas-icon>
   <oas-icon name="check" color="var(--oas-color-success)"></oas-icon>
-</div>
+</DemoBlock>
+
+## 无障碍名称
+
+设置 `label` 后图标对屏幕阅读器暴露可读名称。
+
+<DemoBlock title="带标签图标">
+  <oas-icon name="info" label="提示信息" color="var(--oas-color-primary)"></oas-icon>
+  <oas-icon name="warning" label="警告" color="var(--oas-color-warning)"></oas-icon>
+</DemoBlock>
 
 ## 按需引入
 

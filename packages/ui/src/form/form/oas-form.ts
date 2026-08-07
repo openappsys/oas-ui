@@ -53,6 +53,19 @@ export class OASForm extends OASElement {
       e.preventDefault()
       this.validateAndSubmit()
     })
+    this.addEventListener('oas-input', ((e: CustomEvent<{ value: string }>) => {
+      const target = e.composedPath()[0]
+      if (target instanceof Element && this.contains(target)) {
+        target.setAttribute('value', String(e.detail.value))
+      }
+    }) as EventListener)
+    this.addEventListener('oas-change', ((e: CustomEvent<{ value: unknown }>) => {
+      const target = e.composedPath()[0]
+      if (target instanceof Element && this.contains(target)) {
+        const v = e.detail.value
+        target.setAttribute('value', typeof v === 'string' ? v : JSON.stringify(v))
+      }
+    }) as EventListener)
     this.update()
   }
 

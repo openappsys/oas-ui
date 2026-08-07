@@ -1,30 +1,34 @@
 # Spin 加载中
 
-加载指示器，可包裹内容。
+加载指示器，可单独使用，也可包裹内容并叠加遮罩。
 
 ## 基础用法
 
-<div class="demo">
-  <oas-space>
-    <oas-spin></oas-spin>
+<DemoBlock title="尺寸">
+  <oas-space size="large">
     <oas-spin size="sm"></oas-spin>
+    <oas-spin></oas-spin>
     <oas-spin size="lg"></oas-spin>
   </oas-space>
-</div>
+</DemoBlock>
 
 ## 包裹内容
 
-<div class="demo" style="width: 300px; position: relative">
+<DemoBlock title="包裹内容">
   <oas-spin spinning>
-    <div style="height: 80px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">加载中的内容区域</div>
+    <div style="width: 280px; height: 96px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">
+      加载中的内容区域
+    </div>
   </oas-spin>
-</div>
+</DemoBlock>
 
 ## API
 
-| 属性 | 说明 | 默认值 |
-|---|---|---|
-| `size` | `sm` / `md` / `lg` | `md` |
-| `spinning` | 包裹内容并覆盖遮罩 | `false` |
+### 属性
 
-`role="status"` + `aria-busy="true"`。
+| 属性 | 说明 | 类型 | 默认值 |
+|---|---|---|---|
+| `size` | 指示器尺寸 | `sm` / `md` / `lg` | `md` |
+| `spinning` | 是否加载中；设置后包裹内容并叠加遮罩 | `boolean` | `false` |
+
+指示器 `role="status"`。

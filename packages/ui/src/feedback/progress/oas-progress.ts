@@ -34,7 +34,7 @@ const STYLE = `
 
 export class OASProgress extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['percent', 'status', 'show-text']
+    return ['percent', 'status', 'no-text', 'show-text']
   }
 
   protected override render(): void {
@@ -43,7 +43,7 @@ export class OASProgress extends OASElement {
       <div class="track" part="track">
         <div class="bar" part="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
       </div>
-      ${this.hasAttr('no-text') ? '' : '<div class="text" part="text"></div>'}
+      <div class="text" part="text"></div>
     `
     this.update()
   }
@@ -58,6 +58,9 @@ export class OASProgress extends OASElement {
     bar.classList.toggle('done', percent >= 100 && !status)
     bar.setAttribute('data-status', status)
     const text = this.shadow.querySelector<HTMLElement>('[part="text"]')
-    if (text) text.textContent = `${percent}%`
+    if (text) {
+      text.textContent = `${percent}%`
+      text.hidden = this.hasAttr('no-text') || this.getAttr('show-text', 'true') === 'false'
+    }
   }
 }
