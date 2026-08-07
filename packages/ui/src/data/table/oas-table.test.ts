@@ -67,4 +67,15 @@ describe('OASTable', () => {
     rows(el)[1]!.click()
     expect((detail as { row: Record<string, unknown> }).row['name']).toBe('李四')
   })
+
+  it('checkable：渲染行复选框，勾选派发 oas-check', () => {
+    const el = mount({ checkable: '', 'row-key': 'name' })
+    let detail: unknown
+    el.addEventListener('oas-check', (e: Event) => (detail = (e as CustomEvent).detail))
+    const boxes = el.shadowRoot!.querySelectorAll('.check-cell input[type="checkbox"]')
+    expect(boxes.length).toBe(4)
+    ;(boxes[1] as HTMLInputElement).click()
+    expect((detail as { keys: string[] }).keys).toEqual(['张三'])
+    expect(el.getAttribute('selected')).toBe('张三')
+  })
 })

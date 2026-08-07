@@ -64,7 +64,7 @@ const STYLE = `
 
 export class OASTree extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['data', 'selected', 'checked', 'checkable']
+    return ['data', 'selected', 'checked', 'checkable', 'expanded']
   }
 
   private flat: Array<{ node: TreeNode; depth: number; parent?: string }> = []

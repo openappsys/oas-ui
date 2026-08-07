@@ -13,10 +13,10 @@ const STYLE = `
 .list[data-bordered='true'] {
   border: 1px solid var(--oas-color-border);
 }
-::slotted(oas-list-item) {
+.list[data-split='true'] ::slotted(oas-list-item) {
   border-bottom: 1px solid var(--oas-color-border);
 }
-::slotted(oas-list-item:last-child) {
+.list[data-split='true'] ::slotted(oas-list-item:last-child) {
   border-bottom: none;
 }
 `

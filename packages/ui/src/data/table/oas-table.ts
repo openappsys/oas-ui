@@ -69,6 +69,13 @@ tr.row[data-selected='true'] td {
 .check {
   accent-color: var(--oas-color-primary);
 }
+.check-cell {
+  width: 40px;
+  text-align: center;
+}
+.check-cell input {
+  accent-color: var(--oas-color-primary);
+}
 td.align-center { text-align: center; }
 td.align-right { text-align: right; }
 `
@@ -122,6 +129,23 @@ export class OASTable extends OASElement {
     }
 
     const tr = document.createElement('tr')
+    if (this.hasAttr('checkable')) {
+      const th = document.createElement('th')
+      th.className = 'check-cell'
+      th.style.width = '40px'
+      const selectAll = document.createElement('input')
+      selectAll.type = 'checkbox'
+      selectAll.setAttribute('aria-label', '全选')
+      selectAll.checked = sorted.length > 0 && sorted.every((r) => selected.includes(String(r[rowKey] ?? JSON.stringify(r))))
+      selectAll.addEventListener('change', () => {
+        const keys = sorted.map((r) => String(r[rowKey] ?? JSON.stringify(r)))
+        this.setAttribute('selected', selectAll.checked ? keys.join(',') : '')
+        this.emit('check', { keys: selectAll.checked ? keys : [] })
+        this.update()
+      })
+      th.appendChild(selectAll)
+      tr.appendChild(th)
+    }
     for (const col of this.columns) {
       const th = document.createElement('th')
       th.setAttribute('part', 'header')
@@ -155,7 +179,27 @@ export class OASTable extends OASElement {
       tr.setAttribute('part', 'row')
       const key = String(row[rowKey] ?? JSON.stringify(row))
       tr.setAttribute('data-selected', String(selected.includes(key)))
+      if (this.hasAttr('checkable')) {
+        const td = document.createElement('td')
+        td.className = 'check-cell'
+        const box = document.createElement('input')
+        box.type = 'checkbox'
+        box.setAttribute('aria-label', `选择行 ${key}`)
+        box.checked = selected.includes(key)
+        box.addEventListener('change', (e) => {
+          e.stopPropagation()
+          const next = new Set(selected)
+          if (box.checked) next.add(key)
+          else next.delete(key)
+          this.setAttribute('selected', [...next].join(','))
+          this.emit('check', { keys: [...next] })
+          this.update()
+        })
+        td.appendChild(box)
+        tr.appendChild(td)
+      }
       tr.addEventListener('click', () => {
+        if (this.hasAttr('checkable')) return
         const next = new Set(selected)
         if (next.has(key)) next.delete(key)
         else next.add(key)

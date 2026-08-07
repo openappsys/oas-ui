@@ -30,6 +30,16 @@
 
 `sort-key` / `sort-order` 控制排序，`selected` 高亮选中行（点击行可切换选中）。
 
+## 多选
+
+<DemoBlock title="行多选（checkable）">
+  <div style="width: 100%">
+    <oas-table checkable columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+表头复选框一键全选/取消，行复选框单独勾选；选中变化派发 `oas-check`。
+
 ## 空态
 
 <DemoBlock title="空数据">
@@ -79,11 +89,12 @@ onMounted(() => {
 | `row-key` | 行唯一键字段 | string | `key` |
 | `selected` | 选中行 key 集合（逗号分隔） | string | — |
 | `empty-text` | 空态文案 | string | `暂无数据` |
-| `checkable` | 复选框开关（当前版本尚未渲染） | boolean | `false` |
+| `checkable` | 复选框多选开关 | boolean | `false` |
 
 > 说明：`columns.render` 为函数类型，仅支持在 JS 侧构造后通过属性整体赋值，无法用 JSON 字符串表达。
 
 | 事件 | 说明 |
 |---|---|
 | `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }` |
-| `oas-row-click` | 点击行（同时切换选中），`detail: { row, key }` |
+| `oas-row-click` | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
+| `oas-check` | 复选框选中变化，`detail: { keys: string[] }` |
