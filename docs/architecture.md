@@ -37,8 +37,14 @@
 ### 关键机制
 
 - **`OASElement` 基类**：统一生命周期、属性观察（`observedAttributes` → 属性代理 state）、CSS 变量注入、`part` 暴露约定、事件命名约定。所有组件继承自它。
+- **增量渲染**：`render()` 只在首次连接时构建 shadow DOM；属性变化走 `update()` 增量同步（class/aria/文本），禁止 innerHTML 全量重建——否则 input 丢光标、focus 丢失、table 行状态重建。
+- **property / attribute 双通道**：标量（string/number/boolean）走 attribute + 反射；复杂数据（`options`/`columns`/`data`/`rules`）只走 property（JS 对象，不序列化进 attribute）。基类提供属性 setter 与变更通知约定。
 - **受控/非受控**：表单类组件支持"属性驱动"（外部绑 `value`）与"内部 state"双模式，对齐 React 心智。
+- **清理钩子**：基类提供 `disconnectedCallback` 统一 teardown 注册（计时器、全局监听、浮层引用），防止泄漏。
 - **事件命名**：一律 `oas-*` 前缀 CustomEvent，payload 挂 `detail`，bubbles + composed（穿透 Shadow DOM）。
+- **跨 Shadow DOM 的 ARIA 关联**：idref（`aria-describedby`/`aria-labelledby`）不能穿透 shadow 边界。方案：core 提供 id 生成器；表单错误提示优先用 `aria-live` region 播报 + `aria-invalid` 标记，跨组件 idref 场景由 form 容器在 light DOM 侧协调。
+- **overlay 管理器**（v0.5 前置到 core）：浮层栈、z-index 语义 token（`--oas-z-tooltip/popover/modal/message`）、层叠 Esc 关闭、点击外部关闭。tooltip/modal/message 共用。
+- **i18n 预留**：core 提供 locale 注册表（`setLocale/ t()`），组件内置文案（空态、确认/取消）走查表；当前内置 zh-CN，结构可扩展。
 - **主题注入**：组件样式只写 token 引用；宿主只需一次 `import '@oas-ui/theme'` 定义 `:root` 变量即可换肤。
 - **SSR**：Web Components 原生不 SSR；提供"无 JS 占位 + 渐进增强"策略作为边界（见 ROADMAP SSR 项）。
 
@@ -63,20 +69,21 @@ oas-ui/
 
 | 目录 | 组件 |
 |---|---|
-| `basic/` | button, icon, tag, badge, space |
-| `form/` | input, select, checkbox, radio, switch, form |
-| `feedback/` | message, notification, modal, tooltip, popover, spin, skeleton |
-| `data/` | table, pagination, tabs, tree, empty |
-| `navigation/` | menu, dropdown, breadcrumb |
-| `layout/` | layout, grid, container |
+| `basic/` | button, icon, tag, badge, space, divider, link, typography |
+| `form/` | input, textarea, checkbox, radio, switch, slider, input-number, rate, select, auto-complete, cascader, tree-select, form |
+| `feedback/` | message, notification, modal, drawer, popconfirm, alert, progress, loading-bar, spin, skeleton, empty, result, tooltip, popover |
+| `data/` | table, pagination, tabs, tree, card, avatar, image, collapse, descriptions, timeline, list, carousel |
+| `navigation/` | menu, dropdown, breadcrumb, tour, anchor, back-top, contextmenu, hover-card, steps, segmented |
+| `layout/` | layout, grid, affix, splitter, flex, page-header, float-button |
 
 每个组件一个目录：`index.ts` + `oas-button.ts`（定义）+ `oas-button.test.ts`（单测）+ `oas-button.stories.ts`（demo）。
 
 ## 4. 构建与产物
 
-- library mode：`es`（ESM）+ `d.ts`，`sideEffects: false` 支持 tree-shaking
-- 每个组件可独立按需引入：`import '@oas-ui/ui/basic/button'`（side-effect 注册）与 `import { defineButton } from '@oas-ui/ui'`（显式注册）双路径
-- 产物目录：`dist/`（esm）、`dist/types/`
+- library mode：`es`（ESM），`preserveModules` 保持每组件独立文件，`sideEffects` 白名单仅含注册入口与 CSS，支持 tree-shaking
+- 每个组件可独立按需引入：`import '@oas-ui/ui/basic/button'`（side-effect 注册）与 `import { OASButton } from '@oas-ui/ui'`（显式注册）双路径
+- `.d.ts` 由 `tsc --emitDeclarationOnly` 产出到 `dist/types/`（构建必含，发布验收项）
+- 产物目录：`dist/`（esm，保持 src 目录结构）、`dist/types/`
 - 图标库由源 SVG 目录脚本生成，产出按名称树摇
 
 ## 5. 可访问性基线（架构级承诺）
@@ -100,11 +107,11 @@ oas-ui/
 | 里程碑 | 交付 |
 |---|---|
 | M0 骨架（本次） | monorepo + 构建 + 测试基础设施 + CI 脚本，一个 hello 组件跑通全链路 |
-| M1 地基 | core 基类 + theme + icons + basic 5 件 + 文档站骨架 |
-| M2 表单 | form 6 件 + 校验机制 + Playwright 视觉基线 |
-| M3 反馈 | 浮层基础设施 + modal/tooltip/popover/message + 键盘/焦点完备 |
-| M4 数据 | table（最重）/pagination/tabs/tree/empty |
-| M5 布局导航 | layout/grid/menu/dropdown |
+| M1 地基 | core 基类（增量渲染）+ theme + icons + basic 8 件 + 文档站骨架 + 构建补课（d.ts/exports/tree-shaking） |
+| M2 表单 | form 13 件 + 校验机制 + Playwright 视觉基线 |
+| M3 反馈 | overlay 管理器 + 浮层基础设施 + 反馈 12 件 + tooltip/popover + 键盘/焦点完备 |
+| M4 数据 | table（最重）/tree + 展示 8 件 |
+| M5 布局导航 | layout/grid/flex/splitter + 导航 9 件 |
 | M6 打磨 | SSR 边界、多主题完整、React/Vue playground、无障碍全审计 |
 | v1.0.0 | 发布：npm 可用、文档站、CHANGELOG、贡献指南 |
 
