@@ -61,6 +61,22 @@ export default defineConfig({
             { text: 'Result 结果页', link: '/components/result' },
           ],
         },
+        {
+          text: '导航与浮层组件',
+          collapsed: true,
+          items: [
+            { text: 'Tooltip 文字提示', link: '/components/tooltip' },
+            { text: 'Popover 气泡卡片', link: '/components/popover' },
+            { text: 'Menu 菜单', link: '/components/menu' },
+            { text: 'Dropdown 下拉菜单', link: '/components/dropdown' },
+            { text: 'ContextMenu 右键菜单', link: '/components/context-menu' },
+            { text: 'HoverCard 悬停卡片', link: '/components/hover-card' },
+            { text: 'Breadcrumb 面包屑', link: '/components/breadcrumb' },
+            { text: 'Anchor 锚点', link: '/components/anchor' },
+            { text: 'BackTop 回到顶部', link: '/components/back-top' },
+            { text: 'Tour 引导', link: '/components/tour' },
+          ],
+        },
     ],
   },
 })
