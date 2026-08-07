@@ -94,6 +94,22 @@ export default defineConfig({
             { text: 'Grid 栅格', link: '/components/grid' },
           ],
         },
+        {
+          text: '数据展示组件',
+          collapsed: true,
+          items: [
+            { text: 'Table 表格', link: '/components/table' },
+            { text: 'Tree 树', link: '/components/tree' },
+            { text: 'Card 卡片', link: '/components/card' },
+            { text: 'Avatar 头像', link: '/components/avatar' },
+            { text: 'Image 图片', link: '/components/image' },
+            { text: 'Collapse 折叠面板', link: '/components/collapse' },
+            { text: 'Descriptions 描述列表', link: '/components/descriptions' },
+            { text: 'Timeline 时间线', link: '/components/timeline' },
+            { text: 'List 列表', link: '/components/list' },
+            { text: 'Carousel 轮播', link: '/components/carousel' },
+          ],
+        },
     ],
   },
 })
