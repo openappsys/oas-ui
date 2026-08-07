@@ -8,6 +8,7 @@ import './basic/link/index.js'
 import './basic/typography/index.js'
 import './form/input/index.js'
 import './form/textarea/index.js'
+import './form/checkbox/index.js'
 
 export { OASButton } from './basic/button/oas-button.js'
 export type { ButtonType, ButtonSize } from './basic/button/oas-button.js'
@@ -25,3 +26,4 @@ export { OASText, OASTitle, OASParagraph } from './basic/typography/oas-typograp
 export type { TextType } from './basic/typography/oas-typography.js'
 export { OASInput } from './form/input/oas-input.js'
 export { OASTextarea } from './form/textarea/oas-textarea.js'
+export { OASCheckbox, OASCheckboxGroup } from './form/checkbox/index.js'
