@@ -1,4 +1,4 @@
-import { OASModal } from '../modal/index.js'
+import { OASModal } from '../modal/oas-modal.js'
 
 export interface ConfirmOptions {
   title?: string
@@ -11,7 +11,7 @@ const active: OASModal[] = []
 
 export function confirm(options: ConfirmOptions = {}): Promise<void> {
   return new Promise((resolve, reject) => {
-    const el = document.createElement('oas-modal')
+    const el = document.createElement('oas-modal') as OASModal
     el.setAttribute('visible', '')
     if (options.title !== undefined) el.setAttribute('title', options.title)
     if (options.content !== undefined) {
