@@ -1,0 +1,1 @@
+export const userPath = "<circle cx=\"8\" cy=\"5.5\" r=\"2.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M3.5 13.5 A4.5 4.5 0 0 1 12.5 13.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>"

@@ -1,0 +1,1 @@
+export const calendarPath = "<rect x=\"3\" y=\"4.5\" width=\"10\" height=\"9\" rx=\"1.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M3 7.5 H13 M5.5 2.8 V4.8 M10.5 2.8 V4.8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>"

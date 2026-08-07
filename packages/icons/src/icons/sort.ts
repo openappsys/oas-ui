@@ -1,0 +1,1 @@
+export const sortPath = "<path d=\"M8 2.5 V13.5 M5 5.5 L8 2.5 L11 5.5 M8 13.5 L11 10.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"

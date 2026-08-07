@@ -1,0 +1,1 @@
+export const trashPath = "<path d=\"M3.5 4.5 H12.5 M6.5 4 V3.2 a0.8 0.8 0 0 1 0.8-0.7 h1.4 a0.8 0.8 0 0 1 0.8 0.7 V4\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/><path d=\"M5 4.5 L5.5 13 H10.5 L11 4.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"

@@ -1,0 +1,1 @@
+export const warningPath = "<path d=\"M8 2.3 L14.2 13 H1.8 Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linejoin=\"round\"/><path d=\"M8 6.5 V9.6 M8 11 H8.01\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>"

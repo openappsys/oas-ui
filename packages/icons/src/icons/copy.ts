@@ -1,0 +1,1 @@
+export const copyPath = "<rect x=\"5.5\" y=\"5.5\" width=\"8\" height=\"8\" rx=\"1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M10.5 5.5 V4 a1.5 1.5 0 0 0-1.5-1.5 H4.5 A1.5 1.5 0 0 0 3 4 v5 A1.5 1.5 0 0 0 4.5 10.5 H5.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/>"

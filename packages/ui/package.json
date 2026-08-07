@@ -28,6 +28,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@oas-ui/core": "workspace:*"
+    "@oas-ui/core": "workspace:*",
+    "@oas-ui/icons": "workspace:*"
   }
 }

@@ -1,0 +1,1 @@
+export const moreVerticalPath = "<path d=\"M8 5.5 H8.01 M8 8 H8.01 M8 10.5 H8.01\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>"

@@ -1,0 +1,1 @@
+export const gearPath = "<path d=\"M8 3.5 A4.5 4.5 0 1 1 3.5 8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/><path d=\"M8 2.5 V4.8 M3.5 8 H5.8 M2.5 8 H3.2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>"

@@ -35,6 +35,8 @@ importers:
 
   packages/core: {}
 
+  packages/icons: {}
+
   packages/theme: {}
 
   packages/ui:
@@ -42,6 +44,9 @@ importers:
       '@oas-ui/core':
         specifier: workspace:*
         version: link:../core
+      '@oas-ui/icons':
+        specifier: workspace:*
+        version: link:../icons
 
 packages:
 

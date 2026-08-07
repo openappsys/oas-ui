@@ -1,0 +1,1 @@
+export const lockPath = "<rect x=\"4.5\" y=\"7\" width=\"7\" height=\"6\" rx=\"1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M6 7 V5.5 a2 2 0 0 1 4 0 V7\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>"

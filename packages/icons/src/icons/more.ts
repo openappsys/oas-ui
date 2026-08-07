@@ -1,0 +1,1 @@
+export const morePath = "<circle cx=\"4.5\" cy=\"8\" r=\"1.2\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"8\" cy=\"8\" r=\"1.2\" fill=\"currentColor\" stroke=\"none\"/><circle cx=\"11.5\" cy=\"8\" r=\"1.2\" fill=\"currentColor\" stroke=\"none\"/>"

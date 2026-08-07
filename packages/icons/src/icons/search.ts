@@ -1,0 +1,1 @@
+export const searchPath = "<circle cx=\"7\" cy=\"7\" r=\"3.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M9.6 9.6 L13 13\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>"

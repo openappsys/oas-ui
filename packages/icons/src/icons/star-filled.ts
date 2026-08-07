@@ -1,0 +1,1 @@
+export const starFilledPath = "<path d=\"M8 2.5 C6 2.5 4.6 4.2 5.6 5.8 C6.6 7.4 5 8.8 5 8.8 C4.2 9.4 4.6 11 6 11 C7 11 8 12.5 8 13.5 C8 12.5 9 11 10 11 C11.4 11 11.8 9.4 11 8.8 C11 8.8 9.4 7.4 10.4 5.8 C11.4 4.2 10 2.5 8 2.5 Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linejoin=\"round\"/>"

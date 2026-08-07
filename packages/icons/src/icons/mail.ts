@@ -1,0 +1,1 @@
+export const mailPath = "<rect x=\"3\" y=\"5.5\" width=\"10\" height=\"7.5\" rx=\"1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M3.5 7 L8 10 L12.5 7\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
