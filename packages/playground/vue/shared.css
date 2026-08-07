@@ -1,0 +1,17 @@
+body {
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  margin: 0;
+  padding: 24px;
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  transition: background var(--oas-transition-base), color var(--oas-transition-base);
+}
+h1 { font-size: var(--oas-font-size-xl); }
+.demo-block {
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-lg);
+  padding: var(--oas-space-4);
+  margin-bottom: var(--oas-space-5);
+}
+.demo-block > h3 { margin-top: 0; font-size: var(--oas-font-size-lg); }
+.switch-row { display: flex; gap: var(--oas-space-3); align-items: center; margin-bottom: var(--oas-space-5); }

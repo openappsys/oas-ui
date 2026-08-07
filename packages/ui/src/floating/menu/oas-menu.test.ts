@@ -16,7 +16,7 @@ function mount(attrs: Record<string, string> = {}): OASMenu {
 }
 
 function items(el: OASMenu): HTMLElement[] {
-  return [...el.shadowRoot!.querySelectorAll('[role="menuitem"]')] as HTMLElement[]
+  return [...el.shadowRoot!.querySelectorAll('[part="item"]')] as HTMLElement[]
 }
 
 describe('OASMenu', () => {

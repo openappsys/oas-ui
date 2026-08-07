@@ -116,6 +116,7 @@ export class OASTree extends OASElement {
         const box = document.createElement('input')
         box.type = 'checkbox'
         box.className = 'check'
+        box.setAttribute('aria-label', `选择 ${node.label}`)
         box.checked = checked.has(node.key)
         box.addEventListener('change', () => {
           const next = new Set(this.getAttr('checked', '').split(',').filter(Boolean))

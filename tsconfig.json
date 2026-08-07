@@ -4,5 +4,5 @@
     "composite": true
   },
   "include": ["packages/**/src", "packages/**/*.ts"],
-  "exclude": ["node_modules", "dist", "packages/**/dist"]
+  "exclude": ["node_modules", "dist", "packages/**/dist", "packages/playground"]
 }

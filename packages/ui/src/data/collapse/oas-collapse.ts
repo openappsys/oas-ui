@@ -28,7 +28,7 @@ export class OASCollapse extends OASElement {
   protected override render(): void {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      <div class="group" part="group" role="list"><slot></slot></div>
+      <div class="group" part="group"><slot></slot></div>
     `
     this.shadow.querySelector('.group')?.addEventListener('click', () => undefined)
     this.update()

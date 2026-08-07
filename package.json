@@ -12,8 +12,10 @@
     "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@oas-ui/theme": "workspace:*",
     "@oas-ui/ui": "workspace:*",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^26.1.2",
     "happy-dom": "^20.11.1",
     "typescript": "^7.0.2",

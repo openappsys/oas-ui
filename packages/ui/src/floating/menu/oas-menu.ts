@@ -95,7 +95,7 @@ export class OASMenu extends OASElement {
       const li = document.createElement('li')
       li.className = 'item'
       li.setAttribute('part', 'item')
-      li.setAttribute('role', 'menuitem')
+      li.setAttribute('role', 'menuitemradio')
       li.setAttribute('aria-disabled', String(item.disabled ?? false))
       li.setAttribute('aria-checked', String(item.value === selected))
       if (idx === this.activeIndex) li.classList.add('active')
