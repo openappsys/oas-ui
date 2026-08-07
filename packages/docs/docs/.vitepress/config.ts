@@ -24,6 +24,19 @@ export default defineConfig({
           { text: 'Typography 排版', link: '/components/typography' },
         ],
       },
+      {
+        text: '表单组件',
+        items: [
+          { text: 'Input 输入框', link: '/components/input' },
+          { text: 'Textarea 文本域', link: '/components/textarea' },
+          { text: 'Checkbox 复选框', link: '/components/checkbox' },
+          { text: 'Radio 单选框', link: '/components/radio' },
+          { text: 'Switch 开关', link: '/components/switch' },
+          { text: 'Slider 滑块', link: '/components/slider' },
+          { text: 'InputNumber 数字输入', link: '/components/input-number' },
+          { text: 'Rate 评分', link: '/components/rate' },
+        ],
+      },
     ],
   },
 })
