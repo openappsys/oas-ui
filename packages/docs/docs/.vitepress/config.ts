@@ -77,6 +77,23 @@ export default defineConfig({
             { text: 'Tour 引导', link: '/components/tour' },
           ],
         },
+        {
+          text: '导航与布局组件',
+          collapsed: true,
+          items: [
+            { text: 'Tabs 标签页', link: '/components/tabs' },
+            { text: 'Pagination 分页', link: '/components/pagination' },
+            { text: 'Steps 步骤条', link: '/components/steps' },
+            { text: 'Segmented 分段器', link: '/components/segmented' },
+            { text: 'Affix 固钉', link: '/components/affix' },
+            { text: 'Splitter 分割面板', link: '/components/splitter' },
+            { text: 'Flex 弹性布局', link: '/components/flex' },
+            { text: 'PageHeader 页头', link: '/components/page-header' },
+            { text: 'FloatButton 悬浮按钮', link: '/components/float-button' },
+            { text: 'Layout 布局', link: '/components/layout' },
+            { text: 'Grid 栅格', link: '/components/grid' },
+          ],
+        },
     ],
   },
 })
