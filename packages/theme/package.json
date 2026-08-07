@@ -1,0 +1,14 @@
+{
+  "name": "@oas-ui/theme",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.css",
+  "types": "./src/index.css",
+  "exports": {
+    ".": "./src/index.css"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}

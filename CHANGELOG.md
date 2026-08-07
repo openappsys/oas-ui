@@ -1,0 +1,235 @@
+# Changelog
+
+所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
+
+## [Unreleased]
+
+### v1.9.0 进行中（SSR/DSD 完整版 + 发布冲刺）
+
+> 本段为 v1.9.0 的进行中条目，完工后转正为 `## [1.9.0]`。
+
+#### 已完成（v1.9 第一阶段）
+
+**新增**
+
+- 新增 `@oas-ui/ssr` 渲染器包：`renderToString(tag, attrs, slotHTML, options)` 输出 Declarative Shadow DOM（DSD）静态快照，仅对白名单组件（button/tag/empty/divider/typography）开放
+- `@oas-ui/ui` 新增 Node-safe `ssr` 子路径导出（不执行 `customElements.define`、不触碰 DOM API）
+- OASElement 基类支持复用 declarative shadow root（DSD 第一步）
+- ssr.md 补「服务端渲染（实验）」段（中英双版，Nuxt/Next 调用示例）
+
+#### 已完成（v1.9 第二阶段）
+
+**新增**
+
+- 真水合：upgrade 检测到 DSD 快照指纹时跳过 shadow 重建，仅缓存节点 + 绑事件 + 增量更新（DOM 引用保持）；指纹缺失/不匹配、结构篡改、hydrate 异常一律回退重渲染
+- 测量组件闪动治理：affix/ellipsis/scroll-area 在 DSD 快照场景首帧延迟布局写入（rAF 校正），纯 CSR 行为不变；白名单扩至 13 tag（+table/affix/ellipsis/scroll-area/tree/select）
+- property-only 数据组件声明式通道：table/tree/select 的 columns/data/options 支持 JSON attribute（property 优先、非法 JSON 容错、hydrate 接管）
+- grid 栅格表单：新增 `oas-form-item`（label/span/required/错误位收编）+ `oas-form` 增强 `layout="grid"`/`gap`/`label-align`/`label-width`
+- ssr 首载优化：白名单按需 define，首次 renderToString 从约 1.8s 降至 22ms（纯 Node）
+- 主题新增 on-color token（`--oas-color-text-on-primary/success/warning/danger`），全库实心态硬编码白字改走 token（dark 下深字，对比度 ≥4.5）
+- 9 个表单控件新增 `focus()` 委托（form-item label 点击聚焦到 shadow 内主输入）
+
+#### 进行中（v1.9 收尾）
+
+- 框架集成插件：Nuxt module 与 Next 集成示例/包
+- 公开发布：GitHub 仓库公开 + npm 发布 + CI/CD 打通 + 文档站上线
+
+#### 已完成（v1.9 第四阶段，DSD 彻底落地）
+
+- 新增：SSR 白名单全量覆盖 123/124 tag（表单/反馈/数据展示/导航布局/基础组件五批推进，仅 theme-editor 与命令式组件客户端专属）
+- 新增：`renderToString` 嵌套组件递归序列化（descriptions/tabs/form-item/layout 等组合场景快照完整）
+- 新增：`dist/cdn.js` 单文件 IIFE bundle（gzip ~116KB），CDN 三行引入可用
+- 新增：性能基准体系（vision §5.8 性能领先落地）——体积/渲染基线（`scripts/perf/`，产物 `docs/perf-baseline.json` + 横向对比 `docs/perf-baseline.md`）、CI 体积预算（`pnpm perf:size`，cdn.js gzip ≤ 150KB 等六项门槛）、本地渲染基准（`pnpm perf:bench`，量级防退化）
+- 修复：水合动态内容重复渲染（rate/dynamic-input/log/marquee）、alert 关闭不隐藏、result 图标不随 status 更新、transfer 缺 observedAttributes、textarea autosize 首帧闪动、组件 id 快照确定性
+
+## [1.8.0] - 2026-08-11 (internal)
+
+> 内部功能块版本：通用组件 100% 覆盖收口（combobox 落地），仅推进至 tag、未发 npm（随 v1.9.0 一并公开发布）。含 v1.1~v1.7 组件的能力补齐与复核修复批次、文档站中英双语与完善批。
+
+### 新增
+
+- 新增 combobox：可过滤单选组合框——输入框即控件、子串过滤、键盘导航（↑↓/Enter/Esc）、受控、`clearable`/`loading`/`empty`/`disabled`，事件 `oas-change`/`oas-input`/`oas-clear`，全 ARIA 规范（combobox/listbox/option/activedescendant）
+- input：`show-password`/`show-count`；select：分组、可清空、远程搜索、多选标签折叠 +N、允许创建；button：`block`/`round`/`ghost`/`width`/`icon`；modal：`centered`/`draggable`
+- tabs：`closable`/`badge`/`tab-position`（上/下/左/右）；pagination：`show-total`/`page-sizes`/`jumper`；switch：`checked-text`/`size`/`color`/`allow-clear`；rate：自定义图标
+- table：`stripe`/`bordered`/`summary`/可展开行/树形数据/lazy 懒加载/`draggable` 拖拽；tree：lazy 懒加载；steps：每步状态/可点击；drawer：宽度尺寸；slider：刻度；empty：自定义插画；chart：area/donut/stacked-bar 类型
+- 补 marquee/carousel/card/list/tag 内容形态 demo（图片墙/图片轮播/封面/图文/图标标签）
+- 文档站 114 个组件参考页英文版 + 全部 demo 示例文本英文化（中文能力演示刻意保留）；EN 侧栏指向 `/en/components/*`
+- 文档站本地搜索（中英双索引）+ 组件总览页（中英，7 分组）+ CHANGELOG 页（include 根 CHANGELOG.md）+ icon 图标墙
+- 文档站示例代码 Shiki 语法高亮（懒加载 + 暗色适配）；侧栏组件分组收起展开
+- 文档站组件 API 表自动化：源码 AST 扫描（scan.mjs）+ 说明文案收割（harvest.mjs）+ 统一版式生成器，md `## API` 章节为生成物
+- 文档站语言切换统一走内置 locales 下拉（路由驱动 + `setLocale` 同步组件内置文案）
+
+### 修复
+
+- 修复 Vue 宿主下 property 劫持导致的数据型组件异常（table 同类问题全仓排查修复）
+- 修复 table：SPA 导航下无数据、滚动刷新弹回顶、固定列表头被正文覆盖
+- 修复 tree 虚拟模式行样式全丢（`::part` 后链后代选择器不支持）、virtual-list 视口高度与 items 赋值竞态、timeline 圆线不对齐
+- 修复 select 下拉锚定到页面底部、多选标签换行/箭头漂浮、clear-btn 嵌套解析问题
+- 修复 date-picker/time-picker 弹层定位逃逸出 shadow 落到页面底部
+- 修复 backdrop 锁滚动导致开合遮罩页面位移（最终改为拦截滚动行为方案，滚动条保留则视口宽度不变）
+- 修复 switch 带文案时滑块被遮、button ghost success/warning 文字对比度、tabs 可关闭项嵌套交互违规
+- 修复 button-group 纵向布局失效、tag hover 不可读、link 视觉问题
+
+## [1.7.0] - 2026-08-09 (internal)
+
+> 内部功能块版本：未发 npm（随 v1.9.0 一并公开发布）。
+
+### 新增
+
+- 新增 theme-editor：主题 token 编辑面板——读取 `--oas-*` 变量集实时预览，导出主题 JSON，与 config-provider 的 theme 注入打通（改值即时生效到子树）
+- 新增 bottom-navigation：移动端底部导航，`role="tablist"` + 键盘左右切换 + `aria-selected`
+- 新增 sidebar：可折叠侧栏，`collapsed` 收窄图标态、移动端抽屉态、点击外部收起
+- 新增 container：定宽居中容器，`size`（xs~xl/full）/`center`/`padding`，逻辑 CSS 属性（RTL 合规）
+
+## [1.6.0] - 2026-08-09 (internal)
+
+> 内部功能块版本：未发 npm（随 v1.9.0 一并公开发布）。
+
+### 新增
+
+- 新增 chart：图表（折线/柱状/饼/面积/环形/堆叠柱，数据更新动画）
+- 新增 code：代码展示（语言高亮、行号、复制按钮）
+- 新增 log：日志滚动视图（追加后自动滚到底，仅用户未上翻时）
+- 新增 marquee：跑马灯（`speed`/`pause-on-hover`，尊重 `prefers-reduced-motion`）
+- 新增 number-animation：数字滚动动画（rAF 清理无泄漏）
+- 新增 gradient-text：文字渐变着色
+- 新增 equation：数学公式渲染
+- 新增 aspect-ratio：宽高比容器（无内容仍保比例占位）
+- 新增 masonry：瀑布流布局（CSS columns 实现）
+- 新增 comment：评论（作者头像/内容/时间/操作区，纯展示）
+
+## [1.5.0] - 2026-08-09 (internal)
+
+> 内部功能块版本：未发 npm（随 v1.9.0 一并公开发布）。
+
+### 新增
+
+- 新增 command：命令面板——搜索过滤、↑↓ 选择、Enter 执行、Esc 关闭、焦点陷阱 + 打开自动聚焦
+- 新增 menubar：应用菜单栏，方向键 + Alt 访问键导航
+- 新增 navigation-menu：多级导航栏，悬停/键盘展开子菜单
+- 新增 toolbar：工具按钮组（roving tabindex）
+- 新增 scroll-area：自定义滚动条（细条 + hover 变粗），`oas-scroll` 事件
+- 新增 toggle-group：单选/多选开关组（radio/checkbox 语义，受控）
+- 新增 speed-dial：悬浮主按钮 + 展开子动作（`aria-expanded`，点击外部收起）
+- 新增 toast：命令式 API `toast.success/error/warning/info/loading()` + `toast.promise()`，返回句柄 `.close()`，支持 `action`/`duration`/`position`，loading 态不可关
+- 新增 snackbar：底部提示条，`open`/`message`/`action-text`/`duration`/`direction`，堆叠上限 3，无 action 走 `role="status"`
+- 新增 backdrop：全屏遮罩，`transparent`/`blur`/`lock-scroll`，`oas-click` 事件，关闭即卸载节点（零孤儿 DOM）
+
+## [1.4.0] - 2026-08-09 (internal)
+
+> 内部功能块版本：未发 npm（随 v1.9.0 一并公开发布）。
+
+### 新增
+
+- 新增 virtual-list：定高虚拟列表（视口窗口渲染 + 首尾 padding 占位 + 滚动节流），供 table/tree/select 复用
+- 新增 qrcode：二维码（`value`/`size`/`error-correction`）
+- 新增 watermark：水印（`text`/`image`/`opacity`/`repeat`，`pointer-events:none` 不拦截交互）
+- 新增 ellipsis：文本省略（多行截断、仅溢出时挂 tooltip 展示全文、`expandable` 展开/收起，零孤儿浮层）
+- table 增强：固定列（left/right）+ 表头吸顶 + 虚拟滚动，与排序/分页/多选不冲突
+- tree 增强：大数据量虚拟化渲染（复用 virtual-list），展开状态保持
+- image 增强：`preview` 图片放大预览——点击放大 + 缩放/旋转/下载 + Esc 关闭 + 焦点陷阱，`oas-preview` 事件
+- progress 增强：`type="circle"` 环形进度（`size`/`stroke-width`/`show-text`，`role="progressbar"`），整环 success/error 变色
+
+## [1.3.0] - 2026-08-09 (internal)
+
+> 内部功能块版本：未发 npm（随 v1.9.0 一并公开发布）。
+
+### 新增
+
+- 新增 upload：文件上传（原生 input + 拖拽区 + 进度），`accept`/`multiple`/`max`/`auto-upload`，事件 `oas-change`/`oas-remove`/`oas-upload`
+- 新增 transfer：穿梭框（左右双面板 + 穿梭按钮 + 搜索，键盘方向键移动）
+- 新增 mentions：@ 提及（浮层建议、↑↓ 选择 Enter 插入，复用 popover 定位）
+- 新增 color-picker：颜色选择器（色板 + 饱和度盘，`preset` 预设色，键盘 ↑↓ 调亮度）
+- 新增 toggle-button：切换按钮（`aria-pressed`）
+- 新增 pin-input：逐位输入（自动换位、粘贴分发、Backspace 回退、`mask`），事件 `oas-input`/`oas-change`/`oas-complete`
+- 新增 dynamic-input：动态增删行输入（`min`/`max`/`default-value`，受控/非受控双模式）
+- 新增 dynamic-tags：动态标签输入（Enter/逗号提交、空输入 Backspace 删末 tag、重复提示）
+- 新增 editable：行内编辑（Enter 提交、Esc 还原失焦、空值提交还原旧值默认非破坏）
+- input 增强：`addon-before`/`addon-after`（addon 文案块）、`prefix-icon`/`suffix-icon`（图标名），独立 `::part(prepend/append)`
+- textarea 增强：`autosize` 高度自适应（规范命名，保留 `auto-height` 兼容）+ `min-rows`/`max-rows` 边界，超限出滚动条
+
+## [1.2.0] - 2026-08-09 (internal)
+
+> 内部功能块版本：未发 npm（随 v1.9.0 一并公开发布）。
+
+### 新增
+
+- 新增 date-picker：日期选择器（date/daterange/month/datetime 四种类型），`format`/`min`/`max`/`placeholder`，日期网格键盘导航、`Intl.DateTimeFormat` locale 感知格式化
+- 新增 time-picker：时间选择器（`format`/`step`，滚轮列表或数字输入，↑↓ 调整 Enter 确认）
+- 新增 calendar：日历（月/年模式、`disabled-date` 回调、`show-week-number`、今天快捷）
+- 新增 countdown：倒计时（毫秒值 + `format`，`oas-finish` 事件，timer 无泄漏）
+- 新增 statistic：数值统计（`precision`/`prefix`/`suffix`/`group-separator`/`loading`，`Intl.NumberFormat` locale 感知）
+
+## [1.1.0] - 2026-08-09 (internal)
+
+> 内部功能块版本：未发 npm（随 v1.9.0 一并公开发布）。
+
+### 新增
+
+- 新增 button-group：按钮组——`type`/`size` 透传子按钮、`vertical` 纵向堆叠（圆角合并）、`value`+`multiple` 选值组（单选/多选）、`disabled`，事件 `oas-change`
+- 新增 label：标签——`for` 点击聚焦目标控件、`required` 星号、`position`（before/after）
+- 新增 kbd：键盘按键显示——`keys` 空格分隔自动渲染多块 + 加号连接
+- 新增 visually-hidden：视觉隐藏但屏幕阅读器可读/可复制的容器
+- flex 增强：`wrap`、`align`/`justify` 枚举补全、`vertical`（=Stack 简写，Stack 由 flex 覆盖不单列）
+- grid 增强：`columns`（simple-grid 自动布局）+ `gap`，与 Grid/GridItem 并存不冲突
+- tag 增强：`chip` 胶囊形态 + `clickable` 整签可点（`oas-click` 事件）
+- 文档站导航栏新增全局语言切换（zh-CN/EN，`setLocale` 全局生效）
+
+## [1.0.0] - 2026-08-08
+
+### 新增
+
+**发布**
+
+- 正式发布 `@oas-ui/ui`、`@oas-ui/core`、`@oas-ui/theme`、`@oas-ui/icons` 至 npm
+- 文档站上线 + 快速开始（三行引入）、SSR 边界策略文档
+- 开源协议采用双许可（MIT OR Apache-2.0）
+
+**主题与无障碍（v0.9.0）**
+
+- 内置 light / dark / high-contrast 三套主题，`data-theme` 切换
+- CSS 变量覆盖自定义主题指南
+- 全组件 demo 页 axe 无障碍审计（WCAG 2.1 AA）零严重违规
+- React / Vue 双宿主 playground
+
+**数据展示（v0.8.0）**
+
+- 新增 Table（排序/行选中/空态）、Tree（展开/选中/多选）、Card、Avatar、Image、Collapse、Descriptions、Timeline、List、Carousel
+
+**导航与布局（v0.7.0）**
+
+- 新增 Tabs、Pagination、Steps、Segmented、Affix、Splitter、Flex、PageHeader、FloatButton、Layout、Grid
+
+**浮层与导航（v0.6.0）**
+
+- 浮层定位引擎（flip/视口避让）
+- 新增 Tooltip、Popover、Menu、Dropdown、ContextMenu、HoverCard、Breadcrumb、BackTop、Anchor、Tour
+
+**反馈（v0.5.0）**
+
+- 浮层管理器（z-index 分级、外部点击）
+- 新增 Message、Notification、Modal、Confirm、Drawer、Popconfirm、Alert、Progress、LoadingBar、Spin、Skeleton、Empty、Result
+- 命令式 API：`confirm()` / `message()` / `notification()` / `loadingBar()`
+
+**表单 II（v0.4.0）**
+
+- 新增 Select、AutoComplete、Cascader、TreeSelect、Form（原生 form + 校验）
+
+**表单 I（v0.3.0）**
+
+- 新增 Input、Textarea、Checkbox、Radio、Switch、Slider、InputNumber、Rate
+
+**基础（v0.2.0 / v0.1.0）**
+
+- 基础运行时 `@oas-ui/core`、主题 token、图标库
+- 新增 Button、Icon、Tag、Badge、Space、Divider、Link、Typography
+
+[1.0.0]: https://github.com/oas-ui/oas-ui/releases/tag/v1.0.0
+[1.1.0]: https://github.com/oas-ui/oas-ui/tree/v1.1.0
+[1.2.0]: https://github.com/oas-ui/oas-ui/tree/v1.2.0
+[1.3.0]: https://github.com/oas-ui/oas-ui/tree/v1.3.0
+[1.4.0]: https://github.com/oas-ui/oas-ui/tree/v1.4.0
+[1.5.0]: https://github.com/oas-ui/oas-ui/tree/v1.5.0
+[1.6.0]: https://github.com/oas-ui/oas-ui/tree/v1.6.0
+[1.7.0]: https://github.com/oas-ui/oas-ui/tree/v1.7.0
+[1.8.0]: https://github.com/oas-ui/oas-ui/tree/v1.8.0
