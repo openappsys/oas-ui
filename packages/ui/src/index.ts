@@ -42,6 +42,7 @@ import './navigation/breadcrumb/index.js'
 import './navigation/back-top/index.js'
 import './navigation/anchor/index.js'
 import './navigation/tour/index.js'
+import './layout/segmented/index.js'
 
 export { OASButton } from './basic/button/oas-button.js'
 export type { ButtonType, ButtonSize } from './basic/button/oas-button.js'
@@ -93,3 +94,4 @@ export { OASBreadcrumb, type BreadcrumbItem } from './navigation/breadcrumb/inde
 export { OASBackTop } from './navigation/back-top/oas-back-top.js'
 export { OASAnchor, type AnchorItem } from './navigation/anchor/index.js'
 export { OAStour, type TourStep } from './navigation/tour/index.js'
+export { OASSegmented, type SegmentedOption } from './layout/segmented/index.js'
