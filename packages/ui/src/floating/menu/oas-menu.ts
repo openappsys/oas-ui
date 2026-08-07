@@ -87,8 +87,9 @@ export class OASMenu extends OASElement {
   }
 
   private renderItems(): void {
-    if (!this.menuEl) return
-    this.menuEl.innerHTML = ''
+    const menuEl = this.menuEl
+    if (!menuEl) return
+    menuEl.innerHTML = ''
     const selected = this.getAttr('value', '')
     this.itemsList.forEach((item, idx) => {
       const li = document.createElement('li')
@@ -108,7 +109,7 @@ export class OASMenu extends OASElement {
         if (item.disabled) return
         this.select(item)
       })
-      this.menuEl.appendChild(li)
+      menuEl.appendChild(li)
     })
   }
 
