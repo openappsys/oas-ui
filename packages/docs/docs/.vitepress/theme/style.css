@@ -1,0 +1,10 @@
+.demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--oas-space-3);
+  padding: var(--oas-space-5);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  margin-bottom: var(--oas-space-4);
+}

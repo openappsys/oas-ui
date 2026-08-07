@@ -1,0 +1,16 @@
+{
+  "name": "@oas-ui/docs",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev docs",
+    "build": "vitepress build docs",
+    "preview": "vitepress preview docs"
+  },
+  "dependencies": {
+    "@oas-ui/ui": "workspace:*",
+    "@oas-ui/theme": "workspace:*",
+    "vitepress": "^1.6.3"
+  }
+}
