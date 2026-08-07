@@ -1,8 +1,12 @@
 {
   "name": "@oas-ui/icons",
-  "version": "0.2.0",
-  "private": true,
+  "version": "1.0.0",
+  "description": "OAS-UI 图标（原创内联 SVG）",
+  "license": "MIT OR Apache-2.0",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

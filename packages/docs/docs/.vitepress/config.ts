@@ -13,6 +13,7 @@ export default defineConfig({
           { text: '快速开始', link: '/guide/getting-started' },
           { text: '主题与自定义', link: '/guide/theming' },
           { text: '无障碍（A11y）', link: '/guide/accessibility' },
+          { text: 'SSR 边界策略', link: '/guide/ssr' },
         ],
       },
       {

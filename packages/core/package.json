@@ -1,8 +1,12 @@
 {
   "name": "@oas-ui/core",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
+  "description": "OAS-UI 基础运行时（Web Components 基类与工具）",
+  "license": "MIT OR Apache-2.0",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

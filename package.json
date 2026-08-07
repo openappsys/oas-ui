@@ -9,7 +9,8 @@
     "build": "pnpm -r build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "release": "pnpm test && pnpm typecheck && pnpm build && pnpm -r publish --access public"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

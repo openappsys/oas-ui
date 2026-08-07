@@ -1,8 +1,12 @@
 {
   "name": "@oas-ui/theme",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
+  "description": "OAS-UI 主题 token（light/dark/high-contrast 语义 CSS 变量）",
+  "license": "MIT OR Apache-2.0",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./src/index.css",
   "types": "./src/index.css",
   "exports": {
