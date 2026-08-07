@@ -356,8 +356,9 @@ export class OASSelect extends OASElement {
         valueEl.appendChild(chip)
       }
     } else {
-      const option = this.options.find((o) => o.value === values[0])
-      valueEl.textContent = option?.label ?? values[0]
+      const value = values[0] ?? ''
+      const option = this.options.find((o) => o.value === value)
+      valueEl.textContent = option?.label ?? value
     }
   }
 }
