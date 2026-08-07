@@ -48,7 +48,7 @@ export class OASTabs extends OASElement {
       <div class="tablist" part="tablist" role="tablist"></div>
       <div class="panel" part="panel"><slot></slot></div>
     `
-    this.shadow.querySelector('.tablist')?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e))
+    this.shadow.querySelector('.tablist')?.addEventListener('keydown', (e) => this.handleKey(e))
     this.update()
   }
 
