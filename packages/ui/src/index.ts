@@ -22,6 +22,7 @@ import './form/form/index.js'
 import './feedback/message/index.js'
 import './feedback/notification/index.js'
 import './feedback/modal/index.js'
+import './feedback/confirm/index.js'
 
 export { OASButton } from './basic/button/oas-button.js'
 export type { ButtonType, ButtonSize } from './basic/button/oas-button.js'
