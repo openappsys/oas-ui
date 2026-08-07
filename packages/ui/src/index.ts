@@ -55,6 +55,7 @@ import './layout/layout/index.js'
 import './layout/grid/index.js'
 import './data/card/index.js'
 import './data/avatar/index.js'
+import './data/image/index.js'
 
 export { OASButton } from './basic/button/oas-button.js'
 export type { ButtonType, ButtonSize } from './basic/button/oas-button.js'
@@ -119,3 +120,4 @@ export { OASLayout, OASHeader, OASSider, OASContent, OASFooter } from './layout/
 export { OASGrid, OASGridItem } from './layout/grid/index.js'
 export { OASCard } from './data/card/oas-card.js'
 export { OASAvatar } from './data/avatar/oas-avatar.js'
+export { OASImage } from './data/image/oas-image.js'
