@@ -74,6 +74,9 @@ button.text {
   border-radius: 50%;
   animation: oas-spin 0.8s linear infinite;
 }
+.spinner[hidden] {
+  display: none;
+}
 @keyframes oas-spin {
   to {
     transform: rotate(360deg);
@@ -89,35 +92,36 @@ export class OASButton extends OASElement {
   private btn: HTMLButtonElement | null = null
 
   protected override render(): void {
-    const type = this.getAttr('type', 'default') as ButtonType
-    const size = this.getAttr('size', 'medium') as ButtonSize
-    const disabled = this.hasAttr('disabled')
-    const loading = this.hasAttr('loading')
-
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      <button
-        part="button"
-        class="${type} ${size}"
-        ${disabled || loading ? 'disabled' : ''}
-        aria-busy="${loading ? 'true' : 'false'}"
-      >
-        ${loading ? '<span class="spinner" part="spinner"></span>' : ''}
+      <button part="button">
+        <span class="spinner" part="spinner" hidden></span>
         <slot></slot>
       </button>
     `
     this.btn = this.shadow.querySelector('button')
 
     this.btn?.addEventListener('click', (e: MouseEvent) => {
-      if (disabled || loading) {
+      if (this.hasAttr('disabled') || this.hasAttr('loading')) {
         e.preventDefault()
         return
       }
       this.emit('click', { originalEvent: e })
     })
   }
-}
 
-if (!customElements.get('oas-button')) {
-  customElements.define('oas-button', OASButton)
+  protected override update(): void {
+    if (!this.btn) return
+    const type = this.getAttr('type', 'default') as ButtonType
+    const size = this.getAttr('size', 'medium') as ButtonSize
+    const disabled = this.hasAttr('disabled')
+    const loading = this.hasAttr('loading')
+
+    this.btn.className = `${type} ${size}`
+    this.btn.disabled = disabled || loading
+    this.btn.setAttribute('aria-busy', loading ? 'true' : 'false')
+
+    const spinner = this.btn.querySelector<HTMLElement>('.spinner')
+    if (spinner) spinner.hidden = !loading
+  }
 }

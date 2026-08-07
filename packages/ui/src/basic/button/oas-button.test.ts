@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { OASButton } from './oas-button.js'
+import { OASButton } from './index.js'
 
 function mount(attrs: Record<string, string> = {}, slot = '按钮'): OASButton {
   const el = new OASButton()
@@ -79,5 +79,16 @@ describe('OASButton', () => {
     const el = mount()
     el.setAttribute('type', 'danger')
     expect(shadowBtn(el).classList.contains('danger')).toBe(true)
+  })
+
+  it('属性变化不重建内部 DOM（增量更新，保持元素引用）', () => {
+    const el = mount()
+    const before = shadowBtn(el)
+    el.setAttribute('type', 'primary')
+    el.setAttribute('loading', '')
+    expect(shadowBtn(el)).toBe(before)
+    expect(before.classList.contains('primary')).toBe(true)
+    expect(before.disabled).toBe(true)
+    expect(before.getAttribute('aria-busy')).toBe('true')
   })
 })
