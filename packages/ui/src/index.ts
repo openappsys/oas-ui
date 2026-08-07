@@ -31,6 +31,7 @@ import './feedback/loading-bar/index.js'
 import './feedback/spin/index.js'
 import './feedback/skeleton/index.js'
 import './feedback/empty/index.js'
+import './feedback/result/index.js'
 
 export { OASButton } from './basic/button/oas-button.js'
 export type { ButtonType, ButtonSize } from './basic/button/oas-button.js'
