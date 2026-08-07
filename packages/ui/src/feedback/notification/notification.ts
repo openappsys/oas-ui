@@ -1,0 +1,42 @@
+import { createOverlay, removeOverlay, destroyOverlay } from '../../overlay/index.js'
+import type { NotificationType } from './index.js'
+
+export interface NotificationOptions {
+  title: string
+  description?: string
+  duration?: number
+}
+
+let stackEl: HTMLElement | null = null
+
+function ensureStack(): HTMLElement {
+  if (stackEl && document.body.contains(stackEl)) return stackEl
+  stackEl = document.createElement('div')
+  stackEl.style.cssText =
+    'position: fixed; top: 16px; right: 16px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; z-index: var(--oas-z-toast, 1070);'
+  document.body.appendChild(stackEl)
+  return stackEl
+}
+
+function show(type: NotificationType, options: NotificationOptions): void {
+  const el = document.createElement('oas-notification')
+  el.setAttribute('type', type)
+  el.setAttribute('title', options.title)
+  if (options.description !== undefined) el.setAttribute('description', options.description)
+  el.setAttribute('duration', String(options.duration ?? 4500))
+  ensureStack().appendChild(el)
+  createOverlay(el, {})
+}
+
+export const notification = {
+  info: (options: NotificationOptions): void => show('info', options),
+  success: (options: NotificationOptions): void => show('success', options),
+  warning: (options: NotificationOptions): void => show('warning', options),
+  error: (options: NotificationOptions): void => show('error', options),
+}
+
+export function destroyAll(): void {
+  if (stackEl) stackEl.innerHTML = ''
+  stackEl = null
+  destroyOverlay()
+}
