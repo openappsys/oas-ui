@@ -113,7 +113,7 @@ export class OASModal extends OASElement {
     this.shadow.querySelector('[part="cancel"]')?.addEventListener('click', () => this.emit('cancel'))
     this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => this.emit('ok'))
     this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.emit('cancel'))
-    dialog.addEventListener('click', (e: MouseEvent) => e.stopPropagation())
+    dialog.addEventListener('click', (e) => e.stopPropagation())
 
     const onKey = (e: KeyboardEvent): void => {
       if (e.key !== 'Escape') return
