@@ -1,0 +1,216 @@
+import { OASElement } from '@oas-ui/core'
+
+interface Option {
+  label: string
+  value: string
+  disabled?: boolean
+}
+
+const STYLE = `
+:host {
+  display: inline-block;
+  font-family: inherit;
+  width: 240px;
+}
+.wrapper {
+  position: relative;
+}
+input {
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--oas-control-height-md);
+  padding: 0 var(--oas-space-3);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  font-size: var(--oas-font-size-md);
+  font-family: inherit;
+  transition: border-color var(--oas-transition-fast) var(--oas-ease-out),
+    box-shadow var(--oas-transition-fast) var(--oas-ease-out);
+}
+input:hover {
+  border-color: var(--oas-color-primary);
+}
+input:focus {
+  outline: none;
+  border-color: var(--oas-color-primary);
+  box-shadow: var(--oas-focus-ring);
+}
+input:disabled {
+  cursor: not-allowed;
+  background: var(--oas-color-bg-disabled);
+  color: var(--oas-color-text-disabled);
+}
+.dropdown {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--oas-color-bg);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  padding: var(--oas-space-1);
+  display: none;
+}
+.dropdown.open {
+  display: block;
+}
+.option {
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-radius: var(--oas-radius-sm);
+  cursor: pointer;
+  font-size: var(--oas-font-size-md);
+  color: var(--oas-color-text-primary);
+}
+.option:hover,
+.option.active {
+  background: var(--oas-color-primary);
+  color: #fff;
+}
+.option[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.empty {
+  padding: var(--oas-space-3);
+  text-align: center;
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+}
+`
+
+export class OASAutoComplete extends OASElement {
+  static override get observedAttributes(): string[] {
+    return ['value', 'placeholder', 'options', 'disabled']
+  }
+
+  private input: HTMLInputElement | null = null
+  private dropdown: HTMLElement | null = null
+  private options: Option[] = []
+  private activeIndex = 0
+  private query = ''
+
+  protected override render(): void {
+    this.shadow.innerHTML = `
+      <style>${STYLE}</style>
+      <div class="wrapper" part="wrapper">
+        <input part="input" role="combobox" aria-expanded="false" aria-haspopup="listbox" autocomplete="off" />
+        <div class="dropdown" part="dropdown" role="listbox"></div>
+      </div>
+    `
+    this.input = this.shadow.querySelector('input')
+    this.dropdown = this.shadow.querySelector('.dropdown')
+
+    this.input?.addEventListener('input', () => {
+      this.query = this.input!.value
+      this.emit('input', { value: this.query })
+      this.renderDropdown(true)
+    })
+    this.input?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+    this.update()
+  }
+
+  protected override update(): void {
+    this.parseOptions()
+    if (!this.input) return
+    const value = this.getAttr('value', '')
+    const placeholder = this.getAttr('placeholder', '')
+    const disabled = this.hasAttr('disabled')
+    if (this.input.value !== value && this.query === '') this.input.value = value
+    this.input.placeholder = placeholder
+    this.input.disabled = disabled
+  }
+
+  private parseOptions(): void {
+    try {
+      const parsed = JSON.parse(this.getAttr('options', '[]'))
+      this.options = Array.isArray(parsed)
+        ? parsed.filter((o): o is Option => o && typeof o.value === 'string')
+        : []
+    } catch {
+      this.options = []
+    }
+  }
+
+  private filtered(): Option[] {
+    const q = this.query.trim().toLowerCase()
+    if (!q) return this.options
+    return this.options.filter((o) => o.label.toLowerCase().includes(q))
+  }
+
+  private renderDropdown(open: boolean): void {
+    if (!this.dropdown || !this.input) return
+    const list = this.filtered()
+    this.dropdown.innerHTML = ''
+    this.activeIndex = 0
+
+    if (list.length === 0) {
+      const empty = document.createElement('div')
+      empty.className = 'empty'
+      empty.textContent = '无匹配结果'
+      this.dropdown.appendChild(empty)
+    } else {
+      for (const [idx, option] of list.entries()) {
+        const row = document.createElement('div')
+        row.className = 'option'
+        row.setAttribute('part', 'option')
+        row.setAttribute('role', 'option')
+        row.setAttribute('aria-disabled', String(option.disabled ?? false))
+        if (idx === this.activeIndex) row.classList.add('active')
+        row.textContent = option.label
+        row.addEventListener('click', () => {
+          if (option.disabled) return
+          this.choose(option)
+        })
+        row.addEventListener('mousemove', () => {
+          this.activeIndex = idx
+          this.renderDropdown(true)
+        })
+        this.dropdown.appendChild(row)
+      }
+    }
+
+    this.dropdown.classList.toggle('open', open)
+    this.input.setAttribute('aria-expanded', String(open))
+    if (open) document.addEventListener('click', this.handleOutsideClick)
+    else document.removeEventListener('click', this.handleOutsideClick)
+  }
+
+  private handleOutsideClick = (e: MouseEvent): void => {
+    const path = e.composedPath()
+    if (!path.includes(this) && !path.some((n) => n instanceof Node && this.shadow.contains(n))) {
+      this.renderDropdown(false)
+    }
+  }
+
+  private handleKey(e: KeyboardEvent): void {
+    const list = this.filtered()
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      this.activeIndex = (this.activeIndex + 1) % Math.max(list.length, 1)
+      this.renderDropdown(true)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      this.activeIndex = (this.activeIndex - 1 + Math.max(list.length, 1)) % Math.max(list.length, 1)
+      this.renderDropdown(true)
+    } else if (e.key === 'Enter' && list.length > 0) {
+      e.preventDefault()
+      this.choose(list[this.activeIndex]!)
+    } else if (e.key === 'Escape') {
+      this.renderDropdown(false)
+    }
+  }
+
+  private choose(option: Option): void {
+    this.query = option.label
+    if (this.input) this.input.value = option.label
+    this.setAttribute('value', option.value)
+    this.emit('change', { value: option.value, label: option.label })
+    this.renderDropdown(false)
+  }
+}
