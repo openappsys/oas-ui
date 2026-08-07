@@ -5,13 +5,15 @@
   "type": "module",
   "packageManager": "pnpm@11.20.0",
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
+    "dev": "vite",
     "build": "pnpm -r build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@oas-ui/theme": "workspace:*",
+    "@oas-ui/ui": "workspace:*",
     "@types/node": "^26.1.2",
     "happy-dom": "^20.11.1",
     "typescript": "^7.0.2",
