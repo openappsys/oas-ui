@@ -1,0 +1,143 @@
+import { OASElement } from '@oas-ui/core'
+
+const STYLE = `
+:host {
+  display: none;
+}
+:host([visible]) {
+  display: block;
+}
+.mask {
+  position: fixed;
+  inset: 0;
+  background: var(--oas-color-overlay);
+  z-index: var(--oas-z-overlay, 1040);
+}
+.panel {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 320px;
+  max-width: 90vw;
+  background: var(--oas-color-bg);
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.12);
+  z-index: calc(var(--oas-z-overlay, 1040) + 1);
+  display: flex;
+  flex-direction: column;
+  font-family: inherit;
+  color: var(--oas-color-text-primary);
+}
+.panel[data-placement='left'] {
+  left: 0;
+}
+.panel[data-placement='right'] {
+  right: 0;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--oas-space-4);
+  border-bottom: 1px solid var(--oas-color-border);
+}
+.title {
+  font-weight: 600;
+  font-size: var(--oas-font-size-lg);
+}
+.close-btn {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: var(--oas-font-size-md);
+  color: var(--oas-color-text-secondary);
+}
+.body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--oas-space-4);
+  font-size: var(--oas-font-size-md);
+  line-height: 1.6;
+}
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-4);
+  border-top: 1px solid var(--oas-color-border);
+}
+.btn {
+  min-width: 64px;
+  height: var(--oas-control-height-md);
+  padding: 0 var(--oas-space-3);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  background: var(--oas-color-bg);
+  font-size: var(--oas-font-size-md);
+  cursor: pointer;
+  font-family: inherit;
+}
+`
+
+export class OASDrawer extends OASElement {
+  static override get observedAttributes(): string[] {
+    return ['visible', 'title', 'placement', 'no-footer']
+  }
+
+  private previousFocus: HTMLElement | null = null
+
+  protected override render(): void {
+    const placement = this.getAttr('placement', 'right')
+    this.shadow.innerHTML = `
+      <style>${STYLE}</style>
+      <div class="mask" part="mask"></div>
+      <div class="panel" part="panel" role="dialog" aria-modal="true" data-placement="${placement}">
+        <div class="header">
+          <span class="title" part="title"></span>
+          <button class="close-btn" part="close" aria-label="关闭">✕</button>
+        </div>
+        <div class="body" part="body"><slot></slot></div>
+        ${this.hasAttr('no-footer') ? '' : `
+        <div class="footer" part="footer">
+          <button class="btn" part="cancel" type="button">取消</button>
+          <button class="btn" part="ok" type="button">确定</button>
+        </div>`}
+      </div>
+    `
+    this.update()
+    this.bindEvents()
+  }
+
+  private bindEvents(): void {
+    const panel = this.shadow.querySelector('.panel')!
+    this.shadow.querySelector('.mask')?.addEventListener('click', () => {
+      if (this.hasAttr('no-mask-close')) return
+      this.emit('close')
+    })
+    this.shadow.querySelector('[part="cancel"]')?.addEventListener('click', () => this.emit('close'))
+    this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => this.emit('ok'))
+    this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.emit('close'))
+    panel.addEventListener('click', (e) => e.stopPropagation())
+
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') this.emit('close')
+    }
+    document.addEventListener('keydown', onKey)
+    this.onCleanup(() => document.removeEventListener('keydown', onKey))
+  }
+
+  protected override update(): void {
+    const panel = this.shadow.querySelector('.panel')
+    if (!panel) return
+    const visible = this.hasAttr('visible')
+    panel.setAttribute('aria-hidden', String(!visible))
+    this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.getAttr('title', '')
+    this.shadow.querySelector<HTMLElement>('.panel')!.setAttribute('data-placement', this.getAttr('placement', 'right'))
+
+    if (visible) {
+      this.previousFocus = document.activeElement as HTMLElement
+      this.shadow.querySelector<HTMLElement>('.close-btn')?.focus()
+    } else if (this.previousFocus) {
+      this.previousFocus.focus()
+    }
+  }
+}
