@@ -49,7 +49,7 @@ export class OASCheckboxGroup extends OASElement {
   private collect(): void {
     const disabled = this.hasAttr('disabled')
     const values = this.parseValue()
-    this.items = [...this.querySelectorAll('oas-checkbox')]
+    this.items = [...this.querySelectorAll('oas-checkbox')] as OASCheckbox[]
     for (const cb of this.items) {
       cb.toggleAttribute('checked', values.includes(cb.getAttribute('value') ?? ''))
       cb.toggleAttribute('disabled', disabled)
