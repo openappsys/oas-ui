@@ -27,6 +27,7 @@ import './feedback/drawer/index.js'
 import './feedback/popconfirm/index.js'
 import './feedback/alert/index.js'
 import './feedback/progress/index.js'
+import './feedback/loading-bar/index.js'
 
 export { OASButton } from './basic/button/oas-button.js'
 export type { ButtonType, ButtonSize } from './basic/button/oas-button.js'
