@@ -19,7 +19,7 @@ describe('OASProgress', () => {
 
   it('percent 驱动进度条宽度与 ARIA', () => {
     const el = mount({ percent: '40' })
-    const bar = el.shadowRoot!.querySelector('[part="bar"]')!
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
     expect(bar.style.width).toBe('40%')
     const pb = el.shadowRoot!.querySelector('[role="progressbar"]')!
     expect(pb.getAttribute('aria-valuenow')).toBe('40')
