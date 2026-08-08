@@ -54,6 +54,24 @@ const STYLE = `
   height: auto;
   background: var(--oas-color-border);
 }
+/* 暗色主题：提升分割线与文字对比度 */
+:host-context([data-theme='dark']) .divider {
+  color: var(--oas-color-text-primary);
+}
+:host-context([data-theme='dark']) .divider::before,
+:host-context([data-theme='dark']) .divider::after {
+  background: var(--oas-color-border-strong);
+}
+:host-context([data-theme='dark']) .divider.dashed::before,
+:host-context([data-theme='dark']) .divider.dashed::after {
+  background: repeating-linear-gradient(
+    to right,
+    var(--oas-color-border-strong) 0,
+    var(--oas-color-border-strong) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
 `
 
 export class OASDivider extends OASElement {
