@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: './packages/ui',
   testMatch: '**/*.spec.ts',
   timeout: 30_000,
+  workers: 10,
   use: {
     baseURL: 'http://localhost:4173',
   },

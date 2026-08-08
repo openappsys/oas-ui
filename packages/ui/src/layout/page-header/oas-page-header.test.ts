@@ -17,7 +17,11 @@ describe('OASPageHeader', () => {
     document.body.appendChild(el)
     const sr = el.shadowRoot!
     expect(sr.querySelector('[part="title"]')!.textContent).toBe('页面标题')
-    expect(sr.querySelector('[part="back"]')).not.toBeNull()
+    const back = sr.querySelector('[part="back"]')
+    expect(back).not.toBeNull()
+    // 返回按钮为 SVG chevron 图标按钮（替代文本字符 ‹）
+    expect(back!.querySelector('svg')).not.toBeNull()
+    expect(back!.getAttribute('aria-label')).toBe('返回')
   })
 
   it('点击返回派发 oas-back', () => {

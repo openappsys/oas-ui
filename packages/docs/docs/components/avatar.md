@@ -31,6 +31,31 @@
   <oas-avatar src="https://picsum.photos/seed/isui-avatar-3/160" size="64" alt="头像三"></oas-avatar>
 </DemoBlock>
 
+## 头像组
+
+<DemoBlock title="头像组">
+  <oas-avatar-group>
+    <oas-avatar src="https://picsum.photos/seed/isui-avatar-g1/160" size="40" alt="成员一"></oas-avatar>
+    <oas-avatar src="https://picsum.photos/seed/isui-avatar-g2/160" size="40" alt="成员二"></oas-avatar>
+    <oas-avatar size="40">张</oas-avatar>
+    <oas-avatar size="40">李</oas-avatar>
+  </oas-avatar-group>
+</DemoBlock>
+
+多个 `oas-avatar` 由 `oas-avatar-group` 包裹后按顺序向左重叠陈列。
+
+<DemoBlock title="最大展示数">
+  <oas-avatar-group max="3">
+    <oas-avatar src="https://picsum.photos/seed/isui-avatar-g3/160" size="40" alt="成员一"></oas-avatar>
+    <oas-avatar src="https://picsum.photos/seed/isui-avatar-g4/160" size="40" alt="成员二"></oas-avatar>
+    <oas-avatar size="40">张</oas-avatar>
+    <oas-avatar size="40">李</oas-avatar>
+    <oas-avatar size="40">王</oas-avatar>
+  </oas-avatar-group>
+</DemoBlock>
+
+设置 `max` 后超出部分隐藏，末尾显示 `+N` 计数圆点。
+
 ## 空态兜底
 
 <DemoBlock title="无内容兜底">
@@ -47,3 +72,10 @@
 | `alt` | 图片替代文本 | string | `头像` |
 
 > 说明：`alt` 在首次渲染时读取，未加入观察列表，动态修改需自行触发重渲染。
+
+### oas-avatar-group
+
+| 属性 | 说明 | 类型 | 默认值 |
+|---|---|---|---|
+| `max` | 最大展示头像数，超出显示 `+N` 计数圆点 | number | — |
+| `size` | 统一头像尺寸（px），计数圆点同步适配 | string / number | 跟随各头像 |

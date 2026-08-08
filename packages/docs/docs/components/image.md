@@ -42,6 +42,30 @@
 }
 </style>
 
+## 占位与兜底
+
+<DemoBlock title="加载占位">
+  <oas-image src="https://picsum.photos/seed/isui-placeholder/600/300" placeholder alt="加载占位"></oas-image>
+  <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    设置 <code>placeholder</code> 后，图片加载完成前显示浅灰占位；加载完成后自动切换为图片。
+  </p>
+</DemoBlock>
+
+<DemoBlock title="加载失败兜底">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap; align-items: flex-start">
+    <div>
+      <p class="image-cap">默认失败占位</p>
+      <oas-image class="fit-demo" src="https://invalid.example.com/missing.png" alt="加载失败"></oas-image>
+    </div>
+    <div>
+      <p class="image-cap">自定义兜底图</p>
+      <oas-image class="fit-demo" src="https://invalid.example.com/missing.png" fallback="https://picsum.photos/seed/isui-fallback/600/300" alt="自定义兜底"></oas-image>
+    </div>
+  </div>
+</DemoBlock>
+
+图片加载失败时默认显示「图片加载失败」占位；提供 `fallback` 属性可指定兜底图片地址，兜底图也失败时回退到占位文案。
+
 ## 可预览
 
 <DemoBlock title="点击预览">
@@ -68,6 +92,8 @@ onMounted(() => {
 | `alt` | 替代文本 | string | `图片` |
 | `fit` | `object-fit` 值 | string | — |
 | `preview` | 开启预览，点击图片派发 `oas-preview` | boolean | `false` |
+| `placeholder` | 加载完成前显示浅灰占位 | boolean | `false` |
+| `fallback` | 加载失败时切换的兜底图地址；未设置则显示「图片加载失败」占位 | string | — |
 
 | 事件 | 说明 |
 |---|---|

@@ -32,6 +32,8 @@ const STYLE = `
   display: flex;
   justify-content: space-between;
   align-items: center;
+  white-space: nowrap; /* 禁止中文菜单项逐字换行竖排 */
+  flex-wrap: wrap; /* 允许子菜单 ul 换行独占一行 */
 }
 .item:hover,
 .item.active {
@@ -65,6 +67,8 @@ const STYLE = `
   margin: 0;
   padding: var(--oas-space-1) 0 0 var(--oas-space-4);
   border-left: 1px solid var(--oas-color-border);
+  flex-basis: 100%; /* 子菜单独占一行，避免被父级 flex 压缩成窄列 */
+  min-width: 120px; /* 子菜单最小宽度，确保正常横排显示 */
 }
 `
 

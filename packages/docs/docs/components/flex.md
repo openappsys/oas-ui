@@ -55,22 +55,24 @@
   <div class="demo-flex-col">
     <span class="demo-flex-label">align="stretch"（默认）</span>
     <oas-flex align="stretch" gap="8px" style="width: 100%; height: 80px">
-      <oas-button>按钮</oas-button><oas-tag>标签</oas-tag>
+      <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
     </oas-flex>
     <span class="demo-flex-label">align="flex-start"</span>
     <oas-flex align="flex-start" gap="8px" style="width: 100%; height: 80px">
-      <oas-button>按钮</oas-button><oas-tag>标签</oas-tag>
+      <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
     </oas-flex>
     <span class="demo-flex-label">align="center"</span>
     <oas-flex align="center" gap="8px" style="width: 100%; height: 80px">
-      <oas-button>按钮</oas-button><oas-tag>标签</oas-tag>
+      <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
     </oas-flex>
     <span class="demo-flex-label">align="flex-end"</span>
     <oas-flex align="flex-end" gap="8px" style="width: 100%; height: 80px">
-      <oas-button>按钮</oas-button><oas-tag>标签</oas-tag>
+      <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
     </oas-flex>
   </div>
 </DemoBlock>
+
+> 固定高度 80px 容器 + 不同高度子项（按钮 32px / 标签 20px），用于观察各 `align` 变体的交叉轴对齐差异；`stretch` 会把子项拉伸至容器高度。
 
 ## 换行
 
@@ -93,9 +95,6 @@
   .demo-flex-label {
     font-size: var(--oas-font-size-xs);
     color: var(--oas-color-text-secondary);
-  }
-  oas-flex::part(wrap) {
-    height: 100%;
   }
 </style>
 

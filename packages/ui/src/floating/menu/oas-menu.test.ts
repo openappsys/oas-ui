@@ -165,4 +165,20 @@ describe('OASMenu', () => {
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
     expect(detail).toEqual({ value: 'new-file' })
   })
+
+  it('子菜单样式：菜单项禁止逐字换行、子菜单独占一行且有最小宽度（CSS 规则存在性断言）', () => {
+    const el = mount({ items: NESTED_ITEMS })
+    items(el)[0]!.click() // 展开子菜单，确保 submenu 存在
+    expect(submenuEl(el)).not.toBeNull()
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    // 菜单项禁止中文断裂换行
+    expect(css).toContain('white-space: nowrap;')
+    // 子菜单容器：独占一行 + 最小宽度
+    expect(css).toMatch(/\.submenu\s*\{[^}]*flex-basis:\s*100%/)
+    expect(css).toMatch(/\.submenu\s*\{[^}]*min-width:\s*120px/)
+    // 实际 DOM 中嵌套项均带 item 类
+    for (const it of items(el)) {
+      expect(it.classList.contains('item')).toBe(true)
+    }
+  })
 })

@@ -70,6 +70,9 @@ const STYLE = `
   align-items: center;
   font-size: 1em;
 }
+.tag button[hidden] {
+  display: none;
+}
 .tag button:focus-visible {
   outline: none;
   box-shadow: var(--oas-focus-ring);

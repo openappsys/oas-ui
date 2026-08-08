@@ -37,4 +37,28 @@ describe('OASTimeline', () => {
     const items = el.shadowRoot!.querySelectorAll('[part="item"]')
     expect(items[0]!.getAttribute('data-color')).toBe('green')
   })
+
+  it('pending 尾节点显示进行中标记与默认文案', () => {
+    const el = new OASTimeline()
+    el.innerHTML = `
+      <oas-timeline-item time="2024-01-01"><p>事件一</p></oas-timeline-item>
+      <oas-timeline-item pending></oas-timeline-item>
+    `
+    document.body.appendChild(el)
+    const items = el.shadowRoot!.querySelectorAll('[part="item"]')
+    expect(items[0]!.hasAttribute('data-pending')).toBe(false)
+    expect(items[1]!.hasAttribute('data-pending')).toBe(true)
+    expect(items[1]!.textContent).toContain('敬请期待')
+  })
+
+  it('pending 节点有内容时保留内容', () => {
+    const el = new OASTimeline()
+    el.innerHTML = `
+      <oas-timeline-item time="2024-01-01"><p>事件一</p></oas-timeline-item>
+      <oas-timeline-item pending>正在开发中</oas-timeline-item>
+    `
+    document.body.appendChild(el)
+    const items = el.shadowRoot!.querySelectorAll('[part="item"]')
+    expect(items[1]!.textContent).toContain('正在开发中')
+  })
 })

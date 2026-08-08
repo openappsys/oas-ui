@@ -38,6 +38,16 @@ input:disabled {
   background: var(--oas-color-bg-disabled);
   color: var(--oas-color-text-disabled);
 }
+/* 隐藏浏览器原生步进箭头（webkit spin button），避免与自定义箭头按钮双重显示 */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
 .controls {
   position: absolute;
   right: 4px;

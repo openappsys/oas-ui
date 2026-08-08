@@ -7,6 +7,7 @@ const STYLE = `
 }
 .wrap {
   display: flex;
+  height: 100%;
 }
 `
 
@@ -32,5 +33,6 @@ export class OASFlex extends OASElement {
     wrap.style.gap = this.getAttr('gap', '')
     wrap.style.flexWrap = this.getAttr('wrap', 'nowrap')
     wrap.style.display = 'flex'
+    wrap.style.height = '100%'
   }
 }

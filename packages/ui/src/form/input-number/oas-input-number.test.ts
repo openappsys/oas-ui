@@ -67,4 +67,19 @@ describe('OASInputNumber', () => {
     ;(btns[0] as HTMLButtonElement).click()
     expect(Number(input(el).value)).toBe(5)
   })
+
+  it('隐藏浏览器原生 spinner，避免与自定义箭头双重显示（CSS 规则存在性断言）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    // webkit spin button 隐藏
+    expect(css).toContain('input::-webkit-outer-spin-button')
+    expect(css).toContain('input::-webkit-inner-spin-button')
+    expect(css).toContain('-webkit-appearance: none')
+    // firefox 退化为纯文本框
+    expect(css).toContain("input[type='number']")
+    expect(css).toContain('-moz-appearance: textfield')
+    expect(css).toContain('appearance: textfield')
+    // 保留原有 appearance: none
+    expect(css).toMatch(/appearance:\s*none;/)
+  })
 })

@@ -25,6 +25,12 @@ describe('OASFlex', () => {
     expect(wrap.style.gap).toBe('16px')
   })
 
+  it('wrap 填满宿主高度（宿主定高时 align 生效）', () => {
+    const el = mount({})
+    const wrap = el.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement
+    expect(wrap.style.height).toBe('100%')
+  })
+
   it('direction=vertical 改为纵向', () => {
     const el = mount({ direction: 'vertical' })
     const wrap = el.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement
