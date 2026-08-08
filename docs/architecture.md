@@ -11,7 +11,7 @@
 | 响应式 | **自研 signal + 自研断点/容器查询桥接** | 零依赖原则的延伸；组件粒度小，自研成本可控（见 §2.1） |
 | 语言 | TypeScript strict | 全量类型、属性/事件类型导出 |
 | 构建 | Vite（library mode）+ `vite-plugin-dts` | 产出 ESM + `.d.ts`，按需加载 |
-| 单测 | Vitest + `@testing-library/web-components`（或 happy-dom） | 组件事件/属性/渲染 |
+| 单测 | Vitest + happy-dom | 组件事件/属性/渲染 |
 | 视觉/交互测试 | Playwright（chromium/firefox/webkit） | 真实浏览器交互、视觉回归（可先行 chromium） |
 | 主题 | CSS 变量（`:root` + `[data-theme]`） | 运行时换肤、宿主可覆盖 |
 | 包管理 | pnpm workspace（monorepo） | 多包（core/主题/图标/文档站）依赖清晰 |
@@ -96,8 +96,9 @@ oas-ui/
 │   ├── theme/                   # CSS 变量 token（light/dark/高对比）
 │   ├── icons/                   # 内联 SVG 图标（生成）
 │   ├── ui/                      # 全部组件（按目录分组，见下）
-│   └── docs/                    # Vitepress 文档站 + live demo
-├── playground/                  # React / Vue 双宿主示例（验收用）
+│   ├── i18n/                    # locale registry + 语言包（v0.10）
+│   ├── docs/                    # Vitepress 文档站 + live demo
+│   └── playground/              # React / Vue 双宿主示例（验收用）
 ├── package.json                 # workspace 根
 ├── tsconfig.base.json
 └── vitest.config.ts / playwright.config.ts
@@ -107,14 +108,16 @@ oas-ui/
 
 | 目录 | 组件 |
 |---|---|
-| `basic/` | button, icon, tag, badge, space, divider, link, typography |
-| `form/` | input, textarea, checkbox, radio, switch, slider, input-number, rate, select, auto-complete, cascader, tree-select, form |
-| `feedback/` | message, notification, modal, drawer, popconfirm, alert, progress, loading-bar, spin, skeleton, empty, result, tooltip, popover |
-| `data/` | table, pagination, tabs, tree, card, avatar, image, collapse, descriptions, timeline, list, carousel |
-| `navigation/` | menu, dropdown, breadcrumb, tour, anchor, back-top, contextmenu, hover-card, steps, segmented |
-| `layout/` | layout, grid, affix, splitter, flex, page-header, float-button |
+| `basic/` | badge, button, divider, icon, link, space, tag, typography |
+| `form/` | auto-complete, cascader, checkbox, form, input, input-number, radio, rate, select, slider, switch, textarea, tree-select |
+| `feedback/` | alert, confirm, drawer, empty, loading-bar, message, modal, notification, popconfirm, progress, result, skeleton, spin |
+| `floating/` | app, config-provider, contextmenu, dropdown, hover-card, menu, popover, tooltip |
+| `data/` | avatar, avatar-group, card, carousel, collapse, descriptions, image, list, table, timeline, tree |
+| `layout/` | affix, flex, float-button, grid, layout, page-header, pagination, segmented, splitter, steps, tabs |
+| `navigation/` | anchor, back-top, breadcrumb, tour |
+| `overlay/` | floating（overlay 管理器 + 浮层定位引擎） |
 
-每个组件一个目录：`index.ts` + `oas-button.ts`（定义）+ `oas-button.test.ts`（单测）+ `oas-button.stories.ts`（demo）。
+每个组件一个目录：`index.ts`（注册 + 导出）+ `oas-button.ts`（定义）+ `oas-button.test.ts`（单测）；组件 demo 页在 `packages/docs/docs/components/*.md`。
 
 ## 4. 构建与产物
 
@@ -142,16 +145,18 @@ oas-ui/
 
 ## 7. 技术路线图（里程碑，对应产品 ROADMAP 批次）
 
+> 状态：M0–M6 与 v1.0.0 均已交付（含 v0.10 i18n、v0.11 config-provider/app）。本表为历史里程碑记录；后续按 ROADMAP v1.x 推进。
+
 | 里程碑 | 交付 |
 |---|---|
-| M0 骨架（本次） | monorepo + 构建 + 测试基础设施 + CI 脚本，一个 hello 组件跑通全链路 |
+| M0 骨架 | monorepo + 构建 + 测试基础设施 + CI 脚本，一个 hello 组件跑通全链路 |
 | M1 地基 | core 基类（增量渲染）+ theme + icons + basic 8 件 + 文档站骨架 + 构建补课（d.ts/exports/tree-shaking） |
 | M2 表单 | form 13 件 + 校验机制 + Playwright 视觉基线 |
 | M3 反馈 | overlay 管理器 + 浮层基础设施 + 反馈 12 件 + tooltip/popover + 键盘/焦点完备 |
 | M4 数据 | table（最重）/tree + 展示 8 件 |
 | M5 布局导航 | layout/grid/flex/splitter + 导航 9 件 |
 | M6 打磨 | SSR 边界、多主题完整、React/Vue playground、无障碍全审计 |
-| v1.0.0 | 发布：npm 可用、文档站、CHANGELOG、贡献指南 |
+| v1.0.0 | 发布：npm 可用、文档站、CHANGELOG、贡献指南、i18n + config-provider/app |
 
 ---
 
