@@ -9,6 +9,11 @@ const STYLE = `
   width: 100%;
   font-family: inherit;
 }
+:host([direction='vertical']) {
+  display: inline-block;
+  width: auto;
+  vertical-align: middle;
+}
 .divider {
   display: flex;
   align-items: center;

@@ -52,6 +52,30 @@ button.primary:active {
   background: var(--oas-color-primary-active);
   border-color: var(--oas-color-primary-active);
 }
+button.success {
+  background: var(--oas-color-success);
+  border-color: var(--oas-color-success);
+  color: #fff;
+}
+button.success:hover {
+  filter: brightness(1.08);
+}
+button.warning {
+  background: var(--oas-color-warning);
+  border-color: var(--oas-color-warning);
+  color: #fff;
+}
+button.warning:hover {
+  filter: brightness(1.08);
+}
+button.danger {
+  background: var(--oas-color-danger);
+  border-color: var(--oas-color-danger);
+  color: #fff;
+}
+button.danger:hover {
+  filter: brightness(1.08);
+}
 button.small {
   height: var(--oas-control-height-sm);
   font-size: var(--oas-font-size-sm);

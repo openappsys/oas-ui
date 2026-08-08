@@ -10,6 +10,7 @@ const STYLE = `
   z-index: var(--oas-z-fixed, 1030);
 }
 .btn {
+  position: relative;
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -52,9 +53,9 @@ export class OASFloatButton extends OASElement {
   protected override render(): void {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      ${this.hasAttr('badge') ? '<span class="badge" part="badge"></span>' : ''}
       <button class="btn" part="btn" type="button" aria-label="悬浮操作">
         <slot name="icon">＋</slot>
+        ${this.hasAttr('badge') ? '<span class="badge" part="badge"></span>' : ''}
       </button>
     `
     this.shadow.querySelector('.btn')?.addEventListener('click', () => this.emit('click'))

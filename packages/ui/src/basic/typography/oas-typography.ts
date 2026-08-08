@@ -76,6 +76,8 @@ function createTypography(tag: string, options: { levels?: boolean; part: string
       const el = document.createElement(tagName)
       el.className = 'text'
       el.setAttribute('part', part)
+      const slot = document.createElement('slot')
+      el.appendChild(slot)
       this.shadow.appendChild(el)
       this.shadow.appendChild(this.createCopyBtn())
 

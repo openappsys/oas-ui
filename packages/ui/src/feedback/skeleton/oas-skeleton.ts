@@ -15,6 +15,7 @@ const STYLE = `
   animation: oas-skeleton-shimmer 1.5s infinite;
 }
 [part='avatar'] {
+  display: block;
   width: var(--oas-control-height-lg);
   height: var(--oas-control-height-lg);
   border-radius: 50%;
@@ -22,6 +23,7 @@ const STYLE = `
   margin-bottom: var(--oas-space-2);
 }
 [part='title'] {
+  display: block;
   height: var(--oas-control-height-sm);
   width: 40%;
   border-radius: var(--oas-radius-sm);
@@ -29,6 +31,7 @@ const STYLE = `
   margin-bottom: var(--oas-space-3);
 }
 [part='line'] {
+  display: block;
   height: var(--oas-control-height-sm);
   border-radius: var(--oas-radius-sm);
   background: var(--oas-color-bg-hover);

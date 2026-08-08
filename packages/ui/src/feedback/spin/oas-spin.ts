@@ -43,7 +43,8 @@ const STYLE = `
 .wrap > .indicator {
   display: none;
 }
-.wrap.spinning > .indicator {
+.wrap.spinning > .indicator,
+.wrap.empty > .indicator {
   display: inline-block;
 }
 @keyframes oas-spin-rotate {
