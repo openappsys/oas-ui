@@ -25,6 +25,7 @@ const STYLE = `
   list-style: none;
 }
 .item {
+  position: relative;
   padding: var(--oas-space-2) var(--oas-space-3);
   border-radius: var(--oas-radius-sm);
   cursor: pointer;
@@ -33,7 +34,6 @@ const STYLE = `
   justify-content: space-between;
   align-items: center;
   white-space: nowrap; /* 禁止中文菜单项逐字换行竖排 */
-  flex-wrap: wrap; /* 允许子菜单 ul 换行独占一行 */
 }
 .item:hover,
 .item.active {
@@ -57,20 +57,21 @@ const STYLE = `
   margin-left: var(--oas-space-3);
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-sm);
-  transition: transform var(--oas-transition-base, 0.18s) ease;
 }
-.item[aria-expanded='true'] > .arrow {
-  transform: rotate(90deg);
-}
+/* 级联浮出子菜单：独立浮层，定位在父项右侧，不受父项 hover 背景影响 */
 .submenu {
   list-style: none;
   margin: 0;
-  padding: var(--oas-space-1) 0 0 var(--oas-space-4);
-  border-left: 1px solid var(--oas-color-border);
-  flex-basis: calc(100% + var(--oas-space-3)); /* 覆盖父项右内边距，子菜单右边缘与父项对齐 */
-  flex-shrink: 0; /* 独占一行后禁止被压缩回内容宽，保证右对齐 */
-  box-sizing: border-box; /* 边框/内边距计入 flex-basis，避免逐级压缩子菜单宽度 */
-  min-width: 0; /* 允许按 flex-basis 收缩，防止长文案撑破层级对齐 */
+  padding: var(--oas-space-1);
+  position: absolute;
+  left: 100%;
+  top: calc(-1 * var(--oas-space-1));
+  min-width: 140px;
+  background: var(--oas-color-bg);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 10;
 }
 `
 
@@ -83,7 +84,7 @@ export class OASMenu extends OASElement {
   /** 当前键盘导航所在层级的祖先 value 链（空数组 = 顶层） */
   private activeStack: string[] = []
   private activeIndex = -1
-  /** 已展开的子菜单 value 集合 */
+  /** 已展开的子菜单 value 集合（单条展开路径） */
   private expanded = new Set<string>()
   private menuEl: HTMLElement | null = null
 
@@ -94,6 +95,13 @@ export class OASMenu extends OASElement {
     `
     this.menuEl = this.shadow.querySelector('.menu')
     this.menuEl?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e))
+    // 鼠标移出整个菜单时收起所有浮层
+    this.menuEl?.addEventListener('mouseleave', () => {
+      if (this.expanded.size > 0) {
+        this.expanded.clear()
+        this.renderItems()
+      }
+    })
     this.update()
   }
 
@@ -143,6 +151,23 @@ export class OASMenu extends OASElement {
     return items
   }
 
+  /** 从根到 value 的祖先链（含 value 自身） */
+  private chainOf(value: string): string[] {
+    const chain: string[] = []
+    const walk = (items: MenuItem[], trail: string[]): boolean => {
+      for (const item of items) {
+        if (item.value === value) {
+          chain.push(...trail, value)
+          return true
+        }
+        if (item.children && walk(item.children, [...trail, item.value])) return true
+      }
+      return false
+    }
+    walk(this.itemsList, [])
+    return chain
+  }
+
   private renderItems(): void {
     const menuEl = this.menuEl
     if (!menuEl) return
@@ -178,12 +203,13 @@ export class OASMenu extends OASElement {
         })
         li.addEventListener('mouseenter', () => {
           if (item.disabled) return
-          this.expand(item.value)
+          this.hoverExpand(item.value)
         })
         if (expanded) {
           const sub = document.createElement('ul')
           sub.className = 'submenu'
           sub.setAttribute('part', 'submenu')
+          sub.setAttribute('role', 'menu')
           this.renderLevel(sub, item.children!, selected, depth + 1)
           li.appendChild(sub)
         }
@@ -201,6 +227,10 @@ export class OASMenu extends OASElement {
           if (item.disabled) return
           this.select(item, items, depth)
         })
+        li.addEventListener('mouseenter', () => {
+          if (item.disabled) return
+          this.hoverExpand(item.value)
+        })
       }
       container.appendChild(li)
     }
@@ -214,29 +244,46 @@ export class OASMenu extends OASElement {
     this.renderItems()
   }
 
+  /** hover：级联展开到该项所在的单条路径（同级互斥，父项 hover 不罩住子菜单） */
+  private hoverExpand(value: string): void {
+    const chain = this.chainOf(value)
+    if (chain.length === 0) return
+    const item = this.findItem(value)
+    // 展开路径上的所有父级；若本项有子级也展开本项
+    const open = item?.children?.length ? chain : chain.slice(0, -1)
+    const next = new Set(open)
+    if (next.size === this.expanded.size && [...next].every((v) => this.expanded.has(v))) return
+    this.expanded = next
+    this.renderItems()
+  }
+
   /** 点击：展开/收起子菜单 */
   private toggleExpand(value: string): void {
     if (this.expanded.has(value)) {
-      this.expanded.delete(value)
-      const i = this.activeStack.indexOf(value)
-      if (i >= 0) this.activeStack.length = i
+      // 收起本项及更深的展开
+      this.expanded = new Set(this.chainOf(value).slice(0, -1))
     } else {
-      this.expanded.add(value)
+      this.expanded = new Set(this.chainOf(value))
     }
     this.renderItems()
   }
 
-  /** hover：仅展开，不收起 */
-  private expand(value: string): void {
-    if (this.expanded.has(value)) return
-    this.expanded.add(value)
-    this.renderItems()
+  private findItem(value: string): MenuItem | undefined {
+    let found: MenuItem | undefined
+    const walk = (items: MenuItem[]): void => {
+      for (const item of items) {
+        if (item.value === value) found = item
+        else if (item.children) walk(item.children)
+      }
+    }
+    walk(this.itemsList)
+    return found
   }
 
   /** 键盘进入子菜单：展开并高亮第一个可用子项 */
   private enterSubmenu(item: MenuItem): void {
-    this.expanded.add(item.value)
     this.activeStack.push(item.value)
+    this.expanded = new Set(this.activeStack)
     const children = item.children ?? []
     const firstEnabled = children.findIndex((c) => !c.disabled)
     this.activeIndex = firstEnabled >= 0 ? firstEnabled : 0
@@ -245,7 +292,7 @@ export class OASMenu extends OASElement {
   /** 键盘返回父级：收起子菜单并高亮父级项 */
   private leaveSubmenu(): void {
     const value = this.activeStack.pop()
-    if (value) this.expanded.delete(value)
+    this.expanded = new Set(this.activeStack)
     const parentLevel = this.currentItems()
     this.activeIndex = parentLevel.findIndex((i) => i.value === value)
   }
