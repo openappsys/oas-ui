@@ -99,4 +99,87 @@ describe('OASTag', () => {
     setLocale('zh-CN')
     expect(btn.getAttribute('aria-label')).toBe('关闭')
   })
+
+  it('chip 布尔 → class 含 chip', () => {
+    const el = mount({ chip: '' })
+    expect(root(el).classList.contains('chip')).toBe(true)
+  })
+
+  it('clickable → 宿主 role=button + tabindex=0，可聚焦可点', () => {
+    const el = mount({ clickable: '' })
+    expect(root(el).classList.contains('clickable')).toBe(true)
+    expect(el.getAttribute('role')).toBe('button')
+    expect(el.getAttribute('tabindex')).toBe('0')
+  })
+
+  it('点击整签派发 oas-click（bubbles + composed）', () => {
+    const el = mount({ clickable: '' })
+    let fired = 0
+    let detail: unknown
+    el.addEventListener('oas-click', (e: Event) => {
+      fired++
+      detail = e
+    })
+    el.click()
+    expect(fired).toBe(1)
+    expect((detail as CustomEvent).bubbles).toBe(true)
+    expect((detail as CustomEvent).composed).toBe(true)
+  })
+
+  it('clickable + Enter/Space 键盘触发 oas-click', () => {
+    const el = mount({ clickable: '' })
+    let fired = 0
+    el.addEventListener('oas-click', () => fired++)
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(fired).toBe(1)
+    fired = 0
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    expect(fired).toBe(1)
+  })
+
+  it('clickable + closable：点关闭只触发 oas-close，不触发 oas-click', () => {
+    const el = mount({ clickable: '', closable: '' })
+    let closeFired = 0
+    let clickFired = 0
+    el.addEventListener('oas-close', () => closeFired++)
+    el.addEventListener('oas-click', () => clickFired++)
+    root(el).querySelector('button')!.click()
+    expect(closeFired).toBe(1)
+    expect(clickFired).toBe(0)
+  })
+
+  it('disabled：不派发 oas-click、aria-disabled、去 tabindex、视觉禁用 class', () => {
+    const el = mount({ clickable: '', disabled: '' })
+    let fired = 0
+    el.addEventListener('oas-click', () => fired++)
+    el.click()
+    expect(fired).toBe(0)
+    expect(el.getAttribute('aria-disabled')).toBe('true')
+    expect(el.hasAttribute('tabindex')).toBe(false)
+    expect(root(el).classList.contains('disabled')).toBe(true)
+  })
+
+  it('disabled：点关闭不派发 oas-close、组件不移除、按钮 disabled', () => {
+    const el = mount({ closable: '', disabled: '' })
+    const btn = root(el).querySelector('button')!
+    expect(btn.disabled).toBe(true)
+    let fired = 0
+    el.addEventListener('oas-close', () => fired++)
+    btn.click()
+    expect(fired).toBe(0)
+    expect(el.isConnected).toBe(true)
+  })
+
+  it('chip + disabled 边界：不可点不可关', () => {
+    const el = mount({ chip: '', clickable: '', closable: '', disabled: '' })
+    let clickFired = 0
+    let closeFired = 0
+    el.addEventListener('oas-click', () => clickFired++)
+    el.addEventListener('oas-close', () => closeFired++)
+    el.click()
+    root(el).querySelector('button')!.click()
+    expect(clickFired).toBe(0)
+    expect(closeFired).toBe(0)
+    expect(el.isConnected).toBe(true)
+  })
 })

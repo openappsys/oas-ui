@@ -33,6 +33,10 @@ export default defineConfig({
           { text: 'Divider 分割线', link: '/components/divider' },
           { text: 'Link 链接', link: '/components/link' },
           { text: 'Typography 排版', link: '/components/typography' },
+          { text: 'ButtonGroup 按钮组', link: '/components/button-group' },
+          { text: 'Label 标签', link: '/components/label' },
+          { text: 'Kbd 键盘按键', link: '/components/kbd' },
+          { text: 'VisuallyHidden 视觉隐藏', link: '/components/visually-hidden' },
         ],
       },
       {

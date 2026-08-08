@@ -1,6 +1,6 @@
 # Grid 栅格
 
-24 栅格布局系统，配合 `oas-grid-item` 划分列宽，支持间距、偏移与自定义总列数。
+24 栅格布局系统，配合 `oas-grid-item` 划分列宽，支持间距、偏移与自定义总列数；设置 `columns` 后切换为自动等分布局（simple-grid）。
 
 ## 基础栅格
 
@@ -43,6 +43,30 @@
   </oas-grid>
 </DemoBlock>
 
+## 自动列（simple-grid）
+
+设置 `columns` 后按 `repeat(n, 1fr)` 自动等分，子项 span 被忽略（span 仅在无 `columns` 时生效），与 24 列栅格并存不冲突。
+
+<DemoBlock title="columns 自动等分">
+  <oas-grid columns="3" gap="12px" style="width: 100%">
+    <div class="demo-grid-box">1</div>
+    <div class="demo-grid-box">2</div>
+    <div class="demo-grid-box">3</div>
+    <div class="demo-grid-box">4</div>
+    <div class="demo-grid-box">5</div>
+    <div class="demo-grid-box">6</div>
+  </oas-grid>
+</DemoBlock>
+
+<DemoBlock title="columns 忽略 span">
+  <oas-grid columns="4" gap="12px" style="width: 100%">
+    <oas-grid-item span="8"><div class="demo-grid-box">span 8 被忽略</div></oas-grid-item>
+    <oas-grid-item span="24"><div class="demo-grid-box">span 24 被忽略</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">span 8 被忽略</div></oas-grid-item>
+    <oas-grid-item span="24"><div class="demo-grid-box">span 24 被忽略</div></oas-grid-item>
+  </oas-grid>
+</DemoBlock>
+
 ## 大间距
 
 <DemoBlock title="间距 gap">
@@ -71,8 +95,9 @@
 | 组件            | 属性     | 说明         | 默认值 |
 | --------------- | -------- | ------------ | ------ |
 | `oas-grid`      | `cols`   | 总列数       | `24`   |
+| `oas-grid`      | `columns` | 自动等分数（simple-grid，有值时忽略子项 span） | — |
 | `oas-grid`      | `gap`    | 间距         | `0`    |
 | `oas-grid-item` | `span`   | 跨列数       | `24`   |
 | `oas-grid-item` | `offset` | 左侧偏移列数 | `0`    |
 
-`oas-grid` 渲染为 CSS Grid，子项为 24 份中的一份；`oas-grid-item` 通过 `span` 声明占位。
+`oas-grid` 渲染为 CSS Grid，子项为 24 份中的一份；`oas-grid-item` 通过 `span` 声明占位。设置 `columns` 后自动等分、忽略 span，普通元素子项也可直接放入。

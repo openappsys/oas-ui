@@ -22,6 +22,14 @@ export class OASGridItem extends OASElement {
   }
 
   protected override update(): void {
+    // simple-grid（父级 oas-grid 有 columns 且 >0）时自动布局，忽略 span/offset
+    const grid = this.closest('oas-grid')
+    const columns = grid?.getAttribute('columns') ?? ''
+    const simpleGrid = columns !== '' && (Number(columns) || 0) > 0
+    if (simpleGrid) {
+      this.style.gridColumn = ''
+      return
+    }
     const span = Number(this.getAttr('span', '24')) || 24
     const offset = Number(this.getAttr('offset', '0')) || 0
     if (offset > 0) {

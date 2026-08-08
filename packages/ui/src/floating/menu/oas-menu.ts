@@ -351,6 +351,8 @@ export class OASMenu extends OASElement {
       li.setAttribute('part', 'item')
       if (item.value != null) li.dataset.value = item.value
       li.setAttribute('aria-disabled', String(item.disabled ?? false))
+      // 收起态（collapsed）下 label 隐藏，需以 aria-label 兜底可访问名称
+      if (item.label) li.setAttribute('aria-label', item.label)
       const hasChildren = !!item.children && item.children.length > 0
       if (item.icon) {
         const ic = this.createIcon(item.icon)

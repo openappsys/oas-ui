@@ -70,5 +70,6 @@ export const en: LocaleMessages = {
   'avatar.defaultAlt': 'Avatar',
   'typography.copy': 'Copy',
   'tag.close': 'Close',
+  'buttonGroup.group': 'Button group',
   'loading.loading': 'Loading…',
 }

@@ -14,36 +14,45 @@
 
 ## 方向
 
+`vertical` 简写等价于 `direction="vertical"`（纵向堆叠）。
+
 <DemoBlock title="垂直方向">
-  <oas-flex direction="vertical" gap="8px">
+  <oas-flex vertical gap="8px">
     <oas-tag>纵向排布</oas-tag>
     <oas-tag type="success">从上到下</oas-tag>
     <oas-tag type="info">间距可调</oas-tag>
   </oas-flex>
 </DemoBlock>
 
+<DemoBlock title="direction 等价写法">
+  <oas-flex direction="vertical" gap="8px">
+    <oas-tag>direction="vertical"</oas-tag>
+    <oas-tag type="success">与 vertical 一致</oas-tag>
+  </oas-flex>
+</DemoBlock>
+
 ## 主轴对齐
 
-<DemoBlock title="主轴对齐 justify">
+<DemoBlock title="主轴对齐 justify 全枚举">
   <div class="demo-flex-col">
-    <span class="demo-flex-label">justify="flex-start"（默认）</span>
-    <oas-flex justify="flex-start" gap="8px" style="width: 100%">
+    <span class="demo-flex-label">justify="start"（默认）</span>
+    <oas-flex justify="start" gap="8px" style="width: 100%">
       <oas-tag>1</oas-tag><oas-tag>2</oas-tag><oas-tag>3</oas-tag>
     </oas-flex>
     <span class="demo-flex-label">justify="center"</span>
     <oas-flex justify="center" gap="8px" style="width: 100%">
       <oas-tag>1</oas-tag><oas-tag>2</oas-tag><oas-tag>3</oas-tag>
     </oas-flex>
-    <span class="demo-flex-label">justify="flex-end"</span>
-    <oas-flex justify="flex-end" gap="8px" style="width: 100%">
+    <span class="demo-flex-label">justify="end"</span>
+    <oas-flex justify="end" gap="8px" style="width: 100%">
       <oas-tag>1</oas-tag><oas-tag>2</oas-tag><oas-tag>3</oas-tag>
     </oas-flex>
-    <span class="demo-flex-label">justify="space-between"</span>
-    <oas-flex justify="space-between" style="width: 100%">
+    <span class="demo-flex-label">justify="between"</span>
+    <oas-flex justify="between" style="width: 100%">
       <oas-tag>1</oas-tag><oas-tag>2</oas-tag><oas-tag>3</oas-tag>
     </oas-flex>
-    <span class="demo-flex-label">justify="space-around"</span>
-    <oas-flex justify="space-around" style="width: 100%">
+    <span class="demo-flex-label">justify="around"</span>
+    <oas-flex justify="around" style="width: 100%">
       <oas-tag>1</oas-tag><oas-tag>2</oas-tag><oas-tag>3</oas-tag>
     </oas-flex>
   </div>
@@ -51,22 +60,26 @@
 
 ## 交叉轴对齐
 
-<DemoBlock title="交叉轴对齐 align">
+<DemoBlock title="交叉轴对齐 align 全枚举">
   <div class="demo-flex-col">
     <span class="demo-flex-label">align="stretch"（默认）</span>
     <oas-flex align="stretch" gap="8px" style="width: 100%; height: 80px">
       <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
     </oas-flex>
-    <span class="demo-flex-label">align="flex-start"</span>
-    <oas-flex align="flex-start" gap="8px" style="width: 100%; height: 80px">
+    <span class="demo-flex-label">align="start"</span>
+    <oas-flex align="start" gap="8px" style="width: 100%; height: 80px">
       <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
     </oas-flex>
     <span class="demo-flex-label">align="center"</span>
     <oas-flex align="center" gap="8px" style="width: 100%; height: 80px">
       <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
     </oas-flex>
-    <span class="demo-flex-label">align="flex-end"</span>
-    <oas-flex align="flex-end" gap="8px" style="width: 100%; height: 80px">
+    <span class="demo-flex-label">align="end"</span>
+    <oas-flex align="end" gap="8px" style="width: 100%; height: 80px">
+      <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
+    </oas-flex>
+    <span class="demo-flex-label">align="baseline"</span>
+    <oas-flex align="baseline" gap="8px" style="width: 100%; height: 80px">
       <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
     </oas-flex>
   </div>
@@ -76,13 +89,23 @@
 
 ## 换行
 
+`wrap` 为布尔属性：存在即 `flex-wrap: wrap`，缺省 `nowrap`。
+
 <DemoBlock title="换行 wrap">
-  <oas-flex wrap="wrap" gap="8px" style="width: 100%">
+  <oas-flex wrap gap="8px" style="width: 100%">
     <oas-tag>1</oas-tag><oas-tag>2</oas-tag><oas-tag>3</oas-tag>
     <oas-tag>4</oas-tag><oas-tag>5</oas-tag><oas-tag>6</oas-tag>
     <oas-tag>7</oas-tag><oas-tag>8</oas-tag><oas-tag>9</oas-tag>
     <oas-tag>10</oas-tag>
   </oas-flex>
+</DemoBlock>
+
+## 空容器
+
+无子元素时高度为 0，不报错、不占位。
+
+<DemoBlock title="空容器">
+  <oas-flex style="width: 100%; background: var(--oas-color-bg-hover)"></oas-flex>
 </DemoBlock>
 
 <style>
@@ -100,10 +123,11 @@
 
 ## API
 
-| 属性        | 说明       | 类型                                                                    | 默认值       |
-| ----------- | ---------- | ----------------------------------------------------------------------- | ------------ |
-| `direction` | 主轴方向   | `row` / `vertical`                                                      | `row`        |
-| `justify`   | 主轴对齐   | `flex-start` / `center` / `flex-end` / `space-between` / `space-around` | `flex-start` |
-| `align`     | 交叉轴对齐 | `stretch` / `flex-start` / `center` / `flex-end` / `baseline`           | `stretch`    |
-| `gap`       | 子项间距   | string（如 `8px`）                                                      | —            |
-| `wrap`      | 换行策略   | `nowrap` / `wrap`                                                       | `nowrap`     |
+| 属性        | 说明         | 类型                                                              | 默认值       |
+| ----------- | ------------ | ----------------------------------------------------------------- | ------------ |
+| `direction` | 主轴方向     | `row` / `vertical`                                                | `row`        |
+| `vertical`  | 纵向简写     | boolean（等价 `direction="vertical"`）                            | `false`      |
+| `justify`   | 主轴对齐     | `start` / `center` / `end` / `between` / `around`（兼容旧 `flex-*`/`space-*` 写法） | `start`      |
+| `align`     | 交叉轴对齐   | `start` / `center` / `end` / `baseline` / `stretch`（兼容旧 `flex-*` 写法） | `stretch`    |
+| `gap`       | 子项间距     | string（如 `8px`）                                                | —            |
+| `wrap`      | 换行         | boolean（存在即 `wrap`）                                          | `false`      |

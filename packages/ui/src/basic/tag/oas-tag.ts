@@ -8,6 +8,10 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+:host([clickable]:focus-visible) .tag {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
 .tag {
   display: inline-flex;
   align-items: center;
@@ -59,6 +63,25 @@ const STYLE = `
   font-size: var(--oas-font-size-md);
   padding: 0 var(--oas-space-3);
 }
+.tag.chip {
+  border-radius: 999px;
+  padding-inline: var(--oas-space-1);
+}
+.tag.clickable {
+  cursor: pointer;
+}
+.tag.clickable:hover {
+  border-color: var(--oas-color-primary);
+  color: var(--oas-color-primary);
+}
+.tag.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.tag.disabled.clickable:hover {
+  border-color: var(--oas-color-border);
+  color: inherit;
+}
 .tag button {
   appearance: none;
   border: none;
@@ -73,6 +96,10 @@ const STYLE = `
 .tag button[hidden] {
   display: none;
 }
+.tag button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 .tag button:focus-visible {
   outline: none;
   box-shadow: var(--oas-focus-ring);
@@ -82,7 +109,7 @@ const STYLE = `
 
 export class OASTag extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['type', 'size', 'closable', 'round']
+    return ['type', 'size', 'closable', 'round', 'chip', 'clickable', 'disabled']
   }
 
   private tagRoot: HTMLElement | null = null
@@ -100,7 +127,10 @@ export class OASTag extends OASElement {
       </span>
     `
     this.tagRoot = this.shadow.querySelector<HTMLElement>('.tag')
-    this.shadow.querySelector('button')?.addEventListener('click', () => {
+    this.shadow.querySelector('button')?.addEventListener('click', (e: MouseEvent) => {
+      // 关闭按钮事件自带处理，不再向上触发整签 oas-click
+      e.stopPropagation()
+      if (this.hasAttr('disabled')) return
       const event = new CustomEvent('oas-close', {
         bubbles: true,
         composed: true,
@@ -108,6 +138,22 @@ export class OASTag extends OASElement {
       })
       const notPrevented = this.dispatchEvent(event)
       if (notPrevented) this.remove()
+    })
+    // 整签可点（clickable）：点击/Enter/Space 派发 oas-click；disabled 不可点
+    this.addEventListener('click', (e: Event) => {
+      if (!this.hasAttr('clickable') || this.hasAttr('disabled')) return
+      const btn = this.tagRoot?.querySelector('button')
+      if (btn && e.composedPath().includes(btn)) return
+      this.emit('click', { originalEvent: e })
+    })
+    this.addEventListener('keydown', (e: Event) => {
+      const k = e as KeyboardEvent
+      if (!this.hasAttr('clickable') || this.hasAttr('disabled')) return
+      if (k.key !== 'Enter' && k.key !== ' ') return
+      const btn = this.tagRoot?.querySelector('button')
+      if (btn && k.composedPath().includes(btn)) return
+      k.preventDefault()
+      this.emit('click', { originalEvent: k })
     })
     this.update()
   }
@@ -119,11 +165,29 @@ export class OASTag extends OASElement {
     const size = this.injectValue('size', 'medium') as TagSize
     const closable = this.hasAttr('closable')
     const round = this.hasAttr('round')
+    const chip = this.hasAttr('chip')
+    const clickable = this.hasAttr('clickable')
+    const disabled = this.hasAttr('disabled')
 
-    this.tagRoot.className = `tag ${type} ${size}${round ? ' round' : ''}`
+    this.tagRoot.className = `tag ${type} ${size}${round ? ' round' : ''}${chip ? ' chip' : ''}${clickable ? ' clickable' : ''}${disabled ? ' disabled' : ''}`
+
+    if (clickable) {
+      // 整签承担按钮角色；disabled 时不可聚焦、aria-disabled 同步
+      this.setAttribute('role', 'button')
+      if (disabled) this.removeAttribute('tabindex')
+      else this.setAttribute('tabindex', '0')
+      this.setAttribute('aria-disabled', disabled ? 'true' : 'false')
+    } else {
+      this.removeAttribute('role')
+      this.removeAttribute('tabindex')
+      this.removeAttribute('aria-disabled')
+    }
+
     const btn = this.tagRoot.querySelector('button')
     if (btn) {
       btn.hidden = !closable
+      // disabled 不可关：原生 disabled 阻断点击与聚焦
+      btn.disabled = disabled
       // 关闭按钮内置文案走 locale registry（setLocale 切换自动刷新）
       btn.setAttribute('aria-label', this.t('tag.close'))
     }

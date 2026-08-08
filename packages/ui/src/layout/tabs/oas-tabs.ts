@@ -45,6 +45,7 @@ const STYLE = `
   border-radius: var(--oas-radius-md) var(--oas-radius-md) 0 0;
   margin-bottom: -1px;
   background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-primary);
 }
 :host(.oas-tabs--card) .tab[aria-selected='true'] {
   position: relative;

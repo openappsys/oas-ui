@@ -104,6 +104,8 @@ export const zhCN = {
   'typography.copy': '复制',
   // tag（标签）
   'tag.close': '关闭',
+  // button-group（按钮组）
+  'buttonGroup.group': '按钮组',
   // loading（加载态，通用兜底）
   'loading.loading': '加载中…',
 } as const
