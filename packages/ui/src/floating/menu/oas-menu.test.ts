@@ -34,6 +34,19 @@ const NESTED_ITEMS = JSON.stringify([
   { label: '视图', value: 'view' },
 ])
 
+const GROUP_ITEMS = JSON.stringify([
+  {
+    type: 'group',
+    label: '导航',
+    children: [
+      { label: '首页', value: 'home' },
+      { label: '关于', value: 'about' },
+    ],
+  },
+  { type: 'divider' },
+  { label: '设置', value: 'settings' },
+])
+
 function mount(attrs: Record<string, string> = {}): OASMenu {
   const el = new OASMenu()
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
@@ -197,5 +210,106 @@ describe('OASMenu', () => {
     for (const it of sub.querySelectorAll('[part="item"]')) {
       expect((it as HTMLElement).classList.contains('item')).toBe(true)
     }
+  })
+
+  it('水平模式：菜单项横排，一级子菜单向下浮出（top:100%; left:0）', () => {
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    // 菜单项横排
+    expect(css).toMatch(/:host\(\[mode='horizontal'\]\)\s*\.menu\s*\{[^}]*display:\s*flex/)
+    expect(css).toMatch(/:host\(\[mode='horizontal'\]\)\s*\.menu\s*\{[^}]*flex-direction:\s*row/)
+    // 一级子菜单向下浮出
+    expect(css).toMatch(/\.submenu-1\s*\{[^}]*top:\s*100%/)
+    expect(css).toMatch(/\.submenu-1\s*\{[^}]*left:\s*0/)
+    // 展开一级子菜单：带 submenu-1 类，内容为完整菜单
+    items(el)[0]!.click()
+    const sub = submenuEl(el)!
+    expect(sub.classList.contains('submenu-1')).toBe(true)
+    expect(sub.querySelectorAll('[part="item"]').length).toBe(2)
+  })
+
+  it('收起态（collapsed，仅 vertical）：收窄只显示图标，hover 浮出完整子菜单', () => {
+    const el = mount({ items: NESTED_ITEMS, collapsed: '' })
+    expect(el.hasAttribute('collapsed')).toBe(true)
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    // 项居中收窄、顶层 label/arrow 隐藏
+    expect(css).toMatch(/:host\(:not\(\[mode='horizontal'\]\)\[collapsed\]\)\s*\.item\s*\{[^}]*justify-content:\s*center/)
+    expect(css).toMatch(/:host\(:not\(\[mode='horizontal'\]\)\[collapsed\]\)\s*>\s*\.menu\s*>\s*\.item\s*>\s*\.label/)
+    // hover 浮出子菜单（子菜单为完整菜单）
+    items(el)[0]!.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(items(el)[0]!.getAttribute('aria-expanded')).toBe('true')
+    expect(submenuEl(el)).not.toBeNull()
+    // 叶子项仍可选
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    items(el)[1]!.click()
+    expect(detail).toEqual({ value: 'copy' })
+  })
+
+  it('分组：渲染组标题分区，子项平铺同层，组标题不可点、子项可选中', () => {
+    const el = mount({ items: GROUP_ITEMS })
+    const group = el.shadowRoot!.querySelector('[part="group"]')
+    expect(group).not.toBeNull()
+    expect(group!.getAttribute('role')).toBe('none')
+    expect(group!.querySelector('.group-label')!.textContent).toBe('导航')
+    // 子项平铺：items() 只统计可点项（首页/关于/设置），组标题与分隔线不计入
+    expect(items(el).length).toBe(3)
+    // 组标题不可点
+    let fired = 0
+    el.addEventListener('oas-select', () => fired++)
+    ;(group as HTMLElement).click()
+    expect(fired).toBe(0)
+    // 组内子项可正常选中
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    items(el)[1]!.click()
+    expect(detail).toEqual({ value: 'about' })
+  })
+
+  it('分组+分隔线：键盘导航跳过组标题与分隔线', () => {
+    const el = mount({ items: GROUP_ITEMS })
+    const menu = el.shadowRoot!.querySelector('[role="menu"]')!
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    expect(items(el)[0]!.classList.contains('active')).toBe(true) // 首页
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    expect(items(el)[1]!.classList.contains('active')).toBe(true) // 关于（跳过组标题）
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    expect(items(el)[2]!.classList.contains('active')).toBe(true) // 设置（跳过分隔线）
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    expect(el.getAttribute('value')).toBe('settings')
+  })
+
+  it('分隔线：渲染细分隔线（role=separator），不可点', () => {
+    const el = mount({ items: GROUP_ITEMS })
+    const divider = el.shadowRoot!.querySelector('[part="divider"]')
+    expect(divider).not.toBeNull()
+    expect(divider!.getAttribute('role')).toBe('separator')
+    let fired = 0
+    el.addEventListener('oas-select', () => fired++)
+    ;(divider as HTMLElement).click()
+    expect(fired).toBe(0)
+  })
+
+  it('图标：带 icon 的项渲染内联 SVG 图标在文字左侧，无图标项不渲染', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '用户', value: 'user', icon: 'user' },
+        { label: '设置', value: 'settings', icon: 'gear' },
+      ]),
+    })
+    const icon = items(el)[0]!.querySelector('.icon')
+    expect(icon).not.toBeNull()
+    expect(icon!.querySelector('svg')).not.toBeNull()
+    const plain = mount({ items: JSON.stringify([{ label: '普通', value: 'plain' }]) })
+    expect(plain.shadowRoot!.querySelector('[part="item"] .icon')).toBeNull()
+  })
+
+  it('暗色主题：theme="dark" 写入 data-theme 到自身（局部暗色，独立于全局），样式不硬编码色值', () => {
+    const el = mount({ items: ITEMS, theme: 'dark' })
+    expect(el.dataset.theme).toBe('dark')
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+    el.removeAttribute('theme')
+    expect(el.dataset.theme).toBeUndefined()
   })
 })

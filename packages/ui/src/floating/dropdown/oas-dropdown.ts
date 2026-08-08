@@ -91,10 +91,10 @@ export class OASDropdown extends OASElement {
       li.className = 'item'
       li.setAttribute('role', 'menuitem')
       li.setAttribute('aria-disabled', String(item.disabled ?? false))
-      li.textContent = item.label
+      li.textContent = item.label ?? ''
       li.addEventListener('click', () => {
         if (item.disabled) return
-        this.setAttribute('value', item.value)
+        this.setAttribute('value', item.value ?? '')
         this.emit('select', { value: item.value })
         this.removeAttribute('open')
       })
