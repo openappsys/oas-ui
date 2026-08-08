@@ -1,4 +1,6 @@
 import { OASElement } from '@oas-ui/core'
+import '../menu/index.js' // 副作用：确保 oas-menu 已注册
+import type { OASMenu } from '../menu/index.js'
 import type { MenuItem } from '../menu/index.js'
 
 const STYLE = `
@@ -6,33 +8,12 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
-.menu {
+.menu-anchor {
   position: fixed;
   z-index: var(--oas-z-dropdown, 1000);
-  background: var(--oas-color-bg);
-  border: 1px solid var(--oas-color-border);
-  border-radius: var(--oas-radius-md);
-  padding: var(--oas-space-1);
-  min-width: 160px;
-  margin: 0;
-  list-style: none;
-  color: var(--oas-color-text-primary);
 }
-.menu[aria-hidden='true'] {
+.menu-anchor[hidden] {
   display: none;
-}
-.item {
-  padding: var(--oas-space-2) var(--oas-space-3);
-  border-radius: var(--oas-radius-sm);
-  cursor: pointer;
-  font-size: var(--oas-font-size-md);
-}
-.item:hover {
-  background: var(--oas-color-bg-hover);
-}
-.item[aria-disabled='true'] {
-  cursor: not-allowed;
-  opacity: 0.5;
 }
 `
 
@@ -42,15 +23,19 @@ export class OASContextMenu extends OASElement {
   }
 
   private itemsList: MenuItem[] = []
-  private menuEl: HTMLElement | null = null
+  private menuEl: OASMenu | null = null
+  private anchorEl: HTMLElement | null = null
 
   protected override render(): void {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
       <slot></slot>
-      <ul class="menu" part="menu" role="menu" aria-hidden="true"></ul>
+      <div class="menu-anchor" part="menu" hidden>
+        <oas-menu tabindex="-1"></oas-menu>
+      </div>
     `
-    this.menuEl = this.shadow.querySelector('.menu')
+    this.anchorEl = this.shadow.querySelector('.menu-anchor')
+    this.menuEl = this.shadow.querySelector('oas-menu')
     this.addEventListener('contextmenu', (e: MouseEvent) => {
       e.preventDefault()
       this.openMenu(e.clientX, e.clientY)
@@ -61,40 +46,38 @@ export class OASContextMenu extends OASElement {
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
     this.onCleanup(() => document.removeEventListener('click', this.handleOutside))
+    this.menuEl?.addEventListener('oas-select', (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      this.emit('select', { value: detail.value })
+      this.close()
+    })
     this.update()
   }
 
   private openMenu(x: number, y: number): void {
+    if (!this.menuEl || !this.anchorEl) return
     this.parseItems()
-    const menuEl = this.menuEl
-    if (!menuEl) return
-    menuEl.innerHTML = ''
-    for (const item of this.itemsList) {
-      const li = document.createElement('li')
-      li.className = 'item'
-      li.setAttribute('role', 'menuitem')
-      li.setAttribute('aria-disabled', String(item.disabled ?? false))
-      li.textContent = item.label ?? ''
-      li.addEventListener('click', () => {
-        if (item.disabled) return
-        this.emit('select', { value: item.value })
-        this.close()
-      })
-      menuEl.appendChild(li)
-    }
-    menuEl.setAttribute('aria-hidden', 'false')
-    menuEl.style.top = `${y}px`
-    menuEl.style.left = `${x}px`
+    this.menuEl.setAttribute('items', JSON.stringify(this.itemsList))
+    this.anchorEl.hidden = false
+    // 锚定在光标处；超出视口时向左/上回退
+    let left = x
+    let top = y
+    const { innerWidth: w, innerHeight: h } = window
+    const rect = this.anchorEl.getBoundingClientRect()
+    if (left + rect.width > w) left = Math.max(0, x - rect.width)
+    if (top + rect.height > h) top = Math.max(0, y - rect.height)
+    this.anchorEl.style.left = `${left}px`
+    this.anchorEl.style.top = `${top}px`
     document.addEventListener('click', this.handleOutside)
   }
 
   private close(): void {
-    this.menuEl?.setAttribute('aria-hidden', 'true')
+    if (this.anchorEl) this.anchorEl.hidden = true
     document.removeEventListener('click', this.handleOutside)
   }
 
   private handleOutside = (e: MouseEvent): void => {
-    if (!this.menuEl || this.menuEl.getAttribute('aria-hidden') === 'true') return
+    if (!this.anchorEl || this.anchorEl.hidden) return
     const path = e.composedPath()
     if (!path.includes(this) && !path.some((n) => n instanceof Node && this.shadow.contains(n))) {
       this.close()

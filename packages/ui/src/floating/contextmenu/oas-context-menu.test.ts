@@ -14,6 +14,12 @@ function mount(): OASContextMenu {
   return el
 }
 
+/** 内层 oas-menu 的影子根 */
+function innerMenuRoot(el: OASContextMenu): ShadowRoot {
+  const menu = el.shadowRoot!.querySelector('oas-menu')!
+  return menu.shadowRoot!
+}
+
 describe('OASContextMenu', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -28,9 +34,10 @@ describe('OASContextMenu', () => {
     const target = el.querySelector('div')!
     target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 120, clientY: 80 }))
     await Promise.resolve()
-    const menu = el.shadowRoot!.querySelector('[role="menu"]')!
-    expect(menu.getAttribute('aria-hidden')).toBe('false')
-    expect(el.shadowRoot!.querySelectorAll('[role="menuitem"]').length).toBe(2)
+    const anchor = el.shadowRoot!.querySelector('.menu-anchor')!
+    expect(anchor.hasAttribute('hidden')).toBe(false)
+    expect(anchor.getAttribute('style')).toContain('120px')
+    expect(innerMenuRoot(el).querySelectorAll('[part="item"]').length).toBe(2)
   })
 
   it('选择菜单项派发 oas-select 并关闭', async () => {
@@ -39,9 +46,9 @@ describe('OASContextMenu', () => {
     await Promise.resolve()
     let detail: unknown
     el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
-    ;(el.shadowRoot!.querySelector('[role="menuitem"]') as HTMLElement).click()
+    ;(innerMenuRoot(el).querySelector('[part="item"]') as HTMLElement).click()
     expect(detail).toEqual({ value: 'copy' })
-    expect(el.shadowRoot!.querySelector('[role="menu"]')!.getAttribute('aria-hidden')).toBe('true')
+    expect(el.shadowRoot!.querySelector('.menu-anchor')!.hasAttribute('hidden')).toBe(true)
   })
 
   it('Esc 关闭菜单', async () => {
@@ -49,6 +56,6 @@ describe('OASContextMenu', () => {
     el.querySelector('div')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
     await Promise.resolve()
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-    expect(el.shadowRoot!.querySelector('[role="menu"]')!.getAttribute('aria-hidden')).toBe('true')
+    expect(el.shadowRoot!.querySelector('.menu-anchor')!.hasAttribute('hidden')).toBe(true)
   })
 })
