@@ -53,6 +53,7 @@ async function copy(): Promise<void> {
   padding: var(--oas-space-3) var(--oas-space-5);
   border-bottom: 1px solid var(--oas-color-border);
   background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-primary);
 }
 .demo-block__head h3 {
   margin: 0;
@@ -79,6 +80,7 @@ async function copy(): Promise<void> {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--oas-space-3);
+  color: var(--oas-color-text-primary);
 }
 .demo-block__body > * {
   max-width: 100%;

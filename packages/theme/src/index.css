@@ -68,11 +68,11 @@
   --oas-color-warning: #fbbf24;
   --oas-color-danger: #f87171;
   --oas-color-text-primary: #fafafa;
-  --oas-color-text-secondary: #a1a1aa;
+  --oas-color-text-secondary: #d4d4d8;
   --oas-color-text-disabled: #71717a;
-  --oas-color-border: #3f3f46;
+  --oas-color-border: #71717a;
   --oas-color-bg: #18181b;
-  --oas-color-bg-hover: #27272a;
+  --oas-color-bg-hover: #2d2d33;
   --oas-color-bg-disabled: #27272a;
   --oas-color-overlay: rgba(0, 0, 0, 0.6);
 }

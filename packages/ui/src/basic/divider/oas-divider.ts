@@ -6,13 +6,14 @@ export type DividerPosition = 'left' | 'center' | 'right'
 const STYLE = `
 :host {
   display: block;
+  width: 100%;
   font-family: inherit;
 }
 .divider {
   display: flex;
   align-items: center;
   margin: var(--oas-space-4) 0;
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-primary);
   font-size: var(--oas-font-size-sm);
   gap: var(--oas-space-3);
 }
