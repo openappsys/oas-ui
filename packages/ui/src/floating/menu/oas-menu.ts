@@ -37,9 +37,14 @@ const STYLE = `
   cursor: pointer;
   font-size: var(--oas-font-size-md);
   display: flex;
-  justify-content: space-between;
   align-items: center;
   white-space: nowrap; /* 禁止中文菜单项逐字换行竖排 */
+}
+/* 标签占据中间剩余空间并左对齐，贴住左侧图标；右侧 arrow/check 靠右 */
+.item .label {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
 }
 .item:hover,
 .item.active {
