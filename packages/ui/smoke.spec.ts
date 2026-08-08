@@ -22,9 +22,13 @@ for (const page of PAGES) {
       const body = blocks.nth(i).locator('.demo-block__body')
       await expect(body.locator('*').first()).toBeAttached()
     }
-    // 允许少数控制台报错（如 demo 故意触发），但禁止未捕获异常
+    // 允许少数控制台报错（如 demo 故意触发、外部资源 CDN 不可达），但禁止未捕获异常
     const filtered = errors.filter(
-      (e) => !e.includes('404') && !e.includes('Hydration completed'),
+      (e) =>
+        !e.includes('404') &&
+        !e.includes('Hydration completed') &&
+        !e.includes('net::ERR_') && // 外部资源（picsum 等 CDN）网络/DNS 失败，非组件问题
+        !e.includes('Failed to load resource'),
     )
     expect(filtered).toEqual([])
   })
