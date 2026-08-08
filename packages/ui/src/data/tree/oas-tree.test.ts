@@ -125,3 +125,93 @@ describe('OASTree', () => {
     expect(el.getAttribute('selected')).toBeNull()
   })
 })
+
+const BIG_DATA = JSON.stringify(
+  Array.from({ length: 100 }, (_, i) => ({
+    key: `n${i}`,
+    label: `节点 ${i}`,
+    ...(i % 10 === 0 ? { children: [{ key: `n${i}-c`, label: `子节点 ${i}-c` }] } : {}),
+  })),
+)
+
+function virtualRows(el: OASTree): HTMLElement[] {
+  const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
+  return [...vlist.shadowRoot!.querySelectorAll('[part="item"]')] as HTMLElement[]
+}
+
+function virtualViewport(el: OASTree): HTMLElement {
+  const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
+  return vlist.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+}
+
+const flushRaf = (): Promise<void> =>
+  new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+
+describe('OASTree 虚拟化', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('height 开启虚拟化：仅渲染可见窗口行', () => {
+    const el = mount({ height: '200', 'row-height': '32', data: BIG_DATA })
+    const vlist = el.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement
+    expect(vlist.hidden).toBe(false)
+    expect((el.shadowRoot!.querySelector('.tree') as HTMLElement).hidden).toBe(true)
+    // 可见 ceil(200/32)=7 + 下方 buffer 4 = 11 行
+    expect(virtualRows(el).length).toBe(11)
+    expect(virtualRows(el)[0]!.textContent).toContain('节点 0')
+  })
+
+  it('虚拟化下点击展开按钮显示子节点', () => {
+    const el = mount({ height: '200', 'row-height': '32', data: BIG_DATA })
+    const toggle = virtualRows(el)[0]!.querySelector<HTMLButtonElement>('.toggle')!
+    toggle.click()
+    expect(el.getAttribute('expanded')).toContain('n0')
+    // n0-c 插入索引 1，仍在顶部窗口内
+    expect(virtualRows(el)[1]!.textContent).toContain('子节点 0-c')
+  })
+
+  it('虚拟化：滚动后窗口重算且展开状态保持', async () => {
+    const el = mount({ height: '100', 'row-height': '32', data: BIG_DATA, expanded: 'n0' })
+    const vp = virtualViewport(el)
+    vp.scrollTop = 320
+    vp.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    // floor(320/32)-4 = 6；展开后平铺顺序：n0(0) n0-c(1) n1(2) n2(3) n3(4) n4(5) n5(6)…
+    expect(virtualRows(el)[0]!.textContent).toContain('节点 5')
+    expect(el.getAttribute('expanded')).toBe('n0')
+  })
+
+  it('虚拟化：checkable 勾选写回 checked 属性并恢复勾选态', () => {
+    const el = mount({ height: '200', 'row-height': '32', checkable: '', data: BIG_DATA })
+    const box = virtualRows(el)[0]!.querySelector<HTMLInputElement>('input[type="checkbox"]')!
+    box.checked = true
+    box.dispatchEvent(new Event('change'))
+    expect(el.getAttribute('checked')).toBe('n0')
+    const rebuilt = virtualRows(el)[0]!.querySelector<HTMLInputElement>('input[type="checkbox"]')!
+    expect(rebuilt.checked).toBe(true)
+  })
+
+  it('虚拟化：点击行选中并派发 oas-select', () => {
+    const el = mount({ height: '200', 'row-height': '32', data: BIG_DATA })
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    const row = virtualRows(el)[0]!.querySelector<HTMLElement>('.row')!
+    row.click()
+    expect(el.getAttribute('selected')).toBe('n0')
+    expect(detail).toEqual({ key: 'n0', selected: true })
+  })
+
+  it('height 移除后回退全量渲染', () => {
+    const el = mount({ height: '200', 'row-height': '32', data: BIG_DATA })
+    el.removeAttribute('height')
+    expect(rows(el).length).toBe(100)
+    expect((el.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement).hidden).toBe(true)
+  })
+})

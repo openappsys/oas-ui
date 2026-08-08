@@ -76,6 +76,8 @@ import './data/card/index.js'
 import './data/avatar/index.js'
 import './data/avatar-group/index.js'
 import './data/image/index.js'
+import './data/qrcode/index.js'
+import './data/watermark/index.js'
 import './data/collapse/index.js'
 import './data/descriptions/index.js'
 import './data/timeline/index.js'
@@ -83,8 +85,10 @@ import './data/list/index.js'
 import './data/carousel/index.js'
 import './data/tree/index.js'
 import './data/table/index.js'
+import './data/virtual-list/index.js'
 import './data/countdown/index.js'
 import './data/statistic/index.js'
+import './data/ellipsis/index.js'
 
 export { OASButton } from './basic/button/oas-button.js'
 export type { ButtonType, ButtonSize } from './basic/button/oas-button.js'
@@ -189,6 +193,18 @@ export { OASCard } from './data/card/oas-card.js'
 export { OASAvatar } from './data/avatar/oas-avatar.js'
 export { OASAvatarGroup } from './data/avatar-group/oas-avatar-group.js'
 export { OASImage } from './data/image/oas-image.js'
+export { OASQRCode } from './data/qrcode/index.js'
+export {
+  encodeQR,
+  matrixToPath,
+  encodeDataCodewords,
+  rsEncode,
+  QR_TOO_LONG_ERROR,
+  type QRResult,
+  type QrMode,
+  type QrErrorCorrection,
+} from './data/qrcode/index.js'
+export { OASWatermark, textTileDataUri } from './data/watermark/index.js'
 export { OASCollapse, OASCollapseItem } from './data/collapse/index.js'
 export { OASDescriptions, OASDescriptionsItem } from './data/descriptions/index.js'
 export { OASTimeline, OASTimelineItem } from './data/timeline/index.js'
@@ -196,5 +212,11 @@ export { OASList, OASListItem } from './data/list/index.js'
 export { OASCarousel } from './data/carousel/oas-carousel.js'
 export { OASTree, type TreeNode } from './data/tree/index.js'
 export { OASTable, type TableColumn, type SortOrder } from './data/table/index.js'
+export {
+  OASVirtualList,
+  computeVirtualWindow,
+  type VirtualWindow,
+} from './data/virtual-list/index.js'
 export { OASCountdown, formatDuration } from './data/countdown/oas-countdown.js'
 export { OASStatistic } from './data/statistic/oas-statistic.js'
+export { OASEllipsis } from './data/ellipsis/oas-ellipsis.js'

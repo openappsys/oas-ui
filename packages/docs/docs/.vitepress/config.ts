@@ -127,9 +127,12 @@ export default defineConfig({
         items: [
           { text: 'Table 表格', link: '/components/table' },
           { text: 'Tree 树', link: '/components/tree' },
+          { text: 'VirtualList 虚拟列表', link: '/components/virtual-list' },
           { text: 'Card 卡片', link: '/components/card' },
           { text: 'Avatar 头像', link: '/components/avatar' },
           { text: 'Image 图片', link: '/components/image' },
+          { text: 'QRCode 二维码', link: '/components/qrcode' },
+          { text: 'Watermark 水印', link: '/components/watermark' },
           { text: 'Collapse 折叠面板', link: '/components/collapse' },
           { text: 'Descriptions 描述列表', link: '/components/descriptions' },
           { text: 'Timeline 时间线', link: '/components/timeline' },
@@ -137,6 +140,7 @@ export default defineConfig({
           { text: 'Carousel 轮播', link: '/components/carousel' },
           { text: 'Statistic 统计数值', link: '/components/statistic' },
           { text: 'Countdown 倒计时', link: '/components/countdown' },
+          { text: 'Ellipsis 文本省略', link: '/components/ellipsis' },
         ],
       },
       {

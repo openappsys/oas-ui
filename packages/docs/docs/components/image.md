@@ -66,12 +66,12 @@
 
 图片加载失败时默认显示「图片加载失败」占位；提供 `fallback` 属性可指定兜底图片地址，兜底图也失败时回退到占位文案。
 
-## 可预览
+## 预览
 
-<DemoBlock title="点击预览">
-  <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview alt="可预览"></oas-image>
+<DemoBlock title="点击预览（内置浮层）">
+  <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview alt="可预览图片"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-    点击图片触发 <code>oas-preview</code>（右上角消息提示），可自行接入放大浮层。
+    点击图片打开全屏预览浮层：工具栏支持放大/缩小/旋转/下载，Esc 或点击遮罩关闭；打开时聚焦关闭按钮，关闭后还原焦点。派发 <code>oas-preview</code> 事件（detail 含 src）。
   </p>
 </DemoBlock>
 
@@ -81,7 +81,7 @@ onMounted(async () => {
   const { message } = await import('@oas-ui/ui')
   window.message = message
   document.querySelector('#image-preview')?.addEventListener('oas-preview', (e) => {
-    message.success(`预览：${e.detail.src}`)
+    message.success(`打开预览：${e.detail.src}`)
     console.log('oas-preview', e.detail.src)
   })
 })
@@ -89,15 +89,15 @@ onMounted(async () => {
 
 ## API
 
-| 属性          | 说明                                                         | 类型    | 默认值  |
-| ------------- | ------------------------------------------------------------ | ------- | ------- |
-| `src`         | 图片地址                                                     | string  | —       |
-| `alt`         | 替代文本                                                     | string  | `图片`  |
-| `fit`         | `object-fit` 值                                              | string  | —       |
-| `preview`     | 开启预览，点击图片派发 `oas-preview`                         | boolean | `false` |
-| `placeholder` | 加载完成前显示浅灰占位                                       | boolean | `false` |
-| `fallback`    | 加载失败时切换的兜底图地址；未设置则显示「图片加载失败」占位 | string  | —       |
+| 属性          | 说明                                                          | 类型    | 默认值  |
+| ------------- | ------------------------------------------------------------- | ------- | ------- |
+| `src`         | 图片地址                                                      | string  | —       |
+| `alt`         | 替代文本                                                      | string  | `图片`  |
+| `fit`         | `object-fit` 值                                               | string  | —       |
+| `preview`     | 开启内置预览：点击放大 + 缩放/旋转/下载 + Esc 关闭 + 焦点陷阱 | boolean | `false` |
+| `placeholder` | 加载完成前显示浅灰占位                                        | boolean | `false` |
+| `fallback`    | 加载失败时切换的兜底图地址；未设置则显示「图片加载失败」占位  | string  | —       |
 
-| 事件          | 说明                                              |
-| ------------- | ------------------------------------------------- |
-| `oas-preview` | 点击图片，`detail: { src }`，预览浮层由调用方实现 |
+| 事件          | 说明                                                |
+| ------------- | --------------------------------------------------- |
+| `oas-preview` | 打开预览浮层，`detail: { src }`；浮层关闭不派发事件 |

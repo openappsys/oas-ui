@@ -162,4 +162,18 @@ export const zhCN = {
   'editable.edit': '编辑',
   'editable.submit': '确定',
   'editable.cancel': '取消',
+  // ellipsis（文本省略）
+  'ellipsis.expand': '展开',
+  'ellipsis.collapse': '收起',
+  // image（图片预览浮层）
+  'image.preview.close': '关闭预览',
+  'image.preview.zoomIn': '放大',
+  'image.preview.zoomOut': '缩小',
+  'image.preview.rotate': '旋转',
+  'image.preview.download': '下载',
+  'image.preview.alt': '图片预览',
+  // qrcode（二维码）
+  'qrcode.image': '二维码',
+  'qrcode.empty': '暂无内容',
+  'qrcode.tooLong': '内容过长，请缩短后重试',
 } as const

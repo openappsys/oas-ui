@@ -51,6 +51,32 @@
 
 表格数据按每页 5 条切片，翻页时通过 `oas-change` 事件更新 `data` 属性重新渲染。
 
+## 固定列
+
+<DemoBlock title="左侧固定列">
+  <div style="width: 100%">
+    <oas-table columns='[{"key":"name","title":"姓名","fixed":"left","width":"120px"},{"key":"age","title":"年龄","width":"80px"},{"key":"city","title":"城市","width":"100px"},{"key":"email","title":"邮箱","width":"220px"},{"key":"position","title":"职位","width":"120px"}]' data='[{"name":"张三","age":30,"city":"北京","email":"zhangsan@example.com","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","email":"lisi@example.com","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","email":"wangwu@example.com","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","email":"zhaoliu@example.com","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","email":"sunqi@example.com","position":"测试工程师"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="左右固定列 + 表头吸顶">
+  <div style="width: 100%; max-width: 680px">
+    <oas-table height="240" row-height="40" columns='[{"key":"id","title":"ID","fixed":"left","width":"60px"},{"key":"name","title":"姓名","fixed":"left","width":"120px"},{"key":"age","title":"年龄","width":"80px"},{"key":"city","title":"城市","width":"100px"},{"key":"email","title":"邮箱","width":"220px"},{"key":"position","title":"职位","fixed":"right","width":"120px"}]' data='[{"id":1,"name":"张三","age":30,"city":"北京","email":"zhangsan@example.com","position":"前端工程师"},{"id":2,"name":"李四","age":25,"city":"上海","email":"lisi@example.com","position":"产品经理"},{"id":3,"name":"王五","age":35,"city":"深圳","email":"wangwu@example.com","position":"后端工程师"},{"id":4,"name":"赵六","age":28,"city":"杭州","email":"zhaoliu@example.com","position":"UI 设计师"},{"id":5,"name":"孙七","age":32,"city":"广州","email":"sunqi@example.com","position":"测试工程师"},{"id":6,"name":"周八","age":27,"city":"成都","email":"zhouba@example.com","position":"运营专员"},{"id":7,"name":"吴九","age":41,"city":"武汉","email":"wujiu@example.com","position":"技术总监"},{"id":8,"name":"郑十","age":24,"city":"南京","email":"zhengshi@example.com","position":"实习生"}]' row-key="id"></oas-table>
+  </div>
+</DemoBlock>
+
+列配置中 `fixed: 'left' | 'right'` 将该列表头与单元格设为 `position: sticky`（`left` / `right` 偏移按列宽自动累加），其余列可横向滚动；表头始终吸顶。
+
+## 大数据量（虚拟滚动）
+
+<DemoBlock title="万级数据虚拟滚动">
+  <div style="width: 100%">
+    <oas-table id="table-virtual" height="360" row-height="40" columns='[{"key":"id","title":"ID","fixed":"left","width":"70px"},{"key":"name","title":"姓名","fixed":"left","width":"120px"},{"key":"age","title":"年龄","sortable":true,"width":"80px"},{"key":"city","title":"城市","width":"100px"},{"key":"email","title":"邮箱","width":"220px"},{"key":"position","title":"职位","fixed":"right","width":"120px"}]'></oas-table>
+  </div>
+</DemoBlock>
+
+设置 `height` 开启虚拟滚动（搭配 `row-height` 定高），表格只渲染可见窗口内的行，配合固定列与排序/多选使用；滚动派发 `oas-scroll`。
+
 ## 加载态
 
 <DemoBlock title="加载态">
@@ -125,6 +151,22 @@ onMounted(() => {
     document.querySelector('#table-row').textContent = e.detail.row.name ?? e.detail.key
   })
 
+  // 大数据量虚拟滚动 demo：1 万行
+  const virtual = document.querySelector('#table-virtual')
+  if (virtual) {
+    const cities = ['北京', '上海', '深圳', '杭州', '广州']
+    const positions = ['前端工程师', '后端工程师', '产品经理', '测试工程师', '运营专员']
+    const rows = Array.from({ length: 10000 }, (_, i) => ({
+      id: i + 1,
+      name: `用户 ${i + 1}`,
+      age: 20 + (i % 30),
+      city: cities[i % cities.length],
+      email: `user${i + 1}@example.com`,
+      position: positions[i % positions.length],
+    }))
+    virtual.setAttribute('data', JSON.stringify(rows))
+  }
+
   // 分页联动 demo：按每页 5 条切片写入 data
   const pager = document.querySelector('#table-pager')
   const paged = document.querySelector('#table-paged')
@@ -147,23 +189,26 @@ onMounted(() => {
 
 ## API
 
-| 属性                      | 说明                                                                       | 类型    | 默认值     |
-| ------------------------- | -------------------------------------------------------------------------- | ------- | ---------- |
-| `columns`                 | 列配置 `[{ key, title, sortable?, width?, align?, render? }]`，JSON 字符串 | string  | `[]`       |
-| `data`                    | 行数据 `[{ [key]: value }]`，JSON 字符串                                   | string  | `[]`       |
-| `sort-key` / `sort-order` | 受控排序；`sort-order` 取 `asc` / `desc` / 空                              | string  | —          |
-| `row-key`                 | 行唯一键字段                                                               | string  | `key`      |
-| `selected`                | 选中行 key 集合（逗号分隔）                                                | string  | —          |
-| `empty-text`              | 空态文案                                                                   | string  | `暂无数据` |
-| `checkable`               | 复选框多选开关                                                             | boolean | `false`    |
-| `loading`                 | 加载态：数据区显示加载占位行（表头保留）                                   | boolean | `false`    |
+| 属性                      | 说明                                                                               | 类型    | 默认值     |
+| ------------------------- | ---------------------------------------------------------------------------------- | ------- | ---------- |
+| `columns`                 | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render? }]`，JSON 字符串 | string  | `[]`       |
+| `data`                    | 行数据 `[{ [key]: value }]`，JSON 字符串                                           | string  | `[]`       |
+| `sort-key` / `sort-order` | 受控排序；`sort-order` 取 `asc` / `desc` / 空                                      | string  | —          |
+| `row-key`                 | 行唯一键字段                                                                       | string  | `key`      |
+| `selected`                | 选中行 key 集合（逗号分隔）                                                        | string  | —          |
+| `empty-text`              | 空态文案                                                                           | string  | `暂无数据` |
+| `checkable`               | 复选框多选开关                                                                     | boolean | `false`    |
+| `loading`                 | 加载态：数据区显示加载占位行（表头保留）                                           | boolean | `false`    |
+| `height`                  | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行                        | number  | —          |
+| `row-height`              | 虚拟滚动每行固定高度（px）                                                         | number  | `40`       |
 
-> 说明：`columns.render` 为函数类型，仅支持在 JS 侧构造后通过属性整体赋值，无法用 JSON 字符串表达。
+> 说明：`columns.render` 为函数类型，仅支持在 JS 侧构造后通过属性整体赋值，无法用 JSON 字符串表达；`fixed` 列建议显式声明 `width`（未声明时按 100px 兜底计算 sticky 偏移）。
 
-| 事件              | 说明                                                          |
-| ----------------- | ------------------------------------------------------------- |
-| `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }`     |
-| `oas-row-click`   | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
-| `oas-check`       | 复选框选中变化，`detail: { keys: string[] }`                  |
+| 事件              | 说明                                                              |
+| ----------------- | ----------------------------------------------------------------- |
+| `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }`         |
+| `oas-row-click`   | 点击行（非 checkable 时同时切换选中），`detail: { row, key }`     |
+| `oas-check`       | 复选框选中变化，`detail: { keys: string[] }`                      |
+| `oas-scroll`      | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
 
 加载占位行部件为 `::part(loading-row)`，可单独定制样式。
