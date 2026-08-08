@@ -3,6 +3,7 @@ import DefaultTheme from 'vitepress/theme'
 import '@oas-ui/theme'
 import './style.css'
 import DemoBlock from './components/DemoBlock.vue'
+import Layout from './Layout.vue'
 import { bindOnOas } from './onoas'
 
 if (!import.meta.env.SSR) {
@@ -12,6 +13,7 @@ if (!import.meta.env.SSR) {
 
 export default {
   extends: DefaultTheme,
+  Layout,
   enhanceApp({ app }) {
     app.component('DemoBlock', DemoBlock)
   },
