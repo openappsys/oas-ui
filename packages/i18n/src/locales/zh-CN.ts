@@ -108,4 +108,18 @@ export const zhCN = {
   'buttonGroup.group': '按钮组',
   // loading（加载态，通用兜底）
   'loading.loading': '加载中…',
+  // calendar（日历）
+  'calendar.today': '今天',
+  'calendar.prevMonth': '上一月',
+  'calendar.nextMonth': '下一月',
+  'calendar.prevYear': '上一年',
+  'calendar.nextYear': '下一年',
+  // date-picker（日期选择器）
+  'datePicker.placeholder': '请选择日期',
+  'datePicker.confirm': '确定',
+  // time-picker（时间选择器）
+  'timePicker.placeholder': '请选择时间',
+  'timePicker.hour': '时',
+  'timePicker.minute': '分',
+  'timePicker.second': '秒',
 } as const

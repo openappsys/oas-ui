@@ -54,6 +54,9 @@ export default defineConfig({
           { text: 'AutoComplete 自动完成', link: '/components/auto-complete' },
           { text: 'Cascader 级联选择', link: '/components/cascader' },
           { text: 'TreeSelect 树选择', link: '/components/tree-select' },
+          { text: 'DatePicker 日期选择', link: '/components/date-picker' },
+          { text: 'TimePicker 时间选择', link: '/components/time-picker' },
+          { text: 'Calendar 日历', link: '/components/calendar' },
           { text: 'Form 表单', link: '/components/form' },
         ],
       },
@@ -123,6 +126,8 @@ export default defineConfig({
           { text: 'Timeline 时间线', link: '/components/timeline' },
           { text: 'List 列表', link: '/components/list' },
           { text: 'Carousel 轮播', link: '/components/carousel' },
+          { text: 'Statistic 统计数值', link: '/components/statistic' },
+          { text: 'Countdown 倒计时', link: '/components/countdown' },
         ],
       },
       {
