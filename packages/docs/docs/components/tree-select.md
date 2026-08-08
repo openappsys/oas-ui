@@ -21,13 +21,13 @@
 ## 预设值
 
 <DemoBlock title="预设值（value）">
-  <oas-tree-select value='["vue"]' options='[{"label":"前端","value":"fe","children":[{"label":"框架","value":"framework","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]}]'></oas-tree-select>
+  <oas-tree-select value="vue" options='[{"label":"前端","value":"fe","children":[{"label":"框架","value":"framework","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]}]'></oas-tree-select>
 </DemoBlock>
 
 ## 禁用
 
 <DemoBlock title="禁用">
-  <oas-tree-select disabled value='["vue"]' placeholder="禁用" options='[{"label":"前端","value":"fe","children":[{"label":"Vue","value":"vue"}]}]'></oas-tree-select>
+  <oas-tree-select disabled value="vue" placeholder="禁用" options='[{"label":"前端","value":"fe","children":[{"label":"Vue","value":"vue"}]}]'></oas-tree-select>
 </DemoBlock>
 
 ## 空态
