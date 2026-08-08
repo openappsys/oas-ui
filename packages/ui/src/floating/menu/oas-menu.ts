@@ -444,7 +444,11 @@ export class OASMenu extends OASElement {
   private select(item: MenuItem): void {
     this.setAttribute('value', item.value ?? '')
     this.emit('select', { value: item.value })
-    // 选中态变化影响 aria-checked，需轻量刷新（值属性变化会走 update 全量渲染）
+    // 级联浮出菜单惯例：选中叶子项后收回所有展开的子菜单（展开态是临时的）
+    if (this.expanded.size > 0) {
+      this.expanded.clear()
+      this.syncOpen()
+    }
   }
 
   /** hover：级联展开到该项所在的单条路径（同级互斥），只切 class 不重建 */

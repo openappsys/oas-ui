@@ -159,6 +159,16 @@ describe('OASMenu', () => {
     expect(items(el)[1]!.getAttribute('aria-checked')).toBe('true')
   })
 
+  it('选中叶子项后收回所有展开的子菜单', () => {
+    const el = mount({ items: NESTED_ITEMS })
+    topItems(el)[0]!.click() // 展开 编辑
+    expect(topItems(el)[0]!.classList.contains('open')).toBe(true)
+    items(el)[1]!.click() // 选中 复制（触发 value 变化 → 全量重建，需重新查询）
+    const parent = topItems(el)[0]!
+    expect(parent.classList.contains('open')).toBe(false)
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+  })
+
   it('ArrowRight 进入子菜单，ArrowLeft 返回', () => {
     const el = mount({ items: NESTED_ITEMS })
     const menu = el.shadowRoot!.querySelector('[role="menu"]')!
