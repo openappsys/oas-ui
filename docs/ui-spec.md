@@ -105,7 +105,10 @@
 - 焦点环：`focus-visible` 样式（1px ring + 偏移），不得移除 outline 而不给替代
 - ARIA：动态状态同步（`aria-expanded` `aria-checked` `aria-selected` `aria-busy`）；错误消息 `aria-describedby` 关联
 - 表单原生优先：能用 `<input>/<select>/<button>` 不用 div 模拟；自定义控件补 `role` 与键盘
-- 文案：组件内置文案（如空态"暂无数据"）进 i18n 预留（当前 zh-CN，结构按可扩展设计）
+- 文案：组件内置文案（空态"暂无数据"、分页"共 X 条"、confirm"确定/取消"等）一律走 locale registry（`@oas-ui/i18n`），**禁止在组件里硬编码文案**；locale key 全集有类型约束，漏翻译编译期/测试期报错（locale-completeness 测试）
+- 格式化：数字/日期一律走 `Intl.*`（NumberFormat / DateTimeFormat），不手写格式化逻辑
+- RTL：布局相关样式一律用逻辑 CSS 属性（`margin-inline-start` / `padding-inline-end` / `inset-inline-*`），禁用物理方向属性（`margin-left` 等）；组件在 `dir="rtl"` 下必须视觉正确
+- 覆盖：组件级文案可通过属性或 slot 覆盖 locale 默认值
 
 ## 4. 暗色与主题
 
