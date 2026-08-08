@@ -73,6 +73,36 @@ describe('OASInput', () => {
     expect(el.shadowRoot!.querySelector('button')!.hidden).toBe(true)
   })
 
+  it('空内容（仅占位符）时清除按钮隐藏', () => {
+    const el = mount({ clearable: '', placeholder: '请输入' })
+    expect(el.shadowRoot!.querySelector('button')!.hidden).toBe(true)
+  })
+
+  it('输入内容后清除按钮显示', () => {
+    const el = mount({ clearable: '' })
+    const i = input(el)
+    i.value = 'abc'
+    i.dispatchEvent(new Event('input'))
+    expect(el.shadowRoot!.querySelector('button')!.hidden).toBe(false)
+  })
+
+  it('清空后清除按钮隐藏', () => {
+    const el = mount({ clearable: '', value: 'abc' })
+    const btn = el.shadowRoot!.querySelector('button')!
+    btn.click()
+    expect(btn.hidden).toBe(true)
+  })
+
+  it('disabled 时即使有值也隐藏清除按钮', () => {
+    const el = mount({ clearable: '', value: 'abc', disabled: '' })
+    expect(el.shadowRoot!.querySelector('button')!.hidden).toBe(true)
+  })
+
+  it('readonly 时即使有值也隐藏清除按钮', () => {
+    const el = mount({ clearable: '', value: 'abc', readonly: '' })
+    expect(el.shadowRoot!.querySelector('button')!.hidden).toBe(true)
+  })
+
   it('属性变化增量更新：placeholder 变更不重建引用', () => {
     const el = mount({ placeholder: 'a' })
     const i = input(el)

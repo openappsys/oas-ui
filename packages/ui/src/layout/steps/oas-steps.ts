@@ -8,6 +8,7 @@ export interface StepItem {
 const STYLE = `
 :host {
   display: block;
+  width: 100%;
   font-family: inherit;
 }
 .steps {
@@ -72,10 +73,18 @@ const STYLE = `
   margin-top: var(--oas-space-1);
   font-size: var(--oas-font-size-sm);
   color: var(--oas-color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .desc {
   font-size: var(--oas-font-size-xs);
   color: var(--oas-color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 `
 

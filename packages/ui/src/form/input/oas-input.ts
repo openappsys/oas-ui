@@ -61,6 +61,10 @@ input:disabled:hover {
   outline: none;
   box-shadow: var(--oas-focus-ring);
 }
+/* hidden 属性需要显式覆盖 display（避免 class 的 display 优先级压过 UA 的 [hidden] 规则） */
+.clear-btn[hidden] {
+  display: none;
+}
 `
 
 export class OASInput extends OASElement {
@@ -108,7 +112,6 @@ export class OASInput extends OASElement {
     const type = this.getAttr('type', 'text')
     const disabled = this.hasAttr('disabled')
     const readonly = this.hasAttr('readonly')
-    const clearable = this.hasAttr('clearable')
 
     if (i.value !== value) i.value = value
     i.placeholder = placeholder
@@ -118,11 +121,21 @@ export class OASInput extends OASElement {
     if (!i.getAttribute('aria-label')) {
       i.setAttribute('aria-label', this.getAttr('label', placeholder) || '输入框')
     }
-    if (this.clearBtn) this.clearBtn.hidden = !(clearable && i.value !== '')
+    if (this.clearBtn) this.clearBtn.hidden = !this.shouldShowClear()
+  }
+
+  private shouldShowClear(): boolean {
+    return (
+      this.hasAttr('clearable') &&
+      !this.hasAttr('disabled') &&
+      !this.hasAttr('readonly') &&
+      this.inputEl !== null &&
+      this.inputEl.value !== ''
+    )
   }
 
   private syncClearVisibility(): void {
     if (!this.clearBtn || !this.inputEl) return
-    this.clearBtn.hidden = !(this.hasAttr('clearable') && this.inputEl.value !== '')
+    this.clearBtn.hidden = !this.shouldShowClear()
   }
 }

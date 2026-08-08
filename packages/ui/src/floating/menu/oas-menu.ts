@@ -4,6 +4,8 @@ export interface MenuItem {
   label: string
   value: string
   disabled?: boolean
+  /** 子菜单项，支持多级嵌套（任意层级） */
+  children?: MenuItem[]
 }
 
 const STYLE = `
@@ -49,6 +51,21 @@ const STYLE = `
 .item[aria-checked='true'] .check {
   opacity: 1;
 }
+.arrow {
+  margin-left: var(--oas-space-3);
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-sm);
+  transition: transform var(--oas-transition-base, 0.18s) ease;
+}
+.item[aria-expanded='true'] > .arrow {
+  transform: rotate(90deg);
+}
+.submenu {
+  list-style: none;
+  margin: 0;
+  padding: var(--oas-space-1) 0 0 var(--oas-space-4);
+  border-left: 1px solid var(--oas-color-border);
+}
 `
 
 export class OASMenu extends OASElement {
@@ -57,7 +74,11 @@ export class OASMenu extends OASElement {
   }
 
   private itemsList: MenuItem[] = []
+  /** 当前键盘导航所在层级的祖先 value 链（空数组 = 顶层） */
+  private activeStack: string[] = []
   private activeIndex = -1
+  /** 已展开的子菜单 value 集合 */
+  private expanded = new Set<string>()
   private menuEl: HTMLElement | null = null
 
   protected override render(): void {
@@ -84,6 +105,36 @@ export class OASMenu extends OASElement {
     } catch {
       this.itemsList = []
     }
+    this.pruneState()
+  }
+
+  /** 数据变化后清理失效的展开/导航状态 */
+  private pruneState(): void {
+    const valid = new Set<string>()
+    const collect = (items: MenuItem[]): void => {
+      for (const i of items) {
+        valid.add(i.value)
+        if (i.children) collect(i.children)
+      }
+    }
+    collect(this.itemsList)
+    for (const v of [...this.expanded]) {
+      if (!valid.has(v)) this.expanded.delete(v)
+    }
+    this.activeStack = this.activeStack.filter((v) => valid.has(v))
+    const items = this.currentItems()
+    if (this.activeIndex >= items.length) this.activeIndex = items.length > 0 ? 0 : -1
+  }
+
+  /** 当前键盘导航层级的菜单项（顶层或某个子菜单） */
+  private currentItems(): MenuItem[] {
+    let items = this.itemsList
+    for (const v of this.activeStack) {
+      const parent = items.find((i) => i.value === v)
+      if (!parent || !parent.children) return []
+      items = parent.children
+    }
+    return items
   }
 
   private renderItems(): void {
@@ -91,57 +142,155 @@ export class OASMenu extends OASElement {
     if (!menuEl) return
     menuEl.innerHTML = ''
     const selected = this.getAttr('value', '')
-    this.itemsList.forEach((item, idx) => {
+    this.renderLevel(menuEl, this.itemsList, selected, 0)
+  }
+
+  private renderLevel(container: HTMLElement, items: MenuItem[], selected: string, depth: number): void {
+    const isCurrentLevel = depth === this.activeStack.length
+    for (const [idx, item] of items.entries()) {
       const li = document.createElement('li')
       li.className = 'item'
       li.setAttribute('part', 'item')
-      li.setAttribute('role', 'menuitemradio')
       li.setAttribute('aria-disabled', String(item.disabled ?? false))
-      li.setAttribute('aria-checked', String(item.value === selected))
-      if (idx === this.activeIndex) li.classList.add('active')
-      const label = document.createElement('span')
-      label.textContent = item.label
-      const check = document.createElement('span')
-      check.className = 'check'
-      check.textContent = '✓'
-      li.append(label, check)
-      li.addEventListener('click', () => {
-        if (item.disabled) return
-        this.select(item)
-      })
-      menuEl.appendChild(li)
-    })
+      if (isCurrentLevel && idx === this.activeIndex) li.classList.add('active')
+      const hasChildren = !!item.children && item.children.length > 0
+      if (hasChildren) {
+        const expanded = this.expanded.has(item.value)
+        li.setAttribute('role', 'menuitem')
+        li.setAttribute('aria-haspopup', 'menu')
+        li.setAttribute('aria-expanded', String(expanded))
+        const label = document.createElement('span')
+        label.textContent = item.label
+        const arrow = document.createElement('span')
+        arrow.className = 'arrow'
+        arrow.textContent = '›'
+        li.append(label, arrow)
+        li.addEventListener('click', (e: MouseEvent) => {
+          e.stopPropagation()
+          if (item.disabled) return
+          this.toggleExpand(item.value)
+        })
+        li.addEventListener('mouseenter', () => {
+          if (item.disabled) return
+          this.expand(item.value)
+        })
+        if (expanded) {
+          const sub = document.createElement('ul')
+          sub.className = 'submenu'
+          sub.setAttribute('part', 'submenu')
+          this.renderLevel(sub, item.children!, selected, depth + 1)
+          li.appendChild(sub)
+        }
+      } else {
+        li.setAttribute('role', 'menuitemradio')
+        li.setAttribute('aria-checked', String(item.value === selected))
+        const label = document.createElement('span')
+        label.textContent = item.label
+        const check = document.createElement('span')
+        check.className = 'check'
+        check.textContent = '✓'
+        li.append(label, check)
+        li.addEventListener('click', (e: MouseEvent) => {
+          e.stopPropagation()
+          if (item.disabled) return
+          this.select(item, items, depth)
+        })
+      }
+      container.appendChild(li)
+    }
   }
 
-  private select(item: MenuItem): void {
+  private select(item: MenuItem, levelItems: MenuItem[], depth: number): void {
     this.setAttribute('value', item.value)
-    this.activeIndex = this.itemsList.indexOf(item)
+    this.activeStack.length = depth
+    this.activeIndex = levelItems.indexOf(item)
     this.emit('select', { value: item.value })
     this.renderItems()
   }
 
+  /** 点击：展开/收起子菜单 */
+  private toggleExpand(value: string): void {
+    if (this.expanded.has(value)) {
+      this.expanded.delete(value)
+      const i = this.activeStack.indexOf(value)
+      if (i >= 0) this.activeStack.length = i
+    } else {
+      this.expanded.add(value)
+    }
+    this.renderItems()
+  }
+
+  /** hover：仅展开，不收起 */
+  private expand(value: string): void {
+    if (this.expanded.has(value)) return
+    this.expanded.add(value)
+    this.renderItems()
+  }
+
+  /** 键盘进入子菜单：展开并高亮第一个可用子项 */
+  private enterSubmenu(item: MenuItem): void {
+    this.expanded.add(item.value)
+    this.activeStack.push(item.value)
+    const children = item.children ?? []
+    const firstEnabled = children.findIndex((c) => !c.disabled)
+    this.activeIndex = firstEnabled >= 0 ? firstEnabled : 0
+  }
+
+  /** 键盘返回父级：收起子菜单并高亮父级项 */
+  private leaveSubmenu(): void {
+    const value = this.activeStack.pop()
+    if (value) this.expanded.delete(value)
+    const parentLevel = this.currentItems()
+    this.activeIndex = parentLevel.findIndex((i) => i.value === value)
+  }
+
+  private moveActive(enabled: number[], dir: 1 | -1): void {
+    const len = enabled.length
+    if (this.activeIndex < 0) {
+      this.activeIndex = dir === 1 ? enabled[0]! : enabled[len - 1]!
+      return
+    }
+    const cur = enabled.indexOf(this.activeIndex)
+    this.activeIndex = enabled[(cur + dir + len) % len]!
+  }
+
   private handleKey(e: KeyboardEvent): void {
-    const enabled = this.itemsList.map((i, idx) => (i.disabled ? -1 : idx)).filter((i) => i >= 0)
+    const items = this.currentItems()
+    const enabled = items.map((i, idx) => (i.disabled ? -1 : idx)).filter((i) => i >= 0)
     if (enabled.length === 0) return
-    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+    if (e.key === 'ArrowDown') {
       e.preventDefault()
-      if (this.activeIndex < 0) {
-        this.activeIndex = enabled[0]!
+      this.moveActive(enabled, 1)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      this.moveActive(enabled, -1)
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      const active = items[this.activeIndex]
+      if (active && !active.disabled && active.children?.length) {
+        this.enterSubmenu(active)
       } else {
-        const cur = enabled.indexOf(this.activeIndex)
-        this.activeIndex = enabled[(cur + 1) % enabled.length]!
+        // 与扁平菜单行为一致：无子级时向右循环下移
+        this.moveActive(enabled, 1)
       }
-    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    } else if (e.key === 'ArrowLeft') {
       e.preventDefault()
-      if (this.activeIndex < 0) {
-        this.activeIndex = enabled[enabled.length - 1]!
+      if (this.activeStack.length > 0) {
+        this.leaveSubmenu()
       } else {
-        const cur = enabled.indexOf(this.activeIndex)
-        this.activeIndex = enabled[(cur - 1 + enabled.length) % enabled.length]!
+        // 与扁平菜单行为一致：顶层向左循环上移
+        this.moveActive(enabled, -1)
       }
-    } else if (e.key === 'Enter' && this.activeIndex >= 0) {
+    } else if (e.key === 'Enter') {
+      const active = items[this.activeIndex]
+      if (!active) return
       e.preventDefault()
-      this.select(this.itemsList[this.activeIndex]!)
+      if (active.disabled) return
+      if (active.children?.length) {
+        this.enterSubmenu(active)
+      } else {
+        this.select(active, items, this.activeStack.length)
+      }
     } else if (e.key === 'Home') {
       this.activeIndex = enabled[0]!
     } else if (e.key === 'End') {
