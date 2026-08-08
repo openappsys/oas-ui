@@ -14,7 +14,7 @@ const STYLE = `
 .splitter {
   width: 6px;
   cursor: col-resize;
-  background: var(--oas-color-bg-hover);
+  background: var(--oas-color-border);
   border-radius: var(--oas-radius-sm);
   flex-shrink: 0;
   touch-action: none;

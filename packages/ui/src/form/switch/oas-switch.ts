@@ -14,7 +14,7 @@ button {
   width: 40px;
   height: 22px;
   border-radius: 11px;
-  background: var(--oas-color-bg-disabled);
+  background: var(--oas-color-border);
   transition: background var(--oas-transition-base) var(--oas-ease-out);
   display: inline-block;
 }

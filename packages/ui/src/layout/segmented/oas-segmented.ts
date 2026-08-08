@@ -30,7 +30,7 @@ const STYLE = `
   height: var(--oas-control-height-sm);
 }
 .item[aria-checked='true'] {
-  background: var(--oas-color-bg);
+  background: var(--oas-color-bg-elevated);
   color: var(--oas-color-text-primary);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   font-weight: 500;
