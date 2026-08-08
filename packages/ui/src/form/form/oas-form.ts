@@ -18,18 +18,6 @@ const STYLE = `
 form {
   display: block;
 }
-.item {
-  margin-bottom: var(--oas-space-4);
-}
-.error-text {
-  display: none;
-  color: var(--oas-color-danger);
-  font-size: var(--oas-font-size-sm);
-  margin-top: var(--oas-space-1);
-}
-.item.invalid .error-text {
-  display: block;
-}
 `
 
 export class OASForm extends OASElement {
@@ -147,7 +135,10 @@ export class OASForm extends OASElement {
     }
 
     for (const { name, element } of fields) {
-      element.toggleAttribute('aria-invalid', name in this.errors)
+      const invalid = name in this.errors
+      if (invalid) element.setAttribute('aria-invalid', 'true')
+      else element.removeAttribute('aria-invalid')
+      this.syncErrorText(element, invalid ? this.errors[name]! : null)
     }
 
     if (allInvalid.length === 0) {
@@ -155,6 +146,29 @@ export class OASForm extends OASElement {
     } else {
       this.emit('validate-fail', { errors: this.errors, values })
     }
+  }
+
+  /**
+   * 在字段 host 后同步错误提示元素。字段在 light DOM（form shadow 内仅 <slot> 透传），
+   * 阴影内 class 样式不可达，因此错误文本用内联 token 引用（自动跟随暗色/高对比主题）。
+   * 校验失败时插入/更新，通过时移除。
+   */
+  private syncErrorText(element: Element, message: string | null): void {
+    const next = element.nextElementSibling
+    const existing = next && next.classList.contains('error-text') ? (next as HTMLElement) : null
+    if (message === null) {
+      existing?.remove()
+      return
+    }
+    const el = existing ?? document.createElement('div')
+    if (!existing) {
+      el.className = 'error-text'
+      el.style.color = 'var(--oas-color-danger)'
+      el.style.fontSize = 'var(--oas-font-size-sm)'
+      el.style.marginTop = 'var(--oas-space-1)'
+      element.insertAdjacentElement('afterend', el)
+    }
+    el.textContent = message
   }
 
   getErrors(): Record<string, string> {

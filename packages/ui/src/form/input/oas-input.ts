@@ -34,6 +34,13 @@ input:focus {
   border-color: var(--oas-color-primary);
   box-shadow: var(--oas-focus-ring);
 }
+:host([aria-invalid='true']) input {
+  border-color: var(--oas-color-danger);
+}
+:host([aria-invalid='true']) input:focus {
+  border-color: var(--oas-color-danger);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--oas-color-danger) 30%, transparent);
+}
 input:disabled {
   cursor: not-allowed;
   background: var(--oas-color-bg-disabled);

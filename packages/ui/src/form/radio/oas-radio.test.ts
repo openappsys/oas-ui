@@ -45,6 +45,23 @@ describe('OASRadio', () => {
     input.click()
     expect(input.checked).toBe(true)
   })
+
+  it('同名 radio 互斥：选中第二个后第一个取消选中', () => {
+    const a = mountRadio({ name: 'g', value: 'a' }, 'A')
+    const b = mountRadio({ name: 'g', value: 'b' }, 'B')
+    native(b).click()
+    expect(native(a).checked).toBe(false)
+    expect(a.hasAttribute('checked')).toBe(false)
+    expect(native(b).checked).toBe(true)
+    expect(b.hasAttribute('checked')).toBe(true)
+  })
+
+  it('无 name 的 radio 不受同名互斥影响', () => {
+    const a = mountRadio({}, 'A')
+    const b = mountRadio({ name: 'g', value: 'b' }, 'B')
+    native(b).click()
+    expect(native(a).checked).toBe(false)
+  })
 })
 
 describe('OASRadioGroup', () => {

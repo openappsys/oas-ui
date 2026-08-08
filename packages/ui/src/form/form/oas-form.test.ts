@@ -69,4 +69,28 @@ describe('OASForm', () => {
     const errors = (el as unknown as OASForm).getErrors()
     expect(Object.values(errors).some((m) => m.includes('邮箱格式'))).toBe(true)
   })
+
+  it('校验失败后字段后有 .error-text 显示 message，修正后移除', () => {
+    const el = mount()
+    const submit = () => el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    const name = el.querySelector('oas-input[name="name"]')!
+    const email = el.querySelector('oas-input[name="email"]')!
+
+    // 首次提交全部为空，两个字段都校验失败
+    submit()
+    expect(name.hasAttribute('aria-invalid')).toBe(true)
+    expect(email.hasAttribute('aria-invalid')).toBe(true)
+    const nameError = name.nextElementSibling!
+    expect(nameError.classList.contains('error-text')).toBe(true)
+    expect(nameError.textContent).toBe('请输入姓名')
+    expect(email.nextElementSibling!.textContent).toBe('请输入邮箱')
+
+    // 修正后重新校验通过，错误元素移除
+    name.setAttribute('value', '张三')
+    email.setAttribute('value', 'zhang@example.com')
+    submit()
+    expect(name.hasAttribute('aria-invalid')).toBe(false)
+    expect(email.hasAttribute('aria-invalid')).toBe(false)
+    expect(el.querySelector('.error-text')).toBeNull()
+  })
 })

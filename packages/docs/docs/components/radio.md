@@ -5,9 +5,11 @@
 ## 基础用法
 
 <DemoBlock title="基础用法">
-  <oas-radio checked>选项一</oas-radio>
-  <oas-radio>选项二</oas-radio>
+  <oas-radio name="demo-basic" checked>选项一</oas-radio>
+  <oas-radio name="demo-basic">选项二</oas-radio>
 </DemoBlock>
+
+同名 `name` 的 radio 互斥（组件跨 Shadow DOM 同步）；无 name 时各自独立，互斥请用同名或 `oas-radio-group`。
 
 ## 单选组
 

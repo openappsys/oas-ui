@@ -46,6 +46,14 @@ const STYLE = `
 .trigger[aria-expanded='true'] {
   border-color: var(--oas-color-primary);
 }
+:host([aria-invalid='true']) .trigger {
+  border-color: var(--oas-color-danger);
+}
+:host([aria-invalid='true']) .trigger[aria-expanded='true'],
+:host([aria-invalid='true']) .trigger:focus-visible {
+  border-color: var(--oas-color-danger);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--oas-color-danger) 30%, transparent);
+}
 .trigger[disabled] {
   cursor: not-allowed;
   background: var(--oas-color-bg-disabled);

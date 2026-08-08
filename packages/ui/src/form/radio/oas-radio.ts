@@ -52,8 +52,12 @@ export class OASRadio extends OASElement {
     this.inputId = `oas-radio-${crypto.randomUUID()}`
 
     this.input?.addEventListener('change', () => {
-      this.toggleAttribute('checked', this.input!.checked)
-      this.emit('change', { checked: this.input!.checked, value: this.getAttr('value', '') })
+      const checked = this.input!.checked
+      this.toggleAttribute('checked', checked)
+      // 原生 radio 的同名互斥只在同一 shadow root 内生效；每个 oas-radio 的 input 位于各自 shadow，
+      // 需在 host 层（light DOM）按 name 全文档互斥，避免同名 radio 同时选中
+      if (checked) this.excludeSameName()
+      this.emit('change', { checked, value: this.getAttr('value', '') })
     })
     this.update()
   }
@@ -72,5 +76,22 @@ export class OASRadio extends OASElement {
 
     input.id = this.inputId
     if (this.labelEl) this.labelEl.setAttribute('for', this.inputId)
+  }
+
+  /**
+   * 同名 radio 互斥：本项选中时，清掉文档内所有同 name（非空）的其他 oas-radio。
+   * oas-radio-group 会给子项统一分配唯一的组内 name，因此这里按 name 匹配天然兼容
+   * 组内互斥逻辑，不会跨组误伤。
+   */
+  private excludeSameName(): void {
+    const name = this.getAttr('name', '')
+    if (name === '') return
+    for (const other of document.querySelectorAll('oas-radio')) {
+      if (other === this) continue
+      if (other.getAttribute('name') !== name) continue
+      other.removeAttribute('checked')
+      const input = other.shadowRoot?.querySelector('input')
+      if (input) input.checked = false
+    }
   }
 }
