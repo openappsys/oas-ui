@@ -1,5 +1,1 @@
-/* DemoBlock 暗色块：data-theme 切换时块内组件使用暗色 token */
-.demo-block__body[data-theme='dark'] {
-  color: var(--oas-color-text-primary);
-  background: var(--oas-color-bg);
-}
+/* 组件 demo 样式（DemoBlock 已在组件内处理；此处保留通用 demo 工具样式） */

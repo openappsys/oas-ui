@@ -1,4 +1,3 @@
-import { createOverlay, removeOverlay, destroyOverlay } from '../../overlay/index.js'
 import type { MessageType } from './oas-message.js'
 
 let stackEl: HTMLElement | null = null
@@ -23,9 +22,7 @@ function show(type: MessageType, content: string, duration = 3000): MessageHandl
   el.textContent = content
   const stack = ensureStack()
   stack.appendChild(el)
-  createOverlay(el, {})
   const close = (): void => {
-    removeOverlay(el)
     el.remove()
   }
   return { close }
@@ -41,5 +38,4 @@ export const message = {
 export function destroyAll(): void {
   if (stackEl) stackEl.innerHTML = ''
   stackEl = null
-  destroyOverlay()
 }

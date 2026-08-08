@@ -61,7 +61,8 @@
   --oas-focus-ring: 0 0 0 2px color-mix(in srgb, var(--oas-color-primary) 30%, transparent);
 }
 
-[data-theme='dark'] {
+[data-theme='dark'],
+html.dark {
   --oas-color-primary: #4d9fff;
   --oas-color-primary-hover: #63a8ff;
   --oas-color-primary-active: #3a8ceb;

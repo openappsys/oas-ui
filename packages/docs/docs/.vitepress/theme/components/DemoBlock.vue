@@ -3,22 +3,11 @@
     <div class="demo-block__head">
       <h3 v-if="title">{{ title }}</h3>
       <div v-else>&nbsp;</div>
-      <div class="demo-block__head-actions">
-        <button
-          class="demo-block__theme"
-          type="button"
-          :title="theme === 'dark' ? '切换为浅色' : '切换为暗色'"
-          :aria-label="theme === 'dark' ? '切换为浅色' : '切换为暗色'"
-          @click="toggleTheme"
-        >
-          {{ theme === 'dark' ? '☀️' : '🌙' }}
-        </button>
-        <button class="demo-block__toggle" type="button" @click="show = !show">
-          {{ show ? '收起代码' : '查看代码' }}
-        </button>
-      </div>
+      <button class="demo-block__toggle" type="button" @click="show = !show">
+        {{ show ? '收起代码' : '查看代码' }}
+      </button>
     </div>
-    <div ref="bodyEl" class="demo-block__body" :data-theme="theme"><slot /></div>
+    <div ref="bodyEl" class="demo-block__body"><slot /></div>
     <div v-show="show" class="demo-block__code">
       <div class="demo-block__code-head">
         <span>示例代码</span>
@@ -32,22 +21,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 
-const props = defineProps<{ title?: string; defaultTheme?: 'light' | 'dark' }>()
+const props = defineProps<{ title?: string }>()
 const show = ref(false)
 const bodyEl = ref<HTMLElement | null>(null)
 const code = ref('')
-const theme = ref<'light' | 'dark'>(props.defaultTheme ?? 'light')
 
 onMounted(() => {
-  // 取 light DOM 原始标签作为示例代码（不受主题切换影响）
+  // 取 light DOM 原始标签作为示例代码
   code.value = (bodyEl.value?.innerHTML ?? '').replace(/<!--.*?-->/gs, '').trim()
 })
 
 const cleanCode = computed(() => code.value)
-
-function toggleTheme(): void {
-  theme.value = theme.value === 'dark' ? 'light' : 'dark'
-}
 
 async function copy(): Promise<void> {
   await navigator.clipboard.writeText(cleanCode.value)
@@ -76,12 +60,6 @@ async function copy(): Promise<void> {
   font-size: var(--oas-font-size-md);
   font-weight: 500;
 }
-.demo-block__head-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--oas-space-2);
-}
-.demo-block__theme,
 .demo-block__toggle {
   border: 1px solid var(--oas-color-border);
   background: var(--oas-color-bg);
@@ -91,12 +69,7 @@ async function copy(): Promise<void> {
   cursor: pointer;
   color: var(--oas-color-text-secondary);
   font-family: inherit;
-  line-height: 1.6;
 }
-.demo-block__theme {
-  padding: 2px 6px;
-}
-.demo-block__theme:hover,
 .demo-block__toggle:hover {
   color: var(--oas-color-primary);
   border-color: var(--oas-color-primary);

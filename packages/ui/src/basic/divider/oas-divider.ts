@@ -22,7 +22,7 @@ const STYLE = `
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--oas-color-border);
+  background: var(--oas-color-border-strong);
 }
 .divider.left::before {
   flex: 0 0 5%;
@@ -34,8 +34,8 @@ const STYLE = `
 .divider.dashed::after {
   background: repeating-linear-gradient(
     to right,
-    var(--oas-color-border) 0,
-    var(--oas-color-border) 4px,
+    var(--oas-color-border-strong) 0,
+    var(--oas-color-border-strong) 4px,
     transparent 4px,
     transparent 8px
   );
@@ -52,25 +52,7 @@ const STYLE = `
   flex: 1;
   width: 1px;
   height: auto;
-  background: var(--oas-color-border);
-}
-/* 暗色主题：提升分割线与文字对比度 */
-:host-context([data-theme='dark']) .divider {
-  color: var(--oas-color-text-primary);
-}
-:host-context([data-theme='dark']) .divider::before,
-:host-context([data-theme='dark']) .divider::after {
   background: var(--oas-color-border-strong);
-}
-:host-context([data-theme='dark']) .divider.dashed::before,
-:host-context([data-theme='dark']) .divider.dashed::after {
-  background: repeating-linear-gradient(
-    to right,
-    var(--oas-color-border-strong) 0,
-    var(--oas-color-border-strong) 4px,
-    transparent 4px,
-    transparent 8px
-  );
 }
 `
 
