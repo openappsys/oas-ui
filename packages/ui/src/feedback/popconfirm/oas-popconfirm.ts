@@ -64,8 +64,8 @@ export class OASPopconfirm extends OASElement {
       <div class="popover" part="popover" role="dialog" data-position="${this.getAttr('position', 'top')}">
         <div class="title" part="title"></div>
         <div class="actions" part="actions">
-          <button class="btn" part="cancel" type="button">取消</button>
-          <button class="btn" part="ok" type="button">确定</button>
+          <button class="btn" part="cancel" type="button"></button>
+          <button class="btn" part="ok" type="button"></button>
         </div>
       </div>
     `
@@ -108,6 +108,9 @@ export class OASPopconfirm extends OASElement {
     this.popoverEl.setAttribute('aria-hidden', String(!open))
     this.popoverEl.setAttribute('data-position', this.getAttr('position', 'top'))
     this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.getAttr('title', '')
+    // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
+    this.shadow.querySelector<HTMLElement>('[part="ok"]')!.textContent = this.t('popconfirm.ok')
+    this.shadow.querySelector<HTMLElement>('[part="cancel"]')!.textContent = this.t('popconfirm.cancel')
     if (open) document.addEventListener('click', this.handleOutside)
     else document.removeEventListener('click', this.handleOutside)
   }

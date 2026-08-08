@@ -200,6 +200,8 @@ export class OASTreeSelect extends OASElement {
     this.flat = []
     this.buildFlat(this.options, undefined, 0)
     this.syncTrigger()
+    // 下拉展开时同步刷新 locale 文案（空态）
+    if (this.openState) this.renderTree()
   }
 
   private parseOptions(): void {
@@ -265,7 +267,7 @@ export class OASTreeSelect extends OASElement {
     if (this.flat.length === 0) {
       const empty = document.createElement('div')
       empty.className = 'empty'
-      empty.textContent = '暂无数据'
+      empty.textContent = this.t('treeSelect.empty')
       dropdown.appendChild(empty)
       return
     }
@@ -372,7 +374,7 @@ export class OASTreeSelect extends OASElement {
 
   private syncTrigger(): void {
     if (!this.triggerEl) return
-    const placeholder = this.getAttr('placeholder', '请选择')
+    const placeholder = this.getAttr('placeholder', this.t('treeSelect.placeholder'))
     const valueEl = this.triggerEl.querySelector<HTMLElement>('.value')!
     const values = this.currentValues()
     this.triggerEl.disabled = this.hasAttr('disabled')
@@ -387,7 +389,8 @@ export class OASTreeSelect extends OASElement {
     }
     const labels = values.map((v) => this.findLabel(v))
     valueEl.textContent = this.hasAttr('multiple')
-      ? labels.slice(0, 3).join('、') + (labels.length > 3 ? ` 等${labels.length}项` : '')
+      ? labels.slice(0, 3).join(this.t('treeSelect.join')) +
+        (labels.length > 3 ? ` ${this.t('treeSelect.andMore', { count: labels.length })}` : '')
       : (labels[0] ?? values[0] ?? '')
   }
 

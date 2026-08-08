@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
+import '@oas-ui/i18n'
 import { OASCarousel } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASCarousel {
@@ -12,10 +15,12 @@ function mount(attrs: Record<string, string> = {}): OASCarousel {
 describe('OASCarousel', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   it('渲染滑动容器与指示器', () => {
@@ -64,5 +69,24 @@ describe('OASCarousel', () => {
     vi.advanceTimersByTime(3500)
     expect(el.getAttribute('index')).toBe('1')
     vi.useRealTimers()
+  })
+
+  it('locale：箭头/指示器 aria-label 随 setLocale 切换', () => {
+    const el = mount()
+    const prev = el.shadowRoot!.querySelector<HTMLElement>('[part="arrow-prev"]')!
+    const next = el.shadowRoot!.querySelector<HTMLElement>('[part="arrow-next"]')!
+    const dot = el.shadowRoot!.querySelector<HTMLElement>('[part="dot"]')!
+    expect(prev.getAttribute('aria-label')).toBe('上一屏')
+    expect(next.getAttribute('aria-label')).toBe('下一屏')
+    expect(dot.getAttribute('aria-label')).toBe('第 1 张')
+
+    setLocale(en)
+    expect(prev.getAttribute('aria-label')).toBe('Previous slide')
+    expect(next.getAttribute('aria-label')).toBe('Next slide')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="dot"]')!.getAttribute('aria-label')).toBe('Slide 1')
+
+    setLocale('zh-CN')
+    expect(prev.getAttribute('aria-label')).toBe('上一屏')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="dot"]')!.getAttribute('aria-label')).toBe('第 1 张')
   })
 })

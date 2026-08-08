@@ -103,8 +103,8 @@ export class OASInputNumber extends OASElement {
       <span class="wrapper" part="wrapper">
         <input part="input" type="number" />
         <span class="controls" part="controls">
-          <button part="up" aria-label="增加"><svg viewBox="0 0 8 8" aria-hidden="true"><path d="M1 5.5 L4 2.5 L7 5.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <button part="down" aria-label="减少"><svg viewBox="0 0 8 8" aria-hidden="true"><path d="M1 2.5 L4 5.5 L7 2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button part="up"><svg viewBox="0 0 8 8" aria-hidden="true"><path d="M1 5.5 L4 2.5 L7 5.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button part="down"><svg viewBox="0 0 8 8" aria-hidden="true"><path d="M1 2.5 L4 5.5 L7 2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </span>
       </span>
     `
@@ -132,9 +132,10 @@ export class OASInputNumber extends OASElement {
     i.max = max
     i.step = step
     i.disabled = disabled
-    if (!i.getAttribute('aria-label')) {
-      i.setAttribute('aria-label', this.getAttr('label', '数字输入框'))
-    }
+    // 内置文案走 locale registry（label 属性优先，setLocale 切换自动刷新）
+    i.setAttribute('aria-label', this.getAttr('label', this.t('inputNumber.defaultLabel')))
+    this.upBtn?.setAttribute('aria-label', this.t('inputNumber.increase'))
+    this.downBtn?.setAttribute('aria-label', this.t('inputNumber.decrease'))
     this.syncControls()
   }
 

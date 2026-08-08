@@ -80,7 +80,7 @@ export class OASInput extends OASElement {
       <style>${STYLE}</style>
       <span class="wrapper" part="wrapper">
         <input part="input" />
-        <button class="clear-btn" part="clear" aria-label="清除" hidden>
+        <button class="clear-btn" part="clear" hidden>
           <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
             <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
@@ -118,10 +118,12 @@ export class OASInput extends OASElement {
     i.type = type
     i.disabled = disabled
     i.readOnly = readonly
-    if (!i.getAttribute('aria-label')) {
-      i.setAttribute('aria-label', this.getAttr('label', placeholder) || '输入框')
+    // 内置文案走 locale registry（label/placeholder 属性优先，setLocale 切换自动刷新）
+    i.setAttribute('aria-label', this.getAttr('label', placeholder) || this.t('input.defaultLabel'))
+    if (this.clearBtn) {
+      this.clearBtn.setAttribute('aria-label', this.t('input.clear'))
+      this.clearBtn.hidden = !this.shouldShowClear()
     }
-    if (this.clearBtn) this.clearBtn.hidden = !this.shouldShowClear()
   }
 
   private shouldShowClear(): boolean {

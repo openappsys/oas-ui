@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASImage } from './oas-image.js'
 
 if (!customElements.get('oas-image')) {

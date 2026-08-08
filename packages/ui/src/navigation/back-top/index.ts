@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASBackTop } from './oas-back-top.js'
 
 if (!customElements.get('oas-back-top')) {

@@ -367,7 +367,7 @@ export class OASCascader extends OASElement {
 
   private syncTrigger(): void {
     if (!this.triggerEl) return
-    const placeholder = this.getAttr('placeholder', '请选择')
+    const placeholder = this.getAttr('placeholder', this.t('cascader.placeholder'))
     const valueEl = this.triggerEl.querySelector<HTMLElement>('.value')!
     const path = this.currentPath()
     this.triggerEl.disabled = this.hasAttr('disabled')

@@ -1,13 +1,18 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
+import '@oas-ui/i18n'
 import { OASImage } from './index.js'
 
 describe('OASImage', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   it('渲染图片', () => {
@@ -89,5 +94,39 @@ describe('OASImage', () => {
     img.dispatchEvent(new Event('error'))
     img.dispatchEvent(new Event('error'))
     expect(el.shadowRoot!.querySelector('[part="fallback"]')!.hasAttribute('hidden')).toBe(false)
+  })
+
+  it('locale：默认 alt 随 setLocale 切换，alt 属性优先', () => {
+    const el = new OASImage()
+    el.setAttribute('src', '/a.png')
+    document.body.appendChild(el)
+    const img = el.shadowRoot!.querySelector<HTMLImageElement>('img')!
+    expect(img.getAttribute('alt')).toBe('图片')
+
+    setLocale(en)
+    expect(img.getAttribute('alt')).toBe('Image')
+
+    setLocale('zh-CN')
+    expect(img.getAttribute('alt')).toBe('图片')
+  })
+
+  it('locale：占位/失败文案随 setLocale 切换', () => {
+    const el = new OASImage()
+    el.setAttribute('src', '/bad.png')
+    el.setAttribute('placeholder', '')
+    document.body.appendChild(el)
+    const img = el.shadowRoot!.querySelector<HTMLImageElement>('img')!
+    expect(el.shadowRoot!.querySelector('[part="placeholder"]')!.textContent).toContain('加载中')
+
+    img.dispatchEvent(new Event('error'))
+    const fb = el.shadowRoot!.querySelector('[part="fallback"]')!
+    expect(fb.textContent).toContain('图片加载失败')
+
+    setLocale(en)
+    expect(el.shadowRoot!.querySelector('[part="placeholder"]')!.textContent).toContain('Loading')
+    expect(el.shadowRoot!.querySelector('[part="fallback"]')!.textContent).toContain('Image failed to load')
+
+    setLocale('zh-CN')
+    expect(el.shadowRoot!.querySelector('[part="fallback"]')!.textContent).toContain('图片加载失败')
   })
 })

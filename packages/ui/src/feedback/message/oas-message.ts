@@ -60,7 +60,7 @@ export class OASMessage extends OASElement {
       <style>${STYLE}</style>
       <div class="box" part="box" role="${this.getAttr('type', 'info') === 'error' ? 'alert' : 'status'}">
         <span class="text" part="text"></span>
-        <button class="close" part="close" aria-label="关闭">✕</button>
+        <button class="close" part="close" aria-label="">✕</button>
       </div>
     `
     const text = this.shadow.querySelector('.text')!
@@ -70,5 +70,10 @@ export class OASMessage extends OASElement {
     if (duration > 0) {
       this.timer = setTimeout(() => this.remove(), duration)
     }
+  }
+
+  protected override update(): void {
+    // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
+    this.shadow.querySelector<HTMLElement>('[part="close"]')?.setAttribute('aria-label', this.t('message.close'))
   }
 }

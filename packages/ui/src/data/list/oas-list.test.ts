@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
+import '@oas-ui/i18n'
 import { OASList, OASListItem } from './index.js'
 
 function mount(): OASList {
@@ -14,10 +17,12 @@ function mount(): OASList {
 describe('OASList', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   it('渲染列表项', () => {
@@ -72,6 +77,30 @@ describe('OASList', () => {
     el.setAttribute('empty', '')
     el.setAttribute('empty-text', '没有更多数据了')
     document.body.appendChild(el)
+    expect(el.shadowRoot!.textContent).toContain('没有更多数据了')
+  })
+
+  it('locale：默认空态文案随 setLocale 切换', () => {
+    const el = new OASList()
+    el.setAttribute('empty', '')
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.textContent).toContain('暂无数据')
+
+    setLocale(en)
+    expect(el.shadowRoot!.textContent).toContain('No data')
+
+    setLocale('zh-CN')
+    expect(el.shadowRoot!.textContent).toContain('暂无数据')
+  })
+
+  it('locale：empty-text 属性覆盖 locale 默认文案', () => {
+    const el = new OASList()
+    el.setAttribute('empty', '')
+    el.setAttribute('empty-text', '没有更多数据了')
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.textContent).toContain('没有更多数据了')
+
+    setLocale(en)
     expect(el.shadowRoot!.textContent).toContain('没有更多数据了')
   })
 })

@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
+import '@oas-ui/i18n'
 import { OASTimeline, OASTimelineItem } from './index.js'
 
 function mount(): OASTimeline {
@@ -14,10 +17,12 @@ function mount(): OASTimeline {
 describe('OASTimeline', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   it('渲染时间线项', () => {
@@ -60,5 +65,22 @@ describe('OASTimeline', () => {
     document.body.appendChild(el)
     const items = el.shadowRoot!.querySelectorAll('[part="item"]')
     expect(items[1]!.textContent).toContain('正在开发中')
+  })
+
+  it('locale：pending 默认文案随 setLocale 切换', () => {
+    const el = new OASTimeline()
+    el.innerHTML = `
+      <oas-timeline-item time="2024-01-01"><p>事件一</p></oas-timeline-item>
+      <oas-timeline-item pending></oas-timeline-item>
+    `
+    document.body.appendChild(el)
+    const items = el.shadowRoot!.querySelectorAll('[part="item"]')
+    expect(items[1]!.textContent).toContain('敬请期待')
+
+    setLocale(en)
+    expect(el.shadowRoot!.querySelectorAll('[part="item"]')[1]!.textContent).toContain('Coming soon')
+
+    setLocale('zh-CN')
+    expect(el.shadowRoot!.querySelectorAll('[part="item"]')[1]!.textContent).toContain('敬请期待')
   })
 })

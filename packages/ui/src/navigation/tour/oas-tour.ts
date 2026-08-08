@@ -99,9 +99,9 @@ export class OAStour extends OASElement {
         <div class="footer">
           <span class="step-count" part="step-count"></span>
           <div class="actions">
-            <button class="btn" part="skip" type="button">跳过</button>
-            <button class="btn" part="prev" type="button">上一步</button>
-            <button class="btn" part="next" type="button">下一步</button>
+            <button class="btn" part="skip" type="button"></button>
+            <button class="btn" part="prev" type="button"></button>
+            <button class="btn" part="next" type="button"></button>
           </div>
         </div>
       </div>
@@ -149,6 +149,11 @@ export class OAStour extends OASElement {
     this.parseSteps()
     this.current = Math.min(Math.max(Number(this.getAttr('current', '0')) || 0, 0), this.steps.length - 1)
     const open = this.hasAttr('open')
+    // 操作按钮文案一律 locale 驱动（关闭状态下也保持最新，setLocale 切换自动重刷）
+    this.shadow.querySelector<HTMLElement>('[part="skip"]')!.textContent = this.t('tour.skip')
+    this.shadow.querySelector<HTMLElement>('[part="prev"]')!.textContent = this.t('tour.prev')
+    const nextBtn = this.shadow.querySelector<HTMLButtonElement>('[part="next"]')!
+    nextBtn.textContent = this.current >= this.steps.length - 1 ? this.t('tour.finish') : this.t('tour.next')
     if (!open) return
     const step = this.steps[this.current]
     if (!step) return
@@ -173,8 +178,6 @@ export class OAStour extends OASElement {
     }
     const prevBtn = this.shadow.querySelector<HTMLButtonElement>('[part="prev"]')!
     prevBtn.disabled = this.current === 0
-    const nextBtn = this.shadow.querySelector<HTMLButtonElement>('[part="next"]')!
-    nextBtn.textContent = this.current >= this.steps.length - 1 ? '完成' : '下一步'
   }
 
   private parseSteps(): void {

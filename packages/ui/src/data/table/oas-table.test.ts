@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
+import '@oas-ui/i18n'
 import { OASTable } from './index.js'
 
 const COLUMNS = JSON.stringify([
@@ -31,10 +34,12 @@ function headers(el: OASTable): HTMLElement[] {
 describe('OASTable', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   it('渲染表头与数据行', () => {
@@ -100,5 +105,46 @@ describe('OASTable', () => {
     el.removeAttribute('loading')
     expect(rows(el).length).toBe(3)
     expect(rows(el)[0]!.textContent).toContain('张三')
+  })
+
+  it('locale：全选/行选择 aria-label 随 setLocale 切换', () => {
+    const el = mount({ checkable: '', 'row-key': 'name' })
+    expect(
+      el.shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!.getAttribute('aria-label'),
+    ).toBe('全选')
+    expect(
+      el.shadowRoot!.querySelectorAll<HTMLInputElement>('.check-cell input[type="checkbox"]')[1]!.getAttribute('aria-label'),
+    ).toBe('选择行 张三')
+
+    setLocale(en)
+    expect(
+      el.shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!.getAttribute('aria-label'),
+    ).toBe('Select all')
+    expect(
+      el.shadowRoot!.querySelectorAll<HTMLInputElement>('.check-cell input[type="checkbox"]')[1]!.getAttribute('aria-label'),
+    ).toBe('Select row 张三')
+
+    setLocale('zh-CN')
+    expect(
+      el.shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!.getAttribute('aria-label'),
+    ).toBe('全选')
+  })
+
+  it('locale：空态/加载文案随 setLocale 切换，empty-text 属性优先', () => {
+    const empty = mount({ data: '[]' })
+    expect(empty.shadowRoot!.textContent).toContain('暂无数据')
+    const loading = mount({ loading: '' })
+    expect(loading.shadowRoot!.textContent).toContain('加载中')
+    const custom = mount({ data: '[]', 'empty-text': '没有更多' })
+    expect(custom.shadowRoot!.textContent).toContain('没有更多')
+
+    setLocale(en)
+    expect(empty.shadowRoot!.textContent).toContain('No data')
+    expect(loading.shadowRoot!.textContent).toContain('Loading')
+    expect(custom.shadowRoot!.textContent).toContain('没有更多')
+
+    setLocale('zh-CN')
+    expect(empty.shadowRoot!.textContent).toContain('暂无数据')
+    expect(loading.shadowRoot!.textContent).toContain('加载中')
   })
 })

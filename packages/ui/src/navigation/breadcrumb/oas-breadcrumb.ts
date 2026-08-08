@@ -49,7 +49,7 @@ export class OASBreadcrumb extends OASElement {
   protected override render(): void {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      <nav part="nav" aria-label="面包屑"></nav>
+      <nav part="nav"></nav>
     `
     this.update()
   }
@@ -57,6 +57,8 @@ export class OASBreadcrumb extends OASElement {
   protected override update(): void {
     const nav = this.shadow.querySelector('nav')
     if (!nav) return
+    // 导航 aria-label locale 驱动（setLocale 切换自动重刷）
+    nav.setAttribute('aria-label', this.t('breadcrumb.nav'))
     nav.innerHTML = ''
     let items: BreadcrumbItem[] = []
     try {

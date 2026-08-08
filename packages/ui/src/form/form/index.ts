@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASForm } from './oas-form.js'
 
 if (!customElements.get('oas-form')) {

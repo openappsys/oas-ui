@@ -53,9 +53,9 @@ export class OASImage extends OASElement {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
       <div class="previewable" part="wrapper">
-        <div class="placeholder" part="placeholder" hidden>加载中…</div>
+        <div class="placeholder" part="placeholder" hidden></div>
         <img part="image" alt="">
-        <div class="fallback" part="fallback" hidden>图片加载失败</div>
+        <div class="fallback" part="fallback" hidden></div>
       </div>
     `
     const img = this.shadow.querySelector<HTMLImageElement>('img')
@@ -111,7 +111,12 @@ export class OASImage extends OASElement {
       this.fallbackTried = false
     }
     img.setAttribute('src', src)
-    img.setAttribute('alt', this.getAttr('alt', '图片'))
+    img.setAttribute('alt', this.getAttr('alt', this.t('image.defaultAlt')))
+    // 占位/失败文案走 locale registry（setLocale 切换自动刷新）
+    const ph = this.shadow.querySelector<HTMLElement>('[part="placeholder"]')
+    const fb = this.shadow.querySelector<HTMLElement>('[part="fallback"]')
+    if (ph) ph.textContent = this.t('image.loading')
+    if (fb) fb.textContent = this.t('image.loadFailed')
     const fit = this.getAttr('fit', '')
     if (fit) img.style.objectFit = fit
     this.sync()

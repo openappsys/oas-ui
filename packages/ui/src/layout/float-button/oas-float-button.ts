@@ -53,7 +53,7 @@ export class OASFloatButton extends OASElement {
   protected override render(): void {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      <button class="btn" part="btn" type="button" aria-label="悬浮操作">
+      <button class="btn" part="btn" type="button">
         <slot name="icon">＋</slot>
         ${this.hasAttr('badge') ? '<span class="badge" part="badge"></span>' : ''}
       </button>
@@ -63,6 +63,8 @@ export class OASFloatButton extends OASElement {
   }
 
   protected override update(): void {
+    // 按钮 aria-label locale 驱动（setLocale 切换自动重刷）
+    this.shadow.querySelector<HTMLElement>('[part="btn"]')?.setAttribute('aria-label', this.t('floatButton.action'))
     const badge = this.shadow.querySelector('[part="badge"]')
     if (badge) badge.textContent = this.getAttr('badge', '')
   }

@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
+import '@oas-ui/i18n'
 import { OASText, OASTitle, OASParagraph } from './index.js'
 
 function mount<T extends HTMLElement>(Ctor: new () => T, attrs: Record<string, string> = {}, slot = '文本'): T {
@@ -12,10 +15,12 @@ function mount<T extends HTMLElement>(Ctor: new () => T, attrs: Record<string, s
 describe('OAS typography', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   it('oas-text 渲染 span，type 映射 class', async () => {
@@ -59,5 +64,20 @@ describe('OAS typography', () => {
   it('oas-paragraph 渲染 p，type 映射 class', () => {
     const el = mount(OASParagraph, { type: 'warning' }, '段落')
     expect(el.shadowRoot!.querySelector('p')!.classList.contains('warning')).toBe(true)
+  })
+
+  it('locale：复制按钮文案随 setLocale 切换', async () => {
+    const el = mount(OASText, { copyable: '' }, '可复制内容')
+    await Promise.resolve()
+    const btn = el.shadowRoot!.querySelector('button')!
+    expect(btn.textContent).toBe('复制')
+    expect(btn.getAttribute('aria-label')).toBe('复制')
+
+    setLocale(en)
+    expect(btn.textContent).toBe('Copy')
+    expect(btn.getAttribute('aria-label')).toBe('Copy')
+
+    setLocale('zh-CN')
+    expect(btn.textContent).toBe('复制')
   })
 })

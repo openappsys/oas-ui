@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASLayout } from './oas-layout.js'
 import { OASHeader } from './oas-header.js'
 import { OASSider } from './oas-sider.js'

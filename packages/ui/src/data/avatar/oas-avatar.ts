@@ -41,7 +41,7 @@ export class OASAvatar extends OASElement {
     const img = this.shadow.querySelector('img')
     if (img) {
       img.setAttribute('src', this.getAttr('src', ''))
-      img.setAttribute('alt', this.getAttr('alt', '头像'))
+      img.setAttribute('alt', this.getAttr('alt', this.t('avatar.defaultAlt')))
     }
     const text = this.shadow.querySelector('[part="text"]')
     if (text) text.textContent = (this.textContent ?? '').trim().charAt(0) || '?'

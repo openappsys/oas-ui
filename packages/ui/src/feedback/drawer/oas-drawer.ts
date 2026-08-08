@@ -93,13 +93,13 @@ export class OASDrawer extends OASElement {
       <div class="panel" part="panel" role="dialog" aria-modal="true" data-placement="${placement}">
         <div class="header">
           <span class="title" part="title"></span>
-          <button class="close-btn" part="close" aria-label="关闭">✕</button>
+          <button class="close-btn" part="close" aria-label="">✕</button>
         </div>
         <div class="body" part="body"><slot></slot></div>
         ${this.hasAttr('no-footer') ? '' : `
         <div class="footer" part="footer">
-          <button class="btn" part="cancel" type="button">取消</button>
-          <button class="btn" part="ok" type="button">确定</button>
+          <button class="btn" part="cancel" type="button"></button>
+          <button class="btn" part="ok" type="button"></button>
         </div>`}
       </div>
     `
@@ -132,6 +132,18 @@ export class OASDrawer extends OASElement {
     panel.setAttribute('aria-hidden', String(!visible))
     this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.getAttr('title', '')
     this.shadow.querySelector<HTMLElement>('.panel')!.setAttribute('data-placement', this.getAttr('placement', 'right'))
+    // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
+    this.shadow.querySelector<HTMLElement>('[part="close"]')?.setAttribute('aria-label', this.t('drawer.close'))
+    const okBtn = this.shadow.querySelector<HTMLElement>('[part="ok"]')
+    const cancelBtn = this.shadow.querySelector<HTMLElement>('[part="cancel"]')
+    if (okBtn) {
+      okBtn.setAttribute('aria-label', this.t('drawer.ok'))
+      okBtn.textContent = this.t('drawer.ok')
+    }
+    if (cancelBtn) {
+      cancelBtn.setAttribute('aria-label', this.t('drawer.cancel'))
+      cancelBtn.textContent = this.t('drawer.cancel')
+    }
 
     if (visible) {
       this.previousFocus = document.activeElement as HTMLElement

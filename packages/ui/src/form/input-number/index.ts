@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASInputNumber } from './oas-input-number.js'
 
 if (!customElements.get('oas-input-number')) {

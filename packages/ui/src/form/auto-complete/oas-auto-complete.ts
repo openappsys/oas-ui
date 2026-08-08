@@ -124,6 +124,8 @@ export class OASAutoComplete extends OASElement {
     if (this.input.value !== value && this.query === '') this.input.value = value
     this.input.placeholder = placeholder
     this.input.disabled = disabled
+    // 下拉展开时同步刷新 locale 文案（无匹配空态）
+    if (this.dropdown?.classList.contains('open')) this.renderDropdown(true)
   }
 
   private parseOptions(): void {
@@ -152,7 +154,7 @@ export class OASAutoComplete extends OASElement {
     if (list.length === 0) {
       const empty = document.createElement('div')
       empty.className = 'empty'
-      empty.textContent = '无匹配结果'
+      empty.textContent = this.t('autoComplete.noMatch')
       this.dropdown.appendChild(empty)
     } else {
       for (const [idx, option] of list.entries()) {

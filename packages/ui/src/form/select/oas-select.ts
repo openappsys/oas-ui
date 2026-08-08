@@ -180,7 +180,7 @@ export class OASSelect extends OASElement {
           </svg>
         </button>
         <div class="dropdown" part="dropdown">
-          <input class="search-input" part="search-input" type="text" aria-label="搜索选项" hidden />
+          <input class="search-input" part="search-input" type="text" hidden />
           <div class="listbox" part="listbox" role="listbox"></div>
         </div>
       </div>
@@ -204,6 +204,8 @@ export class OASSelect extends OASElement {
 
   protected override update(): void {
     this.parseOptions()
+    // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
+    this.shadow.querySelector<HTMLInputElement>('.search-input')?.setAttribute('aria-label', this.t('select.search'))
     this.renderListbox()
     this.syncTrigger()
   }
@@ -284,7 +286,7 @@ export class OASSelect extends OASElement {
     if (visible.length === 0) {
       const empty = document.createElement('div')
       empty.className = 'empty'
-      empty.textContent = query ? '无匹配选项' : '暂无数据'
+      empty.textContent = query ? this.t('select.noMatch') : this.t('select.empty')
       listbox.appendChild(empty)
       return
     }
@@ -357,15 +359,13 @@ export class OASSelect extends OASElement {
 
   private syncTrigger(): void {
     if (!this.triggerEl) return
-    const placeholder = this.getAttr('placeholder', '请选择')
+    const placeholder = this.getAttr('placeholder', this.t('select.placeholder'))
     const disabled = this.hasAttr('disabled')
     const values = this.currentValues()
     const valueEl = this.triggerEl.querySelector<HTMLElement>('.value')!
 
     this.triggerEl.disabled = disabled
-    if (!this.triggerEl.getAttribute('aria-label')) {
-      this.triggerEl.setAttribute('aria-label', placeholder)
-    }
+    this.triggerEl.setAttribute('aria-label', placeholder)
 
     if (values.length === 0) {
       valueEl.innerHTML = ''
@@ -385,7 +385,7 @@ export class OASSelect extends OASElement {
         const label = document.createElement('span')
         label.textContent = option?.label ?? v
         const rm = document.createElement('button')
-        rm.setAttribute('aria-label', `移除 ${option?.label ?? v}`)
+        rm.setAttribute('aria-label', this.t('select.remove', { label: option?.label ?? v }))
         rm.textContent = '×'
         rm.addEventListener('click', (e: MouseEvent) => {
           e.stopPropagation()

@@ -154,7 +154,7 @@ export class OASTable extends OASElement {
       th.style.width = '40px'
       const selectAll = document.createElement('input')
       selectAll.type = 'checkbox'
-      selectAll.setAttribute('aria-label', '全选')
+      selectAll.setAttribute('aria-label', this.t('table.selectAll'))
       selectAll.checked = sorted.length > 0 && sorted.every((r) => selected.includes(String(r[rowKey] ?? JSON.stringify(r))))
       selectAll.addEventListener('change', () => {
         const keys = sorted.map((r) => String(r[rowKey] ?? JSON.stringify(r)))
@@ -187,7 +187,9 @@ export class OASTable extends OASElement {
       const loadingTd = document.createElement('td')
       loadingTd.colSpan = this.columns.length
       loadingTd.className = 'loading'
-      loadingTd.innerHTML = '<span class="spin"></span>加载中…'
+      const spin = document.createElement('span')
+      spin.className = 'spin'
+      loadingTd.append(spin, document.createTextNode(this.t('table.loading')))
       loadingTr.appendChild(loadingTd)
       body.appendChild(loadingTr)
       return
@@ -198,7 +200,7 @@ export class OASTable extends OASElement {
       const emptyTd = document.createElement('td')
       emptyTd.colSpan = this.columns.length
       emptyTd.className = 'empty'
-      emptyTd.textContent = this.getAttr('empty-text', '暂无数据')
+      emptyTd.textContent = this.getAttr('empty-text', this.t('table.empty'))
       emptyTr.appendChild(emptyTd)
       body.appendChild(emptyTr)
       return
@@ -215,7 +217,7 @@ export class OASTable extends OASElement {
         td.className = 'check-cell'
         const box = document.createElement('input')
         box.type = 'checkbox'
-        box.setAttribute('aria-label', `选择行 ${key}`)
+        box.setAttribute('aria-label', this.t('table.selectRow', { key }))
         box.checked = selected.includes(key)
         box.addEventListener('change', (e) => {
           e.stopPropagation()

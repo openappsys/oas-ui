@@ -69,11 +69,11 @@ export class OASNotification extends OASElement {
     const type = (this.getAttr('type', 'info') || 'info') as NotificationType
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      <div class="box" part="box" role="region" aria-label="通知">
+      <div class="box" part="box" role="region" aria-label="">
         <div class="title-row">
           <span class="icon" part="icon" type="${type}" aria-hidden="true">${ICONS[type]}</span>
           <span class="title" part="title"></span>
-          <button class="close" part="close" aria-label="关闭">✕</button>
+          <button class="close" part="close" aria-label="">✕</button>
         </div>
         <div class="description" part="description"></div>
       </div>
@@ -87,5 +87,11 @@ export class OASNotification extends OASElement {
     if (duration > 0) {
       this.timer = setTimeout(() => this.remove(), duration)
     }
+  }
+
+  protected override update(): void {
+    // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
+    this.shadow.querySelector<HTMLElement>('[part="box"]')?.setAttribute('aria-label', this.t('notification.region'))
+    this.shadow.querySelector<HTMLElement>('[part="close"]')?.setAttribute('aria-label', this.t('notification.close'))
   }
 }

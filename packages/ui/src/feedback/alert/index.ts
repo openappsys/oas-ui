@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASAlert } from './oas-alert.js'
 
 if (!customElements.get('oas-alert')) {

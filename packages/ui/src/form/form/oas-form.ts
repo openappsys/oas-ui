@@ -138,7 +138,8 @@ export class OASForm extends OASElement {
           }
         }
         if (failed) {
-          this.errors[name] = rule.message ?? '校验未通过'
+          // rule.message 优先，缺省走 locale registry 默认文案（setLocale 切换自动生效）
+          this.errors[name] = rule.message ?? this.t('form.validationFailed')
           allInvalid.push({ name, element, message: this.errors[name]! })
           break
         }

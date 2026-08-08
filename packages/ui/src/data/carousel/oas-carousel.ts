@@ -100,8 +100,8 @@ export class OASCarousel extends OASElement {
       <div class="viewport" part="viewport">
         <div class="track" part="track"><slot></slot></div>
       </div>
-      <button type="button" class="arrow arrow-prev" part="arrow-prev" aria-label="上一屏">‹</button>
-      <button type="button" class="arrow arrow-next" part="arrow-next" aria-label="下一屏">›</button>
+      <button type="button" class="arrow arrow-prev" part="arrow-prev" aria-label="">‹</button>
+      <button type="button" class="arrow arrow-next" part="arrow-next" aria-label="">›</button>
       <div class="dots" part="dots" role="tablist"></div>
     `
     this.shadow.querySelector('.dots')?.addEventListener('click', (e) => {
@@ -125,6 +125,9 @@ export class OASCarousel extends OASElement {
     if (!track) return
     const index = Number(this.getAttr('index', '0')) || 0
     track.style.transform = `translateX(-${index * 100}%)`
+    // 箭头/指示器内置文案走 locale registry（setLocale 切换自动刷新）
+    this.shadow.querySelector<HTMLElement>('[part="arrow-prev"]')?.setAttribute('aria-label', this.t('carousel.prev'))
+    this.shadow.querySelector<HTMLElement>('[part="arrow-next"]')?.setAttribute('aria-label', this.t('carousel.next'))
     const dots = this.shadow.querySelector('[part="dots"]')
     if (!dots) return
     dots.innerHTML = ''
@@ -134,7 +137,7 @@ export class OASCarousel extends OASElement {
       dot.setAttribute('part', 'dot')
       dot.setAttribute('role', 'tab')
       dot.setAttribute('aria-current', String(i === index))
-      dot.setAttribute('aria-label', `第 ${i + 1} 张`)
+      dot.setAttribute('aria-label', this.t('carousel.dot', { index: i + 1 }))
       dot.setAttribute('data-index', String(i))
       dots.appendChild(dot)
     }

@@ -90,7 +90,7 @@ export class OASRate extends OASElement {
     this.syncStars()
     this.slider.setAttribute('aria-valuemax', String(max))
     this.slider.setAttribute('aria-valuenow', String(value))
-    this.slider.setAttribute('aria-label', '评分')
+    this.slider.setAttribute('aria-label', this.t('rate.rate'))
   }
 
   private syncStars(): void {

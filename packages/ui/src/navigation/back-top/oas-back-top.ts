@@ -36,7 +36,7 @@ export class OASBackTop extends OASElement {
   protected override render(): void {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      <button class="btn" part="btn" type="button" aria-label="回到顶部" aria-hidden="true">
+      <button class="btn" part="btn" type="button" aria-hidden="true">
         <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
           <path d="M8 13 V3 M4 7 L8 3 L12 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -53,6 +53,8 @@ export class OASBackTop extends OASElement {
     const btn = this.shadow.querySelector('.btn')
     if (!btn) return
     const visible = this.hasAttr('visible')
+    // 按钮 aria-label locale 驱动（setLocale 切换自动重刷）
+    btn.setAttribute('aria-label', this.t('backTop.backToTop'))
     btn.setAttribute('aria-hidden', String(!visible))
     if (!visible) return
     const btnEl = btn as HTMLElement

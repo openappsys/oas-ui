@@ -98,7 +98,7 @@ export class OASTree extends OASElement {
         const toggle = document.createElement('button')
         toggle.className = `toggle${expanded.has(node.key) ? ' open' : ''}`
         toggle.setAttribute('part', 'toggle')
-        toggle.setAttribute('aria-label', '展开/收起')
+        toggle.setAttribute('aria-label', this.t('tree.expand'))
         toggle.textContent = '›'
         toggle.addEventListener('click', (e) => {
           e.stopPropagation()
@@ -118,7 +118,7 @@ export class OASTree extends OASElement {
         const box = document.createElement('input')
         box.type = 'checkbox'
         box.className = 'check'
-        box.setAttribute('aria-label', `选择 ${node.label}`)
+        box.setAttribute('aria-label', this.t('tree.select', { label: node.label }))
         box.checked = checked.has(node.key)
         box.addEventListener('change', () => {
           const next = new Set(this.getAttr('checked', '').split(',').filter(Boolean))

@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASAutoComplete } from './oas-auto-complete.js'
 
 if (!customElements.get('oas-auto-complete')) {

@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASList } from './oas-list.js'
 import { OASListItem } from './oas-list-item.js'
 

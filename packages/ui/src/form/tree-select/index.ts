@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASTreeSelect } from './oas-tree-select.js'
 
 if (!customElements.get('oas-tree-select')) {

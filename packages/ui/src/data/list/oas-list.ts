@@ -107,6 +107,6 @@ export class OASList extends OASElement {
     skeleton.hidden = !loading
     empty.hidden = !isEmpty
     const text = this.shadow.querySelector<HTMLElement>('[part="empty-text"]')
-    if (text) text.textContent = this.getAttr('empty-text', '暂无数据')
+    if (text) text.textContent = this.getAttr('empty-text', this.t('list.empty'))
   }
 }

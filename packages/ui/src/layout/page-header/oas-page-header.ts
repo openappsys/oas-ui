@@ -59,7 +59,7 @@ export class OASPageHeader extends OASElement {
       <style>${STYLE}</style>
       <div class="row" part="row">
         ${this.hasAttr('back')
-          ? `<button class="back" part="back" type="button" aria-label="返回">
+          ? `<button class="back" part="back" type="button">
                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
                  <path d="M14.5 5.5 L8 12 L14.5 18.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                </svg>
@@ -77,6 +77,9 @@ export class OASPageHeader extends OASElement {
   }
 
   protected override update(): void {
+    // 返回按钮 aria-label locale 驱动（setLocale 切换自动重刷）
+    const back = this.shadow.querySelector<HTMLElement>('[part="back"]')
+    if (back) back.setAttribute('aria-label', this.t('pageHeader.back'))
     this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr('title', '')
     this.shadow.querySelector<HTMLElement>('[part="subtitle"]')!.textContent = this.getAttr('subtitle', '')
   }

@@ -109,16 +109,19 @@ function createTypography(tag: string, options: { levels?: boolean; part: string
           this.root = next
         }
       }
-      if (this.copyBtn) this.copyBtn.hidden = !this.hasAttr('copyable')
+      if (this.copyBtn) {
+        this.copyBtn.hidden = !this.hasAttr('copyable')
+        // 复制按钮内置文案走 locale registry（setLocale 切换自动刷新）
+        this.copyBtn.setAttribute('aria-label', this.t('typography.copy'))
+        this.copyBtn.textContent = this.t('typography.copy')
+      }
     }
 
     private createCopyBtn(): HTMLButtonElement {
       const btn = document.createElement('button')
       btn.className = 'copy-btn'
       btn.setAttribute('part', 'copy')
-      btn.setAttribute('aria-label', '复制')
       btn.hidden = true
-      btn.textContent = '复制'
       return btn
     }
 

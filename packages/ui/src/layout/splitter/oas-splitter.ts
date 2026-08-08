@@ -40,7 +40,7 @@ export class OASSplitter extends OASElement {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
       <div class="pane" part="pane-left"><slot name="left"><slot></slot></slot></div>
-      <div class="splitter" part="splitter" tabindex="0" role="separator" aria-orientation="vertical" aria-label="调整面板宽度"></div>
+      <div class="splitter" part="splitter" tabindex="0" role="separator" aria-orientation="vertical"></div>
       <div class="pane" part="pane-right"><slot name="right"></slot></div>
     `
     this.leftPane = this.shadow.querySelector('.pane:first-of-type') as HTMLElement
@@ -69,6 +69,8 @@ export class OASSplitter extends OASElement {
   }
 
   protected override update(): void {
+    // 分割条 aria-label locale 驱动（setLocale 切换自动重刷）
+    this.shadow.querySelector<HTMLElement>('[part="splitter"]')?.setAttribute('aria-label', this.t('splitter.adjust'))
     this.applyPercent()
   }
 

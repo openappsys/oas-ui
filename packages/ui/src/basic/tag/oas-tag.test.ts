@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
+import '@oas-ui/i18n'
 import { OASTag } from './index.js'
 
 function mount(attrs: Record<string, string> = {}, slot = '标签'): OASTag {
@@ -16,10 +19,12 @@ function root(el: OASTag): HTMLElement {
 describe('OASTag', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   it('默认渲染：type default、size medium、含 slot', async () => {
@@ -81,5 +86,17 @@ describe('OASTag', () => {
     expect(root(el)).toBe(r)
     expect(r.classList.contains('danger')).toBe(true)
     expect(r.classList.contains('round')).toBe(true)
+  })
+
+  it('locale：关闭按钮 aria-label 随 setLocale 切换', () => {
+    const el = mount({ closable: '' })
+    const btn = root(el).querySelector('button')!
+    expect(btn.getAttribute('aria-label')).toBe('关闭')
+
+    setLocale(en)
+    expect(btn.getAttribute('aria-label')).toBe('Close')
+
+    setLocale('zh-CN')
+    expect(btn.getAttribute('aria-label')).toBe('关闭')
   })
 })

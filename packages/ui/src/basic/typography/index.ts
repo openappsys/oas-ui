@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASText } from './oas-typography.js'
 import { OASTitle } from './oas-typography.js'
 import { OASParagraph } from './oas-typography.js'

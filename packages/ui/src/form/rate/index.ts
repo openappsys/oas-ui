@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASRate } from './oas-rate.js'
 
 if (!customElements.get('oas-rate')) {

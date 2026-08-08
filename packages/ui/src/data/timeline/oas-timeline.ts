@@ -105,7 +105,7 @@ export class OASTimeline extends OASElement {
       if (pending && !(clone.textContent ?? '').trim()) {
         const tip = document.createElement('p')
         tip.className = 'pending-text'
-        tip.textContent = '敬请期待'
+        tip.textContent = this.t('timeline.pending')
         clone.appendChild(tip)
       }
       content.append(clone)

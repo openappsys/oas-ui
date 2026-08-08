@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASDrawer } from './oas-drawer.js'
 
 if (!customElements.get('oas-drawer')) {

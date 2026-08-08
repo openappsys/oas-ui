@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
+import '@oas-ui/i18n'
 import { OASTree } from './index.js'
 
 const DATA = JSON.stringify([
@@ -21,10 +24,12 @@ function rows(el: OASTree): HTMLElement[] {
 describe('OASTree', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
+    setLocale('zh-CN')
   })
 
   it('渲染根节点，子节点默认收起', () => {
@@ -46,5 +51,24 @@ describe('OASTree', () => {
     el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
     rows(el)[0]!.click()
     expect(detail).toEqual({ key: 'a', selected: true })
+  })
+
+  it('locale：展开/选择 aria-label 随 setLocale 切换', () => {
+    const el = mount({ checkable: '' })
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label')).toBe('展开/收起')
+    expect(
+      el.shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]')!.getAttribute('aria-label'),
+    ).toBe('选择 节点 A')
+
+    setLocale(en)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label')).toBe(
+      'Expand/Collapse',
+    )
+    expect(
+      el.shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]')!.getAttribute('aria-label'),
+    ).toBe('Select 节点 A')
+
+    setLocale('zh-CN')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label')).toBe('展开/收起')
   })
 })

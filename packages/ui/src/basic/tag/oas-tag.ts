@@ -92,7 +92,7 @@ export class OASTag extends OASElement {
       <style>${STYLE}</style>
       <span class="tag" part="tag">
         <slot></slot>
-        <button part="close" aria-label="关闭" hidden>
+        <button part="close" aria-label="" hidden>
           <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
             <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
@@ -121,6 +121,10 @@ export class OASTag extends OASElement {
 
     this.tagRoot.className = `tag ${type} ${size}${round ? ' round' : ''}`
     const btn = this.tagRoot.querySelector('button')
-    if (btn) btn.hidden = !closable
+    if (btn) {
+      btn.hidden = !closable
+      // 关闭按钮内置文案走 locale registry（setLocale 切换自动刷新）
+      btn.setAttribute('aria-label', this.t('tag.close'))
+    }
   }
 }
