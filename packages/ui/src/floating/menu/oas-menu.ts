@@ -80,9 +80,18 @@ const STYLE = `
   opacity: 1;
 }
 .arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-left: var(--oas-space-3);
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-font-size-sm);
+  flex-shrink: 0;
+}
+.arrow svg {
+  display: block;
+  width: 1em;
+  height: 1em;
 }
 /* 分组标题：小字次要色，不可点 */
 .group {
@@ -349,10 +358,11 @@ export class OASMenu extends OASElement {
         li.setAttribute('role', 'menuitem')
         li.setAttribute('aria-haspopup', 'menu')
         li.setAttribute('aria-expanded', 'false')
-        const arrow = document.createElement('span')
-        arrow.className = 'arrow'
-        arrow.textContent = horizontal && depth === 0 ? '⌄' : '›'
-        li.append(label, arrow)
+        // 箭头用 SVG chevron（光学居中，避免文本字形偏下）
+        const arrowName = horizontal && depth === 0 ? 'chevron-down' : 'chevron-right'
+        const arrow = this.createIcon(arrowName, 'arrow')
+        li.appendChild(label)
+        if (arrow) li.appendChild(arrow)
         li.addEventListener('click', (e: MouseEvent) => {
           e.stopPropagation()
           if (item.disabled) return
@@ -391,11 +401,11 @@ export class OASMenu extends OASElement {
   }
 
   /** 用 iconRegistry 渲染图标（内联 SVG，跟随 currentColor） */
-  private createIcon(icon: string): HTMLElement | null {
+  private createIcon(icon: string, className = 'icon'): HTMLElement | null {
     const content = iconRegistry[icon as IconName]
     if (!content) return null
     const span = document.createElement('span')
-    span.className = 'icon'
+    span.className = className
     span.setAttribute('aria-hidden', 'true')
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     svg.setAttribute('viewBox', '0 0 16 16')
