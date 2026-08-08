@@ -12,20 +12,21 @@ const STYLE = `
   flex-direction: column;
   min-height: 100%;
 }
-.struct.has-sider {
-  flex-direction: row;
-}
-.struct.has-sider .main {
+.main {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+.struct.has-sider .main {
+  flex-direction: row;
 }
 .sider-part {
   flex-shrink: 0;
 }
 .content-part {
   flex: 1;
+  min-width: 0;
 }
 `
 
@@ -40,8 +41,8 @@ export class OASLayout extends OASElement {
         <div class="main">
           <div class="sider-part" part="sider"><slot name="sider"></slot></div>
           <div class="content-part" part="content"><slot name="content"></slot></div>
-          <slot name="footer"></slot>
         </div>
+        <slot name="footer"></slot>
       </div>
     `
     this.observer = new MutationObserver(() => this.update())

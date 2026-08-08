@@ -22,6 +22,9 @@ const STYLE = `
   font-size: var(--oas-font-size-sm);
   gap: var(--oas-space-3);
 }
+.divider.empty {
+  gap: 0;
+}
 .divider::before,
 .divider::after {
   content: '';
@@ -90,5 +93,7 @@ export class OASDivider extends OASElement {
     el.classList.toggle('left', position === 'left')
     el.classList.toggle('right', position === 'right')
     el.setAttribute('aria-orientation', direction)
+    const slot = el.querySelector('slot') as HTMLSlotElement | null
+    el.classList.toggle('empty', !slot?.assignedNodes().length)
   }
 }

@@ -41,6 +41,7 @@ input:disabled {
 .controls {
   position: absolute;
   right: 4px;
+  top: 4px;
   display: flex;
   flex-direction: column;
   height: calc(100% - 8px);
