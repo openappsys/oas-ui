@@ -7,7 +7,8 @@
 | 项 | 选型 | 理由 |
 |---|---|---|
 | 组件载体 | **Web Components**（Custom Elements + Shadow DOM） | 框架无关、浏览器原生、React/Vue/原生皆可用 |
-| 组件基类 | 自研轻量基类（`OASElement`，基于 `HTMLElement`） | 核心无第三方运行时依赖；若体量失控再评估 第三方基类库 |
+| 组件基类 | 自研轻量基类（`OASElement`，基于 `HTMLElement`） | 核心无第三方运行时依赖；响应式自研（见 §2.1），不引第三方基类库 |
+| 响应式 | **自研 signal + 自研断点/容器查询桥接** | 零依赖原则的延伸；组件粒度小，自研成本可控（见 §2.1） |
 | 语言 | TypeScript strict | 全量类型、属性/事件类型导出 |
 | 构建 | Vite（library mode）+ `vite-plugin-dts` | 产出 ESM + `.d.ts`，按需加载 |
 | 单测 | Vitest + `@testing-library/web-components`（或 happy-dom） | 组件事件/属性/渲染 |
@@ -33,6 +34,43 @@
 │  图标（内联 SVG 集，tree-shakable）           │  packages/icons
 └────────────────────────────────────────────┘
 ```
+
+### 2.1 响应式系统（自研，决策记录 2026-08）
+
+两种"响应式"分别自研，不引入第三方基类库 / Vue reactivity / 第三方信号库。
+
+**决策理由**：零运行时依赖是本项目的核心卖点；组件库场景更新粒度小（单组件 shadow 内），自研成本远低于应用级场景。第三方基类库的响应式虽成熟，但引入即破坏零依赖承诺，且其模板体系（第三方模板体系）会重塑组件写法，沉没成本高。
+
+**风险与对策**：自研 signal 的坑在内存泄漏（effect 未清理）与更新抖动（未批处理）——以测试矩阵兜底（见下"验收"）。
+
+**A. 数据响应式（signal）**
+
+core 提供约百行的最小实现，API 对齐signal 心智：
+
+```ts
+const count = signal(0)              // 可读写的原子状态
+const double = computed(() => count.value * 2)  // 派生，惰性+缓存
+effect(() => { /* 依赖自动收集 */ })  // 副作用，返回 dispose
+```
+
+- **依赖收集**：effect 执行期间访问的 signal 自动订阅（Push-Pull：写时标脏，读时重算）
+- **批处理**：同一微任务内多次写只触发一次 effect（`queueMicrotask` 调度）
+- **与 OASElement 集成**：组件 `render/update` 包在 effect 里，读到的 signal 变化自动触发增量 `update()`；attribute/property setter 写入 signal，打通"外部改属性 → 内部响应"
+- **清理**：`disconnectedCallback` 统一 dispose 组件 effect，防泄漏
+- **不做**：模板级细粒度 DOM 绑定（vdom/编译时优化）。组件级重渲染 + 既有增量 `update()` 已够用，table 等重组件靠 `update()` 的 diff 控制成本
+
+**B. 响应式布局（断点 + 容器查询）**
+
+- **断点 token**：`@media` 条件不支持 CSS 变量，断点值以 TS 常量+CSS 字面量双源维护（`xs 0 / sm 576 / md 768 / lg 992 / xl 1200 / xxl 1600`），core 导出 `breakpoints` 常量，CSS 侧写字面量并在注释中标明 token 对应
+- **视口断点桥接**：core 提供 `matchBreakpoint(bp)`（`matchMedia` 封装）与 `useBreakpoint()`（signal 化的当前断点，供组件 JS 逻辑订阅）
+- **容器查询优先**：组件自身布局响应一律 `@container`（组件感知宿主容器宽度而非视口，更符合"组件可被嵌入任意布局"的定位）；容器查询不可用的场景降级 `matchMedia`
+- **尺寸监听**：core 提供 `observeResize(el, cb)`（`ResizeObserver` 封装 + disconnected 自动断开）
+- **grid 等组件**：`span` 响应式对象（`{ xs: 24, md: 12 }`）经 `matchBreakpoint` 桥接到 class 切换
+
+**验收（纳入测试矩阵）**
+
+- signal：依赖收集正确性、批处理（多次写一次触发）、computed 缓存与惰性、dispose 后不再触发、组件断开无残留订阅
+- 布局：各断点 `matchBreakpoint` 命中正确、grid 响应式切换、`@container` 在文档站 demo 可视验证
 
 ### 关键机制
 
