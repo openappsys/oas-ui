@@ -1,4 +1,3 @@
-import { createOverlay, removeOverlay, destroyOverlay } from '../../overlay/index.js'
 import { resolveMessageHost } from '../../floating/app/app-host.js'
 import type { NotificationType } from './index.js'
 
@@ -27,7 +26,6 @@ function show(type: NotificationType, options: NotificationOptions): void {
   if (options.description !== undefined) el.setAttribute('description', options.description)
   el.setAttribute('duration', String(options.duration ?? 4500))
   ensureStack().appendChild(el)
-  createOverlay(el, {})
 }
 
 export const notification = {
@@ -40,5 +38,4 @@ export const notification = {
 export function destroyAll(): void {
   if (stackEl) stackEl.innerHTML = ''
   stackEl = null
-  destroyOverlay()
 }
