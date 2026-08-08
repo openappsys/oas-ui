@@ -4,24 +4,31 @@
 
 > 数据源是各字段的 `value` 属性（受控模式）。表单校验的字段范围为带 `name` 的 `oas-input` / `oas-textarea` / `oas-select` / `oas-auto-complete` / `oas-cascader` / `oas-tree-select` / `oas-input-number` / `oas-checkbox` / `oas-radio`（组容器不参与）。`oas-input` / `oas-textarea` / `oas-input-number` 输入时**不会自动写回 `value` 属性**，需在脚本中监听 `oas-input` / `oas-change` 事件同步；`oas-select` / `oas-cascader` / `oas-tree-select` 选中时自带回写。
 
-## 基础用法
+## 功能展示
 
-<DemoBlock title="必填与格式校验">
-  <oas-form id="form-basic" rules='{"name":[{"required":true,"message":"请输入姓名"}],"email":[{"required":true,"message":"请输入邮箱"},{"pattern":"^\\S+@\\S+$","message":"邮箱格式不正确"}]}' style="width: 340px">
+功能展示区只演示表单的字段收集与提交，不配置校验规则。
+
+### 基础用法
+
+<DemoBlock title="收集与提交">
+  <oas-form id="form-basic" style="width: 340px">
     <oas-space direction="vertical" style="width: 100%">
       <oas-input name="name" placeholder="姓名"></oas-input>
       <oas-input name="email" placeholder="邮箱"></oas-input>
       <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
     </oas-space>
   </oas-form>
+  <span id="form-basic-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 
-## 多种控件组合
+不配置 `rules` 时提交不做任何校验，直接派发 `oas-submit`，`detail.values` 携带所有带 `name` 字段的收集结果。
 
-<DemoBlock title="组合表单">
-  <oas-form id="form-full" rules='{"username":[{"required":true,"message":"请输入用户名"},{"minLength":3,"message":"至少 3 个字符"}],"role":[{"required":true,"message":"请选择角色"}],"age":[{"required":true,"message":"请输入年龄"}]}' style="width: 360px">
+### 多种控件组合
+
+<DemoBlock title="多种控件组合">
+  <oas-form id="form-full" style="width: 360px">
     <oas-space direction="vertical" style="width: 100%">
-      <oas-input name="username" placeholder="用户名（至少 3 个字符）"></oas-input>
+      <oas-input name="username" placeholder="用户名"></oas-input>
       <oas-select name="role" placeholder="选择角色" options='[{"label":"管理员","value":"admin"},{"label":"编辑","value":"editor"},{"label":"访客","value":"guest"}]'></oas-select>
       <oas-input-number name="age"></oas-input-number>
       <oas-textarea name="bio" rows="3" placeholder="个人简介（选填）"></oas-textarea>
@@ -30,9 +37,36 @@
   </oas-form>
 </DemoBlock>
 
-> 校验规则：`{ required, message, minLength, maxLength, pattern }`。校验失败时字段被标记 `aria-invalid`，且派发 `oas-validate-fail`。
+## 表单校验
 
-## 禁用字段跳过校验
+校验区演示 `rules` 声明的校验规则与失败反馈。
+
+> 校验规则：`{ required, message, minLength, maxLength, pattern }`。校验失败时字段被标记 `aria-invalid`（输入框红边），字段下方显示红字错误提示，并派发 `oas-validate-fail`。
+
+### 必填与格式校验
+
+<DemoBlock title="必填与格式校验">
+  <oas-form id="form-validate" rules='{"name":[{"required":true,"message":"请输入姓名"}],"email":[{"required":true,"message":"请输入邮箱"},{"pattern":"^\\S+@\\S+$","message":"邮箱格式不正确"}]}' style="width: 340px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-input name="name" placeholder="姓名"></oas-input>
+      <oas-input name="email" placeholder="邮箱"></oas-input>
+      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+    </oas-space>
+  </oas-form>
+</DemoBlock>
+
+### 长度校验
+
+<DemoBlock title="minLength 校验">
+  <oas-form id="form-length" rules='{"username":[{"required":true,"message":"请输入用户名"},{"minLength":3,"message":"至少 3 个字符"}]}' style="width: 340px">
+    <oas-space direction="vertical" style="width: 100%">
+      <oas-input name="username" placeholder="用户名（至少 3 个字符）"></oas-input>
+      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+    </oas-space>
+  </oas-form>
+</DemoBlock>
+
+### 禁用字段跳过校验
 
 <DemoBlock title="禁用字段不参与校验">
   <oas-form id="form-skip" rules='{"title":[{"required":true,"message":"请输入标题"}],"locked":[{"required":true,"message":"该字段被禁用，应跳过"}]}' style="width: 340px">
@@ -44,7 +78,7 @@
   </oas-form>
 </DemoBlock>
 
-## 提交与校验失败事件
+### 提交与校验失败事件
 
 <DemoBlock title="submit / validate-fail">
   <oas-form id="form-event" rules='{"nick":[{"required":true,"message":"请输入昵称"}]}' style="width: 340px">
@@ -62,7 +96,7 @@
 import { onMounted } from 'vue'
 onMounted(() => {
   // 受控同步：把文本类字段的输入写回 value 属性
-  for (const id of ['form-basic', 'form-full', 'form-skip', 'form-event']) {
+  for (const id of ['form-basic', 'form-full', 'form-validate', 'form-length', 'form-skip', 'form-event']) {
     const form = document.getElementById(id)
     if (!form) continue
     for (const el of form.querySelectorAll('oas-input, oas-textarea')) {
@@ -75,6 +109,13 @@ onMounted(() => {
     }
   }
 
+  // 功能展示：基础用法收集结果
+  const basicOut = document.getElementById('form-basic-output')
+  document.getElementById('form-basic')?.addEventListener('oas-submit', (e) => {
+    basicOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+
+  // 校验区：事件演示
   const out = document.getElementById('form-output')
   const formEvent = document.getElementById('form-event')
   formEvent?.addEventListener('oas-submit', (e) => {

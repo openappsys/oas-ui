@@ -166,19 +166,34 @@ describe('OASMenu', () => {
     expect(detail).toEqual({ value: 'new-file' })
   })
 
-  it('子菜单样式：菜单项禁止逐字换行、子菜单独占一行且有最小宽度（CSS 规则存在性断言）', () => {
+  it('子菜单样式：菜单项禁止逐字换行、子菜单带细分隔线（CSS 规则存在性断言）', () => {
     const el = mount({ items: NESTED_ITEMS })
     items(el)[0]!.click() // 展开子菜单，确保 submenu 存在
     expect(submenuEl(el)).not.toBeNull()
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
     // 菜单项禁止中文断裂换行
     expect(css).toContain('white-space: nowrap;')
-    // 子菜单容器：独占一行 + 最小宽度
-    expect(css).toMatch(/\.submenu\s*\{[^}]*flex-basis:\s*100%/)
-    expect(css).toMatch(/\.submenu\s*\{[^}]*min-width:\s*120px/)
+    // 子菜单容器：左侧细分隔线 + 独占一行
+    expect(css).toMatch(/\.submenu\s*\{[^}]*border-left:\s*1px\s+solid/)
+    expect(css).toMatch(/\.item\s*\{[^}]*flex-wrap:\s*wrap/)
     // 实际 DOM 中嵌套项均带 item 类
     for (const it of items(el)) {
       expect(it.classList.contains('item')).toBe(true)
+    }
+  })
+
+  it('子菜单对齐：flex-basis 覆盖父项右内边距，右边缘与父项一致（CSS 断言）', () => {
+    const el = mount({ items: NESTED_ITEMS })
+    items(el)[0]!.click()
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    // 子菜单宽度 = 100% + 父项右内边距，右边缘与父项对齐，避免箭头/背景逐级错位
+    expect(css).toMatch(/\.submenu\s*\{[^}]*flex-basis:\s*calc\(100% \+ var\(--oas-space-3\)\)/)
+    expect(css).toMatch(/\.submenu\s*\{[^}]*box-sizing:\s*border-box/)
+    // 结构：子菜单内嵌套项依然带 item 类，且层级可继续嵌套
+    const sub = submenuEl(el)!
+    expect(sub.querySelectorAll('[part="item"]').length).toBe(2)
+    for (const it of sub.querySelectorAll('[part="item"]')) {
+      expect((it as HTMLElement).classList.contains('item')).toBe(true)
     }
   })
 })

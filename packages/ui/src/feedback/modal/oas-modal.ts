@@ -81,7 +81,7 @@ export class OASModal extends OASElement {
   }
 
   private previousFocus: HTMLElement | null = null
-  private cleanupKeydown: (() => void) | null = null
+  private wasVisible = false
 
   protected override render(): void {
     this.shadow.innerHTML = `
@@ -105,23 +105,27 @@ export class OASModal extends OASElement {
   }
 
   private bindEvents(): void {
-    const dialog = this.shadow.querySelector('.dialog')!
+    const dialog = this.shadow.querySelector('.dialog')
+    dialog?.addEventListener('click', (e) => e.stopPropagation())
     this.shadow.querySelector('.mask')?.addEventListener('click', () => {
       if (this.hasAttr('no-mask-close')) return
-      this.emit('cancel')
+      this.close('cancel')
     })
-    this.shadow.querySelector('[part="cancel"]')?.addEventListener('click', () => this.emit('cancel'))
-    this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => this.emit('ok'))
-    this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.emit('cancel'))
-    dialog.addEventListener('click', (e) => e.stopPropagation())
+    this.shadow.querySelector('[part="cancel"]')?.addEventListener('click', () => this.close('cancel'))
+    this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.close('cancel'))
+    this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => this.close('ok'))
 
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key !== 'Escape') return
-      this.emit('cancel')
+      if (e.key === 'Escape') this.close('cancel')
     }
     document.addEventListener('keydown', onKey)
-    this.cleanupKeydown = () => document.removeEventListener('keydown', onKey)
-    this.onCleanup(() => this.cleanupKeydown?.())
+    this.onCleanup(() => document.removeEventListener('keydown', onKey))
+  }
+
+  /** 关闭/确认：属性驱动约定——组件自管状态属性，同时派发事件供宿主响应 */
+  private close(action: 'ok' | 'cancel'): void {
+    this.removeAttribute('visible')
+    this.emit(action)
   }
 
   protected override update(): void {
@@ -145,11 +149,21 @@ export class OASModal extends OASElement {
     const footer = this.shadow.querySelector<HTMLElement>('.footer')
     if (footer) footer.style.display = this.hasAttr('no-footer') ? 'none' : ''
 
-    if (visible && this.cleanupKeydown) {
+    // 焦点管理：仅在「隐藏 → 可见」转变时记录来源焦点并移入对话框；
+    // 关闭后归还焦点并清空，避免标题/文案变化时误覆盖来源记录。
+    if (visible && !this.wasVisible) {
+      this.wasVisible = true
       this.previousFocus = document.activeElement as HTMLElement
-      this.shadow.querySelector<HTMLElement>('[part="cancel"]')?.focus()
-    } else if (!visible && this.previousFocus) {
-      this.previousFocus.focus()
+      const target =
+        this.shadow.querySelector<HTMLElement>('[part="cancel"]') ??
+        this.shadow.querySelector<HTMLElement>('[part="close"]')
+      target?.focus()
+    } else if (!visible) {
+      if (this.wasVisible) {
+        this.previousFocus?.focus()
+        this.previousFocus = null
+      }
+      this.wasVisible = false
     }
   }
 }

@@ -65,4 +65,38 @@ describe('OASModal', () => {
     await Promise.resolve()
     expect(el.shadowRoot!.querySelector('[part="ok"]')).toBeNull()
   })
+
+  it('点击 ✕ 移除 visible 并派发 oas-cancel', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    let cancel = 0
+    el.addEventListener('oas-cancel', () => cancel++)
+    ;(el.shadowRoot!.querySelector('[part="close"]') as HTMLElement).click()
+    expect(el.hasAttribute('visible')).toBe(false)
+    expect(cancel).toBe(1)
+  })
+
+  it('Esc 移除 visible', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(el.hasAttribute('visible')).toBe(false)
+  })
+
+  it('点击遮罩移除 visible', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    el.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.hasAttribute('visible')).toBe(false)
+  })
+
+  it('点击确定移除 visible 并派发 oas-ok', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    let ok = 0
+    el.addEventListener('oas-ok', () => ok++)
+    ;(el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
+    expect(el.hasAttribute('visible')).toBe(false)
+    expect(ok).toBe(1)
+  })
 })

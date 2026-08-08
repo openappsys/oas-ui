@@ -1,7 +1,13 @@
 import { test, expect } from '@playwright/test'
 
+async function openReady(page: import('@playwright/test').Page, url: string): Promise<void> {
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 })
+  await page.locator('oas-button').first().waitFor({ state: 'attached', timeout: 15000 })
+  await page.waitForTimeout(1000)
+}
+
 test('onoas-* 属性绑定 CustomEvent（modal 事件反馈 demo）', async ({ page }) => {
-  await page.goto('/components/modal.html', { waitUntil: 'networkidle' })
+  await openReady(page, '/components/modal.html')
   // 打开「事件反馈」对话框（第 4 个 oas-button）
   const btns = page.locator('oas-button')
   await btns.nth(3).click()
@@ -15,8 +21,11 @@ test('onoas-* 属性绑定 CustomEvent（modal 事件反馈 demo）', async ({ p
 })
 
 test('popconfirm onoas-ok 触发（气泡确认）', async ({ page }) => {
-  await page.goto('/components/popconfirm.html', { waitUntil: 'networkidle' })
+  await openReady(page, '/components/popconfirm.html')
   const trigger = page.locator('oas-popconfirm').first().locator('oas-button').first()
   await trigger.click()
-  await page.locator('button').filter({ hasText: '确定' }).first().click()
+  const pop = page.locator('oas-popconfirm').first().locator('[part="popover"]')
+  await expect(pop).toHaveAttribute('aria-hidden', 'false')
+  await pop.locator('[part="ok"]').click()
+  await expect(pop).toHaveAttribute('aria-hidden', 'true')
 })

@@ -71,8 +71,11 @@ export class OASPopconfirm extends OASElement {
     `
     this.popoverEl = this.shadow.querySelector('.popover')
     this.addEventListener('click', (e: Event) => {
-      const target = e.target as Node
-      if (target && !this.shadow.contains(target)) this.toggle()
+      // 用 composedPath 取原始 target：element.click()/键盘激活派发的合成 click 事件
+      // composed=false，跨出 shadow boundary 时会被 retarget 成 host 自身，
+      // 若读 e.target 会把「点按钮关闭」误判成「点外部切换」，导致 open 反复翻转。
+      const origin = e.composedPath()[0] as Node | undefined
+      if (origin && !this.shadow.contains(origin)) this.toggle()
     })
     this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => {
       this.emit('ok')

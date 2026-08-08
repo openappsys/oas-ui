@@ -45,6 +45,35 @@ describe('OASCarousel', () => {
     expect(el.shadowRoot!.querySelector('[part="arrow-next"]')?.getAttribute('aria-label')).toBe('下一屏')
   })
 
+  it('arrows=never 时箭头隐藏（hidden），不渲染可见箭头元素', () => {
+    const el = mount({ arrows: 'never' })
+    expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')?.hasAttribute('hidden')).toBe(true)
+    expect(el.shadowRoot!.querySelector('[part="arrow-next"]')?.hasAttribute('hidden')).toBe(true)
+    expect(el.shadowRoot!.querySelectorAll('[part="arrow-prev"]:not([hidden])').length).toBe(0)
+    expect(el.shadowRoot!.querySelectorAll('[part="arrow-next"]:not([hidden])').length).toBe(0)
+  })
+
+  it('arrows=hover 时箭头保留在 DOM，可见性由 CSS 控制', () => {
+    const el = mount({ arrows: 'hover' })
+    expect(el.getAttribute('arrows')).toBe('hover')
+    expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="arrow-next"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')?.hasAttribute('hidden')).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="arrow-next"]')?.hasAttribute('hidden')).toBe(false)
+  })
+
+  it('arrows=always 时箭头始终显示（无 hidden）', () => {
+    const el = mount({ arrows: 'always' })
+    expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')?.hasAttribute('hidden')).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="arrow-next"]')?.hasAttribute('hidden')).toBe(false)
+  })
+
+  it('未指定 arrows 时默认悬停形态（hover），箭头保留在 DOM', () => {
+    const el = mount()
+    expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')?.hasAttribute('hidden')).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="arrow-next"]')?.hasAttribute('hidden')).toBe(false)
+  })
+
   it('点击 next 箭头 index+1 并派发 oas-change', () => {
     const el = mount()
     let detail: unknown

@@ -71,14 +71,17 @@
 <DemoBlock title="点击预览">
   <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview alt="可预览"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-    点击图片触发 <code>oas-preview</code>，可自行接入放大浮层（此处仅输出到控制台）。
+    点击图片触发 <code>oas-preview</code>（右上角消息提示），可自行接入放大浮层。
   </p>
 </DemoBlock>
 
 <script setup>
 import { onMounted } from 'vue'
-onMounted(() => {
+onMounted(async () => {
+  const { message } = await import('@oas-ui/ui')
+  window.message = message
   document.querySelector('#image-preview')?.addEventListener('oas-preview', (e) => {
+    message.success(`预览：${e.detail.src}`)
     console.log('oas-preview', e.detail.src)
   })
 })

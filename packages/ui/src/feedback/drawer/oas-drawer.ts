@@ -84,6 +84,7 @@ export class OASDrawer extends OASElement {
   }
 
   private previousFocus: HTMLElement | null = null
+  private wasVisible = false
 
   protected override render(): void {
     const placement = this.getAttr('placement', 'right')
@@ -108,21 +109,27 @@ export class OASDrawer extends OASElement {
   }
 
   private bindEvents(): void {
-    const panel = this.shadow.querySelector('.panel')!
+    const panel = this.shadow.querySelector('.panel')
+    panel?.addEventListener('click', (e) => e.stopPropagation())
     this.shadow.querySelector('.mask')?.addEventListener('click', () => {
       if (this.hasAttr('no-mask-close')) return
-      this.emit('close')
+      this.close('close')
     })
-    this.shadow.querySelector('[part="cancel"]')?.addEventListener('click', () => this.emit('close'))
-    this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => this.emit('ok'))
-    this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.emit('close'))
-    panel.addEventListener('click', (e) => e.stopPropagation())
+    this.shadow.querySelector('[part="cancel"]')?.addEventListener('click', () => this.close('close'))
+    this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.close('close'))
+    this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => this.close('ok'))
 
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') this.emit('close')
+      if (e.key === 'Escape') this.close('close')
     }
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
+  }
+
+  /** 关闭/确认：属性驱动约定——组件自管状态属性，同时派发事件供宿主响应 */
+  private close(action: 'ok' | 'close'): void {
+    this.removeAttribute('visible')
+    this.emit(action)
   }
 
   protected override update(): void {
@@ -145,11 +152,18 @@ export class OASDrawer extends OASElement {
       cancelBtn.textContent = this.t('drawer.cancel')
     }
 
-    if (visible) {
+    // 焦点管理：仅在「隐藏 → 可见」转变时记录来源焦点并移入面板；
+    // 关闭后归还焦点并清空，避免标题/文案变化时误覆盖来源记录。
+    if (visible && !this.wasVisible) {
+      this.wasVisible = true
       this.previousFocus = document.activeElement as HTMLElement
       this.shadow.querySelector<HTMLElement>('.close-btn')?.focus()
-    } else if (this.previousFocus) {
-      this.previousFocus.focus()
+    } else if (!visible) {
+      if (this.wasVisible) {
+        this.previousFocus?.focus()
+        this.previousFocus = null
+      }
+      this.wasVisible = false
     }
   }
 }

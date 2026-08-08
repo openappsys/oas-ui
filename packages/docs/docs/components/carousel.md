@@ -44,19 +44,41 @@
 
 设置 `autoplay` 开启自动播放，`interval` 控制间隔（毫秒）。
 
-## 箭头切换
+## 箭头形态
 
-<DemoBlock title="左右箭头">
+左右箭头支持三种显示形态，通过 `arrows` 属性控制：`always`（始终显示）/ `hover`（悬停显示，默认）/ `never`（不显示）。箭头点击切换上一屏 / 下一屏，首尾循环。
+
+<DemoBlock title="始终显示（always）">
   <div style="width: 100%">
-    <oas-carousel>
-      <div style="background: var(--oas-color-primary); color: #fff; height: 200px">第一屏</div>
-      <div style="background: #1f2937; color: #fff; height: 200px">第二屏</div>
-      <div style="background: #374151; color: #fff; height: 200px">第三屏</div>
+    <oas-carousel arrows="always">
+      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">第一屏</div>
+      <div style="background: #1f2937; color: #fff; height: 160px">第二屏</div>
+      <div style="background: #374151; color: #fff; height: 160px">第三屏</div>
     </oas-carousel>
   </div>
 </DemoBlock>
 
-轮播两侧提供左右箭头（`part="arrow-prev"` / `part="arrow-next"`），点击切换上一屏 / 下一屏，首尾循环；配合底部圆点与自动播放可组合使用。
+<DemoBlock title="悬停显示（hover）">
+  <div style="width: 100%">
+    <oas-carousel arrows="hover">
+      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">第一屏</div>
+      <div style="background: #1f2937; color: #fff; height: 160px">第二屏</div>
+      <div style="background: #374151; color: #fff; height: 160px">第三屏</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="不显示（never）">
+  <div style="width: 100%">
+    <oas-carousel arrows="never">
+      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">第一屏</div>
+      <div style="background: #1f2937; color: #fff; height: 160px">第二屏</div>
+      <div style="background: #374151; color: #fff; height: 160px">第三屏</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+默认（未指定 `arrows`）即悬停显示形态：箭头默认隐藏，鼠标悬停或键盘聚焦轮播区域时平滑淡入。不指定 `arrows` 时等价于 `arrows="hover"`。
 
 ## 事件
 
@@ -89,6 +111,7 @@ onMounted(() => {
 | `index` | 当前屏索引（从 0 起） | string / number | `0` |
 | `autoplay` | 是否自动播放 | boolean | `false` |
 | `interval` | 自动播放间隔（ms） | string / number | `3000` |
+| `arrows` | 箭头显示形态：`always`（始终显示）/ `hover`（悬停显示）/ `never`（不显示） | string | `hover` |
 
 | 事件 | 说明 |
 |---|---|

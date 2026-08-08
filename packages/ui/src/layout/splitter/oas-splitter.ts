@@ -22,6 +22,9 @@ const STYLE = `
 .splitter:hover {
   background: var(--oas-color-primary);
 }
+:host([dragging]) {
+  user-select: none;
+}
 .splitter:focus-visible {
   outline: 2px solid var(--oas-color-primary);
   outline-offset: 1px;
@@ -35,6 +38,9 @@ export class OASSplitter extends OASElement {
 
   private leftPane: HTMLElement | null = null
   private rightPane: HTMLElement | null = null
+  private dragging = false
+  private startX = 0
+  private startPercent = 0
 
   protected override render(): void {
     this.shadow.innerHTML = `
@@ -46,7 +52,41 @@ export class OASSplitter extends OASElement {
     this.leftPane = this.shadow.querySelector('.pane:first-of-type') as HTMLElement
     this.rightPane = this.shadow.querySelector('.pane:last-of-type') as HTMLElement
     this.shadow.querySelector('.splitter')?.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
+    this.shadow.querySelector('.splitter')?.addEventListener('pointerdown', (e) => this.startDrag(e as PointerEvent))
+    // 拖拽期间监听在 document 上，保证指针移出分隔条仍能跟随
+    this.onCleanup(() => {
+      document.removeEventListener('pointermove', this.onDrag)
+      document.removeEventListener('pointerup', this.endDrag)
+    })
     this.update()
+  }
+
+  private startDrag(e: PointerEvent): void {
+    if (e.button !== 0 && e.pointerType !== 'touch') return
+    e.preventDefault()
+    this.dragging = true
+    this.startX = e.clientX
+    this.startPercent = Number(this.getAttr('percent', '50')) || 50
+    this.setAttribute('dragging', '')
+    document.addEventListener('pointermove', this.onDrag)
+    document.addEventListener('pointerup', this.endDrag)
+  }
+
+  private onDrag = (e: PointerEvent): void => {
+    if (!this.dragging) return
+    const width = this.clientWidth
+    if (!width) return
+    const delta = e.clientX - this.startX
+    const percent = this.startPercent + (delta / width) * 100
+    this.setPercent(percent)
+  }
+
+  private endDrag = (): void => {
+    if (!this.dragging) return
+    this.dragging = false
+    this.removeAttribute('dragging')
+    document.removeEventListener('pointermove', this.onDrag)
+    document.removeEventListener('pointerup', this.endDrag)
   }
 
   private handleKey(e: KeyboardEvent): void {

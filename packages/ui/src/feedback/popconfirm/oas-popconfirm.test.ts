@@ -53,4 +53,15 @@ describe('OASPopconfirm', () => {
     ;(el.querySelector('button') as HTMLElement).click()
     expect(el.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe('false')
   })
+
+  it('键盘/脚本激活 ok（合成 click）后 open 不被误恢复', async () => {
+    // element.click() 派发 composed=false 的 click，跨 shadow boundary 时浏览器会把
+    // e.target retarget 成 host 自身；组件必须用 composedPath()[0] 判断，避免 toggle 误翻转。
+    const el = mount({ open: '', title: '确认' })
+    await Promise.resolve()
+    const okBtn = el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement
+    okBtn.click()
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe('true')
+  })
 })

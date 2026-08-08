@@ -120,6 +120,12 @@ export class OASTree extends OASElement {
         box.className = 'check'
         box.setAttribute('aria-label', this.t('tree.select', { label: node.label }))
         box.checked = checked.has(node.key)
+        // 阻止复选框点击冒泡到行：既避免误触发行选中，也避免行内 update()
+        // 重建 DOM 打断浏览器对复选框的原生激活（toggle + change），
+        // 否则 change 事件不会触发、勾选状态无法写回 checked 属性。
+        box.addEventListener('click', (e: MouseEvent) => {
+          e.stopPropagation()
+        })
         box.addEventListener('change', () => {
           const next = new Set(this.getAttr('checked', '').split(',').filter(Boolean))
           if (box.checked) next.add(node.key)

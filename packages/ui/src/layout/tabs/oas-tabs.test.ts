@@ -49,4 +49,28 @@ describe('OASTabs', () => {
     expect((panels[1] as HTMLElement).hidden).toBe(true)
     expect((panels[0] as HTMLElement).hidden).toBe(false)
   })
+
+  it('默认 type=line 为下划线式，无卡片类名', () => {
+    const el = mount()
+    expect(el.classList.contains('oas-tabs--card')).toBe(false)
+    const tabs = el.shadowRoot!.querySelectorAll('[role="tab"]')
+    expect(tabs[0]!.classList.contains('tab--card')).toBe(false)
+    expect(tabs[1]!.classList.contains('tab--card')).toBe(false)
+  })
+
+  it('type=card 时为卡片式，host 与标签带卡片类名', () => {
+    const el = mount({ type: 'card' })
+    expect(el.classList.contains('oas-tabs--card')).toBe(true)
+    const tabs = el.shadowRoot!.querySelectorAll('[role="tab"]')
+    expect(tabs[0]!.classList.contains('tab--card')).toBe(true)
+    expect(tabs[1]!.classList.contains('tab--card')).toBe(true)
+  })
+
+  it('type 从 line 切换为 card 时类名同步', () => {
+    const el = mount()
+    el.setAttribute('type', 'card')
+    expect(el.classList.contains('oas-tabs--card')).toBe(true)
+    const tabs = el.shadowRoot!.querySelectorAll('[role="tab"]')
+    expect(tabs[0]!.classList.contains('tab--card')).toBe(true)
+  })
 })

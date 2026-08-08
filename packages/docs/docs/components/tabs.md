@@ -44,6 +44,18 @@
   </oas-tabs>
 </DemoBlock>
 
+## 卡片式
+
+<DemoBlock title="卡片式标签">
+  <oas-tabs type="card" active="a">
+    <oas-tab-panel label="标签一" value="a"><p>内容一：卡片式标签带边框，激活标签与面板连通，四边有线。</p></oas-tab-panel>
+    <oas-tab-panel label="标签二" value="b"><p>内容二：更多详情。</p></oas-tab-panel>
+    <oas-tab-panel label="标签三" value="c"><p>内容三：其他补充说明。</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
+通过 `type="card"` 切换为卡片式：每个标签带独立边框，激活标签底边与面板背景同色（连通无断线），整体四边有线包裹。
+
 ## 切换事件
 
 <DemoBlock title="oas-change 事件">
@@ -71,6 +83,7 @@ onMounted(() => {
 | 组件 | 属性 | 说明 |
 |---|---|---|
 | `oas-tabs` | `active` | 激活标签的 `value` |
+| `oas-tabs` | `type` | 样式变体：`line`（下划线，默认）/ `card`（卡片式） |
 | `oas-tab-panel` | `label` | 标签文本 |
 | `oas-tab-panel` | `value` | 标签值 |
 

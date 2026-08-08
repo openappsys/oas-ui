@@ -65,12 +65,27 @@ const STYLE = `
   font-family: inherit;
   line-height: 1;
   cursor: pointer;
-  opacity: 0.85;
+  /* 默认（悬停形态）：箭头隐藏，悬停/聚焦容器时淡入 */
+  opacity: 0;
+  pointer-events: none;
   transition:
     opacity var(--oas-transition-base) var(--oas-ease-out),
     color var(--oas-transition-base) var(--oas-ease-out),
     border-color var(--oas-transition-base) var(--oas-ease-out),
     background var(--oas-transition-base) var(--oas-ease-out);
+}
+:host(:hover) .arrow,
+:host(:focus-within) .arrow {
+  opacity: 1;
+  pointer-events: auto;
+}
+:host([arrows='always']) .arrow {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* hidden 属性需要显式覆盖 display（避免 class 的 display 优先级压过 UA 的 [hidden] 规则） */
+.arrow[hidden] {
+  display: none;
 }
 .arrow:hover {
   opacity: 1;
@@ -88,7 +103,7 @@ const STYLE = `
 
 export class OASCarousel extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['index', 'autoplay', 'interval']
+    return ['index', 'autoplay', 'interval', 'arrows']
   }
 
   private count = 0
@@ -125,6 +140,10 @@ export class OASCarousel extends OASElement {
     if (!track) return
     const index = Number(this.getAttr('index', '0')) || 0
     track.style.transform = `translateX(-${index * 100}%)`
+    // 箭头显示形态：always（始终显示）/ hover（悬停显示，默认）/ never（不显示）
+    const arrows = this.getAttr('arrows', 'hover')
+    this.shadow.querySelector('[part="arrow-prev"]')?.toggleAttribute('hidden', arrows === 'never')
+    this.shadow.querySelector('[part="arrow-next"]')?.toggleAttribute('hidden', arrows === 'never')
     // 箭头/指示器内置文案走 locale registry（setLocale 切换自动刷新）
     this.shadow.querySelector<HTMLElement>('[part="arrow-prev"]')?.setAttribute('aria-label', this.t('carousel.prev'))
     this.shadow.querySelector<HTMLElement>('[part="arrow-next"]')?.setAttribute('aria-label', this.t('carousel.next'))

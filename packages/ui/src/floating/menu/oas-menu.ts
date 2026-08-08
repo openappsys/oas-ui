@@ -67,8 +67,10 @@ const STYLE = `
   margin: 0;
   padding: var(--oas-space-1) 0 0 var(--oas-space-4);
   border-left: 1px solid var(--oas-color-border);
-  flex-basis: 100%; /* 子菜单独占一行，避免被父级 flex 压缩成窄列 */
-  min-width: 120px; /* 子菜单最小宽度，确保正常横排显示 */
+  flex-basis: calc(100% + var(--oas-space-3)); /* 覆盖父项右内边距，子菜单右边缘与父项对齐 */
+  flex-shrink: 0; /* 独占一行后禁止被压缩回内容宽，保证右对齐 */
+  box-sizing: border-box; /* 边框/内边距计入 flex-basis，避免逐级压缩子菜单宽度 */
+  min-width: 0; /* 允许按 flex-basis 收缩，防止长文案撑破层级对齐 */
 }
 `
 
