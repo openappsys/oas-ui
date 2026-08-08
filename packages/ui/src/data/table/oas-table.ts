@@ -66,6 +66,25 @@ tr.row[data-selected='true'] td {
   text-align: center;
   color: var(--oas-color-text-secondary);
 }
+.loading {
+  padding: var(--oas-space-6);
+  text-align: center;
+  color: var(--oas-color-text-secondary);
+}
+.loading .spin {
+  display: inline-block;
+  width: var(--oas-control-height-sm);
+  height: var(--oas-control-height-sm);
+  margin-right: var(--oas-space-2);
+  vertical-align: middle;
+  border: 2px solid var(--oas-color-border);
+  border-top-color: var(--oas-color-primary);
+  border-radius: 50%;
+  animation: oas-table-spin 0.8s linear infinite;
+}
+@keyframes oas-table-spin {
+  to { transform: rotate(360deg); }
+}
 .check {
   accent-color: var(--oas-color-primary);
 }
@@ -82,7 +101,7 @@ td.align-right { text-align: right; }
 
 export class OASTable extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['columns', 'data', 'sort-key', 'sort-order', 'row-key', 'checkable']
+    return ['columns', 'data', 'sort-key', 'sort-order', 'row-key', 'checkable', 'loading']
   }
 
   private columns: TableColumn[] = []
@@ -161,6 +180,18 @@ export class OASTable extends OASElement {
       tr.appendChild(th)
     }
     head.appendChild(tr)
+
+    if (this.hasAttr('loading')) {
+      const loadingTr = document.createElement('tr')
+      loadingTr.setAttribute('part', 'loading-row')
+      const loadingTd = document.createElement('td')
+      loadingTd.colSpan = this.columns.length
+      loadingTd.className = 'loading'
+      loadingTd.innerHTML = '<span class="spin"></span>加载中…'
+      loadingTr.appendChild(loadingTd)
+      body.appendChild(loadingTr)
+      return
+    }
 
     if (sorted.length === 0) {
       const emptyTr = document.createElement('tr')

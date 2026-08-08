@@ -32,6 +32,32 @@ describe('OASCarousel', () => {
     expect(detail).toEqual({ index: 2 })
   })
 
+  it('渲染左右箭头按钮', () => {
+    const el = mount()
+    expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="arrow-next"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')?.getAttribute('aria-label')).toBe('上一屏')
+    expect(el.shadowRoot!.querySelector('[part="arrow-next"]')?.getAttribute('aria-label')).toBe('下一屏')
+  })
+
+  it('点击 next 箭头 index+1 并派发 oas-change', () => {
+    const el = mount()
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(el.shadowRoot!.querySelector('[part="arrow-next"]') as HTMLElement).click()
+    expect(detail).toEqual({ index: 1 })
+    expect(el.getAttribute('index')).toBe('1')
+  })
+
+  it('点击 prev 箭头循环到最后一屏', () => {
+    const el = mount()
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(el.shadowRoot!.querySelector('[part="arrow-prev"]') as HTMLElement).click()
+    expect(detail).toEqual({ index: 2 })
+    expect(el.getAttribute('index')).toBe('2')
+  })
+
   it('autoplay 时定时切换', () => {
     vi.useFakeTimers()
     const el = mount({ autoplay: '' })

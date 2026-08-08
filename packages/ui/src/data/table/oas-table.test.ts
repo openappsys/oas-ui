@@ -78,4 +78,27 @@ describe('OASTable', () => {
     expect((detail as { keys: string[] }).keys).toEqual(['张三'])
     expect(el.getAttribute('selected')).toBe('张三')
   })
+
+  it('loading：显示加载占位行，不渲染数据行', () => {
+    const el = mount({ loading: '' })
+    expect(el.shadowRoot!.querySelector('[part="loading-row"]')).not.toBeNull()
+    expect(el.shadowRoot!.textContent).toContain('加载中')
+    expect(rows(el).length).toBe(0)
+    // 表头仍保留
+    expect(headers(el).length).toBe(2)
+  })
+
+  it('loading 与空数据同时存在时优先显示加载态', () => {
+    const el = mount({ loading: '', data: '[]' })
+    expect(el.shadowRoot!.querySelector('[part="loading-row"]')).not.toBeNull()
+    expect(el.shadowRoot!.textContent).not.toContain('暂无数据')
+  })
+
+  it('loading 移除后恢复数据行', () => {
+    const el = mount({ loading: '' })
+    expect(rows(el).length).toBe(0)
+    el.removeAttribute('loading')
+    expect(rows(el).length).toBe(3)
+    expect(rows(el)[0]!.textContent).toContain('张三')
+  })
 })

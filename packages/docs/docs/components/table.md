@@ -1,12 +1,12 @@
 # Table 表格
 
-用于以行列表格形式展示结构化数据，支持排序与行选中。
+用于以行列表格形式展示结构化数据，支持排序、行选中、多选与加载态，可与分页组件联动。
 
 ## 基础用法（含排序）
 
 <DemoBlock title="可排序列">
   <div style="width: 100%">
-    <oas-table columns='[{"key":"name","title":"姓名","sortable":true},{"key":"age","title":"年龄","sortable":true},{"key":"city","title":"城市"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"}]' row-key="name"></oas-table>
+    <oas-table columns='[{"key":"name","title":"姓名","sortable":true},{"key":"age","title":"年龄","sortable":true},{"key":"city","title":"城市"},{"key":"email","title":"邮箱"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","email":"zhangsan@example.com","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","email":"lisi@example.com","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","email":"wangwu@example.com","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","email":"zhaoliu@example.com","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","email":"sunqi@example.com","position":"测试工程师"},{"name":"周八","age":27,"city":"成都","email":"zhouba@example.com","position":"运营专员"},{"name":"吴九","age":41,"city":"武汉","email":"wujiu@example.com","position":"技术总监"},{"name":"郑十","age":24,"city":"南京","email":"zhengshi@example.com","position":"实习生"},{"name":"冯十一","age":38,"city":"西安","email":"fengshiyi@example.com","position":"架构师"},{"name":"陈十二","age":29,"city":"苏州","email":"chenshier@example.com","position":"数据分析师"},{"name":"褚十三","age":33,"city":"天津","email":"chushisan@example.com","position":"项目经理"},{"name":"卫十四","age":26,"city":"重庆","email":"weishisi@example.com","position":"运维工程师"}]' row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
@@ -16,7 +16,7 @@
 
 <DemoBlock title="对齐与宽度">
   <div style="width: 100%">
-    <oas-table columns='[{"key":"name","title":"姓名","width":"160px"},{"key":"age","title":"年龄","align":"center"},{"key":"city","title":"城市","align":"right"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"}]' row-key="name"></oas-table>
+    <oas-table columns='[{"key":"name","title":"姓名","width":"140px"},{"key":"age","title":"年龄","align":"center"},{"key":"city","title":"城市","align":"right"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","position":"测试工程师"}]' row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
@@ -24,7 +24,7 @@
 
 <DemoBlock title="初始排序与选中">
   <div style="width: 100%">
-    <oas-table columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄","sortable":true},{"key":"city","title":"城市"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"}]' sort-key="age" sort-order="desc" selected="王五" row-key="name"></oas-table>
+    <oas-table columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄","sortable":true},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","position":"测试工程师"},{"name":"周八","age":27,"city":"成都","position":"运营专员"},{"name":"吴九","age":41,"city":"武汉","position":"技术总监"},{"name":"郑十","age":24,"city":"南京","position":"实习生"},{"name":"冯十一","age":38,"city":"西安","position":"架构师"},{"name":"陈十二","age":29,"city":"苏州","position":"数据分析师"},{"name":"褚十三","age":33,"city":"天津","position":"项目经理"},{"name":"卫十四","age":26,"city":"重庆","position":"运维工程师"}]' sort-key="age" sort-order="desc" selected="吴九" row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
@@ -34,11 +34,33 @@
 
 <DemoBlock title="行多选（checkable）">
   <div style="width: 100%">
-    <oas-table checkable columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"}]' row-key="name"></oas-table>
+    <oas-table checkable columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","position":"测试工程师"},{"name":"周八","age":27,"city":"成都","position":"运营专员"},{"name":"吴九","age":41,"city":"武汉","position":"技术总监"},{"name":"郑十","age":24,"city":"南京","position":"实习生"},{"name":"冯十一","age":38,"city":"西安","position":"架构师"},{"name":"陈十二","age":29,"city":"苏州","position":"数据分析师"},{"name":"褚十三","age":33,"city":"天津","position":"项目经理"},{"name":"卫十四","age":26,"city":"重庆","position":"运维工程师"}]' row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
 表头复选框一键全选/取消，行复选框单独勾选；选中变化派发 `oas-check`。
+
+## 与分页联动
+
+<DemoBlock title="表格 + 分页">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-table id="table-paged" row-key="id" columns='[{"key":"id","title":"ID","width":"60px"},{"key":"name","title":"姓名"},{"key":"age","title":"年龄","sortable":true},{"key":"city","title":"城市"},{"key":"email","title":"邮箱"},{"key":"position","title":"职位"}]' data="[]"></oas-table>
+    <oas-pagination id="table-pager" total="12" page-size="5" current="1"></oas-pagination>
+  </oas-space>
+</DemoBlock>
+
+表格数据按每页 5 条切片，翻页时通过 `oas-change` 事件更新 `data` 属性重新渲染。
+
+## 加载态
+
+<DemoBlock title="加载态">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-table id="table-loading" row-key="name" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","position":"测试工程师"}]'></oas-table>
+    <oas-button type="primary" onclick="simulateTableLoading()">模拟加载 2 秒</oas-button>
+  </oas-space>
+</DemoBlock>
+
+设置 `loading` 属性后表头保留、数据区显示加载占位行；移除属性即恢复数据。
 
 ## 空态
 
@@ -58,7 +80,7 @@
 
 <DemoBlock title="排序与点击事件">
   <div style="width: 100%">
-    <oas-table id="table-event" columns='[{"key":"name","title":"姓名","sortable":true},{"key":"age","title":"年龄","sortable":true},{"key":"city","title":"城市"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"}]' row-key="name"></oas-table>
+    <oas-table id="table-event" columns='[{"key":"name","title":"姓名","sortable":true},{"key":"age","title":"年龄","sortable":true},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"}]' row-key="name"></oas-table>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
       排序：<span id="table-sort">无</span> · 点击行：<span id="table-row">—</span>
     </p>
@@ -67,7 +89,33 @@
 
 <script setup>
 import { onMounted } from 'vue'
+
+// 通用演示数据集（12 条）
+const MOCK = [
+  ['张三', 30, '北京', 'zhangsan@example.com', '前端工程师'],
+  ['李四', 25, '上海', 'lisi@example.com', '产品经理'],
+  ['王五', 35, '深圳', 'wangwu@example.com', '后端工程师'],
+  ['赵六', 28, '杭州', 'zhaoliu@example.com', 'UI 设计师'],
+  ['孙七', 32, '广州', 'sunqi@example.com', '测试工程师'],
+  ['周八', 27, '成都', 'zhouba@example.com', '运营专员'],
+  ['吴九', 41, '武汉', 'wujiu@example.com', '技术总监'],
+  ['郑十', 24, '南京', 'zhengshi@example.com', '实习生'],
+  ['冯十一', 38, '西安', 'fengshiyi@example.com', '架构师'],
+  ['陈十二', 29, '苏州', 'chenshier@example.com', '数据分析师'],
+  ['褚十三', 33, '天津', 'chushisan@example.com', '项目经理'],
+  ['卫十四', 26, '重庆', 'weishisi@example.com', '运维工程师'],
+]
+const TABLE_ROWS = MOCK.map(([name, age, city, email, position], i) => ({
+  id: i + 1,
+  name,
+  age,
+  city,
+  email,
+  position,
+}))
+
 onMounted(() => {
+  // 排序与点击事件 demo
   const table = document.querySelector('#table-event')
   table?.addEventListener('oas-sort-change', (e) => {
     const { key, order } = e.detail
@@ -76,6 +124,24 @@ onMounted(() => {
   table?.addEventListener('oas-row-click', (e) => {
     document.querySelector('#table-row').textContent = e.detail.row.name ?? e.detail.key
   })
+
+  // 分页联动 demo：按每页 5 条切片写入 data
+  const pager = document.querySelector('#table-pager')
+  const paged = document.querySelector('#table-paged')
+  const pageSize = 5
+  const renderPage = (page) => {
+    const start = (page - 1) * pageSize
+    paged?.setAttribute('data', JSON.stringify(TABLE_ROWS.slice(start, start + pageSize)))
+  }
+  pager?.addEventListener('oas-change', (e) => renderPage(e.detail.page))
+  renderPage(1)
+
+  // 加载态 demo：模拟加载 2 秒
+  window.simulateTableLoading = () => {
+    const table = document.querySelector('#table-loading')
+    table?.setAttribute('loading', '')
+    setTimeout(() => table?.removeAttribute('loading'), 2000)
+  }
 })
 </script>
 
@@ -90,6 +156,7 @@ onMounted(() => {
 | `selected` | 选中行 key 集合（逗号分隔） | string | — |
 | `empty-text` | 空态文案 | string | `暂无数据` |
 | `checkable` | 复选框多选开关 | boolean | `false` |
+| `loading` | 加载态：数据区显示加载占位行（表头保留） | boolean | `false` |
 
 > 说明：`columns.render` 为函数类型，仅支持在 JS 侧构造后通过属性整体赋值，无法用 JSON 字符串表达。
 
@@ -98,3 +165,5 @@ onMounted(() => {
 | `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }` |
 | `oas-row-click` | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
 | `oas-check` | 复选框选中变化，`detail: { keys: string[] }` |
+
+加载占位行部件为 `::part(loading-row)`，可单独定制样式。

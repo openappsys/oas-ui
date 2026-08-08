@@ -44,6 +44,20 @@
 
 设置 `autoplay` 开启自动播放，`interval` 控制间隔（毫秒）。
 
+## 箭头切换
+
+<DemoBlock title="左右箭头">
+  <div style="width: 100%">
+    <oas-carousel>
+      <div style="background: var(--oas-color-primary); color: #fff; height: 200px">第一屏</div>
+      <div style="background: #1f2937; color: #fff; height: 200px">第二屏</div>
+      <div style="background: #374151; color: #fff; height: 200px">第三屏</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+轮播两侧提供左右箭头（`part="arrow-prev"` / `part="arrow-next"`），点击切换上一屏 / 下一屏，首尾循环；配合底部圆点与自动播放可组合使用。
+
 ## 事件
 
 <DemoBlock title="切换事件">
@@ -79,3 +93,11 @@ onMounted(() => {
 | 事件 | 说明 |
 |---|---|
 | `oas-change` | 当前屏切换，`detail: { index }` |
+
+### 部件（::part()）
+
+| 部件 | 说明 |
+|---|---|
+| `viewport` / `track` | 视口与滑动轨道 |
+| `dots` / `dot` | 底部指示器容器与单个圆点 |
+| `arrow-prev` / `arrow-next` | 左右切换箭头按钮，绝对定位于轮播两侧垂直居中，可单独定制样式 |

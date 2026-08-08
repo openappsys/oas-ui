@@ -46,6 +46,44 @@ const STYLE = `
 .dot[aria-current='true'] {
   background: #fff;
 }
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--oas-control-height-md);
+  height: var(--oas-control-height-md);
+  padding: 0;
+  border: 1px solid var(--oas-color-border);
+  border-radius: 50%;
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  font-size: var(--oas-font-size-lg);
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.85;
+  transition:
+    opacity var(--oas-transition-base) var(--oas-ease-out),
+    color var(--oas-transition-base) var(--oas-ease-out),
+    border-color var(--oas-transition-base) var(--oas-ease-out),
+    background var(--oas-transition-base) var(--oas-ease-out);
+}
+.arrow:hover {
+  opacity: 1;
+  color: var(--oas-color-primary);
+  border-color: var(--oas-color-primary);
+  background: var(--oas-color-bg-hover);
+}
+.arrow:focus-visible {
+  outline: 2px solid var(--oas-color-primary);
+  outline-offset: 2px;
+}
+.arrow-prev { left: var(--oas-space-3); }
+.arrow-next { right: var(--oas-space-3); }
 `
 
 export class OASCarousel extends OASElement {
@@ -62,11 +100,21 @@ export class OASCarousel extends OASElement {
       <div class="viewport" part="viewport">
         <div class="track" part="track"><slot></slot></div>
       </div>
+      <button type="button" class="arrow arrow-prev" part="arrow-prev" aria-label="上一屏">‹</button>
+      <button type="button" class="arrow arrow-next" part="arrow-next" aria-label="下一屏">›</button>
       <div class="dots" part="dots" role="tablist"></div>
     `
     this.shadow.querySelector('.dots')?.addEventListener('click', (e) => {
       const dot = (e.target as HTMLElement).closest('[part="dot"]')
       if (dot) this.goto(Number((dot as HTMLElement).getAttribute('data-index')) || 0)
+    })
+    this.shadow.querySelector('[part="arrow-prev"]')?.addEventListener('click', () => {
+      const index = Number(this.getAttr('index', '0')) || 0
+      this.goto(index - 1)
+    })
+    this.shadow.querySelector('[part="arrow-next"]')?.addEventListener('click', () => {
+      const index = Number(this.getAttr('index', '0')) || 0
+      this.goto(index + 1)
     })
     this.update()
   }
