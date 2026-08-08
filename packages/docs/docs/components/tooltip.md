@@ -64,10 +64,10 @@
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `content` | 提示内容文本 | `string` | — |
-| `placement` | 浮层位置 | `top` / `bottom` / `left` / `right` | `top` |
-| `open` | 受控显示（布尔属性，存在即显示） | `boolean` | `false` |
+| 属性        | 说明                             | 类型                                | 默认值  |
+| ----------- | -------------------------------- | ----------------------------------- | ------- |
+| `content`   | 提示内容文本                     | `string`                            | —       |
+| `placement` | 浮层位置                         | `top` / `bottom` / `left` / `right` | `top`   |
+| `open`      | 受控显示（布尔属性，存在即显示） | `boolean`                           | `false` |
 
 无对外事件。hover / focus 触发显隐；`role="tooltip"`，浮层 `pointer-events: none` 不拦截交互。

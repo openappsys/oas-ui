@@ -77,8 +77,14 @@ export class OASPopover extends OASElement {
     if (!this.panel) return
     const open = this.hasAttr('open')
     this.panel.setAttribute('aria-hidden', String(!open))
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr('title', '')
-    this.shadow.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr('content', '')
+    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
+      'title',
+      '',
+    )
+    this.shadow.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr(
+      'content',
+      '',
+    )
     if (open) {
       document.addEventListener('click', this.handleOutside)
       const anchorRect = this.anchor?.getBoundingClientRect()

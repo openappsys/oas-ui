@@ -114,7 +114,9 @@ export class OASAnchor extends OASElement {
     try {
       const parsed = JSON.parse(this.getAttr('items', '[]'))
       this.items = Array.isArray(parsed)
-        ? parsed.filter((i): i is AnchorItem => i && typeof i.href === 'string' && typeof i.title === 'string')
+        ? parsed.filter(
+            (i): i is AnchorItem => i && typeof i.href === 'string' && typeof i.title === 'string',
+          )
         : []
     } catch {
       this.items = []

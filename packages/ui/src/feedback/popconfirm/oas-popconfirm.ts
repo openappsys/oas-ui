@@ -113,7 +113,8 @@ export class OASPopconfirm extends OASElement {
     this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.getAttr('title', '')
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
     this.shadow.querySelector<HTMLElement>('[part="ok"]')!.textContent = this.t('popconfirm.ok')
-    this.shadow.querySelector<HTMLElement>('[part="cancel"]')!.textContent = this.t('popconfirm.cancel')
+    this.shadow.querySelector<HTMLElement>('[part="cancel"]')!.textContent =
+      this.t('popconfirm.cancel')
     if (open) document.addEventListener('click', this.handleOutside)
     else document.removeEventListener('click', this.handleOutside)
   }

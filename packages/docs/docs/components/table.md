@@ -147,23 +147,23 @@ onMounted(() => {
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, render? }]`，JSON 字符串 | string | `[]` |
-| `data` | 行数据 `[{ [key]: value }]`，JSON 字符串 | string | `[]` |
-| `sort-key` / `sort-order` | 受控排序；`sort-order` 取 `asc` / `desc` / 空 | string | — |
-| `row-key` | 行唯一键字段 | string | `key` |
-| `selected` | 选中行 key 集合（逗号分隔） | string | — |
-| `empty-text` | 空态文案 | string | `暂无数据` |
-| `checkable` | 复选框多选开关 | boolean | `false` |
-| `loading` | 加载态：数据区显示加载占位行（表头保留） | boolean | `false` |
+| 属性                      | 说明                                                                       | 类型    | 默认值     |
+| ------------------------- | -------------------------------------------------------------------------- | ------- | ---------- |
+| `columns`                 | 列配置 `[{ key, title, sortable?, width?, align?, render? }]`，JSON 字符串 | string  | `[]`       |
+| `data`                    | 行数据 `[{ [key]: value }]`，JSON 字符串                                   | string  | `[]`       |
+| `sort-key` / `sort-order` | 受控排序；`sort-order` 取 `asc` / `desc` / 空                              | string  | —          |
+| `row-key`                 | 行唯一键字段                                                               | string  | `key`      |
+| `selected`                | 选中行 key 集合（逗号分隔）                                                | string  | —          |
+| `empty-text`              | 空态文案                                                                   | string  | `暂无数据` |
+| `checkable`               | 复选框多选开关                                                             | boolean | `false`    |
+| `loading`                 | 加载态：数据区显示加载占位行（表头保留）                                   | boolean | `false`    |
 
 > 说明：`columns.render` 为函数类型，仅支持在 JS 侧构造后通过属性整体赋值，无法用 JSON 字符串表达。
 
-| 事件 | 说明 |
-|---|---|
-| `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }` |
-| `oas-row-click` | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
-| `oas-check` | 复选框选中变化，`detail: { keys: string[] }` |
+| 事件              | 说明                                                          |
+| ----------------- | ------------------------------------------------------------- |
+| `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }`     |
+| `oas-row-click`   | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
+| `oas-check`       | 复选框选中变化，`detail: { keys: string[] }`                  |
 
 加载占位行部件为 `::part(loading-row)`，可单独定制样式。

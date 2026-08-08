@@ -93,11 +93,15 @@ export class OASModal extends OASElement {
           <button class="close-btn" part="close" aria-label="">✕</button>
         </div>
         <div class="body" part="body"><slot></slot></div>
-        ${this.hasAttr('no-footer') ? '' : `
+        ${
+          this.hasAttr('no-footer')
+            ? ''
+            : `
         <div class="footer" part="footer">
           <button class="btn" part="cancel" type="button"></button>
           <button class="btn" part="ok" type="button"></button>
-        </div>`}
+        </div>`
+        }
       </div>
     `
     this.update()
@@ -111,8 +115,12 @@ export class OASModal extends OASElement {
       if (this.hasAttr('no-mask-close')) return
       this.close('cancel')
     })
-    this.shadow.querySelector('[part="cancel"]')?.addEventListener('click', () => this.close('cancel'))
-    this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.close('cancel'))
+    this.shadow
+      .querySelector('[part="cancel"]')
+      ?.addEventListener('click', () => this.close('cancel'))
+    this.shadow
+      .querySelector('[part="close"]')
+      ?.addEventListener('click', () => this.close('cancel'))
     this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => this.close('ok'))
 
     const onKey = (e: KeyboardEvent): void => {
@@ -135,7 +143,9 @@ export class OASModal extends OASElement {
     dialog.setAttribute('aria-hidden', String(!visible))
     this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.getAttr('title', '')
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
-    this.shadow.querySelector<HTMLElement>('[part="close"]')?.setAttribute('aria-label', this.t('modal.close'))
+    this.shadow
+      .querySelector<HTMLElement>('[part="close"]')
+      ?.setAttribute('aria-label', this.t('modal.close'))
     const okBtn = this.shadow.querySelector<HTMLElement>('[part="ok"]')
     const cancelBtn = this.shadow.querySelector<HTMLElement>('[part="cancel"]')
     if (okBtn) {

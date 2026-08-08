@@ -205,7 +205,8 @@ export class OASAutoComplete extends OASElement {
       this.renderDropdown(true)
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      this.activeIndex = (this.activeIndex - 1 + Math.max(list.length, 1)) % Math.max(list.length, 1)
+      this.activeIndex =
+        (this.activeIndex - 1 + Math.max(list.length, 1)) % Math.max(list.length, 1)
       this.renderDropdown(true)
     } else if (e.key === 'Enter' && list.length > 0) {
       e.preventDefault()

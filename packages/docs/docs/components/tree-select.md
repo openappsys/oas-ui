@@ -58,14 +58,14 @@ onMounted(() => {
 
 ## API
 
-| 属性 | 说明 | 默认值 |
-|---|---|---|
-| `value` | 选中值（多选为 JSON 数组） | 无 |
-| `options` | 树形选项，JSON 数组，支持 `children` / `disabled` | `[]` |
-| `placeholder` | 占位提示 | `请选择` |
-| `multiple` | 多选 + 父子级联 | `false` |
-| `disabled` | 禁用 | `false` |
+| 属性          | 说明                                              | 默认值   |
+| ------------- | ------------------------------------------------- | -------- |
+| `value`       | 选中值（多选为 JSON 数组）                        | 无       |
+| `options`     | 树形选项，JSON 数组，支持 `children` / `disabled` | `[]`     |
+| `placeholder` | 占位提示                                          | `请选择` |
+| `multiple`    | 多选 + 父子级联                                   | `false`  |
+| `disabled`    | 禁用                                              | `false`  |
 
-| 事件 | 说明 |
-|---|---|
+| 事件         | 说明                          |
+| ------------ | ----------------------------- |
 | `oas-change` | 选择变化，`detail: { value }` |

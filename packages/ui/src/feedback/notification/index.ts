@@ -6,4 +6,10 @@ if (!customElements.get('oas-notification')) {
   customElements.define('oas-notification', OASNotification)
 }
 
-export { OASNotification, type NotificationType, notification, destroyAll, type NotificationOptions }
+export {
+  OASNotification,
+  type NotificationType,
+  notification,
+  destroyAll,
+  type NotificationOptions,
+}

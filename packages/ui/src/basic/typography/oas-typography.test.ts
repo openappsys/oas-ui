@@ -4,7 +4,11 @@ import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
 import { OASText, OASTitle, OASParagraph } from './index.js'
 
-function mount<T extends HTMLElement>(Ctor: new () => T, attrs: Record<string, string> = {}, slot = '文本'): T {
+function mount<T extends HTMLElement>(
+  Ctor: new () => T,
+  attrs: Record<string, string> = {},
+  slot = '文本',
+): T {
   const el = new Ctor()
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
   el.textContent = slot

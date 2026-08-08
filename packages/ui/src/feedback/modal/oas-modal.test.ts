@@ -30,7 +30,9 @@ describe('OASModal', () => {
 
   it('visible 缺省时隐藏', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('[role="dialog"]')!.getAttribute('aria-hidden')).toBe('true')
+    expect(el.shadowRoot!.querySelector('[role="dialog"]')!.getAttribute('aria-hidden')).toBe(
+      'true',
+    )
   })
 
   it('点击确定派发 oas-ok', async () => {

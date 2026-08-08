@@ -54,13 +54,13 @@ onMounted(async () => {
 
 ### 方法
 
-| 方法 | 说明 |
-|---|---|
-| `message.info(content, duration?)` | 信息提示，返回 `{ close }` |
+| 方法                                  | 说明                       |
+| ------------------------------------- | -------------------------- |
+| `message.info(content, duration?)`    | 信息提示，返回 `{ close }` |
 | `message.success(content, duration?)` | 成功提示，返回 `{ close }` |
 | `message.warning(content, duration?)` | 警告提示，返回 `{ close }` |
-| `message.error(content, duration?)` | 错误提示，返回 `{ close }` |
-| `destroyAllMessage()` | 清空全部消息 |
+| `message.error(content, duration?)`   | 错误提示，返回 `{ close }` |
+| `destroyAllMessage()`                 | 清空全部消息               |
 
 - `duration` 默认 `3000`ms，传 `0` 表示不自动关闭。
 - 顶部居中堆叠；`error` 类型使用 `role="alert"`，其余使用 `role="status"`。

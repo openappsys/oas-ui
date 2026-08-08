@@ -59,6 +59,9 @@ export class OASCard extends OASElement {
     const card = this.shadow.querySelector('[part="card"]')
     if (!card) return
     card.classList.toggle('hoverable', this.hasAttr('hoverable'))
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr('title', '')
+    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
+      'title',
+      '',
+    )
   }
 }

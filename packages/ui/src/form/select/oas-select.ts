@@ -213,7 +213,9 @@ export class OASSelect extends OASElement {
   protected override update(): void {
     this.parseOptions()
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
-    this.shadow.querySelector<HTMLInputElement>('.search-input')?.setAttribute('aria-label', this.t('select.search'))
+    this.shadow
+      .querySelector<HTMLInputElement>('.search-input')
+      ?.setAttribute('aria-label', this.t('select.search'))
     this.renderListbox()
     this.syncTrigger()
   }
@@ -289,8 +291,12 @@ export class OASSelect extends OASElement {
     const listbox = this.listbox
     if (!listbox) return
     listbox.innerHTML = ''
-    const query = (this.shadow.querySelector<HTMLInputElement>('.search-input')?.getAttribute('data-query') ?? '').toLowerCase()
-    const visible = query ? this.options.filter((o) => o.label.toLowerCase().includes(query)) : this.options
+    const query = (
+      this.shadow.querySelector<HTMLInputElement>('.search-input')?.getAttribute('data-query') ?? ''
+    ).toLowerCase()
+    const visible = query
+      ? this.options.filter((o) => o.label.toLowerCase().includes(query))
+      : this.options
     if (visible.length === 0) {
       const empty = document.createElement('div')
       empty.className = 'empty'
@@ -328,7 +334,9 @@ export class OASSelect extends OASElement {
   private selectValue(value: string): void {
     if (this.hasAttr('multiple')) {
       const current = this.currentValues()
-      const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value]
+      const next = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value]
       this.setAttribute('value', JSON.stringify(next))
       this.emit('change', { value: next })
     } else {

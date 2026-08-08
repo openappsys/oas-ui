@@ -41,14 +41,14 @@ onMounted(async () => {
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `visible` | 是否显示按钮 | `boolean` | `false` |
-| `bottom` | 距视口底部距离 | `string` | `32px` |
-| `right` | 距视口右侧距离 | `string` | `32px` |
+| 属性      | 说明           | 类型      | 默认值  |
+| --------- | -------------- | --------- | ------- |
+| `visible` | 是否显示按钮   | `boolean` | `false` |
+| `bottom`  | 距视口底部距离 | `string`  | `32px`  |
+| `right`   | 距视口右侧距离 | `string`  | `32px`  |
 
-| 事件 | 说明 |
-|---|---|
+| 事件        | 说明                           |
+| ----------- | ------------------------------ |
 | `oas-click` | 点击按钮（随后平滑滚动到顶部） |
 
 按钮 `position: fixed` 固定于视口，`:host` 默认 `display: inline-block`；未显示时按钮 `aria-hidden="true"`。

@@ -129,13 +129,13 @@ onMounted(() => {
 
 ## API
 
-| 属性 | 说明 |
-|---|---|
+| 属性    | 说明                                                                                |
+| ------- | ----------------------------------------------------------------------------------- |
 | `rules` | 校验规则 JSON：`{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` |
 
-| 事件 | 说明 |
-|---|---|
-| `oas-submit` | 校验通过，`detail: { values }` |
+| 事件                | 说明                                   |
+| ------------------- | -------------------------------------- |
+| `oas-submit`        | 校验通过，`detail: { values }`         |
 | `oas-validate-fail` | 校验失败，`detail: { errors, values }` |
 
 校验失败时失败字段被标记 `aria-invalid`；可通过 `form.getErrors()` 获取错误信息。

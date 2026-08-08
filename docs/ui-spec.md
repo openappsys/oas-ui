@@ -18,32 +18,32 @@
 
 ### 1.2 主色（light / dark）
 
-| 语义 token | light | dark | 用途 |
-|---|---|---|---|
-| `--oas-color-primary` | `#0b6cff` | `#4d9fff` | 主行动、选中、焦点 |
-| `--oas-color-primary-hover` | `#1f7dff` | `#63a8ff` | primary hover |
-| `--oas-color-primary-active` | `#0a5bd6` | `#3a8ceb` | primary active |
-| `--oas-color-success` | `#16a34a` | `#4ade80` | 成功 |
-| `--oas-color-warning` | `#d97706` | `#fbbf24` | 警告 |
-| `--oas-color-danger` | `#dc2626` | `#f87171` | 危险/删除 |
-| `--oas-color-text-primary` | `#18181b` | `#fafafa` | 主文字 |
-| `--oas-color-text-secondary` | `#71717a` | `#a1a1aa` | 次级文字 |
-| `--oas-color-text-disabled` | `#a1a1aa` | `#71717a` | 禁用文字 |
-| `--oas-color-border` | `#e4e4e7` | `#3f3f46` | 描边/分割线 |
-| `--oas-color-bg` | `#ffffff` | `#18181b` | 组件底 |
-| `--oas-color-bg-hover` | `#f4f4f5` | `#27272a` | hover 底 |
-| `--oas-color-bg-disabled` | `#f4f4f5` | `#27272a` | 禁用底 |
-| `--oas-color-overlay` | `rgba(0,0,0,.5)` | `rgba(0,0,0,.6)` | 遮罩 |
+| 语义 token                   | light            | dark             | 用途               |
+| ---------------------------- | ---------------- | ---------------- | ------------------ |
+| `--oas-color-primary`        | `#0b6cff`        | `#4d9fff`        | 主行动、选中、焦点 |
+| `--oas-color-primary-hover`  | `#1f7dff`        | `#63a8ff`        | primary hover      |
+| `--oas-color-primary-active` | `#0a5bd6`        | `#3a8ceb`        | primary active     |
+| `--oas-color-success`        | `#16a34a`        | `#4ade80`        | 成功               |
+| `--oas-color-warning`        | `#d97706`        | `#fbbf24`        | 警告               |
+| `--oas-color-danger`         | `#dc2626`        | `#f87171`        | 危险/删除          |
+| `--oas-color-text-primary`   | `#18181b`        | `#fafafa`        | 主文字             |
+| `--oas-color-text-secondary` | `#71717a`        | `#a1a1aa`        | 次级文字           |
+| `--oas-color-text-disabled`  | `#a1a1aa`        | `#71717a`        | 禁用文字           |
+| `--oas-color-border`         | `#e4e4e7`        | `#3f3f46`        | 描边/分割线        |
+| `--oas-color-bg`             | `#ffffff`        | `#18181b`        | 组件底             |
+| `--oas-color-bg-hover`       | `#f4f4f5`        | `#27272a`        | hover 底           |
+| `--oas-color-bg-disabled`    | `#f4f4f5`        | `#27272a`        | 禁用底             |
+| `--oas-color-overlay`        | `rgba(0,0,0,.5)` | `rgba(0,0,0,.6)` | 遮罩               |
 
 ### 1.3 字号阶梯
 
-| token | 值 | 用途 |
-|---|---|---|
-| `--oas-font-size-xs` | `12px` | 辅助/徽标 |
-| `--oas-font-size-sm` | `13px` | 次级正文 |
+| token                | 值     | 用途                           |
+| -------------------- | ------ | ------------------------------ |
+| `--oas-font-size-xs` | `12px` | 辅助/徽标                      |
+| `--oas-font-size-sm` | `13px` | 次级正文                       |
 | `--oas-font-size-md` | `14px` | **基准字号**（按钮/输入/标签） |
-| `--oas-font-size-lg` | `16px` | 强调 |
-| `--oas-font-size-xl` | `20px` | 标题 |
+| `--oas-font-size-lg` | `16px` | 强调                           |
+| `--oas-font-size-xl` | `20px` | 标题                           |
 
 ### 1.4 间距刻度（4px 基准）
 
@@ -51,20 +51,20 @@
 
 ### 1.5 圆角
 
-| token | 值 | 用途 |
-|---|---|---|
-| `--oas-radius-sm` | `4px` | 控件内元素 |
-| `--oas-radius-md` | `6px` | **控件默认**（按钮/输入） |
-| `--oas-radius-lg` | `10px` | 卡片/弹窗 |
+| token             | 值     | 用途                      |
+| ----------------- | ------ | ------------------------- |
+| `--oas-radius-sm` | `4px`  | 控件内元素                |
+| `--oas-radius-md` | `6px`  | **控件默认**（按钮/输入） |
+| `--oas-radius-lg` | `10px` | 卡片/弹窗                 |
 
 ### 1.6 动效
 
-| token | 值 | 用途 |
-|---|---|---|
-| `--oas-transition-fast` | `120ms` | hover/active |
-| `--oas-transition-base` | `180ms` | 状态切换 |
-| `--oas-ease-out` | `cubic-bezier(.2,0,.2,1)` | 出场 |
-| `--oas-ease-in-out` | `cubic-bezier(.4,0,.2,1)` | 过渡 |
+| token                   | 值                        | 用途         |
+| ----------------------- | ------------------------- | ------------ |
+| `--oas-transition-fast` | `120ms`                   | hover/active |
+| `--oas-transition-base` | `180ms`                   | 状态切换     |
+| `--oas-ease-out`        | `cubic-bezier(.2,0,.2,1)` | 出场         |
+| `--oas-ease-in-out`     | `cubic-bezier(.4,0,.2,1)` | 过渡         |
 
 规则：动效尊重 `prefers-reduced-motion`（全局媒体查询关闭过渡）。
 
@@ -72,11 +72,11 @@
 
 ### 2.1 尺寸统一
 
-| 尺寸 | 高度 | 适用 |
-|---|---|---|
-| small | `24px` | 紧凑场景 |
-| medium | `32px` | **默认** |
-| large | `40px` | 主操作/移动 |
+| 尺寸   | 高度   | 适用        |
+| ------ | ------ | ----------- |
+| small  | `24px` | 紧凑场景    |
+| medium | `32px` | **默认**    |
+| large  | `40px` | 主操作/移动 |
 
 按钮最小宽 `56px`（防过窄）；输入控件同一尺寸必须同高（`--oas-control-height`）。
 
@@ -91,13 +91,13 @@
 
 每个交互组件必须显式处理这些状态，样式与 aria 同步：
 
-| 状态 | 要求 |
-|---|---|
-| disabled | 不可聚焦、不可点、`aria-disabled`、视觉降饱和（opacity .6） |
-| loading | 显示内置 spinner、禁止重复触发、替换/保留 aria 标签 |
-| hover | 有 hover 反馈（非 touch 端） |
-| active / focus-visible | focus-visible 必须有可见焦点环（`--oas-focus-ring`） |
-| empty（数据类） | 统一 Empty 占位 |
+| 状态                   | 要求                                                        |
+| ---------------------- | ----------------------------------------------------------- |
+| disabled               | 不可聚焦、不可点、`aria-disabled`、视觉降饱和（opacity .6） |
+| loading                | 显示内置 spinner、禁止重复触发、替换/保留 aria 标签         |
+| hover                  | 有 hover 反馈（非 touch 端）                                |
+| active / focus-visible | focus-visible 必须有可见焦点环（`--oas-focus-ring`）        |
+| empty（数据类）        | 统一 Empty 占位                                             |
 
 ## 3. 交互与无障碍基线
 
@@ -119,6 +119,7 @@
 ## 5. 验收（UI 层面）
 
 每个组件合并前：
+
 - [ ] 单测覆盖状态矩阵（含 disabled/loading/empty）
 - [ ] Playwright 视觉基线（light + dark 截图对比）
 - [ ] axe 扫描零严重违规

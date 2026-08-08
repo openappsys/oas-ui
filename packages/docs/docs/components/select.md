@@ -66,17 +66,17 @@ onMounted(() => {
 
 ## API
 
-| 属性 | 说明 | 默认值 |
-|---|---|---|
-| `value` | 当前值（多选为 JSON 数组） | 无 |
-| `options` | 选项，JSON 数组 `[{ label, value, disabled }]` | `[]` |
-| `placeholder` | 占位提示 | `请选择` |
-| `multiple` | 多选 | `false` |
-| `disabled` | 禁用 | `false` |
-| `searchable` | 可搜索（打开下拉后输入过滤） | `false` |
+| 属性          | 说明                                           | 默认值   |
+| ------------- | ---------------------------------------------- | -------- |
+| `value`       | 当前值（多选为 JSON 数组）                     | 无       |
+| `options`     | 选项，JSON 数组 `[{ label, value, disabled }]` | `[]`     |
+| `placeholder` | 占位提示                                       | `请选择` |
+| `multiple`    | 多选                                           | `false`  |
+| `disabled`    | 禁用                                           | `false`  |
+| `searchable`  | 可搜索（打开下拉后输入过滤）                   | `false`  |
 
 键盘：`Enter` / `↓` 展开，`↑`/`↓` 移动高亮，`Enter` 选中，`Esc` 关闭。
 
-| 事件 | 说明 |
-|---|---|
+| 事件         | 说明                          |
+| ------------ | ----------------------------- |
 | `oas-change` | 选择变化，`detail: { value }` |

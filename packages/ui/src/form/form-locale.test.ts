@@ -22,7 +22,14 @@ const TREE_OPTIONS = JSON.stringify([
     label: '前端',
     value: 'fe',
     children: [
-      { label: '框架', value: 'framework', children: [{ label: 'React', value: 'react' }, { label: 'Vue', value: 'vue' }] },
+      {
+        label: '框架',
+        value: 'framework',
+        children: [
+          { label: 'React', value: 'react' },
+          { label: 'Vue', value: 'vue' },
+        ],
+      },
       { label: '样式', value: 'css' },
     ],
   },
@@ -76,7 +83,9 @@ describe('form 组件文案 locale 切换（i18n 集成）', () => {
     const rmEn = el.shadowRoot!.querySelector<HTMLElement>('.chip button')!
     expect(rmEn.getAttribute('aria-label')).toBe('Remove 香蕉')
     setLocale('zh-CN')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('.chip button')!.getAttribute('aria-label')).toBe('移除 香蕉')
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('.chip button')!.getAttribute('aria-label'),
+    ).toBe('移除 香蕉')
   })
 
   it('cascader：placeholder 随 locale 切换', () => {
@@ -131,7 +140,9 @@ describe('form 组件文案 locale 切换（i18n 集成）', () => {
     expect(el.shadowRoot!.querySelector<HTMLElement>('.empty')!.textContent).toBe('无匹配结果')
 
     setLocale(en)
-    expect(el.shadowRoot!.querySelector<HTMLElement>('.empty')!.textContent).toBe('No matching results')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.empty')!.textContent).toBe(
+      'No matching results',
+    )
     setLocale('zh-CN')
     expect(el.shadowRoot!.querySelector<HTMLElement>('.empty')!.textContent).toBe('无匹配结果')
   })

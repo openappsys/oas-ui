@@ -33,10 +33,14 @@ describe('OAStooltip', () => {
 
   it('mouseenter 触发显示，mouseleave 隐藏', async () => {
     const el = mount({ content: '提示' })
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: true }),
+    )
     await Promise.resolve()
     expect(tip(el).getAttribute('aria-hidden')).toBe('false')
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseleave', { bubbles: true }),
+    )
     expect(tip(el).getAttribute('aria-hidden')).toBe('true')
   })
 

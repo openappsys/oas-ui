@@ -56,7 +56,10 @@ interface TypoOptions {
 
 type TypographyConstructor = CustomElementConstructor
 
-function createTypography(tag: string, options: { levels?: boolean; part: string }): TypographyConstructor {
+function createTypography(
+  tag: string,
+  options: { levels?: boolean; part: string },
+): TypographyConstructor {
   const { levels = false, part } = options
 
   class OASTypography extends OASElement {
@@ -151,4 +154,3 @@ function createTypography(tag: string, options: { levels?: boolean; part: string
 export const OASText = createTypography('span', { part: 'text' })
 export const OASTitle = createTypography('div', { levels: true, part: 'title' })
 export const OASParagraph = createTypography('p', { part: 'paragraph' })
-

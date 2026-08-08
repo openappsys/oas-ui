@@ -27,6 +27,8 @@ describe('OASCard', () => {
 
   it('hoverable 时带悬浮阴影类', () => {
     const el = mount({ hoverable: '' })
-    expect(el.shadowRoot!.querySelector('[part="card"]')!.classList.contains('hoverable')).toBe(true)
+    expect(el.shadowRoot!.querySelector('[part="card"]')!.classList.contains('hoverable')).toBe(
+      true,
+    )
   })
 })

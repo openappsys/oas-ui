@@ -55,19 +55,19 @@ onMounted(async () => {
 
 ### 属性
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `visible` | 是否显示 | `boolean` | `false` |
-| `title` | 标题文案 | `string` | — |
-| `placement` | 滑出方向 | `left` / `right` | `right` |
-| `no-footer` | 隐藏底部操作按钮 | `boolean` | `false` |
-| `no-mask-close` | 禁用点击遮罩关闭 | `boolean` | `false` |
+| 属性            | 说明             | 类型             | 默认值  |
+| --------------- | ---------------- | ---------------- | ------- |
+| `visible`       | 是否显示         | `boolean`        | `false` |
+| `title`         | 标题文案         | `string`         | —       |
+| `placement`     | 滑出方向         | `left` / `right` | `right` |
+| `no-footer`     | 隐藏底部操作按钮 | `boolean`        | `false` |
+| `no-mask-close` | 禁用点击遮罩关闭 | `boolean`        | `false` |
 
 ### 事件
 
-| 事件 | 说明 |
-|---|---|
-| `oas-ok` | 点击「确定」 |
+| 事件        | 说明                                |
+| ----------- | ----------------------------------- |
+| `oas-ok`    | 点击「确定」                        |
 | `oas-close` | 关闭：取消按钮 / ✕ / 遮罩点击 / Esc |
 
 `role="dialog"` + `aria-modal="true"`，打开时焦点移入关闭按钮，关闭后还原。

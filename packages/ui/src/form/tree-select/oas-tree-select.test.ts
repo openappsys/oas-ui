@@ -6,7 +6,14 @@ const OPTIONS = JSON.stringify([
     label: '前端',
     value: 'fe',
     children: [
-      { label: '框架', value: 'framework', children: [{ label: 'React', value: 'react' }, { label: 'Vue', value: 'vue' }] },
+      {
+        label: '框架',
+        value: 'framework',
+        children: [
+          { label: 'React', value: 'react' },
+          { label: 'Vue', value: 'vue' },
+        ],
+      },
       { label: '样式', value: 'css' },
     ],
   },
@@ -52,9 +59,15 @@ describe('OASTreeSelect', () => {
     let detail: unknown
     el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
     const byLabel = (label: string): HTMLElement =>
-      [...el.shadowRoot!.querySelectorAll('.node')].find((n) => n.textContent?.includes(label)) as HTMLElement
-    byLabel('前端').querySelector('.toggle')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    byLabel('框架').querySelector('.toggle')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      [...el.shadowRoot!.querySelectorAll('.node')].find((n) =>
+        n.textContent?.includes(label),
+      ) as HTMLElement
+    byLabel('前端')
+      .querySelector('.toggle')!
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    byLabel('框架')
+      .querySelector('.toggle')!
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }))
     byLabel('React').click()
     expect(JSON.parse(el.getAttribute('value') ?? '[]')).toContain('react')
     expect(detail).toEqual({ value: ['react'] })
@@ -77,8 +90,8 @@ describe('OASTreeSelect', () => {
     trigger(el).click()
     const fe = nodes(el)[0]!
     fe.querySelector('.toggle')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    const cssNode = [...el.shadowRoot!.querySelectorAll('.node')].find(
-      (n) => n.textContent?.includes('样式'),
+    const cssNode = [...el.shadowRoot!.querySelectorAll('.node')].find((n) =>
+      n.textContent?.includes('样式'),
     ) as HTMLElement
     cssNode.click()
     expect(el.getAttribute('value')).toBe('css')

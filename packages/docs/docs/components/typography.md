@@ -48,14 +48,14 @@
 
 ## API
 
-| 组件 | 标签 | 属性 |
-|---|---|---|
-| Text | `oas-text` | `type`、`ellipsis`、`copyable` |
-| Title | `oas-title` | `level`（1-5）、`type`、`ellipsis` |
-| Paragraph | `oas-paragraph` | `type`、`ellipsis` |
+| 组件      | 标签            | 属性                               |
+| --------- | --------------- | ---------------------------------- |
+| Text      | `oas-text`      | `type`、`ellipsis`、`copyable`     |
+| Title     | `oas-title`     | `level`（1-5）、`type`、`ellipsis` |
+| Paragraph | `oas-paragraph` | `type`、`ellipsis`                 |
 
 `type` 取值：`default` / `secondary` / `success` / `warning` / `danger` / `disabled`。
 
-| 事件 | 说明 |
-|---|---|
+| 事件       | 说明                         |
+| ---------- | ---------------------------- |
 | `oas-copy` | 复制成功，`detail: { text }` |

@@ -30,11 +30,15 @@ describe('OASHoverCard', () => {
 
   it('mouseenter 延迟后显示，mouseleave 延迟后隐藏', async () => {
     const el = mount({ title: 'x', delay: '100' })
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: true }),
+    )
     expect(el.shadowRoot!.querySelector('[part="card"]')!.getAttribute('aria-hidden')).toBe('true')
     vi.advanceTimersByTime(100)
     expect(el.shadowRoot!.querySelector('[part="card"]')!.getAttribute('aria-hidden')).toBe('false')
-    ;(el.querySelector('button') as HTMLElement).dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseleave', { bubbles: true }),
+    )
     vi.advanceTimersByTime(100)
     expect(el.shadowRoot!.querySelector('[part="card"]')!.getAttribute('aria-hidden')).toBe('true')
   })

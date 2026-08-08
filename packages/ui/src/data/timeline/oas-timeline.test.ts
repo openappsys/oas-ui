@@ -78,7 +78,9 @@ describe('OASTimeline', () => {
     expect(items[1]!.textContent).toContain('敬请期待')
 
     setLocale(en)
-    expect(el.shadowRoot!.querySelectorAll('[part="item"]')[1]!.textContent).toContain('Coming soon')
+    expect(el.shadowRoot!.querySelectorAll('[part="item"]')[1]!.textContent).toContain(
+      'Coming soon',
+    )
 
     setLocale('zh-CN')
     expect(el.shadowRoot!.querySelectorAll('[part="item"]')[1]!.textContent).toContain('敬请期待')

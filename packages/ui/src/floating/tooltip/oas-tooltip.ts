@@ -55,7 +55,11 @@ export class OAStooltip extends OASElement {
     if (!anchorRect) return
     const tipRect = this.tipEl.getBoundingClientRect()
     const placement = this.getAttr('placement', 'top') as Placement
-    const { top, left, placement: actual } = computePosition(anchorRect, tipRect, placement, {
+    const {
+      top,
+      left,
+      placement: actual,
+    } = computePosition(anchorRect, tipRect, placement, {
       width: window.innerWidth,
       height: window.innerHeight,
     })

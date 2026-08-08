@@ -17,7 +17,14 @@ function mount(): OASAnchor {
 describe('OASAnchor', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
-    vi.stubGlobal('IntersectionObserver', class { observe() {} unobserve() {} disconnect() {} })
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    )
   })
 
   afterEach(() => {

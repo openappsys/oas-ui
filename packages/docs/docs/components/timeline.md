@@ -61,8 +61,8 @@
 
 ## API
 
-| 组件 | 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|---|
-| `oas-timeline-item` | `time` | 节点时间文本 | string | — |
-| `oas-timeline-item` | `color` | 节点标记色：`green` / `red` / `gray`，缺省为主题色 | string | — |
+| 组件                | 属性      | 说明                                                      | 类型    | 默认值  |
+| ------------------- | --------- | --------------------------------------------------------- | ------- | ------- |
+| `oas-timeline-item` | `time`    | 节点时间文本                                              | string  | —       |
+| `oas-timeline-item` | `color`   | 节点标记色：`green` / `red` / `gray`，缺省为主题色        | string  | —       |
 | `oas-timeline-item` | `pending` | 进行中节点：空心圆点 + 虚线连接，无内容时显示「敬请期待」 | boolean | `false` |

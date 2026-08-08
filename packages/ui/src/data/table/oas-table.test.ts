@@ -110,23 +110,33 @@ describe('OASTable', () => {
   it('locale：全选/行选择 aria-label 随 setLocale 切换', () => {
     const el = mount({ checkable: '', 'row-key': 'name' })
     expect(
-      el.shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!.getAttribute('aria-label'),
+      el
+        .shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!
+        .getAttribute('aria-label'),
     ).toBe('全选')
     expect(
-      el.shadowRoot!.querySelectorAll<HTMLInputElement>('.check-cell input[type="checkbox"]')[1]!.getAttribute('aria-label'),
+      el
+        .shadowRoot!.querySelectorAll<HTMLInputElement>('.check-cell input[type="checkbox"]')[1]!
+        .getAttribute('aria-label'),
     ).toBe('选择行 张三')
 
     setLocale(en)
     expect(
-      el.shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!.getAttribute('aria-label'),
+      el
+        .shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!
+        .getAttribute('aria-label'),
     ).toBe('Select all')
     expect(
-      el.shadowRoot!.querySelectorAll<HTMLInputElement>('.check-cell input[type="checkbox"]')[1]!.getAttribute('aria-label'),
+      el
+        .shadowRoot!.querySelectorAll<HTMLInputElement>('.check-cell input[type="checkbox"]')[1]!
+        .getAttribute('aria-label'),
     ).toBe('Select row 张三')
 
     setLocale('zh-CN')
     expect(
-      el.shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!.getAttribute('aria-label'),
+      el
+        .shadowRoot!.querySelector<HTMLInputElement>('.check-cell input[type="checkbox"]')!
+        .getAttribute('aria-label'),
     ).toBe('全选')
   })
 

@@ -83,7 +83,9 @@ export class OASNotification extends OASElement {
     const desc = this.shadow.querySelector('.description')!
     title.textContent = this.getAttr('title', '')
     desc.textContent = this.getAttr('description', '')
-    this.shadow.querySelector<HTMLButtonElement>('.close')?.addEventListener('click', () => this.remove())
+    this.shadow
+      .querySelector<HTMLButtonElement>('.close')
+      ?.addEventListener('click', () => this.remove())
     const duration = Number(this.getAttr('duration', '4500'))
     if (duration > 0) {
       this.timer = setTimeout(() => this.remove(), duration)
@@ -92,7 +94,11 @@ export class OASNotification extends OASElement {
 
   protected override update(): void {
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
-    this.shadow.querySelector<HTMLElement>('[part="box"]')?.setAttribute('aria-label', this.t('notification.region'))
-    this.shadow.querySelector<HTMLElement>('[part="close"]')?.setAttribute('aria-label', this.t('notification.close'))
+    this.shadow
+      .querySelector<HTMLElement>('[part="box"]')
+      ?.setAttribute('aria-label', this.t('notification.region'))
+    this.shadow
+      .querySelector<HTMLElement>('[part="close"]')
+      ?.setAttribute('aria-label', this.t('notification.close'))
   }
 }

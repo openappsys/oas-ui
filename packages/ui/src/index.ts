@@ -95,15 +95,35 @@ export { OASAutoComplete } from './form/auto-complete/oas-auto-complete.js'
 export { OASCascader } from './form/cascader/oas-cascader.js'
 export { OASTreeSelect } from './form/tree-select/oas-tree-select.js'
 export { OASForm } from './form/form/oas-form.js'
-export { OASMessage, message, destroyAll as destroyAllMessage, type MessageType, type MessageHandle } from './feedback/message/index.js'
-export { OASNotification, notification, destroyAll as destroyAllNotification, type NotificationType, type NotificationOptions } from './feedback/notification/index.js'
+export {
+  OASMessage,
+  message,
+  destroyAll as destroyAllMessage,
+  type MessageType,
+  type MessageHandle,
+} from './feedback/message/index.js'
+export {
+  OASNotification,
+  notification,
+  destroyAll as destroyAllNotification,
+  type NotificationType,
+  type NotificationOptions,
+} from './feedback/notification/index.js'
 export { OASModal } from './feedback/modal/oas-modal.js'
-export { confirm, destroyAll as destroyAllConfirm, type ConfirmOptions } from './feedback/confirm/index.js'
+export {
+  confirm,
+  destroyAll as destroyAllConfirm,
+  type ConfirmOptions,
+} from './feedback/confirm/index.js'
 export { OASDrawer } from './feedback/drawer/oas-drawer.js'
 export { OASPopconfirm } from './feedback/popconfirm/oas-popconfirm.js'
 export { OASAlert } from './feedback/alert/oas-alert.js'
 export { OASProgress } from './feedback/progress/oas-progress.js'
-export { OASLoadingBar, loadingBar, destroyAll as destroyAllLoadingBar } from './feedback/loading-bar/index.js'
+export {
+  OASLoadingBar,
+  loadingBar,
+  destroyAll as destroyAllLoadingBar,
+} from './feedback/loading-bar/index.js'
 export { OASSpin } from './feedback/spin/oas-spin.js'
 export { OASSkeleton } from './feedback/skeleton/oas-skeleton.js'
 export { OASEmpty } from './feedback/empty/oas-empty.js'

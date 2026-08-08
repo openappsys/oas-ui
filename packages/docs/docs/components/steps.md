@@ -36,10 +36,10 @@
 
 ## API
 
-| 属性 | 说明 | 默认值 |
-|---|---|---|
-| `steps` | `[{ title, description? }]` JSON 字符串 | `[]` |
-| `current` | 当前步骤索引（0 起） | `0` |
-| `direction` | 方向 | `horizontal` / `vertical` |
+| 属性        | 说明                                    | 默认值                    |
+| ----------- | --------------------------------------- | ------------------------- |
+| `steps`     | `[{ title, description? }]` JSON 字符串 | `[]`                      |
+| `current`   | 当前步骤索引（0 起）                    | `0`                       |
+| `direction` | 方向                                    | `horizontal` / `vertical` |
 
 状态规则：`索引 < current` 为完成（✓），`=== current` 为进行中，其余为等待。无事件。

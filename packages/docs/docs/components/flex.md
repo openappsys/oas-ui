@@ -100,10 +100,10 @@
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `direction` | 主轴方向 | `row` / `vertical` | `row` |
-| `justify` | 主轴对齐 | `flex-start` / `center` / `flex-end` / `space-between` / `space-around` | `flex-start` |
-| `align` | 交叉轴对齐 | `stretch` / `flex-start` / `center` / `flex-end` / `baseline` | `stretch` |
-| `gap` | 子项间距 | string（如 `8px`） | — |
-| `wrap` | 换行策略 | `nowrap` / `wrap` | `nowrap` |
+| 属性        | 说明       | 类型                                                                    | 默认值       |
+| ----------- | ---------- | ----------------------------------------------------------------------- | ------------ |
+| `direction` | 主轴方向   | `row` / `vertical`                                                      | `row`        |
+| `justify`   | 主轴对齐   | `flex-start` / `center` / `flex-end` / `space-between` / `space-around` | `flex-start` |
+| `align`     | 交叉轴对齐 | `stretch` / `flex-start` / `center` / `flex-end` / `baseline`           | `stretch`    |
+| `gap`       | 子项间距   | string（如 `8px`）                                                      | —            |
+| `wrap`      | 换行策略   | `nowrap` / `wrap`                                                       | `nowrap`     |

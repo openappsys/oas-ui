@@ -39,7 +39,9 @@ describe('OASTabs', () => {
 
   it('左右方向键切换', () => {
     const el = mount()
-    el.shadowRoot!.querySelector('[role="tablist"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    el.shadowRoot!.querySelector('[role="tablist"]')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight' }),
+    )
     expect(el.getAttribute('active')).toBe('b')
   })
 

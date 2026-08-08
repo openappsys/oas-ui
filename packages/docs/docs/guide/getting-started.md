@@ -3,7 +3,7 @@
 ## 三行引入（CDN）
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@1/index.css">
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@1/index.css" />
 <script type="module">
   import '@oas-ui/ui'
 </script>
@@ -36,7 +36,9 @@ React / Vue 中直接使用：
 
 ```tsx
 // React
-<oas-button type="primary" onOasClick={() => console.log('clicked')}>按钮</oas-button>
+<oas-button type="primary" onOasClick={() => console.log('clicked')}>
+  按钮
+</oas-button>
 ```
 
 ```vue

@@ -49,7 +49,12 @@ describe('OASSegmented', () => {
   })
 
   it('disabled 项不可选', () => {
-    const el = mount({ options: JSON.stringify([{ label: 'a', value: 'a' }, { label: 'b', value: 'b', disabled: true }]) })
+    const el = mount({
+      options: JSON.stringify([
+        { label: 'a', value: 'a' },
+        { label: 'b', value: 'b', disabled: true },
+      ]),
+    })
     let fired = 0
     el.addEventListener('oas-change', () => fired++)
     items(el)[1]!.click()

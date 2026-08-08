@@ -41,11 +41,11 @@ onMounted(async () => {
 
 ### 方法
 
-| 方法 | 说明 |
-|---|---|
-| `loadingBar.start()` | 开始加载，进度自动前进至 90% |
-| `loadingBar.finish()` | 完成并移除 |
-| `loadingBar.error()` | 失败（红色）并移除 |
-| `destroyAllLoadingBar()` | 移除当前加载条 |
+| 方法                     | 说明                         |
+| ------------------------ | ---------------------------- |
+| `loadingBar.start()`     | 开始加载，进度自动前进至 90% |
+| `loadingBar.finish()`    | 完成并移除                   |
+| `loadingBar.error()`     | 失败（红色）并移除           |
+| `destroyAllLoadingBar()` | 移除当前加载条               |
 
 加载条 `role="progressbar"`，进度通过 `aria-valuenow` 同步。

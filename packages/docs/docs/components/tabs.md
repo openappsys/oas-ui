@@ -80,15 +80,15 @@ onMounted(() => {
 
 ## API
 
-| 组件 | 属性 | 说明 |
-|---|---|---|
-| `oas-tabs` | `active` | 激活标签的 `value` |
-| `oas-tabs` | `type` | 样式变体：`line`（下划线，默认）/ `card`（卡片式） |
-| `oas-tab-panel` | `label` | 标签文本 |
-| `oas-tab-panel` | `value` | 标签值 |
+| 组件            | 属性     | 说明                                               |
+| --------------- | -------- | -------------------------------------------------- |
+| `oas-tabs`      | `active` | 激活标签的 `value`                                 |
+| `oas-tabs`      | `type`   | 样式变体：`line`（下划线，默认）/ `card`（卡片式） |
+| `oas-tab-panel` | `label`  | 标签文本                                           |
+| `oas-tab-panel` | `value`  | 标签值                                             |
 
-| 事件 | 说明 |
-|---|---|
+| 事件         | 说明                      |
+| ------------ | ------------------------- |
 | `oas-change` | 切换，`detail: { value }` |
 
 键盘：聚焦标签列表后 ← / → / ↑ / ↓ 循环切换。`oas-tab-panel` 声明 `hidden` 属性隐藏未激活面板（内容保留在 DOM）。

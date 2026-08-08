@@ -67,7 +67,13 @@ export class OASPagination extends OASElement {
     const current = Math.min(Math.max(Number(this.getAttr('current', '1')) || 1, 1), pageCount)
     const siblings = Number(this.getAttr('siblings', '1')) || 1
 
-    const btn = (label: string, part: string, ariaLabel: string, disabled: boolean, onClick: () => void): HTMLButtonElement => {
+    const btn = (
+      label: string,
+      part: string,
+      ariaLabel: string,
+      disabled: boolean,
+      onClick: () => void,
+    ): HTMLButtonElement => {
       const b = document.createElement('button')
       b.className = 'btn'
       b.setAttribute('part', part)
@@ -79,12 +85,18 @@ export class OASPagination extends OASElement {
       return b
     }
 
-    group.appendChild(btn('‹', 'prev', this.t('pagination.prev'), current === 1, () => this.goto(current - 1)))
+    group.appendChild(
+      btn('‹', 'prev', this.t('pagination.prev'), current === 1, () => this.goto(current - 1)),
+    )
 
     const pagesToShow = new Set<number>()
     pagesToShow.add(1)
     pagesToShow.add(pageCount)
-    for (let i = Math.max(2, current - siblings); i <= Math.min(pageCount - 1, current + siblings); i++) {
+    for (
+      let i = Math.max(2, current - siblings);
+      i <= Math.min(pageCount - 1, current + siblings);
+      i++
+    ) {
       pagesToShow.add(i)
     }
     const sorted = [...pagesToShow].sort((a, b) => a - b)
@@ -96,13 +108,19 @@ export class OASPagination extends OASElement {
         ell.textContent = '…'
         group.appendChild(ell)
       }
-      const p = btn(String(page), 'page', this.t('pagination.page', { page }), false, () => this.goto(page))
+      const p = btn(String(page), 'page', this.t('pagination.page', { page }), false, () =>
+        this.goto(page),
+      )
       p.setAttribute('aria-current', String(page === current))
       group.appendChild(p)
       last = page
     }
 
-    group.appendChild(btn('›', 'next', this.t('pagination.next'), current === pageCount, () => this.goto(current + 1)))
+    group.appendChild(
+      btn('›', 'next', this.t('pagination.next'), current === pageCount, () =>
+        this.goto(current + 1),
+      ),
+    )
   }
 
   private goto(page: number): void {

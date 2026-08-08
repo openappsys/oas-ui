@@ -49,11 +49,11 @@
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `title` | 标题文本 | `string` | — |
-| `content` | 正文文本 | `string` | — |
-| `placement` | 浮层位置 | `top` / `bottom` / `left` / `right` | `top` |
-| `open` | 受控显示（布尔属性，存在即显示） | `boolean` | `false` |
+| 属性        | 说明                             | 类型                                | 默认值  |
+| ----------- | -------------------------------- | ----------------------------------- | ------- |
+| `title`     | 标题文本                         | `string`                            | —       |
+| `content`   | 正文文本                         | `string`                            | —       |
+| `placement` | 浮层位置                         | `top` / `bottom` / `left` / `right` | `top`   |
+| `open`      | 受控显示（布尔属性，存在即显示） | `boolean`                           | `false` |
 
 无对外事件。点击触发元素切换显隐，点击外部或按 Esc 关闭；`role="dialog"`。

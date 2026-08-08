@@ -51,8 +51,12 @@ export class OASSplitter extends OASElement {
     `
     this.leftPane = this.shadow.querySelector('.pane:first-of-type') as HTMLElement
     this.rightPane = this.shadow.querySelector('.pane:last-of-type') as HTMLElement
-    this.shadow.querySelector('.splitter')?.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
-    this.shadow.querySelector('.splitter')?.addEventListener('pointerdown', (e) => this.startDrag(e as PointerEvent))
+    this.shadow
+      .querySelector('.splitter')
+      ?.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
+    this.shadow
+      .querySelector('.splitter')
+      ?.addEventListener('pointerdown', (e) => this.startDrag(e as PointerEvent))
     // 拖拽期间监听在 document 上，保证指针移出分隔条仍能跟随
     this.onCleanup(() => {
       document.removeEventListener('pointermove', this.onDrag)
@@ -110,7 +114,9 @@ export class OASSplitter extends OASElement {
 
   protected override update(): void {
     // 分割条 aria-label locale 驱动（setLocale 切换自动重刷）
-    this.shadow.querySelector<HTMLElement>('[part="splitter"]')?.setAttribute('aria-label', this.t('splitter.adjust'))
+    this.shadow
+      .querySelector<HTMLElement>('[part="splitter"]')
+      ?.setAttribute('aria-label', this.t('splitter.adjust'))
     this.applyPercent()
   }
 

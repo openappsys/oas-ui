@@ -305,7 +305,8 @@ export class OASCascader extends OASElement {
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       const cur = enabled.indexOf(this.activeRow)
-      this.activeRow = enabled[(cur - 1 + enabled.length) % enabled.length] ?? enabled[enabled.length - 1] ?? 0
+      this.activeRow =
+        enabled[(cur - 1 + enabled.length) % enabled.length] ?? enabled[enabled.length - 1] ?? 0
       this.focusPanel()
     } else if (e.key === 'ArrowRight') {
       e.preventDefault()

@@ -35,16 +35,16 @@ onMounted(async () => {
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `steps` | 步骤 JSON | `[{ selector, title, description? }]` | `[]` |
-| `open` | 开始引导（布尔属性，存在即启动） | `boolean` | `false` |
-| `current` | 当前步骤索引 | `number` | `0` |
+| 属性      | 说明                             | 类型                                  | 默认值  |
+| --------- | -------------------------------- | ------------------------------------- | ------- |
+| `steps`   | 步骤 JSON                        | `[{ selector, title, description? }]` | `[]`    |
+| `open`    | 开始引导（布尔属性，存在即启动） | `boolean`                             | `false` |
+| `current` | 当前步骤索引                     | `number`                              | `0`     |
 
-| 事件 | 说明 |
-|---|---|
-| `oas-step` | 步骤切换，`detail: { index }` |
-| `oas-finish` | 最后一步点击「完成」 |
-| `oas-cancel` | 跳过 / Esc 取消 |
+| 事件         | 说明                          |
+| ------------ | ----------------------------- |
+| `oas-step`   | 步骤切换，`detail: { index }` |
+| `oas-finish` | 最后一步点击「完成」          |
+| `oas-cancel` | 跳过 / Esc 取消               |
 
 遮罩高亮目标，`role="dialog"` + `aria-modal="true"`；支持「上一步 / 下一步 / 跳过」与键盘 Esc。

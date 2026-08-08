@@ -96,7 +96,9 @@ describe('OASMenu', () => {
 
   it('方向键导航移动 active', () => {
     const el = mount()
-    el.shadowRoot!.querySelector('[role="menu"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    el.shadowRoot!.querySelector('[role="menu"]')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown' }),
+    )
     expect(items(el)[0]!.classList.contains('active')).toBe(true)
   })
 
@@ -256,8 +258,12 @@ describe('OASMenu', () => {
     expect(el.hasAttribute('collapsed')).toBe(true)
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
     // 项居中收窄、顶层 label/arrow 隐藏
-    expect(css).toMatch(/:host\(:not\(\[mode='horizontal'\]\)\[collapsed\]\)\s*\.item\s*\{[^}]*justify-content:\s*center/)
-    expect(css).toMatch(/:host\(:not\(\[mode='horizontal'\]\)\[collapsed\]\)\s*>\s*\.menu\s*>\s*\.item\s*>\s*\.label/)
+    expect(css).toMatch(
+      /:host\(:not\(\[mode='horizontal'\]\)\[collapsed\]\)\s*\.item\s*\{[^}]*justify-content:\s*center/,
+    )
+    expect(css).toMatch(
+      /:host\(:not\(\[mode='horizontal'\]\)\[collapsed\]\)\s*>\s*\.menu\s*>\s*\.item\s*>\s*\.label/,
+    )
     // hover 浮出子菜单（子菜单为完整菜单）
     items(el)[0]!.dispatchEvent(new MouseEvent('mouseenter'))
     expect(items(el)[0]!.getAttribute('aria-expanded')).toBe('true')

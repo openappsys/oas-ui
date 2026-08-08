@@ -34,9 +34,9 @@ describe('OASCollapse', () => {
     el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
     const items = el.querySelectorAll('oas-collapse-item')
     expect((items[0] as OASCollapseItem).getAttribute('open')).not.toBeNull()
-    ;(el.querySelectorAll('oas-collapse-item')[0] as OASCollapseItem).shadowRoot!.querySelector('[part="head"]')!.dispatchEvent(
-      new MouseEvent('click', { bubbles: true, composed: true }),
-    )
+    ;(el.querySelectorAll('oas-collapse-item')[0] as OASCollapseItem)
+      .shadowRoot!.querySelector('[part="head"]')!
+      .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
     expect(detail).toEqual({ active: [] })
   })
 })

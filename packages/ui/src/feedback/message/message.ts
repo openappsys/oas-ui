@@ -32,8 +32,10 @@ function show(type: MessageType, content: string, duration = 3000): MessageHandl
 
 export const message = {
   info: (content: string, duration?: number): MessageHandle => show('info', content, duration),
-  success: (content: string, duration?: number): MessageHandle => show('success', content, duration),
-  warning: (content: string, duration?: number): MessageHandle => show('warning', content, duration),
+  success: (content: string, duration?: number): MessageHandle =>
+    show('success', content, duration),
+  warning: (content: string, duration?: number): MessageHandle =>
+    show('warning', content, duration),
   error: (content: string, duration?: number): MessageHandle => show('error', content, duration),
 }
 

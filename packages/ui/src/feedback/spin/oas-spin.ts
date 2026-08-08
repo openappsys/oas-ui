@@ -75,9 +75,15 @@ export class OASSpin extends OASElement {
     const wrap = this.shadow.querySelector('[part="wrap"]')
     if (wrap) {
       wrap.classList.toggle('spinning', spinning)
-      const hasContent = (this.shadow.querySelector('slot') as HTMLSlotElement | null)?.assignedNodes().length ? true : false
+      const hasContent = (
+        this.shadow.querySelector('slot') as HTMLSlotElement | null
+      )?.assignedNodes().length
+        ? true
+        : false
       wrap.classList.toggle('empty', !hasContent)
     }
-    this.shadow.querySelector('[part="indicator"]')?.setAttribute('data-size', this.getAttr('size', 'md'))
+    this.shadow
+      .querySelector('[part="indicator"]')
+      ?.setAttribute('data-size', this.getAttr('size', 'md'))
   }
 }

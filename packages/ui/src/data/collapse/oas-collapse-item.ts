@@ -61,6 +61,9 @@ export class OASCollapseItem extends OASElement {
   }
 
   protected override update(): void {
-    this.shadow.querySelector<HTMLElement>('[part="header"]')!.textContent = this.getAttr('header', '')
+    this.shadow.querySelector<HTMLElement>('[part="header"]')!.textContent = this.getAttr(
+      'header',
+      '',
+    )
   }
 }

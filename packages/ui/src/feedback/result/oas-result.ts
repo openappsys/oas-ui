@@ -64,7 +64,13 @@ export class OASResult extends OASElement {
   protected override update(): void {
     const icon = this.shadow.querySelector('[part="icon"]')
     icon?.setAttribute('data-status', this.getAttr('status', 'success'))
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr('title', '')
-    this.shadow.querySelector<HTMLElement>('[part="description"]')!.textContent = this.getAttr('description', '')
+    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
+      'title',
+      '',
+    )
+    this.shadow.querySelector<HTMLElement>('[part="description"]')!.textContent = this.getAttr(
+      'description',
+      '',
+    )
   }
 }

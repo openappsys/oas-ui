@@ -66,7 +66,9 @@ export class OASMessage extends OASElement {
     `
     const text = this.shadow.querySelector('.text')!
     text.textContent = this.textContent
-    this.shadow.querySelector<HTMLButtonElement>('.close')?.addEventListener('click', () => this.remove())
+    this.shadow
+      .querySelector<HTMLButtonElement>('.close')
+      ?.addEventListener('click', () => this.remove())
     const duration = Number(this.getAttr('duration', '3000'))
     if (duration > 0) {
       this.timer = setTimeout(() => this.remove(), duration)
@@ -75,6 +77,8 @@ export class OASMessage extends OASElement {
 
   protected override update(): void {
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
-    this.shadow.querySelector<HTMLElement>('[part="close"]')?.setAttribute('aria-label', this.t('message.close'))
+    this.shadow
+      .querySelector<HTMLElement>('[part="close"]')
+      ?.setAttribute('aria-label', this.t('message.close'))
   }
 }

@@ -97,11 +97,15 @@ export class OASDrawer extends OASElement {
           <button class="close-btn" part="close" aria-label="">✕</button>
         </div>
         <div class="body" part="body"><slot></slot></div>
-        ${this.hasAttr('no-footer') ? '' : `
+        ${
+          this.hasAttr('no-footer')
+            ? ''
+            : `
         <div class="footer" part="footer">
           <button class="btn" part="cancel" type="button"></button>
           <button class="btn" part="ok" type="button"></button>
-        </div>`}
+        </div>`
+        }
       </div>
     `
     this.update()
@@ -115,8 +119,12 @@ export class OASDrawer extends OASElement {
       if (this.hasAttr('no-mask-close')) return
       this.close('close')
     })
-    this.shadow.querySelector('[part="cancel"]')?.addEventListener('click', () => this.close('close'))
-    this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.close('close'))
+    this.shadow
+      .querySelector('[part="cancel"]')
+      ?.addEventListener('click', () => this.close('close'))
+    this.shadow
+      .querySelector('[part="close"]')
+      ?.addEventListener('click', () => this.close('close'))
     this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => this.close('ok'))
 
     const onKey = (e: KeyboardEvent): void => {
@@ -138,9 +146,13 @@ export class OASDrawer extends OASElement {
     const visible = this.hasAttr('visible')
     panel.setAttribute('aria-hidden', String(!visible))
     this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.getAttr('title', '')
-    this.shadow.querySelector<HTMLElement>('.panel')!.setAttribute('data-placement', this.getAttr('placement', 'right'))
+    this.shadow
+      .querySelector<HTMLElement>('.panel')!
+      .setAttribute('data-placement', this.getAttr('placement', 'right'))
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
-    this.shadow.querySelector<HTMLElement>('[part="close"]')?.setAttribute('aria-label', this.t('drawer.close'))
+    this.shadow
+      .querySelector<HTMLElement>('[part="close"]')
+      ?.setAttribute('aria-label', this.t('drawer.close'))
     const okBtn = this.shadow.querySelector<HTMLElement>('[part="ok"]')
     const cancelBtn = this.shadow.querySelector<HTMLElement>('[part="cancel"]')
     if (okBtn) {

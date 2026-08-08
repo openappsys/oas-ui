@@ -54,7 +54,7 @@ const Table = dynamic(() => import('./TablePage'), { ssr: false })
 ## 三行引入（客户端）
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@1/index.css">
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@1/index.css" />
 <script type="module">
   import '@oas-ui/ui'
 </script>

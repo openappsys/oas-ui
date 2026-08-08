@@ -57,12 +57,12 @@
 
 ## API
 
-| 组件 | 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|---|
-| `oas-descriptions` | `title` | 标题 | string | — |
-| `oas-descriptions` | `column` | 每行列数 | string / number | `3` |
-| `oas-descriptions-item` | `label` | 字段标签 | string | — |
+| 组件                    | 属性     | 说明     | 类型            | 默认值 |
+| ----------------------- | -------- | -------- | --------------- | ------ |
+| `oas-descriptions`      | `title`  | 标题     | string          | —      |
+| `oas-descriptions`      | `column` | 每行列数 | string / number | `3`    |
+| `oas-descriptions-item` | `label`  | 字段标签 | string          | —      |
 
-| 插槽 | 说明 |
-|---|---|
+| 插槽                             | 说明     |
+| -------------------------------- | -------- |
 | `oas-descriptions-item` 默认插槽 | 字段内容 |

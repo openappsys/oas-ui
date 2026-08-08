@@ -2,7 +2,11 @@ import { defineConfig } from 'vite'
 import { readdirSync, statSync } from 'node:fs'
 import { resolve, relative, join } from 'node:path'
 
-function collectEntries(dir: string, root: string, acc: Record<string, string> = {}): Record<string, string> {
+function collectEntries(
+  dir: string,
+  root: string,
+  acc: Record<string, string> = {},
+): Record<string, string> {
   for (const name of readdirSync(dir)) {
     const full = join(dir, name)
     if (statSync(full).isDirectory()) {

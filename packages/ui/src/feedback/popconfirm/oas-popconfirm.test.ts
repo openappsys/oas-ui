@@ -34,7 +34,9 @@ describe('OASPopconfirm', () => {
     el.addEventListener('oas-ok', () => ok++)
     ;(el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
     expect(ok).toBe(1)
-    expect(el.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe('true')
+    expect(el.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe(
+      'true',
+    )
   })
 
   it('点击取消派发 oas-cancel 并关闭', async () => {
@@ -51,7 +53,9 @@ describe('OASPopconfirm', () => {
     const el = mount({ title: '确认' })
     await Promise.resolve()
     ;(el.querySelector('button') as HTMLElement).click()
-    expect(el.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe('false')
+    expect(el.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe(
+      'false',
+    )
   })
 
   it('键盘/脚本激活 ok（合成 click）后 open 不被误恢复', async () => {
@@ -62,6 +66,8 @@ describe('OASPopconfirm', () => {
     const okBtn = el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement
     okBtn.click()
     expect(el.hasAttribute('open')).toBe(false)
-    expect(el.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe('true')
+    expect(el.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe(
+      'true',
+    )
   })
 })

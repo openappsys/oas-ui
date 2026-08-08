@@ -64,10 +64,10 @@ onMounted(async () => {
 
 ### 属性
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `percent` | 进度百分比（0–100） | `number` | `0` |
-| `status` | 状态色；`error` 显示红色，未设置且进度满 100 时显示成功绿 | `string` | — |
-| `no-text` | 隐藏右侧百分比文本 | `boolean` | `false` |
+| 属性      | 说明                                                      | 类型      | 默认值  |
+| --------- | --------------------------------------------------------- | --------- | ------- |
+| `percent` | 进度百分比（0–100）                                       | `number`  | `0`     |
+| `status`  | 状态色；`error` 显示红色，未设置且进度满 100 时显示成功绿 | `string`  | —       |
+| `no-text` | 隐藏右侧百分比文本                                        | `boolean` | `false` |
 
 `role="progressbar"` + `aria-valuenow` / `aria-valuemin` / `aria-valuemax`。

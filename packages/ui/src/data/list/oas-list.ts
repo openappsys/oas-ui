@@ -100,7 +100,9 @@ export class OASList extends OASElement {
     if (!body || !skeleton || !empty) return
 
     const loading = this.hasAttr('loading')
-    const hasItems = Array.from(this.children).some((c) => c.tagName.toLowerCase() === 'oas-list-item')
+    const hasItems = Array.from(this.children).some(
+      (c) => c.tagName.toLowerCase() === 'oas-list-item',
+    )
     const isEmpty = !loading && (this.hasAttr('empty') || !hasItems)
 
     body.hidden = loading || isEmpty

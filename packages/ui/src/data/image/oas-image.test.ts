@@ -124,7 +124,9 @@ describe('OASImage', () => {
 
     setLocale(en)
     expect(el.shadowRoot!.querySelector('[part="placeholder"]')!.textContent).toContain('Loading')
-    expect(el.shadowRoot!.querySelector('[part="fallback"]')!.textContent).toContain('Image failed to load')
+    expect(el.shadowRoot!.querySelector('[part="fallback"]')!.textContent).toContain(
+      'Image failed to load',
+    )
 
     setLocale('zh-CN')
     expect(el.shadowRoot!.querySelector('[part="fallback"]')!.textContent).toContain('图片加载失败')

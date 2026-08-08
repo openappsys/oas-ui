@@ -76,8 +76,14 @@ export class OASHoverCard extends OASElement {
     if (!this.card) return
     const open = this.hasAttr('open')
     this.card.setAttribute('aria-hidden', String(!open))
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr('title', '')
-    this.shadow.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr('content', '')
+    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
+      'title',
+      '',
+    )
+    this.shadow.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr(
+      'content',
+      '',
+    )
     if (!open) return
     const anchorRect = this.anchor?.getBoundingClientRect()
     if (!anchorRect) return

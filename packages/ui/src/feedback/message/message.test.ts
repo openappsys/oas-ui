@@ -43,7 +43,7 @@ describe('message 命令式 API', () => {
     expect(styleText).toContain(":host([type='error']) .box")
     expect(styleText).toContain(":host([type='warning']) .box")
     // 不应再依赖 .box 自身的 type 属性（永不命中）
-    expect(styleText).not.toContain(".box[type=")
+    expect(styleText).not.toContain('.box[type=')
   })
 
   it('destroyAll 立即清空全部', async () => {

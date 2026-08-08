@@ -44,12 +44,12 @@
 
 ## API
 
-| 组件 | 说明 |
-|---|---|
-| `oas-layout` | 布局容器（含侧栏时自动横向排布） |
-| `oas-header` | 顶栏，渲染为 `<header>` |
-| `oas-sider` | 侧栏，`collapsed` 属性折叠为窄条，渲染为 `<aside aria-label="侧边栏">` |
-| `oas-content` | 内容区，渲染为 `<main>` |
-| `oas-footer` | 底部，渲染为 `<footer>` |
+| 组件          | 说明                                                                   |
+| ------------- | ---------------------------------------------------------------------- |
+| `oas-layout`  | 布局容器（含侧栏时自动横向排布）                                       |
+| `oas-header`  | 顶栏，渲染为 `<header>`                                                |
+| `oas-sider`   | 侧栏，`collapsed` 属性折叠为窄条，渲染为 `<aside aria-label="侧边栏">` |
+| `oas-content` | 内容区，渲染为 `<main>`                                                |
+| `oas-footer`  | 底部，渲染为 `<footer>`                                                |
 
 子组件需带对应 `slot` 属性（`header` / `sider` / `content` / `footer`）。

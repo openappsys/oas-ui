@@ -27,9 +27,21 @@ function onSortChange(e: Event) {
     <h1>Vue Playground · 表格页</h1>
 
     <div class="switch-row">
-      <oas-button size="sm" @click="theme = 'light'" :type="theme === 'light' ? 'primary' : 'default'">Light</oas-button>
-      <oas-button size="sm" @click="theme = 'dark'" :type="theme === 'dark' ? 'primary' : 'default'">Dark</oas-button>
-      <oas-button size="sm" @click="theme = 'high-contrast'" :type="theme === 'high-contrast' ? 'primary' : 'default'">高对比</oas-button>
+      <oas-button
+        size="sm"
+        @click="theme = 'light'"
+        :type="theme === 'light' ? 'primary' : 'default'"
+        >Light</oas-button
+      >
+      <oas-button size="sm" @click="theme = 'dark'" :type="theme === 'dark' ? 'primary' : 'default'"
+        >Dark</oas-button
+      >
+      <oas-button
+        size="sm"
+        @click="theme = 'high-contrast'"
+        :type="theme === 'high-contrast' ? 'primary' : 'default'"
+        >高对比</oas-button
+      >
     </div>
 
     <div class="demo-block">
@@ -45,12 +57,9 @@ function onSortChange(e: Event) {
 
     <div class="demo-block">
       <h3>抽屉 + 消息</h3>
-      <oas-button
-        size="sm"
-        @click="
-          ;(window as any).OASMessage?.success?.('Vue 侧成功提示')
-        "
-      >成功消息</oas-button>
+      <oas-button size="sm" @click=";(window as any).OASMessage?.success?.('Vue 侧成功提示')"
+        >成功消息</oas-button
+      >
     </div>
   </div>
 </template>

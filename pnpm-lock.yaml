@@ -26,6 +26,9 @@ importers:
       happy-dom:
         specifier: ^20.11.1
         version: 20.11.1
+      prettier:
+        specifier: ^3.9.6
+        version: 3.9.6
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
@@ -1435,6 +1438,11 @@ packages:
     peerDependenciesMeta:
       preact-render-to-string:
         optional: true
+
+  prettier@3.9.6:
+    resolution: {integrity: sha512-OpN0zzVdiaiAhxpuuj5efpIS4sY9j7bY6uR5mnj5yPzGkdkjNKSJeUThPb60Jw29QuAZgA4o+/iB49kFiaBX6g==}
+    engines: {node: '>=14'}
+    hasBin: true
 
   property-information@7.2.0:
     resolution: {integrity: sha512-IAtzIB6sUiWaJYrX9smp3V46pBGbBeLFRGdh25kg1334VcBlD8HzhPeNIWQH9zhGmo2itIe25EHt9dQP7G5hmg==}
@@ -2969,6 +2977,8 @@ snapshots:
       source-map-js: 1.2.1
 
   preact@10.29.8: {}
+
+  prettier@3.9.6: {}
 
   property-information@7.2.0: {}
 

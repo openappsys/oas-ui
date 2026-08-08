@@ -4,14 +4,16 @@
 
 在根元素（`<html>` 或任意容器）上设置 `data-theme` 切换三套内置主题：
 
-| `data-theme` | 说明 |
-|---|---|
-| `light`（默认） | 浅色 |
-| `dark` | 深色 |
+| `data-theme`    | 说明                                       |
+| --------------- | ------------------------------------------ |
+| `light`（默认） | 浅色                                       |
+| `dark`          | 深色                                       |
 | `high-contrast` | 高对比（WCAG AAA 友好，边框/文字对比更强） |
 
 ```html
-<html data-theme="dark">…</html>
+<html data-theme="dark">
+  …
+</html>
 ```
 
 ```js
@@ -41,18 +43,18 @@ document.documentElement.dataset.theme = 'high-contrast'
 
 ### Token 一览
 
-| 组 | 变量 |
-|---|---|
-| 品牌 | `--oas-color-primary(-hover/-active)`、`--oas-color-success`、`--oas-color-warning`、`--oas-color-danger` |
-| 文本 | `--oas-color-text-primary/-secondary/-disabled` |
-| 边框/背景 | `--oas-color-border`、`--oas-color-bg(-hover/-disabled)`、`--oas-color-overlay` |
-| 字号 | `--oas-font-size-xs/sm/md/lg/xl` |
-| 间距 | `--oas-space-1…6` |
-| 圆角 | `--oas-radius-sm/md/lg` |
-| 控件 | `--oas-control-height-sm/md/lg` |
-| 动效 | `--oas-transition-fast/base`、`--oas-ease-out/in-out` |
-| 层级 | `--oas-z-dropdown/sticky/fixed/overlay/modal/message/toast/tooltip` |
-| 焦点环 | `--oas-focus-ring` |
+| 组        | 变量                                                                                                      |
+| --------- | --------------------------------------------------------------------------------------------------------- |
+| 品牌      | `--oas-color-primary(-hover/-active)`、`--oas-color-success`、`--oas-color-warning`、`--oas-color-danger` |
+| 文本      | `--oas-color-text-primary/-secondary/-disabled`                                                           |
+| 边框/背景 | `--oas-color-border`、`--oas-color-bg(-hover/-disabled)`、`--oas-color-overlay`                           |
+| 字号      | `--oas-font-size-xs/sm/md/lg/xl`                                                                          |
+| 间距      | `--oas-space-1…6`                                                                                         |
+| 圆角      | `--oas-radius-sm/md/lg`                                                                                   |
+| 控件      | `--oas-control-height-sm/md/lg`                                                                           |
+| 动效      | `--oas-transition-fast/base`、`--oas-ease-out/in-out`                                                     |
+| 层级      | `--oas-z-dropdown/sticky/fixed/overlay/modal/message/toast/tooltip`                                       |
+| 焦点环    | `--oas-focus-ring`                                                                                        |
 
 ## 减弱动效
 

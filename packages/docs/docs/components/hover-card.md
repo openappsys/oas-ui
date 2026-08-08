@@ -46,12 +46,12 @@ hover / 聚焦触发，可配置延迟的预览卡片。
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `title` | 标题文本 | `string` | — |
-| `content` | 内容文本 | `string` | — |
-| `placement` | 浮层位置 | `top` / `bottom` / `left` / `right` | `top` |
-| `delay` | 显隐延迟（毫秒） | `number` | `100` |
-| `open` | 受控显示（布尔属性，存在即显示） | `boolean` | `false` |
+| 属性        | 说明                             | 类型                                | 默认值  |
+| ----------- | -------------------------------- | ----------------------------------- | ------- |
+| `title`     | 标题文本                         | `string`                            | —       |
+| `content`   | 内容文本                         | `string`                            | —       |
+| `placement` | 浮层位置                         | `top` / `bottom` / `left` / `right` | `top`   |
+| `delay`     | 显隐延迟（毫秒）                 | `number`                            | `100`   |
+| `open`      | 受控显示（布尔属性，存在即显示） | `boolean`                           | `false` |
 
 无对外事件。hover / focus 触发，`role="dialog"`。

@@ -6,7 +6,10 @@ function mount(): OASForm {
     'rules',
     JSON.stringify({
       name: [{ required: true, message: '请输入姓名' }],
-      email: [{ required: true, message: '请输入邮箱' }, { pattern: '^\\S+@\\S+$', message: '邮箱格式不正确' }],
+      email: [
+        { required: true, message: '请输入邮箱' },
+        { pattern: '^\\S+@\\S+$', message: '邮箱格式不正确' },
+      ],
     }),
   )
   el.innerHTML = `
@@ -72,7 +75,8 @@ describe('OASForm', () => {
 
   it('校验失败后字段后有 .error-text 显示 message，修正后移除', () => {
     const el = mount()
-    const submit = () => el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    const submit = () =>
+      el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
     const name = el.querySelector('oas-input[name="name"]')!
     const email = el.querySelector('oas-input[name="email"]')!
 

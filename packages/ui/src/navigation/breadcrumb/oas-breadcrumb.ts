@@ -63,7 +63,9 @@ export class OASBreadcrumb extends OASElement {
     let items: BreadcrumbItem[] = []
     try {
       const parsed = JSON.parse(this.getAttr('items', '[]'))
-      items = Array.isArray(parsed) ? parsed.filter((i): i is BreadcrumbItem => i && typeof i.label === 'string') : []
+      items = Array.isArray(parsed)
+        ? parsed.filter((i): i is BreadcrumbItem => i && typeof i.label === 'string')
+        : []
     } catch {
       items = []
     }

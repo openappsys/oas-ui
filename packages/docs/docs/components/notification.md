@@ -44,13 +44,13 @@ onMounted(async () => {
 
 ### 方法
 
-| 方法 | 说明 |
-|---|---|
-| `notification.info({ title, description?, duration? })` | 信息通知 |
-| `notification.success({ title, description?, duration? })` | 成功通知 |
-| `notification.warning({ title, description?, duration? })` | 警告通知 |
-| `notification.error({ title, description?, duration? })` | 错误通知 |
-| `destroyAllNotification()` | 清空全部通知 |
+| 方法                                                       | 说明         |
+| ---------------------------------------------------------- | ------------ |
+| `notification.info({ title, description?, duration? })`    | 信息通知     |
+| `notification.success({ title, description?, duration? })` | 成功通知     |
+| `notification.warning({ title, description?, duration? })` | 警告通知     |
+| `notification.error({ title, description?, duration? })`   | 错误通知     |
+| `destroyAllNotification()`                                 | 清空全部通知 |
 
 - `duration` 默认 `4500`ms，传 `0` 表示不自动关闭。
 - 右上角堆叠，`role="region"` + `aria-label="通知"`。

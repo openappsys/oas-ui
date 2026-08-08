@@ -84,8 +84,12 @@ describe('组件文案 locale 切换（i18n 集成）', () => {
 
     setLocale(en)
     expect(nav.getAttribute('aria-label')).toBe('Pagination')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="prev"]')!.getAttribute('aria-label')).toBe('Previous page')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="next"]')!.getAttribute('aria-label')).toBe('Next page')
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[part="prev"]')!.getAttribute('aria-label'),
+    ).toBe('Previous page')
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[part="next"]')!.getAttribute('aria-label'),
+    ).toBe('Next page')
 
     setLocale('zh-CN')
     expect(nav.getAttribute('aria-label')).toBe('分页')

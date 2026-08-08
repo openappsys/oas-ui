@@ -4,7 +4,17 @@ import { computePosition } from './index.js'
 const viewport = { width: 800, height: 600 }
 
 function rect(x: number, y: number, w: number, h: number): DOMRect {
-  return { x, y, width: w, height: h, top: y, left: x, right: x + w, bottom: y + h, toJSON: () => ({}) } as DOMRect
+  return {
+    x,
+    y,
+    width: w,
+    height: h,
+    top: y,
+    left: x,
+    right: x + w,
+    bottom: y + h,
+    toJSON: () => ({}),
+  } as DOMRect
 }
 
 describe('computePosition 浮层定位', () => {

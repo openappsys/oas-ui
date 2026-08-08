@@ -140,7 +140,8 @@ export class OASTable extends OASElement {
       sorted.sort((a, b) => {
         const av = a[sortKey]
         const bv = b[sortKey]
-        if (typeof av === 'number' && typeof bv === 'number') return sortOrder === 'asc' ? av - bv : bv - av
+        if (typeof av === 'number' && typeof bv === 'number')
+          return sortOrder === 'asc' ? av - bv : bv - av
         return sortOrder === 'asc'
           ? String(av).localeCompare(String(bv))
           : String(bv).localeCompare(String(av))
@@ -155,7 +156,9 @@ export class OASTable extends OASElement {
       const selectAll = document.createElement('input')
       selectAll.type = 'checkbox'
       selectAll.setAttribute('aria-label', this.t('table.selectAll'))
-      selectAll.checked = sorted.length > 0 && sorted.every((r) => selected.includes(String(r[rowKey] ?? JSON.stringify(r))))
+      selectAll.checked =
+        sorted.length > 0 &&
+        sorted.every((r) => selected.includes(String(r[rowKey] ?? JSON.stringify(r))))
       selectAll.addEventListener('change', () => {
         const keys = sorted.map((r) => String(r[rowKey] ?? JSON.stringify(r)))
         this.setAttribute('selected', selectAll.checked ? keys.join(',') : '')

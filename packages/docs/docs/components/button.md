@@ -37,13 +37,13 @@
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `type` | 类型 | `default` / `primary` / `success` / `warning` / `danger` / `text` | `default` |
-| `size` | 尺寸 | `small` / `medium` / `large` | `medium` |
-| `disabled` | 禁用 | boolean | `false` |
-| `loading` | 加载态 | boolean | `false` |
+| 属性       | 说明   | 类型                                                              | 默认值    |
+| ---------- | ------ | ----------------------------------------------------------------- | --------- |
+| `type`     | 类型   | `default` / `primary` / `success` / `warning` / `danger` / `text` | `default` |
+| `size`     | 尺寸   | `small` / `medium` / `large`                                      | `medium`  |
+| `disabled` | 禁用   | boolean                                                           | `false`   |
+| `loading`  | 加载态 | boolean                                                           | `false`   |
 
-| 事件 | 说明 |
-|---|---|
+| 事件        | 说明                              |
+| ----------- | --------------------------------- |
 | `oas-click` | 点击，`detail: { originalEvent }` |

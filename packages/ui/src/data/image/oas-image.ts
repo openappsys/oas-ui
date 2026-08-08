@@ -81,7 +81,9 @@ export class OASImage extends OASElement {
       this.fallbackTried = true
       this.loaded = false
       this.failed = false
-      this.shadow.querySelector<HTMLImageElement>('img')?.setAttribute('src', this.getAttr('fallback', ''))
+      this.shadow
+        .querySelector<HTMLImageElement>('img')
+        ?.setAttribute('src', this.getAttr('fallback', ''))
     } else {
       // 无兜底图或兜底图也失败：显示失败占位
       this.failed = true

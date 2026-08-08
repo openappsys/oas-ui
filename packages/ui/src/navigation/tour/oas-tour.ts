@@ -147,19 +147,24 @@ export class OAStour extends OASElement {
   protected override update(): void {
     if (!this.highlight || !this.popup) return
     this.parseSteps()
-    this.current = Math.min(Math.max(Number(this.getAttr('current', '0')) || 0, 0), this.steps.length - 1)
+    this.current = Math.min(
+      Math.max(Number(this.getAttr('current', '0')) || 0, 0),
+      this.steps.length - 1,
+    )
     const open = this.hasAttr('open')
     // 操作按钮文案一律 locale 驱动（关闭状态下也保持最新，setLocale 切换自动重刷）
     this.shadow.querySelector<HTMLElement>('[part="skip"]')!.textContent = this.t('tour.skip')
     this.shadow.querySelector<HTMLElement>('[part="prev"]')!.textContent = this.t('tour.prev')
     const nextBtn = this.shadow.querySelector<HTMLButtonElement>('[part="next"]')!
-    nextBtn.textContent = this.current >= this.steps.length - 1 ? this.t('tour.finish') : this.t('tour.next')
+    nextBtn.textContent =
+      this.current >= this.steps.length - 1 ? this.t('tour.finish') : this.t('tour.next')
     if (!open) return
     const step = this.steps[this.current]
     if (!step) return
     this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = step.title
     this.shadow.querySelector<HTMLElement>('[part="desc"]')!.textContent = step.description ?? ''
-    this.shadow.querySelector<HTMLElement>('[part="step-count"]')!.textContent = `${this.current + 1} / ${this.steps.length}`
+    this.shadow.querySelector<HTMLElement>('[part="step-count"]')!.textContent =
+      `${this.current + 1} / ${this.steps.length}`
     const target = document.querySelector(step.selector)
     if (target) {
       const rect = target.getBoundingClientRect()
@@ -184,7 +189,10 @@ export class OAStour extends OASElement {
     try {
       const parsed = JSON.parse(this.getAttr('steps', '[]'))
       this.steps = Array.isArray(parsed)
-        ? parsed.filter((s): s is TourStep => s && typeof s.selector === 'string' && typeof s.title === 'string')
+        ? parsed.filter(
+            (s): s is TourStep =>
+              s && typeof s.selector === 'string' && typeof s.title === 'string',
+          )
         : []
     } catch {
       this.steps = []

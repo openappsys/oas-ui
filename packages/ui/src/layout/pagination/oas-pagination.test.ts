@@ -27,7 +27,9 @@ describe('OASPagination', () => {
     const el = mount({ current: '1' })
     expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBeGreaterThanOrEqual(3)
     expect(el.shadowRoot!.querySelector('.ellipsis')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')!.textContent).toBe('1')
+    expect(el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')!.textContent).toBe(
+      '1',
+    )
   })
 
   it('下一页切换并派发 oas-change', () => {

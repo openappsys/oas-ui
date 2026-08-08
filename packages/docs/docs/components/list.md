@@ -81,16 +81,16 @@
 
 ## API
 
-| 组件 | 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|---|
-| `oas-list` | `bordered` | 是否显示整体边框 | boolean | `false` |
-| `oas-list` | `split` | 是否显示条目分隔线 | boolean | 未设置 `bordered` 时为 `true` |
-| `oas-list` | `loading` | 加载态，显示骨架占位 | boolean | `false` |
-| `oas-list` | `empty` | 强制空态；无子项时自动空态 | boolean | `false` |
-| `oas-list` | `empty-text` | 空态文案 | string | `暂无数据` |
-| `oas-list-item` | `title` | 条目标题 | string | — |
+| 组件            | 属性         | 说明                       | 类型    | 默认值                        |
+| --------------- | ------------ | -------------------------- | ------- | ----------------------------- |
+| `oas-list`      | `bordered`   | 是否显示整体边框           | boolean | `false`                       |
+| `oas-list`      | `split`      | 是否显示条目分隔线         | boolean | 未设置 `bordered` 时为 `true` |
+| `oas-list`      | `loading`    | 加载态，显示骨架占位       | boolean | `false`                       |
+| `oas-list`      | `empty`      | 强制空态；无子项时自动空态 | boolean | `false`                       |
+| `oas-list`      | `empty-text` | 空态文案                   | string  | `暂无数据`                    |
+| `oas-list-item` | `title`      | 条目标题                   | string  | —                             |
 
-| 插槽 | 说明 |
-|---|---|
+| 插槽          | 说明                           |
+| ------------- | ------------------------------ |
 | `description` | 描述区（不提供时回退默认插槽） |
-| `extra` | 条目右侧扩展区 |
+| `extra`       | 条目右侧扩展区                 |

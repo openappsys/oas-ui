@@ -89,15 +89,15 @@ onMounted(async () => {
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `src` | 图片地址 | string | — |
-| `alt` | 替代文本 | string | `图片` |
-| `fit` | `object-fit` 值 | string | — |
-| `preview` | 开启预览，点击图片派发 `oas-preview` | boolean | `false` |
-| `placeholder` | 加载完成前显示浅灰占位 | boolean | `false` |
-| `fallback` | 加载失败时切换的兜底图地址；未设置则显示「图片加载失败」占位 | string | — |
+| 属性          | 说明                                                         | 类型    | 默认值  |
+| ------------- | ------------------------------------------------------------ | ------- | ------- |
+| `src`         | 图片地址                                                     | string  | —       |
+| `alt`         | 替代文本                                                     | string  | `图片`  |
+| `fit`         | `object-fit` 值                                              | string  | —       |
+| `preview`     | 开启预览，点击图片派发 `oas-preview`                         | boolean | `false` |
+| `placeholder` | 加载完成前显示浅灰占位                                       | boolean | `false` |
+| `fallback`    | 加载失败时切换的兜底图地址；未设置则显示「图片加载失败」占位 | string  | —       |
 
-| 事件 | 说明 |
-|---|---|
+| 事件          | 说明                                              |
+| ------------- | ------------------------------------------------- |
 | `oas-preview` | 点击图片，`detail: { src }`，预览浮层由调用方实现 |

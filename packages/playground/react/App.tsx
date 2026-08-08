@@ -49,16 +49,26 @@ export default function App() {
           <oas-form-item label="邮箱" name="email" required>
             <oas-input name="email" placeholder="请输入邮箱" required></oas-input>
           </oas-form-item>
-          <oas-button type="primary" size="sm">提交</oas-button>
+          <oas-button type="primary" size="sm">
+            提交
+          </oas-button>
         </oas-form>
-        {form.name && <p>已提交：{form.name} / {form.email}</p>}
+        {form.name && (
+          <p>
+            已提交：{form.name} / {form.email}
+          </p>
+        )}
       </div>
 
       <div className="demo-block">
         <h3>消息与确认（命令式 API）</h3>
         <oas-button
           size="sm"
-          onClick={() => (window as unknown as { OASMessage: Record<string, unknown> }).OASMessage?.success?.('React 侧成功提示')}
+          onClick={() =>
+            (window as unknown as { OASMessage: Record<string, unknown> }).OASMessage?.success?.(
+              'React 侧成功提示',
+            )
+          }
         >
           成功消息
         </oas-button>

@@ -34,7 +34,9 @@ describe('OASList', () => {
   it('bordered 时加边框', () => {
     const el = mount()
     el.setAttribute('bordered', '')
-    expect(el.shadowRoot!.querySelector('[part="list"]')!.getAttribute('data-bordered')).toBe('true')
+    expect(el.shadowRoot!.querySelector('[part="list"]')!.getAttribute('data-bordered')).toBe(
+      'true',
+    )
   })
 
   it('loading 时显示骨架占位、隐藏列表项', () => {

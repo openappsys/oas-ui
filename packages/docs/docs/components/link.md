@@ -34,14 +34,14 @@
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `href` | 链接地址 | string | — |
-| `type` | 类型 | `default` / `primary` / `success` / `warning` / `danger` | `default` |
-| `underline` | 下划线 | boolean | `true` |
-| `disabled` | 禁用 | boolean | `false` |
-| `target` | 打开方式 | string | — |
+| 属性        | 说明     | 类型                                                     | 默认值    |
+| ----------- | -------- | -------------------------------------------------------- | --------- |
+| `href`      | 链接地址 | string                                                   | —         |
+| `type`      | 类型     | `default` / `primary` / `success` / `warning` / `danger` | `default` |
+| `underline` | 下划线   | boolean                                                  | `true`    |
+| `disabled`  | 禁用     | boolean                                                  | `false`   |
+| `target`    | 打开方式 | string                                                   | —         |
 
-| 事件 | 说明 |
-|---|---|
+| 事件        | 说明                              |
+| ----------- | --------------------------------- |
 | `oas-click` | 点击，`detail: { originalEvent }` |

@@ -65,14 +65,14 @@ onMounted(() => {
 
 ## API
 
-| 组件 | 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|---|
-| `oas-collapse` | `active` | 展开项 `name` 集合（逗号分隔） | string | — |
-| `oas-collapse` | `accordion` | 手风琴模式，同时仅展开一项 | boolean | `false` |
-| `oas-collapse-item` | `name` | 面板唯一标识 | string | — |
-| `oas-collapse-item` | `header` | 面板标题 | string | — |
-| `oas-collapse-item` | `open` | 是否展开（由容器托管） | boolean | `false` |
+| 组件                | 属性        | 说明                           | 类型    | 默认值  |
+| ------------------- | ----------- | ------------------------------ | ------- | ------- |
+| `oas-collapse`      | `active`    | 展开项 `name` 集合（逗号分隔） | string  | —       |
+| `oas-collapse`      | `accordion` | 手风琴模式，同时仅展开一项     | boolean | `false` |
+| `oas-collapse-item` | `name`      | 面板唯一标识                   | string  | —       |
+| `oas-collapse-item` | `header`    | 面板标题                       | string  | —       |
+| `oas-collapse-item` | `open`      | 是否展开（由容器托管）         | boolean | `false` |
 
-| 事件 | 说明 |
-|---|---|
+| 事件         | 说明                                         |
+| ------------ | -------------------------------------------- |
 | `oas-change` | 展开状态变化，`detail: { active: string[] }` |

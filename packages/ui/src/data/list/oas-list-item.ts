@@ -43,6 +43,9 @@ export class OASListItem extends OASElement {
   }
 
   protected override update(): void {
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr('title', '')
+    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
+      'title',
+      '',
+    )
   }
 }

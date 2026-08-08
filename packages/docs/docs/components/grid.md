@@ -68,11 +68,11 @@
 
 ## API
 
-| 组件 | 属性 | 说明 | 默认值 |
-|---|---|---|---|
-| `oas-grid` | `cols` | 总列数 | `24` |
-| `oas-grid` | `gap` | 间距 | `0` |
-| `oas-grid-item` | `span` | 跨列数 | `24` |
-| `oas-grid-item` | `offset` | 左侧偏移列数 | `0` |
+| 组件            | 属性     | 说明         | 默认值 |
+| --------------- | -------- | ------------ | ------ |
+| `oas-grid`      | `cols`   | 总列数       | `24`   |
+| `oas-grid`      | `gap`    | 间距         | `0`    |
+| `oas-grid-item` | `span`   | 跨列数       | `24`   |
+| `oas-grid-item` | `offset` | 左侧偏移列数 | `0`    |
 
 `oas-grid` 渲染为 CSS Grid，子项为 24 份中的一份；`oas-grid-item` 通过 `span` 声明占位。

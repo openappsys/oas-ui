@@ -41,8 +41,12 @@ describe('OASCarousel', () => {
     const el = mount()
     expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')).not.toBeNull()
     expect(el.shadowRoot!.querySelector('[part="arrow-next"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')?.getAttribute('aria-label')).toBe('上一屏')
-    expect(el.shadowRoot!.querySelector('[part="arrow-next"]')?.getAttribute('aria-label')).toBe('下一屏')
+    expect(el.shadowRoot!.querySelector('[part="arrow-prev"]')?.getAttribute('aria-label')).toBe(
+      '上一屏',
+    )
+    expect(el.shadowRoot!.querySelector('[part="arrow-next"]')?.getAttribute('aria-label')).toBe(
+      '下一屏',
+    )
   })
 
   it('arrows=never 时箭头隐藏（hidden），不渲染可见箭头元素', () => {
@@ -112,10 +116,14 @@ describe('OASCarousel', () => {
     setLocale(en)
     expect(prev.getAttribute('aria-label')).toBe('Previous slide')
     expect(next.getAttribute('aria-label')).toBe('Next slide')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="dot"]')!.getAttribute('aria-label')).toBe('Slide 1')
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[part="dot"]')!.getAttribute('aria-label'),
+    ).toBe('Slide 1')
 
     setLocale('zh-CN')
     expect(prev.getAttribute('aria-label')).toBe('上一屏')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="dot"]')!.getAttribute('aria-label')).toBe('第 1 张')
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[part="dot"]')!.getAttribute('aria-label'),
+    ).toBe('第 1 张')
   })
 })

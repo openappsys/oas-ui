@@ -56,7 +56,9 @@ export class OASCollapse extends OASElement {
       else item.removeAttribute('open')
       if (!this.bound.has(item)) {
         item.addEventListener('oas-collapse-item-click', ((e: Event) => {
-          this.toggle((e as CustomEvent<{ item: OASCollapseItem }>).detail.item.getAttribute('name') ?? '')
+          this.toggle(
+            (e as CustomEvent<{ item: OASCollapseItem }>).detail.item.getAttribute('name') ?? '',
+          )
         }) as EventListener)
         this.bound.add(item)
       }

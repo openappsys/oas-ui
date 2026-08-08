@@ -2,7 +2,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import './index.js'
 import '../config-provider/index.js'
 import { message, destroyAll as destroyAllMessage } from '../../feedback/message/index.js'
-import { notification, destroyAll as destroyAllNotification } from '../../feedback/notification/index.js'
+import {
+  notification,
+  destroyAll as destroyAllNotification,
+} from '../../feedback/notification/index.js'
 
 /**
  * app 容器测试：

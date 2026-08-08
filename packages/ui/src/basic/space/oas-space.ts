@@ -36,8 +36,9 @@ export class OASSpace extends OASElement {
 
     this.style.display = 'flex'
     this.style.flexDirection = direction === 'vertical' ? 'column' : 'row'
-    this.style.gap = SIZE_MAP[size] ?? (Number.isNaN(Number(size)) ? SIZE_MAP.medium! : `${Number(size)}px`)
+    this.style.gap =
+      SIZE_MAP[size] ?? (Number.isNaN(Number(size)) ? SIZE_MAP.medium! : `${Number(size)}px`)
     this.style.flexWrap = wrap ? 'wrap' : 'nowrap'
-    this.style.alignItems = align ? ALIGN_MAP[align] ?? align : ''
+    this.style.alignItems = align ? (ALIGN_MAP[align] ?? align) : ''
   }
 }

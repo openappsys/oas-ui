@@ -145,8 +145,12 @@ export class OASCarousel extends OASElement {
     this.shadow.querySelector('[part="arrow-prev"]')?.toggleAttribute('hidden', arrows === 'never')
     this.shadow.querySelector('[part="arrow-next"]')?.toggleAttribute('hidden', arrows === 'never')
     // 箭头/指示器内置文案走 locale registry（setLocale 切换自动刷新）
-    this.shadow.querySelector<HTMLElement>('[part="arrow-prev"]')?.setAttribute('aria-label', this.t('carousel.prev'))
-    this.shadow.querySelector<HTMLElement>('[part="arrow-next"]')?.setAttribute('aria-label', this.t('carousel.next'))
+    this.shadow
+      .querySelector<HTMLElement>('[part="arrow-prev"]')
+      ?.setAttribute('aria-label', this.t('carousel.prev'))
+    this.shadow
+      .querySelector<HTMLElement>('[part="arrow-next"]')
+      ?.setAttribute('aria-label', this.t('carousel.next'))
     const dots = this.shadow.querySelector('[part="dots"]')
     if (!dots) return
     dots.innerHTML = ''
@@ -176,7 +180,10 @@ export class OASCarousel extends OASElement {
   private schedule(): void {
     if (this.timer) clearInterval(this.timer)
     if (!this.hasAttr('autoplay')) return
-    this.timer = setInterval(() => this.goto((Number(this.getAttr('index', '0')) || 0) + 1), Number(this.getAttr('interval', '3000')) || 3000)
+    this.timer = setInterval(
+      () => this.goto((Number(this.getAttr('index', '0')) || 0) + 1),
+      Number(this.getAttr('interval', '3000')) || 3000,
+    )
   }
 
   protected override onCleanup(): void {

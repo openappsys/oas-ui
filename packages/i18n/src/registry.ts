@@ -84,7 +84,9 @@ export function onLocaleChange(cb: (name: string) => void): () => void {
 
 /** 把当前翻译能力注入 core（OASElement.t 的委托目标） */
 function syncTranslator(): void {
-  setTranslator((key: string, params?: Record<string, string | number>) => t(key as LocaleKey, params))
+  setTranslator((key: string, params?: Record<string, string | number>) =>
+    t(key as LocaleKey, params),
+  )
 }
 
 // 模块加载即注入默认 zh-CN 翻译器，组件开箱即用中文

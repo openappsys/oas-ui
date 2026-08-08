@@ -22,10 +22,10 @@ test.describe('无障碍审计（axe，零严重违规）', () => {
         .include('.demo-block')
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
         .analyze()
-      const serious = results.violations.filter((v) => ['critical', 'serious'].includes(v.impact ?? ''))
-      expect(
-        serious.map((v) => `${v.id}: ${v.help}`),
-      ).toEqual([])
+      const serious = results.violations.filter((v) =>
+        ['critical', 'serious'].includes(v.impact ?? ''),
+      )
+      expect(serious.map((v) => `${v.id}: ${v.help}`)).toEqual([])
     })
   }
 })

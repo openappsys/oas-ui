@@ -315,7 +315,12 @@ export class OASMenu extends OASElement {
     this.syncActive()
   }
 
-  private renderLevel(container: HTMLElement, items: MenuItem[], selected: string, depth: number): void {
+  private renderLevel(
+    container: HTMLElement,
+    items: MenuItem[],
+    selected: string,
+    depth: number,
+  ): void {
     const horizontal = this.getAttr('mode') === 'horizontal'
     for (const item of items) {
       if (item.type === 'divider') {
@@ -437,7 +442,9 @@ export class OASMenu extends OASElement {
     }
     const current = this.currentItems()[this.activeIndex]
     if (!current || current.value == null) return
-    const el = this.menuEl.querySelector<HTMLElement>(`[part="item"][data-value="${current.value}"]`)
+    const el = this.menuEl.querySelector<HTMLElement>(
+      `[part="item"][data-value="${current.value}"]`,
+    )
     el?.classList.add('active')
   }
 

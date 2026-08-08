@@ -24,6 +24,8 @@ export class OASSider extends OASElement {
 
   protected override update(): void {
     // 侧边栏 aria-label locale 驱动（setLocale 切换自动重刷）
-    this.shadow.querySelector<HTMLElement>('[part="sider"]')?.setAttribute('aria-label', this.t('layout.sider'))
+    this.shadow
+      .querySelector<HTMLElement>('[part="sider"]')
+      ?.setAttribute('aria-label', this.t('layout.sider'))
   }
 }

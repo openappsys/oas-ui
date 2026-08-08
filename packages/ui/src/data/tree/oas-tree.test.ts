@@ -55,21 +55,29 @@ describe('OASTree', () => {
 
   it('locale：展开/选择 aria-label 随 setLocale 切换', () => {
     const el = mount({ checkable: '' })
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label')).toBe('展开/收起')
     expect(
-      el.shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]')!.getAttribute('aria-label'),
+      el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label'),
+    ).toBe('展开/收起')
+    expect(
+      el
+        .shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]')!
+        .getAttribute('aria-label'),
     ).toBe('选择 节点 A')
 
     setLocale(en)
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label')).toBe(
-      'Expand/Collapse',
-    )
     expect(
-      el.shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]')!.getAttribute('aria-label'),
+      el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label'),
+    ).toBe('Expand/Collapse')
+    expect(
+      el
+        .shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]')!
+        .getAttribute('aria-label'),
     ).toBe('Select 节点 A')
 
     setLocale('zh-CN')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label')).toBe('展开/收起')
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label'),
+    ).toBe('展开/收起')
   })
 
   it('点击复选框：更新 checked 属性、派发 oas-check、重建后 √ 恢复', () => {
@@ -80,7 +88,9 @@ describe('OASTree', () => {
     el.addEventListener('oas-select', () => selectFired++)
 
     const boxes = (): HTMLInputElement[] => [
-      ...(el.shadowRoot!.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>),
+      ...(el.shadowRoot!.querySelectorAll(
+        'input[type="checkbox"]',
+      ) as NodeListOf<HTMLInputElement>),
     ]
     // 初始：a 未勾选、a-1 未勾选、a-2 未勾选
     expect(boxes().map((b) => b.checked)).toEqual([false, false, false])

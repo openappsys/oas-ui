@@ -31,7 +31,9 @@ describe('OASPopover', () => {
   it('点击触发元素切换 open', async () => {
     const el = mount({ title: 'x' })
     ;(el.querySelector('button') as HTMLElement).click()
-    expect(el.shadowRoot!.querySelector('[part="panel"]')!.getAttribute('aria-hidden')).toBe('false')
+    expect(el.shadowRoot!.querySelector('[part="panel"]')!.getAttribute('aria-hidden')).toBe(
+      'false',
+    )
   })
 
   it('外部点击关闭', async () => {

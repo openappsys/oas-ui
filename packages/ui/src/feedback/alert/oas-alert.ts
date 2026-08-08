@@ -80,8 +80,13 @@ export class OASAlert extends OASElement {
   }
 
   protected override update(): void {
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr('title', '')
+    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
+      'title',
+      '',
+    )
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
-    this.shadow.querySelector<HTMLElement>('[part="close"]')?.setAttribute('aria-label', this.t('alert.close'))
+    this.shadow
+      .querySelector<HTMLElement>('[part="close"]')
+      ?.setAttribute('aria-label', this.t('alert.close'))
   }
 }

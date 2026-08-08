@@ -4,17 +4,17 @@
 
 ## 1. 技术选型（决策记录）
 
-| 项 | 选型 | 理由 |
-|---|---|---|
-| 组件载体 | **Web Components**（Custom Elements + Shadow DOM） | 框架无关、浏览器原生、React/Vue/原生皆可用 |
-| 组件基类 | 自研轻量基类（`OASElement`，基于 `HTMLElement`） | 核心无第三方运行时依赖；响应式自研（见 §2.1），不引第三方基类库 |
-| 响应式 | **自研 signal + 自研断点/容器查询桥接** | 零依赖原则的延伸；组件粒度小，自研成本可控（见 §2.1） |
-| 语言 | TypeScript strict | 全量类型、属性/事件类型导出 |
-| 构建 | Vite（library mode）+ `vite-plugin-dts` | 产出 ESM + `.d.ts`，按需加载 |
-| 单测 | Vitest + happy-dom | 组件事件/属性/渲染 |
-| 视觉/交互测试 | Playwright（chromium/firefox/webkit） | 真实浏览器交互、视觉回归（可先行 chromium） |
-| 主题 | CSS 变量（`:root` + `[data-theme]`） | 运行时换肤、宿主可覆盖 |
-| 包管理 | pnpm workspace（monorepo） | 多包（core/主题/图标/文档站）依赖清晰 |
+| 项            | 选型                                               | 理由                                                    |
+| ------------- | -------------------------------------------------- | ------------------------------------------------------- |
+| 组件载体      | **Web Components**（Custom Elements + Shadow DOM） | 框架无关、浏览器原生、React/Vue/原生皆可用              |
+| 组件基类      | 自研轻量基类（`OASElement`，基于 `HTMLElement`）   | 核心无第三方运行时依赖；响应式自研（见 §2.1），不引第三方基类库 |
+| 响应式        | **自研 signal + 自研断点/容器查询桥接**            | 零依赖原则的延伸；组件粒度小，自研成本可控（见 §2.1）   |
+| 语言          | TypeScript strict                                  | 全量类型、属性/事件类型导出                             |
+| 构建          | Vite（library mode）+ `vite-plugin-dts`            | 产出 ESM + `.d.ts`，按需加载                            |
+| 单测          | Vitest + happy-dom                                 | 组件事件/属性/渲染                                      |
+| 视觉/交互测试 | Playwright（chromium/firefox/webkit）              | 真实浏览器交互、视觉回归（可先行 chromium）             |
+| 主题          | CSS 变量（`:root` + `[data-theme]`）               | 运行时换肤、宿主可覆盖                                  |
+| 包管理        | pnpm workspace（monorepo）                         | 多包（core/主题/图标/文档站）依赖清晰                   |
 
 ## 2. 架构分层
 
@@ -48,9 +48,11 @@
 core 提供约百行的最小实现，API 对齐signal 心智：
 
 ```ts
-const count = signal(0)              // 可读写的原子状态
-const double = computed(() => count.value * 2)  // 派生，惰性+缓存
-effect(() => { /* 依赖自动收集 */ })  // 副作用，返回 dispose
+const count = signal(0) // 可读写的原子状态
+const double = computed(() => count.value * 2) // 派生，惰性+缓存
+effect(() => {
+  /* 依赖自动收集 */
+}) // 副作用，返回 dispose
 ```
 
 - **依赖收集**：effect 执行期间访问的 signal 自动订阅（Push-Pull：写时标脏，读时重算）
@@ -106,16 +108,16 @@ oas-ui/
 
 ### `packages/ui` 组件目录分组（对齐 ROADMAP 批次）
 
-| 目录 | 组件 |
-|---|---|
-| `basic/` | badge, button, divider, icon, link, space, tag, typography |
-| `form/` | auto-complete, cascader, checkbox, form, input, input-number, radio, rate, select, slider, switch, textarea, tree-select |
-| `feedback/` | alert, confirm, drawer, empty, loading-bar, message, modal, notification, popconfirm, progress, result, skeleton, spin |
-| `floating/` | app, config-provider, contextmenu, dropdown, hover-card, menu, popover, tooltip |
-| `data/` | avatar, avatar-group, card, carousel, collapse, descriptions, image, list, table, timeline, tree |
-| `layout/` | affix, flex, float-button, grid, layout, page-header, pagination, segmented, splitter, steps, tabs |
-| `navigation/` | anchor, back-top, breadcrumb, tour |
-| `overlay/` | floating（overlay 管理器 + 浮层定位引擎） |
+| 目录          | 组件                                                                                                                     |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `basic/`      | badge, button, divider, icon, link, space, tag, typography                                                               |
+| `form/`       | auto-complete, cascader, checkbox, form, input, input-number, radio, rate, select, slider, switch, textarea, tree-select |
+| `feedback/`   | alert, confirm, drawer, empty, loading-bar, message, modal, notification, popconfirm, progress, result, skeleton, spin   |
+| `floating/`   | app, config-provider, contextmenu, dropdown, hover-card, menu, popover, tooltip                                          |
+| `data/`       | avatar, avatar-group, card, carousel, collapse, descriptions, image, list, table, timeline, tree                         |
+| `layout/`     | affix, flex, float-button, grid, layout, page-header, pagination, segmented, splitter, steps, tabs                       |
+| `navigation/` | anchor, back-top, breadcrumb, tour                                                                                       |
+| `overlay/`    | floating（overlay 管理器 + 浮层定位引擎）                                                                                |
 
 每个组件一个目录：`index.ts`（注册 + 导出）+ `oas-button.ts`（定义）+ `oas-button.test.ts`（单测）；组件 demo 页在 `packages/docs/docs/components/*.md`。
 
@@ -135,28 +137,28 @@ oas-ui/
 
 ## 6. 测试矩阵（架构级）
 
-| 层 | 工具 | 覆盖 |
-|---|---|---|
-| 单测 | Vitest | 属性映射、事件派发、state 转移、边界（disabled/empty/loading） |
-| 行为测试 | Vitest + jsdom | 键盘导航、焦点陷阱、受控模式 |
-| 视觉回归 | Playwright screenshot | 每组件各状态、light/dark |
-| 无障碍 | Playwright + axe-core | 键盘流 + ARIA |
-| 互操作 | playground | React/Vue 真实宿主跑通、事件/属性桥接 |
+| 层       | 工具                  | 覆盖                                                           |
+| -------- | --------------------- | -------------------------------------------------------------- |
+| 单测     | Vitest                | 属性映射、事件派发、state 转移、边界（disabled/empty/loading） |
+| 行为测试 | Vitest + jsdom        | 键盘导航、焦点陷阱、受控模式                                   |
+| 视觉回归 | Playwright screenshot | 每组件各状态、light/dark                                       |
+| 无障碍   | Playwright + axe-core | 键盘流 + ARIA                                                  |
+| 互操作   | playground            | React/Vue 真实宿主跑通、事件/属性桥接                          |
 
 ## 7. 技术路线图（里程碑，对应产品 ROADMAP 批次）
 
 > 状态：M0–M6 与 v1.0.0 均已交付（含 v0.10 i18n、v0.11 config-provider/app）。本表为历史里程碑记录；后续按 ROADMAP v1.x 推进。
 
-| 里程碑 | 交付 |
-|---|---|
-| M0 骨架 | monorepo + 构建 + 测试基础设施 + CI 脚本，一个 hello 组件跑通全链路 |
-| M1 地基 | core 基类（增量渲染）+ theme + icons + basic 8 件 + 文档站骨架 + 构建补课（d.ts/exports/tree-shaking） |
-| M2 表单 | form 13 件 + 校验机制 + Playwright 视觉基线 |
-| M3 反馈 | overlay 管理器 + 浮层基础设施 + 反馈 12 件 + tooltip/popover + 键盘/焦点完备 |
-| M4 数据 | table（最重）/tree + 展示 8 件 |
-| M5 布局导航 | layout/grid/flex/splitter + 导航 9 件 |
-| M6 打磨 | SSR 边界、多主题完整、React/Vue playground、无障碍全审计 |
-| v1.0.0 | 发布：npm 可用、文档站、CHANGELOG、贡献指南、i18n + config-provider/app |
+| 里程碑      | 交付                                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------ |
+| M0 骨架     | monorepo + 构建 + 测试基础设施 + CI 脚本，一个 hello 组件跑通全链路                                    |
+| M1 地基     | core 基类（增量渲染）+ theme + icons + basic 8 件 + 文档站骨架 + 构建补课（d.ts/exports/tree-shaking） |
+| M2 表单     | form 13 件 + 校验机制 + Playwright 视觉基线                                                            |
+| M3 反馈     | overlay 管理器 + 浮层基础设施 + 反馈 12 件 + tooltip/popover + 键盘/焦点完备                           |
+| M4 数据     | table（最重）/tree + 展示 8 件                                                                         |
+| M5 布局导航 | layout/grid/flex/splitter + 导航 9 件                                                                  |
+| M6 打磨     | SSR 边界、多主题完整、React/Vue playground、无障碍全审计                                               |
+| v1.0.0      | 发布：npm 可用、文档站、CHANGELOG、贡献指南、i18n + config-provider/app                                |
 
 ---
 

@@ -32,6 +32,9 @@ export class OASDescriptionsItem extends OASElement {
   }
 
   protected override update(): void {
-    this.shadow.querySelector<HTMLElement>('[part="label"]')!.textContent = this.getAttr('label', '')
+    this.shadow.querySelector<HTMLElement>('[part="label"]')!.textContent = this.getAttr(
+      'label',
+      '',
+    )
   }
 }

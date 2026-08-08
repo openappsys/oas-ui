@@ -30,7 +30,9 @@ describe('OASDrawer', () => {
   it('placement 属性控制方向', async () => {
     const el = mount({ visible: '', placement: 'left' })
     await Promise.resolve()
-    expect(el.shadowRoot!.querySelector('[part="panel"]')!.getAttribute('data-placement')).toBe('left')
+    expect(el.shadowRoot!.querySelector('[part="panel"]')!.getAttribute('data-placement')).toBe(
+      'left',
+    )
   })
 
   it('关闭按钮触发 oas-close', async () => {

@@ -27,7 +27,9 @@ describe('OASSplitter', () => {
     el.setAttribute('percent', '50')
     let detail: unknown
     el.addEventListener('oas-resize', (e: Event) => (detail = (e as CustomEvent).detail))
-    el.shadowRoot!.querySelector('[part="splitter"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    el.shadowRoot!.querySelector('[part="splitter"]')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight' }),
+    )
     expect(detail).toEqual({ percent: 51 })
   })
 
@@ -36,7 +38,9 @@ describe('OASSplitter', () => {
     el.setAttribute('percent', '10')
     el.setAttribute('min', '30')
     el.setAttribute('max', '70')
-    el.shadowRoot!.querySelector('[part="splitter"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+    el.shadowRoot!.querySelector('[part="splitter"]')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowLeft' }),
+    )
     expect(Number(el.getAttribute('percent'))).toBeGreaterThanOrEqual(30)
   })
 
@@ -73,8 +77,7 @@ describe('OASSplitter', () => {
 
 function pointer(type: string, clientX: number): Event {
   const Ctor = (globalThis as Record<string, unknown>).PointerEvent as
-    | typeof PointerEvent
-    | undefined
+    typeof PointerEvent | undefined
   if (typeof Ctor === 'function') {
     return new Ctor(type, { bubbles: true, clientX })
   }

@@ -55,7 +55,9 @@ export class OASEmpty extends OASElement {
 
   protected override update(): void {
     // description 属性优先，缺省走 locale registry 默认文案（setLocale 切换自动刷新）
-    const description = this.hasAttr('description') ? this.getAttr('description') : this.t('empty.noData')
+    const description = this.hasAttr('description')
+      ? this.getAttr('description')
+      : this.t('empty.noData')
     this.shadow.querySelector<HTMLElement>('[part="description"]')!.textContent = description
   }
 }

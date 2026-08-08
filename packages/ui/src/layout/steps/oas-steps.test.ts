@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASSteps } from './index.js'
 
-const STEPS = JSON.stringify([{ title: '第一步', description: '开始' }, { title: '第二步', description: '进行中' }, { title: '第三步', description: '完成' }])
+const STEPS = JSON.stringify([
+  { title: '第一步', description: '开始' },
+  { title: '第二步', description: '进行中' },
+  { title: '第三步', description: '完成' },
+])
 
 function mount(attrs: Record<string, string> = {}): OASSteps {
   const el = new OASSteps()
@@ -35,6 +39,8 @@ describe('OASSteps', () => {
 
   it('direction=vertical 时纵向布局', () => {
     const el = mount({ direction: 'vertical' })
-    expect(el.shadowRoot!.querySelector('[part="steps"]')!.getAttribute('data-direction')).toBe('vertical')
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.getAttribute('data-direction')).toBe(
+      'vertical',
+    )
   })
 })

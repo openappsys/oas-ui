@@ -6,7 +6,11 @@ import { test, expect } from '@playwright/test'
 // 3. popconfirm：确定/取消关闭气泡（含键盘/脚本激活的合成 click 场景）
 // 4. splitter：鼠标拖拽改变 percent
 // 5. image：preview 点击派发 oas-preview
-async function openReady(page: import('@playwright/test').Page, url: string, ready: string): Promise<void> {
+async function openReady(
+  page: import('@playwright/test').Page,
+  url: string,
+  ready: string,
+): Promise<void> {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 })
   // 等待自定义元素注册/水合完成（各页面首个可用组件不同）
   await page.locator(ready).first().waitFor({ state: 'attached', timeout: 15000 })
@@ -122,4 +126,3 @@ test.describe('反馈/布局组件交互验真（最新构建）', () => {
     await expect.poll(() => logs.some((l) => l.includes('oas-preview'))).toBe(true)
   })
 })
-

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+**/dist/
+packages/docs/docs/.vitepress/cache/
+packages/docs/docs/.vitepress/dist/
+test-results/
+playwright-report/
+coverage/
+pnpm-lock.yaml
+*.log
+*.tsbuildinfo
+.github/ISSUE_TEMPLATE/

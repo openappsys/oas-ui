@@ -32,7 +32,9 @@ describe('OASContextMenu', () => {
   it('contextmenu 事件打开菜单并定位到鼠标位置', async () => {
     const el = mount()
     const target = el.querySelector('div')!
-    target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 120, clientY: 80 }))
+    target.dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, clientX: 120, clientY: 80 }),
+    )
     await Promise.resolve()
     const anchor = el.shadowRoot!.querySelector('.menu-anchor')!
     expect(anchor.hasAttribute('hidden')).toBe(false)

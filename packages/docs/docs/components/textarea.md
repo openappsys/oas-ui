@@ -54,16 +54,16 @@ onMounted(() => {
 
 ## API
 
-| 属性 | 说明 | 默认值 |
-|---|---|---|
-| `value` | 值（受控） | 无 |
-| `rows` | 行数 | `3` |
-| `resize` | 尺寸调整 | `none` |
+| 属性          | 说明       | 默认值  |
+| ------------- | ---------- | ------- |
+| `value`       | 值（受控） | 无      |
+| `rows`        | 行数       | `3`     |
+| `resize`      | 尺寸调整   | `none`  |
 | `auto-height` | 高度自适应 | `false` |
-| `placeholder` | 占位提示 | 无 |
-| `disabled` | 禁用 | `false` |
-| `readonly` | 只读 | `false` |
+| `placeholder` | 占位提示   | 无      |
+| `disabled`    | 禁用       | `false` |
+| `readonly`    | 只读       | `false` |
 
-| 事件 | 说明 |
-|---|---|
+| 事件        | 说明                        |
+| ----------- | --------------------------- |
 | `oas-input` | 输入中，`detail: { value }` |

@@ -65,17 +65,17 @@ onMounted(() => {
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `data` | 节点数据 `[{ key, label, children?, disabled? }]`，JSON 字符串 | string | `[]` |
-| `selected` | 选中节点 key | string | — |
-| `checked` | 勾选节点 key 集合（逗号分隔） | string | — |
-| `expanded` | 展开节点 key 集合（逗号分隔） | string | — |
-| `checkable` | 是否显示复选框 | boolean | `false` |
+| 属性        | 说明                                                           | 类型    | 默认值  |
+| ----------- | -------------------------------------------------------------- | ------- | ------- |
+| `data`      | 节点数据 `[{ key, label, children?, disabled? }]`，JSON 字符串 | string  | `[]`    |
+| `selected`  | 选中节点 key                                                   | string  | —       |
+| `checked`   | 勾选节点 key 集合（逗号分隔）                                  | string  | —       |
+| `expanded`  | 展开节点 key 集合（逗号分隔）                                  | string  | —       |
+| `checkable` | 是否显示复选框                                                 | boolean | `false` |
 
 > 说明：`expanded` 未加入观察列表，仅首次渲染及交互（展开按钮）时生效。
 
-| 事件 | 说明 |
-|---|---|
+| 事件         | 说明                                  |
+| ------------ | ------------------------------------- |
 | `oas-select` | 选中节点，`detail: { key, selected }` |
-| `oas-check` | 勾选变化，`detail: { key, checked }` |
+| `oas-check`  | 勾选变化，`detail: { key, checked }`  |

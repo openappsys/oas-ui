@@ -58,13 +58,15 @@ export class OASPageHeader extends OASElement {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
       <div class="row" part="row">
-        ${this.hasAttr('back')
-          ? `<button class="back" part="back" type="button">
+        ${
+          this.hasAttr('back')
+            ? `<button class="back" part="back" type="button">
                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
                  <path d="M14.5 5.5 L8 12 L14.5 18.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                </svg>
              </button>`
-          : ''}
+            : ''
+        }
         <div>
           <div class="title" part="title"></div>
           <div class="subtitle" part="subtitle"></div>
@@ -80,7 +82,13 @@ export class OASPageHeader extends OASElement {
     // 返回按钮 aria-label locale 驱动（setLocale 切换自动重刷）
     const back = this.shadow.querySelector<HTMLElement>('[part="back"]')
     if (back) back.setAttribute('aria-label', this.t('pageHeader.back'))
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr('title', '')
-    this.shadow.querySelector<HTMLElement>('[part="subtitle"]')!.textContent = this.getAttr('subtitle', '')
+    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
+      'title',
+      '',
+    )
+    this.shadow.querySelector<HTMLElement>('[part="subtitle"]')!.textContent = this.getAttr(
+      'subtitle',
+      '',
+    )
   }
 }

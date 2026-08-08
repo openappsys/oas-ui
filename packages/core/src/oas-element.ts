@@ -11,15 +11,8 @@
  * - 内置文案一律 this.t('xxx.yyy') 走注入的 translator，禁止硬编码；locale 切换自动重刷 update()
  * - 就近读取 config-provider 注入值：injectValue(key, default) / t() 优先查最近 config-provider
  */
-import {
-  getTranslator,
-  getLocaleTranslator,
-  onTranslatorChange,
-} from './translator.js'
-import {
-  findConfigProvider,
-  subscribeConfigProvider,
-} from './config-context.js'
+import { getTranslator, getLocaleTranslator, onTranslatorChange } from './translator.js'
+import { findConfigProvider, subscribeConfigProvider } from './config-context.js'
 
 export abstract class OASElement extends HTMLElement {
   /** 子类声明需要观察的属性（kebab-case） */

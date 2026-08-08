@@ -65,15 +65,15 @@ onMounted(() => {
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `items` | 菜单项 JSON | `[{ label, value, disabled? }]` | `[]` |
-| `value` | 当前选中值 | `string` | — |
-| `placement` | 浮层位置 | `top` / `bottom` / `left` / `right` | `bottom` |
-| `open` | 受控显示（布尔属性，存在即展开） | `boolean` | `false` |
+| 属性        | 说明                             | 类型                                | 默认值   |
+| ----------- | -------------------------------- | ----------------------------------- | -------- |
+| `items`     | 菜单项 JSON                      | `[{ label, value, disabled? }]`     | `[]`     |
+| `value`     | 当前选中值                       | `string`                            | —        |
+| `placement` | 浮层位置                         | `top` / `bottom` / `left` / `right` | `bottom` |
+| `open`      | 受控显示（布尔属性，存在即展开） | `boolean`                           | `false`  |
 
-| 事件 | 说明 |
-|---|---|
+| 事件         | 说明                          |
+| ------------ | ----------------------------- |
 | `oas-select` | 选择某项，`detail: { value }` |
 
 点击触发器切换显隐，点击外部 / 按 Esc / 选择后关闭；`role="menu"` + `menuitem`。

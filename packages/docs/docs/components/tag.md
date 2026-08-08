@@ -45,13 +45,13 @@ onMounted(async () => {
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `type` | 类型 | `default` / `primary` / `success` / `warning` / `danger` / `info` | `default` |
-| `size` | 尺寸 | `small` / `medium` / `large` | `medium` |
-| `closable` | 可关闭 | boolean | `false` |
-| `round` | 圆角 | boolean | `false` |
+| 属性       | 说明   | 类型                                                              | 默认值    |
+| ---------- | ------ | ----------------------------------------------------------------- | --------- |
+| `type`     | 类型   | `default` / `primary` / `success` / `warning` / `danger` / `info` | `default` |
+| `size`     | 尺寸   | `small` / `medium` / `large`                                      | `medium`  |
+| `closable` | 可关闭 | boolean                                                           | `false`   |
+| `round`    | 圆角   | boolean                                                           | `false`   |
 
-| 事件 | 说明 |
-|---|---|
+| 事件        | 说明                                        |
+| ----------- | ------------------------------------------- |
 | `oas-close` | 关闭，`cancelable`，preventDefault 阻止移除 |

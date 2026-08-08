@@ -32,8 +32,8 @@
 
 ## API
 
-| 属性 | 说明 | 类型 | 默认值 |
-|---|---|---|---|
-| `direction` | 方向 | `horizontal` / `vertical` | `horizontal` |
-| `dashed` | 虚线 | boolean | `false` |
-| `content-position` | 内容位置 | `left` / `center` / `right` | `center` |
+| 属性               | 说明     | 类型                        | 默认值       |
+| ------------------ | -------- | --------------------------- | ------------ |
+| `direction`        | 方向     | `horizontal` / `vertical`   | `horizontal` |
+| `dashed`           | 虚线     | boolean                     | `false`      |
+| `content-position` | 内容位置 | `left` / `center` / `right` | `center`     |
