@@ -59,6 +59,13 @@ function items(el: OASMenu): HTMLElement[] {
   return [...el.shadowRoot!.querySelectorAll('[part="item"]')] as HTMLElement[]
 }
 
+/** 顶层菜单项（.menu 直接子级，不含子菜单内项） */
+function topItems(el: OASMenu): HTMLElement[] {
+  return [...el.shadowRoot!.querySelector('.menu')!.children].filter((c) =>
+    c.classList.contains('item'),
+  ) as HTMLElement[]
+}
+
 function submenuEl(el: OASMenu): HTMLElement | null {
   return el.shadowRoot!.querySelector('[part="submenu"]')
 }
@@ -113,27 +120,31 @@ describe('OASMenu', () => {
 
   it('渲染嵌套项默认收起', () => {
     const el = mount({ items: NESTED_ITEMS })
-    expect(items(el).length).toBe(3)
-    expect(submenuEl(el)).toBeNull()
-    expect(items(el)[0]!.getAttribute('aria-expanded')).toBe('false')
+    expect(topItems(el).length).toBe(3)
+    // 子菜单始终在 DOM，但默认隐藏（父项无 .open、aria-expanded=false）
+    const firstParent = topItems(el)[0]!
+    expect(firstParent.getAttribute('aria-expanded')).toBe('false')
+    expect(firstParent.classList.contains('open')).toBe(false)
+    expect(firstParent.querySelector('[part="submenu"]')).not.toBeNull()
   })
 
   it('点击展开显示子项，再点击收起', () => {
     const el = mount({ items: NESTED_ITEMS })
-    items(el)[0]!.click()
-    expect(items(el)[0]!.getAttribute('aria-expanded')).toBe('true')
-    expect(submenuEl(el)).not.toBeNull()
-    expect(items(el).length).toBe(5) // 编辑 + 复制/剪切 + 文件 + 视图
-    items(el)[0]!.click()
-    expect(submenuEl(el)).toBeNull()
-    expect(items(el).length).toBe(3)
+    const parent = topItems(el)[0]!
+    parent.click()
+    expect(parent.getAttribute('aria-expanded')).toBe('true')
+    expect(parent.classList.contains('open')).toBe(true)
+    parent.click()
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+    expect(parent.classList.contains('open')).toBe(false)
   })
 
   it('hover 展开子菜单', () => {
     const el = mount({ items: NESTED_ITEMS })
-    items(el)[1]!.dispatchEvent(new MouseEvent('mouseenter'))
-    expect(items(el)[1]!.getAttribute('aria-expanded')).toBe('true')
-    expect(items(el).length).toBeGreaterThan(3)
+    const parent = topItems(el)[1]! // 文件（有子级）
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(parent.getAttribute('aria-expanded')).toBe('true')
+    expect(parent.classList.contains('open')).toBe(true)
   })
 
   it('选中子项派发 oas-select 且 value 为子项 value', () => {
@@ -151,15 +162,17 @@ describe('OASMenu', () => {
   it('ArrowRight 进入子菜单，ArrowLeft 返回', () => {
     const el = mount({ items: NESTED_ITEMS })
     const menu = el.shadowRoot!.querySelector('[role="menu"]')!
+    const parent = topItems(el)[0]!
+    const activeEl = () => el.shadowRoot!.querySelector('.item.active')
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' })) // active=0 编辑
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' })) // 进入编辑子菜单
-    expect(items(el)[0]!.getAttribute('aria-expanded')).toBe('true')
-    expect(items(el).length).toBe(5)
-    expect(items(el)[1]!.classList.contains('active')).toBe(true) // 复制高亮
+    expect(parent.getAttribute('aria-expanded')).toBe('true')
+    expect(parent.classList.contains('open')).toBe(true)
+    expect(activeEl()!.textContent).toContain('复制') // 复制高亮
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' })) // 返回父级
-    expect(items(el)[0]!.getAttribute('aria-expanded')).toBe('false')
-    expect(items(el).length).toBe(3)
-    expect(items(el)[0]!.classList.contains('active')).toBe(true) // 编辑高亮
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+    expect(parent.classList.contains('open')).toBe(false)
+    expect(activeEl()!.textContent).toContain('编辑') // 编辑高亮
   })
 
   it('三级嵌套：进入再进入，选中最深子项', () => {
@@ -167,14 +180,14 @@ describe('OASMenu', () => {
     let detail: unknown
     el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
     const menu = el.shadowRoot!.querySelector('[role="menu"]')!
+    const activeEl = () => el.shadowRoot!.querySelector('.item.active')
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' })) // 编辑
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' })) // 文件
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' })) // 进入 文件 > 新建/打开
-    expect(items(el).length).toBe(5)
-    expect(items(el)[2]!.classList.contains('active')).toBe(true) // 新建高亮
+    expect(topItems(el)[1]!.classList.contains('open')).toBe(true)
+    expect(activeEl()!.textContent).toContain('新建') // 新建高亮
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' })) // 进入 新建 > 文件/窗口
-    expect(items(el).length).toBe(7)
-    expect(items(el)[3]!.classList.contains('active')).toBe(true) // 文件高亮
+    expect(activeEl()!.textContent).toContain('文件') // 文件高亮
     menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
     expect(detail).toEqual({ value: 'new-file' })
   })

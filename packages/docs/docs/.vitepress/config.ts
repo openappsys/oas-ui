@@ -4,6 +4,12 @@ export default defineConfig({
   title: 'OAS-UI',
   description: '框架无关的 Web Components UI 组件库',
   lang: 'zh-CN',
+  vite: {
+    server: {
+      port: 5173,
+      strictPort: true, // 固定 5173，端口被占时直接报错而不是自增到 5174/5175
+    },
+  },
   themeConfig: {
     nav: [{ text: '指南', link: '/guide/getting-started' }],
     sidebar: [

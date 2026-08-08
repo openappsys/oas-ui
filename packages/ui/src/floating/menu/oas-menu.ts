@@ -7,7 +7,6 @@ export interface MenuItem {
   label?: string
   value?: string
   disabled?: boolean
-  /** 图标名（@oas-ui/icons 的 iconRegistry 键），渲染在文字左侧 */
   icon?: string
   /** 菜单项类型：普通项（默认）/ 分组 / 分隔线 */
   type?: MenuItemType
@@ -105,8 +104,9 @@ const STYLE = `
   background: var(--oas-color-border);
   cursor: default;
 }
-/* 级联浮出子菜单：独立浮层，定位在父项右侧，不受父项 hover 背景影响 */
+/* 级联浮出子菜单：默认隐藏，父项 .open 时显示；独立浮层定位在父项右侧 */
 .submenu {
+  display: none;
   list-style: none;
   margin: 0;
   padding: var(--oas-space-1);
@@ -119,6 +119,9 @@ const STYLE = `
   border-radius: var(--oas-radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   z-index: 10;
+}
+.item.open > .submenu {
+  display: block;
 }
 /* 水平模式：顶部导航条样式，菜单项横排 */
 :host([mode='horizontal']) {
@@ -176,13 +179,14 @@ export class OASMenu extends OASElement {
       <style>${STYLE}</style>
       <ul class="menu" part="menu" role="menu" tabindex="0"></ul>
     `
-    this.menuEl = this.shadow.querySelector('.menu')
-    this.menuEl?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e))
+    const menuEl = this.shadow.querySelector<HTMLElement>('.menu')!
+    this.menuEl = menuEl
+    menuEl.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
     // 鼠标移出整个菜单时收起所有浮层
-    this.menuEl?.addEventListener('mouseleave', () => {
+    menuEl.addEventListener('mouseleave', () => {
       if (this.expanded.size > 0) {
         this.expanded.clear()
-        this.renderItems()
+        this.syncOpen()
       }
     })
     this.update()
@@ -286,19 +290,19 @@ export class OASMenu extends OASElement {
     return chain
   }
 
+  /** 全量渲染一次（含所有子菜单），显隐/激活由 class 控制，不随 hover 重建 */
   private renderItems(): void {
     const menuEl = this.menuEl
     if (!menuEl) return
     menuEl.innerHTML = ''
     const selected = this.getAttr('value', '')
     this.renderLevel(menuEl, this.itemsList, selected, 0)
+    this.syncOpen()
+    this.syncActive()
   }
 
   private renderLevel(container: HTMLElement, items: MenuItem[], selected: string, depth: number): void {
-    const isCurrentLevel = depth === this.activeStack.length
     const horizontal = this.getAttr('mode') === 'horizontal'
-    // flatIdx：与 currentItems() 扁平化一致的键盘导航索引（跳过 group/divider）
-    let flatIdx = 0
     for (const item of items) {
       if (item.type === 'divider') {
         const li = document.createElement('li')
@@ -321,25 +325,25 @@ export class OASMenu extends OASElement {
         container.appendChild(li)
         // 组内子项平铺在同一个列表层级
         if (item.children) this.renderLevel(container, item.children, selected, depth)
-        // 已内联渲染的子项占用的导航索引需跳过
-        flatIdx += this.flattenLevel(item.children ?? []).length
         continue
       }
       const li = document.createElement('li')
       li.className = 'item'
       li.setAttribute('part', 'item')
+      if (item.value != null) li.dataset.value = item.value
       li.setAttribute('aria-disabled', String(item.disabled ?? false))
-      if (isCurrentLevel && flatIdx === this.activeIndex) li.classList.add('active')
       const hasChildren = !!item.children && item.children.length > 0
+      if (item.icon) {
+        const ic = this.createIcon(item.icon)
+        if (ic) li.appendChild(ic)
+      }
+      const label = document.createElement('span')
+      label.className = 'label'
+      label.textContent = item.label ?? ''
       if (hasChildren) {
-        const expanded = this.expanded.has(item.value ?? '')
         li.setAttribute('role', 'menuitem')
         li.setAttribute('aria-haspopup', 'menu')
-        li.setAttribute('aria-expanded', String(expanded))
-        if (item.icon) li.appendChild(this.createIcon(item.icon) ?? document.createElement('span'))
-        const label = document.createElement('span')
-        label.className = 'label'
-        label.textContent = item.label ?? ''
+        li.setAttribute('aria-expanded', 'false')
         const arrow = document.createElement('span')
         arrow.className = 'arrow'
         arrow.textContent = horizontal && depth === 0 ? '⌄' : '›'
@@ -353,21 +357,16 @@ export class OASMenu extends OASElement {
           if (item.disabled) return
           this.hoverExpand(item.value ?? '')
         })
-        if (expanded) {
-          const sub = document.createElement('ul')
-          sub.className = depth === 0 ? 'submenu submenu-1' : 'submenu'
-          sub.setAttribute('part', 'submenu')
-          sub.setAttribute('role', 'menu')
-          this.renderLevel(sub, item.children!, selected, depth + 1)
-          li.appendChild(sub)
-        }
+        // 子菜单始终渲染，显隐由 .open class 控制（hover 不重建 DOM）
+        const sub = document.createElement('ul')
+        sub.className = depth === 0 ? 'submenu submenu-1' : 'submenu'
+        sub.setAttribute('part', 'submenu')
+        sub.setAttribute('role', 'menu')
+        this.renderLevel(sub, item.children!, selected, depth + 1)
+        li.appendChild(sub)
       } else {
         li.setAttribute('role', 'menuitemradio')
         li.setAttribute('aria-checked', String(item.value === selected))
-        if (item.icon) li.appendChild(this.createIcon(item.icon) ?? document.createElement('span'))
-        const label = document.createElement('span')
-        label.className = 'label'
-        label.textContent = item.label ?? ''
         const check = document.createElement('span')
         check.className = 'check'
         check.textContent = '✓'
@@ -375,7 +374,7 @@ export class OASMenu extends OASElement {
         li.addEventListener('click', (e: MouseEvent) => {
           e.stopPropagation()
           if (item.disabled) return
-          this.select(item, flatIdx, depth)
+          this.select(item)
         })
         li.addEventListener('mouseenter', () => {
           if (item.disabled) return
@@ -383,7 +382,6 @@ export class OASMenu extends OASElement {
         })
       }
       container.appendChild(li)
-      flatIdx++
     }
   }
 
@@ -405,36 +403,56 @@ export class OASMenu extends OASElement {
     return span
   }
 
-  private select(item: MenuItem, index: number, depth: number): void {
-    this.setAttribute('value', item.value ?? '')
-    this.activeStack.length = depth
-    this.activeIndex = index
-    this.emit('select', { value: item.value })
-    this.renderItems()
+  /** 展开状态 → .open class（不重建 DOM） */
+  private syncOpen(): void {
+    if (!this.menuEl) return
+    for (const li of this.menuEl.querySelectorAll<HTMLElement>('[part="item"][data-value]')) {
+      const open = this.expanded.has(li.dataset.value ?? '')
+      li.classList.toggle('open', open)
+      if (open) li.setAttribute('aria-expanded', 'true')
+      else if (li.hasAttribute('aria-haspopup')) li.setAttribute('aria-expanded', 'false')
+    }
   }
 
-  /** hover：级联展开到该项所在的单条路径（同级互斥，父项 hover 不罩住子菜单） */
+  /** 键盘激活态 → .active class（不重建 DOM） */
+  private syncActive(): void {
+    if (!this.menuEl) return
+    for (const li of this.menuEl.querySelectorAll<HTMLElement>('.item.active')) {
+      li.classList.remove('active')
+    }
+    const current = this.currentItems()[this.activeIndex]
+    if (!current || current.value == null) return
+    const el = this.menuEl.querySelector<HTMLElement>(`[part="item"][data-value="${current.value}"]`)
+    el?.classList.add('active')
+  }
+
+  private select(item: MenuItem): void {
+    this.setAttribute('value', item.value ?? '')
+    this.emit('select', { value: item.value })
+    // 选中态变化影响 aria-checked，需轻量刷新（值属性变化会走 update 全量渲染）
+  }
+
+  /** hover：级联展开到该项所在的单条路径（同级互斥），只切 class 不重建 */
   private hoverExpand(value: string): void {
+    if (!value) return
     const chain = this.chainOf(value)
     if (chain.length === 0) return
     const item = this.findItem(value)
-    // 展开路径上的所有父级；若本项有子级也展开本项
     const open = item?.children?.length ? chain : chain.slice(0, -1)
     const next = new Set(open)
     if (next.size === this.expanded.size && [...next].every((v) => this.expanded.has(v))) return
     this.expanded = next
-    this.renderItems()
+    this.syncOpen()
   }
 
   /** 点击：展开/收起子菜单 */
   private toggleExpand(value: string): void {
     if (this.expanded.has(value)) {
-      // 收起本项及更深的展开
       this.expanded = new Set(this.chainOf(value).slice(0, -1))
     } else {
       this.expanded = new Set(this.chainOf(value))
     }
-    this.renderItems()
+    this.syncOpen()
   }
 
   private findItem(value: string): MenuItem | undefined {
@@ -492,7 +510,6 @@ export class OASMenu extends OASElement {
       if (active && !active.disabled && active.children?.length) {
         this.enterSubmenu(active)
       } else {
-        // 与扁平菜单行为一致：无子级时向右循环下移
         this.moveActive(enabled, 1)
       }
     } else if (e.key === 'ArrowLeft') {
@@ -500,7 +517,6 @@ export class OASMenu extends OASElement {
       if (this.activeStack.length > 0) {
         this.leaveSubmenu()
       } else {
-        // 与扁平菜单行为一致：顶层向左循环上移
         this.moveActive(enabled, -1)
       }
     } else if (e.key === 'Enter') {
@@ -511,7 +527,7 @@ export class OASMenu extends OASElement {
       if (active.children?.length) {
         this.enterSubmenu(active)
       } else {
-        this.select(active, this.activeIndex, this.activeStack.length)
+        this.select(active)
       }
     } else if (e.key === 'Home') {
       this.activeIndex = enabled[0]!
@@ -520,6 +536,7 @@ export class OASMenu extends OASElement {
     } else {
       return
     }
-    this.renderItems()
+    this.syncOpen()
+    this.syncActive()
   }
 }
