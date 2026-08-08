@@ -43,8 +43,9 @@ async function copy(): Promise<void> {
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-lg);
   margin-bottom: var(--oas-space-5);
-  overflow: hidden;
   background: var(--oas-color-bg);
+  /* 不再用 overflow: hidden，避免裁掉 demo 内向下展开的下拉/浮层；
+     圆角改由 head/code 子区域各自处理 */
 }
 .demo-block__head {
   display: flex;
@@ -54,6 +55,8 @@ async function copy(): Promise<void> {
   border-bottom: 1px solid var(--oas-color-border);
   background: var(--oas-color-bg-hover);
   color: var(--oas-color-text-primary);
+  border-top-left-radius: var(--oas-radius-lg);
+  border-top-right-radius: var(--oas-radius-lg);
 }
 .demo-block__head h3 {
   margin: 0;
@@ -89,6 +92,10 @@ async function copy(): Promise<void> {
 }
 .demo-block__code {
   border-top: 1px dashed var(--oas-color-border);
+  /* 代码区是展开态最底部元素，负责裁出底部圆角（pre 背景色与外层不同） */
+  border-bottom-left-radius: var(--oas-radius-lg);
+  border-bottom-right-radius: var(--oas-radius-lg);
+  overflow: hidden;
 }
 .demo-block__code-head {
   display: flex;

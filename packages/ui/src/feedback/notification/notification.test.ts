@@ -23,6 +23,19 @@ describe('notification 命令式 API', () => {
     expect(sr.textContent).toContain('操作已完成')
   })
 
+  it('success 类型颜色选择器从 host 属性命中（type 设在 host 上）', async () => {
+    notification.success({ title: '成功' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-notification')!
+    expect(el.getAttribute('type')).toBe('success')
+    const styleText = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(styleText).toContain(":host([type='success']) .icon")
+    expect(styleText).toContain(":host([type='error']) .icon")
+    expect(styleText).toContain(":host([type='warning']) .icon")
+    // icon 不再携带冗余的 type 属性
+    expect(el.shadowRoot!.querySelector('[part="icon"]')!.hasAttribute('type')).toBe(false)
+  })
+
   it('默认 4500ms 自动关闭', async () => {
     notification.info({ title: '通知' })
     await Promise.resolve()

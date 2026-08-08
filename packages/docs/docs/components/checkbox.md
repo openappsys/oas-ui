@@ -5,8 +5,10 @@
 ## 基础用法
 
 <DemoBlock title="基础用法">
-  <oas-checkbox checked>已勾选</oas-checkbox>
-  <oas-checkbox>未勾选</oas-checkbox>
+  <oas-space>
+    <oas-checkbox checked>已勾选</oas-checkbox>
+    <oas-checkbox>未勾选</oas-checkbox>
+  </oas-space>
 </DemoBlock>
 
 ## 半选状态
@@ -20,8 +22,10 @@
 ## 禁用
 
 <DemoBlock title="禁用">
-  <oas-checkbox disabled checked>已选且禁用</oas-checkbox>
-  <oas-checkbox disabled>未选且禁用</oas-checkbox>
+  <oas-space>
+    <oas-checkbox disabled checked>已选且禁用</oas-checkbox>
+    <oas-checkbox disabled>未选且禁用</oas-checkbox>
+  </oas-space>
 </DemoBlock>
 
 ## 多选组
@@ -41,10 +45,12 @@
 
 <DemoBlock title="全选与半选联动">
   <div id="cb-wrap">
-    <oas-checkbox id="cb-all">全选</oas-checkbox>
-    <oas-checkbox value="a">苹果</oas-checkbox>
-    <oas-checkbox value="b">香蕉</oas-checkbox>
-    <oas-checkbox value="c">橙子</oas-checkbox>
+    <oas-space>
+      <oas-checkbox id="cb-all">全选</oas-checkbox>
+      <oas-checkbox value="a">苹果</oas-checkbox>
+      <oas-checkbox value="b">香蕉</oas-checkbox>
+      <oas-checkbox value="c">橙子</oas-checkbox>
+    </oas-space>
   </div>
 </DemoBlock>
 

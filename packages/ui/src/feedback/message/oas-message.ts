@@ -20,15 +20,16 @@ const STYLE = `
   font-size: var(--oas-font-size-md);
   color: var(--oas-color-text-primary);
 }
-.box[type='success'] {
+/* type 属性设在 host 上，颜色选择器需从 host 属性命中 */
+:host([type='success']) .box {
   border-color: var(--oas-color-success);
   color: var(--oas-color-success);
 }
-.box[type='error'] {
+:host([type='error']) .box {
   border-color: var(--oas-color-danger);
   color: var(--oas-color-danger);
 }
-.box[type='warning'] {
+:host([type='warning']) .box {
   border-color: var(--oas-color-warning);
   color: var(--oas-color-warning);
 }

@@ -44,9 +44,10 @@ const STYLE = `
   font-size: var(--oas-font-size-lg);
   line-height: 1;
 }
-.icon[type='success'] { color: var(--oas-color-success); }
-.icon[type='error'] { color: var(--oas-color-danger); }
-.icon[type='warning'] { color: var(--oas-color-warning); }
+/* type 属性设在 host 上，颜色选择器从 host 属性命中（render 后 type 动态变化也能响应） */
+:host([type='success']) .icon { color: var(--oas-color-success); }
+:host([type='error']) .icon { color: var(--oas-color-danger); }
+:host([type='warning']) .icon { color: var(--oas-color-warning); }
 `
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error'
@@ -71,7 +72,7 @@ export class OASNotification extends OASElement {
       <style>${STYLE}</style>
       <div class="box" part="box" role="region" aria-label="">
         <div class="title-row">
-          <span class="icon" part="icon" type="${type}" aria-hidden="true">${ICONS[type]}</span>
+          <span class="icon" part="icon" aria-hidden="true">${ICONS[type]}</span>
           <span class="title" part="title"></span>
           <button class="close" part="close" aria-label="">✕</button>
         </div>
