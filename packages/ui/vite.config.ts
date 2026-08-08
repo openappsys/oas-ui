@@ -26,7 +26,9 @@ export default defineConfig({
     rollupOptions: {
       external: [/^@oas-ui\//],
       treeshake: {
-        moduleSideEffects: (id: string) => id.endsWith('.css') || /[/\\\\]index\.ts$/.test(id),
+        // i18n 主入口含注册副作用（注入 translator），必须保留 side-effect import
+        moduleSideEffects: (id: string) =>
+          id.endsWith('.css') || id === '@oas-ui/i18n' || /[/\\\\]index\.ts$/.test(id),
       },
       output: {
         preserveModules: true,

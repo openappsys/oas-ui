@@ -1,4 +1,5 @@
 import { OASModal } from '../modal/oas-modal.js'
+import { t } from '@oas-ui/i18n'
 
 export interface ConfirmOptions {
   title?: string
@@ -20,10 +21,11 @@ export function confirm(options: ConfirmOptions = {}): Promise<void> {
       el.appendChild(p)
     }
     document.body.appendChild(el)
+    // 按钮文案默认走 locale registry（属性 okText/cancelText 可覆盖）
     const okBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="ok"]')
-    if (okBtn && options.okText) okBtn.textContent = options.okText
+    if (okBtn) okBtn.textContent = options.okText ?? t('confirm.ok')
     const cancelBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="cancel"]')
-    if (cancelBtn && options.cancelText) cancelBtn.textContent = options.cancelText
+    if (cancelBtn) cancelBtn.textContent = options.cancelText ?? t('confirm.cancel')
 
     const cleanup = (): void => {
       el.remove()

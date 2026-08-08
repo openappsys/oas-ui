@@ -53,6 +53,12 @@ importers:
         specifier: ^1.6.3
         version: 1.6.4(@algolia/client-search@5.56.0)(@types/node@26.1.2)(lightningcss@1.33.0)(postcss@8.5.26)(search-insights@2.17.3)(typescript@7.0.2)
 
+  packages/i18n:
+    dependencies:
+      '@oas-ui/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/icons: {}
 
   packages/playground:
@@ -96,6 +102,9 @@ importers:
       '@oas-ui/core':
         specifier: workspace:*
         version: link:../core
+      '@oas-ui/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@oas-ui/icons':
         specifier: workspace:*
         version: link:../icons

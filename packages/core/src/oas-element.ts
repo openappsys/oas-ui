@@ -8,7 +8,10 @@
  * - 对外通信一律派发 oas-* 前缀 CustomEvent（bubbles + composed，可穿出 Shadow DOM）
  * - 属性用 kebab-case，observedAttributes 声明后自动同步
  * - 计时器/全局监听/浮层引用必须经 onCleanup 注册，断开连接时统一清理
+ * - 内置文案一律 this.t('xxx.yyy') 走注入的 translator，禁止硬编码；locale 切换自动重刷 update()
  */
+import { getTranslator, onTranslatorChange } from './translator.js'
+
 export abstract class OASElement extends HTMLElement {
   /** 子类声明需要观察的属性（kebab-case） */
   static get observedAttributes(): string[] {
@@ -19,6 +22,7 @@ export abstract class OASElement extends HTMLElement {
 
   private rendered = false
   private cleanupFns: Array<() => void> = []
+  private unsubscribeLocale: (() => void) | null = null
 
   constructor() {
     super()
@@ -31,6 +35,10 @@ export abstract class OASElement extends HTMLElement {
       this.rendered = true
     }
     this.update()
+    // locale 切换（translator 变化）时自动重刷文案，断开连接时取消订阅
+    if (!this.unsubscribeLocale) {
+      this.unsubscribeLocale = onTranslatorChange(() => this.update())
+    }
   }
 
   attributeChangedCallback(): void {
@@ -39,6 +47,8 @@ export abstract class OASElement extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    this.unsubscribeLocale?.()
+    this.unsubscribeLocale = null
     for (const fn of this.cleanupFns) fn()
     this.cleanupFns.length = 0
   }
@@ -75,5 +85,13 @@ export abstract class OASElement extends HTMLElement {
   /** 读取属性值，无则回退 */
   protected getAttr(name: string, fallback = ''): string {
     return this.getAttribute(name) ?? fallback
+  }
+
+  /**
+   * 翻译内置文案。委托给注入的 translator（@oas-ui/i18n 在 setLocale 时注入），
+   * 未注入时回退返回 key 本身。
+   */
+  protected t(key: string, params?: Record<string, string | number>): string {
+    return getTranslator()?.(key, params) ?? key
   }
 }

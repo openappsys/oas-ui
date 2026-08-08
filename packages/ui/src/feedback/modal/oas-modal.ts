@@ -90,13 +90,13 @@ export class OASModal extends OASElement {
       <div class="dialog" part="dialog" role="dialog" aria-modal="true" aria-labelledby="oas-modal-title">
         <div class="header">
           <span class="title" id="oas-modal-title" part="title"></span>
-          <button class="close-btn" part="close" aria-label="关闭">✕</button>
+          <button class="close-btn" part="close" aria-label="">✕</button>
         </div>
         <div class="body" part="body"><slot></slot></div>
         ${this.hasAttr('no-footer') ? '' : `
         <div class="footer" part="footer">
-          <button class="btn" part="cancel" type="button">取消</button>
-          <button class="btn" part="ok" type="button">确定</button>
+          <button class="btn" part="cancel" type="button"></button>
+          <button class="btn" part="ok" type="button"></button>
         </div>`}
       </div>
     `
@@ -130,6 +130,18 @@ export class OASModal extends OASElement {
     const visible = this.hasAttr('visible')
     dialog.setAttribute('aria-hidden', String(!visible))
     this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.getAttr('title', '')
+    // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
+    this.shadow.querySelector<HTMLElement>('[part="close"]')?.setAttribute('aria-label', this.t('modal.close'))
+    const okBtn = this.shadow.querySelector<HTMLElement>('[part="ok"]')
+    const cancelBtn = this.shadow.querySelector<HTMLElement>('[part="cancel"]')
+    if (okBtn) {
+      okBtn.setAttribute('aria-label', this.t('modal.ok'))
+      okBtn.textContent = this.t('modal.ok')
+    }
+    if (cancelBtn) {
+      cancelBtn.setAttribute('aria-label', this.t('modal.cancel'))
+      cancelBtn.textContent = this.t('modal.cancel')
+    }
     const footer = this.shadow.querySelector<HTMLElement>('.footer')
     if (footer) footer.style.display = this.hasAttr('no-footer') ? 'none' : ''
 

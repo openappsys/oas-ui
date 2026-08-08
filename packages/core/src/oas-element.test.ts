@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { OASElement } from './oas-element.js'
+import { setTranslator } from './translator.js'
 
 class FixtureElement extends OASElement {
   static override get observedAttributes(): string[] {
@@ -22,6 +23,10 @@ class FixtureElement extends OASElement {
 
   registerCleanup(fn: () => void): void {
     this.onCleanup(fn)
+  }
+
+  getText(key: string, params?: Record<string, string | number>): string {
+    return this.t(key, params)
   }
 }
 
@@ -68,5 +73,34 @@ describe('OASElement', () => {
     el.registerCleanup(() => cleaned++)
     el.remove()
     expect(cleaned).toBe(2)
+  })
+
+  it('t() 未注入 translator 时回退返回 key 本身', () => {
+    const el = mount()
+    expect(el.getText('foo.bar')).toBe('foo.bar')
+  })
+
+  it('t() 委托注入的 translator，并透传插值参数', () => {
+    const el = mount()
+    setTranslator((key: string, params) => `${key}:${params?.['count'] ?? ''}`)
+    expect(el.getText('tree.andMore', { count: 5 })).toBe('tree.andMore:5')
+    expect(el.getText('plain')).toBe('plain:')
+    setTranslator(null)
+  })
+
+  it('translator 变化（locale 切换）触发已连接组件 update；断开后不再触发', () => {
+    const el = mount()
+    const before = el.updateCount
+    setTranslator((key: string) => `[${key}]`)
+    expect(el.updateCount).toBe(before + 1)
+    el.remove()
+    const after = el.updateCount
+    setTranslator(null)
+    setTranslator((key: string) => key)
+    expect(el.updateCount).toBe(after)
+  })
+
+  afterEach(() => {
+    setTranslator(null)
   })
 })

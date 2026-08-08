@@ -8,6 +8,7 @@ export default defineConfig({
       '@oas-ui/theme': resolve(__dirname, 'packages/theme/src'),
       '@oas-ui/ui': resolve(__dirname, 'packages/ui/src'),
       '@oas-ui/icons': resolve(__dirname, 'packages/icons/src'),
+      '@oas-ui/i18n': resolve(__dirname, 'packages/i18n/src'),
     },
   },
   test: {

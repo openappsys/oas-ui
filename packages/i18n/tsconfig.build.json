@@ -3,12 +3,11 @@
   "compilerOptions": {
     "composite": false,
     "declaration": true,
-    "emitDeclarationOnly": true,
-    "outDir": "dist/types",
+    "sourceMap": true,
+    "outDir": "dist",
     "rootDir": "src",
     "paths": {
-      "@oas-ui/core": ["../core/dist/index.d.ts"],
-      "@oas-ui/i18n": ["../i18n/dist/index.d.ts"]
+      "@oas-ui/core": ["../core/dist/index.d.ts"]
     }
   },
   "include": ["src"],
