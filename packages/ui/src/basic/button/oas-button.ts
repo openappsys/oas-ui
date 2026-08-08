@@ -137,7 +137,8 @@ export class OASButton extends OASElement {
   protected override update(): void {
     if (!this.btn) return
     const type = this.getAttr('type', 'default') as ButtonType
-    const size = this.getAttr('size', 'medium') as ButtonSize
+    // size 就近读取 config-provider 注入值（自身属性 > config-provider > medium）
+    const size = this.injectValue('size', 'medium') as ButtonSize
     const disabled = this.hasAttr('disabled')
     const loading = this.hasAttr('loading')
 

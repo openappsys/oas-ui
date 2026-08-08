@@ -115,7 +115,8 @@ export class OASTag extends OASElement {
   protected override update(): void {
     if (!this.tagRoot) return
     const type = this.getAttr('type', 'default') as TagType
-    const size = this.getAttr('size', 'medium') as TagSize
+    // size 就近读取 config-provider 注入值（自身属性 > config-provider > medium）
+    const size = this.injectValue('size', 'medium') as TagSize
     const closable = this.hasAttr('closable')
     const round = this.hasAttr('round')
 

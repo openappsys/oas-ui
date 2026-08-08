@@ -115,6 +115,14 @@ export default defineConfig({
             { text: 'Carousel 轮播', link: '/components/carousel' },
           ],
         },
+        {
+          text: '框架级容器',
+          collapsed: true,
+          items: [
+            { text: 'ConfigProvider 全局配置', link: '/components/config-provider' },
+            { text: 'App 消息上下文', link: '/components/app' },
+          ],
+        },
     ],
   },
 })

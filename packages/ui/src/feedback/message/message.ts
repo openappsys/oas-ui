@@ -1,13 +1,15 @@
+import { resolveMessageHost } from '../../floating/app/app-host.js'
 import type { MessageType } from './oas-message.js'
 
 let stackEl: HTMLElement | null = null
 
 function ensureStack(): HTMLElement {
-  if (stackEl && document.body.contains(stackEl)) return stackEl
+  const target = resolveMessageHost()
+  if (stackEl && target.contains(stackEl)) return stackEl
   stackEl = document.createElement('div')
   stackEl.style.cssText =
     'position: fixed; top: 16px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; pointer-events: none; z-index: var(--oas-z-message, 1060);'
-  document.body.appendChild(stackEl)
+  target.appendChild(stackEl)
   return stackEl
 }
 

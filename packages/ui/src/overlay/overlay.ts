@@ -1,10 +1,12 @@
 /**
  * overlay 管理器：
- * - body 级统一容器，浮层挂载于此（跨 Shadow DOM）
+ * - body 级统一容器，浮层挂载于此（跨 Shadow DOM）；存在 app 容器时挂到 app 内（就近）
  * - z-index 递增分配，默认取 --oas-z-overlay token
  * - onOutside：点击浮层外部（composedPath 检测）时回调
  * - destroyOverlay：一次性销毁全部浮层与监听
  */
+import { resolveMessageHost } from '../floating/app/app-host.js'
+
 const CONTAINER_TAG = 'oas-overlay-container'
 
 interface OverlayOptions {
@@ -17,10 +19,10 @@ let currentZ = 0
 let outsideHandlers = new Map<HTMLElement, () => void>()
 
 function ensureContainer(): HTMLElement {
-  if (container && document.body.contains(container)) return container
+  if (container && container.isConnected) return container
   container = document.createElement(CONTAINER_TAG)
   container.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: 0;'
-  document.body.appendChild(container)
+  resolveMessageHost().appendChild(container)
   return container
 }
 

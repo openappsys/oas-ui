@@ -1,4 +1,5 @@
 import { createOverlay, removeOverlay, destroyOverlay } from '../../overlay/index.js'
+import { resolveMessageHost } from '../../floating/app/app-host.js'
 import type { NotificationType } from './index.js'
 
 export interface NotificationOptions {
@@ -10,11 +11,12 @@ export interface NotificationOptions {
 let stackEl: HTMLElement | null = null
 
 function ensureStack(): HTMLElement {
-  if (stackEl && document.body.contains(stackEl)) return stackEl
+  const target = resolveMessageHost()
+  if (stackEl && target.contains(stackEl)) return stackEl
   stackEl = document.createElement('div')
   stackEl.style.cssText =
     'position: fixed; top: 16px; right: 16px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; z-index: var(--oas-z-toast, 1070);'
-  document.body.appendChild(stackEl)
+  target.appendChild(stackEl)
   return stackEl
 }
 

@@ -43,6 +43,9 @@ importers:
 
   packages/docs:
     dependencies:
+      '@oas-ui/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@oas-ui/theme':
         specifier: workspace:*
         version: link:../theme

@@ -1,11 +1,13 @@
 import { OASLoadingBar } from './oas-loading-bar.js'
+import { resolveMessageHost } from '../../floating/app/app-host.js'
 
 let current: OASLoadingBar | null = null
 
 function ensure(): OASLoadingBar {
-  if (current && document.body.contains(current)) return current
+  const target = resolveMessageHost()
+  if (current && target.contains(current)) return current
   current = document.createElement('oas-loading-bar') as OASLoadingBar
-  document.body.appendChild(current)
+  target.appendChild(current)
   return current
 }
 

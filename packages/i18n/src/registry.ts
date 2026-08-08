@@ -7,10 +7,12 @@
  * - onLocaleChange(cb) 订阅切换事件
  * - 模块加载即通过 core 的 setTranslator() 注入当前翻译函数，组件 OASElement.t() 委托到这里；
  *   core 不依赖本包（翻译钩子注入，无循环依赖）
+ * - registerLocale() 同时通过 core 的 registerLocaleTranslator() 注册"按 locale 名"的翻译器，
+ *   供 config-provider 就近注入 locale 时按名查找
  */
-import { setTranslator } from '@oas-ui/core'
+import { setTranslator, registerLocaleTranslator } from '@oas-ui/core'
 import { zhCN } from './locales/zh-CN.js'
-import type { Locale, LocaleKey, LocaleParams } from './types.js'
+import type { Locale, LocaleKey, LocaleMessages, LocaleParams } from './types.js'
 
 const locales = new Map<string, Locale>()
 const listeners = new Set<(name: string) => void>()
@@ -19,9 +21,20 @@ const defaultLocale: Locale = { name: 'zh-CN', messages: zhCN }
 locales.set(defaultLocale.name, defaultLocale)
 let current: Locale = defaultLocale
 
-/** 注册语言包（同名覆盖） */
+/** 用指定语言包翻译（供 config-provider 按 locale 名取翻译器复用） */
+function translateIn(messages: LocaleMessages, key: string, params?: LocaleParams): string {
+  const template: string | undefined = messages[key as LocaleKey]
+  if (template === undefined) return key
+  if (!params) return template
+  return template.replace(/\{(\w+)\}/g, (match, name: string) =>
+    params[name] !== undefined ? String(params[name]) : match,
+  )
+}
+
+/** 注册语言包（同名覆盖），并登记"按 locale 名"的翻译器供 config-provider 注入 */
 export function registerLocale(locale: Locale): void {
   locales.set(locale.name, locale)
+  registerLocaleTranslator(locale.name, (key, params) => translateIn(locale.messages, key, params))
 }
 
 /**
@@ -60,12 +73,7 @@ export function getLocaleName(): string {
 
 /** 翻译：key + 可选插值参数（{count} 等）；未知 key 回退返回 key 本身 */
 export function t(key: LocaleKey, params?: LocaleParams): string {
-  const template: string | undefined = current.messages[key]
-  if (template === undefined) return key
-  if (!params) return template
-  return template.replace(/\{(\w+)\}/g, (match, name: string) =>
-    params[name] !== undefined ? String(params[name]) : match,
-  )
+  return translateIn(current.messages, key, params)
 }
 
 /** 订阅 locale 切换（回调收到新 locale name），返回取消订阅函数 */
@@ -80,4 +88,5 @@ function syncTranslator(): void {
 }
 
 // 模块加载即注入默认 zh-CN 翻译器，组件开箱即用中文
+registerLocale(defaultLocale)
 syncTranslator()
