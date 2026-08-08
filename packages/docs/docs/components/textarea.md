@@ -19,11 +19,19 @@
 
 ## 高度自适应
 
-<DemoBlock title="auto-height">
-  <oas-textarea auto-height placeholder="输入内容高度自动增长" style="width: 320px"></oas-textarea>
+<DemoBlock title="autosize">
+  <oas-textarea autosize placeholder="输入内容高度自动增长" style="width: 320px"></oas-textarea>
 </DemoBlock>
 
-输入时随内容自动增高，不出现滚动条。
+`autosize` 开启高度自适应：随内容自动增高，空态回到最小高度，超过 `max-rows`（默认 6）出现滚动条。
+
+## 自适应边界
+
+<DemoBlock title="autosize + min-rows / max-rows">
+  <oas-textarea autosize min-rows="2" max-rows="4" placeholder="2~4 行之间自适应" style="width: 320px"></oas-textarea>
+</DemoBlock>
+
+`min-rows`（默认 1）控制最小高度，`max-rows`（默认 6）封顶并出滚动条。旧属性 `auto-height` 保留兼容。
 
 ## 禁用与只读
 
@@ -59,7 +67,10 @@ onMounted(() => {
 | `value`       | 值（受控） | 无      |
 | `rows`        | 行数       | `3`     |
 | `resize`      | 尺寸调整   | `none`  |
-| `auto-height` | 高度自适应 | `false` |
+| `autosize`    | 高度自适应 | `false` |
+| `auto-height` | 旧属性名（兼容 `autosize`） | `false` |
+| `min-rows`    | 自适应最小行数 | `1` |
+| `max-rows`    | 自适应最大行数 | `6` |
 | `placeholder` | 占位提示   | 无      |
 | `disabled`    | 禁用       | `false` |
 | `readonly`    | 只读       | `false` |

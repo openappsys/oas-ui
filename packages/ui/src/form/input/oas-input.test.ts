@@ -110,4 +110,69 @@ describe('OASInput', () => {
     expect(input(el)).toBe(i)
     expect(i.placeholder).toBe('b')
   })
+
+  // ---- v1.3 addon / 图标增强 ----
+
+  function part(el: OASInput, name: string): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>(`[part="${name}"]`)!
+  }
+
+  it('prepend/append 渲染 addon 文案块（独立 ::part）', () => {
+    const el = mount({ prepend: 'http://', append: '.com' })
+    const prepend = part(el, 'prepend')
+    const append = part(el, 'append')
+    expect(prepend.textContent).toBe('http://')
+    expect(append.textContent).toBe('.com')
+    expect(prepend.hidden).toBe(false)
+    expect(append.hidden).toBe(false)
+  })
+
+  it('prepend/append 为空时 addon 区域隐藏', () => {
+    const el = mount()
+    expect(part(el, 'prepend').hidden).toBe(true)
+    expect(part(el, 'append').hidden).toBe(true)
+  })
+
+  it('prefix/suffix 渲染内嵌文案', () => {
+    const el = mount({ prefix: '$', suffix: '元' })
+    expect(part(el, 'prefix').textContent).toBe('$')
+    expect(part(el, 'suffix').textContent).toBe('元')
+    expect(part(el, 'prefix').hidden).toBe(false)
+  })
+
+  it('prefix-icon/suffix-icon 用 iconRegistry 渲染内联 SVG', () => {
+    const el = mount({ 'prefix-icon': 'search', 'suffix-icon': 'close' })
+    expect(el.shadowRoot!.querySelector('[part="prefix-icon"] svg')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="suffix-icon"] svg')).not.toBeNull()
+  })
+
+  it('无效图标名不渲染 SVG，图标区域隐藏', () => {
+    const el = mount({ 'prefix-icon': 'no-such-icon' })
+    expect(el.shadowRoot!.querySelector('[part="prefix-icon"] svg')).toBeNull()
+    expect(part(el, 'prefix-icon').hidden).toBe(true)
+  })
+
+  it('与 clearable 并存：addon + 清除按钮互不干扰', () => {
+    const el = mount({ clearable: '', value: 'x', prepend: 'http://' })
+    const btn = el.shadowRoot!.querySelector('button')!
+    btn.click()
+    expect(input(el).value).toBe('')
+  })
+
+  it('disabled 时 addon 灰化（host 携带 disabled，addon 文案保留）', () => {
+    const el = mount({ disabled: '', append: '元' })
+    const append = part(el, 'append')
+    expect(append.textContent).toBe('元')
+    expect(el.hasAttribute('disabled')).toBe(true)
+  })
+
+  it('属性变化增量更新 addon/图标，不重建 input 引用', () => {
+    const el = mount({ prepend: 'a' })
+    const i = input(el)
+    el.setAttribute('prepend', 'b')
+    el.setAttribute('prefix-icon', 'search')
+    expect(input(el)).toBe(i)
+    expect(part(el, 'prepend').textContent).toBe('b')
+    expect(el.shadowRoot!.querySelector('[part="prefix-icon"] svg')).not.toBeNull()
+  })
 })

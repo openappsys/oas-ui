@@ -46,6 +46,9 @@ export const zhCN = {
   // input（输入框）
   'input.clear': '清除',
   'input.defaultLabel': '输入框',
+  // mentions（提及）
+  'mentions.defaultLabel': '提及输入框',
+  'mentions.noMatch': '无匹配提及',
   // input-number（数字输入框）
   'inputNumber.increase': '增加',
   'inputNumber.decrease': '减少',
@@ -122,4 +125,41 @@ export const zhCN = {
   'timePicker.hour': '时',
   'timePicker.minute': '分',
   'timePicker.second': '秒',
+  // upload（上传）
+  'upload.select': '选择文件',
+  'upload.drag': '拖拽文件到此处，或点击选择文件',
+  'upload.remove': '移除 {name}',
+  'upload.upload': '开始上传',
+  'upload.empty': '暂无文件',
+  // transfer（穿梭框）
+  'transfer.source': '源列表',
+  'transfer.target': '已选列表',
+  'transfer.toRight': '移至右侧',
+  'transfer.toLeft': '移至左侧',
+  'transfer.selectAll': '全选',
+  'transfer.search': '搜索',
+  'transfer.empty': '暂无数据',
+  // color-picker（颜色选择器）
+  'colorPicker.label': '颜色选择器',
+  'colorPicker.preset': '预设颜色',
+  'colorPicker.hue': '色相',
+  'colorPicker.saturation': '饱和度',
+  'colorPicker.brightness': '亮度',
+  'colorPicker.red': '红',
+  'colorPicker.green': '绿',
+  'colorPicker.blue': '蓝',
+  // pin-input（验证码分格输入）
+  'pinInput.group': '验证码',
+  'pinInput.digit': '第 {position} 位',
+  // dynamic-input（动态列表）
+  'dynamicInput.add': '添加',
+  'dynamicInput.remove': '删除',
+  // dynamic-tags（动态标签）
+  'dynamicTags.inputLabel': '添加标签',
+  'dynamicTags.remove': '移除 {label}',
+  'dynamicTags.duplicate': '标签已存在',
+  // editable（就地编辑）
+  'editable.edit': '编辑',
+  'editable.submit': '确定',
+  'editable.cancel': '取消',
 } as const

@@ -12,6 +12,13 @@ function ta(el: OASTextarea): HTMLTextAreaElement {
   return el.shadowRoot!.querySelector('textarea')!
 }
 
+/** 行高：优先像素值，无单位倍数 × font-size（与组件内一致） */
+function lineHeight(t: HTMLTextAreaElement): number {
+  const cs = getComputedStyle(t)
+  const lh = parseFloat(cs.lineHeight)
+  return cs.lineHeight.endsWith('px') ? lh : lh * parseFloat(cs.fontSize)
+}
+
 describe('OASTextarea', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -57,5 +64,64 @@ describe('OASTextarea', () => {
     const el = mount({ placeholder: '请输入内容', disabled: '' })
     expect(ta(el).placeholder).toBe('请输入内容')
     expect(ta(el).disabled).toBe(true)
+  })
+
+  // ---- v1.3 autosize 增强 ----
+
+  it('autosize 输入后高度自适应（增量 style.height，不重建 DOM）', () => {
+    const el = mount({ autosize: '' })
+    const t = ta(el)
+    Object.defineProperty(t, 'scrollHeight', { configurable: true, value: 60 })
+    t.value = '第一行\n第二行'
+    t.dispatchEvent(new Event('input'))
+    expect(parseInt(t.style.height)).toBeGreaterThan(0)
+    expect(ta(el)).toBe(t)
+  })
+
+  it('autosize 高度受 min-rows/max-rows 约束（默认 min 1 / max 6）', () => {
+    const el = mount({ autosize: '', 'min-rows': '2', 'max-rows': '4' })
+    const t = ta(el)
+    const lh = lineHeight(t)
+    expect(t.style.minHeight).toBe(`${Math.round(lh * 2 + 16)}px`) // 行高×2+上下 padding
+    expect(t.style.maxHeight).toBe(`${Math.round(lh * 4 + 16)}px`)
+  })
+
+  it('内容超出 max-rows 时高度封顶并出现滚动条', () => {
+    const el = mount({ autosize: '', 'max-rows': '2' })
+    const t = ta(el)
+    const lh = lineHeight(t)
+    const maxH = Math.round(lh * 2 + 16)
+    Object.defineProperty(t, 'scrollHeight', { configurable: true, value: 500 })
+    t.value = '很长的内容'.repeat(20)
+    t.dispatchEvent(new Event('input'))
+    expect(t.style.overflowY).toBe('auto')
+    expect(parseInt(t.style.height)).toBeLessThanOrEqual(maxH)
+  })
+
+  it('空内容回到 min-rows 高度', () => {
+    const el = mount({ autosize: '', 'min-rows': '1' })
+    const t = ta(el)
+    const lh = lineHeight(t)
+    Object.defineProperty(t, 'scrollHeight', { configurable: true, value: 0 })
+    t.value = ''
+    t.dispatchEvent(new Event('input'))
+    expect(parseInt(t.style.height)).toBe(Math.round(lh + 16))
+  })
+
+  it('auto-height 旧属性兼容触发 autosize', () => {
+    const el = mount({ 'auto-height': '' })
+    const t = ta(el)
+    Object.defineProperty(t, 'scrollHeight', { configurable: true, value: 80 })
+    t.value = '内容'
+    t.dispatchEvent(new Event('input'))
+    expect(parseInt(t.style.height)).toBe(80)
+  })
+
+  it('无 autosize 时高度自适应不生效', () => {
+    const el = mount()
+    const t = ta(el)
+    t.value = '内容'
+    t.dispatchEvent(new Event('input'))
+    expect(t.style.height).toBe('')
   })
 })
