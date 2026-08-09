@@ -170,3 +170,40 @@ test('table SPA 导航后数据不丢（Vue property 赋值反射到 attribute�
     expect(t.rows, `表格数据 ${t.dataLen}B 但行数 ${t.rows}`).toBeGreaterThan(0)
   }
 })
+
+test('tree 虚拟滚动渲染真实 label 而非 [object Object]', async ({ page }) => {
+  // 曾现 bug：virtual-list 先写 String(item) 兜底文本再派发 oas-item，
+  // tree 填充的行与 "[object Object]" 并存。修复为先派发、宿主没填才兜底。
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tree-virtual')
+  await page.waitForTimeout(800)
+  const r = await page.evaluate(() => {
+    const tree = document.querySelector('#tree-virtual')!
+    const vlist = tree.shadowRoot!.querySelector('oas-virtual-list')!
+    const items = [...vlist.shadowRoot!.querySelectorAll('[part=item]')]
+    return {
+      hasObjectObject: items.some((el) => el.textContent?.includes('[object Object')),
+      firstLabel: items[0]?.querySelector('.row .label')?.textContent ?? '',
+    }
+  })
+  expect(r.hasObjectObject).toBe(false)
+  expect(r.firstLabel).toContain('节点')
+})
+
+test('timeline 圆点中心与连接线中心对齐', async ({ page }) => {
+  // 曾现 bug：.dot 未设 box-sizing，content-box 下总宽 14px 圆心 7px，线心 5px，偏右 2px。
+  await page.goto('/components/timeline.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-timeline')
+  const r = await page.evaluate(() => {
+    const item = document.querySelector('oas-timeline')!.shadowRoot!.querySelector('.item')!
+    const dot = item.querySelector('.dot')!
+    const dotBox = dot.getBoundingClientRect()
+    const itemBox = item.getBoundingClientRect()
+    return {
+      diff: Math.abs(dotBox.left + dotBox.width / 2 - (itemBox.left + 5)),
+      dotWidth: dotBox.width,
+    }
+  })
+  expect(r.dotWidth).toBe(10)
+  expect(r.diff).toBeLessThanOrEqual(1)
+})

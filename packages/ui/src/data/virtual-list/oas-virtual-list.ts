@@ -230,11 +230,14 @@ private itemRole = ''
       el.style.height = `${ih}px`
       if (tpl) {
         el.appendChild(tpl.content.cloneNode(true))
+        this.emit('item', { index: i, item, element: el })
       } else {
-        el.textContent = String(item ?? '')
+        // 先派发 oas-item 让宿主（如 oas-tree）填充内容；宿主没填才回退 String(item)，
+        // 否则对象项会残留 "[object Object]" 文本（此前 tree 虚拟滚动的 bug）
+        this.emit('item', { index: i, item, element: el })
+        if (!el.hasChildNodes()) el.textContent = String(item ?? '')
       }
       itemsEl.appendChild(el)
-      this.emit('item', { index: i, item, element: el })
     }
   }
 

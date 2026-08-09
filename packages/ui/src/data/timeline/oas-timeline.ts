@@ -31,6 +31,9 @@ const STYLE = `
   top: 4px;
   width: 10px;
   height: 10px;
+  /* border-box：总宽 10px、圆心 5px，与连接线（left:4px + 2px 宽 → 中心 5px）对齐；
+     content-box 下总宽 14px 圆心 7px，会偏右 2px */
+  box-sizing: border-box;
   border-radius: 50%;
   background: var(--oas-color-primary);
   border: 2px solid var(--oas-color-bg);
