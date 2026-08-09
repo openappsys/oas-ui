@@ -73,6 +73,21 @@ export default function App() {
           成功消息
         </oas-button>
       </div>
+
+      <div className="demo-block">
+        <h3>数据型组件（React 19 property 赋值验证）</h3>
+        <oas-select
+          placeholder="请选择"
+          options='[{"value":"a","label":"选项 A"},{"value":"b","label":"选项 B"}]'
+          style={{ width: '220px' }}
+        ></oas-select>
+        <oas-table
+          columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"}]'
+          data='[{"name":"张三","age":30},{"name":"李四","age":25}]'
+          row-key="name"
+        ></oas-table>
+        <oas-input prefix="¥" placeholder="金额" style={{ width: '180px' }}></oas-input>
+      </div>
     </div>
   )
 }
