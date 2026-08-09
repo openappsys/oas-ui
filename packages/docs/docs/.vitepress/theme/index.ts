@@ -8,7 +8,15 @@ import { bindOnOas } from './onoas'
 
 if (!import.meta.env.SSR) {
   // Web Components 需在浏览器环境注册；SSR 构建阶段跳过
-  import('@oas-ui/ui')
+  import('@oas-ui/ui').then((mod) => {
+    // demo 内联事件（onclick / onoas-*）在全局作用域 eval，需要命令式 API 挂到 window
+    const w = window as unknown as Record<string, unknown>
+    w.message = mod.message
+    w.toast = mod.toast
+    w.notification = mod.notification
+    w.loadingBar = mod.loadingBar
+    w.confirm = mod.confirm
+  })
 }
 
 export default {

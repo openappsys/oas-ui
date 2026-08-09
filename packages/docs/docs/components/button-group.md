@@ -29,7 +29,7 @@
 通过 `value` 声明当前选中项，点击派发 `oas-change`，detail 为 `{ value }`。
 
 <DemoBlock title="单选选值组">
-  <oas-button-group value="b" onclick="console.log('oas-change', event.detail)">
+  <oas-button-group value="b" onoas-change="toast.info({ title: '选中：' + event.detail.value })">
     <oas-button value="a">选项 A</oas-button>
     <oas-button value="b">选项 B</oas-button>
     <oas-button value="c">选项 C</oas-button>

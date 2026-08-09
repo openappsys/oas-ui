@@ -12,10 +12,10 @@ function bindOne(root: ParentNode): void {
       if (attr.name.startsWith('onoas-')) {
         has = true
         const eventName = `oas-${attr.name.slice('onoas-'.length)}`
-        el.addEventListener(eventName, () => {
+        el.addEventListener(eventName, (e) => {
           try {
-            // 间接 eval：在全局作用域执行，可访问 window.message 等
-            ;(0, eval)(attr.value)
+            // new Function：可访问 window 上的命令式 API（message / toast 等），并注入事件对象
+            new Function('event', attr.value)(e)
           } catch (err) {
             console.error(`[demo] onoas-${eventName} 执行失败:`, err)
           }

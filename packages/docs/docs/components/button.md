@@ -32,8 +32,10 @@
 ## 事件
 
 <DemoBlock title="点击事件">
-  <oas-button type="primary" onclick="console.log('oas-click', event)">点击我</oas-button>
+  <oas-button type="primary" onoas-click="toast.success({ title: '触发了 oas-click 事件' })">点击我</oas-button>
 </DemoBlock>
+
+点击派发 `oas-click` CustomEvent（bubbles + composed），`detail.originalEvent` 为原生 MouseEvent。
 
 ## API
 

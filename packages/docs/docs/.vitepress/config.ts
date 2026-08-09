@@ -4,6 +4,14 @@ export default defineConfig({
   title: 'OAS-UI',
   description: '框架无关的 Web Components UI 组件库',
   lang: 'zh-CN',
+  vue: {
+    template: {
+      compilerOptions: {
+        // oas-* 为原生 custom elements，避免 Vue 组件解析告警并原样透传属性
+        isCustomElement: (tag: string) => tag.startsWith('oas-'),
+      },
+    },
+  },
   vite: {
     server: {
       port: 5173,
