@@ -58,4 +58,59 @@ describe('OASRate', () => {
     stars(el)[4]!.click()
     expect(el.getAttribute('value')).toBe('1')
   })
+
+  it('allow-clear 默认开启：点击当前已选中的同一颗星清空为 0', () => {
+    const el = mount({ value: '4' })
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    stars(el)[3]!.click()
+    expect(detail).toEqual({ value: 0 })
+    expect(el.getAttribute('value')).toBe('0')
+  })
+
+  it('allow-clear 下点击其他星仍正常设值', () => {
+    const el = mount({ value: '3' })
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    stars(el)[4]!.click()
+    expect(detail).toEqual({ value: 5 })
+    expect(el.getAttribute('value')).toBe('5')
+  })
+
+  it('allow-clear="false" 时点击已选中的星不清空', () => {
+    const el = mount({ value: '4', 'allow-clear': 'false' })
+    let emitted = false
+    el.addEventListener('oas-change', () => (emitted = true))
+    stars(el)[3]!.click()
+    expect(el.getAttribute('value')).toBe('4')
+    expect(emitted).toBe(false)
+  })
+
+  it('半值时点击半星所在星同样清空', () => {
+    const el = mount({ value: '3.5', 'allow-half': '' })
+    stars(el)[3]!.click() // 第 4 颗星（承载半星）
+    expect(el.getAttribute('value')).toBe('0')
+  })
+
+  it('icon 属性自定义字符图标', () => {
+    const el = mount({ icon: '♥', value: '3' })
+    const s = stars(el)
+    expect(s.length).toBe(5)
+    for (const star of s) expect(star.textContent?.trim()).toBe('♥')
+  })
+
+  it('icon 属性支持 SVG 标记', () => {
+    const el = mount({ icon: "<svg viewBox='0 0 16 16'></svg>" })
+    expect(stars(el)[0]!.querySelector('svg')).not.toBeNull()
+  })
+
+  it('slot 自定义图标克隆到每颗星', async () => {
+    const el = new OASRate()
+    el.innerHTML = `<span slot="icon">★</span>`
+    document.body.appendChild(el)
+    await new Promise((r) => setTimeout(r, 0))
+    const s = stars(el)
+    expect(s.length).toBe(5)
+    for (const star of s) expect(star.textContent?.trim()).toBe('★')
+  })
 })

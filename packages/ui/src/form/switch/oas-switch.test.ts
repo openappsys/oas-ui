@@ -60,4 +60,64 @@ describe('OASSwitch', () => {
     expect(sw(el)).toBe(btn)
     expect(btn.getAttribute('aria-checked')).toBe('true')
   })
+
+  it('checked-text/unchecked-text：初始关闭显示 unchecked-text，点击切换为 checked-text', () => {
+    const el = mount({ 'checked-text': '开', 'unchecked-text': '关' })
+    const label = sw(el).querySelector<HTMLElement>('.label')!
+    expect(label.hidden).toBe(false)
+    expect(label.textContent).toBe('关')
+    sw(el).click()
+    expect(label.textContent).toBe('开')
+  })
+
+  it('改 checked-text 增量更新文案且不重建引用', () => {
+    const el = mount({ checked: '', 'checked-text': '开', 'unchecked-text': '关' })
+    const label = sw(el).querySelector<HTMLElement>('.label')!
+    expect(label.textContent).toBe('开')
+    el.setAttribute('checked-text', 'YES')
+    expect(label.textContent).toBe('YES')
+    expect(sw(el).querySelector('.label')).toBe(label)
+  })
+
+  it('未设置文案时轨道内 label 隐藏', () => {
+    const el = mount()
+    const label = sw(el).querySelector<HTMLElement>('.label')!
+    expect(label.hidden).toBe(true)
+  })
+
+  it('size 类名：small / 默认 medium / large', () => {
+    const small = mount({ size: 'small' })
+    expect(sw(small).className).toBe('small')
+    const medium = mount()
+    expect(sw(medium).className).toBe('medium')
+    const large = mount({ size: 'large' })
+    expect(sw(large).className).toBe('large')
+  })
+
+  it('size=small 且设置文案时文案放轨道外侧（outside-label）', () => {
+    const el = mount({ size: 'small', 'checked-text': '开', 'unchecked-text': '关' })
+    const outside = el.shadowRoot!.querySelector<HTMLElement>('.outside-label')!
+    expect(outside.hidden).toBe(false)
+    expect(outside.textContent).toBe('关')
+    expect(sw(el).querySelector<HTMLElement>('.label')!.hidden).toBe(true)
+    expect(el.classList.contains('has-outside-label')).toBe(true)
+    sw(el).click()
+    expect(outside.textContent).toBe('开')
+  })
+
+  it('size=medium 时文案显示在轨道内而非外侧', () => {
+    const el = mount({ size: 'medium', 'checked-text': '开', 'unchecked-text': '关' })
+    const outside = el.shadowRoot!.querySelector<HTMLElement>('.outside-label')!
+    const label = sw(el).querySelector<HTMLElement>('.label')!
+    expect(label.hidden).toBe(false)
+    expect(outside.hidden).toBe(true)
+    expect(el.classList.contains('has-outside-label')).toBe(false)
+  })
+
+  it('color 内联样式：--oas-color-primary 覆盖，移除属性后清除', () => {
+    const el = mount({ color: '#16a34a', checked: '' })
+    expect(sw(el).style.getPropertyValue('--oas-color-primary')).toBe('#16a34a')
+    el.removeAttribute('color')
+    expect(sw(el).style.getPropertyValue('--oas-color-primary')).toBe('')
+  })
 })

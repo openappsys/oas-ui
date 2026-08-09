@@ -96,6 +96,12 @@ export const zhCN = {
   'pagination.prev': '上一页',
   'pagination.next': '下一页',
   'pagination.page': '第 {page} 页',
+  'pagination.total': '共 {total} 条',
+  'pagination.sizes': '每页条数',
+  'pagination.sizePerPage': '{size} 条/页',
+  'pagination.goto': '跳至',
+  'pagination.pageClassifier': '页',
+  'pagination.jumperInput': '页码跳转',
   // table（表格）
   'table.selectAll': '全选',
   'table.loading': '加载中…',
@@ -122,6 +128,8 @@ export const zhCN = {
   'typography.copy': '复制',
   // tag（标签）
   'tag.close': '关闭',
+  // tabs（标签页）
+  'tabs.close': '关闭',
   // button-group（按钮组）
   'buttonGroup.group': '按钮组',
   // loading（加载态，通用兜底）
