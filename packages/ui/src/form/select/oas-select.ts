@@ -11,6 +11,7 @@ interface Option {
 const STYLE = `
 :host {
   display: inline-block;
+  position: relative;
   font-family: inherit;
   width: 220px;
 }
@@ -255,11 +256,11 @@ export class OASSelect extends OASElement {
         <button class="trigger" part="trigger" type="button" role="combobox"
           aria-haspopup="listbox" aria-expanded="false">
           <span class="value" part="value"></span>
-          <button class="clear-btn" part="clear" type="button" tabindex="-1" hidden aria-label="">
+          <span class="clear-btn" part="clear" role="button" tabindex="-1" hidden aria-label="">
             <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
               <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
-          </button>
+          </span>
           <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
