@@ -65,6 +65,9 @@ const STYLE = `
   min-width: 0;
   flex: 1;
   text-align: left;
+  /* 多选标签多时内部滚动而非无限撑高触发器 */
+  max-height: calc(var(--oas-control-height-md) * 2);
+  overflow-y: auto;
 }
 .placeholder {
   color: var(--oas-color-text-secondary);
@@ -91,6 +94,10 @@ const STYLE = `
 }
 .chevron {
   transition: transform var(--oas-transition-fast) var(--oas-ease-out);
+  /* 多行标签时箭头固定首行对齐，不随触发器长高漂浮 */
+  align-self: flex-start;
+  margin-top: calc((var(--oas-control-height-md) - 12px) / 2);
+  flex-shrink: 0;
 }
 .trigger[aria-expanded='true'] .chevron {
   transform: rotate(180deg);

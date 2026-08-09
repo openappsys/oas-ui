@@ -105,6 +105,14 @@
   </oas-tabs>
 </DemoBlock>
 
+<DemoBlock title="right 纵向标签">
+  <oas-tabs tab-position="right" active="a">
+    <oas-tab-panel label="标签一" value="a"><p>内容一：标签纵向排列在右侧，内容在左侧。</p></oas-tab-panel>
+    <oas-tab-panel label="标签二" value="b"><p>内容二</p></oas-tab-panel>
+    <oas-tab-panel label="标签三" value="c"><p>内容三</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
 <DemoBlock title="bottom 标签在下方">
   <oas-tabs tab-position="bottom" active="a">
     <oas-tab-panel label="标签一" value="a"><p>内容一：标签横向排列在下方，内容在上方。</p></oas-tab-panel>

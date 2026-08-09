@@ -69,10 +69,11 @@ button[disabled] {
   border-radius: 50%;
   background: var(--oas-color-bg);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  transition: transform var(--oas-transition-base) var(--oas-ease-out);
+  transition: left var(--oas-transition-base) var(--oas-ease-out);
 }
 button[aria-checked='true'] .thumb {
-  transform: translateX(var(--thumb-travel));
+  /* 锚定右端而非固定位移：轨道带文案自动加宽时也能贴右端，不遮文案 */
+  left: calc(100% - var(--thumb-size) - var(--thumb-offset));
 }
 /* 轨道内文案：显示在滑块对侧，nowrap 不换行、轨道随文案自动加宽（不溢出不变形） */
 .label {
