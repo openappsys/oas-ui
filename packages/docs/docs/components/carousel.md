@@ -80,6 +80,30 @@
 
 默认（未指定 `arrows`）即悬停显示形态：箭头默认隐藏，鼠标悬停或键盘聚焦轮播区域时平滑淡入。不指定 `arrows` 时等价于 `arrows="hover"`。
 
+## 图片轮播
+
+轮播项不局限于色块——放 `<img>` 或 SVG 即成图片 banner。
+
+<DemoBlock title="图片 banner（SVG）">
+  <div style="width: 100%">
+    <oas-carousel arrows="always">
+      <svg viewBox="0 0 800 260" preserveAspectRatio="none" style="width:100%; height:220px; display:block;"><defs><linearGradient id="cbg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b6cff"/><stop offset="1" stop-color="#16a34a"/></linearGradient></defs><rect width="800" height="260" fill="url(#cbg1)"/><text x="400" y="140" font-size="36" text-anchor="middle" fill="#fff" font-family="sans-serif">夏日活动</text></svg>
+      <svg viewBox="0 0 800 260" preserveAspectRatio="none" style="width:100%; height:220px; display:block;"><defs><linearGradient id="cbg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#0891b2"/></linearGradient></defs><rect width="800" height="260" fill="url(#cbg2)"/><text x="400" y="140" font-size="36" text-anchor="middle" fill="#fff" font-family="sans-serif">秋日上新</text></svg>
+      <svg viewBox="0 0 800 260" preserveAspectRatio="none" style="width:100%; height:220px; display:block;"><defs><linearGradient id="cbg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d97706"/><stop offset="1" stop-color="#dc2626"/></linearGradient></defs><rect width="800" height="260" fill="url(#cbg3)"/><text x="400" y="140" font-size="36" text-anchor="middle" fill="#fff" font-family="sans-serif">冬日促销</text></svg>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="图片轮播（img + 自动播放）">
+  <div style="width: 100%">
+    <oas-carousel autoplay interval="2500">
+      <img src="https://picsum.photos/seed/isui-cv-1/800/260" alt="轮播图 1" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="https://picsum.photos/seed/isui-cv-2/800/260" alt="轮播图 2" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="https://picsum.photos/seed/isui-cv-3/800/260" alt="轮播图 3" style="width:100%; height:220px; object-fit: cover; display:block;">
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
 ## 事件
 
 <DemoBlock title="切换事件">

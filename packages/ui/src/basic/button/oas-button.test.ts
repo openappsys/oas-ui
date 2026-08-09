@@ -91,4 +91,50 @@ describe('OASButton', () => {
     expect(before.disabled).toBe(true)
     expect(before.getAttribute('aria-busy')).toBe('true')
   })
+
+  it('icon 渲染：按钮内出现 iconRegistry 内联 SVG，带 has-icon 类', () => {
+    const el = mount({ icon: 'search' }, '搜索')
+    const btn = shadowBtn(el)
+    const iconEl = btn.querySelector<HTMLElement>('.icon')
+    expect(iconEl).not.toBeNull()
+    expect(iconEl!.hidden).toBe(false)
+    expect(iconEl!.querySelector('svg')).not.toBeNull()
+    expect(btn.classList.contains('has-icon')).toBe(true)
+  })
+
+  it('纯图标按钮：等宽 icon-only 类 + aria-label 兜底（取图标名）', () => {
+    const el = mount({ icon: 'search' }, '')
+    const btn = shadowBtn(el)
+    expect(btn.classList.contains('icon-only')).toBe(true)
+    expect(btn.getAttribute('aria-label')).toBe('search')
+  })
+
+  it('有文字时不再判为纯图标，aria-label 兜底移除', () => {
+    const el = mount({ icon: 'check' }, '确认')
+    const btn = shadowBtn(el)
+    expect(btn.classList.contains('icon-only')).toBe(false)
+    expect(btn.hasAttribute('aria-label')).toBe(false)
+  })
+
+  it('宿主 aria-label 同步到内部 button', () => {
+    const el = mount({ icon: 'close', 'aria-label': '关闭' })
+    expect(shadowBtn(el).getAttribute('aria-label')).toBe('关闭')
+  })
+
+  it('block 宽度：button 带 block 类，host 声明块级布局', () => {
+    const el = mount({ block: '' })
+    const btn = shadowBtn(el)
+    expect(btn.classList.contains('block')).toBe(true)
+    expect(el.hasAttribute('block')).toBe(true)
+  })
+
+  it('round 类名：button 带 round 类', () => {
+    const el = mount({ round: '' })
+    expect(shadowBtn(el).classList.contains('round')).toBe(true)
+  })
+
+  it('ghost 类名：button 带 ghost 类', () => {
+    const el = mount({ ghost: '' })
+    expect(shadowBtn(el).classList.contains('ghost')).toBe(true)
+  })
 })

@@ -6,6 +6,9 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+.root {
+  display: block;
+}
 .wrapper {
   display: inline-flex;
   align-items: stretch;
@@ -164,6 +167,35 @@ input:disabled:hover {
   padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 
+/* show-password 眼睛按钮让位：输入框/清除按钮/内嵌后缀整体左移 */
+:host([show-password]) input {
+  padding-right: var(--oas-space-8, 40px);
+}
+:host([show-password][clearable]) input,
+:host([show-password][suffix]) input,
+:host([show-password][suffix-icon]) input {
+  padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+}
+:host([show-password][clearable][suffix]) input,
+:host([show-password][clearable][suffix-icon]) input {
+  padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px) + var(--oas-space-5, 24px));
+}
+:host([show-password][type='password']) .clear-btn {
+  right: var(--oas-space-8, 40px);
+}
+:host([show-password][clearable][suffix-icon]) .clear-btn {
+  right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+}
+:host([show-password]) [part='suffix-icon'] {
+  right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+}
+:host([show-password]:not([suffix-icon])) [part='suffix'] {
+  right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
+}
+:host([show-password]) [part='suffix'] {
+  right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px) + 16px);
+}
+
 /* ---- 清除按钮 ---- */
 .clear-btn {
   position: absolute;
@@ -188,6 +220,58 @@ input:disabled:hover {
 .clear-btn[hidden] {
   display: none;
 }
+
+/* ---- show-password 眼睛切换按钮 ---- */
+.eye-btn {
+  position: absolute;
+  right: var(--oas-space-2);
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--oas-color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--oas-radius-sm);
+  z-index: 2;
+}
+.eye-btn:hover {
+  color: var(--oas-color-text-primary);
+}
+.eye-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.eye-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+:host([disabled]) .eye-btn {
+  cursor: not-allowed;
+  color: var(--oas-color-text-disabled);
+}
+.eye-btn[hidden] {
+  display: none;
+}
+
+/* ---- show-count 字数统计（输入框右下角） ---- */
+.count {
+  display: block;
+  margin-top: var(--oas-space-1, 4px);
+  text-align: right;
+  font-size: var(--oas-font-size-sm);
+  line-height: 1.4;
+  color: var(--oas-color-text-secondary);
+}
+.count[data-over='true'] {
+  color: var(--oas-color-danger);
+}
+.count[hidden] {
+  display: none;
+}
 `
 
 export class OASInput extends OASElement {
@@ -206,6 +290,9 @@ export class OASInput extends OASElement {
       'suffix',
       'prefix-icon',
       'suffix-icon',
+      'show-password',
+      'maxlength',
+      'show-count',
     ]
   }
 
@@ -219,33 +306,54 @@ export class OASInput extends OASElement {
 
   private inputEl: HTMLInputElement | null = null
   private clearBtn: HTMLButtonElement | null = null
+  private eyeBtn: HTMLButtonElement | null = null
+  private countEl: HTMLElement | null = null
+  /** show-password 明文/密文状态（仅 type=password 时生效） */
+  private revealed = false
 
   protected override render(): void {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      <span class="wrapper" part="wrapper">
-        <span class="addon" part="prepend" hidden></span>
-        <span class="inner" part="inner">
-          <span class="affix-icon" part="prefix-icon" hidden></span>
-          <span class="affix" part="prefix" hidden></span>
-          <input part="input" />
-          <span class="affix" part="suffix" hidden></span>
-          <span class="affix-icon" part="suffix-icon" hidden></span>
-          <button class="clear-btn" part="clear" hidden>
-            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-              <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </button>
+      <div class="root" part="root">
+        <span class="wrapper" part="wrapper">
+          <span class="addon" part="prepend" hidden></span>
+          <span class="inner" part="inner">
+            <span class="affix-icon" part="prefix-icon" hidden></span>
+            <span class="affix" part="prefix" hidden></span>
+            <input part="input" />
+            <span class="affix" part="suffix" hidden></span>
+            <span class="affix-icon" part="suffix-icon" hidden></span>
+            <button class="clear-btn" part="clear" hidden>
+              <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <button class="eye-btn" part="eye" type="button" hidden aria-pressed="false">
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+                ${iconRegistry['eye']}
+              </svg>
+            </button>
+          </span>
+          <span class="addon" part="append" hidden></span>
         </span>
-        <span class="addon" part="append" hidden></span>
-      </span>
+        <span class="count" part="count" hidden></span>
+      </div>
     `
     this.inputEl = this.shadow.querySelector('input')
     this.clearBtn = this.shadow.querySelector('.clear-btn')
+    this.eyeBtn = this.shadow.querySelector('.eye-btn')
+    this.countEl = this.shadow.querySelector('.count')
 
     this.inputEl?.addEventListener('input', () => {
       this.emit('input', { value: this.inputEl!.value })
       this.syncClearVisibility()
+      this.syncCount()
+    })
+    this.inputEl?.addEventListener('keydown', (e: KeyboardEvent) => {
+      // 非输入法组合（IME 上屏）时按 Enter 才派发 oas-enter
+      if (e.key === 'Enter' && !e.isComposing) {
+        this.emit('enter', { value: this.inputEl!.value })
+      }
     })
     this.clearBtn?.addEventListener('click', () => {
       if (!this.inputEl) return
@@ -253,6 +361,13 @@ export class OASInput extends OASElement {
       this.emit('clear', { originalEvent: new MouseEvent('click') })
       this.inputEl.focus()
       this.syncClearVisibility()
+      this.syncCount()
+    })
+    this.eyeBtn?.addEventListener('click', () => {
+      if (!this.inputEl || this.hasAttr('disabled')) return
+      this.revealed = !this.revealed
+      this.syncPasswordReveal()
+      this.inputEl.focus()
     })
     this.update()
   }
@@ -268,7 +383,10 @@ export class OASInput extends OASElement {
 
     if (i.value !== value) i.value = value
     i.placeholder = placeholder
-    i.type = type
+    // maxlength 透传原生 input（空值即无限制）
+    const maxlength = this.getAttr('maxlength', '')
+    if (maxlength === '') i.removeAttribute('maxlength')
+    else i.setAttribute('maxlength', maxlength)
     i.disabled = disabled
     i.readOnly = readonly
     // 内置文案走 locale registry（label/placeholder 属性优先，setLocale 切换自动刷新）
@@ -277,6 +395,8 @@ export class OASInput extends OASElement {
       this.clearBtn.setAttribute('aria-label', this.t('input.clear'))
       this.clearBtn.hidden = !this.shouldShowClear()
     }
+    this.syncPasswordReveal()
+    this.syncCount()
     this.syncAddons()
     this.syncAffixes()
   }
@@ -294,6 +414,40 @@ export class OASInput extends OASElement {
   private syncClearVisibility(): void {
     if (!this.clearBtn || !this.inputEl) return
     this.clearBtn.hidden = !this.shouldShowClear()
+  }
+
+  /** show-password 眼睛按钮：仅 type=password + show-password + 未禁用时显示；切换明文/密文 */
+  private syncPasswordReveal(): void {
+    if (!this.inputEl || !this.eyeBtn) return
+    const type = this.getAttr('type', 'text')
+    const isPassword = type === 'password'
+    if (!isPassword) this.revealed = false
+    this.inputEl.type = isPassword && this.revealed ? 'text' : type
+    const showEye = isPassword && this.hasAttr('show-password') && !this.hasAttr('disabled')
+    this.eyeBtn.hidden = !showEye
+    if (showEye) {
+      this.eyeBtn.setAttribute('aria-pressed', String(this.revealed))
+      this.eyeBtn.setAttribute(
+        'aria-label',
+        this.revealed ? this.t('input.hidePassword') : this.t('input.showPassword'),
+      )
+    }
+  }
+
+  /** show-count 字数统计：右下角显示 当前长度/maxlength（无 maxlength 只显示当前长度），超限标 danger */
+  private syncCount(): void {
+    if (!this.countEl || !this.inputEl) return
+    const show = this.hasAttr('show-count')
+    this.countEl.hidden = !show
+    if (!show) return
+    const maxlength = this.getAttr('maxlength', '')
+    const len = this.inputEl.value.length
+    this.countEl.textContent = maxlength === '' ? String(len) : `${len}/${maxlength}`
+    if (maxlength !== '' && len > Number(maxlength)) {
+      this.countEl.setAttribute('data-over', 'true')
+    } else {
+      this.countEl.removeAttribute('data-over')
+    }
   }
 
   /** addon 文案块：prepend / append（空值隐藏，文本可被读屏读取） */

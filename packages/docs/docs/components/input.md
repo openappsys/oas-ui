@@ -18,6 +18,14 @@
 
 `type` 透传原生 input 类型，支持 `text` / `password` / `number` / `email` 等。
 
+## 密码可见切换
+
+<DemoBlock title="show-password">
+  <oas-input type="password" show-password placeholder="密码" value="oasis123" style="width: 240px"></oas-input>
+</DemoBlock>
+
+`show-password` 在 `type="password"` 时于输入框右侧渲染眼睛按钮，点击在明文/密文间切换；按钮带 `aria-label`（locale 文案）与 `aria-pressed`，聚焦时有焦点环。
+
 ## 可清空
 
 <DemoBlock title="可清空（clearable）">
@@ -61,6 +69,24 @@
 
 `prefix` / `suffix` 为输入框内部文案，与 `clearable`、图标、addon 可并存不冲突。
 
+## 字数统计
+
+<DemoBlock title="show-count + maxlength">
+  <oas-input show-count maxlength="10" placeholder="最多输入 10 个字" style="width: 240px"></oas-input>
+  <oas-input show-count value="无长度限制" style="width: 240px"></oas-input>
+</DemoBlock>
+
+`show-count` 在输入框右下角显示字数统计：设置 `maxlength` 时显示 `当前长度/maxlength`，未设置时仅显示当前长度；`maxlength` 同时透传原生 input 限制输入长度。超过限制时计数数字变 danger 色。
+
+## 回车提交事件
+
+<DemoBlock title="oas-enter">
+  <oas-input id="input-enter" placeholder="输入后按回车" style="width: 240px"></oas-input>
+  <span id="enter-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 160px"></span>
+</DemoBlock>
+
+输入时按 Enter（非输入法组合上屏）派发 `oas-enter`，`detail: { value }`。
+
 ## 事件
 
 <DemoBlock title="输入与清除事件">
@@ -81,6 +107,11 @@ onMounted(() => {
   el?.addEventListener('oas-clear', () => {
     out.textContent = 'oas-clear'
   })
+  const enter = document.getElementById('input-enter')
+  const enterOut = document.getElementById('enter-output')
+  enter?.addEventListener('oas-enter', (e) => {
+    enterOut.textContent = `oas-enter: ${e.detail.value}`
+  })
 })
 </script>
 
@@ -100,8 +131,12 @@ onMounted(() => {
 | `suffix`      | 内嵌后置文案    | 无      |
 | `prefix-icon` | 前置图标名      | 无      |
 | `suffix-icon` | 后置图标名      | 无      |
+| `show-password` | 密码可见切换（`type="password"` 时渲染眼睛按钮） | `false` |
+| `maxlength`   | 最大输入长度（透传原生 maxlength） | 无      |
+| `show-count`  | 显示字数统计（右下角，超限标 danger） | `false` |
 
 | 事件        | 说明                                  |
 | ----------- | ------------------------------------- |
 | `oas-input` | 输入中，`detail: { value }`           |
 | `oas-clear` | 点击清除，`detail: { originalEvent }` |
+| `oas-enter` | 按 Enter（非输入法组合），`detail: { value }` |

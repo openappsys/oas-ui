@@ -117,4 +117,122 @@ describe('OASSelect', () => {
     searchInput.dispatchEvent(new Event('input', { bubbles: true }))
     expect(el.shadowRoot!.textContent).toContain('无匹配选项')
   })
+
+  it('分组：渲染组标题（不可选），组内选项缩进，键盘导航跨组连续', () => {
+    const grouped = JSON.stringify([
+      { group: '温带水果', label: '苹果', value: 'apple' },
+      { group: '温带水果', label: '香蕉', value: 'banana' },
+      { group: '热带水果', label: '橙子', value: 'orange' },
+      { group: '热带水果', label: '芒果', value: 'mango' },
+    ])
+    const el = mount({ options: grouped })
+    open(el)
+    const headers = [...el.shadowRoot!.querySelectorAll('.option-group')].map((h) => h.textContent)
+    expect(headers).toEqual(['温带水果', '热带水果'])
+    // 组标题不可选：仅可选项具备 role="option"，且组内选项有缩进标记
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(4)
+    expect(el.shadowRoot!.querySelectorAll('.option.grouped').length).toBe(4)
+    // 从第一组最后一项跨到第二组第一项
+    const btn = trigger(el)
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    const active = el.shadowRoot!.querySelector('.option.active')!
+    expect(active.textContent).toContain('橙子')
+  })
+
+  it('clearable：有值时显示清空按钮，点击清空并派发 oas-clear / oas-change', () => {
+    const el = mount({ clearable: '', value: 'apple' })
+    const clearBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!
+    expect(clearBtn.hidden).toBe(false)
+    let clearDetail: unknown
+    let changeDetail: unknown
+    el.addEventListener('oas-clear', (e: Event) => (clearDetail = (e as CustomEvent).detail))
+    el.addEventListener('oas-change', (e: Event) => (changeDetail = (e as CustomEvent).detail))
+    clearBtn.click()
+    expect(el.getAttribute('value')).toBeNull()
+    expect(clearDetail).toEqual({ value: 'apple' })
+    expect(changeDetail).toEqual({ value: '' })
+    expect(clearBtn.hidden).toBe(true)
+  })
+
+  it('clearable：无值 / 禁用时不显示清空按钮', () => {
+    const el = mount({ clearable: '' })
+    expect(el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!.hidden).toBe(true)
+    const el2 = mount({ clearable: '', disabled: '', value: 'apple' })
+    expect(el2.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!.hidden).toBe(true)
+  })
+
+  it('remote：loading 时下拉显示加载占位', () => {
+    const el = mount({ remote: '', searchable: '' })
+    open(el)
+    el.setAttribute('loading', '')
+    expect(el.shadowRoot!.textContent).toContain('加载中…')
+  })
+
+  it('remote：本地不过滤选项，输入派发 oas-input 供宿主请求', () => {
+    const el = mount({ remote: '', searchable: '' })
+    open(el)
+    const searchInput = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    let inputDetail: unknown
+    el.addEventListener('oas-input', (e: Event) => (inputDetail = (e as CustomEvent).detail))
+    // 关键词在本地下拉中不存在，但 remote 不做本地过滤，全部选项仍渲染
+    searchInput.value = '不存在的'
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(3)
+    expect(inputDetail).toEqual({ value: '不存在的' })
+  })
+
+  it('max-tag-count：多选超过数量折叠为 +N', () => {
+    const el = mount({
+      multiple: '',
+      'max-tag-count': '2',
+      value: JSON.stringify(['apple', 'banana', 'orange']),
+    })
+    const chips = [...el.shadowRoot!.querySelectorAll('.chip')]
+    expect(chips.length).toBe(3)
+    expect(chips[2]!.textContent).toBe('+1')
+  })
+
+  it('allow-create：无匹配时显示「创建 xxx」项，点击创建并纳入选中', () => {
+    const el = mount({ 'allow-create': '', searchable: '' })
+    open(el)
+    const searchInput = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    searchInput.value = '火龙果'
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+    const createRow = el.shadowRoot!.querySelector<HTMLElement>('.create-option')!
+    expect(createRow.textContent).toContain('创建 火龙果')
+    let changeDetail: unknown
+    el.addEventListener('oas-change', (e: Event) => (changeDetail = (e as CustomEvent).detail))
+    createRow.click()
+    expect(el.getAttribute('value')).toBe('火龙果')
+    expect(trigger(el).textContent).toContain('火龙果')
+    expect(changeDetail).toEqual({ value: '火龙果' })
+  })
+
+  it('allow-create：键盘 Enter 创建新选项', () => {
+    const el = mount({ 'allow-create': '', searchable: '' })
+    open(el)
+    const searchInput = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    searchInput.value = '奇异果'
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+    searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(el.getAttribute('value')).toBe('奇异果')
+  })
+
+  it('键盘：展开态按 Enter 选中高亮项（回归：此前 Enter 分支为死代码）', () => {
+    const el = mount()
+    open(el)
+    trigger(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    trigger(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(el.getAttribute('value')).toBe('banana')
+  })
+
+  it('键盘：搜索框内 ↑/↓ 移动高亮', () => {
+    const el = mount({ searchable: '' })
+    open(el)
+    const searchInput = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    const active = el.shadowRoot!.querySelector('.option.active')!
+    expect(active.textContent).toContain('香蕉')
+  })
 })

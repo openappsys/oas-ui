@@ -79,6 +79,45 @@
   </p>
 </DemoBlock>
 
+## 图文混排
+
+条目默认插槽可放缩略图，配合标题与描述形成富媒体列表。
+
+<DemoBlock title="图文列表（缩略图 + 标题 + 描述）">
+  <div style="width: 100%">
+    <oas-list bordered>
+      <oas-list-item>
+        <div style="display: flex; gap: var(--oas-space-3); align-items: center;">
+          <img src="https://picsum.photos/seed/isui-list-1/96/96" alt="缩略图" style="width: 48px; height: 48px; border-radius: var(--oas-radius-sm); object-fit: cover;">
+          <div>
+            <div style="font-weight: 600;">产品周报第 12 期</div>
+            <div style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">本周上线 6 个新组件</div>
+          </div>
+        </div>
+      </oas-list-item>
+      <oas-list-item>
+        <div style="display: flex; gap: var(--oas-space-3); align-items: center;">
+          <img src="https://picsum.photos/seed/isui-list-2/96/96" alt="缩略图" style="width: 48px; height: 48px; border-radius: var(--oas-radius-sm); object-fit: cover;">
+          <div>
+            <div style="font-weight: 600;">设计走查记录</div>
+            <div style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">交互态与暗色主题复核</div>
+          </div>
+        </div>
+      </oas-list-item>
+      <oas-list-item>
+        <div style="display: flex; gap: var(--oas-space-3); align-items: center;">
+          <svg width="48" height="48" viewBox="0 0 48 48" style="border-radius: var(--oas-radius-sm);"><rect width="48" height="48" rx="8" fill="#16a34a"/><text x="24" y="30" font-size="20" text-anchor="middle" fill="#fff" font-family="sans-serif">✓</text></svg>
+          <div>
+            <div style="font-weight: 600;">发布 v1.6</div>
+            <div style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">展示组件全部发布</div>
+          </div>
+        </div>
+        <oas-tag slot="extra" type="success">已发布</oas-tag>
+      </oas-list-item>
+    </oas-list>
+  </div>
+</DemoBlock>
+
 ## API
 
 | 组件            | 属性         | 说明                       | 类型    | 默认值                        |

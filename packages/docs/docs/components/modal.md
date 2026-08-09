@@ -29,6 +29,33 @@
   </oas-modal>
 </DemoBlock>
 
+## 自定义宽度
+
+<DemoBlock title="自定义宽度">
+  <oas-button onclick="document.querySelector('#modal-width').setAttribute('visible','')">打开自定义宽度对话框</oas-button>
+  <oas-modal id="modal-width" title="自定义宽度" width="640px">
+    <p>通过 <code>width</code> 指定对话框宽度，支持像素或百分比（如 <code>50%</code>），未设置时默认 520px。</p>
+  </oas-modal>
+</DemoBlock>
+
+## 垂直居中
+
+<DemoBlock title="垂直居中">
+  <oas-button onclick="document.querySelector('#modal-centered').setAttribute('visible','')">打开垂直居中对话框</oas-button>
+  <oas-modal id="modal-centered" title="垂直居中" centered>
+    <p>默认对话框靠上偏移（顶部 100px），添加 <code>centered</code> 后垂直居中显示。</p>
+  </oas-modal>
+</DemoBlock>
+
+## 可拖拽
+
+<DemoBlock title="可拖拽">
+  <oas-button onclick="document.querySelector('#modal-drag').setAttribute('visible','')">打开可拖拽对话框</oas-button>
+  <oas-modal id="modal-drag" title="按住标题栏拖动" draggable>
+    <p>按住标题栏可拖动对话框；Esc、遮罩关闭与焦点行为保持不变。</p>
+  </oas-modal>
+</DemoBlock>
+
 ## 事件反馈
 
 <DemoBlock title="事件反馈">
@@ -55,6 +82,9 @@ onMounted(async () => {
 | --------------- | ---------------- | --------- | ------- |
 | `visible`       | 是否显示         | `boolean` | `false` |
 | `title`         | 标题文案         | `string`  | —       |
+| `width`         | 对话框宽度（px 或百分比） | `string` | `520px` |
+| `centered`      | 对话框垂直居中显示 | `boolean` | `false` |
+| `draggable`     | 可通过标题栏拖动对话框 | `boolean` | `false` |
 | `no-footer`     | 隐藏底部操作按钮 | `boolean` | `false` |
 | `no-mask-close` | 禁用点击遮罩关闭 | `boolean` | `false` |
 

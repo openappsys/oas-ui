@@ -15,9 +15,10 @@ const STYLE = `
 }
 .dialog {
   position: fixed;
-  top: 50%;
+  top: 100px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
+  width: 520px;
   min-width: 360px;
   max-width: 90vw;
   background: var(--oas-color-bg);
@@ -26,6 +27,19 @@ const STYLE = `
   z-index: calc(var(--oas-z-modal, 1050) + 1);
   font-family: inherit;
   color: var(--oas-color-text-primary);
+}
+/* 垂直居中：data-centered 由 update() 增量同步 */
+.dialog[data-centered] {
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+/* 可拖拽：标题栏抓取、触摸不滚动；拖拽中禁止选中文本（状态属性 dragging 与用户属性 draggable 区分） */
+:host([draggable]) .header {
+  cursor: move;
+  touch-action: none;
+}
+:host([dragging]) {
+  user-select: none;
 }
 .header {
   display: flex;
@@ -77,11 +91,18 @@ const STYLE = `
 
 export class OASModal extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['visible', 'title', 'no-footer']
+    return ['visible', 'title', 'no-footer', 'width', 'centered', 'draggable']
   }
 
   private previousFocus: HTMLElement | null = null
   private wasVisible = false
+
+  // 拖拽状态：dragging 为内部状态属性（未观察），draggable 为用户属性
+  private dragging = false
+  private dragStartX = 0
+  private dragStartY = 0
+  private dragOriginLeft = 0
+  private dragOriginTop = 0
 
   protected override render(): void {
     this.shadow.innerHTML = `
@@ -123,11 +144,56 @@ export class OASModal extends OASElement {
       ?.addEventListener('click', () => this.close('cancel'))
     this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => this.close('ok'))
 
+    // 可拖拽：标题栏 pointerdown 启动，move/up 监听在 document 保证指针移出仍跟随
+    const header = this.shadow.querySelector<HTMLElement>('.header')
+    header?.addEventListener('pointerdown', (e) => this.startDrag(e as PointerEvent))
+    this.onCleanup(() => {
+      document.removeEventListener('pointermove', this.onDrag)
+      document.removeEventListener('pointerup', this.endDrag)
+    })
+
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') this.close('cancel')
     }
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
+  }
+
+  private startDrag(e: PointerEvent): void {
+    if (!this.hasAttr('draggable')) return
+    if (e.button !== 0 && e.pointerType !== 'touch') return
+    // 标题栏上的关闭按钮不触发拖动
+    if ((e.target as Element | null)?.closest('[part="close"]')) return
+    e.preventDefault()
+    const dialog = this.shadow.querySelector<HTMLElement>('.dialog')
+    if (!dialog) return
+    const rect = dialog.getBoundingClientRect()
+    this.dragging = true
+    this.dragStartX = e.clientX
+    this.dragStartY = e.clientY
+    this.dragOriginLeft = rect.left
+    this.dragOriginTop = rect.top
+    this.setAttribute('dragging', '')
+    document.addEventListener('pointermove', this.onDrag)
+    document.addEventListener('pointerup', this.endDrag)
+  }
+
+  private onDrag = (e: PointerEvent): void => {
+    if (!this.dragging) return
+    const dialog = this.shadow.querySelector<HTMLElement>('.dialog')
+    if (!dialog) return
+    // 内联 left/top 覆盖 CSS 居中定位；transform 置空避免 translate 二次偏移
+    dialog.style.transform = 'none'
+    dialog.style.left = `${this.dragOriginLeft + e.clientX - this.dragStartX}px`
+    dialog.style.top = `${this.dragOriginTop + e.clientY - this.dragStartY}px`
+  }
+
+  private endDrag = (): void => {
+    if (!this.dragging) return
+    this.dragging = false
+    this.removeAttribute('dragging')
+    document.removeEventListener('pointermove', this.onDrag)
+    document.removeEventListener('pointerup', this.endDrag)
   }
 
   /** 关闭/确认：属性驱动约定——组件自管状态属性，同时派发事件供宿主响应 */
@@ -137,10 +203,15 @@ export class OASModal extends OASElement {
   }
 
   protected override update(): void {
-    const dialog = this.shadow.querySelector('.dialog')
+    const dialog = this.shadow.querySelector<HTMLElement>('.dialog')
     if (!dialog) return
     const visible = this.hasAttr('visible')
     dialog.setAttribute('aria-hidden', String(!visible))
+    // 宽度：显式设置则覆盖主题默认 520px，未设置时回退 CSS 默认
+    dialog.style.width = this.getAttr('width')
+    // 垂直居中：data-centered 驱动 CSS 布局，增删同步
+    if (this.hasAttr('centered')) dialog.setAttribute('data-centered', '')
+    else dialog.removeAttribute('data-centered')
     this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.getAttr('title', '')
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
     this.shadow
@@ -174,6 +245,11 @@ export class OASModal extends OASElement {
         this.previousFocus = null
       }
       this.wasVisible = false
+      // 关闭时结束拖拽并重置内联定位，下次打开回到默认布局
+      if (this.dragging) this.endDrag()
+      dialog.style.left = ''
+      dialog.style.top = ''
+      dialog.style.transform = ''
     }
   }
 }

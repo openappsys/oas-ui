@@ -175,4 +175,134 @@ describe('OASInput', () => {
     expect(part(el, 'prepend').textContent).toBe('b')
     expect(el.shadowRoot!.querySelector('[part="prefix-icon"] svg')).not.toBeNull()
   })
+
+  // ---- v1.4 show-password / maxlength / show-count / oas-enter ----
+
+  function eye(el: OASInput): HTMLButtonElement {
+    return el.shadowRoot!.querySelector<HTMLButtonElement>('.eye-btn')!
+  }
+
+  function countEl(el: OASInput): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('.count')!
+  }
+
+  it('show-password：type=password 时渲染眼睛按钮，点击在明文/密文间切换', () => {
+    const el = mount({ type: 'password', 'show-password': '', value: 'secret' })
+    const btn = eye(el)
+    expect(btn.hidden).toBe(false)
+    expect(input(el).type).toBe('password')
+    expect(btn.getAttribute('aria-pressed')).toBe('false')
+    expect(btn.getAttribute('aria-label')).toBe('显示密码')
+    btn.click()
+    expect(input(el).type).toBe('text')
+    expect(btn.getAttribute('aria-pressed')).toBe('true')
+    expect(btn.getAttribute('aria-label')).toBe('隐藏密码')
+    btn.click()
+    expect(input(el).type).toBe('password')
+    expect(btn.getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('show-password：type 非 password 时眼睛按钮隐藏', () => {
+    const el = mount({ 'show-password': '' })
+    expect(eye(el).hidden).toBe(true)
+    const pwd = mount({ type: 'password' })
+    expect(eye(pwd).hidden).toBe(true)
+  })
+
+  it('show-password：disabled 时眼睛按钮隐藏且点击不生效', () => {
+    const el = mount({ type: 'password', 'show-password': '', disabled: '' })
+    expect(eye(el).hidden).toBe(true)
+  })
+
+  it('show-password：reveal 后外部属性变化触发 update() 不覆盖明文状态', () => {
+    const el = mount({ type: 'password', 'show-password': '', value: 'x' })
+    eye(el).click()
+    expect(input(el).type).toBe('text')
+    el.setAttribute('value', 'y')
+    expect(input(el).type).toBe('text')
+    expect(input(el).value).toBe('y')
+  })
+
+  it('show-password：从 password 切回 text 时重置 reveal 状态', () => {
+    const el = mount({ type: 'password', 'show-password': '' })
+    eye(el).click()
+    expect(input(el).type).toBe('text')
+    el.setAttribute('type', 'text')
+    expect(input(el).type).toBe('text')
+    el.setAttribute('type', 'password')
+    expect(input(el).type).toBe('password')
+  })
+
+  it('maxlength 透传到原生 input', () => {
+    const el = mount({ maxlength: '10' })
+    expect(input(el).getAttribute('maxlength')).toBe('10')
+    expect(input(el).maxLength).toBe(10)
+  })
+
+  it('移除 maxlength 属性后原生 input 解除限制', () => {
+    const el = mount({ maxlength: '10' })
+    el.removeAttribute('maxlength')
+    expect(input(el).hasAttribute('maxlength')).toBe(false)
+  })
+
+  it('show-count：显示当前长度（无 maxlength）', () => {
+    const el = mount({ 'show-count': '', value: 'abc' })
+    expect(countEl(el).hidden).toBe(false)
+    expect(countEl(el).textContent).toBe('3')
+  })
+
+  it('show-count + maxlength：显示 当前长度/maxlength', () => {
+    const el = mount({ 'show-count': '', maxlength: '10', value: 'abc' })
+    expect(countEl(el).textContent).toBe('3/10')
+    expect(countEl(el).hasAttribute('data-over')).toBe(false)
+  })
+
+  it('show-count：超限时数字标 data-over（danger 色由 CSS 变量控制）', () => {
+    const el = mount({ 'show-count': '', maxlength: '2', value: 'abc' })
+    expect(countEl(el).textContent).toBe('3/2')
+    expect(countEl(el).getAttribute('data-over')).toBe('true')
+  })
+
+  it('show-count：无 show-count 属性时计数元素隐藏', () => {
+    const el = mount({ value: 'abc' })
+    expect(countEl(el).hidden).toBe(true)
+  })
+
+  it('show-count：输入时计数实时更新，回退到限制内清除 data-over', () => {
+    const el = mount({ 'show-count': '', maxlength: '10' })
+    const i = input(el)
+    i.value = 'hello'
+    i.dispatchEvent(new Event('input'))
+    expect(countEl(el).textContent).toBe('5/10')
+    i.value = 'hello world'
+    i.dispatchEvent(new Event('input'))
+    expect(countEl(el).textContent).toBe('11/10')
+    expect(countEl(el).getAttribute('data-over')).toBe('true')
+  })
+
+  it('按 Enter 派发 oas-enter，detail 携带当前 value', () => {
+    const el = mount({ value: 'hi' })
+    let detail: unknown
+    el.addEventListener('oas-enter', (e: Event) => (detail = (e as CustomEvent).detail))
+    input(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(detail).toEqual({ value: 'hi' })
+  })
+
+  it('输入法组合（isComposing）中按 Enter 不派发 oas-enter', () => {
+    const el = mount()
+    let fired = false
+    el.addEventListener('oas-enter', () => (fired = true))
+    input(el).dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, isComposing: true }),
+    )
+    expect(fired).toBe(false)
+  })
+
+  it('非 Enter 按键不派发 oas-enter', () => {
+    const el = mount()
+    let fired = false
+    el.addEventListener('oas-enter', () => (fired = true))
+    input(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }))
+    expect(fired).toBe(false)
+  })
 })

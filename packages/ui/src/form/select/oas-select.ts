@@ -4,6 +4,8 @@ interface Option {
   label: string
   value: string
   disabled?: boolean
+  /** 选项分组标题：同一组连续渲染组标题（不可选），组内选项缩进 */
+  group?: string
 }
 
 const STYLE = `
@@ -60,6 +62,7 @@ const STYLE = `
   flex-wrap: wrap;
   gap: var(--oas-space-1);
   min-width: 0;
+  flex: 1;
   text-align: left;
 }
 .placeholder {
@@ -90,6 +93,36 @@ const STYLE = `
 }
 .trigger[aria-expanded='true'] .chevron {
   transform: rotate(180deg);
+}
+.clear-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0 2px;
+  margin: 0;
+  color: var(--oas-color-text-secondary);
+  font-size: 1em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--oas-radius-sm);
+  flex-shrink: 0;
+}
+.clear-btn:hover {
+  color: var(--oas-color-text-primary);
+}
+.clear-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.clear-btn[hidden] {
+  display: none;
+}
+.clear-btn svg {
+  width: 12px;
+  height: 12px;
+  display: block;
 }
 .dropdown {
   position: absolute;
@@ -129,6 +162,16 @@ const STYLE = `
   max-height: 240px;
   overflow-y: auto;
 }
+.option-group {
+  padding: var(--oas-space-2) var(--oas-space-3) var(--oas-space-1);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+  user-select: none;
+  cursor: default;
+}
+.option-group + .option-group {
+  margin-top: var(--oas-space-2);
+}
 .option {
   padding: var(--oas-space-2) var(--oas-space-3);
   border-radius: var(--oas-radius-sm);
@@ -146,6 +189,9 @@ const STYLE = `
   background: var(--oas-color-primary);
   color: #fff;
 }
+.option.grouped {
+  padding-left: calc(var(--oas-space-3) + var(--oas-space-4));
+}
 .option[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.5;
@@ -155,6 +201,9 @@ const STYLE = `
 }
 .option[aria-selected='true'] .check {
   visibility: visible;
+}
+.create-option {
+  color: var(--oas-color-primary);
 }
 .empty {
   padding: var(--oas-space-3);
@@ -166,7 +215,19 @@ const STYLE = `
 
 export class OASSelect extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'placeholder', 'options', 'disabled', 'multiple', 'searchable']
+    return [
+      'value',
+      'placeholder',
+      'options',
+      'disabled',
+      'multiple',
+      'searchable',
+      'clearable',
+      'remote',
+      'loading',
+      'max-tag-count',
+      'allow-create',
+    ]
   }
 
   private triggerEl: HTMLButtonElement | null = null
@@ -183,6 +244,9 @@ export class OASSelect extends OASElement {
   }
   private activeIndex = 0
   private openState = false
+  /** allow-create 时无匹配展示的「创建 xxx」行状态 */
+  private createVisible = false
+  private createLabel = ''
 
   protected override render(): void {
     this.shadow.innerHTML = `
@@ -191,6 +255,11 @@ export class OASSelect extends OASElement {
         <button class="trigger" part="trigger" type="button" role="combobox"
           aria-haspopup="listbox" aria-expanded="false">
           <span class="value" part="value"></span>
+          <button class="clear-btn" part="clear" type="button" tabindex="-1" hidden aria-label="">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
           <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -206,11 +275,22 @@ export class OASSelect extends OASElement {
     this.listbox = this.shadow.querySelector('.listbox')
 
     this.shadow.querySelector<HTMLInputElement>('.search-input')?.addEventListener('input', (e) => {
-      const v = (e.target as HTMLInputElement).value.toLowerCase()
+      const v = (e.target as HTMLInputElement).value
       const searchInput = this.shadow.querySelector<HTMLInputElement>('.search-input')
       if (searchInput) searchInput.setAttribute('data-query', v)
+      // remote 模式下过滤交给宿主：组件不本地过滤，只派发 oas-input 供宿主请求
+      if (this.hasAttr('remote')) this.emit('input', { value: v })
       this.renderListbox()
     })
+    this.shadow
+      .querySelector<HTMLInputElement>('.search-input')
+      ?.addEventListener('keydown', (e: KeyboardEvent) => this.handleSearchKey(e))
+    this.shadow
+      .querySelector<HTMLButtonElement>('.clear-btn')
+      ?.addEventListener('click', (e: MouseEvent) => {
+        e.stopPropagation()
+        this.clearValue()
+      })
 
     this.triggerEl?.addEventListener('click', () => this.toggle())
     this.triggerEl?.addEventListener('keydown', (e: KeyboardEvent) => this.handleTriggerKey(e))
@@ -248,7 +328,10 @@ export class OASSelect extends OASElement {
     if (this.openState) {
       document.addEventListener('click', this.handleOutsideClick)
       const current = this.currentValues()
-      const idx = current.length > 0 ? this._options.findIndex((o) => o.value === current[0]) : 0
+      const idx =
+        current.length > 0
+          ? this.visibleOptions().findIndex((o) => o.value === current[0])
+          : 0
       this.activeIndex = Math.max(idx, 0)
     } else {
       document.removeEventListener('click', this.handleOutsideClick)
@@ -263,64 +346,162 @@ export class OASSelect extends OASElement {
     this.syncDropdown()
   }
 
+  /** trigger 键盘：Esc 关闭；关闭态 Enter/Space/↑/↓ 展开；展开态 ↑/↓ 移动、Enter 选中 */
   private handleTriggerKey(e: KeyboardEvent): void {
     if (this.hasAttr('disabled')) return
-    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
-      e.preventDefault()
-      if (!this.openState) this.openState = true
-      else if (e.key === 'ArrowDown') this.moveActive(1)
-      this.syncDropdown()
-    } else if (e.key === 'ArrowUp' && this.openState) {
-      e.preventDefault()
-      this.moveActive(-1)
-    } else if (e.key === 'Escape') {
+    // 焦点在 trigger 内嵌按钮（清空/移除 chip）时不响应，交给按钮原生行为
+    if ((e.target as Element).closest('.clear-btn, .chip button')) return
+    if (e.key === 'Escape') {
       this.openState = false
       this.syncDropdown()
-    } else if (e.key === 'Enter' && this.openState) {
+    } else if (!this.openState) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        this.openState = true
+        this.syncDropdown()
+      }
+    } else {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        this.moveActive(1)
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        this.moveActive(-1)
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        this.selectActive()
+      }
+    }
+  }
+
+  /** 搜索框键盘：↑/↓ 移动、Enter 选中、Esc 关闭并还焦 trigger */
+  private handleSearchKey(e: KeyboardEvent): void {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      this.openState = false
+      this.syncDropdown()
+      this.triggerEl?.focus()
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      this.moveActive(1)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      this.moveActive(-1)
+    } else if (e.key === 'Enter') {
       e.preventDefault()
       this.selectActive()
     }
   }
 
+  /** 可导航行数：可见选项 +（allow-create 无匹配时的「创建」行） */
+  private navigableCount(): number {
+    return this.visibleOptions().length + (this.createVisible ? 1 : 0)
+  }
+
   private moveActive(dir: 1 | -1): void {
-    const n = this._options.length
+    const n = this.navigableCount()
     if (n === 0) return
     this.activeIndex = (this.activeIndex + dir + n) % n
     this.renderListbox()
   }
 
   private selectActive(): void {
-    const option = this._options[this.activeIndex]
+    const visible = this.visibleOptions()
+    if (this.createVisible && this.activeIndex >= visible.length) {
+      this.createOption()
+      return
+    }
+    const option = visible[this.activeIndex]
     if (!option || option.disabled) return
     this.selectValue(option.value)
+  }
+
+  /**
+   * 当前下拉可见选项：
+   * - remote 模式：不做本地过滤（过滤交给宿主，直接渲染 options）
+   * - 本地模式：有查询词时按 label 过滤
+   */
+  private visibleOptions(): Option[] {
+    if (this.hasAttr('remote')) return this._options
+    const q = this.currentQuery().toLowerCase()
+    if (q === '') return this._options
+    return this._options.filter((o) => o.label.toLowerCase().includes(q))
+  }
+
+  /** 搜索框原始查询词（trim 后，保留原始大小写供「创建」用） */
+  private currentQuery(): string {
+    return (
+      this.shadow.querySelector<HTMLInputElement>('.search-input')?.getAttribute('data-query') ?? ''
+    ).trim()
   }
 
   private renderListbox(): void {
     const listbox = this.listbox
     if (!listbox) return
     listbox.innerHTML = ''
-    const query = (
-      this.shadow.querySelector<HTMLInputElement>('.search-input')?.getAttribute('data-query') ?? ''
-    ).toLowerCase()
-    const visible = query
-      ? this._options.filter((o) => o.label.toLowerCase().includes(query))
-      : this._options
+    this.createVisible = false
+
+    // loading 占位态：remote 模式下宿主请求期间显示（文案走 locale）
+    if (this.hasAttr('loading')) {
+      const loading = document.createElement('div')
+      loading.className = 'empty'
+      loading.textContent = this.t('loading.loading')
+      listbox.appendChild(loading)
+      return
+    }
+
+    const visible = this.visibleOptions()
+    const query = this.currentQuery()
+
     if (visible.length === 0) {
+      // allow-create：无匹配时展示「创建 xxx」行（选中后以输入值新建选项）
+      if (this.hasAttr('allow-create') && query !== '') {
+        this.createVisible = true
+        this.createLabel = query
+        const row = document.createElement('div')
+        row.className = 'option create-option'
+        row.setAttribute('role', 'option')
+        row.setAttribute('aria-selected', 'false')
+        if (this.activeIndex === visible.length) row.classList.add('active')
+        const label = document.createElement('span')
+        label.textContent = this.t('select.create', { label: query })
+        row.append(label)
+        row.addEventListener('click', () => this.createOption())
+        row.addEventListener('mousemove', () => {
+          this.activeIndex = visible.length
+          this.renderListbox()
+        })
+        listbox.appendChild(row)
+        return
+      }
       const empty = document.createElement('div')
       empty.className = 'empty'
       empty.textContent = query ? this.t('select.noMatch') : this.t('select.empty')
       listbox.appendChild(empty)
       return
     }
+
     const values = this.currentValues()
-    visible.forEach((option, idx) => {
+    let prevGroup: string | undefined
+    let optionIdx = 0
+    for (const option of visible) {
+      // 分组标题：组字段变化时插入（不可选，仅展示）
+      if (option.group !== undefined && option.group !== prevGroup) {
+        const groupEl = document.createElement('div')
+        groupEl.className = 'option-group'
+        groupEl.textContent = option.group
+        listbox.appendChild(groupEl)
+      }
+      prevGroup = option.group
+
       const row = document.createElement('div')
       row.className = 'option'
+      if (option.group !== undefined) row.classList.add('grouped')
       row.setAttribute('part', 'option')
       row.setAttribute('role', 'option')
       row.setAttribute('aria-selected', String(values.includes(option.value)))
       row.setAttribute('aria-disabled', String(option.disabled ?? false))
-      if (idx === this.activeIndex) row.classList.add('active')
+      if (optionIdx === this.activeIndex) row.classList.add('active')
       const label = document.createElement('span')
       label.textContent = option.label
       const check = document.createElement('span')
@@ -332,11 +513,12 @@ export class OASSelect extends OASElement {
         this.selectValue(option.value)
       })
       row.addEventListener('mousemove', () => {
-        this.activeIndex = idx
+        this.activeIndex = optionIdx
         this.renderListbox()
       })
       listbox.appendChild(row)
-    })
+      optionIdx++
+    }
   }
 
   private selectValue(value: string): void {
@@ -355,6 +537,33 @@ export class OASSelect extends OASElement {
     }
     this.syncTrigger()
     this.renderListbox()
+  }
+
+  /** clearable：清空值并派发 oas-clear（detail 为被清空前的值）+ oas-change（空值） */
+  private clearValue(): void {
+    if (this.hasAttr('disabled')) return
+    const prev = this.currentValues()
+    if (this.hasAttr('multiple')) {
+      this.setAttribute('value', '[]')
+      this.emit('clear', { value: [...prev] })
+      this.emit('change', { value: [] })
+    } else {
+      this.removeAttribute('value')
+      this.emit('clear', { value: prev[0] ?? '' })
+      this.emit('change', { value: '' })
+    }
+    this.syncTrigger()
+    this.renderListbox()
+    this.triggerEl?.focus()
+  }
+
+  /** allow-create：以输入值创建选项并纳入选中 */
+  private createOption(): void {
+    const label = this.createLabel.trim()
+    if (label === '') return
+    this._options.push({ label, value: label })
+    this.createVisible = false
+    this.selectValue(label)
   }
 
   private currentValues(): string[] {
@@ -381,6 +590,13 @@ export class OASSelect extends OASElement {
     }
   }
 
+  private intAttr(name: string): number | null {
+    const raw = this.getAttr(name, '').trim()
+    if (raw === '') return null
+    const n = Number.parseInt(raw, 10)
+    return Number.isNaN(n) ? null : n
+  }
+
   private syncTrigger(): void {
     if (!this.triggerEl) return
     const placeholder = this.getAttr('placeholder', this.t('select.placeholder'))
@@ -390,6 +606,13 @@ export class OASSelect extends OASElement {
 
     this.triggerEl.disabled = disabled
     this.triggerEl.setAttribute('aria-label', placeholder)
+
+    // 清空按钮：clearable && 有值 && 未禁用 时显示
+    const clearBtn = this.shadow.querySelector<HTMLButtonElement>('.clear-btn')
+    if (clearBtn) {
+      clearBtn.hidden = !(this.hasAttr('clearable') && !disabled && values.length > 0)
+      clearBtn.setAttribute('aria-label', this.t('input.clear'))
+    }
 
     if (values.length === 0) {
       valueEl.innerHTML = ''
@@ -402,7 +625,10 @@ export class OASSelect extends OASElement {
 
     if (this.hasAttr('multiple')) {
       valueEl.innerHTML = ''
-      for (const v of values) {
+      // max-tag-count：超过数量折叠为 +N
+      const limit = this.intAttr('max-tag-count') ?? Number.POSITIVE_INFINITY
+      const shown = limit >= 0 ? values.slice(0, limit) : values
+      for (const v of shown) {
         const option = this._options.find((o) => o.value === v)
         const chip = document.createElement('span')
         chip.className = 'chip'
@@ -417,6 +643,16 @@ export class OASSelect extends OASElement {
         })
         chip.append(label, rm)
         valueEl.appendChild(chip)
+      }
+      if (values.length > shown.length) {
+        const more = document.createElement('span')
+        more.className = 'chip'
+        more.textContent = `+${values.length - shown.length}`
+        const rest = values
+          .slice(shown.length)
+          .map((v) => this._options.find((o) => o.value === v)?.label ?? v)
+        more.setAttribute('title', rest.join('、'))
+        valueEl.appendChild(more)
       }
     } else {
       const value = values[0] ?? ''

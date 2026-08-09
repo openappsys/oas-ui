@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type ButtonType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'text'
 export type ButtonSize = 'small' | 'medium' | 'large'
@@ -7,6 +8,13 @@ const STYLE = `
 :host {
   display: inline-block;
   font-family: inherit;
+}
+:host([block]) {
+  display: block;
+  width: 100%;
+}
+:host([block]) button {
+  width: 100%;
 }
 button {
   appearance: none;
@@ -29,6 +37,29 @@ button {
 }
 button:hover {
   background: var(--oas-color-bg-hover);
+}
+/* 图标按钮：图标与文字间距走 --oas-space-2 */
+button.has-icon {
+  gap: var(--oas-space-2);
+}
+/* 纯图标按钮：等宽正方形（width = height），去除水平内边距 */
+button.icon-only {
+  aspect-ratio: 1;
+  padding: 0;
+}
+/* 块级按钮占满父容器 */
+button.block {
+  width: 100%;
+}
+/* 胶囊圆角（button-group 合并圆角经自定义属性穿透，round 显式覆盖） */
+button.round {
+  border-radius: var(--oas-radius-full, 999px);
+}
+.icon {
+  display: inline-flex;
+}
+.icon[hidden] {
+  display: none;
 }
 button:focus-visible {
   outline: none;
@@ -112,6 +143,69 @@ button.text {
   border-color: transparent;
   background: transparent;
 }
+/* 幽灵按钮：透明底 + 描边，按 type 着色，hover 加深 */
+button.ghost {
+  background: transparent;
+  border-color: var(--oas-color-border);
+  color: var(--oas-color-text-primary);
+}
+button.ghost:hover {
+  background: var(--oas-color-bg-hover);
+  border-color: var(--oas-color-border-strong);
+}
+button.ghost.primary {
+  background: transparent;
+  border-color: var(--oas-color-primary);
+  color: var(--oas-color-primary);
+}
+button.ghost.primary:hover {
+  background: color-mix(in srgb, var(--oas-color-primary) 10%, transparent);
+  border-color: var(--oas-color-primary-hover);
+  color: var(--oas-color-primary-hover);
+}
+button.ghost.primary:active {
+  background: color-mix(in srgb, var(--oas-color-primary) 16%, transparent);
+  border-color: var(--oas-color-primary-active);
+  color: var(--oas-color-primary-active);
+}
+button.ghost.success {
+  background: transparent;
+  border-color: var(--oas-color-success);
+  color: var(--oas-color-success);
+}
+button.ghost.success:hover {
+  background: color-mix(in srgb, var(--oas-color-success) 10%, transparent);
+  border-color: color-mix(in srgb, var(--oas-color-success) 70%, black);
+  color: color-mix(in srgb, var(--oas-color-success) 70%, black);
+}
+button.ghost.warning {
+  background: transparent;
+  border-color: var(--oas-color-warning);
+  color: var(--oas-color-warning);
+}
+button.ghost.warning:hover {
+  background: color-mix(in srgb, var(--oas-color-warning) 10%, transparent);
+  border-color: color-mix(in srgb, var(--oas-color-warning) 70%, black);
+  color: color-mix(in srgb, var(--oas-color-warning) 70%, black);
+}
+button.ghost.danger {
+  background: transparent;
+  border-color: var(--oas-color-danger);
+  color: var(--oas-color-danger);
+}
+button.ghost.danger:hover {
+  background: color-mix(in srgb, var(--oas-color-danger) 10%, transparent);
+  border-color: color-mix(in srgb, var(--oas-color-danger) 70%, black);
+  color: color-mix(in srgb, var(--oas-color-danger) 70%, black);
+}
+/* 幽灵禁用：回落到禁用配色，防止 ghost/ghost:hover 覆盖 disabled 样式 */
+button.ghost[disabled],
+button.ghost[disabled]:hover,
+button.ghost[disabled]:active {
+  background: var(--oas-color-bg-disabled);
+  border-color: var(--oas-color-border);
+  color: var(--oas-color-text-disabled);
+}
 .spinner {
   width: 1em;
   height: 1em;
@@ -132,7 +226,7 @@ button.text {
 
 export class OASButton extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['type', 'size', 'disabled', 'loading']
+    return ['type', 'size', 'disabled', 'loading', 'icon', 'block', 'round', 'ghost']
   }
 
   private btn: HTMLButtonElement | null = null
@@ -142,6 +236,7 @@ export class OASButton extends OASElement {
       <style>${STYLE}</style>
       <button part="button">
         <span class="spinner" part="spinner" hidden></span>
+        <span class="icon" part="icon" aria-hidden="true" hidden></span>
         <slot></slot>
       </button>
     `
@@ -154,6 +249,9 @@ export class OASButton extends OASElement {
       }
       this.emit('click', { originalEvent: e })
     })
+
+    // 文字经 slot 增删时重算「纯图标 / 有文字」布局
+    this.shadow.querySelector('slot')?.addEventListener('slotchange', () => this.update())
   }
 
   protected override update(): void {
@@ -163,12 +261,58 @@ export class OASButton extends OASElement {
     const size = this.injectValue('size', 'medium') as ButtonSize
     const disabled = this.hasAttr('disabled')
     const loading = this.hasAttr('loading')
+    const icon = this.getAttr('icon', '')
+    const ghost = this.hasAttr('ghost')
+    const block = this.hasAttr('block')
+    const round = this.hasAttr('round')
 
-    this.btn.className = `${type} ${size}`
+    const hasIcon = icon !== '' && iconRegistry[icon as IconName] !== undefined
+    const hasText = (this.textContent ?? '').trim().length > 0
+    const iconOnly = hasIcon && !hasText
+
+    this.btn.className = [
+      type,
+      size,
+      ghost ? 'ghost' : '',
+      block ? 'block' : '',
+      round ? 'round' : '',
+      hasIcon ? 'has-icon' : '',
+      iconOnly ? 'icon-only' : '',
+    ]
+      .filter(Boolean)
+      .join(' ')
     this.btn.disabled = disabled || loading
     this.btn.setAttribute('aria-busy', loading ? 'true' : 'false')
 
     const spinner = this.btn.querySelector<HTMLElement>('.spinner')
     if (spinner) spinner.hidden = !loading
+
+    // 图标：iconRegistry 内联 SVG（跟随 currentColor，装饰性对读屏隐藏）
+    const iconEl = this.btn.querySelector<HTMLElement>('.icon')
+    if (iconEl) {
+      const content = hasIcon ? iconRegistry[icon as IconName] : undefined
+      iconEl.hidden = !content
+      iconEl.innerHTML = ''
+      if (content) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+        svg.setAttribute('viewBox', '0 0 16 16')
+        svg.setAttribute('width', '1em')
+        svg.setAttribute('height', '1em')
+        svg.setAttribute('aria-hidden', 'true')
+        svg.setAttribute('focusable', 'false')
+        svg.innerHTML = content
+        iconEl.appendChild(svg)
+      }
+    }
+
+    // 可访问名称：宿主 aria-label 优先；纯图标无文字时以图标名兜底
+    const hostLabel = this.getAttribute('aria-label')
+    if (hostLabel) {
+      this.btn.setAttribute('aria-label', hostLabel)
+    } else if (iconOnly) {
+      this.btn.setAttribute('aria-label', icon)
+    } else {
+      this.btn.removeAttribute('aria-label')
+    }
   }
 }

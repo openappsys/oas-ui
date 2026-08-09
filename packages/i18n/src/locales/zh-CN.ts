@@ -36,6 +36,7 @@ export const zhCN = {
   'select.empty': '暂无数据',
   'select.noMatch': '无匹配选项',
   'select.remove': '移除 {label}',
+  'select.create': '创建 {label}',
   // cascader（级联选择）
   'cascader.placeholder': '请选择',
   // tree-select（树选择）
@@ -48,6 +49,8 @@ export const zhCN = {
   // input（输入框）
   'input.clear': '清除',
   'input.defaultLabel': '输入框',
+  'input.showPassword': '显示密码',
+  'input.hidePassword': '隐藏密码',
   // mentions（提及）
   'mentions.defaultLabel': '提及输入框',
   'mentions.noMatch': '无匹配提及',

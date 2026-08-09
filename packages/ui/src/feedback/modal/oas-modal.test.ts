@@ -101,4 +101,93 @@ describe('OASModal', () => {
     expect(el.hasAttribute('visible')).toBe(false)
     expect(ok).toBe(1)
   })
+
+  it('width 属性控制对话框宽度（px 与百分比，动态切换）', async () => {
+    const el = mount({ visible: '', width: '640px' })
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
+    expect(dialog.style.width).toBe('640px')
+    el.setAttribute('width', '60%')
+    expect(dialog.style.width).toBe('60%')
+  })
+
+  it('未设置 width 时回退主题默认（无内联宽度），移除属性后恢复', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
+    expect(dialog.style.width).toBe('')
+    el.setAttribute('width', '520px')
+    expect(dialog.style.width).toBe('520px')
+    el.removeAttribute('width')
+    expect(dialog.style.width).toBe('')
+  })
+
+  it('centered 属性驱动 data-centered 标记（增删同步）', async () => {
+    const el = mount({ visible: '', centered: '' })
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector('.dialog')!
+    expect(dialog.getAttribute('data-centered')).not.toBeNull()
+    el.removeAttribute('centered')
+    expect(dialog.getAttribute('data-centered')).toBeNull()
+  })
+
+  it('无 centered 时不带 data-centered 标记', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    expect(el.shadowRoot!.querySelector('.dialog')!.getAttribute('data-centered')).toBeNull()
+  })
+
+  it('draggable 时拖动标题栏改变对话框位置（内联 left/top），松手后停止跟随', async () => {
+    const el = mount({ visible: '', draggable: '' })
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
+    el.shadowRoot!.querySelector('.header')!.dispatchEvent(pointer('pointerdown', 0, 0))
+    expect(el.hasAttribute('dragging')).toBe(true)
+    document.dispatchEvent(pointer('pointermove', 100, 50))
+    expect(dialog.style.left).toBe('100px')
+    expect(dialog.style.top).toBe('50px')
+    expect(dialog.style.transform).toBe('none')
+    document.dispatchEvent(pointer('pointerup', 100, 50))
+    expect(el.hasAttribute('dragging')).toBe(false)
+    document.dispatchEvent(pointer('pointermove', 200, 100))
+    expect(dialog.style.left).toBe('100px')
+  })
+
+  it('未开启 draggable 时标题栏拖动无效', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
+    el.shadowRoot!.querySelector('.header')!.dispatchEvent(pointer('pointerdown', 0, 0))
+    document.dispatchEvent(pointer('pointermove', 100, 50))
+    expect(dialog.style.left).toBe('')
+    expect(dialog.style.top).toBe('')
+    expect(el.hasAttribute('dragging')).toBe(false)
+  })
+
+  it('拖动中 Esc 仍可关闭；关闭后重置拖拽位置', async () => {
+    const el = mount({ visible: '', draggable: '' })
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
+    let cancel = 0
+    el.addEventListener('oas-cancel', () => cancel++)
+    el.shadowRoot!.querySelector('.header')!.dispatchEvent(pointer('pointerdown', 0, 0))
+    document.dispatchEvent(pointer('pointermove', 100, 50))
+    expect(dialog.style.left).toBe('100px')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(el.hasAttribute('visible')).toBe(false)
+    expect(cancel).toBe(1)
+    expect(dialog.style.left).toBe('')
+    expect(dialog.style.top).toBe('')
+    expect(dialog.style.transform).toBe('')
+  })
 })
+
+function pointer(type: string, clientX: number, clientY = 0): Event {
+  const Ctor = (globalThis as Record<string, unknown>).PointerEvent as
+    | typeof PointerEvent
+    | undefined
+  if (typeof Ctor === 'function') {
+    return new Ctor(type, { bubbles: true, clientX, clientY })
+  }
+  return new MouseEvent(type, { bubbles: true, clientX, clientY })
+}
