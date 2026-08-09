@@ -13,7 +13,7 @@ async function up(p: import('@playwright/test').Page, sel: string) {
 }
 
 test('button-group 单选选中态可见（primary 字 + 浅底）', async ({ page }) => {
-  await page.goto('http://localhost:5173/components/button-group.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button-group oas-button')
   const r = await page.evaluate(() => {
     const group = document.querySelector('oas-button-group[value]')!
@@ -28,7 +28,7 @@ test('button-group 单选选中态可见（primary 字 + 浅底）', async ({ pa
 })
 
 test('button-group 多选点击切换选中态', async ({ page }) => {
-  await page.goto('http://localhost:5173/components/button-group.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button-group[multiple] oas-button')
   const b = page.locator('oas-button-group[multiple] oas-button[value="b"]')
   const before = await b.getAttribute('aria-pressed')
@@ -47,7 +47,7 @@ test('button-group 多选点击切换选中态', async ({ page }) => {
 })
 
 test('button-group 纵向布局生效 + 圆角合并', async ({ page }) => {
-  await page.goto('http://localhost:5173/components/button-group.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button-group[vertical] oas-button')
   const r = await page.evaluate(() => {
     const group = document.querySelector('oas-button-group[vertical]')!
@@ -73,7 +73,7 @@ test('button-group 纵向布局生效 + 圆角合并', async ({ page }) => {
 })
 
 test('button-group 横向圆角合并', async ({ page }) => {
-  await page.goto('http://localhost:5173/components/button-group.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button-group oas-button')
   const r = await page.evaluate(() => {
     const group = document.querySelector('oas-button-group')!
@@ -88,7 +88,7 @@ test('button-group 横向圆角合并', async ({ page }) => {
 })
 
 test('tag primary clickable hover 文字可读（白字）', async ({ page }) => {
-  await page.goto('http://localhost:5173/components/tag.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/tag.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-tag[clickable][type="primary"]')
   const tag = page.locator('oas-tag[clickable][type="primary"]').first()
   await tag.hover()
@@ -101,7 +101,7 @@ test('tag primary clickable hover 文字可读（白字）', async ({ page }) =>
 })
 
 test('link href="#" 点击不滚动页面', async ({ page }) => {
-  await page.goto('http://localhost:5173/components/link.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/link.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-link')
   const link = page.locator('.demo-block', { hasText: '点击事件' }).locator('oas-link')
   await link.scrollIntoViewIfNeeded()
@@ -115,7 +115,7 @@ test('link href="#" 点击不滚动页面', async ({ page }) => {
 })
 
 test('input addon 属性在 Vue demo 中存活并渲染', async ({ page }) => {
-  await page.goto('http://localhost:5173/components/input.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-input[addon-before]')
   const attrs = await page.evaluate(
     () => [...document.querySelectorAll('oas-input')].map((el) => el.getAttribute('addon-before')),
@@ -129,7 +129,7 @@ test('input addon 属性在 Vue demo 中存活并渲染', async ({ page }) => {
 })
 
 test('demo 事件反馈（点击 button 弹出 message）', async ({ page }) => {
-  await page.goto('http://localhost:5173/components/button.html', { waitUntil: 'domcontentloaded' })
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
   await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
     timeout: 10000,
