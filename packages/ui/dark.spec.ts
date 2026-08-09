@@ -10,7 +10,7 @@ for (const page of PAGES) {
   test(`全局暗色冒烟：${page}`, async ({ page: p }) => {
     const errors: string[] = []
     p.on('pageerror', (e) => errors.push(e.message))
-    await p.goto(page, { waitUntil: 'networkidle' })
+    await p.goto(page, { waitUntil: 'domcontentloaded' })
     // 切换全局暗色
     await p.evaluate(() => document.documentElement.classList.add('dark'))
     await p.waitForTimeout(300)

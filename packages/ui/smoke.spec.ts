@@ -13,7 +13,8 @@ for (const page of PAGES) {
     p.on('console', (m) => {
       if (m.type() === 'error') errors.push(m.text())
     })
-    await p.goto(page, { waitUntil: 'networkidle' })
+    await p.goto(page, { waitUntil: 'domcontentloaded' })
+    await p.waitForTimeout(600)
     const blocks = p.locator('.demo-block')
     const count = await blocks.count()
     expect(count).toBeGreaterThan(0)

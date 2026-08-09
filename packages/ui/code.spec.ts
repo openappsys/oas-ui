@@ -8,7 +8,8 @@ const PAGES = readdirSync(resolve(import.meta.dirname, '../docs/docs/components'
 
 for (const page of PAGES) {
   test(`示例代码展示：${page}`, async ({ page: p }) => {
-    await p.goto(page, { waitUntil: 'networkidle' })
+    await p.goto(page, { waitUntil: 'domcontentloaded' })
+    await p.waitForTimeout(600)
     const blocks = p.locator('.demo-block')
     const count = await blocks.count()
     for (let i = 0; i < count; i++) {

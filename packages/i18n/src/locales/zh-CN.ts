@@ -25,6 +25,8 @@ export const zhCN = {
   // notification（通知提醒）
   'notification.close': '关闭',
   'notification.region': '通知',
+  // toast（轻提示）
+  'toast.close': '关闭',
   // popconfirm（气泡确认）
   'popconfirm.ok': '确定',
   'popconfirm.cancel': '取消',
@@ -76,6 +78,10 @@ export const zhCN = {
   'layout.sider': '侧边栏',
   // float-button（悬浮按钮）
   'floatButton.action': '悬浮操作',
+  // toggle-group（切换组）
+  'toggleGroup.group': '切换组',
+  // speed-dial（悬浮动作按钮）
+  'speedDial.actions': '操作菜单',
   // pagination（分页）
   'pagination.nav': '分页',
   'pagination.prev': '上一页',
@@ -176,4 +182,15 @@ export const zhCN = {
   'qrcode.image': '二维码',
   'qrcode.empty': '暂无内容',
   'qrcode.tooLong': '内容过长，请缩短后重试',
+  // command（命令面板）
+  'command.placeholder': '搜索命令…',
+  'command.empty': '无匹配命令',
+  'command.search': '搜索命令',
+  'command.label': '命令面板',
+  // menubar（应用菜单栏）
+  'menubar.label': '菜单栏',
+  // navigation-menu（多级导航）
+  'navigationMenu.label': '导航',
+  // toolbar（工具栏）
+  'toolbar.label': '工具栏',
 } as const

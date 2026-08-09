@@ -1,0 +1,55 @@
+# Menubar 应用菜单栏
+
+桌面应用式顶部菜单条（文件 / 编辑 / 视图），点击 / 悬停展开子菜单（级联浮出），支持方向键、`Alt` 访问键与焦点陷阱。
+
+## 基础用法
+
+<DemoBlock title="基础用法">
+  <oas-menubar id="menubar-basic" onoas-select="menubarLog(event)" items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"新建","value":"new"},{"label":"打开","value":"open"},{"type":"divider"},{"label":"退出","value":"quit"}]},{"label":"编辑","value":"edit","accessKey":"e","children":[{"label":"撤销","value":"undo"},{"label":"重做","value":"redo"},{"type":"divider"},{"label":"复制","value":"copy"},{"label":"粘贴","value":"paste"}]},{"label":"视图","value":"view","accessKey":"v","children":[{"label":"全屏","value":"fullscreen"},{"label":"缩放","value":"zoom","children":[{"label":"放大","value":"zoom-in"},{"label":"缩小","value":"zoom-out"}]}]}]'></oas-menubar>
+  <oas-tag id="menubar-result" type="info">尚未选择</oas-tag>
+</DemoBlock>
+
+## 禁用项与分组
+
+子菜单内支持 `disabled`、`type: "divider"` 分隔线与 `type: "group"` 分组标题。
+
+<DemoBlock title="禁用项与分组">
+  <oas-menubar onoas-select="menubarLog2(event)" items='[{"label":"文件","value":"file","accessKey":"f","children":[{"type":"group","label":"最近","children":[{"label":"项目 A","value":"proj-a"},{"label":"项目 B","value":"proj-b"}]},{"type":"divider"},{"label":"保存","value":"save"},{"label":"另存为","value":"save-as","disabled":true}]}]'></oas-menubar>
+  <oas-tag id="menubar-result-2" type="info">尚未选择</oas-tag>
+</DemoBlock>
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  window.menubarLog = (e) => {
+    const tag = document.getElementById('menubar-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}`
+  }
+  window.menubarLog2 = (e) => {
+    const tag = document.getElementById('menubar-result-2')
+    if (tag) tag.textContent = `已选择：${e.detail.value}`
+  }
+})
+</script>
+
+## API
+
+| 属性    | 说明                                  | 类型         | 默认值 |
+| ------- | ------------------------------------- | ------------ | ------ |
+| `items` | 顶级菜单项 JSON（含子菜单 children）  | `MenubarItem[]` | `[]`   |
+
+`MenubarItem` 字段（继承 `MenuItem`）：
+
+| 字段       | 说明                                                        | 类型     |
+| ---------- | ----------------------------------------------------------- | -------- |
+| `label`    | 菜单文字                                                    | `string` |
+| `value`    | 选中值                                                      | `string` |
+| `accessKey`| `Alt` 访问键（单字符）；缺省取 label 首个 ASCII 字母        | `string` |
+| `disabled` | 禁用                                                        | `boolean`|
+| `children` | 子菜单项（可继续嵌套，级联向右浮出）                        | `MenubarItem[]` |
+
+| 事件         | 说明                          |
+| ------------ | ----------------------------- |
+| `oas-select` | 选择某项，`detail: { value }` |
+
+键盘：顶级 `←`/`→` 切换、`↓`/`Enter` 打开子菜单、`Esc` 关闭；子菜单内 `↑`/`↓` 移动、`→` 进入级联、`←` 返回父级；`Home`/`End` 跳转。`Alt` 单独按下聚焦菜单栏，`Alt + 访问键` 打开对应顶级菜单。子菜单打开时 `Tab` 在子项间循环（焦点陷阱），`roving tabindex` 只保留当前顶级项可 Tab 到达。

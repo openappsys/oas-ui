@@ -32,12 +32,16 @@ import './form/upload/index.js'
 import './form/transfer/index.js'
 import './form/color-picker/index.js'
 import './form/toggle-button/index.js'
+import './form/toggle-group/index.js'
 import './form/pin-input/index.js'
 import './form/dynamic-input/index.js'
 import './form/dynamic-tags/index.js'
 import './form/editable/index.js'
 import './feedback/message/index.js'
 import './feedback/notification/index.js'
+import './feedback/toast/index.js'
+import './feedback/snackbar/index.js'
+import './feedback/backdrop/index.js'
 import './feedback/modal/index.js'
 import './feedback/confirm/index.js'
 import './feedback/drawer/index.js'
@@ -55,8 +59,14 @@ import './floating/menu/index.js'
 import './floating/dropdown/index.js'
 import './floating/contextmenu/index.js'
 import './floating/hover-card/index.js'
+import './floating/command/index.js'
+import './floating/menubar/index.js'
+import './floating/navigation-menu/index.js'
+import './floating/toolbar/index.js'
 import './floating/config-provider/index.js'
 import './floating/app/index.js'
+import './floating/scroll-area/index.js'
+import './floating/speed-dial/index.js'
 import './navigation/breadcrumb/index.js'
 import './navigation/back-top/index.js'
 import './navigation/anchor/index.js'
@@ -129,6 +139,7 @@ export { OASUpload } from './form/upload/oas-upload.js'
 export { OASTransfer, type TransferItem } from './form/transfer/index.js'
 export { OASColorPicker } from './form/color-picker/oas-color-picker.js'
 export { OASToggleButton } from './form/toggle-button/oas-toggle-button.js'
+export { OASToggleGroup, type ToggleItem } from './form/toggle-group/oas-toggle-group.js'
 export { OASPinInput } from './form/pin-input/oas-pin-input.js'
 export { OASDynamicInput } from './form/dynamic-input/oas-dynamic-input.js'
 export { OASDynamicTags } from './form/dynamic-tags/oas-dynamic-tags.js'
@@ -147,6 +158,18 @@ export {
   type NotificationType,
   type NotificationOptions,
 } from './feedback/notification/index.js'
+export {
+  OASToast,
+  toast,
+  destroyAll as destroyAllToast,
+  type ToastType,
+  type ToastOptions,
+  type ToastPosition,
+  type ToastPromiseOptions,
+  type ToastAction,
+} from './feedback/toast/index.js'
+export { OASSnackbar } from './feedback/snackbar/index.js'
+export { OASBackdrop } from './feedback/backdrop/index.js'
 export { OASModal } from './feedback/modal/oas-modal.js'
 export {
   confirm,
@@ -172,8 +195,17 @@ export { OASMenu, type MenuItem } from './floating/menu/index.js'
 export { OASDropdown } from './floating/dropdown/oas-dropdown.js'
 export { OASContextMenu } from './floating/contextmenu/oas-context-menu.js'
 export { OASHoverCard } from './floating/hover-card/oas-hover-card.js'
+export { OASCommand, type CommandItem } from './floating/command/index.js'
+export { OASMenubar, type MenubarItem } from './floating/menubar/index.js'
+export {
+  OASNavigationMenu,
+  type NavItem,
+} from './floating/navigation-menu/index.js'
+export { OASToolbar } from './floating/toolbar/index.js'
 export { OASConfigProvider } from './floating/config-provider/oas-config-provider.js'
 export { OASApp } from './floating/app/oas-app.js'
+export { OASScrollArea } from './floating/scroll-area/oas-scroll-area.js'
+export { OASSpeedDial, type SpeedDialAction } from './floating/speed-dial/oas-speed-dial.js'
 export { OASBreadcrumb, type BreadcrumbItem } from './navigation/breadcrumb/index.js'
 export { OASBackTop } from './navigation/back-top/oas-back-top.js'
 export { OASAnchor, type AnchorItem } from './navigation/anchor/index.js'
