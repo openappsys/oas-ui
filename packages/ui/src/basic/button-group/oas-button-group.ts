@@ -7,10 +7,10 @@ const STYLE = `
   vertical-align: middle;
   font-family: inherit;
 }
-.group {
+[part='group'] {
   display: inline-flex;
 }
-:host([vertical]) .group {
+:host([vertical]) [part='group'] {
   flex-direction: column;
   align-items: stretch;
 }
