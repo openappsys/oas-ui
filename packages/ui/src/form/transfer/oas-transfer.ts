@@ -154,6 +154,18 @@ export class OASTransfer extends OASElement {
     this.renderPanels()
   }
 
+  override connectedCallback(): void {
+    super.connectedCallback()
+    // 兼容 SSR/水合时序：元素升级前若 data 被赋成自有属性，会遮蔽原型 setter。
+    // 回收自有属性进 _data 并删除，保证 setter 生效、选项正确渲染。
+    if (Object.prototype.hasOwnProperty.call(this, 'data') && Array.isArray(this.data)) {
+      const own = this.data
+      delete (this as Record<string, unknown>).data
+      this._data = own.filter((i) => i && typeof i.key === 'string')
+      this.renderPanels()
+    }
+  }
+
   protected override render(): void {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>

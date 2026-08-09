@@ -46,8 +46,9 @@ onMounted(async () => {
       el.removeAttribute('open')
       toast.info({ title: '遮罩被点击，已关闭', duration: 2000 })
     })
-    document.body.appendChild(el)
+    // 先设 open 再挂载：组件在 !open 时连接会自动卸载，顺序颠倒会导致被立即移除
     el.setAttribute('open', '')
+    document.body.appendChild(el)
   }
 })
 </script>

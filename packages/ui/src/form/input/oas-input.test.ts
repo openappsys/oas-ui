@@ -118,7 +118,7 @@ describe('OASInput', () => {
   }
 
   it('prepend/append 渲染 addon 文案块（独立 ::part）', () => {
-    const el = mount({ prepend: 'http://', append: '.com' })
+    const el = mount({ 'addon-before': 'http://', 'addon-after': '.com' })
     const prepend = part(el, 'prepend')
     const append = part(el, 'append')
     expect(prepend.textContent).toBe('http://')
@@ -153,23 +153,23 @@ describe('OASInput', () => {
   })
 
   it('与 clearable 并存：addon + 清除按钮互不干扰', () => {
-    const el = mount({ clearable: '', value: 'x', prepend: 'http://' })
+    const el = mount({ clearable: '', value: 'x', 'addon-before': 'http://' })
     const btn = el.shadowRoot!.querySelector('button')!
     btn.click()
     expect(input(el).value).toBe('')
   })
 
   it('disabled 时 addon 灰化（host 携带 disabled，addon 文案保留）', () => {
-    const el = mount({ disabled: '', append: '元' })
+    const el = mount({ disabled: '', 'addon-after': '元' })
     const append = part(el, 'append')
     expect(append.textContent).toBe('元')
     expect(el.hasAttribute('disabled')).toBe(true)
   })
 
   it('属性变化增量更新 addon/图标，不重建 input 引用', () => {
-    const el = mount({ prepend: 'a' })
+    const el = mount({ 'addon-before': 'a' })
     const i = input(el)
-    el.setAttribute('prepend', 'b')
+    el.setAttribute('addon-before', 'b')
     el.setAttribute('prefix-icon', 'search')
     expect(input(el)).toBe(i)
     expect(part(el, 'prepend').textContent).toBe('b')

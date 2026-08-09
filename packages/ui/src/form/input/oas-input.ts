@@ -74,19 +74,19 @@ input:disabled:hover {
   background: var(--oas-color-bg-disabled);
   color: var(--oas-color-text-disabled);
 }
-:host([prepend]) [part='prepend'] {
+:host([addon-before]) [part='prepend'] {
   border-radius: var(--oas-radius-md) 0 0 var(--oas-radius-md);
   border-right: none;
 }
-:host([append]) [part='append'] {
+:host([addon-after]) [part='append'] {
   border-radius: 0 var(--oas-radius-md) var(--oas-radius-md) 0;
   border-left: none;
 }
-:host([prepend]) input {
+:host([addon-before]) input {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
-:host([append]) input {
+:host([addon-after]) input {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
@@ -200,8 +200,8 @@ export class OASInput extends OASElement {
       'readonly',
       'clearable',
       'label',
-      'prepend',
-      'append',
+      'addon-before',
+      'addon-after',
       'prefix',
       'suffix',
       'prefix-icon',
@@ -297,8 +297,8 @@ export class OASInput extends OASElement {
       el.textContent = value
       el.hidden = value === ''
     }
-    setAddon(prepend, this.getAttr('prepend', ''))
-    setAddon(append, this.getAttr('append', ''))
+    setAddon(prepend, this.getAttr('addon-before', ''))
+    setAddon(append, this.getAttr('addon-after', ''))
   }
 
   /** 内嵌前后缀：prefix/suffix 文案 + prefix-icon/suffix-icon 图标（iconRegistry 内联 SVG） */
