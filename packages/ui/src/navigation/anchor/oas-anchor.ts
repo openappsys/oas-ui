@@ -39,7 +39,15 @@ export class OASAnchor extends OASElement {
     return ['items', 'active', 'offset']
   }
 
-  private items: AnchorItem[] = []
+  private _items: AnchorItem[] = []
+
+  /** Vue/React 会把 items 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
+  get items(): AnchorItem[] {
+    return this._items
+  }
+  set items(value: AnchorItem[] | string) {
+    this.setAttribute('items', typeof value === 'string' ? value : JSON.stringify(value))
+  }
   private observer: IntersectionObserver | null = null
   private activeHref = ''
 
@@ -60,7 +68,7 @@ export class OASAnchor extends OASElement {
     this.activeHref = this.getAttr('active', '')
     nav.innerHTML = ''
     const targets: Element[] = []
-    for (const item of this.items) {
+    for (const item of this._items) {
       const link = document.createElement('a')
       link.setAttribute('part', 'link')
       link.href = item.href
@@ -113,13 +121,13 @@ export class OASAnchor extends OASElement {
   private parseItems(): void {
     try {
       const parsed = JSON.parse(this.getAttr('items', '[]'))
-      this.items = Array.isArray(parsed)
+      this._items = Array.isArray(parsed)
         ? parsed.filter(
             (i): i is AnchorItem => i && typeof i.href === 'string' && typeof i.title === 'string',
           )
         : []
     } catch {
-      this.items = []
+      this._items = []
     }
   }
 }

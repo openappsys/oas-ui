@@ -244,7 +244,15 @@ export class OASSidebar extends OASElement {
     return ['collapsed', 'items', 'width', 'mobile-breakpoint']
   }
 
-  private items: SidebarItem[] = []
+  private _items: SidebarItem[] = []
+
+  /** Vue/React 会把 items 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
+  get items(): SidebarItem[] {
+    return this._items
+  }
+  set items(value: SidebarItem[] | string) {
+    this.setAttribute('items', typeof value === 'string' ? value : JSON.stringify(value))
+  }
   private mq: MediaQueryList | null = null
 
   protected override render(): void {
@@ -346,7 +354,7 @@ export class OASSidebar extends OASElement {
     if (!nav) return
     this.parseItems()
     nav.innerHTML = ''
-    for (const item of this.items) {
+    for (const item of this._items) {
       const btn = document.createElement('button')
       btn.className = 'item'
       btn.setAttribute('part', 'item')
@@ -374,14 +382,14 @@ export class OASSidebar extends OASElement {
   private parseItems(): void {
     try {
       const parsed = JSON.parse(this.getAttr('items', '[]'))
-      this.items = Array.isArray(parsed)
+      this._items = Array.isArray(parsed)
         ? parsed.filter(
             (i): i is SidebarItem =>
               i && typeof i.label === 'string' && typeof i.value === 'string',
           )
         : []
     } catch {
-      this.items = []
+      this._items = []
     }
   }
 

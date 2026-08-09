@@ -322,13 +322,13 @@ export class OASDatePicker extends OASElement {
   private range: RangeState = { start: null, end: null }
   private previewEnd: Date | null = null
 
-  private get type(): PickerType {
+  private get pickerType(): PickerType {
     const t = this.getAttr('type', 'date')
     return t === 'daterange' || t === 'month' || t === 'datetime' ? t : 'date'
   }
 
   private currentFormat(): string {
-    return this.getAttr('format', '') || DEFAULT_FORMAT[this.type]
+    return this.getAttr('format', '') || DEFAULT_FORMAT[this.pickerType]
   }
 
   protected override render(): void {
@@ -377,7 +377,7 @@ export class OASDatePicker extends OASElement {
   }
 
   private open(): void {
-    const t = this.type
+    const t = this.pickerType
     const today = startOfDay(new Date())
     const sel = this.selectedDates()
     this.subPanel = 'days'
@@ -441,7 +441,7 @@ export class OASDatePicker extends OASElement {
   private selectedDates(): Date | null {
     const raw = this.getAttr('value', '')
     if (!raw) return null
-    const t = this.type
+    const t = this.pickerType
     if (t === 'daterange') return this.parseRange().start
     const d = parseISODate(raw)
     if (!d) return null
@@ -472,7 +472,7 @@ export class OASDatePicker extends OASElement {
     triggerEl.disabled = this.hasAttr('disabled')
     const valueEl = this.shadow.querySelector<HTMLElement>('.value')
     if (!valueEl) return
-    const t = this.type
+    const t = this.pickerType
     const format = this.currentFormat()
     const locale = resolveLocale(this)
     const raw = this.getAttr('value', '')
@@ -501,7 +501,7 @@ export class OASDatePicker extends OASElement {
   private renderPanel(focusNow: boolean): void {
     const panel = this.panel
     if (!panel) return
-    const t = this.type
+    const t = this.pickerType
     if (t === 'month') {
       panel.classList.remove('range-panel')
       this.renderMonthPanel(panel)
@@ -516,7 +516,7 @@ export class OASDatePicker extends OASElement {
 
   private renderDatePanel(panel: HTMLElement, focusNow: boolean): void {
     const locale = resolveLocale(this)
-    const t = this.type
+    const t = this.pickerType
     const yearNav = this.subPanel === 'months'
     panel.innerHTML = `
       <div class="header">
@@ -563,7 +563,7 @@ export class OASDatePicker extends OASElement {
 
   private renderDaysGrid(grid: HTMLElement, focusNow: boolean): void {
     const locale = resolveLocale(this)
-    const t = this.type
+    const t = this.pickerType
     const selected = t === 'datetime' ? this.pendingDate : this.selectedDates()
     const focus = this.focusDate ?? selected ?? startOfDay(new Date())
     renderMonthGrid(grid, {
@@ -733,7 +733,7 @@ export class OASDatePicker extends OASElement {
   }
 
   private pickToday(): void {
-    const t = this.type
+    const t = this.pickerType
     const today = startOfDay(new Date())
     if (t === 'datetime') {
       this.pendingDate = today
@@ -749,7 +749,7 @@ export class OASDatePicker extends OASElement {
 
   private selectDay(d: Date): void {
     this.focusDate = startOfDay(d)
-    const t = this.type
+    const t = this.pickerType
     if (t === 'datetime') {
       this.pendingDate = startOfDay(d)
       this.renderPanel(false)
@@ -805,7 +805,7 @@ export class OASDatePicker extends OASElement {
 
   private handleGridKey(e: KeyboardEvent, grid: HTMLElement): void {
     if (this.subPanel === 'months') return
-    const t = this.type
+    const t = this.pickerType
     const selected = t === 'datetime' ? this.pendingDate : this.selectedDates()
     const focus = this.focusDate ?? selected ?? startOfDay(new Date())
     if (e.key === 'Enter' || e.key === ' ') {

@@ -35,6 +35,14 @@ export class OASStatistic extends OASElement {
     return ['value', 'precision', 'prefix', 'suffix', 'group-separator', 'loading']
   }
 
+  /** Element 内建只读 getter prefix 会让 Vue 走 property 赋值；访问器遮蔽并反射到 attribute */
+  override get prefix(): string {
+    return this.getAttr('prefix', '')
+  }
+  override set prefix(value: string) {
+    this.setAttribute('prefix', value)
+  }
+
   protected override render(): void {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>

@@ -97,7 +97,23 @@ export class OASMentions extends OASElement {
 
   private ta: HTMLTextAreaElement | null = null
   private panel: HTMLElement | null = null
-  private options: Option[] = []
+  private _options: Option[] = []
+
+  /** Vue/React 会把 options 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
+  get options(): Option[] {
+    return this._options
+  }
+  set options(value: Option[] | string) {
+    this.setAttribute('options', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  /** Element 内建只读 getter prefix 会让 Vue 走 property 赋值；访问器遮蔽并反射到 attribute */
+  override get prefix(): string {
+    return this.getAttr('prefix', '')
+  }
+  override set prefix(value: string) {
+    this.setAttribute('prefix', value)
+  }
   private activeIndex = 0
   private openState = false
   /** 当前提及片段的起始下标（prefix 字符位置），-1 表示无触发 */
@@ -220,8 +236,8 @@ export class OASMentions extends OASElement {
 
   private filtered(): Option[] {
     const q = this.queryText.trim().toLowerCase()
-    if (!q) return this.options
-    return this.options.filter((o) => o.label.toLowerCase().includes(q))
+    if (!q) return this._options
+    return this._options.filter((o) => o.label.toLowerCase().includes(q))
   }
 
   private renderPanel(): void {
@@ -303,11 +319,11 @@ export class OASMentions extends OASElement {
   private parseOptions(): void {
     try {
       const parsed = JSON.parse(this.getAttr('options', '[]'))
-      this.options = Array.isArray(parsed)
+      this._options = Array.isArray(parsed)
         ? parsed.filter((o): o is Option => o && typeof o.value === 'string')
         : []
     } catch {
-      this.options = []
+      this._options = []
     }
   }
 }

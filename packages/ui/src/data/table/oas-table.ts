@@ -231,7 +231,7 @@ export class OASTable extends OASElement {
     const virtual = this.isVirtual()
     if (virtual) {
       this.wrap!.setAttribute('data-virtual', 'true')
-      this.wrap!.style.maxHeight = `${this.height()}px`
+      this.wrap!.style.maxHeight = `${this.tableHeight()}px`
     } else {
       this.wrap!.removeAttribute('data-virtual')
       this.wrap!.style.maxHeight = ''
@@ -380,7 +380,7 @@ export class OASTable extends OASElement {
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
   ): void {
     const scrollTop = this.wrap ? this.wrap.scrollTop : 0
-    const win = computeVirtualWindow(scrollTop, this.height(), this.rowHeight(), sorted.length)
+    const win = computeVirtualWindow(scrollTop, this.tableHeight(), this.rowHeight(), sorted.length)
     const colSpan = this._columns.length + (this.hasAttr('checkable') ? 1 : 0)
 
     const topSpacer = document.createElement('tr')
@@ -463,7 +463,7 @@ export class OASTable extends OASElement {
     return this.getAttr('height', '') !== ''
   }
 
-  private height(): number {
+  private tableHeight(): number {
     return Number(this.getAttr('height', '320')) || 320
   }
 
@@ -501,7 +501,7 @@ export class OASTable extends OASElement {
       this.renderVirtualBody(body, sorted, rowKey, selected, this.computeLayout())
       const win = computeVirtualWindow(
         this.wrap!.scrollTop,
-        this.height(),
+        this.tableHeight(),
         this.rowHeight(),
         sorted.length,
       )

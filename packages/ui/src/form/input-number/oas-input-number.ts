@@ -120,8 +120,8 @@ export class OASInputNumber extends OASElement {
     this.downBtn = this.shadow.querySelector('button[part="down"]')
 
     this.input?.addEventListener('change', () => this.emitChange())
-    this.upBtn?.addEventListener('click', () => this.step(1))
-    this.downBtn?.addEventListener('click', () => this.step(-1))
+    this.upBtn?.addEventListener('click', () => this.stepBy(1))
+    this.downBtn?.addEventListener('click', () => this.stepBy(-1))
     this.update()
   }
 
@@ -146,7 +146,7 @@ export class OASInputNumber extends OASElement {
     this.syncControls()
   }
 
-  private step(dir: 1 | -1): void {
+  private stepBy(dir: 1 | -1): void {
     const i = this.input
     if (!i || this.hasAttr('disabled')) return
     const step = Number(i.step) || 1

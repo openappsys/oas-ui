@@ -127,7 +127,15 @@ export class OASCascader extends OASElement {
 
   private triggerEl: HTMLButtonElement | null = null
   private dropdown: HTMLElement | null = null
-  private options: CascaderOption[] = []
+  private _options: CascaderOption[] = []
+
+  /** Vue/React 会把 options 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
+  get options(): CascaderOption[] {
+    return this._options
+  }
+  set options(value: CascaderOption[] | string) {
+    this.setAttribute('options', typeof value === 'string' ? value : JSON.stringify(value))
+  }
   private openState = false
   private activePath: string[] = []
   private activePanel = 0
@@ -210,11 +218,11 @@ export class OASCascader extends OASElement {
   private parseOptions(): void {
     try {
       const parsed = JSON.parse(this.getAttr('options', '[]'))
-      this.options = Array.isArray(parsed)
+      this._options = Array.isArray(parsed)
         ? parsed.filter((o): o is CascaderOption => o && typeof o.value === 'string')
         : []
     } catch {
-      this.options = []
+      this._options = []
     }
   }
 
@@ -354,7 +362,7 @@ export class OASCascader extends OASElement {
 
   private buildPanels(): CascaderOption[][] {
     const panels: CascaderOption[][] = []
-    let current: CascaderOption[] = this.options
+    let current: CascaderOption[] = this._options
     for (let depth = 0; depth <= this.activePath.length; depth++) {
       panels.push(current)
       const selected = this.activePath[depth]
@@ -391,7 +399,7 @@ export class OASCascader extends OASElement {
     }
 
     const labels: string[] = []
-    let current: CascaderOption[] = this.options
+    let current: CascaderOption[] = this._options
     for (const value of path) {
       const node = current.find((o) => o.value === value)
       if (!node) break

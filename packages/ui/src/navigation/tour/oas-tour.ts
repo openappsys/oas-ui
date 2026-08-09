@@ -83,7 +83,15 @@ export class OAStour extends OASElement {
     return ['open', 'steps', 'current']
   }
 
-  private steps: TourStep[] = []
+  private _steps: TourStep[] = []
+
+  /** Vue/React 会把 steps 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
+  get steps(): TourStep[] {
+    return this._steps
+  }
+  set steps(value: TourStep[] | string) {
+    this.setAttribute('steps', typeof value === 'string' ? value : JSON.stringify(value))
+  }
   private highlight: HTMLElement | null = null
   private popup: HTMLElement | null = null
   private current = 0
@@ -120,7 +128,7 @@ export class OAStour extends OASElement {
   }
 
   private next(): void {
-    if (this.current >= this.steps.length - 1) {
+    if (this.current >= this._steps.length - 1) {
       this.emit('finish')
       this.removeAttribute('open')
       return
@@ -149,7 +157,7 @@ export class OAStour extends OASElement {
     this.parseSteps()
     this.current = Math.min(
       Math.max(Number(this.getAttr('current', '0')) || 0, 0),
-      this.steps.length - 1,
+      this._steps.length - 1,
     )
     const open = this.hasAttr('open')
     // 操作按钮文案一律 locale 驱动（关闭状态下也保持最新，setLocale 切换自动重刷）
@@ -157,14 +165,14 @@ export class OAStour extends OASElement {
     this.shadow.querySelector<HTMLElement>('[part="prev"]')!.textContent = this.t('tour.prev')
     const nextBtn = this.shadow.querySelector<HTMLButtonElement>('[part="next"]')!
     nextBtn.textContent =
-      this.current >= this.steps.length - 1 ? this.t('tour.finish') : this.t('tour.next')
+      this.current >= this._steps.length - 1 ? this.t('tour.finish') : this.t('tour.next')
     if (!open) return
-    const step = this.steps[this.current]
+    const step = this._steps[this.current]
     if (!step) return
     this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = step.title
     this.shadow.querySelector<HTMLElement>('[part="desc"]')!.textContent = step.description ?? ''
     this.shadow.querySelector<HTMLElement>('[part="step-count"]')!.textContent =
-      `${this.current + 1} / ${this.steps.length}`
+      `${this.current + 1} / ${this._steps.length}`
     const target = document.querySelector(step.selector)
     if (target) {
       const rect = target.getBoundingClientRect()
@@ -188,14 +196,14 @@ export class OAStour extends OASElement {
   private parseSteps(): void {
     try {
       const parsed = JSON.parse(this.getAttr('steps', '[]'))
-      this.steps = Array.isArray(parsed)
+      this._steps = Array.isArray(parsed)
         ? parsed.filter(
             (s): s is TourStep =>
               s && typeof s.selector === 'string' && typeof s.title === 'string',
           )
         : []
     } catch {
-      this.steps = []
+      this._steps = []
     }
   }
 }

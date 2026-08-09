@@ -52,7 +52,15 @@ export class OASNumberAnimation extends OASElement {
   private raf = 0
   private from = 0
   private to = 0
-  private duration = DEFAULT_DURATION
+  private _duration = DEFAULT_DURATION
+
+  /** Vue/React 会把 duration 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
+  get duration(): number {
+    return this._duration
+  }
+  set duration(value: number | string) {
+    this.setAttribute('duration', String(value))
+  }
   private startedAt = 0
   private current = 0
   /** 已抵达/正在动画的目标值；null 表示尚未初始化 */
@@ -81,7 +89,7 @@ export class OASNumberAnimation extends OASElement {
       this.current = target
       this.from = target
       this.to = target
-      this.duration = duration
+      this._duration = duration
       this.lastTarget = target
       this.renderText()
       if (changed) this.emit('finish', { value: target })
@@ -90,7 +98,7 @@ export class OASNumberAnimation extends OASElement {
 
     // 目标未变：仅刷新显示，不重启动画
     if (this.lastTarget === target) {
-      this.duration = duration
+      this._duration = duration
       this.renderText()
       return
     }
@@ -102,12 +110,12 @@ export class OASNumberAnimation extends OASElement {
     // 起点即目标（如挂载时 value=0）：定值不启动动画
     if (this.from === this.to) {
       this.current = this.to
-      this.duration = duration
+      this._duration = duration
       this.lastTarget = target
       this.renderText()
       return
     }
-    this.duration = duration
+    this._duration = duration
     this.lastTarget = target
     // -1 表示尚未开始（首帧 ts 可能为 0，不能用 0 作哨兵）
     this.startedAt = -1
@@ -116,7 +124,7 @@ export class OASNumberAnimation extends OASElement {
 
   private tick = (ts: number): void => {
     if (this.startedAt < 0) this.startedAt = ts
-    const p = Math.min(1, (ts - this.startedAt) / this.duration)
+    const p = Math.min(1, (ts - this.startedAt) / this._duration)
     this.current = this.from + (this.to - this.from) * easeOutCubic(p)
     this.renderText()
     if (p >= 1) {

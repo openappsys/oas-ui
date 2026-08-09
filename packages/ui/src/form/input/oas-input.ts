@@ -209,6 +209,14 @@ export class OASInput extends OASElement {
     ]
   }
 
+  /** Element 内建只读 getter prefix 会让 Vue 走 property 赋值；访问器遮蔽并反射到 attribute */
+  override get prefix(): string {
+    return this.getAttr('prefix', '')
+  }
+  override set prefix(value: string) {
+    this.setAttribute('prefix', value)
+  }
+
   private inputEl: HTMLInputElement | null = null
   private clearBtn: HTMLButtonElement | null = null
 

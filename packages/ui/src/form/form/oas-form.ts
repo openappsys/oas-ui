@@ -26,7 +26,15 @@ export class OASForm extends OASElement {
   }
 
   private form: HTMLFormElement | null = null
-  private rules: Rules = {}
+  private _rules: Rules = {}
+
+  /** Vue/React 会把 rules 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
+  get rules(): Rules {
+    return this._rules
+  }
+  set rules(value: Rules | string) {
+    this.setAttribute('rules', typeof value === 'string' ? value : JSON.stringify(value))
+  }
   private errors: Record<string, string> = {}
 
   protected override render(): void {
@@ -63,9 +71,9 @@ export class OASForm extends OASElement {
 
   private parseRules(): void {
     try {
-      this.rules = JSON.parse(this.getAttr('rules', '{}'))
+      this._rules = JSON.parse(this.getAttr('rules', '{}'))
     } catch {
-      this.rules = {}
+      this._rules = {}
     }
   }
 
@@ -111,7 +119,7 @@ export class OASForm extends OASElement {
     for (const { name, element } of fields) {
       const value = this.readValue(element)
       values[name] = value
-      const rules = this.rules[name] ?? []
+      const rules = this._rules[name] ?? []
       if (element.hasAttribute('disabled')) continue
       for (const rule of rules) {
         let failed = false

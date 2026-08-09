@@ -172,7 +172,15 @@ export class OASSelect extends OASElement {
   private triggerEl: HTMLButtonElement | null = null
   private dropdown: HTMLElement | null = null
   private listbox: HTMLElement | null = null
-  private options: Option[] = []
+  private _options: Option[] = []
+
+  /** Vue/React 会把 options 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
+  get options(): Option[] {
+    return this._options
+  }
+  set options(value: Option[] | string) {
+    this.setAttribute('options', typeof value === 'string' ? value : JSON.stringify(value))
+  }
   private activeIndex = 0
   private openState = false
 
@@ -240,7 +248,7 @@ export class OASSelect extends OASElement {
     if (this.openState) {
       document.addEventListener('click', this.handleOutsideClick)
       const current = this.currentValues()
-      const idx = current.length > 0 ? this.options.findIndex((o) => o.value === current[0]) : 0
+      const idx = current.length > 0 ? this._options.findIndex((o) => o.value === current[0]) : 0
       this.activeIndex = Math.max(idx, 0)
     } else {
       document.removeEventListener('click', this.handleOutsideClick)
@@ -275,14 +283,14 @@ export class OASSelect extends OASElement {
   }
 
   private moveActive(dir: 1 | -1): void {
-    const n = this.options.length
+    const n = this._options.length
     if (n === 0) return
     this.activeIndex = (this.activeIndex + dir + n) % n
     this.renderListbox()
   }
 
   private selectActive(): void {
-    const option = this.options[this.activeIndex]
+    const option = this._options[this.activeIndex]
     if (!option || option.disabled) return
     this.selectValue(option.value)
   }
@@ -295,8 +303,8 @@ export class OASSelect extends OASElement {
       this.shadow.querySelector<HTMLInputElement>('.search-input')?.getAttribute('data-query') ?? ''
     ).toLowerCase()
     const visible = query
-      ? this.options.filter((o) => o.label.toLowerCase().includes(query))
-      : this.options
+      ? this._options.filter((o) => o.label.toLowerCase().includes(query))
+      : this._options
     if (visible.length === 0) {
       const empty = document.createElement('div')
       empty.className = 'empty'
@@ -365,11 +373,11 @@ export class OASSelect extends OASElement {
   private parseOptions(): void {
     try {
       const parsed = JSON.parse(this.getAttr('options', '[]'))
-      this.options = Array.isArray(parsed)
+      this._options = Array.isArray(parsed)
         ? parsed.filter((o): o is Option => o && typeof o.value === 'string')
         : []
     } catch {
-      this.options = []
+      this._options = []
     }
   }
 
@@ -395,7 +403,7 @@ export class OASSelect extends OASElement {
     if (this.hasAttr('multiple')) {
       valueEl.innerHTML = ''
       for (const v of values) {
-        const option = this.options.find((o) => o.value === v)
+        const option = this._options.find((o) => o.value === v)
         const chip = document.createElement('span')
         chip.className = 'chip'
         const label = document.createElement('span')
@@ -412,7 +420,7 @@ export class OASSelect extends OASElement {
       }
     } else {
       const value = values[0] ?? ''
-      const option = this.options.find((o) => o.value === value)
+      const option = this._options.find((o) => o.value === value)
       valueEl.textContent = option?.label ?? value
     }
   }

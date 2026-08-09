@@ -75,7 +75,7 @@ export class OASTextarea extends OASElement {
     this.ta = this.shadow.querySelector('textarea')
     this.ta?.addEventListener('input', () => {
       this.emit('input', { value: this.ta!.value })
-      this.resize()
+      this.autoResize()
     })
     this.update()
   }
@@ -99,7 +99,7 @@ export class OASTextarea extends OASElement {
       // autosize：高度由 min-rows/max-rows 约束，rows 取 min-rows
       t.rows = this.minRows()
       t.style.resize = 'none'
-      this.resize()
+      this.autoResize()
     } else {
       t.rows = rows
       t.style.resize = resize
@@ -143,7 +143,7 @@ export class OASTextarea extends OASElement {
    * 高度自适应（增量渲染：只改 style.height，不重建 DOM）。
    * 范围 clamp 到 [min-rows, max-rows]，超出 max-rows 出滚动条，空态回 min-rows。
    */
-  private resize(): void {
+  private autoResize(): void {
     const t = this.ta
     if (!t || !this.autosizeEnabled()) return
     const lh = this.lineHeight()

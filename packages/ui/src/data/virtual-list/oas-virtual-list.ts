@@ -150,7 +150,7 @@ private itemRole = ''
     this.itemRole = this.getAttribute('item-role') ?? ''
   }
 
-  private height(): number {
+  private listHeight(): number {
     return Number(this.getAttr('height', '320')) || 320
   }
 
@@ -198,7 +198,7 @@ private itemRole = ''
     if (!itemsEl) return
     const count = this.data.length
     const ih = this.itemHeight()
-    const vh = this.height()
+    const vh = this.listHeight()
     // 数据收缩时夹取 scrollTop，避免窗口越界
     const target = this.boundTarget ?? this.viewport
     const scrollTop = Math.min(

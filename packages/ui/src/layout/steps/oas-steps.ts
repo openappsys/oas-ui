@@ -93,7 +93,15 @@ export class OASSteps extends OASElement {
     return ['steps', 'current', 'direction']
   }
 
-  private steps: StepItem[] = []
+  private _steps: StepItem[] = []
+
+  /** Vue/React 会把 steps 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
+  get steps(): StepItem[] {
+    return this._steps
+  }
+  set steps(value: StepItem[] | string) {
+    this.setAttribute('steps', typeof value === 'string' ? value : JSON.stringify(value))
+  }
 
   protected override render(): void {
     this.shadow.innerHTML = `
@@ -111,7 +119,7 @@ export class OASSteps extends OASElement {
     stepsEl.setAttribute('data-direction', direction)
     stepsEl.innerHTML = ''
     const current = Number(this.getAttr('current', '0')) || 0
-    this.steps.forEach((step, idx) => {
+    this._steps.forEach((step, idx) => {
       const item = document.createElement('div')
       item.className = 'item'
       item.setAttribute('part', 'item')
@@ -139,11 +147,11 @@ export class OASSteps extends OASElement {
   private parseSteps(): void {
     try {
       const parsed = JSON.parse(this.getAttr('steps', '[]'))
-      this.steps = Array.isArray(parsed)
+      this._steps = Array.isArray(parsed)
         ? parsed.filter((s): s is StepItem => s && typeof s.title === 'string')
         : []
     } catch {
-      this.steps = []
+      this._steps = []
     }
   }
 }

@@ -173,7 +173,15 @@ export class OASTreeSelect extends OASElement {
 
   private triggerEl: HTMLButtonElement | null = null
   private dropdown: HTMLElement | null = null
-  private options: TreeOption[] = []
+  private _options: TreeOption[] = []
+
+  /** Vue/React 会把 options 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
+  get options(): TreeOption[] {
+    return this._options
+  }
+  set options(value: TreeOption[] | string) {
+    this.setAttribute('options', typeof value === 'string' ? value : JSON.stringify(value))
+  }
   private openState = false
   private flat: FlatNode[] = []
 
@@ -206,7 +214,7 @@ export class OASTreeSelect extends OASElement {
   protected override update(): void {
     this.parseOptions()
     this.flat = []
-    this.buildFlat(this.options, undefined, 0)
+    this.buildFlat(this._options, undefined, 0)
     this.syncTrigger()
     // 下拉展开时同步刷新 locale 文案（空态）
     if (this.openState) this.renderTree()
@@ -215,11 +223,11 @@ export class OASTreeSelect extends OASElement {
   private parseOptions(): void {
     try {
       const parsed = JSON.parse(this.getAttr('options', '[]'))
-      this.options = Array.isArray(parsed)
+      this._options = Array.isArray(parsed)
         ? parsed.filter((o): o is TreeOption => o && typeof o.value === 'string')
         : []
     } catch {
-      this.options = []
+      this._options = []
     }
   }
 
