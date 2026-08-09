@@ -154,4 +154,29 @@ describe('OASTabs', () => {
     expect(el.classList.contains('oas-tabs--bottom')).toBe(false)
     expect(el.classList.contains('oas-tabs--vertical')).toBe(false)
   })
+
+  it('回归：tab-position=right 时 tab 内容右对齐（justify-content: flex-end）', () => {
+    const el = mount({ 'tab-position': 'right' })
+    expect(el.classList.contains('oas-tabs--right')).toBe(true)
+    const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"]')!
+    const computed = getComputedStyle(tab).justifyContent
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    const rule = style.match(/:host\(\.oas-tabs--right\) \.tab\s*\{[^}]*\}/)?.[0] ?? ''
+    // happy-dom 对 shadow 内联样式解析支持有限：计算样式能拿到则断言计算值，否则退化为 STYLE 字符串断言
+    if (computed !== '') expect(computed).toBe('flex-end')
+    expect(rule).toContain('justify-content: flex-end')
+  })
+
+  it('回归：card + vertical + right 组合样式仍生效（盒式卡片不被右对齐破坏）', () => {
+    const el = mount({ type: 'card', 'tab-position': 'right' })
+    expect(el.classList.contains('oas-tabs--card')).toBe(true)
+    expect(el.classList.contains('oas-tabs--vertical')).toBe(true)
+    expect(el.classList.contains('oas-tabs--right')).toBe(true)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    const cardRule =
+      style.match(/:host\(\.oas-tabs--card\.oas-tabs--vertical\) \.tab\s*\{[^}]*\}/)?.[0] ?? ''
+    // 卡片盒式规则必须保留边框与圆角，且不覆盖右对齐
+    expect(cardRule).toContain('border-radius: var(--oas-radius-md)')
+    expect(cardRule).not.toContain('justify-content')
+  })
 })

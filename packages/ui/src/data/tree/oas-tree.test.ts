@@ -126,6 +126,177 @@ describe('OASTree', () => {
   })
 })
 
+const LAZY_DATA = JSON.stringify([
+  { key: 'a', label: '节点 A', children: [{ key: 'a-1', label: '子节点 1' }] },
+  { key: 'b', label: '节点 B' },
+  { key: 'c', label: '节点 C', isLeaf: true },
+])
+
+function toggles(el: OASTree): HTMLElement[] {
+  return [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="toggle"]')]
+}
+
+describe('OASTree 懒加载', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('lazy：未加载节点显示展开按钮，isLeaf 节点不显示', () => {
+    const el = mount({ lazy: '', data: LAZY_DATA })
+    // a（有 children）+ b（未加载，懒加载可展开）= 2 个可见展开按钮；c 为显式叶子 → 隐藏
+    expect(toggles(el).length).toBe(2)
+    // 非 lazy 模式下 b、c 均为叶子，只有 a 有展开按钮
+    const plain = mount({ data: LAZY_DATA })
+    expect(toggles(plain).length).toBe(1)
+  })
+
+  it('lazy：展开未加载节点派发 oas-load、显示加载占位，回填后子节点可见', () => {
+    const el = mount({ lazy: '', data: LAZY_DATA })
+    let loadDetail: unknown
+    el.addEventListener('oas-load', (e: Event) => (loadDetail = (e as CustomEvent).detail))
+
+    toggles(el)[1]!.click() // b 的展开按钮
+    expect(loadDetail).toEqual({ key: 'b' })
+    expect(el.getAttribute('expanded')).toContain('b')
+    // 加载中占位（spinner 占住原展开按钮的槽位，行高/对齐不变）
+    const spinner = el.shadowRoot!.querySelector<HTMLElement>('[part="spinner"]')
+    expect(spinner).not.toBeNull()
+    expect(spinner!.getAttribute('aria-label')).toBe('加载中…')
+
+    // 宿主回填子节点：b 获得 children → 加载态清除、b-1 因 expanded 直接可见
+    const loaded = JSON.stringify([
+      { key: 'a', label: '节点 A', children: [{ key: 'a-1', label: '子节点 1' }] },
+      { key: 'b', label: '节点 B', children: [{ key: 'b-1', label: '子节点 b-1' }] },
+      { key: 'c', label: '节点 C', isLeaf: true },
+    ])
+    el.setAttribute('data', loaded)
+    expect(el.shadowRoot!.querySelector('[part="spinner"]')).toBeNull()
+    expect(el.shadowRoot!.textContent).toContain('子节点 b-1')
+  })
+
+  it('lazy：load 属性回调触发（与 oas-load 事件并存）', () => {
+    const el = mount({ lazy: '', data: LAZY_DATA })
+    let viaProp: unknown
+    let viaEvent = 0
+    el.load = (payload) => (viaProp = payload)
+    el.addEventListener('oas-load', () => viaEvent++)
+    toggles(el)[1]!.click()
+    expect(viaProp).toEqual({ key: 'b' })
+    expect(viaEvent).toBe(1)
+  })
+
+  it('lazy：已加载节点（有 children）展开不触发 oas-load', () => {
+    const el = mount({ lazy: '', data: LAZY_DATA })
+    let fired = 0
+    el.addEventListener('oas-load', () => fired++)
+    toggles(el)[0]!.click() // a 已有 children，普通展开
+    expect(fired).toBe(0)
+    expect(el.getAttribute('expanded')).toContain('a')
+  })
+})
+
+function rect100(): DOMRect {
+  return {
+    top: 0,
+    bottom: 100,
+    left: 0,
+    right: 100,
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+    toJSON: () => ({}),
+  } as DOMRect
+}
+
+function dropEvent(type: string, clientY: number): MouseEvent {
+  return new MouseEvent(type, { bubbles: true, cancelable: true, clientY })
+}
+
+describe('OASTree 拖拽', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('draggable：before/after/inner 三种落点均派发 oas-node-drop', () => {
+    const el = mount({ draggable: '', expanded: 'a' })
+    const r = rows(el) // a, a-1, b
+    const details: unknown[] = []
+    el.addEventListener('oas-node-drop', (e: Event) => details.push((e as CustomEvent).detail))
+
+    // before：目标行上半区
+    r[0]!.dispatchEvent(dropEvent('dragstart', 0))
+    r[1]!.getBoundingClientRect = () => rect100()
+    r[1]!.dispatchEvent(dropEvent('dragover', 10))
+    expect(r[1]!.classList.contains('drop-before')).toBe(true)
+    r[1]!.dispatchEvent(dropEvent('drop', 10))
+    expect(details[0]).toEqual({ dragKey: 'a', dropKey: 'a-1', position: 'before' })
+
+    // after：目标行下半区
+    r[0]!.dispatchEvent(dropEvent('dragstart', 0))
+    r[2]!.getBoundingClientRect = () => rect100()
+    r[2]!.dispatchEvent(dropEvent('dragover', 90))
+    expect(r[2]!.classList.contains('drop-after')).toBe(true)
+    r[2]!.dispatchEvent(dropEvent('drop', 90))
+    expect(details[1]).toEqual({ dragKey: 'a', dropKey: 'b', position: 'after' })
+
+    // inner：可展开目标行中部（a 有 children）
+    r[1]!.dispatchEvent(dropEvent('dragstart', 0)) // 拖动 a-1
+    r[0]!.getBoundingClientRect = () => rect100()
+    r[0]!.dispatchEvent(dropEvent('dragover', 50))
+    expect(r[0]!.classList.contains('drop-inner')).toBe(true)
+    r[0]!.dispatchEvent(dropEvent('drop', 50))
+    expect(details[2]).toEqual({ dragKey: 'a-1', dropKey: 'a', position: 'inner' })
+  })
+
+  it('draggable：拖放自身不派发事件', () => {
+    const el = mount({ draggable: '' })
+    const r = rows(el)
+    let fired = 0
+    el.addEventListener('oas-node-drop', () => fired++)
+    r[0]!.dispatchEvent(dropEvent('dragstart', 0))
+    r[0]!.dispatchEvent(dropEvent('dragover', 50))
+    r[0]!.dispatchEvent(dropEvent('drop', 50))
+    expect(fired).toBe(0)
+  })
+
+  it('draggable：dragend 清空拖拽反馈标记', () => {
+    const el = mount({ draggable: '', expanded: 'a' })
+    const r = rows(el)
+    r[0]!.dispatchEvent(dropEvent('dragstart', 0))
+    r[1]!.getBoundingClientRect = () => rect100()
+    r[1]!.dispatchEvent(dropEvent('dragover', 10))
+    expect(r[1]!.classList.contains('drop-before')).toBe(true)
+    r[0]!.dispatchEvent(dropEvent('dragend', 0))
+    expect(r[1]!.classList.contains('drop-before')).toBe(false)
+  })
+
+  it('draggable：拖到根容器空白处派发 oas-node-drop（dropKey 为空，inner）', () => {
+    const el = mount({ draggable: '' })
+    const r = rows(el)
+    let detail: unknown
+    el.addEventListener('oas-node-drop', (e: Event) => (detail = (e as CustomEvent).detail))
+    r[0]!.dispatchEvent(dropEvent('dragstart', 0))
+    const tree = el.shadowRoot!.querySelector<HTMLElement>('.tree')!
+    tree.dispatchEvent(dropEvent('dragover', 0))
+    expect(tree.classList.contains('drop-inner')).toBe(true)
+    tree.dispatchEvent(dropEvent('drop', 0))
+    expect(detail).toEqual({ dragKey: 'a', dropKey: '', position: 'inner' })
+  })
+})
+
 const BIG_DATA = JSON.stringify(
   Array.from({ length: 100 }, (_, i) => ({
     key: `n${i}`,

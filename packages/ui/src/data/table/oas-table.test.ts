@@ -361,3 +361,191 @@ describe('OASTable 虚拟滚动', () => {
     expect(rows(el).length).toBe(0)
   })
 })
+
+describe('OASTable 展示增强（stripe/bordered/summary/expand/tree）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('stripe：偶数/奇数行交替写入 data-stripe 类标记', () => {
+    const el = mount({ stripe: '' })
+    const trs = rows(el)
+    expect(trs.length).toBe(3)
+    expect(trs[0]!.getAttribute('data-stripe')).toBe('even')
+    expect(trs[1]!.getAttribute('data-stripe')).toBe('odd')
+    expect(trs[2]!.getAttribute('data-stripe')).toBe('even')
+    // 未开启 stripe 时不写标记
+    const plain = mount()
+    expect(rows(plain)[0]!.getAttribute('data-stripe')).toBeNull()
+  })
+
+  it('bordered：宿主属性生效且样式表含单元格描边规则', () => {
+    const el = mount({ bordered: '' })
+    expect(el.hasAttribute('bordered')).toBe(true)
+    const style = el.shadowRoot!.querySelector('style')!.textContent
+    expect(style).toContain(":host([bordered]) td")
+    expect(style).toContain(":host([bordered]) th")
+    // 数据仍正常渲染
+    expect(rows(el).length).toBe(3)
+  })
+
+  it('summary：表格级配置渲染合计行（sum/avg/count + label）', () => {
+    const el = mount({
+      summary: '[{"key":"age","type":"sum","label":"合计"}]',
+      'row-key': 'name',
+    })
+    const row = el.shadowRoot!.querySelector('[part="summary-row"]')!
+    expect(row).not.toBeNull()
+    expect(row.className).toContain('summary')
+    // 30 + 25 + 35 = 90；首列放标签
+    expect(row.textContent).toContain('90')
+    expect(row.textContent).toContain('合计')
+
+    const avg = mount({
+      summary: '[{"key":"age","type":"avg"}]',
+      'row-key': 'name',
+    })
+    expect(avg.shadowRoot!.querySelector('[part="summary-row"]')!.textContent).toContain('30')
+    // 默认标签走 locale
+    expect(avg.shadowRoot!.querySelector('[part="summary-row"]')!.textContent).toContain('合计')
+
+    const count = mount({ summary: '[{"key":"age","type":"count"}]', 'row-key': 'name' })
+    expect(count.shadowRoot!.querySelector('[part="summary-row"]')!.textContent).toContain('3')
+  })
+
+  it('summary：列级 summary 字段同样触发合计行', () => {
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'name', title: '姓名' },
+        { key: 'age', title: '年龄', summary: 'sum' },
+      ]),
+      'row-key': 'name',
+    })
+    const row = el.shadowRoot!.querySelector('[part="summary-row"]')!
+    expect(row.textContent).toContain('90')
+  })
+
+  it('summary：与 checkable 并存时合计行列数对齐', () => {
+    const el = mount({
+      checkable: '',
+      summary: '[{"key":"age","type":"sum"}]',
+      'row-key': 'name',
+    })
+    const row = el.shadowRoot!.querySelector('[part="summary-row"]')!
+    expect(row.querySelectorAll('td').length).toBe(3)
+  })
+
+  it('expand：行尾按钮展开内容行并派发 oas-expand', () => {
+    const el = mount({
+      'row-key': 'name',
+      data: JSON.stringify([
+        { name: '张三', age: 30, expand: '<div>备注：技术骨干</div>' },
+        { name: '李四', age: 25 },
+      ]),
+    })
+    // 仅含 expand 字段的行有按钮，表头多一列空列（含 part 列 + 尾列 = 3 个 th）
+    expect(el.shadowRoot!.querySelectorAll('thead th').length).toBe(3)
+    const toggles = el.shadowRoot!.querySelectorAll('td.expand-toggle-cell button')
+    expect(toggles.length).toBe(1)
+
+    let detail: unknown
+    el.addEventListener('oas-expand', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(toggles[0] as HTMLButtonElement).click()
+    expect(detail).toEqual({ key: '张三', expanded: true })
+    expect(el.getAttribute('expanded')).toBe('张三')
+    const expandRow = el.shadowRoot!.querySelector('[part="expand-row"]')
+    expect(expandRow).not.toBeNull()
+    expect(expandRow!.textContent).toContain('技术骨干')
+
+    // 再次点击收起
+    const toggles2 = el.shadowRoot!.querySelectorAll('td.expand-toggle-cell button')
+    ;(toggles2[0] as HTMLButtonElement).click()
+    expect(el.getAttribute('expanded')).toBe('')
+    expect(el.shadowRoot!.querySelector('[part="expand-row"]')).toBeNull()
+  })
+
+  it('expand：点击展开按钮不触发行选中（非 checkable 时）', () => {
+    const el = mount({
+      'row-key': 'name',
+      data: JSON.stringify([{ name: '张三', age: 30, expand: '<div>x</div>' }]),
+    })
+    el.shadowRoot!.querySelector<HTMLButtonElement>('td.expand-toggle-cell button')!.click()
+    expect(el.getAttribute('selected')).toBeNull()
+  })
+
+  it('tree：children 父行展开子行（缩进）并派发 oas-expand', () => {
+    const el = mount({
+      'row-key': 'name',
+      data: JSON.stringify([
+        {
+          name: '研发部',
+          age: 0,
+          children: [
+            { name: '张三', age: 30 },
+            { name: '李四', age: 25 },
+          ],
+        },
+        { name: '产品部', age: 0 },
+      ]),
+    })
+    // 初始只渲染父行
+    expect(rows(el).length).toBe(2)
+    const toggles = el.shadowRoot!.querySelectorAll('td button.toggle')
+    expect(toggles.length).toBe(1)
+
+    let detail: unknown
+    el.addEventListener('oas-expand', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(toggles[0] as HTMLButtonElement).click()
+    expect(detail).toEqual({ key: '研发部', expanded: true })
+    expect(el.getAttribute('expanded')).toBe('研发部')
+    expect(rows(el).length).toBe(4)
+    // 展开后顺序：研发部 / 张三 / 李四 / 产品部
+    expect(rows(el)[1]!.textContent).toContain('张三')
+    expect(rows(el)[2]!.textContent).toContain('李四')
+    // 子行首格按层级缩进（16 + depth*24 = 40px）
+    const firstCell = rows(el)[1]!.querySelector('td') as HTMLElement
+    expect(firstCell.style.paddingLeft).toBe('40px')
+
+    // 再次点击收起
+    const toggles2 = el.shadowRoot!.querySelectorAll('td button.toggle')
+    ;(toggles2[0] as HTMLButtonElement).click()
+    expect(rows(el).length).toBe(2)
+  })
+
+  it('tree：多级 children 嵌套展开缩进逐级加深', () => {
+    const el = mount({
+      'row-key': 'name',
+      data: JSON.stringify([
+        {
+          name: '总部',
+          age: 0,
+          children: [
+            {
+              name: '研发部',
+              age: 0,
+              children: [{ name: '张三', age: 30 }],
+            },
+          ],
+        },
+      ]),
+    })
+    expect(rows(el).length).toBe(1)
+    const first = el.shadowRoot!.querySelector('td button.toggle') as HTMLButtonElement
+    first.click()
+    // 展开总部 → 研发部 出现（depth 1）
+    expect(rows(el).length).toBe(2)
+    const second = el.shadowRoot!.querySelectorAll('td button.toggle')[1] as HTMLButtonElement
+    second.click()
+    // 再展开研发部 → 张三 出现（depth 2，缩进 16 + 48 = 64px）
+    expect(rows(el).length).toBe(3)
+    const cell = rows(el)[2]!.querySelector('td') as HTMLElement
+    expect(cell.style.paddingLeft).toBe('64px')
+  })
+})
+

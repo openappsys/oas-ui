@@ -10,9 +10,21 @@ export interface TableColumn {
   /** 固定列：'left' | 'right'（配合 sticky 定位实现横向滚动时固定） */
   fixed?: 'left' | 'right'
   render?: (row: Record<string, unknown>) => string
+  /** 合计：'sum' | 'avg' | 'count'（列级简单配置；复杂配置走表格级 summary 属性） */
+  summary?: 'sum' | 'avg' | 'count'
 }
 
 export type SortOrder = '' | 'asc' | 'desc'
+
+/** 合计类型：求和 / 平均 / 计数 */
+export type SummaryType = 'sum' | 'avg' | 'count'
+
+export interface SummaryConfig {
+  key: string
+  type: SummaryType
+  /** 合计行首列展示的标签（不配置时用默认文案） */
+  label?: string
+}
 
 interface ColumnOffset {
   fixed: 'left' | 'right'
@@ -81,6 +93,14 @@ th[data-fixed='right'], td[data-fixed='right'] {
   z-index: 1;
   background: var(--oas-color-bg);
 }
+/* 斑马纹：奇数行浅底（hover/selected 规则在其后声明，自动覆盖） */
+tr.row[data-stripe='odd'] td {
+  background: var(--oas-color-bg-hover);
+}
+tr.row[data-stripe='odd'] td[data-fixed='left'],
+tr.row[data-stripe='odd'] td[data-fixed='right'] {
+  background: var(--oas-color-bg-hover);
+}
 tr.row[data-selected='true'] td[data-fixed='left'],
 tr.row[data-selected='true'] td[data-fixed='right'] {
   background: var(--oas-color-primary-soft, rgba(24, 144, 255, 0.08));
@@ -91,6 +111,16 @@ td {
 }
 tr:last-child td {
   border-bottom: none;
+}
+/* 完整边框：单元格右/下描边成网格，四边由 :host 外框兜底 */
+:host([bordered]) th,
+:host([bordered]) td {
+  border-right: 1px solid var(--oas-color-border);
+  border-bottom: 1px solid var(--oas-color-border);
+}
+:host([bordered]) th:last-child,
+:host([bordered]) td:last-child {
+  border-right: none;
 }
 tr.row:hover td {
   background: var(--oas-color-bg-hover);
@@ -147,9 +177,47 @@ tr.spacer td {
 }
 td.align-center { text-align: center; }
 td.align-right { text-align: right; }
+/* 展开/收起按钮（树形 + 可展开行共用） */
+.toggle {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  padding: 0;
+  line-height: 1;
+  vertical-align: middle;
+}
+.toggle.open {
+  transform: rotate(90deg);
+}
+td.expand-toggle-cell,
+th.expand-toggle-cell {
+  width: 40px;
+  text-align: center;
+}
+/* 可展开行的内容行 */
+tr.expand-row td {
+  background: var(--oas-color-bg);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+/* 合计行（表尾） */
+tr.summary td {
+  background: var(--oas-color-bg-hover);
+  font-weight: 600;
+  border-top: 1px solid var(--oas-color-border);
+}
+tr.summary td[data-fixed='left'],
+tr.summary td[data-fixed='right'] {
+  background: var(--oas-color-bg-hover);
+}
 `
 
 const CHECK_CELL_WIDTH = 40
+const EXPAND_CELL_WIDTH = 40
 
 export class OASTable extends OASElement {
   static override get observedAttributes(): string[] {
@@ -163,6 +231,10 @@ export class OASTable extends OASElement {
       'loading',
       'height',
       'row-height',
+      'stripe',
+      'bordered',
+      'expanded',
+      'summary',
     ]
   }
 
@@ -170,6 +242,8 @@ export class OASTable extends OASElement {
   private _data: Array<Record<string, unknown>> = []
   private scrollRaf = 0
   private wrap: HTMLElement | null = null
+  /** 是否可展开行（任一数据行存在非空 expand 字段） */
+  private _expandable = false
 
   /**
    * data/columns 同时支持 attribute 与 property 赋值：
@@ -224,8 +298,11 @@ export class OASTable extends OASElement {
     const sortOrder = this.getAttr('sort-order', '') as SortOrder
     const rowKey = this.getAttr('row-key', 'key')
     const selected = this.getAttr('selected', '').split(',').filter(Boolean)
+    const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
 
-    const sorted = this.sortData(sortKey, sortOrder)
+    const flat = this.buildFlat(sortKey, sortOrder, rowKey)
+    const display = this.visibleFlat(flat, expanded, rowKey)
+    const summaryConfigs = this.buildSummaryConfigs()
 
     const layout = this.computeLayout()
     const virtual = this.isVirtual()
@@ -253,10 +330,9 @@ export class OASTable extends OASElement {
       selectAll.type = 'checkbox'
       selectAll.setAttribute('aria-label', this.t('table.selectAll'))
       selectAll.checked =
-        sorted.length > 0 &&
-        sorted.every((r) => selected.includes(String(r[rowKey] ?? JSON.stringify(r))))
+        flat.length > 0 && flat.every((f) => selected.includes(String(f.row[rowKey] ?? JSON.stringify(f.row))))
       selectAll.addEventListener('change', () => {
-        const keys = sorted.map((r) => String(r[rowKey] ?? JSON.stringify(r)))
+        const keys = flat.map((f) => String(f.row[rowKey] ?? JSON.stringify(f.row)))
         this.setAttribute('selected', selectAll.checked ? keys.join(',') : '')
         this.emit('check', { keys: selectAll.checked ? keys : [] })
         this.update()
@@ -279,13 +355,18 @@ export class OASTable extends OASElement {
       if (col.width) th.style.width = col.width
       tr.appendChild(th)
     }
+    if (this._expandable) {
+      const th = document.createElement('th')
+      th.className = 'expand-toggle-cell'
+      tr.appendChild(th)
+    }
     head.appendChild(tr)
 
     if (this.hasAttr('loading')) {
       const loadingTr = document.createElement('tr')
       loadingTr.setAttribute('part', 'loading-row')
       const loadingTd = document.createElement('td')
-      loadingTd.colSpan = this._columns.length + (this.hasAttr('checkable') ? 1 : 0)
+      loadingTd.colSpan = this.columnCount()
       loadingTd.className = 'loading'
       const spin = document.createElement('span')
       spin.className = 'spin'
@@ -295,10 +376,10 @@ export class OASTable extends OASElement {
       return
     }
 
-    if (sorted.length === 0) {
+    if (display.length === 0) {
       const emptyTr = document.createElement('tr')
       const emptyTd = document.createElement('td')
-      emptyTd.colSpan = this._columns.length + (this.hasAttr('checkable') ? 1 : 0)
+      emptyTd.colSpan = this.columnCount()
       emptyTd.className = 'empty'
       emptyTd.textContent = this.getAttr('empty-text', this.t('table.empty'))
       emptyTr.appendChild(emptyTd)
@@ -307,26 +388,41 @@ export class OASTable extends OASElement {
     }
 
     if (virtual) {
-      this.renderVirtualBody(body, sorted, rowKey, selected, layout)
+      this.renderVirtualBody(body, display, rowKey, selected, expanded, layout)
     } else {
-      for (const row of sorted) {
-        body.appendChild(this.buildRow(row, rowKey, selected, layout))
+      for (let i = 0; i < display.length; i++) {
+        const f = display[i]!
+        body.appendChild(
+          f.kind === 'expand'
+            ? this.buildExpandRow(f)
+            : this.buildRow(f, i, rowKey, selected, expanded, layout),
+        )
       }
+    }
+
+    if (summaryConfigs.length > 0 && flat.length > 0) {
+      body.appendChild(this.buildSummaryRow(summaryConfigs, flat, layout))
     }
   }
 
   /** 渲染一行数据（非虚拟模式逐行调用；虚拟模式仅窗口内行调用） */
   private buildRow(
-    row: Record<string, unknown>,
+    flat: FlatRow,
+    index: number,
     rowKey: string,
     selected: string[],
+    expanded: Set<string>,
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
   ): HTMLTableRowElement {
+    const row = flat.row
     const tr = document.createElement('tr')
     tr.className = 'row'
     tr.setAttribute('part', 'row')
     const key = String(row[rowKey] ?? JSON.stringify(row))
     tr.setAttribute('data-selected', String(selected.includes(key)))
+    if (this.hasAttr('stripe')) {
+      tr.setAttribute('data-stripe', index % 2 === 1 ? 'odd' : 'even')
+    }
     if (this.hasAttr('checkable')) {
       const td = document.createElement('td')
       td.className = 'check-cell'
@@ -359,29 +455,82 @@ export class OASTable extends OASElement {
       this.emit('row-click', { row, key })
       this.update()
     })
-    for (const col of this._columns) {
+    const children = row.children
+    const hasChildren = Array.isArray(children) && children.length > 0
+    for (let i = 0; i < this._columns.length; i++) {
+      const col = this._columns[i]!
       const td = document.createElement('td')
       this.applyColumnOffset(td, col, layout)
       if (col.align) td.className = `align-${col.align}`
+      if (i === 0) {
+        // 树形：按层级缩进
+        if (hasChildren || flat.depth > 0) {
+          td.style.paddingLeft = `${16 + flat.depth * 24}px`
+        }
+        // 树形：父行展开/收起按钮
+        if (hasChildren) {
+          const btn = document.createElement('button')
+          btn.className = `toggle${expanded.has(key) ? ' open' : ''}`
+          btn.setAttribute('aria-label', this.t('table.expand'))
+          btn.setAttribute('aria-expanded', String(expanded.has(key)))
+          btn.textContent = '›'
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            this.toggleExpand(key, !expanded.has(key))
+          })
+          td.appendChild(btn)
+        }
+      }
       const raw = row[col.key]
       const cell = col.render ? col.render(row) : String(raw ?? '')
-      td.textContent = cell
+      td.appendChild(document.createTextNode(cell))
       tr.appendChild(td)
     }
+    if (this._expandable) {
+      // 可展开行：行尾展开/收起按钮
+      const td = document.createElement('td')
+      td.className = 'expand-toggle-cell'
+      if (typeof row.expand === 'string' && row.expand.length > 0) {
+        const btn = document.createElement('button')
+        btn.className = `toggle${expanded.has(key) ? ' open' : ''}`
+        btn.setAttribute('aria-label', this.t('table.expand'))
+        btn.setAttribute('aria-expanded', String(expanded.has(key)))
+        btn.textContent = '›'
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          this.toggleExpand(key, !expanded.has(key))
+        })
+        td.appendChild(btn)
+      }
+      tr.appendChild(td)
+    }
+    return tr
+  }
+
+  /** 渲染可展开行的内容行（整行 colspan 展示自定义内容） */
+  private buildExpandRow(flat: FlatRow): HTMLTableRowElement {
+    const tr = document.createElement('tr')
+    tr.className = 'expand-row'
+    tr.setAttribute('part', 'expand-row')
+    const td = document.createElement('td')
+    td.colSpan = this.columnCount()
+    td.innerHTML = flat.expandContent ?? ''
+    tr.appendChild(td)
     return tr
   }
 
   /** 虚拟滚动：占位行 + 可见窗口行 */
   private renderVirtualBody(
     body: HTMLElement,
-    sorted: Array<Record<string, unknown>>,
+    display: FlatRow[],
     rowKey: string,
     selected: string[],
+    expanded: Set<string>,
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
   ): void {
     const scrollTop = this.wrap ? this.wrap.scrollTop : 0
-    const win = computeVirtualWindow(scrollTop, this.tableHeight(), this.rowHeight(), sorted.length)
-    const colSpan = this._columns.length + (this.hasAttr('checkable') ? 1 : 0)
+    const win = computeVirtualWindow(scrollTop, this.tableHeight(), this.rowHeight(), display.length)
+    const colSpan = this.columnCount()
 
     const topSpacer = document.createElement('tr')
     topSpacer.className = 'spacer'
@@ -392,8 +541,11 @@ export class OASTable extends OASElement {
     body.appendChild(topSpacer)
 
     for (let i = win.start; i < win.end; i++) {
-      const row = sorted[i]!
-      const tr = this.buildRow(row, rowKey, selected, layout)
+      const f = display[i]!
+      const tr =
+        f.kind === 'expand'
+          ? this.buildExpandRow(f)
+          : this.buildRow(f, i, rowKey, selected, expanded, layout)
       tr.style.height = `${this.rowHeight()}px`
       body.appendChild(tr)
     }
@@ -402,7 +554,7 @@ export class OASTable extends OASElement {
     bottomSpacer.className = 'spacer'
     const bottomTd = document.createElement('td')
     bottomTd.colSpan = colSpan
-    bottomTd.style.height = `${(sorted.length - win.end) * this.rowHeight()}px`
+    bottomTd.style.height = `${(display.length - win.end) * this.rowHeight()}px`
     bottomSpacer.appendChild(bottomTd)
     body.appendChild(bottomSpacer)
   }
@@ -432,7 +584,7 @@ export class OASTable extends OASElement {
         leftAccum += columnWidth(col)
       }
     }
-    let rightAccum = 0
+    let rightAccum = this._expandable ? EXPAND_CELL_WIDTH : 0
     for (let i = this._columns.length - 1; i >= 0; i--) {
       const col = this._columns[i]!
       if (col.fixed === 'right') {
@@ -443,20 +595,181 @@ export class OASTable extends OASElement {
     return { offsets, hasFixed }
   }
 
-  private sortData(sortKey: string, sortOrder: SortOrder): Array<Record<string, unknown>> {
-    const sorted = [...this._data]
-    if (sortKey && (sortOrder === 'asc' || sortOrder === 'desc')) {
-      sorted.sort((a, b) => {
-        const av = a[sortKey]
-        const bv = b[sortKey]
-        if (typeof av === 'number' && typeof bv === 'number')
-          return sortOrder === 'asc' ? av - bv : bv - av
-        return sortOrder === 'asc'
-          ? String(av).localeCompare(String(bv))
-          : String(bv).localeCompare(String(av))
-      })
+  /** 排序比较器：数字按数值、其余按字符串 localeCompare（与既有 sortData 一致） */
+  private compareRows(
+    a: Record<string, unknown>,
+    b: Record<string, unknown>,
+    sortKey: string,
+    sortOrder: SortOrder,
+  ): number {
+    const av = a[sortKey]
+    const bv = b[sortKey]
+    if (typeof av === 'number' && typeof bv === 'number')
+      return sortOrder === 'asc' ? av - bv : bv - av
+    return sortOrder === 'asc'
+      ? String(av).localeCompare(String(bv))
+      : String(bv).localeCompare(String(av))
+  }
+
+  /**
+   * 构建扁平行列表（含树形 children 递归）。排序在各层级兄弟间独立进行，不破坏父子结构；
+   * 返回的 flat 是完整列表（树形含隐藏子行），visibleFlat 再做可见性过滤。
+   */
+  private buildFlat(
+    sortKey: string,
+    sortOrder: SortOrder,
+    rowKey: string,
+  ): FlatRow[] {
+    const flat: FlatRow[] = []
+    const walk = (nodes: Array<Record<string, unknown>>, depth: number, parent?: string): void => {
+      const list = [...nodes]
+      if (sortKey && (sortOrder === 'asc' || sortOrder === 'desc')) {
+        list.sort((a, b) => this.compareRows(a, b, sortKey, sortOrder))
+      }
+      for (const row of list) {
+        flat.push({ row, depth, parent, kind: 'data' })
+        const children = row.children
+        if (Array.isArray(children) && children.length > 0) {
+          walk(children, depth + 1, String(row[rowKey] ?? JSON.stringify(row)))
+        }
+      }
     }
-    return sorted
+    walk(this._data, 0)
+    return flat
+  }
+
+  /**
+   * 可见行列表：树形数据按 expanded（父行 key）过滤；可展开行的内容行紧随数据行。
+   * 父行有 children 时优先展示子树（不叠加 expand 内容行）。
+   */
+  private visibleFlat(flat: FlatRow[], expanded: Set<string>, rowKey: string): FlatRow[] {
+    const out: FlatRow[] = []
+    for (const f of flat) {
+      if (f.parent !== undefined && !expanded.has(f.parent)) continue
+      out.push(f)
+      const row = f.row
+      const children = row.children
+      const hasChildren = Array.isArray(children) && children.length > 0
+      const key = String(row[rowKey] ?? JSON.stringify(row))
+      if (
+        !hasChildren &&
+        expanded.has(key) &&
+        typeof row.expand === 'string' &&
+        row.expand.length > 0
+      ) {
+        out.push({ row, depth: f.depth, parent: f.parent, kind: 'expand', expandContent: row.expand })
+      }
+    }
+    return out
+  }
+
+  /** 展开/收起某行（树形子行或可展开内容行共用），派发 oas-expand */
+  private toggleExpand(key: string, expanded: boolean): void {
+    const set = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
+    if (expanded) set.add(key)
+    else set.delete(key)
+    this.setAttribute('expanded', [...set].join(','))
+    this.emit('expand', { key, expanded })
+    this.update()
+  }
+
+  /** 总列数（勾选列 + 数据列 + 可展开行尾列） */
+  private columnCount(): number {
+    return this._columns.length + (this.hasAttr('checkable') ? 1 : 0) + (this._expandable ? 1 : 0)
+  }
+
+  /** 汇总合计配置：表格级 summary 属性（JSON 数组）+ 列级 summary 字段 */
+  private buildSummaryConfigs(): SummaryConfig[] {
+    const configs: SummaryConfig[] = []
+    const raw = this.getAttr('summary', '')
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) {
+          for (const item of parsed) {
+            if (item && typeof item.key === 'string' && isSummaryType(item.type)) {
+              configs.push({
+                key: item.key,
+                type: item.type,
+                label: typeof item.label === 'string' && item.label ? item.label : undefined,
+              })
+            }
+          }
+        }
+      } catch {
+        /* 非法 JSON 忽略，回退列级配置 */
+      }
+    }
+    for (const col of this._columns) {
+      if (isSummaryType(col.summary) && !configs.some((c) => c.key === col.key)) {
+        configs.push({ key: col.key, type: col.summary })
+      }
+    }
+    return configs
+  }
+
+  /** 按类型计算各列聚合值（对完整扁平行计算，树形含隐藏子行，结果不随展开状态漂移） */
+  private computeSummary(configs: SummaryConfig[], flat: FlatRow[]): Map<string, string> {
+    const values = new Map<string, string>()
+    for (const cfg of configs) {
+      let sum = 0
+      let cnt = 0
+      for (const f of flat) {
+        const v = f.row[cfg.key]
+        if (cfg.type === 'count') {
+          if (v !== undefined && v !== null && v !== '') cnt++
+          continue
+        }
+        const n = typeof v === 'number' ? v : Number(v)
+        if (Number.isFinite(n)) {
+          sum += n
+          cnt++
+        }
+      }
+      if (cfg.type === 'sum') values.set(cfg.key, String(sum))
+      else if (cfg.type === 'avg') values.set(cfg.key, String(cnt ? Math.round((sum / cnt) * 100) / 100 : 0))
+      else values.set(cfg.key, String(cnt))
+    }
+    return values
+  }
+
+  /** 渲染合计行（表尾，紧随全部数据行之后） */
+  private buildSummaryRow(
+    configs: SummaryConfig[],
+    flat: FlatRow[],
+    layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
+  ): HTMLTableRowElement {
+    const tr = document.createElement('tr')
+    tr.className = 'summary'
+    tr.setAttribute('part', 'summary-row')
+    const values = this.computeSummary(configs, flat)
+    const label = configs.find((c) => c.label)?.label ?? this.t('table.summary')
+    let labelPlaced = false
+    if (this.hasAttr('checkable')) {
+      const td = document.createElement('td')
+      td.className = 'check-cell'
+      tr.appendChild(td)
+    }
+    for (const col of this._columns) {
+      const td = document.createElement('td')
+      this.applyColumnOffset(td, col, layout)
+      if (col.align) td.className = `align-${col.align}`
+      const cfg = configs.find((c) => c.key === col.key)
+      if (cfg) {
+        td.textContent = values.get(cfg.key) ?? ''
+      } else if (!labelPlaced) {
+        // 首列（无聚合配置的列）放标签，其余空格
+        td.textContent = label
+        labelPlaced = true
+      }
+      tr.appendChild(td)
+    }
+    if (this._expandable) {
+      const td = document.createElement('td')
+      td.className = 'expand-toggle-cell'
+      tr.appendChild(td)
+    }
+    return tr
   }
 
   private isVirtual(): boolean {
@@ -496,14 +809,16 @@ export class OASTable extends OASElement {
       const sortOrder = this.getAttr('sort-order', '') as SortOrder
       const rowKey = this.getAttr('row-key', 'key')
       const selected = this.getAttr('selected', '').split(',').filter(Boolean)
-      const sorted = this.sortData(sortKey, sortOrder)
+      const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
+      const flat = this.buildFlat(sortKey, sortOrder, rowKey)
+      const display = this.visibleFlat(flat, expanded, rowKey)
       body.innerHTML = ''
-      this.renderVirtualBody(body, sorted, rowKey, selected, this.computeLayout())
+      this.renderVirtualBody(body, display, rowKey, selected, expanded, this.computeLayout())
       const win = computeVirtualWindow(
         this.wrap!.scrollTop,
         this.tableHeight(),
         this.rowHeight(),
-        sorted.length,
+        display.length,
       )
       this.emit('scroll', { scrollTop: this.wrap!.scrollTop, start: win.start, end: win.end })
     })
@@ -522,6 +837,8 @@ export class OASTable extends OASElement {
     } catch {
       this._data = []
     }
+    // 任一（含嵌套 children）数据行存在非空 expand 字段 → 展示行尾展开列
+    this._expandable = this._data.some((r) => rowHasExpand(r))
   }
 }
 
@@ -532,4 +849,31 @@ function columnWidth(col: TableColumn): number {
     if (Number.isFinite(n)) return n
   }
   return 100
+}
+
+/** 行（含嵌套 children）是否存在非空 expand 内容 */
+function rowHasExpand(row: Record<string, unknown>): boolean {
+  if (typeof row.expand === 'string' && row.expand.length > 0) return true
+  const children = row.children
+  if (Array.isArray(children)) {
+    return children.some(
+      (c) => c && typeof c === 'object' && rowHasExpand(c as Record<string, unknown>),
+    )
+  }
+  return false
+}
+
+/** 是否为合法合计类型 */
+function isSummaryType(v: unknown): v is SummaryType {
+  return v === 'sum' || v === 'avg' || v === 'count'
+}
+
+/** 扁平行：树形/可展开行统一渲染单位 */
+interface FlatRow {
+  row: Record<string, unknown>
+  depth: number
+  parent?: string
+  kind: 'data' | 'expand'
+  /** expand 类型行的自定义内容（来自 row.expand 字段） */
+  expandContent?: string
 }

@@ -8,6 +8,10 @@ export interface TreeNode {
   label: string
   children?: TreeNode[]
   disabled?: boolean
+  /** 懒加载：显式叶子（无可加载子节点，不显示展开箭头） */
+  isLeaf?: boolean
+  /** 懒加载：已加载完成标记（children 已就绪或确认无子节点） */
+  loaded?: boolean
 }
 
 interface FlatRow {
@@ -23,7 +27,13 @@ const STYLE = `
   color: var(--oas-color-text-primary);
   font-size: var(--oas-font-size-md);
 }
+.tree.drop-inner {
+  outline: 2px dashed var(--oas-color-primary);
+  outline-offset: -2px;
+  border-radius: var(--oas-radius-md);
+}
 .row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--oas-space-1);
@@ -44,6 +54,27 @@ const STYLE = `
 .row[data-disabled='true'] .label {
   color: var(--oas-color-text-secondary);
 }
+.row.dragging {
+  opacity: 0.5;
+}
+.row.drop-inner {
+  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
+}
+.row.drop-before::before,
+.row.drop-after::after {
+  content: '';
+  position: absolute;
+  left: var(--oas-space-1);
+  right: var(--oas-space-1);
+  height: 2px;
+  background: var(--oas-color-primary);
+}
+.row.drop-before::before {
+  top: 0;
+}
+.row.drop-after::after {
+  bottom: 0;
+}
 .toggle {
   width: 20px;
   height: 20px;
@@ -61,6 +92,28 @@ const STYLE = `
 .toggle.open {
   transform: rotate(90deg);
 }
+.toggle-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.toggle-spinner::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--oas-color-border);
+  border-top-color: var(--oas-color-primary);
+  border-radius: 50%;
+  animation: oas-tree-spin 0.8s linear infinite;
+}
+@keyframes oas-tree-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .check {
   accent-color: var(--oas-color-primary);
   margin: 0;
@@ -77,6 +130,7 @@ const STYLE = `
  */
 const VIRTUAL_ROW_STYLE = `
 .row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--oas-space-1);
@@ -99,6 +153,27 @@ const VIRTUAL_ROW_STYLE = `
 .row[data-disabled='true'] .label {
   color: var(--oas-color-text-secondary);
 }
+.row.dragging {
+  opacity: 0.5;
+}
+.row.drop-inner {
+  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
+}
+.row.drop-before::before,
+.row.drop-after::after {
+  content: '';
+  position: absolute;
+  left: var(--oas-space-1);
+  right: var(--oas-space-1);
+  height: 2px;
+  background: var(--oas-color-primary);
+}
+.row.drop-before::before {
+  top: 0;
+}
+.row.drop-after::after {
+  bottom: 0;
+}
 .toggle {
   width: 20px;
   height: 20px;
@@ -115,6 +190,28 @@ const VIRTUAL_ROW_STYLE = `
 }
 .toggle.open {
   transform: rotate(90deg);
+}
+.toggle-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.toggle-spinner::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--oas-color-border);
+  border-top-color: var(--oas-color-primary);
+  border-radius: 50%;
+  animation: oas-tree-spin 0.8s linear infinite;
+}
+@keyframes oas-tree-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .check {
   accent-color: var(--oas-color-primary);
@@ -135,11 +232,28 @@ const VIRTUAL_ROW_STYLE = `
  */
 export class OASTree extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['data', 'selected', 'checked', 'checkable', 'expanded', 'height', 'row-height']
+    return [
+      'data',
+      'selected',
+      'checked',
+      'checkable',
+      'expanded',
+      'height',
+      'row-height',
+      'lazy',
+      'draggable',
+    ]
   }
+
+  /** 懒加载回调：展开未加载节点时触发 `{ key }`，宿主回填子节点后重设 data 属性 */
+  load?: (payload: { key: string }) => void
 
   private flat: FlatRow[] = []
   private vlist: OASVirtualList | null = null
+  /** 正在懒加载的节点 key 集合 */
+  private loading = new Set<string>()
+  /** 当前正在拖拽的节点 key */
+  private dragKey: string | null = null
 
   protected override render(): void {
     this.shadow.innerHTML = `
@@ -164,6 +278,30 @@ export class OASTree extends OASElement {
         this.renderRow(detail.item, detail.element)
       }
     }) as EventListener)
+    // 根容器拖放：拖到空白处视为移入根（dropKey 为空字符串、position 'inner'）
+    const wrap = this.shadow.querySelector<HTMLElement>('.tree')
+    if (wrap) {
+      wrap.addEventListener('dragover', (e: Event) => {
+        if (!this.dragKey) return
+        const target = e.target as HTMLElement
+        if (target.closest('[part="row"]')) return
+        e.preventDefault()
+        const dt = (e as DragEvent).dataTransfer
+        if (dt) dt.dropEffect = 'move'
+        wrap.classList.add('drop-inner')
+      })
+      wrap.addEventListener('dragleave', () => wrap.classList.remove('drop-inner'))
+      wrap.addEventListener('drop', (e: Event) => {
+        const target = e.target as HTMLElement
+        if (target.closest('[part="row"]')) return
+        e.preventDefault()
+        wrap.classList.remove('drop-inner')
+        if (this.dragKey) {
+          this.emit('node-drop', { dragKey: this.dragKey, dropKey: '', position: 'inner' })
+          this.dragKey = null
+        }
+      })
+    }
     this.update()
   }
 
@@ -215,22 +353,45 @@ export class OASTree extends OASElement {
     row.setAttribute('aria-level', String(depth + 1))
     row.setAttribute('data-disabled', String(!!node.disabled))
     row.setAttribute('data-selected', String(node.key === selected))
-    if (node.children?.length) {
-      const toggle = document.createElement('button')
-      toggle.className = `toggle${expanded.has(node.key) ? ' open' : ''}`
-      toggle.setAttribute('part', 'toggle')
-      toggle.setAttribute('aria-label', this.t('tree.expand'))
-      toggle.setAttribute('aria-expanded', String(expanded.has(node.key)))
-      toggle.textContent = '›'
-      toggle.addEventListener('click', (e) => {
-        e.stopPropagation()
-        const exp = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
-        if (exp.has(node.key)) exp.delete(node.key)
-        else exp.add(node.key)
-        this.setAttribute('expanded', [...exp].join(','))
-        this.update()
-      })
-      row.appendChild(toggle)
+    if (this.isExpandable(node)) {
+      if (this.loading.has(node.key)) {
+        const spinner = document.createElement('span')
+        spinner.className = 'toggle-spinner'
+        spinner.setAttribute('part', 'spinner')
+        spinner.setAttribute('aria-label', this.t('tree.loading'))
+        row.appendChild(spinner)
+      } else {
+        const toggle = document.createElement('button')
+        toggle.className = `toggle${expanded.has(node.key) ? ' open' : ''}`
+        toggle.setAttribute('part', 'toggle')
+        toggle.setAttribute('aria-label', this.t('tree.expand'))
+        toggle.setAttribute('aria-expanded', String(expanded.has(node.key)))
+        toggle.textContent = '›'
+        toggle.addEventListener('click', (e) => {
+          e.stopPropagation()
+          const exp = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
+          if (exp.has(node.key)) {
+            exp.delete(node.key)
+          } else {
+            exp.add(node.key)
+            // 懒加载：展开未加载节点时触发加载（children 尚未回填、非显式叶子、未标记已加载）
+            if (
+              this.hasAttr('lazy') &&
+              !node.children?.length &&
+              !node.isLeaf &&
+              node.loaded !== true &&
+              !this.loading.has(node.key)
+            ) {
+              this.loading.add(node.key)
+              this.emit('load', { key: node.key })
+              this.load?.({ key: node.key })
+            }
+          }
+          this.setAttribute('expanded', [...exp].join(','))
+          this.update()
+        })
+        row.appendChild(toggle)
+      }
     } else {
       const toggle = document.createElement('button')
       toggle.className = 'toggle leaf'
@@ -271,7 +432,86 @@ export class OASTree extends OASElement {
         this.update()
       }
     })
+    if (this.hasAttr('draggable')) this.bindDrag(row, node)
     container.appendChild(row)
+  }
+
+  /**
+   * 是否可展开。常规模式仅 children 非空；懒加载模式下未加载节点
+   * （无 children、非 isLeaf、未标记 loaded）也可展开，点击触发加载。
+   */
+  private isExpandable(node: TreeNode): boolean {
+    if (node.children?.length) return true
+    if (!this.hasAttr('lazy')) return false
+    if (node.isLeaf || node.loaded === true) return false
+    if (node.children !== undefined) return false // children: [] → 已加载为空
+    return true
+  }
+
+  /** 拖拽行：dragstart 记录 key，dragover/drop 计算插入位置并派发 oas-node-drop */
+  private bindDrag(row: HTMLElement, node: TreeNode): void {
+    if (node.disabled) return
+    row.draggable = true
+    row.addEventListener('dragstart', ((e: DragEvent) => {
+      this.dragKey = node.key
+      row.classList.add('dragging')
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move'
+        e.dataTransfer.setData('text/plain', node.key)
+      }
+    }) as EventListener)
+    row.addEventListener('dragend', (() => {
+      this.dragKey = null
+      row.classList.remove('dragging')
+      this.clearDropMarkers()
+    }) as EventListener)
+    row.addEventListener('dragover', ((e: DragEvent) => {
+      if (!this.dragKey || this.dragKey === node.key || node.disabled) return
+      e.preventDefault()
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+      const pos = this.dropPosition(row, e, node)
+      this.clearDropMarkers()
+      row.classList.add(pos === 'before' ? 'drop-before' : pos === 'after' ? 'drop-after' : 'drop-inner')
+    }) as EventListener)
+    row.addEventListener('dragleave', (() => {
+      row.classList.remove('drop-before', 'drop-after', 'drop-inner')
+    }) as EventListener)
+    row.addEventListener('drop', ((e: DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      this.clearDropMarkers()
+      if (this.dragKey && this.dragKey !== node.key && !node.disabled) {
+        this.emit('node-drop', {
+          dragKey: this.dragKey,
+          dropKey: node.key,
+          position: this.dropPosition(row, e, node),
+        })
+      }
+    }) as EventListener)
+  }
+
+  /** 按鼠标在行内的纵向比例判定插入位置：上 1/4 before、下 1/4 after、中部 inner（目标可展开时） */
+  private dropPosition(row: HTMLElement, e: DragEvent, node: TreeNode): 'before' | 'after' | 'inner' {
+    const rect = row.getBoundingClientRect()
+    const ratio = rect.height ? (e.clientY - rect.top) / rect.height : 0.5
+    if (ratio < 0.25) return 'before'
+    if (ratio > 0.75) return 'after'
+    if (this.isExpandable(node)) return 'inner'
+    return ratio < 0.5 ? 'before' : 'after'
+  }
+
+  /** 清空所有行与根容器的拖拽落点反馈 */
+  private clearDropMarkers(): void {
+    this.shadow.querySelector<HTMLElement>('.tree')?.classList.remove('drop-inner')
+    for (const el of this.allRows()) el.classList.remove('drop-before', 'drop-after', 'drop-inner')
+  }
+
+  /** 收集树 shadow 与虚拟列表 shadow 内的所有行（虚拟/非虚拟共用） */
+  private allRows(): HTMLElement[] {
+    const out: HTMLElement[] = [...this.shadow.querySelectorAll<HTMLElement>('[part="row"]')]
+    const root = this.vlist?.shadowRoot
+    if (root) out.push(...root.querySelectorAll<HTMLElement>('[part="row"]'))
+    return out
   }
 
   private buildFlat(): void {
@@ -286,6 +526,13 @@ export class OASTree extends OASElement {
     const walk = (nodes: TreeNode[], depth: number, parent?: string): void => {
       for (const node of nodes) {
         this.flat.push({ node, depth, parent })
+        // 宿主回填子节点（children 就绪 / isLeaf / loaded）后结束加载态，占位符随之消失
+        if (
+          this.loading.has(node.key) &&
+          (node.children !== undefined || node.isLeaf || node.loaded === true)
+        ) {
+          this.loading.delete(node.key)
+        }
         if (node.children?.length) walk(node.children, depth + 1, node.key)
       }
     }

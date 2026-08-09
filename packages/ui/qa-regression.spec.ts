@@ -258,3 +258,44 @@ test('timeline 圆点中心与连接线中心对齐', async ({ page }) => {
   expect(r.dotWidth).toBe(10)
   expect(r.diff).toBeLessThanOrEqual(1)
 })
+
+test('tabs tab-position=right：tab 内容右对齐（justify-content: flex-end）', async ({ page }) => {
+  // 曾现 bug：纵向 right 模式下 .tab 随 tablist 拉伸占满宽，但内容仍左对齐，与 left 模式不镜像。
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tabs[tab-position="right"]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-tabs[tab-position="right"]')!
+    const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"]')!
+    const cs = getComputedStyle(tab)
+    return {
+      hostRightClass: el.classList.contains('oas-tabs--right'),
+      justifyContent: cs.justifyContent,
+    }
+  })
+  expect(r.hostRightClass).toBe(true)
+  expect(r.justifyContent).toBe('flex-end')
+})
+
+test('select multiple：chip 结构完整（label + 移除按钮）且样式不拥挤', async ({ page }) => {
+  // 曾现 bug：chip 无行高、label 与 × 间距仅 2px、padding 只有横向，文字贴边、行间粘连。
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-select[multiple][value]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-select[multiple][value]')!
+    const chip = el.shadowRoot!.querySelector<HTMLElement>('.chip')
+    if (!chip) return { chipCount: 0, hasLabel: false, hasButton: false, height: '', gap: '' }
+    const cs = getComputedStyle(chip)
+    return {
+      chipCount: el.shadowRoot!.querySelectorAll('.chip').length,
+      hasLabel: !!chip.querySelector('span'),
+      hasButton: !!chip.querySelector('button'),
+      height: cs.height,
+      gap: cs.gap,
+    }
+  })
+  expect(r.chipCount).toBeGreaterThan(0)
+  expect(r.hasLabel).toBe(true)
+  expect(r.hasButton).toBe(true)
+  expect(r.height).toBe('20px')
+  expect(r.gap).toBe('4px')
+})

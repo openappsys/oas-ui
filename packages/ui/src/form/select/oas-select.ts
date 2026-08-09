@@ -75,7 +75,9 @@ const STYLE = `
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  box-sizing: border-box;
+  height: 20px;
+  gap: var(--oas-space-1);
   background: var(--oas-color-bg-hover);
   border-radius: var(--oas-radius-sm);
   padding: 0 var(--oas-space-1);

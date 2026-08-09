@@ -77,6 +77,52 @@
 
 设置 `height` 开启虚拟滚动（搭配 `row-height` 定高），表格只渲染可见窗口内的行，配合固定列与排序/多选使用；滚动派发 `oas-scroll`。
 
+## 斑马纹与边框
+
+<DemoBlock title="斑马纹（stripe）">
+  <div style="width: 100%">
+    <oas-table stripe columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","position":"测试工程师"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="完整边框（bordered）">
+  <div style="width: 100%">
+    <oas-table bordered columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","position":"测试工程师"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+设置 `stripe` 交替奇数/偶数行底色，设置 `bordered` 为单元格绘制完整网格边框。
+
+## 合计行
+
+<DemoBlock title="合计行（summary）">
+  <div style="width: 100%">
+    <oas-table summary='[{"key":"age","type":"sum","label":"合计"},{"key":"score","type":"avg"}]' columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"score","title":"分数"},{"key":"city","title":"城市"}]' data='[{"name":"张三","age":30,"score":92,"city":"北京"},{"name":"李四","age":25,"score":88,"city":"上海"},{"name":"王五","age":35,"score":76,"city":"深圳"},{"name":"赵六","age":28,"score":95,"city":"杭州"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+`summary` 属性为 JSON 数组 `[{ key, type: 'sum' | 'avg' | 'count', label? }]`，表尾渲染合计行：`label` 显示在首个未聚合列，各聚合值显示在对应列；也支持在列配置上直接写 `summary: 'sum' | 'avg' | 'count'`。
+
+## 可展开行
+
+<DemoBlock title="可展开行（expand 字段）">
+  <div style="width: 100%">
+    <oas-table columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师","expand":"<div>更多信息：张三 负责前端架构与团队管理，2021 年入职。</div>"},{"name":"李四","age":25,"city":"上海","position":"产品经理","expand":"<div>更多信息：李四 主导产品规划与需求评审，2022 年入职。</div>"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+行数据存在非空 `expand` 字段时，表尾出现展开列，点击行尾按钮展开一整行展示自定义内容；展开状态保存在 `expanded` 属性（逗号分隔的 key 集合），切换时派发 `oas-expand`。
+
+## 树形数据
+
+<DemoBlock title="树形数据（children）">
+  <div style="width: 100%">
+    <oas-table columns='[{"key":"name","title":"部门 / 成员"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"}]' data='[{"name":"研发部","age":"","city":"","children":[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"}]},{"name":"产品部","age":"","city":"","children":[{"name":"王五","age":35,"city":"深圳"},{"name":"赵六","age":28,"city":"杭州"}]}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+行数据存在 `children` 数组时按树形渲染：父行首列出现展开按钮，子行按层级缩进；展开状态同样保存在 `expanded` 属性，切换时派发 `oas-expand`。
+
 ## 加载态
 
 <DemoBlock title="加载态">
@@ -191,8 +237,8 @@ onMounted(() => {
 
 | 属性                      | 说明                                                                               | 类型    | 默认值     |
 | ------------------------- | ---------------------------------------------------------------------------------- | ------- | ---------- |
-| `columns`                 | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render? }]`，JSON 字符串 | string  | `[]`       |
-| `data`                    | 行数据 `[{ [key]: value }]`，JSON 字符串                                           | string  | `[]`       |
+| `columns`                 | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`，JSON 字符串 | string  | `[]`       |
+| `data`                    | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串                       | string  | `[]`       |
 | `sort-key` / `sort-order` | 受控排序；`sort-order` 取 `asc` / `desc` / 空                                      | string  | —          |
 | `row-key`                 | 行唯一键字段                                                                       | string  | `key`      |
 | `selected`                | 选中行 key 集合（逗号分隔）                                                        | string  | —          |
@@ -201,8 +247,12 @@ onMounted(() => {
 | `loading`                 | 加载态：数据区显示加载占位行（表头保留）                                           | boolean | `false`    |
 | `height`                  | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行                        | number  | —          |
 | `row-height`              | 虚拟滚动每行固定高度（px）                                                         | number  | `40`       |
+| `stripe`                  | 斑马纹：奇数/偶数行交替浅底色                                                      | boolean | `false`    |
+| `bordered`                | 完整边框：单元格网格描边（外框由组件自带）                                         | boolean | `false`    |
+| `expanded`                | 已展开行 key 集合（逗号分隔；树形父行/可展开行共用）                               | string  | —          |
+| `summary`                 | 合计配置 `[{ key, type: 'sum'\|'avg'\|'count', label? }]`，JSON 字符串             | string  | —          |
 
-> 说明：`columns.render` 为函数类型，仅支持在 JS 侧构造后通过属性整体赋值，无法用 JSON 字符串表达；`fixed` 列建议显式声明 `width`（未声明时按 100px 兜底计算 sticky 偏移）。
+> 说明：`columns.render` 为函数类型，仅支持在 JS 侧构造后通过属性整体赋值，无法用 JSON 字符串表达；`fixed` 列建议显式声明 `width`（未声明时按 100px 兜底计算 sticky 偏移）。合计也可在列上直接写 `summary: 'sum' | 'avg' | 'count'`；`children`（树形子行）与 `expand`（可展开行内容）均为行数据字段。
 
 | 事件              | 说明                                                              |
 | ----------------- | ----------------------------------------------------------------- |
@@ -210,5 +260,6 @@ onMounted(() => {
 | `oas-row-click`   | 点击行（非 checkable 时同时切换选中），`detail: { row, key }`     |
 | `oas-check`       | 复选框选中变化，`detail: { keys: string[] }`                      |
 | `oas-scroll`      | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
+| `oas-expand`      | 行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }` |
 
-加载占位行部件为 `::part(loading-row)`，可单独定制样式。
+加载占位行部件为 `::part(loading-row)`，合计行 `::part(summary-row)`、展开内容行 `::part(expand-row)`，均可单独定制样式。

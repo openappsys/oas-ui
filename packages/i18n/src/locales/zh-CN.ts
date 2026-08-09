@@ -107,11 +107,14 @@ export const zhCN = {
   'table.loading': '加载中…',
   'table.empty': '暂无数据',
   'table.selectRow': '选择行 {key}',
+  'table.expand': '展开/收起',
+  'table.summary': '合计',
   // list（列表）
   'list.empty': '暂无数据',
   // tree（树形控件）
   'tree.expand': '展开/收起',
   'tree.select': '选择 {label}',
+  'tree.loading': '加载中…',
   // timeline（时间轴）
   'timeline.pending': '敬请期待',
   // carousel（轮播）

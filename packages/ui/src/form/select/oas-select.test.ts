@@ -84,6 +84,30 @@ describe('OASSelect', () => {
     expect(el.shadowRoot!.querySelectorAll('.chip').length).toBe(2)
   })
 
+  it('回归：多选 chip 渲染 label + 移除按钮（button ×），样式含固定高度与间距', () => {
+    const el = mount({ multiple: '', value: JSON.stringify(['apple', 'banana']) })
+    const chips = [...el.shadowRoot!.querySelectorAll('.chip')]
+    expect(chips.length).toBe(2)
+    const chip = chips[0]!
+    const label = chip.children[0] as HTMLElement
+    const rm = chip.children[1] as HTMLButtonElement
+    expect(label.textContent).toBe('苹果')
+    expect(rm.textContent).toBe('×')
+    expect(rm.getAttribute('aria-label')).toBeTruthy()
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    const chipRule = style.match(/\.chip\s*\{[^}]*\}/)?.[0] ?? ''
+    expect(chipRule).toContain('box-sizing: border-box')
+    expect(chipRule).toContain('height: 20px')
+    expect(chipRule).toContain('gap: var(--oas-space-1)')
+  })
+
+  it('回归：多选 chip 移除按钮可点击移除对应值', () => {
+    const el = mount({ multiple: '', value: JSON.stringify(['apple', 'banana']) })
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.chip button')!.click()
+    expect(JSON.parse(el.getAttribute('value') ?? '[]')).toEqual(['banana'])
+    expect(el.shadowRoot!.querySelectorAll('.chip').length).toBe(1)
+  })
+
   it('disabled 时 trigger 不可交互', () => {
     const el = mount({ disabled: '' })
     expect(trigger(el).disabled).toBe(true)

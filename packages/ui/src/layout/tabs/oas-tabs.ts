@@ -166,6 +166,8 @@ const STYLE = `
 :host(.oas-tabs--right) .tab {
   border-left: 2px solid transparent;
   margin-left: -1px;
+  /* 镜像 left：内容右对齐贴标签栏右边缘 */
+  justify-content: flex-end;
 }
 :host(.oas-tabs--right) .tab[aria-selected='true'] {
   border-left-color: var(--oas-color-primary);
