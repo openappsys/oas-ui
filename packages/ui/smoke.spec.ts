@@ -11,7 +11,8 @@ for (const page of PAGES) {
     const errors: string[] = []
     p.on('pageerror', (e) => errors.push(e.message))
     p.on('console', (m) => {
-      if (m.type() === 'error') errors.push(m.text())
+      // warning 也纳入（如 Vue isCustomElement 未配置会以 warning 刷屏，此前漏检）
+      if (m.type() === 'error' || m.type() === 'warning') errors.push(m.text())
     })
     await p.goto(page, { waitUntil: 'domcontentloaded' })
     await p.waitForTimeout(600)
