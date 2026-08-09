@@ -34,6 +34,12 @@ button:focus-visible {
   outline: none;
   box-shadow: var(--oas-focus-ring);
 }
+/* 选中态（button-group 单/多选经 host aria-pressed 标记）；置于类型规则前，有色按钮由下方规则覆盖 */
+:host([aria-pressed='true']) button {
+  color: var(--oas-color-primary);
+  border-color: var(--oas-color-primary);
+  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
+}
 button[part~='button'][disabled],
 button[disabled] {
   cursor: not-allowed;
@@ -77,6 +83,20 @@ button.danger {
 }
 button.danger:hover {
   filter: brightness(1.08);
+}
+/* 有色 / text 按钮的选中态覆盖 */
+:host([aria-pressed='true']) button.primary {
+  background: var(--oas-color-primary-active);
+  border-color: var(--oas-color-primary-active);
+}
+:host([aria-pressed='true']) button.success,
+:host([aria-pressed='true']) button.warning,
+:host([aria-pressed='true']) button.danger {
+  filter: brightness(0.9);
+}
+:host([aria-pressed='true']) button.text {
+  color: var(--oas-color-primary);
+  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
 }
 button.small {
   height: var(--oas-control-height-sm);
