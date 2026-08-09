@@ -187,6 +187,7 @@ test('tree 虚拟滚动渲染真实 label 且行样式生效', async ({ page }) 
     const firstRow = items[0]?.querySelector('.row')
     const toggle = firstRow?.querySelector('.toggle')
     const leafToggle = items[1]?.querySelector('.toggle.leaf')
+    const viewport = vroot.querySelector('[part=viewport]')!
     return {
       hasObjectObject: items.some((el) => el.textContent?.includes('[object Object')),
       firstLabel: firstRow?.querySelector('.label')?.textContent ?? '',
@@ -194,6 +195,9 @@ test('tree 虚拟滚动渲染真实 label 且行样式生效', async ({ page }) 
       rowDisplay: firstRow ? getComputedStyle(firstRow).display : '',
       toggleBorder: toggle ? getComputedStyle(toggle).borderStyle : '',
       leafVisibility: leafToggle ? getComputedStyle(leafToggle).visibility : '',
+      // 曾现 bug3：height 属性只用于窗口计算，视口 height:100% 被撑高容器拉到 16 万 px
+      viewportHeight: viewport.getBoundingClientRect().height,
+      viewportScrollable: viewport.scrollHeight > viewport.clientHeight,
     }
   })
   expect(r.hasObjectObject).toBe(false)
@@ -202,12 +206,39 @@ test('tree 虚拟滚动渲染真实 label 且行样式生效', async ({ page }) 
   expect(r.rowDisplay).toBe('flex')
   expect(r.toggleBorder).toBe('none')
   expect(r.leafVisibility).toBe('hidden')
+  expect(r.viewportHeight).toBe(360)
+  expect(r.viewportScrollable).toBe(true)
   // hover 背景（Playwright CSS 选择器自动穿透 open shadow DOM）
   const firstRow = page.locator('#tree-virtual oas-virtual-list [part=item] .row').first()
   await firstRow.hover()
   await page.waitForTimeout(200)
   const hoverBg = await firstRow.evaluate((row) => getComputedStyle(row).backgroundColor)
   expect(hoverBg).not.toBe('rgba(0, 0, 0, 0)')
+})
+
+test('virtual-list 独立页：items 升级前赋值回收 + 视口高度受限', async ({ page }) => {
+  // 曾现 bug：demo 在 onMounted 用 basic.items = [...] 赋值，若此时组件未升级
+  // （模块动态 import 与 onMounted 时序竞争），自有属性遮蔽原型 setter → 不渲染。
+  // 另有视口 height 不落 CSS 高度的同款撑高问题。
+  await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-virtual-list')
+  await page.waitForTimeout(600)
+  const r = await page.evaluate(() =>
+    [...document.querySelectorAll('oas-virtual-list')].map((vlist) => {
+      const viewport = vlist.shadowRoot!.querySelector('[part=viewport]')
+      return {
+        itemCount: vlist.shadowRoot!.querySelectorAll('[part=item]').length,
+        viewportHeight: viewport?.getBoundingClientRect().height ?? -1,
+        scrollable: viewport ? viewport.scrollHeight > viewport.clientHeight : true,
+      }
+    }),
+  )
+  expect(r.length).toBeGreaterThan(0)
+  for (const [i, v] of r.entries()) {
+    expect(v.itemCount, `第 ${i} 个 virtual-list 未渲染`).toBeGreaterThan(0)
+    if (v.viewportHeight >= 0) expect(v.viewportHeight).toBeLessThanOrEqual(400)
+    expect(v.scrollable).toBe(true)
+  }
 })
 
 test('timeline 圆点中心与连接线中心对齐', async ({ page }) => {

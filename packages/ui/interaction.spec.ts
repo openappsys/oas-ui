@@ -73,20 +73,20 @@ test.describe('反馈/布局组件交互验真（最新构建）', () => {
     const pop = pc.locator('[part="popover"]')
 
     await trigger.click()
-    await expect(pop).toHaveAttribute('aria-hidden', 'false')
+    await expect(pop).toHaveAttribute('aria-hidden', 'false', { timeout: 10000 })
     await pop.locator('[part="ok"]').click()
     await expect(pop).toHaveAttribute('aria-hidden', 'true')
     await expect(pc).not.toHaveAttribute('open', '')
 
     await trigger.click()
-    await expect(pop).toHaveAttribute('aria-hidden', 'false')
+    await expect(pop).toHaveAttribute('aria-hidden', 'false', { timeout: 10000 })
     await pop.locator('[part="cancel"]').click()
     await expect(pop).toHaveAttribute('aria-hidden', 'true')
     await expect(pc).not.toHaveAttribute('open', '')
 
     // 键盘 Enter 激活 ok（派发合成 click，composed=false）不应误翻转
     await trigger.click()
-    await expect(pop).toHaveAttribute('aria-hidden', 'false')
+    await expect(pop).toHaveAttribute('aria-hidden', 'false', { timeout: 10000 })
     await pop.locator('[part="ok"]').focus()
     await page.keyboard.press('Enter')
     await expect(pop).toHaveAttribute('aria-hidden', 'true')

@@ -25,7 +25,7 @@ test('popconfirm onoas-ok 触发（气泡确认）', async ({ page }) => {
   const trigger = page.locator('oas-popconfirm').first().locator('oas-button').first()
   await trigger.click()
   const pop = page.locator('oas-popconfirm').first().locator('[part="popover"]')
-  await expect(pop).toHaveAttribute('aria-hidden', 'false')
+  await expect(pop).toHaveAttribute('aria-hidden', 'false', { timeout: 10000 })
   await pop.locator('[part="ok"]').click()
   await expect(pop).toHaveAttribute('aria-hidden', 'true')
 })

@@ -99,6 +99,17 @@ private itemRole = ''
     return this.data.slice()
   }
 
+  override connectedCallback(): void {
+    super.connectedCallback()
+    // 升级前被赋过 items（SSR/onMounted 与模块加载的时序竞争），自有属性遮蔽原型
+    // setter → parseItems 读 attribute 为空 → 不渲染。回收到 setter 通道。
+    if (Object.prototype.hasOwnProperty.call(this, 'items') && Array.isArray(this.items)) {
+      const own = this.items
+      delete (this as unknown as Record<string, unknown>).items
+      this.items = own
+    }
+  }
+
   set items(value: unknown[]) {
     this.data = Array.isArray(value) ? value.slice() : []
     this.itemsFromProperty = true
@@ -136,6 +147,9 @@ private itemRole = ''
     this.parseItems()
     this.syncTarget()
     this.syncRoles()
+    // height 属性必须落成视口的实际 CSS 高度（此前只用于窗口计算，视口 height:100%
+    // 会被撑高容器拉到全内容高度，页面跟着变 16 万 px）
+    if (this.viewport) this.viewport.style.height = `${this.listHeight()}px`
     this.renderWindow()
   }
 
