@@ -117,6 +117,7 @@ export default defineConfig({
         collapsed: true,
         items: [
           { text: 'Tabs 标签页', link: '/components/tabs' },
+          { text: 'BottomNavigation 底部导航', link: '/components/bottom-navigation' },
           { text: 'Pagination 分页', link: '/components/pagination' },
           { text: 'Steps 步骤条', link: '/components/steps' },
           { text: 'Segmented 分段器', link: '/components/segmented' },
@@ -128,6 +129,8 @@ export default defineConfig({
           { text: 'FloatButton 悬浮按钮', link: '/components/float-button' },
           { text: 'SpeedDial 悬浮动作', link: '/components/speed-dial' },
           { text: 'Layout 布局', link: '/components/layout' },
+          { text: 'Sidebar 侧栏', link: '/components/sidebar' },
+          { text: 'Container 容器', link: '/components/container' },
           { text: 'Grid 栅格', link: '/components/grid' },
         ],
       },
@@ -169,6 +172,7 @@ export default defineConfig({
         items: [
           { text: 'ConfigProvider 全局配置', link: '/components/config-provider' },
           { text: 'App 消息上下文', link: '/components/app' },
+          { text: 'ThemeEditor 主题编辑器', link: '/components/theme-editor' },
         ],
       },
     ],

@@ -76,6 +76,12 @@ export const zhCN = {
   'splitter.adjust': '调整面板宽度',
   // layout（布局容器）
   'layout.sider': '侧边栏',
+  // sidebar（可折叠侧栏）
+  'sidebar.nav': '侧栏导航',
+  'sidebar.toggle': '折叠侧栏',
+  'sidebar.expand': '展开侧栏',
+  'sidebar.openMenu': '打开侧栏',
+  'sidebar.closeMenu': '关闭侧栏',
   // float-button（悬浮按钮）
   'floatButton.action': '悬浮操作',
   // toggle-group（切换组）
@@ -203,4 +209,15 @@ export const zhCN = {
   'toolbar.label': '工具栏',
   // log（日志流）
   'log.empty': '暂无日志',
+  // theme-editor（主题编辑器）
+  'themeEditor.label': '主题编辑器',
+  'themeEditor.export': '导出主题 JSON',
+  'themeEditor.group.color': '颜色',
+  'themeEditor.group.fontSize': '字号',
+  'themeEditor.group.space': '间距',
+  'themeEditor.group.radius': '圆角',
+  'themeEditor.group.controlHeight': '控件高度',
+  'themeEditor.group.custom': '其他',
+  // bottom-navigation（底部导航）
+  'bottomNavigation.nav': '底部导航',
 } as const

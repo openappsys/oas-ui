@@ -37,6 +37,16 @@
   --oas-space-5: 24px;
   --oas-space-6: 32px;
 
+  /* 布局尺寸 token（尺寸不分主题，light/dark/high-contrast 共用） */
+  --oas-container-xs: 480px;
+  --oas-container-sm: 576px;
+  --oas-container-md: 768px;
+  --oas-container-lg: 992px;
+  --oas-container-xl: 1200px;
+  --oas-container-full: 100%;
+  --oas-sidebar-width: 220px;
+  --oas-sidebar-collapsed-width: 64px;
+
   --oas-radius-sm: 4px;
   --oas-radius-md: 6px;
   --oas-radius-lg: 10px;
