@@ -166,10 +166,29 @@ export class OASTable extends OASElement {
     ]
   }
 
-  private columns: TableColumn[] = []
-  private data: Array<Record<string, unknown>> = []
+  private _columns: TableColumn[] = []
+  private _data: Array<Record<string, unknown>> = []
   private scrollRaf = 0
   private wrap: HTMLElement | null = null
+
+  /**
+   * data/columns 同时支持 attribute 与 property 赋值：
+   * Vue/React 模板渲染时 `data`/`columns` 命中实例属性（class 字段），宿主框架会走 property
+   * 赋值而非 setAttribute（此前 SPA 导航下表格无数据的根因）。setter 统一反射到 attribute，
+   * 经 attributeChangedCallback 走既有 parse/update 链路，保持单一数据源。
+   */
+  get columns(): TableColumn[] {
+    return this._columns
+  }
+  set columns(value: TableColumn[] | string) {
+    this.setAttribute('columns', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+  get data(): Array<Record<string, unknown>> {
+    return this._data
+  }
+  set data(value: Array<Record<string, unknown>> | string) {
+    this.setAttribute('data', typeof value === 'string' ? value : JSON.stringify(value))
+  }
 
   protected override render(): void {
     this.shadow.innerHTML = `
@@ -245,7 +264,7 @@ export class OASTable extends OASElement {
       th.appendChild(selectAll)
       tr.appendChild(th)
     }
-    for (const col of this.columns) {
+    for (const col of this._columns) {
       const th = document.createElement('th')
       th.setAttribute('part', 'header')
       th.setAttribute('data-key', col.key)
@@ -266,7 +285,7 @@ export class OASTable extends OASElement {
       const loadingTr = document.createElement('tr')
       loadingTr.setAttribute('part', 'loading-row')
       const loadingTd = document.createElement('td')
-      loadingTd.colSpan = this.columns.length + (this.hasAttr('checkable') ? 1 : 0)
+      loadingTd.colSpan = this._columns.length + (this.hasAttr('checkable') ? 1 : 0)
       loadingTd.className = 'loading'
       const spin = document.createElement('span')
       spin.className = 'spin'
@@ -279,7 +298,7 @@ export class OASTable extends OASElement {
     if (sorted.length === 0) {
       const emptyTr = document.createElement('tr')
       const emptyTd = document.createElement('td')
-      emptyTd.colSpan = this.columns.length + (this.hasAttr('checkable') ? 1 : 0)
+      emptyTd.colSpan = this._columns.length + (this.hasAttr('checkable') ? 1 : 0)
       emptyTd.className = 'empty'
       emptyTd.textContent = this.getAttr('empty-text', this.t('table.empty'))
       emptyTr.appendChild(emptyTd)
@@ -340,7 +359,7 @@ export class OASTable extends OASElement {
       this.emit('row-click', { row, key })
       this.update()
     })
-    for (const col of this.columns) {
+    for (const col of this._columns) {
       const td = document.createElement('td')
       this.applyColumnOffset(td, col, layout)
       if (col.align) td.className = `align-${col.align}`
@@ -362,7 +381,7 @@ export class OASTable extends OASElement {
   ): void {
     const scrollTop = this.wrap ? this.wrap.scrollTop : 0
     const win = computeVirtualWindow(scrollTop, this.height(), this.rowHeight(), sorted.length)
-    const colSpan = this.columns.length + (this.hasAttr('checkable') ? 1 : 0)
+    const colSpan = this._columns.length + (this.hasAttr('checkable') ? 1 : 0)
 
     const topSpacer = document.createElement('tr')
     topSpacer.className = 'spacer'
@@ -404,18 +423,18 @@ export class OASTable extends OASElement {
   /** 计算各列 sticky 偏移（左侧从左累加、右侧从右累加） */
   private computeLayout(): { offsets: Map<string, ColumnOffset>; hasFixed: boolean } {
     const offsets = new Map<string, ColumnOffset>()
-    const hasFixed = this.columns.some((c) => c.fixed)
+    const hasFixed = this._columns.some((c) => c.fixed)
     let leftAccum = 0
     if (hasFixed && this.hasAttr('checkable')) leftAccum = CHECK_CELL_WIDTH
-    for (const col of this.columns) {
+    for (const col of this._columns) {
       if (col.fixed === 'left') {
         offsets.set(col.key, { fixed: 'left', left: leftAccum })
         leftAccum += columnWidth(col)
       }
     }
     let rightAccum = 0
-    for (let i = this.columns.length - 1; i >= 0; i--) {
-      const col = this.columns[i]!
+    for (let i = this._columns.length - 1; i >= 0; i--) {
+      const col = this._columns[i]!
       if (col.fixed === 'right') {
         offsets.set(col.key, { fixed: 'right', right: rightAccum })
         rightAccum += columnWidth(col)
@@ -425,7 +444,7 @@ export class OASTable extends OASElement {
   }
 
   private sortData(sortKey: string, sortOrder: SortOrder): Array<Record<string, unknown>> {
-    const sorted = [...this.data]
+    const sorted = [...this._data]
     if (sortKey && (sortOrder === 'asc' || sortOrder === 'desc')) {
       sorted.sort((a, b) => {
         const av = a[sortKey]
@@ -493,15 +512,15 @@ export class OASTable extends OASElement {
   private parse(): void {
     try {
       const cols = JSON.parse(this.getAttr('columns', '[]'))
-      this.columns = Array.isArray(cols) ? cols.filter((c) => c && typeof c.key === 'string') : []
+      this._columns = Array.isArray(cols) ? cols.filter((c) => c && typeof c.key === 'string') : []
     } catch {
-      this.columns = []
+      this._columns = []
     }
     try {
       const rows = JSON.parse(this.getAttr('data', '[]'))
-      this.data = Array.isArray(rows) ? rows.filter((r) => r && typeof r === 'object') : []
+      this._data = Array.isArray(rows) ? rows.filter((r) => r && typeof r === 'object') : []
     } catch {
-      this.data = []
+      this._data = []
     }
   }
 }

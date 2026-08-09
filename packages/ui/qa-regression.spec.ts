@@ -61,7 +61,7 @@ test('button-group 纵向布局生效 + 圆角合并', async ({ page }) => {
     })
     return {
       flexDirection: cs.flexDirection,
-      stackedVertically: boxes[1].y > boxes[0].y && boxes[1].x === boxes[0].x,
+      stackedVertically: boxes[1]!.y > boxes[0]!.y && boxes[1]!.x === boxes[0]!.x,
       radii,
     }
   })
@@ -140,4 +140,33 @@ test('demo 事件反馈（点击 button 弹出 message）', async ({ page }) => 
   })
   const n = await page.evaluate(() => document.querySelectorAll('oas-message').length)
   expect(n).toBeGreaterThan(0)
+})
+
+test('table SPA 导航后数据不丢（Vue property 赋值反射到 attribute）', async ({ page }) => {
+  // 曾现 bug：oas-table 的 data/columns 是 class 字段，Vue SPA 渲染时走 property 赋值而非
+  // setAttribute，组件只读 attribute → 表格空，强刷（SSR attribute 水合）才有数据。
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('a[href="/components/table.html"]', {
+    state: 'attached',
+    timeout: 10000,
+  })
+  // 折叠侧栏里的链接不可见，直接 DOM click 走 Vue Router（等价用户 SPA 点进去）
+  await page.evaluate(() => {
+    document.querySelector<HTMLAnchorElement>('a[href="/components/table.html"]')!.click()
+  })
+  await page.waitForURL('**/components/table.html')
+  await page.waitForSelector('oas-table', { timeout: 10000 })
+  await page.waitForTimeout(800)
+  const r = await page.evaluate(() =>
+    [...document.querySelectorAll('oas-table')].map((t) => ({
+      rows: t.shadowRoot?.querySelectorAll('tbody tr').length ?? -1,
+      dataLen: t.getAttribute('data')?.length ?? 0,
+    })),
+  )
+  // dataLen>2（非空 data="[]"）的表格必须渲染出数据行
+  const nonEmpty = r.filter((t) => t.dataLen > 2)
+  expect(nonEmpty.length).toBeGreaterThan(5)
+  for (const t of nonEmpty) {
+    expect(t.rows, `表格数据 ${t.dataLen}B 但行数 ${t.rows}`).toBeGreaterThan(0)
+  }
 })
