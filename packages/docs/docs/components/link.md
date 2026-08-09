@@ -29,7 +29,7 @@
 ## 事件
 
 <DemoBlock title="点击事件">
-  <oas-link href="#" type="primary" onoas-click="toast.info({ title: '触发了 oas-click 事件' })">点击链接</oas-link>
+  <oas-link href="#" type="primary" onoas-click="message.info('触发了 oas-click 事件')">点击链接</oas-link>
 </DemoBlock>
 
 点击派发 `oas-click` CustomEvent，`detail.originalEvent` 为原生 MouseEvent。
