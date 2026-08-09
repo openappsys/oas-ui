@@ -120,6 +120,12 @@ export const en: LocaleMessages = {
   'editable.cancel': 'Cancel',
   'ellipsis.expand': 'Expand',
   'ellipsis.collapse': 'Collapse',
+  'chart.line': 'Line chart',
+  'chart.bar': 'Bar chart',
+  'chart.pie': 'Pie chart',
+  'chart.empty': 'No data',
+  'code.copy': 'Copy',
+  'code.copied': 'Copied',
   'image.preview.close': 'Close preview',
   'image.preview.zoomIn': 'Zoom in',
   'image.preview.zoomOut': 'Zoom out',
@@ -136,4 +142,5 @@ export const en: LocaleMessages = {
   'menubar.label': 'Menu bar',
   'navigationMenu.label': 'Navigation',
   'toolbar.label': 'Toolbar',
+  'log.empty': 'No logs',
 }

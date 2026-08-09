@@ -1,0 +1,86 @@
+import { OASElement } from '@oas-ui/core'
+
+const STYLE = `
+:host {
+  display: inline-block;
+  font-family: inherit;
+  font-size: var(--oas-font-size-lg);
+}
+[part='text'] {
+  display: inline-block;
+  max-width: 100%;
+}
+`
+
+/** 默认色标（token，随主题亮暗自动切换，无硬编码色值） */
+const DEFAULT_COLORS = ['var(--oas-color-primary)', 'var(--oas-color-primary-hover)']
+const DEFAULT_DIRECTION = 'to right'
+
+/** 合法色标形态：hex / rgb(a) / hsl(a) / var() / 命名色 */
+const COLOR_RE =
+  /^(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)|var\([^)]*\)|[a-zA-Z]+)$/
+
+/**
+ * oas-gradient-text —— 渐变文字（纯展示，无事件）。
+ *
+ * 属性（kebab-case）：
+ * - `gradient`：JSON 色标数组，如 `["#f00","#00f"]`；单个色标渲染纯色；
+ *   缺失/非法回退默认 token 双色渐变
+ * - `direction`：渐变方向（linear-gradient 第一参数），默认 `to right`
+ *
+ * 实现：`background-image: linear-gradient(direction, colors...)` +
+ * `-webkit-background-clip: text` + `color: transparent`，文字被渐变色填充。
+ * 色标条目经白名单校验，防 CSS 注入。
+ */
+export class OASGradientText extends OASElement {
+  static override get observedAttributes(): string[] {
+    return ['gradient', 'direction']
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = `
+      <style>${STYLE}</style>
+      <span class="text" part="text"><slot></slot></span>
+    `
+    this.update()
+  }
+
+  protected override update(): void {
+    const el = this.shadow.querySelector<HTMLElement>('[part="text"]')
+    if (!el) return
+
+    const colors = this.parseGradient()
+    const direction = this.getAttr('direction', '').trim() || DEFAULT_DIRECTION
+
+    el.style.color = 'transparent'
+    el.style.setProperty('-webkit-background-clip', 'text')
+    el.style.backgroundClip = 'text'
+
+    if (colors.length > 1) {
+      el.style.backgroundColor = 'transparent'
+      el.style.backgroundImage = `linear-gradient(${direction}, ${colors.join(', ')})`
+    } else if (colors.length === 1) {
+      // 单个色标：渲染纯色
+      el.style.backgroundColor = colors[0]!
+      el.style.backgroundImage = 'none'
+    } else {
+      el.style.backgroundColor = 'transparent'
+      el.style.backgroundImage = `linear-gradient(${direction}, ${DEFAULT_COLORS.join(', ')})`
+    }
+  }
+
+  /** 解析 gradient JSON 色标数组，逐条白名单校验；返回空数组表示回退默认 */
+  private parseGradient(): string[] {
+    const raw = this.getAttr('gradient', '').trim()
+    if (!raw) return []
+    try {
+      const parsed: unknown = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return []
+      return parsed.filter(
+        (c): c is string => typeof c === 'string' && COLOR_RE.test(c.trim()),
+      )
+    } catch {
+      return []
+    }
+  }
+}

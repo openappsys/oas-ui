@@ -171,6 +171,14 @@ export const zhCN = {
   // ellipsis（文本省略）
   'ellipsis.expand': '展开',
   'ellipsis.collapse': '收起',
+  // chart（图表）
+  'chart.line': '折线图',
+  'chart.bar': '柱状图',
+  'chart.pie': '饼图',
+  'chart.empty': '暂无数据',
+  // code（代码块）
+  'code.copy': '复制',
+  'code.copied': '已复制',
   // image（图片预览浮层）
   'image.preview.close': '关闭预览',
   'image.preview.zoomIn': '放大',
@@ -193,4 +201,6 @@ export const zhCN = {
   'navigationMenu.label': '导航',
   // toolbar（工具栏）
   'toolbar.label': '工具栏',
+  // log（日志流）
+  'log.empty': '暂无日志',
 } as const
