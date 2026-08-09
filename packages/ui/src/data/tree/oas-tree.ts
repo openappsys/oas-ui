@@ -69,8 +69,14 @@ const STYLE = `
 .label {
   user-select: none;
 }
-/* 虚拟化：行渲染进 oas-virtual-list 的 item part 内，样式经 ::part 镜像 */
-oas-virtual-list::part(item) .row {
+`
+
+/**
+ * 虚拟路径行样式：行渲染在 oas-virtual-list 的 shadow 内，tree 自身样式够不到；
+ * ::part() 后不支持链后代选择器（浏览器静默丢规则），故注入 vlist 的 shadow root。
+ */
+const VIRTUAL_ROW_STYLE = `
+.row {
   display: flex;
   align-items: center;
   gap: var(--oas-space-1);
@@ -80,20 +86,20 @@ oas-virtual-list::part(item) .row {
   border-radius: var(--oas-radius-sm);
   cursor: default;
 }
-oas-virtual-list::part(item) .row:hover {
+.row:hover {
   background: var(--oas-color-bg-hover);
 }
-oas-virtual-list::part(item) .row[data-selected='true'] {
+.row[data-selected='true'] {
   background: var(--oas-color-primary-soft, rgba(24, 144, 255, 0.1));
   color: var(--oas-color-primary-active);
 }
-oas-virtual-list::part(item) .row[data-disabled='true'] {
+.row[data-disabled='true'] {
   pointer-events: none;
 }
-oas-virtual-list::part(item) .row[data-disabled='true'] .label {
+.row[data-disabled='true'] .label {
   color: var(--oas-color-text-secondary);
 }
-oas-virtual-list::part(item) .toggle {
+.toggle {
   width: 20px;
   height: 20px;
   border: none;
@@ -104,18 +110,18 @@ oas-virtual-list::part(item) .toggle {
   padding: 0;
   flex-shrink: 0;
 }
-oas-virtual-list::part(item) .toggle.leaf {
+.toggle.leaf {
   visibility: hidden;
 }
-oas-virtual-list::part(item) .toggle.open {
+.toggle.open {
   transform: rotate(90deg);
 }
-oas-virtual-list::part(item) .check {
+.check {
   accent-color: var(--oas-color-primary);
   margin: 0;
   flex-shrink: 0;
 }
-oas-virtual-list::part(item) .label {
+.label {
   user-select: none;
 }
 `
@@ -142,6 +148,14 @@ export class OASTree extends OASElement {
       <oas-virtual-list part="virtual" hidden></oas-virtual-list>
     `
     this.vlist = this.shadow.querySelector<OASVirtualList>('oas-virtual-list')
+    // 行样式注入 vlist 的 shadow（其 render 已在 innerHTML 插入时同步完成，后追加不会被覆盖）
+    const vlistRoot = this.vlist?.shadowRoot
+    if (vlistRoot && !vlistRoot.querySelector('style[data-oas-tree-rows]')) {
+      const style = document.createElement('style')
+      style.setAttribute('data-oas-tree-rows', '')
+      style.textContent = VIRTUAL_ROW_STYLE
+      vlistRoot.appendChild(style)
+    }
     this.vlist?.addEventListener('oas-item', ((
       e: CustomEvent<{ index: number; item: FlatRow; element: HTMLElement }>,
     ) => {

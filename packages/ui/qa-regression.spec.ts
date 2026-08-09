@@ -171,23 +171,43 @@ test('table SPA 导航后数据不丢（Vue property 赋值反射到 attribute�
   }
 })
 
-test('tree 虚拟滚动渲染真实 label 而非 [object Object]', async ({ page }) => {
-  // 曾现 bug：virtual-list 先写 String(item) 兜底文本再派发 oas-item，
-  // tree 填充的行与 "[object Object]" 并存。修复为先派发、宿主没填才兜底。
+test('tree 虚拟滚动渲染真实 label 且行样式生效', async ({ page }) => {
+  // 曾现 bug1：virtual-list 先写 String(item) 兜底文本再派发 oas-item，[object Object] 与真实行并存。
+  // 曾现 bug2：虚拟行样式写在 tree 的 shadow 里用 `oas-virtual-list::part(item) .row` 选择器，
+  //           ::part() 后不支持链后代选择器 → 全部静默失效（裸按钮、leaf 占位符外露）。
+  //           修复为注入 VIRTUAL_ROW_STYLE 到 vlist 的 shadow root。
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-virtual')
   await page.waitForTimeout(800)
   const r = await page.evaluate(() => {
     const tree = document.querySelector('#tree-virtual')!
     const vlist = tree.shadowRoot!.querySelector('oas-virtual-list')!
-    const items = [...vlist.shadowRoot!.querySelectorAll('[part=item]')]
+    const vroot = vlist.shadowRoot!
+    const items = [...vroot.querySelectorAll('[part=item]')]
+    const firstRow = items[0]?.querySelector('.row')
+    const toggle = firstRow?.querySelector('.toggle')
+    const leafToggle = items[1]?.querySelector('.toggle.leaf')
     return {
       hasObjectObject: items.some((el) => el.textContent?.includes('[object Object')),
-      firstLabel: items[0]?.querySelector('.row .label')?.textContent ?? '',
+      firstLabel: firstRow?.querySelector('.label')?.textContent ?? '',
+      styleInjected: !!vroot.querySelector('style[data-oas-tree-rows]'),
+      rowDisplay: firstRow ? getComputedStyle(firstRow).display : '',
+      toggleBorder: toggle ? getComputedStyle(toggle).borderStyle : '',
+      leafVisibility: leafToggle ? getComputedStyle(leafToggle).visibility : '',
     }
   })
   expect(r.hasObjectObject).toBe(false)
   expect(r.firstLabel).toContain('节点')
+  expect(r.styleInjected).toBe(true)
+  expect(r.rowDisplay).toBe('flex')
+  expect(r.toggleBorder).toBe('none')
+  expect(r.leafVisibility).toBe('hidden')
+  // hover 背景（Playwright CSS 选择器自动穿透 open shadow DOM）
+  const firstRow = page.locator('#tree-virtual oas-virtual-list [part=item] .row').first()
+  await firstRow.hover()
+  await page.waitForTimeout(200)
+  const hoverBg = await firstRow.evaluate((row) => getComputedStyle(row).backgroundColor)
+  expect(hoverBg).not.toBe('rgba(0, 0, 0, 0)')
 })
 
 test('timeline 圆点中心与连接线中心对齐', async ({ page }) => {
