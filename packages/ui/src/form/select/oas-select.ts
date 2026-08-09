@@ -60,14 +60,13 @@ const STYLE = `
 }
 .value {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--oas-space-1);
   min-width: 0;
   flex: 1;
   text-align: left;
-  /* 多选标签多时内部滚动而非无限撑高触发器 */
-  max-height: calc(var(--oas-control-height-md) * 2);
-  overflow-y: auto;
+  /* 多选标签保持单行，超出横向滚动而非折行撑高 */
+  overflow-x: auto;
 }
 .placeholder {
   color: var(--oas-color-text-secondary);
@@ -77,6 +76,7 @@ const STYLE = `
   align-items: center;
   box-sizing: border-box;
   height: 20px;
+  flex-shrink: 0;
   gap: var(--oas-space-1);
   background: var(--oas-color-bg-hover);
   border-radius: var(--oas-radius-sm);

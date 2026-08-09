@@ -4,6 +4,7 @@ import type { OASTabPanel } from './oas-tab-panel.js'
 const STYLE = `
 :host {
   display: block;
+  width: 100%;
   font-family: inherit;
   color: var(--oas-color-text-primary);
 }

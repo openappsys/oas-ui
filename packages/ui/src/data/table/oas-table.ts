@@ -241,6 +241,8 @@ export class OASTable extends OASElement {
   private _columns: TableColumn[] = []
   private _data: Array<Record<string, unknown>> = []
   private scrollRaf = 0
+  /** 恢复 scrollTop 触发的下一次 scroll 事件需忽略，防止重入死循环 */
+  private ignoreNextScroll = false
   private wrap: HTMLElement | null = null
   /** 是否可展开行（任一数据行存在非空 expand 字段） */
   private _expandable = false
@@ -314,6 +316,7 @@ export class OASTable extends OASElement {
       this.wrap!.style.maxHeight = ''
     }
 
+    const st = this.wrap ? this.wrap.scrollTop : 0
     head.innerHTML = ''
     body.innerHTML = ''
 
@@ -388,7 +391,7 @@ export class OASTable extends OASElement {
     }
 
     if (virtual) {
-      this.renderVirtualBody(body, display, rowKey, selected, expanded, layout)
+      this.renderVirtualBody(body, display, rowKey, selected, expanded, layout, st)
     } else {
       for (let i = 0; i < display.length; i++) {
         const f = display[i]!
@@ -402,6 +405,11 @@ export class OASTable extends OASElement {
 
     if (summaryConfigs.length > 0 && flat.length > 0) {
       body.appendChild(this.buildSummaryRow(summaryConfigs, flat, layout))
+    }
+    // innerHTML 清空曾触发浏览器把 scrollTop 钳回 0；内容（含占位）已铺满后恢复原滚动位置
+    if (this.wrap && this.wrap.scrollTop !== st) {
+      this.ignoreNextScroll = true
+      this.wrap.scrollTop = st
     }
   }
 
@@ -527,8 +535,8 @@ export class OASTable extends OASElement {
     selected: string[],
     expanded: Set<string>,
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
+    scrollTop = this.wrap ? this.wrap.scrollTop : 0,
   ): void {
-    const scrollTop = this.wrap ? this.wrap.scrollTop : 0
     const win = computeVirtualWindow(scrollTop, this.tableHeight(), this.rowHeight(), display.length)
     const colSpan = this.columnCount()
 
@@ -798,6 +806,10 @@ export class OASTable extends OASElement {
   }
 
   private handleScroll = (): void => {
+    if (this.ignoreNextScroll) {
+      this.ignoreNextScroll = false
+      return
+    }
     if (!this.isVirtual() || !this.wrap) return
     if (this.scrollRaf) return
     this.scrollRaf = requestAnimationFrame(() => {
@@ -805,6 +817,7 @@ export class OASTable extends OASElement {
       const body = this.shadow.querySelector('tbody')
       const head = this.shadow.querySelector('thead')
       if (!body || !head) return
+      const st = this.wrap!.scrollTop
       const sortKey = this.getAttr('sort-key', '')
       const sortOrder = this.getAttr('sort-order', '') as SortOrder
       const rowKey = this.getAttr('row-key', 'key')
@@ -813,14 +826,14 @@ export class OASTable extends OASElement {
       const flat = this.buildFlat(sortKey, sortOrder, rowKey)
       const display = this.visibleFlat(flat, expanded, rowKey)
       body.innerHTML = ''
-      this.renderVirtualBody(body, display, rowKey, selected, expanded, this.computeLayout())
-      const win = computeVirtualWindow(
-        this.wrap!.scrollTop,
-        this.tableHeight(),
-        this.rowHeight(),
-        display.length,
-      )
-      this.emit('scroll', { scrollTop: this.wrap!.scrollTop, start: win.start, end: win.end })
+      this.renderVirtualBody(body, display, rowKey, selected, expanded, this.computeLayout(), st)
+      // 清空曾把 scrollTop 钳回 0，内容铺满后恢复（窗口按 st 算，视觉不跳）
+      if (this.wrap!.scrollTop !== st) {
+        this.ignoreNextScroll = true
+        this.wrap!.scrollTop = st
+      }
+      const win = computeVirtualWindow(st, this.tableHeight(), this.rowHeight(), display.length)
+      this.emit('scroll', { scrollTop: st, start: win.start, end: win.end })
     })
   }
 
