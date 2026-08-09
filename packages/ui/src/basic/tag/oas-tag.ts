@@ -74,6 +74,12 @@ const STYLE = `
   border-color: var(--oas-color-primary);
   color: var(--oas-color-primary);
 }
+/* 实心 primary tag hover：保持白字，只加深底色，避免蓝底蓝字不可读 */
+.tag.primary.clickable:hover {
+  background: var(--oas-color-primary-hover);
+  border-color: var(--oas-color-primary-hover);
+  color: #fff;
+}
 .tag.disabled {
   opacity: 0.6;
   cursor: not-allowed;

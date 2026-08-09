@@ -68,6 +68,9 @@ export class OASLink extends OASElement {
         return
       }
       this.emit('click', { originalEvent: e })
+      // href 为 '#'/空 时仅作为动作链接，阻止浏览器默认跳转（避免页面滚回顶部）
+      const href = this.getAttr('href', '')
+      if (href === '' || href === '#') e.preventDefault()
     })
     this.update()
   }

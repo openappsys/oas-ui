@@ -31,43 +31,31 @@ const STYLE = `
 ::slotted(oas-button[aria-pressed='true']) {
   z-index: 1;
 }
-/* 横向：首/尾圆角，中间直角 */
-::slotted(oas-button:first-child)::part(button) {
-  border-top-left-radius: var(--oas-radius-md);
-  border-bottom-left-radius: var(--oas-radius-md);
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
+/* 横向：首/尾圆角，中间直角（::slotted 后不支持链 ::part，经自定义属性穿透到 button 内部） */
+::slotted(oas-button:first-child) {
+  --oas-button-group-radius: var(--oas-radius-md) 0 0 var(--oas-radius-md);
 }
-::slotted(oas-button:last-child)::part(button) {
-  border-top-right-radius: var(--oas-radius-md);
-  border-bottom-right-radius: var(--oas-radius-md);
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
+::slotted(oas-button:last-child) {
+  --oas-button-group-radius: 0 var(--oas-radius-md) var(--oas-radius-md) 0;
 }
-::slotted(oas-button:not(:first-child):not(:last-child))::part(button) {
-  border-radius: 0;
+::slotted(oas-button:not(:first-child):not(:last-child)) {
+  --oas-button-group-radius: 0;
 }
-::slotted(oas-button:only-child)::part(button) {
-  border-radius: var(--oas-radius-md);
+::slotted(oas-button:only-child) {
+  --oas-button-group-radius: var(--oas-radius-md);
 }
 /* 纵向：上/下圆角，中间直角 */
-:host([vertical]) ::slotted(oas-button)::part(button) {
-  width: 100%;
+:host([vertical]) ::slotted(oas-button) {
+  --oas-button-group-width: 100%;
 }
-:host([vertical]) ::slotted(oas-button:first-child)::part(button) {
-  border-top-left-radius: var(--oas-radius-md);
-  border-top-right-radius: var(--oas-radius-md);
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+:host([vertical]) ::slotted(oas-button:first-child) {
+  --oas-button-group-radius: var(--oas-radius-md) var(--oas-radius-md) 0 0;
 }
-:host([vertical]) ::slotted(oas-button:last-child)::part(button) {
-  border-bottom-left-radius: var(--oas-radius-md);
-  border-bottom-right-radius: var(--oas-radius-md);
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+:host([vertical]) ::slotted(oas-button:last-child) {
+  --oas-button-group-radius: 0 0 var(--oas-radius-md) var(--oas-radius-md);
 }
-:host([vertical]) ::slotted(oas-button:only-child)::part(button) {
-  border-radius: var(--oas-radius-md);
+:host([vertical]) ::slotted(oas-button:only-child) {
+  --oas-button-group-radius: var(--oas-radius-md);
 }
 `
 

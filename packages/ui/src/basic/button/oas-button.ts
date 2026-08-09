@@ -16,7 +16,9 @@ button {
   font-size: var(--oas-font-size-md);
   height: var(--oas-control-height-md);
   padding: 0 var(--oas-space-4);
-  border-radius: var(--oas-radius-md);
+  /* button-group 通过自定义属性合并相邻圆角/拉满宽度（::slotted 后不支持链 ::part，故走变量穿透） */
+  border-radius: var(--oas-button-group-radius, var(--oas-radius-md));
+  width: var(--oas-button-group-width, auto);
   cursor: pointer;
   transition: background var(--oas-transition-fast) var(--oas-ease-out),
     border-color var(--oas-transition-fast) var(--oas-ease-out);
