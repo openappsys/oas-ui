@@ -113,6 +113,14 @@
 
 行数据存在非空 `expand` 字段时，表尾出现展开列，点击行尾按钮展开一整行展示自定义内容；展开状态保存在 `expanded` 属性（逗号分隔的 key 集合），切换时派发 `oas-expand`。
 
+<DemoBlock title="受控展开（expanded 属性）">
+  <div style="width: 100%">
+    <oas-table expanded="张三" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师","expand":"<div>更多信息：张三 负责前端架构与团队管理，2021 年入职。</div>"},{"name":"李四","age":25,"city":"上海","position":"产品经理"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+`expanded` 为受控属性（逗号分隔的 key 集合）：预置展开行在首次渲染即展开，宿主可随时增删 key 驱动展开状态（树形父行与可展开行共用）。
+
 ## 树形数据
 
 <DemoBlock title="树形数据（children）">
