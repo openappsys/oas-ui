@@ -29,7 +29,9 @@ export abstract class OASElement extends HTMLElement {
 
   constructor() {
     super()
-    this.shadow = this.attachShadow({ mode: 'open' })
+    // DSD（Declarative Shadow DOM）场景：服务端输出 <template shadowrootmode="open"> 后，
+    // 浏览器 upgrade 元素时 shadow root 已存在，需复用而非 attachShadow（后者会抛 NotSupportedError）
+    this.shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' })
   }
 
   connectedCallback(): void {
