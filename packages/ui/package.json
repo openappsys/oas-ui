@@ -1,6 +1,6 @@
 {
   "name": "@oas-ui/ui",
-  "version": "1.0.0",
+  "version": "1.8.0",
   "description": "OAS-UI 框架无关 Web Components UI 组件库",
   "license": "MIT OR Apache-2.0",
   "type": "module",

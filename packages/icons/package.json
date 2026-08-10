@@ -1,6 +1,6 @@
 {
   "name": "@oas-ui/icons",
-  "version": "1.0.0",
+  "version": "1.8.0",
   "description": "OAS-UI 图标（原创内联 SVG）",
   "license": "MIT OR Apache-2.0",
   "type": "module",
