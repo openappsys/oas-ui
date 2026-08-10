@@ -23,32 +23,40 @@ const STYLE = `
 `
 
 /**
- * body scroll 锁定：计数器保证多个遮罩同时打开时，
- * 只有最后一个关闭才恢复原始的 overflow，避免互相覆盖。
+ * body scroll 锁定：不移除滚动条（overflow:hidden 会移除滚动条→视口变宽→页面/固定元素位移），
+ * 改为拦截滚动行为（wheel / touchmove / 滚动方向键），滚动条保持可见 → 视口宽度不变 → 零位移。
+ * 计数器保证多个遮罩同时打开时，只有最后一个关闭才解除拦截。
  */
 let scrollLockCount = 0
-let previousOverflow = ''
-let previousGutter = ''
+
+const SCROLL_KEYS = new Set([' ', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End'])
+
+function preventScroll(e: Event): void {
+  e.preventDefault()
+}
+
+function preventScrollKeydown(e: KeyboardEvent): void {
+  const t = e.target as HTMLElement | null
+  // 输入类控件内不拦截（保留正常输入），仅拦截会滚动页面的按键
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return
+  if (SCROLL_KEYS.has(e.key)) e.preventDefault()
+}
 
 function lockScroll(): void {
-  const de = document.documentElement
   if (scrollLockCount === 0) {
-    previousOverflow = de.style.overflow
-    previousGutter = de.style.scrollbarGutter
-    // 槽位预留与锁滚动必须落在同一滚动容器（本页面在 html 上滚动）：
-    // 先预留滚动条槽位，再移除滚动条 → 视口宽度不变 → 任何定位元素都不位移
-    if (de.scrollHeight > window.innerHeight) de.style.scrollbarGutter = 'stable'
+    window.addEventListener('wheel', preventScroll, { passive: false })
+    window.addEventListener('touchmove', preventScroll, { passive: false })
+    window.addEventListener('keydown', preventScrollKeydown, { passive: false })
   }
   scrollLockCount++
-  de.style.overflow = 'hidden'
 }
 
 function unlockScroll(): void {
-  const de = document.documentElement
   scrollLockCount = Math.max(0, scrollLockCount - 1)
   if (scrollLockCount === 0) {
-    de.style.overflow = previousOverflow
-    de.style.scrollbarGutter = previousGutter
+    window.removeEventListener('wheel', preventScroll)
+    window.removeEventListener('touchmove', preventScroll)
+    window.removeEventListener('keydown', preventScrollKeydown)
   }
 }
 
