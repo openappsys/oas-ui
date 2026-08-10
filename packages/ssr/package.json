@@ -1,0 +1,31 @@
+{
+  "name": "@oas-ui/ssr",
+  "version": "1.8.0",
+  "description": "OAS-UI 服务端渲染（SSR）——renderToString 产出 Declarative Shadow DOM（DSD）静态快照",
+  "license": "MIT OR Apache-2.0",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@oas-ui/i18n": "workspace:*",
+    "@oas-ui/ui": "workspace:*",
+    "happy-dom": "^20.11.1"
+  }
+}

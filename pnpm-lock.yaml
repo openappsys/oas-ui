@@ -107,6 +107,18 @@ importers:
         specifier: ^8.2.1
         version: 8.2.1(@types/node@26.1.2)
 
+  packages/ssr:
+    dependencies:
+      '@oas-ui/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      '@oas-ui/ui':
+        specifier: workspace:*
+        version: link:../ui
+      happy-dom:
+        specifier: ^20.11.1
+        version: 20.11.1
+
   packages/theme: {}
 
   packages/ui:

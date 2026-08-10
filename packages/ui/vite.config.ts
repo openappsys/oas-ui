@@ -21,10 +21,14 @@ function collectEntries(
 
 const srcRoot = resolve(import.meta.dirname, 'src')
 
+// collectEntries 只收集 index.ts；Node-safe 的 ssr.ts 是 src 根级入口，单独补上
+const entries = collectEntries(srcRoot, srcRoot)
+entries['ssr'] = resolve(srcRoot, 'ssr.ts')
+
 export default defineConfig({
   build: {
     lib: {
-      entry: collectEntries(srcRoot, srcRoot),
+      entry: entries,
       formats: ['es'],
     },
     rollupOptions: {
