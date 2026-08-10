@@ -60,6 +60,7 @@ export default defineConfig({
           { text: 'Rate 评分', link: '/components/rate' },
           { text: 'Select 选择器', link: '/components/select' },
           { text: 'AutoComplete 自动完成', link: '/components/auto-complete' },
+          { text: 'Combobox 组合框', link: '/components/combobox' },
           { text: 'Cascader 级联选择', link: '/components/cascader' },
           { text: 'TreeSelect 树选择', link: '/components/tree-select' },
           { text: 'Mentions 提及', link: '/components/mentions' },
