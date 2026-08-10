@@ -337,8 +337,25 @@ function extractAttrs(cls, observed, propNames) {
 // type 优先取 setter 形参类型注解（如 set columns(value: TableColumn[] | string)），
 // 无 setter 时取 getter 返回类型；公共字段（如 tree 的 `load?: (payload) => void`）
 // 取字段类型注解（非 static/private/protected 且带注解才抓，不猜）。
+//
+// default（只抓可靠字面量初始值，表达式/标识符/函数调用/对象/null 一律不抓）：
+//   1) 字段声明初始值字面量（如 `private _items: unknown[] = []` → "[]"；
+//      `load?: ... = undefined` 不抓；`action: ToastAction | null = null` 不抓）
+//   2) getter 返回 backing field 引用（`return this._options` / `this.data.slice()` /
+//      `[...this._files]`）时，追踪该字段的字面量初始值（如 virtual-list 的
+//      `get items() { return this.data.slice() }` + `private data: unknown[] = []` → "[]"）
+// 宁可不抓不可错抓：非字面量初始值（标识符 DEFAULT_DURATION、对象 {}、null）保持省略。
 function extractProps(cls) {
-  const propMap = new Map() // name -> { name, setType?, getType? }
+  const propMap = new Map() // name -> { name, setType?, getType?, default? }
+
+  // backing fields：类内字段声明 → 初始值节点（含 private，供 getter 默认值追踪）
+  const fieldInit = new Map()
+  for (const m of cls.members || []) {
+    if (m.kind === K.PropertyDeclaration && m.name?.text && m.initializer) {
+      fieldInit.set(m.name.text, m.initializer)
+    }
+  }
+
   for (const m of cls.members || []) {
     // 静态成员（observedAttributes 等）与普通方法不作 props
     const mods = (m.modifiers || []).map((x) => x.kind)
@@ -365,6 +382,15 @@ function extractProps(cls) {
       } else if (m.type) {
         entry.getType = srcText(m.type)
       }
+      // getter：追踪 backing field 引用 → 该字段的字面量初始值作为默认值
+      if (m.kind === K.GetAccessor) {
+        const ret = (m.body?.statements || []).find((s) => s.kind === K.ReturnStatement)
+        const field = getterBackingField(ret?.expression)
+        if (field && fieldInit.has(field)) {
+          const def = literalDefault(fieldInit.get(field))
+          if (def !== undefined) entry.default = def
+        }
+      }
       continue
     }
 
@@ -372,15 +398,76 @@ function extractProps(cls) {
     const t = srcText(m.type)
     if (!t) continue
     if (!entry.setType) entry.setType = t
+    // 字段声明初始值字面量 → 默认值（表达式/标识符/null 不抓）
+    const def = literalDefault(m.initializer)
+    if (def !== undefined) entry.default = def
   }
   const props = []
   for (const p of propMap.values()) {
     const item = { name: p.name }
     const type = p.setType ?? p.getType
     if (type) item.type = type
+    if (p.default !== undefined) item.default = p.default
     props.push(item)
   }
   return props
+}
+
+// getter 返回表达式 → backing field 字段名（无则不返回）：
+//   `return this.X`、`return this.X.slice()`、`return [...this.X]`
+function getterBackingField(retExpr) {
+  if (!retExpr) return undefined
+  // return this.X
+  if (
+    retExpr.kind === K.PropertyAccessExpression &&
+    retExpr.expression?.kind === K.ThisKeyword &&
+    retExpr.name?.text
+  ) {
+    return retExpr.name.text
+  }
+  // return this.X.slice() / this.X.map(...) 等：this.X 上的方法调用
+  if (retExpr.kind === K.CallExpression) {
+    const callee = retExpr.expression
+    if (
+      callee?.kind === K.PropertyAccessExpression &&
+      callee.expression?.kind === K.PropertyAccessExpression &&
+      callee.expression.expression?.kind === K.ThisKeyword &&
+      callee.expression.name?.text
+    ) {
+      return callee.expression.name.text
+    }
+  }
+  // return [...this.X]：数组展开复制
+  if (retExpr.kind === K.ArrayLiteralExpression) {
+    const els = retExpr.elements || []
+    if (els.length === 1 && els[0]?.kind === K.SpreadElement) {
+      const spread = els[0].expression
+      if (
+        spread?.kind === K.PropertyAccessExpression &&
+        spread.expression?.kind === K.ThisKeyword &&
+        spread.name?.text
+      ) {
+        return spread.name.text
+      }
+    }
+  }
+  return undefined
+}
+
+// 字面量初始值 → 默认值文本（只抓 [] / '' / 0 / false / true / 数字 / 字符串）。
+// 非字面量（标识符、函数调用、对象字面量 {}、null、undefined、含元素数组）一律不抓。
+function literalDefault(node) {
+  if (!node) return undefined
+  // 空数组字面量（非空数组元素含表达式风险，宁可不抓）
+  if (node.kind === K.ArrayLiteralExpression) {
+    if ((node.elements || []).length === 0) return '[]'
+    return undefined
+  }
+  if (node.kind === K.StringLiteral || node.kind === K.NoSubstitutionTemplateLiteral) return node.text
+  if (node.kind === K.NumericLiteral) return node.text
+  if (node.kind === K.TrueKeyword) return 'true'
+  if (node.kind === K.FalseKeyword) return 'false'
+  return undefined
 }
 
 // ---------- events：emit / new CustomEvent ----------

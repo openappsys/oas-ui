@@ -72,7 +72,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `data` | 数据（property，`[{ key, label, disabled }]`） | `TransferItem[]` | — |
+| `data` | 数据（property，`[{ key, label, disabled }]`） | `TransferItem[]` | `[]` |
 | `searchable` | 面板内搜索过滤 | `boolean` | — |
 | `source-title` | — | — | — |
 | `target-title` | — | — | — |

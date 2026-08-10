@@ -227,7 +227,11 @@ function tagRows(tag, lang) {
       const d = desc.attrs[name] ?? null;
       if (d === null) missing('attrs', name);
       let def = a?.default;
-      if (def === undefined || def === '' || /this\.|\(|String\(/.test(def)) def = null;
+      if (def === undefined || def === '' || /this\.|\(|String\(/.test(def)) {
+        // attr 无可靠默认值 → 回退同名 property 的字面量初始值（如 virtual-list 的
+        // items 默认 `[]`）；property 也无则保持 —
+        def = prop?.default ?? null;
+      }
       return {
         name,
         desc: d,

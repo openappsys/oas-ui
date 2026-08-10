@@ -1158,7 +1158,8 @@
     "props": [
       {
         "name": "options",
-        "type": "Option[] | string"
+        "type": "Option[] | string",
+        "default": "[]"
       }
     ],
     "events": [
@@ -1208,7 +1209,8 @@
     "props": [
       {
         "name": "options",
-        "type": "Option[] | string"
+        "type": "Option[] | string",
+        "default": "[]"
       }
     ],
     "events": [
@@ -1268,7 +1270,8 @@
     "props": [
       {
         "name": "options",
-        "type": "Option[] | string"
+        "type": "Option[] | string",
+        "default": "[]"
       }
     ],
     "events": [
@@ -1325,7 +1328,8 @@
     "props": [
       {
         "name": "options",
-        "type": "CascaderOption[] | string"
+        "type": "CascaderOption[] | string",
+        "default": "[]"
       }
     ],
     "events": [
@@ -1376,7 +1380,8 @@
     "props": [
       {
         "name": "options",
-        "type": "TreeOption[] | string"
+        "type": "TreeOption[] | string",
+        "default": "[]"
       }
     ],
     "events": [
@@ -1427,7 +1432,8 @@
     "props": [
       {
         "name": "options",
-        "type": "Option[] | string"
+        "type": "Option[] | string",
+        "default": "[]"
       },
       {
         "name": "prefix",
@@ -1665,7 +1671,8 @@
     "props": [
       {
         "name": "files",
-        "type": "File[]"
+        "type": "File[]",
+        "default": "[]"
       }
     ],
     "events": [
@@ -1718,7 +1725,8 @@
     "props": [
       {
         "name": "data",
-        "type": "TransferItem[]"
+        "type": "TransferItem[]",
+        "default": "[]"
       }
     ],
     "events": [
@@ -1926,7 +1934,8 @@
     "props": [
       {
         "name": "modelValue",
-        "type": "string[]"
+        "type": "string[]",
+        "default": "[]"
       }
     ],
     "events": [
@@ -1972,7 +1981,8 @@
     "props": [
       {
         "name": "modelValue",
-        "type": "string[]"
+        "type": "string[]",
+        "default": "[]"
       }
     ],
     "events": [
@@ -3116,7 +3126,8 @@
     "props": [
       {
         "name": "items",
-        "type": "AnchorItem[] | string"
+        "type": "AnchorItem[] | string",
+        "default": "[]"
       }
     ],
     "events": [
@@ -3152,7 +3163,8 @@
     "props": [
       {
         "name": "steps",
-        "type": "TourStep[] | string"
+        "type": "TourStep[] | string",
+        "default": "[]"
       }
     ],
     "events": [
@@ -3305,7 +3317,8 @@
     "props": [
       {
         "name": "steps",
-        "type": "StepItem[] | string"
+        "type": "StepItem[] | string",
+        "default": "[]"
       }
     ],
     "events": [
@@ -3730,7 +3743,8 @@
     "props": [
       {
         "name": "items",
-        "type": "SidebarItem[] | string"
+        "type": "SidebarItem[] | string",
+        "default": "[]"
       }
     ],
     "events": [
@@ -4398,11 +4412,13 @@
     "props": [
       {
         "name": "columns",
-        "type": "TableColumn[] | string"
+        "type": "TableColumn[] | string",
+        "default": "[]"
       },
       {
         "name": "data",
-        "type": "Array<Record<string, unknown>> | string"
+        "type": "Array<Record<string, unknown>> | string",
+        "default": "[]"
       }
     ],
     "events": [
@@ -4466,7 +4482,8 @@
     "props": [
       {
         "name": "items",
-        "type": "unknown[]"
+        "type": "unknown[]",
+        "default": "[]"
       }
     ],
     "events": [
@@ -4833,7 +4850,8 @@
     "props": [
       {
         "name": "lines",
-        "type": "string[]"
+        "type": "string[]",
+        "default": "[]"
       }
     ],
     "events": [],

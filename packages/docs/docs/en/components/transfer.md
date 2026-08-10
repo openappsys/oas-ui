@@ -72,7 +72,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `data` | Data (property, `[{ key, label, disabled }]`) | `TransferItem[]` | — |
+| `data` | Data (property, `[{ key, label, disabled }]`) | `TransferItem[]` | `[]` |
 | `searchable` | Search filtering within panels | `boolean` | — |
 | `source-title` | — | — | — |
 | `target-title` | — | — | — |
