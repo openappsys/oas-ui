@@ -11,18 +11,18 @@ function mount(attrs: Record<string, string> = {}): OASBackdrop {
 describe('OASBackdrop', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
-    document.body.style.overflow = ''
+    document.documentElement.style.overflow = ''
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
-    document.body.style.overflow = ''
+    document.documentElement.style.overflow = ''
   })
 
   it('open 显示遮罩并默认锁定 body 滚动', () => {
     const el = mount({ open: '' })
     expect(el.shadowRoot!.querySelector('[part="mask"]')).not.toBeNull()
-    expect(document.body.style.overflow).toBe('hidden')
+    expect(document.documentElement.style.overflow).toBe('hidden')
   })
 
   it('open=false 卸载节点，无孤儿 DOM，并恢复滚动', () => {
@@ -30,13 +30,13 @@ describe('OASBackdrop', () => {
     expect(document.body.contains(el)).toBe(true)
     el.removeAttribute('open')
     expect(document.body.contains(el)).toBe(false)
-    expect(document.body.style.overflow).toBe('')
+    expect(document.documentElement.style.overflow).toBe('')
   })
 
   it('lock-scroll=false 不锁定滚动', () => {
     const el = mount({ open: '', 'lock-scroll': 'false' })
     expect(el.shadowRoot!.querySelector('[part="mask"]')).not.toBeNull()
-    expect(document.body.style.overflow).toBe('')
+    expect(document.documentElement.style.overflow).toBe('')
   })
 
   it('transparent 与 blur 通过 host 属性命中样式选择器', () => {
@@ -59,18 +59,18 @@ describe('OASBackdrop', () => {
 
   it('断开连接时释放 body 滚动锁', () => {
     const el = mount({ open: '' })
-    expect(document.body.style.overflow).toBe('hidden')
+    expect(document.documentElement.style.overflow).toBe('hidden')
     el.remove()
-    expect(document.body.style.overflow).toBe('')
+    expect(document.documentElement.style.overflow).toBe('')
   })
 
   it('嵌套遮罩：都关闭后才恢复滚动', () => {
     const a = mount({ open: '' })
     const b = mount({ open: '' })
-    expect(document.body.style.overflow).toBe('hidden')
+    expect(document.documentElement.style.overflow).toBe('hidden')
     a.remove()
-    expect(document.body.style.overflow).toBe('hidden')
+    expect(document.documentElement.style.overflow).toBe('hidden')
     b.remove()
-    expect(document.body.style.overflow).toBe('')
+    expect(document.documentElement.style.overflow).toBe('')
   })
 })

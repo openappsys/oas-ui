@@ -31,23 +31,24 @@ let previousOverflow = ''
 let previousGutter = ''
 
 function lockScroll(): void {
+  const de = document.documentElement
   if (scrollLockCount === 0) {
-    previousOverflow = document.body.style.overflow
-    previousGutter = document.documentElement.style.scrollbarGutter
-    // 有滚动条时先预留滚动条槽位（scrollbar-gutter: stable），再锁滚动移除滚动条
-    // 视口宽度不变 → 固定定位元素与页面内容都不位移（经典滚动条环境下的页面晃动修复）
-    const hasScrollbar = window.innerWidth > document.documentElement.clientWidth
-    if (hasScrollbar) document.documentElement.style.scrollbarGutter = 'stable'
+    previousOverflow = de.style.overflow
+    previousGutter = de.style.scrollbarGutter
+    // 槽位预留与锁滚动必须落在同一滚动容器（本页面在 html 上滚动）：
+    // 先预留滚动条槽位，再移除滚动条 → 视口宽度不变 → 任何定位元素都不位移
+    if (de.scrollHeight > window.innerHeight) de.style.scrollbarGutter = 'stable'
   }
   scrollLockCount++
-  document.body.style.overflow = 'hidden'
+  de.style.overflow = 'hidden'
 }
 
 function unlockScroll(): void {
+  const de = document.documentElement
   scrollLockCount = Math.max(0, scrollLockCount - 1)
   if (scrollLockCount === 0) {
-    document.body.style.overflow = previousOverflow
-    document.documentElement.style.scrollbarGutter = previousGutter
+    de.style.overflow = previousOverflow
+    de.style.scrollbarGutter = previousGutter
   }
 }
 
