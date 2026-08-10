@@ -5,8 +5,8 @@ A command palette (⌘K / Ctrl+K) — search filtering, keyboard selection and E
 ## Basic usage
 
 <DemoBlock title="Basic usage (open with ⌘K / Ctrl+K)">
-  <oas-command id="command-basic" onoas-select="commandLog(event)" items='[{"label":"新建文件","value":"new-file","keywords":["create","file"],"group":"文件"},{"label":"打开文件","value":"open-file","group":"文件"},{"label":"保存文件","value":"save","group":"文件"},{"label":"撤销","value":"undo","keywords":["ctrl z"],"group":"编辑"},{"label":"重做","value":"redo","keywords":["ctrl y"],"group":"编辑"},{"label":"全选","value":"select-all","keywords":["select"],"group":"编辑"}]'></oas-command>
-  <oas-tag id="command-result" type="info">按 ⌘K / Ctrl+K 打开命令面板，或外部控制 open</oas-tag>
+  <oas-command id="command-basic" onoas-select="commandLog(event)" items='[{"label":"New file","value":"new-file","keywords":["create","file"],"group":"File"},{"label":"Open file","value":"open-file","group":"File"},{"label":"Save","value":"save","group":"File"},{"label":"Undo","value":"undo","keywords":["ctrl z"],"group":"Edit"},{"label":"Redo","value":"redo","keywords":["ctrl y"],"group":"Edit"},{"label":"Select all","value":"select-all","keywords":["select"],"group":"Edit"}]'></oas-command>
+  <oas-tag id="command-result" type="info">Press ⌘K / Ctrl+K to open the command palette, or control open externally</oas-tag>
 </DemoBlock>
 
 ## Controlled open
@@ -17,11 +17,11 @@ The `open` attribute is externally controlled: an external button sets `open` to
 
 <DemoBlock title="Externally controlled open">
   <oas-space size="small">
-    <oas-button type="primary" onclick="cmdOpen()">打开命令面板</oas-button>
+    <oas-button type="primary" onclick="cmdOpen()">Open command palette</oas-button>
     <oas-tag id="command-ctrl-status" type="info">open: false</oas-tag>
-    <oas-tag id="command-ctrl-selected" type="success">尚未选择</oas-tag>
+    <oas-tag id="command-ctrl-selected" type="success">Nothing selected</oas-tag>
   </oas-space>
-  <oas-command id="command-controlled" onoas-select="commandCtrlSelect(event)" items='[{"label":"设置主题","value":"theme","group":"外观"},{"label":"切换暗色模式","value":"dark","group":"外观"},{"label":"查看快捷键","value":"shortcuts","group":"帮助"}]'></oas-command>
+  <oas-command id="command-controlled" onoas-select="commandCtrlSelect(event)" items='[{"label":"Set theme","value":"theme","group":"Appearance"},{"label":"Toggle dark mode","value":"dark","group":"Appearance"},{"label":"View shortcuts","value":"shortcuts","group":"Help"}]'></oas-command>
 </DemoBlock>
 
 ## Groups and empty state
@@ -29,10 +29,10 @@ The `open` attribute is externally controlled: an external button sets `open` to
 Group titles render from the `group` field; when nothing matches, an "no matching commands" empty state is shown.
 
 <DemoBlock title="Groups and empty state">
-  <oas-command id="command-empty" items='[{"label":"部署","value":"deploy","group":"操作"},{"label":"回滚","value":"rollback","group":"操作"}]'></oas-command>
+  <oas-command id="command-empty" items='[{"label":"Deploy","value":"deploy","group":"Actions"},{"label":"Rollback","value":"rollback","group":"Actions"}]'></oas-command>
   <oas-space size="small">
-    <oas-button id="command-empty-btn" type="primary">打开（试试搜「部署」和「xyz」）</oas-button>
-    <oas-tag id="command-empty-result" type="info">尚未选择</oas-tag>
+    <oas-button id="command-empty-btn" type="primary">Open (try searching "deploy" and "xyz")</oas-button>
+    <oas-tag id="command-empty-result" type="info">Nothing selected</oas-tag>
   </oas-space>
 </DemoBlock>
 
@@ -41,7 +41,7 @@ import { onMounted } from 'vue'
 onMounted(() => {
   window.commandLog = (e) => {
     const tag = document.getElementById('command-result')
-    if (tag) tag.textContent = `已选择：${e.detail.value}`
+    if (tag) tag.textContent = `Selected: ${e.detail.value}`
   }
 
   const ctrl = document.getElementById('command-controlled')
@@ -53,10 +53,10 @@ onMounted(() => {
     }
     window.cmdOpen = () => ctrl.setAttribute('open', '')
     window.commandCtrlSelect = (e) => {
-      if (ctrlSelected) ctrlSelected.textContent = `已选择：${e.detail.value}`
+      if (ctrlSelected) ctrlSelected.textContent = `Selected: ${e.detail.value}`
     }
     sync()
-    // 选择 / Esc / 点击遮罩由组件移除 open，用 MutationObserver 保持状态同步
+    // Selecting / Esc / clicking the backdrop makes the component remove open; keep status synced with MutationObserver
     new MutationObserver(sync).observe(ctrl, { attributes: true, attributeFilter: ['open'] })
   }
 
@@ -65,7 +65,7 @@ onMounted(() => {
   })
   document.getElementById('command-empty')?.addEventListener('oas-select', (e) => {
     const tag = document.getElementById('command-empty-result')
-    if (tag) tag.textContent = `已选择：${e.detail.value}`
+    if (tag) tag.textContent = `Selected: ${e.detail.value}`
   })
 })
 </script>

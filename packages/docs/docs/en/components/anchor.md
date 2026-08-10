@@ -6,14 +6,14 @@ Tracks the current section on scroll and highlights it automatically; clicking a
 
 <DemoBlock title="Scroll spy">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
-    <oas-anchor style="width: 128px; flex-shrink: 0" items='[{"href":"#anchor-sec-1","title":"第一章"},{"href":"#anchor-sec-2","title":"第二章"},{"href":"#anchor-sec-3","title":"第三章"}]'></oas-anchor>
+    <oas-anchor style="width: 128px; flex-shrink: 0" items='[{"href":"#anchor-sec-1","title":"Chapter 1"},{"href":"#anchor-sec-2","title":"Chapter 2"},{"href":"#anchor-sec-3","title":"Chapter 3"}]'></oas-anchor>
     <div style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
-      <h4 id="anchor-sec-1" style="margin-top: 0">第一章</h4>
-      <p style="color: var(--oas-color-text-secondary)">第一节内容：用于演示滚动监听与高亮跟随。</p>
-      <h4 id="anchor-sec-2">第二章</h4>
-      <p style="color: var(--oas-color-text-secondary)">滚动到该区域时，左侧锚点自动高亮。</p>
-      <h4 id="anchor-sec-3">第三章</h4>
-      <p style="color: var(--oas-color-text-secondary)">点击锚点可平滑滚动定位到对应章节。</p>
+      <h4 id="anchor-sec-1" style="margin-top: 0">Chapter 1</h4>
+      <p style="color: var(--oas-color-text-secondary)">Section 1 content: demonstrates scroll spy and highlight tracking.</p>
+      <h4 id="anchor-sec-2">Chapter 2</h4>
+      <p style="color: var(--oas-color-text-secondary)">When scrolled into view, the left anchor highlights automatically.</p>
+      <h4 id="anchor-sec-3">Chapter 3</h4>
+      <p style="color: var(--oas-color-text-secondary)">Click an anchor to smooth-scroll to the corresponding section.</p>
     </div>
   </div>
 </DemoBlock>
@@ -22,12 +22,12 @@ Tracks the current section on scroll and highlights it automatically; clicking a
 
 <DemoBlock title="Highlight offset (offset)">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
-    <oas-anchor style="width: 128px; flex-shrink: 0" offset="80" items='[{"href":"#anchor-sec-4","title":"第一章"},{"href":"#anchor-sec-5","title":"第二章"}]'></oas-anchor>
+    <oas-anchor style="width: 128px; flex-shrink: 0" offset="80" items='[{"href":"#anchor-sec-4","title":"Chapter 1"},{"href":"#anchor-sec-5","title":"Chapter 2"}]'></oas-anchor>
     <div style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
-      <h4 id="anchor-sec-4" style="margin-top: 0">第一章</h4>
-      <p style="color: var(--oas-color-text-secondary)">offset 控制顶部高亮判定区的偏移量。</p>
-      <h4 id="anchor-sec-5">第二章</h4>
-      <p style="color: var(--oas-color-text-secondary)">滚动观察高亮切换点与默认值的差异。</p>
+      <h4 id="anchor-sec-4" style="margin-top: 0">Chapter 1</h4>
+      <p style="color: var(--oas-color-text-secondary)">offset controls the offset of the top highlight detection zone.</p>
+      <h4 id="anchor-sec-5">Chapter 2</h4>
+      <p style="color: var(--oas-color-text-secondary)">Scroll to observe the difference between the highlight switch point and the default.</p>
     </div>
   </div>
 </DemoBlock>
@@ -36,15 +36,15 @@ Tracks the current section on scroll and highlights it automatically; clicking a
 
 <DemoBlock title="Click event">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
-    <oas-anchor style="width: 128px; flex-shrink: 0" onoas-change="anchorLog(event)" items='[{"href":"#anchor-sec-6","title":"第一章"},{"href":"#anchor-sec-7","title":"第二章"}]'></oas-anchor>
+    <oas-anchor style="width: 128px; flex-shrink: 0" onoas-change="anchorLog(event)" items='[{"href":"#anchor-sec-6","title":"Chapter 1"},{"href":"#anchor-sec-7","title":"Chapter 2"}]'></oas-anchor>
     <div style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
-      <h4 id="anchor-sec-6" style="margin-top: 0">第一章</h4>
-      <p style="color: var(--oas-color-text-secondary)">点击左侧锚点，查看事件输出。</p>
-      <h4 id="anchor-sec-7">第二章</h4>
-      <p style="color: var(--oas-color-text-secondary)">事件 detail 携带目标 href。</p>
+      <h4 id="anchor-sec-6" style="margin-top: 0">Chapter 1</h4>
+      <p style="color: var(--oas-color-text-secondary)">Click the left anchor to see the event output.</p>
+      <h4 id="anchor-sec-7">Chapter 2</h4>
+      <p style="color: var(--oas-color-text-secondary)">The event detail carries the target href.</p>
     </div>
   </div>
-  <oas-tag id="anchor-result" type="info">尚未点击</oas-tag>
+  <oas-tag id="anchor-result" type="info">Nothing clicked</oas-tag>
 </DemoBlock>
 
 ## Controlled highlight
@@ -53,20 +53,20 @@ Tracks the current section on scroll and highlights it automatically; clicking a
 
 <DemoBlock title="Controlled active">
   <oas-space>
-    <oas-button onclick="anchorSetActive('#anchor-sec-c1')">高亮第一章</oas-button>
-    <oas-button onclick="anchorSetActive('#anchor-sec-c2')">高亮第二章</oas-button>
-    <oas-button onclick="anchorSetActive('#anchor-sec-c3')">高亮第三章</oas-button>
-    <oas-button onclick="document.getElementById('anchor-ctrl').removeAttribute('active')">清除高亮</oas-button>
+    <oas-button onclick="anchorSetActive('#anchor-sec-c1')">Highlight Chapter 1</oas-button>
+    <oas-button onclick="anchorSetActive('#anchor-sec-c2')">Highlight Chapter 2</oas-button>
+    <oas-button onclick="anchorSetActive('#anchor-sec-c3')">Highlight Chapter 3</oas-button>
+    <oas-button onclick="document.getElementById('anchor-ctrl').removeAttribute('active')">Clear highlight</oas-button>
   </oas-space>
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch; margin-top: 8px">
-    <oas-anchor id="anchor-ctrl" style="width: 128px; flex-shrink: 0" items='[{"href":"#anchor-sec-c1","title":"第一章"},{"href":"#anchor-sec-c2","title":"第二章"},{"href":"#anchor-sec-c3","title":"第三章"}]'></oas-anchor>
+    <oas-anchor id="anchor-ctrl" style="width: 128px; flex-shrink: 0" items='[{"href":"#anchor-sec-c1","title":"Chapter 1"},{"href":"#anchor-sec-c2","title":"Chapter 2"},{"href":"#anchor-sec-c3","title":"Chapter 3"}]'></oas-anchor>
     <div style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
-      <h4 id="anchor-sec-c1" style="margin-top: 0">第一章</h4>
-      <p style="color: var(--oas-color-text-secondary)">点击左侧按钮设置 <code>active</code>，锚点立即高亮对应项。</p>
-      <h4 id="anchor-sec-c2">第二章</h4>
-      <p style="color: var(--oas-color-text-secondary)">滚动该容器时，scroll spy 会接管高亮。</p>
-      <h4 id="anchor-sec-c3">第三章</h4>
-      <p style="color: var(--oas-color-text-secondary)">「清除高亮」移除 <code>active</code>，恢复无高亮状态。</p>
+      <h4 id="anchor-sec-c1" style="margin-top: 0">Chapter 1</h4>
+      <p style="color: var(--oas-color-text-secondary)">Click a left button to set <code>active</code>; the anchor highlights the corresponding item immediately.</p>
+      <h4 id="anchor-sec-c2">Chapter 2</h4>
+      <p style="color: var(--oas-color-text-secondary)">When scrolling this container, the scroll spy takes over highlighting.</p>
+      <h4 id="anchor-sec-c3">Chapter 3</h4>
+      <p style="color: var(--oas-color-text-secondary)">"Clear highlight" removes <code>active</code>, restoring the no-highlight state.</p>
     </div>
   </div>
 </DemoBlock>
@@ -76,7 +76,7 @@ import { onMounted } from 'vue'
 onMounted(() => {
   window.anchorLog = (e) => {
     const tag = document.getElementById('anchor-result')
-    if (tag) tag.textContent = `已定位：${e.detail.href}`
+    if (tag) tag.textContent = `Located: ${e.detail.href}`
   }
   window.anchorSetActive = (href) => document.getElementById('anchor-ctrl').setAttribute('active', href)
 })

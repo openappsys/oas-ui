@@ -6,10 +6,10 @@ A container for groups of tool buttons: `role="toolbar"` + `aria-label`, `Tab` e
 
 <DemoBlock title="Basic usage (native buttons)">
   <oas-toolbar>
-    <button>加粗</button>
-    <button>斜体</button>
-    <button>下划线</button>
-    <button>删除线</button>
+    <button>Bold</button>
+    <button>Italic</button>
+    <button>Underline</button>
+    <button>Strikethrough</button>
   </oas-toolbar>
 </DemoBlock>
 
@@ -19,12 +19,12 @@ Put `oas-button` elements in the slot (custom elements automatically join the ro
 
 <DemoBlock title="oas-button + separator">
   <oas-toolbar>
-    <oas-button>剪切</oas-button>
-    <oas-button>复制</oas-button>
-    <oas-button>粘贴</oas-button>
+    <oas-button>Cut</oas-button>
+    <oas-button>Copy</oas-button>
+    <oas-button>Paste</oas-button>
     <oas-divider direction="vertical" data-toolbar-ignore></oas-divider>
-    <oas-button>撤销</oas-button>
-    <oas-button>重做</oas-button>
+    <oas-button>Undo</oas-button>
+    <oas-button>Redo</oas-button>
   </oas-toolbar>
 </DemoBlock>
 
@@ -34,9 +34,9 @@ Buttons with `disabled` / `aria-disabled` are skipped by arrow-key navigation (r
 
 <DemoBlock title="Disabled items">
   <oas-toolbar>
-    <button>保存</button>
-    <button disabled>另存为</button>
-    <button>打印</button>
+    <button>Save</button>
+    <button disabled>Save as</button>
+    <button>Print</button>
   </oas-toolbar>
 </DemoBlock>
 

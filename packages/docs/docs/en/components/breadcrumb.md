@@ -5,20 +5,20 @@ Shows the page hierarchy path; the last item is the current page (not clickable)
 ## Basic usage
 
 <DemoBlock title="Basic usage">
-  <oas-breadcrumb items='[{"label":"首页","href":"/"},{"label":"组件","href":"/components"},{"label":"导航","href":"/components/anchor"},{"label":"面包屑"}]'></oas-breadcrumb>
+  <oas-breadcrumb items='[{"label":"Home","href":"/"},{"label":"Components","href":"/components"},{"label":"Navigation","href":"/components/anchor"},{"label":"Breadcrumb"}]'></oas-breadcrumb>
 </DemoBlock>
 
 ## Custom separator
 
 <DemoBlock title="Custom separator">
-  <oas-breadcrumb separator="›" items='[{"label":"首页","href":"/"},{"label":"组件","href":"/components"},{"label":"面包屑"}]'></oas-breadcrumb>
+  <oas-breadcrumb separator="›" items='[{"label":"Home","href":"/"},{"label":"Components","href":"/components"},{"label":"Breadcrumb"}]'></oas-breadcrumb>
 </DemoBlock>
 
 ## Click event
 
 <DemoBlock title="Click event">
-  <oas-breadcrumb onoas-select="breadcrumbLog(event)" items='[{"label":"首页","href":"/"},{"label":"组件","href":"/components"},{"label":"面包屑"}]'></oas-breadcrumb>
-  <oas-tag id="bc-result" type="info">尚未点击</oas-tag>
+  <oas-breadcrumb onoas-select="breadcrumbLog(event)" items='[{"label":"Home","href":"/"},{"label":"Components","href":"/components"},{"label":"Breadcrumb"}]'></oas-breadcrumb>
+  <oas-tag id="bc-result" type="info">Nothing clicked</oas-tag>
 </DemoBlock>
 
 ## Edge cases
@@ -32,7 +32,7 @@ import { onMounted } from 'vue'
 onMounted(() => {
   window.breadcrumbLog = (e) => {
     const tag = document.getElementById('bc-result')
-    if (tag) tag.textContent = `已点击：${e.detail.value}`
+    if (tag) tag.textContent = `Clicked: ${e.detail.value}`
   }
 })
 </script>

@@ -5,25 +5,25 @@ A simple text prompt bubble triggered on hover or keyboard focus.
 ## Basic usage
 
 <DemoBlock title="Trigger on hover">
-  <oas-tooltip content="这是一条提示文字">
-    <oas-button type="primary">悬停查看</oas-button>
+  <oas-tooltip content="This is a tooltip text">
+    <oas-button type="primary">Hover to view</oas-button>
   </oas-tooltip>
 </DemoBlock>
 
 ## Placement
 
 <DemoBlock title="Four directions">
-  <oas-tooltip content="提示在上方" placement="top">
-    <oas-button>上</oas-button>
+  <oas-tooltip content="Hint on top" placement="top">
+    <oas-button>Up</oas-button>
   </oas-tooltip>
-  <oas-tooltip content="提示在下方" placement="bottom">
-    <oas-button>下</oas-button>
+  <oas-tooltip content="Hint at the bottom" placement="bottom">
+    <oas-button>Down</oas-button>
   </oas-tooltip>
-  <oas-tooltip content="提示在左侧" placement="left">
-    <oas-button>左</oas-button>
+  <oas-tooltip content="Hint on the left" placement="left">
+    <oas-button>Left</oas-button>
   </oas-tooltip>
-  <oas-tooltip content="提示在右侧" placement="right">
-    <oas-button>右</oas-button>
+  <oas-tooltip content="Hint on the right" placement="right">
+    <oas-button>Right</oas-button>
   </oas-tooltip>
 </DemoBlock>
 
@@ -32,8 +32,8 @@ When space is insufficient, the tooltip automatically flips along the main axis 
 ## Focus trigger
 
 <DemoBlock title="Trigger on keyboard focus">
-  <oas-tooltip content="通过 Tab 聚焦也能看到我">
-    <oas-button>Tab 聚焦我</oas-button>
+  <oas-tooltip content="You can also see me by focusing with Tab">
+    <oas-button>Focus me with Tab</oas-button>
   </oas-tooltip>
 </DemoBlock>
 
@@ -43,20 +43,20 @@ The `open` attribute is controlled: an external button can set/remove `open` to 
 
 <DemoBlock title="Controlled display (open attribute)">
   <oas-space size="small">
-    <oas-button type="primary" size="small" onclick="tipCtrl(true)">显示</oas-button>
-    <oas-button size="small" onclick="tipCtrl(false)">隐藏</oas-button>
+    <oas-button type="primary" size="small" onclick="tipCtrl(true)">Show</oas-button>
+    <oas-button size="small" onclick="tipCtrl(false)">Hide</oas-button>
     <oas-tag id="tip-status" type="info">open: false</oas-tag>
   </oas-space>
-  <oas-tooltip id="tip-ctrl" content="由 open 属性控制显隐" placement="bottom">
-    <oas-button>触发元素</oas-button>
+  <oas-tooltip id="tip-ctrl" content="Visibility controlled by the open attribute" placement="bottom">
+    <oas-button>Trigger element</oas-button>
   </oas-tooltip>
 </DemoBlock>
 
 ## Long text
 
 <DemoBlock title="Long text and max width">
-  <oas-tooltip content="这是一段较长的提示文字，用于演示最大宽度限制与自动换行，最长不超过 240px。" placement="bottom">
-    <oas-button>悬停查看长提示</oas-button>
+  <oas-tooltip content="This is a longer tooltip text demonstrating the max-width limit and automatic wrapping (at most 240px)." placement="bottom">
+    <oas-button>Hover to view long hint</oas-button>
   </oas-tooltip>
 </DemoBlock>
 
@@ -64,7 +64,7 @@ The `open` attribute is controlled: an external button can set/remove `open` to 
 
 <DemoBlock title="Empty content">
   <oas-tooltip placement="bottom">
-    <oas-button>无内容提示</oas-button>
+    <oas-button>Tooltip without content</oas-button>
   </oas-tooltip>
 </DemoBlock>
 
@@ -82,7 +82,7 @@ onMounted(() => {
     else tip.removeAttribute('open')
   }
   sync()
-  // hover / focus 触发与外部控制都会改 open，用 MutationObserver 保持状态同步
+  // Both hover/focus triggers and external control change open; keep status synced with MutationObserver
   new MutationObserver(sync).observe(tip, { attributes: true, attributeFilter: ['open'] })
 })
 </script>

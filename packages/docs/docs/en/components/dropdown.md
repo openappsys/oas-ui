@@ -5,43 +5,43 @@ A click-triggered menu that opens anchored to the trigger element.
 ## Basic usage
 
 <DemoBlock title="Trigger on click">
-  <oas-dropdown items='[{"label":"编辑","value":"edit"},{"label":"复制","value":"copy"},{"label":"删除","value":"delete"}]' placement="bottom">
-    <oas-button type="primary">操作</oas-button>
+  <oas-dropdown items='[{"label":"Edit","value":"edit"},{"label":"Copy","value":"copy"},{"label":"Delete","value":"delete"}]' placement="bottom">
+    <oas-button type="primary">Actions</oas-button>
   </oas-dropdown>
 </DemoBlock>
 
 ## Placement
 
 <DemoBlock title="Four directions">
-  <oas-dropdown placement="top" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
-    <oas-button>上</oas-button>
+  <oas-dropdown placement="top" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Up</oas-button>
   </oas-dropdown>
-  <oas-dropdown placement="bottom" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
-    <oas-button>下</oas-button>
+  <oas-dropdown placement="bottom" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Down</oas-button>
   </oas-dropdown>
-  <oas-dropdown placement="left" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
-    <oas-button>左</oas-button>
+  <oas-dropdown placement="left" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Left</oas-button>
   </oas-dropdown>
-  <oas-dropdown placement="right" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
-    <oas-button>右</oas-button>
+  <oas-dropdown placement="right" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Right</oas-button>
   </oas-dropdown>
 </DemoBlock>
 
 ## Disabled items
 
 <DemoBlock title="Disabled items">
-  <oas-dropdown items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete","disabled":true}]'>
-    <oas-button>操作</oas-button>
+  <oas-dropdown items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete","disabled":true}]'>
+    <oas-button>Actions</oas-button>
   </oas-dropdown>
 </DemoBlock>
 
 ## Selection event
 
 <DemoBlock title="Selection event">
-  <oas-dropdown id="dd-event" onoas-select="ddLog(event)" items='[{"label":"编辑","value":"edit"},{"label":"复制","value":"copy"},{"label":"删除","value":"delete"}]'>
-    <oas-button>选择操作</oas-button>
+  <oas-dropdown id="dd-event" onoas-select="ddLog(event)" items='[{"label":"Edit","value":"edit"},{"label":"Copy","value":"copy"},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Select an action</oas-button>
   </oas-dropdown>
-  <oas-tag id="dd-result" type="info">尚未选择</oas-tag>
+  <oas-tag id="dd-result" type="info">Nothing selected</oas-tag>
 </DemoBlock>
 
 ## Controlled display
@@ -50,12 +50,12 @@ The `open` attribute is controlled: an external button can set/remove `open` to 
 
 <DemoBlock title="Controlled display (open attribute)">
   <oas-space size="small">
-    <oas-button type="primary" size="small" onclick="event.stopPropagation(); ddOpen(true)">打开</oas-button>
-    <oas-button size="small" onclick="event.stopPropagation(); ddOpen(false)">关闭</oas-button>
+    <oas-button type="primary" size="small" onclick="event.stopPropagation(); ddOpen(true)">Open</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation(); ddOpen(false)">Close</oas-button>
     <oas-tag id="dd-open-status" type="info">open: false</oas-tag>
   </oas-space>
-  <oas-dropdown id="dd-ctrl" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
-    <oas-button>触发元素</oas-button>
+  <oas-dropdown id="dd-ctrl" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Trigger element</oas-button>
   </oas-dropdown>
 </DemoBlock>
 
@@ -65,13 +65,13 @@ The `value` attribute is controlled: an external value sets the selected item (t
 
 <DemoBlock title="Controlled selection (value attribute)">
   <oas-space size="small">
-    <oas-button size="small" onclick="ddValue('edit')">选中「编辑」</oas-button>
-    <oas-button size="small" onclick="ddValue('copy')">选中「复制」</oas-button>
-    <oas-button size="small" onclick="ddValue('')">清除</oas-button>
+    <oas-button size="small" onclick="ddValue('edit')">Select "Edit"</oas-button>
+    <oas-button size="small" onclick="ddValue('copy')">Select "Copy"</oas-button>
+    <oas-button size="small" onclick="ddValue('')">Clear</oas-button>
     <oas-tag id="dd-value-status" type="info">value: -</oas-tag>
   </oas-space>
-  <oas-dropdown id="dd-value" onoas-select="ddValueLog(event)" items='[{"label":"编辑","value":"edit"},{"label":"复制","value":"copy"},{"label":"删除","value":"delete"}]'>
-    <oas-button>选择操作</oas-button>
+  <oas-dropdown id="dd-value" onoas-select="ddValueLog(event)" items='[{"label":"Edit","value":"edit"},{"label":"Copy","value":"copy"},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Select an action</oas-button>
   </oas-dropdown>
 </DemoBlock>
 
@@ -80,7 +80,7 @@ import { onMounted } from 'vue'
 onMounted(() => {
   window.ddLog = (e) => {
     const tag = document.getElementById('dd-result')
-    if (tag) tag.textContent = `已选择：${e.detail.value}`
+    if (tag) tag.textContent = `Selected: ${e.detail.value}`
   }
 
   const ctrl = document.getElementById('dd-ctrl')
@@ -94,7 +94,7 @@ onMounted(() => {
       else ctrl.removeAttribute('open')
     }
     syncOpen()
-    // 点击外部 / Esc / 选择后由组件移除 open，用 MutationObserver 保持状态同步
+    // Clicking outside / Esc / selecting makes the component remove open; keep status synced with MutationObserver
     new MutationObserver(syncOpen).observe(ctrl, { attributes: true, attributeFilter: ['open'] })
   }
 
@@ -112,7 +112,7 @@ onMounted(() => {
       val.setAttribute('value', e.detail.value)
     }
     syncValue()
-    // 选择菜单项由组件更新 value，用 MutationObserver 保持状态同步
+    // Selecting a menu item updates value in the component; keep status synced with MutationObserver
     new MutationObserver(syncValue).observe(val, { attributes: true, attributeFilter: ['value'] })
   }
 })

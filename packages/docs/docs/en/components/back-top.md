@@ -20,15 +20,15 @@ The button is fixed to the bottom-right corner of the viewport by default (`bott
 ## Show / hide control
 
 <DemoBlock title="Show / hide control">
-  <oas-button onclick="document.getElementById('bt-ctrl').toggleAttribute('visible')">显示 / 隐藏</oas-button>
+  <oas-button onclick="document.getElementById('bt-ctrl').toggleAttribute('visible')">Show / Hide</oas-button>
   <oas-back-top id="bt-ctrl" bottom="180px"></oas-back-top>
 </DemoBlock>
 
 ## Click event
 
 <DemoBlock title="Click event">
-  <oas-button onclick="document.getElementById('bt-event').setAttribute('visible','')">显示按钮</oas-button>
-  <oas-back-top id="bt-event" visible bottom="240px" onoas-click="message.info('即将平滑回到顶部')"></oas-back-top>
+  <oas-button onclick="document.getElementById('bt-event').setAttribute('visible','')">Show button</oas-button>
+  <oas-back-top id="bt-event" visible bottom="240px" onoas-click="message.info('About to smooth-scroll back to top')"></oas-back-top>
 </DemoBlock>
 
 <script setup>

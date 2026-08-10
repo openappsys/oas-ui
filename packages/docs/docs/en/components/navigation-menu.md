@@ -5,14 +5,14 @@ A website-style multi-level navigation bar: hover / keyboard expands submenus (c
 ## Basic usage
 
 <DemoBlock title="Basic usage">
-  <oas-navigation-menu id="nav-basic" onoas-select="navLog(event)" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components"},{"label":"文档","value":"docs","href":"/docs"},{"label":"更多","value":"more","children":[{"label":"博客","value":"blog","href":"/blog"},{"label":"社区","value":"community","href":"/community"}]}]},{"label":"定价","value":"pricing","href":"/pricing"},{"label":"关于","value":"about","href":"/about"}]'></oas-navigation-menu>
-  <oas-tag id="nav-result" type="info">尚未选择</oas-tag>
+  <oas-navigation-menu id="nav-basic" onoas-select="navLog(event)" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components"},{"label":"Docs","value":"docs","href":"/docs"},{"label":"More","value":"more","children":[{"label":"Blog","value":"blog","href":"/blog"},{"label":"Community","value":"community","href":"/community"}]}]},{"label":"Pricing","value":"pricing","href":"/pricing"},{"label":"About","value":"about","href":"/about"}]'></oas-navigation-menu>
+  <oas-tag id="nav-result" type="info">Nothing selected</oas-tag>
 </DemoBlock>
 
 ## Disabled items
 
 <DemoBlock title="Disabled items">
-  <oas-navigation-menu items='[{"label":"首页","value":"home","href":"/"},{"label":"产品","value":"products","children":[{"label":"组件","value":"components"},{"label":"文档","value":"docs","disabled":true}]}]'></oas-navigation-menu>
+  <oas-navigation-menu items='[{"label":"Home","value":"home","href":"/"},{"label":"Products","value":"products","children":[{"label":"Components","value":"components"},{"label":"Docs","value":"docs","disabled":true}]}]'></oas-navigation-menu>
 </DemoBlock>
 
 <script setup>
@@ -20,7 +20,7 @@ import { onMounted } from 'vue'
 onMounted(() => {
   window.navLog = (e) => {
     const tag = document.getElementById('nav-result')
-    if (tag) tag.textContent = `已选择：${e.detail.value}`
+    if (tag) tag.textContent = `Selected: ${e.detail.value}`
   }
 })
 </script>
