@@ -24,7 +24,8 @@ const STYLE = `
     opacity var(--oas-transition-base) var(--oas-ease-out);
   pointer-events: auto;
 }
-:host([direction='bottom']) .box {
+/* bottom 为默认方向（未设 direction 时也贴底部，避免 fixed 无垂直定位跑到文档底部） */
+:host(:not([direction='top'])) .box {
   bottom: var(--snackbar-offset, 24px);
 }
 :host([direction='top']) .box {
@@ -35,7 +36,7 @@ const STYLE = `
   opacity: 0;
   pointer-events: none;
 }
-:host([direction='bottom']:not([open])) .box {
+:host(:not([direction='top']):not([open])) .box {
   transform: translate(-50%, 24px);
 }
 :host([direction='top']:not([open])) .box {

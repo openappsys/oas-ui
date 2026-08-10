@@ -28,16 +28,34 @@ const STYLE = `
  */
 let scrollLockCount = 0
 let previousOverflow = ''
+let previousPaddingRight = ''
+
+/** 滚动条宽度（overlay 滚动条系统如 macOS 为 0，无需补偿） */
+function scrollbarWidth(): number {
+  return window.innerWidth - document.documentElement.clientWidth
+}
 
 function lockScroll(): void {
-  if (scrollLockCount === 0) previousOverflow = document.body.style.overflow
+  if (scrollLockCount === 0) {
+    previousOverflow = document.body.style.overflow
+    previousPaddingRight = document.body.style.paddingRight
+    // 锁滚动会移除滚动条导致页面右移；补偿滚动条宽度防页面晃动
+    const sw = scrollbarWidth()
+    if (sw > 0) {
+      const cur = parseFloat(previousPaddingRight || '0') || 0
+      document.body.style.paddingRight = `${cur + sw}px`
+    }
+  }
   scrollLockCount++
   document.body.style.overflow = 'hidden'
 }
 
 function unlockScroll(): void {
   scrollLockCount = Math.max(0, scrollLockCount - 1)
-  if (scrollLockCount === 0) document.body.style.overflow = previousOverflow
+  if (scrollLockCount === 0) {
+    document.body.style.overflow = previousOverflow
+    document.body.style.paddingRight = previousPaddingRight
+  }
 }
 
 export class OASBackdrop extends OASElement {

@@ -93,9 +93,9 @@ describe('OASSnackbar', () => {
 
   it('direction 默认 bottom，offset 写 CSS 变量', () => {
     const el = mount({ open: '', message: '提示', offset: '48' })
-    expect(el.shadowRoot!.querySelector('style')!.textContent).toContain(
-      ":host([direction='bottom']) .box",
-    )
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    // bottom 为默认方向：未设 direction 时也贴底部（:not([direction='top']) 兜底）
+    expect(style).toContain(":host(:not([direction='top'])) .box")
     expect(el.style.getPropertyValue('--snackbar-offset')).toBe('48px')
   })
 
