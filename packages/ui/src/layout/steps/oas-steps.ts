@@ -1,9 +1,16 @@
 import { OASElement } from '@oas-ui/core'
 
+/** 步骤状态：wait 等待 / process 进行中 / finish 完成 / error 错误 */
+export type StepStatus = 'wait' | 'process' | 'finish' | 'error'
+
 export interface StepItem {
   title: string
   description?: string
+  /** 显式状态，缺省时按 current 推导（前序 finish / 当前 process / 其余 wait） */
+  status?: StepStatus
 }
+
+const VALID_STATUS = new Set<StepStatus>(['wait', 'process', 'finish', 'error'])
 
 const STYLE = `
 :host {
@@ -38,8 +45,15 @@ const STYLE = `
   background: var(--oas-color-border);
   z-index: 0;
 }
-.item[data-status='finish']:not(:last-child)::after {
+/* 连接线颜色跟随前一步状态：process 主色 / finish 成功色 / error 危险色 */
+.item[data-status='process']:not(:last-child)::after {
   background: var(--oas-color-primary);
+}
+.item[data-status='finish']:not(:last-child)::after {
+  background: var(--oas-color-success);
+}
+.item[data-status='error']:not(:last-child)::after {
+  background: var(--oas-color-danger);
 }
 .steps[data-direction='vertical'] .item:not(:last-child)::after {
   top: var(--oas-control-height-sm);
@@ -61,13 +75,19 @@ const STYLE = `
   position: relative;
   z-index: 1;
 }
-.item[data-status='finish'] .icon,
-.item[data-status='current'] .icon {
+/* wait：次要色（默认），process：主色，finish：成功色，error：危险色 */
+.item[data-status='process'] .icon {
   border-color: var(--oas-color-primary);
   color: var(--oas-color-primary);
-}
-.item[data-status='current'] .icon {
   font-weight: 600;
+}
+.item[data-status='finish'] .icon {
+  border-color: var(--oas-color-success);
+  color: var(--oas-color-success);
+}
+.item[data-status='error'] .icon {
+  border-color: var(--oas-color-danger);
+  color: var(--oas-color-danger);
 }
 .text {
   margin-top: var(--oas-space-1);
@@ -86,11 +106,23 @@ const STYLE = `
   text-overflow: ellipsis;
   max-width: 100%;
 }
+/* clickable：整项可点，hover 图标轻微强调、focus-visible 焦点环 */
+.steps[data-clickable='true'] .item {
+  cursor: pointer;
+}
+.steps[data-clickable='true'] .item:hover .icon {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--oas-color-primary) 18%, transparent);
+}
+.steps[data-clickable='true'] .item:focus-visible {
+  outline: none;
+  border-radius: var(--oas-radius-sm);
+  box-shadow: var(--oas-focus-ring);
+}
 `
 
 export class OASSteps extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['steps', 'current', 'direction']
+    return ['steps', 'current', 'direction', 'clickable']
   }
 
   private _steps: StepItem[] = []
@@ -117,17 +149,21 @@ export class OASSteps extends OASElement {
     this.parseSteps()
     const direction = this.getAttr('direction', 'horizontal')
     stepsEl.setAttribute('data-direction', direction)
+    const clickable = this.hasAttr('clickable')
+    if (clickable) stepsEl.setAttribute('data-clickable', 'true')
+    else stepsEl.removeAttribute('data-clickable')
     stepsEl.innerHTML = ''
     const current = Number(this.getAttr('current', '0')) || 0
     this._steps.forEach((step, idx) => {
       const item = document.createElement('div')
       item.className = 'item'
       item.setAttribute('part', 'item')
-      const status = idx < current ? 'finish' : idx === current ? 'current' : 'wait'
+      const status = this.resolveStatus(step, idx, current)
       item.setAttribute('data-status', status)
       const icon = document.createElement('span')
       icon.className = 'icon'
-      icon.textContent = status === 'finish' ? '✓' : String(idx + 1)
+      icon.textContent =
+        status === 'finish' ? '✓' : status === 'error' ? '✕' : String(idx + 1)
       const textWrap = document.createElement('div')
       const title = document.createElement('div')
       title.className = 'text'
@@ -140,8 +176,34 @@ export class OASSteps extends OASElement {
         textWrap.appendChild(desc)
       }
       item.append(icon, textWrap)
+      if (clickable) {
+        // 整项承担按钮角色，键盘 Enter/Space 可达；点击派发 oas-change{index} 并切换 current
+        item.setAttribute('role', 'button')
+        item.setAttribute('tabindex', '0')
+        if (status === 'process') item.setAttribute('aria-current', 'step')
+        const goto = (): void => {
+          this.setAttribute('current', String(idx))
+          this.emit('change', { index: idx })
+          this.update()
+        }
+        item.addEventListener('click', goto)
+        item.addEventListener('keydown', (e: Event) => {
+          const k = e as KeyboardEvent
+          if (k.key !== 'Enter' && k.key !== ' ') return
+          k.preventDefault()
+          goto()
+        })
+      }
       stepsEl.appendChild(item)
     })
+  }
+
+  /** 状态解析：显式 status 优先，否则按 current 推导（前序 finish / 当前 process / 其余 wait） */
+  private resolveStatus(step: StepItem, idx: number, current: number): StepStatus {
+    if (step.status && VALID_STATUS.has(step.status)) return step.status
+    if (idx < current) return 'finish'
+    if (idx === current) return 'process'
+    return 'wait'
   }
 
   private parseSteps(): void {

@@ -12,6 +12,14 @@ function range(el: OASSlider): HTMLInputElement {
   return el.shadowRoot!.querySelector('input')!
 }
 
+function marksEl(el: OASSlider): HTMLElement {
+  return el.shadowRoot!.querySelector<HTMLElement>('.marks')!
+}
+
+function markItems(el: OASSlider): HTMLElement[] {
+  return [...marksEl(el).querySelectorAll<HTMLElement>('.mark')]
+}
+
 describe('OASSlider', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -57,5 +65,87 @@ describe('OASSlider', () => {
   it('disabled 透传', () => {
     const el = mount({ disabled: '' })
     expect(range(el).disabled).toBe(true)
+  })
+
+  describe('marks 刻度', () => {
+    it('无 marks 时刻度区隐藏', () => {
+      const el = mount()
+      expect(marksEl(el).hidden).toBe(true)
+      expect(markItems(el)).toHaveLength(0)
+    })
+
+    it('对象形式：渲染刻度点 + 标签，位置映射到百分比', () => {
+      const el = mount({
+        min: '0',
+        max: '100',
+        marks: JSON.stringify({ '0': '0°C', '26': '26°C', '60': '60°C' }),
+      })
+      expect(marksEl(el).hidden).toBe(false)
+      const items = markItems(el)
+      expect(items).toHaveLength(3)
+      expect(items.map((n) => n.getAttribute('data-value'))).toEqual(['0', '26', '60'])
+      expect(items.map((n) => n.style.left)).toEqual(['0%', '26%', '60%'])
+      const labels = [...marksEl(el).querySelectorAll('.mark-label')].map((n) => n.textContent)
+      expect(labels).toEqual(['0°C', '26°C', '60°C'])
+    })
+
+    it('数组形式：渲染刻度点，标签回退为数值文本', () => {
+      const el = mount({
+        min: '0',
+        max: '100',
+        marks: JSON.stringify([0, 26, 60]),
+      })
+      const items = markItems(el)
+      expect(items).toHaveLength(3)
+      expect(items.map((n) => n.style.left)).toEqual(['0%', '26%', '60%'])
+      const labels = [...marksEl(el).querySelectorAll('.mark-label')].map((n) => n.textContent)
+      expect(labels).toEqual(['0', '26', '60'])
+    })
+
+    it('位置随 min/max 重新映射不错位', () => {
+      const el = mount({
+        min: '-50',
+        max: '50',
+        marks: JSON.stringify({ '-50': 'min', '0': '中', '50': 'max' }),
+      })
+      expect(markItems(el).map((n) => n.style.left)).toEqual(['0%', '50%', '100%'])
+    })
+
+    it('当前值经过的刻度高亮 data-passed，未经过不高亮', () => {
+      const el = mount({
+        value: '30',
+        min: '0',
+        max: '100',
+        marks: JSON.stringify([0, 26, 60]),
+      })
+      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual(['true', 'true', 'false'])
+      // 值增大后增量刷新高亮
+      el.setAttribute('value', '70')
+      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual(['true', 'true', 'true'])
+      expect(markItems(el)).toHaveLength(3)
+    })
+
+    it('input 事件实时刷新经过状态（不重建节点）', () => {
+      const el = mount({
+        value: '0',
+        min: '0',
+        max: '100',
+        marks: JSON.stringify([0, 50, 100]),
+      })
+      const input = range(el)
+      const before = markItems(el)
+      input.value = '80'
+      input.dispatchEvent(new Event('input'))
+      const after = markItems(el)
+      expect(after.map((n) => n.getAttribute('data-passed'))).toEqual(['true', 'true', 'false'])
+      // 节点未被重建（同一引用）
+      expect(after).toEqual(before)
+    })
+
+    it('marks 非法 JSON 时回退为空（隐藏）', () => {
+      const el = mount({ marks: '{oops' })
+      expect(marksEl(el).hidden).toBe(true)
+      expect(markItems(el)).toHaveLength(0)
+    })
   })
 })

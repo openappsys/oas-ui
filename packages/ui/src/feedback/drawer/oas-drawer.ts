@@ -78,9 +78,16 @@ const STYLE = `
 }
 `
 
+/** size 预设档位宽度（对齐主流抽屉尺寸） */
+const SIZE_PRESETS: Record<string, string> = {
+  small: '256px',
+  medium: '378px',
+  large: '736px',
+}
+
 export class OASDrawer extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['visible', 'title', 'placement', 'no-footer']
+    return ['visible', 'title', 'placement', 'no-footer', 'width', 'size']
   }
 
   private previousFocus: HTMLElement | null = null
@@ -140,11 +147,29 @@ export class OASDrawer extends OASElement {
     this.emit(action)
   }
 
+  /**
+   * 宽度解析：显式 width 优先于 size；size 支持预设档位（small/medium/large）
+   * 或具体值（纯数字视为 px，或直接是长度/百分比），无法解析时回退空串（用 CSS 默认）。
+   */
+  private resolveWidth(): string {
+    const explicit = this.getAttr('width')
+    if (explicit) return explicit
+    const size = this.getAttr('size')
+    if (!size) return ''
+    const preset = SIZE_PRESETS[size]
+    if (preset) return preset
+    if (/^\d+(\.\d+)?$/.test(size)) return `${size}px`
+    if (/^\d+(\.\d+)?(px|rem|em|vw|vh|%)$/.test(size)) return size
+    return ''
+  }
+
   protected override update(): void {
-    const panel = this.shadow.querySelector('.panel')
+    const panel = this.shadow.querySelector<HTMLElement>('.panel')
     if (!panel) return
     const visible = this.hasAttr('visible')
     panel.setAttribute('aria-hidden', String(!visible))
+    // 宽度：显式 width 优先；否则按 size 档位/具体值解析，未设置回退 CSS 默认
+    panel.style.width = this.resolveWidth()
     this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.getAttr('title', '')
     this.shadow
       .querySelector<HTMLElement>('.panel')!

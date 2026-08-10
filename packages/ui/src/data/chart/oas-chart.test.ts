@@ -67,6 +67,47 @@ describe('OASChart', () => {
     expect(slices[0]!.querySelector('title')!.textContent).toContain('一月')
   })
 
+  it('type=area 渲染面积图：折线 + 填充 path（填充闭合到基线）', () => {
+    const el = mount({ type: 'area', data: SINGLE })
+    const svg = svgOf(el)
+    expect(svg.querySelectorAll('.line-path').length).toBe(1)
+    expect(svg.querySelectorAll('.dot').length).toBe(3)
+    const d = svg.querySelector('.area-path')!.getAttribute('d')!
+    expect(d.startsWith('M')).toBe(true)
+    // 基线 y = PAD.t + plotH = 16 + 234 = 250，填充必须闭合到基线
+    expect(d).toContain('250.0')
+    expect(d.endsWith('Z')).toBe(true)
+  })
+
+  it('type=donut 渲染镂空扇区（内弧半径小于外弧半径）', () => {
+    const el = mount({ type: 'donut', data: SINGLE })
+    const slices = svgOf(el).querySelectorAll('.slice')
+    expect(slices.length).toBe(3)
+    const d = slices[0]!.getAttribute('d')!
+    const radii = [...d.matchAll(/A ([\d.]+) ([\d.]+)/g)].map((m) => Number(m[1]))
+    expect(radii.length).toBe(2)
+    expect(radii[0]!).toBe(116) // 外半径 = min(520,280)/2 - 24
+    expect(radii[1]!).toBeGreaterThan(0)
+    expect(radii[1]!).toBeLessThan(radii[0]!)
+  })
+
+  it('type=stacked-bar 多系列堆叠（段高之和=分类总高，不超绘图区）', () => {
+    const el = mount({ type: 'stacked-bar', data: MULTI })
+    const bars = svgOf(el).querySelectorAll('.bar')
+    expect(bars.length).toBe(6)
+    // 分类「一月」：系列 A(10) 在底、系列 B(5) 叠其上
+    const a = bars[0]!
+    const b = bars[1]!
+    const yA = Number(a.getAttribute('y'))
+    const hA = Number(a.getAttribute('height'))
+    const yB = Number(b.getAttribute('y'))
+    const hB = Number(b.getAttribute('height'))
+    expect(yB + hB).toBeCloseTo(yA, 1)
+    // 柱体不超出绘图区：顶 ≥ PAD.t(16)、底 ≤ PAD.t + plotH(250)
+    expect(yB).toBeGreaterThanOrEqual(16)
+    expect(yA + hA).toBeLessThanOrEqual(250)
+  })
+
   it('对象格式多系列：折线每系列一条 path', () => {
     const el = mount({ data: MULTI })
     expect(svgOf(el).querySelectorAll('.line-path').length).toBe(2)

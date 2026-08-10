@@ -78,20 +78,17 @@ th.sortable:hover {
 }
 th[data-order='asc'] .sort-icon { color: var(--oas-color-primary); }
 th[data-order='desc'] .sort-icon { color: var(--oas-color-primary); }
-/* 固定列：sticky 横向定位（left/right 由 JS 按列宽累加写入） */
-th[data-fixed='left'], td[data-fixed='left'] {
+/* 固定列：sticky 横向定位（left/right 由 JS 按列宽累加写入）。
+   层级：固定正文格 1 < 表头吸顶格 2 < 固定表头格 3（滚动时表头不被正文盖住） */
+td[data-fixed='left'], td[data-fixed='right'] {
   position: sticky;
   z-index: 1;
   background: var(--oas-color-bg);
 }
 th[data-fixed='left'], th[data-fixed='right'] {
+  position: sticky;
   z-index: 3;
   background: var(--oas-color-bg-hover);
-}
-th[data-fixed='right'], td[data-fixed='right'] {
-  position: sticky;
-  z-index: 1;
-  background: var(--oas-color-bg);
 }
 /* 斑马纹：奇数行浅底（hover/selected 规则在其后声明，自动覆盖） */
 tr.row[data-stripe='odd'] td {

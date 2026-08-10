@@ -65,8 +65,8 @@ const STYLE = `
   min-width: 0;
   flex: 1;
   text-align: left;
-  /* 多选标签保持单行，超出横向滚动而非折行撑高 */
-  overflow-x: auto;
+  /* 单行：不换行、不出横向滚动条，放不下的标签折叠为 +N（见 collapseOverflowChips） */
+  overflow: hidden;
 }
 .placeholder {
   color: var(--oas-color-text-secondary);
@@ -83,6 +83,26 @@ const STYLE = `
   padding: 0 var(--oas-space-1);
   font-size: var(--oas-font-size-xs);
   color: var(--oas-color-text-primary);
+}
+.chip[hidden] {
+  display: none;
+}
+/* 折叠计数 chip：样式同 .chip，颜色次要；仅在需要折叠时才插入 DOM */
+.chip-plus {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 20px;
+  flex-shrink: 0;
+  gap: var(--oas-space-1);
+  background: var(--oas-color-bg-hover);
+  border-radius: var(--oas-radius-sm);
+  padding: 0 var(--oas-space-1);
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+}
+.chip-plus[hidden] {
+  display: none;
 }
 .chip button {
   appearance: none;
@@ -607,6 +627,32 @@ export class OASSelect extends OASElement {
     return Number.isNaN(n) ? null : n
   }
 
+  /** 单行放不下时把放不下的标签收进 +N（不换行、不出横向滚动条，最佳实践） */
+  private collapseOverflowChips(valueEl: HTMLElement, plus: HTMLElement, allLabels: string[], renderedCount: number): void {
+    const chips = [...valueEl.querySelectorAll<HTMLElement>('.chip:not(.chip-plus)')]
+    let hidden = allLabels.length - renderedCount // 已按 max-tag-count 折叠的数量
+    // 无需折叠且单行放得下：移除 +N，不占位
+    if (hidden === 0 && valueEl.scrollWidth <= valueEl.clientWidth) {
+      plus.remove()
+      return
+    }
+    const applyPlus = () => {
+      plus.hidden = false
+      plus.textContent = `+${hidden}`
+      plus.setAttribute('title', allLabels.slice(allLabels.length - hidden).join('、'))
+    }
+    applyPlus()
+    // 从后往前收起，直到单行放得下
+    for (let i = chips.length - 1; i >= 0; i--) {
+      if (valueEl.scrollWidth <= valueEl.clientWidth) break
+      const c = chips[i]
+      if (!c) continue
+      c.hidden = true
+      hidden++
+      applyPlus()
+    }
+  }
+
   private syncTrigger(): void {
     if (!this.triggerEl) return
     const placeholder = this.getAttr('placeholder', this.t('select.placeholder'))
@@ -635,9 +681,10 @@ export class OASSelect extends OASElement {
 
     if (this.hasAttr('multiple')) {
       valueEl.innerHTML = ''
-      // max-tag-count：超过数量折叠为 +N
+      // max-tag-count：超过数量先按数量折叠
       const limit = this.intAttr('max-tag-count') ?? Number.POSITIVE_INFINITY
       const shown = limit >= 0 ? values.slice(0, limit) : values
+      const allLabels = values.map((v) => this._options.find((o) => o.value === v)?.label ?? v)
       for (const v of shown) {
         const option = this._options.find((o) => o.value === v)
         const chip = document.createElement('span')
@@ -654,16 +701,11 @@ export class OASSelect extends OASElement {
         chip.append(label, rm)
         valueEl.appendChild(chip)
       }
-      if (values.length > shown.length) {
-        const more = document.createElement('span')
-        more.className = 'chip'
-        more.textContent = `+${values.length - shown.length}`
-        const rest = values
-          .slice(shown.length)
-          .map((v) => this._options.find((o) => o.value === v)?.label ?? v)
-        more.setAttribute('title', rest.join('、'))
-        valueEl.appendChild(more)
-      }
+      // 折叠计数 chip：max-tag-count 折叠 + 超宽自动折叠合并计数（单行不换行、不出滚动条）
+      const plus = document.createElement('span')
+      plus.className = 'chip chip-plus'
+      valueEl.appendChild(plus)
+      this.collapseOverflowChips(valueEl, plus, allLabels, shown.length)
     } else {
       const value = values[0] ?? ''
       const option = this._options.find((o) => o.value === value)

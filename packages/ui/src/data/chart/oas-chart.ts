@@ -1,6 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 
-export type ChartType = 'line' | 'bar' | 'pie'
+export type ChartType = 'line' | 'bar' | 'pie' | 'area' | 'donut' | 'stacked-bar'
 
 export interface ChartDatum {
   label: string
@@ -36,6 +36,9 @@ const PALETTE = [
 
 /** 折线图配色类：color 继承 → 元素 stroke/fill 用 currentColor */
 const SWATCH_CLASSES = ['c0', 'c1', 'c2', 'c3']
+
+/** 环形图镂空比例（内半径 = 外半径 × 该值） */
+const DONUT_HOLE_RATIO = 0.62
 
 const STYLE = `
 :host {
@@ -84,6 +87,11 @@ svg {
   fill: currentColor;
   stroke: var(--oas-color-bg);
   stroke-width: 1.5;
+}
+/* 面积图填充：折线下方半透明区域（多系列叠加时仍可读） */
+.area-path {
+  fill: currentColor;
+  opacity: 0.18;
 }
 /* 柱状 */
 .bar {
@@ -137,7 +145,8 @@ svg {
   }
   .slice.animate,
   .line-path.animate,
-  .dot.animate {
+  .dot.animate,
+  .area-path.animate {
     animation: oas-chart-fade 0.5s var(--oas-ease-out);
   }
 }
@@ -158,12 +167,12 @@ const PAD = { l: 42, r: 12, t: 16, b: 30 }
  * oas-chart —— 自研 SVG 图表（零第三方引擎）。
  *
  * 属性（kebab-case）：
- * - `type`：line / bar / pie，默认 line
+ * - `type`：line / bar / pie / area / donut / stacked-bar，默认 line
  * - `data`：JSON 字符串（数组单系列 `[{label,value}]` 或对象多系列
  *   `{labels:[...], series:[{name,data:[...]}]}`），property `data` 优先
  * - `options`：JSON 字符串（smooth / colors / showLegend）
  *
- * 渲染：SVG path/rect/circle 手写折线/柱状/饼图；坐标轴刻度 + 网格线；
+ * 渲染：SVG path/rect/circle 手写折线/柱状/饼图/面积/环形/堆叠柱状；坐标轴刻度 + 网格线；
  * 每个数据点带原生 `<title>` 悬停显示数值；数据更新整体重绘（qrcode 同模式）。
  * 颜色只用 token（primary/success/warning/danger 系列，可 options.colors 覆盖）。
  * ARIA：容器 role="img" + aria-label（组件属性优先，缺省按类型走 i18n）。
@@ -244,9 +253,12 @@ export class OASChart extends OASElement {
     this.renderLegend(legend, data, options)
   }
 
-  /** 渲染主体图形（line/bar/pie 三型） */
+  /** 渲染主体图形（line/bar/pie/area/donut/stacked-bar 六型） */
   private renderBody(type: ChartType, data: ChartData, options: ChartOptions): string {
     if (type === 'pie') return this.renderPie(data, options)
+    if (type === 'donut') return this.renderDonut(data, options)
+    if (type === 'stacked-bar') return this.renderStackedBars(data, options)
+    if (type === 'area') return this.renderArea(data, options)
     return type === 'bar' ? this.renderBars(data, options) : this.renderLine(data, options)
   }
 
@@ -272,6 +284,42 @@ export class OASChart extends OASElement {
       const path = options.smooth
         ? this.smoothPath(pts)
         : pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
+      out += `<path class="line-path ${cls} animate" d="${path}"${color ? ` style="color:${color}"` : ''}></path>`
+      pts.forEach((p, i) => {
+        const label = this.datumLabel(data.labels[i] ?? '', series.data[i] ?? 0)
+        out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"><title>${this.escapeAttr(label)}</title></circle>`
+      })
+    })
+    return out
+  }
+
+  /** 面积图：折线 + 闭合到基线的半透明填充（多系列叠加显示） */
+  private renderArea(data: ChartData, options: ChartOptions): string {
+    const plotW = W - PAD.l - PAD.r
+    const plotH = H - PAD.t - PAD.b
+    const maxVal = this.maxValue(data)
+    const ticks = this.niceTicks(maxVal)
+    const n = data.labels.length
+
+    let out = this.renderGrid(ticks, plotH)
+    out += this.renderXLabels(data.labels, plotW, 'top')
+
+    const stepX = n > 1 ? plotW / (n - 1) : plotW / 2
+    const xAt = (i: number): number => PAD.l + (n > 1 ? i * stepX : stepX)
+    const yAt = (v: number): number => PAD.t + plotH - (ticks.max > 0 ? (v / ticks.max) * plotH : 0)
+    const baseY = PAD.t + plotH
+
+    data.series.forEach((series, si) => {
+      const cls = SWATCH_CLASSES[si % SWATCH_CLASSES.length]!
+      const color = options.colors?.[si]
+      const pts = series.data.map((v, i) => ({ x: xAt(i), y: yAt(v) }))
+      const path = options.smooth
+        ? this.smoothPath(pts)
+        : pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
+      // 填充：折线 + 末点垂线到底 + 沿基线回到首点 + 闭合
+      const lastI = Math.min(n, series.data.length) - 1
+      const fill = `${path} L ${xAt(lastI).toFixed(1)} ${baseY.toFixed(1)} L ${xAt(0).toFixed(1)} ${baseY.toFixed(1)} Z`
+      out += `<path class="area-path ${cls} animate" d="${fill}"${color ? ` style="color:${color}"` : ''}></path>`
       out += `<path class="line-path ${cls} animate" d="${path}"${color ? ` style="color:${color}"` : ''}></path>`
       pts.forEach((p, i) => {
         const label = this.datumLabel(data.labels[i] ?? '', series.data[i] ?? 0)
@@ -311,6 +359,42 @@ export class OASChart extends OASElement {
     return out
   }
 
+  /** 堆叠柱状图：每分类各系列自底向上堆叠，柱高=分类合计，刻度按合计计算 */
+  private renderStackedBars(data: ChartData, options: ChartOptions): string {
+    const plotW = W - PAD.l - PAD.r
+    const plotH = H - PAD.t - PAD.b
+    const n = data.labels.length
+    const m = data.series.length
+
+    // 堆叠基准：每分类各系列之和的最大值
+    const stackMax = Math.max(
+      0,
+      ...data.labels.map((_, i) => data.series.reduce((acc, s) => acc + Math.max(0, s.data[i] ?? 0), 0)),
+    )
+    const ticks = this.niceTicks(stackMax)
+    const bandW = plotW / n
+    const barW = bandW * 0.6
+
+    let out = this.renderGrid(ticks, plotH)
+    out += this.renderXLabels(data.labels, plotW, 'middle')
+
+    data.labels.forEach((_, i) => {
+      let acc = 0
+      data.series.forEach((series, si) => {
+        const v = Math.max(0, series.data[i] ?? 0)
+        const cls = SWATCH_CLASSES[si % SWATCH_CLASSES.length]!
+        const color = options.colors?.[si]
+        const h = ticks.max > 0 ? (v / ticks.max) * plotH : 0
+        const y = PAD.t + plotH - acc - h
+        const x = PAD.l + i * bandW + (bandW - barW) / 2
+        const title = this.datumLabel(data.labels[i] ?? '', v)
+        out += `<rect class="bar ${cls} animate" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, barW).toFixed(1)}" height="${h.toFixed(1)}" rx="2"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(title)}</title></rect>`
+        acc += h
+      })
+    })
+    return out
+  }
+
   /** 饼图：每数据一段扇区 path + 百分比 title */
   private renderPie(data: ChartData, options: ChartOptions): string {
     const values = data.series[0]?.data ?? []
@@ -337,6 +421,42 @@ export class OASChart extends OASElement {
       const color = options.colors?.[i]
       const label = `${this.datumLabel(data.labels[i] ?? '', v)} (${Math.round((v / total) * 100)}%)`
       out += `<path class="slice ${cls} animate" d="M ${cx} ${cy} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(label)}</title></path>`
+      angle += sweep
+    })
+    return out
+  }
+
+  /** 环形图：饼图镂空（内半径 = 外半径 × DONUT_HOLE_RATIO），每段环带 arc + 百分比 title */
+  private renderDonut(data: ChartData, options: ChartOptions): string {
+    const values = data.series[0]?.data ?? []
+    const total = values.reduce((a, b) => a + Math.max(0, b), 0)
+    if (total <= 0) return ''
+
+    const cx = W / 2
+    const cy = H / 2
+    const r = Math.min(W, H) / 2 - 24
+    const ir = r * DONUT_HOLE_RATIO
+
+    let out = ''
+    let angle = -90
+    values.forEach((raw, i) => {
+      const v = Math.max(0, raw)
+      const sweep = (v / total) * 360
+      const a1 = (angle * Math.PI) / 180
+      const a2 = ((angle + sweep) * Math.PI) / 180
+      const large = sweep > 180 ? 1 : 0
+      const x1 = cx + r * Math.cos(a1)
+      const y1 = cy + r * Math.sin(a1)
+      const x2 = cx + r * Math.cos(a2)
+      const y2 = cy + r * Math.sin(a2)
+      const ix1 = cx + ir * Math.cos(a2)
+      const iy1 = cy + ir * Math.sin(a2)
+      const ix2 = cx + ir * Math.cos(a1)
+      const iy2 = cy + ir * Math.sin(a1)
+      const cls = SWATCH_CLASSES[i % SWATCH_CLASSES.length]!
+      const color = options.colors?.[i]
+      const label = `${this.datumLabel(data.labels[i] ?? '', v)} (${Math.round((v / total) * 100)}%)`
+      out += `<path class="slice ${cls} animate" d="M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r} ${r} 0 ${large} 1 ${x2.toFixed(1)} ${y2.toFixed(1)} L ${ix1.toFixed(1)} ${iy1.toFixed(1)} A ${ir} ${ir} 0 ${large} 0 ${ix2.toFixed(1)} ${iy2.toFixed(1)} Z"${color ? ` style="color:${color}"` : ''}><title>${this.escapeAttr(label)}</title></path>`
       angle += sweep
     })
     return out

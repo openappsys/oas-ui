@@ -11,16 +11,49 @@ const STYLE = `
   color: var(--oas-color-text-secondary);
 }
 .image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 96px;
   height: 96px;
-  opacity: 0.7;
+  flex-shrink: 0;
 }
-.description {
-  margin-top: var(--oas-space-3);
-  font-size: var(--oas-font-size-sm);
+.illustration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+.illustration svg,
+.illustration img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* 仅默认插画做降透明处理，自定义插画保持原样 */
+.illustration[data-default] svg {
+  opacity: 0.7;
 }
 :host([hide-image]) .image {
   display: none;
+}
+/* slot 内容直接参与 .image 的 flex 居中布局 */
+slot[name='illustration'] {
+  display: contents;
+}
+/* hidden 属性会被作者级 display 规则覆盖，需显式补回 */
+.illustration[hidden],
+slot[name='illustration'][hidden] {
+  display: none;
+}
+::slotted(svg),
+::slotted(img) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 ::slotted([slot='action']) {
   margin-top: var(--oas-space-3);
@@ -29,27 +62,39 @@ const STYLE = `
 
 const ILLUSTRATION = `
 <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" width="96" height="96" aria-hidden="true">
-  <rect x="28" y="36" width="64" height="44" rx="8" fill="#e4e4e7" stroke="#a1a1aa" stroke-width="2"/>
-  <line x1="28" y1="50" x2="92" y2="50" stroke="#a1a1aa" stroke-width="2"/>
-  <line x1="40" y1="60" x2="80" y2="60" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round"/>
-  <line x1="48" y1="68" x2="72" y2="68" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round"/>
-  <circle cx="60" cy="84" r="14" fill="#0b6cff" opacity="0.15"/>
-  <circle cx="60" cy="84" r="5" fill="#0b6cff"/>
+  <rect x="28" y="36" width="64" height="44" rx="8" fill="var(--oas-color-border)" stroke="var(--oas-color-text-disabled)" stroke-width="2"/>
+  <line x1="28" y1="50" x2="92" y2="50" stroke="var(--oas-color-text-disabled)" stroke-width="2"/>
+  <line x1="40" y1="60" x2="80" y2="60" stroke="var(--oas-color-border)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="48" y1="68" x2="72" y2="68" stroke="var(--oas-color-border)" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="60" cy="84" r="14" fill="var(--oas-color-primary)" opacity="0.15"/>
+  <circle cx="60" cy="84" r="5" fill="var(--oas-color-primary)"/>
 </svg>
 `
 
+/** 转义属性值中的危险字符，避免注入闭合引号/标签 */
+function escapeAttr(v: string): string {
+  return v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
 export class OASEmpty extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['description', 'hide-image']
+    return ['description', 'hide-image', 'illustration', 'image-size']
   }
 
   protected override render(): void {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      <div class="image" part="image">${ILLUSTRATION}</div>
+      <div class="image" part="image">
+        <slot name="illustration"></slot>
+        <div class="illustration" part="illustration"></div>
+      </div>
       <div class="description" part="description"></div>
       <slot name="action"></slot>
     `
+    // 插画 slot 内容增减时重新同步优先级
+    this.shadow
+      .querySelector<HTMLSlotElement>('slot[name="illustration"]')
+      ?.addEventListener('slotchange', () => this.update())
     this.update()
   }
 
@@ -59,5 +104,40 @@ export class OASEmpty extends OASElement {
       ? this.getAttr('description')
       : this.t('empty.noData')
     this.shadow.querySelector<HTMLElement>('[part="description"]')!.textContent = description
+
+    const image = this.shadow.querySelector<HTMLElement>('.image')
+    const content = this.shadow.querySelector<HTMLElement>('[part="illustration"]')
+    const slot = this.shadow.querySelector<HTMLSlotElement>('slot[name="illustration"]')
+    if (!image || !content || !slot) return
+
+    // image-size 控制插画区域尺寸（缺省 96px）
+    const size = this.imageSize()
+    image.style.width = `${size}px`
+    image.style.height = `${size}px`
+
+    // 优先级：slot="illustration" > illustration 属性 > 默认插画
+    const hasSlotContent = slot.assignedNodes({ flatten: true }).length > 0
+    slot.hidden = !hasSlotContent
+    content.hidden = hasSlotContent
+    if (hasSlotContent) return
+
+    // illustration 属性：SVG/HTML 标记直接注入，否则按图片 URL 渲染 <img>
+    const raw = this.getAttr('illustration')
+    const markup = raw
+      ? raw.trim().startsWith('<')
+        ? raw
+        : `<img src="${escapeAttr(raw)}" alt="" aria-hidden="true">`
+      : ILLUSTRATION
+    // 内容未变化时跳过 innerHTML 重建（增量同步）
+    if (content.dataset.markup !== markup) {
+      content.innerHTML = markup
+      content.dataset.markup = markup
+    }
+    content.toggleAttribute('data-default', markup === ILLUSTRATION)
+  }
+
+  private imageSize(): number {
+    const n = Number(this.getAttr('image-size'))
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : 96
   }
 }

@@ -195,6 +195,9 @@ export const zhCN = {
   'chart.line': '折线图',
   'chart.bar': '柱状图',
   'chart.pie': '饼图',
+  'chart.area': '面积图',
+  'chart.donut': '环形图',
+  'chart.stacked-bar': '堆叠柱状图',
   'chart.empty': '暂无数据',
   // code（代码块）
   'code.copy': '复制',

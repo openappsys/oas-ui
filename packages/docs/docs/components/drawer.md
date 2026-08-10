@@ -42,6 +42,28 @@
   </oas-drawer>
 </DemoBlock>
 
+## 自定义宽度
+
+<DemoBlock title="自定义宽度">
+  <oas-button type="primary" onclick="document.querySelector('#drawer-width').setAttribute('visible','')">打开 640px 抽屉</oas-button>
+  <oas-drawer id="drawer-width" title="自定义宽度" width="640px">
+    <p>通过 <code>width</code> 属性指定抽屉宽度，支持 px 或百分比（如 <code>50%</code>），窄屏下受 <code>max-width: 90vw</code> 约束。</p>
+  </oas-drawer>
+</DemoBlock>
+
+## 尺寸档位
+
+<DemoBlock title="尺寸档位">
+  <oas-button onclick="document.querySelector('#drawer-size-small').setAttribute('visible','')">small（256px）</oas-button>
+  <oas-button onclick="document.querySelector('#drawer-size-large').setAttribute('visible','')">large（736px）</oas-button>
+  <oas-drawer id="drawer-size-small" title="小抽屉" size="small">
+    <p>small 档：256px，适合窄屏辅助信息。</p>
+  </oas-drawer>
+  <oas-drawer id="drawer-size-large" title="大抽屉" size="large">
+    <p>large 档：736px，适合复杂表单或详情场景。</p>
+  </oas-drawer>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -60,6 +82,8 @@ onMounted(async () => {
 | `visible`       | 是否显示         | `boolean`        | `false` |
 | `title`         | 标题文案         | `string`         | —       |
 | `placement`     | 滑出方向         | `left` / `right` | `right` |
+| `width`         | 抽屉宽度（px 或百分比），优先级高于 `size` | `string` | —（回退默认 320px） |
+| `size`          | 预设尺寸档位或具体值：`small`（256px）/ `medium`（378px）/ `large`（736px），或直接写如 `512px`、`40%` | `string` | —（回退默认 320px） |
 | `no-footer`     | 隐藏底部操作按钮 | `boolean`        | `false` |
 | `no-mask-close` | 禁用点击遮罩关闭 | `boolean`        | `false` |
 

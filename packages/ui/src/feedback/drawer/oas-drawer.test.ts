@@ -89,4 +89,50 @@ describe('OASDrawer', () => {
     expect(el.hasAttribute('visible')).toBe(false)
     expect(ok).toBe(1)
   })
+
+  it('width 属性控制面板宽度（px 与百分比，动态切换）', async () => {
+    const el = mount({ visible: '', width: '640px' })
+    await Promise.resolve()
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+    expect(panel.style.width).toBe('640px')
+    el.setAttribute('width', '60%')
+    expect(panel.style.width).toBe('60%')
+    el.removeAttribute('width')
+    expect(panel.style.width).toBe('')
+  })
+
+  it('size 档位映射预设宽度（small/medium/large）', async () => {
+    const cases: Array<[string, string]> = [
+      ['small', '256px'],
+      ['medium', '378px'],
+      ['large', '736px'],
+    ]
+    for (const [size, width] of cases) {
+      const el = mount({ visible: '', size })
+      await Promise.resolve()
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.style.width).toBe(
+        width,
+      )
+      el.remove()
+    }
+  })
+
+  it('size 支持具体值（纯数字视为 px，长度/百分比原样生效）', async () => {
+    const el = mount({ visible: '', size: '512' })
+    await Promise.resolve()
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.style.width).toBe('512px')
+    el.setAttribute('size', '40%')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.style.width).toBe('40%')
+  })
+
+  it('width 优先级高于 size', async () => {
+    const el = mount({ visible: '', size: 'small', width: '400px' })
+    await Promise.resolve()
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.style.width).toBe('400px')
+  })
+
+  it('未设置 width/size 时回退 CSS 默认（无内联宽度）', () => {
+    const el = mount({ visible: '' })
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.style.width).toBe('')
+  })
 })

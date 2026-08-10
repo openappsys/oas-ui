@@ -20,6 +20,20 @@
   <oas-slider disabled value="50" style="width: 320px"></oas-slider>
 </DemoBlock>
 
+## 刻度（marks 对象）
+
+<DemoBlock title="marks 对象：值 → 标签映射">
+  <oas-slider marks='{"0":"0°C","26":"26°C","60":"60°C"}' min="0" max="100" value="30" style="width: 320px"></oas-slider>
+</DemoBlock>
+
+## 刻度（marks 数组）
+
+<DemoBlock title="marks 数组：仅数值，标签回退为数值文本">
+  <oas-slider marks="[0,25,50,75,100]" min="0" max="100" value="60" style="width: 320px"></oas-slider>
+</DemoBlock>
+
+拖动滑块时，当前值已到达的刻度点与标签会以主题色高亮；`marks` 同时支持 JSON 对象 `{"值":"标签"}` 与 JSON 数组 `[值, 值]` 两种写法（数组元素也可用 `{"value": 26, "label": "26°C"}`）。
+
 ## 事件
 
 <DemoBlock title="实时值与变化事件">
@@ -44,12 +58,13 @@ onMounted(() => {
 
 ## API
 
-| 属性          | 说明           | 默认值      |
-| ------------- | -------------- | ----------- |
-| `value`       | 当前值（受控） | `0`         |
-| `min` / `max` | 范围           | `0` / `100` |
-| `step`        | 步长           | `1`         |
-| `disabled`    | 禁用           | `false`     |
+| 属性          | 说明                                                         | 默认值      |
+| ------------- | ------------------------------------------------------------ | ----------- |
+| `value`       | 当前值（受控）                                               | `0`         |
+| `min` / `max` | 范围                                                         | `0` / `100` |
+| `step`        | 步长                                                         | `1`         |
+| `marks`       | 刻度：JSON 对象 `{"0":"0°C"}`（值→标签）或 JSON 数组 `[0,26,60]`（也可为 `{"value":26,"label":"26°C"}`）；刻度点与标签显示在轨道下方，值经过处高亮 | 无          |
+| `disabled`    | 禁用                                                         | `false`     |
 
 | 事件         | 说明                          |
 | ------------ | ----------------------------- |
