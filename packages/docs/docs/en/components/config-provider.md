@@ -1,0 +1,93 @@
+# ConfigProvider
+
+The injection entry point for global configuration, centrally managing `locale` / `size` / `theme` for the wrapped subtree. Component resolution order: own attribute > config-provider > global default.
+
+## Locale injection
+
+The config-provider's `locale` takes precedence over the global `setLocale()`: components inside use the injected locale for built-in copy.
+
+<DemoBlock title="Switching locale">
+  <oas-space>
+    <oas-button type="primary" onclick="setCpLocale('zh-CN')">中文</oas-button>
+    <oas-button onclick="setCpLocale('en')">English</oas-button>
+  </oas-space>
+  <oas-config-provider id="cp-locale" locale="zh-CN">
+    <oas-space style="margin-top: 16px">
+      <oas-empty></oas-empty>
+      <oas-tag closable>可关闭标签</oas-tag>
+      <oas-alert>这是一条警告提示</oas-alert>
+    </oas-space>
+  </oas-config-provider>
+</DemoBlock>
+
+## Size injection
+
+Components inside use the injected `size` unless they set it explicitly; explicitly set `size` always wins.
+
+<DemoBlock title="Size injection">
+  <oas-space>
+    <oas-button type="primary" onclick="setCpSize('small')">小号</oas-button>
+    <oas-button onclick="setCpSize('medium')">中号</oas-button>
+    <oas-button onclick="setCpSize('large')">大号</oas-button>
+  </oas-space>
+  <oas-config-provider id="cp-size" size="medium" style="margin-top: 16px; display: block">
+    <oas-space>
+      <oas-button>注入按钮</oas-button>
+      <oas-button size="small">自身小号</oas-button>
+      <oas-tag>注入标签</oas-tag>
+    </oas-space>
+  </oas-config-provider>
+</DemoBlock>
+
+## Theme injection
+
+The config-provider's `theme` writes `data-theme` onto itself, and the wrapped subtree (including Shadow DOM) inherits the corresponding theme tokens.
+
+<DemoBlock title="Theme injection">
+  <oas-space>
+    <oas-button type="primary" onclick="setCpTheme('')">浅色</oas-button>
+    <oas-button onclick="setCpTheme('dark')">深色</oas-button>
+  </oas-space>
+  <oas-config-provider id="cp-theme" theme="" style="margin-top: 16px; display: block; padding: 16px; border-radius: 8px; background: var(--oas-color-bg)">
+    <oas-space>
+      <oas-button type="primary">主题按钮</oas-button>
+      <oas-tag>跟随主题</oas-tag>
+    </oas-space>
+  </oas-config-provider>
+</DemoBlock>
+
+## Nearest provider wins
+
+An inner config-provider overrides an outer one: components wrapped by the inner provider use its config, while components under the outer provider (not nested further) use the outer config.
+
+<DemoBlock title="Nearest provider wins">
+  <oas-config-provider locale="en">
+    <oas-space style="margin-bottom: 8px"><oas-tag>外层 en</oas-tag></oas-space>
+    <oas-config-provider locale="zh-CN">
+      <oas-space><oas-tag>内层 zh-CN</oas-tag></oas-space>
+    </oas-config-provider>
+  </oas-config-provider>
+</DemoBlock>
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(async () => {
+  const { registerLocale } = await import('@oas-ui/i18n')
+  const en = (await import('@oas-ui/i18n/en')).default
+  registerLocale(en)
+  window.setCpLocale = (locale) => document.getElementById('cp-locale')?.setAttribute('locale', locale)
+  window.setCpSize = (size) => document.getElementById('cp-size')?.setAttribute('size', size)
+  window.setCpTheme = (theme) => document.getElementById('cp-theme')?.setAttribute('theme', theme)
+})
+</script>
+
+## API
+
+| Prop | Description | Type | Default |
+| --- | --- | --- | --- |
+| `locale` | Language for built-in copy in the wrapped subtree (must be registered); takes precedence over global `setLocale()` | `string` | None (uses global) |
+| `size` | Default size for wrapped components, applied when a component doesn't set it explicitly | `small` / `medium` / `large` | None |
+| `theme` | Theme for the wrapped subtree, written to `data-theme` | `light` / `dark` / `high-contrast` | None |
+
+- Component resolution order: own attribute > config-provider > global default.
+- `locale` requires the language pack to be registered via `registerLocale()`; falls back to the global translator when unregistered.

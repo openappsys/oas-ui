@@ -4,14 +4,14 @@
       <h3 v-if="title">{{ title }}</h3>
       <div v-else>&nbsp;</div>
       <button class="demo-block__toggle" type="button" @click="toggle">
-        {{ show ? '收起代码' : '查看代码' }}
+        {{ show ? labels.hide : labels.show }}
       </button>
     </div>
     <div ref="bodyEl" class="demo-block__body"><slot /></div>
     <div v-show="show" class="demo-block__code">
       <div class="demo-block__code-head">
-        <span>示例代码</span>
-        <button type="button" class="demo-block__copy" @click="copy">复制</button>
+        <span>{{ labels.example }}</span>
+        <button type="button" class="demo-block__copy" @click="copy">{{ labels.copy }}</button>
       </div>
       <!-- Shiki 高亮输出完整 <pre>，经 v-html 注入；未就绪或失败时回退纯文本 -->
       <div v-if="highlightedHtml" class="demo-block__code-body" v-html="highlightedHtml"></div>
@@ -21,13 +21,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useData } from 'vitepress'
 
 const props = defineProps<{ title?: string }>()
 const show = ref(false)
 const bodyEl = ref<HTMLElement | null>(null)
 const code = ref('')
 const highlightedHtml = ref('')
+
+// UI 文案跟随页面 locale（zh-CN / en）
+const { lang } = useData()
+const labels = computed(() =>
+  lang.value.startsWith('en')
+    ? { show: 'Show code', hide: 'Hide code', example: 'Example', copy: 'Copy' }
+    : { show: '查看代码', hide: '收起代码', example: '示例代码', copy: '复制' },
+)
 
 onMounted(() => {
   // 取 light DOM 原始标签作为示例代码

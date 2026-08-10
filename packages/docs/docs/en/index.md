@@ -21,5 +21,6 @@ import '@oas-ui/theme'
 import '@oas-ui/ui'
 ```
 
-> Component reference pages are currently Chinese-only; this homepage and the
-> guides are available in English. Switch back to Chinese for component docs.
+> All component reference pages are available in English under
+> `/en/components/*`. Demo snippets inside the pages keep their original
+> Chinese example text, since code examples are shared with the Chinese docs.

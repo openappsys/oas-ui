@@ -2,8 +2,8 @@ import { defineConfig } from 'vitepress'
 import type { DefaultTheme } from 'vitepress'
 
 /**
- * 组件分组侧栏，zh / en 两个 locale 共用。
- * en 组件条目暂指向中文页面（`/components/*`），组件页英文内容待补。
+ * 组件分组侧栏（中文）。英文侧栏由 enComponentSidebar 派生：
+ * 分组名走 enGroupNames 映射，条目名取组件英文名，链接加 /en 前缀。
  */
 const componentSidebar: DefaultTheme.SidebarItem[] = [
   {
@@ -164,6 +164,25 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
   },
 ]
 
+const enGroupNames: Record<string, string> = {
+  基础组件: 'Basic',
+  表单组件: 'Form',
+  反馈组件: 'Feedback',
+  导航与浮层组件: 'Navigation & Overlays',
+  导航与布局组件: 'Navigation & Layout',
+  数据展示组件: 'Data Display',
+  框架级容器: 'Framework Containers',
+}
+
+const enComponentSidebar: DefaultTheme.SidebarItem[] = componentSidebar.map((group) => ({
+  text: enGroupNames[group.text as string] ?? group.text,
+  collapsed: group.collapsed,
+  items: (group.items ?? []).map((item) => ({
+    text: (item.text as string).split(' ')[0],
+    link: `/en${item.link}`,
+  })),
+}))
+
 export default defineConfig({
   title: 'OAS-UI',
   description: '框架无关的 Web Components UI 组件库',
@@ -219,8 +238,7 @@ export default defineConfig({
               { text: 'SSR Strategy', link: '/en/guide/ssr' },
             ],
           },
-          // 组件条目与中文版一致，暂指向中文页面（组件页英文内容待补）
-          ...componentSidebar,
+          ...enComponentSidebar,
         ],
       },
     },

@@ -1,0 +1,101 @@
+# Snackbar
+
+A lightweight feedback bar that slides in from the bottom (or top). The `open` attribute is controlled; it can include an action button and dispatches `oas-close` after 4 seconds by default, leaving dismissal to the host.
+
+## Basic usage
+
+<DemoBlock title="Controlled open">
+  <oas-space>
+    <oas-button type="primary" onclick="openSnackbar('消息已发送')">打开</oas-button>
+  </oas-space>
+  <oas-snackbar id="snackbar-basic" message="消息已发送" onoas-close="closeSnackbar()"></oas-snackbar>
+</DemoBlock>
+
+## Action buttons
+
+<DemoBlock title="Action buttons">
+  <oas-space>
+    <oas-button type="primary" onclick="openSnackbar('文件已删除', '撤销')">打开（带撤销）</oas-button>
+  </oas-space>
+  <oas-snackbar id="snackbar-action" message="文件已删除" action-text="撤销" onoas-action="closeSnackbar(); toast.info({ title: '已撤销删除' })" onoas-close="closeSnackbar()"></oas-snackbar>
+</DemoBlock>
+
+## Direction & offset
+
+<DemoBlock title="Direction & offset">
+  <oas-space>
+    <oas-button onclick="showSnackbar('bottom')">底部（默认）</oas-button>
+    <oas-button onclick="showSnackbar('top')">顶部</oas-button>
+    <oas-button onclick="showSnackbar('bottom', 80)">底部 + 偏移 80</oas-button>
+  </oas-space>
+</DemoBlock>
+
+## Stack limit
+
+<DemoBlock title="Stack limit 3">
+  <oas-space>
+    <oas-button onclick="for (let i = 1; i <= 4; i++) openSnackbar('消息 ' + i, undefined, i)">连发四条</oas-button>
+  </oas-space>
+  <p>At most 3 snackbars are shown at once; when a 4th appears, the oldest one receives <code>oas-close</code>.</p>
+</DemoBlock>
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(async () => {
+  const { toast } = await import('@oas-ui/ui')
+  window.toast = toast
+  window.closeSnackbar = () => {
+    document.querySelectorAll('oas-snackbar').forEach((el) => el.removeAttribute('open'))
+  }
+  window.openSnackbar = (message, actionText, seq = 0) => {
+    const id = seq ? `sb-${seq}` : 'snackbar-tmp'
+    let el = document.getElementById(id)
+    if (!el) {
+      el = document.createElement('oas-snackbar')
+      el.id = id
+      if (actionText) el.setAttribute('action-text', actionText)
+      el.addEventListener('oas-close', () => el.removeAttribute('open'))
+      document.body.appendChild(el)
+    }
+    el.setAttribute('message', message)
+    el.setAttribute('open', '')
+  }
+  window.showSnackbar = (direction, offset) => {
+    const el = document.getElementById('snackbar-tmp') || (() => {
+      const e = document.createElement('oas-snackbar')
+      e.id = 'snackbar-tmp'
+      e.addEventListener('oas-close', () => e.removeAttribute('open'))
+      document.body.appendChild(e)
+      return e
+    })()
+    el.setAttribute('direction', direction)
+    if (offset) el.setAttribute('offset', String(offset))
+    el.setAttribute('message', direction === 'top' ? '顶部消息条' : offset ? '底部偏移 80px' : '底部消息条')
+    el.setAttribute('open', '')
+  }
+})
+</script>
+
+## API
+
+### Props
+
+| Prop | Description | Type | Default |
+| --- | --- | --- | --- |
+| `open` | Whether shown (controlled) | `boolean` | `false` |
+| `message` | Message text | `string` | — |
+| `action-text` | Action button text | `string` | — |
+| `duration` | Auto-dismiss duration (ms) | `number` | `4000` |
+| `direction` | Position direction | `top` \| `bottom` | `bottom` |
+| `offset` | Offset from the screen edge (px) | `string` | `24` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-open` | Dispatched when opened |
+| `oas-close` | Dispatched when auto-dismissing after timeout (controlled mode does not clear `open` itself) |
+| `oas-action` | Dispatched when the action button is clicked |
+
+- `role="status"` without `action-text`; `role="alertdialog"` + `aria-live="assertive"` when an action button is present.
+- `open` is controlled: only `oas-close` is dispatched on timeout and the host is responsible for removing `open`; at most 3 stack at once, and the oldest receives `oas-close` when exceeded.

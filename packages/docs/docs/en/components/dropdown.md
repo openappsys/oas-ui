@@ -1,0 +1,134 @@
+# Dropdown
+
+A click-triggered menu that opens anchored to the trigger element.
+
+## Basic usage
+
+<DemoBlock title="Trigger on click">
+  <oas-dropdown items='[{"label":"编辑","value":"edit"},{"label":"复制","value":"copy"},{"label":"删除","value":"delete"}]' placement="bottom">
+    <oas-button type="primary">操作</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+## Placement
+
+<DemoBlock title="Four directions">
+  <oas-dropdown placement="top" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
+    <oas-button>上</oas-button>
+  </oas-dropdown>
+  <oas-dropdown placement="bottom" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
+    <oas-button>下</oas-button>
+  </oas-dropdown>
+  <oas-dropdown placement="left" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
+    <oas-button>左</oas-button>
+  </oas-dropdown>
+  <oas-dropdown placement="right" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
+    <oas-button>右</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+## Disabled items
+
+<DemoBlock title="Disabled items">
+  <oas-dropdown items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete","disabled":true}]'>
+    <oas-button>操作</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+## Selection event
+
+<DemoBlock title="Selection event">
+  <oas-dropdown id="dd-event" onoas-select="ddLog(event)" items='[{"label":"编辑","value":"edit"},{"label":"复制","value":"copy"},{"label":"删除","value":"delete"}]'>
+    <oas-button>选择操作</oas-button>
+  </oas-dropdown>
+  <oas-tag id="dd-result" type="info">尚未选择</oas-tag>
+</DemoBlock>
+
+## Controlled display
+
+The `open` attribute is controlled: an external button can set/remove `open` to show/hide the menu (clicking outside / pressing Esc / selecting an item still closes it).
+
+<DemoBlock title="Controlled display (open attribute)">
+  <oas-space size="small">
+    <oas-button type="primary" size="small" onclick="event.stopPropagation(); ddOpen(true)">打开</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation(); ddOpen(false)">关闭</oas-button>
+    <oas-tag id="dd-open-status" type="info">open: false</oas-tag>
+  </oas-space>
+  <oas-dropdown id="dd-ctrl" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
+    <oas-button>触发元素</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+## Controlled selection
+
+The `value` attribute is controlled: an external value sets the selected item (the dropdown shows no check mark, so a tag echoes the current value in real time); selecting a menu item also updates `value` and fires `oas-select`.
+
+<DemoBlock title="Controlled selection (value attribute)">
+  <oas-space size="small">
+    <oas-button size="small" onclick="ddValue('edit')">选中「编辑」</oas-button>
+    <oas-button size="small" onclick="ddValue('copy')">选中「复制」</oas-button>
+    <oas-button size="small" onclick="ddValue('')">清除</oas-button>
+    <oas-tag id="dd-value-status" type="info">value: -</oas-tag>
+  </oas-space>
+  <oas-dropdown id="dd-value" onoas-select="ddValueLog(event)" items='[{"label":"编辑","value":"edit"},{"label":"复制","value":"copy"},{"label":"删除","value":"delete"}]'>
+    <oas-button>选择操作</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  window.ddLog = (e) => {
+    const tag = document.getElementById('dd-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}`
+  }
+
+  const ctrl = document.getElementById('dd-ctrl')
+  const openStatus = document.getElementById('dd-open-status')
+  if (ctrl && openStatus) {
+    const syncOpen = () => {
+      openStatus.textContent = `open: ${ctrl.hasAttribute('open')}`
+    }
+    window.ddOpen = (open) => {
+      if (open) ctrl.setAttribute('open', '')
+      else ctrl.removeAttribute('open')
+    }
+    syncOpen()
+    // 点击外部 / Esc / 选择后由组件移除 open，用 MutationObserver 保持状态同步
+    new MutationObserver(syncOpen).observe(ctrl, { attributes: true, attributeFilter: ['open'] })
+  }
+
+  const val = document.getElementById('dd-value')
+  const valueStatus = document.getElementById('dd-value-status')
+  if (val && valueStatus) {
+    const syncValue = () => {
+      valueStatus.textContent = `value: ${val.getAttribute('value') || '-'}`
+    }
+    window.ddValue = (v) => {
+      if (v) val.setAttribute('value', v)
+      else val.removeAttribute('value')
+    }
+    window.ddValueLog = (e) => {
+      val.setAttribute('value', e.detail.value)
+    }
+    syncValue()
+    // 选择菜单项由组件更新 value，用 MutationObserver 保持状态同步
+    new MutationObserver(syncValue).observe(val, { attributes: true, attributeFilter: ['value'] })
+  }
+})
+</script>
+
+## API
+
+| Property   | Description                        | Type                                 | Default  |
+| ---------- | ---------------------------------- | ------------------------------------ | -------- |
+| `items`    | Menu items JSON                    | `[{ label, value, disabled? }]`      | `[]`     |
+| `value`    | Current selected value             | `string`                             | —        |
+| `placement`| Popup placement                    | `top` / `bottom` / `left` / `right`  | `bottom` |
+| `open`     | Controlled display (boolean attribute; expands when present) | `boolean`        | `false`  |
+
+| Event        | Description                         |
+| ------------ | ----------------------------------- |
+| `oas-select` | An item was selected, `detail: { value }` |
+
+Clicking the trigger toggles visibility; clicking outside / pressing Esc / selecting an item closes it; `role="menu"` + `menuitem`.
