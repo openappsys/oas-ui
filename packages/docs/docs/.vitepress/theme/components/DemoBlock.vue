@@ -3,7 +3,7 @@
     <div class="demo-block__head">
       <h3 v-if="title">{{ title }}</h3>
       <div v-else>&nbsp;</div>
-      <button class="demo-block__toggle" type="button" @click="show = !show">
+      <button class="demo-block__toggle" type="button" @click="toggle">
         {{ show ? '收起代码' : '查看代码' }}
       </button>
     </div>
@@ -13,28 +13,67 @@
         <span>示例代码</span>
         <button type="button" class="demo-block__copy" @click="copy">复制</button>
       </div>
-      <pre><code>{{ cleanCode }}</code></pre>
+      <!-- Shiki 高亮输出完整 <pre>，经 v-html 注入；未就绪或失败时回退纯文本 -->
+      <div v-if="highlightedHtml" class="demo-block__code-body" v-html="highlightedHtml"></div>
+      <pre v-else><code>{{ code }}</code></pre>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 
 const props = defineProps<{ title?: string }>()
 const show = ref(false)
 const bodyEl = ref<HTMLElement | null>(null)
 const code = ref('')
+const highlightedHtml = ref('')
 
 onMounted(() => {
   // 取 light DOM 原始标签作为示例代码
   code.value = (bodyEl.value?.innerHTML ?? '').replace(/<!--.*?-->/gs, '').trim()
 })
 
-const cleanCode = computed(() => code.value)
+function toggle(): void {
+  show.value = !show.value
+  // 首次展开才异步高亮（shiki 按需分包，避免每个页面都加载高亮内核）
+  if (show.value) void renderHighlight()
+}
+
+/**
+ * 用 Shiki 把示例代码按 HTML 语法高亮。
+ * 双主题（github-light / github-dark）：token 色由行内 --shiki-light/--shiki-dark
+ * 变量承载，暗色切换走 CSS（见全局 <style> 块），无需重渲染。
+ * 动态 import：shiki 拆成懒加载 chunk；失败时保持纯文本，不阻断复制。
+ */
+async function renderHighlight(): Promise<void> {
+  if (highlightedHtml.value || !code.value) return
+  try {
+    const [{ createHighlighterCore }, { createJavaScriptRegexEngine }, htmlLang, githubLight, githubDark] =
+      await Promise.all([
+        import('shiki/core'),
+        import('shiki/engine/javascript'),
+        import('shiki/langs/html.mjs'),
+        import('shiki/themes/github-light.mjs'),
+        import('shiki/themes/github-dark.mjs'),
+      ])
+    const highlighter = await createHighlighterCore({
+      themes: [githubLight.default, githubDark.default],
+      langs: [htmlLang.default],
+      // JS 正则引擎，浏览器端无需加载 wasm
+      engine: createJavaScriptRegexEngine(),
+    })
+    highlightedHtml.value = await highlighter.codeToHtml(code.value, {
+      lang: 'html',
+      themes: { light: 'github-light', dark: 'github-dark' },
+    })
+  } catch (err) {
+    console.error('[DemoBlock] Shiki 语法高亮失败，已回退为纯文本：', err)
+  }
+}
 
 async function copy(): Promise<void> {
-  await navigator.clipboard.writeText(cleanCode.value)
+  await navigator.clipboard.writeText(code.value)
 }
 </script>
 
@@ -113,15 +152,28 @@ async function copy(): Promise<void> {
   color: var(--oas-color-primary);
   font-family: inherit;
 }
-.demo-block__code pre {
+/* 纯文本回退的 <pre>（模板内，带 data-v）与 Shiki 注入的 <pre.shiki>（v-html，无 data-v）共用外观 */
+.demo-block__code pre,
+.demo-block__code :deep(pre.shiki) {
   margin: 0;
   padding: var(--oas-space-3) var(--oas-space-4);
-  background: var(--oas-color-bg-hover);
+  /* 覆盖 Shiki 行内主题背景，统一走设计 token（明暗自动切换） */
+  background: var(--oas-color-bg-hover) !important;
   font-size: var(--oas-font-size-sm);
   overflow-x: auto;
   line-height: 1.7;
 }
-.demo-block__code code {
+.demo-block__code code,
+.demo-block__code :deep(pre.shiki code) {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+</style>
+
+<style>
+/* Shiki 双主题：暗色下把 token 色切到 --shiki-dark（html.dark 由 Vitepress 控制）。
+   需放全局块：v-html 注入的 span 不携带本组件 data-v 属性，scoped 选择器够不到。 */
+html.dark .demo-block__code-body pre.shiki,
+html.dark .demo-block__code-body pre.shiki span {
+  color: var(--shiki-dark) !important;
 }
 </style>

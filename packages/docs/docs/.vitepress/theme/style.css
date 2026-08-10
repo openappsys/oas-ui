@@ -1,1 +1,7 @@
 /* 组件 demo 样式（DemoBlock 已在组件内处理；此处保留通用 demo 工具样式） */
+
+/* locales 配置开启后，默认主题会自动在导航栏追加语言下拉（VPNavBarTranslations）；
+   自定义 LangSwitch 已承担中英切换，隐藏内置下拉避免重复入口 */
+.VPNavBarTranslations {
+  display: none;
+}
