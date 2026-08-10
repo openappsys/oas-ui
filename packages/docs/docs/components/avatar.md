@@ -56,6 +56,26 @@
 
 设置 `max` 后超出部分隐藏，末尾显示 `+N` 计数圆点。
 
+## 统一尺寸
+
+`size` 统一组内所有头像尺寸（px），无需逐个设置；配合 `max` 时，`+N` 计数圆点同步适配尺寸。
+
+<DemoBlock title="统一尺寸 size">
+  <oas-avatar-group size="48">
+    <oas-avatar src="https://picsum.photos/seed/isui-avatar-ga1/160" alt="成员一"></oas-avatar>
+    <oas-avatar src="https://picsum.photos/seed/isui-avatar-ga2/160" alt="成员二"></oas-avatar>
+    <oas-avatar>张</oas-avatar>
+    <oas-avatar>李</oas-avatar>
+  </oas-avatar-group>
+  <oas-avatar-group size="24" max="3">
+    <oas-avatar src="https://picsum.photos/seed/isui-avatar-ga3/160" alt="成员一"></oas-avatar>
+    <oas-avatar>张</oas-avatar>
+    <oas-avatar>李</oas-avatar>
+    <oas-avatar>王</oas-avatar>
+    <oas-avatar>赵</oas-avatar>
+  </oas-avatar-group>
+</DemoBlock>
+
 ## 空态兜底
 
 <DemoBlock title="无内容兜底">

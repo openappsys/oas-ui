@@ -37,12 +37,37 @@ hover / 聚焦触发，可配置延迟的预览卡片。
 
 ## 受控显示
 
+`open` 属性受控：外部按钮设置 / 移除 `open` 即可显示 / 隐藏卡片（hover / focus 触发仍叠加生效）。
+
 <DemoBlock title="受控显示（open 属性）">
-  <oas-button onclick="document.getElementById('hc-ctrl').toggleAttribute('open')">切换显隐</oas-button>
-  <oas-hover-card id="hc-ctrl" title="受控卡片" content="由 open 属性控制显隐。" placement="right">
+  <oas-space size="small">
+    <oas-button type="primary" size="small" onclick="hcCtrl(true)">显示</oas-button>
+    <oas-button size="small" onclick="hcCtrl(false)">隐藏</oas-button>
+    <oas-tag id="hc-status" type="info">open: false</oas-tag>
+  </oas-space>
+  <oas-hover-card id="hc-ctrl" title="受控卡片" content="由 open 属性控制显隐。" placement="bottom">
     <oas-button>触发元素</oas-button>
   </oas-hover-card>
 </DemoBlock>
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  const hc = document.getElementById('hc-ctrl')
+  const status = document.getElementById('hc-status')
+  if (!hc || !status) return
+  const sync = () => {
+    status.textContent = `open: ${hc.hasAttribute('open')}`
+  }
+  window.hcCtrl = (open) => {
+    if (open) hc.setAttribute('open', '')
+    else hc.removeAttribute('open')
+  }
+  sync()
+  // hover / focus 触发与外部控制都会改 open，用 MutationObserver 保持状态同步
+  new MutationObserver(sync).observe(hc, { attributes: true, attributeFilter: ['open'] })
+})
+</script>
 
 ## API
 

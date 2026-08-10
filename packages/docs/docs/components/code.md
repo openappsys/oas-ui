@@ -77,6 +77,17 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 
 `show-line-number` 显示行号栏；右上角复制按钮（`copyable="false"` 可关闭），点击复制源码并派发 `oas-copy` 事件。
 
+## 复制按钮开关
+
+<DemoBlock title="copyable 复制按钮">
+  <div style="width: 100%">
+    <oas-code language="js" code='console.log("默认显示复制按钮")'></oas-code>
+    <oas-code language="js" copyable="false" code='console.log("copyable=false 隐藏复制按钮")' style="margin-top: var(--oas-space-3)"></oas-code>
+  </div>
+</DemoBlock>
+
+`copyable` 控制右上角复制按钮（默认 `true`）：设为 `false` 隐藏按钮；点击按钮将源码写入剪贴板并短暂显示「已复制」。
+
 ## 未知语言
 
 <DemoBlock title="未知语言按纯文本渲染">
@@ -91,19 +102,19 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 
 ### 属性
 
-| 属性              | 说明                                 | 类型      | 默认值 |
-| ----------------- | ------------------------------------ | --------- | ------ |
-| `code`            | 源代码原文                           | `string`  | —      |
-| `language`        | 语言：`js`/`ts`/`html`/`css`/`json`，未知按纯文本 | `string` | —      |
-| `show-line-number` | 显示行号栏                          | `boolean` | `false` |
-| `copyable`        | 显示复制按钮                         | `boolean` | `true`  |
+| 属性               | 说明                                              | 类型      | 默认值  |
+| ------------------ | ------------------------------------------------- | --------- | ------- |
+| `code`             | 源代码原文                                        | `string`  | —       |
+| `language`         | 语言：`js`/`ts`/`html`/`css`/`json`，未知按纯文本 | `string`  | —       |
+| `show-line-number` | 显示行号栏                                        | `boolean` | `false` |
+| `copyable`         | 显示复制按钮                                      | `boolean` | `true`  |
 
 ### 事件
 
-| 事件              | 说明                          |
-| ----------------- | ----------------------------- |
-| `oas-copy`        | 复制成功，`detail: { text }`  |
-| `oas-copy-error`  | 复制失败，`detail: { text }`  |
+| 事件             | 说明                         |
+| ---------------- | ---------------------------- |
+| `oas-copy`       | 复制成功，`detail: { text }` |
+| `oas-copy-error` | 复制失败，`detail: { text }` |
 
 ### 引擎选型（架构决策）
 

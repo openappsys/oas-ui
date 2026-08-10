@@ -24,6 +24,18 @@
   <oas-tree-select value="vue" options='[{"label":"前端","value":"fe","children":[{"label":"框架","value":"framework","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]}]'></oas-tree-select>
 </DemoBlock>
 
+## 受控展开（expanded）
+
+`expanded` 为 JSON 数组，声明展开节点的 value 集合（受控通道）：外部修改属性即时反映到下拉树。以下预设展开「前端 → 框架」，并用按钮外部驱动：
+
+<DemoBlock title="受控展开（expanded）">
+  <oas-tree-select id="tree-expanded" expanded='["fe","framework"]' placeholder="点击查看预展开节点" options='[{"label":"前端","value":"fe","children":[{"label":"框架","value":"framework","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]},{"label":"样式","value":"css"}]},{"label":"后端","value":"be","children":[{"label":"Node","value":"node"}]}]'></oas-tree-select>
+  <oas-button id="tree-expand-all" size="small">全部展开</oas-button>
+  <oas-button id="tree-collapse-all" size="small">全部收起</oas-button>
+</DemoBlock>
+
+预设 `expanded='["fe","framework"]'` 使首次展开下拉时「前端」「框架」已展开；点击「全部展开」外部写入 `expanded='["fe","framework","be"]'`，全部收起写入 `'[]'`，下拉打开时即时重渲染。
+
 ## 禁用
 
 <DemoBlock title="禁用">
@@ -53,6 +65,14 @@ onMounted(() => {
   el?.addEventListener('oas-change', (e) => {
     out.textContent = `oas-change: [${e.detail.value.join(', ')}]`
   })
+
+  // expanded（受控展开）demo：外部驱动展开节点集合
+  document.getElementById('tree-expand-all')?.addEventListener('click', () => {
+    document.getElementById('tree-expanded')?.setAttribute('expanded', '["fe","framework","be"]')
+  })
+  document.getElementById('tree-collapse-all')?.addEventListener('click', () => {
+    document.getElementById('tree-expanded')?.setAttribute('expanded', '[]')
+  })
 })
 </script>
 
@@ -62,6 +82,7 @@ onMounted(() => {
 | ------------- | ------------------------------------------------- | -------- |
 | `value`       | 选中值（多选为 JSON 数组）                        | 无       |
 | `options`     | 树形选项，JSON 数组，支持 `children` / `disabled` | `[]`     |
+| `expanded`    | 展开节点的 value 集合（JSON 数组，受控）          | `[]`     |
 | `placeholder` | 占位提示                                          | `请选择` |
 | `multiple`    | 多选 + 父子级联                                   | `false`  |
 | `disabled`    | 禁用                                              | `false`  |

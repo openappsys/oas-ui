@@ -75,8 +75,33 @@
     <oas-list bordered empty></oas-list>
   </div>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    设置 <code>empty</code> 强制空态；列表没有任何 <code>oas-list-item</code> 子项时也会自动显示空态，可通过 <code>empty-text</code> 自定义文案。
+     设置 <code>empty</code> 强制空态；列表没有任何 <code>oas-list-item</code> 子项时也会自动显示空态，可通过 <code>empty-text</code> 自定义文案。
   </p>
+</DemoBlock>
+
+## 空态文案与分隔线
+
+`empty-text` 自定义空态文案（默认「暂无数据」）。
+
+<DemoBlock title="自定义空态文案">
+  <div style="width: 100%">
+    <oas-list bordered empty empty-text="暂无匹配任务，请调整筛选条件后重试"></oas-list>
+  </div>
+</DemoBlock>
+
+`split` 控制条目分隔线：默认（不设置 `bordered`）时自带分隔线；设置 `bordered` 后分隔线关闭，需要时用 `split` 重新开启。
+
+<DemoBlock title="分隔线 split">
+  <div style="width: 100%">
+    <oas-list bordered>
+      <oas-list-item title="条目一"><span slot="description">bordered 默认不绘制条目分隔线</span></oas-list-item>
+      <oas-list-item title="条目二"><span slot="description">仅整体边框</span></oas-list-item>
+    </oas-list>
+    <oas-list bordered split style="margin-top: var(--oas-space-4)">
+      <oas-list-item title="条目一"><span slot="description">bordered + split 追加条目分隔线</span></oas-list-item>
+      <oas-list-item title="条目二"><span slot="description">边框与分隔线并存</span></oas-list-item>
+    </oas-list>
+  </div>
 </DemoBlock>
 
 ## 图文混排

@@ -11,6 +11,20 @@
   </oas-modal>
 </DemoBlock>
 
+## 受控显示
+
+`visible` 为受控属性：由宿主（按钮 / JS）设置或移除，组件不会自动恢复；关闭后可监听 `oas-ok` / `oas-cancel` 后移除 `visible`。
+
+<DemoBlock title="受控显示（visible）">
+  <oas-space>
+    <oas-button type="primary" onclick="document.querySelector('#modal-ctrl').setAttribute('visible','')">打开（设置 visible）</oas-button>
+    <oas-button onclick="document.querySelector('#modal-ctrl').removeAttribute('visible')">关闭（移除 visible）</oas-button>
+  </oas-space>
+  <oas-modal id="modal-ctrl" title="受控显示">
+    <p>外部按钮直接设置 / 移除 <code>visible</code> 控制显隐，无需依赖底部按钮。</p>
+  </oas-modal>
+</DemoBlock>
+
 ## 无底部按钮
 
 <DemoBlock title="无底部按钮">

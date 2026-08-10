@@ -11,13 +11,17 @@
 
 ## 受控打开
 
-`open` 属性由外部控制；选择后组件自动移除 `open`（受控关闭由宿主监听 `oas-select` 后决定是否重新打开）。
+`open` 属性由外部控制：外部按钮设置 `open` 打开面板；关闭由 Esc / 点击遮罩 / 选择命令触发（组件移除 `open`，受控关闭由宿主监听 `oas-select` 后决定是否重新打开）。
+
+> 打开时遮罩铺满全屏，因此「关闭」不提供外部按钮，用 Esc / 点击遮罩 / 选择命令关闭。
 
 <DemoBlock title="外部控制 open">
   <oas-space size="small">
-    <oas-button type="primary" id="command-open-btn">打开命令面板</oas-button>
-    <oas-command id="command-controlled" items='[{"label":"设置主题","value":"theme","group":"外观"},{"label":"切换暗色模式","value":"dark","group":"外观"},{"label":"查看快捷键","value":"shortcuts","group":"帮助"}]'></oas-command>
+    <oas-button type="primary" onclick="cmdOpen()">打开命令面板</oas-button>
+    <oas-tag id="command-ctrl-status" type="info">open: false</oas-tag>
+    <oas-tag id="command-ctrl-selected" type="success">尚未选择</oas-tag>
   </oas-space>
+  <oas-command id="command-controlled" onoas-select="commandCtrlSelect(event)" items='[{"label":"设置主题","value":"theme","group":"外观"},{"label":"切换暗色模式","value":"dark","group":"外观"},{"label":"查看快捷键","value":"shortcuts","group":"帮助"}]'></oas-command>
 </DemoBlock>
 
 ## 分组与空态
@@ -39,9 +43,23 @@ onMounted(() => {
     const tag = document.getElementById('command-result')
     if (tag) tag.textContent = `已选择：${e.detail.value}`
   }
-  document.getElementById('command-open-btn')?.addEventListener('click', () => {
-    document.getElementById('command-controlled')?.setAttribute('open', '')
-  })
+
+  const ctrl = document.getElementById('command-controlled')
+  const ctrlStatus = document.getElementById('command-ctrl-status')
+  const ctrlSelected = document.getElementById('command-ctrl-selected')
+  if (ctrl && ctrlStatus) {
+    const sync = () => {
+      ctrlStatus.textContent = `open: ${ctrl.hasAttribute('open')}`
+    }
+    window.cmdOpen = () => ctrl.setAttribute('open', '')
+    window.commandCtrlSelect = (e) => {
+      if (ctrlSelected) ctrlSelected.textContent = `已选择：${e.detail.value}`
+    }
+    sync()
+    // 选择 / Esc / 点击遮罩由组件移除 open，用 MutationObserver 保持状态同步
+    new MutationObserver(sync).observe(ctrl, { attributes: true, attributeFilter: ['open'] })
+  }
+
   document.getElementById('command-empty-btn')?.addEventListener('click', () => {
     document.getElementById('command-empty')?.setAttribute('open', '')
   })

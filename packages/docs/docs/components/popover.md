@@ -40,12 +40,37 @@
 
 ## 受控显示
 
+`open` 属性受控：外部按钮设置 / 移除 `open` 控制显隐（点击外部 / Esc 仍会关闭）。
+
 <DemoBlock title="受控显示（open 属性）">
-  <oas-button onclick="event.stopPropagation(); document.getElementById('pop-ctrl').toggleAttribute('open')">切换显隐</oas-button>
-  <oas-popover id="pop-ctrl" title="受控面板" content="由 open 属性控制，点击外部 / Esc 关闭。" placement="right">
+  <oas-space size="small">
+    <oas-button type="primary" size="small" onclick="event.stopPropagation(); popoverCtrl(true)">打开</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation(); popoverCtrl(false)">关闭</oas-button>
+    <oas-tag id="pop-status" type="info">open: false</oas-tag>
+  </oas-space>
+  <oas-popover id="pop-ctrl" title="受控面板" content="由 open 属性控制，点击外部 / Esc 关闭。" placement="bottom">
     <oas-button>触发元素</oas-button>
   </oas-popover>
 </DemoBlock>
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  const pop = document.getElementById('pop-ctrl')
+  const status = document.getElementById('pop-status')
+  if (!pop || !status) return
+  const sync = () => {
+    status.textContent = `open: ${pop.hasAttribute('open')}`
+  }
+  window.popoverCtrl = (open) => {
+    if (open) pop.setAttribute('open', '')
+    else pop.removeAttribute('open')
+  }
+  sync()
+  // 点击外部 / Esc 由组件移除 open，用 MutationObserver 保持状态同步
+  new MutationObserver(sync).observe(pop, { attributes: true, attributeFilter: ['open'] })
+})
+</script>
 
 ## API
 

@@ -28,6 +28,20 @@
   <oas-toggle-group items='[{"label":"可编辑","value":"editable"},{"label":"只读","value":"readonly","disabled":true},{"label":"可删除","value":"deletable"}]'></oas-toggle-group>
 </DemoBlock>
 
+## 受控选中（value）
+
+`value` 为受控通道：单选为字符串、多选为 JSON 数组字符串；外部设置属性即时反映到选中态（组内点击也会回写该属性）。以下用按钮外部驱动选中：
+
+<DemoBlock title="受控 value">
+  <oas-toggle-group id="tg-controlled" value="week" items='[{"label":"日","value":"day"},{"label":"周","value":"week"},{"label":"月","value":"month"}]'></oas-toggle-group>
+  <oas-toggle-group id="tg-controlled-multi" multiple value='["bold"]' items='[{"label":"加粗","value":"bold"},{"label":"斜体","value":"italic"},{"label":"下划线","value":"underline"}]'></oas-toggle-group>
+  <oas-button id="tg-set-day" size="small">单选：日</oas-button>
+  <oas-button id="tg-set-month" size="small">单选：月</oas-button>
+  <oas-button id="tg-set-multi" size="small">多选：斜体+下划线</oas-button>
+</DemoBlock>
+
+预设 `value="week"` / `value='["bold"]'` 使两个组初始即带选中态；按钮外部写入 `value` 属性后选中态即时切换。
+
 ## 事件
 
 点击或键盘切换派发 `oas-change`，单选 `detail: { value: string }`，多选 `detail: { value: string[] }`。
@@ -59,6 +73,17 @@ onMounted(() => {
   evt?.addEventListener('oas-change', (e) => {
     evt.setAttribute('value', e.detail.value)
     evtOut.textContent = `oas-change: { value: "${e.detail.value}" }`
+  })
+
+  // 受控 value demo：外部驱动选中态
+  document.getElementById('tg-set-day')?.addEventListener('click', () => {
+    document.getElementById('tg-controlled')?.setAttribute('value', 'day')
+  })
+  document.getElementById('tg-set-month')?.addEventListener('click', () => {
+    document.getElementById('tg-controlled')?.setAttribute('value', 'month')
+  })
+  document.getElementById('tg-set-multi')?.addEventListener('click', () => {
+    document.getElementById('tg-controlled-multi')?.setAttribute('value', '["italic","underline"]')
   })
 })
 </script>

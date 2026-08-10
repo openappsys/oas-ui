@@ -32,6 +32,24 @@
 
 `value` 分发到各格；超出 `length` 的部分自动截断。
 
+## 输入类型
+
+<DemoBlock title="type（text / number）">
+  <oas-pin-input type="text" length="4" value="ab12"></oas-pin-input>
+  <oas-pin-input type="number" length="4" value="1024"></oas-pin-input>
+</DemoBlock>
+
+`type` 透传原生 input 类型：`text`（默认）允许任意字符；`number` 限制为数字输入（移动端弹出数字键盘）；设 `mask` 时强制为 `password` 遮罩（见上）。
+
+## 校验失败态
+
+<DemoBlock title="aria-invalid">
+  <oas-pin-input length="4" value="123" aria-invalid="true"></oas-pin-input>
+  <oas-pin-input length="4" value="456"></oas-pin-input>
+</DemoBlock>
+
+`aria-invalid="true"` 表示校验失败：所有格子与容器同步该状态并标 danger 色边框，读屏播报「无效」。通常由宿主在 `oas-complete` 后校验置位（如验证码错误/过期）；移除该属性即恢复默认态。
+
 ## 禁用 / 只读
 
 <DemoBlock title="disabled">
@@ -78,6 +96,7 @@ onMounted(() => {
 | `disabled` | 禁用               | `false` |
 | `readonly` | 只读               | `false` |
 | `type`     | 格子输入类型       | `text`  |
+| `aria-invalid` | 校验失败态（同步到容器与各格，标 danger） | 无 |
 
 键盘：`←`/`→` 格间移动，`Backspace` 删除当前格并回退，支持粘贴自动分发；全空时每格均可聚焦（原生 caret）。
 

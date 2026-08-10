@@ -46,10 +46,32 @@
 
 ## 受控显示
 
+`open` 属性受控：外部按钮设置 / 移除 `open` 控制菜单显隐（点击外部 / Esc / 选择后仍会关闭）。
+
 <DemoBlock title="受控显示（open 属性）">
-  <oas-button onclick="event.stopPropagation(); document.getElementById('dd-ctrl').toggleAttribute('open')">切换显隐</oas-button>
+  <oas-space size="small">
+    <oas-button type="primary" size="small" onclick="event.stopPropagation(); ddOpen(true)">打开</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation(); ddOpen(false)">关闭</oas-button>
+    <oas-tag id="dd-open-status" type="info">open: false</oas-tag>
+  </oas-space>
   <oas-dropdown id="dd-ctrl" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
     <oas-button>触发元素</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+## 受控选中项
+
+`value` 属性受控：外部设置 `value` 指定选中项（下拉菜单无勾选标识，用标签实时回显当前值）；选择菜单项同样会更新 `value` 并派发 `oas-select`。
+
+<DemoBlock title="受控选中（value 属性）">
+  <oas-space size="small">
+    <oas-button size="small" onclick="ddValue('edit')">选中「编辑」</oas-button>
+    <oas-button size="small" onclick="ddValue('copy')">选中「复制」</oas-button>
+    <oas-button size="small" onclick="ddValue('')">清除</oas-button>
+    <oas-tag id="dd-value-status" type="info">value: -</oas-tag>
+  </oas-space>
+  <oas-dropdown id="dd-value" onoas-select="ddValueLog(event)" items='[{"label":"编辑","value":"edit"},{"label":"复制","value":"copy"},{"label":"删除","value":"delete"}]'>
+    <oas-button>选择操作</oas-button>
   </oas-dropdown>
 </DemoBlock>
 
@@ -59,6 +81,39 @@ onMounted(() => {
   window.ddLog = (e) => {
     const tag = document.getElementById('dd-result')
     if (tag) tag.textContent = `已选择：${e.detail.value}`
+  }
+
+  const ctrl = document.getElementById('dd-ctrl')
+  const openStatus = document.getElementById('dd-open-status')
+  if (ctrl && openStatus) {
+    const syncOpen = () => {
+      openStatus.textContent = `open: ${ctrl.hasAttribute('open')}`
+    }
+    window.ddOpen = (open) => {
+      if (open) ctrl.setAttribute('open', '')
+      else ctrl.removeAttribute('open')
+    }
+    syncOpen()
+    // 点击外部 / Esc / 选择后由组件移除 open，用 MutationObserver 保持状态同步
+    new MutationObserver(syncOpen).observe(ctrl, { attributes: true, attributeFilter: ['open'] })
+  }
+
+  const val = document.getElementById('dd-value')
+  const valueStatus = document.getElementById('dd-value-status')
+  if (val && valueStatus) {
+    const syncValue = () => {
+      valueStatus.textContent = `value: ${val.getAttribute('value') || '-'}`
+    }
+    window.ddValue = (v) => {
+      if (v) val.setAttribute('value', v)
+      else val.removeAttribute('value')
+    }
+    window.ddValueLog = (e) => {
+      val.setAttribute('value', e.detail.value)
+    }
+    syncValue()
+    // 选择菜单项由组件更新 value，用 MutationObserver 保持状态同步
+    new MutationObserver(syncValue).observe(val, { attributes: true, attributeFilter: ['value'] })
   }
 })
 </script>

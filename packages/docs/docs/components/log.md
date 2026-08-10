@@ -43,6 +43,13 @@
   </p>
 </DemoBlock>
 
+<DemoBlock title="自定义空态文案">
+  <oas-log empty-text="暂无日志输出，等待命令执行…" style="height: 180px; width: 100%; background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-log>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    <code>empty-text</code> 覆盖默认空态文案（默认「暂无日志」）。
+  </p>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 
@@ -97,12 +104,12 @@ onMounted(() => {
 
 ## API
 
-| 属性          | 说明                                   | 类型       | 默认值   |
-| ------------- | -------------------------------------- | ---------- | -------- |
-| `lines`       | 日志行数据（property 通道，优先于属性） | `string[]` | `[]`     |
-| `lines`       | 日志行 JSON 字符串（属性通道）          | string     | —        |
-| `auto-scroll` | 追加后自动滚动到底（仅贴底时滚动）     | boolean    | `true`   |
-| `line-number` | 显示左侧行号栏                         | boolean    | `false`  |
-| `empty-text`  | 空态文案（覆盖 locale 默认值）         | string     | `暂无日志` |
+| 属性          | 说明                                    | 类型       | 默认值     |
+| ------------- | --------------------------------------- | ---------- | ---------- |
+| `lines`       | 日志行数据（property 通道，优先于属性） | `string[]` | `[]`       |
+| `lines`       | 日志行 JSON 字符串（属性通道）          | string     | —          |
+| `auto-scroll` | 追加后自动滚动到底（仅贴底时滚动）      | boolean    | `true`     |
+| `line-number` | 显示左侧行号栏                          | boolean    | `false`    |
+| `empty-text`  | 空态文案（覆盖 locale 默认值）          | string     | `暂无日志` |
 
 部件：`::part(viewport)` 滚动视口、`::part(log)` 日志内容、`::part(row)` 单行、`::part(line-number)` 行号、`::part(line)` 行文本、`::part(empty)` 空态。

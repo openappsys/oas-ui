@@ -30,6 +30,16 @@
   <oas-input-number value="3" disabled style="width: 160px"></oas-input-number>
 </DemoBlock>
 
+## 无障碍名称（label）
+
+<DemoBlock title="label（可访问名称）">
+  <oas-input-number id="num-label" label="商品数量" value="3" style="width: 160px"></oas-input-number>
+  <oas-input-number id="num-label-default" value="5" style="width: 160px"></oas-input-number>
+  <span id="num-label-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 280px"></span>
+</DemoBlock>
+
+`label` 作为输入框的可访问名称（`aria-label`）：设置后读屏朗读该名称；未设置时回退内置文案「数字输入框」（数字输入框没有 `placeholder` 回退链）。步进按钮「增加 / 减少」的可访问名称同样走内置文案。
+
 ## 事件
 
 <DemoBlock title="变化事件">
@@ -47,6 +57,21 @@ onMounted(() => {
   el?.addEventListener('oas-change', (e) => {
     out.textContent = `oas-change: ${e.detail.value}`
   })
+
+  // label（可访问名称）demo：等组件升级后读取内层 input 的 aria-label
+  const numLabelSet = document.getElementById('num-label')
+  const numLabelFallback = document.getElementById('num-label-default')
+  const numLabelOut = document.getElementById('num-label-output')
+  const readNumLabel = () => {
+    const a = numLabelSet?.shadowRoot?.querySelector('input')?.getAttribute('aria-label')
+    const b = numLabelFallback?.shadowRoot?.querySelector('input')?.getAttribute('aria-label')
+    if (a !== undefined && b !== undefined) {
+      numLabelOut.textContent = `aria-label：设置「${a}」 / 回退「${b}」`
+    } else {
+      setTimeout(readNumLabel, 60)
+    }
+  }
+  readNumLabel()
 })
 </script>
 
@@ -59,6 +84,7 @@ onMounted(() => {
 | `step`        | 步长               | `1`     |
 | `precision`   | 小数位数           | 无      |
 | `disabled`    | 禁用               | `false` |
+| `label`       | 可访问名称（`aria-label` 来源，未设时回退内置文案「数字输入框」） | 无 |
 
 | 事件         | 说明                                        |
 | ------------ | ------------------------------------------- |

@@ -33,6 +33,14 @@
 
 `min-rows`（默认 1）控制最小高度，`max-rows`（默认 6）封顶并出滚动条。旧属性 `auto-height` 保留兼容。
 
+## auto-height 兼容别名
+
+<DemoBlock title="auto-height">
+  <oas-textarea auto-height placeholder="auto-height 下输入内容自动撑高（与 autosize 等价）" style="width: 320px"></oas-textarea>
+</DemoBlock>
+
+`auto-height` 是 `autosize` 的兼容别名，行为完全一致：随内容自动增高、空态回到最小行高、超过 `max-rows`（默认 6）出滚动条。二者任设其一即开启高度自适应。
+
 ## 禁用与只读
 
 <DemoBlock title="disabled / readonly">

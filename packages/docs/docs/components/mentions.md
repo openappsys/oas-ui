@@ -26,6 +26,23 @@
 
 `prefix` 默认 `@`，可换成任意触发符（如 `#`）。
 
+## 禁用
+
+<DemoBlock title="disabled">
+  <oas-mentions disabled value="已禁用的提及输入" style="width: 320px" options='[{"label":"张三","value":"zhangsan"}]'></oas-mentions>
+</DemoBlock>
+
+`disabled` 下文本域不可输入、不可触发提及浮层（灰化禁用态）。
+
+## 无障碍名称（label）
+
+<DemoBlock title="label（可访问名称）">
+  <oas-mentions id="mention-label" label="会议参与人" style="width: 320px" placeholder="输入 @ 提及成员" options='[{"label":"张三","value":"zhangsan"},{"label":"李四","value":"lisi"}]'></oas-mentions>
+  <span id="mention-label-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+</DemoBlock>
+
+`label` 作为文本域的可访问名称（`aria-label`）：设置后读屏朗读该名称；未设置时依次回退 `placeholder` → 内置文案「提及输入框」。
+
 ## 受控值
 
 <DemoBlock title="value（受控）">
@@ -54,6 +71,19 @@ onMounted(() => {
   el?.addEventListener('oas-change', (e) => {
     out.textContent = `oas-change: ${e.detail.value}`
   })
+
+  // label（可访问名称）demo：等组件升级后读取内层 textarea 的 aria-label
+  const mLabel = document.getElementById('mention-label')
+  const mLabelOut = document.getElementById('mention-label-output')
+  const readMLabel = () => {
+    const a = mLabel?.shadowRoot?.querySelector('textarea')?.getAttribute('aria-label')
+    if (a !== undefined) {
+      mLabelOut.textContent = `aria-label：${a}`
+    } else {
+      setTimeout(readMLabel, 60)
+    }
+  }
+  readMLabel()
 })
 </script>
 

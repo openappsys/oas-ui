@@ -48,6 +48,21 @@
   </oas-button-group>
 </DemoBlock>
 
+## 可访问名称
+
+`aria-label` 为按钮组容器设置可访问名称，屏幕阅读器将其朗读为一个可聚焦的按钮组；未设置时走内置 i18n「按钮组」。同页存在多个按钮组时，用名称区分它们。
+
+<DemoBlock title="aria-label 可访问名称">
+  <oas-button-group aria-label="视图切换" value="list">
+    <oas-button value="list">列表视图</oas-button>
+    <oas-button value="grid">网格视图</oas-button>
+  </oas-button-group>
+  <oas-button-group aria-label="结果导出" value="csv">
+    <oas-button value="csv">导出 CSV</oas-button>
+    <oas-button value="pdf">导出 PDF</oas-button>
+  </oas-button-group>
+</DemoBlock>
+
 ## 纵向
 
 <DemoBlock title="纵向按钮组">
@@ -76,18 +91,18 @@
 
 ## API
 
-| 属性       | 说明                                           | 类型                          | 默认值     |
-| ---------- | ---------------------------------------------- | ----------------------------- | ---------- |
-| `type`     | 透传给子按钮的类型                             | `default` / `primary` / …     | 未设置     |
-| `size`     | 透传给子按钮的尺寸                             | `small` / `medium` / `large`  | 未设置     |
-| `vertical` | 纵向堆叠，圆角合并方向改为上下                 | boolean                       | `false`    |
-| `value`    | 选中值（单选为单值，多选用逗号分隔）           | string                        | `''`       |
-| `multiple` | 多选模式                                       | boolean                       | `false`    |
-| `disabled` | 禁用整个组                                     | boolean                       | `false`    |
-| `aria-label` | 组容器可访问名称（默认走 i18n「按钮组」）    | string                        | 内置       |
+| 属性         | 说明                                      | 类型                         | 默认值  |
+| ------------ | ----------------------------------------- | ---------------------------- | ------- |
+| `type`       | 透传给子按钮的类型                        | `default` / `primary` / …    | 未设置  |
+| `size`       | 透传给子按钮的尺寸                        | `small` / `medium` / `large` | 未设置  |
+| `vertical`   | 纵向堆叠，圆角合并方向改为上下            | boolean                      | `false` |
+| `value`      | 选中值（单选为单值，多选用逗号分隔）      | string                       | `''`    |
+| `multiple`   | 多选模式                                  | boolean                      | `false` |
+| `disabled`   | 禁用整个组                                | boolean                      | `false` |
+| `aria-label` | 组容器可访问名称（默认走 i18n「按钮组」） | string                       | 内置    |
 
-| 事件        | 说明                                                        |
-| ----------- | ----------------------------------------------------------- |
+| 事件         | 说明                                                             |
+| ------------ | ---------------------------------------------------------------- |
 | `oas-change` | 选中变化。单选 `detail: { value }`；多选 `detail: { value: [] }` |
 
 > 说明：子按钮通过 `value` 属性声明其选值；不带 `value` 的子按钮是普通按钮，不参与选值、不派发 `oas-change`。选中态通过子按钮 `aria-pressed` 表达，可用 `oas-button[aria-pressed='true']` 自定义选中样式。

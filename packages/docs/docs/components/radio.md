@@ -24,6 +24,16 @@
 
 组通过 `value` 受控，子项 `value` 作为选项标识；组会统一管理单选互斥。
 
+## 单个禁用
+
+<DemoBlock title="单个 disabled">
+  <oas-radio name="radio-item-disabled" checked>可选</oas-radio>
+  <oas-radio name="radio-item-disabled" disabled>已禁用</oas-radio>
+  <oas-radio name="radio-item-disabled" disabled checked>禁用且选中</oas-radio>
+</DemoBlock>
+
+单项 `disabled` 只禁该项：不可点击、不可聚焦（原生 disabled 语义），组内其余项不受影响；整组禁用走 `oas-radio-group` 的 `disabled`（见下）。
+
 ## 禁用
 
 <DemoBlock title="禁用">

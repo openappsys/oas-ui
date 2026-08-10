@@ -35,6 +35,29 @@
 
 滚动事件按 rAF 节流派发 `oas-scroll`，`detail` 为 `{ scrollTop, start, end }`。
 
+## 渲染缓冲
+
+`buffer` 控制上下超出可视区的预渲染项数（默认 `4`）：buffer 越大，滚动时越少出现空白（白屏），代价是渲染的 DOM 节点更多。
+
+<DemoBlock title="渲染缓冲 buffer">
+  <div style="width: 100%">
+    <div style="display: flex; gap: var(--oas-space-4)">
+      <div style="flex: 1; min-width: 0">
+        <oas-virtual-list id="vl-buffer-0" height="160" item-height="32" buffer="0"></oas-virtual-list>
+        <p style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+          <code>buffer="0"</code>：渲染项数 <span id="vl-buffer-0-count">—</span>，仅渲染可视窗口内的项。
+        </p>
+      </div>
+      <div style="flex: 1; min-width: 0">
+        <oas-virtual-list id="vl-buffer-8" height="160" item-height="32" buffer="8"></oas-virtual-list>
+        <p style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+          <code>buffer="8"</code>：渲染项数 <span id="vl-buffer-8-count">—</span>，上下各多预渲染 8 项。
+        </p>
+      </div>
+    </div>
+  </div>
+</DemoBlock>
+
 ## 自定义滚动容器
 
 <DemoBlock title="scroll-target 外部容器">
@@ -84,6 +107,27 @@ onMounted(() => {
   // 自定义滚动容器
   const target = document.querySelector('#vl-target')
   if (target) target.items = Array.from({ length: 500 }, (_, i) => `记录 ${i + 1}`)
+
+  // 渲染缓冲对比：统计实际渲染到 DOM 的项数
+  const buf0 = document.querySelector('#vl-buffer-0')
+  const buf8 = document.querySelector('#vl-buffer-8')
+  const bufItems = Array.from({ length: 100 }, (_, i) => `缓冲项 ${i + 1}`)
+  const refreshBufferCounts = () => {
+    const countOf = (el) => (el && el.shadowRoot ? el.shadowRoot.querySelectorAll('[part="item"]').length : 0)
+    const c0 = document.querySelector('#vl-buffer-0-count')
+    const c8 = document.querySelector('#vl-buffer-8-count')
+    if (c0) c0.textContent = String(countOf(buf0))
+    if (c8) c8.textContent = String(countOf(buf8))
+  }
+  if (buf0) {
+    buf0.items = bufItems
+    buf0.addEventListener('oas-scroll', refreshBufferCounts)
+  }
+  if (buf8) {
+    buf8.items = bufItems
+    buf8.addEventListener('oas-scroll', refreshBufferCounts)
+  }
+  refreshBufferCounts()
 })
 </script>
 

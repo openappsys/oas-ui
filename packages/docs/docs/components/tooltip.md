@@ -39,9 +39,15 @@
 
 ## 受控显示
 
+`open` 属性受控：外部按钮设置 / 移除 `open` 即可显示 / 隐藏提示（hover / focus 触发仍叠加生效）。
+
 <DemoBlock title="受控显示（open 属性）">
-  <oas-button onclick="document.getElementById('tip-ctrl').toggleAttribute('open')">切换显隐</oas-button>
-  <oas-tooltip id="tip-ctrl" content="由 open 属性控制显隐" placement="right">
+  <oas-space size="small">
+    <oas-button type="primary" size="small" onclick="tipCtrl(true)">显示</oas-button>
+    <oas-button size="small" onclick="tipCtrl(false)">隐藏</oas-button>
+    <oas-tag id="tip-status" type="info">open: false</oas-tag>
+  </oas-space>
+  <oas-tooltip id="tip-ctrl" content="由 open 属性控制显隐" placement="bottom">
     <oas-button>触发元素</oas-button>
   </oas-tooltip>
 </DemoBlock>
@@ -61,6 +67,25 @@
     <oas-button>无内容提示</oas-button>
   </oas-tooltip>
 </DemoBlock>
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  const tip = document.getElementById('tip-ctrl')
+  const status = document.getElementById('tip-status')
+  if (!tip || !status) return
+  const sync = () => {
+    status.textContent = `open: ${tip.hasAttribute('open')}`
+  }
+  window.tipCtrl = (open) => {
+    if (open) tip.setAttribute('open', '')
+    else tip.removeAttribute('open')
+  }
+  sync()
+  // hover / focus 触发与外部控制都会改 open，用 MutationObserver 保持状态同步
+  new MutationObserver(sync).observe(tip, { attributes: true, attributeFilter: ['open'] })
+})
+</script>
 
 ## API
 

@@ -48,15 +48,16 @@
 
 ## 受控 open
 
-`open` 属性受控：外部设置/移除即展开/收起，组件自身点击也会同步属性并派发 `oas-open`。
+`open` 属性受控：外部设置/移除即展开/收起，组件自身点击也会同步属性并派发 `oas-open`（点击外部 / Esc 仍会收起）。
 
 <DemoBlock title="受控展开">
   <div style="width: 200px; height: 160px">
     <oas-speed-dial id="sd-ctrl" style="position: static" actions='[{"label":"新建","icon":"plus"},{"label":"上传","icon":"upload"},{"label":"下载","icon":"download"}]'></oas-speed-dial>
   </div>
   <oas-button-group>
-    <oas-button type="primary" size="small" onclick="sdCtrl(true)">展开</oas-button>
-    <oas-button size="small" onclick="sdCtrl(false)">收起</oas-button>
+    <oas-button type="primary" size="small" onclick="event.stopPropagation(); sdCtrl(true)">展开</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation(); sdCtrl(false)">收起</oas-button>
+    <oas-tag id="sd-status" type="info">open: false</oas-tag>
   </oas-button-group>
 </DemoBlock>
 
@@ -73,9 +74,18 @@ onMounted(() => {
   })
 
   const ctrl = document.getElementById('sd-ctrl')
-  window.sdCtrl = (open) => {
-    if (open) ctrl.setAttribute('open', '')
-    else ctrl.removeAttribute('open')
+  const status = document.getElementById('sd-status')
+  if (ctrl && status) {
+    const sync = () => {
+      status.textContent = `open: ${ctrl.hasAttribute('open')}`
+    }
+    window.sdCtrl = (open) => {
+      if (open) ctrl.setAttribute('open', '')
+      else ctrl.removeAttribute('open')
+    }
+    sync()
+    // 组件自身点击 / 点击外部 / Esc 都会改 open，用 MutationObserver 保持状态同步
+    new MutationObserver(sync).observe(ctrl, { attributes: true, attributeFilter: ['open'] })
   }
 })
 </script>

@@ -24,6 +24,31 @@
   </oas-drawer>
 </DemoBlock>
 
+## 禁止遮罩关闭
+
+`no-mask-close` 禁止点击遮罩关闭抽屉（其他关闭入口保留）。
+
+<DemoBlock title="no-mask-close">
+  <oas-button type="primary" onclick="document.querySelector('#drawer-nomask').setAttribute('visible','')">打开抽屉</oas-button>
+  <oas-drawer id="drawer-nomask" title="必须确认" no-mask-close>
+    <p>点击遮罩不会关闭，需通过 ✕ / Esc 或底部按钮关闭。</p>
+  </oas-drawer>
+</DemoBlock>
+
+## 受控显示
+
+`visible` 为受控属性：由宿主（按钮 / JS）设置或移除，组件不会自动恢复；关闭后可监听 `oas-ok` / `oas-close` 后移除 `visible`。
+
+<DemoBlock title="受控显示（visible）">
+  <oas-space>
+    <oas-button type="primary" onclick="document.querySelector('#drawer-ctrl').setAttribute('visible','')">打开（设置 visible）</oas-button>
+    <oas-button onclick="document.querySelector('#drawer-ctrl').removeAttribute('visible')">关闭（移除 visible）</oas-button>
+  </oas-space>
+  <oas-drawer id="drawer-ctrl" title="受控显示">
+    <p>外部按钮直接设置 / 移除 <code>visible</code> 控制显隐，无需依赖底部按钮。</p>
+  </oas-drawer>
+</DemoBlock>
+
 ## 无底部按钮
 
 <DemoBlock title="无底部按钮">

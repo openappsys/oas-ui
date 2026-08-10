@@ -18,6 +18,20 @@
   <oas-tag id="menubar-result-2" type="info">尚未选择</oas-tag>
 </DemoBlock>
 
+## 受控选中
+
+`value` 属性受控：外部设置 `value` 决定当前选中项（子菜单叶子项带 ✓ 高亮）。`value` 未列入 observedAttributes，外部变更后需同时重设 `items` 触发重渲染使勾选生效。
+
+<DemoBlock title="受控选中（value 属性）">
+  <oas-space size="small">
+    <oas-button size="small" onclick="mbSet('new')">选中「新建」</oas-button>
+    <oas-button size="small" onclick="mbSet('undo')">选中「撤销」</oas-button>
+    <oas-button size="small" onclick="mbSet('')">清除选中</oas-button>
+    <oas-tag id="mb-value-status" type="info">value: -</oas-tag>
+  </oas-space>
+  <oas-menubar id="mb-value" items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"新建","value":"new"},{"label":"打开","value":"open"},{"type":"divider"},{"label":"退出","value":"quit"}]},{"label":"编辑","value":"edit","accessKey":"e","children":[{"label":"撤销","value":"undo"},{"label":"重做","value":"redo"}]}]'></oas-menubar>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -28,6 +42,24 @@ onMounted(() => {
   window.menubarLog2 = (e) => {
     const tag = document.getElementById('menubar-result-2')
     if (tag) tag.textContent = `已选择：${e.detail.value}`
+  }
+
+  const mb = document.getElementById('mb-value')
+  const status = document.getElementById('mb-value-status')
+  if (mb && status) {
+    const items = mb.getAttribute('items')
+    const sync = () => {
+      status.textContent = `value: ${mb.getAttribute('value') || '-'}`
+    }
+    window.mbSet = (v) => {
+      mb.setAttribute('value', v)
+      // value 不在 observedAttributes：重设 items 触发重渲染，勾选才会移动
+      mb.setAttribute('items', items ?? '')
+    }
+    // 菜单内点击选中：组件只派发 oas-select，不回写 value，由外部接管
+    mb.addEventListener('oas-select', (e) => mbSet(e.detail.value))
+    sync()
+    new MutationObserver(sync).observe(mb, { attributes: true, attributeFilter: ['value'] })
   }
 })
 </script>

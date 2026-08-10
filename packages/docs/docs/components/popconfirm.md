@@ -10,6 +10,43 @@
   </oas-popconfirm>
 </DemoBlock>
 
+## 受控显示
+
+`open` 属性受控：外部按钮设置 / 移除 `open` 控制气泡显隐（点击外部 / Esc / 确定 / 取消仍会关闭）。
+
+<DemoBlock title="受控显示（open 属性）">
+  <oas-space size="small">
+    <oas-button type="primary" size="small" onclick="event.stopPropagation(); pcCtrl(true)">打开确认</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation(); pcCtrl(false)">关闭</oas-button>
+    <oas-tag id="pc-status" type="info">open: false</oas-tag>
+  </oas-space>
+  <oas-popconfirm id="pc-ctrl" title="确定删除这条数据吗？">
+    <oas-button type="danger">删除</oas-button>
+  </oas-popconfirm>
+</DemoBlock>
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(async () => {
+  const { message } = await import('@oas-ui/ui')
+  window.message = message
+
+  const pc = document.getElementById('pc-ctrl')
+  const status = document.getElementById('pc-status')
+  if (!pc || !status) return
+  const sync = () => {
+    status.textContent = `open: ${pc.hasAttribute('open')}`
+  }
+  window.pcCtrl = (open) => {
+    if (open) pc.setAttribute('open', '')
+    else pc.removeAttribute('open')
+  }
+  sync()
+  // 确定 / 取消 / 外部点击 / Esc 由组件移除 open，用 MutationObserver 保持状态同步
+  new MutationObserver(sync).observe(pc, { attributes: true, attributeFilter: ['open'] })
+})
+</script>
+
 ## 四种位置
 
 <DemoBlock title="四种位置">
@@ -32,14 +69,6 @@
     <oas-button type="danger">删除订单</oas-button>
   </oas-popconfirm>
 </DemoBlock>
-
-<script setup>
-import { onMounted } from 'vue'
-onMounted(async () => {
-  const { message } = await import('@oas-ui/ui')
-  window.message = message
-})
-</script>
 
 ## API
 

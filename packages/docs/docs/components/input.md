@@ -8,6 +8,16 @@
   <oas-input placeholder="请输入内容" style="width: 240px"></oas-input>
 </DemoBlock>
 
+## 无障碍名称（label）
+
+<DemoBlock title="label（可访问名称）">
+  <oas-input id="input-label-set" label="登录邮箱" placeholder="name@example.com" style="width: 240px"></oas-input>
+  <oas-input id="input-label" placeholder="无 label，回退占位文本" style="width: 240px"></oas-input>
+  <span id="input-label-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 260px"></span>
+</DemoBlock>
+
+`label` 作为输入框的可访问名称（`aria-label`）来源，读屏朗读该名称。未设置 `label` 时依次回退 `placeholder` → 内置文案「输入框」；设置后（如「登录邮箱」）覆盖回退链。
+
 ## 类型
 
 <DemoBlock title="type">
@@ -112,6 +122,21 @@ onMounted(() => {
   enter?.addEventListener('oas-enter', (e) => {
     enterOut.textContent = `oas-enter: ${e.detail.value}`
   })
+
+  // label（可访问名称）demo：等组件升级后读取内层 input 的 aria-label
+  const labelSet = document.getElementById('input-label-set')
+  const labelFallback = document.getElementById('input-label')
+  const labelOut = document.getElementById('input-label-output')
+  const readLabel = () => {
+    const a = labelSet?.shadowRoot?.querySelector('input')?.getAttribute('aria-label')
+    const b = labelFallback?.shadowRoot?.querySelector('input')?.getAttribute('aria-label')
+    if (a !== undefined && b !== undefined) {
+      labelOut.textContent = `aria-label：设置「${a}」 / 回退「${b}」`
+    } else {
+      setTimeout(readLabel, 60)
+    }
+  }
+  readLabel()
 })
 </script>
 
@@ -121,6 +146,7 @@ onMounted(() => {
 | ------------- | --------------- | ------- |
 | `value`       | 值（受控）      | 无      |
 | `placeholder` | 占位提示        | 无      |
+| `label`       | 可访问名称（`aria-label` 来源，未设时回退 `placeholder` → 内置文案「输入框」） | 无 |
 | `type`        | 原生 input 类型 | `text`  |
 | `clearable`   | 可清空          | `false` |
 | `disabled`    | 禁用            | `false` |

@@ -46,6 +46,41 @@
   </div>
 </DemoBlock>
 
+## 移动端抽屉受控
+
+`drawer-open` 为受控属性：外部设置 / 移除即可开合移动端抽屉（无需点击悬浮 ☰）。此 demo 将断点调高强制移动端形态，方便在宽屏观察。
+
+<DemoBlock title="受控 drawer-open">
+  <oas-space>
+    <oas-button type="primary" onclick="document.getElementById('sidebar-drawer').setAttribute('drawer-open','')">打开抽屉（设置 drawer-open）</oas-button>
+    <oas-button onclick="document.getElementById('sidebar-drawer').removeAttribute('drawer-open')">收起抽屉（移除 drawer-open）</oas-button>
+  </oas-space>
+  <div style="height: 260px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-drawer" mobile-breakpoint="2000" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据看板","value":"dashboard","icon":"📊"},{"label":"订单管理","value":"orders","icon":"📦"},{"label":"设置","value":"settings","icon":"⚙️"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      外部按钮设置 <code>drawer-open</code> 控制抽屉开合；遮罩 / ✕ / Esc 收起后属性被移除。
+    </div>
+  </div>
+</DemoBlock>
+
+## 自定义宽度
+
+`width` 属性覆盖展开宽度（默认走 `--oas-sidebar-width` token）；折叠态仍收窄为图标条。
+
+<DemoBlock title="width 属性">
+  <oas-space>
+    <oas-button size="small" onclick="document.getElementById('sidebar-width').setAttribute('width','180px')">180px</oas-button>
+    <oas-button size="small" onclick="document.getElementById('sidebar-width').setAttribute('width','280px')">280px</oas-button>
+    <oas-button size="small" onclick="document.getElementById('sidebar-width').removeAttribute('width')">默认 token</oas-button>
+  </oas-space>
+  <div style="height: 260px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-width" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据看板","value":"dashboard","icon":"📊"},{"label":"设置","value":"settings","icon":"⚙️"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      点击上方按钮切换展开宽度，观察侧栏宽度变化。
+    </div>
+  </div>
+</DemoBlock>
+
 ## 与 oas-layout 配合
 
 `oas-sidebar` 可直接作为 `oas-layout` 的 sider（slot="sider"）使用。

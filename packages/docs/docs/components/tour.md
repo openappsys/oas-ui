@@ -21,6 +21,23 @@
   <div id="tour-e2" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">高亮区域二</div>
 </DemoBlock>
 
+## 受控步骤与开关
+
+`open` 与 `current` 均为受控属性：外部按钮 / JS 设置 `open` 启动引导，设置 `current` 直接跳到指定步骤（无需逐步点击）。
+
+<DemoBlock title="受控 open / current">
+  <oas-space>
+    <oas-button type="primary" onclick="tourCtlOpen()">开始引导（设置 open）</oas-button>
+    <oas-button onclick="tourCtlJump(1)">跳到第 2 步（current=1）</oas-button>
+    <oas-button onclick="tourCtlJump(2)">跳到第 3 步（current=2）</oas-button>
+    <oas-button onclick="tourCtlClose()">结束（移除 open）</oas-button>
+  </oas-space>
+  <oas-tour id="tour-ctrl" steps='[{"selector":"#tour-c1","title":"第一步","description":"通过外部按钮设置 current 可跳步。"},{"selector":"#tour-c2","title":"第二步","description":"当前步骤高亮随属性变化。"},{"selector":"#tour-c3","title":"第三步","description":"直接移除 open 结束引导。"}]'></oas-tour>
+  <div id="tour-c1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">受控高亮区域一</div>
+  <div id="tour-c2" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">受控高亮区域二</div>
+  <div id="tour-c3" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">受控高亮区域三</div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -30,6 +47,9 @@ onMounted(async () => {
     const tag = document.getElementById('tour-result')
     if (tag) tag.textContent = `当前步骤：${e.detail.index + 1}`
   }
+  window.tourCtlOpen = () => document.getElementById('tour-ctrl').setAttribute('open', '')
+  window.tourCtlJump = (i) => document.getElementById('tour-ctrl').setAttribute('current', String(i))
+  window.tourCtlClose = () => document.getElementById('tour-ctrl').removeAttribute('open')
 })
 </script>
 
