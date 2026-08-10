@@ -55,7 +55,9 @@ const STYLE = `
   white-space: nowrap;
 }
 
-/* 关闭按钮（span role=button，避免 button 嵌套被解析器挤出） */
+/* 关闭按钮：span（非原生 button）——原生 button 会被 axe 视为 tablist 的
+   不允许子元素/与 role=tab 构成交互嵌套；tabindex=-1 可脚本聚焦（读屏可激活），
+   不进 Tab 顺序（避免嵌套交互违规），Enter/Space 由组件内 keydown 处理 */
 .tab-close {
   display: inline-flex;
   align-items: center;
@@ -286,12 +288,13 @@ export class OASTabs extends OASElement {
         btn.appendChild(badgeEl)
       }
 
-      // 关闭按钮：span role=button（避免 button 内嵌 button 被解析器挤出）
+      // 关闭按钮：span tabindex=-1（无 role，避免 axe nested-interactive 判为
+      // 可交互控件嵌套 / tablist 不允许子元素）；读屏可经 aria-label 命名并激活，
+      // Enter/Space 走组件内 keydown
       if (closable) {
         const close = document.createElement('span')
         close.className = 'tab-close'
-        close.setAttribute('role', 'button')
-        close.setAttribute('tabindex', '0')
+        close.setAttribute('tabindex', '-1')
         close.setAttribute('aria-label', this.t('tabs.close'))
         close.innerHTML = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`
         close.addEventListener('click', (e: Event) => {

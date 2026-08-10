@@ -12,9 +12,17 @@ async function openReady(
   ready: string,
 ): Promise<void> {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 })
-  // 等待自定义元素注册/水合完成（各页面首个可用组件不同）
-  await page.locator(ready).first().waitFor({ state: 'attached', timeout: 15000 })
-  await page.waitForTimeout(1000)
+  // 等待自定义元素升级完成（shadowRoot 就绪）——仅等 attached 在并行负载下
+  // 会过早（元素已存在但 JS 尚未注册/升级），点击落在未升级元素上事件丢失
+  await page.waitForFunction(
+    (sel) => {
+      const el = document.querySelector(sel)
+      return el instanceof HTMLElement && el.shadowRoot !== null
+    },
+    ready,
+    { timeout: 15000 },
+  )
+  await page.waitForTimeout(300)
 }
 
 test.describe('反馈/布局组件交互验真（最新构建）', () => {

@@ -186,4 +186,27 @@ describe('OASPinInput', () => {
     cs[3]!.focus()
     expect(el.shadowRoot!.activeElement).toBe(cs[3])
   })
+
+  it('aria-invalid 在 observedAttributes 中（外部可动态切换校验态）', () => {
+    expect(OASPinInput.observedAttributes).toContain('aria-invalid')
+  })
+
+  it('受控：外部动态 setAttribute/removeAttribute(aria-invalid) 即时同步容器与各格', () => {
+    const el = mount()
+    expect(container(el).getAttribute('aria-invalid')).toBeNull()
+    expect(cells(el)[0]!.getAttribute('aria-invalid')).toBeNull()
+
+    el.setAttribute('aria-invalid', 'true')
+    expect(container(el).getAttribute('aria-invalid')).toBe('true')
+    expect(cells(el)[0]!.getAttribute('aria-invalid')).toBe('true')
+    expect(cells(el)[5]!.getAttribute('aria-invalid')).toBe('true')
+
+    el.setAttribute('aria-invalid', 'false')
+    expect(container(el).getAttribute('aria-invalid')).toBe('false')
+    expect(cells(el)[0]!.getAttribute('aria-invalid')).toBe('false')
+
+    el.removeAttribute('aria-invalid')
+    expect(container(el).getAttribute('aria-invalid')).toBeNull()
+    expect(cells(el)[0]!.getAttribute('aria-invalid')).toBeNull()
+  })
 })

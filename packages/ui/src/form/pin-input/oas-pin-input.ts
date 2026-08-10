@@ -52,7 +52,7 @@ input:read-only {
 
 export class OASPinInput extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['length', 'value', 'mask', 'disabled', 'readonly', 'type']
+    return ['length', 'value', 'mask', 'disabled', 'readonly', 'type', 'aria-invalid']
   }
 
   private container: HTMLElement | null = null

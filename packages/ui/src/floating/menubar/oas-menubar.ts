@@ -156,11 +156,13 @@ const STYLE = `
 
 export class OASMenubar extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['items']
+    return ['items', 'value']
   }
 
   private itemsList: MenubarItem[] = []
   private barEl: HTMLElement | null = null
+  /** 上次解析的 items 属性原文，未变化时跳过全量重建（value 变化只增量同步勾选） */
+  private lastItemsAttr: string | null = null
   /** 键盘导航当前层级的祖先 value 链（空 = 顶级菜单行） */
   private activeStack: string[] = []
   private activeIndex = 0
@@ -188,10 +190,16 @@ export class OASMenubar extends OASElement {
   }
 
   protected override update(): void {
-    this.parseItems()
-    this.pruneState()
+    // items 变化才全量重建；value 等属性变化走下方增量同步（勾选/展开/激活/roving）
+    const itemsAttr = this.getAttr('items', '[]')
+    if (itemsAttr !== this.lastItemsAttr) {
+      this.lastItemsAttr = itemsAttr
+      this.parseItems()
+      this.pruneState()
+      this.renderMenubar()
+    }
     this.barEl?.setAttribute('aria-label', this.t('menubar.label'))
-    this.renderMenubar()
+    this.syncSelection()
     this.syncOpen()
     this.syncActive()
     this.syncRoving()
@@ -442,6 +450,17 @@ export class OASMenubar extends OASElement {
     return span
   }
 
+  /** value 变化 → 轻量同步叶子项勾选态（aria-checked，不重建 DOM） */
+  private syncSelection(): void {
+    if (!this.shadow) return
+    const selected = this.getAttr('value', '')
+    for (const li of this.shadow.querySelectorAll<HTMLElement>('[part="item"]')) {
+      // 带子菜单的项是父节点，无勾选态
+      if (li.getAttribute('aria-haspopup') === 'menu') continue
+      li.setAttribute('aria-checked', String(li.dataset.value === selected))
+    }
+  }
+
   /** 展开状态 → .open class + aria-expanded（不重建 DOM） */
   private syncOpen(): void {
     if (!this.shadow) return
@@ -540,6 +559,9 @@ export class OASMenubar extends OASElement {
   }
 
   private select(item: MenuItem): void {
+    // 非受控通道：内部选中直接写回 value（受控模式由宿主监听 oas-select 接管，
+    // 外部 setAttribute('value') 同样即时生效——value 在 observedAttributes 中）
+    this.setAttribute('value', item.value ?? '')
     this.emit('select', { value: item.value })
     this.collapseAndFocusTop()
   }

@@ -20,7 +20,7 @@
 
 ## 受控选中
 
-`value` 属性受控：外部设置 `value` 决定当前选中项（子菜单叶子项带 ✓ 高亮）。`value` 未列入 observedAttributes，外部变更后需同时重设 `items` 触发重渲染使勾选生效。
+`value` 属性受控（已列入 observedAttributes）：外部 `setAttribute('value', ...)` 即时生效，选中项（勾选/高亮）同步到对应叶子项；组件内部点击也会写回 `value`（非受控通道），宿主可监听 `oas-select` 自行接管。
 
 <DemoBlock title="受控选中（value 属性）">
   <oas-space size="small">
@@ -47,16 +47,14 @@ onMounted(() => {
   const mb = document.getElementById('mb-value')
   const status = document.getElementById('mb-value-status')
   if (mb && status) {
-    const items = mb.getAttribute('items')
     const sync = () => {
       status.textContent = `value: ${mb.getAttribute('value') || '-'}`
     }
     window.mbSet = (v) => {
+      // value 在 observedAttributes 中：直接 setAttribute 即触发即时重渲染
       mb.setAttribute('value', v)
-      // value 不在 observedAttributes：重设 items 触发重渲染，勾选才会移动
-      mb.setAttribute('items', items ?? '')
     }
-    // 菜单内点击选中：组件只派发 oas-select，不回写 value，由外部接管
+    // 受控接管：菜单内点击组件已写回 value；宿主亦可监听 oas-select 自行决定
     mb.addEventListener('oas-select', (e) => mbSet(e.detail.value))
     sync()
     new MutationObserver(sync).observe(mb, { attributes: true, attributeFilter: ['value'] })
@@ -69,6 +67,7 @@ onMounted(() => {
 | 属性    | 说明                                  | 类型         | 默认值 |
 | ------- | ------------------------------------- | ------------ | ------ |
 | `items` | 顶级菜单项 JSON（含子菜单 children）  | `MenubarItem[]` | `[]`   |
+| `value` | 受控选中值（外部改即时同步勾选；内部选中自动写回） | `string` | 无 |
 
 `MenubarItem` 字段（继承 `MenuItem`）：
 

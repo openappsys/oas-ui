@@ -214,4 +214,45 @@ describe('OASMenubar', () => {
     expect(topItems(el).length).toBe(1)
     expect(topItems(el)[0]!.textContent).toBe('帮助')
   })
+
+  it('value 在 observedAttributes 中（受控属性被观察）', () => {
+    expect(OASMenubar.observedAttributes).toContain('value')
+  })
+
+  it('受控：外部 setAttribute(value) 即时同步勾选态（不重建 DOM）', () => {
+    const el = mount()
+    const refs = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
+    const openItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    const newItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
+    expect(openItem.getAttribute('aria-checked')).toBe('false')
+
+    el.setAttribute('value', 'open')
+    expect(openItem.getAttribute('aria-checked')).toBe('true')
+    expect(newItem.getAttribute('aria-checked')).toBe('false')
+
+    el.setAttribute('value', 'new')
+    expect(openItem.getAttribute('aria-checked')).toBe('false')
+    expect(newItem.getAttribute('aria-checked')).toBe('true')
+
+    // 增量同步：DOM 元素引用保持（未整体重建）
+    expect([...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]).toEqual(refs)
+  })
+
+  it('受控：value 支持级联子菜单叶子项', () => {
+    const el = mount()
+    el.setAttribute('value', 'insert-date')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="insert-date"]')!.getAttribute('aria-checked')).toBe('true')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="insert-time"]')!.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('非受控：内部点击叶子项写回 value 并派发 oas-select', () => {
+    const el = mount()
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    const newItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
+    newItem.click()
+    expect(el.getAttribute('value')).toBe('new')
+    expect(detail).toEqual({ value: 'new' })
+    expect(newItem.getAttribute('aria-checked')).toBe('true')
+  })
 })

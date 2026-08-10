@@ -170,8 +170,9 @@ button.ghost.primary:active {
 }
 button.ghost.success {
   background: transparent;
-  border-color: var(--oas-color-success);
-  color: var(--oas-color-success);
+  /* 文字/描边用更深色（token 80% + 20% 黑），白底对比度 ≥ 4.5:1（#16a34a 仅 3.3:1） */
+  border-color: color-mix(in srgb, var(--oas-color-success) 80%, black);
+  color: color-mix(in srgb, var(--oas-color-success) 80%, black);
 }
 button.ghost.success:hover {
   background: color-mix(in srgb, var(--oas-color-success) 10%, transparent);
@@ -180,8 +181,9 @@ button.ghost.success:hover {
 }
 button.ghost.warning {
   background: transparent;
-  border-color: var(--oas-color-warning);
-  color: var(--oas-color-warning);
+  /* 文字/描边用更深色（token 80% + 20% 黑），白底对比度 ≥ 4.5:1（#d97706 仅 3.18:1） */
+  border-color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
+  color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
 }
 button.ghost.warning:hover {
   background: color-mix(in srgb, var(--oas-color-warning) 10%, transparent);

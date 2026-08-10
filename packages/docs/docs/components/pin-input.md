@@ -43,12 +43,20 @@
 
 ## 校验失败态
 
-<DemoBlock title="aria-invalid">
+`aria-invalid` 已列入 observedAttributes：外部动态 `setAttribute('aria-invalid', 'true'/'false')` 即时切换——所有格子与容器同步该状态并标 danger 色边框，读屏播报「无效」。通常由宿主在 `oas-complete` 后校验置位（如验证码错误/过期）；移除该属性即恢复默认态。
+
+<DemoBlock title="aria-invalid 动态切换">
+  <oas-space size="small">
+    <oas-button size="small" type="danger" onclick="pinInvalid('true')">标记校验失败</oas-button>
+    <oas-button size="small" onclick="pinInvalid('false')">恢复正常</oas-button>
+  </oas-space>
+  <oas-pin-input id="pin-invalid" length="4" value="123"></oas-pin-input>
+</DemoBlock>
+
+<DemoBlock title="aria-invalid 静态示例">
   <oas-pin-input length="4" value="123" aria-invalid="true"></oas-pin-input>
   <oas-pin-input length="4" value="456"></oas-pin-input>
 </DemoBlock>
-
-`aria-invalid="true"` 表示校验失败：所有格子与容器同步该状态并标 danger 色边框，读屏播报「无效」。通常由宿主在 `oas-complete` 后校验置位（如验证码错误/过期）；移除该属性即恢复默认态。
 
 ## 禁用 / 只读
 
@@ -72,6 +80,12 @@
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
+  window.pinInvalid = (invalid) => {
+    const el = document.getElementById('pin-invalid')
+    if (invalid === 'true') el?.setAttribute('aria-invalid', 'true')
+    else el?.setAttribute('aria-invalid', 'false')
+  }
+
   const el = document.getElementById('pin-event')
   const out = document.getElementById('pin-output')
   el?.addEventListener('oas-input', (e) => {

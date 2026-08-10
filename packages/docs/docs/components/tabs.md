@@ -69,7 +69,7 @@
 
 ## 可关闭
 
-`closable`：每个标签右侧显示关闭 ×（span role=button）。点击 × 派发 `oas-close`，`detail: { key }`；组件不自动删除面板，交由宿主移除（移除后标签栏增量刷新）。
+`closable`：每个标签右侧显示关闭 ×（`span[tabindex="-1"]`，读屏经 `aria-label` 命名，Enter / Space 触发关闭）。点击 × 派发 `oas-close`，`detail: { key }`；组件不自动删除面板，交由宿主移除（移除后标签栏增量刷新）。
 
 <DemoBlock title="可关闭标签">
   <oas-tabs id="tabs-closable" closable active="a">

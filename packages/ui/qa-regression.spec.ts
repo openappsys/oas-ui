@@ -338,3 +338,53 @@ test('date-picker / time-picker 面板贴输入框下方（:host 为定位祖先
     ).toBeCloseTo(4, 1)
   }
 })
+
+test('menubar 受控：外部 setAttribute(value) 即时同步勾选（value 在 observedAttributes）', async ({ page }) => {
+  // 曾现 bug：value 未列入 observedAttributes，外部 setAttribute('value') 不触发 update()，
+  // 勾选/高亮不移动，受控 demo 只能靠重设 items 绕开。
+  await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#mb-value')
+  const r = await page.evaluate(() => {
+    const mb = document.querySelector('#mb-value')!
+    const checked = (v: string) =>
+      mb.shadowRoot!.querySelector<HTMLElement>(`[part="item"][data-value="${v}"]`)
+        ?.getAttribute('aria-checked') ?? null
+    mb.setAttribute('value', 'open')
+    const afterOpen = { open: checked('open'), created: checked('new') }
+    mb.setAttribute('value', 'new')
+    const afterNew = { open: checked('open'), created: checked('new') }
+    return { afterOpen, afterNew }
+  })
+  expect(r.afterOpen).toEqual({ open: 'true', created: 'false' })
+  expect(r.afterNew).toEqual({ open: 'false', created: 'true' })
+})
+
+test('pin-input 受控：外部动态切换 aria-invalid 即时同步 danger 边框', async ({ page }) => {
+  // 曾现 bug：aria-invalid 未列入 observedAttributes，外部 setAttribute('aria-invalid') 不触发
+  // update()，容器/各格不同步、danger 边框不生效（校验失败态无视觉反馈）。
+  await page.goto('/components/pin-input.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#pin-invalid')
+  const r = await page.evaluate(async () => {
+    const el = document.querySelector('#pin-invalid')!
+    const root = el.shadowRoot!
+    const container = root.querySelector('[part="container"]')!
+    const cell = root.querySelector('input')!
+    const state = () => ({
+      container: container.getAttribute('aria-invalid'),
+      cell: cell.getAttribute('aria-invalid'),
+      border: getComputedStyle(cell).borderColor,
+    })
+    el.setAttribute('aria-invalid', 'true')
+    // 边框有 120ms 过渡（--oas-transition-fast）：等过渡完成再读 computed style
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    const invalid = state()
+    el.setAttribute('aria-invalid', 'false')
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    const restored = state()
+    return { invalid, restored }
+  })
+  expect(r.invalid.container).toBe('true')
+  expect(r.invalid.cell).toBe('true')
+  expect(r.invalid.border).not.toBe(r.restored.border) // danger 边框 ≠ 默认边框
+  expect(r.restored.container).toBe('false')
+})

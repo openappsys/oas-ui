@@ -76,12 +76,13 @@ describe('OASTabs', () => {
     expect(tabs[0]!.classList.contains('tab--card')).toBe(true)
   })
 
-  it('closable：每个标签渲染关闭按钮（span role=button，非 button 嵌套）', () => {
+  it('closable：每个标签渲染关闭按钮（span tabindex=-1 无 role，避免 axe 嵌套交互违规）', () => {
     const el = mount({ closable: '' })
     const closes = el.shadowRoot!.querySelectorAll('.tab-close')
     expect(closes.length).toBe(2)
     expect(closes[0]!.tagName).toBe('SPAN')
-    expect(closes[0]!.getAttribute('role')).toBe('button')
+    expect(closes[0]!.getAttribute('tabindex')).toBe('-1')
+    expect(closes[0]!.getAttribute('role')).toBeNull()
     expect(closes[0]!.getAttribute('aria-label')).toBeTruthy()
   })
 
