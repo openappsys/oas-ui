@@ -1,0 +1,1327 @@
+{
+  "oas-affix": {
+    "attrs": {
+      "offset": "Fixed distance from the viewport top (px)"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-alert": {
+    "attrs": {
+      "closeable": "Whether to show the close button",
+      "title": "Title text",
+      "type": "Alert type"
+    },
+    "events": {
+      "oas-close": "Dispatched after the close button is clicked; the component then hides"
+    },
+    "slots": {}
+  },
+  "oas-anchor": {
+    "attrs": {
+      "active": "Currently highlighted href",
+      "items": "Anchor items JSON",
+      "offset": "Highlight offset in px"
+    },
+    "events": {
+      "oas-change": "An anchor was clicked, `detail: { href }`"
+    },
+    "slots": {}
+  },
+  "oas-aspect-ratio": {
+    "attrs": {
+      "ratio": "Aspect ratio; supports `16/9`, `4:3`, `16 / 9`, decimal `1.5`; invalid values fall back to `1 / 1`"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-auto-complete": {
+    "attrs": {
+      "disabled": "Disabled",
+      "options": "Options, JSON array `[{ label, value, disabled }]`",
+      "placeholder": "Placeholder text",
+      "value": "Preset value"
+    },
+    "events": {
+      "oas-change": "Selected, `detail: { value, label }`",
+      "oas-input": "While typing, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-avatar": {
+    "attrs": {
+      "alt": "Alternative text for the image",
+      "size": "Avatar size (px)",
+      "src": "Image URL; renders an image avatar when present"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-avatar-group": {
+    "attrs": {
+      "max": "Max number of avatars shown; overflow shows a `+N` count badge",
+      "size": "Unified avatar size (px); the count badge adapts"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-back-top": {
+    "attrs": {
+      "bottom": "Distance from the viewport bottom",
+      "right": "Distance from the viewport right edge",
+      "visible": "Whether the button is shown"
+    },
+    "events": {
+      "oas-click": "The button was clicked (then smooth-scrolls to the top)"
+    },
+    "slots": {}
+  },
+  "oas-backdrop": {
+    "attrs": {
+      "blur": "Blur the background",
+      "lock-scroll": "Lock body scroll while open",
+      "open": "Whether shown",
+      "transparent": "Transparent overlay (no background)"
+    },
+    "events": {
+      "oas-click": "Backdrop clicked, `detail.originalEvent` is the original click event"
+    },
+    "slots": {}
+  },
+  "oas-badge": {
+    "attrs": {
+      "dot": "Dot mode",
+      "max": "Upper limit",
+      "showZero": "Whether to show when value=0",
+      "value": "Number"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-bottom-navigation": {
+    "attrs": {
+      "fixed": "Pin to the viewport bottom (`position: fixed; bottom: 0`)",
+      "items": "Navigation items JSON",
+      "value": "Value of the active item; defaults to the first available item"
+    },
+    "events": {
+      "oas-change": "The active item changed, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-breadcrumb": {
+    "attrs": {
+      "items": "Breadcrumb items JSON",
+      "separator": "Separator"
+    },
+    "events": {
+      "oas-select": "A link item was clicked, `detail: { value: href }`"
+    },
+    "slots": {}
+  },
+  "oas-button": {
+    "attrs": {
+      "block": "Fill the full width of the parent container (block level)",
+      "disabled": "Disabled",
+      "ghost": "Ghost/outline style: transparent background + outline colored by `type`, darkens on hover",
+      "icon": "Icon name (reusing the oas-icon icon set); without text it becomes an equal-width square and uses the icon name as the fallback label",
+      "loading": "Loading state",
+      "round": "Pill radius (`--oas-radius-full` / `999px`)",
+      "size": "Size",
+      "type": "Type"
+    },
+    "events": {
+      "oas-click": "Click, `detail: { originalEvent }`"
+    },
+    "slots": {}
+  },
+  "oas-button-group": {
+    "attrs": {
+      "aria-label": "Group container accessible name (defaults to the built-in i18n label)",
+      "disabled": "Disable the whole group",
+      "multiple": "Multi-select mode",
+      "size": "Size passed to child buttons",
+      "type": "Type passed to child buttons",
+      "value": "Selected value (single value in single-select, comma-separated in multi-select)",
+      "vertical": "Stack vertically, merging corners top/bottom"
+    },
+    "events": {
+      "oas-change": "Selection changed. Single-select `detail: { value }`; multi-select `detail: { value: [] }`"
+    },
+    "slots": {}
+  },
+  "oas-calendar": {
+    "attrs": {
+      "disabledDate": "Disabled callback (property)",
+      "max": "Selectable range (ISO dates)",
+      "min": "Selectable range (ISO dates)",
+      "mode": "`month` / `year`",
+      "show-week-number": "Show the ISO week number column",
+      "value": "Selected value (ISO)"
+    },
+    "events": {
+      "oas-change": "Selection change, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-card": {
+    "attrs": {
+      "hoverable": "Whether to enable the hover shadow",
+      "title": "Card title"
+    },
+    "events": {},
+    "slots": {
+      "": "Card content",
+      "extra": "Extra area on the right of the title"
+    }
+  },
+  "oas-carousel": {
+    "attrs": {
+      "arrows": "Arrow display mode: `always` (always shown) / `hover` (shown on hover) / `never` (hidden)",
+      "autoplay": "Whether to autoplay",
+      "index": "Current screen index (starting from 0)",
+      "interval": "Autoplay interval (ms)"
+    },
+    "events": {
+      "oas-change": "Current screen changed, `detail: { index }`"
+    },
+    "slots": {}
+  },
+  "oas-cascader": {
+    "attrs": {
+      "change-on-select": "Submit when selecting any level",
+      "disabled": "Disabled",
+      "options": "Cascade options, JSON array, supports `children` / `disabled`",
+      "placeholder": "Placeholder text",
+      "show-all-levels": "Whether to show the full path (reserved in the current version; display is always the full path)",
+      "value": "Path array (JSON), e.g. `[\"zj\",\"hz\"]`"
+    },
+    "events": {
+      "oas-change": "Selection change, `detail: { value }` (path array)"
+    },
+    "slots": {}
+  },
+  "oas-chart": {
+    "attrs": {
+      "aria-label": "Chart description (falls back to locale by type)",
+      "data": "Data. Array single-series `[{label, value}]` or object multi-series `{labels, series}`",
+      "options": "Config: `smooth` (smoothing), `colors` (series palette), `showLegend`",
+      "type": "Chart type: `line` / `bar` / `pie` / `area` / `donut` / `stacked-bar`"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-checkbox": {
+    "attrs": {
+      "checked": "Whether checked",
+      "disabled": "Disabled",
+      "indeterminate": "Indeterminate state",
+      "value": "Option identifier"
+    },
+    "events": {
+      "oas-change": "Change, `detail: { checked, value }`; group: `detail: { value }` (array)"
+    },
+    "slots": {}
+  },
+  "oas-code": {
+    "attrs": {
+      "code": "Raw source code",
+      "copyable": "Show the copy button",
+      "language": "Language: `js`/`ts`/`html`/`css`/`json`; unknown falls back to plain text",
+      "show-line-number": "Show the line number column"
+    },
+    "events": {
+      "oas-copy": "Copy succeeded, `detail: { text }`",
+      "oas-copy-error": "Copy failed, `detail: { text }`"
+    },
+    "slots": {}
+  },
+  "oas-collapse": {
+    "attrs": {
+      "accordion": "Accordion mode; only one panel open at a time",
+      "active": "Set of expanded panel `name` values (comma-separated)"
+    },
+    "events": {
+      "oas-change": "Expansion state change, `detail: { active: string[] }`"
+    },
+    "slots": {}
+  },
+  "oas-collapse-item": {
+    "attrs": {
+      "header": "Panel title",
+      "name": "Unique identifier of the panel",
+      "open": "Whether it is expanded (managed by the container)"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-color-picker": {
+    "attrs": {
+      "disabled": "Disabled",
+      "preset": "Preset color array (JSON)",
+      "value": "Current color (hex)"
+    },
+    "events": {
+      "oas-change": "Color change, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-combobox": {
+    "attrs": {
+      "clearable": "Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`)",
+      "disabled": "Disabled (no input, no dropdown)",
+      "filterable": "Filter labels in real time while typing (`filterable=\"false\"` disables local filtering)",
+      "loading": "Loading placeholder (dropdown shows \"加载中…\")",
+      "options": "Options, JSON array `[{ label, value, disabled? }]`",
+      "placeholder": "Placeholder text",
+      "value": "Current value (controlled, the selected option's `option.value`)"
+    },
+    "events": {
+      "oas-change": "Selection/clear change, `detail: { value }`",
+      "oas-clear": "Clear button clicked, `detail: { value }` (value before clearing)",
+      "oas-input": "Filter keyword typed, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-command": {
+    "attrs": {
+      "items": "Command items JSON",
+      "open": "Whether open (controlled; auto-removed after selection / Esc)"
+    },
+    "events": {
+      "oas-select": "A command was executed, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-comment": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "Nested `oas-comment` child comments, automatically indented",
+      "actions": "Action area (reply / like, etc., provided by the host)",
+      "author": "Author name",
+      "avatar": "Author avatar (can hold an `oas-avatar`)",
+      "content": "Comment content",
+      "time": "Time"
+    }
+  },
+  "oas-config-provider": {
+    "attrs": {
+      "locale": "Language for built-in copy in the wrapped subtree (must be registered); takes precedence over global `setLocale()`",
+      "size": "Default size for wrapped components, applied when a component doesn't set it explicitly",
+      "theme": "Theme for the wrapped subtree, written to `data-theme`"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-container": {
+    "attrs": {
+      "center": "Whether to center (`center=\"false\"` disables)",
+      "padding": "Padding token/value (applies to `padding-inline`)",
+      "size": "Fixed-width tier, mapped to `--oas-container-*` tokens"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-context-menu": {
+    "attrs": {
+      "items": "Menu items JSON"
+    },
+    "events": {
+      "oas-select": "An item was selected, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-countdown": {
+    "attrs": {
+      "format": "Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds",
+      "value": "Total countdown duration (milliseconds)"
+    },
+    "events": {
+      "oas-finish": "Emitted once when the countdown reaches zero"
+    },
+    "slots": {}
+  },
+  "oas-date-picker": {
+    "attrs": {
+      "disabled": "Disabled",
+      "format": "Display format tokens (`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`)",
+      "max": "Selectable range (ISO dates)",
+      "min": "Selectable range (ISO dates)",
+      "placeholder": "Placeholder text",
+      "type": "Type: `date` / `daterange` / `month` / `datetime`",
+      "value": "Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON range array"
+    },
+    "events": {
+      "oas-change": "Value change, `detail: { value }` (string array for daterange)"
+    },
+    "slots": {}
+  },
+  "oas-descriptions": {
+    "attrs": {
+      "column": "Columns per row",
+      "title": "Title"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-descriptions-item": {
+    "attrs": {
+      "label": "Field label"
+    },
+    "events": {},
+    "slots": {
+      "": "Field content"
+    }
+  },
+  "oas-divider": {
+    "attrs": {
+      "content-position": "Content position",
+      "dashed": "Dashed",
+      "direction": "Direction"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-drawer": {
+    "attrs": {
+      "no-footer": "Hide footer action buttons",
+      "no-mask-close": "Disable closing on mask click",
+      "placement": "Slide direction",
+      "size": "Preset size or a concrete value: `small` (256px) / `medium` (378px) / `large` (736px), or write directly like `512px`, `40%`",
+      "title": "Title text",
+      "visible": "Whether shown",
+      "width": "Drawer width (px or percentage), takes precedence over `size`"
+    },
+    "events": {
+      "oas-close": "Close: cancel button / ✕ / mask click / Esc",
+      "oas-ok": "Clicked \"OK\""
+    },
+    "slots": {}
+  },
+  "oas-dropdown": {
+    "attrs": {
+      "items": "Menu items JSON",
+      "open": "Controlled display (boolean attribute; expands when present)",
+      "placement": "Popup placement",
+      "value": "Current selected value"
+    },
+    "events": {
+      "oas-select": "An item was selected, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-dynamic-input": {
+    "attrs": {
+      "default-value": "Default value for new rows",
+      "disabled": "Disabled (row inputs + buttons)",
+      "max": "Maximum rows; truncates when over",
+      "min": "Minimum rows; auto-fills when below",
+      "model-value": "String array (property or JSON)"
+    },
+    "events": {
+      "oas-change": "Dispatched after add/remove/edit, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-dynamic-tags": {
+    "attrs": {
+      "allow-duplicate": "Allow duplicate tags",
+      "disabled": "Disabled",
+      "max": "Maximum number of tags",
+      "model-value": "Tag array (property or JSON)",
+      "placeholder": "Input placeholder"
+    },
+    "events": {
+      "oas-add": "Tag added, `detail: { value }`",
+      "oas-change": "Dispatched after add/remove, `detail: { value }`",
+      "oas-remove": "Tag removed, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-editable": {
+    "attrs": {
+      "disabled": "Disabled",
+      "maxlength": "Maximum input length",
+      "placeholder": "Empty value placeholder",
+      "submit-on-enter": "Whether Enter submits",
+      "value": "Current value (controlled)"
+    },
+    "events": {
+      "oas-cancel": "Cancel/empty-value submit (reverts to old value), non-destructive by default",
+      "oas-change": "New value submitted, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-ellipsis": {
+    "attrs": {
+      "expandable": "Show an \"expand/collapse\" button when overflowing",
+      "rows": "Number of lines to show (1 is single-line ellipsis, ≥2 multi-line `-webkit-line-clamp`)",
+      "text": "Text content",
+      "tooltip": "Show a full-text tooltip on hover when overflowing"
+    },
+    "events": {
+      "oas-collapse": "Collapsed, `detail: { expanded: false }`",
+      "oas-expand": "Expanded, `detail: { expanded: true }`"
+    },
+    "slots": {}
+  },
+  "oas-empty": {
+    "attrs": {
+      "description": "Description text",
+      "hide-image": "Hide the illustration",
+      "illustration": "Custom illustration: SVG/HTML markup or image URL",
+      "image-size": "Illustration size (px)"
+    },
+    "events": {},
+    "slots": {
+      "action": "Action area, placed below the description",
+      "illustration": "Custom illustration content, takes precedence over the `illustration` attribute"
+    }
+  },
+  "oas-equation": {
+    "attrs": {
+      "code": "LaTeX subset source text"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-flex": {
+    "attrs": {
+      "align": "Cross-axis alignment",
+      "direction": "Main-axis direction",
+      "gap": "Gap between items",
+      "justify": "Main-axis alignment",
+      "vertical": "Vertical shorthand",
+      "wrap": "Wrapping (boolean; present means `wrap`)"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-float-button": {
+    "attrs": {
+      "badge": "Badge number at the top-right corner"
+    },
+    "events": {
+      "oas-click": "Clicked, `detail: { originalEvent }`"
+    },
+    "slots": {}
+  },
+  "oas-form": {
+    "attrs": {
+      "rules": "Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }`"
+    },
+    "events": {
+      "oas-submit": "Validation passed, `detail: { values }`",
+      "oas-validate-fail": "Validation failed, `detail: { errors, values }`"
+    },
+    "slots": {}
+  },
+  "oas-gradient-text": {
+    "attrs": {
+      "direction": "Gradient direction (first argument of `linear-gradient`, e.g. `to right`, `135deg`)",
+      "gradient": "JSON color-stop array, e.g. `[\"#f00\",\"#00f\"]`; a single stop renders a solid color; missing / invalid values fall back to the default token gradient"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-grid": {
+    "attrs": {
+      "cols": "Total column count",
+      "columns": "Auto equal-width count (simple-grid; when set, child `span` is ignored)",
+      "gap": "Gap"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-grid-item": {
+    "attrs": {
+      "offset": "Number of columns offset on the left",
+      "span": "Number of columns spanned"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-hover-card": {
+    "attrs": {
+      "content": "Content text",
+      "delay": "Show/hide delay in milliseconds",
+      "open": "Controlled display (boolean attribute; shows when present)",
+      "placement": "Popup placement",
+      "title": "Title text"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-icon": {
+    "attrs": {
+      "color": "Color (CSS value)",
+      "label": "Accessible name; sets `role=\"img\"` when provided",
+      "name": "Icon name (kebab-case)",
+      "size": "Size (px or em)"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-image": {
+    "attrs": {
+      "alt": "Alternative text",
+      "fallback": "Fallback image URL to switch to on load failure; when not set, shows the \"图片加载失败\" placeholder",
+      "fit": "`object-fit` value",
+      "placeholder": "Show a light gray placeholder before the image finishes loading",
+      "preview": "Enable built-in preview: click to zoom + zoom/rotate/download + Esc to close + focus trap",
+      "src": "Image URL"
+    },
+    "events": {
+      "oas-preview": "Preview overlay opened, `detail: { src }`; closing the overlay does not emit an event"
+    },
+    "slots": {}
+  },
+  "oas-input": {
+    "attrs": {
+      "addon-after": "Addon text block after the input",
+      "addon-before": "Addon text block before the input",
+      "clearable": "Clearable",
+      "disabled": "Disabled",
+      "label": "Accessible name (`aria-label` source; falls back to `placeholder` → built-in \"输入框\" when unset)",
+      "maxlength": "Maximum input length (passed through to native maxlength)",
+      "placeholder": "Placeholder text",
+      "prefix": "Inline text before the input value",
+      "prefix-icon": "Icon name for the leading icon",
+      "readonly": "Readonly",
+      "show-count": "Show character count (bottom-right; danger when over limit)",
+      "show-password": "Password visibility toggle (renders an eye button when `type=\"password\"`)",
+      "suffix": "Inline text after the input value",
+      "suffix-icon": "Icon name for the trailing icon",
+      "type": "Native input type",
+      "value": "Value (controlled)"
+    },
+    "events": {
+      "oas-clear": "Cleared by click, `detail: { originalEvent }`",
+      "oas-enter": "Enter pressed (not IME composition), `detail: { value }`",
+      "oas-input": "While typing, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-input-number": {
+    "attrs": {
+      "disabled": "Disabled",
+      "label": "Accessible name (`aria-label` source; falls back to built-in \"数字输入框\" when unset)",
+      "max": "Range, out-of-range values are clamped automatically",
+      "min": "Range, out-of-range values are clamped automatically",
+      "precision": "Number of decimal places",
+      "step": "Step",
+      "value": "Current value (controlled)"
+    },
+    "events": {
+      "oas-change": "Change on step or blur, `detail: { value }` (number)"
+    },
+    "slots": {}
+  },
+  "oas-kbd": {
+    "attrs": {
+      "keys": "Space-separated key sequence, e.g. `\"ctrl shift k\"`"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-label": {
+    "attrs": {
+      "for": "Target control id; click forwards to `getElementById(for).focus()`",
+      "position": "Position of the asterisk relative to the text",
+      "required": "Append a required `*` marker (`aria-hidden`)"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-link": {
+    "attrs": {
+      "disabled": "Disabled",
+      "href": "Link URL",
+      "target": "Open behavior",
+      "type": "Type",
+      "underline": "Underline"
+    },
+    "events": {
+      "oas-click": "Click, `detail: { originalEvent }`"
+    },
+    "slots": {}
+  },
+  "oas-list": {
+    "attrs": {
+      "bordered": "Whether to show the outer border",
+      "empty": "Force empty state; auto empty when there are no children",
+      "empty-text": "Empty state text",
+      "loading": "Loading state, shows skeleton placeholders",
+      "split": "Whether to show item dividers"
+    },
+    "events": {},
+    "slots": {
+      "description": "Description area (falls back to the default slot when not provided)",
+      "extra": "Extra area on the right of the item"
+    }
+  },
+  "oas-list-item": {
+    "attrs": {
+      "title": "Item title"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-log": {
+    "attrs": {
+      "auto-scroll": "Auto-scroll to bottom on append (only when stuck to the bottom)",
+      "empty-text": "Empty state text (overrides the locale default)",
+      "line-number": "Show the left line number column",
+      "lines": "Log lines JSON string (attribute channel)"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-marquee": {
+    "attrs": {
+      "pause-on-hover": "Boolean; when present, pauses the animation on hover/focus (`animation-play-state: paused`)",
+      "speed": "Duration of a single animation cycle (seconds), written to CSS `animation-duration`; non-positive values fall back to the default"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-masonry": {
+    "attrs": {
+      "columns": "Number of columns; invalid values (non-positive integers / decimals / 0 / negatives) fall back to 1",
+      "gap": "Column gap (px); invalid values fall back to the default"
+    },
+    "events": {},
+    "slots": {
+      "": "Masonry child items; children automatically get `break-inside: avoid`"
+    }
+  },
+  "oas-mentions": {
+    "attrs": {
+      "disabled": "Disabled",
+      "label": "Accessible name (built-in text by default)",
+      "options": "Options, JSON array `[{ label, value }]`",
+      "placeholder": "Placeholder text",
+      "prefix": "Trigger prefix",
+      "value": "Value (controlled, full text)"
+    },
+    "events": {
+      "oas-change": "Text changed after insertion, `detail: { value }` (full text)",
+      "oas-select": "Suggestion selected, `detail: { value, label }`"
+    },
+    "slots": {}
+  },
+  "oas-menu": {
+    "attrs": {
+      "collapsed": "Collapsed state (vertical only): icons only, submenus pop to the right",
+      "items": "Menu items JSON",
+      "mode": "Layout mode: `vertical` menu / `horizontal` top bar",
+      "theme": "Local theme: `dark` uses dark tokens (independent of the global theme)",
+      "value": "Current selected value"
+    },
+    "events": {
+      "oas-select": "An item was selected, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-menubar": {
+    "attrs": {
+      "items": "Top-level menu items JSON (with submenu `children`)",
+      "value": "Controlled selected value (external change syncs the check immediately; internal selection writes back)"
+    },
+    "events": {
+      "oas-select": "An item was selected, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-modal": {
+    "attrs": {
+      "centered": "Vertically center the dialog",
+      "draggable": "Drag the dialog via its header",
+      "no-footer": "Hide footer action buttons",
+      "no-mask-close": "Disable closing on mask click",
+      "title": "Title text",
+      "visible": "Whether shown",
+      "width": "Dialog width (px or percentage)"
+    },
+    "events": {
+      "oas-cancel": "Cancel: cancel button / ✕ / mask click / Esc",
+      "oas-ok": "Clicked \"OK\""
+    },
+    "slots": {}
+  },
+  "oas-navigation-menu": {
+    "attrs": {
+      "items": "Navigation items JSON (hierarchical)"
+    },
+    "events": {
+      "oas-select": "An item was selected, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-number-animation": {
+    "attrs": {
+      "duration": "Animation duration (ms); 0 jumps straight to the target",
+      "to-fixed": "Decimal places (`Number.prototype.toFixed`); when omitted, integer display",
+      "value": "Target value; invalid values treated as 0"
+    },
+    "events": {
+      "oas-finish": "Emitted once when the animation reaches the target, detail `{ value: target value }`"
+    },
+    "slots": {}
+  },
+  "oas-page-header": {
+    "attrs": {
+      "back": "Whether to show the back button",
+      "subtitle": "Subtitle text",
+      "title": "Title text"
+    },
+    "events": {
+      "oas-back": "The back button was clicked"
+    },
+    "slots": {}
+  },
+  "oas-pagination": {
+    "attrs": {
+      "current": "Current page (controlled; flipping updates this attribute)",
+      "page-size": "Records per page",
+      "page-sizes": "Page-size dropdown options (JSON array), e.g. `[10,20,50]`; switching resets to page 1",
+      "show-jumper": "Shows a quick-jump input 「跳至 __ 页」(Enter to jump, out-of-range clamped)",
+      "show-total": "Shows the total text 「共 X 条」",
+      "siblings": "Number of page numbers shown on each side of the current page",
+      "total": "Total number of records"
+    },
+    "events": {
+      "oas-change": "Flipping `{ page }`; page-size switch `{ page: 1, pageSize }`; quick jump `{ page, pageSize }`"
+    },
+    "slots": {}
+  },
+  "oas-pin-input": {
+    "attrs": {
+      "aria-invalid": "Invalid state (synced to container and cells, marked danger)",
+      "disabled": "Disabled",
+      "length": "Number of code digits",
+      "mask": "Asterisk masking",
+      "readonly": "Readonly",
+      "type": "Cell input type",
+      "value": "Current value (controlled)"
+    },
+    "events": {
+      "oas-change": "Dispatched when filled, `detail: { value }`",
+      "oas-complete": "Dispatched when filled, `detail: { value }`",
+      "oas-input": "Per-cell input, `detail: { value, index }`"
+    },
+    "slots": {}
+  },
+  "oas-popconfirm": {
+    "attrs": {
+      "open": "Whether the bubble is shown",
+      "position": "Bubble position",
+      "title": "Confirmation text"
+    },
+    "events": {
+      "oas-cancel": "Cancel: cancel button / Esc / outside click",
+      "oas-ok": "Clicked \"OK\"; the bubble then collapses automatically"
+    },
+    "slots": {}
+  },
+  "oas-popover": {
+    "attrs": {
+      "content": "Body text",
+      "open": "Controlled display (boolean attribute; shows when present)",
+      "placement": "Popup placement",
+      "title": "Title text"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-progress": {
+    "attrs": {
+      "no-text": "Hide the side/center percentage text",
+      "percent": "Progress percentage (0–100, clamped automatically)",
+      "show-text": "Whether to show the percentage text",
+      "size": "Circle diameter (px)",
+      "status": "Status color; `error` red, `success` green; when unset and progress reaches 100, success green is shown",
+      "stroke-width": "Circle stroke width (px)",
+      "type": "Form: `line` / `circle`"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-qrcode": {
+    "attrs": {
+      "aria-label": "Accessible name of the container; defaults to i18n",
+      "error-correction": "Error correction level l/m/q/h (currently L only; the rest are normalized to l)",
+      "size": "Rendered width/height (px)",
+      "value": "QR code content text"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-radio": {
+    "attrs": {
+      "checked": "Whether checked",
+      "disabled": "Disabled",
+      "name": "Native group name (managed inside the group)",
+      "value": "Option identifier"
+    },
+    "events": {
+      "oas-change": "Change, `detail: { checked, value }`; group: `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-rate": {
+    "attrs": {
+      "allow-clear": "Clear to `0` when clicking the currently selected star",
+      "allow-half": "Allow half stars",
+      "disabled": "Disabled",
+      "icon": "Custom star icon (character or SVG markup)",
+      "max": "Number of stars",
+      "value": "Current score (controlled)"
+    },
+    "events": {
+      "oas-change": "Score change, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-result": {
+    "attrs": {
+      "description": "Description text",
+      "status": "Result status",
+      "title": "Title text"
+    },
+    "events": {},
+    "slots": {
+      "extra": "Action area, placed below the description"
+    }
+  },
+  "oas-scroll-area": {
+    "attrs": {
+      "auto-hide": "The scrollbar is shown only while scrolling/hovering, then auto-hides after a timeout",
+      "height": "Viewport height (px); when unset, grows with the content",
+      "width": "Viewport width (px); when unset, fills the host width"
+    },
+    "events": {
+      "oas-scroll": "Scroll event (rAF-throttled), `detail: { scrollTop, scrollLeft }`"
+    },
+    "slots": {}
+  },
+  "oas-segmented": {
+    "attrs": {
+      "options": "`[{ label, value, disabled? }]` JSON string",
+      "value": "Selected value (defaults to the first option; controlled)"
+    },
+    "events": {
+      "oas-change": "Switched, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-select": {
+    "attrs": {
+      "allow-create": "Allow creating new options from the input value when nothing matches",
+      "clearable": "Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`)",
+      "disabled": "Disabled",
+      "loading": "Remote loading placeholder (use with `remote`)",
+      "max-tag-count": "Collapse tags beyond this count into `+N` in multiple mode",
+      "multiple": "Multiple select",
+      "options": "Options, JSON array `[{ label, value, disabled?, group? }]`",
+      "placeholder": "Placeholder text",
+      "remote": "Remote search: no local filtering, typing dispatches `oas-input` for the host to request",
+      "searchable": "Searchable (type to filter after opening the dropdown)",
+      "value": "Current value (JSON array in multiple mode)"
+    },
+    "events": {
+      "oas-change": "Selection/clear change, `detail: { value }`",
+      "oas-clear": "Clear button clicked, `detail: { value }` (value before clearing)",
+      "oas-input": "Input in `remote` mode, `detail: { value }` (for host requests)"
+    },
+    "slots": {}
+  },
+  "oas-sidebar": {
+    "attrs": {
+      "collapsed": "Controlled collapse to an icon strip (present means collapsed)",
+      "items": "Menu items JSON `[{label, value, icon?}]`",
+      "mobile-breakpoint": "Mobile breakpoint (px); narrower than this becomes an overlay drawer",
+      "width": "Expanded width; defaults to the `--oas-sidebar-width` token"
+    },
+    "events": {
+      "oas-collapse": "`detail: { collapsed: boolean }`; When fired: Desktop collapse button toggled",
+      "oas-select": "`detail: { value: string, label: string }`; When fired: A menu item was selected (also collapses the drawer on mobile)"
+    },
+    "slots": {}
+  },
+  "oas-skeleton": {
+    "attrs": {
+      "active": "Whether to enable the shimmer animation",
+      "avatar": "Whether to show the avatar placeholder",
+      "rows": "Number of paragraph rows",
+      "title": "Whether to show the title placeholder"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-slider": {
+    "attrs": {
+      "disabled": "Disabled",
+      "marks": "Ticks: JSON object `{\"0\":\"0°C\"}` (value→label) or JSON array `[0,26,60]` (also `{\"value\":26,\"label\":\"26°C\"}`); tick marks and labels are shown below the track, highlighted where the value passes",
+      "max": "Range",
+      "min": "Range",
+      "step": "Step",
+      "value": "Current value (controlled)"
+    },
+    "events": {
+      "oas-change": "Committed on release, `detail: { value }`",
+      "oas-input": "While dragging, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-snackbar": {
+    "attrs": {
+      "action-text": "Action button text",
+      "direction": "Position direction",
+      "duration": "Auto-dismiss duration (ms)",
+      "message": "Message text",
+      "offset": "Offset from the screen edge (px)",
+      "open": "Whether shown (controlled)"
+    },
+    "events": {
+      "oas-action": "Dispatched when the action button is clicked",
+      "oas-close": "Dispatched when auto-dismissing after timeout (controlled mode does not clear `open` itself)",
+      "oas-open": "Dispatched when opened"
+    },
+    "slots": {}
+  },
+  "oas-space": {
+    "attrs": {
+      "align": "Alignment",
+      "direction": "Direction",
+      "size": "Spacing",
+      "wrap": "Whether to wrap"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-speed-dial": {
+    "attrs": {
+      "actions": "Sub-action JSON",
+      "direction": "Expansion direction",
+      "open": "Expanded state (controlled)"
+    },
+    "events": {
+      "oas-open": "Expanded/collapsed, `detail: { open }`",
+      "oas-select": "A sub-action was selected, `detail: { index, label }`, then it collapses automatically"
+    },
+    "slots": {}
+  },
+  "oas-spin": {
+    "attrs": {
+      "size": "Indicator size",
+      "spinning": "Whether loading; when set, wraps content with an overlaid mask"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-splitter": {
+    "attrs": {
+      "max": "Left panel maximum ratio (%)",
+      "min": "Left panel minimum ratio (%)",
+      "percent": "Left panel ratio (%)"
+    },
+    "events": {
+      "oas-resize": "Fired after resizing, `detail: { percent }`"
+    },
+    "slots": {}
+  },
+  "oas-statistic": {
+    "attrs": {
+      "group-separator": "Thousands grouping (`\"false\"` disables)",
+      "loading": "Loading state (skeleton placeholder)",
+      "precision": "Decimal places (rounded)",
+      "prefix": "Prefix / suffix text",
+      "suffix": "Prefix / suffix text",
+      "value": "Numeric value (number string)"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-steps": {
+    "attrs": {
+      "clickable": "Steps are clickable to jump (boolean; enabled when present)",
+      "current": "Current step index (0-based)",
+      "direction": "Direction",
+      "steps": "`[{ title, description?, status? }]` JSON string"
+    },
+    "events": {
+      "oas-change": "Fired when a clickable step is clicked (including keyboard triggers); `detail: { index }` (0-based)"
+    },
+    "slots": {}
+  },
+  "oas-switch": {
+    "attrs": {
+      "checked": "Whether on",
+      "checked-text": "Label shown when on; inside the track at medium/large, outside at small",
+      "color": "Custom primary color for the on state, overrides `--oas-color-primary` (CSS color value)",
+      "disabled": "Disabled",
+      "loading": "Loading state, prevents toggling",
+      "size": "Size",
+      "unchecked-text": "Label shown when off; inside the track at medium/large, outside at small"
+    },
+    "events": {
+      "oas-change": "Toggle, `detail: { checked }`"
+    },
+    "slots": {}
+  },
+  "oas-tab-panel": {
+    "attrs": {
+      "badge": "Badge next to the tab title (number or text)",
+      "label": "Tab text",
+      "value": "Tab value"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-table": {
+    "attrs": {
+      "bordered": "Full border: draws a grid outline around cells (the outer frame is built in)",
+      "checkable": "Enables checkbox multi-select",
+      "columns": "Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`, JSON string",
+      "data": "Row data `[{ [key]: value, children?, expand? }]`, JSON string",
+      "empty-text": "Empty state text",
+      "expanded": "Set of expanded row keys (comma-separated; shared by tree parent rows and expandable rows)",
+      "height": "Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered",
+      "loading": "Loading state: shows placeholder rows in the data area (header retained)",
+      "row-height": "Fixed row height for virtual scrolling (px)",
+      "row-key": "Unique key field of a row",
+      "selected": "Set of selected row keys (comma-separated)",
+      "sort-key": "Controlled sort; `sort-order` is `asc` / `desc` / empty",
+      "sort-order": "Controlled sort; `sort-order` is `asc` / `desc` / empty",
+      "stripe": "Zebra striping: alternating light background for odd/even rows",
+      "summary": "Summary config `[{ key, type: 'sum'|'avg'|'count', label? }]`, JSON string"
+    },
+    "events": {
+      "oas-check": "Checkbox selection change, `detail: { keys: string[] }`",
+      "oas-expand": "Row expand/collapse (tree child rows or expandable content rows), `detail: { key, expanded }`",
+      "oas-row-click": "Row click (also toggles selection when not checkable), `detail: { row, key }`",
+      "oas-scroll": "Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }`",
+      "oas-sort-change": "Sort change, `detail: { key, order: 'asc' | 'desc' | '' }`"
+    },
+    "slots": {}
+  },
+  "oas-tabs": {
+    "attrs": {
+      "active": "The `value` of the active tab",
+      "closable": "Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel)",
+      "tab-position": "Tab bar position: `top` (default) / `left` / `right` / `bottom`",
+      "type": "Style variant: `line` (underline, default) / `card`"
+    },
+    "events": {
+      "oas-change": "Switched, `detail: { value }`",
+      "oas-close": "A tab's close × was clicked, `detail: { key }` (`key` is that tab's `value`; the component does not remove the panel)"
+    },
+    "slots": {}
+  },
+  "oas-tag": {
+    "attrs": {
+      "chip": "Chip (pill radius + compact padding)",
+      "clickable": "Whole tag clickable (focusable, dispatches `oas-click`)",
+      "closable": "Closable",
+      "disabled": "Disabled (cannot be clicked or closed)",
+      "round": "Rounded",
+      "size": "Size",
+      "type": "Type"
+    },
+    "events": {
+      "oas-click": "Whole-tag click (when `clickable`), detail contains originalEvent",
+      "oas-close": "Close, `cancelable`; `preventDefault` prevents removal"
+    },
+    "slots": {}
+  },
+  "oas-textarea": {
+    "attrs": {
+      "auto-height": "Legacy name (alias of `autosize`)",
+      "autosize": "Auto height",
+      "disabled": "Disabled",
+      "max-rows": "Maximum rows in autosize",
+      "min-rows": "Minimum rows in autosize",
+      "placeholder": "Placeholder text",
+      "readonly": "Readonly",
+      "resize": "Resize behavior",
+      "rows": "Number of rows",
+      "value": "Value (controlled)"
+    },
+    "events": {
+      "oas-input": "While typing, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-theme-editor": {
+    "attrs": {
+      "token": "Custom list of tokens to edit (CSS variable names)"
+    },
+    "events": {
+      "oas-change": "Editing any token, `detail: { token, value }`"
+    },
+    "slots": {}
+  },
+  "oas-time-picker": {
+    "attrs": {
+      "disabled": "Disabled",
+      "format": "Display format tokens",
+      "step": "Minute stepping interval",
+      "value": "Current value (`HH:mm:ss`)"
+    },
+    "events": {
+      "oas-change": "Confirmed value change, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-timeline-item": {
+    "attrs": {
+      "color": "Node marker color: `green` / `red` / `gray`; defaults to the theme color",
+      "pending": "In-progress node: hollow dot + dashed connector; shows \"敬请期待\" when empty",
+      "time": "Time text of the node"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-toggle-button": {
+    "attrs": {
+      "disabled": "Disabled",
+      "pressed": "Whether pressed (controlled)",
+      "value": "Value (returned with events)"
+    },
+    "events": {
+      "oas-change": "Toggle, `detail: { value, pressed }`"
+    },
+    "slots": {}
+  },
+  "oas-toggle-group": {
+    "attrs": {
+      "items": "Options JSON",
+      "multiple": "Multiple mode (checkbox semantics)",
+      "value": "Current value: string for single; JSON array string for multiple"
+    },
+    "events": {
+      "oas-change": "Toggle, `detail: { value: string | string[] }`"
+    },
+    "slots": {}
+  },
+  "oas-tooltip": {
+    "attrs": {
+      "content": "Tooltip content text",
+      "open": "Controlled display (boolean attribute; shows when present)",
+      "placement": "Popup placement"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-tour": {
+    "attrs": {
+      "current": "Current step index",
+      "open": "Start the tour (boolean attribute; starts when present)",
+      "steps": "Steps JSON"
+    },
+    "events": {
+      "oas-cancel": "Skipped or cancelled via Esc",
+      "oas-finish": "\"Finish\" was clicked on the last step",
+      "oas-step": "The step changed, `detail: { index }`"
+    },
+    "slots": {}
+  },
+  "oas-transfer": {
+    "attrs": {
+      "data": "Data (property, `[{ key, label, disabled }]`)",
+      "searchable": "Search filtering within panels",
+      "titles": "Panel titles (JSON array) or `source-title`/`target-title`",
+      "value": "Selected key array (JSON attribute)"
+    },
+    "events": {
+      "oas-change": "Value change after shuttling, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-tree": {
+    "attrs": {
+      "checkable": "Whether to show checkboxes",
+      "checked": "Set of checked node keys (comma-separated)",
+      "data": "Node data `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`, JSON string",
+      "draggable": "Nodes can be dragged to reorder / reparent; drop shows insertion line / highlight; release emits `oas-node-drop`",
+      "expanded": "Set of expanded node keys (comma-separated)",
+      "height": "Virtual scroll viewport height (px); setting it enables virtualized rendering for large data",
+      "lazy": "Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand",
+      "load": "Lazy loading callback `(payload: { key }) => void`, coexists with the `oas-load` event; the host refills child nodes and resets the `data` attribute",
+      "row-height": "Fixed row height when virtualized (px)",
+      "selected": "Key of the selected node"
+    },
+    "events": {
+      "oas-check": "Check state change, `detail: { key, checked }`",
+      "oas-load": "Lazy loading triggered, `detail: { key }`; the host refills `children` and resets the `data` attribute",
+      "oas-node-drop": "Node dropped, `detail: { dragKey, dropKey, position }`; `position` is `before` / `after` / `inner`; an empty-string `dropKey` means moved to the root",
+      "oas-select": "Node selected, `detail: { key, selected }`"
+    },
+    "slots": {}
+  },
+  "oas-tree-select": {
+    "attrs": {
+      "disabled": "Disabled",
+      "expanded": "Set of expanded node values (JSON array, controlled)",
+      "multiple": "Multiple select + parent-child cascade",
+      "options": "Tree options, JSON array, supports `children` / `disabled`",
+      "placeholder": "Placeholder text",
+      "value": "Selected value (JSON array in multiple mode)"
+    },
+    "events": {
+      "oas-change": "Selection change, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-upload": {
+    "attrs": {
+      "accept": "Accepted file types",
+      "auto-upload": "Auto-simulate upload after adding",
+      "disabled": "Disabled",
+      "files": "File list (property, `File[]`)",
+      "max": "Maximum number of files",
+      "multiple": "Multiple selection"
+    },
+    "events": {
+      "oas-change": "File list change, `detail: { files }`",
+      "oas-remove": "File removed, `detail: { file, index }`",
+      "oas-upload": "Upload progress, `detail: { file, percent, status }`"
+    },
+    "slots": {}
+  },
+  "oas-virtual-list": {
+    "attrs": {
+      "buffer": "Number of items pre-rendered above/below (rendered early beyond the visible area to reduce scrolling blanks)",
+      "height": "Viewport height (px)",
+      "item-height": "Fixed height of each item (px)",
+      "items": "Data JSON string (attribute channel)",
+      "scroll-target": "CSS selector of the external scroll container; when set, the component has no scrollbar of its own and listens to the external scroll"
+    },
+    "events": {
+      "oas-item": "Emitted after each visible item renders, `detail: { index, item, element }`",
+      "oas-scroll": "Scroll event (rAF throttled), `detail: { scrollTop, start, end }`"
+    },
+    "slots": {
+      "template[slot=\"item\"]": "Static per-item template, cloned into each visible item container (optional)"
+    }
+  },
+  "oas-visually-hidden": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "Passed-through content, visually hidden but readable and copyable by screen readers"
+    }
+  },
+  "oas-watermark": {
+    "attrs": {
+      "image": "Image watermark URL (takes precedence over `text` when present)",
+      "opacity": "Watermark layer transparency (0–1, auto-clamped)",
+      "repeat": "Boolean; when present the unit is tiled, otherwise a single unit is centered",
+      "text": "Text watermark content (either `text` or `image`)"
+    },
+    "events": {},
+    "slots": {}
+  }
+}

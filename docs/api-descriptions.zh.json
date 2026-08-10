@@ -1,0 +1,1327 @@
+{
+  "oas-affix": {
+    "attrs": {
+      "offset": "距视口顶部的固定距离（px）"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-alert": {
+    "attrs": {
+      "closeable": "是否显示关闭按钮",
+      "title": "标题文案",
+      "type": "提示类型"
+    },
+    "events": {
+      "oas-close": "点击关闭按钮后触发，随后组件隐藏"
+    },
+    "slots": {}
+  },
+  "oas-anchor": {
+    "attrs": {
+      "active": "当前高亮 href",
+      "items": "锚点项 JSON",
+      "offset": "高亮判定偏移（px）"
+    },
+    "events": {
+      "oas-change": "点击锚点，`detail: { href }`"
+    },
+    "slots": {}
+  },
+  "oas-aspect-ratio": {
+    "attrs": {
+      "ratio": "宽高比，支持 `16/9`、`4:3`、`16 / 9`、小数 `1.5`；非法回退 `1 / 1`"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-auto-complete": {
+    "attrs": {
+      "disabled": "禁用",
+      "options": "选项，JSON 数组 `[{ label, value, disabled }]`",
+      "placeholder": "占位提示",
+      "value": "预设值"
+    },
+    "events": {
+      "oas-change": "选中，`detail: { value, label }`",
+      "oas-input": "输入中，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-avatar": {
+    "attrs": {
+      "alt": "图片替代文本",
+      "size": "头像尺寸（px）",
+      "src": "图片地址，存在时渲染图片头像"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-avatar-group": {
+    "attrs": {
+      "max": "最大展示头像数，超出显示 `+N` 计数圆点",
+      "size": "统一头像尺寸（px），计数圆点同步适配"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-back-top": {
+    "attrs": {
+      "bottom": "距视口底部距离",
+      "right": "距视口右侧距离",
+      "visible": "是否显示按钮"
+    },
+    "events": {
+      "oas-click": "点击按钮（随后平滑滚动到顶部）"
+    },
+    "slots": {}
+  },
+  "oas-backdrop": {
+    "attrs": {
+      "blur": "背景模糊",
+      "lock-scroll": "打开时锁定 body 滚动",
+      "open": "是否显示",
+      "transparent": "遮罩透明（无底色）"
+    },
+    "events": {
+      "oas-click": "点击遮罩，`detail.originalEvent` 为原始点击事件"
+    },
+    "slots": {}
+  },
+  "oas-badge": {
+    "attrs": {
+      "dot": "小圆点模式",
+      "max": "上限",
+      "showZero": "value=0 时是否显示",
+      "value": "数字"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-bottom-navigation": {
+    "attrs": {
+      "fixed": "固定到视口底部（`position: fixed; bottom: 0`）",
+      "items": "导航项 JSON",
+      "value": "激活项 value，未指定默认激活第一个可用项"
+    },
+    "events": {
+      "oas-change": "切换激活项，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-breadcrumb": {
+    "attrs": {
+      "items": "面包屑项 JSON",
+      "separator": "分隔符"
+    },
+    "events": {
+      "oas-select": "点击链接项，`detail: { value: href }`"
+    },
+    "slots": {}
+  },
+  "oas-button": {
+    "attrs": {
+      "block": "占满父容器宽度（块级）",
+      "disabled": "禁用",
+      "ghost": "幽灵/描边形态，透明底 + 按 `type` 着色描边，hover 加深",
+      "icon": "图标名（复用 oas-icon 图标集）；无文字时等宽、以图标名兜底名称",
+      "loading": "加载态",
+      "round": "胶囊圆角（`--oas-radius-full` / `999px`）",
+      "size": "尺寸",
+      "type": "类型"
+    },
+    "events": {
+      "oas-click": "点击，`detail: { originalEvent }`"
+    },
+    "slots": {}
+  },
+  "oas-button-group": {
+    "attrs": {
+      "aria-label": "组容器可访问名称（默认走 i18n「按钮组」）",
+      "disabled": "禁用整个组",
+      "multiple": "多选模式",
+      "size": "透传给子按钮的尺寸",
+      "type": "透传给子按钮的类型",
+      "value": "选中值（单选为单值，多选用逗号分隔）",
+      "vertical": "纵向堆叠，圆角合并方向改为上下"
+    },
+    "events": {
+      "oas-change": "选中变化。单选 `detail: { value }`；多选 `detail: { value: [] }`"
+    },
+    "slots": {}
+  },
+  "oas-calendar": {
+    "attrs": {
+      "disabledDate": "禁用回调（property）",
+      "max": "可选范围（ISO 日期）",
+      "min": "可选范围（ISO 日期）",
+      "mode": "`month` / `year`",
+      "show-week-number": "显示 ISO 周号列",
+      "value": "选中值（ISO）"
+    },
+    "events": {
+      "oas-change": "选中变化，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-card": {
+    "attrs": {
+      "hoverable": "是否开启悬浮阴影",
+      "title": "卡片标题"
+    },
+    "events": {},
+    "slots": {
+      "": "卡片内容",
+      "extra": "标题右侧扩展区"
+    }
+  },
+  "oas-carousel": {
+    "attrs": {
+      "arrows": "箭头显示形态：`always`（始终显示）/ `hover`（悬停显示）/ `never`（不显示）",
+      "autoplay": "是否自动播放",
+      "index": "当前屏索引（从 0 起）",
+      "interval": "自动播放间隔（ms）"
+    },
+    "events": {
+      "oas-change": "当前屏切换，`detail: { index }`"
+    },
+    "slots": {}
+  },
+  "oas-cascader": {
+    "attrs": {
+      "change-on-select": "选中任意层级即提交",
+      "disabled": "禁用",
+      "options": "级联选项，JSON 数组，支持 `children` / `disabled`",
+      "placeholder": "占位提示",
+      "show-all-levels": "是否显示完整路径（当前版本预留，展示始终为完整路径）",
+      "value": "路径数组（JSON），如 `[\"zj\",\"hz\"]`"
+    },
+    "events": {
+      "oas-change": "选择变化，`detail: { value }`（路径数组）"
+    },
+    "slots": {}
+  },
+  "oas-chart": {
+    "attrs": {
+      "aria-label": "图表描述（缺省按类型走 locale）",
+      "data": "数据。数组单系列 `[{label, value}]` 或对象多系列 `{labels, series}`",
+      "options": "配置：`smooth`（平滑）、`colors`（系列配色）、`showLegend`",
+      "type": "图表类型：`line` / `bar` / `pie` / `area` / `donut` / `stacked-bar`"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-checkbox": {
+    "attrs": {
+      "checked": "是否选中",
+      "disabled": "禁用",
+      "indeterminate": "半选状态",
+      "value": "选项标识"
+    },
+    "events": {
+      "oas-change": "变化，`detail: { checked, value }`；组为 `detail: { value }`（数组）"
+    },
+    "slots": {}
+  },
+  "oas-code": {
+    "attrs": {
+      "code": "源代码原文",
+      "copyable": "显示复制按钮",
+      "language": "语言：`js`/`ts`/`html`/`css`/`json`，未知按纯文本",
+      "show-line-number": "显示行号栏"
+    },
+    "events": {
+      "oas-copy": "复制成功，`detail: { text }`",
+      "oas-copy-error": "复制失败，`detail: { text }`"
+    },
+    "slots": {}
+  },
+  "oas-collapse": {
+    "attrs": {
+      "accordion": "手风琴模式，同时仅展开一项",
+      "active": "展开项 `name` 集合（逗号分隔）"
+    },
+    "events": {
+      "oas-change": "展开状态变化，`detail: { active: string[] }`"
+    },
+    "slots": {}
+  },
+  "oas-collapse-item": {
+    "attrs": {
+      "header": "面板标题",
+      "name": "面板唯一标识",
+      "open": "是否展开（由容器托管）"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-color-picker": {
+    "attrs": {
+      "disabled": "禁用",
+      "preset": "预设色数组（JSON）",
+      "value": "当前颜色（hex）"
+    },
+    "events": {
+      "oas-change": "颜色变化，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-combobox": {
+    "attrs": {
+      "clearable": "可清空（有值时显示清空按钮，清空派发 `oas-clear`）",
+      "disabled": "禁用（不可输入、不展开）",
+      "filterable": "输入实时过滤 label（`filterable=\"false\"` 关闭本地过滤）",
+      "loading": "加载占位（下拉显示「加载中…」）",
+      "options": "选项，JSON 数组 `[{ label, value, disabled? }]`",
+      "placeholder": "占位提示",
+      "value": "当前值（受控，选中项 `option.value`）"
+    },
+    "events": {
+      "oas-change": "选中/清空变化，`detail: { value }`",
+      "oas-clear": "点击清空按钮，`detail: { value }`（清空前的值）",
+      "oas-input": "输入过滤词，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-command": {
+    "attrs": {
+      "items": "命令项 JSON",
+      "open": "是否打开（受控；选择 / Esc 后自动移除）"
+    },
+    "events": {
+      "oas-select": "执行某项，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-comment": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "嵌套的 `oas-comment` 子评论，自动缩进缩进",
+      "actions": "操作区（回复/点赞等，由宿主提供）",
+      "author": "作者名",
+      "avatar": "作者头像（可放 `oas-avatar`）",
+      "content": "评论内容",
+      "time": "时间"
+    }
+  },
+  "oas-config-provider": {
+    "attrs": {
+      "locale": "包裹子树的内置文案语言（需已注册），就近优先于全局 `setLocale()`",
+      "size": "包裹组件的默认尺寸，组件自身未显式设置时生效",
+      "theme": "包裹子树的主题，写入 `data-theme`"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-container": {
+    "attrs": {
+      "center": "是否居中（`center=\"false\"` 关闭）",
+      "padding": "内边距 token/值（作用于 `padding-inline`）",
+      "size": "定宽档位，映射 `--oas-container-*` token"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-context-menu": {
+    "attrs": {
+      "items": "菜单项 JSON"
+    },
+    "events": {
+      "oas-select": "选择某项，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-countdown": {
+    "attrs": {
+      "format": "模板：`DD`/`D` 天、`HH`/`H` 时、`mm`/`m` 分、`ss`/`s` 秒",
+      "value": "倒计时总时长（毫秒）"
+    },
+    "events": {
+      "oas-finish": "倒计时归零时派发一次"
+    },
+    "slots": {}
+  },
+  "oas-date-picker": {
+    "attrs": {
+      "disabled": "禁用",
+      "format": "展示格式 token（`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`）",
+      "max": "可选范围（ISO 日期）",
+      "min": "可选范围（ISO 日期）",
+      "placeholder": "占位提示",
+      "type": "类型：`date` / `daterange` / `month` / `datetime`",
+      "value": "当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组"
+    },
+    "events": {
+      "oas-change": "值变化，`detail: { value }`（daterange 为字符串数组）"
+    },
+    "slots": {}
+  },
+  "oas-descriptions": {
+    "attrs": {
+      "column": "每行列数",
+      "title": "标题"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-descriptions-item": {
+    "attrs": {
+      "label": "字段标签"
+    },
+    "events": {},
+    "slots": {
+      "": "字段内容"
+    }
+  },
+  "oas-divider": {
+    "attrs": {
+      "content-position": "内容位置",
+      "dashed": "虚线",
+      "direction": "方向"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-drawer": {
+    "attrs": {
+      "no-footer": "隐藏底部操作按钮",
+      "no-mask-close": "禁用点击遮罩关闭",
+      "placement": "滑出方向",
+      "size": "预设尺寸档位或具体值：`small`（256px）/ `medium`（378px）/ `large`（736px），或直接写如 `512px`、`40%`",
+      "title": "标题文案",
+      "visible": "是否显示",
+      "width": "抽屉宽度（px 或百分比），优先级高于 `size`"
+    },
+    "events": {
+      "oas-close": "关闭：取消按钮 / ✕ / 遮罩点击 / Esc",
+      "oas-ok": "点击「确定」"
+    },
+    "slots": {}
+  },
+  "oas-dropdown": {
+    "attrs": {
+      "items": "菜单项 JSON",
+      "open": "受控显示（布尔属性，存在即展开）",
+      "placement": "浮层位置",
+      "value": "当前选中值"
+    },
+    "events": {
+      "oas-select": "选择某项，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-dynamic-input": {
+    "attrs": {
+      "default-value": "新增行的默认值",
+      "disabled": "禁用（行内输入 + 按钮）",
+      "max": "最多行数，超长截断",
+      "min": "最少行数，不足自动补足",
+      "model-value": "字符串数组（property 或 JSON）"
+    },
+    "events": {
+      "oas-change": "增/删/编辑后派发，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-dynamic-tags": {
+    "attrs": {
+      "allow-duplicate": "允许重复标签",
+      "disabled": "禁用",
+      "max": "标签数量上限",
+      "model-value": "标签数组（property 或 JSON）",
+      "placeholder": "输入框占位符"
+    },
+    "events": {
+      "oas-add": "新增标签，`detail: { value }`",
+      "oas-change": "增删后派发，`detail: { value }`",
+      "oas-remove": "删除标签，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-editable": {
+    "attrs": {
+      "disabled": "禁用",
+      "maxlength": "输入最大长度",
+      "placeholder": "空值占位",
+      "submit-on-enter": "是否允许 Enter 提交",
+      "value": "当前值（受控）"
+    },
+    "events": {
+      "oas-cancel": "取消/空值提交（还原旧值），默认非破坏",
+      "oas-change": "提交新值，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-ellipsis": {
+    "attrs": {
+      "expandable": "溢出时显示「展开/收起」按钮",
+      "rows": "显示行数（1 为单行省略，≥2 多行 `-webkit-line-clamp`）",
+      "text": "文本内容",
+      "tooltip": "溢出时悬停展示全文 tooltip"
+    },
+    "events": {
+      "oas-collapse": "收起，`detail: { expanded: false }`",
+      "oas-expand": "展开，`detail: { expanded: true }`"
+    },
+    "slots": {}
+  },
+  "oas-empty": {
+    "attrs": {
+      "description": "描述文案",
+      "hide-image": "隐藏插画",
+      "illustration": "自定义插画：SVG/HTML 标记或图片 URL",
+      "image-size": "插画尺寸（px）"
+    },
+    "events": {},
+    "slots": {
+      "action": "操作区，置于描述下方",
+      "illustration": "自定义插画内容，优先级高于 `illustration` 属性"
+    }
+  },
+  "oas-equation": {
+    "attrs": {
+      "code": "LaTeX 子集源文本"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-flex": {
+    "attrs": {
+      "align": "交叉轴对齐",
+      "direction": "主轴方向",
+      "gap": "子项间距",
+      "justify": "主轴对齐",
+      "vertical": "纵向简写",
+      "wrap": "换行"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-float-button": {
+    "attrs": {
+      "badge": "右上角标数字"
+    },
+    "events": {
+      "oas-click": "点击，`detail: { originalEvent }`"
+    },
+    "slots": {}
+  },
+  "oas-form": {
+    "attrs": {
+      "rules": "校验规则 JSON：`{ 字段名: [{ required, message, minLength, maxLength, pattern }] }`"
+    },
+    "events": {
+      "oas-submit": "校验通过，`detail: { values }`",
+      "oas-validate-fail": "校验失败，`detail: { errors, values }`"
+    },
+    "slots": {}
+  },
+  "oas-gradient-text": {
+    "attrs": {
+      "direction": "渐变方向（linear-gradient 第一参数，如 `to right`、`135deg`）",
+      "gradient": "JSON 色标数组，如 `[\"#f00\",\"#00f\"]`；单个色标渲染纯色；缺失/非法回退默认 token 渐变"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-grid": {
+    "attrs": {
+      "cols": "总列数",
+      "columns": "自动等分数（simple-grid，有值时忽略子项 span）",
+      "gap": "间距"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-grid-item": {
+    "attrs": {
+      "offset": "左侧偏移列数",
+      "span": "跨列数"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-hover-card": {
+    "attrs": {
+      "content": "内容文本",
+      "delay": "显隐延迟（毫秒）",
+      "open": "受控显示（布尔属性，存在即显示）",
+      "placement": "浮层位置",
+      "title": "标题文本"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-icon": {
+    "attrs": {
+      "color": "颜色（CSS 色值）",
+      "label": "可读名称；设置后 `role=\"img\"`",
+      "name": "图标名（kebab-case）",
+      "size": "尺寸（px 或 em）"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-image": {
+    "attrs": {
+      "alt": "替代文本",
+      "fallback": "加载失败时切换的兜底图地址；未设置则显示「图片加载失败」占位",
+      "fit": "`object-fit` 值",
+      "placeholder": "加载完成前显示浅灰占位",
+      "preview": "开启内置预览：点击放大 + 缩放/旋转/下载 + Esc 关闭 + 焦点陷阱",
+      "src": "图片地址"
+    },
+    "events": {
+      "oas-preview": "打开预览浮层，`detail: { src }`；浮层关闭不派发事件"
+    },
+    "slots": {}
+  },
+  "oas-input": {
+    "attrs": {
+      "addon-after": "后置 addon 文案块",
+      "addon-before": "前置 addon 文案块",
+      "clearable": "可清空",
+      "disabled": "禁用",
+      "label": "可访问名称（`aria-label` 来源，未设时回退 `placeholder` → 内置文案「输入框」）",
+      "maxlength": "最大输入长度（透传原生 maxlength）",
+      "placeholder": "占位提示",
+      "prefix": "内嵌前置文案",
+      "prefix-icon": "前置图标名",
+      "readonly": "只读",
+      "show-count": "显示字数统计（右下角，超限标 danger）",
+      "show-password": "密码可见切换（`type=\"password\"` 时渲染眼睛按钮）",
+      "suffix": "内嵌后置文案",
+      "suffix-icon": "后置图标名",
+      "type": "原生 input 类型",
+      "value": "值（受控）"
+    },
+    "events": {
+      "oas-clear": "点击清除，`detail: { originalEvent }`",
+      "oas-enter": "按 Enter（非输入法组合），`detail: { value }`",
+      "oas-input": "输入中，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-input-number": {
+    "attrs": {
+      "disabled": "禁用",
+      "label": "可访问名称（`aria-label` 来源，未设时回退内置文案「数字输入框」）",
+      "max": "范围，越界自动钳制",
+      "min": "范围，越界自动钳制",
+      "precision": "小数位数",
+      "step": "步长",
+      "value": "当前值（受控）"
+    },
+    "events": {
+      "oas-change": "步进或失焦变化，`detail: { value }`（数字）"
+    },
+    "slots": {}
+  },
+  "oas-kbd": {
+    "attrs": {
+      "keys": "空格分隔的按键序列，如 `\"ctrl shift k\"`"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-label": {
+    "attrs": {
+      "for": "目标控件 id，点击代理 `getElementById(for).focus()`",
+      "position": "星号相对文本的位置",
+      "required": "追加必填 `*` 标记（`aria-hidden`）"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-link": {
+    "attrs": {
+      "disabled": "禁用",
+      "href": "链接地址",
+      "target": "打开方式",
+      "type": "类型",
+      "underline": "下划线"
+    },
+    "events": {
+      "oas-click": "点击，`detail: { originalEvent }`"
+    },
+    "slots": {}
+  },
+  "oas-list": {
+    "attrs": {
+      "bordered": "是否显示整体边框",
+      "empty": "强制空态；无子项时自动空态",
+      "empty-text": "空态文案",
+      "loading": "加载态，显示骨架占位",
+      "split": "是否显示条目分隔线"
+    },
+    "events": {},
+    "slots": {
+      "description": "描述区（不提供时回退默认插槽）",
+      "extra": "条目右侧扩展区"
+    }
+  },
+  "oas-list-item": {
+    "attrs": {
+      "title": "条目标题"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-log": {
+    "attrs": {
+      "auto-scroll": "追加后自动滚动到底（仅贴底时滚动）",
+      "empty-text": "空态文案（覆盖 locale 默认值）",
+      "line-number": "显示左侧行号栏",
+      "lines": "日志行 JSON 字符串（属性通道）"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-marquee": {
+    "attrs": {
+      "pause-on-hover": "布尔，存在时悬停/聚焦暂停动画（animation-play-state: paused）",
+      "speed": "单次动画时长（秒），写入 CSS animation-duration；非正数回退默认"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-masonry": {
+    "attrs": {
+      "columns": "列数；非法值（非正整数/小数/0/负数）回退 1",
+      "gap": "列间距（px）；非法值回退默认"
+    },
+    "events": {},
+    "slots": {
+      "": "瀑布流子项，子项自动 `break-inside: avoid`"
+    }
+  },
+  "oas-mentions": {
+    "attrs": {
+      "disabled": "禁用",
+      "label": "可访问名称（默认走内置文案）",
+      "options": "选项，JSON 数组 `[{ label, value }]`",
+      "placeholder": "占位提示",
+      "prefix": "触发前缀",
+      "value": "值（受控，完整文本）"
+    },
+    "events": {
+      "oas-change": "插入后文本变化，`detail: { value }`（完整文本）",
+      "oas-select": "选中建议项，`detail: { value, label }`"
+    },
+    "slots": {}
+  },
+  "oas-menu": {
+    "attrs": {
+      "collapsed": "收起态（仅 vertical）：只显示图标，子菜单向右浮出",
+      "items": "菜单项 JSON",
+      "mode": "布局模式：`vertical` 纵向菜单 / `horizontal` 顶部导航条",
+      "theme": "局部主题：`dark` 使用暗色 token（独立于全局主题）",
+      "value": "当前选中值"
+    },
+    "events": {
+      "oas-select": "选择某项，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-menubar": {
+    "attrs": {
+      "items": "顶级菜单项 JSON（含子菜单 children）",
+      "value": "受控选中值（外部改即时同步勾选；内部选中自动写回）"
+    },
+    "events": {
+      "oas-select": "选择某项，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-modal": {
+    "attrs": {
+      "centered": "对话框垂直居中显示",
+      "draggable": "可通过标题栏拖动对话框",
+      "no-footer": "隐藏底部操作按钮",
+      "no-mask-close": "禁用点击遮罩关闭",
+      "title": "标题文案",
+      "visible": "是否显示",
+      "width": "对话框宽度（px 或百分比）"
+    },
+    "events": {
+      "oas-cancel": "取消：取消按钮 / ✕ / 遮罩点击 / Esc",
+      "oas-ok": "点击「确定」"
+    },
+    "slots": {}
+  },
+  "oas-navigation-menu": {
+    "attrs": {
+      "items": "导航项 JSON（层级结构）"
+    },
+    "events": {
+      "oas-select": "选择某项，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-number-animation": {
+    "attrs": {
+      "duration": "动画时长（毫秒）；0 直接跳目标",
+      "to-fixed": "小数位（Number.prototype.toFixed）；缺省整数显示",
+      "value": "目标数值；非法按 0"
+    },
+    "events": {
+      "oas-finish": "动画抵达目标时派发一次，detail `{ value: 目标值 }`"
+    },
+    "slots": {}
+  },
+  "oas-page-header": {
+    "attrs": {
+      "back": "是否显示返回按钮",
+      "subtitle": "副标题文案",
+      "title": "标题文案"
+    },
+    "events": {
+      "oas-back": "点击返回按钮"
+    },
+    "slots": {}
+  },
+  "oas-pagination": {
+    "attrs": {
+      "current": "当前页（受控，翻页会更新该属性）",
+      "page-size": "每页条数",
+      "page-sizes": "每页条数下拉选项（JSON 数组），如 `[10,20,50]`；切换后回到第 1 页",
+      "show-jumper": "显示「跳至 __ 页」快速跳转输入框（回车跳转，越界夹取）",
+      "show-total": "显示总条数文案「共 X 条」",
+      "siblings": "当前页前后各显示的页码数",
+      "total": "总条数"
+    },
+    "events": {
+      "oas-change": "翻页 `{ page }`；切换每页条数 `{ page: 1, pageSize }`；快速跳转 `{ page, pageSize }`"
+    },
+    "slots": {}
+  },
+  "oas-pin-input": {
+    "attrs": {
+      "aria-invalid": "校验失败态（同步到容器与各格，标 danger）",
+      "disabled": "禁用",
+      "length": "验证码位数",
+      "mask": "星号遮罩",
+      "readonly": "只读",
+      "type": "格子输入类型",
+      "value": "当前值（受控）"
+    },
+    "events": {
+      "oas-change": "填满时派发，`detail: { value }`",
+      "oas-complete": "填满时派发，`detail: { value }`",
+      "oas-input": "每格输入，`detail: { value, index }`"
+    },
+    "slots": {}
+  },
+  "oas-popconfirm": {
+    "attrs": {
+      "open": "是否显示气泡",
+      "position": "气泡位置",
+      "title": "确认文案"
+    },
+    "events": {
+      "oas-cancel": "取消：取消按钮 / Esc / 外部点击",
+      "oas-ok": "点击「确定」，随后气泡自动收起"
+    },
+    "slots": {}
+  },
+  "oas-popover": {
+    "attrs": {
+      "content": "正文文本",
+      "open": "受控显示（布尔属性，存在即显示）",
+      "placement": "浮层位置",
+      "title": "标题文本"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-progress": {
+    "attrs": {
+      "no-text": "隐藏右侧/圆心百分比文本",
+      "percent": "进度百分比（0–100，自动夹取）",
+      "show-text": "是否显示百分比文本",
+      "size": "circle 直径（px）",
+      "status": "状态色；`error` 红色、`success` 绿色，未设置且进度满 100 时显示成功绿",
+      "stroke-width": "circle 线宽（px）",
+      "type": "形态：`line`（线形）/ `circle`（圆环）"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-qrcode": {
+    "attrs": {
+      "aria-label": "容器可访问名称，缺省走 i18n",
+      "error-correction": "纠错级别 l/m/q/h（当前仅 L 级，其余归一为 l）",
+      "size": "渲染宽高（px）",
+      "value": "二维码内容文本"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-radio": {
+    "attrs": {
+      "checked": "是否选中",
+      "disabled": "禁用",
+      "name": "原生分组名（组内自动管理）",
+      "value": "选项标识"
+    },
+    "events": {
+      "oas-change": "变化，`detail: { checked, value }`；组为 `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-rate": {
+    "attrs": {
+      "allow-clear": "点击已选中的同一颗星时清空为 `0`",
+      "allow-half": "允许半星",
+      "disabled": "禁用",
+      "icon": "自定义星星图标（字符或 SVG 标记）",
+      "max": "星星数量",
+      "value": "当前分值（受控）"
+    },
+    "events": {
+      "oas-change": "分值变化，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-result": {
+    "attrs": {
+      "description": "描述文案",
+      "status": "结果状态",
+      "title": "标题文案"
+    },
+    "events": {},
+    "slots": {
+      "extra": "操作区，置于描述下方"
+    }
+  },
+  "oas-scroll-area": {
+    "attrs": {
+      "auto-hide": "滚动条仅在滚动/悬停时显示，超时自动隐藏",
+      "height": "视口高度（px），不设置时随内容自然撑开",
+      "width": "视口宽度（px），不设置时铺满宿主宽度"
+    },
+    "events": {
+      "oas-scroll": "滚动事件（rAF 节流），`detail: { scrollTop, scrollLeft }`"
+    },
+    "slots": {}
+  },
+  "oas-segmented": {
+    "attrs": {
+      "options": "`[{ label, value, disabled? }]` JSON 字符串",
+      "value": "选中值（缺省选第一项，受控属性）"
+    },
+    "events": {
+      "oas-change": "切换，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-select": {
+    "attrs": {
+      "allow-create": "无匹配时允许以输入值创建新选项",
+      "clearable": "可清空（有值时显示清空按钮，清空派发 `oas-clear`）",
+      "disabled": "禁用",
+      "loading": "远程加载占位（与 `remote` 搭配使用）",
+      "max-tag-count": "多选标签超出数量后折叠为 `+N`",
+      "multiple": "多选",
+      "options": "选项，JSON 数组 `[{ label, value, disabled?, group? }]`",
+      "placeholder": "占位提示",
+      "remote": "远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求",
+      "searchable": "可搜索（打开下拉后输入过滤）",
+      "value": "当前值（多选为 JSON 数组）"
+    },
+    "events": {
+      "oas-change": "选择/清空变化，`detail: { value }`",
+      "oas-clear": "点击清空按钮，`detail: { value }`（清空前的值）",
+      "oas-input": "`remote` 模式输入，`detail: { value }`（供宿主请求）"
+    },
+    "slots": {}
+  },
+  "oas-sidebar": {
+    "attrs": {
+      "collapsed": "受控折叠，收窄为图标条（存在即折叠）",
+      "items": "菜单项 JSON `[{label, value, icon?}]`",
+      "mobile-breakpoint": "移动端断点（px），窄于该值变覆盖式抽屉",
+      "width": "展开宽度，默认走 `--oas-sidebar-width` token"
+    },
+    "events": {
+      "oas-collapse": "`detail: { collapsed: boolean }`；触发时机：桌面折叠按钮切换时",
+      "oas-select": "`detail: { value: string, label: string }`；触发时机：选中菜单项时（移动端同时收起抽屉）"
+    },
+    "slots": {}
+  },
+  "oas-skeleton": {
+    "attrs": {
+      "active": "是否启用流光动画",
+      "avatar": "是否显示头像占位",
+      "rows": "段落行数",
+      "title": "是否显示标题占位"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-slider": {
+    "attrs": {
+      "disabled": "禁用",
+      "marks": "刻度：JSON 对象 `{\"0\":\"0°C\"}`（值→标签）或 JSON 数组 `[0,26,60]`（也可为 `{\"value\":26,\"label\":\"26°C\"}`）；刻度点与标签显示在轨道下方，值经过处高亮",
+      "max": "范围",
+      "min": "范围",
+      "step": "步长",
+      "value": "当前值（受控）"
+    },
+    "events": {
+      "oas-change": "松手确定，`detail: { value }`",
+      "oas-input": "拖动中，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-snackbar": {
+    "attrs": {
+      "action-text": "操作按钮文案",
+      "direction": "位置方向",
+      "duration": "自动关闭时长（ms）",
+      "message": "文案",
+      "offset": "距屏幕边缘偏移（px）",
+      "open": "是否显示（受控）"
+    },
+    "events": {
+      "oas-action": "点击操作按钮时派发",
+      "oas-close": "到期自动关闭时派发（受控模式不自改 `open`）",
+      "oas-open": "打开时派发"
+    },
+    "slots": {}
+  },
+  "oas-space": {
+    "attrs": {
+      "align": "对齐",
+      "direction": "方向",
+      "size": "间距",
+      "wrap": "是否换行"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-speed-dial": {
+    "attrs": {
+      "actions": "子动作 JSON",
+      "direction": "展开方向",
+      "open": "展开态（受控）"
+    },
+    "events": {
+      "oas-open": "展开/收起，`detail: { open }`",
+      "oas-select": "选择子动作，`detail: { index, label }`，随后自动收起"
+    },
+    "slots": {}
+  },
+  "oas-spin": {
+    "attrs": {
+      "size": "指示器尺寸",
+      "spinning": "是否加载中；设置后包裹内容并叠加遮罩"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-splitter": {
+    "attrs": {
+      "max": "左侧最大占比（%）",
+      "min": "左侧最小占比（%）",
+      "percent": "左侧面板占比（%）"
+    },
+    "events": {
+      "oas-resize": "调整后触发，`detail: { percent }`"
+    },
+    "slots": {}
+  },
+  "oas-statistic": {
+    "attrs": {
+      "group-separator": "千分位分组（`\"false\"` 关闭）",
+      "loading": "加载态（骨架占位）",
+      "precision": "小数位（四舍五入）",
+      "prefix": "前后缀文案",
+      "suffix": "前后缀文案",
+      "value": "数值（数字字符串）"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-steps": {
+    "attrs": {
+      "clickable": "步骤可点击跳转（布尔，存在即开启）",
+      "current": "当前步骤索引（0 起）",
+      "direction": "方向",
+      "steps": "`[{ title, description?, status? }]` JSON 字符串"
+    },
+    "events": {
+      "oas-change": "点击可点击步骤时触发（含键盘触发）；`detail: { index }`（0 起）"
+    },
+    "slots": {}
+  },
+  "oas-switch": {
+    "attrs": {
+      "checked": "是否开启",
+      "checked-text": "开启时显示的文案；medium/large 在轨道内，small 在轨道外侧",
+      "color": "开启态自定义主色，覆盖 `--oas-color-primary`（CSS 颜色值）",
+      "disabled": "禁用",
+      "loading": "加载态，阻止切换",
+      "size": "尺寸",
+      "unchecked-text": "关闭时显示的文案；medium/large 在轨道内，small 在轨道外侧"
+    },
+    "events": {
+      "oas-change": "切换，`detail: { checked }`"
+    },
+    "slots": {}
+  },
+  "oas-tab-panel": {
+    "attrs": {
+      "badge": "标签标题旁的徽标（数字或文本）",
+      "label": "标签文本",
+      "value": "标签值"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-table": {
+    "attrs": {
+      "bordered": "完整边框：单元格网格描边（外框由组件自带）",
+      "checkable": "复选框多选开关",
+      "columns": "列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`，JSON 字符串",
+      "data": "行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串",
+      "empty-text": "空态文案",
+      "expanded": "已展开行 key 集合（逗号分隔；树形父行/可展开行共用）",
+      "height": "虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行",
+      "loading": "加载态：数据区显示加载占位行（表头保留）",
+      "row-height": "虚拟滚动每行固定高度（px）",
+      "row-key": "行唯一键字段",
+      "selected": "选中行 key 集合（逗号分隔）",
+      "sort-key": "受控排序；`sort-order` 取 `asc` / `desc` / 空",
+      "sort-order": "受控排序；`sort-order` 取 `asc` / `desc` / 空",
+      "stripe": "斑马纹：奇数/偶数行交替浅底色",
+      "summary": "合计配置 `[{ key, type: 'sum'|'avg'|'count', label? }]`，JSON 字符串"
+    },
+    "events": {
+      "oas-check": "复选框选中变化，`detail: { keys: string[] }`",
+      "oas-expand": "行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }`",
+      "oas-row-click": "点击行（非 checkable 时同时切换选中），`detail: { row, key }`",
+      "oas-scroll": "虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }`",
+      "oas-sort-change": "排序变化，`detail: { key, order: 'asc' | 'desc' | '' }`"
+    },
+    "slots": {}
+  },
+  "oas-tabs": {
+    "attrs": {
+      "active": "激活标签的 `value`",
+      "closable": "每个标签显示关闭 ×，点击派发 `oas-close`（组件不自动删除）",
+      "tab-position": "标签栏位置：`top`（默认）/ `left` / `right` / `bottom`",
+      "type": "样式变体：`line`（下划线，默认）/ `card`（卡片式）"
+    },
+    "events": {
+      "oas-change": "切换，`detail: { value }`",
+      "oas-close": "点击标签关闭 ×，`detail: { key }`（`key` 为该标签 `value`，组件不自动移除）"
+    },
+    "slots": {}
+  },
+  "oas-tag": {
+    "attrs": {
+      "chip": "胶囊",
+      "clickable": "整签可点",
+      "closable": "可关闭",
+      "disabled": "禁用",
+      "round": "圆角",
+      "size": "尺寸",
+      "type": "类型"
+    },
+    "events": {
+      "oas-click": "整签点击（`clickable` 时），detail 含 originalEvent",
+      "oas-close": "关闭，`cancelable`，preventDefault 阻止移除"
+    },
+    "slots": {}
+  },
+  "oas-textarea": {
+    "attrs": {
+      "auto-height": "旧属性名（兼容 `autosize`）",
+      "autosize": "高度自适应",
+      "disabled": "禁用",
+      "max-rows": "自适应最大行数",
+      "min-rows": "自适应最小行数",
+      "placeholder": "占位提示",
+      "readonly": "只读",
+      "resize": "尺寸调整",
+      "rows": "行数",
+      "value": "值（受控）"
+    },
+    "events": {
+      "oas-input": "输入中，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-theme-editor": {
+    "attrs": {
+      "token": "自定义要编辑的 token 列表（CSS 变量名）"
+    },
+    "events": {
+      "oas-change": "编辑任一 token，`detail: { token, value }`"
+    },
+    "slots": {}
+  },
+  "oas-time-picker": {
+    "attrs": {
+      "disabled": "禁用",
+      "format": "展示格式 token",
+      "step": "分钟步进间隔",
+      "value": "当前值（`HH:mm:ss`）"
+    },
+    "events": {
+      "oas-change": "确认值变化，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-timeline-item": {
+    "attrs": {
+      "color": "节点标记色：`green` / `red` / `gray`，缺省为主题色",
+      "pending": "进行中节点：空心圆点 + 虚线连接，无内容时显示「敬请期待」",
+      "time": "节点时间文本"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-toggle-button": {
+    "attrs": {
+      "disabled": "禁用",
+      "pressed": "是否按下（受控）",
+      "value": "值（随事件回传）"
+    },
+    "events": {
+      "oas-change": "切换，`detail: { value, pressed }`"
+    },
+    "slots": {}
+  },
+  "oas-toggle-group": {
+    "attrs": {
+      "items": "选项 JSON",
+      "multiple": "多选模式（checkbox 语义）",
+      "value": "当前值：单选为字符串；多选为 JSON 数组字符串"
+    },
+    "events": {
+      "oas-change": "切换，`detail: { value: string | string[] }`"
+    },
+    "slots": {}
+  },
+  "oas-tooltip": {
+    "attrs": {
+      "content": "提示内容文本",
+      "open": "受控显示（布尔属性，存在即显示）",
+      "placement": "浮层位置"
+    },
+    "events": {},
+    "slots": {}
+  },
+  "oas-tour": {
+    "attrs": {
+      "current": "当前步骤索引",
+      "open": "开始引导（布尔属性，存在即启动）",
+      "steps": "步骤 JSON"
+    },
+    "events": {
+      "oas-cancel": "跳过 / Esc 取消",
+      "oas-finish": "最后一步点击「完成」",
+      "oas-step": "步骤切换，`detail: { index }`"
+    },
+    "slots": {}
+  },
+  "oas-transfer": {
+    "attrs": {
+      "data": "数据（property，`[{ key, label, disabled }]`）",
+      "searchable": "面板内搜索过滤",
+      "titles": "双面板标题（JSON 数组）或 `source-title`/`target-title`",
+      "value": "已选 key 数组（JSON 属性）"
+    },
+    "events": {
+      "oas-change": "穿梭后值变化，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-tree": {
+    "attrs": {
+      "checkable": "是否显示复选框",
+      "checked": "勾选节点 key 集合（逗号分隔）",
+      "data": "节点数据 `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`，JSON 字符串",
+      "draggable": "节点可拖拽换序 / 换父，落点显示插入线 / 高亮，松手派发 `oas-node-drop`",
+      "expanded": "展开节点 key 集合（逗号分隔）",
+      "height": "虚拟滚动视口高度（px）；设置后开启大数据量虚拟化渲染",
+      "lazy": "懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载",
+      "load": "懒加载回调 `(payload: { key }) => void`，与 `oas-load` 事件并存；宿主回填子节点后重设 `data` 属性",
+      "row-height": "虚拟化时每行固定高度（px）",
+      "selected": "选中节点 key"
+    },
+    "events": {
+      "oas-check": "勾选变化，`detail: { key, checked }`",
+      "oas-load": "懒加载触发，`detail: { key }`；宿主回填 `children` 后重设 `data` 属性",
+      "oas-node-drop": "节点拖放，`detail: { dragKey, dropKey, position }`，`position` 为 `before` / `after` / `inner`；`dropKey` 为空字符串表示移入根",
+      "oas-select": "选中节点，`detail: { key, selected }`"
+    },
+    "slots": {}
+  },
+  "oas-tree-select": {
+    "attrs": {
+      "disabled": "禁用",
+      "expanded": "展开节点的 value 集合（JSON 数组，受控）",
+      "multiple": "多选 + 父子级联",
+      "options": "树形选项，JSON 数组，支持 `children` / `disabled`",
+      "placeholder": "占位提示",
+      "value": "选中值（多选为 JSON 数组）"
+    },
+    "events": {
+      "oas-change": "选择变化，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-upload": {
+    "attrs": {
+      "accept": "接受的文件类型",
+      "auto-upload": "添加后自动模拟上传",
+      "disabled": "禁用",
+      "files": "文件列表（property，`File[]`）",
+      "max": "最大文件数",
+      "multiple": "多选"
+    },
+    "events": {
+      "oas-change": "文件列表变化，`detail: { files }`",
+      "oas-remove": "移除文件，`detail: { file, index }`",
+      "oas-upload": "上传进度，`detail: { file, percent, status }`"
+    },
+    "slots": {}
+  },
+  "oas-virtual-list": {
+    "attrs": {
+      "buffer": "上下预渲染项数（超出可视区提前渲染，减少滚动白屏）",
+      "height": "视口高度（px）",
+      "item-height": "每项固定高度（px）",
+      "items": "数据 JSON 字符串（属性通道）",
+      "scroll-target": "外部滚动容器 CSS 选择器；设置后组件不自带滚动条，监听外部滚动"
+    },
+    "events": {
+      "oas-item": "每个可见项渲染后派发，`detail: { index, item, element }`",
+      "oas-scroll": "滚动事件（rAF 节流），`detail: { scrollTop, start, end }`"
+    },
+    "slots": {
+      "template[slot=\"item\"]": "每项静态模板，克隆到每个可见项容器（可选）"
+    }
+  },
+  "oas-visually-hidden": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "透出的内容，视觉隐藏但对屏幕阅读器可读、可复制"
+    }
+  },
+  "oas-watermark": {
+    "attrs": {
+      "image": "图片水印 URL（存在时优先于 text）",
+      "opacity": "水印层透明度（0–1，自动夹取）",
+      "repeat": "布尔，存在时平铺；缺省单枚居中",
+      "text": "文字水印内容（与 image 二选一）"
+    },
+    "events": {},
+    "slots": {}
+  }
+}
