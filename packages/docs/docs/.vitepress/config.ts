@@ -203,6 +203,33 @@ export default defineConfig({
   },
   themeConfig: {
     nav: [{ text: '指南', link: '/guide/getting-started' }],
+    search: {
+      provider: 'local',
+      options: {
+        locales: {
+          root: {
+            translations: {
+              button: { buttonText: '搜索文档', buttonAriaLabel: '搜索文档' },
+              modal: {
+                noResultsText: '未找到相关结果',
+                resetButtonTitle: '清除查询条件',
+                footer: { selectText: '选择', navigateText: '切换', closeText: '关闭' },
+              },
+            },
+          },
+          en: {
+            translations: {
+              button: { buttonText: 'Search', buttonAriaLabel: 'Search the docs' },
+              modal: {
+                noResultsText: 'No results found',
+                resetButtonTitle: 'Reset search',
+                footer: { selectText: 'to select', navigateText: 'to navigate', closeText: 'to close' },
+              },
+            },
+          },
+        },
+      },
+    },
     sidebar: [
       {
         text: '指南',
@@ -211,6 +238,8 @@ export default defineConfig({
           { text: '主题与自定义', link: '/guide/theming' },
           { text: '无障碍（A11y）', link: '/guide/accessibility' },
           { text: 'SSR 边界策略', link: '/guide/ssr' },
+          { text: '组件总览', link: '/components/' },
+          { text: '更新记录', link: '/changelog' },
         ],
       },
       ...componentSidebar,
@@ -228,6 +257,23 @@ export default defineConfig({
       description: 'Framework-agnostic Web Components UI library',
       themeConfig: {
         nav: [{ text: 'Guide', link: '/en/guide/getting-started' }],
+        search: {
+          provider: 'local',
+          options: {
+            locales: {
+              en: {
+                translations: {
+                  button: { buttonText: 'Search', buttonAriaLabel: 'Search the docs' },
+                  modal: {
+                    noResultsText: 'No results found',
+                    resetButtonTitle: 'Reset search',
+                    footer: { selectText: 'to select', navigateText: 'to navigate', closeText: 'to close' },
+                  },
+                },
+              },
+            },
+          },
+        },
         sidebar: [
           {
             text: 'Guide',
@@ -236,6 +282,8 @@ export default defineConfig({
               { text: 'Theming', link: '/en/guide/theming' },
               { text: 'Accessibility (A11y)', link: '/en/guide/accessibility' },
               { text: 'SSR Strategy', link: '/en/guide/ssr' },
+              { text: 'Overview', link: '/en/components/' },
+              { text: 'Changelog', link: '/en/changelog' },
             ],
           },
           ...enComponentSidebar,

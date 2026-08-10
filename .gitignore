@@ -8,3 +8,4 @@ playwright-report/
 test-results/
 .idea/
 *.tsbuildinfo
+**/.vitepress/cache/
