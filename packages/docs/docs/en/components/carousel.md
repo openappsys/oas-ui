@@ -130,16 +130,26 @@ onMounted(() => {
 
 ## API
 
-| Attribute   | Description                                                                        | Type            | Default |
-| ----------- | ---------------------------------------------------------------------------------- | --------------- | ------- |
-| `index`     | Current screen index (starting from 0)                                             | string / number | `0`     |
-| `autoplay`  | Whether to autoplay                                                                | boolean         | `false` |
-| `interval`  | Autoplay interval (ms)                                                             | string / number | `3000`  |
-| `arrows`    | Arrow display mode: `always` (always shown) / `hover` (shown on hover) / `never` (hidden) | string          | `hover` |
+### Attributes
 
-| Event         | Description                          |
-| ------------- | ------------------------------------ |
-| `oas-change`  | Current screen changed, `detail: { index }` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `arrows` | Arrow display mode: `always` (always shown) / `hover` (shown on hover) / `never` (hidden) | — | `hover` |
+| `autoplay` | Whether to autoplay | — | — |
+| `index` | Current screen index (starting from 0) | — | `0` |
+| `interval` | Autoplay interval (ms) | — | `3000` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Current screen changed, `detail: { index }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 ### Parts (::part())
 

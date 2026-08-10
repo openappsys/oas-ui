@@ -59,14 +59,25 @@ onMounted(() => {
 
 ## API
 
-| Property  | Description               | Default |
-| --------- | ------------------------- | ------- |
-| `percent` | Left panel ratio (%)      | `50`    |
-| `min`     | Left panel minimum ratio (%) | `10`    |
-| `max`     | Left panel maximum ratio (%) | `90`    |
+### Attributes
 
-| Event        | Description                                |
-| ------------ | ------------------------------------------ |
-| `oas-resize` | Fired after resizing, `detail: { percent }`|
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `max` | Left panel maximum ratio (%) | — | `90` |
+| `min` | Left panel minimum ratio (%) | — | `10` |
+| `percent` | Left panel ratio (%) | — | `50` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-resize` | Fired after resizing, `detail: { percent }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `left` | — |
+| `right` | — |
 
 The divider is `role="separator"` + `tabindex="0"`; once focused, `←` / `→` adjust by 1% each time.

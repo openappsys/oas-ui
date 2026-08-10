@@ -49,9 +49,17 @@ A layout container with even horizontal/vertical spacing.
 
 ## API
 
-| Prop | Description | Type | Default |
+### Attributes
+
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `direction` | Direction | `horizontal` / `vertical` | `horizontal` |
-| `size` | Spacing | `small` / `medium` / `large` / number | `medium` |
-| `wrap` | Whether to wrap | boolean | `false` |
-| `align` | Alignment | `start` / `center` / `end` / `baseline` / `stretch` | — |
+| `align` | Alignment | — | — |
+| `direction` | Direction | `SpaceDirection` | `horizontal` |
+| `size` | Spacing | — | `medium` |
+| `wrap` | Whether to wrap | — | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |

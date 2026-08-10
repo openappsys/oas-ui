@@ -70,15 +70,25 @@ onMounted(() => {
 
 ## API
 
-| Property    | Description                            | Default |
-| ----------- | -------------------------------------- | ------- |
-| `checked`   | Whether checked                        | `false` |
-| `value`     | Option identifier                      | —       |
-| `disabled`  | Disabled                               | `false` |
-| `name`      | Native group name (managed inside the group) | —  |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `checked` | Whether checked | — | — |
+| `disabled` | Disabled | — | — |
+| `name` | Native group name (managed inside the group) | — | — |
+| `value` | Option identifier | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Change, `detail: { checked, value }`; group: `detail: { value }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 `oas-radio-group`: `value` (selected value), `disabled`, supports `slot="label"` to set the group title.
-
-| Event         | Description                                                     |
-| ------------- | --------------------------------------------------------------- |
-| `oas-change`  | Change, `detail: { checked, value }`; group: `detail: { value }` |

@@ -47,19 +47,24 @@ In year mode, selecting a month dispatches `yyyy-MM`.
 
 ## API
 
-| Property             | Description                     | Default  |
-| -------------------- | ------------------------------- | -------- |
-| `value`              | Selected value (ISO)            | —        |
-| `mode`               | `month` / `year`                | `month`  |
-| `min` / `max`        | Selectable range (ISO dates)    | —        |
-| `disabledDate`       | Disabled callback (property)    | —        |
-| `show-week-number`   | Show the ISO week number column | `false`  |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabledDate` | Disabled callback (property) | `((d: Date) => boolean) \| null` | — |
+| `max` | Selectable range (ISO dates) | — | — |
+| `min` | Selectable range (ISO dates) | — | — |
+| `mode` | `month` / `year` | — | `month` |
+| `show-week-number` | Show the ISO week number column | — | — |
+| `value` | Selected value (ISO) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Selection change, `detail: { value }` |
 
 Keyboard: `↑`/`↓`/`←`/`→` to move within the grid, `Enter` to select.
-
-| Event         | Description                        |
-| ------------- | ---------------------------------- |
-| `oas-change`  | Selection change, `detail: { value }` |
 
 <script setup>
 import { onMounted } from 'vue'

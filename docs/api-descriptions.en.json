@@ -1136,6 +1136,13 @@
     },
     "slots": {}
   },
+  "oas-text": {
+    "attrs": {},
+    "events": {
+      "oas-copy": "Copy succeeded, `detail: { text }`"
+    },
+    "slots": {}
+  },
   "oas-textarea": {
     "attrs": {
       "auto-height": "Legacy name (alias of `autosize`)",

@@ -105,15 +105,25 @@ onMounted(() => {
 
 ## API
 
-| Property         | Description            | Default |
-| ---------------- | ---------------------- | ------- |
-| `checked`        | Whether checked        | `false` |
-| `indeterminate`  | Indeterminate state    | `false` |
-| `disabled`       | Disabled               | `false` |
-| `value`          | Option identifier      | —       |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `checked` | Whether checked | — | — |
+| `disabled` | Disabled | — | — |
+| `indeterminate` | Indeterminate state | — | — |
+| `value` | Option identifier | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Change, `detail: { checked, value }`; group: `detail: { value }` (array) |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 `oas-checkbox-group`: `value` (JSON array), `disabled`, supports `slot="label"` to set the group title.
-
-| Event         | Description                                                            |
-| ------------- | ---------------------------------------------------------------------- |
-| `oas-change`  | Change, `detail: { checked, value }`; group: `detail: { value }` (array) |

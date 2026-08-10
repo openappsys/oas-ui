@@ -189,27 +189,28 @@ onMounted(() => {
 
 ## API
 
-| Attribute   | Description                                                                          | Type    | Default |
-| ----------- | ------------------------------------------------------------------------------------ | ------- | ------- |
-| `data`      | Node data `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`, JSON string    | string  | `[]`    |
-| `selected`  | Key of the selected node                                                             | string  | —       |
-| `checked`   | Set of checked node keys (comma-separated)                                           | string  | —       |
-| `expanded`  | Set of expanded node keys (comma-separated)                                          | string  | —       |
-| `checkable` | Whether to show checkboxes                                                           | boolean | `false` |
-| `lazy`      | Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand | boolean | `false` |
-| `draggable` | Nodes can be dragged to reorder / reparent; drop shows insertion line / highlight; release emits `oas-node-drop` | boolean | `false` |
-| `height`    | Virtual scroll viewport height (px); setting it enables virtualized rendering for large data | number  | —       |
-| `row-height`| Fixed row height when virtualized (px)                                               | number  | `32`    |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `checkable` | Whether to show checkboxes | — | — |
+| `checked` | Set of checked node keys (comma-separated) | — | — |
+| `data` | Node data `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`, JSON string | — | `[]` |
+| `draggable` | Nodes can be dragged to reorder / reparent; drop shows insertion line / highlight; release emits `oas-node-drop` | — | — |
+| `expanded` | Set of expanded node keys (comma-separated) | — | — |
+| `height` | Virtual scroll viewport height (px); setting it enables virtualized rendering for large data | — | `360` |
+| `lazy` | Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand | — | — |
+| `load` | Lazy loading callback `(payload: { key }) => void`, coexists with the `oas-load` event; the host refills child nodes and resets the `data` attribute | — | — |
+| `row-height` | Fixed row height when virtualized (px) | — | `32` |
+| `selected` | Key of the selected node | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-check` | Check state change, `detail: { key, checked }` |
+| `oas-load` | Lazy loading triggered, `detail: { key }`; the host refills `children` and resets the `data` attribute |
+| `oas-node-drop` | Node dropped, `detail: { dragKey, dropKey, position }`; `position` is `before` / `after` / `inner`; an empty-string `dropKey` means moved to the root |
+| `oas-select` | Node selected, `detail: { key, selected }` |
 
 > Node field notes: `isLeaf: true` marks an explicit leaf (no expand arrow under lazy loading); `loaded: true` marks a node as fully loaded (used with `children` to avoid triggering loading repeatedly).
-
-| Attribute | Description                                                                                                  |
-| --------- | ------------------------------------------------------------------------------------------------------------ |
-| `load`    | Lazy loading callback `(payload: { key }) => void`, coexists with the `oas-load` event; the host refills child nodes and resets the `data` attribute |
-
-| Event            | Description                                                                                     |
-| ---------------- | ----------------------------------------------------------------------------------------------- |
-| `oas-select`     | Node selected, `detail: { key, selected }`                                                      |
-| `oas-check`      | Check state change, `detail: { key, checked }`                                                  |
-| `oas-load`       | Lazy loading triggered, `detail: { key }`; the host refills `children` and resets the `data` attribute |
-| `oas-node-drop`  | Node dropped, `detail: { dragKey, dropKey, position }`; `position` is `before` / `after` / `inner`; an empty-string `dropKey` means moved to the root |

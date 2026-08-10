@@ -104,12 +104,13 @@ onMounted(() => {
 
 ## API
 
-| 属性          | 说明                                    | 类型       | 默认值     |
-| ------------- | --------------------------------------- | ---------- | ---------- |
-| `lines`       | 日志行数据（property 通道，优先于属性） | `string[]` | `[]`       |
-| `lines`       | 日志行 JSON 字符串（属性通道）          | string     | —          |
-| `auto-scroll` | 追加后自动滚动到底（仅贴底时滚动）      | boolean    | `true`     |
-| `line-number` | 显示左侧行号栏                          | boolean    | `false`    |
-| `empty-text`  | 空态文案（覆盖 locale 默认值）          | string     | `暂无日志` |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `auto-scroll` | 追加后自动滚动到底（仅贴底时滚动） | — | `true` |
+| `empty-text` | 空态文案（覆盖 locale 默认值） | — | — |
+| `line-number` | 显示左侧行号栏 | — | — |
+| `lines` | 日志行 JSON 字符串（属性通道） | `string[]` | — |
 
 部件：`::part(viewport)` 滚动视口、`::part(log)` 日志内容、`::part(row)` 单行、`::part(line-number)` 行号、`::part(line)` 行文本、`::part(empty)` 空态。

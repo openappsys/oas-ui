@@ -29,16 +29,20 @@ A countdown component that refreshes in real time, supports day/hour/minute/seco
 
 ## API
 
-| Attribute | Description                               | Default   |
-| -------- | ----------------------------------------- | --------- |
-| `value`  | Total countdown duration (milliseconds)   | `0`       |
-| `format` | Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds | `HH:mm:ss` |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `format` | Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds | — | `HH:mm:ss` |
+| `value` | Total countdown duration (milliseconds) | — | `0` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-finish` | Emitted once when the countdown reaches zero |
 
 When the template contains `D`/`DD`, hours are counted within the day (0-23); without days, hours roll up into them (e.g. `25:01:01`).
-
-| Event         | Description                |
-| ------------- | -------------------------- |
-| `oas-finish`  | Emitted once when the countdown reaches zero |
 
 <script setup>
 import { onMounted } from 'vue'

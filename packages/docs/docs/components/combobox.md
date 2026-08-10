@@ -114,20 +114,24 @@ onMounted(() => {
 
 ## API
 
-| 属性         | 说明                                                            | 默认值   |
-| ------------ | --------------------------------------------------------------- | -------- |
-| `value`      | 当前值（受控，选中项 `option.value`）                            | 无       |
-| `options`    | 选项，JSON 数组 `[{ label, value, disabled? }]`                 | `[]`     |
-| `placeholder`| 占位提示                                                        | `请选择` |
-| `disabled`   | 禁用（不可输入、不展开）                                        | `false`  |
-| `clearable`  | 可清空（有值时显示清空按钮，清空派发 `oas-clear`）              | `false`  |
-| `loading`    | 加载占位（下拉显示「加载中…」）                                  | `false`  |
-| `filterable` | 输入实时过滤 label（`filterable="false"` 关闭本地过滤）          | `true`   |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `clearable` | 可清空（有值时显示清空按钮，清空派发 `oas-clear`） | — | — |
+| `disabled` | 禁用（不可输入、不展开） | — | — |
+| `filterable` | 输入实时过滤 label（`filterable="false"` 关闭本地过滤） | — | `true` |
+| `loading` | 加载占位（下拉显示「加载中…」） | — | — |
+| `options` | 选项，JSON 数组 `[{ label, value, disabled? }]` | `Option[] \| string` | `[]` |
+| `placeholder` | 占位提示 | — | — |
+| `value` | 当前值（受控，选中项 `option.value`） | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 选中/清空变化，`detail: { value }` |
+| `oas-clear` | 点击清空按钮，`detail: { value }`（清空前的值） |
+| `oas-input` | 输入过滤词，`detail: { value }` |
 
 键盘：`Enter` / 聚焦展开，`↑`/`↓` 移动高亮，`Enter` 选中，`Esc` 关闭并回退。
-
-| 事件         | 说明                                                        |
-| ------------ | ----------------------------------------------------------- |
-| `oas-change` | 选中/清空变化，`detail: { value }`                          |
-| `oas-input`  | 输入过滤词，`detail: { value }`                             |
-| `oas-clear`  | 点击清空按钮，`detail: { value }`（清空前的值）             |

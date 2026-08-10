@@ -85,17 +85,23 @@ When `max` is set, the overflow is hidden and a `+N` count badge is shown at the
 
 ## API
 
-| Attribute | Description                          | Type          | Default |
-| --------- | ------------------------------------ | ------------- | ------- |
-| `src`     | Image URL; renders an image avatar when present | string        | —       |
-| `size`    | Avatar size (px)                     | string / number | `32`    |
-| `alt`     | Alternative text for the image       | string        | `头像`  |
+### oas-avatar
 
-> Note: `alt` is read on first render and is not in the observed attribute list; dynamic changes require a manual re-render.
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `alt` | Alternative text for the image | — | — |
+| `size` | Avatar size (px) | — | `32` |
+| `src` | Image URL; renders an image avatar when present | — | — |
 
 ### oas-avatar-group
 
-| Attribute | Description                                        | Type          | Default        |
-| --------- | -------------------------------------------------- | ------------- | -------------- |
-| `max`     | Max number of avatars shown; overflow shows a `+N` count badge | number        | —              |
-| `size`    | Unified avatar size (px); the count badge adapts   | string / number | follows each avatar |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `max` | Max number of avatars shown; overflow shows a `+N` count badge | — | — |
+| `size` | Unified avatar size (px); the count badge adapts | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | — |
+
+> Note: `alt` is read on first render and is not in the observed attribute list; dynamic changes require a manual re-render.

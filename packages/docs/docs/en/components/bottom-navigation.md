@@ -56,11 +56,19 @@ onMounted(() => {
 
 ## API
 
-| Property | Description                                          | Type             | Default |
-| -------- | ---------------------------------------------------- | ---------------- | ------- |
-| `items`  | Navigation items JSON                                | `BottomNavItem[]`| `[]`    |
-| `value`  | Value of the active item; defaults to the first available item | `string`     | none    |
-| `fixed`  | Pin to the viewport bottom (`position: fixed; bottom: 0`) | `boolean`      | `false` |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `fixed` | Pin to the viewport bottom (`position: fixed; bottom: 0`) | — | — |
+| `items` | Navigation items JSON | — | `[]` |
+| `value` | Value of the active item; defaults to the first available item | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | The active item changed, `detail: { value }` |
 
 `BottomNavItem` fields:
 
@@ -70,9 +78,5 @@ onMounted(() => {
 | `value`    | Value (unique identifier)                               | `string` |
 | `icon`     | Icon name (a key of `@oas-ui/icons` iconRegistry)     | `string` |
 | `disabled` | Disabled (not selectable, skipped by keyboard)          | `boolean`|
-
-| Event        | Description                          |
-| ------------ | ------------------------------------ |
-| `oas-change` | The active item changed, `detail: { value }` |
 
 Behavior: `role="tablist"` + `role="tab"` + synced `aria-selected` / `aria-disabled`; roving tabindex keeps only the active item focusable; arrow keys (left/right or up/down) cycle focus among available items (Home/End jump to the ends), Enter/Space selects the focused item; clicking an already-active item does not re-fire; empty `items` renders an empty tablist without errors. The active item uses the primary color plus an icon (iconRegistry inline SVG following `currentColor`), with a thin top divider.

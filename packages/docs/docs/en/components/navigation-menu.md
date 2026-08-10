@@ -27,9 +27,17 @@ onMounted(() => {
 
 ## API
 
-| Property | Description                            | Type        | Default |
-| -------- | -------------------------------------- | ----------- | ------- |
-| `items`  | Navigation items JSON (hierarchical)   | `NavItem[]` | `[]`    |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `items` | Navigation items JSON (hierarchical) | — | `[]` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-select` | An item was selected, `detail: { value }` |
 
 `NavItem` fields (inherits `MenuItem`):
 
@@ -41,9 +49,5 @@ onMounted(() => {
 | `target`   | Link open target (optional)                                       | `string`   |
 | `disabled` | Disabled                                                          | `boolean`  |
 | `children` | Sub navigation items (nested recursively, cascading to the right) | `NavItem[]`|
-
-| Event        | Description                         |
-| ------------ | ----------------------------------- |
-| `oas-select` | An item was selected, `detail: { value }` |
 
 Interaction: hover expands a submenu, click toggles; keyboard `←`/`→` switches top level, `↓`/`Enter` opens, `↑` opens and focuses the last item, `→` enters a cascading submenu, `←` returns to the parent, `Esc` closes everything and refocuses the top level. While a submenu is open, `Tab` cycles among its items (focus trap); after selection it collapses and fires `oas-select`.

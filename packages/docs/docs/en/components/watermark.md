@@ -65,11 +65,17 @@ When the container has no slot content at all, the watermark layer still renders
 
 ### Attributes
 
-| Attribute | Description                                        | Type      | Default |
-| --------- | -------------------------------------------------- | --------- | ------- |
-| `text`    | Text watermark content (either `text` or `image`)  | `string`  | —       |
-| `image`   | Image watermark URL (takes precedence over `text` when present) | `string`  | —       |
-| `opacity` | Watermark layer transparency (0–1, auto-clamped)   | `number`  | `0.15`  |
-| `repeat`  | Boolean; when present the unit is tiled, otherwise a single unit is centered | `boolean` | `false` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `image` | Image watermark URL (takes precedence over `text` when present) | — | — |
+| `opacity` | Watermark layer transparency (0–1, auto-clamped) | — | `0.15` |
+| `repeat` | Boolean; when present the unit is tiled, otherwise a single unit is centered | — | — |
+| `text` | Text watermark content (either `text` or `image`) | — | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 The watermark is a decorative layer (`aria-hidden` + `pointer-events: none`): it is excluded from the accessibility tree and does not intercept interaction.

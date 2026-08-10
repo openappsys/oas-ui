@@ -57,20 +57,24 @@ onMounted(() => {
 
 ## API
 
-| 属性             | 说明                           | 默认值   |
-| ---------------- | ------------------------------ | -------- |
-| `model-value`    | 标签数组（property 或 JSON）   | `[]`     |
-| `max`            | 标签数量上限                   | `∞`      |
-| `allow-duplicate`| 允许重复标签                   | `false`  |
-| `disabled`       | 禁用                           | `false`  |
-| `placeholder`    | 输入框占位符                   | `''`     |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `allow-duplicate` | 允许重复标签 | — | — |
+| `disabled` | 禁用 | — | — |
+| `max` | 标签数量上限 | — | — |
+| `model-value` | 标签数组（property 或 JSON） | — | — |
+| `placeholder` | 输入框占位符 | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-add` | 新增标签，`detail: { value }` |
+| `oas-change` | 增删后派发，`detail: { value }` |
+| `oas-remove` | 删除标签，`detail: { value }` |
 
 键盘：`Enter` / `,` 提交；输入框为空时 `Backspace` 删除最后一个标签。
-
-| 事件          | 说明                                   |
-| ------------- | -------------------------------------- |
-| `oas-add`     | 新增标签，`detail: { value }`          |
-| `oas-remove`  | 删除标签，`detail: { value }`          |
-| `oas-change`  | 增删后派发，`detail: { value }`        |
 
 ARIA：容器 `role="list"`、标签 `role="listitem"`，删除按钮可聚焦并带 `aria-label`；重复提交时输入框标记 `aria-invalid` 并给出提示。

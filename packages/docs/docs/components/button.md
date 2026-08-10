@@ -90,17 +90,27 @@
 
 ## API
 
-| 属性       | 说明                                                             | 类型                                                              | 默认值    |
-| ---------- | ---------------------------------------------------------------- | ----------------------------------------------------------------- | --------- |
-| `type`     | 类型                                                             | `default` / `primary` / `success` / `warning` / `danger` / `text` | `default` |
-| `size`     | 尺寸                                                             | `small` / `medium` / `large`                                      | `medium`  |
-| `disabled` | 禁用                                                             | boolean                                                           | `false`   |
-| `loading`  | 加载态                                                           | boolean                                                           | `false`   |
-| `icon`     | 图标名（复用 oas-icon 图标集）；无文字时等宽、以图标名兜底名称   | `IconName`                                                        | —         |
-| `block`    | 占满父容器宽度（块级）                                           | boolean                                                           | `false`   |
-| `round`    | 胶囊圆角（`--oas-radius-full` / `999px`）                        | boolean                                                           | `false`   |
-| `ghost`    | 幽灵/描边形态，透明底 + 按 `type` 着色描边，hover 加深           | boolean                                                           | `false`   |
+### 属性
 
-| 事件        | 说明                              |
-| ----------- | --------------------------------- |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `block` | 占满父容器宽度（块级） | — | — |
+| `disabled` | 禁用 | — | — |
+| `ghost` | 幽灵/描边形态，透明底 + 按 `type` 着色描边，hover 加深 | — | — |
+| `icon` | 图标名（复用 oas-icon 图标集）；无文字时等宽、以图标名兜底名称 | — | — |
+| `loading` | 加载态 | — | — |
+| `round` | 胶囊圆角（`--oas-radius-full` / `999px`） | — | — |
+| `size` | 尺寸 | `ButtonSize` | `medium` |
+| `type` | 类型 | `ButtonType` | `default` |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
 | `oas-click` | 点击，`detail: { originalEvent }` |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | — |

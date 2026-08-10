@@ -30,13 +30,13 @@ A result feedback page supporting four states: success, error, warning, and info
 
 ## API
 
-### Props
+### Attributes
 
-| Prop | Description | Type | Default |
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `status` | Result status | `success` / `error` / `warning` / `info` | `success` |
-| `title` | Title text | `string` | — |
-| `description` | Description text | `string` | — |
+| `description` | Description text | — | — |
+| `status` | Result status | — | `success` |
+| `title` | Title text | — | — |
 
 ### Slots
 

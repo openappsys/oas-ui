@@ -66,20 +66,25 @@ format 支持 `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` token。
 
 ## API
 
-| 属性          | 说明                                                                           | 默认值       |
-| ------------- | ------------------------------------------------------------------------------ | ------------ |
-| `value`       | 当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组        | 无           |
-| `type`        | 类型：`date` / `daterange` / `month` / `datetime`                               | `date`       |
-| `format`      | 展示格式 token（`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`）                               | 随类型变化   |
-| `min` / `max` | 可选范围（ISO 日期）                                                            | 无           |
-| `disabled`    | 禁用                                                                             | `false`      |
-| `placeholder` | 占位提示                                                                         | `请选择日期` |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 禁用 | — | — |
+| `format` | 展示格式 token（`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`） | — | — |
+| `max` | 可选范围（ISO 日期） | — | — |
+| `min` | 可选范围（ISO 日期） | — | — |
+| `placeholder` | 占位提示 | — | — |
+| `type` | 类型：`date` / `daterange` / `month` / `datetime` | — | `date` |
+| `value` | 当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组 | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 值变化，`detail: { value }`（daterange 为字符串数组） |
 
 键盘：`Enter` / `↓` 展开，`↑`/`↓`/`←`/`→` 在网格内移动，`Enter` 选中，`Esc` 关闭。
-
-| 事件         | 说明                                                    |
-| ------------ | ------------------------------------------------------- |
-| `oas-change` | 值变化，`detail: { value }`（daterange 为字符串数组）   |
 
 <script setup>
 import { onMounted } from 'vue'

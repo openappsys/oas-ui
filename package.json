@@ -12,6 +12,9 @@
     "test:e2e": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "api:scan": "node scripts/api-docs/scan.mjs",
+    "api:gen": "node scripts/api-docs/gen.mjs",
+    "api:check": "node scripts/api-docs/scan.mjs && node scripts/api-docs/gen.mjs --check && git diff --exit-code -- docs/api-manifest.json",
     "release": "pnpm test && pnpm typecheck && pnpm build && pnpm -r publish --access public"
   },
   "devDependencies": {

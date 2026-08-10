@@ -103,19 +103,30 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
 
 ## API
 
-| Property             | Description                                          | Type                             | Default |
-| -------------------- | ---------------------------------------------------- | -------------------------------- | ------- |
-| `collapsed`          | Controlled collapse to an icon strip (present means collapsed) | boolean                  | `false` |
-| `items`              | Menu items JSON `[{label, value, icon?}]`            | string（JSON）                   | —       |
-| `width`              | Expanded width; defaults to the `--oas-sidebar-width` token | string (e.g. `280px`)     | token   |
-| `mobile-breakpoint`  | Mobile breakpoint (px); narrower than this becomes an overlay drawer | number            | `768`   |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `collapsed` | Controlled collapse to an icon strip (present means collapsed) | — | — |
+| `drawer-open` | — | — | — |
+| `items` | Menu items JSON `[{label, value, icon?}]` | `SidebarItem[] \| string` | `[]` |
+| `mobile-breakpoint` | Mobile breakpoint (px); narrower than this becomes an overlay drawer | — | — |
+| `width` | Expanded width; defaults to the `--oas-sidebar-width` token | — | — |
 
 ### Events
 
-| Event         | detail                             | When fired                    |
-| ------------- | ---------------------------------- | ----------------------------- |
-| `oas-collapse`| `{ collapsed: boolean }`           | Desktop collapse button toggled |
-| `oas-select`  | `{ value: string, label: string }` | A menu item was selected (also collapses the drawer on mobile) |
+| Event | Description |
+| --- | --- |
+| `oas-collapse` | `detail: { collapsed: boolean }`; When fired: Desktop collapse button toggled |
+| `oas-select` | `detail: { value: string, label: string }`; When fired: A menu item was selected (also collapses the drawer on mobile) |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
+| `footer` | — |
+| `header` | — |
 
 ### Parts
 

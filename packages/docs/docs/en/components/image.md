@@ -89,15 +89,19 @@ onMounted(async () => {
 
 ## API
 
-| Attribute      | Description                                                          | Type    | Default |
-| ------------- | -------------------------------------------------------------------- | ------- | ------- |
-| `src`         | Image URL                                                            | string  | —       |
-| `alt`         | Alternative text                                                     | string  | `图片`  |
-| `fit`         | `object-fit` value                                                   | string  | —       |
-| `preview`     | Enable built-in preview: click to zoom + zoom/rotate/download + Esc to close + focus trap | boolean | `false` |
-| `placeholder` | Show a light gray placeholder before the image finishes loading      | boolean | `false` |
-| `fallback`    | Fallback image URL to switch to on load failure; when not set, shows the "图片加载失败" placeholder | string  | —       |
+### Attributes
 
-| Event          | Description                                                |
-| ------------- | ---------------------------------------------------------- |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `alt` | Alternative text | — | — |
+| `fallback` | Fallback image URL to switch to on load failure; when not set, shows the "图片加载失败" placeholder | — | — |
+| `fit` | `object-fit` value | — | — |
+| `placeholder` | Show a light gray placeholder before the image finishes loading | — | — |
+| `preview` | Enable built-in preview: click to zoom + zoom/rotate/download + Esc to close + focus trap | — | — |
+| `src` | Image URL | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
 | `oas-preview` | Preview overlay opened, `detail: { src }`; closing the overlay does not emit an event |

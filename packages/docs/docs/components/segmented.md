@@ -43,13 +43,17 @@ onMounted(() => {
 
 ## API
 
-| 属性      | 说明                                        |
-| --------- | ------------------------------------------- |
-| `options` | `[{ label, value, disabled? }]` JSON 字符串 |
-| `value`   | 选中值（缺省选第一项，受控属性）            |
+### 属性
 
-| 事件         | 说明                      |
-| ------------ | ------------------------- |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `options` | `[{ label, value, disabled? }]` JSON 字符串 | — | `[]` |
+| `value` | 选中值（缺省选第一项，受控属性） | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
 | `oas-change` | 切换，`detail: { value }` |
 
 容器 `role="radiogroup"`，每项 `role="radio"` + `aria-checked` / `aria-disabled`。

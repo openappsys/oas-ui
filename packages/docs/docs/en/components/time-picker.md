@@ -40,18 +40,22 @@ The minute column steps by `step` (e.g. 0, 15, 30, 45).
 
 ## API
 
-| Property   | Description                     | Default     |
-| ---------- | ------------------------------- | ----------- |
-| `value`    | Current value (`HH:mm:ss`)      | —           |
-| `format`   | Display format tokens           | `HH:mm:ss`  |
-| `step`     | Minute stepping interval        | `1`         |
-| `disabled` | Disabled                        | `false`     |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disabled | — | — |
+| `format` | Display format tokens | — | `HH:mm:ss` |
+| `step` | Minute stepping interval | — | `1` |
+| `value` | Current value (`HH:mm:ss`) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Confirmed value change, `detail: { value }` |
 
 Keyboard: `Enter` / `↓` to open, `↑`/`↓` to adjust the current column, `←`/`→` to switch columns, `Enter` to confirm, `Esc` to cancel.
-
-| Event         | Description                          |
-| ------------- | ------------------------------------ |
-| `oas-change`  | Confirmed value change, `detail: { value }` |
 
 <script setup>
 import { onMounted } from 'vue'

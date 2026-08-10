@@ -13,8 +13,10 @@ A container that is visible to screen readers but visually hidden. Commonly used
 
 This component has no attributes; it only passes through content via the default slot.
 
-| Slot | Description |
+### Slots
+
+| Name | Description |
 | --- | --- |
-| Default | Passed-through content, visually hidden but readable and copyable by screen readers |
+| default | Passed-through content, visually hidden but readable and copyable by screen readers |
 
 > Note: uses the classic clip technique (`position: absolute; width/height: 1px; clip`, etc.) for visual hiding; purely presentational with no interactive elements and no events.

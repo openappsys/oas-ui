@@ -114,20 +114,24 @@ onMounted(() => {
 
 ## API
 
-| Property         | Description                                                           | Default  |
-| ---------------- | --------------------------------------------------------------------- | -------- |
-| `value`          | Current value (controlled, the selected option's `option.value`)      | —        |
-| `options`        | Options, JSON array `[{ label, value, disabled? }]`                  | `[]`     |
-| `placeholder`    | Placeholder text                                                      | `请选择` |
-| `disabled`       | Disabled (no input, no dropdown)                                      | `false`  |
-| `clearable`      | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`) | `false` |
-| `loading`        | Loading placeholder (dropdown shows "加载中…")                         | `false`  |
-| `filterable`     | Filter labels in real time while typing (`filterable="false"` disables local filtering) | `true` |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `clearable` | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`) | — | — |
+| `disabled` | Disabled (no input, no dropdown) | — | — |
+| `filterable` | Filter labels in real time while typing (`filterable="false"` disables local filtering) | — | `true` |
+| `loading` | Loading placeholder (dropdown shows "加载中…") | — | — |
+| `options` | Options, JSON array `[{ label, value, disabled? }]` | `Option[] \| string` | `[]` |
+| `placeholder` | Placeholder text | — | — |
+| `value` | Current value (controlled, the selected option's `option.value`) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Selection/clear change, `detail: { value }` |
+| `oas-clear` | Clear button clicked, `detail: { value }` (value before clearing) |
+| `oas-input` | Filter keyword typed, `detail: { value }` |
 
 Keyboard: `Enter` / focus to open, `↑`/`↓` to move the highlight, `Enter` to select, `Esc` to close and revert.
-
-| Event         | Description                                                |
-| ------------- | ---------------------------------------------------------- |
-| `oas-change`  | Selection/clear change, `detail: { value }`                |
-| `oas-input`   | Filter keyword typed, `detail: { value }`                  |
-| `oas-clear`   | Clear button clicked, `detail: { value }` (value before clearing) |

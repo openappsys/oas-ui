@@ -120,15 +120,25 @@ onMounted(() => {
 
 ## API
 
-| Property   | Description                        | Type                                 | Default  |
-| ---------- | ---------------------------------- | ------------------------------------ | -------- |
-| `items`    | Menu items JSON                    | `[{ label, value, disabled? }]`      | `[]`     |
-| `value`    | Current selected value             | `string`                             | —        |
-| `placement`| Popup placement                    | `top` / `bottom` / `left` / `right`  | `bottom` |
-| `open`     | Controlled display (boolean attribute; expands when present) | `boolean`        | `false`  |
+### Attributes
 
-| Event        | Description                         |
-| ------------ | ----------------------------------- |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `items` | Menu items JSON | — | `[]` |
+| `open` | Controlled display (boolean attribute; expands when present) | — | — |
+| `placement` | Popup placement | `Placement` | `bottom` |
+| `value` | Current selected value | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
 | `oas-select` | An item was selected, `detail: { value }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 Clicking the trigger toggles visibility; clicking outside / pressing Esc / selecting an item closes it; `role="menu"` + `menuitem`.

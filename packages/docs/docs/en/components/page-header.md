@@ -41,14 +41,24 @@ onMounted(async () => {
 
 ## API
 
-| Property   | Description            | Type    |
-| ---------- | ---------------------- | ------- |
-| `title`    | Title text             | string  |
-| `subtitle` | Subtitle text          | string  |
-| `back`     | Whether to show the back button | boolean |
+### Attributes
 
-| Event      | Description         |
-| ---------- | ------------------- |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `back` | Whether to show the back button | — | — |
+| `subtitle` | Subtitle text | — | — |
+| `title` | Title text | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
 | `oas-back` | The back button was clicked |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `extra` | — |
 
 Slots: `extra` (right-side action area, empty by default). The back button renders as a native `<button aria-label="返回">`.

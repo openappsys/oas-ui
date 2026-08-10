@@ -36,14 +36,24 @@ Clicking dispatches the `oas-click` CustomEvent; `detail.originalEvent` is the n
 
 ## API
 
-| Prop | Description | Type | Default |
+### Attributes
+
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `href` | Link URL | string | — |
-| `type` | Type | `default` / `primary` / `success` / `warning` / `danger` | `default` |
-| `underline` | Underline | boolean | `true` |
-| `disabled` | Disabled | boolean | `false` |
-| `target` | Open behavior | string | — |
+| `disabled` | Disabled | — | — |
+| `href` | Link URL | — | — |
+| `target` | Open behavior | — | — |
+| `type` | Type | `LinkType` | `default` |
+| `underline` | Underline | — | `true` |
+
+### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-click` | Click, `detail: { originalEvent }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |

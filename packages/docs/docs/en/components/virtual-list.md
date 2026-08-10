@@ -133,22 +133,27 @@ onMounted(() => {
 
 ## API
 
-| Attribute        | Description                                                                   | Type        | Default |
-| ---------------- | ----------------------------------------------------------------------------- | ----------- | ------- |
-| `items`          | Data array (property channel, takes precedence over the `items` attribute)    | `unknown[]` | `[]`    |
-| `items`          | Data JSON string (attribute channel)                                          | string      | —       |
-| `height`         | Viewport height (px)                                                          | number      | `320`   |
-| `item-height`    | Fixed height of each item (px)                                                | number      | `36`    |
-| `buffer`         | Number of items pre-rendered above/below (rendered early beyond the visible area to reduce scrolling blanks) | number      | `4`     |
-| `scroll-target`  | CSS selector of the external scroll container; when set, the component has no scrollbar of its own and listens to the external scroll | string      | —       |
+### Attributes
 
-| Event         | Description                                                       |
-| ------------- | ----------------------------------------------------------------- |
-| `oas-scroll`  | Scroll event (rAF throttled), `detail: { scrollTop, start, end }` |
-| `oas-item`    | Emitted after each visible item renders, `detail: { index, item, element }` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `buffer` | Number of items pre-rendered above/below (rendered early beyond the visible area to reduce scrolling blanks) | — | `4` |
+| `height` | Viewport height (px) | — | `320` |
+| `item-height` | Fixed height of each item (px) | — | `36` |
+| `items` | Data JSON string (attribute channel) | `unknown[]` | — |
+| `scroll-target` | CSS selector of the external scroll container; when set, the component has no scrollbar of its own and listens to the external scroll | — | — |
 
-| Slot                       | Description                                          |
-| -------------------------- | ---------------------------------------------------- |
-| `template[slot="item"]`    | Static per-item template, cloned into each visible item container (optional) |
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-item` | Emitted after each visible item renders, `detail: { index, item, element }` |
+| `oas-scroll` | Scroll event (rAF throttled), `detail: { scrollTop, start, end }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `template[slot="item"]` | Static per-item template, cloned into each visible item container (optional) |
 
 Parts: `::part(viewport)` scroll viewport, `::part(inner)` content, `::part(padding-top)` / `::part(padding-bottom)` placeholders, `::part(item)` a single item.

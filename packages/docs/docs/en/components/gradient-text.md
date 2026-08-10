@@ -30,10 +30,18 @@ A purely presentational component that fills text with a gradient color, impleme
 
 ## API
 
-| Attribute   | Description                                                         | Default       |
-| ----------- | ------------------------------------------------------------------- | ------------- |
-| `gradient`  | JSON color-stop array, e.g. `["#f00","#00f"]`; a single stop renders a solid color; missing / invalid values fall back to the default token gradient | theme primary two-color |
-| `direction` | Gradient direction (first argument of `linear-gradient`, e.g. `to right`, `135deg`) | `to right`    |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `direction` | Gradient direction (first argument of `linear-gradient`, e.g. `to right`, `135deg`) | — | — |
+| `gradient` | JSON color-stop array, e.g. `["#f00","#00f"]`; a single stop renders a solid color; missing / invalid values fall back to the default token gradient | — | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 - The default gradient uses theme tokens (`--oas-color-primary` → `--oas-color-primary-hover`), switching automatically with the light/dark theme — no hardcoded color values.
 - Color-stop entries are validated against a whitelist to prevent CSS injection.

@@ -92,11 +92,20 @@ onMounted(() => {
 
 ## API
 
-| 属性        | 说明                        | 类型                  | 默认值 |
-| ----------- | --------------------------- | --------------------- | ------ |
-| `actions`   | 子动作 JSON                 | `SpeedDialAction[]`   | `[]`   |
-| `direction` | 展开方向                    | `up`/`down`/`left`/`right` | `up` |
-| `open`      | 展开态（受控）              | `boolean`             | `false` |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `actions` | 子动作 JSON | — | `[]` |
+| `direction` | 展开方向 | — | `up` |
+| `open` | 展开态（受控） | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-open` | 展开/收起，`detail: { open }` |
+| `oas-select` | 选择子动作，`detail: { index, label }`，随后自动收起 |
 
 `SpeedDialAction` 字段：
 
@@ -104,10 +113,5 @@ onMounted(() => {
 | ------ | ------------------------------------------ | -------- |
 | `label` | 动作文案                                   | `string` |
 | `icon`  | 图标名（`@oas-ui/icons` 的 iconRegistry 键） | `string` |
-
-| 事件         | 说明                                                |
-| ------------ | --------------------------------------------------- |
-| `oas-open`   | 展开/收起，`detail: { open }`                        |
-| `oas-select` | 选择子动作，`detail: { index, label }`，随后自动收起 |
 
 行为：点击主按钮切换展开（`aria-expanded` 同步）；点击外部或 Esc 收起（Esc 后焦点回到主按钮）；展开时自动聚焦第一个子动作。默认定位 `position: fixed; bottom/right`，可覆盖。文档级监听仅在展开时挂载、断开连接清理，无孤儿浮层。

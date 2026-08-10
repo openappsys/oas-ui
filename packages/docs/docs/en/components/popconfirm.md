@@ -72,19 +72,25 @@ onMounted(async () => {
 
 ## API
 
-### Props
+### Attributes
 
-| Prop | Description | Type | Default |
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `open` | Whether the bubble is shown | `boolean` | `false` |
-| `title` | Confirmation text | `string` | — |
-| `position` | Bubble position | `top` / `bottom` / `left` / `right` | `top` |
+| `open` | Whether the bubble is shown | — | — |
+| `position` | Bubble position | — | `top` |
+| `title` | Confirmation text | — | — |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-ok` | Clicked "OK"; the bubble then collapses automatically |
 | `oas-cancel` | Cancel: cancel button / Esc / outside click |
+| `oas-ok` | Clicked "OK"; the bubble then collapses automatically |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 Clicking the wrapped content toggles the bubble; the bubble uses `role="dialog"`.

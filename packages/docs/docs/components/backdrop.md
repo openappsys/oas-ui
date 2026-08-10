@@ -57,18 +57,18 @@ onMounted(async () => {
 
 ### 属性
 
-| 属性          | 说明                       | 类型      | 默认值  |
-| ------------- | -------------------------- | --------- | ------- |
-| `open`        | 是否显示                   | `boolean` | `false` |
-| `transparent` | 遮罩透明（无底色）         | `boolean` | `false` |
-| `blur`        | 背景模糊                   | `boolean` | `false` |
-| `lock-scroll` | 打开时锁定 body 滚动       | `boolean` | `true`  |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `blur` | 背景模糊 | — | — |
+| `lock-scroll` | 打开时锁定 body 滚动 | — | `true` |
+| `open` | 是否显示 | — | — |
+| `transparent` | 遮罩透明（无底色） | — | — |
 
 ### 事件
 
-| 事件       | 说明                              |
-| ---------- | --------------------------------- |
-| `oas-click`| 点击遮罩，`detail.originalEvent` 为原始点击事件 |
+| 事件 | 说明 |
+| --- | --- |
+| `oas-click` | 点击遮罩，`detail.originalEvent` 为原始点击事件 |
 
 - 自身无焦点陷阱（由上层弹窗负责）；Esc 不自动关闭（由外层弹窗决定）。
 - `open=false` 时节点从 DOM 卸载，无孤儿 DOM；多遮罩共存时仅最后一个关闭才恢复滚动。

@@ -32,8 +32,16 @@ A horizontal/vertical divider that separates content.
 
 ## API
 
-| Prop | Description | Type | Default |
+### Attributes
+
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `direction` | Direction | `horizontal` / `vertical` | `horizontal` |
-| `dashed` | Dashed | boolean | `false` |
-| `content-position` | Content position | `left` / `center` / `right` | `center` |
+| `content-position` | Content position | `DividerPosition` | `center` |
+| `dashed` | Dashed | — | — |
+| `direction` | Direction | `DividerDirection` | `horizontal` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |

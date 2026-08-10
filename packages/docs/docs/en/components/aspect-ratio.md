@@ -32,9 +32,17 @@ A purely presentational component that locks a container's size to a specified a
 
 ## API
 
-| Attribute | Description                                                           | Default  |
-| --------- | --------------------------------------------------------------------- | -------- |
-| `ratio`   | Aspect ratio; supports `16/9`, `4:3`, `16 / 9`, decimal `1.5`; invalid values fall back to `1 / 1` | `1 / 1`  |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `ratio` | Aspect ratio; supports `16/9`, `4:3`, `16 / 9`, decimal `1.5`; invalid values fall back to `1 / 1` | — | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 - The host is 100% wide, with height derived from `aspect-ratio`; content fills the area via absolute `inset: 0` and is cropped to the ratio.
 - Without children, the host still occupies space at the ratio.

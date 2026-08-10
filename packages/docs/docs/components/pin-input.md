@@ -102,22 +102,26 @@ onMounted(() => {
 
 ## API
 
-| 属性       | 说明               | 默认值  |
-| ---------- | ------------------ | ------- |
-| `length`   | 验证码位数         | `6`     |
-| `value`    | 当前值（受控）     | `''`    |
-| `mask`     | 星号遮罩           | `false` |
-| `disabled` | 禁用               | `false` |
-| `readonly` | 只读               | `false` |
-| `type`     | 格子输入类型       | `text`  |
-| `aria-invalid` | 校验失败态（同步到容器与各格，标 danger） | 无 |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `aria-invalid` | 校验失败态（同步到容器与各格，标 danger） | — | — |
+| `disabled` | 禁用 | — | — |
+| `length` | 验证码位数 | — | `6` |
+| `mask` | 星号遮罩 | — | — |
+| `readonly` | 只读 | — | — |
+| `type` | 格子输入类型 | — | `text` |
+| `value` | 当前值（受控） | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 填满时派发，`detail: { value }` |
+| `oas-complete` | 填满时派发，`detail: { value }` |
+| `oas-input` | 每格输入，`detail: { value, index }` |
 
 键盘：`←`/`→` 格间移动，`Backspace` 删除当前格并回退，支持粘贴自动分发；全空时每格均可聚焦（原生 caret）。
-
-| 事件          | 说明                                |
-| ------------- | ----------------------------------- |
-| `oas-input`   | 每格输入，`detail: { value, index }` |
-| `oas-change`  | 填满时派发，`detail: { value }`      |
-| `oas-complete`| 填满时派发，`detail: { value }`      |
 
 ARIA：容器 `role="group"` + `aria-label`，每格 `aria-label="第 n 位"`，`aria-invalid` 同步到容器与各格。

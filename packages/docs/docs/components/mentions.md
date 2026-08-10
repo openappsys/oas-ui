@@ -89,18 +89,23 @@ onMounted(() => {
 
 ## API
 
-| 属性          | 说明                              | 默认值 |
-| ------------- | --------------------------------- | ------ |
-| `value`       | 值（受控，完整文本）              | 无     |
-| `options`     | 选项，JSON 数组 `[{ label, value }]` | `[]`   |
-| `prefix`      | 触发前缀                          | `@`    |
-| `placeholder` | 占位提示                          | 无     |
-| `label`       | 可访问名称（默认走内置文案）      | 无     |
-| `disabled`    | 禁用                              | `false` |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 禁用 | — | — |
+| `label` | 可访问名称（默认走内置文案） | — | `placeholder` |
+| `options` | 选项，JSON 数组 `[{ label, value }]` | `Option[] \| string` | `[]` |
+| `placeholder` | 占位提示 | — | — |
+| `prefix` | 触发前缀 | `string` | `@` |
+| `value` | 值（受控，完整文本） | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 插入后文本变化，`detail: { value }`（完整文本） |
+| `oas-input` | — |
+| `oas-select` | 选中建议项，`detail: { value, label }` |
 
 键盘：输入 `@` 弹出，`↑`/`↓` 移动高亮，`Enter` 插入，`Esc` 关闭。
-
-| 事件         | 说明                                             |
-| ------------ | ------------------------------------------------ |
-| `oas-select` | 选中建议项，`detail: { value, label }`           |
-| `oas-change` | 插入后文本变化，`detail: { value }`（完整文本）  |

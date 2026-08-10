@@ -54,9 +54,11 @@ onMounted(async () => {
 
 ## API
 
-| Prop | Description |
+### Slots
+
+| Name | Description |
 | --- | --- |
-| No attributes | Serves as the host container for imperative APIs; wrapped content is passed through and rendered |
+| default | — |
 
 - When an app container exists, the message stacks of imperative APIs like message / notification / loadingBar mount into the nearest app container.
 - Without an app container, behavior is unchanged and messages mount to `document.body`.

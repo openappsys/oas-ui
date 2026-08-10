@@ -89,18 +89,23 @@ onMounted(() => {
 
 ## API
 
-| Property       | Description                              | Default |
-| -------------- | ---------------------------------------- | ------- |
-| `value`        | Value (controlled, full text)            | —       |
-| `options`      | Options, JSON array `[{ label, value }]` | `[]`    |
-| `prefix`       | Trigger prefix                           | `@`     |
-| `placeholder`  | Placeholder text                         | —       |
-| `label`        | Accessible name (built-in text by default)| —      |
-| `disabled`     | Disabled                                 | `false` |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disabled | — | — |
+| `label` | Accessible name (built-in text by default) | — | `placeholder` |
+| `options` | Options, JSON array `[{ label, value }]` | `Option[] \| string` | `[]` |
+| `placeholder` | Placeholder text | — | — |
+| `prefix` | Trigger prefix | `string` | `@` |
+| `value` | Value (controlled, full text) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Text changed after insertion, `detail: { value }` (full text) |
+| `oas-input` | — |
+| `oas-select` | Suggestion selected, `detail: { value, label }` |
 
 Keyboard: type `@` to open, `↑`/`↓` to move the highlight, `Enter` to insert, `Esc` to close.
-
-| Event         | Description                                  |
-| ------------- | -------------------------------------------- |
-| `oas-select`  | Suggestion selected, `detail: { value, label }` |
-| `oas-change`  | Text changed after insertion, `detail: { value }` (full text) |

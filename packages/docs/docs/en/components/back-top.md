@@ -41,14 +41,18 @@ onMounted(async () => {
 
 ## API
 
-| Property  | Description          | Type      | Default |
-| --------- | -------------------- | --------- | ------- |
-| `visible` | Whether the button is shown | `boolean` | `false` |
-| `bottom`  | Distance from the viewport bottom | `string`  | `32px`  |
-| `right`   | Distance from the viewport right edge | `string`  | `32px`  |
+### Attributes
 
-| Event       | Description                              |
-| ----------- | ---------------------------------------- |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `bottom` | Distance from the viewport bottom | — | `32px` |
+| `right` | Distance from the viewport right edge | — | `32px` |
+| `visible` | Whether the button is shown | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
 | `oas-click` | The button was clicked (then smooth-scrolls to the top) |
 
 The button is `position: fixed` on the viewport; the `:host` defaults to `display: inline-block`; the button has `aria-hidden="true"` when hidden.

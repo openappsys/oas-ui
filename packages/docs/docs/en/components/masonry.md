@@ -38,13 +38,17 @@ A masonry layout container based on CSS columns; child items are automatically d
 
 ## API
 
-| Attribute  | Description                                         | Type   | Default |
-| ---------- | ---------------------------------------------------- | ------ | ------- |
-| `columns`  | Number of columns; invalid values (non-positive integers / decimals / 0 / negatives) fall back to 1 | number | `4`     |
-| `gap`      | Column gap (px); invalid values fall back to the default | number | `8`     |
+### Attributes
 
-| Slot        | Description                                              |
-| ----------- | --------------------------------------------------------- |
-| Default     | Masonry child items; children automatically get `break-inside: avoid` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `columns` | Number of columns; invalid values (non-positive integers / decimals / 0 / negatives) fall back to 1 | — | — |
+| `gap` | Column gap (px); invalid values fall back to the default | — | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | Masonry child items; children automatically get `break-inside: avoid` |
 
 Part: `::part(masonry)` the masonry container.

@@ -57,12 +57,23 @@ Displays read-only information in groups, suitable for detail page scenarios.
 
 ## API
 
-| Component                | Attribute | Description   | Type          | Default |
-| ------------------------ | --------- | ------------- | ------------- | ------- |
-| `oas-descriptions`       | `title`   | Title         | string        | —       |
-| `oas-descriptions`       | `column`  | Columns per row | string / number | `3`     |
-| `oas-descriptions-item`  | `label`   | Field label   | string        | —       |
+### oas-descriptions
 
-| Slot                              | Description   |
-| --------------------------------- | -------------- |
-| `oas-descriptions-item` default slot | Field content  |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `column` | Columns per row | — | `3` |
+| `title` | Title | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | — |
+
+### oas-descriptions-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `label` | Field label | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Field content |

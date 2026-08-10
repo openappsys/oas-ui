@@ -46,9 +46,17 @@ When the value exceeds `max`, `max+` is displayed.
 
 ## API
 
-| Prop | Description | Default |
-| --- | --- | --- |
-| `value` | Number | — (hidden when empty) |
-| `max` | Upper limit | Unlimited |
-| `dot` | Dot mode | `false` |
-| `showZero` | Whether to show when value=0 | `false` |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `dot` | Dot mode | — | — |
+| `max` | Upper limit | — | — |
+| `showZero` | Whether to show when value=0 | — | — |
+| `value` | Number | — | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |

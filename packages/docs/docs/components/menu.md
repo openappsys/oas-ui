@@ -116,13 +116,21 @@ onMounted(() => {
 
 ## API
 
-| 属性        | 说明                                                    | 类型                      | 默认值     |
-| ----------- | ------------------------------------------------------- | ------------------------- | ---------- |
-| `items`     | 菜单项 JSON                                             | `MenuItem[]`              | `[]`       |
-| `value`     | 当前选中值                                              | `string`                  | —          |
-| `mode`      | 布局模式：`vertical` 纵向菜单 / `horizontal` 顶部导航条 | `vertical` / `horizontal` | `vertical` |
-| `collapsed` | 收起态（仅 vertical）：只显示图标，子菜单向右浮出       | `boolean`                 | `false`    |
-| `theme`     | 局部主题：`dark` 使用暗色 token（独立于全局主题）       | `dark`                    | 跟随全局   |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `collapsed` | 收起态（仅 vertical）：只显示图标，子菜单向右浮出 | — | — |
+| `items` | 菜单项 JSON | — | `[]` |
+| `mode` | 布局模式：`vertical` 纵向菜单 / `horizontal` 顶部导航条 | — | — |
+| `theme` | 局部主题：`dark` 使用暗色 token（独立于全局主题） | — | — |
+| `value` | 当前选中值 | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-select` | 选择某项，`detail: { value }` |
 
 `MenuItem` 字段：
 
@@ -136,9 +144,5 @@ onMounted(() => {
 | `children` | 子菜单项数组，结构与父项一致（可继续嵌套）                           | `MenuItem[]` |
 
 `children` 为可选子菜单项数组；有 `children` 的项点击/悬停展开子菜单，选中态只落在叶子项。`group` 的 `children` 平铺展示在同一层，组标题不可点、不参与键盘导航；`divider` 不可点、不参与键盘导航。
-
-| 事件         | 说明                          |
-| ------------ | ----------------------------- |
-| `oas-select` | 选择某项，`detail: { value }` |
 
 键盘导航：方向键移动（自动跳过组标题与分隔线）、Enter 选择（含子菜单的项 Enter/ArrowRight 进入）、Home / End 跳转、ArrowLeft 返回父级；`role="menu"` + `menuitemradio`（子菜单父项为 `menuitem`），选中项显示对勾。

@@ -70,19 +70,23 @@ onMounted(() => {
 
 ## API
 
-| 属性          | 说明       | 默认值  |
-| ------------- | ---------- | ------- |
-| `value`       | 值（受控） | 无      |
-| `rows`        | 行数       | `3`     |
-| `resize`      | 尺寸调整   | `none`  |
-| `autosize`    | 高度自适应 | `false` |
-| `auto-height` | 旧属性名（兼容 `autosize`） | `false` |
-| `min-rows`    | 自适应最小行数 | `1` |
-| `max-rows`    | 自适应最大行数 | `6` |
-| `placeholder` | 占位提示   | 无      |
-| `disabled`    | 禁用       | `false` |
-| `readonly`    | 只读       | `false` |
+### 属性
 
-| 事件        | 说明                        |
-| ----------- | --------------------------- |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `auto-height` | 旧属性名（兼容 `autosize`） | — | — |
+| `autosize` | 高度自适应 | — | — |
+| `disabled` | 禁用 | — | — |
+| `max-rows` | 自适应最大行数 | — | `6` |
+| `min-rows` | 自适应最小行数 | — | `1` |
+| `placeholder` | 占位提示 | — | — |
+| `readonly` | 只读 | — | — |
+| `resize` | 尺寸调整 | — | — |
+| `rows` | 行数 | — | `3` |
+| `value` | 值（受控） | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
 | `oas-input` | 输入中，`detail: { value }` |

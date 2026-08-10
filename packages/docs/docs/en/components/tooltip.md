@@ -89,10 +89,18 @@ onMounted(() => {
 
 ## API
 
-| Property   | Description                        | Type                             | Default |
-| ---------- | ---------------------------------- | -------------------------------- | ------- |
-| `content`  | Tooltip content text               | `string`                         | —       |
-| `placement` | Popup placement                    | `top` / `bottom` / `left` / `right` | `top` |
-| `open`     | Controlled display (boolean attribute; shows when present) | `boolean`        | `false` |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `content` | Tooltip content text | — | — |
+| `open` | Controlled display (boolean attribute; shows when present) | — | — |
+| `placement` | Popup placement | `Placement` | `top` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 No public events. Shown/hidden on hover or focus; `role="tooltip"`, the popup uses `pointer-events: none` so it never blocks interactions.

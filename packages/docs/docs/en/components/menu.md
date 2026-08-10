@@ -116,13 +116,21 @@ onMounted(() => {
 
 ## API
 
-| Property   | Description                                               | Type                       | Default    |
-| ---------- | --------------------------------------------------------- | -------------------------- | ---------- |
-| `items`    | Menu items JSON                                           | `MenuItem[]`               | `[]`       |
-| `value`    | Current selected value                                    | `string`                   | —          |
-| `mode`     | Layout mode: `vertical` menu / `horizontal` top bar       | `vertical` / `horizontal`  | `vertical` |
-| `collapsed`| Collapsed state (vertical only): icons only, submenus pop to the right | `boolean`      | `false`    |
-| `theme`    | Local theme: `dark` uses dark tokens (independent of the global theme) | `dark` | follows global |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `collapsed` | Collapsed state (vertical only): icons only, submenus pop to the right | — | — |
+| `items` | Menu items JSON | — | `[]` |
+| `mode` | Layout mode: `vertical` menu / `horizontal` top bar | — | — |
+| `theme` | Local theme: `dark` uses dark tokens (independent of the global theme) | — | — |
+| `value` | Current selected value | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-select` | An item was selected, `detail: { value }` |
 
 `MenuItem` fields:
 
@@ -136,9 +144,5 @@ onMounted(() => {
 | `children` | Submenu items array with the same shape as the parent (nested recursively) | `MenuItem[]` |
 
 `children` is an optional submenu items array; items with `children` expand their submenu on click/hover, and the selected state only lands on leaf items. `group` children are laid out flat on the same level; group titles are not clickable and skipped in keyboard navigation; `divider` items are not clickable and skipped in keyboard navigation.
-
-| Event        | Description                         |
-| ------------ | ----------------------------------- |
-| `oas-select` | An item was selected, `detail: { value }` |
 
 Keyboard navigation: arrow keys move (auto-skipping group titles and dividers), Enter selects (items with submenus enter via Enter/ArrowRight), Home / End jump, ArrowLeft returns to the parent; `role="menu"` + `menuitemradio` (submenu parents are `menuitem`), the selected item shows a check mark.

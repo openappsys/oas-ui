@@ -69,16 +69,20 @@ onMounted(() => {
 
 ## API
 
-| Property         | Description                                                              | Default   |
-| ---------------- | ------------------------------------------------------------------------ | --------- |
-| `checked`        | Whether on                                                               | `false`   |
-| `disabled`       | Disabled                                                                 | `false`   |
-| `loading`        | Loading state, prevents toggling                                         | `false`   |
-| `checked-text`   | Label shown when on; inside the track at medium/large, outside at small  | —         |
-| `unchecked-text` | Label shown when off; inside the track at medium/large, outside at small | —         |
-| `size`           | Size                                                                     | `medium`  |
-| `color`          | Custom primary color for the on state, overrides `--oas-color-primary` (CSS color value) | — |
+### Attributes
 
-| Event         | Description                        |
-| ------------- | ---------------------------------- |
-| `oas-change`  | Toggle, `detail: { checked }`      |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `checked` | Whether on | — | — |
+| `checked-text` | Label shown when on; inside the track at medium/large, outside at small | — | — |
+| `color` | Custom primary color for the on state, overrides `--oas-color-primary` (CSS color value) | — | — |
+| `disabled` | Disabled | — | — |
+| `loading` | Loading state, prevents toggling | — | — |
+| `size` | Size | — | `medium` |
+| `unchecked-text` | Label shown when off; inside the track at medium/large, outside at small | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Toggle, `detail: { checked }` |

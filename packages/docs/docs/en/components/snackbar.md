@@ -78,24 +78,24 @@ onMounted(async () => {
 
 ## API
 
-### Props
+### Attributes
 
-| Prop | Description | Type | Default |
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `open` | Whether shown (controlled) | `boolean` | `false` |
-| `message` | Message text | `string` | — |
-| `action-text` | Action button text | `string` | — |
-| `duration` | Auto-dismiss duration (ms) | `number` | `4000` |
-| `direction` | Position direction | `top` \| `bottom` | `bottom` |
-| `offset` | Offset from the screen edge (px) | `string` | `24` |
+| `action-text` | Action button text | — | — |
+| `direction` | Position direction | — | — |
+| `duration` | Auto-dismiss duration (ms) | — | `4000` |
+| `message` | Message text | — | — |
+| `offset` | Offset from the screen edge (px) | — | `24` |
+| `open` | Whether shown (controlled) | — | — |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-open` | Dispatched when opened |
-| `oas-close` | Dispatched when auto-dismissing after timeout (controlled mode does not clear `open` itself) |
 | `oas-action` | Dispatched when the action button is clicked |
+| `oas-close` | Dispatched when auto-dismissing after timeout (controlled mode does not clear `open` itself) |
+| `oas-open` | Dispatched when opened |
 
 - `role="status"` without `action-text`; `role="alertdialog"` + `aria-live="assertive"` when an action button is present.
 - `open` is controlled: only `oas-close` is dispatched on timeout and the host is responsible for removing `open`; at most 3 stack at once, and the oldest receives `oas-close` when exceeded.

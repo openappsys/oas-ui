@@ -56,11 +56,19 @@ onMounted(() => {
 
 ## API
 
-| 属性    | 说明                                             | 类型            | 默认值 |
-| ------- | ------------------------------------------------ | --------------- | ------ |
-| `items` | 导航项 JSON                                      | `BottomNavItem[]` | `[]`   |
-| `value` | 激活项 value，未指定默认激活第一个可用项         | `string`        | 无     |
-| `fixed` | 固定到视口底部（`position: fixed; bottom: 0`）   | `boolean`       | `false` |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `fixed` | 固定到视口底部（`position: fixed; bottom: 0`） | — | — |
+| `items` | 导航项 JSON | — | `[]` |
+| `value` | 激活项 value，未指定默认激活第一个可用项 | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 切换激活项，`detail: { value }` |
 
 `BottomNavItem` 字段：
 
@@ -70,9 +78,5 @@ onMounted(() => {
 | `value`  | 值（唯一标识）                                       | `string` |
 | `icon`   | 图标名（`@oas-ui/icons` 的 iconRegistry 键）        | `string` |
 | `disabled` | 禁用（不可选中、键盘跳过）                         | `boolean` |
-
-| 事件       | 说明                              |
-| ---------- | --------------------------------- |
-| `oas-change` | 切换激活项，`detail: { value }`    |
 
 行为：`role="tablist"` + `role="tab"` + `aria-selected` / `aria-disabled` 同步；roving tabindex 仅激活项可聚焦；方向键（左右/上下）在可用项间循环移动焦点（Home/End 首尾），Enter/Space 选中当前焦点项；点击已激活项不重复派发；空 `items` 渲染空 tablist 不报错。激活项主色 + 图标（iconRegistry 内联 SVG，跟随 currentColor），顶部细分隔线。

@@ -65,18 +65,18 @@ Control the illustration size (number, in px) via `image-size`, used together wi
 
 ## API
 
-### Props
+### Attributes
 
-| Prop | Description | Type | Default |
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `description` | Description text | `string` | `No data` |
-| `illustration` | Custom illustration: SVG/HTML markup or image URL | `string` | Built-in illustration |
-| `image-size` | Illustration size (px) | `number` | `96` |
-| `hide-image` | Hide the illustration | `boolean` | `false` |
+| `description` | Description text | — | — |
+| `hide-image` | Hide the illustration | — | — |
+| `illustration` | Custom illustration: SVG/HTML markup or image URL | — | — |
+| `image-size` | Illustration size (px) | — | — |
 
 ### Slots
 
 | Name | Description |
 | --- | --- |
-| `illustration` | Custom illustration content, takes precedence over the `illustration` attribute |
 | `action` | Action area, placed below the description |
+| `illustration` | Custom illustration content, takes precedence over the `illustration` attribute |

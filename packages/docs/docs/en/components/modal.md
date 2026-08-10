@@ -90,23 +90,29 @@ onMounted(async () => {
 
 ## API
 
-### Props
+### Attributes
 
-| Prop | Description | Type | Default |
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `visible` | Whether shown | `boolean` | `false` |
-| `title` | Title text | `string` | — |
-| `width` | Dialog width (px or percentage) | `string` | `520px` |
-| `centered` | Vertically center the dialog | `boolean` | `false` |
-| `draggable` | Drag the dialog via its header | `boolean` | `false` |
-| `no-footer` | Hide footer action buttons | `boolean` | `false` |
-| `no-mask-close` | Disable closing on mask click | `boolean` | `false` |
+| `centered` | Vertically center the dialog | — | — |
+| `draggable` | Drag the dialog via its header | — | — |
+| `no-footer` | Hide footer action buttons | — | — |
+| `no-mask-close` | Disable closing on mask click | — | — |
+| `title` | Title text | — | — |
+| `visible` | Whether shown | — | — |
+| `width` | Dialog width (px or percentage) | — | — |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-ok` | Clicked "OK" |
 | `oas-cancel` | Cancel: cancel button / ✕ / mask click / Esc |
+| `oas-ok` | Clicked "OK" |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 `role="dialog"` + `aria-modal="true"`; focus moves to the "Cancel" button on open and is restored on close.

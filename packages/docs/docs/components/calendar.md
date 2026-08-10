@@ -47,19 +47,24 @@
 
 ## API
 
-| 属性               | 说明                     | 默认值   |
-| ------------------ | ------------------------ | -------- |
-| `value`            | 选中值（ISO）            | 无       |
-| `mode`             | `month` / `year`         | `month`  |
-| `min` / `max`      | 可选范围（ISO 日期）     | 无       |
-| `disabledDate`     | 禁用回调（property）     | 无       |
-| `show-week-number` | 显示 ISO 周号列          | `false`  |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabledDate` | 禁用回调（property） | `((d: Date) => boolean) \| null` | — |
+| `max` | 可选范围（ISO 日期） | — | — |
+| `min` | 可选范围（ISO 日期） | — | — |
+| `mode` | `month` / `year` | — | `month` |
+| `show-week-number` | 显示 ISO 周号列 | — | — |
+| `value` | 选中值（ISO） | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 选中变化，`detail: { value }` |
 
 键盘：`↑`/`↓`/`←`/`→` 在网格内移动，`Enter` 选中。
-
-| 事件         | 说明                          |
-| ------------ | ----------------------------- |
-| `oas-change` | 选中变化，`detail: { value }` |
 
 <script setup>
 import { onMounted } from 'vue'

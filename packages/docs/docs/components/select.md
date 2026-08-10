@@ -143,26 +143,30 @@ onMounted(() => {
 
 ## API
 
-| 属性             | 说明                                                                  | 默认值   |
-| ---------------- | --------------------------------------------------------------------- | -------- |
-| `value`          | 当前值（多选为 JSON 数组）                                            | 无       |
-| `options`        | 选项，JSON 数组 `[{ label, value, disabled?, group? }]`               | `[]`     |
-| `placeholder`    | 占位提示                                                              | `请选择` |
-| `multiple`       | 多选                                                                  | `false`  |
-| `disabled`       | 禁用                                                                  | `false`  |
-| `searchable`     | 可搜索（打开下拉后输入过滤）                                          | `false`  |
-| `clearable`      | 可清空（有值时显示清空按钮，清空派发 `oas-clear`）                    | `false`  |
-| `remote`         | 远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求               | `false`  |
-| `loading`        | 远程加载占位（与 `remote` 搭配使用）                                  | `false`  |
-| `max-tag-count`  | 多选标签超出数量后折叠为 `+N`                                         | 无       |
-| `allow-create`   | 无匹配时允许以输入值创建新选项                                        | `false`  |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `allow-create` | 无匹配时允许以输入值创建新选项 | — | — |
+| `clearable` | 可清空（有值时显示清空按钮，清空派发 `oas-clear`） | — | — |
+| `disabled` | 禁用 | — | — |
+| `loading` | 远程加载占位（与 `remote` 搭配使用） | — | — |
+| `max-tag-count` | 多选标签超出数量后折叠为 `+N` | — | — |
+| `multiple` | 多选 | — | — |
+| `options` | 选项，JSON 数组 `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
+| `placeholder` | 占位提示 | — | — |
+| `remote` | 远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求 | — | — |
+| `searchable` | 可搜索（打开下拉后输入过滤） | — | — |
+| `value` | 当前值（多选为 JSON 数组） | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 选择/清空变化，`detail: { value }` |
+| `oas-clear` | 点击清空按钮，`detail: { value }`（清空前的值） |
+| `oas-input` | `remote` 模式输入，`detail: { value }`（供宿主请求） |
 
 > `options` 中带 `group` 字段的选项按组渲染组标题（不可选），组内选项缩进；键盘导航跨组连续。
 
 键盘：`Enter` / `↓` 展开，`↑`/`↓` 移动高亮（搜索框内同样可用），`Enter` 选中，`Esc` 关闭。
-
-| 事件         | 说明                                              |
-| ------------ | ------------------------------------------------- |
-| `oas-change` | 选择/清空变化，`detail: { value }`                |
-| `oas-input`  | `remote` 模式输入，`detail: { value }`（供宿主请求） |
-| `oas-clear`  | 点击清空按钮，`detail: { value }`（清空前的值）   |

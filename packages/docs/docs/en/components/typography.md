@@ -56,6 +56,44 @@ Typography components for text, titles, and paragraphs.
 
 `type` values: `default` / `secondary` / `success` / `warning` / `danger` / `disabled`.
 
+### oas-text
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `copyable` | — | — | — |
+| `ellipsis` | — | — | — |
+| `level` | — | — | `3` |
+| `type` | — | `TextType` | `default` |
+
 | Event | Description |
 | --- | --- |
 | `oas-copy` | Copy succeeded, `detail: { text }` |
+| `oas-copy-error` | — |
+
+### oas-title
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `copyable` | — | — | — |
+| `ellipsis` | — | — | — |
+| `level` | — | — | `3` |
+| `type` | — | `TextType` | `default` |
+
+| Event | Description |
+| --- | --- |
+| `oas-copy` | — |
+| `oas-copy-error` | — |
+
+### oas-paragraph
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `copyable` | — | — | — |
+| `ellipsis` | — | — | — |
+| `level` | — | — | `3` |
+| `type` | — | `TextType` | `default` |
+
+| Event | Description |
+| --- | --- |
+| `oas-copy` | — |
+| `oas-copy-error` | — |

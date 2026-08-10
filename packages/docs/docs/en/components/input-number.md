@@ -77,15 +77,20 @@ onMounted(() => {
 
 ## API
 
-| Property        | Description                                              | Default |
-| --------------- | -------------------------------------------------------- | ------- |
-| `value`         | Current value (controlled)                               | —       |
-| `min` / `max`   | Range, out-of-range values are clamped automatically     | —       |
-| `step`          | Step                                                      | `1`     |
-| `precision`     | Number of decimal places                                 | —       |
-| `disabled`      | Disabled                                                  | `false` |
-| `label`         | Accessible name (`aria-label` source; falls back to built-in "数字输入框" when unset) | — |
+### Attributes
 
-| Event         | Description                                            |
-| ------------- | ------------------------------------------------------ |
-| `oas-change`  | Change on step or blur, `detail: { value }` (number)   |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disabled | — | — |
+| `label` | Accessible name (`aria-label` source; falls back to built-in "数字输入框" when unset) | — | — |
+| `max` | Range, out-of-range values are clamped automatically | — | — |
+| `min` | Range, out-of-range values are clamped automatically | — | — |
+| `precision` | Number of decimal places | — | — |
+| `step` | Step | — | `1` |
+| `value` | Current value (controlled) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Change on step or blur, `detail: { value }` (number) |

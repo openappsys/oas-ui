@@ -104,12 +104,13 @@ onMounted(() => {
 
 ## API
 
-| Attribute      | Description                                  | Type       | Default    |
-| -------------- | -------------------------------------------- | ---------- | ---------- |
-| `lines`        | Log line data (property channel, takes precedence over the attribute) | `string[]` | `[]`       |
-| `lines`        | Log lines JSON string (attribute channel)    | string     | —          |
-| `auto-scroll`  | Auto-scroll to bottom on append (only when stuck to the bottom) | boolean    | `true`     |
-| `line-number`  | Show the left line number column             | boolean    | `false`    |
-| `empty-text`   | Empty state text (overrides the locale default) | string     | `暂无日志` |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `auto-scroll` | Auto-scroll to bottom on append (only when stuck to the bottom) | — | `true` |
+| `empty-text` | Empty state text (overrides the locale default) | — | — |
+| `line-number` | Show the left line number column | — | — |
+| `lines` | Log lines JSON string (attribute channel) | `string[]` | — |
 
 Parts: `::part(viewport)` scroll viewport, `::part(log)` log content, `::part(row)` a single row, `::part(line-number)` line number, `::part(line)` line text, `::part(empty)` empty state.

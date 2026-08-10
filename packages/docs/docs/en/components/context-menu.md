@@ -49,12 +49,22 @@ onMounted(() => {
 
 ## API
 
-| Property | Description | Type                                                                    | Default |
-| -------- | ----------- | ----------------------------------------------------------------------- | ------- |
-| `items`  | Menu items JSON | `[{ label, value, disabled?, children? }]` (`children` is a nested submenu) | `[]`    |
+### Attributes
 
-| Event        | Description                         |
-| ------------ | ----------------------------------- |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `items` | Menu items JSON | — | `[]` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
 | `oas-select` | An item was selected, `detail: { value }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 Opens at the mouse position; closes on Esc / outside click / selection; `role="menu"` + `menuitem`.

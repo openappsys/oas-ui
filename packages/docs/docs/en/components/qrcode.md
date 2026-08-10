@@ -51,12 +51,12 @@ When `value` is empty, a "暂无内容" placeholder is shown; when the content e
 
 ### Attributes
 
-| Attribute          | Description                                      | Type     | Default |
-| ------------------ | ------------------------------------------------ | -------- | ------- |
-| `value`            | QR code content text                             | `string` | —       |
-| `size`             | Rendered width/height (px)                       | `number` | `128`   |
-| `error-correction` | Error correction level l/m/q/h (currently L only; the rest are normalized to l) | `string` | `l`     |
-| `aria-label`       | Accessible name of the container; defaults to i18n | `string` | 二维码 |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `aria-label` | Accessible name of the container; defaults to i18n | — | — |
+| `error-correction` | Error correction level l/m/q/h (currently L only; the rest are normalized to l) | — | — |
+| `size` | Rendered width/height (px) | — | `128` |
+| `value` | QR code content text | — | — |
 
 ### Encoder Choice (Architecture Decision)
 

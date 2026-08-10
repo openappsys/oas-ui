@@ -65,9 +65,13 @@ onMounted(() => {
 
 ## API
 
-| Prop | Description | Type | Default |
+### Attributes
+
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `token` | Custom list of tokens to edit (CSS variable names) | `string[]` | Full default set |
+| `token` | Custom list of tokens to edit (CSS variable names) | — | — |
+
+### Events
 
 | Event | Description |
 | --- | --- |

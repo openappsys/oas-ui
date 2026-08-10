@@ -66,10 +66,18 @@
 
 ## API
 
-| 属性             | 说明                                                             | 默认值 |
-| ---------------- | ---------------------------------------------------------------- | ------ |
-| `speed`          | 单次动画时长（秒），写入 CSS animation-duration；非正数回退默认    | `20`   |
-| `pause-on-hover` | 布尔，存在时悬停/聚焦暂停动画（animation-play-state: paused）     | 无     |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `pause-on-hover` | 布尔，存在时悬停/聚焦暂停动画（animation-play-state: paused） | — | — |
+| `speed` | 单次动画时长（秒），写入 CSS animation-duration；非正数回退默认 | — | — |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | — |
 
 - 系统开启「减少动态效果」（`prefers-reduced-motion: reduce`）时动画关闭、静态展示。
 - 复制内容组带 `aria-hidden`，屏幕阅读器不重复朗读。

@@ -24,11 +24,17 @@ A loading indicator that can be used standalone or wrap content with an overlaid
 
 ## API
 
-### Props
+### Attributes
 
-| Prop | Description | Type | Default |
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `size` | Indicator size | `sm` / `md` / `lg` | `md` |
-| `spinning` | Whether loading; when set, wraps content with an overlaid mask | `boolean` | `false` |
+| `size` | Indicator size | — | `md` |
+| `spinning` | Whether loading; when set, wraps content with an overlaid mask | — | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 The indicator uses `role="status"`.

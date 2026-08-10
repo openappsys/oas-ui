@@ -55,14 +55,14 @@ onMounted(async () => {
 
 ## API
 
-### Props
+### Attributes
 
-| Prop | Description | Type | Default |
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `open` | Whether shown | `boolean` | `false` |
-| `transparent` | Transparent overlay (no background) | `boolean` | `false` |
-| `blur` | Blur the background | `boolean` | `false` |
-| `lock-scroll` | Lock body scroll while open | `boolean` | `true` |
+| `blur` | Blur the background | — | — |
+| `lock-scroll` | Lock body scroll while open | — | `true` |
+| `open` | Whether shown | — | — |
+| `transparent` | Transparent overlay (no background) | — | — |
 
 ### Events
 

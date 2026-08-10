@@ -92,12 +92,27 @@ Setting `columns` divides the width equally with `repeat(n, 1fr)`; child `span` 
 
 ## API
 
-| Component       | Property  | Description                           | Default |
-| --------------- | --------- | ------------------------------------- | ------- |
-| `oas-grid`      | `cols`    | Total column count                    | `24`    |
-| `oas-grid`      | `columns` | Auto equal-width count (simple-grid; when set, child `span` is ignored) | —       |
-| `oas-grid`      | `gap`     | Gap                                   | `0`     |
-| `oas-grid-item` | `span`    | Number of columns spanned             | `24`    |
-| `oas-grid-item` | `offset`  | Number of columns offset on the left  | `0`     |
+### oas-grid
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `cols` | Total column count | — | `24` |
+| `columns` | Auto equal-width count (simple-grid; when set, child `span` is ignored) | — | — |
+| `gap` | Gap | — | `0` |
+
+| Name | Description |
+| --- | --- |
+| default | — |
+
+### oas-grid-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `offset` | Number of columns offset on the left | — | `0` |
+| `span` | Number of columns spanned | — | `24` |
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 `oas-grid` renders as CSS Grid where each child occupies a share of the 24 columns; `oas-grid-item` declares its footprint with `span`. Setting `columns` divides equally and ignores `span`, so plain elements can be placed directly.

@@ -36,12 +36,15 @@ Displays statistical values with `Intl.NumberFormat` thousands separators and pr
 
 ## API
 
-| Attribute          | Description                        | Default |
-| ------------------ | ---------------------------------- | ------- |
-| `value`            | Numeric value (number string)      | `0`     |
-| `precision`        | Decimal places (rounded)           | `0`     |
-| `prefix` / `suffix`| Prefix / suffix text               | none    |
-| `group-separator`  | Thousands grouping (`"false"` disables) | `true` |
-| `loading`          | Loading state (skeleton placeholder) | `false`  |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `group-separator` | Thousands grouping (`"false"` disables) | — | `true` |
+| `loading` | Loading state (skeleton placeholder) | — | — |
+| `precision` | Decimal places (rounded) | — | `0` |
+| `prefix` | Prefix / suffix text | `string` | — |
+| `suffix` | Prefix / suffix text | — | — |
+| `value` | Numeric value (number string) | — | `0` |
 
 No events (purely presentational).

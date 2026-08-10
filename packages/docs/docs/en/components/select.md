@@ -143,26 +143,30 @@ onMounted(() => {
 
 ## API
 
-| Property          | Description                                                             | Default  |
-| ----------------- | ----------------------------------------------------------------------- | -------- |
-| `value`           | Current value (JSON array in multiple mode)                             | —        |
-| `options`         | Options, JSON array `[{ label, value, disabled?, group? }]`             | `[]`     |
-| `placeholder`     | Placeholder text                                                        | `请选择` |
-| `multiple`        | Multiple select                                                         | `false`  |
-| `disabled`        | Disabled                                                                | `false`  |
-| `searchable`      | Searchable (type to filter after opening the dropdown)                  | `false`  |
-| `clearable`       | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`) | `false` |
-| `remote`          | Remote search: no local filtering, typing dispatches `oas-input` for the host to request | `false` |
-| `loading`         | Remote loading placeholder (use with `remote`)                          | `false`  |
-| `max-tag-count`   | Collapse tags beyond this count into `+N` in multiple mode              | —        |
-| `allow-create`    | Allow creating new options from the input value when nothing matches    | `false`  |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `allow-create` | Allow creating new options from the input value when nothing matches | — | — |
+| `clearable` | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`) | — | — |
+| `disabled` | Disabled | — | — |
+| `loading` | Remote loading placeholder (use with `remote`) | — | — |
+| `max-tag-count` | Collapse tags beyond this count into `+N` in multiple mode | — | — |
+| `multiple` | Multiple select | — | — |
+| `options` | Options, JSON array `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
+| `placeholder` | Placeholder text | — | — |
+| `remote` | Remote search: no local filtering, typing dispatches `oas-input` for the host to request | — | — |
+| `searchable` | Searchable (type to filter after opening the dropdown) | — | — |
+| `value` | Current value (JSON array in multiple mode) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Selection/clear change, `detail: { value }` |
+| `oas-clear` | Clear button clicked, `detail: { value }` (value before clearing) |
+| `oas-input` | Input in `remote` mode, `detail: { value }` (for host requests) |
 
 > Options carrying a `group` field are rendered under a group title (not selectable), items are indented; keyboard navigation continues across groups.
 
 Keyboard: `Enter` / `↓` to open, `↑`/`↓` to move the highlight (works inside the search box too), `Enter` to select, `Esc` to close.
-
-| Event         | Description                                             |
-| ------------- | ------------------------------------------------------- |
-| `oas-change`  | Selection/clear change, `detail: { value }`             |
-| `oas-input`   | Input in `remote` mode, `detail: { value }` (for host requests) |
-| `oas-clear`   | Clear button clicked, `detail: { value }` (value before clearing) |

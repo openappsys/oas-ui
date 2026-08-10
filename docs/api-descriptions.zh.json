@@ -1136,6 +1136,13 @@
     },
     "slots": {}
   },
+  "oas-text": {
+    "attrs": {},
+    "events": {
+      "oas-copy": "复制成功，`detail: { text }`"
+    },
+    "slots": {}
+  },
   "oas-textarea": {
     "attrs": {
       "auto-height": "旧属性名（兼容 `autosize`）",

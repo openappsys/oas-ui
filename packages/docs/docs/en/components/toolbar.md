@@ -42,9 +42,11 @@ Buttons with `disabled` / `aria-disabled` are skipped by arrow-key navigation (r
 
 ## API
 
-| Property | Description                          | Default |
-| -------- | ------------------------------------ | ------- |
-| none     | Put buttons / `oas-button` etc. in the slot | —       |
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 - The host has `role="toolbar"`; `aria-label` comes from the locale key (`toolbar.label`, default 「工具栏」)
 - Children that join roving: native controls (`button`/`input`/`select`/`textarea`/`a[href]`), interactive `role`s, custom elements (tag contains `-`); exclude them with `data-toolbar-ignore` or `aria-hidden`, and `disabled`/`aria-disabled` are skipped automatically

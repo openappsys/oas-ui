@@ -84,14 +84,18 @@ onMounted(() => {
 
 ## API
 
-| Property | Description               | Type                | Default |
-| -------- | ------------------------- | ------------------- | ------- |
-| `items`  | Anchor items JSON         | `[{ href, title }]` | `[]`    |
-| `active` | Currently highlighted href| `string`            | —       |
-| `offset` | Highlight offset in px    | `number`            | `0`     |
+### Attributes
 
-| Event        | Description                      |
-| ------------ | -------------------------------- |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `active` | Currently highlighted href | — | — |
+| `items` | Anchor items JSON | `AnchorItem[] \| string` | `[]` |
+| `offset` | Highlight offset in px | — | `0` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
 | `oas-change` | An anchor was clicked, `detail: { href }` |
 
 Scroll spy based on `IntersectionObserver`; clicking smooth-scrolls to the target; `nav` + `aria-label="锚点导航"`, the current item has `aria-current="true"`.

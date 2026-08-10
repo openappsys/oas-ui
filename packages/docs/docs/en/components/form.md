@@ -129,13 +129,23 @@ onMounted(() => {
 
 ## API
 
-| Property | Description                                                                            |
-| -------- | -------------------------------------------------------------------------------------- |
-| `rules`  | Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` |
+### Attributes
 
-| Event                | Description                                  |
-| -------------------- | -------------------------------------------- |
-| `oas-submit`         | Validation passed, `detail: { values }`      |
-| `oas-validate-fail`  | Validation failed, `detail: { errors, values }` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `rules` | Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | `{}` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-submit` | Validation passed, `detail: { values }` |
+| `oas-validate-fail` | Validation failed, `detail: { errors, values }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 On validation failure, failed fields are marked `aria-invalid`; error messages can be retrieved via `form.getErrors()`.

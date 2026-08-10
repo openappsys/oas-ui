@@ -57,8 +57,16 @@ An empty container causes no error and takes no placeholder.
 
 ## API
 
-| Property  | Description                                      | Type                                                              | Default |
-| --------- | ------------------------------------------------ | ----------------------------------------------------------------- | ------- |
-| `size`    | Fixed-width tier, mapped to `--oas-container-*` tokens | `xs` / `sm` / `md` / `lg` / `xl` / `full` (invalid falls back to `lg`) | `lg`    |
-| `center`  | Whether to center (`center="false"` disables)    | boolean                                                           | `true`  |
-| `padding` | Padding token/value (applies to `padding-inline`)| string (e.g. `var(--oas-space-4)`)                                 | —       |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `center` | Whether to center (`center="false"` disables) | — | `true` |
+| `padding` | Padding token/value (applies to `padding-inline`) | — | — |
+| `size` | Fixed-width tier, mapped to `--oas-container-*` tokens | — | `lg` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |

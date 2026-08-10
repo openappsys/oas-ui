@@ -142,27 +142,31 @@ onMounted(() => {
 
 ## API
 
-| 属性          | 说明            | 默认值  |
-| ------------- | --------------- | ------- |
-| `value`       | 值（受控）      | 无      |
-| `placeholder` | 占位提示        | 无      |
-| `label`       | 可访问名称（`aria-label` 来源，未设时回退 `placeholder` → 内置文案「输入框」） | 无 |
-| `type`        | 原生 input 类型 | `text`  |
-| `clearable`   | 可清空          | `false` |
-| `disabled`    | 禁用            | `false` |
-| `readonly`    | 只读            | `false` |
-| `addon-before` | 前置 addon 文案块 | 无    |
-| `addon-after`  | 后置 addon 文案块 | 无    |
-| `prefix`      | 内嵌前置文案    | 无      |
-| `suffix`      | 内嵌后置文案    | 无      |
-| `prefix-icon` | 前置图标名      | 无      |
-| `suffix-icon` | 后置图标名      | 无      |
-| `show-password` | 密码可见切换（`type="password"` 时渲染眼睛按钮） | `false` |
-| `maxlength`   | 最大输入长度（透传原生 maxlength） | 无      |
-| `show-count`  | 显示字数统计（右下角，超限标 danger） | `false` |
+### 属性
 
-| 事件        | 说明                                  |
-| ----------- | ------------------------------------- |
-| `oas-input` | 输入中，`detail: { value }`           |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `addon-after` | 后置 addon 文案块 | — | — |
+| `addon-before` | 前置 addon 文案块 | — | — |
+| `clearable` | 可清空 | — | — |
+| `disabled` | 禁用 | — | — |
+| `label` | 可访问名称（`aria-label` 来源，未设时回退 `placeholder` → 内置文案「输入框」） | — | `placeholder` |
+| `maxlength` | 最大输入长度（透传原生 maxlength） | — | — |
+| `placeholder` | 占位提示 | — | — |
+| `prefix` | 内嵌前置文案 | `string` | — |
+| `prefix-icon` | 前置图标名 | — | — |
+| `readonly` | 只读 | — | — |
+| `show-count` | 显示字数统计（右下角，超限标 danger） | — | — |
+| `show-password` | 密码可见切换（`type="password"` 时渲染眼睛按钮） | — | — |
+| `suffix` | 内嵌后置文案 | — | — |
+| `suffix-icon` | 后置图标名 | — | — |
+| `type` | 原生 input 类型 | — | `text` |
+| `value` | 值（受控） | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
 | `oas-clear` | 点击清除，`detail: { originalEvent }` |
 | `oas-enter` | 按 Enter（非输入法组合），`detail: { value }` |
+| `oas-input` | 输入中，`detail: { value }` |

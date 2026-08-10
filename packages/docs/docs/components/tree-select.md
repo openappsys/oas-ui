@@ -78,15 +78,19 @@ onMounted(() => {
 
 ## API
 
-| 属性          | 说明                                              | 默认值   |
-| ------------- | ------------------------------------------------- | -------- |
-| `value`       | 选中值（多选为 JSON 数组）                        | 无       |
-| `options`     | 树形选项，JSON 数组，支持 `children` / `disabled` | `[]`     |
-| `expanded`    | 展开节点的 value 集合（JSON 数组，受控）          | `[]`     |
-| `placeholder` | 占位提示                                          | `请选择` |
-| `multiple`    | 多选 + 父子级联                                   | `false`  |
-| `disabled`    | 禁用                                              | `false`  |
+### 属性
 
-| 事件         | 说明                          |
-| ------------ | ----------------------------- |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 禁用 | — | — |
+| `expanded` | 展开节点的 value 集合（JSON 数组，受控） | — | `[]` |
+| `multiple` | 多选 + 父子级联 | — | — |
+| `options` | 树形选项，JSON 数组，支持 `children` / `disabled` | `TreeOption[] \| string` | `[]` |
+| `placeholder` | 占位提示 | — | — |
+| `value` | 选中值（多选为 JSON 数组） | — | `[]` |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
 | `oas-change` | 选择变化，`detail: { value }` |

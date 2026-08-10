@@ -54,15 +54,19 @@ onMounted(() => {
 
 ## API
 
-| Property             | Description                                          | Default   |
-| -------------------- | ---------------------------------------------------- | -------- |
-| `value`              | Path array (JSON), e.g. `["zj","hz"]`                | `[]`     |
-| `options`            | Cascade options, JSON array, supports `children` / `disabled` | `[]` |
-| `placeholder`        | Placeholder text                                     | `请选择` |
-| `change-on-select`   | Submit when selecting any level                      | `false`  |
-| `disabled`           | Disabled                                             | `false`  |
-| `show-all-levels`    | Whether to show the full path (reserved in the current version; display is always the full path) | `false` |
+### Attributes
 
-| Event         | Description                                |
-| ------------- | ------------------------------------------ |
-| `oas-change`  | Selection change, `detail: { value }` (path array) |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `change-on-select` | Submit when selecting any level | — | — |
+| `disabled` | Disabled | — | — |
+| `options` | Cascade options, JSON array, supports `children` / `disabled` | `CascaderOption[] \| string` | `[]` |
+| `placeholder` | Placeholder text | — | — |
+| `show-all-levels` | Whether to show the full path (reserved in the current version; display is always the full path) | — | — |
+| `value` | Path array (JSON), e.g. `["zj","hz"]` | — | `[]` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Selection change, `detail: { value }` (path array) |

@@ -123,11 +123,19 @@ With no children the height is 0 — no error, no placeholder.
 
 ## API
 
-| Property    | Description                          | Type                                                              | Default    |
-| ----------- | ------------------------------------ | ----------------------------------------------------------------- | ---------- |
-| `direction` | Main-axis direction                  | `row` / `vertical`                                                | `row`      |
-| `vertical`  | Vertical shorthand                  | boolean (equals `direction="vertical"`)                           | `false`    |
-| `justify`   | Main-axis alignment                  | `start` / `center` / `end` / `between` / `around` (legacy `flex-*`/`space-*` values accepted) | `start` |
-| `align`     | Cross-axis alignment                 | `start` / `center` / `end` / `baseline` / `stretch` (legacy `flex-*` values accepted) | `stretch` |
-| `gap`       | Gap between items                    | string (e.g. `8px`)                                               | —          |
-| `wrap`      | Wrapping (boolean; present means `wrap`) | boolean                                                          | `false`    |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `align` | Cross-axis alignment | — | `stretch` |
+| `direction` | Main-axis direction | — | `row` |
+| `gap` | Gap between items | — | — |
+| `justify` | Main-axis alignment | — | `start` |
+| `vertical` | Vertical shorthand | — | — |
+| `wrap` | Wrapping (boolean; present means `wrap`) | — | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |

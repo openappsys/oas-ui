@@ -66,10 +66,18 @@ Content is not limited to text — putting images or logos in the slot produces 
 
 ## API
 
-| Attribute        | Description                                                             | Default |
-| ---------------- | ----------------------------------------------------------------------- | ------- |
-| `speed`          | Duration of a single animation cycle (seconds), written to CSS `animation-duration`; non-positive values fall back to the default | `20`    |
-| `pause-on-hover` | Boolean; when present, pauses the animation on hover/focus (`animation-play-state: paused`) | none    |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `pause-on-hover` | Boolean; when present, pauses the animation on hover/focus (`animation-play-state: paused`) | — | — |
+| `speed` | Duration of a single animation cycle (seconds), written to CSS `animation-duration`; non-positive values fall back to the default | — | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 - When the system enables "reduce motion" (`prefers-reduced-motion: reduce`), the animation is disabled and content is shown statically.
 - The duplicated content group carries `aria-hidden`, so screen readers do not read it twice.

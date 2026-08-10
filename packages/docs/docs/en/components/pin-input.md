@@ -102,22 +102,26 @@ onMounted(() => {
 
 ## API
 
-| Property        | Description                                   | Default |
-| --------------- | --------------------------------------------- | ------- |
-| `length`        | Number of code digits                         | `6`     |
-| `value`         | Current value (controlled)                    | `''`    |
-| `mask`          | Asterisk masking                              | `false` |
-| `disabled`      | Disabled                                      | `false` |
-| `readonly`      | Readonly                                      | `false` |
-| `type`          | Cell input type                               | `text`  |
-| `aria-invalid`  | Invalid state (synced to container and cells, marked danger) | — |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `aria-invalid` | Invalid state (synced to container and cells, marked danger) | — | — |
+| `disabled` | Disabled | — | — |
+| `length` | Number of code digits | — | `6` |
+| `mask` | Asterisk masking | — | — |
+| `readonly` | Readonly | — | — |
+| `type` | Cell input type | — | `text` |
+| `value` | Current value (controlled) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Dispatched when filled, `detail: { value }` |
+| `oas-complete` | Dispatched when filled, `detail: { value }` |
+| `oas-input` | Per-cell input, `detail: { value, index }` |
 
 Keyboard: `←`/`→` to move between cells, `Backspace` deletes the current cell and moves back, paste auto-distribution is supported; when all cells are empty, each cell is focusable (native caret).
-
-| Event           | Description                                    |
-| --------------- | ---------------------------------------------- |
-| `oas-input`     | Per-cell input, `detail: { value, index }`     |
-| `oas-change`    | Dispatched when filled, `detail: { value }`    |
-| `oas-complete`  | Dispatched when filled, `detail: { value }`    |
 
 ARIA: the container has `role="group"` + `aria-label`, each cell has `aria-label="第 n 位"`, and `aria-invalid` is synced to both the container and all cells.

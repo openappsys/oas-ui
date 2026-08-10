@@ -90,11 +90,19 @@ onMounted(() => {
 
 ## API
 
-| 属性       | 说明                                              | 类型                   | 默认值 |
-| ---------- | ------------------------------------------------- | ---------------------- | ------ |
-| `items`    | 选项 JSON                                         | `ToggleItem[]`         | `[]`   |
-| `value`    | 当前值：单选为字符串；多选为 JSON 数组字符串      | `string`               | —      |
-| `multiple` | 多选模式（checkbox 语义）                         | `boolean`              | `false` |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `items` | 选项 JSON | — | `[]` |
+| `multiple` | 多选模式（checkbox 语义） | — | — |
+| `value` | 当前值：单选为字符串；多选为 JSON 数组字符串 | — | `[]` |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 切换，`detail: { value: string \| string[] }` |
 
 `ToggleItem` 字段：
 
@@ -103,9 +111,5 @@ onMounted(() => {
 | `label`    | 按钮文案     | `string`  |
 | `value`    | 值（随事件回传） | `string`  |
 | `disabled` | 禁用该项     | `boolean` |
-
-| 事件         | 说明                                          |
-| ------------ | --------------------------------------------- |
-| `oas-change` | 切换，`detail: { value: string \| string[] }` |
 
 键盘：单选模式方向键移动并选中（radio 组惯例）；多选模式方向键移动焦点（roving tabindex）、Space/Enter 切换。容器 `role="radiogroup"` / `role="group"` + `aria-label`，选中项 `aria-checked`。

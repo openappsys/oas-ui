@@ -49,9 +49,17 @@
 
 ## API
 
-| 属性        | 说明     | 类型                                                | 默认值       |
-| ----------- | -------- | --------------------------------------------------- | ------------ |
-| `direction` | 方向     | `horizontal` / `vertical`                           | `horizontal` |
-| `size`      | 间距     | `small` / `medium` / `large` / number               | `medium`     |
-| `wrap`      | 是否换行 | boolean                                             | `false`      |
-| `align`     | 对齐     | `start` / `center` / `end` / `baseline` / `stretch` | —            |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `align` | 对齐 | — | — |
+| `direction` | 方向 | `SpaceDirection` | `horizontal` |
+| `size` | 间距 | — | `medium` |
+| `wrap` | 是否换行 | — | — |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | — |

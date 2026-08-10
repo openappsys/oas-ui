@@ -43,13 +43,17 @@ onMounted(() => {
 
 ## API
 
-| Property  | Description                                          |
-| --------- | ---------------------------------------------------- |
-| `options` | `[{ label, value, disabled? }]` JSON string          |
-| `value`   | Selected value (defaults to the first option; controlled) |
+### Attributes
 
-| Event        | Description                      |
-| ------------ | -------------------------------- |
-| `oas-change` | Switched, `detail: { value }`    |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `options` | `[{ label, value, disabled? }]` JSON string | — | `[]` |
+| `value` | Selected value (defaults to the first option; controlled) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Switched, `detail: { value }` |
 
 The container is `role="radiogroup"`; each item is `role="radio"` + `aria-checked` / `aria-disabled`.

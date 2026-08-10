@@ -58,19 +58,23 @@ onMounted(() => {
 
 ## API
 
-| Property       | Description                                  | Default |
-| -------------- | -------------------------------------------- | ------- |
-| `files`        | File list (property, `File[]`)               | `[]`    |
-| `accept`       | Accepted file types                          | —       |
-| `multiple`     | Multiple selection                           | `false` |
-| `max`          | Maximum number of files                      | unlimited |
-| `disabled`     | Disabled                                     | `false` |
-| `auto-upload`  | Auto-simulate upload after adding            | `false` |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `accept` | Accepted file types | — | — |
+| `auto-upload` | Auto-simulate upload after adding | — | — |
+| `disabled` | Disabled | — | — |
+| `files` | File list (property, `File[]`) | `File[]` | — |
+| `max` | Maximum number of files | — | `0` |
+| `multiple` | Multiple selection | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | File list change, `detail: { files }` |
+| `oas-remove` | File removed, `detail: { file, index }` |
+| `oas-upload` | Upload progress, `detail: { file, percent, status }` |
 
 Keyboard: `Enter` / `Space` on the drop zone opens the file picker; remove buttons are focusable.
-
-| Event         | Description                                     |
-| ------------- | ----------------------------------------------- |
-| `oas-change`  | File list change, `detail: { files }`           |
-| `oas-remove`  | File removed, `detail: { file, index }`         |
-| `oas-upload`  | Upload progress, `detail: { file, percent, status }` |

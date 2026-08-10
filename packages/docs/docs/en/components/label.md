@@ -34,10 +34,18 @@ Without `for`, only text is rendered and clicks don't forward focus; long text w
 
 ## API
 
-| Prop | Description | Type | Default |
+### Attributes
+
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `for` | Target control id; click forwards to `getElementById(for).focus()` | string | `''` |
-| `required` | Append a required `*` marker (`aria-hidden`) | boolean | `false` |
-| `position` | Position of the asterisk relative to the text | `before` / `after` | `after` |
+| `for` | Target control id; click forwards to `getElementById(for).focus()` | — | — |
+| `position` | Position of the asterisk relative to the text | — | `after` |
+| `required` | Append a required `*` marker (`aria-hidden`) | — | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 > Note: `for` is also synced to the native `<label>` `for` attribute; the click behavior is manually forwarded and can focus the target control across Shadow DOM.

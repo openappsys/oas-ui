@@ -105,15 +105,25 @@ onMounted(() => {
 
 ## API
 
-| 属性            | 说明     | 默认值  |
-| --------------- | -------- | ------- |
-| `checked`       | 是否选中 | `false` |
-| `indeterminate` | 半选状态 | `false` |
-| `disabled`      | 禁用     | `false` |
-| `value`         | 选项标识 | 无      |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `checked` | 是否选中 | — | — |
+| `disabled` | 禁用 | — | — |
+| `indeterminate` | 半选状态 | — | — |
+| `value` | 选项标识 | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 变化，`detail: { checked, value }`；组为 `detail: { value }`（数组） |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | — |
 
 `oas-checkbox-group`：`value`（JSON 数组）、`disabled`，支持 `slot="label"` 设置组标题。
-
-| 事件         | 说明                                                                 |
-| ------------ | -------------------------------------------------------------------- |
-| `oas-change` | 变化，`detail: { checked, value }`；组为 `detail: { value }`（数组） |

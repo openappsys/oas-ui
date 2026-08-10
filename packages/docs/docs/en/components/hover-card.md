@@ -71,12 +71,20 @@ onMounted(() => {
 
 ## API
 
-| Property   | Description                        | Type                             | Default |
-| ---------- | ---------------------------------- | -------------------------------- | ------- |
-| `title`    | Title text                         | `string`                         | —       |
-| `content`  | Content text                       | `string`                         | —       |
-| `placement`| Popup placement                    | `top` / `bottom` / `left` / `right` | `top` |
-| `delay`    | Show/hide delay in milliseconds    | `number`                         | `100`   |
-| `open`     | Controlled display (boolean attribute; shows when present) | `boolean`        | `false` |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `content` | Content text | — | — |
+| `delay` | Show/hide delay in milliseconds | — | `100` |
+| `open` | Controlled display (boolean attribute; shows when present) | — | — |
+| `placement` | Popup placement | `Placement` | `top` |
+| `title` | Title text | — | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 No public events. Triggered on hover/focus, `role="dialog"`.

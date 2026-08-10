@@ -52,15 +52,19 @@
 
 ## API
 
-| 属性        | 说明                                                    | 默认值                    |
-| ----------- | ------------------------------------------------------- | ------------------------- |
-| `steps`     | `[{ title, description?, status? }]` JSON 字符串        | `[]`                      |
-| `current`   | 当前步骤索引（0 起）                                    | `0`                       |
-| `direction` | 方向                                                    | `horizontal` / `vertical` |
-| `clickable` | 步骤可点击跳转（布尔，存在即开启）                      | 关闭                      |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `clickable` | 步骤可点击跳转（布尔，存在即开启） | — | — |
+| `current` | 当前步骤索引（0 起） | — | `0` |
+| `direction` | 方向 | — | `horizontal` |
+| `steps` | `[{ title, description?, status? }]` JSON 字符串 | `StepItem[] \| string` | `[]` |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 点击可点击步骤时触发（含键盘触发）；`detail: { index }`（0 起） |
 
 状态规则：显式 `status`（`wait` / `process` / `finish` / `error`）优先；未指定时按 `current` 推导——索引 `< current` 为 `finish`（✓），`=== current` 为 `process`，其余为 `wait`。
-
-| 事件       | 说明                          | detail          |
-| ---------- | ----------------------------- | --------------- |
-| `oas-change` | 点击可点击步骤时触发（含键盘触发） | `{ index }`（0 起） |

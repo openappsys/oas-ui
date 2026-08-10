@@ -66,20 +66,25 @@ The format supports `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` tokens.
 
 ## API
 
-| Property       | Description                                                                     | Default        |
-| -------------- | ------------------------------------------------------------------------------- | ------------- |
-| `value`        | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | —            |
-| `type`         | Type: `date` / `daterange` / `month` / `datetime`                                | `date`        |
-| `format`       | Display format tokens (`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`)                          | varies by type |
-| `min` / `max`  | Selectable range (ISO dates)                                                     | —             |
-| `disabled`     | Disabled                                                                         | `false`       |
-| `placeholder`  | Placeholder text                                                                 | `请选择日期`  |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disabled | — | — |
+| `format` | Display format tokens (`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`) | — | — |
+| `max` | Selectable range (ISO dates) | — | — |
+| `min` | Selectable range (ISO dates) | — | — |
+| `placeholder` | Placeholder text | — | — |
+| `type` | Type: `date` / `daterange` / `month` / `datetime` | — | `date` |
+| `value` | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Value change, `detail: { value }` (string array for daterange) |
 
 Keyboard: `Enter` / `↓` to open, `↑`/`↓`/`←`/`→` to move within the grid, `Enter` to select, `Esc` to close.
-
-| Event         | Description                                                |
-| ------------- | ---------------------------------------------------------- |
-| `oas-change`  | Value change, `detail: { value }` (string array for daterange) |
 
 <script setup>
 import { onMounted } from 'vue'

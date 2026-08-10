@@ -104,14 +104,14 @@ onMounted(async () => {
 
 ### 属性
 
-| 属性           | 说明                                                                  | 类型      | 默认值  |
-| -------------- | --------------------------------------------------------------------- | --------- | ------- |
-| `percent`      | 进度百分比（0–100，自动夹取）                                         | `number`  | `0`     |
-| `status`       | 状态色；`error` 红色、`success` 绿色，未设置且进度满 100 时显示成功绿 | `string`  | —       |
-| `no-text`      | 隐藏右侧/圆心百分比文本                                               | `boolean` | `false` |
-| `show-text`    | 是否显示百分比文本                                                    | `boolean` | `true`  |
-| `type`         | 形态：`line`（线形）/ `circle`（圆环）                                | `string`  | `line`  |
-| `size`         | circle 直径（px）                                                     | `number`  | `48`    |
-| `stroke-width` | circle 线宽（px）                                                     | `number`  | `6`     |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `no-text` | 隐藏右侧/圆心百分比文本 | — | — |
+| `percent` | 进度百分比（0–100，自动夹取） | — | `0` |
+| `show-text` | 是否显示百分比文本 | — | `true` |
+| `size` | circle 直径（px） | — | `48` |
+| `status` | 状态色；`error` 红色、`success` 绿色，未设置且进度满 100 时显示成功绿 | — | — |
+| `stroke-width` | circle 线宽（px） | — | `6` |
+| `type` | 形态：`line`（线形）/ `circle`（圆环） | — | `line` |
 
 `role="progressbar"` + `aria-valuenow` / `aria-valuemin` / `aria-valuemax`（line 与 circle 均同步）。

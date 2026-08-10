@@ -65,14 +65,33 @@ onMounted(() => {
 
 ## API
 
-| Component            | Attribute   | Description                         | Type    | Default |
-| -------------------- | ----------- | ----------------------------------- | ------- | ------- |
-| `oas-collapse`       | `active`    | Set of expanded panel `name` values (comma-separated) | string  | —       |
-| `oas-collapse`       | `accordion` | Accordion mode; only one panel open at a time | boolean | `false` |
-| `oas-collapse-item`  | `name`      | Unique identifier of the panel      | string  | —       |
-| `oas-collapse-item`  | `header`    | Panel title                         | string  | —       |
-| `oas-collapse-item`  | `open`      | Whether it is expanded (managed by the container) | boolean | `false` |
+### oas-collapse
 
-| Event         | Description                                        |
-| ------------ | -------------------------------------------------- |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `accordion` | Accordion mode; only one panel open at a time | — | — |
+| `active` | Set of expanded panel `name` values (comma-separated) | — | — |
+
+| Event | Description |
+| --- | --- |
 | `oas-change` | Expansion state change, `detail: { active: string[] }` |
+
+| Name | Description |
+| --- | --- |
+| default | — |
+
+### oas-collapse-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `header` | Panel title | — | — |
+| `name` | Unique identifier of the panel | — | — |
+| `open` | Whether it is expanded (managed by the container) | — | — |
+
+| Event | Description |
+| --- | --- |
+| `oas-collapse-item-click` | — |
+
+| Name | Description |
+| --- | --- |
+| default | — |

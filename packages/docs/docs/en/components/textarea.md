@@ -70,19 +70,23 @@ onMounted(() => {
 
 ## API
 
-| Property       | Description                        | Default |
-| -------------- | ---------------------------------- | ------- |
-| `value`        | Value (controlled)                 | —       |
-| `rows`         | Number of rows                     | `3`     |
-| `resize`       | Resize behavior                    | `none`  |
-| `autosize`     | Auto height                        | `false` |
-| `auto-height`  | Legacy name (alias of `autosize`)  | `false` |
-| `min-rows`     | Minimum rows in autosize           | `1`     |
-| `max-rows`     | Maximum rows in autosize           | `6`     |
-| `placeholder`  | Placeholder text                   | —       |
-| `disabled`     | Disabled                           | `false` |
-| `readonly`     | Readonly                           | `false` |
+### Attributes
 
-| Event        | Description                        |
-| ------------ | ---------------------------------- |
-| `oas-input`  | While typing, `detail: { value }`  |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `auto-height` | Legacy name (alias of `autosize`) | — | — |
+| `autosize` | Auto height | — | — |
+| `disabled` | Disabled | — | — |
+| `max-rows` | Maximum rows in autosize | — | `6` |
+| `min-rows` | Minimum rows in autosize | — | `1` |
+| `placeholder` | Placeholder text | — | — |
+| `readonly` | Readonly | — | — |
+| `resize` | Resize behavior | — | — |
+| `rows` | Number of rows | — | `3` |
+| `value` | Value (controlled) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-input` | While typing, `detail: { value }` |

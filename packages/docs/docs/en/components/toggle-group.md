@@ -90,11 +90,19 @@ onMounted(() => {
 
 ## API
 
-| Property   | Description                                         | Type                | Default |
-| ---------- | --------------------------------------------------- | ------------------- | ------- |
-| `items`    | Options JSON                                        | `ToggleItem[]`      | `[]`    |
-| `value`    | Current value: string for single; JSON array string for multiple | `string`  | —      |
-| `multiple` | Multiple mode (checkbox semantics)                  | `boolean`           | `false` |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `items` | Options JSON | — | `[]` |
+| `multiple` | Multiple mode (checkbox semantics) | — | — |
+| `value` | Current value: string for single; JSON array string for multiple | — | `[]` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Toggle, `detail: { value: string \| string[] }` |
 
 `ToggleItem` fields:
 
@@ -103,9 +111,5 @@ onMounted(() => {
 | `label`    | Button label         | `string`  |
 | `value`    | Value (returned with events) | `string` |
 | `disabled` | Disable this item    | `boolean` |
-
-| Event         | Description                                          |
-| ------------- | ---------------------------------------------------- |
-| `oas-change`  | Toggle, `detail: { value: string \| string[] }`     |
 
 Keyboard: in single mode arrow keys move and select (radio group convention); in multiple mode arrow keys move focus (roving tabindex) and Space/Enter toggle. The container has `role="radiogroup"` / `role="group"` + `aria-label`; selected items expose `aria-checked`.

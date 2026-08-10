@@ -78,15 +78,19 @@ onMounted(() => {
 
 ## API
 
-| Property       | Description                                          | Default   |
-| -------------- | ---------------------------------------------------- | -------- |
-| `value`        | Selected value (JSON array in multiple mode)         | —        |
-| `options`      | Tree options, JSON array, supports `children` / `disabled` | `[]` |
-| `expanded`     | Set of expanded node values (JSON array, controlled) | `[]`     |
-| `placeholder`  | Placeholder text                                     | `请选择` |
-| `multiple`     | Multiple select + parent-child cascade               | `false`  |
-| `disabled`     | Disabled                                             | `false`  |
+### Attributes
 
-| Event         | Description                        |
-| ------------- | ---------------------------------- |
-| `oas-change`  | Selection change, `detail: { value }` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disabled | — | — |
+| `expanded` | Set of expanded node values (JSON array, controlled) | — | `[]` |
+| `multiple` | Multiple select + parent-child cascade | — | — |
+| `options` | Tree options, JSON array, supports `children` / `disabled` | `TreeOption[] \| string` | `[]` |
+| `placeholder` | Placeholder text | — | — |
+| `value` | Selected value (JSON array in multiple mode) | — | `[]` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Selection change, `detail: { value }` |

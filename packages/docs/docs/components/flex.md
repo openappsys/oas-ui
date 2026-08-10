@@ -123,11 +123,19 @@
 
 ## API
 
-| 属性        | 说明         | 类型                                                              | 默认值       |
-| ----------- | ------------ | ----------------------------------------------------------------- | ------------ |
-| `direction` | 主轴方向     | `row` / `vertical`                                                | `row`        |
-| `vertical`  | 纵向简写     | boolean（等价 `direction="vertical"`）                            | `false`      |
-| `justify`   | 主轴对齐     | `start` / `center` / `end` / `between` / `around`（兼容旧 `flex-*`/`space-*` 写法） | `start`      |
-| `align`     | 交叉轴对齐   | `start` / `center` / `end` / `baseline` / `stretch`（兼容旧 `flex-*` 写法） | `stretch`    |
-| `gap`       | 子项间距     | string（如 `8px`）                                                | —            |
-| `wrap`      | 换行         | boolean（存在即 `wrap`）                                          | `false`      |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `align` | 交叉轴对齐 | — | `stretch` |
+| `direction` | 主轴方向 | — | `row` |
+| `gap` | 子项间距 | — | — |
+| `justify` | 主轴对齐 | — | `start` |
+| `vertical` | 纵向简写 | — | — |
+| `wrap` | 换行 | — | — |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | — |

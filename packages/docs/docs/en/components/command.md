@@ -72,10 +72,18 @@ onMounted(() => {
 
 ## API
 
-| Property | Description                                                       | Type                                                            | Default |
-| -------- | ----------------------------------------------------------------- | --------------------------------------------------------------- | ------- |
-| `items`  | Command items JSON                                                | `CommandItem[]`                                                 | `[]`    |
-| `open`   | Whether open (controlled; auto-removed after selection / Esc)     | `boolean`                                                       | `false` |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `items` | Command items JSON | — | `[]` |
+| `open` | Whether open (controlled; auto-removed after selection / Esc) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-select` | A command was executed, `detail: { value }` |
 
 `CommandItem` fields:
 
@@ -86,9 +94,5 @@ onMounted(() => {
 | `keywords` | Search keywords (optional), matched in addition to the label | `string[]` |
 | `group`    | Group name (optional); same-group items render a group title | `string`   |
 | `disabled` | Disables the item (not selectable via Enter/click, skipped by arrow keys) | `boolean` |
-
-| Event        | Description                         |
-| ------------ | ----------------------------------- |
-| `oas-select` | A command was executed, `detail: { value }` |
 
 Keyboard: `↑`/`↓` move the highlight (skipping disabled items), `Enter` executes and closes, `Esc` closes, `Tab` cycles between the search input and the options (focus trap); on open the search input is focused, and on close focus returns to the source element. The global `⌘K` / `Ctrl+K` shortcut toggles it.

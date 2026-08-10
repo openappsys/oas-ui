@@ -142,27 +142,31 @@ onMounted(() => {
 
 ## API
 
-| Property      | Description                        | Default |
-| ------------- | ---------------------------------- | ------- |
-| `value`       | Value (controlled)                 | —       |
-| `placeholder` | Placeholder text                   | —       |
-| `label`       | Accessible name (`aria-label` source; falls back to `placeholder` → built-in "输入框" when unset) | — |
-| `type`        | Native input type                  | `text`  |
-| `clearable`   | Clearable                          | `false` |
-| `disabled`    | Disabled                           | `false` |
-| `readonly`    | Readonly                           | `false` |
-| `addon-before`| Addon text block before the input  | —       |
-| `addon-after` | Addon text block after the input   | —       |
-| `prefix`      | Inline text before the input value | —       |
-| `suffix`      | Inline text after the input value  | —       |
-| `prefix-icon` | Icon name for the leading icon     | —       |
-| `suffix-icon` | Icon name for the trailing icon    | —       |
-| `show-password` | Password visibility toggle (renders an eye button when `type="password"`) | `false` |
-| `maxlength`   | Maximum input length (passed through to native maxlength) | — |
-| `show-count`  | Show character count (bottom-right; danger when over limit) | `false` |
+### Attributes
 
-| Event        | Description                              |
-| ------------ | ---------------------------------------- |
-| `oas-input`  | While typing, `detail: { value }`        |
-| `oas-clear`  | Cleared by click, `detail: { originalEvent }` |
-| `oas-enter`  | Enter pressed (not IME composition), `detail: { value }` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `addon-after` | Addon text block after the input | — | — |
+| `addon-before` | Addon text block before the input | — | — |
+| `clearable` | Clearable | — | — |
+| `disabled` | Disabled | — | — |
+| `label` | Accessible name (`aria-label` source; falls back to `placeholder` → built-in "输入框" when unset) | — | `placeholder` |
+| `maxlength` | Maximum input length (passed through to native maxlength) | — | — |
+| `placeholder` | Placeholder text | — | — |
+| `prefix` | Inline text before the input value | `string` | — |
+| `prefix-icon` | Icon name for the leading icon | — | — |
+| `readonly` | Readonly | — | — |
+| `show-count` | Show character count (bottom-right; danger when over limit) | — | — |
+| `show-password` | Password visibility toggle (renders an eye button when `type="password"`) | — | — |
+| `suffix` | Inline text after the input value | — | — |
+| `suffix-icon` | Icon name for the trailing icon | — | — |
+| `type` | Native input type | — | `text` |
+| `value` | Value (controlled) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-clear` | Cleared by click, `detail: { originalEvent }` |
+| `oas-enter` | Enter pressed (not IME composition), `detail: { value }` |
+| `oas-input` | While typing, `detail: { value }` |

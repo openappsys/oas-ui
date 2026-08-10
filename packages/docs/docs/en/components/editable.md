@@ -63,19 +63,23 @@ onMounted(() => {
 
 ## API
 
-| Property           | Description                        | Default |
-| ------------------ | ---------------------------------- | ------- |
-| `value`            | Current value (controlled)         | `''`    |
-| `placeholder`      | Empty value placeholder            | `''`    |
-| `disabled`         | Disabled                           | `false` |
-| `submit-on-enter`  | Whether Enter submits              | `true`  |
-| `maxlength`        | Maximum input length               | `-1`    |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disabled | — | — |
+| `maxlength` | Maximum input length | — | — |
+| `placeholder` | Empty value placeholder | — | — |
+| `submit-on-enter` | Whether Enter submits | — | `true` |
+| `value` | Current value (controlled) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-cancel` | Cancel/empty-value submit (reverts to old value), non-destructive by default, `detail: { value: oldValue }` |
+| `oas-change` | New value submitted, `detail: { value }` |
 
 Keyboard: in display mode `Enter`/Space/click enters edit mode; in edit mode `Enter` submits, `Esc` reverts and blurs.
-
-| Event         | Description                                        |
-| ------------- | -------------------------------------------------- |
-| `oas-change`  | New value submitted, `detail: { value }`           |
-| `oas-cancel`  | Cancel/empty-value submit (reverts to old value), non-destructive by default |
 
 ARIA: display mode has `role="button"` + `aria-label="编辑"`; the edit-mode input keeps the same label.

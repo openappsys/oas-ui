@@ -44,18 +44,24 @@ onMounted(async () => {
 
 ## API
 
-### Props
+### Attributes
 
-| Prop | Description | Type | Default |
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `type` | Alert type | `info` / `success` / `warning` / `error` | `info` |
-| `title` | Title text | `string` | — |
-| `closeable` | Whether to show the close button | `boolean` | `false` |
+| `closeable` | Whether to show the close button | — | — |
+| `title` | Title text | — | — |
+| `type` | Alert type | — | `info` |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-close` | Dispatched after the close button is clicked; the component then hides |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 `error` uses `role="alert"`, other types use `role="status"`.

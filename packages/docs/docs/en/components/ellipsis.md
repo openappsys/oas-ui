@@ -44,18 +44,18 @@ With `expandable`, the button only appears when the text actually overflows; onc
 
 ### Attributes
 
-| Attribute    | Description                                              | Type      | Default |
-| ------------ | -------------------------------------------------------- | --------- | ------- |
-| `text`       | Text content                                             | `string`  | —       |
-| `rows`       | Number of lines to show (1 is single-line ellipsis, ≥2 multi-line `-webkit-line-clamp`) | `number`  | `1`     |
-| `tooltip`    | Show a full-text tooltip on hover when overflowing       | `boolean` | `true`  |
-| `expandable` | Show an "expand/collapse" button when overflowing        | `boolean` | `false` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `expandable` | Show an "expand/collapse" button when overflowing | — | — |
+| `rows` | Number of lines to show (1 is single-line ellipsis, ≥2 multi-line `-webkit-line-clamp`) | — | `1` |
+| `text` | Text content | — | — |
+| `tooltip` | Show a full-text tooltip on hover when overflowing | — | `true` |
 
 ### Events
 
-| Event           | Description                                |
-| ---------------- | ------------------------------------------ |
-| `oas-expand`     | Expanded, `detail: { expanded: true }`     |
-| `oas-collapse`   | Collapsed, `detail: { expanded: false }`   |
+| Event | Description |
+| --- | --- |
+| `oas-collapse` | Collapsed, `detail: { expanded: false }` |
+| `oas-expand` | Expanded, `detail: { expanded: true }` |
 
 The tooltip / expand button is only mounted when the text **actually overflows**; with no overflow it is plain text, and on disconnect it is destroyed — no orphaned overlays.

@@ -57,20 +57,24 @@ onMounted(() => {
 
 ## API
 
-| Property           | Description                          | Default |
-| ------------------ | ------------------------------------ | ------- |
-| `model-value`      | Tag array (property or JSON)         | `[]`    |
-| `max`              | Maximum number of tags               | `∞`     |
-| `allow-duplicate`  | Allow duplicate tags                 | `false` |
-| `disabled`         | Disabled                             | `false` |
-| `placeholder`      | Input placeholder                    | `''`    |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `allow-duplicate` | Allow duplicate tags | — | — |
+| `disabled` | Disabled | — | — |
+| `max` | Maximum number of tags | — | — |
+| `model-value` | Tag array (property or JSON) | — | — |
+| `placeholder` | Input placeholder | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-add` | Tag added, `detail: { value }` |
+| `oas-change` | Dispatched after add/remove, `detail: { value }` |
+| `oas-remove` | Tag removed, `detail: { value }` |
 
 Keyboard: `Enter` / `,` to submit; with the input empty, `Backspace` deletes the last tag.
-
-| Event          | Description                            |
-| -------------- | -------------------------------------- |
-| `oas-add`      | Tag added, `detail: { value }`         |
-| `oas-remove`   | Tag removed, `detail: { value }`       |
-| `oas-change`   | Dispatched after add/remove, `detail: { value }` |
 
 ARIA: the container has `role="list"`, tags have `role="listitem"`, remove buttons are focusable with an `aria-label`; when submitting a duplicate, the input is marked `aria-invalid` with a hint shown.

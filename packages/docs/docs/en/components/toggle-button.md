@@ -36,12 +36,22 @@ onMounted(() => {
 
 ## API
 
-| Property   | Description                         | Default |
-| ---------- | ----------------------------------- | ------- |
-| `value`    | Value (returned with events)        | —       |
-| `pressed`  | Whether pressed (controlled)        | `false` |
-| `disabled` | Disabled                            | `false` |
+### Attributes
 
-| Event         | Description                              |
-| ------------- | ---------------------------------------- |
-| `oas-change`  | Toggle, `detail: { value, pressed }`     |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disabled | — | — |
+| `pressed` | Whether pressed (controlled) | — | — |
+| `value` | Value (returned with events) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Toggle, `detail: { value, pressed }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |

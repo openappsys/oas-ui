@@ -27,8 +27,16 @@ A keyboard shortcut display component. `keys` is split by spaces into multiple k
 
 ## API
 
-| Prop | Description | Type | Default |
+### Attributes
+
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `keys` | Space-separated key sequence, e.g. `"ctrl shift k"` | string | `''` |
+| `keys` | Space-separated key sequence, e.g. `"ctrl shift k"` | — | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 > Note: empty `keys` renders a single empty keycap; slot content takes priority when provided. The component is purely presentational with `role="text"` and dispatches no events.

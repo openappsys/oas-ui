@@ -102,16 +102,16 @@ onMounted(async () => {
 
 ## API
 
-### Props
+### Attributes
 
-| Prop | Description | Type | Default |
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `percent` | Progress percentage (0–100, clamped automatically) | `number` | `0` |
-| `status` | Status color; `error` red, `success` green; when unset and progress reaches 100, success green is shown | `string` | — |
-| `no-text` | Hide the side/center percentage text | `boolean` | `false` |
-| `show-text` | Whether to show the percentage text | `boolean` | `true` |
-| `type` | Form: `line` / `circle` | `string` | `line` |
-| `size` | Circle diameter (px) | `number` | `48` |
-| `stroke-width` | Circle stroke width (px) | `number` | `6` |
+| `no-text` | Hide the side/center percentage text | — | — |
+| `percent` | Progress percentage (0–100, clamped automatically) | — | `0` |
+| `show-text` | Whether to show the percentage text | — | `true` |
+| `size` | Circle diameter (px) | — | `48` |
+| `status` | Status color; `error` red, `success` green; when unset and progress reaches 100, success green is shown | — | — |
+| `stroke-width` | Circle stroke width (px) | — | `6` |
+| `type` | Form: `line` / `circle` | — | `line` |
 
 `role="progressbar"` + `aria-valuenow` / `aria-valuemin` / `aria-valuemax` (synced for both line and circle).

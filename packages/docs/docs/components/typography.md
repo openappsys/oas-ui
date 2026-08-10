@@ -56,6 +56,44 @@
 
 `type` 取值：`default` / `secondary` / `success` / `warning` / `danger` / `disabled`。
 
-| 事件       | 说明                         |
-| ---------- | ---------------------------- |
+### oas-text
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `copyable` | — | — | — |
+| `ellipsis` | — | — | — |
+| `level` | — | — | `3` |
+| `type` | — | `TextType` | `default` |
+
+| 事件 | 说明 |
+| --- | --- |
 | `oas-copy` | 复制成功，`detail: { text }` |
+| `oas-copy-error` | — |
+
+### oas-title
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `copyable` | — | — | — |
+| `ellipsis` | — | — | — |
+| `level` | — | — | `3` |
+| `type` | — | `TextType` | `default` |
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-copy` | — |
+| `oas-copy-error` | — |
+
+### oas-paragraph
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `copyable` | — | — | — |
+| `ellipsis` | — | — | — |
+| `level` | — | — | `3` |
+| `type` | — | `TextType` | `default` |
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-copy` | — |
+| `oas-copy-error` | — |

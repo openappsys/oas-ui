@@ -68,15 +68,21 @@ onMounted(() => {
 
 ## API
 
-| Property       | Description                                           | Default    |
-| -------------- | ----------------------------------------------------- | ---------- |
-| `data`         | Data (property, `[{ key, label, disabled }]`)         | `[]`       |
-| `value`        | Selected key array (JSON attribute)                   | `[]`       |
-| `titles`       | Panel titles (JSON array) or `source-title`/`target-title` | source/selected |
-| `searchable`   | Search filtering within panels                        | `false`    |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `data` | Data (property, `[{ key, label, disabled }]`) | `TransferItem[]` | — |
+| `searchable` | Search filtering within panels | — | — |
+| `source-title` | — | — | — |
+| `target-title` | — | — | — |
+| `titles` | Panel titles (JSON array) or `source-title`/`target-title` | — | — |
+| `value` | Selected key array (JSON attribute) | — | `[]` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Value change after shuttling, `detail: { value }` |
 
 Keyboard: after focusing a panel list, `↑`/`↓` moves the selection, `Enter` shuttles.
-
-| Event         | Description                              |
-| ------------- | ---------------------------------------- |
-| `oas-change`  | Value change after shuttling, `detail: { value }` |

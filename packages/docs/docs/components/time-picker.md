@@ -40,18 +40,22 @@ format 含 `HH`/`mm`/`ss` 时对应列才出现。
 
 ## API
 
-| 属性       | 说明                     | 默认值       |
-| ---------- | ------------------------ | ------------ |
-| `value`    | 当前值（`HH:mm:ss`）     | 无           |
-| `format`   | 展示格式 token           | `HH:mm:ss`   |
-| `step`     | 分钟步进间隔             | `1`          |
-| `disabled` | 禁用                     | `false`      |
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 禁用 | — | — |
+| `format` | 展示格式 token | — | `HH:mm:ss` |
+| `step` | 分钟步进间隔 | — | `1` |
+| `value` | 当前值（`HH:mm:ss`） | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 确认值变化，`detail: { value }` |
 
 键盘：`Enter` / `↓` 展开，`↑`/`↓` 调整当前列，`←`/`→` 切换列，`Enter` 确认，`Esc` 取消。
-
-| 事件         | 说明                          |
-| ------------ | ----------------------------- |
-| `oas-change` | 确认值变化，`detail: { value }` |
 
 <script setup>
 import { onMounted } from 'vue'

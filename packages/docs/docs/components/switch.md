@@ -69,16 +69,20 @@ onMounted(() => {
 
 ## API
 
-| 属性             | 说明                                                               | 默认值    |
-| ---------------- | ------------------------------------------------------------------ | --------- |
-| `checked`        | 是否开启                                                           | `false`   |
-| `disabled`       | 禁用                                                               | `false`   |
-| `loading`        | 加载态，阻止切换                                                   | `false`   |
-| `checked-text`   | 开启时显示的文案；medium/large 在轨道内，small 在轨道外侧          | —         |
-| `unchecked-text` | 关闭时显示的文案；medium/large 在轨道内，small 在轨道外侧          | —         |
-| `size`           | 尺寸                                                               | `medium`  |
-| `color`          | 开启态自定义主色，覆盖 `--oas-color-primary`（CSS 颜色值）         | —         |
+### 属性
 
-| 事件         | 说明                        |
-| ------------ | --------------------------- |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `checked` | 是否开启 | — | — |
+| `checked-text` | 开启时显示的文案；medium/large 在轨道内，small 在轨道外侧 | — | — |
+| `color` | 开启态自定义主色，覆盖 `--oas-color-primary`（CSS 颜色值） | — | — |
+| `disabled` | 禁用 | — | — |
+| `loading` | 加载态，阻止切换 | — | — |
+| `size` | 尺寸 | — | `medium` |
+| `unchecked-text` | 关闭时显示的文案；medium/large 在轨道内，small 在轨道外侧 | — | — |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
 | `oas-change` | 切换，`detail: { checked }` |

@@ -80,22 +80,22 @@ onMounted(async () => {
 
 ### 属性
 
-| 属性          | 说明                 | 类型      | 默认值   |
-| ------------- | -------------------- | --------- | -------- |
-| `open`        | 是否显示（受控）     | `boolean` | `false`  |
-| `message`     | 文案                 | `string`  | —        |
-| `action-text` | 操作按钮文案         | `string`  | —        |
-| `duration`    | 自动关闭时长（ms）   | `number`  | `4000`   |
-| `direction`   | 位置方向             | `top` \| `bottom` | `bottom` |
-| `offset`      | 距屏幕边缘偏移（px） | `string`  | `24`     |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `action-text` | 操作按钮文案 | — | — |
+| `direction` | 位置方向 | — | — |
+| `duration` | 自动关闭时长（ms） | — | `4000` |
+| `message` | 文案 | — | — |
+| `offset` | 距屏幕边缘偏移（px） | — | `24` |
+| `open` | 是否显示（受控） | — | — |
 
 ### 事件
 
-| 事件         | 说明                                            |
-| ------------ | ----------------------------------------------- |
-| `oas-open`   | 打开时派发                                      |
-| `oas-close`  | 到期自动关闭时派发（受控模式不自改 `open`）     |
-| `oas-action` | 点击操作按钮时派发                              |
+| 事件 | 说明 |
+| --- | --- |
+| `oas-action` | 点击操作按钮时派发 |
+| `oas-close` | 到期自动关闭时派发（受控模式不自改 `open`） |
+| `oas-open` | 打开时派发 |
 
 - 无 `action-text` 时 `role="status"`；有操作按钮时 `role="alertdialog"` + `aria-live="assertive"`。
 - `open` 受控：到期只派发 `oas-close`，由外部负责移除 `open`；同时最多堆叠 3 条，超出时最老的一条收到 `oas-close`。

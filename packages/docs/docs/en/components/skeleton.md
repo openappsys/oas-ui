@@ -31,11 +31,11 @@ A placeholder skeleton for loading states, supporting an avatar, title, multiple
 
 ## API
 
-### Props
+### Attributes
 
-| Prop | Description | Type | Default |
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `rows` | Number of paragraph rows | `number` | `3` |
-| `title` | Whether to show the title placeholder | `boolean` | `false` |
-| `avatar` | Whether to show the avatar placeholder | `boolean` | `false` |
-| `active` | Whether to enable the shimmer animation | `boolean` | `false` |
+| `active` | Whether to enable the shimmer animation | — | — |
+| `avatar` | Whether to show the avatar placeholder | — | — |
+| `rows` | Number of paragraph rows | — | `3` |
+| `title` | Whether to show the title placeholder | — | — |

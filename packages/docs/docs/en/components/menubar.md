@@ -64,10 +64,18 @@ onMounted(() => {
 
 ## API
 
-| Property | Description                                   | Type          | Default |
-| -------- | --------------------------------------------- | ------------- | ------- |
-| `items`  | Top-level menu items JSON (with submenu `children`) | `MenubarItem[]` | `[]`    |
-| `value`  | Controlled selected value (external change syncs the check immediately; internal selection writes back) | `string` | none |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `items` | Top-level menu items JSON (with submenu `children`) | — | `[]` |
+| `value` | Controlled selected value (external change syncs the check immediately; internal selection writes back) | — | — |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-select` | An item was selected, `detail: { value }` |
 
 `MenubarItem` fields (inherits `MenuItem`):
 
@@ -78,9 +86,5 @@ onMounted(() => {
 | `accessKey` | `Alt` access key (single character); defaults to the first ASCII letter of `label` | `string` |
 | `disabled`  | Disabled                                                          | `boolean`     |
 | `children`  | Submenu items (nested recursively, cascading to the right)        | `MenubarItem[]` |
-
-| Event        | Description                         |
-| ------------ | ----------------------------------- |
-| `oas-select` | An item was selected, `detail: { value }` |
 
 Keyboard: at top level `←`/`→` switch, `↓`/`Enter` opens the submenu, `Esc` closes; inside a submenu `↑`/`↓` move, `→` enters a cascading submenu, `←` returns to the parent; `Home`/`End` jump. Pressing `Alt` alone focuses the menu bar, `Alt + access key` opens the matching top-level menu. While a submenu is open, `Tab` cycles among its items (focus trap); `roving tabindex` keeps only the current top-level item tab-reachable.

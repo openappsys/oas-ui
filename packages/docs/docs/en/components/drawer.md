@@ -100,23 +100,29 @@ onMounted(async () => {
 
 ## API
 
-### Props
+### Attributes
 
-| Prop | Description | Type | Default |
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `visible` | Whether shown | `boolean` | `false` |
-| `title` | Title text | `string` | — |
-| `placement` | Slide direction | `left` / `right` | `right` |
-| `width` | Drawer width (px or percentage), takes precedence over `size` | `string` | — (falls back to 320px) |
-| `size` | Preset size or a concrete value: `small` (256px) / `medium` (378px) / `large` (736px), or write directly like `512px`, `40%` | `string` | — (falls back to 320px) |
-| `no-footer` | Hide footer action buttons | `boolean` | `false` |
-| `no-mask-close` | Disable closing on mask click | `boolean` | `false` |
+| `no-footer` | Hide footer action buttons | — | — |
+| `no-mask-close` | Disable closing on mask click | — | — |
+| `placement` | Slide direction | — | `right` |
+| `size` | Preset size or a concrete value: `small` (256px) / `medium` (378px) / `large` (736px), or write directly like `512px`, `40%` | — | — |
+| `title` | Title text | — | — |
+| `visible` | Whether shown | — | — |
+| `width` | Drawer width (px or percentage), takes precedence over `size` | — | — |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-ok` | Clicked "OK" |
 | `oas-close` | Close: cancel button / ✕ / mask click / Esc |
+| `oas-ok` | Clicked "OK" |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 `role="dialog"` + `aria-modal="true"`; focus moves to the close button on open and is restored on close.

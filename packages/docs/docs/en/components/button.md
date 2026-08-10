@@ -90,17 +90,27 @@ Without text, the button becomes an equal-width square and needs an `aria-label`
 
 ## API
 
-| Prop | Description | Type | Default |
+### Attributes
+
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `type` | Type | `default` / `primary` / `success` / `warning` / `danger` / `text` | `default` |
-| `size` | Size | `small` / `medium` / `large` | `medium` |
-| `disabled` | Disabled | boolean | `false` |
-| `loading` | Loading state | boolean | `false` |
-| `icon` | Icon name (reusing the oas-icon icon set); without text it becomes an equal-width square and uses the icon name as the fallback label | `IconName` | — |
-| `block` | Fill the full width of the parent container (block level) | boolean | `false` |
-| `round` | Pill radius (`--oas-radius-full` / `999px`) | boolean | `false` |
-| `ghost` | Ghost/outline style: transparent background + outline colored by `type`, darkens on hover | boolean | `false` |
+| `block` | Fill the full width of the parent container (block level) | — | — |
+| `disabled` | Disabled | — | — |
+| `ghost` | Ghost/outline style: transparent background + outline colored by `type`, darkens on hover | — | — |
+| `icon` | Icon name (reusing the oas-icon icon set); without text it becomes an equal-width square and uses the icon name as the fallback label | — | — |
+| `loading` | Loading state | — | — |
+| `round` | Pill radius (`--oas-radius-full` / `999px`) | — | — |
+| `size` | Size | `ButtonSize` | `medium` |
+| `type` | Type | `ButtonType` | `default` |
+
+### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-click` | Click, `detail: { originalEvent }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |

@@ -81,17 +81,27 @@ The default slot can hold an icon — combining an icon and text forms an icon t
 
 ## API
 
-| Prop | Description | Type | Default |
+### Attributes
+
+| Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `type` | Type | `default` / `primary` / `success` / `warning` / `danger` / `info` | `default` |
-| `size` | Size | `small` / `medium` / `large` | `medium` |
-| `closable` | Closable | boolean | `false` |
-| `round` | Rounded | boolean | `false` |
-| `chip` | Chip (pill radius + compact padding) | boolean | `false` |
-| `clickable` | Whole tag clickable (focusable, dispatches `oas-click`) | boolean | `false` |
-| `disabled` | Disabled (cannot be clicked or closed) | boolean | `false` |
+| `chip` | Chip (pill radius + compact padding) | — | — |
+| `clickable` | Whole tag clickable (focusable, dispatches `oas-click`) | — | — |
+| `closable` | Closable | — | — |
+| `disabled` | Disabled (cannot be clicked or closed) | — | — |
+| `round` | Rounded | — | — |
+| `size` | Size | `TagSize` | `medium` |
+| `type` | Type | `TagType` | `default` |
+
+### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-close` | Close, `cancelable`; `preventDefault` prevents removal |
 | `oas-click` | Whole-tag click (when `clickable`), detail contains originalEvent |
+| `oas-close` | Close, `cancelable`; `preventDefault` prevents removal |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |

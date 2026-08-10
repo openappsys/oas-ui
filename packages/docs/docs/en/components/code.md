@@ -102,19 +102,19 @@ When the language is unknown, the content is rendered as plain text (escaped) wi
 
 ### Attributes
 
-| Attribute           | Description                                        | Type      | Default |
-| ------------------- | -------------------------------------------------- | --------- | ------- |
-| `code`              | Raw source code                                    | `string`  | —       |
-| `language`          | Language: `js`/`ts`/`html`/`css`/`json`; unknown falls back to plain text | `string`  | —       |
-| `show-line-number`  | Show the line number column                        | `boolean` | `false` |
-| `copyable`          | Show the copy button                               | `boolean` | `true`  |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `code` | Raw source code | — | — |
+| `copyable` | Show the copy button | — | `true` |
+| `language` | Language: `js`/`ts`/`html`/`css`/`json`; unknown falls back to plain text | — | — |
+| `show-line-number` | Show the line number column | — | — |
 
 ### Events
 
-| Event             | Description                         |
-| ----------------- | ----------------------------------- |
-| `oas-copy`        | Copy succeeded, `detail: { text }`  |
-| `oas-copy-error`  | Copy failed, `detail: { text }`     |
+| Event | Description |
+| --- | --- |
+| `oas-copy` | Copy succeeded, `detail: { text }` |
+| `oas-copy-error` | Copy failed, `detail: { text }` |
 
 ### Engine Choice (Architecture Decision)
 

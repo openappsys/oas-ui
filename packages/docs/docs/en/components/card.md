@@ -70,12 +70,16 @@ An image can be placed in the content area to compose a "cover + title + descrip
 
 ## API
 
-| Attribute   | Description                 | Type    | Default |
-| ----------- | --------------------------- | ------- | ------- |
-| `title`     | Card title                  | string  | —       |
-| `hoverable` | Whether to enable the hover shadow | boolean | `false` |
+### Attributes
 
-| Slot        | Description            |
-| ----------- | ---------------------- |
-| Default     | Card content           |
-| `extra`     | Extra area on the right of the title |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `hoverable` | Whether to enable the hover shadow | — | — |
+| `title` | Card title | — | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | Card content |
+| `extra` | Extra area on the right of the title |

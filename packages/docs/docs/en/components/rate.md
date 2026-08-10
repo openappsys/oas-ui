@@ -104,19 +104,29 @@ onMounted(() => {
 
 ## API
 
-| Property       | Description                                     | Default |
-| -------------- | ----------------------------------------------- | ------- |
-| `value`        | Current score (controlled)                      | `0`     |
-| `max`          | Number of stars                                 | `5`     |
-| `allow-half`   | Allow half stars                                | `false` |
-| `allow-clear`  | Clear to `0` when clicking the currently selected star | `true` |
-| `icon`         | Custom star icon (character or SVG markup)      | —       |
-| `disabled`     | Disabled                                        | `false` |
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `allow-clear` | Clear to `0` when clicking the currently selected star | — | `true` |
+| `allow-half` | Allow half stars | — | — |
+| `disabled` | Disabled | — | — |
+| `icon` | Custom star icon (character or SVG markup) | — | — |
+| `max` | Number of stars | — | `5` |
+| `value` | Current score (controlled) | — | `0` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Score change, `detail: { value }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `icon` | — |
 
 Icon customization: `icon` property > `slot="icon"` (cloned to each star) > default star.
 
 Keyboard: `←`/`→` (or `↑`/`↓`) to adjust, `Home` to reset to zero, `End` to fill.
-
-| Event         | Description                        |
-| ------------- | ---------------------------------- |
-| `oas-change`  | Score change, `detail: { value }`  |

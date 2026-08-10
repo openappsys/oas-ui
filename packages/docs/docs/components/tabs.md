@@ -148,19 +148,35 @@ onMounted(async () => {
 
 ## API
 
-| 组件            | 属性           | 说明                                                              |
-| --------------- | -------------- | ----------------------------------------------------------------- |
-| `oas-tabs`      | `active`       | 激活标签的 `value`                                                |
-| `oas-tabs`      | `type`         | 样式变体：`line`（下划线，默认）/ `card`（卡片式）                |
-| `oas-tabs`      | `closable`     | 每个标签显示关闭 ×，点击派发 `oas-close`（组件不自动删除）        |
-| `oas-tabs`      | `tab-position` | 标签栏位置：`top`（默认）/ `left` / `right` / `bottom`            |
-| `oas-tab-panel` | `label`        | 标签文本                                                          |
-| `oas-tab-panel` | `value`        | 标签值                                                            |
-| `oas-tab-panel` | `badge`        | 标签标题旁的徽标（数字或文本）                                    |
+### oas-tabs
 
-| 事件         | 说明                         |
-| ------------ | ---------------------------- |
-| `oas-change` | 切换，`detail: { value }`    |
-| `oas-close`  | 点击标签关闭 ×，`detail: { key }`（`key` 为该标签 `value`，组件不自动移除） |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `active` | 激活标签的 `value` | — | — |
+| `closable` | 每个标签显示关闭 ×，点击派发 `oas-close`（组件不自动删除） | — | — |
+| `tab-position` | 标签栏位置：`top`（默认）/ `left` / `right` / `bottom` | — | `top` |
+| `type` | 样式变体：`line`（下划线，默认）/ `card`（卡片式） | — | `line` |
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 切换，`detail: { value }` |
+| `oas-close` | 点击标签关闭 ×，`detail: { key }`（`key` 为该标签 `value`，组件不自动移除） |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | — |
+
+### oas-tab-panel
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `badge` | 标签标题旁的徽标（数字或文本） | — | — |
+| `hidden` | — | — | — |
+| `label` | 标签文本 | — | — |
+| `value` | 标签值 | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | — |
 
 键盘：聚焦标签列表后 ← / → / ↑ / ↓ 循环切换；关闭按钮聚焦后 Enter / Space 触发关闭。`oas-tab-panel` 声明 `hidden` 属性隐藏未激活面板（内容保留在 DOM）。

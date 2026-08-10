@@ -23,15 +23,19 @@ An animation component that eases a number from its current value to the target 
 
 ## API
 
-| Attribute | Description                                       | Default |
-| --------- | ------------------------------------------------- | ------- |
-| `value`   | Target value; invalid values treated as 0         | `0`     |
-| `duration`| Animation duration (ms); 0 jumps straight to the target | `1500`  |
-| `to-fixed`| Decimal places (`Number.prototype.toFixed`); when omitted, integer display | none |
+### Attributes
 
-| Event         | Description                                            |
-| ------------- | ------------------------------------------------------ |
-| `oas-finish`  | Emitted once when the animation reaches the target, detail `{ value: target value }` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `duration` | Animation duration (ms); 0 jumps straight to the target | `number \| string` | — |
+| `to-fixed` | Decimal places (`Number.prototype.toFixed`); when omitted, integer display | — | — |
+| `value` | Target value; invalid values treated as 0 | — | `0` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-finish` | Emitted once when the animation reaches the target, detail `{ value: target value }` |
 
 - Changing `value` mid-animation continues from the currently displayed value to the new target.
 - When the system enables "reduce motion", the animation is skipped and the target value is shown directly (`oas-finish` is still emitted).
