@@ -68,7 +68,7 @@ onMounted(() => {
 | `disabled` | Disabled (row inputs + buttons) | `boolean` | — |
 | `max` | Maximum rows; truncates when over | `string` | — |
 | `min` | Minimum rows; auto-fills when below | `string` | `0` |
-| `model-value` | String array (property or JSON) | — | — |
+| `model-value` | String array (property or JSON) | `string[]` | `[]` |
 
 ### Events
 

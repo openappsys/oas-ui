@@ -306,10 +306,12 @@ function extractAttrs(cls, observed, propNames) {
   })
 
   // 类型收尾：as 强转 > 字面量推断（多调用点同类型才采纳）> hasAttr-only boolean。
-  // 有同名 prop 的 attr 不推断（prop 类型更富，gen 回退用 prop 类型，不拿 string 遮蔽）
+  // 有同名 prop 的 attr 不推断（prop 类型更富，gen 回退用 prop 类型，不拿 string 遮蔽）；
+  // attr(kebab) 与 prop(camel) 需规范化互配：model-value ↔ modelValue
   for (const entry of map.values()) {
     if (entry.type !== undefined) continue
-    if (propNames?.has(entry.name)) continue
+    const camel = entry.name.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+    if (propNames?.has(entry.name) || propNames?.has(camel)) continue
     const uniq = [...new Set(entry.inferTypes)]
     if (uniq.length === 1) entry.type = uniq[0]
     else if (entry.has && !entry.get) entry.type = 'boolean'

@@ -64,7 +64,7 @@ onMounted(() => {
 | `allow-duplicate` | Allow duplicate tags | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `max` | Maximum number of tags | `string` | — |
-| `model-value` | Tag array (property or JSON) | — | — |
+| `model-value` | Tag array (property or JSON) | `string[]` | `[]` |
 | `placeholder` | Input placeholder | `string` | — |
 
 ### Events

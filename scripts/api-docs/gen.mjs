@@ -223,7 +223,9 @@ function tagRows(tag, lang) {
     .sort()
     .map((name) => {
       const a = man.attrs.find((x) => x.name === name);
-      const prop = man.props.find((p) => p.name === name);
+      // attr(kebab) 与 prop(camel) 规范化互配：model-value ↔ modelValue
+      const camel = name.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+      const prop = man.props.find((p) => p.name === name || p.name === camel);
       const d = desc.attrs[name] ?? null;
       if (d === null) missing('attrs', name);
       let def = a?.default;

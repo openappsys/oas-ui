@@ -68,7 +68,7 @@ onMounted(() => {
 | `disabled` | 禁用（行内输入 + 按钮） | `boolean` | — |
 | `max` | 最多行数，超长截断 | `string` | — |
 | `min` | 最少行数，不足自动补足 | `string` | `0` |
-| `model-value` | 字符串数组（property 或 JSON） | — | — |
+| `model-value` | 字符串数组（property 或 JSON） | `string[]` | `[]` |
 
 ### 事件
 

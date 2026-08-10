@@ -64,7 +64,7 @@ onMounted(() => {
 | `allow-duplicate` | 允许重复标签 | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `max` | 标签数量上限 | `string` | — |
-| `model-value` | 标签数组（property 或 JSON） | — | — |
+| `model-value` | 标签数组（property 或 JSON） | `string[]` | `[]` |
 | `placeholder` | 输入框占位符 | `string` | — |
 
 ### 事件
