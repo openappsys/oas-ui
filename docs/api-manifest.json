@@ -1,0 +1,4512 @@
+{
+  "oas-button": {
+    "className": "OASButton",
+    "sourceFile": "packages/ui/src/basic/button/oas-button.ts",
+    "attrs": [
+      {
+        "name": "type",
+        "type": "ButtonType",
+        "default": "default",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "type": "ButtonSize",
+        "default": "medium",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "loading",
+        "observed": true
+      },
+      {
+        "name": "icon",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "block",
+        "observed": true
+      },
+      {
+        "name": "round",
+        "observed": true
+      },
+      {
+        "name": "ghost",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-click",
+        "detail": "{ originalEvent: e }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-icon": {
+    "className": "OASIcon",
+    "sourceFile": "packages/ui/src/basic/icon/oas-icon.ts",
+    "attrs": [
+      {
+        "name": "name",
+        "type": "IconName",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "color",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "label",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-tag": {
+    "className": "OASTag",
+    "sourceFile": "packages/ui/src/basic/tag/oas-tag.ts",
+    "attrs": [
+      {
+        "name": "type",
+        "type": "TagType",
+        "default": "default",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "type": "TagSize",
+        "default": "medium",
+        "observed": true
+      },
+      {
+        "name": "closable",
+        "observed": true
+      },
+      {
+        "name": "round",
+        "observed": true
+      },
+      {
+        "name": "chip",
+        "observed": true
+      },
+      {
+        "name": "clickable",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-close"
+      },
+      {
+        "name": "oas-click",
+        "detail": "{ originalEvent: e }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-badge": {
+    "className": "OASBadge",
+    "sourceFile": "packages/ui/src/basic/badge/oas-badge.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "max",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "showZero",
+        "observed": true
+      },
+      {
+        "name": "dot",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-space": {
+    "className": "OASSpace",
+    "sourceFile": "packages/ui/src/basic/space/oas-space.ts",
+    "attrs": [
+      {
+        "name": "direction",
+        "type": "SpaceDirection",
+        "default": "horizontal",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "default": "medium",
+        "observed": true
+      },
+      {
+        "name": "wrap",
+        "observed": true
+      },
+      {
+        "name": "align",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-divider": {
+    "className": "OASDivider",
+    "sourceFile": "packages/ui/src/basic/divider/oas-divider.ts",
+    "attrs": [
+      {
+        "name": "direction",
+        "type": "DividerDirection",
+        "default": "horizontal",
+        "observed": true
+      },
+      {
+        "name": "dashed",
+        "observed": true
+      },
+      {
+        "name": "content-position",
+        "type": "DividerPosition",
+        "default": "center",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-link": {
+    "className": "OASLink",
+    "sourceFile": "packages/ui/src/basic/link/oas-link.ts",
+    "attrs": [
+      {
+        "name": "href",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "type",
+        "type": "LinkType",
+        "default": "default",
+        "observed": true
+      },
+      {
+        "name": "underline",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "target",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-click",
+        "detail": "{ originalEvent: e }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-text": {
+    "className": "OASText",
+    "sourceFile": "packages/ui/src/basic/typography/oas-typography.ts",
+    "attrs": [
+      {
+        "name": "type",
+        "type": "TextType",
+        "default": "default",
+        "observed": true
+      },
+      {
+        "name": "ellipsis",
+        "observed": true
+      },
+      {
+        "name": "copyable",
+        "observed": true
+      },
+      {
+        "name": "level",
+        "default": "3",
+        "observed": false
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-copy",
+        "detail": "{ text }"
+      },
+      {
+        "name": "oas-copy-error",
+        "detail": "{ text }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-title": {
+    "className": "OASTitle",
+    "sourceFile": "packages/ui/src/basic/typography/oas-typography.ts",
+    "attrs": [
+      {
+        "name": "level",
+        "default": "3",
+        "observed": true
+      },
+      {
+        "name": "type",
+        "type": "TextType",
+        "default": "default",
+        "observed": true
+      },
+      {
+        "name": "ellipsis",
+        "observed": true
+      },
+      {
+        "name": "copyable",
+        "observed": false
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-copy",
+        "detail": "{ text }"
+      },
+      {
+        "name": "oas-copy-error",
+        "detail": "{ text }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-paragraph": {
+    "className": "OASParagraph",
+    "sourceFile": "packages/ui/src/basic/typography/oas-typography.ts",
+    "attrs": [
+      {
+        "name": "type",
+        "type": "TextType",
+        "default": "default",
+        "observed": true
+      },
+      {
+        "name": "ellipsis",
+        "observed": true
+      },
+      {
+        "name": "copyable",
+        "observed": true
+      },
+      {
+        "name": "level",
+        "default": "3",
+        "observed": false
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-copy",
+        "detail": "{ text }"
+      },
+      {
+        "name": "oas-copy-error",
+        "detail": "{ text }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-button-group": {
+    "className": "OASButtonGroup",
+    "sourceFile": "packages/ui/src/basic/button-group/oas-button-group.ts",
+    "attrs": [
+      {
+        "name": "type",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "vertical",
+        "observed": true
+      },
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "multiple",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "aria-label",
+        "default": "this.t('buttonGroup.group')",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "selectedValues",
+        "type": "string[]"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: next }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-label": {
+    "className": "OASLabel",
+    "sourceFile": "packages/ui/src/basic/label/oas-label.ts",
+    "attrs": [
+      {
+        "name": "for",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "required",
+        "observed": true
+      },
+      {
+        "name": "position",
+        "default": "after",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-kbd": {
+    "className": "OASKbd",
+    "sourceFile": "packages/ui/src/basic/kbd/oas-kbd.ts",
+    "attrs": [
+      {
+        "name": "keys",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-visually-hidden": {
+    "className": "OASVisuallyHidden",
+    "sourceFile": "packages/ui/src/basic/visually-hidden/oas-visually-hidden.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-input": {
+    "className": "OASInput",
+    "sourceFile": "packages/ui/src/form/input/oas-input.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "placeholder",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "type",
+        "default": "text",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "readonly",
+        "observed": true
+      },
+      {
+        "name": "clearable",
+        "observed": true
+      },
+      {
+        "name": "label",
+        "default": "placeholder",
+        "observed": true
+      },
+      {
+        "name": "addon-before",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "addon-after",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "prefix",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "suffix",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "prefix-icon",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "suffix-icon",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "show-password",
+        "observed": true
+      },
+      {
+        "name": "maxlength",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "show-count",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "prefix",
+        "type": "string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-input",
+        "detail": "{ value: this.inputEl!.value }"
+      },
+      {
+        "name": "oas-enter",
+        "detail": "{ value: this.inputEl!.value }"
+      },
+      {
+        "name": "oas-clear",
+        "detail": "{ originalEvent: new MouseEvent('click') }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-textarea": {
+    "className": "OASTextarea",
+    "sourceFile": "packages/ui/src/form/textarea/oas-textarea.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "placeholder",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "rows",
+        "default": "3",
+        "observed": true
+      },
+      {
+        "name": "resize",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "readonly",
+        "observed": true
+      },
+      {
+        "name": "autosize",
+        "observed": true
+      },
+      {
+        "name": "auto-height",
+        "observed": true
+      },
+      {
+        "name": "min-rows",
+        "default": "1",
+        "observed": true
+      },
+      {
+        "name": "max-rows",
+        "default": "6",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-input",
+        "detail": "{ value: this.ta!.value }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-checkbox": {
+    "className": "OASCheckbox",
+    "sourceFile": "packages/ui/src/form/checkbox/oas-checkbox.ts",
+    "attrs": [
+      {
+        "name": "checked",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "indeterminate",
+        "observed": true
+      },
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ checked, value: this.getAttr('value', '') }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-checkbox-group": {
+    "className": "OASCheckboxGroup",
+    "sourceFile": "packages/ui/src/form/checkbox/oas-checkbox-group.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: [...current] }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      },
+      {
+        "name": "label"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-radio": {
+    "className": "OASRadio",
+    "sourceFile": "packages/ui/src/form/radio/oas-radio.ts",
+    "attrs": [
+      {
+        "name": "checked",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "name",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ checked, value: this.getAttr('value', '') }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-radio-group": {
+    "className": "OASRadioGroup",
+    "sourceFile": "packages/ui/src/form/radio/oas-radio-group.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      },
+      {
+        "name": "label"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-switch": {
+    "className": "OASSwitch",
+    "sourceFile": "packages/ui/src/form/switch/oas-switch.ts",
+    "attrs": [
+      {
+        "name": "checked",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "loading",
+        "observed": true
+      },
+      {
+        "name": "checked-text",
+        "observed": true
+      },
+      {
+        "name": "unchecked-text",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "default": "medium",
+        "observed": true
+      },
+      {
+        "name": "color",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ checked }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-slider": {
+    "className": "OASSlider",
+    "sourceFile": "packages/ui/src/form/slider/oas-slider.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "min",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "max",
+        "default": "100",
+        "observed": true
+      },
+      {
+        "name": "step",
+        "default": "1",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "marks",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "marks",
+        "type": "string | Record<string, string | number> | number[]"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-input",
+        "detail": "{ value: Number(this.input!.value) }"
+      },
+      {
+        "name": "oas-change",
+        "detail": "{ value: Number(this.input!.value) }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-input-number": {
+    "className": "OASInputNumber",
+    "sourceFile": "packages/ui/src/form/input-number/oas-input-number.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "min",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "max",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "step",
+        "default": "1",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "precision",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "label",
+        "default": "this.t('inputNumber.defaultLabel')",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: Number(this.input?.value) || 0 }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-rate": {
+    "className": "OASRate",
+    "sourceFile": "packages/ui/src/form/rate/oas-rate.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "max",
+        "default": "5",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "allow-half",
+        "observed": true
+      },
+      {
+        "name": "allow-clear",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "icon",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: v }"
+      }
+    ],
+    "slots": [
+      {
+        "name": "icon"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-select": {
+    "className": "OASSelect",
+    "sourceFile": "packages/ui/src/form/select/oas-select.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "this.hasAttr('multiple') ? '[]' : ''",
+        "observed": true
+      },
+      {
+        "name": "placeholder",
+        "default": "this.t('select.placeholder')",
+        "observed": true
+      },
+      {
+        "name": "options",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "multiple",
+        "observed": true
+      },
+      {
+        "name": "searchable",
+        "observed": true
+      },
+      {
+        "name": "clearable",
+        "observed": true
+      },
+      {
+        "name": "remote",
+        "observed": true
+      },
+      {
+        "name": "loading",
+        "observed": true
+      },
+      {
+        "name": "max-tag-count",
+        "observed": true
+      },
+      {
+        "name": "allow-create",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "options",
+        "type": "Option[] | string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-input",
+        "detail": "{ value: v }"
+      },
+      {
+        "name": "oas-change",
+        "detail": "{ value: next }"
+      },
+      {
+        "name": "oas-clear",
+        "detail": "{ value: [...prev] }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-auto-complete": {
+    "className": "OASAutoComplete",
+    "sourceFile": "packages/ui/src/form/auto-complete/oas-auto-complete.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "placeholder",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "options",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "options",
+        "type": "Option[] | string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-input",
+        "detail": "{ value: this.query }"
+      },
+      {
+        "name": "oas-change",
+        "detail": "{ value: option.value, label: option.label }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-combobox": {
+    "className": "OASCombobox",
+    "sourceFile": "packages/ui/src/form/combobox/oas-combobox.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "placeholder",
+        "default": "this.t('select.placeholder')",
+        "observed": true
+      },
+      {
+        "name": "options",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "clearable",
+        "observed": true
+      },
+      {
+        "name": "loading",
+        "observed": true
+      },
+      {
+        "name": "filterable",
+        "default": "true",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "options",
+        "type": "Option[] | string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-input",
+        "detail": "{ value: this.query }"
+      },
+      {
+        "name": "oas-change",
+        "detail": "{ value: option.value }"
+      },
+      {
+        "name": "oas-clear",
+        "detail": "{ value: prev }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-cascader": {
+    "className": "OASCascader",
+    "sourceFile": "packages/ui/src/form/cascader/oas-cascader.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "placeholder",
+        "default": "this.t('cascader.placeholder')",
+        "observed": true
+      },
+      {
+        "name": "options",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "change-on-select",
+        "observed": true
+      },
+      {
+        "name": "show-all-levels",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "options",
+        "type": "CascaderOption[] | string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: path }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-tree-select": {
+    "className": "OASTreeSelect",
+    "sourceFile": "packages/ui/src/form/tree-select/oas-tree-select.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "placeholder",
+        "default": "this.t('treeSelect.placeholder')",
+        "observed": true
+      },
+      {
+        "name": "options",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "multiple",
+        "observed": true
+      },
+      {
+        "name": "expanded",
+        "default": "[]",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "options",
+        "type": "TreeOption[] | string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: values }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-mentions": {
+    "className": "OASMentions",
+    "sourceFile": "packages/ui/src/form/mentions/oas-mentions.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "options",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "prefix",
+        "default": "@",
+        "observed": true
+      },
+      {
+        "name": "placeholder",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "label",
+        "default": "placeholder",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "options",
+        "type": "Option[] | string"
+      },
+      {
+        "name": "prefix",
+        "type": "string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-input",
+        "detail": "{ value: this.ta!.value }"
+      },
+      {
+        "name": "oas-select",
+        "detail": "{ value: option.value, label: option.label }"
+      },
+      {
+        "name": "oas-change",
+        "detail": "{ value: next }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-form": {
+    "className": "OASForm",
+    "sourceFile": "packages/ui/src/form/form/oas-form.ts",
+    "attrs": [
+      {
+        "name": "rules",
+        "default": "{}",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "rules",
+        "type": "Rules | string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-submit",
+        "detail": "{ values }"
+      },
+      {
+        "name": "oas-validate-fail",
+        "detail": "{ errors: this.errors, values }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-calendar": {
+    "className": "OASCalendar",
+    "sourceFile": "packages/ui/src/form/calendar/oas-calendar.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "mode",
+        "default": "month",
+        "observed": true
+      },
+      {
+        "name": "min",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "max",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "show-week-number",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "disabledDate",
+        "type": "((d: Date) => boolean) | null"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: iso }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-date-picker": {
+    "className": "OASDatePicker",
+    "sourceFile": "packages/ui/src/form/date-picker/oas-date-picker.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "format",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "type",
+        "default": "date",
+        "observed": true
+      },
+      {
+        "name": "min",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "max",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "placeholder",
+        "default": "this.t('datePicker.placeholder')",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "pickerType",
+        "type": "PickerType"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-time-picker": {
+    "className": "OASTimePicker",
+    "sourceFile": "packages/ui/src/form/time-picker/oas-time-picker.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "format",
+        "default": "HH:mm:ss",
+        "observed": true
+      },
+      {
+        "name": "step",
+        "default": "1",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-upload": {
+    "className": "OASUpload",
+    "sourceFile": "packages/ui/src/form/upload/oas-upload.ts",
+    "attrs": [
+      {
+        "name": "accept",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "multiple",
+        "observed": true
+      },
+      {
+        "name": "max",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "auto-upload",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "files",
+        "type": "File[]"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ files: this.files }"
+      },
+      {
+        "name": "oas-upload",
+        "detail": "{ file: f, percent: st.percent, status: st.percent >= 100 ? 'done' : 'uploading', }"
+      },
+      {
+        "name": "oas-remove",
+        "detail": "{ file, index }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-transfer": {
+    "className": "OASTransfer",
+    "sourceFile": "packages/ui/src/form/transfer/oas-transfer.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "titles",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "source-title",
+        "observed": true
+      },
+      {
+        "name": "target-title",
+        "observed": true
+      },
+      {
+        "name": "searchable",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "data",
+        "type": "TransferItem[]"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: next }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-color-picker": {
+    "className": "OASColorPicker",
+    "sourceFile": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "preset",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: normalized }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-toggle-button": {
+    "className": "OASToggleButton",
+    "sourceFile": "packages/ui/src/form/toggle-button/oas-toggle-button.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "pressed",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: this.getAttr('value', ''), pressed }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-toggle-group": {
+    "className": "OASToggleGroup",
+    "sourceFile": "packages/ui/src/form/toggle-group/oas-toggle-group.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "multiple",
+        "observed": true
+      },
+      {
+        "name": "items",
+        "default": "[]",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: next }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-pin-input": {
+    "className": "OASPinInput",
+    "sourceFile": "packages/ui/src/form/pin-input/oas-pin-input.ts",
+    "attrs": [
+      {
+        "name": "length",
+        "default": "6",
+        "observed": true
+      },
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "mask",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "readonly",
+        "observed": true
+      },
+      {
+        "name": "type",
+        "default": "text",
+        "observed": true
+      },
+      {
+        "name": "aria-invalid",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-input",
+        "detail": "{ value: code, index: idx }"
+      },
+      {
+        "name": "oas-change",
+        "detail": "{ value: code }"
+      },
+      {
+        "name": "oas-complete",
+        "detail": "{ value: code }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-dynamic-input": {
+    "className": "OASDynamicInput",
+    "sourceFile": "packages/ui/src/form/dynamic-input/oas-dynamic-input.ts",
+    "attrs": [
+      {
+        "name": "min",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "max",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "default-value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "model-value",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "modelValue",
+        "type": "string[]"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: this.values.slice() }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-dynamic-tags": {
+    "className": "OASDynamicTags",
+    "sourceFile": "packages/ui/src/form/dynamic-tags/oas-dynamic-tags.ts",
+    "attrs": [
+      {
+        "name": "model-value",
+        "observed": true
+      },
+      {
+        "name": "max",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "allow-duplicate",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "placeholder",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "modelValue",
+        "type": "string[]"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-add",
+        "detail": "{ value }"
+      },
+      {
+        "name": "oas-remove",
+        "detail": "{ value: removed }"
+      },
+      {
+        "name": "oas-change",
+        "detail": "{ value: this.tags.slice() }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-editable": {
+    "className": "OASEditable",
+    "sourceFile": "packages/ui/src/form/editable/oas-editable.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "placeholder",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "submit-on-enter",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "maxlength",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-cancel",
+        "detail": "{ value: oldValue }"
+      },
+      {
+        "name": "oas-change",
+        "detail": "{ value: next }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-message": {
+    "className": "OASMessage",
+    "sourceFile": "packages/ui/src/feedback/message/oas-message.ts",
+    "attrs": [
+      {
+        "name": "type",
+        "default": "info",
+        "observed": true
+      },
+      {
+        "name": "duration",
+        "default": "3000",
+        "observed": false
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-notification": {
+    "className": "OASNotification",
+    "sourceFile": "packages/ui/src/feedback/notification/oas-notification.ts",
+    "attrs": [
+      {
+        "name": "type",
+        "default": "info",
+        "observed": true
+      },
+      {
+        "name": "title",
+        "default": "",
+        "observed": false
+      },
+      {
+        "name": "description",
+        "default": "",
+        "observed": false
+      },
+      {
+        "name": "duration",
+        "default": "4500",
+        "observed": false
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-toast": {
+    "className": "OASToast",
+    "sourceFile": "packages/ui/src/feedback/toast/oas-toast.ts",
+    "attrs": [
+      {
+        "name": "type",
+        "default": "info",
+        "observed": true
+      },
+      {
+        "name": "closable",
+        "observed": false
+      },
+      {
+        "name": "title",
+        "default": "",
+        "observed": false
+      },
+      {
+        "name": "description",
+        "default": "",
+        "observed": false
+      },
+      {
+        "name": "duration",
+        "default": "3000",
+        "observed": false
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-snackbar": {
+    "className": "OASSnackbar",
+    "sourceFile": "packages/ui/src/feedback/snackbar/oas-snackbar.ts",
+    "attrs": [
+      {
+        "name": "open",
+        "observed": true
+      },
+      {
+        "name": "message",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "action-text",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "duration",
+        "default": "4000",
+        "observed": true
+      },
+      {
+        "name": "direction",
+        "observed": true
+      },
+      {
+        "name": "offset",
+        "default": "24",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-action"
+      },
+      {
+        "name": "oas-close"
+      },
+      {
+        "name": "oas-open"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-backdrop": {
+    "className": "OASBackdrop",
+    "sourceFile": "packages/ui/src/feedback/backdrop/oas-backdrop.ts",
+    "attrs": [
+      {
+        "name": "open",
+        "observed": true
+      },
+      {
+        "name": "transparent",
+        "observed": true
+      },
+      {
+        "name": "blur",
+        "observed": true
+      },
+      {
+        "name": "lock-scroll",
+        "default": "true",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-click",
+        "detail": "{ originalEvent: e }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-modal": {
+    "className": "OASModal",
+    "sourceFile": "packages/ui/src/feedback/modal/oas-modal.ts",
+    "attrs": [
+      {
+        "name": "visible",
+        "observed": true
+      },
+      {
+        "name": "title",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "no-footer",
+        "observed": true
+      },
+      {
+        "name": "width",
+        "observed": true
+      },
+      {
+        "name": "centered",
+        "observed": true
+      },
+      {
+        "name": "draggable",
+        "observed": true
+      },
+      {
+        "name": "no-mask-close",
+        "observed": false
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-ok"
+      },
+      {
+        "name": "oas-cancel"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-drawer": {
+    "className": "OASDrawer",
+    "sourceFile": "packages/ui/src/feedback/drawer/oas-drawer.ts",
+    "attrs": [
+      {
+        "name": "visible",
+        "observed": true
+      },
+      {
+        "name": "title",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "placement",
+        "default": "right",
+        "observed": true
+      },
+      {
+        "name": "no-footer",
+        "observed": true
+      },
+      {
+        "name": "width",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "observed": true
+      },
+      {
+        "name": "no-mask-close",
+        "observed": false
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-ok"
+      },
+      {
+        "name": "oas-close"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-popconfirm": {
+    "className": "OASPopconfirm",
+    "sourceFile": "packages/ui/src/feedback/popconfirm/oas-popconfirm.ts",
+    "attrs": [
+      {
+        "name": "open",
+        "observed": true
+      },
+      {
+        "name": "title",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "position",
+        "default": "top",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-ok"
+      },
+      {
+        "name": "oas-cancel"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-alert": {
+    "className": "OASAlert",
+    "sourceFile": "packages/ui/src/feedback/alert/oas-alert.ts",
+    "attrs": [
+      {
+        "name": "type",
+        "default": "info",
+        "observed": true
+      },
+      {
+        "name": "title",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "closeable",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-close"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-progress": {
+    "className": "OASProgress",
+    "sourceFile": "packages/ui/src/feedback/progress/oas-progress.ts",
+    "attrs": [
+      {
+        "name": "percent",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "status",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "no-text",
+        "observed": true
+      },
+      {
+        "name": "show-text",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "type",
+        "default": "line",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "default": "48",
+        "observed": true
+      },
+      {
+        "name": "stroke-width",
+        "default": "6",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-loading-bar": {
+    "className": "OASLoadingBar",
+    "sourceFile": "packages/ui/src/feedback/loading-bar/oas-loading-bar.ts",
+    "attrs": [
+      {
+        "name": "status",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-spin": {
+    "className": "OASSpin",
+    "sourceFile": "packages/ui/src/feedback/spin/oas-spin.ts",
+    "attrs": [
+      {
+        "name": "size",
+        "default": "md",
+        "observed": true
+      },
+      {
+        "name": "spinning",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-skeleton": {
+    "className": "OASSkeleton",
+    "sourceFile": "packages/ui/src/feedback/skeleton/oas-skeleton.ts",
+    "attrs": [
+      {
+        "name": "rows",
+        "default": "3",
+        "observed": true
+      },
+      {
+        "name": "title",
+        "observed": true
+      },
+      {
+        "name": "avatar",
+        "observed": true
+      },
+      {
+        "name": "active",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-empty": {
+    "className": "OASEmpty",
+    "sourceFile": "packages/ui/src/feedback/empty/oas-empty.ts",
+    "attrs": [
+      {
+        "name": "description",
+        "observed": true
+      },
+      {
+        "name": "hide-image",
+        "observed": true
+      },
+      {
+        "name": "illustration",
+        "observed": true
+      },
+      {
+        "name": "image-size",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": "action"
+      },
+      {
+        "name": "illustration"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-result": {
+    "className": "OASResult",
+    "sourceFile": "packages/ui/src/feedback/result/oas-result.ts",
+    "attrs": [
+      {
+        "name": "status",
+        "default": "success",
+        "observed": true
+      },
+      {
+        "name": "title",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "description",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": "extra"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-tooltip": {
+    "className": "OAStooltip",
+    "sourceFile": "packages/ui/src/floating/tooltip/oas-tooltip.ts",
+    "attrs": [
+      {
+        "name": "open",
+        "observed": true
+      },
+      {
+        "name": "content",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "placement",
+        "type": "Placement",
+        "default": "top",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-popover": {
+    "className": "OASPopover",
+    "sourceFile": "packages/ui/src/floating/popover/oas-popover.ts",
+    "attrs": [
+      {
+        "name": "open",
+        "observed": true
+      },
+      {
+        "name": "title",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "content",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "placement",
+        "type": "Placement",
+        "default": "top",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      },
+      {
+        "name": "content"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-menu": {
+    "className": "OASMenu",
+    "sourceFile": "packages/ui/src/floating/menu/oas-menu.ts",
+    "attrs": [
+      {
+        "name": "items",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "mode",
+        "observed": true
+      },
+      {
+        "name": "collapsed",
+        "observed": true
+      },
+      {
+        "name": "theme",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-select",
+        "detail": "{ value: item.value }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-dropdown": {
+    "className": "OASDropdown",
+    "sourceFile": "packages/ui/src/floating/dropdown/oas-dropdown.ts",
+    "attrs": [
+      {
+        "name": "open",
+        "observed": true
+      },
+      {
+        "name": "items",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "placement",
+        "type": "Placement",
+        "default": "bottom",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-select",
+        "detail": "{ value: item.value }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-context-menu": {
+    "className": "OASContextMenu",
+    "sourceFile": "packages/ui/src/floating/contextmenu/oas-context-menu.ts",
+    "attrs": [
+      {
+        "name": "items",
+        "default": "[]",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-select",
+        "detail": "{ value: detail.value }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-hover-card": {
+    "className": "OASHoverCard",
+    "sourceFile": "packages/ui/src/floating/hover-card/oas-hover-card.ts",
+    "attrs": [
+      {
+        "name": "open",
+        "observed": true
+      },
+      {
+        "name": "title",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "content",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "placement",
+        "type": "Placement",
+        "default": "top",
+        "observed": true
+      },
+      {
+        "name": "delay",
+        "default": "100",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-command": {
+    "className": "OASCommand",
+    "sourceFile": "packages/ui/src/floating/command/oas-command.ts",
+    "attrs": [
+      {
+        "name": "items",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "open",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-select",
+        "detail": "{ value: item.value }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-menubar": {
+    "className": "OASMenubar",
+    "sourceFile": "packages/ui/src/floating/menubar/oas-menubar.ts",
+    "attrs": [
+      {
+        "name": "items",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-select",
+        "detail": "{ value: item.value }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-navigation-menu": {
+    "className": "OASNavigationMenu",
+    "sourceFile": "packages/ui/src/floating/navigation-menu/oas-navigation-menu.ts",
+    "attrs": [
+      {
+        "name": "items",
+        "default": "[]",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-select",
+        "detail": "{ value: item.value }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-toolbar": {
+    "className": "OASToolbar",
+    "sourceFile": "packages/ui/src/floating/toolbar/oas-toolbar.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-config-provider": {
+    "className": "OASConfigProvider",
+    "sourceFile": "packages/ui/src/floating/config-provider/oas-config-provider.ts",
+    "attrs": [
+      {
+        "name": "locale",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "observed": true
+      },
+      {
+        "name": "theme",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-app": {
+    "className": "OASApp",
+    "sourceFile": "packages/ui/src/floating/app/oas-app.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-scroll-area": {
+    "className": "OASScrollArea",
+    "sourceFile": "packages/ui/src/floating/scroll-area/oas-scroll-area.ts",
+    "attrs": [
+      {
+        "name": "height",
+        "observed": true
+      },
+      {
+        "name": "width",
+        "observed": true
+      },
+      {
+        "name": "auto-hide",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-scroll",
+        "detail": "{ scrollTop: vp ? vp.scrollTop : 0, scrollLeft: vp ? vp.scrollLeft : 0, }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-speed-dial": {
+    "className": "OASSpeedDial",
+    "sourceFile": "packages/ui/src/floating/speed-dial/oas-speed-dial.ts",
+    "attrs": [
+      {
+        "name": "actions",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "direction",
+        "default": "up",
+        "observed": true
+      },
+      {
+        "name": "open",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-open",
+        "detail": "{ open: true }"
+      },
+      {
+        "name": "oas-select",
+        "detail": "{ index, label: action.label }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-theme-editor": {
+    "className": "OASThemeEditor",
+    "sourceFile": "packages/ui/src/floating/theme-editor/oas-theme-editor.ts",
+    "attrs": [
+      {
+        "name": "token",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ token: def.name, value }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-breadcrumb": {
+    "className": "OASBreadcrumb",
+    "sourceFile": "packages/ui/src/navigation/breadcrumb/oas-breadcrumb.ts",
+    "attrs": [
+      {
+        "name": "items",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "separator",
+        "default": "/",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-select",
+        "detail": "{ value: item.href }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-back-top": {
+    "className": "OASBackTop",
+    "sourceFile": "packages/ui/src/navigation/back-top/oas-back-top.ts",
+    "attrs": [
+      {
+        "name": "visible",
+        "observed": true
+      },
+      {
+        "name": "bottom",
+        "default": "32px",
+        "observed": true
+      },
+      {
+        "name": "right",
+        "default": "32px",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-click"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-anchor": {
+    "className": "OASAnchor",
+    "sourceFile": "packages/ui/src/navigation/anchor/oas-anchor.ts",
+    "attrs": [
+      {
+        "name": "items",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "active",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "offset",
+        "default": "0",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "items",
+        "type": "AnchorItem[] | string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ href: item.href }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-tour": {
+    "className": "OAStour",
+    "sourceFile": "packages/ui/src/navigation/tour/oas-tour.ts",
+    "attrs": [
+      {
+        "name": "open",
+        "observed": true
+      },
+      {
+        "name": "steps",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "current",
+        "default": "0",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "steps",
+        "type": "TourStep[] | string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-finish"
+      },
+      {
+        "name": "oas-step",
+        "detail": "{ index: this.current }"
+      },
+      {
+        "name": "oas-cancel"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-bottom-navigation": {
+    "className": "OASBottomNavigation",
+    "sourceFile": "packages/ui/src/navigation/bottom-navigation/oas-bottom-navigation.ts",
+    "attrs": [
+      {
+        "name": "items",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "value",
+        "observed": true
+      },
+      {
+        "name": "fixed",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: item.value }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-segmented": {
+    "className": "OASSegmented",
+    "sourceFile": "packages/ui/src/layout/segmented/oas-segmented.ts",
+    "attrs": [
+      {
+        "name": "options",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: option.value }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-flex": {
+    "className": "OASFlex",
+    "sourceFile": "packages/ui/src/layout/flex/oas-flex.ts",
+    "attrs": [
+      {
+        "name": "direction",
+        "default": "row",
+        "observed": true
+      },
+      {
+        "name": "justify",
+        "default": "start",
+        "observed": true
+      },
+      {
+        "name": "align",
+        "default": "stretch",
+        "observed": true
+      },
+      {
+        "name": "gap",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "wrap",
+        "observed": true
+      },
+      {
+        "name": "vertical",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-steps": {
+    "className": "OASSteps",
+    "sourceFile": "packages/ui/src/layout/steps/oas-steps.ts",
+    "attrs": [
+      {
+        "name": "steps",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "current",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "direction",
+        "default": "horizontal",
+        "observed": true
+      },
+      {
+        "name": "clickable",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "steps",
+        "type": "StepItem[] | string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ index: idx }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-pagination": {
+    "className": "OASPagination",
+    "sourceFile": "packages/ui/src/layout/pagination/oas-pagination.ts",
+    "attrs": [
+      {
+        "name": "total",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "page-size",
+        "default": "10",
+        "observed": true
+      },
+      {
+        "name": "current",
+        "default": "1",
+        "observed": true
+      },
+      {
+        "name": "siblings",
+        "default": "1",
+        "observed": true
+      },
+      {
+        "name": "show-total",
+        "observed": true
+      },
+      {
+        "name": "page-sizes",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "show-jumper",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ page }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-tabs": {
+    "className": "OASTabs",
+    "sourceFile": "packages/ui/src/layout/tabs/oas-tabs.ts",
+    "attrs": [
+      {
+        "name": "active",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "type",
+        "default": "line",
+        "observed": true
+      },
+      {
+        "name": "closable",
+        "observed": true
+      },
+      {
+        "name": "tab-position",
+        "default": "top",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-close",
+        "detail": "{ key: value }"
+      },
+      {
+        "name": "oas-change",
+        "detail": "{ value }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-tab-panel": {
+    "className": "OASTabPanel",
+    "sourceFile": "packages/ui/src/layout/tabs/oas-tab-panel.ts",
+    "attrs": [
+      {
+        "name": "label",
+        "observed": true
+      },
+      {
+        "name": "value",
+        "observed": true
+      },
+      {
+        "name": "hidden",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-affix": {
+    "className": "OASAffix",
+    "sourceFile": "packages/ui/src/layout/affix/oas-affix.ts",
+    "attrs": [
+      {
+        "name": "offset",
+        "default": "0",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-splitter": {
+    "className": "OASSplitter",
+    "sourceFile": "packages/ui/src/layout/splitter/oas-splitter.ts",
+    "attrs": [
+      {
+        "name": "percent",
+        "default": "50",
+        "observed": true
+      },
+      {
+        "name": "min",
+        "default": "10",
+        "observed": true
+      },
+      {
+        "name": "max",
+        "default": "90",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-resize",
+        "detail": "{ percent: clamped }"
+      }
+    ],
+    "slots": [
+      {
+        "name": "left"
+      },
+      {
+        "name": "right"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-page-header": {
+    "className": "OASPageHeader",
+    "sourceFile": "packages/ui/src/layout/page-header/oas-page-header.ts",
+    "attrs": [
+      {
+        "name": "title",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "back",
+        "observed": true
+      },
+      {
+        "name": "subtitle",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-back"
+      }
+    ],
+    "slots": [
+      {
+        "name": "extra"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-float-button": {
+    "className": "OASFloatButton",
+    "sourceFile": "packages/ui/src/layout/float-button/oas-float-button.ts",
+    "attrs": [
+      {
+        "name": "badge",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-click"
+      }
+    ],
+    "slots": [
+      {
+        "name": "icon"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-layout": {
+    "className": "OASLayout",
+    "sourceFile": "packages/ui/src/layout/layout/oas-layout.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": "content"
+      },
+      {
+        "name": "footer"
+      },
+      {
+        "name": "header"
+      },
+      {
+        "name": "sider"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-header": {
+    "className": "OASHeader",
+    "sourceFile": "packages/ui/src/layout/layout/oas-header.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-sider": {
+    "className": "OASSider",
+    "sourceFile": "packages/ui/src/layout/layout/oas-sider.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-content": {
+    "className": "OASContent",
+    "sourceFile": "packages/ui/src/layout/layout/oas-content.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-footer": {
+    "className": "OASFooter",
+    "sourceFile": "packages/ui/src/layout/layout/oas-footer.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-grid": {
+    "className": "OASGrid",
+    "sourceFile": "packages/ui/src/layout/grid/oas-grid.ts",
+    "attrs": [
+      {
+        "name": "gap",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "cols",
+        "default": "24",
+        "observed": true
+      },
+      {
+        "name": "columns",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-grid-item": {
+    "className": "OASGridItem",
+    "sourceFile": "packages/ui/src/layout/grid/oas-grid-item.ts",
+    "attrs": [
+      {
+        "name": "span",
+        "default": "24",
+        "observed": true
+      },
+      {
+        "name": "offset",
+        "default": "0",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-sidebar": {
+    "className": "OASSidebar",
+    "sourceFile": "packages/ui/src/layout/sidebar/oas-sidebar.ts",
+    "attrs": [
+      {
+        "name": "collapsed",
+        "observed": true
+      },
+      {
+        "name": "items",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "width",
+        "observed": true
+      },
+      {
+        "name": "mobile-breakpoint",
+        "default": "String(DEFAULT_BREAKPOINT)",
+        "observed": true
+      },
+      {
+        "name": "drawer-open",
+        "observed": false
+      }
+    ],
+    "props": [
+      {
+        "name": "items",
+        "type": "SidebarItem[] | string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-select",
+        "detail": "{ value: item.value, label: item.label }"
+      },
+      {
+        "name": "oas-collapse",
+        "detail": "{ collapsed: !collapsed }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      },
+      {
+        "name": "footer"
+      },
+      {
+        "name": "header"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-container": {
+    "className": "OASContainer",
+    "sourceFile": "packages/ui/src/layout/container/oas-container.ts",
+    "attrs": [
+      {
+        "name": "size",
+        "default": "lg",
+        "observed": true
+      },
+      {
+        "name": "center",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "padding",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-card": {
+    "className": "OASCard",
+    "sourceFile": "packages/ui/src/data/card/oas-card.ts",
+    "attrs": [
+      {
+        "name": "title",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "hoverable",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      },
+      {
+        "name": "extra"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-avatar": {
+    "className": "OASAvatar",
+    "sourceFile": "packages/ui/src/data/avatar/oas-avatar.ts",
+    "attrs": [
+      {
+        "name": "src",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "default": "32",
+        "observed": true
+      },
+      {
+        "name": "alt",
+        "default": "this.t('avatar.defaultAlt')",
+        "observed": false
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-avatar-group": {
+    "className": "OASAvatarGroup",
+    "sourceFile": "packages/ui/src/data/avatar-group/oas-avatar-group.ts",
+    "attrs": [
+      {
+        "name": "max",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-image": {
+    "className": "OASImage",
+    "sourceFile": "packages/ui/src/data/image/oas-image.ts",
+    "attrs": [
+      {
+        "name": "src",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "alt",
+        "default": "this.t('image.defaultAlt')",
+        "observed": true
+      },
+      {
+        "name": "preview",
+        "observed": true
+      },
+      {
+        "name": "fit",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "placeholder",
+        "observed": true
+      },
+      {
+        "name": "fallback",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-preview",
+        "detail": "{ src }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-qrcode": {
+    "className": "OASQRCode",
+    "sourceFile": "packages/ui/src/data/qrcode/oas-qrcode.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "default": "128",
+        "observed": true
+      },
+      {
+        "name": "error-correction",
+        "observed": true
+      },
+      {
+        "name": "aria-label",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-watermark": {
+    "className": "OASWatermark",
+    "sourceFile": "packages/ui/src/data/watermark/oas-watermark.ts",
+    "attrs": [
+      {
+        "name": "text",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "image",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "opacity",
+        "default": "0.15",
+        "observed": true
+      },
+      {
+        "name": "repeat",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-collapse": {
+    "className": "OASCollapse",
+    "sourceFile": "packages/ui/src/data/collapse/oas-collapse.ts",
+    "attrs": [
+      {
+        "name": "active",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "accordion",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ active: [...active] }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-collapse-item": {
+    "className": "OASCollapseItem",
+    "sourceFile": "packages/ui/src/data/collapse/oas-collapse-item.ts",
+    "attrs": [
+      {
+        "name": "name",
+        "observed": true
+      },
+      {
+        "name": "header",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "open",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-collapse-item-click"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-descriptions": {
+    "className": "OASDescriptions",
+    "sourceFile": "packages/ui/src/data/descriptions/oas-descriptions.ts",
+    "attrs": [
+      {
+        "name": "column",
+        "default": "3",
+        "observed": true
+      },
+      {
+        "name": "title",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-descriptions-item": {
+    "className": "OASDescriptionsItem",
+    "sourceFile": "packages/ui/src/data/descriptions/oas-descriptions-item.ts",
+    "attrs": [
+      {
+        "name": "label",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-timeline": {
+    "className": "OASTimeline",
+    "sourceFile": "packages/ui/src/data/timeline/oas-timeline.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-timeline-item": {
+    "className": "OASTimelineItem",
+    "sourceFile": "packages/ui/src/data/timeline/oas-timeline-item.ts",
+    "attrs": [
+      {
+        "name": "time",
+        "observed": true
+      },
+      {
+        "name": "color",
+        "observed": true
+      },
+      {
+        "name": "pending",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-list": {
+    "className": "OASList",
+    "sourceFile": "packages/ui/src/data/list/oas-list.ts",
+    "attrs": [
+      {
+        "name": "bordered",
+        "observed": true
+      },
+      {
+        "name": "split",
+        "observed": true
+      },
+      {
+        "name": "loading",
+        "observed": true
+      },
+      {
+        "name": "empty",
+        "observed": true
+      },
+      {
+        "name": "empty-text",
+        "default": "this.t('list.empty')",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-list-item": {
+    "className": "OASListItem",
+    "sourceFile": "packages/ui/src/data/list/oas-list-item.ts",
+    "attrs": [
+      {
+        "name": "title",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": "description"
+      },
+      {
+        "name": "extra"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-carousel": {
+    "className": "OASCarousel",
+    "sourceFile": "packages/ui/src/data/carousel/oas-carousel.ts",
+    "attrs": [
+      {
+        "name": "index",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "autoplay",
+        "observed": true
+      },
+      {
+        "name": "interval",
+        "default": "3000",
+        "observed": true
+      },
+      {
+        "name": "arrows",
+        "default": "hover",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ index: next }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-tree": {
+    "className": "OASTree",
+    "sourceFile": "packages/ui/src/data/tree/oas-tree.ts",
+    "attrs": [
+      {
+        "name": "data",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "selected",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "checked",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "checkable",
+        "observed": true
+      },
+      {
+        "name": "expanded",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "height",
+        "default": "360",
+        "observed": true
+      },
+      {
+        "name": "row-height",
+        "default": "32",
+        "observed": true
+      },
+      {
+        "name": "lazy",
+        "observed": true
+      },
+      {
+        "name": "draggable",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-node-drop",
+        "detail": "{ dragKey: this.dragKey, dropKey: '', position: 'inner' }"
+      },
+      {
+        "name": "oas-load",
+        "detail": "{ key: node.key }"
+      },
+      {
+        "name": "oas-check",
+        "detail": "{ key: node.key, checked: box.checked }"
+      },
+      {
+        "name": "oas-select",
+        "detail": "{ key: node.key, selected: true }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-table": {
+    "className": "OASTable",
+    "sourceFile": "packages/ui/src/data/table/oas-table.ts",
+    "attrs": [
+      {
+        "name": "columns",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "data",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "sort-key",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "sort-order",
+        "type": "SortOrder",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "row-key",
+        "default": "key",
+        "observed": true
+      },
+      {
+        "name": "checkable",
+        "observed": true
+      },
+      {
+        "name": "loading",
+        "observed": true
+      },
+      {
+        "name": "height",
+        "default": "320",
+        "observed": true
+      },
+      {
+        "name": "row-height",
+        "default": "40",
+        "observed": true
+      },
+      {
+        "name": "stripe",
+        "observed": true
+      },
+      {
+        "name": "bordered",
+        "observed": true
+      },
+      {
+        "name": "expanded",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "summary",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "selected",
+        "default": "",
+        "observed": false
+      },
+      {
+        "name": "empty-text",
+        "default": "this.t('table.empty')",
+        "observed": false
+      }
+    ],
+    "props": [
+      {
+        "name": "columns",
+        "type": "TableColumn[] | string"
+      },
+      {
+        "name": "data",
+        "type": "Array<Record<string, unknown>> | string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-check",
+        "detail": "{ keys: selectAll.checked ? keys : [] }"
+      },
+      {
+        "name": "oas-row-click",
+        "detail": "{ row, key }"
+      },
+      {
+        "name": "oas-expand",
+        "detail": "{ key, expanded }"
+      },
+      {
+        "name": "oas-sort-change",
+        "detail": "{ key, order: nextOrder }"
+      },
+      {
+        "name": "oas-scroll",
+        "detail": "{ scrollTop: st, start: win.start, end: win.end }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-virtual-list": {
+    "className": "OASVirtualList",
+    "sourceFile": "packages/ui/src/data/virtual-list/oas-virtual-list.ts",
+    "attrs": [
+      {
+        "name": "height",
+        "default": "320",
+        "observed": true
+      },
+      {
+        "name": "item-height",
+        "default": "36",
+        "observed": true
+      },
+      {
+        "name": "buffer",
+        "default": "4",
+        "observed": true
+      },
+      {
+        "name": "scroll-target",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "items",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "items",
+        "type": "unknown[]"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-item",
+        "detail": "{ index: i, item, element: el }"
+      },
+      {
+        "name": "oas-scroll",
+        "detail": "{ scrollTop, start: this.start, end: this.end }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-countdown": {
+    "className": "OASCountdown",
+    "sourceFile": "packages/ui/src/data/countdown/oas-countdown.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "format",
+        "default": "HH:mm:ss",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-finish"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-statistic": {
+    "className": "OASStatistic",
+    "sourceFile": "packages/ui/src/data/statistic/oas-statistic.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "precision",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "prefix",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "suffix",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "group-separator",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "loading",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "prefix",
+        "type": "string"
+      }
+    ],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-ellipsis": {
+    "className": "OASEllipsis",
+    "sourceFile": "packages/ui/src/data/ellipsis/oas-ellipsis.ts",
+    "attrs": [
+      {
+        "name": "text",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "rows",
+        "default": "1",
+        "observed": true
+      },
+      {
+        "name": "tooltip",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "expandable",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-expand",
+        "detail": "{ expanded: this.expanded }"
+      },
+      {
+        "name": "oas-collapse",
+        "detail": "{ expanded: this.expanded }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-marquee": {
+    "className": "OASMarquee",
+    "sourceFile": "packages/ui/src/data/marquee/oas-marquee.ts",
+    "attrs": [
+      {
+        "name": "speed",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "pause-on-hover",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-number-animation": {
+    "className": "OASNumberAnimation",
+    "sourceFile": "packages/ui/src/data/number-animation/oas-number-animation.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "duration",
+        "default": "String(DEFAULT_DURATION)",
+        "observed": true
+      },
+      {
+        "name": "to-fixed",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "duration",
+        "type": "number | string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-finish",
+        "detail": "{ value: target }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-gradient-text": {
+    "className": "OASGradientText",
+    "sourceFile": "packages/ui/src/data/gradient-text/oas-gradient-text.ts",
+    "attrs": [
+      {
+        "name": "gradient",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "direction",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-aspect-ratio": {
+    "className": "OASAspectRatio",
+    "sourceFile": "packages/ui/src/data/aspect-ratio/oas-aspect-ratio.ts",
+    "attrs": [
+      {
+        "name": "ratio",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-chart": {
+    "className": "OASChart",
+    "sourceFile": "packages/ui/src/data/chart/oas-chart.ts",
+    "attrs": [
+      {
+        "name": "type",
+        "type": "ChartType",
+        "default": "line",
+        "observed": true
+      },
+      {
+        "name": "data",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "options",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "aria-label",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "data",
+        "type": "unknown"
+      },
+      {
+        "name": "options",
+        "type": "unknown"
+      }
+    ],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-code": {
+    "className": "OASCode",
+    "sourceFile": "packages/ui/src/data/code/oas-code.ts",
+    "attrs": [
+      {
+        "name": "code",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "language",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "show-line-number",
+        "observed": true
+      },
+      {
+        "name": "copyable",
+        "default": "true",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-copy",
+        "detail": "{ text }"
+      },
+      {
+        "name": "oas-copy-error",
+        "detail": "{ text }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-equation": {
+    "className": "OASEquation",
+    "sourceFile": "packages/ui/src/data/equation/oas-equation.ts",
+    "attrs": [
+      {
+        "name": "code",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-log": {
+    "className": "OASLog",
+    "sourceFile": "packages/ui/src/data/log/oas-log.ts",
+    "attrs": [
+      {
+        "name": "lines",
+        "observed": true
+      },
+      {
+        "name": "auto-scroll",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "line-number",
+        "observed": true
+      },
+      {
+        "name": "empty-text",
+        "default": "this.t('log.empty')",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "lines",
+        "type": "string[]"
+      }
+    ],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-masonry": {
+    "className": "OASMasonry",
+    "sourceFile": "packages/ui/src/data/masonry/oas-masonry.ts",
+    "attrs": [
+      {
+        "name": "columns",
+        "default": "String(DEFAULT_COLUMNS)",
+        "observed": true
+      },
+      {
+        "name": "gap",
+        "default": "String(DEFAULT_GAP)",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-comment": {
+    "className": "OASComment",
+    "sourceFile": "packages/ui/src/data/comment/oas-comment.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      },
+      {
+        "name": "actions"
+      },
+      {
+        "name": "author"
+      },
+      {
+        "name": "avatar"
+      },
+      {
+        "name": "content"
+      },
+      {
+        "name": "time"
+      }
+    ],
+    "unresolved": []
+  }
+}
