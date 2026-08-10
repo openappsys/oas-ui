@@ -38,6 +38,75 @@
 import { checkPath } from '@oas-ui/icons'
 ```
 
+## 图标一览
+
+<DemoBlock title="全部图标（点击复制名称）">
+  <div id="icon-gallery" style="width: 100%"></div>
+</DemoBlock>
+
+<style>
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--oas-space-2);
+  width: 100%;
+}
+.icon-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-3) var(--oas-space-1);
+  border-radius: var(--oas-radius-md);
+  cursor: pointer;
+  transition: background var(--oas-transition-fast) var(--oas-ease-out);
+}
+.icon-cell:hover {
+  background: var(--oas-color-bg-hover);
+}
+.icon-cell:hover oas-icon {
+  color: var(--oas-color-primary);
+}
+.icon-cell .icon-name {
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+  user-select: none;
+}
+</style>
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(async () => {
+  const [{ iconNames }, { message }] = await Promise.all([
+    import('@oas-ui/icons'),
+    import('@oas-ui/ui'),
+  ])
+  const gallery = document.querySelector('#icon-gallery')
+  if (!gallery) return
+  const grid = document.createElement('div')
+  grid.className = 'icon-grid'
+  for (const name of iconNames) {
+    const cell = document.createElement('div')
+    cell.className = 'icon-cell'
+    cell.title = `点击复制 ${name}`
+    const icon = document.createElement('oas-icon')
+    icon.setAttribute('name', name)
+    icon.setAttribute('size', '22')
+    const label = document.createElement('span')
+    label.className = 'icon-name'
+    label.textContent = name
+    cell.append(icon, label)
+    cell.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(name)
+      message.success(`已复制 ${name}`)
+    })
+    grid.appendChild(cell)
+  }
+  gallery.appendChild(grid)
+})
+</script>
+
 ## API
 
 ### 属性
