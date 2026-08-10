@@ -17,7 +17,7 @@ A loading indicator that can be used standalone or wrap content with an overlaid
 <DemoBlock title="Wrapping content">
   <oas-spin spinning>
     <div style="width: 280px; height: 96px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)">
-      加载中的内容区域
+       Content area while loading
     </div>
   </oas-spin>
 </DemoBlock>

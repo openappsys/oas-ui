@@ -9,14 +9,14 @@ Wrapping content with `<oas-app>` makes imperative messages mount inside the app
 <DemoBlock title="Messages in the App container">
   <oas-app>
     <oas-space>
-      <oas-button type="primary" onclick="message.success('已挂载到 App 容器')">成功消息</oas-button>
-      <oas-button type="danger" onclick="message.error('错误消息')">错误消息</oas-button>
-      <oas-button onclick="message.info('普通消息')">信息消息</oas-button>
+      <oas-button type="primary" onclick="message.success('Mounted in the App container')">Success message</oas-button>
+      <oas-button type="danger" onclick="message.error('Error message')">Error message</oas-button>
+      <oas-button onclick="message.info('Info message')">Info message</oas-button>
     </oas-space>
     <oas-space style="margin-top: 16px">
-      <oas-button type="warning" onclick="notification.warning({ title: 'App 内通知', description: '通知也挂载在 App 内' })">通知</oas-button>
-      <oas-button onclick="loadingBar.start(); setTimeout(() => loadingBar.finish(), 1500)">加载条</oas-button>
-      <oas-button onclick="destroyAllMessage()">清空消息</oas-button>
+      <oas-button type="warning" onclick="notification.warning({ title: 'Notification in App', description: 'Notifications also mount inside App' })">Notification</oas-button>
+      <oas-button onclick="loadingBar.start(); setTimeout(() => loadingBar.finish(), 1500)">Loading bar</oas-button>
+      <oas-button onclick="destroyAllMessage()">Clear messages</oas-button>
     </oas-space>
   </oas-app>
 </DemoBlock>
@@ -29,7 +29,7 @@ app can be nested inside a config-provider to receive both the injected locale /
   <oas-config-provider locale="en">
     <oas-app>
       <oas-space>
-        <oas-button type="primary" onclick="message.success('Mounted in App (en)')">消息（en）</oas-button>
+        <oas-button type="primary" onclick="message.success('Mounted in App (en)')">Message (en)</oas-button>
         <oas-empty hide-image></oas-empty>
       </oas-space>
     </oas-app>

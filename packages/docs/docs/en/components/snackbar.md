@@ -6,27 +6,27 @@ A lightweight feedback bar that slides in from the bottom (or top). The `open` a
 
 <DemoBlock title="Controlled open">
   <oas-space>
-    <oas-button type="primary" onclick="openSnackbar('消息已发送')">打开</oas-button>
+    <oas-button type="primary" onclick="openSnackbar('Message sent')">Open</oas-button>
   </oas-space>
-  <oas-snackbar id="snackbar-basic" message="消息已发送" onoas-close="closeSnackbar()"></oas-snackbar>
+  <oas-snackbar id="snackbar-basic" message="Message sent" onoas-close="closeSnackbar()"></oas-snackbar>
 </DemoBlock>
 
 ## Action buttons
 
 <DemoBlock title="Action buttons">
   <oas-space>
-    <oas-button type="primary" onclick="openSnackbar('文件已删除', '撤销')">打开（带撤销）</oas-button>
+    <oas-button type="primary" onclick="openSnackbar('File deleted', 'Undo')">Open (with undo)</oas-button>
   </oas-space>
-  <oas-snackbar id="snackbar-action" message="文件已删除" action-text="撤销" onoas-action="closeSnackbar(); toast.info({ title: '已撤销删除' })" onoas-close="closeSnackbar()"></oas-snackbar>
+  <oas-snackbar id="snackbar-action" message="File deleted" action-text="Undo" onoas-action="closeSnackbar(); toast.info({ title: 'Delete undone' })" onoas-close="closeSnackbar()"></oas-snackbar>
 </DemoBlock>
 
 ## Direction & offset
 
 <DemoBlock title="Direction & offset">
   <oas-space>
-    <oas-button onclick="showSnackbar('bottom')">底部（默认）</oas-button>
-    <oas-button onclick="showSnackbar('top')">顶部</oas-button>
-    <oas-button onclick="showSnackbar('bottom', 80)">底部 + 偏移 80</oas-button>
+    <oas-button onclick="showSnackbar('bottom')">Bottom (default)</oas-button>
+    <oas-button onclick="showSnackbar('top')">Top</oas-button>
+    <oas-button onclick="showSnackbar('bottom', 80)">Bottom + offset 80</oas-button>
   </oas-space>
 </DemoBlock>
 
@@ -34,7 +34,7 @@ A lightweight feedback bar that slides in from the bottom (or top). The `open` a
 
 <DemoBlock title="Stack limit 3">
   <oas-space>
-    <oas-button onclick="for (let i = 1; i <= 4; i++) openSnackbar('消息 ' + i, undefined, i)">连发四条</oas-button>
+    <oas-button onclick="for (let i = 1; i <= 4; i++) openSnackbar('Message ' + i, undefined, i)">Fire four</oas-button>
   </oas-space>
   <p>At most 3 snackbars are shown at once; when a 4th appears, the oldest one receives <code>oas-close</code>.</p>
 </DemoBlock>
@@ -70,7 +70,7 @@ onMounted(async () => {
     })()
     el.setAttribute('direction', direction)
     if (offset) el.setAttribute('offset', String(offset))
-    el.setAttribute('message', direction === 'top' ? '顶部消息条' : offset ? '底部偏移 80px' : '底部消息条')
+    el.setAttribute('message', direction === 'top' ? 'Top message bar' : offset ? 'Bottom offset 80px' : 'Bottom message bar')
     el.setAttribute('open', '')
   }
 })

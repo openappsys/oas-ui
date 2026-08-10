@@ -17,9 +17,9 @@ When the editor is inside a `<oas-config-provider>`, the write target switches t
 <DemoBlock title="Live preview in a ConfigProvider subtree">
   <oas-config-provider id="te-cp" theme="" style="display: block; width: 100%">
     <oas-space style="margin-bottom: var(--oas-space-3)">
-      <oas-button type="primary">主色按钮</oas-button>
-      <oas-tag type="primary">主色标签</oas-tag>
-      <oas-button type="primary" size="small" onclick="teSwitchTheme()">切换深色主题</oas-button>
+      <oas-button type="primary">Primary button</oas-button>
+      <oas-tag type="primary">Primary tag</oas-tag>
+      <oas-button type="primary" size="small" onclick="teSwitchTheme()">Toggle dark theme</oas-button>
     </oas-space>
     <oas-theme-editor id="te-in-cp" style="max-width: 440px; width: 100%; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg); padding: var(--oas-space-4)"></oas-theme-editor>
   </oas-config-provider>
@@ -38,9 +38,9 @@ Pass a JSON string array (CSS variable names) via the `token` attribute to edit 
 Call `exportJson()` to get the current token set as JSON; `reset()` clears the inline variables written by the editor and restores the default theme values.
 
 <DemoBlock title="Export theme JSON / reset">
-  <oas-button size="small" type="primary" onclick="teExport()">导出主题 JSON</oas-button>
-  <oas-button size="small" onclick="teReset()">重置编辑器</oas-button>
-  <pre id="te-json" style="width: 100%; max-height: 320px; overflow: auto; margin: var(--oas-space-3) 0 0; padding: var(--oas-space-3); background: var(--oas-color-bg-hover); border-radius: var(--oas-radius-md); font-size: var(--oas-font-size-xs); line-height: 1.6">点击「导出主题 JSON」查看结果</pre>
+  <oas-button size="small" type="primary" onclick="teExport()">Export theme JSON</oas-button>
+  <oas-button size="small" onclick="teReset()">Reset editor</oas-button>
+  <pre id="te-json" style="width: 100%; max-height: 320px; overflow: auto; margin: var(--oas-space-3) 0 0; padding: var(--oas-space-3); background: var(--oas-color-bg-hover); border-radius: var(--oas-radius-md); font-size: var(--oas-font-size-xs); line-height: 1.6">Click "Export theme JSON" to view the result</pre>
 </DemoBlock>
 
 <script setup>

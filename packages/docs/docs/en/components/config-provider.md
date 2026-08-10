@@ -26,15 +26,15 @@ Components inside use the injected `size` unless they set it explicitly; explici
 
 <DemoBlock title="Size injection">
   <oas-space>
-    <oas-button type="primary" onclick="setCpSize('small')">小号</oas-button>
-    <oas-button onclick="setCpSize('medium')">中号</oas-button>
-    <oas-button onclick="setCpSize('large')">大号</oas-button>
+    <oas-button type="primary" onclick="setCpSize('small')">Small</oas-button>
+    <oas-button onclick="setCpSize('medium')">Medium</oas-button>
+    <oas-button onclick="setCpSize('large')">Large</oas-button>
   </oas-space>
   <oas-config-provider id="cp-size" size="medium" style="margin-top: 16px; display: block">
     <oas-space>
-      <oas-button>注入按钮</oas-button>
-      <oas-button size="small">自身小号</oas-button>
-      <oas-tag>注入标签</oas-tag>
+      <oas-button>Injected button</oas-button>
+      <oas-button size="small">Small by itself</oas-button>
+      <oas-tag>Injected tag</oas-tag>
     </oas-space>
   </oas-config-provider>
 </DemoBlock>
@@ -45,13 +45,13 @@ The config-provider's `theme` writes `data-theme` onto itself, and the wrapped s
 
 <DemoBlock title="Theme injection">
   <oas-space>
-    <oas-button type="primary" onclick="setCpTheme('')">浅色</oas-button>
-    <oas-button onclick="setCpTheme('dark')">深色</oas-button>
+    <oas-button type="primary" onclick="setCpTheme('')">Light</oas-button>
+    <oas-button onclick="setCpTheme('dark')">Dark</oas-button>
   </oas-space>
   <oas-config-provider id="cp-theme" theme="" style="margin-top: 16px; display: block; padding: 16px; border-radius: 8px; background: var(--oas-color-bg)">
     <oas-space>
-      <oas-button type="primary">主题按钮</oas-button>
-      <oas-tag>跟随主题</oas-tag>
+      <oas-button type="primary">Theme button</oas-button>
+      <oas-tag>Follows theme</oas-tag>
     </oas-space>
   </oas-config-provider>
 </DemoBlock>
@@ -62,9 +62,9 @@ An inner config-provider overrides an outer one: components wrapped by the inner
 
 <DemoBlock title="Nearest provider wins">
   <oas-config-provider locale="en">
-    <oas-space style="margin-bottom: 8px"><oas-tag>外层 en</oas-tag></oas-space>
+    <oas-space style="margin-bottom: 8px"><oas-tag>Outer en</oas-tag></oas-space>
     <oas-config-provider locale="zh-CN">
-      <oas-space><oas-tag>内层 zh-CN</oas-tag></oas-space>
+      <oas-space><oas-tag>Inner zh-CN</oas-tag></oas-space>
     </oas-config-provider>
   </oas-config-provider>
 </DemoBlock>

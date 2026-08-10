@@ -6,10 +6,10 @@ Imperative global message notifications with support for types, custom duration,
 
 <DemoBlock title="Four types">
   <oas-space>
-    <oas-button type="success" onclick="message.success('操作成功')">成功</oas-button>
-    <oas-button type="danger" onclick="message.error('出错了')">错误</oas-button>
-    <oas-button type="warning" onclick="message.warning('请注意')">警告</oas-button>
-    <oas-button onclick="message.info('这是一条提示')">信息</oas-button>
+    <oas-button type="success" onclick="message.success('Operation successful')">Success</oas-button>
+    <oas-button type="danger" onclick="message.error('Something went wrong')">Error</oas-button>
+    <oas-button type="warning" onclick="message.warning('Please pay attention')">Warning</oas-button>
+    <oas-button onclick="message.info('This is a message')">Info</oas-button>
   </oas-space>
 </DemoBlock>
 
@@ -17,9 +17,9 @@ Imperative global message notifications with support for types, custom duration,
 
 <DemoBlock title="Custom duration">
   <oas-space>
-    <oas-button onclick="message.info('2 秒后自动关闭', 2000)">2 秒</oas-button>
-    <oas-button onclick="message.success('5 秒后自动关闭', 5000)">5 秒</oas-button>
-    <oas-button onclick="message.warning('持续显示，需手动关闭', 0)">不自动关闭（0）</oas-button>
+    <oas-button onclick="message.info('Auto closes after 2s', 2000)">2s</oas-button>
+    <oas-button onclick="message.success('Auto closes after 5s', 5000)">5s</oas-button>
+    <oas-button onclick="message.warning('Stays open until closed manually', 0)">No auto-close (0)</oas-button>
   </oas-space>
 </DemoBlock>
 
@@ -27,8 +27,8 @@ Imperative global message notifications with support for types, custom duration,
 
 <DemoBlock title="Manual close">
   <oas-space>
-    <oas-button onclick="window.msgHandle = message.info('这条消息不会自动关闭', 0)">弹出消息</oas-button>
-    <oas-button onclick="window.msgHandle && window.msgHandle.close()">手动关闭</oas-button>
+    <oas-button onclick="window.msgHandle = message.info('This message will not close automatically', 0)">Show message</oas-button>
+    <oas-button onclick="window.msgHandle && window.msgHandle.close()">Close manually</oas-button>
   </oas-space>
 </DemoBlock>
 
@@ -36,8 +36,8 @@ Imperative global message notifications with support for types, custom duration,
 
 <DemoBlock title="Clear all">
   <oas-space>
-    <oas-button onclick="message.info('消息一'); message.success('消息二'); message.warning('消息三')">连发三条</oas-button>
-    <oas-button onclick="destroyAllMessage()">清空全部</oas-button>
+    <oas-button onclick="message.info('Message one'); message.success('Message two'); message.warning('Message three')">Fire three</oas-button>
+    <oas-button onclick="destroyAllMessage()">Clear all</oas-button>
   </oas-space>
 </DemoBlock>
 

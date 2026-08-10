@@ -6,8 +6,8 @@ A global loading progress bar at the top of the page, driven by an imperative AP
 
 <DemoBlock title="Start & finish">
   <oas-space>
-    <oas-button type="primary" onclick="loadingBar.start(); setTimeout(() => loadingBar.finish(), 2000)">开始加载</oas-button>
-    <oas-button onclick="loadingBar.finish()">立即完成</oas-button>
+    <oas-button type="primary" onclick="loadingBar.start(); setTimeout(() => loadingBar.finish(), 2000)">Start loading</oas-button>
+    <oas-button onclick="loadingBar.finish()">Finish now</oas-button>
   </oas-space>
 </DemoBlock>
 
@@ -15,7 +15,7 @@ A global loading progress bar at the top of the page, driven by an imperative AP
 
 <DemoBlock title="Error state">
   <oas-space>
-    <oas-button type="danger" onclick="loadingBar.start(); setTimeout(() => loadingBar.error(), 2000)">模拟加载失败</oas-button>
+    <oas-button type="danger" onclick="loadingBar.start(); setTimeout(() => loadingBar.error(), 2000)">Simulate load failure</oas-button>
   </oas-space>
 </DemoBlock>
 
@@ -23,8 +23,8 @@ A global loading progress bar at the top of the page, driven by an imperative AP
 
 <DemoBlock title="Clear">
   <oas-space>
-    <oas-button onclick="loadingBar.start()">开始</oas-button>
-    <oas-button onclick="destroyAllLoadingBar()">移除加载条</oas-button>
+    <oas-button onclick="loadingBar.start()">Start</oas-button>
+    <oas-button onclick="destroyAllLoadingBar()">Remove loading bar</oas-button>
   </oas-space>
 </DemoBlock>
 

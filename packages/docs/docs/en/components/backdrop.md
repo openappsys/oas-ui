@@ -6,7 +6,7 @@ A full-screen semi-transparent overlay with `transparent`/`blur` variants and bo
 
 <DemoBlock title="Basic usage">
   <oas-space>
-    <oas-button type="primary" onclick="openBackdrop('backdrop-basic')">打开遮罩</oas-button>
+    <oas-button type="primary" onclick="openBackdrop('backdrop-basic')">Open backdrop</oas-button>
   </oas-space>
   <p>Click anywhere on the backdrop to close it (listen for <code>oas-click</code>).</p>
 </DemoBlock>
@@ -15,8 +15,8 @@ A full-screen semi-transparent overlay with `transparent`/`blur` variants and bo
 
 <DemoBlock title="Transparent & blur">
   <oas-space>
-    <oas-button onclick="openBackdrop('backdrop-transparent', { transparent: true, blur: true })">透明 + 模糊</oas-button>
-    <oas-button onclick="openBackdrop('backdrop-plain', { transparent: true })">纯透明</oas-button>
+    <oas-button onclick="openBackdrop('backdrop-transparent', { transparent: true, blur: true })">Transparent + blur</oas-button>
+    <oas-button onclick="openBackdrop('backdrop-plain', { transparent: true })">Fully transparent</oas-button>
   </oas-space>
 </DemoBlock>
 
@@ -24,7 +24,7 @@ A full-screen semi-transparent overlay with `transparent`/`blur` variants and bo
 
 <DemoBlock title="No scroll lock">
   <oas-space>
-    <oas-button onclick="openBackdrop('backdrop-scroll', { lockScroll: false })">打开（可滚动）</oas-button>
+    <oas-button onclick="openBackdrop('backdrop-scroll', { lockScroll: false })">Open (scrollable)</oas-button>
   </oas-space>
   <p><code>lock-scroll</code> defaults to <code>true</code>; set it to <code>false</code> to keep the body scrollable.</p>
 </DemoBlock>
@@ -44,9 +44,9 @@ onMounted(async () => {
     if (opts.lockScroll === false) el.setAttribute('lock-scroll', 'false')
     el.addEventListener('oas-click', () => {
       el.removeAttribute('open')
-      toast.info({ title: '遮罩被点击，已关闭', duration: 2000 })
+      toast.info({ title: 'Backdrop clicked, closed', duration: 2000 })
     })
-    // 先设 open 再挂载：组件在 !open 时连接会自动卸载，顺序颠倒会导致被立即移除
+    // Set open before mounting: the component auto-unmounts when connected with !open; reversing the order would remove it immediately
     el.setAttribute('open', '')
     document.body.appendChild(el)
   }

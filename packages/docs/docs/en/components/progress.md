@@ -74,7 +74,7 @@ The circle defaults to a 48px diameter and 6px stroke, showing the percentage in
       <oas-progress id="dynamic-progress" percent="0"></oas-progress>
       <oas-progress id="dynamic-circle" type="circle" percent="0"></oas-progress>
     </oas-space>
-    <oas-button type="primary" onclick="startProgress()">开始模拟任务</oas-button>
+    <oas-button type="primary" onclick="startProgress()">Start simulated task</oas-button>
   </oas-space>
 </DemoBlock>
 
@@ -93,7 +93,7 @@ onMounted(async () => {
       circle.setAttribute('percent', String(percent))
       if (percent >= 100) {
         clearInterval(timer)
-        message.success('任务完成')
+        message.success('Task completed')
       }
     }, 300)
   }

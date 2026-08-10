@@ -5,8 +5,8 @@ Shows a confirmation bubble next to the trigger element, commonly used before de
 ## Basic usage
 
 <DemoBlock title="Basic usage">
-  <oas-popconfirm title="确定删除这条数据吗？" onoas-ok="message.success('已删除')" onoas-cancel="message.info('已取消')">
-    <oas-button type="danger">删除</oas-button>
+  <oas-popconfirm title="Delete this record?" onoas-ok="message.success('Deleted')" onoas-cancel="message.info('Cancelled')">
+    <oas-button type="danger">Delete</oas-button>
   </oas-popconfirm>
 </DemoBlock>
 
@@ -16,12 +16,12 @@ The `open` attribute is controlled: external buttons set/remove `open` to toggle
 
 <DemoBlock title="Controlled visibility (open)">
   <oas-space size="small">
-    <oas-button type="primary" size="small" onclick="event.stopPropagation(); pcCtrl(true)">打开确认</oas-button>
-    <oas-button size="small" onclick="event.stopPropagation(); pcCtrl(false)">关闭</oas-button>
+    <oas-button type="primary" size="small" onclick="event.stopPropagation(); pcCtrl(true)">Open confirm</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation(); pcCtrl(false)">Close</oas-button>
     <oas-tag id="pc-status" type="info">open: false</oas-tag>
   </oas-space>
-  <oas-popconfirm id="pc-ctrl" title="确定删除这条数据吗？">
-    <oas-button type="danger">删除</oas-button>
+  <oas-popconfirm id="pc-ctrl" title="Delete this record?">
+    <oas-button type="danger">Delete</oas-button>
   </oas-popconfirm>
 </DemoBlock>
 
@@ -42,7 +42,7 @@ onMounted(async () => {
     else pc.removeAttribute('open')
   }
   sync()
-  // 确定 / 取消 / 外部点击 / Esc 由组件移除 open，用 MutationObserver 保持状态同步
+  // OK / cancel / outside click / Esc remove open in the component; keep status in sync via MutationObserver
   new MutationObserver(sync).observe(pc, { attributes: true, attributeFilter: ['open'] })
 })
 </script>
@@ -52,12 +52,12 @@ onMounted(async () => {
 <DemoBlock title="Four positions">
   <oas-space direction="vertical" size="large" align="center" style="width: 100%; padding: 24px 0">
     <div style="display: flex; justify-content: center; gap: 16px">
-      <oas-popconfirm title="上方气泡" position="top"><oas-button size="small">上方 top</oas-button></oas-popconfirm>
-      <oas-popconfirm title="下方气泡" position="bottom"><oas-button size="small">下方 bottom</oas-button></oas-popconfirm>
+      <oas-popconfirm title="Top bubble" position="top"><oas-button size="small">Top</oas-button></oas-popconfirm>
+      <oas-popconfirm title="Bottom bubble" position="bottom"><oas-button size="small">Bottom</oas-button></oas-popconfirm>
     </div>
     <div style="display: flex; justify-content: center; gap: 16px">
-      <oas-popconfirm title="左侧气泡" position="left"><oas-button size="small">左侧 left</oas-button></oas-popconfirm>
-      <oas-popconfirm title="右侧气泡" position="right"><oas-button size="small">右侧 right</oas-button></oas-popconfirm>
+      <oas-popconfirm title="Left bubble" position="left"><oas-button size="small">Left</oas-button></oas-popconfirm>
+      <oas-popconfirm title="Right bubble" position="right"><oas-button size="small">Right</oas-button></oas-popconfirm>
     </div>
   </oas-space>
 </DemoBlock>
@@ -65,8 +65,8 @@ onMounted(async () => {
 ## Long text
 
 <DemoBlock title="Long text">
-  <oas-popconfirm title="此操作会永久删除该订单及其全部子记录，且无法恢复，确定继续吗？">
-    <oas-button type="danger">删除订单</oas-button>
+  <oas-popconfirm title="This action permanently deletes this order and all its child records, which cannot be recovered. Continue?">
+    <oas-button type="danger">Delete order</oas-button>
   </oas-popconfirm>
 </DemoBlock>
 
