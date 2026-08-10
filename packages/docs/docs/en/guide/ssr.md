@@ -94,6 +94,11 @@ a whitelisted component into a full HTML string made of the host tag plus a
 styles with no JS; loading the component library script afterwards upgrades the
 elements and takes over interactivity.
 
+> Note: the shadow inline styles in the snapshot reference `--oas-*` theme
+> tokens (defined on `:root` in `@oas-ui/theme`). The page must include
+> `@oas-ui/theme` as usual, otherwise the snapshot components render without
+> colors (unresolved tokens fall back to transparent).
+
 ```ts
 import { renderToString } from '@oas-ui/ssr'
 

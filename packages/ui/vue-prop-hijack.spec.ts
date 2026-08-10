@@ -19,10 +19,19 @@ test('Vue property 劫持门禁：全页 SPA 扫描', async ({ page }) => {
 
   const report: Record<string, Record<string, string[]>> = {}
   for (const name of PAGES) {
-    await page.evaluate((n) => {
-      document.querySelector<HTMLAnchorElement>(`a[href="/components/${n}.html"]`)!.click()
-    }, name)
-    await page.waitForURL(`**/components/${name}.html`)
+    // 总览页（index.md）在侧栏的链接形态与其他组件页不同：Vitepress 对目录 index 归一化为
+    // /components/（末尾斜杠），其余页为 /components/{name}.html（已实测确认，曾因
+    // 硬查 a[href="/components/index.html"] 取到 null 导致 .click() 抛 TypeError）。
+    // 按形态取锚点：index 优先末尾斜杠形态，其余用 .html 形态；找不到才抛明确错误。
+    const hrefs = name === 'index' ? ['/components/'] : [`/components/${name}.html`]
+    await page.evaluate((hs) => {
+      const a = hs
+        .map((h) => document.querySelector<HTMLAnchorElement>(`a[href="${h}"]`))
+        .find((el): el is HTMLAnchorElement => el !== null)
+      if (!a) throw new Error(`未找到侧栏锚点：${hs.join(' / ')}`)
+      a.click()
+    }, hrefs)
+    await page.waitForURL(name === 'index' ? '**/components/' : `**/components/${name}.html`)
     await page.waitForTimeout(250)
 
     const missing = await page.evaluate(() => {

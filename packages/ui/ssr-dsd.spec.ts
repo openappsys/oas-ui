@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -76,6 +76,11 @@ test.beforeAll(async () => {
   buildUiBundle()
 
   // —— 2) 用渲染器产出白名单组件 DSD 快照，拼成完整静态页 ——
+  // theme CSS：快照 shadow 内联样式引用 --oas-* token（定义在 @oas-ui/theme 的 :root），
+  // 页面必须内联 theme CSS 否则禁 JS 渲染时组件无色（此前缺陷：按钮灰黑无字色、tag 无胶囊样式）。
+  // @oas-ui/theme 无构建产物（main 直指 src），直接读源文件。
+  const themeCssPath = join(REPO_ROOT, 'packages', 'theme', 'src', 'index.css')
+  const themeCss = readFileSync(themeCssPath, 'utf8')
   const [btn, tag, empty, divider, text, title, para] = await Promise.all([
     renderToString('oas-button', { type: 'primary', 'data-esc': 'a"&<>b' }, '确定'),
     renderToString('oas-tag', { type: 'success', size: 'large' }, '进行中'),
@@ -90,6 +95,7 @@ test.beforeAll(async () => {
 <head>
   <meta charset="utf-8" />
   <title>OAS-UI DSD 静态快照验收页</title>
+  <style>${themeCss}</style>
 </head>
 <body style="font-family: system-ui, sans-serif; padding: 24px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start;">
 ${[btn, tag, empty, divider, text, title, para].join('\n')}
@@ -125,6 +131,14 @@ function layoutOf(page: Page): Promise<Record<string, { x: number; y: number; w:
     }
     return out
   }, [...WHITELIST])
+}
+
+/** #0b6cff -> rgb(11, 108, 255)（比较 getComputedStyle 的色值用；不支持 8 位 hex 的 alpha） */
+function hexToRgb(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
+  if (!m) throw new Error(`非法 hex 色值：${hex}`)
+  const n = parseInt(m[1]!, 16)
+  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`
 }
 
 test('禁 JS 可视：DSD 快照解析即附加 shadow root 并渲染关键结构', async ({ page }) => {
@@ -165,6 +179,40 @@ test('禁 JS 可视：DSD 快照解析即附加 shadow root 并渲染关键结�
 
   // 快照属性无逃逸：含引号/尖括号/& 的属性值在页面解析后原样还原
   expect(await page.locator('oas-button').first().getAttribute('data-esc')).toBe('a"&<>b')
+
+  // 禁 JS 下 token 颜色可见：theme CSS 已内联，shadow 内 var(--oas-*) 应解析到同页 :root 的 token 值。
+  // （此前 fixture 缺 theme CSS，按钮灰黑无字色、tag 无胶囊样式——token 解析失败回落到透明。）
+  const colors = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement)
+    const btn = document.querySelector('oas-button')?.shadowRoot?.querySelector('button[part="button"]')
+    const tag = document.querySelector('oas-tag')?.shadowRoot?.querySelector('.tag')
+    const btnBg = btn ? getComputedStyle(btn).backgroundColor : ''
+    const tagColor = tag ? getComputedStyle(tag).color : ''
+    // alpha 通道：rgb(...) 视为 1，rgba(...,a) 取 a；rgba(0,0,0,0)=透明
+    const alpha = (c: string): number => {
+      const m = /rgba?\(([^)]+)\)/.exec(c)
+      if (!m) return 0
+      const parts = m[1]!.split(',').map((s) => s.trim())
+      return parts.length === 4 ? Number(parts[3]) : 1
+    }
+    return {
+      primary: root.getPropertyValue('--oas-color-primary').trim(),
+      success: root.getPropertyValue('--oas-color-success').trim(),
+      btnBg,
+      tagColor,
+      btnAlpha: btn ? alpha(btnBg) : 0,
+      tagAlpha: tag ? alpha(tagColor) : 0,
+    }
+  })
+  // theme CSS 已内联：:root 上 token 有解析值
+  expect(colors.primary).not.toBe('')
+  expect(colors.success).not.toBe('')
+  // oas-button(type=primary) 底色 = --oas-color-primary 同页解析值，且非透明
+  expect(colors.btnBg).toBe(hexToRgb(colors.primary))
+  expect(colors.btnAlpha).toBeGreaterThan(0)
+  // oas-tag(type=success) 文字色 = --oas-color-success 同页解析值，且非透明
+  expect(colors.tagColor).toBe(hexToRgb(colors.success))
+  expect(colors.tagAlpha).toBeGreaterThan(0)
 
   // 禁 JS 下无未捕获异常
   expect(pageErrors).toEqual([])

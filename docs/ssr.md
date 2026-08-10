@@ -67,6 +67,8 @@ const Table = dynamic(() => import('./TablePage'), { ssr: false })
 
 `@oas-ui/ssr` 包提供渲染器 `renderToString(tag, attrs, slotHTML, { locale })`：在 Node 服务端把白名单组件渲染为「宿主标签 + `<template shadowrootmode="open">` 快照」的完整 HTML 字符串。浏览器拿到该字符串后无需 JS 即可呈现结构与样式；随后加载组件库脚本完成 upgrade，由组件接管交互。
 
+> 注意：SSR 快照的 shadow 内联样式引用 `--oas-*` 主题 token（token 定义在 `@oas-ui/theme` 的 `:root`）。页面必须照常引入 `@oas-ui/theme`，否则快照中的组件没有颜色（token 解析失败回落到透明）。
+
 ```ts
 import { renderToString } from '@oas-ui/ssr'
 

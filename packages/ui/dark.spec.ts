@@ -2,8 +2,11 @@ import { test, expect } from '@playwright/test'
 import { readdirSync } from 'node:fs'
 import { resolve, basename } from 'node:path'
 
+// 组件总览页（index.md）是纯目录导航、不含 demo 块（预期行为），
+// 暗色冒烟只面向 demo 页，故收 PAGES 时跳过它，避免误报「无 demo 块」。
 const PAGES = readdirSync(resolve(import.meta.dirname, '../docs/docs/components'))
   .filter((f) => f.endsWith('.md'))
+  .filter((f) => f !== 'index.md')
   .map((f) => `/components/${basename(f, '.md')}.html`)
 
 for (const page of PAGES) {
