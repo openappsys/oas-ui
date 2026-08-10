@@ -53,10 +53,10 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `align` | 对齐 | — | — |
+| `align` | 对齐 | `string` | — |
 | `direction` | 方向 | `SpaceDirection` | `horizontal` |
-| `size` | 间距 | — | `medium` |
-| `wrap` | 是否换行 | — | — |
+| `size` | 间距 | `string` | `medium` |
+| `wrap` | 是否换行 | `boolean` | — |
 
 ### 插槽
 

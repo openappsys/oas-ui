@@ -94,9 +94,9 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `items` | 选项 JSON | — | `[]` |
-| `multiple` | 多选模式（checkbox 语义） | — | — |
-| `value` | 当前值：单选为字符串；多选为 JSON 数组字符串 | — | `[]` |
+| `items` | 选项 JSON | `string` | `[]` |
+| `multiple` | 多选模式（checkbox 语义） | `boolean` | — |
+| `value` | 当前值：单选为字符串；多选为 JSON 数组字符串 | `string` | `[]` |
 
 ### 事件
 

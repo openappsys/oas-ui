@@ -44,9 +44,9 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `disabled` | Disabled | — | — |
-| `preset` | Preset color array (JSON) | — | — |
-| `value` | Current color (hex) | — | — |
+| `disabled` | Disabled | `boolean` | — |
+| `preset` | Preset color array (JSON) | `string` | — |
+| `value` | Current color (hex) | `string` | — |
 
 ### Events
 

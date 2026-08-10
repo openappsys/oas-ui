@@ -67,11 +67,11 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `disabled` | 禁用 | — | — |
-| `maxlength` | 输入最大长度 | — | — |
-| `placeholder` | 空值占位 | — | — |
-| `submit-on-enter` | 是否允许 Enter 提交 | — | `true` |
-| `value` | 当前值（受控） | — | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `maxlength` | 输入最大长度 | `string` | — |
+| `placeholder` | 空值占位 | `string` | — |
+| `submit-on-enter` | 是否允许 Enter 提交 | `string` | `true` |
+| `value` | 当前值（受控） | `string` | — |
 
 ### 事件
 

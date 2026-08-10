@@ -5,9 +5,12 @@
  * 对每个目录用 TypeScript Compiler API（typescript@7 原生 sync API）解析
  * `oas-*.ts` 类文件，抽取：
  *   - attrs：observedAttributes ∪ getAttr/hasAttr/injectValue 调用点
- *   - props：get/set 访问器（富类型 property，取 setter 形参注解）
+ *     （类型/默认值推断：`as XxxType` 强转别名、字面量第二实参的
+ *     string/number/boolean 与默认值、hasAttr-only 的 boolean；表达式不硬算）
+ *   - props：get/set 访问器（富类型 property，取 setter 形参注解）+ 公共字段类型注解
  *   - events：this.emit(...)（事件名自动加 oas- 前缀）+ new CustomEvent('oas-...')
- *   - slots：render() 模板字符串里的 <slot> / <slot name="...">
+ *   - slots：render() 模板字符串里的 <slot> / <slot name="...">，以及
+ *     `template[slot="..."]` 子模板选择器引用（宿主侧命名插槽）
  * 产物：docs/api-manifest.json（按 tag 名 keyed）。
  *
  * 用法：node scripts/api-docs/scan.mjs
@@ -30,6 +33,13 @@ const K = tsast.SyntaxKind
 
 const OBSERVED_GETTER = 'observedAttributes'
 const ATTR_HELPERS = new Set(['getAttr', 'hasAttr', 'injectValue'])
+
+// 跨组件属性补充：父组件通过 `getAttribute('x')` 读取子元素上的属性
+// （如 oas-tabs 读 oas-tab-panel 的 badge），子组件源码里没有 getAttr/hasAttr
+// 调用点，AST 无法推导，故显式登记（observed:false，不参与 attributeChanged 联动）。
+const SUPPLEMENT_ATTRS = {
+  'oas-tab-panel': ['badge'],
+}
 
 // ---------- 组件目录清单：ui/src/index.ts 的副作用导入行 ----------
 function listComponentDirs() {
@@ -226,10 +236,18 @@ function getObservedAttributes(cls, unresolved, factoryCall, factoryFn) {
 }
 
 // ---------- attrs：observed ∪ helper 调用点 ----------
-function extractAttrs(cls, observed) {
-  // 中间结构：name -> { type?, default?, observed }
+// 类型/默认值推断（只做可靠的，宁可不猜）：
+//   - `as XxxType` 强转（如 getAttr('type','default') as ButtonType）→ type 取别名，优先
+//   - 仅出现在 hasAttr('x') 调用点（无 getAttr/injectValue）→ type: boolean
+//   - getAttr/injectValue('x', 字面量) → type 按字面量类型（string/number/boolean），
+//     default 填字面量（字符串字面量去引号、数字/布尔取原文）
+//   - 第二实参是表达式（三元、函数调用、String(X)、标识符）→ default 保持省略
+//     （gen 渲染 —，不硬算）
+//   - attr 有同名 prop 时不做类型推断（prop 类型更富，gen 回退用 prop 类型）
+function extractAttrs(cls, observed, propNames) {
+  // 中间结构：name -> { type?, default?, observed, has, get, inferTypes }
   const map = new Map()
-  for (const name of observed) map.set(name, { name, observed: true })
+  for (const name of observed) map.set(name, { name, observed: true, has: false, get: false, inferTypes: [] })
 
   walk(cls, (n) => {
     if (n.kind !== K.CallExpression) return
@@ -248,22 +266,54 @@ function extractAttrs(cls, observed) {
 
     let entry = map.get(name)
     if (!entry) {
-      entry = { name, observed: false }
+      entry = { name, observed: false, has: false, get: false, inferTypes: [] }
       map.set(name, entry)
     }
-    // type：`as XxxType` 强转（如 getAttr('type','default') as ButtonType）
+    const isHas = helper === 'hasAttr'
+    if (isHas) entry.has = true
+    else entry.get = true
+
+    // type：`as XxxType` 强转（如 getAttr('type','default') as ButtonType），优先于字面量推断
     const parent = n.parent
     if (parent && parent.kind === K.AsExpression && parent.type) {
       const t = srcText(parent.type)
       if (t) entry.type = t
     }
-    // default：getAttr / injectValue 第二实参源码文本（字符串字面量取值，其余取源码）
-    if (helper !== 'hasAttr' && n.arguments?.[1]) {
-      const dArg = n.arguments[1]
-      const lit = litText(dArg)
-      entry.default = lit !== undefined ? lit : srcText(dArg)
+    if (isHas || !n.arguments?.[1]) return
+    const dArg = n.arguments[1]
+    // default：仅字面量第二实参取值；表达式/标识符不写（gen 渲染 —）
+    const lit = litText(dArg)
+    if (lit !== undefined) {
+      entry.default = lit
+    } else if (
+      dArg.kind === K.NumericLiteral ||
+      dArg.kind === K.TrueKeyword ||
+      dArg.kind === K.FalseKeyword
+    ) {
+      entry.default = dArg.text
+    }
+    // 字面量 → 可推断类型
+    if (
+      dArg.kind === K.StringLiteral ||
+      dArg.kind === K.NoSubstitutionTemplateLiteral
+    ) {
+      entry.inferTypes.push('string')
+    } else if (dArg.kind === K.NumericLiteral) {
+      entry.inferTypes.push('number')
+    } else if (dArg.kind === K.TrueKeyword || dArg.kind === K.FalseKeyword) {
+      entry.inferTypes.push('boolean')
     }
   })
+
+  // 类型收尾：as 强转 > 字面量推断（多调用点同类型才采纳）> hasAttr-only boolean。
+  // 有同名 prop 的 attr 不推断（prop 类型更富，gen 回退用 prop 类型，不拿 string 遮蔽）
+  for (const entry of map.values()) {
+    if (entry.type !== undefined) continue
+    if (propNames?.has(entry.name)) continue
+    const uniq = [...new Set(entry.inferTypes)]
+    if (uniq.length === 1) entry.type = uniq[0]
+    else if (entry.has && !entry.get) entry.type = 'boolean'
+  }
 
   // 排序：observed 在前（按声明顺序），非 observed 在后
   const observedOrder = new Map(observed.map((name, i) => [name, i]))
@@ -283,28 +333,45 @@ function extractAttrs(cls, observed) {
     })
 }
 
-// ---------- props：get/set 访问器 ----------
+// ---------- props：get/set 访问器 + 公共字段 ----------
 // type 优先取 setter 形参类型注解（如 set columns(value: TableColumn[] | string)），
-// 无 setter 时取 getter 返回类型
+// 无 setter 时取 getter 返回类型；公共字段（如 tree 的 `load?: (payload) => void`）
+// 取字段类型注解（非 static/private/protected 且带注解才抓，不猜）。
 function extractProps(cls) {
   const propMap = new Map() // name -> { name, setType?, getType? }
   for (const m of cls.members || []) {
-    if (m.kind !== K.GetAccessor && m.kind !== K.SetAccessor) continue
-    const name = m.name?.text
-    if (!name || name === OBSERVED_GETTER) continue
-    // 静态 getter（observedAttributes 等）不作 props
+    // 静态成员（observedAttributes 等）与普通方法不作 props
     const mods = (m.modifiers || []).map((x) => x.kind)
     if (mods.includes(K.StaticKeyword)) continue
+    if (m.kind !== K.GetAccessor && m.kind !== K.SetAccessor && m.kind !== K.PropertyDeclaration) continue
+    const name = m.name?.text
+    if (!name || name === OBSERVED_GETTER) continue
+
+    const isAccessor = m.kind === K.GetAccessor || m.kind === K.SetAccessor
+    // 公共字段：私有/受保护不抓，无类型注解不猜
+    if (!isAccessor) {
+      if (mods.includes(K.PrivateKeyword) || mods.includes(K.ProtectedKeyword)) continue
+      if (!m.type) continue
+    }
     let entry = propMap.get(name)
     if (!entry) {
       entry = { name }
       propMap.set(name, entry)
     }
-    if (m.kind === K.SetAccessor) {
-      entry.setType = m.parameters?.[0]?.type ? srcText(m.parameters[0].type) : undefined
-    } else if (m.type) {
-      entry.getType = srcText(m.type)
+
+    if (isAccessor) {
+      if (m.kind === K.SetAccessor) {
+        entry.setType = m.parameters?.[0]?.type ? srcText(m.parameters[0].type) : undefined
+      } else if (m.type) {
+        entry.getType = srcText(m.type)
+      }
+      continue
     }
+
+    // 公共字段（带类型注解）：property setter 之外的另一类 property 通道
+    const t = srcText(m.type)
+    if (!t) continue
+    if (!entry.setType) entry.setType = t
   }
   const props = []
   for (const p of propMap.values()) {
@@ -423,14 +490,29 @@ function scanSlotsInHtml(html, names) {
   }
 }
 
+// `<template slot="x">` 选择器引用（如 virtual-list 的 itemTemplate() 查宿主子模板）：
+// 命名插槽写在宿主侧子模板上而非 <slot name="...">，仍属该组件暴露的插槽 API。
+// 名字按 doc 约定取完整选择器 `template[slot="x"]`（与语料/手写表 key 一致）。
+function scanTemplateSlotRefs(text, names) {
+  if (!text) return
+  const re = /template\[slot=(?:"([^"]+)"|'([^']+)')\]/g
+  let m
+  while ((m = re.exec(text))) {
+    const name = m[1] ?? m[2]
+    if (name) names.add(`template[slot="${name}"]`)
+  }
+}
+
 function extractSlots(cls) {
   const names = new Set()
   // 类内所有模板字面量（render 的 innerHTML 模板）与普通字符串
   walk(cls, (n) => {
     if (n.kind === K.TemplateExpression || n.kind === K.NoSubstitutionTemplateLiteral) {
       scanSlotsInHtml(n.getText(), names)
+      scanTemplateSlotRefs(n.getText(), names)
     } else if (n.kind === K.StringLiteral) {
       scanSlotsInHtml(n.text, names)
+      scanTemplateSlotRefs(n.text, names)
     }
   })
   return [...names]
@@ -487,8 +569,12 @@ function scanDir(project, dir, unresolvedGlobal) {
     }
 
     const observed = getObservedAttributes(classNode, unresolved, factoryCall, factoryFn)
-    const attrs = extractAttrs(classNode, observed)
     const props = extractProps(classNode)
+    const attrs = extractAttrs(classNode, observed, new Set(props.map((p) => p.name)))
+    // 跨组件属性补充（badge 等由父组件 getAttribute 读取的属性）
+    for (const name of SUPPLEMENT_ATTRS[tag] ?? []) {
+      if (!attrs.some((a) => a.name === name)) attrs.push({ name, observed: false })
+    }
     const events = extractEvents(classNode, unresolved)
     const slots = extractSlots(classNode)
 

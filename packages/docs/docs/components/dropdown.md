@@ -124,10 +124,10 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `items` | 菜单项 JSON | — | `[]` |
-| `open` | 受控显示（布尔属性，存在即展开） | — | — |
+| `items` | 菜单项 JSON | `string` | `[]` |
+| `open` | 受控显示（布尔属性，存在即展开） | `boolean` | — |
 | `placement` | 浮层位置 | `Placement` | `bottom` |
-| `value` | 当前选中值 | — | — |
+| `value` | 当前选中值 | `string` | — |
 
 ### 事件
 

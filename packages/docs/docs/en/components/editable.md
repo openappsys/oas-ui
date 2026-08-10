@@ -67,11 +67,11 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `disabled` | Disabled | — | — |
-| `maxlength` | Maximum input length | — | — |
-| `placeholder` | Empty value placeholder | — | — |
-| `submit-on-enter` | Whether Enter submits | — | `true` |
-| `value` | Current value (controlled) | — | — |
+| `disabled` | Disabled | `boolean` | — |
+| `maxlength` | Maximum input length | `string` | — |
+| `placeholder` | Empty value placeholder | `string` | — |
+| `submit-on-enter` | Whether Enter submits | `string` | `true` |
+| `value` | Current value (controlled) | `string` | — |
 
 ### Events
 

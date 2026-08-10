@@ -82,12 +82,12 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `action-text` | Action button text | — | — |
+| `action-text` | Action button text | `string` | — |
 | `direction` | Position direction | — | — |
-| `duration` | Auto-dismiss duration (ms) | — | `4000` |
-| `message` | Message text | — | — |
-| `offset` | Offset from the screen edge (px) | — | `24` |
-| `open` | Whether shown (controlled) | — | — |
+| `duration` | Auto-dismiss duration (ms) | `string` | `4000` |
+| `message` | Message text | `string` | — |
+| `offset` | Offset from the screen edge (px) | `string` | `24` |
+| `open` | Whether shown (controlled) | `boolean` | — |
 
 ### Events
 

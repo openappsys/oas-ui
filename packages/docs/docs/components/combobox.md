@@ -118,13 +118,13 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `clearable` | 可清空（有值时显示清空按钮，清空派发 `oas-clear`） | — | — |
-| `disabled` | 禁用（不可输入、不展开） | — | — |
-| `filterable` | 输入实时过滤 label（`filterable="false"` 关闭本地过滤） | — | `true` |
-| `loading` | 加载占位（下拉显示「加载中…」） | — | — |
+| `clearable` | 可清空（有值时显示清空按钮，清空派发 `oas-clear`） | `boolean` | — |
+| `disabled` | 禁用（不可输入、不展开） | `boolean` | — |
+| `filterable` | 输入实时过滤 label（`filterable="false"` 关闭本地过滤） | `string` | `true` |
+| `loading` | 加载占位（下拉显示「加载中…」） | `boolean` | — |
 | `options` | 选项，JSON 数组 `[{ label, value, disabled? }]` | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
-| `value` | 当前值（受控，选中项 `option.value`） | — | — |
+| `value` | 当前值（受控，选中项 `option.value`） | `string` | — |
 
 ### 事件
 

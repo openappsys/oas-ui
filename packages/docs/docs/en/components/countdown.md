@@ -33,8 +33,8 @@ A countdown component that refreshes in real time, supports day/hour/minute/seco
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `format` | Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds | — | `HH:mm:ss` |
-| `value` | Total countdown duration (milliseconds) | — | `0` |
+| `format` | Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds | `string` | `HH:mm:ss` |
+| `value` | Total countdown duration (milliseconds) | `string` | `0` |
 
 ### Events
 

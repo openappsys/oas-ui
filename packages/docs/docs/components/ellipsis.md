@@ -46,10 +46,10 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `expandable` | 溢出时显示「展开/收起」按钮 | — | — |
-| `rows` | 显示行数（1 为单行省略，≥2 多行 `-webkit-line-clamp`） | — | `1` |
-| `text` | 文本内容 | — | — |
-| `tooltip` | 溢出时悬停展示全文 tooltip | — | `true` |
+| `expandable` | 溢出时显示「展开/收起」按钮 | `boolean` | — |
+| `rows` | 显示行数（1 为单行省略，≥2 多行 `-webkit-line-clamp`） | `string` | `1` |
+| `text` | 文本内容 | `string` | — |
+| `tooltip` | 溢出时悬停展示全文 tooltip | `string` | `true` |
 
 ### 事件
 

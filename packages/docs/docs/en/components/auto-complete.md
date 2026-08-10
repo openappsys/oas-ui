@@ -57,10 +57,10 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `disabled` | Disabled | — | — |
+| `disabled` | Disabled | `boolean` | — |
 | `options` | Options, JSON array `[{ label, value, disabled }]` | `Option[] \| string` | `[]` |
-| `placeholder` | Placeholder text | — | — |
-| `value` | Preset value | — | — |
+| `placeholder` | Placeholder text | `string` | — |
+| `value` | Preset value | `string` | — |
 
 ### Events
 

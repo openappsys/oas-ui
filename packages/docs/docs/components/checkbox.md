@@ -109,10 +109,10 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `checked` | 是否选中 | — | — |
-| `disabled` | 禁用 | — | — |
-| `indeterminate` | 半选状态 | — | — |
-| `value` | 选项标识 | — | — |
+| `checked` | 是否选中 | `boolean` | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `indeterminate` | 半选状态 | `boolean` | — |
+| `value` | 选项标识 | `string` | — |
 
 ### 事件
 

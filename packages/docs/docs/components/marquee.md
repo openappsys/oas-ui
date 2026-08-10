@@ -71,7 +71,7 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `pause-on-hover` | 布尔，存在时悬停/聚焦暂停动画（animation-play-state: paused） | — | — |
-| `speed` | 单次动画时长（秒），写入 CSS animation-duration；非正数回退默认 | — | — |
+| `speed` | 单次动画时长（秒），写入 CSS animation-duration；非正数回退默认 | `string` | — |
 
 ### 插槽
 

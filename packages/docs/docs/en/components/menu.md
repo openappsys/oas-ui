@@ -121,10 +121,10 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `collapsed` | Collapsed state (vertical only): icons only, submenus pop to the right | — | — |
-| `items` | Menu items JSON | — | `[]` |
+| `items` | Menu items JSON | `string` | `[]` |
 | `mode` | Layout mode: `vertical` menu / `horizontal` top bar | — | — |
 | `theme` | Local theme: `dark` uses dark tokens (independent of the global theme) | — | — |
-| `value` | Current selected value | — | — |
+| `value` | Current selected value | `string` | — |
 
 ### Events
 

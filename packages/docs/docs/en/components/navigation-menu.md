@@ -31,7 +31,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `items` | Navigation items JSON (hierarchical) | — | `[]` |
+| `items` | Navigation items JSON (hierarchical) | `string` | `[]` |
 
 ### Events
 

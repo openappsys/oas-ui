@@ -152,10 +152,10 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `active` | The `value` of the active tab | — | — |
-| `closable` | Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel) | — | — |
-| `tab-position` | Tab bar position: `top` (default) / `left` / `right` / `bottom` | — | `top` |
-| `type` | Style variant: `line` (underline, default) / `card` | — | `line` |
+| `active` | The `value` of the active tab | `string` | — |
+| `closable` | Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel) | `boolean` | — |
+| `tab-position` | Tab bar position: `top` (default) / `left` / `right` / `bottom` | `string` | `top` |
+| `type` | Style variant: `line` (underline, default) / `card` | `string` | `line` |
 
 | Event | Description |
 | --- | --- |

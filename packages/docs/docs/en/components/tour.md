@@ -59,8 +59,8 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `current` | Current step index | — | `0` |
-| `open` | Start the tour (boolean attribute; starts when present) | — | — |
+| `current` | Current step index | `string` | `0` |
+| `open` | Start the tour (boolean attribute; starts when present) | `boolean` | — |
 | `steps` | Steps JSON | `TourStep[] \| string` | `[]` |
 
 ### Events

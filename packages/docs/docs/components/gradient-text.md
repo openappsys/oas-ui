@@ -34,8 +34,8 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `direction` | 渐变方向（linear-gradient 第一参数，如 `to right`、`135deg`） | — | — |
-| `gradient` | JSON 色标数组，如 `["#f00","#00f"]`；单个色标渲染纯色；缺失/非法回退默认 token 渐变 | — | — |
+| `direction` | 渐变方向（linear-gradient 第一参数，如 `to right`、`135deg`） | `string` | — |
+| `gradient` | JSON 色标数组，如 `["#f00","#00f"]`；单个色标渲染纯色；缺失/非法回退默认 token 渐变 | `string` | — |
 
 ### 插槽
 

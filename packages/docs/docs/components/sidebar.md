@@ -107,8 +107,8 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `collapsed` | 受控折叠，收窄为图标条（存在即折叠） | — | — |
-| `drawer-open` | — | — | — |
+| `collapsed` | 受控折叠，收窄为图标条（存在即折叠） | `boolean` | — |
+| `drawer-open` | — | `boolean` | — |
 | `items` | 菜单项 JSON `[{label, value, icon?}]` | `SidebarItem[] \| string` | `[]` |
 | `mobile-breakpoint` | 移动端断点（px），窄于该值变覆盖式抽屉 | — | — |
 | `width` | 展开宽度，默认走 `--oas-sidebar-width` token | — | — |

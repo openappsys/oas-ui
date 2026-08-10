@@ -64,10 +64,10 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `default-value` | Default value for new rows | — | — |
-| `disabled` | Disabled (row inputs + buttons) | — | — |
-| `max` | Maximum rows; truncates when over | — | — |
-| `min` | Minimum rows; auto-fills when below | — | `0` |
+| `default-value` | Default value for new rows | `string` | — |
+| `disabled` | Disabled (row inputs + buttons) | `boolean` | — |
+| `max` | Maximum rows; truncates when over | `string` | — |
+| `min` | Minimum rows; auto-fills when below | `string` | `0` |
 | `model-value` | String array (property or JSON) | — | — |
 
 ### Events

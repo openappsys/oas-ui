@@ -104,12 +104,12 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `no-footer` | 隐藏底部操作按钮 | — | — |
-| `no-mask-close` | 禁用点击遮罩关闭 | — | — |
-| `placement` | 滑出方向 | — | `right` |
+| `no-footer` | 隐藏底部操作按钮 | `boolean` | — |
+| `no-mask-close` | 禁用点击遮罩关闭 | `boolean` | — |
+| `placement` | 滑出方向 | `string` | `right` |
 | `size` | 预设尺寸档位或具体值：`small`（256px）/ `medium`（378px）/ `large`（736px），或直接写如 `512px`、`40%` | — | — |
-| `title` | 标题文案 | — | — |
-| `visible` | 是否显示 | — | — |
+| `title` | 标题文案 | `string` | — |
+| `visible` | 是否显示 | `boolean` | — |
 | `width` | 抽屉宽度（px 或百分比），优先级高于 `size` | — | — |
 
 ### 事件

@@ -46,10 +46,10 @@ With `expandable`, the button only appears when the text actually overflows; onc
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `expandable` | Show an "expand/collapse" button when overflowing | — | — |
-| `rows` | Number of lines to show (1 is single-line ellipsis, ≥2 multi-line `-webkit-line-clamp`) | — | `1` |
-| `text` | Text content | — | — |
-| `tooltip` | Show a full-text tooltip on hover when overflowing | — | `true` |
+| `expandable` | Show an "expand/collapse" button when overflowing | `boolean` | — |
+| `rows` | Number of lines to show (1 is single-line ellipsis, ≥2 multi-line `-webkit-line-clamp`) | `string` | `1` |
+| `text` | Text content | `string` | — |
+| `tooltip` | Show a full-text tooltip on hover when overflowing | `string` | `true` |
 
 ### Events
 

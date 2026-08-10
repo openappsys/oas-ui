@@ -40,9 +40,9 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `disabled` | 禁用 | — | — |
-| `pressed` | 是否按下（受控） | — | — |
-| `value` | 值（随事件回传） | — | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `pressed` | 是否按下（受控） | `boolean` | — |
+| `value` | 值（随事件回传） | `string` | — |
 
 ### 事件
 

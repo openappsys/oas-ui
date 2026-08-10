@@ -93,12 +93,12 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `disabled` | 禁用 | — | — |
-| `label` | 可访问名称（默认走内置文案） | — | `placeholder` |
+| `disabled` | 禁用 | `boolean` | — |
+| `label` | 可访问名称（默认走内置文案） | — | — |
 | `options` | 选项，JSON 数组 `[{ label, value }]` | `Option[] \| string` | `[]` |
-| `placeholder` | 占位提示 | — | — |
+| `placeholder` | 占位提示 | `string` | — |
 | `prefix` | 触发前缀 | `string` | `@` |
-| `value` | 值（受控，完整文本） | — | — |
+| `value` | 值（受控，完整文本） | `string` | — |
 
 ### 事件
 

@@ -45,9 +45,9 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `back` | Whether to show the back button | — | — |
-| `subtitle` | Subtitle text | — | — |
-| `title` | Title text | — | — |
+| `back` | Whether to show the back button | `boolean` | — |
+| `subtitle` | Subtitle text | `string` | — |
+| `title` | Title text | `string` | — |
 
 ### Events
 

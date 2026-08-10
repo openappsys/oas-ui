@@ -50,10 +50,10 @@ When the value exceeds `max`, `max+` is displayed.
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `dot` | Dot mode | — | — |
-| `max` | Upper limit | — | — |
-| `showZero` | Whether to show when value=0 | — | — |
-| `value` | Number | — | — |
+| `dot` | Dot mode | `boolean` | — |
+| `max` | Upper limit | `string` | — |
+| `showZero` | Whether to show when value=0 | `boolean` | — |
+| `value` | Number | `string` | — |
 
 ### Slots
 

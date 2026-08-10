@@ -60,8 +60,8 @@ onMounted(async () => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `blur` | 背景模糊 | — | — |
-| `lock-scroll` | 打开时锁定 body 滚动 | — | `true` |
-| `open` | 是否显示 | — | — |
+| `lock-scroll` | 打开时锁定 body 滚动 | `string` | `true` |
+| `open` | 是否显示 | `boolean` | — |
 | `transparent` | 遮罩透明（无底色） | — | — |
 
 ### 事件

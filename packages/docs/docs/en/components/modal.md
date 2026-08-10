@@ -94,12 +94,12 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `centered` | Vertically center the dialog | — | — |
-| `draggable` | Drag the dialog via its header | — | — |
-| `no-footer` | Hide footer action buttons | — | — |
-| `no-mask-close` | Disable closing on mask click | — | — |
-| `title` | Title text | — | — |
-| `visible` | Whether shown | — | — |
+| `centered` | Vertically center the dialog | `boolean` | — |
+| `draggable` | Drag the dialog via its header | `boolean` | — |
+| `no-footer` | Hide footer action buttons | `boolean` | — |
+| `no-mask-close` | Disable closing on mask click | `boolean` | — |
+| `title` | Title text | `string` | — |
+| `visible` | Whether shown | `boolean` | — |
 | `width` | Dialog width (px or percentage) | — | — |
 
 ### Events

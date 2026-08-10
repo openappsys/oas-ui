@@ -28,8 +28,8 @@ An animation component that eases a number from its current value to the target 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `duration` | Animation duration (ms); 0 jumps straight to the target | `number \| string` | — |
-| `to-fixed` | Decimal places (`Number.prototype.toFixed`); when omitted, integer display | — | — |
-| `value` | Target value; invalid values treated as 0 | — | `0` |
+| `to-fixed` | Decimal places (`Number.prototype.toFixed`); when omitted, integer display | `string` | — |
+| `value` | Target value; invalid values treated as 0 | `string` | `0` |
 
 ### Events
 

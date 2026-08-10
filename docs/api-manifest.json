@@ -17,27 +17,33 @@
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "loading",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "icon",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "block",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "round",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "ghost",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -67,16 +73,19 @@
       },
       {
         "name": "size",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "color",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "label",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -104,22 +113,27 @@
       },
       {
         "name": "closable",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "round",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "chip",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "clickable",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -146,20 +160,24 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "max",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "showZero",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "dot",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -184,15 +202,18 @@
       },
       {
         "name": "size",
+        "type": "string",
         "default": "medium",
         "observed": true
       },
       {
         "name": "wrap",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "align",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -218,6 +239,7 @@
       },
       {
         "name": "dashed",
+        "type": "boolean",
         "observed": true
       },
       {
@@ -242,6 +264,7 @@
     "attrs": [
       {
         "name": "href",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -253,15 +276,18 @@
       },
       {
         "name": "underline",
+        "type": "string",
         "default": "true",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "target",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -292,14 +318,17 @@
       },
       {
         "name": "ellipsis",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "copyable",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "level",
+        "type": "string",
         "default": "3",
         "observed": false
       }
@@ -324,6 +353,7 @@
     "attrs": [
       {
         "name": "level",
+        "type": "string",
         "default": "3",
         "observed": true
       },
@@ -335,10 +365,12 @@
       },
       {
         "name": "ellipsis",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "copyable",
+        "type": "boolean",
         "observed": false
       }
     ],
@@ -368,14 +400,17 @@
       },
       {
         "name": "ellipsis",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "copyable",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "level",
+        "type": "string",
         "default": "3",
         "observed": false
       }
@@ -400,11 +435,13 @@
     "attrs": [
       {
         "name": "type",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "size",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -414,20 +451,22 @@
       },
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "multiple",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "aria-label",
-        "default": "this.t('buttonGroup.group')",
         "observed": true
       }
     ],
@@ -456,15 +495,18 @@
     "attrs": [
       {
         "name": "for",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "required",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "position",
+        "type": "string",
         "default": "after",
         "observed": true
       }
@@ -484,6 +526,7 @@
     "attrs": [
       {
         "name": "keys",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -516,43 +559,50 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "placeholder",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "type",
+        "type": "string",
         "default": "text",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "readonly",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "clearable",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "label",
-        "default": "placeholder",
         "observed": true
       },
       {
         "name": "addon-before",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "addon-after",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -563,30 +613,36 @@
       },
       {
         "name": "suffix",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "prefix-icon",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "suffix-icon",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "show-password",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "maxlength",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "show-count",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -619,47 +675,57 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "placeholder",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "rows",
+        "type": "string",
         "default": "3",
         "observed": true
       },
       {
         "name": "resize",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "readonly",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "autosize",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "auto-height",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "min-rows",
+        "type": "string",
         "default": "1",
         "observed": true
       },
       {
         "name": "max-rows",
+        "type": "string",
         "default": "6",
         "observed": true
       }
@@ -680,18 +746,22 @@
     "attrs": [
       {
         "name": "checked",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "indeterminate",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -716,11 +786,13 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -747,19 +819,23 @@
     "attrs": [
       {
         "name": "checked",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "name",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -784,11 +860,13 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -815,14 +893,17 @@
     "attrs": [
       {
         "name": "checked",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "loading",
+        "type": "boolean",
         "observed": true
       },
       {
@@ -835,6 +916,7 @@
       },
       {
         "name": "size",
+        "type": "string",
         "default": "medium",
         "observed": true
       },
@@ -859,26 +941,31 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "min",
+        "type": "string",
         "default": "0",
         "observed": true
       },
       {
         "name": "max",
+        "type": "string",
         "default": "100",
         "observed": true
       },
       {
         "name": "step",
+        "type": "string",
         "default": "1",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
@@ -912,36 +999,41 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "min",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "max",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "step",
+        "type": "string",
         "default": "1",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "precision",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "label",
-        "default": "this.t('inputNumber.defaultLabel')",
         "observed": true
       }
     ],
@@ -961,24 +1053,29 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "0",
         "observed": true
       },
       {
         "name": "max",
+        "type": "string",
         "default": "5",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "allow-half",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "allow-clear",
+        "type": "string",
         "default": "true",
         "observed": true
       },
@@ -1007,12 +1104,10 @@
     "attrs": [
       {
         "name": "value",
-        "default": "this.hasAttr('multiple') ? '[]' : ''",
         "observed": true
       },
       {
         "name": "placeholder",
-        "default": "this.t('select.placeholder')",
         "observed": true
       },
       {
@@ -1022,26 +1117,32 @@
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "multiple",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "searchable",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "clearable",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "remote",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "loading",
+        "type": "boolean",
         "observed": true
       },
       {
@@ -1050,6 +1151,7 @@
       },
       {
         "name": "allow-create",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -1082,11 +1184,13 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "placeholder",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -1097,6 +1201,7 @@
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -1125,12 +1230,12 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "placeholder",
-        "default": "this.t('select.placeholder')",
         "observed": true
       },
       {
@@ -1140,18 +1245,22 @@
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "clearable",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "loading",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "filterable",
+        "type": "string",
         "default": "true",
         "observed": true
       }
@@ -1185,12 +1294,12 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
       {
         "name": "placeholder",
-        "default": "this.t('cascader.placeholder')",
         "observed": true
       },
       {
@@ -1200,10 +1309,12 @@
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "change-on-select",
+        "type": "boolean",
         "observed": true
       },
       {
@@ -1232,12 +1343,12 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
       {
         "name": "placeholder",
-        "default": "this.t('treeSelect.placeholder')",
         "observed": true
       },
       {
@@ -1247,14 +1358,17 @@
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "multiple",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "expanded",
+        "type": "string",
         "default": "[]",
         "observed": true
       }
@@ -1280,6 +1394,7 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -1295,16 +1410,17 @@
       },
       {
         "name": "placeholder",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "label",
-        "default": "placeholder",
         "observed": true
       }
     ],
@@ -1374,26 +1490,31 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "mode",
+        "type": "string",
         "default": "month",
         "observed": true
       },
       {
         "name": "min",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "max",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "show-week-number",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -1418,36 +1539,41 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "format",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "type",
+        "type": "string",
         "default": "date",
         "observed": true
       },
       {
         "name": "min",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "max",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "placeholder",
-        "default": "this.t('datePicker.placeholder')",
         "observed": true
       }
     ],
@@ -1472,21 +1598,25 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "format",
+        "type": "string",
         "default": "HH:mm:ss",
         "observed": true
       },
       {
         "name": "step",
+        "type": "string",
         "default": "1",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -1506,24 +1636,29 @@
     "attrs": [
       {
         "name": "accept",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "multiple",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "max",
+        "type": "string",
         "default": "0",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "auto-upload",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -1556,11 +1691,13 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
       {
         "name": "titles",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -1574,6 +1711,7 @@
       },
       {
         "name": "searchable",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -1598,16 +1736,19 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "preset",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -1627,15 +1768,18 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "pressed",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -1659,15 +1803,18 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
       {
         "name": "multiple",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "items",
+        "type": "string",
         "default": "[]",
         "observed": true
       }
@@ -1688,33 +1835,40 @@
     "attrs": [
       {
         "name": "length",
+        "type": "string",
         "default": "6",
         "observed": true
       },
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "mask",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "readonly",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "type",
+        "type": "string",
         "default": "text",
         "observed": true
       },
       {
         "name": "aria-invalid",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -1743,21 +1897,25 @@
     "attrs": [
       {
         "name": "min",
+        "type": "string",
         "default": "0",
         "observed": true
       },
       {
         "name": "max",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "default-value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
@@ -1790,19 +1948,23 @@
       },
       {
         "name": "max",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "allow-duplicate",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "placeholder",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -1836,25 +1998,30 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "placeholder",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "disabled",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "submit-on-enter",
+        "type": "string",
         "default": "true",
         "observed": true
       },
       {
         "name": "maxlength",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -1879,11 +2046,13 @@
     "attrs": [
       {
         "name": "type",
+        "type": "string",
         "default": "info",
         "observed": true
       },
       {
         "name": "duration",
+        "type": "string",
         "default": "3000",
         "observed": false
       }
@@ -1899,21 +2068,25 @@
     "attrs": [
       {
         "name": "type",
+        "type": "string",
         "default": "info",
         "observed": true
       },
       {
         "name": "title",
+        "type": "string",
         "default": "",
         "observed": false
       },
       {
         "name": "description",
+        "type": "string",
         "default": "",
         "observed": false
       },
       {
         "name": "duration",
+        "type": "string",
         "default": "4500",
         "observed": false
       }
@@ -1929,30 +2102,40 @@
     "attrs": [
       {
         "name": "type",
+        "type": "string",
         "default": "info",
         "observed": true
       },
       {
         "name": "closable",
+        "type": "boolean",
         "observed": false
       },
       {
         "name": "title",
+        "type": "string",
         "default": "",
         "observed": false
       },
       {
         "name": "description",
+        "type": "string",
         "default": "",
         "observed": false
       },
       {
         "name": "duration",
+        "type": "string",
         "default": "3000",
         "observed": false
       }
     ],
-    "props": [],
+    "props": [
+      {
+        "name": "action",
+        "type": "ToastAction | null"
+      }
+    ],
     "events": [],
     "slots": [],
     "unresolved": []
@@ -1963,20 +2146,24 @@
     "attrs": [
       {
         "name": "open",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "message",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "action-text",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "duration",
+        "type": "string",
         "default": "4000",
         "observed": true
       },
@@ -1986,6 +2173,7 @@
       },
       {
         "name": "offset",
+        "type": "string",
         "default": "24",
         "observed": true
       }
@@ -2011,6 +2199,7 @@
     "attrs": [
       {
         "name": "open",
+        "type": "boolean",
         "observed": true
       },
       {
@@ -2023,6 +2212,7 @@
       },
       {
         "name": "lock-scroll",
+        "type": "string",
         "default": "true",
         "observed": true
       }
@@ -2043,15 +2233,18 @@
     "attrs": [
       {
         "name": "visible",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "title",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "no-footer",
+        "type": "boolean",
         "observed": true
       },
       {
@@ -2060,14 +2253,17 @@
       },
       {
         "name": "centered",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "draggable",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "no-mask-close",
+        "type": "boolean",
         "observed": false
       }
     ],
@@ -2093,20 +2289,24 @@
     "attrs": [
       {
         "name": "visible",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "title",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "placement",
+        "type": "string",
         "default": "right",
         "observed": true
       },
       {
         "name": "no-footer",
+        "type": "boolean",
         "observed": true
       },
       {
@@ -2119,6 +2319,7 @@
       },
       {
         "name": "no-mask-close",
+        "type": "boolean",
         "observed": false
       }
     ],
@@ -2144,15 +2345,18 @@
     "attrs": [
       {
         "name": "open",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "title",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "position",
+        "type": "string",
         "default": "top",
         "observed": true
       }
@@ -2179,16 +2383,19 @@
     "attrs": [
       {
         "name": "type",
+        "type": "string",
         "default": "info",
         "observed": true
       },
       {
         "name": "title",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "closeable",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -2211,35 +2418,42 @@
     "attrs": [
       {
         "name": "percent",
+        "type": "string",
         "default": "0",
         "observed": true
       },
       {
         "name": "status",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "no-text",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "show-text",
+        "type": "string",
         "default": "true",
         "observed": true
       },
       {
         "name": "type",
+        "type": "string",
         "default": "line",
         "observed": true
       },
       {
         "name": "size",
+        "type": "string",
         "default": "48",
         "observed": true
       },
       {
         "name": "stroke-width",
+        "type": "string",
         "default": "6",
         "observed": true
       }
@@ -2255,6 +2469,7 @@
     "attrs": [
       {
         "name": "status",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -2270,11 +2485,13 @@
     "attrs": [
       {
         "name": "size",
+        "type": "string",
         "default": "md",
         "observed": true
       },
       {
         "name": "spinning",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -2293,19 +2510,23 @@
     "attrs": [
       {
         "name": "rows",
+        "type": "string",
         "default": "3",
         "observed": true
       },
       {
         "name": "title",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "avatar",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "active",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -2353,16 +2574,19 @@
     "attrs": [
       {
         "name": "status",
+        "type": "string",
         "default": "success",
         "observed": true
       },
       {
         "name": "title",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "description",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -2382,10 +2606,12 @@
     "attrs": [
       {
         "name": "open",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "content",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -2411,15 +2637,18 @@
     "attrs": [
       {
         "name": "open",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "title",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "content",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -2448,11 +2677,13 @@
     "attrs": [
       {
         "name": "items",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -2485,15 +2716,18 @@
     "attrs": [
       {
         "name": "open",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "items",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -2524,6 +2758,7 @@
     "attrs": [
       {
         "name": "items",
+        "type": "string",
         "default": "[]",
         "observed": true
       }
@@ -2548,15 +2783,18 @@
     "attrs": [
       {
         "name": "open",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "title",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "content",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -2568,6 +2806,7 @@
       },
       {
         "name": "delay",
+        "type": "string",
         "default": "100",
         "observed": true
       }
@@ -2587,11 +2826,13 @@
     "attrs": [
       {
         "name": "items",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
       {
         "name": "open",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -2611,11 +2852,13 @@
     "attrs": [
       {
         "name": "items",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -2636,6 +2879,7 @@
     "attrs": [
       {
         "name": "items",
+        "type": "string",
         "default": "[]",
         "observed": true
       }
@@ -2716,6 +2960,7 @@
       },
       {
         "name": "auto-hide",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -2739,16 +2984,19 @@
     "attrs": [
       {
         "name": "actions",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
       {
         "name": "direction",
+        "type": "string",
         "default": "up",
         "observed": true
       },
       {
         "name": "open",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -2791,11 +3039,13 @@
     "attrs": [
       {
         "name": "items",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
       {
         "name": "separator",
+        "type": "string",
         "default": "/",
         "observed": true
       }
@@ -2816,15 +3066,18 @@
     "attrs": [
       {
         "name": "visible",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "bottom",
+        "type": "string",
         "default": "32px",
         "observed": true
       },
       {
         "name": "right",
+        "type": "string",
         "default": "32px",
         "observed": true
       }
@@ -2849,11 +3102,13 @@
       },
       {
         "name": "active",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "offset",
+        "type": "string",
         "default": "0",
         "observed": true
       }
@@ -2879,6 +3134,7 @@
     "attrs": [
       {
         "name": "open",
+        "type": "boolean",
         "observed": true
       },
       {
@@ -2888,6 +3144,7 @@
       },
       {
         "name": "current",
+        "type": "string",
         "default": "0",
         "observed": true
       }
@@ -2919,6 +3176,7 @@
     "attrs": [
       {
         "name": "items",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
@@ -2928,6 +3186,7 @@
       },
       {
         "name": "fixed",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -2947,11 +3206,13 @@
     "attrs": [
       {
         "name": "options",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -2972,30 +3233,36 @@
     "attrs": [
       {
         "name": "direction",
+        "type": "string",
         "default": "row",
         "observed": true
       },
       {
         "name": "justify",
+        "type": "string",
         "default": "start",
         "observed": true
       },
       {
         "name": "align",
+        "type": "string",
         "default": "stretch",
         "observed": true
       },
       {
         "name": "gap",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "wrap",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "vertical",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -3019,16 +3286,19 @@
       },
       {
         "name": "current",
+        "type": "string",
         "default": "0",
         "observed": true
       },
       {
         "name": "direction",
+        "type": "string",
         "default": "horizontal",
         "observed": true
       },
       {
         "name": "clickable",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -3053,35 +3323,42 @@
     "attrs": [
       {
         "name": "total",
+        "type": "string",
         "default": "0",
         "observed": true
       },
       {
         "name": "page-size",
+        "type": "string",
         "default": "10",
         "observed": true
       },
       {
         "name": "current",
+        "type": "string",
         "default": "1",
         "observed": true
       },
       {
         "name": "siblings",
+        "type": "string",
         "default": "1",
         "observed": true
       },
       {
         "name": "show-total",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "page-sizes",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "show-jumper",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -3101,20 +3378,24 @@
     "attrs": [
       {
         "name": "active",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "type",
+        "type": "string",
         "default": "line",
         "observed": true
       },
       {
         "name": "closable",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "tab-position",
+        "type": "string",
         "default": "top",
         "observed": true
       }
@@ -3152,6 +3433,10 @@
       {
         "name": "hidden",
         "observed": true
+      },
+      {
+        "name": "badge",
+        "observed": false
       }
     ],
     "props": [],
@@ -3169,6 +3454,7 @@
     "attrs": [
       {
         "name": "offset",
+        "type": "string",
         "default": "0",
         "observed": true
       }
@@ -3188,16 +3474,19 @@
     "attrs": [
       {
         "name": "percent",
+        "type": "string",
         "default": "50",
         "observed": true
       },
       {
         "name": "min",
+        "type": "string",
         "default": "10",
         "observed": true
       },
       {
         "name": "max",
+        "type": "string",
         "default": "90",
         "observed": true
       }
@@ -3225,15 +3514,18 @@
     "attrs": [
       {
         "name": "title",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "back",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "subtitle",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -3257,6 +3549,7 @@
     "attrs": [
       {
         "name": "badge",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -3354,16 +3647,19 @@
     "attrs": [
       {
         "name": "gap",
+        "type": "string",
         "default": "0",
         "observed": true
       },
       {
         "name": "cols",
+        "type": "string",
         "default": "24",
         "observed": true
       },
       {
         "name": "columns",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -3383,11 +3679,13 @@
     "attrs": [
       {
         "name": "span",
+        "type": "string",
         "default": "24",
         "observed": true
       },
       {
         "name": "offset",
+        "type": "string",
         "default": "0",
         "observed": true
       }
@@ -3407,6 +3705,7 @@
     "attrs": [
       {
         "name": "collapsed",
+        "type": "boolean",
         "observed": true
       },
       {
@@ -3420,11 +3719,11 @@
       },
       {
         "name": "mobile-breakpoint",
-        "default": "String(DEFAULT_BREAKPOINT)",
         "observed": true
       },
       {
         "name": "drawer-open",
+        "type": "boolean",
         "observed": false
       }
     ],
@@ -3463,11 +3762,13 @@
     "attrs": [
       {
         "name": "size",
+        "type": "string",
         "default": "lg",
         "observed": true
       },
       {
         "name": "center",
+        "type": "string",
         "default": "true",
         "observed": true
       },
@@ -3491,11 +3792,13 @@
     "attrs": [
       {
         "name": "title",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "hoverable",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -3517,17 +3820,18 @@
     "attrs": [
       {
         "name": "src",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "size",
+        "type": "string",
         "default": "32",
         "observed": true
       },
       {
         "name": "alt",
-        "default": "this.t('avatar.defaultAlt')",
         "observed": false
       }
     ],
@@ -3542,11 +3846,13 @@
     "attrs": [
       {
         "name": "max",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "size",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -3566,29 +3872,33 @@
     "attrs": [
       {
         "name": "src",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "alt",
-        "default": "this.t('image.defaultAlt')",
         "observed": true
       },
       {
         "name": "preview",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "fit",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "placeholder",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "fallback",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -3609,11 +3919,13 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "size",
+        "type": "string",
         "default": "128",
         "observed": true
       },
@@ -3637,21 +3949,25 @@
     "attrs": [
       {
         "name": "text",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "image",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "opacity",
+        "type": "string",
         "default": "0.15",
         "observed": true
       },
       {
         "name": "repeat",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -3670,11 +3986,13 @@
     "attrs": [
       {
         "name": "active",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "accordion",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -3702,6 +4020,7 @@
       },
       {
         "name": "header",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -3729,11 +4048,13 @@
     "attrs": [
       {
         "name": "column",
+        "type": "string",
         "default": "3",
         "observed": true
       },
       {
         "name": "title",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -3753,6 +4074,7 @@
     "attrs": [
       {
         "name": "label",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -3807,23 +4129,26 @@
     "attrs": [
       {
         "name": "bordered",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "split",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "loading",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "empty",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "empty-text",
-        "default": "this.t('list.empty')",
         "observed": true
       }
     ],
@@ -3842,6 +4167,7 @@
     "attrs": [
       {
         "name": "title",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -3864,20 +4190,24 @@
     "attrs": [
       {
         "name": "index",
+        "type": "string",
         "default": "0",
         "observed": true
       },
       {
         "name": "autoplay",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "interval",
+        "type": "string",
         "default": "3000",
         "observed": true
       },
       {
         "name": "arrows",
+        "type": "string",
         "default": "hover",
         "observed": true
       }
@@ -3902,48 +4232,62 @@
     "attrs": [
       {
         "name": "data",
+        "type": "string",
         "default": "[]",
         "observed": true
       },
       {
         "name": "selected",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "checked",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "checkable",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "expanded",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "height",
+        "type": "string",
         "default": "360",
         "observed": true
       },
       {
         "name": "row-height",
+        "type": "string",
         "default": "32",
         "observed": true
       },
       {
         "name": "lazy",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "draggable",
+        "type": "boolean",
         "observed": true
       }
     ],
-    "props": [],
+    "props": [
+      {
+        "name": "load",
+        "type": "(payload: { key: string }) => void"
+      }
+    ],
     "events": [
       {
         "name": "oas-node-drop",
@@ -3981,6 +4325,7 @@
       },
       {
         "name": "sort-key",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -3992,29 +4337,35 @@
       },
       {
         "name": "row-key",
+        "type": "string",
         "default": "key",
         "observed": true
       },
       {
         "name": "checkable",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "loading",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "height",
+        "type": "string",
         "default": "320",
         "observed": true
       },
       {
         "name": "row-height",
+        "type": "string",
         "default": "40",
         "observed": true
       },
       {
         "name": "stripe",
+        "type": "boolean",
         "observed": true
       },
       {
@@ -4023,22 +4374,24 @@
       },
       {
         "name": "expanded",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "summary",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "selected",
+        "type": "string",
         "default": "",
         "observed": false
       },
       {
         "name": "empty-text",
-        "default": "this.t('table.empty')",
         "observed": false
       }
     ],
@@ -4083,21 +4436,25 @@
     "attrs": [
       {
         "name": "height",
+        "type": "string",
         "default": "320",
         "observed": true
       },
       {
         "name": "item-height",
+        "type": "string",
         "default": "36",
         "observed": true
       },
       {
         "name": "buffer",
+        "type": "string",
         "default": "4",
         "observed": true
       },
       {
         "name": "scroll-target",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -4122,7 +4479,11 @@
         "detail": "{ scrollTop, start: this.start, end: this.end }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": "template[slot=\"item\"]"
+      }
+    ],
     "unresolved": []
   },
   "oas-countdown": {
@@ -4131,11 +4492,13 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "0",
         "observed": true
       },
       {
         "name": "format",
+        "type": "string",
         "default": "HH:mm:ss",
         "observed": true
       }
@@ -4155,11 +4518,13 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "0",
         "observed": true
       },
       {
         "name": "precision",
+        "type": "string",
         "default": "0",
         "observed": true
       },
@@ -4170,16 +4535,19 @@
       },
       {
         "name": "suffix",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "group-separator",
+        "type": "string",
         "default": "true",
         "observed": true
       },
       {
         "name": "loading",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -4199,21 +4567,25 @@
     "attrs": [
       {
         "name": "text",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "rows",
+        "type": "string",
         "default": "1",
         "observed": true
       },
       {
         "name": "tooltip",
+        "type": "string",
         "default": "true",
         "observed": true
       },
       {
         "name": "expandable",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -4237,6 +4609,7 @@
     "attrs": [
       {
         "name": "speed",
+        "type": "string",
         "default": "",
         "observed": true
       },
@@ -4260,16 +4633,17 @@
     "attrs": [
       {
         "name": "value",
+        "type": "string",
         "default": "0",
         "observed": true
       },
       {
         "name": "duration",
-        "default": "String(DEFAULT_DURATION)",
         "observed": true
       },
       {
         "name": "to-fixed",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -4295,11 +4669,13 @@
     "attrs": [
       {
         "name": "gradient",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "direction",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -4319,6 +4695,7 @@
     "attrs": [
       {
         "name": "ratio",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -4377,20 +4754,24 @@
     "attrs": [
       {
         "name": "code",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "language",
+        "type": "string",
         "default": "",
         "observed": true
       },
       {
         "name": "show-line-number",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "copyable",
+        "type": "string",
         "default": "true",
         "observed": true
       }
@@ -4415,6 +4796,7 @@
     "attrs": [
       {
         "name": "code",
+        "type": "string",
         "default": "",
         "observed": true
       }
@@ -4434,16 +4816,17 @@
       },
       {
         "name": "auto-scroll",
+        "type": "string",
         "default": "true",
         "observed": true
       },
       {
         "name": "line-number",
+        "type": "boolean",
         "observed": true
       },
       {
         "name": "empty-text",
-        "default": "this.t('log.empty')",
         "observed": true
       }
     ],
@@ -4463,12 +4846,10 @@
     "attrs": [
       {
         "name": "columns",
-        "default": "String(DEFAULT_COLUMNS)",
         "observed": true
       },
       {
         "name": "gap",
-        "default": "String(DEFAULT_GAP)",
         "observed": true
       }
     ],

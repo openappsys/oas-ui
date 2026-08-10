@@ -40,11 +40,11 @@ Clicking dispatches the `oas-click` CustomEvent; `detail.originalEvent` is the n
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `disabled` | Disabled | — | — |
-| `href` | Link URL | — | — |
-| `target` | Open behavior | — | — |
+| `disabled` | Disabled | `boolean` | — |
+| `href` | Link URL | `string` | — |
+| `target` | Open behavior | `string` | — |
 | `type` | Type | `LinkType` | `default` |
-| `underline` | Underline | — | `true` |
+| `underline` | Underline | `string` | `true` |
 
 ### Events
 

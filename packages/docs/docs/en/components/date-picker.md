@@ -70,13 +70,13 @@ The format supports `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` tokens.
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `disabled` | Disabled | — | — |
-| `format` | Display format tokens (`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`) | — | — |
-| `max` | Selectable range (ISO dates) | — | — |
-| `min` | Selectable range (ISO dates) | — | — |
+| `disabled` | Disabled | `boolean` | — |
+| `format` | Display format tokens (`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`) | `string` | — |
+| `max` | Selectable range (ISO dates) | `string` | — |
+| `min` | Selectable range (ISO dates) | `string` | — |
 | `placeholder` | Placeholder text | — | — |
-| `type` | Type: `date` / `daterange` / `month` / `datetime` | — | `date` |
-| `value` | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | — | — |
+| `type` | Type: `date` / `daterange` / `month` / `datetime` | `string` | `date` |
+| `value` | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | `string` | — |
 
 ### Events
 

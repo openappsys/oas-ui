@@ -59,8 +59,8 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `current` | 当前步骤索引 | — | `0` |
-| `open` | 开始引导（布尔属性，存在即启动） | — | — |
+| `current` | 当前步骤索引 | `string` | `0` |
+| `open` | 开始引导（布尔属性，存在即启动） | `boolean` | — |
 | `steps` | 步骤 JSON | `TourStep[] \| string` | `[]` |
 
 ### 事件

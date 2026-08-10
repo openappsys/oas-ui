@@ -60,8 +60,8 @@ onMounted(async () => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `blur` | Blur the background | — | — |
-| `lock-scroll` | Lock body scroll while open | — | `true` |
-| `open` | Whether shown | — | — |
+| `lock-scroll` | Lock body scroll while open | `string` | `true` |
+| `open` | Whether shown | `boolean` | — |
 | `transparent` | Transparent overlay (no background) | — | — |
 
 ### Events

@@ -60,40 +60,40 @@ Typography components for text, titles, and paragraphs.
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `copyable` | — | — | — |
-| `ellipsis` | — | — | — |
-| `level` | — | — | `3` |
-| `type` | — | `TextType` | `default` |
+| `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
+| `ellipsis` | Single-line ellipsis when the text overflows its container | `boolean` | — |
+| `level` | Heading level (1-5) | `string` | `3` |
+| `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 
 | Event | Description |
 | --- | --- |
 | `oas-copy` | Copy succeeded, `detail: { text }` |
-| `oas-copy-error` | — |
+| `oas-copy-error` | Copy failed, `detail: { text }` |
 
 ### oas-title
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `copyable` | — | — | — |
-| `ellipsis` | — | — | — |
-| `level` | — | — | `3` |
-| `type` | — | `TextType` | `default` |
+| `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
+| `ellipsis` | Single-line ellipsis when the text overflows its container | `boolean` | — |
+| `level` | Heading level (1-5) | `string` | `3` |
+| `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 
 | Event | Description |
 | --- | --- |
-| `oas-copy` | — |
-| `oas-copy-error` | — |
+| `oas-copy` | Copy succeeded, `detail: { text }` |
+| `oas-copy-error` | Copy failed, `detail: { text }` |
 
 ### oas-paragraph
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `copyable` | — | — | — |
-| `ellipsis` | — | — | — |
-| `level` | — | — | `3` |
-| `type` | — | `TextType` | `default` |
+| `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
+| `ellipsis` | Single-line ellipsis when the text overflows its container | `boolean` | — |
+| `level` | Heading level (1-5) | `string` | `3` |
+| `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 
 | Event | Description |
 | --- | --- |
-| `oas-copy` | — |
-| `oas-copy-error` | — |
+| `oas-copy` | Copy succeeded, `detail: { text }` |
+| `oas-copy-error` | Copy failed, `detail: { text }` |

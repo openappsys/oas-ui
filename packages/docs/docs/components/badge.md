@@ -50,10 +50,10 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `dot` | 小圆点模式 | — | — |
-| `max` | 上限 | — | — |
-| `showZero` | value=0 时是否显示 | — | — |
-| `value` | 数字 | — | — |
+| `dot` | 小圆点模式 | `boolean` | — |
+| `max` | 上限 | `string` | — |
+| `showZero` | value=0 时是否显示 | `boolean` | — |
+| `value` | 数字 | `string` | — |
 
 ### 插槽
 

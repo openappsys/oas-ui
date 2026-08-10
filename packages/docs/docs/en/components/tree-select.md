@@ -82,12 +82,12 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `disabled` | Disabled | — | — |
-| `expanded` | Set of expanded node values (JSON array, controlled) | — | `[]` |
-| `multiple` | Multiple select + parent-child cascade | — | — |
+| `disabled` | Disabled | `boolean` | — |
+| `expanded` | Set of expanded node values (JSON array, controlled) | `string` | `[]` |
+| `multiple` | Multiple select + parent-child cascade | `boolean` | — |
 | `options` | Tree options, JSON array, supports `children` / `disabled` | `TreeOption[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
-| `value` | Selected value (JSON array in multiple mode) | — | `[]` |
+| `value` | Selected value (JSON array in multiple mode) | `string` | `[]` |
 
 ### Events
 

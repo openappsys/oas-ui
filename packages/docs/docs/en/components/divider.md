@@ -37,7 +37,7 @@ A horizontal/vertical divider that separates content.
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `content-position` | Content position | `DividerPosition` | `center` |
-| `dashed` | Dashed | — | — |
+| `dashed` | Dashed | `boolean` | — |
 | `direction` | Direction | `DividerDirection` | `horizontal` |
 
 ### Slots

@@ -40,11 +40,11 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `group-separator` | 千分位分组（`"false"` 关闭） | — | `true` |
-| `loading` | 加载态（骨架占位） | — | — |
-| `precision` | 小数位（四舍五入） | — | `0` |
+| `group-separator` | 千分位分组（`"false"` 关闭） | `string` | `true` |
+| `loading` | 加载态（骨架占位） | `boolean` | — |
+| `precision` | 小数位（四舍五入） | `string` | `0` |
 | `prefix` | 前后缀文案 | `string` | — |
-| `suffix` | 前后缀文案 | — | — |
-| `value` | 数值（数字字符串） | — | `0` |
+| `suffix` | 前后缀文案 | `string` | — |
+| `value` | 数值（数字字符串） | `string` | `0` |
 
 无事件（纯展示）。

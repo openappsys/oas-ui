@@ -152,10 +152,10 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `active` | 激活标签的 `value` | — | — |
-| `closable` | 每个标签显示关闭 ×，点击派发 `oas-close`（组件不自动删除） | — | — |
-| `tab-position` | 标签栏位置：`top`（默认）/ `left` / `right` / `bottom` | — | `top` |
-| `type` | 样式变体：`line`（下划线，默认）/ `card`（卡片式） | — | `line` |
+| `active` | 激活标签的 `value` | `string` | — |
+| `closable` | 每个标签显示关闭 ×，点击派发 `oas-close`（组件不自动删除） | `boolean` | — |
+| `tab-position` | 标签栏位置：`top`（默认）/ `left` / `right` / `bottom` | `string` | `top` |
+| `type` | 样式变体：`line`（下划线，默认）/ `card`（卡片式） | `string` | `line` |
 
 | 事件 | 说明 |
 | --- | --- |

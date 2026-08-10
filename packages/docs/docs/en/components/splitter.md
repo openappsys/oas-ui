@@ -63,9 +63,9 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `max` | Left panel maximum ratio (%) | — | `90` |
-| `min` | Left panel minimum ratio (%) | — | `10` |
-| `percent` | Left panel ratio (%) | — | `50` |
+| `max` | Left panel maximum ratio (%) | `string` | `90` |
+| `min` | Left panel minimum ratio (%) | `string` | `10` |
+| `percent` | Left panel ratio (%) | `string` | `50` |
 
 ### Events
 

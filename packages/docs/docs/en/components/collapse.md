@@ -69,8 +69,8 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `accordion` | Accordion mode; only one panel open at a time | — | — |
-| `active` | Set of expanded panel `name` values (comma-separated) | — | — |
+| `accordion` | Accordion mode; only one panel open at a time | `boolean` | — |
+| `active` | Set of expanded panel `name` values (comma-separated) | `string` | — |
 
 | Event | Description |
 | --- | --- |
@@ -84,7 +84,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `header` | Panel title | — | — |
+| `header` | Panel title | `string` | — |
 | `name` | Unique identifier of the panel | — | — |
 | `open` | Whether it is expanded (managed by the container) | — | — |
 

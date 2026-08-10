@@ -74,10 +74,10 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `checked` | Whether checked | — | — |
-| `disabled` | Disabled | — | — |
-| `name` | Native group name (managed inside the group) | — | — |
-| `value` | Option identifier | — | — |
+| `checked` | Whether checked | `boolean` | — |
+| `disabled` | Disabled | `boolean` | — |
+| `name` | Native group name (managed inside the group) | `string` | — |
+| `value` | Option identifier | `string` | — |
 
 ### Events
 

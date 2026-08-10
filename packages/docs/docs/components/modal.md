@@ -94,12 +94,12 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `centered` | 对话框垂直居中显示 | — | — |
-| `draggable` | 可通过标题栏拖动对话框 | — | — |
-| `no-footer` | 隐藏底部操作按钮 | — | — |
-| `no-mask-close` | 禁用点击遮罩关闭 | — | — |
-| `title` | 标题文案 | — | — |
-| `visible` | 是否显示 | — | — |
+| `centered` | 对话框垂直居中显示 | `boolean` | — |
+| `draggable` | 可通过标题栏拖动对话框 | `boolean` | — |
+| `no-footer` | 隐藏底部操作按钮 | `boolean` | — |
+| `no-mask-close` | 禁用点击遮罩关闭 | `boolean` | — |
+| `title` | 标题文案 | `string` | — |
+| `visible` | 是否显示 | `boolean` | — |
 | `width` | 对话框宽度（px 或百分比） | — | — |
 
 ### 事件

@@ -82,12 +82,12 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `disabled` | 禁用 | — | — |
-| `expanded` | 展开节点的 value 集合（JSON 数组，受控） | — | `[]` |
-| `multiple` | 多选 + 父子级联 | — | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `expanded` | 展开节点的 value 集合（JSON 数组，受控） | `string` | `[]` |
+| `multiple` | 多选 + 父子级联 | `boolean` | — |
 | `options` | 树形选项，JSON 数组，支持 `children` / `disabled` | `TreeOption[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
-| `value` | 选中值（多选为 JSON 数组） | — | `[]` |
+| `value` | 选中值（多选为 JSON 数组） | `string` | `[]` |
 
 ### 事件
 

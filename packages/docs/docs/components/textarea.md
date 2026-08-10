@@ -74,16 +74,16 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `auto-height` | 旧属性名（兼容 `autosize`） | — | — |
-| `autosize` | 高度自适应 | — | — |
-| `disabled` | 禁用 | — | — |
-| `max-rows` | 自适应最大行数 | — | `6` |
-| `min-rows` | 自适应最小行数 | — | `1` |
-| `placeholder` | 占位提示 | — | — |
-| `readonly` | 只读 | — | — |
-| `resize` | 尺寸调整 | — | — |
-| `rows` | 行数 | — | `3` |
-| `value` | 值（受控） | — | — |
+| `auto-height` | 旧属性名（兼容 `autosize`） | `boolean` | — |
+| `autosize` | 高度自适应 | `boolean` | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `max-rows` | 自适应最大行数 | `string` | `6` |
+| `min-rows` | 自适应最小行数 | `string` | `1` |
+| `placeholder` | 占位提示 | `string` | — |
+| `readonly` | 只读 | `boolean` | — |
+| `resize` | 尺寸调整 | `string` | — |
+| `rows` | 行数 | `string` | `3` |
+| `value` | 值（受控） | `string` | — |
 
 ### 事件
 

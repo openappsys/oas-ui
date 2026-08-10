@@ -67,10 +67,10 @@ When the container has no slot content at all, the watermark layer still renders
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `image` | Image watermark URL (takes precedence over `text` when present) | — | — |
-| `opacity` | Watermark layer transparency (0–1, auto-clamped) | — | `0.15` |
-| `repeat` | Boolean; when present the unit is tiled, otherwise a single unit is centered | — | — |
-| `text` | Text watermark content (either `text` or `image`) | — | — |
+| `image` | Image watermark URL (takes precedence over `text` when present) | `string` | — |
+| `opacity` | Watermark layer transparency (0–1, auto-clamped) | `string` | `0.15` |
+| `repeat` | Boolean; when present the unit is tiled, otherwise a single unit is centered | `boolean` | — |
+| `text` | Text watermark content (either `text` or `image`) | `string` | — |
 
 ### Slots
 

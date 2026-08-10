@@ -96,9 +96,9 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `actions` | Sub-action JSON | — | `[]` |
-| `direction` | Expansion direction | — | `up` |
-| `open` | Expanded state (controlled) | — | — |
+| `actions` | Sub-action JSON | `string` | `[]` |
+| `direction` | Expansion direction | `string` | `up` |
+| `open` | Expanded state (controlled) | `boolean` | — |
 
 ### Events
 

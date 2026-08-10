@@ -47,8 +47,8 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `options` | `[{ label, value, disabled? }]` JSON 字符串 | — | `[]` |
-| `value` | 选中值（缺省选第一项，受控属性） | — | — |
+| `options` | `[{ label, value, disabled? }]` JSON 字符串 | `string` | `[]` |
+| `value` | 选中值（缺省选第一项，受控属性） | `string` | — |
 
 ### 事件
 

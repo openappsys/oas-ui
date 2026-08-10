@@ -73,12 +73,12 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `checked` | Whether on | — | — |
+| `checked` | Whether on | `boolean` | — |
 | `checked-text` | Label shown when on; inside the track at medium/large, outside at small | — | — |
 | `color` | Custom primary color for the on state, overrides `--oas-color-primary` (CSS color value) | — | — |
-| `disabled` | Disabled | — | — |
-| `loading` | Loading state, prevents toggling | — | — |
-| `size` | Size | — | `medium` |
+| `disabled` | Disabled | `boolean` | — |
+| `loading` | Loading state, prevents toggling | `boolean` | — |
+| `size` | Size | `string` | `medium` |
 | `unchecked-text` | Label shown when off; inside the track at medium/large, outside at small | — | — |
 
 ### Events

@@ -78,10 +78,10 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `content` | 正文文本 | — | — |
-| `open` | 受控显示（布尔属性，存在即显示） | — | — |
+| `content` | 正文文本 | `string` | — |
+| `open` | 受控显示（布尔属性，存在即显示） | `boolean` | — |
 | `placement` | 浮层位置 | `Placement` | `top` |
-| `title` | 标题文本 | — | — |
+| `title` | 标题文本 | `string` | — |
 
 ### 插槽
 

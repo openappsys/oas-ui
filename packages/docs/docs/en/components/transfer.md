@@ -73,11 +73,11 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `data` | Data (property, `[{ key, label, disabled }]`) | `TransferItem[]` | — |
-| `searchable` | Search filtering within panels | — | — |
+| `searchable` | Search filtering within panels | `boolean` | — |
 | `source-title` | — | — | — |
 | `target-title` | — | — | — |
-| `titles` | Panel titles (JSON array) or `source-title`/`target-title` | — | — |
-| `value` | Selected key array (JSON attribute) | — | `[]` |
+| `titles` | Panel titles (JSON array) or `source-title`/`target-title` | `string` | — |
+| `value` | Selected key array (JSON attribute) | `string` | `[]` |
 
 ### Events
 

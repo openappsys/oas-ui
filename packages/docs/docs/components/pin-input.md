@@ -106,13 +106,13 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `aria-invalid` | 校验失败态（同步到容器与各格，标 danger） | — | — |
-| `disabled` | 禁用 | — | — |
-| `length` | 验证码位数 | — | `6` |
-| `mask` | 星号遮罩 | — | — |
-| `readonly` | 只读 | — | — |
-| `type` | 格子输入类型 | — | `text` |
-| `value` | 当前值（受控） | — | — |
+| `aria-invalid` | 校验失败态（同步到容器与各格，标 danger） | `string` | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `length` | 验证码位数 | `string` | `6` |
+| `mask` | 星号遮罩 | `boolean` | — |
+| `readonly` | 只读 | `boolean` | — |
+| `type` | 格子输入类型 | `string` | `text` |
+| `value` | 当前值（受控） | `string` | — |
 
 ### 事件
 

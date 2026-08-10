@@ -88,9 +88,9 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `active` | Currently highlighted href | — | — |
+| `active` | Currently highlighted href | `string` | — |
 | `items` | Anchor items JSON | `AnchorItem[] \| string` | `[]` |
-| `offset` | Highlight offset in px | — | `0` |
+| `offset` | Highlight offset in px | `string` | `0` |
 
 ### Events
 

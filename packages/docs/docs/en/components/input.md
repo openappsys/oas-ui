@@ -146,22 +146,22 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `addon-after` | Addon text block after the input | — | — |
-| `addon-before` | Addon text block before the input | — | — |
-| `clearable` | Clearable | — | — |
-| `disabled` | Disabled | — | — |
-| `label` | Accessible name (`aria-label` source; falls back to `placeholder` → built-in "输入框" when unset) | — | `placeholder` |
-| `maxlength` | Maximum input length (passed through to native maxlength) | — | — |
-| `placeholder` | Placeholder text | — | — |
+| `addon-after` | Addon text block after the input | `string` | — |
+| `addon-before` | Addon text block before the input | `string` | — |
+| `clearable` | Clearable | `boolean` | — |
+| `disabled` | Disabled | `boolean` | — |
+| `label` | Accessible name (`aria-label` source; falls back to `placeholder` → built-in "输入框" when unset) | — | — |
+| `maxlength` | Maximum input length (passed through to native maxlength) | `string` | — |
+| `placeholder` | Placeholder text | `string` | — |
 | `prefix` | Inline text before the input value | `string` | — |
-| `prefix-icon` | Icon name for the leading icon | — | — |
-| `readonly` | Readonly | — | — |
-| `show-count` | Show character count (bottom-right; danger when over limit) | — | — |
-| `show-password` | Password visibility toggle (renders an eye button when `type="password"`) | — | — |
-| `suffix` | Inline text after the input value | — | — |
-| `suffix-icon` | Icon name for the trailing icon | — | — |
-| `type` | Native input type | — | `text` |
-| `value` | Value (controlled) | — | — |
+| `prefix-icon` | Icon name for the leading icon | `string` | — |
+| `readonly` | Readonly | `boolean` | — |
+| `show-count` | Show character count (bottom-right; danger when over limit) | `boolean` | — |
+| `show-password` | Password visibility toggle (renders an eye button when `type="password"`) | `boolean` | — |
+| `suffix` | Inline text after the input value | `string` | — |
+| `suffix-icon` | Icon name for the trailing icon | `string` | — |
+| `type` | Native input type | `string` | `text` |
+| `value` | Value (controlled) | `string` | — |
 
 ### Events
 

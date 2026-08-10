@@ -61,11 +61,11 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `allow-duplicate` | 允许重复标签 | — | — |
-| `disabled` | 禁用 | — | — |
-| `max` | 标签数量上限 | — | — |
+| `allow-duplicate` | 允许重复标签 | `boolean` | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `max` | 标签数量上限 | `string` | — |
 | `model-value` | 标签数组（property 或 JSON） | — | — |
-| `placeholder` | 输入框占位符 | — | — |
+| `placeholder` | 输入框占位符 | `string` | — |
 
 ### 事件
 

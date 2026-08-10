@@ -44,10 +44,10 @@ format 含 `HH`/`mm`/`ss` 时对应列才出现。
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `disabled` | 禁用 | — | — |
-| `format` | 展示格式 token | — | `HH:mm:ss` |
-| `step` | 分钟步进间隔 | — | `1` |
-| `value` | 当前值（`HH:mm:ss`） | — | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `format` | 展示格式 token | `string` | `HH:mm:ss` |
+| `step` | 分钟步进间隔 | `string` | `1` |
+| `value` | 当前值（`HH:mm:ss`） | `string` | — |
 
 ### 事件
 

@@ -48,9 +48,9 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `closeable` | 是否显示关闭按钮 | — | — |
-| `title` | 标题文案 | — | — |
-| `type` | 提示类型 | — | `info` |
+| `closeable` | 是否显示关闭按钮 | `boolean` | — |
+| `title` | 标题文案 | `string` | — |
+| `type` | 提示类型 | `string` | `info` |
 
 ### 事件
 

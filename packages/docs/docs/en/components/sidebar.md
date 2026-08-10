@@ -107,8 +107,8 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `collapsed` | Controlled collapse to an icon strip (present means collapsed) | — | — |
-| `drawer-open` | — | — | — |
+| `collapsed` | Controlled collapse to an icon strip (present means collapsed) | `boolean` | — |
+| `drawer-open` | — | `boolean` | — |
 | `items` | Menu items JSON `[{label, value, icon?}]` | `SidebarItem[] \| string` | `[]` |
 | `mobile-breakpoint` | Mobile breakpoint (px); narrower than this becomes an overlay drawer | — | — |
 | `width` | Expanded width; defaults to the `--oas-sidebar-width` token | — | — |

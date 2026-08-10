@@ -97,7 +97,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `auto-hide` | The scrollbar is shown only while scrolling/hovering, then auto-hides after a timeout | — | — |
+| `auto-hide` | The scrollbar is shown only while scrolling/hovering, then auto-hides after a timeout | `boolean` | — |
 | `height` | Viewport height (px); when unset, grows with the content | — | — |
 | `width` | Viewport width (px); when unset, fills the host width | — | — |
 

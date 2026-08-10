@@ -94,11 +94,11 @@ onMounted(async () => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `alt` | Alternative text | — | — |
-| `fallback` | Fallback image URL to switch to on load failure; when not set, shows the "图片加载失败" placeholder | — | — |
-| `fit` | `object-fit` value | — | — |
-| `placeholder` | Show a light gray placeholder before the image finishes loading | — | — |
-| `preview` | Enable built-in preview: click to zoom + zoom/rotate/download + Esc to close + focus trap | — | — |
-| `src` | Image URL | — | — |
+| `fallback` | Fallback image URL to switch to on load failure; when not set, shows the "图片加载失败" placeholder | `string` | — |
+| `fit` | `object-fit` value | `string` | — |
+| `placeholder` | Show a light gray placeholder before the image finishes loading | `boolean` | — |
+| `preview` | Enable built-in preview: click to zoom + zoom/rotate/download + Esc to close + focus trap | `boolean` | — |
+| `src` | Image URL | `string` | — |
 
 ### Events
 

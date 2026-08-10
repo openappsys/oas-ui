@@ -61,9 +61,9 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `center` | 是否居中（`center="false"` 关闭） | — | `true` |
+| `center` | 是否居中（`center="false"` 关闭） | `string` | `true` |
 | `padding` | 内边距 token/值（作用于 `padding-inline`） | — | — |
-| `size` | 定宽档位，映射 `--oas-container-*` token | — | `lg` |
+| `size` | 定宽档位，映射 `--oas-container-*` token | `string` | `lg` |
 
 ### 插槽
 

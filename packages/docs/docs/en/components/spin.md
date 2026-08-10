@@ -28,8 +28,8 @@ A loading indicator that can be used standalone or wrap content with an overlaid
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `size` | Indicator size | — | `md` |
-| `spinning` | Whether loading; when set, wraps content with an overlaid mask | — | — |
+| `size` | Indicator size | `string` | `md` |
+| `spinning` | Whether loading; when set, wraps content with an overlaid mask | `boolean` | — |
 
 ### Slots
 

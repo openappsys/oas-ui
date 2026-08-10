@@ -47,8 +47,8 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `options` | `[{ label, value, disabled? }]` JSON string | — | `[]` |
-| `value` | Selected value (defaults to the first option; controlled) | — | — |
+| `options` | `[{ label, value, disabled? }]` JSON string | `string` | `[]` |
+| `value` | Selected value (defaults to the first option; controlled) | `string` | — |
 
 ### Events
 

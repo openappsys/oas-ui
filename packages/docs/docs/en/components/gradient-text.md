@@ -34,8 +34,8 @@ A purely presentational component that fills text with a gradient color, impleme
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `direction` | Gradient direction (first argument of `linear-gradient`, e.g. `to right`, `135deg`) | — | — |
-| `gradient` | JSON color-stop array, e.g. `["#f00","#00f"]`; a single stop renders a solid color; missing / invalid values fall back to the default token gradient | — | — |
+| `direction` | Gradient direction (first argument of `linear-gradient`, e.g. `to right`, `135deg`) | `string` | — |
+| `gradient` | JSON color-stop array, e.g. `["#f00","#00f"]`; a single stop renders a solid color; missing / invalid values fall back to the default token gradient | `string` | — |
 
 ### Slots
 

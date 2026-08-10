@@ -104,10 +104,10 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `code` | 源代码原文 | — | — |
-| `copyable` | 显示复制按钮 | — | `true` |
-| `language` | 语言：`js`/`ts`/`html`/`css`/`json`，未知按纯文本 | — | — |
-| `show-line-number` | 显示行号栏 | — | — |
+| `code` | 源代码原文 | `string` | — |
+| `copyable` | 显示复制按钮 | `string` | `true` |
+| `language` | 语言：`js`/`ts`/`html`/`css`/`json`，未知按纯文本 | `string` | — |
+| `show-line-number` | 显示行号栏 | `boolean` | — |
 
 ### 事件
 

@@ -60,8 +60,8 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `fixed` | 固定到视口底部（`position: fixed; bottom: 0`） | — | — |
-| `items` | 导航项 JSON | — | `[]` |
+| `fixed` | 固定到视口底部（`position: fixed; bottom: 0`） | `boolean` | — |
+| `items` | 导航项 JSON | `string` | `[]` |
 | `value` | 激活项 value，未指定默认激活第一个可用项 | — | — |
 
 ### 事件

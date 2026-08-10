@@ -64,10 +64,10 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `default-value` | 新增行的默认值 | — | — |
-| `disabled` | 禁用（行内输入 + 按钮） | — | — |
-| `max` | 最多行数，超长截断 | — | — |
-| `min` | 最少行数，不足自动补足 | — | `0` |
+| `default-value` | 新增行的默认值 | `string` | — |
+| `disabled` | 禁用（行内输入 + 按钮） | `boolean` | — |
+| `max` | 最多行数，超长截断 | `string` | — |
+| `min` | 最少行数，不足自动补足 | `string` | `0` |
 | `model-value` | 字符串数组（property 或 JSON） | — | — |
 
 ### 事件

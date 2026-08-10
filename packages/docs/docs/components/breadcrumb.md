@@ -43,8 +43,8 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `items` | 面包屑项 JSON | — | `[]` |
-| `separator` | 分隔符 | — | `/` |
+| `items` | 面包屑项 JSON | `string` | `[]` |
+| `separator` | 分隔符 | `string` | `/` |
 
 ### 事件
 

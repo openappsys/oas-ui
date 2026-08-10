@@ -45,9 +45,9 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `bottom` | Distance from the viewport bottom | — | `32px` |
-| `right` | Distance from the viewport right edge | — | `32px` |
-| `visible` | Whether the button is shown | — | — |
+| `bottom` | Distance from the viewport bottom | `string` | `32px` |
+| `right` | Distance from the viewport right edge | `string` | `32px` |
+| `visible` | Whether the button is shown | `boolean` | — |
 
 ### Events
 

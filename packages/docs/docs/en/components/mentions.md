@@ -93,12 +93,12 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `disabled` | Disabled | — | — |
-| `label` | Accessible name (built-in text by default) | — | `placeholder` |
+| `disabled` | Disabled | `boolean` | — |
+| `label` | Accessible name (built-in text by default) | — | — |
 | `options` | Options, JSON array `[{ label, value }]` | `Option[] \| string` | `[]` |
-| `placeholder` | Placeholder text | — | — |
+| `placeholder` | Placeholder text | `string` | — |
 | `prefix` | Trigger prefix | `string` | `@` |
-| `value` | Value (controlled, full text) | — | — |
+| `value` | Value (controlled, full text) | `string` | — |
 
 ### Events
 

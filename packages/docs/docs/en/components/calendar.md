@@ -52,11 +52,11 @@ In year mode, selecting a month dispatches `yyyy-MM`.
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `disabledDate` | Disabled callback (property) | `((d: Date) => boolean) \| null` | — |
-| `max` | Selectable range (ISO dates) | — | — |
-| `min` | Selectable range (ISO dates) | — | — |
-| `mode` | `month` / `year` | — | `month` |
-| `show-week-number` | Show the ISO week number column | — | — |
-| `value` | Selected value (ISO) | — | — |
+| `max` | Selectable range (ISO dates) | `string` | — |
+| `min` | Selectable range (ISO dates) | `string` | — |
+| `mode` | `month` / `year` | `string` | `month` |
+| `show-week-number` | Show the ISO week number column | `boolean` | — |
+| `value` | Selected value (ISO) | `string` | — |
 
 ### Events
 

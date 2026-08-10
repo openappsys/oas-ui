@@ -42,7 +42,7 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `badge` | Badge number at the top-right corner | — | — |
+| `badge` | Badge number at the top-right corner | `string` | — |
 
 ### Events
 

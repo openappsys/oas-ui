@@ -193,16 +193,16 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `checkable` | 是否显示复选框 | — | — |
-| `checked` | 勾选节点 key 集合（逗号分隔） | — | — |
-| `data` | 节点数据 `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`，JSON 字符串 | — | `[]` |
-| `draggable` | 节点可拖拽换序 / 换父，落点显示插入线 / 高亮，松手派发 `oas-node-drop` | — | — |
-| `expanded` | 展开节点 key 集合（逗号分隔） | — | — |
-| `height` | 虚拟滚动视口高度（px）；设置后开启大数据量虚拟化渲染 | — | `360` |
-| `lazy` | 懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载 | — | — |
-| `load` | 懒加载回调 `(payload: { key }) => void`，与 `oas-load` 事件并存；宿主回填子节点后重设 `data` 属性 | — | — |
-| `row-height` | 虚拟化时每行固定高度（px） | — | `32` |
-| `selected` | 选中节点 key | — | — |
+| `checkable` | 是否显示复选框 | `boolean` | — |
+| `checked` | 勾选节点 key 集合（逗号分隔） | `string` | — |
+| `data` | 节点数据 `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`，JSON 字符串 | `string` | `[]` |
+| `draggable` | 节点可拖拽换序 / 换父，落点显示插入线 / 高亮，松手派发 `oas-node-drop` | `boolean` | — |
+| `expanded` | 展开节点 key 集合（逗号分隔） | `string` | — |
+| `height` | 虚拟滚动视口高度（px）；设置后开启大数据量虚拟化渲染 | `string` | `360` |
+| `lazy` | 懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载 | `boolean` | — |
+| `load` | 懒加载回调 `(payload: { key }) => void`，与 `oas-load` 事件并存；宿主回填子节点后重设 `data` 属性 | `(payload: { key: string }) => void` | — |
+| `row-height` | 虚拟化时每行固定高度（px） | `string` | `32` |
+| `selected` | 选中节点 key | `string` | — |
 
 ### 事件
 

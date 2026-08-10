@@ -48,9 +48,9 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `closeable` | Whether to show the close button | — | — |
-| `title` | Title text | — | — |
-| `type` | Alert type | — | `info` |
+| `closeable` | Whether to show the close button | `boolean` | — |
+| `title` | Title text | `string` | — |
+| `type` | Alert type | `string` | `info` |
 
 ### Events
 

@@ -38,9 +38,9 @@ Without `for`, only text is rendered and clicks don't forward focus; long text w
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `for` | Target control id; click forwards to `getElementById(for).focus()` | — | — |
-| `position` | Position of the asterisk relative to the text | — | `after` |
-| `required` | Append a required `*` marker (`aria-hidden`) | — | — |
+| `for` | Target control id; click forwards to `getElementById(for).focus()` | `string` | — |
+| `position` | Position of the asterisk relative to the text | `string` | `after` |
+| `required` | Append a required `*` marker (`aria-hidden`) | `boolean` | — |
 
 ### Slots
 

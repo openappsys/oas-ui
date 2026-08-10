@@ -40,9 +40,9 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `disabled` | Disabled | — | — |
-| `pressed` | Whether pressed (controlled) | — | — |
-| `value` | Value (returned with events) | — | — |
+| `disabled` | Disabled | `boolean` | — |
+| `pressed` | Whether pressed (controlled) | `boolean` | — |
+| `value` | Value (returned with events) | `string` | — |
 
 ### Events
 

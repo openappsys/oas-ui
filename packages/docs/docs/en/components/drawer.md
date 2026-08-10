@@ -104,12 +104,12 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `no-footer` | Hide footer action buttons | — | — |
-| `no-mask-close` | Disable closing on mask click | — | — |
-| `placement` | Slide direction | — | `right` |
+| `no-footer` | Hide footer action buttons | `boolean` | — |
+| `no-mask-close` | Disable closing on mask click | `boolean` | — |
+| `placement` | Slide direction | `string` | `right` |
 | `size` | Preset size or a concrete value: `small` (256px) / `medium` (378px) / `large` (736px), or write directly like `512px`, `40%` | — | — |
-| `title` | Title text | — | — |
-| `visible` | Whether shown | — | — |
+| `title` | Title text | `string` | — |
+| `visible` | Whether shown | `boolean` | — |
 | `width` | Drawer width (px or percentage), takes precedence over `size` | — | — |
 
 ### Events

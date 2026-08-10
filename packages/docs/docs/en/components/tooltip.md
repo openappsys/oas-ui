@@ -93,8 +93,8 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `content` | Tooltip content text | — | — |
-| `open` | Controlled display (boolean attribute; shows when present) | — | — |
+| `content` | Tooltip content text | `string` | — |
+| `open` | Controlled display (boolean attribute; shows when present) | `boolean` | — |
 | `placement` | Popup placement | `Placement` | `top` |
 
 ### Slots

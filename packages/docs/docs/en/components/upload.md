@@ -62,12 +62,12 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `accept` | Accepted file types | — | — |
-| `auto-upload` | Auto-simulate upload after adding | — | — |
-| `disabled` | Disabled | — | — |
+| `accept` | Accepted file types | `string` | — |
+| `auto-upload` | Auto-simulate upload after adding | `boolean` | — |
+| `disabled` | Disabled | `boolean` | — |
 | `files` | File list (property, `File[]`) | `File[]` | — |
-| `max` | Maximum number of files | — | `0` |
-| `multiple` | Multiple selection | — | — |
+| `max` | Maximum number of files | `string` | `0` |
+| `multiple` | Multiple selection | `boolean` | — |
 
 ### Events
 

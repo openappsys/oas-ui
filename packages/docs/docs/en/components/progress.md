@@ -106,12 +106,12 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `no-text` | Hide the side/center percentage text | — | — |
-| `percent` | Progress percentage (0–100, clamped automatically) | — | `0` |
-| `show-text` | Whether to show the percentage text | — | `true` |
-| `size` | Circle diameter (px) | — | `48` |
-| `status` | Status color; `error` red, `success` green; when unset and progress reaches 100, success green is shown | — | — |
-| `stroke-width` | Circle stroke width (px) | — | `6` |
-| `type` | Form: `line` / `circle` | — | `line` |
+| `no-text` | Hide the side/center percentage text | `boolean` | — |
+| `percent` | Progress percentage (0–100, clamped automatically) | `string` | `0` |
+| `show-text` | Whether to show the percentage text | `string` | `true` |
+| `size` | Circle diameter (px) | `string` | `48` |
+| `status` | Status color; `error` red, `success` green; when unset and progress reaches 100, success green is shown | `string` | — |
+| `stroke-width` | Circle stroke width (px) | `string` | `6` |
+| `type` | Form: `line` / `circle` | `string` | `line` |
 
 `role="progressbar"` + `aria-valuenow` / `aria-valuemin` / `aria-valuemax` (synced for both line and circle).

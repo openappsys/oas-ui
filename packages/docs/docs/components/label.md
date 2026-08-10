@@ -38,9 +38,9 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `for` | 目标控件 id，点击代理 `getElementById(for).focus()` | — | — |
-| `position` | 星号相对文本的位置 | — | `after` |
-| `required` | 追加必填 `*` 标记（`aria-hidden`） | — | — |
+| `for` | 目标控件 id，点击代理 `getElementById(for).focus()` | `string` | — |
+| `position` | 星号相对文本的位置 | `string` | `after` |
+| `required` | 追加必填 `*` 标记（`aria-hidden`） | `boolean` | — |
 
 ### 插槽
 

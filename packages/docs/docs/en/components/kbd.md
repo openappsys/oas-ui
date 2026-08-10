@@ -31,7 +31,7 @@ A keyboard shortcut display component. `keys` is split by spaces into multiple k
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `keys` | Space-separated key sequence, e.g. `"ctrl shift k"` | — | — |
+| `keys` | Space-separated key sequence, e.g. `"ctrl shift k"` | `string` | — |
 
 ### Slots
 

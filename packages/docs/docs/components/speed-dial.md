@@ -96,9 +96,9 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `actions` | 子动作 JSON | — | `[]` |
-| `direction` | 展开方向 | — | `up` |
-| `open` | 展开态（受控） | — | — |
+| `actions` | 子动作 JSON | `string` | `[]` |
+| `direction` | 展开方向 | `string` | `up` |
+| `open` | 展开态（受控） | `boolean` | — |
 
 ### 事件
 

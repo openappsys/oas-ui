@@ -656,17 +656,17 @@
       "split": "Whether to show item dividers"
     },
     "events": {},
-    "slots": {
-      "description": "Description area (falls back to the default slot when not provided)",
-      "extra": "Extra area on the right of the item"
-    }
+    "slots": {}
   },
   "oas-list-item": {
     "attrs": {
       "title": "Item title"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "description": "Description area (falls back to the default slot when not provided)",
+      "extra": "Extra area on the right of the item"
+    }
   },
   "oas-log": {
     "attrs": {
@@ -793,6 +793,19 @@
     },
     "events": {
       "oas-change": "Flipping `{ page }`; page-size switch `{ page: 1, pageSize }`; quick jump `{ page, pageSize }`"
+    },
+    "slots": {}
+  },
+  "oas-paragraph": {
+    "attrs": {
+      "copyable": "Show a copy button that copies the text content on click",
+      "ellipsis": "Single-line ellipsis when the text overflows its container",
+      "level": "Heading level (1-5)",
+      "type": "Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled`"
+    },
+    "events": {
+      "oas-copy": "Copy succeeded, `detail: { text }`",
+      "oas-copy-error": "Copy failed, `detail: { text }`"
     },
     "slots": {}
   },
@@ -1137,9 +1150,15 @@
     "slots": {}
   },
   "oas-text": {
-    "attrs": {},
+    "attrs": {
+      "copyable": "Show a copy button that copies the text content on click",
+      "ellipsis": "Single-line ellipsis when the text overflows its container",
+      "level": "Heading level (1-5)",
+      "type": "Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled`"
+    },
     "events": {
-      "oas-copy": "Copy succeeded, `detail: { text }`"
+      "oas-copy": "Copy succeeded, `detail: { text }`",
+      "oas-copy-error": "Copy failed, `detail: { text }`"
     },
     "slots": {}
   },
@@ -1189,6 +1208,19 @@
       "time": "Time text of the node"
     },
     "events": {},
+    "slots": {}
+  },
+  "oas-title": {
+    "attrs": {
+      "copyable": "Show a copy button that copies the text content on click",
+      "ellipsis": "Single-line ellipsis when the text overflows its container",
+      "level": "Heading level (1-5)",
+      "type": "Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled`"
+    },
+    "events": {
+      "oas-copy": "Copy succeeded, `detail: { text }`",
+      "oas-copy-error": "Copy failed, `detail: { text }`"
+    },
     "slots": {}
   },
   "oas-toggle-button": {
@@ -1303,7 +1335,7 @@
       "buffer": "Number of items pre-rendered above/below (rendered early beyond the visible area to reduce scrolling blanks)",
       "height": "Viewport height (px)",
       "item-height": "Fixed height of each item (px)",
-      "items": "Data JSON string (attribute channel)",
+      "items": "Data array (property channel, takes precedence over the `items` attribute); data JSON string (attribute channel)",
       "scroll-target": "CSS selector of the external scroll container; when set, the component has no scrollbar of its own and listens to the external scroll"
     },
     "events": {

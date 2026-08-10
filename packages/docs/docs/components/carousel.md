@@ -134,10 +134,10 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `arrows` | 箭头显示形态：`always`（始终显示）/ `hover`（悬停显示）/ `never`（不显示） | — | `hover` |
-| `autoplay` | 是否自动播放 | — | — |
-| `index` | 当前屏索引（从 0 起） | — | `0` |
-| `interval` | 自动播放间隔（ms） | — | `3000` |
+| `arrows` | 箭头显示形态：`always`（始终显示）/ `hover`（悬停显示）/ `never`（不显示） | `string` | `hover` |
+| `autoplay` | 是否自动播放 | `boolean` | — |
+| `index` | 当前屏索引（从 0 起） | `string` | `0` |
+| `interval` | 自动播放间隔（ms） | `string` | `3000` |
 
 ### 事件
 

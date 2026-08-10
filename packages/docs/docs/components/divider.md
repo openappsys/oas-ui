@@ -37,7 +37,7 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `content-position` | 内容位置 | `DividerPosition` | `center` |
-| `dashed` | 虚线 | — | — |
+| `dashed` | 虚线 | `boolean` | — |
 | `direction` | 方向 | `DividerDirection` | `horizontal` |
 
 ### 插槽

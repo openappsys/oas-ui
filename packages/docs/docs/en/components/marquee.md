@@ -71,7 +71,7 @@ Content is not limited to text — putting images or logos in the slot produces 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `pause-on-hover` | Boolean; when present, pauses the animation on hover/focus (`animation-play-state: paused`) | — | — |
-| `speed` | Duration of a single animation cycle (seconds), written to CSS `animation-duration`; non-positive values fall back to the default | — | — |
+| `speed` | Duration of a single animation cycle (seconds), written to CSS `animation-duration`; non-positive values fall back to the default | `string` | — |
 
 ### Slots
 

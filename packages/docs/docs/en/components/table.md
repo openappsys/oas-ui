@@ -248,20 +248,20 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `bordered` | Full border: draws a grid outline around cells (the outer frame is built in) | — | — |
-| `checkable` | Enables checkbox multi-select | — | — |
+| `checkable` | Enables checkbox multi-select | `boolean` | — |
 | `columns` | Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`, JSON string | `TableColumn[] \| string` | `[]` |
 | `data` | Row data `[{ [key]: value, children?, expand? }]`, JSON string | `Array<Record<string, unknown>> \| string` | `[]` |
 | `empty-text` | Empty state text | — | — |
-| `expanded` | Set of expanded row keys (comma-separated; shared by tree parent rows and expandable rows) | — | — |
-| `height` | Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered | — | `320` |
-| `loading` | Loading state: shows placeholder rows in the data area (header retained) | — | — |
-| `row-height` | Fixed row height for virtual scrolling (px) | — | `40` |
-| `row-key` | Unique key field of a row | — | `key` |
-| `selected` | Set of selected row keys (comma-separated) | — | — |
-| `sort-key` | Controlled sort; `sort-order` is `asc` / `desc` / empty | — | — |
+| `expanded` | Set of expanded row keys (comma-separated; shared by tree parent rows and expandable rows) | `string` | — |
+| `height` | Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered | `string` | `320` |
+| `loading` | Loading state: shows placeholder rows in the data area (header retained) | `boolean` | — |
+| `row-height` | Fixed row height for virtual scrolling (px) | `string` | `40` |
+| `row-key` | Unique key field of a row | `string` | `key` |
+| `selected` | Set of selected row keys (comma-separated) | `string` | — |
+| `sort-key` | Controlled sort; `sort-order` is `asc` / `desc` / empty | `string` | — |
 | `sort-order` | Controlled sort; `sort-order` is `asc` / `desc` / empty | `SortOrder` | — |
-| `stripe` | Zebra striping: alternating light background for odd/even rows | — | — |
-| `summary` | Summary config `[{ key, type: 'sum'\|'avg'\|'count', label? }]`, JSON string | — | — |
+| `stripe` | Zebra striping: alternating light background for odd/even rows | `boolean` | — |
+| `summary` | Summary config `[{ key, type: 'sum'\|'avg'\|'count', label? }]`, JSON string | `string` | — |
 
 ### Events
 

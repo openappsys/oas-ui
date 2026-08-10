@@ -96,9 +96,9 @@ Setting `columns` divides the width equally with `repeat(n, 1fr)`; child `span` 
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `cols` | Total column count | — | `24` |
-| `columns` | Auto equal-width count (simple-grid; when set, child `span` is ignored) | — | — |
-| `gap` | Gap | — | `0` |
+| `cols` | Total column count | `string` | `24` |
+| `columns` | Auto equal-width count (simple-grid; when set, child `span` is ignored) | `string` | — |
+| `gap` | Gap | `string` | `0` |
 
 | Name | Description |
 | --- | --- |
@@ -108,8 +108,8 @@ Setting `columns` divides the width equally with `repeat(n, 1fr)`; child `span` 
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `offset` | Number of columns offset on the left | — | `0` |
-| `span` | Number of columns spanned | — | `24` |
+| `offset` | Number of columns offset on the left | `string` | `0` |
+| `span` | Number of columns spanned | `string` | `24` |
 
 | Name | Description |
 | --- | --- |

@@ -147,16 +147,16 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `allow-create` | 无匹配时允许以输入值创建新选项 | — | — |
-| `clearable` | 可清空（有值时显示清空按钮，清空派发 `oas-clear`） | — | — |
-| `disabled` | 禁用 | — | — |
-| `loading` | 远程加载占位（与 `remote` 搭配使用） | — | — |
+| `allow-create` | 无匹配时允许以输入值创建新选项 | `boolean` | — |
+| `clearable` | 可清空（有值时显示清空按钮，清空派发 `oas-clear`） | `boolean` | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `loading` | 远程加载占位（与 `remote` 搭配使用） | `boolean` | — |
 | `max-tag-count` | 多选标签超出数量后折叠为 `+N` | — | — |
-| `multiple` | 多选 | — | — |
+| `multiple` | 多选 | `boolean` | — |
 | `options` | 选项，JSON 数组 `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
-| `remote` | 远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求 | — | — |
-| `searchable` | 可搜索（打开下拉后输入过滤） | — | — |
+| `remote` | 远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求 | `boolean` | — |
+| `searchable` | 可搜索（打开下拉后输入过滤） | `boolean` | — |
 | `value` | 当前值（多选为 JSON 数组） | — | — |
 
 ### 事件

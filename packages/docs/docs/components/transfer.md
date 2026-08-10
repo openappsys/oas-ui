@@ -73,11 +73,11 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `data` | 数据（property，`[{ key, label, disabled }]`） | `TransferItem[]` | — |
-| `searchable` | 面板内搜索过滤 | — | — |
+| `searchable` | 面板内搜索过滤 | `boolean` | — |
 | `source-title` | — | — | — |
 | `target-title` | — | — | — |
-| `titles` | 双面板标题（JSON 数组）或 `source-title`/`target-title` | — | — |
-| `value` | 已选 key 数组（JSON 属性） | — | `[]` |
+| `titles` | 双面板标题（JSON 数组）或 `source-title`/`target-title` | `string` | — |
+| `value` | 已选 key 数组（JSON 属性） | `string` | `[]` |
 
 ### 事件
 

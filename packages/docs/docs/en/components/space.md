@@ -53,10 +53,10 @@ A layout container with even horizontal/vertical spacing.
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `align` | Alignment | — | — |
+| `align` | Alignment | `string` | — |
 | `direction` | Direction | `SpaceDirection` | `horizontal` |
-| `size` | Spacing | — | `medium` |
-| `wrap` | Whether to wrap | — | — |
+| `size` | Spacing | `string` | `medium` |
+| `wrap` | Whether to wrap | `boolean` | — |
 
 ### Slots
 

@@ -74,8 +74,8 @@ An image can be placed in the content area to compose a "cover + title + descrip
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `hoverable` | Whether to enable the hover shadow | — | — |
-| `title` | Card title | — | — |
+| `hoverable` | Whether to enable the hover shadow | `boolean` | — |
+| `title` | Card title | `string` | — |
 
 ### Slots
 

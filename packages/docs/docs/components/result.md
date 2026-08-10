@@ -34,9 +34,9 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `description` | 描述文案 | — | — |
-| `status` | 结果状态 | — | `success` |
-| `title` | 标题文案 | — | — |
+| `description` | 描述文案 | `string` | — |
+| `status` | 结果状态 | `string` | `success` |
+| `title` | 标题文案 | `string` | — |
 
 ### 插槽
 

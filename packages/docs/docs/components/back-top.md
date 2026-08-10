@@ -45,9 +45,9 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `bottom` | 距视口底部距离 | — | `32px` |
-| `right` | 距视口右侧距离 | — | `32px` |
-| `visible` | 是否显示按钮 | — | — |
+| `bottom` | 距视口底部距离 | `string` | `32px` |
+| `right` | 距视口右侧距离 | `string` | `32px` |
+| `visible` | 是否显示按钮 | `boolean` | — |
 
 ### 事件
 

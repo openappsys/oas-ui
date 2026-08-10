@@ -34,9 +34,9 @@ A result feedback page supporting four states: success, error, warning, and info
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `description` | Description text | — | — |
-| `status` | Result status | — | `success` |
-| `title` | Title text | — | — |
+| `description` | Description text | `string` | — |
+| `status` | Result status | `string` | `success` |
+| `title` | Title text | `string` | — |
 
 ### Slots
 

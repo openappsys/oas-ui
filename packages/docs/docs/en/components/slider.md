@@ -62,12 +62,12 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `disabled` | Disabled | — | — |
+| `disabled` | Disabled | `boolean` | — |
 | `marks` | Ticks: JSON object `{"0":"0°C"}` (value→label) or JSON array `[0,26,60]` (also `{"value":26,"label":"26°C"}`); tick marks and labels are shown below the track, highlighted where the value passes | `string \| Record<string, string \| number> \| number[]` | — |
-| `max` | Range | — | `100` |
-| `min` | Range | — | `0` |
-| `step` | Step | — | `1` |
-| `value` | Current value (controlled) | — | — |
+| `max` | Range | `string` | `100` |
+| `min` | Range | `string` | `0` |
+| `step` | Step | `string` | `1` |
+| `value` | Current value (controlled) | `string` | — |
 
 ### Events
 

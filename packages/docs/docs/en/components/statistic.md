@@ -40,11 +40,11 @@ Displays statistical values with `Intl.NumberFormat` thousands separators and pr
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `group-separator` | Thousands grouping (`"false"` disables) | — | `true` |
-| `loading` | Loading state (skeleton placeholder) | — | — |
-| `precision` | Decimal places (rounded) | — | `0` |
+| `group-separator` | Thousands grouping (`"false"` disables) | `string` | `true` |
+| `loading` | Loading state (skeleton placeholder) | `boolean` | — |
+| `precision` | Decimal places (rounded) | `string` | `0` |
 | `prefix` | Prefix / suffix text | `string` | — |
-| `suffix` | Prefix / suffix text | — | — |
-| `value` | Numeric value (number string) | — | `0` |
+| `suffix` | Prefix / suffix text | `string` | — |
+| `value` | Numeric value (number string) | `string` | `0` |
 
 No events (purely presentational).

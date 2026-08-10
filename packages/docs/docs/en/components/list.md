@@ -149,25 +149,23 @@ The default slot of an item can hold a thumbnail, combining it with the title an
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `bordered` | Whether to show the outer border | — | — |
-| `empty` | Force empty state; auto empty when there are no children | — | — |
+| `bordered` | Whether to show the outer border | `boolean` | — |
+| `empty` | Force empty state; auto empty when there are no children | `boolean` | — |
 | `empty-text` | Empty state text | — | — |
-| `loading` | Loading state, shows skeleton placeholders | — | — |
-| `split` | Whether to show item dividers | — | — |
+| `loading` | Loading state, shows skeleton placeholders | `boolean` | — |
+| `split` | Whether to show item dividers | `boolean` | — |
 
 | Name | Description |
 | --- | --- |
 | default | — |
-| `description` | Description area (falls back to the default slot when not provided) |
-| `extra` | Extra area on the right of the item |
 
 ### oas-list-item
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `title` | Item title | — | — |
+| `title` | Item title | `string` | — |
 
 | Name | Description |
 | --- | --- |
-| `description` | — |
-| `extra` | — |
+| `description` | Description area (falls back to the default slot when not provided) |
+| `extra` | Extra area on the right of the item |

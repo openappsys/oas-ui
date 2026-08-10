@@ -656,17 +656,17 @@
       "split": "是否显示条目分隔线"
     },
     "events": {},
-    "slots": {
-      "description": "描述区（不提供时回退默认插槽）",
-      "extra": "条目右侧扩展区"
-    }
+    "slots": {}
   },
   "oas-list-item": {
     "attrs": {
       "title": "条目标题"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "description": "描述区（不提供时回退默认插槽）",
+      "extra": "条目右侧扩展区"
+    }
   },
   "oas-log": {
     "attrs": {
@@ -793,6 +793,19 @@
     },
     "events": {
       "oas-change": "翻页 `{ page }`；切换每页条数 `{ page: 1, pageSize }`；快速跳转 `{ page, pageSize }`"
+    },
+    "slots": {}
+  },
+  "oas-paragraph": {
+    "attrs": {
+      "copyable": "显示复制按钮，点击复制文本内容",
+      "ellipsis": "超出容器宽度后单行省略（nowrap + ellipsis）",
+      "level": "标题级别（1–5）",
+      "type": "文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled`"
+    },
+    "events": {
+      "oas-copy": "复制成功，`detail: { text }`",
+      "oas-copy-error": "复制失败，`detail: { text }`"
     },
     "slots": {}
   },
@@ -1137,9 +1150,15 @@
     "slots": {}
   },
   "oas-text": {
-    "attrs": {},
+    "attrs": {
+      "copyable": "显示复制按钮，点击复制文本内容",
+      "ellipsis": "超出容器宽度后单行省略（nowrap + ellipsis）",
+      "level": "标题级别（1–5）",
+      "type": "文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled`"
+    },
     "events": {
-      "oas-copy": "复制成功，`detail: { text }`"
+      "oas-copy": "复制成功，`detail: { text }`",
+      "oas-copy-error": "复制失败，`detail: { text }`"
     },
     "slots": {}
   },
@@ -1189,6 +1208,19 @@
       "time": "节点时间文本"
     },
     "events": {},
+    "slots": {}
+  },
+  "oas-title": {
+    "attrs": {
+      "copyable": "显示复制按钮，点击复制文本内容",
+      "ellipsis": "超出容器宽度后单行省略（nowrap + ellipsis）",
+      "level": "标题级别（1–5）",
+      "type": "文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled`"
+    },
+    "events": {
+      "oas-copy": "复制成功，`detail: { text }`",
+      "oas-copy-error": "复制失败，`detail: { text }`"
+    },
     "slots": {}
   },
   "oas-toggle-button": {
@@ -1303,7 +1335,7 @@
       "buffer": "上下预渲染项数（超出可视区提前渲染，减少滚动白屏）",
       "height": "视口高度（px）",
       "item-height": "每项固定高度（px）",
-      "items": "数据 JSON 字符串（属性通道）",
+      "items": "数据数组（property 通道，优先于 items 属性）；数据 JSON 字符串（属性通道）",
       "scroll-target": "外部滚动容器 CSS 选择器；设置后组件不自带滚动条，监听外部滚动"
     },
     "events": {

@@ -147,16 +147,16 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `allow-create` | Allow creating new options from the input value when nothing matches | — | — |
-| `clearable` | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`) | — | — |
-| `disabled` | Disabled | — | — |
-| `loading` | Remote loading placeholder (use with `remote`) | — | — |
+| `allow-create` | Allow creating new options from the input value when nothing matches | `boolean` | — |
+| `clearable` | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`) | `boolean` | — |
+| `disabled` | Disabled | `boolean` | — |
+| `loading` | Remote loading placeholder (use with `remote`) | `boolean` | — |
 | `max-tag-count` | Collapse tags beyond this count into `+N` in multiple mode | — | — |
-| `multiple` | Multiple select | — | — |
+| `multiple` | Multiple select | `boolean` | — |
 | `options` | Options, JSON array `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
-| `remote` | Remote search: no local filtering, typing dispatches `oas-input` for the host to request | — | — |
-| `searchable` | Searchable (type to filter after opening the dropdown) | — | — |
+| `remote` | Remote search: no local filtering, typing dispatches `oas-input` for the host to request | `boolean` | — |
+| `searchable` | Searchable (type to filter after opening the dropdown) | `boolean` | — |
 | `value` | Current value (JSON array in multiple mode) | — | — |
 
 ### Events

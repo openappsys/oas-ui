@@ -137,11 +137,11 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `buffer` | 上下预渲染项数（超出可视区提前渲染，减少滚动白屏） | — | `4` |
-| `height` | 视口高度（px） | — | `320` |
-| `item-height` | 每项固定高度（px） | — | `36` |
-| `items` | 数据 JSON 字符串（属性通道） | `unknown[]` | — |
-| `scroll-target` | 外部滚动容器 CSS 选择器；设置后组件不自带滚动条，监听外部滚动 | — | — |
+| `buffer` | 上下预渲染项数（超出可视区提前渲染，减少滚动白屏） | `string` | `4` |
+| `height` | 视口高度（px） | `string` | `320` |
+| `item-height` | 每项固定高度（px） | `string` | `36` |
+| `items` | 数据数组（property 通道，优先于 items 属性）；数据 JSON 字符串（属性通道） | `unknown[]` | — |
+| `scroll-target` | 外部滚动容器 CSS 选择器；设置后组件不自带滚动条，监听外部滚动 | `string` | — |
 
 ### 事件
 

@@ -62,12 +62,12 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `disabled` | 禁用 | — | — |
+| `disabled` | 禁用 | `boolean` | — |
 | `marks` | 刻度：JSON 对象 `{"0":"0°C"}`（值→标签）或 JSON 数组 `[0,26,60]`（也可为 `{"value":26,"label":"26°C"}`）；刻度点与标签显示在轨道下方，值经过处高亮 | `string \| Record<string, string \| number> \| number[]` | — |
-| `max` | 范围 | — | `100` |
-| `min` | 范围 | — | `0` |
-| `step` | 步长 | — | `1` |
-| `value` | 当前值（受控） | — | — |
+| `max` | 范围 | `string` | `100` |
+| `min` | 范围 | `string` | `0` |
+| `step` | 步长 | `string` | `1` |
+| `value` | 当前值（受控） | `string` | — |
 
 ### 事件
 

@@ -76,9 +76,9 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `open` | 是否显示气泡 | — | — |
-| `position` | 气泡位置 | — | `top` |
-| `title` | 确认文案 | — | — |
+| `open` | 是否显示气泡 | `boolean` | — |
+| `position` | 气泡位置 | `string` | `top` |
+| `title` | 确认文案 | `string` | — |
 
 ### 事件
 

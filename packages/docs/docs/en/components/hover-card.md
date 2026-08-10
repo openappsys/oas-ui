@@ -75,11 +75,11 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `content` | Content text | — | — |
-| `delay` | Show/hide delay in milliseconds | — | `100` |
-| `open` | Controlled display (boolean attribute; shows when present) | — | — |
+| `content` | Content text | `string` | — |
+| `delay` | Show/hide delay in milliseconds | `string` | `100` |
+| `open` | Controlled display (boolean attribute; shows when present) | `boolean` | — |
 | `placement` | Popup placement | `Placement` | `top` |
-| `title` | Title text | — | — |
+| `title` | Title text | `string` | — |
 
 ### Slots
 

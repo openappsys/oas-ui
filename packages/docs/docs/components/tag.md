@@ -85,11 +85,11 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `chip` | 胶囊 | — | — |
-| `clickable` | 整签可点 | — | — |
-| `closable` | 可关闭 | — | — |
-| `disabled` | 禁用 | — | — |
-| `round` | 圆角 | — | — |
+| `chip` | 胶囊 | `boolean` | — |
+| `clickable` | 整签可点 | `boolean` | — |
+| `closable` | 可关闭 | `boolean` | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `round` | 圆角 | `boolean` | — |
 | `size` | 尺寸 | `TagSize` | `medium` |
 | `type` | 类型 | `TagType` | `default` |
 

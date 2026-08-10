@@ -104,10 +104,10 @@ When the language is unknown, the content is rendered as plain text (escaped) wi
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `code` | Raw source code | — | — |
-| `copyable` | Show the copy button | — | `true` |
-| `language` | Language: `js`/`ts`/`html`/`css`/`json`; unknown falls back to plain text | — | — |
-| `show-line-number` | Show the line number column | — | — |
+| `code` | Raw source code | `string` | — |
+| `copyable` | Show the copy button | `string` | `true` |
+| `language` | Language: `js`/`ts`/`html`/`css`/`json`; unknown falls back to plain text | `string` | — |
+| `show-line-number` | Show the line number column | `boolean` | — |
 
 ### Events
 

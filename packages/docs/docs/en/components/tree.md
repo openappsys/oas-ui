@@ -193,16 +193,16 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `checkable` | Whether to show checkboxes | — | — |
-| `checked` | Set of checked node keys (comma-separated) | — | — |
-| `data` | Node data `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`, JSON string | — | `[]` |
-| `draggable` | Nodes can be dragged to reorder / reparent; drop shows insertion line / highlight; release emits `oas-node-drop` | — | — |
-| `expanded` | Set of expanded node keys (comma-separated) | — | — |
-| `height` | Virtual scroll viewport height (px); setting it enables virtualized rendering for large data | — | `360` |
-| `lazy` | Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand | — | — |
-| `load` | Lazy loading callback `(payload: { key }) => void`, coexists with the `oas-load` event; the host refills child nodes and resets the `data` attribute | — | — |
-| `row-height` | Fixed row height when virtualized (px) | — | `32` |
-| `selected` | Key of the selected node | — | — |
+| `checkable` | Whether to show checkboxes | `boolean` | — |
+| `checked` | Set of checked node keys (comma-separated) | `string` | — |
+| `data` | Node data `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`, JSON string | `string` | `[]` |
+| `draggable` | Nodes can be dragged to reorder / reparent; drop shows insertion line / highlight; release emits `oas-node-drop` | `boolean` | — |
+| `expanded` | Set of expanded node keys (comma-separated) | `string` | — |
+| `height` | Virtual scroll viewport height (px); setting it enables virtualized rendering for large data | `string` | `360` |
+| `lazy` | Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand | `boolean` | — |
+| `load` | Lazy loading callback `(payload: { key }) => void`, coexists with the `oas-load` event; the host refills child nodes and resets the `data` attribute | `(payload: { key: string }) => void` | — |
+| `row-height` | Fixed row height when virtualized (px) | `string` | `32` |
+| `selected` | Key of the selected node | `string` | — |
 
 ### Events
 

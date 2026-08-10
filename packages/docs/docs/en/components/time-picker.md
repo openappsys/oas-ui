@@ -44,10 +44,10 @@ The minute column steps by `step` (e.g. 0, 15, 30, 45).
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `disabled` | Disabled | — | — |
-| `format` | Display format tokens | — | `HH:mm:ss` |
-| `step` | Minute stepping interval | — | `1` |
-| `value` | Current value (`HH:mm:ss`) | — | — |
+| `disabled` | Disabled | `boolean` | — |
+| `format` | Display format tokens | `string` | `HH:mm:ss` |
+| `step` | Minute stepping interval | `string` | `1` |
+| `value` | Current value (`HH:mm:ss`) | `string` | — |
 
 ### Events
 

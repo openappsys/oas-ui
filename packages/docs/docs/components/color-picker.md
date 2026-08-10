@@ -44,9 +44,9 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `disabled` | 禁用 | — | — |
-| `preset` | 预设色数组（JSON） | — | — |
-| `value` | 当前颜色（hex） | — | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `preset` | 预设色数组（JSON） | `string` | — |
+| `value` | 当前颜色（hex） | `string` | — |
 
 ### 事件
 

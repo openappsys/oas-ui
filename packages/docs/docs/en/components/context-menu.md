@@ -53,7 +53,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `items` | Menu items JSON | — | `[]` |
+| `items` | Menu items JSON | `string` | `[]` |
 
 ### Events
 

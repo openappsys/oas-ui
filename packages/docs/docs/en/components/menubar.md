@@ -68,8 +68,8 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `items` | Top-level menu items JSON (with submenu `children`) | — | `[]` |
-| `value` | Controlled selected value (external change syncs the check immediately; internal selection writes back) | — | — |
+| `items` | Top-level menu items JSON (with submenu `children`) | `string` | `[]` |
+| `value` | Controlled selected value (external change syncs the check immediately; internal selection writes back) | `string` | — |
 
 ### Events
 

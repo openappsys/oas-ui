@@ -60,40 +60,40 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `copyable` | — | — | — |
-| `ellipsis` | — | — | — |
-| `level` | — | — | `3` |
-| `type` | — | `TextType` | `default` |
+| `copyable` | 显示复制按钮，点击复制文本内容 | `boolean` | — |
+| `ellipsis` | 超出容器宽度后单行省略（nowrap + ellipsis） | `boolean` | — |
+| `level` | 标题级别（1–5） | `string` | `3` |
+| `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-copy` | 复制成功，`detail: { text }` |
-| `oas-copy-error` | — |
+| `oas-copy-error` | 复制失败，`detail: { text }` |
 
 ### oas-title
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `copyable` | — | — | — |
-| `ellipsis` | — | — | — |
-| `level` | — | — | `3` |
-| `type` | — | `TextType` | `default` |
+| `copyable` | 显示复制按钮，点击复制文本内容 | `boolean` | — |
+| `ellipsis` | 超出容器宽度后单行省略（nowrap + ellipsis） | `boolean` | — |
+| `level` | 标题级别（1–5） | `string` | `3` |
+| `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-copy` | — |
-| `oas-copy-error` | — |
+| `oas-copy` | 复制成功，`detail: { text }` |
+| `oas-copy-error` | 复制失败，`detail: { text }` |
 
 ### oas-paragraph
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `copyable` | — | — | — |
-| `ellipsis` | — | — | — |
-| `level` | — | — | `3` |
-| `type` | — | `TextType` | `default` |
+| `copyable` | 显示复制按钮，点击复制文本内容 | `boolean` | — |
+| `ellipsis` | 超出容器宽度后单行省略（nowrap + ellipsis） | `boolean` | — |
+| `level` | 标题级别（1–5） | `string` | `3` |
+| `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-copy` | — |
-| `oas-copy-error` | — |
+| `oas-copy` | 复制成功，`detail: { text }` |
+| `oas-copy-error` | 复制失败，`detail: { text }` |

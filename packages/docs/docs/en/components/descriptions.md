@@ -61,8 +61,8 @@ Displays read-only information in groups, suitable for detail page scenarios.
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `column` | Columns per row | — | `3` |
-| `title` | Title | — | — |
+| `column` | Columns per row | `string` | `3` |
+| `title` | Title | `string` | — |
 
 | Name | Description |
 | --- | --- |
@@ -72,7 +72,7 @@ Displays read-only information in groups, suitable for detail page scenarios.
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `label` | Field label | — | — |
+| `label` | Field label | `string` | — |
 
 | Name | Description |
 | --- | --- |

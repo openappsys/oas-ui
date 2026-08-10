@@ -108,12 +108,12 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `allow-clear` | 点击已选中的同一颗星时清空为 `0` | — | `true` |
-| `allow-half` | 允许半星 | — | — |
-| `disabled` | 禁用 | — | — |
+| `allow-clear` | 点击已选中的同一颗星时清空为 `0` | `string` | `true` |
+| `allow-half` | 允许半星 | `boolean` | — |
+| `disabled` | 禁用 | `boolean` | — |
 | `icon` | 自定义星星图标（字符或 SVG 标记） | — | — |
-| `max` | 星星数量 | — | `5` |
-| `value` | 当前分值（受控） | — | `0` |
+| `max` | 星星数量 | `string` | `5` |
+| `value` | 当前分值（受控） | `string` | `0` |
 
 ### 事件
 

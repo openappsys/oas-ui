@@ -56,9 +56,9 @@ With `clickable` enabled, step items are clickable to jump (the whole item is cl
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `clickable` | Steps are clickable to jump (boolean; enabled when present) | — | — |
-| `current` | Current step index (0-based) | — | `0` |
-| `direction` | Direction | — | `horizontal` |
+| `clickable` | Steps are clickable to jump (boolean; enabled when present) | `boolean` | — |
+| `current` | Current step index (0-based) | `string` | `0` |
+| `direction` | Direction | `string` | `horizontal` |
 | `steps` | `[{ title, description?, status? }]` JSON string | `StepItem[] \| string` | `[]` |
 
 ### Events

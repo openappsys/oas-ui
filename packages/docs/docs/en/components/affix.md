@@ -38,7 +38,7 @@ Scroll this page down and observe the button being pinned as it approaches the t
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `offset` | Fixed distance from the viewport top (px) | — | `0` |
+| `offset` | Fixed distance from the viewport top (px) | `string` | `0` |
 
 ### Slots
 

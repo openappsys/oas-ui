@@ -70,7 +70,7 @@ Unknown commands are displayed literally without errors.
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `code` | LaTeX subset source text | — | — |
+| `code` | LaTeX subset source text | `string` | — |
 
 ### ARIA
 

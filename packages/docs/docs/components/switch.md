@@ -73,12 +73,12 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `checked` | 是否开启 | — | — |
+| `checked` | 是否开启 | `boolean` | — |
 | `checked-text` | 开启时显示的文案；medium/large 在轨道内，small 在轨道外侧 | — | — |
 | `color` | 开启态自定义主色，覆盖 `--oas-color-primary`（CSS 颜色值） | — | — |
-| `disabled` | 禁用 | — | — |
-| `loading` | 加载态，阻止切换 | — | — |
-| `size` | 尺寸 | — | `medium` |
+| `disabled` | 禁用 | `boolean` | — |
+| `loading` | 加载态，阻止切换 | `boolean` | — |
+| `size` | 尺寸 | `string` | `medium` |
 | `unchecked-text` | 关闭时显示的文案；medium/large 在轨道内，small 在轨道外侧 | — | — |
 
 ### 事件

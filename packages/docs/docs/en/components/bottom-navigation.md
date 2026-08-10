@@ -60,8 +60,8 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `fixed` | Pin to the viewport bottom (`position: fixed; bottom: 0`) | — | — |
-| `items` | Navigation items JSON | — | `[]` |
+| `fixed` | Pin to the viewport bottom (`position: fixed; bottom: 0`) | `boolean` | — |
+| `items` | Navigation items JSON | `string` | `[]` |
 | `value` | Value of the active item; defaults to the first available item | — | — |
 
 ### Events

@@ -82,12 +82,12 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `action-text` | 操作按钮文案 | — | — |
+| `action-text` | 操作按钮文案 | `string` | — |
 | `direction` | 位置方向 | — | — |
-| `duration` | 自动关闭时长（ms） | — | `4000` |
-| `message` | 文案 | — | — |
-| `offset` | 距屏幕边缘偏移（px） | — | `24` |
-| `open` | 是否显示（受控） | — | — |
+| `duration` | 自动关闭时长（ms） | `string` | `4000` |
+| `message` | 文案 | `string` | — |
+| `offset` | 距屏幕边缘偏移（px） | `string` | `24` |
+| `open` | 是否显示（受控） | `boolean` | — |
 
 ### 事件
 

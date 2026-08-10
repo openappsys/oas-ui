@@ -74,16 +74,16 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `auto-height` | Legacy name (alias of `autosize`) | — | — |
-| `autosize` | Auto height | — | — |
-| `disabled` | Disabled | — | — |
-| `max-rows` | Maximum rows in autosize | — | `6` |
-| `min-rows` | Minimum rows in autosize | — | `1` |
-| `placeholder` | Placeholder text | — | — |
-| `readonly` | Readonly | — | — |
-| `resize` | Resize behavior | — | — |
-| `rows` | Number of rows | — | `3` |
-| `value` | Value (controlled) | — | — |
+| `auto-height` | Legacy name (alias of `autosize`) | `boolean` | — |
+| `autosize` | Auto height | `boolean` | — |
+| `disabled` | Disabled | `boolean` | — |
+| `max-rows` | Maximum rows in autosize | `string` | `6` |
+| `min-rows` | Minimum rows in autosize | `string` | `1` |
+| `placeholder` | Placeholder text | `string` | — |
+| `readonly` | Readonly | `boolean` | — |
+| `resize` | Resize behavior | `string` | — |
+| `rows` | Number of rows | `string` | `3` |
+| `value` | Value (controlled) | `string` | — |
 
 ### Events
 

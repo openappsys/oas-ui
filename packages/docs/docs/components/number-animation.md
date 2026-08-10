@@ -28,8 +28,8 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `duration` | 动画时长（毫秒）；0 直接跳目标 | `number \| string` | — |
-| `to-fixed` | 小数位（Number.prototype.toFixed）；缺省整数显示 | — | — |
-| `value` | 目标数值；非法按 0 | — | `0` |
+| `to-fixed` | 小数位（Number.prototype.toFixed）；缺省整数显示 | `string` | — |
+| `value` | 目标数值；非法按 0 | `string` | `0` |
 
 ### 事件
 

@@ -76,9 +76,9 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `open` | Whether the bubble is shown | — | — |
-| `position` | Bubble position | — | `top` |
-| `title` | Confirmation text | — | — |
+| `open` | Whether the bubble is shown | `boolean` | — |
+| `position` | Bubble position | `string` | `top` |
+| `title` | Confirmation text | `string` | — |
 
 ### Events
 

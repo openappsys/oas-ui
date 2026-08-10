@@ -248,20 +248,20 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `bordered` | 完整边框：单元格网格描边（外框由组件自带） | — | — |
-| `checkable` | 复选框多选开关 | — | — |
+| `checkable` | 复选框多选开关 | `boolean` | — |
 | `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`，JSON 字符串 | `TableColumn[] \| string` | `[]` |
 | `data` | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串 | `Array<Record<string, unknown>> \| string` | `[]` |
 | `empty-text` | 空态文案 | — | — |
-| `expanded` | 已展开行 key 集合（逗号分隔；树形父行/可展开行共用） | — | — |
-| `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | — | `320` |
-| `loading` | 加载态：数据区显示加载占位行（表头保留） | — | — |
-| `row-height` | 虚拟滚动每行固定高度（px） | — | `40` |
-| `row-key` | 行唯一键字段 | — | `key` |
-| `selected` | 选中行 key 集合（逗号分隔） | — | — |
-| `sort-key` | 受控排序；`sort-order` 取 `asc` / `desc` / 空 | — | — |
+| `expanded` | 已展开行 key 集合（逗号分隔；树形父行/可展开行共用） | `string` | — |
+| `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
+| `loading` | 加载态：数据区显示加载占位行（表头保留） | `boolean` | — |
+| `row-height` | 虚拟滚动每行固定高度（px） | `string` | `40` |
+| `row-key` | 行唯一键字段 | `string` | `key` |
+| `selected` | 选中行 key 集合（逗号分隔） | `string` | — |
+| `sort-key` | 受控排序；`sort-order` 取 `asc` / `desc` / 空 | `string` | — |
 | `sort-order` | 受控排序；`sort-order` 取 `asc` / `desc` / 空 | `SortOrder` | — |
-| `stripe` | 斑马纹：奇数/偶数行交替浅底色 | — | — |
-| `summary` | 合计配置 `[{ key, type: 'sum'\|'avg'\|'count', label? }]`，JSON 字符串 | — | — |
+| `stripe` | 斑马纹：奇数/偶数行交替浅底色 | `boolean` | — |
+| `summary` | 合计配置 `[{ key, type: 'sum'\|'avg'\|'count', label? }]`，JSON 字符串 | `string` | — |
 
 ### 事件
 

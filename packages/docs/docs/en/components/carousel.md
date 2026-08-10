@@ -134,10 +134,10 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `arrows` | Arrow display mode: `always` (always shown) / `hover` (shown on hover) / `never` (hidden) | — | `hover` |
-| `autoplay` | Whether to autoplay | — | — |
-| `index` | Current screen index (starting from 0) | — | `0` |
-| `interval` | Autoplay interval (ms) | — | `3000` |
+| `arrows` | Arrow display mode: `always` (always shown) / `hover` (shown on hover) / `never` (hidden) | `string` | `hover` |
+| `autoplay` | Whether to autoplay | `boolean` | — |
+| `index` | Current screen index (starting from 0) | `string` | `0` |
+| `interval` | Autoplay interval (ms) | `string` | `3000` |
 
 ### Events
 

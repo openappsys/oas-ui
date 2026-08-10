@@ -78,10 +78,10 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `content` | Body text | — | — |
-| `open` | Controlled display (boolean attribute; shows when present) | — | — |
+| `content` | Body text | `string` | — |
+| `open` | Controlled display (boolean attribute; shows when present) | `boolean` | — |
 | `placement` | Popup placement | `Placement` | `top` |
-| `title` | Title text | — | — |
+| `title` | Title text | `string` | — |
 
 ### Slots
 

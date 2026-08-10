@@ -70,13 +70,13 @@ format 支持 `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` token。
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `disabled` | 禁用 | — | — |
-| `format` | 展示格式 token（`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`） | — | — |
-| `max` | 可选范围（ISO 日期） | — | — |
-| `min` | 可选范围（ISO 日期） | — | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `format` | 展示格式 token（`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`） | `string` | — |
+| `max` | 可选范围（ISO 日期） | `string` | — |
+| `min` | 可选范围（ISO 日期） | `string` | — |
 | `placeholder` | 占位提示 | — | — |
-| `type` | 类型：`date` / `daterange` / `month` / `datetime` | — | `date` |
-| `value` | 当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组 | — | — |
+| `type` | 类型：`date` / `daterange` / `month` / `datetime` | `string` | `date` |
+| `value` | 当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组 | `string` | — |
 
 ### 事件
 

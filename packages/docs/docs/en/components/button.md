@@ -94,12 +94,12 @@ Without text, the button becomes an equal-width square and needs an `aria-label`
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `block` | Fill the full width of the parent container (block level) | — | — |
-| `disabled` | Disabled | — | — |
-| `ghost` | Ghost/outline style: transparent background + outline colored by `type`, darkens on hover | — | — |
-| `icon` | Icon name (reusing the oas-icon icon set); without text it becomes an equal-width square and uses the icon name as the fallback label | — | — |
-| `loading` | Loading state | — | — |
-| `round` | Pill radius (`--oas-radius-full` / `999px`) | — | — |
+| `block` | Fill the full width of the parent container (block level) | `boolean` | — |
+| `disabled` | Disabled | `boolean` | — |
+| `ghost` | Ghost/outline style: transparent background + outline colored by `type`, darkens on hover | `boolean` | — |
+| `icon` | Icon name (reusing the oas-icon icon set); without text it becomes an equal-width square and uses the icon name as the fallback label | `string` | — |
+| `loading` | Loading state | `boolean` | — |
+| `round` | Pill radius (`--oas-radius-full` / `999px`) | `boolean` | — |
 | `size` | Size | `ButtonSize` | `medium` |
 | `type` | Type | `ButtonType` | `default` |
 

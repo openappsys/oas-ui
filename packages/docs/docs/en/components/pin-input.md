@@ -106,13 +106,13 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `aria-invalid` | Invalid state (synced to container and cells, marked danger) | — | — |
-| `disabled` | Disabled | — | — |
-| `length` | Number of code digits | — | `6` |
-| `mask` | Asterisk masking | — | — |
-| `readonly` | Readonly | — | — |
-| `type` | Cell input type | — | `text` |
-| `value` | Current value (controlled) | — | — |
+| `aria-invalid` | Invalid state (synced to container and cells, marked danger) | `string` | — |
+| `disabled` | Disabled | `boolean` | — |
+| `length` | Number of code digits | `string` | `6` |
+| `mask` | Asterisk masking | `boolean` | — |
+| `readonly` | Readonly | `boolean` | — |
+| `type` | Cell input type | `string` | `text` |
+| `value` | Current value (controlled) | `string` | — |
 
 ### Events
 

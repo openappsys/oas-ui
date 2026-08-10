@@ -124,10 +124,10 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `items` | Menu items JSON | — | `[]` |
-| `open` | Controlled display (boolean attribute; expands when present) | — | — |
+| `items` | Menu items JSON | `string` | `[]` |
+| `open` | Controlled display (boolean attribute; expands when present) | `boolean` | — |
 | `placement` | Popup placement | `Placement` | `bottom` |
-| `value` | Current selected value | — | — |
+| `value` | Current selected value | `string` | — |
 
 ### Events
 

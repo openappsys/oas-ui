@@ -85,11 +85,11 @@ The default slot can hold an icon — combining an icon and text forms an icon t
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `chip` | Chip (pill radius + compact padding) | — | — |
-| `clickable` | Whole tag clickable (focusable, dispatches `oas-click`) | — | — |
-| `closable` | Closable | — | — |
-| `disabled` | Disabled (cannot be clicked or closed) | — | — |
-| `round` | Rounded | — | — |
+| `chip` | Chip (pill radius + compact padding) | `boolean` | — |
+| `clickable` | Whole tag clickable (focusable, dispatches `oas-click`) | `boolean` | — |
+| `closable` | Closable | `boolean` | — |
+| `disabled` | Disabled (cannot be clicked or closed) | `boolean` | — |
+| `round` | Rounded | `boolean` | — |
 | `size` | Size | `TagSize` | `medium` |
 | `type` | Type | `TagType` | `default` |
 

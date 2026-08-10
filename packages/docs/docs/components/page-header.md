@@ -45,9 +45,9 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `back` | 是否显示返回按钮 | — | — |
-| `subtitle` | 副标题文案 | — | — |
-| `title` | 标题文案 | — | — |
+| `back` | 是否显示返回按钮 | `boolean` | — |
+| `subtitle` | 副标题文案 | `string` | — |
+| `title` | 标题文案 | `string` | — |
 
 ### 事件
 

@@ -57,10 +57,10 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `disabled` | 禁用 | — | — |
+| `disabled` | 禁用 | `boolean` | — |
 | `options` | 选项，JSON 数组 `[{ label, value, disabled }]` | `Option[] \| string` | `[]` |
-| `placeholder` | 占位提示 | — | — |
-| `value` | 预设值 | — | — |
+| `placeholder` | 占位提示 | `string` | — |
+| `value` | 预设值 | `string` | — |
 
 ### 事件
 

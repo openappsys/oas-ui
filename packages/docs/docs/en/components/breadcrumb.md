@@ -43,8 +43,8 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `items` | Breadcrumb items JSON | — | `[]` |
-| `separator` | Separator | — | `/` |
+| `items` | Breadcrumb items JSON | `string` | `[]` |
+| `separator` | Separator | `string` | `/` |
 
 ### Events
 

@@ -88,9 +88,9 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `active` | 当前高亮 href | — | — |
+| `active` | 当前高亮 href | `string` | — |
 | `items` | 锚点项 JSON | `AnchorItem[] \| string` | `[]` |
-| `offset` | 高亮判定偏移（px） | — | `0` |
+| `offset` | 高亮判定偏移（px） | `string` | `0` |
 
 ### 事件
 

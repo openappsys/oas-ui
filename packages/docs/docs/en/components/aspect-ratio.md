@@ -36,7 +36,7 @@ A purely presentational component that locks a container's size to a specified a
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `ratio` | Aspect ratio; supports `16/9`, `4:3`, `16 / 9`, decimal `1.5`; invalid values fall back to `1 / 1` | — | — |
+| `ratio` | Aspect ratio; supports `16/9`, `4:3`, `16 / 9`, decimal `1.5`; invalid values fall back to `1 / 1` | `string` | — |
 
 ### Slots
 

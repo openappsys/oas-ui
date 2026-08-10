@@ -56,9 +56,9 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `clickable` | 步骤可点击跳转（布尔，存在即开启） | — | — |
-| `current` | 当前步骤索引（0 起） | — | `0` |
-| `direction` | 方向 | — | `horizontal` |
+| `clickable` | 步骤可点击跳转（布尔，存在即开启） | `boolean` | — |
+| `current` | 当前步骤索引（0 起） | `string` | `0` |
+| `direction` | 方向 | `string` | `horizontal` |
 | `steps` | `[{ title, description?, status? }]` JSON 字符串 | `StepItem[] \| string` | `[]` |
 
 ### 事件

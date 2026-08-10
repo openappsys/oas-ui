@@ -96,11 +96,11 @@ Add `multiple` to enable multi-select; `value` uses comma-separated selected val
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `aria-label` | Group container accessible name (defaults to the built-in i18n label) | — | — |
-| `disabled` | Disable the whole group | — | — |
-| `multiple` | Multi-select mode | — | — |
-| `size` | Size passed to child buttons | — | — |
-| `type` | Type passed to child buttons | — | — |
-| `value` | Selected value (single value in single-select, comma-separated in multi-select) | — | — |
+| `disabled` | Disable the whole group | `boolean` | — |
+| `multiple` | Multi-select mode | `boolean` | — |
+| `size` | Size passed to child buttons | `string` | — |
+| `type` | Type passed to child buttons | `string` | — |
+| `value` | Selected value (single value in single-select, comma-separated in multi-select) | `string` | — |
 | `vertical` | Stack vertically, merging corners top/bottom | — | — |
 
 ### Events

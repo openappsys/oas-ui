@@ -62,12 +62,12 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `accept` | 接受的文件类型 | — | — |
-| `auto-upload` | 添加后自动模拟上传 | — | — |
-| `disabled` | 禁用 | — | — |
+| `accept` | 接受的文件类型 | `string` | — |
+| `auto-upload` | 添加后自动模拟上传 | `boolean` | — |
+| `disabled` | 禁用 | `boolean` | — |
 | `files` | 文件列表（property，`File[]`） | `File[]` | — |
-| `max` | 最大文件数 | — | `0` |
-| `multiple` | 多选 | — | — |
+| `max` | 最大文件数 | `string` | `0` |
+| `multiple` | 多选 | `boolean` | — |
 
 ### 事件
 

@@ -109,10 +109,10 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `checked` | Whether checked | — | — |
-| `disabled` | Disabled | — | — |
-| `indeterminate` | Indeterminate state | — | — |
-| `value` | Option identifier | — | — |
+| `checked` | Whether checked | `boolean` | — |
+| `disabled` | Disabled | `boolean` | — |
+| `indeterminate` | Indeterminate state | `boolean` | — |
+| `value` | Option identifier | `string` | — |
 
 ### Events
 

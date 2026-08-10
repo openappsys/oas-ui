@@ -146,22 +146,22 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `addon-after` | 后置 addon 文案块 | — | — |
-| `addon-before` | 前置 addon 文案块 | — | — |
-| `clearable` | 可清空 | — | — |
-| `disabled` | 禁用 | — | — |
-| `label` | 可访问名称（`aria-label` 来源，未设时回退 `placeholder` → 内置文案「输入框」） | — | `placeholder` |
-| `maxlength` | 最大输入长度（透传原生 maxlength） | — | — |
-| `placeholder` | 占位提示 | — | — |
+| `addon-after` | 后置 addon 文案块 | `string` | — |
+| `addon-before` | 前置 addon 文案块 | `string` | — |
+| `clearable` | 可清空 | `boolean` | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `label` | 可访问名称（`aria-label` 来源，未设时回退 `placeholder` → 内置文案「输入框」） | — | — |
+| `maxlength` | 最大输入长度（透传原生 maxlength） | `string` | — |
+| `placeholder` | 占位提示 | `string` | — |
 | `prefix` | 内嵌前置文案 | `string` | — |
-| `prefix-icon` | 前置图标名 | — | — |
-| `readonly` | 只读 | — | — |
-| `show-count` | 显示字数统计（右下角，超限标 danger） | — | — |
-| `show-password` | 密码可见切换（`type="password"` 时渲染眼睛按钮） | — | — |
-| `suffix` | 内嵌后置文案 | — | — |
-| `suffix-icon` | 后置图标名 | — | — |
-| `type` | 原生 input 类型 | — | `text` |
-| `value` | 值（受控） | — | — |
+| `prefix-icon` | 前置图标名 | `string` | — |
+| `readonly` | 只读 | `boolean` | — |
+| `show-count` | 显示字数统计（右下角，超限标 danger） | `boolean` | — |
+| `show-password` | 密码可见切换（`type="password"` 时渲染眼睛按钮） | `boolean` | — |
+| `suffix` | 内嵌后置文案 | `string` | — |
+| `suffix-icon` | 后置图标名 | `string` | — |
+| `type` | 原生 input 类型 | `string` | `text` |
+| `value` | 值（受控） | `string` | — |
 
 ### 事件
 

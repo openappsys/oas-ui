@@ -76,8 +76,8 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `items` | Command items JSON | — | `[]` |
-| `open` | Whether open (controlled; auto-removed after selection / Esc) | — | — |
+| `items` | Command items JSON | `string` | `[]` |
+| `open` | Whether open (controlled; auto-removed after selection / Esc) | `boolean` | — |
 
 ### Events
 
