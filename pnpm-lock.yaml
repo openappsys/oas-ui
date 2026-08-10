@@ -132,6 +132,10 @@ importers:
       '@oas-ui/icons':
         specifier: workspace:*
         version: link:../icons
+    devDependencies:
+      '@oas-ui/ssr':
+        specifier: workspace:*
+        version: link:../ssr
 
 packages:
 

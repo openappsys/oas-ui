@@ -1,0 +1,228 @@
+import { test, expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { spawnSync } from 'node:child_process'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { renderToString, WHITELIST } from '@oas-ui/ssr'
+
+// DSD 静态页 e2e 验收（PRD v1.9，四条）：
+//   1. 禁 JS 可视：渲染器产出的 DSD 快照解析即附加 shadow root、结构样式完整可见
+//   2. upgrade 无错：注入 ui bundle 后组件升级复用 declarative shadow root，
+//      无 NotSupportedError、console 零 error
+//   3. 无闪动：upgrade 前后宿主布局（boundingClientRect）一致
+//   4. 事件可触发：upgrade 后点击 oas-button 派发 oas-click
+// 独立路线：不依赖 docs 站点，用 file:// 加载本 spec 生成的静态页。
+//
+// 产物（bundle / 静态页 / 截图）放系统临时目录，不入仓库。
+
+// packages/ui -> 仓库根
+const REPO_ROOT = resolve(import.meta.dirname, '..', '..')
+const ARTIFACT_DIR = join(tmpdir(), 'opencode', 'oas-ssr-dsd-e2e')
+const UI_BUNDLE = join(ARTIFACT_DIR, 'ui.js')
+const DSD_PAGE = join(ARTIFACT_DIR, 'index.html')
+const DSD_PAGE_URL = pathToFileURL(DSD_PAGE).href
+const SCREENSHOT = {
+  noJs: join(ARTIFACT_DIR, 'dsd-01-no-js.png'),
+  beforeUpgrade: join(ARTIFACT_DIR, 'dsd-02-before-upgrade.png'),
+  afterUpgrade: join(ARTIFACT_DIR, 'dsd-03-after-upgrade.png'),
+}
+
+let dsdHtml = ''
+
+/** 用仓库内的 vite 把 @oas-ui/ui 主入口打成单文件 ESM bundle（workspace 依赖全部内联） */
+function buildUiBundle(): string {
+  const uiEntry = join(REPO_ROOT, 'packages', 'ui', 'dist', 'index.js')
+  if (!existsSync(uiEntry)) {
+    throw new Error(
+      `[ssr-dsd] 缺少 ${uiEntry}：请先执行 pnpm --filter @oas-ui/ui build 再跑 e2e`,
+    )
+  }
+  const viteCli = join(REPO_ROOT, 'node_modules', 'vite', 'bin', 'vite.js')
+  if (!existsSync(viteCli)) {
+    throw new Error(`[ssr-dsd] 未找到 vite CLI：${viteCli}`)
+  }
+  const configFile = join(ARTIFACT_DIR, 'vite.config.mjs')
+  const cfg = [
+    'export default {',
+    `  root: ${JSON.stringify(REPO_ROOT.replaceAll('\\', '/'))},`,
+    '  configFile: false,',
+    "  logLevel: 'silent',",
+    '  build: {',
+    `    lib: { entry: ${JSON.stringify(uiEntry.replaceAll('\\', '/'))}, formats: ['es'], fileName: () => 'ui.js' },`,
+    `    outDir: ${JSON.stringify(ARTIFACT_DIR.replaceAll('\\', '/'))},`,
+    '    emptyOutDir: false,',
+    '    minify: false,',
+    '    sourcemap: false,',
+    '  },',
+    '}',
+  ].join('\n')
+  writeFileSync(configFile, cfg, 'utf8')
+  const r = spawnSync(process.execPath, [viteCli, 'build', '--config', configFile], {
+    encoding: 'utf8',
+  })
+  if (r.status !== 0 || !existsSync(UI_BUNDLE)) {
+    throw new Error(
+      `[ssr-dsd] vite 单文件 bundle 构建失败（status=${r.status}）：\n${r.stdout}\n${r.stderr}`,
+    )
+  }
+  return UI_BUNDLE
+}
+
+test.beforeAll(async () => {
+  mkdirSync(ARTIFACT_DIR, { recursive: true })
+  // —— 1) 构建单文件 ESM bundle（浏览器注入用） ——
+  buildUiBundle()
+
+  // —— 2) 用渲染器产出白名单组件 DSD 快照，拼成完整静态页 ——
+  const [btn, tag, empty, divider, text, title, para] = await Promise.all([
+    renderToString('oas-button', { type: 'primary', 'data-esc': 'a"&<>b' }, '确定'),
+    renderToString('oas-tag', { type: 'success', size: 'large' }, '进行中'),
+    renderToString('oas-empty', { description: '暂无数据' }),
+    renderToString('oas-divider', { 'content-position': 'left' }, '分割线'),
+    renderToString('oas-text', { type: 'secondary' }, '次要文本'),
+    renderToString('oas-title', { level: '2' }, '二级标题'),
+    renderToString('oas-paragraph', {}, '段落正文'),
+  ])
+  dsdHtml = `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>OAS-UI DSD 静态快照验收页</title>
+</head>
+<body style="font-family: system-ui, sans-serif; padding: 24px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start;">
+${[btn, tag, empty, divider, text, title, para].join('\n')}
+</body>
+</html>`
+  writeFileSync(DSD_PAGE, dsdHtml, 'utf8')
+})
+
+async function openPage(page: Page): Promise<void> {
+  await page.goto(DSD_PAGE_URL, { waitUntil: 'load' })
+}
+
+/** 注入 ui bundle 并等待白名单组件全部 upgrade */
+async function upgradeUi(page: Page): Promise<void> {
+  await page.addScriptTag({ path: UI_BUNDLE, type: 'module' })
+  await page.evaluate(async (tags) => {
+    const w = window as Window & { customElements: CustomElementRegistry }
+    await Promise.all(tags.map((t) => w.customElements.whenDefined(t)))
+  }, [...WHITELIST])
+  await page.waitForTimeout(300)
+}
+
+/** 各白名单宿主元素的 boundingClientRect 快照（2 位小数，排除浮点噪声） */
+function layoutOf(page: Page): Promise<Record<string, { x: number; y: number; w: number; h: number }>> {
+  return page.evaluate((tags) => {
+    const round2 = (n: number): number => Math.round(n * 100) / 100
+    const out: Record<string, { x: number; y: number; w: number; h: number }> = {}
+    for (const t of tags) {
+      const el = document.querySelector(t)
+      if (!el) continue
+      const r = el.getBoundingClientRect()
+      out[t] = { x: round2(r.x), y: round2(r.y), w: round2(r.width), h: round2(r.height) }
+    }
+    return out
+  }, [...WHITELIST])
+}
+
+test('禁 JS 可视：DSD 快照解析即附加 shadow root 并渲染关键结构', async ({ page }) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', (e) => pageErrors.push(e.message))
+  await openPage(page)
+
+  // 无 JS、无 bundle：shadow root 已由 declarative shadow DOM 解析附加
+  const shadowReady = await page.evaluate((tags) => {
+    const out: Record<string, boolean> = {}
+    for (const t of tags) {
+      const el = document.querySelector(t)
+      out[t] = el !== null && el.shadowRoot !== null
+    }
+    return out
+  }, [...WHITELIST])
+  for (const t of WHITELIST) {
+    expect(shadowReady[t], `${t} 的 shadow root 应已附加`).toBe(true)
+  }
+
+  // 关键结构：oas-button 的 button[part=button]、oas-empty 的 description 文案、oas-title 的 h2
+  const structure = await page.evaluate(() => {
+    const btnHost = document.querySelector('oas-button')
+    const emptyHost = document.querySelector('oas-empty')
+    const titleHost = document.querySelector('oas-title')
+    const btn = btnHost?.shadowRoot?.querySelector('button[part="button"]')
+    const desc = emptyHost?.shadowRoot?.querySelector('[part="description"]')
+    const h2 = titleHost?.shadowRoot?.querySelector('h2[part="title"]')
+    return {
+      hasButton: btn !== null && btn !== undefined,
+      emptyDesc: desc?.textContent ?? '',
+      titleTag: h2?.tagName ?? '',
+    }
+  })
+  expect(structure.hasButton).toBe(true)
+  expect(structure.emptyDesc).toBe('暂无数据')
+  expect(structure.titleTag).toBe('H2')
+
+  // 快照属性无逃逸：含引号/尖括号/& 的属性值在页面解析后原样还原
+  expect(await page.locator('oas-button').first().getAttribute('data-esc')).toBe('a"&<>b')
+
+  // 禁 JS 下无未捕获异常
+  expect(pageErrors).toEqual([])
+  await page.screenshot({ path: SCREENSHOT.noJs, fullPage: true })
+})
+
+test('upgrade 无错：注入 ui bundle 后升级复用 DSD root，无 NotSupportedError、console 零 error', async ({
+  page,
+}) => {
+  const pageErrors: string[] = []
+  const consoleErrors: string[] = []
+  page.on('pageerror', (e) => pageErrors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') consoleErrors.push(m.text())
+  })
+  await openPage(page)
+  await upgradeUi(page)
+
+  // 重点：无 NotSupportedError（attachShadow 二次调用），也无任何未捕获异常
+  expect(pageErrors).toEqual([])
+  expect(consoleErrors).toEqual([])
+})
+
+test('无闪动：upgrade 前后宿主 boundingClientRect 完全一致', async ({ page }) => {
+  await openPage(page)
+  const before = await layoutOf(page)
+  await page.screenshot({ path: SCREENSHOT.beforeUpgrade, fullPage: true })
+  await upgradeUi(page)
+  const after = await layoutOf(page)
+  expect(after).toEqual(before)
+  await page.screenshot({ path: SCREENSHOT.afterUpgrade, fullPage: true })
+})
+
+test('事件可触发：upgrade 后点击 oas-button 派发 oas-click', async ({ page }) => {
+  await openPage(page)
+  await upgradeUi(page)
+
+  await page.evaluate(() => {
+    const w = window as unknown as Window & { __oasClicks: unknown[] }
+    w.__oasClicks = []
+    const el = document.querySelector('oas-button')
+    el?.addEventListener('oas-click', (e: Event) => w.__oasClicks.push((e as CustomEvent).detail))
+  })
+
+  // 真实鼠标点击 shadow 内的 button（Playwright locator 自动穿透 open shadow root）
+  await page.locator('oas-button').locator('button').click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as unknown as Window & { __oasClicks: unknown[] }).__oasClicks.length,
+      ),
+    )
+    .toBe(1)
+})
+
+test('渲染器边界：非白名单抛错、快照属性完整 HTML 转义', async () => {
+  await expect(renderToString('oas-table', { columns: '[]' })).rejects.toThrow(/非白名单/)
+  const snap = await renderToString('oas-button', { type: 'primary', 'data-esc': 'a"&<>b' }, '确定')
+  expect(snap).toContain('data-esc="a&quot;&amp;&lt;&gt;b"')
+  expect(snap).toContain('<template shadowrootmode="open">')
+})
