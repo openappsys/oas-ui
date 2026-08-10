@@ -5,14 +5,14 @@ An `aria-pressed` two-state toggle button; the pressed state uses the primary co
 ## Basic Usage
 
 <DemoBlock title="Basic">
-  <oas-toggle-button value="bold">加粗</oas-toggle-button>
-  <oas-toggle-button value="italic" pressed>斜体</oas-toggle-button>
+  <oas-toggle-button value="bold">Bold</oas-toggle-button>
+  <oas-toggle-button value="italic" pressed>Italic</oas-toggle-button>
 </DemoBlock>
 
 ## Events
 
 <DemoBlock title="Change events">
-  <oas-toggle-button id="tb-event" value="underline">下划线</oas-toggle-button>
+  <oas-toggle-button id="tb-event" value="underline">Underline</oas-toggle-button>
   <span id="tb-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 160px"></span>
 </DemoBlock>
 
@@ -30,8 +30,8 @@ onMounted(() => {
 ## Disabled
 
 <DemoBlock title="Disabled">
-  <oas-toggle-button value="strike" disabled>删除线</oas-toggle-button>
-  <oas-toggle-button value="strike" pressed disabled>删除线（按下）</oas-toggle-button>
+  <oas-toggle-button value="strike" disabled>Strikethrough</oas-toggle-button>
+  <oas-toggle-button value="strike" pressed disabled>Strikethrough (pressed)</oas-toggle-button>
 </DemoBlock>
 
 ## API

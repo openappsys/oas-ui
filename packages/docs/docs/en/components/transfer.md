@@ -11,7 +11,7 @@ Dual left/right panels with shuttle buttons in the middle, supporting search fil
 ## Preset Values & Titles
 
 <DemoBlock title="Preset value + titles">
-  <oas-transfer id="transfer-preset" value='["b"]' titles='["可选水果", "已选水果"]'></oas-transfer>
+  <oas-transfer id="transfer-preset" value='["b"]' titles='["Available fruits", "Selected fruits"]'></oas-transfer>
 </DemoBlock>
 
 ## Searchable
@@ -32,31 +32,31 @@ import { onMounted } from 'vue'
 onMounted(() => {
   const basic = document.getElementById('transfer-basic')
   if (basic) basic.data = [
-    { key: 'a', label: '苹果' },
-    { key: 'b', label: '香蕉' },
-    { key: 'c', label: '橙子' },
-    { key: 'd', label: '葡萄', disabled: true },
+    { key: 'a', label: 'Apple' },
+    { key: 'b', label: 'Banana' },
+    { key: 'c', label: 'Orange' },
+    { key: 'd', label: 'Grape', disabled: true },
   ]
   const preset = document.getElementById('transfer-preset')
   if (preset) preset.data = [
-    { key: 'a', label: '苹果' },
-    { key: 'b', label: '香蕉' },
-    { key: 'c', label: '橙子' },
+    { key: 'a', label: 'Apple' },
+    { key: 'b', label: 'Banana' },
+    { key: 'c', label: 'Orange' },
   ]
   const search = document.getElementById('transfer-search')
   if (search) search.data = [
-    { key: 'a', label: '苹果' },
-    { key: 'b', label: '香蕉' },
-    { key: 'c', label: '橙子' },
-    { key: 'd', label: '草莓' },
-    { key: 'e', label: '西瓜' },
+    { key: 'a', label: 'Apple' },
+    { key: 'b', label: 'Banana' },
+    { key: 'c', label: 'Orange' },
+    { key: 'd', label: 'Strawberry' },
+    { key: 'e', label: 'Watermelon' },
   ]
   const el = document.getElementById('transfer-event')
   if (el) {
     el.data = [
-      { key: 'a', label: '苹果' },
-      { key: 'b', label: '香蕉' },
-      { key: 'c', label: '橙子' },
+      { key: 'a', label: 'Apple' },
+      { key: 'b', label: 'Banana' },
+      { key: 'c', label: 'Orange' },
     ]
     const out = document.getElementById('transfer-output')
     el.addEventListener('oas-change', (e) => {

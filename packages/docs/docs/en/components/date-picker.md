@@ -5,7 +5,7 @@ A date picker supporting four types — single date, date range, month, and date
 ## Basic Selection
 
 <DemoBlock title="Basic usage (type=date)">
-  <oas-date-picker value="2026-08-09" placeholder="请选择日期"></oas-date-picker>
+  <oas-date-picker value="2026-08-09" placeholder="Select a date"></oas-date-picker>
 </DemoBlock>
 
 Click the input to open the date panel; click a date to select it and close.
@@ -21,7 +21,7 @@ A double-month grid: pick the start first, then the end; submits a JSON array `[
 ## Month Selection
 
 <DemoBlock title="Month (type=month)">
-  <oas-date-picker type="month" value="2026-08" placeholder="请选择月份"></oas-date-picker>
+  <oas-date-picker type="month" value="2026-08" placeholder="Select a month"></oas-date-picker>
 </DemoBlock>
 
 ## Datetime
@@ -35,7 +35,7 @@ Pick the date and hour/minute/second, then click "确定" to submit.
 ## Disabled Range
 
 <DemoBlock title="min / max limits">
-  <oas-date-picker min="2026-08-01" max="2026-08-31" placeholder="仅可选 8 月"></oas-date-picker>
+  <oas-date-picker min="2026-08-01" max="2026-08-31" placeholder="Only August is selectable"></oas-date-picker>
 </DemoBlock>
 
 Out-of-range dates are not selectable.
@@ -56,7 +56,7 @@ The format supports `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` tokens.
   <span id="date-picker-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
-<button id="date-picker-set" type="button" style="margin-top: 12px">设为 2026-08-20</button>
+<button id="date-picker-set" type="button" style="margin-top: 12px">Set to 2026-08-20</button>
 
 ## Disabled
 

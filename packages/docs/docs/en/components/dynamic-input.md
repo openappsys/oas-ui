@@ -13,7 +13,7 @@ Add/remove/edit for array fields; each row reuses the `oas-input` component, sup
 ## Default Value
 
 <DemoBlock title="default-value">
-  <oas-dynamic-input default-value="新行"></oas-dynamic-input>
+  <oas-dynamic-input default-value="New row"></oas-dynamic-input>
 </DemoBlock>
 
 New rows start with `default-value` as their initial value.

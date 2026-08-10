@@ -13,9 +13,9 @@ The feature demo area only demonstrates field collection and submission, without
 <DemoBlock title="Collect & submit">
   <oas-form id="form-basic" style="width: 340px">
     <oas-space direction="vertical" style="width: 100%">
-      <oas-input name="name" placeholder="姓名"></oas-input>
-      <oas-input name="email" placeholder="邮箱"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+      <oas-input name="name" placeholder="Name"></oas-input>
+      <oas-input name="email" placeholder="Email"></oas-input>
+      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Submit</oas-button>
     </oas-space>
   </oas-form>
   <span id="form-basic-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
@@ -28,11 +28,11 @@ Without `rules`, submission performs no validation and dispatches `oas-submit` d
 <DemoBlock title="Mixed controls">
   <oas-form id="form-full" style="width: 360px">
     <oas-space direction="vertical" style="width: 100%">
-      <oas-input name="username" placeholder="用户名"></oas-input>
-      <oas-select name="role" placeholder="选择角色" options='[{"label":"管理员","value":"admin"},{"label":"编辑","value":"editor"},{"label":"访客","value":"guest"}]'></oas-select>
+      <oas-input name="username" placeholder="Username"></oas-input>
+      <oas-select name="role" placeholder="Select a role" options='[{"label":"Admin","value":"admin"},{"label":"Editor","value":"editor"},{"label":"Guest","value":"guest"}]'></oas-select>
       <oas-input-number name="age"></oas-input-number>
-      <oas-textarea name="bio" rows="3" placeholder="个人简介（选填）"></oas-textarea>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+      <oas-textarea name="bio" rows="3" placeholder="Bio (optional)"></oas-textarea>
+      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Submit</oas-button>
     </oas-space>
   </oas-form>
 </DemoBlock>
@@ -46,11 +46,11 @@ The validation area demonstrates `rules`-declared validation rules and failure f
 ### Required & Format Validation
 
 <DemoBlock title="Required & format validation">
-  <oas-form id="form-validate" rules='{"name":[{"required":true,"message":"请输入姓名"}],"email":[{"required":true,"message":"请输入邮箱"},{"pattern":"^\\S+@\\S+$","message":"邮箱格式不正确"}]}' style="width: 340px">
+  <oas-form id="form-validate" rules='{"name":[{"required":true,"message":"Please enter a name"}],"email":[{"required":true,"message":"Please enter an email"},{"pattern":"^\\S+@\\S+$","message":"Invalid email format"}]}' style="width: 340px">
     <oas-space direction="vertical" style="width: 100%">
-      <oas-input name="name" placeholder="姓名"></oas-input>
-      <oas-input name="email" placeholder="邮箱"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+      <oas-input name="name" placeholder="Name"></oas-input>
+      <oas-input name="email" placeholder="Email"></oas-input>
+      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Submit</oas-button>
     </oas-space>
   </oas-form>
 </DemoBlock>
@@ -58,10 +58,10 @@ The validation area demonstrates `rules`-declared validation rules and failure f
 ### Length Validation
 
 <DemoBlock title="minLength validation">
-  <oas-form id="form-length" rules='{"username":[{"required":true,"message":"请输入用户名"},{"minLength":3,"message":"至少 3 个字符"}]}' style="width: 340px">
+  <oas-form id="form-length" rules='{"username":[{"required":true,"message":"Please enter a username"},{"minLength":3,"message":"At least 3 characters"}]}' style="width: 340px">
     <oas-space direction="vertical" style="width: 100%">
-      <oas-input name="username" placeholder="用户名（至少 3 个字符）"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+      <oas-input name="username" placeholder="Username (at least 3 characters)"></oas-input>
+      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Submit</oas-button>
     </oas-space>
   </oas-form>
 </DemoBlock>
@@ -69,11 +69,11 @@ The validation area demonstrates `rules`-declared validation rules and failure f
 ### Disabled Fields Skip Validation
 
 <DemoBlock title="Disabled fields are not validated">
-  <oas-form id="form-skip" rules='{"title":[{"required":true,"message":"请输入标题"}],"locked":[{"required":true,"message":"该字段被禁用，应跳过"}]}' style="width: 340px">
+  <oas-form id="form-skip" rules='{"title":[{"required":true,"message":"Please enter a title"}],"locked":[{"required":true,"message":"This field is disabled and should be skipped"}]}' style="width: 340px">
     <oas-space direction="vertical" style="width: 100%">
-      <oas-input name="title" placeholder="标题"></oas-input>
-      <oas-input name="locked" disabled value="禁止修改"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+      <oas-input name="title" placeholder="Title"></oas-input>
+      <oas-input name="locked" disabled value="Cannot be modified"></oas-input>
+      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Submit</oas-button>
     </oas-space>
   </oas-form>
 </DemoBlock>
@@ -81,10 +81,10 @@ The validation area demonstrates `rules`-declared validation rules and failure f
 ### Submit & Validation-fail Events
 
 <DemoBlock title="submit / validate-fail">
-  <oas-form id="form-event" rules='{"nick":[{"required":true,"message":"请输入昵称"}]}' style="width: 340px">
+  <oas-form id="form-event" rules='{"nick":[{"required":true,"message":"Please enter a nickname"}]}' style="width: 340px">
     <oas-space direction="vertical" style="width: 100%">
-      <oas-input name="nick" placeholder="昵称"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+      <oas-input name="nick" placeholder="Nickname"></oas-input>
+      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Submit</oas-button>
     </oas-space>
   </oas-form>
   <span id="form-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
@@ -95,7 +95,7 @@ Controlled syncing and event listeners (wired in one `<script>` block):
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
-  // 受控同步：把文本类字段的输入写回 value 属性
+  // Controlled sync: write text-field input back to the value attribute
   for (const id of ['form-basic', 'form-full', 'form-validate', 'form-length', 'form-skip', 'form-event']) {
     const form = document.getElementById(id)
     if (!form) continue
@@ -109,13 +109,13 @@ onMounted(() => {
     }
   }
 
-  // 功能展示：基础用法收集结果
+  // Feature demo: collect results from the basic usage form
   const basicOut = document.getElementById('form-basic-output')
   document.getElementById('form-basic')?.addEventListener('oas-submit', (e) => {
     basicOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
   })
 
-  // 校验区：事件演示
+  // Validation area: event demo
   const out = document.getElementById('form-output')
   const formEvent = document.getElementById('form-event')
   formEvent?.addEventListener('oas-submit', (e) => {

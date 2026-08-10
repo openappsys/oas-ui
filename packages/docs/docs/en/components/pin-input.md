@@ -47,8 +47,8 @@ Set the number of cells via `length`.
 
 <DemoBlock title="aria-invalid dynamic toggle">
   <oas-space size="small">
-    <oas-button size="small" type="danger" onclick="pinInvalid('true')">标记校验失败</oas-button>
-    <oas-button size="small" onclick="pinInvalid('false')">恢复正常</oas-button>
+    <oas-button size="small" type="danger" onclick="pinInvalid('true')">Mark as invalid</oas-button>
+    <oas-button size="small" onclick="pinInvalid('false')">Restore normal</oas-button>
   </oas-space>
   <oas-pin-input id="pin-invalid" length="4" value="123"></oas-pin-input>
 </DemoBlock>

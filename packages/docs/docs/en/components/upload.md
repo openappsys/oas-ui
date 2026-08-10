@@ -45,7 +45,7 @@ onMounted(() => {
   const el = document.getElementById('upload-event')
   const out = document.getElementById('upload-output')
   el?.addEventListener('oas-change', (e) => {
-    out.textContent = `oas-change: ${e.detail.files.length} 个文件`
+    out.textContent = `oas-change: ${e.detail.files.length} files`
   })
   el?.addEventListener('oas-remove', () => {
     out.textContent = `oas-remove`

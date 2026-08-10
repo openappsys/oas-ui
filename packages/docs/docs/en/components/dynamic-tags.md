@@ -27,7 +27,7 @@ When `max` is reached, the input is automatically disabled; deleting a tag resto
 ## Placeholder & Disabled
 
 <DemoBlock title="placeholder">
-  <oas-dynamic-tags placeholder="输入后按回车添加"></oas-dynamic-tags>
+  <oas-dynamic-tags placeholder="Type and press Enter to add"></oas-dynamic-tags>
 </DemoBlock>
 
 <DemoBlock title="disabled">

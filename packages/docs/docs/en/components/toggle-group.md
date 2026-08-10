@@ -7,8 +7,8 @@ A mutually exclusive button group for single/multiple selection: single mode use
 Without `multiple`, it is single-select (`role="radiogroup"` + `radio`); `value` is a string, and only one item is pressed at a time.
 
 <DemoBlock title="Single select">
-  <oas-toggle-group id="tg-single" items='[{"label":"日","value":"day"},{"label":"周","value":"week"},{"label":"月","value":"month"}]'></oas-toggle-group>
-  <span id="tg-single-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">当前：day</span>
+  <oas-toggle-group id="tg-single" items='[{"label":"Day","value":"day"},{"label":"Week","value":"week"},{"label":"Month","value":"month"}]'></oas-toggle-group>
+  <span id="tg-single-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Current: day</span>
 </DemoBlock>
 
 ## Multiple Select
@@ -16,8 +16,8 @@ Without `multiple`, it is single-select (`role="radiogroup"` + `radio`); `value`
 With `multiple`, it becomes multi-select (`role="group"` + `checkbox`); `value` is a JSON array string.
 
 <DemoBlock title="Multiple select">
-  <oas-toggle-group id="tg-multi" multiple items='[{"label":"加粗","value":"bold"},{"label":"斜体","value":"italic"},{"label":"下划线","value":"underline"}]'></oas-toggle-group>
-  <span id="tg-multi-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">当前：[]</span>
+  <oas-toggle-group id="tg-multi" multiple items='[{"label":"Bold","value":"bold"},{"label":"Italic","value":"italic"},{"label":"Underline","value":"underline"}]'></oas-toggle-group>
+  <span id="tg-multi-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Current: []</span>
 </DemoBlock>
 
 ## Disabled
@@ -25,7 +25,7 @@ With `multiple`, it becomes multi-select (`role="group"` + `checkbox`); `value` 
 Item-level `disabled: true` disables that item; disabled items are skipped in keyboard navigation.
 
 <DemoBlock title="Disabled items">
-  <oas-toggle-group items='[{"label":"可编辑","value":"editable"},{"label":"只读","value":"readonly","disabled":true},{"label":"可删除","value":"deletable"}]'></oas-toggle-group>
+  <oas-toggle-group items='[{"label":"Editable","value":"editable"},{"label":"Readonly","value":"readonly","disabled":true},{"label":"Deletable","value":"deletable"}]'></oas-toggle-group>
 </DemoBlock>
 
 ## Controlled Selection (value)
@@ -33,11 +33,11 @@ Item-level `disabled: true` disables that item; disabled items are skipped in ke
 `value` is a controlled channel: a string for single select, a JSON array string for multiple; externally setting the attribute immediately reflects in the selected state (clicks inside the group also write back the attribute). The buttons below drive the selection externally:
 
 <DemoBlock title="Controlled value">
-  <oas-toggle-group id="tg-controlled" value="week" items='[{"label":"日","value":"day"},{"label":"周","value":"week"},{"label":"月","value":"month"}]'></oas-toggle-group>
-  <oas-toggle-group id="tg-controlled-multi" multiple value='["bold"]' items='[{"label":"加粗","value":"bold"},{"label":"斜体","value":"italic"},{"label":"下划线","value":"underline"}]'></oas-toggle-group>
-  <oas-button id="tg-set-day" size="small">单选：日</oas-button>
-  <oas-button id="tg-set-month" size="small">单选：月</oas-button>
-  <oas-button id="tg-set-multi" size="small">多选：斜体+下划线</oas-button>
+  <oas-toggle-group id="tg-controlled" value="week" items='[{"label":"Day","value":"day"},{"label":"Week","value":"week"},{"label":"Month","value":"month"}]'></oas-toggle-group>
+  <oas-toggle-group id="tg-controlled-multi" multiple value='["bold"]' items='[{"label":"Bold","value":"bold"},{"label":"Italic","value":"italic"},{"label":"Underline","value":"underline"}]'></oas-toggle-group>
+  <oas-button id="tg-set-day" size="small">Single: Day</oas-button>
+  <oas-button id="tg-set-month" size="small">Single: Month</oas-button>
+  <oas-button id="tg-set-multi" size="small">Multiple: Italic + Underline</oas-button>
 </DemoBlock>
 
 Presetting `value="week"` / `value='["bold"]'` gives both groups an initial selected state; writing the `value` attribute externally switches the selected state immediately.
@@ -47,7 +47,7 @@ Presetting `value="week"` / `value='["bold"]'` gives both groups an initial sele
 Clicking or keyboard toggling dispatches `oas-change`; single select: `detail: { value: string }`, multiple select: `detail: { value: string[] }`.
 
 <DemoBlock title="Change events">
-  <oas-toggle-group id="tg-event" items='[{"label":"左","value":"left"},{"label":"中","value":"center"},{"label":"右","value":"right"}]'></oas-toggle-group>
+  <oas-toggle-group id="tg-event" items='[{"label":"Left","value":"left"},{"label":"Center","value":"center"},{"label":"Right","value":"right"}]'></oas-toggle-group>
   <span id="tg-event-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">oas-change: { value: "left" }</span>
 </DemoBlock>
 
@@ -58,14 +58,14 @@ onMounted(() => {
   const singleOut = document.getElementById('tg-single-out')
   single?.addEventListener('oas-change', (e) => {
     single.setAttribute('value', e.detail.value)
-    singleOut.textContent = `当前：${e.detail.value}`
+    singleOut.textContent = `Current: ${e.detail.value}`
   })
 
   const multi = document.getElementById('tg-multi')
   const multiOut = document.getElementById('tg-multi-out')
   multi?.addEventListener('oas-change', (e) => {
     multi.setAttribute('value', JSON.stringify(e.detail.value))
-    multiOut.textContent = `当前：${JSON.stringify(e.detail.value)}`
+    multiOut.textContent = `Current: ${JSON.stringify(e.detail.value)}`
   })
 
   const evt = document.getElementById('tg-event')
@@ -75,7 +75,7 @@ onMounted(() => {
     evtOut.textContent = `oas-change: { value: "${e.detail.value}" }`
   })
 
-  // 受控 value demo：外部驱动选中态
+  // Controlled value demo: drive the selected state externally
   document.getElementById('tg-set-day')?.addEventListener('click', () => {
     document.getElementById('tg-controlled')?.setAttribute('value', 'day')
   })
