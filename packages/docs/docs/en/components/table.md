@@ -6,7 +6,7 @@ Displays structured data in a row-and-column grid with sorting, row selection, m
 
 <DemoBlock title="Sortable columns">
   <div style="width: 100%">
-    <oas-table columns='[{"key":"name","title":"姓名","sortable":true},{"key":"age","title":"年龄","sortable":true},{"key":"city","title":"城市"},{"key":"email","title":"邮箱"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","email":"zhangsan@example.com","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","email":"lisi@example.com","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","email":"wangwu@example.com","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","email":"zhaoliu@example.com","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","email":"sunqi@example.com","position":"测试工程师"},{"name":"周八","age":27,"city":"成都","email":"zhouba@example.com","position":"运营专员"},{"name":"吴九","age":41,"city":"武汉","email":"wujiu@example.com","position":"技术总监"},{"name":"郑十","age":24,"city":"南京","email":"zhengshi@example.com","position":"实习生"},{"name":"冯十一","age":38,"city":"西安","email":"fengshiyi@example.com","position":"架构师"},{"name":"陈十二","age":29,"city":"苏州","email":"chenshier@example.com","position":"数据分析师"},{"name":"褚十三","age":33,"city":"天津","email":"chushisan@example.com","position":"项目经理"},{"name":"卫十四","age":26,"city":"重庆","email":"weishisi@example.com","position":"运维工程师"}]' row-key="name"></oas-table>
+    <oas-table columns='[{"key":"name","title":"Name","sortable":true},{"key":"age","title":"Age","sortable":true},{"key":"city","title":"City"},{"key":"email","title":"Email"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","email":"alice@example.com","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","email":"bob@example.com","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","email":"carol@example.com","position":"Backend Engineer"},{"name":"David","age":28,"city":"Hangzhou","email":"david@example.com","position":"UI Designer"},{"name":"Emma","age":32,"city":"Guangzhou","email":"emma@example.com","position":"QA Engineer"},{"name":"Frank","age":27,"city":"Chengdu","email":"frank@example.com","position":"Operations Specialist"},{"name":"Grace","age":41,"city":"Wuhan","email":"grace@example.com","position":"Technical Director"},{"name":"Henry","age":24,"city":"Nanjing","email":"henry@example.com","position":"Intern"},{"name":"Ivy","age":38,"city":"Xian","email":"ivy@example.com","position":"Architect"},{"name":"Jack","age":29,"city":"Suzhou","email":"jack@example.com","position":"Data Analyst"},{"name":"Kate","age":33,"city":"Tianjin","email":"kate@example.com","position":"Project Manager"},{"name":"Liam","age":26,"city":"Chongqing","email":"liam@example.com","position":"DevOps Engineer"}]' row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
@@ -16,7 +16,7 @@ Click a sortable column header to cycle through ascending / descending / no sort
 
 <DemoBlock title="Alignment and width">
   <div style="width: 100%">
-    <oas-table columns='[{"key":"name","title":"姓名","width":"140px"},{"key":"age","title":"年龄","align":"center"},{"key":"city","title":"城市","align":"right"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","position":"测试工程师"}]' row-key="name"></oas-table>
+    <oas-table columns='[{"key":"name","title":"Name","width":"140px"},{"key":"age","title":"Age","align":"center"},{"key":"city","title":"City","align":"right"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"},{"name":"David","age":28,"city":"Hangzhou","position":"UI Designer"},{"name":"Emma","age":32,"city":"Guangzhou","position":"QA Engineer"}]' row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
@@ -24,7 +24,7 @@ Click a sortable column header to cycle through ascending / descending / no sort
 
 <DemoBlock title="Initial sort and selection">
   <div style="width: 100%">
-    <oas-table columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄","sortable":true},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","position":"测试工程师"},{"name":"周八","age":27,"city":"成都","position":"运营专员"},{"name":"吴九","age":41,"city":"武汉","position":"技术总监"},{"name":"郑十","age":24,"city":"南京","position":"实习生"},{"name":"冯十一","age":38,"city":"西安","position":"架构师"},{"name":"陈十二","age":29,"city":"苏州","position":"数据分析师"},{"name":"褚十三","age":33,"city":"天津","position":"项目经理"},{"name":"卫十四","age":26,"city":"重庆","position":"运维工程师"}]' sort-key="age" sort-order="desc" selected="吴九" row-key="name"></oas-table>
+    <oas-table columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age","sortable":true},{"key":"city","title":"City"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"},{"name":"David","age":28,"city":"Hangzhou","position":"UI Designer"},{"name":"Emma","age":32,"city":"Guangzhou","position":"QA Engineer"},{"name":"Frank","age":27,"city":"Chengdu","position":"Operations Specialist"},{"name":"Grace","age":41,"city":"Wuhan","position":"Technical Director"},{"name":"Henry","age":24,"city":"Nanjing","position":"Intern"},{"name":"Ivy","age":38,"city":"Xian","position":"Architect"},{"name":"Jack","age":29,"city":"Suzhou","position":"Data Analyst"},{"name":"Kate","age":33,"city":"Tianjin","position":"Project Manager"},{"name":"Liam","age":26,"city":"Chongqing","position":"DevOps Engineer"}]' sort-key="age" sort-order="desc" selected="Grace" row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
@@ -34,7 +34,7 @@ Click a sortable column header to cycle through ascending / descending / no sort
 
 <DemoBlock title="Row multi-select (checkable)">
   <div style="width: 100%">
-    <oas-table checkable columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","position":"测试工程师"},{"name":"周八","age":27,"city":"成都","position":"运营专员"},{"name":"吴九","age":41,"city":"武汉","position":"技术总监"},{"name":"郑十","age":24,"city":"南京","position":"实习生"},{"name":"冯十一","age":38,"city":"西安","position":"架构师"},{"name":"陈十二","age":29,"city":"苏州","position":"数据分析师"},{"name":"褚十三","age":33,"city":"天津","position":"项目经理"},{"name":"卫十四","age":26,"city":"重庆","position":"运维工程师"}]' row-key="name"></oas-table>
+    <oas-table checkable columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"},{"name":"David","age":28,"city":"Hangzhou","position":"UI Designer"},{"name":"Emma","age":32,"city":"Guangzhou","position":"QA Engineer"},{"name":"Frank","age":27,"city":"Chengdu","position":"Operations Specialist"},{"name":"Grace","age":41,"city":"Wuhan","position":"Technical Director"},{"name":"Henry","age":24,"city":"Nanjing","position":"Intern"},{"name":"Ivy","age":38,"city":"Xian","position":"Architect"},{"name":"Jack","age":29,"city":"Suzhou","position":"Data Analyst"},{"name":"Kate","age":33,"city":"Tianjin","position":"Project Manager"},{"name":"Liam","age":26,"city":"Chongqing","position":"DevOps Engineer"}]' row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
@@ -44,7 +44,7 @@ The header checkbox selects / clears all rows at once; row checkboxes toggle ind
 
 <DemoBlock title="Table + pagination">
   <oas-space direction="vertical" size="small" style="width: 100%">
-    <oas-table id="table-paged" row-key="id" columns='[{"key":"id","title":"ID","width":"60px"},{"key":"name","title":"姓名"},{"key":"age","title":"年龄","sortable":true},{"key":"city","title":"城市"},{"key":"email","title":"邮箱"},{"key":"position","title":"职位"}]' data="[]"></oas-table>
+    <oas-table id="table-paged" row-key="id" columns='[{"key":"id","title":"ID","width":"60px"},{"key":"name","title":"Name"},{"key":"age","title":"Age","sortable":true},{"key":"city","title":"City"},{"key":"email","title":"Email"},{"key":"position","title":"Position"}]' data="[]"></oas-table>
     <oas-pagination id="table-pager" total="12" page-size="5" current="1"></oas-pagination>
   </oas-space>
 </DemoBlock>
@@ -55,13 +55,13 @@ Table data is sliced into 5 rows per page; on page change the `data` attribute i
 
 <DemoBlock title="Left fixed column">
   <div style="width: 100%">
-    <oas-table columns='[{"key":"name","title":"姓名","fixed":"left","width":"120px"},{"key":"age","title":"年龄","width":"80px"},{"key":"city","title":"城市","width":"100px"},{"key":"email","title":"邮箱","width":"220px"},{"key":"position","title":"职位","width":"120px"}]' data='[{"name":"张三","age":30,"city":"北京","email":"zhangsan@example.com","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","email":"lisi@example.com","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","email":"wangwu@example.com","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","email":"zhaoliu@example.com","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","email":"sunqi@example.com","position":"测试工程师"}]' row-key="name"></oas-table>
+    <oas-table columns='[{"key":"name","title":"Name","fixed":"left","width":"120px"},{"key":"age","title":"Age","width":"80px"},{"key":"city","title":"City","width":"100px"},{"key":"email","title":"Email","width":"220px"},{"key":"position","title":"Position","width":"120px"}]' data='[{"name":"Alice","age":30,"city":"Beijing","email":"alice@example.com","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","email":"bob@example.com","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","email":"carol@example.com","position":"Backend Engineer"},{"name":"David","age":28,"city":"Hangzhou","email":"david@example.com","position":"UI Designer"},{"name":"Emma","age":32,"city":"Guangzhou","email":"emma@example.com","position":"QA Engineer"}]' row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
 <DemoBlock title="Left/right fixed columns + sticky header">
   <div style="width: 100%; max-width: 680px">
-    <oas-table height="240" row-height="40" columns='[{"key":"id","title":"ID","fixed":"left","width":"60px"},{"key":"name","title":"姓名","fixed":"left","width":"120px"},{"key":"age","title":"年龄","width":"80px"},{"key":"city","title":"城市","width":"100px"},{"key":"email","title":"邮箱","width":"220px"},{"key":"position","title":"职位","fixed":"right","width":"120px"}]' data='[{"id":1,"name":"张三","age":30,"city":"北京","email":"zhangsan@example.com","position":"前端工程师"},{"id":2,"name":"李四","age":25,"city":"上海","email":"lisi@example.com","position":"产品经理"},{"id":3,"name":"王五","age":35,"city":"深圳","email":"wangwu@example.com","position":"后端工程师"},{"id":4,"name":"赵六","age":28,"city":"杭州","email":"zhaoliu@example.com","position":"UI 设计师"},{"id":5,"name":"孙七","age":32,"city":"广州","email":"sunqi@example.com","position":"测试工程师"},{"id":6,"name":"周八","age":27,"city":"成都","email":"zhouba@example.com","position":"运营专员"},{"id":7,"name":"吴九","age":41,"city":"武汉","email":"wujiu@example.com","position":"技术总监"},{"id":8,"name":"郑十","age":24,"city":"南京","email":"zhengshi@example.com","position":"实习生"}]' row-key="id"></oas-table>
+    <oas-table height="240" row-height="40" columns='[{"key":"id","title":"ID","fixed":"left","width":"60px"},{"key":"name","title":"Name","fixed":"left","width":"120px"},{"key":"age","title":"Age","width":"80px"},{"key":"city","title":"City","width":"100px"},{"key":"email","title":"Email","width":"220px"},{"key":"position","title":"Position","fixed":"right","width":"120px"}]' data='[{"id":1,"name":"Alice","age":30,"city":"Beijing","email":"alice@example.com","position":"Frontend Engineer"},{"id":2,"name":"Bob","age":25,"city":"Shanghai","email":"bob@example.com","position":"Product Manager"},{"id":3,"name":"Carol","age":35,"city":"Shenzhen","email":"carol@example.com","position":"Backend Engineer"},{"id":4,"name":"David","age":28,"city":"Hangzhou","email":"david@example.com","position":"UI Designer"},{"id":5,"name":"Emma","age":32,"city":"Guangzhou","email":"emma@example.com","position":"QA Engineer"},{"id":6,"name":"Frank","age":27,"city":"Chengdu","email":"frank@example.com","position":"Operations Specialist"},{"id":7,"name":"Grace","age":41,"city":"Wuhan","email":"grace@example.com","position":"Technical Director"},{"id":8,"name":"Henry","age":24,"city":"Nanjing","email":"henry@example.com","position":"Intern"}]' row-key="id"></oas-table>
   </div>
 </DemoBlock>
 
@@ -71,7 +71,7 @@ In the column config, `fixed: 'left' | 'right'` makes that column's header and c
 
 <DemoBlock title="Virtual scroll with 10k rows">
   <div style="width: 100%">
-    <oas-table id="table-virtual" height="360" row-height="40" columns='[{"key":"id","title":"ID","fixed":"left","width":"70px"},{"key":"name","title":"姓名","fixed":"left","width":"120px"},{"key":"age","title":"年龄","sortable":true,"width":"80px"},{"key":"city","title":"城市","width":"100px"},{"key":"email","title":"邮箱","width":"220px"},{"key":"position","title":"职位","fixed":"right","width":"120px"}]'></oas-table>
+    <oas-table id="table-virtual" height="360" row-height="40" columns='[{"key":"id","title":"ID","fixed":"left","width":"70px"},{"key":"name","title":"Name","fixed":"left","width":"120px"},{"key":"age","title":"Age","sortable":true,"width":"80px"},{"key":"city","title":"City","width":"100px"},{"key":"email","title":"Email","width":"220px"},{"key":"position","title":"Position","fixed":"right","width":"120px"}]'></oas-table>
   </div>
 </DemoBlock>
 
@@ -81,13 +81,13 @@ Setting `height` enables virtual scrolling (with a fixed `row-height`): only row
 
 <DemoBlock title="Striped rows (stripe)">
   <div style="width: 100%">
-    <oas-table stripe columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","position":"测试工程师"}]' row-key="name"></oas-table>
+    <oas-table stripe columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"},{"name":"David","age":28,"city":"Hangzhou","position":"UI Designer"},{"name":"Emma","age":32,"city":"Guangzhou","position":"QA Engineer"}]' row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
 <DemoBlock title="Full border (bordered)">
   <div style="width: 100%">
-    <oas-table bordered columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","position":"测试工程师"}]' row-key="name"></oas-table>
+    <oas-table bordered columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"},{"name":"David","age":28,"city":"Hangzhou","position":"UI Designer"},{"name":"Emma","age":32,"city":"Guangzhou","position":"QA Engineer"}]' row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
@@ -97,7 +97,7 @@ Set `stripe` to alternate the background of odd/even rows, or `bordered` to draw
 
 <DemoBlock title="Summary row (summary)">
   <div style="width: 100%">
-    <oas-table summary='[{"key":"age","type":"sum","label":"合计"},{"key":"score","type":"avg"}]' columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"score","title":"分数"},{"key":"city","title":"城市"}]' data='[{"name":"张三","age":30,"score":92,"city":"北京"},{"name":"李四","age":25,"score":88,"city":"上海"},{"name":"王五","age":35,"score":76,"city":"深圳"},{"name":"赵六","age":28,"score":95,"city":"杭州"}]' row-key="name"></oas-table>
+    <oas-table summary='[{"key":"age","type":"sum","label":"Total"},{"key":"score","type":"avg"}]' columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"score","title":"Score"},{"key":"city","title":"City"}]' data='[{"name":"Alice","age":30,"score":92,"city":"Beijing"},{"name":"Bob","age":25,"score":88,"city":"Shanghai"},{"name":"Carol","age":35,"score":76,"city":"Shenzhen"},{"name":"David","age":28,"score":95,"city":"Hangzhou"}]' row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
@@ -107,7 +107,7 @@ The `summary` attribute is a JSON array `[{ key, type: 'sum' | 'avg' | 'count', 
 
 <DemoBlock title="Expandable rows (expand field)">
   <div style="width: 100%">
-    <oas-table columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师","expand":"<div>更多信息：张三 负责前端架构与团队管理，2021 年入职。</div>"},{"name":"李四","age":25,"city":"上海","position":"产品经理","expand":"<div>更多信息：李四 主导产品规划与需求评审，2022 年入职。</div>"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"}]' row-key="name"></oas-table>
+    <oas-table columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer","expand":"<div>More: Alice oversees frontend architecture and team management, joined in 2021.</div>"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager","expand":"<div>More: Bob leads product planning and requirements review, joined in 2022.</div>"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"}]' row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
@@ -115,7 +115,7 @@ When a row's data has a non-empty `expand` field, an expand column appears at th
 
 <DemoBlock title="Controlled expansion (expanded attribute)">
   <div style="width: 100%">
-    <oas-table expanded="张三" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师","expand":"<div>更多信息：张三 负责前端架构与团队管理，2021 年入职。</div>"},{"name":"李四","age":25,"city":"上海","position":"产品经理"}]' row-key="name"></oas-table>
+    <oas-table expanded="Alice" columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer","expand":"<div>More: Alice oversees frontend architecture and team management, joined in 2021.</div>"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"}]' row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
@@ -125,7 +125,7 @@ When a row's data has a non-empty `expand` field, an expand column appears at th
 
 <DemoBlock title="Tree data (children)">
   <div style="width: 100%">
-    <oas-table columns='[{"key":"name","title":"部门 / 成员"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"}]' data='[{"name":"研发部","age":"","city":"","children":[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"}]},{"name":"产品部","age":"","city":"","children":[{"name":"王五","age":35,"city":"深圳"},{"name":"赵六","age":28,"city":"杭州"}]}]' row-key="name"></oas-table>
+    <oas-table columns='[{"key":"name","title":"Department / Member"},{"key":"age","title":"Age"},{"key":"city","title":"City"}]' data='[{"name":"R&D Department","age":"","city":"","children":[{"name":"Alice","age":30,"city":"Beijing"},{"name":"Bob","age":25,"city":"Shanghai"}]},{"name":"Product Department","age":"","city":"","children":[{"name":"Carol","age":35,"city":"Shenzhen"},{"name":"David","age":28,"city":"Hangzhou"}]}]' row-key="name"></oas-table>
   </div>
 </DemoBlock>
 
@@ -135,8 +135,8 @@ Rows with a `children` array are rendered as a tree: parent rows show an expand 
 
 <DemoBlock title="Loading state">
   <oas-space direction="vertical" size="small" style="width: 100%">
-    <oas-table id="table-loading" row-key="name" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","position":"测试工程师"}]'></oas-table>
-    <oas-button type="primary" onclick="simulateTableLoading()">模拟加载 2 秒</oas-button>
+    <oas-table id="table-loading" row-key="name" columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"},{"name":"David","age":28,"city":"Hangzhou","position":"UI Designer"},{"name":"Emma","age":32,"city":"Guangzhou","position":"QA Engineer"}]'></oas-table>
+    <oas-button type="primary" onclick="simulateTableLoading()">Simulate 2s loading</oas-button>
   </oas-space>
 </DemoBlock>
 
@@ -146,13 +146,13 @@ With the `loading` attribute, the header stays visible and the data area shows p
 
 <DemoBlock title="Empty data">
   <div style="width: 100%">
-    <oas-table columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"}]' data="[]"></oas-table>
+    <oas-table columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"}]' data="[]"></oas-table>
   </div>
 </DemoBlock>
 
 <DemoBlock title="Custom empty text">
   <div style="width: 100%">
-    <oas-table empty-text="暂无匹配数据" columns='[{"key":"name","title":"姓名"}]' data="[]"></oas-table>
+    <oas-table empty-text="No matching data" columns='[{"key":"name","title":"Name"}]' data="[]"></oas-table>
   </div>
 </DemoBlock>
 
@@ -160,9 +160,9 @@ With the `loading` attribute, the header stays visible and the data area shows p
 
 <DemoBlock title="Sort and click events">
   <div style="width: 100%">
-    <oas-table id="table-event" columns='[{"key":"name","title":"姓名","sortable":true},{"key":"age","title":"年龄","sortable":true},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"}]' row-key="name"></oas-table>
+    <oas-table id="table-event" columns='[{"key":"name","title":"Name","sortable":true},{"key":"age","title":"Age","sortable":true},{"key":"city","title":"City"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"},{"name":"David","age":28,"city":"Hangzhou","position":"UI Designer"}]' row-key="name"></oas-table>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-      排序：<span id="table-sort">无</span> · 点击行：<span id="table-row">—</span>
+      Sort: <span id="table-sort">none</span> · Row: <span id="table-row">—</span>
     </p>
   </div>
 </DemoBlock>
@@ -170,20 +170,20 @@ With the `loading` attribute, the header stays visible and the data area shows p
 <script setup>
 import { onMounted } from 'vue'
 
-// 通用演示数据集（12 条）
+// Shared demo dataset (12 rows)
 const MOCK = [
-  ['张三', 30, '北京', 'zhangsan@example.com', '前端工程师'],
-  ['李四', 25, '上海', 'lisi@example.com', '产品经理'],
-  ['王五', 35, '深圳', 'wangwu@example.com', '后端工程师'],
-  ['赵六', 28, '杭州', 'zhaoliu@example.com', 'UI 设计师'],
-  ['孙七', 32, '广州', 'sunqi@example.com', '测试工程师'],
-  ['周八', 27, '成都', 'zhouba@example.com', '运营专员'],
-  ['吴九', 41, '武汉', 'wujiu@example.com', '技术总监'],
-  ['郑十', 24, '南京', 'zhengshi@example.com', '实习生'],
-  ['冯十一', 38, '西安', 'fengshiyi@example.com', '架构师'],
-  ['陈十二', 29, '苏州', 'chenshier@example.com', '数据分析师'],
-  ['褚十三', 33, '天津', 'chushisan@example.com', '项目经理'],
-  ['卫十四', 26, '重庆', 'weishisi@example.com', '运维工程师'],
+  ['Alice', 30, 'Beijing', 'alice@example.com', 'Frontend Engineer'],
+  ['Bob', 25, 'Shanghai', 'bob@example.com', 'Product Manager'],
+  ['Carol', 35, 'Shenzhen', 'carol@example.com', 'Backend Engineer'],
+  ['David', 28, 'Hangzhou', 'david@example.com', 'UI Designer'],
+  ['Emma', 32, 'Guangzhou', 'emma@example.com', 'QA Engineer'],
+  ['Frank', 27, 'Chengdu', 'frank@example.com', 'Operations Specialist'],
+  ['Grace', 41, 'Wuhan', 'grace@example.com', 'Technical Director'],
+  ['Henry', 24, 'Nanjing', 'henry@example.com', 'Intern'],
+  ['Ivy', 38, 'Xian', 'ivy@example.com', 'Architect'],
+  ['Jack', 29, 'Suzhou', 'jack@example.com', 'Data Analyst'],
+  ['Kate', 33, 'Tianjin', 'kate@example.com', 'Project Manager'],
+  ['Liam', 26, 'Chongqing', 'liam@example.com', 'DevOps Engineer'],
 ]
 const TABLE_ROWS = MOCK.map(([name, age, city, email, position], i) => ({
   id: i + 1,
@@ -195,24 +195,24 @@ const TABLE_ROWS = MOCK.map(([name, age, city, email, position], i) => ({
 }))
 
 onMounted(() => {
-  // 排序与点击事件 demo
+  // Sort and click event demo
   const table = document.querySelector('#table-event')
   table?.addEventListener('oas-sort-change', (e) => {
     const { key, order } = e.detail
-    document.querySelector('#table-sort').textContent = order ? `${key} ${order}` : '无'
+    document.querySelector('#table-sort').textContent = order ? `${key} ${order}` : 'none'
   })
   table?.addEventListener('oas-row-click', (e) => {
     document.querySelector('#table-row').textContent = e.detail.row.name ?? e.detail.key
   })
 
-  // 大数据量虚拟滚动 demo：1 万行
+  // Virtual scroll demo: 10k rows
   const virtual = document.querySelector('#table-virtual')
   if (virtual) {
-    const cities = ['北京', '上海', '深圳', '杭州', '广州']
-    const positions = ['前端工程师', '后端工程师', '产品经理', '测试工程师', '运营专员']
+    const cities = ['Beijing', 'Shanghai', 'Shenzhen', 'Hangzhou', 'Guangzhou']
+    const positions = ['Frontend Engineer', 'Backend Engineer', 'Product Manager', 'QA Engineer', 'Operations Specialist']
     const rows = Array.from({ length: 10000 }, (_, i) => ({
       id: i + 1,
-      name: `用户 ${i + 1}`,
+      name: `User ${i + 1}`,
       age: 20 + (i % 30),
       city: cities[i % cities.length],
       email: `user${i + 1}@example.com`,
@@ -221,7 +221,7 @@ onMounted(() => {
     virtual.setAttribute('data', JSON.stringify(rows))
   }
 
-  // 分页联动 demo：按每页 5 条切片写入 data
+  // Pagination demo: slice 5 rows per page into data
   const pager = document.querySelector('#table-pager')
   const paged = document.querySelector('#table-paged')
   const pageSize = 5
@@ -232,7 +232,7 @@ onMounted(() => {
   pager?.addEventListener('oas-change', (e) => renderPage(e.detail.page))
   renderPage(1)
 
-  // 加载态 demo：模拟加载 2 秒
+  // Loading state demo: simulate 2s loading
   window.simulateTableLoading = () => {
     const table = document.querySelector('#table-loading')
     table?.setAttribute('loading', '')

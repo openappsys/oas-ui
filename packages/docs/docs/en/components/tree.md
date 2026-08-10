@@ -6,7 +6,7 @@ Displays hierarchical data with support for selection, expansion, multi-select, 
 
 <DemoBlock title="Hierarchical tree">
   <div style="width: 100%">
-    <oas-tree data='[{"key":"a","label":"节点 A","children":[{"key":"a-1","label":"子节点 1"},{"key":"a-2","label":"子节点 2"}]},{"key":"b","label":"节点 B","children":[{"key":"b-1","label":"子节点 1"}]},{"key":"c","label":"节点 C"}]'></oas-tree>
+    <oas-tree data='[{"key":"a","label":"Node A","children":[{"key":"a-1","label":"Child 1"},{"key":"a-2","label":"Child 2"}]},{"key":"b","label":"Node B","children":[{"key":"b-1","label":"Child 1"}]},{"key":"c","label":"Node C"}]'></oas-tree>
   </div>
 </DemoBlock>
 
@@ -16,7 +16,7 @@ Click the expand arrow to show / hide child nodes; click a node label to select 
 
 <DemoBlock title="Initial expansion and selection">
   <div style="width: 100%">
-    <oas-tree expanded="a" selected="a-1" data='[{"key":"a","label":"节点 A","children":[{"key":"a-1","label":"子节点 1"},{"key":"a-2","label":"子节点 2"}]},{"key":"b","label":"节点 B"}]'></oas-tree>
+    <oas-tree expanded="a" selected="a-1" data='[{"key":"a","label":"Node A","children":[{"key":"a-1","label":"Child 1"},{"key":"a-2","label":"Child 2"}]},{"key":"b","label":"Node B"}]'></oas-tree>
   </div>
 </DemoBlock>
 
@@ -26,7 +26,7 @@ Click the expand arrow to show / hide child nodes; click a node label to select 
 
 <DemoBlock title="Checkable tree">
   <div style="width: 100%">
-    <oas-tree checkable expanded="a" checked="a-1,b" data='[{"key":"a","label":"节点 A","children":[{"key":"a-1","label":"子节点 1"},{"key":"a-2","label":"子节点 2"}]},{"key":"b","label":"节点 B"}]'></oas-tree>
+    <oas-tree checkable expanded="a" checked="a-1,b" data='[{"key":"a","label":"Node A","children":[{"key":"a-1","label":"Child 1"},{"key":"a-2","label":"Child 2"}]},{"key":"b","label":"Node B"}]'></oas-tree>
   </div>
 </DemoBlock>
 
@@ -34,7 +34,7 @@ Click the expand arrow to show / hide child nodes; click a node label to select 
 
 <DemoBlock title="Disabled nodes">
   <div style="width: 100%">
-    <oas-tree expanded="a" data='[{"key":"a","label":"可操作节点","children":[{"key":"a-1","label":"子节点 1"},{"key":"a-2","label":"只读节点","disabled":true}]},{"key":"b","label":"只读节点","disabled":true}]'></oas-tree>
+    <oas-tree expanded="a" data='[{"key":"a","label":"Interactive node","children":[{"key":"a-1","label":"Child 1"},{"key":"a-2","label":"Read-only node","disabled":true}]},{"key":"b","label":"Read-only node","disabled":true}]'></oas-tree>
   </div>
 </DemoBlock>
 
@@ -42,9 +42,9 @@ Click the expand arrow to show / hide child nodes; click a node label to select 
 
 <DemoBlock title="Lazy loading (async child fill-in on expand)">
   <div style="width: 100%">
-    <oas-tree id="tree-lazy" lazy data='[{"key":"dir-a","label":"目录 A"},{"key":"dir-b","label":"目录 B","isLeaf":true},{"key":"file-1","label":"文件 1","isLeaf":true}]'></oas-tree>
+    <oas-tree id="tree-lazy" lazy data='[{"key":"dir-a","label":"Folder A"},{"key":"dir-b","label":"Folder B","isLeaf":true},{"key":"file-1","label":"File 1","isLeaf":true}]'></oas-tree>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-      <span id="tree-lazy-status">点击「目录 A」前的展开箭头触发加载</span>
+      <span id="tree-lazy-status">Click the expand arrow before "Folder A" to trigger loading</span>
     </p>
   </div>
 </DemoBlock>
@@ -55,9 +55,9 @@ With `lazy`, nodes without `children` and not marked `isLeaf` / `loaded` are con
 
 <DemoBlock title="Draggable (reorder / reparent)">
   <div style="width: 100%">
-    <oas-tree id="tree-dnd" draggable expanded="grp-1" data='[{"key":"grp-1","label":"分组 1","children":[{"key":"item-1","label":"条目 1"},{"key":"item-2","label":"条目 2"}]},{"key":"grp-2","label":"分组 2","children":[{"key":"item-3","label":"条目 3"}]}]'></oas-tree>
+    <oas-tree id="tree-dnd" draggable expanded="grp-1" data='[{"key":"grp-1","label":"Group 1","children":[{"key":"item-1","label":"Item 1"},{"key":"item-2","label":"Item 2"}]},{"key":"grp-2","label":"Group 2","children":[{"key":"item-3","label":"Item 3"}]}]'></oas-tree>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-      <span id="tree-dnd-status">拖拽节点到目标行上 / 下 / 中部，分别插入其前 / 后 / 子</span>
+      <span id="tree-dnd-status">Drag a node to the upper / lower / middle of a target row to insert before / after / inside it</span>
     </p>
   </div>
 </DemoBlock>
@@ -78,9 +78,9 @@ Setting `height` enables virtualization (with a fixed `row-height`): the tree re
 
 <DemoBlock title="Selection and check events">
   <div style="width: 100%">
-    <oas-tree id="tree-event" checkable expanded="a" data='[{"key":"a","label":"节点 A","children":[{"key":"a-1","label":"子节点 1"}]},{"key":"b","label":"节点 B"}]'></oas-tree>
+    <oas-tree id="tree-event" checkable expanded="a" data='[{"key":"a","label":"Node A","children":[{"key":"a-1","label":"Child 1"}]},{"key":"b","label":"Node B"}]'></oas-tree>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-      选中：<span id="tree-select">—</span> · 勾选：<span id="tree-check">—</span>
+      Selected: <span id="tree-select">—</span> · Checked: <span id="tree-check">—</span>
     </p>
   </div>
 </DemoBlock>
@@ -94,20 +94,20 @@ onMounted(() => {
   })
   tree?.addEventListener('oas-check', (e) => {
     const span = document.querySelector('#tree-check')
-    span.textContent = span.textContent === '—' ? e.detail.key : `${span.textContent}、${e.detail.key}`
+    span.textContent = span.textContent === '—' ? e.detail.key : `${span.textContent}, ${e.detail.key}`
   })
 
-  // 大数据量虚拟滚动 demo：5000 根节点，每 100 个带 20 个子节点
+  // Virtual scroll demo: 5000 root nodes, every 100th has 20 children
   const virtual = document.querySelector('#tree-virtual')
   if (virtual) {
     const nodes = Array.from({ length: 5000 }, (_, i) => ({
       key: `n${i}`,
-      label: `节点 ${i}`,
+      label: `Node ${i}`,
       ...(i % 100 === 0
         ? {
             children: Array.from({ length: 20 }, (_, j) => ({
               key: `n${i}-${j}`,
-              label: `子节点 ${i}-${j}`,
+              label: `Child ${i}-${j}`,
             })),
           }
         : {}),
@@ -115,21 +115,21 @@ onMounted(() => {
     virtual.setAttribute('data', JSON.stringify(nodes))
   }
 
-  // 懒加载 demo：监听 oas-load，模拟异步回填子节点后重设 data
+  // Lazy loading demo: listen to oas-load, simulate async child backfill, then reset data
   const lazy = document.querySelector('#tree-lazy')
   if (lazy) {
     lazy.addEventListener('oas-load', (e) => {
       const { key } = e.detail
       const status = document.querySelector('#tree-lazy-status')
-      status.textContent = `正在加载 ${key}…`
+      status.textContent = `Loading ${key}…`
       setTimeout(() => {
         const nodes = JSON.parse(lazy.getAttribute('data'))
         const fill = (list) => {
           for (const n of list) {
             if (n.key === key) {
               n.children = [
-                { key: `${key}-1`, label: `${key} 的子节点 1`, isLeaf: true },
-                { key: `${key}-2`, label: `${key} 的子节点 2`, isLeaf: true },
+                { key: `${key}-1`, label: `Child 1 of ${key}`, isLeaf: true },
+                { key: `${key}-2`, label: `Child 2 of ${key}`, isLeaf: true },
               ]
               return true
             }
@@ -139,12 +139,12 @@ onMounted(() => {
         }
         fill(nodes)
         lazy.setAttribute('data', JSON.stringify(nodes))
-        status.textContent = `${key} 加载完成，已回填 2 个子节点`
+        status.textContent = `${key} loaded, 2 children backfilled`
       }, 500)
     })
   }
 
-  // 可拖拽 demo：按 oas-node-drop 结果重排数据后重设 data
+  // Drag demo: reorder data by the oas-node-drop result, then reset data
   const dnd = document.querySelector('#tree-dnd')
   if (dnd) {
     dnd.addEventListener('oas-node-drop', (e) => {
@@ -181,7 +181,7 @@ onMounted(() => {
         dnd.setAttribute('data', JSON.stringify(nodes))
       }
       document.querySelector('#tree-dnd-status').textContent =
-        `拖动：${dragKey} → ${dropKey || '根'}（${position}）`
+        `Dropped: ${dragKey} → ${dropKey || 'root'} (${position})`
     })
   }
 })

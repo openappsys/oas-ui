@@ -6,7 +6,7 @@ A purely presentational component that scrolls long content horizontally in a lo
 
 <DemoBlock title="Default looping scroll (20s)">
   <oas-marquee style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
-    OAS-UI 组件库 · Web Components 无框架依赖 · TypeScript 类型完备 · 无障碍可达 ·
+    OAS-UI component library · Web Components with no framework dependencies · Complete TypeScript types · Accessible ·
   </oas-marquee>
 </DemoBlock>
 
@@ -14,10 +14,10 @@ A purely presentational component that scrolls long content horizontally in a lo
 
 <DemoBlock title="speed=8 fast / speed=40 slow">
   <oas-marquee speed="8" style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
-    快速滚动：8 秒一个循环
+    Fast: one loop in 8 seconds
   </oas-marquee>
   <oas-marquee speed="40" style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0; margin-top: var(--oas-space-3);">
-    慢速滚动：40 秒一个循环
+    Slow: one loop in 40 seconds
   </oas-marquee>
 </DemoBlock>
 
@@ -25,7 +25,7 @@ A purely presentational component that scrolls long content horizontally in a lo
 
 <DemoBlock title="pause-on-hover: pauses on mouse hover / focus">
   <oas-marquee pause-on-hover style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
-    将鼠标移入本行，滚动暂停；移出后继续。
+    Hover over this line to pause the scroll; move away to resume.
   </oas-marquee>
 </DemoBlock>
 
@@ -33,10 +33,10 @@ A purely presentational component that scrolls long content horizontally in a lo
 
 <DemoBlock title="slot supports arbitrary element combinations">
   <oas-marquee speed="12" style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
-    <oas-tag>新增</oas-tag>
-    <span style="margin: 0 var(--oas-space-3);">v1.6 展示组件已发布</span>
-    <oas-tag type="success">推荐</oas-tag>
-    <span style="margin-left: var(--oas-space-3);">构建于 Web Components 标准之上</span>
+    <oas-tag>New</oas-tag>
+    <span style="margin: 0 var(--oas-space-3);">v1.6 display components are released</span>
+    <oas-tag type="success">Recommended</oas-tag>
+    <span style="margin-left: var(--oas-space-3);">Built on Web Components standards</span>
   </oas-marquee>
 </DemoBlock>
 
@@ -57,10 +57,10 @@ Content is not limited to text — putting images or logos in the slot produces 
 
 <DemoBlock title="Image scrolling (img)">
   <oas-marquee speed="30" style="border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-2) 0;">
-    <img src="https://picsum.photos/seed/isui-mq-1/120/60" alt="图 1" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
-    <img src="https://picsum.photos/seed/isui-mq-2/120/60" alt="图 2" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
-    <img src="https://picsum.photos/seed/isui-mq-3/120/60" alt="图 3" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
-    <img src="https://picsum.photos/seed/isui-mq-4/120/60" alt="图 4" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
+    <img src="https://picsum.photos/seed/isui-mq-1/120/60" alt="Image 1" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
+    <img src="https://picsum.photos/seed/isui-mq-2/120/60" alt="Image 2" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
+    <img src="https://picsum.photos/seed/isui-mq-3/120/60" alt="Image 3" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
+    <img src="https://picsum.photos/seed/isui-mq-4/120/60" alt="Image 4" style="height: 44px; border-radius: var(--oas-radius-sm); margin: 0 var(--oas-space-3); vertical-align: middle;">
   </oas-marquee>
 </DemoBlock>
 

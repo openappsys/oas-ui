@@ -7,7 +7,7 @@ A container-level watermark layer that sits on top of the content without interc
 <DemoBlock title="Basic text watermark">
   <oas-watermark text="内部资料 · CONFIDENTIAL" repeat>
     <div style="height: 180px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-      平铺文字水印，容器内任意内容均可作为 slot 传入
+      The text watermark is tiled; any content inside the container can be passed in as the slot
     </div>
   </oas-watermark>
 </DemoBlock>
@@ -34,7 +34,7 @@ A container-level watermark layer that sits on top of the content without interc
 <DemoBlock title="Image watermark">
   <oas-watermark image="https://picsum.photos/seed/isui-watermark/160/160" opacity="0.25" repeat>
     <div style="height: 160px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-      `image` 属性传入图片 URL，与 text 同时存在时 image 优先
+      The `image` attribute takes an image URL; when both text and image are present, image wins
     </div>
   </oas-watermark>
 </DemoBlock>
@@ -44,12 +44,12 @@ A container-level watermark layer that sits on top of the content without interc
 <DemoBlock title="Normal content interaction">
   <oas-watermark text="演示水印" repeat>
     <div style="height: 120px; display: flex; align-items: center; justify-content: center; gap: var(--oas-space-3)">
-      <button class="wm-btn" onclick="window.message && window.message.success('按钮仍可点击')">可点击按钮</button>
-      <button class="wm-btn">另一按钮</button>
+      <button class="wm-btn" onclick="window.message && window.message.success('The button is still clickable')">Clickable button</button>
+      <button class="wm-btn">Another button</button>
     </div>
   </oas-watermark>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    水印层 `pointer-events: none`，上方的按钮/输入等交互完全不受影响。
+    The watermark layer has `pointer-events: none`, so interactions with buttons / inputs above are completely unaffected.
   </p>
 </DemoBlock>
 

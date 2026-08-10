@@ -7,9 +7,9 @@ Stows content in collapsible panels to keep the focus on key information.
 <DemoBlock title="Multiple panels open at once">
   <div style="width: 100%">
     <oas-collapse active="a">
-      <oas-collapse-item name="a" header="项目信息"><p>包括团队、里程碑与预算等基础信息。</p></oas-collapse-item>
-      <oas-collapse-item name="b" header="技术栈"><p>组件库基于 Web Components 标准构建。</p></oas-collapse-item>
-      <oas-collapse-item name="c" header="发布计划"><p>按版本迭代，每个版本发布前执行工程纪律清单。</p></oas-collapse-item>
+      <oas-collapse-item name="a" header="Project info"><p>Includes basic info such as team, milestones, and budget.</p></oas-collapse-item>
+      <oas-collapse-item name="b" header="Tech stack"><p>The component library is built on Web Components standards.</p></oas-collapse-item>
+      <oas-collapse-item name="c" header="Release plan"><p>Iterates by version, running the engineering discipline checklist before each release.</p></oas-collapse-item>
     </oas-collapse>
   </div>
 </DemoBlock>
@@ -21,9 +21,9 @@ Stows content in collapsible panels to keep the focus on key information.
 <DemoBlock title="Accordion mode">
   <div style="width: 100%">
     <oas-collapse accordion active="a">
-      <oas-collapse-item name="a" header="面板一"><p>同一时间仅展开一个面板。</p></oas-collapse-item>
-      <oas-collapse-item name="b" header="面板二"><p>展开新的面板会自动收起上一个。</p></oas-collapse-item>
-      <oas-collapse-item name="c" header="面板三"><p>再次点击已展开面板可全部收起。</p></oas-collapse-item>
+      <oas-collapse-item name="a" header="Panel 1"><p>Only one panel can be open at a time.</p></oas-collapse-item>
+      <oas-collapse-item name="b" header="Panel 2"><p>Opening a new panel automatically collapses the previous one.</p></oas-collapse-item>
+      <oas-collapse-item name="c" header="Panel 3"><p>Clicking an already-open panel collapses it.</p></oas-collapse-item>
     </oas-collapse>
   </div>
 </DemoBlock>
@@ -33,8 +33,8 @@ Stows content in collapsible panels to keep the focus on key information.
 <DemoBlock title="All collapsed by default">
   <div style="width: 100%">
     <oas-collapse>
-      <oas-collapse-item name="a" header="面板一"><p>默认状态全部收起。</p></oas-collapse-item>
-      <oas-collapse-item name="b" header="面板二"><p>点击标题展开。</p></oas-collapse-item>
+      <oas-collapse-item name="a" header="Panel 1"><p>All panels are collapsed by default.</p></oas-collapse-item>
+      <oas-collapse-item name="b" header="Panel 2"><p>Click the header to expand.</p></oas-collapse-item>
     </oas-collapse>
   </div>
 </DemoBlock>
@@ -44,11 +44,11 @@ Stows content in collapsible panels to keep the focus on key information.
 <DemoBlock title="Expansion state events">
   <div style="width: 100%">
     <oas-collapse accordion active="a" id="collapse-event">
-      <oas-collapse-item name="a" header="面板一"><p>内容一</p></oas-collapse-item>
-      <oas-collapse-item name="b" header="面板二"><p>内容二</p></oas-collapse-item>
+      <oas-collapse-item name="a" header="Panel 1"><p>Content 1</p></oas-collapse-item>
+      <oas-collapse-item name="b" header="Panel 2"><p>Content 2</p></oas-collapse-item>
     </oas-collapse>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-      当前展开：<span id="collapse-state">a</span>
+      Currently open: <span id="collapse-state">a</span>
     </p>
   </div>
 </DemoBlock>
@@ -58,7 +58,7 @@ import { onMounted } from 'vue'
 onMounted(() => {
   document.querySelector('#collapse-event')?.addEventListener('oas-change', (e) => {
     const active = e.detail.active
-    document.querySelector('#collapse-state').textContent = active.length ? active.join('、') : '（无）'
+    document.querySelector('#collapse-state').textContent = active.length ? active.join(', ') : '(none)'
   })
 })
 </script>

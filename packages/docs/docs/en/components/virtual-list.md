@@ -28,7 +28,7 @@ Each visible item emits `oas-item` after rendering with `detail` containing `{ i
   <div style="width: 100%">
     <oas-virtual-list id="vl-scroll" height="200" item-height="32"></oas-virtual-list>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
-      可见窗口：<span id="vl-window">0–0</span> · scrollTop：<span id="vl-scrolltop">0</span>
+      Visible window: <span id="vl-window">0–0</span> · scrollTop: <span id="vl-scrolltop">0</span>
     </p>
   </div>
 </DemoBlock>
@@ -45,13 +45,13 @@ Scroll events are emitted as `oas-scroll`, throttled by rAF, with `detail` being
       <div style="flex: 1; min-width: 0">
         <oas-virtual-list id="vl-buffer-0" height="160" item-height="32" buffer="0"></oas-virtual-list>
         <p style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-          <code>buffer="0"</code>：渲染项数 <span id="vl-buffer-0-count">—</span>，仅渲染可视窗口内的项。
+          <code>buffer="0"</code>: rendered items <span id="vl-buffer-0-count">—</span>; only items within the visible window are rendered.
         </p>
       </div>
       <div style="flex: 1; min-width: 0">
         <oas-virtual-list id="vl-buffer-8" height="160" item-height="32" buffer="8"></oas-virtual-list>
         <p style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-          <code>buffer="8"</code>：渲染项数 <span id="vl-buffer-8-count">—</span>，上下各多预渲染 8 项。
+          <code>buffer="8"</code>: rendered items <span id="vl-buffer-8-count">—</span>; 8 extra items pre-rendered above and below.
         </p>
       </div>
     </div>
@@ -74,17 +74,17 @@ When `scroll-target` (a CSS selector) is set, the component does not provide its
 import { onMounted } from 'vue'
 
 onMounted(() => {
-  // 基础：1000 条定高渲染
+  // Basic: 1000 fixed-height items
   const basic = document.querySelector('#vl-basic')
-  if (basic) basic.items = Array.from({ length: 1000 }, (_, i) => `第 ${i + 1} 条`)
+  if (basic) basic.items = Array.from({ length: 1000 }, (_, i) => `Item ${i + 1}`)
 
-  // 自定义条目内容：oas-item 事件绑定
+  // Custom item content bound via the oas-item event
   const itemList = document.querySelector('#vl-item')
   if (itemList) {
     const rows = Array.from({ length: 500 }, (_, i) => ({
       id: i + 1,
-      label: `任务 #${i + 1}`,
-      status: ['进行中', '已完成', '待开始'][i % 3],
+      label: `Task #${i + 1}`,
+      status: ['In Progress', 'Done', 'Pending'][i % 3],
     }))
     itemList.items = rows
     itemList.addEventListener('oas-item', (e) => {
@@ -93,7 +93,7 @@ onMounted(() => {
     })
   }
 
-  // 滚动事件窗口展示
+  // Scroll event window display
   const scroller = document.querySelector('#vl-scroll')
   if (scroller) {
     scroller.items = Array.from({ length: 200 }, (_, i) => i + 1)
@@ -104,14 +104,14 @@ onMounted(() => {
     })
   }
 
-  // 自定义滚动容器
+  // Custom scroll container
   const target = document.querySelector('#vl-target')
-  if (target) target.items = Array.from({ length: 500 }, (_, i) => `记录 ${i + 1}`)
+  if (target) target.items = Array.from({ length: 500 }, (_, i) => `Record ${i + 1}`)
 
-  // 渲染缓冲对比：统计实际渲染到 DOM 的项数
+  // Render buffer comparison: count items actually rendered to the DOM
   const buf0 = document.querySelector('#vl-buffer-0')
   const buf8 = document.querySelector('#vl-buffer-8')
-  const bufItems = Array.from({ length: 100 }, (_, i) => `缓冲项 ${i + 1}`)
+  const bufItems = Array.from({ length: 100 }, (_, i) => `Buffer item ${i + 1}`)
   const refreshBufferCounts = () => {
     const countOf = (el) => (el && el.shadowRoot ? el.shadowRoot.querySelectorAll('[part="item"]').length : 0)
     const c0 = document.querySelector('#vl-buffer-0-count')

@@ -7,7 +7,7 @@ A code block component (self-developed regex token highlighting, no third-party 
 <DemoBlock title="JavaScript highlighting">
   <div style="width: 100%">
     <oas-code language="js" code='const add = (a, b) => {
-  return a + b // 求和
+  return a + b // sum
 }
 console.log(add(1, 2))'></oas-code>
   </div>
@@ -23,7 +23,7 @@ Basic coloring for keywords / strings / comments / numbers / functions / operato
   id: number
   name: string
 }
-const user: User = { id: 1, name: "张三" }'></oas-code>
+const user: User = { id: 1, name: "Alice" }'></oas-code>
   </div>
 </DemoBlock>
 
@@ -32,7 +32,7 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 <DemoBlock title="HTML highlighting">
   <div style="width: 100%">
     <oas-code language="html" code='<div class="card">
-  <!-- 卡片标题 -->
+  <!-- Card title -->
   <h2>Hello</h2>
 </div>'></oas-code>
   </div>
@@ -45,7 +45,7 @@ Tag names and attribute names are colored separately.
 <DemoBlock title="CSS highlighting">
   <div style="width: 100%">
     <oas-code language="css" code='.card {
-  /* 圆角卡片 */
+  /* Rounded card */
   border-radius: 8px;
   background: #fff;
 }'></oas-code>
@@ -81,8 +81,8 @@ Tag names and attribute names are colored separately.
 
 <DemoBlock title="copyable copy button">
   <div style="width: 100%">
-    <oas-code language="js" code='console.log("默认显示复制按钮")'></oas-code>
-    <oas-code language="js" copyable="false" code='console.log("copyable=false 隐藏复制按钮")' style="margin-top: var(--oas-space-3)"></oas-code>
+    <oas-code language="js" code='console.log("Copy button shown by default")'></oas-code>
+    <oas-code language="js" copyable="false" code='console.log("copyable=false hides the copy button")' style="margin-top: var(--oas-space-3)"></oas-code>
   </div>
 </DemoBlock>
 
@@ -92,7 +92,7 @@ Tag names and attribute names are colored separately.
 
 <DemoBlock title="Unknown language rendered as plain text">
   <div style="width: 100%">
-    <oas-code language="unknown-lang" code='这是一段纯文本，不进行任何高亮。'></oas-code>
+    <oas-code language="unknown-lang" code='This is plain text without any highlighting.'></oas-code>
   </div>
 </DemoBlock>
 

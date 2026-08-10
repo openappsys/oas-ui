@@ -46,7 +46,7 @@ onMounted(() => {
   const el = document.getElementById('countdown-event')
   const out = document.getElementById('countdown-output')
   el?.addEventListener('oas-finish', () => {
-    out.textContent = 'oas-finish: 倒计时结束'
+    out.textContent = 'oas-finish: countdown finished'
   })
 })
 </script>

@@ -7,15 +7,15 @@ A purely presentational comment block container that assembles the author avatar
 <DemoBlock title="Single comment">
   <div style="width: 100%">
     <oas-comment>
-      <oas-avatar slot="avatar" size="32">张</oas-avatar>
-      <span slot="author">张三</span>
-      <span slot="time">3 分钟前</span>
+      <oas-avatar slot="avatar" size="32">A</oas-avatar>
+      <span slot="author">Alice</span>
+      <span slot="time">3 minutes ago</span>
       <p slot="content" style="margin: 0">
-        这个组件支持纯展示的评论结构，交互操作由宿主通过 <code>actions</code> 插槽自行提供。
+        This component supports a purely presentational comment structure; interactions are provided by the host via the <code>actions</code> slot.
       </p>
       <span slot="actions">
-        <oas-button size="small" type="text">回复</oas-button>
-        <oas-button size="small" type="text">点赞</oas-button>
+        <oas-button size="small" type="text">Reply</oas-button>
+        <oas-button size="small" type="text">Like</oas-button>
       </span>
     </oas-comment>
   </div>
@@ -26,20 +26,20 @@ A purely presentational comment block container that assembles the author avatar
 <DemoBlock title="Nested replies (auto-indent)">
   <div style="width: 100%">
     <oas-comment>
-      <oas-avatar slot="avatar" size="32">李</oas-avatar>
-      <span slot="author">李四</span>
-      <span slot="time">昨天 18:20</span>
-      <p slot="content" style="margin: 0">父评论：赞同这个设计，子评论会自动缩进并带引导线。</p>
+      <oas-avatar slot="avatar" size="32">B</oas-avatar>
+      <span slot="author">Bob</span>
+      <span slot="time">Yesterday 18:20</span>
+      <p slot="content" style="margin: 0">Parent comment: I agree with this design; child comments are automatically indented with a guide line.</p>
       <span slot="actions">
-        <oas-button size="small" type="text">回复</oas-button>
+        <oas-button size="small" type="text">Reply</oas-button>
       </span>
       <oas-comment>
-        <oas-avatar slot="avatar" size="32">王</oas-avatar>
-        <span slot="author">王五</span>
-        <span slot="time">昨天 19:02</span>
-        <p slot="content" style="margin: 0">子评论：通过默认插槽嵌套 <code>oas-comment</code> 即可，层级不限。</p>
+        <oas-avatar slot="avatar" size="32">C</oas-avatar>
+        <span slot="author">Carol</span>
+        <span slot="time">Yesterday 19:02</span>
+        <p slot="content" style="margin: 0">Child comment: nest <code>oas-comment</code> via the default slot, with no depth limit.</p>
         <span slot="actions">
-          <oas-button size="small" type="text">回复</oas-button>
+          <oas-button size="small" type="text">Reply</oas-button>
         </span>
       </oas-comment>
     </oas-comment>
@@ -53,7 +53,7 @@ A purely presentational comment block container that assembles the author avatar
     <oas-comment></oas-comment>
   </div>
   <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    无任何插槽内容时渲染为空容器，不报错；空插槽对应的区块自动隐藏。
+    With no slot content at all, it renders as an empty container without errors; the sections of empty slots are hidden automatically.
   </p>
 </DemoBlock>
 

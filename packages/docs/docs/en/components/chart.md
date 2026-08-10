@@ -6,7 +6,7 @@ A self-developed SVG chart component (no third-party chart engine) supporting li
 
 <DemoBlock title="Line chart (default)">
   <div style="width: 100%">
-    <oas-chart type="line" data='[{"label":"一月","value":10},{"label":"二月","value":20},{"label":"三月","value":15},{"label":"四月","value":28},{"label":"五月","value":22}]'></oas-chart>
+    <oas-chart type="line" data='[{"label":"Jan","value":10},{"label":"Feb","value":20},{"label":"Mar","value":15},{"label":"Apr","value":28},{"label":"May","value":22}]'></oas-chart>
   </div>
 </DemoBlock>
 
@@ -16,7 +16,7 @@ The default is `type="line"`. An array `[{label, value}]` is a single series; ho
 
 <DemoBlock title="Bar chart">
   <div style="width: 100%">
-    <oas-chart type="bar" data='[{"label":"北京","value":86},{"label":"上海","value":92},{"label":"广州","value":65},{"label":"深圳","value":78}]'></oas-chart>
+    <oas-chart type="bar" data='[{"label":"Beijing","value":86},{"label":"Shanghai","value":92},{"label":"Guangzhou","value":65},{"label":"Shenzhen","value":78}]'></oas-chart>
   </div>
 </DemoBlock>
 
@@ -26,7 +26,7 @@ The default is `type="line"`. An array `[{label, value}]` is a single series; ho
 
 <DemoBlock title="Pie chart">
   <div style="width: 100%">
-    <oas-chart type="pie" data='[{"label":"市场","value":40},{"label":"研发","value":35},{"label":"运营","value":25}]'></oas-chart>
+    <oas-chart type="pie" data='[{"label":"Marketing","value":40},{"label":"R&D","value":35},{"label":"Operations","value":25}]'></oas-chart>
   </div>
 </DemoBlock>
 
@@ -36,7 +36,7 @@ The default is `type="line"`. An array `[{label, value}]` is a single series; ho
 
 <DemoBlock title="Donut chart">
   <div style="width: 100%">
-    <oas-chart type="donut" data='[{"label":"市场","value":40},{"label":"研发","value":35},{"label":"运营","value":25}]'></oas-chart>
+    <oas-chart type="donut" data='[{"label":"Marketing","value":40},{"label":"R&D","value":35},{"label":"Operations","value":25}]'></oas-chart>
   </div>
 </DemoBlock>
 
@@ -46,7 +46,7 @@ The default is `type="line"`. An array `[{label, value}]` is a single series; ho
 
 <DemoBlock title="Area chart (smooth + legend)">
   <div style="width: 100%">
-    <oas-chart type="area" options='{"smooth":true}' data='{"labels":["周一","周二","周三","周四","周五"],"series":[{"name":"访问量","data":[320,302,341,374,390]},{"name":"下载量","data":[120,132,101,134,90]}]}'></oas-chart>
+    <oas-chart type="area" options='{"smooth":true}' data='{"labels":["Mon","Tue","Wed","Thu","Fri"],"series":[{"name":"Visits","data":[320,302,341,374,390]},{"name":"Downloads","data":[120,132,101,134,90]}]}'></oas-chart>
   </div>
 </DemoBlock>
 
@@ -56,7 +56,7 @@ The default is `type="line"`. An array `[{label, value}]` is a single series; ho
 
 <DemoBlock title="Stacked bar chart">
   <div style="width: 100%">
-    <oas-chart type="stacked-bar" data='{"labels":["Q1","Q2","Q3","Q4"],"series":[{"name":"线上","data":[120,132,101,134]},{"name":"门店","data":[90,95,110,102]}]}'></oas-chart>
+    <oas-chart type="stacked-bar" data='{"labels":["Q1","Q2","Q3","Q4"],"series":[{"name":"Online","data":[120,132,101,134]},{"name":"Stores","data":[90,95,110,102]}]}'></oas-chart>
   </div>
 </DemoBlock>
 
@@ -66,7 +66,7 @@ The default is `type="line"`. An array `[{label, value}]` is a single series; ho
 
 <DemoBlock title="Multi-series line (smooth + legend)">
   <div style="width: 100%">
-    <oas-chart type="line" options='{"smooth":true}' data='{"labels":["周一","周二","周三","周四","周五"],"series":[{"name":"访问量","data":[320,302,341,374,390]},{"name":"下载量","data":[120,132,101,134,90]}]}'></oas-chart>
+    <oas-chart type="line" options='{"smooth":true}' data='{"labels":["Mon","Tue","Wed","Thu","Fri"],"series":[{"name":"Visits","data":[320,302,341,374,390]},{"name":"Downloads","data":[120,132,101,134,90]}]}'></oas-chart>
   </div>
 </DemoBlock>
 

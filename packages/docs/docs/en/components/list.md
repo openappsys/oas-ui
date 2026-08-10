@@ -7,15 +7,15 @@ Displays a collection of related items, capable of carrying a title, description
 <DemoBlock title="Bordered list">
   <div style="width: 100%">
     <oas-list bordered>
-      <oas-list-item title="需求评审">
-        <span slot="description">迭代 v1.0 需求清单</span>
+      <oas-list-item title="Requirements Review">
+        <span slot="description">Iteration v1.0 requirements list</span>
       </oas-list-item>
-      <oas-list-item title="开发完成">
-        <span slot="description">全部组件单测通过</span>
+      <oas-list-item title="Development Complete">
+        <span slot="description">All component unit tests pass</span>
       </oas-list-item>
-      <oas-list-item title="发布上线">
-        <span slot="description">文档站已部署</span>
-        <oas-tag slot="extra" type="success">已发布</oas-tag>
+      <oas-list-item title="Released">
+        <span slot="description">Docs site deployed</span>
+        <oas-tag slot="extra" type="success">Released</oas-tag>
       </oas-list-item>
     </oas-list>
   </div>
@@ -26,11 +26,11 @@ Displays a collection of related items, capable of carrying a title, description
 <DemoBlock title="Default dividers">
   <div style="width: 100%">
     <oas-list>
-      <oas-list-item title="说明文档">
-        <span slot="description">仅保留条目间分隔线</span>
+      <oas-list-item title="Documentation">
+        <span slot="description">Only item dividers remain</span>
       </oas-list-item>
-      <oas-list-item title="使用手册">
-        <span slot="description">不加整体边框</span>
+      <oas-list-item title="Manual">
+        <span slot="description">No outer border</span>
       </oas-list-item>
     </oas-list>
   </div>
@@ -41,15 +41,15 @@ Displays a collection of related items, capable of carrying a title, description
 <DemoBlock title="Multiple content forms">
   <div style="width: 100%">
     <oas-list bordered>
-      <oas-list-item title="纯标题条目">
+      <oas-list-item title="Title-only item">
         <oas-tag slot="extra" type="primary">NEW</oas-tag>
       </oas-list-item>
-      <oas-list-item title="默认插槽兜底">
-        未提供 description 插槽时，内容走默认插槽。
+      <oas-list-item title="Default slot fallback">
+        When no description slot is provided, content falls back to the default slot.
       </oas-list-item>
-      <oas-list-item title="待办状态">
-        <span slot="description">等待负责人确认</span>
-        <oas-tag slot="extra" type="warning">待处理</oas-tag>
+      <oas-list-item title="Todo status">
+        <span slot="description">Awaiting owner confirmation</span>
+        <oas-tag slot="extra" type="warning">Pending</oas-tag>
       </oas-list-item>
     </oas-list>
   </div>
@@ -60,11 +60,11 @@ Displays a collection of related items, capable of carrying a title, description
 <DemoBlock title="Loading state">
   <div style="width: 100%">
     <oas-list loading bordered>
-      <oas-list-item title="请求中的条目">
-        <span slot="description">加载完成前显示骨架占位</span>
+      <oas-list-item title="Loading item">
+        <span slot="description">Skeleton placeholder until loading finishes</span>
       </oas-list-item>
-      <oas-list-item title="请求中的条目">
-        <span slot="description">由 loading 属性统一接管占位</span>
+      <oas-list-item title="Loading item">
+        <span slot="description">The loading attribute handles the placeholder</span>
       </oas-list-item>
     </oas-list>
   </div>
@@ -75,7 +75,7 @@ Displays a collection of related items, capable of carrying a title, description
     <oas-list bordered empty></oas-list>
   </div>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-     设置 <code>empty</code> 强制空态；列表没有任何 <code>oas-list-item</code> 子项时也会自动显示空态，可通过 <code>empty-text</code> 自定义文案。
+     Setting <code>empty</code> forces the empty state; the list also shows it automatically when it has no <code>oas-list-item</code> children, and the copy can be customized via <code>empty-text</code>.
   </p>
 </DemoBlock>
 
@@ -85,7 +85,7 @@ Displays a collection of related items, capable of carrying a title, description
 
 <DemoBlock title="Custom empty text">
   <div style="width: 100%">
-    <oas-list bordered empty empty-text="暂无匹配任务，请调整筛选条件后重试"></oas-list>
+    <oas-list bordered empty empty-text="No matching tasks, please adjust the filters and retry"></oas-list>
   </div>
 </DemoBlock>
 
@@ -94,12 +94,12 @@ Displays a collection of related items, capable of carrying a title, description
 <DemoBlock title="split dividers">
   <div style="width: 100%">
     <oas-list bordered>
-      <oas-list-item title="条目一"><span slot="description">bordered 默认不绘制条目分隔线</span></oas-list-item>
-      <oas-list-item title="条目二"><span slot="description">仅整体边框</span></oas-list-item>
+      <oas-list-item title="Item 1"><span slot="description">bordered does not draw item dividers by default</span></oas-list-item>
+      <oas-list-item title="Item 2"><span slot="description">Only the outer border</span></oas-list-item>
     </oas-list>
     <oas-list bordered split style="margin-top: var(--oas-space-4)">
-      <oas-list-item title="条目一"><span slot="description">bordered + split 追加条目分隔线</span></oas-list-item>
-      <oas-list-item title="条目二"><span slot="description">边框与分隔线并存</span></oas-list-item>
+      <oas-list-item title="Item 1"><span slot="description">bordered + split adds item dividers</span></oas-list-item>
+      <oas-list-item title="Item 2"><span slot="description">Border and dividers coexist</span></oas-list-item>
     </oas-list>
   </div>
 </DemoBlock>
@@ -113,19 +113,19 @@ The default slot of an item can hold a thumbnail, combining it with the title an
     <oas-list bordered>
       <oas-list-item>
         <div style="display: flex; gap: var(--oas-space-3); align-items: center;">
-          <img src="https://picsum.photos/seed/isui-list-1/96/96" alt="缩略图" style="width: 48px; height: 48px; border-radius: var(--oas-radius-sm); object-fit: cover;">
+          <img src="https://picsum.photos/seed/isui-list-1/96/96" alt="Thumbnail" style="width: 48px; height: 48px; border-radius: var(--oas-radius-sm); object-fit: cover;">
           <div>
-            <div style="font-weight: 600;">产品周报第 12 期</div>
-            <div style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">本周上线 6 个新组件</div>
+            <div style="font-weight: 600;">Product Weekly #12</div>
+            <div style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">6 new components shipped this week</div>
           </div>
         </div>
       </oas-list-item>
       <oas-list-item>
         <div style="display: flex; gap: var(--oas-space-3); align-items: center;">
-          <img src="https://picsum.photos/seed/isui-list-2/96/96" alt="缩略图" style="width: 48px; height: 48px; border-radius: var(--oas-radius-sm); object-fit: cover;">
+          <img src="https://picsum.photos/seed/isui-list-2/96/96" alt="Thumbnail" style="width: 48px; height: 48px; border-radius: var(--oas-radius-sm); object-fit: cover;">
           <div>
-            <div style="font-weight: 600;">设计走查记录</div>
-            <div style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">交互态与暗色主题复核</div>
+            <div style="font-weight: 600;">Design review log</div>
+            <div style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">Interaction states and dark theme review</div>
           </div>
         </div>
       </oas-list-item>
@@ -133,11 +133,11 @@ The default slot of an item can hold a thumbnail, combining it with the title an
         <div style="display: flex; gap: var(--oas-space-3); align-items: center;">
           <svg width="48" height="48" viewBox="0 0 48 48" style="border-radius: var(--oas-radius-sm);"><rect width="48" height="48" rx="8" fill="#16a34a"/><text x="24" y="30" font-size="20" text-anchor="middle" fill="#fff" font-family="sans-serif">✓</text></svg>
           <div>
-            <div style="font-weight: 600;">发布 v1.6</div>
-            <div style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">展示组件全部发布</div>
+            <div style="font-weight: 600;">Released v1.6</div>
+            <div style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">All display components released</div>
           </div>
         </div>
-        <oas-tag slot="extra" type="success">已发布</oas-tag>
+        <oas-tag slot="extra" type="success">Released</oas-tag>
       </oas-list-item>
     </oas-list>
   </div>

@@ -19,7 +19,7 @@ Displays statistical values with `Intl.NumberFormat` thousands separators and pr
 <DemoBlock title="prefix / suffix">
   <oas-statistic value="8846" prefix="¥"></oas-statistic>
   <oas-statistic value="99.9" precision="1" suffix="%"></oas-statistic>
-  <oas-statistic value="12" prefix="本周新增 " suffix=" 单"></oas-statistic>
+  <oas-statistic value="12" prefix="New this week " suffix=" orders"></oas-statistic>
 </DemoBlock>
 
 ## Disabling Thousands Separator

@@ -5,7 +5,7 @@ Displays image resources, with an optional built-in preview feature.
 ## Basic Usage
 
 <DemoBlock title="Basic image">
-  <oas-image src="https://picsum.photos/seed/isui/600/300" alt="示例图"></oas-image>
+  <oas-image src="https://picsum.photos/seed/isui/600/300" alt="Example image"></oas-image>
 </DemoBlock>
 
 ## Fit Mode
@@ -13,11 +13,11 @@ Displays image resources, with an optional built-in preview feature.
 <DemoBlock title="object-fit variants">
   <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap">
     <div>
-      <p class="image-cap">cover（裁切填充）</p>
+      <p class="image-cap">cover (crop to fill)</p>
       <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-cover/600/300" fit="cover" alt="cover"></oas-image>
     </div>
     <div>
-      <p class="image-cap">contain（完整显示）</p>
+      <p class="image-cap">contain (fit fully)</p>
       <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-contain/600/300" fit="contain" alt="contain"></oas-image>
     </div>
   </div>
@@ -45,21 +45,21 @@ Set `object-fit` via `fit`, then fix the image container size with `::part(image
 ## Placeholder and Fallback
 
 <DemoBlock title="Loading placeholder">
-  <oas-image src="https://picsum.photos/seed/isui-placeholder/600/300" placeholder alt="加载占位"></oas-image>
+  <oas-image src="https://picsum.photos/seed/isui-placeholder/600/300" placeholder alt="Loading placeholder"></oas-image>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
-    设置 <code>placeholder</code> 后，图片加载完成前显示浅灰占位；加载完成后自动切换为图片。
+    With <code>placeholder</code>, a light-gray placeholder is shown until the image finishes loading, then it switches to the image.
   </p>
 </DemoBlock>
 
 <DemoBlock title="Load failure fallback">
   <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap; align-items: flex-start">
     <div>
-      <p class="image-cap">默认失败占位</p>
-      <oas-image class="fit-demo" src="https://invalid.example.com/missing.png" alt="加载失败"></oas-image>
+      <p class="image-cap">Default failure placeholder</p>
+      <oas-image class="fit-demo" src="https://invalid.example.com/missing.png" alt="Load failed"></oas-image>
     </div>
     <div>
-      <p class="image-cap">自定义兜底图</p>
-      <oas-image class="fit-demo" src="https://invalid.example.com/missing.png" fallback="https://picsum.photos/seed/isui-fallback/600/300" alt="自定义兜底"></oas-image>
+      <p class="image-cap">Custom fallback image</p>
+      <oas-image class="fit-demo" src="https://invalid.example.com/missing.png" fallback="https://picsum.photos/seed/isui-fallback/600/300" alt="Custom fallback"></oas-image>
     </div>
   </div>
 </DemoBlock>
@@ -69,9 +69,9 @@ When the image fails to load, a "图片加载失败" placeholder is shown by def
 ## Preview
 
 <DemoBlock title="Click to preview (built-in overlay)">
-  <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview alt="可预览图片"></oas-image>
+  <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview alt="Preview image"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-    点击图片打开全屏预览浮层：工具栏支持放大/缩小/旋转/下载，Esc 或点击遮罩关闭；打开时聚焦关闭按钮，关闭后还原焦点。派发 <code>oas-preview</code> 事件（detail 含 src）。
+    Click the image to open a full-screen preview overlay: the toolbar supports zoom in / out, rotate, and download; press Esc or click the mask to close. The close button is focused when opened, and focus is restored on close. Emits <code>oas-preview</code> (detail contains src).
   </p>
 </DemoBlock>
 
@@ -81,7 +81,7 @@ onMounted(async () => {
   const { message } = await import('@oas-ui/ui')
   window.message = message
   document.querySelector('#image-preview')?.addEventListener('oas-preview', (e) => {
-    message.success(`打开预览：${e.detail.src}`)
+    message.success(`Preview opened: ${e.detail.src}`)
     console.log('oas-preview', e.detail.src)
   })
 })

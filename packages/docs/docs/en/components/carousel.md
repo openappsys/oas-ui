@@ -7,9 +7,9 @@ Cycles through multiple screens of content in the same viewport, with manual swi
 <DemoBlock title="Basic carousel">
   <div style="width: 100%">
     <oas-carousel>
-      <div style="background: var(--oas-color-primary); color: #fff; height: 200px">第一屏</div>
-      <div style="background: #1f2937; color: #fff; height: 200px">第二屏</div>
-      <div style="background: #374151; color: #fff; height: 200px">第三屏</div>
+      <div style="background: var(--oas-color-primary); color: #fff; height: 200px">Slide 1</div>
+      <div style="background: #1f2937; color: #fff; height: 200px">Slide 2</div>
+      <div style="background: #374151; color: #fff; height: 200px">Slide 3</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -21,9 +21,9 @@ Click the dots at the bottom to switch screens; autoplay is off by default.
 <DemoBlock title="Controlled index">
   <div style="width: 100%">
     <oas-carousel index="1">
-      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">第一屏</div>
-      <div style="background: #1f2937; color: #fff; height: 160px">第二屏</div>
-      <div style="background: #4b5563; color: #fff; height: 160px">第三屏</div>
+      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">Slide 1</div>
+      <div style="background: #1f2937; color: #fff; height: 160px">Slide 2</div>
+      <div style="background: #4b5563; color: #fff; height: 160px">Slide 3</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -35,9 +35,9 @@ Click the dots at the bottom to switch screens; autoplay is off by default.
 <DemoBlock title="Autoplay">
   <div style="width: 100%">
     <oas-carousel autoplay interval="2000">
-      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">自动 1</div>
-      <div style="background: #1f2937; color: #fff; height: 160px">自动 2</div>
-      <div style="background: #374151; color: #fff; height: 160px">自动 3</div>
+      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">Auto 1</div>
+      <div style="background: #1f2937; color: #fff; height: 160px">Auto 2</div>
+      <div style="background: #374151; color: #fff; height: 160px">Auto 3</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -51,9 +51,9 @@ The left/right arrows support three display modes, controlled by the `arrows` at
 <DemoBlock title="Always shown (always)">
   <div style="width: 100%">
     <oas-carousel arrows="always">
-      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">第一屏</div>
-      <div style="background: #1f2937; color: #fff; height: 160px">第二屏</div>
-      <div style="background: #374151; color: #fff; height: 160px">第三屏</div>
+      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">Slide 1</div>
+      <div style="background: #1f2937; color: #fff; height: 160px">Slide 2</div>
+      <div style="background: #374151; color: #fff; height: 160px">Slide 3</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -61,9 +61,9 @@ The left/right arrows support three display modes, controlled by the `arrows` at
 <DemoBlock title="Shown on hover (hover)">
   <div style="width: 100%">
     <oas-carousel arrows="hover">
-      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">第一屏</div>
-      <div style="background: #1f2937; color: #fff; height: 160px">第二屏</div>
-      <div style="background: #374151; color: #fff; height: 160px">第三屏</div>
+      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">Slide 1</div>
+      <div style="background: #1f2937; color: #fff; height: 160px">Slide 2</div>
+      <div style="background: #374151; color: #fff; height: 160px">Slide 3</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -71,9 +71,9 @@ The left/right arrows support three display modes, controlled by the `arrows` at
 <DemoBlock title="Hidden (never)">
   <div style="width: 100%">
     <oas-carousel arrows="never">
-      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">第一屏</div>
-      <div style="background: #1f2937; color: #fff; height: 160px">第二屏</div>
-      <div style="background: #374151; color: #fff; height: 160px">第三屏</div>
+      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">Slide 1</div>
+      <div style="background: #1f2937; color: #fff; height: 160px">Slide 2</div>
+      <div style="background: #374151; color: #fff; height: 160px">Slide 3</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -87,9 +87,9 @@ Carousel items are not limited to color blocks — putting in an `<img>` or SVG 
 <DemoBlock title="Image banner (SVG)">
   <div style="width: 100%">
     <oas-carousel arrows="always">
-      <svg viewBox="0 0 800 260" preserveAspectRatio="none" style="width:100%; height:220px; display:block;"><defs><linearGradient id="cbg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b6cff"/><stop offset="1" stop-color="#16a34a"/></linearGradient></defs><rect width="800" height="260" fill="url(#cbg1)"/><text x="400" y="140" font-size="36" text-anchor="middle" fill="#fff" font-family="sans-serif">夏日活动</text></svg>
-      <svg viewBox="0 0 800 260" preserveAspectRatio="none" style="width:100%; height:220px; display:block;"><defs><linearGradient id="cbg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#0891b2"/></linearGradient></defs><rect width="800" height="260" fill="url(#cbg2)"/><text x="400" y="140" font-size="36" text-anchor="middle" fill="#fff" font-family="sans-serif">秋日上新</text></svg>
-      <svg viewBox="0 0 800 260" preserveAspectRatio="none" style="width:100%; height:220px; display:block;"><defs><linearGradient id="cbg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d97706"/><stop offset="1" stop-color="#dc2626"/></linearGradient></defs><rect width="800" height="260" fill="url(#cbg3)"/><text x="400" y="140" font-size="36" text-anchor="middle" fill="#fff" font-family="sans-serif">冬日促销</text></svg>
+      <svg viewBox="0 0 800 260" preserveAspectRatio="none" style="width:100%; height:220px; display:block;"><defs><linearGradient id="cbg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b6cff"/><stop offset="1" stop-color="#16a34a"/></linearGradient></defs><rect width="800" height="260" fill="url(#cbg1)"/><text x="400" y="140" font-size="36" text-anchor="middle" fill="#fff" font-family="sans-serif">Summer Event</text></svg>
+      <svg viewBox="0 0 800 260" preserveAspectRatio="none" style="width:100%; height:220px; display:block;"><defs><linearGradient id="cbg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#0891b2"/></linearGradient></defs><rect width="800" height="260" fill="url(#cbg2)"/><text x="400" y="140" font-size="36" text-anchor="middle" fill="#fff" font-family="sans-serif">Autumn Arrivals</text></svg>
+      <svg viewBox="0 0 800 260" preserveAspectRatio="none" style="width:100%; height:220px; display:block;"><defs><linearGradient id="cbg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d97706"/><stop offset="1" stop-color="#dc2626"/></linearGradient></defs><rect width="800" height="260" fill="url(#cbg3)"/><text x="400" y="140" font-size="36" text-anchor="middle" fill="#fff" font-family="sans-serif">Winter Sale</text></svg>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -97,9 +97,9 @@ Carousel items are not limited to color blocks — putting in an `<img>` or SVG 
 <DemoBlock title="Image carousel (img + autoplay)">
   <div style="width: 100%">
     <oas-carousel autoplay interval="2500">
-      <img src="https://picsum.photos/seed/isui-cv-1/800/260" alt="轮播图 1" style="width:100%; height:220px; object-fit: cover; display:block;">
-      <img src="https://picsum.photos/seed/isui-cv-2/800/260" alt="轮播图 2" style="width:100%; height:220px; object-fit: cover; display:block;">
-      <img src="https://picsum.photos/seed/isui-cv-3/800/260" alt="轮播图 3" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="https://picsum.photos/seed/isui-cv-1/800/260" alt="Slide 1" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="https://picsum.photos/seed/isui-cv-2/800/260" alt="Slide 2" style="width:100%; height:220px; object-fit: cover; display:block;">
+      <img src="https://picsum.photos/seed/isui-cv-3/800/260" alt="Slide 3" style="width:100%; height:220px; object-fit: cover; display:block;">
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -109,12 +109,12 @@ Carousel items are not limited to color blocks — putting in an `<img>` or SVG 
 <DemoBlock title="Change event">
   <div style="width: 100%">
     <oas-carousel id="carousel-event">
-      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">第一屏</div>
-      <div style="background: #1f2937; color: #fff; height: 160px">第二屏</div>
-      <div style="background: #4b5563; color: #fff; height: 160px">第三屏</div>
+      <div style="background: var(--oas-color-primary); color: #fff; height: 160px">Slide 1</div>
+      <div style="background: #1f2937; color: #fff; height: 160px">Slide 2</div>
+      <div style="background: #4b5563; color: #fff; height: 160px">Slide 3</div>
     </oas-carousel>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-      当前屏：<span id="carousel-current">1</span>
+      Current slide: <span id="carousel-current">1</span>
     </p>
   </div>
 </DemoBlock>
