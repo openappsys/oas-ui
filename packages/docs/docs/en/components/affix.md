@@ -6,7 +6,7 @@ Pins content to the top of the viewport; it becomes fixed once the page scrolls 
 
 <DemoBlock title="Basic usage">
   <oas-affix offset="16">
-    <oas-button type="primary">滚动页面时固定到顶部</oas-button>
+    <oas-button type="primary">Pinned to the top when scrolling</oas-button>
   </oas-affix>
 </DemoBlock>
 
@@ -16,7 +16,7 @@ Scroll this page down and observe the button being pinned as it approaches the t
 
 <DemoBlock title="Custom offset">
   <oas-affix offset="80">
-    <oas-button>固定于距视口顶部 80px</oas-button>
+    <oas-button>Fixed 80px from the viewport top</oas-button>
   </oas-affix>
 </DemoBlock>
 
@@ -25,9 +25,9 @@ Scroll this page down and observe the button being pinned as it approaches the t
 <DemoBlock title="Combined content">
   <oas-affix offset="16">
     <oas-space>
-      <oas-tag type="primary">筛选条件</oas-tag>
-      <oas-button size="small">重置</oas-button>
-      <oas-button size="small" type="primary">查询</oas-button>
+      <oas-tag type="primary">Filters</oas-tag>
+      <oas-button size="small">Reset</oas-button>
+      <oas-button size="small" type="primary">Query</oas-button>
     </oas-space>
   </oas-affix>
 </DemoBlock>

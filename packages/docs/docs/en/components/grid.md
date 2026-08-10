@@ -36,8 +36,8 @@ A 24-column grid layout system. Pair it with `oas-grid-item` to divide column wi
 
 <DemoBlock title="Custom cols">
   <oas-grid cols="12" gap="12px" style="width: 100%">
-    <oas-grid-item span="6"><div class="demo-grid-box">span 6 / 12 列</div></oas-grid-item>
-    <oas-grid-item span="6"><div class="demo-grid-box">span 6 / 12 列</div></oas-grid-item>
+    <oas-grid-item span="6"><div class="demo-grid-box">span 6 / 12 cols</div></oas-grid-item>
+    <oas-grid-item span="6"><div class="demo-grid-box">span 6 / 12 cols</div></oas-grid-item>
     <oas-grid-item span="4"><div class="demo-grid-box">span 4</div></oas-grid-item>
     <oas-grid-item span="8"><div class="demo-grid-box">span 8</div></oas-grid-item>
   </oas-grid>
@@ -60,10 +60,10 @@ Setting `columns` divides the width equally with `repeat(n, 1fr)`; child `span` 
 
 <DemoBlock title="columns ignores span">
   <oas-grid columns="4" gap="12px" style="width: 100%">
-    <oas-grid-item span="8"><div class="demo-grid-box">span 8 被忽略</div></oas-grid-item>
-    <oas-grid-item span="24"><div class="demo-grid-box">span 24 被忽略</div></oas-grid-item>
-    <oas-grid-item span="8"><div class="demo-grid-box">span 8 被忽略</div></oas-grid-item>
-    <oas-grid-item span="24"><div class="demo-grid-box">span 24 被忽略</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">span 8 ignored</div></oas-grid-item>
+    <oas-grid-item span="24"><div class="demo-grid-box">span 24 ignored</div></oas-grid-item>
+    <oas-grid-item span="8"><div class="demo-grid-box">span 8 ignored</div></oas-grid-item>
+    <oas-grid-item span="24"><div class="demo-grid-box">span 24 ignored</div></oas-grid-item>
   </oas-grid>
 </DemoBlock>
 

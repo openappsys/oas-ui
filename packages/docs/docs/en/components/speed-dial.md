@@ -11,16 +11,16 @@ A floating main button that expands a list of sub-actions, commonly used for qui
 <DemoBlock title="Directions: up / down / left / right">
   <div style="display: flex; gap: var(--oas-space-5); align-items: center; min-height: 200px; width: 100%">
     <div style="width: 96px; height: 160px">
-      <oas-speed-dial style="position: static" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash"}]'></oas-speed-dial>
+      <oas-speed-dial style="position: static" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash"}]'></oas-speed-dial>
     </div>
     <div style="width: 96px; height: 160px">
-      <oas-speed-dial direction="down" style="position: static" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash"}]'></oas-speed-dial>
+      <oas-speed-dial direction="down" style="position: static" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash"}]'></oas-speed-dial>
     </div>
     <div style="width: 220px; height: 80px; display: flex; align-items: center">
-      <oas-speed-dial direction="right" style="position: static" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash"}]'></oas-speed-dial>
+      <oas-speed-dial direction="right" style="position: static" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash"}]'></oas-speed-dial>
     </div>
     <div style="width: 220px; height: 80px; display: flex; align-items: center; justify-content: flex-end">
-      <oas-speed-dial direction="left" style="position: static" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash"}]'></oas-speed-dial>
+      <oas-speed-dial direction="left" style="position: static" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash"}]'></oas-speed-dial>
     </div>
   </div>
 </DemoBlock>
@@ -31,7 +31,7 @@ A floating main button that expands a list of sub-actions, commonly used for qui
 
 <DemoBlock title="Text only / icon only">
   <div style="width: 120px; height: 160px">
-    <oas-speed-dial style="position: static" actions='[{"label":"分享"},{"label":"收藏"},{"label":"举报"}]'></oas-speed-dial>
+    <oas-speed-dial style="position: static" actions='[{"label":"Share"},{"label":"Favorite"},{"label":"Report"}]'></oas-speed-dial>
   </div>
 </DemoBlock>
 
@@ -41,7 +41,7 @@ Clicking the main button to expand/collapse fires `oas-open` (`detail: { open }`
 
 <DemoBlock title="Event feedback">
   <div style="width: 200px; height: 160px">
-    <oas-speed-dial id="sd-event" style="position: static" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash"}]'></oas-speed-dial>
+    <oas-speed-dial id="sd-event" style="position: static" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash"}]'></oas-speed-dial>
   </div>
   <span id="sd-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
 </DemoBlock>
@@ -52,11 +52,11 @@ The `open` attribute is controlled: setting/removing it externally expands/colla
 
 <DemoBlock title="Controlled expansion">
   <div style="width: 200px; height: 160px">
-    <oas-speed-dial id="sd-ctrl" style="position: static" actions='[{"label":"新建","icon":"plus"},{"label":"上传","icon":"upload"},{"label":"下载","icon":"download"}]'></oas-speed-dial>
+    <oas-speed-dial id="sd-ctrl" style="position: static" actions='[{"label":"New","icon":"plus"},{"label":"Upload","icon":"upload"},{"label":"Download","icon":"download"}]'></oas-speed-dial>
   </div>
   <oas-button-group>
-    <oas-button type="primary" size="small" onclick="event.stopPropagation(); sdCtrl(true)">展开</oas-button>
-    <oas-button size="small" onclick="event.stopPropagation(); sdCtrl(false)">收起</oas-button>
+    <oas-button type="primary" size="small" onclick="event.stopPropagation(); sdCtrl(true)">Expand</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation(); sdCtrl(false)">Collapse</oas-button>
     <oas-tag id="sd-status" type="info">open: false</oas-tag>
   </oas-button-group>
 </DemoBlock>
@@ -84,7 +84,7 @@ onMounted(() => {
       else ctrl.removeAttribute('open')
     }
     sync()
-    // 组件自身点击 / 点击外部 / Esc 都会改 open，用 MutationObserver 保持状态同步
+    // Component clicks, outside clicks and Esc all change `open`; keep the status in sync with a MutationObserver
     new MutationObserver(sync).observe(ctrl, { attributes: true, attributeFilter: ['open'] })
   }
 })

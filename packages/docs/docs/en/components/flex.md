@@ -6,9 +6,9 @@ A layout container based on CSS Flexbox; attributes control direction, main/cros
 
 <DemoBlock title="Horizontal and gap">
   <oas-flex gap="12px">
-    <oas-tag type="primary">标签一</oas-tag>
-    <oas-tag type="success">标签二</oas-tag>
-    <oas-tag type="warning">标签三</oas-tag>
+    <oas-tag type="primary">Tag 1</oas-tag>
+    <oas-tag type="success">Tag 2</oas-tag>
+    <oas-tag type="warning">Tag 3</oas-tag>
   </oas-flex>
 </DemoBlock>
 
@@ -18,16 +18,16 @@ The `vertical` shorthand equals `direction="vertical"` (stacked vertically).
 
 <DemoBlock title="Vertical direction">
   <oas-flex vertical gap="8px">
-    <oas-tag>纵向排布</oas-tag>
-    <oas-tag type="success">从上到下</oas-tag>
-    <oas-tag type="info">间距可调</oas-tag>
+    <oas-tag>Stacked vertically</oas-tag>
+    <oas-tag type="success">Top to bottom</oas-tag>
+    <oas-tag type="info">Adjustable gap</oas-tag>
   </oas-flex>
 </DemoBlock>
 
 <DemoBlock title="Equivalent direction syntax">
   <oas-flex direction="vertical" gap="8px">
     <oas-tag>direction="vertical"</oas-tag>
-    <oas-tag type="success">与 vertical 一致</oas-tag>
+    <oas-tag type="success">Same as vertical</oas-tag>
   </oas-flex>
 </DemoBlock>
 
@@ -35,7 +35,7 @@ The `vertical` shorthand equals `direction="vertical"` (stacked vertically).
 
 <DemoBlock title="justify — full enumeration">
   <div class="demo-flex-col">
-    <span class="demo-flex-label">justify="start"（默认）</span>
+    <span class="demo-flex-label">justify="start" (default)</span>
     <oas-flex justify="start" gap="8px" style="width: 100%">
       <oas-tag>1</oas-tag><oas-tag>2</oas-tag><oas-tag>3</oas-tag>
     </oas-flex>
@@ -62,25 +62,25 @@ The `vertical` shorthand equals `direction="vertical"` (stacked vertically).
 
 <DemoBlock title="align — full enumeration">
   <div class="demo-flex-col">
-    <span class="demo-flex-label">align="stretch"（默认）</span>
+    <span class="demo-flex-label">align="stretch" (default)</span>
     <oas-flex align="stretch" gap="8px" style="width: 100%; height: 80px">
-      <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
+      <oas-button>Button</oas-button><oas-tag size="small">Tag</oas-tag>
     </oas-flex>
     <span class="demo-flex-label">align="start"</span>
     <oas-flex align="start" gap="8px" style="width: 100%; height: 80px">
-      <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
+      <oas-button>Button</oas-button><oas-tag size="small">Tag</oas-tag>
     </oas-flex>
     <span class="demo-flex-label">align="center"</span>
     <oas-flex align="center" gap="8px" style="width: 100%; height: 80px">
-      <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
+      <oas-button>Button</oas-button><oas-tag size="small">Tag</oas-tag>
     </oas-flex>
     <span class="demo-flex-label">align="end"</span>
     <oas-flex align="end" gap="8px" style="width: 100%; height: 80px">
-      <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
+      <oas-button>Button</oas-button><oas-tag size="small">Tag</oas-tag>
     </oas-flex>
     <span class="demo-flex-label">align="baseline"</span>
     <oas-flex align="baseline" gap="8px" style="width: 100%; height: 80px">
-      <oas-button>按钮</oas-button><oas-tag size="small">标签</oas-tag>
+      <oas-button>Button</oas-button><oas-tag size="small">Tag</oas-tag>
     </oas-flex>
   </div>
 </DemoBlock>

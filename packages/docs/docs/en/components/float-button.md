@@ -25,7 +25,7 @@ A circular action button fixed to the bottom-right corner of the page by default
 ## Event feedback
 
 <DemoBlock title="Click event">
-  <oas-float-button badge="5" style="position: static; box-shadow: none" onoas-click="message.info('悬浮按钮被点击')"></oas-float-button>
+  <oas-float-button badge="5" style="position: static; box-shadow: none" onoas-click="message.info('Floating button clicked')"></oas-float-button>
 </DemoBlock>
 
 <script setup>

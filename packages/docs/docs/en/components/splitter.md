@@ -7,7 +7,7 @@ A split component that resizes the left/right panel widths, adjustable via mouse
 <DemoBlock title="Default 50/50">
   <div style="height: 200px; width: 100%">
     <oas-splitter percent="50">
-      <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">左面板</div>
+      <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">Left panel</div>
     </oas-splitter>
   </div>
 </DemoBlock>
@@ -17,7 +17,7 @@ A split component that resizes the left/right panel widths, adjustable via mouse
 <DemoBlock title="30% / 70%">
   <div style="height: 200px; width: 100%">
     <oas-splitter percent="30">
-      <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">左面板 30%</div>
+      <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">Left panel 30%</div>
     </oas-splitter>
   </div>
 </DemoBlock>
@@ -27,7 +27,7 @@ A split component that resizes the left/right panel widths, adjustable via mouse
 <DemoBlock title="min / max limits">
   <div style="height: 200px; width: 100%">
     <oas-splitter percent="50" min="20" max="80">
-      <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">左面板 20% ~ 80%</div>
+      <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">Left panel 20% ~ 80%</div>
     </oas-splitter>
   </div>
 </DemoBlock>
@@ -36,13 +36,13 @@ A split component that resizes the left/right panel widths, adjustable via mouse
 
 <DemoBlock title="oas-resize event">
   <oas-space direction="vertical" size="small" style="width: 100%">
-    <oas-tag type="primary" id="splitter-info">左侧占比：50%</oas-tag>
+    <oas-tag type="primary" id="splitter-info">Left ratio: 50%</oas-tag>
     <div style="height: 200px; width: 100%">
       <oas-splitter id="splitter-demo" percent="50">
-        <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">左面板</div>
+        <div slot="left" style="height: 100%; display: flex; align-items: center; justify-content: center">Left panel</div>
       </oas-splitter>
     </div>
-    <oas-tag type="info">拖拽分隔条，或聚焦分隔条后使用 ← / → 方向键调整</oas-tag>
+    <oas-tag type="info">Drag the divider, or focus it and use the ← / → arrow keys to adjust</oas-tag>
   </oas-space>
 </DemoBlock>
 
@@ -52,7 +52,7 @@ onMounted(() => {
   const splitter = document.getElementById('splitter-demo')
   const info = document.getElementById('splitter-info')
   splitter?.addEventListener('oas-resize', (e) => {
-    info.textContent = `左侧占比：${e.detail.percent}%`
+    info.textContent = `Left ratio: ${e.detail.percent}%`
   })
 })
 </script>

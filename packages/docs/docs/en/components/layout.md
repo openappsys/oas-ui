@@ -6,15 +6,15 @@ A classic page skeleton of header + sider + content + footer, used with semantic
 
 <DemoBlock title="Sider + header + content + footer">
   <oas-layout style="height: 300px; width: 100%">
-    <oas-header slot="header">头部区域</oas-header>
-    <oas-sider slot="sider">侧边栏</oas-sider>
+    <oas-header slot="header">Header area</oas-header>
+    <oas-sider slot="sider">Sider</oas-sider>
     <oas-content slot="content">
       <oas-space direction="vertical" style="width: 100%">
-        <p>主要内容区，可放置任意内容。</p>
+        <p>Main content area; place any content here.</p>
         <oas-tag type="primary">flex 1</oas-tag>
       </oas-space>
     </oas-content>
-    <oas-footer slot="footer">底部信息</oas-footer>
+    <oas-footer slot="footer">Footer info</oas-footer>
   </oas-layout>
 </DemoBlock>
 
@@ -22,9 +22,9 @@ A classic page skeleton of header + sider + content + footer, used with semantic
 
 <DemoBlock title="Header + content + footer">
   <oas-layout style="height: 260px; width: 100%">
-    <oas-header slot="header">头部区域</oas-header>
-    <oas-content slot="content">仅含头部与底部的内容布局。</oas-content>
-    <oas-footer slot="footer">底部信息</oas-footer>
+    <oas-header slot="header">Header area</oas-header>
+    <oas-content slot="content">A layout with only the header and footer.</oas-content>
+    <oas-footer slot="footer">Footer info</oas-footer>
   </oas-layout>
 </DemoBlock>
 
@@ -32,12 +32,12 @@ A classic page skeleton of header + sider + content + footer, used with semantic
 
 <DemoBlock title="Collapsible sider (collapsed)">
   <oas-space direction="vertical" style="width: 100%">
-    <oas-button size="small" onclick="document.querySelector('#layout-sider').toggleAttribute('collapsed')">切换侧栏折叠</oas-button>
+    <oas-button size="small" onclick="document.querySelector('#layout-sider').toggleAttribute('collapsed')">Toggle sider collapse</oas-button>
     <oas-layout style="height: 260px; width: 100%">
-      <oas-header slot="header">头部区域</oas-header>
-      <oas-sider id="layout-sider" slot="sider">侧边栏</oas-sider>
-      <oas-content slot="content">点击上方按钮折叠 / 展开侧栏。</oas-content>
-      <oas-footer slot="footer">底部信息</oas-footer>
+      <oas-header slot="header">Header area</oas-header>
+      <oas-sider id="layout-sider" slot="sider">Sider</oas-sider>
+      <oas-content slot="content">Click the button above to collapse / expand the sider.</oas-content>
+      <oas-footer slot="footer">Footer info</oas-footer>
     </oas-layout>
   </oas-space>
 </DemoBlock>

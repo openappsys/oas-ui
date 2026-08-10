@@ -5,22 +5,22 @@ A page header information area with title, subtitle, back button and a right-sid
 ## Basic usage
 
 <DemoBlock title="Title and subtitle">
-  <oas-page-header title="订单详情" subtitle="订单号 20260801001"></oas-page-header>
+  <oas-page-header title="Order details" subtitle="Order No. 20260801001"></oas-page-header>
 </DemoBlock>
 
 ## With back button
 
 <DemoBlock title="Back button">
-  <oas-page-header title="用户设置" subtitle="修改账号与安全信息" back></oas-page-header>
+  <oas-page-header title="User settings" subtitle="Update account and security info" back></oas-page-header>
 </DemoBlock>
 
 ## Right-side action area
 
 <DemoBlock title="extra slot">
-  <oas-page-header title="项目管理" subtitle="共 12 个项目">
+  <oas-page-header title="Project management" subtitle="12 projects in total">
     <oas-space slot="extra" size="small">
-      <oas-button size="small">导出</oas-button>
-      <oas-button size="small" type="primary">新建项目</oas-button>
+      <oas-button size="small">Export</oas-button>
+      <oas-button size="small" type="primary">New project</oas-button>
     </oas-space>
   </oas-page-header>
 </DemoBlock>
@@ -28,7 +28,7 @@ A page header information area with title, subtitle, back button and a right-sid
 ## Event feedback
 
 <DemoBlock title="Back event">
-  <oas-page-header title="文章详情" back onoas-back="message.info('点击了返回')"></oas-page-header>
+  <oas-page-header title="Article details" back onoas-back="message.info('Back clicked')"></oas-page-header>
 </DemoBlock>
 
 <script setup>

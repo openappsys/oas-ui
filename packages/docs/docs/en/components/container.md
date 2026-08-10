@@ -33,7 +33,7 @@ With `center="false"` centering is disabled (`margin-inline: 0`) and the contain
 
 <DemoBlock title="center=false">
   <oas-container size="sm" center="false" style="background: var(--oas-color-bg-hover)">
-    左对齐，不再居中
+    Left-aligned, no longer centered
   </oas-container>
 </DemoBlock>
 
@@ -43,7 +43,7 @@ With `center="false"` centering is disabled (`margin-inline: 0`) and the contain
 
 <DemoBlock title="padding">
   <oas-container size="md" padding="var(--oas-space-4)" style="background: var(--oas-color-bg-hover)">
-    内容两侧留有 16px 内边距
+    16px padding on both sides of the content
   </oas-container>
 </DemoBlock>
 

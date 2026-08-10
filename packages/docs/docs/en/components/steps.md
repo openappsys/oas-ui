@@ -5,19 +5,19 @@ A step indicator that guides users through a task, with four states (wait / proc
 ## Basic usage
 
 <DemoBlock title="In progress">
-  <oas-steps current="1" steps='[{"title":"创建订单","description":"填写订单信息"},{"title":"确认支付","description":"选择支付方式"},{"title":"完成发货","description":"等待收货"}]'></oas-steps>
+  <oas-steps current="1" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
 </DemoBlock>
 
 ## Finished state
 
 <DemoBlock title="All finished">
-  <oas-steps current="3" steps='[{"title":"创建订单"},{"title":"确认支付"},{"title":"完成发货"}]'></oas-steps>
+  <oas-steps current="3" steps='[{"title":"Create order"},{"title":"Confirm payment"},{"title":"Complete shipping"}]'></oas-steps>
 </DemoBlock>
 
 ## Initial step
 
 <DemoBlock title="Initial waiting">
-  <oas-steps current="0" steps='[{"title":"第一步"},{"title":"第二步"},{"title":"第三步"}]'></oas-steps>
+  <oas-steps current="0" steps='[{"title":"Step 1"},{"title":"Step 2"},{"title":"Step 3"}]'></oas-steps>
 </DemoBlock>
 
 ## Four states
@@ -25,7 +25,7 @@ A step indicator that guides users through a task, with four states (wait / proc
 Set the state explicitly per step via the `status` field: `wait` waiting (secondary color + number), `process` in progress (primary color + number), `finish` done (success color + ✓), `error` error (danger color + ✕).
 
 <DemoBlock title="wait / process / finish / error">
-  <oas-steps steps='[{"title":"等待中","description":"尚未开始","status":"wait"},{"title":"进行中","description":"正在处理","status":"process"},{"title":"已完成","description":"处理成功","status":"finish"},{"title":"出错","description":"处理失败","status":"error"}]'></oas-steps>
+  <oas-steps steps='[{"title":"Waiting","description":"Not started","status":"wait"},{"title":"In progress","description":"Processing","status":"process"},{"title":"Completed","description":"Succeeded","status":"finish"},{"title":"Error","description":"Failed","status":"error"}]'></oas-steps>
 </DemoBlock>
 
 ## Clickable switching
@@ -33,20 +33,20 @@ Set the state explicitly per step via the `status` field: `wait` waiting (second
 With `clickable` enabled, step items are clickable to jump (the whole item is clickable and keyboard-reachable via Enter/Space); clicking fires `oas-change` (detail is `{ index }`) and switches the current step.
 
 <DemoBlock title="Click a step to switch the current step">
-  <oas-steps clickable current="1" onoas-change="message.info('切换到第 ' + (event.detail.index + 1) + ' 步')" steps='[{"title":"创建订单","description":"填写订单信息"},{"title":"确认支付","description":"选择支付方式"},{"title":"完成发货","description":"等待收货"}]'></oas-steps>
+  <oas-steps clickable current="1" onoas-change="message.info('Switched to step ' + (event.detail.index + 1))" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
 </DemoBlock>
 
 ## Without description
 
 <DemoBlock title="Titles only">
-  <oas-steps current="1" steps='[{"title":"注册"},{"title":"实名认证"},{"title":"开通完成"}]'></oas-steps>
+  <oas-steps current="1" steps='[{"title":"Register"},{"title":"Real-name verification"},{"title":"Activation complete"}]'></oas-steps>
 </DemoBlock>
 
 ## Vertical
 
 <DemoBlock title="Vertical direction">
   <div style="width: 260px">
-    <oas-steps direction="vertical" current="1" steps='[{"title":"填写资料","description":"基本信息与联系方式"},{"title":"上传证件","description":"身份证正反面"},{"title":"审核通过","description":"等待管理员审核"}]'></oas-steps>
+    <oas-steps direction="vertical" current="1" steps='[{"title":"Fill in profile","description":"Basic info and contact details"},{"title":"Upload ID documents","description":"Front and back of ID card"},{"title":"Approved","description":"Waiting for admin review"}]'></oas-steps>
   </div>
 </DemoBlock>
 

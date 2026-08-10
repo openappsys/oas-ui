@@ -9,7 +9,7 @@ A mobile bottom navigation bar: `role="tablist"` with each item `role="tab"` + s
 Pass a JSON array via `items` `[{ label, value, icon? }]`; `icon` is an icon name from `@oas-ui/icons` iconRegistry. When `value` is not set, the first item is active by default.
 
 <DemoBlock title="Basic usage">
-  <oas-bottom-navigation id="bn-basic" value="home" style="width: 100%; max-width: 480px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"搜索","icon":"search","value":"search"},{"label":"消息","icon":"mail","value":"mail"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+  <oas-bottom-navigation id="bn-basic" value="home" style="width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Search","icon":"search","value":"search"},{"label":"Messages","icon":"mail","value":"mail"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
 </DemoBlock>
 
 ## Controlled value
@@ -17,11 +17,11 @@ Pass a JSON array via `items` `[{ label, value, icon? }]`; `icon` is an icon nam
 The `value` attribute is controlled: setting it externally switches the active item, and component interaction also writes the attribute back and fires `oas-change`.
 
 <DemoBlock title="Controlled switching">
-  <oas-bottom-navigation id="bn-ctrl" value="home" style="width: 100%; max-width: 480px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"收藏","icon":"star","value":"favorite"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+  <oas-bottom-navigation id="bn-ctrl" value="home" style="width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Favorites","icon":"star","value":"favorite"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
   <oas-button-group>
-    <oas-button size="small" type="primary" onclick="bnSet('home')">首页</oas-button>
-    <oas-button size="small" onclick="bnSet('favorite')">收藏</oas-button>
-    <oas-button size="small" onclick="bnSet('mine')">我的</oas-button>
+    <oas-button size="small" type="primary" onclick="bnSet('home')">Home</oas-button>
+    <oas-button size="small" onclick="bnSet('favorite')">Favorites</oas-button>
+    <oas-button size="small" onclick="bnSet('mine')">Mine</oas-button>
   </oas-button-group>
   <span id="bn-out" style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
@@ -31,7 +31,7 @@ The `value` attribute is controlled: setting it externally switches the active i
 `disabled` items sync `aria-disabled`, cannot be selected by click, and are skipped by arrow-key navigation.
 
 <DemoBlock title="Disabled items">
-  <oas-bottom-navigation value="home" style="width: 100%; max-width: 480px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"发现","icon":"heart","value":"discover","disabled":true},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+  <oas-bottom-navigation value="home" style="width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Discover","icon":"heart","value":"discover","disabled":true},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
 </DemoBlock>
 
 ## Fixed to the bottom (fixed)
@@ -39,7 +39,7 @@ The `value` attribute is controlled: setting it externally switches the active i
 Add the `fixed` attribute to pin it to the bottom of the viewport (`bottom: 0`). This demo page uses a static layout to avoid covering content; use `fixed` in real mobile scenarios.
 
 <DemoBlock title="fixed demo (kept static here)">
-  <oas-bottom-navigation fixed style="position: static; width: 100%; max-width: 480px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"搜索","icon":"search","value":"search"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+  <oas-bottom-navigation fixed style="position: static; width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Search","icon":"search","value":"search"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
 </DemoBlock>
 
 <script setup>

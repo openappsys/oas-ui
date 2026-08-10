@@ -8,11 +8,11 @@ Pass menu JSON via the `items` attribute (`[{label, value, icon?}]`); the defaul
 
 <DemoBlock title="Default sidebar">
   <div style="height: 260px; width: 100%; display: flex">
-    <oas-sidebar id="sidebar-basic" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据看板","value":"dashboard","icon":"📊"},{"label":"订单管理","value":"orders","icon":"📦"},{"label":"设置","value":"settings","icon":"⚙️"}]'>
-      <oas-tag size="small">自定义内容区</oas-tag>
+    <oas-sidebar id="sidebar-basic" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Dashboard","value":"dashboard","icon":"📊"},{"label":"Orders","value":"orders","icon":"📦"},{"label":"Settings","value":"settings","icon":"⚙️"}]'>
+      <oas-tag size="small">Custom content area</oas-tag>
     </oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
-      右侧内容区
+      Right content area
     </div>
   </div>
 </DemoBlock>
@@ -23,11 +23,11 @@ Clicking the bottom「«」button toggles `collapsed` (a controlled attribute; f
 
 <DemoBlock title="collapsed icon state">
   <oas-space direction="vertical" style="width: 100%">
-    <oas-button size="small" onclick="document.querySelector('#sidebar-collapsible').toggleAttribute('collapsed')">切换折叠 collapsed</oas-button>
+    <oas-button size="small" onclick="document.querySelector('#sidebar-collapsible').toggleAttribute('collapsed')">Toggle collapsed</oas-button>
     <div style="height: 240px; width: 100%; display: flex">
-      <oas-sidebar id="sidebar-collapsible" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据看板","value":"dashboard","icon":"📊"},{"label":"设置","value":"settings","icon":"⚙️"}]'></oas-sidebar>
+      <oas-sidebar id="sidebar-collapsible" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Dashboard","value":"dashboard","icon":"📊"},{"label":"Settings","value":"settings","icon":"⚙️"}]'></oas-sidebar>
       <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
-        右侧内容区
+        Right content area
       </div>
     </div>
   </oas-space>
@@ -39,9 +39,9 @@ On narrow screens the sidebar automatically becomes an overlay drawer: the float
 
 <DemoBlock title="Mobile drawer (breakpoint 700)">
   <div style="height: 260px; width: 100%; display: flex">
-    <oas-sidebar mobile-breakpoint="700" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据看板","value":"dashboard","icon":"📊"}]'></oas-sidebar>
+    <oas-sidebar mobile-breakpoint="700" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Dashboard","value":"dashboard","icon":"📊"}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
-      把窗口 / 预览容器缩到 700px 以下，点击左上角 ☰ 打开抽屉
+      Shrink the window / preview container below 700px, then click the ☰ at the top-left to open the drawer
     </div>
   </div>
 </DemoBlock>
@@ -52,13 +52,13 @@ On narrow screens the sidebar automatically becomes an overlay drawer: the float
 
 <DemoBlock title="Controlled drawer-open">
   <oas-space>
-    <oas-button type="primary" onclick="document.getElementById('sidebar-drawer').setAttribute('drawer-open','')">打开抽屉（设置 drawer-open）</oas-button>
-    <oas-button onclick="document.getElementById('sidebar-drawer').removeAttribute('drawer-open')">收起抽屉（移除 drawer-open）</oas-button>
+    <oas-button type="primary" onclick="document.getElementById('sidebar-drawer').setAttribute('drawer-open','')">Open drawer (set drawer-open)</oas-button>
+    <oas-button onclick="document.getElementById('sidebar-drawer').removeAttribute('drawer-open')">Close drawer (remove drawer-open)</oas-button>
   </oas-space>
   <div style="height: 260px; width: 100%; display: flex">
-    <oas-sidebar id="sidebar-drawer" mobile-breakpoint="2000" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据看板","value":"dashboard","icon":"📊"},{"label":"订单管理","value":"orders","icon":"📦"},{"label":"设置","value":"settings","icon":"⚙️"}]'></oas-sidebar>
+    <oas-sidebar id="sidebar-drawer" mobile-breakpoint="2000" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Dashboard","value":"dashboard","icon":"📊"},{"label":"Orders","value":"orders","icon":"📦"},{"label":"Settings","value":"settings","icon":"⚙️"}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
-      外部按钮设置 <code>drawer-open</code> 控制抽屉开合；遮罩 / ✕ / Esc 收起后属性被移除。
+      External buttons set <code>drawer-open</code> to control the drawer; after it is closed via the mask / ✕ / Esc, the attribute is removed.
     </div>
   </div>
 </DemoBlock>
@@ -71,12 +71,12 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
   <oas-space>
     <oas-button size="small" onclick="document.getElementById('sidebar-width').setAttribute('width','180px')">180px</oas-button>
     <oas-button size="small" onclick="document.getElementById('sidebar-width').setAttribute('width','280px')">280px</oas-button>
-    <oas-button size="small" onclick="document.getElementById('sidebar-width').removeAttribute('width')">默认 token</oas-button>
+    <oas-button size="small" onclick="document.getElementById('sidebar-width').removeAttribute('width')">Default token</oas-button>
   </oas-space>
   <div style="height: 260px; width: 100%; display: flex">
-    <oas-sidebar id="sidebar-width" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据看板","value":"dashboard","icon":"📊"},{"label":"设置","value":"settings","icon":"⚙️"}]'></oas-sidebar>
+    <oas-sidebar id="sidebar-width" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Dashboard","value":"dashboard","icon":"📊"},{"label":"Settings","value":"settings","icon":"⚙️"}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
-      点击上方按钮切换展开宽度，观察侧栏宽度变化。
+      Click the buttons above to switch the expanded width and watch the sidebar change.
     </div>
   </div>
 </DemoBlock>
@@ -87,17 +87,17 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
 
 <DemoBlock title="sidebar as the sider">
   <oas-layout style="height: 300px; width: 100%">
-    <oas-header slot="header">头部区域</oas-header>
-    <oas-sidebar slot="sider" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据看板","value":"dashboard","icon":"📊"}]'>
-      <oas-tag size="small">副内容</oas-tag>
+    <oas-header slot="header">Header area</oas-header>
+    <oas-sidebar slot="sider" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Dashboard","value":"dashboard","icon":"📊"}]'>
+      <oas-tag size="small">Side content</oas-tag>
     </oas-sidebar>
     <oas-content slot="content">
       <oas-space direction="vertical" style="width: 100%">
-        <p>主要内容区。</p>
+        <p>Main content area.</p>
         <oas-tag type="primary">flex 1</oas-tag>
       </oas-space>
     </oas-content>
-    <oas-footer slot="footer">底部信息</oas-footer>
+    <oas-footer slot="footer">Footer info</oas-footer>
   </oas-layout>
 </DemoBlock>
 

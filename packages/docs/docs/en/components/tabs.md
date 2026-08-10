@@ -6,9 +6,9 @@ Tab-based content switching with arrow-key navigation; inactive panels are hidde
 
 <DemoBlock title="Basic usage">
   <oas-tabs active="a">
-    <oas-tab-panel label="标签一" value="a"><p>内容一：基础信息展示。</p></oas-tab-panel>
-    <oas-tab-panel label="标签二" value="b"><p>内容二：更多详情。</p></oas-tab-panel>
-    <oas-tab-panel label="标签三" value="c"><p>内容三：其他补充说明。</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 1" value="a"><p>Content 1: basic information display.</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 2" value="b"><p>Content 2: more details.</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 3" value="c"><p>Content 3: other supplementary notes.</p></oas-tab-panel>
   </oas-tabs>
 </DemoBlock>
 
@@ -16,9 +16,9 @@ Tab-based content switching with arrow-key navigation; inactive panels are hidde
 
 <DemoBlock title="Specify active">
   <oas-tabs active="c">
-    <oas-tab-panel label="标签一" value="a"><p>内容一</p></oas-tab-panel>
-    <oas-tab-panel label="标签二" value="b"><p>内容二</p></oas-tab-panel>
-    <oas-tab-panel label="标签三" value="c"><p>默认选中内容三</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 1" value="a"><p>Content 1</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 2" value="b"><p>Content 2</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 3" value="c"><p>Content 3 selected by default</p></oas-tab-panel>
   </oas-tabs>
 </DemoBlock>
 
@@ -26,19 +26,19 @@ Tab-based content switching with arrow-key navigation; inactive panels are hidde
 
 <DemoBlock title="Rich content">
   <oas-tabs active="a">
-    <oas-tab-panel label="表单" value="a">
+    <oas-tab-panel label="Form" value="a">
       <oas-space direction="vertical" size="small" style="width: 100%">
-        <oas-input placeholder="请输入姓名" style="width: 240px"></oas-input>
+        <oas-input placeholder="Enter your name" style="width: 240px"></oas-input>
         <oas-space>
-          <oas-button type="primary" size="small">提交</oas-button>
-          <oas-button size="small">取消</oas-button>
+          <oas-button type="primary" size="small">Submit</oas-button>
+          <oas-button size="small">Cancel</oas-button>
         </oas-space>
       </oas-space>
     </oas-tab-panel>
-    <oas-tab-panel label="列表" value="b">
+    <oas-tab-panel label="List" value="b">
       <oas-space direction="vertical" size="small" style="width: 100%">
-        <oas-tag type="success">已启用</oas-tag>
-        <oas-tag>待处理</oas-tag>
+        <oas-tag type="success">Enabled</oas-tag>
+        <oas-tag>Pending</oas-tag>
       </oas-space>
     </oas-tab-panel>
   </oas-tabs>
@@ -48,9 +48,9 @@ Tab-based content switching with arrow-key navigation; inactive panels are hidde
 
 <DemoBlock title="Card-style tabs">
   <oas-tabs type="card" active="a">
-    <oas-tab-panel label="标签一" value="a"><p>内容一：卡片式标签带边框，激活标签与面板连通，四边有线。</p></oas-tab-panel>
-    <oas-tab-panel label="标签二" value="b"><p>内容二：更多详情。</p></oas-tab-panel>
-    <oas-tab-panel label="标签三" value="c"><p>内容三：其他补充说明。</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 1" value="a"><p>Content 1: card-style tabs have borders; the active tab connects with the panel, and the whole is wrapped by a four-side border.</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 2" value="b"><p>Content 2: more details.</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 3" value="c"><p>Content 3: other supplementary notes.</p></oas-tab-panel>
   </oas-tabs>
 </DemoBlock>
 
@@ -60,12 +60,12 @@ Switch to the card style with `type="card"`: every tab has its own border, the a
 
 <DemoBlock title="oas-change event">
   <oas-tabs id="tabs-demo" active="a">
-    <oas-tab-panel label="标签一" value="a"><p>内容一</p></oas-tab-panel>
-    <oas-tab-panel label="标签二" value="b"><p>内容二</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 1" value="a"><p>Content 1</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 2" value="b"><p>Content 2</p></oas-tab-panel>
   </oas-tabs>
 </DemoBlock>
 
-<oas-tag type="primary" id="tabs-info">当前激活：a</oas-tag>
+<oas-tag type="primary" id="tabs-info">Current active: a</oas-tag>
 
 ## Closable
 
@@ -73,9 +73,9 @@ Switch to the card style with `type="card"`: every tab has its own border, the a
 
 <DemoBlock title="Closable tabs">
   <oas-tabs id="tabs-closable" closable active="a">
-    <oas-tab-panel label="标签一" value="a"><p>内容一</p></oas-tab-panel>
-    <oas-tab-panel label="标签二" value="b"><p>内容二</p></oas-tab-panel>
-    <oas-tab-panel label="标签三" value="c"><p>内容三</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 1" value="a"><p>Content 1</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 2" value="b"><p>Content 2</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 3" value="c"><p>Content 3</p></oas-tab-panel>
   </oas-tabs>
 </DemoBlock>
 
@@ -87,9 +87,9 @@ The `badge` attribute of `oas-tab-panel` renders a badge (number or text) next t
 
 <DemoBlock title="Tabs with badges">
   <oas-tabs active="a">
-    <oas-tab-panel label="标签一" value="a" badge="3"><p>内容一：徽标展示数量。</p></oas-tab-panel>
-    <oas-tab-panel label="标签二" value="b" badge="新"><p>内容二：徽标也可以显示文本。</p></oas-tab-panel>
-    <oas-tab-panel label="标签三" value="c"><p>内容三：无徽标。</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 1" value="a" badge="3"><p>Content 1: the badge shows a count.</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 2" value="b" badge="New"><p>Content 2: the badge can also display text.</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 3" value="c"><p>Content 3: no badge.</p></oas-tab-panel>
   </oas-tabs>
 </DemoBlock>
 
@@ -99,25 +99,25 @@ The `badge` attribute of `oas-tab-panel` renders a badge (number or text) next t
 
 <DemoBlock title="left vertical tabs">
   <oas-tabs tab-position="left" active="a">
-    <oas-tab-panel label="标签一" value="a"><p>内容一：标签纵向排列在左侧，内容在右侧。</p></oas-tab-panel>
-    <oas-tab-panel label="标签二" value="b"><p>内容二</p></oas-tab-panel>
-    <oas-tab-panel label="标签三" value="c"><p>内容三</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 1" value="a"><p>Content 1: tabs stack vertically on the left, content on the right.</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 2" value="b"><p>Content 2</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 3" value="c"><p>Content 3</p></oas-tab-panel>
   </oas-tabs>
 </DemoBlock>
 
 <DemoBlock title="right vertical tabs">
   <oas-tabs tab-position="right" active="a">
-    <oas-tab-panel label="标签一" value="a"><p>内容一：标签纵向排列在右侧，内容在左侧。</p></oas-tab-panel>
-    <oas-tab-panel label="标签二" value="b"><p>内容二</p></oas-tab-panel>
-    <oas-tab-panel label="标签三" value="c"><p>内容三</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 1" value="a"><p>Content 1: tabs stack vertically on the right, content on the left.</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 2" value="b"><p>Content 2</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 3" value="c"><p>Content 3</p></oas-tab-panel>
   </oas-tabs>
 </DemoBlock>
 
 <DemoBlock title="bottom tabs">
   <oas-tabs tab-position="bottom" active="a">
-    <oas-tab-panel label="标签一" value="a"><p>内容一：标签横向排列在下方，内容在上方。</p></oas-tab-panel>
-    <oas-tab-panel label="标签二" value="b"><p>内容二</p></oas-tab-panel>
-    <oas-tab-panel label="标签三" value="c"><p>内容三</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 1" value="a"><p>Content 1: tabs sit horizontally at the bottom, content above.</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 2" value="b"><p>Content 2</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 3" value="c"><p>Content 3</p></oas-tab-panel>
   </oas-tabs>
 </DemoBlock>
 
@@ -128,13 +128,13 @@ onMounted(async () => {
   const tabs = document.getElementById('tabs-demo')
   const info = document.getElementById('tabs-info')
   tabs?.addEventListener('oas-change', (e) => {
-    info.textContent = `当前激活：${e.detail.value}`
+    info.textContent = `Current active: ${e.detail.value}`
   })
 
   const closableTabs = document.getElementById('tabs-closable')
   closableTabs?.addEventListener('oas-close', (e) => {
     const key = e.detail.key
-    message?.info(`关闭标签「${key}」`)
+    message?.info(`Closed tab "${key}"`)
     const target = closableTabs.querySelector(`oas-tab-panel[value="${key}"]`)
     const wasActive = closableTabs.getAttribute('active') === key
     target?.remove()

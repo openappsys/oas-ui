@@ -9,16 +9,16 @@ A container that wraps content and takes over the scrollbar appearance: a thin c
 <DemoBlock title="Fixed-height scrolling">
   <oas-scroll-area height="200" style="width: 320px">
     <div style="padding: var(--oas-space-2)">
-      <p style="margin: var(--oas-space-2) 0">第 1 行内容：ScrollArea 支持自定义滚动条外观</p>
-      <p style="margin: var(--oas-space-2) 0">第 2 行内容：细条 + hover 变粗</p>
-      <p style="margin: var(--oas-space-2) 0">第 3 行内容：滚动事件节流派发 oas-scroll</p>
-      <p style="margin: var(--oas-space-2) 0">第 4 行内容：wheel 平滑滚动</p>
-      <p style="margin: var(--oas-space-2) 0">第 5 行内容：支持 auto-hide 自动隐藏</p>
-      <p style="margin: var(--oas-space-2) 0">第 6 行内容：横向内容同样接管滚动条</p>
-      <p style="margin: var(--oas-space-2) 0">第 7 行内容：颜色走主题 token</p>
-      <p style="margin: var(--oas-space-2) 0">第 8 行内容：适合列表、日志、长文案</p>
-      <p style="margin: var(--oas-space-2) 0">第 9 行内容：内容不足时不显示滚动条</p>
-      <p style="margin: var(--oas-space-2) 0">第 10 行内容：自定义内容插槽</p>
+      <p style="margin: var(--oas-space-2) 0">Line 1: ScrollArea supports a custom scrollbar appearance</p>
+      <p style="margin: var(--oas-space-2) 0">Line 2: thin bar that thickens on hover</p>
+      <p style="margin: var(--oas-space-2) 0">Line 3: scroll events throttled into oas-scroll</p>
+      <p style="margin: var(--oas-space-2) 0">Line 4: smooth wheel scrolling</p>
+      <p style="margin: var(--oas-space-2) 0">Line 5: auto-hide supported</p>
+      <p style="margin: var(--oas-space-2) 0">Line 6: horizontal content also gets the custom scrollbar</p>
+      <p style="margin: var(--oas-space-2) 0">Line 7: colors use theme tokens</p>
+      <p style="margin: var(--oas-space-2) 0">Line 8: great for lists, logs and long text</p>
+      <p style="margin: var(--oas-space-2) 0">Line 9: no scrollbar when content fits</p>
+      <p style="margin: var(--oas-space-2) 0">Line 10: custom content slot</p>
     </div>
   </oas-scroll-area>
 </DemoBlock>
@@ -30,12 +30,12 @@ A container that wraps content and takes over the scrollbar appearance: a thin c
 <DemoBlock title="Horizontal scrolling">
   <oas-scroll-area height="120" style="width: 100%">
     <div style="display: flex; gap: var(--oas-space-3); padding: var(--oas-space-2); width: max-content">
-      <div style="flex-shrink: 0; width: 200px; height: 80px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">卡片 1</div>
-      <div style="flex-shrink: 0; width: 200px; height: 80px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">卡片 2</div>
-      <div style="flex-shrink: 0; width: 200px; height: 80px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">卡片 3</div>
-      <div style="flex-shrink: 0; width: 200px; height: 80px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">卡片 4</div>
-      <div style="flex-shrink: 0; width: 200px; height: 80px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">卡片 5</div>
-      <div style="flex-shrink: 0; width: 200px; height: 80px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">卡片 6</div>
+      <div style="flex-shrink: 0; width: 200px; height: 80px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">Card 1</div>
+      <div style="flex-shrink: 0; width: 200px; height: 80px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">Card 2</div>
+      <div style="flex-shrink: 0; width: 200px; height: 80px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">Card 3</div>
+      <div style="flex-shrink: 0; width: 200px; height: 80px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">Card 4</div>
+      <div style="flex-shrink: 0; width: 200px; height: 80px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">Card 5</div>
+      <div style="flex-shrink: 0; width: 200px; height: 80px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">Card 6</div>
     </div>
   </oas-scroll-area>
 </DemoBlock>
@@ -47,11 +47,11 @@ With `auto-hide` the scrollbar is hidden normally and only appears while scrolli
 <DemoBlock title="auto-hide">
   <oas-scroll-area auto-hide height="160" style="width: 320px">
     <div style="padding: var(--oas-space-2)">
-      <p style="margin: var(--oas-space-2) 0">滚动我看看滚动条：平时隐藏，滚动时出现</p>
-      <p style="margin: var(--oas-space-2) 0">停下来等一秒，滚动条自动淡出</p>
-      <p style="margin: var(--oas-space-2) 0">悬停在区域内也会临时显示</p>
-      <p style="margin: var(--oas-space-2) 0">适合不希望滚动条干扰阅读的界面</p>
-      <p style="margin: var(--oas-space-2) 0">移动端卡片列表场景推荐使用</p>
+      <p style="margin: var(--oas-space-2) 0">Scroll to see the scrollbar: hidden normally, shown while scrolling</p>
+      <p style="margin: var(--oas-space-2) 0">Stop for a second and the scrollbar fades out automatically</p>
+      <p style="margin: var(--oas-space-2) 0">Hovering over the area also shows it temporarily</p>
+      <p style="margin: var(--oas-space-2) 0">Great for UIs where a scrollbar would distract from reading</p>
+      <p style="margin: var(--oas-space-2) 0">Recommended for mobile card lists</p>
     </div>
   </oas-scroll-area>
 </DemoBlock>
@@ -64,18 +64,18 @@ Scroll events are throttled with rAF and fire `oas-scroll`; `detail` carries `{ 
   <div style="width: 320px">
     <oas-scroll-area id="sa-event" height="160">
       <div style="padding: var(--oas-space-2)">
-        <p style="margin: var(--oas-space-2) 0">第 1 行：滚动事件节流派发</p>
-        <p style="margin: var(--oas-space-2) 0">第 2 行：detail 包含 scrollTop / scrollLeft</p>
-        <p style="margin: var(--oas-space-2) 0">第 3 行：适合做滚动监听、懒加载</p>
-        <p style="margin: var(--oas-space-2) 0">第 4 行：与虚拟列表滚动逻辑互补</p>
-        <p style="margin: var(--oas-space-2) 0">第 5 行：滚动条位置同步更新</p>
-        <p style="margin: var(--oas-space-2) 0">第 6 行：继续滚动查看输出</p>
-        <p style="margin: var(--oas-space-2) 0">第 7 行：节流避免高频事件</p>
-        <p style="margin: var(--oas-space-2) 0">第 8 行：最后一个示例</p>
+        <p style="margin: var(--oas-space-2) 0">Line 1: scroll events throttled</p>
+        <p style="margin: var(--oas-space-2) 0">Line 2: detail carries scrollTop / scrollLeft</p>
+        <p style="margin: var(--oas-space-2) 0">Line 3: great for scroll listeners and lazy loading</p>
+        <p style="margin: var(--oas-space-2) 0">Line 4: complements virtual-list scrolling</p>
+        <p style="margin: var(--oas-space-2) 0">Line 5: scrollbar position stays in sync</p>
+        <p style="margin: var(--oas-space-2) 0">Line 6: keep scrolling to see the output</p>
+        <p style="margin: var(--oas-space-2) 0">Line 7: throttling avoids high-frequency events</p>
+        <p style="margin: var(--oas-space-2) 0">Line 8: the last example</p>
       </div>
     </oas-scroll-area>
     <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-2) 0 0">
-      scrollTop：<span id="sa-scrolltop">0</span>
+      scrollTop: <span id="sa-scrolltop">0</span>
     </p>
   </div>
 </DemoBlock>
