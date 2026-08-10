@@ -28,23 +28,16 @@ const STYLE = `
  */
 let scrollLockCount = 0
 let previousOverflow = ''
-let previousPaddingRight = ''
-
-/** 滚动条宽度（overlay 滚动条系统如 macOS 为 0，无需补偿） */
-function scrollbarWidth(): number {
-  return window.innerWidth - document.documentElement.clientWidth
-}
+let previousGutter = ''
 
 function lockScroll(): void {
   if (scrollLockCount === 0) {
     previousOverflow = document.body.style.overflow
-    previousPaddingRight = document.body.style.paddingRight
-    // 锁滚动会移除滚动条导致页面右移；补偿滚动条宽度防页面晃动
-    const sw = scrollbarWidth()
-    if (sw > 0) {
-      const cur = parseFloat(previousPaddingRight || '0') || 0
-      document.body.style.paddingRight = `${cur + sw}px`
-    }
+    previousGutter = document.documentElement.style.scrollbarGutter
+    // 有滚动条时先预留滚动条槽位（scrollbar-gutter: stable），再锁滚动移除滚动条
+    // 视口宽度不变 → 固定定位元素与页面内容都不位移（经典滚动条环境下的页面晃动修复）
+    const hasScrollbar = window.innerWidth > document.documentElement.clientWidth
+    if (hasScrollbar) document.documentElement.style.scrollbarGutter = 'stable'
   }
   scrollLockCount++
   document.body.style.overflow = 'hidden'
@@ -54,7 +47,7 @@ function unlockScroll(): void {
   scrollLockCount = Math.max(0, scrollLockCount - 1)
   if (scrollLockCount === 0) {
     document.body.style.overflow = previousOverflow
-    document.body.style.paddingRight = previousPaddingRight
+    document.documentElement.style.scrollbarGutter = previousGutter
   }
 }
 
