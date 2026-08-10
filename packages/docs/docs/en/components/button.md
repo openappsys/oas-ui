@@ -5,34 +5,34 @@ Basic button component, an enhanced native `<button>`.
 ## Types
 
 <DemoBlock title="Button types">
-  <oas-button>默认按钮</oas-button>
-  <oas-button type="primary">主要按钮</oas-button>
-  <oas-button type="success">成功按钮</oas-button>
-  <oas-button type="warning">警告按钮</oas-button>
-  <oas-button type="danger">危险按钮</oas-button>
-  <oas-button type="text">文字按钮</oas-button>
+  <oas-button>Default</oas-button>
+  <oas-button type="primary">Primary</oas-button>
+  <oas-button type="success">Success</oas-button>
+  <oas-button type="warning">Warning</oas-button>
+  <oas-button type="danger">Danger</oas-button>
+  <oas-button type="text">Text</oas-button>
 </DemoBlock>
 
 ## Sizes
 
 <DemoBlock title="Three sizes">
-  <oas-button size="small">小按钮</oas-button>
-  <oas-button size="medium">中按钮</oas-button>
-  <oas-button size="large">大按钮</oas-button>
+  <oas-button size="small">Small</oas-button>
+  <oas-button size="medium">Medium</oas-button>
+  <oas-button size="large">Large</oas-button>
 </DemoBlock>
 
 ## Disabled & Loading
 
 <DemoBlock title="Disabled and loading states">
-  <oas-button disabled>禁用</oas-button>
-  <oas-button type="primary" loading>加载中</oas-button>
-  <oas-button type="success" loading>提交中</oas-button>
+  <oas-button disabled>Disabled</oas-button>
+  <oas-button type="primary" loading>Loading</oas-button>
+  <oas-button type="success" loading>Submitting</oas-button>
 </DemoBlock>
 
 ## Events
 
 <DemoBlock title="Click event">
-  <oas-button type="primary" onoas-click="message.info('触发了 oas-click 事件')">点击我</oas-button>
+  <oas-button type="primary" onoas-click="message.info('oas-click event fired')">Click me</oas-button>
 </DemoBlock>
 
 Clicking dispatches the `oas-click` CustomEvent (bubbles + composed); `detail.originalEvent` is the native MouseEvent.
@@ -42,19 +42,19 @@ Clicking dispatches the `oas-click` CustomEvent (bubbles + composed); `detail.or
 `icon` renders an icon before the text (reusing the oas-icon icon set, `IconName`); the spacing between the icon and text follows `--oas-space-2`.
 
 <DemoBlock title="Icon + text">
-  <oas-button type="primary" icon="search">搜索</oas-button>
-  <oas-button type="success" icon="download">下载</oas-button>
-  <oas-button type="danger" icon="trash">删除</oas-button>
-  <oas-button icon="plus">新建</oas-button>
+  <oas-button type="primary" icon="search">Search</oas-button>
+  <oas-button type="success" icon="download">Download</oas-button>
+  <oas-button type="danger" icon="trash">Delete</oas-button>
+  <oas-button icon="plus">New</oas-button>
 </DemoBlock>
 
 Without text, the button becomes an equal-width square and needs an `aria-label` for an accessible name; when not set explicitly, the icon name is used as a fallback (e.g. `icon="close"` → `aria-label="close"`). It is recommended to provide an explicit label.
 
 <DemoBlock title="Icon-only buttons">
-  <oas-button type="primary" icon="check" aria-label="确认"></oas-button>
-  <oas-button icon="search" aria-label="搜索"></oas-button>
-  <oas-button type="danger" icon="trash" aria-label="删除"></oas-button>
-  <oas-button icon="heart" aria-label="收藏"></oas-button>
+  <oas-button type="primary" icon="check" aria-label="Confirm"></oas-button>
+  <oas-button icon="search" aria-label="Search"></oas-button>
+  <oas-button type="danger" icon="trash" aria-label="Delete"></oas-button>
+  <oas-button icon="heart" aria-label="Favorite"></oas-button>
 </DemoBlock>
 
 ## Block
@@ -62,8 +62,8 @@ Without text, the button becomes an equal-width square and needs an `aria-label`
 `block` makes the button fill the full width of its parent container.
 
 <DemoBlock title="Block buttons">
-  <oas-button block type="primary">块级按钮</oas-button>
-  <oas-button block type="success" icon="download">下载</oas-button>
+  <oas-button block type="primary">Block button</oas-button>
+  <oas-button block type="success" icon="download">Download</oas-button>
 </DemoBlock>
 
 ## Rounded
@@ -71,9 +71,9 @@ Without text, the button becomes an equal-width square and needs an `aria-label`
 `round` applies a pill radius (`--oas-radius-full`, falling back to `999px` when the token is unavailable).
 
 <DemoBlock title="Rounded buttons">
-  <oas-button round type="primary" icon="check">完成</oas-button>
-  <oas-button round icon="search" aria-label="搜索"></oas-button>
-  <oas-button round type="danger">取消订阅</oas-button>
+  <oas-button round type="primary" icon="check">Done</oas-button>
+  <oas-button round icon="search" aria-label="Search"></oas-button>
+  <oas-button round type="danger">Unsubscribe</oas-button>
 </DemoBlock>
 
 ## Ghost
@@ -81,11 +81,11 @@ Without text, the button becomes an equal-width square and needs an `aria-label`
 `ghost` renders a transparent background with an outline; the outline and text are colored by `type` and darken on hover.
 
 <DemoBlock title="Ghost buttons">
-  <oas-button ghost>默认幽灵</oas-button>
-  <oas-button ghost type="primary">主要幽灵</oas-button>
-  <oas-button ghost type="success">成功幽灵</oas-button>
-  <oas-button ghost type="warning">警告幽灵</oas-button>
-  <oas-button ghost type="danger" icon="trash">危险幽灵</oas-button>
+  <oas-button ghost>Default ghost</oas-button>
+  <oas-button ghost type="primary">Primary ghost</oas-button>
+  <oas-button ghost type="success">Success ghost</oas-button>
+  <oas-button ghost type="warning">Warning ghost</oas-button>
+  <oas-button ghost type="danger" icon="trash">Danger ghost</oas-button>
 </DemoBlock>
 
 ## API

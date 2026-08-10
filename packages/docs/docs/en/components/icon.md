@@ -28,8 +28,8 @@ An original linear icon set that renders inline SVGs by name; tree-shakable.
 Setting `label` exposes a readable name to screen readers.
 
 <DemoBlock title="Icons with labels">
-  <oas-icon name="info" label="提示信息" color="var(--oas-color-primary)"></oas-icon>
-  <oas-icon name="warning" label="警告" color="var(--oas-color-warning)"></oas-icon>
+  <oas-icon name="info" label="Info" color="var(--oas-color-primary)"></oas-icon>
+  <oas-icon name="warning" label="Warning" color="var(--oas-color-warning)"></oas-icon>
 </DemoBlock>
 
 ## On-demand import

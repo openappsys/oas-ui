@@ -5,8 +5,8 @@ A container that is visible to screen readers but visually hidden. Commonly used
 ## Basic usage
 
 <DemoBlock title="Visually hidden text">
-  <oas-button>提交</oas-button>
-  <oas-visually-hidden>该表单仅能提交一次，提交前请确认内容无误。</oas-visually-hidden>
+  <oas-button>Submit</oas-button>
+  <oas-visually-hidden>This form can only be submitted once. Please confirm the content is correct before submitting.</oas-visually-hidden>
 </DemoBlock>
 
 ## API

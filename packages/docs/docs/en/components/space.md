@@ -6,9 +6,9 @@ A layout container with even horizontal/vertical spacing.
 
 <DemoBlock title="Horizontal spacing">
   <oas-space>
-    <oas-button>按钮</oas-button>
-    <oas-button type="primary">按钮</oas-button>
-    <oas-button type="danger">按钮</oas-button>
+    <oas-button>Button</oas-button>
+    <oas-button type="primary">Button</oas-button>
+    <oas-button type="danger">Button</oas-button>
   </oas-space>
 </DemoBlock>
 
@@ -16,9 +16,9 @@ A layout container with even horizontal/vertical spacing.
 
 <DemoBlock title="Vertical spacing">
   <oas-space direction="vertical">
-    <oas-tag>标签一</oas-tag>
-    <oas-tag type="success">标签二</oas-tag>
-    <oas-tag type="warning">标签三</oas-tag>
+    <oas-tag>Tag 1</oas-tag>
+    <oas-tag type="success">Tag 2</oas-tag>
+    <oas-tag type="warning">Tag 3</oas-tag>
   </oas-space>
 </DemoBlock>
 
@@ -26,11 +26,11 @@ A layout container with even horizontal/vertical spacing.
 
 <DemoBlock title="Large spacing & wrapping">
   <oas-space size="large" wrap>
-    <oas-button>按钮 1</oas-button>
-    <oas-button>按钮 2</oas-button>
-    <oas-button>按钮 3</oas-button>
-    <oas-button>按钮 4</oas-button>
-    <oas-button>按钮 5</oas-button>
+    <oas-button>Button 1</oas-button>
+    <oas-button>Button 2</oas-button>
+    <oas-button>Button 3</oas-button>
+    <oas-button>Button 4</oas-button>
+    <oas-button>Button 5</oas-button>
   </oas-space>
 </DemoBlock>
 
@@ -39,11 +39,11 @@ A layout container with even horizontal/vertical spacing.
 <DemoBlock title="Cross-axis alignment">
   <oas-space align="start">
     <oas-tag>start</oas-tag>
-    <oas-button type="primary">按钮</oas-button>
+    <oas-button type="primary">Button</oas-button>
   </oas-space>
   <oas-space align="center">
     <oas-tag>center</oas-tag>
-    <oas-button type="primary">按钮</oas-button>
+    <oas-button type="primary">Button</oas-button>
   </oas-space>
 </DemoBlock>
 

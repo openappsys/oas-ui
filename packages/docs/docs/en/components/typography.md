@@ -5,35 +5,35 @@ Typography components for text, titles, and paragraphs.
 ## Text
 
 <DemoBlock title="Text types">
-  <oas-text>默认文本</oas-text>
-  <oas-text type="secondary">次要文本</oas-text>
-  <oas-text type="success">成功文本</oas-text>
-  <oas-text type="warning">警告文本</oas-text>
-  <oas-text type="danger">危险文本</oas-text>
-  <oas-text type="disabled">禁用文本</oas-text>
+  <oas-text>Default text</oas-text>
+  <oas-text type="secondary">Secondary text</oas-text>
+  <oas-text type="success">Success text</oas-text>
+  <oas-text type="warning">Warning text</oas-text>
+  <oas-text type="danger">Danger text</oas-text>
+  <oas-text type="disabled">Disabled text</oas-text>
 </DemoBlock>
 
 ## Ellipsis
 
 <DemoBlock title="Text ellipsis">
   <div style="max-width: 320px">
-    <oas-text ellipsis>这是一段很长的文本，超出宽度后将以省略号截断显示，不再换行。</oas-text>
+    <oas-text ellipsis>This is a long piece of text that will be truncated with an ellipsis once it exceeds the container width, without wrapping.</oas-text>
   </div>
 </DemoBlock>
 
 ## Copyable
 
 <DemoBlock title="Copyable text">
-  <oas-text copyable>可复制的文本内容</oas-text>
+  <oas-text copyable>Copyable text content</oas-text>
 </DemoBlock>
 
 ## Title
 
 <DemoBlock title="Heading levels">
   <div style="flex-direction: column; align-items: flex-start; display: flex">
-    <oas-title level="1">标题一</oas-title>
-    <oas-title level="2">标题二</oas-title>
-    <oas-title level="3">标题三</oas-title>
+    <oas-title level="1">Heading 1</oas-title>
+    <oas-title level="2">Heading 2</oas-title>
+    <oas-title level="3">Heading 3</oas-title>
   </div>
 </DemoBlock>
 
@@ -41,8 +41,8 @@ Typography components for text, titles, and paragraphs.
 
 <DemoBlock title="Paragraphs">
   <div style="flex-direction: column; align-items: flex-start; display: flex">
-    <oas-paragraph>段落文本一</oas-paragraph>
-    <oas-paragraph type="secondary">段落文本二</oas-paragraph>
+    <oas-paragraph>Paragraph text 1</oas-paragraph>
+    <oas-paragraph type="secondary">Paragraph text 2</oas-paragraph>
   </div>
 </DemoBlock>
 

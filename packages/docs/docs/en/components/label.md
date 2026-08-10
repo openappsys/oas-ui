@@ -5,8 +5,8 @@ A form label component. `for` points to the target control's id, and clicking fo
 ## Basic usage
 
 <DemoBlock title="Basic label">
-  <oas-label for="demo-input">姓名</oas-label>
-  <oas-input id="demo-input" placeholder="请输入姓名"></oas-input>
+  <oas-label for="demo-input">Name</oas-label>
+  <oas-input id="demo-input" placeholder="Enter your name"></oas-input>
 </DemoBlock>
 
 ## Required asterisk
@@ -14,13 +14,13 @@ A form label component. `for` points to the target control's id, and clicking fo
 `required` appends a `*` marker; `position` places the asterisk before (`before`) or after (`after`, default) the text.
 
 <DemoBlock title="Required asterisk">
-  <oas-label for="demo-required" required>邮箱</oas-label>
-  <oas-input id="demo-required" placeholder="请输入邮箱"></oas-input>
+  <oas-label for="demo-required" required>Email</oas-label>
+  <oas-input id="demo-required" placeholder="Enter your email"></oas-input>
 </DemoBlock>
 
 <DemoBlock title="Asterisk before">
-  <oas-label for="demo-before" required position="before">手机号</oas-label>
-  <oas-input id="demo-before" placeholder="请输入手机号"></oas-input>
+  <oas-label for="demo-before" required position="before">Phone number</oas-label>
+  <oas-input id="demo-before" placeholder="Enter your phone number"></oas-input>
 </DemoBlock>
 
 ## Plain text label
@@ -28,8 +28,8 @@ A form label component. `for` points to the target control's id, and clicking fo
 Without `for`, only text is rendered and clicks don't forward focus; long text wraps instead of overflowing.
 
 <DemoBlock title="Plain text & long text">
-  <oas-label>无 for 的纯文本标签</oas-label>
-  <oas-label>这是一段特别长的标签文案，用于演示长文本自动换行不溢出容器边界的效果，请保持耐心阅读。</oas-label>
+  <oas-label>Plain text label without for</oas-label>
+  <oas-label>This is an especially long label text, used to demonstrate that long text wraps automatically without overflowing the container boundary. Please be patient while reading.</oas-label>
 </DemoBlock>
 
 ## API

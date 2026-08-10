@@ -11,9 +11,9 @@ A horizontal/vertical divider that separates content.
 ## With content
 
 <DemoBlock title="Content position">
-  <oas-divider>文字</oas-divider>
-  <oas-divider content-position="left">左对齐</oas-divider>
-  <oas-divider content-position="right">右对齐</oas-divider>
+  <oas-divider>Text</oas-divider>
+  <oas-divider content-position="left">Left aligned</oas-divider>
+  <oas-divider content-position="right">Right aligned</oas-divider>
 </DemoBlock>
 
 ## Dashed
@@ -25,9 +25,9 @@ A horizontal/vertical divider that separates content.
 ## Vertical
 
 <DemoBlock title="Vertical divider">
-  <span>文本</span>
+  <span>Text</span>
   <oas-divider direction="vertical"></oas-divider>
-  <span>文本</span>
+  <span>Text</span>
 </DemoBlock>
 
 ## API

@@ -6,9 +6,9 @@ Button group: combines multiple `oas-button` elements into a value-selection gro
 
 <DemoBlock title="Basic button group">
   <oas-button-group>
-    <oas-button value="1">一月</oas-button>
-    <oas-button value="2">二月</oas-button>
-    <oas-button value="3">三月</oas-button>
+    <oas-button value="1">January</oas-button>
+    <oas-button value="2">February</oas-button>
+    <oas-button value="3">March</oas-button>
   </oas-button-group>
 </DemoBlock>
 
@@ -18,9 +18,9 @@ Button group: combines multiple `oas-button` elements into a value-selection gro
 
 <DemoBlock title="Type & size passthrough">
   <oas-button-group type="primary" size="large">
-    <oas-button value="a">左</oas-button>
-    <oas-button value="b">中</oas-button>
-    <oas-button value="c">右</oas-button>
+    <oas-button value="a">Left</oas-button>
+    <oas-button value="b">Middle</oas-button>
+    <oas-button value="c">Right</oas-button>
   </oas-button-group>
 </DemoBlock>
 
@@ -29,10 +29,10 @@ Button group: combines multiple `oas-button` elements into a value-selection gro
 Declare the current selection with `value`; clicking dispatches `oas-change` with `detail: { value }`.
 
 <DemoBlock title="Single-select group">
-  <oas-button-group value="b" onoas-change="message.info('选中：' + event.detail.value)">
-    <oas-button value="a">选项 A</oas-button>
-    <oas-button value="b">选项 B</oas-button>
-    <oas-button value="c">选项 C</oas-button>
+  <oas-button-group value="b" onoas-change="message.info('Selected: ' + event.detail.value)">
+    <oas-button value="a">Option A</oas-button>
+    <oas-button value="b">Option B</oas-button>
+    <oas-button value="c">Option C</oas-button>
   </oas-button-group>
 </DemoBlock>
 
@@ -42,9 +42,9 @@ Add `multiple` to enable multi-select; `value` uses comma-separated selected val
 
 <DemoBlock title="Multi-select group">
   <oas-button-group multiple value="a,c">
-    <oas-button value="a">标签 A</oas-button>
-    <oas-button value="b">标签 B</oas-button>
-    <oas-button value="c">标签 C</oas-button>
+    <oas-button value="a">Tag A</oas-button>
+    <oas-button value="b">Tag B</oas-button>
+    <oas-button value="c">Tag C</oas-button>
   </oas-button-group>
 </DemoBlock>
 
@@ -53,13 +53,13 @@ Add `multiple` to enable multi-select; `value` uses comma-separated selected val
 `aria-label` gives the button group container an accessible name, letting screen readers announce it as a single focusable group; when unset, the built-in i18n label "button group" is used. When multiple groups exist on a page, use names to distinguish them.
 
 <DemoBlock title="aria-label accessible name">
-  <oas-button-group aria-label="视图切换" value="list">
-    <oas-button value="list">列表视图</oas-button>
-    <oas-button value="grid">网格视图</oas-button>
+  <oas-button-group aria-label="View switch" value="list">
+    <oas-button value="list">List view</oas-button>
+    <oas-button value="grid">Grid view</oas-button>
   </oas-button-group>
-  <oas-button-group aria-label="结果导出" value="csv">
-    <oas-button value="csv">导出 CSV</oas-button>
-    <oas-button value="pdf">导出 PDF</oas-button>
+  <oas-button-group aria-label="Export results" value="csv">
+    <oas-button value="csv">Export CSV</oas-button>
+    <oas-button value="pdf">Export PDF</oas-button>
   </oas-button-group>
 </DemoBlock>
 
@@ -67,9 +67,9 @@ Add `multiple` to enable multi-select; `value` uses comma-separated selected val
 
 <DemoBlock title="Vertical button group">
   <oas-button-group vertical>
-    <oas-button value="up">置顶</oas-button>
-    <oas-button value="mid">置中</oas-button>
-    <oas-button value="down">置底</oas-button>
+    <oas-button value="up">Top</oas-button>
+    <oas-button value="mid">Middle</oas-button>
+    <oas-button value="down">Bottom</oas-button>
   </oas-button-group>
 </DemoBlock>
 
@@ -79,13 +79,13 @@ Add `multiple` to enable multi-select; `value` uses comma-separated selected val
 
 <DemoBlock title="Disabled & mixed">
   <oas-button-group disabled>
-    <oas-button value="1">已禁用</oas-button>
-    <oas-button value="2">已禁用</oas-button>
+    <oas-button value="1">Disabled</oas-button>
+    <oas-button value="2">Disabled</oas-button>
   </oas-button-group>
   <oas-button-group>
-    <oas-button value="save">保存</oas-button>
-    <oas-button value="delete" type="danger">删除</oas-button>
-    <oas-button>更多操作</oas-button>
+    <oas-button value="save">Save</oas-button>
+    <oas-button value="delete" type="danger">Delete</oas-button>
+    <oas-button>More actions</oas-button>
   </oas-button-group>
 </DemoBlock>
 
