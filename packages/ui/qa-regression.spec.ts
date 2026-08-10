@@ -299,3 +299,42 @@ test('select multiple：chip 结构完整（label + 移除按钮）且样式不�
   expect(r.height).toBe('20px')
   expect(r.gap).toBe('4px')
 })
+
+test('date-picker / time-picker 面板贴输入框下方（:host 为定位祖先）', async ({ page }) => {
+  // 曾现 bug：:host 缺 position: relative，[part=dropdown] 的 absolute 定位基准逃逸出 shadow，
+  // top: calc(100% + 4px) 相对页面底部定位，面板掉到页面底部。
+  // 修复：:host 补 position: relative；本测试锁定「dropdown 有定位祖先」不变量。
+  for (const name of ['date-picker', 'time-picker'] as const) {
+    await page.goto(`/components/${name}.html`, { waitUntil: 'domcontentloaded' })
+    await up(page, `oas-${name}`)
+    const host = page.locator(`oas-${name}`).first()
+    await host.locator('[part="trigger"]').click()
+    await page.waitForFunction(
+      (sel) =>
+        document.querySelector(sel)?.shadowRoot
+          ?.querySelector('[part="dropdown"]')
+          ?.classList.contains('open'),
+      `oas-${name}`,
+      { timeout: 5000 },
+    )
+    const r = await host.evaluate((el) => {
+      const root = el.shadowRoot!
+      const dropdown = root.querySelector<HTMLElement>('[part="dropdown"]')!
+      const trigger = root.querySelector<HTMLElement>('[part="trigger"]')!
+      const d = dropdown.getBoundingClientRect()
+      const t = trigger.getBoundingClientRect()
+      return {
+        hostPosition: getComputedStyle(el).position,
+        offsetParentIsHost: dropdown.offsetParent === el,
+        dropdownTop: d.top,
+        triggerBottom: t.bottom,
+      }
+    })
+    expect(r.hostPosition, `${name} :host 应为定位祖先`).toBe('relative')
+    expect(r.offsetParentIsHost, `${name} dropdown 定位基准应是 host`).toBe(true)
+    expect(
+      r.dropdownTop - r.triggerBottom,
+      `${name} 面板应贴住输入框下方（top: calc(100% + 4px)）`,
+    ).toBeCloseTo(4, 1)
+  }
+})

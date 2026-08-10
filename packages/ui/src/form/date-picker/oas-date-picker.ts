@@ -32,6 +32,7 @@ function pad(v: number): string {
 const STYLE = `
 :host {
   display: inline-block;
+  position: relative;
   font-family: inherit;
   width: 220px;
 }

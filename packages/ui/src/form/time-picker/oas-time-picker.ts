@@ -4,6 +4,7 @@ import { formatToken, resolveLocale } from '../calendar/date-grid.js'
 const STYLE = `
 :host {
   display: inline-block;
+  position: relative;
   font-family: inherit;
   width: 180px;
 }
