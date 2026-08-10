@@ -33,7 +33,7 @@ Values beyond `min` / `max` are clamped; the corresponding stepper button is aut
 ## Accessible Name (label)
 
 <DemoBlock title="label (accessible name)">
-  <oas-input-number id="num-label" label="商品数量" value="3" style="width: 160px"></oas-input-number>
+  <oas-input-number id="num-label" label="Item quantity" value="3" style="width: 160px"></oas-input-number>
   <oas-input-number id="num-label-default" value="5" style="width: 160px"></oas-input-number>
   <span id="num-label-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 280px"></span>
 </DemoBlock>
@@ -58,7 +58,7 @@ onMounted(() => {
     out.textContent = `oas-change: ${e.detail.value}`
   })
 
-  // label（可访问名称）demo：等组件升级后读取内层 input 的 aria-label
+  // label (accessible name) demo: read the inner input's aria-label after the component upgrades
   const numLabelSet = document.getElementById('num-label')
   const numLabelFallback = document.getElementById('num-label-default')
   const numLabelOut = document.getElementById('num-label-output')
@@ -66,7 +66,7 @@ onMounted(() => {
     const a = numLabelSet?.shadowRoot?.querySelector('input')?.getAttribute('aria-label')
     const b = numLabelFallback?.shadowRoot?.querySelector('input')?.getAttribute('aria-label')
     if (a !== undefined && b !== undefined) {
-      numLabelOut.textContent = `aria-label：设置「${a}」 / 回退「${b}」`
+      numLabelOut.textContent = `aria-label: set "${a}" / fallback "${b}"`
     } else {
       setTimeout(readNumLabel, 60)
     }

@@ -11,7 +11,7 @@ A filterable single-select combobox whose input is the control: **an always-visi
 ## Basic Usage
 
 <DemoBlock title="Basic usage">
-  <oas-combobox placeholder="输入或选择" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"}]'></oas-combobox>
+  <oas-combobox placeholder="Type or select" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"}]'></oas-combobox>
 </DemoBlock>
 
 Click/focus to open the dropdown; typing filters in real time (`filterable` is enabled by default, substring-matching the label); `↑`/`↓` move the highlight, `Enter` selects, `Esc` closes.
@@ -19,7 +19,7 @@ Click/focus to open the dropdown; typing filters in real time (`filterable` is e
 ## Preset Value (controlled)
 
 <DemoBlock title="Preset value (controlled)">
-  <oas-combobox value="banana" placeholder="已选中的值" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-combobox>
+  <oas-combobox value="banana" placeholder="Selected value" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-combobox>
 </DemoBlock>
 
 `value` is a controlled property: it is written back after selection; externally changing the property also immediately reflects in the input's label.
@@ -27,9 +27,9 @@ Click/focus to open the dropdown; typing filters in real time (`filterable` is e
 ## Externally Controlled Value
 
 <DemoBlock title="External controlled value">
-  <oas-combobox id="cb-controlled" placeholder="点击按钮外部设值" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-combobox>
-  <oas-button id="cb-set-apple" size="small">设为 苹果</oas-button>
-  <oas-button id="cb-clear-value" size="small">清空 value</oas-button>
+  <oas-combobox id="cb-controlled" placeholder="Set value externally via button" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-combobox>
+  <oas-button id="cb-set-apple" size="small">Set to Apple</oas-button>
+  <oas-button id="cb-clear-value" size="small">Clear value</oas-button>
 </DemoBlock>
 
 In controlled mode, the host can drive the component display via the `value` attribute at any time:
@@ -37,7 +37,7 @@ In controlled mode, the host can drive the component display via the `value` att
 ## Filtering & Blur Boundaries
 
 <DemoBlock title="Input filtering + blur fallback">
-  <oas-combobox value="apple" placeholder="输入后失焦会自动回退" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"},{"label":"西瓜","value":"watermelon"}]'></oas-combobox>
+  <oas-combobox value="apple" placeholder="Falls back automatically on blur after typing" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"},{"label":"Watermelon","value":"watermelon"}]'></oas-combobox>
 </DemoBlock>
 
 If you type without selecting and then blur/press `Esc`, the input falls back to the currently selected label (non-destructive by default — the selected value is not lost).
@@ -45,7 +45,7 @@ If you type without selecting and then blur/press `Esc`, the input falls back to
 ## Not Filterable
 
 <DemoBlock title='Filtering disabled (filterable="false")'>
-  <oas-combobox filterable="false" placeholder="输入不过滤，仅键盘选择" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-combobox>
+  <oas-combobox filterable="false" placeholder="No filtering on typing, select via keyboard only" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-combobox>
 </DemoBlock>
 
 With `filterable="false"`, typing no longer filters options; select only via keyboard `↑`/`↓` + `Enter` or mouse.
@@ -53,7 +53,7 @@ With `filterable="false"`, typing no longer filters options; select only via key
 ## Clearable
 
 <DemoBlock title="Clearable">
-  <oas-combobox clearable value="apple" placeholder="可清空" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-combobox>
+  <oas-combobox clearable value="apple" placeholder="Clearable" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-combobox>
 </DemoBlock>
 
 When a value is selected, a clear button appears; clicking clears `value` and dispatches `oas-clear` and `oas-change`.
@@ -61,7 +61,7 @@ When a value is selected, a clear button appears; clicking clears `value` and di
 ## Loading
 
 <DemoBlock title="Loading">
-  <oas-combobox loading placeholder="聚焦查看加载占位" options='[]'></oas-combobox>
+  <oas-combobox loading placeholder="Focus to see the loading placeholder" options='[]'></oas-combobox>
 </DemoBlock>
 
 While `loading`, the dropdown shows a "加载中…" placeholder (the host sets it during remote data requests).
@@ -69,7 +69,7 @@ While `loading`, the dropdown shows a "加载中…" placeholder (the host sets 
 ## Empty State
 
 <DemoBlock title="No options (empty)">
-  <oas-combobox placeholder="暂无选项" options='[]'></oas-combobox>
+  <oas-combobox placeholder="No options" options='[]'></oas-combobox>
 </DemoBlock>
 
 When options are empty, the dropdown shows "暂无选项"; when filtering yields no match, "无匹配选项" is shown.
@@ -77,13 +77,13 @@ When options are empty, the dropdown shows "暂无选项"; when filtering yields
 ## Disabled
 
 <DemoBlock title="Disabled">
-  <oas-combobox disabled value="apple" placeholder="禁用" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-combobox>
+  <oas-combobox disabled value="apple" placeholder="Disabled" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-combobox>
 </DemoBlock>
 
 ## Events
 
 <DemoBlock title="Event output">
-  <oas-combobox id="cb-event" clearable placeholder="输入或选择" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-combobox>
+  <oas-combobox id="cb-event" clearable placeholder="Type or select" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-combobox>
   <span id="cb-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
 </DemoBlock>
 
@@ -101,7 +101,7 @@ onMounted(() => {
   el?.addEventListener('oas-change', (e) => set('oas-change', e))
   el?.addEventListener('oas-clear', (e) => set('oas-clear', e))
 
-  // 受控设值 demo：宿主外部驱动 value 属性
+  // controlled value demo: the host drives the value attribute externally
   const controlled = document.getElementById('cb-controlled')
   document.getElementById('cb-set-apple')?.addEventListener('click', () => {
     controlled?.setAttribute('value', 'apple')

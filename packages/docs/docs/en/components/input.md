@@ -5,25 +5,25 @@ An enhanced base input built on the native `<input>` element.
 ## Basic Usage
 
 <DemoBlock title="Basic usage">
-  <oas-input placeholder="请输入内容" style="width: 240px"></oas-input>
+  <oas-input placeholder="Please enter content" style="width: 240px"></oas-input>
 </DemoBlock>
 
 ## Accessible Name (label)
 
 <DemoBlock title="label (accessible name)">
-  <oas-input id="input-label-set" label="登录邮箱" placeholder="name@example.com" style="width: 240px"></oas-input>
-  <oas-input id="input-label" placeholder="无 label，回退占位文本" style="width: 240px"></oas-input>
+  <oas-input id="input-label-set" label="Login email" placeholder="name@example.com" style="width: 240px"></oas-input>
+  <oas-input id="input-label" placeholder="No label, falls back to placeholder" style="width: 240px"></oas-input>
   <span id="input-label-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 260px"></span>
 </DemoBlock>
 
-`label` serves as the accessible name (`aria-label`) source for the input, announced by screen readers. When `label` is not set, it falls back to `placeholder` → built-in text "输入框"; once set (e.g. "登录邮箱"), it overrides the fallback chain.
+`label` serves as the accessible name (`aria-label`) source for the input, announced by screen readers. When `label` is not set, it falls back to `placeholder` → built-in text "输入框"; once set (e.g. "Login email"), it overrides the fallback chain.
 
 ## Types
 
 <DemoBlock title="type">
-  <oas-input type="password" placeholder="密码" style="width: 240px"></oas-input>
-  <oas-input type="number" placeholder="数字" style="width: 240px"></oas-input>
-  <oas-input type="email" placeholder="邮箱" style="width: 240px"></oas-input>
+  <oas-input type="password" placeholder="Password" style="width: 240px"></oas-input>
+  <oas-input type="number" placeholder="Number" style="width: 240px"></oas-input>
+  <oas-input type="email" placeholder="Email" style="width: 240px"></oas-input>
 </DemoBlock>
 
 `type` is passed through to the native input type, supporting `text` / `password` / `number` / `email`, etc.
@@ -31,7 +31,7 @@ An enhanced base input built on the native `<input>` element.
 ## Password Visibility Toggle
 
 <DemoBlock title="show-password">
-  <oas-input type="password" show-password placeholder="密码" value="oasis123" style="width: 240px"></oas-input>
+  <oas-input type="password" show-password placeholder="Password" value="oasis123" style="width: 240px"></oas-input>
 </DemoBlock>
 
 With `show-password` and `type="password"`, an eye button is rendered on the right side of the input; clicking toggles between plaintext and masked text. The button has an `aria-label` (locale text), `aria-pressed`, and a focus ring when focused.
@@ -39,7 +39,7 @@ With `show-password` and `type="password"`, an eye button is rendered on the rig
 ## Clearable
 
 <DemoBlock title="clearable">
-  <oas-input clearable value="有内容时可一键清空" style="width: 240px"></oas-input>
+  <oas-input clearable value="One-click clear when there is content" style="width: 240px"></oas-input>
 </DemoBlock>
 
 When there is content and `clearable` is set, a clear button is shown; clicking clears the value, refocuses, and dispatches `oas-clear`.
@@ -47,16 +47,16 @@ When there is content and `clearable` is set, a clear button is shown; clicking 
 ## Disabled & Readonly
 
 <DemoBlock title="disabled / readonly">
-  <oas-input disabled placeholder="禁用" style="width: 240px"></oas-input>
-  <oas-input readonly value="只读内容" style="width: 240px"></oas-input>
+  <oas-input disabled placeholder="Disabled" style="width: 240px"></oas-input>
+  <oas-input readonly value="Read-only content" style="width: 240px"></oas-input>
 </DemoBlock>
 
 ## Addons
 
 <DemoBlock title="addon-before / addon-after">
-  <oas-input addon-before="http://" placeholder="域名" style="width: 240px"></oas-input>
-  <oas-input addon-after="元" placeholder="金额" style="width: 240px"></oas-input>
-  <oas-input addon-before="¥" addon-after="/人" placeholder="单价" style="width: 240px"></oas-input>
+  <oas-input addon-before="http://" placeholder="Domain" style="width: 240px"></oas-input>
+  <oas-input addon-after="USD" placeholder="Amount" style="width: 240px"></oas-input>
+  <oas-input addon-before="¥" addon-after="/person" placeholder="Unit price" style="width: 240px"></oas-input>
 </DemoBlock>
 
 `addon-before` / `addon-after` render external addon text blocks (e.g. units, domains) outside the input, going through dedicated `::part(prepend)` / `::part(append)` parts; addons are greyed out when disabled.
@@ -64,8 +64,8 @@ When there is content and `clearable` is set, a clear button is shown; clicking 
 ## Icons
 
 <DemoBlock title="prefix-icon / suffix-icon">
-  <oas-input prefix-icon="search" placeholder="搜索" style="width: 240px"></oas-input>
-  <oas-input suffix-icon="eye" placeholder="密码" type="password" style="width: 240px"></oas-input>
+  <oas-input prefix-icon="search" placeholder="Search" style="width: 240px"></oas-input>
+  <oas-input suffix-icon="eye" placeholder="Password" type="password" style="width: 240px"></oas-input>
 </DemoBlock>
 
 `prefix-icon` / `suffix-icon` accept icon names (from `@oas-ui/icons` iconRegistry) and inline-render decorative SVG icons.
@@ -74,7 +74,7 @@ When there is content and `clearable` is set, a clear button is shown; clicking 
 
 <DemoBlock title="prefix / suffix + clearable">
   <oas-input prefix="$" suffix=".00" clearable value="1280" style="width: 240px"></oas-input>
-  <oas-input suffix-icon="chevron-down" clearable value="可清空带图标" style="width: 240px"></oas-input>
+  <oas-input suffix-icon="chevron-down" clearable value="Clearable with icon" style="width: 240px"></oas-input>
 </DemoBlock>
 
 `prefix` / `suffix` are inline text inside the input and can coexist with `clearable`, icons, and addons without conflicts.
@@ -82,8 +82,8 @@ When there is content and `clearable` is set, a clear button is shown; clicking 
 ## Character Count
 
 <DemoBlock title="show-count + maxlength">
-  <oas-input show-count maxlength="10" placeholder="最多输入 10 个字" style="width: 240px"></oas-input>
-  <oas-input show-count value="无长度限制" style="width: 240px"></oas-input>
+  <oas-input show-count maxlength="10" placeholder="Up to 10 characters" style="width: 240px"></oas-input>
+  <oas-input show-count value="No length limit" style="width: 240px"></oas-input>
 </DemoBlock>
 
 `show-count` displays a character counter at the bottom-right of the input: with `maxlength` it shows `current/maxlength`, without it just the current length; `maxlength` is also passed through to the native input to limit input length. When the limit is exceeded, the counter number turns danger-colored.
@@ -91,7 +91,7 @@ When there is content and `clearable` is set, a clear button is shown; clicking 
 ## Enter Submit Event
 
 <DemoBlock title="oas-enter">
-  <oas-input id="input-enter" placeholder="输入后按回车" style="width: 240px"></oas-input>
+  <oas-input id="input-enter" placeholder="Type then press Enter" style="width: 240px"></oas-input>
   <span id="enter-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 160px"></span>
 </DemoBlock>
 
@@ -100,7 +100,7 @@ Pressing Enter while typing (not an IME composition commit) dispatches `oas-ente
 ## Events
 
 <DemoBlock title="Input and clear events">
-  <oas-input id="input-event" clearable placeholder="输入或点击清除" style="width: 240px"></oas-input>
+  <oas-input id="input-event" clearable placeholder="Type or click to clear" style="width: 240px"></oas-input>
   <span id="input-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 160px"></span>
 </DemoBlock>
 
@@ -123,7 +123,7 @@ onMounted(() => {
     enterOut.textContent = `oas-enter: ${e.detail.value}`
   })
 
-  // label（可访问名称）demo：等组件升级后读取内层 input 的 aria-label
+  // label (accessible name) demo: read the inner input's aria-label after the component upgrades
   const labelSet = document.getElementById('input-label-set')
   const labelFallback = document.getElementById('input-label')
   const labelOut = document.getElementById('input-label-output')
@@ -131,7 +131,7 @@ onMounted(() => {
     const a = labelSet?.shadowRoot?.querySelector('input')?.getAttribute('aria-label')
     const b = labelFallback?.shadowRoot?.querySelector('input')?.getAttribute('aria-label')
     if (a !== undefined && b !== undefined) {
-      labelOut.textContent = `aria-label：设置「${a}」 / 回退「${b}」`
+      labelOut.textContent = `aria-label: set "${a}" / fallback "${b}"`
     } else {
       setTimeout(readLabel, 60)
     }

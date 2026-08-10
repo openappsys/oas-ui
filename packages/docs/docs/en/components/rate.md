@@ -33,7 +33,7 @@ Set the number of stars via `max`.
   </div>
   <div style="display: flex; align-items: center; gap: var(--oas-space-3); margin-top: var(--oas-space-2); flex-wrap: wrap;">
     <oas-rate value="4" allow-clear="false"></oas-rate>
-    <span style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">allow-clear="false"：点已选中的星不清空</span>
+    <span style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">allow-clear="false": clicking the selected star does not clear</span>
   </div>
 </DemoBlock>
 

@@ -6,15 +6,15 @@ An enhanced native `<input type="checkbox">` supporting indeterminate state and 
 
 <DemoBlock title="Basic usage">
   <oas-space>
-    <oas-checkbox checked>已勾选</oas-checkbox>
-    <oas-checkbox>未勾选</oas-checkbox>
+    <oas-checkbox checked>Checked</oas-checkbox>
+    <oas-checkbox>Unchecked</oas-checkbox>
   </oas-space>
 </DemoBlock>
 
 ## Indeterminate State
 
 <DemoBlock title="Indeterminate">
-  <oas-checkbox indeterminate>半选状态</oas-checkbox>
+  <oas-checkbox indeterminate>Indeterminate</oas-checkbox>
 </DemoBlock>
 
 Use it with select-all linkage scenarios (see the example below) to express "partially selected".
@@ -23,8 +23,8 @@ Use it with select-all linkage scenarios (see the example below) to express "par
 
 <DemoBlock title="Disabled">
   <oas-space>
-    <oas-checkbox disabled checked>已选且禁用</oas-checkbox>
-    <oas-checkbox disabled>未选且禁用</oas-checkbox>
+    <oas-checkbox disabled checked>Checked & disabled</oas-checkbox>
+    <oas-checkbox disabled>Unchecked & disabled</oas-checkbox>
   </oas-space>
 </DemoBlock>
 
@@ -32,10 +32,10 @@ Use it with select-all linkage scenarios (see the example below) to express "par
 
 <DemoBlock title="Checkbox group">
   <oas-checkbox-group value='["a"]'>
-    <span slot="label">水果（可选多个）</span>
-    <oas-checkbox value="a">苹果</oas-checkbox>
-    <oas-checkbox value="b">香蕉</oas-checkbox>
-    <oas-checkbox value="c">橙子</oas-checkbox>
+    <span slot="label">Fruits (multiple selectable)</span>
+    <oas-checkbox value="a">Apple</oas-checkbox>
+    <oas-checkbox value="b">Banana</oas-checkbox>
+    <oas-checkbox value="c">Orange</oas-checkbox>
   </oas-checkbox-group>
 </DemoBlock>
 
@@ -46,10 +46,10 @@ The group is controlled via `value` (a JSON array); each item's `value` acts as 
 <DemoBlock title="Select-all & indeterminate linkage">
   <div id="cb-wrap">
     <oas-space>
-      <oas-checkbox id="cb-all">全选</oas-checkbox>
-      <oas-checkbox value="a">苹果</oas-checkbox>
-      <oas-checkbox value="b">香蕉</oas-checkbox>
-      <oas-checkbox value="c">橙子</oas-checkbox>
+      <oas-checkbox id="cb-all">Select all</oas-checkbox>
+      <oas-checkbox value="a">Apple</oas-checkbox>
+      <oas-checkbox value="b">Banana</oas-checkbox>
+      <oas-checkbox value="c">Orange</oas-checkbox>
     </oas-space>
   </div>
 </DemoBlock>
@@ -58,9 +58,9 @@ The group is controlled via `value` (a JSON array); each item's `value` acts as 
 
 <DemoBlock title="Selection events">
   <oas-checkbox-group id="cbg-event" value='["a"]'>
-    <oas-checkbox value="a">苹果</oas-checkbox>
-    <oas-checkbox value="b">香蕉</oas-checkbox>
-    <oas-checkbox value="c">橙子</oas-checkbox>
+    <oas-checkbox value="a">Apple</oas-checkbox>
+    <oas-checkbox value="b">Banana</oas-checkbox>
+    <oas-checkbox value="c">Orange</oas-checkbox>
   </oas-checkbox-group>
   <span id="cbg-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 180px"></span>
 </DemoBlock>

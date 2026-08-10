@@ -23,9 +23,9 @@ A switch button with `role="switch"`.
 `checked-text` / `unchecked-text` render labels on the switch: at medium/large sizes they appear inside the track on the side opposite the thumb; at `size="small"` the labels move outside the switch.
 
 <DemoBlock title="Switch labels">
-  <oas-switch checked-text="开" unchecked-text="关"></oas-switch>
-  <oas-switch checked checked-text="已开启" unchecked-text="已关闭"></oas-switch>
-  <oas-switch size="small" checked-text="开" unchecked-text="关"></oas-switch>
+  <oas-switch checked-text="On" unchecked-text="Off"></oas-switch>
+  <oas-switch checked checked-text="Enabled" unchecked-text="Disabled"></oas-switch>
+  <oas-switch size="small" checked-text="On" unchecked-text="Off"></oas-switch>
 </DemoBlock>
 
 ## Sizes
@@ -44,7 +44,7 @@ A switch button with `role="switch"`.
 
 <DemoBlock title="Custom color">
   <oas-switch checked color="#16a34a"></oas-switch>
-  <oas-switch checked color="#dc2626" checked-text="危险开" unchecked-text="危险关"></oas-switch>
+  <oas-switch checked color="#dc2626" checked-text="Danger on" unchecked-text="Danger off"></oas-switch>
 </DemoBlock>
 
 ## Events

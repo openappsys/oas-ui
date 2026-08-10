@@ -5,8 +5,8 @@ An enhanced native `<input type="radio">` supporting radio groups and controlled
 ## Basic Usage
 
 <DemoBlock title="Basic usage">
-  <oas-radio name="demo-basic" checked>选项一</oas-radio>
-  <oas-radio name="demo-basic">选项二</oas-radio>
+  <oas-radio name="demo-basic" checked>Option 1</oas-radio>
+  <oas-radio name="demo-basic">Option 2</oas-radio>
 </DemoBlock>
 
 Radios sharing the same `name` are mutually exclusive (the component syncs across Shadow DOM); without `name`, each is independent — use the same `name` or `oas-radio-group` for mutual exclusion.
@@ -15,10 +15,10 @@ Radios sharing the same `name` are mutually exclusive (the component syncs acros
 
 <DemoBlock title="Radio group">
   <oas-radio-group value="wechat">
-    <span slot="label">选择支付方式</span>
-    <oas-radio value="wechat">微信支付</oas-radio>
-    <oas-radio value="alipay">支付宝</oas-radio>
-    <oas-radio value="card">银行卡</oas-radio>
+    <span slot="label">Choose a payment method</span>
+    <oas-radio value="wechat">WeChat Pay</oas-radio>
+    <oas-radio value="alipay">Alipay</oas-radio>
+    <oas-radio value="card">Bank card</oas-radio>
   </oas-radio-group>
 </DemoBlock>
 
@@ -27,9 +27,9 @@ The group is controlled via `value`; each item's `value` acts as the option iden
 ## Single-item Disabled
 
 <DemoBlock title="Single disabled">
-  <oas-radio name="radio-item-disabled" checked>可选</oas-radio>
-  <oas-radio name="radio-item-disabled" disabled>已禁用</oas-radio>
-  <oas-radio name="radio-item-disabled" disabled checked>禁用且选中</oas-radio>
+  <oas-radio name="radio-item-disabled" checked>Selectable</oas-radio>
+  <oas-radio name="radio-item-disabled" disabled>Disabled</oas-radio>
+  <oas-radio name="radio-item-disabled" disabled checked>Disabled & selected</oas-radio>
 </DemoBlock>
 
 Item-level `disabled` only disables that item: not clickable, not focusable (native disabled semantics), other items in the group are unaffected; disable the whole group via `oas-radio-group`'s `disabled` (see below).
@@ -38,9 +38,9 @@ Item-level `disabled` only disables that item: not clickable, not focusable (nat
 
 <DemoBlock title="Disabled">
   <oas-radio-group disabled value="a">
-    <oas-radio value="a">已选且禁用</oas-radio>
-    <oas-radio value="b">禁用</oas-radio>
-    <oas-radio value="c">禁用</oas-radio>
+    <oas-radio value="a">Selected & disabled</oas-radio>
+    <oas-radio value="b">Disabled</oas-radio>
+    <oas-radio value="c">Disabled</oas-radio>
   </oas-radio-group>
 </DemoBlock>
 
@@ -48,9 +48,9 @@ Item-level `disabled` only disables that item: not clickable, not focusable (nat
 
 <DemoBlock title="Change events">
   <oas-radio-group id="radio-event" value="a">
-    <oas-radio value="a">选项 A</oas-radio>
-    <oas-radio value="b">选项 B</oas-radio>
-    <oas-radio value="c">选项 C</oas-radio>
+    <oas-radio value="a">Option A</oas-radio>
+    <oas-radio value="b">Option B</oas-radio>
+    <oas-radio value="c">Option C</oas-radio>
   </oas-radio-group>
   <span id="radio-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 120px"></span>
 </DemoBlock>

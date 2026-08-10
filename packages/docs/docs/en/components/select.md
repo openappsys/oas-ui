@@ -5,19 +5,19 @@ A dropdown selector supporting single/multiple selection, groups, clearable, rem
 ## Single Select
 
 <DemoBlock title="Single select">
-  <oas-select placeholder="请选择水果" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"}]'></oas-select>
+  <oas-select placeholder="Select a fruit" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"}]'></oas-select>
 </DemoBlock>
 
 ## Preset Value
 
 <DemoBlock title="Preset value">
-  <oas-select value="banana" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-select>
+  <oas-select value="banana" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-select>
 </DemoBlock>
 
 ## Multiple Select
 
 <DemoBlock title="Multiple">
-  <oas-select multiple value='["apple","banana"]' placeholder="可多选" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"}]'></oas-select>
+  <oas-select multiple value='["apple","banana"]' placeholder="Multiple" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"}]'></oas-select>
 </DemoBlock>
 
 In multiple mode `value` is a JSON array; selected items are shown as tags that can be removed individually.
@@ -25,13 +25,13 @@ In multiple mode `value` is a JSON array; selected items are shown as tags that 
 ## Disabled
 
 <DemoBlock title="Disabled">
-  <oas-select disabled value="apple" placeholder="禁用" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"}]'></oas-select>
+  <oas-select disabled value="apple" placeholder="Disabled" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"}]'></oas-select>
 </DemoBlock>
 
 ## Empty State
 
 <DemoBlock title="No data">
-  <oas-select placeholder="暂无选项" options='[]'></oas-select>
+  <oas-select placeholder="No options" options='[]'></oas-select>
 </DemoBlock>
 
 When options are empty, the dropdown shows "暂无数据".
@@ -39,7 +39,7 @@ When options are empty, the dropdown shows "暂无数据".
 ## Searchable
 
 <DemoBlock title="Searchable">
-  <oas-select searchable placeholder="输入关键词过滤" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"},{"label":"西瓜","value":"watermelon"}]'></oas-select>
+  <oas-select searchable placeholder="Type a keyword to filter" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"},{"label":"Watermelon","value":"watermelon"}]'></oas-select>
 </DemoBlock>
 
 Once opened, you can type directly to filter; when nothing matches, "无匹配选项" is shown.
@@ -47,11 +47,11 @@ Once opened, you can type directly to filter; when nothing matches, "无匹配�
 ## Groups
 
 <DemoBlock title="Grouped">
-  <oas-select placeholder="按组浏览" options='[{"group":"温带水果","label":"苹果","value":"apple"},{"group":"温带水果","label":"梨","value":"pear"},{"group":"热带水果","label":"香蕉","value":"banana"},{"group":"热带水果","label":"芒果","value":"mango"},{"label":"其他","value":"other"}]'></oas-select>
+  <oas-select placeholder="Browse by group" options='[{"group":"Temperate fruits","label":"Apple","value":"apple"},{"group":"Temperate fruits","label":"Pear","value":"pear"},{"group":"Tropical fruits","label":"Banana","value":"banana"},{"group":"Tropical fruits","label":"Mango","value":"mango"},{"label":"Other","value":"other"}]'></oas-select>
 </DemoBlock>
 
 <DemoBlock title="Grouped multiple">
-  <oas-select multiple placeholder="分组多选" options='[{"group":"温带水果","label":"苹果","value":"apple"},{"group":"温带水果","label":"梨","value":"pear"},{"group":"热带水果","label":"香蕉","value":"banana"},{"group":"热带水果","label":"芒果","value":"mango"}]'></oas-select>
+  <oas-select multiple placeholder="Grouped multiple" options='[{"group":"Temperate fruits","label":"Apple","value":"apple"},{"group":"Temperate fruits","label":"Pear","value":"pear"},{"group":"Tropical fruits","label":"Banana","value":"banana"},{"group":"Tropical fruits","label":"Mango","value":"mango"}]'></oas-select>
 </DemoBlock>
 
 Options carrying a `group` field are rendered under a group title (not selectable), with items indented; keyboard `↑`/`↓` navigates continuously across groups.
@@ -59,8 +59,8 @@ Options carrying a `group` field are rendered under a group title (not selectabl
 ## Clearable
 
 <DemoBlock title="Clearable">
-  <oas-select clearable value="apple" placeholder="可清空" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-select>
-  <oas-select clearable multiple value='["apple","banana"]' placeholder="多选可清空" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-select>
+  <oas-select clearable value="apple" placeholder="Clearable" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-select>
+  <oas-select clearable multiple value='["apple","banana"]' placeholder="Multiple, clearable" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-select>
 </DemoBlock>
 
 When a value is selected, a clear button appears; clicking clears the value and dispatches `oas-clear` and `oas-change`.
@@ -68,20 +68,20 @@ When a value is selected, a clear button appears; clicking clears the value and 
 ## Remote Search
 
 <DemoBlock title="Remote search (remote + loading)">
-  <oas-select id="select-remote" remote searchable placeholder="输入关键词模拟远程搜索" options='[]'></oas-select>
+  <oas-select id="select-remote" remote searchable placeholder="Type a keyword to simulate remote search" options='[]'></oas-select>
   <span id="select-remote-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 180px"></span>
 </DemoBlock>
 
 In `remote` mode the component does no local filtering: typing dispatches `oas-input` for the host to request data, and the host sets `loading` during the request to show a loading placeholder. This example simulates an 800ms delayed filter:
 
 <DemoBlock title="Remote loading placeholder">
-  <oas-select remote searchable loading placeholder="loading 占位演示" options='[]'></oas-select>
+  <oas-select remote searchable loading placeholder="Loading placeholder demo" options='[]'></oas-select>
 </DemoBlock>
 
 ## Tag Collapse
 
 <DemoBlock title="Tag collapse (max-tag-count)">
-  <oas-select multiple max-tag-count="2" value='["apple","banana","orange","strawberry"]' placeholder="超出折叠为 +N" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"},{"label":"西瓜","value":"watermelon"}]'></oas-select>
+  <oas-select multiple max-tag-count="2" value='["apple","banana","orange","strawberry"]' placeholder="Collapse into +N when exceeded" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"},{"label":"Watermelon","value":"watermelon"}]'></oas-select>
 </DemoBlock>
 
 When the selected tags exceed `max-tag-count`, they collapse into `+N` (hover to see the remaining items).
@@ -89,7 +89,7 @@ When the selected tags exceed `max-tag-count`, they collapse into `+N` (hover to
 ## Allow Create
 
 <DemoBlock title="Allow create">
-  <oas-select allow-create searchable placeholder="输入不存在的选项创建" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-select>
+  <oas-select allow-create searchable placeholder="Type a non-existent option to create" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-select>
 </DemoBlock>
 
 When search yields no match, a "创建 xxx" item is shown; clicking or pressing Enter creates a new option from the input value and selects it.
@@ -97,7 +97,7 @@ When search yields no match, a "创建 xxx" item is shown; clicking or pressing 
 ## Events
 
 <DemoBlock title="Change events">
-  <oas-select id="select-event" multiple placeholder="选择后触发 oas-change" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"}]'></oas-select>
+  <oas-select id="select-event" multiple placeholder="Select to trigger oas-change" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"}]'></oas-select>
   <span id="select-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 180px"></span>
 </DemoBlock>
 
@@ -112,15 +112,15 @@ onMounted(() => {
     out.textContent = `oas-change: [${e.detail.value.join(', ')}]`
   })
 
-  // 远程搜索 demo：模拟宿主请求，输入 800ms 后按 label 过滤回填 options
+  // remote search demo: simulate host requests, filter and refill options by label after an 800ms delay
   const remote = document.getElementById('select-remote')
   const remoteOut = document.getElementById('select-remote-output')
   const REMOTE_ALL = [
-    { label: '苹果', value: 'apple' },
-    { label: '香蕉', value: 'banana' },
-    { label: '橙子', value: 'orange' },
-    { label: '草莓', value: 'strawberry' },
-    { label: '西瓜', value: 'watermelon' },
+    { label: 'Apple', value: 'apple' },
+    { label: 'Banana', value: 'banana' },
+    { label: 'Orange', value: 'orange' },
+    { label: 'Strawberry', value: 'strawberry' },
+    { label: 'Watermelon', value: 'watermelon' },
   ]
   let remoteTimer = 0
   remote?.addEventListener('oas-input', (e) => {
