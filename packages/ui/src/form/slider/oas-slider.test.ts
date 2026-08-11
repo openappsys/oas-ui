@@ -39,6 +39,16 @@ describe('OASSlider', () => {
     expect(Number(input.step)).toBe(5)
   })
 
+  it('样式表覆盖 Firefox 伪元素（::-moz-range-track/thumb），防回归', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // Firefox 曾因此缺失整条轨道横线；moz 伪元素必须与 webkit 分开书写
+    expect(css).toContain('::-moz-range-track')
+    expect(css).toContain('::-moz-range-thumb')
+    expect(css).toContain('::-webkit-slider-runnable-track')
+    expect(css).not.toMatch(/::-webkit-slider-runnable-track\s*,\s*input::-moz-range-track/)
+  })
+
   it('value 受控同步 + 外部变更增量更新', () => {
     const el = mount({ value: '40' })
     const input = range(el)

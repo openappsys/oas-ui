@@ -39,10 +39,31 @@ input::-webkit-slider-thumb {
 input::-webkit-slider-thumb:hover {
   transform: scale(1.15);
 }
+/* Firefox：moz 伪元素必须与 webkit 分开书写（浏览器遇到不认识的伪元素会使整条规则失效）；
+   ::-moz-range-thumb 相对 track 自动居中，无需 webkit 的 margin-top 偏移 */
+input::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--oas-color-border);
+}
+input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--oas-color-primary);
+  border: none;
+  transition: transform var(--oas-transition-fast) var(--oas-ease-out);
+}
+input::-moz-range-thumb:hover {
+  transform: scale(1.15);
+}
 input:focus-visible {
   outline: none;
 }
 input:focus-visible::-webkit-slider-thumb {
+  box-shadow: var(--oas-focus-ring);
+}
+input:focus-visible::-moz-range-thumb {
   box-shadow: var(--oas-focus-ring);
 }
 input:disabled {
