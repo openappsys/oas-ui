@@ -22,7 +22,7 @@ form {
 
 export class OASForm extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['rules']
+    return ['rules', 'layout', 'gap', 'label-align', 'label-width']
   }
 
   private form: HTMLFormElement | null = null
@@ -67,6 +67,35 @@ export class OASForm extends OASElement {
 
   protected override update(): void {
     this.parseRules()
+    this.applyLayout()
+  }
+
+  /**
+   * 栅格布局：layout="grid" 时 form 元素为 24 列 grid（gap 生效）；
+   * 其他值（含非法值）回退 vertical 块级。布局属性变化时通知各 form-item 重刷感知。
+   */
+  private applyLayout(): void {
+    if (!this.form) return
+    const layout = this.getAttr('layout', 'vertical')
+    if (layout === 'grid') {
+      this.form.style.display = 'grid'
+      this.form.style.gridTemplateColumns = 'repeat(24, 1fr)'
+      this.form.style.gap = this.getAttr('gap', '0')
+    } else {
+      this.form.style.display = 'block'
+      this.form.style.gridTemplateColumns = ''
+      this.form.style.gap = ''
+    }
+    // label-align 以 CSS 变量暴露（默认 top），供消费者/主题层读取；form-item 自身走 closest 读取
+    const labelAlign = this.getAttr('label-align', 'top')
+    if (labelAlign === 'left' || labelAlign === 'right' || labelAlign === 'top') {
+      this.style.setProperty('--oas-form-label-align', labelAlign)
+    } else {
+      this.style.setProperty('--oas-form-label-align', 'top')
+    }
+    for (const item of this.querySelectorAll('oas-form-item')) {
+      ;(item as unknown as { refreshLayout?: () => void }).refreshLayout?.()
+    }
   }
 
   private parseRules(): void {
@@ -157,11 +186,18 @@ export class OASForm extends OASElement {
   }
 
   /**
-   * 在字段 host 后同步错误提示元素。字段在 light DOM（form shadow 内仅 <slot> 透传），
-   * 阴影内 class 样式不可达，因此错误文本用内联 token 引用（自动跟随暗色/高对比主题）。
+   * 同步错误提示。字段被 oas-form-item 包裹时写入 form-item 的错误位（shadow 内更新）；
+   * 裸字段保持既有行为——在字段 host 后插入内联 token 样式 div（自动跟随暗色/高对比主题）。
    * 校验失败时插入/更新，通过时移除。
    */
   private syncErrorText(element: Element, message: string | null): void {
+    const item = element.closest('oas-form-item') as
+      | (Element & { setError?: (m: string | null) => void })
+      | null
+    if (item?.setError) {
+      item.setError(message)
+      return
+    }
     const next = element.nextElementSibling
     const existing = next && next.classList.contains('error-text') ? (next as HTMLElement) : null
     if (message === null) {

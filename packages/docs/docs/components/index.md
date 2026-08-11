@@ -1,6 +1,6 @@
 # 组件总览
 
-OAS-UI 提供 114 个框架无关的 Web Components 组件，按用途划分为 7 个分组。点击组件名可查看该组件的完整文档与示例。
+OAS-UI 提供 115 个框架无关的 Web Components 组件，按用途划分为 7 个分组。点击组件名可查看该组件的完整文档与示例。
 
 ## 基础组件
 
@@ -46,6 +46,7 @@ OAS-UI 提供 114 个框架无关的 Web Components 组件，按用途划分为 
 - [DynamicTags 动态标签](/components/dynamic-tags) —— 输入框回车/逗号提交生成标签，支持去重、上限与键盘删除。
 - [Editable 就地编辑](/components/editable) —— 点击/回车/空格进入编辑态，Enter 提交、Esc 取消，空值提交默认非破坏。
 - [Form 表单](/components/form) —— 原生 `<form>` 增强，支持按 `rules` 规则对内部字段做校验与提交。
+- [FormItem 表单项](/components/form#栅格表单布局) —— `oas-form-item`：label + 控件容器 + 错误提示位，在 `layout="grid"` 的表单内按 `span` 栅格占列。
 
 ## 反馈组件
 

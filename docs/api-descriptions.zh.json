@@ -509,6 +509,10 @@
   },
   "oas-form": {
     "attrs": {
+      "gap": "grid 模式栅格间距（token 值，如 `var(--oas-space-4)`）",
+      "label-align": "标签对齐：`left` / `right` / `top`（grid 模式默认 `top`）",
+      "label-width": "`label-align` 为 left/right 时的标签列宽",
+      "layout": "布局模式：`vertical`（默认，竖排）/ `grid`（24 列栅格）；非枚举值回退 `vertical`",
       "rules": "校验规则 JSON：`{ 字段名: [{ required, message, minLength, maxLength, pattern }] }`"
     },
     "events": {
@@ -516,6 +520,18 @@
       "oas-validate-fail": "校验失败，`detail: { errors, values }`"
     },
     "slots": {}
+  },
+  "oas-form-item": {
+    "attrs": {
+      "label": "标签文本（缺省不渲染标签行）",
+      "name": "字段名（透传校验关联）",
+      "required": "必填星号（仅视觉标记，校验规则仍由 form 的 `rules` 驱动）",
+      "span": "24 栅格占列数（仅 form `layout=\"grid\"` 生效；非 1-24 整数按 24）"
+    },
+    "events": {},
+    "slots": {
+      "": "字段控件"
+    }
   },
   "oas-gradient-text": {
     "attrs": {

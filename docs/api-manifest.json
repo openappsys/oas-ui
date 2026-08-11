@@ -344,7 +344,11 @@
         "detail": "{ text }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
     "unresolved": []
   },
   "oas-title": {
@@ -385,7 +389,11 @@
         "detail": "{ text }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
     "unresolved": []
   },
   "oas-paragraph": {
@@ -426,7 +434,11 @@
         "detail": "{ text }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
     "unresolved": []
   },
   "oas-button-group": {
@@ -1465,6 +1477,28 @@
         "name": "rules",
         "default": "{}",
         "observed": true
+      },
+      {
+        "name": "layout",
+        "type": "string",
+        "default": "vertical",
+        "observed": true
+      },
+      {
+        "name": "gap",
+        "type": "string",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "label-align",
+        "type": "string",
+        "default": "top",
+        "observed": true
+      },
+      {
+        "name": "label-width",
+        "observed": true
       }
     ],
     "props": [
@@ -1483,6 +1517,41 @@
         "detail": "{ errors: this.errors, values }"
       }
     ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-form-item": {
+    "className": "OASFormItem",
+    "sourceFile": "packages/ui/src/form/form-item/oas-form-item.ts",
+    "attrs": [
+      {
+        "name": "label",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "name",
+        "observed": true
+      },
+      {
+        "name": "span",
+        "type": "string",
+        "default": "24",
+        "observed": true
+      },
+      {
+        "name": "required",
+        "type": "boolean",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
     "slots": [
       {
         "name": ""

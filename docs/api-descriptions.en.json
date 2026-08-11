@@ -509,6 +509,10 @@
   },
   "oas-form": {
     "attrs": {
+      "gap": "Grid spacing in `grid` mode (token value, e.g. `var(--oas-space-4)`)",
+      "label-align": "Label alignment: `left` / `right` / `top` (default `top` in grid mode)",
+      "label-width": "Label column width when `label-align` is `left`/`right`",
+      "layout": "Layout mode: `vertical` (default, stacked) / `grid` (24-column grid); non-enum values fall back to `vertical`",
       "rules": "Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }`"
     },
     "events": {
@@ -516,6 +520,18 @@
       "oas-validate-fail": "Validation failed, `detail: { errors, values }`"
     },
     "slots": {}
+  },
+  "oas-form-item": {
+    "attrs": {
+      "label": "Label text (no label row when omitted)",
+      "name": "Field name (validation association)",
+      "required": "Required asterisk (visual only; validation is still driven by form `rules`)",
+      "span": "Columns spanned in the 24-column grid (only when form `layout=\"grid\"`; non-integer in 1-24 → `24`)"
+    },
+    "events": {},
+    "slots": {
+      "": "Field control"
+    }
   },
   "oas-gradient-text": {
     "attrs": {

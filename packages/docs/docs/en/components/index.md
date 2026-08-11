@@ -1,6 +1,6 @@
 # Component Overview
 
-OAS-UI provides 114 framework-agnostic Web Components, organized into 7 groups by purpose. Click a component name to see its full documentation and examples.
+OAS-UI provides 115 framework-agnostic Web Components, organized into 7 groups by purpose. Click a component name to see its full documentation and examples.
 
 ## Basic
 
@@ -46,6 +46,7 @@ OAS-UI provides 114 framework-agnostic Web Components, organized into 7 groups b
 - [DynamicTags](/en/components/dynamic-tags) —— Type in the input and press Enter/comma to create tags; supports deduplication, a maximum limit, and keyboard deletion.
 - [Editable](/en/components/editable) —— Click/Enter/Space enters edit mode; Enter submits, Esc cancels, and empty-value submission is non-destructive by default.
 - [Form](/en/components/form) —— An enhanced native `<form>` supporting validation and submission of inner fields according to `rules`.
+- [FormItem](/en/components/form#grid-form-layout) —— `oas-form-item`: label + control container + error slot; spans grid columns via `span` inside a `layout="grid"` form.
 
 ## Feedback
 
