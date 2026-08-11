@@ -27,7 +27,7 @@ Current progress:
 - The `@oas-ui/ssr` renderer has landed: it boots a minimal DOM shim on
   happy-dom in Node, registers the component classes, renders per input, and
   serializes the shadow snapshot as DSD, returning the full host HTML string
-  (see "Server rendering (experimental)").
+  (see "Server rendering").
 - True hydration: on upgrade the component detects the DSD snapshot fingerprint,
   skips the shadow rebuild, and only caches nodes, binds events, plus runs
   incremental `update()`. If the snapshot structure mismatches, it falls back to
@@ -125,7 +125,7 @@ const Table = dynamic(() => import('./TablePage'), { ssr: false })
 The server only outputs a static placeholder; the script resource is executed by
 the browser to register the components.
 
-## Server rendering (experimental)
+## Server rendering
 
 The `@oas-ui/ssr` package provides the renderer
 `renderToString(tag, attrs, slotHTML, { locale })`: on a Node server it renders
