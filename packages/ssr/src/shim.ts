@@ -16,6 +16,7 @@ import { Window } from 'happy-dom'
  * - 组件类求值：HTMLElement、customElements
  * - 组件 render()/update() 实例执行：document、ShadowRoot 相关、CustomEvent/Event、MutationObserver
  * - config-context 的 instanceof 判定：Node、Element、ShadowRoot
+ * - tree → virtual-list 依赖图：HTMLTemplateElement（slot item 模板判定）
  * - 实例期可选的浏览器 API（happy-dom 均有）：navigator、getComputedStyle、requestAnimationFrame、
  *   cancelAnimationFrame、ResizeObserver
  */
@@ -24,6 +25,7 @@ const GLOBALS = [
   'document',
   'customElements',
   'HTMLElement',
+  'HTMLTemplateElement',
   'Node',
   'Element',
   'ShadowRoot',

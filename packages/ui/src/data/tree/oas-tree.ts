@@ -248,6 +248,7 @@ export class OASTree extends OASElement {
   /** 懒加载回调：展开未加载节点时触发 `{ key }`，宿主回填子节点后重设 data 属性 */
   load?: (payload: { key: string }) => void
 
+  private _data: TreeNode[] = []
   private flat: FlatRow[] = []
   private vlist: OASVirtualList | null = null
   /** 正在懒加载的节点 key 集合 */
@@ -255,12 +256,30 @@ export class OASTree extends OASElement {
   /** 当前正在拖拽的节点 key */
   private dragKey: string | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /**
+   * data 同时支持 attribute 与 property 赋值：
+   * Vue/React 模板渲染时 `data` 命中实例属性（accessor），宿主框架会走 property 赋值而非
+   * setAttribute；setter 统一反射到 attribute，经 attributeChangedCallback 走既有
+   * parse/update 链路，保持单一数据源（attribute 为唯一权威，无回写循环）。
+   */
+  get data(): TreeNode[] {
+    return this._data
+  }
+  set data(value: TreeNode[] | string) {
+    this.setAttribute('data', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="tree" part="tree" role="tree"></div>
       <oas-virtual-list part="virtual" hidden></oas-virtual-list>
     `
+  }
+
+  /** 缓存节点引用 + 绑定虚拟列表/拖放事件 + 注入虚拟行样式（render 与水合路径共用） */
+  private bind(): void {
     this.vlist = this.shadow.querySelector<OASVirtualList>('oas-virtual-list')
     // 行样式注入 vlist 的 shadow（其 render 已在 innerHTML 插入时同步完成，后追加不会被覆盖）
     const vlistRoot = this.vlist?.shadowRoot
@@ -302,7 +321,20 @@ export class OASTree extends OASElement {
         }
       })
     }
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（tree 容器与虚拟列表存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.tree')) return false
+    if (!this.shadow.querySelector('oas-virtual-list')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {
@@ -523,6 +555,7 @@ export class OASTree extends OASElement {
     } catch {
       data = []
     }
+    this._data = data
     const walk = (nodes: TreeNode[], depth: number, parent?: string): void => {
       for (const node of nodes) {
         this.flat.push({ node, depth, parent })

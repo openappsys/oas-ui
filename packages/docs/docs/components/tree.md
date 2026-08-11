@@ -195,7 +195,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `checkable` | 是否显示复选框 | `boolean` | — |
 | `checked` | 勾选节点 key 集合（逗号分隔） | `string` | — |
-| `data` | 节点数据 `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`，JSON 字符串 | `string` | `[]` |
+| `data` | 节点数据 `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`，JSON 字符串 | `TreeNode[] \| string` | `[]` |
 | `draggable` | 节点可拖拽换序 / 换父，落点显示插入线 / 高亮，松手派发 `oas-node-drop` | `boolean` | — |
 | `expanded` | 展开节点 key 集合（逗号分隔） | `string` | — |
 | `height` | 虚拟滚动视口高度（px）；设置后开启大数据量虚拟化渲染 | `string` | `360` |

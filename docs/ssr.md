@@ -12,19 +12,19 @@ OAS-UI 是 Web Components 组件库，组件在浏览器运行时自定义元素
 
 组件库的 SSR 长期策略走 Declarative Shadow DOM（DSD）路线：服务端输出 `<template shadowrootmode="open">` 的静态结构 + 样式，浏览器 upgrade 自定义元素后由组件接管交互。
 
-当前进展（第一、二步已落地）：
+当前进展：
 
 - 基类 `OASElement` 已支持复用 declarative shadow root：元素在 upgrade 前已由 `<template shadowrootmode="open">` 挂好 shadow root 时，构造器复用已有 root，不再调用 `attachShadow`（否则会抛 `NotSupportedError` 导致组件报废）。
 - `@oas-ui/ssr` 渲染器已落地：Node 环境用 happy-dom 起最小 DOM shim，注册组件类后按入参渲染并把 shadow 快照序列化为 DSD，输出完整宿主 HTML 字符串（见「服务端渲染（实验）」）。
+- 真水合：upgrade 检测到 DSD 快照指纹时跳过 shadow 重建，只缓存节点并绑定事件 + 增量 update；快照结构不符时回退全量重渲染（正确性优先）。
+- 数据组件声明式数据通道：table / tree / select 的 `columns` / `data` / `options` 走 JSON attribute 声明式通道（property 优先，非法 JSON 回退空态），SSR 快照可序列化表头与数据行 / 树节点行 / 下拉选项。
+- 测量组件首帧闪动治理：affix / ellipsis / scroll-area 检测到 DSD 快照时把布局写入延迟到首帧后（rAF）——快照 = 未校正态，upgrade 首帧与快照一致无跳动，rAF 后按真实布局校正。
 
 尚未落地（ROADMAP backlog）：
 
-- 真水合：upgrade 时跳过 shadow 重建，只缓存节点并绑定事件 + 增量 update。首版客户端接管策略为「复用 DSD root + 照常重渲染」——快照与重渲染结果一致，视觉无感知。
-- tree / select 等其余数据组件的声明式数据通道（table 已试点落地，见白名单）。
-- 含布局测量组件（affix / ellipsis / tooltip 等）的首帧闪动治理（仅检测到 DSD 快照时延迟布局写入）。
 - 框架集成插件（Nuxt / Next）。
 
-白名单组件可直接服务端渲染；其余组件（未接入声明式通道的数据组件、布局测量组件）仍按"客户端专属"方式接入（见下）。
+白名单组件可直接服务端渲染；其余组件仍按"客户端专属"方式接入（见下）。
 
 ### Vue（Nuxt / Vite SSR）
 
@@ -121,10 +121,11 @@ RSC 在服务端完成渲染，`dangerouslySetInnerHTML` 的字面量进入 SSR 
 
 ### 白名单与边界
 
-- 白名单（render 只依赖 attributes 的纯展示组件 + 声明式数据通道试点 oas-table）：`oas-button`、`oas-tag`、`oas-empty`、`oas-divider`、`oas-text`、`oas-title`、`oas-paragraph`、`oas-table`。
+- 白名单（纯展示组件 + 声明式数据组件 + 测量组件闪动治理试点）：`oas-button`、`oas-tag`、`oas-empty`、`oas-divider`、`oas-text`、`oas-title`、`oas-paragraph`、`oas-table`、`oas-affix`、`oas-ellipsis`、`oas-scroll-area`、`oas-tree`、`oas-select`。
 - 非白名单调用直接抛错，不会静默降级。
-- `oas-table` 的 `columns` / `data` 走 JSON attribute 声明式通道（property 优先，非法 JSON 回退空态），SSR 快照含表头与数据行；tree / select 等其余数据组件与含布局测量的组件（affix / ellipsis / tooltip 等）仍为客户端渲染，属 backlog。
-- 首版客户端接管策略：upgrade 时复用 DSD root 并照常重渲染——快照与重渲染结果一致，视觉无感知；跳过重建的真水合属 backlog。
+- `oas-table` / `oas-tree` / `oas-select` 的 `columns` / `data` / `options` 走 JSON attribute 声明式通道（property 优先，非法 JSON 回退空态），SSR 快照含表头与数据行 / 树节点行 / 下拉选项。
+- 测量组件（affix / ellipsis / scroll-area）快照为未校正态（happy-dom 布局测量全 0），upgrade 首帧与快照一致，rAF 后按真实布局校正——这是闪动治理的设计语义。
+- 真水合：upgrade 时跳过 shadow 重建（DOM 引用保持），只缓存节点并绑定事件 + 增量 update；快照结构不符时回退全量重渲染。
 
 ## 为什么
 

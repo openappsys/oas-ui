@@ -6,8 +6,9 @@
  * 输出完整宿主 HTML 字符串。浏览器拿到该快照无需 JS 即可呈现结构与样式，upgrade 后复用已有 shadow root
  * 照常接管交互（基类已有 DSD 防御）。
  *
- * 范围：白名单纯展示组件（button/tag/empty/divider/typography）+ 数据组件试点（table，
- * 其 columns/data 走 JSON attribute 声明式通道，property 优先）。含布局测量的组件仍为客户端渲染。
+ * 范围：白名单纯展示组件（button/tag/empty/divider/typography）+ 数据组件（table/tree/select，
+ * 数据走 JSON attribute 声明式通道，property 优先）+ 测量组件闪动治理试点（affix/ellipsis/scroll-area，
+ * 快照为未校正态，浏览器 upgrade 后 rAF 校正）。
  *
  * 为什么按需装载（而不是 `import('@oas-ui/ui')` 全量）：
  * - 全量入口会求值全部 ~115 个组件目录（每个目录 index.ts 的 define 副作用 + 各自依赖图），
@@ -43,8 +44,9 @@ import { ensureShim } from './shim.js'
 
 /**
  * 渲染器开放的白名单 tag。
- * 纯展示组件（render 只依赖 attributes）+ 数据组件试点 oas-table（columns/data 走 JSON
- * attribute 声明式通道，非虚拟模式同步渲染，快照可序列化数据行）。
+ * 纯展示组件（render 只依赖 attributes）+ 数据组件（table/tree/select，数据走 JSON attribute
+ * 声明式通道、非虚拟模式同步渲染、快照可序列化数据行/选项）+ 测量组件闪动治理试点
+ * （affix/ellipsis/scroll-area：SSR 快照为未校正态，浏览器端 rAF 校正，属设计语义）。
  */
 export const WHITELIST = [
   'oas-button',
@@ -55,6 +57,11 @@ export const WHITELIST = [
   'oas-title',
   'oas-paragraph',
   'oas-table',
+  'oas-affix',
+  'oas-ellipsis',
+  'oas-scroll-area',
+  'oas-tree',
+  'oas-select',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -99,6 +106,11 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-title': '@oas-ui/ui/basic/typography',
   'oas-paragraph': '@oas-ui/ui/basic/typography',
   'oas-table': '@oas-ui/ui/data/table',
+  'oas-affix': '@oas-ui/ui/layout/affix',
+  'oas-ellipsis': '@oas-ui/ui/data/ellipsis',
+  'oas-scroll-area': '@oas-ui/ui/floating/scroll-area',
+  'oas-tree': '@oas-ui/ui/data/tree',
+  'oas-select': '@oas-ui/ui/form/select',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */
@@ -139,7 +151,8 @@ async function ensureI18n(): Promise<typeof import('@oas-ui/i18n')> {
  * 渲染白名单组件为含 DSD 快照的宿主 HTML 字符串。
  *
  * @param tag 白名单组件标签（oas-button / oas-tag / oas-empty / oas-divider /
- *   oas-text / oas-title / oas-paragraph），其余抛错
+ *   oas-text / oas-title / oas-paragraph / oas-table / oas-affix / oas-ellipsis /
+ *   oas-scroll-area / oas-tree / oas-select），其余抛错
  * @param attrs 宿主 attributes（kebab-case 键），值在序列化时做 & " < > 完整 HTML 转义
  * @param slotHTML 注入 light DOM 的 HTML 片段（默认插槽内容）
  * @param opts 选项（locale 控制内置文案语言）

@@ -31,42 +31,44 @@ const SCREENSHOT = {
 
 let dsdHtml = ''
 
-/** 测量组件闪动治理专用 DSD 页面：oas-affix 手工构造快照（非白名单，渲染器不可产，故手工拼 DSD template）。 */
-const AFFIX_DSD_PAGE = join(ARTIFACT_DIR, 'affix-dsd.html')
-const AFFIX_DSD_PAGE_URL = pathToFileURL(AFFIX_DSD_PAGE).href
+/** 测量组件闪动治理专用 DSD 页面：affix/ellipsis/scroll-area 快照由渲染器产出（SSR 未校正态）。 */
+const FLICKER_PAGE = join(ARTIFACT_DIR, 'measure-dsd.html')
+const FLICKER_PAGE_URL = pathToFileURL(FLICKER_PAGE).href
 
-/** 测量组件闪动治理 e2e 依赖：affix 组件在真实浏览器里按布局校正，需 ui bundle 已构建 */
-function buildAffixDsdPage(): void {
-  // 快照语义：SSR 端（happy-dom）getBoundingClientRect 恒 0 → rect.top=0 <= offset=100 → 吸顶，
-  // 故快照含 .fixed + top:100px。真实浏览器里 affix 位于 body padding-top 之下（rect.top≈200 > offset）
-  // → 真实布局不吸顶。治理后 upgrade 首帧保持快照态（fixed、rect.top=100），rAF 后才移除 fixed。
-  const affixSnap = `
-<oas-affix offset="100">
-  <template shadowrootmode="open">
-    <meta data-oas-ssr="oas-affix" data-oas-ssr-v="1">
-    <style>
-      :host { display: block; font-family: inherit; }
-      .wrap { display: inline-block; }
-      .wrap.fixed { position: fixed; z-index: 1020; }
-    </style>
-    <div class="wrap fixed" part="wrap" style="top: 100px"><slot></slot></div>
-  </template>
-  <span>吸顶导航</span>
-</oas-affix>`
+/** 闪动页 ellipsis 用文本：300px 容器 + 2 行内必然溢出（触发校正） */
+const LONG_TEXT = '这是一段特别长的文本用于验证省略组件在真实浏览器中的溢出测量与校正行为，它跨越了不止两行的高度以便触发省略形态的布局写入，内容本身并无实际业务含义。'.repeat(2)
+
+/**
+ * 测量组件闪动治理 e2e 依赖：affix/ellipsis/scroll-area 在真实浏览器里按布局校正，需 ui bundle 已构建。
+ * 快照由 renderToString 产出（不再手工拼 DSD template），语义：
+ *   affix：SSR 端 getBoundingClientRect 恒 0 → rect.top=0 <= offset=100 → 吸顶（.fixed + top:100px）；
+ *     真实浏览器里 affix 位于 body padding-top 之下（rect.top≈200 > offset）→ 不吸顶，rAF 后移除 fixed。
+ *   ellipsis：SSR 端无溢出判定 → toggle 隐藏、不挂 tooltip；真实浏览器里长文本溢出 2 行 →
+ *     rAF 后显示展开按钮并挂 tooltip（快照首帧与 hydrate 后一致，第二帧校正）。
+ *   scroll-area：SSR 端溢出测量全 0 → 轨道隐藏；真实浏览器里内容超高视口 → rAF 后垂直轨道可见。
+ */
+function buildFlickerPage(affixSnap: string, ellipsisSnap: string, scrollAreaSnap: string, themeCss: string): void {
   const html = `<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <title>OAS-UI 测量组件闪动治理验收</title>
+  <style>${themeCss}</style>
 </head>
 <body style="font-family: system-ui, sans-serif; padding: 200px 24px;">
   <div style="height: 1200px;">
     ${affixSnap}
-    <p>滚动测试占位内容</p>
+    <div style="width: 300px; margin-top: 24px;">
+      ${ellipsisSnap}
+    </div>
+    <div style="margin-top: 24px;">
+      ${scrollAreaSnap}
+    </div>
+    <p style="margin-top: 24px;">滚动测试占位内容</p>
   </div>
 </body>
 </html>`
-  writeFileSync(AFFIX_DSD_PAGE, html, 'utf8')
+  writeFileSync(FLICKER_PAGE, html, 'utf8')
 }
 
 /** 用仓库内的 vite 把 @oas-ui/ui 主入口打成单文件 ESM bundle（workspace 依赖全部内联） */
@@ -119,7 +121,38 @@ test.beforeAll(async () => {
   // @oas-ui/theme 无构建产物（main 直指 src），直接读源文件。
   const themeCssPath = join(REPO_ROOT, 'packages', 'theme', 'src', 'index.css')
   const themeCss = readFileSync(themeCssPath, 'utf8')
-  const [btn, tag, empty, divider, text, title, para, table] = await Promise.all([
+
+  // 测量组件闪动治理（子活 1）：主页面用「不触发校正」的内容保证布局稳定（真水合断言）——
+  // affix 用超大 offset（SSR 端 rect=0 ≤ 9999 恒吸顶，真实浏览器同样恒吸顶 → 无校正、布局稳定）；
+  // 闪动页用「触发校正」的内容验证首帧与快照一致 + rAF 校正。
+  const affixSnap = await renderToString(
+    'oas-affix',
+    { offset: '9999' },
+    '<span style="display:inline-block;padding:4px 12px;border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-sm)">吸顶导航</span>',
+  )
+  const ellipsisSnap = await renderToString('oas-ellipsis', { text: '短文本' }, '')
+  const scrollAreaSnap = await renderToString(
+    'oas-scroll-area',
+    { height: '120' },
+    '<p>短内容</p>',
+  )
+  const ellipsisFlickerSnap = await renderToString(
+    'oas-ellipsis',
+    { text: LONG_TEXT, rows: '2', expandable: 'true' },
+    '',
+  )
+  const scrollAreaFlickerSnap = await renderToString(
+    'oas-scroll-area',
+    { height: '160' },
+    '<div style="height: 500px; background: var(--oas-color-bg-hover)">超高内容</div>',
+  )
+  const affixFlickerSnap = await renderToString(
+    'oas-affix',
+    { offset: '100' },
+    '<span style="display:inline-block;padding:4px 12px;border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-sm)">吸顶导航</span>',
+  )
+
+  const [btn, tag, empty, divider, text, title, para, table, tree, select] = await Promise.all([
     renderToString('oas-button', { type: 'primary', 'data-esc': 'a"&<>b' }, '确定'),
     renderToString('oas-tag', { type: 'success', size: 'large' }, '进行中'),
     renderToString('oas-empty', { description: '暂无数据' }),
@@ -143,6 +176,32 @@ test.beforeAll(async () => {
       '',
       { locale: 'zh-CN' },
     ),
+    renderToString(
+      'oas-tree',
+      {
+        data: JSON.stringify([
+          { key: 'a', label: '节点 A', children: [{ key: 'a-1', label: '子节点 1' }] },
+          { key: 'b', label: '节点 B' },
+        ]),
+        expanded: 'a',
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString(
+      'oas-select',
+      {
+        options: JSON.stringify([
+          { label: '苹果', value: 'apple' },
+          { label: '香蕉', value: 'banana' },
+          { label: '橙子', value: 'orange' },
+        ]),
+        value: 'banana',
+        placeholder: '请选择',
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
   ])
   dsdHtml = `<!doctype html>
 <html lang="zh-CN">
@@ -152,13 +211,13 @@ test.beforeAll(async () => {
   <style>${themeCss}</style>
 </head>
 <body style="font-family: system-ui, sans-serif; padding: 24px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start;">
-${[btn, tag, empty, divider, text, title, para, table].join('\n')}
+${[btn, tag, empty, divider, text, title, para, table, affixSnap, ellipsisSnap, scrollAreaSnap, tree, select].join('\n')}
 </body>
 </html>`
   writeFileSync(DSD_PAGE, dsdHtml, 'utf8')
 
-  // —— 3) 测量组件闪动治理：oas-affix 手工构造 DSD 快照场景 ——
-  buildAffixDsdPage()
+  // —— 3) 测量组件闪动治理：affix/ellipsis/scroll-area 由渲染器产出 DSD 快照场景 ——
+  buildFlickerPage(affixFlickerSnap, ellipsisFlickerSnap, scrollAreaFlickerSnap, themeCss)
 })
 
 async function openPage(page: Page): Promise<void> {
@@ -368,7 +427,7 @@ test('事件可触发且无重复绑定：upgrade 后逐次点击 oas-button，o
 })
 
 test('渲染器边界：非白名单抛错、快照属性完整 HTML 转义、快照含真水合指纹', async () => {
-  await expect(renderToString('oas-tree', { columns: '[]' })).rejects.toThrow(/非白名单/)
+  await expect(renderToString('oas-input', { value: 'x' })).rejects.toThrow(/非白名单/)
   const snap = await renderToString('oas-button', { type: 'primary', 'data-esc': 'a"&<>b' }, '确定')
   expect(snap).toContain('data-esc="a&quot;&amp;&lt;&gt;b"')
   expect(snap).toContain('<template shadowrootmode="open">')
@@ -380,18 +439,25 @@ test('渲染器边界：非白名单抛错、快照属性完整 HTML 转义、�
 })
 
 /**
- * 测量组件闪动治理（PRD v1.9）：affix 在 DSD 快照场景 upgrade 后首帧无布局跳动。
+ * 测量组件闪动治理（PRD v1.9）：affix/ellipsis/scroll-area 在 DSD 快照场景 upgrade 后首帧无布局跳动。
  *
- * 快照语义：SSR 端（happy-dom）测量全 0 → 快照含 .fixed + top:100px（吸顶态）；
- * 真实浏览器里 affix 位于 body padding-top 之下（rect.top≈200 > offset=100）→ 真实布局不吸顶。
+ * 快照语义（由渲染器产出，SSR 端 happy-dom 布局测量全 0 = 未校正态）：
+ * - affix：快照含 .fixed + top:100px（吸顶态）；真实浏览器里 affix 位于 body padding-top 之下
+ *   （rect.top≈200 > offset=100）→ 真实布局不吸顶。
+ * - ellipsis：快照无溢出态（toggle 隐藏、无 tooltip）；真实浏览器里长文本溢出 2 行 →
+ *   校正后显示展开按钮并挂 tooltip。
+ * - scroll-area：快照无溢出态（轨道隐藏）；真实浏览器里内容超高视口 → 校正后垂直轨道可见。
  *
- * 治理断言（两段式，确定性时序）：
- * 1. upgrade 首帧（同一微任务内、rAF 之前）：.wrap 仍是快照态——fixed class 保留、rect.top 仍是 100，
- *    即 hydrate 后首帧与快照一致、无跳动（未经治理的版本此时会立即移除 fixed，rect.top 跳到 200+）；
- * 2. 下一帧（rAF 校正）：按真实布局移除 fixed，rect.top 回到自然文档流位置。
+ * 治理断言（三段式，确定性时序）：
+ * 1. upgrade 首帧（同一微任务内、rAF 之前）保持快照态：
+ *    affix 的 .wrap 仍是 .fixed（rect.top=100）、ellipsis 的 toggle 仍隐藏且无 tooltip、
+ *    scroll-area 轨道仍不可见——即 hydrate 后首帧与快照一致、无跳动
+ *    （未经治理的版本此时会立即写入真实布局态）；
+ * 2. 下一帧（rAF 校正）：按真实布局写入——affix 移除 fixed、ellipsis 显示展开按钮 + tooltip、
+ *    scroll-area 垂直轨道可见。
  * 另断言水合接管成功：shadow 未重建（style 引用保持）、指纹 meta 已移除、console 零 error。
  */
-test('测量组件闪动治理：affix upgrade 首帧与快照一致、rAF 后按真实布局校正', async ({ page }) => {
+test('测量组件闪动治理：affix/ellipsis/scroll-area upgrade 首帧与快照一致、rAF 后按真实布局校正', async ({ page }) => {
   const pageErrors: string[] = []
   const consoleErrors: string[] = []
   page.on('pageerror', (e) => pageErrors.push(e.message))
@@ -399,62 +465,117 @@ test('测量组件闪动治理：affix upgrade 首帧与快照一致、rAF 后�
     if (m.type() === 'error') consoleErrors.push(m.text())
   })
 
-  await page.goto(AFFIX_DSD_PAGE_URL, { waitUntil: 'load' })
+  await page.goto(FLICKER_PAGE_URL, { waitUntil: 'load' })
 
-  // upgrade 前：快照态 rect（.fixed 生效，wrap 位于 fixed top:100px）
+  // upgrade 前：读三个组件的快照态 + 保存 style 引用（供水合后比对）
   const snapshot = await page.evaluate(() => {
-    const wrap = document
-      .querySelector('oas-affix')!
-      .shadowRoot!.querySelector<HTMLElement>('.wrap')!
-    const styleEl = document
-      .querySelector('oas-affix')!
-      .shadowRoot!.querySelector('style')!
+    const w = window as unknown as Window & { __flickerStyleRefs: Record<string, Element | null> }
+    w.__flickerStyleRefs = {}
+    const affixRoot = document.querySelector('oas-affix')!.shadowRoot!
+    const ellipsisRoot = document.querySelector('oas-ellipsis')!.shadowRoot!
+    const saRoot = document.querySelector('oas-scroll-area')!.shadowRoot!
+    w.__flickerStyleRefs['oas-affix'] = affixRoot.querySelector('style')
+    w.__flickerStyleRefs['oas-ellipsis'] = ellipsisRoot.querySelector('style')
+    w.__flickerStyleRefs['oas-scroll-area'] = saRoot.querySelector('style')
+    const affixWrap = affixRoot.querySelector<HTMLElement>('.wrap')!
+    const textEl = ellipsisRoot.querySelector<HTMLElement>('.text')!
+    const toggleEl = ellipsisRoot.querySelector<HTMLElement>('.toggle')!
+    const vTrack = saRoot.querySelector<HTMLElement>('.track-v')!
+    const vThumb = saRoot.querySelector<HTMLElement>('[part="thumb-v"]')!
     return {
-      fixed: wrap.classList.contains('fixed'),
-      top: Math.round(wrap.getBoundingClientRect().top),
-      hasMeta: document.querySelector('oas-affix')!.shadowRoot!.querySelector('meta[data-oas-ssr]') !== null,
-      styleRefIsSame: false,
+      affix: {
+        fixed: affixWrap.classList.contains('fixed'),
+        top: Math.round(affixWrap.getBoundingClientRect().top),
+        hasMeta: affixRoot.querySelector('meta[data-oas-ssr]') !== null,
+      },
+      ellipsis: {
+        textClass: textEl.className,
+        toggleHidden: toggleEl.hasAttribute('hidden'),
+        hasTooltip: ellipsisRoot.querySelector('oas-tooltip') !== null,
+        hasMeta: ellipsisRoot.querySelector('meta[data-oas-ssr]') !== null,
+      },
+      scrollArea: {
+        vVisible: vTrack.classList.contains('visible'),
+        vPeek: vTrack.classList.contains('peek'),
+        thumbHeight: vThumb.style.height,
+        hasMeta: saRoot.querySelector('meta[data-oas-ssr]') !== null,
+      },
     }
   })
-  // 保存 style 引用，供水合后比对（shadow 未重建 → 引用保持）
-  snapshot.styleRefIsSame = await page.evaluate(() => {
-    const w = window as unknown as Window & { __affixStyleRef?: Element }
-    w.__affixStyleRef = document
-      .querySelector('oas-affix')!
-      .shadowRoot!.querySelector('style')
-    return true
-  })
-  expect(snapshot.fixed).toBe(true)
-  expect(snapshot.hasMeta).toBe(true)
+  // 快照 = 未校正态断言
+  expect(snapshot.affix.fixed).toBe(true)
+  expect(snapshot.affix.hasMeta).toBe(true)
+  expect(snapshot.ellipsis.toggleHidden).toBe(true)
+  expect(snapshot.ellipsis.hasTooltip).toBe(false)
+  expect(snapshot.ellipsis.hasMeta).toBe(true)
+  expect(snapshot.scrollArea.vVisible).toBe(false)
+  expect(snapshot.scrollArea.vPeek).toBe(false)
+  expect(snapshot.scrollArea.thumbHeight).toBe('')
+  expect(snapshot.scrollArea.hasMeta).toBe(true)
 
   // 注入 bundle（Blob URL 动态 import，与 evaluate 同上下文同步触发 upgrade，
   // 可在同一微任务内、rAF 之前读到 upgrade 首帧状态）
   const bundleSrc = readFileSync(UI_BUNDLE, 'utf8')
   const result = await page.evaluate(async (src: string) => {
-    const w = window as unknown as Window & { __affixStyleRef?: Element }
+    const w = window as unknown as Window & { __flickerStyleRefs: Record<string, Element | null> }
     const blob = new Blob([src], { type: 'text/javascript' })
     const url = URL.createObjectURL(blob)
     await import(url)
-    await customElements.whenDefined('oas-affix')
+    await Promise.all([
+      customElements.whenDefined('oas-affix'),
+      customElements.whenDefined('oas-ellipsis'),
+      customElements.whenDefined('oas-scroll-area'),
+    ])
 
-    const wrap = document
-      .querySelector('oas-affix')!
-      .shadowRoot!.querySelector<HTMLElement>('.wrap')!
+    const affixRoot = document.querySelector('oas-affix')!.shadowRoot!
+    const ellipsisRoot = document.querySelector('oas-ellipsis')!.shadowRoot!
+    const saRoot = document.querySelector('oas-scroll-area')!.shadowRoot!
+    const affixWrap = affixRoot.querySelector<HTMLElement>('.wrap')!
+    const textEl = ellipsisRoot.querySelector<HTMLElement>('.text')!
+    const toggleEl = ellipsisRoot.querySelector<HTMLElement>('.toggle')!
+    const vTrack = saRoot.querySelector<HTMLElement>('.track-v')!
+    const vThumb = saRoot.querySelector<HTMLElement>('[part="thumb-v"]')!
+    const styleSame = (tag: string): boolean =>
+      document.querySelector(tag)!.shadowRoot!.querySelector('style') === w.__flickerStyleRefs[tag]
     // —— upgrade 首帧：rAF 之前同步读 ——
     const firstFrame = {
-      fixed: wrap.classList.contains('fixed'),
-      top: Math.round(wrap.getBoundingClientRect().top),
-      styleRefSame: document
-        .querySelector('oas-affix')!
-        .shadowRoot!.querySelector('style') === w.__affixStyleRef,
-      metaRemoved:
-        document.querySelector('oas-affix')!.shadowRoot!.querySelector('meta[data-oas-ssr]') === null,
+      affix: {
+        fixed: affixWrap.classList.contains('fixed'),
+        top: Math.round(affixWrap.getBoundingClientRect().top),
+        styleRefSame: styleSame('oas-affix'),
+        metaRemoved: affixRoot.querySelector('meta[data-oas-ssr]') === null,
+      },
+      ellipsis: {
+        textClass: textEl.className,
+        toggleHidden: toggleEl.hasAttribute('hidden'),
+        hasTooltip: ellipsisRoot.querySelector('oas-tooltip') !== null,
+        styleRefSame: styleSame('oas-ellipsis'),
+        metaRemoved: ellipsisRoot.querySelector('meta[data-oas-ssr]') === null,
+      },
+      scrollArea: {
+        vVisible: vTrack.classList.contains('visible'),
+        vPeek: vTrack.classList.contains('peek'),
+        thumbHeight: vThumb.style.height,
+        styleRefSame: styleSame('oas-scroll-area'),
+        metaRemoved: saRoot.querySelector('meta[data-oas-ssr]') === null,
+      },
     }
     // —— 下一帧：rAF 校正 ——
     await new Promise((r) => requestAnimationFrame(() => r(null)))
     const secondFrame = {
-      fixed: wrap.classList.contains('fixed'),
-      top: Math.round(wrap.getBoundingClientRect().top),
+      affix: {
+        fixed: affixWrap.classList.contains('fixed'),
+        top: Math.round(affixWrap.getBoundingClientRect().top),
+      },
+      ellipsis: {
+        toggleHidden: toggleEl.hasAttribute('hidden'),
+        hasTooltip: ellipsisRoot.querySelector('oas-tooltip') !== null,
+      },
+      scrollArea: {
+        vVisible: vTrack.classList.contains('visible'),
+        vPeek: vTrack.classList.contains('peek'),
+        thumbHeight: vThumb.style.height,
+      },
     }
     return { firstFrame, secondFrame }
   }, bundleSrc)
@@ -464,14 +585,32 @@ test('测量组件闪动治理：affix upgrade 首帧与快照一致、rAF 后�
   expect(consoleErrors).toEqual([])
 
   // 水合接管成功：shadow 未重建（style 引用保持）、指纹已移除
-  expect(result.firstFrame.styleRefSame).toBe(true)
-  expect(result.firstFrame.metaRemoved).toBe(true)
+  expect(result.firstFrame.affix.styleRefSame).toBe(true)
+  expect(result.firstFrame.affix.metaRemoved).toBe(true)
+  expect(result.firstFrame.ellipsis.styleRefSame).toBe(true)
+  expect(result.firstFrame.ellipsis.metaRemoved).toBe(true)
+  expect(result.firstFrame.scrollArea.styleRefSame).toBe(true)
+  expect(result.firstFrame.scrollArea.metaRemoved).toBe(true)
 
-  // 首帧与快照一致、无跳动：fixed 保留、rect.top 仍为 100（= 快照值）
-  expect(result.firstFrame.fixed).toBe(true)
-  expect(result.firstFrame.top).toBe(snapshot.top)
-  // rAF 后按真实布局校正：affix 不吸顶 → 移除 fixed，回到文档流（body padding-top 200px）
-  expect(result.secondFrame.fixed).toBe(false)
-  expect(result.secondFrame.top).not.toBe(snapshot.top)
-  expect(result.secondFrame.top).toBeGreaterThanOrEqual(200)
+  // 首帧与快照一致、无跳动：
+  expect(result.firstFrame.affix.fixed).toBe(true)
+  expect(result.firstFrame.affix.top).toBe(snapshot.affix.top)
+  expect(result.firstFrame.ellipsis.textClass).toBe(snapshot.ellipsis.textClass)
+  expect(result.firstFrame.ellipsis.toggleHidden).toBe(true)
+  expect(result.firstFrame.ellipsis.hasTooltip).toBe(false)
+  expect(result.firstFrame.scrollArea.vVisible).toBe(false)
+  expect(result.firstFrame.scrollArea.vPeek).toBe(false)
+
+  // rAF 后按真实布局校正：
+  // affix 不吸顶 → 移除 fixed，回到文档流（body padding-top 200px）
+  expect(result.secondFrame.affix.fixed).toBe(false)
+  expect(result.secondFrame.affix.top).not.toBe(snapshot.affix.top)
+  expect(result.secondFrame.affix.top).toBeGreaterThanOrEqual(200)
+  // ellipsis 溢出 → 展开按钮显示 + tooltip 挂载
+  expect(result.secondFrame.ellipsis.toggleHidden).toBe(false)
+  expect(result.secondFrame.ellipsis.hasTooltip).toBe(true)
+  // scroll-area 溢出 → 垂直轨道可见（thumb 写入尺寸）
+  expect(result.secondFrame.scrollArea.vVisible).toBe(true)
+  expect(result.secondFrame.scrollArea.vPeek).toBe(true)
+  expect(result.secondFrame.scrollArea.thumbHeight).not.toBe('')
 })

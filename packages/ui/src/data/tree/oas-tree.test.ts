@@ -386,3 +386,88 @@ describe('OASTree 虚拟化', () => {
     expect((el.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement).hidden).toBe(true)
   })
 })
+
+describe('OASTree 声明式数据通道与真水合', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('property 赋值优先：data setter 单向反射 attribute，getter 返回解析数组', () => {
+    const el = new OASTree()
+    document.body.appendChild(el)
+    const data = [
+      { key: 'a', label: '属性节点', children: [{ key: 'a-1', label: '子节点 1' }] },
+    ]
+    el.data = data
+    // setter 反射 attribute（attribute 为唯一权威数据源）
+    expect(el.getAttribute('data')).toBe(JSON.stringify(data))
+    // attributeChangedCallback → update() → 行渲染
+    expect(rows(el)[0]!.textContent).toContain('属性节点')
+    // getter 返回 parse 后的数组（与 table 先例一致）
+    expect(el.data).toEqual(data)
+  })
+
+  it('属性变化驱动重渲染：setAttribute data 后行内容即时更新', () => {
+    const el = mount()
+    expect(rows(el)[0]!.textContent).toContain('节点 A')
+    el.setAttribute(
+      'data',
+      JSON.stringify([{ key: 'x', label: '新节点' }, { key: 'y', label: '另一节点' }]),
+    )
+    const r = rows(el)
+    expect(r.length).toBe(2)
+    expect(r[0]!.textContent).toContain('新节点')
+    expect(r[0]!.textContent).not.toContain('节点 A')
+  })
+
+  it('非法 JSON 容错：data 非 JSON 时渲染空树，不抛错', () => {
+    const el = new OASTree()
+    el.setAttribute('data', '[{bad json')
+    document.body.appendChild(el)
+    expect(rows(el).length).toBe(0)
+    expect(el.shadowRoot!.textContent).not.toContain('bad')
+  })
+
+  it('真水合：DSD 快照存在时 hydrate 接管，shadow 不重建（style 引用保持）、行数据照常渲染', () => {
+    // 模拟浏览器 DSD upgrade：构造器 attachShadow 后注入「SSR 快照 + 指纹 meta」
+    const snap = new OASTree()
+    snap.shadowRoot!.innerHTML = `
+      <meta data-oas-ssr="oas-tree" data-oas-ssr-v="1">
+      <style>.probe-style { color: red; }</style>
+      <div class="tree" part="tree" role="tree"></div>
+      <oas-virtual-list part="virtual" hidden></oas-virtual-list>`
+    const styleSnap = snap.shadowRoot!.querySelector('style')!
+    document.body.appendChild(snap) // connectedCallback → tryHydrate
+    // hydrate 接管：style 引用保持同一对象（shadow 未重建）
+    expect(snap.shadowRoot!.querySelector('style')).toBe(styleSnap)
+    // 指纹 meta 已移除
+    expect(snap.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    // 属性驱动的数据行照常增量写入（update 只重建 .tree 内容）
+    snap.setAttribute('data', JSON.stringify([{ key: 'a', label: '水合节点' }]))
+    expect(snap.shadowRoot!.querySelector('style')).toBe(styleSnap)
+    expect(rows(snap)[0]!.textContent).toContain('水合节点')
+    // 交互完整恢复：点击选中派发 oas-select
+    let detail: unknown
+    snap.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    rows(snap)[0]!.click()
+    expect(detail).toEqual({ key: 'a', selected: true })
+  })
+
+  it('真水合回退：快照缺关键结构时回退 render 全量重建，功能仍正常', () => {
+    const snap = new OASTree()
+    // 指纹命中但结构不完整（无 .tree 容器）→ hydrate 返回 false → render 重建
+    snap.shadowRoot!.innerHTML =
+      '<meta data-oas-ssr="oas-tree" data-oas-ssr-v="1"><span>broken</span>'
+    document.body.appendChild(snap)
+    expect(snap.shadowRoot!.querySelector('.tree')).not.toBeNull()
+    expect(snap.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    snap.setAttribute('data', JSON.stringify([{ key: 'a', label: '回退节点' }]))
+    expect(rows(snap)[0]!.textContent).toContain('回退节点')
+  })
+})

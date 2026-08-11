@@ -4315,7 +4315,6 @@
     "attrs": [
       {
         "name": "data",
-        "type": "string",
         "default": "[]",
         "observed": true
       },
@@ -4369,6 +4368,11 @@
       {
         "name": "load",
         "type": "(payload: { key: string }) => void"
+      },
+      {
+        "name": "data",
+        "type": "TreeNode[] | string",
+        "default": "[]"
       }
     ],
     "events": [

@@ -260,3 +260,98 @@ describe('OASSelect', () => {
     expect(active.textContent).toContain('香蕉')
   })
 })
+
+describe('OASSelect 声明式数据通道与真水合', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('property 赋值优先：options setter 单向反射 attribute，getter 返回解析数组', () => {
+    const el = new OASSelect()
+    document.body.appendChild(el)
+    const options = [
+      { label: '苹果', value: 'apple' },
+      { label: '香蕉', value: 'banana' },
+    ]
+    el.options = options
+    // setter 反射 attribute（attribute 为唯一权威数据源，无回写循环）
+    expect(el.getAttribute('options')).toBe(JSON.stringify(options))
+    expect(el.options).toEqual(options)
+    // 触发渲染：打开下拉可见选项
+    open(el)
+    const optionRows = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    expect(optionRows.length).toBe(2)
+    expect(optionRows[0]!.textContent).toContain('苹果')
+  })
+
+  it('属性变化驱动重渲染：setAttribute options 后选项即时更新', () => {
+    const el = mount()
+    el.setAttribute('options', JSON.stringify([{ label: '葡萄', value: 'grape' }]))
+    open(el)
+    const optionRows = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    expect(optionRows.length).toBe(1)
+    expect(optionRows[0]!.textContent).toContain('葡萄')
+  })
+
+  it('非法 JSON 容错：options 非 JSON 时无选项，不抛错', () => {
+    const el = new OASSelect()
+    el.setAttribute('options', '[{bad json')
+    document.body.appendChild(el)
+    open(el)
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(0)
+    expect(trigger(el).textContent).toContain('请选择')
+  })
+
+  it('真水合：DSD 快照存在时 hydrate 接管，shadow 不重建（style 引用保持）、交互完整恢复', () => {
+    // 模拟浏览器 DSD upgrade：构造器 attachShadow 后注入「SSR 快照 + 指纹 meta」
+    const snap = new OASSelect()
+    snap.shadowRoot!.innerHTML = `
+      <meta data-oas-ssr="oas-select" data-oas-ssr-v="1">
+      <style>.probe-style { color: red; }</style>
+      <div class="wrapper" part="wrapper">
+        <button class="trigger" part="trigger" type="button" role="combobox"
+          aria-haspopup="listbox" aria-expanded="false">
+          <span class="value" part="value"></span>
+          <span class="clear-btn" part="clear" role="button" tabindex="-1" hidden aria-label=""></span>
+          <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false"></svg>
+        </button>
+        <div class="dropdown" part="dropdown">
+          <input class="search-input" part="search-input" type="text" hidden />
+          <div class="listbox" part="listbox" role="listbox"></div>
+        </div>
+      </div>`
+    const styleSnap = snap.shadowRoot!.querySelector('style')!
+    snap.setAttribute('options', OPTIONS)
+    document.body.appendChild(snap) // connectedCallback → tryHydrate
+    // hydrate 接管：style 引用保持同一对象（shadow 未重建）
+    expect(snap.shadowRoot!.querySelector('style')).toBe(styleSnap)
+    // 指纹 meta 已移除
+    expect(snap.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    // 交互完整恢复：点击展开 + 选中选项派发 oas-change
+    open(snap)
+    expect(trigger(snap).getAttribute('aria-expanded')).toBe('true')
+    let changeDetail: unknown
+    snap.addEventListener('oas-change', (e: Event) => (changeDetail = (e as CustomEvent).detail))
+    const rows = snap.shadowRoot!.querySelectorAll('[role="option"]')
+    ;(rows[1] as HTMLElement).click()
+    expect(snap.getAttribute('value')).toBe('banana')
+    expect(changeDetail).toEqual({ value: 'banana' })
+  })
+
+  it('真水合回退：快照缺关键结构时回退 render 全量重建，功能仍正常', () => {
+    const snap = new OASSelect()
+    // 指纹命中但结构不完整（无 .trigger）→ hydrate 返回 false → render 重建
+    snap.shadowRoot!.innerHTML =
+      '<meta data-oas-ssr="oas-select" data-oas-ssr-v="1"><span>broken</span>'
+    snap.setAttribute('options', OPTIONS)
+    document.body.appendChild(snap)
+    expect(snap.shadowRoot!.querySelector('.trigger')).not.toBeNull()
+    expect(snap.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    open(snap)
+    expect(snap.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(3)
+  })
+})

@@ -195,7 +195,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `checkable` | Whether to show checkboxes | `boolean` | — |
 | `checked` | Set of checked node keys (comma-separated) | `string` | — |
-| `data` | Node data `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`, JSON string | `string` | `[]` |
+| `data` | Node data `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`, JSON string | `TreeNode[] \| string` | `[]` |
 | `draggable` | Nodes can be dragged to reorder / reparent; drop shows insertion line / highlight; release emits `oas-node-drop` | `boolean` | — |
 | `expanded` | Set of expanded node keys (comma-separated) | `string` | — |
 | `height` | Virtual scroll viewport height (px); setting it enables virtualized rendering for large data | `string` | `360` |

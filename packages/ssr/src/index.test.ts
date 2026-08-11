@@ -43,7 +43,7 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(customElements.get('oas-button')).toBeDefined()
     // 非白名单组件未被装载（若误走全量 @oas-ui/ui 入口此处会失败）
     expect(customElements.get('oas-input')).toBeUndefined()
-    expect(customElements.get('oas-tree')).toBeUndefined()
+    expect(customElements.get('oas-modal')).toBeUndefined()
   })
 
   it('oas-button：DSD 快照 + light DOM slot 文本 + 宿主属性', async () => {
@@ -168,12 +168,124 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).not.toContain('part="row"')
   })
 
+  it('oas-affix：测量组件快照为未校正态（happy-dom rect 全 0 → 吸顶态 .fixed + top），浏览器端 rAF 校正', async () => {
+    const html = await renderToString('oas-affix', { offset: '100' }, '吸顶导航')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toContain('<oas-affix offset="100">')
+    // 快照语义：SSR 端 getBoundingClientRect 恒 0 → 0 <= offset → 吸顶（未校正态）
+    expect(html).toContain('class="wrap fixed"')
+    expect(html).toContain('style="top: 100px;"')
+    // 骨架与 slot 内容同步完整
+    expect(html).toContain('</template>吸顶导航</oas-affix>')
+  })
+
+  it('oas-ellipsis：文本同步入快照，省略形态类已写入、测量态（溢出/tooltip）不进快照属预期', async () => {
+    const text = '这是一段很长的文本用于验证省略组件在 SSR 快照中的文本同步渲染行为'
+    const html = await renderToString('oas-ellipsis', { text, rows: '2' }, '')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toContain(`text="${text}"`)
+    // 文本内容同步写入（快照可见骨架+文本）
+    expect(html).toContain(`>${text}</div>`)
+    // 行数形态类（.multi + line-clamp）在 SSR 即写入（与 rows 决定，非测量依赖）
+    expect(html).toContain('class="text multi"')
+    expect(html).toContain('-webkit-line-clamp: 2')
+    // 测量态（溢出判定）happy-dom 全 0 → 无溢出 → toggle 保持 hidden、不挂 tooltip
+    expect(html).toContain('class="toggle" part="toggle" hidden=""')
+    expect(html).not.toContain('oas-tooltip')
+  })
+
+  it('oas-scroll-area：骨架 + slot 内容同步，视口尺寸写入、溢出态不进快照属预期', async () => {
+    const html = await renderToString('oas-scroll-area', { height: '200' }, '<p>滚动内容</p>')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toContain('<oas-scroll-area height="200">')
+    expect(html).toContain('</template><p>滚动内容</p></oas-scroll-area>')
+    // 视口尺寸（非测量态）同步写入
+    expect(html).toContain('class="viewport"')
+    // happy-dom 溢出测量全 0 → 轨道无 visible/peek（快照=未校正态，浏览器 rAF 校正）
+    expect(html).toContain('class="track track-v"')
+    expect(html).not.toContain('track-v visible')
+  })
+
+  it('oas-tree：JSON data 声明式通道产出节点行快照（含展开子节点）', async () => {
+    const html = await renderToString(
+      'oas-tree',
+      {
+        data: JSON.stringify([
+          { key: 'a', label: '节点 A', children: [{ key: 'a-1', label: '子节点 1' }] },
+          { key: 'b', label: '节点 B' },
+        ]),
+        expanded: 'a',
+      },
+      '',
+      { locale: 'zh-CN' },
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    // 宿主属性保留 data JSON（attribute 通道可被浏览器 upgrade 后重新解析）
+    expect(html).toContain('<oas-tree data=')
+    // 快照含树行骨架与节点文本
+    expect(html).toContain('role="treeitem"')
+    expect(html).toContain('节点 A')
+    expect(html).toContain('子节点 1')
+    // 展开按钮 aria-expanded 同步
+    expect(html).toContain('aria-expanded="true"')
+  })
+
+  it('oas-select：JSON options 声明式通道产出触发器与下拉选项快照', async () => {
+    const html = await renderToString(
+      'oas-select',
+      {
+        options: JSON.stringify([
+          { label: '苹果', value: 'apple' },
+          { label: '香蕉', value: 'banana' },
+          { label: '橙子', value: 'orange' },
+        ]),
+        value: 'banana',
+        placeholder: '请选择',
+      },
+      '',
+      { locale: 'zh-CN' },
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toContain('<oas-select options=')
+    expect(html).toContain('value="banana"')
+    // 触发器 combobox 角色 + 已选值 label
+    expect(html).toContain('role="combobox"')
+    expect(html).toContain('香蕉')
+    // 下拉选项行（关闭态快照，浏览器 upgrade 后交互展开）
+    expect(html).toContain('role="option"')
+    expect(html).toContain('苹果')
+    expect(html).toContain('橙子')
+    // 选中项 aria-selected 同步
+    expect(html).toContain('aria-selected="true"')
+  })
+
+  it('oas-tree/oas-select：data/options JSON 非法时容错为空态快照，不抛错', async () => {
+    const tree = await renderToString('oas-tree', { data: '[{bad', expanded: 'a' }, '', {
+      locale: 'zh-CN',
+    })
+    expect(tree).toContain('<template shadowrootmode="open">')
+    expect(tree).not.toContain('role="treeitem"')
+
+    const select = await renderToString('oas-select', { options: 'not-json' }, '', {
+      locale: 'zh-CN',
+    })
+    expect(select).toContain('<template shadowrootmode="open">')
+    expect(select).not.toContain('role="option"')
+    // 空态：placeholder 兜底（合法 JSON 数组空态）
+    expect(select).toContain('请选择')
+  })
+
   it('非白名单 tag 抛错并列出白名单', async () => {
     await expect(renderToString('oas-input')).rejects.toThrow(
       /非白名单 tag「oas-input」/,
     )
     await expect(renderToString('oas-input')).rejects.toThrow(/oas-button/)
-    await expect(renderToString('oas-tree')).rejects.toThrow(/oas-empty/)
+    await expect(renderToString('oas-modal')).rejects.toThrow(/oas-empty/)
   })
 
   it('attrs 值含引号/尖括号时正确转义', async () => {

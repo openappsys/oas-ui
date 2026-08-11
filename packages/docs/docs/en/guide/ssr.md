@@ -18,7 +18,7 @@ The long-term SSR strategy is Declarative Shadow DOM (DSD): the server outputs
 the static structure plus styles inside `<template shadowrootmode="open">`, and
 the browser's custom element upgrade takes over interactivity afterwards.
 
-Current progress (first and second steps landed):
+Current progress:
 
 - The base class `OASElement` reuses an existing declarative shadow root: when
   the element already has a shadow root attached by
@@ -29,22 +29,26 @@ Current progress (first and second steps landed):
   happy-dom in Node, registers the component classes, renders per input, and
   serializes the shadow snapshot as DSD, returning the full host HTML string
   (see "Server rendering (experimental)").
+- True hydration: on upgrade the component detects the DSD snapshot fingerprint,
+  skips the shadow rebuild, and only caches nodes, binds events, plus runs
+  incremental `update()`. If the snapshot structure mismatches, it falls back to
+  a full re-render (correctness first).
+- A declarative data channel for data components: table / tree / select take
+  `columns` / `data` / `options` through the JSON attribute channel (property
+  takes precedence; invalid JSON falls back to the empty state), and the SSR
+  snapshot serializes the header and data rows / tree node rows / dropdown
+  options.
+- First-frame flicker mitigation for layout-measuring components:
+  affix / ellipsis / scroll-area defer layout writes to the first frame after
+  upgrade when a DSD snapshot is detected (via rAF) — the snapshot is the
+  un-measured state, the first frame after upgrade matches it (no jump), and the
+  real layout is applied on the next frame.
 
 Not yet landed (ROADMAP backlog):
 
-- True hydration: skip the shadow rebuild on upgrade, only cache nodes and bind
-  events plus incremental `update()`. The v1 client take-over strategy is
-  "reuse the DSD root + re-render as usual" — the snapshot and the re-rendered
-  output are identical, so there is no visual difference.
-- A declarative data channel for the remaining data components
-  (tree / select; table has landed as a pilot, see the whitelist).
-- First-frame flicker mitigation for layout-measuring components
-  (affix / ellipsis / tooltip): defer layout writes only when a DSD snapshot is
-  detected.
 - Framework integration plugins (Nuxt / Next).
 
-Whitelisted components can be rendered on the server directly; the rest
-(property-only data components, layout-measuring components) keep the
+Whitelisted components can be rendered on the server directly; the rest keep the
 "client-only" approach below.
 
 ### Vue (Nuxt / Vite SSR)
@@ -161,20 +165,24 @@ into the SSR output stream and the browser parser attaches the DSD templates.
 
 ### Whitelist and boundaries
 
-- Whitelist (pure-presentation components whose `render()` only depends on
-  attributes, plus the declarative-data-channel pilot `oas-table`):
-  `oas-button`, `oas-tag`, `oas-empty`, `oas-divider`,
-  `oas-text`, `oas-title`, `oas-paragraph`, `oas-table`.
+- Whitelist (pure-presentation components, declarative-data components, and the
+  layout-measuring pilot): `oas-button`, `oas-tag`, `oas-empty`, `oas-divider`,
+  `oas-text`, `oas-title`, `oas-paragraph`, `oas-table`, `oas-affix`,
+  `oas-ellipsis`, `oas-scroll-area`, `oas-tree`, `oas-select`.
 - Calling `renderToString` with a non-whitelisted tag throws an explicit error;
   there is no silent fallback.
-- `oas-table` takes `columns` / `data` through the JSON attribute channel
-  (property takes precedence; invalid JSON falls back to the empty state), and
-  its SSR snapshot includes the header and data rows. The remaining data
-  components (tree / select) and layout-measuring components
-  (affix / ellipsis / tooltip) remain client-rendered for now (backlog).
-- v1 client take-over: upgrade reuses the DSD root and re-renders as usual —
-  the snapshot and the re-rendered output are identical, so there is no visual
-  difference; true hydration (skip the rebuild) is backlog.
+- `oas-table` / `oas-tree` / `oas-select` take `columns` / `data` / `options`
+  through the JSON attribute channel (property takes precedence; invalid JSON
+  falls back to the empty state), and the SSR snapshot includes the header and
+  data rows / tree node rows / dropdown options.
+- The snapshots of the layout-measuring components
+  (affix / ellipsis / scroll-area) are the un-measured state (happy-dom reports
+  all-zero layout), the first frame after upgrade matches the snapshot, and the
+  real layout is applied on the next frame — this is the intended semantics of
+  the flicker mitigation.
+- True hydration: upgrade skips the shadow rebuild (DOM references are kept),
+  only caching nodes, binding events, and running incremental `update()`;
+  snapshot structure mismatches fall back to a full re-render.
 
 ## Why
 
