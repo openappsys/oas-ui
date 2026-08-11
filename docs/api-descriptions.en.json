@@ -1252,7 +1252,7 @@
   },
   "oas-toggle-group": {
     "attrs": {
-      "items": "Options JSON",
+      "items": "Options JSON (property assignment reflects to attribute)",
       "multiple": "Multiple mode (checkbox semantics)",
       "value": "Current value: string for single; JSON array string for multiple"
     },
@@ -1285,7 +1285,7 @@
   },
   "oas-transfer": {
     "attrs": {
-      "data": "Data (property, `[{ key, label, disabled }]`)",
+      "data": "Data (JSON attribute channel; property assignment reflects to attribute, [{ key, label, disabled }])",
       "searchable": "Search filtering within panels",
       "titles": "Panel titles (JSON array) or `source-title`/`target-title`",
       "value": "Selected key array (JSON attribute)"

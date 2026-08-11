@@ -37,13 +37,18 @@ export class OASForm extends OASElement {
   }
   private errors: Record<string, string> = {}
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <form part="form" novalidate>
         <slot></slot>
       </form>
     `
+  }
+
+  /** 缓存节点引用 + 绑定提交/字段值同步事件（render 与水合路径共用） */
+  private bind(): void {
     this.form = this.shadow.querySelector('form')
     this.form?.addEventListener('submit', (e: SubmitEvent) => {
       e.preventDefault()
@@ -62,7 +67,19 @@ export class OASForm extends OASElement {
         target.setAttribute('value', typeof v === 'string' ? v : JSON.stringify(v))
       }
     }) as EventListener)
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（form 元素存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('form')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

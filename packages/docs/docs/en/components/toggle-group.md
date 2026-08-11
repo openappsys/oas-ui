@@ -94,7 +94,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `items` | Options JSON | `string` | `[]` |
+| `items` | Options JSON (property assignment reflects to attribute) | `ToggleItem[] \| string` | `[]` |
 | `multiple` | Multiple mode (checkbox semantics) | `boolean` | — |
 | `value` | Current value: string for single; JSON array string for multiple | `string` | `[]` |
 

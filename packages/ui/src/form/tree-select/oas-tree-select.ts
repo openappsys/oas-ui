@@ -185,8 +185,9 @@ export class OASTreeSelect extends OASElement {
   private openState = false
   private flat: FlatNode[] = []
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="wrapper" part="wrapper">
         <button class="trigger" part="trigger" type="button" role="combobox" aria-haspopup="true" aria-expanded="false">
@@ -198,6 +199,10 @@ export class OASTreeSelect extends OASElement {
         <div class="dropdown" part="dropdown"></div>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定触发器/外部点击事件（render 与水合路径共用） */
+  private bind(): void {
     this.triggerEl = this.shadow.querySelector('.trigger')
     this.dropdown = this.shadow.querySelector('.dropdown')
     this.triggerEl?.addEventListener('click', () => this.toggle())
@@ -208,7 +213,20 @@ export class OASTreeSelect extends OASElement {
       }
     })
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（trigger 与 dropdown 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.trigger')) return false
+    if (!this.shadow.querySelector('.dropdown')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

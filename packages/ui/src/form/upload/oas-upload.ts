@@ -143,13 +143,18 @@ export class OASUpload extends OASElement {
     this.renderList()
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <input class="file-input" type="file" hidden />
       <div class="zone" part="zone" role="button" tabindex="0"></div>
       <div class="list" part="list"></div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定文件选择/点击/拖拽事件（render 与水合路径共用） */
+  private bind(): void {
     this.input = this.shadow.querySelector('.file-input')
     this.zone = this.shadow.querySelector('.zone')
     this.list = this.shadow.querySelector('.list')
@@ -194,7 +199,20 @@ export class OASUpload extends OASElement {
     this.onCleanup(() => {
       if (this.timer) clearInterval(this.timer)
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（上传区与列表容器存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.zone')) return false
+    if (!this.shadow.querySelector('.list')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

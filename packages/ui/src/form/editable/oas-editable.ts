@@ -122,8 +122,9 @@ export class OASEditable extends OASElement {
   private inputEl: HTMLInputElement | null = null
   private editing = false
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致（快照为展示态） */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <span class="display" part="display" role="button" tabindex="0"></span>
       <span class="edit" part="edit" hidden>
@@ -132,6 +133,10 @@ export class OASEditable extends OASElement {
         <button class="action cancel" part="cancel" type="button"></button>
       </span>
     `
+  }
+
+  /** 缓存节点引用 + 绑定进入编辑/提交/取消事件（render 与水合路径共用） */
+  private bind(): void {
     this.displayEl = this.shadow.querySelector('.display')
     this.editEl = this.shadow.querySelector('.edit')
     this.inputEl = this.shadow.querySelector('input')
@@ -159,7 +164,20 @@ export class OASEditable extends OASElement {
     this.inputEl?.addEventListener('blur', (e: FocusEvent) => this.handleBlur(e))
     okBtn?.addEventListener('click', () => this.submit())
     cancelBtn?.addEventListener('click', () => this.cancel())
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（display 与编辑态容器存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.display')) return false
+    if (!this.shadow.querySelector('.edit')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

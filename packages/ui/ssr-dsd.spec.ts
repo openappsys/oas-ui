@@ -203,6 +203,57 @@ test.beforeAll(async () => {
       { locale: 'zh-CN' },
     ),
   ])
+
+  // —— DSD 批次 1：表单组件快照（白名单化后由渲染器产出 DSD） ——
+  // 注意：复合组件（checkbox-group/radio-group/form/form-item/dynamic-input）的布局依赖
+  // light DOM 子组件升级，fixture 用空内容保证升级前后布局稳定（子组件交互由单测覆盖）。
+  const FORM_OPTIONS = JSON.stringify([
+    { label: '苹果', value: 'apple' },
+    { label: '香蕉', value: 'banana' },
+  ])
+  const FORM_TREE_OPTIONS = JSON.stringify([
+    { label: '节点 A', value: 'a', children: [{ label: '子节点 1', value: 'a-1' }] },
+  ])
+  const formSnaps = await Promise.all([
+    renderToString('oas-input', { value: '水合输入', placeholder: '请输入' }),
+    renderToString('oas-textarea', { value: '多行文本', rows: '3' }),
+    renderToString('oas-checkbox', { checked: '' }, '记住我'),
+    renderToString('oas-checkbox-group', { value: '["a"]' }),
+    renderToString('oas-radio', { checked: '', value: 'a' }, '选项 A'),
+    renderToString('oas-radio-group', { value: 'a' }),
+    renderToString('oas-switch', { checked: '', size: 'small' }),
+    renderToString('oas-slider', { value: '60', min: '0', max: '100' }),
+    renderToString('oas-input-number', { value: '12', min: '0', max: '100' }),
+    renderToString('oas-rate', { value: '4' }),
+    renderToString('oas-auto-complete', { options: FORM_OPTIONS, value: 'apple' }),
+    renderToString('oas-combobox', { options: FORM_OPTIONS, value: 'banana' }),
+    renderToString('oas-cascader', { options: FORM_TREE_OPTIONS, value: '["a","a-1"]' }),
+    renderToString('oas-tree-select', { options: FORM_TREE_OPTIONS, value: 'a' }),
+    renderToString('oas-mentions', { options: FORM_OPTIONS, value: '你好 @张' }),
+    renderToString('oas-date-picker', { value: '2024-01-15' }, '', { locale: 'zh-CN' }),
+    renderToString('oas-time-picker', { value: '12:30:00' }, '', { locale: 'zh-CN' }),
+    renderToString('oas-calendar', { value: '2024-02-10' }, '', { locale: 'zh-CN' }),
+    renderToString('oas-upload', {}, '', { locale: 'zh-CN' }),
+    renderToString(
+      'oas-transfer',
+      { data: JSON.stringify([{ key: 'a', label: '苹果' }, { key: 'b', label: '香蕉' }]) },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString('oas-color-picker', { value: '#0b6cff' }, '', { locale: 'zh-CN' }),
+    renderToString('oas-toggle-button', { pressed: '', value: 'a' }, '白天'),
+    renderToString(
+      'oas-toggle-group',
+      { items: JSON.stringify([{ label: '日', value: 'day' }, { label: '周', value: 'week' }]), value: 'week' },
+    ),
+    renderToString('oas-pin-input', { value: '123', length: '4' }),
+    renderToString('oas-dynamic-input', { 'model-value': '[]' }),
+    renderToString('oas-dynamic-tags', { 'model-value': '["标签1"]' }),
+    renderToString('oas-editable', { value: '可编辑文本' }),
+    renderToString('oas-form-item', { label: '姓名' }),
+    renderToString('oas-form', {}),
+  ])
+
   dsdHtml = `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -211,7 +262,22 @@ test.beforeAll(async () => {
   <style>${themeCss}</style>
 </head>
 <body style="font-family: system-ui, sans-serif; padding: 24px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start;">
-${[btn, tag, empty, divider, text, title, para, table, affixSnap, ellipsisSnap, scrollAreaSnap, tree, select].join('\n')}
+${[
+  btn,
+  tag,
+  empty,
+  divider,
+  text,
+  title,
+  para,
+  table,
+  affixSnap,
+  ellipsisSnap,
+  scrollAreaSnap,
+  tree,
+  select,
+  ...formSnaps,
+].join('\n')}
 </body>
 </html>`
   writeFileSync(DSD_PAGE, dsdHtml, 'utf8')
@@ -235,19 +301,28 @@ async function upgradeUi(page: Page): Promise<void> {
 }
 
 /** 各白名单宿主元素的 boundingClientRect 快照（2 位小数，排除浮点噪声） */
-function layoutOf(page: Page): Promise<Record<string, { x: number; y: number; w: number; h: number }>> {
-  return page.evaluate((tags) => {
+function layoutOf(
+  page: Page,
+  tags: readonly string[],
+): Promise<Record<string, { x: number; y: number; w: number; h: number }>> {
+  return page.evaluate((tagList) => {
     const round2 = (n: number): number => Math.round(n * 100) / 100
     const out: Record<string, { x: number; y: number; w: number; h: number }> = {}
-    for (const t of tags) {
+    for (const t of tagList) {
       const el = document.querySelector(t)
       if (!el) continue
       const r = el.getBoundingClientRect()
       out[t] = { x: round2(r.x), y: round2(r.y), w: round2(r.width), h: round2(r.height) }
     }
     return out
-  }, [...WHITELIST])
+  }, [...tags])
 }
+
+/**
+ * 布局稳定性比较集：DSD 批次 1 的复合组件 fixture 用空内容保证升级前后布局稳定，
+ * 全部白名单 tag 均参与比较（各组件自身尺寸在升级前后不得变化）。
+ */
+const LAYOUT_STABLE_TAGS = WHITELIST
 
 /** #0b6cff -> rgb(11, 108, 255)（比较 getComputedStyle 的色值用；不支持 8 位 hex 的 alpha） */
 function hexToRgb(hex: string): string {
@@ -356,7 +431,7 @@ test('真水合：upgrade 后 shadow 未被重建（style DOM 引用保持同一
   page,
 }) => {
   await openPage(page)
-  const before = await layoutOf(page)
+  const before = await layoutOf(page, LAYOUT_STABLE_TAGS)
   await page.screenshot({ path: SCREENSHOT.beforeUpgrade, fullPage: true })
 
   // upgrade 前：确认指纹 meta 存在，并保存 shadow 内 style 元素的 DOM 引用（跨 evaluate 保留）
@@ -397,7 +472,7 @@ test('真水合：upgrade 后 shadow 未被重建（style DOM 引用保持同一
     expect(postHydrate[t]!.metaRemoved, `${t} 指纹 meta 应被移除`).toBe(true)
   }
 
-  const after = await layoutOf(page)
+  const after = await layoutOf(page, LAYOUT_STABLE_TAGS)
   expect(after).toEqual(before)
   await page.screenshot({ path: SCREENSHOT.afterUpgrade, fullPage: true })
 })
@@ -426,8 +501,71 @@ test('事件可触发且无重复绑定：upgrade 后逐次点击 oas-button，o
   await expect.poll(clickCount).toBe(2)
 })
 
+test('表单组件事件可触发：upgrade 后 oas-input 输入 / oas-switch 切换 / oas-toggle-group 选中 / oas-checkbox 勾选', async ({
+  page,
+}) => {
+  await openPage(page)
+  await upgradeUi(page)
+
+  await page.evaluate(() => {
+    const w = window as unknown as Window & { __formEvents: Record<string, unknown[]> }
+    w.__formEvents = { input: [], switch: [], tg: [], cb: [] }
+    document.querySelector('oas-input')?.addEventListener('oas-input', (e: Event) =>
+      w.__formEvents.input!.push((e as CustomEvent).detail),
+    )
+    document.querySelector('oas-switch')?.addEventListener('oas-change', (e: Event) =>
+      w.__formEvents.switch!.push((e as CustomEvent).detail),
+    )
+    document.querySelector('oas-toggle-group')?.addEventListener('oas-change', (e: Event) =>
+      w.__formEvents.tg!.push((e as CustomEvent).detail),
+    )
+    document.querySelector('oas-checkbox')?.addEventListener('oas-change', (e: Event) =>
+      w.__formEvents.cb!.push((e as CustomEvent).detail),
+    )
+  })
+
+  // oas-input：输入框聚焦后敲字 → oas-input 派发（fixture 中 oas-input 多处出现，取首个独立实例）
+  const inputEl = page.locator('oas-input').first().locator('input')
+  await inputEl.click()
+  await inputEl.press('Control+A')
+  await inputEl.pressSequentially('abc')
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as unknown as Window & { __formEvents: Record<string, unknown[]> }).__formEvents.input,
+      ),
+    )
+    .not.toEqual([])
+
+  // oas-switch：点击轨道切换 checked（唯一独立实例）
+  await page.locator('oas-switch').first().locator('button').click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as unknown as Window & { __formEvents: Record<string, unknown[]> }).__formEvents.switch,
+      ),
+    )
+    .toEqual([{ checked: false }])
+  await expect(page.locator('oas-switch').first().locator('button')).toHaveAttribute('aria-checked', 'false')
+
+  // oas-toggle-group：点击「周」→ value=week
+  await page.locator('oas-toggle-group [part="item"]').nth(1).click()
+  await expect(page.locator('oas-toggle-group').first()).toHaveAttribute('value', 'week')
+
+  // oas-checkbox：取消勾选原生 checkbox → oas-change（fixture 初始 checked，uncheck 触发 change）
+  await page.locator('oas-checkbox').first().locator('input').uncheck()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as unknown as Window & { __formEvents: Record<string, unknown[]> }).__formEvents.cb,
+      ),
+    )
+    .not.toEqual([])
+})
+
 test('渲染器边界：非白名单抛错、快照属性完整 HTML 转义、快照含真水合指纹', async () => {
-  await expect(renderToString('oas-input', { value: 'x' })).rejects.toThrow(/非白名单/)
+  await expect(renderToString('oas-modal', { value: 'x' })).rejects.toThrow(/非白名单/)
+  await expect(renderToString('oas-alert')).rejects.toThrow(/非白名单/)
   const snap = await renderToString('oas-button', { type: 'primary', 'data-esc': 'a"&<>b' }, '确定')
   expect(snap).toContain('data-esc="a&quot;&amp;&lt;&gt;b"')
   expect(snap).toContain('<template shadowrootmode="open">')

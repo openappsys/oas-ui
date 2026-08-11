@@ -99,14 +99,24 @@ export class OASDynamicInput extends OASElement {
     this.syncRows()
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="rows" part="rows"></div>
       <button class="add" part="add" type="button"></button>
     `
+  }
+
+  /** 缓存节点引用 + 绑定行输入/删除/添加事件 + 接管快照已有行（render 与水合路径共用） */
+  private bind(): void {
     this.rowsEl = this.shadow.querySelector('.rows')
     this.addBtn = this.shadow.querySelector('.add')
+
+    // 水合接管：SSR 快照已按 model-value 渲染行，采纳为 rows 引用，避免 syncRows 重复追加
+    if (this.rowsEl) {
+      this.rows = [...this.rowsEl.querySelectorAll<HTMLElement>(':scope > .row')]
+    }
 
     this.rowsEl?.addEventListener(
       'oas-input',
@@ -117,7 +127,20 @@ export class OASDynamicInput extends OASElement {
     this.onCleanup(() => {
       this.rows = []
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（rows 容器与添加按钮存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.rows')) return false
+    if (!this.shadow.querySelector('.add')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

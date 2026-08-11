@@ -59,16 +59,33 @@ export class OASPinInput extends OASElement {
   private cells: HTMLInputElement[] = []
   private currentLength = 0
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="container" part="container" role="group"></div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定键盘/粘贴/输入事件（render 与水合路径共用） */
+  private bind(): void {
     this.container = this.shadow.querySelector('.container')
     this.container?.addEventListener('keydown', (e: KeyboardEvent) => this.onKeydown(e))
     this.container?.addEventListener('paste', (e: ClipboardEvent) => this.onPaste(e))
     this.container?.addEventListener('input', (e: Event) => this.onInput(e))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（container 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.container')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

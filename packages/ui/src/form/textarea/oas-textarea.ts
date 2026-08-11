@@ -66,18 +66,38 @@ export class OASTextarea extends OASElement {
   }
 
   private ta: HTMLTextAreaElement | null = null
+  /** 水合首帧的测量写入是否已延迟登记（autosize 高度依据 scrollHeight，SSR 无法预知真实内容高度） */
+  private resizeRafScheduled = false
+  private hydratedFirstFrameApplied = false
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <textarea part="textarea"></textarea>
     `
+  }
+
+  /** 缓存节点引用 + 绑定输入事件（render 与水合路径共用） */
+  private bind(): void {
     this.ta = this.shadow.querySelector('textarea')
     this.ta?.addEventListener('input', () => {
       this.emit('input', { value: this.ta!.value })
       this.autoResize()
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（textarea 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('textarea')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {
@@ -99,12 +119,36 @@ export class OASTextarea extends OASElement {
       // autosize：高度由 min-rows/max-rows 约束，rows 取 min-rows
       t.rows = this.minRows()
       t.style.resize = 'none'
-      this.autoResize()
+      this.maybeAutoResize()
     } else {
       t.rows = rows
       t.style.resize = resize
       this.resetHeight()
     }
+  }
+
+  /**
+   * autosize 测量写入的 DSD 水合适配：SSR 快照中 scrollHeight 恒 0 → 写入 min-rows 高；
+   * 水合首帧若同步测量会写入与快照不同的真实高度（闪动）。故水合场景延迟到首帧后
+   * （与 affix 的布局写入治理一致），纯 CSR 或水合后的后续 update 一律同步测量。
+   */
+  private maybeAutoResize(): void {
+    if (this.wasHydrated() && !this.hydratedFirstFrameApplied) {
+      this.scheduleHydratedResize()
+      return
+    }
+    this.autoResize()
+  }
+
+  /** 水合首帧：测量写入统一延迟到 rAF 校正；期间重复调用一律抑制 */
+  private scheduleHydratedResize(): void {
+    if (this.resizeRafScheduled) return
+    this.resizeRafScheduled = true
+    const raf = requestAnimationFrame(() => {
+      this.hydratedFirstFrameApplied = true
+      this.autoResize()
+    })
+    this.onCleanup(() => cancelAnimationFrame(raf))
   }
 
   /** autosize 开启判定：规范命名 autosize，旧属性 auto-height 兼容 */

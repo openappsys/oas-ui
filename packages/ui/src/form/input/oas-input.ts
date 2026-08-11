@@ -311,8 +311,9 @@ export class OASInput extends OASElement {
   /** show-password 明文/密文状态（仅 type=password 时生效） */
   private revealed = false
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="root" part="root">
         <span class="wrapper" part="wrapper">
@@ -339,6 +340,10 @@ export class OASInput extends OASElement {
         <span class="count" part="count" hidden></span>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定输入/清空/密码眼事件（render 与水合路径共用） */
+  private bind(): void {
     this.inputEl = this.shadow.querySelector('input')
     this.clearBtn = this.shadow.querySelector('.clear-btn')
     this.eyeBtn = this.shadow.querySelector('.eye-btn')
@@ -369,7 +374,19 @@ export class OASInput extends OASElement {
       this.syncPasswordReveal()
       this.inputEl.focus()
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（主输入 input 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('input')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

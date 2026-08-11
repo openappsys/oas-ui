@@ -104,8 +104,9 @@ export class OASInputNumber extends OASElement {
   private upBtn: HTMLButtonElement | null = null
   private downBtn: HTMLButtonElement | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <span class="wrapper" part="wrapper">
         <input part="input" type="number" />
@@ -115,6 +116,10 @@ export class OASInputNumber extends OASElement {
         </span>
       </span>
     `
+  }
+
+  /** 缓存节点引用 + 绑定输入/步进按钮事件（render 与水合路径共用） */
+  private bind(): void {
     this.input = this.shadow.querySelector('input')
     this.upBtn = this.shadow.querySelector('button[part="up"]')
     this.downBtn = this.shadow.querySelector('button[part="down"]')
@@ -122,7 +127,21 @@ export class OASInputNumber extends OASElement {
     this.input?.addEventListener('change', () => this.emitChange())
     this.upBtn?.addEventListener('click', () => this.stepBy(1))
     this.downBtn?.addEventListener('click', () => this.stepBy(-1))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（主输入与步进按钮存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('input')) return false
+    if (!this.shadow.querySelector('button[part="up"]')) return false
+    if (!this.shadow.querySelector('button[part="down"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

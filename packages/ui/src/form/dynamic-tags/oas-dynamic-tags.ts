@@ -128,8 +128,9 @@ export class OASDynamicTags extends OASElement {
     this.syncInputState()
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="tags" part="tags" role="list"></div>
       <div class="entry">
@@ -137,6 +138,10 @@ export class OASDynamicTags extends OASElement {
         <span class="hint" role="alert" hidden></span>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定输入/删除/提示事件（render 与水合路径共用） */
+  private bind(): void {
     this.tagsEl = this.shadow.querySelector('.tags')
     this.inputEl = this.shadow.querySelector('.tag-input')
     this.hintEl = this.shadow.querySelector('.hint')
@@ -148,7 +153,20 @@ export class OASDynamicTags extends OASElement {
       if (this.hintTimer != null) window.clearTimeout(this.hintTimer)
       this.hintTimer = null
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（tags 容器与输入框存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.tags')) return false
+    if (!this.shadow.querySelector('.tag-input')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

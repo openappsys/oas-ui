@@ -79,14 +79,43 @@ export class OASToggleGroup extends OASElement {
   /** 多选模式 roving tabindex 的焦点项下标 */
   private focusIndex = 0
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /**
+   * items 数据通道：Vue/React 模板渲染时 `items` 命中实例属性走 property 赋值，
+   * setter 单向反射到 attribute（attribute 为唯一权威数据源），经 attributeChangedCallback
+   * 走既有 parse/update 链路——与 table/select 的数据组件 JSON attribute 通道约定一致。
+   */
+  get items(): ToggleItem[] {
+    return this.itemsList
+  }
+  set items(value: ToggleItem[] | string) {
+    this.setAttribute('items', typeof value === 'string' ? value : JSON.stringify(value))
+  }
+
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="group" part="group"></div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定键盘导航（render 与水合路径共用） */
+  private bind(): void {
     this.group = this.shadow.querySelector('.group')
     this.group?.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（group 容器存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.group')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

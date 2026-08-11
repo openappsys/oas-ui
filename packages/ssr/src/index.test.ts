@@ -281,10 +281,8 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('非白名单 tag 抛错并列出白名单', async () => {
-    await expect(renderToString('oas-input')).rejects.toThrow(
-      /非白名单 tag「oas-input」/,
-    )
-    await expect(renderToString('oas-input')).rejects.toThrow(/oas-button/)
+    await expect(renderToString('oas-modal')).rejects.toThrow(/非白名单 tag「oas-modal」/)
+    await expect(renderToString('oas-alert')).rejects.toThrow(/oas-button/)
     await expect(renderToString('oas-modal')).rejects.toThrow(/oas-empty/)
   })
 
@@ -297,5 +295,298 @@ describe('@oas-ui/ssr renderToString', () => {
     const a = await renderToString('oas-button', { type: 'primary' }, '确定', { locale: 'zh-CN' })
     const b = await renderToString('oas-button', { type: 'primary' }, '确定', { locale: 'zh-CN' })
     expect(b).toBe(a)
+  })
+
+  // ---- DSD 批次 1：表单组件白名单化（template/bind/hydrate 拆分 + 数据组件 JSON 通道） ----
+
+  it('oas-input：骨架 + value/placeholder 宿主属性同步', async () => {
+    const html = await renderToString('oas-input', { value: 'hello', placeholder: '请输入' }, '')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<oas-input value="hello" placeholder="请输入">')
+    expect(html).toContain('<input part="input"')
+  })
+
+  it('oas-textarea：骨架 + value 同步', async () => {
+    const html = await renderToString('oas-textarea', { value: '多行文本', rows: '4' }, '')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<oas-textarea value="多行文本" rows="4">')
+    expect(html).toContain('<textarea part="textarea"')
+  })
+
+  it('oas-checkbox / oas-radio：选中态同步', async () => {
+    const cb = await renderToString('oas-checkbox', { checked: '' }, '记住我')
+    expect(cb).toContain('<oas-checkbox checked="">')
+    expect(cb).toContain('<input part="checkbox"')
+    expect(cb).toContain('aria-checked="true"')
+    expect(cb).toContain('</template>记住我</oas-checkbox>')
+
+    const rd = await renderToString('oas-radio', { checked: '', value: 'a' }, 'A')
+    expect(rd).toContain('<oas-radio checked="" value="a">')
+    expect(rd).toContain('<input part="radio"')
+    expect(rd).toContain('aria-checked="true"')
+  })
+
+  it('oas-checkbox-group / oas-radio-group：fieldset 骨架 + light DOM 子项原样保留', async () => {
+    const children = '<oas-checkbox value="a">A</oas-checkbox><oas-checkbox value="b">B</oas-checkbox>'
+    const cg = await renderToString('oas-checkbox-group', { value: '["a"]' }, children)
+    expect(cg).toContain('<template shadowrootmode="open">')
+    expect(cg).toContain('<fieldset part="group">')
+    expect(cg).toContain('</template>')
+    expect(cg).toContain(children)
+
+    const rg = await renderToString('oas-radio-group', { value: 'a' }, '<oas-radio value="a">A</oas-radio>')
+    expect(rg).toContain('<oas-radio-group value="a">')
+    expect(rg).toContain('<fieldset part="group">')
+    expect(rg).toContain('<oas-radio value="a">A</oas-radio>')
+  })
+
+  it('oas-switch：checked 同步 aria-checked', async () => {
+    const html = await renderToString('oas-switch', { checked: '', size: 'small' }, '')
+    expect(html).toContain('<oas-switch')
+    expect(html).toContain('checked=""')
+    expect(html).toContain('size="small"')
+    expect(html).toContain('<button part="switch" role="switch"')
+    expect(html).toContain('aria-checked="true"')
+  })
+
+  it('oas-slider：range 骨架 + value/min/max 同步', async () => {
+    const html = await renderToString('oas-slider', { value: '60', min: '0', max: '100' }, '')
+    expect(html).toContain('<oas-slider value="60" min="0" max="100">')
+    expect(html).toContain('<input part="track" type="range"')
+  })
+
+  it('oas-input-number：数字输入骨架 + value 同步', async () => {
+    const html = await renderToString('oas-input-number', { value: '12', min: '0', max: '100' }, '')
+    expect(html).toContain('<oas-input-number value="12" min="0" max="100">')
+    expect(html).toContain('<input part="input" type="number"')
+    expect(html).toContain('part="up"')
+    expect(html).toContain('part="down"')
+  })
+
+  it('oas-rate：评分骨架 + aria-valuenow 同步 + 星形部件', async () => {
+    const html = await renderToString('oas-rate', { value: '4' }, '')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('role="slider"')
+    expect(html).toContain('aria-valuenow="4"')
+    expect(html).toContain('part="star"')
+  })
+
+  it('oas-auto-complete：options JSON 通道保留 + 输入骨架', async () => {
+    const options = JSON.stringify([
+      { label: '苹果', value: 'apple' },
+      { label: '香蕉', value: 'banana' },
+    ])
+    const html = await renderToString('oas-auto-complete', { options, value: 'apple' }, '')
+    expect(html).toContain('<oas-auto-complete options=')
+    expect(html).toContain('value="apple"')
+    expect(html).toContain('<input part="input" role="combobox"')
+    // 下拉关闭态：不含选项行（浏览器 upgrade 后输入才展开）
+    expect(html).not.toContain('role="option"')
+  })
+
+  it('oas-combobox：options JSON 通道 + 已选值 label 回填输入框', async () => {
+    const options = JSON.stringify([
+      { label: '苹果', value: 'apple' },
+      { label: '香蕉', value: 'banana' },
+    ])
+    const html = await renderToString('oas-combobox', { options, value: 'banana' }, '')
+    expect(html).toContain('<oas-combobox options=')
+    expect(html).toContain('value="banana"')
+    expect(html).toContain('role="combobox"')
+    // 受控 value 回填 label（触发文案）
+    expect(html).toContain('香蕉')
+    // 下拉关闭态
+    expect(html).not.toContain('role="option"')
+  })
+
+  it('oas-cascader：options JSON 通道 + 已选路径 label 展示', async () => {
+    const options = JSON.stringify([
+      { label: '节点 A', value: 'a', children: [{ label: '子节点 1', value: 'a-1' }] },
+      { label: '节点 B', value: 'b' },
+    ])
+    const html = await renderToString('oas-cascader', { options, value: '["a","a-1"]' }, '')
+    expect(html).toContain('<oas-cascader options=')
+    expect(html).toContain('节点 A / 子节点 1')
+    expect(html).toContain('part="trigger"')
+    // 下拉关闭态
+    expect(html).not.toContain('part="panel"')
+  })
+
+  it('oas-tree-select：options JSON 通道 + 已选节点 label 展示', async () => {
+    const options = JSON.stringify([
+      { label: '节点 A', value: 'a', children: [{ label: '子节点 1', value: 'a-1' }] },
+    ])
+    const html = await renderToString('oas-tree-select', { options, value: 'a' }, '')
+    expect(html).toContain('<oas-tree-select options=')
+    expect(html).toContain('value="a"')
+    expect(html).toContain('节点 A')
+    expect(html).toContain('part="trigger"')
+    // 下拉关闭态
+    expect(html).not.toContain('role="treeitem"')
+  })
+
+  it('oas-mentions：options JSON 通道 + textarea 骨架 + value 同步', async () => {
+    const options = JSON.stringify([
+      { label: '张三', value: 'zhangsan' },
+      { label: '李四', value: 'lisi' },
+    ])
+    const html = await renderToString('oas-mentions', { options, value: '你好 @张' }, '')
+    expect(html).toContain('<oas-mentions options=')
+    expect(html).toContain('<textarea part="textarea"')
+    // 提及面板关闭态
+    expect(html).not.toContain('part="option"')
+  })
+
+  it('oas-date-picker：触发器 value 格式化同步，面板关闭态不进快照', async () => {
+    const html = await renderToString('oas-date-picker', { value: '2024-01-15' }, '', { locale: 'zh-CN' })
+    expect(html).toContain('<oas-date-picker value="2024-01-15">')
+    expect(html).toContain('part="trigger"')
+    expect(html).toContain('2024-01-15')
+    // 面板关闭态：不含日历网格
+    expect(html).not.toContain('role="grid"')
+  })
+
+  it('oas-time-picker：触发器 value 格式化同步，面板关闭态不进快照', async () => {
+    const html = await renderToString('oas-time-picker', { value: '12:30:00' }, '', { locale: 'zh-CN' })
+    expect(html).toContain('<oas-time-picker value="12:30:00">')
+    expect(html).toContain('part="trigger"')
+    expect(html).toContain('12:30:00')
+    // 面板关闭态：不含选项行（列容器骨架在模板中，属预期）
+    expect(html).not.toContain('role="option"')
+  })
+
+  it('oas-calendar：月网格同步入快照（选中日 + 周表头）', async () => {
+    const html = await renderToString('oas-calendar', { value: '2024-02-10' }, '', { locale: 'zh-CN' })
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('part="grid"')
+    expect(html).toContain('role="grid"')
+    expect(html).toContain('part="today"')
+  })
+
+  it('oas-upload：空态骨架（无文件时占位文案走 locale）', async () => {
+    const html = await renderToString('oas-upload', {}, '', { locale: 'zh-CN' })
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('part="zone"')
+    expect(html).toContain('暂无文件')
+  })
+
+  it('oas-transfer：data JSON 通道产出左侧面板数据行', async () => {
+    const html = await renderToString(
+      'oas-transfer',
+      { data: JSON.stringify([{ key: 'a', label: '苹果' }, { key: 'b', label: '香蕉' }]) },
+      '',
+      { locale: 'zh-CN' },
+    )
+    expect(html).toContain('<oas-transfer data=')
+    expect(html).toContain('part="option"')
+    expect(html).toContain('苹果')
+    expect(html).toContain('香蕉')
+  })
+
+  it('oas-transfer：data 非法 JSON 容错为空态，不抛错', async () => {
+    const html = await renderToString('oas-transfer', { data: '[{bad' }, '', { locale: 'zh-CN' })
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).not.toContain('part="option"')
+  })
+
+  it('oas-color-picker：触发器色块与 hex 文本同步', async () => {
+    const html = await renderToString('oas-color-picker', { value: '#0b6cff' }, '', { locale: 'zh-CN' })
+    expect(html).toContain('<oas-color-picker value="#0b6cff">')
+    expect(html).toContain('part="trigger"')
+    expect(html).toContain('#0b6cff')
+    // 预设色板由 update 同步渲染（确定性），面板本体 display:none 属关闭态
+    expect(html).toContain('part="preset"')
+  })
+
+  it('oas-toggle-button：pressed 同步 aria-pressed', async () => {
+    const html = await renderToString('oas-toggle-button', { pressed: '', value: 'a' }, '白天')
+    expect(html).toContain('<oas-toggle-button pressed="" value="a">')
+    expect(html).toContain('aria-pressed="true"')
+    expect(html).toContain('</template>白天</oas-toggle-button>')
+  })
+
+  it('oas-toggle-group：items JSON 通道产出按钮组 + 选中态同步', async () => {
+    const items = JSON.stringify([
+      { label: '日', value: 'day' },
+      { label: '周', value: 'week' },
+    ])
+    const html = await renderToString('oas-toggle-group', { items, value: 'week' }, '')
+    expect(html).toContain('<oas-toggle-group items=')
+    expect(html).toContain('value="week"')
+    expect(html).toContain('part="item"')
+    expect(html).toContain('>日<')
+    expect(html).toContain('>周<')
+    expect(html).toContain('aria-checked="true"')
+  })
+
+  it('oas-pin-input：value 拆格同步到每格输入框', async () => {
+    const html = await renderToString('oas-pin-input', { value: '123', length: '4' }, '')
+    expect(html).toContain('<oas-pin-input value="123" length="4">')
+    expect(html).toContain('part="container"')
+    expect(html).toContain('part="cell"')
+    // 4 格且值拆到各格
+    const cells = html.match(/part="cell"/g)
+    expect(cells?.length).toBe(4)
+  })
+
+  it('oas-dynamic-input：model-value JSON 通道产出行骨架（内嵌 oas-input）', async () => {
+    const html = await renderToString('oas-dynamic-input', { 'model-value': '["a","b"]' }, '')
+    expect(html).toContain('<oas-dynamic-input model-value="[&quot;a&quot;,&quot;b&quot;]">')
+    expect(html).toContain('part="rows"')
+    expect(html).toContain('part="row-input"')
+    expect(html).toContain('<oas-input')
+    expect(html).toContain('part="add"')
+  })
+
+  it('oas-dynamic-tags：model-value JSON 通道产出标签行', async () => {
+    const html = await renderToString('oas-dynamic-tags', { 'model-value': '["标签1"]' }, '')
+    expect(html).toContain('<oas-dynamic-tags model-value="[&quot;标签1&quot;]">')
+    expect(html).toContain('part="tags"')
+    expect(html).toContain('part="tag"')
+    expect(html).toContain('标签1')
+    expect(html).toContain('part="input"')
+  })
+
+  it('oas-editable：展示态快照（value 文本同步，编辑态默认隐藏）', async () => {
+    const html = await renderToString('oas-editable', { value: '可编辑文本' }, '')
+    expect(html).toContain('<oas-editable value="可编辑文本">')
+    expect(html).toContain('part="display"')
+    expect(html).toContain('可编辑文本')
+    // 编辑态容器默认隐藏
+    expect(html).toContain('part="edit" hidden')
+  })
+
+  it('oas-form：form 骨架 + rules JSON 通道保留', async () => {
+    const rules = JSON.stringify({ name: [{ required: true }] })
+    const html = await renderToString('oas-form', { rules }, '<oas-form-item label="姓名"></oas-form-item>')
+    expect(html).toContain('<oas-form rules=')
+    expect(html).toContain('<form part="form"')
+    expect(html).toContain('</template><oas-form-item label="姓名"></oas-form-item></oas-form>')
+  })
+
+  it('oas-form-item：label 文本同步入快照', async () => {
+    const html = await renderToString('oas-form-item', { label: '姓名', required: '' }, '<oas-input></oas-input>')
+    expect(html).toContain('<oas-form-item')
+    expect(html).toContain('label="姓名"')
+    expect(html).toContain('required=""')
+    expect(html).toContain('part="label"')
+    expect(html).toContain('姓名')
+    // 必填星号可见（required 属性时 hidden 移除）
+    expect(html).toContain('part="required"')
+    expect(html).toContain('>')
+    expect(html).toContain('</template><oas-input></oas-input></oas-form-item>')
+  })
+
+  it('数据组件非法 JSON 容错：auto-complete / toggle-group / dynamic-tags 空态快照', async () => {
+    const ac = await renderToString('oas-auto-complete', { options: 'not-json' }, '')
+    expect(ac).toContain('<template shadowrootmode="open">')
+
+    const tg = await renderToString('oas-toggle-group', { items: 'not-json' }, '')
+    expect(tg).toContain('<template shadowrootmode="open">')
+    expect(tg).not.toContain('part="item"')
+
+    const dt = await renderToString('oas-dynamic-tags', { 'model-value': 'not-json' }, '')
+    expect(dt).toContain('<template shadowrootmode="open">')
+    expect(dt).not.toContain('part="tag"')
   })
 })

@@ -6,9 +6,12 @@
  * 输出完整宿主 HTML 字符串。浏览器拿到该快照无需 JS 即可呈现结构与样式，upgrade 后复用已有 shadow root
  * 照常接管交互（基类已有 DSD 防御）。
  *
- * 范围：白名单纯展示组件（button/tag/empty/divider/typography）+ 数据组件（table/tree/select，
- * 数据走 JSON attribute 声明式通道，property 优先）+ 测量组件闪动治理试点（affix/ellipsis/scroll-area，
- * 快照为未校正态，浏览器 upgrade 后 rAF 校正）。
+ * 范围：白名单纯展示组件（button/tag/empty/divider/typography）+ 数据组件（table/tree/select/transfer/
+ * toggle-group 等，数据走 JSON attribute 声明式通道，property 优先）+ 测量组件闪动治理试点（affix/
+ * ellipsis/scroll-area，快照为未校正态，浏览器 upgrade 后 rAF 校正）+ 表单组件批次 1（input/textarea/
+ * checkbox/radio/switch/slider/input-number/rate/auto-complete/combobox/cascader/tree-select/mentions/
+ * date-picker/time-picker/calendar/upload/color-picker/toggle-button/pin-input/dynamic-input/dynamic-tags/
+ * editable/form/form-item 等，快照含骨架与已选值；下拉面板默认关闭态、上传列表为空态属预期）。
  *
  * 为什么按需装载（而不是 `import('@oas-ui/ui')` 全量）：
  * - 全量入口会求值全部 ~115 个组件目录（每个目录 index.ts 的 define 副作用 + 各自依赖图），
@@ -44,9 +47,10 @@ import { ensureShim } from './shim.js'
 
 /**
  * 渲染器开放的白名单 tag。
- * 纯展示组件（render 只依赖 attributes）+ 数据组件（table/tree/select，数据走 JSON attribute
- * 声明式通道、非虚拟模式同步渲染、快照可序列化数据行/选项）+ 测量组件闪动治理试点
- * （affix/ellipsis/scroll-area：SSR 快照为未校正态，浏览器端 rAF 校正，属设计语义）。
+ * 纯展示组件（render 只依赖 attributes）+ 数据组件（table/tree/select/transfer/toggle-group，
+ * 数据走 JSON attribute 声明式通道、非虚拟模式同步渲染、快照可序列化数据行/选项）+ 测量组件闪动治理
+ * 试点（affix/ellipsis/scroll-area：SSR 快照为未校正态，浏览器端 rAF 校正，属设计语义）+ 表单组件
+ * 批次 1（DSD 白名单化：template/bind/hydrate 拆分，快照为骨架/已选值/关闭态下拉）。
  */
 export const WHITELIST = [
   'oas-button',
@@ -62,6 +66,35 @@ export const WHITELIST = [
   'oas-scroll-area',
   'oas-tree',
   'oas-select',
+  'oas-input',
+  'oas-textarea',
+  'oas-checkbox',
+  'oas-checkbox-group',
+  'oas-radio',
+  'oas-radio-group',
+  'oas-switch',
+  'oas-slider',
+  'oas-input-number',
+  'oas-rate',
+  'oas-auto-complete',
+  'oas-combobox',
+  'oas-cascader',
+  'oas-tree-select',
+  'oas-mentions',
+  'oas-date-picker',
+  'oas-time-picker',
+  'oas-calendar',
+  'oas-upload',
+  'oas-transfer',
+  'oas-color-picker',
+  'oas-toggle-button',
+  'oas-toggle-group',
+  'oas-pin-input',
+  'oas-dynamic-input',
+  'oas-dynamic-tags',
+  'oas-editable',
+  'oas-form',
+  'oas-form-item',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -95,7 +128,8 @@ function fingerprintFor(tag: string): string {
 /**
  * 白名单 tag → 组件目录入口映射（经 @oas-ui/ui exports 的 `./*` 通配可达：
  * `@oas-ui/ui/basic/button` → `dist/basic/button/index.js`，vitest 走 alias 到 src 目录 index.ts）。
- * typography 三兄弟共用 `basic/typography` 目录，装载一次即注册三个 tag。
+ * typography 三兄弟共用 `basic/typography` 目录，checkbox/radio 各含单控件与 group 两个 tag，
+ * 装载一次即注册全部相关 tag。
  */
 const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-button': '@oas-ui/ui/basic/button',
@@ -111,6 +145,35 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-scroll-area': '@oas-ui/ui/floating/scroll-area',
   'oas-tree': '@oas-ui/ui/data/tree',
   'oas-select': '@oas-ui/ui/form/select',
+  'oas-input': '@oas-ui/ui/form/input',
+  'oas-textarea': '@oas-ui/ui/form/textarea',
+  'oas-checkbox': '@oas-ui/ui/form/checkbox',
+  'oas-checkbox-group': '@oas-ui/ui/form/checkbox',
+  'oas-radio': '@oas-ui/ui/form/radio',
+  'oas-radio-group': '@oas-ui/ui/form/radio',
+  'oas-switch': '@oas-ui/ui/form/switch',
+  'oas-slider': '@oas-ui/ui/form/slider',
+  'oas-input-number': '@oas-ui/ui/form/input-number',
+  'oas-rate': '@oas-ui/ui/form/rate',
+  'oas-auto-complete': '@oas-ui/ui/form/auto-complete',
+  'oas-combobox': '@oas-ui/ui/form/combobox',
+  'oas-cascader': '@oas-ui/ui/form/cascader',
+  'oas-tree-select': '@oas-ui/ui/form/tree-select',
+  'oas-mentions': '@oas-ui/ui/form/mentions',
+  'oas-date-picker': '@oas-ui/ui/form/date-picker',
+  'oas-time-picker': '@oas-ui/ui/form/time-picker',
+  'oas-calendar': '@oas-ui/ui/form/calendar',
+  'oas-upload': '@oas-ui/ui/form/upload',
+  'oas-transfer': '@oas-ui/ui/form/transfer',
+  'oas-color-picker': '@oas-ui/ui/form/color-picker',
+  'oas-toggle-button': '@oas-ui/ui/form/toggle-button',
+  'oas-toggle-group': '@oas-ui/ui/form/toggle-group',
+  'oas-pin-input': '@oas-ui/ui/form/pin-input',
+  'oas-dynamic-input': '@oas-ui/ui/form/dynamic-input',
+  'oas-dynamic-tags': '@oas-ui/ui/form/dynamic-tags',
+  'oas-editable': '@oas-ui/ui/form/editable',
+  'oas-form': '@oas-ui/ui/form/form',
+  'oas-form-item': '@oas-ui/ui/form/form-item',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */
@@ -151,7 +214,13 @@ async function ensureI18n(): Promise<typeof import('@oas-ui/i18n')> {
  *
  * @param tag 白名单组件标签（oas-button / oas-tag / oas-empty / oas-divider /
  *   oas-text / oas-title / oas-paragraph / oas-table / oas-affix / oas-ellipsis /
- *   oas-scroll-area / oas-tree / oas-select），其余抛错
+ *   oas-scroll-area / oas-tree / oas-select / oas-input / oas-textarea / oas-checkbox /
+ *   oas-checkbox-group / oas-radio / oas-radio-group / oas-switch / oas-slider /
+ *   oas-input-number / oas-rate / oas-auto-complete / oas-combobox / oas-cascader /
+ *   oas-tree-select / oas-mentions / oas-date-picker / oas-time-picker / oas-calendar /
+ *   oas-upload / oas-transfer / oas-color-picker / oas-toggle-button / oas-toggle-group /
+ *   oas-pin-input / oas-dynamic-input / oas-dynamic-tags / oas-editable / oas-form /
+ *   oas-form-item），其余抛错
  * @param attrs 宿主 attributes（kebab-case 键），值在序列化时做 & " < > 完整 HTML 转义
  * @param slotHTML 注入 light DOM 的 HTML 片段（默认插槽内容）
  * @param opts 选项（locale 控制内置文案语言）

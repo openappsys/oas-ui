@@ -178,8 +178,9 @@ export class OASColorPicker extends OASElement {
   private openState = false
   private rgb: RGB = { r: 0, g: 102, b: 255 }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="wrapper" part="wrapper">
         <button class="trigger" part="trigger" type="button"
@@ -217,6 +218,10 @@ export class OASColorPicker extends OASElement {
         </div>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定触发器/通道滑杆/数字输入/外部点击事件（render 与水合路径共用） */
+  private bind(): void {
     this.trigger = this.shadow.querySelector('.trigger')
     this.panel = this.shadow.querySelector('.panel')
 
@@ -243,7 +248,20 @@ export class OASColorPicker extends OASElement {
     )
 
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（trigger 与面板存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.trigger')) return false
+    if (!this.shadow.querySelector('.panel')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

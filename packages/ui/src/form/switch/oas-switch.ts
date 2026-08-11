@@ -176,8 +176,9 @@ export class OASSwitch extends OASElement {
 
   private btn: HTMLButtonElement | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <button part="switch" role="switch" aria-checked="false">
         <span class="thumb" part="thumb"></span>
@@ -186,6 +187,10 @@ export class OASSwitch extends OASElement {
       </button>
       <span class="outside-label" part="label" hidden></span>
     `
+  }
+
+  /** 缓存节点引用 + 绑定切换事件（render 与水合路径共用） */
+  private bind(): void {
     this.btn = this.shadow.querySelector('button')
     this.btn?.addEventListener('click', () => {
       if (this.hasAttr('disabled') || this.hasAttr('loading')) return
@@ -193,7 +198,19 @@ export class OASSwitch extends OASElement {
       this.toggleAttribute('checked', checked)
       this.emit('change', { checked })
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（switch 按钮存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('button[part="switch"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

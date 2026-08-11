@@ -130,7 +130,7 @@ const STYLE = `
 
 export class OASTransfer extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'titles', 'source-title', 'target-title', 'searchable']
+    return ['value', 'data', 'titles', 'source-title', 'target-title', 'searchable']
   }
 
   private _data: TransferItem[] = []
@@ -139,35 +139,36 @@ export class OASTransfer extends OASElement {
   private activeSide: 'left' | 'right' = 'left'
   private leftListbox: HTMLElement | null = null
   private rightListbox: HTMLElement | null = null
+  /** 最近一次数据签名：数据变化时清空两侧选中态（与既有 setter 行为一致） */
+  private lastDataKey = ''
 
-  /** data 走 property（对象数组无法用 JSON 属性表达），设置后立即重渲 */
+  /**
+   * data 同时支持 attribute 与 property 赋值（JSON attribute 声明式通道，参照 table/select 约定）：
+   * Vue/React 模板渲染时 `data` 命中实例属性走 property 赋值，setter 单向反射到 attribute，
+   * 经 attributeChangedCallback 走既有 parse/update 链路，attribute 为唯一权威数据源。
+   */
   get data(): TransferItem[] {
     return [...this._data]
   }
 
-  set data(items: TransferItem[]) {
-    this._data = Array.isArray(items)
-      ? items.filter((i) => i && typeof i.key === 'string')
-      : []
-    this.leftSelected.clear()
-    this.rightSelected.clear()
-    this.renderPanels()
+  set data(value: TransferItem[] | string) {
+    this.setAttribute('data', typeof value === 'string' ? value : JSON.stringify(value))
   }
 
   override connectedCallback(): void {
     super.connectedCallback()
     // 兼容 SSR/水合时序：元素升级前若 data 被赋成自有属性，会遮蔽原型 setter。
-    // 回收自有属性进 _data 并删除，保证 setter 生效、选项正确渲染。
+    // 回收自有属性进 attribute 通道（JSON），删除自有属性，保证 setter/update 统一解析。
     if (Object.prototype.hasOwnProperty.call(this, 'data') && Array.isArray(this.data)) {
-      const own = this.data
+      const own = this.data as TransferItem[]
       delete (this as Record<string, unknown>).data
-      this._data = own.filter((i) => i && typeof i.key === 'string')
-      this.renderPanels()
+      this.setAttribute('data', JSON.stringify(own))
     }
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="panel" part="panel">
         <div class="panel-head">
@@ -196,6 +197,10 @@ export class OASTransfer extends OASElement {
         <div class="listbox right" role="listbox" tabindex="0"></div>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定穿梭/全选/搜索/键盘事件（render 与水合路径共用） */
+  private bind(): void {
     this.leftListbox = this.shadow.querySelector('.listbox.left')
     this.rightListbox = this.shadow.querySelector('.listbox.right')
 
@@ -218,12 +223,46 @@ export class OASTransfer extends OASElement {
 
     this.leftListbox?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e, 'left'))
     this.rightListbox?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e, 'right'))
+  }
 
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
   }
 
+  /** 真水合：校验 SSR 快照结构（两侧 listbox 与穿梭按钮存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.listbox.left')) return false
+    if (!this.shadow.querySelector('.listbox.right')) return false
+    if (!this.shadow.querySelector('.to-right')) return false
+    if (!this.shadow.querySelector('.to-left')) return false
+    this.bind()
+    return true
+  }
+
   protected override update(): void {
+    this.parseData()
     this.renderPanels()
+  }
+
+  /** 解析 data 数据通道（JSON attribute）：非法 JSON 容错为空数据，数据签名变化时清空选中态 */
+  private parseData(): void {
+    const raw = this.getAttribute('data')
+    try {
+      const parsed = raw == null ? null : JSON.parse(raw)
+      this._data = Array.isArray(parsed)
+        ? parsed.filter((i) => i && typeof i.key === 'string')
+        : []
+    } catch {
+      this._data = []
+    }
+    const key = JSON.stringify(this._data)
+    if (key !== this.lastDataKey) {
+      this.lastDataKey = key
+      this.leftSelected.clear()
+      this.rightSelected.clear()
+    }
   }
 
   private currentValue(): string[] {

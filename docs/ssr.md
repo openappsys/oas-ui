@@ -17,7 +17,8 @@ OAS-UI 是 Web Components 组件库，组件在浏览器运行时自定义元素
 - 基类 `OASElement` 已支持复用 declarative shadow root：元素在 upgrade 前已由 `<template shadowrootmode="open">` 挂好 shadow root 时，构造器复用已有 root，不再调用 `attachShadow`（否则会抛 `NotSupportedError` 导致组件报废）。
 - `@oas-ui/ssr` 渲染器已落地：Node 环境用 happy-dom 起最小 DOM shim，注册组件类后按入参渲染并把 shadow 快照序列化为 DSD，输出完整宿主 HTML 字符串（见「服务端渲染（实验）」）。
 - 真水合：upgrade 检测到 DSD 快照指纹时跳过 shadow 重建，只缓存节点并绑定事件 + 增量 update；快照结构不符时回退全量重渲染（正确性优先）。
-- 数据组件声明式数据通道：table / tree / select 的 `columns` / `data` / `options` 走 JSON attribute 声明式通道（property 优先，非法 JSON 回退空态），SSR 快照可序列化表头与数据行 / 树节点行 / 下拉选项。
+- 数据组件声明式数据通道：table / tree / select / transfer / toggle-group 的 `columns` / `data` / `options` / `items` 走 JSON attribute 声明式通道（property 赋值单向反射 attribute，非法 JSON 回退空态），SSR 快照可序列化表头与数据行 / 树节点行 / 下拉选项 / 穿梭面板数据 / 按钮组。
+- 表单组件批次 1（DSD 白名单化）：input / textarea / checkbox / radio / switch / slider / input-number / rate / auto-complete / combobox / cascader / tree-select / mentions / date-picker / time-picker / calendar / upload / color-picker / toggle-button / toggle-group / pin-input / dynamic-input / dynamic-tags / editable / form / form-item 均拆出 `template()`（纯函数）/ `bind()`（缓存节点 + 绑事件）/ `hydrate()`（校验快照结构 + 接管）三段式，SSR 快照含骨架与已选值；下拉面板默认关闭态、上传列表为空态、textarea autosize 高度为未校正态（水合首帧后 rAF 校正，与 affix 同策略）属预期。
 - 测量组件首帧闪动治理：affix / ellipsis / scroll-area 检测到 DSD 快照时把布局写入延迟到首帧后（rAF）——快照 = 未校正态，upgrade 首帧与快照一致无跳动，rAF 后按真实布局校正。
 
 尚未落地（ROADMAP backlog）：
@@ -134,9 +135,10 @@ RSC 在服务端完成渲染，`dangerouslySetInnerHTML` 的字面量进入 SSR 
 
 ### 白名单与边界
 
-- 白名单（纯展示组件 + 声明式数据组件 + 测量组件闪动治理试点）：`oas-button`、`oas-tag`、`oas-empty`、`oas-divider`、`oas-text`、`oas-title`、`oas-paragraph`、`oas-table`、`oas-affix`、`oas-ellipsis`、`oas-scroll-area`、`oas-tree`、`oas-select`。
+- 白名单（纯展示组件 + 声明式数据组件 + 测量组件闪动治理试点 + 表单组件批次 1）：`oas-button`、`oas-tag`、`oas-empty`、`oas-divider`、`oas-text`、`oas-title`、`oas-paragraph`、`oas-table`、`oas-affix`、`oas-ellipsis`、`oas-scroll-area`、`oas-tree`、`oas-select`、`oas-input`、`oas-textarea`、`oas-checkbox`、`oas-checkbox-group`、`oas-radio`、`oas-radio-group`、`oas-switch`、`oas-slider`、`oas-input-number`、`oas-rate`、`oas-auto-complete`、`oas-combobox`、`oas-cascader`、`oas-tree-select`、`oas-mentions`、`oas-date-picker`、`oas-time-picker`、`oas-calendar`、`oas-upload`、`oas-transfer`、`oas-color-picker`、`oas-toggle-button`、`oas-toggle-group`、`oas-pin-input`、`oas-dynamic-input`、`oas-dynamic-tags`、`oas-editable`、`oas-form`、`oas-form-item`。
 - 非白名单调用直接抛错，不会静默降级。
-- `oas-table` / `oas-tree` / `oas-select` 的 `columns` / `data` / `options` 走 JSON attribute 声明式通道（property 优先，非法 JSON 回退空态），SSR 快照含表头与数据行 / 树节点行 / 下拉选项。
+- `oas-table` / `oas-tree` / `oas-select` / `oas-transfer` / `oas-toggle-group` 的 `columns` / `data` / `options` / `items` 走 JSON attribute 声明式通道（property 赋值单向反射，非法 JSON 回退空态），SSR 快照含表头与数据行 / 树节点行 / 下拉选项 / 穿梭面板数据 / 按钮组。
+- 表单组件批次 1：下拉面板类组件（auto-complete / combobox / cascader / tree-select / mentions / date-picker / time-picker / color-picker）快照为关闭态（面板骨架不含弹出内容，浏览器 upgrade 后交互展开）；upload 快照为空态列表；textarea autosize 高度为未校正态（水合首帧后 rAF 校正）。
 - 测量组件（affix / ellipsis / scroll-area）快照为未校正态（happy-dom 布局测量全 0），upgrade 首帧与快照一致，rAF 后按真实布局校正——这是闪动治理的设计语义。
 - 真水合：upgrade 时跳过 shadow 重建（DOM 引用保持），只缓存节点并绑定事件 + 增量 update；快照结构不符时回退全量重渲染。
 

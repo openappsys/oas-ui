@@ -55,15 +55,28 @@ export class OASRate extends OASElement {
   private iconSlot: HTMLSlotElement | null = null
   private starEls: HTMLElement[] = []
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <span class="slider" part="slider" role="slider" tabindex="0" aria-valuemin="0">
         <slot name="icon" style="display:none" aria-hidden="true"></slot>
       </span>
     `
+  }
+
+  /** 缓存节点引用 + 绑定键盘/图标 slot 事件 + 接管快照已有星星（render 与水合路径共用） */
+  private bind(): void {
     this.slider = this.shadow.querySelector('.slider')
     this.iconSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="icon"]')
+    // 水合接管：SSR 快照已含星形（update 在 SSR 端渲染过），采纳并补绑点击，避免 ensureStars 重复追加
+    if (this.slider) {
+      const existing = [...this.slider.querySelectorAll<HTMLElement>(':scope > .star')]
+      existing.forEach((star, idx) => {
+        star.addEventListener('click', () => this.onStarClick(idx + 1))
+        this.starEls.push(star)
+      })
+    }
     this.slider?.addEventListener('keydown', (e: KeyboardEvent) => {
       const max = this.maxValue()
       let value = this.currentValue()
@@ -77,7 +90,20 @@ export class OASRate extends OASElement {
     })
     // 图标 slot 内容变化时重绘每颗星的图标
     this.iconSlot?.addEventListener('slotchange', () => this.applyIcons())
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（slider 容器与图标 slot 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.slider')) return false
+    if (!this.shadow.querySelector('slot[name="icon"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

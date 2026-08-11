@@ -121,8 +121,9 @@ export class OASMentions extends OASElement {
   /** prefix 之后、光标之前的关键词 */
   private queryText = ''
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="wrapper" part="wrapper">
         <textarea part="textarea" role="combobox" aria-autocomplete="list"
@@ -130,6 +131,10 @@ export class OASMentions extends OASElement {
         <div class="panel" part="panel" role="listbox" id="mention-list" aria-hidden="true"></div>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定输入/键盘/外部点击事件（render 与水合路径共用） */
+  private bind(): void {
     this.ta = this.shadow.querySelector('textarea')
     this.panel = this.shadow.querySelector('.panel')
 
@@ -139,7 +144,20 @@ export class OASMentions extends OASElement {
     })
     this.ta?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e))
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（textarea 与面板存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('textarea')) return false
+    if (!this.shadow.querySelector('.panel')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

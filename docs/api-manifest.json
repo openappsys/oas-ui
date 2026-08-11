@@ -1772,6 +1772,10 @@
         "observed": true
       },
       {
+        "name": "data",
+        "observed": true
+      },
+      {
         "name": "titles",
         "type": "string",
         "default": "",
@@ -1794,7 +1798,7 @@
     "props": [
       {
         "name": "data",
-        "type": "TransferItem[]",
+        "type": "TransferItem[] | string",
         "default": "[]"
       }
     ],
@@ -1891,12 +1895,17 @@
       },
       {
         "name": "items",
-        "type": "string",
         "default": "[]",
         "observed": true
       }
     ],
-    "props": [],
+    "props": [
+      {
+        "name": "items",
+        "type": "ToggleItem[] | string",
+        "default": "[]"
+      }
+    ],
     "events": [
       {
         "name": "oas-change",

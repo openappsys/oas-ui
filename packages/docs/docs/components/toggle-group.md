@@ -94,7 +94,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `items` | 选项 JSON | `string` | `[]` |
+| `items` | 选项 JSON（property 赋值单向反射 attribute） | `ToggleItem[] \| string` | `[]` |
 | `multiple` | 多选模式（checkbox 语义） | `boolean` | — |
 | `value` | 当前值：单选为字符串；多选为 JSON 数组字符串 | `string` | `[]` |
 

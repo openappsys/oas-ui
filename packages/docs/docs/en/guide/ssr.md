@@ -32,11 +32,23 @@ Current progress:
   skips the shadow rebuild, and only caches nodes, binds events, plus runs
   incremental `update()`. If the snapshot structure mismatches, it falls back to
   a full re-render (correctness first).
-- A declarative data channel for data components: table / tree / select take
-  `columns` / `data` / `options` through the JSON attribute channel (property
-  takes precedence; invalid JSON falls back to the empty state), and the SSR
+- A declarative data channel for data components: table / tree / select /
+  transfer / toggle-group take `columns` / `data` / `options` / `items` through
+  the JSON attribute channel (property assignment reflects to the attribute in
+  one direction; invalid JSON falls back to the empty state), and the SSR
   snapshot serializes the header and data rows / tree node rows / dropdown
-  options.
+  options / shuttle panel data / button groups.
+- Form components batch 1 (DSD whitelisting): input / textarea / checkbox /
+  radio / switch / slider / input-number / rate / auto-complete / combobox /
+  cascader / tree-select / mentions / date-picker / time-picker / calendar /
+  upload / color-picker / toggle-button / toggle-group / pin-input /
+  dynamic-input / dynamic-tags / editable / form / form-item are all split into
+  `template()` (pure function) / `bind()` (caches nodes + binds events) /
+  `hydrate()` (validates snapshot structure + takes over) — the SSR snapshot
+  includes the skeleton and selected values; dropdown panels default to the
+  closed state, the upload list is empty, and the textarea autosize height is the
+  un-measured state (corrected on the first frame after hydration via rAF, same
+  strategy as affix).
 - First-frame flicker mitigation for layout-measuring components:
   affix / ellipsis / scroll-area defer layout writes to the first frame after
   upgrade when a DSD snapshot is detected (via rAF) — the snapshot is the
@@ -185,16 +197,31 @@ into the SSR output stream and the browser parser attaches the DSD templates.
 
 ### Whitelist and boundaries
 
-- Whitelist (pure-presentation components, declarative-data components, and the
-  layout-measuring pilot): `oas-button`, `oas-tag`, `oas-empty`, `oas-divider`,
-  `oas-text`, `oas-title`, `oas-paragraph`, `oas-table`, `oas-affix`,
-  `oas-ellipsis`, `oas-scroll-area`, `oas-tree`, `oas-select`.
+- Whitelist (pure-presentation components, declarative-data components, the
+  layout-measuring pilot, and form components batch 1): `oas-button`, `oas-tag`,
+  `oas-empty`, `oas-divider`, `oas-text`, `oas-title`, `oas-paragraph`,
+  `oas-table`, `oas-affix`, `oas-ellipsis`, `oas-scroll-area`, `oas-tree`,
+  `oas-select`, `oas-input`, `oas-textarea`, `oas-checkbox`,
+  `oas-checkbox-group`, `oas-radio`, `oas-radio-group`, `oas-switch`,
+  `oas-slider`, `oas-input-number`, `oas-rate`, `oas-auto-complete`,
+  `oas-combobox`, `oas-cascader`, `oas-tree-select`, `oas-mentions`,
+  `oas-date-picker`, `oas-time-picker`, `oas-calendar`, `oas-upload`,
+  `oas-transfer`, `oas-color-picker`, `oas-toggle-button`, `oas-toggle-group`,
+  `oas-pin-input`, `oas-dynamic-input`, `oas-dynamic-tags`, `oas-editable`,
+  `oas-form`, `oas-form-item`.
 - Calling `renderToString` with a non-whitelisted tag throws an explicit error;
   there is no silent fallback.
-- `oas-table` / `oas-tree` / `oas-select` take `columns` / `data` / `options`
-  through the JSON attribute channel (property takes precedence; invalid JSON
-  falls back to the empty state), and the SSR snapshot includes the header and
-  data rows / tree node rows / dropdown options.
+- `oas-table` / `oas-tree` / `oas-select` / `oas-transfer` / `oas-toggle-group`
+  take `columns` / `data` / `options` / `items` through the JSON attribute
+  channel (property assignment reflects to the attribute; invalid JSON falls
+  back to the empty state), and the SSR snapshot includes the header and data
+  rows / tree node rows / dropdown options / shuttle panel data / button groups.
+- Form components batch 1: dropdown-panel components (auto-complete / combobox /
+  cascader / tree-select / mentions / date-picker / time-picker / color-picker)
+  snapshot the closed state (the panel skeleton carries no popup content; the
+  browser opens it on interaction after upgrade); upload snapshots the empty
+  list; the textarea autosize height is the un-measured state (corrected on the
+  first frame after hydration via rAF).
 - The snapshots of the layout-measuring components
   (affix / ellipsis / scroll-area) are the un-measured state (happy-dom reports
   all-zero layout), the first frame after upgrade matches the snapshot, and the

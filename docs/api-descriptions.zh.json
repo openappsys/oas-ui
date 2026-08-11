@@ -1252,7 +1252,7 @@
   },
   "oas-toggle-group": {
     "attrs": {
-      "items": "选项 JSON",
+      "items": "选项 JSON（property 赋值单向反射 attribute）",
       "multiple": "多选模式（checkbox 语义）",
       "value": "当前值：单选为字符串；多选为 JSON 数组字符串"
     },
@@ -1285,7 +1285,7 @@
   },
   "oas-transfer": {
     "attrs": {
-      "data": "数据（property，`[{ key, label, disabled }]`）",
+      "data": "数据（JSON attribute 声明式通道，property 赋值单向反射，[{ key, label, disabled }]）",
       "searchable": "面板内搜索过滤",
       "titles": "双面板标题（JSON 数组）或 `source-title`/`target-title`",
       "value": "已选 key 数组（JSON 属性）"

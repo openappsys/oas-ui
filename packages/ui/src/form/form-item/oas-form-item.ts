@@ -68,8 +68,9 @@ export class OASFormItem extends OASElement {
   private requiredEl: HTMLElement | null = null
   private errorEl: HTMLElement | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="field" part="field">
         <label part="label" class="label">
@@ -82,6 +83,10 @@ export class OASFormItem extends OASElement {
         <div part="error" class="error-text" role="alert" hidden></div>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定 label 点击聚焦（render 与水合路径共用） */
+  private bind(): void {
     this.labelEl = this.shadow.querySelector<HTMLElement>('[part="label"]')
     this.labelTextEl = this.shadow.querySelector<HTMLElement>('.label-text')
     this.requiredEl = this.shadow.querySelector<HTMLElement>('[part="required"]')
@@ -89,7 +94,21 @@ export class OASFormItem extends OASElement {
 
     // 点击 label 聚焦默认插槽控件（跨 Shadow DOM 原生 label for 不可用，手动代理，复用 oas-label 约定）
     this.labelEl?.addEventListener('click', () => this.focusControl())
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（field/label/control 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.field')) return false
+    if (!this.shadow.querySelector('[part="label"]')) return false
+    if (!this.shadow.querySelector('.control')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

@@ -33,6 +33,9 @@ input:focus-visible {
 }
 `
 
+/** label for/input id 关联：确定性计数器（SSR 快照可重复，浏览器多实例不冲突） */
+let radioIdCounter = 0
+
 export class OASRadio extends OASElement {
   static override get observedAttributes(): string[] {
     return ['checked', 'disabled', 'value', 'name']
@@ -42,14 +45,19 @@ export class OASRadio extends OASElement {
   private labelEl: HTMLLabelElement | null = null
   private inputId = ''
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <label part="label"><input part="radio" type="radio" /><slot></slot></label>
     `
+  }
+
+  /** 缓存节点引用 + 绑定 change 事件 + 分配确定性 id（render 与水合路径共用） */
+  private bind(): void {
     this.input = this.shadow.querySelector('input')
     this.labelEl = this.shadow.querySelector('label')
-    this.inputId = `oas-radio-${crypto.randomUUID()}`
+    this.inputId = `oas-radio-${++radioIdCounter}`
 
     this.input?.addEventListener('change', () => {
       const checked = this.input!.checked
@@ -59,7 +67,19 @@ export class OASRadio extends OASElement {
       if (checked) this.excludeSameName()
       this.emit('change', { checked, value: this.getAttr('value', '') })
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（原生 radio input 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('input[type="radio"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

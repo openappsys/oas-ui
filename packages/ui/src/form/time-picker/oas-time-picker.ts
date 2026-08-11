@@ -148,8 +148,9 @@ export class OASTimePicker extends OASElement {
   private activeColumn = 0
   private units: TimeUnit[] = ['h', 'm', 's']
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致（快照不含弹出面板内容） */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="picker" part="picker">
         <button class="trigger" part="trigger" type="button" role="combobox"
@@ -164,6 +165,10 @@ export class OASTimePicker extends OASElement {
         </div>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定触发器/面板/外部点击事件（render 与水合路径共用） */
+  private bind(): void {
     this.triggerEl = this.shadow.querySelector<HTMLButtonElement>('[part="trigger"]')
     this.dropdown = this.shadow.querySelector<HTMLElement>('[part="dropdown"]')
     this.columnsEl = this.shadow.querySelector<HTMLElement>('[part="columns"]')
@@ -173,7 +178,21 @@ export class OASTimePicker extends OASElement {
     this.dropdown?.addEventListener('click', (e) => e.stopPropagation())
     this.dropdown?.addEventListener('keydown', (e) => this.handleDropdownKey(e as KeyboardEvent))
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（trigger/dropdown/columns 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('[part="trigger"]')) return false
+    if (!this.shadow.querySelector('[part="dropdown"]')) return false
+    if (!this.shadow.querySelector('[part="columns"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

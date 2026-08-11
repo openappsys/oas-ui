@@ -156,8 +156,9 @@ export class OASCombobox extends OASElement {
   /** 用户正在输入的过滤词（未选中前不覆盖受控 value，失焦/Esc 回退为选中项 label） */
   private query = ''
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="wrapper" part="wrapper">
         <input part="input" role="combobox" aria-haspopup="listbox" aria-autocomplete="list"
@@ -172,6 +173,10 @@ export class OASCombobox extends OASElement {
         </div>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定输入/失焦/键盘/清空/外部点击事件（render 与水合路径共用） */
+  private bind(): void {
     this.input = this.shadow.querySelector('input')
     this.dropdown = this.shadow.querySelector('.dropdown')
     this.listbox = this.shadow.querySelector('.listbox')
@@ -195,7 +200,21 @@ export class OASCombobox extends OASElement {
       this.clearValue()
     })
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（输入框/下拉/listbox 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('input')) return false
+    if (!this.shadow.querySelector('.dropdown')) return false
+    if (!this.shadow.querySelector('.listbox')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {
