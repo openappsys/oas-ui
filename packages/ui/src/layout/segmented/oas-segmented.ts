@@ -23,7 +23,7 @@ const STYLE = `
   border-radius: var(--oas-radius-sm);
   font-size: var(--oas-font-size-sm);
   cursor: pointer;
-  color: var(--oas-color-text-secondary);
+  color: var(--oas-color-text-primary);
   border: none;
   background: none;
   font-family: inherit;

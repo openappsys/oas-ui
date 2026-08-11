@@ -128,6 +128,29 @@ test('input addon 属性在 Vue demo 中存活并渲染', async ({ page }) => {
   expect(r).toBe('http://')
 })
 
+test('segmented 未选中项文字对比度达标（text-primary，axe 色彩对比回归）', async ({ page }) => {
+  // 曾现 bug：oas-segmented 未选中项用 --oas-color-text-secondary（#71717a）落在
+  // --oas-color-bg-hover（#f4f4f5）上对比度 4.39:1 < 4.5:1，form.html 栅格表单 demo
+  // 用 segmented 切 label-align 时被 axe 审计揪出；修复为 text-primary。
+  await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-segmented#form-align-switch')
+  const r = await page.evaluate(() => {
+    const seg = document.querySelector('#form-align-switch')!
+    const root = seg.shadowRoot!
+    const items = [...root.querySelectorAll<HTMLElement>('[part="item"]')]
+    return {
+      unselectedColor: getComputedStyle(items[1]!).color,
+      unselectedBg: getComputedStyle(items[1]!).backgroundColor,
+      selectedChecked: items.find((b) => b.getAttribute('aria-checked') === 'true')
+        ?.getAttribute('aria-checked') ?? null,
+    }
+  })
+  // 未选中项应为 text-primary（#18181b），而非 text-secondary（#71717a）
+  expect(r.unselectedColor).toBe('rgb(24, 24, 27)')
+  expect(r.unselectedBg).toBe('rgb(244, 244, 245)') // 仍在 bg-hover 轨道上
+  expect(r.selectedChecked).toBe('true')
+})
+
 test('demo 事件反馈（点击 button 弹出 message）', async ({ page }) => {
   await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
