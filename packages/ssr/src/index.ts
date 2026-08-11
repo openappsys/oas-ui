@@ -11,7 +11,9 @@
  * ellipsis/scroll-area，快照为未校正态，浏览器 upgrade 后 rAF 校正）+ 表单组件批次 1（input/textarea/
  * checkbox/radio/switch/slider/input-number/rate/auto-complete/combobox/cascader/tree-select/mentions/
  * date-picker/time-picker/calendar/upload/color-picker/toggle-button/pin-input/dynamic-input/dynamic-tags/
- * editable/form/form-item 等，快照含骨架与已选值；下拉面板默认关闭态、上传列表为空态属预期）。
+ * editable/form/form-item 等，快照含骨架与已选值；下拉面板默认关闭态、上传列表为空态属预期）+
+ * 反馈组件批次 2（alert/progress/spin/skeleton/result/backdrop/modal/drawer/popconfirm，可见态直出快照；
+ * modal/drawer 默认关闭态为宿主骨架、popconfirm 为隐藏气泡，服务端直出 visible/open 时快照含完整弹层）。
  *
  * 为什么按需装载（而不是 `import('@oas-ui/ui')` 全量）：
  * - 全量入口会求值全部 ~115 个组件目录（每个目录 index.ts 的 define 副作用 + 各自依赖图），
@@ -50,7 +52,9 @@ import { ensureShim } from './shim.js'
  * 纯展示组件（render 只依赖 attributes）+ 数据组件（table/tree/select/transfer/toggle-group，
  * 数据走 JSON attribute 声明式通道、非虚拟模式同步渲染、快照可序列化数据行/选项）+ 测量组件闪动治理
  * 试点（affix/ellipsis/scroll-area：SSR 快照为未校正态，浏览器端 rAF 校正，属设计语义）+ 表单组件
- * 批次 1（DSD 白名单化：template/bind/hydrate 拆分，快照为骨架/已选值/关闭态下拉）。
+ * 批次 1（DSD 白名单化：template/bind/hydrate 拆分，快照为骨架/已选值/关闭态下拉）+ 反馈组件批次 2
+ * （可见态反馈组件 + 浮层组件，命令式组件 message/notification/toast/snackbar/loading-bar/confirm
+ * 无初始 DOM 不纳入）。
  */
 export const WHITELIST = [
   'oas-button',
@@ -95,6 +99,15 @@ export const WHITELIST = [
   'oas-editable',
   'oas-form',
   'oas-form-item',
+  'oas-alert',
+  'oas-progress',
+  'oas-spin',
+  'oas-skeleton',
+  'oas-result',
+  'oas-backdrop',
+  'oas-modal',
+  'oas-drawer',
+  'oas-popconfirm',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -174,6 +187,15 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-editable': '@oas-ui/ui/form/editable',
   'oas-form': '@oas-ui/ui/form/form',
   'oas-form-item': '@oas-ui/ui/form/form-item',
+  'oas-alert': '@oas-ui/ui/feedback/alert',
+  'oas-progress': '@oas-ui/ui/feedback/progress',
+  'oas-spin': '@oas-ui/ui/feedback/spin',
+  'oas-skeleton': '@oas-ui/ui/feedback/skeleton',
+  'oas-result': '@oas-ui/ui/feedback/result',
+  'oas-backdrop': '@oas-ui/ui/feedback/backdrop',
+  'oas-modal': '@oas-ui/ui/feedback/modal',
+  'oas-drawer': '@oas-ui/ui/feedback/drawer',
+  'oas-popconfirm': '@oas-ui/ui/feedback/popconfirm',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */
@@ -220,7 +242,8 @@ async function ensureI18n(): Promise<typeof import('@oas-ui/i18n')> {
  *   oas-tree-select / oas-mentions / oas-date-picker / oas-time-picker / oas-calendar /
  *   oas-upload / oas-transfer / oas-color-picker / oas-toggle-button / oas-toggle-group /
  *   oas-pin-input / oas-dynamic-input / oas-dynamic-tags / oas-editable / oas-form /
- *   oas-form-item），其余抛错
+ *   oas-form-item / oas-alert / oas-progress / oas-spin / oas-skeleton / oas-result /
+ *   oas-backdrop / oas-modal / oas-drawer / oas-popconfirm），其余抛错
  * @param attrs 宿主 attributes（kebab-case 键），值在序列化时做 & " < > 完整 HTML 转义
  * @param slotHTML 注入 light DOM 的 HTML 片段（默认插槽内容）
  * @param opts 选项（locale 控制内置文案语言）

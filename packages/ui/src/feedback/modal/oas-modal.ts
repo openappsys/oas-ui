@@ -104,8 +104,9 @@ export class OASModal extends OASElement {
   private dragOriginLeft = 0
   private dragOriginTop = 0
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="mask" part="mask"></div>
       <div class="dialog" part="dialog" role="dialog" aria-modal="true" aria-labelledby="oas-modal-title">
@@ -125,11 +126,10 @@ export class OASModal extends OASElement {
         }
       </div>
     `
-    this.update()
-    this.bindEvents()
   }
 
-  private bindEvents(): void {
+  /** 缓存节点 + 绑定交互事件（render 与水合路径共用） */
+  private bind(): void {
     const dialog = this.shadow.querySelector('.dialog')
     dialog?.addEventListener('click', (e) => e.stopPropagation())
     this.shadow.querySelector('.mask')?.addEventListener('click', () => {
@@ -157,6 +157,20 @@ export class OASModal extends OASElement {
     }
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+    this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（mask 与 dialog 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.mask')) return false
+    if (!this.shadow.querySelector('.dialog')) return false
+    this.bind()
+    return true
   }
 
   private startDrag(e: PointerEvent): void {

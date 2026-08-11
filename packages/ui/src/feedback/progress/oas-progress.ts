@@ -79,8 +79,14 @@ export class OASProgress extends OASElement {
     return ['percent', 'status', 'no-text', 'show-text', 'type', 'size', 'stroke-width']
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  private bar: HTMLElement | null = null
+  private track: HTMLElement | null = null
+  private text: HTMLElement | null = null
+  private circle: HTMLElement | null = null
+
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="track" part="track">
         <div class="bar" part="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
@@ -94,7 +100,27 @@ export class OASProgress extends OASElement {
         <div class="circle-text" part="circle-text">0%</div>
       </div>
     `
-    this.update()
+  }
+
+  /** 缓存节点引用（render 与水合路径共用；无事件绑定） */
+  private bind(): void {
+    this.bar = this.shadow.querySelector<HTMLElement>('[part="bar"]')
+    this.track = this.shadow.querySelector<HTMLElement>('.track')
+    this.text = this.shadow.querySelector<HTMLElement>('[part="text"]')
+    this.circle = this.shadow.querySelector<HTMLElement>('[part="circle"]')
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+  }
+
+  /** 真水合：校验 SSR 快照结构（bar 与 circle 关键部件存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('[part="bar"]')) return false
+    if (!this.shadow.querySelector('[part="circle"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {
@@ -103,19 +129,16 @@ export class OASProgress extends OASElement {
     const type = this.getAttr('type', 'line') === 'circle' ? 'circle' : 'line'
 
     // line 形态（保持既有行为）
-    const bar = this.shadow.querySelector<HTMLElement>('[part="bar"]')
-    const track = this.shadow.querySelector<HTMLElement>('.track')
-    const text = this.shadow.querySelector<HTMLElement>('[part="text"]')
-    if (track) track.hidden = type !== 'line'
-    if (bar) {
-      bar.style.width = `${percent}%`
-      bar.setAttribute('aria-valuenow', String(percent))
-      bar.classList.toggle('done', percent >= 100 && !status)
-      bar.setAttribute('data-status', status)
+    if (this.track) this.track.hidden = type !== 'line'
+    if (this.bar) {
+      this.bar.style.width = `${percent}%`
+      this.bar.setAttribute('aria-valuenow', String(percent))
+      this.bar.classList.toggle('done', percent >= 100 && !status)
+      this.bar.setAttribute('data-status', status)
     }
-    if (text) {
-      text.textContent = `${percent}%`
-      text.hidden =
+    if (this.text) {
+      this.text.textContent = `${percent}%`
+      this.text.hidden =
         type !== 'line' || this.hasAttr('no-text') || this.getAttr('show-text', 'true') === 'false'
     }
 
@@ -128,9 +151,8 @@ export class OASProgress extends OASElement {
   }
 
   private updateCircle(type: 'line' | 'circle', percent: number, status: string): void {
-    const circle = this.shadow.querySelector<HTMLElement>('[part="circle"]')
-    if (!circle) return
-    circle.hidden = type !== 'circle'
+    if (!this.circle) return
+    this.circle.hidden = type !== 'circle'
     if (type !== 'circle') return
 
     const size = Math.max(0, Number(this.getAttr('size', '48')) || 48)
@@ -163,6 +185,6 @@ export class OASProgress extends OASElement {
       circleText.textContent = `${percent}%`
       circleText.hidden = this.hasAttr('no-text') || this.getAttr('show-text', 'true') === 'false'
     }
-    circle.setAttribute('aria-valuenow', String(percent))
+    this.circle.setAttribute('aria-valuenow', String(percent))
   }
 }

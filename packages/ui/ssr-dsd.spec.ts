@@ -254,12 +254,48 @@ test.beforeAll(async () => {
     renderToString('oas-form', {}),
   ])
 
+  // —— DSD 批次 2：反馈组件快照（可见态直出 + 浮层宿主骨架） ——
+  // 布局稳定性约定：modal/drawer 取默认关闭态（宿主骨架，display:none 高度 0）；popconfirm 取
+  // 关闭态（气泡 aria-hidden）；backdrop 必须 open（默认关闭态会在 update 时 self-remove，
+  // 无法参与全量白名单的水合断言），fixture 用 transparent 免遮视觉，页面 CSS 关掉其指针拦截。
+  const feedbackSnaps = await Promise.all([
+    renderToString(
+      'oas-alert',
+      { type: 'warning', title: '提示标题', closeable: '' },
+      '这是提示内容',
+      { locale: 'zh-CN' },
+    ),
+    renderToString('oas-progress', { percent: '60' }, '', { locale: 'zh-CN' }),
+    renderToString('oas-spin', { size: 'large' }, '<div>加载中内容</div>'),
+    renderToString('oas-skeleton', { rows: '4', title: 'title', avatar: 'avatar' }, ''),
+    renderToString(
+      'oas-result',
+      { status: 'success', title: '操作成功', description: '你的请求已处理完成' },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString('oas-backdrop', { open: '', transparent: '' }, ''),
+    renderToString('oas-modal', { title: '弹窗标题' }, '', { locale: 'zh-CN' }),
+    renderToString('oas-drawer', { title: '筛选' }, '', { locale: 'zh-CN' }),
+    renderToString(
+      'oas-popconfirm',
+      { title: '确认删除？' },
+      '<button type="button">删除</button>',
+      { locale: 'zh-CN' },
+    ),
+  ])
+
   dsdHtml = `<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <title>OAS-UI DSD 静态快照验收页</title>
-  <style>${themeCss}</style>
+  <style>${themeCss}
+/* 反馈批次 2：backdrop 以 open+transparent 参与水合断言，页面级关闭其指针拦截（避免遮罩盖住全页点击） */
+oas-backdrop {
+  pointer-events: none;
+}
+</style>
 </head>
 <body style="font-family: system-ui, sans-serif; padding: 24px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start;">
 ${[
@@ -277,6 +313,7 @@ ${[
   tree,
   select,
   ...formSnaps,
+  ...feedbackSnaps,
 ].join('\n')}
 </body>
 </html>`
@@ -563,9 +600,44 @@ test('表单组件事件可触发：upgrade 后 oas-input 输入 / oas-switch �
     .not.toEqual([])
 })
 
+test('反馈组件事件可触发：upgrade 后 oas-popconfirm 触发按钮切换气泡 / oas-alert 关闭按钮派发 oas-close', async ({
+  page,
+}) => {
+  await openPage(page)
+  await upgradeUi(page)
+
+  // oas-popconfirm：点击 light DOM 触发按钮 → 气泡展开（aria-hidden=false）→ 确定按钮 → oas-ok
+  await page.evaluate(() => {
+    const w = window as unknown as Window & { __pcOk: number }
+    w.__pcOk = 0
+    document.querySelector('oas-popconfirm')?.addEventListener('oas-ok', () => w.__pcOk++)
+  })
+  // 触发按钮在 light DOM（> 子选择器不穿透 shadow，避免命中气泡内的 ok/cancel）
+  await page.locator('oas-popconfirm > button[type="button"]').click()
+  await expect(page.locator('oas-popconfirm [part="popover"]')).toHaveAttribute('aria-hidden', 'false')
+  await page.locator('oas-popconfirm [part="ok"]').click()
+  await expect(page.locator('oas-popconfirm [part="popover"]')).toHaveAttribute('aria-hidden', 'true')
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as Window & { __pcOk: number }).__pcOk))
+    .toBe(1)
+
+  // oas-alert（closeable）：点击关闭按钮 → oas-close 派发 + host hidden
+  await page.evaluate(() => {
+    const w = window as unknown as Window & { __alertClose: number }
+    w.__alertClose = 0
+    document.querySelector('oas-alert')?.addEventListener('oas-close', () => w.__alertClose++)
+  })
+  await page.locator('oas-alert [part="close"]').click()
+  await expect(page.locator('oas-alert').first()).toBeHidden()
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as Window & { __alertClose: number }).__alertClose))
+    .toBe(1)
+})
+
 test('渲染器边界：非白名单抛错、快照属性完整 HTML 转义、快照含真水合指纹', async () => {
-  await expect(renderToString('oas-modal', { value: 'x' })).rejects.toThrow(/非白名单/)
-  await expect(renderToString('oas-alert')).rejects.toThrow(/非白名单/)
+  // 命令式组件（无初始 DOM）不纳入白名单：message/toast 等动态创建，SSR 无意义
+  await expect(renderToString('oas-message', { value: 'x' })).rejects.toThrow(/非白名单/)
+  await expect(renderToString('oas-toast')).rejects.toThrow(/非白名单/)
   const snap = await renderToString('oas-button', { type: 'primary', 'data-esc': 'a"&<>b' }, '确定')
   expect(snap).toContain('data-esc="a&quot;&amp;&lt;&gt;b"')
   expect(snap).toContain('<template shadowrootmode="open">')

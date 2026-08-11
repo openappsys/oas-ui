@@ -93,12 +93,12 @@ export class OASDrawer extends OASElement {
   private previousFocus: HTMLElement | null = null
   private wasVisible = false
 
-  protected override render(): void {
-    const placement = this.getAttr('placement', 'right')
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="mask" part="mask"></div>
-      <div class="panel" part="panel" role="dialog" aria-modal="true" data-placement="${placement}">
+      <div class="panel" part="panel" role="dialog" aria-modal="true">
         <div class="header">
           <span class="title" part="title"></span>
           <button class="close-btn" part="close" aria-label="">✕</button>
@@ -115,11 +115,10 @@ export class OASDrawer extends OASElement {
         }
       </div>
     `
-    this.update()
-    this.bindEvents()
   }
 
-  private bindEvents(): void {
+  /** 缓存节点 + 绑定交互事件（render 与水合路径共用） */
+  private bind(): void {
     const panel = this.shadow.querySelector('.panel')
     panel?.addEventListener('click', (e) => e.stopPropagation())
     this.shadow.querySelector('.mask')?.addEventListener('click', () => {
@@ -139,6 +138,20 @@ export class OASDrawer extends OASElement {
     }
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+    this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（mask 与 panel 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.mask')) return false
+    if (!this.shadow.querySelector('.panel')) return false
+    this.bind()
+    return true
   }
 
   /** 关闭/确认：属性驱动约定——组件自管状态属性，同时派发事件供宿主响应 */

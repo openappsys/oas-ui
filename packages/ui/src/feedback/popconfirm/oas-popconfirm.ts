@@ -57,11 +57,12 @@ export class OASPopconfirm extends OASElement {
 
   private popoverEl: HTMLElement | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <slot></slot>
-      <div class="popover" part="popover" role="dialog" data-position="${this.getAttr('position', 'top')}">
+      <div class="popover" part="popover" role="dialog">
         <div class="title" part="title"></div>
         <div class="actions" part="actions">
           <button class="btn" part="cancel" type="button"></button>
@@ -69,6 +70,10 @@ export class OASPopconfirm extends OASElement {
         </div>
       </div>
     `
+  }
+
+  /** 缓存节点 + 绑定触发/确认/取消/Esc/外部点击事件（render 与水合路径共用） */
+  private bind(): void {
     this.popoverEl = this.shadow.querySelector('.popover')
     this.addEventListener('click', (e: Event) => {
       // 用 composedPath 取原始 target：element.click()/键盘激活派发的合成 click 事件
@@ -91,7 +96,18 @@ export class OASPopconfirm extends OASElement {
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
     this.onCleanup(() => document.removeEventListener('click', this.handleOutside))
-    this.update()
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+  }
+
+  /** 真水合：校验 SSR 快照结构（popover 容器存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.popover')) return false
+    this.bind()
+    return true
   }
 
   private toggle(): void {

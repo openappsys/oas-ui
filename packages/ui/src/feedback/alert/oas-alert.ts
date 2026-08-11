@@ -5,6 +5,10 @@ const STYLE = `
   display: block;
   font-family: inherit;
 }
+/* 关闭态：host hidden 会被上面的作者级 display 规则覆盖，需显式补回（关闭按钮点击后真正隐藏） */
+:host([hidden]) {
+  display: none;
+}
 .box {
   display: flex;
   align-items: flex-start;
@@ -60,11 +64,11 @@ export class OASAlert extends OASElement {
     return ['type', 'title', 'closeable']
   }
 
-  protected override render(): void {
-    const type = this.getAttr('type', 'info')
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
-      <div class="box" part="box" data-type="${type}" role="${ROLES[type as keyof typeof ROLES] ?? 'status'}">
+      <div class="box" part="box">
         <div class="body" part="body">
           <div class="title" part="title"></div>
           <slot></slot>
@@ -72,14 +76,34 @@ export class OASAlert extends OASElement {
         ${this.hasAttr('closeable') ? '<button class="close-btn" part="close" aria-label="">✕</button>' : ''}
       </div>
     `
+  }
+
+  /** 绑定关闭事件（render 与水合路径共用） */
+  private bind(): void {
     this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => {
       this.emit('close')
       this.hidden = true
     })
-    this.update()
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+  }
+
+  /** 真水合：校验 SSR 快照结构（box 容器存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('[part="box"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {
+    // type/role 增量同步（SSR 快照与运行时变更共用同一通道）
+    const type = this.getAttr('type', 'info')
+    const box = this.shadow.querySelector('[part="box"]')
+    box?.setAttribute('data-type', type)
+    box?.setAttribute('role', ROLES[type as keyof typeof ROLES] ?? 'status')
     this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
       'title',
       '',

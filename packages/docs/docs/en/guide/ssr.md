@@ -49,6 +49,18 @@ Current progress:
   closed state, the upload list is empty, and the textarea autosize height is the
   un-measured state (corrected on the first frame after hydration via rAF, same
   strategy as affix).
+- Feedback components batch 2 (DSD whitelisting): alert / progress / spin /
+  skeleton / result / backdrop / modal / drawer / popconfirm all follow the same
+  three-part split — the visible-state components (alert/progress/spin/skeleton/
+  result) snapshot their full visual; backdrop renders a visible mask with
+  `open` (its default closed state self-removes on update, so it is not a
+  snapshot scenario); modal/drawer snapshot the host skeleton in their default
+  closed state (`display: none`, and a server-direct `visible` snapshot includes
+  the full dialog); popconfirm snapshots the trigger slot plus the hidden
+  popover. The imperative components (message / notification / toast / snackbar /
+  loading-bar / confirm) are created dynamically by imperative APIs and do not
+  exist in the initial DOM, so SSR is meaningless — they stay out of the
+  whitelist.
 - First-frame flicker mitigation for layout-measuring components:
   affix / ellipsis / scroll-area defer layout writes to the first frame after
   upgrade when a DSD snapshot is detected (via rAF) — the snapshot is the
@@ -198,7 +210,8 @@ into the SSR output stream and the browser parser attaches the DSD templates.
 ### Whitelist and boundaries
 
 - Whitelist (pure-presentation components, declarative-data components, the
-  layout-measuring pilot, and form components batch 1): `oas-button`, `oas-tag`,
+  layout-measuring pilot, form components batch 1, and feedback components
+  batch 2): `oas-button`, `oas-tag`,
   `oas-empty`, `oas-divider`, `oas-text`, `oas-title`, `oas-paragraph`,
   `oas-table`, `oas-affix`, `oas-ellipsis`, `oas-scroll-area`, `oas-tree`,
   `oas-select`, `oas-input`, `oas-textarea`, `oas-checkbox`,
@@ -208,9 +221,17 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   `oas-date-picker`, `oas-time-picker`, `oas-calendar`, `oas-upload`,
   `oas-transfer`, `oas-color-picker`, `oas-toggle-button`, `oas-toggle-group`,
   `oas-pin-input`, `oas-dynamic-input`, `oas-dynamic-tags`, `oas-editable`,
-  `oas-form`, `oas-form-item`.
+  `oas-form`, `oas-form-item`, `oas-alert`, `oas-progress`, `oas-spin`,
+  `oas-skeleton`, `oas-result`, `oas-backdrop`, `oas-modal`, `oas-drawer`,
+  `oas-popconfirm`.
 - Calling `renderToString` with a non-whitelisted tag throws an explicit error;
   there is no silent fallback.
+- The imperative components (message / notification / toast / snackbar /
+  loading-bar / confirm) are created dynamically by imperative APIs
+  (`document.createElement` appended to a floating layer), so no instance exists
+  in the initial DOM and SSR is meaningless — they stay out of the whitelist and
+  remain client-only; `confirm()` reuses the `oas-modal` tag (whitelisted), but
+  the `confirm()` call itself is still a client-side behavior.
 - `oas-table` / `oas-tree` / `oas-select` / `oas-transfer` / `oas-toggle-group`
   take `columns` / `data` / `options` / `items` through the JSON attribute
   channel (property assignment reflects to the attribute; invalid JSON falls

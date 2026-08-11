@@ -281,9 +281,10 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('非白名单 tag 抛错并列出白名单', async () => {
-    await expect(renderToString('oas-modal')).rejects.toThrow(/非白名单 tag「oas-modal」/)
-    await expect(renderToString('oas-alert')).rejects.toThrow(/oas-button/)
-    await expect(renderToString('oas-modal')).rejects.toThrow(/oas-empty/)
+    // 命令式组件（无初始 DOM）不在白名单：message/toast/notification 等动态创建，SSR 无意义
+    await expect(renderToString('oas-message')).rejects.toThrow(/非白名单 tag「oas-message」/)
+    await expect(renderToString('oas-toast')).rejects.toThrow(/oas-button/)
+    await expect(renderToString('oas-notification')).rejects.toThrow(/oas-empty/)
   })
 
   it('attrs 值含引号/尖括号时正确转义', async () => {
@@ -588,5 +589,141 @@ describe('@oas-ui/ssr renderToString', () => {
     const dt = await renderToString('oas-dynamic-tags', { 'model-value': 'not-json' }, '')
     expect(dt).toContain('<template shadowrootmode="open">')
     expect(dt).not.toContain('part="tag"')
+  })
+
+  // ---- DSD 批次 2：反馈组件白名单化（可见态直出快照；命令式组件无初始 DOM 不纳入） ----
+
+  it('oas-alert：box 骨架 + type/title 同步 + closeable 关闭按钮', async () => {
+    const html = await renderToString(
+      'oas-alert',
+      { type: 'warning', title: '提示标题', closeable: '' },
+      '这是提示内容',
+      { locale: 'zh-CN' },
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<oas-alert type="warning" title="提示标题" closeable="">')
+    expect(html).toContain('part="box"')
+    expect(html).toContain('part="close"')
+    // update 增量同步：data-type + title 文本 + 关闭按钮 aria-label（locale）
+    expect(html).toContain('data-type="warning"')
+    expect(html).toContain('提示标题')
+    expect(html).toContain('aria-label="关闭"')
+    expect(html).toContain('</template>这是提示内容</oas-alert>')
+  })
+
+  it('oas-progress：line 进度条 width + aria-valuenow 同步；circle 圆环几何同步', async () => {
+    const line = await renderToString('oas-progress', { percent: '60' }, '')
+    expect(line).toContain('<template shadowrootmode="open">')
+    expect(line).toContain('<oas-progress percent="60">')
+    expect(line).toContain('part="bar"')
+    expect(line).toContain('style="width: 60%;"')
+    expect(line).toContain('aria-valuenow="60"')
+    expect(line).toContain('>60%</div>')
+
+    const circle = await renderToString('oas-progress', { type: 'circle', percent: '50', size: '72' }, '')
+    expect(circle).toContain('<oas-progress type="circle" percent="50" size="72">')
+    expect(circle).toContain('part="circle"')
+    expect(circle).toContain('viewBox="0 0 72 72"')
+  })
+
+  it('oas-spin：wrap/mask/indicator 骨架 + data-size 同步', async () => {
+    const html = await renderToString('oas-spin', { size: 'large' }, '<div>加载中</div>')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<oas-spin size="large"')
+    expect(html).toContain('part="wrap"')
+    expect(html).toContain('part="indicator"')
+    expect(html).toContain('data-size="large"')
+    expect(html).toContain('</template><div>加载中</div></oas-spin>')
+  })
+
+  it('oas-skeleton：行/头像/标题部件按属性直出（rows/title/avatar）', async () => {
+    const html = await renderToString('oas-skeleton', { rows: '4', title: 'title', avatar: 'avatar' }, '')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<oas-skeleton rows="4" title="title" avatar="avatar">')
+    expect(html).toContain('part="block"')
+    expect(html).toContain('part="avatar"')
+    expect(html).toContain('part="title"')
+    expect(html.match(/part="line"/g)?.length).toBe(4)
+  })
+
+  it('oas-result：icon 字形 + title/description 文本同步入快照', async () => {
+    const html = await renderToString(
+      'oas-result',
+      { status: 'success', title: '操作成功', description: '你的请求已处理完成' },
+      '',
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<oas-result status="success" title="操作成功" description="你的请求已处理完成">')
+    expect(html).toContain('part="icon"')
+    expect(html).toContain('data-status="success"')
+    expect(html).toContain('操作成功')
+    expect(html).toContain('你的请求已处理完成')
+  })
+
+  it('oas-backdrop：open 直出可见遮罩（mask 部件），透明/模糊属性透传到宿主', async () => {
+    const html = await renderToString('oas-backdrop', { open: '', transparent: '' }, '')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<oas-backdrop open="" transparent="">')
+    expect(html).toContain('part="mask"')
+    // 快照 style 含 transparent/blur 选择器（宿主属性命中样式）
+    expect(html).toContain(':host([transparent]) .mask')
+  })
+
+  it('oas-modal：默认关闭态为宿主骨架（dialog/header/body/footer 完整，aria-hidden=true）；visible 直出可见弹窗', async () => {
+    const closed = await renderToString('oas-modal', { title: '弹窗标题' }, '', { locale: 'zh-CN' })
+    expect(closed).toContain('<template shadowrootmode="open">')
+    expect(closed).toContain('<oas-modal title="弹窗标题">')
+    expect(closed).toContain('part="dialog"')
+    expect(closed).toContain('part="title"')
+    expect(closed).toContain('part="cancel"')
+    expect(closed).toContain('part="ok"')
+    expect(closed).toContain('aria-hidden="true"')
+    // 按钮文案走 locale（zh-CN）
+    expect(closed).toContain('确定')
+    expect(closed).toContain('取消')
+
+    const visible = await renderToString('oas-modal', { visible: '', title: '可见弹窗' }, '', {
+      locale: 'zh-CN',
+    })
+    expect(visible).toContain('<oas-modal visible="" title="可见弹窗">')
+    expect(visible).toContain('aria-hidden="false"')
+    expect(visible).toContain('可见弹窗')
+  })
+
+  it('oas-drawer：panel 骨架 + title/placement 同步', async () => {
+    const html = await renderToString('oas-drawer', { visible: '', title: '筛选', placement: 'left' }, '', {
+      locale: 'zh-CN',
+    })
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<oas-drawer visible="" title="筛选" placement="left">')
+    expect(html).toContain('part="panel"')
+    expect(html).toContain('data-placement="left"')
+    expect(html).toContain('筛选')
+    expect(html).toContain('aria-hidden="false"')
+  })
+
+  it('oas-popconfirm：触发 slot 原样保留 + 气泡骨架（默认关闭态 aria-hidden=true）', async () => {
+    const html = await renderToString('oas-popconfirm', { title: '确认删除？' }, '<button>删除</button>', {
+      locale: 'zh-CN',
+    })
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<oas-popconfirm title="确认删除？">')
+    expect(html).toContain('part="popover"')
+    expect(html).toContain('aria-hidden="true"')
+    expect(html).toContain('part="ok"')
+    expect(html).toContain('确认删除？')
+    // 操作按钮文案走 locale（zh-CN）
+    expect(html).toContain('确定')
+    expect(html).toContain('取消')
+    expect(html).toContain('</template><button>删除</button></oas-popconfirm>')
+  })
+
+  it('命令式反馈组件无初始 DOM 不 SSR：message/toast/notification/snackbar/loading-bar/confirm 均不在白名单', async () => {
+    for (const tag of ['oas-message', 'oas-toast', 'oas-notification', 'oas-snackbar', 'oas-loading-bar']) {
+      await expect(renderToString(tag)).rejects.toThrow(/非白名单 tag/)
+    }
+    // confirm 无独立 tag（命令式 API 动态创建 oas-modal），oas-modal 在白名单
+    const modal = await renderToString('oas-modal', {}, '')
+    expect(modal).toContain('<template shadowrootmode="open">')
   })
 })

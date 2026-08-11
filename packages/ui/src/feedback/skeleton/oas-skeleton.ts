@@ -53,34 +53,54 @@ export class OASSkeleton extends OASElement {
     return ['rows', 'title', 'avatar', 'active']
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  private block: HTMLElement | null = null
+
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="block" part="block"></div>
     `
-    this.update()
+  }
+
+  /** 缓存节点引用（render 与水合路径共用；无事件绑定） */
+  private bind(): void {
+    this.block = this.shadow.querySelector<HTMLElement>('[part="block"]')
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+  }
+
+  /** 真水合：校验 SSR 快照结构（block 容器存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('[part="block"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {
-    const block = this.shadow.querySelector<HTMLElement>('[part="block"]')
-    if (!block) return
-    block.classList.toggle('active', this.hasAttr('active'))
+    // 行/头像/标题由 update 全量重建（先清空再追加）：SSR 快照已有子节点在水合时
+    // 会被同构重建为完全一致的行序列，不会重复叠加（与 rate 等追加式组件不同）。
+    if (!this.block) return
+    this.block.classList.toggle('active', this.hasAttr('active'))
     const rows = Math.max(1, Number(this.getAttr('rows', '3')) || 3)
-    block.innerHTML = ''
+    this.block.innerHTML = ''
     if (this.hasAttr('avatar')) {
       const a = document.createElement('span')
       a.setAttribute('part', 'avatar')
-      block.appendChild(a)
+      this.block.appendChild(a)
     }
     if (this.hasAttr('title')) {
       const t = document.createElement('span')
       t.setAttribute('part', 'title')
-      block.appendChild(t)
+      this.block.appendChild(t)
     }
     for (let i = 0; i < rows; i++) {
       const l = document.createElement('span')
       l.setAttribute('part', 'line')
-      block.appendChild(l)
+      this.block.appendChild(l)
     }
   }
 }
