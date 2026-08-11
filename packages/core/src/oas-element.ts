@@ -36,7 +36,11 @@ export abstract class OASElement extends HTMLElement {
 
   connectedCallback(): void {
     if (!this.rendered) {
-      this.render()
+      // 真水合优先：DSD 快照指纹命中且子类 hydrate() 接管成功则跳过 render() 重建，
+      // 否则回退 render() 全量重建（正确性优先）
+      if (!this.tryHydrate()) {
+        this.render()
+      }
       this.rendered = true
     }
     this.update()
@@ -74,6 +78,40 @@ export abstract class OASElement extends HTMLElement {
 
   /** 子类实现：首次连接时构建 shadow DOM（整个生命周期只调用一次） */
   protected abstract render(): void
+
+  /**
+   * 子类可选水合钩子：校验 SSR（DSD）快照结构符合预期，并接管交互
+   * （缓存节点引用 + 绑定事件，与 render() 后半段等价）。
+   *
+   * 返回 true 表示接管成功、跳过 render() 的 shadow 重建（真水合）；
+   * 返回 false 或抛异常则回退 render() 全量重建。默认返回 false（不支持水合）。
+   */
+  protected hydrate(): boolean {
+    return false
+  }
+
+  /**
+   * 尝试 DSD 真水合。判定依据：shadow 内存在 SSR 指纹 `meta[data-oas-ssr]`，
+   * 且其值与自身 tag（小写）一致 → 视为有效快照，交由子类 hydrate() 接管。
+   *
+   * 误判防御：指纹缺失/不匹配、hydrate() 返回 false 或抛异常，一律回退 false，
+   * 由调用方走 render() 重建。指纹 meta 仅在水合成功后移除（防止二次误判）；
+   * 回退 render() 时 innerHTML 重建会自然清掉指纹。
+   */
+  private tryHydrate(): boolean {
+    const meta = this.shadow.querySelector('meta[data-oas-ssr]')
+    if (!meta) return false
+    if (meta.getAttribute('data-oas-ssr') !== this.tagName.toLowerCase()) return false
+
+    let ok = false
+    try {
+      ok = this.hydrate()
+    } catch {
+      ok = false
+    }
+    if (ok) meta.remove()
+    return ok
+  }
 
   /** 子类实现：属性/状态变化时增量同步 DOM（默认空实现，纯静态组件可不覆写） */
   protected update(): void {}

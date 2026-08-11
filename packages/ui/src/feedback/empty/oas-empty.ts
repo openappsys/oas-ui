@@ -81,8 +81,9 @@ export class OASEmpty extends OASElement {
     return ['description', 'hide-image', 'illustration', 'image-size']
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="image" part="image">
         <slot name="illustration"></slot>
@@ -91,11 +92,26 @@ export class OASEmpty extends OASElement {
       <div class="description" part="description"></div>
       <slot name="action"></slot>
     `
+  }
+
+  /** 绑定事件（render 与水合路径共用） */
+  private bind(): void {
     // 插画 slot 内容增减时重新同步优先级
     this.shadow
       .querySelector<HTMLSlotElement>('slot[name="illustration"]')
       ?.addEventListener('slotchange', () => this.update())
-    this.update()
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+  }
+
+  /** 真水合：校验 SSR 快照结构（关键节点 [part=description] 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('[part="description"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

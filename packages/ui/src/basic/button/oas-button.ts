@@ -233,8 +233,9 @@ export class OASButton extends OASElement {
 
   private btn: HTMLButtonElement | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <button part="button">
         <span class="spinner" part="spinner" hidden></span>
@@ -242,6 +243,10 @@ export class OASButton extends OASElement {
         <slot></slot>
       </button>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件（render 与水合路径共用） */
+  private bind(): void {
     this.btn = this.shadow.querySelector('button')
 
     this.btn?.addEventListener('click', (e: MouseEvent) => {
@@ -254,6 +259,18 @@ export class OASButton extends OASElement {
 
     // 文字经 slot 增删时重算「纯图标 / 有文字」布局
     this.shadow.querySelector('slot')?.addEventListener('slotchange', () => this.update())
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+  }
+
+  /** 真水合：校验 SSR 快照结构（关键节点 button[part=button] 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('button[part="button"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

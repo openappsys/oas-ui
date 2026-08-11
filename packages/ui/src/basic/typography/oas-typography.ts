@@ -70,24 +70,36 @@ function createTypography(
     private root: HTMLElement | null = null
     private copyBtn: HTMLButtonElement | null = null
 
-    protected override render(): void {
-      const style = document.createElement('style')
-      style.textContent = BASE_STYLE
-      this.shadow.appendChild(style)
+    /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+    private template(): string {
       const level = Number(this.getAttr('level', '3')) || 3
       const tagName = levels ? (`h${level}` as const) : tag
-      const el = document.createElement(tagName)
-      el.className = 'text'
-      el.setAttribute('part', part)
-      const slot = document.createElement('slot')
-      el.appendChild(slot)
-      this.shadow.appendChild(el)
-      this.shadow.appendChild(this.createCopyBtn())
+      return `
+        <style>${BASE_STYLE}</style>
+        <${tagName} class="text" part="${part}">
+          <slot></slot>
+        </${tagName}>
+        <button class="copy-btn" part="copy" hidden></button>
+      `
+    }
 
+    /** 缓存节点引用 + 绑定事件（render 与水合路径共用） */
+    private bind(): void {
       this.root = this.shadow.querySelector('.text')
       this.copyBtn = this.shadow.querySelector('.copy-btn')
       this.copyBtn?.addEventListener('click', () => this.handleCopy())
-      this.update()
+    }
+
+    protected override render(): void {
+      this.shadow.innerHTML = this.template()
+      this.bind()
+    }
+
+    /** 真水合：校验 SSR 快照结构（关键节点 .text 存在）后直接接管，跳过 shadow 重建 */
+    protected override hydrate(): boolean {
+      if (!this.shadow.querySelector('.text')) return false
+      this.bind()
+      return true
     }
 
     protected override update(): void {
@@ -118,14 +130,6 @@ function createTypography(
         this.copyBtn.setAttribute('aria-label', this.t('typography.copy'))
         this.copyBtn.textContent = this.t('typography.copy')
       }
-    }
-
-    private createCopyBtn(): HTMLButtonElement {
-      const btn = document.createElement('button')
-      btn.className = 'copy-btn'
-      btn.setAttribute('part', 'copy')
-      btn.hidden = true
-      return btn
     }
 
     private async handleCopy(): Promise<void> {

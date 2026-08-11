@@ -137,4 +137,55 @@ describe('OASButton', () => {
     const el = mount({ ghost: '' })
     expect(shadowBtn(el).classList.contains('ghost')).toBe(true)
   })
+
+  describe('真水合（hydrate 接管 SSR 快照）', () => {
+    /** 用组件自身 template() 产快照内容（保证与客户端渲染结构严格一致），前置指纹 meta */
+    function snapshotWith(el: OASButton, fingerprintTag: string): string {
+      const template = (el as unknown as { template(): string }).template()
+      return `<meta data-oas-ssr="${fingerprintTag}" data-oas-ssr-v="1">${template}`
+    }
+
+    it('指纹匹配 + 结构完整：跳过重建、DOM 引用保持、事件已绑定、指纹移除', () => {
+      const el = new OASButton()
+      el.setAttribute('type', 'primary')
+      // 模拟浏览器 upgrade：shadow 里已有 SSR 快照（指纹 + 组件自身 template 结构）
+      el.shadowRoot!.innerHTML = snapshotWith(el, 'oas-button')
+      const btn = el.shadowRoot!.querySelector('button')!
+      const slot = el.shadowRoot!.querySelector('slot')!
+      el.textContent = '确定'
+      document.body.appendChild(el)
+
+      // 真水合：render 未重建，button/slot 是同一对象
+      expect(el.shadowRoot!.querySelector('button')).toBe(btn)
+      expect(el.shadowRoot!.querySelector('slot')).toBe(slot)
+      // 指纹移除
+      expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+      // 事件已绑定：点击派发 oas-click 一次
+      let fired = 0
+      el.addEventListener('oas-click', () => fired++)
+      btn.click()
+      expect(fired).toBe(1)
+      // update() 照常执行：类型同步到 class
+      expect(btn.classList.contains('primary')).toBe(true)
+      el.remove()
+    })
+
+    it('指纹 tag 不匹配：回退 render() 重建，行为正确', () => {
+      const el = new OASButton()
+      el.shadowRoot!.innerHTML = snapshotWith(el, 'oas-tag')
+      const preBtn = el.shadowRoot!.querySelector('button')
+      document.body.appendChild(el)
+
+      // 重建后 button 是新对象（非快照里的节点）
+      expect(el.shadowRoot!.querySelector('button')).not.toBe(preBtn)
+      // 指纹被 innerHTML 清掉
+      expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+      // 重建后功能正常
+      let fired = 0
+      el.addEventListener('oas-click', () => fired++)
+      el.shadowRoot!.querySelector('button')!.click()
+      expect(fired).toBe(1)
+      el.remove()
+    })
+  })
 })

@@ -182,4 +182,52 @@ describe('OASTag', () => {
     expect(closeFired).toBe(0)
     expect(el.isConnected).toBe(true)
   })
+
+  describe('真水合（hydrate 接管 SSR 快照）', () => {
+    /** 用组件自身 template() 产快照内容（保证与客户端渲染结构严格一致），前置指纹 meta */
+    function snapshotWith(el: OASTag, fingerprintTag: string): string {
+      const template = (el as unknown as { template(): string }).template()
+      return `<meta data-oas-ssr="${fingerprintTag}" data-oas-ssr-v="1">${template}`
+    }
+
+    it('指纹匹配 + 结构完整：跳过重建、DOM 引用保持、事件已绑定（含 host 级 click/keydown）、指纹移除', () => {
+      const el = new OASTag()
+      el.setAttribute('clickable', '')
+      el.setAttribute('closable', '')
+      el.shadowRoot!.innerHTML = snapshotWith(el, 'oas-tag')
+      const tagEl = el.shadowRoot!.querySelector('.tag')!
+      const closeBtn = el.shadowRoot!.querySelector('button')!
+      el.textContent = '标签'
+      document.body.appendChild(el)
+
+      // 真水合：.tag 与关闭按钮是同一对象（未重建）
+      expect(el.shadowRoot!.querySelector('.tag')).toBe(tagEl)
+      expect(el.shadowRoot!.querySelector('button')).toBe(closeBtn)
+      expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+
+      // host 级 click 已绑定：整签点击派发 oas-click
+      let clickFired = 0
+      el.addEventListener('oas-click', () => clickFired++)
+      el.click()
+      expect(clickFired).toBe(1)
+
+      // 关闭按钮事件已绑定：派发 oas-close 并自动移除
+      let closeFired = 0
+      el.addEventListener('oas-close', () => closeFired++)
+      closeBtn.click()
+      expect(closeFired).toBe(1)
+      expect(el.isConnected).toBe(false)
+    })
+
+    it('指纹 tag 不匹配：回退 render() 重建', () => {
+      const el = new OASTag()
+      el.shadowRoot!.innerHTML = snapshotWith(el, 'oas-button')
+      const pre = el.shadowRoot!.querySelector('.tag')
+      document.body.appendChild(el)
+
+      expect(el.shadowRoot!.querySelector('.tag')).not.toBe(pre)
+      expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+      el.remove()
+    })
+  })
 })

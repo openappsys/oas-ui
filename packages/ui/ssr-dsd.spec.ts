@@ -81,7 +81,7 @@ test.beforeAll(async () => {
   // @oas-ui/theme 无构建产物（main 直指 src），直接读源文件。
   const themeCssPath = join(REPO_ROOT, 'packages', 'theme', 'src', 'index.css')
   const themeCss = readFileSync(themeCssPath, 'utf8')
-  const [btn, tag, empty, divider, text, title, para] = await Promise.all([
+  const [btn, tag, empty, divider, text, title, para, table] = await Promise.all([
     renderToString('oas-button', { type: 'primary', 'data-esc': 'a"&<>b' }, '确定'),
     renderToString('oas-tag', { type: 'success', size: 'large' }, '进行中'),
     renderToString('oas-empty', { description: '暂无数据' }),
@@ -89,6 +89,22 @@ test.beforeAll(async () => {
     renderToString('oas-text', { type: 'secondary' }, '次要文本'),
     renderToString('oas-title', { level: '2' }, '二级标题'),
     renderToString('oas-paragraph', {}, '段落正文'),
+    renderToString(
+      'oas-table',
+      {
+        columns: JSON.stringify([
+          { key: 'name', title: 'Name' },
+          { key: 'age', title: 'Age' },
+        ]),
+        data: JSON.stringify([
+          { name: 'Alice', age: 30 },
+          { name: 'Bob', age: 25 },
+        ]),
+        'row-key': 'name',
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
   ])
   dsdHtml = `<!doctype html>
 <html lang="zh-CN">
@@ -98,7 +114,7 @@ test.beforeAll(async () => {
   <style>${themeCss}</style>
 </head>
 <body style="font-family: system-ui, sans-serif; padding: 24px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start;">
-${[btn, tag, empty, divider, text, title, para].join('\n')}
+${[btn, tag, empty, divider, text, title, para, table].join('\n')}
 </body>
 </html>`
   writeFileSync(DSD_PAGE, dsdHtml, 'utf8')
@@ -236,17 +252,59 @@ test('upgrade 无错：注入 ui bundle 后升级复用 DSD root，无 NotSuppor
   expect(consoleErrors).toEqual([])
 })
 
-test('无闪动：upgrade 前后宿主 boundingClientRect 完全一致', async ({ page }) => {
+test('真水合：upgrade 后 shadow 未被重建（style DOM 引用保持同一对象）、指纹移除、布局无闪动', async ({
+  page,
+}) => {
   await openPage(page)
   const before = await layoutOf(page)
   await page.screenshot({ path: SCREENSHOT.beforeUpgrade, fullPage: true })
+
+  // upgrade 前：确认指纹 meta 存在，并保存 shadow 内 style 元素的 DOM 引用（跨 evaluate 保留）
+  const preMeta = await page.evaluate((tags) => {
+    const w = window as unknown as Window & { __ssrStyleRef: Record<string, Element | null> }
+    w.__ssrStyleRef = {}
+    const out: Record<string, boolean> = {}
+    for (const t of tags) {
+      const shadow = document.querySelector(t)?.shadowRoot
+      if (!shadow) continue
+      w.__ssrStyleRef[t] = shadow.querySelector('style')
+      out[t] = shadow.querySelector('meta[data-oas-ssr]') !== null
+    }
+    return out
+  }, [...WHITELIST])
+  for (const t of WHITELIST) {
+    expect(preMeta[t], `${t} 水合前 shadow 应含指纹 meta`).toBe(true)
+  }
+
   await upgradeUi(page)
+
+  // upgrade 后：style 仍是同一对象（真水合决定性证据，此前重建路径会产生新元素）+
+  // 指纹 meta 已移除（hydrate 成功后清理，防二次误判）
+  const postHydrate = await page.evaluate((tags) => {
+    const w = window as unknown as Window & { __ssrStyleRef: Record<string, Element | null> }
+    const out: Record<string, { sameStyle: boolean; metaRemoved: boolean }> = {}
+    for (const t of tags) {
+      const shadow = document.querySelector(t)?.shadowRoot
+      out[t] = {
+        sameStyle: shadow?.querySelector('style') === w.__ssrStyleRef[t],
+        metaRemoved: shadow?.querySelector('meta[data-oas-ssr]') === null,
+      }
+    }
+    return out
+  }, [...WHITELIST])
+  for (const t of WHITELIST) {
+    expect(postHydrate[t]!.sameStyle, `${t} 真水合：style 应保持同一 DOM 对象`).toBe(true)
+    expect(postHydrate[t]!.metaRemoved, `${t} 指纹 meta 应被移除`).toBe(true)
+  }
+
   const after = await layoutOf(page)
   expect(after).toEqual(before)
   await page.screenshot({ path: SCREENSHOT.afterUpgrade, fullPage: true })
 })
 
-test('事件可触发：upgrade 后点击 oas-button 派发 oas-click', async ({ page }) => {
+test('事件可触发且无重复绑定：upgrade 后逐次点击 oas-button，oas-click 恰好每次派发一次', async ({
+  page,
+}) => {
   await openPage(page)
   await upgradeUi(page)
 
@@ -257,20 +315,25 @@ test('事件可触发：upgrade 后点击 oas-button 派发 oas-click', async ({
     el?.addEventListener('oas-click', (e: Event) => w.__oasClicks.push((e as CustomEvent).detail))
   })
 
-  // 真实鼠标点击 shadow 内的 button（Playwright locator 自动穿透 open shadow root）
+  const clickCount = (): Promise<number> =>
+    page.evaluate(() => (window as unknown as Window & { __oasClicks: unknown[] }).__oasClicks.length)
+
+  // 真实鼠标点击 shadow 内的 button（Playwright locator 自动穿透 open shadow root）。
+  // 双击两次各恰好派发一次：若事件被重复绑定，第一次点击就会累计 >1 而 poll 永不等于目标值。
   await page.locator('oas-button').locator('button').click()
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () => (window as unknown as Window & { __oasClicks: unknown[] }).__oasClicks.length,
-      ),
-    )
-    .toBe(1)
+  await expect.poll(clickCount).toBe(1)
+  await page.locator('oas-button').locator('button').click()
+  await expect.poll(clickCount).toBe(2)
 })
 
-test('渲染器边界：非白名单抛错、快照属性完整 HTML 转义', async () => {
-  await expect(renderToString('oas-table', { columns: '[]' })).rejects.toThrow(/非白名单/)
+test('渲染器边界：非白名单抛错、快照属性完整 HTML 转义、快照含真水合指纹', async () => {
+  await expect(renderToString('oas-tree', { columns: '[]' })).rejects.toThrow(/非白名单/)
   const snap = await renderToString('oas-button', { type: 'primary', 'data-esc': 'a"&<>b' }, '确定')
   expect(snap).toContain('data-esc="a&quot;&amp;&lt;&gt;b"')
   expect(snap).toContain('<template shadowrootmode="open">')
+  // 真水合指纹：shadow 内容最前面（style 之前）的 data-oas-ssr meta，值为对应 tag
+  expect(snap).toContain('<meta data-oas-ssr="oas-button" data-oas-ssr-v="1">')
+  expect(snap.indexOf('<meta data-oas-ssr="oas-button" data-oas-ssr-v="1">')).toBeLessThan(
+    snap.indexOf('<style>'),
+  )
 })

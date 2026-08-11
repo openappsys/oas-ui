@@ -6,8 +6,8 @@
  * 输出完整宿主 HTML 字符串。浏览器拿到该快照无需 JS 即可呈现结构与样式，upgrade 后复用已有 shadow root
  * 照常接管交互（基类已有 DSD 防御）。
  *
- * 范围：仅开放白名单纯展示组件（button/tag/empty/divider/typography）。property-only 数据组件与
- * 含布局测量的组件仍为客户端渲染。
+ * 范围：白名单纯展示组件（button/tag/empty/divider/typography）+ 数据组件试点（table，
+ * 其 columns/data 走 JSON attribute 声明式通道，property 优先）。含布局测量的组件仍为客户端渲染。
  *
  * 为什么按需装载（而不是 `import('@oas-ui/ui')` 全量）：
  * - 全量入口会求值全部 ~115 个组件目录（每个目录 index.ts 的 define 副作用 + 各自依赖图），
@@ -41,7 +41,11 @@ import en from '@oas-ui/i18n/en'
 import type { Locale } from '@oas-ui/i18n'
 import { ensureShim } from './shim.js'
 
-/** 渲染器开放的白名单 tag（纯展示、render 只依赖 attributes） */
+/**
+ * 渲染器开放的白名单 tag。
+ * 纯展示组件（render 只依赖 attributes）+ 数据组件试点 oas-table（columns/data 走 JSON
+ * attribute 声明式通道，非虚拟模式同步渲染，快照可序列化数据行）。
+ */
 export const WHITELIST = [
   'oas-button',
   'oas-tag',
@@ -50,6 +54,7 @@ export const WHITELIST = [
   'oas-text',
   'oas-title',
   'oas-paragraph',
+  'oas-table',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -66,6 +71,21 @@ const LOCALES: Record<RenderLocale, Locale> = {
 }
 
 /**
+ * 真水合指纹：DSD 快照格式版本。快照语义/结构升级时递增，
+ * 旧版本快照在升级后的组件上会因 hydrate() 结构校验不符而回退重渲染（正确性优先）。
+ */
+const SNAPSHOT_FORMAT_VERSION = '1'
+
+/**
+ * 生成真水合指纹 meta：嵌入 DSD 快照 shadow 内容最前面（style 之前）。
+ * meta 元素在 shadow 内无副作用（UA 样式 display:none，不影响布局），
+ * 组件 upgrade 时基类据 `data-oas-ssr` 值判定快照归属 tag，命中则跳过 shadow 重建接管。
+ */
+function fingerprintFor(tag: string): string {
+  return `<meta data-oas-ssr="${tag}" data-oas-ssr-v="${SNAPSHOT_FORMAT_VERSION}">`
+}
+
+/**
  * 白名单 tag → 组件目录入口映射（经 @oas-ui/ui exports 的 `./*` 通配可达：
  * `@oas-ui/ui/basic/button` → `dist/basic/button/index.js`，vitest 走 alias 到 src 目录 index.ts）。
  * typography 三兄弟共用 `basic/typography` 目录，装载一次即注册三个 tag。
@@ -78,6 +98,7 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-text': '@oas-ui/ui/basic/typography',
   'oas-title': '@oas-ui/ui/basic/typography',
   'oas-paragraph': '@oas-ui/ui/basic/typography',
+  'oas-table': '@oas-ui/ui/data/table',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */
@@ -164,7 +185,7 @@ export async function renderToString(
   const tagName = el.tagName.toLowerCase()
   el.remove()
 
-  return `<${tagName}${attrsHtml.join('')}><template shadowrootmode="open">${shadowHtml}</template>${slotHTML}</${tagName}>`
+  return `<${tagName}${attrsHtml.join('')}><template shadowrootmode="open">${fingerprintFor(tagName)}${shadowHtml}</template>${slotHTML}</${tagName}>`
 }
 
 /** 属性值 HTML 转义（& " < >），防止注入闭合引号/标签 */

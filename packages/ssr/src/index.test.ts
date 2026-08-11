@@ -43,7 +43,7 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(customElements.get('oas-button')).toBeDefined()
     // 非白名单组件未被装载（若误走全量 @oas-ui/ui 入口此处会失败）
     expect(customElements.get('oas-input')).toBeUndefined()
-    expect(customElements.get('oas-table')).toBeUndefined()
+    expect(customElements.get('oas-tree')).toBeUndefined()
   })
 
   it('oas-button：DSD 快照 + light DOM slot 文本 + 宿主属性', async () => {
@@ -54,6 +54,22 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('<oas-button type="primary" size="large">')
     // slot 文本在 template 之外的 light DOM：DSD 模板在最前，文本随后
     expect(html).toContain('</template>提交</oas-button>')
+  })
+
+  it('真水合指纹：快照 shadow 内容最前面（style 之前）嵌入 data-oas-ssr meta，值为对应 tag', async () => {
+    const btn = await renderToString('oas-button', {}, '确定')
+    // 指纹紧随 template 开头；shadow 内容可能以空白文本节点起始，故 meta 与 style 之间允许有空白
+    expect(btn).toContain(
+      '<template shadowrootmode="open"><meta data-oas-ssr="oas-button" data-oas-ssr-v="1">',
+    )
+    // 指纹在 style 之前
+    expect(btn.indexOf('<meta data-oas-ssr="oas-button" data-oas-ssr-v="1">')).toBeLessThan(
+      btn.indexOf('<style>'),
+    )
+    const tag = await renderToString('oas-tag', {}, '标签')
+    expect(tag).toContain('<meta data-oas-ssr="oas-tag" data-oas-ssr-v="1">')
+    const empty = await renderToString('oas-empty', {}, '')
+    expect(empty).toContain('<meta data-oas-ssr="oas-empty" data-oas-ssr-v="1">')
   })
 
   it('oas-tag：关闭按钮 aria-label 走 locale', async () => {
@@ -106,12 +122,58 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(enHtml).not.toContain('暂无数据')
   })
 
+  it('oas-table：JSON attribute 声明式通道产出表头与数据行快照', async () => {
+    const html = await renderToString(
+      'oas-table',
+      {
+        columns: JSON.stringify([
+          { key: 'name', title: 'Name' },
+          { key: 'age', title: 'Age' },
+        ]),
+        data: JSON.stringify([
+          { name: 'Alice', age: 30 },
+          { name: 'Bob', age: 25 },
+        ]),
+        'row-key': 'name',
+      },
+      '',
+      { locale: 'zh-CN' },
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    // 宿主属性保留 columns/data JSON（attribute 通道可被浏览器 upgrade 后重新解析）
+    expect(html).toContain('<oas-table columns=')
+    expect(html).toContain('data=')
+    // 快照含表头标题与数据单元格文本（非虚拟模式同步渲染，无 rAF/测量依赖）
+    expect(html).toContain('<th')
+    expect(html).toContain('>Name<')
+    expect(html).toContain('>Age<')
+    expect(html).toContain('Alice')
+    expect(html).toContain('Bob')
+    // 快照含数据行部件
+    expect(html).toContain('part="row"')
+  })
+
+  it('oas-table：JSON 非法时容错为空态快照，不抛错', async () => {
+    const html = await renderToString(
+      'oas-table',
+      { columns: 'not-json', data: '[{bad' },
+      '',
+      { locale: 'zh-CN' },
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    // 空态占位（zh-CN 默认文案）
+    expect(html).toContain('暂无数据')
+    // 无数据行
+    expect(html).not.toContain('part="row"')
+  })
+
   it('非白名单 tag 抛错并列出白名单', async () => {
     await expect(renderToString('oas-input')).rejects.toThrow(
       /非白名单 tag「oas-input」/,
     )
     await expect(renderToString('oas-input')).rejects.toThrow(/oas-button/)
-    await expect(renderToString('oas-table')).rejects.toThrow(/oas-empty/)
+    await expect(renderToString('oas-tree')).rejects.toThrow(/oas-empty/)
   })
 
   it('attrs 值含引号/尖括号时正确转义', async () => {

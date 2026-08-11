@@ -120,8 +120,9 @@ export class OASTag extends OASElement {
 
   private tagRoot: HTMLElement | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <span class="tag" part="tag">
         <slot></slot>
@@ -132,6 +133,10 @@ export class OASTag extends OASElement {
         </button>
       </span>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件（render 与水合路径共用；事件绑定幂等性由 rendered 标志保证只走一次） */
+  private bind(): void {
     this.tagRoot = this.shadow.querySelector<HTMLElement>('.tag')
     this.shadow.querySelector('button')?.addEventListener('click', (e: MouseEvent) => {
       // 关闭按钮事件自带处理，不再向上触发整签 oas-click
@@ -161,7 +166,18 @@ export class OASTag extends OASElement {
       k.preventDefault()
       this.emit('click', { originalEvent: k })
     })
-    this.update()
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+  }
+
+  /** 真水合：校验 SSR 快照结构（关键节点 .tag 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.tag')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

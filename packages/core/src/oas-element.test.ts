@@ -96,12 +96,58 @@ class DsdUpgradeFixture extends OASElement {
   }
 }
 
+/**
+ * 真水合（DSD 接管）测试夹具：shadowRoot getter 指向静态 DSD root（同 DsdFixtureElement 技巧，
+ * 模拟浏览器 upgrade 时构造时刻已有服务端快照 root），带 hydrate() 实现与可开关的异常路径。
+ */
+class DsdHydrateFixture extends OASElement {
+  static dsdRoot: ShadowRoot | null = null
+
+  static override get observedAttributes(): string[] {
+    return ['label']
+  }
+
+  renderCount = 0
+  updateCount = 0
+  hydrateCalls = 0
+  hydrateThrows = false
+
+  override get shadowRoot(): ShadowRoot | null {
+    return DsdHydrateFixture.dsdRoot
+  }
+
+  protected override render(): void {
+    this.renderCount++
+    this.shadow.innerHTML = '<span id="label"></span>'
+  }
+
+  protected override hydrate(): boolean {
+    this.hydrateCalls++
+    if (this.hydrateThrows) throw new Error('hydrate 模拟异常')
+    return this.shadow.querySelector('#label') !== null
+  }
+
+  protected override update(): void {
+    this.updateCount++
+    const span = this.shadow.querySelector('#label')
+    if (span) span.textContent = this.getAttr('label', '')
+  }
+
+  get shadowRef(): ShadowRoot {
+    return this.shadow
+  }
+}
+
 if (!customElements.get('oas-fixture')) {
   customElements.define('oas-fixture', FixtureElement)
 }
 
 if (!customElements.get('oas-dsd-fixture')) {
   customElements.define('oas-dsd-fixture', DsdFixtureElement)
+}
+
+if (!customElements.get('oas-dsd-hydrate')) {
+  customElements.define('oas-dsd-hydrate', DsdHydrateFixture)
 }
 
 function mount(attrs: Record<string, string> = {}): FixtureElement {
@@ -218,8 +264,114 @@ describe('OASElement', () => {
     })
   })
 
+  describe('真水合：SSR 指纹命中时跳过 shadow 重建接管', () => {
+    /** 构造一个带指纹的 DSD root（模拟服务端快照解析结果） */
+    function makeDsdRoot(inner: string): { dsdRoot: ShadowRoot; preSpan: Element | null } {
+      const div = document.createElement('div')
+      const dsdRoot = div.attachShadow({ mode: 'open' })
+      dsdRoot.innerHTML = inner
+      return { dsdRoot, preSpan: dsdRoot.querySelector('#label') }
+    }
+
+    it('指纹匹配 + hydrate 成功：跳过 render()、shadow 未重建（DOM 引用保持）、指纹移除、update 照常', () => {
+      const { dsdRoot, preSpan } = makeDsdRoot(
+        '<meta data-oas-ssr="oas-dsd-hydrate" data-oas-ssr-v="1"><span id="label">ssr 快照</span>',
+      )
+      DsdHydrateFixture.dsdRoot = dsdRoot
+
+      const el = document.createElement('oas-dsd-hydrate') as DsdHydrateFixture
+      expect(el.shadowRef).toBe(dsdRoot)
+
+      document.body.appendChild(el)
+
+      // 真水合接管：render() 未执行，hydrate() 恰好执行一次
+      expect(el.renderCount).toBe(0)
+      expect(el.hydrateCalls).toBe(1)
+      // 决定性证据：shadow 内容未被 innerHTML 重建，upgrade 前后 #label 是同一对象
+      expect(dsdRoot.querySelector('#label')).toBe(preSpan)
+      // 指纹 meta 已被移除（防二次误判）
+      expect(dsdRoot.querySelector('meta[data-oas-ssr]')).toBeNull()
+      // update() 照常执行，属性同步不缺失
+      expect(el.updateCount).toBe(1)
+      el.setAttribute('label', '水合')
+      expect(dsdRoot.querySelector('#label')!.textContent).toBe('水合')
+
+      el.remove()
+    })
+
+    it('指纹 tag 不匹配（快照属于别的组件）：回退 render() 重建', () => {
+      const { dsdRoot, preSpan } = makeDsdRoot(
+        '<meta data-oas-ssr="oas-button" data-oas-ssr-v="1"><span id="label">ssr 快照</span>',
+      )
+      DsdHydrateFixture.dsdRoot = dsdRoot
+
+      const el = document.createElement('oas-dsd-hydrate') as DsdHydrateFixture
+      document.body.appendChild(el)
+
+      expect(el.hydrateCalls).toBe(0)
+      expect(el.renderCount).toBe(1)
+      // 重建：原快照节点被替换为新节点，指纹被 innerHTML 清掉
+      expect(dsdRoot.querySelector('#label')).not.toBe(preSpan)
+      expect(dsdRoot.querySelector('meta[data-oas-ssr]')).toBeNull()
+
+      el.remove()
+    })
+
+    it('无指纹（普通 CSR）：正常 render()，行为与既有组件一致', () => {
+      const { dsdRoot } = makeDsdRoot('<span id="label">普通 CSR</span>')
+      DsdHydrateFixture.dsdRoot = dsdRoot
+
+      const el = document.createElement('oas-dsd-hydrate') as DsdHydrateFixture
+      document.body.appendChild(el)
+
+      expect(el.renderCount).toBe(1)
+      expect(el.hydrateCalls).toBe(0)
+      expect(dsdRoot.querySelector('#label')).not.toBeNull()
+
+      el.remove()
+    })
+
+    it('指纹匹配但快照被篡改（缺关键节点）：hydrate 结构校验失败回退重建', () => {
+      const { dsdRoot, preSpan } = makeDsdRoot(
+        '<meta data-oas-ssr="oas-dsd-hydrate" data-oas-ssr-v="1"><div>结构不对</div>',
+      )
+      DsdHydrateFixture.dsdRoot = dsdRoot
+
+      const el = document.createElement('oas-dsd-hydrate') as DsdHydrateFixture
+      document.body.appendChild(el)
+
+      // hydrate() 被尝试过一次但校验失败 → 回退 render() 全量重建
+      expect(el.hydrateCalls).toBe(1)
+      expect(el.renderCount).toBe(1)
+      expect(dsdRoot.querySelector('#label')).not.toBeNull()
+      expect(dsdRoot.querySelector('#label')).not.toBe(preSpan)
+      expect(dsdRoot.querySelector('meta[data-oas-ssr]')).toBeNull()
+
+      el.remove()
+    })
+
+    it('hydrate 抛异常：回退 render()，正确性优先', () => {
+      const { dsdRoot } = makeDsdRoot(
+        '<meta data-oas-ssr="oas-dsd-hydrate" data-oas-ssr-v="1"><span id="label"></span>',
+      )
+      DsdHydrateFixture.dsdRoot = dsdRoot
+
+      const el = document.createElement('oas-dsd-hydrate') as DsdHydrateFixture
+      el.hydrateThrows = true
+      document.body.appendChild(el)
+
+      expect(el.hydrateCalls).toBe(1)
+      expect(el.renderCount).toBe(1)
+      expect(dsdRoot.querySelector('#label')).not.toBeNull()
+      expect(dsdRoot.querySelector('meta[data-oas-ssr]')).toBeNull()
+
+      el.remove()
+    })
+  })
+
   afterEach(() => {
     setTranslator(null)
     DsdFixtureElement.dsdRoot = null
+    DsdHydrateFixture.dsdRoot = null
   })
 })
