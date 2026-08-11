@@ -4,9 +4,9 @@ OAS-UI 是 Web Components 组件库，组件在浏览器运行时自定义元素
 
 ## 核心规则
 
-**不要在服务端渲染期间执行组件库的副作用导入。**
-
+::: danger 不要在服务端渲染期间执行组件库的副作用导入
 组件库入口 `@oas-ui/ui` 会调用 `customElements.define` 与 DOM API，在 Node（无 DOM）环境下会抛错（如 `HTMLElement is not defined`）。
+:::
 
 ## DSD 路线（渐进增强）
 

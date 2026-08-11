@@ -6,11 +6,10 @@ in SSR / static-generation environments.
 
 ## Core rule
 
-**Do not run side-effect imports of the component library during server-side
-rendering.**
-
+::: danger Do not run side-effect imports of the component library during server-side rendering
 The library entry `@oas-ui/ui` calls `customElements.define` and DOM APIs,
 which throw in Node (no DOM), e.g. `HTMLElement is not defined`.
+:::
 
 ## DSD route (progressive enhancement)
 
