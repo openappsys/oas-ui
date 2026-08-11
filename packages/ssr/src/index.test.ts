@@ -1,19 +1,49 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import { renderToString } from './index.js'
+import { ensureShim } from './shim.js'
 
 /**
  * @oas-ui/ssr 渲染器单测。
  *
- * 说明：renderToString 为 async——首次调用时先装 happy-dom DOM shim 再动态 import
- * `@oas-ui/ui`（define 副作用注册到 shim 的 customElements）。所有断言针对产出的
- * DSD 静态快照字符串，happy-dom 环境本身不解析 `<template shadowrootmode>`，验证对象是
- * 输出结构而非浏览器 upgrade 行为（后者由 e2e 验收）。
+ * 说明：renderToString 为 async——首次调用时先装 happy-dom DOM shim，再按 tag 动态 import
+ * 对应组件目录（`@oas-ui/ui/<目录>`，define 副作用注册到 shim 的 customElements）。
+ * 所有断言针对产出的 DSD 静态快照字符串，happy-dom 环境本身不解析 `<template shadowrootmode>`，
+ * 验证对象是输出结构而非浏览器 upgrade 行为（后者由 e2e 验收）。
+ *
+ * 注意：性能用例（首次冷装载 < 500ms）必须保持在本文件首位，保证其 tag 的目录
+ * import 是冷加载（vitest 按声明顺序执行，同文件内此前未装载过该模块）。
  */
 describe('@oas-ui/ssr renderToString', () => {
   beforeEach(() => {
     // 保证用例间 locale 全局态不串（渲染器未传 opts.locale 时沿用当前 locale）
     setLocale('zh-CN')
+  })
+
+  it('性能：白名单组件首次冷装载 + 渲染 < 500ms，二次渲染为毫秒级且远快于首次', async () => {
+    // 保持本用例在文件首位：oas-divider 目录此前未被装载，首次渲染即冷装载
+    const t0 = performance.now()
+    const html = await renderToString('oas-divider', { dashed: 'dashed' }, '分割线')
+    const firstMs = performance.now() - t0
+    expect(html).toContain('<template shadowrootmode="open">')
+    // 全量装载基线为 1.8~3.5s；按需装载后白名单组件首载应在 CI 容忍范围内
+    expect(firstMs).toBeLessThan(500)
+
+    const t1 = performance.now()
+    await renderToString('oas-divider', { dashed: 'dashed' }, '分割线')
+    const warmMs = performance.now() - t1
+    expect(warmMs).toBeLessThan(100)
+    expect(warmMs).toBeLessThan(firstMs)
+  })
+
+  it('按需装载：渲染白名单组件后只注册白名单，不装载全量 @oas-ui/ui', async () => {
+    const { customElements } = ensureShim()
+    await renderToString('oas-button', { type: 'primary' }, '确定')
+    // 白名单组件已注册
+    expect(customElements.get('oas-button')).toBeDefined()
+    // 非白名单组件未被装载（若误走全量 @oas-ui/ui 入口此处会失败）
+    expect(customElements.get('oas-input')).toBeUndefined()
+    expect(customElements.get('oas-table')).toBeUndefined()
   })
 
   it('oas-button：DSD 快照 + light DOM slot 文本 + 宿主属性', async () => {

@@ -1,7 +1,7 @@
 /**
  * OAS-UI 服务端渲染（SSR）渲染器 —— `renderToString`。
  *
- * 能力：在 Node 环境用 happy-dom 起最小 DOM shim，装载组件类后按入参写 attributes 与 light DOM，
+ * 能力：在 Node 环境用 happy-dom 起最小 DOM shim，按需装载白名单组件后按入参写 attributes 与 light DOM，
  * 触发首次 render，再把 shadowRoot 序列化为 Declarative Shadow DOM（DSD）`<template shadowrootmode="open">`，
  * 输出完整宿主 HTML 字符串。浏览器拿到该快照无需 JS 即可呈现结构与样式，upgrade 后复用已有 shadow root
  * 照常接管交互（基类已有 DSD 防御）。
@@ -9,10 +9,20 @@
  * 范围：仅开放白名单纯展示组件（button/tag/empty/divider/typography）。property-only 数据组件与
  * 含布局测量的组件仍为客户端渲染。
  *
+ * 为什么按需装载（而不是 `import('@oas-ui/ui')` 全量）：
+ * - 全量入口会求值全部 ~115 个组件目录（每个目录 index.ts 的 define 副作用 + 各自依赖图），
+ *   测试环境首次 renderToString 实测约 1.8~3.5s；
+ * - 本渲染器按 tag 只动态 import 对应组件目录（如 `@oas-ui/ui/basic/button`），白名单组件
+ *   首载实测 < 200ms。目录 index.ts 的 define 副作用注册到 shim 的 customElements 上
+ *   （shim 在 import 之前先装好），无需手动 define，安全；
+ * - 为什么不走 `@oas-ui/ui/ssr`（Node-safe 类导出入口）：该入口 re-export 全部组件类，
+ *   import 任一具名导出都会求值全部 ~115 个类文件（模块装载量不降，只是不 define）；
+ *   单独 `@oas-ui/ui/basic/button/oas-button` 子路径与 ui exports 的 `./*` 通配
+ *   （映射到 `dist/<目录>/index.js`）形态不符不可达；目录 index 才是真正的按需最小单元。
+ *
  * 为什么是 async：
  * - ESM 静态 import 会提升，无法保证「先装 DOM shim 再求值组件类」的顺序；
- * - 故首次调用时 `await import('@oas-ui/ui')`，此时组件目录 index.ts 的 define 副作用
- *   已注册到 shim 的 customElements 上（shim 在 import 之前先装好）；
+ * - 故组件目录一律在首次 renderToString 内动态 import（shim 先装好再装载）；
  * - 之后模块已缓存，调用开销仅为渲染本身。同一进程内多次调用幂等。
  *
  * 用法：
@@ -55,22 +65,47 @@ const LOCALES: Record<RenderLocale, Locale> = {
   en,
 }
 
-let uiLoaded: Promise<void> | null = null
-let i18nApi: typeof import('@oas-ui/i18n') | null = null
-
-/** 装载 UI 组件模块（define 副作用注册到 shim 的 customElements）。幂等。 */
-async function ensureUI(): Promise<void> {
-  if (!uiLoaded) {
-    // 必须先装 shim：组件类求值需要全局 HTMLElement/customElements 已就位
-    ensureShim()
-    uiLoaded = import('@oas-ui/ui').then(() => undefined)
-  }
-  await uiLoaded
+/**
+ * 白名单 tag → 组件目录入口映射（经 @oas-ui/ui exports 的 `./*` 通配可达：
+ * `@oas-ui/ui/basic/button` → `dist/basic/button/index.js`，vitest 走 alias 到 src 目录 index.ts）。
+ * typography 三兄弟共用 `basic/typography` 目录，装载一次即注册三个 tag。
+ */
+const TAG_ENTRY: Record<WhiteListTag, string> = {
+  'oas-button': '@oas-ui/ui/basic/button',
+  'oas-tag': '@oas-ui/ui/basic/tag',
+  'oas-empty': '@oas-ui/ui/feedback/empty',
+  'oas-divider': '@oas-ui/ui/basic/divider',
+  'oas-text': '@oas-ui/ui/basic/typography',
+  'oas-title': '@oas-ui/ui/basic/typography',
+  'oas-paragraph': '@oas-ui/ui/basic/typography',
 }
+
+/** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */
+const tagLoaded = new Map<string, Promise<void>>()
+
+/**
+ * 装载单个白名单 tag 对应的组件目录（index.ts 的 define 副作用注册到 shim 的 customElements）。幂等。
+ */
+function ensureTag(tag: string): Promise<void> {
+  const cached = tagLoaded.get(tag)
+  if (cached) return cached
+  const spec = TAG_ENTRY[tag as WhiteListTag]
+  if (!spec) {
+    // 防御性兜底：renderToString 已按 WHITELIST 校验，正常不可达
+    throw new Error(`[oas-ui/ssr] 未知白名单 tag「${tag}」：无对应组件目录映射`)
+  }
+  // 必须先装 shim：组件类求值需要全局 HTMLElement/customElements 已就位
+  ensureShim()
+  const loading = import(spec).then(() => undefined)
+  tagLoaded.set(tag, loading)
+  return loading
+}
+
+let i18nApi: typeof import('@oas-ui/i18n') | null = null
 
 /**
  * 装载 i18n registry（其依赖链会求值 OASElement：class extends HTMLElement）。
- * 在 ensureUI 之后调用，此时 shim 已装好，故安全。幂等。
+ * 在 ensureTag 之后调用，此时 shim 已装好，故安全。幂等。
  */
 async function ensureI18n(): Promise<typeof import('@oas-ui/i18n')> {
   if (!i18nApi) {
@@ -100,7 +135,7 @@ export async function renderToString(
     )
   }
 
-  await ensureUI()
+  await ensureTag(tag)
   if (opts.locale) await applyLocale(opts.locale)
 
   const { document } = ensureShim()
