@@ -20,11 +20,11 @@ OAS-UI 是 Web Components 组件库，组件在浏览器运行时自定义元素
 尚未落地（ROADMAP backlog）：
 
 - 真水合：upgrade 时跳过 shadow 重建，只缓存节点并绑定事件 + 增量 update。首版客户端接管策略为「复用 DSD root + 照常重渲染」——快照与重渲染结果一致，视觉无感知。
-- property-only 数据组件（table / tree / select）的声明式数据通道。
+- tree / select 等其余数据组件的声明式数据通道（table 已试点落地，见白名单）。
 - 含布局测量组件（affix / ellipsis / tooltip 等）的首帧闪动治理（仅检测到 DSD 快照时延迟布局写入）。
 - 框架集成插件（Nuxt / Next）。
 
-白名单组件可直接服务端渲染；其余组件（property-only 数据组件、布局测量组件）仍按"客户端专属"方式接入（见下）。
+白名单组件可直接服务端渲染；其余组件（未接入声明式通道的数据组件、布局测量组件）仍按"客户端专属"方式接入（见下）。
 
 ### Vue（Nuxt / Vite SSR）
 
@@ -121,9 +121,9 @@ RSC 在服务端完成渲染，`dangerouslySetInnerHTML` 的字面量进入 SSR 
 
 ### 白名单与边界
 
-- 白名单（render 只依赖 attributes 的纯展示组件）：`oas-button`、`oas-tag`、`oas-empty`、`oas-divider`、`oas-text`、`oas-title`、`oas-paragraph`。
+- 白名单（render 只依赖 attributes 的纯展示组件 + 声明式数据通道试点 oas-table）：`oas-button`、`oas-tag`、`oas-empty`、`oas-divider`、`oas-text`、`oas-title`、`oas-paragraph`、`oas-table`。
 - 非白名单调用直接抛错，不会静默降级。
-- property-only 数据组件（table / tree / select 等）与含布局测量的组件（affix / ellipsis / tooltip 等）仍为客户端渲染，属 backlog。
+- `oas-table` 的 `columns` / `data` 走 JSON attribute 声明式通道（property 优先，非法 JSON 回退空态），SSR 快照含表头与数据行；tree / select 等其余数据组件与含布局测量的组件（affix / ellipsis / tooltip 等）仍为客户端渲染，属 backlog。
 - 首版客户端接管策略：upgrade 时复用 DSD root 并照常重渲染——快照与重渲染结果一致，视觉无感知；跳过重建的真水合属 backlog。
 
 ## 为什么

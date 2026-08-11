@@ -362,6 +362,126 @@ describe('OASTable 虚拟滚动', () => {
   })
 })
 
+describe('OASTable 属性/attribute 声明式通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('attribute 通道：声明式 columns/data JSON 字符串渲染表头与数据行', () => {
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: 'Name' },
+        { key: 'age', title: 'Age' },
+      ]),
+    )
+    el.setAttribute('data', JSON.stringify([{ name: 'Alice', age: 30 }]))
+    document.body.appendChild(el)
+    expect(headers(el)[0]!.textContent).toBe('Name')
+    expect(rows(el).length).toBe(1)
+    expect(rows(el)[0]!.textContent).toContain('Alice')
+  })
+
+  it('attribute 通道：setAttribute 新 data JSON 驱动重渲染', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: 'Name' }]))
+    el.setAttribute('data', JSON.stringify([{ name: 'Alice' }]))
+    document.body.appendChild(el)
+    expect(rows(el)[0]!.textContent).toContain('Alice')
+    el.setAttribute('data', JSON.stringify([{ name: 'Bob' }]))
+    expect(rows(el)[0]!.textContent).toContain('Bob')
+    expect(rows(el)[0]!.textContent).not.toContain('Alice')
+  })
+
+  it('JSON 非法容错：columns/data 非 JSON 不抛错且渲染空态', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', 'not-json')
+    el.setAttribute('data', 'not-json')
+    document.body.appendChild(el)
+    expect(rows(el).length).toBe(0)
+    expect(headers(el).length).toBe(0)
+    expect(el.shadowRoot!.textContent).toContain('暂无数据')
+    // 变化为合法 JSON 后恢复
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: 'Name' }]))
+    el.setAttribute('data', JSON.stringify([{ name: 'Alice' }]))
+    expect(headers(el).length).toBe(1)
+    expect(rows(el).length).toBe(1)
+  })
+
+  it('property 通道：赋值数组对象反射到 attribute 并渲染', () => {
+    const el = new OASTable()
+    document.body.appendChild(el)
+    el.columns = [{ key: 'name', title: 'Name' }]
+    el.data = [{ name: 'Alice' }]
+    expect(el.getAttribute('columns')).toContain('"key":"name"')
+    expect(el.getAttribute('data')).toContain('"name":"Alice"')
+    expect(headers(el)[0]!.textContent).toBe('Name')
+    expect(rows(el)[0]!.textContent).toContain('Alice')
+    // property 为最后写入源：再赋值即重渲染
+    el.data = [{ name: 'Bob' }]
+    expect(rows(el)[0]!.textContent).toContain('Bob')
+  })
+
+  it('property 优先：property 赋值晚于既有 attribute，结果以 property 为准', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: 'Attr' }]))
+    el.setAttribute('data', JSON.stringify([{ name: 'AttrRow' }]))
+    document.body.appendChild(el)
+    expect(headers(el)[0]!.textContent).toBe('Attr')
+    // 宿主框架（Vue/React）渲染时会走 property 赋值，覆盖 attribute 初值
+    el.columns = [{ key: 'name', title: 'Prop' }]
+    el.data = [{ name: 'PropRow' }]
+    expect(headers(el)[0]!.textContent).toBe('Prop')
+    expect(rows(el)[0]!.textContent).toContain('PropRow')
+  })
+
+  it('真水合：DSD 快照存在时 hydrate 接管，shadow 不重建（style 引用保持）', () => {
+    // 模拟浏览器 DSD upgrade：构造器 attachShadow 后注入「SSR 快照 + 指纹 meta」
+    // （等价于 <template shadowrootmode="open"> 已由 HTML 解析器附加），
+    // connectedCallback 触发 tryHydrate → hydrate() 应接管、不重建 shadow。
+    const snap = new OASTable()
+    snap.shadowRoot!.innerHTML = `
+      <meta data-oas-ssr="oas-table" data-oas-ssr-v="1">
+      <style>.probe-style { color: red; }</style>
+      <div class="table-scroll" part="scroll" tabindex="0">
+        <table part="table"><thead part="head"></thead><tbody part="body"></tbody></table>
+      </div>`
+    const styleSnap = snap.shadowRoot!.querySelector('style')!
+    const wrapSnap = snap.shadowRoot!.querySelector('.table-scroll')!
+    document.body.appendChild(snap) // connectedCallback → tryHydrate
+    // hydrate 接管：style / wrap 节点引用保持同一对象（shadow 未重建）
+    expect(snap.shadowRoot!.querySelector('style')).toBe(styleSnap)
+    expect(snap.shadowRoot!.querySelector('.table-scroll')).toBe(wrapSnap)
+    // 指纹 meta 已移除（防止二次误判）
+    expect(snap.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    // 属性驱动的数据行照常增量写入（update 只重建 thead/tbody 内容）
+    snap.setAttribute('columns', JSON.stringify([{ key: 'name', title: 'Name' }]))
+    snap.setAttribute('data', JSON.stringify([{ name: 'Alice' }]))
+    expect(snap.shadowRoot!.querySelector('style')).toBe(styleSnap)
+    expect(headers(snap)[0]!.textContent).toBe('Name')
+    expect(rows(snap)[0]!.textContent).toContain('Alice')
+  })
+
+  it('真水合回退：快照缺关键结构时回退 render 全量重建，功能仍正常', () => {
+    const snap = new OASTable()
+    // 指纹命中但结构不完整（无 table-scroll）→ hydrate 返回 false → render 重建
+    snap.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-table" data-oas-ssr-v="1"><span>broken</span>'
+    document.body.appendChild(snap)
+    expect(snap.shadowRoot!.querySelector('.table-scroll')).not.toBeNull()
+    expect(snap.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    snap.setAttribute('columns', JSON.stringify([{ key: 'name', title: 'Name' }]))
+    snap.setAttribute('data', JSON.stringify([{ name: 'Alice' }]))
+    expect(rows(snap)[0]!.textContent).toContain('Alice')
+  })
+})
+
 describe('OASTable 展示增强（stripe/bordered/summary/expand/tree）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

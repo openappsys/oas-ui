@@ -36,8 +36,8 @@ Not yet landed (ROADMAP backlog):
   events plus incremental `update()`. The v1 client take-over strategy is
   "reuse the DSD root + re-render as usual" — the snapshot and the re-rendered
   output are identical, so there is no visual difference.
-- A declarative data channel for property-only data components
-  (table / tree / select).
+- A declarative data channel for the remaining data components
+  (tree / select; table has landed as a pilot, see the whitelist).
 - First-frame flicker mitigation for layout-measuring components
   (affix / ellipsis / tooltip): defer layout writes only when a DSD snapshot is
   detected.
@@ -162,13 +162,16 @@ into the SSR output stream and the browser parser attaches the DSD templates.
 ### Whitelist and boundaries
 
 - Whitelist (pure-presentation components whose `render()` only depends on
-  attributes): `oas-button`, `oas-tag`, `oas-empty`, `oas-divider`,
-  `oas-text`, `oas-title`, `oas-paragraph`.
+  attributes, plus the declarative-data-channel pilot `oas-table`):
+  `oas-button`, `oas-tag`, `oas-empty`, `oas-divider`,
+  `oas-text`, `oas-title`, `oas-paragraph`, `oas-table`.
 - Calling `renderToString` with a non-whitelisted tag throws an explicit error;
   there is no silent fallback.
-- Property-only data components (table / tree / select) and layout-measuring
-  components (affix / ellipsis / tooltip) remain client-rendered for now
-  (backlog).
+- `oas-table` takes `columns` / `data` through the JSON attribute channel
+  (property takes precedence; invalid JSON falls back to the empty state), and
+  its SSR snapshot includes the header and data rows. The remaining data
+  components (tree / select) and layout-measuring components
+  (affix / ellipsis / tooltip) remain client-rendered for now (backlog).
 - v1 client take-over: upgrade reuses the DSD root and re-renders as usual —
   the snapshot and the re-rendered output are identical, so there is no visual
   difference; true hydration (skip the rebuild) is backlog.

@@ -79,6 +79,7 @@ effect(() => {
 - **`OASElement` 基类**：统一生命周期、属性观察（`observedAttributes` → 属性代理 state）、CSS 变量注入、`part` 暴露约定、事件命名约定。所有组件继承自它。
 - **增量渲染**：`render()` 只在首次连接时构建 shadow DOM；属性变化走 `update()` 增量同步（class/aria/文本），禁止 innerHTML 全量重建——否则 input 丢光标、focus 丢失、table 行状态重建。
 - **property / attribute 双通道**：标量（string/number/boolean）走 attribute + 反射；复杂数据（`options`/`columns`/`data`/`rules`）只走 property（JS 对象，不序列化进 attribute）。基类提供属性 setter 与变更通知约定。
+  - **决策修订（v1.9）**：数据组件新增 attribute（JSON 字符串）回退通道，property 优先——动机是 DSD 序列化需要声明式内容（SSR 快照含数据行）。属性通道统一经 attribute 解析（property setter 反射到 attribute，`parse()` 从 attribute 读 JSON 并容错非法值回退空态），避免 attr↔prop 双向漂移。`data`/`columns` 等语义与 DOM API 重名的属性名，宿主框架 property 赋值正常命中实例属性；attribute 通道仅作声明式/SSR 场景的序列化载体。
 - **受控/非受控**：表单类组件支持"属性驱动"（外部绑 `value`）与"内部 state"双模式，对齐 React 心智。
 - **清理钩子**：基类提供 `disconnectedCallback` 统一 teardown 注册（计时器、全局监听、浮层引用），防止泄漏。
 - **事件命名**：一律 `oas-*` 前缀 CustomEvent，payload 挂 `detail`，bubbles + composed（穿透 Shadow DOM）。

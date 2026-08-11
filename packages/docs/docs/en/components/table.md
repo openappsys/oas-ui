@@ -2,6 +2,8 @@
 
 Displays structured data in a row-and-column grid with sorting, row selection, multi-select, and a loading state. It can be wired together with a pagination component.
 
+`columns` / `data` support a declarative attribute channel: pass a JSON string directly to render the header and data rows (invalid JSON falls back to the empty state), while the property channel (assigning arrays/objects, property takes precedence) remains available and can be serialized into an SSR snapshot.
+
 ## Basic Usage (with Sorting)
 
 <DemoBlock title="Sortable columns">
@@ -249,8 +251,8 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `bordered` | Full border: draws a grid outline around cells (the outer frame is built in) | — | — |
 | `checkable` | Enables checkbox multi-select | `boolean` | — |
-| `columns` | Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`, JSON string | `TableColumn[] \| string` | `[]` |
-| `data` | Row data `[{ [key]: value, children?, expand? }]`, JSON string | `Array<Record<string, unknown>> \| string` | `[]` |
+| `columns` | Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `TableColumn[] \| string` | `[]` |
+| `data` | Row data `[{ [key]: value, children?, expand? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `Array<Record<string, unknown>> \| string` | `[]` |
 | `empty-text` | Empty state text | — | — |
 | `expanded` | Set of expanded row keys (comma-separated; shared by tree parent rows and expandable rows) | `string` | — |
 | `height` | Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered | `string` | `320` |

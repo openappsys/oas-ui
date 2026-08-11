@@ -1113,8 +1113,8 @@
     "attrs": {
       "bordered": "Full border: draws a grid outline around cells (the outer frame is built in)",
       "checkable": "Enables checkbox multi-select",
-      "columns": "Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`, JSON string",
-      "data": "Row data `[{ [key]: value, children?, expand? }]`, JSON string",
+      "columns": "Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`, JSON string (declarative attribute channel; property assignment takes precedence)",
+      "data": "Row data `[{ [key]: value, children?, expand? }]`, JSON string (declarative attribute channel; property assignment takes precedence)",
       "empty-text": "Empty state text",
       "expanded": "Set of expanded row keys (comma-separated; shared by tree parent rows and expandable rows)",
       "height": "Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered",

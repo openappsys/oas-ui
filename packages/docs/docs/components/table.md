@@ -2,6 +2,8 @@
 
 用于以行列表格形式展示结构化数据，支持排序、行选中、多选与加载态，可与分页组件联动。
 
+`columns` / `data` 支持 attribute 声明式通道：直接写 JSON 字符串即可渲染表头与数据行（非法 JSON 回退空态），同时保留 property 通道（赋值数组对象，property 优先），可被 SSR 快照序列化。
+
 ## 基础用法（含排序）
 
 <DemoBlock title="可排序列">
@@ -249,8 +251,8 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `bordered` | 完整边框：单元格网格描边（外框由组件自带） | — | — |
 | `checkable` | 复选框多选开关 | `boolean` | — |
-| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`，JSON 字符串 | `TableColumn[] \| string` | `[]` |
-| `data` | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串 | `Array<Record<string, unknown>> \| string` | `[]` |
+| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `TableColumn[] \| string` | `[]` |
+| `data` | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `Array<Record<string, unknown>> \| string` | `[]` |
 | `empty-text` | 空态文案 | — | — |
 | `expanded` | 已展开行 key 集合（逗号分隔；树形父行/可展开行共用） | `string` | — |
 | `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
