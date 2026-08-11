@@ -306,3 +306,20 @@ describe('OASInput', () => {
     expect(fired).toBe(false)
   })
 })
+
+describe('OASInput focus 委托', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('host.focus() 委托到 shadow 内主输入', () => {
+    const el = new OASInput()
+    document.body.appendChild(el)
+    el.focus()
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('input'))
+  })
+})

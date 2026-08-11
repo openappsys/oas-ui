@@ -74,4 +74,9 @@ export class OASCheckbox extends OASElement {
     input.id = this.inputId
     if (this.labelEl) this.labelEl.setAttribute('for', this.inputId)
   }
+
+  /** label 点击聚焦委托：把焦点交给 shadow 内原生 checkbox（配合 oas-form-item 的 label 点击代理） */
+  override focus(options?: FocusOptions): void {
+    this.shadow.querySelector<HTMLInputElement>('input')?.focus(options)
+  }
 }

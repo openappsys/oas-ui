@@ -99,3 +99,21 @@ describe('OASCheckboxGroup', () => {
     expect(el.getAttribute('value')).toContain('"b"')
   })
 })
+
+describe('OASCheckbox focus 委托', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('host.focus() 委托到 shadow 内原生 checkbox', () => {
+    const el = new OASCheckbox()
+    el.textContent = '记住我'
+    document.body.appendChild(el)
+    el.focus()
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('input'))
+  })
+})

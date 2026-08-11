@@ -84,3 +84,21 @@ describe('OASCascader', () => {
     expect(trigger(el).disabled).toBe(true)
   })
 })
+
+describe('OASCascader focus 委托', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('host.focus() 委托到 shadow 内 trigger', () => {
+    const el = new OASCascader()
+    el.setAttribute('options', OPTIONS)
+    document.body.appendChild(el)
+    el.focus()
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('button[part="trigger"]'))
+  })
+})

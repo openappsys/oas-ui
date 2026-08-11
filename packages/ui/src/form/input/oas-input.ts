@@ -500,4 +500,9 @@ export class OASInput extends OASElement {
     render('suffix-icon', '', this.getAttr('suffix-icon', ''))
     render('suffix', this.getAttr('suffix', ''), '')
   }
+
+  /** label 点击聚焦委托：把焦点交给 shadow 内主输入（配合 oas-form-item 的 label 点击代理） */
+  override focus(options?: FocusOptions): void {
+    this.shadow.querySelector<HTMLInputElement>('input')?.focus(options)
+  }
 }

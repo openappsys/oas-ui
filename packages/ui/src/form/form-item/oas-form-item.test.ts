@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASFormItem } from './index.js'
 import { OASForm } from '../form/index.js'
+import { OASInput } from '../input/index.js'
 
 function mount(attrs: Record<string, string> = {}, innerHTML = '<input />'): OASFormItem {
   const el = new OASFormItem()
@@ -136,6 +137,17 @@ describe('OASFormItem', () => {
     const el = mount({ label: '姓名' }, '<input id="name-field" />')
     el.shadowRoot!.querySelector<HTMLElement>('[part="label"]')!.click()
     expect(document.activeElement).toBe(el.querySelector('#name-field'))
+  })
+
+  it('点击 label 聚焦自定义控件宿主（focus 委托链：label → host.focus() → shadow 内主输入）', () => {
+    const el = mount({ label: '姓名' }, '')
+    const control = new OASInput()
+    el.appendChild(control)
+    expect(control.shadowRoot).not.toBeNull() // 自定义元素已渲染
+    el.shadowRoot!.querySelector<HTMLElement>('[part="label"]')!.click()
+    // happy-dom 重定向：document.activeElement 为宿主，shadowRoot.activeElement 指向内层 input
+    expect(document.activeElement).toBe(control)
+    expect(control.shadowRoot!.activeElement).toBe(control.shadowRoot!.querySelector('input'))
   })
 
   it('refreshLayout 可主动触发重刷', () => {

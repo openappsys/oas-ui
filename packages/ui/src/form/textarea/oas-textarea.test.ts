@@ -125,3 +125,20 @@ describe('OASTextarea', () => {
     expect(t.style.height).toBe('')
   })
 })
+
+describe('OASTextarea focus 委托', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('host.focus() 委托到 shadow 内 textarea', () => {
+    const el = new OASTextarea()
+    document.body.appendChild(el)
+    el.focus()
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('textarea'))
+  })
+})

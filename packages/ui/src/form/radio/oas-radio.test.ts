@@ -99,3 +99,21 @@ describe('OASRadioGroup', () => {
     expect(el.getAttribute('value')).toBe('b')
   })
 })
+
+describe('OASRadio focus 委托', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('host.focus() 委托到 shadow 内原生 radio', () => {
+    const el = new OASRadio()
+    el.textContent = '选项 A'
+    document.body.appendChild(el)
+    el.focus()
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('input'))
+  })
+})

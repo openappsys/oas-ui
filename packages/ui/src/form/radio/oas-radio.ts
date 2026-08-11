@@ -78,6 +78,11 @@ export class OASRadio extends OASElement {
     if (this.labelEl) this.labelEl.setAttribute('for', this.inputId)
   }
 
+  /** label 点击聚焦委托：把焦点交给 shadow 内原生 radio（配合 oas-form-item 的 label 点击代理） */
+  override focus(options?: FocusOptions): void {
+    this.shadow.querySelector<HTMLInputElement>('input')?.focus(options)
+  }
+
   /**
    * 同名 radio 互斥：本项选中时，清掉文档内所有同 name（非空）的其他 oas-radio。
    * oas-radio-group 会给子项统一分配唯一的组内 name，因此这里按 name 匹配天然兼容
