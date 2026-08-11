@@ -217,6 +217,32 @@ describe('OASSelect', () => {
     expect(chips[2]!.textContent).toBe('+1')
   })
 
+  it('默认：无 max-tag-count 时多标签不折叠（value 容器 wrap、无 +N chip）', () => {
+    const el = mount({ multiple: '', value: JSON.stringify(['apple', 'banana', 'orange']) })
+    // 全部标签原样渲染，不出现折叠计数 chip
+    const chips = [...el.shadowRoot!.querySelectorAll('.chip')]
+    expect(chips.length).toBe(3)
+    expect(el.shadowRoot!.querySelectorAll('.chip-plus').length).toBe(0)
+    // value 容器为换行模式，且没有单行 overflow 裁剪
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    const valueRule = style.match(/\.value\s*\{[^}]*\}/)?.[0] ?? ''
+    expect(valueRule).toContain('flex-wrap: wrap')
+    expect(valueRule).not.toContain('overflow: hidden')
+    // 折叠模式（nowrap + overflow hidden）仅绑定到显式设置 max-tag-count 的宿主
+    const collapseRule = style.match(/:host\(\[max-tag-count\]\)\s*\.value\s*\{[^}]*\}/)?.[0] ?? ''
+    expect(collapseRule).toContain('flex-wrap: nowrap')
+    expect(collapseRule).toContain('overflow: hidden')
+  })
+
+  it('动态加 max-tag-count：从换行模式切换为折叠模式，+N 出现', () => {
+    const el = mount({ multiple: '', value: JSON.stringify(['apple', 'banana', 'orange']) })
+    expect(el.shadowRoot!.querySelectorAll('.chip-plus').length).toBe(0)
+    el.setAttribute('max-tag-count', '2')
+    const chips = [...el.shadowRoot!.querySelectorAll('.chip')]
+    expect(chips.length).toBe(3)
+    expect(chips[2]!.textContent).toBe('+1')
+  })
+
   it('allow-create：无匹配时显示「创建 xxx」项，点击创建并纳入选中', () => {
     const el = mount({ 'allow-create': '', searchable: '' })
     open(el)

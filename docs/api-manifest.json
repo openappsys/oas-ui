@@ -1159,6 +1159,7 @@
       },
       {
         "name": "max-tag-count",
+        "type": "boolean",
         "observed": true
       },
       {

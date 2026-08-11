@@ -17,10 +17,10 @@
 ## 多选
 
 <DemoBlock title="多选（multiple）">
-  <oas-select multiple value='["apple","banana"]' placeholder="可多选" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"}]'></oas-select>
+  <oas-select multiple value='["apple","banana","orange","strawberry"]' placeholder="可多选" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"},{"label":"西瓜","value":"watermelon"}]'></oas-select>
 </DemoBlock>
 
-多选时 `value` 为 JSON 数组，选中项以标签展示，可单独移除。
+多选时 `value` 为 JSON 数组，选中项以标签展示，可单独移除；标签默认换行展示、触发器随内容增高（不设置 `max-tag-count` 时不会折叠）。
 
 ## 禁用
 
@@ -84,7 +84,7 @@
   <oas-select multiple max-tag-count="2" value='["apple","banana","orange","strawberry"]' placeholder="超出折叠为 +N" options='[{"label":"苹果","value":"apple"},{"label":"香蕉","value":"banana"},{"label":"橙子","value":"orange"},{"label":"草莓","value":"strawberry"},{"label":"西瓜","value":"watermelon"}]'></oas-select>
 </DemoBlock>
 
-多选选中标签超过 `max-tag-count` 时折叠为 `+N`（悬浮显示剩余项）。
+多选标签默认换行展示、不折叠；仅显式设置 `max-tag-count` 时按数量折叠为 `+N`（悬浮显示剩余项）。
 
 ## 允许创建
 
@@ -151,7 +151,7 @@ onMounted(() => {
 | `clearable` | 可清空（有值时显示清空按钮，清空派发 `oas-clear`） | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `loading` | 远程加载占位（与 `remote` 搭配使用） | `boolean` | — |
-| `max-tag-count` | 多选标签超出数量后折叠为 `+N` | — | — |
+| `max-tag-count` | 多选标签按数量折叠为 `+N`（需显式设置；未设置时标签默认换行展示，不折叠） | `boolean` | — |
 | `multiple` | 多选 | `boolean` | — |
 | `options` | 选项，JSON 数组 `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |

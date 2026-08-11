@@ -951,7 +951,7 @@
       "clearable": "可清空（有值时显示清空按钮，清空派发 `oas-clear`）",
       "disabled": "禁用",
       "loading": "远程加载占位（与 `remote` 搭配使用）",
-      "max-tag-count": "多选标签超出数量后折叠为 `+N`",
+      "max-tag-count": "多选标签按数量折叠为 `+N`（需显式设置；未设置时标签默认换行展示，不折叠）",
       "multiple": "多选",
       "options": "选项，JSON 数组 `[{ label, value, disabled?, group? }]`",
       "placeholder": "占位提示",

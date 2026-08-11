@@ -60,12 +60,16 @@ const STYLE = `
 }
 .value {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: var(--oas-space-1);
   min-width: 0;
   flex: 1;
   text-align: left;
-  /* 单行：不换行、不出横向滚动条，放不下的标签折叠为 +N（见 collapseOverflowChips） */
+  /* 默认换行：标签放不下时换行、触发器自适应增高；折叠仅在显式设置 max-tag-count 时启用 */
+}
+:host([max-tag-count]) .value {
+  flex-wrap: nowrap;
+  /* max-tag-count 折叠模式：单行不换行、不出横向滚动条，放不下的标签折叠为 +N（见 collapseOverflowChips） */
   overflow: hidden;
 }
 .placeholder {
@@ -77,12 +81,20 @@ const STYLE = `
   box-sizing: border-box;
   height: 20px;
   flex-shrink: 0;
+  max-width: 100%;
   gap: var(--oas-space-1);
   background: var(--oas-color-bg-hover);
   border-radius: var(--oas-radius-sm);
   padding: 0 var(--oas-space-1);
   font-size: var(--oas-font-size-xs);
   color: var(--oas-color-text-primary);
+}
+/* 超长标签在 chip 内省略，避免超出容器横向溢出（换行模式下单个标签无法再折行） */
+.chip > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 .chip[hidden] {
   display: none;
@@ -138,6 +150,9 @@ const STYLE = `
   align-items: center;
   border-radius: var(--oas-radius-sm);
   flex-shrink: 0;
+  /* 多行标签时清除按钮固定首行对齐，不随触发器长高漂浮（与 .chevron 一致） */
+  align-self: flex-start;
+  margin-top: calc((var(--oas-control-height-md) - 12px) / 2);
 }
 .clear-btn:hover {
   color: var(--oas-color-text-primary);
@@ -646,7 +661,7 @@ export class OASSelect extends OASElement {
     return Number.isNaN(n) ? null : n
   }
 
-  /** 单行放不下时把放不下的标签收进 +N（不换行、不出横向滚动条，最佳实践） */
+  /** 单行（max-tag-count 折叠模式）放不下时把放不下的标签收进 +N（不换行、不出横向滚动条） */
   private collapseOverflowChips(valueEl: HTMLElement, plus: HTMLElement, allLabels: string[], renderedCount: number): void {
     const chips = [...valueEl.querySelectorAll<HTMLElement>('.chip:not(.chip-plus)')]
     let hidden = allLabels.length - renderedCount // 已按 max-tag-count 折叠的数量
@@ -700,8 +715,10 @@ export class OASSelect extends OASElement {
 
     if (this.hasAttr('multiple')) {
       valueEl.innerHTML = ''
-      // max-tag-count：超过数量先按数量折叠
-      const limit = this.intAttr('max-tag-count') ?? Number.POSITIVE_INFINITY
+      // max-tag-count：仅显式设置时才按数量折叠；未设置时标签默认换行展示（flex-wrap: wrap 见 CSS）
+      const limit = this.hasAttr('max-tag-count')
+        ? (this.intAttr('max-tag-count') ?? Number.POSITIVE_INFINITY)
+        : Number.POSITIVE_INFINITY
       const shown = limit >= 0 ? values.slice(0, limit) : values
       const allLabels = values.map((v) => this._options.find((o) => o.value === v)?.label ?? v)
       for (const v of shown) {
@@ -720,11 +737,13 @@ export class OASSelect extends OASElement {
         chip.append(label, rm)
         valueEl.appendChild(chip)
       }
-      // 折叠计数 chip：max-tag-count 折叠 + 超宽自动折叠合并计数（单行不换行、不出滚动条）
-      const plus = document.createElement('span')
-      plus.className = 'chip chip-plus'
-      valueEl.appendChild(plus)
-      this.collapseOverflowChips(valueEl, plus, allLabels, shown.length)
+      // 折叠计数 chip：仅在显式设置 max-tag-count 时插入（数量折叠 + 超宽折叠合并计数）
+      if (this.hasAttr('max-tag-count')) {
+        const plus = document.createElement('span')
+        plus.className = 'chip chip-plus'
+        valueEl.appendChild(plus)
+        this.collapseOverflowChips(valueEl, plus, allLabels, shown.length)
+      }
     } else {
       const value = values[0] ?? ''
       const option = this._options.find((o) => o.value === value)

@@ -951,7 +951,7 @@
       "clearable": "Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`)",
       "disabled": "Disabled",
       "loading": "Remote loading placeholder (use with `remote`)",
-      "max-tag-count": "Collapse tags beyond this count into `+N` in multiple mode",
+      "max-tag-count": "Collapse tags beyond this count into `+N` in multiple mode (opt-in; without it tags wrap instead of collapsing)",
       "multiple": "Multiple select",
       "options": "Options, JSON array `[{ label, value, disabled?, group? }]`",
       "placeholder": "Placeholder text",

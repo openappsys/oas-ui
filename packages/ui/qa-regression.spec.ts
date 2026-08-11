@@ -325,6 +325,57 @@ test('select multiple：chip 结构完整（label + 移除按钮）且样式不�
   expect(r.gap).toBe('4px')
 })
 
+test('select 多选默认换行：标签多行展示、触发器增高、chevron 首行对齐、无 +N', async ({ page }) => {
+  // 曾现 bug：多选标签被按容器宽度自动折叠为 +N（无开关总是生效），用户期望默认换行展示。
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-select[multiple][value]:not([max-tag-count])')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-select[multiple][value]:not([max-tag-count])')!
+    const root = el.shadowRoot!
+    const trigger = root.querySelector<HTMLElement>('[part="trigger"]')!
+    const valueEl = root.querySelector<HTMLElement>('.value')!
+    const chevron = root.querySelector<HTMLElement>('.chevron')!
+    const chips = [...root.querySelectorAll<HTMLElement>('.chip:not(.chip-plus)')]
+    const t = trigger.getBoundingClientRect()
+    const chipTops = chips.map((c) => c.getBoundingClientRect().top)
+    const rowCount = new Set(chipTops.map((y) => Math.round(y))).size
+    const firstRowTop = Math.min(...chipTops)
+    const c = chevron.getBoundingClientRect()
+    return {
+      wrap: getComputedStyle(valueEl).flexWrap,
+      rowCount,
+      plusCount: root.querySelectorAll('.chip-plus').length,
+      triggerHeight: t.height,
+      // chip 高 20px：chevron 中心应与首行 chip 中心对齐
+      chevronOffset: Math.abs(c.top + c.height / 2 - (firstRowTop + 10)),
+    }
+  })
+  expect(r.wrap).toBe('wrap')
+  expect(r.rowCount).toBeGreaterThan(1)
+  expect(r.plusCount).toBe(0)
+  expect(r.triggerHeight).toBeGreaterThan(32) // 超出 --oas-control-height-md（32px）说明随内容增高
+  expect(r.chevronOffset).toBeLessThanOrEqual(6)
+})
+
+test('select 折叠示例：max-tag-count 显式启用时折叠为 +N（单行 nowrap）', async ({ page }) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-select[max-tag-count]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-select[max-tag-count]')!
+    const root = el.shadowRoot!
+    const valueEl = root.querySelector<HTMLElement>('.value')!
+    const plus = root.querySelector<HTMLElement>('.chip-plus')
+    return {
+      wrap: getComputedStyle(valueEl).flexWrap,
+      plusText: plus?.textContent ?? null,
+      chipCount: root.querySelectorAll('.chip:not(.chip-plus)').length,
+    }
+  })
+  expect(r.wrap).toBe('nowrap')
+  expect(r.chipCount).toBe(2) // max-tag-count="2"
+  expect(r.plusText).toBe('+2')
+})
+
 test('date-picker / time-picker 面板贴输入框下方（:host 为定位祖先）', async ({ page }) => {
   // 曾现 bug：:host 缺 position: relative，[part=dropdown] 的 absolute 定位基准逃逸出 shadow，
   // top: calc(100% + 4px) 相对页面底部定位，面板掉到页面底部。

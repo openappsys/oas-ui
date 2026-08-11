@@ -17,10 +17,10 @@ A dropdown selector supporting single/multiple selection, groups, clearable, rem
 ## Multiple Select
 
 <DemoBlock title="Multiple">
-  <oas-select multiple value='["apple","banana"]' placeholder="Multiple" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"}]'></oas-select>
+  <oas-select multiple value='["apple","banana","orange","strawberry"]' placeholder="Multiple" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"},{"label":"Watermelon","value":"watermelon"}]'></oas-select>
 </DemoBlock>
 
-In multiple mode `value` is a JSON array; selected items are shown as tags that can be removed individually.
+In multiple mode `value` is a JSON array; selected items are shown as tags that can be removed individually. Tags wrap to new lines by default and the trigger grows with the content (no collapsing unless `max-tag-count` is set).
 
 ## Disabled
 
@@ -84,7 +84,7 @@ In `remote` mode the component does no local filtering: typing dispatches `oas-i
   <oas-select multiple max-tag-count="2" value='["apple","banana","orange","strawberry"]' placeholder="Collapse into +N when exceeded" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"},{"label":"Watermelon","value":"watermelon"}]'></oas-select>
 </DemoBlock>
 
-When the selected tags exceed `max-tag-count`, they collapse into `+N` (hover to see the remaining items).
+Multiple-select tags wrap by default and do not collapse; only when `max-tag-count` is explicitly set do they collapse into `+N` (hover to see the remaining items).
 
 ## Allow Create
 
@@ -151,7 +151,7 @@ onMounted(() => {
 | `clearable` | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`) | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `loading` | Remote loading placeholder (use with `remote`) | `boolean` | — |
-| `max-tag-count` | Collapse tags beyond this count into `+N` in multiple mode | — | — |
+| `max-tag-count` | Collapse tags beyond this count into `+N` in multiple mode (opt-in; without it tags wrap instead of collapsing) | `boolean` | — |
 | `multiple` | Multiple select | `boolean` | — |
 | `options` | Options, JSON array `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
