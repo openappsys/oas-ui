@@ -158,7 +158,7 @@ const FIXTURES: Fixture[] = [
       e.setAttribute('items', MENU_ITEMS)
       e.innerHTML = '<button>更多</button>'
     },
-    probe: '.menu',
+    probe: '.menu-anchor',
   },
   { name: 'context-menu', cls: OASContextMenu, setup: (e) => e.setAttribute('items', MENU_ITEMS), probe: '.menu-anchor' },
   { name: 'menubar', cls: OASMenubar, setup: (e) => e.setAttribute('items', MENUBAR_ITEMS), probe: '.bar' },
@@ -350,7 +350,7 @@ describe('导航布局组件 DSD 真水合批次 4', () => {
       e.innerHTML = '<button>更多</button>'
     }).el
     ;(dd.querySelector('button') as HTMLElement).click()
-    expect(dd.shadowRoot!.querySelector('.menu')!.getAttribute('aria-hidden')).toBe('false')
+    expect(dd.shadowRoot!.querySelector('.menu-anchor')!.hasAttribute('hidden')).toBe(false)
 
     // oas-speed-dial：点击 fab → open
     const sdSnap = captureSnapshot(OASSpeedDial, (e) => e.setAttribute('actions', '[{"label":"分享"}]'))

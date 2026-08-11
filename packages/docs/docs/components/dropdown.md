@@ -27,6 +27,16 @@
   </oas-dropdown>
 </DemoBlock>
 
+## 多级子菜单
+
+items 项支持 `children` 数组级联子菜单（任意层级），hover / 点击展开，选中叶子项后自动收回并关闭；浮层菜单复用了 `oas-menu` 渲染，多级子菜单贴近视口边缘时自动向左 / 向上翻转保证完整可见。
+
+<DemoBlock title="多级子菜单">
+  <oas-dropdown items='[{"label":"文件","value":"file","children":[{"label":"新建","value":"new","children":[{"label":"文件","value":"new-file"},{"label":"窗口","value":"new-window"}]},{"label":"打开","value":"open"}]},{"label":"编辑","value":"edit"}]'>
+    <oas-button>更多操作</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
 ## 禁用项
 
 <DemoBlock title="禁用项">
@@ -141,4 +151,4 @@ onMounted(() => {
 | --- | --- |
 | 默认 | — |
 
-点击触发器切换显隐，点击外部 / 按 Esc / 选择后关闭；`role="menu"` + `menuitem`。
+点击触发器切换显隐，点击外部 / 按 Esc / 选择后关闭；浮层为内层 `oas-menu`（`role="menu"`，叶子项 `menuitemradio`、带子菜单项 `menuitem`），支持多级级联子菜单与键盘导航。

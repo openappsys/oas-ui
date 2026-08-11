@@ -70,6 +70,27 @@ function submenuEl(el: OASMenu): HTMLElement | null {
   return el.shadowRoot!.querySelector('[part="submenu"]')
 }
 
+/** happy-dom 无真实布局：手动桩掉 getBoundingClientRect 以驱动视口边界翻转检测 */
+function stubRect(
+  el: Element,
+  rect: { top: number; left: number; right: number; bottom: number; width: number; height: number },
+): void {
+  el.getBoundingClientRect = () => rect as DOMRect
+}
+
+const ORIG_INNER_WIDTH = Object.getOwnPropertyDescriptor(window, 'innerWidth')
+const ORIG_INNER_HEIGHT = Object.getOwnPropertyDescriptor(window, 'innerHeight')
+
+/** 测试内视口；每例结束还原，避免污染其他用例 */
+function stubViewport(w: number, h: number): void {
+  Object.defineProperty(window, 'innerWidth', { value: w, configurable: true })
+  Object.defineProperty(window, 'innerHeight', { value: h, configurable: true })
+}
+function restoreViewport(): void {
+  if (ORIG_INNER_WIDTH) Object.defineProperty(window, 'innerWidth', ORIG_INNER_WIDTH)
+  if (ORIG_INNER_HEIGHT) Object.defineProperty(window, 'innerHeight', ORIG_INNER_HEIGHT)
+}
+
 describe('OASMenu', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -77,6 +98,7 @@ describe('OASMenu', () => {
 
   afterEach(() => {
     document.body.innerHTML = ''
+    restoreViewport()
   })
 
   it('渲染菜单项，role=menu', () => {
@@ -340,5 +362,119 @@ describe('OASMenu', () => {
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
     el.removeAttribute('theme')
     expect(el.dataset.theme).toBeUndefined()
+  })
+
+  // —— 视口边界翻转（缺陷 8 回归）——
+  // 右侧剩余空间不足 → 子菜单向左展开（flip-left）；底部不足 → 向上展开（flip-up）。
+  // 翻转由样式表类表达（calc/var 在样式表内，happy-dom 无法解析 inline calc(…var())），
+  // 多级嵌套逐级检测；happy-dom 无真实布局，rect 用桩值驱动。
+
+  it('样式表声明翻转规则：flip-left 向左（right:100%）、flip-up 向上（bottom 翻转）', () => {
+    const el = mount({ items: NESTED_ITEMS })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.submenu\.flip-left\s*\{[^}]*left:\s*auto;\s*right:\s*100%/)
+    expect(css).toMatch(/\.submenu\.flip-up\s*\{[^}]*top:\s*auto;\s*bottom:\s*calc\(-1\s*\*\s*var\(--oas-space-1\)\)/)
+    // 水平模式一级子菜单向上翻转：bottom:100%（在父项上方浮出）
+    const h = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    const hcss = h.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(hcss).toMatch(
+      /:host\(\[mode='horizontal'\]\)\s*\.submenu-1\.flip-up\s*\{[^}]*bottom:\s*calc\(100%\s*\+\s*var\(--oas-space-1\)\)/,
+    )
+  })
+
+  it('右侧空间不足：子菜单向左翻转（flip-left）', () => {
+    stubViewport(800, 600)
+    const el = mount({ items: NESTED_ITEMS })
+    const parent = topItems(el)[0]! // 编辑（有子级）
+    // 父项贴近视口右缘：右侧仅剩 20px，不足以容纳 140px 宽的子菜单
+    stubRect(parent, { left: 620, top: 40, right: 780, bottom: 76, width: 160, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(sub, { left: 780, top: 36, right: 920, bottom: 176, width: 140, height: 140 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(parent.classList.contains('open')).toBe(true)
+    expect(sub.classList.contains('flip-left')).toBe(true)
+    expect(sub.classList.contains('flip-up')).toBe(false)
+  })
+
+  it('右侧空间充足：不翻转', () => {
+    stubViewport(800, 600)
+    const el = mount({ items: NESTED_ITEMS })
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 10, top: 40, right: 170, bottom: 76, width: 160, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(sub, { left: 170, top: 36, right: 310, bottom: 176, width: 140, height: 140 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub.classList.contains('flip-left')).toBe(false)
+  })
+
+  it('底部空间不足：级联子菜单向上翻转（flip-up）', () => {
+    stubViewport(800, 600)
+    const el = mount({ items: NESTED_ITEMS })
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 10, top: 500, right: 170, bottom: 536, width: 160, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(sub, { left: 170, top: 496, right: 310, bottom: 2000, width: 140, height: 1504 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub.classList.contains('flip-up')).toBe(true)
+    expect(sub.classList.contains('flip-left')).toBe(false)
+  })
+
+  it('底部空间充足：不垂直翻转', () => {
+    stubViewport(800, 600)
+    const el = mount({ items: NESTED_ITEMS })
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 10, top: 10, right: 170, bottom: 46, width: 160, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(sub, { left: 170, top: 6, right: 310, bottom: 146, width: 140, height: 140 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub.classList.contains('flip-up')).toBe(false)
+  })
+
+  it('水平模式一级子菜单底部不足：向上翻转（flip-up）', () => {
+    stubViewport(800, 600)
+    const el = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
+    const parent = topItems(el)[0]!
+    stubRect(parent, { left: 10, top: 200, right: 170, bottom: 236, width: 160, height: 36 })
+    const sub = parent.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(sub, { left: 10, top: 240, right: 150, bottom: 2000, width: 140, height: 1760 })
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(sub.classList.contains('submenu-1')).toBe(true)
+    expect(sub.classList.contains('flip-up')).toBe(true)
+  })
+
+  it('三级嵌套：最深层子菜单同样按视口右缘翻转（逐级检测）', () => {
+    stubViewport(800, 600)
+    const el = mount({ items: NESTED_ITEMS })
+    // 展开 文件 > 新建（两级链），使 新建 成为 .open 父项
+    topItems(el)[1]!.dispatchEvent(new MouseEvent('mouseenter')) // 文件
+    const newItem = el.shadowRoot!.querySelector<HTMLElement>('[data-value="new"]')!
+    expect(newItem).not.toBeNull()
+    // 桩掉 新建 的 rect 与它的子菜单 rect：新建 贴近视口右缘
+    stubRect(newItem, { left: 600, top: 40, right: 760, bottom: 76, width: 160, height: 36 })
+    const deepSub = newItem.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(deepSub, { left: 760, top: 36, right: 900, bottom: 176, width: 140, height: 140 })
+    newItem.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(newItem.classList.contains('open')).toBe(true)
+    expect(deepSub.classList.contains('flip-left')).toBe(true)
+  })
+
+  it('展开切换不同父项：翻转类随各父项视口条件独立判定', () => {
+    stubViewport(800, 600)
+    const el = mount({ items: NESTED_ITEMS })
+    // 编辑 贴近右缘 → 左翻；随后切到靠左的 文件 → 不复位翻转
+    const edit = topItems(el)[0]!
+    const file = topItems(el)[1]!
+    stubRect(edit, { left: 620, top: 40, right: 780, bottom: 76, width: 160, height: 36 })
+    const editSub = edit.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(editSub, { left: 780, top: 36, right: 920, bottom: 176, width: 140, height: 140 })
+    edit.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(editSub.classList.contains('flip-left')).toBe(true)
+
+    stubRect(file, { left: 10, top: 40, right: 170, bottom: 76, width: 160, height: 36 })
+    const fileSub = file.querySelector<HTMLElement>('[part="submenu"]')!
+    stubRect(fileSub, { left: 170, top: 36, right: 310, bottom: 176, width: 140, height: 140 })
+    file.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(fileSub.classList.contains('flip-left')).toBe(false)
+    expect(fileSub.classList.contains('flip-up')).toBe(false)
   })
 })

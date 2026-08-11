@@ -712,3 +712,203 @@ test('scroll-area 横向可滚：滚轮增量横向滚动 + 横向/纵向 thumb 
   )
   expect(afterVDrag).toBeGreaterThan(v.before)
 })
+
+// —— 缺陷 8：多级子菜单视口边界翻转 ——
+// 曾现 bug：ContextMenu/Menu/Dropdown 的多级子菜单一律向右展开，贴近视口右缘时被子菜单
+// 顶出屏幕被裁剪。修复：展开前检测视口剩余空间，右侧不足向左翻转（flip-left）、
+// 底部不足向上翻转（flip-up），三级及以上逐级检测。断言：可见子菜单完整落在视口内。
+
+/** 收集所有可见子菜单的矩形（递归遍历 open shadow root；原生 querySelectorAll 不穿透 shadow） */
+async function visibleSubmenuRects(page: import('@playwright/test').Page): Promise<Array<{
+  left: number
+  right: number
+  top: number
+  bottom: number
+  vw: number
+  vh: number
+  flipLeft: boolean
+}>> {
+  return page.evaluate(() => {
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const out: Array<{
+      left: number
+      right: number
+      top: number
+      bottom: number
+      vw: number
+      vh: number
+      flipLeft: boolean
+    }> = []
+    const walk = (root: Document | ShadowRoot): void => {
+      for (const el of root.querySelectorAll('*')) {
+        if (el.getAttribute('part') === 'submenu') {
+          const b = el.getBoundingClientRect()
+          if (b.width > 0 && b.height > 0) {
+            out.push({
+              left: b.left,
+              right: b.right,
+              top: b.top,
+              bottom: b.bottom,
+              vw,
+              vh,
+              flipLeft: el.classList.contains('flip-left'),
+            })
+          }
+        }
+        if (el.shadowRoot) walk(el.shadowRoot)
+      }
+    }
+    walk(document)
+    return out
+  })
+}
+
+test('context-menu 多级子菜单贴近视口右缘：翻转后全部落在视口内', async ({ page }) => {
+  await page.goto('/components/context-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-context-menu')
+  // 把「多级子菜单」demo 平移到视口右缘（fixed + 高 z-index），右键点在右缘附近
+  await page.evaluate(() => {
+    const cm = [...document.querySelectorAll('oas-context-menu')].find((el) =>
+      el.getAttribute('items')?.includes('"children"'),
+    ) as HTMLElement
+    cm.style.cssText = 'position: fixed; right: 0; top: 260px; z-index: 9999'
+    cm.dataset.e2eRightEdge = '1'
+  })
+  const box = await page
+    .locator('oas-context-menu[data-e2e-right-edge]')
+    .boundingBox()
+  await page.mouse.click(box!.x + box!.width - 12, box!.y + 60, { button: 'right' })
+  // 逐级展开两级子菜单链：新建 → 项目 →（Git 仓库/空白）
+  await page
+    .locator('oas-context-menu[data-e2e-right-edge] [part="item"][data-value="new"]')
+    .hover({ timeout: 5000 })
+  await page
+    .locator('oas-context-menu[data-e2e-right-edge] [part="item"][data-value="new-project"]')
+    .hover({ timeout: 5000 })
+  await page.waitForTimeout(200)
+  const rects = await visibleSubmenuRects(page)
+  expect(rects.length).toBeGreaterThanOrEqual(2) // 一级 + 二级子菜单均已展开
+  expect(rects.some((r) => r.flipLeft), '贴右缘的子菜单应向左翻转（flip-left），而非被裁掉').toBe(true)
+  for (const r of rects) {
+    expect(r.left, `子菜单 left=${r.left} 越出视口左缘`).toBeGreaterThanOrEqual(-1)
+    expect(r.right, `子菜单 right=${r.right} 越出视口右缘`).toBeLessThanOrEqual(r.vw + 1)
+    expect(r.top, `子菜单 top=${r.top} 越出视口上缘`).toBeGreaterThanOrEqual(-1)
+    expect(r.bottom, `子菜单 bottom=${r.bottom} 越出视口下缘`).toBeLessThanOrEqual(r.vh + 1)
+  }
+  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix8-context-menu-flip.png' })
+})
+
+test('menu 多级子菜单贴近视口右缘：翻转后全部落在视口内', async ({ page }) => {
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#menu-nested')
+  await page.evaluate(() => {
+    const m = document.querySelector('#menu-nested') as HTMLElement
+    m.style.cssText = 'position: fixed; right: 0; top: 240px; z-index: 9999'
+    m.dataset.e2eRightEdge = '1'
+  })
+  // hover 展开 文件 → 新建（三级链）
+  await page.locator('#menu-nested [part="item"][data-value="file"]').hover()
+  await page.locator('#menu-nested [part="item"][data-value="new"]').hover()
+  await page.waitForTimeout(200)
+  const rects = await visibleSubmenuRects(page)
+  expect(rects.length).toBeGreaterThanOrEqual(2)
+  expect(rects.some((r) => r.flipLeft), '贴右缘的子菜单应向左翻转（flip-left），而非被裁掉').toBe(true)
+  for (const r of rects) {
+    expect(r.left, `子菜单 left=${r.left} 越出视口左缘`).toBeGreaterThanOrEqual(-1)
+    expect(r.right, `子菜单 right=${r.right} 越出视口右缘`).toBeLessThanOrEqual(r.vw + 1)
+    expect(r.bottom, `子菜单 bottom=${r.bottom} 越出视口下缘`).toBeLessThanOrEqual(r.vh + 1)
+  }
+  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix8-menu-flip.png' })
+})
+
+test('dropdown 多级子菜单贴近视口右缘：翻转后全部落在视口内', async ({ page }) => {
+  await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-dropdown')
+  // 注入一个带两级子菜单的 dropdown 并平移到视口右缘
+  await page.evaluate(() => {
+    const dd = document.createElement('oas-dropdown')
+    dd.setAttribute(
+      'items',
+      JSON.stringify([
+        {
+          label: '文件',
+          value: 'file',
+          children: [
+            {
+              label: '新建',
+              value: 'new',
+              children: [
+                { label: '文件', value: 'new-file' },
+                { label: '窗口', value: 'new-window' },
+              ],
+            },
+            { label: '打开', value: 'open' },
+          ],
+        },
+        { label: '编辑', value: 'edit' },
+      ]),
+    )
+    dd.innerHTML = '<button>操作</button>'
+    dd.style.cssText = 'position: fixed; right: 0; top: 240px; z-index: 9999'
+    dd.dataset.e2eRightEdge = '1'
+    document.body.appendChild(dd)
+  })
+  const dd = page.locator('oas-dropdown[data-e2e-right-edge]')
+  await dd.locator('button').click()
+  await page.locator('oas-dropdown[data-e2e-right-edge] [part="item"][data-value="file"]').hover()
+  await page.locator('oas-dropdown[data-e2e-right-edge] [part="item"][data-value="new"]').hover()
+  await page.waitForTimeout(200)
+  const rects = await visibleSubmenuRects(page)
+  expect(rects.length).toBeGreaterThanOrEqual(2)
+  expect(rects.some((r) => r.flipLeft), '贴右缘的子菜单应向左翻转（flip-left），而非被裁掉').toBe(true)
+  for (const r of rects) {
+    expect(r.left, `子菜单 left=${r.left} 越出视口左缘`).toBeGreaterThanOrEqual(-1)
+    expect(r.right, `子菜单 right=${r.right} 越出视口右缘`).toBeLessThanOrEqual(r.vw + 1)
+    expect(r.bottom, `子菜单 bottom=${r.bottom} 越出视口下缘`).toBeLessThanOrEqual(r.vh + 1)
+  }
+  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix8-dropdown-flip.png' })
+})
+
+// —— 缺陷 9：rate 半选视觉 ——
+// 曾现 bug：半星整颗按 50% 透明度淡化，看起来是整颗黄描边星。
+// 修复：半星 = 左半激活色（warning）+ 右半未激活色（border），由 .half-fill 覆盖层 +
+// clip-path 垂直分割（inset(0 50% 0 0)）实现。断言：覆盖层存在、clip 只留左半、
+// 覆盖层为 warning 色、基础星为未激活 border 色。
+
+test('rate 半选（allow-half）：半星为左半黄右半灰的垂直分割视觉', async ({ page }) => {
+  await page.goto('/components/rate.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-rate[value="3.5"][allow-half]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-rate[value="3.5"][allow-half]')!
+    const root = el.shadowRoot!
+    const stars = [...root.querySelectorAll<HTMLElement>('.star')]
+    const half = stars.find((s) => s.classList.contains('half'))!
+    const fill = half.querySelector<HTMLElement>('.half-fill')
+    const fillCs = fill ? getComputedStyle(fill) : null
+    return {
+      starCount: stars.length,
+      activeCount: stars.filter((s) => s.classList.contains('active')).length,
+      halfIndex: stars.indexOf(half),
+      oldOpacityHack: half.style.opacity,
+      hasFill: !!fill,
+      fillAriaHidden: fill?.getAttribute('aria-hidden') ?? null,
+      fillHasSvg: !!fill?.querySelector('svg'),
+      fillClipPath: fillCs?.clipPath ?? '',
+      fillColor: fillCs?.color ?? '',
+      baseColor: getComputedStyle(half).color,
+    }
+  })
+  // 2.5 语义演示用 3.5：3 颗全黄 + 1 颗半黄半灰 + 1 颗全灰
+  expect(r.starCount).toBe(5)
+  expect(r.activeCount).toBe(3)
+  expect(r.halfIndex).toBe(3)
+  expect(r.oldOpacityHack).toBe('') // 旧透明度淡化已移除
+  expect(r.hasFill).toBe(true)
+  expect(r.fillAriaHidden).toBe('true')
+  expect(r.fillHasSvg).toBe(true)
+  expect(r.fillClipPath).toContain('50%') // 垂直分割：只保留左半
+  expect(r.fillColor).toBe('rgb(217, 119, 6)') // --oas-color-warning（light）
+  expect(r.baseColor).toBe('rgb(228, 228, 231)') // --oas-color-border（light）
+  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix9-rate-half-star.png' })
+})

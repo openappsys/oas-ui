@@ -225,7 +225,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   alert: [['oas-alert[closeable] [part="close"]', 'click', '点关闭钮 → oas-close']],
   dropdown: [
     ['oas-dropdown', 'click', '（通用探针可能已翻转开合，这里再确认展开）'],
-    ['oas-dropdown [role="menuitem"]', 'click', '选菜单项 → oas-select'],
+    ['oas-dropdown [role="menuitemradio"]', 'click', '选菜单项 → oas-select'],
   ],
   contextmenu: [
     ['oas-context-menu', 'rightclick', '右键打开菜单'],

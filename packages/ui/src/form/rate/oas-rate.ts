@@ -16,6 +16,7 @@ const STYLE = `
   gap: var(--oas-space-1);
 }
 .star {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -28,6 +29,18 @@ const STYLE = `
 .star svg {
   width: 20px;
   height: 20px;
+}
+/* 半选：覆盖层叠加在基础星上，clip-path 垂直分割只保留左半（激活色），
+   右半透出基础星的未激活色 → 左黄右灰，替代旧「整星 opacity 淡化」实现 */
+.star .half-fill {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  clip-path: inset(0 50% 0 0);
+  color: var(--oas-color-warning);
+  pointer-events: none;
 }
 .star:hover {
   transform: scale(1.1);
@@ -186,12 +199,27 @@ export class OASRate extends OASElement {
       star.classList.toggle('active', idx < Math.floor(value))
       if (this.hasAttr('allow-half') && idx === Math.floor(value) && value % 1 !== 0) {
         star.classList.add('half')
-        star.style.opacity = '0.5'
+        this.applyHalfFill(star)
       } else {
         star.classList.remove('half')
-        star.style.opacity = ''
+        this.removeHalfFill(star)
       }
     })
+  }
+
+  /** 半星覆盖层：克隆当前星图标，叠加 clip-path 后只露出左半（激活色） */
+  private applyHalfFill(star: HTMLElement): void {
+    if (star.querySelector('.half-fill')) return
+    const fill = document.createElement('span')
+    fill.className = 'half-fill'
+    fill.setAttribute('aria-hidden', 'true')
+    // applyIcons 已先行写入基础图标，此处克隆当前内容即可（SVG/字符/SVG 标记通用）
+    fill.innerHTML = star.innerHTML
+    star.appendChild(fill)
+  }
+
+  private removeHalfFill(star: HTMLElement): void {
+    star.querySelector('.half-fill')?.remove()
   }
 
   private currentValue(): number {

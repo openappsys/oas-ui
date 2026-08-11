@@ -27,6 +27,16 @@ A click-triggered menu that opens anchored to the trigger element.
   </oas-dropdown>
 </DemoBlock>
 
+## Nested submenus
+
+`items` entries support a `children` array for cascading submenus (any depth); hover/click expands, selecting a leaf collapses and closes. The floating menu reuses `oas-menu`, so nested submenus automatically flip left/up near viewport edges to stay fully visible.
+
+<DemoBlock title="Nested submenus">
+  <oas-dropdown items='[{"label":"File","value":"file","children":[{"label":"New","value":"new","children":[{"label":"File","value":"new-file"},{"label":"Window","value":"new-window"}]},{"label":"Open","value":"open"}]},{"label":"Edit","value":"edit"}]'>
+    <oas-button>More actions</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
 ## Disabled items
 
 <DemoBlock title="Disabled items">
@@ -141,4 +151,4 @@ onMounted(() => {
 | --- | --- |
 | default | — |
 
-Clicking the trigger toggles visibility; clicking outside / pressing Esc / selecting an item closes it; `role="menu"` + `menuitem`.
+Clicking the trigger toggles visibility; clicking outside / pressing Esc / selecting an item closes it. The floating menu is an inner `oas-menu` (`role="menu"`, leaf items `menuitemradio`, items with submenus `menuitem`) supporting cascading submenus and keyboard navigation.

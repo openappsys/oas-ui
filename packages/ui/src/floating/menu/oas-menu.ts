@@ -140,6 +140,20 @@ const STYLE = `
 .item.open > .submenu {
   display: block;
 }
+/* 视口边界翻转（JS 检测后切类）：右侧空间不足向左展开、底部不足向上展开 */
+.submenu.flip-left {
+  left: auto;
+  right: 100%;
+}
+.submenu.flip-up {
+  top: auto;
+  bottom: calc(-1 * var(--oas-space-1));
+}
+:host([mode='horizontal']) .submenu-1.flip-up {
+  top: auto;
+  bottom: calc(100% + var(--oas-space-1));
+  margin-top: 0;
+}
 /* 水平模式：顶部导航条样式，菜单项横排 */
 :host([mode='horizontal']) {
   display: inline-block;
@@ -211,6 +225,14 @@ export class OASMenu extends OASElement {
         this.syncOpen()
       }
     })
+    // 视口尺寸/滚动变化时重算子菜单翻转（仅展开态下有意义，浮层是瞬时的）
+    const reposition = (): void => {
+      if (this.expanded.size > 0) this.syncSubmenuPositions()
+    }
+    window.addEventListener('resize', reposition)
+    this.onCleanup(() => window.removeEventListener('resize', reposition))
+    window.addEventListener('scroll', reposition, true)
+    this.onCleanup(() => window.removeEventListener('scroll', reposition, true))
   }
 
   protected override render(): void {
@@ -453,6 +475,30 @@ export class OASMenu extends OASElement {
       li.classList.toggle('open', open)
       if (open) li.setAttribute('aria-expanded', 'true')
       else if (li.hasAttribute('aria-haspopup')) li.setAttribute('aria-expanded', 'false')
+    }
+    this.syncSubmenuPositions()
+  }
+
+  /**
+   * 子菜单视口边界翻转：父项右侧剩余空间不足时向左展开（flip-left）、
+   * 底部空间不足时向上展开（flip-up）。翻转由样式表类表达，本方法只做测量与切类。
+   * 多级嵌套逐级检测：querySelectorAll 按 DOM 序遍历（外层先于内层），外层翻转先生效，
+   * 内层 rect 反映翻转后的真实布局，因此第三级及以上同样逐级判定。
+   */
+  private syncSubmenuPositions(): void {
+    if (!this.menuEl) return
+    const margin = 8
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    for (const item of this.menuEl.querySelectorAll<HTMLElement>('.item.open')) {
+      const sub = item.querySelector<HTMLElement>(':scope > .submenu')
+      if (!sub) continue
+      const itemRect = item.getBoundingClientRect()
+      const subRect = sub.getBoundingClientRect()
+      sub.classList.toggle('flip-left', itemRect.right + subRect.width > vw - margin)
+      // 重新测量（水平翻转已生效），垂直向同样按实际布局判定
+      const subRectV = sub.getBoundingClientRect()
+      sub.classList.toggle('flip-up', subRectV.bottom > vh - margin)
     }
   }
 

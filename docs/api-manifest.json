@@ -2831,7 +2831,7 @@
     "events": [
       {
         "name": "oas-select",
-        "detail": "{ value: item.value }"
+        "detail": "{ value: detail.value }"
       }
     ],
     "slots": [

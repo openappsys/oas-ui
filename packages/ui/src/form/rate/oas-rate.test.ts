@@ -113,4 +113,57 @@ describe('OASRate', () => {
     expect(s.length).toBe(5)
     for (const star of s) expect(star.textContent?.trim()).toBe('★')
   })
+
+  // —— 半选视觉（缺陷 9 回归）——
+  // 半星 = 左半激活色（warning）+ 右半未激活色：由 .half-fill 覆盖层 + clip-path 垂直分割实现，
+  // 替代旧「整星 opacity:0.5」实现。
+
+  it('半选：半星渲染左半激活覆盖层（half-fill + clip-path 垂直分割），非透明度淡化', () => {
+    const el = mount({ value: '2.5', 'allow-half': '' })
+    const s = stars(el)
+    // 2.5 = 两颗全黄 + 一颗半黄半灰 + 两颗全灰
+    expect(s.filter((st) => st.classList.contains('active')).length).toBe(2)
+    const half = s[2]!
+    expect(half.classList.contains('half')).toBe(true)
+    // 旧实现已移除：不再用 inline opacity 0.5
+    expect(half.style.opacity).toBe('')
+    const fill = half.querySelector<HTMLElement>('.half-fill')
+    expect(fill).not.toBeNull()
+    expect(fill!.getAttribute('aria-hidden')).toBe('true')
+    expect(fill!.querySelector('svg')).not.toBeNull() // 覆盖层与基础星同图标
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    // 垂直分割保留左半 + 覆盖层用激活色
+    expect(css).toMatch(/\.half-fill\s*\{[^}]*clip-path:\s*inset\(0\s+50%\s+0\s+0\)/)
+    expect(css).toMatch(/\.half-fill\s*\{[^}]*color:\s*var\(--oas-color-warning\)/)
+    expect(css).toMatch(/\.star\s*\{[^}]*position:\s*relative/)
+    // 未到半星的星没有覆盖层
+    expect(s[3]!.querySelector('.half-fill')).toBeNull()
+    expect(s[4]!.querySelector('.half-fill')).toBeNull()
+  })
+
+  it('半选：整数值/非半选模式不渲染 half-fill，值变化增量增删', () => {
+    const el = mount({ value: '2.5', 'allow-half': '' })
+    const s = stars(el)
+    expect(s[2]!.querySelector('.half-fill')).not.toBeNull()
+    // 值变回整数 → 覆盖层移除
+    el.setAttribute('value', '3')
+    expect(s[2]!.classList.contains('half')).toBe(false)
+    expect(s[2]!.querySelector('.half-fill')).toBeNull()
+    // 再变回半值 → 覆盖层重新出现
+    el.setAttribute('value', '3.5')
+    expect(s[3]!.classList.contains('half')).toBe(true)
+    expect(s[3]!.querySelector('.half-fill')).not.toBeNull()
+    // 非半选模式下半值按整星计，无覆盖层
+    el.removeAttribute('allow-half')
+    el.setAttribute('value', '2.5')
+    expect(s[2]!.querySelector('.half-fill')).toBeNull()
+  })
+
+  it('半选：自定义 icon 同样有半选覆盖层（克隆当前图标）', () => {
+    const el = mount({ value: '2.5', 'allow-half': '', icon: '♥' })
+    const half = stars(el)[2]!
+    const fill = half.querySelector<HTMLElement>('.half-fill')
+    expect(fill).not.toBeNull()
+    expect(fill!.textContent?.trim()).toBe('♥')
+  })
 })

@@ -1,5 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import '../menu/index.js' // 副作用：确保 oas-menu 已注册
+import type { OASMenu } from '../menu/index.js'
 import type { MenuItem } from '../menu/index.js'
 
 const STYLE = `
@@ -10,34 +12,12 @@ const STYLE = `
 :host([hidden]) {
   display: none;
 }
-.menu {
+.menu-anchor {
   position: fixed;
   z-index: var(--oas-z-dropdown, 1000);
-  background: var(--oas-color-bg);
-  border: 1px solid var(--oas-color-border);
-  border-radius: var(--oas-radius-md);
-  padding: var(--oas-space-1);
-  min-width: 160px;
-  margin: 0;
-  list-style: none;
-  color: var(--oas-color-text-primary);
 }
-.menu[aria-hidden='true'] {
+.menu-anchor[hidden] {
   display: none;
-}
-.item {
-  padding: var(--oas-space-2) var(--oas-space-3);
-  border-radius: var(--oas-radius-sm);
-  cursor: pointer;
-  font-size: var(--oas-font-size-md);
-}
-.item:hover,
-.item.active {
-  background: var(--oas-color-bg-hover);
-}
-.item[aria-disabled='true'] {
-  cursor: not-allowed;
-  opacity: 0.5;
 }
 `
 
@@ -47,7 +27,8 @@ export class OASDropdown extends OASElement {
   }
 
   private itemsList: MenuItem[] = []
-  private menuEl: HTMLElement | null = null
+  private menuEl: OASMenu | null = null
+  private anchorEl: HTMLElement | null = null
   private anchor: Element | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -55,13 +36,16 @@ export class OASDropdown extends OASElement {
     return `
       <style>${STYLE}</style>
       <slot></slot>
-      <ul class="menu" part="menu" role="menu" aria-hidden="true"></ul>
+      <div class="menu-anchor" part="menu" hidden>
+        <oas-menu tabindex="-1"></oas-menu>
+      </div>
     `
   }
 
   /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
   private bind(): void {
-    this.menuEl = this.shadow.querySelector('.menu')
+    this.anchorEl = this.shadow.querySelector('.menu-anchor')
+    this.menuEl = this.shadow.querySelector('oas-menu')
     this.anchor = this.querySelector(':scope > *') ?? this
     this.anchor?.addEventListener('click', () => this.toggle())
     const onKey = (e: KeyboardEvent): void => {
@@ -70,6 +54,14 @@ export class OASDropdown extends OASElement {
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
     this.onCleanup(() => document.removeEventListener('click', this.handleOutside))
+    // 内层 oas-menu 的选中事件转发为 dropdown 的 oas-select 并关闭（多级子菜单叶子项同样走这里）
+    this.menuEl?.addEventListener('oas-select', (e: Event) => {
+      const detail = (e as CustomEvent).detail as { value?: string }
+      if (typeof detail?.value !== 'string') return
+      this.setAttribute('value', detail.value)
+      this.emit('select', { value: detail.value })
+      this.removeAttribute('open')
+    })
   }
 
   protected override render(): void {
@@ -78,9 +70,9 @@ export class OASDropdown extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（menu 列表存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（menu-anchor 存在）后直接接管，跳过 shadow 重建 */
   protected override hydrate(): boolean {
-    if (!this.shadow.querySelector('.menu')) return false
+    if (!this.shadow.querySelector('.menu-anchor')) return false
     this.bind()
     return true
   }
@@ -99,43 +91,36 @@ export class OASDropdown extends OASElement {
   }
 
   protected override update(): void {
-    const menuEl = this.menuEl
-    if (!menuEl) return
     this.parseItems()
     const open = this.hasAttr('open')
-    menuEl.setAttribute('aria-hidden', String(!open))
-    menuEl.innerHTML = ''
-    const selected = this.getAttr('value', '')
-    for (const item of this.itemsList) {
-      const li = document.createElement('li')
-      li.className = 'item'
-      li.setAttribute('role', 'menuitem')
-      li.setAttribute('aria-disabled', String(item.disabled ?? false))
-      li.textContent = item.label ?? ''
-      li.addEventListener('click', () => {
-        if (item.disabled) return
-        this.setAttribute('value', item.value ?? '')
-        this.emit('select', { value: item.value })
-        this.removeAttribute('open')
-      })
-      menuEl.appendChild(li)
-    }
+    if (!this.menuEl || !this.anchorEl) return
     if (open) {
+      this.menuEl.setAttribute('items', JSON.stringify(this.itemsList))
+      this.menuEl.setAttribute('value', this.getAttr('value', ''))
+      this.anchorEl.hidden = false
       document.addEventListener('click', this.handleOutside)
       const anchorRect = this.anchor?.getBoundingClientRect()
+      const menuRect = this.anchorEl.getBoundingClientRect()
       if (anchorRect) {
-        const menuRect = menuEl.getBoundingClientRect()
         const { top, left } = computePosition(
           anchorRect,
           menuRect,
           this.getAttr('placement', 'bottom') as Placement,
           { width: window.innerWidth, height: window.innerHeight },
         )
-        menuEl.style.top = `${top}px`
-        menuEl.style.left = `${left}px`
+        this.anchorEl.style.top = `${top}px`
+        this.anchorEl.style.left = `${left}px`
       }
     } else {
+      this.anchorEl.hidden = true
       document.removeEventListener('click', this.handleOutside)
+      // 收起内层菜单残留的级联展开态，避免重开时子菜单直接可见；
+      // SSR/Node 渲染环境无 MouseEvent，跳过（SSR 快照本就是关闭态）
+      if (typeof MouseEvent !== 'undefined') {
+        this.menuEl.shadowRoot
+          ?.querySelector('.menu')
+          ?.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+      }
     }
   }
 
