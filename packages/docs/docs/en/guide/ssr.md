@@ -153,6 +153,17 @@ export default defineEventHandler(async () => {
 Merge the returned HTML into the server-rendered output stream on the page side;
 the browser renders it on parse, then the library script takes over.
 
+For lists, loop the calls (module caching keeps later calls at render-only cost):
+
+```ts
+const items = await Promise.all(
+  rows.map((row) =>
+    renderToString('oas-tag', { type: row.status }, row.label, { locale: 'en' }),
+  ),
+)
+return `<div class="tags">${items.join('')}</div>`
+```
+
 ### Next.js (RSC async component)
 
 ```tsx

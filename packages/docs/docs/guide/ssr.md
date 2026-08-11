@@ -102,6 +102,17 @@ export default defineEventHandler(async () => {
 
 页面侧把该 HTML 合入服务端渲染输出流，浏览器解析即呈现结构，随后加载组件库脚本接管交互。
 
+列表场景循环调用即可（模块缓存使后续调用开销仅为渲染本身）：
+
+```ts
+const items = await Promise.all(
+  rows.map((row) =>
+    renderToString('oas-tag', { type: row.status }, row.label, { locale: 'zh-CN' }),
+  ),
+)
+return `<div class="tags">${items.join('')}</div>`
+```
+
 ### Next.js（RSC async 组件）
 
 ```tsx
