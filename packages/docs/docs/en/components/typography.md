@@ -70,6 +70,10 @@ Typography components for text, titles, and paragraphs.
 | `oas-copy` | Copy succeeded, `detail: { text }` |
 | `oas-copy-error` | Copy failed, `detail: { text }` |
 
+| Name | Description |
+| --- | --- |
+| default | — |
+
 ### oas-title
 
 | Attribute | Description | Type | Default |
@@ -84,6 +88,10 @@ Typography components for text, titles, and paragraphs.
 | `oas-copy` | Copy succeeded, `detail: { text }` |
 | `oas-copy-error` | Copy failed, `detail: { text }` |
 
+| Name | Description |
+| --- | --- |
+| default | — |
+
 ### oas-paragraph
 
 | Attribute | Description | Type | Default |
@@ -97,3 +105,7 @@ Typography components for text, titles, and paragraphs.
 | --- | --- |
 | `oas-copy` | Copy succeeded, `detail: { text }` |
 | `oas-copy-error` | Copy failed, `detail: { text }` |
+
+| Name | Description |
+| --- | --- |
+| default | — |

@@ -70,6 +70,10 @@
 | `oas-copy` | 复制成功，`detail: { text }` |
 | `oas-copy-error` | 复制失败，`detail: { text }` |
 
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | — |
+
 ### oas-title
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -84,6 +88,10 @@
 | `oas-copy` | 复制成功，`detail: { text }` |
 | `oas-copy-error` | 复制失败，`detail: { text }` |
 
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | — |
+
 ### oas-paragraph
 
 | 属性 | 说明 | 类型 | 默认值 |
@@ -97,3 +105,7 @@
 | --- | --- |
 | `oas-copy` | 复制成功，`detail: { text }` |
 | `oas-copy-error` | 复制失败，`detail: { text }` |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | — |
