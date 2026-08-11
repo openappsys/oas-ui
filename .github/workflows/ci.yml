@@ -22,6 +22,10 @@ jobs:
       - run: pnpm test
       - run: pnpm typecheck
       - run: pnpm build
+      # 体积预算（vision §5.8 性能领先）：依赖 dist，必须紧跟 build 之后。
+      # 渲染基准（pnpm perf:bench）耗时波动大（happy-dom + 共享 runner 抖动），不进 CI，
+      # 发布前本地跑一遍核对即可（见 docs/engineering.md §4 性能基准）。
+      - run: pnpm perf:size
       - run: pnpm api:check
   e2e:
     runs-on: ubuntu-latest

@@ -1,0 +1,339 @@
+{
+  "size": {
+    "generatedAt": "2026-08-12",
+    "method": "gzip = zlib gzipSync；brotli = zlib brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
+    "packages": {
+      "@oas-ui/ui": {
+        "distTotalBytes": 4236330,
+        "browserJs": {
+          "files": 258,
+          "rawBytes": 1312389,
+          "gzipBytes": 372455,
+          "brotliBytes": 300822
+        },
+        "fullEntry": {
+          "files": 305,
+          "rawBytes": 752704,
+          "gzipBytes": 271796,
+          "brotliBytes": 225189
+        },
+        "cdn": {
+          "files": 1,
+          "rawBytes": 588167,
+          "gzipBytes": 116502,
+          "brotliBytes": 88733
+        }
+      },
+      "@oas-ui/theme": {
+        "indexCss": {
+          "rawBytes": 4341,
+          "gzipBytes": 1467,
+          "brotliBytes": 1154
+        }
+      },
+      "@oas-ui/core": {
+        "files": 4,
+        "rawBytes": 11209,
+        "gzipBytes": 4908,
+        "brotliBytes": 3990
+      },
+      "@oas-ui/i18n": {
+        "files": 7,
+        "rawBytes": 20066,
+        "gzipBytes": 7821,
+        "brotliBytes": 6393
+      },
+      "@oas-ui/icons": {
+        "files": 46,
+        "rawBytes": 17802,
+        "gzipBytes": 9889,
+        "brotliBytes": 8494
+      },
+      "@oas-ui/ssr": {
+        "files": 2,
+        "rawBytes": 30200,
+        "gzipBytes": 10490,
+        "brotliBytes": 8558
+      }
+    },
+    "components": {
+      "button": {
+        "entry": "basic/button",
+        "spec": "@oas-ui/ui/basic/button",
+        "files": 51,
+        "rawBytes": 39368,
+        "gzipBytes": 17906,
+        "brotliBytes": 14995,
+        "fileList": [
+          "packages/ui/dist/basic/button/index.js",
+          "packages/ui/dist/basic/button/oas-button.js",
+          "packages/icons/dist/index.js",
+          "packages/icons/dist/registry.js",
+          "packages/icons/dist/icons/index.js",
+          "packages/icons/dist/icons/warning.js",
+          "packages/icons/dist/icons/user.js",
+          "packages/icons/dist/icons/upload.js",
+          "packages/icons/dist/icons/trash.js",
+          "packages/icons/dist/icons/star.js",
+          "packages/icons/dist/icons/star-filled.js",
+          "packages/icons/dist/icons/sort.js",
+          "packages/icons/dist/icons/search.js",
+          "packages/icons/dist/icons/refresh.js",
+          "packages/icons/dist/icons/plus.js",
+          "packages/icons/dist/icons/more.js",
+          "packages/icons/dist/icons/more-vertical.js",
+          "packages/icons/dist/icons/minus.js",
+          "packages/icons/dist/icons/menu.js",
+          "packages/icons/dist/icons/mail.js",
+          "packages/icons/dist/icons/lock.js",
+          "packages/icons/dist/icons/loading.js",
+          "packages/icons/dist/icons/info.js",
+          "packages/icons/dist/icons/heart.js",
+          "packages/icons/dist/icons/gear.js",
+          "packages/icons/dist/icons/filter.js",
+          "packages/icons/dist/icons/eye.js",
+          "packages/icons/dist/icons/external-link.js",
+          "packages/icons/dist/icons/error.js",
+          "packages/icons/dist/icons/edit.js",
+          "packages/icons/dist/icons/download.js",
+          "packages/icons/dist/icons/copy.js",
+          "packages/icons/dist/icons/close.js",
+          "packages/icons/dist/icons/close-circle.js",
+          "packages/icons/dist/icons/clock.js",
+          "packages/icons/dist/icons/chevron-up.js",
+          "packages/icons/dist/icons/chevron-right.js",
+          "packages/icons/dist/icons/chevron-left.js",
+          "packages/icons/dist/icons/chevron-down.js",
+          "packages/icons/dist/icons/check.js",
+          "packages/icons/dist/icons/check-circle.js",
+          "packages/icons/dist/icons/calendar.js",
+          "packages/icons/dist/icons/arrow-up.js",
+          "packages/icons/dist/icons/arrow-right.js",
+          "packages/icons/dist/icons/arrow-left.js",
+          "packages/icons/dist/icons/arrow-down.js",
+          "packages/icons/dist/icons/alert-circle.js",
+          "packages/core/dist/index.js",
+          "packages/core/dist/config-context.js",
+          "packages/core/dist/translator.js",
+          "packages/core/dist/oas-element.js"
+        ]
+      },
+      "table": {
+        "entry": "data/table",
+        "spec": "@oas-ui/ui/data/table",
+        "files": 10,
+        "rawBytes": 50026,
+        "gzipBytes": 17921,
+        "brotliBytes": 14791,
+        "fileList": [
+          "packages/ui/dist/data/table/index.js",
+          "packages/i18n/dist/index.js",
+          "packages/i18n/dist/registry.js",
+          "packages/i18n/dist/locales/zh-CN.js",
+          "packages/core/dist/index.js",
+          "packages/core/dist/config-context.js",
+          "packages/core/dist/translator.js",
+          "packages/core/dist/oas-element.js",
+          "packages/ui/dist/data/table/oas-table.js",
+          "packages/ui/dist/data/virtual-list/oas-virtual-list.js"
+        ]
+      },
+      "form": {
+        "entry": "form/form",
+        "spec": "@oas-ui/ui/form/form",
+        "files": 9,
+        "rawBytes": 28606,
+        "gzipBytes": 11873,
+        "brotliBytes": 9675,
+        "fileList": [
+          "packages/ui/dist/form/form/index.js",
+          "packages/i18n/dist/index.js",
+          "packages/i18n/dist/registry.js",
+          "packages/i18n/dist/locales/zh-CN.js",
+          "packages/core/dist/index.js",
+          "packages/core/dist/config-context.js",
+          "packages/core/dist/translator.js",
+          "packages/core/dist/oas-element.js",
+          "packages/ui/dist/form/form/oas-form.js"
+        ]
+      }
+    },
+    "budgets": [
+      {
+        "name": "dist/cdn.js gzip",
+        "actualBytes": 116502,
+        "limitBytes": 153600,
+        "pass": true,
+        "basis": "任务给定 150KB；实测 gzip 116,166 B"
+      },
+      {
+        "name": "@oas-ui/ui 全量入口链 gzip",
+        "actualBytes": 271796,
+        "limitBytes": 327680,
+        "pass": true,
+        "basis": "实测 gzip 271,496 B（逐文件求和上界），上浮约 15% 后取整 320 KB"
+      },
+      {
+        "name": "@oas-ui/ui/basic/button 链 gzip",
+        "actualBytes": 17906,
+        "limitBytes": 22528,
+        "pass": true,
+        "basis": "实测 gzip 17,906 B（含 core + 全量 icon 注册表），上浮约 23%"
+      },
+      {
+        "name": "@oas-ui/ui/data/table 链 gzip",
+        "actualBytes": 17921,
+        "limitBytes": 22528,
+        "pass": true,
+        "basis": "实测 gzip 17,921 B（含 core + virtual-list + i18n），上浮约 23%"
+      },
+      {
+        "name": "@oas-ui/ui/form/form 链 gzip",
+        "actualBytes": 11873,
+        "limitBytes": 14336,
+        "pass": true,
+        "basis": "实测 gzip 11,873 B（含 core + i18n），上浮约 21%"
+      },
+      {
+        "name": "@oas-ui/theme index.css gzip",
+        "actualBytes": 1467,
+        "limitBytes": 2048,
+        "pass": true,
+        "basis": "实测 gzip 1,467 B，上浮约 40%"
+      }
+    ]
+  },
+  "render": {
+    "generatedAt": "2026-08-12",
+    "env": {
+      "runtime": "node v23.8.0",
+      "happyDom": "happy-dom@20.x",
+      "iterations": 100,
+      "note": "happy-dom 合成环境，非真实浏览器渲染口径；耗时仅供相对对比与退化监测"
+    },
+    "scenarios": {
+      "button-first-render": {
+        "label": "button",
+        "meanMs": 0.119,
+        "medianMs": 0.089,
+        "p95Ms": 0.199,
+        "minMs": 0.059,
+        "maxMs": 1.868
+      },
+      "input-first-render": {
+        "label": "input",
+        "meanMs": 0.718,
+        "medianMs": 0.365,
+        "p95Ms": 3.609,
+        "minMs": 0.255,
+        "maxMs": 11.801
+      },
+      "table-100rows-first-render": {
+        "label": "table(100 行)",
+        "meanMs": 9.734,
+        "medianMs": 9.189,
+        "p95Ms": 13.312,
+        "minMs": 5.532,
+        "maxMs": 14.643
+      },
+      "select-100opt-first-render": {
+        "label": "select(100 选项)",
+        "meanMs": 7.202,
+        "medianMs": 6.987,
+        "p95Ms": 11.517,
+        "minMs": 3.461,
+        "maxMs": 25.822
+      },
+      "tabs-10panel-first-render": {
+        "label": "tabs(10 面板)",
+        "meanMs": 1.059,
+        "medianMs": 0.59,
+        "p95Ms": 4.303,
+        "minMs": 0.475,
+        "maxMs": 9.761
+      },
+      "form-10field-first-render": {
+        "label": "form(10 字段)",
+        "meanMs": 7.476,
+        "medianMs": 7.752,
+        "p95Ms": 11.269,
+        "minMs": 3.685,
+        "maxMs": 12.921
+      },
+      "table-data-update": {
+        "label": "table 数据更新",
+        "meanMs": 6.154,
+        "medianMs": 6.526,
+        "p95Ms": 14.224,
+        "minMs": 2.913,
+        "maxMs": 19.581
+      },
+      "select-options-update": {
+        "label": "select 选项更新",
+        "meanMs": 5.593,
+        "medianMs": 3.023,
+        "p95Ms": 19.292,
+        "minMs": 1.887,
+        "maxMs": 27.158
+      }
+    },
+    "budgets": [
+      {
+        "id": "button-first-render",
+        "label": "button",
+        "budgetMs": 5,
+        "p95Ms": 0.199,
+        "pass": true
+      },
+      {
+        "id": "input-first-render",
+        "label": "input",
+        "budgetMs": 15,
+        "p95Ms": 3.609,
+        "pass": true
+      },
+      {
+        "id": "table-100rows-first-render",
+        "label": "table(100 行)",
+        "budgetMs": 50,
+        "p95Ms": 13.312,
+        "pass": true
+      },
+      {
+        "id": "select-100opt-first-render",
+        "label": "select(100 选项)",
+        "budgetMs": 50,
+        "p95Ms": 11.517,
+        "pass": true
+      },
+      {
+        "id": "tabs-10panel-first-render",
+        "label": "tabs(10 面板)",
+        "budgetMs": 15,
+        "p95Ms": 4.303,
+        "pass": true
+      },
+      {
+        "id": "form-10field-first-render",
+        "label": "form(10 字段)",
+        "budgetMs": 40,
+        "p95Ms": 11.269,
+        "pass": true
+      },
+      {
+        "id": "table-data-update",
+        "label": "table 数据更新",
+        "budgetMs": 50,
+        "p95Ms": 14.224,
+        "pass": true
+      },
+      {
+        "id": "select-options-update",
+        "label": "select 选项更新",
+        "budgetMs": 50,
+        "p95Ms": 19.292,
+        "pass": true
+      }
+    ]
+  }
+}
