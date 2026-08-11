@@ -282,6 +282,8 @@ describe('@oas-ui/ssr renderToString', () => {
     await expect(renderToString('oas-message')).rejects.toThrow(/非白名单 tag「oas-message」/)
     await expect(renderToString('oas-toast')).rejects.toThrow(/oas-button/)
     await expect(renderToString('oas-notification')).rejects.toThrow(/oas-empty/)
+    // theme-editor 为开发工具组件，评估后排除（无 SSR 意义）
+    await expect(renderToString('oas-theme-editor')).rejects.toThrow(/oas-message|非白名单/)
   })
 
   it('attrs 值含引号/尖括号时正确转义', async () => {
@@ -1169,5 +1171,163 @@ describe('@oas-ui/ssr renderToString', () => {
     const html = await renderToString('oas-button', { type: 'primary' }, '提交')
     expect(html).toContain('<template shadowrootmode="open"><meta data-oas-ssr="oas-button"')
     expect(html).toContain('</template>提交</oas-button>')
+  })
+
+  // ---- DSD 批次 5：白名单收尾（基础纯展示 + 浮层触发 + 框架级容器） ----
+
+  it('oas-badge：徽标 value/max 同步 + light DOM slot 文本', async () => {
+    const html = await renderToString('oas-badge', { value: '5' }, '消息')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toContain('<oas-badge value="5">')
+    // update 增量同步：hidden 移除 + 文本写入
+    expect(html).toContain('class="badge" part="badge"')
+    expect(html).toContain('>5</sup>')
+    expect(html).toContain('</template>消息</oas-badge>')
+
+    const capped = await renderToString('oas-badge', { value: '120', max: '99' }, '')
+    expect(capped).toContain('>99+</sup>')
+
+    const dot = await renderToString('oas-badge', { value: '5', dot: '' }, '')
+    expect(dot).toContain('class="badge dot"')
+  })
+
+  it('oas-button-group：组骨架 + 嵌套 oas-button DSD + 选中态 aria-pressed 同步', async () => {
+    const html = await renderToString(
+      'oas-button-group',
+      { value: 'a' },
+      '<oas-button value="a">A</oas-button><oas-button value="b">B</oas-button>',
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toContain('<oas-button-group value="a">')
+    // 组容器骨架 + role（aria-label 走 i18n，未传 locale 时回退 key 本身）
+    expect(html).toContain('<div part="group" role="group" aria-label=')
+    // 选中同步写入 light DOM（组件对 light DOM 的同步保留在处理后的 el.innerHTML）
+    expect(html).toContain('<oas-button value="a" aria-pressed="true">')
+    expect(html).toContain('<oas-button value="b" aria-pressed="false">')
+    // 子按钮被递归包成嵌套 DSD（含子组件指纹）
+    expect(html).toContain('<meta data-oas-ssr="oas-button" data-oas-ssr-v="1">')
+    expect(html).toContain('A</oas-button>')
+    expect(html).toContain('B</oas-button>')
+  })
+
+  it('oas-icon：name 图标 SVG 直出 + 宿主 aria-hidden 同步', async () => {
+    const html = await renderToString('oas-icon', { name: 'check', size: '16' }, '')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<svg part="icon"')
+    expect(html).toContain('viewBox="0 0 16 16"')
+    expect(html).toContain('width="16"')
+    expect(html).toContain('height="16"')
+    // update 在宿主同步 aria-hidden（装饰性图标对读屏隐藏）
+    expect(html).toContain('<oas-icon name="check" size="16" aria-hidden="true">')
+  })
+
+  it('oas-kbd：keys 拆分渲染键帽块（slot 为空时）', async () => {
+    const html = await renderToString('oas-kbd', { keys: 'Ctrl C' }, '')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<kbd part="kbd" role="text">')
+    expect(html).toContain('part="keys"')
+    // 两个键帽 + 加号分隔
+    expect(html.match(/part="key"/g)?.length).toBe(2)
+    expect(html).toContain('>Ctrl<')
+    expect(html).toContain('>C<')
+    expect(html).toContain('aria-hidden="true"')
+  })
+
+  it('oas-label：label 骨架 + required 星号可见 + light DOM 文本', async () => {
+    const html = await renderToString('oas-label', { required: '' }, '姓名')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toContain('<label part="label"')
+    // required 时星号 visible（hidden 移除）
+    expect(html).toContain('part="required" class="required" aria-hidden="true">')
+    expect(html).not.toContain('part="required" class="required" aria-hidden="true" hidden')
+    expect(html).toContain('</template>姓名</oas-label>')
+  })
+
+  it('oas-link：a 骨架 + href/type class 同步 + light DOM 文本', async () => {
+    const html = await renderToString('oas-link', { href: '/detail', type: 'primary' }, '详情')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toContain('<a part="link" href="/detail" class="primary" aria-disabled=')
+    expect(html).toContain('</template>详情</oas-link>')
+  })
+
+  it('oas-space：布局写宿主内联样式（方向/间距/flex-wrap 确定性子串）+ light DOM 原样', async () => {
+    const html = await renderToString(
+      'oas-space',
+      { size: 'small', direction: 'vertical' },
+      '<span>一</span><span>二</span>',
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('style=')
+    expect(html).toContain('flex-direction: column;')
+    expect(html).toContain('gap: var(--oas-space-2);')
+    expect(html).toContain('</template><span>一</span><span>二</span></oas-space>')
+  })
+
+  it('oas-visually-hidden：纯 slot 透传 + 样式快照 + light DOM 原样', async () => {
+    const html = await renderToString('oas-visually-hidden', {}, '读屏文本')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toContain('clip-path: inset(50%)')
+    expect(html).toContain('</template>读屏文本</oas-visually-hidden>')
+  })
+
+  it('oas-tooltip：触发 slot 原样保留 + 关闭态气泡骨架（aria-hidden=true + content 同步）', async () => {
+    const html = await renderToString(
+      'oas-tooltip',
+      { content: '提示', placement: 'bottom' },
+      '<button>悬停</button>',
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toContain('<oas-tooltip content="提示" placement="bottom">')
+    expect(html).toContain('class="tip" part="tip" role="tooltip" aria-hidden="true"')
+    // content 文本由 update 同步写入（关闭态也写文本，定位在触发时才算）
+    expect(html).toContain('>提示</div>')
+    expect(html).toContain('</template><button>悬停</button></oas-tooltip>')
+  })
+
+  it('oas-popover：触发 slot 原样保留 + 关闭态面板骨架（title/content 同步）', async () => {
+    const html = await renderToString(
+      'oas-popover',
+      { title: '标题', content: '内容' },
+      '<button>点击</button>',
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toContain('<oas-popover title="标题" content="内容">')
+    expect(html).toContain('class="panel" part="panel" role="dialog" aria-hidden="true"')
+    expect(html).toContain('>标题<')
+    expect(html).toContain('>内容<')
+    expect(html).toContain('</template><button>点击</button></oas-popover>')
+  })
+
+  it('oas-config-provider：子树原样 + data-theme/属性就位（上下文注入容器）', async () => {
+    const html = await renderToString(
+      'oas-config-provider',
+      { theme: 'dark', size: 'small' },
+      '<oas-button>确定</oas-button>',
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toContain('<oas-config-provider theme="dark" size="small" data-theme="dark">')
+    // 嵌套子组件被 injectNestedDSD 覆盖
+    expect(html).toContain('<meta data-oas-ssr="oas-button" data-oas-ssr-v="1">')
+    expect(html).toContain('确定</oas-button>')
+  })
+
+  it('oas-app：消息上下文容器子树原样 + 宿主注册无副作用', async () => {
+    const html = await renderToString('oas-app', {}, '<span>app 内容</span>')
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('<style>')
+    expect(html).toContain('<oas-app>')
+    expect(html).toContain('</template><span>app 内容</span></oas-app>')
+  })
+
+  it('theme-editor 排除：开发工具组件 SSR 意义低，不在白名单', async () => {
+    await expect(renderToString('oas-theme-editor')).rejects.toThrow(/非白名单 tag「oas-theme-editor」/)
   })
 })

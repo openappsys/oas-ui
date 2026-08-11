@@ -523,6 +523,33 @@ test.beforeAll(async () => {
     renderToString('oas-grid-item', { span: '12' }, '<p>栅格项</p>'),
   ])
 
+  // —— DSD 批次 5：白名单收尾（基础纯展示 + 浮层触发 + 框架级容器） ——
+  // 布局稳定性约定：badge 徽标绝对定位不占位；button-group 空内容（light DOM 子按钮升级会带
+  // 自身 shadow 改变布局，嵌套 DSD 由 SSR 单测覆盖）；tooltip/popover 取默认关闭态（气泡
+  // display:none 高度 0）；icon 用确定性 SVG；config-provider/app 纯容器无自身视觉。
+  const batch5Snaps = await Promise.all([
+    renderToString('oas-badge', { value: '5' }, '消息'),
+    renderToString('oas-button-group', { size: 'small' }),
+    renderToString('oas-icon', { name: 'check', size: '16' }),
+    renderToString('oas-kbd', { keys: 'Ctrl C' }),
+    renderToString('oas-label', { required: '' }, '姓名'),
+    renderToString('oas-link', { href: '/', type: 'primary' }, '链接'),
+    renderToString('oas-space', { size: 'small' }, '<span>一</span><span>二</span>'),
+    renderToString('oas-visually-hidden', {}, '读屏文本'),
+    renderToString(
+      'oas-tooltip',
+      { content: '提示' },
+      '<button type="button">悬停</button>',
+    ),
+    renderToString(
+      'oas-popover',
+      { title: '标题', content: '内容' },
+      '<button type="button">点击</button>',
+    ),
+    renderToString('oas-config-provider', { size: 'small' }, '<span>配置容器</span>'),
+    renderToString('oas-app', {}, '<span>消息宿主</span>'),
+  ])
+
   // —— 嵌套递归序列化组合（子活 1）：白名单组合禁 JS 时子组件 shadow 内容可见 ——
   const NESTED_COMBO_ITEMS = JSON.stringify([
     { key: 'a', label: '节点A' },
@@ -594,6 +621,7 @@ ${[
   ...feedbackSnaps,
   ...dataSnaps,
   ...navLayoutSnaps,
+  ...batch5Snaps,
   ...nestedSnaps,
 ].join('\n')}
 </body>

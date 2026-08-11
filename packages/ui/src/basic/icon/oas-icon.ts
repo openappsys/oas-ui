@@ -8,10 +8,25 @@ export class OASIcon extends OASElement {
 
   private svgHost: SVGSVGElement | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = '<svg part="icon"></svg>'
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return '<svg part="icon"></svg>'
+  }
+
+  /** 缓存节点引用（render 与水合路径共用） */
+  private bind(): void {
     this.svgHost = this.shadow.querySelector('svg')
-    this.update()
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+  }
+
+  /** 真水合：SVG 骨架缺失（非法 name 时快照为空 shadow）也属有效快照，由 update 按属性决定是否重建 */
+  protected override hydrate(): boolean {
+    this.bind()
+    return true
   }
 
   protected override update(): void {
@@ -29,8 +44,8 @@ export class OASIcon extends OASElement {
     }
 
     if (!this.svgHost) {
-      this.shadow.innerHTML = '<svg part="icon"></svg>'
-      this.svgHost = this.shadow.querySelector('svg')
+      this.shadow.innerHTML = this.template()
+      this.bind()
     }
     const host = this.svgHost
     if (!host) return

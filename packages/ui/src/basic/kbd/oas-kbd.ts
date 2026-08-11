@@ -49,19 +49,35 @@ export class OASKbd extends OASElement {
   private slotEl: HTMLSlotElement | null = null
   private keysEl: HTMLElement | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <kbd part="kbd" role="text">
         <slot></slot>
         <span class="keys" part="keys"></span>
       </kbd>
     `
+  }
+
+  /** 缓存节点引用 + 绑定 slotchange（render 与水合路径共用） */
+  private bind(): void {
     this.kbdEl = this.shadow.querySelector<HTMLElement>('[part="kbd"]')
     this.slotEl = this.shadow.querySelector<HTMLSlotElement>('slot')
     this.keysEl = this.shadow.querySelector<HTMLElement>('.keys')
     this.slotEl?.addEventListener('slotchange', () => this.update())
-    this.update()
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+  }
+
+  /** 真水合：校验 SSR 快照结构（键帽容器存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('[part="kbd"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

@@ -20,11 +20,21 @@ export class OASConfigProvider extends OASElement {
     return ['locale', 'size', 'theme']
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板（上下文注入容器，无自身视觉，仅包裹子树） */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <slot></slot>
     `
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+  }
+
+  /** 真水合：slot 骨架存在即接管（无事件绑定，update 处理 data-theme 与通知） */
+  protected override hydrate(): boolean {
+    return this.shadow.querySelector('slot') !== null
   }
 
   protected override update(): void {

@@ -30,19 +30,35 @@ export class OAStooltip extends OASElement {
   private tipEl: HTMLElement | null = null
   private anchor: Element | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <slot></slot>
       <div class="tip" part="tip" role="tooltip" aria-hidden="true"></div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定 hover/focus 触发（render 与水合路径共用；定位只在触发时计算） */
+  private bind(): void {
     this.tipEl = this.shadow.querySelector('.tip')
     this.anchor = this.querySelector(':scope > *') ?? this
     this.anchor?.addEventListener('mouseenter', () => this.setAttribute('open', ''))
     this.anchor?.addEventListener('mouseleave', () => this.removeAttribute('open'))
     this.anchor?.addEventListener('focusin', () => this.setAttribute('open', ''))
     this.anchor?.addEventListener('focusout', () => this.removeAttribute('open'))
-    this.update()
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+  }
+
+  /** 真水合：校验 SSR 快照结构（气泡骨架存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.tip')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

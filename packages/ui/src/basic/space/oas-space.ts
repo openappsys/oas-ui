@@ -40,9 +40,18 @@ export class OASSpace extends OASElement {
     return ['direction', 'size', 'wrap', 'align']
   }
 
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板（纯 slot 透传，宿主内联样式由 update 增量写） */
+  private template(): string {
+    return '<slot></slot>'
+  }
+
   protected override render(): void {
-    this.shadow.innerHTML = '<slot></slot>'
-    this.update()
+    this.shadow.innerHTML = this.template()
+  }
+
+  /** 真水合：slot 骨架存在即接管（无事件绑定，update 写宿主内联样式） */
+  protected override hydrate(): boolean {
+    return this.shadow.querySelector('slot') !== null
   }
 
   protected override update(): void {

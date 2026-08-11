@@ -24,7 +24,11 @@
  * back-top/menu/dropdown/context-menu/menubar/navigation-menu/toolbar/command/tour/hover-card/splitter/
  * flex/page-header/float-button/speed-dial/layout/sider/header/content/footer/sidebar/container/grid/
  * grid-item：静态结构组件直出完整快照；浮层触发类 dropdown/context-menu/hover-card/command/tour 面板
- * 默认关闭、快照为触发器骨架；menu/menubar/navigation-menu/toolbar 为可见菜单结构直出快照）。
+ * 默认关闭、快照为触发器骨架；menu/menubar/navigation-menu/toolbar 为可见菜单结构直出快照）+
+ * 白名单收尾批次 5（badge/button-group/icon/kbd/label/link/space/visually-hidden 纯展示组件直出完整
+ * 快照；tooltip/popover 浮层触发类默认关闭、快照为触发器 slot 原样 + 关闭态气泡骨架；config-provider/
+ * app 框架级容器无自身视觉、快照为子树原样 + 容器属性就位，嵌套子组件由 injectNestedDSD 覆盖；
+ * theme-editor 为开发工具组件、SSR 意义低，评估后排除）。
  *
  * 嵌套递归序列化：light DOM 里已 upgrade 的子组件（如 form>form-item>oas-input、tabs>tab-panel、
  * layout>sider）会被递归包成嵌套 `<template shadowrootmode="open">`（含子组件指纹），
@@ -74,7 +78,10 @@ import { ensureShim } from './shim.js'
  * 无初始 DOM 不纳入）+ 数据展示组件批次 3（纯展示组件直出快照；chart/code/equation 同步确定性渲染；
  * 动态组件快照为初始帧，动画客户端接管；virtual-list 快照为首屏窗口 + padding 占位）+
  * 导航布局组件批次 4（静态结构组件直出快照；浮层触发类面板默认关闭、快照为触发器骨架；
- * menu/menubar/navigation-menu/toolbar 可见菜单结构直出快照；layout 多 tag 组件走嵌套递归序列化）。
+ * menu/menubar/navigation-menu/toolbar 可见菜单结构直出快照；layout 多 tag 组件走嵌套递归序列化）+
+ * 白名单收尾批次 5（badge/button-group/icon/kbd/label/link/space/visually-hidden 纯展示组件直出完整
+ * 快照；tooltip/popover 浮层触发类快照为触发器 slot 原样 + 关闭态气泡骨架；config-provider/app
+ * 框架级容器快照为子树原样；theme-editor 开发工具组件 SSR 意义低，排除）。
  */
 export const WHITELIST = [
   'oas-button',
@@ -189,6 +196,19 @@ export const WHITELIST = [
   'oas-container',
   'oas-grid',
   'oas-grid-item',
+  // —— DSD 批次 5：白名单收尾（基础纯展示 + 浮层触发 + 框架级容器） ——
+  'oas-badge',
+  'oas-button-group',
+  'oas-icon',
+  'oas-kbd',
+  'oas-label',
+  'oas-link',
+  'oas-space',
+  'oas-visually-hidden',
+  'oas-tooltip',
+  'oas-popover',
+  'oas-config-provider',
+  'oas-app',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -338,6 +358,19 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-container': '@oas-ui/ui/layout/container',
   'oas-grid': '@oas-ui/ui/layout/grid',
   'oas-grid-item': '@oas-ui/ui/layout/grid',
+  // —— DSD 批次 5：白名单收尾 ——
+  'oas-badge': '@oas-ui/ui/basic/badge',
+  'oas-button-group': '@oas-ui/ui/basic/button-group',
+  'oas-icon': '@oas-ui/ui/basic/icon',
+  'oas-kbd': '@oas-ui/ui/basic/kbd',
+  'oas-label': '@oas-ui/ui/basic/label',
+  'oas-link': '@oas-ui/ui/basic/link',
+  'oas-space': '@oas-ui/ui/basic/space',
+  'oas-visually-hidden': '@oas-ui/ui/basic/visually-hidden',
+  'oas-tooltip': '@oas-ui/ui/floating/tooltip',
+  'oas-popover': '@oas-ui/ui/floating/popover',
+  'oas-config-provider': '@oas-ui/ui/floating/config-provider',
+  'oas-app': '@oas-ui/ui/floating/app',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */
@@ -398,7 +431,9 @@ async function ensureI18n(): Promise<typeof import('@oas-ui/i18n')> {
  *   oas-command / oas-tour / oas-hover-card / oas-splitter / oas-flex /
  *   oas-page-header / oas-float-button / oas-speed-dial / oas-layout /
  *   oas-header / oas-sider / oas-content / oas-footer / oas-sidebar /
- *   oas-container / oas-grid / oas-grid-item），其余抛错
+ *   oas-container / oas-grid / oas-grid-item / oas-badge / oas-button-group /
+ *   oas-icon / oas-kbd / oas-label / oas-link / oas-space / oas-visually-hidden /
+ *   oas-tooltip / oas-popover / oas-config-provider / oas-app），其余抛错
  * @param attrs 宿主 attributes（kebab-case 键），值在序列化时做 & " < > 完整 HTML 转义
  * @param slotHTML 注入 light DOM 的 HTML 片段（默认插槽内容）；内部含白名单子组件时
  *   会被递归序列化为嵌套 DSD（子组件 shadowRoot + 指纹包成 template 插到内容最前）

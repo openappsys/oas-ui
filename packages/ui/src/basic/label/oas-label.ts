@@ -42,14 +42,19 @@ export class OASLabel extends OASElement {
   private labelEl: HTMLElement | null = null
   private requiredEl: HTMLElement | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <label part="label">
         <span part="text"><slot></slot></span>
         <span part="required" class="required" aria-hidden="true" hidden>*</span>
       </label>
     `
+  }
+
+  /** 缓存节点引用 + 绑定点击代理聚焦（render 与水合路径共用） */
+  private bind(): void {
     this.labelEl = this.shadow.querySelector<HTMLElement>('[part="label"]')
     this.requiredEl = this.shadow.querySelector<HTMLElement>('[part="required"]')
 
@@ -63,6 +68,18 @@ export class OASLabel extends OASElement {
         ;(target as HTMLElement).focus()
       }
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+  }
+
+  /** 真水合：校验 SSR 快照结构（label 元素存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('[part="label"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

@@ -66,6 +66,19 @@ Current progress:
   upgrade when a DSD snapshot is detected (via rAF) — the snapshot is the
   un-measured state, the first frame after upgrade matches it (no jump), and the
   real layout is applied on the next frame.
+- Whitelist-finalization batch 5 (DSD whitelisting): the pure-presentation
+  components badge / button-group / icon / kbd / label / link / space /
+  visually-hidden snapshot their full visual deterministically (badge count,
+  kbd key-cap splitting, space host inline layout styles); the floating-trigger
+  components tooltip / popover default to the closed state and snapshot the
+  trigger slot as-is plus the hidden bubble skeleton (content/title text is
+  synced; positioning is computed only when triggered); the framework-level
+  containers config-provider / app have no visual of their own and snapshot the
+  subtree as-is with their container attributes in place (`data-theme` / `size`,
+  etc.), with nested children covered by `injectNestedDSD`. `oas-theme-editor`
+  is a dev-tool component (a theme-editing panel for development) with little
+  SSR value — it was evaluated and excluded from the whitelist, staying
+  client-only.
 
 Not yet landed (ROADMAP backlog):
 
@@ -211,8 +224,9 @@ into the SSR output stream and the browser parser attaches the DSD templates.
 
 - Whitelist (pure-presentation components, declarative-data components, the
   layout-measuring pilot, form components batch 1, feedback components
-  batch 2, data-display components batch 3, and navigation/layout components
-  batch 4): `oas-button`, `oas-tag`,
+  batch 2, data-display components batch 3, navigation/layout components
+  batch 4, and whitelist-finalization batch 5 — 123 tags in total):
+  `oas-button`, `oas-tag`,
   `oas-empty`, `oas-divider`, `oas-text`, `oas-title`, `oas-paragraph`,
   `oas-table`, `oas-affix`, `oas-ellipsis`, `oas-scroll-area`, `oas-tree`,
   `oas-select`, `oas-input`, `oas-textarea`, `oas-checkbox`,
@@ -238,7 +252,10 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   `oas-command`, `oas-tour`, `oas-hover-card`, `oas-splitter`, `oas-flex`,
   `oas-page-header`, `oas-float-button`, `oas-speed-dial`, `oas-layout`,
   `oas-header`, `oas-sider`, `oas-content`, `oas-footer`, `oas-sidebar`,
-  `oas-container`, `oas-grid`, `oas-grid-item`.
+  `oas-container`, `oas-grid`, `oas-grid-item`, `oas-badge`,
+  `oas-button-group`, `oas-icon`, `oas-kbd`, `oas-label`, `oas-link`,
+  `oas-space`, `oas-visually-hidden`, `oas-tooltip`, `oas-popover`,
+  `oas-config-provider`, `oas-app`.
 - Calling `renderToString` with a non-whitelisted tag throws an explicit error;
   there is no silent fallback.
 - The imperative components (message / notification / toast / snackbar /
@@ -247,6 +264,9 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   in the initial DOM and SSR is meaningless — they stay out of the whitelist and
   remain client-only; `confirm()` reuses the `oas-modal` tag (whitelisted), but
   the `confirm()` call itself is still a client-side behavior.
+- `oas-theme-editor` (a dev-tool component, a theme-editing panel for
+  development) has little SSR value — it stays out of the whitelist and remains
+  client-only.
 - `oas-table` / `oas-tree` / `oas-select` / `oas-transfer` / `oas-toggle-group`
   take `columns` / `data` / `options` / `items` through the JSON attribute
   channel (property assignment reflects to the attribute; invalid JSON falls
@@ -285,6 +305,14 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   interaction after upgrade; visible-menu components (menu / menubar /
   navigation-menu / toolbar) snapshot the menu structure (submenus default to
   collapsed).
+- Whitelist-finalization batch 5: the pure-presentation components badge /
+  button-group / icon / kbd / label / link / space / visually-hidden snapshot
+  their full visuals (badge count, kbd key caps, space host inline layout
+  styles); tooltip / popover default to the closed state and snapshot the
+  trigger slot plus the hidden bubble skeleton (content/title text is synced;
+  positioning is computed only when triggered); config-provider / app snapshot
+  the subtree as-is with their container attributes in place, with nested
+  children covered by `injectNestedDSD`.
 - Nested recursive serialization: whitelisted child components upgraded in the
   light DOM (form > form-item > oas-input, tabs > tab-panel,
   descriptions > descriptions-item, layout > sider/header, grid > grid-item,
