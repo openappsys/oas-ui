@@ -49,6 +49,14 @@ Use directly in React / Vue:
 No wrappers are needed in any of the three environments (React/Vue/vanilla);
 events are bridged through `oas-*` CustomEvents.
 
+## Browser support
+
+Modern evergreen browsers: latest two major versions of Chrome / Edge / Firefox / Safari. Specifically:
+
+- **Chrome / Edge (Chromium)**: full e2e coverage
+- **Firefox**: verified by real-browser testing (Firefox-specific pseudo-elements such as the slider track are adapted)
+- **Safari ≥ 16.4**: verified on the WebKit engine; Declarative Shadow DOM requires 16.4+, solid-state coloring (`color-mix`) requires 16.2+
+
 ## Theme switching
 
 ```html

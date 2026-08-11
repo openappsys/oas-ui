@@ -48,6 +48,14 @@ React / Vue 中直接使用：
 
 原生三端（React/Vue/原生）均无需封装即可使用，事件通过 `oas-*` CustomEvent 桥接。
 
+## 浏览器基线
+
+现代浏览器 evergreen 版本：Chrome / Edge / Firefox / Safari 最新两个大版本。其中：
+
+- **Chrome / Edge（Chromium）**：全量 e2e 覆盖
+- **Firefox**：实测覆盖（slider 轨道等 Firefox 专有伪元素已适配）
+- **Safari ≥ 16.4**：WebKit 引擎实测；Declarative Shadow DOM 需 16.4+，实心态用色（`color-mix`）需 16.2+
+
 ## 主题切换
 
 ```html
