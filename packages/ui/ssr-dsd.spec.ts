@@ -31,6 +31,44 @@ const SCREENSHOT = {
 
 let dsdHtml = ''
 
+/** 测量组件闪动治理专用 DSD 页面：oas-affix 手工构造快照（非白名单，渲染器不可产，故手工拼 DSD template）。 */
+const AFFIX_DSD_PAGE = join(ARTIFACT_DIR, 'affix-dsd.html')
+const AFFIX_DSD_PAGE_URL = pathToFileURL(AFFIX_DSD_PAGE).href
+
+/** 测量组件闪动治理 e2e 依赖：affix 组件在真实浏览器里按布局校正，需 ui bundle 已构建 */
+function buildAffixDsdPage(): void {
+  // 快照语义：SSR 端（happy-dom）getBoundingClientRect 恒 0 → rect.top=0 <= offset=100 → 吸顶，
+  // 故快照含 .fixed + top:100px。真实浏览器里 affix 位于 body padding-top 之下（rect.top≈200 > offset）
+  // → 真实布局不吸顶。治理后 upgrade 首帧保持快照态（fixed、rect.top=100），rAF 后才移除 fixed。
+  const affixSnap = `
+<oas-affix offset="100">
+  <template shadowrootmode="open">
+    <meta data-oas-ssr="oas-affix" data-oas-ssr-v="1">
+    <style>
+      :host { display: block; font-family: inherit; }
+      .wrap { display: inline-block; }
+      .wrap.fixed { position: fixed; z-index: 1020; }
+    </style>
+    <div class="wrap fixed" part="wrap" style="top: 100px"><slot></slot></div>
+  </template>
+  <span>吸顶导航</span>
+</oas-affix>`
+  const html = `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>OAS-UI 测量组件闪动治理验收</title>
+</head>
+<body style="font-family: system-ui, sans-serif; padding: 200px 24px;">
+  <div style="height: 1200px;">
+    ${affixSnap}
+    <p>滚动测试占位内容</p>
+  </div>
+</body>
+</html>`
+  writeFileSync(AFFIX_DSD_PAGE, html, 'utf8')
+}
+
 /** 用仓库内的 vite 把 @oas-ui/ui 主入口打成单文件 ESM bundle（workspace 依赖全部内联） */
 function buildUiBundle(): string {
   const uiEntry = join(REPO_ROOT, 'packages', 'ui', 'dist', 'index.js')
@@ -118,6 +156,9 @@ ${[btn, tag, empty, divider, text, title, para, table].join('\n')}
 </body>
 </html>`
   writeFileSync(DSD_PAGE, dsdHtml, 'utf8')
+
+  // —— 3) 测量组件闪动治理：oas-affix 手工构造 DSD 快照场景 ——
+  buildAffixDsdPage()
 })
 
 async function openPage(page: Page): Promise<void> {
@@ -336,4 +377,101 @@ test('渲染器边界：非白名单抛错、快照属性完整 HTML 转义、�
   expect(snap.indexOf('<meta data-oas-ssr="oas-button" data-oas-ssr-v="1">')).toBeLessThan(
     snap.indexOf('<style>'),
   )
+})
+
+/**
+ * 测量组件闪动治理（PRD v1.9）：affix 在 DSD 快照场景 upgrade 后首帧无布局跳动。
+ *
+ * 快照语义：SSR 端（happy-dom）测量全 0 → 快照含 .fixed + top:100px（吸顶态）；
+ * 真实浏览器里 affix 位于 body padding-top 之下（rect.top≈200 > offset=100）→ 真实布局不吸顶。
+ *
+ * 治理断言（两段式，确定性时序）：
+ * 1. upgrade 首帧（同一微任务内、rAF 之前）：.wrap 仍是快照态——fixed class 保留、rect.top 仍是 100，
+ *    即 hydrate 后首帧与快照一致、无跳动（未经治理的版本此时会立即移除 fixed，rect.top 跳到 200+）；
+ * 2. 下一帧（rAF 校正）：按真实布局移除 fixed，rect.top 回到自然文档流位置。
+ * 另断言水合接管成功：shadow 未重建（style 引用保持）、指纹 meta 已移除、console 零 error。
+ */
+test('测量组件闪动治理：affix upgrade 首帧与快照一致、rAF 后按真实布局校正', async ({ page }) => {
+  const pageErrors: string[] = []
+  const consoleErrors: string[] = []
+  page.on('pageerror', (e) => pageErrors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') consoleErrors.push(m.text())
+  })
+
+  await page.goto(AFFIX_DSD_PAGE_URL, { waitUntil: 'load' })
+
+  // upgrade 前：快照态 rect（.fixed 生效，wrap 位于 fixed top:100px）
+  const snapshot = await page.evaluate(() => {
+    const wrap = document
+      .querySelector('oas-affix')!
+      .shadowRoot!.querySelector<HTMLElement>('.wrap')!
+    const styleEl = document
+      .querySelector('oas-affix')!
+      .shadowRoot!.querySelector('style')!
+    return {
+      fixed: wrap.classList.contains('fixed'),
+      top: Math.round(wrap.getBoundingClientRect().top),
+      hasMeta: document.querySelector('oas-affix')!.shadowRoot!.querySelector('meta[data-oas-ssr]') !== null,
+      styleRefIsSame: false,
+    }
+  })
+  // 保存 style 引用，供水合后比对（shadow 未重建 → 引用保持）
+  snapshot.styleRefIsSame = await page.evaluate(() => {
+    const w = window as unknown as Window & { __affixStyleRef?: Element }
+    w.__affixStyleRef = document
+      .querySelector('oas-affix')!
+      .shadowRoot!.querySelector('style')
+    return true
+  })
+  expect(snapshot.fixed).toBe(true)
+  expect(snapshot.hasMeta).toBe(true)
+
+  // 注入 bundle（Blob URL 动态 import，与 evaluate 同上下文同步触发 upgrade，
+  // 可在同一微任务内、rAF 之前读到 upgrade 首帧状态）
+  const bundleSrc = readFileSync(UI_BUNDLE, 'utf8')
+  const result = await page.evaluate(async (src: string) => {
+    const w = window as unknown as Window & { __affixStyleRef?: Element }
+    const blob = new Blob([src], { type: 'text/javascript' })
+    const url = URL.createObjectURL(blob)
+    await import(url)
+    await customElements.whenDefined('oas-affix')
+
+    const wrap = document
+      .querySelector('oas-affix')!
+      .shadowRoot!.querySelector<HTMLElement>('.wrap')!
+    // —— upgrade 首帧：rAF 之前同步读 ——
+    const firstFrame = {
+      fixed: wrap.classList.contains('fixed'),
+      top: Math.round(wrap.getBoundingClientRect().top),
+      styleRefSame: document
+        .querySelector('oas-affix')!
+        .shadowRoot!.querySelector('style') === w.__affixStyleRef,
+      metaRemoved:
+        document.querySelector('oas-affix')!.shadowRoot!.querySelector('meta[data-oas-ssr]') === null,
+    }
+    // —— 下一帧：rAF 校正 ——
+    await new Promise((r) => requestAnimationFrame(() => r(null)))
+    const secondFrame = {
+      fixed: wrap.classList.contains('fixed'),
+      top: Math.round(wrap.getBoundingClientRect().top),
+    }
+    return { firstFrame, secondFrame }
+  }, bundleSrc)
+
+  // upgrade 无错、console 零 error
+  expect(pageErrors).toEqual([])
+  expect(consoleErrors).toEqual([])
+
+  // 水合接管成功：shadow 未重建（style 引用保持）、指纹已移除
+  expect(result.firstFrame.styleRefSame).toBe(true)
+  expect(result.firstFrame.metaRemoved).toBe(true)
+
+  // 首帧与快照一致、无跳动：fixed 保留、rect.top 仍为 100（= 快照值）
+  expect(result.firstFrame.fixed).toBe(true)
+  expect(result.firstFrame.top).toBe(snapshot.top)
+  // rAF 后按真实布局校正：affix 不吸顶 → 移除 fixed，回到文档流（body padding-top 200px）
+  expect(result.secondFrame.fixed).toBe(false)
+  expect(result.secondFrame.top).not.toBe(snapshot.top)
+  expect(result.secondFrame.top).toBeGreaterThanOrEqual(200)
 })

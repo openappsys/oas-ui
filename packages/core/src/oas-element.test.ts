@@ -136,6 +136,11 @@ class DsdHydrateFixture extends OASElement {
   get shadowRef(): ShadowRoot {
     return this.shadow
   }
+
+  /** 公开 wasHydrated() 供测试断言（生产子类直接使用 protected 方法） */
+  get hydratedNow(): boolean {
+    return this.wasHydrated()
+  }
 }
 
 if (!customElements.get('oas-fixture')) {
@@ -365,6 +370,39 @@ describe('OASElement', () => {
       expect(dsdRoot.querySelector('#label')).not.toBeNull()
       expect(dsdRoot.querySelector('meta[data-oas-ssr]')).toBeNull()
 
+      el.remove()
+    })
+
+    it('wasHydrated：水合接管成功为 true，普通 CSR 为 false，断开连接复位', () => {
+      // 纯 CSR：无 DSD 指纹 → wasHydrated 恒为 false
+      const csr = document.createElement('oas-dsd-hydrate') as DsdHydrateFixture
+      document.body.appendChild(csr)
+      expect(csr.hydratedNow).toBe(false)
+      csr.remove()
+
+      // 指纹匹配 + hydrate 成功 → wasHydrated 为 true（水合场景判定）
+      const { dsdRoot } = makeDsdRoot(
+        '<meta data-oas-ssr="oas-dsd-hydrate" data-oas-ssr-v="1"><span id="label"></span>',
+      )
+      DsdHydrateFixture.dsdRoot = dsdRoot
+      const el = document.createElement('oas-dsd-hydrate') as DsdHydrateFixture
+      document.body.appendChild(el)
+      expect(el.hydrateCalls).toBe(1)
+      expect(el.hydratedNow).toBe(true)
+      // 断开连接 → 水合状态复位（本次连接语义）
+      el.remove()
+      expect(el.hydratedNow).toBe(false)
+    })
+
+    it('wasHydrated：回退 render（指纹不匹配 / 结构校验失败）时为 false', () => {
+      const { dsdRoot } = makeDsdRoot(
+        '<meta data-oas-ssr="oas-button" data-oas-ssr-v="1"><span id="label"></span>',
+      )
+      DsdHydrateFixture.dsdRoot = dsdRoot
+      const el = document.createElement('oas-dsd-hydrate') as DsdHydrateFixture
+      document.body.appendChild(el)
+      expect(el.renderCount).toBe(1)
+      expect(el.hydratedNow).toBe(false)
       el.remove()
     })
   })

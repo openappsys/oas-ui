@@ -68,15 +68,22 @@ export class OASEllipsis extends OASElement {
   private toggleEl: HTMLButtonElement | null = null
   private observer: ResizeObserver | null = null
   private expanded = false
+  /** 水合首帧的布局写入是否已延迟登记（抑制直至 rAF 校正完成，含 RO 首回调等同期写入） */
+  private layoutRafScheduled = false
+  private hydratedFirstFrameApplied = false
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="root" part="root">
         <div class="text" part="text"></div>
         <button type="button" class="toggle" part="toggle" hidden></button>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定交互与尺寸监听（render 与水合路径共用） */
+  private bind(): void {
     this.rootEl = this.shadow.querySelector<HTMLElement>('.root')
     this.textEl = this.shadow.querySelector<HTMLElement>('.text')
     this.toggleEl = this.shadow.querySelector<HTMLButtonElement>('.toggle')
@@ -88,14 +95,52 @@ export class OASEllipsis extends OASElement {
       this.observer.observe(this)
       this.onCleanup(() => this.observer?.disconnect())
     }
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（root/text 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.root')) return false
+    if (!this.shadow.querySelector('.text')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {
     if (!this.textEl) return
     const text = this.getAttr('text', '')
-    const rows = this.normalizeRows()
     this.textEl.textContent = text
+
+    // DSD 水合首帧：省略态（class/line-clamp/toggle/tooltip）写入延迟到首帧后，
+    // 保证快照首帧与 hydrate 后一致、第二帧再按真实布局校正（内容一致，仅测量态补写）。
+    // 文本写入保持同步（快照内容一致，无闪动）；纯 CSR / 水合后更新同步执行。
+    if (this.wasHydrated() && !this.hydratedFirstFrameApplied) {
+      this.scheduleHydratedClamp(text)
+      return
+    }
+    this.syncClampState(text)
+  }
+
+  /** 水合首帧：省略态写入统一延迟到 rAF 校正；期间（含 rAF 前其他 update/RO 回调）一律抑制 */
+  private scheduleHydratedClamp(text: string): void {
+    if (this.layoutRafScheduled) return
+    this.layoutRafScheduled = true
+    const raf = requestAnimationFrame(() => {
+      this.hydratedFirstFrameApplied = true
+      this.syncClampState(this.getAttr('text', ''))
+    })
+    this.onCleanup(() => cancelAnimationFrame(raf))
+  }
+
+  /** 省略形态 + 溢出判定 + 展开按钮 + tooltip 挂载（布局相关写入，水合首帧时延迟执行） */
+  private syncClampState(text: string): void {
+    if (!this.textEl) return
+    const rows = this.normalizeRows()
 
     // 省略样式由 rows 决定（展开态移除）：先应用形态再测量溢出（line-clamp 参与 scrollHeight）
     const clamped = !this.expanded

@@ -26,6 +26,8 @@ export abstract class OASElement extends HTMLElement {
   private cleanupFns: Array<() => void> = []
   private unsubscribeLocale: (() => void) | null = null
   private unsubscribeConfig: (() => void) | null = null
+  /** 本次连接是否为 DSD 真水合接管（tryHydrate 成功后置 true，断开连接时复位） */
+  private hydrated = false
 
   constructor() {
     super()
@@ -67,6 +69,7 @@ export abstract class OASElement extends HTMLElement {
     this.unsubscribeLocale = null
     this.unsubscribeConfig?.()
     this.unsubscribeConfig = null
+    this.hydrated = false
     for (const fn of this.cleanupFns) fn()
     this.cleanupFns.length = 0
   }
@@ -109,8 +112,25 @@ export abstract class OASElement extends HTMLElement {
     } catch {
       ok = false
     }
-    if (ok) meta.remove()
+    if (ok) {
+      this.hydrated = true
+      meta.remove()
+    }
     return ok
+  }
+
+  /**
+   * 本次连接是否为 DSD 真水合接管。
+   *
+   * 供子类 update() 查询"本次连接是否是水合场景"：水合接管成功后（hydrate() 返回 true）
+   * 返回 true，断开连接时复位。纯 CSR（无 DSD 快照指纹或回退 render()）始终返回 false。
+   *
+   * 用途：测量组件（affix/ellipsis/scroll-area 等）在 update() 里同步测量并立即写布局态，
+   * SSR 快照无法预知这些运行时状态；水合首帧若照常同步写入会产生与快照的差异帧（闪动），
+   * 子类可在 wasHydrated() 时把布局相关写入延迟到首帧后（requestAnimationFrame）。
+   */
+  protected wasHydrated(): boolean {
+    return this.hydrated
   }
 
   /** 子类实现：属性/状态变化时增量同步 DOM（默认空实现，纯静态组件可不覆写） */

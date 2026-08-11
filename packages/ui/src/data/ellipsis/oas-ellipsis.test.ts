@@ -131,4 +131,70 @@ describe('OASEllipsis', () => {
     expect(spy).toHaveBeenCalled()
     spy.mockRestore()
   })
+
+  it('纯 CSR：省略态同步写入（行为不变）', () => {
+    const el = mount({ text: '长文本' })
+    const t = textEl(el)
+    Object.defineProperty(t, 'scrollWidth', { value: 300, configurable: true })
+    Object.defineProperty(t, 'clientWidth', { value: 100, configurable: true })
+    // 同值重设触发 update → 溢出判定同步写入省略类
+    el.setAttribute('text', '长文本')
+    expect(t.classList.contains('single')).toBe(true)
+  })
+
+  /** 模拟 DSD 水合：构造器 attachShadow 后注入「SSR 快照 + 指纹 meta」（等价于 DSD template 解析结果） */
+  function dsdEllipsis(attrs: Record<string, string> = {}): OASEllipsis {
+    const el = new OASEllipsis()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.shadowRoot!.innerHTML = `
+      <meta data-oas-ssr="oas-ellipsis" data-oas-ssr-v="1">
+      <style>.probe { color: red; }</style>
+      <div class="root" part="root">
+        <div class="text" part="text"></div>
+        <button type="button" class="toggle" part="toggle" hidden></button>
+      </div>
+    `
+    return el
+  }
+
+  const flushRaf = (): Promise<void> =>
+    new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+
+  it('DSD 水合：首帧不写省略类，rAF 后按真实溢出校正', async () => {
+    const el = dsdEllipsis({ text: '这是一段很长的文本' })
+    document.body.appendChild(el)
+    const t = textEl(el)
+    // 水合接管：指纹移除、text 引用保持（shadow 未重建）
+    expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+    expect(textEl(el)).toBe(t)
+    // 首帧：溢出判定未执行 → 省略类未写入
+    expect(t.classList.contains('single')).toBe(false)
+    expect(t.classList.contains('multi')).toBe(false)
+    // rAF 前构造溢出条件，校正帧按真实布局补写
+    Object.defineProperty(t, 'scrollWidth', { value: 300, configurable: true })
+    Object.defineProperty(t, 'clientWidth', { value: 100, configurable: true })
+    await flushRaf()
+    expect(t.classList.contains('single')).toBe(true)
+    el.remove()
+  })
+
+  it('DSD 水合：rAF 前重复 update 一律抑制，校正后恢复正常', async () => {
+    const el = dsdEllipsis({ text: '长文本', rows: '2' })
+    document.body.appendChild(el)
+    const t = textEl(el)
+    // rAF 前多次属性变化 → 仍不写省略态（class 与 line-clamp 均未落）
+    Object.defineProperty(t, 'scrollWidth', { value: 300, configurable: true })
+    Object.defineProperty(t, 'clientWidth', { value: 100, configurable: true })
+    el.setAttribute('text', '变化')
+    expect(t.classList.contains('multi')).toBe(false)
+    expect(t.style.getPropertyValue('-webkit-line-clamp')).toBe('')
+    await flushRaf()
+    // 校正帧：rows=2 → multi 类 + line-clamp=2
+    expect(t.classList.contains('multi')).toBe(true)
+    expect(t.style.getPropertyValue('-webkit-line-clamp')).toBe('2')
+    // 校正后：属性变化同步写入
+    el.setAttribute('rows', '3')
+    expect(t.style.getPropertyValue('-webkit-line-clamp')).toBe('3')
+    el.remove()
+  })
 })

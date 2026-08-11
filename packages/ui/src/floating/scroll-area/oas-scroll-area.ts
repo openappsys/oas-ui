@@ -107,9 +107,12 @@ export class OASScrollArea extends OASElement {
   private raf = 0
   private hideTimer = 0
   private resizeObserver: ResizeObserver | null = null
+  /** 水合首帧的布局写入是否已延迟登记（抑制直至 rAF 校正完成，含 RO 首回调等同期写入） */
+  private layoutRafScheduled = false
+  private hydratedFirstFrameApplied = false
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="scroll-area">
         <div class="viewport" part="viewport" tabindex="0">
@@ -123,6 +126,10 @@ export class OASScrollArea extends OASElement {
         </div>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定滚动/悬停监听 + 尺寸观察（render 与水合路径共用） */
+  private bind(): void {
     this.viewport = this.shadow.querySelector('.viewport')
     this.vTrack = this.shadow.querySelector('.track-v')
     this.vThumb = this.shadow.querySelector('[part="thumb-v"]')
@@ -140,17 +147,48 @@ export class OASScrollArea extends OASElement {
       this.resizeObserver?.disconnect()
       this.resizeObserver = null
     })
-    // 内容/容器尺寸变化时重算滚动条（内容增删后即时生效）
+    // 内容/容器尺寸变化时重算滚动条（内容增删后即时生效）；走 update() 统一入口，
+    // 水合首帧时 RO 首回调同样被延迟抑制（避免第一帧提前写滚动条）
     if (typeof ResizeObserver !== 'undefined' && wrap) {
-      this.resizeObserver = new ResizeObserver(() => this.syncThumbs())
+      this.resizeObserver = new ResizeObserver(() => this.update())
       this.resizeObserver.observe(wrap)
     }
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
   }
 
+  /** 真水合：校验 SSR 快照结构（viewport 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.viewport')) return false
+    this.bind()
+    return true
+  }
+
   protected override update(): void {
+    // DSD 水合首帧：滚动条可见性/尺寸写入延迟到首帧后（快照首帧与 hydrate 后一致，第二帧校正）。
+    // 纯 CSR 或水合后的后续 update 一律同步写入（行为不变）。
+    if (this.wasHydrated() && !this.hydratedFirstFrameApplied) {
+      this.scheduleHydratedSync()
+      return
+    }
     this.syncSize()
     this.syncThumbs()
+  }
+
+  /** 水合首帧：滚动条写入统一延迟到 rAF 校正；期间（含 rAF 前其他 update/RO 回调）一律抑制 */
+  private scheduleHydratedSync(): void {
+    if (this.layoutRafScheduled) return
+    this.layoutRafScheduled = true
+    const raf = requestAnimationFrame(() => {
+      this.hydratedFirstFrameApplied = true
+      this.syncSize()
+      this.syncThumbs()
+    })
+    this.onCleanup(() => cancelAnimationFrame(raf))
   }
 
   private autoHide(): boolean {
