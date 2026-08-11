@@ -90,8 +90,9 @@ export class OASComment extends OASElement {
     actions: 'actions',
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="comment" part="comment">
         <div class="main" part="main">
@@ -108,12 +109,28 @@ export class OASComment extends OASElement {
         <div class="children" part="children" hidden><slot></slot></div>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件（render 与水合路径共用） */
+  private bind(): void {
     // slotchange 监听挂在 Shadow DOM 内部节点上，随元素整体回收，无全局泄漏；
     // 断开/重连后元素与监听一起保留，重连后仍能同步插槽内容。
     for (const slot of this.shadow.querySelectorAll('slot')) {
       slot.addEventListener('slotchange', this.handleSlotChange)
     }
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（comment 骨架存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('[part="comment"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

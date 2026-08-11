@@ -9,6 +9,9 @@ const STYLE = `
   font-size: var(--oas-font-size-lg);
   font-variant-numeric: tabular-nums;
 }
+:host([hidden]) {
+  display: none;
+}
 [part='statistic'] {
   display: inline-flex;
   align-items: baseline;
@@ -43,8 +46,9 @@ export class OASStatistic extends OASElement {
     this.setAttribute('prefix', value)
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="statistic" part="statistic">
         <span class="prefix" part="prefix"></span>
@@ -52,7 +56,22 @@ export class OASStatistic extends OASElement {
         <span class="suffix" part="suffix"></span>
       </div>
     `
+  }
+
+  /** 缓存节点引用（render 与水合路径共用；statistic 无事件绑定） */
+  private bind(): void {}
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（statistic 骨架存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('[part="statistic"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

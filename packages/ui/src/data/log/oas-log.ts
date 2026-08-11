@@ -104,15 +104,14 @@ export class OASLog extends OASElement {
   }
 
   set lines(value: string[]) {
-    this.data = Array.isArray(value)
-      ? value.filter((l): l is string => typeof l === 'string')
-      : []
+    this.data = Array.isArray(value) ? value.filter((l): l is string => typeof l === 'string') : []
     this.linesFromProperty = true
     if (this.isConnected) this.update()
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="viewport" part="viewport" tabindex="0">
         <div class="log" part="log" role="log" aria-live="polite" hidden></div>
@@ -122,6 +121,10 @@ export class OASLog extends OASElement {
         </div>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
     this.viewport = this.shadow.querySelector('.viewport')
     this.logEl = this.shadow.querySelector('.log')
     this.emptyEl = this.shadow.querySelector('.empty')
@@ -129,7 +132,19 @@ export class OASLog extends OASElement {
     this.onCleanup(() => {
       this.viewport?.removeEventListener('scroll', this.handleScroll)
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（视口/日志容器存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.viewport') || !this.shadow.querySelector('.log')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

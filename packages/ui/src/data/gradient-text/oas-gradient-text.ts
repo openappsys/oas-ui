@@ -6,6 +6,9 @@ const STYLE = `
   font-family: inherit;
   font-size: var(--oas-font-size-lg);
 }
+:host([hidden]) {
+  display: none;
+}
 [part='text'] {
   display: inline-block;
   max-width: 100%;
@@ -17,8 +20,7 @@ const DEFAULT_COLORS = ['var(--oas-color-primary)', 'var(--oas-color-primary-hov
 const DEFAULT_DIRECTION = 'to right'
 
 /** 合法色标形态：hex / rgb(a) / hsl(a) / var() / 命名色 */
-const COLOR_RE =
-  /^(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)|var\([^)]*\)|[a-zA-Z]+)$/
+const COLOR_RE = /^(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)|var\([^)]*\)|[a-zA-Z]+)$/
 
 /**
  * oas-gradient-text —— 渐变文字（纯展示，无事件）。
@@ -37,12 +39,28 @@ export class OASGradientText extends OASElement {
     return ['gradient', 'direction']
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <span class="text" part="text"><slot></slot></span>
     `
+  }
+
+  /** 缓存节点引用（render 与水合路径共用；gradient-text 无事件绑定） */
+  private bind(): void {}
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（文本节点存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('[part="text"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {
@@ -76,9 +94,7 @@ export class OASGradientText extends OASElement {
     try {
       const parsed: unknown = JSON.parse(raw)
       if (!Array.isArray(parsed)) return []
-      return parsed.filter(
-        (c): c is string => typeof c === 'string' && COLOR_RE.test(c.trim()),
-      )
+      return parsed.filter((c): c is string => typeof c === 'string' && COLOR_RE.test(c.trim()))
     } catch {
       return []
     }

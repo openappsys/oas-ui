@@ -8,6 +8,9 @@ const STYLE = `
   color: var(--oas-color-text-primary);
   line-height: 1;
 }
+:host([hidden]) {
+  display: none;
+}
 .wrapper {
   display: inline-block;
 }
@@ -54,8 +57,9 @@ export class OASQRCode extends OASElement {
     return ['value', 'size', 'error-correction', 'aria-label']
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="wrapper" part="wrapper" role="img" aria-label="">
         <svg class="qr" part="qr" xmlns="http://www.w3.org/2000/svg" role="presentation" focusable="false"></svg>
@@ -63,7 +67,22 @@ export class OASQRCode extends OASElement {
         <div class="error" part="error" hidden></div>
       </div>
     `
+  }
+
+  /** 缓存节点引用（render 与水合路径共用；qrcode 无事件绑定） */
+  private bind(): void {}
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（svg 骨架存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('svg')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

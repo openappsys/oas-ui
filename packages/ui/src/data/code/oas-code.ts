@@ -3,19 +3,75 @@ import { OASElement } from '@oas-ui/core'
 export type CodeLanguage = 'js' | 'ts' | 'html' | 'css' | 'json' | string
 
 /** token 类别 → CSS class（配色见 STYLE 的 .tok-* 规则） */
-type TokenClass = 'keyword' | 'string' | 'comment' | 'number' | 'tag' | 'attr' | 'function' | 'operator'
+type TokenClass =
+  'keyword' | 'string' | 'comment' | 'number' | 'tag' | 'attr' | 'function' | 'operator'
 
 const JS_KEYWORDS = [
-  'const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'do', 'switch',
-  'case', 'break', 'continue', 'new', 'class', 'extends', 'import', 'export', 'from', 'default',
-  'async', 'await', 'try', 'catch', 'finally', 'throw', 'typeof', 'instanceof', 'this', 'super',
-  'null', 'undefined', 'true', 'false', 'in', 'of', 'yield', 'static', 'get', 'set', 'void', 'delete',
+  'const',
+  'let',
+  'var',
+  'function',
+  'return',
+  'if',
+  'else',
+  'for',
+  'while',
+  'do',
+  'switch',
+  'case',
+  'break',
+  'continue',
+  'new',
+  'class',
+  'extends',
+  'import',
+  'export',
+  'from',
+  'default',
+  'async',
+  'await',
+  'try',
+  'catch',
+  'finally',
+  'throw',
+  'typeof',
+  'instanceof',
+  'this',
+  'super',
+  'null',
+  'undefined',
+  'true',
+  'false',
+  'in',
+  'of',
+  'yield',
+  'static',
+  'get',
+  'set',
+  'void',
+  'delete',
 ]
 
 const TS_KEYWORDS = [
   ...JS_KEYWORDS,
-  'type', 'interface', 'enum', 'namespace', 'declare', 'readonly', 'implements', 'keyof', 'infer',
-  'as', 'abstract', 'private', 'protected', 'public', 'unknown', 'never', 'any', 'satisfies',
+  'type',
+  'interface',
+  'enum',
+  'namespace',
+  'declare',
+  'readonly',
+  'implements',
+  'keyof',
+  'infer',
+  'as',
+  'abstract',
+  'private',
+  'protected',
+  'public',
+  'unknown',
+  'never',
+  'any',
+  'satisfies',
 ]
 
 const CSS_KEYWORDS = ['@media', '@import', '@keyframes', '@font-face', '@supports', 'important']
@@ -123,6 +179,9 @@ const STYLE = `
   line-height: 1.6;
   color: var(--oas-color-text-primary);
 }
+:host([hidden]) {
+  display: none;
+}
 .block {
   position: relative;
   border: 1px solid var(--oas-color-border);
@@ -224,8 +283,9 @@ export class OASCode extends OASElement {
 
   private copyTimer: ReturnType<typeof setTimeout> | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="block" part="block">
         <div class="toolbar" part="toolbar">
@@ -235,12 +295,29 @@ export class OASCode extends OASElement {
         <pre class="code" part="code"><code class="code-inner" part="code-inner"></code></pre>
       </div>
     `
-    const copy = this.shadow.querySelector<HTMLButtonElement>('.copy-btn')
-    copy?.addEventListener('click', () => this.handleCopy())
+  }
+
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
+    this.shadow.querySelector<HTMLButtonElement>('.copy-btn')?.addEventListener('click', () => {
+      void this.handleCopy()
+    })
     this.onCleanup(() => {
       if (this.copyTimer) clearTimeout(this.copyTimer)
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（代码块骨架存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.block')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

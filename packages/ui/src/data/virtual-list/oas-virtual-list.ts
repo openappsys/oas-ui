@@ -92,7 +92,7 @@ export class OASVirtualList extends OASElement {
   private paddingTop: HTMLElement | null = null
   private paddingBottom: HTMLElement | null = null
   private itemsEl: HTMLElement | null = null
-private itemRole = ''
+  private itemRole = ''
   private boundTarget: HTMLElement | null = null
 
   get items(): unknown[] {
@@ -116,7 +116,8 @@ private itemRole = ''
     if (this.isConnected) this.update()
   }
 
-  protected override render(): void {
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
     const innerHtml = `
       <div class="inner" part="inner">
         <div class="padding padding-top" part="padding-top"></div>
@@ -125,10 +126,14 @@ private itemRole = ''
       </div>
     `
     // scroll-target 模式：不自建滚动视口，由外部容器滚动整段内容
-    this.shadow.innerHTML = this.scrollTargetSelector()
+    return this.scrollTargetSelector()
       ? `<style>${STYLE}</style>${innerHtml}`
       : `<style>${STYLE}</style>
          <div class="viewport" part="viewport" tabindex="0">${innerHtml}</div>`
+  }
+
+  /** 缓存节点引用 + 注册清理（render 与水合路径共用；滚动监听由 update 的 syncTarget 幂等绑定） */
+  private bind(): void {
     this.viewport = this.shadow.querySelector('.viewport')
     this.inner = this.shadow.querySelector('.inner')
     this.paddingTop = this.shadow.querySelector('.padding-top')
@@ -140,7 +145,19 @@ private itemRole = ''
       if (this.raf) cancelAnimationFrame(this.raf)
       this.raf = 0
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（items 容器存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.items')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

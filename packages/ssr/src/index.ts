@@ -13,7 +13,13 @@
  * date-picker/time-picker/calendar/upload/color-picker/toggle-button/pin-input/dynamic-input/dynamic-tags/
  * editable/form/form-item 等，快照含骨架与已选值；下拉面板默认关闭态、上传列表为空态属预期）+
  * 反馈组件批次 2（alert/progress/spin/skeleton/result/backdrop/modal/drawer/popconfirm，可见态直出快照；
- * modal/drawer 默认关闭态为宿主骨架、popconfirm 为隐藏气泡，服务端直出 visible/open 时快照含完整弹层）。
+ * modal/drawer 默认关闭态为宿主骨架、popconfirm 为隐藏气泡，服务端直出 visible/open 时快照含完整弹层）+
+ * 数据展示组件批次 3（card/avatar/avatar-group/image/qrcode/watermark/collapse/descriptions/timeline/list/
+ * carousel/statistic/countdown/chart/code/equation/log/masonry/comment/marquee/number-animation/gradient-text/
+ * aspect-ratio/virtual-list 及四个子组件 collapse-item/descriptions-item/timeline-item/list-item：
+ * 纯展示组件直出完整快照；chart/code/equation 为同步确定性渲染（SVG/高亮/公式全部纯计算，非 canvas/异步）；
+ * 动态组件 carousel/countdown/number-animation/marquee 快照为初始帧/初始值，动画与计时由客户端接管；
+ * virtual-list 快照为 scrollTop=0 的首屏窗口行 + 上下 padding 占位，升级后按同属性重算窗口不变）。
  *
  * 为什么按需装载（而不是 `import('@oas-ui/ui')` 全量）：
  * - 全量入口会求值全部 ~115 个组件目录（每个目录 index.ts 的 define 副作用 + 各自依赖图），
@@ -54,7 +60,8 @@ import { ensureShim } from './shim.js'
  * 试点（affix/ellipsis/scroll-area：SSR 快照为未校正态，浏览器端 rAF 校正，属设计语义）+ 表单组件
  * 批次 1（DSD 白名单化：template/bind/hydrate 拆分，快照为骨架/已选值/关闭态下拉）+ 反馈组件批次 2
  * （可见态反馈组件 + 浮层组件，命令式组件 message/notification/toast/snackbar/loading-bar/confirm
- * 无初始 DOM 不纳入）。
+ * 无初始 DOM 不纳入）+ 数据展示组件批次 3（纯展示组件直出快照；chart/code/equation 同步确定性渲染；
+ * 动态组件快照为初始帧，动画客户端接管；virtual-list 快照为首屏窗口 + padding 占位）。
  */
 export const WHITELIST = [
   'oas-button',
@@ -108,6 +115,34 @@ export const WHITELIST = [
   'oas-modal',
   'oas-drawer',
   'oas-popconfirm',
+  'oas-card',
+  'oas-avatar',
+  'oas-avatar-group',
+  'oas-image',
+  'oas-qrcode',
+  'oas-watermark',
+  'oas-collapse',
+  'oas-collapse-item',
+  'oas-descriptions',
+  'oas-descriptions-item',
+  'oas-timeline',
+  'oas-timeline-item',
+  'oas-list',
+  'oas-list-item',
+  'oas-carousel',
+  'oas-statistic',
+  'oas-countdown',
+  'oas-chart',
+  'oas-code',
+  'oas-equation',
+  'oas-log',
+  'oas-masonry',
+  'oas-comment',
+  'oas-marquee',
+  'oas-number-animation',
+  'oas-gradient-text',
+  'oas-aspect-ratio',
+  'oas-virtual-list',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -196,6 +231,34 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-modal': '@oas-ui/ui/feedback/modal',
   'oas-drawer': '@oas-ui/ui/feedback/drawer',
   'oas-popconfirm': '@oas-ui/ui/feedback/popconfirm',
+  'oas-card': '@oas-ui/ui/data/card',
+  'oas-avatar': '@oas-ui/ui/data/avatar',
+  'oas-avatar-group': '@oas-ui/ui/data/avatar-group',
+  'oas-image': '@oas-ui/ui/data/image',
+  'oas-qrcode': '@oas-ui/ui/data/qrcode',
+  'oas-watermark': '@oas-ui/ui/data/watermark',
+  'oas-collapse': '@oas-ui/ui/data/collapse',
+  'oas-collapse-item': '@oas-ui/ui/data/collapse',
+  'oas-descriptions': '@oas-ui/ui/data/descriptions',
+  'oas-descriptions-item': '@oas-ui/ui/data/descriptions',
+  'oas-timeline': '@oas-ui/ui/data/timeline',
+  'oas-timeline-item': '@oas-ui/ui/data/timeline',
+  'oas-list': '@oas-ui/ui/data/list',
+  'oas-list-item': '@oas-ui/ui/data/list',
+  'oas-carousel': '@oas-ui/ui/data/carousel',
+  'oas-statistic': '@oas-ui/ui/data/statistic',
+  'oas-countdown': '@oas-ui/ui/data/countdown',
+  'oas-chart': '@oas-ui/ui/data/chart',
+  'oas-code': '@oas-ui/ui/data/code',
+  'oas-equation': '@oas-ui/ui/data/equation',
+  'oas-log': '@oas-ui/ui/data/log',
+  'oas-masonry': '@oas-ui/ui/data/masonry',
+  'oas-comment': '@oas-ui/ui/data/comment',
+  'oas-marquee': '@oas-ui/ui/data/marquee',
+  'oas-number-animation': '@oas-ui/ui/data/number-animation',
+  'oas-gradient-text': '@oas-ui/ui/data/gradient-text',
+  'oas-aspect-ratio': '@oas-ui/ui/data/aspect-ratio',
+  'oas-virtual-list': '@oas-ui/ui/data/virtual-list',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */
@@ -243,7 +306,13 @@ async function ensureI18n(): Promise<typeof import('@oas-ui/i18n')> {
  *   oas-upload / oas-transfer / oas-color-picker / oas-toggle-button / oas-toggle-group /
  *   oas-pin-input / oas-dynamic-input / oas-dynamic-tags / oas-editable / oas-form /
  *   oas-form-item / oas-alert / oas-progress / oas-spin / oas-skeleton / oas-result /
- *   oas-backdrop / oas-modal / oas-drawer / oas-popconfirm），其余抛错
+ *   oas-backdrop / oas-modal / oas-drawer / oas-popconfirm / oas-card / oas-avatar /
+ *   oas-avatar-group / oas-image / oas-qrcode / oas-watermark / oas-collapse /
+ *   oas-collapse-item / oas-descriptions / oas-descriptions-item / oas-timeline /
+ *   oas-timeline-item / oas-list / oas-list-item / oas-carousel / oas-statistic /
+ *   oas-countdown / oas-chart / oas-code / oas-equation / oas-log / oas-masonry /
+ *   oas-comment / oas-marquee / oas-number-animation / oas-gradient-text /
+ *   oas-aspect-ratio / oas-virtual-list），其余抛错
  * @param attrs 宿主 attributes（kebab-case 键），值在序列化时做 & " < > 完整 HTML 转义
  * @param slotHTML 注入 light DOM 的 HTML 片段（默认插槽内容）
  * @param opts 选项（locale 控制内置文案语言）

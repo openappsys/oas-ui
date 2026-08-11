@@ -9,6 +9,9 @@ const STYLE = `
   background: var(--oas-color-bg-hover);
   border-radius: var(--oas-radius-lg);
 }
+:host([hidden]) {
+  display: none;
+}
 .viewport {
   overflow: hidden;
 }
@@ -109,8 +112,9 @@ export class OASCarousel extends OASElement {
   private count = 0
   private timer: ReturnType<typeof setInterval> | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="viewport" part="viewport">
         <div class="track" part="track"><slot></slot></div>
@@ -119,6 +123,10 @@ export class OASCarousel extends OASElement {
       <button type="button" class="arrow arrow-next" part="arrow-next" aria-label="">›</button>
       <div class="dots" part="dots" role="tablist"></div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
     this.shadow.querySelector('.dots')?.addEventListener('click', (e) => {
       const dot = (e.target as HTMLElement).closest('[part="dot"]')
       if (dot) this.goto(Number((dot as HTMLElement).getAttribute('data-index')) || 0)
@@ -131,7 +139,24 @@ export class OASCarousel extends OASElement {
       const index = Number(this.getAttr('index', '0')) || 0
       this.goto(index + 1)
     })
+    this.onCleanup(() => {
+      if (this.timer) clearInterval(this.timer)
+      this.timer = null
+    })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（视口/轨道存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.viewport') || !this.shadow.querySelector('.track'))
+      return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {
@@ -184,9 +209,5 @@ export class OASCarousel extends OASElement {
       () => this.goto((Number(this.getAttr('index', '0')) || 0) + 1),
       Number(this.getAttr('interval', '3000')) || 3000,
     )
-  }
-
-  protected override onCleanup(): void {
-    if (this.timer) clearInterval(this.timer)
   }
 }

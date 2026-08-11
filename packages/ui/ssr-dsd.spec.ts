@@ -36,7 +36,10 @@ const FLICKER_PAGE = join(ARTIFACT_DIR, 'measure-dsd.html')
 const FLICKER_PAGE_URL = pathToFileURL(FLICKER_PAGE).href
 
 /** 闪动页 ellipsis 用文本：300px 容器 + 2 行内必然溢出（触发校正） */
-const LONG_TEXT = '这是一段特别长的文本用于验证省略组件在真实浏览器中的溢出测量与校正行为，它跨越了不止两行的高度以便触发省略形态的布局写入，内容本身并无实际业务含义。'.repeat(2)
+const LONG_TEXT =
+  '这是一段特别长的文本用于验证省略组件在真实浏览器中的溢出测量与校正行为，它跨越了不止两行的高度以便触发省略形态的布局写入，内容本身并无实际业务含义。'.repeat(
+    2,
+  )
 
 /**
  * 测量组件闪动治理 e2e 依赖：affix/ellipsis/scroll-area 在真实浏览器里按布局校正，需 ui bundle 已构建。
@@ -47,7 +50,12 @@ const LONG_TEXT = '这是一段特别长的文本用于验证省略组件在真�
  *     rAF 后显示展开按钮并挂 tooltip（快照首帧与 hydrate 后一致，第二帧校正）。
  *   scroll-area：SSR 端溢出测量全 0 → 轨道隐藏；真实浏览器里内容超高视口 → rAF 后垂直轨道可见。
  */
-function buildFlickerPage(affixSnap: string, ellipsisSnap: string, scrollAreaSnap: string, themeCss: string): void {
+function buildFlickerPage(
+  affixSnap: string,
+  ellipsisSnap: string,
+  scrollAreaSnap: string,
+  themeCss: string,
+): void {
   const html = `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -75,9 +83,7 @@ function buildFlickerPage(affixSnap: string, ellipsisSnap: string, scrollAreaSna
 function buildUiBundle(): string {
   const uiEntry = join(REPO_ROOT, 'packages', 'ui', 'dist', 'index.js')
   if (!existsSync(uiEntry)) {
-    throw new Error(
-      `[ssr-dsd] 缺少 ${uiEntry}：请先执行 pnpm --filter @oas-ui/ui build 再跑 e2e`,
-    )
+    throw new Error(`[ssr-dsd] 缺少 ${uiEntry}：请先执行 pnpm --filter @oas-ui/ui build 再跑 e2e`)
   }
   const viteCli = join(REPO_ROOT, 'node_modules', 'vite', 'bin', 'vite.js')
   if (!existsSync(viteCli)) {
@@ -131,11 +137,7 @@ test.beforeAll(async () => {
     '<span style="display:inline-block;padding:4px 12px;border:1px solid var(--oas-color-border);border-radius:var(--oas-radius-sm)">吸顶导航</span>',
   )
   const ellipsisSnap = await renderToString('oas-ellipsis', { text: '短文本' }, '')
-  const scrollAreaSnap = await renderToString(
-    'oas-scroll-area',
-    { height: '120' },
-    '<p>短内容</p>',
-  )
+  const scrollAreaSnap = await renderToString('oas-scroll-area', { height: '120' }, '<p>短内容</p>')
   const ellipsisFlickerSnap = await renderToString(
     'oas-ellipsis',
     { text: LONG_TEXT, rows: '2', expandable: 'true' },
@@ -236,16 +238,24 @@ test.beforeAll(async () => {
     renderToString('oas-upload', {}, '', { locale: 'zh-CN' }),
     renderToString(
       'oas-transfer',
-      { data: JSON.stringify([{ key: 'a', label: '苹果' }, { key: 'b', label: '香蕉' }]) },
+      {
+        data: JSON.stringify([
+          { key: 'a', label: '苹果' },
+          { key: 'b', label: '香蕉' },
+        ]),
+      },
       '',
       { locale: 'zh-CN' },
     ),
     renderToString('oas-color-picker', { value: '#0b6cff' }, '', { locale: 'zh-CN' }),
     renderToString('oas-toggle-button', { pressed: '', value: 'a' }, '白天'),
-    renderToString(
-      'oas-toggle-group',
-      { items: JSON.stringify([{ label: '日', value: 'day' }, { label: '周', value: 'week' }]), value: 'week' },
-    ),
+    renderToString('oas-toggle-group', {
+      items: JSON.stringify([
+        { label: '日', value: 'day' },
+        { label: '周', value: 'week' },
+      ]),
+      value: 'week',
+    }),
     renderToString('oas-pin-input', { value: '123', length: '4' }),
     renderToString('oas-dynamic-input', { 'model-value': '[]' }),
     renderToString('oas-dynamic-tags', { 'model-value': '["标签1"]' }),
@@ -285,6 +295,86 @@ test.beforeAll(async () => {
     ),
   ])
 
+  // —— DSD 批次 3：数据展示组件快照 ——
+  // 布局稳定性约定：复合组件（avatar-group/collapse/descriptions/list）的 light DOM 子组件
+  // 升级后自带 shadow 会改变布局，fixture 用空内容保证升级前后布局稳定（子组件行为由单测覆盖）；
+  // 子组件（collapse-item/descriptions-item/list-item）独立 fixture 同样空内容；
+  // timeline 的行克隆在 shadow 内、timeline-item 的 shadow 是纯 slot 透传，内容 fixture 稳定；
+  // 动态组件取初始帧/初始值：carousel index=0、countdown 完整初始值、number-animation 用
+  // duration=0（SSR 直出目标值、升级后无动画跳变，保证布局稳定）；image/avatar 用 1×1 PNG
+  // data-uri 保证真实浏览器加载成功（避免 error 态改变布局）；virtual-list 快照为 scrollTop=0
+  // 首屏窗口行 + padding 占位（升级后按同属性重算窗口不变）。
+  const PNG_1PX =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+  const CHART_DATA = JSON.stringify([
+    { label: '一月', value: 120 },
+    { label: '二月', value: 200 },
+    { label: '三月', value: 150 },
+  ])
+  const VL_ITEMS = JSON.stringify(Array.from({ length: 100 }, (_, i) => `项${i}`))
+  const dataSnaps = await Promise.all([
+    renderToString('oas-card', { title: '卡片标题' }, '<p>卡片内容</p>'),
+    renderToString('oas-avatar', { src: PNG_1PX, size: '40' }),
+    renderToString('oas-avatar-group', { max: '3' }),
+    renderToString('oas-image', { src: PNG_1PX, preview: '', alt: '示例图' }),
+    renderToString('oas-qrcode', { value: 'https://oas-ui.dev', size: '96' }),
+    renderToString('oas-watermark', { text: '内部资料' }, '<div>水印覆盖内容</div>'),
+    renderToString('oas-collapse', { active: 'a' }),
+    renderToString('oas-collapse-item', { header: '面板标题' }),
+    renderToString('oas-descriptions', { title: '基本信息' }),
+    renderToString('oas-descriptions-item', { label: '姓名' }),
+    // timeline-item 独立实例必须在 timeline 之前：oas-timeline 的 light DOM 里含内嵌
+    // oas-timeline-item（无 DSD），querySelector('oas-timeline-item') 命中首个会拿到它
+    renderToString('oas-timeline-item', { time: '2024-02-01' }, '<p>独立节点</p>'),
+    renderToString(
+      'oas-timeline',
+      {},
+      '<oas-timeline-item time="2024-01-01"><p>事件一</p></oas-timeline-item>',
+    ),
+    renderToString('oas-list', { bordered: '' }),
+    renderToString('oas-list-item', { title: '标题' }),
+    // carousel 用 arrows=always：默认 hover 态箭头 pointer-events:none（需悬停宿主才可点），e2e 点击不可靠
+    renderToString(
+      'oas-carousel',
+      { index: '0', arrows: 'always' },
+      '<div class="slide">一</div><div class="slide">二</div><div class="slide">三</div>',
+    ),
+    renderToString('oas-statistic', { value: '12345', prefix: '¥', suffix: '元' }, '', {
+      locale: 'zh-CN',
+    }),
+    renderToString('oas-countdown', { value: '3600000', format: 'HH:mm:ss' }),
+    renderToString('oas-chart', { type: 'bar', data: CHART_DATA }, '', { locale: 'zh-CN' }),
+    renderToString(
+      'oas-code',
+      { code: 'const a = 1\nconsole.log(a)', language: 'js', 'show-line-number': '' },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString('oas-equation', { code: 'x^2 + \\frac{1}{2}' }),
+    renderToString('oas-log', { lines: '["第一行","第二行"]', 'line-number': '' }, '', {
+      locale: 'zh-CN',
+    }),
+    renderToString(
+      'oas-masonry',
+      { columns: '3', gap: '12' },
+      '<div>卡一</div><div>卡二</div><div>卡三</div>',
+    ),
+    renderToString(
+      'oas-comment',
+      {},
+      '<span slot="author">张三</span><span slot="time">2024-01-01</span><div slot="content">评论内容</div>',
+    ),
+    renderToString('oas-marquee', { speed: '20' }, '<span>公告内容</span>'),
+    renderToString('oas-number-animation', { value: '9527', duration: '0' }),
+    renderToString('oas-gradient-text', { gradient: '["#0b6cff","#52c41a"]' }, '渐变文字'),
+    renderToString(
+      'oas-aspect-ratio',
+      { ratio: '16/9' },
+      '<div style="background: var(--oas-color-bg-hover); height: 100%">比例容器</div>',
+    ),
+    renderToString('oas-virtual-list', { height: '100', 'item-height': '20', items: VL_ITEMS }),
+  ])
+
   dsdHtml = `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -314,6 +404,7 @@ ${[
   select,
   ...formSnaps,
   ...feedbackSnaps,
+  ...dataSnaps,
 ].join('\n')}
 </body>
 </html>`
@@ -330,10 +421,13 @@ async function openPage(page: Page): Promise<void> {
 /** 注入 ui bundle 并等待白名单组件全部 upgrade */
 async function upgradeUi(page: Page): Promise<void> {
   await page.addScriptTag({ path: UI_BUNDLE, type: 'module' })
-  await page.evaluate(async (tags) => {
-    const w = window as Window & { customElements: CustomElementRegistry }
-    await Promise.all(tags.map((t) => w.customElements.whenDefined(t)))
-  }, [...WHITELIST])
+  await page.evaluate(
+    async (tags) => {
+      const w = window as Window & { customElements: CustomElementRegistry }
+      await Promise.all(tags.map((t) => w.customElements.whenDefined(t)))
+    },
+    [...WHITELIST],
+  )
   await page.waitForTimeout(300)
 }
 
@@ -342,17 +436,20 @@ function layoutOf(
   page: Page,
   tags: readonly string[],
 ): Promise<Record<string, { x: number; y: number; w: number; h: number }>> {
-  return page.evaluate((tagList) => {
-    const round2 = (n: number): number => Math.round(n * 100) / 100
-    const out: Record<string, { x: number; y: number; w: number; h: number }> = {}
-    for (const t of tagList) {
-      const el = document.querySelector(t)
-      if (!el) continue
-      const r = el.getBoundingClientRect()
-      out[t] = { x: round2(r.x), y: round2(r.y), w: round2(r.width), h: round2(r.height) }
-    }
-    return out
-  }, [...tags])
+  return page.evaluate(
+    (tagList) => {
+      const round2 = (n: number): number => Math.round(n * 100) / 100
+      const out: Record<string, { x: number; y: number; w: number; h: number }> = {}
+      for (const t of tagList) {
+        const el = document.querySelector(t)
+        if (!el) continue
+        const r = el.getBoundingClientRect()
+        out[t] = { x: round2(r.x), y: round2(r.y), w: round2(r.width), h: round2(r.height) }
+      }
+      return out
+    },
+    [...tags],
+  )
 }
 
 /**
@@ -375,14 +472,17 @@ test('禁 JS 可视：DSD 快照解析即附加 shadow root 并渲染关键结�
   await openPage(page)
 
   // 无 JS、无 bundle：shadow root 已由 declarative shadow DOM 解析附加
-  const shadowReady = await page.evaluate((tags) => {
-    const out: Record<string, boolean> = {}
-    for (const t of tags) {
-      const el = document.querySelector(t)
-      out[t] = el !== null && el.shadowRoot !== null
-    }
-    return out
-  }, [...WHITELIST])
+  const shadowReady = await page.evaluate(
+    (tags) => {
+      const out: Record<string, boolean> = {}
+      for (const t of tags) {
+        const el = document.querySelector(t)
+        out[t] = el !== null && el.shadowRoot !== null
+      }
+      return out
+    },
+    [...WHITELIST],
+  )
   for (const t of WHITELIST) {
     expect(shadowReady[t], `${t} 的 shadow root 应已附加`).toBe(true)
   }
@@ -412,7 +512,9 @@ test('禁 JS 可视：DSD 快照解析即附加 shadow root 并渲染关键结�
   // （此前 fixture 缺 theme CSS，按钮灰黑无字色、tag 无胶囊样式——token 解析失败回落到透明。）
   const colors = await page.evaluate(() => {
     const root = getComputedStyle(document.documentElement)
-    const btn = document.querySelector('oas-button')?.shadowRoot?.querySelector('button[part="button"]')
+    const btn = document
+      .querySelector('oas-button')
+      ?.shadowRoot?.querySelector('button[part="button"]')
     const tag = document.querySelector('oas-tag')?.shadowRoot?.querySelector('.tag')
     const btnBg = btn ? getComputedStyle(btn).backgroundColor : ''
     const tagColor = tag ? getComputedStyle(tag).color : ''
@@ -472,18 +574,21 @@ test('真水合：upgrade 后 shadow 未被重建（style DOM 引用保持同一
   await page.screenshot({ path: SCREENSHOT.beforeUpgrade, fullPage: true })
 
   // upgrade 前：确认指纹 meta 存在，并保存 shadow 内 style 元素的 DOM 引用（跨 evaluate 保留）
-  const preMeta = await page.evaluate((tags) => {
-    const w = window as unknown as Window & { __ssrStyleRef: Record<string, Element | null> }
-    w.__ssrStyleRef = {}
-    const out: Record<string, boolean> = {}
-    for (const t of tags) {
-      const shadow = document.querySelector(t)?.shadowRoot
-      if (!shadow) continue
-      w.__ssrStyleRef[t] = shadow.querySelector('style')
-      out[t] = shadow.querySelector('meta[data-oas-ssr]') !== null
-    }
-    return out
-  }, [...WHITELIST])
+  const preMeta = await page.evaluate(
+    (tags) => {
+      const w = window as unknown as Window & { __ssrStyleRef: Record<string, Element | null> }
+      w.__ssrStyleRef = {}
+      const out: Record<string, boolean> = {}
+      for (const t of tags) {
+        const shadow = document.querySelector(t)?.shadowRoot
+        if (!shadow) continue
+        w.__ssrStyleRef[t] = shadow.querySelector('style')
+        out[t] = shadow.querySelector('meta[data-oas-ssr]') !== null
+      }
+      return out
+    },
+    [...WHITELIST],
+  )
   for (const t of WHITELIST) {
     expect(preMeta[t], `${t} 水合前 shadow 应含指纹 meta`).toBe(true)
   }
@@ -492,18 +597,21 @@ test('真水合：upgrade 后 shadow 未被重建（style DOM 引用保持同一
 
   // upgrade 后：style 仍是同一对象（真水合决定性证据，此前重建路径会产生新元素）+
   // 指纹 meta 已移除（hydrate 成功后清理，防二次误判）
-  const postHydrate = await page.evaluate((tags) => {
-    const w = window as unknown as Window & { __ssrStyleRef: Record<string, Element | null> }
-    const out: Record<string, { sameStyle: boolean; metaRemoved: boolean }> = {}
-    for (const t of tags) {
-      const shadow = document.querySelector(t)?.shadowRoot
-      out[t] = {
-        sameStyle: shadow?.querySelector('style') === w.__ssrStyleRef[t],
-        metaRemoved: shadow?.querySelector('meta[data-oas-ssr]') === null,
+  const postHydrate = await page.evaluate(
+    (tags) => {
+      const w = window as unknown as Window & { __ssrStyleRef: Record<string, Element | null> }
+      const out: Record<string, { sameStyle: boolean; metaRemoved: boolean }> = {}
+      for (const t of tags) {
+        const shadow = document.querySelector(t)?.shadowRoot
+        out[t] = {
+          sameStyle: shadow?.querySelector('style') === w.__ssrStyleRef[t],
+          metaRemoved: shadow?.querySelector('meta[data-oas-ssr]') === null,
+        }
       }
-    }
-    return out
-  }, [...WHITELIST])
+      return out
+    },
+    [...WHITELIST],
+  )
   for (const t of WHITELIST) {
     expect(postHydrate[t]!.sameStyle, `${t} 真水合：style 应保持同一 DOM 对象`).toBe(true)
     expect(postHydrate[t]!.metaRemoved, `${t} 指纹 meta 应被移除`).toBe(true)
@@ -528,7 +636,9 @@ test('事件可触发且无重复绑定：upgrade 后逐次点击 oas-button，o
   })
 
   const clickCount = (): Promise<number> =>
-    page.evaluate(() => (window as unknown as Window & { __oasClicks: unknown[] }).__oasClicks.length)
+    page.evaluate(
+      () => (window as unknown as Window & { __oasClicks: unknown[] }).__oasClicks.length,
+    )
 
   // 真实鼠标点击 shadow 内的 button（Playwright locator 自动穿透 open shadow root）。
   // 双击两次各恰好派发一次：若事件被重复绑定，第一次点击就会累计 >1 而 poll 永不等于目标值。
@@ -547,18 +657,26 @@ test('表单组件事件可触发：upgrade 后 oas-input 输入 / oas-switch �
   await page.evaluate(() => {
     const w = window as unknown as Window & { __formEvents: Record<string, unknown[]> }
     w.__formEvents = { input: [], switch: [], tg: [], cb: [] }
-    document.querySelector('oas-input')?.addEventListener('oas-input', (e: Event) =>
-      w.__formEvents.input!.push((e as CustomEvent).detail),
-    )
-    document.querySelector('oas-switch')?.addEventListener('oas-change', (e: Event) =>
-      w.__formEvents.switch!.push((e as CustomEvent).detail),
-    )
-    document.querySelector('oas-toggle-group')?.addEventListener('oas-change', (e: Event) =>
-      w.__formEvents.tg!.push((e as CustomEvent).detail),
-    )
-    document.querySelector('oas-checkbox')?.addEventListener('oas-change', (e: Event) =>
-      w.__formEvents.cb!.push((e as CustomEvent).detail),
-    )
+    document
+      .querySelector('oas-input')
+      ?.addEventListener('oas-input', (e: Event) =>
+        w.__formEvents.input!.push((e as CustomEvent).detail),
+      )
+    document
+      .querySelector('oas-switch')
+      ?.addEventListener('oas-change', (e: Event) =>
+        w.__formEvents.switch!.push((e as CustomEvent).detail),
+      )
+    document
+      .querySelector('oas-toggle-group')
+      ?.addEventListener('oas-change', (e: Event) =>
+        w.__formEvents.tg!.push((e as CustomEvent).detail),
+      )
+    document
+      .querySelector('oas-checkbox')
+      ?.addEventListener('oas-change', (e: Event) =>
+        w.__formEvents.cb!.push((e as CustomEvent).detail),
+      )
   })
 
   // oas-input：输入框聚焦后敲字 → oas-input 派发（fixture 中 oas-input 多处出现，取首个独立实例）
@@ -569,7 +687,9 @@ test('表单组件事件可触发：upgrade 后 oas-input 输入 / oas-switch �
   await expect
     .poll(() =>
       page.evaluate(
-        () => (window as unknown as Window & { __formEvents: Record<string, unknown[]> }).__formEvents.input,
+        () =>
+          (window as unknown as Window & { __formEvents: Record<string, unknown[]> }).__formEvents
+            .input,
       ),
     )
     .not.toEqual([])
@@ -579,11 +699,16 @@ test('表单组件事件可触发：upgrade 后 oas-input 输入 / oas-switch �
   await expect
     .poll(() =>
       page.evaluate(
-        () => (window as unknown as Window & { __formEvents: Record<string, unknown[]> }).__formEvents.switch,
+        () =>
+          (window as unknown as Window & { __formEvents: Record<string, unknown[]> }).__formEvents
+            .switch,
       ),
     )
     .toEqual([{ checked: false }])
-  await expect(page.locator('oas-switch').first().locator('button')).toHaveAttribute('aria-checked', 'false')
+  await expect(page.locator('oas-switch').first().locator('button')).toHaveAttribute(
+    'aria-checked',
+    'false',
+  )
 
   // oas-toggle-group：点击「周」→ value=week
   await page.locator('oas-toggle-group [part="item"]').nth(1).click()
@@ -594,7 +719,9 @@ test('表单组件事件可触发：upgrade 后 oas-input 输入 / oas-switch �
   await expect
     .poll(() =>
       page.evaluate(
-        () => (window as unknown as Window & { __formEvents: Record<string, unknown[]> }).__formEvents.cb,
+        () =>
+          (window as unknown as Window & { __formEvents: Record<string, unknown[]> }).__formEvents
+            .cb,
       ),
     )
     .not.toEqual([])
@@ -614,9 +741,15 @@ test('反馈组件事件可触发：upgrade 后 oas-popconfirm 触发按钮切�
   })
   // 触发按钮在 light DOM（> 子选择器不穿透 shadow，避免命中气泡内的 ok/cancel）
   await page.locator('oas-popconfirm > button[type="button"]').click()
-  await expect(page.locator('oas-popconfirm [part="popover"]')).toHaveAttribute('aria-hidden', 'false')
+  await expect(page.locator('oas-popconfirm [part="popover"]')).toHaveAttribute(
+    'aria-hidden',
+    'false',
+  )
   await page.locator('oas-popconfirm [part="ok"]').click()
-  await expect(page.locator('oas-popconfirm [part="popover"]')).toHaveAttribute('aria-hidden', 'true')
+  await expect(page.locator('oas-popconfirm [part="popover"]')).toHaveAttribute(
+    'aria-hidden',
+    'true',
+  )
   await expect
     .poll(() => page.evaluate(() => (window as unknown as Window & { __pcOk: number }).__pcOk))
     .toBe(1)
@@ -630,8 +763,66 @@ test('反馈组件事件可触发：upgrade 后 oas-popconfirm 触发按钮切�
   await page.locator('oas-alert [part="close"]').click()
   await expect(page.locator('oas-alert').first()).toBeHidden()
   await expect
-    .poll(() => page.evaluate(() => (window as unknown as Window & { __alertClose: number }).__alertClose))
+    .poll(() =>
+      page.evaluate(() => (window as unknown as Window & { __alertClose: number }).__alertClose),
+    )
     .toBe(1)
+})
+
+test('数据展示组件事件可触发：upgrade 后 oas-carousel 切换 / oas-image 打开预览 / oas-countdown 走时', async ({
+  page,
+}) => {
+  await openPage(page)
+  await upgradeUi(page)
+
+  // oas-carousel：点击 next 箭头 → index=1 + 指示器 aria-current 切换（可见反馈）
+  await page.evaluate(() => {
+    const w = window as unknown as Window & { __carouselChange: unknown[] }
+    w.__carouselChange = []
+    document
+      .querySelector('oas-carousel')
+      ?.addEventListener('oas-change', (e: Event) =>
+        w.__carouselChange.push((e as CustomEvent).detail),
+      )
+  })
+  await page.locator('oas-carousel [part="arrow-next"]').click()
+  await expect(page.locator('oas-carousel').first()).toHaveAttribute('index', '1')
+  await expect(page.locator('oas-carousel [part="dot"]').nth(1)).toHaveAttribute(
+    'aria-current',
+    'true',
+  )
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as unknown as Window & { __carouselChange: unknown[] }).__carouselChange,
+      ),
+    )
+    .toEqual([{ index: 1 }])
+
+  // oas-image：点击主图 → 预览浮层可见（part=preview-mask 移除 hidden）+ oas-preview
+  await page.evaluate(() => {
+    const w = window as unknown as Window & { __imgPreview: number }
+    w.__imgPreview = 0
+    document.querySelector('oas-image')?.addEventListener('oas-preview', () => w.__imgPreview++)
+  })
+  await page.locator('oas-image .previewable').click()
+  await expect(page.locator('oas-image [part="preview-mask"]')).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as unknown as Window & { __imgPreview: number }).__imgPreview),
+    )
+    .toBe(1)
+  // Esc 关闭还原
+  await page.keyboard.press('Escape')
+  await expect(page.locator('oas-image [part="preview-mask"]')).toBeHidden()
+
+  // oas-countdown：走时递减（读初始值后等待，值不再相等；格式恒为 HH:mm:ss）
+  const initial = await page.locator('oas-countdown [part="display"]').first().textContent()
+  expect(initial).toMatch(/^\d{2}:\d{2}:\d{2}$/)
+  await page.waitForTimeout(1300)
+  await expect
+    .poll(async () => page.locator('oas-countdown [part="display"]').first().textContent())
+    .not.toBe(initial)
 })
 
 test('渲染器边界：非白名单抛错、快照属性完整 HTML 转义、快照含真水合指纹', async () => {
@@ -667,7 +858,9 @@ test('渲染器边界：非白名单抛错、快照属性完整 HTML 转义、�
  *    scroll-area 垂直轨道可见。
  * 另断言水合接管成功：shadow 未重建（style 引用保持）、指纹 meta 已移除、console 零 error。
  */
-test('测量组件闪动治理：affix/ellipsis/scroll-area upgrade 首帧与快照一致、rAF 后按真实布局校正', async ({ page }) => {
+test('测量组件闪动治理：affix/ellipsis/scroll-area upgrade 首帧与快照一致、rAF 后按真实布局校正', async ({
+  page,
+}) => {
   const pageErrors: string[] = []
   const consoleErrors: string[] = []
   page.on('pageerror', (e) => pageErrors.push(e.message))

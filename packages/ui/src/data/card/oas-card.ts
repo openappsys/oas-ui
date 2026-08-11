@@ -9,6 +9,9 @@ const STYLE = `
   border-radius: var(--oas-radius-lg);
   color: var(--oas-color-text-primary);
 }
+:host([hidden]) {
+  display: none;
+}
 .card.hoverable {
   transition: box-shadow var(--oas-transition-base) var(--oas-ease-out);
 }
@@ -41,8 +44,9 @@ export class OASCard extends OASElement {
     return ['title', 'hoverable']
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="card" part="card">
         <div class="header" part="header">
@@ -52,7 +56,24 @@ export class OASCard extends OASElement {
         <div class="body" part="body"><slot></slot></div>
       </div>
     `
+  }
+
+  /** 缓存节点引用（render 与水合路径共用） */
+  private bind(): void {
+    /* card 无事件绑定，bind 保持为空（结构校验在 hydrate 中完成） */
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（card 骨架存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('[part="card"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

@@ -47,6 +47,9 @@ const STYLE = `
   color: var(--oas-color-text-primary);
   font-size: var(--oas-font-size-md);
 }
+:host([hidden]) {
+  display: none;
+}
 [part='wrapper'] {
   display: block;
 }
@@ -204,8 +207,9 @@ export class OASChart extends OASElement {
     if (this.isConnected) this.update()
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="wrapper" part="wrapper" role="img" aria-label="">
         <svg class="chart" part="chart" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="presentation" focusable="false"></svg>
@@ -213,7 +217,22 @@ export class OASChart extends OASElement {
         <div class="empty" part="empty" hidden></div>
       </div>
     `
+  }
+
+  /** 缓存节点引用（render 与水合路径共用；chart 无事件绑定，图形渲染由 update 驱动） */
+  private bind(): void {}
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（svg 骨架存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('svg')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {
@@ -369,7 +388,9 @@ export class OASChart extends OASElement {
     // 堆叠基准：每分类各系列之和的最大值
     const stackMax = Math.max(
       0,
-      ...data.labels.map((_, i) => data.series.reduce((acc, s) => acc + Math.max(0, s.data[i] ?? 0), 0)),
+      ...data.labels.map((_, i) =>
+        data.series.reduce((acc, s) => acc + Math.max(0, s.data[i] ?? 0), 0),
+      ),
     )
     const ticks = this.niceTicks(stackMax)
     const bandW = plotW / n
@@ -463,7 +484,10 @@ export class OASChart extends OASElement {
   }
 
   /** 水平网格线 + y 轴刻度文字 */
-  private renderGrid(ticks: { max: number; step: number; values: number[] }, plotH: number): string {
+  private renderGrid(
+    ticks: { max: number; step: number; values: number[] },
+    plotH: number,
+  ): string {
     let out = ''
     const lines = 5
     for (let i = 0; i < lines; i++) {
@@ -571,9 +595,7 @@ export class OASChart extends OASElement {
     }
     if (parsed && typeof parsed === 'object') {
       const obj = parsed as Record<string, unknown>
-      const labels = Array.isArray(obj.labels)
-        ? obj.labels.map((l) => String(l))
-        : []
+      const labels = Array.isArray(obj.labels) ? obj.labels.map((l) => String(l)) : []
       const series = Array.isArray(obj.series)
         ? obj.series
             .map((s): ChartSeries | null => {
@@ -618,10 +640,7 @@ export class OASChart extends OASElement {
   }
 
   private escapeText(text: string): string {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   }
 
   private escapeAttr(text: string): string {

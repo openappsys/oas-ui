@@ -210,8 +210,8 @@ into the SSR output stream and the browser parser attaches the DSD templates.
 ### Whitelist and boundaries
 
 - Whitelist (pure-presentation components, declarative-data components, the
-  layout-measuring pilot, form components batch 1, and feedback components
-  batch 2): `oas-button`, `oas-tag`,
+  layout-measuring pilot, form components batch 1, feedback components
+  batch 2, and data-display components batch 3): `oas-button`, `oas-tag`,
   `oas-empty`, `oas-divider`, `oas-text`, `oas-title`, `oas-paragraph`,
   `oas-table`, `oas-affix`, `oas-ellipsis`, `oas-scroll-area`, `oas-tree`,
   `oas-select`, `oas-input`, `oas-textarea`, `oas-checkbox`,
@@ -223,7 +223,14 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   `oas-pin-input`, `oas-dynamic-input`, `oas-dynamic-tags`, `oas-editable`,
   `oas-form`, `oas-form-item`, `oas-alert`, `oas-progress`, `oas-spin`,
   `oas-skeleton`, `oas-result`, `oas-backdrop`, `oas-modal`, `oas-drawer`,
-  `oas-popconfirm`.
+  `oas-popconfirm`, `oas-card`, `oas-avatar`, `oas-avatar-group`,
+  `oas-image`, `oas-qrcode`, `oas-watermark`, `oas-collapse`,
+  `oas-collapse-item`, `oas-descriptions`, `oas-descriptions-item`,
+  `oas-timeline`, `oas-timeline-item`, `oas-list`, `oas-list-item`,
+  `oas-carousel`, `oas-statistic`, `oas-countdown`, `oas-chart`, `oas-code`,
+  `oas-equation`, `oas-log`, `oas-masonry`, `oas-comment`, `oas-marquee`,
+  `oas-number-animation`, `oas-gradient-text`, `oas-aspect-ratio`,
+  `oas-virtual-list`.
 - Calling `renderToString` with a non-whitelisted tag throws an explicit error;
   there is no silent fallback.
 - The imperative components (message / notification / toast / snackbar /
@@ -243,6 +250,24 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   browser opens it on interaction after upgrade); upload snapshots the empty
   list; the textarea autosize height is the un-measured state (corrected on the
   first frame after hydration via rAF).
+- Data-display components batch 3: pure-presentation components
+  (card / avatar / qrcode / watermark / descriptions / statistic / masonry /
+  comment / gradient-text / aspect-ratio and the sub-components collapse-item /
+  descriptions-item / timeline-item / list-item) snapshot the full visuals;
+  chart / code / equation are synchronous deterministic renders (SVG paths,
+  regex highlighting, and the LaTeX subset are pure computation — no canvas and
+  no async work), so the snapshot carries the complete graphics and
+  highlighting; dynamic components (carousel / countdown / number-animation /
+  marquee) snapshot the initial frame / initial value (carousel syncs the
+  transform and indicators from `index`, countdown renders the full initial
+  value, number-animation renders the target when `duration=0` or the initial
+  value otherwise) and the browser takes over animation and timers after
+  upgrade; virtual-list snapshots the first-screen window rows at `scrollTop=0`
+  plus top/bottom padding placeholders (the window is computed purely from
+  `height` / `item-height` / `buffer` attributes, not scroll measurement), and
+  the window recomputed from the same attributes after upgrade is identical;
+  log adopts the snapshot rows incrementally and marquee re-syncs its clone
+  group idempotently — neither duplicates DOM.
 - The snapshots of the layout-measuring components
   (affix / ellipsis / scroll-area) are the un-measured state (happy-dom reports
   all-zero layout), the first frame after upgrade matches the snapshot, and the

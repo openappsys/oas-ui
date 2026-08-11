@@ -34,6 +34,9 @@ const STYLE = `
   color: var(--oas-color-text-primary);
   font-variant-numeric: tabular-nums;
 }
+:host([hidden]) {
+  display: none;
+}
 [part='display'] {
   line-height: 1;
 }
@@ -51,15 +54,33 @@ export class OASCountdown extends OASElement {
   /** 刚重置后的完整值：首次 tick 前保持整值显示，避免 endAt-Date.now() 毫秒漂移少 1 秒 */
   private pendingStart: number | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <span class="display" part="display" aria-live="off"></span>
     `
+  }
+
+  /** 缓存节点引用 + 注册清理（render 与水合路径共用；countdown 无交互事件，仅定时器） */
+  private bind(): void {
     this.onCleanup(() => {
       if (this.timer) clearInterval(this.timer)
+      this.timer = null
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（display 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('[part="display"]')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {
@@ -83,7 +104,7 @@ export class OASCountdown extends OASElement {
     if (!el) return
     const remaining = this.finished
       ? 0
-      : this.pendingStart ?? Math.max(0, this.endAt - Date.now())
+      : (this.pendingStart ?? Math.max(0, this.endAt - Date.now()))
     el.textContent = formatDuration(remaining, this.getAttr('format', 'HH:mm:ss'))
   }
 

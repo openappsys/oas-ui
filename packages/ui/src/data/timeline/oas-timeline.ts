@@ -8,6 +8,9 @@ const STYLE = `
   color: var(--oas-color-text-primary);
   font-size: var(--oas-font-size-md);
 }
+:host([hidden]) {
+  display: none;
+}
 .item {
   position: relative;
   padding-left: var(--oas-space-5);
@@ -76,12 +79,28 @@ const STYLE = `
 `
 
 export class OASTimeline extends OASElement {
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="timeline" part="timeline"></div>
     `
+  }
+
+  /** 缓存节点引用（render 与水合路径共用；timeline 无事件绑定，行渲染由 update 驱动） */
+  private bind(): void {}
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（timeline 容器存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.timeline')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

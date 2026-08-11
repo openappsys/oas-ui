@@ -8,6 +8,9 @@ const STYLE = `
   font-family: inherit;
   color: var(--oas-color-text-primary);
 }
+:host([hidden]) {
+  display: none;
+}
 .track {
   display: flex;
   width: max-content;
@@ -64,19 +67,36 @@ export class OASMarquee extends OASElement {
     return ['speed', 'pause-on-hover']
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="track" part="track">
         <div class="group" part="group"><slot></slot></div>
         <div class="group clone" part="group" aria-hidden="true"></div>
       </div>
     `
-    this.shadow
-      .querySelector('slot')
-      ?.addEventListener('slotchange', () => this.syncClone())
+  }
+
+  /** 缓存节点引用 + 绑定事件（render 与水合路径共用；克隆组同步由 syncClone 幂等处理） */
+  private bind(): void {
+    this.shadow.querySelector('slot')?.addEventListener('slotchange', () => this.syncClone())
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.syncClone()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（track 骨架存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.track')) return false
+    this.bind()
+    // 克隆组按当前 light DOM 重同步（幂等：先清空再按 childNodes 克隆，保证与快照一致）
+    this.syncClone()
+    return true
   }
 
   protected override update(): void {
