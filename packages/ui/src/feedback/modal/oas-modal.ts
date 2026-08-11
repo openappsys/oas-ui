@@ -85,7 +85,7 @@ const STYLE = `
 .btn[part='ok'] {
   background: var(--oas-color-primary);
   border-color: var(--oas-color-primary);
-  color: #fff;
+  color: var(--oas-color-text-on-primary);
 }
 `
 

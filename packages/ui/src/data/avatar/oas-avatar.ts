@@ -7,7 +7,7 @@ const STYLE = `
   justify-content: center;
   border-radius: 50%;
   background: var(--oas-color-primary);
-  color: #fff;
+  color: var(--oas-color-text-on-primary);
   font-family: inherit;
   overflow: hidden;
   flex-shrink: 0;

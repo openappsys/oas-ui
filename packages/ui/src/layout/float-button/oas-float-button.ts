@@ -16,7 +16,7 @@ const STYLE = `
   border-radius: 50%;
   border: none;
   background: var(--oas-color-primary);
-  color: #fff;
+  color: var(--oas-color-text-on-primary);
   font-size: var(--oas-font-size-xl);
   cursor: pointer;
   display: flex;
@@ -36,7 +36,7 @@ const STYLE = `
   height: 18px;
   border-radius: 9px;
   background: var(--oas-color-danger);
-  color: #fff;
+  color: var(--oas-color-text-on-danger);
   font-size: 12px;
   display: flex;
   align-items: center;

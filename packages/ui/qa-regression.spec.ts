@@ -413,3 +413,62 @@ test('pin-input 受控：外部动态切换 aria-invalid 即时同步 danger 边
   expect(r.invalid.border).not.toBe(r.restored.border) // danger 边框 ≠ 默认边框
   expect(r.restored.container).toBe('false')
 })
+
+test('select 展开态 active 选项在暗色主题下文字/背景对比度 ≥ 4.5（on-primary token）', async ({
+  page,
+}) => {
+  // 曾现 bug：.option.active 硬编码 color:#fff，暗色下 primary 变亮（#4d9fff）白字仅 ~2.7:1。
+  // 修复：改用 --oas-color-text-on-primary（暗色为深色文字），回归锁定对比度。
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-select')
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await page.waitForTimeout(200)
+  const sel = page.locator('oas-select').first()
+  await sel.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const s = document.querySelector('oas-select')
+    return s?.shadowRoot?.querySelector('.option.active') != null
+  })
+  const r = await sel.evaluate((el) => {
+    const root = el.shadowRoot!
+    const active = root.querySelector<HTMLElement>('.option.active')!
+    const cs = getComputedStyle(active)
+    const parse = (c: string) => c.match(/\d+/g)!.slice(0, 3).map(Number)
+    const lum = (rgb: number[]) => {
+      const f = (v: number) => {
+        v /= 255
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * f(rgb[0]!) + 0.7152 * f(rgb[1]!) + 0.0722 * f(rgb[2]!)
+    }
+    const a = lum(parse(cs.color))
+    const b = lum(parse(cs.backgroundColor))
+    return {
+      color: cs.color,
+      bg: cs.backgroundColor,
+      ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
+    }
+  })
+  expect(r.ratio, `暗色 active 文字 ${r.color} 落在背景 ${r.bg} 上`).toBeGreaterThanOrEqual(4.5)
+})
+
+test('form-item label 点击聚焦 oas-input 的 shadow 内 input（focus 委托链）', async ({ page }) => {
+  await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-form-item[label] oas-input')
+  const item = page.locator('oas-form-item[label]').first()
+  await item.locator('[part="label"]').click()
+  await page.waitForTimeout(100)
+  const r = await page.evaluate(() => {
+    const item = document.querySelector<HTMLElement>('oas-form-item[label]')!
+    const control = item.querySelector('oas-input')
+    const inner = control?.shadowRoot?.activeElement
+    return {
+      hostFocused: document.activeElement === control,
+      innerTag: inner?.tagName ?? null,
+      sameAsInput: inner === control?.shadowRoot?.querySelector('input'),
+    }
+  })
+  expect(r.hostFocused).toBe(true)
+  expect(r.innerTag).toBe('INPUT')
+  expect(r.sameAsInput).toBe(true)
+})

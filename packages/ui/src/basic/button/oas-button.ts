@@ -81,7 +81,7 @@ button[disabled] {
 button.primary {
   background: var(--oas-color-primary);
   border-color: var(--oas-color-primary);
-  color: #fff;
+  color: var(--oas-color-text-on-primary);
 }
 button.primary:hover {
   background: var(--oas-color-primary-hover);
@@ -94,7 +94,7 @@ button.primary:active {
 button.success {
   background: color-mix(in srgb, var(--oas-color-success) 80%, black);
   border-color: color-mix(in srgb, var(--oas-color-success) 80%, black);
-  color: #fff;
+  color: var(--oas-color-text-on-success);
 }
 button.success:hover {
   filter: brightness(1.08);
@@ -102,7 +102,7 @@ button.success:hover {
 button.warning {
   background: color-mix(in srgb, var(--oas-color-warning) 80%, black);
   border-color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
-  color: #fff;
+  color: var(--oas-color-text-on-warning);
 }
 button.warning:hover {
   filter: brightness(1.08);
@@ -110,7 +110,7 @@ button.warning:hover {
 button.danger {
   background: color-mix(in srgb, var(--oas-color-danger) 80%, black);
   border-color: color-mix(in srgb, var(--oas-color-danger) 80%, black);
-  color: #fff;
+  color: var(--oas-color-text-on-danger);
 }
 button.danger:hover {
   filter: brightness(1.08);

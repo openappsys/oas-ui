@@ -49,7 +49,7 @@ const STYLE = `
   padding: 0 var(--oas-space-1);
   border-radius: 8px;
   background: var(--oas-color-danger);
-  color: #fff;
+  color: var(--oas-color-text-on-danger);
   font-size: var(--oas-font-size-xs);
   line-height: 16px;
   white-space: nowrap;

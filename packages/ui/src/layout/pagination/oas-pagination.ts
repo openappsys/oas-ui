@@ -37,7 +37,7 @@ const STYLE = `
 .page[aria-current='true'] {
   background: var(--oas-color-primary);
   border-color: var(--oas-color-primary);
-  color: #fff;
+  color: var(--oas-color-text-on-primary);
 }
 .ellipsis {
   color: var(--oas-color-text-secondary);

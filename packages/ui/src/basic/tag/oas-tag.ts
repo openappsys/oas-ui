@@ -48,7 +48,7 @@ const STYLE = `
 .tag.primary {
   background: var(--oas-color-primary);
   border-color: var(--oas-color-primary);
-  color: #fff;
+  color: var(--oas-color-text-on-primary);
 }
 .tag.round {
   border-radius: var(--oas-control-height-sm);
@@ -78,7 +78,7 @@ const STYLE = `
 .tag.primary.clickable:hover {
   background: var(--oas-color-primary-hover);
   border-color: var(--oas-color-primary-hover);
-  color: #fff;
+  color: var(--oas-color-text-on-primary);
 }
 .tag.disabled {
   opacity: 0.6;

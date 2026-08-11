@@ -13,6 +13,11 @@
   --oas-color-success: #16a34a;
   --oas-color-warning: #d97706;
   --oas-color-danger: #dc2626;
+  /* 填充色背景上的文字色（实心 primary/success/warning/danger 按钮、激活选项、徽标等） */
+  --oas-color-text-on-primary: #ffffff;
+  --oas-color-text-on-success: #ffffff;
+  --oas-color-text-on-warning: #ffffff;
+  --oas-color-text-on-danger: #ffffff;
   --oas-color-text-primary: #18181b;
   --oas-color-text-secondary: #71717a;
   --oas-color-text-disabled: #a1a1aa;
@@ -80,6 +85,11 @@ html.dark {
   --oas-color-success: #4ade80;
   --oas-color-warning: #fbbf24;
   --oas-color-danger: #f87171;
+  /* 暗色下 primary/success/warning/danger 变亮，白色文字对比不足，改用深色文字保证 ≥4.5:1 */
+  --oas-color-text-on-primary: #18181b;
+  --oas-color-text-on-success: #18181b;
+  --oas-color-text-on-warning: #18181b;
+  --oas-color-text-on-danger: #18181b;
   --oas-color-text-primary: #fafafa;
   --oas-color-text-secondary: #a1a1aa;
   --oas-color-text-disabled: #71717a;
@@ -99,6 +109,11 @@ html.dark {
   --oas-color-success: #006d1b;
   --oas-color-warning: #8c4a00;
   --oas-color-danger: #a8071a;
+  /* 高对比主题保持白字（primary #0050b3 等深色底上对比充足） */
+  --oas-color-text-on-primary: #ffffff;
+  --oas-color-text-on-success: #ffffff;
+  --oas-color-text-on-warning: #ffffff;
+  --oas-color-text-on-danger: #ffffff;
   --oas-color-text-primary: #000000;
   --oas-color-text-secondary: #262626;
   --oas-color-text-disabled: #595959;

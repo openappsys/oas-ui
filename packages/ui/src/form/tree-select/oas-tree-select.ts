@@ -129,7 +129,7 @@ const STYLE = `
   align-items: center;
   justify-content: center;
   flex: none;
-  color: #fff;
+  color: var(--oas-color-text-on-primary);
   font-size: var(--oas-font-size-xs);
 }
 .check.checked {
@@ -415,5 +415,10 @@ export class OASTreeSelect extends OASElement {
       if (item.option.value === value) return item.option.label
     }
     return value
+  }
+
+  /** label 点击聚焦委托：把焦点交给 shadow 内 trigger（配合 oas-form-item 的 label 点击代理） */
+  override focus(options?: FocusOptions): void {
+    this.shadow.querySelector<HTMLButtonElement>('.trigger')?.focus(options)
   }
 }

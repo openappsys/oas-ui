@@ -217,7 +217,7 @@ const STYLE = `
 }
 .option.active {
   background: var(--oas-color-primary);
-  color: #fff;
+  color: var(--oas-color-text-on-primary);
 }
 .option.grouped {
   padding-left: calc(var(--oas-space-3) + var(--oas-space-4));
@@ -730,5 +730,10 @@ export class OASSelect extends OASElement {
       const option = this._options.find((o) => o.value === value)
       valueEl.textContent = option?.label ?? value
     }
+  }
+
+  /** label 点击聚焦委托：把焦点交给 shadow 内 trigger（配合 oas-form-item 的 label 点击代理） */
+  override focus(options?: FocusOptions): void {
+    this.shadow.querySelector<HTMLButtonElement>('.trigger')?.focus(options)
   }
 }
