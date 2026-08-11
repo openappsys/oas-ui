@@ -125,7 +125,7 @@ test.beforeAll(async () => {
   // theme CSS：快照 shadow 内联样式引用 --oas-* token（定义在 @oas-ui/theme 的 :root），
   // 页面必须内联 theme CSS 否则禁 JS 渲染时组件无色（此前缺陷：按钮灰黑无字色、tag 无胶囊样式）。
   // @oas-ui/theme 无构建产物（main 直指 src），直接读源文件。
-  const themeCssPath = join(REPO_ROOT, 'packages', 'theme', 'src', 'index.css')
+  const themeCssPath = join(REPO_ROOT, 'packages', 'theme', 'index.css')
   const themeCss = readFileSync(themeCssPath, 'utf8')
 
   // 测量组件闪动治理（子活 1）：主页面用「不触发校正」的内容保证布局稳定（真水合断言）——

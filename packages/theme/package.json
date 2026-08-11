@@ -13,11 +13,6 @@
     ".": "./index.css"
   },
   "files": [
-    "index.css",
-    "src/index.css"
-  ],
-  "scripts": {
-    "build": "node scripts/build.mjs",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
-  }
+    "index.css"
+  ]
 }
