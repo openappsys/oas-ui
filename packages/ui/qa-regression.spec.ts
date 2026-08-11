@@ -472,3 +472,39 @@ test('form-item label 点击聚焦 oas-input 的 shadow 内 input（focus 委托
   expect(r.innerTag).toBe('INPUT')
   expect(r.sameAsInput).toBe(true)
 })
+
+test('size 五档：button/tag/switch 在 demo 中渲染对应 size class（不静默吞值）', async ({ page }) => {
+  const SIZES = ['xs', 'small', 'medium', 'large', 'xl']
+  // button：shadow button 应带对应 size class
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button')
+  const buttonSizes = await page.evaluate((list) => {
+    return list.map((s) => {
+      const el = document.querySelector(`oas-button[size="${s}"]`)
+      return el?.shadowRoot?.querySelector('button')?.classList.contains(s) ?? false
+    })
+  }, SIZES)
+  expect(buttonSizes).toEqual([true, true, true, true, true])
+
+  // tag：.tag 应带对应 size class
+  await page.goto('/components/tag.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tag')
+  const tagSizes = await page.evaluate((list) => {
+    return list.map((s) => {
+      const el = document.querySelector(`oas-tag[size="${s}"]`)
+      return el?.shadowRoot?.querySelector('.tag')?.classList.contains(s) ?? false
+    })
+  }, SIZES)
+  expect(tagSizes).toEqual([true, true, true, true, true])
+
+  // switch：shadow button className 应等于对应 size（白名单修复：不再吞掉 xs/xl）
+  await page.goto('/components/switch.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-switch')
+  const switchSizes = await page.evaluate((list) => {
+    return list.map((s) => {
+      const el = document.querySelector(`oas-switch[size="${s}"]`)
+      return el?.shadowRoot?.querySelector('button')?.className ?? null
+    })
+  }, SIZES)
+  expect(switchSizes).toEqual(['xs', 'small', 'medium', 'large', 'xl'])
+})

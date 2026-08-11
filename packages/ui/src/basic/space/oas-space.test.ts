@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASSpace } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASSpace {
@@ -21,7 +21,7 @@ describe('OASSpace', () => {
     const el = mount()
     await Promise.resolve()
     expect(el.style.flexDirection).toBe('row')
-    expect(el.style.gap).toBe('12px')
+    expect(el.style.gap).toBe('var(--oas-space-3)')
   })
 
   it('direction=vertical 切换为列布局', () => {
@@ -31,13 +31,38 @@ describe('OASSpace', () => {
 
   it('size 支持 token 名与数字像素', () => {
     const small = mount({ size: 'small' })
-    expect(small.style.gap).toBe('8px')
+    expect(small.style.gap).toBe('var(--oas-space-2)')
     small.remove()
     const large = mount({ size: 'large' })
-    expect(large.style.gap).toBe('24px')
+    expect(large.style.gap).toBe('var(--oas-space-5)')
     large.remove()
     const num = mount({ size: '16' })
     expect(num.style.gap).toBe('16px')
+  })
+
+  it('size 五档：xs=space-1/small=space-2/medium=space-3/large=space-5/xl=space-6', () => {
+    const map: Array<[string, string]> = [
+      ['xs', 'var(--oas-space-1)'],
+      ['small', 'var(--oas-space-2)'],
+      ['medium', 'var(--oas-space-3)'],
+      ['large', 'var(--oas-space-5)'],
+      ['xl', 'var(--oas-space-6)'],
+    ]
+    for (const [size, gap] of map) {
+      const el = mount({ size })
+      expect(el.style.gap, `size=${size}`).toBe(gap)
+      el.remove()
+    }
+  })
+
+  it('size 非法值回落 medium 且 dev 下 console.warn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ size: 'huge' })
+    expect(el.style.gap).toBe('var(--oas-space-3)')
+    el.setAttribute('size', 'huge')
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+    el.remove()
   })
 
   it('wrap 控制 flex-wrap', () => {
@@ -55,6 +80,6 @@ describe('OASSpace', () => {
     el.setAttribute('direction', 'vertical')
     el.setAttribute('size', 'large')
     expect(el.style.flexDirection).toBe('column')
-    expect(el.style.gap).toBe('24px')
+    expect(el.style.gap).toBe('var(--oas-space-5)')
   })
 })

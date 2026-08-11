@@ -24,6 +24,36 @@
 
 ## 尺寸与换行
 
+`size` 支持 `xs`（4px）/ `small`（8px）/ `medium`（12px，默认）/ `large`（24px）/ `xl`（32px）五档，或直接写数字像素；非法值回落 `medium` 并提示告警。
+
+<DemoBlock title="五种间距">
+  <oas-space size="xs">
+    <oas-tag>xs 4px</oas-tag>
+    <oas-tag>标签</oas-tag>
+    <oas-tag>标签</oas-tag>
+  </oas-space>
+  <oas-space size="small">
+    <oas-tag>small 8px</oas-tag>
+    <oas-tag>标签</oas-tag>
+    <oas-tag>标签</oas-tag>
+  </oas-space>
+  <oas-space size="medium">
+    <oas-tag>medium 12px</oas-tag>
+    <oas-tag>标签</oas-tag>
+    <oas-tag>标签</oas-tag>
+  </oas-space>
+  <oas-space size="large">
+    <oas-tag>large 24px</oas-tag>
+    <oas-tag>标签</oas-tag>
+    <oas-tag>标签</oas-tag>
+  </oas-space>
+  <oas-space size="xl">
+    <oas-tag>xl 32px</oas-tag>
+    <oas-tag>标签</oas-tag>
+    <oas-tag>标签</oas-tag>
+  </oas-space>
+</DemoBlock>
+
 <DemoBlock title="大间距与换行">
   <oas-space size="large" wrap>
     <oas-button>按钮 1</oas-button>
@@ -55,7 +85,7 @@
 | --- | --- | --- | --- |
 | `align` | 对齐 | `string` | — |
 | `direction` | 方向 | `SpaceDirection` | `horizontal` |
-| `size` | 间距 | `string` | `medium` |
+| `size` | 间距：`xs`（4px）/ `small`（8px）/ `medium`（12px，默认）/ `large`（24px）/ `xl`（32px），或数字像素；非法值回落 `medium` 并告警 | `string` | `medium` |
 | `wrap` | 是否换行 | `boolean` | — |
 
 ### 插槽

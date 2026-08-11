@@ -17,10 +17,14 @@
 
 <DemoBlock title="圆角与尺寸">
   <oas-tag round type="primary">胶囊标签</oas-tag>
+  <oas-tag size="xs">超小</oas-tag>
   <oas-tag size="small">小号</oas-tag>
   <oas-tag size="medium">中号</oas-tag>
   <oas-tag size="large">大号</oas-tag>
+  <oas-tag size="xl">超大</oas-tag>
 </DemoBlock>
+
+`size` 支持 `xs` / `small` / `medium`（默认）/ `large` / `xl` 五档；非法值回落 `medium` 并提示告警。
 
 ## 可关闭
 
@@ -90,7 +94,7 @@ onMounted(async () => {
 | `closable` | 可关闭 | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `round` | 圆角 | `boolean` | — |
-| `size` | 尺寸 | `TagSize` | `medium` |
+| `size` | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `TagSize` | `medium` |
 | `type` | 类型 | `TagType` | `default` |
 
 ### 事件

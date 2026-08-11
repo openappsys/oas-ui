@@ -14,9 +14,15 @@ const STYLE = `
   border-radius: 50%;
   animation: oas-spin-rotate 0.8s linear infinite;
 }
-.indicator[data-size='sm'] { width: var(--oas-control-height-sm); height: var(--oas-control-height-sm); border-width: 2px; margin: -12px 0 0 -12px; }
-.indicator[data-size='md'] { margin: -16px 0 0 -16px; }
-.indicator[data-size='lg'] { width: var(--oas-control-height-lg); height: var(--oas-control-height-lg); margin: -20px 0 0 -20px; }
+/* 五档尺寸：xs/small/medium/large/xl；旧缩写 sm/md/lg 保留别名兼容（CSS 两组选择器并存） */
+.indicator[data-size='xs'] { width: var(--oas-control-height-xs); height: var(--oas-control-height-xs); border-width: 2px; margin: -10px 0 0 -10px; }
+.indicator[data-size='sm'],
+.indicator[data-size='small'] { width: var(--oas-control-height-sm); height: var(--oas-control-height-sm); border-width: 2px; margin: -12px 0 0 -12px; }
+.indicator[data-size='md'],
+.indicator[data-size='medium'] { margin: -16px 0 0 -16px; }
+.indicator[data-size='lg'],
+.indicator[data-size='large'] { width: var(--oas-control-height-lg); height: var(--oas-control-height-lg); margin: -20px 0 0 -20px; }
+.indicator[data-size='xl'] { width: var(--oas-control-height-xl); height: var(--oas-control-height-xl); margin: -24px 0 0 -24px; }
 .wrap {
   position: relative;
   display: inline-block;
@@ -52,6 +58,22 @@ const STYLE = `
 }
 `
 
+/** 五档 + 旧缩写别名统一归一化为全拼（sm→small、md→medium、lg→large），非法值回落 medium */
+const SPIN_SIZE_ALIASES: Record<string, string> = {
+  xs: 'xs',
+  sm: 'small',
+  small: 'small',
+  md: 'medium',
+  medium: 'medium',
+  lg: 'large',
+  large: 'large',
+  xl: 'xl',
+}
+
+function normalizeSpinSize(raw: string): string {
+  return SPIN_SIZE_ALIASES[raw] ?? SPIN_SIZE_ALIASES.medium!
+}
+
 export class OASSpin extends OASElement {
   static override get observedAttributes(): string[] {
     return ['size', 'spinning']
@@ -63,7 +85,7 @@ export class OASSpin extends OASElement {
       <div class="wrap" part="wrap">
         <div class="mask" part="mask"></div>
         <slot></slot>
-        <span class="indicator" part="indicator" data-size="${this.getAttr('size', 'md')}" role="status"></span>
+        <span class="indicator" part="indicator" data-size="${normalizeSpinSize(this.getAttr('size', 'md'))}" role="status"></span>
       </div>
     `
     this.update()
@@ -84,6 +106,6 @@ export class OASSpin extends OASElement {
     }
     this.shadow
       .querySelector('[part="indicator"]')
-      ?.setAttribute('data-size', this.getAttr('size', 'md'))
+      ?.setAttribute('data-size', normalizeSpinSize(this.getAttr('size', 'md')))
   }
 }

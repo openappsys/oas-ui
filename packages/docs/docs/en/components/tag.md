@@ -17,10 +17,14 @@ A small tag used for marking and categorization.
 
 <DemoBlock title="Radius & size">
   <oas-tag round type="primary">Pill</oas-tag>
+  <oas-tag size="xs">XS</oas-tag>
   <oas-tag size="small">Small</oas-tag>
   <oas-tag size="medium">Medium</oas-tag>
   <oas-tag size="large">Large</oas-tag>
+  <oas-tag size="xl">XL</oas-tag>
 </DemoBlock>
+
+`size` supports five tiers: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning.
 
 ## Closable
 
@@ -90,7 +94,7 @@ The default slot can hold an icon — combining an icon and text forms an icon t
 | `closable` | Closable | `boolean` | — |
 | `disabled` | Disabled (cannot be clicked or closed) | `boolean` | — |
 | `round` | Rounded | `boolean` | — |
-| `size` | Size | `TagSize` | `medium` |
+| `size` | Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning | `TagSize` | `medium` |
 | `type` | Type | `TagType` | `default` |
 
 ### Events

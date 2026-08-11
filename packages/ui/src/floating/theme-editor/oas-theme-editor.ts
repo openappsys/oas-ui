@@ -160,9 +160,11 @@ const DEFAULT_GROUPS: TokenGroup[] = [
     key: 'controlHeight',
     labelKey: 'themeEditor.group.controlHeight',
     tokens: [
+      '--oas-control-height-xs',
       '--oas-control-height-sm',
       '--oas-control-height-md',
       '--oas-control-height-lg',
+      '--oas-control-height-xl',
     ].map((name) => ({ name, type: 'number' as const, min: 16, max: 80, step: 1 })),
   },
 ]

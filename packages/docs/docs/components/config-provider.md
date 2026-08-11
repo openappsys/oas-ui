@@ -22,13 +22,15 @@ config-provider 的 `locale` 就近优先于全局 `setLocale()`：包裹内的�
 
 ## Size 注入
 
-包裹内组件的 `size` 未显式设置时走注入值；自身显式设置了 `size` 的组件仍以自身为准。
+包裹内组件的 `size` 未显式设置时走注入值；自身显式设置了 `size` 的组件仍以自身为准。`size` 支持 `xs` / `small` / `medium`（默认）/ `large` / `xl` 五档。
 
 <DemoBlock title="Size 注入">
   <oas-space>
+    <oas-button type="primary" onclick="setCpSize('xs')">超小</oas-button>
     <oas-button type="primary" onclick="setCpSize('small')">小号</oas-button>
     <oas-button onclick="setCpSize('medium')">中号</oas-button>
     <oas-button onclick="setCpSize('large')">大号</oas-button>
+    <oas-button onclick="setCpSize('xl')">超大</oas-button>
   </oas-space>
   <oas-config-provider id="cp-size" size="medium" style="margin-top: 16px; display: block">
     <oas-space>

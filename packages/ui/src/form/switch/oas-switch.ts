@@ -1,6 +1,19 @@
 import { OASElement } from '@oas-ui/core'
 
-export type SwitchSize = 'small' | 'medium' | 'large'
+export type SwitchSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
+
+const VALID_SWITCH_SIZES: readonly SwitchSize[] = ['xs', 'small', 'medium', 'large', 'xl']
+const warnedSizes = new Set<string>()
+
+/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
+function normalizeSwitchSize(raw: string): SwitchSize {
+  if ((VALID_SWITCH_SIZES as readonly string[]).includes(raw)) return raw as SwitchSize
+  if (!warnedSizes.has(raw)) {
+    warnedSizes.add(raw)
+    console.warn(`[oas-switch] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+  }
+  return 'medium'
+}
 
 const STYLE = `
 :host {
@@ -35,6 +48,13 @@ button {
   background: var(--oas-color-border);
   transition: background var(--oas-transition-base) var(--oas-ease-out);
 }
+button.xs {
+  --track-w: 22px;
+  --track-h: 12px;
+  --thumb-size: 8px;
+  --thumb-travel: 10px;
+  --label-font: var(--oas-font-size-xs);
+}
 button.small {
   --track-w: 28px;
   --track-h: 16px;
@@ -48,6 +68,13 @@ button.large {
   --thumb-size: 24px;
   --thumb-travel: 24px;
   --label-font: var(--oas-font-size-md);
+}
+button.xl {
+  --track-w: 64px;
+  --track-h: 34px;
+  --thumb-size: 28px;
+  --thumb-travel: 32px;
+  --label-font: var(--oas-font-size-lg);
 }
 button[aria-checked='true'] {
   background: var(--oas-color-primary);
@@ -179,15 +206,15 @@ export class OASSwitch extends OASElement {
     btn.setAttribute('aria-checked', String(checked))
     btn.disabled = disabled || loading
 
-    // 尺寸：自身属性 > config-provider 注入 > medium（复用 button 的注入约定）
-    const rawSize = this.injectValue('size', 'medium')
-    const size: SwitchSize = rawSize === 'small' || rawSize === 'large' ? rawSize : 'medium'
+    // 尺寸：自身属性 > config-provider 注入 > medium（复用 button 的注入约定）；
+    // 非法值回落 medium + dev warn（不再静默吞值）
+    const size = normalizeSwitchSize(this.injectValue('size', 'medium'))
     btn.className = size
 
     // 开关文案：开启显示 checked-text，关闭显示 unchecked-text；
-    // small 尺寸时文案放轨道外侧（小轨道塞不下文字），其余尺寸显示在轨道内滑块对侧
+    // xs/small 尺寸时文案放轨道外侧（小轨道塞不下文字），其余尺寸显示在轨道内滑块对侧
     const text = checked ? this.getAttr('checked-text') : this.getAttr('unchecked-text')
-    const showOutside = size === 'small' && text !== ''
+    const showOutside = (size === 'xs' || size === 'small') && text !== ''
     const label = btn.querySelector<HTMLElement>('.label')
     const outside = this.shadow.querySelector<HTMLElement>('.outside-label')
     if (label) {

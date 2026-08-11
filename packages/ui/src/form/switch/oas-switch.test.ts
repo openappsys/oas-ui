@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASSwitch } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASSwitch {
@@ -92,6 +92,36 @@ describe('OASSwitch', () => {
     expect(sw(medium).className).toBe('medium')
     const large = mount({ size: 'large' })
     expect(sw(large).className).toBe('large')
+  })
+
+  it('size 五档：xs/small/medium/large/xl 均反映到 class', () => {
+    for (const s of ['xs', 'small', 'medium', 'large', 'xl'] as const) {
+      const el = mount({ size: s })
+      expect(sw(el).className).toBe(s)
+      el.remove()
+    }
+  })
+
+  it('size 非法值回落 medium 且 dev 下 console.warn 一次（白名单修复）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ size: 'huge' })
+    expect(sw(el).className).toBe('medium')
+    expect(sw(el).classList.contains('huge')).toBe(false)
+    el.setAttribute('size', 'huge')
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+    el.remove()
+  })
+
+  it('size=xs 且设置文案时文案放轨道外侧（outside-label），同 small 行为', () => {
+    const el = mount({ size: 'xs', 'checked-text': '开', 'unchecked-text': '关' })
+    const outside = el.shadowRoot!.querySelector<HTMLElement>('.outside-label')!
+    expect(outside.hidden).toBe(false)
+    expect(outside.textContent).toBe('关')
+    expect(sw(el).querySelector<HTMLElement>('.label')!.hidden).toBe(true)
+    expect(el.classList.contains('has-outside-label')).toBe(true)
+    sw(el).click()
+    expect(outside.textContent).toBe('开')
   })
 
   it('size=small 且设置文案时文案放轨道外侧（outside-label）', () => {

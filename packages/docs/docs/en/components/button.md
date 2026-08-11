@@ -15,10 +15,30 @@ Basic button component, an enhanced native `<button>`.
 
 ## Sizes
 
-<DemoBlock title="Three sizes">
+<DemoBlock title="Five sizes">
+  <oas-button size="xs">XS</oas-button>
   <oas-button size="small">Small</oas-button>
   <oas-button size="medium">Medium</oas-button>
   <oas-button size="large">Large</oas-button>
+  <oas-button size="xl">XL</oas-button>
+</DemoBlock>
+
+`size` supports five tiers: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning.
+
+<DemoBlock title="Five sizes · primary">
+  <oas-button type="primary" size="xs">XS</oas-button>
+  <oas-button type="primary" size="small">Small</oas-button>
+  <oas-button type="primary" size="medium">Medium</oas-button>
+  <oas-button type="primary" size="large">Large</oas-button>
+  <oas-button type="primary" size="xl">XL</oas-button>
+</DemoBlock>
+
+<DemoBlock title="Five sizes · icon-only">
+  <oas-button icon="search" size="xs" aria-label="Search"></oas-button>
+  <oas-button icon="search" size="small" aria-label="Search"></oas-button>
+  <oas-button icon="search" size="medium" aria-label="Search"></oas-button>
+  <oas-button icon="search" size="large" aria-label="Search"></oas-button>
+  <oas-button icon="search" size="xl" aria-label="Search"></oas-button>
 </DemoBlock>
 
 ## Disabled & Loading
@@ -100,7 +120,7 @@ Without text, the button becomes an equal-width square and needs an `aria-label`
 | `icon` | Icon name (reusing the oas-icon icon set); without text it becomes an equal-width square and uses the icon name as the fallback label | `string` | — |
 | `loading` | Loading state | `boolean` | — |
 | `round` | Pill radius (`--oas-radius-full` / `999px`) | `boolean` | — |
-| `size` | Size | `ButtonSize` | `medium` |
+| `size` | Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning | `ButtonSize` | `medium` |
 | `type` | Type | `ButtonType` | `default` |
 
 ### Events

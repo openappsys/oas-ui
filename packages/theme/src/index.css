@@ -56,9 +56,11 @@
   --oas-radius-md: 6px;
   --oas-radius-lg: 10px;
 
+  --oas-control-height-xs: 20px;
   --oas-control-height-sm: 24px;
   --oas-control-height-md: 32px;
   --oas-control-height-lg: 40px;
+  --oas-control-height-xl: 48px;
 
   --oas-transition-fast: 120ms;
   --oas-transition-base: 180ms;

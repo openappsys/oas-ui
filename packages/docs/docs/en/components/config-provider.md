@@ -22,13 +22,15 @@ The config-provider's `locale` takes precedence over the global `setLocale()`: c
 
 ## Size injection
 
-Components inside use the injected `size` unless they set it explicitly; explicitly set `size` always wins.
+Components inside use the injected `size` unless they set it explicitly; explicitly set `size` always wins. `size` supports five tiers: `xs` / `small` / `medium` (default) / `large` / `xl`.
 
 <DemoBlock title="Size injection">
   <oas-space>
+    <oas-button type="primary" onclick="setCpSize('xs')">XS</oas-button>
     <oas-button type="primary" onclick="setCpSize('small')">Small</oas-button>
     <oas-button onclick="setCpSize('medium')">Medium</oas-button>
     <oas-button onclick="setCpSize('large')">Large</oas-button>
+    <oas-button onclick="setCpSize('xl')">XL</oas-button>
   </oas-space>
   <oas-config-provider id="cp-size" size="medium" style="margin-top: 16px; display: block">
     <oas-space>

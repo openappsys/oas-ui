@@ -127,7 +127,7 @@
       "icon": "Icon name (reusing the oas-icon icon set); without text it becomes an equal-width square and uses the icon name as the fallback label",
       "loading": "Loading state",
       "round": "Pill radius (`--oas-radius-full` / `999px`)",
-      "size": "Size",
+      "size": "Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning",
       "type": "Type"
     },
     "events": {
@@ -1024,7 +1024,7 @@
     "attrs": {
       "align": "Alignment",
       "direction": "Direction",
-      "size": "Spacing",
+      "size": "Spacing: `xs` (4px) / `small` (8px) / `medium` (12px, default) / `large` (24px) / `xl` (32px), or a numeric pixel value; invalid values fall back to `medium` with a warning",
       "wrap": "Whether to wrap"
     },
     "events": {},
@@ -1044,7 +1044,7 @@
   },
   "oas-spin": {
     "attrs": {
-      "size": "Indicator size",
+      "size": "Indicator size: `xs` / `small` / `medium` (default) / `large` / `xl`; legacy abbreviations `sm`/`md`/`lg` remain supported",
       "spinning": "Whether loading; when set, wraps content with an overlaid mask"
     },
     "events": {},
@@ -1088,12 +1088,12 @@
   "oas-switch": {
     "attrs": {
       "checked": "Whether on",
-      "checked-text": "Label shown when on; inside the track at medium/large, outside at small",
+      "checked-text": "Label shown when on; inside the track at medium/large/xl, outside at xs/small",
       "color": "Custom primary color for the on state, overrides `--oas-color-primary` (CSS color value)",
       "disabled": "Disabled",
       "loading": "Loading state, prevents toggling",
-      "size": "Size",
-      "unchecked-text": "Label shown when off; inside the track at medium/large, outside at small"
+      "size": "Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning",
+      "unchecked-text": "Label shown when off; inside the track at medium/large/xl, outside at xs/small"
     },
     "events": {
       "oas-change": "Toggle, `detail: { checked }`"
@@ -1156,7 +1156,7 @@
       "closable": "Closable",
       "disabled": "Disabled (cannot be clicked or closed)",
       "round": "Rounded",
-      "size": "Size",
+      "size": "Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning",
       "type": "Type"
     },
     "events": {

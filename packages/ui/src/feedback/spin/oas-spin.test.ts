@@ -14,7 +14,35 @@ describe('OASSpin', () => {
     const el = new OASSpin()
     document.body.appendChild(el)
     expect(el.shadowRoot!.querySelector('[part="indicator"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size')).toBe('md')
+    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size')).toBe('medium')
+  })
+
+  it('size 五档：xs/small/medium/large/xl 映射到 data-size', () => {
+    for (const s of ['xs', 'small', 'medium', 'large', 'xl'] as const) {
+      const el = new OASSpin()
+      el.setAttribute('size', s)
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size')).toBe(s)
+      el.remove()
+    }
+  })
+
+  it('旧缩写 sm/md/lg 保留别名兼容（归一化为全拼）', () => {
+    const map: Array<[string, string]> = [
+      ['sm', 'small'],
+      ['md', 'medium'],
+      ['lg', 'large'],
+    ]
+    for (const [raw, normalized] of map) {
+      const el = new OASSpin()
+      el.setAttribute('size', raw)
+      document.body.appendChild(el)
+      expect(
+        el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size'),
+        `size=${raw}`,
+      ).toBe(normalized)
+      el.remove()
+    }
   })
 
   it('role=status + aria-busy', () => {

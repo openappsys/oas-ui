@@ -2,7 +2,21 @@ import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type ButtonType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'text'
-export type ButtonSize = 'small' | 'medium' | 'large'
+export type ButtonSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
+
+const VALID_BUTTON_SIZES: readonly ButtonSize[] = ['xs', 'small', 'medium', 'large', 'xl']
+
+/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
+function normalizeButtonSize(raw: string): ButtonSize {
+  if ((VALID_BUTTON_SIZES as readonly string[]).includes(raw)) return raw as ButtonSize
+  if (!warnedSizes.has(raw)) {
+    warnedSizes.add(raw)
+    console.warn(`[oas-button] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+  }
+  return 'medium'
+}
+
+const warnedSizes = new Set<string>()
 
 const STYLE = `
 :host {
@@ -134,10 +148,26 @@ button.small {
   font-size: var(--oas-font-size-sm);
   padding: 0 var(--oas-space-2);
 }
+button.xs {
+  height: var(--oas-control-height-xs);
+  font-size: var(--oas-font-size-xs);
+}
+button.xs:not(.icon-only) {
+  padding: 0 6px;
+  /* xs 档防过窄：最小宽放宽至 44px（其余档 56px） */
+  min-width: 44px;
+}
 button.large {
   height: var(--oas-control-height-lg);
   font-size: var(--oas-font-size-lg);
   padding: 0 var(--oas-space-5);
+}
+button.xl {
+  height: var(--oas-control-height-xl);
+  font-size: var(--oas-font-size-xl);
+}
+button.xl:not(.icon-only) {
+  padding: 0 var(--oas-space-6);
 }
 button.text {
   border-color: transparent;
@@ -277,7 +307,7 @@ export class OASButton extends OASElement {
     if (!this.btn) return
     const type = this.getAttr('type', 'default') as ButtonType
     // size 就近读取 config-provider 注入值（自身属性 > config-provider > medium）
-    const size = this.injectValue('size', 'medium') as ButtonSize
+    const size = normalizeButtonSize(this.injectValue('size', 'medium') as ButtonSize)
     const disabled = this.hasAttr('disabled')
     const loading = this.hasAttr('loading')
     const icon = this.getAttr('icon', '')

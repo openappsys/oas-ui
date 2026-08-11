@@ -24,6 +24,36 @@ A layout container with even horizontal/vertical spacing.
 
 ## Size & wrapping
 
+`size` supports five tiers: `xs` (4px) / `small` (8px) / `medium` (12px, default) / `large` (24px) / `xl` (32px), or a numeric pixel value; invalid values fall back to `medium` with a warning.
+
+<DemoBlock title="Five spacing tiers">
+  <oas-space size="xs">
+    <oas-tag>xs 4px</oas-tag>
+    <oas-tag>Tag</oas-tag>
+    <oas-tag>Tag</oas-tag>
+  </oas-space>
+  <oas-space size="small">
+    <oas-tag>small 8px</oas-tag>
+    <oas-tag>Tag</oas-tag>
+    <oas-tag>Tag</oas-tag>
+  </oas-space>
+  <oas-space size="medium">
+    <oas-tag>medium 12px</oas-tag>
+    <oas-tag>Tag</oas-tag>
+    <oas-tag>Tag</oas-tag>
+  </oas-space>
+  <oas-space size="large">
+    <oas-tag>large 24px</oas-tag>
+    <oas-tag>Tag</oas-tag>
+    <oas-tag>Tag</oas-tag>
+  </oas-space>
+  <oas-space size="xl">
+    <oas-tag>xl 32px</oas-tag>
+    <oas-tag>Tag</oas-tag>
+    <oas-tag>Tag</oas-tag>
+  </oas-space>
+</DemoBlock>
+
 <DemoBlock title="Large spacing & wrapping">
   <oas-space size="large" wrap>
     <oas-button>Button 1</oas-button>
@@ -55,7 +85,7 @@ A layout container with even horizontal/vertical spacing.
 | --- | --- | --- | --- |
 | `align` | Alignment | `string` | — |
 | `direction` | Direction | `SpaceDirection` | `horizontal` |
-| `size` | Spacing | `string` | `medium` |
+| `size` | Spacing: `xs` (4px) / `small` (8px) / `medium` (12px, default) / `large` (24px) / `xl` (32px), or a numeric pixel value; invalid values fall back to `medium` with a warning | `string` | `medium` |
 | `wrap` | Whether to wrap | `boolean` | — |
 
 ### Slots

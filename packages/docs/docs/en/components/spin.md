@@ -4,10 +4,22 @@ A loading indicator that can be used standalone or wrap content with an overlaid
 
 ## Basic usage
 
-<DemoBlock title="Sizes">
+`size` supports five tiers: `xs` / `small` / `medium` (default) / `large` / `xl`; the old abbreviations `sm` / `md` / `lg` remain supported.
+
+<DemoBlock title="Five sizes">
+  <oas-space size="large">
+    <oas-spin size="xs"></oas-spin>
+    <oas-spin size="small"></oas-spin>
+    <oas-spin></oas-spin>
+    <oas-spin size="large"></oas-spin>
+    <oas-spin size="xl"></oas-spin>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="Legacy abbreviations (sm / md / lg)">
   <oas-space size="large">
     <oas-spin size="sm"></oas-spin>
-    <oas-spin></oas-spin>
+    <oas-spin size="md"></oas-spin>
     <oas-spin size="lg"></oas-spin>
   </oas-space>
 </DemoBlock>
@@ -28,7 +40,7 @@ A loading indicator that can be used standalone or wrap content with an overlaid
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `size` | Indicator size | `string` | `md` |
+| `size` | Indicator size: `xs` / `small` / `medium` (default) / `large` / `xl`; legacy abbreviations `sm`/`md`/`lg` remain supported | `string` | `md` |
 | `spinning` | Whether loading; when set, wraps content with an overlaid mask | `boolean` | — |
 
 ### Slots

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
@@ -43,6 +43,25 @@ describe('OASTag', () => {
     expect(r.classList.contains('success')).toBe(true)
     expect(r.classList.contains('small')).toBe(true)
     expect(r.classList.contains('round')).toBe(true)
+  })
+
+  it('size 五档：xs/small/medium/large/xl 均反映到 class', () => {
+    for (const s of ['xs', 'small', 'medium', 'large', 'xl'] as const) {
+      const el = mount({ size: s })
+      expect(root(el).classList.contains(s)).toBe(true)
+      el.remove()
+    }
+  })
+
+  it('size 非法值回落 medium 且 dev 下 console.warn 一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ size: 'huge' })
+    expect(root(el).classList.contains('medium')).toBe(true)
+    expect(root(el).classList.contains('huge')).toBe(false)
+    el.setAttribute('size', 'huge')
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+    el.remove()
   })
 
   it('默认关闭按钮 hidden（不可交互/不入 a11y 树）；closable 时显示', () => {

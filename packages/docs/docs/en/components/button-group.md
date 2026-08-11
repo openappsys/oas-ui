@@ -14,13 +14,23 @@ Button group: combines multiple `oas-button` elements into a value-selection gro
 
 ## Type & size passthrough
 
-`type` / `size` are passed through uniformly to all child buttons in the group.
+`type` / `size` are passed through uniformly to all child buttons in the group. `size` supports five tiers: `xs` / `small` / `medium` (default) / `large` / `xl`.
 
 <DemoBlock title="Type & size passthrough">
   <oas-button-group type="primary" size="large">
     <oas-button value="a">Left</oas-button>
     <oas-button value="b">Middle</oas-button>
     <oas-button value="c">Right</oas-button>
+  </oas-button-group>
+  <oas-button-group size="xs" style="margin-top: 8px">
+    <oas-button value="a">XS</oas-button>
+    <oas-button value="b">XS</oas-button>
+    <oas-button value="c">XS</oas-button>
+  </oas-button-group>
+  <oas-button-group size="xl" style="margin-top: 8px">
+    <oas-button value="a">XL</oas-button>
+    <oas-button value="b">XL</oas-button>
+    <oas-button value="c">XL</oas-button>
   </oas-button-group>
 </DemoBlock>
 

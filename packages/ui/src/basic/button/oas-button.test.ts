@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASButton } from './index.js'
 
 function mount(attrs: Record<string, string> = {}, slot = '按钮'): OASButton {
@@ -42,6 +42,27 @@ describe('OASButton', () => {
     const btn = shadowBtn(el)
     expect(btn.classList.contains('primary')).toBe(true)
     expect(btn.classList.contains('large')).toBe(true)
+  })
+
+  it('size 五档：xs/small/medium/large/xl 均反映到 class', () => {
+    for (const s of ['xs', 'small', 'medium', 'large', 'xl'] as const) {
+      const el = mount({ size: s })
+      expect(shadowBtn(el).classList.contains(s)).toBe(true)
+      el.remove()
+    }
+  })
+
+  it('size 非法值回落 medium 且 dev 下 console.warn 一次（同值去重）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ size: 'huge' })
+    const btn = shadowBtn(el)
+    expect(btn.classList.contains('medium')).toBe(true)
+    expect(btn.classList.contains('huge')).toBe(false)
+    el.setAttribute('size', 'huge')
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0]![0]).toContain('oas-button')
+    warn.mockRestore()
+    el.remove()
   })
 
   it('disabled 属性使原生按钮禁用', () => {

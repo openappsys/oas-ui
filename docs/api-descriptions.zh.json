@@ -127,7 +127,7 @@
       "icon": "图标名（复用 oas-icon 图标集）；无文字时等宽、以图标名兜底名称",
       "loading": "加载态",
       "round": "胶囊圆角（`--oas-radius-full` / `999px`）",
-      "size": "尺寸",
+      "size": "尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警",
       "type": "类型"
     },
     "events": {
@@ -1024,7 +1024,7 @@
     "attrs": {
       "align": "对齐",
       "direction": "方向",
-      "size": "间距",
+      "size": "间距：`xs`（4px）/ `small`（8px）/ `medium`（12px，默认）/ `large`（24px）/ `xl`（32px），或数字像素；非法值回落 `medium` 并告警",
       "wrap": "是否换行"
     },
     "events": {},
@@ -1044,7 +1044,7 @@
   },
   "oas-spin": {
     "attrs": {
-      "size": "指示器尺寸",
+      "size": "指示器尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；旧缩写 `sm`/`md`/`lg` 保留兼容",
       "spinning": "是否加载中；设置后包裹内容并叠加遮罩"
     },
     "events": {},
@@ -1088,12 +1088,12 @@
   "oas-switch": {
     "attrs": {
       "checked": "是否开启",
-      "checked-text": "开启时显示的文案；medium/large 在轨道内，small 在轨道外侧",
+      "checked-text": "开启时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧",
       "color": "开启态自定义主色，覆盖 `--oas-color-primary`（CSS 颜色值）",
       "disabled": "禁用",
       "loading": "加载态，阻止切换",
-      "size": "尺寸",
-      "unchecked-text": "关闭时显示的文案；medium/large 在轨道内，small 在轨道外侧"
+      "size": "尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警",
+      "unchecked-text": "关闭时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧"
     },
     "events": {
       "oas-change": "切换，`detail: { checked }`"
@@ -1156,7 +1156,7 @@
       "closable": "可关闭",
       "disabled": "禁用",
       "round": "圆角",
-      "size": "尺寸",
+      "size": "尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警",
       "type": "类型"
     },
     "events": {

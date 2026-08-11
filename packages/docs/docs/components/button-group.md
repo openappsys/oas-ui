@@ -14,13 +14,23 @@
 
 ## 类型与尺寸透传
 
-`type` / `size` 会统一透传给组内所有子按钮。
+`type` / `size` 会统一透传给组内所有子按钮。`size` 支持 `xs` / `small` / `medium`（默认）/ `large` / `xl` 五档。
 
 <DemoBlock title="类型与尺寸透传">
   <oas-button-group type="primary" size="large">
     <oas-button value="a">左</oas-button>
     <oas-button value="b">中</oas-button>
     <oas-button value="c">右</oas-button>
+  </oas-button-group>
+  <oas-button-group size="xs" style="margin-top: 8px">
+    <oas-button value="a">超小</oas-button>
+    <oas-button value="b">超小</oas-button>
+    <oas-button value="c">超小</oas-button>
+  </oas-button-group>
+  <oas-button-group size="xl" style="margin-top: 8px">
+    <oas-button value="a">超大</oas-button>
+    <oas-button value="b">超大</oas-button>
+    <oas-button value="c">超大</oas-button>
   </oas-button-group>
 </DemoBlock>
 

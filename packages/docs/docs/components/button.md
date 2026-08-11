@@ -15,10 +15,30 @@
 
 ## 尺寸
 
-<DemoBlock title="三种尺寸">
+<DemoBlock title="五种尺寸">
+  <oas-button size="xs">超小</oas-button>
   <oas-button size="small">小按钮</oas-button>
   <oas-button size="medium">中按钮</oas-button>
   <oas-button size="large">大按钮</oas-button>
+  <oas-button size="xl">超大</oas-button>
+</DemoBlock>
+
+`size` 支持 `xs` / `small` / `medium`（默认）/ `large` / `xl` 五档；非法值回落 `medium` 并提示告警。
+
+<DemoBlock title="五种尺寸 · 主要按钮">
+  <oas-button type="primary" size="xs">超小</oas-button>
+  <oas-button type="primary" size="small">小按钮</oas-button>
+  <oas-button type="primary" size="medium">中按钮</oas-button>
+  <oas-button type="primary" size="large">大按钮</oas-button>
+  <oas-button type="primary" size="xl">超大</oas-button>
+</DemoBlock>
+
+<DemoBlock title="五种尺寸 · 图标按钮">
+  <oas-button icon="search" size="xs" aria-label="搜索"></oas-button>
+  <oas-button icon="search" size="small" aria-label="搜索"></oas-button>
+  <oas-button icon="search" size="medium" aria-label="搜索"></oas-button>
+  <oas-button icon="search" size="large" aria-label="搜索"></oas-button>
+  <oas-button icon="search" size="xl" aria-label="搜索"></oas-button>
 </DemoBlock>
 
 ## 禁用与加载
@@ -100,7 +120,7 @@
 | `icon` | 图标名（复用 oas-icon 图标集）；无文字时等宽、以图标名兜底名称 | `string` | — |
 | `loading` | 加载态 | `boolean` | — |
 | `round` | 胶囊圆角（`--oas-radius-full` / `999px`） | `boolean` | — |
-| `size` | 尺寸 | `ButtonSize` | `medium` |
+| `size` | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `ButtonSize` | `medium` |
 | `type` | 类型 | `ButtonType` | `default` |
 
 ### 事件

@@ -20,22 +20,25 @@
 
 ## 开关文案
 
-`checked-text` / `unchecked-text` 在开关上显示对应文案：medium/large 尺寸显示在轨道内滑块对侧，`size="small"` 时文案放到开关外侧。
+`checked-text` / `unchecked-text` 在开关上显示对应文案：medium/large/xl 尺寸显示在轨道内滑块对侧，`size="xs"` / `size="small"` 时文案放到开关外侧。
 
 <DemoBlock title="开关文案">
   <oas-switch checked-text="开" unchecked-text="关"></oas-switch>
   <oas-switch checked checked-text="已开启" unchecked-text="已关闭"></oas-switch>
+  <oas-switch size="xs" checked-text="开" unchecked-text="关"></oas-switch>
   <oas-switch size="small" checked-text="开" unchecked-text="关"></oas-switch>
 </DemoBlock>
 
 ## 尺寸
 
-`size` 支持 `small` / `medium`（默认）/ `large` 三档。
+`size` 支持 `xs` / `small` / `medium`（默认）/ `large` / `xl` 五档；非法值回落 `medium` 并提示告警。
 
-<DemoBlock title="三种尺寸">
+<DemoBlock title="五种尺寸">
+  <oas-switch size="xs" checked></oas-switch>
   <oas-switch size="small" checked></oas-switch>
   <oas-switch size="medium" checked></oas-switch>
   <oas-switch size="large" checked></oas-switch>
+  <oas-switch size="xl" checked></oas-switch>
 </DemoBlock>
 
 ## 自定义颜色
@@ -74,12 +77,12 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `checked` | 是否开启 | `boolean` | — |
-| `checked-text` | 开启时显示的文案；medium/large 在轨道内，small 在轨道外侧 | — | — |
+| `checked-text` | 开启时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | — | — |
 | `color` | 开启态自定义主色，覆盖 `--oas-color-primary`（CSS 颜色值） | — | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `loading` | 加载态，阻止切换 | `boolean` | — |
-| `size` | 尺寸 | `string` | `medium` |
-| `unchecked-text` | 关闭时显示的文案；medium/large 在轨道内，small 在轨道外侧 | — | — |
+| `size` | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `string` | `medium` |
+| `unchecked-text` | 关闭时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | — | — |
 
 ### 事件
 

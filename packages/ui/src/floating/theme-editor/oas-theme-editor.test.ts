@@ -36,9 +36,11 @@ const DEFAULT_VARS: Record<string, string> = {
   '--oas-radius-sm': '4px',
   '--oas-radius-md': '6px',
   '--oas-radius-lg': '10px',
+  '--oas-control-height-xs': '20px',
   '--oas-control-height-sm': '24px',
   '--oas-control-height-md': '32px',
   '--oas-control-height-lg': '40px',
+  '--oas-control-height-xl': '48px',
 }
 
 function mount(
@@ -81,6 +83,16 @@ describe('OASThemeEditor', () => {
     const el = mount()
     const titles = [...el.shadowRoot!.querySelectorAll('.group-title')].map((t) => t.textContent)
     expect(titles).toEqual(['颜色', '字号', '间距', '圆角', '控件高度'])
+  })
+
+  it('控件高度组含五档 token（xs/sm/md/lg/xl）', () => {
+    const el = mount()
+    for (const name of ['--oas-control-height-xs', '--oas-control-height-xl']) {
+      const row = rowFor(el, name)
+      expect(row, `${name} 应出现在默认集`).toBeDefined()
+    }
+    expect(numberInput(rowFor(el, '--oas-control-height-xs')!).value).toBe('20')
+    expect(numberInput(rowFor(el, '--oas-control-height-xl')!).value).toBe('48')
   })
 
   it('颜色 token 行用 color input，显示当前值', () => {

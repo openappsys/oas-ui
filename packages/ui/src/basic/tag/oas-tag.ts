@@ -1,7 +1,20 @@
 import { OASElement } from '@oas-ui/core'
 
 export type TagType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
-export type TagSize = 'small' | 'medium' | 'large'
+export type TagSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
+
+const VALID_TAG_SIZES: readonly TagSize[] = ['xs', 'small', 'medium', 'large', 'xl']
+const warnedSizes = new Set<string>()
+
+/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
+function normalizeTagSize(raw: string): TagSize {
+  if ((VALID_TAG_SIZES as readonly string[]).includes(raw)) return raw as TagSize
+  if (!warnedSizes.has(raw)) {
+    warnedSizes.add(raw)
+    console.warn(`[oas-tag] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+  }
+  return 'medium'
+}
 
 const STYLE = `
 :host {
@@ -54,7 +67,13 @@ const STYLE = `
   border-radius: var(--oas-control-height-sm);
 }
 .tag.small {
-  height: 20px;
+  height: var(--oas-control-height-xs);
+  padding: 0 var(--oas-space-1);
+  font-size: var(--oas-font-size-xs);
+}
+/* xs 展示档：16px 高，比 small 更紧凑 */
+.tag.xs {
+  height: 16px;
   padding: 0 var(--oas-space-1);
   font-size: var(--oas-font-size-xs);
 }
@@ -62,6 +81,11 @@ const STYLE = `
   height: var(--oas-control-height-md);
   font-size: var(--oas-font-size-md);
   padding: 0 var(--oas-space-3);
+}
+.tag.xl {
+  height: var(--oas-control-height-lg);
+  font-size: var(--oas-font-size-lg);
+  padding: 0 var(--oas-space-4);
 }
 .tag.chip {
   border-radius: 999px;
@@ -184,7 +208,7 @@ export class OASTag extends OASElement {
     if (!this.tagRoot) return
     const type = this.getAttr('type', 'default') as TagType
     // size 就近读取 config-provider 注入值（自身属性 > config-provider > medium）
-    const size = this.injectValue('size', 'medium') as TagSize
+    const size = normalizeTagSize(this.injectValue('size', 'medium') as TagSize)
     const closable = this.hasAttr('closable')
     const round = this.hasAttr('round')
     const chip = this.hasAttr('chip')
