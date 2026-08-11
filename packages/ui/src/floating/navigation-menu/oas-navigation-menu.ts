@@ -14,6 +14,9 @@ const STYLE = `
   font-family: inherit;
   color: var(--oas-color-text-primary);
 }
+:host([hidden]) {
+  display: none;
+}
 .nav {
   display: flex;
   align-items: center;
@@ -163,11 +166,16 @@ export class OASNavigationMenu extends OASElement {
   private expanded = new Set<string>()
   private keyboardMode = false
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="nav" part="nav" role="navigation"></div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
     this.navEl = this.shadow.querySelector('.nav')
     this.navEl?.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
     this.navEl?.addEventListener('mouseleave', () => {
@@ -179,7 +187,19 @@ export class OASNavigationMenu extends OASElement {
     })
     document.addEventListener('keydown', this.handleDocumentKey)
     this.onCleanup(() => document.removeEventListener('keydown', this.handleDocumentKey))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（nav 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.nav')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

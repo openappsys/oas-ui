@@ -15,6 +15,9 @@ const STYLE = `
   right: var(--oas-space-6);
   z-index: var(--oas-z-fixed, 1030);
 }
+:host([hidden]) {
+  display: none;
+}
 .dial {
   position: relative;
   display: flex;
@@ -156,8 +159,9 @@ export class OASSpeedDial extends OASElement {
   private fab: HTMLButtonElement | null = null
   private actionsEl: HTMLElement | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="dial" data-dir="up">
         <div class="actions" part="actions" role="group"></div>
@@ -166,6 +170,10 @@ export class OASSpeedDial extends OASElement {
         </button>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
     this.dial = this.shadow.querySelector('.dial')
     this.fab = this.shadow.querySelector('.fab')
     this.actionsEl = this.shadow.querySelector('.actions')
@@ -174,7 +182,19 @@ export class OASSpeedDial extends OASElement {
       document.removeEventListener('click', this.handleOutsideClick)
       document.removeEventListener('keydown', this.handleDocKeydown)
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（fab 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.fab')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

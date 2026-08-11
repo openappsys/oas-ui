@@ -6,6 +6,9 @@ const STYLE = `
   height: 100%;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 .pane {
   flex: 1;
   min-width: 0;
@@ -42,13 +45,18 @@ export class OASSplitter extends OASElement {
   private startX = 0
   private startPercent = 0
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="pane" part="pane-left"><slot name="left"><slot></slot></slot></div>
       <div class="splitter" part="splitter" tabindex="0" role="separator" aria-orientation="vertical"></div>
       <div class="pane" part="pane-right"><slot name="right"></slot></div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
     this.leftPane = this.shadow.querySelector('.pane:first-of-type') as HTMLElement
     this.rightPane = this.shadow.querySelector('.pane:last-of-type') as HTMLElement
     this.shadow
@@ -62,7 +70,19 @@ export class OASSplitter extends OASElement {
       document.removeEventListener('pointermove', this.onDrag)
       document.removeEventListener('pointerup', this.endDrag)
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（splitter 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.splitter')) return false
+    this.bind()
+    return true
   }
 
   private startDrag(e: PointerEvent): void {

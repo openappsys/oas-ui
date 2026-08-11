@@ -7,6 +7,9 @@ const STYLE = `
   padding: var(--oas-space-4) var(--oas-space-5);
   color: var(--oas-color-text-primary);
 }
+:host([hidden]) {
+  display: none;
+}
 .row {
   display: flex;
   align-items: center;
@@ -54,8 +57,9 @@ export class OASPageHeader extends OASElement {
     return ['title', 'back', 'subtitle']
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致（back 存在性由宿主属性决定） */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="row" part="row">
         ${
@@ -74,8 +78,24 @@ export class OASPageHeader extends OASElement {
         <div class="extra"><slot name="extra"></slot></div>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定返回按钮（render 与水合路径共用） */
+  private bind(): void {
     this.shadow.querySelector('[part="back"]')?.addEventListener('click', () => this.emit('back'))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（row 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.row')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

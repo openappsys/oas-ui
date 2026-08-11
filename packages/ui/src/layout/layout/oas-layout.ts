@@ -7,6 +7,9 @@ const STYLE = `
   font-family: inherit;
   background: var(--oas-color-bg);
 }
+:host([hidden]) {
+  display: none;
+}
 .struct {
   display: flex;
   flex-direction: column;
@@ -33,8 +36,9 @@ const STYLE = `
 export class OASLayout extends OASElement {
   private observer: MutationObserver | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="struct" part="root" data-has-sider="false">
         <slot name="header"></slot>
@@ -45,10 +49,26 @@ export class OASLayout extends OASElement {
         <slot name="footer"></slot>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定观察器 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
     this.observer = new MutationObserver(() => this.update())
     this.observer.observe(this, { childList: true, subtree: false })
     this.onCleanup(() => this.observer?.disconnect())
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（struct 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.struct')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

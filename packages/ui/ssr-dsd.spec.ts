@@ -375,6 +375,194 @@ test.beforeAll(async () => {
     renderToString('oas-virtual-list', { height: '100', 'item-height': '20', items: VL_ITEMS }),
   ])
 
+  // —— DSD 批次 4：导航布局组件快照 ——
+  // 布局稳定性约定：浮层触发类（dropdown/context-menu/hover-card/command/tour/speed-dial）取默认
+  // 关闭态（面板隐藏、高度不参与流内布局，升级前后稳定）；menu/menubar/navigation-menu/toolbar 为
+  // 可见菜单结构（默认收起子菜单）；float-button/back-top 取可见态（固定定位不影响文档流）；
+  // sidebar 取桌面态（e2e 视口 1280×720 > 768 断点，SSR happy-dom 同为桌面态，升级前后一致）。
+  const BREADCRUMB_ITEMS = JSON.stringify([
+    { label: '首页', href: '/' },
+    { label: '详情', href: '/detail' },
+  ])
+  const MENU_ITEMS = JSON.stringify([
+    { label: '首页', value: 'home' },
+    { label: '更多', value: 'more', children: [{ label: '子项', value: 'sub' }] },
+  ])
+  const MENUBAR_ITEMS = JSON.stringify([
+    { label: '文件', value: 'file', children: [{ label: '打开', value: 'open' }] },
+    { label: '编辑', value: 'edit' },
+  ])
+  const NAV_ITEMS = JSON.stringify([
+    { label: '首页', value: 'home', href: '/home' },
+    { label: '产品', value: 'product', children: [{ label: '列表', value: 'list' }] },
+  ])
+  const navLayoutSnaps = await Promise.all([
+    renderToString(
+      'oas-tabs',
+      { active: 'a' },
+      '<oas-tab-panel label="A" value="a"><p>内容A</p></oas-tab-panel><oas-tab-panel label="B" value="b"><p>内容B</p></oas-tab-panel>',
+    ),
+    renderToString('oas-tab-panel', { label: '独立面板' }, '<p>独立内容</p>'),
+    renderToString(
+      'oas-bottom-navigation',
+      {
+        items: JSON.stringify([
+          { label: '首页', value: 'home' },
+          { label: '消息', value: 'msg' },
+          { label: '我的', value: 'me' },
+        ]),
+        value: 'home',
+      },
+      '',
+    ),
+    renderToString('oas-pagination', { total: '120', 'show-total': '' }, '', { locale: 'zh-CN' }),
+    renderToString(
+      'oas-steps',
+      {
+        steps: JSON.stringify([
+          { title: '第一步' },
+          { title: '第二步' },
+          { title: '第三步' },
+        ]),
+        current: '1',
+      },
+      '',
+    ),
+    renderToString(
+      'oas-segmented',
+      {
+        options: JSON.stringify([
+          { label: '日', value: 'day' },
+          { label: '周', value: 'week' },
+        ]),
+        value: 'week',
+      },
+      '',
+    ),
+    renderToString('oas-breadcrumb', { items: BREADCRUMB_ITEMS }, '', { locale: 'zh-CN' }),
+    renderToString(
+      'oas-anchor',
+      {
+        items: JSON.stringify([
+          { href: '#basic', title: '基础用法' },
+          { href: '#a11y', title: '无障碍' },
+        ]),
+        active: '#basic',
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString('oas-back-top', { visible: '' }, '', { locale: 'zh-CN' }),
+    renderToString('oas-menu', { items: MENU_ITEMS, value: 'home' }, '', { locale: 'zh-CN' }),
+    renderToString(
+      'oas-dropdown',
+      { items: MENU_ITEMS },
+      '<button type="button">更多操作</button>',
+      { locale: 'zh-CN' },
+    ),
+    renderToString('oas-context-menu', { items: MENU_ITEMS }, '<span>右键区域</span>'),
+    renderToString('oas-menubar', { items: MENUBAR_ITEMS }, '', { locale: 'zh-CN' }),
+    renderToString('oas-navigation-menu', { items: NAV_ITEMS }, '', { locale: 'zh-CN' }),
+    renderToString(
+      'oas-toolbar',
+      {},
+      '<button type="button">复制</button><button type="button">粘贴</button>',
+      { locale: 'zh-CN' },
+    ),
+    renderToString(
+      'oas-command',
+      {
+        items: JSON.stringify([
+          { label: '新建', value: 'new' },
+          { label: '保存', value: 'save' },
+        ]),
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString(
+      'oas-tour',
+      {
+        steps: JSON.stringify([
+          { selector: '#step1', title: '第一步' },
+          { selector: '#step2', title: '第二步' },
+        ]),
+      },
+      '',
+      { locale: 'zh-CN' },
+    ),
+    renderToString(
+      'oas-hover-card',
+      { title: '提示卡片', content: '悬停显示的内容' },
+      '<button type="button">悬停</button>',
+    ),
+    renderToString('oas-splitter', { percent: '40' }, '<div>左</div><div>右</div>'),
+    renderToString('oas-flex', { gap: '8' }, '<div>一</div><div>二</div>'),
+    renderToString('oas-page-header', { title: '页面标题', back: '' }, '<span>副操作</span>', {
+      locale: 'zh-CN',
+    }),
+    renderToString('oas-float-button', { badge: '3' }, '', { locale: 'zh-CN' }),
+    renderToString('oas-speed-dial', { actions: '[{"label":"分享"}]' }, '', { locale: 'zh-CN' }),
+    renderToString(
+      'oas-layout',
+      {},
+      '<oas-header slot="header"><span>顶栏</span></oas-header><oas-sider slot="sider"><span>侧栏</span></oas-sider><oas-content slot="content"><span>内容区</span></oas-content><oas-footer slot="footer"><span>底栏</span></oas-footer>',
+    ),
+    renderToString('oas-header', {}, '<span>独立顶栏</span>'),
+    renderToString('oas-sider', {}, '<span>独立侧栏</span>'),
+    renderToString('oas-content', {}, '<span>独立内容</span>'),
+    renderToString('oas-footer', {}, '<span>独立底栏</span>'),
+    renderToString(
+      'oas-sidebar',
+      { items: '[{"label":"首页","value":"home","icon":"🏠"}]' },
+      '<div>侧栏内容</div>',
+      { locale: 'zh-CN' },
+    ),
+    renderToString('oas-container', { size: 'md' }, '<p>容器内容</p>'),
+    renderToString('oas-grid', { cols: '2', gap: '8' }, '<div>左</div><div>右</div>'),
+    renderToString('oas-grid-item', { span: '12' }, '<p>栅格项</p>'),
+  ])
+
+  // —— 嵌套递归序列化组合（子活 1）：白名单组合禁 JS 时子组件 shadow 内容可见 ——
+  const NESTED_COMBO_ITEMS = JSON.stringify([
+    { key: 'a', label: '节点A' },
+    { key: 'b', label: '节点B' },
+  ])
+  const nestedSnaps = await Promise.all([
+    renderToString(
+      'oas-descriptions',
+      { title: '基本信息' },
+      '<oas-descriptions-item label="姓名">张三</oas-descriptions-item><oas-descriptions-item label="年龄">30</oas-descriptions-item>',
+    ),
+    renderToString(
+      'oas-form',
+      {},
+      '<oas-form-item label="邮箱"><oas-input value="a@b.c" placeholder="请输入邮箱"></oas-input></oas-form-item>',
+      { locale: 'zh-CN' },
+    ),
+    renderToString(
+      'oas-collapse',
+      { active: 'a' },
+      '<oas-collapse-item name="a" header="面板一">内容一</oas-collapse-item>',
+    ),
+    renderToString(
+      'oas-timeline',
+      {},
+      '<oas-timeline-item time="2024-01-01"><p>事件一</p></oas-timeline-item>',
+    ),
+    renderToString(
+      'oas-grid',
+      { cols: '2' },
+      '<oas-grid-item span="12"><p>左</p></oas-grid-item><oas-grid-item span="12"><p>右</p></oas-grid-item>',
+    ),
+    renderToString(
+      'oas-tree',
+      { data: NESTED_COMBO_ITEMS },
+      '',
+      { locale: 'zh-CN' },
+    ),
+  ])
+
   dsdHtml = `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -405,6 +593,8 @@ ${[
   ...formSnaps,
   ...feedbackSnaps,
   ...dataSnaps,
+  ...navLayoutSnaps,
+  ...nestedSnaps,
 ].join('\n')}
 </body>
 </html>`
@@ -620,6 +810,162 @@ test('真水合：upgrade 后 shadow 未被重建（style DOM 引用保持同一
   const after = await layoutOf(page, LAYOUT_STABLE_TAGS)
   expect(after).toEqual(before)
   await page.screenshot({ path: SCREENSHOT.afterUpgrade, fullPage: true })
+})
+
+test('嵌套组合真水合：descriptions>item 父子都保持 DOM 引用、无双绑（label 文本禁 JS 可见）', async ({
+  page,
+}) => {
+  await openPage(page)
+
+  // 禁 JS：嵌套子组件的 shadow 内容（descriptions-item 的 label 文本）经 HTML 解析器附加 shadow 后可见
+  // 注意：页面含批次 3 的独立 oas-descriptions（空 light DOM），须用后代选择器锁定嵌套组合
+  const noJsNested = await page.evaluate(() => {
+    const item = document.querySelector('oas-descriptions oas-descriptions-item')
+    const label = item?.shadowRoot?.querySelector('[part="label"]')
+    return {
+      itemHasShadow: item?.shadowRoot !== null && item?.shadowRoot !== undefined,
+      labelText: label?.textContent ?? '',
+      itemHasMeta: item?.shadowRoot?.querySelector('meta[data-oas-ssr]') !== null,
+    }
+  })
+  expect(noJsNested.itemHasShadow).toBe(true)
+  expect(noJsNested.labelText).toBe('姓名')
+  expect(noJsNested.itemHasMeta).toBe(true)
+
+  // 升级前：保存父子 style 引用（跨 evaluate 保留）
+  const styleRefs = await page.evaluate(() => {
+    const w = window as unknown as Window & { __nestedStyleRefs: Record<string, Element | null> }
+    w.__nestedStyleRefs = {}
+    const parent = document.querySelector('oas-descriptions oas-descriptions-item')?.parentElement
+    const item = parent?.querySelector('oas-descriptions-item') ?? null
+    w.__nestedStyleRefs['parent'] = parent?.shadowRoot?.querySelector('style') ?? null
+    w.__nestedStyleRefs['item'] = item?.shadowRoot?.querySelector('style') ?? null
+    return {
+      parentMeta: parent?.shadowRoot?.querySelector('meta[data-oas-ssr]')?.getAttribute('data-oas-ssr'),
+      itemMeta: item?.shadowRoot?.querySelector('meta[data-oas-ssr]')?.getAttribute('data-oas-ssr'),
+    }
+  })
+  expect(styleRefs.parentMeta).toBe('oas-descriptions')
+  expect(styleRefs.itemMeta).toBe('oas-descriptions-item')
+
+  await upgradeUi(page)
+
+  // 升级后：父子 style 均为同一 DOM 对象（双双真水合，未重建）、指纹均已移除
+  const post = await page.evaluate(() => {
+    const w = window as unknown as Window & { __nestedStyleRefs: Record<string, Element | null> }
+    const item = document.querySelector('oas-descriptions oas-descriptions-item')
+    const parent = item?.parentElement ?? null
+    return {
+      parentSame: parent?.shadowRoot?.querySelector('style') === w.__nestedStyleRefs['parent'],
+      itemSame: item?.shadowRoot?.querySelector('style') === w.__nestedStyleRefs['item'],
+      parentMetaGone: parent?.shadowRoot?.querySelector('meta[data-oas-ssr]') === null,
+      itemMetaGone: item?.shadowRoot?.querySelector('meta[data-oas-ssr]') === null,
+      itemLabel: item?.shadowRoot?.querySelector('[part="label"]')?.textContent ?? '',
+    }
+  })
+  expect(post.parentSame).toBe(true)
+  expect(post.itemSame).toBe(true)
+  expect(post.parentMetaGone).toBe(true)
+  expect(post.itemMetaGone).toBe(true)
+  expect(post.itemLabel).toBe('姓名')
+})
+
+test('嵌套组合真水合：form>form-item>oas-input 三层父子无双绑、input 可输入派发事件', async ({
+  page,
+}) => {
+  await openPage(page)
+
+  // 升级前：三层结构均已由嵌套 DSD 附加 shadow，且内容可见
+  // 注意：页面含批次 1 的独立 oas-form（空 light DOM），须用后代选择器锁定嵌套组合
+  const noJs = await page.evaluate(() => {
+    const input = document.querySelector('oas-form oas-form-item oas-input')
+    const item = input?.parentElement ?? null
+    const form = item?.parentElement ?? null
+    return {
+      formShadow: form?.shadowRoot !== null,
+      itemShadow: item?.shadowRoot !== null,
+      inputShadow: input?.shadowRoot !== null,
+      itemLabel: item?.shadowRoot?.querySelector('[part="label"]')?.textContent?.trim() ?? '',
+      inputEl: input?.shadowRoot?.querySelector('input[part="input"]') !== null,
+    }
+  })
+  expect(noJs.formShadow).toBe(true)
+  expect(noJs.itemShadow).toBe(true)
+  expect(noJs.inputShadow).toBe(true)
+  expect(noJs.itemLabel.includes('邮箱')).toBe(true)
+  expect(noJs.inputEl).toBe(true)
+
+  // 保存三层 style 引用
+  await page.evaluate(() => {
+    const w = window as unknown as Window & { __triStyleRefs: Record<string, Element | null> }
+    w.__triStyleRefs = {}
+    const input = document.querySelector('oas-form oas-form-item oas-input')
+    const item = input?.parentElement
+    const form = item?.parentElement
+    w.__triStyleRefs['form'] = form?.shadowRoot?.querySelector('style') ?? null
+    w.__triStyleRefs['item'] = item?.shadowRoot?.querySelector('style') ?? null
+    w.__triStyleRefs['input'] = input?.shadowRoot?.querySelector('style') ?? null
+  })
+
+  await upgradeUi(page)
+
+  // 三层 style 引用保持 + 指纹移除
+  const post = await page.evaluate(() => {
+    const w = window as unknown as Window & { __triStyleRefs: Record<string, Element | null> }
+    const input = document.querySelector('oas-form oas-form-item oas-input')
+    const item = input?.parentElement
+    const form = item?.parentElement
+    const same = (el: Element | null | undefined, key: string): boolean =>
+      el?.shadowRoot?.querySelector('style') === w.__triStyleRefs[key]
+    const metaGone = (el: Element | null | undefined): boolean =>
+      el?.shadowRoot?.querySelector('meta[data-oas-ssr]') === null
+    return {
+      formSame: same(form, 'form'),
+      itemSame: same(item, 'item'),
+      inputSame: same(input, 'input'),
+      formMetaGone: metaGone(form),
+      itemMetaGone: metaGone(item),
+      inputMetaGone: metaGone(input),
+    }
+  })
+  expect(post.formSame).toBe(true)
+  expect(post.itemSame).toBe(true)
+  expect(post.inputSame).toBe(true)
+  expect(post.formMetaGone).toBe(true)
+  expect(post.itemMetaGone).toBe(true)
+  expect(post.inputMetaGone).toBe(true)
+
+  // 无双绑：输入框输入一次恰好派发一次 oas-input
+  await page.evaluate(() => {
+    const w = window as unknown as Window & { __nestedInputEvents: unknown[] }
+    w.__nestedInputEvents = []
+    document
+      .querySelector('oas-form oas-form-item')
+      ?.addEventListener('oas-input', (e: Event) =>
+        w.__nestedInputEvents!.push((e as CustomEvent).detail),
+      )
+  })
+  const inputLocator = page
+    .locator('oas-form oas-form-item oas-input')
+    .first()
+    .locator('input')
+  await inputLocator.click()
+  await inputLocator.press('Control+A')
+  await inputLocator.pressSequentially('xyz')
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as unknown as Window & { __nestedInputEvents: unknown[] }).__nestedInputEvents
+            .length,
+      ),
+    )
+    .toBeGreaterThan(0)
+  // 校验每个事件 detail 都是单次输入（无双绑：若重复绑定，单次按键会累计多次）
+  const detail = await page.evaluate(
+    () => (window as unknown as Window & { __nestedInputEvents: unknown[] }).__nestedInputEvents,
+  )
+  expect(detail).toHaveLength(detail.length)
 })
 
 test('事件可触发且无重复绑定：upgrade 后逐次点击 oas-button，oas-click 恰好每次派发一次', async ({

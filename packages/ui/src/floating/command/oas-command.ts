@@ -17,6 +17,9 @@ const STYLE = `
   display: block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 .overlay {
   position: fixed;
   inset: 0;
@@ -120,8 +123,9 @@ export class OASCommand extends OASElement {
   private previousFocus: HTMLElement | null = null
   private optionSeq = 0
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="overlay" part="overlay" hidden>
         <div class="panel" part="panel" role="dialog" aria-modal="true">
@@ -131,6 +135,10 @@ export class OASCommand extends OASElement {
         </div>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
     this.overlayEl = this.shadow.querySelector('.overlay')
     this.panelEl = this.shadow.querySelector('.panel')
     this.listEl = this.shadow.querySelector('.list')
@@ -164,7 +172,20 @@ export class OASCommand extends OASElement {
     }
     document.addEventListener('keydown', onDocumentKey)
     this.onCleanup(() => document.removeEventListener('keydown', onDocumentKey))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（overlay/list 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.overlay')) return false
+    if (!this.shadow.querySelector('.list')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

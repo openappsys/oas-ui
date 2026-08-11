@@ -15,6 +15,9 @@ const STYLE = `
   font-size: var(--oas-font-size-sm);
   color: var(--oas-color-text-secondary);
 }
+:host([hidden]) {
+  display: none;
+}
 :host(.oas-bottom-navigation--fixed) {
   position: fixed;
   bottom: 0;
@@ -103,14 +106,31 @@ export class OASBottomNavigation extends OASElement {
   private lastValueRaw: string | null = null
   private focusIndex = 0
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="tablist" part="tablist"></div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定键盘导航（render 与水合路径共用） */
+  private bind(): void {
     this.tablist = this.shadow.querySelector('.tablist')
     this.tablist?.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（tablist 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.tablist')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

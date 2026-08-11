@@ -211,7 +211,8 @@ into the SSR output stream and the browser parser attaches the DSD templates.
 
 - Whitelist (pure-presentation components, declarative-data components, the
   layout-measuring pilot, form components batch 1, feedback components
-  batch 2, and data-display components batch 3): `oas-button`, `oas-tag`,
+  batch 2, data-display components batch 3, and navigation/layout components
+  batch 4): `oas-button`, `oas-tag`,
   `oas-empty`, `oas-divider`, `oas-text`, `oas-title`, `oas-paragraph`,
   `oas-table`, `oas-affix`, `oas-ellipsis`, `oas-scroll-area`, `oas-tree`,
   `oas-select`, `oas-input`, `oas-textarea`, `oas-checkbox`,
@@ -230,7 +231,14 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   `oas-carousel`, `oas-statistic`, `oas-countdown`, `oas-chart`, `oas-code`,
   `oas-equation`, `oas-log`, `oas-masonry`, `oas-comment`, `oas-marquee`,
   `oas-number-animation`, `oas-gradient-text`, `oas-aspect-ratio`,
-  `oas-virtual-list`.
+  `oas-virtual-list`, `oas-tabs`, `oas-tab-panel`, `oas-bottom-navigation`,
+  `oas-pagination`, `oas-steps`, `oas-segmented`, `oas-breadcrumb`,
+  `oas-anchor`, `oas-back-top`, `oas-menu`, `oas-dropdown`,
+  `oas-context-menu`, `oas-menubar`, `oas-navigation-menu`, `oas-toolbar`,
+  `oas-command`, `oas-tour`, `oas-hover-card`, `oas-splitter`, `oas-flex`,
+  `oas-page-header`, `oas-float-button`, `oas-speed-dial`, `oas-layout`,
+  `oas-header`, `oas-sider`, `oas-content`, `oas-footer`, `oas-sidebar`,
+  `oas-container`, `oas-grid`, `oas-grid-item`.
 - Calling `renderToString` with a non-whitelisted tag throws an explicit error;
   there is no silent fallback.
 - The imperative components (message / notification / toast / snackbar /
@@ -268,6 +276,26 @@ into the SSR output stream and the browser parser attaches the DSD templates.
   the window recomputed from the same attributes after upgrade is identical;
   log adopts the snapshot rows incrementally and marquee re-syncs its clone
   group idempotently — neither duplicates DOM.
+- Navigation/layout components batch 4: static-structure components (tabs /
+  steps / pagination / breadcrumb / segmented / flex / page-header / container /
+  grid / splitter, etc.) snapshot their full structure; floating-trigger
+  components (dropdown / context-menu / hover-card / command / tour / speed-dial)
+  default to the closed panel and snapshot the trigger skeleton (a server-direct
+  `open` snapshot includes the full overlay), with the browser opening them on
+  interaction after upgrade; visible-menu components (menu / menubar /
+  navigation-menu / toolbar) snapshot the menu structure (submenus default to
+  collapsed).
+- Nested recursive serialization: whitelisted child components upgraded in the
+  light DOM (form > form-item > oas-input, tabs > tab-panel,
+  descriptions > descriptions-item, layout > sider/header, grid > grid-item,
+  timeline > timeline-item, etc.) are recursively wrapped into nested
+  `<template shadowrootmode="open">` blocks (including the child fingerprint)
+  inserted at the start of each child's content — child shadow content (label
+  text, etc.) is visible without JS, and both parent and child go through true
+  hydration by fingerprint after upgrade. Child tags are loaded on demand before
+  rendering (non-whitelisted children are left as raw markup); the light DOM
+  part is emitted from the processed `el.innerHTML` so component light-DOM sync
+  (e.g. tabs hiding inactive panels, collapse open state) is preserved.
 - The snapshots of the layout-measuring components
   (affix / ellipsis / scroll-area) are the un-measured state (happy-dom reports
   all-zero layout), the first frame after upgrade matches the snapshot, and the

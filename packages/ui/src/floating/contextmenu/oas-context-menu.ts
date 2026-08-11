@@ -8,6 +8,9 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 .menu-anchor {
   position: fixed;
   z-index: var(--oas-z-dropdown, 1000);
@@ -26,14 +29,19 @@ export class OASContextMenu extends OASElement {
   private menuEl: OASMenu | null = null
   private anchorEl: HTMLElement | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <slot></slot>
       <div class="menu-anchor" part="menu" hidden>
         <oas-menu tabindex="-1"></oas-menu>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
     this.anchorEl = this.shadow.querySelector('.menu-anchor')
     this.menuEl = this.shadow.querySelector('oas-menu')
     this.addEventListener('contextmenu', (e: MouseEvent) => {
@@ -51,7 +59,19 @@ export class OASContextMenu extends OASElement {
       this.emit('select', { value: detail.value })
       this.close()
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（menu-anchor 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.menu-anchor')) return false
+    this.bind()
+    return true
   }
 
   private openMenu(x: number, y: number): void {

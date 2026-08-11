@@ -13,6 +13,9 @@ const STYLE = `
 :host([open]) {
   display: block;
 }
+:host([hidden]) {
+  display: none;
+}
 .mask {
   position: fixed;
   inset: 0;
@@ -96,8 +99,9 @@ export class OAStour extends OASElement {
   private popup: HTMLElement | null = null
   private current = 0
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="mask" part="mask"></div>
       <div class="highlight" part="highlight" aria-hidden="true"></div>
@@ -114,6 +118,10 @@ export class OAStour extends OASElement {
         </div>
       </div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
     this.highlight = this.shadow.querySelector('.highlight')
     this.popup = this.shadow.querySelector('.popup')
     this.shadow.querySelector('[part="next"]')?.addEventListener('click', () => this.next())
@@ -124,7 +132,19 @@ export class OAStour extends OASElement {
     }
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（popup 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.popup')) return false
+    this.bind()
+    return true
   }
 
   private next(): void {

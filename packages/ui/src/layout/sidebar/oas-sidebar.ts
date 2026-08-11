@@ -22,6 +22,9 @@ const STYLE = `
   font-family: inherit;
   transition: width var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1));
 }
+:host([hidden]) {
+  display: none;
+}
 :host([collapsed]) {
   width: var(--oas-sidebar-collapsed-width, 64px);
 }
@@ -255,8 +258,9 @@ export class OASSidebar extends OASElement {
   }
   private mq: MediaQueryList | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <aside part="root">
         <div class="panel" part="panel">
@@ -273,6 +277,10 @@ export class OASSidebar extends OASElement {
       <button part="trigger" type="button" hidden>☰</button>
       <div class="mask" part="mask"></div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
     this.shadow.querySelector('.mask')?.addEventListener('click', () => this.closeDrawer())
     this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.closeDrawer())
     this.shadow.querySelector('[part="trigger"]')?.addEventListener('click', () => this.openDrawer())
@@ -286,7 +294,19 @@ export class OASSidebar extends OASElement {
 
     this.syncMq()
     this.onCleanup(() => this.mq?.removeEventListener('change', this.mqListener))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（panel 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.panel')) return false
+    this.bind()
+    return true
   }
 
   /** matchMedia 变化：断点穿越时重新判定（抽屉关闭逻辑收敛在 update） */

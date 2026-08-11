@@ -19,7 +19,16 @@
  * aspect-ratio/virtual-list 及四个子组件 collapse-item/descriptions-item/timeline-item/list-item：
  * 纯展示组件直出完整快照；chart/code/equation 为同步确定性渲染（SVG/高亮/公式全部纯计算，非 canvas/异步）；
  * 动态组件 carousel/countdown/number-animation/marquee 快照为初始帧/初始值，动画与计时由客户端接管；
- * virtual-list 快照为 scrollTop=0 的首屏窗口行 + 上下 padding 占位，升级后按同属性重算窗口不变）。
+ * virtual-list 快照为 scrollTop=0 的首屏窗口行 + 上下 padding 占位，升级后按同属性重算窗口不变）+
+ * 导航布局组件批次 4（tabs/tab-panel/bottom-navigation/pagination/steps/segmented/breadcrumb/anchor/
+ * back-top/menu/dropdown/context-menu/menubar/navigation-menu/toolbar/command/tour/hover-card/splitter/
+ * flex/page-header/float-button/speed-dial/layout/sider/header/content/footer/sidebar/container/grid/
+ * grid-item：静态结构组件直出完整快照；浮层触发类 dropdown/context-menu/hover-card/command/tour 面板
+ * 默认关闭、快照为触发器骨架；menu/menubar/navigation-menu/toolbar 为可见菜单结构直出快照）。
+ *
+ * 嵌套递归序列化：light DOM 里已 upgrade 的子组件（如 form>form-item>oas-input、tabs>tab-panel、
+ * layout>sider）会被递归包成嵌套 `<template shadowrootmode="open">`（含子组件指纹），
+ * 禁 JS 时子组件 shadow 内容同样可见；浏览器 upgrade 后父子均按指纹走真水合。
  *
  * 为什么按需装载（而不是 `import('@oas-ui/ui')` 全量）：
  * - 全量入口会求值全部 ~115 个组件目录（每个目录 index.ts 的 define 副作用 + 各自依赖图），
@@ -27,6 +36,8 @@
  * - 本渲染器按 tag 只动态 import 对应组件目录（如 `@oas-ui/ui/basic/button`），白名单组件
  *   首载实测 < 200ms。目录 index.ts 的 define 副作用注册到 shim 的 customElements 上
  *   （shim 在 import 之前先装好），无需手动 define，安全；
+ * - 嵌套场景（slotHTML 里含其他白名单子组件，如 form>form-item）会在渲染前把子组件 tag
+ *   一并按需装载——子组件不 upgrade 就没有 shadowRoot 可序列化，禁 JS 快照会丢失子组件内容。
  * - 为什么不走 `@oas-ui/ui/ssr`（Node-safe 类导出入口）：该入口 re-export 全部组件类，
  *   import 任一具名导出都会求值全部 ~115 个类文件（模块装载量不降，只是不 define）；
  *   单独 `@oas-ui/ui/basic/button/oas-button` 子路径与 ui exports 的 `./*` 通配
@@ -61,7 +72,9 @@ import { ensureShim } from './shim.js'
  * 批次 1（DSD 白名单化：template/bind/hydrate 拆分，快照为骨架/已选值/关闭态下拉）+ 反馈组件批次 2
  * （可见态反馈组件 + 浮层组件，命令式组件 message/notification/toast/snackbar/loading-bar/confirm
  * 无初始 DOM 不纳入）+ 数据展示组件批次 3（纯展示组件直出快照；chart/code/equation 同步确定性渲染；
- * 动态组件快照为初始帧，动画客户端接管；virtual-list 快照为首屏窗口 + padding 占位）。
+ * 动态组件快照为初始帧，动画客户端接管；virtual-list 快照为首屏窗口 + padding 占位）+
+ * 导航布局组件批次 4（静态结构组件直出快照；浮层触发类面板默认关闭、快照为触发器骨架；
+ * menu/menubar/navigation-menu/toolbar 可见菜单结构直出快照；layout 多 tag 组件走嵌套递归序列化）。
  */
 export const WHITELIST = [
   'oas-button',
@@ -143,6 +156,39 @@ export const WHITELIST = [
   'oas-gradient-text',
   'oas-aspect-ratio',
   'oas-virtual-list',
+  // —— DSD 批次 4：导航布局组件白名单化 ——
+  'oas-tabs',
+  'oas-tab-panel',
+  'oas-bottom-navigation',
+  'oas-pagination',
+  'oas-steps',
+  'oas-segmented',
+  'oas-breadcrumb',
+  'oas-anchor',
+  'oas-back-top',
+  'oas-menu',
+  'oas-dropdown',
+  'oas-context-menu',
+  'oas-menubar',
+  'oas-navigation-menu',
+  'oas-toolbar',
+  'oas-command',
+  'oas-tour',
+  'oas-hover-card',
+  'oas-splitter',
+  'oas-flex',
+  'oas-page-header',
+  'oas-float-button',
+  'oas-speed-dial',
+  'oas-layout',
+  'oas-header',
+  'oas-sider',
+  'oas-content',
+  'oas-footer',
+  'oas-sidebar',
+  'oas-container',
+  'oas-grid',
+  'oas-grid-item',
 ] as const
 
 export type WhiteListTag = (typeof WHITELIST)[number]
@@ -259,6 +305,39 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-gradient-text': '@oas-ui/ui/data/gradient-text',
   'oas-aspect-ratio': '@oas-ui/ui/data/aspect-ratio',
   'oas-virtual-list': '@oas-ui/ui/data/virtual-list',
+  // —— DSD 批次 4：导航布局组件（layout 多 tag 目录一次装载注册全部） ——
+  'oas-tabs': '@oas-ui/ui/layout/tabs',
+  'oas-tab-panel': '@oas-ui/ui/layout/tabs',
+  'oas-bottom-navigation': '@oas-ui/ui/navigation/bottom-navigation',
+  'oas-pagination': '@oas-ui/ui/layout/pagination',
+  'oas-steps': '@oas-ui/ui/layout/steps',
+  'oas-segmented': '@oas-ui/ui/layout/segmented',
+  'oas-breadcrumb': '@oas-ui/ui/navigation/breadcrumb',
+  'oas-anchor': '@oas-ui/ui/navigation/anchor',
+  'oas-back-top': '@oas-ui/ui/navigation/back-top',
+  'oas-menu': '@oas-ui/ui/floating/menu',
+  'oas-dropdown': '@oas-ui/ui/floating/dropdown',
+  'oas-context-menu': '@oas-ui/ui/floating/contextmenu',
+  'oas-menubar': '@oas-ui/ui/floating/menubar',
+  'oas-navigation-menu': '@oas-ui/ui/floating/navigation-menu',
+  'oas-toolbar': '@oas-ui/ui/floating/toolbar',
+  'oas-command': '@oas-ui/ui/floating/command',
+  'oas-tour': '@oas-ui/ui/navigation/tour',
+  'oas-hover-card': '@oas-ui/ui/floating/hover-card',
+  'oas-splitter': '@oas-ui/ui/layout/splitter',
+  'oas-flex': '@oas-ui/ui/layout/flex',
+  'oas-page-header': '@oas-ui/ui/layout/page-header',
+  'oas-float-button': '@oas-ui/ui/layout/float-button',
+  'oas-speed-dial': '@oas-ui/ui/floating/speed-dial',
+  'oas-layout': '@oas-ui/ui/layout/layout',
+  'oas-header': '@oas-ui/ui/layout/layout',
+  'oas-sider': '@oas-ui/ui/layout/layout',
+  'oas-content': '@oas-ui/ui/layout/layout',
+  'oas-footer': '@oas-ui/ui/layout/layout',
+  'oas-sidebar': '@oas-ui/ui/layout/sidebar',
+  'oas-container': '@oas-ui/ui/layout/container',
+  'oas-grid': '@oas-ui/ui/layout/grid',
+  'oas-grid-item': '@oas-ui/ui/layout/grid',
 }
 
 /** 已装载的组件目录 import promise（按 tag 缓存；Node ESM 模块缓存兜底去重）。 */
@@ -312,9 +391,17 @@ async function ensureI18n(): Promise<typeof import('@oas-ui/i18n')> {
  *   oas-timeline-item / oas-list / oas-list-item / oas-carousel / oas-statistic /
  *   oas-countdown / oas-chart / oas-code / oas-equation / oas-log / oas-masonry /
  *   oas-comment / oas-marquee / oas-number-animation / oas-gradient-text /
- *   oas-aspect-ratio / oas-virtual-list），其余抛错
+ *   oas-aspect-ratio / oas-virtual-list / oas-tabs / oas-tab-panel /
+ *   oas-bottom-navigation / oas-pagination / oas-steps / oas-segmented /
+ *   oas-breadcrumb / oas-anchor / oas-back-top / oas-menu / oas-dropdown /
+ *   oas-context-menu / oas-menubar / oas-navigation-menu / oas-toolbar /
+ *   oas-command / oas-tour / oas-hover-card / oas-splitter / oas-flex /
+ *   oas-page-header / oas-float-button / oas-speed-dial / oas-layout /
+ *   oas-header / oas-sider / oas-content / oas-footer / oas-sidebar /
+ *   oas-container / oas-grid / oas-grid-item），其余抛错
  * @param attrs 宿主 attributes（kebab-case 键），值在序列化时做 & " < > 完整 HTML 转义
- * @param slotHTML 注入 light DOM 的 HTML 片段（默认插槽内容）
+ * @param slotHTML 注入 light DOM 的 HTML 片段（默认插槽内容）；内部含白名单子组件时
+ *   会被递归序列化为嵌套 DSD（子组件 shadowRoot + 指纹包成 template 插到内容最前）
  * @param opts 选项（locale 控制内置文案语言）
  */
 export async function renderToString(
@@ -330,6 +417,9 @@ export async function renderToString(
   }
 
   await ensureTag(tag)
+  // 嵌套序列化前置：slotHTML 里出现的白名单子组件 tag 也需已装载（否则子组件不 upgrade，
+  // shadowRoot 为空 → 无法序列化其 shadow 内容）。非白名单子组件不装载、按原始标记输出。
+  await ensureNestedTags(slotHTML)
   if (opts.locale) await applyLocale(opts.locale)
 
   // 注意：applyLocale（setLocale 是进程级全局态）之后的渲染段全程同步、无 await——
@@ -347,6 +437,11 @@ export async function renderToString(
   const host = document.body ?? document.documentElement
   host.appendChild(el)
 
+  // 嵌套递归序列化：把 light DOM 里所有已 upgrade 的自定义元素（shadowRoot 非空者）
+  // 的 shadowRoot.innerHTML + 指纹包成 <template shadowrootmode="open"> 插到该子元素内容最前。
+  // happy-dom 序列化 template 元素时包含其 content（已探测验证），故无需手写序列化。
+  injectNestedDSD(el, document)
+
   // shadowRoot 序列化为 DSD template 内容；宿主标签手动序列化：
   // happy-dom 的属性序列化只转义 & 与 "，不转义 < / >（属性值内的 < 可逃逸出属性），
   // 故这里自行做完整转义，同时保留组件在宿主侧同步的属性（如 oas-tag 的 role/tabindex）。
@@ -358,9 +453,53 @@ export async function renderToString(
     attrsHtml.push(` ${attr.name}="${escapeAttr(attr.value)}"`)
   }
   const tagName = el.tagName.toLowerCase()
+  // light DOM 用处理后的 el.innerHTML（保留组件对 light DOM 的同步，如 tabs 给非激活
+  // panel 加 hidden、checkbox-group 给子项同步 checked），而非原始 slotHTML 入参
+  const lightHtml = el.innerHTML
   el.remove()
 
-  return `<${tagName}${attrsHtml.join('')}><template shadowrootmode="open">${fingerprintFor(tagName)}${shadowHtml}</template>${slotHTML}</${tagName}>`
+  return `<${tagName}${attrsHtml.join('')}><template shadowrootmode="open">${fingerprintFor(tagName)}${shadowHtml}</template>${lightHtml}</${tagName}>`
+}
+
+/**
+ * 装载 slotHTML 里出现的白名单子组件 tag（嵌套序列化需要子组件已 upgrade）。
+ * 幂等：只调用 ensureTag（内部按 tag 缓存）；非白名单/非自定义元素 tag 忽略。
+ */
+async function ensureNestedTags(slotHTML: string): Promise<void> {
+  if (!slotHTML) return
+  // 正则提取自定义元素 tag（含 '-' 的标签名），不建 DOM、无副作用
+  const found = new Set<string>()
+  for (const m of slotHTML.matchAll(/<\s*([a-z][a-z0-9-]*)/gi)) {
+    const name = m[1]!.toLowerCase()
+    if (name.includes('-') && (WHITELIST as readonly string[]).includes(name)) found.add(name)
+  }
+  for (const name of found) {
+    await ensureTag(name)
+  }
+}
+
+/**
+ * 嵌套递归序列化：遍历 el 的 light DOM 里所有已 upgrade 的自定义元素（shadowRoot 非空者），
+ * 把它们的 shadowRoot.innerHTML + 指纹包成 `<template shadowrootmode="open">…</template>`
+ * 插到该子元素内容最前。多层级嵌套（form > form-item > oas-input）由 querySelectorAll('*')
+ * 深度优先天然覆盖（内层元素先序列化，外层模板只包其自身 shadow）。
+ *
+ * happy-dom 序列化 template 元素时包含其 content（innerHTML/outerHTML 均含内容，已探测），
+ * 故 el.innerHTML 最终输出即含嵌套 DSD。浏览器解析该 HTML 时子组件由 HTML 解析器附加
+ * shadow root，upgrade 后据指纹走真水合（基类 tryHydrate 已具备）。
+ *
+ * 注意：这里给子组件 light DOM 插入的 template 元素只在序列化阶段存在，序列化完成后
+ * el.remove() 整体丢弃，不会污染 shim 环境（happy-dom 不解析 DSD，无附加 shadow 副作用）。
+ */
+function injectNestedDSD(el: HTMLElement, document: Document): void {
+  for (const child of el.querySelectorAll('*')) {
+    if (!child.shadowRoot || child.shadowRoot.innerHTML === '') continue
+    const childTag = child.tagName.toLowerCase()
+    const tpl = document.createElement('template')
+    tpl.setAttribute('shadowrootmode', 'open')
+    tpl.innerHTML = `${fingerprintFor(childTag)}${child.shadowRoot.innerHTML}`
+    child.insertBefore(tpl, child.firstChild)
+  }
 }
 
 /** 属性值 HTML 转义（& " < >），防止注入闭合引号/标签 */

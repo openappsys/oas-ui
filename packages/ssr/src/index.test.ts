@@ -324,14 +324,20 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(rd).toContain('aria-checked="true"')
   })
 
-  it('oas-checkbox-group / oas-radio-group：fieldset 骨架 + light DOM 子项原样保留', async () => {
+  it('oas-checkbox-group / oas-radio-group：fieldset 骨架 + light DOM 子项保留（子组件嵌套 DSD 序列化）', async () => {
     const children =
       '<oas-checkbox value="a">A</oas-checkbox><oas-checkbox value="b">B</oas-checkbox>'
     const cg = await renderToString('oas-checkbox-group', { value: '["a"]' }, children)
     expect(cg).toContain('<template shadowrootmode="open">')
     expect(cg).toContain('<fieldset part="group">')
     expect(cg).toContain('</template>')
-    expect(cg).toContain(children)
+    // 子项原样保留 + 每个已 upgrade 的子组件被包成嵌套 DSD（含子组件指纹）；
+    // checked 由 checkbox-group 对 light DOM 同步写入（处理后的 el.innerHTML）
+    expect(cg).toContain('<oas-checkbox value="a" checked=""><template shadowrootmode="open">')
+    expect(cg).toContain('<meta data-oas-ssr="oas-checkbox" data-oas-ssr-v="1">')
+    expect(cg).toContain('<oas-checkbox value="b"><template shadowrootmode="open">')
+    expect(cg).toContain('A</oas-checkbox>')
+    expect(cg).toContain('B</oas-checkbox>')
 
     const rg = await renderToString(
       'oas-radio-group',
@@ -340,7 +346,9 @@ describe('@oas-ui/ssr renderToString', () => {
     )
     expect(rg).toContain('<oas-radio-group value="a">')
     expect(rg).toContain('<fieldset part="group">')
-    expect(rg).toContain('<oas-radio value="a">A</oas-radio>')
+    expect(rg).toContain('<oas-radio value="a"')
+    expect(rg).toContain('checked=""><template shadowrootmode="open">')
+    expect(rg).toContain('<meta data-oas-ssr="oas-radio" data-oas-ssr-v="1">')
   })
 
   it('oas-switch：checked 同步 aria-checked', async () => {
@@ -572,7 +580,7 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('part="edit" hidden')
   })
 
-  it('oas-form：form 骨架 + rules JSON 通道保留', async () => {
+  it('oas-form：form 骨架 + rules JSON 通道保留（嵌套 form-item DSD 序列化）', async () => {
     const rules = JSON.stringify({ name: [{ required: true }] })
     const html = await renderToString(
       'oas-form',
@@ -581,10 +589,15 @@ describe('@oas-ui/ssr renderToString', () => {
     )
     expect(html).toContain('<oas-form rules=')
     expect(html).toContain('<form part="form"')
-    expect(html).toContain('</template><oas-form-item label="姓名"></oas-form-item></oas-form>')
+    // form-item 嵌套 DSD：组件对 light DOM 的同步（data-form-label-align）也保留
+    expect(html).toContain(
+      '</template><oas-form-item label="姓名" data-form-label-align="top"><template shadowrootmode="open">',
+    )
+    expect(html).toContain('<meta data-oas-ssr="oas-form-item" data-oas-ssr-v="1">')
+    expect(html).toContain('</oas-form-item></oas-form>')
   })
 
-  it('oas-form-item：label 文本同步入快照', async () => {
+  it('oas-form-item：label 文本同步入快照（嵌套 oas-input DSD 序列化）', async () => {
     const html = await renderToString(
       'oas-form-item',
       { label: '姓名', required: '' },
@@ -598,7 +611,9 @@ describe('@oas-ui/ssr renderToString', () => {
     // 必填星号可见（required 属性时 hidden 移除）
     expect(html).toContain('part="required"')
     expect(html).toContain('>')
-    expect(html).toContain('</template><oas-input></oas-input></oas-form-item>')
+    expect(html).toContain('</template><oas-input><template shadowrootmode="open">')
+    expect(html).toContain('<meta data-oas-ssr="oas-input" data-oas-ssr-v="1">')
+    expect(html).toContain('</oas-input></oas-form-item>')
   })
 
   it('数据组件非法 JSON 容错：auto-complete / toggle-group / dynamic-tags 空态快照', async () => {
@@ -816,15 +831,17 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('</template>正文内容</oas-watermark>')
   })
 
-  it('oas-collapse：group 骨架 + light DOM 面板原样保留（open 态由浏览器端 update 按 active 写入）', async () => {
+  it('oas-collapse：group 骨架 + light DOM 面板保留（嵌套 collapse-item DSD 序列化，open 态同步）', async () => {
     const items = '<oas-collapse-item name="a" header="面板一">内容一</oas-collapse-item>'
     const html = await renderToString('oas-collapse', { active: 'a' }, items)
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('part="group"')
     // 宿主 active 属性保留（浏览器 upgrade 后据此展开面板）
     expect(html).toContain('<oas-collapse active="a">')
-    // light DOM 面板原样保留（open 属性由客户端 update 写入）
-    expect(html).toContain(items)
+    // light DOM 面板保留 + 嵌套 DSD（含子组件指纹）+ open 态由组件 update 同步写入
+    expect(html).toContain('<oas-collapse-item name="a" header="面板一" open=""><template shadowrootmode="open">')
+    expect(html).toContain('<meta data-oas-ssr="oas-collapse-item" data-oas-ssr-v="1">')
+    expect(html).toContain('内容一</oas-collapse-item></oas-collapse>')
   })
 
   it('oas-collapse-item：header 文本同步入快照', async () => {
@@ -1045,5 +1062,112 @@ describe('@oas-ui/ssr renderToString', () => {
     const vl = await renderToString('oas-virtual-list', { items: 'not-json' }, '')
     expect(vl).toContain('<template shadowrootmode="open">')
     expect(vl).not.toContain('part="item"')
+  })
+
+  // ---- 嵌套递归序列化（子活 1）：light DOM 子组件 shadow 内容递归包成嵌套 DSD ----
+
+  it('嵌套序列化：descriptions > descriptions-item（label 文本禁 JS 可见 + 子组件指纹）', async () => {
+    const html = await renderToString(
+      'oas-descriptions',
+      { title: '基本信息' },
+      '<oas-descriptions-item label="姓名">张三</oas-descriptions-item>',
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    // 子组件嵌套 DSD：template + 指纹 + shadow 内容（label 文本）插到 item 内容最前
+    expect(html).toContain(
+      '<template shadowrootmode="open"><meta data-oas-ssr="oas-descriptions-item" data-oas-ssr-v="1">',
+    )
+    expect(html).toContain('>姓名<')
+    // slot 内容保留在嵌套 template 之后
+    const itemIdx = html.indexOf('oas-descriptions-item')
+    const tplIdx = html.indexOf('<template shadowrootmode="open">', itemIdx)
+    expect(tplIdx).toBeGreaterThan(itemIdx)
+    expect(html.indexOf('>张三<', tplIdx)).toBeGreaterThan(tplIdx)
+  })
+
+  it('嵌套序列化：form > form-item > oas-input 多层递归（每层独立 DSD + 指纹）', async () => {
+    const html = await renderToString(
+      'oas-form',
+      {},
+      '<oas-form-item label="邮箱"><oas-input value="a@b.c"></oas-input></oas-form-item>',
+    )
+    expect(html).toContain('<meta data-oas-ssr="oas-form-item" data-oas-ssr-v="1">')
+    expect(html).toContain('<meta data-oas-ssr="oas-input" data-oas-ssr-v="1">')
+    // 内层 oas-input 的嵌套 template 出现在外层 form-item 之后（深度优先内层先处理）
+    expect(html.indexOf('data-oas-ssr="oas-input"')).toBeGreaterThan(
+      html.indexOf('data-oas-ssr="oas-form-item"'),
+    )
+    // 子组件 shadow 内容入快照：form-item label 文本 + input 骨架
+    expect(html).toContain('>邮箱<')
+    expect(html).toContain('<input part="input"')
+  })
+
+  it('嵌套序列化：tabs > tab-panel（非激活面板 hidden 同步 + 每个面板嵌套 DSD）', async () => {
+    const html = await renderToString(
+      'oas-tabs',
+      { active: 'a' },
+      '<oas-tab-panel label="A" value="a">面板A内容</oas-tab-panel><oas-tab-panel label="B" value="b">面板B内容</oas-tab-panel>',
+    )
+    // 两个面板都被序列化（含子组件指纹）
+    const count = (html.match(/data-oas-ssr="oas-tab-panel"/g) ?? []).length
+    expect(count).toBe(2)
+    // 组件对 light DOM 的同步（非激活面板 hidden）保留在处理后的 el.innerHTML 中
+    expect(
+      html
+        .toLowerCase()
+        .includes('<oas-tab-panel label="b" value="b" hidden=""><template shadowrootmode="open">'),
+    ).toBe(true)
+    expect(html).toContain('面板B内容')
+    expect(html).toContain('面板A内容')
+  })
+
+  it('嵌套序列化：timeline > timeline-item（时间文本同步 + item 嵌套 DSD）', async () => {
+    const html = await renderToString(
+      'oas-timeline',
+      {},
+      '<oas-timeline-item time="2024-01-01"><p>事件一</p></oas-timeline-item>',
+    )
+    expect(html).toContain('<meta data-oas-ssr="oas-timeline-item" data-oas-ssr-v="1">')
+    expect(html).toContain('2024-01-01')
+    expect(html).toContain('事件一')
+  })
+
+  it('嵌套序列化：layout > sider/header/content/footer（layout 多 tag 组件，各子 tag 独立 DSD）', async () => {
+    const html = await renderToString(
+      'oas-layout',
+      {},
+      '<oas-header>顶栏</oas-header><oas-sider>侧栏</oas-sider><oas-content>内容</oas-content><oas-footer>底栏</oas-footer>',
+    )
+    for (const tag of ['oas-header', 'oas-sider', 'oas-content', 'oas-footer']) {
+      expect(html).toContain(`<meta data-oas-ssr="${tag}" data-oas-ssr-v="1">`)
+    }
+    expect(html).toContain('顶栏')
+    expect(html).toContain('侧栏')
+    expect(html).toContain('内容')
+    expect(html).toContain('底栏')
+  })
+
+  it('嵌套序列化：grid > grid-item（轻量子组件 DSD）', async () => {
+    const html = await renderToString(
+      'oas-grid',
+      { cols: '2' },
+      '<oas-grid-item span="12">左</oas-grid-item><oas-grid-item span="12">右</oas-grid-item>',
+    )
+    const count = (html.match(/data-oas-ssr="oas-grid-item"/g) ?? []).length
+    expect(count).toBe(2)
+    expect(html).toContain('>左<')
+    expect(html).toContain('>右<')
+  })
+
+  it('嵌套序列化：非白名单子组件不装载、按原始标记输出（不抛错）', async () => {
+    const html = await renderToString('oas-button', {}, '<custom-widget>x</custom-widget>')
+    expect(html).toContain('<custom-widget>x</custom-widget>')
+    expect(html).not.toContain('data-oas-ssr="custom-widget"')
+  })
+
+  it('嵌套序列化：slotHTML 无子组件时行为与批次 3 一致（无额外嵌套 template）', async () => {
+    const html = await renderToString('oas-button', { type: 'primary' }, '提交')
+    expect(html).toContain('<template shadowrootmode="open"><meta data-oas-ssr="oas-button"')
+    expect(html).toContain('</template>提交</oas-button>')
   })
 })

@@ -10,6 +10,9 @@ const STYLE = `
   display: block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 nav {
   display: flex;
   flex-direction: column;
@@ -51,12 +54,30 @@ export class OASAnchor extends OASElement {
   private observer: IntersectionObserver | null = null
   private activeHref = ''
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <nav part="nav"></nav>
     `
+  }
+
+  /** 缓存节点引用 + 注册清理（render 与水合路径共用；链接点击/observer 由 update 重建时绑定） */
+  private bind(): void {
+    this.onCleanup(() => this.observer?.disconnect())
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（nav 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('nav')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

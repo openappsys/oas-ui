@@ -11,6 +11,9 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 .group {
   display: inline-flex;
   padding: var(--oas-space-1);
@@ -48,12 +51,28 @@ export class OASSegmented extends OASElement {
 
   private optionsList: SegmentedOption[] = []
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="group" part="group" role="radiogroup"></div>
     `
+  }
+
+  /** 缓存节点引用（render 与水合路径共用；选项事件在 update 重建时绑定） */
+  private bind(): void {}
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（group 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.group')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

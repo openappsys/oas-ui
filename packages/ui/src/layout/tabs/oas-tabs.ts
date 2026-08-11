@@ -8,6 +8,9 @@ const STYLE = `
   font-family: inherit;
   color: var(--oas-color-text-primary);
 }
+:host([hidden]) {
+  display: none;
+}
 .tablist {
   display: flex;
   border-bottom: 1px solid var(--oas-color-border);
@@ -228,21 +231,39 @@ export class OASTabs extends OASElement {
   }
 
   private panels: OASTabPanel[] = []
+  private observer: MutationObserver | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <div class="tablist" part="tablist" role="tablist"></div>
       <div class="panel" part="panel"><slot></slot></div>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
     this.shadow
       .querySelector('.tablist')
       ?.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
     // 宿主增删 oas-tab-panel（如 closable 场景外部移除面板）时增量刷新标签栏
-    const observer = new MutationObserver(() => this.update())
-    observer.observe(this, { childList: true })
-    this.onCleanup(() => observer.disconnect())
+    this.observer = new MutationObserver(() => this.update())
+    this.observer.observe(this, { childList: true })
+    this.onCleanup(() => this.observer?.disconnect())
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（tablist 存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.tablist')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {

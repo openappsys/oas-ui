@@ -7,6 +7,9 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+:host([hidden]) {
+  display: none;
+}
 .menu {
   position: fixed;
   z-index: var(--oas-z-dropdown, 1000);
@@ -47,12 +50,17 @@ export class OASDropdown extends OASElement {
   private menuEl: HTMLElement | null = null
   private anchor: Element | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <slot></slot>
       <ul class="menu" part="menu" role="menu" aria-hidden="true"></ul>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
     this.menuEl = this.shadow.querySelector('.menu')
     this.anchor = this.querySelector(':scope > *') ?? this
     this.anchor?.addEventListener('click', () => this.toggle())
@@ -62,7 +70,19 @@ export class OASDropdown extends OASElement {
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
     this.onCleanup(() => document.removeEventListener('click', this.handleOutside))
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（menu 列表存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.menu')) return false
+    this.bind()
+    return true
   }
 
   private toggle(): void {

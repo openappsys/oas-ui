@@ -25,6 +25,9 @@ const STYLE = `
   min-width: 160px;
   color: var(--oas-color-text-primary);
 }
+:host([hidden]) {
+  display: none;
+}
 .menu {
   margin: 0;
   padding: 0;
@@ -188,11 +191,16 @@ export class OASMenu extends OASElement {
   private expanded = new Set<string>()
   private menuEl: HTMLElement | null = null
 
-  protected override render(): void {
-    this.shadow.innerHTML = `
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
+  private template(): string {
+    return `
       <style>${STYLE}</style>
       <ul class="menu" part="menu" role="menu" tabindex="0"></ul>
     `
+  }
+
+  /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
+  private bind(): void {
     const menuEl = this.shadow.querySelector<HTMLElement>('.menu')!
     this.menuEl = menuEl
     menuEl.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
@@ -203,7 +211,19 @@ export class OASMenu extends OASElement {
         this.syncOpen()
       }
     })
+  }
+
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
     this.update()
+  }
+
+  /** 真水合：校验 SSR 快照结构（menu 列表存在）后直接接管，跳过 shadow 重建 */
+  protected override hydrate(): boolean {
+    if (!this.shadow.querySelector('.menu')) return false
+    this.bind()
+    return true
   }
 
   protected override update(): void {
