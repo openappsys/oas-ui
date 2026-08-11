@@ -573,3 +573,142 @@ test('alert 关闭后真正隐藏：closeable 点击关闭按钮 host 视觉消�
   await expect(host).toBeHidden()
   expect(await host.getAttribute('hidden')).not.toBeNull()
 })
+
+test('virtual-list 滚轮增量滚动不失控（overflow-anchor 回归）', async ({ page }) => {
+  // 曾现 bug：虚拟滚动重渲染触发 Chrome 滚动锚定，滚轮增量逐帧放大（120 → 1056 → 2784），
+  // 表现为"滚一下直接滚到底/越滚越快"。修复：.viewport/.inner 加 overflow-anchor: none。
+  await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#vl-basic')
+  await page.waitForTimeout(600)
+  const box = await page.locator('#vl-basic').boundingBox()
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + 50)
+  const scrollTop = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#vl-basic')!
+      return el.shadowRoot!.querySelector('[part=viewport]')!.scrollTop
+    })
+  const s0 = await scrollTop()
+  await page.mouse.wheel(0, 120)
+  await page.waitForTimeout(300)
+  const s1 = await scrollTop()
+  await page.mouse.wheel(0, 120)
+  await page.waitForTimeout(300)
+  const s2 = await scrollTop()
+  await page.mouse.wheel(0, 120)
+  await page.waitForTimeout(300)
+  const s3 = await scrollTop()
+  const d1 = s1 - s0
+  const d2 = s2 - s1
+  const d3 = s3 - s2
+  // 每格滚轮应基本按增量前进（120 上下），绝不失控放大
+  expect(d1).toBeGreaterThanOrEqual(100)
+  expect(d2).toBeGreaterThanOrEqual(100)
+  expect(d3).toBeGreaterThanOrEqual(100)
+  expect(d2).toBeLessThanOrEqual(240)
+  expect(d3).toBeLessThanOrEqual(240)
+})
+
+test('tree 虚拟列表滚轮增量滚动正常（overflow-anchor 回归）', async ({ page }) => {
+  // 曾现 bug：同 virtual-list——tree 虚拟模式复用 oas-virtual-list，滚轮一下直接滚到底。
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tree-virtual')
+  await page.waitForTimeout(800)
+  await page.locator('#tree-virtual').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(300)
+  const r = await page.evaluate(() => {
+    const tree = document.querySelector('#tree-virtual')!
+    const vlist = tree.shadowRoot!.querySelector('oas-virtual-list')!
+    const vp = vlist.shadowRoot!.querySelector('[part=viewport]')!
+    const br = vp.getBoundingClientRect()
+    return { x: br.x, y: br.y, w: br.width, h: br.height }
+  })
+  await page.mouse.move(r.x + r.w / 2, r.y + 20)
+  const scrollTop = () =>
+    page.evaluate(() => {
+      const tree = document.querySelector('#tree-virtual')!
+      const vlist = tree.shadowRoot!.querySelector('oas-virtual-list')!
+      return vlist.shadowRoot!.querySelector('[part=viewport]')!.scrollTop
+    })
+  await page.mouse.wheel(0, 120)
+  await page.waitForTimeout(300)
+  const s1 = await scrollTop()
+  await page.mouse.wheel(0, 120)
+  await page.waitForTimeout(300)
+  const s2 = await scrollTop()
+  await page.mouse.wheel(0, 120)
+  await page.waitForTimeout(300)
+  const s3 = await scrollTop()
+  expect(s1).toBeGreaterThanOrEqual(100)
+  expect(s2 - s1).toBeGreaterThanOrEqual(100)
+  expect(s3 - s2).toBeGreaterThanOrEqual(100)
+  expect(s2 - s1).toBeLessThanOrEqual(240)
+  expect(s3 - s2).toBeLessThanOrEqual(240)
+})
+
+test('scroll-area 横向可滚：滚轮增量横向滚动 + 横向/纵向 thumb 可拖拽', async ({ page }) => {
+  // 曾现 bug：thumb 完全无拖拽实现（mousedown 无响应）；横向仅溢出时原生纵向滚轮
+  // 不滚动横向轴，用户"滚不动"。修复：thumb 拖拽 + 滚轮纵向增量转译横向。
+  await page.goto('/components/scroll-area.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-scroll-area')
+  await page.waitForTimeout(600)
+
+  // 横向 demo（第 2 个 oas-scroll-area）：纵向滚轮 → 横向滚动
+  const area = page.locator('oas-scroll-area').nth(1)
+  await area.scrollIntoViewIfNeeded()
+  await page.waitForTimeout(300)
+  const r = await area.evaluate((el) => {
+    const vp = el.shadowRoot!.querySelector('[part=viewport]')!
+    const br = vp.getBoundingClientRect()
+    return { x: br.x, y: br.y, w: br.width, h: br.height }
+  })
+  await page.mouse.move(r.x + r.w / 2, r.y + r.h / 2)
+  await page.mouse.wheel(0, 120)
+  await page.waitForTimeout(300)
+  const afterWheel = await area.evaluate(
+    (el) => el.shadowRoot!.querySelector('[part=viewport]')!.scrollLeft,
+  )
+  expect(afterWheel).toBeGreaterThan(0)
+
+  // 横向 thumb 拖拽：scrollLeft 变化
+  const h = await area.evaluate((el) => {
+    const vp = el.shadowRoot!.querySelector('[part=viewport]')!
+    const before = vp.scrollLeft
+    const thumbEl = el.shadowRoot!.querySelector('[part=thumb-h]')!
+    const br = thumbEl.getBoundingClientRect()
+    return { before, x: br.x, y: br.y, w: br.width, h: br.height }
+  })
+  await page.mouse.move(h.x + 30, h.y + h.h / 2)
+  await page.mouse.down()
+  await page.mouse.move(h.x + h.w / 2, h.y + h.h / 2, { steps: 4 })
+  await page.mouse.up()
+  await page.waitForTimeout(300)
+  const afterHDrag = await area.evaluate(
+    (el) => el.shadowRoot!.querySelector('[part=viewport]')!.scrollLeft,
+  )
+  expect(afterHDrag).not.toBe(h.before)
+
+  // 纵向 thumb 拖拽（基础 demo，第 1 个）：scrollTop 增大
+  // 注意：scrollIntoView 时 thumb 起点可能落在文档站粘性页头之下，pointerdown 被页头截走；
+  // 把 host 移到固定坐标（避开页头）再拖，保证拖拽真实发生在 thumb 上。
+  const area0 = page.locator('oas-scroll-area').nth(0)
+  await area0.evaluate((el) => {
+    el.style.cssText = 'position: fixed; left: 80px; top: 300px; z-index: 9999'
+  })
+  await page.waitForTimeout(300)
+  const v = await area0.evaluate((el) => {
+    const vp = el.shadowRoot!.querySelector('[part=viewport]')!
+    const before = vp.scrollTop
+    const thumbEl = el.shadowRoot!.querySelector('[part=thumb-v]')!
+    const br = thumbEl.getBoundingClientRect()
+    return { before, x: br.x, y: br.y, w: br.width, h: br.height }
+  })
+  await page.mouse.move(v.x + v.w / 2, v.y + 10)
+  await page.mouse.down()
+  await page.mouse.move(v.x + v.w / 2, v.y + v.h - 10, { steps: 4 })
+  await page.mouse.up()
+  await page.waitForTimeout(300)
+  const afterVDrag = await area0.evaluate(
+    (el) => el.shadowRoot!.querySelector('[part=viewport]')!.scrollTop,
+  )
+  expect(afterVDrag).toBeGreaterThan(v.before)
+})

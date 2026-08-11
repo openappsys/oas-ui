@@ -43,9 +43,13 @@ const STYLE = `
   height: 100%;
   overflow: auto;
   overscroll-behavior: contain;
+  /* 虚拟滚动重渲染（padding/items 增删）会触发 Chrome 滚动锚定，把滚轮增量逐帧放大
+     成加速循环（滚一下直接到底/越滚越快），必须禁用锚定 */
+  overflow-anchor: none;
 }
 .inner {
   position: relative;
+  overflow-anchor: none;
 }
 .padding {
   width: 100%;

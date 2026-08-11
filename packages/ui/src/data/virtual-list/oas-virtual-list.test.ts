@@ -174,4 +174,15 @@ describe('OASVirtualList', () => {
     document.body.appendChild(el)
     expect(items(el).length).toBeGreaterThan(0)
   })
+
+  it('视口与 inner 禁用 Chrome 滚动锚定（overflow-anchor: none）', () => {
+    // 回归：虚拟滚动重渲染（padding/items 增删）会触发 Chrome 滚动锚定，滚轮增量被逐帧
+    // 放大成加速循环（滚一下直接到底）；.viewport 与 .inner（scroll-target 外部容器场景）
+    // 都必须显式禁用锚定。
+    const el = mount({ height: '100', 'item-height': '20', items: JSON.stringify(range(100)) })
+    const styleText = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    const block = (sel: string) => styleText.match(new RegExp(`${sel}\\s*\\{([^}]*)\\}`))?.[1] ?? ''
+    expect(block('\\.viewport')).toContain('overflow-anchor: none')
+    expect(block('\\.inner')).toContain('overflow-anchor: none')
+  })
 })

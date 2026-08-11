@@ -240,4 +240,118 @@ describe('OASScrollArea', () => {
     expect(track(el, 'track-v').classList.contains('visible')).toBe(false)
     el.remove()
   })
+
+  describe('滚轮接管（仅横向可滚时）', () => {
+    it('纵向不可滚、横向可滚：纵向滚轮增量转横向并阻止默认', () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
+      const ev = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 50 })
+      vp.dispatchEvent(ev)
+      expect(ev.defaultPrevented).toBe(true)
+      expect(vp.scrollLeft).toBe(50)
+    })
+
+    it('deltaX 滚轮增量同样接管横向滚动', () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
+      const ev = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaX: 30 })
+      vp.dispatchEvent(ev)
+      expect(ev.defaultPrevented).toBe(true)
+      expect(vp.scrollLeft).toBe(30)
+    })
+
+    it('横向滚动中负增量可回退', () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
+      scrollTo(el, 100, 0)
+      const ev = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: -30 })
+      vp.dispatchEvent(ev)
+      expect(ev.defaultPrevented).toBe(true)
+      expect(vp.scrollLeft).toBe(70)
+    })
+
+    it('已在横向边缘继续滚：不拦截，链式传给页面', () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
+      scrollTo(el, 300, 0) // maxX = 300
+      const ev = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 50 })
+      vp.dispatchEvent(ev)
+      expect(ev.defaultPrevented).toBe(false)
+      expect(vp.scrollLeft).toBe(300)
+    })
+
+    it('纵向可滚（含双向可滚）时滚轮不拦截，交给原生', () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      const ev = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 50 })
+      vp.dispatchEvent(ev)
+      expect(ev.defaultPrevented).toBe(false)
+    })
+  })
+
+  describe('thumb 拖拽', () => {
+    it('纵向：pointerdown→move 按比例滚动 scrollTop，松开结束并还原文本选择', () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 400 })
+      const vTrack = track(el, 'track-v')
+      const vThumb = thumb(el, 'thumb-v')
+      // 轨道高 96（top/bottom 各 2px）、thumb 高 25 → travel = 71，maxScroll = 300
+      Object.defineProperty(vTrack, 'clientHeight', { value: 96, configurable: true })
+      Object.defineProperty(vThumb, 'clientHeight', { value: 25, configurable: true })
+      vThumb.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientY: 10 }))
+      window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientY: 45.5 }))
+      // delta=35.5 → 35.5/71*300 = 150
+      expect(vp.scrollTop).toBe(150)
+      expect(document.body.style.userSelect).toBe('none')
+      window.dispatchEvent(new PointerEvent('pointerup', {}))
+      expect(document.body.style.userSelect).toBe('')
+      // 拖拽结束后不再响应 move
+      window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientY: 90 }))
+      expect(vp.scrollTop).toBe(150)
+    })
+
+    it('横向：pointermove 按比例同步 scrollLeft', () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
+      const hTrack = track(el, 'track-h')
+      const hThumb = thumb(el, 'thumb-h')
+      Object.defineProperty(hTrack, 'clientWidth', { value: 96, configurable: true })
+      Object.defineProperty(hThumb, 'clientWidth', { value: 25, configurable: true })
+      hThumb.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 10 }))
+      window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 45.5 }))
+      expect(vp.scrollLeft).toBe(150)
+      window.dispatchEvent(new PointerEvent('pointerup', {}))
+    })
+
+    it('拖拽越界夹取到有效区间（maxScroll）', () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
+      const hTrack = track(el, 'track-h')
+      const hThumb = thumb(el, 'thumb-h')
+      Object.defineProperty(hTrack, 'clientWidth', { value: 96, configurable: true })
+      Object.defineProperty(hThumb, 'clientWidth', { value: 25, configurable: true })
+      hThumb.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 10 }))
+      window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 500 }))
+      expect(vp.scrollLeft).toBe(300)
+      window.dispatchEvent(new PointerEvent('pointerup', {}))
+    })
+
+    it('非主键按下不启动拖拽', () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
+      const hThumb = thumb(el, 'thumb-h')
+      hThumb.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 2, clientX: 10 }))
+      window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 45 }))
+      expect(vp.scrollLeft).toBe(0)
+    })
+  })
 })
