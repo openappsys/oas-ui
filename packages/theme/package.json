@@ -7,12 +7,17 @@
   "publishConfig": {
     "access": "public"
   },
-  "main": "./src/index.css",
-  "types": "./src/index.css",
+  "main": "./index.css",
+  "types": "./index.css",
   "exports": {
-    ".": "./src/index.css"
+    ".": "./index.css"
   },
+  "files": [
+    "index.css",
+    "src/index.css"
+  ],
   "scripts": {
+    "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   }
 }
