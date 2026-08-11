@@ -127,6 +127,16 @@ for the rendering itself.
 > should reach the browser through the SSR output stream (the server-rendered
 > HTML response).
 
+> Process-level side effect: on first call the renderer installs happy-dom's
+> `document` / `customElements` / `HTMLElement` and other globals onto
+> `globalThis` (required for component class evaluation and registration). If
+> your Node process uses another global DOM solution (other SSR libraries, test
+> framework environments), evaluate coexistence first — the renderer throws a
+> clear error when globals cannot be installed. Also, the `locale` option
+> switches via the global i18n registry; the rendering segment runs
+> synchronously, so there is no interleaving window between requests on a single
+> thread.
+
 ### Nuxt (Nitro server route)
 
 ```ts

@@ -83,7 +83,9 @@ const html = await renderToString(
 
 **为什么 async**：组件类求值依赖全局 DOM shim（`class extends HTMLElement` 需要 `HTMLElement` / `customElements` 已就位），静态 import 会提前求值、无法保证「先装 shim 再装载组件」的顺序，故首次调用时动态装载组件模块（shim 先就位）；模块加载后缓存，后续调用开销仅为渲染本身。
 
-> 注意：DSD 模板由浏览器** HTML 解析器**附加 shadow root，`innerHTML` 等运行时字符串注入不会触发附加。产出字符串应经由 SSR 输出流（服务端渲染的 HTML 响应）送达浏览器。
+> 注意：DSD 模板由浏览器 **HTML 解析器**附加 shadow root，`innerHTML` 等运行时字符串注入不会触发附加。产出字符串应经由 SSR 输出流（服务端渲染的 HTML 响应）送达浏览器。
+
+> 进程级副作用声明：渲染器首次调用会把 happy-dom 的 `document` / `customElements` / `HTMLElement` 等全局安装到 `globalThis`（组件类求值与注册的必需环境）。若你的 Node 进程另有全局 DOM 方案（其他 SSR 库、测试框架环境），请先评估共存——无法覆盖全局时渲染器会抛明确错误。另：`locale` 选项经全局 i18n registry 切换，渲染段为同步执行，单线程下请求间无交错窗口。
 
 ### Nuxt（Nitro server route）
 

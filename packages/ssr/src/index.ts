@@ -137,8 +137,7 @@ function ensureTag(tag: string): Promise<void> {
 let i18nApi: typeof import('@oas-ui/i18n') | null = null
 
 /**
- * 装载 i18n registry（其依赖链会求值 OASElement：class extends HTMLElement）。
- * 在 ensureTag 之后调用，此时 shim 已装好，故安全。幂等。
+ * 装载 i18n registry（纯数据模块，但保持动态 import 以便首次调用时装载，避免无谓的启动开销）。幂等。
  */
 async function ensureI18n(): Promise<typeof import('@oas-ui/i18n')> {
   if (!i18nApi) {
@@ -172,6 +171,8 @@ export async function renderToString(
   await ensureTag(tag)
   if (opts.locale) await applyLocale(opts.locale)
 
+  // 注意：applyLocale（setLocale 是进程级全局态）之后的渲染段全程同步、无 await——
+  // 单线程下多请求交错调用时 locale 不会被串。未来改动请勿在此区间插入 await。
   const { document } = ensureShim()
   const el = document.createElement(tag)
   for (const [name, value] of Object.entries(attrs)) {
