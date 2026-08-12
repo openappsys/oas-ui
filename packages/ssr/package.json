@@ -28,6 +28,6 @@
   "dependencies": {
     "@oas-ui/i18n": "workspace:*",
     "@oas-ui/ui": "workspace:*",
-    "happy-dom": "^20.11.1"
+    "happy-dom": "^20.11.2"
   }
 }

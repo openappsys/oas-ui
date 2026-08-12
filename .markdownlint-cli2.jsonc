@@ -2,8 +2,8 @@
   "config": {
     "default": true,
     // 以下为规则的场景适用性决策（通用做法），每条记录理由，非偷懒禁用：
-    // MD013 line-length：中文文档无空格分词、长句一行轻松超行宽（且 prettier proseWrap
-    //   从不折行），939 处误报证明与中文文档冲突——对 CJK 文档普遍禁用或大幅放宽。
+    // MD013 line-length：中文文档无空格分词、长句一行轻松超行宽（且文档从不折行），
+    // 939 处误报证明与中文文档冲突——对 CJK 文档普遍禁用或大幅放宽。
     "MD013": false,
     // MD024 no-duplicate-heading：CHANGELOG（Keep a Changelog）/PRD 每版本下
     //   相同小节标题（### 新增/### 修复）是标准结构；markdownlint 的 allow_different_nesting

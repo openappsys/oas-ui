@@ -1,5 +1,5 @@
 # 跨编辑器编码规范（主流编辑器自动遵循）
-# 与 .prettierrc.json 保持一致：2 空格缩进、LF 行尾、UTF-8、末尾换行
+# 与 biome.json 一致：2 空格缩进、LF 行尾、UTF-8、末尾换行
 root = true
 
 [*]

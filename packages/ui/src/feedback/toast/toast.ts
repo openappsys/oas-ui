@@ -2,7 +2,12 @@ import { resolveMessageHost } from '../../floating/app/app-host.js'
 import type { OASToast, ToastType } from './oas-toast.js'
 
 export type ToastPosition =
-  'top-right' | 'top-left' | 'top-center' | 'bottom-right' | 'bottom-left' | 'bottom-center'
+  | 'top-right'
+  | 'top-left'
+  | 'top-center'
+  | 'bottom-right'
+  | 'bottom-left'
+  | 'bottom-center'
 
 export interface ToastAction {
   label: string

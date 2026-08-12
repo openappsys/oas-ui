@@ -79,7 +79,7 @@
   --oas-focus-ring: 0 0 0 2px color-mix(in srgb, var(--oas-color-primary) 30%, transparent);
 }
 
-[data-theme='dark'],
+[data-theme="dark"],
 html.dark {
   --oas-color-primary: #4d9fff;
   --oas-color-primary-hover: #63a8ff;
@@ -104,7 +104,7 @@ html.dark {
   --oas-color-overlay: rgba(0, 0, 0, 0.6);
 }
 
-[data-theme='high-contrast'] {
+[data-theme="high-contrast"] {
   --oas-color-primary: #0050b3;
   --oas-color-primary-hover: #003a8c;
   --oas-color-primary-active: #002766;

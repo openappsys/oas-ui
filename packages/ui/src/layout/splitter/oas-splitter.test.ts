@@ -77,7 +77,8 @@ describe('OASSplitter', () => {
 
 function pointer(type: string, clientX: number): Event {
   const Ctor = (globalThis as Record<string, unknown>).PointerEvent as
-    typeof PointerEvent | undefined
+    | typeof PointerEvent
+    | undefined
   if (typeof Ctor === 'function') {
     return new Ctor(type, { bubbles: true, clientX })
   }

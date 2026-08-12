@@ -4,7 +4,14 @@ export type CodeLanguage = 'js' | 'ts' | 'html' | 'css' | 'json' | string
 
 /** token 类别 → CSS class（配色见 STYLE 的 .tok-* 规则） */
 type TokenClass =
-  'keyword' | 'string' | 'comment' | 'number' | 'tag' | 'attr' | 'function' | 'operator'
+  | 'keyword'
+  | 'string'
+  | 'comment'
+  | 'number'
+  | 'tag'
+  | 'attr'
+  | 'function'
+  | 'operator'
 
 const JS_KEYWORDS = [
   'const',

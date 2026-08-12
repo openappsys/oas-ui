@@ -184,7 +184,8 @@ describe('OASModal', () => {
 
 function pointer(type: string, clientX: number, clientY = 0): Event {
   const Ctor = (globalThis as Record<string, unknown>).PointerEvent as
-    typeof PointerEvent | undefined
+    | typeof PointerEvent
+    | undefined
   if (typeof Ctor === 'function') {
     return new Ctor(type, { bubbles: true, clientX, clientY })
   }
