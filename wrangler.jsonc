@@ -4,7 +4,7 @@
 // Node 版本：NODE_VERSION=22
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "oas-ui-docs",
+  "name": "oas-ui",
   "compatibility_date": "2026-08-12",
   "assets": {
     "directory": "packages/docs/docs/.vitepress/dist"
