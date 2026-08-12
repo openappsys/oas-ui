@@ -87,25 +87,25 @@ The default slot can hold an icon — combining an icon and text forms an icon t
 
 ### Attributes
 
-| Attribute   | Description                                                                                                     | Type      | Default   |
-| ----------- | --------------------------------------------------------------------------------------------------------------- | --------- | --------- |
-| `chip`      | Chip (pill radius + compact padding)                                                                            | `boolean` | —         |
-| `clickable` | Whole tag clickable (focusable, dispatches `oas-click`)                                                         | `boolean` | —         |
-| `closable`  | Closable                                                                                                        | `boolean` | —         |
-| `disabled`  | Disabled (cannot be clicked or closed)                                                                          | `boolean` | —         |
-| `round`     | Rounded                                                                                                         | `boolean` | —         |
-| `size`      | Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning | `TagSize` | `medium`  |
-| `type`      | Type                                                                                                            | `TagType` | `default` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `chip` | Chip (pill radius + compact padding) | `boolean` | — |
+| `clickable` | Whole tag clickable (focusable, dispatches `oas-click`) | `boolean` | — |
+| `closable` | Closable | `boolean` | — |
+| `disabled` | Disabled (cannot be clicked or closed) | `boolean` | — |
+| `round` | Rounded | `boolean` | — |
+| `size` | Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning | `TagSize` | `medium` |
+| `type` | Type | `TagType` | `default` |
 
 ### Events
 
-| Event       | Description                                                       |
-| ----------- | ----------------------------------------------------------------- |
+| Event | Description |
+| --- | --- |
 | `oas-click` | Whole-tag click (when `clickable`), detail contains originalEvent |
-| `oas-close` | Close, `cancelable`; `preventDefault` prevents removal            |
+| `oas-close` | Close, `cancelable`; `preventDefault` prevents removal |
 
 ### Slots
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |

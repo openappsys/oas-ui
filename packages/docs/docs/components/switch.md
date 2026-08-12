@@ -74,18 +74,18 @@ onMounted(() => {
 
 ### 属性
 
-| 属性             | 说明                                                                                | 类型      | 默认值   |
-| ---------------- | ----------------------------------------------------------------------------------- | --------- | -------- |
-| `checked`        | 是否开启                                                                            | `boolean` | —        |
-| `checked-text`   | 开启时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧                     | —         | —        |
-| `color`          | 开启态自定义主色，覆盖 `--oas-color-primary`（CSS 颜色值）                          | —         | —        |
-| `disabled`       | 禁用                                                                                | `boolean` | —        |
-| `loading`        | 加载态，阻止切换                                                                    | `boolean` | —        |
-| `size`           | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `string`  | `medium` |
-| `unchecked-text` | 关闭时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧                     | —         | —        |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `checked` | 是否开启 | `boolean` | — |
+| `checked-text` | 开启时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | — | — |
+| `color` | 开启态自定义主色，覆盖 `--oas-color-primary`（CSS 颜色值） | — | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `loading` | 加载态，阻止切换 | `boolean` | — |
+| `size` | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `string` | `medium` |
+| `unchecked-text` | 关闭时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧 | — | — |
 
 ### 事件
 
-| 事件         | 说明                        |
-| ------------ | --------------------------- |
+| 事件 | 说明 |
+| --- | --- |
 | `oas-change` | 切换，`detail: { checked }` |

@@ -186,34 +186,34 @@ onMounted(() => {
 
 ### oas-form
 
-| Attribute     | Description                                                                                                   | Type              | Default    |
-| ------------- | ------------------------------------------------------------------------------------------------------------- | ----------------- | ---------- |
-| `gap`         | Grid spacing in `grid` mode (token value, e.g. `var(--oas-space-4)`)                                          | `string`          | `0`        |
-| `label-align` | Label alignment: `left` / `right` / `top` (default `top` in grid mode)                                        | `string`          | `top`      |
-| `label-width` | Label column width when `label-align` is `left`/`right`                                                       | —                 | —          |
-| `layout`      | Layout mode: `vertical` (default, stacked) / `grid` (24-column grid); non-enum values fall back to `vertical` | `string`          | `vertical` |
-| `rules`       | Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }`                   | `Rules \| string` | `{}`       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `gap` | Grid spacing in `grid` mode (token value, e.g. `var(--oas-space-4)`) | `string` | `0` |
+| `label-align` | Label alignment: `left` / `right` / `top` (default `top` in grid mode) | `string` | `top` |
+| `label-width` | Label column width when `label-align` is `left`/`right` | — | — |
+| `layout` | Layout mode: `vertical` (default, stacked) / `grid` (24-column grid); non-enum values fall back to `vertical` | `string` | `vertical` |
+| `rules` | Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | `{}` |
 
-| Event               | Description                                     |
-| ------------------- | ----------------------------------------------- |
-| `oas-submit`        | Validation passed, `detail: { values }`         |
+| Event | Description |
+| --- | --- |
+| `oas-submit` | Validation passed, `detail: { values }` |
 | `oas-validate-fail` | Validation failed, `detail: { errors, values }` |
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |
 
 ### oas-form-item
 
-| Attribute  | Description                                                                                        | Type      | Default |
-| ---------- | -------------------------------------------------------------------------------------------------- | --------- | ------- |
-| `label`    | Label text (no label row when omitted)                                                             | `string`  | —       |
-| `name`     | Field name (validation association)                                                                | —         | —       |
-| `required` | Required asterisk (visual only; validation is still driven by form `rules`)                        | `boolean` | —       |
-| `span`     | Columns spanned in the 24-column grid (only when form `layout="grid"`; non-integer in 1-24 → `24`) | `string`  | `24`    |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `label` | Label text (no label row when omitted) | `string` | — |
+| `name` | Field name (validation association) | — | — |
+| `required` | Required asterisk (visual only; validation is still driven by form `rules`) | `boolean` | — |
+| `span` | Columns spanned in the 24-column grid (only when form `layout="grid"`; non-integer in 1-24 → `24`) | `string` | `24` |
 
-| Name    | Description   |
-| ------- | ------------- |
+| Name | Description |
+| --- | --- |
 | default | Field control |
 
 On validation failure, failed fields are marked `aria-invalid`; error messages can be retrieved via `form.getErrors()`. For fields wrapped in `oas-form-item`, the error text is collected into the form-item's error slot (`role="alert"`).

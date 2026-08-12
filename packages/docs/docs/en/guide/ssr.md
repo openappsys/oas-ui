@@ -163,7 +163,7 @@ for the rendering itself.
 > string injection such as `innerHTML` does not attach them. The returned string
 > should reach the browser through the SSR output stream (the server-rendered
 > HTML response).
-
+>
 > Process-level side effect: on first call the renderer installs happy-dom's
 > `document` / `customElements` / `HTMLElement` and other globals onto
 > `globalThis` (required for component class evaluation and registration). If

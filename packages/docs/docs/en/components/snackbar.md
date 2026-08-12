@@ -80,22 +80,22 @@ onMounted(async () => {
 
 ### Attributes
 
-| Attribute     | Description                      | Type      | Default |
-| ------------- | -------------------------------- | --------- | ------- |
-| `action-text` | Action button text               | `string`  | —       |
-| `direction`   | Position direction               | —         | —       |
-| `duration`    | Auto-dismiss duration (ms)       | `string`  | `4000`  |
-| `message`     | Message text                     | `string`  | —       |
-| `offset`      | Offset from the screen edge (px) | `string`  | `24`    |
-| `open`        | Whether shown (controlled)       | `boolean` | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `action-text` | Action button text | `string` | — |
+| `direction` | Position direction | — | — |
+| `duration` | Auto-dismiss duration (ms) | `string` | `4000` |
+| `message` | Message text | `string` | — |
+| `offset` | Offset from the screen edge (px) | `string` | `24` |
+| `open` | Whether shown (controlled) | `boolean` | — |
 
 ### Events
 
-| Event        | Description                                                                                  |
-| ------------ | -------------------------------------------------------------------------------------------- |
-| `oas-action` | Dispatched when the action button is clicked                                                 |
-| `oas-close`  | Dispatched when auto-dismissing after timeout (controlled mode does not clear `open` itself) |
-| `oas-open`   | Dispatched when opened                                                                       |
+| Event | Description |
+| --- | --- |
+| `oas-action` | Dispatched when the action button is clicked |
+| `oas-close` | Dispatched when auto-dismissing after timeout (controlled mode does not clear `open` itself) |
+| `oas-open` | Dispatched when opened |
 
 - `role="status"` without `action-text`; `role="alertdialog"` + `aria-live="assertive"` when an action button is present.
 - `open` is controlled: only `oas-close` is dispatched on timeout and the host is responsible for removing `open`; at most 3 stack at once, and the oldest receives `oas-close` when exceeded.

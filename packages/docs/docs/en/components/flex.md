@@ -125,17 +125,17 @@ With no children the height is 0 — no error, no placeholder.
 
 ### Attributes
 
-| Attribute   | Description                              | Type      | Default   |
-| ----------- | ---------------------------------------- | --------- | --------- |
-| `align`     | Cross-axis alignment                     | `string`  | `stretch` |
-| `direction` | Main-axis direction                      | `string`  | `row`     |
-| `gap`       | Gap between items                        | `string`  | —         |
-| `justify`   | Main-axis alignment                      | `string`  | `start`   |
-| `vertical`  | Vertical shorthand                       | `boolean` | —         |
-| `wrap`      | Wrapping (boolean; present means `wrap`) | `boolean` | —         |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `align` | Cross-axis alignment | `string` | `stretch` |
+| `direction` | Main-axis direction | `string` | `row` |
+| `gap` | Gap between items | `string` | — |
+| `justify` | Main-axis alignment | `string` | `start` |
+| `vertical` | Vertical shorthand | `boolean` | — |
+| `wrap` | Wrapping (boolean; present means `wrap`) | `boolean` | — |
 
 ### Slots
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |

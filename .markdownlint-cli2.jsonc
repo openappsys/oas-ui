@@ -1,0 +1,27 @@
+{
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD060": {
+      "style": "lax"
+    },
+    "MD024": false,
+    "MD033": false,
+    "MD036": false,
+    "MD041": false,
+    "MD059": false
+  },
+  "globs": [
+    "packages/docs/docs/**/*.md",
+    "docs/**/*.md",
+    "README.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "AGENTS.md"
+  ],
+  "ignores": [
+    "**/node_modules/**",
+    "**/.vitepress/**",
+    "**/dist/**"
+  ]
+}

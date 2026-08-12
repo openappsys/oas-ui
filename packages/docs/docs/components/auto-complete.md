@@ -55,18 +55,18 @@ onMounted(() => {
 
 ### 属性
 
-| 属性          | 说明                                           | 类型                 | 默认值 |
-| ------------- | ---------------------------------------------- | -------------------- | ------ |
-| `disabled`    | 禁用                                           | `boolean`            | —      |
-| `options`     | 选项，JSON 数组 `[{ label, value, disabled }]` | `Option[] \| string` | `[]`   |
-| `placeholder` | 占位提示                                       | `string`             | —      |
-| `value`       | 预设值                                         | `string`             | —      |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 禁用 | `boolean` | — |
+| `options` | 选项，JSON 数组 `[{ label, value, disabled }]` | `Option[] \| string` | `[]` |
+| `placeholder` | 占位提示 | `string` | — |
+| `value` | 预设值 | `string` | — |
 
 ### 事件
 
-| 事件         | 说明                             |
-| ------------ | -------------------------------- |
+| 事件 | 说明 |
+| --- | --- |
 | `oas-change` | 选中，`detail: { value, label }` |
-| `oas-input`  | 输入中，`detail: { value }`      |
+| `oas-input` | 输入中，`detail: { value }` |
 
 键盘：`↑`/`↓` 移动，`Enter` 选中，`Esc` 关闭。

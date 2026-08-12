@@ -77,26 +77,26 @@ onMounted(async () => {
 
 ### Methods
 
-| Method                         | Description                                       |
-| ------------------------------ | ------------------------------------------------- |
-| `toast.info(options)`          | Info toast, returns `{ close }`                   |
-| `toast.success(options)`       | Success toast, returns `{ close }`                |
-| `toast.warning(options)`       | Warning toast, returns `{ close }`                |
-| `toast.error(options)`         | Error toast, returns `{ close }`                  |
-| `toast.loading(options)`       | Loading toast (not closable), returns `{ close }` |
-| `toast.promise(promise, opts)` | Promise chain: loading → success/error            |
-| `destroyAllToast()`            | Clear all toasts                                  |
+| Method | Description |
+| --- | --- |
+| `toast.info(options)` | Info toast, returns `{ close }` |
+| `toast.success(options)` | Success toast, returns `{ close }` |
+| `toast.warning(options)` | Warning toast, returns `{ close }` |
+| `toast.error(options)` | Error toast, returns `{ close }` |
+| `toast.loading(options)` | Loading toast (not closable), returns `{ close }` |
+| `toast.promise(promise, opts)` | Promise chain: loading → success/error |
+| `destroyAllToast()` | Clear all toasts |
 
 ### options
 
-| Field         | Description                                                      | Type                             | Default     |
-| ------------- | ---------------------------------------------------------------- | -------------------------------- | ----------- |
-| `title`       | Title                                                            | `string`                         | —           |
-| `description` | Description                                                      | `string`                         | —           |
-| `action`      | Action button                                                    | `{ label, onClick }`             | —           |
-| `duration`    | Auto-dismiss duration (ms); 0 keeps it open                      | `number`                         | `3000`      |
-| `closable`    | Whether it can be closed manually (loading is always unclosable) | `boolean`                        | `true`      |
-| `position`    | Position                                                         | 6 directions such as `top-right` | `top-right` |
+| Field | Description | Type | Default |
+| --- | --- | --- | --- |
+| `title` | Title | `string` | — |
+| `description` | Description | `string` | — |
+| `action` | Action button | `{ label, onClick }` | — |
+| `duration` | Auto-dismiss duration (ms); 0 keeps it open | `number` | `3000` |
+| `closable` | Whether it can be closed manually (loading is always unclosable) | `boolean` | `true` |
+| `position` | Position | 6 directions such as `top-right` | `top-right` |
 
 - `error` uses `role="alert"`, others use `role="status"`.
 - Multiple toasts share one stack container and stack by position per direction; `duration` timers are cleaned up on close/unmount with no leaks.

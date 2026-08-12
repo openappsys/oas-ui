@@ -54,17 +54,17 @@ With `clickable` enabled, step items are clickable to jump (the whole item is cl
 
 ### Attributes
 
-| Attribute   | Description                                                 | Type                   | Default      |
-| ----------- | ----------------------------------------------------------- | ---------------------- | ------------ |
-| `clickable` | Steps are clickable to jump (boolean; enabled when present) | `boolean`              | —            |
-| `current`   | Current step index (0-based)                                | `string`               | `0`          |
-| `direction` | Direction                                                   | `string`               | `horizontal` |
-| `steps`     | `[{ title, description?, status? }]` JSON string            | `StepItem[] \| string` | `[]`         |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `clickable` | Steps are clickable to jump (boolean; enabled when present) | `boolean` | — |
+| `current` | Current step index (0-based) | `string` | `0` |
+| `direction` | Direction | `string` | `horizontal` |
+| `steps` | `[{ title, description?, status? }]` JSON string | `StepItem[] \| string` | `[]` |
 
 ### Events
 
-| Event        | Description                                                                                         |
-| ------------ | --------------------------------------------------------------------------------------------------- |
+| Event | Description |
+| --- | --- |
 | `oas-change` | Fired when a clickable step is clicked (including keyboard triggers); `detail: { index }` (0-based) |
 
 State rules: an explicit `status` (`wait` / `process` / `finish` / `error`) takes priority; otherwise it is derived from `current` — index `< current` is `finish` (✓), `=== current` is `process`, and the rest are `wait`.

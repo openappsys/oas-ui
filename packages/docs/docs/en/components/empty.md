@@ -67,16 +67,16 @@ Control the illustration size (number, in px) via `image-size`, used together wi
 
 ### Attributes
 
-| Attribute      | Description                                       | Type | Default |
-| -------------- | ------------------------------------------------- | ---- | ------- |
-| `description`  | Description text                                  | —    | —       |
-| `hide-image`   | Hide the illustration                             | —    | —       |
-| `illustration` | Custom illustration: SVG/HTML markup or image URL | —    | —       |
-| `image-size`   | Illustration size (px)                            | —    | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `description` | Description text | — | — |
+| `hide-image` | Hide the illustration | — | — |
+| `illustration` | Custom illustration: SVG/HTML markup or image URL | — | — |
+| `image-size` | Illustration size (px) | — | — |
 
 ### Slots
 
-| Name           | Description                                                                     |
-| -------------- | ------------------------------------------------------------------------------- |
-| `action`       | Action area, placed below the description                                       |
+| Name | Description |
+| --- | --- |
+| `action` | Action area, placed below the description |
 | `illustration` | Custom illustration content, takes precedence over the `illustration` attribute |

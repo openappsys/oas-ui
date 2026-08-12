@@ -38,13 +38,13 @@ Displays statistical values with `Intl.NumberFormat` thousands separators and pr
 
 ### Attributes
 
-| Attribute         | Description                             | Type      | Default |
-| ----------------- | --------------------------------------- | --------- | ------- |
-| `group-separator` | Thousands grouping (`"false"` disables) | `string`  | `true`  |
-| `loading`         | Loading state (skeleton placeholder)    | `boolean` | —       |
-| `precision`       | Decimal places (rounded)                | `string`  | `0`     |
-| `prefix`          | Prefix / suffix text                    | `string`  | —       |
-| `suffix`          | Prefix / suffix text                    | `string`  | —       |
-| `value`           | Numeric value (number string)           | `string`  | `0`     |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `group-separator` | Thousands grouping (`"false"` disables) | `string` | `true` |
+| `loading` | Loading state (skeleton placeholder) | `boolean` | — |
+| `precision` | Decimal places (rounded) | `string` | `0` |
+| `prefix` | Prefix / suffix text | `string` | — |
+| `suffix` | Prefix / suffix text | `string` | — |
+| `value` | Numeric value (number string) | `string` | `0` |
 
 No events (purely presentational).

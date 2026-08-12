@@ -12,3 +12,6 @@ pnpm-lock.yaml
 .github/ISSUE_TEMPLATE/
 packages/icons/src/icons/
 wrangler.jsonc
+
+*.md
+.markdownlint-cli2.jsonc

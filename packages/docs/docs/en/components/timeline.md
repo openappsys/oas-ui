@@ -63,12 +63,12 @@ Setting `pending` on an `oas-timeline-item` renders that node as a hollow dot wi
 
 ### oas-timeline-item
 
-| Attribute | Description                                                                  | Type | Default |
-| --------- | ---------------------------------------------------------------------------- | ---- | ------- |
-| `color`   | Node marker color: `green` / `red` / `gray`; defaults to the theme color     | —    | —       |
-| `pending` | In-progress node: hollow dot + dashed connector; shows "敬请期待" when empty | —    | —       |
-| `time`    | Time text of the node                                                        | —    | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `color` | Node marker color: `green` / `red` / `gray`; defaults to the theme color | — | — |
+| `pending` | In-progress node: hollow dot + dashed connector; shows "敬请期待" when empty | — | — |
+| `time` | Time text of the node | — | — |
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |

@@ -112,20 +112,20 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute     | Description                                                                            | Type      | Default |
-| ------------- | -------------------------------------------------------------------------------------- | --------- | ------- |
-| `current`     | Current page (controlled; flipping updates this attribute)                             | `string`  | `1`     |
-| `page-size`   | Records per page                                                                       | `string`  | `10`    |
-| `page-sizes`  | Page-size dropdown options (JSON array), e.g. `[10,20,50]`; switching resets to page 1 | `string`  | —       |
-| `show-jumper` | Shows a quick-jump input 「跳至 __ 页」(Enter to jump, out-of-range clamped)           | `boolean` | —       |
-| `show-total`  | Shows the total text 「共 X 条」                                                       | `boolean` | —       |
-| `siblings`    | Number of page numbers shown on each side of the current page                          | `string`  | `1`     |
-| `total`       | Total number of records                                                                | `string`  | `0`     |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `current` | Current page (controlled; flipping updates this attribute) | `string` | `1` |
+| `page-size` | Records per page | `string` | `10` |
+| `page-sizes` | Page-size dropdown options (JSON array), e.g. `[10,20,50]`; switching resets to page 1 | `string` | — |
+| `show-jumper` | Shows a quick-jump input 「跳至 __ 页」(Enter to jump, out-of-range clamped) | `boolean` | — |
+| `show-total` | Shows the total text 「共 X 条」 | `boolean` | — |
+| `siblings` | Number of page numbers shown on each side of the current page | `string` | `1` |
+| `total` | Total number of records | `string` | `0` |
 
 ### Events
 
-| Event        | Description                                                                                    |
-| ------------ | ---------------------------------------------------------------------------------------------- |
+| Event | Description |
+| --- | --- |
 | `oas-change` | Flipping `{ page }`; page-size switch `{ page: 1, pageSize }`; quick jump `{ page, pageSize }` |
 
 Page numbers are omitted automatically when out of range, and the first/last flip buttons are disabled at the boundaries.

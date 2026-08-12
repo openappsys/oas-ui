@@ -104,23 +104,23 @@ onMounted(() => {
 
 ### 属性
 
-| 属性           | 说明                                      | 类型      | 默认值 |
-| -------------- | ----------------------------------------- | --------- | ------ |
-| `aria-invalid` | 校验失败态（同步到容器与各格，标 danger） | `string`  | —      |
-| `disabled`     | 禁用                                      | `boolean` | —      |
-| `length`       | 验证码位数                                | `string`  | `6`    |
-| `mask`         | 星号遮罩                                  | `boolean` | —      |
-| `readonly`     | 只读                                      | `boolean` | —      |
-| `type`         | 格子输入类型                              | `string`  | `text` |
-| `value`        | 当前值（受控）                            | `string`  | —      |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `aria-invalid` | 校验失败态（同步到容器与各格，标 danger） | `string` | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `length` | 验证码位数 | `string` | `6` |
+| `mask` | 星号遮罩 | `boolean` | — |
+| `readonly` | 只读 | `boolean` | — |
+| `type` | 格子输入类型 | `string` | `text` |
+| `value` | 当前值（受控） | `string` | — |
 
 ### 事件
 
-| 事件           | 说明                                 |
-| -------------- | ------------------------------------ |
-| `oas-change`   | 填满时派发，`detail: { value }`      |
-| `oas-complete` | 填满时派发，`detail: { value }`      |
-| `oas-input`    | 每格输入，`detail: { value, index }` |
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 填满时派发，`detail: { value }` |
+| `oas-complete` | 填满时派发，`detail: { value }` |
+| `oas-input` | 每格输入，`detail: { value, index }` |
 
 键盘：`←`/`→` 格间移动，`Backspace` 删除当前格并回退，支持粘贴自动分发；全空时每格均可聚焦（原生 caret）。
 

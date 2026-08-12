@@ -48,64 +48,64 @@ Typography components for text, titles, and paragraphs.
 
 ## API
 
-| Component | Tag             | Props                             |
-| --------- | --------------- | --------------------------------- |
-| Text      | `oas-text`      | `type`, `ellipsis`, `copyable`    |
-| Title     | `oas-title`     | `level` (1-5), `type`, `ellipsis` |
-| Paragraph | `oas-paragraph` | `type`, `ellipsis`                |
+| Component | Tag | Props |
+| --- | --- | --- |
+| Text | `oas-text` | `type`, `ellipsis`, `copyable` |
+| Title | `oas-title` | `level` (1-5), `type`, `ellipsis` |
+| Paragraph | `oas-paragraph` | `type`, `ellipsis` |
 
 `type` values: `default` / `secondary` / `success` / `warning` / `danger` / `disabled`.
 
 ### oas-text
 
-| Attribute  | Description                                                                        | Type       | Default   |
-| ---------- | ---------------------------------------------------------------------------------- | ---------- | --------- |
-| `copyable` | Show a copy button that copies the text content on click                           | `boolean`  | —         |
-| `ellipsis` | Single-line ellipsis when the text overflows its container                         | `boolean`  | —         |
-| `level`    | Heading level (1-5)                                                                | `string`   | `3`       |
-| `type`     | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
+| `ellipsis` | Single-line ellipsis when the text overflows its container | `boolean` | — |
+| `level` | Heading level (1-5) | `string` | `3` |
+| `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 
-| Event            | Description                        |
-| ---------------- | ---------------------------------- |
-| `oas-copy`       | Copy succeeded, `detail: { text }` |
-| `oas-copy-error` | Copy failed, `detail: { text }`    |
+| Event | Description |
+| --- | --- |
+| `oas-copy` | Copy succeeded, `detail: { text }` |
+| `oas-copy-error` | Copy failed, `detail: { text }` |
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |
 
 ### oas-title
 
-| Attribute  | Description                                                                        | Type       | Default   |
-| ---------- | ---------------------------------------------------------------------------------- | ---------- | --------- |
-| `copyable` | Show a copy button that copies the text content on click                           | `boolean`  | —         |
-| `ellipsis` | Single-line ellipsis when the text overflows its container                         | `boolean`  | —         |
-| `level`    | Heading level (1-5)                                                                | `string`   | `3`       |
-| `type`     | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
+| `ellipsis` | Single-line ellipsis when the text overflows its container | `boolean` | — |
+| `level` | Heading level (1-5) | `string` | `3` |
+| `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 
-| Event            | Description                        |
-| ---------------- | ---------------------------------- |
-| `oas-copy`       | Copy succeeded, `detail: { text }` |
-| `oas-copy-error` | Copy failed, `detail: { text }`    |
+| Event | Description |
+| --- | --- |
+| `oas-copy` | Copy succeeded, `detail: { text }` |
+| `oas-copy-error` | Copy failed, `detail: { text }` |
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |
 
 ### oas-paragraph
 
-| Attribute  | Description                                                                        | Type       | Default   |
-| ---------- | ---------------------------------------------------------------------------------- | ---------- | --------- |
-| `copyable` | Show a copy button that copies the text content on click                           | `boolean`  | —         |
-| `ellipsis` | Single-line ellipsis when the text overflows its container                         | `boolean`  | —         |
-| `level`    | Heading level (1-5)                                                                | `string`   | `3`       |
-| `type`     | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
+| `ellipsis` | Single-line ellipsis when the text overflows its container | `boolean` | — |
+| `level` | Heading level (1-5) | `string` | `3` |
+| `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 
-| Event            | Description                        |
-| ---------------- | ---------------------------------- |
-| `oas-copy`       | Copy succeeded, `detail: { text }` |
-| `oas-copy-error` | Copy failed, `detail: { text }`    |
+| Event | Description |
+| --- | --- |
+| `oas-copy` | Copy succeeded, `detail: { text }` |
+| `oas-copy-error` | Copy failed, `detail: { text }` |
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |

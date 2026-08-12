@@ -41,11 +41,11 @@ onMounted(async () => {
 
 ### Methods
 
-| Method                   | Description                                               |
-| ------------------------ | --------------------------------------------------------- |
-| `loadingBar.start()`     | Start loading; the progress automatically advances to 90% |
-| `loadingBar.finish()`    | Finish and remove                                         |
-| `loadingBar.error()`     | Fail (red) and remove                                     |
-| `destroyAllLoadingBar()` | Remove the current loading bar                            |
+| Method | Description |
+| --- | --- |
+| `loadingBar.start()` | Start loading; the progress automatically advances to 90% |
+| `loadingBar.finish()` | Finish and remove |
+| `loadingBar.error()` | Fail (red) and remove |
+| `destroyAllLoadingBar()` | Remove the current loading bar |
 
 The bar uses `role="progressbar"` with progress synced via `aria-valuenow`.

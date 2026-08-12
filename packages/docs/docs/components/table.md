@@ -247,33 +247,33 @@ onMounted(() => {
 
 ### 属性
 
-| 属性         | 说明                                                                                                                                    | 类型                                       | 默认值 |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------ |
-| `bordered`   | 完整边框：单元格网格描边（外框由组件自带）                                                                                              | —                                          | —      |
-| `checkable`  | 复选框多选开关                                                                                                                          | `boolean`                                  | —      |
-| `columns`    | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `TableColumn[] \| string`                  | `[]`   |
-| `data`       | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）                                 | `Array<Record<string, unknown>> \| string` | `[]`   |
-| `empty-text` | 空态文案                                                                                                                                | —                                          | —      |
-| `expanded`   | 已展开行 key 集合（逗号分隔；树形父行/可展开行共用）                                                                                    | `string`                                   | —      |
-| `height`     | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行                                                                             | `string`                                   | `320`  |
-| `loading`    | 加载态：数据区显示加载占位行（表头保留）                                                                                                | `boolean`                                  | —      |
-| `row-height` | 虚拟滚动每行固定高度（px）                                                                                                              | `string`                                   | `40`   |
-| `row-key`    | 行唯一键字段                                                                                                                            | `string`                                   | `key`  |
-| `selected`   | 选中行 key 集合（逗号分隔）                                                                                                             | `string`                                   | —      |
-| `sort-key`   | 受控排序；`sort-order` 取 `asc` / `desc` / 空                                                                                           | `string`                                   | —      |
-| `sort-order` | 受控排序；`sort-order` 取 `asc` / `desc` / 空                                                                                           | `SortOrder`                                | —      |
-| `stripe`     | 斑马纹：奇数/偶数行交替浅底色                                                                                                           | `boolean`                                  | —      |
-| `summary`    | 合计配置 `[{ key, type: 'sum'\|'avg'\|'count', label? }]`，JSON 字符串                                                                  | `string`                                   | —      |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `bordered` | 完整边框：单元格网格描边（外框由组件自带） | — | — |
+| `checkable` | 复选框多选开关 | `boolean` | — |
+| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `TableColumn[] \| string` | `[]` |
+| `data` | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `Array<Record<string, unknown>> \| string` | `[]` |
+| `empty-text` | 空态文案 | — | — |
+| `expanded` | 已展开行 key 集合（逗号分隔；树形父行/可展开行共用） | `string` | — |
+| `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
+| `loading` | 加载态：数据区显示加载占位行（表头保留） | `boolean` | — |
+| `row-height` | 虚拟滚动每行固定高度（px） | `string` | `40` |
+| `row-key` | 行唯一键字段 | `string` | `key` |
+| `selected` | 选中行 key 集合（逗号分隔） | `string` | — |
+| `sort-key` | 受控排序；`sort-order` 取 `asc` / `desc` / 空 | `string` | — |
+| `sort-order` | 受控排序；`sort-order` 取 `asc` / `desc` / 空 | `SortOrder` | — |
+| `stripe` | 斑马纹：奇数/偶数行交替浅底色 | `boolean` | — |
+| `summary` | 合计配置 `[{ key, type: 'sum'\|'avg'\|'count', label? }]`，JSON 字符串 | `string` | — |
 
 ### 事件
 
-| 事件              | 说明                                                               |
-| ----------------- | ------------------------------------------------------------------ |
-| `oas-check`       | 复选框选中变化，`detail: { keys: string[] }`                       |
-| `oas-expand`      | 行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }` |
-| `oas-row-click`   | 点击行（非 checkable 时同时切换选中），`detail: { row, key }`      |
-| `oas-scroll`      | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }`  |
-| `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }`          |
+| 事件 | 说明 |
+| --- | --- |
+| `oas-check` | 复选框选中变化，`detail: { keys: string[] }` |
+| `oas-expand` | 行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }` |
+| `oas-row-click` | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
+| `oas-scroll` | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
+| `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }` |
 
 > 说明：`columns.render` 为函数类型，仅支持在 JS 侧构造后通过属性整体赋值，无法用 JSON 字符串表达；`fixed` 列建议显式声明 `width`（未声明时按 100px 兜底计算 sticky 偏移）。合计也可在列上直接写 `summary: 'sum' | 'avg' | 'count'`；`children`（树形子行）与 `expand`（可展开行内容）均为行数据字段。
 

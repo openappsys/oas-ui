@@ -48,15 +48,15 @@ When the value exceeds `max`, `max+` is displayed.
 
 ### Attributes
 
-| Attribute  | Description                  | Type      | Default |
-| ---------- | ---------------------------- | --------- | ------- |
-| `dot`      | Dot mode                     | `boolean` | —       |
-| `max`      | Upper limit                  | `string`  | —       |
-| `showZero` | Whether to show when value=0 | `boolean` | —       |
-| `value`    | Number                       | `string`  | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `dot` | Dot mode | `boolean` | — |
+| `max` | Upper limit | `string` | — |
+| `showZero` | Whether to show when value=0 | `boolean` | — |
+| `value` | Number | `string` | — |
 
 ### Slots
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |

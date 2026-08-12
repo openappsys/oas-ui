@@ -36,16 +36,16 @@
 
 ### 属性
 
-| 属性       | 说明                                                | 类型      | 默认值  |
-| ---------- | --------------------------------------------------- | --------- | ------- |
-| `for`      | 目标控件 id，点击代理 `getElementById(for).focus()` | `string`  | —       |
-| `position` | 星号相对文本的位置                                  | `string`  | `after` |
-| `required` | 追加必填 `*` 标记（`aria-hidden`）                  | `boolean` | —       |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `for` | 目标控件 id，点击代理 `getElementById(for).focus()` | `string` | — |
+| `position` | 星号相对文本的位置 | `string` | `after` |
+| `required` | 追加必填 `*` 标记（`aria-hidden`） | `boolean` | — |
 
 ### 插槽
 
 | 名称 | 说明 |
-| ---- | ---- |
-| 默认 | —    |
+| --- | --- |
+| 默认 | — |
 
 > 说明：`for` 同时同步到原生 `<label>` 的 `for` 属性；点击行为为手动代理，可跨 Shadow DOM 聚焦目标控件。

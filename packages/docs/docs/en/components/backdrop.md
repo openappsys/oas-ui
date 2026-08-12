@@ -57,17 +57,17 @@ onMounted(async () => {
 
 ### Attributes
 
-| Attribute     | Description                         | Type      | Default |
-| ------------- | ----------------------------------- | --------- | ------- |
-| `blur`        | Blur the background                 | —         | —       |
-| `lock-scroll` | Lock body scroll while open         | `string`  | `true`  |
-| `open`        | Whether shown                       | `boolean` | —       |
-| `transparent` | Transparent overlay (no background) | —         | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `blur` | Blur the background | — | — |
+| `lock-scroll` | Lock body scroll while open | `string` | `true` |
+| `open` | Whether shown | `boolean` | — |
+| `transparent` | Transparent overlay (no background) | — | — |
 
 ### Events
 
-| Event       | Description                                                          |
-| ----------- | -------------------------------------------------------------------- |
+| Event | Description |
+| --- | --- |
 | `oas-click` | Backdrop clicked, `detail.originalEvent` is the original click event |
 
 - No focus trap of its own (handled by the overlying dialog); Esc does not auto-close (decided by the outer dialog).

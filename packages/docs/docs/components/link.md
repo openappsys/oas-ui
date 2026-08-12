@@ -38,22 +38,22 @@
 
 ### 属性
 
-| 属性        | 说明     | 类型       | 默认值    |
-| ----------- | -------- | ---------- | --------- |
-| `disabled`  | 禁用     | `boolean`  | —         |
-| `href`      | 链接地址 | `string`   | —         |
-| `target`    | 打开方式 | `string`   | —         |
-| `type`      | 类型     | `LinkType` | `default` |
-| `underline` | 下划线   | `string`   | `true`    |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 禁用 | `boolean` | — |
+| `href` | 链接地址 | `string` | — |
+| `target` | 打开方式 | `string` | — |
+| `type` | 类型 | `LinkType` | `default` |
+| `underline` | 下划线 | `string` | `true` |
 
 ### 事件
 
-| 事件        | 说明                              |
-| ----------- | --------------------------------- |
+| 事件 | 说明 |
+| --- | --- |
 | `oas-click` | 点击，`detail: { originalEvent }` |
 
 ### 插槽
 
 | 名称 | 说明 |
-| ---- | ---- |
-| 默认 | —    |
+| --- | --- |
+| 默认 | — |

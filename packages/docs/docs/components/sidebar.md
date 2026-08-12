@@ -105,28 +105,28 @@
 
 ### 属性
 
-| 属性                | 说明                                         | 类型                      | 默认值 |
-| ------------------- | -------------------------------------------- | ------------------------- | ------ |
-| `collapsed`         | 受控折叠，收窄为图标条（存在即折叠）         | `boolean`                 | —      |
-| `drawer-open`       | —                                            | `boolean`                 | —      |
-| `items`             | 菜单项 JSON `[{label, value, icon?}]`        | `SidebarItem[] \| string` | `[]`   |
-| `mobile-breakpoint` | 移动端断点（px），窄于该值变覆盖式抽屉       | —                         | —      |
-| `width`             | 展开宽度，默认走 `--oas-sidebar-width` token | —                         | —      |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `collapsed` | 受控折叠，收窄为图标条（存在即折叠） | `boolean` | — |
+| `drawer-open` | — | `boolean` | — |
+| `items` | 菜单项 JSON `[{label, value, icon?}]` | `SidebarItem[] \| string` | `[]` |
+| `mobile-breakpoint` | 移动端断点（px），窄于该值变覆盖式抽屉 | — | — |
+| `width` | 展开宽度，默认走 `--oas-sidebar-width` token | — | — |
 
 ### 事件
 
-| 事件           | 说明                                                                                     |
-| -------------- | ---------------------------------------------------------------------------------------- |
-| `oas-collapse` | `detail: { collapsed: boolean }`；触发时机：桌面折叠按钮切换时                           |
-| `oas-select`   | `detail: { value: string, label: string }`；触发时机：选中菜单项时（移动端同时收起抽屉） |
+| 事件 | 说明 |
+| --- | --- |
+| `oas-collapse` | `detail: { collapsed: boolean }`；触发时机：桌面折叠按钮切换时 |
+| `oas-select` | `detail: { value: string, label: string }`；触发时机：选中菜单项时（移动端同时收起抽屉） |
 
 ### 插槽
 
-| 名称     | 说明 |
-| -------- | ---- |
-| 默认     | —    |
-| `footer` | —    |
-| `header` | —    |
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | — |
+| `footer` | — |
+| `header` | — |
 
 ### 部件（part）
 

@@ -38,15 +38,15 @@ A loading indicator that can be used standalone or wrap content with an overlaid
 
 ### Attributes
 
-| Attribute  | Description                                                                                                                | Type      | Default |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------- | --------- | ------- |
-| `size`     | Indicator size: `xs` / `small` / `medium` (default) / `large` / `xl`; legacy abbreviations `sm`/`md`/`lg` remain supported | `string`  | `md`    |
-| `spinning` | Whether loading; when set, wraps content with an overlaid mask                                                             | `boolean` | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `size` | Indicator size: `xs` / `small` / `medium` (default) / `large` / `xl`; legacy abbreviations `sm`/`md`/`lg` remain supported | `string` | `md` |
+| `spinning` | Whether loading; when set, wraps content with an overlaid mask | `boolean` | — |
 
 ### Slots
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |
 
 The indicator uses `role="status"`.

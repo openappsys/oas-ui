@@ -102,27 +102,27 @@ onMounted(async () => {
 
 ### Attributes
 
-| Attribute       | Description                                                                                                                  | Type      | Default |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------- | ------- |
-| `no-footer`     | Hide footer action buttons                                                                                                   | `boolean` | —       |
-| `no-mask-close` | Disable closing on mask click                                                                                                | `boolean` | —       |
-| `placement`     | Slide direction                                                                                                              | `string`  | `right` |
-| `size`          | Preset size or a concrete value: `small` (256px) / `medium` (378px) / `large` (736px), or write directly like `512px`, `40%` | —         | —       |
-| `title`         | Title text                                                                                                                   | `string`  | —       |
-| `visible`       | Whether shown                                                                                                                | `boolean` | —       |
-| `width`         | Drawer width (px or percentage), takes precedence over `size`                                                                | —         | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `no-footer` | Hide footer action buttons | `boolean` | — |
+| `no-mask-close` | Disable closing on mask click | `boolean` | — |
+| `placement` | Slide direction | `string` | `right` |
+| `size` | Preset size or a concrete value: `small` (256px) / `medium` (378px) / `large` (736px), or write directly like `512px`, `40%` | — | — |
+| `title` | Title text | `string` | — |
+| `visible` | Whether shown | `boolean` | — |
+| `width` | Drawer width (px or percentage), takes precedence over `size` | — | — |
 
 ### Events
 
-| Event       | Description                                 |
-| ----------- | ------------------------------------------- |
+| Event | Description |
+| --- | --- |
 | `oas-close` | Close: cancel button / ✕ / mask click / Esc |
-| `oas-ok`    | Clicked "OK"                                |
+| `oas-ok` | Clicked "OK" |
 
 ### Slots
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |
 
 `role="dialog"` + `aria-modal="true"`; focus moves to the close button on open and is restored on close.

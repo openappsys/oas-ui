@@ -125,17 +125,17 @@
 
 ### 属性
 
-| 属性        | 说明       | 类型      | 默认值    |
-| ----------- | ---------- | --------- | --------- |
-| `align`     | 交叉轴对齐 | `string`  | `stretch` |
-| `direction` | 主轴方向   | `string`  | `row`     |
-| `gap`       | 子项间距   | `string`  | —         |
-| `justify`   | 主轴对齐   | `string`  | `start`   |
-| `vertical`  | 纵向简写   | `boolean` | —         |
-| `wrap`      | 换行       | `boolean` | —         |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `align` | 交叉轴对齐 | `string` | `stretch` |
+| `direction` | 主轴方向 | `string` | `row` |
+| `gap` | 子项间距 | `string` | — |
+| `justify` | 主轴对齐 | `string` | `start` |
+| `vertical` | 纵向简写 | `boolean` | — |
+| `wrap` | 换行 | `boolean` | — |
 
 ### 插槽
 
 | 名称 | 说明 |
-| ---- | ---- |
-| 默认 | —    |
+| --- | --- |
+| 默认 | — |

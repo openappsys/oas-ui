@@ -111,11 +111,11 @@ onMounted(async () => {
 
 ### 属性
 
-| 属性    | 说明                          | 类型       | 默认值 |
-| ------- | ----------------------------- | ---------- | ------ |
-| `color` | 颜色（CSS 色值）              | `string`   | —      |
-| `label` | 可读名称；设置后 `role="img"` | `string`   | —      |
-| `name`  | 图标名（kebab-case）          | `IconName` | —      |
-| `size`  | 尺寸（px 或 em）              | `string`   | —      |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `color` | 颜色（CSS 色值） | `string` | — |
+| `label` | 可读名称；设置后 `role="img"` | `string` | — |
+| `name` | 图标名（kebab-case） | `IconName` | — |
+| `size` | 尺寸（px 或 em） | `string` | — |
 
 图标名一览：`alert-circle` `arrow-down` `arrow-left` `arrow-right` `arrow-up` `calendar` `check-circle` `check` `chevron-down` `chevron-left` `chevron-right` `chevron-up` `clock` `close-circle` `close` `copy` `download` `edit` `error` `external-link` `eye` `filter` `gear` `heart` `info` `loading` `lock` `mail` `menu` `minus` `more-vertical` `more` `plus` `refresh` `search` `sort` `star-filled` `star` `trash` `upload` `user` `warning`。

@@ -145,27 +145,27 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute       | Description                                                                                                     | Type                 | Default |
-| --------------- | --------------------------------------------------------------------------------------------------------------- | -------------------- | ------- |
-| `allow-create`  | Allow creating new options from the input value when nothing matches                                            | `boolean`            | —       |
-| `clearable`     | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`)                           | `boolean`            | —       |
-| `disabled`      | Disabled                                                                                                        | `boolean`            | —       |
-| `loading`       | Remote loading placeholder (use with `remote`)                                                                  | `boolean`            | —       |
-| `max-tag-count` | Collapse tags beyond this count into `+N` in multiple mode (opt-in; without it tags wrap instead of collapsing) | `boolean`            | —       |
-| `multiple`      | Multiple select                                                                                                 | `boolean`            | —       |
-| `options`       | Options, JSON array `[{ label, value, disabled?, group? }]`                                                     | `Option[] \| string` | `[]`    |
-| `placeholder`   | Placeholder text                                                                                                | —                    | —       |
-| `remote`        | Remote search: no local filtering, typing dispatches `oas-input` for the host to request                        | `boolean`            | —       |
-| `searchable`    | Searchable (type to filter after opening the dropdown)                                                          | `boolean`            | —       |
-| `value`         | Current value (JSON array in multiple mode)                                                                     | —                    | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `allow-create` | Allow creating new options from the input value when nothing matches | `boolean` | — |
+| `clearable` | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`) | `boolean` | — |
+| `disabled` | Disabled | `boolean` | — |
+| `loading` | Remote loading placeholder (use with `remote`) | `boolean` | — |
+| `max-tag-count` | Collapse tags beyond this count into `+N` in multiple mode (opt-in; without it tags wrap instead of collapsing) | `boolean` | — |
+| `multiple` | Multiple select | `boolean` | — |
+| `options` | Options, JSON array `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
+| `placeholder` | Placeholder text | — | — |
+| `remote` | Remote search: no local filtering, typing dispatches `oas-input` for the host to request | `boolean` | — |
+| `searchable` | Searchable (type to filter after opening the dropdown) | `boolean` | — |
+| `value` | Current value (JSON array in multiple mode) | — | — |
 
 ### Events
 
-| Event        | Description                                                       |
-| ------------ | ----------------------------------------------------------------- |
-| `oas-change` | Selection/clear change, `detail: { value }`                       |
-| `oas-clear`  | Clear button clicked, `detail: { value }` (value before clearing) |
-| `oas-input`  | Input in `remote` mode, `detail: { value }` (for host requests)   |
+| Event | Description |
+| --- | --- |
+| `oas-change` | Selection/clear change, `detail: { value }` |
+| `oas-clear` | Clear button clicked, `detail: { value }` (value before clearing) |
+| `oas-input` | Input in `remote` mode, `detail: { value }` (for host requests) |
 
 > Options carrying a `group` field are rendered under a group title (not selectable), items are indented; keyboard navigation continues across groups.
 

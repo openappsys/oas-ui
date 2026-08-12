@@ -103,26 +103,26 @@ Add `multiple` to enable multi-select; `value` uses comma-separated selected val
 
 ### Attributes
 
-| Attribute    | Description                                                                     | Type      | Default |
-| ------------ | ------------------------------------------------------------------------------- | --------- | ------- |
-| `aria-label` | Group container accessible name (defaults to the built-in i18n label)           | —         | —       |
-| `disabled`   | Disable the whole group                                                         | `boolean` | —       |
-| `multiple`   | Multi-select mode                                                               | `boolean` | —       |
-| `size`       | Size passed to child buttons                                                    | `string`  | —       |
-| `type`       | Type passed to child buttons                                                    | `string`  | —       |
-| `value`      | Selected value (single value in single-select, comma-separated in multi-select) | `string`  | —       |
-| `vertical`   | Stack vertically, merging corners top/bottom                                    | —         | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `aria-label` | Group container accessible name (defaults to the built-in i18n label) | — | — |
+| `disabled` | Disable the whole group | `boolean` | — |
+| `multiple` | Multi-select mode | `boolean` | — |
+| `size` | Size passed to child buttons | `string` | — |
+| `type` | Type passed to child buttons | `string` | — |
+| `value` | Selected value (single value in single-select, comma-separated in multi-select) | `string` | — |
+| `vertical` | Stack vertically, merging corners top/bottom | — | — |
 
 ### Events
 
-| Event        | Description                                                                                |
-| ------------ | ------------------------------------------------------------------------------------------ |
+| Event | Description |
+| --- | --- |
 | `oas-change` | Selection changed. Single-select `detail: { value }`; multi-select `detail: { value: [] }` |
 
 ### Slots
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |
 
 > Note: child buttons declare their selectable value via the `value` attribute; children without `value` are regular buttons and don't participate in selection or dispatch `oas-change`. The selected state is expressed through the child button's `aria-pressed`; use `oas-button[aria-pressed='true']` to customize the selected style.

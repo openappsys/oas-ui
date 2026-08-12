@@ -46,22 +46,22 @@ onMounted(async () => {
 
 ### Attributes
 
-| Attribute   | Description                      | Type      | Default |
-| ----------- | -------------------------------- | --------- | ------- |
-| `closeable` | Whether to show the close button | `boolean` | —       |
-| `title`     | Title text                       | `string`  | —       |
-| `type`      | Alert type                       | `string`  | `info`  |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `closeable` | Whether to show the close button | `boolean` | — |
+| `title` | Title text | `string` | — |
+| `type` | Alert type | `string` | `info` |
 
 ### Events
 
-| Event       | Description                                                            |
-| ----------- | ---------------------------------------------------------------------- |
+| Event | Description |
+| --- | --- |
 | `oas-close` | Dispatched after the close button is clicked; the component then hides |
 
 ### Slots
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |
 
 `error` uses `role="alert"`, other types use `role="status"`.

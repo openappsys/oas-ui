@@ -44,12 +44,12 @@ A classic page skeleton of header + sider + content + footer, used with semantic
 
 ## API
 
-| Component     | Description                                                                                             |
-| ------------- | ------------------------------------------------------------------------------------------------------- |
-| `oas-layout`  | Layout container (lays out horizontally when a sider is present)                                        |
-| `oas-header`  | Top bar, renders as `<header>`                                                                          |
-| `oas-sider`   | Sider; the `collapsed` attribute collapses it to a narrow bar; renders as `<aside aria-label="侧边栏">` |
-| `oas-content` | Content area, renders as `<main>`                                                                       |
-| `oas-footer`  | Footer, renders as `<footer>`                                                                           |
+| Component    | Description                                                              |
+| ------------ | ------------------------------------------------------------------------ |
+| `oas-layout` | Layout container (lays out horizontally when a sider is present)         |
+| `oas-header` | Top bar, renders as `<header>`                                           |
+| `oas-sider`  | Sider; the `collapsed` attribute collapses it to a narrow bar; renders as `<aside aria-label="侧边栏">` |
+| `oas-content`| Content area, renders as `<main>`                                        |
+| `oas-footer` | Footer, renders as `<footer>`                                            |
 
 Child components must carry the matching `slot` attribute (`header` / `sider` / `content` / `footer`).

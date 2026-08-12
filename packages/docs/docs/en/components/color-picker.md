@@ -42,16 +42,16 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute  | Description               | Type      | Default |
-| ---------- | ------------------------- | --------- | ------- |
-| `disabled` | Disabled                  | `boolean` | —       |
-| `preset`   | Preset color array (JSON) | `string`  | —       |
-| `value`    | Current color (hex)       | `string`  | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disabled | `boolean` | — |
+| `preset` | Preset color array (JSON) | `string` | — |
+| `value` | Current color (hex) | `string` | — |
 
 ### Events
 
-| Event        | Description                       |
-| ------------ | --------------------------------- |
+| Event | Description |
+| --- | --- |
 | `oas-change` | Color change, `detail: { value }` |
 
 Keyboard: with the trigger button focused, `↑`/`↓` adjusts brightness; inside the panel, `Esc` closes, clicking outside closes.

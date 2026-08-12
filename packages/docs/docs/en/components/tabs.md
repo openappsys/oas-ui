@@ -150,33 +150,33 @@ onMounted(async () => {
 
 ### oas-tabs
 
-| Attribute      | Description                                                                                        | Type      | Default |
-| -------------- | -------------------------------------------------------------------------------------------------- | --------- | ------- |
-| `active`       | The `value` of the active tab                                                                      | `string`  | —       |
-| `closable`     | Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel) | `boolean` | —       |
-| `tab-position` | Tab bar position: `top` (default) / `left` / `right` / `bottom`                                    | `string`  | `top`   |
-| `type`         | Style variant: `line` (underline, default) / `card`                                                | `string`  | `line`  |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `active` | The `value` of the active tab | `string` | — |
+| `closable` | Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel) | `boolean` | — |
+| `tab-position` | Tab bar position: `top` (default) / `left` / `right` / `bottom` | `string` | `top` |
+| `type` | Style variant: `line` (underline, default) / `card` | `string` | `line` |
 
-| Event        | Description                                                                                                           |
-| ------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `oas-change` | Switched, `detail: { value }`                                                                                         |
-| `oas-close`  | A tab's close × was clicked, `detail: { key }` (`key` is that tab's `value`; the component does not remove the panel) |
+| Event | Description |
+| --- | --- |
+| `oas-change` | Switched, `detail: { value }` |
+| `oas-close` | A tab's close × was clicked, `detail: { key }` (`key` is that tab's `value`; the component does not remove the panel) |
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |
 
 ### oas-tab-panel
 
-| Attribute | Description                                  | Type | Default |
-| --------- | -------------------------------------------- | ---- | ------- |
-| `badge`   | Badge next to the tab title (number or text) | —    | —       |
-| `hidden`  | —                                            | —    | —       |
-| `label`   | Tab text                                     | —    | —       |
-| `value`   | Tab value                                    | —    | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `badge` | Badge next to the tab title (number or text) | — | — |
+| `hidden` | — | — | — |
+| `label` | Tab text | — | — |
+| `value` | Tab value | — | — |
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |
 
 Keyboard: after focusing the tab list, `←` / `→` / `↑` / `↓` cycle through tabs; with a close button focused, Enter / Space triggers close. `oas-tab-panel` declares the `hidden` attribute to hide inactive panels (content stays in the DOM).

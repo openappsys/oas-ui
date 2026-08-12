@@ -132,23 +132,23 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute   | Description                                                  | Type        | Default  |
-| ----------- | ------------------------------------------------------------ | ----------- | -------- |
-| `items`     | Menu items JSON                                              | `string`    | `[]`     |
-| `open`      | Controlled display (boolean attribute; expands when present) | `boolean`   | —        |
-| `placement` | Popup placement                                              | `Placement` | `bottom` |
-| `value`     | Current selected value                                       | `string`    | —        |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `items` | Menu items JSON | `string` | `[]` |
+| `open` | Controlled display (boolean attribute; expands when present) | `boolean` | — |
+| `placement` | Popup placement | `Placement` | `bottom` |
+| `value` | Current selected value | `string` | — |
 
 ### Events
 
-| Event        | Description                               |
-| ------------ | ----------------------------------------- |
+| Event | Description |
+| --- | --- |
 | `oas-select` | An item was selected, `detail: { value }` |
 
 ### Slots
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |
 
 Clicking the trigger toggles visibility; clicking outside / pressing Esc / selecting an item closes it. The floating menu is an inner `oas-menu` (`role="menu"`, leaf items `menuitemradio`, items with submenus `menuitem`) supporting cascading submenus and keyboard navigation.

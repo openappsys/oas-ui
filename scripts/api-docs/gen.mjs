@@ -26,7 +26,6 @@
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import { join, dirname, resolve, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { format as prettierFormat, resolveConfig } from 'prettier'
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(SCRIPT_DIR, '..', '..')
@@ -380,7 +379,7 @@ function isConsumed(b, blocks, i, pageTags) {
  *   { status: 'nochange' }      章节无需改动
  *   { status: 'changed', newLines, oldSectionLines, newSectionLines }  需要重写
  */
-async function processPage(file, lang) {
+function processPage(file, lang) {
   const dir = lang === 'zh' ? ZH_DIR : EN_DIR
   const path = join(dir, file)
   const text = readFileSync(path, 'utf8')
@@ -447,13 +446,10 @@ async function processPage(file, lang) {
     sectionOut.push(...b.lines)
   }
 
-  // 组装新文件（prettier 化输出：与全仓 prettier 格式一致，否则 check 与格式化后的文件永久不一致）
+  // 组装新文件
   const newLines = [...lines.slice(0, apiIdx + 1), '', ...sectionOut]
   if (endIdx < lines.length) newLines.push('', ...lines.slice(endIdx))
-  const rawText = newLines.join('\n').replace(/\n+$/, '') + '\n'
-  const filepath = join(lang === 'zh' ? ZH_DIR : EN_DIR, file)
-  const config = (await resolveConfig(filepath)) ?? {}
-  const newText = await prettierFormat(rawText, { ...config, filepath })
+  const newText = newLines.join('\n').replace(/\n+$/, '') + '\n'
 
   if (newText === text) return { status: 'nochange' }
   return {
@@ -481,7 +477,7 @@ function diffStats(oldLines, newLines) {
 }
 
 // ---------- 主流程 ----------
-async function main() {
+function main() {
   const stats = { changed: 0, skip: [], diffs: [] }
   const changedFiles = []
 
@@ -491,18 +487,13 @@ async function main() {
       .filter((f) => f.endsWith('.md'))
       .sort()
     for (const file of files) {
-      const res = await processPage(file, lang)
+      const res = processPage(file, lang)
       const rel = `${lang === 'zh' ? 'components' : 'en/components'}/${file}`
       if (res.status === 'changed') {
         stats.changed++
         const diff = diffStats(res.oldSection, res.newSection)
         stats.diffs.push({ file: rel, ...diff })
-        changedFiles.push({
-          lang,
-          file,
-          // prettier 化输出：md 表格列对齐与全仓 prettier 一致（否则 api:gen --check 与格式化后的文件永久不一致）
-          text: await prettierFormat(res.newText, { filepath: join(dir, file) }),
-        })
+        changedFiles.push({ lang, file, text: res.newText })
       } else if (res.status === 'skip') {
         stats.skip.push(`${rel}（${res.reason}）`)
       }
@@ -579,7 +570,7 @@ async function main() {
 
 // ---------- 入口 ----------
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-  await main()
+  main()
 }
 
 export { processPage, diffStats }

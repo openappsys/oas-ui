@@ -112,25 +112,25 @@
 
 ### 属性
 
-| 属性       | 说明                                                                                | 类型         | 默认值    |
-| ---------- | ----------------------------------------------------------------------------------- | ------------ | --------- |
-| `block`    | 占满父容器宽度（块级）                                                              | `boolean`    | —         |
-| `disabled` | 禁用                                                                                | `boolean`    | —         |
-| `ghost`    | 幽灵/描边形态，透明底 + 按 `type` 着色描边，hover 加深                              | `boolean`    | —         |
-| `icon`     | 图标名（复用 oas-icon 图标集）；无文字时等宽、以图标名兜底名称                      | `string`     | —         |
-| `loading`  | 加载态                                                                              | `boolean`    | —         |
-| `round`    | 胶囊圆角（`--oas-radius-full` / `999px`）                                           | `boolean`    | —         |
-| `size`     | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `ButtonSize` | `medium`  |
-| `type`     | 类型                                                                                | `ButtonType` | `default` |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `block` | 占满父容器宽度（块级） | `boolean` | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `ghost` | 幽灵/描边形态，透明底 + 按 `type` 着色描边，hover 加深 | `boolean` | — |
+| `icon` | 图标名（复用 oas-icon 图标集）；无文字时等宽、以图标名兜底名称 | `string` | — |
+| `loading` | 加载态 | `boolean` | — |
+| `round` | 胶囊圆角（`--oas-radius-full` / `999px`） | `boolean` | — |
+| `size` | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `ButtonSize` | `medium` |
+| `type` | 类型 | `ButtonType` | `default` |
 
 ### 事件
 
-| 事件        | 说明                              |
-| ----------- | --------------------------------- |
+| 事件 | 说明 |
+| --- | --- |
 | `oas-click` | 点击，`detail: { originalEvent }` |
 
 ### 插槽
 
 | 名称 | 说明 |
-| ---- | ---- |
-| 默认 | —    |
+| --- | --- |
+| 默认 | — |

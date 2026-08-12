@@ -65,20 +65,20 @@ onMounted(() => {
 
 ### 属性
 
-| 属性              | 说明                | 类型      | 默认值 |
-| ----------------- | ------------------- | --------- | ------ |
-| `disabled`        | 禁用                | `boolean` | —      |
-| `maxlength`       | 输入最大长度        | `string`  | —      |
-| `placeholder`     | 空值占位            | `string`  | —      |
-| `submit-on-enter` | 是否允许 Enter 提交 | `string`  | `true` |
-| `value`           | 当前值（受控）      | `string`  | —      |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 禁用 | `boolean` | — |
+| `maxlength` | 输入最大长度 | `string` | — |
+| `placeholder` | 空值占位 | `string` | — |
+| `submit-on-enter` | 是否允许 Enter 提交 | `string` | `true` |
+| `value` | 当前值（受控） | `string` | — |
 
 ### 事件
 
-| 事件         | 说明                                                                 |
-| ------------ | -------------------------------------------------------------------- |
+| 事件 | 说明 |
+| --- | --- |
 | `oas-cancel` | 取消/空值提交（还原旧值），默认非破坏，`detail: { value: oldValue }` |
-| `oas-change` | 提交新值，`detail: { value }`                                        |
+| `oas-change` | 提交新值，`detail: { value }` |
 
 键盘：展示态 `Enter`/空格/点击进入编辑；编辑态 `Enter` 提交、`Esc` 还原失焦。
 

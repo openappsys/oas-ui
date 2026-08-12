@@ -70,19 +70,19 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute      | Description                                                                                          | Type                       | Default |
-| -------------- | ---------------------------------------------------------------------------------------------------- | -------------------------- | ------- |
-| `data`         | Data (JSON attribute channel; property assignment reflects to attribute, [{ key, label, disabled }]) | `TransferItem[] \| string` | `[]`    |
-| `searchable`   | Search filtering within panels                                                                       | `boolean`                  | —       |
-| `source-title` | —                                                                                                    | —                          | —       |
-| `target-title` | —                                                                                                    | —                          | —       |
-| `titles`       | Panel titles (JSON array) or `source-title`/`target-title`                                           | `string`                   | —       |
-| `value`        | Selected key array (JSON attribute)                                                                  | `string`                   | `[]`    |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `data` | Data (JSON attribute channel; property assignment reflects to attribute, [{ key, label, disabled }]) | `TransferItem[] \| string` | `[]` |
+| `searchable` | Search filtering within panels | `boolean` | — |
+| `source-title` | — | — | — |
+| `target-title` | — | — | — |
+| `titles` | Panel titles (JSON array) or `source-title`/`target-title` | `string` | — |
+| `value` | Selected key array (JSON attribute) | `string` | `[]` |
 
 ### Events
 
-| Event        | Description                                       |
-| ------------ | ------------------------------------------------- |
+| Event | Description |
+| --- | --- |
 | `oas-change` | Value change after shuttling, `detail: { value }` |
 
 Keyboard: after focusing a panel list, `↑`/`↓` moves the selection, `Enter` shuttles.

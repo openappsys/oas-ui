@@ -18,7 +18,8 @@
     "api:check": "node scripts/api-docs/scan.mjs && node scripts/api-docs/gen.mjs --check && git diff --exit-code -- docs/api-manifest.json",
     "perf:size": "node scripts/perf/size.mjs",
     "perf:bench": "node scripts/perf/render-bench.mjs",
-    "release": "pnpm test && pnpm typecheck && pnpm build && pnpm -r publish --access public"
+    "release": "pnpm test && pnpm typecheck && pnpm build && pnpm -r publish --access public",
+    "lint:md": "markdownlint-cli2"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
@@ -27,6 +28,7 @@
     "@playwright/test": "^1.62.1",
     "@types/node": "^26.1.2",
     "happy-dom": "^20.11.1",
+    "markdownlint-cli2": "^0.23.2",
     "prettier": "^3.9.6",
     "typescript": "^7.0.2",
     "vite": "^8.2.1",

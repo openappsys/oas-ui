@@ -56,9 +56,9 @@ onMounted(async () => {
 
 ### Slots
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |
 
 - When an app container exists, the message stacks of imperative APIs like message / notification / loadingBar mount into the nearest app container.
 - Without an app container, behavior is unchanged and messages mount to `document.body`.

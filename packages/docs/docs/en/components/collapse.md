@@ -67,31 +67,31 @@ onMounted(() => {
 
 ### oas-collapse
 
-| Attribute   | Description                                           | Type      | Default |
-| ----------- | ----------------------------------------------------- | --------- | ------- |
-| `accordion` | Accordion mode; only one panel open at a time         | `boolean` | —       |
-| `active`    | Set of expanded panel `name` values (comma-separated) | `string`  | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `accordion` | Accordion mode; only one panel open at a time | `boolean` | — |
+| `active` | Set of expanded panel `name` values (comma-separated) | `string` | — |
 
-| Event        | Description                                            |
-| ------------ | ------------------------------------------------------ |
+| Event | Description |
+| --- | --- |
 | `oas-change` | Expansion state change, `detail: { active: string[] }` |
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |
 
 ### oas-collapse-item
 
-| Attribute | Description                                       | Type     | Default |
-| --------- | ------------------------------------------------- | -------- | ------- |
-| `header`  | Panel title                                       | `string` | —       |
-| `name`    | Unique identifier of the panel                    | —        | —       |
-| `open`    | Whether it is expanded (managed by the container) | —        | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `header` | Panel title | `string` | — |
+| `name` | Unique identifier of the panel | — | — |
+| `open` | Whether it is expanded (managed by the container) | — | — |
 
-| Event                     | Description |
-| ------------------------- | ----------- |
-| `oas-collapse-item-click` | —           |
+| Event | Description |
+| --- | --- |
+| `oas-collapse-item-click` | — |
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |

@@ -81,15 +81,15 @@ A layout container with even horizontal/vertical spacing.
 
 ### Attributes
 
-| Attribute   | Description                                                                                                                                                                  | Type             | Default      |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ------------ |
-| `align`     | Alignment                                                                                                                                                                    | `string`         | —            |
-| `direction` | Direction                                                                                                                                                                    | `SpaceDirection` | `horizontal` |
-| `size`      | Spacing: `xs` (4px) / `small` (8px) / `medium` (12px, default) / `large` (24px) / `xl` (32px), or a numeric pixel value; invalid values fall back to `medium` with a warning | `string`         | `medium`     |
-| `wrap`      | Whether to wrap                                                                                                                                                              | `boolean`        | —            |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `align` | Alignment | `string` | — |
+| `direction` | Direction | `SpaceDirection` | `horizontal` |
+| `size` | Spacing: `xs` (4px) / `small` (8px) / `medium` (12px, default) / `large` (24px) / `xl` (32px), or a numeric pixel value; invalid values fall back to `medium` with a warning | `string` | `medium` |
+| `wrap` | Whether to wrap | `boolean` | — |
 
 ### Slots
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |

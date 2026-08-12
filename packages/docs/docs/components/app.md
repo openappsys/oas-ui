@@ -57,8 +57,8 @@ onMounted(async () => {
 ### 插槽
 
 | 名称 | 说明 |
-| ---- | ---- |
-| 默认 | —    |
+| --- | --- |
+| 默认 | — |
 
 - app 容器存在时，message / notification / loadingBar 等命令式 API 的消息栈挂载到最近的 app 容器内。
 - 无 app 容器时保持原有行为，挂载到 `document.body`。

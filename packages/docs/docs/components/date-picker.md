@@ -68,20 +68,20 @@ format 支持 `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` token。
 
 ### 属性
 
-| 属性          | 说明                                                                     | 类型      | 默认值 |
-| ------------- | ------------------------------------------------------------------------ | --------- | ------ |
-| `disabled`    | 禁用                                                                     | `boolean` | —      |
-| `format`      | 展示格式 token（`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`）                        | `string`  | —      |
-| `max`         | 可选范围（ISO 日期）                                                     | `string`  | —      |
-| `min`         | 可选范围（ISO 日期）                                                     | `string`  | —      |
-| `placeholder` | 占位提示                                                                 | —         | —      |
-| `type`        | 类型：`date` / `daterange` / `month` / `datetime`                        | `string`  | `date` |
-| `value`       | 当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组 | `string`  | —      |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 禁用 | `boolean` | — |
+| `format` | 展示格式 token（`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`） | `string` | — |
+| `max` | 可选范围（ISO 日期） | `string` | — |
+| `min` | 可选范围（ISO 日期） | `string` | — |
+| `placeholder` | 占位提示 | — | — |
+| `type` | 类型：`date` / `daterange` / `month` / `datetime` | `string` | `date` |
+| `value` | 当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组 | `string` | — |
 
 ### 事件
 
-| 事件         | 说明                                                  |
-| ------------ | ----------------------------------------------------- |
+| 事件 | 说明 |
+| --- | --- |
 | `oas-change` | 值变化，`detail: { value }`（daterange 为字符串数组） |
 
 键盘：`Enter` / `↓` 展开，`↑`/`↓`/`←`/`→` 在网格内移动，`Enter` 选中，`Esc` 关闭。

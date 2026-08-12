@@ -247,33 +247,33 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute    | Description                                                                                                                                                               | Type                                       | Default |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------- |
-| `bordered`   | Full border: draws a grid outline around cells (the outer frame is built in)                                                                                              | —                                          | —       |
-| `checkable`  | Enables checkbox multi-select                                                                                                                                             | `boolean`                                  | —       |
-| `columns`    | Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `TableColumn[] \| string`                  | `[]`    |
-| `data`       | Row data `[{ [key]: value, children?, expand? }]`, JSON string (declarative attribute channel; property assignment takes precedence)                                      | `Array<Record<string, unknown>> \| string` | `[]`    |
-| `empty-text` | Empty state text                                                                                                                                                          | —                                          | —       |
-| `expanded`   | Set of expanded row keys (comma-separated; shared by tree parent rows and expandable rows)                                                                                | `string`                                   | —       |
-| `height`     | Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered                                                          | `string`                                   | `320`   |
-| `loading`    | Loading state: shows placeholder rows in the data area (header retained)                                                                                                  | `boolean`                                  | —       |
-| `row-height` | Fixed row height for virtual scrolling (px)                                                                                                                               | `string`                                   | `40`    |
-| `row-key`    | Unique key field of a row                                                                                                                                                 | `string`                                   | `key`   |
-| `selected`   | Set of selected row keys (comma-separated)                                                                                                                                | `string`                                   | —       |
-| `sort-key`   | Controlled sort; `sort-order` is `asc` / `desc` / empty                                                                                                                   | `string`                                   | —       |
-| `sort-order` | Controlled sort; `sort-order` is `asc` / `desc` / empty                                                                                                                   | `SortOrder`                                | —       |
-| `stripe`     | Zebra striping: alternating light background for odd/even rows                                                                                                            | `boolean`                                  | —       |
-| `summary`    | Summary config `[{ key, type: 'sum'\|'avg'\|'count', label? }]`, JSON string                                                                                              | `string`                                   | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `bordered` | Full border: draws a grid outline around cells (the outer frame is built in) | — | — |
+| `checkable` | Enables checkbox multi-select | `boolean` | — |
+| `columns` | Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `TableColumn[] \| string` | `[]` |
+| `data` | Row data `[{ [key]: value, children?, expand? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `Array<Record<string, unknown>> \| string` | `[]` |
+| `empty-text` | Empty state text | — | — |
+| `expanded` | Set of expanded row keys (comma-separated; shared by tree parent rows and expandable rows) | `string` | — |
+| `height` | Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered | `string` | `320` |
+| `loading` | Loading state: shows placeholder rows in the data area (header retained) | `boolean` | — |
+| `row-height` | Fixed row height for virtual scrolling (px) | `string` | `40` |
+| `row-key` | Unique key field of a row | `string` | `key` |
+| `selected` | Set of selected row keys (comma-separated) | `string` | — |
+| `sort-key` | Controlled sort; `sort-order` is `asc` / `desc` / empty | `string` | — |
+| `sort-order` | Controlled sort; `sort-order` is `asc` / `desc` / empty | `SortOrder` | — |
+| `stripe` | Zebra striping: alternating light background for odd/even rows | `boolean` | — |
+| `summary` | Summary config `[{ key, type: 'sum'\|'avg'\|'count', label? }]`, JSON string | `string` | — |
 
 ### Events
 
-| Event             | Description                                                                                   |
-| ----------------- | --------------------------------------------------------------------------------------------- |
-| `oas-check`       | Checkbox selection change, `detail: { keys: string[] }`                                       |
-| `oas-expand`      | Row expand/collapse (tree child rows or expandable content rows), `detail: { key, expanded }` |
-| `oas-row-click`   | Row click (also toggles selection when not checkable), `detail: { row, key }`                 |
-| `oas-scroll`      | Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }`                     |
-| `oas-sort-change` | Sort change, `detail: { key, order: 'asc' \| 'desc' \| '' }`                                  |
+| Event | Description |
+| --- | --- |
+| `oas-check` | Checkbox selection change, `detail: { keys: string[] }` |
+| `oas-expand` | Row expand/collapse (tree child rows or expandable content rows), `detail: { key, expanded }` |
+| `oas-row-click` | Row click (also toggles selection when not checkable), `detail: { row, key }` |
+| `oas-scroll` | Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }` |
+| `oas-sort-change` | Sort change, `detail: { key, order: 'asc' \| 'desc' \| '' }` |
 
 > Note: `columns.render` is a function type and can only be assigned via the property from JS — it cannot be expressed as a JSON string. For `fixed` columns it is recommended to declare `width` explicitly (sticky offsets fall back to 100px when omitted). Summary can also be written directly on a column as `summary: 'sum' | 'avg' | 'count'`; `children` (tree child rows) and `expand` (expandable row content) are both row data fields.
 

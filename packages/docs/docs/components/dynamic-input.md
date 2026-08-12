@@ -62,18 +62,18 @@ onMounted(() => {
 
 ### 属性
 
-| 属性            | 说明                           | 类型       | 默认值 |
-| --------------- | ------------------------------ | ---------- | ------ |
-| `default-value` | 新增行的默认值                 | `string`   | —      |
-| `disabled`      | 禁用（行内输入 + 按钮）        | `boolean`  | —      |
-| `max`           | 最多行数，超长截断             | `string`   | —      |
-| `min`           | 最少行数，不足自动补足         | `string`   | `0`    |
-| `model-value`   | 字符串数组（property 或 JSON） | `string[]` | `[]`   |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `default-value` | 新增行的默认值 | `string` | — |
+| `disabled` | 禁用（行内输入 + 按钮） | `boolean` | — |
+| `max` | 最多行数，超长截断 | `string` | — |
+| `min` | 最少行数，不足自动补足 | `string` | `0` |
+| `model-value` | 字符串数组（property 或 JSON） | `string[]` | `[]` |
 
 ### 事件
 
-| 事件         | 说明                                  |
-| ------------ | ------------------------------------- |
+| 事件 | 说明 |
+| --- | --- |
 | `oas-change` | 增/删/编辑后派发，`detail: { value }` |
 
 受控：监听 `oas-change` 后设置 `modelValue` property（或 `model-value` 属性）回填即可。

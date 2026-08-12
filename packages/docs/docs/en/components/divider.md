@@ -34,14 +34,14 @@ A horizontal/vertical divider that separates content.
 
 ### Attributes
 
-| Attribute          | Description      | Type               | Default      |
-| ------------------ | ---------------- | ------------------ | ------------ |
-| `content-position` | Content position | `DividerPosition`  | `center`     |
-| `dashed`           | Dashed           | `boolean`          | —            |
-| `direction`        | Direction        | `DividerDirection` | `horizontal` |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `content-position` | Content position | `DividerPosition` | `center` |
+| `dashed` | Dashed | `boolean` | — |
+| `direction` | Direction | `DividerDirection` | `horizontal` |
 
 ### Slots
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |

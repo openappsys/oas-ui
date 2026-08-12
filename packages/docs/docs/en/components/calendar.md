@@ -49,19 +49,19 @@ In year mode, selecting a month dispatches `yyyy-MM`.
 
 ### Attributes
 
-| Attribute          | Description                     | Type                             | Default |
-| ------------------ | ------------------------------- | -------------------------------- | ------- |
-| `disabledDate`     | Disabled callback (property)    | `((d: Date) => boolean) \| null` | —       |
-| `max`              | Selectable range (ISO dates)    | `string`                         | —       |
-| `min`              | Selectable range (ISO dates)    | `string`                         | —       |
-| `mode`             | `month` / `year`                | `string`                         | `month` |
-| `show-week-number` | Show the ISO week number column | `boolean`                        | —       |
-| `value`            | Selected value (ISO)            | `string`                         | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabledDate` | Disabled callback (property) | `((d: Date) => boolean) \| null` | — |
+| `max` | Selectable range (ISO dates) | `string` | — |
+| `min` | Selectable range (ISO dates) | `string` | — |
+| `mode` | `month` / `year` | `string` | `month` |
+| `show-week-number` | Show the ISO week number column | `boolean` | — |
+| `value` | Selected value (ISO) | `string` | — |
 
 ### Events
 
-| Event        | Description                           |
-| ------------ | ------------------------------------- |
+| Event | Description |
+| --- | --- |
 | `oas-change` | Selection change, `detail: { value }` |
 
 Keyboard: `↑`/`↓`/`←`/`→` to move within the grid, `Enter` to select.

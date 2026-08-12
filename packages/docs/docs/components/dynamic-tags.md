@@ -59,21 +59,21 @@ onMounted(() => {
 
 ### 属性
 
-| 属性              | 说明                         | 类型       | 默认值 |
-| ----------------- | ---------------------------- | ---------- | ------ |
-| `allow-duplicate` | 允许重复标签                 | `boolean`  | —      |
-| `disabled`        | 禁用                         | `boolean`  | —      |
-| `max`             | 标签数量上限                 | `string`   | —      |
-| `model-value`     | 标签数组（property 或 JSON） | `string[]` | `[]`   |
-| `placeholder`     | 输入框占位符                 | `string`   | —      |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `allow-duplicate` | 允许重复标签 | `boolean` | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `max` | 标签数量上限 | `string` | — |
+| `model-value` | 标签数组（property 或 JSON） | `string[]` | `[]` |
+| `placeholder` | 输入框占位符 | `string` | — |
 
 ### 事件
 
-| 事件         | 说明                            |
-| ------------ | ------------------------------- |
-| `oas-add`    | 新增标签，`detail: { value }`   |
+| 事件 | 说明 |
+| --- | --- |
+| `oas-add` | 新增标签，`detail: { value }` |
 | `oas-change` | 增删后派发，`detail: { value }` |
-| `oas-remove` | 删除标签，`detail: { value }`   |
+| `oas-remove` | 删除标签，`detail: { value }` |
 
 键盘：`Enter` / `,` 提交；输入框为空时 `Backspace` 删除最后一个标签。
 

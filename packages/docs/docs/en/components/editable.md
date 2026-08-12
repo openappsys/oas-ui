@@ -65,20 +65,20 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute         | Description                | Type      | Default |
-| ----------------- | -------------------------- | --------- | ------- |
-| `disabled`        | Disabled                   | `boolean` | —       |
-| `maxlength`       | Maximum input length       | `string`  | —       |
-| `placeholder`     | Empty value placeholder    | `string`  | —       |
-| `submit-on-enter` | Whether Enter submits      | `string`  | `true`  |
-| `value`           | Current value (controlled) | `string`  | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disabled | `boolean` | — |
+| `maxlength` | Maximum input length | `string` | — |
+| `placeholder` | Empty value placeholder | `string` | — |
+| `submit-on-enter` | Whether Enter submits | `string` | `true` |
+| `value` | Current value (controlled) | `string` | — |
 
 ### Events
 
-| Event        | Description                                                                                                 |
-| ------------ | ----------------------------------------------------------------------------------------------------------- |
+| Event | Description |
+| --- | --- |
 | `oas-cancel` | Cancel/empty-value submit (reverts to old value), non-destructive by default, `detail: { value: oldValue }` |
-| `oas-change` | New value submitted, `detail: { value }`                                                                    |
+| `oas-change` | New value submitted, `detail: { value }` |
 
 Keyboard: in display mode `Enter`/Space/click enters edit mode; in edit mode `Enter` submits, `Esc` reverts and blurs.
 

@@ -68,9 +68,9 @@ Unknown commands are displayed literally without errors.
 
 ### Attributes
 
-| Attribute | Description              | Type     | Default |
-| --------- | ------------------------ | -------- | ------- |
-| `code`    | LaTeX subset source text | `string` | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `code` | LaTeX subset source text | `string` | — |
 
 ### ARIA
 

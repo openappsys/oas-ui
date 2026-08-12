@@ -186,34 +186,34 @@ onMounted(() => {
 
 ### oas-form
 
-| 属性          | 说明                                                                                | 类型              | 默认值     |
-| ------------- | ----------------------------------------------------------------------------------- | ----------------- | ---------- |
-| `gap`         | grid 模式栅格间距（token 值，如 `var(--oas-space-4)`）                              | `string`          | `0`        |
-| `label-align` | 标签对齐：`left` / `right` / `top`（grid 模式默认 `top`）                           | `string`          | `top`      |
-| `label-width` | `label-align` 为 left/right 时的标签列宽                                            | —                 | —          |
-| `layout`      | 布局模式：`vertical`（默认，竖排）/ `grid`（24 列栅格）；非枚举值回退 `vertical`    | `string`          | `vertical` |
-| `rules`       | 校验规则 JSON：`{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | `{}`       |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `gap` | grid 模式栅格间距（token 值，如 `var(--oas-space-4)`） | `string` | `0` |
+| `label-align` | 标签对齐：`left` / `right` / `top`（grid 模式默认 `top`） | `string` | `top` |
+| `label-width` | `label-align` 为 left/right 时的标签列宽 | — | — |
+| `layout` | 布局模式：`vertical`（默认，竖排）/ `grid`（24 列栅格）；非枚举值回退 `vertical` | `string` | `vertical` |
+| `rules` | 校验规则 JSON：`{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | `{}` |
 
-| 事件                | 说明                                   |
-| ------------------- | -------------------------------------- |
-| `oas-submit`        | 校验通过，`detail: { values }`         |
+| 事件 | 说明 |
+| --- | --- |
+| `oas-submit` | 校验通过，`detail: { values }` |
 | `oas-validate-fail` | 校验失败，`detail: { errors, values }` |
 
 | 名称 | 说明 |
-| ---- | ---- |
-| 默认 | —    |
+| --- | --- |
+| 默认 | — |
 
 ### oas-form-item
 
-| 属性       | 说明                                                             | 类型      | 默认值 |
-| ---------- | ---------------------------------------------------------------- | --------- | ------ |
-| `label`    | 标签文本（缺省不渲染标签行）                                     | `string`  | —      |
-| `name`     | 字段名（透传校验关联）                                           | —         | —      |
-| `required` | 必填星号（仅视觉标记，校验规则仍由 form 的 `rules` 驱动）        | `boolean` | —      |
-| `span`     | 24 栅格占列数（仅 form `layout="grid"` 生效；非 1-24 整数按 24） | `string`  | `24`   |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `label` | 标签文本（缺省不渲染标签行） | `string` | — |
+| `name` | 字段名（透传校验关联） | — | — |
+| `required` | 必填星号（仅视觉标记，校验规则仍由 form 的 `rules` 驱动） | `boolean` | — |
+| `span` | 24 栅格占列数（仅 form `layout="grid"` 生效；非 1-24 整数按 24） | `string` | `24` |
 
-| 名称 | 说明     |
-| ---- | -------- |
+| 名称 | 说明 |
+| --- | --- |
 | 默认 | 字段控件 |
 
 校验失败时失败字段被标记 `aria-invalid`；可通过 `form.getErrors()` 获取错误信息。被 `oas-form-item` 包裹的字段，错误文本写入 form-item 的错误位（`role="alert"`）。

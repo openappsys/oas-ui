@@ -24,7 +24,7 @@ pnpm dev            # 文档站 + 组件 demo
 
 遵循 Conventional Commits：
 
-```
+```text
 feat(tabs): 新增 oas-tabs
 fix(select): 修复外部点击关闭穿透 shadow 边界
 docs: 更新 v0.9.0 状态

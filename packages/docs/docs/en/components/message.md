@@ -54,13 +54,13 @@ onMounted(async () => {
 
 ### Methods
 
-| Method                                | Description                          |
-| ------------------------------------- | ------------------------------------ |
-| `message.info(content, duration?)`    | Info message, returns `{ close }`    |
+| Method | Description |
+| --- | --- |
+| `message.info(content, duration?)` | Info message, returns `{ close }` |
 | `message.success(content, duration?)` | Success message, returns `{ close }` |
 | `message.warning(content, duration?)` | Warning message, returns `{ close }` |
-| `message.error(content, duration?)`   | Error message, returns `{ close }`   |
-| `destroyAllMessage()`                 | Clear all messages                   |
+| `message.error(content, duration?)` | Error message, returns `{ close }` |
+| `destroyAllMessage()` | Clear all messages |
 
 - `duration` defaults to `3000`ms; pass `0` to keep the message open.
 - Stacked and centered at the top; `error` uses `role="alert"`, others use `role="status"`.

@@ -38,20 +38,20 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute  | Description                  | Type      | Default |
-| ---------- | ---------------------------- | --------- | ------- |
-| `disabled` | Disabled                     | `boolean` | —       |
-| `pressed`  | Whether pressed (controlled) | `boolean` | —       |
-| `value`    | Value (returned with events) | `string`  | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disabled | `boolean` | — |
+| `pressed` | Whether pressed (controlled) | `boolean` | — |
+| `value` | Value (returned with events) | `string` | — |
 
 ### Events
 
-| Event        | Description                          |
-| ------------ | ------------------------------------ |
+| Event | Description |
+| --- | --- |
 | `oas-change` | Toggle, `detail: { value, pressed }` |
 
 ### Slots
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |

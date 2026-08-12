@@ -56,17 +56,17 @@ onMounted(() => {
 
 ### 属性
 
-| 属性               | 说明                                                 | 类型                         | 默认值 |
-| ------------------ | ---------------------------------------------------- | ---------------------------- | ------ |
-| `change-on-select` | 选中任意层级即提交                                   | `boolean`                    | —      |
-| `disabled`         | 禁用                                                 | `boolean`                    | —      |
-| `options`          | 级联选项，JSON 数组，支持 `children` / `disabled`    | `CascaderOption[] \| string` | `[]`   |
-| `placeholder`      | 占位提示                                             | —                            | —      |
-| `show-all-levels`  | 是否显示完整路径（当前版本预留，展示始终为完整路径） | —                            | —      |
-| `value`            | 路径数组（JSON），如 `["zj","hz"]`                   | `string`                     | `[]`   |
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `change-on-select` | 选中任意层级即提交 | `boolean` | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `options` | 级联选项，JSON 数组，支持 `children` / `disabled` | `CascaderOption[] \| string` | `[]` |
+| `placeholder` | 占位提示 | — | — |
+| `show-all-levels` | 是否显示完整路径（当前版本预留，展示始终为完整路径） | — | — |
+| `value` | 路径数组（JSON），如 `["zj","hz"]` | `string` | `[]` |
 
 ### 事件
 
-| 事件         | 说明                                      |
-| ------------ | ----------------------------------------- |
+| 事件 | 说明 |
+| --- | --- |
 | `oas-change` | 选择变化，`detail: { value }`（路径数组） |

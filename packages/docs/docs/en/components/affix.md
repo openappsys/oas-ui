@@ -36,14 +36,14 @@ Scroll this page down and observe the button being pinned as it approaches the t
 
 ### Attributes
 
-| Attribute | Description                               | Type     | Default |
-| --------- | ----------------------------------------- | -------- | ------- |
-| `offset`  | Fixed distance from the viewport top (px) | `string` | `0`     |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `offset` | Fixed distance from the viewport top (px) | `string` | `0` |
 
 ### Slots
 
-| Name    | Description |
-| ------- | ----------- |
-| default | —           |
+| Name | Description |
+| --- | --- |
+| default | — |
 
 Listens to `window` scroll; the content is pinned once it scrolls out of the viewport and is passed through the default slot.

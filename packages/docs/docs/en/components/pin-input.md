@@ -104,23 +104,23 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute      | Description                                                  | Type      | Default |
-| -------------- | ------------------------------------------------------------ | --------- | ------- |
-| `aria-invalid` | Invalid state (synced to container and cells, marked danger) | `string`  | —       |
-| `disabled`     | Disabled                                                     | `boolean` | —       |
-| `length`       | Number of code digits                                        | `string`  | `6`     |
-| `mask`         | Asterisk masking                                             | `boolean` | —       |
-| `readonly`     | Readonly                                                     | `boolean` | —       |
-| `type`         | Cell input type                                              | `string`  | `text`  |
-| `value`        | Current value (controlled)                                   | `string`  | —       |
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `aria-invalid` | Invalid state (synced to container and cells, marked danger) | `string` | — |
+| `disabled` | Disabled | `boolean` | — |
+| `length` | Number of code digits | `string` | `6` |
+| `mask` | Asterisk masking | `boolean` | — |
+| `readonly` | Readonly | `boolean` | — |
+| `type` | Cell input type | `string` | `text` |
+| `value` | Current value (controlled) | `string` | — |
 
 ### Events
 
-| Event          | Description                                 |
-| -------------- | ------------------------------------------- |
-| `oas-change`   | Dispatched when filled, `detail: { value }` |
+| Event | Description |
+| --- | --- |
+| `oas-change` | Dispatched when filled, `detail: { value }` |
 | `oas-complete` | Dispatched when filled, `detail: { value }` |
-| `oas-input`    | Per-cell input, `detail: { value, index }`  |
+| `oas-input` | Per-cell input, `detail: { value, index }` |
 
 Keyboard: `←`/`→` to move between cells, `Backspace` deletes the current cell and moves back, paste auto-distribution is supported; when all cells are empty, each cell is focusable (native caret).
 
