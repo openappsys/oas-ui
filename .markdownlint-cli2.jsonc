@@ -1,11 +1,9 @@
 {
   "config": {
     "default": true,
-    "MD013": {
-      "line_length": 120,
-      "code_blocks": false,
-      "tables": false
-    },
+    // MD013 line-length：中文文档无空格分词、长句一行轻松超行宽（且 prettier proseWrap
+    // 从不折行），939 处误报证明该规则与中文文档场景冲突，禁用（非偷懒，属规则适用性决策）。
+    "MD013": false,
     "MD024": false,
     "MD033": false,
     "MD036": false,
