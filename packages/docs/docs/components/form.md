@@ -131,13 +131,51 @@
   </div>
 </DemoBlock>
 
+## 行内表单
+
+> `inline` 时表单项水平排列：label 在控件左侧（宽度自适应）、控件自动宽度、项之间按 `gap` 留间距（默认 `var(--oas-space-4)`），容器放不下时自动换行。与 `layout` 并存且优先于 `layout`；此时 `label-align` 强制 `left`、`label-width` 自动。适合登录、搜索等紧凑工具栏场景。
+
+### 行内登录表单
+
+<DemoBlock title="行内登录表单">
+  <oas-form id="form-inline-login" inline rules='{"username":[{"required":true,"message":"请输入用户名"}],"password":[{"required":true,"message":"请输入密码"}]}' style="width: 100%; max-width: 640px">
+    <oas-form-item label="用户名" required>
+      <oas-input name="username" placeholder="用户名" style="width: 180px"></oas-input>
+    </oas-form-item>
+    <oas-form-item label="密码" required>
+      <oas-input name="password" type="password" placeholder="密码" style="width: 180px"></oas-input>
+    </oas-form-item>
+    <oas-form-item>
+      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">登录</oas-button>
+      <span id="form-inline-login-output" style="margin-left: var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+    </oas-form-item>
+  </oas-form>
+</DemoBlock>
+
+### 行内搜索表单
+
+<DemoBlock title="行内搜索表单">
+  <oas-form id="form-inline-search" inline rules='{"keyword":[{"required":true,"message":"请输入搜索关键词"}]}' style="width: 100%; max-width: 720px">
+    <oas-form-item label="关键词" required>
+      <oas-input name="keyword" placeholder="搜索关键词" style="width: 200px"></oas-input>
+    </oas-form-item>
+    <oas-form-item label="分类">
+      <oas-select name="category" placeholder="全部分类" options='[{"label":"全部","value":"all"},{"label":"文档","value":"doc"},{"label":"组件","value":"component"}]' style="width: 140px"></oas-select>
+    </oas-form-item>
+    <oas-form-item>
+      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">搜索</oas-button>
+      <span id="form-inline-search-output" style="margin-left: var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+    </oas-form-item>
+  </oas-form>
+</DemoBlock>
+
 受控同步与事件监听（一个 `<script>` 块统一挂接）：
 
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
   // 受控同步：把文本类字段的输入写回 value 属性
-  for (const id of ['form-basic', 'form-full', 'form-validate', 'form-length', 'form-skip', 'form-event', 'form-grid', 'form-align']) {
+  for (const id of ['form-basic', 'form-full', 'form-validate', 'form-length', 'form-skip', 'form-event', 'form-grid', 'form-align', 'form-inline-login', 'form-inline-search']) {
     const form = document.getElementById(id)
     if (!form) continue
     for (const el of form.querySelectorAll('oas-input, oas-textarea')) {
@@ -179,6 +217,18 @@ onMounted(() => {
     document.getElementById('form-align')?.setAttribute('label-align', v)
     alignOut.textContent = `label-align: ${v}`
   })
+
+  // 行内登录：提交结果回显（校验失败的错误文本收编进 form-item 错误位，显示在控件下方）
+  const loginOut = document.getElementById('form-inline-login-output')
+  document.getElementById('form-inline-login')?.addEventListener('oas-submit', (e) => {
+    loginOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+
+  // 行内搜索：提交结果回显
+  const searchOut = document.getElementById('form-inline-search-output')
+  document.getElementById('form-inline-search')?.addEventListener('oas-submit', (e) => {
+    searchOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
 })
 </script>
 
@@ -188,10 +238,11 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `gap` | grid 模式栅格间距（token 值，如 `var(--oas-space-4)`） | `string` | `0` |
-| `label-align` | 标签对齐：`left` / `right` / `top`（grid 模式默认 `top`） | `string` | `top` |
-| `label-width` | `label-align` 为 left/right 时的标签列宽 | — | — |
-| `layout` | 布局模式：`vertical`（默认，竖排）/ `grid`（24 列栅格）；非枚举值回退 `vertical` | `string` | `vertical` |
+| `gap` | 间距（grid 模式栅格间距；inline 模式项间距），token 值如 `var(--oas-space-4)`；grid 默认 `0`，inline 默认 `var(--oas-space-4)` | `string` | `0` |
+| `inline` | 行内布局：表单项水平排列（label 在控件左侧、控件自动宽度、可换行），项间距取 `gap`（默认 `var(--oas-space-4)`）；与 `layout` 并存且优先于 `layout`；此时 `label-align` 强制 `left`、`label-width` 自动 | `boolean` | — |
+| `label-align` | 标签对齐：`left` / `right` / `top`（grid 模式默认 `top`；inline 模式强制 `left`） | `string` | `top` |
+| `label-width` | `label-align` 为 left/right 时的标签列宽（inline 模式自动，不生效） | — | — |
+| `layout` | 布局模式：`vertical`（默认，竖排）/ `grid`（24 列栅格）；非枚举值回退 `vertical`；存在 `inline` 属性时优先 | `string` | `vertical` |
 | `rules` | 校验规则 JSON：`{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | `{}` |
 
 | 事件 | 说明 |

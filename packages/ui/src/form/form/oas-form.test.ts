@@ -100,6 +100,126 @@ describe('OASForm', () => {
   })
 })
 
+describe('OASForm 行内布局（inline）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountInline(attrs: Record<string, string> = {}): OASForm {
+    const el = new OASForm()
+    el.setAttribute('inline', '')
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('inline：form 元素为可换行 flex 行，项间距默认 var(--oas-space-4)', () => {
+    const el = mountInline()
+    const form = el.shadowRoot!.querySelector('form')!
+    expect(form.style.display).toBe('flex')
+    expect(form.style.flexWrap).toBe('wrap')
+    expect(form.style.alignItems).toBe('flex-start')
+    expect(form.style.gap).toBe('var(--oas-space-4)')
+  })
+
+  it('inline：gap 属性可覆盖默认项间距', () => {
+    const el = mountInline({ gap: 'var(--oas-space-2)' })
+    const form = el.shadowRoot!.querySelector('form')!
+    expect(form.style.gap).toBe('var(--oas-space-2)')
+  })
+
+  it('inline：host 暴露 --oas-form-layout=inline 与 --oas-form-label-align=left', () => {
+    const el = mountInline()
+    expect(el.style.getPropertyValue('--oas-form-layout')).toBe('inline')
+    expect(el.style.getPropertyValue('--oas-form-label-align')).toBe('left')
+  })
+
+  it('inline 与 layout 并存：inline 优先于 grid（display flex、无 grid 列）', () => {
+    const el = mountInline({ layout: 'grid' })
+    const form = el.shadowRoot!.querySelector('form')!
+    expect(form.style.display).toBe('flex')
+    expect(form.style.gridTemplateColumns).toBe('')
+  })
+
+  it('inline 移除后回退 vertical（块级、无 flex）', () => {
+    const el = mountInline()
+    const form = el.shadowRoot!.querySelector('form')!
+    el.removeAttribute('inline')
+    expect(form.style.display).toBe('block')
+    expect(form.style.flexWrap).toBe('')
+    expect(el.style.getPropertyValue('--oas-form-layout')).toBe('vertical')
+  })
+
+  it('inline：form-item 感知行内模式（label-align 强制 left、label-width 自动）', () => {
+    const el = new OASForm()
+    el.setAttribute('inline', '')
+    el.setAttribute('label-width', '120px')
+    const item = new OASFormItem()
+    item.setAttribute('label', '姓名')
+    item.innerHTML = '<oas-input name="name"></oas-input>'
+    el.appendChild(item)
+    document.body.appendChild(el)
+    expect(item.dataset.formLayout).toBe('inline')
+    expect(item.dataset.formLabelAlign).toBe('left')
+    expect(item.style.getPropertyValue('--oas-form-label-width')).toBe('')
+  })
+
+  it('inline：form-item 的 span 忽略（gridColumn 清空）', () => {
+    const el = new OASForm()
+    el.setAttribute('inline', '')
+    const item = new OASFormItem()
+    item.setAttribute('span', '6')
+    item.innerHTML = '<oas-input name="name"></oas-input>'
+    el.appendChild(item)
+    document.body.appendChild(el)
+    expect(item.style.gridColumn).toBe('')
+  })
+
+  it('inline 运行时切换 grid ↔ inline，form-item 即时重刷（refreshLayout 链路）', () => {
+    const el = new OASForm()
+    const item = new OASFormItem()
+    item.innerHTML = '<oas-input name="name"></oas-input>'
+    el.appendChild(item)
+    document.body.appendChild(el)
+    expect(item.dataset.formLabelAlign).toBe('top')
+
+    el.setAttribute('inline', '')
+    expect(item.dataset.formLayout).toBe('inline')
+    expect(item.dataset.formLabelAlign).toBe('left')
+
+    el.removeAttribute('inline')
+    el.setAttribute('layout', 'grid')
+    expect(item.dataset.formLayout).toBeUndefined()
+    expect(item.dataset.formLabelAlign).toBe('top')
+    expect(item.style.gridColumn).toBe('span 24')
+  })
+
+  it('inline：校验失败错误文本写入 form-item 错误位（角色 alert 可见）', () => {
+    const el = new OASForm()
+    el.setAttribute('inline', '')
+    el.setAttribute(
+      'rules',
+      JSON.stringify({ name: [{ required: true, message: '请输入用户名' }] }),
+    )
+    const item = new OASFormItem()
+    item.setAttribute('label', '用户名')
+    item.setAttribute('required', '')
+    item.innerHTML = '<oas-input name="name"></oas-input>'
+    el.appendChild(item)
+    document.body.appendChild(el)
+    el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    const input = item.querySelector('oas-input')!
+    expect(input.hasAttribute('aria-invalid')).toBe(true)
+    const err = item.shadowRoot!.querySelector('[part="error"]')!
+    expect(err.hasAttribute('hidden')).toBe(false)
+    expect(err.textContent).toBe('请输入用户名')
+  })
+})
+
 describe('OASForm 栅格布局增强', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

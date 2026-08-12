@@ -150,6 +150,11 @@ export const zhCN = {
   // date-picker（日期选择器）
   'datePicker.placeholder': '请选择日期',
   'datePicker.confirm': '确定',
+  'datePicker.join': '、',
+  'datePicker.shortcutToday': '今天',
+  'datePicker.shortcutThisWeek': '本周',
+  'datePicker.shortcutThisMonth': '本月',
+  'datePicker.shortcutThisYear': '今年',
   // time-picker（时间选择器）
   'timePicker.placeholder': '请选择时间',
   'timePicker.hour': '时',
@@ -161,6 +166,10 @@ export const zhCN = {
   'upload.remove': '移除 {name}',
   'upload.upload': '开始上传',
   'upload.empty': '暂无文件',
+  'upload.maxCount': '最多上传 {max} 个文件',
+  'upload.preview': '预览 {name}',
+  'upload.previewDialog': '文件预览',
+  'upload.closePreview': '关闭预览',
   // transfer（穿梭框）
   'transfer.source': '源列表',
   'transfer.target': '已选列表',

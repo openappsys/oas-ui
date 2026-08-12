@@ -44,10 +44,24 @@ const STYLE = `
   flex: 1;
   min-width: 0;
 }
+/* 错误提示收纳在 control 内（slot 之后），label 在左侧时错误仍位于控件下方 */
 .error-text {
   color: var(--oas-color-danger);
   font-size: var(--oas-font-size-sm);
   line-height: 1.4;
+}
+/* ---- inline 行内模式：label 在控件左侧且宽度自适应、控件自动宽度 ---- */
+:host([data-form-layout='inline']) .field {
+  flex-direction: row;
+  align-items: baseline;
+  gap: var(--oas-space-2);
+}
+:host([data-form-layout='inline']) .label {
+  flex: 0 0 auto;
+  width: auto;
+}
+:host([data-form-layout='inline']) .control {
+  flex: 0 1 auto;
 }
 [hidden] {
   display: none;
@@ -79,8 +93,8 @@ export class OASFormItem extends OASElement {
         </label>
         <div class="control" part="control">
           <slot></slot>
+          <div part="error" class="error-text" role="alert" hidden></div>
         </div>
-        <div part="error" class="error-text" role="alert" hidden></div>
       </div>
     `
   }
@@ -112,20 +126,25 @@ export class OASFormItem extends OASElement {
   }
 
   protected override update(): void {
-    // 感知父 oas-form 的布局配置（closest 读属性；form 属性变化时由 form 侧调 refreshLayout 同步）
+    // 感知父 oas-form 的布局配置（closest 读属性；form 属性变化时由 form 侧调 refreshLayout 同步）。
+    // inline 优先于 layout：标签强制左侧、label-width 自动、span 忽略。
     const form = this.closest('oas-form')
-    const isGrid = form?.getAttribute('layout') === 'grid'
-    // grid 模式按 span 占列（1-24 整数，非法按 24）；vertical/无 form 忽略 span，退化为块级
+    const isInline = form?.hasAttribute('inline') === true
+    const isGrid = !isInline && form?.getAttribute('layout') === 'grid'
+    // grid 模式按 span 占列（1-24 整数，非法按 24）；vertical/inline/无 form 忽略 span，退化为块级
     if (isGrid) {
       this.style.gridColumn = `span ${this.normalizeSpan(this.getAttr('span', '24'))}`
     } else {
       this.style.gridColumn = ''
     }
 
-    const labelAlign = this.normalizeAlign(form?.getAttribute('label-align'))
+    const labelAlign = isInline ? 'left' : this.normalizeAlign(form?.getAttribute('label-align'))
     this.dataset.formLabelAlign = labelAlign
+    // 行内布局标记（CSS 钩子）；先写 label-align 再写 layout，保持 SSR 快照属性顺序稳定
+    if (isInline) this.dataset.formLayout = 'inline'
+    else delete this.dataset.formLayout
 
-    const labelWidth = form?.getAttribute('label-width') ?? ''
+    const labelWidth = isInline ? '' : (form?.getAttribute('label-width') ?? '')
     if (labelWidth === '') this.style.removeProperty('--oas-form-label-width')
     else this.style.setProperty('--oas-form-label-width', labelWidth)
 

@@ -179,4 +179,154 @@ describe('OASDatePicker', () => {
     el.setAttribute('value', '2026-08-20')
     expect(trigger(el).textContent).toContain('2026-08-20')
   })
+
+  // ---- shortcuts 快捷预设 ----
+
+  it('shortcuts：property 渲染快捷按钮，点击应用值并派发 oas-change、关闭', () => {
+    const el = mount({ value: '2026-08-09' })
+    el.shortcuts = [
+      { label: '明天', value: '2026-08-10' },
+      { label: '下周一', getValue: () => new Date(2026, 7, 17) },
+    ]
+    open(el)
+    const btns = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.shortcut')]
+    expect(btns.length).toBe(2)
+    expect(btns[0]!.textContent).toBe('明天')
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    btns[0]!.click()
+    expect(el.getAttribute('value')).toBe('2026-08-10')
+    expect(detail).toEqual({ value: '2026-08-10' })
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('shortcuts：getValue 形式应用日期', () => {
+    const el = mount({ value: '2026-08-09' })
+    el.shortcuts = [{ label: '下周一', getValue: () => new Date(2026, 7, 17) }]
+    open(el)
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    el.shadowRoot!.querySelector<HTMLElement>('.shortcut')!.click()
+    expect(el.getAttribute('value')).toBe('2026-08-17')
+    expect(detail).toEqual({ value: '2026-08-17' })
+  })
+
+  it('shortcuts：daterange 预设范围提交 JSON 数组', () => {
+    const el = mount({ type: 'daterange' })
+    el.shortcuts = [
+      { label: '本周', value: ['2026-08-10', '2026-08-14'] },
+      { label: '本月', getValue: () => [new Date(2026, 7, 1), new Date(2026, 7, 15)] },
+    ]
+    open(el)
+    const btns = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.shortcut')]
+    expect(btns.length).toBe(2)
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    btns[0]!.click()
+    expect(el.getAttribute('value')).toBe('["2026-08-10","2026-08-14"]')
+    expect(detail).toEqual({ value: ['2026-08-10', '2026-08-14'] })
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
+    detail = undefined
+    btns[1]!.click()
+    expect(detail).toEqual({ value: ['2026-08-01', '2026-08-15'] })
+  })
+
+  it('shortcuts：未设置时 date 类型渲染内置「今天」预设（locale）', () => {
+    const el = mount({ value: '2026-08-09' })
+    open(el)
+    const labels = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.shortcut')].map(
+      (b) => b.textContent,
+    )
+    expect(labels).toContain('今天')
+  })
+
+  it('shortcuts：命中禁用日期时不应用', () => {
+    const el = mount()
+    el.disabledDate = (d) => d.getDate() === 10
+    el.shortcuts = [{ label: '禁用日', value: '2026-08-10' }]
+    open(el)
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    el.shadowRoot!.querySelector<HTMLElement>('.shortcut')!.click()
+    expect(detail).toBeUndefined()
+    expect(el.getAttribute('value')).toBeNull()
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
+  })
+
+  // ---- disabled-date 禁用日期 ----
+
+  it('disabled-date：回调禁用日期置灰、aria-disabled、点击不提交', () => {
+    const el = mount({ value: '2026-08-09' })
+    el.disabledDate = (d) => d.getDate() === 15
+    open(el)
+    expect(day(el, '2026-08-15').classList.contains('disabled')).toBe(true)
+    expect(day(el, '2026-08-15').getAttribute('aria-disabled')).toBe('true')
+    expect(day(el, '2026-08-14').classList.contains('disabled')).toBe(false)
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    day(el, '2026-08-15').click()
+    expect(detail).toBeUndefined()
+    expect(el.getAttribute('value')).toBe('2026-08-09')
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('disabled-date：键盘导航跳过禁用日期', () => {
+    const el = mount({ value: '2026-08-09' })
+    el.disabledDate = (d) => d.getDate() === 10
+    open(el)
+    expect(rovingFocus(el).getAttribute('data-date')).toBe('2026-08-09')
+    grids(el)[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    // 2026-08-10 被禁用 → 焦点停在原地不进入
+    expect(rovingFocus(el).getAttribute('data-date')).toBe('2026-08-09')
+  })
+
+  it('disabled-date：daterange 网格中禁用日期不可选', () => {
+    const el = mount({ type: 'daterange', value: '["2026-08-05","2026-08-15"]' })
+    el.disabledDate = (d) => d.getDate() === 20
+    open(el)
+    expect(day(el, '2026-08-20', 0).classList.contains('disabled')).toBe(true)
+    expect(day(el, '2026-08-21', 0).classList.contains('disabled')).toBe(false)
+  })
+
+  // ---- multiple 多选 ----
+
+  it('multiple：连续点选累加为 JSON 数组，面板保持打开，再点取消', () => {
+    const el = mount({ value: '2026-08-09', multiple: '' })
+    open(el)
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    day(el, '2026-08-10').click()
+    expect(el.getAttribute('value')).toBe('["2026-08-09","2026-08-10"]')
+    expect(detail).toEqual({ value: ['2026-08-09', '2026-08-10'] })
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
+    expect(day(el, '2026-08-09').classList.contains('selected')).toBe(true)
+    expect(day(el, '2026-08-10').classList.contains('selected')).toBe(true)
+    day(el, '2026-08-10').click()
+    expect(el.getAttribute('value')).toBe('["2026-08-09"]')
+    expect(day(el, '2026-08-10').classList.contains('selected')).toBe(false)
+  })
+
+  it('multiple：trigger 展示全部选中日期', () => {
+    const el = mount({ value: '["2026-08-09","2026-08-10"]', multiple: '' })
+    expect(trigger(el).textContent).toContain('2026-08-09')
+    expect(trigger(el).textContent).toContain('2026-08-10')
+  })
+
+  it('multiple：受控模式外部改 value 同步面板高亮', () => {
+    const el = mount({ value: '2026-08-09', multiple: '' })
+    open(el)
+    el.setAttribute('value', '["2026-08-09","2026-08-11"]')
+    expect(day(el, '2026-08-09').classList.contains('selected')).toBe(true)
+    expect(day(el, '2026-08-11').classList.contains('selected')).toBe(true)
+    expect(day(el, '2026-08-10').classList.contains('selected')).toBe(false)
+  })
+
+  it('multiple：daterange 忽略 multiple，走范围语义', () => {
+    const el = mount({ type: 'daterange', value: '["2026-08-05","2026-08-15"]', multiple: '' })
+    open(el)
+    expect(grids(el).length).toBe(2)
+    day(el, '2026-08-20', 0).click()
+    day(el, '2026-08-25', 0).click()
+    expect(el.getAttribute('value')).toBe('["2026-08-20","2026-08-25"]')
+  })
 })

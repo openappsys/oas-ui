@@ -22,7 +22,7 @@ form {
 
 export class OASForm extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['rules', 'layout', 'gap', 'label-align', 'label-width']
+    return ['rules', 'layout', 'gap', 'label-align', 'label-width', 'inline']
   }
 
   private form: HTMLFormElement | null = null
@@ -88,27 +88,46 @@ export class OASForm extends OASElement {
   }
 
   /**
-   * 栅格布局：layout="grid" 时 form 元素为 24 列 grid（gap 生效）；
-   * 其他值（含非法值）回退 vertical 块级。布局属性变化时通知各 form-item 重刷感知。
+   * 布局策略（优先级：inline > layout）：
+   * - inline：form 元素为可换行 flex 行，项间距取 gap（默认 var(--oas-space-4)），
+   *   标签强制左侧、label-width 自动（由 form-item 感知本属性自行适配）；
+   * - layout="grid"：form 元素为 24 列 grid（gap 生效）；
+   * - 其他值（含非法值）回退 vertical 块级。
+   * 布局属性变化时通知各 form-item 重刷感知。
    */
   private applyLayout(): void {
     if (!this.form) return
-    const layout = this.getAttr('layout', 'vertical')
-    if (layout === 'grid') {
-      this.form.style.display = 'grid'
-      this.form.style.gridTemplateColumns = 'repeat(24, 1fr)'
-      this.form.style.gap = this.getAttr('gap', '0')
+    if (this.hasAttr('inline')) {
+      this.form.style.display = 'flex'
+      this.form.style.flexWrap = 'wrap'
+      this.form.style.alignItems = 'flex-start'
+      this.form.style.gap = this.getAttr('gap', 'var(--oas-space-4)')
+      // 行内强制标签左侧；布局以 CSS 变量暴露，供消费者/主题层读取
+      this.style.setProperty('--oas-form-layout', 'inline')
+      this.style.setProperty('--oas-form-label-align', 'left')
     } else {
-      this.form.style.display = 'block'
-      this.form.style.gridTemplateColumns = ''
-      this.form.style.gap = ''
-    }
-    // label-align 以 CSS 变量暴露（默认 top），供消费者/主题层读取；form-item 自身走 closest 读取
-    const labelAlign = this.getAttr('label-align', 'top')
-    if (labelAlign === 'left' || labelAlign === 'right' || labelAlign === 'top') {
-      this.style.setProperty('--oas-form-label-align', labelAlign)
-    } else {
-      this.style.setProperty('--oas-form-label-align', 'top')
+      this.style.removeProperty('--oas-form-layout')
+      const layout = this.getAttr('layout', 'vertical')
+      if (layout === 'grid') {
+        this.form.style.display = 'grid'
+        this.form.style.gridTemplateColumns = 'repeat(24, 1fr)'
+        this.form.style.gap = this.getAttr('gap', '0')
+        this.style.setProperty('--oas-form-layout', 'grid')
+      } else {
+        this.form.style.display = 'block'
+        this.form.style.flexWrap = ''
+        this.form.style.alignItems = ''
+        this.form.style.gridTemplateColumns = ''
+        this.form.style.gap = ''
+        this.style.setProperty('--oas-form-layout', 'vertical')
+      }
+      // label-align 以 CSS 变量暴露（默认 top），供消费者/主题层读取；form-item 自身走 closest 读取
+      const labelAlign = this.getAttr('label-align', 'top')
+      if (labelAlign === 'left' || labelAlign === 'right' || labelAlign === 'top') {
+        this.style.setProperty('--oas-form-label-align', labelAlign)
+      } else {
+        this.style.setProperty('--oas-form-label-align', 'top')
+      }
     }
     for (const item of this.querySelectorAll('oas-form-item')) {
       ;(item as unknown as { refreshLayout?: () => void }).refreshLayout?.()

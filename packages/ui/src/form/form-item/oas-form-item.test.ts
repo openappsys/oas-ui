@@ -25,6 +25,47 @@ function mountInForm(
   return { form, item }
 }
 
+describe('OASFormItem 行内布局适配', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('inline 模式：data-form-layout=inline、label-align 强制 left、label-width 自动、span 忽略', () => {
+    const { item } = mountInForm(
+      { inline: '', 'label-align': 'top', 'label-width': '120px' },
+      { label: '姓名', span: '6' },
+    )
+    expect(item.dataset.formLayout).toBe('inline')
+    expect(item.dataset.formLabelAlign).toBe('left')
+    expect(item.style.getPropertyValue('--oas-form-label-width')).toBe('')
+    expect(item.style.gridColumn).toBe('')
+  })
+
+  it('inline 模式：错误文本渲染在 control 内（slot 之后、角色 alert）', () => {
+    const { item } = mountInForm({ inline: '' }, { label: '姓名' })
+    item.setError('请填写')
+    const err = item.shadowRoot!.querySelector('[part="error"]')!
+    const control = item.shadowRoot!.querySelector('[part="control"]')!
+    expect(control.contains(err)).toBe(true)
+    expect(err.getAttribute('role')).toBe('alert')
+    expect(err.hasAttribute('hidden')).toBe(false)
+    expect(err.textContent).toBe('请填写')
+  })
+
+  it('移除 inline 后回退默认感知（refreshLayout 链路）', () => {
+    const { form, item } = mountInForm({ inline: '' }, { label: '姓名' })
+    expect(item.dataset.formLayout).toBe('inline')
+    expect(item.dataset.formLabelAlign).toBe('left')
+    form.removeAttribute('inline')
+    expect(item.dataset.formLayout).toBeUndefined()
+    expect(item.dataset.formLabelAlign).toBe('top')
+  })
+})
+
 describe('OASFormItem', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

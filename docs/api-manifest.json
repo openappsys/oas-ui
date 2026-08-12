@@ -1166,6 +1166,17 @@
         "name": "allow-create",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "virtual",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "item-height",
+        "type": "string",
+        "default": "36",
+        "observed": true
       }
     ],
     "props": [
@@ -1181,15 +1192,30 @@
         "detail": "{ value: v }"
       },
       {
+        "name": "oas-option-render",
+        "detail": "{ index: optionIdx, option, element: label }"
+      },
+      {
         "name": "oas-change",
         "detail": "{ value: next }"
       },
       {
         "name": "oas-clear",
         "detail": "{ value: [...prev] }"
+      },
+      {
+        "name": "oas-tag-render",
+        "detail": "{ value, label, element: labelEl }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": "template[slot=\"option\"]"
+      },
+      {
+        "name": "template[slot=\"tag\"]"
+      }
+    ],
     "unresolved": []
   },
   "oas-auto-complete": {
@@ -1500,6 +1526,11 @@
       {
         "name": "label-width",
         "observed": true
+      },
+      {
+        "name": "inline",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [
@@ -1651,9 +1682,22 @@
       {
         "name": "placeholder",
         "observed": true
+      },
+      {
+        "name": "multiple",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [
+      {
+        "name": "shortcuts",
+        "type": "ShortcutItem[] | null"
+      },
+      {
+        "name": "disabledDate",
+        "type": "((d: Date) => boolean) | null"
+      },
       {
         "name": "pickerType",
         "type": "PickerType"
@@ -1736,6 +1780,11 @@
         "name": "auto-upload",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "list-type",
+        "default": "list",
+        "observed": true
       }
     ],
     "props": [
@@ -1743,9 +1792,17 @@
         "name": "files",
         "type": "File[]",
         "default": "[]"
+      },
+      {
+        "name": "listType",
+        "type": "ListType"
       }
     ],
     "events": [
+      {
+        "name": "oas-exceed",
+        "detail": "{ files: rejected, max, total: next.length }"
+      },
       {
         "name": "oas-change",
         "detail": "{ files: this.files }"
@@ -1757,6 +1814,10 @@
       {
         "name": "oas-remove",
         "detail": "{ file, index }"
+      },
+      {
+        "name": "oas-preview",
+        "detail": "{ file, url }"
       }
     ],
     "slots": [],

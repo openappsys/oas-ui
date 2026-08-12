@@ -348,12 +348,13 @@
       "format": "展示格式 token（`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`）",
       "max": "可选范围（ISO 日期）",
       "min": "可选范围（ISO 日期）",
+      "multiple": "多选（仅 `type=date`），值存 JSON 数组",
       "placeholder": "占位提示",
       "type": "类型：`date` / `daterange` / `month` / `datetime`",
       "value": "当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组"
     },
     "events": {
-      "oas-change": "值变化，`detail: { value }`（daterange 为字符串数组）"
+      "oas-change": "值变化，`detail: { value }`（daterange 为字符串数组；multiple 为字符串数组）"
     },
     "slots": {}
   },
@@ -509,10 +510,11 @@
   },
   "oas-form": {
     "attrs": {
-      "gap": "grid 模式栅格间距（token 值，如 `var(--oas-space-4)`）",
-      "label-align": "标签对齐：`left` / `right` / `top`（grid 模式默认 `top`）",
-      "label-width": "`label-align` 为 left/right 时的标签列宽",
-      "layout": "布局模式：`vertical`（默认，竖排）/ `grid`（24 列栅格）；非枚举值回退 `vertical`",
+      "gap": "间距（grid 模式栅格间距；inline 模式项间距），token 值如 `var(--oas-space-4)`；grid 默认 `0`，inline 默认 `var(--oas-space-4)`",
+      "inline": "行内布局：表单项水平排列（label 在控件左侧、控件自动宽度、可换行），项间距取 `gap`（默认 `var(--oas-space-4)`）；与 `layout` 并存且优先于 `layout`；此时 `label-align` 强制 `left`、`label-width` 自动",
+      "label-align": "标签对齐：`left` / `right` / `top`（grid 模式默认 `top`；inline 模式强制 `left`）",
+      "label-width": "`label-align` 为 left/right 时的标签列宽（inline 模式自动，不生效）",
+      "layout": "布局模式：`vertical`（默认，竖排）/ `grid`（24 列栅格）；非枚举值回退 `vertical`；存在 `inline` 属性时优先",
       "rules": "校验规则 JSON：`{ 字段名: [{ required, message, minLength, maxLength, pattern }] }`"
     },
     "events": {
@@ -950,6 +952,7 @@
       "allow-create": "无匹配时允许以输入值创建新选项",
       "clearable": "可清空（有值时显示清空按钮，清空派发 `oas-clear`）",
       "disabled": "禁用",
+      "item-height": "虚拟滚动时每项固定高度（px）",
       "loading": "远程加载占位（与 `remote` 搭配使用）",
       "max-tag-count": "多选标签按数量折叠为 `+N`（需显式设置；未设置时标签默认换行展示，不折叠）",
       "multiple": "多选",
@@ -957,14 +960,20 @@
       "placeholder": "占位提示",
       "remote": "远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求",
       "searchable": "可搜索（打开下拉后输入过滤）",
-      "value": "当前值（多选为 JSON 数组）"
+      "value": "当前值（多选为 JSON 数组）",
+      "virtual": "大数据量虚拟滚动：只渲染可视窗口，滚动流畅（复用 oas-virtual-list）；带 `group` 的选项自动回退全量渲染"
     },
     "events": {
       "oas-change": "选择/清空变化，`detail: { value }`",
       "oas-clear": "点击清空按钮，`detail: { value }`（清空前的值）",
-      "oas-input": "`remote` 模式输入，`detail: { value }`（供宿主请求）"
+      "oas-input": "`remote` 模式输入，`detail: { value }`（供宿主请求）",
+      "oas-option-render": "每个渲染的选项行派发，`detail: { index, option, element }`（element 为选项 label 容器，宿主可改写为图标/富文本）",
+      "oas-tag-render": "多选标签渲染时派发，`detail: { value, label, element }`（element 为标签文本容器，宿主可改写）"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"option\"]": "选项行静态模板，克隆到每个选项 label 容器；`[data-option-label]` 节点自动绑定选项 label",
+      "template[slot=\"tag\"]": "多选标签静态模板，克隆到每个 chip 的文本容器；`[data-tag-label]` 节点自动绑定标签 label"
+    }
   },
   "oas-sidebar": {
     "attrs": {
@@ -1336,11 +1345,14 @@
       "auto-upload": "添加后自动模拟上传",
       "disabled": "禁用",
       "files": "文件列表（property，`File[]`）",
+      "list-type": "列表样式：`list`（默认）/ `picture`（列表带小缩略图）/ `picture-card`（卡片缩略图墙）",
       "max": "最大文件数",
       "multiple": "多选"
     },
     "events": {
       "oas-change": "文件列表变化，`detail: { files }`",
+      "oas-exceed": "添加文件超限被拒绝，`detail: { files, max, total }`",
+      "oas-preview": "打开预览浮层，`detail: { file, url }`",
       "oas-remove": "移除文件，`detail: { file, index }`",
       "oas-upload": "上传进度，`detail: { file, percent, status }`"
     },

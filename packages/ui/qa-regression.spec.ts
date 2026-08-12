@@ -507,6 +507,122 @@ test('select 展开态 active 选项在暗色主题下文字/背景对比度 ≥
   expect(r.ratio, `暗色 active 文字 ${r.color} 落在背景 ${r.bg} 上`).toBeGreaterThanOrEqual(4.5)
 })
 
+test('select virtual：1 万条选项仅渲染可视窗口，滚动后窗口平移、滚动条可用', async ({ page }) => {
+  // 曾现风险：虚拟滚动退化为全量渲染（万级 DOM 卡死）；本测试锁定「DOM 行数 ≪ 数据量」不变量。
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#select-virtual')
+  const sel = page.locator('#select-virtual')
+  await sel.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const s = document.querySelector('#select-virtual')
+    const vlist = s?.shadowRoot?.querySelector('oas-virtual-list') as HTMLElement | null
+    return (
+      vlist != null &&
+      !vlist.hidden &&
+      (vlist.shadowRoot?.querySelectorAll('[role="option"]').length ?? 0) > 0
+    )
+  })
+  const initial = await page.evaluate(() => {
+    const s = document.querySelector('#select-virtual')!
+    const vlist = s.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement
+    const vp = vlist.shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    const first = vlist.shadowRoot!.querySelector<HTMLElement>('[role="option"]')!
+    return {
+      rendered: vlist.shadowRoot!.querySelectorAll('[role="option"]').length,
+      viewportHeight: vp.clientHeight,
+      firstLabel: first.textContent,
+    }
+  })
+  // 1 万条数据下只渲染窗口（240/36≈7 项 + 上下 buffer 4）
+  expect(initial.rendered).toBeLessThan(30)
+  expect(initial.rendered).toBeGreaterThan(3)
+  expect(initial.viewportHeight).toBeGreaterThan(100)
+  expect(initial.firstLabel).toContain('选项 0')
+  // 滚动后窗口平移：首可见项不再是 选项 0
+  await page.evaluate(() => {
+    const s = document.querySelector('#select-virtual')!
+    const vlist = s.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement
+    const vp = vlist.shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    vp.scrollTop = 4000
+    vp.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForTimeout(100)
+  const after = await page.evaluate(() => {
+    const s = document.querySelector('#select-virtual')!
+    const vlist = s.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement
+    const first = vlist.shadowRoot!.querySelector<HTMLElement>('[role="option"]')!
+    return { firstLabel: first.textContent }
+  })
+  expect(after.firstLabel).not.toContain('选项 0')
+  expect(after.firstLabel).toMatch(/选项 1\d{2}/)
+})
+
+test('select virtual：键盘导航高亮项滚动进视口且 aria-activedescendant 指向可见项', async ({
+  page,
+}) => {
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#select-virtual')
+  const sel = page.locator('#select-virtual')
+  await sel.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const s = document.querySelector('#select-virtual')
+    const vlist = s?.shadowRoot?.querySelector('oas-virtual-list') as HTMLElement | null
+    return (
+      vlist != null &&
+      !vlist.hidden &&
+      (vlist.shadowRoot?.querySelectorAll('[role="option"]').length ?? 0) > 0
+    )
+  })
+  const r = await page.evaluate(async () => {
+    const s = document.querySelector('#select-virtual')!
+    const trigger = s.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
+    // 连按 20 次 ↓：高亮滚出首屏，aria-activedescendant 应跟随
+    for (let i = 0; i < 20; i++) {
+      trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
+    const vlist = s.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement
+    const vp = vlist.shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    const desc = trigger.getAttribute('aria-activedescendant')
+    const activeRow = vlist.shadowRoot!.querySelector<HTMLElement>('.option.active')
+    return {
+      desc,
+      descId: desc ? (document.getElementById(desc)?.tagName ?? null) : null,
+      activeIndex: activeRow?.getAttribute('data-index') ?? null,
+      scrollTop: vp.scrollTop,
+    }
+  })
+  expect(r.desc).toBe('opt-20')
+  expect(r.activeIndex).toBe('20')
+  expect(r.scrollTop).toBeGreaterThan(0) // 窗口已滚动
+})
+
+test('select 自定义选项渲染：demo 里图标 + 文本进入选项行与标签', async ({ page }) => {
+  // 曾现风险：oas-option-render 的 element 绑定不回 UI（事件只进 console）；本测试锁定
+  // 「宿主改写的 element 内容真的渲染进下拉」。
+  await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#select-custom')
+  const sel = page.locator('#select-custom')
+  await sel.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
+    const s = document.querySelector('#select-custom')
+    return s?.shadowRoot?.querySelectorAll('[role="option"]').length === 4
+  })
+  const r = await page.evaluate(() => {
+    const s = document.querySelector('#select-custom')!
+    const first = s.shadowRoot!.querySelector<HTMLElement>('[role="option"]')!
+    const label = first.querySelector<HTMLElement>('.option-label')!
+    // 图标渲染为 span（emoji 文本），label 文本紧随其后
+    return {
+      optionText: first.textContent ?? '',
+      labelChildCount: label.children.length,
+    }
+  })
+  expect(r.optionText).toContain('🍎')
+  expect(r.optionText).toContain('苹果')
+  expect(r.labelChildCount).toBeGreaterThanOrEqual(2)
+})
+
 test('form-item label 点击聚焦 oas-input 的 shadow 内 input（focus 委托链）', async ({ page }) => {
   await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-form-item[label] oas-input')
@@ -959,4 +1075,155 @@ test('rate 半选（allow-half）：半星为左半黄右半灰的垂直分割�
   expect(r.fillColor).toBe('rgb(217, 119, 6)') // --oas-color-warning（light）
   expect(r.baseColor).toBe('rgb(228, 228, 231)') // --oas-color-border（light）
   await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix9-rate-half-star.png' })
+})
+
+// —— upload P0 补缺：照片墙 + 拖拽 ——
+// 曾现风险：picture-card 缩略图不渲染、Vue 剥离 list-type、超限无可见反馈、disabled 拖拽会打开文件。
+
+test('upload picture-card：list-type 属性在 Vue demo 存活，预置照片渲染缩略图卡片', async ({
+  page,
+}) => {
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-full')
+  // #upload-full 预置 3 张 SVG 图片（onMounted 异步 import 后设置 files）
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#upload-full')?.shadowRoot?.querySelectorAll('.card').length === 3,
+    null,
+    { timeout: 10000 },
+  )
+  const r = await page.evaluate(() => {
+    const full = document.querySelector('#upload-full')!
+    return {
+      listTypeAttr: full.getAttribute('list-type'),
+      cards: full.shadowRoot!.querySelectorAll('.card').length,
+      thumbs: full.shadowRoot!.querySelectorAll('.card .thumb img').length,
+      thumbBlobSrc: full.shadowRoot!.querySelector('.card .thumb img')?.getAttribute('src') ?? '',
+    }
+  })
+  expect(r.listTypeAttr, 'list-type 被 Vue 剥离').toBe('picture-card')
+  expect(r.cards).toBe(3)
+  expect(r.thumbs).toBe(3)
+  expect(r.thumbBlobSrc).toContain('blob:') // URL.createObjectURL 缩略图
+})
+
+test('upload 拖拽 drop：真实拖放文件到拖拽区即渲染', async ({ page }) => {
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-drag')
+  await page.evaluate(() => {
+    const el = document.querySelector('#upload-drag')!
+    const zone = el.shadowRoot!.querySelector('.zone')!
+    const dt = new DataTransfer()
+    dt.items.add(new File(['hello'], 'drag.txt', { type: 'text/plain' }))
+    zone.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }))
+  })
+  await page.waitForFunction(
+    () => document.querySelector('#upload-drag')?.shadowRoot?.querySelector('.item') != null,
+    null,
+    { timeout: 5000 },
+  )
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#upload-drag')!
+    return {
+      items: el.shadowRoot!.querySelectorAll('.item').length,
+      hasName: el.shadowRoot!.querySelector('.item .name')?.textContent,
+    }
+  })
+  expect(r.items).toBe(1)
+  expect(r.hasName).toBe('drag.txt')
+})
+
+test('upload 超限 max：drop 超过 max 的文件触发 oas-exceed 并弹出 message 可见反馈', async ({
+  page,
+}) => {
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-wall-exceed')
+  await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
+    timeout: 10000,
+  })
+  await page.evaluate(() => {
+    const el = document.querySelector('#upload-wall-exceed')!
+    const zone = el.shadowRoot!.querySelector('.zone')!
+    const dt = new DataTransfer()
+    for (let i = 0; i < 4; i++) {
+      dt.items.add(new File(['x'], `f${i}.png`, { type: 'image/png' }))
+    }
+    zone.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }))
+  })
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length > 0, null, {
+    timeout: 5000,
+  })
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#upload-wall-exceed')!
+    return {
+      msgCount: document.querySelectorAll('oas-message').length,
+      msgText: document.querySelector('oas-message')?.shadowRoot?.textContent ?? '',
+      cards: el.shadowRoot!.querySelectorAll('.card').length, // max=3：只接收 3 个
+    }
+  })
+  expect(r.msgCount).toBeGreaterThan(0)
+  expect(r.msgText).toContain('最多上传 3 个文件')
+  expect(r.cards).toBe(3)
+})
+
+test('form inline：表单项水平排列（同一行）、label 在控件左侧、空提交必填错误在控件下方', async ({
+  page,
+}) => {
+  // 曾现风险：inline 仅声明属性但无视觉效果（form 未切 flex / form-item 未感知行内）
+  await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-form[inline] oas-form-item oas-input')
+  const r = await page.evaluate(() => {
+    const form = document.querySelector('#form-inline-login')!
+    const formEl = form.shadowRoot!.querySelector('form')!
+    const items = [...form.querySelectorAll('oas-form-item')].filter((i) =>
+      i.querySelector('oas-input, oas-select'),
+    )
+    const first = items[0]!
+    const second = items[1]!
+    const a = first.getBoundingClientRect()
+    const b = second.getBoundingClientRect()
+    const labelBox = first
+      .shadowRoot!.querySelector<HTMLElement>('[part="label"]')!
+      .getBoundingClientRect()
+    const controlBox = first.querySelector<HTMLElement>('oas-input')!.getBoundingClientRect()
+    return {
+      flex: getComputedStyle(formEl).display,
+      wrap: getComputedStyle(formEl).flexWrap,
+      sameRow: Math.abs(a.top - b.top) < 4 && b.left > a.right,
+      labelLeftOfControl: labelBox.right <= controlBox.left + 1,
+      labelWidth: first
+        .shadowRoot!.querySelector<HTMLElement>('[part="label"]')!
+        .getBoundingClientRect().width,
+    }
+  })
+  expect(r.flex).toBe('flex')
+  expect(r.wrap).toBe('wrap')
+  expect(r.sameRow).toBe(true)
+  expect(r.labelLeftOfControl).toBe(true)
+  expect(r.labelWidth).toBeLessThan(96) // label-width 自动：不加固定 96px 列宽
+
+  // 空表单提交 → 必填错误写入 form-item 错误位（控件下方红字）
+  await page.locator('#form-inline-login oas-form-item:last-child oas-button').click()
+  await page.waitForFunction(() => {
+    const item = document.querySelector('#form-inline-login oas-form-item')
+    const err = item?.shadowRoot?.querySelector<HTMLElement>('[part="error"]')
+    return err != null && !err.hidden && (err.textContent?.length ?? 0) > 0
+  })
+  const err = await page.evaluate(() => {
+    const item = document.querySelector('#form-inline-login oas-form-item')!
+    const err = item.shadowRoot!.querySelector<HTMLElement>('[part="error"]')!
+    const input = item.querySelector('oas-input')!.getBoundingClientRect()
+    const errBox = err.getBoundingClientRect()
+    return {
+      text: err.textContent,
+      belowInput: errBox.top >= input.bottom - 1,
+      labelLeftOfInput:
+        item.shadowRoot!.querySelector<HTMLElement>('[part="label"]')!.getBoundingClientRect()
+          .right <=
+        input.left + 1,
+    }
+  })
+  expect(err.text).toContain('请输入用户名')
+  expect(err.belowInput).toBe(true)
+  expect(err.labelLeftOfInput).toBe(true)
 })

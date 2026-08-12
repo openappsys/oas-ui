@@ -348,12 +348,13 @@
       "format": "Display format tokens (`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`)",
       "max": "Selectable range (ISO dates)",
       "min": "Selectable range (ISO dates)",
+      "multiple": "Multiple selection (only `type=date`), value is a JSON array",
       "placeholder": "Placeholder text",
       "type": "Type: `date` / `daterange` / `month` / `datetime`",
       "value": "Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON range array"
     },
     "events": {
-      "oas-change": "Value change, `detail: { value }` (string array for daterange)"
+      "oas-change": "Value change, `detail: { value }` (string array for daterange and multiple)"
     },
     "slots": {}
   },
@@ -509,10 +510,11 @@
   },
   "oas-form": {
     "attrs": {
-      "gap": "Grid spacing in `grid` mode (token value, e.g. `var(--oas-space-4)`)",
-      "label-align": "Label alignment: `left` / `right` / `top` (default `top` in grid mode)",
-      "label-width": "Label column width when `label-align` is `left`/`right`",
-      "layout": "Layout mode: `vertical` (default, stacked) / `grid` (24-column grid); non-enum values fall back to `vertical`",
+      "gap": "Spacing (grid gap in `grid` mode; item spacing in `inline` mode), token value e.g. `var(--oas-space-4)`; `0` by default in grid, `var(--oas-space-4)` by default in inline",
+      "inline": "Inline layout: items laid out horizontally (label on the left of the control, controls auto-width, wraps to new lines); item spacing follows `gap` (default `var(--oas-space-4)`); coexists with `layout` and takes precedence over it; forces `label-align` to `left` and `label-width` to auto",
+      "label-align": "Label alignment: `left` / `right` / `top` (default `top` in grid mode; forced to `left` in inline mode)",
+      "label-width": "Label column width when `label-align` is `left`/`right` (ignored in inline mode, auto)",
+      "layout": "Layout mode: `vertical` (default, stacked) / `grid` (24-column grid); non-enum values fall back to `vertical`; `inline` attribute takes precedence when present",
       "rules": "Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }`"
     },
     "events": {
@@ -950,6 +952,7 @@
       "allow-create": "Allow creating new options from the input value when nothing matches",
       "clearable": "Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`)",
       "disabled": "Disabled",
+      "item-height": "Fixed row height (px) when virtual scrolling",
       "loading": "Remote loading placeholder (use with `remote`)",
       "max-tag-count": "Collapse tags beyond this count into `+N` in multiple mode (opt-in; without it tags wrap instead of collapsing)",
       "multiple": "Multiple select",
@@ -957,14 +960,20 @@
       "placeholder": "Placeholder text",
       "remote": "Remote search: no local filtering, typing dispatches `oas-input` for the host to request",
       "searchable": "Searchable (type to filter after opening the dropdown)",
-      "value": "Current value (JSON array in multiple mode)"
+      "value": "Current value (JSON array in multiple mode)",
+      "virtual": "Virtual scrolling for large datasets: renders only the visible window (reuses oas-virtual-list); options with a `group` field fall back to full rendering"
     },
     "events": {
       "oas-change": "Selection/clear change, `detail: { value }`",
       "oas-clear": "Clear button clicked, `detail: { value }` (value before clearing)",
-      "oas-input": "Input in `remote` mode, `detail: { value }` (for host requests)"
+      "oas-input": "Input in `remote` mode, `detail: { value }` (for host requests)",
+      "oas-option-render": "Dispatched for each rendered option row, `detail: { index, option, element }` (element is the option label container; host can rewrite it into icon/rich text)",
+      "oas-tag-render": "Dispatched when a multi-select tag renders, `detail: { value, label, element }` (element is the tag text container; host can rewrite it)"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"option\"]": "Static option row template, cloned into each option label container; `[data-option-label]` nodes get bound to the option label",
+      "template[slot=\"tag\"]": "Static multi-select tag template, cloned into each chip text container; `[data-tag-label]` nodes get bound to the tag label"
+    }
   },
   "oas-sidebar": {
     "attrs": {
@@ -1336,11 +1345,14 @@
       "auto-upload": "Auto-simulate upload after adding",
       "disabled": "Disabled",
       "files": "File list (property, `File[]`)",
+      "list-type": "List style: `list` (default) / `picture` (rows with thumbnails) / `picture-card` (card thumbnail wall)",
       "max": "Maximum number of files",
       "multiple": "Multiple selection"
     },
     "events": {
       "oas-change": "File list change, `detail: { files }`",
+      "oas-exceed": "Files rejected by the max limit, `detail: { files, max, total }`",
+      "oas-preview": "Preview overlay opened, `detail: { file, url }`",
       "oas-remove": "File removed, `detail: { file, index }`",
       "oas-upload": "Upload progress, `detail: { file, percent, status }`"
     },

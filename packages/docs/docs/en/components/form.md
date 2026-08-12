@@ -131,13 +131,51 @@ The validation area demonstrates `rules`-declared validation rules and failure f
   </div>
 </DemoBlock>
 
+## Inline Form Layout
+
+> With `inline`, items are laid out horizontally: the label sits on the left of the control (auto-width), controls size to their content, item spacing follows `gap` (default `var(--oas-space-4)`), and items wrap when the container is too narrow. Coexists with `layout` and takes precedence over it; forces `label-align` to `left` and `label-width` to auto. Suited to compact toolbars like login and search.
+
+### Inline Login Form
+
+<DemoBlock title="Inline login form">
+  <oas-form id="form-inline-login" inline rules='{"username":[{"required":true,"message":"Please enter a username"}],"password":[{"required":true,"message":"Please enter a password"}]}' style="width: 100%; max-width: 640px">
+    <oas-form-item label="Username" required>
+      <oas-input name="username" placeholder="Username" style="width: 180px"></oas-input>
+    </oas-form-item>
+    <oas-form-item label="Password" required>
+      <oas-input name="password" type="password" placeholder="Password" style="width: 180px"></oas-input>
+    </oas-form-item>
+    <oas-form-item>
+      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Log in</oas-button>
+      <span id="form-inline-login-output" style="margin-left: var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+    </oas-form-item>
+  </oas-form>
+</DemoBlock>
+
+### Inline Search Form
+
+<DemoBlock title="Inline search form">
+  <oas-form id="form-inline-search" inline rules='{"keyword":[{"required":true,"message":"Please enter a keyword"}]}' style="width: 100%; max-width: 720px">
+    <oas-form-item label="Keyword" required>
+      <oas-input name="keyword" placeholder="Search keyword" style="width: 200px"></oas-input>
+    </oas-form-item>
+    <oas-form-item label="Category">
+      <oas-select name="category" placeholder="All categories" options='[{"label":"All","value":"all"},{"label":"Docs","value":"doc"},{"label":"Components","value":"component"}]' style="width: 140px"></oas-select>
+    </oas-form-item>
+    <oas-form-item>
+      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Search</oas-button>
+      <span id="form-inline-search-output" style="margin-left: var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+    </oas-form-item>
+  </oas-form>
+</DemoBlock>
+
 Controlled syncing and event listeners (wired in one `<script>` block):
 
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
   // Controlled sync: write text-field input back to the value attribute
-  for (const id of ['form-basic', 'form-full', 'form-validate', 'form-length', 'form-skip', 'form-event', 'form-grid', 'form-align']) {
+  for (const id of ['form-basic', 'form-full', 'form-validate', 'form-length', 'form-skip', 'form-event', 'form-grid', 'form-align', 'form-inline-login', 'form-inline-search']) {
     const form = document.getElementById(id)
     if (!form) continue
     for (const el of form.querySelectorAll('oas-input, oas-textarea')) {
@@ -179,6 +217,18 @@ onMounted(() => {
     document.getElementById('form-align')?.setAttribute('label-align', v)
     alignOut.textContent = `label-align: ${v}`
   })
+
+  // Inline login: echo submit results (error texts are collected into the form-item error slot below the control)
+  const loginOut = document.getElementById('form-inline-login-output')
+  document.getElementById('form-inline-login')?.addEventListener('oas-submit', (e) => {
+    loginOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
+
+  // Inline search: echo submit results
+  const searchOut = document.getElementById('form-inline-search-output')
+  document.getElementById('form-inline-search')?.addEventListener('oas-submit', (e) => {
+    searchOut.textContent = `oas-submit: ${JSON.stringify(e.detail.values)}`
+  })
 })
 </script>
 
@@ -188,10 +238,11 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `gap` | Grid spacing in `grid` mode (token value, e.g. `var(--oas-space-4)`) | `string` | `0` |
-| `label-align` | Label alignment: `left` / `right` / `top` (default `top` in grid mode) | `string` | `top` |
-| `label-width` | Label column width when `label-align` is `left`/`right` | — | — |
-| `layout` | Layout mode: `vertical` (default, stacked) / `grid` (24-column grid); non-enum values fall back to `vertical` | `string` | `vertical` |
+| `gap` | Spacing (grid gap in `grid` mode; item spacing in `inline` mode), token value e.g. `var(--oas-space-4)`; `0` by default in grid, `var(--oas-space-4)` by default in inline | `string` | `0` |
+| `inline` | Inline layout: items laid out horizontally (label on the left of the control, controls auto-width, wraps to new lines); item spacing follows `gap` (default `var(--oas-space-4)`); coexists with `layout` and takes precedence over it; forces `label-align` to `left` and `label-width` to auto | `boolean` | — |
+| `label-align` | Label alignment: `left` / `right` / `top` (default `top` in grid mode; forced to `left` in inline mode) | `string` | `top` |
+| `label-width` | Label column width when `label-align` is `left`/`right` (ignored in inline mode, auto) | — | — |
+| `layout` | Layout mode: `vertical` (default, stacked) / `grid` (24-column grid); non-enum values fall back to `vertical`; `inline` attribute takes precedence when present | `string` | `vertical` |
 | `rules` | Validation rules JSON: `{ 字段名: [{ required, message, minLength, maxLength, pattern }] }` | `Rules \| string` | `{}` |
 
 | Event | Description |

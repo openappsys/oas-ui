@@ -94,6 +94,22 @@ Multiple-select tags wrap by default and do not collapse; only when `max-tag-cou
 
 When search yields no match, a "创建 xxx" item is shown; clicking or pressing Enter creates a new option from the input value and selects it.
 
+## Custom Option Rendering
+
+<DemoBlock title="Custom options (icons + rich text)">
+  <oas-select id="select-custom" multiple searchable placeholder="Select a fruit with icons" options='[{"label":"Apple","value":"apple"},{"label":"Banana","value":"banana"},{"label":"Orange","value":"orange"},{"label":"Strawberry","value":"strawberry"}]'></oas-select>
+</DemoBlock>
+
+Listen to `oas-option-render` (each option row) and `oas-tag-render` (multi-select tags); `detail.element` is the corresponding text container that the host can rewrite into any content (icons, rich text). You can also put `<template slot="option">` / `<template slot="tag">` inside the component for a static skeleton — `[data-option-label]` / `[data-tag-label]` nodes get bound to the option/tag text automatically.
+
+## Large Datasets (Virtual Scrolling)
+
+<DemoBlock title="10k options virtual scrolling">
+  <oas-select id="select-virtual" virtual searchable clearable item-height="36" placeholder="10k options, smooth scrolling" options='[]'></oas-select>
+</DemoBlock>
+
+With `virtual` set, only the visible window is rendered (reusing the `oas-virtual-list` window math; leading/trailing padding carries the scroll height) — 10k options scroll smoothly. `item-height` tunes the fixed row height (default `36`). Keyboard `↑`/`↓` scrolling follows the highlighted item and `aria-activedescendant` keeps pointing at a visible row; options with a `group` field fall back to full rendering.
+
 ## Events
 
 <DemoBlock title="Change events">
@@ -138,6 +154,37 @@ onMounted(() => {
   remote?.addEventListener('oas-change', (e) => {
     remoteOut.textContent = `oas-change: ${e.detail.value}`
   })
+
+  // custom option rendering demo: icons + rich text (rewrite element via oas-option-render / oas-tag-render)
+  const custom = document.getElementById('select-custom')
+  const CUSTOM_ICONS = { apple: '🍎', banana: '🍌', orange: '🍊', strawberry: '🍓' }
+  custom?.addEventListener('oas-option-render', (e) => {
+    const { option, element } = e.detail
+    element.innerHTML = ''
+    const ic = document.createElement('span')
+    ic.textContent = CUSTOM_ICONS[option.value] ?? '•'
+    const txt = document.createElement('span')
+    txt.textContent = option.label
+    element.append(ic, txt)
+  })
+  custom?.addEventListener('oas-tag-render', (e) => {
+    const { value, element } = e.detail
+    element.innerHTML = ''
+    const ic = document.createElement('span')
+    ic.textContent = CUSTOM_ICONS[value] ?? '•'
+    element.append(ic)
+  })
+
+  // virtual scrolling demo: 10k options
+  const virtual = document.getElementById('select-virtual')
+  if (virtual) {
+    virtual.setAttribute(
+      'options',
+      JSON.stringify(
+        Array.from({ length: 10000 }, (_, i) => ({ label: `Option ${i}`, value: `v${i}` })),
+      ),
+    )
+  }
 })
 </script>
 
@@ -150,6 +197,7 @@ onMounted(() => {
 | `allow-create` | Allow creating new options from the input value when nothing matches | `boolean` | — |
 | `clearable` | Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`) | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
+| `item-height` | Fixed row height (px) when virtual scrolling | `string` | `36` |
 | `loading` | Remote loading placeholder (use with `remote`) | `boolean` | — |
 | `max-tag-count` | Collapse tags beyond this count into `+N` in multiple mode (opt-in; without it tags wrap instead of collapsing) | `boolean` | — |
 | `multiple` | Multiple select | `boolean` | — |
@@ -158,6 +206,7 @@ onMounted(() => {
 | `remote` | Remote search: no local filtering, typing dispatches `oas-input` for the host to request | `boolean` | — |
 | `searchable` | Searchable (type to filter after opening the dropdown) | `boolean` | — |
 | `value` | Current value (JSON array in multiple mode) | — | — |
+| `virtual` | Virtual scrolling for large datasets: renders only the visible window (reuses oas-virtual-list); options with a `group` field fall back to full rendering | `boolean` | — |
 
 ### Events
 
@@ -166,6 +215,15 @@ onMounted(() => {
 | `oas-change` | Selection/clear change, `detail: { value }` |
 | `oas-clear` | Clear button clicked, `detail: { value }` (value before clearing) |
 | `oas-input` | Input in `remote` mode, `detail: { value }` (for host requests) |
+| `oas-option-render` | Dispatched for each rendered option row, `detail: { index, option, element }` (element is the option label container; host can rewrite it into icon/rich text) |
+| `oas-tag-render` | Dispatched when a multi-select tag renders, `detail: { value, label, element }` (element is the tag text container; host can rewrite it) |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `template[slot="option"]` | Static option row template, cloned into each option label container; `[data-option-label]` nodes get bound to the option label |
+| `template[slot="tag"]` | Static multi-select tag template, cloned into each chip text container; `[data-tag-label]` nodes get bound to the tag label |
 
 > Options carrying a `group` field are rendered under a group title (not selectable), items are indented; keyboard navigation continues across groups.
 

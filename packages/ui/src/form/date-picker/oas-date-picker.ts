@@ -13,10 +13,18 @@ import {
   setRovingTab,
   renderMonthGrid,
   moveGridDate,
+  getWeekStart,
 } from '../calendar/date-grid.js'
 
 type PickerType = 'date' | 'daterange' | 'month' | 'datetime'
 type SubPanel = 'days' | 'months'
+
+/** 快捷预设项：value 为静态值（date 为 ISO 字符串，daterange 为 [start, end]），getValue 动态计算 */
+interface ShortcutItem {
+  label: string
+  value?: string | [string, string]
+  getValue?: () => Date | [Date, Date]
+}
 
 const DEFAULT_FORMAT: Record<PickerType, string> = {
   date: 'yyyy-MM-dd',
@@ -27,6 +35,13 @@ const DEFAULT_FORMAT: Record<PickerType, string> = {
 
 function pad(v: number): string {
   return String(v).padStart(2, '0')
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+  )
 }
 
 const STYLE = `
@@ -299,6 +314,41 @@ const STYLE = `
   background: var(--oas-color-primary-hover);
   color: var(--oas-color-bg);
 }
+[part='panel'] .shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--oas-space-1);
+  margin-bottom: var(--oas-space-2);
+  padding-bottom: var(--oas-space-2);
+  border-bottom: 1px solid var(--oas-color-border);
+}
+[part='panel'] .shortcut {
+  appearance: none;
+  border: 1px solid var(--oas-color-border);
+  background: var(--oas-color-bg);
+  font-family: inherit;
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+  border-radius: var(--oas-radius-sm);
+  padding: var(--oas-space-1) var(--oas-space-2);
+  cursor: pointer;
+  transition: color var(--oas-transition-fast) var(--oas-ease-out),
+    border-color var(--oas-transition-fast) var(--oas-ease-out),
+    background var(--oas-transition-fast) var(--oas-ease-out);
+}
+[part='panel'] .shortcut:hover {
+  border-color: var(--oas-color-primary);
+  color: var(--oas-color-primary);
+}
+[part='panel'] .shortcut:focus-visible {
+  outline: 2px solid var(--oas-color-primary);
+  outline-offset: -2px;
+}
+[part='grid'] .day.disabled.selected {
+  background: var(--oas-color-bg-disabled);
+  color: var(--oas-color-text-disabled);
+  box-shadow: none;
+}
 `
 
 interface RangeState {
@@ -308,7 +358,7 @@ interface RangeState {
 
 export class OASDatePicker extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'format', 'type', 'min', 'max', 'disabled', 'placeholder']
+    return ['value', 'format', 'type', 'min', 'max', 'disabled', 'placeholder', 'multiple']
   }
 
   private triggerEl: HTMLButtonElement | null = null
@@ -322,6 +372,28 @@ export class OASDatePicker extends OASElement {
   private time = { h: 0, m: 0, s: 0 }
   private range: RangeState = { start: null, end: null }
   private previewEnd: Date | null = null
+  private _shortcuts: ShortcutItem[] | null = null
+  private _disabledDate: ((d: Date) => boolean) | null = null
+
+  /** shortcuts 走 property（对象数组无法用 JSON 属性表达），设置后即时重渲面板 */
+  get shortcuts(): ShortcutItem[] | null {
+    return this._shortcuts
+  }
+
+  set shortcuts(items: ShortcutItem[] | null) {
+    this._shortcuts = items
+    if (this.isConnected) this.update()
+  }
+
+  /** disabled-date 走 property（回调无法用 JSON 表达），设置后即时重渲面板 */
+  get disabledDate(): ((d: Date) => boolean) | null {
+    return this._disabledDate
+  }
+
+  set disabledDate(fn: ((d: Date) => boolean) | null) {
+    this._disabledDate = fn
+    if (this.isConnected) this.update()
+  }
 
   private get pickerType(): PickerType {
     const t = this.getAttr('type', 'date')
@@ -399,7 +471,8 @@ export class OASDatePicker extends OASElement {
   private open(): void {
     const t = this.pickerType
     const today = startOfDay(new Date())
-    const sel = this.selectedDates()
+    const multi = this.isMultiple()
+    const sel = multi ? (this.selectedDateArray().at(-1) ?? null) : this.selectedDates()
     this.subPanel = 'days'
     this.focusDate = sel ?? null
     if (t === 'daterange') {
@@ -456,6 +529,36 @@ export class OASDatePicker extends OASElement {
 
   // ---- value / 状态解析 ----
 
+  /** multiple 仅在 date 类型下生效（daterange 忽略，走范围语义） */
+  private isMultiple(): boolean {
+    return this.hasAttr('multiple') && this.pickerType === 'date'
+  }
+
+  /** 全部选中日期（multiple 时为 JSON 数组展开；其余类型返回单个或空） */
+  private selectedDateArray(): Date[] {
+    const raw = this.getAttr('value', '')
+    if (!raw) return []
+    if (this.isMultiple()) {
+      try {
+        const arr = JSON.parse(raw)
+        if (Array.isArray(arr)) {
+          return arr
+            .map((s) => parseISODate(String(s)))
+            .filter((d): d is Date => !!d)
+            .map(startOfDay)
+        }
+      } catch {
+        /* 非 JSON 数组走单值兜底 */
+      }
+      // 单值兜底：非 multiple 初始值切到 multiple 时不丢已选日期
+      const d = parseISODate(raw)
+      if (d) return [startOfDay(d)]
+      return []
+    }
+    const d = this.selectedDates()
+    return d ? [d] : []
+  }
+
   private selectedDates(): Date | null {
     const raw = this.getAttr('value', '')
     if (!raw) return null
@@ -509,6 +612,18 @@ export class OASDatePicker extends OASElement {
       valueEl.textContent = start && end ? `${st} ~ ${et}` : placeholder
       return
     }
+    if (this.isMultiple()) {
+      const dates = this.selectedDateArray()
+      if (!dates.length) {
+        valueEl.textContent = placeholder
+        valueEl.classList.add('placeholder')
+        return
+      }
+      valueEl.textContent = dates
+        .map((d) => formatToken(d, format, locale))
+        .join(this.t('datePicker.join'))
+      return
+    }
     // datetime 显示需保留时分（selectedDates 为网格高亮会截到日）
     const d = t === 'datetime' ? parseISODate(raw) : this.selectedDates()
     valueEl.textContent = d ? formatToken(d, format, locale) : placeholder
@@ -537,6 +652,7 @@ export class OASDatePicker extends OASElement {
     const t = this.pickerType
     const yearNav = this.subPanel === 'months'
     panel.innerHTML = `
+      ${this.shortcutsMarkup()}
       <div class="header">
         <button type="button" class="nav" part="prev"
           aria-label="${yearNav ? this.t('calendar.prevYear') : this.t('calendar.prevMonth')}">‹</button>
@@ -551,6 +667,7 @@ export class OASDatePicker extends OASElement {
         ${t === 'datetime' ? `<button type="button" class="confirm" part="confirm">${this.t('datePicker.confirm')}</button>` : ''}
       </div>
     `
+    this.bindShortcuts(panel)
     const grid = panel.querySelector<HTMLElement>('[part="grid"]')!
     const title = panel.querySelector<HTMLElement>('[part="title"]')!
     title.textContent =
@@ -591,8 +708,15 @@ export class OASDatePicker extends OASElement {
   private renderDaysGrid(grid: HTMLElement, focusNow: boolean): void {
     const locale = resolveLocale(this)
     const t = this.pickerType
-    const selected = t === 'datetime' ? this.pendingDate : this.selectedDates()
-    const focus = this.focusDate ?? selected ?? startOfDay(new Date())
+    const multi = this.isMultiple()
+    const selectedList = multi ? this.selectedDateArray() : []
+    const selected =
+      t === 'datetime' ? this.pendingDate : multi ? selectedList : this.selectedDates()
+    let focus: Date
+    if (this.focusDate) focus = this.focusDate
+    else if (multi && selectedList.length) focus = selectedList[selectedList.length - 1]!
+    else if (selected instanceof Date) focus = selected
+    else focus = startOfDay(new Date())
     renderMonthGrid(grid, {
       viewDate: this.viewDate,
       locale,
@@ -600,6 +724,7 @@ export class OASDatePicker extends OASElement {
       today: new Date(),
       min: parseISODate(this.getAttr('min', '')),
       max: parseISODate(this.getAttr('max', '')),
+      disabledDate: this._disabledDate ?? undefined,
       onSelect: (d) => this.selectDay(d),
     })
     setRovingTab(grid, focus)
@@ -664,6 +789,7 @@ export class OASDatePicker extends OASElement {
     const selected = this.selectedDates()
     const selectedMonth = selected?.getFullYear() === year ? selected.getMonth() : -1
     panel.innerHTML = `
+      ${this.shortcutsMarkup()}
       <div class="header">
         <button type="button" class="nav" part="prev" aria-label="${this.t('calendar.prevYear')}">‹</button>
         <span class="title" part="title"></span>
@@ -671,6 +797,7 @@ export class OASDatePicker extends OASElement {
       </div>
       <div class="months"></div>
     `
+    this.bindShortcuts(panel)
     panel.querySelector<HTMLElement>('[part="title"]')!.textContent = formatYear(
       this.viewDate,
       locale,
@@ -711,6 +838,7 @@ export class OASDatePicker extends OASElement {
     const min = parseISODate(this.getAttr('min', ''))
     const max = parseISODate(this.getAttr('max', ''))
     panel.innerHTML = `
+      ${this.shortcutsMarkup()}
       <div class="header">
         <button type="button" class="nav" part="prev" aria-label="${this.t('calendar.prevMonth')}">‹</button>
         <span class="title" part="title"></span>
@@ -721,6 +849,7 @@ export class OASDatePicker extends OASElement {
         <div class="grid" part="grid" role="grid" data-month="1"></div>
       </div>
     `
+    this.bindShortcuts(panel)
     panel.querySelector<HTMLElement>('[part="title"]')!.textContent =
       `${formatYearMonth(firstMonth, locale)} ~ ${formatYearMonth(secondMonth, locale)}`
     const gridA = panel.querySelector<HTMLElement>('[part="grid"][data-month="0"]')!
@@ -733,6 +862,7 @@ export class OASDatePicker extends OASElement {
         today: new Date(),
         min,
         max,
+        disabledDate: this._disabledDate ?? undefined,
         range,
         onSelect: (d) => this.selectRangeDate(d),
         onCellHover: (d) => this.hoverRangeDate(d),
@@ -759,6 +889,156 @@ export class OASDatePicker extends OASElement {
   }
 
   // ---- 交互 ----
+
+  /** 生效的快捷预设：用户 property 优先，未设置时用内置默认（label 走 locale） */
+  private shortcutItems(): ShortcutItem[] {
+    return this._shortcuts ?? this.defaultShortcuts()
+  }
+
+  private defaultShortcuts(): ShortcutItem[] {
+    const t = this.pickerType
+    if (t === 'daterange') {
+      return [
+        { label: this.t('datePicker.shortcutToday'), getValue: () => this.todayRange() },
+        { label: this.t('datePicker.shortcutThisWeek'), getValue: () => this.weekRange() },
+        { label: this.t('datePicker.shortcutThisMonth'), getValue: () => this.monthRange() },
+        { label: this.t('datePicker.shortcutThisYear'), getValue: () => this.yearRange() },
+      ]
+    }
+    if (t === 'date') {
+      return [{ label: this.t('datePicker.shortcutToday'), getValue: () => new Date() }]
+    }
+    return []
+  }
+
+  private shortcutsMarkup(): string {
+    const items = this.shortcutItems()
+    if (!items.length) return ''
+    const labels = items
+      .map(
+        (it, i) =>
+          `<button type="button" class="shortcut" part="shortcut" data-index="${i}">${escapeHtml(it.label)}</button>`,
+      )
+      .join('')
+    return `<div class="shortcuts" part="shortcuts">${labels}</div>`
+  }
+
+  private bindShortcuts(panel: HTMLElement): void {
+    const items = this.shortcutItems()
+    for (const btn of panel.querySelectorAll<HTMLElement>('.shortcut')) {
+      const idx = Number(btn.dataset.index)
+      btn.addEventListener('click', () => {
+        const item = items[idx]
+        if (item) this.applyShortcut(item)
+      })
+    }
+  }
+
+  private applyShortcut(item: ShortcutItem): void {
+    const t = this.pickerType
+    if (t === 'daterange') {
+      const r = this.resolveShortcutRange(item)
+      if (!r) return
+      this.range = { start: r.start, end: r.end }
+      const value = JSON.stringify([toISODate(r.start), toISODate(r.end)])
+      this.setAttribute('value', value)
+      this.emit('change', { value: [toISODate(r.start), toISODate(r.end)] })
+      this.close()
+      return
+    }
+    const d = this.resolveShortcutDate(item)
+    if (!d) return
+    if (t === 'datetime') {
+      const value = `${toISODate(d)}T${pad(this.time.h)}:${pad(this.time.m)}:${pad(this.time.s)}`
+      this.setAttribute('value', value)
+      this.emit('change', { value })
+      this.close()
+      return
+    }
+    if (t === 'month') {
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      this.setAttribute('value', value)
+      this.emit('change', { value })
+      this.close()
+      return
+    }
+    const iso = toISODate(d)
+    if (this.isMultiple()) {
+      const value = JSON.stringify([iso])
+      this.setAttribute('value', value)
+      this.emit('change', { value: [iso] })
+      this.close()
+      return
+    }
+    this.setAttribute('value', iso)
+    this.emit('change', { value: iso })
+    this.close()
+  }
+
+  /** 解析单值快捷预设，命中禁用日期返回 null（不应用） */
+  private resolveShortcutDate(item: ShortcutItem): Date | null {
+    let d: Date | null = null
+    if (item.getValue) {
+      const v = item.getValue()
+      d = Array.isArray(v) ? v[0] : v
+    } else if (typeof item.value === 'string') {
+      d = parseISODate(item.value)
+    }
+    if (!d) return null
+    const s = startOfDay(d)
+    if (this._disabledDate && this._disabledDate(s)) return null
+    return s
+  }
+
+  /** 解析范围快捷预设（端点早于起点时自动对调），命中禁用日期返回 null */
+  private resolveShortcutRange(item: ShortcutItem): { start: Date; end: Date } | null {
+    let start: Date | null = null
+    let end: Date | null = null
+    if (item.getValue) {
+      const v = item.getValue()
+      if (Array.isArray(v) && v.length === 2) {
+        start = startOfDay(v[0])
+        end = startOfDay(v[1])
+      }
+    } else if (Array.isArray(item.value) && item.value.length === 2) {
+      start = parseISODate(item.value[0])
+      end = parseISODate(item.value[1])
+    }
+    if (!start || !end) return null
+    if (end < start) {
+      const tmp = start
+      start = end
+      end = tmp
+    }
+    if (this._disabledDate && (this._disabledDate(start) || this._disabledDate(end))) return null
+    return { start, end }
+  }
+
+  private todayRange(): [Date, Date] {
+    const t = startOfDay(new Date())
+    return [t, t]
+  }
+
+  private weekRange(): [Date, Date] {
+    const ws = getWeekStart(resolveLocale(this))
+    const today = new Date()
+    const diff = (today.getDay() + 7 - ws) % 7
+    const start = new Date(today)
+    start.setDate(today.getDate() - diff)
+    const end = new Date(start)
+    end.setDate(start.getDate() + 6)
+    return [startOfDay(start), startOfDay(end)]
+  }
+
+  private monthRange(): [Date, Date] {
+    const today = new Date()
+    return [new Date(today.getFullYear(), today.getMonth(), 1), startOfDay(today)]
+  }
+
+  private yearRange(): [Date, Date] {
+    const today = new Date()
+    return [new Date(today.getFullYear(), 0, 1), startOfDay(today)]
+  }
 
   private stepView(dir: 1 | -1): void {
     if (this.subPanel === 'months') this.viewDate = addYears(this.viewDate, dir)
@@ -787,6 +1067,17 @@ export class OASDatePicker extends OASElement {
     if (t === 'datetime') {
       this.pendingDate = startOfDay(d)
       this.renderPanel(false)
+      return
+    }
+    if (this.isMultiple()) {
+      const iso = toISODate(d)
+      const before = this.selectedDateArray()
+      const list = before.filter((x) => toISODate(x) !== iso)
+      if (list.length === before.length) list.push(startOfDay(d))
+      const values = list.map(toISODate)
+      this.setAttribute('value', JSON.stringify(values))
+      this.emit('change', { value: values })
+      // 保持面板打开，支持连续点选（setAttribute 触发 update 重渲染高亮）
       return
     }
     const iso = toISODate(d)

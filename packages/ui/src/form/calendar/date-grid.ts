@@ -20,7 +20,8 @@ export interface GridCell {
 export interface MonthGridRenderOptions {
   viewDate: Date
   locale: string
-  selected?: Date | null
+  /** 选中日期（multiple 多选场景为数组，所有选中日同样高亮） */
+  selected?: Date | Date[] | null
   today?: Date
   min?: Date | null
   max?: Date | null
@@ -242,7 +243,11 @@ export function renderMonthGrid(container: HTMLElement, opts: MonthGridRenderOpt
   const ws = getWeekStart(locale)
   const cells = buildMonthCells(viewDate, locale)
   const today = opts.today ? startOfDay(opts.today) : null
-  const selected = opts.selected ? startOfDay(opts.selected) : null
+  const selectedList = (
+    opts.selected ? (Array.isArray(opts.selected) ? opts.selected : [opts.selected]) : []
+  )
+    .map(startOfDay)
+    .filter((d) => !Number.isNaN(d.getTime()))
   const min = opts.min ? startOfDay(opts.min) : null
   const max = opts.max ? startOfDay(opts.max) : null
   const range = opts.range ?? null
@@ -293,7 +298,7 @@ export function renderMonthGrid(container: HTMLElement, opts: MonthGridRenderOpt
       if (!cell.inMonth) btn.classList.add('outside')
       if (isDisabled) btn.classList.add('disabled')
       if (today && isSameDay(d, today)) btn.classList.add('today')
-      if (selected && isSameDay(d, selected)) btn.classList.add('selected')
+      if (selectedList.some((s) => isSameDay(d, s))) btn.classList.add('selected')
       if (range) {
         if (range.start && isSameDay(d, range.start)) btn.classList.add('range-start')
         if (range.end && isSameDay(d, range.end)) btn.classList.add('range-end')

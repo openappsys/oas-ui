@@ -1,3 +1,6 @@
+// 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
+import '../../data/virtual-list/index.js'
+import type { OASVirtualList } from '../../data/virtual-list/index.js'
 import { OASElement } from '@oas-ui/core'
 
 interface Option {
@@ -7,6 +10,66 @@ interface Option {
   /** 选项分组标题：同一组连续渲染组标题（不可选），组内选项缩进 */
   group?: string
 }
+
+/** 选项行样式（非虚拟模式渲染在 select 自身 shadow；虚拟模式需注入到 vlist shadow，两处共用） */
+const OPTION_STYLE = `
+.option {
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-radius: var(--oas-radius-sm);
+  cursor: pointer;
+  font-size: var(--oas-font-size-md);
+  color: var(--oas-color-text-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.option:hover {
+  background: var(--oas-color-bg-hover);
+}
+.option.active {
+  background: var(--oas-color-primary);
+  color: var(--oas-color-text-on-primary);
+}
+.option.grouped {
+  padding-left: calc(var(--oas-space-3) + var(--oas-space-4));
+}
+.option[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.option .check {
+  visibility: hidden;
+}
+.option[aria-selected='true'] .check {
+  visibility: visible;
+}
+.option-label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+}
+.option-label > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+`
+
+/** 虚拟模式注入 oas-virtual-list 的 shadow：选项行占满 item、整行可高亮 */
+const VIRTUAL_ROW_STYLE = `
+[part="item"] {
+  display: flex;
+  align-items: center;
+}
+[part="item"] .option {
+  flex: 1;
+  height: 100%;
+  box-sizing: border-box;
+}
+${OPTION_STYLE}
+`
 
 const STYLE = `
 :host {
@@ -94,6 +157,13 @@ const STYLE = `
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+/* 自定义标签模板（template[slot="tag"]）渲染时：标签容器改为 flex 布局，子元素各自省略 */
+.chip .chip-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-1);
   min-width: 0;
 }
 .chip[hidden] {
@@ -217,36 +287,7 @@ const STYLE = `
 .option-group + .option-group {
   margin-top: var(--oas-space-2);
 }
-.option {
-  padding: var(--oas-space-2) var(--oas-space-3);
-  border-radius: var(--oas-radius-sm);
-  cursor: pointer;
-  font-size: var(--oas-font-size-md);
-  color: var(--oas-color-text-primary);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.option:hover {
-  background: var(--oas-color-bg-hover);
-}
-.option.active {
-  background: var(--oas-color-primary);
-  color: var(--oas-color-text-on-primary);
-}
-.option.grouped {
-  padding-left: calc(var(--oas-space-3) + var(--oas-space-4));
-}
-.option[aria-disabled='true'] {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-.option .check {
-  visibility: hidden;
-}
-.option[aria-selected='true'] .check {
-  visibility: visible;
-}
+${OPTION_STYLE}
 .create-option {
   color: var(--oas-color-primary);
 }
@@ -272,12 +313,15 @@ export class OASSelect extends OASElement {
       'loading',
       'max-tag-count',
       'allow-create',
+      'virtual',
+      'item-height',
     ]
   }
 
   private triggerEl: HTMLButtonElement | null = null
   private dropdown: HTMLElement | null = null
   private listbox: HTMLElement | null = null
+  private vlist: OASVirtualList | null = null
   private _options: Option[] = []
 
   /** Vue/React 会把 options 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
@@ -313,16 +357,18 @@ export class OASSelect extends OASElement {
         <div class="dropdown" part="dropdown">
           <input class="search-input" part="search-input" type="text" hidden />
           <div class="listbox" part="listbox" role="listbox"></div>
+          <oas-virtual-list class="vlist" part="virtual-list" hidden></oas-virtual-list>
         </div>
       </div>
     `
   }
 
-  /** 缓存节点引用 + 绑定触发器/搜索/清空事件 + 注册清理（render 与水合路径共用） */
+  /** 缓存节点引用 + 绑定触发器/搜索/清空/虚拟列表事件 + 注册清理（render 与水合路径共用） */
   private bind(): void {
     this.triggerEl = this.shadow.querySelector('.trigger')
     this.dropdown = this.shadow.querySelector('.dropdown')
     this.listbox = this.shadow.querySelector('.listbox')
+    this.vlist = this.shadow.querySelector<OASVirtualList>('oas-virtual-list')
 
     this.shadow.querySelector<HTMLInputElement>('.search-input')?.addEventListener('input', (e) => {
       const v = (e.target as HTMLInputElement).value
@@ -344,6 +390,15 @@ export class OASSelect extends OASElement {
 
     this.triggerEl?.addEventListener('click', () => this.toggle())
     this.triggerEl?.addEventListener('keydown', (e: KeyboardEvent) => this.handleTriggerKey(e))
+    // 虚拟滚动：复用 oas-virtual-list 的窗口计算，把每个可见项渲染为选项行
+    this.vlist?.addEventListener('oas-item', ((
+      e: CustomEvent<{ index: number; item: Option; element: HTMLElement }>,
+    ) => {
+      const detail = e.detail
+      if (detail && detail.item && detail.element) {
+        this.createOptionRow(detail.item, detail.index, this.currentValues(), detail.element)
+      }
+    }) as EventListener)
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
   }
 
@@ -395,8 +450,11 @@ export class OASSelect extends OASElement {
       const idx =
         current.length > 0 ? this.visibleOptions().findIndex((o) => o.value === current[0]) : 0
       this.activeIndex = Math.max(idx, 0)
+      this.scrollActiveIntoView()
+      this.syncActive()
     } else {
       document.removeEventListener('click', this.handleOutsideClick)
+      this.syncAriaActiveDescendant()
     }
   }
 
@@ -460,11 +518,16 @@ export class OASSelect extends OASElement {
     return this.visibleOptions().length + (this.createVisible ? 1 : 0)
   }
 
+  /**
+   * 移动高亮：增量同步（不重建 DOM）——虚拟滚动下重建会打断窗口渲染，
+   * 改走 scrollActiveIntoView + syncActive（class / aria-activedescendant / 选中态）
+   */
   private moveActive(dir: 1 | -1): void {
     const n = this.navigableCount()
     if (n === 0) return
     this.activeIndex = (this.activeIndex + dir + n) % n
-    this.renderListbox()
+    this.scrollActiveIntoView()
+    this.syncActive()
   }
 
   private selectActive(): void {
@@ -497,6 +560,13 @@ export class OASSelect extends OASElement {
     ).trim()
   }
 
+  /** 虚拟滚动定高：默认 36（与 oas-virtual-list 默认一致，匹配选项行视觉高度） */
+  private virtualItemHeight(): number {
+    const raw = this.getAttr('item-height', '36')
+    const n = Number.parseInt(raw, 10)
+    return Number.isNaN(n) ? 36 : n
+  }
+
   private renderListbox(): void {
     const listbox = this.listbox
     if (!listbox) return
@@ -505,10 +575,12 @@ export class OASSelect extends OASElement {
 
     // loading 占位态：remote 模式下宿主请求期间显示（文案走 locale）
     if (this.hasAttr('loading')) {
+      this.setVirtualVisible(false)
       const loading = document.createElement('div')
       loading.className = 'empty'
       loading.textContent = this.t('loading.loading')
       listbox.appendChild(loading)
+      this.syncActive()
       return
     }
 
@@ -516,6 +588,7 @@ export class OASSelect extends OASElement {
     const query = this.currentQuery()
 
     if (visible.length === 0) {
+      this.setVirtualVisible(false)
       // allow-create：无匹配时展示「创建 xxx」行（选中后以输入值新建选项）
       if (this.hasAttr('allow-create') && query !== '') {
         this.createVisible = true
@@ -524,6 +597,7 @@ export class OASSelect extends OASElement {
         row.className = 'option create-option'
         row.setAttribute('role', 'option')
         row.setAttribute('aria-selected', 'false')
+        row.id = `opt-${visible.length}` // aria-activedescendant 指向创建行
         if (this.activeIndex === visible.length) row.classList.add('active')
         const label = document.createElement('span')
         label.textContent = this.t('select.create', { label: query })
@@ -531,18 +605,29 @@ export class OASSelect extends OASElement {
         row.addEventListener('click', () => this.createOption())
         row.addEventListener('mousemove', () => {
           this.activeIndex = visible.length
-          this.renderListbox()
+          this.syncActive()
         })
         listbox.appendChild(row)
-        return
+      } else {
+        const empty = document.createElement('div')
+        empty.className = 'empty'
+        empty.textContent = query ? this.t('select.noMatch') : this.t('select.empty')
+        listbox.appendChild(empty)
       }
-      const empty = document.createElement('div')
-      empty.className = 'empty'
-      empty.textContent = query ? this.t('select.noMatch') : this.t('select.empty')
-      listbox.appendChild(empty)
+      this.syncActive()
       return
     }
 
+    // 虚拟滚动：大数据量时复用 oas-virtual-list 仅渲染可见窗口；
+    // 带 group 的选项回退非虚拟全量渲染（组标题是不同行高的流式分隔，虚拟定高模型不适配）；
+    // vlist 缺失（如手写 DSD 快照无此元素）时同样回退全量渲染，避免静默空下拉
+    if (this.hasAttr('virtual') && this.vlist && !visible.some((o) => o.group !== undefined)) {
+      this.renderVirtualList(visible)
+      this.syncActive()
+      return
+    }
+
+    this.setVirtualVisible(false)
     const values = this.currentValues()
     let prevGroup: string | undefined
     let optionIdx = 0
@@ -555,31 +640,139 @@ export class OASSelect extends OASElement {
         listbox.appendChild(groupEl)
       }
       prevGroup = option.group
-
-      const row = document.createElement('div')
-      row.className = 'option'
-      if (option.group !== undefined) row.classList.add('grouped')
-      row.setAttribute('part', 'option')
-      row.setAttribute('role', 'option')
-      row.setAttribute('aria-selected', String(values.includes(option.value)))
-      row.setAttribute('aria-disabled', String(option.disabled ?? false))
-      if (optionIdx === this.activeIndex) row.classList.add('active')
-      const label = document.createElement('span')
-      label.textContent = option.label
-      const check = document.createElement('span')
-      check.className = 'check'
-      check.textContent = '✓'
-      row.append(label, check)
-      row.addEventListener('click', () => {
-        if (option.disabled) return
-        this.selectValue(option.value)
-      })
-      row.addEventListener('mousemove', () => {
-        this.activeIndex = optionIdx
-        this.renderListbox()
-      })
-      listbox.appendChild(row)
+      this.createOptionRow(option, optionIdx, values, listbox)
       optionIdx++
+    }
+    this.syncActive()
+  }
+
+  /** 构建一个选项行（角色/aria/高亮/点击/自定义渲染），非虚拟与虚拟（vlist oas-item）两路共用 */
+  private createOptionRow(
+    option: Option,
+    optionIdx: number,
+    values: string[],
+    container: HTMLElement,
+  ): void {
+    const row = document.createElement('div')
+    row.className = 'option'
+    if (option.group !== undefined) row.classList.add('grouped')
+    row.setAttribute('part', 'option')
+    row.setAttribute('role', 'option')
+    row.setAttribute('aria-selected', String(values.includes(option.value)))
+    row.setAttribute('aria-disabled', String(option.disabled ?? false))
+    row.id = `opt-${optionIdx}` // aria-activedescendant 锚点（shadow 内 id 作用域隔离，无宿主冲突）
+    row.setAttribute('data-index', String(optionIdx))
+    if (optionIdx === this.activeIndex) row.classList.add('active')
+    const label = document.createElement('span')
+    label.className = 'option-label'
+    this.fillOptionLabel(label, option)
+    const check = document.createElement('span')
+    check.className = 'check'
+    check.textContent = '✓'
+    row.append(label, check)
+    row.addEventListener('click', () => {
+      if (option.disabled) return
+      this.selectValue(option.value)
+    })
+    row.addEventListener('mousemove', () => {
+      if (this.activeIndex === optionIdx) return
+      this.activeIndex = optionIdx
+      this.syncActive()
+    })
+    container.appendChild(row)
+    // 自定义选项渲染：宿主可监听改写 element（图标/富文本），机制与 virtual-list 的 oas-item 一致
+    this.emit('option-render', { index: optionIdx, option, element: label })
+  }
+
+  /** 选项 label 渲染：template[slot="option"] 克隆 + [data-option-label] 绑定，缺省回落纯文本 */
+  private fillOptionLabel(labelEl: HTMLElement, option: Option): void {
+    const tpl = this.querySelector('template[slot="option"]')
+    if (tpl instanceof HTMLTemplateElement) {
+      labelEl.appendChild(tpl.content.cloneNode(true))
+      const binder = labelEl.querySelector('[data-option-label]')
+      if (binder) binder.textContent = option.label
+    } else {
+      labelEl.textContent = option.label
+    }
+  }
+
+  /** 虚拟模式：切到 vlist 渲染（保证行样式/视口键盘可达性）并喂入可见选项 */
+  private renderVirtualList(visible: Option[]): void {
+    const vlist = this.vlist
+    if (!vlist) return
+    this.setVirtualVisible(true)
+    // 行样式注入 vlist shadow（虚拟行在 vlist shadow 内，select 自身样式够不到）
+    const vlistRoot = vlist.shadowRoot
+    if (vlistRoot && !vlistRoot.querySelector('style[data-oas-select-rows]')) {
+      const style = document.createElement('style')
+      style.setAttribute('data-oas-select-rows', '')
+      style.textContent = VIRTUAL_ROW_STYLE
+      vlistRoot.appendChild(style)
+    }
+    // 视口键盘可达性由 trigger 的 combobox 键盘流负责，去掉 vlist 内层 tabindex 避免多余 Tab 停靠点
+    vlistRoot?.querySelector<HTMLElement>('.viewport')?.removeAttribute('tabindex')
+    vlist.setAttribute('items-role', 'listbox')
+    vlist.setAttribute('item-role', 'presentation')
+    vlist.setAttribute('height', '240')
+    vlist.setAttribute('item-height', String(this.virtualItemHeight()))
+    vlist.items = visible
+  }
+
+  private setVirtualVisible(visible: boolean): void {
+    if (this.listbox) this.listbox.hidden = visible
+    if (this.vlist) this.vlist.hidden = !visible
+  }
+
+  /** 虚拟滚动：让 activeIndex 所在项进入视口（设置 scrollTop，vlist 随 scroll 重算窗口） */
+  private scrollActiveIntoView(): void {
+    const vlist = this.vlist
+    if (!vlist || vlist.hidden) return
+    const ih = this.virtualItemHeight()
+    const vp = vlist.shadowRoot?.querySelector<HTMLElement>('.viewport')
+    if (!vp) return
+    const top = this.activeIndex * ih
+    const vh = vp.clientHeight || 240
+    const cur = vp.scrollTop
+    if (top < cur) vp.scrollTop = Math.max(0, top)
+    else if (top + ih > cur + vh) vp.scrollTop = Math.max(0, top + ih - vh)
+  }
+
+  /** 高亮/aria 增量同步（不重建 DOM）：虚拟滚动下窗口随 scroll 重算后行内 class 由 createOptionRow 落定 */
+  private syncActive(): void {
+    for (const row of this.renderedOptionRows()) {
+      const idx = Number(row.getAttribute('data-index'))
+      row.classList.toggle('active', idx === this.activeIndex)
+    }
+    const visibleLen = this.visibleOptions().length
+    const create = this.shadow.querySelector('.create-option')
+    if (create) {
+      create.classList.toggle('active', this.createVisible && this.activeIndex >= visibleLen)
+    }
+    this.syncAriaActiveDescendant()
+  }
+
+  /** 已渲染的选项行：非虚拟在 listbox、虚拟在 vlist shadow（open shadow 可跨根查询） */
+  private renderedOptionRows(): HTMLElement[] {
+    const out: HTMLElement[] = []
+    const listbox = this.shadow.querySelector('.listbox')
+    if (listbox) out.push(...listbox.querySelectorAll<HTMLElement>('.option[data-index]'))
+    const vroot = this.vlist?.shadowRoot
+    if (vroot) out.push(...vroot.querySelectorAll<HTMLElement>('.option[data-index]'))
+    return out
+  }
+
+  /** combobox 的 aria-activedescendant 指向高亮行（仅展开时），随窗口滚动保持有效 */
+  private syncAriaActiveDescendant(): void {
+    if (!this.triggerEl) return
+    if (!this.openState) {
+      this.triggerEl.removeAttribute('aria-activedescendant')
+      return
+    }
+    const n = this.navigableCount()
+    if (n > 0 && this.activeIndex >= 0 && this.activeIndex < n) {
+      this.triggerEl.setAttribute('aria-activedescendant', `opt-${this.activeIndex}`)
+    } else {
+      this.triggerEl.removeAttribute('aria-activedescendant')
     }
   }
 
@@ -726,18 +919,19 @@ export class OASSelect extends OASElement {
       const allLabels = values.map((v) => this._options.find((o) => o.value === v)?.label ?? v)
       for (const v of shown) {
         const option = this._options.find((o) => o.value === v)
+        const label = option?.label ?? v
         const chip = document.createElement('span')
         chip.className = 'chip'
-        const label = document.createElement('span')
-        label.textContent = option?.label ?? v
+        const labelEl = document.createElement('span')
+        this.fillTagLabel(labelEl, v, label)
         const rm = document.createElement('button')
-        rm.setAttribute('aria-label', this.t('select.remove', { label: option?.label ?? v }))
+        rm.setAttribute('aria-label', this.t('select.remove', { label }))
         rm.textContent = '×'
         rm.addEventListener('click', (e: MouseEvent) => {
           e.stopPropagation()
           this.selectValue(v)
         })
-        chip.append(label, rm)
+        chip.append(labelEl, rm)
         valueEl.appendChild(chip)
       }
       // 折叠计数 chip：仅在显式设置 max-tag-count 时插入（数量折叠 + 超宽折叠合并计数）
@@ -752,6 +946,21 @@ export class OASSelect extends OASElement {
       const option = this._options.find((o) => o.value === value)
       valueEl.textContent = option?.label ?? value
     }
+  }
+
+  /** 标签（chip）渲染：template[slot="tag"] 克隆 + [data-tag-label] 绑定；随后派发 oas-tag-render 供宿主改写 */
+  private fillTagLabel(labelEl: HTMLElement, value: string, label: string): void {
+    const tpl = this.querySelector('template[slot="tag"]')
+    if (tpl instanceof HTMLTemplateElement) {
+      labelEl.innerHTML = ''
+      labelEl.appendChild(tpl.content.cloneNode(true))
+      const binder = labelEl.querySelector('[data-tag-label]')
+      if (binder) binder.textContent = label
+      labelEl.classList.add('chip-label')
+    } else {
+      labelEl.textContent = label
+    }
+    this.emit('tag-render', { value, label, element: labelEl })
   }
 
   /** label 点击聚焦委托：把焦点交给 shadow 内 trigger（配合 oas-form-item 的 label 点击代理） */

@@ -348,6 +348,7 @@ describe('OASSelect 声明式数据通道与真水合', () => {
         <div class="dropdown" part="dropdown">
           <input class="search-input" part="search-input" type="text" hidden />
           <div class="listbox" part="listbox" role="listbox"></div>
+          <oas-virtual-list class="vlist" part="virtual-list" hidden></oas-virtual-list>
         </div>
       </div>`
     const styleSnap = snap.shadowRoot!.querySelector('style')!
@@ -399,5 +400,214 @@ describe('OASSelect focus 委托', () => {
     expect(el.shadowRoot!.activeElement).toBe(
       el.shadowRoot!.querySelector('button[part="trigger"]'),
     )
+  })
+})
+
+describe('OASSelect 自定义选项渲染（template slot + 渲染事件）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('template[slot="option"] 克隆到选项行，data-option-label 绑定 label', () => {
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'option')
+    tpl.innerHTML = '<span class="opt-icon">🍎</span><span data-option-label></span>'
+    el.appendChild(tpl)
+    document.body.appendChild(el)
+    open(el)
+    const first = el.shadowRoot!.querySelector('[role="option"]')!
+    expect(first.querySelector('.opt-icon')).not.toBeNull()
+    expect(first.querySelector('[data-option-label]')!.textContent).toBe('苹果')
+  })
+
+  it('oas-option-render 派发 { index, option, element }，宿主可改写选项内容', () => {
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    const seen: Array<{ index: number; value: string }> = []
+    el.addEventListener('oas-option-render', (e: Event) => {
+      const d = (e as CustomEvent).detail
+      seen.push({ index: d.index, value: d.option.value })
+      d.element.innerHTML = ''
+      d.element.textContent = `⭐ ${d.option.label}`
+    })
+    document.body.appendChild(el)
+    open(el)
+    // 每次渲染窗口都会派发（挂载渲染 + 展开后重渲染）；内容按 option 绑定
+    expect(seen.some((s) => s.index === 0 && s.value === 'apple')).toBe(true)
+    expect(seen.some((s) => s.index === 1 && s.value === 'banana')).toBe(true)
+    expect(seen.some((s) => s.index === 2 && s.value === 'orange')).toBe(true)
+    expect(el.shadowRoot!.querySelector('[role="option"]')!.textContent).toContain('⭐ 苹果')
+  })
+
+  it('template[slot="tag"] 克隆到多选 chip，data-tag-label 绑定 label', () => {
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    el.setAttribute('multiple', '')
+    el.setAttribute('value', JSON.stringify(['apple', 'banana']))
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'tag')
+    tpl.innerHTML = '<span class="tag-ic">#</span><span data-tag-label></span>'
+    el.appendChild(tpl)
+    document.body.appendChild(el)
+    const chip = el.shadowRoot!.querySelector('.chip')!
+    expect(chip.querySelector('.tag-ic')).not.toBeNull()
+    expect(chip.querySelector('[data-tag-label]')!.textContent).toBe('苹果')
+  })
+
+  it('oas-tag-render 派发 { value, label, element }，宿主可改写标签内容', () => {
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    el.setAttribute('multiple', '')
+    el.setAttribute('value', JSON.stringify(['apple']))
+    const seen: Array<{ value: string; label: string }> = []
+    el.addEventListener('oas-tag-render', (e: Event) => {
+      const d = (e as CustomEvent).detail
+      seen.push({ value: d.value, label: d.label })
+      d.element.innerHTML = ''
+      d.element.textContent = `🏷 ${d.label}`
+    })
+    document.body.appendChild(el)
+    expect(seen[0]).toEqual({ value: 'apple', label: '苹果' })
+    expect(el.shadowRoot!.querySelector('.chip')!.textContent).toContain('🏷 苹果')
+  })
+})
+
+describe('OASSelect 虚拟滚动（virtual）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function manyOptions(n: number): string {
+    return JSON.stringify(
+      Array.from({ length: n }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` })),
+    )
+  }
+
+  function vlistOf(el: OASSelect): HTMLElement {
+    return el.shadowRoot!.querySelector('oas-virtual-list')!
+  }
+
+  function virtualRows(el: OASSelect): HTMLElement[] {
+    return [...vlistOf(el).shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')]
+  }
+
+  const flushRaf = (): Promise<void> =>
+    new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+
+  it('virtual：仅渲染可见窗口 + buffer，不渲染全量；非 virtual 全量渲染', () => {
+    const el = mount({ virtual: '', options: manyOptions(100) })
+    open(el)
+    const rows = virtualRows(el)
+    // 视口 240 / item-height 36 ≈ 7 项 + 上下 buffer 4 → start 0, end ceil(240/36)+4=11
+    expect(rows.length).toBe(11)
+    expect(rows[0]!.getAttribute('data-index')).toBe('0')
+    // 非虚拟：全量渲染
+    const el2 = mount({ options: manyOptions(100) })
+    open(el2)
+    expect(el2.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(100)
+  })
+
+  it('virtual：滚动后窗口平移，padding 撑起滚动高度', async () => {
+    const el = mount({ virtual: '', options: manyOptions(1000) })
+    open(el)
+    const vp = vlistOf(el).shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    vp.scrollTop = 3600
+    vp.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const rows = virtualRows(el)
+    expect(rows.length).toBe(15) // 96..110
+    expect(rows[0]!.getAttribute('data-index')).toBe('96')
+    const pads = vlistOf(el).shadowRoot!.querySelectorAll('.padding')
+    expect((pads[0] as HTMLElement).style.height).toBe('3456px') // 96 * 36
+  })
+
+  it('virtual：键盘导航滚动窗口使高亮可见，aria-activedescendant 跟随', async () => {
+    const el = mount({ virtual: '', options: manyOptions(100) })
+    open(el)
+    const btn = trigger(el)
+    for (let i = 0; i < 25; i++) {
+      btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    }
+    expect(btn.getAttribute('aria-activedescendant')).toBe('opt-25')
+    const vp = vlistOf(el).shadowRoot!.querySelector<HTMLElement>('.viewport')!
+    expect(vp.scrollTop).toBeGreaterThan(0)
+    // happy-dom 不自动触发 scroll：手动派发后窗口重算，高亮项应在窗口内
+    vp.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const rows = virtualRows(el)
+    const activeRow = rows.find((r) => r.classList.contains('active'))
+    expect(activeRow?.getAttribute('data-index')).toBe('25')
+    expect(activeRow?.getAttribute('aria-selected')).toBe('false')
+  })
+
+  it('virtual：受控 value 同步 aria-selected；点击非受控写回 value + oas-change', () => {
+    const el = mount({ virtual: '', options: manyOptions(100), value: 'v5' })
+    open(el)
+    expect(trigger(el).getAttribute('aria-activedescendant')).toBe('opt-5')
+    // 受控：外部改 value → 选中项 aria-selected 同步
+    el.setAttribute('value', 'v7')
+    const sel = virtualRows(el).filter((r) => r.getAttribute('aria-selected') === 'true')
+    expect(sel.length).toBe(1)
+    expect(sel[0]!.getAttribute('data-index')).toBe('7')
+    // 非受控：点击选中 → 写回 value + 派发 oas-change
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    const row8 = virtualRows(el).find((r) => r.getAttribute('data-index') === '8')
+    ;(row8 as HTMLElement).click()
+    expect(el.getAttribute('value')).toBe('v8')
+    expect(detail).toEqual({ value: 'v8' })
+  })
+
+  it('virtual：searchable 过滤后虚拟列表跟随过滤子集', () => {
+    const el = mount({ virtual: '', searchable: '', options: manyOptions(100) })
+    open(el)
+    const searchInput = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    searchInput.value = '选项 5'
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+    const rows = virtualRows(el)
+    // 匹配：选项 5 + 选项 50~59，共 11 项，窗口全量渲染
+    expect(rows.length).toBe(11)
+    expect(rows.every((r) => r.textContent!.includes('选项 5'))).toBe(true)
+  })
+
+  it('virtual：无匹配时回退直接渲染（allow-create 创建行可交互）', () => {
+    const el = mount({
+      virtual: '',
+      'allow-create': '',
+      searchable: '',
+      options: manyOptions(100),
+    })
+    open(el)
+    const searchInput = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    searchInput.value = '不存在项'
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(vlistOf(el).hidden).toBe(true)
+    const createRow = el.shadowRoot!.querySelector<HTMLElement>('.create-option')!
+    expect(createRow).not.toBeNull()
+    createRow.click()
+    expect(el.getAttribute('value')).toBe('不存在项')
+  })
+
+  it('virtual + 分组：带 group 的选项回退非虚拟全量渲染（组标题保留）', () => {
+    const grouped = JSON.stringify([
+      { group: '温带', label: '苹果', value: 'apple' },
+      { group: '温带', label: '梨', value: 'pear' },
+      { group: '热带', label: '香蕉', value: 'banana' },
+    ])
+    const el = mount({ virtual: '', options: grouped })
+    open(el)
+    expect(el.shadowRoot!.querySelectorAll('.option-group').length).toBe(2)
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(3)
+    expect(vlistOf(el).hidden).toBe(true)
   })
 })

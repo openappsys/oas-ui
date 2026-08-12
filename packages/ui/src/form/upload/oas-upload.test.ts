@@ -133,3 +133,172 @@ describe('OASUpload', () => {
     expect(el.files.length).toBe(before)
   })
 })
+
+// ---- 拖拽缺口补全 ----
+describe('OASUpload 拖拽', () => {
+  function zoneOf(el: OASUpload): HTMLElement {
+    return el.shadowRoot!.querySelector('.zone')!
+  }
+
+  function fireDrag(el: OASUpload, type: string, files: File[] | null = null): Event {
+    const e = new Event(type, { bubbles: true, cancelable: true })
+    if (files) Object.defineProperty(e, 'dataTransfer', { value: { files } })
+    zoneOf(el).dispatchEvent(e)
+    return e
+  }
+
+  it('dragover preventDefault 允许 drop', () => {
+    const el = mount()
+    expect(fireDrag(el, 'dragover').defaultPrevented).toBe(true)
+  })
+
+  it('disabled 时 dragover 不 preventDefault（浏览器默认禁止 drop，防止松开后打开文件）', () => {
+    const el = mount({ disabled: '' })
+    expect(fireDrag(el, 'dragover').defaultPrevented).toBe(false)
+  })
+
+  it('dragenter 加 dragging 高亮、dragleave 移除', () => {
+    const el = mount()
+    fireDrag(el, 'dragenter')
+    expect(zoneOf(el).classList.contains('dragging')).toBe(true)
+    fireDrag(el, 'dragleave')
+    expect(zoneOf(el).classList.contains('dragging')).toBe(false)
+  })
+
+  it('drop 添加文件、移除高亮、preventDefault', () => {
+    const el = mount()
+    fireDrag(el, 'dragenter')
+    const e = fireDrag(el, 'drop', [makeFile('a.txt')])
+    expect(e.defaultPrevented).toBe(true)
+    expect(zoneOf(el).classList.contains('dragging')).toBe(false)
+    expect(el.files.length).toBe(1)
+  })
+
+  it('disabled 时 drop 不收文件且不产生 dragging 高亮', () => {
+    const el = mount({ disabled: '' })
+    fireDrag(el, 'dragenter')
+    expect(zoneOf(el).classList.contains('dragging')).toBe(false)
+    fireDrag(el, 'drop', [makeFile('a.txt')])
+    expect(el.files.length).toBe(0)
+  })
+})
+
+// ---- list-type（list / picture / picture-card）----
+describe('OASUpload list-type', () => {
+  beforeEach(() => {
+    // happy-dom 不保证实现 createObjectURL/revokeObjectURL，统一 mock
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn(() => 'blob:mock-url'),
+      revokeObjectURL: vi.fn(),
+    })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('默认 list：文本列表无缩略图', () => {
+    const el = mount()
+    el.files = [makeFile('a.png', 'image/png')]
+    expect(el.shadowRoot!.querySelectorAll('.card').length).toBe(0)
+    expect(el.shadowRoot!.querySelector('.item img')).toBeNull()
+  })
+
+  it('picture-card：图片渲染缩略图（blob objectURL）', () => {
+    const el = mount({ 'list-type': 'picture-card' })
+    el.files = [makeFile('a.png', 'image/png')]
+    const img = el.shadowRoot!.querySelector<HTMLImageElement>('.card .thumb img')!
+    expect(img).not.toBeNull()
+    expect(img.src).toContain('blob:')
+    expect(img.alt).toBe('a.png')
+  })
+
+  it('picture-card：非图片渲染图标占位 + 文件名', () => {
+    const el = mount({ 'list-type': 'picture-card' })
+    el.files = [makeFile('a.txt')]
+    const thumb = el.shadowRoot!.querySelector('.card .thumb')!
+    expect(thumb.querySelector('oas-icon')).not.toBeNull()
+    expect(thumb.querySelector('img')).toBeNull()
+    expect(thumb.textContent).toContain('a.txt')
+  })
+
+  it('picture-card：点击缩略图派发 oas-preview（file + url）并打开浮层', () => {
+    const el = mount({ 'list-type': 'picture-card' })
+    el.files = [makeFile('a.png', 'image/png')]
+    let detail: unknown
+    el.addEventListener('oas-preview', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(el.shadowRoot!.querySelector('.card .thumb') as HTMLElement).click()
+    expect(detail).toEqual({ file: expect.any(File), url: 'blob:mock-url' })
+    const mask = el.shadowRoot!.querySelector<HTMLElement>('.preview-mask')!
+    expect(mask.hasAttribute('hidden')).toBe(false)
+  })
+
+  it('preview 浮层：Esc 关闭并还原焦点', () => {
+    const el = mount({ 'list-type': 'picture-card' })
+    el.files = [makeFile('a.png', 'image/png')]
+    ;(el.shadowRoot!.querySelector('.card .thumb') as HTMLElement).click()
+    const mask = el.shadowRoot!.querySelector<HTMLElement>('.preview-mask')!
+    expect(mask.hasAttribute('hidden')).toBe(false)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(mask.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('picture-card：右上角删除按钮移除文件并派发 oas-remove', () => {
+    const el = mount({ 'list-type': 'picture-card' })
+    el.files = [makeFile('a.png', 'image/png')]
+    const rm = el.shadowRoot!.querySelector<HTMLButtonElement>('.card .remove')!
+    expect(rm.getAttribute('aria-label')).toContain('移除')
+    rm.click()
+    expect(el.files.length).toBe(0)
+    expect(el.shadowRoot!.querySelectorAll('.card').length).toBe(0)
+  })
+
+  it('picture-card：disabled 时删除按钮禁用', () => {
+    const el = mount({ 'list-type': 'picture-card', disabled: '' })
+    el.files = [makeFile('a.png', 'image/png')]
+    expect(el.shadowRoot!.querySelector<HTMLButtonElement>('.card .remove')!.disabled).toBe(true)
+  })
+
+  it('picture：列表带小缩略图，图片用 img、非图片用图标', () => {
+    const el = mount({ 'list-type': 'picture' })
+    el.files = [makeFile('a.png', 'image/png'), makeFile('b.txt')]
+    const items = el.shadowRoot!.querySelectorAll('.item-picture')
+    expect(items.length).toBe(2)
+    expect(el.shadowRoot!.querySelectorAll('.item-picture .item-thumb img').length).toBe(1)
+    expect(el.shadowRoot!.querySelectorAll('.item-picture .item-thumb oas-icon').length).toBe(1)
+    expect(items[0]!.querySelector('.meta .name')!.textContent).toBe('a.png')
+  })
+
+  it('objectURL 生命周期：删除文件时 revoke、断开连接时 revoke 全部', () => {
+    const el = mount({ 'list-type': 'picture-card' })
+    el.files = [makeFile('a.png', 'image/png'), makeFile('b.png', 'image/png')]
+    const revoke = vi.mocked(URL.revokeObjectURL)
+    ;(el.shadowRoot!.querySelector('.card .remove') as HTMLElement).click()
+    expect(revoke).toHaveBeenCalledTimes(1)
+    document.body.removeChild(el)
+    expect(revoke).toHaveBeenCalledTimes(2)
+  })
+
+  it('list-type 运行时切换立即重渲染为对应模式', () => {
+    const el = mount()
+    el.files = [makeFile('a.png', 'image/png')]
+    el.setAttribute('list-type', 'picture-card')
+    expect(el.shadowRoot!.querySelectorAll('.card').length).toBe(1)
+    el.setAttribute('list-type', 'picture')
+    expect(el.shadowRoot!.querySelectorAll('.item-picture').length).toBe(1)
+  })
+})
+
+// ---- 数量超限 ----
+describe('OASUpload 数量超限', () => {
+  it('超过 max 时拒绝多余文件并派发 oas-exceed（detail 含 files/max/total）', () => {
+    const el = mount({ max: '1' })
+    let detail: unknown
+    el.addEventListener('oas-exceed', (e: Event) => (detail = (e as CustomEvent).detail))
+    pick(el, [makeFile('a.txt'), makeFile('b.txt')])
+    expect(el.files.length).toBe(1)
+    expect(el.files[0]!.name).toBe('a.txt')
+    expect(detail).toEqual({ files: [expect.any(File)], max: 1, total: 1 })
+  })
+})

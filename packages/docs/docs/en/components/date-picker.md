@@ -74,6 +74,7 @@ The format supports `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` tokens.
 | `format` | Display format tokens (`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`) | `string` | — |
 | `max` | Selectable range (ISO dates) | `string` | — |
 | `min` | Selectable range (ISO dates) | `string` | — |
+| `multiple` | Multiple selection (only `type=date`), value is a JSON array | `boolean` | — |
 | `placeholder` | Placeholder text | — | — |
 | `type` | Type: `date` / `daterange` / `month` / `datetime` | `string` | `date` |
 | `value` | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | `string` | — |
@@ -82,7 +83,7 @@ The format supports `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` tokens.
 
 | Event | Description |
 | --- | --- |
-| `oas-change` | Value change, `detail: { value }` (string array for daterange) |
+| `oas-change` | Value change, `detail: { value }` (string array for daterange and multiple) |
 
 Keyboard: `Enter` / `↓` to open, `↑`/`↓`/`←`/`→` to move within the grid, `Enter` to select, `Esc` to close.
 
