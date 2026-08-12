@@ -1,0 +1,13 @@
+# 跨编辑器编码规范（主流编辑器自动遵循）
+# 与 .prettierrc.json 保持一致：2 空格缩进、LF 行尾、UTF-8、末尾换行
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,vue,css,md}]
+indent_style = space
+indent_size = 2
