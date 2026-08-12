@@ -14,6 +14,7 @@
       "!**/node_modules/**",
       "!packages/docs/docs/.vitepress/**",
       "!packages/icons/src/icons/**",
+      "!packages/icons/src/registry.ts",
       "!docs/api-manifest.json",
       "!docs/api-descriptions.*.json",
       "!docs/demo-inventory.json",
