@@ -40,5 +40,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm exec playwright install --with-deps chromium
+      # e2e 双浏览器：chromium 全量 + firefox 抽样（visual/smoke/qa-regression 子集，
+      # 由 playwright.config.ts 的 firefox project testMatch 圈定，见 docs/engineering.md §2）
+      - run: pnpm exec playwright install --with-deps chromium firefox
       - run: pnpm test:e2e

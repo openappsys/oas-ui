@@ -19,5 +19,17 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
-  projects: [{ name: 'chromium', use: {} }],
+  projects: [
+    // chromium 全量（默认 project 跑全部 spec）
+    { name: 'chromium', use: {} },
+    // Firefox 抽样覆盖：全量 e2e 在 Firefox 上跑会翻倍耗时——不值。只挑能暴露
+    // 浏览器专有渲染/兼容问题的 spec（视觉截图、全页冒烟、浏览器相关回归），
+    // 交互密集或时序敏感的 spec（interaction/a11y/demo/onoas 等）留在 chromium
+    // （Firefox headless 时序差异可能引入 flaky，宁少勿滥）。
+    {
+      name: 'firefox',
+      use: {},
+      testMatch: [/visual\.spec\.ts/, /smoke\.spec\.ts/, /qa-regression\.spec\.ts/],
+    },
+  ],
 })
