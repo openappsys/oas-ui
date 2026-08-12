@@ -200,6 +200,11 @@ export default defineConfig({
       port: 5173,
       strictPort: true, // 固定 5173，端口被占时直接报错而不是自增到 5174/5175
     },
+    optimizeDeps: {
+      // workspace 包经 symlink 直接解析 packages/*/dist（与生产同一份产物），
+      // 显式 exclude 防止被纳入预构建缓存——否则改 dist 后须清 .vitepress/cache 才生效。
+      exclude: ['@oas-ui/ui', '@oas-ui/core', '@oas-ui/i18n', '@oas-ui/icons'],
+    },
   },
   themeConfig: {
     nav: [{ text: '指南', link: '/guide/getting-started' }],

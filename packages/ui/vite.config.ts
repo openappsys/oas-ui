@@ -46,5 +46,9 @@ export default defineConfig({
     },
     outDir: 'dist',
     sourcemap: true,
+    // watch 模式下不清空 outDir：① Windows 下 dev server 正持有 dist 文件句柄，
+    // emptyDir 会触发 EPERM；② 全量重写会让 vite dev 收到 258 个 change 事件风暴。
+    // 同名文件会被覆盖写，残留的"不再产出"文件在 dev 场景无碍。
+    emptyOutDir: process.argv.includes('--watch') ? false : true,
   },
 })

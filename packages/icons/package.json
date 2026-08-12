@@ -22,6 +22,7 @@
   "scripts": {
     "generate": "node scripts/generate.mts",
     "build": "node scripts/generate.mts && tsc -p tsconfig.build.json",
+    "dev": "node scripts/generate.mts && tsc -p tsconfig.build.json --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   }
 }
