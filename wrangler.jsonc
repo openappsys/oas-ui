@@ -1,0 +1,12 @@
+// wrangler.jsonc —— Cloudflare Workers 静态资产部署配置（文档站，域名 oasui.dev）
+// 构建后执行：pnpm --filter @oas-ui/ui build && pnpm --filter @oas-ui/docs build
+// 然后：wrangler deploy（assets 目录上传为静态资产，自定义域名在 Cloudflare 后台绑定）
+// Node 版本：NODE_VERSION=22
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "oas-ui-docs",
+  "compatibility_date": "2026-08-12",
+  "assets": {
+    "directory": "packages/docs/docs/.vitepress/dist"
+  }
+}

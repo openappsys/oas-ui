@@ -11,3 +11,4 @@ pnpm-lock.yaml
 *.tsbuildinfo
 .github/ISSUE_TEMPLATE/
 packages/icons/src/icons/
+wrangler.jsonc

@@ -80,25 +80,24 @@
 - **granular token（90 天期，应急）**：npm → Access Tokens → Granular（限 `@oas-ui/*` + publish，可勾 Bypass 2FA 免每次 OTP）→ 写入用户级 `~/.npmrc`（**勿提交仓库**），到期重新生成
 - 可选最严姿态：包 Settings → Publishing access → "Require 2FA and disallow tokens"，则 token 全废，本地只能交互式、CI 只能 OIDC
 
-## 6. 文档站部署（Cloudflare Pages + oasui.dev）
+## 6. 文档站部署（Cloudflare + oasui.dev）
 
-文档站是 Vitepress SSG，静态构建产物部署到 Cloudflare Pages，绑定自定义域名 `oasui.dev`（域名 DNS 托管到 Cloudflare，自动 Let's Encrypt HTTPS）。
+文档站是 Vitepress SSG，静态构建产物部署到 Cloudflare（Workers Static Assets，`wrangler deploy`），绑定自定义域名 `oasui.dev`（域名 DNS 托管到 Cloudflare，自动 HTTPS）。
 
-**Cloudflare Pages 配置**：
+仓库根已提供 `wrangler.jsonc`（Workers 静态资产配置，`assets.directory` 指向构建产物；`$schema` 是 IDE 提示，本地未装 wrangler 时无害）。
 
-1. Pages → Create project → 连接 Git 仓库（oas-ui）
-2. 构建设置：
-   - 构建命令：`pnpm install --frozen-lockfile && pnpm --filter @oas-ui/ui build && pnpm --filter @oas-ui/docs build`
-   - 输出目录：`packages/docs/docs/.vitepress/dist`
-   - Node 版本：环境变量 `NODE_VERSION=22`（或仓库 `.node-version`）
-3. Custom domains → Add `oasui.dev`
-4. 自动部署：push main → 自动构建发布；预览分支生成 `<pr>-oas-ui.pages.dev` 独立 URL
+**部署流程（CI/远程 wrangler，本地无需安装 wrangler）**：
+
+1. 构建：`pnpm install --frozen-lockfile && pnpm --filter @oas-ui/ui build && pnpm --filter @oas-ui/docs build`
+2. 部署：CI 中用 Cloudflare 官方 action（`cloudflare/wrangler-action`）或 `npx wrangler deploy`（上传 `packages/docs/docs/.vitepress/dist` 为静态资产，凭证用 Cloudflare API token，存 CI secret）
+3. 绑域名：Cloudflare 后台 → Workers → 该项目 → Custom Domains → Add `oasui.dev`
 
 **要点**：
 
 - `docs build` 依赖 `@oas-ui/ui` 的 dist（workspace symlink）——必须先 `pnpm --filter @oas-ui/ui build`，已含在构建命令
 - `base: '/'`（自定义域名，无子路径）；`404.html` 由 Vitepress 自动生成（深层直达兜底）
 - 本地预览：`pnpm dev`（5173，dev 链路自带 watch 构建）
+- 备选：Cloudflare Pages（UI 连 Git 自动构建，构建命令同上、输出目录 `packages/docs/docs/.vitepress/dist`）
 
 ## 7. 代码规范
 
