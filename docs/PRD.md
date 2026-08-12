@@ -489,7 +489,7 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 - **真水合**：✅ 已落地（指纹判定 + 白名单组件 template/bind 拆分 + hydrate 接管跳过重建，DOM 引用保持、回退防御、无双绑）
 - **测量组件闪动治理**：✅ 已落地（wasHydrated 暴露水合态；affix/ellipsis/scroll-area 三组件快照场景首帧延迟布局写入，其余 16 个测量组件评估后排除——浮层/交互型仅触发时测量无首帧写入）
 - **property-only 数据声明式通道**：✅ 已落地（table/tree/select 全通——attribute JSON 通道 + property 优先单向反射 + hydrate 接管；architecture.md 决策修订已记录；方案评审结论：无回写循环，attribute 为唯一数据源）
-- **框架集成插件**：（稍后，用户排期）Nuxt module 与 Next 集成示例
+- **框架集成插件**：✅ 已落地（`@oas-ui/nuxt` Nuxt 3 module——`vite:extendConfig` 注入 Vue `isCustomElement` 识别 oas-* + `@oas-ui/theme` 自动注入 `nuxt.options.css` + `renderOasToString`/`useOasRender` SSR helper 自动导入；`@oas-ui/next` Next.js App Router 集成——RSC `<OasComponent>` 服务端产 DSD 快照（dangerouslySetInnerHTML 进 SSR 输出流）+ `<OasRegistry>` "use client" 客户端注册引导 + `renderOas` 纯逻辑包装；ssr.md 插件优先示例）
 - **grid 栅格表单布局**：✅ 已落地（oas-form-item + form layout/gap/label-align/label-width；错误提示收编 form-item；裸字段向后兼容）
 - **CHANGELOG 回填**：✅ 已落地（v1.1~v1.8 补记，v1.9 在 Unreleased）
 - **ssr 首载优化**：✅ 已落地（按需 define，纯 Node 冷载 135ms→22ms）

@@ -1,0 +1,43 @@
+{
+  "name": "@oas-ui/nuxt",
+  "version": "1.9.0",
+  "description": "OAS-UI Nuxt 3 module——SSR（DSD 快照）开箱即用：Vue isCustomElement 配置 + theme CSS 注入 + renderOasToString SSR helper",
+  "license": "MIT OR Apache-2.0",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./ssr": {
+      "types": "./dist/ssr.d.ts",
+      "default": "./dist/ssr.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "LICENSE-APACHE",
+    "LICENSE-MIT"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "@nuxt/kit": "^3.16.0",
+    "@oas-ui/ssr": "^1.9.0",
+    "@oas-ui/theme": "^1.9.0"
+  },
+  "devDependencies": {
+    "@nuxt/kit": "^3.21.11",
+    "@nuxt/schema": "^3.21.11",
+    "@oas-ui/ssr": "workspace:*",
+    "@oas-ui/theme": "workspace:*"
+  }
+}

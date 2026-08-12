@@ -79,10 +79,14 @@ Current progress:
   is a dev-tool component (a theme-editing panel for development) with little
   SSR value — it was evaluated and excluded from the whitelist, staying
   client-only.
-
-Not yet landed (ROADMAP backlog):
-
-- Framework integration plugins (Nuxt / Next).
+- Framework integration plugins: `@oas-ui/nuxt` (a Nuxt 3 module) and
+  `@oas-ui/next` (a Next.js App Router integration) have landed — the Nuxt
+  module auto-configures Vue `compilerOptions.isCustomElement` (recognizing
+  `oas-*`), injects the `@oas-ui/theme` global CSS, and auto-imports the
+  `renderOasToString` SSR helper; the Next integration provides the RSC
+  `<OasComponent>` that renders DSD snapshots on the server plus the
+  `<OasRegistry>` client registration bootstrap (see "Nuxt (recommended)" /
+  "Next.js (recommended)" below).
 
 Whitelisted components can be rendered on the server directly; the rest keep the
 "client-only" approach below.
@@ -142,12 +146,9 @@ elements and takes over interactivity.
 ```ts
 import { renderToString } from '@oas-ui/ssr'
 
-const html = await renderToString(
-  'oas-button',
-  { type: 'primary', size: 'large' },
-  'Submit',
-  { locale: 'en' },
-)
+const html = await renderToString('oas-button', { type: 'primary', size: 'large' }, 'Submit', {
+  locale: 'en',
+})
 // '<oas-button type="primary" size="large"><template shadowrootmode="open">…</template>Submit</oas-button>'
 ```
 
@@ -173,7 +174,50 @@ for the rendering itself.
 > synchronously, so there is no interleaving window between requests on a single
 > thread.
 
-### Nuxt (Nitro server route)
+### Nuxt (recommended: the `@oas-ui/nuxt` module)
+
+Install and register the module, then it works out of the box:
+
+```bash
+pnpm add @oas-ui/nuxt @oas-ui/ssr @oas-ui/theme
+```
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@oas-ui/nuxt'],
+})
+```
+
+The module does three things automatically:
+
+- **Vue isCustomElement**: the `vite:extendConfig` hook registers the `oas-*`
+  prefix into `compilerOptions.isCustomElement` (merged with any existing
+  function / RegExp / boolean config), so Vue no longer tries to resolve
+  `oas-*` as components or warn about them
+- **theme CSS injection**: `@oas-ui/theme` is appended to `nuxt.options.css`
+  (the `--oas-*` tokens referenced by DSD snapshots become globally available);
+  disable with `oasUi: { theme: false }` or pass a custom CSS entry
+- **SSR helper**: `renderOasToString` / `useOasRender` are auto-imported (from
+  `@oas-ui/nuxt/ssr`) and available without an import in server/api and server
+  components; you can also `import { renderOasToString } from '@oas-ui/nuxt/ssr'`
+
+```ts
+// server/api/ssr-demo.ts (renderOasToString is auto-imported, no import needed)
+export default defineEventHandler(async () => {
+  const button = await renderOasToString('oas-button', { type: 'primary' }, 'Submit')
+  const empty = await renderOasToString('oas-empty', { description: 'No data' }, '', {
+    locale: 'en',
+  })
+  return `<div class="ssr-demo">${button}${empty}</div>`
+})
+```
+
+Merge the returned HTML into the server-rendered output stream; the browser
+renders it on parse. For client upgrade, use the "client-only" approach above
+(dynamic-import the library entry after `onMounted`).
+
+### Nuxt (manual integration, low-level)
 
 ```ts
 // server/api/ssr-demo.ts
@@ -193,14 +237,73 @@ For lists, loop the calls (module caching keeps later calls at render-only cost)
 
 ```ts
 const items = await Promise.all(
-  rows.map((row) =>
-    renderToString('oas-tag', { type: row.status }, row.label, { locale: 'en' }),
-  ),
+  rows.map((row) => renderToString('oas-tag', { type: row.status }, row.label, { locale: 'en' })),
 )
 return `<div class="tags">${items.join('')}</div>`
 ```
 
-### Next.js (RSC async component)
+### Next.js (recommended: the `@oas-ui/next` integration)
+
+```bash
+pnpm add @oas-ui/next @oas-ui/ssr @oas-ui/ui
+```
+
+The RSC server component `<OasComponent>` (from `@oas-ui/next/server`) calls
+`renderToString` on the server to produce a DSD snapshot, rendered through
+`dangerouslySetInnerHTML` into the SSR output stream:
+
+```tsx
+// app/ssr-demo/page.tsx (Server Component)
+import { OasComponent } from '@oas-ui/next/server'
+
+export default function SsrDemoPage() {
+  return (
+    <section>
+      <OasComponent tag="oas-button" attrs={{ type: 'primary' }}>
+        Submit
+      </OasComponent>
+      <OasComponent tag="oas-divider" attrs={{ 'content-position': 'left' }}>
+        Divider
+      </OasComponent>
+    </section>
+  )
+}
+```
+
+Client registration bootstrap: mount `<OasRegistry>` in the layout ("use client",
+side-effect `import '@oas-ui/ui'` registers all `oas-*` elements globally),
+so every `oas-*` element in the app upgrades and the components take over
+interactivity:
+
+```tsx
+// app/layout.tsx
+import { OasRegistry } from '@oas-ui/next'
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <OasRegistry>
+      <html lang="en">
+        <body>{children}</body>
+      </html>
+    </OasRegistry>
+  )
+}
+```
+
+Low-level capability: `renderOas(tag, attrs, slotHTML, opts)` (from
+`@oas-ui/next`) is a pure-logic wrapper of `renderToString` (attrs values
+support `string | number | boolean` and are serialized automatically);
+`OasComponent`'s `slotHTML` prop accepts raw HTML directly (children, when a
+string or a ReactNode, is serialized automatically).
+
+> Note: DSD templates are attached by the browser's **HTML parser** — the
+> initial SSR is applied by parsing the server output stream; client-side soft
+> navigation (RSC flight rebuild) injects via `innerHTML`, which does not attach
+> DSD. At that point the components are already registered on the client
+> (OasRegistry) and take over via custom-element self-rendering — this is the
+> progressive-enhancement model.
+
+### Next.js (manual integration, low-level)
 
 ```tsx
 // app/ssr-demo/page.tsx

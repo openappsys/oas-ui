@@ -25,10 +25,7 @@ OAS-UI 是 Web Components 组件库，组件在浏览器运行时自定义元素
 - 白名单收尾批次 5（DSD 白名单化）：badge / button-group / icon / kbd / label / link / space / visually-hidden 纯展示组件快照直出完整视觉（badge 徽标数字、kbd 键帽拆分、space 宿主内联布局样式均确定性写入）；tooltip / popover 浮层触发类默认关闭、快照为触发器 slot 原样 + 关闭态气泡骨架（content/title 文本同步，定位在触发时计算）；config-provider / app 框架级容器无自身视觉、快照为子树原样 + 容器属性就位（data-theme / size 等），嵌套子组件由 injectNestedDSD 覆盖。theme-editor 为开发工具组件（开发期主题编辑面板），SSR 意义低，评估后排除白名单，保持客户端专属。
 - 嵌套递归序列化：light DOM 里已 upgrade 的白名单子组件（如 form>form-item>oas-input、tabs>tab-panel、descriptions>descriptions-item、layout>sider/header、grid>grid-item、timeline>timeline-item）会被递归包成嵌套 `<template shadowrootmode="open">`（含子组件指纹）插到该子元素内容最前，禁 JS 时子组件 shadow 内容（label 文本等）同样可见；浏览器 upgrade 后父子均按指纹走真水合。子组件 tag 在渲染前按需装载（非白名单子组件不装载、按原始标记输出）；light DOM 输出用处理后的 `el.innerHTML`（保留组件对 light DOM 的同步，如 tabs 非激活面板 hidden、collapse open 态）。
 - 测量组件首帧闪动治理：affix / ellipsis / scroll-area 检测到 DSD 快照时把布局写入延迟到首帧后（rAF）——快照 = 未校正态，upgrade 首帧与快照一致无跳动，rAF 后按真实布局校正。
-
-尚未落地（ROADMAP backlog）：
-
-- 框架集成插件（Nuxt / Next）。
+- 框架集成插件：`@oas-ui/nuxt`（Nuxt 3 module）与 `@oas-ui/next`（Next.js App Router 集成）已落地——nuxt module 自动配置 Vue `compilerOptions.isCustomElement`（识别 `oas-*`）、注入 `@oas-ui/theme` 全局 CSS、注册 `renderOasToString` SSR helper 自动导入；next 提供 RSC `<OasComponent>` 服务端产 DSD 快照 + `<OasRegistry>` 客户端注册引导（见下「Nuxt（推荐）」/「Next.js（推荐）」）。
 
 白名单组件可直接服务端渲染；其余组件仍按"客户端专属"方式接入（见下）。
 
@@ -78,12 +75,9 @@ const Table = dynamic(() => import('./TablePage'), { ssr: false })
 ```ts
 import { renderToString } from '@oas-ui/ssr'
 
-const html = await renderToString(
-  'oas-button',
-  { type: 'primary', size: 'large' },
-  '提交',
-  { locale: 'zh-CN' },
-)
+const html = await renderToString('oas-button', { type: 'primary', size: 'large' }, '提交', {
+  locale: 'zh-CN',
+})
 // '<oas-button type="primary" size="large"><template shadowrootmode="open">…</template>提交</oas-button>'
 ```
 
@@ -93,7 +87,41 @@ const html = await renderToString(
 
 > 进程级副作用声明：渲染器首次调用会把 happy-dom 的 `document` / `customElements` / `HTMLElement` 等全局安装到 `globalThis`（组件类求值与注册的必需环境）。若你的 Node 进程另有全局 DOM 方案（其他 SSR 库、测试框架环境），请先评估共存——无法覆盖全局时渲染器会抛明确错误。另：`locale` 选项经全局 i18n registry 切换，渲染段为同步执行，单线程下请求间无交错窗口。
 
-### Nuxt（Nitro server route）
+### Nuxt（推荐：`@oas-ui/nuxt` 插件）
+
+安装并注册 module 后即开箱即用：
+
+```bash
+pnpm add @oas-ui/nuxt @oas-ui/ssr @oas-ui/theme
+```
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@oas-ui/nuxt'],
+})
+```
+
+插件自动完成三件事：
+
+- **Vue isCustomElement**：`vite:extendConfig` 钩子把 `oas-*` 前缀注册进 `compilerOptions.isCustomElement`（与既有配置合并，支持函数 / RegExp / 布尔），Vue 不再把 `oas-*` 当组件解析、不再告警
+- **theme CSS 注入**：`@oas-ui/theme` 自动追加到 `nuxt.options.css`（DSD 快照引用的 `--oas-*` token 全局可用）；可用 `oasUi: { theme: false }` 关闭或传自定义 CSS 入口替换
+- **SSR helper**：`renderOasToString` / `useOasRender` 自动导入（来自 `@oas-ui/nuxt/ssr`），server/api 与 server components 免 import 直接调用；也可显式 `import { renderOasToString } from '@oas-ui/nuxt/ssr'`
+
+```ts
+// server/api/ssr-demo.ts（renderOasToString 已自动导入，无需 import）
+export default defineEventHandler(async () => {
+  const button = await renderOasToString('oas-button', { type: 'primary' }, '提交')
+  const empty = await renderOasToString('oas-empty', { description: '暂无数据' }, '', {
+    locale: 'zh-CN',
+  })
+  return `<div class="ssr-demo">${button}${empty}</div>`
+})
+```
+
+页面侧把该 HTML 合入服务端渲染输出流，浏览器解析即呈现结构；客户端 upgrade 按上文「客户端专属」方式接入（页面 `onMounted` 后动态 import 组件库入口）。
+
+### Nuxt（手写接入，底层说明）
 
 ```ts
 // server/api/ssr-demo.ts
@@ -119,7 +147,54 @@ const items = await Promise.all(
 return `<div class="tags">${items.join('')}</div>`
 ```
 
-### Next.js（RSC async 组件）
+### Next.js（推荐：`@oas-ui/next` 插件）
+
+```bash
+pnpm add @oas-ui/next @oas-ui/ssr @oas-ui/ui
+```
+
+RSC 服务端组件 `<OasComponent>`（`@oas-ui/next/server`）在服务端调 `renderToString` 产 DSD 快照，经 `dangerouslySetInnerHTML` 进 SSR 输出流：
+
+```tsx
+// app/ssr-demo/page.tsx（Server Component）
+import { OasComponent } from '@oas-ui/next/server'
+
+export default function SsrDemoPage() {
+  return (
+    <section>
+      <OasComponent tag="oas-button" attrs={{ type: 'primary' }}>
+        提交
+      </OasComponent>
+      <OasComponent tag="oas-divider" attrs={{ 'content-position': 'left' }}>
+        分割线
+      </OasComponent>
+    </section>
+  )
+}
+```
+
+客户端注册引导：layout 挂 `<OasRegistry>`（"use client"，副作用 `import '@oas-ui/ui'` 完成全局注册）——整个应用的 `oas-*` 元素 upgrade 后由组件接管交互：
+
+```tsx
+// app/layout.tsx
+import { OasRegistry } from '@oas-ui/next'
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <OasRegistry>
+      <html lang="zh-CN">
+        <body>{children}</body>
+      </html>
+    </OasRegistry>
+  )
+}
+```
+
+低层能力：`renderOas(tag, attrs, slotHTML, opts)`（`@oas-ui/next`）为 `renderToString` 的纯逻辑包装（attrs 值支持 `string | number | boolean` 自动序列化）；`OasComponent` 的 `slotHTML` prop 直接传原始 HTML（children 为字符串或 ReactNode 时自动序列化）。
+
+> 注意：`dangerouslySetInnerHTML` 的 DSD 模板只在浏览器 **HTML 解析器**处理时附加 shadow root——初始 SSR 由服务端输出流解析生效；客户端软导航（RSC flight 重建）走 `innerHTML` 注入不会附加 DSD，此时组件已在客户端注册（OasRegistry），由自定义元素自渲染接管，属渐进增强模型。
+
+### Next.js（手写接入，底层说明）
 
 ```tsx
 // app/ssr-demo/page.tsx
