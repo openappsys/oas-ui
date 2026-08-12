@@ -80,7 +80,25 @@
 - **granular token（90 天期，应急）**：npm → Access Tokens → Granular（限 `@oas-ui/*` + publish，可勾 Bypass 2FA 免每次 OTP）→ 写入用户级 `~/.npmrc`（**勿提交仓库**），到期重新生成
 - 可选最严姿态：包 Settings → Publishing access → "Require 2FA and disallow tokens"，则 token 全废，本地只能交互式、CI 只能 OIDC
 
-## 6. 代码规范
+## 6. 文档站部署（Cloudflare Pages + oasui.dev）
+
+文档站是 Vitepress SSG，静态构建产物部署到 Cloudflare Pages，绑定自定义域名 `oasui.dev`（域名 DNS 托管到 Cloudflare，自动 Let's Encrypt HTTPS）。
+
+**Cloudflare Pages 配置**：
+1. Pages → Create project → 连接 Git 仓库（oas-ui）
+2. 构建设置：
+   - 构建命令：`pnpm install --frozen-lockfile && pnpm --filter @oas-ui/ui build && pnpm --filter @oas-ui/docs build`
+   - 输出目录：`packages/docs/docs/.vitepress/dist`
+   - Node 版本：环境变量 `NODE_VERSION=22`（或仓库 `.node-version`）
+3. Custom domains → Add `oasui.dev`
+4. 自动部署：push main → 自动构建发布；预览分支生成 `<pr>-oas-ui.pages.dev` 独立 URL
+
+**要点**：
+- `docs build` 依赖 `@oas-ui/ui` 的 dist（workspace symlink）——必须先 `pnpm --filter @oas-ui/ui build`，已含在构建命令
+- `base: '/'`（自定义域名，无子路径）；`404.html` 由 Vitepress 自动生成（深层直达兜底）
+- 本地预览：`pnpm dev`（5173，dev 链路自带 watch 构建）
+
+## 7. 代码规范
 
 - TypeScript strict；无 `any`（有理由时注释）
 - 组件对外类型集中导出：每个组件导出 `ButtonProps`（属性）与事件类型 `ButtonEventMap`
