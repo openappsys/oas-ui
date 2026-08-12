@@ -255,4 +255,17 @@ describe('OASMenubar', () => {
     expect(detail).toEqual({ value: 'new' })
     expect(newItem.getAttribute('aria-checked')).toBe('true')
   })
+
+  it('子菜单视口翻转：样式表含 flip 规则，展开时检测不抛错（行为验证见 qa-regression e2e）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('.submenu .submenu.flip-left')
+    expect(css).toContain('.submenu.flip-right')
+    expect(css).toContain('.submenu.flip-up')
+    // 展开一级与级联后 syncSubmenuPositions 在 happy-dom 下安全执行（rect 全 0 不误判翻转）
+    const editTop = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="edit"]')!
+    editTop.click()
+    const insertItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="insert"]')
+    expect(insertItem).not.toBeNull()
+  })
 })

@@ -84,6 +84,23 @@ const STYLE = `
   top: calc(-1 * var(--oas-space-1));
   left: 100%;
 }
+/* 视口边界翻转（JS 检测后切类）：级联子菜单右侧不足向左展开；一级下拉右缘不足右对齐；底部不足向上 */
+.submenu .submenu.flip-left {
+  left: auto;
+  right: 100%;
+}
+.submenu.flip-right {
+  left: auto;
+  right: 0;
+}
+.submenu.flip-up {
+  top: auto;
+  bottom: 100%;
+}
+.submenu .submenu.flip-up {
+  top: auto;
+  bottom: calc(-1 * var(--oas-space-1));
+}
 .subitem {
   position: relative;
   display: flex;
@@ -490,6 +507,37 @@ export class OASMenubar extends OASElement {
     }
     for (const ul of this.shadow.querySelectorAll<HTMLElement>('[part="submenu"]')) {
       ul.classList.toggle('open', this.expanded.has(ul.dataset.parent ?? ''))
+    }
+    this.syncSubmenuPositions()
+  }
+
+  /**
+   * 子菜单视口边界翻转：级联子菜单父项右侧剩余空间不足时向左展开（flip-left）、
+   * 一级下拉右缘不足时右对齐（flip-right）、底部不足时向上展开（flip-up）。
+   * 与 oas-menu 同一方案：翻转由样式表类表达，本方法只做测量与切类；
+   * 多级嵌套逐级检测（DOM 序外层先于内层，内层 rect 反映外层翻转后的真实布局）。
+   */
+  private syncSubmenuPositions(): void {
+    const margin = 8
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    for (const sub of this.shadow.querySelectorAll<HTMLElement>('[part="submenu"].open')) {
+      // 级联子菜单的父项是 li；一级下拉的容器是 div（wrap），closest('li') 为 null 时回退直接父元素
+      const parentItem = (sub.closest('li') ?? sub.parentElement) as HTMLElement | null
+      if (!parentItem) continue
+      const itemRect = parentItem.getBoundingClientRect()
+      const subRect = sub.getBoundingClientRect()
+      // 级联子菜单（父项本身在某个 submenu 里）左右翻转；一级下拉只 clamp 到右对齐
+      const isNested = !!parentItem.parentElement?.closest('[part="submenu"]')
+      if (isNested) {
+        sub.classList.toggle('flip-left', itemRect.right + subRect.width > vw - margin)
+        sub.classList.remove('flip-right')
+      } else {
+        sub.classList.toggle('flip-right', itemRect.left + subRect.width > vw - margin)
+        sub.classList.remove('flip-left')
+      }
+      const subRectV = sub.getBoundingClientRect()
+      sub.classList.toggle('flip-up', subRectV.bottom > vh - margin)
     }
   }
 

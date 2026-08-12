@@ -822,6 +822,37 @@ test('menu 多级子菜单贴近视口右缘：翻转后全部落在视口内', 
   await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix8-menu-flip.png' })
 })
 
+test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内', async ({ page }) => {
+  await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menubar')
+  // 平移 menubar 到视口右缘
+  await page.evaluate(() => {
+    const mb = document.querySelector('oas-menubar') as HTMLElement
+    mb.style.cssText = 'position: fixed; right: 0; top: 240px; z-index: 9999'
+    mb.dataset.e2eRightEdge = '1'
+  })
+  // hover 顶级「视图」展开一级下拉，hover 级联「缩放」展开二级子菜单（menubar 是 mouseenter 展开）
+  await page.locator('oas-menubar[data-e2e-right-edge] [part="top-item"][data-value="view"]').hover()
+  await page.waitForTimeout(150)
+  await page.locator('oas-menubar[data-e2e-right-edge] [part="item"][data-value="zoom"]').hover()
+  await page.waitForTimeout(200)
+  const rects = await visibleSubmenuRects(page)
+  expect(rects.length).toBeGreaterThanOrEqual(2) // 一级下拉 + 级联子菜单
+  for (const r of rects) {
+    expect(r.left, `子菜单 left=${r.left} 越出视口左缘`).toBeGreaterThanOrEqual(-1)
+    expect(r.right, `子菜单 right=${r.right} 越出视口右缘`).toBeLessThanOrEqual(r.vw + 1)
+    expect(r.bottom, `子菜单 bottom=${r.bottom} 越出视口下缘`).toBeLessThanOrEqual(r.vh + 1)
+  }
+  // 右缘场景至少一级发生了翻转（级联 flip-left 或一级 flip-right 右对齐）
+  const flipped = await page.evaluate(() => {
+    const mb = document.querySelector('oas-menubar')!
+    const subs = [...mb.shadowRoot!.querySelectorAll('[part="submenu"]')]
+    return subs.some((s) => s.classList.contains('flip-left') || s.classList.contains('flip-right'))
+  })
+  expect(flipped, '贴右缘的子菜单应翻转（flip-left/flip-right），而非被裁掉').toBe(true)
+  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix8-menubar-flip.png' })
+})
+
 test('dropdown 多级子菜单贴近视口右缘：翻转后全部落在视口内', async ({ page }) => {
   await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-dropdown')
