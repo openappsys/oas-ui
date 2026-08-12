@@ -78,6 +78,10 @@ function buildManifest(): Record<string, ManifestEntry> {
 
 const manifest = buildManifest()
 
+// 文件内 test 并行：playwright 同文件 test 默认串行共享 1 个 worker（本文件 ~320 test 曾独占 worker 跑 10min+）。
+// mode: 'parallel' 让各组件 test 分发到多个 worker；每个 test 独立 page 且无共享状态，隔离安全。
+test.describe.configure({ mode: 'parallel' })
+
 // 需特殊触发、通用探针难以触达的事件：定时器/滚动/步骤流/填满
 const EXEMPT_EVENTS = new Set(['oas-finish', 'oas-scroll', 'oas-step', 'oas-complete'])
 
@@ -481,19 +485,27 @@ for (const [name, m] of Object.entries(manifest)) {
           return orig.call(this, ev)
         }
       })
-      await page.goto(`/components/${m.demo}.html`, { waitUntil: 'networkidle' })
-      // 等组件挂载（attach 即可，关闭态 host 可能 0 高/不可见；backdrop 由交互创建，跳过）
+      await page.goto(`/components/${m.demo}.html`, { waitUntil: 'load' })
+      // 等组件 upgrade（shadowRoot 出现）再 probe——并行高负载下 attached 立即满足但 upgrade 排队，
+      // 探针太早会全部扑空（「已触发: 无」）；backdrop 由交互创建，跳过
       if (!SKIP_WAIT.has(name)) {
         const tags = WAIT_TAGS[name] ?? [m.tag]
         for (const t of tags) {
           try {
-            await page.waitForSelector(t, { state: 'attached', timeout: 8000 })
+            await page.waitForFunction(
+              (sel) => {
+                const el = document.querySelector(sel)
+                return el instanceof HTMLElement && el.shadowRoot != null
+              },
+              t,
+              { timeout: 4000 },
+            )
             break
           } catch {}
         }
       }
       await probe(page, name)
-      await page.waitForTimeout(400)
+      await page.waitForTimeout(200)
       const fired = await page.evaluate(() => [...window.__fired])
       const notFired = m.events.filter((e) => !fired.includes(e) && !EXEMPT_EVENTS.has(e))
       expect(

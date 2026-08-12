@@ -9,10 +9,13 @@ const PAGES = readdirSync(resolve(import.meta.dirname, '../docs/docs/components'
   .filter((f) => f !== 'index.md')
   .map((f) => `/components/${basename(f, '.md')}.html`)
 
+// 文件内 test 并行：每页 1 test 曾串行共享 1 个 worker；各 test 独立 page，无共享状态
+test.describe.configure({ mode: 'parallel' })
+
 for (const page of PAGES) {
   test(`示例代码展示：${page}`, async ({ page: p }) => {
     await p.goto(page, { waitUntil: 'domcontentloaded' })
-    await p.waitForTimeout(600)
+    await p.waitForSelector('.demo-block', { state: 'attached' })
     const blocks = p.locator('.demo-block')
     const count = await blocks.count()
     for (let i = 0; i < count; i++) {

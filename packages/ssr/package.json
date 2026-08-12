@@ -1,6 +1,6 @@
 {
   "name": "@oas-ui/ssr",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "description": "OAS-UI 服务端渲染（SSR）——renderToString 产出 Declarative Shadow DOM（DSD）静态快照",
   "license": "MIT OR Apache-2.0",
   "repository": {

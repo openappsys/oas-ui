@@ -12,8 +12,11 @@ const PAGES = readdirSync(resolve(import.meta.dirname, '../docs/docs/components'
   .filter((f) => f.endsWith('.md'))
   .map((f) => `/components/${basename(f, '.md')}.html`)
 
+// 文件内 test 并行：每页 1 test 曾串行共享 1 个 worker；各 test 独立 page + 独立 console 监听
+test.describe.configure({ mode: 'parallel' })
+
 for (const page of PAGES) {
-  test(`console 零告警/零报错 ${page}`, async ({ page: p }) => {
+  test(`console 无警告/报错 ${page}`, async ({ page: p }) => {
     const warns: string[] = []
     const errs: string[] = []
     p.on('console', (m) => {
@@ -22,7 +25,8 @@ for (const page of PAGES) {
     })
     p.on('pageerror', (e) => errs.push(`pageerror: ${e.message}`))
     await p.goto(page, { waitUntil: 'domcontentloaded' })
-    await p.waitForTimeout(800)
+    // PAGES 含 index.md（无 demo-block），不能用 waitForSelector 统一等待；固定短缓冲等脚本执行完
+    await p.waitForTimeout(300)
 
     const badWarns = warns.filter((w) => !WARN_ALLOW.some((re) => re.test(w)))
     const badErrs = errs.filter((e) => !ERR_ALLOW.some((re) => re.test(e)))

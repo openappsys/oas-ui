@@ -9,6 +9,9 @@ const PAGES = readdirSync(resolve(import.meta.dirname, '../docs/docs/components'
   .filter((f) => f !== 'index.md')
   .map((f) => `/components/${basename(f, '.md')}.html`)
 
+// 文件内 test 并行：每页 1 test 曾串行共享 1 个 worker；各 test 独立 page，无共享状态
+test.describe.configure({ mode: 'parallel' })
+
 for (const page of PAGES) {
   test(`全局暗色冒烟：${page}`, async ({ page: p }) => {
     const errors: string[] = []

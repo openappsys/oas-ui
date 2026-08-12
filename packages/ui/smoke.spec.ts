@@ -9,16 +9,21 @@ const PAGES = readdirSync(resolve(import.meta.dirname, '../docs/docs/components'
   .filter((f) => f !== 'index.md')
   .map((f) => `/components/${basename(f, '.md')}.html`)
 
+// 文件内 test 并行：每页 1 test 曾串行共享 1 个 worker；各 test 独立 page + 独立监听
+test.describe.configure({ mode: 'parallel' })
+
 for (const page of PAGES) {
   test(`demo 冒烟：${page}`, async ({ page: p }) => {
     const errors: string[] = []
     p.on('pageerror', (e) => errors.push(e.message))
     p.on('console', (m) => {
-      // warning 也纳入（如 Vue isCustomElement 未配置会以 warning 刷屏，此前漏检）
+      // warning 也计入（如 Vue isCustomElement 未配置会刷屏，此前漏检）
       if (m.type() === 'error' || m.type() === 'warning') errors.push(m.text())
     })
     await p.goto(page, { waitUntil: 'domcontentloaded' })
-    await p.waitForTimeout(600)
+    await p.waitForSelector('.demo-block', { state: 'attached' })
+    // 缓冲等 hydration 后组件脚本执行完，console/pageerror 才能收全
+    await p.waitForTimeout(300)
     const blocks = p.locator('.demo-block')
     const count = await blocks.count()
     expect(count).toBeGreaterThan(0)

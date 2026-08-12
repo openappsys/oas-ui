@@ -14,7 +14,11 @@ export default defineConfig({
     baseURL: 'http://localhost:4173',
   },
   webServer: {
-    command: 'pnpm --filter @oas-ui/docs run build && pnpm --filter @oas-ui/docs run preview',
+    // CI 已先跑全量 pnpm build（含 docs dist），不必再 build 一遍，直接 preview 省 ~10s/shard；
+    // 本地（非 CI）dist 可能缺失，先 build 再 preview
+    command: process.env.CI
+      ? 'pnpm --filter @oas-ui/docs run preview'
+      : 'pnpm --filter @oas-ui/docs run build && pnpm --filter @oas-ui/docs run preview',
     url: 'http://localhost:4173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
