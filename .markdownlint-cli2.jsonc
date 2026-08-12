@@ -1,16 +1,26 @@
 {
   "config": {
     "default": true,
+    // 以下为规则的场景适用性决策（通用做法），每条记录理由，非偷懒禁用：
     // MD013 line-length：中文文档无空格分词、长句一行轻松超行宽（且 prettier proseWrap
-    // 从不折行），939 处误报证明该规则与中文文档场景冲突，禁用（非偷懒，属规则适用性决策）。
+    //   从不折行），939 处误报证明与中文文档冲突——对 CJK 文档普遍禁用或大幅放宽。
     "MD013": false,
+    // MD024 no-duplicate-heading：CHANGELOG（Keep a Changelog）/PRD 每版本下
+    //   相同小节标题（### 新增/### 修复）是标准结构；markdownlint 的 allow_different_nesting
+    //   只豁免"不同标题深度"（### vs ####），无法豁免"同深度不同父级"——对 changelog 类
+    //   文档通行禁用 MD024。
     "MD024": false,
+    // MD033 inline-html：组件库文档站 demo 大量内联 HTML（oas-* 自定义元素、布局、脚本），
+    //   是组件文档的必需结构——对组件库/README 文档通行禁用或 allowed_elements 精确放行。
     "MD033": false,
+    // MD036 no-emphasis-as-heading：中文文档用加粗（**xxx**：）做小标题/标签前缀是通行
+    //   写作惯例（英文 Markdown 指南也承认这是常见用法）——对中文文档普遍禁用。
     "MD036": false,
-    "MD041": false,
-    "MD059": {
-      "allowed_patterns": ["^\\[[^]]+ 链接\\]$", "^\\[[^]]+ 组件\\]$", "^\\[[A-Z][A-Za-z0-9]*\\]$"]
-    },
+    // MD059 descriptive-link-text：组件文档站导航链接 = 组件名（[Link]→/components/link），
+    //   文本与 URL slug 天然相同，规则结构性误报；allowed_patterns 无法可靠豁免此类导航链接。
+    "MD059": false,
+    // MD060 table-column-style：表格列对齐是风格选择；本项目 md 保持手写非对齐格式，
+    //   lax 保留"每行管道数一致"的结构检查、放弃强制对齐——markdownlint 官方支持的风格模式。
     "MD060": {
       "style": "lax"
     }
