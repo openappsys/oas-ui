@@ -649,7 +649,14 @@ function layoutOf(
         const el = document.querySelector(t)
         if (!el) continue
         const r = el.getBoundingClientRect()
-        out[t] = { x: round2(r.x), y: round2(r.y), w: round2(r.width), h: round2(r.height) }
+        // 文档绝对坐标（补偿滚动）：getBoundingClientRect 的 x/y 是视口相对坐标，
+        // upgrade 后浏览器因布局微调滚动会整体平移 1px，绝对坐标消除该假阳性
+        out[t] = {
+          x: round2(r.x + window.scrollX),
+          y: round2(r.y + window.scrollY),
+          w: round2(r.width),
+          h: round2(r.height),
+        }
       }
       return out
     },
