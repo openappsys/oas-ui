@@ -1,15 +1,21 @@
 {
   "config": {
     "default": true,
-    "MD013": false,
-    "MD060": {
-      "style": "lax"
+    "MD013": {
+      "line_length": 120,
+      "code_blocks": false,
+      "tables": false
     },
     "MD024": false,
     "MD033": false,
     "MD036": false,
     "MD041": false,
-    "MD059": false
+    "MD059": {
+      "allowed_patterns": ["^\\[[^]]+ 链接\\]$", "^\\[[^]]+ 组件\\]$"]
+    },
+    "MD060": {
+      "style": "lax"
+    }
   },
   "globs": [
     "packages/docs/docs/**/*.md",

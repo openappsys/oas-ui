@@ -1,6 +1,7 @@
 # OAS-UI
 
-框架无关的 Web Components UI 组件库（TypeScript + Vite + Vitest）。功能覆盖通用组件需求，但**不绑定任何前端框架**——`<oas-button>` 在 React、Vue、Svelte、原生 HTML 里都能直接用。
+框架无关的 Web Components UI 组件库（TypeScript + Vite + Vitest）。功能覆盖通用组件需求，但**不绑定任何前端框架**——`<oas-button>` 在 React、Vue、Svelte、原生
+HTML 里都能直接用。
 
 ## 文档
 
