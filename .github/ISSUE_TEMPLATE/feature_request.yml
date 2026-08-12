@@ -1,26 +1,33 @@
 ---
-name: 功能请求
-about: 建议新组件或新能力
+name: Feature request
+about: Suggest a new component or capability
 title: '[feat] '
 labels: enhancement
 assignees: ''
 ---
 
-## 需求描述
-要解决什么问题，面向什么场景。
+<!-- Please reply in English or Chinese; both are welcome. -->
 
-## 建议 API
+## Motivation
+
+What problem does this solve, and for which scenario?
+
+## Proposed API
+
 ```html
 <oas-xxx prop=""></oas-xxx>
 ```
-- 属性 / 事件：列出命名与含义
-- 与现有组件的关系（是否复用 Select/Menu 等）
 
-## 优先级
-- [ ] 阻塞（当前版本核心路径缺它）
-- [ ] 高
-- [ ] 中
-- [ ] 低
+- Attributes / events: list names and meanings
+- Relationship to existing components (e.g. reuse of Select / Menu)
 
-## 验收提示
-描述怎样的行为算完成（含键盘可达 / 空态 / 破坏性选项边界）。
+## Priority
+
+- [ ] Blocking (core path of the current version is missing it)
+- [ ] High
+- [ ] Medium
+- [ ] Low
+
+## Acceptance hints
+
+Describe what counts as done (including keyboard reachability, empty states, and destructive-option boundaries).

@@ -466,7 +466,7 @@
 - 与 select / auto-complete 的定位差异在文档中说清
 - 单测 + typecheck + build + e2e 全绿
 
-### v1.9 SSR/DSD + 发布冲刺 🚧 进行中
+### v1.9 SSR/DSD + 发布冲刺 ✅ 已完成
 
 ### 功能定义
 

@@ -33,7 +33,7 @@
 | **v1.6** 内容与展示长尾 | chart、code、log、marquee、number-animation、gradient-text、equation、aspect-ratio、masonry、comment | ✅ 已完成 |
 | **v1.7** 框架级容器长尾 | theme-editor、bottom-navigation、sidebar、**container**（config-provider/app 已前移 v0.11.0） | ✅ 已完成 |
 | **v1.8** 收尾 | combobox（可过滤单选组合框，区别于 select/auto-complete 定位）+ 文档站中英双语与完善（英文参考页与 demo 英文化、本地搜索、组件总览、CHANGELOG 页、图标墙、API 表自动化） | ✅ 已完成 |
-| **v1.9** SSR/DSD + 发布冲刺 | 第一阶段 ✅：ssr 渲染器 + Node-safe 入口 + 白名单试点。第二阶段 ✅：真水合、闪动治理、数据通道（table/tree/select）、白名单 13 tag、grid 栅格表单（oas-form-item）、CHANGELOG 回填、首载优化（22ms）。第三阶段 ✅：尺寸档位扩展（size 五档 xs~xl，button/tag/switch/space/spin + 非法值回落告警）。第四阶段 ✅：DSD 彻底落地——白名单 123/124 tag（五批全量推进）、嵌套组件递归序列化、CDN 单文件 bundle（gzip ~116KB）、ssr.md 摘实验转正。待办：框架集成插件、公开发布（GitHub + npm + CI/CD + 文档站上线） | 🚧 进行中 |
+| **v1.9** SSR/DSD + 发布冲刺 | 第一阶段 ✅：ssr 渲染器 + Node-safe 入口 + 白名单试点。第二阶段 ✅：真水合、闪动治理、数据通道（table/tree/select）、白名单 13 tag、grid 栅格表单（oas-form-item）、CHANGELOG 回填、首载优化（22ms）。第三阶段 ✅：尺寸档位扩展（size 五档 xs~xl，button/tag/switch/space/spin + 非法值回落告警）。第四阶段 ✅：DSD 彻底落地——白名单 123/124 tag（五批全量推进）、嵌套组件递归序列化、CDN 单文件 bundle（gzip ~116KB）、ssr.md 摘实验转正。已发布：npm（OIDC Trusted Publishing）+ 文档站上线（自定义域名）。待办：框架集成插件 | ✅ 已完成 |
 
 > 组件总数：v1.0 核心集约 68 件；v1.x 长尾推进至约 115~120 件，100% 覆盖。原 13 个未排期组件已全部分配：轻量基础组件（button-group/label/kbd/visually-hidden）提到最前的 v1.1（独立、无前置依赖、快速交付），其余按功能族归到 v1.3/v1.4/v1.5/v1.7，无遗漏。
 

@@ -2,45 +2,35 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-## [Unreleased]
+## [1.9.0] - 2026-08-12
 
-### v1.9.0 进行中（SSR/DSD 完整版 + 发布冲刺）
+### 新增
 
-> 本段为 v1.9.0 的进行中条目，完工后转正为 `## [1.9.0]`。
+- `@oas-ui/ssr` 渲染器包：`renderToString(tag, attrs, slotHTML, options)` 输出 Declarative Shadow DOM（DSD）静态快照；`@oas-ui/ui` 新增 Node-safe `ssr` 子路径导出（不执行 `customElements.define`、不触碰 DOM API）
+- DSD 支持全链：基类复用 declarative shadow root、真水合（指纹判定 + hydrate 接管，DOM 引用保持，误判回退重渲染）、测量组件首帧闪动治理、数据组件声明式 JSON 通道（table/tree/select）、嵌套组件递归序列化、SSR 白名单全量覆盖 123/124 tag（表单/反馈/数据展示/导航布局/基础组件五批推进）
+- `oas-form-item` 组件 + `oas-form` 栅格布局（`layout="grid"`/`gap`/`label-align`/`label-width`，错误提示收编 form-item，裸字段向后兼容）
+- size 尺寸档位扩展：三档 → 五档（xs=20px / small=24 / medium=32 / large=40 / xl=48px），button/tag/switch/space/spin 全档支持（spin 保留旧缩写别名）
+- 主题 on-color token（`--oas-color-text-on-primary/success/warning/danger`），全库实心态硬编码白字改走 token（dark 深字对比度 ≥4.5）
+- 性能基准体系（vision §5.8）：体积/渲染基线 + CI 体积预算（`pnpm perf:size`）+ 本地渲染基准（`pnpm perf:bench`）
+- `dist/cdn.js` 单文件 IIFE bundle（gzip ~116KB）CDN 三行引入可用；theme 包根 index.css 直引
+- 9 个表单控件 `focus()` 委托（form-item label 点击聚焦 shadow 主输入）
+- dev 链路重构：组件源码 watch 构建 + dev server 自动 full reload（零盲区）；e2e 增加 Firefox 抽样覆盖（visual/smoke/qa-regression）
 
-#### 已完成（v1.9 第一阶段）
+### 变更
 
-**新增**
+- select 多选标签默认换行自适应高度，折叠由 `max-tag-count` 显式启用（对齐通用做法）
+- slider 补 Firefox 轨道伪元素（`::-moz-range-track/thumb`）
+- 多级子菜单视口边界翻转（menu/dropdown/context-menu/menubar，flip-left/flip-right/flip-up）
+- rate 半选改 clip-path 半黄半灰垂直分割
+- scroll-area 补 thumb 拖拽 + 横向滚轮接管；virtual-list/tree 修复滚轮"一下到底"
+- theme CSS 单源化（canonical 收束为包根 index.css）
+- SSR 指南转正（摘"实验"标签）、快速开始补浏览器基线声明、核心规则改 ::: danger 容器
 
-- 新增 `@oas-ui/ssr` 渲染器包：`renderToString(tag, attrs, slotHTML, options)` 输出 Declarative Shadow DOM（DSD）静态快照，仅对白名单组件（button/tag/empty/divider/typography）开放
-- `@oas-ui/ui` 新增 Node-safe `ssr` 子路径导出（不执行 `customElements.define`、不触碰 DOM API）
-- OASElement 基类支持复用 declarative shadow root（DSD 第一步）
-- ssr.md 补「服务端渲染（实验）」段（中英双版，Nuxt/Next 调用示例）
+### 修复
 
-#### 已完成（v1.9 第二阶段）
-
-**新增**
-
-- 真水合：upgrade 检测到 DSD 快照指纹时跳过 shadow 重建，仅缓存节点 + 绑事件 + 增量更新（DOM 引用保持）；指纹缺失/不匹配、结构篡改、hydrate 异常一律回退重渲染
-- 测量组件闪动治理：affix/ellipsis/scroll-area 在 DSD 快照场景首帧延迟布局写入（rAF 校正），纯 CSR 行为不变；白名单扩至 13 tag（+table/affix/ellipsis/scroll-area/tree/select）
-- property-only 数据组件声明式通道：table/tree/select 的 columns/data/options 支持 JSON attribute（property 优先、非法 JSON 容错、hydrate 接管）
-- grid 栅格表单：新增 `oas-form-item`（label/span/required/错误位收编）+ `oas-form` 增强 `layout="grid"`/`gap`/`label-align`/`label-width`
-- ssr 首载优化：白名单按需 define，首次 renderToString 从约 1.8s 降至 22ms（纯 Node）
-- 主题新增 on-color token（`--oas-color-text-on-primary/success/warning/danger`），全库实心态硬编码白字改走 token（dark 下深字，对比度 ≥4.5）
-- 9 个表单控件新增 `focus()` 委托（form-item label 点击聚焦到 shadow 内主输入）
-
-#### 进行中（v1.9 收尾）
-
-- 框架集成插件：Nuxt module 与 Next 集成示例/包
-- 公开发布：GitHub 仓库公开 + npm 发布 + CI/CD 打通 + 文档站上线
-
-#### 已完成（v1.9 第四阶段，DSD 彻底落地）
-
-- 新增：SSR 白名单全量覆盖 123/124 tag（表单/反馈/数据展示/导航布局/基础组件五批推进，仅 theme-editor 与命令式组件客户端专属）
-- 新增：`renderToString` 嵌套组件递归序列化（descriptions/tabs/form-item/layout 等组合场景快照完整）
-- 新增：`dist/cdn.js` 单文件 IIFE bundle（gzip ~116KB），CDN 三行引入可用
-- 新增：性能基准体系（vision §5.8 性能领先落地）——体积/渲染基线（`scripts/perf/`，产物 `docs/perf-baseline.json` + 横向对比 `docs/perf-baseline.md`）、CI 体积预算（`pnpm perf:size`，cdn.js gzip ≤ 150KB 等六项门槛）、本地渲染基准（`pnpm perf:bench`，量级防退化）
-- 修复：水合动态内容重复渲染（rate/dynamic-input/log/marquee）、alert 关闭不隐藏、result 图标不随 status 更新、transfer 缺 observedAttributes、textarea autosize 首帧闪动、组件 id 快照确定性
+- DSD 水合动态内容重复渲染（rate/dynamic-input/log/marquee）
+- alert 关闭不隐藏（`:host([hidden])` 补位，全库排查）、result 状态图标不随 status 更新、transfer 缺 observedAttributes、textarea autosize 首帧闪动、组件 id 快照确定性
+- slider Firefox 轨道不可见（补 `::-moz-range-*` 伪元素）、select 多选折叠吞值（非法 size 回落告警）
 
 ## [1.8.0] - 2026-08-11 (internal)
 

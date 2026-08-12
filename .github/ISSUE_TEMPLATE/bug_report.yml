@@ -1,28 +1,35 @@
 ---
-name: Bug 报告
-about: 提交一个缺陷
+name: Bug report
+about: Report a defect
 title: '[bug] '
 labels: bug
 assignees: ''
 ---
 
-## 描述
-清晰描述 bug 现象。
+<!-- Please reply in English or Chinese; both are welcome. -->
 
-## 复现步骤
-1. 引入 `@oas-ui/ui`
+## Description
+
+A clear and concise description of the bug.
+
+## Steps to reproduce
+
+1. Import `@oas-ui/ui`
 2. …
-3. 期望结果 vs 实际结果
+3. Expected result vs actual result
 
-## 环境
-- 包与版本：`@oas-ui/ui@?`
-- 浏览器：Chrome/Firefox/Safari + 版本
-- 框架：原生 / React / Vue
-- 操作系统
+## Environment
 
-## 最小复现
-粘贴最小 HTML/代码片段。
+- Package & version: `@oas-ui/ui@?`
+- Browser: Chrome / Firefox / Safari + version
+- Framework: vanilla / React / Vue
+- OS
 
-## 检查项
-- [ ] 是否服务端渲染（SSR）环境？（若是，参考 `docs/ssr.md`）
-- [ ] 是否只在特定主题（dark / high-contrast）下出现？
+## Minimal reproduction
+
+Paste a minimal HTML/code snippet.
+
+## Checklist
+
+- [ ] Does it happen in SSR environments? (If so, see `docs/ssr.md`)
+- [ ] Does it only happen under a specific theme (dark / high-contrast)?
