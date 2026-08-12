@@ -57,7 +57,8 @@ describe('OASTable', () => {
     headers(el)[0]!.click()
     expect(detail).toEqual({ key: 'name', order: 'asc' })
     const firstRow = rows(el)[0]!.textContent ?? ''
-    expect(firstRow).toContain('李四')
+    // 确定性码点排序（不依赖宿主 locale 拼音）：张(0x5F20) < 李(0x674E) < 王(0x738B)
+    expect(firstRow).toContain('张三')
   })
 
   it('empty 空态：无数据时显示占位', () => {

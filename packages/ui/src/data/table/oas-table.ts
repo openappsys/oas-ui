@@ -624,7 +624,12 @@ export class OASTable extends OASElement {
     return { offsets, hasFixed }
   }
 
-  /** 排序比较器：数字按数值、其余按字符串 localeCompare（与既有 sortData 一致） */
+  /**
+   * 排序比较器：数字按数值、其余按字符串码点确定性比较。
+   * 不依赖宿主 locale（localeCompare 无显式 locale 时 Windows full-ICU 中文拼音与
+   * Linux small-ICU 码点排序结果不同，导致跨环境行为不一致）；语言感知排序（如中文
+   * 拼音）应由宿主在数据侧预排序或提供自定义 comparator。
+   */
   private compareRows(
     a: Record<string, unknown>,
     b: Record<string, unknown>,
@@ -635,9 +640,10 @@ export class OASTable extends OASElement {
     const bv = b[sortKey]
     if (typeof av === 'number' && typeof bv === 'number')
       return sortOrder === 'asc' ? av - bv : bv - av
-    return sortOrder === 'asc'
-      ? String(av).localeCompare(String(bv))
-      : String(bv).localeCompare(String(av))
+    const sa = String(av)
+    const sb = String(bv)
+    const cmp = sa < sb ? -1 : sa > sb ? 1 : 0
+    return sortOrder === 'asc' ? cmp : -cmp
   }
 
   /**
