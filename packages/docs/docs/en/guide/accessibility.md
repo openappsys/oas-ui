@@ -16,24 +16,24 @@ the component demo area (`.demo`).
 
 ## Keyboard flow regression matrix
 
-| Component                                   | Keyboard behavior                    | Role/ARIA                           |
-| ------------------------------------------- | ------------------------------------ | ----------------------------------- |
-| Button                                      | Enter/Space triggers                 | `button`                            |
-| Input / Textarea                            | Native input                         | `textbox` + `label`                 |
-| Checkbox / Radio / Switch                   | Space toggles, arrow keys (Radio)    | `checkbox` / `radio` / `switch`     |
-| Slider                                      | Arrow keys + Home/End                | `slider` (`aria-valuenow`)          |
-| InputNumber                                 | Arrow keys inc/dec, Home/End         | `spinbutton`                        |
-| Rate                                        | Arrow keys, Enter confirms           | `radiogroup` + `radio`              |
-| Select / AutoComplete / Cascader / TreeSelect | Arrow navigation, Enter selects, Esc closes | `combobox` + `listbox`/`tree` |
-| Menu / Dropdown / ContextMenu               | Arrow keys, Home/End, Enter          | `menu` + `menuitemradio`            |
-| Tabs                                        | Arrow keys cycle                     | `tablist` + `tab` + `aria-selected` |
-| Tree                                        | Arrow keys + Left/Right expand/collapse | `tree` + `treeitem`              |
-| Modal / Drawer / Confirm                    | Tab focus trapped, Esc closes        | `dialog` + `aria-modal`             |
-| Tooltip / Popover / HoverCard               | Esc closes                           | `tooltip` / `dialog`                |
-| Pagination                                  | Tab to page buttons                  | Semantic buttons + `aria-current`   |
-| Carousel                                    | Indicators tabbable                  | `role="tablist"` + `role="tab"`     |
-| Collapse                                    | Header tabbable + Enter/Space toggles | Button semantics                   |
-| Splitter                                    | Arrow keys adjust                    | `separator` + `aria-orientation`    |
+| Component                                     | Keyboard behavior                           | Role/ARIA                           |
+| --------------------------------------------- | ------------------------------------------- | ----------------------------------- |
+| Button                                        | Enter/Space triggers                        | `button`                            |
+| Input / Textarea                              | Native input                                | `textbox` + `label`                 |
+| Checkbox / Radio / Switch                     | Space toggles, arrow keys (Radio)           | `checkbox` / `radio` / `switch`     |
+| Slider                                        | Arrow keys + Home/End                       | `slider` (`aria-valuenow`)          |
+| InputNumber                                   | Arrow keys inc/dec, Home/End                | `spinbutton`                        |
+| Rate                                          | Arrow keys, Enter confirms                  | `radiogroup` + `radio`              |
+| Select / AutoComplete / Cascader / TreeSelect | Arrow navigation, Enter selects, Esc closes | `combobox` + `listbox`/`tree`       |
+| Menu / Dropdown / ContextMenu                 | Arrow keys, Home/End, Enter                 | `menu` + `menuitemradio`            |
+| Tabs                                          | Arrow keys cycle                            | `tablist` + `tab` + `aria-selected` |
+| Tree                                          | Arrow keys + Left/Right expand/collapse     | `tree` + `treeitem`                 |
+| Modal / Drawer / Confirm                      | Tab focus trapped, Esc closes               | `dialog` + `aria-modal`             |
+| Tooltip / Popover / HoverCard                 | Esc closes                                  | `tooltip` / `dialog`                |
+| Pagination                                    | Tab to page buttons                         | Semantic buttons + `aria-current`   |
+| Carousel                                      | Indicators tabbable                         | `role="tablist"` + `role="tab"`     |
+| Collapse                                      | Header tabbable + Enter/Space toggles       | Button semantics                    |
+| Splitter                                      | Arrow keys adjust                           | `separator` + `aria-orientation`    |
 
 ## Semantic principles
 

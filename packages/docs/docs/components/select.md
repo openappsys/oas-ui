@@ -145,27 +145,27 @@ onMounted(() => {
 
 ### 属性
 
-| 属性 | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| `allow-create` | 无匹配时允许以输入值创建新选项 | `boolean` | — |
-| `clearable` | 可清空（有值时显示清空按钮，清空派发 `oas-clear`） | `boolean` | — |
-| `disabled` | 禁用 | `boolean` | — |
-| `loading` | 远程加载占位（与 `remote` 搭配使用） | `boolean` | — |
-| `max-tag-count` | 多选标签按数量折叠为 `+N`（需显式设置；未设置时标签默认换行展示，不折叠） | `boolean` | — |
-| `multiple` | 多选 | `boolean` | — |
-| `options` | 选项，JSON 数组 `[{ label, value, disabled?, group? }]` | `Option[] \| string` | `[]` |
-| `placeholder` | 占位提示 | — | — |
-| `remote` | 远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求 | `boolean` | — |
-| `searchable` | 可搜索（打开下拉后输入过滤） | `boolean` | — |
-| `value` | 当前值（多选为 JSON 数组） | — | — |
+| 属性            | 说明                                                                      | 类型                 | 默认值 |
+| --------------- | ------------------------------------------------------------------------- | -------------------- | ------ |
+| `allow-create`  | 无匹配时允许以输入值创建新选项                                            | `boolean`            | —      |
+| `clearable`     | 可清空（有值时显示清空按钮，清空派发 `oas-clear`）                        | `boolean`            | —      |
+| `disabled`      | 禁用                                                                      | `boolean`            | —      |
+| `loading`       | 远程加载占位（与 `remote` 搭配使用）                                      | `boolean`            | —      |
+| `max-tag-count` | 多选标签按数量折叠为 `+N`（需显式设置；未设置时标签默认换行展示，不折叠） | `boolean`            | —      |
+| `multiple`      | 多选                                                                      | `boolean`            | —      |
+| `options`       | 选项，JSON 数组 `[{ label, value, disabled?, group? }]`                   | `Option[] \| string` | `[]`   |
+| `placeholder`   | 占位提示                                                                  | —                    | —      |
+| `remote`        | 远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求                   | `boolean`            | —      |
+| `searchable`    | 可搜索（打开下拉后输入过滤）                                              | `boolean`            | —      |
+| `value`         | 当前值（多选为 JSON 数组）                                                | —                    | —      |
 
 ### 事件
 
-| 事件 | 说明 |
-| --- | --- |
-| `oas-change` | 选择/清空变化，`detail: { value }` |
-| `oas-clear` | 点击清空按钮，`detail: { value }`（清空前的值） |
-| `oas-input` | `remote` 模式输入，`detail: { value }`（供宿主请求） |
+| 事件         | 说明                                                 |
+| ------------ | ---------------------------------------------------- |
+| `oas-change` | 选择/清空变化，`detail: { value }`                   |
+| `oas-clear`  | 点击清空按钮，`detail: { value }`（清空前的值）      |
+| `oas-input`  | `remote` 模式输入，`detail: { value }`（供宿主请求） |
 
 > `options` 中带 `group` 字段的选项按组渲染组标题（不可选），组内选项缩进；键盘导航跨组连续。
 

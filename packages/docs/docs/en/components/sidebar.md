@@ -105,28 +105,28 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `collapsed` | Controlled collapse to an icon strip (present means collapsed) | `boolean` | — |
-| `drawer-open` | — | `boolean` | — |
-| `items` | Menu items JSON `[{label, value, icon?}]` | `SidebarItem[] \| string` | `[]` |
-| `mobile-breakpoint` | Mobile breakpoint (px); narrower than this becomes an overlay drawer | — | — |
-| `width` | Expanded width; defaults to the `--oas-sidebar-width` token | — | — |
+| Attribute           | Description                                                          | Type                      | Default |
+| ------------------- | -------------------------------------------------------------------- | ------------------------- | ------- |
+| `collapsed`         | Controlled collapse to an icon strip (present means collapsed)       | `boolean`                 | —       |
+| `drawer-open`       | —                                                                    | `boolean`                 | —       |
+| `items`             | Menu items JSON `[{label, value, icon?}]`                            | `SidebarItem[] \| string` | `[]`    |
+| `mobile-breakpoint` | Mobile breakpoint (px); narrower than this becomes an overlay drawer | —                         | —       |
+| `width`             | Expanded width; defaults to the `--oas-sidebar-width` token          | —                         | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
-| `oas-collapse` | `detail: { collapsed: boolean }`; When fired: Desktop collapse button toggled |
-| `oas-select` | `detail: { value: string, label: string }`; When fired: A menu item was selected (also collapses the drawer on mobile) |
+| Event          | Description                                                                                                            |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `oas-collapse` | `detail: { collapsed: boolean }`; When fired: Desktop collapse button toggled                                          |
+| `oas-select`   | `detail: { value: string, label: string }`; When fired: A menu item was selected (also collapses the drawer on mobile) |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| default | — |
-| `footer` | — |
-| `header` | — |
+| Name     | Description |
+| -------- | ----------- |
+| default  | —           |
+| `footer` | —           |
+| `header` | —           |
 
 ### Parts
 

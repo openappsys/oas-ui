@@ -197,10 +197,18 @@ export class OASCalendar extends OASElement {
   /** 缓存节点引用 + 绑定导航/标题/今天/网格键盘事件（render 与水合路径共用） */
   private bind(): void {
     this.grid = this.shadow.querySelector<HTMLElement>('[part="grid"]')
-    this.shadow.querySelector<HTMLElement>('[part="prev"]')?.addEventListener('click', () => this.navigate(-1))
-    this.shadow.querySelector<HTMLElement>('[part="next"]')?.addEventListener('click', () => this.navigate(1))
-    this.shadow.querySelector<HTMLElement>('[part="title"]')?.addEventListener('click', () => this.togglePanel())
-    this.shadow.querySelector<HTMLElement>('[part="today"]')?.addEventListener('click', () => this.goToday())
+    this.shadow
+      .querySelector<HTMLElement>('[part="prev"]')
+      ?.addEventListener('click', () => this.navigate(-1))
+    this.shadow
+      .querySelector<HTMLElement>('[part="next"]')
+      ?.addEventListener('click', () => this.navigate(1))
+    this.shadow
+      .querySelector<HTMLElement>('[part="title"]')
+      ?.addEventListener('click', () => this.togglePanel())
+    this.shadow
+      .querySelector<HTMLElement>('[part="today"]')
+      ?.addEventListener('click', () => this.goToday())
     this.grid?.addEventListener('keydown', (e) => this.handleGridKey(e as KeyboardEvent))
   }
 
@@ -235,10 +243,16 @@ export class OASCalendar extends OASElement {
     const yearNav = this.monthPanel || mode === 'year'
     this.shadow
       .querySelector<HTMLElement>('[part="prev"]')
-      ?.setAttribute('aria-label', yearNav ? this.t('calendar.prevYear') : this.t('calendar.prevMonth'))
+      ?.setAttribute(
+        'aria-label',
+        yearNav ? this.t('calendar.prevYear') : this.t('calendar.prevMonth'),
+      )
     this.shadow
       .querySelector<HTMLElement>('[part="next"]')
-      ?.setAttribute('aria-label', yearNav ? this.t('calendar.nextYear') : this.t('calendar.nextMonth'))
+      ?.setAttribute(
+        'aria-label',
+        yearNav ? this.t('calendar.nextYear') : this.t('calendar.nextMonth'),
+      )
     const todayBtn = this.shadow.querySelector<HTMLElement>('[part="today"]')
     if (todayBtn) {
       todayBtn.hidden = this.monthPanel || mode !== 'month'
@@ -298,7 +312,8 @@ export class OASCalendar extends OASElement {
     const year = this.viewDate.getFullYear()
     const selected = this.selectedDate()
     const mode = this.getAttr('mode', 'month')
-    const selectedMonth = mode === 'year' && selected?.getFullYear() === year ? selected.getMonth() : -1
+    const selectedMonth =
+      mode === 'year' && selected?.getFullYear() === year ? selected.getMonth() : -1
     const cells: GridCell[] = []
     for (let m = 0; m < 12; m++) {
       cells.push({ date: new Date(year, m, 1), inMonth: true })
@@ -311,7 +326,9 @@ export class OASCalendar extends OASElement {
       btn.type = 'button'
       btn.className = 'month-cell'
       btn.setAttribute('part', 'month-cell')
-      btn.textContent = new Intl.DateTimeFormat(locale, { month: 'short' }).format(new Date(year, m, 1))
+      btn.textContent = new Intl.DateTimeFormat(locale, { month: 'short' }).format(
+        new Date(year, m, 1),
+      )
       btn.setAttribute('aria-label', formatYearMonth(new Date(year, m, 1), locale))
       if (m === selectedMonth) btn.classList.add('selected')
       btn.addEventListener('click', () => this.selectMonth(m))

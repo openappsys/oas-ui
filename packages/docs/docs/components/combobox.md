@@ -116,22 +116,22 @@ onMounted(() => {
 
 ### 属性
 
-| 属性 | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| `clearable` | 可清空（有值时显示清空按钮，清空派发 `oas-clear`） | `boolean` | — |
-| `disabled` | 禁用（不可输入、不展开） | `boolean` | — |
-| `filterable` | 输入实时过滤 label（`filterable="false"` 关闭本地过滤） | `string` | `true` |
-| `loading` | 加载占位（下拉显示「加载中…」） | `boolean` | — |
-| `options` | 选项，JSON 数组 `[{ label, value, disabled? }]` | `Option[] \| string` | `[]` |
-| `placeholder` | 占位提示 | — | — |
-| `value` | 当前值（受控，选中项 `option.value`） | `string` | — |
+| 属性          | 说明                                                    | 类型                 | 默认值 |
+| ------------- | ------------------------------------------------------- | -------------------- | ------ |
+| `clearable`   | 可清空（有值时显示清空按钮，清空派发 `oas-clear`）      | `boolean`            | —      |
+| `disabled`    | 禁用（不可输入、不展开）                                | `boolean`            | —      |
+| `filterable`  | 输入实时过滤 label（`filterable="false"` 关闭本地过滤） | `string`             | `true` |
+| `loading`     | 加载占位（下拉显示「加载中…」）                         | `boolean`            | —      |
+| `options`     | 选项，JSON 数组 `[{ label, value, disabled? }]`         | `Option[] \| string` | `[]`   |
+| `placeholder` | 占位提示                                                | —                    | —      |
+| `value`       | 当前值（受控，选中项 `option.value`）                   | `string`             | —      |
 
 ### 事件
 
-| 事件 | 说明 |
-| --- | --- |
-| `oas-change` | 选中/清空变化，`detail: { value }` |
-| `oas-clear` | 点击清空按钮，`detail: { value }`（清空前的值） |
-| `oas-input` | 输入过滤词，`detail: { value }` |
+| 事件         | 说明                                            |
+| ------------ | ----------------------------------------------- |
+| `oas-change` | 选中/清空变化，`detail: { value }`              |
+| `oas-clear`  | 点击清空按钮，`detail: { value }`（清空前的值） |
+| `oas-input`  | 输入过滤词，`detail: { value }`                 |
 
 键盘：`Enter` / 聚焦展开，`↑`/`↓` 移动高亮，`Enter` 选中，`Esc` 关闭并回退。

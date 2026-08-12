@@ -22,7 +22,9 @@ function typeCell(cell: HTMLInputElement, value: string): void {
 }
 
 function key(cell: HTMLInputElement, keyName: string): void {
-  cell.dispatchEvent(new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true }))
+  cell.dispatchEvent(
+    new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true }),
+  )
 }
 
 describe('OASPinInput', () => {

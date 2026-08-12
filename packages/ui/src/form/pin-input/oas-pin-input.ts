@@ -189,7 +189,10 @@ export class OASPinInput extends OASElement {
     e.preventDefault()
     const idx = this.cells.indexOf(document.activeElement as HTMLInputElement)
     const start = idx >= 0 ? idx : 0
-    const chars = text.trim().slice(0, this.currentLength - start).split('')
+    const chars = text
+      .trim()
+      .slice(0, this.currentLength - start)
+      .split('')
     chars.forEach((ch, i) => {
       const cell = this.cells[start + i]
       if (cell) cell.value = ch

@@ -56,17 +56,17 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `change-on-select` | Submit when selecting any level | `boolean` | — |
-| `disabled` | Disabled | `boolean` | — |
-| `options` | Cascade options, JSON array, supports `children` / `disabled` | `CascaderOption[] \| string` | `[]` |
-| `placeholder` | Placeholder text | — | — |
-| `show-all-levels` | Whether to show the full path (reserved in the current version; display is always the full path) | — | — |
-| `value` | Path array (JSON), e.g. `["zj","hz"]` | `string` | `[]` |
+| Attribute          | Description                                                                                      | Type                         | Default |
+| ------------------ | ------------------------------------------------------------------------------------------------ | ---------------------------- | ------- |
+| `change-on-select` | Submit when selecting any level                                                                  | `boolean`                    | —       |
+| `disabled`         | Disabled                                                                                         | `boolean`                    | —       |
+| `options`          | Cascade options, JSON array, supports `children` / `disabled`                                    | `CascaderOption[] \| string` | `[]`    |
+| `placeholder`      | Placeholder text                                                                                 | —                            | —       |
+| `show-all-levels`  | Whether to show the full path (reserved in the current version; display is always the full path) | —                            | —       |
+| `value`            | Path array (JSON), e.g. `["zj","hz"]`                                                            | `string`                     | `[]`    |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                        |
+| ------------ | -------------------------------------------------- |
 | `oas-change` | Selection change, `detail: { value }` (path array) |

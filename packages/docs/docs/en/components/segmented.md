@@ -45,15 +45,15 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `options` | `[{ label, value, disabled? }]` JSON string | `string` | `[]` |
-| `value` | Selected value (defaults to the first option; controlled) | `string` | — |
+| Attribute | Description                                               | Type     | Default |
+| --------- | --------------------------------------------------------- | -------- | ------- |
+| `options` | `[{ label, value, disabled? }]` JSON string               | `string` | `[]`    |
+| `value`   | Selected value (defaults to the first option; controlled) | `string` | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                   |
+| ------------ | ----------------------------- |
 | `oas-change` | Switched, `detail: { value }` |
 
 The container is `role="radiogroup"`; each item is `role="radio"` + `aria-checked` / `aria-disabled`.

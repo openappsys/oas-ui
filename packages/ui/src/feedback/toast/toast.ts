@@ -2,12 +2,7 @@ import { resolveMessageHost } from '../../floating/app/app-host.js'
 import type { OASToast, ToastType } from './oas-toast.js'
 
 export type ToastPosition =
-  | 'top-right'
-  | 'top-left'
-  | 'top-center'
-  | 'bottom-right'
-  | 'bottom-left'
-  | 'bottom-center'
+  'top-right' | 'top-left' | 'top-center' | 'bottom-right' | 'bottom-left' | 'bottom-center'
 
 export interface ToastAction {
   label: string
@@ -100,7 +95,8 @@ export const toast = {
     const handle = show('loading', { title: options.loading, duration: 0, closable: false })
     p.then(
       (data) => {
-        const title = typeof options.success === 'function' ? options.success(data) : options.success
+        const title =
+          typeof options.success === 'function' ? options.success(data) : options.success
         handle.element.transition('success', title)
       },
       (err) => {

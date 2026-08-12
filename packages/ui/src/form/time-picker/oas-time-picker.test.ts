@@ -31,7 +31,9 @@ function optionsIn(col: HTMLElement): HTMLElement[] {
 }
 
 function selectedOption(el: OASTimePicker, colIndex: number): HTMLElement | null {
-  return el.shadowRoot!.querySelectorAll('.column')[colIndex]?.querySelector('.option.selected') ?? null
+  return (
+    el.shadowRoot!.querySelectorAll('.column')[colIndex]?.querySelector('.option.selected') ?? null
+  )
 }
 
 describe('OASTimePicker', () => {

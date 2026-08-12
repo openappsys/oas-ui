@@ -283,8 +283,12 @@ export class OASSidebar extends OASElement {
   private bind(): void {
     this.shadow.querySelector('.mask')?.addEventListener('click', () => this.closeDrawer())
     this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => this.closeDrawer())
-    this.shadow.querySelector('[part="trigger"]')?.addEventListener('click', () => this.openDrawer())
-    this.shadow.querySelector('[part="toggle"]')?.addEventListener('click', () => this.toggleCollapsed())
+    this.shadow
+      .querySelector('[part="trigger"]')
+      ?.addEventListener('click', () => this.openDrawer())
+    this.shadow
+      .querySelector('[part="toggle"]')
+      ?.addEventListener('click', () => this.toggleCollapsed())
 
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') this.closeDrawer()
@@ -315,7 +319,8 @@ export class OASSidebar extends OASElement {
   }
 
   private syncMq(): void {
-    const bp = Number(this.getAttr('mobile-breakpoint', String(DEFAULT_BREAKPOINT))) || DEFAULT_BREAKPOINT
+    const bp =
+      Number(this.getAttr('mobile-breakpoint', String(DEFAULT_BREAKPOINT))) || DEFAULT_BREAKPOINT
     const media = `(max-width: ${bp}px)`
     if (this.mq && this.mq.media === media) return
     this.mq?.removeEventListener('change', this.mqListener)
@@ -350,11 +355,16 @@ export class OASSidebar extends OASElement {
     if (close) close.hidden = !drawerOpen
 
     // 内置文案走 locale registry（setLocale 切换自动重刷 update）
-    this.shadow.querySelector<HTMLElement>('.nav')?.setAttribute('aria-label', this.t('sidebar.nav'))
+    this.shadow
+      .querySelector<HTMLElement>('.nav')
+      ?.setAttribute('aria-label', this.t('sidebar.nav'))
     if (toggle) {
       const collapsed = this.hasAttr('collapsed')
       toggle.setAttribute('aria-expanded', String(!collapsed))
-      toggle.setAttribute('aria-label', collapsed ? this.t('sidebar.expand') : this.t('sidebar.toggle'))
+      toggle.setAttribute(
+        'aria-label',
+        collapsed ? this.t('sidebar.expand') : this.t('sidebar.toggle'),
+      )
       toggle.textContent = collapsed ? '»' : '«'
     }
     if (trigger) trigger.setAttribute('aria-label', this.t('sidebar.openMenu'))

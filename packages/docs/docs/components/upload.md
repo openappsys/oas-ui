@@ -60,21 +60,21 @@ onMounted(() => {
 
 ### 属性
 
-| 属性 | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| `accept` | 接受的文件类型 | `string` | — |
-| `auto-upload` | 添加后自动模拟上传 | `boolean` | — |
-| `disabled` | 禁用 | `boolean` | — |
-| `files` | 文件列表（property，`File[]`） | `File[]` | `[]` |
-| `max` | 最大文件数 | `string` | `0` |
-| `multiple` | 多选 | `boolean` | — |
+| 属性          | 说明                           | 类型      | 默认值 |
+| ------------- | ------------------------------ | --------- | ------ |
+| `accept`      | 接受的文件类型                 | `string`  | —      |
+| `auto-upload` | 添加后自动模拟上传             | `boolean` | —      |
+| `disabled`    | 禁用                           | `boolean` | —      |
+| `files`       | 文件列表（property，`File[]`） | `File[]`  | `[]`   |
+| `max`         | 最大文件数                     | `string`  | `0`    |
+| `multiple`    | 多选                           | `boolean` | —      |
 
 ### 事件
 
-| 事件 | 说明 |
-| --- | --- |
-| `oas-change` | 文件列表变化，`detail: { files }` |
-| `oas-remove` | 移除文件，`detail: { file, index }` |
+| 事件         | 说明                                          |
+| ------------ | --------------------------------------------- |
+| `oas-change` | 文件列表变化，`detail: { files }`             |
+| `oas-remove` | 移除文件，`detail: { file, index }`           |
 | `oas-upload` | 上传进度，`detail: { file, percent, status }` |
 
 键盘：拖拽区 `Enter` / `空格` 打开文件选择；删除按钮可聚焦。

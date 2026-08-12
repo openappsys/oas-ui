@@ -472,7 +472,8 @@ describe('OASTable 属性/attribute 声明式通道', () => {
   it('真水合回退：快照缺关键结构时回退 render 全量重建，功能仍正常', () => {
     const snap = new OASTable()
     // 指纹命中但结构不完整（无 table-scroll）→ hydrate 返回 false → render 重建
-    snap.shadowRoot!.innerHTML = '<meta data-oas-ssr="oas-table" data-oas-ssr-v="1"><span>broken</span>'
+    snap.shadowRoot!.innerHTML =
+      '<meta data-oas-ssr="oas-table" data-oas-ssr-v="1"><span>broken</span>'
     document.body.appendChild(snap)
     expect(snap.shadowRoot!.querySelector('.table-scroll')).not.toBeNull()
     expect(snap.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
@@ -509,8 +510,8 @@ describe('OASTable 展示增强（stripe/bordered/summary/expand/tree）', () =>
     const el = mount({ bordered: '' })
     expect(el.hasAttribute('bordered')).toBe(true)
     const style = el.shadowRoot!.querySelector('style')!.textContent
-    expect(style).toContain(":host([bordered]) td")
-    expect(style).toContain(":host([bordered]) th")
+    expect(style).toContain(':host([bordered]) td')
+    expect(style).toContain(':host([bordered]) th')
     // 数据仍正常渲染
     expect(rows(el).length).toBe(3)
   })
@@ -668,4 +669,3 @@ describe('OASTable 展示增强（stripe/bordered/summary/expand/tree）', () =>
     expect(cell.style.paddingLeft).toBe('64px')
   })
 })
-

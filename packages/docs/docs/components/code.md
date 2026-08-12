@@ -102,18 +102,18 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 
 ### 属性
 
-| 属性 | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| `code` | 源代码原文 | `string` | — |
-| `copyable` | 显示复制按钮 | `string` | `true` |
-| `language` | 语言：`js`/`ts`/`html`/`css`/`json`，未知按纯文本 | `string` | — |
-| `show-line-number` | 显示行号栏 | `boolean` | — |
+| 属性               | 说明                                              | 类型      | 默认值 |
+| ------------------ | ------------------------------------------------- | --------- | ------ |
+| `code`             | 源代码原文                                        | `string`  | —      |
+| `copyable`         | 显示复制按钮                                      | `string`  | `true` |
+| `language`         | 语言：`js`/`ts`/`html`/`css`/`json`，未知按纯文本 | `string`  | —      |
+| `show-line-number` | 显示行号栏                                        | `boolean` | —      |
 
 ### 事件
 
-| 事件 | 说明 |
-| --- | --- |
-| `oas-copy` | 复制成功，`detail: { text }` |
+| 事件             | 说明                         |
+| ---------------- | ---------------------------- |
+| `oas-copy`       | 复制成功，`detail: { text }` |
 | `oas-copy-error` | 复制失败，`detail: { text }` |
 
 ### 引擎选型（架构决策）

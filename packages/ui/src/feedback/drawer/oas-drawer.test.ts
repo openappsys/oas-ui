@@ -110,9 +110,7 @@ describe('OASDrawer', () => {
     for (const [size, width] of cases) {
       const el = mount({ visible: '', size })
       await Promise.resolve()
-      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.style.width).toBe(
-        width,
-      )
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.style.width).toBe(width)
       el.remove()
     }
   })

@@ -62,7 +62,8 @@ function walk(node, fn) {
 // 字符串字面量 / 模板字面量取原始值
 function litText(node) {
   if (!node) return undefined
-  if (node.kind === K.StringLiteral || node.kind === K.NoSubstitutionTemplateLiteral) return node.text
+  if (node.kind === K.StringLiteral || node.kind === K.NoSubstitutionTemplateLiteral)
+    return node.text
   return undefined
 }
 
@@ -187,14 +188,17 @@ function evalCondBoolean(cond, factoryCall, factoryFn) {
     let def = undefined
     walk(factoryFn, (n) => {
       if (def !== undefined) return
-      if (
-        n.kind === K.VariableDeclaration &&
-        n.name?.kind === K.ObjectBindingPattern
-      ) {
+      if (n.kind === K.VariableDeclaration && n.name?.kind === K.ObjectBindingPattern) {
         for (const el of n.name.elements || []) {
           if (el.propertyName?.text === name || el.name?.text === name) {
-            if (el.initializer?.kind === K.TrueKeyword) { def = true; return }
-            if (el.initializer?.kind === K.FalseKeyword) { def = false; return }
+            if (el.initializer?.kind === K.TrueKeyword) {
+              def = true
+              return
+            }
+            if (el.initializer?.kind === K.FalseKeyword) {
+              def = false
+              return
+            }
           }
         }
       }
@@ -247,7 +251,8 @@ function getObservedAttributes(cls, unresolved, factoryCall, factoryFn) {
 function extractAttrs(cls, observed, propNames) {
   // 中间结构：name -> { type?, default?, observed, has, get, inferTypes }
   const map = new Map()
-  for (const name of observed) map.set(name, { name, observed: true, has: false, get: false, inferTypes: [] })
+  for (const name of observed)
+    map.set(name, { name, observed: true, has: false, get: false, inferTypes: [] })
 
   walk(cls, (n) => {
     if (n.kind !== K.CallExpression) return
@@ -293,10 +298,7 @@ function extractAttrs(cls, observed, propNames) {
       entry.default = dArg.text
     }
     // 字面量 → 可推断类型
-    if (
-      dArg.kind === K.StringLiteral ||
-      dArg.kind === K.NoSubstitutionTemplateLiteral
-    ) {
+    if (dArg.kind === K.StringLiteral || dArg.kind === K.NoSubstitutionTemplateLiteral) {
       entry.inferTypes.push('string')
     } else if (dArg.kind === K.NumericLiteral) {
       entry.inferTypes.push('number')
@@ -321,8 +323,8 @@ function extractAttrs(cls, observed, propNames) {
   const observedOrder = new Map(observed.map((name, i) => [name, i]))
   return [...map.values()]
     .sort((a, b) => {
-      const ao = a.observed ? observedOrder.get(a.name) ?? 0 : 1e9
-      const bo = b.observed ? observedOrder.get(b.name) ?? 0 : 1e9
+      const ao = a.observed ? (observedOrder.get(a.name) ?? 0) : 1e9
+      const bo = b.observed ? (observedOrder.get(b.name) ?? 0) : 1e9
       return ao - bo
     })
     .map(({ name, type, default: def, observed }) => {
@@ -362,7 +364,8 @@ function extractProps(cls) {
     // 静态成员（observedAttributes 等）与普通方法不作 props
     const mods = (m.modifiers || []).map((x) => x.kind)
     if (mods.includes(K.StaticKeyword)) continue
-    if (m.kind !== K.GetAccessor && m.kind !== K.SetAccessor && m.kind !== K.PropertyDeclaration) continue
+    if (m.kind !== K.GetAccessor && m.kind !== K.SetAccessor && m.kind !== K.PropertyDeclaration)
+      continue
     const name = m.name?.text
     if (!name || name === OBSERVED_GETTER) continue
 
@@ -465,7 +468,8 @@ function literalDefault(node) {
     if ((node.elements || []).length === 0) return '[]'
     return undefined
   }
-  if (node.kind === K.StringLiteral || node.kind === K.NoSubstitutionTemplateLiteral) return node.text
+  if (node.kind === K.StringLiteral || node.kind === K.NoSubstitutionTemplateLiteral)
+    return node.text
   if (node.kind === K.NumericLiteral) return node.text
   if (node.kind === K.TrueKeyword) return 'true'
   if (node.kind === K.FalseKeyword) return 'false'
@@ -525,7 +529,9 @@ function extractEvents(cls, unresolved) {
           return
         }
       }
-      unresolved.push(`emit(${nameNode.text})：事件名来自变量，参数类型注解非字符串字面量联合，无法回溯`)
+      unresolved.push(
+        `emit(${nameNode.text})：事件名来自变量，参数类型注解非字符串字面量联合，无法回溯`,
+      )
       return
     }
     if (nameNode && nameNode.kind === K.ConditionalExpression) {

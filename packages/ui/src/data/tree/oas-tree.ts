@@ -503,7 +503,9 @@ export class OASTree extends OASElement {
       if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
       const pos = this.dropPosition(row, e, node)
       this.clearDropMarkers()
-      row.classList.add(pos === 'before' ? 'drop-before' : pos === 'after' ? 'drop-after' : 'drop-inner')
+      row.classList.add(
+        pos === 'before' ? 'drop-before' : pos === 'after' ? 'drop-after' : 'drop-inner',
+      )
     }) as EventListener)
     row.addEventListener('dragleave', (() => {
       row.classList.remove('drop-before', 'drop-after', 'drop-inner')
@@ -523,7 +525,11 @@ export class OASTree extends OASElement {
   }
 
   /** 按鼠标在行内的纵向比例判定插入位置：上 1/4 before、下 1/4 after、中部 inner（目标可展开时） */
-  private dropPosition(row: HTMLElement, e: DragEvent, node: TreeNode): 'before' | 'after' | 'inner' {
+  private dropPosition(
+    row: HTMLElement,
+    e: DragEvent,
+    node: TreeNode,
+  ): 'before' | 'after' | 'inner' {
     const rect = row.getBoundingClientRect()
     const ratio = rect.height ? (e.clientY - rect.top) / rect.height : 0.5
     if (ratio < 0.25) return 'before'

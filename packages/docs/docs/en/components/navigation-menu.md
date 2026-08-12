@@ -29,25 +29,25 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `items` | Navigation items JSON (hierarchical) | `string` | `[]` |
+| Attribute | Description                          | Type     | Default |
+| --------- | ------------------------------------ | -------- | ------- |
+| `items`   | Navigation items JSON (hierarchical) | `string` | `[]`    |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                               |
+| ------------ | ----------------------------------------- |
 | `oas-select` | An item was selected, `detail: { value }` |
 
 `NavItem` fields (inherits `MenuItem`):
 
-| Field      | Description                                                       | Type       |
-| ---------- | ----------------------------------------------------------------- | ---------- |
-| `label`    | Navigation text                                                   | `string`   |
-| `value`    | Selection value                                                   | `string`   |
-| `href`     | Link URL (optional); leaf items with `href` render as `<a>` and are navigable | `string` |
-| `target`   | Link open target (optional)                                       | `string`   |
-| `disabled` | Disabled                                                          | `boolean`  |
-| `children` | Sub navigation items (nested recursively, cascading to the right) | `NavItem[]`|
+| Field      | Description                                                                   | Type        |
+| ---------- | ----------------------------------------------------------------------------- | ----------- |
+| `label`    | Navigation text                                                               | `string`    |
+| `value`    | Selection value                                                               | `string`    |
+| `href`     | Link URL (optional); leaf items with `href` render as `<a>` and are navigable | `string`    |
+| `target`   | Link open target (optional)                                                   | `string`    |
+| `disabled` | Disabled                                                                      | `boolean`   |
+| `children` | Sub navigation items (nested recursively, cascading to the right)             | `NavItem[]` |
 
 Interaction: hover expands a submenu, click toggles; keyboard `←`/`→` switches top level, `↓`/`Enter` opens, `↑` opens and focuses the last item, `→` enters a cascading submenu, `←` returns to the parent, `Esc` closes everything and refocuses the top level. While a submenu is open, `Tab` cycles among its items (focus trap); after selection it collapses and fires `oas-select`.

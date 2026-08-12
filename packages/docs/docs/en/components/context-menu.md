@@ -51,20 +51,20 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `items` | Menu items JSON | `string` | `[]` |
+| Attribute | Description     | Type     | Default |
+| --------- | --------------- | -------- | ------- |
+| `items`   | Menu items JSON | `string` | `[]`    |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                               |
+| ------------ | ----------------------------------------- |
 | `oas-select` | An item was selected, `detail: { value }` |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| default | — |
+| Name    | Description |
+| ------- | ----------- |
+| default | —           |
 
 Opens at the mouse position; closes on Esc / outside click / selection; `role="menu"` + `menuitem`.

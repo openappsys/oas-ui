@@ -95,22 +95,22 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `auto-hide` | The scrollbar is shown only while scrolling/hovering, then auto-hides after a timeout | `boolean` | — |
-| `height` | Viewport height (px); when unset, grows with the content | — | — |
-| `width` | Viewport width (px); when unset, fills the host width | — | — |
+| Attribute   | Description                                                                           | Type      | Default |
+| ----------- | ------------------------------------------------------------------------------------- | --------- | ------- |
+| `auto-hide` | The scrollbar is shown only while scrolling/hovering, then auto-hides after a timeout | `boolean` | —       |
+| `height`    | Viewport height (px); when unset, grows with the content                              | —         | —       |
+| `width`     | Viewport width (px); when unset, fills the host width                                 | —         | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                                       |
+| ------------ | ----------------------------------------------------------------- |
 | `oas-scroll` | Scroll event (rAF-throttled), `detail: { scrollTop, scrollLeft }` |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| default | — |
+| Name    | Description |
+| ------- | ----------- |
+| default | —           |
 
 Parts: `::part(viewport)` is the scrolling viewport, `::part(track-v)` / `::part(track-h)` are the scroll tracks, `::part(thumb-v)` / `::part(thumb-h)` are the scroll thumbs. The viewport is focusable (`tabindex="0"`) and scrolls with arrow keys.

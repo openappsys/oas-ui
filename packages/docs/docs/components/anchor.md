@@ -86,16 +86,16 @@ onMounted(() => {
 
 ### 属性
 
-| 属性 | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| `active` | 当前高亮 href | `string` | — |
-| `items` | 锚点项 JSON | `AnchorItem[] \| string` | `[]` |
-| `offset` | 高亮判定偏移（px） | `string` | `0` |
+| 属性     | 说明               | 类型                     | 默认值 |
+| -------- | ------------------ | ------------------------ | ------ |
+| `active` | 当前高亮 href      | `string`                 | —      |
+| `items`  | 锚点项 JSON        | `AnchorItem[] \| string` | `[]`   |
+| `offset` | 高亮判定偏移（px） | `string`                 | `0`    |
 
 ### 事件
 
-| 事件 | 说明 |
-| --- | --- |
+| 事件         | 说明                         |
+| ------------ | ---------------------------- |
 | `oas-change` | 点击锚点，`detail: { href }` |
 
 基于 `IntersectionObserver` 的 scroll spy；点击平滑滚动定位；`nav` + `aria-label="锚点导航"`，当前项 `aria-current="true"`。

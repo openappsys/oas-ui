@@ -22,7 +22,9 @@ function normalizeSpaceSize(raw: string): string {
   if (!Number.isNaN(num)) return `${num}px`
   if (!warnedSizes.has(raw)) {
     warnedSizes.add(raw)
-    console.warn(`[oas-space] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl 或数字 px`)
+    console.warn(
+      `[oas-space] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl 或数字 px`,
+    )
   }
   return SIZE_MAP.medium!
 }

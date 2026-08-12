@@ -2,25 +2,83 @@ import { OASElement } from '@oas-ui/core'
 
 /** 希腊字母映射（LaTeX 命令 → Unicode 字符） */
 const GREEK: Record<string, string> = {
-  alpha: 'α', beta: 'β', gamma: 'γ', delta: 'δ', epsilon: 'ε',
-  zeta: 'ζ', eta: 'η', theta: 'θ', iota: 'ι', kappa: 'κ',
-  lambda: 'λ', mu: 'μ', nu: 'ν', xi: 'ξ', pi: 'π',
-  rho: 'ρ', sigma: 'σ', tau: 'τ', upsilon: 'υ', phi: 'φ',
-  chi: 'χ', psi: 'ψ', omega: 'ω',
-  Gamma: 'Γ', Delta: 'Δ', Theta: 'Θ', Lambda: 'Λ', Xi: 'Ξ',
-  Pi: 'Π', Sigma: 'Σ', Upsilon: 'Υ', Phi: 'Φ', Psi: 'Ψ', Omega: 'Ω',
+  alpha: 'α',
+  beta: 'β',
+  gamma: 'γ',
+  delta: 'δ',
+  epsilon: 'ε',
+  zeta: 'ζ',
+  eta: 'η',
+  theta: 'θ',
+  iota: 'ι',
+  kappa: 'κ',
+  lambda: 'λ',
+  mu: 'μ',
+  nu: 'ν',
+  xi: 'ξ',
+  pi: 'π',
+  rho: 'ρ',
+  sigma: 'σ',
+  tau: 'τ',
+  upsilon: 'υ',
+  phi: 'φ',
+  chi: 'χ',
+  psi: 'ψ',
+  omega: 'ω',
+  Gamma: 'Γ',
+  Delta: 'Δ',
+  Theta: 'Θ',
+  Lambda: 'Λ',
+  Xi: 'Ξ',
+  Pi: 'Π',
+  Sigma: 'Σ',
+  Upsilon: 'Υ',
+  Phi: 'Φ',
+  Psi: 'Ψ',
+  Omega: 'Ω',
 }
 
 /** 运算符映射（LaTeX 命令 → Unicode 字符） */
 const OPERATORS: Record<string, string> = {
-  times: '×', div: '÷', pm: '±', mp: '∓', cdot: '·', ast: '∗',
-  leq: '≤', geq: '≥', neq: '≠', approx: '≈', equiv: '≡', sim: '∼',
-  infty: '∞', partial: '∂', nabla: '∇', emptyset: '∅',
-  to: '→', gets: '←', in: '∈', notin: '∉', subset: '⊂', supset: '⊃',
-  cup: '∪', cap: '∩', forall: '∀', exists: '∃', neg: '¬', land: '∧', lor: '∨',
-  ldots: '…', cdots: '⋯', vdots: '⋮', prime: '′',
-  leftarrow: '←', rightarrow: '→', leftrightarrow: '↔',
-  sum: '∑', int: '∫', prod: '∏',
+  times: '×',
+  div: '÷',
+  pm: '±',
+  mp: '∓',
+  cdot: '·',
+  ast: '∗',
+  leq: '≤',
+  geq: '≥',
+  neq: '≠',
+  approx: '≈',
+  equiv: '≡',
+  sim: '∼',
+  infty: '∞',
+  partial: '∂',
+  nabla: '∇',
+  emptyset: '∅',
+  to: '→',
+  gets: '←',
+  in: '∈',
+  notin: '∉',
+  subset: '⊂',
+  supset: '⊃',
+  cup: '∪',
+  cap: '∩',
+  forall: '∀',
+  exists: '∃',
+  neg: '¬',
+  land: '∧',
+  lor: '∨',
+  ldots: '…',
+  cdots: '⋯',
+  vdots: '⋮',
+  prime: '′',
+  leftarrow: '←',
+  rightarrow: '→',
+  leftrightarrow: '↔',
+  sum: '∑',
+  int: '∫',
+  prod: '∏',
 }
 
 type Tok =
@@ -203,7 +261,11 @@ function parseCommand(toks: Tok[], pos: { i: number }, name: string): Node {
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 function render(n: Node | Node[]): string {

@@ -132,7 +132,9 @@ export function weekdayLabels(locale: string, weekStart: 0 | 1): string[] {
   const names: string[] = []
   for (let i = 0; i < 7; i++) {
     // 2026-01-04 为周日，作为基准行
-    names.push(new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(new Date(2026, 0, 4 + i)))
+    names.push(
+      new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(new Date(2026, 0, 4 + i)),
+    )
   }
   return weekStart === 1 ? [...names.slice(1), names[0]!] : names
 }

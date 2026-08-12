@@ -60,18 +60,18 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `disabled` | Disabled | `boolean` | — |
-| `marks` | Ticks: JSON object `{"0":"0°C"}` (value→label) or JSON array `[0,26,60]` (also `{"value":26,"label":"26°C"}`); tick marks and labels are shown below the track, highlighted where the value passes | `string \| Record<string, string \| number> \| number[]` | — |
-| `max` | Range | `string` | `100` |
-| `min` | Range | `string` | `0` |
-| `step` | Step | `string` | `1` |
-| `value` | Current value (controlled) | `string` | — |
+| Attribute  | Description                                                                                                                                                                                        | Type                                                     | Default |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ------- |
+| `disabled` | Disabled                                                                                                                                                                                           | `boolean`                                                | —       |
+| `marks`    | Ticks: JSON object `{"0":"0°C"}` (value→label) or JSON array `[0,26,60]` (also `{"value":26,"label":"26°C"}`); tick marks and labels are shown below the track, highlighted where the value passes | `string \| Record<string, string \| number> \| number[]` | —       |
+| `max`      | Range                                                                                                                                                                                              | `string`                                                 | `100`   |
+| `min`      | Range                                                                                                                                                                                              | `string`                                                 | `0`     |
+| `step`     | Step                                                                                                                                                                                               | `string`                                                 | `1`     |
+| `value`    | Current value (controlled)                                                                                                                                                                         | `string`                                                 | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                               |
+| ------------ | ----------------------------------------- |
 | `oas-change` | Committed on release, `detail: { value }` |
-| `oas-input` | While dragging, `detail: { value }` |
+| `oas-input`  | While dragging, `detail: { value }`       |

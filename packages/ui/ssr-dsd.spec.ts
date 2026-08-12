@@ -419,11 +419,7 @@ test.beforeAll(async () => {
     renderToString(
       'oas-steps',
       {
-        steps: JSON.stringify([
-          { title: '第一步' },
-          { title: '第二步' },
-          { title: '第三步' },
-        ]),
+        steps: JSON.stringify([{ title: '第一步' }, { title: '第二步' }, { title: '第三步' }]),
         current: '1',
       },
       '',
@@ -536,11 +532,7 @@ test.beforeAll(async () => {
     renderToString('oas-link', { href: '/', type: 'primary' }, '链接'),
     renderToString('oas-space', { size: 'small' }, '<span>一</span><span>二</span>'),
     renderToString('oas-visually-hidden', {}, '读屏文本'),
-    renderToString(
-      'oas-tooltip',
-      { content: '提示' },
-      '<button type="button">悬停</button>',
-    ),
+    renderToString('oas-tooltip', { content: '提示' }, '<button type="button">悬停</button>'),
     renderToString(
       'oas-popover',
       { title: '标题', content: '内容' },
@@ -582,12 +574,7 @@ test.beforeAll(async () => {
       { cols: '2' },
       '<oas-grid-item span="12"><p>左</p></oas-grid-item><oas-grid-item span="12"><p>右</p></oas-grid-item>',
     ),
-    renderToString(
-      'oas-tree',
-      { data: NESTED_COMBO_ITEMS },
-      '',
-      { locale: 'zh-CN' },
-    ),
+    renderToString('oas-tree', { data: NESTED_COMBO_ITEMS }, '', { locale: 'zh-CN' }),
   ])
 
   dsdHtml = `<!doctype html>
@@ -869,7 +856,9 @@ test('嵌套组合真水合：descriptions>item 父子都保持 DOM 引用、无
     w.__nestedStyleRefs['parent'] = parent?.shadowRoot?.querySelector('style') ?? null
     w.__nestedStyleRefs['item'] = item?.shadowRoot?.querySelector('style') ?? null
     return {
-      parentMeta: parent?.shadowRoot?.querySelector('meta[data-oas-ssr]')?.getAttribute('data-oas-ssr'),
+      parentMeta: parent?.shadowRoot
+        ?.querySelector('meta[data-oas-ssr]')
+        ?.getAttribute('data-oas-ssr'),
       itemMeta: item?.shadowRoot?.querySelector('meta[data-oas-ssr]')?.getAttribute('data-oas-ssr'),
     }
   })
@@ -973,10 +962,7 @@ test('嵌套组合真水合：form>form-item>oas-input 三层父子无双绑、i
         w.__nestedInputEvents!.push((e as CustomEvent).detail),
       )
   })
-  const inputLocator = page
-    .locator('oas-form oas-form-item oas-input')
-    .first()
-    .locator('input')
+  const inputLocator = page.locator('oas-form oas-form-item oas-input').first().locator('input')
   await inputLocator.click()
   await inputLocator.press('Control+A')
   await inputLocator.pressSequentially('xyz')

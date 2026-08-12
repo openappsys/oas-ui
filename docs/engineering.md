@@ -85,6 +85,7 @@
 文档站是 Vitepress SSG，静态构建产物部署到 Cloudflare Pages，绑定自定义域名 `oasui.dev`（域名 DNS 托管到 Cloudflare，自动 Let's Encrypt HTTPS）。
 
 **Cloudflare Pages 配置**：
+
 1. Pages → Create project → 连接 Git 仓库（oas-ui）
 2. 构建设置：
    - 构建命令：`pnpm install --frozen-lockfile && pnpm --filter @oas-ui/ui build && pnpm --filter @oas-ui/docs build`
@@ -94,6 +95,7 @@
 4. 自动部署：push main → 自动构建发布；预览分支生成 `<pr>-oas-ui.pages.dev` 独立 URL
 
 **要点**：
+
 - `docs build` 依赖 `@oas-ui/ui` 的 dist（workspace symlink）——必须先 `pnpm --filter @oas-ui/ui build`，已含在构建命令
 - `base: '/'`（自定义域名，无子路径）；`404.html` 由 Vitepress 自动生成（深层直达兜底）
 - 本地预览：`pnpm dev`（5173，dev 链路自带 watch 构建）

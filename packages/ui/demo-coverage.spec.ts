@@ -20,8 +20,18 @@ declare global {
 const SRC = join(process.cwd(), 'packages', 'ui', 'src')
 const DOCS_DIR = join(process.cwd(), 'packages', 'docs', 'docs', 'components')
 const TAG_OVERRIDE: Record<string, string> = { contextmenu: 'oas-context-menu' }
-const DEMO_OVERRIDE: Record<string, string> = { contextmenu: 'context-menu', 'avatar-group': 'avatar' }
-const IMPERATIVE = new Set(['message', 'notification', 'toast', 'snackbar', 'confirm', 'loading-bar'])
+const DEMO_OVERRIDE: Record<string, string> = {
+  contextmenu: 'context-menu',
+  'avatar-group': 'avatar',
+}
+const IMPERATIVE = new Set([
+  'message',
+  'notification',
+  'toast',
+  'snackbar',
+  'confirm',
+  'loading-bar',
+])
 
 function walk(dir: string): string[] {
   const out: string[] = []
@@ -34,9 +44,12 @@ function walk(dir: string): string[] {
 }
 
 function extractCaps(dir: string): { attrs: string[]; events: string[] } {
-  const body = walk(dir).map((f) => readFileSync(f, 'utf8')).join('\n')
+  const body = walk(dir)
+    .map((f) => readFileSync(f, 'utf8'))
+    .join('\n')
   const attrs = new Set<string>()
-  for (const a of body.matchAll(/(?:getAttr|hasAttr|getBool|getNum)\(\s*['"`]([a-z0-9-]+)['"`]/g)) attrs.add(a[1]!)
+  for (const a of body.matchAll(/(?:getAttr|hasAttr|getBool|getNum)\(\s*['"`]([a-z0-9-]+)['"`]/g))
+    attrs.add(a[1]!)
   const events = new Set<string>()
   for (const a of body.matchAll(/emit\(\s*['"`]([a-z-]+)['"`]/g)) events.add('oas-' + a[1]!)
   return { attrs: [...attrs].sort(), events: [...events].sort() }
@@ -142,8 +155,16 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   select: [
     ['oas-select[clearable] [part="clear"]', 'click', '有选中值时清空钮可见 → oas-clear'],
-    ['oas-select[remote] [part="trigger"]', 'click', '展开远程下拉（搜索框常驻仅受 searchable 控制）'],
-    ['oas-select[remote] [part="search-input"]', 'fill:x', 'remote 模式输入 → oas-input（过滤交给宿主）'],
+    [
+      'oas-select[remote] [part="trigger"]',
+      'click',
+      '展开远程下拉（搜索框常驻仅受 searchable 控制）',
+    ],
+    [
+      'oas-select[remote] [part="search-input"]',
+      'fill:x',
+      'remote 模式输入 → oas-input（过滤交给宿主）',
+    ],
   ],
   combobox: [
     ['oas-combobox[clearable] [part="clear"]', 'click', 'demo 带 value，清空钮可见 → oas-clear'],
@@ -152,7 +173,11 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   rate: [
     ['oas-rate:not([disabled]) [part="star"]', 'click'],
-    ['oas-rate:not([disabled]) [part="star"]', 'click:n1', '点不同星兜底（防 allow-clear 恰好清空）'],
+    [
+      'oas-rate:not([disabled]) [part="star"]',
+      'click:n1',
+      '点不同星兜底（防 allow-clear 恰好清空）',
+    ],
   ],
   'auto-complete': [
     ['oas-auto-complete:not([disabled]) input', 'fill:苹', '匹配「苹果」保证有选项'],
@@ -171,16 +196,18 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-mentions:not([disabled]) [part="textarea"]', 'fill:@', '触发 @ 建议面板'],
     ['oas-mentions [role="option"]', 'click', '选中 → oas-select + oas-change'],
   ],
-  form: [
-    ['oas-form[rules] oas-button button', 'click', '必填为空提交 → oas-validate-fail'],
-  ],
+  form: [['oas-form[rules] oas-button button', 'click', '必填为空提交 → oas-validate-fail']],
   'date-picker': [
     ['oas-date-picker:not([disabled]) [part="trigger"]', 'click', '展开日历面板'],
     ['oas-date-picker [part="grid"] .day', 'click', '选日 → oas-change'],
   ],
   'time-picker': [
     ['oas-time-picker:not([disabled]) [part="trigger"]', 'click', '展开时间列'],
-    ['oas-time-picker [role="option"]', 'click:n1', '点第 2 个时值（首个即当前选中值，点它不会产生 diff）'],
+    [
+      'oas-time-picker [role="option"]',
+      'click:n1',
+      '点第 2 个时值（首个即当前选中值，点它不会产生 diff）',
+    ],
     ['keyboard', 'press:Enter', '面板聚焦时 Enter → confirm → oas-change'],
   ],
   upload: [
@@ -189,12 +216,8 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['wait:700', 'wait', '等模拟上传进度事件'],
     ['oas-upload [part="item"] .remove', 'click', '删文件 → oas-remove'],
   ],
-  'toggle-group': [
-    ['oas-toggle-group [part="item"]', 'click:n1', '点非默认选中项 → oas-change'],
-  ],
-  'pin-input': [
-    ['oas-pin-input [part="cell"]', 'fillall:1', '填满全部格 → oas-change'],
-  ],
+  'toggle-group': [['oas-toggle-group [part="item"]', 'click:n1', '点非默认选中项 → oas-change']],
+  'pin-input': [['oas-pin-input [part="cell"]', 'fillall:1', '填满全部格 → oas-change']],
   'dynamic-tags': [
     ['oas-dynamic-tags:not([disabled]) [part="input"]', 'fill:tag-x'],
     ['oas-dynamic-tags [part="input"]', 'press:Enter', '回车新增 → oas-add + oas-change'],
@@ -210,12 +233,18 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   snackbar: [
     ['oas-snackbar', 'open', '静态实例置 open → oas-open'],
     ['wait:300', 'wait'],
-    ['oas-snackbar[action-text] [part="action"]', 'domclick', 'DOM click：真实点击会被同位置堆叠的 tmp 实例拦走'],
-    ['oas-button:has-text("连发四条") button', 'click', '连发 4 条 → 堆叠溢出 → 最老实例同步 oas-close（比等 4s 定时器稳定）'],
+    [
+      'oas-snackbar[action-text] [part="action"]',
+      'domclick',
+      'DOM click：真实点击会被同位置堆叠的 tmp 实例拦走',
+    ],
+    [
+      'oas-button:has-text("连发四条") button',
+      'click',
+      '连发 4 条 → 堆叠溢出 → 最老实例同步 oas-close（比等 4s 定时器稳定）',
+    ],
   ],
-  backdrop: [
-    ['oas-backdrop [part="mask"]', 'click', '点遮罩 → oas-click（通用探针已点开 demo）'],
-  ],
+  backdrop: [['oas-backdrop [part="mask"]', 'click', '点遮罩 → oas-click（通用探针已点开 demo）']],
   popconfirm: [
     ['oas-popconfirm', 'click', '点触发器打开气泡'],
     ['oas-popconfirm [part="ok"]', 'click', '确认 → oas-ok'],
@@ -236,7 +265,11 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-command [part="option"]', 'click', '选命令 → oas-select'],
   ],
   menubar: [
-    ['oas-menubar [part="top-item"]', 'domclick', 'DOM click 避开 mouseenter 展开与 click 收起的抵消'],
+    [
+      'oas-menubar [part="top-item"]',
+      'domclick',
+      'DOM click 避开 mouseenter 展开与 click 收起的抵消',
+    ],
     ['oas-menubar [part="item"]', 'click', '点子菜单项 → oas-select'],
   ],
   'navigation-menu': [
@@ -270,7 +303,13 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-tree[draggable] [part="row"]', 'dragto', '拖第 1 行到第 2 行 → oas-node-drop'],
   ],
   table: [['oas-table .expand-toggle-cell .toggle', 'click', '点行尾展开钮 → oas-expand']],
-  'page-header': [['oas-page-header[back] [part="back"]', 'domclick', '返回钮 → oas-back（真实点击会被下方元素拦截）']],
+  'page-header': [
+    [
+      'oas-page-header[back] [part="back"]',
+      'domclick',
+      '返回钮 → oas-back（真实点击会被下方元素拦截）',
+    ],
+  ],
   splitter: [['oas-splitter [part="splitter"]', 'drag', '拖拽分隔条 → oas-resize']],
   tour: [['oas-tour [part="skip"]', 'click', '跳过 → oas-cancel（通用探针已点开始引导）']],
 }
@@ -392,8 +431,12 @@ async function probe(page: Page, name: string) {
   }
   // 组件级探针步骤（读 shadow 真实结构）
   await runSteps(page, COMPONENT_STEPS[name] ?? [])
-  try { await page.keyboard.press('Enter') } catch {}
-  try { await page.mouse.wheel(0, 500) } catch {}
+  try {
+    await page.keyboard.press('Enter')
+  } catch {}
+  try {
+    await page.mouse.wheel(0, 500)
+  } catch {}
 }
 
 // 判定某属性是否在 demo 中呈现：读 .md 源文件的 demo 区域（模板含子元素标签 attr、布尔 attr + script setup 的 setAttribute/受控驱动），排除 API 文档表
@@ -412,16 +455,24 @@ for (const [name, m] of Object.entries(manifest)) {
 
   test.describe(`${name}`, () => {
     test('静态属性全部演示', async () => {
-      if (m.imperative) { test.skip(true, '命令式组件，静态属性自动核对不适用'); return }
+      if (m.imperative) {
+        test.skip(true, '命令式组件，静态属性自动核对不适用')
+        return
+      }
       // 读 demo 源文件（模板 + script setup 全在里面，比渲染后 HTML 更全：受控 setAttribute 也能抓到）
-      const md = readFileSync(join(process.cwd(), 'packages', 'docs', 'docs', 'components', `${m.demo}.md`), 'utf8')
+      const md = readFileSync(
+        join(process.cwd(), 'packages', 'docs', 'docs', 'components', `${m.demo}.md`),
+        'utf8',
+      )
       const demoRegion = md.split(/^##\s*API/m)[0] ?? md
       const missing = m.attrs.filter((a) => !attrDemoedInMd(demoRegion, a))
       expect(missing, `未演示属性: ${missing.join(', ')}`).toEqual([])
     })
 
     test('事件全部触发（通用探针）', async ({ page }) => {
-      if (m.events.length === 0) { test.skip(true, '无事件') }
+      if (m.events.length === 0) {
+        test.skip(true, '无事件')
+      }
       await page.addInitScript(() => {
         window.__fired = new Set()
         const orig = EventTarget.prototype.dispatchEvent
@@ -445,7 +496,10 @@ for (const [name, m] of Object.entries(manifest)) {
       await page.waitForTimeout(400)
       const fired = await page.evaluate(() => [...window.__fired])
       const notFired = m.events.filter((e) => !fired.includes(e) && !EXEMPT_EVENTS.has(e))
-      expect(notFired, `未触发事件: ${notFired.join(', ')}（已触发: ${fired.join(', ') || '无'}）`).toEqual([])
+      expect(
+        notFired,
+        `未触发事件: ${notFired.join(', ')}（已触发: ${fired.join(', ') || '无'}）`,
+      ).toEqual([])
     })
   })
 }

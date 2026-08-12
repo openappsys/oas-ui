@@ -79,18 +79,18 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `disabled` | Disabled | `boolean` | — |
-| `label` | Accessible name (`aria-label` source; falls back to built-in "数字输入框" when unset) | — | — |
-| `max` | Range, out-of-range values are clamped automatically | `string` | — |
-| `min` | Range, out-of-range values are clamped automatically | `string` | — |
-| `precision` | Number of decimal places | `string` | — |
-| `step` | Step | `string` | `1` |
-| `value` | Current value (controlled) | `string` | — |
+| Attribute   | Description                                                                           | Type      | Default |
+| ----------- | ------------------------------------------------------------------------------------- | --------- | ------- |
+| `disabled`  | Disabled                                                                              | `boolean` | —       |
+| `label`     | Accessible name (`aria-label` source; falls back to built-in "数字输入框" when unset) | —         | —       |
+| `max`       | Range, out-of-range values are clamped automatically                                  | `string`  | —       |
+| `min`       | Range, out-of-range values are clamped automatically                                  | `string`  | —       |
+| `precision` | Number of decimal places                                                              | `string`  | —       |
+| `step`      | Step                                                                                  | `string`  | `1`     |
+| `value`     | Current value (controlled)                                                            | `string`  | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                          |
+| ------------ | ---------------------------------------------------- |
 | `oas-change` | Change on step or blur, `detail: { value }` (number) |

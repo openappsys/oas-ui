@@ -55,18 +55,18 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `disabled` | Disabled | `boolean` | — |
-| `options` | Options, JSON array `[{ label, value, disabled }]` | `Option[] \| string` | `[]` |
-| `placeholder` | Placeholder text | `string` | — |
-| `value` | Preset value | `string` | — |
+| Attribute     | Description                                        | Type                 | Default |
+| ------------- | -------------------------------------------------- | -------------------- | ------- |
+| `disabled`    | Disabled                                           | `boolean`            | —       |
+| `options`     | Options, JSON array `[{ label, value, disabled }]` | `Option[] \| string` | `[]`    |
+| `placeholder` | Placeholder text                                   | `string`             | —       |
+| `value`       | Preset value                                       | `string`             | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                          |
+| ------------ | ------------------------------------ |
 | `oas-change` | Selected, `detail: { value, label }` |
-| `oas-input` | While typing, `detail: { value }` |
+| `oas-input`  | While typing, `detail: { value }`    |
 
 Keyboard: `↑`/`↓` to move, `Enter` to select, `Esc` to close.

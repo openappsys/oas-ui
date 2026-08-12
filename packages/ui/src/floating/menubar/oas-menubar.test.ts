@@ -29,7 +29,12 @@ const ITEMS = JSON.stringify([
       },
     ],
   },
-  { label: '视图', value: 'view', accessKey: 'v', children: [{ label: '全屏', value: 'fullscreen' }] },
+  {
+    label: '视图',
+    value: 'view',
+    accessKey: 'v',
+    children: [{ label: '全屏', value: 'fullscreen' }],
+  },
 ])
 
 function mount(attrs: Record<string, string> = {}): OASMenubar {
@@ -210,7 +215,12 @@ describe('OASMenubar', () => {
 
   it('items 数据变化增量重渲染', () => {
     const el = mount()
-    el.setAttribute('items', JSON.stringify([{ label: '帮助', value: 'help', children: [{ label: '关于', value: 'about' }] }]))
+    el.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '帮助', value: 'help', children: [{ label: '关于', value: 'about' }] },
+      ]),
+    )
     expect(topItems(el).length).toBe(1)
     expect(topItems(el)[0]!.textContent).toBe('帮助')
   })
@@ -241,8 +251,16 @@ describe('OASMenubar', () => {
   it('受控：value 支持级联子菜单叶子项', () => {
     const el = mount()
     el.setAttribute('value', 'insert-date')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="insert-date"]')!.getAttribute('aria-checked')).toBe('true')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="insert-time"]')!.getAttribute('aria-checked')).toBe('false')
+    expect(
+      el
+        .shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="insert-date"]')!
+        .getAttribute('aria-checked'),
+    ).toBe('true')
+    expect(
+      el
+        .shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="insert-time"]')!
+        .getAttribute('aria-checked'),
+    ).toBe('false')
   })
 
   it('非受控：内部点击叶子项写回 value 并派发 oas-select', () => {
@@ -263,9 +281,13 @@ describe('OASMenubar', () => {
     expect(css).toContain('.submenu.flip-right')
     expect(css).toContain('.submenu.flip-up')
     // 展开一级与级联后 syncSubmenuPositions 在 happy-dom 下安全执行（rect 全 0 不误判翻转）
-    const editTop = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="edit"]')!
+    const editTop = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="top-item"][data-value="edit"]',
+    )!
     editTop.click()
-    const insertItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="insert"]')
+    const insertItem = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="item"][data-value="insert"]',
+    )
     expect(insertItem).not.toBeNull()
   })
 })

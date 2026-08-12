@@ -181,8 +181,7 @@ export class OASSteps extends OASElement {
       item.setAttribute('data-status', status)
       const icon = document.createElement('span')
       icon.className = 'icon'
-      icon.textContent =
-        status === 'finish' ? '✓' : status === 'error' ? '✕' : String(idx + 1)
+      icon.textContent = status === 'finish' ? '✓' : status === 'error' ? '✕' : String(idx + 1)
       const textWrap = document.createElement('div')
       const title = document.createElement('div')
       title.className = 'text'

@@ -72,7 +72,9 @@ describe('OASTransfer', () => {
   it('disabled 项不可选中，穿梭按钮随选中清空禁用', () => {
     const el = mount()
     ;(leftOptions(el)[2] as HTMLElement).click() // c 是 disabled
-    expect(el.shadowRoot!.querySelector('.listbox.left .option[aria-disabled="true"]')).not.toBeNull()
+    expect(
+      el.shadowRoot!.querySelector('.listbox.left .option[aria-disabled="true"]'),
+    ).not.toBeNull()
     expect(toRightBtn(el).disabled).toBe(true)
   })
 

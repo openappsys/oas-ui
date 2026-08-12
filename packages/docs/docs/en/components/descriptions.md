@@ -59,21 +59,21 @@ Displays read-only information in groups, suitable for detail page scenarios.
 
 ### oas-descriptions
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `column` | Columns per row | `string` | `3` |
-| `title` | Title | `string` | — |
+| Attribute | Description     | Type     | Default |
+| --------- | --------------- | -------- | ------- |
+| `column`  | Columns per row | `string` | `3`     |
+| `title`   | Title           | `string` | —       |
 
-| Name | Description |
-| --- | --- |
-| default | — |
+| Name    | Description |
+| ------- | ----------- |
+| default | —           |
 
 ### oas-descriptions-item
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `label` | Field label | `string` | — |
+| Attribute | Description | Type     | Default |
+| --------- | ----------- | -------- | ------- |
+| `label`   | Field label | `string` | —       |
 
-| Name | Description |
-| --- | --- |
+| Name    | Description   |
+| ------- | ------------- |
 | default | Field content |

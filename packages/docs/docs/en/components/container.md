@@ -59,14 +59,14 @@ An empty container causes no error and takes no placeholder.
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `center` | Whether to center (`center="false"` disables) | `string` | `true` |
-| `padding` | Padding token/value (applies to `padding-inline`) | — | — |
-| `size` | Fixed-width tier, mapped to `--oas-container-*` tokens | `string` | `lg` |
+| Attribute | Description                                            | Type     | Default |
+| --------- | ------------------------------------------------------ | -------- | ------- |
+| `center`  | Whether to center (`center="false"` disables)          | `string` | `true`  |
+| `padding` | Padding token/value (applies to `padding-inline`)      | —        | —       |
+| `size`    | Fixed-width tier, mapped to `--oas-container-*` tokens | `string` | `lg`    |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| default | — |
+| Name    | Description |
+| ------- | ----------- |
+| default | —           |

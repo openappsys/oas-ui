@@ -87,25 +87,25 @@ onMounted(async () => {
 
 ### 属性
 
-| 属性 | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| `chip` | 胶囊 | `boolean` | — |
-| `clickable` | 整签可点 | `boolean` | — |
-| `closable` | 可关闭 | `boolean` | — |
-| `disabled` | 禁用 | `boolean` | — |
-| `round` | 圆角 | `boolean` | — |
-| `size` | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `TagSize` | `medium` |
-| `type` | 类型 | `TagType` | `default` |
+| 属性        | 说明                                                                                | 类型      | 默认值    |
+| ----------- | ----------------------------------------------------------------------------------- | --------- | --------- |
+| `chip`      | 胶囊                                                                                | `boolean` | —         |
+| `clickable` | 整签可点                                                                            | `boolean` | —         |
+| `closable`  | 可关闭                                                                              | `boolean` | —         |
+| `disabled`  | 禁用                                                                                | `boolean` | —         |
+| `round`     | 圆角                                                                                | `boolean` | —         |
+| `size`      | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `TagSize` | `medium`  |
+| `type`      | 类型                                                                                | `TagType` | `default` |
 
 ### 事件
 
-| 事件 | 说明 |
-| --- | --- |
+| 事件        | 说明                                                |
+| ----------- | --------------------------------------------------- |
 | `oas-click` | 整签点击（`clickable` 时），detail 含 originalEvent |
-| `oas-close` | 关闭，`cancelable`，preventDefault 阻止移除 |
+| `oas-close` | 关闭，`cancelable`，preventDefault 阻止移除         |
 
 ### 插槽
 
 | 名称 | 说明 |
-| --- | --- |
-| 默认 | — |
+| ---- | ---- |
+| 默认 | —    |

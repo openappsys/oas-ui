@@ -74,18 +74,18 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `checked` | Whether on | `boolean` | — |
-| `checked-text` | Label shown when on; inside the track at medium/large/xl, outside at xs/small | — | — |
-| `color` | Custom primary color for the on state, overrides `--oas-color-primary` (CSS color value) | — | — |
-| `disabled` | Disabled | `boolean` | — |
-| `loading` | Loading state, prevents toggling | `boolean` | — |
-| `size` | Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning | `string` | `medium` |
-| `unchecked-text` | Label shown when off; inside the track at medium/large/xl, outside at xs/small | — | — |
+| Attribute        | Description                                                                                                     | Type      | Default  |
+| ---------------- | --------------------------------------------------------------------------------------------------------------- | --------- | -------- |
+| `checked`        | Whether on                                                                                                      | `boolean` | —        |
+| `checked-text`   | Label shown when on; inside the track at medium/large/xl, outside at xs/small                                   | —         | —        |
+| `color`          | Custom primary color for the on state, overrides `--oas-color-primary` (CSS color value)                        | —         | —        |
+| `disabled`       | Disabled                                                                                                        | `boolean` | —        |
+| `loading`        | Loading state, prevents toggling                                                                                | `boolean` | —        |
+| `size`           | Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning | `string`  | `medium` |
+| `unchecked-text` | Label shown when off; inside the track at medium/large/xl, outside at xs/small                                  | —         | —        |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                   |
+| ------------ | ----------------------------- |
 | `oas-change` | Toggle, `detail: { checked }` |

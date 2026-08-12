@@ -61,19 +61,40 @@ const TREE_OPTIONS = JSON.stringify([
 ])
 
 const FIXTURES: Fixture[] = [
-  { name: 'input', cls: OASInput, setup: (e) => e.setAttribute('value', 'hello'), probe: 'input[part="input"]' },
-  { name: 'textarea', cls: OASTextarea, setup: (e) => e.setAttribute('value', '多行文本'), probe: 'textarea[part="textarea"]' },
-  { name: 'checkbox', cls: OASCheckbox, setup: (e) => e.setAttribute('checked', ''), probe: 'input[part="checkbox"]' },
+  {
+    name: 'input',
+    cls: OASInput,
+    setup: (e) => e.setAttribute('value', 'hello'),
+    probe: 'input[part="input"]',
+  },
+  {
+    name: 'textarea',
+    cls: OASTextarea,
+    setup: (e) => e.setAttribute('value', '多行文本'),
+    probe: 'textarea[part="textarea"]',
+  },
+  {
+    name: 'checkbox',
+    cls: OASCheckbox,
+    setup: (e) => e.setAttribute('checked', ''),
+    probe: 'input[part="checkbox"]',
+  },
   {
     name: 'checkbox-group',
     cls: OASCheckboxGroup,
     setup: (e) => {
       e.setAttribute('value', '["a"]')
-      e.innerHTML = '<oas-checkbox value="a">A</oas-checkbox><oas-checkbox value="b">B</oas-checkbox>'
+      e.innerHTML =
+        '<oas-checkbox value="a">A</oas-checkbox><oas-checkbox value="b">B</oas-checkbox>'
     },
     probe: 'fieldset',
   },
-  { name: 'radio', cls: OASRadio, setup: (e) => e.setAttribute('checked', ''), probe: 'input[part="radio"]' },
+  {
+    name: 'radio',
+    cls: OASRadio,
+    setup: (e) => e.setAttribute('checked', ''),
+    probe: 'input[part="radio"]',
+  },
   {
     name: 'radio-group',
     cls: OASRadioGroup,
@@ -83,9 +104,24 @@ const FIXTURES: Fixture[] = [
     },
     probe: 'fieldset',
   },
-  { name: 'switch', cls: OASSwitch, setup: (e) => e.setAttribute('checked', ''), probe: 'button[part="switch"]' },
-  { name: 'slider', cls: OASSlider, setup: (e) => e.setAttribute('value', '60'), probe: 'input[part="track"]' },
-  { name: 'input-number', cls: OASInputNumber, setup: (e) => e.setAttribute('value', '12'), probe: 'input[part="input"]' },
+  {
+    name: 'switch',
+    cls: OASSwitch,
+    setup: (e) => e.setAttribute('checked', ''),
+    probe: 'button[part="switch"]',
+  },
+  {
+    name: 'slider',
+    cls: OASSlider,
+    setup: (e) => e.setAttribute('value', '60'),
+    probe: 'input[part="track"]',
+  },
+  {
+    name: 'input-number',
+    cls: OASInputNumber,
+    setup: (e) => e.setAttribute('value', '12'),
+    probe: 'input[part="input"]',
+  },
   { name: 'rate', cls: OASRate, setup: (e) => e.setAttribute('value', '4'), probe: '.slider' },
   {
     name: 'auto-complete',
@@ -129,33 +165,96 @@ const FIXTURES: Fixture[] = [
     setup: (e) => e.setAttribute('options', OPTIONS),
     probe: 'textarea',
   },
-  { name: 'date-picker', cls: OASDatePicker, setup: (e) => e.setAttribute('value', '2024-01-15'), probe: '[part="trigger"]' },
-  { name: 'time-picker', cls: OASTimePicker, setup: (e) => e.setAttribute('value', '12:30:00'), probe: '[part="trigger"]' },
-  { name: 'calendar', cls: OASCalendar, setup: (e) => e.setAttribute('value', '2024-02-10'), probe: '[part="grid"]' },
+  {
+    name: 'date-picker',
+    cls: OASDatePicker,
+    setup: (e) => e.setAttribute('value', '2024-01-15'),
+    probe: '[part="trigger"]',
+  },
+  {
+    name: 'time-picker',
+    cls: OASTimePicker,
+    setup: (e) => e.setAttribute('value', '12:30:00'),
+    probe: '[part="trigger"]',
+  },
+  {
+    name: 'calendar',
+    cls: OASCalendar,
+    setup: (e) => e.setAttribute('value', '2024-02-10'),
+    probe: '[part="grid"]',
+  },
   { name: 'upload', cls: OASUpload, probe: '.zone' },
   {
     name: 'transfer',
     cls: OASTransfer,
-    setup: (e) => e.setAttribute('data', JSON.stringify([{ key: 'a', label: '苹果' }, { key: 'b', label: '香蕉' }])),
+    setup: (e) =>
+      e.setAttribute(
+        'data',
+        JSON.stringify([
+          { key: 'a', label: '苹果' },
+          { key: 'b', label: '香蕉' },
+        ]),
+      ),
     probe: '.listbox.left',
   },
-  { name: 'color-picker', cls: OASColorPicker, setup: (e) => e.setAttribute('value', '#0b6cff'), probe: '.trigger' },
-  { name: 'toggle-button', cls: OASToggleButton, setup: (e) => e.setAttribute('pressed', ''), probe: 'button[part="button"]' },
+  {
+    name: 'color-picker',
+    cls: OASColorPicker,
+    setup: (e) => e.setAttribute('value', '#0b6cff'),
+    probe: '.trigger',
+  },
+  {
+    name: 'toggle-button',
+    cls: OASToggleButton,
+    setup: (e) => e.setAttribute('pressed', ''),
+    probe: 'button[part="button"]',
+  },
   {
     name: 'toggle-group',
     cls: OASToggleGroup,
     setup: (e) => {
-      e.setAttribute('items', JSON.stringify([{ label: '日', value: 'day' }, { label: '周', value: 'week' }]))
+      e.setAttribute(
+        'items',
+        JSON.stringify([
+          { label: '日', value: 'day' },
+          { label: '周', value: 'week' },
+        ]),
+      )
       e.setAttribute('value', 'week')
     },
     probe: '.group',
   },
-  { name: 'pin-input', cls: OASPinInput, setup: (e) => e.setAttribute('value', '123'), probe: '.container' },
-  { name: 'dynamic-input', cls: OASDynamicInput, setup: (e) => e.setAttribute('model-value', '["a","b"]'), probe: '.rows' },
-  { name: 'dynamic-tags', cls: OASDynamicTags, setup: (e) => e.setAttribute('model-value', '["标签1"]'), probe: '.tags' },
-  { name: 'editable', cls: OASEditable, setup: (e) => e.setAttribute('value', '可编辑'), probe: '.display' },
+  {
+    name: 'pin-input',
+    cls: OASPinInput,
+    setup: (e) => e.setAttribute('value', '123'),
+    probe: '.container',
+  },
+  {
+    name: 'dynamic-input',
+    cls: OASDynamicInput,
+    setup: (e) => e.setAttribute('model-value', '["a","b"]'),
+    probe: '.rows',
+  },
+  {
+    name: 'dynamic-tags',
+    cls: OASDynamicTags,
+    setup: (e) => e.setAttribute('model-value', '["标签1"]'),
+    probe: '.tags',
+  },
+  {
+    name: 'editable',
+    cls: OASEditable,
+    setup: (e) => e.setAttribute('value', '可编辑'),
+    probe: '.display',
+  },
   { name: 'form', cls: OASForm, probe: 'form[part="form"]' },
-  { name: 'form-item', cls: OASFormItem, setup: (e) => e.setAttribute('label', '姓名'), probe: '.field' },
+  {
+    name: 'form-item',
+    cls: OASFormItem,
+    setup: (e) => e.setAttribute('label', '姓名'),
+    probe: '.field',
+  },
 ]
 
 /** 渲染一个参照实例并返回其 shadow 快照（SSR 场景等价物） */
@@ -223,8 +322,12 @@ describe('form 组件 DSD 真水合批次 1', () => {
     expect(rate.shadowRoot!.querySelectorAll('.star').length).toBe(5)
 
     // oas-dynamic-input：快照按 model-value 渲染 2 行，水合后 syncRows 不得重复追加
-    const diSnap = captureSnapshot(OASDynamicInput, (e) => e.setAttribute('model-value', '["a","b"]'))
-    const di = upgradeFromSnapshot(OASDynamicInput, diSnap, (e) => e.setAttribute('model-value', '["a","b"]')).el
+    const diSnap = captureSnapshot(OASDynamicInput, (e) =>
+      e.setAttribute('model-value', '["a","b"]'),
+    )
+    const di = upgradeFromSnapshot(OASDynamicInput, diSnap, (e) =>
+      e.setAttribute('model-value', '["a","b"]'),
+    ).el
     expect(di.shadowRoot!.querySelectorAll('.row').length).toBe(2)
   })
 
@@ -254,9 +357,14 @@ describe('form 组件 DSD 真水合批次 1', () => {
 
   it('交互可触发：水合后 oas-transfer 选项可选中、oas-toggle-group 点击可选中', () => {
     // oas-transfer
-    const transferData = JSON.stringify([{ key: 'a', label: '苹果' }, { key: 'b', label: '香蕉' }])
+    const transferData = JSON.stringify([
+      { key: 'a', label: '苹果' },
+      { key: 'b', label: '香蕉' },
+    ])
     const tfSnap = captureSnapshot(OASTransfer, (e) => e.setAttribute('data', transferData))
-    const tf = upgradeFromSnapshot(OASTransfer, tfSnap, (e) => e.setAttribute('data', transferData)).el
+    const tf = upgradeFromSnapshot(OASTransfer, tfSnap, (e) =>
+      e.setAttribute('data', transferData),
+    ).el
     const firstLeft = tf.shadowRoot!.querySelector<HTMLElement>('.listbox.left .option')!
     firstLeft.click()
     // renderPanel 重建行：重新查询而非读已分离的旧引用
@@ -264,7 +372,10 @@ describe('form 组件 DSD 真水合批次 1', () => {
     expect(freshLeft.getAttribute('aria-selected')).toBe('true')
 
     // oas-toggle-group
-    const items = JSON.stringify([{ label: '日', value: 'day' }, { label: '周', value: 'week' }])
+    const items = JSON.stringify([
+      { label: '日', value: 'day' },
+      { label: '周', value: 'week' },
+    ])
     const tgSnap = captureSnapshot(OASToggleGroup, (e) => e.setAttribute('items', items))
     const tg = upgradeFromSnapshot(OASToggleGroup, tgSnap, (e) => e.setAttribute('items', items)).el
     tg.shadowRoot!.querySelectorAll<HTMLButtonElement>('[part="item"]')[1]!.click()
@@ -280,7 +391,10 @@ describe('数据组件 JSON attribute 数据通道', () => {
   it('transfer.data：property setter 单向反射 attribute，getter 返回解析数组', () => {
     const el = new OASTransfer()
     document.body.appendChild(el)
-    const items = [{ key: 'a', label: '苹果' }, { key: 'b', label: '香蕉' }]
+    const items = [
+      { key: 'a', label: '苹果' },
+      { key: 'b', label: '香蕉' },
+    ]
     el.data = items
     expect(el.getAttribute('data')).toBe(JSON.stringify(items))
     expect(el.data).toEqual(items)
@@ -298,7 +412,10 @@ describe('数据组件 JSON attribute 数据通道', () => {
   it('toggle-group.items：property setter 单向反射 attribute，getter 返回解析数组', () => {
     const el = new OASToggleGroup()
     document.body.appendChild(el)
-    const items = [{ label: '日', value: 'day' }, { label: '周', value: 'week' }]
+    const items = [
+      { label: '日', value: 'day' },
+      { label: '周', value: 'week' },
+    ]
     el.items = items
     expect(el.getAttribute('items')).toBe(JSON.stringify(items))
     expect(el.items).toEqual(items)

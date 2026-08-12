@@ -73,7 +73,11 @@ const ILLUSTRATION = `
 
 /** 转义属性值中的危险字符，避免注入闭合引号/标签 */
 function escapeAttr(v: string): string {
-  return v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return v
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
 }
 
 export class OASEmpty extends OASElement {

@@ -57,18 +57,18 @@ onMounted(async () => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `current` | Current step index | `string` | `0` |
-| `open` | Start the tour (boolean attribute; starts when present) | `boolean` | — |
-| `steps` | Steps JSON | `TourStep[] \| string` | `[]` |
+| Attribute | Description                                             | Type                   | Default |
+| --------- | ------------------------------------------------------- | ---------------------- | ------- |
+| `current` | Current step index                                      | `string`               | `0`     |
+| `open`    | Start the tour (boolean attribute; starts when present) | `boolean`              | —       |
+| `steps`   | Steps JSON                                              | `TourStep[] \| string` | `[]`    |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
-| `oas-cancel` | Skipped or cancelled via Esc |
+| Event        | Description                           |
+| ------------ | ------------------------------------- |
+| `oas-cancel` | Skipped or cancelled via Esc          |
 | `oas-finish` | "Finish" was clicked on the last step |
-| `oas-step` | The step changed, `detail: { index }` |
+| `oas-step`   | The step changed, `detail: { index }` |
 
 The overlay highlights the target, `role="dialog"` + `aria-modal="true"`; supports "Previous / Next / Skip" and the Esc key.

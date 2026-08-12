@@ -348,7 +348,8 @@ export class OASTable extends OASElement {
       selectAll.type = 'checkbox'
       selectAll.setAttribute('aria-label', this.t('table.selectAll'))
       selectAll.checked =
-        flat.length > 0 && flat.every((f) => selected.includes(String(f.row[rowKey] ?? JSON.stringify(f.row))))
+        flat.length > 0 &&
+        flat.every((f) => selected.includes(String(f.row[rowKey] ?? JSON.stringify(f.row))))
       selectAll.addEventListener('change', () => {
         const keys = flat.map((f) => String(f.row[rowKey] ?? JSON.stringify(f.row)))
         this.setAttribute('selected', selectAll.checked ? keys.join(',') : '')
@@ -552,7 +553,12 @@ export class OASTable extends OASElement {
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
     scrollTop = this.wrap ? this.wrap.scrollTop : 0,
   ): void {
-    const win = computeVirtualWindow(scrollTop, this.tableHeight(), this.rowHeight(), display.length)
+    const win = computeVirtualWindow(
+      scrollTop,
+      this.tableHeight(),
+      this.rowHeight(),
+      display.length,
+    )
     const colSpan = this.columnCount()
 
     const topSpacer = document.createElement('tr')
@@ -638,11 +644,7 @@ export class OASTable extends OASElement {
    * 构建扁平行列表（含树形 children 递归）。排序在各层级兄弟间独立进行，不破坏父子结构；
    * 返回的 flat 是完整列表（树形含隐藏子行），visibleFlat 再做可见性过滤。
    */
-  private buildFlat(
-    sortKey: string,
-    sortOrder: SortOrder,
-    rowKey: string,
-  ): FlatRow[] {
+  private buildFlat(sortKey: string, sortOrder: SortOrder, rowKey: string): FlatRow[] {
     const flat: FlatRow[] = []
     const walk = (nodes: Array<Record<string, unknown>>, depth: number, parent?: string): void => {
       const list = [...nodes]
@@ -680,7 +682,13 @@ export class OASTable extends OASElement {
         typeof row.expand === 'string' &&
         row.expand.length > 0
       ) {
-        out.push({ row, depth: f.depth, parent: f.parent, kind: 'expand', expandContent: row.expand })
+        out.push({
+          row,
+          depth: f.depth,
+          parent: f.parent,
+          kind: 'expand',
+          expandContent: row.expand,
+        })
       }
     }
     return out
@@ -750,7 +758,8 @@ export class OASTable extends OASElement {
         }
       }
       if (cfg.type === 'sum') values.set(cfg.key, String(sum))
-      else if (cfg.type === 'avg') values.set(cfg.key, String(cnt ? Math.round((sum / cnt) * 100) / 100 : 0))
+      else if (cfg.type === 'avg')
+        values.set(cfg.key, String(cnt ? Math.round((sum / cnt) * 100) / 100 : 0))
       else values.set(cfg.key, String(cnt))
     }
     return values

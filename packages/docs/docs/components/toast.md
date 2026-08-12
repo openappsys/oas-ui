@@ -77,26 +77,26 @@ onMounted(async () => {
 
 ### 方法
 
-| 方法                            | 说明                                 |
-| ------------------------------- | ------------------------------------ |
-| `toast.info(options)`           | 信息提示，返回 `{ close }`           |
-| `toast.success(options)`        | 成功提示，返回 `{ close }`           |
-| `toast.warning(options)`        | 警告提示，返回 `{ close }`           |
-| `toast.error(options)`          | 错误提示，返回 `{ close }`           |
-| `toast.loading(options)`        | 加载提示（不可关），返回 `{ close }` |
-| `toast.promise(promise, opts)`  | promise 链：loading → success/error  |
-| `destroyAllToast()`             | 清空全部 toast                       |
+| 方法                           | 说明                                 |
+| ------------------------------ | ------------------------------------ |
+| `toast.info(options)`          | 信息提示，返回 `{ close }`           |
+| `toast.success(options)`       | 成功提示，返回 `{ close }`           |
+| `toast.warning(options)`       | 警告提示，返回 `{ close }`           |
+| `toast.error(options)`         | 错误提示，返回 `{ close }`           |
+| `toast.loading(options)`       | 加载提示（不可关），返回 `{ close }` |
+| `toast.promise(promise, opts)` | promise 链：loading → success/error  |
+| `destroyAllToast()`            | 清空全部 toast                       |
 
 ### options
 
-| 字段          | 说明                          | 类型                          | 默认值      |
-| ------------- | ----------------------------- | ----------------------------- | ----------- |
-| `title`       | 标题                          | `string`                      | —          |
-| `description` | 描述                          | `string`                      | —          |
-| `action`      | 操作按钮                      | `{ label, onClick }`          | —          |
-| `duration`    | 自动关闭时长（ms），0 不关闭  | `number`                      | `3000`      |
-| `closable`    | 是否可手动关闭（loading 恒关）| `boolean`                     | `true`      |
-| `position`    | 位置                          | `top-right` 等 6 个方向       | `top-right` |
+| 字段          | 说明                           | 类型                    | 默认值      |
+| ------------- | ------------------------------ | ----------------------- | ----------- |
+| `title`       | 标题                           | `string`                | —           |
+| `description` | 描述                           | `string`                | —           |
+| `action`      | 操作按钮                       | `{ label, onClick }`    | —           |
+| `duration`    | 自动关闭时长（ms），0 不关闭   | `number`                | `3000`      |
+| `closable`    | 是否可手动关闭（loading 恒关） | `boolean`               | `true`      |
+| `position`    | 位置                           | `top-right` 等 6 个方向 | `top-right` |
 
 - `error` 类型使用 `role="alert"`，其余使用 `role="status"`。
 - 多个 toast 共用一个栈容器，同一方向按位置堆叠；`duration` 计时器在关闭/卸载时清理，无泄漏。

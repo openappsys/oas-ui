@@ -157,8 +157,12 @@ describe('OASDatePicker', () => {
     const el = mount({ type: 'datetime', value: '2026-08-09T00:00:00' })
     open(el)
     day(el, '2026-08-09').click()
-    const hourOpt = el.shadowRoot!.querySelector<HTMLElement>('.time-col[data-unit="h"] .time-option[data-value="9"]')!
-    const minuteOpt = el.shadowRoot!.querySelector<HTMLElement>('.time-col[data-unit="m"] .time-option[data-value="30"]')!
+    const hourOpt = el.shadowRoot!.querySelector<HTMLElement>(
+      '.time-col[data-unit="h"] .time-option[data-value="9"]',
+    )!
+    const minuteOpt = el.shadowRoot!.querySelector<HTMLElement>(
+      '.time-col[data-unit="m"] .time-option[data-value="30"]',
+    )!
     hourOpt.click()
     minuteOpt.click()
     let detail: unknown

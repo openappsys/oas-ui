@@ -152,10 +152,7 @@ describe('OASForm 栅格布局增强', () => {
 
   it('校验失败错误提示写入 form-item 错误位（字段后不插入 div）', () => {
     const el = new OASForm()
-    el.setAttribute(
-      'rules',
-      JSON.stringify({ name: [{ required: true, message: '请输入姓名' }] }),
-    )
+    el.setAttribute('rules', JSON.stringify({ name: [{ required: true, message: '请输入姓名' }] }))
     const item = new OASFormItem()
     item.setAttribute('label', '姓名')
     item.innerHTML = '<oas-input name="name"></oas-input>'

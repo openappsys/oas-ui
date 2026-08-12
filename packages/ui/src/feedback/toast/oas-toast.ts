@@ -164,7 +164,10 @@ export class OASToast extends OASElement {
       .querySelector<HTMLElement>('[part="box"]')
       ?.setAttribute('role', type === 'error' ? 'alert' : 'status')
     this.shadow.querySelector<HTMLElement>('[part="icon"]')!.textContent = ICONS[type] ?? ''
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr('title', '')
+    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
+      'title',
+      '',
+    )
     const desc = this.getAttr('description', '')
     const descEl = this.shadow.querySelector<HTMLElement>('[part="description"]')
     if (descEl) {

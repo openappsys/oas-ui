@@ -396,6 +396,8 @@ describe('OASSelect focus 委托', () => {
     el.setAttribute('options', OPTIONS)
     document.body.appendChild(el)
     el.focus()
-    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('button[part="trigger"]'))
+    expect(el.shadowRoot!.activeElement).toBe(
+      el.shadowRoot!.querySelector('button[part="trigger"]'),
+    )
   })
 })

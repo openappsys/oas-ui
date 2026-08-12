@@ -101,9 +101,9 @@ describe('OASDropdown', () => {
     const el = mount({ open: '', items: NESTED_ITEMS })
     await Promise.resolve()
     const root = innerMenuRoot(el)
-    root.querySelector<HTMLElement>('[part="item"][data-value="file"]')!.dispatchEvent(
-      new MouseEvent('mouseenter'),
-    )
+    root
+      .querySelector<HTMLElement>('[part="item"][data-value="file"]')!
+      .dispatchEvent(new MouseEvent('mouseenter'))
     expect(root.querySelectorAll('.item.open').length).toBeGreaterThan(0)
     // 外部点击关闭 → 重开：级联展开态应清空
     document.dispatchEvent(new MouseEvent('click', { bubbles: true }))

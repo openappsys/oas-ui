@@ -67,19 +67,19 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `token` | Custom list of tokens to edit (CSS variable names) | — | — |
+| Attribute | Description                                        | Type | Default |
+| --------- | -------------------------------------------------- | ---- | ------- |
+| `token`   | Custom list of tokens to edit (CSS variable names) | —    | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                   |
+| ------------ | --------------------------------------------- |
 | `oas-change` | Editing any token, `detail: { token, value }` |
 
-| Method | Description |
-| --- | --- |
-| `exportJson()` | Returns the current token set `{ '--oas-*': value }` |
-| `reset()` | Clears the inline CSS variables written to the host and restores the default theme values |
+| Method         | Description                                                                               |
+| -------------- | ----------------------------------------------------------------------------------------- |
+| `exportJson()` | Returns the current token set `{ '--oas-*': value }`                                      |
+| `reset()`      | Clears the inline CSS variables written to the host and restores the default theme values |
 
 Behavior: tokens are read from the computed style of the host (or the nearest `oas-config-provider`); edits are written back to the host immediately via `style.setProperty`, and the subtree inherits them live. Inside a config-provider, writes go to the nearest provider (inherited by the whole subtree). Color input only accepts hex `#rrggbb`; non-hex current values are displayed but not fed into the color picker. Empty or invalid numeric input is neither written nor dispatched.

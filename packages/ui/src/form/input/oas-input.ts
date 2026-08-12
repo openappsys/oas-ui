@@ -482,11 +482,7 @@ export class OASInput extends OASElement {
 
   /** 内嵌前后缀：prefix/suffix 文案 + prefix-icon/suffix-icon 图标（iconRegistry 内联 SVG） */
   private syncAffixes(): void {
-    const render = (
-      part: string,
-      text: string,
-      iconName: string,
-    ): void => {
+    const render = (part: string, text: string, iconName: string): void => {
       const el = this.shadow.querySelector<HTMLElement>(`[part="${part}"]`)
       if (!el) return
       const content = iconName ? iconRegistry[iconName as IconName] : undefined

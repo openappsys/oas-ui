@@ -306,12 +306,10 @@ export class OASMentions extends OASElement {
     if (!this.panel || !this.ta || !this.openState) return
     const anchorRect = this.ta.getBoundingClientRect()
     const panelRect = this.panel.getBoundingClientRect()
-    const { top, left } = computePosition(
-      anchorRect,
-      panelRect,
-      'bottom' as Placement,
-      { width: window.innerWidth, height: window.innerHeight },
-    )
+    const { top, left } = computePosition(anchorRect, panelRect, 'bottom' as Placement, {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    })
     this.panel.style.top = `${top}px`
     this.panel.style.left = `${left}px`
   }

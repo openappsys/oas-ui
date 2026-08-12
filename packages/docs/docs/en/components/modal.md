@@ -92,27 +92,27 @@ onMounted(async () => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `centered` | Vertically center the dialog | `boolean` | — |
-| `draggable` | Drag the dialog via its header | `boolean` | — |
-| `no-footer` | Hide footer action buttons | `boolean` | — |
-| `no-mask-close` | Disable closing on mask click | `boolean` | — |
-| `title` | Title text | `string` | — |
-| `visible` | Whether shown | `boolean` | — |
-| `width` | Dialog width (px or percentage) | — | — |
+| Attribute       | Description                     | Type      | Default |
+| --------------- | ------------------------------- | --------- | ------- |
+| `centered`      | Vertically center the dialog    | `boolean` | —       |
+| `draggable`     | Drag the dialog via its header  | `boolean` | —       |
+| `no-footer`     | Hide footer action buttons      | `boolean` | —       |
+| `no-mask-close` | Disable closing on mask click   | `boolean` | —       |
+| `title`         | Title text                      | `string`  | —       |
+| `visible`       | Whether shown                   | `boolean` | —       |
+| `width`         | Dialog width (px or percentage) | —         | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                  |
+| ------------ | -------------------------------------------- |
 | `oas-cancel` | Cancel: cancel button / ✕ / mask click / Esc |
-| `oas-ok` | Clicked "OK" |
+| `oas-ok`     | Clicked "OK"                                 |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| default | — |
+| Name    | Description |
+| ------- | ----------- |
+| default | —           |
 
 `role="dialog"` + `aria-modal="true"`; focus moves to the "Cancel" button on open and is restored on close.

@@ -14,7 +14,9 @@ describe('OASSpin', () => {
     const el = new OASSpin()
     document.body.appendChild(el)
     expect(el.shadowRoot!.querySelector('[part="indicator"]')).not.toBeNull()
-    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size')).toBe('medium')
+    expect(el.shadowRoot!.querySelector('[part="indicator"]')!.getAttribute('data-size')).toBe(
+      'medium',
+    )
   })
 
   it('size 五档：xs/small/medium/large/xl 映射到 data-size', () => {

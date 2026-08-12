@@ -33,9 +33,9 @@ A placeholder skeleton for loading states, supporting an avatar, title, multiple
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `active` | Whether to enable the shimmer animation | `boolean` | — |
-| `avatar` | Whether to show the avatar placeholder | `boolean` | — |
-| `rows` | Number of paragraph rows | `string` | `3` |
-| `title` | Whether to show the title placeholder | `boolean` | — |
+| Attribute | Description                             | Type      | Default |
+| --------- | --------------------------------------- | --------- | ------- |
+| `active`  | Whether to enable the shimmer animation | `boolean` | —       |
+| `avatar`  | Whether to show the avatar placeholder  | `boolean` | —       |
+| `rows`    | Number of paragraph rows                | `string`  | `3`     |
+| `title`   | Whether to show the title placeholder   | `boolean` | —       |

@@ -32,14 +32,14 @@ A result feedback page supporting four states: success, error, warning, and info
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `description` | Description text | `string` | — |
-| `status` | Result status | `string` | `success` |
-| `title` | Title text | `string` | — |
+| Attribute     | Description      | Type     | Default   |
+| ------------- | ---------------- | -------- | --------- |
+| `description` | Description text | `string` | —         |
+| `status`      | Result status    | `string` | `success` |
+| `title`       | Title text       | `string` | —         |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
+| Name    | Description                               |
+| ------- | ----------------------------------------- |
 | `extra` | Action area, placed below the description |

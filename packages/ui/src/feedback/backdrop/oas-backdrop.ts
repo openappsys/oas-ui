@@ -38,7 +38,14 @@ function preventScroll(e: Event): void {
 function preventScrollKeydown(e: KeyboardEvent): void {
   const t = e.target as HTMLElement | null
   // 输入类控件内不拦截（保留正常输入），仅拦截会滚动页面的按键
-  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return
+  if (
+    t &&
+    (t.tagName === 'INPUT' ||
+      t.tagName === 'TEXTAREA' ||
+      t.tagName === 'SELECT' ||
+      t.isContentEditable)
+  )
+    return
   if (SCROLL_KEYS.has(e.key)) e.preventDefault()
 }
 

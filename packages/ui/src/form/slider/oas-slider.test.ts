@@ -128,10 +128,18 @@ describe('OASSlider', () => {
         max: '100',
         marks: JSON.stringify([0, 26, 60]),
       })
-      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual(['true', 'true', 'false'])
+      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual([
+        'true',
+        'true',
+        'false',
+      ])
       // 值增大后增量刷新高亮
       el.setAttribute('value', '70')
-      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual(['true', 'true', 'true'])
+      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual([
+        'true',
+        'true',
+        'true',
+      ])
       expect(markItems(el)).toHaveLength(3)
     })
 

@@ -393,9 +393,7 @@ export class OASSelect extends OASElement {
       document.addEventListener('click', this.handleOutsideClick)
       const current = this.currentValues()
       const idx =
-        current.length > 0
-          ? this.visibleOptions().findIndex((o) => o.value === current[0])
-          : 0
+        current.length > 0 ? this.visibleOptions().findIndex((o) => o.value === current[0]) : 0
       this.activeIndex = Math.max(idx, 0)
     } else {
       document.removeEventListener('click', this.handleOutsideClick)
@@ -662,7 +660,12 @@ export class OASSelect extends OASElement {
   }
 
   /** 单行（max-tag-count 折叠模式）放不下时把放不下的标签收进 +N（不换行、不出横向滚动条） */
-  private collapseOverflowChips(valueEl: HTMLElement, plus: HTMLElement, allLabels: string[], renderedCount: number): void {
+  private collapseOverflowChips(
+    valueEl: HTMLElement,
+    plus: HTMLElement,
+    allLabels: string[],
+    renderedCount: number,
+  ): void {
     const chips = [...valueEl.querySelectorAll<HTMLElement>('.chip:not(.chip-plus)')]
     let hidden = allLabels.length - renderedCount // 已按 max-tag-count 折叠的数量
     // 无需折叠且单行放得下：移除 +N，不占位

@@ -139,7 +139,9 @@ describe('OASTabs', () => {
     expect(el.classList.contains('oas-tabs--left')).toBe(true)
     expect(el.classList.contains('oas-tabs--right')).toBe(false)
     expect(el.classList.contains('oas-tabs--bottom')).toBe(false)
-    expect(el.shadowRoot!.querySelector('[role="tablist"]')!.classList.contains('tablist--vertical')).toBe(true)
+    expect(
+      el.shadowRoot!.querySelector('[role="tablist"]')!.classList.contains('tablist--vertical'),
+    ).toBe(true)
   })
 
   it('tab-position 默认 top，可切换 right / bottom 并同步类名', () => {

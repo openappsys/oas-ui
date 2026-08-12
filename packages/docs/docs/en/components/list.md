@@ -147,25 +147,25 @@ The default slot of an item can hold a thumbnail, combining it with the title an
 
 ### oas-list
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `bordered` | Whether to show the outer border | `boolean` | — |
-| `empty` | Force empty state; auto empty when there are no children | `boolean` | — |
-| `empty-text` | Empty state text | — | — |
-| `loading` | Loading state, shows skeleton placeholders | `boolean` | — |
-| `split` | Whether to show item dividers | `boolean` | — |
+| Attribute    | Description                                              | Type      | Default |
+| ------------ | -------------------------------------------------------- | --------- | ------- |
+| `bordered`   | Whether to show the outer border                         | `boolean` | —       |
+| `empty`      | Force empty state; auto empty when there are no children | `boolean` | —       |
+| `empty-text` | Empty state text                                         | —         | —       |
+| `loading`    | Loading state, shows skeleton placeholders               | `boolean` | —       |
+| `split`      | Whether to show item dividers                            | `boolean` | —       |
 
-| Name | Description |
-| --- | --- |
-| default | — |
+| Name    | Description |
+| ------- | ----------- |
+| default | —           |
 
 ### oas-list-item
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `title` | Item title | `string` | — |
+| Attribute | Description | Type     | Default |
+| --------- | ----------- | -------- | ------- |
+| `title`   | Item title  | `string` | —       |
 
-| Name | Description |
-| --- | --- |
+| Name          | Description                                                         |
+| ------------- | ------------------------------------------------------------------- |
 | `description` | Description area (falls back to the default slot when not provided) |
-| `extra` | Extra area on the right of the item |
+| `extra`       | Extra area on the right of the item                                 |

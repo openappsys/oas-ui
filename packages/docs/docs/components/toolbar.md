@@ -45,8 +45,8 @@ slot 里放 `oas-button`（自定义元素自动参与 roving），用 `data-too
 ### 插槽
 
 | 名称 | 说明 |
-| --- | --- |
-| 默认 | — |
+| ---- | ---- |
+| 默认 | —    |
 
 - 宿主 `role="toolbar"`，`aria-label` 走 locale key（`toolbar.label`，默认「工具栏」）
 - 参与 roving 的子元素：native 控件（`button`/`input`/`select`/`textarea`/`a[href]`）、交互 `role`、自定义元素（tag 含 `-`）；用 `data-toolbar-ignore` 或 `aria-hidden` 排除，`disabled`/`aria-disabled` 自动跳过

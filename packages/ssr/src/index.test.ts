@@ -841,7 +841,9 @@ describe('@oas-ui/ssr renderToString', () => {
     // 宿主 active 属性保留（浏览器 upgrade 后据此展开面板）
     expect(html).toContain('<oas-collapse active="a">')
     // light DOM 面板保留 + 嵌套 DSD（含子组件指纹）+ open 态由组件 update 同步写入
-    expect(html).toContain('<oas-collapse-item name="a" header="面板一" open=""><template shadowrootmode="open">')
+    expect(html).toContain(
+      '<oas-collapse-item name="a" header="面板一" open=""><template shadowrootmode="open">',
+    )
     expect(html).toContain('<meta data-oas-ssr="oas-collapse-item" data-oas-ssr-v="1">')
     expect(html).toContain('内容一</oas-collapse-item></oas-collapse>')
   })
@@ -1328,6 +1330,8 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('theme-editor 排除：开发工具组件 SSR 意义低，不在白名单', async () => {
-    await expect(renderToString('oas-theme-editor')).rejects.toThrow(/非白名单 tag「oas-theme-editor」/)
+    await expect(renderToString('oas-theme-editor')).rejects.toThrow(
+      /非白名单 tag「oas-theme-editor」/,
+    )
   })
 })

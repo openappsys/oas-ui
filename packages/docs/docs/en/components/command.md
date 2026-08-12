@@ -74,25 +74,25 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `items` | Command items JSON | `string` | `[]` |
-| `open` | Whether open (controlled; auto-removed after selection / Esc) | `boolean` | — |
+| Attribute | Description                                                   | Type      | Default |
+| --------- | ------------------------------------------------------------- | --------- | ------- |
+| `items`   | Command items JSON                                            | `string`  | `[]`    |
+| `open`    | Whether open (controlled; auto-removed after selection / Esc) | `boolean` | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                 |
+| ------------ | ------------------------------------------- |
 | `oas-select` | A command was executed, `detail: { value }` |
 
 `CommandItem` fields:
 
-| Field      | Description                                        | Type       |
-| ---------- | -------------------------------------------------- | ---------- |
-| `label`    | Display text                                       | `string`   |
-| `value`    | Selected value (`oas-select` detail.value)         | `string`   |
-| `keywords` | Search keywords (optional), matched in addition to the label | `string[]` |
-| `group`    | Group name (optional); same-group items render a group title | `string`   |
-| `disabled` | Disables the item (not selectable via Enter/click, skipped by arrow keys) | `boolean` |
+| Field      | Description                                                               | Type       |
+| ---------- | ------------------------------------------------------------------------- | ---------- |
+| `label`    | Display text                                                              | `string`   |
+| `value`    | Selected value (`oas-select` detail.value)                                | `string`   |
+| `keywords` | Search keywords (optional), matched in addition to the label              | `string[]` |
+| `group`    | Group name (optional); same-group items render a group title              | `string`   |
+| `disabled` | Disables the item (not selectable via Enter/click, skipped by arrow keys) | `boolean`  |
 
 Keyboard: `↑`/`↓` move the highlight (skipping disabled items), `Enter` executes and closes, `Esc` closes, `Tab` cycles between the search input and the options (focus trap); on open the search input is focused, and on close focus returns to the source element. The global `⌘K` / `Ctrl+K` shortcut toggles it.

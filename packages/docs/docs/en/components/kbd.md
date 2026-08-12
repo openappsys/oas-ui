@@ -29,14 +29,14 @@ A keyboard shortcut display component. `keys` is split by spaces into multiple k
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `keys` | Space-separated key sequence, e.g. `"ctrl shift k"` | `string` | — |
+| Attribute | Description                                         | Type     | Default |
+| --------- | --------------------------------------------------- | -------- | ------- |
+| `keys`    | Space-separated key sequence, e.g. `"ctrl shift k"` | `string` | —       |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| default | — |
+| Name    | Description |
+| ------- | ----------- |
+| default | —           |
 
 > Note: empty `keys` renders a single empty keycap; slot content takes priority when provided. The component is purely presentational with `role="text"` and dispatches no events.

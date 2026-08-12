@@ -31,15 +31,15 @@ A countdown component that refreshes in real time, supports day/hour/minute/seco
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `format` | Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds | `string` | `HH:mm:ss` |
-| `value` | Total countdown duration (milliseconds) | `string` | `0` |
+| Attribute | Description                                                                 | Type     | Default    |
+| --------- | --------------------------------------------------------------------------- | -------- | ---------- |
+| `format`  | Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds | `string` | `HH:mm:ss` |
+| `value`   | Total countdown duration (milliseconds)                                     | `string` | `0`        |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                  |
+| ------------ | -------------------------------------------- |
 | `oas-finish` | Emitted once when the countdown reaches zero |
 
 When the template contains `D`/`DD`, hours are counted within the day (0-23); without days, hours roll up into them (e.g. `25:01:01`).

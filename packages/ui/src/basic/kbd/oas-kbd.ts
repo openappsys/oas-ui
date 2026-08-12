@@ -87,9 +87,7 @@ export class OASKbd extends OASElement {
     if (hasSlot) return
 
     // 按空格拆分渲染多块 + 加号连接；空 keys 渲染单空块
-    const keys = this.getAttr('keys', '')
-      .split(/\s+/)
-      .filter(Boolean)
+    const keys = this.getAttr('keys', '').split(/\s+/).filter(Boolean)
     const list = keys.length > 0 ? keys : ['']
     this.keysEl.replaceChildren()
     list.forEach((key, i) => {

@@ -118,10 +118,8 @@ export class OASDynamicInput extends OASElement {
       this.rows = [...this.rowsEl.querySelectorAll<HTMLElement>(':scope > .row')]
     }
 
-    this.rowsEl?.addEventListener(
-      'oas-input',
-      ((e: CustomEvent<{ value: string }>) => this.handleRowInput(e)) as EventListener,
-    )
+    this.rowsEl?.addEventListener('oas-input', ((e: CustomEvent<{ value: string }>) =>
+      this.handleRowInput(e)) as EventListener)
     this.rowsEl?.addEventListener('click', (e: MouseEvent) => this.handleClick(e))
     this.addBtn?.addEventListener('click', () => this.handleAdd())
     this.onCleanup(() => {

@@ -21,10 +21,7 @@ function thumb(el: OASScrollArea, part: 'thumb-v' | 'thumb-h'): HTMLElement {
 }
 
 /** 模拟滚动容器尺寸（happy-dom 无布局，手动覆写只读属性） */
-function mockSize(
-  vp: HTMLElement,
-  size: { cw: number; ch: number; sw: number; sh: number },
-): void {
+function mockSize(vp: HTMLElement, size: { cw: number; ch: number; sw: number; sh: number }): void {
   Object.defineProperty(vp, 'clientWidth', { value: size.cw, configurable: true })
   Object.defineProperty(vp, 'clientHeight', { value: size.ch, configurable: true })
   Object.defineProperty(vp, 'scrollWidth', { value: size.sw, configurable: true })
@@ -304,7 +301,9 @@ describe('OASScrollArea', () => {
       // 轨道高 96（top/bottom 各 2px）、thumb 高 25 → travel = 71，maxScroll = 300
       Object.defineProperty(vTrack, 'clientHeight', { value: 96, configurable: true })
       Object.defineProperty(vThumb, 'clientHeight', { value: 25, configurable: true })
-      vThumb.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientY: 10 }))
+      vThumb.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, clientY: 10 }),
+      )
       window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientY: 45.5 }))
       // delta=35.5 → 35.5/71*300 = 150
       expect(vp.scrollTop).toBe(150)
@@ -324,7 +323,9 @@ describe('OASScrollArea', () => {
       const hThumb = thumb(el, 'thumb-h')
       Object.defineProperty(hTrack, 'clientWidth', { value: 96, configurable: true })
       Object.defineProperty(hThumb, 'clientWidth', { value: 25, configurable: true })
-      hThumb.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 10 }))
+      hThumb.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 10 }),
+      )
       window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 45.5 }))
       expect(vp.scrollLeft).toBe(150)
       window.dispatchEvent(new PointerEvent('pointerup', {}))
@@ -338,7 +339,9 @@ describe('OASScrollArea', () => {
       const hThumb = thumb(el, 'thumb-h')
       Object.defineProperty(hTrack, 'clientWidth', { value: 96, configurable: true })
       Object.defineProperty(hThumb, 'clientWidth', { value: 25, configurable: true })
-      hThumb.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 10 }))
+      hThumb.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: 10 }),
+      )
       window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 500 }))
       expect(vp.scrollLeft).toBe(300)
       window.dispatchEvent(new PointerEvent('pointerup', {}))
@@ -349,7 +352,9 @@ describe('OASScrollArea', () => {
       const vp = viewport(el)
       mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
       const hThumb = thumb(el, 'thumb-h')
-      hThumb.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 2, clientX: 10 }))
+      hThumb.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, button: 2, clientX: 10 }),
+      )
       window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 45 }))
       expect(vp.scrollLeft).toBe(0)
     })

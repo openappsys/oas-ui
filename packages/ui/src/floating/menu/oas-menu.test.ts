@@ -373,7 +373,9 @@ describe('OASMenu', () => {
     const el = mount({ items: NESTED_ITEMS })
     const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
     expect(css).toMatch(/\.submenu\.flip-left\s*\{[^}]*left:\s*auto;\s*right:\s*100%/)
-    expect(css).toMatch(/\.submenu\.flip-up\s*\{[^}]*top:\s*auto;\s*bottom:\s*calc\(-1\s*\*\s*var\(--oas-space-1\)\)/)
+    expect(css).toMatch(
+      /\.submenu\.flip-up\s*\{[^}]*top:\s*auto;\s*bottom:\s*calc\(-1\s*\*\s*var\(--oas-space-1\)\)/,
+    )
     // 水平模式一级子菜单向上翻转：bottom:100%（在父项上方浮出）
     const h = mount({ items: NESTED_ITEMS, mode: 'horizontal' })
     const hcss = h.shadowRoot!.querySelector('style')!.textContent ?? ''

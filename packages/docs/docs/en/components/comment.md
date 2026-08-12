@@ -61,13 +61,13 @@ A purely presentational comment block container that assembles the author avatar
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| default | Nested `oas-comment` child comments, automatically indented |
-| `actions` | Action area (reply / like, etc., provided by the host) |
-| `author` | Author name |
-| `avatar` | Author avatar (can hold an `oas-avatar`) |
-| `content` | Comment content |
-| `time` | Time |
+| Name      | Description                                                 |
+| --------- | ----------------------------------------------------------- |
+| default   | Nested `oas-comment` child comments, automatically indented |
+| `actions` | Action area (reply / like, etc., provided by the host)      |
+| `author`  | Author name                                                 |
+| `avatar`  | Author avatar (can hold an `oas-avatar`)                    |
+| `content` | Comment content                                             |
+| `time`    | Time                                                        |
 
 Parts: `::part(comment)` root, `::part(main)` main body, `::part(avatar)` / `::part(author)` / `::part(time)` / `::part(content)` / `::part(actions)`, `::part(children)` child comment container.

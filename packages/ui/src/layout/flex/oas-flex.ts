@@ -75,7 +75,8 @@ export class OASFlex extends OASElement {
     if (!wrap) return
     const direction = this.getAttr('direction', 'row')
     // vertical 简写 = direction:column
-    wrap.style.flexDirection = this.hasAttr('vertical') || direction === 'vertical' ? 'column' : 'row'
+    wrap.style.flexDirection =
+      this.hasAttr('vertical') || direction === 'vertical' ? 'column' : 'row'
     wrap.style.justifyContent = JUSTIFY_MAP[this.getAttr('justify', 'start')] ?? 'flex-start'
     wrap.style.alignItems = ALIGN_MAP[this.getAttr('align', 'stretch')] ?? 'stretch'
     wrap.style.gap = this.getAttr('gap', '')

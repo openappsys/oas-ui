@@ -76,18 +76,18 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `content` | Body text | `string` | — |
-| `open` | Controlled display (boolean attribute; shows when present) | `boolean` | — |
-| `placement` | Popup placement | `Placement` | `top` |
-| `title` | Title text | `string` | — |
+| Attribute   | Description                                                | Type        | Default |
+| ----------- | ---------------------------------------------------------- | ----------- | ------- |
+| `content`   | Body text                                                  | `string`    | —       |
+| `open`      | Controlled display (boolean attribute; shows when present) | `boolean`   | —       |
+| `placement` | Popup placement                                            | `Placement` | `top`   |
+| `title`     | Title text                                                 | `string`    | —       |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| default | — |
-| `content` | — |
+| Name      | Description |
+| --------- | ----------- |
+| default   | —           |
+| `content` | —           |
 
 No public events. Clicking the trigger toggles visibility; clicking outside or pressing Esc closes it; `role="dialog"`.

@@ -204,15 +204,23 @@ export class OASTransfer extends OASElement {
     this.leftListbox = this.shadow.querySelector('.listbox.left')
     this.rightListbox = this.shadow.querySelector('.listbox.right')
 
-    this.shadow.querySelector('.to-right')?.addEventListener('click', () => this.move('left', 'right'))
-    this.shadow.querySelector('.to-left')?.addEventListener('click', () => this.move('right', 'left'))
+    this.shadow
+      .querySelector('.to-right')
+      ?.addEventListener('click', () => this.move('left', 'right'))
+    this.shadow
+      .querySelector('.to-left')
+      ?.addEventListener('click', () => this.move('right', 'left'))
 
-    this.shadow.querySelector<HTMLInputElement>('.check-left')?.addEventListener('change', (e) =>
-      this.toggleSelectAll('left', (e.target as HTMLInputElement).checked),
-    )
-    this.shadow.querySelector<HTMLInputElement>('.check-right')?.addEventListener('change', (e) =>
-      this.toggleSelectAll('right', (e.target as HTMLInputElement).checked),
-    )
+    this.shadow
+      .querySelector<HTMLInputElement>('.check-left')
+      ?.addEventListener('change', (e) =>
+        this.toggleSelectAll('left', (e.target as HTMLInputElement).checked),
+      )
+    this.shadow
+      .querySelector<HTMLInputElement>('.check-right')
+      ?.addEventListener('change', (e) =>
+        this.toggleSelectAll('right', (e.target as HTMLInputElement).checked),
+      )
 
     this.shadow
       .querySelector<HTMLInputElement>('.search-left')
@@ -251,9 +259,7 @@ export class OASTransfer extends OASElement {
     const raw = this.getAttribute('data')
     try {
       const parsed = raw == null ? null : JSON.parse(raw)
-      this._data = Array.isArray(parsed)
-        ? parsed.filter((i) => i && typeof i.key === 'string')
-        : []
+      this._data = Array.isArray(parsed) ? parsed.filter((i) => i && typeof i.key === 'string') : []
     } catch {
       this._data = []
     }
@@ -323,7 +329,9 @@ export class OASTransfer extends OASElement {
     }
 
     // 标题
-    const title = this.shadow.querySelector<HTMLElement>(`.title.${side === 'left' ? 'source' : 'target'}`)
+    const title = this.shadow.querySelector<HTMLElement>(
+      `.title.${side === 'left' ? 'source' : 'target'}`,
+    )
     if (title) title.textContent = this.titleFor(side)
 
     // 全选 checkbox 状态：全部可见项已选中时为 true，全不选时为 false
@@ -332,9 +340,8 @@ export class OASTransfer extends OASElement {
       const selectable = visible.filter((i) => !i.disabled)
       check.checked = selectable.length > 0 && selectable.every((i) => selected.has(i.key))
       check.disabled = selectable.length === 0
-      this.shadow.querySelector<HTMLElement>(`.check-${side} + span`)!.textContent = this.t(
-        'transfer.selectAll',
-      )
+      this.shadow.querySelector<HTMLElement>(`.check-${side} + span`)!.textContent =
+        this.t('transfer.selectAll')
     }
 
     // 搜索框

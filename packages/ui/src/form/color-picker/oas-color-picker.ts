@@ -228,24 +228,24 @@ export class OASColorPicker extends OASElement {
     this.trigger?.addEventListener('click', () => this.toggle())
     this.trigger?.addEventListener('keydown', (e: KeyboardEvent) => this.handleTriggerKey(e))
 
-    this.shadow.querySelector<HTMLInputElement>('.hue')?.addEventListener('input', (e) =>
-      this.fromHsl((e.target as HTMLInputElement).value, 'h'),
-    )
-    this.shadow.querySelector<HTMLInputElement>('.sat')?.addEventListener('input', (e) =>
-      this.fromHsl((e.target as HTMLInputElement).value, 's'),
-    )
-    this.shadow.querySelector<HTMLInputElement>('.val')?.addEventListener('input', (e) =>
-      this.fromHsl((e.target as HTMLInputElement).value, 'v'),
-    )
-    this.shadow.querySelector<HTMLInputElement>('.r')?.addEventListener('input', (e) =>
-      this.fromRgb((e.target as HTMLInputElement).value, 'r'),
-    )
-    this.shadow.querySelector<HTMLInputElement>('.g')?.addEventListener('input', (e) =>
-      this.fromRgb((e.target as HTMLInputElement).value, 'g'),
-    )
-    this.shadow.querySelector<HTMLInputElement>('.b')?.addEventListener('input', (e) =>
-      this.fromRgb((e.target as HTMLInputElement).value, 'b'),
-    )
+    this.shadow
+      .querySelector<HTMLInputElement>('.hue')
+      ?.addEventListener('input', (e) => this.fromHsl((e.target as HTMLInputElement).value, 'h'))
+    this.shadow
+      .querySelector<HTMLInputElement>('.sat')
+      ?.addEventListener('input', (e) => this.fromHsl((e.target as HTMLInputElement).value, 's'))
+    this.shadow
+      .querySelector<HTMLInputElement>('.val')
+      ?.addEventListener('input', (e) => this.fromHsl((e.target as HTMLInputElement).value, 'v'))
+    this.shadow
+      .querySelector<HTMLInputElement>('.r')
+      ?.addEventListener('input', (e) => this.fromRgb((e.target as HTMLInputElement).value, 'r'))
+    this.shadow
+      .querySelector<HTMLInputElement>('.g')
+      ?.addEventListener('input', (e) => this.fromRgb((e.target as HTMLInputElement).value, 'g'))
+    this.shadow
+      .querySelector<HTMLInputElement>('.b')
+      ?.addEventListener('input', (e) => this.fromRgb((e.target as HTMLInputElement).value, 'b'))
 
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
   }
@@ -280,14 +280,18 @@ export class OASColorPicker extends OASElement {
       const s = m[1]!
       return `#${s[0]}${s[0]}${s[1]}${s[1]}${s[2]}${s[2]}`
     }
-    return /^#?[0-9a-f]{6}$/i.test(hex.trim()) ? `#${hex.trim().replace(/^#/, '').toLowerCase()}` : '#0066ff'
+    return /^#?[0-9a-f]{6}$/i.test(hex.trim())
+      ? `#${hex.trim().replace(/^#/, '').toLowerCase()}`
+      : '#0066ff'
   }
 
   private parsePresets(): void {
     try {
       const parsed = JSON.parse(this.getAttr('preset', ''))
       if (Array.isArray(parsed)) {
-        const colors = parsed.filter((c): c is string => typeof c === 'string' && /^#?[0-9a-f]{3,6}$/i.test(c))
+        const colors = parsed.filter(
+          (c): c is string => typeof c === 'string' && /^#?[0-9a-f]{3,6}$/i.test(c),
+        )
         if (colors.length > 0) this.presets = colors
       }
     } catch {

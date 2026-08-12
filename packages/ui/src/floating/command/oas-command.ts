@@ -230,7 +230,10 @@ export class OASCommand extends OASElement {
       this.itemsList = Array.isArray(parsed)
         ? parsed.filter(
             (i): i is CommandItem =>
-              !!i && typeof i === 'object' && typeof i.label === 'string' && typeof i.value === 'string',
+              !!i &&
+              typeof i === 'object' &&
+              typeof i.label === 'string' &&
+              typeof i.value === 'string',
           )
         : []
     } catch {

@@ -63,8 +63,5 @@ test('Vue property 劫持门禁：全页 SPA 扫描', async ({ page }) => {
     if (Object.keys(missing).length) report[name] = missing
   }
 
-  expect(
-    report,
-    `存在 Vue property 劫持漏网：\n${JSON.stringify(report, null, 2)}`,
-  ).toEqual({})
+  expect(report, `存在 Vue property 劫持漏网：\n${JSON.stringify(report, null, 2)}`).toEqual({})
 })

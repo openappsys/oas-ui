@@ -132,29 +132,29 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `arrows` | Arrow display mode: `always` (always shown) / `hover` (shown on hover) / `never` (hidden) | `string` | `hover` |
-| `autoplay` | Whether to autoplay | `boolean` | — |
-| `index` | Current screen index (starting from 0) | `string` | `0` |
-| `interval` | Autoplay interval (ms) | `string` | `3000` |
+| Attribute  | Description                                                                               | Type      | Default |
+| ---------- | ----------------------------------------------------------------------------------------- | --------- | ------- |
+| `arrows`   | Arrow display mode: `always` (always shown) / `hover` (shown on hover) / `never` (hidden) | `string`  | `hover` |
+| `autoplay` | Whether to autoplay                                                                       | `boolean` | —       |
+| `index`    | Current screen index (starting from 0)                                                    | `string`  | `0`     |
+| `interval` | Autoplay interval (ms)                                                                    | `string`  | `3000`  |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                 |
+| ------------ | ------------------------------------------- |
 | `oas-change` | Current screen changed, `detail: { index }` |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| default | — |
+| Name    | Description |
+| ------- | ----------- |
+| default | —           |
 
 ### Parts (::part())
 
-| Part                           | Description                                                    |
-| ------------------------------ | -------------------------------------------------------------- |
-| `viewport` / `track`           | Viewport and sliding track                                     |
-| `dots` / `dot`                 | Bottom indicator container and a single dot                    |
-| `arrow-prev` / `arrow-next`    | Left/right arrow buttons, absolutely positioned at the vertical center of the two sides of the carousel; can be styled independently |
+| Part                        | Description                                                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `viewport` / `track`        | Viewport and sliding track                                                                                                           |
+| `dots` / `dot`              | Bottom indicator container and a single dot                                                                                          |
+| `arrow-prev` / `arrow-next` | Left/right arrow buttons, absolutely positioned at the vertical center of the two sides of the carousel; can be styled independently |

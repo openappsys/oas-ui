@@ -44,18 +44,18 @@
 
 ### 属性
 
-| 属性 | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| `expandable` | 溢出时显示「展开/收起」按钮 | `boolean` | — |
-| `rows` | 显示行数（1 为单行省略，≥2 多行 `-webkit-line-clamp`） | `string` | `1` |
-| `text` | 文本内容 | `string` | — |
-| `tooltip` | 溢出时悬停展示全文 tooltip | `string` | `true` |
+| 属性         | 说明                                                   | 类型      | 默认值 |
+| ------------ | ------------------------------------------------------ | --------- | ------ |
+| `expandable` | 溢出时显示「展开/收起」按钮                            | `boolean` | —      |
+| `rows`       | 显示行数（1 为单行省略，≥2 多行 `-webkit-line-clamp`） | `string`  | `1`    |
+| `text`       | 文本内容                                               | `string`  | —      |
+| `tooltip`    | 溢出时悬停展示全文 tooltip                             | `string`  | `true` |
 
 ### 事件
 
-| 事件 | 说明 |
-| --- | --- |
+| 事件           | 说明                                |
+| -------------- | ----------------------------------- |
 | `oas-collapse` | 收起，`detail: { expanded: false }` |
-| `oas-expand` | 展开，`detail: { expanded: true }` |
+| `oas-expand`   | 展开，`detail: { expanded: true }`  |
 
 仅文本**实际溢出**时才会挂载 tooltip / 展开按钮；无溢出时纯文本，断开连接即销毁，零孤儿浮层。

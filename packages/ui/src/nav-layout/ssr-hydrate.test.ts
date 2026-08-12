@@ -107,18 +107,19 @@ const FIXTURES: Fixture[] = [
       ),
     probe: '.tablist',
   },
-  { name: 'pagination', cls: OASPagination, setup: (e) => e.setAttribute('total', '50'), probe: '.group' },
+  {
+    name: 'pagination',
+    cls: OASPagination,
+    setup: (e) => e.setAttribute('total', '50'),
+    probe: '.group',
+  },
   {
     name: 'steps',
     cls: OASSteps,
     setup: (e) =>
       e.setAttribute(
         'steps',
-        JSON.stringify([
-          { title: '第一步' },
-          { title: '第二步' },
-          { title: '第三步' },
-        ]),
+        JSON.stringify([{ title: '第一步' }, { title: '第二步' }, { title: '第三步' }]),
       ),
     probe: '.steps',
   },
@@ -135,7 +136,12 @@ const FIXTURES: Fixture[] = [
       ),
     probe: '.group',
   },
-  { name: 'breadcrumb', cls: OASBreadcrumb, setup: (e) => e.setAttribute('items', BREADCRUMB_ITEMS), probe: 'nav' },
+  {
+    name: 'breadcrumb',
+    cls: OASBreadcrumb,
+    setup: (e) => e.setAttribute('items', BREADCRUMB_ITEMS),
+    probe: 'nav',
+  },
   {
     name: 'anchor',
     cls: OASAnchor,
@@ -160,12 +166,42 @@ const FIXTURES: Fixture[] = [
     },
     probe: '.menu-anchor',
   },
-  { name: 'context-menu', cls: OASContextMenu, setup: (e) => e.setAttribute('items', MENU_ITEMS), probe: '.menu-anchor' },
-  { name: 'menubar', cls: OASMenubar, setup: (e) => e.setAttribute('items', MENUBAR_ITEMS), probe: '.bar' },
-  { name: 'navigation-menu', cls: OASNavigationMenu, setup: (e) => e.setAttribute('items', NAV_ITEMS), probe: '.nav' },
-  { name: 'toolbar', cls: OASToolbar, setup: (e) => (e.innerHTML = '<button>复制</button><button>粘贴</button>'), probe: 'slot' },
-  { name: 'command', cls: OASCommand, setup: (e) => e.setAttribute('items', COMMAND_ITEMS), probe: '.list' },
-  { name: 'tour', cls: OAStour, setup: (e) => e.setAttribute('steps', TOUR_STEPS), probe: '.popup' },
+  {
+    name: 'context-menu',
+    cls: OASContextMenu,
+    setup: (e) => e.setAttribute('items', MENU_ITEMS),
+    probe: '.menu-anchor',
+  },
+  {
+    name: 'menubar',
+    cls: OASMenubar,
+    setup: (e) => e.setAttribute('items', MENUBAR_ITEMS),
+    probe: '.bar',
+  },
+  {
+    name: 'navigation-menu',
+    cls: OASNavigationMenu,
+    setup: (e) => e.setAttribute('items', NAV_ITEMS),
+    probe: '.nav',
+  },
+  {
+    name: 'toolbar',
+    cls: OASToolbar,
+    setup: (e) => (e.innerHTML = '<button>复制</button><button>粘贴</button>'),
+    probe: 'slot',
+  },
+  {
+    name: 'command',
+    cls: OASCommand,
+    setup: (e) => e.setAttribute('items', COMMAND_ITEMS),
+    probe: '.list',
+  },
+  {
+    name: 'tour',
+    cls: OAStour,
+    setup: (e) => e.setAttribute('steps', TOUR_STEPS),
+    probe: '.popup',
+  },
   {
     name: 'hover-card',
     cls: OASHoverCard,
@@ -176,11 +212,31 @@ const FIXTURES: Fixture[] = [
     },
     probe: '.card',
   },
-  { name: 'splitter', cls: OASSplitter, setup: (e) => e.setAttribute('percent', '40'), probe: '.splitter' },
-  { name: 'flex', cls: OASFlex, setup: (e) => (e.innerHTML = '<div>一</div><div>二</div>'), probe: '[part="wrap"]' },
-  { name: 'page-header', cls: OASPageHeader, setup: (e) => e.setAttribute('title', '标题'), probe: '.row' },
+  {
+    name: 'splitter',
+    cls: OASSplitter,
+    setup: (e) => e.setAttribute('percent', '40'),
+    probe: '.splitter',
+  },
+  {
+    name: 'flex',
+    cls: OASFlex,
+    setup: (e) => (e.innerHTML = '<div>一</div><div>二</div>'),
+    probe: '[part="wrap"]',
+  },
+  {
+    name: 'page-header',
+    cls: OASPageHeader,
+    setup: (e) => e.setAttribute('title', '标题'),
+    probe: '.row',
+  },
   { name: 'float-button', cls: OASFloatButton, probe: '.btn' },
-  { name: 'speed-dial', cls: OASSpeedDial, setup: (e) => e.setAttribute('actions', '[{"label":"分享"}]'), probe: '.fab' },
+  {
+    name: 'speed-dial',
+    cls: OASSpeedDial,
+    setup: (e) => e.setAttribute('actions', '[{"label":"分享"}]'),
+    probe: '.fab',
+  },
   {
     name: 'layout',
     cls: OASLayout,
@@ -202,7 +258,12 @@ const FIXTURES: Fixture[] = [
   },
   { name: 'container', cls: OASContainer, probe: '[part="root"]' },
   { name: 'grid', cls: OASGrid, setup: (e) => e.setAttribute('cols', '2'), probe: 'slot' },
-  { name: 'grid-item', cls: OASGridItem, setup: (e) => e.setAttribute('span', '12'), probe: 'slot' },
+  {
+    name: 'grid-item',
+    cls: OASGridItem,
+    setup: (e) => e.setAttribute('span', '12'),
+    probe: 'slot',
+  },
 ]
 
 /** 渲染一个参照实例并返回其 shadow 快照（SSR 场景等价物） */
@@ -312,7 +373,9 @@ describe('导航布局组件 DSD 真水合批次 4', () => {
 
     // oas-menu：点击叶子项 → oas-select + value 同步
     const menuSnap = captureSnapshot(OASMenu, (e) => e.setAttribute('items', MENU_ITEMS))
-    const menu = upgradeFromSnapshot(OASMenu, menuSnap, (e) => e.setAttribute('items', MENU_ITEMS)).el
+    const menu = upgradeFromSnapshot(OASMenu, menuSnap, (e) =>
+      e.setAttribute('items', MENU_ITEMS),
+    ).el
     let menuDetail: unknown = null
     menu.addEventListener('oas-select', (e: Event) => (menuDetail = (e as CustomEvent).detail))
     menu.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="home"]')!.click()
@@ -353,7 +416,9 @@ describe('导航布局组件 DSD 真水合批次 4', () => {
     expect(dd.shadowRoot!.querySelector('.menu-anchor')!.hasAttribute('hidden')).toBe(false)
 
     // oas-speed-dial：点击 fab → open
-    const sdSnap = captureSnapshot(OASSpeedDial, (e) => e.setAttribute('actions', '[{"label":"分享"}]'))
+    const sdSnap = captureSnapshot(OASSpeedDial, (e) =>
+      e.setAttribute('actions', '[{"label":"分享"}]'),
+    )
     const sd = upgradeFromSnapshot(OASSpeedDial, sdSnap, (e) =>
       e.setAttribute('actions', '[{"label":"分享"}]'),
     ).el
@@ -361,4 +426,3 @@ describe('导航布局组件 DSD 真水合批次 4', () => {
     expect(sd.hasAttribute('open')).toBe(true)
   })
 })
-

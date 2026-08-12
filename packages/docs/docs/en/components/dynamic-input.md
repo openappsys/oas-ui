@@ -62,18 +62,18 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `default-value` | Default value for new rows | `string` | — |
-| `disabled` | Disabled (row inputs + buttons) | `boolean` | — |
-| `max` | Maximum rows; truncates when over | `string` | — |
-| `min` | Minimum rows; auto-fills when below | `string` | `0` |
-| `model-value` | String array (property or JSON) | `string[]` | `[]` |
+| Attribute       | Description                         | Type       | Default |
+| --------------- | ----------------------------------- | ---------- | ------- |
+| `default-value` | Default value for new rows          | `string`   | —       |
+| `disabled`      | Disabled (row inputs + buttons)     | `boolean`  | —       |
+| `max`           | Maximum rows; truncates when over   | `string`   | —       |
+| `min`           | Minimum rows; auto-fills when below | `string`   | `0`     |
+| `model-value`   | String array (property or JSON)     | `string[]` | `[]`    |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                           |
+| ------------ | ----------------------------------------------------- |
 | `oas-change` | Dispatched after add/remove/edit, `detail: { value }` |
 
 Controlled: listen to `oas-change` and set the `modelValue` property (or the `model-value` attribute) to write back.

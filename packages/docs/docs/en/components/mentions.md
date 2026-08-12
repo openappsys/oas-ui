@@ -91,21 +91,21 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `disabled` | Disabled | `boolean` | — |
-| `label` | Accessible name (built-in text by default) | — | — |
-| `options` | Options, JSON array `[{ label, value }]` | `Option[] \| string` | `[]` |
-| `placeholder` | Placeholder text | `string` | — |
-| `prefix` | Trigger prefix | `string` | `@` |
-| `value` | Value (controlled, full text) | `string` | — |
+| Attribute     | Description                                | Type                 | Default |
+| ------------- | ------------------------------------------ | -------------------- | ------- |
+| `disabled`    | Disabled                                   | `boolean`            | —       |
+| `label`       | Accessible name (built-in text by default) | —                    | —       |
+| `options`     | Options, JSON array `[{ label, value }]`   | `Option[] \| string` | `[]`    |
+| `placeholder` | Placeholder text                           | `string`             | —       |
+| `prefix`      | Trigger prefix                             | `string`             | `@`     |
+| `value`       | Value (controlled, full text)              | `string`             | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                                   |
+| ------------ | ------------------------------------------------------------- |
 | `oas-change` | Text changed after insertion, `detail: { value }` (full text) |
-| `oas-input` | — |
-| `oas-select` | Suggestion selected, `detail: { value, label }` |
+| `oas-input`  | —                                                             |
+| `oas-select` | Suggestion selected, `detail: { value, label }`               |
 
 Keyboard: type `@` to open, `↑`/`↓` to move the highlight, `Enter` to insert, `Esc` to close.

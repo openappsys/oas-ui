@@ -59,21 +59,21 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `allow-duplicate` | Allow duplicate tags | `boolean` | — |
-| `disabled` | Disabled | `boolean` | — |
-| `max` | Maximum number of tags | `string` | — |
-| `model-value` | Tag array (property or JSON) | `string[]` | `[]` |
-| `placeholder` | Input placeholder | `string` | — |
+| Attribute         | Description                  | Type       | Default |
+| ----------------- | ---------------------------- | ---------- | ------- |
+| `allow-duplicate` | Allow duplicate tags         | `boolean`  | —       |
+| `disabled`        | Disabled                     | `boolean`  | —       |
+| `max`             | Maximum number of tags       | `string`   | —       |
+| `model-value`     | Tag array (property or JSON) | `string[]` | `[]`    |
+| `placeholder`     | Input placeholder            | `string`   | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
-| `oas-add` | Tag added, `detail: { value }` |
+| Event        | Description                                      |
+| ------------ | ------------------------------------------------ |
+| `oas-add`    | Tag added, `detail: { value }`                   |
 | `oas-change` | Dispatched after add/remove, `detail: { value }` |
-| `oas-remove` | Tag removed, `detail: { value }` |
+| `oas-remove` | Tag removed, `detail: { value }`                 |
 
 Keyboard: `Enter` / `,` to submit; with the input empty, `Backspace` deletes the last tag.
 

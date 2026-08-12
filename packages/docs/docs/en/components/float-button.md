@@ -40,20 +40,20 @@ onMounted(async () => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `badge` | Badge number at the top-right corner | `string` | — |
+| Attribute | Description                          | Type     | Default |
+| --------- | ------------------------------------ | -------- | ------- |
+| `badge`   | Badge number at the top-right corner | `string` | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event       | Description                          |
+| ----------- | ------------------------------------ |
 | `oas-click` | Clicked, `detail: { originalEvent }` |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| `icon` | — |
+| Name   | Description |
+| ------ | ----------- |
+| `icon` | —           |
 
 Slots: `icon` (default ＋). The default position is `position: fixed; bottom/right`, overridable via host element styles.

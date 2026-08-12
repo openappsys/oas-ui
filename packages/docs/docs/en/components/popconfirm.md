@@ -74,23 +74,23 @@ onMounted(async () => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `open` | Whether the bubble is shown | `boolean` | — |
-| `position` | Bubble position | `string` | `top` |
-| `title` | Confirmation text | `string` | — |
+| Attribute  | Description                 | Type      | Default |
+| ---------- | --------------------------- | --------- | ------- |
+| `open`     | Whether the bubble is shown | `boolean` | —       |
+| `position` | Bubble position             | `string`  | `top`   |
+| `title`    | Confirmation text           | `string`  | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
-| `oas-cancel` | Cancel: cancel button / Esc / outside click |
-| `oas-ok` | Clicked "OK"; the bubble then collapses automatically |
+| Event        | Description                                           |
+| ------------ | ----------------------------------------------------- |
+| `oas-cancel` | Cancel: cancel button / Esc / outside click           |
+| `oas-ok`     | Clicked "OK"; the bubble then collapses automatically |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| default | — |
+| Name    | Description |
+| ------- | ----------- |
+| default | —           |
 
 Clicking the wrapped content toggles the bubble; the bubble uses `role="dialog"`.

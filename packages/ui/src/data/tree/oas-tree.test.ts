@@ -401,9 +401,7 @@ describe('OASTree 声明式数据通道与真水合', () => {
   it('property 赋值优先：data setter 单向反射 attribute，getter 返回解析数组', () => {
     const el = new OASTree()
     document.body.appendChild(el)
-    const data = [
-      { key: 'a', label: '属性节点', children: [{ key: 'a-1', label: '子节点 1' }] },
-    ]
+    const data = [{ key: 'a', label: '属性节点', children: [{ key: 'a-1', label: '子节点 1' }] }]
     el.data = data
     // setter 反射 attribute（attribute 为唯一权威数据源）
     expect(el.getAttribute('data')).toBe(JSON.stringify(data))
@@ -418,7 +416,10 @@ describe('OASTree 声明式数据通道与真水合', () => {
     expect(rows(el)[0]!.textContent).toContain('节点 A')
     el.setAttribute(
       'data',
-      JSON.stringify([{ key: 'x', label: '新节点' }, { key: 'y', label: '另一节点' }]),
+      JSON.stringify([
+        { key: 'x', label: '新节点' },
+        { key: 'y', label: '另一节点' },
+      ]),
     )
     const r = rows(el)
     expect(r.length).toBe(2)

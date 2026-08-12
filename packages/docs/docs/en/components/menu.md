@@ -118,29 +118,29 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `collapsed` | Collapsed state (vertical only): icons only, submenus pop to the right | — | — |
-| `items` | Menu items JSON | `string` | `[]` |
-| `mode` | Layout mode: `vertical` menu / `horizontal` top bar | — | — |
-| `theme` | Local theme: `dark` uses dark tokens (independent of the global theme) | — | — |
-| `value` | Current selected value | `string` | — |
+| Attribute   | Description                                                            | Type     | Default |
+| ----------- | ---------------------------------------------------------------------- | -------- | ------- |
+| `collapsed` | Collapsed state (vertical only): icons only, submenus pop to the right | —        | —       |
+| `items`     | Menu items JSON                                                        | `string` | `[]`    |
+| `mode`      | Layout mode: `vertical` menu / `horizontal` top bar                    | —        | —       |
+| `theme`     | Local theme: `dark` uses dark tokens (independent of the global theme) | —        | —       |
+| `value`     | Current selected value                                                 | `string` | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                               |
+| ------------ | ----------------------------------------- |
 | `oas-select` | An item was selected, `detail: { value }` |
 
 `MenuItem` fields:
 
-| Field      | Description                                                        | Type         |
-| ---------- | ------------------------------------------------------------------ | ------------ |
-| `label`    | Menu item text                                                     | `string`     |
-| `value`    | Selection value                                                    | `string`     |
-| `type`     | Item type: `item` (default) / `group` (group title) / `divider`    | `string`     |
-| `icon`     | Icon name (a key of `@oas-ui/icons` iconRegistry)                | `string`     |
-| `disabled` | Disables the item                                                  | `boolean`    |
+| Field      | Description                                                                | Type         |
+| ---------- | -------------------------------------------------------------------------- | ------------ |
+| `label`    | Menu item text                                                             | `string`     |
+| `value`    | Selection value                                                            | `string`     |
+| `type`     | Item type: `item` (default) / `group` (group title) / `divider`            | `string`     |
+| `icon`     | Icon name (a key of `@oas-ui/icons` iconRegistry)                        | `string`     |
+| `disabled` | Disables the item                                                          | `boolean`    |
 | `children` | Submenu items array with the same shape as the parent (nested recursively) | `MenuItem[]` |
 
 `children` is an optional submenu items array; items with `children` expand their submenu on click/hover, and the selected state only lands on leaf items. `group` children are laid out flat on the same level; group titles are not clickable and skipped in keyboard navigation; `divider` items are not clickable and skipped in keyboard navigation.

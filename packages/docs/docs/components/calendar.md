@@ -49,19 +49,19 @@
 
 ### 属性
 
-| 属性 | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| `disabledDate` | 禁用回调（property） | `((d: Date) => boolean) \| null` | — |
-| `max` | 可选范围（ISO 日期） | `string` | — |
-| `min` | 可选范围（ISO 日期） | `string` | — |
-| `mode` | `month` / `year` | `string` | `month` |
-| `show-week-number` | 显示 ISO 周号列 | `boolean` | — |
-| `value` | 选中值（ISO） | `string` | — |
+| 属性               | 说明                 | 类型                             | 默认值  |
+| ------------------ | -------------------- | -------------------------------- | ------- |
+| `disabledDate`     | 禁用回调（property） | `((d: Date) => boolean) \| null` | —       |
+| `max`              | 可选范围（ISO 日期） | `string`                         | —       |
+| `min`              | 可选范围（ISO 日期） | `string`                         | —       |
+| `mode`             | `month` / `year`     | `string`                         | `month` |
+| `show-week-number` | 显示 ISO 周号列      | `boolean`                        | —       |
+| `value`            | 选中值（ISO）        | `string`                         | —       |
 
 ### 事件
 
-| 事件 | 说明 |
-| --- | --- |
+| 事件         | 说明                          |
+| ------------ | ----------------------------- |
 | `oas-change` | 选中变化，`detail: { value }` |
 
 键盘：`↑`/`↓`/`←`/`→` 在网格内移动，`Enter` 选中。

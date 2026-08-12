@@ -15,15 +15,15 @@
 
 ## 3. 目标（做什么）
 
-| 维度   | 目标                                                                                                    |
-| ------ | ------------------------------------------------------------------------------------------------------- |
-| 运行时 | Web Components（Custom Elements + Shadow DOM），无框架运行时依赖，`<oas-button>` 直接可用               |
-| 语言   | TypeScript 全量覆盖，导出 `.d.ts`，属性/事件有完整类型                                                  |
-| 工程   | Vite 构建 + Vitest 单测 + Playwright 视觉/交互测试                                                      |
-| 主题   | CSS 变量设计 token + 多主题（light/dark）+ 自定义主题能力                                               |
-| 国际化 | 框架无关 locale registry（不依赖 vue-i18n/react-intl）、语言包 tree-shakable、Intl.* 格式化、RTL 支持   |
-| 覆盖   | 通用组件库覆盖：表单、反馈、数据展示、布局、导航（v1.0 核心集 68 件，v1.x 长尾推进至约 115~120 件） |
-| 发布   | 语义化版本、文档站、demo、变更日志、可 tree-shaking                                                      |
+| 维度   | 目标                                                                                                  |
+| ------ | ----------------------------------------------------------------------------------------------------- |
+| 运行时 | Web Components（Custom Elements + Shadow DOM），无框架运行时依赖，`<oas-button>` 直接可用             |
+| 语言   | TypeScript 全量覆盖，导出 `.d.ts`，属性/事件有完整类型                                                |
+| 工程   | Vite 构建 + Vitest 单测 + Playwright 视觉/交互测试                                                    |
+| 主题   | CSS 变量设计 token + 多主题（light/dark）+ 自定义主题能力                                             |
+| 国际化 | 框架无关 locale registry（不依赖 vue-i18n/react-intl）、语言包 tree-shakable、Intl.* 格式化、RTL 支持 |
+| 覆盖   | 通用组件库覆盖：表单、反馈、数据展示、布局、导航（v1.0 核心集 68 件，v1.x 长尾推进至约 115~120 件）   |
+| 发布   | 语义化版本、文档站、demo、变更日志、可 tree-shaking                                                   |
 
 ## 4. 非目标（不做什么，守住边界）
 

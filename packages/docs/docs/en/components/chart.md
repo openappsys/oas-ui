@@ -86,12 +86,12 @@ No data / invalid JSON shows an empty state placeholder without errors.
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `aria-label` | Chart description (falls back to locale by type) | — | — |
-| `data` | Data. Array single-series `[{label, value}]` or object multi-series `{labels, series}` | `unknown` | — |
-| `options` | Config: `smooth` (smoothing), `colors` (series palette), `showLegend` | `unknown` | — |
-| `type` | Chart type: `line` / `bar` / `pie` / `area` / `donut` / `stacked-bar` | `ChartType` | `line` |
+| Attribute    | Description                                                                            | Type        | Default |
+| ------------ | -------------------------------------------------------------------------------------- | ----------- | ------- |
+| `aria-label` | Chart description (falls back to locale by type)                                       | —           | —       |
+| `data`       | Data. Array single-series `[{label, value}]` or object multi-series `{labels, series}` | `unknown`   | —       |
+| `options`    | Config: `smooth` (smoothing), `colors` (series palette), `showLegend`                  | `unknown`   | —       |
+| `type`       | Chart type: `line` / `bar` / `pie` / `area` / `donut` / `stacked-bar`                  | `ChartType` | `line`  |
 
 `data` / `options` also support the property channel (JS objects, taking precedence over attributes).
 

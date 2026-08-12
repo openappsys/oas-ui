@@ -321,7 +321,8 @@ export class OASNavigationMenu extends OASElement {
       wrap.className = 'top-wrap'
       const hasChildren = !!item.children && item.children.length > 0
       // 顶级叶子带 href 渲染为链接，否则按钮
-      const el = hasChildren || !item.href ? document.createElement('button') : document.createElement('a')
+      const el =
+        hasChildren || !item.href ? document.createElement('button') : document.createElement('a')
       el.className = 'top-item'
       el.setAttribute('part', 'top-item')
       if (hasChildren || !item.href) {
@@ -484,8 +485,7 @@ export class OASNavigationMenu extends OASElement {
     for (const el of this.shadow.querySelectorAll('.active')) el.classList.remove('active')
     const item = this.currentItems()[this.activeIndex]
     if (!item || item.value == null) return
-    const selector =
-      this.activeStack.length === 0 ? '[part="top-item"]' : '[part="item"]'
+    const selector = this.activeStack.length === 0 ? '[part="top-item"]' : '[part="item"]'
     this.shadow
       .querySelector<HTMLElement>(`${selector}[data-value="${item.value}"]`)
       ?.classList.add('active')
@@ -520,9 +520,7 @@ export class OASNavigationMenu extends OASElement {
     }
     const item = this.currentItems()[this.activeIndex]
     if (!item || item.value == null) return
-    this.shadow
-      .querySelector<HTMLElement>(`[part="item"][data-value="${item.value}"]`)
-      ?.focus()
+    this.shadow.querySelector<HTMLElement>(`[part="item"][data-value="${item.value}"]`)?.focus()
   }
 
   private hoverExpand(value: string): void {

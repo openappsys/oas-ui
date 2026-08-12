@@ -41,15 +41,15 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `items` | Breadcrumb items JSON | `string` | `[]` |
-| `separator` | Separator | `string` | `/` |
+| Attribute   | Description           | Type     | Default |
+| ----------- | --------------------- | -------- | ------- |
+| `items`     | Breadcrumb items JSON | `string` | `[]`    |
+| `separator` | Separator             | `string` | `/`     |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                        |
+| ------------ | -------------------------------------------------- |
 | `oas-select` | A link item was clicked, `detail: { value: href }` |
 
 `nav` + `aria-label="面包屑"`, the last item has `aria-current="page"` and is not clickable.

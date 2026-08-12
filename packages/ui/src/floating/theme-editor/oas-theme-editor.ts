@@ -150,11 +150,13 @@ const DEFAULT_GROUPS: TokenGroup[] = [
   {
     key: 'radius',
     labelKey: 'themeEditor.group.radius',
-    tokens: [
-      '--oas-radius-sm',
-      '--oas-radius-md',
-      '--oas-radius-lg',
-    ].map((name) => ({ name, type: 'number' as const, min: 0, max: 32, step: 1 })),
+    tokens: ['--oas-radius-sm', '--oas-radius-md', '--oas-radius-lg'].map((name) => ({
+      name,
+      type: 'number' as const,
+      min: 0,
+      max: 32,
+      step: 1,
+    })),
   },
   {
     key: 'controlHeight',

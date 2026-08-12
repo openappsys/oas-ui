@@ -42,17 +42,17 @@ The minute column steps by `step` (e.g. 0, 15, 30, 45).
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `disabled` | Disabled | `boolean` | — |
-| `format` | Display format tokens | `string` | `HH:mm:ss` |
-| `step` | Minute stepping interval | `string` | `1` |
-| `value` | Current value (`HH:mm:ss`) | `string` | — |
+| Attribute  | Description                | Type      | Default    |
+| ---------- | -------------------------- | --------- | ---------- |
+| `disabled` | Disabled                   | `boolean` | —          |
+| `format`   | Display format tokens      | `string`  | `HH:mm:ss` |
+| `step`     | Minute stepping interval   | `string`  | `1`        |
+| `value`    | Current value (`HH:mm:ss`) | `string`  | —          |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                 |
+| ------------ | ------------------------------------------- |
 | `oas-change` | Confirmed value change, `detail: { value }` |
 
 Keyboard: `Enter` / `↓` to open, `↑`/`↓` to adjust the current column, `←`/`→` to switch columns, `Enter` to confirm, `Esc` to cancel.

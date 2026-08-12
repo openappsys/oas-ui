@@ -58,14 +58,19 @@ function toggle(): void {
 async function renderHighlight(): Promise<void> {
   if (highlightedHtml.value || !code.value) return
   try {
-    const [{ createHighlighterCore }, { createJavaScriptRegexEngine }, htmlLang, githubLight, githubDark] =
-      await Promise.all([
-        import('shiki/core'),
-        import('shiki/engine/javascript'),
-        import('shiki/langs/html.mjs'),
-        import('shiki/themes/github-light.mjs'),
-        import('shiki/themes/github-dark.mjs'),
-      ])
+    const [
+      { createHighlighterCore },
+      { createJavaScriptRegexEngine },
+      htmlLang,
+      githubLight,
+      githubDark,
+    ] = await Promise.all([
+      import('shiki/core'),
+      import('shiki/engine/javascript'),
+      import('shiki/langs/html.mjs'),
+      import('shiki/themes/github-light.mjs'),
+      import('shiki/themes/github-dark.mjs'),
+    ])
     const highlighter = await createHighlighterCore({
       themes: [githubLight.default, githubDark.default],
       langs: [htmlLang.default],

@@ -215,10 +215,7 @@ export { OASContextMenu } from './floating/contextmenu/oas-context-menu.js'
 export { OASHoverCard } from './floating/hover-card/oas-hover-card.js'
 export { OASCommand, type CommandItem } from './floating/command/index.js'
 export { OASMenubar, type MenubarItem } from './floating/menubar/index.js'
-export {
-  OASNavigationMenu,
-  type NavItem,
-} from './floating/navigation-menu/index.js'
+export { OASNavigationMenu, type NavItem } from './floating/navigation-menu/index.js'
 export { OASToolbar } from './floating/toolbar/index.js'
 export { OASConfigProvider } from './floating/config-provider/oas-config-provider.js'
 export { OASApp } from './floating/app/oas-app.js'
@@ -279,7 +276,13 @@ export { OASNumberAnimation } from './data/number-animation/index.js'
 export { OASGradientText } from './data/gradient-text/index.js'
 export { OASAspectRatio } from './data/aspect-ratio/index.js'
 export { OASChart } from './data/chart/oas-chart.js'
-export type { ChartType, ChartDatum, ChartSeries, ChartData, ChartOptions } from './data/chart/oas-chart.js'
+export type {
+  ChartType,
+  ChartDatum,
+  ChartSeries,
+  ChartData,
+  ChartOptions,
+} from './data/chart/oas-chart.js'
 export { OASCode, highlightLine } from './data/code/index.js'
 export type { CodeLanguage } from './data/code/oas-code.js'
 export { OASEquation, renderLatex } from './data/equation/index.js'

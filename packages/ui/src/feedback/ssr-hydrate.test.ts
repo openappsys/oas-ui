@@ -43,8 +43,18 @@ const FIXTURES: Fixture[] = [
     },
     probe: '[part="box"]',
   },
-  { name: 'progress', cls: OASProgress, setup: (e) => e.setAttribute('percent', '60'), probe: '[part="bar"]' },
-  { name: 'spin', cls: OASSpin, setup: (e) => e.setAttribute('size', 'large'), probe: '[part="indicator"]' },
+  {
+    name: 'progress',
+    cls: OASProgress,
+    setup: (e) => e.setAttribute('percent', '60'),
+    probe: '[part="bar"]',
+  },
+  {
+    name: 'spin',
+    cls: OASSpin,
+    setup: (e) => e.setAttribute('size', 'large'),
+    probe: '[part="indicator"]',
+  },
   {
     name: 'skeleton',
     cls: OASSkeleton,
@@ -67,9 +77,24 @@ const FIXTURES: Fixture[] = [
   },
   // backdrop 默认关闭态会 self-remove，快照/水合场景统一用 open（服务端直出可见遮罩）
   { name: 'backdrop', cls: OASBackdrop, setup: (e) => e.setAttribute('open', ''), probe: '.mask' },
-  { name: 'modal', cls: OASModal, setup: (e) => e.setAttribute('visible', ''), probe: '[part="dialog"]' },
-  { name: 'drawer', cls: OASDrawer, setup: (e) => e.setAttribute('visible', ''), probe: '[part="panel"]' },
-  { name: 'popconfirm', cls: OASPopconfirm, setup: (e) => e.setAttribute('title', '确认删除？'), probe: '[part="popover"]' },
+  {
+    name: 'modal',
+    cls: OASModal,
+    setup: (e) => e.setAttribute('visible', ''),
+    probe: '[part="dialog"]',
+  },
+  {
+    name: 'drawer',
+    cls: OASDrawer,
+    setup: (e) => e.setAttribute('visible', ''),
+    probe: '[part="panel"]',
+  },
+  {
+    name: 'popconfirm',
+    cls: OASPopconfirm,
+    setup: (e) => e.setAttribute('title', '确认删除？'),
+    probe: '[part="popover"]',
+  },
 ]
 
 /** 渲染一个参照实例并返回其 shadow 快照（SSR 场景等价物） */
@@ -190,6 +215,8 @@ describe('feedback 组件 DSD 真水合批次 2', () => {
       e.innerHTML = '<button>删除</button>'
     }).el
     ;(pc.querySelector('button') as HTMLElement).click()
-    expect(pc.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe('false')
+    expect(pc.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe(
+      'false',
+    )
   })
 })

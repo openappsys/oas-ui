@@ -5,11 +5,9 @@ import { test, expect } from '@playwright/test'
 
 async function up(p: import('@playwright/test').Page, sel: string) {
   await p.waitForSelector(sel, { timeout: 15000 })
-  await p.waitForFunction(
-    (s) => document.querySelector(s)?.shadowRoot != null,
-    sel,
-    { timeout: 15000 },
-  )
+  await p.waitForFunction((s) => document.querySelector(s)?.shadowRoot != null, sel, {
+    timeout: 15000,
+  })
 }
 
 test('button-group 单选选中态可见（primary 字 + 浅底）', async ({ page }) => {
@@ -117,8 +115,8 @@ test('link href="#" 点击不滚动页面', async ({ page }) => {
 test('input addon 属性在 Vue demo 中存活并渲染', async ({ page }) => {
   await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-input[addon-before]')
-  const attrs = await page.evaluate(
-    () => [...document.querySelectorAll('oas-input')].map((el) => el.getAttribute('addon-before')),
+  const attrs = await page.evaluate(() =>
+    [...document.querySelectorAll('oas-input')].map((el) => el.getAttribute('addon-before')),
   )
   expect(attrs.some((v) => v !== null)).toBe(true)
   const r = await page.evaluate(() => {
@@ -142,8 +140,10 @@ test('segmented 未选中项文字对比度达标（text-primary，axe 色彩对
     return {
       unselectedColor: getComputedStyle(items[1]!).color,
       groupBg: getComputedStyle(group).backgroundColor, // 轨道色，item 与之构成对比对
-      selectedChecked: items.find((b) => b.getAttribute('aria-checked') === 'true')
-        ?.getAttribute('aria-checked') ?? null,
+      selectedChecked:
+        items
+          .find((b) => b.getAttribute('aria-checked') === 'true')
+          ?.getAttribute('aria-checked') ?? null,
     }
   })
   // 未选中项应为 text-primary（#18181b），而非 text-secondary（#71717a）——
@@ -387,8 +387,9 @@ test('date-picker / time-picker 面板贴输入框下方（:host 为定位祖先
     await host.locator('[part="trigger"]').click()
     await page.waitForFunction(
       (sel) =>
-        document.querySelector(sel)?.shadowRoot
-          ?.querySelector('[part="dropdown"]')
+        document
+          .querySelector(sel)
+          ?.shadowRoot?.querySelector('[part="dropdown"]')
           ?.classList.contains('open'),
       `oas-${name}`,
       { timeout: 5000 },
@@ -415,7 +416,9 @@ test('date-picker / time-picker 面板贴输入框下方（:host 为定位祖先
   }
 })
 
-test('menubar 受控：外部 setAttribute(value) 即时同步勾选（value 在 observedAttributes）', async ({ page }) => {
+test('menubar 受控：外部 setAttribute(value) 即时同步勾选（value 在 observedAttributes）', async ({
+  page,
+}) => {
   // 曾现 bug：value 未列入 observedAttributes，外部 setAttribute('value') 不触发 update()，
   // 勾选/高亮不移动，受控 demo 只能靠重设 items 绕开。
   await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
@@ -423,7 +426,8 @@ test('menubar 受控：外部 setAttribute(value) 即时同步勾选（value 在
   const r = await page.evaluate(() => {
     const mb = document.querySelector('#mb-value')!
     const checked = (v: string) =>
-      mb.shadowRoot!.querySelector<HTMLElement>(`[part="item"][data-value="${v}"]`)
+      mb
+        .shadowRoot!.querySelector<HTMLElement>(`[part="item"][data-value="${v}"]`)
         ?.getAttribute('aria-checked') ?? null
     mb.setAttribute('value', 'open')
     const afterOpen = { open: checked('open'), created: checked('new') }
@@ -524,7 +528,9 @@ test('form-item label 点击聚焦 oas-input 的 shadow 内 input（focus 委托
   expect(r.sameAsInput).toBe(true)
 })
 
-test('size 五档：button/tag/switch 在 demo 中渲染对应 size class（不静默吞值）', async ({ page }) => {
+test('size 五档：button/tag/switch 在 demo 中渲染对应 size class（不静默吞值）', async ({
+  page,
+}) => {
   const SIZES = ['xs', 'small', 'medium', 'large', 'xl']
   // button：shadow button 应带对应 size class
   await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
@@ -719,15 +725,17 @@ test('scroll-area 横向可滚：滚轮增量横向滚动 + 横向/纵向 thumb 
 // 底部不足向上翻转（flip-up），三级及以上逐级检测。断言：可见子菜单完整落在视口内。
 
 /** 收集所有可见子菜单的矩形（递归遍历 open shadow root；原生 querySelectorAll 不穿透 shadow） */
-async function visibleSubmenuRects(page: import('@playwright/test').Page): Promise<Array<{
-  left: number
-  right: number
-  top: number
-  bottom: number
-  vw: number
-  vh: number
-  flipLeft: boolean
-}>> {
+async function visibleSubmenuRects(page: import('@playwright/test').Page): Promise<
+  Array<{
+    left: number
+    right: number
+    top: number
+    bottom: number
+    vw: number
+    vh: number
+    flipLeft: boolean
+  }>
+> {
   return page.evaluate(() => {
     const vw = window.innerWidth
     const vh = window.innerHeight
@@ -775,9 +783,7 @@ test('context-menu 多级子菜单贴近视口右缘：翻转后全部落在视�
     cm.style.cssText = 'position: fixed; right: 0; top: 260px; z-index: 9999'
     cm.dataset.e2eRightEdge = '1'
   })
-  const box = await page
-    .locator('oas-context-menu[data-e2e-right-edge]')
-    .boundingBox()
+  const box = await page.locator('oas-context-menu[data-e2e-right-edge]').boundingBox()
   await page.mouse.click(box!.x + box!.width - 12, box!.y + 60, { button: 'right' })
   // 逐级展开两级子菜单链：新建 → 项目 →（Git 仓库/空白）
   await page
@@ -789,7 +795,10 @@ test('context-menu 多级子菜单贴近视口右缘：翻转后全部落在视�
   await page.waitForTimeout(200)
   const rects = await visibleSubmenuRects(page)
   expect(rects.length).toBeGreaterThanOrEqual(2) // 一级 + 二级子菜单均已展开
-  expect(rects.some((r) => r.flipLeft), '贴右缘的子菜单应向左翻转（flip-left），而非被裁掉').toBe(true)
+  expect(
+    rects.some((r) => r.flipLeft),
+    '贴右缘的子菜单应向左翻转（flip-left），而非被裁掉',
+  ).toBe(true)
   for (const r of rects) {
     expect(r.left, `子菜单 left=${r.left} 越出视口左缘`).toBeGreaterThanOrEqual(-1)
     expect(r.right, `子菜单 right=${r.right} 越出视口右缘`).toBeLessThanOrEqual(r.vw + 1)
@@ -813,7 +822,10 @@ test('menu 多级子菜单贴近视口右缘：翻转后全部落在视口内', 
   await page.waitForTimeout(200)
   const rects = await visibleSubmenuRects(page)
   expect(rects.length).toBeGreaterThanOrEqual(2)
-  expect(rects.some((r) => r.flipLeft), '贴右缘的子菜单应向左翻转（flip-left），而非被裁掉').toBe(true)
+  expect(
+    rects.some((r) => r.flipLeft),
+    '贴右缘的子菜单应向左翻转（flip-left），而非被裁掉',
+  ).toBe(true)
   for (const r of rects) {
     expect(r.left, `子菜单 left=${r.left} 越出视口左缘`).toBeGreaterThanOrEqual(-1)
     expect(r.right, `子菜单 right=${r.right} 越出视口右缘`).toBeLessThanOrEqual(r.vw + 1)
@@ -832,7 +844,9 @@ test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内
     mb.dataset.e2eRightEdge = '1'
   })
   // hover 顶级「视图」展开一级下拉，hover 级联「缩放」展开二级子菜单（menubar 是 mouseenter 展开）
-  await page.locator('oas-menubar[data-e2e-right-edge] [part="top-item"][data-value="view"]').hover()
+  await page
+    .locator('oas-menubar[data-e2e-right-edge] [part="top-item"][data-value="view"]')
+    .hover()
   await page.waitForTimeout(150)
   await page.locator('oas-menubar[data-e2e-right-edge] [part="item"][data-value="zoom"]').hover()
   await page.waitForTimeout(200)
@@ -892,7 +906,10 @@ test('dropdown 多级子菜单贴近视口右缘：翻转后全部落在视口�
   await page.waitForTimeout(200)
   const rects = await visibleSubmenuRects(page)
   expect(rects.length).toBeGreaterThanOrEqual(2)
-  expect(rects.some((r) => r.flipLeft), '贴右缘的子菜单应向左翻转（flip-left），而非被裁掉').toBe(true)
+  expect(
+    rects.some((r) => r.flipLeft),
+    '贴右缘的子菜单应向左翻转（flip-left），而非被裁掉',
+  ).toBe(true)
   for (const r of rects) {
     expect(r.left, `子菜单 left=${r.left} 越出视口左缘`).toBeGreaterThanOrEqual(-1)
     expect(r.right, `子菜单 right=${r.right} 越出视口右缘`).toBeLessThanOrEqual(r.vw + 1)

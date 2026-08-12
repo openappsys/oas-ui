@@ -34,14 +34,14 @@
 
 ### 属性
 
-| 属性 | 说明 | 类型 | 默认值 |
-| --- | --- | --- | --- |
-| `content-position` | 内容位置 | `DividerPosition` | `center` |
-| `dashed` | 虚线 | `boolean` | — |
-| `direction` | 方向 | `DividerDirection` | `horizontal` |
+| 属性               | 说明     | 类型               | 默认值       |
+| ------------------ | -------- | ------------------ | ------------ |
+| `content-position` | 内容位置 | `DividerPosition`  | `center`     |
+| `dashed`           | 虚线     | `boolean`          | —            |
+| `direction`        | 方向     | `DividerDirection` | `horizontal` |
 
 ### 插槽
 
 | 名称 | 说明 |
-| --- | --- |
-| 默认 | — |
+| ---- | ---- |
+| 默认 | —    |

@@ -87,17 +87,17 @@ onMounted(async () => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `locale` | Language for built-in copy in the wrapped subtree (must be registered); takes precedence over global `setLocale()` | — | — |
-| `size` | Default size for wrapped components, applied when a component doesn't set it explicitly | — | — |
-| `theme` | Theme for the wrapped subtree, written to `data-theme` | — | — |
+| Attribute | Description                                                                                                        | Type | Default |
+| --------- | ------------------------------------------------------------------------------------------------------------------ | ---- | ------- |
+| `locale`  | Language for built-in copy in the wrapped subtree (must be registered); takes precedence over global `setLocale()` | —    | —       |
+| `size`    | Default size for wrapped components, applied when a component doesn't set it explicitly                            | —    | —       |
+| `theme`   | Theme for the wrapped subtree, written to `data-theme`                                                             | —    | —       |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| default | — |
+| Name    | Description |
+| ------- | ----------- |
+| default | —           |
 
 - Component resolution order: own attribute > config-provider > global default.
 - `locale` requires the language pack to be registered via `registerLocale()`; falls back to the global translator when unregistered.

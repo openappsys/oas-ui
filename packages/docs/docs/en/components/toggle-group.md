@@ -92,24 +92,24 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `items` | Options JSON (property assignment reflects to attribute) | `ToggleItem[] \| string` | `[]` |
-| `multiple` | Multiple mode (checkbox semantics) | `boolean` | — |
-| `value` | Current value: string for single; JSON array string for multiple | `string` | `[]` |
+| Attribute  | Description                                                      | Type                     | Default |
+| ---------- | ---------------------------------------------------------------- | ------------------------ | ------- |
+| `items`    | Options JSON (property assignment reflects to attribute)         | `ToggleItem[] \| string` | `[]`    |
+| `multiple` | Multiple mode (checkbox semantics)                               | `boolean`                | —       |
+| `value`    | Current value: string for single; JSON array string for multiple | `string`                 | `[]`    |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                     |
+| ------------ | ----------------------------------------------- |
 | `oas-change` | Toggle, `detail: { value: string \| string[] }` |
 
 `ToggleItem` fields:
 
-| Field      | Description          | Type      |
-| ---------- | -------------------- | --------- |
-| `label`    | Button label         | `string`  |
-| `value`    | Value (returned with events) | `string` |
-| `disabled` | Disable this item    | `boolean` |
+| Field      | Description                  | Type      |
+| ---------- | ---------------------------- | --------- |
+| `label`    | Button label                 | `string`  |
+| `value`    | Value (returned with events) | `string`  |
+| `disabled` | Disable this item            | `boolean` |
 
 Keyboard: in single mode arrow keys move and select (radio group convention); in multiple mode arrow keys move focus (roving tabindex) and Space/Enter toggle. The container has `role="radiogroup"` / `role="group"` + `aria-label`; selected items expose `aria-checked`.

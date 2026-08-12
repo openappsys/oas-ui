@@ -154,7 +154,9 @@ describe('OASNavigationMenu', () => {
 
   it('disabled 顶级项不可展开', () => {
     const el = mount({
-      items: JSON.stringify([{ label: '禁用', value: 'x', disabled: true, children: [{ label: '子', value: 'sub' }] }]),
+      items: JSON.stringify([
+        { label: '禁用', value: 'x', disabled: true, children: [{ label: '子', value: 'sub' }] },
+      ]),
     })
     let fired = 0
     el.addEventListener('oas-select', () => fired++)

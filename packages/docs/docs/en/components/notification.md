@@ -44,13 +44,13 @@ onMounted(async () => {
 
 ### Methods
 
-| Method | Description |
-| --- | --- |
-| `notification.info({ title, description?, duration? })` | Info notification |
-| `notification.success({ title, description?, duration? })` | Success notification |
-| `notification.warning({ title, description?, duration? })` | Warning notification |
-| `notification.error({ title, description?, duration? })` | Error notification |
-| `destroyAllNotification()` | Clear all notifications |
+| Method                                                     | Description             |
+| ---------------------------------------------------------- | ----------------------- |
+| `notification.info({ title, description?, duration? })`    | Info notification       |
+| `notification.success({ title, description?, duration? })` | Success notification    |
+| `notification.warning({ title, description?, duration? })` | Warning notification    |
+| `notification.error({ title, description?, duration? })`   | Error notification      |
+| `destroyAllNotification()`                                 | Clear all notifications |
 
 - `duration` defaults to `4500`ms; pass `0` to keep the notification open.
 - Stacked at the top-right, `role="region"` + `aria-label="Notification"`.

@@ -53,10 +53,14 @@ describe('OASFlex', () => {
 
   it('wrap 为布尔：存在即 flex-wrap:wrap，缺省 nowrap', () => {
     const a = mount({ wrap: '' })
-    expect((a.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement).style.flexWrap).toBe('wrap')
+    expect((a.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement).style.flexWrap).toBe(
+      'wrap',
+    )
     document.body.innerHTML = ''
     const b = mount({})
-    expect((b.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement).style.flexWrap).toBe('nowrap')
+    expect((b.shadowRoot!.querySelector('[part="wrap"]') as HTMLElement).style.flexWrap).toBe(
+      'nowrap',
+    )
   })
 
   it('justify 简写枚举补全：start/end/between/around', () => {

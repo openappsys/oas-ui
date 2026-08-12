@@ -106,26 +106,26 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `allow-clear` | Clear to `0` when clicking the currently selected star | `string` | `true` |
-| `allow-half` | Allow half stars | `boolean` | — |
-| `disabled` | Disabled | `boolean` | — |
-| `icon` | Custom star icon (character or SVG markup) | — | — |
-| `max` | Number of stars | `string` | `5` |
-| `value` | Current score (controlled) | `string` | `0` |
+| Attribute     | Description                                            | Type      | Default |
+| ------------- | ------------------------------------------------------ | --------- | ------- |
+| `allow-clear` | Clear to `0` when clicking the currently selected star | `string`  | `true`  |
+| `allow-half`  | Allow half stars                                       | `boolean` | —       |
+| `disabled`    | Disabled                                               | `boolean` | —       |
+| `icon`        | Custom star icon (character or SVG markup)             | —         | —       |
+| `max`         | Number of stars                                        | `string`  | `5`     |
+| `value`       | Current score (controlled)                             | `string`  | `0`     |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                       |
+| ------------ | --------------------------------- |
 | `oas-change` | Score change, `detail: { value }` |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| `icon` | — |
+| Name   | Description |
+| ------ | ----------- |
+| `icon` | —           |
 
 Icon customization: `icon` property > `slot="icon"` (cloned to each star) > default star.
 

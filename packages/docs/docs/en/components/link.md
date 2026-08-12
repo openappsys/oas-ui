@@ -38,22 +38,22 @@ Clicking dispatches the `oas-click` CustomEvent; `detail.originalEvent` is the n
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `disabled` | Disabled | `boolean` | — |
-| `href` | Link URL | `string` | — |
-| `target` | Open behavior | `string` | — |
-| `type` | Type | `LinkType` | `default` |
-| `underline` | Underline | `string` | `true` |
+| Attribute   | Description   | Type       | Default   |
+| ----------- | ------------- | ---------- | --------- |
+| `disabled`  | Disabled      | `boolean`  | —         |
+| `href`      | Link URL      | `string`   | —         |
+| `target`    | Open behavior | `string`   | —         |
+| `type`      | Type          | `LinkType` | `default` |
+| `underline` | Underline     | `string`   | `true`    |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event       | Description                        |
+| ----------- | ---------------------------------- |
 | `oas-click` | Click, `detail: { originalEvent }` |
 
 ### Slots
 
-| Name | Description |
-| --- | --- |
-| default | — |
+| Name    | Description |
+| ------- | ----------- |
+| default | —           |

@@ -42,11 +42,11 @@ import { checkPath } from '@oas-ui/icons'
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `color` | Color (CSS value) | `string` | — |
-| `label` | Accessible name; sets `role="img"` when provided | `string` | — |
-| `name` | Icon name (kebab-case) | `IconName` | — |
-| `size` | Size (px or em) | `string` | — |
+| Attribute | Description                                      | Type       | Default |
+| --------- | ------------------------------------------------ | ---------- | ------- |
+| `color`   | Color (CSS value)                                | `string`   | —       |
+| `label`   | Accessible name; sets `role="img"` when provided | `string`   | —       |
+| `name`    | Icon name (kebab-case)                           | `IconName` | —       |
+| `size`    | Size (px or em)                                  | `string`   | —       |
 
 Icon names: `alert-circle` `arrow-down` `arrow-left` `arrow-right` `arrow-up` `calendar` `check-circle` `check` `chevron-down` `chevron-left` `chevron-right` `chevron-up` `clock` `close-circle` `close` `copy` `download` `edit` `error` `external-link` `eye` `filter` `gear` `heart` `info` `loading` `lock` `mail` `menu` `minus` `more-vertical` `more` `plus` `refresh` `search` `sort` `star-filled` `star` `trash` `upload` `user` `warning`.

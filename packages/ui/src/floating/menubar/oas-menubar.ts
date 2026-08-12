@@ -547,8 +547,7 @@ export class OASMenubar extends OASElement {
     for (const el of this.shadow.querySelectorAll('.active')) el.classList.remove('active')
     const item = this.currentItems()[this.activeIndex]
     if (!item || item.value == null) return
-    const selector =
-      this.activeStack.length === 0 ? '[part="top-item"]' : '[part="item"]'
+    const selector = this.activeStack.length === 0 ? '[part="top-item"]' : '[part="item"]'
     this.shadow
       .querySelector<HTMLElement>(`${selector}[data-value="${item.value}"]`)
       ?.classList.add('active')
@@ -585,9 +584,7 @@ export class OASMenubar extends OASElement {
     }
     const item = this.currentItems()[this.activeIndex]
     if (!item || item.value == null) return
-    this.shadow
-      .querySelector<HTMLElement>(`[part="item"][data-value="${item.value}"]`)
-      ?.focus()
+    this.shadow.querySelector<HTMLElement>(`[part="item"][data-value="${item.value}"]`)?.focus()
   }
 
   /** hover：级联展开到该项所在路径（同级互斥），同步导航上下文但不移动焦点 */

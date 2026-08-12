@@ -94,24 +94,24 @@ onMounted(() => {
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `actions` | Sub-action JSON | `string` | `[]` |
-| `direction` | Expansion direction | `string` | `up` |
-| `open` | Expanded state (controlled) | `boolean` | — |
+| Attribute   | Description                 | Type      | Default |
+| ----------- | --------------------------- | --------- | ------- |
+| `actions`   | Sub-action JSON             | `string`  | `[]`    |
+| `direction` | Expansion direction         | `string`  | `up`    |
+| `open`      | Expanded state (controlled) | `boolean` | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
-| `oas-open` | Expanded/collapsed, `detail: { open }` |
+| Event        | Description                                                                            |
+| ------------ | -------------------------------------------------------------------------------------- |
+| `oas-open`   | Expanded/collapsed, `detail: { open }`                                                 |
 | `oas-select` | A sub-action was selected, `detail: { index, label }`, then it collapses automatically |
 
 `SpeedDialAction` fields:
 
-| Field   | Description                                          | Type     |
-| ------- | ---------------------------------------------------- | -------- |
-| `label` | Action text                                          | `string` |
-| `icon`  | Icon name (a key of `@oas-ui/icons` iconRegistry)  | `string` |
+| Field   | Description                                         | Type     |
+| ------- | --------------------------------------------------- | -------- |
+| `label` | Action text                                         | `string` |
+| `icon`  | Icon name (a key of `@oas-ui/icons` iconRegistry) | `string` |
 
 Behavior: clicking the main button toggles expansion (`aria-expanded` synced); clicking outside or pressing Esc collapses (after Esc, focus returns to the main button); when expanded, the first sub-action is focused automatically. The default position is `position: fixed; bottom/right`, overridable. The document-level listener is only attached while expanded and disconnected during cleanup — no orphan popups.

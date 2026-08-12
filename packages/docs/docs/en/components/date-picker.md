@@ -68,20 +68,20 @@ The format supports `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` tokens.
 
 ### Attributes
 
-| Attribute | Description | Type | Default |
-| --- | --- | --- | --- |
-| `disabled` | Disabled | `boolean` | — |
-| `format` | Display format tokens (`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`) | `string` | — |
-| `max` | Selectable range (ISO dates) | `string` | — |
-| `min` | Selectable range (ISO dates) | `string` | — |
-| `placeholder` | Placeholder text | — | — |
-| `type` | Type: `date` / `daterange` / `month` / `datetime` | `string` | `date` |
-| `value` | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | `string` | — |
+| Attribute     | Description                                                                        | Type      | Default |
+| ------------- | ---------------------------------------------------------------------------------- | --------- | ------- |
+| `disabled`    | Disabled                                                                           | `boolean` | —       |
+| `format`      | Display format tokens (`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`)                            | `string`  | —       |
+| `max`         | Selectable range (ISO dates)                                                       | `string`  | —       |
+| `min`         | Selectable range (ISO dates)                                                       | `string`  | —       |
+| `placeholder` | Placeholder text                                                                   | —         | —       |
+| `type`        | Type: `date` / `daterange` / `month` / `datetime`                                  | `string`  | `date`  |
+| `value`       | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | `string`  | —       |
 
 ### Events
 
-| Event | Description |
-| --- | --- |
+| Event        | Description                                                    |
+| ------------ | -------------------------------------------------------------- |
 | `oas-change` | Value change, `detail: { value }` (string array for daterange) |
 
 Keyboard: `Enter` / `↓` to open, `↑`/`↓`/`←`/`→` to move within the grid, `Enter` to select, `Esc` to close.

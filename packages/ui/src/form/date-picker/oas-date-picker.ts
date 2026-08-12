@@ -405,9 +405,7 @@ export class OASDatePicker extends OASElement {
     if (t === 'daterange') {
       const r = this.parseRange()
       this.range = { start: r.start, end: r.end }
-      this.viewDate = r.start
-        ? new Date(r.start.getFullYear(), r.start.getMonth(), 1)
-        : today
+      this.viewDate = r.start ? new Date(r.start.getFullYear(), r.start.getMonth(), 1) : today
     } else {
       this.viewDate = sel ? new Date(sel.getFullYear(), sel.getMonth(), 1) : today
       if (t === 'datetime') {
@@ -555,9 +553,10 @@ export class OASDatePicker extends OASElement {
     `
     const grid = panel.querySelector<HTMLElement>('[part="grid"]')!
     const title = panel.querySelector<HTMLElement>('[part="title"]')!
-    title.textContent = this.subPanel === 'months'
-      ? formatYear(this.viewDate, locale)
-      : formatYearMonth(this.viewDate, locale)
+    title.textContent =
+      this.subPanel === 'months'
+        ? formatYear(this.viewDate, locale)
+        : formatYearMonth(this.viewDate, locale)
 
     if (this.subPanel === 'months') {
       this.renderMonthsGrid(grid, (m) => {
@@ -570,14 +569,22 @@ export class OASDatePicker extends OASElement {
     }
     if (t === 'datetime') this.renderTimeSection()
 
-    panel.querySelector<HTMLElement>('[part="prev"]')?.addEventListener('click', () => this.stepView(-1))
-    panel.querySelector<HTMLElement>('[part="next"]')?.addEventListener('click', () => this.stepView(1))
+    panel
+      .querySelector<HTMLElement>('[part="prev"]')
+      ?.addEventListener('click', () => this.stepView(-1))
+    panel
+      .querySelector<HTMLElement>('[part="next"]')
+      ?.addEventListener('click', () => this.stepView(1))
     title.addEventListener('click', () => {
       this.subPanel = this.subPanel === 'days' ? 'months' : 'days'
       this.renderPanel(false)
     })
-    panel.querySelector<HTMLElement>('[part="today"]')?.addEventListener('click', () => this.pickToday())
-    panel.querySelector<HTMLElement>('[part="confirm"]')?.addEventListener('click', () => this.confirmDateTime())
+    panel
+      .querySelector<HTMLElement>('[part="today"]')
+      ?.addEventListener('click', () => this.pickToday())
+    panel
+      .querySelector<HTMLElement>('[part="confirm"]')
+      ?.addEventListener('click', () => this.confirmDateTime())
     grid.addEventListener('keydown', (e) => this.handleGridKey(e as KeyboardEvent, grid))
   }
 
@@ -613,7 +620,9 @@ export class OASDatePicker extends OASElement {
       btn.type = 'button'
       btn.className = 'month-cell'
       btn.setAttribute('part', 'month-cell')
-      btn.textContent = new Intl.DateTimeFormat(locale, { month: 'short' }).format(new Date(year, m, 1))
+      btn.textContent = new Intl.DateTimeFormat(locale, { month: 'short' }).format(
+        new Date(year, m, 1),
+      )
       btn.setAttribute('aria-label', formatYearMonth(new Date(year, m, 1), locale))
       btn.addEventListener('click', () => onPick(m))
       months.appendChild(btn)
@@ -662,14 +671,19 @@ export class OASDatePicker extends OASElement {
       </div>
       <div class="months"></div>
     `
-    panel.querySelector<HTMLElement>('[part="title"]')!.textContent = formatYear(this.viewDate, locale)
+    panel.querySelector<HTMLElement>('[part="title"]')!.textContent = formatYear(
+      this.viewDate,
+      locale,
+    )
     const monthsWrap = panel.querySelector<HTMLElement>('.months')!
     for (let m = 0; m < 12; m++) {
       const btn = document.createElement('button')
       btn.type = 'button'
       btn.className = 'month-cell'
       btn.setAttribute('part', 'month-cell')
-      btn.textContent = new Intl.DateTimeFormat(locale, { month: 'short' }).format(new Date(year, m, 1))
+      btn.textContent = new Intl.DateTimeFormat(locale, { month: 'short' }).format(
+        new Date(year, m, 1),
+      )
       btn.setAttribute('aria-label', formatYearMonth(new Date(year, m, 1), locale))
       if (m === selectedMonth) btn.classList.add('selected')
       btn.addEventListener('click', () => {
