@@ -81,7 +81,7 @@ const STYLE = `
 }
 `
 
-export class OAStour extends OASElement {
+export class OASTour extends OASElement {
   static override get observedAttributes(): string[] {
     return ['open', 'steps', 'current']
   }

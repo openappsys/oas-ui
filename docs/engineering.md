@@ -88,13 +88,14 @@
 
 **部署流程（CI/远程 wrangler，本地无需安装 wrangler）**：
 
-1. 构建：`pnpm install --frozen-lockfile && pnpm --filter @oas-ui/ui build && pnpm --filter @oas-ui/docs build`
+1. 构建：`pnpm install --frozen-lockfile && pnpm build`
+   - 必须全量 `pnpm build`（拓扑序 core→i18n→icons→theme→ui→…→docs）：ui 的 `tsconfig.build.json` paths 指向 `../core/dist/index.d.ts`、`../i18n/dist/index.d.ts`，**只 build ui 会因 core/i18n 的 d.ts 未生成而 tsc 报基类缺失**（如 `OASTour` 的 `extends OASElement` 失效）；docs build 依赖 ui dist，拓扑序自动先构建
 2. 部署：CI 中用 Cloudflare 官方 action（`cloudflare/wrangler-action`）或 `npx wrangler deploy`（上传 `packages/docs/docs/.vitepress/dist` 为静态资产，凭证用 Cloudflare API token，存 CI secret）
 3. 绑域名：Cloudflare 后台 → Workers → 该项目 → Custom Domains → Add `oasui.dev`
 
 **要点**：
 
-- `docs build` 依赖 `@oas-ui/ui` 的 dist（workspace symlink）——必须先 `pnpm --filter @oas-ui/ui build`，已含在构建命令
+- `docs build` 依赖 `@oas-ui/ui` 的 dist（workspace symlink）——全量 `pnpm build` 拓扑序自动先构建 ui，无需手动指定
 - `base: '/'`（自定义域名，无子路径）；`404.html` 由 Vitepress 自动生成（深层直达兜底）
 - 本地预览：`pnpm dev`（5173，dev 链路自带 watch 构建）
 - 备选：Cloudflare Pages（UI 连 Git 自动构建，构建命令同上、输出目录 `packages/docs/docs/.vitepress/dist`）

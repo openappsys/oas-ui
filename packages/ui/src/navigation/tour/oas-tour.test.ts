@@ -1,20 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { OAStour } from './index.js'
+import { OASTour } from './index.js'
 
 const STEPS = JSON.stringify([
   { selector: '#step1', title: '第一步', description: '这里是第一步' },
   { selector: '#step2', title: '第二步', description: '这里是第二步' },
 ])
 
-function mount(): OAStour {
+function mount(): OASTour {
   document.body.innerHTML = `<div id="step1" style="height:40px"></div><div id="step2" style="height:40px"></div>`
-  const el = new OAStour()
+  const el = new OASTour()
   el.setAttribute('steps', STEPS)
   document.body.appendChild(el)
   return el
 }
 
-describe('OAStour', () => {
+describe('OASTour', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
   })

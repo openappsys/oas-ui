@@ -15,7 +15,7 @@ import { OASMenubar } from '../floating/menubar/index.js'
 import { OASNavigationMenu } from '../floating/navigation-menu/index.js'
 import { OASToolbar } from '../floating/toolbar/index.js'
 import { OASCommand } from '../floating/command/index.js'
-import { OAStour } from '../navigation/tour/index.js'
+import { OASTour } from '../navigation/tour/index.js'
 import { OASHoverCard } from '../floating/hover-card/index.js'
 import { OASSplitter } from '../layout/splitter/index.js'
 import { OASFlex } from '../layout/flex/index.js'
@@ -198,7 +198,7 @@ const FIXTURES: Fixture[] = [
   },
   {
     name: 'tour',
-    cls: OAStour,
+    cls: OASTour,
     setup: (e) => e.setAttribute('steps', TOUR_STEPS),
     probe: '.popup',
   },

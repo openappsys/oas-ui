@@ -3219,7 +3219,7 @@
     "unresolved": []
   },
   "oas-tour": {
-    "className": "OAStour",
+    "className": "OASTour",
     "sourceFile": "packages/ui/src/navigation/tour/oas-tour.ts",
     "attrs": [
       {

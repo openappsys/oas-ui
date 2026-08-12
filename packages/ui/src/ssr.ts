@@ -100,7 +100,7 @@ export { OASThemeEditor } from './floating/theme-editor/oas-theme-editor.js'
 export { OASBreadcrumb } from './navigation/breadcrumb/oas-breadcrumb.js'
 export { OASBackTop } from './navigation/back-top/oas-back-top.js'
 export { OASAnchor } from './navigation/anchor/oas-anchor.js'
-export { OAStour } from './navigation/tour/oas-tour.js'
+export { OASTour } from './navigation/tour/oas-tour.js'
 export { OASBottomNavigation } from './navigation/bottom-navigation/oas-bottom-navigation.js'
 
 // ---------- layout ----------

@@ -1,8 +1,8 @@
 import '@oas-ui/i18n'
-import { OAStour, type TourStep } from './oas-tour.js'
+import { OASTour, type TourStep } from './oas-tour.js'
 
 if (!customElements.get('oas-tour')) {
-  customElements.define('oas-tour', OAStour)
+  customElements.define('oas-tour', OASTour)
 }
 
-export { OAStour, type TourStep }
+export { OASTour, type TourStep }
