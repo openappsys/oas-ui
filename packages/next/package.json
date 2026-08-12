@@ -53,5 +53,9 @@
     "react-dom": "^19.0.0",
     "@oas-ui/ssr": "workspace:*",
     "@oas-ui/ui": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openappsys/oas-ui.git"
   }
 }

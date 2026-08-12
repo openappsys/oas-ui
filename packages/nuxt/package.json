@@ -39,5 +39,9 @@
     "@nuxt/schema": "^3.21.11",
     "@oas-ui/ssr": "workspace:*",
     "@oas-ui/theme": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openappsys/oas-ui.git"
   }
 }

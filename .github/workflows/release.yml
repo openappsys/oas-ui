@@ -28,7 +28,8 @@ jobs:
       - run: pnpm build
       - run: pnpm api:check
       # OIDC 交换凭证，无需 NODE_AUTH_TOKEN；各包须在 npm 后台配置 Trusted Publisher 指向本 workflow
-      - run: pnpm -r publish --access public --no-git-checks
+      # publish 幂等：跳过 npm 已存在的版本（中途失败如 provenance 校验重跑不会 403）
+      - run: node scripts/publish-skip-existing.mjs
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
