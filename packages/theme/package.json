@@ -13,6 +13,8 @@
     ".": "./index.css"
   },
   "files": [
-    "index.css"
+    "index.css",
+    "LICENSE-APACHE",
+    "LICENSE-MIT"
   ]
 }

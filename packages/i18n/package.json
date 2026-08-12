@@ -27,7 +27,9 @@
     "./dist/index.js"
   ],
   "files": [
-    "dist"
+    "dist",
+    "LICENSE-APACHE",
+    "LICENSE-MIT"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
