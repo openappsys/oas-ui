@@ -823,7 +823,16 @@ test('真水合：upgrade 后 shadow 未被重建（style DOM 引用保持同一
   }
 
   const after = await layoutOf(page, LAYOUT_STABLE_TAGS)
-  expect(after).toEqual(before)
+  // 布局稳定断言：±1px 容差（Linux CI 字体渲染/滚动亚像素抖动会导致 y 差 0.5~1px，
+  // 完全相等过于脆弱；1px 内视为布局稳定）
+  for (const t of Object.keys(before)) {
+    for (const k of ['x', 'y', 'w', 'h'] as const) {
+      expect(
+        Math.abs((after[t]?.[k] ?? 0) - before[t]![k]),
+        `${t} 升级前后 ${k} 应稳定（±1px）`,
+      ).toBeLessThanOrEqual(1)
+    }
+  }
   await page.screenshot({ path: SCREENSHOT.afterUpgrade, fullPage: true })
 })
 

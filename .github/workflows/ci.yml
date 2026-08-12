@@ -29,6 +29,10 @@ jobs:
       - run: pnpm api:check
   e2e:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -46,4 +50,5 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm exec playwright install --with-deps chromium firefox
-      - run: pnpm test:e2e
+      # 全量 e2e 分 3 片并行（5 个遍历型 spec 各 7-10min，串行 15min+；shard 后 ≈ 6min）
+      - run: pnpm test:e2e -- --shard=${{ matrix.shard }}/3
