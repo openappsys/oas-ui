@@ -3,6 +3,10 @@
   "version": "1.9.0",
   "description": "OAS-UI 主题 token（light/dark/high-contrast 语义 CSS 变量）",
   "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openappsys/oas-ui.git"
+  },
   "type": "module",
   "publishConfig": {
     "access": "public"
