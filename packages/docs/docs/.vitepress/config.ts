@@ -187,6 +187,21 @@ export default defineConfig({
   title: 'OAS-UI',
   description: '框架无关的 Web Components UI 组件库',
   lang: 'zh-CN',
+  head: [
+    // Google Analytics 4（统计 ID G-RXS142HBXF）；SPA 路由切换的 page_view 由 theme 里 router.afterEach 补充
+    [
+      'script',
+      { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-RXS142HBXF' },
+    ],
+    [
+      'script',
+      {},
+      `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-RXS142HBXF');`,
+    ],
+  ],
   vue: {
     template: {
       compilerOptions: {

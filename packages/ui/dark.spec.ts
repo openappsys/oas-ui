@@ -22,11 +22,12 @@ for (const page of PAGES) {
     expect(n).toBeGreaterThan(0)
     // 每个块背景应为暗色，无未捕获异常
     for (let i = 0; i < n; i++) {
-      const bg = await blocks
-        .nth(i)
-        .locator('.demo-block__body')
-        .evaluate((el) => getComputedStyle(el).backgroundColor)
-      expect(bg, `${page} 第 ${i + 1} 个块未跟随暗色`).toBe('rgb(24, 24, 27)')
+      const body = blocks.nth(i).locator('.demo-block__body')
+      // toHaveCSS 自动重试，等待 background 0.2s transition 结束（固定 waitForTimeout 在 CI 高负载下会采到中间帧，如 rgb(25,25,28)）
+      await expect(body, `${page} 第 ${i + 1} 个块未跟随暗色`).toHaveCSS(
+        'background-color',
+        'rgb(24, 24, 27)',
+      )
     }
     expect(errors.filter((e) => !e.includes('Hydration'))).toEqual([])
   })
