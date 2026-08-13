@@ -480,3 +480,105 @@ describe('OASMenu', () => {
     expect(fileSub.classList.contains('flip-up')).toBe(false)
   })
 })
+
+// —— P1 补缺：loading 菜单项 ——
+// loading: true 的项渲染 spinner、禁点（点击/键盘/hover 子菜单均拦截），aria-busy 同步；
+// 恢复（items 更新移除 loading）后还原可点。视觉上 spinner 动画 + 弱化文字（token 驱动）。
+
+describe('OASMenu loading 菜单项', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const LOADING_ITEMS = JSON.stringify([
+    { label: '保存', value: 'save' },
+    { label: '同步中', value: 'syncing', loading: true },
+    { label: '删除', value: 'delete' },
+  ])
+
+  it('loading 项渲染 spinner、aria-busy/aria-disabled，点击不派发 oas-select', () => {
+    const el = mount({ items: LOADING_ITEMS })
+    const item = items(el).find((i) => i.dataset.value === 'syncing')!
+    expect(item.classList.contains('loading')).toBe(true)
+    expect(item.querySelector('.spin')).not.toBeNull()
+    expect(item.getAttribute('aria-busy')).toBe('true')
+    expect(item.getAttribute('aria-disabled')).toBe('true')
+    let fired = 0
+    el.addEventListener('oas-select', () => fired++)
+    item.click()
+    expect(fired).toBe(0)
+    // 相邻普通项不受影响
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    items(el)[0]!.click()
+    expect(detail).toEqual({ value: 'save' })
+  })
+
+  it('键盘导航跳过 loading 项（ArrowDown 从 保存 跳到 删除）', () => {
+    const el = mount({ items: LOADING_ITEMS })
+    const menu = el.shadowRoot!.querySelector('[role="menu"]')!
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    expect(items(el)[0]!.classList.contains('active')).toBe(true)
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    expect(items(el)[2]!.classList.contains('active')).toBe(true)
+    // loading 项不参与 Enter 选中
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    expect(el.getAttribute('value')).toBe('delete')
+  })
+
+  it('loading 恢复（items 更新移除 loading）后还原可点、spinner 消失', () => {
+    const el = mount({ items: LOADING_ITEMS })
+    el.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '保存', value: 'save' },
+        { label: '同步中', value: 'syncing' },
+        { label: '删除', value: 'delete' },
+      ]),
+    )
+    const item = items(el).find((i) => i.dataset.value === 'syncing')!
+    expect(item.classList.contains('loading')).toBe(false)
+    expect(item.getAttribute('aria-busy')).toBeNull()
+    expect(item.getAttribute('aria-disabled')).toBe('false')
+    expect(item.querySelector('.spin')).toBeNull()
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    item.click()
+    expect(detail).toEqual({ value: 'syncing' })
+  })
+
+  it('loading 样式：spinner 旋转动画 + 禁点视觉，颜色全走 token', () => {
+    const el = mount({ items: LOADING_ITEMS })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/\.item\.loading\s*\{[^}]*cursor:\s*wait/)
+    expect(css).toMatch(/\.item\.loading\s*\{[^}]*opacity:/)
+    expect(css).toMatch(/\.spin\s*\{[^}]*animation:/)
+    expect(css).toMatch(/\.spin\s*\{[^}]*border-top-color:\s*transparent/)
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/)
+  })
+
+  it('loading + disabled 共存：仍禁点，不派发 select', () => {
+    const el = mount({
+      items: JSON.stringify([{ label: 'x', value: 'x', loading: true, disabled: true }]),
+    })
+    let fired = 0
+    el.addEventListener('oas-select', () => fired++)
+    items(el)[0]!.click()
+    expect(fired).toBe(0)
+  })
+
+  it('loading 项带 children：hover 不展开子菜单', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '同步中', value: 'sync', loading: true, children: [{ label: 'a', value: 'a' }] },
+      ]),
+    })
+    items(el)[0]!.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(items(el)[0]!.getAttribute('aria-expanded')).toBe('false')
+    expect(items(el)[0]!.classList.contains('open')).toBe(false)
+  })
+})

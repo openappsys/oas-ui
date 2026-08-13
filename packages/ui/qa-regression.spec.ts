@@ -1016,7 +1016,8 @@ test('dropdown 多级子菜单贴近视口右缘：翻转后全部落在视口�
     document.body.appendChild(dd)
   })
   const dd = page.locator('oas-dropdown[data-e2e-right-edge]')
-  await dd.locator('button').click()
+  // 注：dropdown shadow 内也有原生 button（拆分箭头按钮），必须限定 light DOM 直接子元素
+  await dd.locator(':scope > button').click()
   await page.locator('oas-dropdown[data-e2e-right-edge] [part="item"][data-value="file"]').hover()
   await page.locator('oas-dropdown[data-e2e-right-edge] [part="item"][data-value="new"]').hover()
   await page.waitForTimeout(200)
@@ -1577,6 +1578,47 @@ test('tree 自定义节点模板 + oas-node-render 渲染真实内容且 ARIA �
     null,
     { timeout: 5000 },
   )
+})
+
+test('tree slot 模板：Vue CSR 直插形态（insertBefore 到模板自身、content 为空）也能克隆渲染', async ({
+  page,
+}) => {
+  // 回归：dev（Vue CSR 挂载）下 insertBefore 直插 template 元素，子节点落在元素自身 childNodes、
+  // content 为空（Chromium 不转发进 content），曾致 #tree-custom 自定义节点行空白；preview 走
+  // SSR 快照 content 有值所以正常。此处用 insertBefore 在真实 Chromium 复现 CSR 形态。
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  // 先等 ui bundle 加载完成（oas-tree 已注册），保证动态创建的元素立即 upgrade
+  await up(page, '#tree-custom')
+  await page.evaluate(() => {
+    const wrap = document.createElement('div')
+    wrap.innerHTML = `<oas-tree id="tree-csr-slot" data='[{"key":"a","label":"CSR 节点"}]'></oas-tree>`
+    document.body.appendChild(wrap)
+    const tree = document.querySelector('#tree-csr-slot')!
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'node')
+    const glyph = document.createElement('svg')
+    glyph.setAttribute('class', 'csr-glyph')
+    const binder = document.createElement('span')
+    binder.setAttribute('data-node-label', '')
+    // Vue runtime-dom 的 insert 实现即 parent.insertBefore(child, anchor)
+    tpl.insertBefore(glyph, null)
+    tpl.insertBefore(binder, null)
+    tree.appendChild(tpl)
+    // 模板就位后触发 update 重建行（与 demo onMounted 重刷同路径）
+    tree.setAttribute('data', tree.getAttribute('data')!)
+  })
+  await up(page, '#tree-csr-slot')
+  await page.waitForTimeout(200)
+  const r = await page.evaluate(() => {
+    const tree = document.querySelector('#tree-csr-slot')!
+    const label = tree.shadowRoot!.querySelector('[part="row"] .label')!
+    return {
+      glyph: !!label.querySelector('svg.csr-glyph'),
+      boundText: label.querySelector('[data-node-label]')?.textContent ?? '',
+    }
+  })
+  expect(r.glyph, 'CSR 直插形态应克隆骨架图标').toBe(true)
+  expect(r.boundText).toBe('CSR 节点')
 })
 
 test('tree 目录模式：文件夹/文件图标、展开态切换与 ARIA', async ({ page }) => {
@@ -2510,6 +2552,591 @@ test('steps navigation：底部上一步/下一步可见，点击切换 current 
   })
   await page.waitForFunction(
     () => document.querySelector('oas-steps[navigation]')?.getAttribute('current') === '0',
+    null,
+    { timeout: 5000 },
+  )
+})
+
+// —— dropdown P1 补缺：拆分下拉按钮（split）+ loading 菜单项 ——
+// 曾现缺口：下拉只有整体触发一种形态�拆分按钮；菜单项无 loading 态。
+// 本批补：split（主按钮派发 oas-action + 箭头按钮开合菜单 + aria 同步）与菜单项 loading（spinner 禁点）。
+
+test('dropdown split：Vue demo 属性存活、箭头按钮 aria 同步、主按钮 oas-action 有可见反馈', async ({
+  page,
+}) => {
+  await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-dropdown[split]')
+  await page.waitForFunction(() => typeof (window as any).ddSplitAction === 'function', null, {
+    timeout: 10000,
+  })
+  // 点拆分主按钮（host 中心落在主按钮上）→ oas-action → tag 回显（可见反馈）
+  await page.locator('#dd-split').click()
+  await page.waitForFunction(
+    () => document.getElementById('dd-split-result')?.textContent === '主按钮已点击（oas-action）',
+    null,
+    { timeout: 5000 },
+  )
+  const r = await page.evaluate(() => {
+    const dd = document.querySelector('#dd-split')!
+    const arrow = dd.shadowRoot!.querySelector<HTMLElement>('[part="arrow"]')!
+    const cs = getComputedStyle(arrow)
+    return {
+      splitAttr: dd.getAttribute('split'),
+      hasArrow: !!arrow,
+      haspoup: arrow.getAttribute('aria-haspopup'),
+      expanded: arrow.getAttribute('aria-expanded'),
+      label: arrow.getAttribute('aria-label'),
+      open: dd.hasAttribute('open'),
+      display: cs.display,
+      height: cs.height,
+      topLeftRadius: cs.borderTopLeftRadius,
+      topRightRadius: cs.borderTopRightRadius,
+    }
+  })
+  expect(r.splitAttr, 'split 属性被 Vue 剥离').not.toBeNull()
+  expect(r.hasArrow).toBe(true)
+  expect(r.haspoup).toBe('menu')
+  expect(r.expanded).toBe('false')
+  expect(r.label).toBe('打开菜单') // locale 可访问名称
+  expect(r.open).toBe(false)
+  expect(r.display).not.toBe('none') // split 下箭头按钮可见
+  expect(r.height).toBe('32px') // 与 --oas-control-height-md 主按钮等高（align-self stretch）
+  expect(r.topLeftRadius).toBe('0px') // 左直右圆，与主按钮贴合
+  expect(r.topRightRadius).toBe('6px')
+
+  // 点箭头 → 展开菜单 + aria-expanded 同步
+  await page.locator('#dd-split [part="arrow"]').click()
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#dd-split')?.hasAttribute('open') === true &&
+      document
+        .querySelector('#dd-split')!
+        .shadowRoot!.querySelector<HTMLElement>('[part="arrow"]')!
+        .getAttribute('aria-expanded') === 'true',
+    null,
+    { timeout: 5000 },
+  )
+})
+
+test('dropdown loading 菜单项：spinner 视觉 + 禁点，异步恢复后还原可点', async ({ page }) => {
+  await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#dd-async')
+  await page.waitForFunction(() => typeof (window as any).ddAsyncLog === 'function', null, {
+    timeout: 10000,
+  })
+  // 打开异步 demo 菜单并选「保存」→ 该项转圈禁点（demo 1.5s 后恢复）
+  await page.evaluate(() => document.querySelector('#dd-async')!.setAttribute('open', ''))
+  await page.waitForSelector('#dd-async [role="menuitemradio"]', { timeout: 5000 })
+  await page.locator('#dd-async [role="menuitemradio"]', { hasText: '保存' }).first().click()
+  // 等 demo 把「保存」置 loading（items 数据驱动）；menu 浮层在两层 shadow 内，
+  // 这里只查 items 属性，元素态用穿透 locator 断言
+  await page.waitForFunction(
+    () => {
+      const dd = document.querySelector('#dd-async')!
+      const save = JSON.parse(dd.getAttribute('items') ?? '[]').find(
+        (i: { value: string }) => i.value === 'save',
+      )
+      return save?.loading === true
+    },
+    null,
+    { timeout: 5000 },
+  )
+  const saveItem = page.locator('#dd-async [part="item"][data-value="save"]')
+  await expect(saveItem).toHaveClass(/loading/)
+  const during = await saveItem.evaluate((el) => {
+    const spin = el.querySelector('.spin')
+    return {
+      busy: el.getAttribute('aria-busy'),
+      ariaDisabled: el.getAttribute('aria-disabled'),
+      hasSpin: !!spin,
+      cursor: getComputedStyle(el).cursor,
+    }
+  })
+  expect(during.busy).toBe('true')
+  expect(during.ariaDisabled).toBe('true')
+  expect(during.hasSpin).toBe(true)
+  expect(during.cursor).toBe('wait')
+
+  // 等 1.5s 异步完成 → spinner 消失、禁点解除
+  await page.waitForFunction(
+    () => {
+      const dd = document.querySelector('#dd-async')!
+      const save = JSON.parse(dd.getAttribute('items') ?? '[]').find(
+        (i: { value: string }) => i.value === 'save',
+      )
+      return save && !save.loading
+    },
+    null,
+    { timeout: 5000 },
+  )
+  await expect(saveItem).not.toHaveClass(/loading/)
+  const after = await saveItem.evaluate((el) => ({
+    hasSpin: !!el.querySelector('.spin'),
+    busy: el.getAttribute('aria-busy'),
+  }))
+  expect(after.hasSpin).toBe(false)
+  expect(after.busy).toBeNull()
+})
+
+// —— tooltip P1 补缺：虚拟触发（virtual-trigger）——
+// 曾现缺口：tooltip 只能绑定宿主元素 hover/focus，图表点位、拖拽中的浮层提示等
+// 无触发元素的场景无法使用。本次补 virtual 模式：open 受控 + oas-open-change +
+// virtual-anchor（锚点元素选择器）/ virtual-x、virtual-y（视口坐标）定位。
+
+test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、移出隐藏（Vue demo 属性存活 + 可见反馈）', async ({
+  page,
+}) => {
+  await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  // oas-tooltip host 零尺寸（inline-block 无内容），waitForSelector 默认等可见会超时 → 等 attached + shadowRoot
+  await page.waitForSelector('#tt-follow', { state: 'attached', timeout: 15000 })
+  await page.waitForFunction((s) => document.querySelector(s)?.shadowRoot != null, '#tt-follow', {
+    timeout: 15000,
+  })
+  // virtual / virtual-x / virtual-y 在 Vue demo 中存活（不被剥离）
+  const attrs = await page.evaluate(() => {
+    const t = document.querySelector('#tt-follow')!
+    return {
+      virtual: t.getAttribute('virtual'),
+      x: t.getAttribute('virtual-x'),
+      y: t.getAttribute('virtual-y'),
+    }
+  })
+  expect(attrs.virtual, 'virtual 被 Vue 剥离').not.toBeNull()
+  expect(attrs.x).toBe('0')
+  expect(attrs.y).toBe('0')
+
+  // 画布滚到视口中央（避开粘性页头拦截指针）
+  const canvas = page.locator('#vp-canvas')
+  await canvas.scrollIntoViewIfNeeded()
+  await page.evaluate(() => {
+    document.querySelector('#vp-canvas')?.scrollIntoView({ block: 'center' })
+  })
+  await page.waitForTimeout(300)
+  const box = await canvas.boundingBox()
+
+  // 监听 oas-open-change 计数（demo 可见反馈：状态 tag 跟随中/未跟随）
+  await page.evaluate(() => {
+    ;(window as any).__tipOpenCount = 0
+    document.querySelector('#tt-follow')!.addEventListener('oas-open-change', () => {
+      ;(window as any).__tipOpenCount++
+    })
+  })
+
+  // 移入画布 → tooltip 按坐标跟随显示
+  await page.mouse.move(box!.x + 60, box!.y + 40)
+  await page.waitForFunction(() => {
+    const t = document.querySelector('#tt-follow')
+    const tip = t?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
+    return tip?.getAttribute('aria-hidden') === 'false' && tip?.style.top !== ''
+  })
+  const r = await page.evaluate(() => {
+    const t = document.querySelector('#tt-follow')!
+    const tip = t.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
+    const tb = tip.getBoundingClientRect()
+    return {
+      openCount: (window as any).__tipOpenCount,
+      status: document.querySelector('#tt-follow-status')?.textContent ?? '',
+      content: tip.textContent,
+      placement: tip.getAttribute('data-placement'),
+      top: parseFloat(tip.style.top),
+      left: parseFloat(tip.style.left),
+      inViewport:
+        tb.top >= 0 &&
+        tb.left >= 0 &&
+        tb.bottom <= window.innerHeight &&
+        tb.right <= window.innerWidth,
+    }
+  })
+  expect(r.openCount, '鼠标移入应派发 oas-open-change').toBeGreaterThan(0)
+  expect(r.status, 'demo 状态 tag 应有可见反馈').toContain('跟随')
+  expect(r.content).toContain('坐标') // 内容实时更新
+  expect(r.placement).toBe('bottom')
+  expect(r.top, 'tooltip 应定位在鼠标下方').toBeGreaterThan(0)
+  expect(r.left).toBeGreaterThan(0)
+  expect(r.inViewport, 'tooltip 不应溢出视口').toBe(true)
+
+  // 移出画布 → tooltip 隐藏 + 状态反馈复位
+  await page.mouse.move(box!.x + box!.width + 60, box!.y + 40)
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#tt-follow')
+        ?.shadowRoot?.querySelector('[part="tip"]')
+        ?.getAttribute('aria-hidden') === 'true',
+  )
+  const closed = await page.evaluate(
+    () => document.querySelector('#tt-follow-status')?.textContent ?? '',
+  )
+  expect(closed).toContain('未跟随')
+})
+
+test('tooltip virtual-anchor：hover 图表点位 tooltip 锚定该点显示、切换点位跟随', async ({
+  page,
+}) => {
+  await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#tt-anchor', { state: 'attached', timeout: 15000 })
+  await page.waitForFunction((s) => document.querySelector(s)?.shadowRoot != null, '#tt-anchor', {
+    timeout: 15000,
+  })
+  const attrs = await page.evaluate(() => {
+    const t = document.querySelector('#tt-anchor')!
+    return { virtual: t.getAttribute('virtual'), anchor: t.getAttribute('virtual-anchor') }
+  })
+  expect(attrs.virtual, 'virtual 被 Vue 剥离').not.toBeNull()
+  expect(attrs.anchor).toBe('#vp-dot-0')
+
+  await page.evaluate(() => {
+    document.querySelector('#vp-chart')?.scrollIntoView({ block: 'center' })
+  })
+  await page.waitForTimeout(300)
+
+  // hover 点位 0 → tooltip 锚定显示（placement=top，气泡在点位上方）
+  await page.locator('#vp-dot-0').hover()
+  await page.waitForFunction(() => {
+    const t = document.querySelector('#tt-anchor')
+    const tip = t?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
+    return tip?.getAttribute('aria-hidden') === 'false'
+  })
+  const r0 = await page.evaluate(() => {
+    const t = document.querySelector('#tt-anchor')!
+    const tip = t.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
+    const tb = tip.getBoundingClientRect()
+    const db = document.getElementById('vp-dot-0')!.getBoundingClientRect()
+    return {
+      content: tip.textContent,
+      placement: tip.getAttribute('data-placement'),
+      anchor: t.getAttribute('virtual-anchor'),
+      aboveDot: Math.abs(tb.bottom - db.top) < 30, // 气泡底 ≈ 点位顶（8px gap）
+    }
+  })
+  expect(r0.content).toContain('Q1')
+  expect(r0.placement).toBe('top')
+  expect(r0.anchor).toBe('#vp-dot-0')
+  expect(r0.aboveDot, 'tooltip 应锚定在点位上方').toBe(true)
+
+  // 切到点位 2 → virtual-anchor 与内容同步更新（跟随移动）
+  await page.locator('#vp-dot-2').hover()
+  await page.waitForFunction(() => {
+    const t = document.querySelector('#tt-anchor')
+    const tip = t?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
+    return tip?.textContent?.includes('Q3') ?? false
+  })
+  const r1 = await page.evaluate(() => {
+    const t = document.querySelector('#tt-anchor')!
+    return {
+      anchor: t.getAttribute('virtual-anchor'),
+      content: t.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!.textContent,
+    }
+  })
+  expect(r1.anchor).toBe('#vp-dot-2')
+  expect(r1.content).toContain('Q3')
+})
+
+// —— popover P1 补缺：嵌套浮层（nested）+ 虚拟触发（virtual）——
+// 曾现缺口：popover 面板内无法再开子浮层（父关闭时子面板残留）、无图表/画布坐标提示能力。
+// 本次补：父关闭级联关闭子层、Esc 逐层关闭并还原焦点；virtual 模式（同 tooltip 的
+// virtual-x/virtual-y/virtual-anchor）+ oas-open-change。
+
+test('popover 嵌套：父关闭级联关闭子层、Esc 逐层关闭、Vue demo 属性存活', async ({ page }) => {
+  await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#pop-parent')
+  const parent = page.locator('#pop-parent')
+  const child = page.locator('#pop-child')
+  // 嵌套层级：子 popover 是父的 light DOM 后代，parent.locator('[part=panel]') 会同时匹配
+  // 父/子两块面板（pierce 嵌套 shadow），故用 evaluate 精确取各自 shadow 内的面板。
+  const panelState = () =>
+    page.evaluate(() => {
+      const p = document.querySelector('#pop-parent')!.shadowRoot!.querySelector('[part="panel"]')!
+      const c = document.querySelector('#pop-child')!.shadowRoot!.querySelector('[part="panel"]')!
+      return {
+        pAria: p.getAttribute('aria-hidden'),
+        cAria: c.getAttribute('aria-hidden'),
+      }
+    })
+
+  // focus-on-open 属性在 Vue demo 中存活（不被剥离）
+  const focusAttr = await parent.evaluate((e) => e.getAttribute('focus-on-open'))
+  expect(focusAttr, 'focus-on-open 被 Vue 剥离').not.toBeNull()
+
+  // 同时打开父子 → 子层可见且层级在父之上
+  await parent.evaluate((e) => e.setAttribute('open', ''))
+  await child.evaluate((e) => e.setAttribute('open', ''))
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#pop-child')
+        ?.shadowRoot?.querySelector('[part="panel"]')
+        ?.getAttribute('aria-hidden') === 'false',
+    null,
+    { timeout: 5000 },
+  )
+  let s = await panelState()
+  expect(s.pAria).toBe('false')
+  expect(s.cAria).toBe('false')
+  const z = await page.evaluate(() => {
+    const c = document.querySelector('#pop-child')!.shadowRoot!.querySelector('[part="panel"]')!
+    const p = document.querySelector('#pop-parent')!.shadowRoot!.querySelector('[part="panel"]')!
+    return { child: getComputedStyle(c).zIndex, parent: getComputedStyle(p).zIndex }
+  })
+  expect(z.child).toBe(z.parent) // 同 token；子层在父的 stacking context 内，视觉上盖在父之上
+
+  // Esc 一次只关最内层（子），父保持打开
+  await page.keyboard.press('Escape')
+  s = await panelState()
+  expect(s.cAria).toBe('true')
+  expect(s.pAria).toBe('false')
+
+  // 再次 Esc 关父层
+  await page.keyboard.press('Escape')
+  s = await panelState()
+  expect(s.pAria).toBe('true')
+
+  // 父关闭级联关闭子层
+  await parent.evaluate((e) => e.setAttribute('open', ''))
+  await child.evaluate((e) => e.setAttribute('open', ''))
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#pop-child')
+        ?.shadowRoot?.querySelector('[part="panel"]')
+        ?.getAttribute('aria-hidden') === 'false',
+    null,
+    { timeout: 5000 },
+  )
+  await parent.evaluate((e) => e.removeAttribute('open'))
+  s = await panelState()
+  expect(s.pAria).toBe('true')
+  expect(s.cAria, '父关闭应级联关闭子层').toBe('true')
+})
+
+test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-open-change 可见反馈', async ({
+  page,
+}) => {
+  await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
+  // oas-popover host 零尺寸（inline-block 无内容），waitForSelector 默认等可见会超时 → 等 attached + shadowRoot
+  await page.waitForSelector('#pop-point', { state: 'attached', timeout: 15000 })
+  await page.waitForFunction((s) => document.querySelector(s)?.shadowRoot != null, '#pop-point', {
+    timeout: 15000,
+  })
+  const point = page.locator('#pop-point')
+
+  // virtual / virtual-x / virtual-y 在 Vue demo 中存活（不被剥离）
+  const attrs = await point.evaluate((e) => ({
+    virtual: e.getAttribute('virtual'),
+    x: e.getAttribute('virtual-x'),
+    y: e.getAttribute('virtual-y'),
+  }))
+  expect(attrs.virtual, 'virtual 被 Vue 剥离').not.toBeNull()
+  expect(attrs.x).toBe('160')
+  expect(attrs.y).toBe('90')
+
+  // 按坐标打开：placement=right → 面板左缘 = 160 + 8（gap），垂直居中于锚点
+  await point.evaluate((e) => e.setAttribute('open', ''))
+  const panel = point.locator('[part="panel"]')
+  await expect(panel).toHaveAttribute('aria-hidden', 'false')
+  await expect(panel).toHaveAttribute('data-placement', 'right')
+  const box = (await panel.boundingBox())!
+  expect(Math.abs(box.x - 168)).toBeLessThanOrEqual(2)
+  expect(Math.abs(box.y - (90 - box.height / 2))).toBeLessThanOrEqual(2)
+
+  // oas-open-change 可见反馈：demo 状态 tag 回显 open
+  await page.waitForFunction(
+    () => document.getElementById('pop-point-status')?.textContent === 'open: true',
+    null,
+    { timeout: 5000 },
+  )
+
+  // 外部点击不关闭（虚拟模式生命周期由宿主控制）
+  await page.mouse.click(5, 5)
+  await expect(panel).toHaveAttribute('aria-hidden', 'false')
+  await point.evaluate((e) => e.removeAttribute('open'))
+
+  // 换坐标重新打开：virtual-x/y 更新后 open 应重定位（宿主 mousemove 场景）
+  await point.evaluate((e) => e.setAttribute('virtual-x', '700'))
+  await point.evaluate((e) => e.setAttribute('virtual-y', '500'))
+  await point.evaluate((e) => e.setAttribute('open', ''))
+  await expect(panel).toHaveAttribute('aria-hidden', 'false')
+  await page.waitForFunction(
+    () => {
+      const p = document
+        .querySelector('#pop-point')!
+        .shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+      return p.style.left === '708px' // 700 + 8（gap）
+    },
+    null,
+    { timeout: 5000 },
+  )
+  const box2 = (await panel.boundingBox())!
+  expect(Math.abs(box2.x - 708)).toBeLessThanOrEqual(2)
+  expect(Math.abs(box2.y - (500 - box2.height / 2))).toBeLessThanOrEqual(2)
+  await point.evaluate((e) => e.removeAttribute('open'))
+
+  // 虚拟锚点元素跟随：hover 点位 → 面板锚定该点（placement=top，气泡在点位上方）
+  const chart = page.locator('#pop-chart')
+  await chart.scrollIntoViewIfNeeded()
+  await page.evaluate(() => {
+    document.querySelector('#pop-chart')?.scrollIntoView({ block: 'center' })
+  })
+  await page.waitForTimeout(300)
+  await page.locator('#pop-dot-0').hover()
+  const anchorPanel = page.locator('#pop-anchor [part="panel"]')
+  await expect(anchorPanel).toHaveAttribute('aria-hidden', 'false', { timeout: 5000 })
+  const anchorBox = (await anchorPanel.boundingBox())!
+  const dotBox = (await page.locator('#pop-dot-0').boundingBox())!
+  expect(anchorBox.y + anchorBox.height - dotBox.y).toBeLessThanOrEqual(40) // 气泡底 ≈ 点位顶（8px gap）
+  // 切到点位 1 → 面板跟随
+  await page.locator('#pop-dot-1').hover()
+  await page.waitForFunction(() => {
+    const t = document.querySelector('#pop-anchor')!
+    return t.getAttribute('virtual-anchor') === '#pop-dot-1'
+  })
+})
+
+// —— tree-select P1 补缺：勾选策略（check-strategy）+ 虚拟滚动（virtual）——
+// 曾现缺口：多选只有父子级联一种取值模型（父级勾选时子级全部进值）�
+// check-strategy（parent 只父级 / child 只叶子）；万级数据下拉无窗口化渲染。
+// 本批补：策略对比 demo 值回显、虚拟滚动窗口化渲染 + 滚动窗口平移 + 键盘导航 ARIA。
+
+test('tree-select check-strategy：parent/child 勾选父级后值按策略过滤并可见回显', async ({
+  page,
+}) => {
+  await page.goto('/components/tree-select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ts-strategy-parent')
+  // parent：勾选根节点「前端」→ value 只含 fe
+  await page.locator('#ts-strategy-parent [part="trigger"]').click()
+  await page.locator('#ts-strategy-parent [role="treeitem"]').first().click()
+  await page.waitForFunction(
+    () => document.querySelector('#ts-strategy-parent')?.getAttribute('value') === '["fe"]',
+    null,
+    { timeout: 5000 },
+  )
+  // 可见反馈：输出 span 回显选中值
+  expect(await page.locator('#ts-out-parent').textContent()).toBe('[fe]')
+  // 关闭 parent 下拉，避免其浮层遮挡下方 child 触发器
+  await page.locator('#ts-strategy-parent [part="trigger"]').press('Escape')
+  // child：勾选根节点「前端」→ value 只含叶子
+  await page.locator('#ts-strategy-child [part="trigger"]').click()
+  await page.locator('#ts-strategy-child [role="treeitem"]').first().click()
+  await page.waitForFunction(
+    () => {
+      const v = document.querySelector('#ts-strategy-child')?.getAttribute('value')
+      // demo 数据中 框架 的子节点顺序为 Vue 在前 React 在后
+      return v === '["vue","react","css"]'
+    },
+    null,
+    { timeout: 5000 },
+  )
+  expect(await page.locator('#ts-out-child').textContent()).toBe('[vue, react, css]')
+})
+
+test('tree-select virtual：万级节点窗口化渲染、滚动窗口平移、行 ARIA 保持', async ({ page }) => {
+  await page.goto('/components/tree-select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ts-virtual')
+  // 等注入的万级数据就绪（onMounted 经 options 属性通道写入）
+  await page.waitForFunction(
+    () => document.querySelector('#ts-virtual')?.getAttribute('options')?.includes('"m-99-99"'),
+    null,
+    { timeout: 10000 },
+  )
+  await page.locator('#ts-virtual [part="trigger"]').click()
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#ts-virtual')!
+      return (
+        el
+          .shadowRoot!.querySelector('oas-virtual-list')!
+          .shadowRoot!.querySelectorAll('[role="treeitem"]').length > 0
+      )
+    },
+    null,
+    { timeout: 5000 },
+  )
+  const info = await page.evaluate(() => {
+    const el = document.querySelector('#ts-virtual')!
+    const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
+    const rows = [...vlist.shadowRoot!.querySelectorAll('[role="treeitem"]')]
+    const vp = vlist.shadowRoot!.querySelector('.viewport')!
+    return {
+      rendered: rows.length,
+      first: rows[0]?.getAttribute('data-index'),
+      itemsRole: vlist.getAttribute('items-role'),
+      itemRole: vlist.getAttribute('item-role'),
+      ariaLevel: rows[0]?.getAttribute('aria-level'),
+      viewportTabindex: vp.getAttribute('tabindex'),
+    }
+  })
+  expect(info.rendered).toBeLessThanOrEqual(20) // 万级只渲染窗口 + buffer
+  expect(info.first).toBe('0')
+  expect(info.itemsRole).toBe('tree')
+  expect(info.itemRole).toBe('presentation')
+  expect(info.ariaLevel).toBe('1')
+  expect(info.viewportTabindex).toBeNull() // 键盘焦点保持在 trigger（combobox 键盘流）
+
+  // 全部展开 → 可见节点 10100（100 部门 + 10000 成员），窗口化渲染仍受限
+  await page.evaluate(() => {
+    const depts = Array.from({ length: 100 }, (_, i) => `dept-${i}`)
+    document.querySelector('#ts-virtual')!.setAttribute('expanded', JSON.stringify(depts))
+  })
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('#ts-virtual')!
+      const inner = el
+        .shadowRoot!.querySelector('oas-virtual-list')!
+        .shadowRoot!.querySelector('.inner') as HTMLElement | null
+      return (
+        !!inner && inner.style.height !== '' && Number.parseInt(inner.style.height, 10) > 100000
+      )
+    },
+    null,
+    { timeout: 5000 },
+  )
+
+  // 滚动到 5000 行附近 → 窗口平移（真实浏览器 scroll 驱动 vlist 重算）
+  const after = await page.evaluate(
+    () =>
+      new Promise<{ first: string | null | undefined; count: number }>((resolve) => {
+        const el = document.querySelector('#ts-virtual')!
+        const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
+        const vp = vlist.shadowRoot!.querySelector('.viewport')!
+        vp.scrollTop = 5000 * 36
+        vp.dispatchEvent(new Event('scroll'))
+        requestAnimationFrame(() => {
+          const rows = [...vlist.shadowRoot!.querySelectorAll('[role="treeitem"]')]
+          resolve({ first: rows[0]?.getAttribute('data-index'), count: rows.length })
+        })
+      }),
+  )
+  expect(after.first).toBe('4996')
+  expect(after.count).toBe(16)
+})
+
+test('tree-select virtual：键盘导航高亮滚动进视口且 aria-activedescendant 跟随', async ({
+  page,
+}) => {
+  await page.goto('/components/tree-select.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#ts-virtual')
+  await page.waitForFunction(
+    () => document.querySelector('#ts-virtual')?.getAttribute('options')?.includes('"m-99-99"'),
+    null,
+    { timeout: 10000 },
+  )
+  const btn = page.locator('#ts-virtual [part="trigger"]')
+  await btn.click()
+  for (let i = 0; i < 30; i++) await btn.press('ArrowDown')
+  await expect(btn).toHaveAttribute('aria-activedescendant', 'tree-opt-30', { timeout: 5000 })
+  // 高亮项滚动进视口（viewport scrollTop > 0）
+  const scrolled = await page.evaluate(() => {
+    const el = document.querySelector('#ts-virtual')!
+    const vp = el
+      .shadowRoot!.querySelector('oas-virtual-list')!
+      .shadowRoot!.querySelector('.viewport')!
+    return vp.scrollTop
+  })
+  expect(scrolled).toBeGreaterThan(0)
+  // Enter 勾选高亮行 → value 写回（trigger 显示成员标签，可见反馈）
+  await btn.press('Enter')
+  await page.waitForFunction(
+    () => document.querySelector('#ts-virtual')?.getAttribute('value')?.includes('m-0-29'),
     null,
     { timeout: 5000 },
   )

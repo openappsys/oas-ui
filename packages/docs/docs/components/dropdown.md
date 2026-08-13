@@ -85,6 +85,44 @@ items 项支持 `children` 数组级联子菜单（任意层级），hover / 点
   </oas-dropdown>
 </DemoBlock>
 
+## 拆分下拉按钮
+
+`split` 属性开启下拉按钮模式＼�：主按钮 + 拆分箭头按钮。点箭头展开菜单，点主按钮派发 `oas-action`（绑定执行主操作，如保存）；菜单选择仍走 `oas-select`。
+
+<DemoBlock title="拆分下拉按钮">
+  <oas-dropdown split items='[{"label":"编辑","value":"edit"},{"label":"复制","value":"copy"},{"label":"删除","value":"delete"}]'>
+    <oas-button type="primary">保存并提交</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+<DemoBlock title="主按钮动作事件">
+  <oas-space size="small">
+    <oas-dropdown id="dd-split" split onoas-action="ddSplitAction(event)" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
+      <oas-button>更多操作</oas-button>
+    </oas-dropdown>
+    <oas-tag id="dd-split-result" type="info">尚未点击</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## 加载中菜单项
+
+菜单项配置 `loading: true` 即进入加载态：该项显示旋转 spinner、禁点（点击 / 键盘 / hover 均拦截），异步完成后更新 `items` 移除 `loading` 即恢复。下面的异步演示：选择「保存」后该项转圈禁点约 1.5 秒，随后恢复。
+
+<DemoBlock title="loading 菜单项">
+  <oas-dropdown items='[{"label":"保存","value":"save"},{"label":"同步中…","value":"syncing","loading":true},{"label":"删除","value":"delete"}]'>
+    <oas-button>操作</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+<DemoBlock title="异步操作演示">
+  <oas-space size="small">
+    <oas-dropdown id="dd-async" onoas-select="ddAsyncLog(event)" items='[{"label":"保存","value":"save"},{"label":"另存为","value":"save-as"},{"label":"删除","value":"delete"}]'>
+      <oas-button>选择操作</oas-button>
+    </oas-dropdown>
+    <oas-tag id="dd-async-status" type="info">尚未选择</oas-tag>
+  </oas-space>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -125,6 +163,37 @@ onMounted(() => {
     // 选择菜单项由组件更新 value，用 MutationObserver 保持状态同步
     new MutationObserver(syncValue).observe(val, { attributes: true, attributeFilter: ['value'] })
   }
+
+  window.ddSplitAction = (e) => {
+    const tag = document.getElementById('dd-split-result')
+    if (tag) tag.textContent = `主按钮已点击（${e.type}）`
+  }
+
+  const asyncDd = document.getElementById('dd-async')
+  const asyncStatus = document.getElementById('dd-async-status')
+  if (asyncDd && asyncStatus) {
+    window.ddAsyncLog = (e) => {
+      asyncStatus.textContent = `已选择：${e.detail.value}`
+      if (e.detail.value !== 'save') return
+      // 模拟异步：选中「保存」→ 该项转圈禁点 1.5s，随后恢复（菜单保持打开可观察）
+      const mark = (loading) => {
+        const items = JSON.parse(asyncDd.getAttribute('items') || '[]')
+        const target = items.find((i) => i.value === 'save')
+        if (!target) return
+        if (loading) {
+          target.loading = true
+          asyncDd.setAttribute('items', JSON.stringify(items))
+          // 组件在 select 转发后同步关闭菜单，下一帧再重开以展示 loading 态
+          window.setTimeout(() => asyncDd.setAttribute('open', ''), 0)
+        } else {
+          delete target.loading
+          asyncDd.setAttribute('items', JSON.stringify(items))
+        }
+      }
+      mark(true)
+      window.setTimeout(() => mark(false), 1500)
+    }
+  }
 })
 </script>
 
@@ -137,12 +206,14 @@ onMounted(() => {
 | `items` | 菜单项 JSON | `string` | `[]` |
 | `open` | 受控显示（布尔属性，存在即展开） | `boolean` | — |
 | `placement` | 浮层位置 | `Placement` | `bottom` |
+| `split` | 拆分下拉按钮（布尔属性）：主按钮 + 箭头按钮，点箭头开菜单、主按钮派发 oas-action | `boolean` | — |
 | `value` | 当前选中值 | `string` | — |
 
 ### 事件
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-action` | 拆分模式下点击主按钮，`detail: { originalEvent }` |
 | `oas-select` | 选择某项，`detail: { value }` |
 
 ### 插槽

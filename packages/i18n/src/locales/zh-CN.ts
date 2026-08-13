@@ -169,6 +169,8 @@ export const zhCN = {
   'datePicker.shortcutThisWeek': '本周',
   'datePicker.shortcutThisMonth': '本月',
   'datePicker.shortcutThisYear': '今年',
+  // dropdown（下拉菜单）
+  'dropdown.openMenu': '打开菜单',
   // time-picker（时间选择器）
   'timePicker.placeholder': '请选择时间',
   'timePicker.hour': '时',

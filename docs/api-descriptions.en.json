@@ -433,9 +433,11 @@
       "items": "Menu items JSON",
       "open": "Controlled display (boolean attribute; expands when present)",
       "placement": "Popup placement",
+      "split": "Split button mode (boolean attribute): main button + arrow button; arrow opens the menu, main button fires oas-action",
       "value": "Current selected value"
     },
     "events": {
+      "oas-action": "Main button clicked in split mode, `detail: { originalEvent }`",
       "oas-select": "An item was selected, `detail: { value }`"
     },
     "slots": {}
@@ -761,7 +763,7 @@
   "oas-menu": {
     "attrs": {
       "collapsed": "Collapsed state (vertical only): icons only, submenus pop to the right",
-      "items": "Menu items JSON",
+      "items": "Menu items JSON (supports disabled / loading, icon, children submenus)",
       "mode": "Layout mode: `vertical` menu / `horizontal` top bar",
       "theme": "Local theme: `dark` uses dark tokens (independent of the global theme)",
       "value": "Current selected value"
@@ -916,11 +918,18 @@
   "oas-popover": {
     "attrs": {
       "content": "Body text",
+      "focus-on-open": "Moves focus into the first focusable element of the panel when opened",
       "open": "Controlled display (boolean attribute; shows when present)",
       "placement": "Popup placement",
-      "title": "Title text"
+      "title": "Title text",
+      "virtual": "Virtual trigger mode (same as tooltip; no anchor element)",
+      "virtual-anchor": "Virtual anchor element selector (used when virtual-x/virtual-y are unset)",
+      "virtual-x": "Virtual anchor x (viewport coordinate, px)",
+      "virtual-y": "Virtual anchor y (viewport coordinate, px)"
     },
-    "events": {},
+    "events": {
+      "oas-open-change": "open state changed, `detail: { open }`"
+    },
     "slots": {}
   },
   "oas-progress": {
@@ -1347,10 +1356,18 @@
     "attrs": {
       "content": "Tooltip content text",
       "open": "Controlled display (boolean attribute; shows when present)",
-      "placement": "Popup placement"
+      "placement": "Popup placement",
+      "virtual": "Virtual trigger mode: not bound to a host trigger element; `open` is fully controlled externally and the position is set by `virtual-anchor` or `virtual-x`/`virtual-y` (for chart points, floating hints during drag)",
+      "virtual-anchor": "Anchor element selector (e.g. `#chart-point-1`); the tooltip is positioned by that element's rect. Mutually exclusive with `virtual-x`/`virtual-y` (coordinates take precedence)",
+      "virtual-x": "Virtual anchor viewport X coordinate (px, e.g. mouse `clientX`); position by coordinates when set together with `virtual-y`",
+      "virtual-y": "Virtual anchor viewport Y coordinate (px, e.g. mouse `clientY`); position by coordinates when set together with `virtual-x`"
     },
-    "events": {},
-    "slots": {}
+    "events": {
+      "oas-open-change": "Fired when the `open` state changes (show/hide), `detail: { open }`"
+    },
+    "slots": {
+      "": "Trigger element (hover/focus trigger); optional in `virtual` mode"
+    }
   },
   "oas-tour": {
     "attrs": {
@@ -1409,12 +1426,16 @@
   },
   "oas-tree-select": {
     "attrs": {
+      "check-strategy": "Multiple-select check strategy: `all` (default) keeps both parents and children in the value; `parent` keeps only parent nodes (a parent represents its fully-checked children); `child` keeps only leaf nodes",
       "disabled": "Disabled",
       "expanded": "Set of expanded node values (JSON array, controlled)",
+      "height": "Virtual-scroll viewport height (px); works with `virtual`",
+      "item-height": "Fixed row height for virtual scroll (px)",
       "multiple": "Multiple select + parent-child cascade",
       "options": "Tree options, JSON array, supports `children` / `disabled`",
       "placeholder": "Placeholder text",
-      "value": "Selected value (JSON array in multiple mode)"
+      "value": "Selected value (JSON array in multiple mode)",
+      "virtual": "Enable virtual scroll: the dropdown renders only the visible window for large data (reuses oas-virtual-list), keeping keyboard/ARIA intact"
     },
     "events": {
       "oas-change": "Selection change, `detail: { value }`"

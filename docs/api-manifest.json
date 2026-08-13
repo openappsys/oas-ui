@@ -1470,6 +1470,29 @@
         "type": "string",
         "default": "[]",
         "observed": true
+      },
+      {
+        "name": "check-strategy",
+        "type": "string",
+        "default": "all",
+        "observed": true
+      },
+      {
+        "name": "virtual",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "height",
+        "type": "string",
+        "default": "288",
+        "observed": true
+      },
+      {
+        "name": "item-height",
+        "type": "string",
+        "default": "36",
+        "observed": true
       }
     ],
     "props": [
@@ -2905,10 +2928,32 @@
         "type": "Placement",
         "default": "top",
         "observed": true
+      },
+      {
+        "name": "virtual",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "virtual-anchor",
+        "observed": true
+      },
+      {
+        "name": "virtual-x",
+        "observed": true
+      },
+      {
+        "name": "virtual-y",
+        "observed": true
       }
     ],
     "props": [],
-    "events": [],
+    "events": [
+      {
+        "name": "oas-open-change",
+        "detail": "{ open }"
+      }
+    ],
     "slots": [
       {
         "name": ""
@@ -2942,10 +2987,37 @@
         "type": "Placement",
         "default": "top",
         "observed": true
+      },
+      {
+        "name": "virtual",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "virtual-x",
+        "observed": true
+      },
+      {
+        "name": "virtual-y",
+        "observed": true
+      },
+      {
+        "name": "virtual-anchor",
+        "observed": true
+      },
+      {
+        "name": "focus-on-open",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [],
-    "events": [],
+    "events": [
+      {
+        "name": "oas-open-change",
+        "detail": "{ open }"
+      }
+    ],
     "slots": [
       {
         "name": ""
@@ -3021,10 +3093,19 @@
         "type": "Placement",
         "default": "bottom",
         "observed": true
+      },
+      {
+        "name": "split",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [],
     "events": [
+      {
+        "name": "oas-action",
+        "detail": "{ originalEvent: e }"
+      },
       {
         "name": "oas-select",
         "detail": "{ value: detail.value }"

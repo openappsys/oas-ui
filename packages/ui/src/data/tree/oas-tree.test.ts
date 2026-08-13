@@ -480,6 +480,22 @@ function tpl(slot: string, html: string): HTMLTemplateElement {
   return t
 }
 
+/**
+ * 模拟 Vue(CSR) 直插形态：`<template>` 子节点落在元素自身 childNodes、content 为空。
+ * happy-dom 的 appendChild/insertBefore 按规范转发进 content，走公开 API 无法伪造该形态，
+ * 故直接向 happy-dom 内部 nodeArray 符号塞节点（真实 Chromium 中 Vue 的 insertBefore 正是此形态）。
+ */
+function devSlotTemplate(slot: string, ...children: Element[]): HTMLTemplateElement {
+  const t = document.createElement('template')
+  t.setAttribute('slot', slot)
+  const nodeArray = Object.getOwnPropertySymbols(t).find((s) => String(s) === 'Symbol(nodeArray)')
+  if (!nodeArray) throw new Error('happy-dom 内部 nodeArray 符号缺失，无法伪造 dev 直插形态')
+  const arr = (t as unknown as Record<symbol, unknown>)[nodeArray]
+  if (!Array.isArray(arr)) throw new Error('nodeArray 符号指向非数组')
+  arr.push(...children)
+  return t
+}
+
 describe('OASTree 自定义节点渲染', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -498,6 +514,42 @@ describe('OASTree 自定义节点渲染', () => {
     const label = el.shadowRoot!.querySelector<HTMLElement>('[part="row"] .label')!
     expect(label.querySelector('svg.glyph')).not.toBeNull()
     expect(label.querySelector('[data-node-label]')!.textContent).toBe('自定义节点')
+  })
+
+  it('dev 形态：模板子节点被宿主直插到元素自身（content 为空）时同样克隆渲染 + 绑定 label', () => {
+    // 回归：dev（Vue CSR）下 insertBefore 直插 template 元素，content 为空导致自定义节点空白
+    const el = mount()
+    const glyph = document.createElement('svg')
+    glyph.setAttribute('class', 'glyph')
+    const binder = document.createElement('span')
+    binder.setAttribute('data-node-label', '')
+    el.appendChild(devSlotTemplate('node', glyph, binder))
+    // 模板就位后触发 update 重建行（与 demo 中 setAttribute('data', …) 重刷同路径）
+    el.setAttribute('data', el.getAttribute('data')!)
+    const label = el.shadowRoot!.querySelector<HTMLElement>('[part="row"] .label')!
+    expect(label.querySelector('svg.glyph')).not.toBeNull()
+    expect(label.querySelector('[data-node-label]')!.textContent).toBe('节点 A')
+    // 再次 update 重建仍渲染（内容源选择稳定、不依赖首次克隆的残留）
+    el.setAttribute('data', el.getAttribute('data')!)
+    const label2 = el.shadowRoot!.querySelector<HTMLElement>('[part="row"] .label')!
+    expect(label2.querySelector('svg.glyph')).not.toBeNull()
+    expect(label2.querySelector('[data-node-label]')!.textContent).toBe('节点 A')
+  })
+
+  it('dev 形态：toggle 模板直插到元素自身时替换默认展开箭头，交互保持', () => {
+    const el = mount()
+    const chev = document.createElement('svg')
+    chev.setAttribute('class', 'chev')
+    el.appendChild(devSlotTemplate('toggle', chev))
+    el.setAttribute('data', el.getAttribute('data')!)
+    const toggle = el.shadowRoot!.querySelector('[part="toggle"]')!
+    expect(toggle.querySelector('svg.chev')).not.toBeNull()
+    expect(toggle.textContent!.includes('›')).toBe(false)
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+    ;(toggle as HTMLButtonElement).click()
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-expanded'),
+    ).toBe('true')
   })
 
   it('无 template 时回落纯文本（默认行为不变）', () => {

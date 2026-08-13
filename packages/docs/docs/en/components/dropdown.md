@@ -85,6 +85,44 @@ The `value` attribute is controlled: an external value sets the selected item (t
   </oas-dropdown>
 </DemoBlock>
 
+## Split button
+
+The `split` attribute turns the dropdown into a split button : a main button plus a separate arrow button. Click the arrow to open the menu; clicking the main button fires `oas-action` (bind your primary action, e.g. save); selecting a menu item still fires `oas-select`.
+
+<DemoBlock title="Split button">
+  <oas-dropdown split items='[{"label":"Edit","value":"edit"},{"label":"Copy","value":"copy"},{"label":"Delete","value":"delete"}]'>
+    <oas-button type="primary">Save & submit</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+<DemoBlock title="Main button action event">
+  <oas-space size="small">
+    <oas-dropdown id="dd-split" split onoas-action="ddSplitAction(event)" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+      <oas-button>More actions</oas-button>
+    </oas-dropdown>
+    <oas-tag id="dd-split-result" type="info">Not clicked yet</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## Loading menu items
+
+A menu item with `loading: true` enters a loading state: it shows a spinning indicator and is not selectable (click / keyboard / hover are all ignored); update `items` to remove `loading` once the async work finishes. The demo below marks "Save" as loading for ~1.5s after you select it.
+
+<DemoBlock title="Loading menu items">
+  <oas-dropdown items='[{"label":"Save","value":"save"},{"label":"Syncing…","value":"syncing","loading":true},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Actions</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+<DemoBlock title="Async operation demo">
+  <oas-space size="small">
+    <oas-dropdown id="dd-async" onoas-select="ddAsyncLog(event)" items='[{"label":"Save","value":"save"},{"label":"Save as","value":"save-as"},{"label":"Delete","value":"delete"}]'>
+      <oas-button>Select an action</oas-button>
+    </oas-dropdown>
+    <oas-tag id="dd-async-status" type="info">Nothing selected</oas-tag>
+  </oas-space>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -125,6 +163,38 @@ onMounted(() => {
     // Selecting a menu item updates value in the component; keep status synced with MutationObserver
     new MutationObserver(syncValue).observe(val, { attributes: true, attributeFilter: ['value'] })
   }
+
+  window.ddSplitAction = (e) => {
+    const tag = document.getElementById('dd-split-result')
+    if (tag) tag.textContent = `Main button clicked (${e.type})`
+  }
+
+  const asyncDd = document.getElementById('dd-async')
+  const asyncStatus = document.getElementById('dd-async-status')
+  if (asyncDd && asyncStatus) {
+    window.ddAsyncLog = (e) => {
+      asyncStatus.textContent = `Selected: ${e.detail.value}`
+      if (e.detail.value !== 'save') return
+      // Simulate async work: "Save" spins for ~1.5s, then recovers (menu stays open to observe)
+      const mark = (loading) => {
+        const items = JSON.parse(asyncDd.getAttribute('items') || '[]')
+        const target = items.find((i) => i.value === 'save')
+        if (!target) return
+        if (loading) {
+          target.loading = true
+          asyncDd.setAttribute('items', JSON.stringify(items))
+          // The component closes the menu right after forwarding the select event;
+          // reopen on the next frame so the loading state is visible
+          window.setTimeout(() => asyncDd.setAttribute('open', ''), 0)
+        } else {
+          delete target.loading
+          asyncDd.setAttribute('items', JSON.stringify(items))
+        }
+      }
+      mark(true)
+      window.setTimeout(() => mark(false), 1500)
+    }
+  }
 })
 </script>
 
@@ -137,12 +207,14 @@ onMounted(() => {
 | `items` | Menu items JSON | `string` | `[]` |
 | `open` | Controlled display (boolean attribute; expands when present) | `boolean` | — |
 | `placement` | Popup placement | `Placement` | `bottom` |
+| `split` | Split button mode (boolean attribute): main button + arrow button; arrow opens the menu, main button fires oas-action | `boolean` | — |
 | `value` | Current selected value | `string` | — |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
+| `oas-action` | Main button clicked in split mode, `detail: { originalEvent }` |
 | `oas-select` | An item was selected, `detail: { value }` |
 
 ### Slots

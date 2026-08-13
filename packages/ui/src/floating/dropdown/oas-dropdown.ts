@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { iconRegistry } from '@oas-ui/icons'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
 import type { OASMenu } from '../menu/index.js'
@@ -12,6 +13,48 @@ const STYLE = `
 :host([hidden]) {
   display: none;
 }
+/* 拆分按钮组合：主按钮（默认 slot）+ 箭头按钮并排；非 split 时容器塌陷、箭头隐藏 */
+.split-group {
+  display: inline-flex;
+  align-items: stretch;
+}
+:host(:not([split])) .split-group {
+  display: contents;
+}
+:host(:not([split])) .arrow-btn {
+  display: none;
+}
+.arrow-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--oas-color-border);
+  border-left: none;
+  border-radius: 0 var(--oas-radius-md) var(--oas-radius-md) 0;
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  margin-left: -1px; /* 覆盖主按钮右边框，接缝成一条线 */
+  padding: 0 var(--oas-space-2);
+  cursor: pointer;
+  transition: background var(--oas-transition-fast) var(--oas-ease-out),
+    border-color var(--oas-transition-fast) var(--oas-ease-out);
+}
+.arrow-btn:hover {
+  background: var(--oas-color-bg-hover);
+}
+.arrow-btn:active {
+  background: var(--oas-color-bg-hover);
+}
+.arrow-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.arrow-btn svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
 .menu-anchor {
   position: fixed;
   z-index: var(--oas-z-dropdown, 1000);
@@ -23,19 +66,26 @@ const STYLE = `
 
 export class OASDropdown extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['open', 'items', 'value', 'placement']
+    return ['open', 'items', 'value', 'placement', 'split']
   }
 
   private itemsList: MenuItem[] = []
   private menuEl: OASMenu | null = null
   private anchorEl: HTMLElement | null = null
   private anchor: Element | null = null
+  private arrowBtn: HTMLButtonElement | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
+    const chevron = iconRegistry['chevron-down'] ?? ''
     return `
       <style>${STYLE}</style>
-      <slot></slot>
+      <div class="split-group" part="split-group">
+        <slot></slot>
+        <button class="arrow-btn" part="arrow" type="button" aria-haspopup="menu" aria-expanded="false">
+          <svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false">${chevron}</svg>
+        </button>
+      </div>
       <div class="menu-anchor" part="menu" hidden>
         <oas-menu tabindex="-1"></oas-menu>
       </div>
@@ -47,7 +97,19 @@ export class OASDropdown extends OASElement {
     this.anchorEl = this.shadow.querySelector('.menu-anchor')
     this.menuEl = this.shadow.querySelector('oas-menu')
     this.anchor = this.querySelector(':scope > *') ?? this
-    this.anchor?.addEventListener('click', () => this.toggle())
+    this.arrowBtn = this.shadow.querySelector<HTMLButtonElement>('.arrow-btn')
+    this.anchor?.addEventListener('click', (e: Event) => {
+      if (this.hasAttr('split')) {
+        // 下拉按钮模式：主按钮只派发动作事件，不开菜单；箭头按钮负责开合
+        this.emit('action', { originalEvent: e })
+      } else {
+        this.toggle()
+      }
+    })
+    this.arrowBtn?.addEventListener('click', (e: MouseEvent) => {
+      e.stopPropagation()
+      this.toggle()
+    })
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') this.removeAttribute('open')
     }
@@ -94,6 +156,11 @@ export class OASDropdown extends OASElement {
     this.parseItems()
     const open = this.hasAttr('open')
     if (!this.menuEl || !this.anchorEl) return
+    // 拆分箭头按钮的可访问性：haspopup=menu + expanded 随 open 同步 + locale 可访问名称
+    if (this.arrowBtn) {
+      this.arrowBtn.setAttribute('aria-expanded', String(open))
+      this.arrowBtn.setAttribute('aria-label', this.t('dropdown.openMenu'))
+    }
     if (open) {
       this.menuEl.setAttribute('items', JSON.stringify(this.itemsList))
       this.menuEl.setAttribute('value', this.getAttr('value', ''))

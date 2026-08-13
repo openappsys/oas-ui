@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import '@oas-ui/i18n' // 副作用：注册默认 zh-CN translator（内置文案断言依赖）
 import { OASDropdown } from './index.js'
 import { OASMenu } from '../menu/index.js' // side effect：确保 oas-menu 已注册
 
@@ -111,5 +112,92 @@ describe('OASDropdown', () => {
     el.setAttribute('open', '')
     await Promise.resolve()
     expect(root.querySelectorAll('.item.open').length).toBe(0)
+  })
+})
+
+// —— P1 补缺：下拉按钮（split 模式）——
+// 主按钮 + 拆分箭头按钮：点箭头开菜单，主按钮点击派发 oas-action＼�。
+
+describe('OASDropdown split 下拉按钮', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function arrowBtn(el: OASDropdown): HTMLButtonElement {
+    return el.shadowRoot!.querySelector<HTMLButtonElement>('.arrow-btn')!
+  }
+
+  it('split 属性列入 observedAttributes', () => {
+    expect(OASDropdown.observedAttributes).toContain('split')
+  })
+
+  it('渲染箭头按钮；非 split 时隐藏（display:none）', () => {
+    const plain = mount()
+    const arrow = arrowBtn(plain)
+    expect(arrow).not.toBeNull()
+    expect(arrow.getAttribute('aria-haspopup')).toBe('menu')
+    const css = plain.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toMatch(/:host\(:not\(\[split\]\)\)\s*\.arrow-btn\s*\{[^}]*display:\s*none/)
+    const split = mount({ split: '' })
+    expect(split.hasAttribute('split')).toBe(true)
+  })
+
+  it('split：点主按钮派发 oas-action 且不打开菜单', () => {
+    const el = mount({ split: '' })
+    let detail: unknown
+    el.addEventListener('oas-action', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(el.querySelector('button') as HTMLElement).click()
+    expect(detail).toBeDefined()
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(anchorEl(el).hasAttribute('hidden')).toBe(true)
+  })
+
+  it('split：点箭头按钮切换菜单', () => {
+    const el = mount({ split: '' })
+    arrowBtn(el).click()
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(anchorEl(el).hasAttribute('hidden')).toBe(false)
+    arrowBtn(el).click()
+    expect(anchorEl(el).hasAttribute('hidden')).toBe(true)
+  })
+
+  it('箭头按钮 aria-expanded 随 open 同步，aria-label 走 locale', () => {
+    const el = mount({ split: '' })
+    expect(arrowBtn(el).getAttribute('aria-expanded')).toBe('false')
+    expect(arrowBtn(el).getAttribute('aria-label')).toBe('打开菜单')
+    arrowBtn(el).click()
+    expect(arrowBtn(el).getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('split：选择菜单项派发 oas-select 并关闭', async () => {
+    const el = mount({ split: '' })
+    arrowBtn(el).click()
+    await Promise.resolve()
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(innerMenuRoot(el).querySelector('[part="item"]') as HTMLElement).click()
+    expect(detail).toEqual({ value: 'edit' })
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(anchorEl(el).hasAttribute('hidden')).toBe(true)
+  })
+
+  it('split：打开菜单后点主按钮不开不关�），点箭头关闭', () => {
+    const el = mount({ split: '' })
+    arrowBtn(el).click()
+    expect(el.hasAttribute('open')).toBe(true)
+    ;(el.querySelector('button') as HTMLElement).click()
+    expect(el.hasAttribute('open')).toBe(true)
+    arrowBtn(el).click()
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('非 split：主按钮点击仍是切换菜单（原行为不变）', () => {
+    const el = mount()
+    ;(el.querySelector('button') as HTMLElement).click()
+    expect(el.hasAttribute('open')).toBe(true)
   })
 })

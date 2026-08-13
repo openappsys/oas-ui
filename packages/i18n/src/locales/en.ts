@@ -122,6 +122,7 @@ export const en: LocaleMessages = {
   'datePicker.shortcutThisWeek': 'This week',
   'datePicker.shortcutThisMonth': 'This month',
   'datePicker.shortcutThisYear': 'This year',
+  'dropdown.openMenu': 'Open menu',
   'timePicker.placeholder': 'Please select time',
   'timePicker.hour': 'Hour',
   'timePicker.minute': 'Minute',

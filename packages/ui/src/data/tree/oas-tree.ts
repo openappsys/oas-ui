@@ -525,7 +525,7 @@ export class OASTree extends OASElement {
   private fillToggle(toggle: HTMLButtonElement): void {
     const tpl = this.querySelector('template[slot="toggle"]')
     if (tpl instanceof HTMLTemplateElement) {
-      toggle.appendChild(tpl.content.cloneNode(true))
+      toggle.appendChild(this.slotTemplateFragment(tpl))
     } else {
       toggle.textContent = '›'
     }
@@ -535,12 +535,28 @@ export class OASTree extends OASElement {
   private fillNodeLabel(labelEl: HTMLElement, node: TreeNode): void {
     const tpl = this.querySelector('template[slot="node"]')
     if (tpl instanceof HTMLTemplateElement) {
-      labelEl.appendChild(tpl.content.cloneNode(true))
+      labelEl.appendChild(this.slotTemplateFragment(tpl))
       const binder = labelEl.querySelector('[data-node-label]')
       if (binder) binder.textContent = node.label
     } else {
       labelEl.textContent = node.label
     }
+  }
+
+  /**
+   * 克隆 slot 骨架模板内容。浏览器对 `<template>` 子节点存在两种挂载形态：
+   * - 静态 HTML / SSR 快照（preview 生产构建）：子节点在 `template.content` 里；
+   * - Vue 等框架 CSR 挂载（dev）：用 `insertBefore` 直插 template 元素，子节点落在
+   *   元素自身 `childNodes`、`content` 为空——直接克隆 content 会得到空白行。
+   * 按内容优先取源再逐节点深克隆，dev 与生产双形态都能正确渲染，不改动宿主模板 DOM。
+   */
+  private slotTemplateFragment(tpl: HTMLTemplateElement): DocumentFragment {
+    const source = tpl.content.childNodes.length > 0 ? tpl.content : tpl
+    const frag = document.createDocumentFragment()
+    for (const node of Array.from(source.childNodes)) {
+      frag.appendChild(node.cloneNode(true))
+    }
+    return frag
   }
 
   /**

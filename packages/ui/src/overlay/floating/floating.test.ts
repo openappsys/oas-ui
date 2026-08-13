@@ -46,4 +46,63 @@ describe('computePosition 浮层定位', () => {
     expect(pos.left).toBeGreaterThanOrEqual(0)
     expect(pos.left + 300).toBeLessThanOrEqual(800)
   })
+
+  describe('0 尺寸锚点（virtual 坐标点，图表/画布坐标提示）', () => {
+    // popover/tooltip 的 virtual-x/virtual-y 模式锚点是 {left:x, top:y, width:0, height:0} 的点位，
+    // 锚定语义 = 以该点为「锚点右侧/上方/下方/左侧」放置，垂直/水平居中。
+    const point = rect(160, 90, 0, 0)
+    const popup = rect(0, 0, 200, 60)
+
+    it('placement=right：面板在点右侧，垂直居中于锚点', () => {
+      const pos = computePosition(point, popup, 'right', viewport)
+      expect(pos.placement).toBe('right')
+      expect(pos.left).toBe(160 + 8)
+      expect(pos.top).toBe(90 - 30)
+    })
+
+    it('placement=top：面板在点上方，水平居中于锚点', () => {
+      const pos = computePosition(point, popup, 'top', viewport)
+      expect(pos.placement).toBe('top')
+      expect(pos.top).toBe(90 - 60 - 8)
+      expect(pos.left).toBe(160 - 100)
+    })
+
+    it('placement=bottom：面板在点下方，水平居中于锚点', () => {
+      const pos = computePosition(point, popup, 'bottom', viewport)
+      expect(pos.placement).toBe('bottom')
+      expect(pos.top).toBe(90 + 8)
+      expect(pos.left).toBe(160 - 100)
+    })
+
+    it('placement=left 但左侧空间不足时翻转到 right（fits 判断不因 0 尺寸锚点失效）', () => {
+      const pos = computePosition(point, popup, 'left', viewport)
+      expect(pos.placement).toBe('right')
+      expect(pos.left).toBe(160 + 8)
+    })
+
+    it('点位贴视口顶时 placement=top 自动翻转到 bottom', () => {
+      const pos = computePosition(rect(300, 0, 0, 0), popup, 'top', viewport)
+      expect(pos.placement).toBe('bottom')
+      expect(pos.top).toBe(0 + 8)
+    })
+
+    it('点位贴视口右缘时 placement=right 自动翻转到 left 并避让', () => {
+      const pos = computePosition(rect(760, 100, 0, 0), popup, 'right', viewport)
+      expect(pos.placement).toBe('left')
+      expect(pos.left + 200).toBeLessThanOrEqual(viewport.width)
+      expect(pos.left).toBeGreaterThanOrEqual(0)
+    })
+  })
+
+  describe('0 尺寸浮层（popup 尚未布局）', () => {
+    // 面板 display:none 或尚未布局时 getBoundingClientRect 返回 0 尺寸；computePosition
+    // 必须仍产出不越界的坐标（不得因 popup 尺寸为 0 而把 flip 判断全部判成「放得下」）。
+    it('0 尺寸浮层 + placement=top：坐标仍落在视口内', () => {
+      const pos = computePosition(rect(400, 300, 0, 0), rect(0, 0, 0, 0), 'top', viewport)
+      expect(pos.top).toBeGreaterThanOrEqual(0)
+      expect(pos.left).toBeGreaterThanOrEqual(0)
+      expect(pos.top).toBeLessThanOrEqual(viewport.height)
+      expect(pos.left).toBeLessThanOrEqual(viewport.width)
+    })
+  })
 })

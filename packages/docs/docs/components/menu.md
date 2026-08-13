@@ -121,7 +121,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `collapsed` | 收起态（仅 vertical）：只显示图标，子菜单向右浮出 | — | — |
-| `items` | 菜单项 JSON | `string` | `[]` |
+| `items` | 菜单项 JSON（支持 disabled / loading 禁点、icon、children 子菜单） | `string` | `[]` |
 | `mode` | 布局模式：`vertical` 纵向菜单 / `horizontal` 顶部导航条 | — | — |
 | `theme` | 局部主题：`dark` 使用暗色 token（独立于全局主题） | — | — |
 | `value` | 当前选中值 | `string` | — |

@@ -433,9 +433,11 @@
       "items": "菜单项 JSON",
       "open": "受控显示（布尔属性，存在即展开）",
       "placement": "浮层位置",
+      "split": "拆分下拉按钮（布尔属性）：主按钮 + 箭头按钮，点箭头开菜单、主按钮派发 oas-action",
       "value": "当前选中值"
     },
     "events": {
+      "oas-action": "拆分模式下点击主按钮，`detail: { originalEvent }`",
       "oas-select": "选择某项，`detail: { value }`"
     },
     "slots": {}
@@ -761,7 +763,7 @@
   "oas-menu": {
     "attrs": {
       "collapsed": "收起态（仅 vertical）：只显示图标，子菜单向右浮出",
-      "items": "菜单项 JSON",
+      "items": "菜单项 JSON（支持 disabled / loading 禁点、icon、children 子菜单）",
       "mode": "布局模式：`vertical` 纵向菜单 / `horizontal` 顶部导航条",
       "theme": "局部主题：`dark` 使用暗色 token（独立于全局主题）",
       "value": "当前选中值"
@@ -916,11 +918,18 @@
   "oas-popover": {
     "attrs": {
       "content": "正文文本",
+      "focus-on-open": "打开时焦点移入面板内首个可聚焦元素",
       "open": "受控显示（布尔属性，存在即显示）",
       "placement": "浮层位置",
-      "title": "标题文本"
+      "title": "标题文本",
+      "virtual": "虚拟触发模式（同 tooltip，不依赖锚点元素）",
+      "virtual-anchor": "虚拟锚点元素选择器（virtual-x/virtual-y 未设置时生效）",
+      "virtual-x": "虚拟锚点 x（视口坐标，px）",
+      "virtual-y": "虚拟锚点 y（视口坐标，px）"
     },
-    "events": {},
+    "events": {
+      "oas-open-change": "open 状态变化，`detail: { open }`"
+    },
     "slots": {}
   },
   "oas-progress": {
@@ -1347,10 +1356,18 @@
     "attrs": {
       "content": "提示内容文本",
       "open": "受控显示（布尔属性，存在即显示）",
-      "placement": "浮层位置"
+      "placement": "浮层位置",
+      "virtual": "虚拟触发模式：不绑定宿主触发元素，`open` 完全受外部控制，位置由 `virtual-anchor` 或 `virtual-x`/`virtual-y` 指定（适合图表点位、拖拽中的浮层提示）",
+      "virtual-anchor": "虚拟锚点元素选择器（如 `#chart-point-1`），tooltip 按该元素矩形定位；与 `virtual-x`/`virtual-y` 二选一，坐标优先",
+      "virtual-x": "虚拟锚点视口 X 坐标（px，如鼠标 `clientX`），与 `virtual-y` 同时设置时按坐标定位",
+      "virtual-y": "虚拟锚点视口 Y 坐标（px，如鼠标 `clientY`），与 `virtual-x` 同时设置时按坐标定位"
     },
-    "events": {},
-    "slots": {}
+    "events": {
+      "oas-open-change": "open 状态变化（显示/隐藏）时派发，`detail: { open }`"
+    },
+    "slots": {
+      "": "触发元素（hover/focus 触发）；`virtual` 虚拟模式下可省略"
+    }
   },
   "oas-tour": {
     "attrs": {
@@ -1409,12 +1426,16 @@
   },
   "oas-tree-select": {
     "attrs": {
+      "check-strategy": "多选勾选策略：`all`（默认）父级与子级全部进入值；`parent` 只保留父级（子级全选时以父级为代表）；`child` 只保留叶子节点",
       "disabled": "禁用",
       "expanded": "展开节点的 value 集合（JSON 数组，受控）",
+      "height": "虚拟滚动视口高度（px）；与 `virtual` 搭配生效",
+      "item-height": "虚拟滚动每行固定高度（px）",
       "multiple": "多选 + 父子级联",
       "options": "树形选项，JSON 数组，支持 `children` / `disabled`",
       "placeholder": "占位提示",
-      "value": "选中值（多选为 JSON 数组）"
+      "value": "选中值（多选为 JSON 数组）",
+      "virtual": "开启虚拟滚动：大数据量下拉仅渲染可见窗口（复用 oas-virtual-list），键盘/ARIA 保持"
     },
     "events": {
       "oas-change": "选择变化，`detail: { value }`"

@@ -197,6 +197,8 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   'tree-select': [
     ['oas-tree-select:not([disabled]) [part="trigger"]', 'click', '展开下拉'],
     ['oas-tree-select [role="treeitem"]', 'click', '点根节点提交 → oas-change'],
+    ['#ts-virtual [part="trigger"]', 'click', '展开万级虚拟下拉（窗口化渲染）'],
+    ['#ts-virtual [role="treeitem"]', 'click:n1', '虚拟行勾选 → oas-change'],
   ],
   mentions: [
     ['oas-mentions:not([disabled]) [part="textarea"]', 'fill:@', '触发 @ 建议面板'],
@@ -302,6 +304,9 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   dropdown: [
     ['oas-dropdown', 'click', '（通用探针可能已翻转开合，这里再确认展开）'],
     ['oas-dropdown [role="menuitemradio"]', 'click', '选菜单项 → oas-select'],
+    ['oas-dropdown[split]', 'click', '点拆分主按钮 → oas-action'],
+    ['oas-dropdown[split] [part="arrow"]', 'click', '点箭头 → 展开拆分菜单'],
+    ['oas-dropdown[split] [role="menuitemradio"]', 'click', '选拆分菜单项 → oas-select'],
   ],
   contextmenu: [
     ['oas-context-menu', 'rightclick', '右键打开菜单'],

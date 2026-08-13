@@ -7,6 +7,8 @@ export interface MenuItem {
   label?: string
   value?: string
   disabled?: boolean
+  /** 加载中：渲染 spinner、禁点（点击/键盘/hover 均拦截），由数据驱动恢复 */
+  loading?: boolean
   icon?: string
   /** 菜单项类型：普通项（默认）/ 分组 / 分隔线 */
   type?: MenuItemType
@@ -60,6 +62,33 @@ const STYLE = `
 .item[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.5;
+}
+/* loading 项：spinner + 弱化文字，光标 wait；点击/键盘由 JS 拦截（aria-disabled 语义同步） */
+.item.loading {
+  cursor: wait;
+  opacity: 0.7;
+}
+.item.loading .label {
+  color: var(--oas-color-text-secondary);
+}
+/* spinner：CSS 圆环旋转，占用图标位，跟随 secondary 色（light/dark token 自动适配） */
+.spin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.9em;
+  height: 0.9em;
+  margin-right: var(--oas-space-2);
+  flex-shrink: 0;
+  border: 2px solid var(--oas-color-text-secondary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: oas-spin 0.8s linear infinite;
+}
+@keyframes oas-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .icon {
   display: inline-flex;
@@ -392,11 +421,24 @@ export class OASMenu extends OASElement {
       li.className = 'item'
       li.setAttribute('part', 'item')
       if (item.value != null) li.dataset.value = item.value
-      li.setAttribute('aria-disabled', String(item.disabled ?? false))
+      const loading = item.loading ?? false
+      const inert = item.disabled || loading
+      li.setAttribute('aria-disabled', String(inert))
+      // loading 态：aria-busy 同步 + .loading 类（spinner 视觉 + 禁点光标）
+      if (loading) {
+        li.classList.add('loading')
+        li.setAttribute('aria-busy', 'true')
+      }
       // 收起态（collapsed）下 label 隐藏，需以 aria-label 兜底可访问名称
       if (item.label) li.setAttribute('aria-label', item.label)
       const hasChildren = !!item.children && item.children.length > 0
-      if (item.icon) {
+      if (loading) {
+        // loading 项：spinner 替换图标位（若后续恢复，items 重建即还原 icon）
+        const spin = document.createElement('span')
+        spin.className = 'spin'
+        spin.setAttribute('aria-hidden', 'true')
+        li.appendChild(spin)
+      } else if (item.icon) {
         const ic = this.createIcon(item.icon)
         if (ic) li.appendChild(ic)
       }
@@ -414,11 +456,11 @@ export class OASMenu extends OASElement {
         if (arrow) li.appendChild(arrow)
         li.addEventListener('click', (e: MouseEvent) => {
           e.stopPropagation()
-          if (item.disabled) return
+          if (item.disabled || item.loading) return
           this.toggleExpand(item.value ?? '')
         })
         li.addEventListener('mouseenter', () => {
-          if (item.disabled) return
+          if (item.disabled || item.loading) return
           this.hoverExpand(item.value ?? '')
         })
         // 子菜单始终渲染，显隐由 .open class 控制（hover 不重建 DOM）
@@ -437,11 +479,11 @@ export class OASMenu extends OASElement {
         li.append(label, check)
         li.addEventListener('click', (e: MouseEvent) => {
           e.stopPropagation()
-          if (item.disabled) return
+          if (item.disabled || item.loading) return
           this.select(item)
         })
         li.addEventListener('mouseenter', () => {
-          if (item.disabled) return
+          if (item.disabled || item.loading) return
           this.hoverExpand(item.value ?? '')
         })
       }
@@ -566,7 +608,7 @@ export class OASMenu extends OASElement {
     this.activeStack.push(item.value ?? '')
     this.expanded = new Set(this.activeStack)
     const children = this.currentItems()
-    const firstEnabled = children.findIndex((c) => !c.disabled)
+    const firstEnabled = children.findIndex((c) => !c.disabled && !c.loading)
     this.activeIndex = firstEnabled >= 0 ? firstEnabled : 0
   }
 
@@ -590,7 +632,9 @@ export class OASMenu extends OASElement {
 
   private handleKey(e: KeyboardEvent): void {
     const items = this.currentItems()
-    const enabled = items.map((i, idx) => (i.disabled ? -1 : idx)).filter((i) => i >= 0)
+    const enabled = items
+      .map((i, idx) => (i.disabled || i.loading ? -1 : idx))
+      .filter((i) => i >= 0)
     if (enabled.length === 0) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()
@@ -601,7 +645,7 @@ export class OASMenu extends OASElement {
     } else if (e.key === 'ArrowRight') {
       e.preventDefault()
       const active = items[this.activeIndex]
-      if (active && !active.disabled && active.children?.length) {
+      if (active && !active.disabled && !active.loading && active.children?.length) {
         this.enterSubmenu(active)
       } else {
         this.moveActive(enabled, 1)
@@ -617,7 +661,7 @@ export class OASMenu extends OASElement {
       const active = items[this.activeIndex]
       if (!active) return
       e.preventDefault()
-      if (active.disabled) return
+      if (active.disabled || active.loading) return
       if (active.children?.length) {
         this.enterSubmenu(active)
       } else {

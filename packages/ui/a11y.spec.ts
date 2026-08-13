@@ -8,6 +8,7 @@ const PAGES = [
   '/components/menu.html',
   '/components/table.html',
   '/components/tree.html',
+  '/components/tree-select.html',
   '/components/collapse.html',
   '/components/carousel.html',
   '/components/tabs.html',
