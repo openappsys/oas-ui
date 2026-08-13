@@ -1545,9 +1545,13 @@ test('tree 自定义节点模板 + oas-node-render 渲染真实内容且 ARIA �
     const row = tree.shadowRoot!.querySelector('[part="row"]')!
     const label = row.querySelector('.label')!
     const toggle = row.querySelector('[part="toggle"]')!
+    const glyph = label.querySelector('svg.node-demo-glyph') as SVGSVGElement | null
+    const binder = label.querySelector('[data-node-label]') as HTMLElement | null
     return {
-      glyph: !!label.querySelector('svg.node-demo-glyph'),
-      boundText: label.querySelector('[data-node-label]')?.textContent ?? '',
+      glyph: !!glyph,
+      glyphW: glyph ? Math.round(glyph.getBoundingClientRect().width) : null,
+      boundText: binder?.textContent ?? '',
+      labelW: binder ? Math.round(binder.getBoundingClientRect().width) : null,
       badge: label.querySelector('.node-demo-count')?.textContent ?? '',
       rowRole: row.getAttribute('role'),
       rowLevel: row.getAttribute('aria-level'),
@@ -1557,7 +1561,10 @@ test('tree 自定义节点模板 + oas-node-render 渲染真实内容且 ARIA �
   })
   // 骨架模板渲染：图标 + [data-node-label] 绑定 + 徽标（oas-node-render 写入）
   expect(r.glyph, '自定义节点应渲染骨架图标').toBe(true)
+  expect(r.glyphW, 'SVG glyph 应有显式 width 属性（14px），不能撑满容器').toBeGreaterThan(0)
+  expect(r.glyphW, 'SVG glyph 渲染宽应 ≤32px（14 + 余量）').toBeLessThanOrEqual(32)
   expect(r.boundText).toBe('项目 A')
+  expect(r.labelW, '[data-node-label] 文字宽度应 > 0（不被 flex 压成 0 宽）').toBeGreaterThan(0)
   expect(r.badge).toContain('3')
   // ARIA 在自定义渲染下保持
   expect(r.rowRole).toBe('treeitem')

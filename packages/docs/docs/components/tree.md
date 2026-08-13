@@ -85,12 +85,12 @@
         </svg>
       </template>
       <template slot="node">
-        <svg class="node-demo-glyph" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <svg class="node-demo-glyph" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
           <rect x="3" y="2.5" width="10" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/>
           <path d="M6 7.5 H10" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
         </svg>
-        <span data-node-label></span>
-        <span class="node-demo-count"></span>
+        <span data-node-label style="min-width: 60px; display: inline-block"></span>
+        <span class="node-demo-count" style="font-size: var(--oas-font-size-xs); padding: 0 6px; border-radius: 999px; background: var(--oas-color-bg-hover); color: var(--oas-color-text-primary); display: inline-block; margin-left: var(--oas-space-2)"></span>
       </template>
     </oas-tree>
   </div>
