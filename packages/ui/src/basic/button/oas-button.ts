@@ -3,8 +3,11 @@ import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type ButtonType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'text'
 export type ButtonSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
+/** variant 形态维度（正交 type 语义色）：solid 实底 / outlined 描边 / dashed 虚线描边 / filled 浅底 / text 文字 / link 链接 */
+export type ButtonVariant = 'solid' | 'outlined' | 'dashed' | 'filled' | 'text' | 'link'
 
 const VALID_BUTTON_SIZES: readonly ButtonSize[] = ['xs', 'small', 'medium', 'large', 'xl']
+const VALID_BUTTON_VARIANTS: readonly ButtonVariant[] = ['solid', 'outlined', 'dashed', 'filled', 'text', 'link']
 
 /** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
 function normalizeButtonSize(raw: string): ButtonSize {
@@ -122,6 +125,7 @@ button.plain.danger {
 button.plain.danger:hover {
   background: color-mix(in srgb, var(--oas-color-danger) 20%, transparent);
 }
+
 /* 链接按钮禁用态（a 无 disabled 属性，用 aria-disabled + 与 button 一致配色） */
 a[part='button'][aria-disabled='true'] {
   cursor: not-allowed;
@@ -387,6 +391,109 @@ a[part='button'].ghost[disabled]:active {
   border-color: var(--oas-color-border);
   color: var(--oas-color-text-disabled);
 }
+/* ===== variant 形态维度（正交 type 语义色）===== */
+/* 语义色变量：type 决定；color 属性经 --oas-button-color 覆盖 */
+button.primary,
+a[part='button'].primary {
+  --btn-color: var(--oas-button-color, var(--oas-color-primary));
+}
+button.success,
+a[part='button'].success {
+  --btn-color: var(--oas-button-color, color-mix(in srgb, var(--oas-color-success) 80%, black));
+}
+button.warning,
+a[part='button'].warning {
+  --btn-color: var(--oas-button-color, color-mix(in srgb, var(--oas-color-warning) 80%, black));
+}
+button.danger,
+a[part='button'].danger {
+  --btn-color: var(--oas-button-color, var(--oas-color-danger));
+}
+/* outlined：透明底 + 语义色描边与文字 */
+button.outlined,
+a[part='button'].outlined {
+  background: transparent;
+  border-color: var(--btn-color, var(--oas-color-border));
+  color: var(--btn-color, var(--oas-color-text-primary));
+}
+button.outlined:hover,
+a[part='button'].outlined:hover {
+  background: color-mix(in srgb, var(--btn-color, var(--oas-color-text-primary)) 8%, transparent);
+}
+/* dashed：虚线描边（outlined + 虚线样式） */
+button.dashed,
+a[part='button'].dashed {
+  background: transparent;
+  border: 1px dashed var(--btn-color, var(--oas-color-border));
+  color: var(--btn-color, var(--oas-color-text-primary));
+}
+button.dashed:hover,
+a[part='button'].dashed:hover {
+  background: color-mix(in srgb, var(--btn-color, var(--oas-color-text-primary)) 8%, transparent);
+}
+/* filled：浅底 soft（语义色 12% 底 + 80% 深文字） */
+button.filled,
+a[part='button'].filled {
+  background: color-mix(in srgb, var(--btn-color, var(--oas-color-text-primary)) 12%, transparent);
+  border-color: transparent;
+  color: var(--btn-color, var(--oas-color-text-primary));
+}
+button.filled.primary,
+a[part='button'].filled.primary,
+button.filled.success,
+a[part='button'].filled.success,
+button.filled.warning,
+a[part='button'].filled.warning,
+button.filled.danger,
+a[part='button'].filled.danger {
+  color: color-mix(in srgb, var(--btn-color) 80%, black);
+}
+button.filled:hover,
+a[part='button'].filled:hover {
+  background: color-mix(in srgb, var(--btn-color, var(--oas-color-text-primary)) 18%, transparent);
+}
+/* text：纯文字（无框无背景） */
+button.text,
+a[part='button'].text {
+  background: transparent;
+  border-color: transparent;
+  color: var(--btn-color, var(--oas-color-text-primary));
+}
+button.text:hover,
+a[part='button'].text:hover {
+  background: color-mix(in srgb, var(--btn-color, var(--oas-color-text-primary)) 8%, transparent);
+}
+/* link：链接样式（主色文字 + hover 下划线），常配合 href */
+button.link,
+a[part='button'].link {
+  background: transparent;
+  border-color: transparent;
+  color: var(--oas-button-color, var(--oas-color-primary));
+}
+button.link:hover,
+a[part='button'].link:hover {
+  color: var(--oas-button-color, var(--oas-color-primary-hover));
+  text-decoration: underline;
+  background: transparent;
+}
+/* solid 背景走 --oas-button-bg 变量（支持渐变覆盖，默认语义色）；仅 solid 生效，避免覆盖 filled/outlined 等形态 */
+button.primary:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link),
+a[part='button'].primary:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link) {
+  background: var(--oas-button-bg, var(--oas-color-primary));
+}
+/* press 反馈（wave 默认开）：按下轻微下沉 + 加深，克制不抢眼 */
+button.wave,
+a[part='button'].wave {
+  transition: transform var(--oas-transition-fast) var(--oas-ease-out),
+    background var(--oas-transition-fast) var(--oas-ease-out),
+    border-color var(--oas-transition-fast) var(--oas-ease-out),
+    filter var(--oas-transition-fast) var(--oas-ease-out);
+}
+button.wave:active,
+a[part='button'].wave:active {
+  transform: scale(0.97);
+  filter: brightness(0.94);
+}
 .spinner {
   width: 1em;
   height: 1em;
@@ -421,6 +528,10 @@ export class OASButton extends OASElement {
       'href',
       'target',
       'plain',
+      'variant',
+      'color',
+      'wave',
+      'auto-insert-space',
     ]
   }
 
@@ -501,6 +612,19 @@ export class OASButton extends OASElement {
     const plain = this.hasAttr('plain')
     const iconPosition = this.getAttr('icon-position', 'start')
     const link = this.isLink()
+    // variant 形态维度：显式 variant 属性优先；否则按旧属性映射（ghost→outlined、plain→filled、type=text→text），默认 solid
+    const rawVariant = this.getAttr('variant', '') as ButtonVariant | ''
+    const variant: ButtonVariant = (VALID_BUTTON_VARIANTS as readonly string[]).includes(rawVariant)
+      ? (rawVariant as ButtonVariant)
+      : ghost
+        ? 'outlined'
+        : plain
+          ? 'filled'
+          : type === 'text'
+            ? 'text'
+            : 'solid'
+    const color = this.getAttr('color', '')
+    const wave = this.getAttr('wave', 'true') !== 'false'
 
     const hasIcon = icon !== '' && iconRegistry[icon as IconName] !== undefined
     const hasText = (this.textContent ?? '').trim().length > 0
@@ -509,6 +633,8 @@ export class OASButton extends OASElement {
     this.btn.className = [
       type,
       size,
+      // variant 形态 class（solid 为默认不加 class；旧属性 ghost/plain 仍保留 class 兼容旧 CSS）
+      variant !== 'solid' ? variant : '',
       ghost ? 'ghost' : '',
       block ? 'block' : '',
       round ? 'round' : '',
@@ -517,9 +643,13 @@ export class OASButton extends OASElement {
       iconPosition === 'end' ? 'icon-end' : '',
       hasIcon ? 'has-icon' : '',
       iconOnly ? 'icon-only' : '',
+      wave ? 'wave' : '',
     ]
       .filter(Boolean)
       .join(' ')
+    // color 自定义色：覆盖 type 语义色（经 --oas-button-color 变量，CSS 配色处兜底引用）
+    if (color) this.btn.style.setProperty('--oas-button-color', color)
+    else this.btn.style.removeProperty('--oas-button-color')
     this.btn.setAttribute('aria-busy', loading ? 'true' : 'false')
     // 链接按钮（a）无 disabled 属性，用 aria-disabled 承载禁用语义 + CSS 禁用态；button 用原生 disabled
     if (link) {
@@ -557,6 +687,21 @@ export class OASButton extends OASElement {
       this.btn.setAttribute('aria-label', icon)
     } else {
       this.btn.removeAttribute('aria-label')
+    }
+
+    // 中文间自动空格（默认开）：两个连续汉字之间插入空格（中文排版优化）
+    this.applyAutoInsertSpace()
+  }
+
+  /** 中文间自动空格：slot 文本里两个连续 CJK 字符间插入空格（auto-insert-space 默认关，opt-in） */
+  private applyAutoInsertSpace(): void {
+    if (!this.hasAttr('auto-insert-space') || this.getAttr('auto-insert-space', '') === 'false') return
+    // 遍历宿主直接文本节点，两个连续汉字间插空格（不破坏元素子节点结构）
+    for (const node of Array.from(this.childNodes)) {
+      if (node.nodeType !== Node.TEXT_NODE) continue
+      const text = node.textContent ?? ''
+      const spaced = text.replace(/([\u4e00-\u9fa5])([\u4e00-\u9fa5])/g, '$1 $2')
+      if (spaced !== text) node.textContent = spaced
     }
   }
 }

@@ -73,6 +73,30 @@
         "name": "plain",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "variant",
+        "type": "ButtonVariant | ''",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "color",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "wave",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "auto-insert-space",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],

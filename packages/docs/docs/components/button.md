@@ -146,25 +146,75 @@
   <oas-button plain type="danger">危险朴素</oas-button>
 </DemoBlock>
 
+## 形态（variant）
+
+`variant` 控制按钮形态，与 `type` 语义色正交：`solid`（默认实底）/ `outlined`（描边）/ `dashed`（虚线描边）/ `filled`（浅底）/ `text`（纯文字）/ `link`（链接样式）。旧属性 `ghost` 等价 `outlined`、`plain` 等价 `filled`。
+
+<DemoBlock title="描边 / 虚线 / 浅底">
+  <oas-button variant="outlined" type="primary">描边</oas-button>
+  <oas-button variant="dashed" type="primary">虚线描边</oas-button>
+  <oas-button variant="filled" type="primary">浅底</oas-button>
+  <oas-button variant="outlined">默认描边</oas-button>
+  <oas-button variant="dashed">默认虚线</oas-button>
+</DemoBlock>
+
+<DemoBlock title="文字 / 链接">
+  <oas-button variant="text">文字按钮</oas-button>
+  <oas-button variant="text" type="primary">主色文字</oas-button>
+  <oas-button variant="link" href="#">链接按钮</oas-button>
+</DemoBlock>
+
+## 自定义颜色
+
+`color` 覆盖 `type` 语义色（任意色值），优先级高于 `type`。
+
+<DemoBlock title="自定义颜色">
+  <oas-button color="#7c3aed">紫色实底</oas-button>
+  <oas-button color="#0e9f6e" variant="outlined">绿色描边</oas-button>
+  <oas-button color="#db2777" variant="filled">粉色浅底</oas-button>
+</DemoBlock>
+
+## 按下反馈
+
+`wave` 开启按下反馈（轻微下沉 + 加深，默认开）；`wave="false"` 关闭。
+
+<DemoBlock title="按下反馈">
+  <oas-button type="primary">按下试试（默认开）</oas-button>
+  <oas-button wave="false">关闭反馈</oas-button>
+</DemoBlock>
+
+## 中文间空格
+
+`auto-insert-space` 在两个连续汉字间自动插入空格（中文排版优化，默认关）。
+
+<DemoBlock title="中文间自动空格">
+  <oas-button auto-insert-space>保存设置</oas-button>
+  <oas-button auto-insert-space type="primary">确认提交订单</oas-button>
+</DemoBlock>
+
 ## API
 
 ### 属性
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `auto-insert-space` | 中文间自动空格：两个连续汉字间插入空格（排版优化，默认关） | `string` | — |
 | `block` | 占满父容器宽度（块级） | `boolean` | — |
-| `circle` | — | `boolean` | — |
+| `circle` | 圆形按钮（纯图标场景，正方形 + 正圆角） | `boolean` | — |
+| `color` | 自定义颜色：覆盖 `type` 语义色（任意色值），优先级高于 `type` | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `ghost` | 幽灵/描边形态，透明底 + 按 `type` 着色描边，hover 加深 | `boolean` | — |
-| `href` | — | `string` | — |
+| `href` | 链接地址：设置后渲染为原生链接 `<a>` | `string` | — |
 | `icon` | 图标名（复用 oas-icon 图标集）；无文字时等宽、以图标名兜底名称 | `string` | — |
-| `icon-position` | — | `string` | `start` |
+| `icon-position` | 图标位置：`start`（默认，图标在左）/ `end`（图标在右） | `string` | `start` |
 | `loading` | 加载态 | `boolean` | — |
-| `plain` | — | `boolean` | — |
+| `plain` | 朴素形态：低对比浅色（透明底 + 弱化描边文字），等价 `variant="filled"` | `boolean` | — |
 | `round` | 胶囊圆角（`--oas-radius-full` / `999px`） | `boolean` | — |
 | `size` | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `ButtonSize` | `medium` |
-| `target` | — | `string` | — |
+| `target` | 链接打开方式（`_blank` / `_self` 等），配合 `href` | `string` | — |
 | `type` | 类型 | `ButtonType` | `default` |
+| `variant` | 形态（与 `type` 正交）：`solid`（默认实底）/ `outlined`（描边）/ `dashed`（虚线描边）/ `filled`（浅底）/ `text`（纯文字）/ `link`（链接样式） | `ButtonVariant \| ''` | — |
+| `wave` | 按下反馈：轻微下沉 + 加深（默认开）；`wave="false"` 关闭 | `string` | `true` |
 
 ### 事件
 

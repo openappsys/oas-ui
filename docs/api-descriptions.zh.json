@@ -145,7 +145,16 @@
       "loading": "加载态",
       "round": "胶囊圆角（`--oas-radius-full` / `999px`）",
       "size": "尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警",
-      "type": "类型"
+      "type": "类型",
+      "circle": "圆形按钮（纯图标场景，正方形 + 正圆角）",
+      "icon-position": "图标位置：`start`（默认，图标在左）/ `end`（图标在右）",
+      "href": "链接地址：设置后渲染为原生链接 `<a>`",
+      "target": "链接打开方式（`_blank` / `_self` 等），配合 `href`",
+      "plain": "朴素形态：低对比浅色（透明底 + 弱化描边文字），等价 `variant=\"filled\"`",
+      "variant": "形态（与 `type` 正交）：`solid`（默认实底）/ `outlined`（描边）/ `dashed`（虚线描边）/ `filled`（浅底）/ `text`（纯文字）/ `link`（链接样式）",
+      "color": "自定义颜色：覆盖 `type` 语义色（任意色值），优先级高于 `type`",
+      "wave": "按下反馈：轻微下沉 + 加深（默认开）；`wave=\"false\"` 关闭",
+      "auto-insert-space": "中文间自动空格：两个连续汉字间插入空格（排版优化，默认关）"
     },
     "events": {
       "oas-click": "点击，`detail: { originalEvent }`"

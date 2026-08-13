@@ -145,7 +145,16 @@
       "loading": "Loading state",
       "round": "Pill radius (`--oas-radius-full` / `999px`)",
       "size": "Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning",
-      "type": "Type"
+      "type": "Type",
+      "circle": "Circle button (icon-only, square + full rounding)",
+      "icon-position": "Icon position: `start` (default, left) / `end` (right)",
+      "href": "Link address: renders a native `<a>` when set",
+      "target": "How the link opens (`_blank` / `_self` etc.), with `href`",
+      "plain": "Plain style: low-contrast soft (transparent bg + softened text), equals `variant=\"filled\"`",
+      "variant": "Shape (orthogonal to `type`): `solid` (default filled) / `outlined` / `dashed` / `filled` (soft) / `text` / `link`",
+      "color": "Custom color: overrides the `type` semantic color (any color value)",
+      "wave": "Press feedback: slight sink + darken (on by default); `wave=\"false\"` disables",
+      "auto-insert-space": "CJK auto spacing: inserts a space between two consecutive CJK characters (off by default)"
     },
     "events": {
       "oas-click": "Click, `detail: { originalEvent }`"

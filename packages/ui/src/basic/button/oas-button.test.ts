@@ -265,3 +265,103 @@ describe('OASButton', () => {
     })
   })
 })
+
+describe('variant / color / wave / auto-insert-space', () => {
+  const mountV = (attrs: Record<string, string> = {}): OASButton => {
+    const el = document.createElement('oas-button') as OASButton
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.textContent = '按钮'
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('variant=outlined 应用 outlined class', async () => {
+    const el = mountV({ variant: 'outlined', type: 'primary' })
+    await flush()
+    const btn = el.shadowRoot!.querySelector('button')!
+    expect(btn.classList.contains('outlined')).toBe(true)
+    expect(btn.classList.contains('primary')).toBe(true)
+    el.remove()
+  })
+
+  it('variant=dashed / filled / text / link 应用对应 class', async () => {
+    for (const v of ['dashed', 'filled', 'text', 'link']) {
+      const el = mountV({ variant: v })
+      await flush()
+      const btn = el.shadowRoot!.querySelector('button')!
+      expect(btn.classList.contains(v), `variant=${v} 应有 ${v} class`).toBe(true)
+      el.remove()
+    }
+  })
+
+  it('variant 缺省为 solid（不加 variant class）', async () => {
+    const el = mountV({ type: 'primary' })
+    await flush()
+    const btn = el.shadowRoot!.querySelector('button')!
+    expect(btn.classList.contains('solid')).toBe(false)
+    expect(btn.classList.contains('outlined')).toBe(false)
+    el.remove()
+  })
+
+  it('向后兼容：ghost 映射 outlined、plain 映射 filled、type=text 映射 text', async () => {
+    const g = mountV({ ghost: '', type: 'primary' })
+    await flush()
+    expect(g.shadowRoot!.querySelector('button')!.classList.contains('outlined')).toBe(true)
+    g.remove()
+    const p = mountV({ plain: '', type: 'primary' })
+    await flush()
+    expect(p.shadowRoot!.querySelector('button')!.classList.contains('filled')).toBe(true)
+    p.remove()
+    const t = mountV({ type: 'text' })
+    await flush()
+    expect(t.shadowRoot!.querySelector('button')!.classList.contains('text')).toBe(true)
+    t.remove()
+  })
+
+  it('显式 variant 优先于旧属性映射', async () => {
+    const el = mountV({ ghost: '', variant: 'dashed' })
+    await flush()
+    const btn = el.shadowRoot!.querySelector('button')!
+    expect(btn.classList.contains('dashed')).toBe(true)
+    expect(btn.classList.contains('outlined')).toBe(false)
+    el.remove()
+  })
+
+  it('color 属性设置 --oas-button-color 自定义色', async () => {
+    const el = mountV({ color: '#7c3aed', type: 'primary' })
+    await flush()
+    const btn = el.shadowRoot!.querySelector('button') as HTMLElement
+    expect(btn.style.getPropertyValue('--oas-button-color')).toBe('#7c3aed')
+    el.remove()
+  })
+
+  it('wave 默认开（press 反馈 class），wave="false" 关闭', async () => {
+    const el = mountV({})
+    await flush()
+    expect(el.shadowRoot!.querySelector('button')!.classList.contains('wave')).toBe(true)
+    el.remove()
+    const off = mountV({ wave: 'false' })
+    await flush()
+    expect(off.shadowRoot!.querySelector('button')!.classList.contains('wave')).toBe(false)
+    off.remove()
+  })
+
+  it('auto-insert-space：两个连续汉字间插入空格', async () => {
+    const el = document.createElement('oas-button') as OASButton
+    el.setAttribute('auto-insert-space', '')
+    el.textContent = '保存设置'
+    document.body.appendChild(el)
+    await flush()
+    expect(el.textContent).toBe('保 存 设 置')
+    el.remove()
+  })
+
+  it('auto-insert-space 默认关（不插空格）', async () => {
+    const el = document.createElement('oas-button') as OASButton
+    el.textContent = '保存设置'
+    document.body.appendChild(el)
+    await flush()
+    expect(el.textContent).toBe('保存设置')
+    el.remove()
+  })
+})

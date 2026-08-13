@@ -146,25 +146,75 @@ Setting `href` renders a native link (`<a>`); `target` controls how it opens (`_
   <oas-button plain type="danger">Danger plain</oas-button>
 </DemoBlock>
 
+## Variant
+
+`variant` controls the button shape, orthogonal to the `type` semantic color: `solid` (default filled) / `outlined` / `dashed` / `filled` (soft) / `text` / `link`. Legacy `ghost` equals `outlined`, `plain` equals `filled`.
+
+<DemoBlock title="Outlined / Dashed / Filled">
+  <oas-button variant="outlined" type="primary">Outlined</oas-button>
+  <oas-button variant="dashed" type="primary">Dashed</oas-button>
+  <oas-button variant="filled" type="primary">Filled</oas-button>
+  <oas-button variant="outlined">Default outlined</oas-button>
+  <oas-button variant="dashed">Default dashed</oas-button>
+</DemoBlock>
+
+<DemoBlock title="Text / Link">
+  <oas-button variant="text">Text button</oas-button>
+  <oas-button variant="text" type="primary">Primary text</oas-button>
+  <oas-button variant="link" href="#">Link button</oas-button>
+</DemoBlock>
+
+## Custom color
+
+`color` overrides the `type` semantic color with any color value.
+
+<DemoBlock title="Custom color">
+  <oas-button color="#7c3aed">Purple solid</oas-button>
+  <oas-button color="#0e9f6e" variant="outlined">Green outlined</oas-button>
+  <oas-button color="#db2777" variant="filled">Pink filled</oas-button>
+</DemoBlock>
+
+## Press feedback
+
+`wave` enables a subtle press feedback (slight sink + darken, on by default); `wave="false"` disables it.
+
+<DemoBlock title="Press feedback">
+  <oas-button type="primary">Press me (on by default)</oas-button>
+  <oas-button wave="false">Feedback off</oas-button>
+</DemoBlock>
+
+## CJK auto spacing
+
+`auto-insert-space` inserts a space between two consecutive CJK characters (typography optimization, off by default).
+
+<DemoBlock title="CJK auto spacing">
+  <oas-button auto-insert-space>保存设置</oas-button>
+  <oas-button auto-insert-space type="primary">确认提交订单</oas-button>
+</DemoBlock>
+
 ## API
 
 ### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `auto-insert-space` | CJK auto spacing: inserts a space between two consecutive CJK characters (off by default) | `string` | — |
 | `block` | Fill the full width of the parent container (block level) | `boolean` | — |
-| `circle` | — | `boolean` | — |
+| `circle` | Circle button (icon-only, square + full rounding) | `boolean` | — |
+| `color` | Custom color: overrides the `type` semantic color (any color value) | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `ghost` | Ghost/outline style: transparent background + outline colored by `type`, darkens on hover | `boolean` | — |
-| `href` | — | `string` | — |
+| `href` | Link address: renders a native `<a>` when set | `string` | — |
 | `icon` | Icon name (reusing the oas-icon icon set); without text it becomes an equal-width square and uses the icon name as the fallback label | `string` | — |
-| `icon-position` | — | `string` | `start` |
+| `icon-position` | Icon position: `start` (default, left) / `end` (right) | `string` | `start` |
 | `loading` | Loading state | `boolean` | — |
-| `plain` | — | `boolean` | — |
+| `plain` | Plain style: low-contrast soft (transparent bg + softened text), equals `variant="filled"` | `boolean` | — |
 | `round` | Pill radius (`--oas-radius-full` / `999px`) | `boolean` | — |
 | `size` | Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning | `ButtonSize` | `medium` |
-| `target` | — | `string` | — |
+| `target` | How the link opens (`_blank` / `_self` etc.), with `href` | `string` | — |
 | `type` | Type | `ButtonType` | `default` |
+| `variant` | Shape (orthogonal to `type`): `solid` (default filled) / `outlined` / `dashed` / `filled` (soft) / `text` / `link` | `ButtonVariant \| ''` | — |
+| `wave` | Press feedback: slight sink + darken (on by default); `wave="false"` disables | `string` | `true` |
 
 ### Events
 
