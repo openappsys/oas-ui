@@ -1,12 +1,25 @@
 # 快速开始
 
-## 三行引入（CDN）
+## CDN 引入
+
+**整包（最简单，注册全部组件）**：`cdn.js` 是打包好的 IIFE 单文件，`<script>` 直接引入即可：
 
 ```html
 <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@1/index.css" />
 <script src="https://unpkg.com/@oas-ui/ui@1/dist/cdn.js"></script>
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
+
+**按需引入单个组件**：用 esm.sh 的短路径（自动解析依赖），只注册你用到的那一个：
+
+```html
+<script type="module">
+  import 'https://esm.sh/@oas-ui/ui@1/basic/button'
+</script>
+<oas-button type="primary">Hello OAS-UI</oas-button>
+```
+
+> **CDN 路径入口说明**：组件目录下的 `oas-*.js` 是纯类定义（供打包器 tree-shaking），**不含注册副作用**；会执行 `customElements.define` 的是 `index.js`。CDN 直引请用上面的整包 `cdn.js` 或按需短路径（走 exports map 自动落到 `index.js`），**不要直引 `dist/basic/button/oas-button.js`**（import 成功但元素不注册、页面不渲染）。
 
 ## 安装（npm / pnpm / yarn）
 
