@@ -5,6 +5,12 @@ export interface NotificationOptions {
   title: string
   description?: string
   duration?: number
+  /** 显示自动关闭倒计时进度条＼� */
+  showProgress?: boolean
+  /** 进度条位置：`bottom`（默认）或 `top` */
+  progressPosition?: 'top' | 'bottom'
+  /** 描述内容超长时可滚动，默认开启；传 `false` 关闭 */
+  scrollable?: boolean
 }
 
 let stackEl: HTMLElement | null = null
@@ -25,6 +31,11 @@ function show(type: NotificationType, options: NotificationOptions): void {
   el.setAttribute('title', options.title)
   if (options.description !== undefined) el.setAttribute('description', options.description)
   el.setAttribute('duration', String(options.duration ?? 4500))
+  if (options.showProgress) el.setAttribute('show-progress', '')
+  if (options.progressPosition !== undefined) {
+    el.setAttribute('progress-position', options.progressPosition)
+  }
+  if (options.scrollable !== undefined) el.setAttribute('scrollable', String(options.scrollable))
   ensureStack().appendChild(el)
 }
 

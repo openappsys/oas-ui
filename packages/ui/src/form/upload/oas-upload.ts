@@ -52,6 +52,14 @@ const STYLE = `
   color: var(--oas-color-text-disabled);
 }
 .zone .icon {
+  /* 固定宿主尺寸：DSD 快照阶段 oas-icon 尚未 upgrade（shadow 为空、flex 子项 block 化后高度 0），
+     upgrade 后图标渲染 28px——尺寸不定会导致升级前后拖拽区高度跳变（真水合布局闪动断言 ±1px 失败）。
+     显式定宽高 + inline-flex 居中，令升级前后占用一致；同时消除内联 svg 的基线间隙。 */
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: var(--oas-font-size-xl);
   line-height: 1;
   color: var(--oas-color-primary);
@@ -190,11 +198,14 @@ const STYLE = `
   color: var(--oas-color-bg);
   cursor: pointer;
   opacity: 0;
+  /* 隐藏态不拦截指针事件：否则 20x20 透明角标会吃掉缩略图点击 */
+  pointer-events: none;
   transition: opacity var(--oas-transition-fast) var(--oas-ease-out);
 }
 .card:hover .remove,
 .card .remove:focus-visible {
   opacity: 1;
+  pointer-events: auto;
 }
 .card .remove:focus-visible {
   outline: none;
@@ -213,11 +224,21 @@ const STYLE = `
   gap: var(--oas-space-2);
   background: var(--oas-color-overlay);
   opacity: 0;
+  /* 覆盖层永不拦截指针事件（hover 态也不）：整卡点击回落到缩略图（oas-preview），
+     只有内部 .act 操作按钮在 hover 时才可命中，避免鼠标移动触发 hover 后吞掉缩略图点击 */
+  pointer-events: none;
   transition: opacity var(--oas-transition-fast) var(--oas-ease-out);
 }
 .card:hover .actions,
 .card:focus-within .actions {
   opacity: 1;
+}
+.card .actions .act {
+  pointer-events: none;
+}
+.card:hover .actions .act,
+.card:focus-within .actions .act {
+  pointer-events: auto;
 }
 .card .actions .act {
   width: 28px;
@@ -249,6 +270,8 @@ const STYLE = `
   bottom: 0;
   padding: var(--oas-space-1);
   background: var(--oas-color-overlay);
+  /* 纯信息展示，不拦截缩略图点击 */
+  pointer-events: none;
 }
 /* 预览浮层 */
 .preview-mask {
@@ -259,6 +282,11 @@ const STYLE = `
   align-items: center;
   justify-content: center;
   background: var(--oas-color-overlay);
+}
+/* hidden 属性需要显式覆盖 display（避免 class 的 display:flex 优先级压过 UA 的 [hidden] 规则，
+   否则关闭态的预览浮层始终占满视口拦截全页指针事件——曾致真水合 e2e 全页点击被 oas-upload 拦截） */
+.preview-mask[hidden] {
+  display: none;
 }
 .preview-dialog {
   display: flex;

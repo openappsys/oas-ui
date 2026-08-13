@@ -9,6 +9,8 @@ const STYLE = `
   margin-bottom: var(--oas-space-3);
 }
 .box {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-lg);
   background: var(--oas-color-bg);
@@ -40,9 +42,42 @@ const STYLE = `
   color: var(--oas-color-text-secondary);
   line-height: 1.6;
 }
+/* 长内容可滚动：内容区限高 + 纵向滚动（scrollable 默认开启，显式 "false" 关闭） */
+.description.scrollable {
+  max-height: 8em;
+  overflow-y: auto;
+}
 .icon {
   font-size: var(--oas-font-size-lg);
   line-height: 1;
+}
+/* 自动关闭倒计时进度条：进度动画时长 = duration，与 JS 计时器同步关闭 */
+.progress {
+  margin-top: var(--oas-space-3);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--oas-color-bg-hover);
+  overflow: hidden;
+}
+.progress[hidden] {
+  display: none;
+}
+.progress-top {
+  order: -1;
+  margin-top: 0;
+  margin-bottom: var(--oas-space-3);
+}
+.progress-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--oas-color-primary);
+  animation-name: oas-notification-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes oas-notification-progress {
+  from { width: 100%; }
+  to { width: 0; }
 }
 /* type 属性设在 host 上，颜色选择器从 host 属性命中（render 后 type 动态变化也能响应） */
 :host([type='success']) .icon { color: var(--oas-color-success); }
@@ -61,7 +96,7 @@ const ICONS: Record<NotificationType, string> = {
 
 export class OASNotification extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['type']
+    return ['type', 'show-progress', 'progress-position', 'scrollable', 'duration']
   }
 
   private timer: ReturnType<typeof setTimeout> | null = null
@@ -77,6 +112,9 @@ export class OASNotification extends OASElement {
           <button class="close" part="close" aria-label="">✕</button>
         </div>
         <div class="description" part="description"></div>
+        <div class="progress" part="progress" aria-hidden="true" hidden>
+          <div class="progress-fill"></div>
+        </div>
       </div>
     `
     const title = this.shadow.querySelector('.title')!
@@ -89,6 +127,9 @@ export class OASNotification extends OASElement {
     const duration = Number(this.getAttr('duration', '4500'))
     if (duration > 0) {
       this.timer = setTimeout(() => this.remove(), duration)
+      this.onCleanup(() => {
+        if (this.timer) clearTimeout(this.timer)
+      })
     }
   }
 
@@ -100,5 +141,19 @@ export class OASNotification extends OASElement {
     this.shadow
       .querySelector<HTMLElement>('[part="close"]')
       ?.setAttribute('aria-label', this.t('notification.close'))
+
+    // 倒计时进度条：show-progress 且 duration>0 才显示；动画时长与 auto-close 同步
+    const duration = Number(this.getAttr('duration', '4500'))
+    const progress = this.shadow.querySelector<HTMLElement>('[part="progress"]')
+    if (!progress) return
+    const fill = progress.querySelector<HTMLElement>('.progress-fill')
+    if (fill) fill.style.animationDuration = `${duration}ms`
+    progress.hidden = !(this.hasAttr('show-progress') && duration > 0)
+    progress.classList.toggle('progress-top', this.getAttr('progress-position', 'bottom') === 'top')
+
+    // 长内容可滚动：默认开启，显式 scrollable="false" 关闭
+    this.shadow
+      .querySelector<HTMLElement>('[part="description"]')
+      ?.classList.toggle('scrollable', this.getAttr('scrollable', 'true') !== 'false')
   }
 }

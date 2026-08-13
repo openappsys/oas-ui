@@ -158,4 +158,131 @@ describe('OASCalendar', () => {
     expect(day(el, '2026-08-20').classList.contains('selected')).toBe(true)
     expect(day(el, '2026-08-09').classList.contains('selected')).toBe(false)
   })
+
+  it('template[slot="cell"] 克隆到日单元格，data-cell-date 绑定日期数字', () => {
+    const el = new OASCalendar()
+    el.setAttribute('value', '2026-08-09')
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'cell')
+    tpl.innerHTML = '<span class="dot"></span><span data-cell-date></span>'
+    el.appendChild(tpl)
+    document.body.appendChild(el)
+    const btn = day(el, '2026-08-15')
+    expect(btn.querySelector('.dot')).not.toBeNull()
+    expect(btn.querySelector('[data-cell-date]')!.textContent).toBe('15')
+  })
+
+  it('oas-cell-render 每个日单元格派发 { date, element }，宿主可标记节假日', () => {
+    const el = new OASCalendar()
+    el.setAttribute('value', '2026-08-09')
+    const marked: Array<{ iso: string; text: string }> = []
+    el.addEventListener('oas-cell-render', (e: Event) => {
+      const { date, element } = (e as CustomEvent).detail as {
+        date: Date
+        element: HTMLElement
+      }
+      if (date.getMonth() === 7 && (date.getDate() === 1 || date.getDate() === 15)) {
+        element.classList.add('holiday')
+        const dot = document.createElement('span')
+        dot.className = 'cell-dot'
+        element.appendChild(dot)
+      }
+      marked.push({ iso: toISO(date), text: element.textContent ?? '' })
+    })
+    document.body.appendChild(el)
+    expect(day(el, '2026-08-01').classList.contains('holiday')).toBe(true)
+    expect(day(el, '2026-08-15').querySelector('.cell-dot')).not.toBeNull()
+    expect(day(el, '2026-08-02').classList.contains('holiday')).toBe(false)
+    // 42 格全部派发（含前后月补位）
+    expect(marked.length).toBeGreaterThanOrEqual(42)
+    expect(marked.some((m) => m.iso === '2026-08-01' && m.text === '1')).toBe(true)
+    // 重新导航重渲染后标记保持（宿主监听幂等重写）
+    el.shadowRoot!.querySelector<HTMLElement>('[part="next"]')!.click()
+    expect(day(el, '2026-09-15').classList.contains('holiday')).toBe(false)
+    expect(el.shadowRoot!.querySelectorAll('.day.holiday').length).toBe(0)
+  })
+
+  it('year 模式点击月份：value 更新 yyyy-MM、切回 month 视图并派发 oas-mode-change', () => {
+    const el = mount({ value: '2026-07', mode: 'year' })
+    const events: Array<[string, unknown]> = []
+    el.addEventListener('oas-change', (e: Event) =>
+      events.push(['change', (e as CustomEvent).detail]),
+    )
+    el.addEventListener('oas-mode-change', (e: Event) =>
+      events.push(['mode', (e as CustomEvent).detail]),
+    )
+    el.shadowRoot!.querySelectorAll('.month-cell')[6]!.dispatchEvent(new MouseEvent('click'))
+    expect(events).toContainEqual(['change', { value: '2026-07' }])
+    expect(events).toContainEqual(['mode', { mode: 'month' }])
+    expect(el.getAttribute('mode')).toBe('month')
+    // 回到月视图：标题 + 日网格，选中 7 月 1 日
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年7月')
+    expect(el.shadowRoot!.querySelectorAll('.day').length).toBeGreaterThan(0)
+    expect(day(el, '2026-07-01').classList.contains('selected')).toBe(true)
+  })
+
+  it('e2e 场景锁定：month 起始 → 宿主切 year → 选月 → oas-mode-change 与 oas-change 均派发', () => {
+    // 复现 qa-regression「模式切换」用例的完整链路：
+    // 默认 month 视图 → 宿主 setAttribute('mode','year') → 点 2026 年 7 月
+    const el = mount({ value: '2026-08-09' })
+    const events: Array<[string, unknown]> = []
+    el.addEventListener('oas-change', (e: Event) =>
+      events.push(['change', (e as CustomEvent).detail]),
+    )
+    el.addEventListener('oas-mode-change', (e: Event) =>
+      events.push(['mode', (e as CustomEvent).detail]),
+    )
+    el.setAttribute('mode', 'year')
+    el.shadowRoot!.querySelectorAll('.month-cell')[6]!.dispatchEvent(new MouseEvent('click'))
+    // 两个事件都派发：选月切回月视图 + value 更新
+    expect(events).toContainEqual(['mode', { mode: 'year' }])
+    expect(events).toContainEqual(['mode', { mode: 'month' }])
+    expect(events).toContainEqual(['change', { value: '2026-07' }])
+    // 终态：month 视图 + 值已更新（与 demo 反馈展示顺序无关）
+    expect(el.getAttribute('value')).toBe('2026-07')
+    expect(el.getAttribute('mode')).toBe('month')
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年7月')
+  })
+
+  it('mode 属性变化即时切换 month/year 视图', () => {
+    const el = mount({ value: '2026-08-09' })
+    expect(el.shadowRoot!.querySelectorAll('.day').length).toBe(42)
+    el.setAttribute('mode', 'year')
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年')
+    expect(el.shadowRoot!.querySelectorAll('.month-cell').length).toBe(12)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="today"]')!.hidden).toBe(true)
+    el.setAttribute('mode', 'month')
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年8月')
+    expect(el.shadowRoot!.querySelectorAll('.day').length).toBe(42)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="today"]')!.hidden).toBe(false)
+  })
+
+  it('year 模式键盘方向键不拦截（原生按钮可达），停留年视图', () => {
+    const el = mount({ value: '2026-07', mode: 'year' })
+    grid(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(el.shadowRoot!.querySelectorAll('.month-cell').length).toBe(12)
+    expect(el.getAttribute('mode')).toBe('year')
+  })
+
+  it('宿主设置 mode 属性同样派发 oas-mode-change（受控通知）', () => {
+    const el = mount({ value: '2026-08-09' })
+    const details: unknown[] = []
+    el.addEventListener('oas-mode-change', (e: Event) =>
+      details.push((e as CustomEvent).detail),
+    )
+    el.setAttribute('mode', 'year')
+    expect(details).toEqual([{ mode: 'year' }])
+    el.setAttribute('mode', 'month')
+    expect(details).toEqual([{ mode: 'year' }, { mode: 'month' }])
+    // 重复设置同值不重复派发
+    el.setAttribute('mode', 'month')
+    expect(details).toEqual([{ mode: 'year' }, { mode: 'month' }])
+  })
 })
+
+function toISO(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}

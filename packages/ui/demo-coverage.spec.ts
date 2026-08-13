@@ -145,6 +145,8 @@ const INTERACTIONS: Array<[string, string]> = [
 //   drag          拖拽分隔条（真实指针手势）
 //   dragto        HTML5 拖放：源 = 第 1 个匹配，目标 = 第 2 个匹配（Playwright dragTo 触发真实 dragstart/drop）
 //   wait:<ms>     等待
+//   waitfor       sel 字段为 JS 条件表达式，等页面求值为真（demo 异步注入 onMounted 等）
+//   file:svg      设置 SVG 图片文件（走 accept 过滤但可用于触达 max 超限/预览）
 const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   carousel: [['oas-carousel [part="arrow-next"]', 'click', '点下一张箭头 → oas-change']],
   tag: [['oas-tag[clickable]:not([disabled]) [part="tag"]', 'click', '点整签派发 oas-click']],
@@ -219,6 +221,13 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-upload[auto-upload] .file-input', 'file', '自动上传实例 → oas-upload'],
     ['wait:700', 'wait', '等模拟上传进度事件'],
     ['oas-upload [part="item"] .remove', 'click', '删文件 → oas-remove'],
+    [
+      'document.getElementById("upload-full")?.files?.length >= 3',
+      'waitfor',
+      '等 upload-full 预置 3 张（onMounted 异步注入）',
+    ],
+    ['#upload-full [part="item"] .thumb', 'click', '点缩略图 → oas-preview'],
+    ['#upload-full .file-input', 'file:svg', '第 4 张 SVG → 超 max=3 → oas-exceed'],
   ],
   'toggle-group': [['oas-toggle-group [part="item"]', 'click:n1', '点非默认选中项 → oas-change']],
   'pin-input': [['oas-pin-input [part="cell"]', 'fillall:1', '填满全部格 → oas-change']],
@@ -248,7 +257,34 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       '连发 4 条 → 堆叠溢出 → 最老实例同步 oas-close（比等 4s 定时器稳定）',
     ],
   ],
-  backdrop: [['oas-backdrop [part="mask"]', 'click', '点遮罩 → oas-click（通用探针已点开 demo）']],
+  backdrop: [
+    [
+      'typeof window.openBackdrop === "function"',
+      'waitfor',
+      '等 demo onMounted 注入 openBackdrop（SKIP_WAIT 跳过 tag 等待，并行负载下注入可能较慢）',
+    ],
+    [
+      'oas-button:has-text("打开遮罩") button',
+      'domclick',
+      'DOM click 打开遮罩：真实点击会被 sticky 导航栏/探针滚动后遮挡',
+    ],
+    ['oas-backdrop [part="mask"]', 'click', '点遮罩 → oas-click'],
+  ],
+  slider: [
+    [
+      'oas-slider input[type="range"]:not([hidden]):not([disabled])',
+      'click:n1',
+      '点第 2 个可见滑块（demo2 value=30，点击中心 50% → oas-input + oas-change；通用探针点的 demo1 值恰在中心不产生变化）',
+    ],
+  ],
+  modal: [
+    [
+      'oas-button:has-text("打开对话框") button',
+      'domclick',
+      'DOM click 重开基础对话框：真实点击会被 sticky 导航栏/浮层拦截（force 点不滚动到安全区）',
+    ],
+    ['oas-modal[visible] [part="ok"]', 'click', '点确定 → oas-ok'],
+  ],
   popconfirm: [
     ['oas-popconfirm', 'click', '点触发器打开气泡'],
     ['oas-popconfirm [part="ok"]', 'click', '确认 → oas-ok'],
@@ -381,6 +417,26 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
             { timeout: 400 },
           )
         }
+      } else if (act.startsWith('file:')) {
+        const payload =
+          act.slice(5) === 'svg'
+            ? {
+                name: 'photo.svg',
+                mimeType: 'image/svg+xml',
+                buffer: Buffer.from(
+                  '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20" rx="4" fill="#0b6cff"/></svg>',
+                ),
+              }
+            : { name: 'demo.txt', mimeType: 'text/plain', buffer: Buffer.from('oas-ui demo file') }
+        const el = page.locator(sel).first()
+        if (await el.count()) {
+          await el.setInputFiles(payload, { timeout: 400 })
+        }
+      } else if (act === 'waitfor') {
+        // sel 字段承载 JS 条件表达式（页面上下文求值）；8s 超时静默跳过
+        try {
+          await page.waitForFunction(sel, undefined, { timeout: 8000 })
+        } catch {}
       } else if (act === 'drag') {
         const el = page.locator(sel).first()
         if (await el.count()) {

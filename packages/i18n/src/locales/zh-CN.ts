@@ -62,6 +62,10 @@ export const zhCN = {
   'inputNumber.increase': '增加',
   'inputNumber.decrease': '减少',
   'inputNumber.defaultLabel': '数字输入框',
+  // slider（滑块）
+  'slider.valueLabel': '滑块',
+  'slider.minLabel': '最小值',
+  'slider.maxLabel': '最大值',
   // rate（评分）
   'rate.rate': '评分',
   // form（表单校验）
@@ -182,6 +186,7 @@ export const zhCN = {
   'transfer.selectAll': '全选',
   'transfer.search': '搜索',
   'transfer.empty': '暂无数据',
+  'transfer.noMatch': '未找到匹配项',
   // color-picker（颜色选择器）
   'colorPicker.label': '颜色选择器',
   'colorPicker.preset': '预设颜色',

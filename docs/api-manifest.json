@@ -1016,6 +1016,26 @@
         "name": "marks",
         "default": "",
         "observed": true
+      },
+      {
+        "name": "range",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "show-input",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "reverse",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "show-tooltip",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [
@@ -1034,7 +1054,11 @@
         "detail": "{ value: Number(this.input!.value) }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": "template[slot=\"custom-thumb\"]"
+      }
+    ],
     "unresolved": []
   },
   "oas-input-number": {
@@ -1665,11 +1689,23 @@
     ],
     "events": [
       {
+        "name": "oas-mode-change",
+        "detail": "{ mode }"
+      },
+      {
+        "name": "oas-cell-render",
+        "detail": "{ date, element: btn }"
+      },
+      {
         "name": "oas-change",
         "detail": "{ value: iso }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": "template[slot=\"cell\"]"
+      }
+    ],
     "unresolved": []
   },
   "oas-date-picker": {
@@ -1886,6 +1922,27 @@
       {
         "name": "searchable",
         "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "case-sensitive",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "one-way",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "virtual",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "item-height",
+        "type": "string",
+        "default": "36",
         "observed": true
       }
     ],
@@ -2255,6 +2312,29 @@
         "observed": true
       },
       {
+        "name": "show-progress",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "progress-position",
+        "type": "string",
+        "default": "bottom",
+        "observed": true
+      },
+      {
+        "name": "scrollable",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "duration",
+        "type": "string",
+        "default": "4500",
+        "observed": true
+      },
+      {
         "name": "title",
         "type": "string",
         "default": "",
@@ -2264,12 +2344,6 @@
         "name": "description",
         "type": "string",
         "default": "",
-        "observed": false
-      },
-      {
-        "name": "duration",
-        "type": "string",
-        "default": "4500",
         "observed": false
       }
     ],

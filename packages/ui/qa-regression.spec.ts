@@ -1166,6 +1166,33 @@ test('upload 超限 max：drop 超过 max 的文件触发 oas-exceed 并弹出 m
   expect(r.cards).toBe(3)
 })
 
+test('upload 预览浮层关闭态不拦截指针事件 + 拖拽区图标尺寸稳定', async ({ page }) => {
+  // 曾现风险 1：.preview-mask 的 display:flex 压过 UA [hidden] 规则 → 关闭态浮层 fixed 铺满
+  // 视口拦截全页指针事件（DSD 真水合 e2e 全页点击被 oas-upload 拦截而超时）。
+  // 曾现风险 2：zone 内 oas-icon 未 upgrade 前高度 0、upgrade 后 28px → 拖拽区高度跳变。
+  await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#upload-drag')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#upload-drag')!
+    const mask = el.shadowRoot!.querySelector('.preview-mask')!
+    const icon = el.shadowRoot!.querySelector('.zone .icon')!
+    const rect = mask.getBoundingClientRect()
+    const iconStyle = getComputedStyle(icon)
+    return {
+      maskHidden: mask.hasAttribute('hidden'),
+      maskDisplay: getComputedStyle(mask).display,
+      maskCoversPage: rect.width > 0 && rect.height > 0,
+      iconW: iconStyle.width,
+      iconH: iconStyle.height,
+    }
+  })
+  expect(r.maskHidden).toBe(true)
+  expect(r.maskDisplay).toBe('none')
+  expect(r.maskCoversPage).toBe(false)
+  expect(r.iconW).toBe('28px')
+  expect(r.iconH).toBe('28px')
+})
+
 test('form inline：表单项水平排列（同一行）、label 在控件左侧、空提交必填错误在控件下方', async ({
   page,
 }) => {
@@ -1233,23 +1260,25 @@ test('badge ribbon：缎带可见、折叠角生效、语义色与 placement 渲
   await page.goto('/components/badge.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-badge[ribbon] oas-card')
   const r = await page.evaluate(() => {
-    const badges = [...document.querySelectorAll('oas-badge[ribbon]')]
+    const badges = [...document.querySelectorAll('oas-badge[ribbon], oas-badge[mode="ribbon"]')]
     const ribbonEl = (el: Element) => el.shadowRoot!.querySelector<HTMLElement>('.ribbon')
     const cornerEl = (el: Element) => el.shadowRoot!.querySelector<HTMLElement>('.ribbon-corner')
     const pick = (color?: string, placement?: string) => {
       const b = badges.find((x) => {
         if (color && x.getAttribute('color') !== color) return false
         if (placement && x.getAttribute('placement') !== placement) return false
-        return x.hasAttribute('ribbon')
+        return x.hasAttribute('ribbon') || x.getAttribute('mode') === 'ribbon'
       })
       if (!b) return null
       const rb = ribbonEl(b)!
       const cs = getComputedStyle(rb)
+      // 根元素 color 故意=背景色（corner 用 currentColor 折叠阴影），文字色在 .ribbon-text，断言取文字
+      const textEl = rb.querySelector<HTMLElement>('.ribbon-text')
       return {
         hidden: rb.hidden,
         text: rb.textContent,
         bg: cs.backgroundColor,
-        color: cs.color,
+        color: textEl ? getComputedStyle(textEl).color : cs.color,
         endRadius: cs.borderEndEndRadius,
         cornerTransform: getComputedStyle(cornerEl(b)!).transform,
         placementStart: rb.classList.contains('placement-start'),
@@ -1650,10 +1679,18 @@ test('avatar 加载失败回退：404 图触发 img error 后回退首字符、�
 test('image 懒加载：视口外图片不加载（img 无 src、占位显示），滚动进入视口后逐图加载', async ({
   page,
 }) => {
-  // 防回归：lazy 必须真正延迟请求——视口外 img 不得带 src；滚动后开始加载并断开观察器
+  // 回归：lazy 必须真正延迟加载——视口外 img 没有 src，进入视口后才发起加载
   await page.goto('/components/image.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-image[lazy]')
-  // 滚动列表到顶部：首屏在视口内的项已加载，视口外项仍为占位（无 src）
+  // 动态创建的懒加载列表由 demo onMounted 填充，静态首图存在不代表列表已建完
+  await page.waitForFunction(
+    () => document.querySelectorAll('#image-lazy-list oas-image[lazy]').length >= 6,
+    null,
+    { timeout: 15000 },
+  )
+  // 懒加载列表块整体位于页面首屏之外（demo 页需先滚页面才可见）——
+  // 仅滚内层容器时列表块仍在视口外，IO 永远不触发。先把列表整体滚入页面视口。
+  await page.evaluate(() => document.querySelector('#image-lazy-list')?.scrollIntoView())
   await page.locator('#image-lazy-list').evaluate((el) => (el.scrollTop = 0))
   const state = await page.evaluate(() => {
     const list = document.querySelector('#image-lazy-list')!
@@ -1665,9 +1702,17 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
     return { total: imgs.length, noSrc: noSrc.length }
   })
   expect(state.total).toBeGreaterThan(5)
-  expect(state.noSrc, '滚动列表底部应仍有未加载的懒加载项').toBeGreaterThan(0)
-  // 滚动到底部：所有项都应开始加载（img 带 src）
-  await page.locator('#image-lazy-list').evaluate((el) => (el.scrollTop = el.scrollHeight))
+  expect(state.noSrc, '列表底部应有未加载的图片').toBeGreaterThan(0)
+  // 逐步滚动内层列表到底部（模拟真实浏览：每屏都经过视口，IO 逐屏触发加载；
+  // 一次滚到底会跳过中间项，这些项从未进入视口 → 永远不加载，属于正确懒加载行为）
+  await page.evaluate(async () => {
+    const list = document.querySelector('#image-lazy-list') as HTMLElement
+    const max = list.scrollHeight - list.clientHeight
+    while (list.scrollTop < max) {
+      list.scrollTop = Math.min(list.scrollTop + 150, max)
+      await new Promise((r) => setTimeout(r, 50))
+    }
+  })
   await page.waitForFunction(
     () => {
       const list = document.querySelector('#image-lazy-list')!
@@ -1681,7 +1726,7 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
       )
     },
     null,
-    { timeout: 5000 },
+    { timeout: 10000 },
   )
   // 状态机收尾：首批（列表首个）加载完成后 aria-busy 从 true 复位为 false
   await page.waitForFunction(
@@ -1692,4 +1737,407 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
     null,
     { timeout: 15000 },
   )
+})
+
+test('transfer 搜索：输入过滤词后可见行减少、无匹配显示空态', async ({ page }) => {
+  // 防回归：searchable 过滤必须真实驱动面板渲染，且无匹配时有可见空态反馈
+  await page.goto('/components/transfer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-transfer[searchable]')
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#transfer-search')
+    return el?.shadowRoot?.querySelectorAll('.listbox.left .option').length === 5
+  })
+  await page.locator('#transfer-search').evaluate((el) => {
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('.search-left')!
+    input.value = '香'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#transfer-search')
+    return el?.shadowRoot?.querySelectorAll('.listbox.left .option').length === 1
+  })
+  await page.locator('#transfer-search').evaluate((el) => {
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('.search-left')!
+    input.value = 'zzz'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#transfer-search')
+    return el?.shadowRoot?.querySelector('.listbox.left .empty') != null
+  })
+})
+
+test('transfer case-sensitive：区分大小写搜索', async ({ page }) => {
+  await page.goto('/components/transfer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-transfer[case-sensitive]')
+  await page.locator('#transfer-casesensitive').evaluate((el) => {
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('.search-left')!
+    input.value = 'ap'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  // 'ap' 只命中 apricot（Apple 大写 A 不匹配）
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#transfer-casesensitive')
+    const rows = el?.shadowRoot?.querySelectorAll('.listbox.left .option') ?? []
+    return rows.length === 1 && rows[0]!.textContent === 'apricot'
+  })
+})
+
+test('transfer one-way：左侧含全部数据且已穿梭项禁用，右侧无移除按钮', async ({ page }) => {
+  await page.goto('/components/transfer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-transfer[one-way]')
+  await page.locator('#transfer-oneway').evaluate((el) => {
+    const row = el.shadowRoot!.querySelector('.listbox.left .option') as HTMLElement
+    row.click()
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.to-right')!.click()
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#transfer-oneway')
+    return el?.getAttribute('value')?.includes('a')
+  })
+  const state = await page.locator('#transfer-oneway').evaluate((el) => {
+    const s = el.shadowRoot!
+    const rows = [...s.querySelectorAll('.listbox.left .option')]
+    return {
+      total: rows.length,
+      disabledSelected: rows.filter(
+        (r) =>
+          r.getAttribute('aria-disabled') === 'true' && r.getAttribute('aria-selected') === 'true',
+      ).length,
+      toLeftHidden: (s.querySelector('.to-left') as HTMLButtonElement).hidden,
+    }
+  })
+  expect(state.total).toBe(4)
+  expect(state.disabledSelected).toBe(1)
+  expect(state.toLeftHidden).toBe(true)
+})
+
+test('transfer virtual：万级数据窗口化渲染且滚动后窗口平移', async ({ page }) => {
+  await page.goto('/components/transfer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-transfer[virtual]')
+  await page.waitForFunction(() => {
+    const vlist = document
+      .querySelector('#transfer-virtual')
+      ?.shadowRoot?.querySelector('.vlist-left')
+    return !!vlist && !!vlist.shadowRoot?.querySelector('[part="item"]')
+  })
+  const before = await page.locator('#transfer-virtual').evaluate((el) => {
+    const vlist = el.shadowRoot!.querySelector('.vlist-left')!
+    return {
+      rows: vlist.shadowRoot!.querySelectorAll('[part="item"]').length,
+      innerHeight: (vlist.shadowRoot!.querySelector('[part="inner"]') as HTMLElement).style.height,
+    }
+  })
+  expect(before.rows).toBeLessThan(40)
+  expect(before.innerHeight).toBe('320000px') // 10000 * item-height 32
+  // 滚动后窗口平移：首行 data-key 不再是 k0
+  await page.locator('#transfer-virtual').evaluate((el) => {
+    const vlist = el.shadowRoot!.querySelector('.vlist-left')!
+    const vp = vlist.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+    vp.scrollTop = 10000
+    vp.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForTimeout(200)
+  const after = await page.locator('#transfer-virtual').evaluate((el) => {
+    const vlist = el.shadowRoot!.querySelector('.vlist-left')!
+    const first = vlist.shadowRoot!.querySelector('[part="item"] .option')
+    return first?.getAttribute('data-key') ?? null
+  })
+  expect(after).not.toBe('k0')
+})
+
+// —— notification P1 补缺：进度条 + 可滚动 ——
+// 曾现缺口：notification 无自动关闭倒计时反馈（用户不知何时消失）、长内容撑破卡片。
+// 本次补 show-progress（进度动画时长=duration）+ progress-position + scrollable。
+
+test('notification 进度条：show-progress 渲染、动画时长与 duration 同步、位于底部', async ({
+  page,
+}) => {
+  await page.goto('/components/notification.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button')
+  await page.waitForFunction(() => typeof (window as any).notification !== 'undefined', null, {
+    timeout: 10000,
+  })
+  await page.locator('.demo-block', { hasText: '带进度条' }).locator('oas-button').first().click()
+  await page.waitForFunction(
+    () => document.querySelector('oas-notification[show-progress]') != null,
+    null,
+    { timeout: 5000 },
+  )
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-notification[show-progress]')!
+    const root = el.shadowRoot!
+    const progress = root.querySelector<HTMLElement>('[part="progress"]')!
+    const fill = root.querySelector<HTMLElement>('.progress-fill')!
+    const box = root.querySelector<HTMLElement>('[part="box"]')!
+    const desc = root.querySelector<HTMLElement>('[part="description"]')!
+    const p = progress.getBoundingClientRect()
+    const b = box.getBoundingClientRect()
+    const d = desc.getBoundingClientRect()
+    return {
+      progressHidden: progress.hidden,
+      fillInlineDuration: fill.style.animationDuration, // '5000ms'（demo duration: 5000）
+      computedDuration: getComputedStyle(fill).animationDuration,
+      animationName: getComputedStyle(fill).animationName,
+      belowDescription: p.top >= d.bottom - 1, // 进度条在描述下方
+      insideBox: p.bottom <= b.bottom + 1, // 进度条在卡片盒内
+      topClass: progress.classList.contains('progress-top'),
+    }
+  })
+  expect(r.progressHidden).toBe(false)
+  expect(r.fillInlineDuration).toBe('5000ms')
+  expect(r.computedDuration).not.toBe('0s') // 动画真实生效（非 0 时长）
+  expect(r.animationName).toContain('oas-notification-progress')
+  expect(r.belowDescription).toBe(true)
+  expect(r.insideBox).toBe(true)
+  expect(r.topClass).toBe(false)
+})
+
+test('notification 进度条 progress-position=top：进度条切到描述上方', async ({ page }) => {
+  await page.goto('/components/notification.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button')
+  await page.waitForFunction(() => typeof (window as any).notification !== 'undefined', null, {
+    timeout: 10000,
+  })
+  await page
+    .locator('.demo-block', { hasText: '带进度条' })
+    .locator('oas-button')
+    .nth(1)
+    .click()
+  await page.waitForFunction(
+    () => document.querySelector('oas-notification[progress-position="top"]') != null,
+    null,
+    { timeout: 5000 },
+  )
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-notification[progress-position="top"]')!
+    const root = el.shadowRoot!
+    const progress = root.querySelector<HTMLElement>('[part="progress"]')!
+    const box = root.querySelector<HTMLElement>('[part="box"]')!
+    const titleRow = root.querySelector<HTMLElement>('.title-row')!
+    const p = progress.getBoundingClientRect()
+    const b = box.getBoundingClientRect()
+    const t = titleRow.getBoundingClientRect()
+    return {
+      topClass: progress.classList.contains('progress-top'),
+      aboveTitle: p.bottom <= t.top + 1, // 进度条在标题行上方（卡盒顶部）
+      insideBox: p.top >= b.top - 1,
+      notHidden: !progress.hidden,
+    }
+  })
+  expect(r.topClass).toBe(true)
+  expect(r.aboveTitle).toBe(true)
+  expect(r.insideBox).toBe(true)
+  expect(r.notHidden).toBe(true)
+})
+
+test('notification 长内容可滚动：描述区限高 + overflow-y auto 且真实可滚', async ({ page }) => {
+  await page.goto('/components/notification.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button')
+  await page.waitForFunction(() => typeof (window as any).notification !== 'undefined', null, {
+    timeout: 10000,
+  })
+  await page.locator('.demo-block', { hasText: '长内容可滚动' }).locator('oas-button').click()
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('oas-notification')
+        ?.shadowRoot?.querySelector('[part="description"]')
+        ?.classList.contains('scrollable') ?? false,
+    null,
+    { timeout: 5000 },
+  )
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-notification')!
+    const desc = el.shadowRoot!.querySelector<HTMLElement>('[part="description"]')!
+    const cs = getComputedStyle(desc)
+    return {
+      scrollableClass: desc.classList.contains('scrollable'),
+      maxHeight: cs.maxHeight,
+      overflowY: cs.overflowY,
+      scrollable: desc.scrollHeight > desc.clientHeight, // 内容超长 → 真实可滚
+    }
+  })
+  expect(r.scrollableClass).toBe(true)
+  expect(r.maxHeight).not.toBe('none')
+  expect(r.overflowY).toBe('auto')
+  expect(r.scrollable).toBe(true)
+})
+
+// —— calendar P1 补缺：自定义单元格 + 模式切换 ——
+// 曾现缺口：日历无法标记节假日/事件点；year 模式选中月份后停留在年视图（应切回月视图）。
+// 本次补 oas-cell-render（detail { date, element }）+ template[slot="cell"] + year 选月自动切回 month。
+
+test('calendar 自定义单元格：cell-render 标记的节假日点可见', async ({ page }) => {
+  await page.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-calendar#calendar-cell-render')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-cell-render')!
+    const dots = [...el.shadowRoot!.querySelectorAll('.day .cell-dot')].map((d) => {
+      const btn = d.closest('.day')
+      return { iso: btn?.getAttribute('data-date'), cls: btn?.className }
+    })
+    return { dots, text: el.shadowRoot!.querySelector('[part="title"]')?.textContent ?? '' }
+  })
+  expect(r.text).toContain('2026')
+  // 至少两个节假日点（建军节 8-01、8-15），且标记落在本日单元格上
+  expect(r.dots.length).toBeGreaterThanOrEqual(2)
+  expect(r.dots.some((d) => d.iso === '2026-08-01' && d.cls?.includes('holiday'))).toBe(true)
+})
+
+test('calendar 模式切换：year 选中月份后自动切回月视图（value 双向同步）', async ({ page }) => {
+  await page.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-calendar#calendar-mode')
+  // 切到年视图
+  await page.locator('#calendar-mode-year').click()
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-calendar#calendar-mode')!
+    return el.getAttribute('mode') === 'year' && el.shadowRoot!.querySelectorAll('.month-cell').length === 12
+  })
+  // 年视图下点 2026 年 7 月 → value 更新 + 自动切回月视图
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-mode')!
+    const months = el.shadowRoot!.querySelectorAll('.month-cell')
+    ;(months[6] as HTMLElement).click()
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-calendar#calendar-mode')!
+    return (
+      el.getAttribute('value') === '2026-07' &&
+      el.getAttribute('mode') === 'month' &&
+      el.shadowRoot!.querySelectorAll('.day').length > 0
+    )
+  })
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-mode')!
+    return {
+      mode: el.getAttribute('mode'),
+      value: el.getAttribute('value'),
+      title: el.shadowRoot!.querySelector('[part="title"]')!.textContent,
+      output: document.querySelector('#calendar-mode-output')?.textContent ?? '',
+    }
+  })
+  expect(r.mode).toBe('month')
+  expect(r.value).toBe('2026-07')
+  expect(r.title).toContain('2026年7月')
+  expect(r.output).toContain('oas-mode-change')
+})
+
+// —— slider P1 补缺：show-input 联动 + 自定义滑块 + reverse ——
+// 曾现缺口：滑块无数值输入联动（精确取值只能靠猜）、滑块外观不可定制、方向不可反转。
+// 本次补 show-input（双向同步 + 防抖 + 夹取）、range（双滑块区间）、custom-thumb（模板/插槽）、reverse。
+
+test('slider show-input：拖动滑块实时更新输入框、输入数字防抖后驱动滑块', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[show-input]')
+  const el = page.locator('oas-slider[show-input]').first()
+  // 初始：输入框与滑块数值一致
+  const r0 = await el.evaluate((node) => {
+    const root = node.shadowRoot!
+    const input = root.querySelector<HTMLInputElement>('[data-role="range"]')!
+    const num = root.querySelector<HTMLInputElement>('[data-role="num"]')!
+    return { range: Number(input.value), num: num.value }
+  })
+  expect(r0.num).toBe(String(r0.range))
+  // 拖动滑块（派发 input）→ 输入框实时更新
+  await el.evaluate((node) => {
+    const root = node.shadowRoot!
+    const input = root.querySelector<HTMLInputElement>('[data-role="range"]')!
+    input.value = '77'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  const r1 = await el.evaluate((node) => {
+    const root = node.shadowRoot!
+    return root.querySelector<HTMLInputElement>('[data-role="num"]')!.value
+  })
+  expect(r1).toBe('77')
+  // 输入数字 → 防抖（300ms）后驱动滑块
+  await el.evaluate((node) => {
+    const root = node.shadowRoot!
+    const num = root.querySelector<HTMLInputElement>('[data-role="num"]')!
+    num.value = '35'
+    num.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-slider[show-input]')
+    const input = el?.shadowRoot?.querySelector<HTMLInputElement>('[data-role="range"]')
+    return input != null && Number(input.value) === 35
+  }, null, { timeout: 5000 })
+})
+
+test('slider range：双滑块区间 + 双输入框联动且方向反向（reverse）生效', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[range][show-input]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider[range][show-input]')!
+    const root = el.shadowRoot!
+    const min = root.querySelector<HTMLInputElement>('[data-role="range-min"]')!
+    const max = root.querySelector<HTMLInputElement>('[data-role="range-max"]')!
+    const numMin = root.querySelector<HTMLInputElement>('[data-role="num-min"]')!
+    const numMax = root.querySelector<HTMLInputElement>('[data-role="num-max"]')!
+    const fill = root.querySelector<HTMLElement>('.fill')!
+    return {
+      min: Number(min.value),
+      max: Number(max.value),
+      numMin: numMin.value,
+      numMax: numMax.value,
+      fillWidth: fill.style.width,
+      minAria: min.getAttribute('aria-label'),
+      maxAria: max.getAttribute('aria-label'),
+    }
+  })
+  expect(r.min).toBe(20)
+  expect(r.max).toBe(80)
+  expect(r.numMin).toBe('20')
+  expect(r.numMax).toBe('80')
+  expect(r.fillWidth).toBe('60%')
+  expect(r.minAria).toBeTruthy()
+  expect(r.maxAria).toBeTruthy()
+
+  // reverse demo：方向反转 + 填充区从右端
+  await up(page, 'oas-slider[reverse]')
+  const rev = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider[reverse]')!
+    const root = el.shadowRoot!
+    const input = root.querySelector<HTMLInputElement>('[data-role="range"]')!
+    const fill = root.querySelector<HTMLElement>('.fill')!
+    return {
+      dir: input.getAttribute('dir'),
+      fillRight: fill.style.right,
+      fillWidth: fill.style.width,
+      ariaLabel: input.getAttribute('aria-label'),
+      ariaNow: input.getAttribute('aria-valuenow'),
+    }
+  })
+  expect(rev.dir).toBe('rtl')
+  expect(rev.fillRight).toBe('0%')
+  expect(parseFloat(rev.fillWidth)).toBeGreaterThan(0)
+  expect(rev.ariaLabel).toBeTruthy()
+  expect(rev.ariaNow).toBe('60')
+})
+
+test('slider custom-thumb：模板内容克隆进滑块、值气泡显示当前值、原生 thumb 隐藏', async ({
+  page,
+}) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[show-tooltip]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider[show-tooltip]')!
+    const root = el.shadowRoot!
+    const thumb = root.querySelector<HTMLElement>('.custom-thumb[data-thumb="value"]')!
+    return {
+      visible: !thumb.hidden,
+      content: thumb.querySelector('.thumb-content')?.textContent ?? '',
+      tip: thumb.querySelector('.thumb-tip')?.textContent ?? '',
+      tipVisible: !thumb.querySelector('.thumb-tip')?.hasAttribute('hidden'),
+      nativeHidden: el.hasAttribute('data-custom-thumb'),
+      dataPct: thumb.getAttribute('data-pct'),
+    }
+  })
+  expect(r.visible).toBe(true)
+  expect(r.content).toContain('🎯')
+  expect(r.tip).toBe('60')
+  expect(r.tipVisible).toBe(true)
+  expect(r.nativeHidden).toBe(true)
+  expect(parseFloat(r.dataPct ?? '')).toBe(60)
 })

@@ -52,8 +52,8 @@
   <oas-badge ribbon text="HOT" style="margin-inline-end: var(--oas-space-4)">
     <oas-card><p>默认缎带（右上角）</p></oas-card>
   </oas-badge>
-  <oas-badge ribbon text="限量" placement="start">
-    <oas-card><p>placement="start"（左上角）</p></oas-card>
+  <oas-badge mode="ribbon" text="限量" placement="start">
+    <oas-card><p>mode="ribbon"（左上角）</p></oas-card>
   </oas-badge>
 </DemoBlock>
 

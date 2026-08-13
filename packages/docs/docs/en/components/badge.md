@@ -52,8 +52,8 @@ The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — 
   <oas-badge ribbon text="HOT" style="margin-inline-end: var(--oas-space-4)">
     <oas-card><p>Default ribbon (top-end)</p></oas-card>
   </oas-badge>
-  <oas-badge ribbon text="LIMITED" placement="start">
-    <oas-card><p>placement="start" (top-start)</p></oas-card>
+  <oas-badge mode="ribbon" text="LIMITED" placement="start">
+    <oas-card><p>mode="ribbon" (top-start)</p></oas-card>
   </oas-badge>
 </DemoBlock>
 

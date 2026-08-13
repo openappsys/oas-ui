@@ -1,3 +1,4 @@
+import '@oas-ui/i18n'
 import { OASSlider } from './oas-slider.js'
 
 if (!customElements.get('oas-slider')) {

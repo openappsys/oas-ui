@@ -169,14 +169,18 @@
       "disabledDate": "Disabled callback (property)",
       "max": "Selectable range (ISO dates)",
       "min": "Selectable range (ISO dates)",
-      "mode": "`month` / `year`",
+      "mode": "`month` / `year` (in year mode, picking a month auto-switches back to month view)",
       "show-week-number": "Show the ISO week number column",
       "value": "Selected value (ISO)"
     },
     "events": {
-      "oas-change": "Selection change, `detail: { value }`"
+      "oas-cell-render": "Dispatched when each day cell renders, `detail: { date, element }` (element is the day button; host can append markers/badges/rich content)",
+      "oas-change": "Selection change, `detail: { value }`",
+      "oas-mode-change": "Dispatched when year mode auto-switches back to month view after picking a month, `detail: { mode }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"cell\"]": "Static template for day cells, cloned into each day button; the `[data-cell-date]` node is bound to the day number"
+    }
   },
   "oas-card": {
     "attrs": {
@@ -792,6 +796,19 @@
     },
     "slots": {}
   },
+  "oas-notification": {
+    "attrs": {
+      "description": "Description content",
+      "duration": "Auto-close duration in ms; pass `0` to keep it open",
+      "progress-position": "Progress bar position: `bottom` (default) / `top`",
+      "scrollable": "Scroll inside the card when the content is too long; enabled by default, pass `false` to disable",
+      "show-progress": "Show the auto-close countdown progress bar (animates in sync with `duration`)",
+      "title": "Title text",
+      "type": "Notification type: `info`/`success`/`warning`/`error`"
+    },
+    "events": {},
+    "slots": {}
+  },
   "oas-navigation-menu": {
     "attrs": {
       "items": "Navigation items JSON (hierarchical)"
@@ -1025,17 +1042,23 @@
   "oas-slider": {
     "attrs": {
       "disabled": "Disabled",
-      "marks": "Ticks: JSON object `{\"0\":\"0°C\"}` (value→label) or JSON array `[0,26,60]` (also `{\"value\":26,\"label\":\"26°C\"}`); tick marks and labels are shown below the track, highlighted where the value passes",
+      "marks": "Ticks: JSON object `{\"0\":\"0°C\"}` (value→label) or JSON array `[0,26,60]` (also `{\"value\":26,\"label\":\"26°C\"}`); tick marks and labels are shown below the track, highlighted where the value passes; positions mirror under `reverse`",
       "max": "Range",
       "min": "Range",
+      "range": "Range mode: dual-thumb interval selection, `value` as JSON array `[lo, hi]` or comma-separated string `\"lo,hi\"`; thumbs constrain each other (lo ≤ hi), event `detail.value` is an array",
+      "reverse": "Reversed direction: minimum on the right (track `dir=\"rtl\"`), fill/ticks/custom thumb positions mirror",
+      "show-input": "Show a numeric input on the right, synced bidirectionally with the slider: dragging updates the input live; typing commits after a 300ms debounce and is clamped to `min`/`max`, Enter/blur commits immediately; range mode shows min/max inputs (min beyond max pushes max along)",
+      "show-tooltip": "Show a value bubble above the thumb (temporarily shown while dragging; coexists with `custom-thumb`)",
       "step": "Step",
-      "value": "Current value (controlled)"
+      "value": "Current value (controlled): numeric string for single mode; JSON array or comma-separated string for `range` mode"
     },
     "events": {
-      "oas-change": "Committed on release, `detail: { value }`",
-      "oas-input": "While dragging, `detail: { value }`"
+      "oas-change": "Committed on release, `detail: { value }` (single number; `[lo, hi]` array in `range` mode)",
+      "oas-input": "While dragging / after debounced typing commit, `detail: { value }` (single number; `[lo, hi]` array in `range` mode)"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"custom-thumb\"]": "Custom thumb content (icon/text): `template[slot=\"custom-thumb\"]` (static template, cloned into every visible thumb — both thumbs in range mode) or a plain `[slot=\"custom-thumb\"]` element"
+    }
   },
   "oas-snackbar": {
     "attrs": {
@@ -1324,7 +1347,11 @@
   "oas-transfer": {
     "attrs": {
       "data": "Data (JSON attribute channel; property assignment reflects to attribute, [{ key, label, disabled }])",
-      "searchable": "Search filtering within panels",
+      "searchable": "Search filtering within panels (filtered independently per panel)",
+      "case-sensitive": "Search filtering is case-sensitive (case-insensitive by default)",
+      "one-way": "One-way mode: move left to right only, right panel is read-only; left panel shows all data, already transferred items are disabled and shown as selected",
+      "virtual": "Windowed rendering for large data (virtual scroll, default row height 36px)",
+      "item-height": "Fixed row height for virtual scrolling (px), default 36",
       "titles": "Panel titles (JSON array) or `source-title`/`target-title`",
       "value": "Selected key array (JSON attribute)"
     },

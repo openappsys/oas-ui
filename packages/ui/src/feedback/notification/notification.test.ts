@@ -52,4 +52,70 @@ describe('notification 命令式 API', () => {
     destroyAll()
     expect(document.body.querySelectorAll('oas-notification').length).toBe(0)
   })
+
+  it('show-progress：命令式 API 透传属性并渲染进度条', async () => {
+    notification.success({ title: '成功', showProgress: true, duration: 8000 })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-notification')!
+    expect(el.hasAttribute('show-progress')).toBe(true)
+    expect(el.getAttribute('duration')).toBe('8000')
+    const progress = el.shadowRoot!.querySelector('[part="progress"]')!
+    expect(progress.hasAttribute('hidden')).toBe(false)
+    // 进度动画与 auto-close 时长同步：fill 的 animation-duration = duration
+    const fill = el.shadowRoot!.querySelector('.progress-fill') as HTMLElement
+    expect(fill.style.animationDuration).toBe('8000ms')
+  })
+
+  it('show-progress 未开启时进度条隐藏', async () => {
+    notification.info({ title: 'x' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-notification')!
+    expect(el.shadowRoot!.querySelector('[part="progress"]')!.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('progress-position="top" 时进度条切到顶部位置', async () => {
+    notification.info({ title: 'x', showProgress: true, progressPosition: 'top' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-notification')!
+    expect(el.getAttribute('progress-position')).toBe('top')
+    const progress = el.shadowRoot!.querySelector('[part="progress"]')!
+    expect(progress.classList.contains('progress-top')).toBe(true)
+  })
+
+  it('duration=0（不自动关闭）时进度条不显示', async () => {
+    notification.info({ title: 'x', showProgress: true, duration: 0 })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-notification')!
+    expect(el.shadowRoot!.querySelector('[part="progress"]')!.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('scrollable：默认开启（内容区限高 + overflow-y auto）', async () => {
+    notification.info({ title: 'x', description: '内容' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-notification')!
+    const desc = el.shadowRoot!.querySelector('[part="description"]')!
+    expect(desc.classList.contains('scrollable')).toBe(true)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toContain('.description.scrollable')
+    expect(style).toContain('max-height')
+    expect(style).toContain('overflow-y: auto')
+  })
+
+  it('scrollable="false" 时描述区不限制高度', async () => {
+    notification.info({ title: 'x', description: '内容', scrollable: false })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-notification')!
+    expect(el.getAttribute('scrollable')).toBe('false')
+    expect(
+      el.shadowRoot!.querySelector('[part="description"]')!.classList.contains('scrollable'),
+    ).toBe(false)
+  })
+
+  it('命令式 API 透传 scrollable / show-progress 组合', async () => {
+    notification.warning({ title: 'x', showProgress: true, scrollable: true })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-notification')!
+    expect(el.hasAttribute('show-progress')).toBe(true)
+    expect(el.getAttribute('scrollable')).toBe('true')
+  })
 })

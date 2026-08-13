@@ -95,6 +95,7 @@ const STYLE = `
   appearance: none;
   border: none;
   background: transparent;
+  position: relative;
   width: 100%;
   height: var(--oas-control-height-md);
   border-radius: var(--oas-radius-sm);
@@ -102,6 +103,17 @@ const STYLE = `
   font-family: inherit;
   color: var(--oas-color-text-primary);
   cursor: pointer;
+}
+/* 自定义单元格标记点：宿主经 oas-cell-render 追加 <span class="cell-dot"> 即可获得可见标记 */
+[part='grid'] .day .cell-dot {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--oas-color-danger);
 }
 [part='grid'] .day:hover:not(.disabled) {
   background: var(--oas-color-bg-hover);
@@ -167,6 +179,9 @@ export class OASCalendar extends OASElement {
   private userNavigated = false
   private grid: HTMLElement | null = null
   private _disabledDate: ((d: Date) => boolean) | null = null
+  /** mode 变化检测：首帧吸收初始值不派发，之后任何 mode 属性变化（宿主/内部）都派发 oas-mode-change */
+  private lastMode = 'month'
+  private modeInit = false
 
   /** disabled-date 走 property（回调无法用 JSON 表达），设置后即时重渲 */
   get disabledDate(): ((d: Date) => boolean) | null {
@@ -229,6 +244,14 @@ export class OASCalendar extends OASElement {
   protected override update(): void {
     const locale = resolveLocale(this)
     const mode = this.getAttr('mode', 'month')
+    // mode 属性变化统一派发 oas-mode-change（受控宿主可据此重新设置 mode 保持模式）
+    if (!this.modeInit) {
+      this.lastMode = mode
+      this.modeInit = true
+    } else if (mode !== this.lastMode) {
+      this.lastMode = mode
+      this.emit('mode-change', { mode })
+    }
     const selected = this.selectedDate()
     // 未主动导航时，viewDate 跟随 value
     if (!this.userNavigated && selected) this.viewDate = startOfDay(selected)
@@ -300,10 +323,32 @@ export class OASCalendar extends OASElement {
       showWeekNumber: this.hasAttr('show-week-number'),
       onSelect: (d) => this.selectDate(d),
     })
+    this.fillCells(grid)
     setRovingTab(grid, focus)
     if (hadFocus) {
       const cell = findDayButton(grid, focus)
       cell?.focus()
+    }
+  }
+
+  /**
+   * 自定义单元格渲染（对齐 select 的 option-render 机制，双通道）：
+   * 1. `template[slot="cell"]` 克隆到每个日单元格，`[data-cell-date]` 节点自动绑定日期数字；
+   * 2. 每个单元格派发 `oas-cell-render`，detail `{ date, element }`，宿主可追加标记/徽标/富文本。
+   * 每次网格重建都会执行并重派发，宿主监听须幂等。
+   */
+  private fillCells(grid: HTMLElement): void {
+    const tpl = this.querySelector<HTMLTemplateElement>('template[slot="cell"]')
+    for (const btn of grid.querySelectorAll<HTMLButtonElement>('.day')) {
+      const date = parseISODate(btn.dataset.date ?? '')
+      if (!date) continue
+      if (tpl) {
+        btn.textContent = ''
+        btn.appendChild(tpl.content.cloneNode(true))
+        const binder = btn.querySelector<HTMLElement>('[data-cell-date]')
+        if (binder) binder.textContent = String(date.getDate())
+      }
+      this.emit('cell-render', { date, element: btn })
     }
   }
 
@@ -373,9 +418,15 @@ export class OASCalendar extends OASElement {
 
   private selectMonth(m: number): void {
     const mode = this.getAttr('mode', 'month')
+    const value = `${this.viewDate.getFullYear()}-${String(m + 1).padStart(2, '0')}`
     if (mode === 'year') {
-      const value = `${this.viewDate.getFullYear()}-${String(m + 1).padStart(2, '0')}`
+      // 年模式选中月份：更新 value 并切回月视图＼�。
+      // 受控宿主可监听 oas-mode-change 后重新设置 mode="year" 保持年模式。
       this.setAttribute('value', value)
+      this.viewDate = new Date(this.viewDate.getFullYear(), m, 1)
+      this.userNavigated = true
+      this.monthPanel = false
+      this.setAttribute('mode', 'month') // update() 内统一派发 oas-mode-change
       this.emit('change', { value })
       this.update()
       return

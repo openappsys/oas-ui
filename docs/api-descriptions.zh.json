@@ -169,14 +169,18 @@
       "disabledDate": "禁用回调（property）",
       "max": "可选范围（ISO 日期）",
       "min": "可选范围（ISO 日期）",
-      "mode": "`month` / `year`",
+      "mode": "`month` / `year`（年模式选中月份后自动切回月视图）",
       "show-week-number": "显示 ISO 周号列",
       "value": "选中值（ISO）"
     },
     "events": {
-      "oas-change": "选中变化，`detail: { value }`"
+      "oas-cell-render": "每个日单元格渲染时派发，`detail: { date, element }`（element 为日按钮，宿主可追加标记/徽标/富文本）",
+      "oas-change": "选中变化，`detail: { value }`",
+      "oas-mode-change": "年模式选中月份自动切回月视图时派发，`detail: { mode }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"cell\"]": "日单元格静态模板，克隆到每个日按钮；`[data-cell-date]` 节点自动绑定日期数字"
+    }
   },
   "oas-card": {
     "attrs": {
@@ -792,6 +796,19 @@
     },
     "slots": {}
   },
+  "oas-notification": {
+    "attrs": {
+      "description": "描述内容",
+      "duration": "自动关闭时长（ms），`0` 表示不自动关闭",
+      "progress-position": "进度条位置：`bottom`（默认）/ `top`",
+      "scrollable": "描述内容超长时卡片内滚动，默认开启；传 `false` 关闭",
+      "show-progress": "显示自动关闭倒计时进度条（动画时长与 `duration` 同步）",
+      "title": "标题文案",
+      "type": "通知类型：`info`/`success`/`warning`/`error`"
+    },
+    "events": {},
+    "slots": {}
+  },
   "oas-navigation-menu": {
     "attrs": {
       "items": "导航项 JSON（层级结构）"
@@ -1025,17 +1042,23 @@
   "oas-slider": {
     "attrs": {
       "disabled": "禁用",
-      "marks": "刻度：JSON 对象 `{\"0\":\"0°C\"}`（值→标签）或 JSON 数组 `[0,26,60]`（也可为 `{\"value\":26,\"label\":\"26°C\"}`）；刻度点与标签显示在轨道下方，值经过处高亮",
+      "marks": "刻度：JSON 对象 `{\"0\":\"0°C\"}`（值→标签）或 JSON 数组 `[0,26,60]`（也可为 `{\"value\":26,\"label\":\"26°C\"}`）；刻度点与标签显示在轨道下方，值经过处高亮；`reverse` 下位置镜像",
       "max": "范围",
       "min": "范围",
+      "range": "范围模式：双滑块区间选择，`value` 为 JSON 数组 `[lo, hi]` 或逗号分隔字符串 `\"lo,hi\"`；拖动态互相钳制（lo ≤ hi），事件 `detail.value` 为数组",
+      "reverse": "方向反转：最小值在右端（轨道 `dir=\"rtl\"`），填充区/刻度/自定义滑块位置镜像",
+      "show-input": "右侧显示数值输入框，与滑块双向同步：拖动实时更新输入框；输入数字防抖 300ms 后生效并夹取到 `min`/`max`，Enter/失焦立即提交；范围模式显示 min/max 两个输入框（min 超过 max 时推着 max 移动）",
+      "show-tooltip": "滑块上方显示当前值气泡（拖动中临时显示，与 `custom-thumb` 共存）",
       "step": "步长",
-      "value": "当前值（受控）"
+      "value": "当前值（受控）：单值为数值字符串；`range` 模式为 JSON 数组或逗号分隔字符串"
     },
     "events": {
-      "oas-change": "松手确定，`detail: { value }`",
-      "oas-input": "拖动中，`detail: { value }`"
+      "oas-change": "松手确定，`detail: { value }`（单值数字；`range` 模式为 `[lo, hi]` 数组）",
+      "oas-input": "拖动中/输入防抖提交，`detail: { value }`（单值数字；`range` 模式为 `[lo, hi]` 数组）"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"custom-thumb\"]": "自定义滑块内容（图标/文字）：`template[slot=\"custom-thumb\"]`（静态模板，克隆到每个可见滑块，范围模式两个滑块都会克隆）或普通 `[slot=\"custom-thumb\"]` 元素"
+    }
   },
   "oas-snackbar": {
     "attrs": {
@@ -1324,7 +1347,11 @@
   "oas-transfer": {
     "attrs": {
       "data": "数据（JSON attribute 声明式通道，property 赋值单向反射，[{ key, label, disabled }]）",
-      "searchable": "面板内搜索过滤",
+      "searchable": "面板内搜索过滤（左右各自过滤）",
+      "case-sensitive": "搜索区分大小写（默认大小写不敏感）",
+      "one-way": "单向模式：只能左→右移动，右侧只读；左侧展示全部数据，已穿梭项禁用并显示为已选",
+      "virtual": "大数据量窗口化渲染（虚拟滚动，行高默认 36px）",
+      "item-height": "虚拟滚动每行固定高度（px），默认 36",
       "titles": "双面板标题（JSON 数组）或 `source-title`/`target-title`",
       "value": "已选 key 数组（JSON 属性）"
     },

@@ -234,6 +234,24 @@ describe('OASUpload list-type', () => {
     expect(mask.hasAttribute('hidden')).toBe(false)
   })
 
+  it('picture-card：透明 hover 操作区不拦截指针事件，缩略图始终可点', () => {
+    const el = mount({ 'list-type': 'picture-card' })
+    el.files = [makeFile('a.png', 'image/png')]
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 防回归：.actions 覆盖层（hover 态也）不得拦截指针——否则鼠标移动触发 hover 后，
+    // 整卡被透明操作区吞掉点击，缩略图 oas-preview 失效；仅 .act 按钮在 hover 时可命中
+    const actionsBlock = css.match(/\.card \.actions \{([^}]*)\}/)?.[1] ?? ''
+    const removeBlock = css.match(/\.card \.remove \{([^}]*)\}/)?.[1] ?? ''
+    const hoverBlock = css.match(/\.card:hover \.actions\s*,[^}]*\}/)?.[0] ?? ''
+    const actBaseBlock = css.match(/\.card \.actions \.act \{([^}]*)\}/)?.[1] ?? ''
+    const actHoverBlock = css.match(/\.card:hover \.actions \.act\s*,[^}]*\}/)?.[0] ?? ''
+    expect(actionsBlock).toMatch(/pointer-events:\s*none/)
+    expect(hoverBlock).not.toMatch(/pointer-events:\s*auto/)
+    expect(removeBlock).toMatch(/pointer-events:\s*none/)
+    expect(actBaseBlock).toMatch(/pointer-events:\s*none/)
+    expect(actHoverBlock).toMatch(/pointer-events:\s*auto/)
+  })
+
   it('preview 浮层：Esc 关闭并还原焦点', () => {
     const el = mount({ 'list-type': 'picture-card' })
     el.files = [makeFile('a.png', 'image/png')]

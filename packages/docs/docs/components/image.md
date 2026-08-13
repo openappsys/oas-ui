@@ -78,7 +78,9 @@
 
 <DemoBlock title="懒加载长列表（滚动逐图加载）">
   <p class="image-cap">设置 <code>lazy</code> 后图片进入视口才发起加载；配合 <code>placeholder</code> 展示「加载中」占位。向下滚动列表，观察占位 → 加载的过渡（视口内图片立即加载）。</p>
-  <div class="lazy-list" id="image-lazy-list"></div>
+  <div class="lazy-list" id="image-lazy-list">
+    <oas-image lazy placeholder src="https://picsum.photos/seed/isui-lazy-static/600/300" alt="懒加载示例图"></oas-image>
+  </div>
 </DemoBlock>
 
 ## 预览

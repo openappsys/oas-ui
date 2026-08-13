@@ -78,7 +78,9 @@ When the image fails to load, a "图片加载失败" placeholder is shown by def
 
 <DemoBlock title="Lazy-loading long list (loads image by image while scrolling)">
   <p class="image-cap">With <code>lazy</code>, an image only starts loading when it enters the viewport; pair it with <code>placeholder</code> to show a "Loading" placeholder. Scroll down the list and watch the placeholder → loaded transition (images already in the viewport load immediately).</p>
-  <div class="lazy-list" id="image-lazy-list"></div>
+  <div class="lazy-list" id="image-lazy-list">
+    <oas-image lazy placeholder src="https://picsum.photos/seed/isui-lazy-static/600/300" alt="Lazy loading example"></oas-image>
+  </div>
 </DemoBlock>
 
 ## Preview
