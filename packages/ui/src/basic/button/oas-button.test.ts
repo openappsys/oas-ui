@@ -209,4 +209,59 @@ describe('OASButton', () => {
       el.remove()
     })
   })
+
+  describe('circle / icon-position / plain / href', () => {
+    it('circle: renders circle class', async () => {
+      const el = mount({ icon: 'search', circle: '' }, '')
+      const btn = shadowBtn(el)
+      expect(btn.classList.contains('circle')).toBe(true)
+      el.remove()
+    })
+
+    it('icon-position=end: icon-end class', async () => {
+      const el = mount({ icon: 'arrow-right', 'icon-position': 'end' })
+      expect(shadowBtn(el).classList.contains('icon-end')).toBe(true)
+      const el2 = mount({ icon: 'arrow-right' })
+      expect(shadowBtn(el2).classList.contains('icon-end')).toBe(false)
+      el.remove()
+      el2.remove()
+    })
+
+    it('plain: renders plain class', async () => {
+      const el = mount({ type: 'primary', plain: '' })
+      expect(shadowBtn(el).classList.contains('plain')).toBe(true)
+      el.remove()
+    })
+
+    it('href: renders <a> instead of <button>, carries href/target', async () => {
+      const el = mount({ href: '/guide', target: '_blank' })
+      const a = el.shadowRoot!.querySelector('a[part="button"]')
+      expect(a).not.toBeNull()
+      expect(a!.getAttribute('href')).toBe('/guide')
+      expect(a!.getAttribute('target')).toBe('_blank')
+      expect(el.shadowRoot!.querySelector('button')).toBeNull()
+      el.remove()
+    })
+
+    it('href + disabled: a uses aria-disabled, click blocked', async () => {
+      const el = mount({ href: '/guide', disabled: '' })
+      const a = el.shadowRoot!.querySelector('a[part="button"]')!
+      expect(a.getAttribute('aria-disabled')).toBe('true')
+      let fired = 0
+      el.addEventListener('oas-click', () => fired++)
+      a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+      expect(fired).toBe(0)
+      el.remove()
+    })
+
+    it('href removed: rebuilds back to <button>', async () => {
+      const el = mount({ href: '/guide' })
+      expect(el.shadowRoot!.querySelector('a')).not.toBeNull()
+      el.removeAttribute('href')
+      await flush()
+      expect(el.shadowRoot!.querySelector('button')).not.toBeNull()
+      expect(el.shadowRoot!.querySelector('a')).toBeNull()
+      el.remove()
+    })
+  })
 })

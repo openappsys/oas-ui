@@ -45,6 +45,34 @@
         "name": "ghost",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "circle",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "icon-position",
+        "type": "string",
+        "default": "start",
+        "observed": true
+      },
+      {
+        "name": "href",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "target",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "plain",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [],

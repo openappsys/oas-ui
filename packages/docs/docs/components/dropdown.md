@@ -157,7 +157,7 @@ items 项支持 `children` 数组级联子菜单（任意层级），hover / 点
 
 <script setup>
 import { onMounted } from 'vue'
-onMounted( => {
+onMounted(() => {
   window.ddLog = (e) => {
     const tag = document.getElementById('dd-result')
     if (tag) tag.textContent = `已选择：${e.detail.value}`
@@ -166,7 +166,7 @@ onMounted( => {
   const ctrl = document.getElementById('dd-ctrl')
   const openStatus = document.getElementById('dd-open-status')
   if (ctrl && openStatus) {
-    const syncOpen =  => {
+    const syncOpen = () => {
       openStatus.textContent = `open: ${ctrl.hasAttribute('open')}`
     }
     window.ddOpen = (open) => {
@@ -181,7 +181,7 @@ onMounted( => {
   const val = document.getElementById('dd-value')
   const valueStatus = document.getElementById('dd-value-status')
   if (val && valueStatus) {
-    const syncValue =  => {
+    const syncValue = () => {
       valueStatus.textContent = `value: ${val.getAttribute('value') || '-'}`
     }
     window.ddValue = (v) => {
@@ -216,14 +216,14 @@ onMounted( => {
           target.loading = true
           asyncDd.setAttribute('items', JSON.stringify(items))
           // 组件在 select 转发后同步关闭菜单，下一帧再重开以展示 loading 态
-          window.setTimeout( => asyncDd.setAttribute('open', ''), 0)
+          window.setTimeout(() => asyncDd.setAttribute('open', ''), 0)
         } else {
           delete target.loading
           asyncDd.setAttribute('items', JSON.stringify(items))
         }
       }
       mark(true)
-      window.setTimeout( => mark(false), 1500)
+      window.setTimeout(() => mark(false), 1500)
     }
   }
 })

@@ -48,7 +48,7 @@ Shows the page hierarchy path; the last item is the current page (not clickable)
 
 <script setup>
 import { onMounted } from 'vue'
-onMounted( => {
+onMounted(() => {
   window.breadcrumbLog = (e) => {
     for (const id of ['bc-result', 'bc-collapsed-result']) {
       const tag = document.getElementById(id)

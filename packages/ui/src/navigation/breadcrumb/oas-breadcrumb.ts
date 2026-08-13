@@ -140,7 +140,7 @@ nav.ellipsis [part='current'] {
 `
 
 export class OASBreadcrumb extends OASElement {
-  static override get observedAttributes: string[] {
+  static override get observedAttributes(): string[] {
     return ['items', 'separator', 'collapsed', 'max-items', 'ellipsis']
   }
 
@@ -148,7 +148,7 @@ export class OASBreadcrumb extends OASElement {
   private openState = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
-  private template: string {
+  private template(): string {
     return `
       <style>${STYLE}</style>
       <nav part="nav"></nav>
@@ -156,25 +156,25 @@ export class OASBreadcrumb extends OASElement {
   }
 
   /** 缓存节点引用（render 与水合路径共用；面包屑项事件在 update 重建时绑定） */
-  private bind: void {
+  private bind(): void {
     // 组件断开时清理下拉的 document 点击监听（连接期间打开/关闭反复 add/remove，此处兜底移除）
-    this.onCleanup( => document.removeEventListener('click', this.handleOutsideClick))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
   }
 
-  protected override render: void {
-    this.shadow.innerHTML = this.template
-    this.bind
-    this.update
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+    this.update()
   }
 
   /** 真水合：校验 SSR 快照结构（nav 存在）后直接接管，跳过 shadow 重建 */
-  protected override hydrate: boolean {
+  protected override hydrate(): boolean {
     if (!this.shadow.querySelector('nav')) return false
-    this.bind
+    this.bind()
     return true
   }
 
-  protected override update: void {
+  protected override update(): void {
     const nav = this.shadow.querySelector('nav')
     if (!nav) return
     // 导航 aria-label locale 驱动（setLocale 切换自动重刷）
@@ -195,7 +195,7 @@ export class OASBreadcrumb extends OASElement {
 
     // 折叠：collapsed 且 items 数超过 max-items（默认 4）时，
     // 保留首项 + 末 maxItems-2 项，中间项收进 … 下拉
-    const maxItems = this.maxItemsValue
+    const maxItems = this.maxItemsValue()
     const collapsed = this.hasAttr('collapsed') && items.length > maxItems
     const tailCount = Math.max(0, maxItems - 2)
     const hiddenItems = collapsed ? items.slice(1, items.length - tailCount) : []
@@ -226,7 +226,7 @@ export class OASBreadcrumb extends OASElement {
           link.textContent = slot.label
           link.title = slot.label
           link.addEventListener('click', (e: MouseEvent) => {
-            e.preventDefault
+            e.preventDefault()
             this.emit('select', { value: slot.href })
           })
           span.appendChild(link)
@@ -240,11 +240,11 @@ export class OASBreadcrumb extends OASElement {
         nav.appendChild(sep)
       }
     })
-    this.syncDropdown
+    this.syncDropdown()
   }
 
   /** max-items 归一化：非法值回退默认 4 */
-  private maxItemsValue: number {
+  private maxItemsValue(): number {
     const raw = this.getAttr('max-items', '4')
     const n = Number.parseInt(raw, 10)
     return Number.isNaN(n) || n < 1 ? 4 : n
@@ -263,7 +263,7 @@ export class OASBreadcrumb extends OASElement {
     btn.setAttribute('aria-label', this.t('breadcrumb.expand'))
     btn.textContent = '…'
     btn.addEventListener('click', (e: MouseEvent) => {
-      e.stopPropagation
+      e.stopPropagation()
       this.setOpen(!this.openState)
     })
     btn.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -285,7 +285,7 @@ export class OASBreadcrumb extends OASElement {
         a.textContent = item.label
         a.title = item.label
         a.addEventListener('click', (e: MouseEvent) => {
-          e.preventDefault
+          e.preventDefault()
           this.emit('select', { value: item.href })
           this.setOpen(false)
         })
@@ -305,11 +305,11 @@ export class OASBreadcrumb extends OASElement {
 
   private setOpen(open: boolean): void {
     this.openState = open
-    this.syncDropdown
+    this.syncDropdown()
   }
 
   /** 下拉显隐 + aria-expanded 增量同步；打开时挂 document 点击监听、关闭时移除（防泄漏） */
-  private syncDropdown: void {
+  private syncDropdown(): void {
     const dropdown = this.shadow.querySelector<HTMLElement>('.ellipsis-dropdown')
     const btn = this.shadow.querySelector<HTMLButtonElement>('.ellipsis-btn')
     if (!dropdown || !btn) {
@@ -329,7 +329,7 @@ export class OASBreadcrumb extends OASElement {
 
   private handleOutsideClick = (e: MouseEvent): void => {
     // composedPath 含宿主（shadow 内任意点击）则视为组件内部，不关闭
-    if (!e.composedPath.includes(this)) {
+    if (!e.composedPath().includes(this)) {
       this.setOpen(false)
     }
   }

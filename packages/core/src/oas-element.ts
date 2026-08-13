@@ -59,9 +59,17 @@ export abstract class OASElement extends HTMLElement {
     }
   }
 
-  attributeChangedCallback(): void {
+  attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    void name
+    void oldValue
+    void newValue
     if (!this.rendered) return
     this.update()
+  }
+
+  /** 是否已完成首次 render（供子类在 attributeChangedCallback 等钩子中判断） */
+  protected get hasRendered(): boolean {
+    return this.rendered
   }
 
   disconnectedCallback(): void {

@@ -157,7 +157,7 @@ A menu item with `loading: true` enters a loading state: it shows a spinning ind
 
 <script setup>
 import { onMounted } from 'vue'
-onMounted( => {
+onMounted(() => {
   window.ddLog = (e) => {
     const tag = document.getElementById('dd-result')
     if (tag) tag.textContent = `Selected: ${e.detail.value}`
@@ -166,7 +166,7 @@ onMounted( => {
   const ctrl = document.getElementById('dd-ctrl')
   const openStatus = document.getElementById('dd-open-status')
   if (ctrl && openStatus) {
-    const syncOpen =  => {
+    const syncOpen = () => {
       openStatus.textContent = `open: ${ctrl.hasAttribute('open')}`
     }
     window.ddOpen = (open) => {
@@ -181,7 +181,7 @@ onMounted( => {
   const val = document.getElementById('dd-value')
   const valueStatus = document.getElementById('dd-value-status')
   if (val && valueStatus) {
-    const syncValue =  => {
+    const syncValue = () => {
       valueStatus.textContent = `value: ${val.getAttribute('value') || '-'}`
     }
     window.ddValue = (v) => {
@@ -217,14 +217,14 @@ onMounted( => {
           asyncDd.setAttribute('items', JSON.stringify(items))
           // The component closes the menu right after forwarding the select event;
           // reopen on the next frame so the loading state is visible
-          window.setTimeout( => asyncDd.setAttribute('open', ''), 0)
+          window.setTimeout(() => asyncDd.setAttribute('open', ''), 0)
         } else {
           delete target.loading
           asyncDd.setAttribute('items', JSON.stringify(items))
         }
       }
       mark(true)
-      window.setTimeout( => mark(false), 1500)
+      window.setTimeout(() => mark(false), 1500)
     }
   }
 })

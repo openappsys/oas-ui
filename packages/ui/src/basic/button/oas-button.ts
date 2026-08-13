@@ -30,7 +30,8 @@ const STYLE = `
 :host([block]) button {
   width: 100%;
 }
-button {
+button,
+a[part='button'] {
   appearance: none;
   border: 1px solid var(--oas-color-border);
   background: var(--oas-color-bg);
@@ -48,8 +49,11 @@ button {
   align-items: center;
   justify-content: center;
   gap: var(--oas-space-1);
+  text-decoration: none;
+  box-sizing: border-box;
 }
-button:hover {
+button:hover,
+a[part='button']:hover {
   background: var(--oas-color-bg-hover);
 }
 /* 图标按钮：图标与文字间距走 --oas-space-2 */
@@ -66,8 +70,68 @@ button.block {
   width: 100%;
 }
 /* 胶囊圆角（button-group 合并圆角经自定义属性穿透，round 显式覆盖） */
-button.round {
+button.round,
+a[part='button'].round {
   border-radius: var(--oas-radius-full, 999px);
+}
+/* 圆形按钮（纯图标常用）：正方形 + 正圆角 */
+button.circle,
+a[part='button'].circle {
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+}
+/* 图标在右：icon 后置到文字之后 */
+button.icon-end .icon,
+a[part='button'].icon-end .icon {
+  order: 2;
+}
+/* 朴素按钮：弱化填充（浅底 + 主色文字），text 已是朴素 */
+button.plain.primary {
+  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
+  border-color: transparent;
+  color: color-mix(in srgb, var(--oas-color-primary) 80%, black);
+}
+button.plain.primary:hover {
+  background: color-mix(in srgb, var(--oas-color-primary) 20%, transparent);
+}
+button.plain.primary:active {
+  background: color-mix(in srgb, var(--oas-color-primary) 26%, transparent);
+}
+button.plain.success {
+  background: color-mix(in srgb, var(--oas-color-success) 12%, transparent);
+  border-color: transparent;
+  color: color-mix(in srgb, var(--oas-color-success) 80%, black);
+}
+button.plain.success:hover {
+  background: color-mix(in srgb, var(--oas-color-success) 20%, transparent);
+}
+button.plain.warning {
+  background: color-mix(in srgb, var(--oas-color-warning) 12%, transparent);
+  border-color: transparent;
+  color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
+}
+button.plain.warning:hover {
+  background: color-mix(in srgb, var(--oas-color-warning) 20%, transparent);
+}
+button.plain.danger {
+  background: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);
+  border-color: transparent;
+  color: color-mix(in srgb, var(--oas-color-danger) 80%, black);
+}
+button.plain.danger:hover {
+  background: color-mix(in srgb, var(--oas-color-danger) 20%, transparent);
+}
+/* 链接按钮禁用态（a 无 disabled 属性，用 aria-disabled + 与 button 一致配色） */
+a[part='button'][aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background: var(--oas-color-bg-disabled);
+  color: var(--oas-color-text-disabled);
+}
+a[part='button'][aria-disabled='true']:hover {
+  background: var(--oas-color-bg-disabled);
+  color: var(--oas-color-text-disabled);
 }
 .icon {
   display: inline-flex;
@@ -97,6 +161,11 @@ button.primary {
   border-color: var(--oas-color-primary);
   color: var(--oas-color-text-on-primary);
 }
+a[part='button'].primary {
+  background: var(--oas-color-primary);
+  border-color: var(--oas-color-primary);
+  color: var(--oas-color-text-on-primary);
+}
 button.primary:hover {
   background: var(--oas-color-primary-hover);
   border-color: var(--oas-color-primary-hover);
@@ -110,10 +179,20 @@ button.success {
   border-color: color-mix(in srgb, var(--oas-color-success) 80%, black);
   color: var(--oas-color-text-on-success);
 }
+a[part='button'].success {
+  background: color-mix(in srgb, var(--oas-color-success) 80%, black);
+  border-color: color-mix(in srgb, var(--oas-color-success) 80%, black);
+  color: var(--oas-color-text-on-success);
+}
 button.success:hover {
   filter: brightness(1.08);
 }
 button.warning {
+  background: color-mix(in srgb, var(--oas-color-warning) 80%, black);
+  border-color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
+  color: var(--oas-color-text-on-warning);
+}
+a[part='button'].warning {
   background: color-mix(in srgb, var(--oas-color-warning) 80%, black);
   border-color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
   color: var(--oas-color-text-on-warning);
@@ -126,6 +205,11 @@ button.danger {
   border-color: color-mix(in srgb, var(--oas-color-danger) 80%, black);
   color: var(--oas-color-text-on-danger);
 }
+a[part='button'].danger {
+  background: color-mix(in srgb, var(--oas-color-danger) 80%, black);
+  border-color: color-mix(in srgb, var(--oas-color-danger) 80%, black);
+  color: var(--oas-color-text-on-danger);
+}
 button.danger:hover {
   filter: brightness(1.08);
 }
@@ -134,12 +218,23 @@ button.danger:hover {
   background: var(--oas-color-primary-active);
   border-color: var(--oas-color-primary-active);
 }
+a[part='button'].primary {
+  background: var(--oas-color-primary-active);
+  border-color: var(--oas-color-primary-active);
+}
 :host([aria-pressed='true']) button.success,
 :host([aria-pressed='true']) button.warning,
 :host([aria-pressed='true']) button.danger {
   filter: brightness(0.9);
 }
+a[part='button'].danger {
+  filter: brightness(0.9);
+}
 :host([aria-pressed='true']) button.text {
+  color: var(--oas-color-primary);
+  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
+}
+a[part='button'].text {
   color: var(--oas-color-primary);
   background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
 }
@@ -148,7 +243,16 @@ button.small {
   font-size: var(--oas-font-size-sm);
   padding: 0 var(--oas-space-2);
 }
+a[part='button'].small {
+  height: var(--oas-control-height-sm);
+  font-size: var(--oas-font-size-sm);
+  padding: 0 var(--oas-space-2);
+}
 button.xs {
+  height: var(--oas-control-height-xs);
+  font-size: var(--oas-font-size-xs);
+}
+a[part='button'].xs {
   height: var(--oas-control-height-xs);
   font-size: var(--oas-font-size-xs);
 }
@@ -162,7 +266,16 @@ button.large {
   font-size: var(--oas-font-size-lg);
   padding: 0 var(--oas-space-5);
 }
+a[part='button'].large {
+  height: var(--oas-control-height-lg);
+  font-size: var(--oas-font-size-lg);
+  padding: 0 var(--oas-space-5);
+}
 button.xl {
+  height: var(--oas-control-height-xl);
+  font-size: var(--oas-font-size-xl);
+}
+a[part='button'].xl {
   height: var(--oas-control-height-xl);
   font-size: var(--oas-font-size-xl);
 }
@@ -173,8 +286,17 @@ button.text {
   border-color: transparent;
   background: transparent;
 }
+a[part='button'].text {
+  border-color: transparent;
+  background: transparent;
+}
 /* 幽灵按钮：透明底 + 描边，按 type 着色，hover 加深 */
 button.ghost {
+  background: transparent;
+  border-color: var(--oas-color-border);
+  color: var(--oas-color-text-primary);
+}
+a[part='button'].ghost {
   background: transparent;
   border-color: var(--oas-color-border);
   color: var(--oas-color-text-primary);
@@ -184,6 +306,11 @@ button.ghost:hover {
   border-color: var(--oas-color-border-strong);
 }
 button.ghost.primary {
+  background: transparent;
+  border-color: var(--oas-color-primary);
+  color: var(--oas-color-primary);
+}
+a[part='button'].ghost.primary {
   background: transparent;
   border-color: var(--oas-color-primary);
   color: var(--oas-color-primary);
@@ -204,12 +331,24 @@ button.ghost.success {
   border-color: color-mix(in srgb, var(--oas-color-success) 80%, black);
   color: color-mix(in srgb, var(--oas-color-success) 80%, black);
 }
+a[part='button'].ghost.success {
+  background: transparent;
+  /* 文字/描边用更深色（token 80% + 20% 黑），白底对比度 ≥ 4.5:1（#16a34a 仅 3.3:1） */
+  border-color: color-mix(in srgb, var(--oas-color-success) 80%, black);
+  color: color-mix(in srgb, var(--oas-color-success) 80%, black);
+}
 button.ghost.success:hover {
   background: color-mix(in srgb, var(--oas-color-success) 10%, transparent);
   border-color: color-mix(in srgb, var(--oas-color-success) 70%, black);
   color: color-mix(in srgb, var(--oas-color-success) 70%, black);
 }
 button.ghost.warning {
+  background: transparent;
+  /* 文字/描边用更深色（token 80% + 20% 黑），白底对比度 ≥ 4.5:1（#d97706 仅 3.18:1） */
+  border-color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
+  color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
+}
+a[part='button'].ghost.warning {
   background: transparent;
   /* 文字/描边用更深色（token 80% + 20% 黑），白底对比度 ≥ 4.5:1（#d97706 仅 3.18:1） */
   border-color: color-mix(in srgb, var(--oas-color-warning) 80%, black);
@@ -225,6 +364,11 @@ button.ghost.danger {
   border-color: var(--oas-color-danger);
   color: var(--oas-color-danger);
 }
+a[part='button'].ghost.danger {
+  background: transparent;
+  border-color: var(--oas-color-danger);
+  color: var(--oas-color-danger);
+}
 button.ghost.danger:hover {
   background: color-mix(in srgb, var(--oas-color-danger) 10%, transparent);
   border-color: color-mix(in srgb, var(--oas-color-danger) 70%, black);
@@ -234,6 +378,11 @@ button.ghost.danger:hover {
 button.ghost[disabled],
 button.ghost[disabled]:hover,
 button.ghost[disabled]:active {
+  background: var(--oas-color-bg-disabled);
+  border-color: var(--oas-color-border);
+  color: var(--oas-color-text-disabled);
+}
+a[part='button'].ghost[disabled]:active {
   background: var(--oas-color-bg-disabled);
   border-color: var(--oas-color-border);
   color: var(--oas-color-text-disabled);
@@ -258,26 +407,49 @@ button.ghost[disabled]:active {
 
 export class OASButton extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['type', 'size', 'disabled', 'loading', 'icon', 'block', 'round', 'ghost']
+    return [
+      'type',
+      'size',
+      'disabled',
+      'loading',
+      'icon',
+      'block',
+      'round',
+      'ghost',
+      'circle',
+      'icon-position',
+      'href',
+      'target',
+      'plain',
+    ]
   }
 
-  private btn: HTMLButtonElement | null = null
+  private btn: HTMLElement | null = null
+
+  /** 是否为链接按钮（渲染 <a> 而非 <button>） */
+  private isLink(): boolean {
+    return this.getAttr('href', '') !== ''
+  }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
+    const href = this.getAttr('href', '')
+    const target = this.getAttr('target', '')
+    const tag = href ? 'a' : 'button'
+    const hrefAttr = href ? ` href="${href}"${target ? ` target="${target}"` : ''}` : ''
     return `
       <style>${STYLE}</style>
-      <button part="button">
+      <${tag} part="button"${hrefAttr}>
         <span class="spinner" part="spinner" hidden></span>
         <span class="icon" part="icon" aria-hidden="true" hidden></span>
         <slot></slot>
-      </button>
+      </${tag}>
     `
   }
 
   /** 缓存节点引用 + 绑定事件（render 与水合路径共用） */
   private bind(): void {
-    this.btn = this.shadow.querySelector('button')
+    this.btn = this.shadow.querySelector('button[part="button"], a[part="button"]')
 
     this.btn?.addEventListener('click', (e: MouseEvent) => {
       if (this.hasAttr('disabled') || this.hasAttr('loading')) {
@@ -296,11 +468,22 @@ export class OASButton extends OASElement {
     this.bind()
   }
 
-  /** 真水合：校验 SSR 快照结构（关键节点 button[part=button] 存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（关键节点 button/a[part=button] 存在）后直接接管，跳过 shadow 重建 */
   protected override hydrate(): boolean {
-    if (!this.shadow.querySelector('button[part="button"]')) return false
+    if (!this.shadow.querySelector('button[part="button"], a[part="button"]')) return false
     this.bind()
     return true
+  }
+
+  /** href/target 增删会改变内部元素类型（button ↔ a），需重建 shadow；其余属性走 update() */
+  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+    if ((name === 'href' || name === 'target') && this.hasRendered) {
+      this.shadow.innerHTML = this.template()
+      this.bind()
+      this.update()
+      return
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
   }
 
   protected override update(): void {
@@ -314,6 +497,10 @@ export class OASButton extends OASElement {
     const ghost = this.hasAttr('ghost')
     const block = this.hasAttr('block')
     const round = this.hasAttr('round')
+    const circle = this.hasAttr('circle')
+    const plain = this.hasAttr('plain')
+    const iconPosition = this.getAttr('icon-position', 'start')
+    const link = this.isLink()
 
     const hasIcon = icon !== '' && iconRegistry[icon as IconName] !== undefined
     const hasText = (this.textContent ?? '').trim().length > 0
@@ -325,13 +512,21 @@ export class OASButton extends OASElement {
       ghost ? 'ghost' : '',
       block ? 'block' : '',
       round ? 'round' : '',
+      circle ? 'circle' : '',
+      plain ? 'plain' : '',
+      iconPosition === 'end' ? 'icon-end' : '',
       hasIcon ? 'has-icon' : '',
       iconOnly ? 'icon-only' : '',
     ]
       .filter(Boolean)
       .join(' ')
-    this.btn.disabled = disabled || loading
     this.btn.setAttribute('aria-busy', loading ? 'true' : 'false')
+    // 链接按钮（a）无 disabled 属性，用 aria-disabled 承载禁用语义 + CSS 禁用态；button 用原生 disabled
+    if (link) {
+      this.btn.setAttribute('aria-disabled', disabled || loading ? 'true' : 'false')
+    } else {
+      ;(this.btn as HTMLButtonElement).disabled = disabled || loading
+    }
 
     const spinner = this.btn.querySelector<HTMLElement>('.spinner')
     if (spinner) spinner.hidden = !loading

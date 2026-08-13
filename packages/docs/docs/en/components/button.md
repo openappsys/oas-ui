@@ -108,6 +108,44 @@ Without text, the button becomes an equal-width square and needs an `aria-label`
   <oas-button ghost type="danger" icon="trash">Danger ghost</oas-button>
 </DemoBlock>
 
+## Circle
+
+`circle` turns the button into a circle; icon-only buttons combine equal-width and full rounding into a circle.
+
+<DemoBlock title="Circle buttons">
+  <oas-button circle icon="search" aria-label="Search"></oas-button>
+  <oas-button circle type="primary" icon="check" aria-label="Confirm"></oas-button>
+  <oas-button circle type="danger" icon="trash" aria-label="Delete"></oas-button>
+</DemoBlock>
+
+## Icon position
+
+`icon-position` controls the icon/text order: `start` (default, icon on the left) or `end` (icon on the right).
+
+<DemoBlock title="Icon on the right">
+  <oas-button icon-position="end" type="primary" icon="download">Download</oas-button>
+  <oas-button icon-position="end" icon="chevron-right">Next</oas-button>
+</DemoBlock>
+
+## Link button
+
+Setting `href` renders a native link (`<a>`); `target` controls how it opens (`_blank` / `_self` etc.).
+
+<DemoBlock title="Link buttons">
+  <oas-button href="#">Default link</oas-button>
+  <oas-button href="#" target="_blank" type="primary">Open in new tab</oas-button>
+</DemoBlock>
+
+## Plain
+
+`plain` uses a low-contrast, subtle style (transparent background with softened outline and text), gentler on light backgrounds.
+
+<DemoBlock title="Plain buttons">
+  <oas-button plain>Plain button</oas-button>
+  <oas-button plain type="primary">Primary plain</oas-button>
+  <oas-button plain type="danger">Danger plain</oas-button>
+</DemoBlock>
+
 ## API
 
 ### Attributes
@@ -115,12 +153,17 @@ Without text, the button becomes an equal-width square and needs an `aria-label`
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `block` | Fill the full width of the parent container (block level) | `boolean` | — |
+| `circle` | — | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `ghost` | Ghost/outline style: transparent background + outline colored by `type`, darkens on hover | `boolean` | — |
+| `href` | — | `string` | — |
 | `icon` | Icon name (reusing the oas-icon icon set); without text it becomes an equal-width square and uses the icon name as the fallback label | `string` | — |
+| `icon-position` | — | `string` | `start` |
 | `loading` | Loading state | `boolean` | — |
+| `plain` | — | `boolean` | — |
 | `round` | Pill radius (`--oas-radius-full` / `999px`) | `boolean` | — |
 | `size` | Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning | `ButtonSize` | `medium` |
+| `target` | — | `string` | — |
 | `type` | Type | `ButtonType` | `default` |
 
 ### Events

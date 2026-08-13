@@ -263,14 +263,14 @@ const STYLE = `
 `
 
 export class OASSteps extends OASElement {
-  static override get observedAttributes: string[] {
+  static override get observedAttributes(): string[] {
     return ['steps', 'current', 'direction', 'clickable', 'progress-dot', 'navigation']
   }
 
   private _steps: StepItem[] = []
 
   /** Vue/React 会把 steps 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
-  get steps: StepItem[] {
+  get steps(): StepItem[] {
     return this._steps
   }
   set steps(value: StepItem[] | string) {
@@ -282,7 +282,7 @@ export class OASSteps extends OASElement {
   private nextBtn: HTMLButtonElement | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
-  private template: string {
+  private template(): string {
     return `
       <style>${STYLE}</style>
       <div class="steps" part="steps"></div>
@@ -294,24 +294,24 @@ export class OASSteps extends OASElement {
   }
 
   /** 缓存节点引用（render 与水合路径共用；步骤事件在 update 重建时绑定） */
-  private bind: void {
+  private bind(): void {
     this.nav = this.shadow.querySelector('.nav')
     this.prevBtn = this.shadow.querySelector<HTMLButtonElement>('[part="prev"]')
     this.nextBtn = this.shadow.querySelector<HTMLButtonElement>('[part="next"]')
-    this.prevBtn?.addEventListener('click',  => this.navStep(-1))
-    this.nextBtn?.addEventListener('click',  => this.navStep(1))
+    this.prevBtn?.addEventListener('click', () => this.navStep(-1))
+    this.nextBtn?.addEventListener('click', () => this.navStep(1))
   }
 
-  protected override render: void {
-    this.shadow.innerHTML = this.template
-    this.bind
-    this.update
+  protected override render(): void {
+    this.shadow.innerHTML = this.template()
+    this.bind()
+    this.update()
   }
 
   /** 真水合：校验 SSR 快照结构（steps 容器存在）后直接接管，跳过 shadow 重建 */
-  protected override hydrate: boolean {
+  protected override hydrate(): boolean {
     if (!this.shadow.querySelector('.steps')) return false
-    this.bind
+    this.bind()
     return true
   }
 
@@ -319,7 +319,7 @@ export class OASSteps extends OASElement {
   private goto(idx: number): void {
     this.setAttribute('current', String(idx))
     this.emit('change', { index: idx })
-    this.update
+    this.update()
   }
 
   /** 导航模式底部按钮：向相邻步切换 */
@@ -331,10 +331,10 @@ export class OASSteps extends OASElement {
     this.goto(target)
   }
 
-  protected override update: void {
+  protected override update(): void {
     const stepsEl = this.shadow.querySelector('.steps')
     if (!stepsEl) return
-    this.parseSteps
+    this.parseSteps()
     const clickable = this.hasAttr('clickable')
     const navigation = this.hasAttr('navigation')
     const progressDot = this.hasAttr('progress-dot')
@@ -385,13 +385,13 @@ export class OASSteps extends OASElement {
         // 整项承担按钮角色，键盘 Enter/Space 可达；点击派发 oas-change{index} 并切换 current
         item.setAttribute('role', 'button')
         item.setAttribute('tabindex', '0')
-        const goto = : void => this.goto(idx)
+        const goto: () => void = () => this.goto(idx)
         item.addEventListener('click', goto)
         item.addEventListener('keydown', (e: Event) => {
           const k = e as KeyboardEvent
           if (k.key !== 'Enter' && k.key !== ' ') return
-          k.preventDefault
-          goto
+          k.preventDefault()
+          goto()
         })
       }
       stepsEl.appendChild(item)
@@ -419,7 +419,7 @@ export class OASSteps extends OASElement {
     return 'wait'
   }
 
-  private parseSteps: void {
+  private parseSteps(): void {
     try {
       const parsed = JSON.parse(this.getAttr('steps', '[]'))
       this._steps = Array.isArray(parsed)

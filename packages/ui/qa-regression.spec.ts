@@ -13,7 +13,7 @@ async function up(p: import('@playwright/test').Page, sel: string) {
 test('button-group 单选选中态可见（primary 字 + 浅底）', async ({ page }) => {
   await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button-group oas-button')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const group = document.querySelector('oas-button-group[value]')!
     const sel = [...group.querySelectorAll('oas-button')].find(
       (b) => b.getAttribute('aria-pressed') === 'true',
@@ -30,9 +30,8 @@ test('button-group 多选点击切换选中态', async ({ page }) => {
   await up(page, 'oas-button-group[multiple] oas-button')
   const b = page.locator('oas-button-group[multiple] oas-button[value="b"]')
   const before = await b.getAttribute('aria-pressed')
-  await b.click
-  await page.waitForFunction(
-     =>
+  await b.click()
+  await page.waitForFunction(() =>
       document
         .querySelector('oas-button-group[multiple] oas-button[value="b"]')
         ?.getAttribute('aria-pressed') !== 'false',
@@ -47,12 +46,12 @@ test('button-group 多选点击切换选中态', async ({ page }) => {
 test('button-group 纵向布局生效 + 圆角合并', async ({ page }) => {
   await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button-group[vertical] oas-button')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const group = document.querySelector('oas-button-group[vertical]')!
     const inner = group.shadowRoot!.querySelector('[part=group]')!
     const cs = getComputedStyle(inner)
     const btns = [...group.querySelectorAll('oas-button')]
-    const boxes = btns.map((b) => b.getBoundingClientRect)
+    const boxes = btns.map((b) => b.getBoundingClientRect())
     const radii = btns.map((b) => {
       const c = getComputedStyle(b.shadowRoot!.querySelector('[part=button]')!)
       return `${c.borderTopLeftRadius},${c.borderTopRightRadius},${c.borderBottomRightRadius},${c.borderBottomLeftRadius}`
@@ -73,7 +72,7 @@ test('button-group 纵向布局生效 + 圆角合并', async ({ page }) => {
 test('button-group 横向圆角合并', async ({ page }) => {
   await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button-group oas-button')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const group = document.querySelector('oas-button-group')!
     return [...group.querySelectorAll('oas-button')].map((b) => {
       const c = getComputedStyle(b.shadowRoot!.querySelector('[part=button]')!)
@@ -88,8 +87,8 @@ test('button-group 横向圆角合并', async ({ page }) => {
 test('tag primary clickable hover 文字可读（白字）', async ({ page }) => {
   await page.goto('/components/tag.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-tag[clickable][type="primary"]')
-  const tag = page.locator('oas-tag[clickable][type="primary"]').first
-  await tag.hover
+  const tag = page.locator('oas-tag[clickable][type="primary"]').first()
+  await tag.hover()
   const r = await tag.evaluate((el) => {
     const cs = getComputedStyle(el.shadowRoot!.querySelector('.tag')!)
     return { color: cs.color, bg: cs.backgroundColor }
@@ -102,12 +101,12 @@ test('link href="#" 点击不滚动页面', async ({ page }) => {
   await page.goto('/components/link.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-link')
   const link = page.locator('.demo-block', { hasText: '点击事件' }).locator('oas-link')
-  await link.scrollIntoViewIfNeeded
+  await link.scrollIntoViewIfNeeded()
   await page.waitForTimeout(200)
-  const before = await page.evaluate( => window.scrollY)
-  await link.click
+  const before = await page.evaluate(() => window.scrollY)
+  await link.click()
   await page.waitForTimeout(300)
-  const after = await page.evaluate( => window.scrollY)
+  const after = await page.evaluate(() => window.scrollY)
   expect(after).toBe(before)
   expect(after).toBeGreaterThan(0)
 })
@@ -115,11 +114,11 @@ test('link href="#" 点击不滚动页面', async ({ page }) => {
 test('input addon 属性在 Vue demo 中存活并渲染', async ({ page }) => {
   await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-input[addon-before]')
-  const attrs = await page.evaluate( =>
+  const attrs = await page.evaluate(() =>
     [...document.querySelectorAll('oas-input')].map((el) => el.getAttribute('addon-before')),
   )
   expect(attrs.some((v) => v !== null)).toBe(true)
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-input[addon-before]')!
     return el.shadowRoot?.querySelector('[part="prepend"]')?.textContent ?? null
   })
@@ -132,7 +131,7 @@ test('segmented 未选中项文字对比度达标（text-primary，axe 色彩对
   // 用 segmented 切 label-align 时被 axe 审计揪出；修复为 text-primary。
   await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-segmented#form-align-switch')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const seg = document.querySelector('#form-align-switch')!
     const root = seg.shadowRoot!
     const items = [...root.querySelectorAll<HTMLElement>('[part="item"]')]
@@ -156,14 +155,14 @@ test('segmented 未选中项文字对比度达标（text-primary，axe 色彩对
 test('demo 事件反馈（点击 button 弹出 message）', async ({ page }) => {
   await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
-  await page.waitForFunction( => typeof (window as any).message !== 'undefined', null, {
+  await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
     timeout: 10000,
   })
-  await page.locator('.demo-block', { hasText: '点击事件' }).locator('oas-button').click
-  await page.waitForFunction( => document.querySelectorAll('oas-message').length > 0, null, {
+  await page.locator('.demo-block', { hasText: '点击事件' }).locator('oas-button').click()
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length > 0, null, {
     timeout: 5000,
   })
-  const n = await page.evaluate( => document.querySelectorAll('oas-message').length)
+  const n = await page.evaluate(() => document.querySelectorAll('oas-message').length)
   expect(n).toBeGreaterThan(0)
 })
 
@@ -176,13 +175,13 @@ test('table SPA 导航后数据不丢（Vue property 赋值反射到 attribute�
     timeout: 10000,
   })
   // 折叠侧栏里的链接不可见，直接 DOM click 走 Vue Router（等价用户 SPA 点进去）
-  await page.evaluate( => {
-    document.querySelector<HTMLAnchorElement>('a[href="/components/table.html"]')!.click
+  await page.evaluate(() => {
+    document.querySelector<HTMLAnchorElement>('a[href="/components/table.html"]')!.click()
   })
   await page.waitForURL('**/components/table.html')
   await page.waitForSelector('oas-table', { timeout: 10000 })
   await page.waitForTimeout(800)
-  const r = await page.evaluate( =>
+  const r = await page.evaluate(() =>
     [...document.querySelectorAll('oas-table')].map((t) => ({
       rows: t.shadowRoot?.querySelectorAll('tbody tr').length ?? -1,
       dataLen: t.getAttribute('data')?.length ?? 0,
@@ -204,7 +203,7 @@ test('tree 虚拟滚动渲染真实 label 且行样式生效', async ({ page }) 
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-virtual')
   await page.waitForTimeout(800)
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const tree = document.querySelector('#tree-virtual')!
     const vlist = tree.shadowRoot!.querySelector('oas-virtual-list')!
     const vroot = vlist.shadowRoot!
@@ -221,7 +220,7 @@ test('tree 虚拟滚动渲染真实 label 且行样式生效', async ({ page }) 
       toggleBorder: toggle ? getComputedStyle(toggle).borderStyle : '',
       leafVisibility: leafToggle ? getComputedStyle(leafToggle).visibility : '',
       // 曾现 bug3：height 属性只用于窗口计算，视口 height:100% 被撑高容器拉到 16 万 px
-      viewportHeight: viewport.getBoundingClientRect.height,
+      viewportHeight: viewport.getBoundingClientRect().height,
       viewportScrollable: viewport.scrollHeight > viewport.clientHeight,
     }
   })
@@ -234,8 +233,8 @@ test('tree 虚拟滚动渲染真实 label 且行样式生效', async ({ page }) 
   expect(r.viewportHeight).toBe(360)
   expect(r.viewportScrollable).toBe(true)
   // hover 背景（Playwright CSS 选择器自动穿透 open shadow DOM）
-  const firstRow = page.locator('#tree-virtual oas-virtual-list [part=item] .row').first
-  await firstRow.hover
+  const firstRow = page.locator('#tree-virtual oas-virtual-list [part=item] .row').first()
+  await firstRow.hover()
   await page.waitForTimeout(200)
   const hoverBg = await firstRow.evaluate((row) => getComputedStyle(row).backgroundColor)
   expect(hoverBg).not.toBe('rgba(0, 0, 0, 0)')
@@ -248,18 +247,18 @@ test('virtual-list 独立页：items 升级前赋值回收 + 视口高度受限'
   await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-virtual-list')
   await page.waitForTimeout(600)
-  const r = await page.evaluate( =>
+  const r = await page.evaluate(() =>
     [...document.querySelectorAll('oas-virtual-list')].map((vlist) => {
       const viewport = vlist.shadowRoot!.querySelector('[part=viewport]')
       return {
         itemCount: vlist.shadowRoot!.querySelectorAll('[part=item]').length,
-        viewportHeight: viewport?.getBoundingClientRect.height ?? -1,
+        viewportHeight: viewport?.getBoundingClientRect().height ?? -1,
         scrollable: viewport ? viewport.scrollHeight > viewport.clientHeight : true,
       }
     }),
   )
   expect(r.length).toBeGreaterThan(0)
-  for (const [i, v] of r.entries) {
+  for (const [i, v] of r.entries()) {
     expect(v.itemCount, `第 ${i} 个 virtual-list 未渲染`).toBeGreaterThan(0)
     if (v.viewportHeight >= 0) expect(v.viewportHeight).toBeLessThanOrEqual(400)
     expect(v.scrollable).toBe(true)
@@ -270,11 +269,11 @@ test('timeline 圆点中心与连接线中心对齐', async ({ page }) => {
   // 曾现 bug：.dot 未设 box-sizing，content-box 下总宽 14px 圆心 7px，线心 5px，偏右 2px。
   await page.goto('/components/timeline.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-timeline')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const item = document.querySelector('oas-timeline')!.shadowRoot!.querySelector('.item')!
     const dot = item.querySelector('.dot')!
-    const dotBox = dot.getBoundingClientRect
-    const itemBox = item.getBoundingClientRect
+    const dotBox = dot.getBoundingClientRect()
+    const itemBox = item.getBoundingClientRect()
     return {
       diff: Math.abs(dotBox.left + dotBox.width / 2 - (itemBox.left + 5)),
       dotWidth: dotBox.width,
@@ -288,7 +287,7 @@ test('tabs tab-position=right：tab 内容右对齐（justify-content: flex-end�
   // 曾现 bug：纵向 right 模式下 .tab 随 tablist 拉伸占满宽，但内容仍左对齐，与 left 模式不镜像。
   await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-tabs[tab-position="right"]')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-tabs[tab-position="right"]')!
     const tab = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"]')!
     const cs = getComputedStyle(tab)
@@ -305,7 +304,7 @@ test('select multiple：chip 结构完整（label + 移除按钮）且样式不�
   // 曾现 bug：chip 无行高、label 与 × 间距仅 2px、padding 只有横向，文字贴边、行间粘连。
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-select[multiple][value]')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-select[multiple][value]')!
     const chip = el.shadowRoot!.querySelector<HTMLElement>('.chip')
     if (!chip) return { chipCount: 0, hasLabel: false, hasButton: false, height: '', gap: '' }
@@ -329,18 +328,18 @@ test('select 多选默认换行：标签多行展示、触发器增高、chevron
   // 曾现 bug：多选标签被按容器宽度自动折叠为 +N（无开关总是生效），用户期望默认换行展示。
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-select[multiple][value]:not([max-tag-count])')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-select[multiple][value]:not([max-tag-count])')!
     const root = el.shadowRoot!
     const trigger = root.querySelector<HTMLElement>('[part="trigger"]')!
     const valueEl = root.querySelector<HTMLElement>('.value')!
     const chevron = root.querySelector<HTMLElement>('.chevron')!
     const chips = [...root.querySelectorAll<HTMLElement>('.chip:not(.chip-plus)')]
-    const t = trigger.getBoundingClientRect
-    const chipTops = chips.map((c) => c.getBoundingClientRect.top)
+    const t = trigger.getBoundingClientRect()
+    const chipTops = chips.map((c) => c.getBoundingClientRect().top)
     const rowCount = new Set(chipTops.map((y) => Math.round(y))).size
     const firstRowTop = Math.min(...chipTops)
-    const c = chevron.getBoundingClientRect
+    const c = chevron.getBoundingClientRect()
     return {
       wrap: getComputedStyle(valueEl).flexWrap,
       rowCount,
@@ -360,7 +359,7 @@ test('select 多选默认换行：标签多行展示、触发器增高、chevron
 test('select 折叠示例：max-tag-count 显式启用时折叠为 +N（单行 nowrap）', async ({ page }) => {
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-select[max-tag-count]')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-select[max-tag-count]')!
     const root = el.shadowRoot!
     const valueEl = root.querySelector<HTMLElement>('.value')!
@@ -383,8 +382,8 @@ test('date-picker / time-picker 面板贴输入框下方（:host 为定位祖先
   for (const name of ['date-picker', 'time-picker'] as const) {
     await page.goto(`/components/${name}.html`, { waitUntil: 'domcontentloaded' })
     await up(page, `oas-${name}`)
-    const host = page.locator(`oas-${name}`).first
-    await host.locator('[part="trigger"]').click
+    const host = page.locator(`oas-${name}`).first()
+    await host.locator('[part="trigger"]').click()
     await page.waitForFunction(
       (sel) =>
         document
@@ -398,8 +397,8 @@ test('date-picker / time-picker 面板贴输入框下方（:host 为定位祖先
       const root = el.shadowRoot!
       const dropdown = root.querySelector<HTMLElement>('[part="dropdown"]')!
       const trigger = root.querySelector<HTMLElement>('[part="trigger"]')!
-      const d = dropdown.getBoundingClientRect
-      const t = trigger.getBoundingClientRect
+      const d = dropdown.getBoundingClientRect()
+      const t = trigger.getBoundingClientRect()
       return {
         hostPosition: getComputedStyle(el).position,
         offsetParentIsHost: dropdown.offsetParent === el,
@@ -423,7 +422,7 @@ test('menubar 受控：外部 setAttribute(value) 即时同步勾选（value 在
   // 勾选/高亮不移动，受控 demo 只能靠重设 items 绕开。
   await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#mb-value')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const mb = document.querySelector('#mb-value')!
     const checked = (v: string) =>
       mb
@@ -444,12 +443,12 @@ test('pin-input 受控：外部动态切换 aria-invalid 即时同步 danger 边
   // update，容器/各格不同步、danger 边框不生效（校验失败态无视觉反馈）。
   await page.goto('/components/pin-input.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#pin-invalid')
-  const r = await page.evaluate(async  => {
+  const r = await page.evaluate(async () => {
     const el = document.querySelector('#pin-invalid')!
     const root = el.shadowRoot!
     const container = root.querySelector('[part="container"]')!
     const cell = root.querySelector('input')!
-    const state =  => ({
+    const state = () => ({
       container: container.getAttribute('aria-invalid'),
       cell: cell.getAttribute('aria-invalid'),
       border: getComputedStyle(cell).borderColor,
@@ -457,10 +456,10 @@ test('pin-input 受控：外部动态切换 aria-invalid 即时同步 danger 边
     el.setAttribute('aria-invalid', 'true')
     // 边框有 120ms 过渡（--oas-transition-fast）：等过渡完成再读 computed style
     await new Promise((resolve) => setTimeout(resolve, 250))
-    const invalid = state
+    const invalid = state()
     el.setAttribute('aria-invalid', 'false')
     await new Promise((resolve) => setTimeout(resolve, 250))
-    const restored = state
+    const restored = state()
     return { invalid, restored }
   })
   expect(r.invalid.container).toBe('true')
@@ -476,11 +475,11 @@ test('select 展开态 active 选项在暗色主题下文字/背景对比度 ≥
   // 修复：改用 --oas-color-text-on-primary（暗色为深色文字），回归锁定对比度。
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-select')
-  await page.evaluate( => document.documentElement.classList.add('dark'))
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
   await page.waitForTimeout(200)
-  const sel = page.locator('oas-select').first
-  await sel.locator('[part="trigger"]').click
-  await page.waitForFunction( => {
+  const sel = page.locator('oas-select').first()
+  await sel.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
     const s = document.querySelector('oas-select')
     return s?.shadowRoot?.querySelector('.option.active') != null
   })
@@ -512,8 +511,8 @@ test('select virtual：1 万条选项仅渲染可视窗口，滚动后窗口平�
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#select-virtual')
   const sel = page.locator('#select-virtual')
-  await sel.locator('[part="trigger"]').click
-  await page.waitForFunction( => {
+  await sel.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
     const s = document.querySelector('#select-virtual')
     const vlist = s?.shadowRoot?.querySelector('oas-virtual-list') as HTMLElement | null
     return (
@@ -522,7 +521,7 @@ test('select virtual：1 万条选项仅渲染可视窗口，滚动后窗口平�
       (vlist.shadowRoot?.querySelectorAll('[role="option"]').length ?? 0) > 0
     )
   })
-  const initial = await page.evaluate( => {
+  const initial = await page.evaluate(() => {
     const s = document.querySelector('#select-virtual')!
     const vlist = s.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement
     const vp = vlist.shadowRoot!.querySelector<HTMLElement>('.viewport')!
@@ -539,7 +538,7 @@ test('select virtual：1 万条选项仅渲染可视窗口，滚动后窗口平�
   expect(initial.viewportHeight).toBeGreaterThan(100)
   expect(initial.firstLabel).toContain('选项 0')
   // 滚动后窗口平移：首可见项不再是 选项 0
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const s = document.querySelector('#select-virtual')!
     const vlist = s.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement
     const vp = vlist.shadowRoot!.querySelector<HTMLElement>('.viewport')!
@@ -547,7 +546,7 @@ test('select virtual：1 万条选项仅渲染可视窗口，滚动后窗口平�
     vp.dispatchEvent(new Event('scroll'))
   })
   await page.waitForTimeout(100)
-  const after = await page.evaluate( => {
+  const after = await page.evaluate(() => {
     const s = document.querySelector('#select-virtual')!
     const vlist = s.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement
     const first = vlist.shadowRoot!.querySelector<HTMLElement>('[role="option"]')!
@@ -563,8 +562,8 @@ test('select virtual：键盘导航高亮项滚动进视口且 aria-activedescen
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#select-virtual')
   const sel = page.locator('#select-virtual')
-  await sel.locator('[part="trigger"]').click
-  await page.waitForFunction( => {
+  await sel.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
     const s = document.querySelector('#select-virtual')
     const vlist = s?.shadowRoot?.querySelector('oas-virtual-list') as HTMLElement | null
     return (
@@ -573,7 +572,7 @@ test('select virtual：键盘导航高亮项滚动进视口且 aria-activedescen
       (vlist.shadowRoot?.querySelectorAll('[role="option"]').length ?? 0) > 0
     )
   })
-  const r = await page.evaluate(async  => {
+  const r = await page.evaluate(async () => {
     const s = document.querySelector('#select-virtual')!
     const trigger = s.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
     // 连按 20 次 ↓：高亮滚出首屏，aria-activedescendant 应跟随
@@ -603,12 +602,12 @@ test('select 自定义选项渲染：demo 里图标 + 文本进入选项行与�
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#select-custom')
   const sel = page.locator('#select-custom')
-  await sel.locator('[part="trigger"]').click
-  await page.waitForFunction( => {
+  await sel.locator('[part="trigger"]').click()
+  await page.waitForFunction(() => {
     const s = document.querySelector('#select-custom')
     return s?.shadowRoot?.querySelectorAll('[role="option"]').length === 4
   })
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const s = document.querySelector('#select-custom')!
     const first = s.shadowRoot!.querySelector<HTMLElement>('[role="option"]')!
     const label = first.querySelector<HTMLElement>('.option-label')!
@@ -626,10 +625,10 @@ test('select 自定义选项渲染：demo 里图标 + 文本进入选项行与�
 test('form-item label 点击聚焦 oas-input 的 shadow 内 input（focus 委托链）', async ({ page }) => {
   await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-form-item[label] oas-input')
-  const item = page.locator('oas-form-item[label]').first
-  await item.locator('[part="label"]').click
+  const item = page.locator('oas-form-item[label]').first()
+  await item.locator('[part="label"]').click()
   await page.waitForTimeout(100)
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const item = document.querySelector<HTMLElement>('oas-form-item[label]')!
     const control = item.querySelector('oas-input')
     const inner = control?.shadowRoot?.activeElement
@@ -687,13 +686,13 @@ test('alert 关闭后真正隐藏：closeable 点击关闭按钮 host 视觉消�
 }) => {
   await page.goto('/components/alert.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-alert[closeable]')
-  const firstCloseable = page.locator('oas-alert[closeable]').first
+  const firstCloseable = page.locator('oas-alert[closeable]').first()
   const host = firstCloseable
   // 点击关闭按钮：shadow 内 [part=close]
-  await host.locator('[part="close"]').click
+  await host.locator('[part="close"]').click()
   // host 应视觉消失（此前 :host{display:block} 覆盖 UA [hidden]，点击后仍可见——已修复）
-  await expect(host).toBeHidden
-  expect(await host.getAttribute('hidden')).not.toBeNull
+  await expect(host).toBeHidden()
+  expect(await host.getAttribute('hidden')).not.toBeNull()
 })
 
 test('virtual-list 滚轮增量滚动不失控（overflow-anchor 回归）', async ({ page }) => {
@@ -702,23 +701,23 @@ test('virtual-list 滚轮增量滚动不失控（overflow-anchor 回归）', asy
   await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#vl-basic')
   await page.waitForTimeout(600)
-  const box = await page.locator('#vl-basic').boundingBox
+  const box = await page.locator('#vl-basic').boundingBox()
   await page.mouse.move(box!.x + box!.width / 2, box!.y + 50)
-  const scrollTop =  =>
-    page.evaluate( => {
+  const scrollTop = () =>
+    page.evaluate(() => {
       const el = document.querySelector('#vl-basic')!
       return el.shadowRoot!.querySelector('[part=viewport]')!.scrollTop
     })
-  const s0 = await scrollTop
+  const s0 = await scrollTop()
   await page.mouse.wheel(0, 120)
   await page.waitForTimeout(300)
-  const s1 = await scrollTop
+  const s1 = await scrollTop()
   await page.mouse.wheel(0, 120)
   await page.waitForTimeout(300)
-  const s2 = await scrollTop
+  const s2 = await scrollTop()
   await page.mouse.wheel(0, 120)
   await page.waitForTimeout(300)
-  const s3 = await scrollTop
+  const s3 = await scrollTop()
   const d1 = s1 - s0
   const d2 = s2 - s1
   const d3 = s3 - s2
@@ -735,31 +734,31 @@ test('tree 虚拟列表滚轮增量滚动正常（overflow-anchor 回归）', as
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-virtual')
   await page.waitForTimeout(800)
-  await page.locator('#tree-virtual').scrollIntoViewIfNeeded
+  await page.locator('#tree-virtual').scrollIntoViewIfNeeded()
   await page.waitForTimeout(300)
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const tree = document.querySelector('#tree-virtual')!
     const vlist = tree.shadowRoot!.querySelector('oas-virtual-list')!
     const vp = vlist.shadowRoot!.querySelector('[part=viewport]')!
-    const br = vp.getBoundingClientRect
+    const br = vp.getBoundingClientRect()
     return { x: br.x, y: br.y, w: br.width, h: br.height }
   })
   await page.mouse.move(r.x + r.w / 2, r.y + 20)
-  const scrollTop =  =>
-    page.evaluate( => {
+  const scrollTop = () =>
+    page.evaluate(() => {
       const tree = document.querySelector('#tree-virtual')!
       const vlist = tree.shadowRoot!.querySelector('oas-virtual-list')!
       return vlist.shadowRoot!.querySelector('[part=viewport]')!.scrollTop
     })
   await page.mouse.wheel(0, 120)
   await page.waitForTimeout(300)
-  const s1 = await scrollTop
+  const s1 = await scrollTop()
   await page.mouse.wheel(0, 120)
   await page.waitForTimeout(300)
-  const s2 = await scrollTop
+  const s2 = await scrollTop()
   await page.mouse.wheel(0, 120)
   await page.waitForTimeout(300)
-  const s3 = await scrollTop
+  const s3 = await scrollTop()
   expect(s1).toBeGreaterThanOrEqual(100)
   expect(s2 - s1).toBeGreaterThanOrEqual(100)
   expect(s3 - s2).toBeGreaterThanOrEqual(100)
@@ -776,11 +775,11 @@ test('scroll-area 横向可滚：滚轮增量横向滚动 + 横向/纵向 thumb 
 
   // 横向 demo（第 2 个 oas-scroll-area）：纵向滚轮 → 横向滚动
   const area = page.locator('oas-scroll-area').nth(1)
-  await area.scrollIntoViewIfNeeded
+  await area.scrollIntoViewIfNeeded()
   await page.waitForTimeout(300)
   const r = await area.evaluate((el) => {
     const vp = el.shadowRoot!.querySelector('[part=viewport]')!
-    const br = vp.getBoundingClientRect
+    const br = vp.getBoundingClientRect()
     return { x: br.x, y: br.y, w: br.width, h: br.height }
   })
   await page.mouse.move(r.x + r.w / 2, r.y + r.h / 2)
@@ -796,13 +795,13 @@ test('scroll-area 横向可滚：滚轮增量横向滚动 + 横向/纵向 thumb 
     const vp = el.shadowRoot!.querySelector('[part=viewport]')!
     const before = vp.scrollLeft
     const thumbEl = el.shadowRoot!.querySelector('[part=thumb-h]')!
-    const br = thumbEl.getBoundingClientRect
+    const br = thumbEl.getBoundingClientRect()
     return { before, x: br.x, y: br.y, w: br.width, h: br.height }
   })
   await page.mouse.move(h.x + 30, h.y + h.h / 2)
-  await page.mouse.down
+  await page.mouse.down()
   await page.mouse.move(h.x + h.w / 2, h.y + h.h / 2, { steps: 4 })
-  await page.mouse.up
+  await page.mouse.up()
   await page.waitForTimeout(300)
   const afterHDrag = await area.evaluate(
     (el) => el.shadowRoot!.querySelector('[part=viewport]')!.scrollLeft,
@@ -821,13 +820,13 @@ test('scroll-area 横向可滚：滚轮增量横向滚动 + 横向/纵向 thumb 
     const vp = el.shadowRoot!.querySelector('[part=viewport]')!
     const before = vp.scrollTop
     const thumbEl = el.shadowRoot!.querySelector('[part=thumb-v]')!
-    const br = thumbEl.getBoundingClientRect
+    const br = thumbEl.getBoundingClientRect()
     return { before, x: br.x, y: br.y, w: br.width, h: br.height }
   })
   await page.mouse.move(v.x + v.w / 2, v.y + 10)
-  await page.mouse.down
+  await page.mouse.down()
   await page.mouse.move(v.x + v.w / 2, v.y + v.h - 10, { steps: 4 })
-  await page.mouse.up
+  await page.mouse.up()
   await page.waitForTimeout(300)
   const afterVDrag = await area0.evaluate(
     (el) => el.shadowRoot!.querySelector('[part=viewport]')!.scrollTop,
@@ -852,7 +851,7 @@ async function visibleSubmenuRects(page: import('@playwright/test').Page): Promi
     flipLeft: boolean
   }>
 > {
-  return page.evaluate( => {
+  return page.evaluate(() => {
     const vw = window.innerWidth
     const vh = window.innerHeight
     const out: Array<{
@@ -867,7 +866,7 @@ async function visibleSubmenuRects(page: import('@playwright/test').Page): Promi
     const walk = (root: Document | ShadowRoot): void => {
       for (const el of root.querySelectorAll('*')) {
         if (el.getAttribute('part') === 'submenu') {
-          const b = el.getBoundingClientRect
+          const b = el.getBoundingClientRect()
           if (b.width > 0 && b.height > 0) {
             out.push({
               left: b.left,
@@ -892,14 +891,14 @@ test('context-menu 多级子菜单贴近视口右缘：翻转后全部落在视�
   await page.goto('/components/context-menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-context-menu')
   // 把「多级子菜单」demo 平移到视口右缘（fixed + 高 z-index），右键点在右缘附近
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const cm = [...document.querySelectorAll('oas-context-menu')].find((el) =>
       el.getAttribute('items')?.includes('"children"'),
     ) as HTMLElement
     cm.style.cssText = 'position: fixed; right: 0; top: 260px; z-index: 9999'
     cm.dataset.e2eRightEdge = '1'
   })
-  const box = await page.locator('oas-context-menu[data-e2e-right-edge]').boundingBox
+  const box = await page.locator('oas-context-menu[data-e2e-right-edge]').boundingBox()
   await page.mouse.click(box!.x + box!.width - 12, box!.y + 60, { button: 'right' })
   // 逐级展开两级子菜单链：新建 → 项目 →（Git 仓库/空白）
   await page
@@ -927,14 +926,14 @@ test('context-menu 多级子菜单贴近视口右缘：翻转后全部落在视�
 test('menu 多级子菜单贴近视口右缘：翻转后全部落在视口内', async ({ page }) => {
   await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#menu-nested')
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const m = document.querySelector('#menu-nested') as HTMLElement
     m.style.cssText = 'position: fixed; right: 0; top: 240px; z-index: 9999'
     m.dataset.e2eRightEdge = '1'
   })
   // hover 展开 文件 → 新建（三级链）
-  await page.locator('#menu-nested [part="item"][data-value="file"]').hover
-  await page.locator('#menu-nested [part="item"][data-value="new"]').hover
+  await page.locator('#menu-nested [part="item"][data-value="file"]').hover()
+  await page.locator('#menu-nested [part="item"][data-value="new"]').hover()
   await page.waitForTimeout(200)
   const rects = await visibleSubmenuRects(page)
   expect(rects.length).toBeGreaterThanOrEqual(2)
@@ -954,7 +953,7 @@ test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内
   await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-menubar')
   // 平移 menubar 到视口右缘
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const mb = document.querySelector('oas-menubar') as HTMLElement
     mb.style.cssText = 'position: fixed; right: 0; top: 240px; z-index: 9999'
     mb.dataset.e2eRightEdge = '1'
@@ -962,9 +961,9 @@ test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内
   // hover 顶级「视图」展开一级下拉，hover 级联「缩放」展开二级子菜单（menubar 是 mouseenter 展开）
   await page
     .locator('oas-menubar[data-e2e-right-edge] [part="top-item"][data-value="view"]')
-    .hover
+    .hover()
   await page.waitForTimeout(150)
-  await page.locator('oas-menubar[data-e2e-right-edge] [part="item"][data-value="zoom"]').hover
+  await page.locator('oas-menubar[data-e2e-right-edge] [part="item"][data-value="zoom"]').hover()
   await page.waitForTimeout(200)
   const rects = await visibleSubmenuRects(page)
   expect(rects.length).toBeGreaterThanOrEqual(2) // 一级下拉 + 级联子菜单
@@ -974,7 +973,7 @@ test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内
     expect(r.bottom, `子菜单 bottom=${r.bottom} 越出视口下缘`).toBeLessThanOrEqual(r.vh + 1)
   }
   // 右缘场景至少一级发生了翻转（级联 flip-left 或一级 flip-right 右对齐）
-  const flipped = await page.evaluate( => {
+  const flipped = await page.evaluate(() => {
     const mb = document.querySelector('oas-menubar')!
     const subs = [...mb.shadowRoot!.querySelectorAll('[part="submenu"]')]
     return subs.some((s) => s.classList.contains('flip-left') || s.classList.contains('flip-right'))
@@ -987,7 +986,7 @@ test('dropdown 多级子菜单贴近视口右缘：翻转后全部落在视口�
   await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-dropdown')
   // 注入一个带两级子菜单的 dropdown 并平移到视口右缘
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const dd = document.createElement('oas-dropdown')
     dd.setAttribute(
       'items',
@@ -1017,9 +1016,9 @@ test('dropdown 多级子菜单贴近视口右缘：翻转后全部落在视口�
   })
   const dd = page.locator('oas-dropdown[data-e2e-right-edge]')
   // 注：dropdown shadow 内也有原生 button（拆分箭头按钮），必须限定 light DOM 直接子元素
-  await dd.locator(':scope > button').click
-  await page.locator('oas-dropdown[data-e2e-right-edge] [part="item"][data-value="file"]').hover
-  await page.locator('oas-dropdown[data-e2e-right-edge] [part="item"][data-value="new"]').hover
+  await dd.locator(':scope > button').click()
+  await page.locator('oas-dropdown[data-e2e-right-edge] [part="item"][data-value="file"]').hover()
+  await page.locator('oas-dropdown[data-e2e-right-edge] [part="item"][data-value="new"]').hover()
   await page.waitForTimeout(200)
   const rects = await visibleSubmenuRects(page)
   expect(rects.length).toBeGreaterThanOrEqual(2)
@@ -1044,7 +1043,7 @@ test('dropdown 多级子菜单贴近视口右缘：翻转后全部落在视口�
 test('rate 半选（allow-half）：半星为左半黄右半灰的垂直分割视觉', async ({ page }) => {
   await page.goto('/components/rate.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-rate[value="3.5"][allow-half]')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-rate[value="3.5"][allow-half]')!
     const root = el.shadowRoot!
     const stars = [...root.querySelectorAll<HTMLElement>('.star')]
@@ -1087,13 +1086,12 @@ test('upload picture-card：list-type 属性在 Vue demo 存活，预置照片�
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#upload-full')
   // #upload-full 预置 3 张 SVG 图片（onMounted 异步 import 后设置 files）
-  await page.waitForFunction(
-     =>
+  await page.waitForFunction(() =>
       document.querySelector('#upload-full')?.shadowRoot?.querySelectorAll('.card').length === 3,
     null,
     { timeout: 10000 },
   )
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const full = document.querySelector('#upload-full')!
     return {
       listTypeAttr: full.getAttribute('list-type'),
@@ -1111,19 +1109,18 @@ test('upload picture-card：list-type 属性在 Vue demo 存活，预置照片�
 test('upload 拖拽 drop：真实拖放文件到拖拽区即渲染', async ({ page }) => {
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#upload-drag')
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const el = document.querySelector('#upload-drag')!
     const zone = el.shadowRoot!.querySelector('.zone')!
     const dt = new DataTransfer
     dt.items.add(new File(['hello'], 'drag.txt', { type: 'text/plain' }))
     zone.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }))
   })
-  await page.waitForFunction(
-     => document.querySelector('#upload-drag')?.shadowRoot?.querySelector('.item') != null,
+  await page.waitForFunction(() => document.querySelector('#upload-drag')?.shadowRoot?.querySelector('.item') != null,
     null,
     { timeout: 5000 },
   )
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('#upload-drag')!
     return {
       items: el.shadowRoot!.querySelectorAll('.item').length,
@@ -1139,10 +1136,10 @@ test('upload 超限 max：drop 超过 max 的文件触发 oas-exceed 并弹出 m
 }) => {
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#upload-wall-exceed')
-  await page.waitForFunction( => typeof (window as any).message !== 'undefined', null, {
+  await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
     timeout: 10000,
   })
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const el = document.querySelector('#upload-wall-exceed')!
     const zone = el.shadowRoot!.querySelector('.zone')!
     const dt = new DataTransfer
@@ -1151,10 +1148,10 @@ test('upload 超限 max：drop 超过 max 的文件触发 oas-exceed 并弹出 m
     }
     zone.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }))
   })
-  await page.waitForFunction( => document.querySelectorAll('oas-message').length > 0, null, {
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length > 0, null, {
     timeout: 5000,
   })
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('#upload-wall-exceed')!
     return {
       msgCount: document.querySelectorAll('oas-message').length,
@@ -1173,11 +1170,11 @@ test('upload 预览浮层关闭态不拦截指针事件 + 拖拽区图标尺寸�
   // 曾现风险 2：zone 内 oas-icon 未 upgrade 前高度 0、upgrade 后 28px → 拖拽区高度跳变。
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#upload-drag')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('#upload-drag')!
     const mask = el.shadowRoot!.querySelector('.preview-mask')!
     const icon = el.shadowRoot!.querySelector('.zone .icon')!
-    const rect = mask.getBoundingClientRect
+    const rect = mask.getBoundingClientRect()
     const iconStyle = getComputedStyle(icon)
     return {
       maskHidden: mask.hasAttribute('hidden'),
@@ -1200,7 +1197,7 @@ test('form inline：表单项水平排列（同一行）、label 在控件左侧
   // 曾现风险：inline 仅声明属性但无视觉效果（form 未切 flex / form-item 未感知行内）
   await page.goto('/components/form.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-form[inline] oas-form-item oas-input')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const form = document.querySelector('#form-inline-login')!
     const formEl = form.shadowRoot!.querySelector('form')!
     const items = [...form.querySelectorAll('oas-form-item')].filter((i) =>
@@ -1208,12 +1205,12 @@ test('form inline：表单项水平排列（同一行）、label 在控件左侧
     )
     const first = items[0]!
     const second = items[1]!
-    const a = first.getBoundingClientRect
-    const b = second.getBoundingClientRect
+    const a = first.getBoundingClientRect()
+    const b = second.getBoundingClientRect()
     const labelBox = first
       .shadowRoot!.querySelector<HTMLElement>('[part="label"]')!
-      .getBoundingClientRect
-    const controlBox = first.querySelector<HTMLElement>('oas-input')!.getBoundingClientRect
+      .getBoundingClientRect()
+    const controlBox = first.querySelector<HTMLElement>('oas-input')!.getBoundingClientRect()
     return {
       flex: getComputedStyle(formEl).display,
       wrap: getComputedStyle(formEl).flexWrap,
@@ -1221,7 +1218,7 @@ test('form inline：表单项水平排列（同一行）、label 在控件左侧
       labelLeftOfControl: labelBox.right <= controlBox.left + 1,
       labelWidth: first
         .shadowRoot!.querySelector<HTMLElement>('[part="label"]')!
-        .getBoundingClientRect.width,
+        .getBoundingClientRect().width,
     }
   })
   expect(r.flex).toBe('flex')
@@ -1231,22 +1228,22 @@ test('form inline：表单项水平排列（同一行）、label 在控件左侧
   expect(r.labelWidth).toBeLessThan(96) // label-width 自动：不加固定 96px 列宽
 
   // 空表单提交 → 必填错误写入 form-item 错误位（控件下方红字）
-  await page.locator('#form-inline-login oas-form-item:last-child oas-button').click
-  await page.waitForFunction( => {
+  await page.locator('#form-inline-login oas-form-item:last-child oas-button').click()
+  await page.waitForFunction(() => {
     const item = document.querySelector('#form-inline-login oas-form-item')
     const err = item?.shadowRoot?.querySelector<HTMLElement>('[part="error"]')
     return err != null && !err.hidden && (err.textContent?.length ?? 0) > 0
   })
-  const err = await page.evaluate( => {
+  const err = await page.evaluate(() => {
     const item = document.querySelector('#form-inline-login oas-form-item')!
     const err = item.shadowRoot!.querySelector<HTMLElement>('[part="error"]')!
-    const input = item.querySelector('oas-input')!.getBoundingClientRect
-    const errBox = err.getBoundingClientRect
+    const input = item.querySelector('oas-input')!.getBoundingClientRect()
+    const errBox = err.getBoundingClientRect()
     return {
       text: err.textContent,
       belowInput: errBox.top >= input.bottom - 1,
       labelLeftOfInput:
-        item.shadowRoot!.querySelector<HTMLElement>('[part="label"]')!.getBoundingClientRect
+        item.shadowRoot!.querySelector<HTMLElement>('[part="label"]')!.getBoundingClientRect()
           .right <=
         input.left + 1,
     }
@@ -1260,7 +1257,7 @@ test('badge ribbon：缎带可见、折叠角生效、语义色与 placement 渲
   // 曾现风险：ribbon 只有机制没有视觉（角标不显、无折叠角、颜色/位置不生效）
   await page.goto('/components/badge.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-badge[ribbon] oas-card')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const badges = [...document.querySelectorAll('oas-badge[ribbon], oas-badge[mode="ribbon"]')]
     const ribbonEl = (el: Element) => el.shadowRoot!.querySelector<HTMLElement>('.ribbon')
     const cornerEl = (el: Element) => el.shadowRoot!.querySelector<HTMLElement>('.ribbon-corner')
@@ -1287,14 +1284,14 @@ test('badge ribbon：缎带可见、折叠角生效、语义色与 placement 渲
     }
     const countEl = document.querySelector('oas-badge[value="5"]')
     return {
-      default: pick,
+      default: pick(),
       start: pick(undefined, 'start'),
       success: pick('success'),
       count: countEl?.shadowRoot?.querySelector<HTMLElement>('.badge')?.textContent ?? null,
     }
   })
   // 默认缎带：可见、文本同步、danger 色、折叠角方形 + transform 生效
-  expect(r.default).not.toBeNull
+  expect(r.default).not.toBeNull()
   expect(r.default!.hidden).toBe(false)
   expect(r.default!.text).toContain('HOT')
   expect(r.default!.bg).toBe('rgb(220, 38, 38)')
@@ -1302,11 +1299,11 @@ test('badge ribbon：缎带可见、折叠角生效、语义色与 placement 渲
   expect(r.default!.endRadius).toBe('0px')
   expect(r.default!.cornerTransform).not.toBe('none')
   // placement=start：换到行首
-  expect(r.start).not.toBeNull
+  expect(r.start).not.toBeNull()
   expect(r.start!.hidden).toBe(false)
   expect(r.start!.placementStart).toBe(true)
   // color=success：语义色生效（非 danger）
-  expect(r.success).not.toBeNull
+  expect(r.success).not.toBeNull()
   expect(r.success!.bg).toBe('rgb(22, 163, 74)')
   // count 数字徽标与 ribbon 并存正常
   expect(r.count).toBe('5')
@@ -1317,21 +1314,20 @@ test('badge ribbon：缎带可见、折叠角生效、语义色与 placement 渲
 test('modal fullscreen：铺满视口、无圆角、width 被忽略、Esc/遮罩关闭照常', async ({ page }) => {
   await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-modal[fullscreen]')
-  await page.evaluate( => {
+  await page.evaluate(() => {
     document.querySelector('#modal-fullscreen')?.setAttribute('visible', '')
   })
-  await page.waitForFunction(
-     =>
+  await page.waitForFunction(() =>
       document
         .querySelector('#modal-fullscreen')
         ?.shadowRoot?.querySelector('.dialog[data-fullscreen]') != null,
     null,
     { timeout: 5000 },
   )
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('#modal-fullscreen')!
     const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
-    const d = dialog.getBoundingClientRect
+    const d = dialog.getBoundingClientRect()
     return {
       left: d.left,
       top: d.top,
@@ -1355,8 +1351,7 @@ test('modal fullscreen：铺满视口、无圆角、width 被忽略、Esc/遮罩
   expect(r.ariaHidden).toBe('false')
   // Esc 关闭照常
   await page.keyboard.press('Escape')
-  await page.waitForFunction(
-     => !document.querySelector('#modal-fullscreen')?.hasAttribute('visible'),
+  await page.waitForFunction(() => !document.querySelector('#modal-fullscreen')?.hasAttribute('visible'),
     null,
     { timeout: 5000 },
   )
@@ -1367,24 +1362,23 @@ test('modal 命令式确认 loading：确定进入 loading、1.5s 后自动关�
 }) => {
   await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
-  await page.waitForFunction( => typeof (window as any).message !== 'undefined', null, {
+  await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
     timeout: 10000,
   })
   // 注意：openConfirmLoading 返回 confirm 的 Promise（settle 于确定/取消），
   // 用块语句包裹避免 page.evaluate 等待该 Promise
-  await page.evaluate( => {
-    ;(window as any).openConfirmLoading
+  await page.evaluate(() => {
+    ;(window as any).openConfirmLoading()
   })
-  await page.waitForFunction( => document.querySelector('oas-modal[visible]') != null, null, {
+  await page.waitForFunction(() => document.querySelector('oas-modal[visible]') != null, null, {
     timeout: 5000,
   })
   // 点击确定 → 对话框保持打开并进入 loading（OK 禁用 + aria-busy + spinner 可见）
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const m = document.querySelector('oas-modal[visible]')!
-    ;(m.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click
+    ;(m.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
   })
-  await page.waitForFunction(
-     => {
+  await page.waitForFunction(() => {
       const m = document.querySelector('oas-modal[visible]')
       const ok = m?.shadowRoot?.querySelector<HTMLButtonElement>('[part="ok"]')
       const spinner = m?.shadowRoot?.querySelector('[part="ok"] .spinner')
@@ -1400,8 +1394,7 @@ test('modal 命令式确认 loading：确定进入 loading、1.5s 后自动关�
     { timeout: 5000 },
   )
   // onOk resolve（1.5s）后自动关闭并弹成功 message
-  await page.waitForFunction(
-     =>
+  await page.waitForFunction(() =>
       document.querySelector('oas-modal[visible]') == null &&
       document.querySelectorAll('oas-message').length > 0,
     null,
@@ -1415,11 +1408,11 @@ test('card clickable：整卡 role/tabindex 存活、点击派发 oas-click 有�
   // 曾现风险：clickable 属性被 Vue 剥离、整卡点击静默失败、actions 内按钮误触整卡
   await page.goto('/components/card.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-card[clickable]')
-  await page.waitForFunction( => typeof (window as any).message !== 'undefined', null, {
+  await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
     timeout: 10000,
   })
   // 整卡承担按钮语义（Vue 下 clickable 存活 → role/tabindex 同步）
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const card = document.querySelector('oas-card[clickable][cover-src]')!
     const cover = card.shadowRoot!.querySelector('[part="cover-img"]')
     const actions = card.shadowRoot!.querySelector('[part="actions"]')
@@ -1436,21 +1429,21 @@ test('card clickable：整卡 role/tabindex 存活、点击派发 oas-click 有�
   expect(r.actionsHidden).toBe(false)
 
   // 点击整卡 → message 可见反馈（demo 监听 oas-click 弹消息）
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const card = document.querySelector('oas-card[clickable][cover-src]')!
-    ;(card.shadowRoot!.querySelector('[part="body"]') as HTMLElement).click
+    ;(card.shadowRoot!.querySelector('[part="body"]') as HTMLElement).click()
   })
-  await page.waitForFunction( => document.querySelectorAll('oas-message').length > 0, null, {
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length > 0, null, {
     timeout: 5000,
   })
-  const msgCount = await page.locator('oas-message').count
+  const msgCount = await page.locator('oas-message').count()
   expect(msgCount).toBeGreaterThan(0)
 
   // 点击 actions 内按钮 → 不派发整卡 oas-click（演示反馈应不重复弹出）
-  const before = await page.locator('oas-message').count
-  await page.locator('oas-card[clickable][cover-src] oas-button').first.click
+  const before = await page.locator('oas-message').count()
+  await page.locator('oas-card[clickable][cover-src] oas-button').first().click()
   await page.waitForTimeout(600)
-  const after = await page.locator('oas-message').count
+  const after = await page.locator('oas-message').count()
   expect(after, '点内部按钮不应再触发整卡 oas-click').toBe(before)
 })
 
@@ -1462,20 +1455,19 @@ test('table 行内编辑：Enter 提交后编辑器退出且列高亮清除', as
   // 直接对首行「姓名」单元格派发 dblclick 进入编辑
   // （Playwright 真实 dblclick 手势会把两次 click 派发给同一解析元素——首击触发行选中重建
   //  后该元素已脱离文档，进入编辑会落到游离节点上；这里用 DOM 事件直派更确定）
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const table = document.querySelector('#table-edit')!
     const td = table.shadowRoot!.querySelector('tbody tr.row td')!
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
   })
-  await page.waitForFunction(
-     => {
+  await page.waitForFunction(() => {
       const t = document.querySelector('#table-edit')!
       return !!t.shadowRoot!.querySelector('input.cell-editor')
     },
     null,
     { timeout: 5000 },
   )
-  const entered = await page.evaluate( => {
+  const entered = await page.evaluate(() => {
     const table = document.querySelector('#table-edit')!
     return {
       hasEditor: !!table.shadowRoot!.querySelector('input.cell-editor'),
@@ -1484,7 +1476,7 @@ test('table 行内编辑：Enter 提交后编辑器退出且列高亮清除', as
   })
   expect(entered.hasEditor).toBe(true)
   expect(entered.editingCol).toBe(true)
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const table = document.querySelector('#table-edit')!
     const input = table.shadowRoot!.querySelector<HTMLInputElement>('input.cell-editor')!
     input.value = '演示提交'
@@ -1492,15 +1484,14 @@ test('table 行内编辑：Enter 提交后编辑器退出且列高亮清除', as
       new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true }),
     )
   })
-  await page.waitForFunction(
-     => {
+  await page.waitForFunction(() => {
       const t = document.querySelector('#table-edit')!
       return !t.shadowRoot!.querySelector('input.cell-editor')
     },
     null,
     { timeout: 5000 },
   )
-  const after = await page.evaluate( => {
+  const after = await page.evaluate(() => {
     const table = document.querySelector('#table-edit')!
     return {
       hasEditor: !!table.shadowRoot!.querySelector('input.cell-editor'),
@@ -1516,7 +1507,7 @@ test('table 行内编辑：Enter 提交后编辑器退出且列高亮清除', as
 test('table 吸顶行：sticky-rows 前 N 行带 data-sticky 且与固定列共存', async ({ page }) => {
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-table[sticky-rows]')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const table = document.querySelector('oas-table[sticky-rows]')!
     const rows = [...table.shadowRoot!.querySelectorAll('tbody tr.row')]
     return rows.slice(0, 4).map((tr) => ({
@@ -1528,7 +1519,7 @@ test('table 吸顶行：sticky-rows 前 N 行带 data-sticky 且与固定列共�
   expect(r[0]!.sticky).toBe('true')
   expect(r[1]!.sticky).toBe('true')
   expect(r[2]!.sticky).toBe('true')
-  expect(r[3]!.sticky).toBeNull
+  expect(r[3]!.sticky).toBeNull()
   // 固定列与吸顶行共存：sticky 行的固定单元格仍保留横向偏移
   expect(r[0]!.left).toBe('0px')
   expect(parseFloat(r[0]!.top), '吸顶行 top 应大于 0（表头下方）').toBeGreaterThan(0)
@@ -1540,7 +1531,7 @@ test('tree 自定义节点模板 + oas-node-render 渲染真实内容且 ARIA �
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-custom')
   await page.waitForTimeout(600)
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const tree = document.querySelector('#tree-custom')!
     const row = tree.shadowRoot!.querySelector('[part="row"]')!
     const label = row.querySelector('.label')!
@@ -1549,9 +1540,9 @@ test('tree 自定义节点模板 + oas-node-render 渲染真实内容且 ARIA �
     const binder = label.querySelector('[data-node-label]') as HTMLElement | null
     return {
       glyph: !!glyph,
-      glyphW: glyph ? Math.round(glyph.getBoundingClientRect.width) : null,
+      glyphW: glyph ? Math.round(glyph.getBoundingClientRect().width) : null,
       boundText: binder?.textContent ?? '',
-      labelW: binder ? Math.round(binder.getBoundingClientRect.width) : null,
+      labelW: binder ? Math.round(binder.getBoundingClientRect().width) : null,
       badge: label.querySelector('.node-demo-count')?.textContent ?? '',
       rowRole: row.getAttribute('role'),
       rowLevel: row.getAttribute('aria-level'),
@@ -1572,12 +1563,11 @@ test('tree 自定义节点模板 + oas-node-render 渲染真实内容且 ARIA �
   expect(r.toggleTag, '展开按钮应为原生 button（键盘 Enter/Space 可达）').toBe('BUTTON')
   expect(r.toggleExpanded).toBe('true')
   // 展开按钮点击 → aria-expanded 翻转（自定义 toggle 模板下键盘/ARIA 不丢）
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const tree = document.querySelector('#tree-custom')!
-    ;(tree.shadowRoot!.querySelector('[part="toggle"]') as HTMLElement).click
+    ;(tree.shadowRoot!.querySelector('[part="toggle"]') as HTMLElement).click()
   })
-  await page.waitForFunction(
-     =>
+  await page.waitForFunction(() =>
       document
         .querySelector('#tree-custom')!
         .shadowRoot!.querySelector('[part="toggle"]')
@@ -1596,7 +1586,7 @@ test('tree slot 模板：Vue CSR 直插形态（insertBefore 到模板自身、c
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   // 先等 ui bundle 加载完成（oas-tree 已注册），保证动态创建的元素立即 upgrade
   await up(page, '#tree-custom')
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const wrap = document.createElement('div')
     wrap.innerHTML = `<oas-tree id="tree-csr-slot" data='[{"key":"a","label":"CSR 节点"}]'></oas-tree>`
     document.body.appendChild(wrap)
@@ -1616,7 +1606,7 @@ test('tree slot 模板：Vue CSR 直插形态（insertBefore 到模板自身、c
   })
   await up(page, '#tree-csr-slot')
   await page.waitForTimeout(200)
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const tree = document.querySelector('#tree-csr-slot')!
     const label = tree.shadowRoot!.querySelector('[part="row"] .label')!
     return {
@@ -1634,8 +1624,8 @@ test('tree 目录模式：文件夹/文件图标、展开态切换与 ARIA', asy
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-dir')
   await page.waitForTimeout(600)
-  const kinds =  =>
-    page.evaluate( => {
+  const kinds = () =>
+    page.evaluate(() => {
       const tree = document.querySelector('#tree-dir')!
       return [...tree.shadowRoot!.querySelectorAll('[part="row"]')].map((row) => ({
         kind: row.querySelector('[part="node-icon"]')?.getAttribute('data-kind') ?? '',
@@ -1644,7 +1634,7 @@ test('tree 目录模式：文件夹/文件图标、展开态切换与 ARIA', asy
         label: row.querySelector('.label')?.textContent ?? '',
       }))
     })
-  const rows = await kinds
+  const rows = await kinds()
   // src(folder-open，expanded 初始含 src) components(folder) index.ts(file) …
   expect(rows[0]!.label).toBe('src')
   expect(rows[0]!.kind, '已展开文件夹应为 folder-open').toBe('folder-open')
@@ -1655,13 +1645,12 @@ test('tree 目录模式：文件夹/文件图标、展开态切换与 ARIA', asy
   expect(rows[0]!.iconHidden, '目录图标应为纯装饰（aria-hidden）').toBe('true')
   expect(rows[1]!.ariaExpanded).toBe('false')
   // 点击 components 展开按钮 → 图标切 folder-open 且子文件出现
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const tree = document.querySelector('#tree-dir')!
     const row = [...tree.shadowRoot!.querySelectorAll('[part="row"]')][1]!
-    ;(row.querySelector('[part="toggle"]') as HTMLElement).click
+    ;(row.querySelector('[part="toggle"]') as HTMLElement).click()
   })
-  await page.waitForFunction(
-     => {
+  await page.waitForFunction(() => {
       const tree = document.querySelector('#tree-dir')!
       const row = [...tree.shadowRoot!.querySelectorAll('[part="row"]')][1]!
       return row.querySelector('[part="node-icon"]')?.getAttribute('data-kind') === 'folder-open'
@@ -1669,7 +1658,7 @@ test('tree 目录模式：文件夹/文件图标、展开态切换与 ARIA', asy
     null,
     { timeout: 5000 },
   )
-  const expanded = await kinds
+  const expanded = await kinds()
   expect(expanded[1]!.ariaExpanded).toBe('true')
   expect(
     expanded.some((r) => r.label === 'tree.tsx' && r.kind === 'file'),
@@ -1682,7 +1671,7 @@ test('avatar 徽标角标：badge 文本可见且带底色、dot 圆点不渲染
   // 本次补 badge/badge-dot/badge-color/badge-placement 叠加角标（视觉对齐 oas-badge）。
   await page.goto('/components/avatar.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-avatar[badge="99+"]')
-  const textBadge = await page.evaluate( => {
+  const textBadge = await page.evaluate(() => {
     const el = document.querySelector('oas-avatar[badge="99+"]')!
     const b = el.shadowRoot!.querySelector('[part="badge"]')!
     const cs = getComputedStyle(b)
@@ -1692,7 +1681,7 @@ test('avatar 徽标角标：badge 文本可见且带底色、dot 圆点不渲染
   expect(textBadge.text).toBe('99+')
   expect(textBadge.bg, '徽标应有非透明底色').not.toBe('rgba(0, 0, 0, 0)')
 
-  const dot = await page.evaluate( => {
+  const dot = await page.evaluate(() => {
     const el = document.querySelector('oas-avatar[badge-dot]')!
     const b = el.shadowRoot!.querySelector('[part="badge"]')!
     return { dot: b.classList.contains('dot'), text: b.textContent }
@@ -1706,15 +1695,14 @@ test('avatar 加载失败回退：404 图触发 img error 后回退首字符、�
   await page.goto('/components/avatar.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-avatar[src*="invalid.example.com"]')
   // 等 img error 触发 → fallback 容器显示
-  await page.waitForFunction(
-     => {
+  await page.waitForFunction(() => {
       const el = document.querySelector('oas-avatar[src*="invalid.example.com"]')!
       return el.shadowRoot!.querySelector('[part="fallback"]')!.hasAttribute('hidden') === false
     },
     null,
     { timeout: 10000 },
   )
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-avatar[src*="invalid.example.com"]')!
     return {
       imgHidden: el.shadowRoot!.querySelector('img')!.hasAttribute('hidden'),
@@ -1732,16 +1720,15 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
   await page.goto('/components/image.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-image[lazy]')
   // 动态创建的懒加载列表由 demo onMounted 填充，静态首图存在不代表列表已建完
-  await page.waitForFunction(
-     => document.querySelectorAll('#image-lazy-list oas-image[lazy]').length >= 6,
+  await page.waitForFunction(() => document.querySelectorAll('#image-lazy-list oas-image[lazy]').length >= 6,
     null,
     { timeout: 15000 },
   )
   // 懒加载列表块整体位于页面首屏之外（demo 页需先滚页面才可见）——
   // 仅滚内层容器时列表块仍在视口外，IO 永远不触发。先把列表整体滚入页面视口。
-  await page.evaluate( => document.querySelector('#image-lazy-list')?.scrollIntoView)
+  await page.evaluate(() => document.querySelector('#image-lazy-list')?.scrollIntoView())
   await page.locator('#image-lazy-list').evaluate((el) => (el.scrollTop = 0))
-  const state = await page.evaluate( => {
+  const state = await page.evaluate(() => {
     const list = document.querySelector('#image-lazy-list')!
     const imgs = [...list.querySelectorAll('oas-image[lazy]')]
     const noSrc = imgs.filter((i) => {
@@ -1754,7 +1741,7 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
   expect(state.noSrc, '列表底部应有未加载的图片').toBeGreaterThan(0)
   // 逐步滚动内层列表到底部（模拟真实浏览：每屏都经过视口，IO 逐屏触发加载；
   // 一次滚到底会跳过中间项，这些项从未进入视口 → 永远不加载，属于正确懒加载行为）
-  await page.evaluate(async  => {
+  await page.evaluate(async () => {
     const list = document.querySelector('#image-lazy-list') as HTMLElement
     const max = list.scrollHeight - list.clientHeight
     while (list.scrollTop < max) {
@@ -1762,8 +1749,7 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
       await new Promise((r) => setTimeout(r, 50))
     }
   })
-  await page.waitForFunction(
-     => {
+  await page.waitForFunction(() => {
       const list = document.querySelector('#image-lazy-list')!
       const imgs = [...list.querySelectorAll('oas-image[lazy]')]
       return (
@@ -1778,8 +1764,7 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
     { timeout: 10000 },
   )
   // 状态机收尾：首批（列表首个）加载完成后 aria-busy 从 true 复位为 false
-  await page.waitForFunction(
-     => {
+  await page.waitForFunction(() => {
       const first = document.querySelector('#image-lazy-list oas-image[lazy]')!
       return first.getAttribute('aria-busy') === 'false'
     },
@@ -1792,7 +1777,7 @@ test('transfer 搜索：输入过滤词后可见行减少、无匹配显示空�
   // 防回归：searchable 过滤必须真实驱动面板渲染，且无匹配时有可见空态反馈
   await page.goto('/components/transfer.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-transfer[searchable]')
-  await page.waitForFunction( => {
+  await page.waitForFunction(() => {
     const el = document.querySelector('#transfer-search')
     return el?.shadowRoot?.querySelectorAll('.listbox.left .option').length === 5
   })
@@ -1801,7 +1786,7 @@ test('transfer 搜索：输入过滤词后可见行减少、无匹配显示空�
     input.value = '香'
     input.dispatchEvent(new Event('input', { bubbles: true }))
   })
-  await page.waitForFunction( => {
+  await page.waitForFunction(() => {
     const el = document.querySelector('#transfer-search')
     return el?.shadowRoot?.querySelectorAll('.listbox.left .option').length === 1
   })
@@ -1810,7 +1795,7 @@ test('transfer 搜索：输入过滤词后可见行减少、无匹配显示空�
     input.value = 'zzz'
     input.dispatchEvent(new Event('input', { bubbles: true }))
   })
-  await page.waitForFunction( => {
+  await page.waitForFunction(() => {
     const el = document.querySelector('#transfer-search')
     return el?.shadowRoot?.querySelector('.listbox.left .empty') != null
   })
@@ -1825,7 +1810,7 @@ test('transfer case-sensitive：区分大小写搜索', async ({ page }) => {
     input.dispatchEvent(new Event('input', { bubbles: true }))
   })
   // 'ap' 只命中 apricot（Apple 大写 A 不匹配）
-  await page.waitForFunction( => {
+  await page.waitForFunction(() => {
     const el = document.querySelector('#transfer-casesensitive')
     const rows = el?.shadowRoot?.querySelectorAll('.listbox.left .option') ?? []
     return rows.length === 1 && rows[0]!.textContent === 'apricot'
@@ -1837,10 +1822,10 @@ test('transfer one-way：左侧含全部数据且已穿梭项禁用，右侧无�
   await up(page, 'oas-transfer[one-way]')
   await page.locator('#transfer-oneway').evaluate((el) => {
     const row = el.shadowRoot!.querySelector('.listbox.left .option') as HTMLElement
-    row.click
-    el.shadowRoot!.querySelector<HTMLButtonElement>('.to-right')!.click
+    row.click()
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.to-right')!.click()
   })
-  await page.waitForFunction( => {
+  await page.waitForFunction(() => {
     const el = document.querySelector('#transfer-oneway')
     return el?.getAttribute('value')?.includes('a')
   })
@@ -1864,7 +1849,7 @@ test('transfer one-way：左侧含全部数据且已穿梭项禁用，右侧无�
 test('transfer virtual：万级数据窗口化渲染且滚动后窗口平移', async ({ page }) => {
   await page.goto('/components/transfer.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-transfer[virtual]')
-  await page.waitForFunction( => {
+  await page.waitForFunction(() => {
     const vlist = document
       .querySelector('#transfer-virtual')
       ?.shadowRoot?.querySelector('.vlist-left')
@@ -1904,25 +1889,24 @@ test('notification 进度条：show-progress 渲染、动画时长与 duration �
 }) => {
   await page.goto('/components/notification.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
-  await page.waitForFunction( => typeof (window as any).notification !== 'undefined', null, {
+  await page.waitForFunction(() => typeof (window as any).notification !== 'undefined', null, {
     timeout: 10000,
   })
-  await page.locator('.demo-block', { hasText: '带进度条' }).locator('oas-button').first.click
-  await page.waitForFunction(
-     => document.querySelector('oas-notification[show-progress]') != null,
+  await page.locator('.demo-block', { hasText: '带进度条' }).locator('oas-button').first().click()
+  await page.waitForFunction(() => document.querySelector('oas-notification[show-progress]') != null,
     null,
     { timeout: 5000 },
   )
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-notification[show-progress]')!
     const root = el.shadowRoot!
     const progress = root.querySelector<HTMLElement>('[part="progress"]')!
     const fill = root.querySelector<HTMLElement>('.progress-fill')!
     const box = root.querySelector<HTMLElement>('[part="box"]')!
     const desc = root.querySelector<HTMLElement>('[part="description"]')!
-    const p = progress.getBoundingClientRect
-    const b = box.getBoundingClientRect
-    const d = desc.getBoundingClientRect
+    const p = progress.getBoundingClientRect()
+    const b = box.getBoundingClientRect()
+    const d = desc.getBoundingClientRect()
     return {
       progressHidden: progress.hidden,
       fillInlineDuration: fill.style.animationDuration, // '5000ms'（demo duration: 5000）
@@ -1945,24 +1929,23 @@ test('notification 进度条：show-progress 渲染、动画时长与 duration �
 test('notification 进度条 progress-position=top：进度条切到描述上方', async ({ page }) => {
   await page.goto('/components/notification.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
-  await page.waitForFunction( => typeof (window as any).notification !== 'undefined', null, {
+  await page.waitForFunction(() => typeof (window as any).notification !== 'undefined', null, {
     timeout: 10000,
   })
-  await page.locator('.demo-block', { hasText: '带进度条' }).locator('oas-button').nth(1).click
-  await page.waitForFunction(
-     => document.querySelector('oas-notification[progress-position="top"]') != null,
+  await page.locator('.demo-block', { hasText: '带进度条' }).locator('oas-button').nth(1).click()
+  await page.waitForFunction(() => document.querySelector('oas-notification[progress-position="top"]') != null,
     null,
     { timeout: 5000 },
   )
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-notification[progress-position="top"]')!
     const root = el.shadowRoot!
     const progress = root.querySelector<HTMLElement>('[part="progress"]')!
     const box = root.querySelector<HTMLElement>('[part="box"]')!
     const titleRow = root.querySelector<HTMLElement>('.title-row')!
-    const p = progress.getBoundingClientRect
-    const b = box.getBoundingClientRect
-    const t = titleRow.getBoundingClientRect
+    const p = progress.getBoundingClientRect()
+    const b = box.getBoundingClientRect()
+    const t = titleRow.getBoundingClientRect()
     return {
       topClass: progress.classList.contains('progress-top'),
       aboveTitle: p.bottom <= t.top + 1, // 进度条在标题行上方（卡盒顶部）
@@ -1979,12 +1962,11 @@ test('notification 进度条 progress-position=top：进度条切到描述上方
 test('notification 长内容可滚动：描述区限高 + overflow-y auto 且真实可滚', async ({ page }) => {
   await page.goto('/components/notification.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
-  await page.waitForFunction( => typeof (window as any).notification !== 'undefined', null, {
+  await page.waitForFunction(() => typeof (window as any).notification !== 'undefined', null, {
     timeout: 10000,
   })
-  await page.locator('.demo-block', { hasText: '长内容可滚动' }).locator('oas-button').click
-  await page.waitForFunction(
-     =>
+  await page.locator('.demo-block', { hasText: '长内容可滚动' }).locator('oas-button').click()
+  await page.waitForFunction(() =>
       document
         .querySelector('oas-notification')
         ?.shadowRoot?.querySelector('[part="description"]')
@@ -1992,7 +1974,7 @@ test('notification 长内容可滚动：描述区限高 + overflow-y auto 且真
     null,
     { timeout: 5000 },
   )
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-notification')!
     const desc = el.shadowRoot!.querySelector<HTMLElement>('[part="description"]')!
     const cs = getComputedStyle(desc)
@@ -2016,7 +1998,7 @@ test('notification 长内容可滚动：描述区限高 + overflow-y auto 且真
 test('calendar 自定义单元格：cell-render 标记的节假日点可见', async ({ page }) => {
   await page.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-calendar#calendar-cell-render')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-calendar#calendar-cell-render')!
     const dots = [...el.shadowRoot!.querySelectorAll('.day .cell-dot')].map((d) => {
       const btn = d.closest('.day')
@@ -2034,8 +2016,8 @@ test('calendar 模式切换：year 选中月份后自动切回月视图（value 
   await page.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-calendar#calendar-mode')
   // 切到年视图
-  await page.locator('#calendar-mode-year').click
-  await page.waitForFunction( => {
+  await page.locator('#calendar-mode-year').click()
+  await page.waitForFunction(() => {
     const el = document.querySelector('oas-calendar#calendar-mode')!
     return (
       el.getAttribute('mode') === 'year' &&
@@ -2043,12 +2025,12 @@ test('calendar 模式切换：year 选中月份后自动切回月视图（value 
     )
   })
   // 年视图下点 2026 年 7 月 → value 更新 + 自动切回月视图
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const el = document.querySelector('oas-calendar#calendar-mode')!
     const months = el.shadowRoot!.querySelectorAll('.month-cell')
-    ;(months[6] as HTMLElement).click
+    ;(months[6] as HTMLElement).click()
   })
-  await page.waitForFunction( => {
+  await page.waitForFunction(() => {
     const el = document.querySelector('oas-calendar#calendar-mode')!
     return (
       el.getAttribute('value') === '2026-07' &&
@@ -2056,7 +2038,7 @@ test('calendar 模式切换：year 选中月份后自动切回月视图（value 
       el.shadowRoot!.querySelectorAll('.day').length > 0
     )
   })
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-calendar#calendar-mode')!
     return {
       mode: el.getAttribute('mode'),
@@ -2078,7 +2060,7 @@ test('calendar 模式切换：year 选中月份后自动切回月视图（value 
 test('slider show-input：拖动滑块实时更新输入框、输入数字防抖后驱动滑块', async ({ page }) => {
   await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-slider[show-input]')
-  const el = page.locator('oas-slider[show-input]').first
+  const el = page.locator('oas-slider[show-input]').first()
   // 初始：输入框与滑块数值一致
   const r0 = await el.evaluate((node) => {
     const root = node.shadowRoot!
@@ -2106,8 +2088,7 @@ test('slider show-input：拖动滑块实时更新输入框、输入数字防抖
     num.value = '35'
     num.dispatchEvent(new Event('input', { bubbles: true }))
   })
-  await page.waitForFunction(
-     => {
+  await page.waitForFunction(() => {
       const el = document.querySelector('oas-slider[show-input]')
       const input = el?.shadowRoot?.querySelector<HTMLInputElement>('[data-role="range"]')
       return input != null && Number(input.value) === 35
@@ -2120,7 +2101,7 @@ test('slider show-input：拖动滑块实时更新输入框、输入数字防抖
 test('slider range：双滑块区间 + 双输入框联动且方向反向（reverse）生效', async ({ page }) => {
   await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-slider[range][show-input]')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-slider[range][show-input]')!
     const root = el.shadowRoot!
     const min = root.querySelector<HTMLInputElement>('[data-role="range-min"]')!
@@ -2143,12 +2124,12 @@ test('slider range：双滑块区间 + 双输入框联动且方向反向（rever
   expect(r.numMin).toBe('20')
   expect(r.numMax).toBe('80')
   expect(r.fillWidth).toBe('60%')
-  expect(r.minAria).toBeTruthy
-  expect(r.maxAria).toBeTruthy
+  expect(r.minAria).toBeTruthy()
+  expect(r.maxAria).toBeTruthy()
 
   // reverse demo：方向反转 + 填充区从右端
   await up(page, 'oas-slider[reverse]')
-  const rev = await page.evaluate( => {
+  const rev = await page.evaluate(() => {
     const el = document.querySelector('oas-slider[reverse]')!
     const root = el.shadowRoot!
     const input = root.querySelector<HTMLInputElement>('[data-role="range"]')!
@@ -2164,7 +2145,7 @@ test('slider range：双滑块区间 + 双输入框联动且方向反向（rever
   expect(rev.dir).toBe('rtl')
   expect(rev.fillRight).toBe('0%')
   expect(parseFloat(rev.fillWidth)).toBeGreaterThan(0)
-  expect(rev.ariaLabel).toBeTruthy
+  expect(rev.ariaLabel).toBeTruthy()
   expect(rev.ariaNow).toBe('60')
 })
 
@@ -2173,7 +2154,7 @@ test('slider custom-thumb：模板内容克隆进滑块、值气泡显示当前�
 }) => {
   await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-slider[show-tooltip]')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-slider[show-tooltip]')!
     const root = el.shadowRoot!
     const thumb = root.querySelector<HTMLElement>('.custom-thumb[data-thumb="value"]')!
@@ -2199,38 +2180,36 @@ test('message 分组与更新：同组合并计数、update/destroy 可见反馈
   // 现要求：同 group 合并为一条并递增计数；update(key, options) 原位改内容/类型；destroy(key) 关单条。
   await page.goto('/components/message.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button')
-  await page.waitForFunction( => typeof (window as any).message !== 'undefined', null, {
+  await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
     timeout: 10000,
   })
   // 同 group 连点两次 → 合并为一条且计数 ×2（demo 按钮带 group + duration 0，可连点）
   const groupBlock = page.locator('.demo-block', { hasText: '分组消息' })
-  await groupBlock.locator('oas-button').nth(0).click
-  await groupBlock.locator('oas-button').nth(0).click
-  await page.waitForFunction( => document.querySelectorAll('oas-message').length === 1, null, {
+  await groupBlock.locator('oas-button').nth(0).click()
+  await groupBlock.locator('oas-button').nth(0).click()
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length === 1, null, {
     timeout: 5000,
   })
-  let text = await page.evaluate(
-     =>
+  let text = await page.evaluate(() =>
       document.querySelector('oas-message')?.shadowRoot?.querySelector('[part="text"]')
         ?.textContent ?? '',
   )
   expect(text).toContain('保存成功')
   expect(text).toContain('×2')
   // 不同 group → 相互独立（2 条）
-  await groupBlock.locator('oas-button').nth(1).click
-  await page.waitForFunction( => document.querySelectorAll('oas-message').length === 2, null, {
+  await groupBlock.locator('oas-button').nth(1).click()
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length === 2, null, {
     timeout: 5000,
   })
   // update：点「开始上传」新建 key=upload，再点「更新为成功」→ 原位改类型/内容（计数不显示后缀）
   const updateBlock = page.locator('.demo-block', { hasText: '更新消息' })
-  await updateBlock.locator('oas-button').nth(0).click
-  await updateBlock.locator('oas-button').nth(1).click
-  await page.waitForFunction(
-     => document.querySelector('oas-message[key="upload"]')?.getAttribute('type') === 'success',
+  await updateBlock.locator('oas-button').nth(0).click()
+  await updateBlock.locator('oas-button').nth(1).click()
+  await page.waitForFunction(() => document.querySelector('oas-message[key="upload"]')?.getAttribute('type') === 'success',
     null,
     { timeout: 5000 },
   )
-  const upd = await page.evaluate( => {
+  const upd = await page.evaluate(() => {
     const el = document.querySelector('oas-message[key="upload"]')!
     return {
       text: el.shadowRoot!.querySelector('[part="text"]')!.textContent ?? '',
@@ -2240,19 +2219,17 @@ test('message 分组与更新：同组合并计数、update/destroy 可见反馈
   expect(upd.text).toBe('上传成功')
   expect(upd.total).toBe(3)
   // destroy：关闭指定 key，其余保留
-  await updateBlock.locator('oas-button').nth(2).click
-  await page.waitForFunction(
-     => document.querySelector('oas-message[key="upload"]') == null,
+  await updateBlock.locator('oas-button').nth(2).click()
+  await page.waitForFunction(() => document.querySelector('oas-message[key="upload"]') == null,
     null,
     {
       timeout: 5000,
     },
   )
-  expect(await page.locator('oas-message').count).toBe(2)
+  expect(await page.locator('oas-message').count()).toBe(2)
   // 同组再点 → 计数继续累加（×3，分组合并后 count 持久）
-  await groupBlock.locator('oas-button').nth(0).click
-  await page.waitForFunction(
-     =>
+  await groupBlock.locator('oas-button').nth(0).click()
+  await page.waitForFunction(() =>
       document
         .querySelector('oas-message[group="save"]')
         ?.shadowRoot?.querySelector('[part="text"]')
@@ -2272,7 +2249,7 @@ test('breadcrumb 折叠：超出 max-items 中间项折叠为 …，点击展开
   await page.goto('/components/breadcrumb.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-breadcrumb#bc-collapsed')
   // 折叠态：可见 item 4（首 + … + 末2），省略按钮可聚焦（aria-expanded=false）、下拉默认关闭
-  const r0 = await page.evaluate( => {
+  const r0 = await page.evaluate(() => {
     const el = document.querySelector('oas-breadcrumb#bc-collapsed')!
     const root = el.shadowRoot!
     const btn = root.querySelector<HTMLButtonElement>('.ellipsis-btn')!
@@ -2290,36 +2267,36 @@ test('breadcrumb 折叠：超出 max-items 中间项折叠为 …，点击展开
   expect(r0.itemCount).toBe(4)
   expect(r0.btnText).toContain('…')
   expect(r0.ariaExpanded).toBe('false')
-  expect(r0.ariaLabel).toBeTruthy
+  expect(r0.ariaLabel).toBeTruthy()
   expect(r0.open).toBe(false)
   expect(r0.hiddenLabels).toEqual(['组件', '导航', '数据展示'])
   expect(r0.current).toBe('面包屑')
   // 点击 … 展开下拉
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const el = document.querySelector('oas-breadcrumb#bc-collapsed')!
-    el.shadowRoot!.querySelector<HTMLElement>('.ellipsis-btn')!.click
+    el.shadowRoot!.querySelector<HTMLElement>('.ellipsis-btn')!.click()
   })
-  await page.waitForFunction( => {
+  await page.waitForFunction(() => {
     const el = document.querySelector('oas-breadcrumb#bc-collapsed')!
     return el.shadowRoot!.querySelector('.ellipsis-dropdown')!.classList.contains('open')
   })
   // 点击折叠项：派发 oas-select（demo 输出可见反馈）+ 下拉关闭
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const el = document.querySelector('oas-breadcrumb#bc-collapsed')!
-    el.shadowRoot!.querySelector<HTMLElement>('.ellipsis-dropdown a')!.click
+    el.shadowRoot!.querySelector<HTMLElement>('.ellipsis-dropdown a')!.click()
   })
-  await page.waitForFunction( => {
+  await page.waitForFunction(() => {
     const el = document.querySelector('oas-breadcrumb#bc-collapsed')!
     return !el.shadowRoot!.querySelector('.ellipsis-dropdown')!.classList.contains('open')
   })
-  const output = await page.locator('#bc-collapsed-result').textContent
+  const output = await page.locator('#bc-collapsed-result').textContent()
   expect(output).toContain('已点击')
 })
 
 test('breadcrumb 单行省略：ellipsis 时 nav 不换行 class + 链接带全文 title', async ({ page }) => {
   await page.goto('/components/breadcrumb.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-breadcrumb#bc-ellipsis')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-breadcrumb#bc-ellipsis')!
     const root = el.shadowRoot!
     const nav = root.querySelector('nav')!
@@ -2330,7 +2307,7 @@ test('breadcrumb 单行省略：ellipsis 时 nav 不换行 class + 链接带全�
     }
   })
   expect(r.ellipsis).toBe(true)
-  expect(r.title).toBeTruthy
+  expect(r.title).toBeTruthy()
 })
 
 test('tabs 动态增删：+ 新增默认标签（locale 文案、选中、roving tabindex），× 关闭可见反馈', async ({
@@ -2338,11 +2315,11 @@ test('tabs 动态增删：+ 新增默认标签（locale 文案、选中、roving
 }) => {
   await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-tabs[addable] oas-tab-panel')
-  const r1 = await page.evaluate( => {
+  const r1 = await page.evaluate(() => {
     const t = document.querySelector('#tabs-editable')!
     const add = t.shadowRoot!.querySelector<HTMLElement>('.tab-add')!
-    add.focus // 模拟真实点击：先聚焦 + 按钮（键盘 Enter / 鼠标按下都会聚焦）
-    add.click
+    add.focus() // 模拟真实点击：先聚焦 + 按钮（键盘 Enter / 鼠标按下都会聚焦）
+    add.click()
     // 排除 + 占位 tab（role=tab 但无 data-value，axe aria-required-children 需要它是 tab）
     const tabs = [...t.shadowRoot!.querySelectorAll('[role="tab"][data-value]')]
     const selected = tabs.find((b) => b.getAttribute('aria-selected') === 'true')!
@@ -2355,7 +2332,7 @@ test('tabs 动态增删：+ 新增默认标签（locale 文案、选中、roving
       focusOnNew: t.shadowRoot!.activeElement === selected,
     }
   })
-  expect(r1.count).toBe(3)
+  expect(r1.count ).toBe(3)
   expect(r1.panelCount).toBe(3)
   expect(r1.selectedText).toContain('新标签')
   expect(r1.selectedTabIndex).toBe('0')
@@ -2363,14 +2340,14 @@ test('tabs 动态增删：+ 新增默认标签（locale 文案、选中、roving
   expect(r1.focusOnNew).toBe(true)
 
   // 关闭新增的激活标签 → 面板移除 + 切回第一个 + 焦点仍在标签栏
-  const r2 = await page.evaluate( => {
+  const r2 = await page.evaluate(() => {
     const t = document.querySelector('#tabs-editable')!
     const key = t.getAttribute('active')!
     const tabs = [...t.shadowRoot!.querySelectorAll('[role="tab"][data-value]')]
     const idx = tabs.findIndex((b) => b.getAttribute('data-value') === key)
     const close = tabs[idx]!.querySelector<HTMLElement>('.tab-close')!
     close.focus // 模拟真实鼠标点击 ×（mousedown 聚焦可聚焦的关闭位）
-    close.click
+    close.click()
     const after = [...t.shadowRoot!.querySelectorAll('[role="tab"][data-value]')]
     return {
       panelCount: t.querySelectorAll('oas-tab-panel').length,
@@ -2388,11 +2365,11 @@ test('tabs 动态增删：+ 新增默认标签（locale 文案、选中、roving
 test('tabs 键盘方向键：焦点随 roving tabindex 移动、aria-selected 同步', async ({ page }) => {
   await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-tabs oas-tab-panel')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const t = document.querySelector('oas-tabs')!
     const tablist = t.shadowRoot!.querySelector<HTMLElement>('[role="tablist"]')!
     const first = t.shadowRoot!.querySelector<HTMLElement>('[role="tab"]')!
-    first.focus
+    first.focus()
     tablist.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
     const tabs = [...t.shadowRoot!.querySelectorAll('[role="tab"]')]
     return {
@@ -2411,7 +2388,7 @@ test('tabs 键盘方向键：焦点随 roving tabindex 移动、aria-selected �
 test('tabs 图标标签：icon 属性渲染 SVG，slot="icon" 自定义图标，均对读屏隐藏', async ({ page }) => {
   await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-tabs#tabs-icon oas-tab-panel')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const t = document.querySelector('#tabs-icon')!
     const icons = [...t.shadowRoot!.querySelectorAll('.tab-icon')]
     return {
@@ -2434,14 +2411,14 @@ test('steps progress-dot：属性在 Vue demo 存活、指示器为装饰性圆�
 }) => {
   await page.goto('/components/steps.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-steps[progress-dot]')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const el = document.querySelector('oas-steps[progress-dot]')!
     const root = el.shadowRoot!
     const items = [...root.querySelectorAll('.item')]
     const icons = items.map((it) => it.querySelector('.icon')!)
     const line = getComputedStyle(items[0]!, '::after')
-    const iconRect = icons[0]!.getBoundingClientRect
-    const itemRect = items[0]!.getBoundingClientRect
+    const iconRect = icons[0]!.getBoundingClientRect()
+    const itemRect = items[0]!.getBoundingClientRect()
     return {
       attrSurvived: el.getAttribute('progress-dot'),
       dotMarked: root.querySelector('[part="steps"]')!.getAttribute('data-progress-dot'),
@@ -2453,14 +2430,19 @@ test('steps progress-dot：属性在 Vue demo 存活、指示器为装饰性圆�
       processAriaCurrent: items
         .find((i) => i.getAttribute('data-status') === 'process')
         ?.getAttribute('aria-current'),
-      processDotWider: ( => {
-        const proc = items.find((i) => i.getAttribute('data-status') === 'process')!
-        const wait = items.find((i) => i.getAttribute('data-status') === 'wait')!
-        return (
-          parseFloat(getComputedStyle(proc.querySelector('.icon')!, '::before').width) >
-          parseFloat(getComputedStyle(wait.querySelector('.icon')!, '::before').width)
-        )
-      }),
+      processDotWider:
+        parseFloat(
+          getComputedStyle(
+            items.find((i) => i.getAttribute('data-status') === 'process')!.querySelector('.icon')!,
+            '::before',
+          ).width,
+        ) >
+        parseFloat(
+          getComputedStyle(
+            items.find((i) => i.getAttribute('data-status') === 'wait')!.querySelector('.icon')!,
+            '::before',
+          ).width,
+        ),
     }
   })
   expect(r.attrSurvived, 'progress-dot 被 Vue 剥离').toBe('')
@@ -2479,10 +2461,10 @@ test('steps navigation：底部上一步/下一步可见，点击切换 current 
 }) => {
   await page.goto('/components/steps.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-steps[navigation]')
-  await page.waitForFunction( => typeof (window as any).message !== 'undefined', null, {
+  await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
     timeout: 10000,
   })
-  const r0 = await page.evaluate( => {
+  const r0 = await page.evaluate(() => {
     const el = document.querySelector('oas-steps[navigation]')!
     const root = el.shadowRoot!
     const nav = root.querySelector('[part="nav"]')!
@@ -2521,14 +2503,14 @@ test('steps navigation：底部上一步/下一步可见，点击切换 current 
   expect(r0.arrowExists).toBe(true)
 
   // 点击下一步 → current 前移 + oas-change 弹 message（可见反馈）
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const el = document.querySelector('oas-steps[navigation]')!
-    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!.click
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!.click()
   })
-  await page.waitForFunction( => document.querySelectorAll('oas-message').length > 0, null, {
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length > 0, null, {
     timeout: 5000,
   })
-  const after = await page.evaluate( => {
+  const after = await page.evaluate(() => {
     const el = document.querySelector('oas-steps[navigation]')!
     const root = el.shadowRoot!
     const msg = document.querySelector('oas-message')?.shadowRoot?.textContent ?? ''
@@ -2546,19 +2528,18 @@ test('steps navigation：底部上一步/下一步可见，点击切换 current 
   expect(after.msg).toContain('第 3 步')
 
   // 末步下一步禁用
-  const lastDisabled = await page.evaluate( => {
+  const lastDisabled = await page.evaluate(() => {
     const el = document.querySelector('oas-steps[navigation]')!
     return el.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!.disabled
   })
   expect(lastDisabled).toBe(true)
 
   // 点击上一步回退 + 步骤项点击也可切换（点击第 1 项回到第 1 步）
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const el = document.querySelector('oas-steps[navigation]')!
-    el.shadowRoot!.querySelector<HTMLElement>('.item')!.click
+    el.shadowRoot!.querySelector<HTMLElement>('.item')!.click()
   })
-  await page.waitForFunction(
-     => document.querySelector('oas-steps[navigation]')?.getAttribute('current') === '0',
+  await page.waitForFunction(() => document.querySelector('oas-steps[navigation]')?.getAttribute('current') === '0',
     null,
     { timeout: 5000 },
   )
@@ -2573,17 +2554,16 @@ test('dropdown split：Vue demo 属性存活、箭头按钮 aria 同步、主按
 }) => {
   await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-dropdown[split]')
-  await page.waitForFunction( => typeof (window as any).ddSplitAction === 'function', null, {
+  await page.waitForFunction(() => typeof (window as any).ddSplitAction === 'function', null, {
     timeout: 10000,
   })
   // 点拆分主按钮（host 中心落在主按钮上）→ oas-action → tag 回显（可见反馈）
-  await page.locator('#dd-split').click
-  await page.waitForFunction(
-     => document.getElementById('dd-split-result')?.textContent === '主按钮已点击（oas-action）',
+  await page.locator('#dd-split').click()
+  await page.waitForFunction(() => document.getElementById('dd-split-result')?.textContent === '主按钮已点击（oas-action）',
     null,
     { timeout: 5000 },
   )
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const dd = document.querySelector('#dd-split')!
     const arrow = dd.shadowRoot!.querySelector<HTMLElement>('[part="split-arrow"]')!
     const cs = getComputedStyle(arrow)
@@ -2600,7 +2580,7 @@ test('dropdown split：Vue demo 属性存活、箭头按钮 aria 同步、主按
       topRightRadius: cs.borderTopRightRadius,
     }
   })
-  expect(r.splitAttr, 'split 属性被 Vue 剥离').not.toBeNull
+  expect(r.splitAttr, 'split 属性被 Vue 剥离').not.toBeNull()
   expect(r.hasArrow).toBe(true)
   expect(r.haspoup).toBe('menu')
   expect(r.expanded).toBe('false')
@@ -2612,9 +2592,8 @@ test('dropdown split：Vue demo 属性存活、箭头按钮 aria 同步、主按
   expect(r.topRightRadius).toBe('6px')
 
   // 点箭头 → 展开菜单 + aria-expanded 同步
-  await page.locator('#dd-split [part="split-arrow"]').click
-  await page.waitForFunction(
-     =>
+  await page.locator('#dd-split [part="split-arrow"]').click()
+  await page.waitForFunction(() =>
       document.querySelector('#dd-split')?.hasAttribute('open') === true &&
       document
         .querySelector('#dd-split')!
@@ -2628,17 +2607,16 @@ test('dropdown split：Vue demo 属性存活、箭头按钮 aria 同步、主按
 test('dropdown loading 菜单项：spinner 视觉 + 禁点，异步恢复后还原可点', async ({ page }) => {
   await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#dd-async')
-  await page.waitForFunction( => typeof (window as any).ddAsyncLog === 'function', null, {
+  await page.waitForFunction(() => typeof (window as any).ddAsyncLog === 'function', null, {
     timeout: 10000,
   })
   // 打开异步 demo 菜单并选「保存」→ 该项转圈禁点（demo 1.5s 后恢复）
-  await page.evaluate( => document.querySelector('#dd-async')!.setAttribute('open', ''))
+  await page.evaluate(() => document.querySelector('#dd-async')!.setAttribute('open', ''))
   await page.waitForSelector('#dd-async [role="menuitemradio"]', { timeout: 5000 })
-  await page.locator('#dd-async [role="menuitemradio"]', { hasText: '保存' }).first.click
+  await page.locator('#dd-async [role="menuitemradio"]', { hasText: '保存' }).first().click()
   // 等 demo 把「保存」置 loading（items 数据驱动）；menu 浮层在两层 shadow 内，
   // 这里只查 items 属性，元素态用穿透 locator 断言
-  await page.waitForFunction(
-     => {
+  await page.waitForFunction(() => {
       const dd = document.querySelector('#dd-async')!
       const save = JSON.parse(dd.getAttribute('items') ?? '[]').find(
         (i: { value: string }) => i.value === 'save',
@@ -2665,8 +2643,7 @@ test('dropdown loading 菜单项：spinner 视觉 + 禁点，异步恢复后还�
   expect(during.cursor).toBe('wait')
 
   // 等 1.5s 异步完成 → spinner 消失、禁点解除
-  await page.waitForFunction(
-     => {
+  await page.waitForFunction(() => {
       const dd = document.querySelector('#dd-async')!
       const save = JSON.parse(dd.getAttribute('items') ?? '[]').find(
         (i: { value: string }) => i.value === 'save',
@@ -2682,7 +2659,7 @@ test('dropdown loading 菜单项：spinner 视觉 + 禁点，异步恢复后还�
     busy: el.getAttribute('aria-busy'),
   }))
   expect(after.hasSpin).toBe(false)
-  expect(after.busy).toBeNull
+  expect(after.busy).toBeNull()
 })
 
 // —— tooltip P1 补缺：虚拟触发（virtual-trigger）——
@@ -2700,7 +2677,7 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
     timeout: 15000,
   })
   // virtual / virtual-x / virtual-y 在 Vue demo 中存活（不被剥离）
-  const attrs = await page.evaluate( => {
+  const attrs = await page.evaluate(() => {
     const t = document.querySelector('#tt-follow')!
     return {
       virtual: t.getAttribute('virtual'),
@@ -2708,38 +2685,38 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
       y: t.getAttribute('virtual-y'),
     }
   })
-  expect(attrs.virtual, 'virtual 被 Vue 剥离').not.toBeNull
+  expect(attrs.virtual, 'virtual 被 Vue 剥离').not.toBeNull()
   expect(attrs.x).toBe('0')
   expect(attrs.y).toBe('0')
 
   // 画布滚到视口中央（避开粘性页头拦截指针）
   const canvas = page.locator('#vp-canvas')
-  await canvas.scrollIntoViewIfNeeded
-  await page.evaluate( => {
+  await canvas.scrollIntoViewIfNeeded()
+  await page.evaluate(() => {
     document.querySelector('#vp-canvas')?.scrollIntoView({ block: 'center' })
   })
   await page.waitForTimeout(300)
-  const box = await canvas.boundingBox
+  const box = await canvas.boundingBox()
 
   // 监听 oas-open-change 计数（demo 可见反馈：状态 tag 跟随中/未跟随）
-  await page.evaluate( => {
+  await page.evaluate(() => {
     ;(window as any).__tipOpenCount = 0
-    document.querySelector('#tt-follow')!.addEventListener('oas-open-change',  => {
+    document.querySelector('#tt-follow')!.addEventListener('oas-open-change', () => {
       ;(window as any).__tipOpenCount++
     })
   })
 
   // 移入画布 → tooltip 按坐标跟随显示
   await page.mouse.move(box!.x + 60, box!.y + 40)
-  await page.waitForFunction( => {
+  await page.waitForFunction(() => {
     const t = document.querySelector('#tt-follow')
     const tip = t?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
     return tip?.getAttribute('aria-hidden') === 'false' && tip?.style.top !== ''
   })
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const t = document.querySelector('#tt-follow')!
     const tip = t.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
-    const tb = tip.getBoundingClientRect
+    const tb = tip.getBoundingClientRect()
     return {
       openCount: (window as any).__tipOpenCount,
       status: document.querySelector('#tt-follow-status')?.textContent ?? '',
@@ -2764,15 +2741,13 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
 
   // 移出画布 → tooltip 隐藏 + 状态反馈复位
   await page.mouse.move(box!.x + box!.width + 60, box!.y + 40)
-  await page.waitForFunction(
-     =>
+  await page.waitForFunction(() =>
       document
         .querySelector('#tt-follow')
         ?.shadowRoot?.querySelector('[part="tip"]')
         ?.getAttribute('aria-hidden') === 'true',
   )
-  const closed = await page.evaluate(
-     => document.querySelector('#tt-follow-status')?.textContent ?? '',
+  const closed = await page.evaluate(() => document.querySelector('#tt-follow-status')?.textContent ?? '',
   )
   expect(closed).toContain('未跟随')
 })
@@ -2785,30 +2760,30 @@ test('tooltip virtual-anchor：hover 图表点位 tooltip 锚定该点显示、�
   await page.waitForFunction((s) => document.querySelector(s)?.shadowRoot != null, '#tt-anchor', {
     timeout: 15000,
   })
-  const attrs = await page.evaluate( => {
+  const attrs = await page.evaluate(() => {
     const t = document.querySelector('#tt-anchor')!
     return { virtual: t.getAttribute('virtual'), anchor: t.getAttribute('virtual-anchor') }
   })
-  expect(attrs.virtual, 'virtual 被 Vue 剥离').not.toBeNull
+  expect(attrs.virtual, 'virtual 被 Vue 剥离').not.toBeNull()
   expect(attrs.anchor).toBe('#vp-dot-0')
 
-  await page.evaluate( => {
+  await page.evaluate(() => {
     document.querySelector('#vp-chart')?.scrollIntoView({ block: 'center' })
   })
   await page.waitForTimeout(300)
 
   // hover 点位 0 → tooltip 锚定显示（placement=top，气泡在点位上方）
-  await page.locator('#vp-dot-0').hover
-  await page.waitForFunction( => {
+  await page.locator('#vp-dot-0').hover()
+  await page.waitForFunction(() => {
     const t = document.querySelector('#tt-anchor')
     const tip = t?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
     return tip?.getAttribute('aria-hidden') === 'false'
   })
-  const r0 = await page.evaluate( => {
+  const r0 = await page.evaluate(() => {
     const t = document.querySelector('#tt-anchor')!
     const tip = t.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
-    const tb = tip.getBoundingClientRect
-    const db = document.getElementById('vp-dot-0')!.getBoundingClientRect
+    const tb = tip.getBoundingClientRect()
+    const db = document.getElementById('vp-dot-0')!.getBoundingClientRect()
     return {
       content: tip.textContent,
       placement: tip.getAttribute('data-placement'),
@@ -2822,13 +2797,13 @@ test('tooltip virtual-anchor：hover 图表点位 tooltip 锚定该点显示、�
   expect(r0.aboveDot, 'tooltip 应锚定在点位上方').toBe(true)
 
   // 切到点位 2 → virtual-anchor 与内容同步更新（跟随移动）
-  await page.locator('#vp-dot-2').hover
-  await page.waitForFunction( => {
+  await page.locator('#vp-dot-2').hover()
+  await page.waitForFunction(() => {
     const t = document.querySelector('#tt-anchor')
     const tip = t?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
     return tip?.textContent?.includes('Q3') ?? false
   })
-  const r1 = await page.evaluate( => {
+  const r1 = await page.evaluate(() => {
     const t = document.querySelector('#tt-anchor')!
     return {
       anchor: t.getAttribute('virtual-anchor'),
@@ -2851,8 +2826,8 @@ test('popover 嵌套：父关闭级联关闭子层、Esc 逐层关闭、Vue demo
   const child = page.locator('#pop-child')
   // 嵌套层级：子 popover 是父的 light DOM 后代，parent.locator('[part=panel]') 会同时匹配
   // 父/子两块面板（pierce 嵌套 shadow），故用 evaluate 精确取各自 shadow 内的面板。
-  const panelState =  =>
-    page.evaluate( => {
+  const panelState = () =>
+    page.evaluate(() => {
       const p = document.querySelector('#pop-parent')!.shadowRoot!.querySelector('[part="panel"]')!
       const c = document.querySelector('#pop-child')!.shadowRoot!.querySelector('[part="panel"]')!
       return {
@@ -2863,13 +2838,12 @@ test('popover 嵌套：父关闭级联关闭子层、Esc 逐层关闭、Vue demo
 
   // focus-on-open 属性在 Vue demo 中存活（不被剥离）
   const focusAttr = await parent.evaluate((e) => e.getAttribute('focus-on-open'))
-  expect(focusAttr, 'focus-on-open 被 Vue 剥离').not.toBeNull
+  expect(focusAttr, 'focus-on-open 被 Vue 剥离').not.toBeNull()
 
   // 同时打开父子 → 子层可见且层级在父之上
   await parent.evaluate((e) => e.setAttribute('open', ''))
   await child.evaluate((e) => e.setAttribute('open', ''))
-  await page.waitForFunction(
-     =>
+  await page.waitForFunction(() =>
       document
         .querySelector('#pop-child')
         ?.shadowRoot?.querySelector('[part="panel"]')
@@ -2877,10 +2851,10 @@ test('popover 嵌套：父关闭级联关闭子层、Esc 逐层关闭、Vue demo
     null,
     { timeout: 5000 },
   )
-  let s = await panelState
+  let s = await panelState()
   expect(s.pAria).toBe('false')
   expect(s.cAria).toBe('false')
-  const z = await page.evaluate( => {
+  const z = await page.evaluate(() => {
     const c = document.querySelector('#pop-child')!.shadowRoot!.querySelector('[part="panel"]')!
     const p = document.querySelector('#pop-parent')!.shadowRoot!.querySelector('[part="panel"]')!
     return { child: getComputedStyle(c).zIndex, parent: getComputedStyle(p).zIndex }
@@ -2889,20 +2863,19 @@ test('popover 嵌套：父关闭级联关闭子层、Esc 逐层关闭、Vue demo
 
   // Esc 一次只关最内层（子），父保持打开
   await page.keyboard.press('Escape')
-  s = await panelState
+  s = await panelState()
   expect(s.cAria).toBe('true')
   expect(s.pAria).toBe('false')
 
   // 再次 Esc 关父层
   await page.keyboard.press('Escape')
-  s = await panelState
+  s = await panelState()
   expect(s.pAria).toBe('true')
 
   // 父关闭级联关闭子层
   await parent.evaluate((e) => e.setAttribute('open', ''))
   await child.evaluate((e) => e.setAttribute('open', ''))
-  await page.waitForFunction(
-     =>
+  await page.waitForFunction(() =>
       document
         .querySelector('#pop-child')
         ?.shadowRoot?.querySelector('[part="panel"]')
@@ -2911,7 +2884,7 @@ test('popover 嵌套：父关闭级联关闭子层、Esc 逐层关闭、Vue demo
     { timeout: 5000 },
   )
   await parent.evaluate((e) => e.removeAttribute('open'))
-  s = await panelState
+  s = await panelState()
   expect(s.pAria).toBe('true')
   expect(s.cAria, '父关闭应级联关闭子层').toBe('true')
 })
@@ -2933,7 +2906,7 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
     x: e.getAttribute('virtual-x'),
     y: e.getAttribute('virtual-y'),
   }))
-  expect(attrs.virtual, 'virtual 被 Vue 剥离').not.toBeNull
+  expect(attrs.virtual, 'virtual 被 Vue 剥离').not.toBeNull()
   expect(attrs.x).toBe('160')
   expect(attrs.y).toBe('90')
 
@@ -2942,13 +2915,12 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
   const panel = point.locator('[part="panel"]')
   await expect(panel).toHaveAttribute('aria-hidden', 'false')
   await expect(panel).toHaveAttribute('data-placement', 'right')
-  const box = (await panel.boundingBox)!
+  const box = (await panel.boundingBox())!
   expect(Math.abs(box.x - 168)).toBeLessThanOrEqual(2)
   expect(Math.abs(box.y - (90 - box.height / 2))).toBeLessThanOrEqual(2)
 
   // oas-open-change 可见反馈：demo 状态 tag 回显 open
-  await page.waitForFunction(
-     => document.getElementById('pop-point-status')?.textContent === 'open: true',
+  await page.waitForFunction(() => document.getElementById('pop-point-status')?.textContent === 'open: true',
     null,
     { timeout: 5000 },
   )
@@ -2963,8 +2935,7 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
   await point.evaluate((e) => e.setAttribute('virtual-y', '500'))
   await point.evaluate((e) => e.setAttribute('open', ''))
   await expect(panel).toHaveAttribute('aria-hidden', 'false')
-  await page.waitForFunction(
-     => {
+  await page.waitForFunction(() => {
       const p = document
         .querySelector('#pop-point')!
         .shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
@@ -2973,27 +2944,27 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
     null,
     { timeout: 5000 },
   )
-  const box2 = (await panel.boundingBox)!
+  const box2 = (await panel.boundingBox())!
   expect(Math.abs(box2.x - 708)).toBeLessThanOrEqual(2)
   expect(Math.abs(box2.y - (500 - box2.height / 2))).toBeLessThanOrEqual(2)
   await point.evaluate((e) => e.removeAttribute('open'))
 
   // 虚拟锚点元素跟随：hover 点位 → 面板锚定该点（placement=top，气泡在点位上方）
   const chart = page.locator('#pop-chart')
-  await chart.scrollIntoViewIfNeeded
-  await page.evaluate( => {
+  await chart.scrollIntoViewIfNeeded()
+  await page.evaluate(() => {
     document.querySelector('#pop-chart')?.scrollIntoView({ block: 'center' })
   })
   await page.waitForTimeout(300)
-  await page.locator('#pop-dot-0').hover
+  await page.locator('#pop-dot-0').hover()
   const anchorPanel = page.locator('#pop-anchor [part="panel"]')
   await expect(anchorPanel).toHaveAttribute('aria-hidden', 'false', { timeout: 5000 })
-  const anchorBox = (await anchorPanel.boundingBox)!
-  const dotBox = (await page.locator('#pop-dot-0').boundingBox)!
+  const anchorBox = (await anchorPanel.boundingBox())!
+  const dotBox = (await page.locator('#pop-dot-0').boundingBox())!
   expect(anchorBox.y + anchorBox.height - dotBox.y).toBeLessThanOrEqual(40) // 气泡底 ≈ 点位顶（8px gap）
   // 切到点位 1 → 面板跟随
-  await page.locator('#pop-dot-1').hover
-  await page.waitForFunction( => {
+  await page.locator('#pop-dot-1').hover()
+  await page.waitForFunction(() => {
     const t = document.querySelector('#pop-anchor')!
     return t.getAttribute('virtual-anchor') === '#pop-dot-1'
   })
@@ -3010,22 +2981,20 @@ test('tree-select check-strategy：parent/child 勾选父级后值按策略过�
   await page.goto('/components/tree-select.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ts-strategy-parent')
   // parent：勾选根节点「前端」→ value 只含 fe
-  await page.locator('#ts-strategy-parent [part="trigger"]').click
-  await page.locator('#ts-strategy-parent [role="treeitem"]').first.click
-  await page.waitForFunction(
-     => document.querySelector('#ts-strategy-parent')?.getAttribute('value') === '["fe"]',
+  await page.locator('#ts-strategy-parent [part="trigger"]').click()
+  await page.locator('#ts-strategy-parent [role="treeitem"]').first().click()
+  await page.waitForFunction(() => document.querySelector('#ts-strategy-parent')?.getAttribute('value') === '["fe"]',
     null,
     { timeout: 5000 },
   )
   // 可见反馈：输出 span 回显选中值
-  expect(await page.locator('#ts-out-parent').textContent).toBe('[fe]')
+  expect(await page.locator('#ts-out-parent').textContent()).toBe('[fe]')
   // 关闭 parent 下拉，避免其浮层遮挡下方 child 触发器
   await page.locator('#ts-strategy-parent [part="trigger"]').press('Escape')
   // child：勾选根节点「前端」→ value 只含叶子
-  await page.locator('#ts-strategy-child [part="trigger"]').click
-  await page.locator('#ts-strategy-child [role="treeitem"]').first.click
-  await page.waitForFunction(
-     => {
+  await page.locator('#ts-strategy-child [part="trigger"]').click()
+  await page.locator('#ts-strategy-child [role="treeitem"]').first().click()
+  await page.waitForFunction(() => {
       const v = document.querySelector('#ts-strategy-child')?.getAttribute('value')
       // demo 数据中 框架 的子节点顺序为 Vue 在前 React 在后
       return v === '["vue","react","css"]'
@@ -3033,21 +3002,19 @@ test('tree-select check-strategy：parent/child 勾选父级后值按策略过�
     null,
     { timeout: 5000 },
   )
-  expect(await page.locator('#ts-out-child').textContent).toBe('[vue, react, css]')
+  expect(await page.locator('#ts-out-child').textContent()).toBe('[vue, react, css]')
 })
 
 test('tree-select virtual：万级节点窗口化渲染、滚动窗口平移、行 ARIA 保持', async ({ page }) => {
   await page.goto('/components/tree-select.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ts-virtual')
   // 等注入的万级数据就绪（onMounted 经 options 属性通道写入）
-  await page.waitForFunction(
-     => document.querySelector('#ts-virtual')?.getAttribute('options')?.includes('"m-99-99"'),
+  await page.waitForFunction(() => document.querySelector('#ts-virtual')?.getAttribute('options')?.includes('"m-99-99"'),
     null,
     { timeout: 10000 },
   )
-  await page.locator('#ts-virtual [part="trigger"]').click
-  await page.waitForFunction(
-     => {
+  await page.locator('#ts-virtual [part="trigger"]').click()
+  await page.waitForFunction(() => {
       const el = document.querySelector('#ts-virtual')!
       return (
         el
@@ -3058,7 +3025,7 @@ test('tree-select virtual：万级节点窗口化渲染、滚动窗口平移、�
     null,
     { timeout: 5000 },
   )
-  const info = await page.evaluate( => {
+  const info = await page.evaluate(() => {
     const el = document.querySelector('#ts-virtual')!
     const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
     const rows = [...vlist.shadowRoot!.querySelectorAll('[role="treeitem"]')]
@@ -3073,19 +3040,18 @@ test('tree-select virtual：万级节点窗口化渲染、滚动窗口平移、�
     }
   })
   expect(info.rendered).toBeLessThanOrEqual(20) // 万级只渲染窗口 + buffer
-  expect(info.first).toBe('0')
+  expect(info.first ).toBe('0')
   expect(info.itemsRole).toBe('tree')
   expect(info.itemRole).toBe('presentation')
   expect(info.ariaLevel).toBe('1')
   expect(info.viewportTabindex).toBeNull // 键盘焦点保持在 trigger（combobox 键盘流）
 
   // 全部展开 → 可见节点 10100（100 部门 + 10000 成员），窗口化渲染仍受限
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const depts = Array.from({ length: 100 }, (_, i) => `dept-${i}`)
     document.querySelector('#ts-virtual')!.setAttribute('expanded', JSON.stringify(depts))
   })
-  await page.waitForFunction(
-     => {
+  await page.waitForFunction(() => {
       const el = document.querySelector('#ts-virtual')!
       const inner = el
         .shadowRoot!.querySelector('oas-virtual-list')!
@@ -3099,22 +3065,21 @@ test('tree-select virtual：万级节点窗口化渲染、滚动窗口平移、�
   )
 
   // 滚动到 5000 行附近 → 窗口平移（真实浏览器 scroll 驱动 vlist 重算）
-  const after = await page.evaluate(
-     =>
+  const after = await page.evaluate(() =>
       new Promise<{ first: string | null | undefined; count: number }>((resolve) => {
         const el = document.querySelector('#ts-virtual')!
         const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
         const vp = vlist.shadowRoot!.querySelector('.viewport')!
         vp.scrollTop = 5000 * 36
         vp.dispatchEvent(new Event('scroll'))
-        requestAnimationFrame( => {
+        requestAnimationFrame(() => {
           const rows = [...vlist.shadowRoot!.querySelectorAll('[role="treeitem"]')]
           resolve({ first: rows[0]?.getAttribute('data-index'), count: rows.length })
         })
       }),
   )
-  expect(after.first).toBe('4996')
-  expect(after.count).toBe(16)
+  expect(after.first ).toBe('4996')
+  expect(after.count ).toBe(16)
 })
 
 test('tree-select virtual：键盘导航高亮滚动进视口且 aria-activedescendant 跟随', async ({
@@ -3122,17 +3087,16 @@ test('tree-select virtual：键盘导航高亮滚动进视口且 aria-activedesc
 }) => {
   await page.goto('/components/tree-select.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ts-virtual')
-  await page.waitForFunction(
-     => document.querySelector('#ts-virtual')?.getAttribute('options')?.includes('"m-99-99"'),
+  await page.waitForFunction(() => document.querySelector('#ts-virtual')?.getAttribute('options')?.includes('"m-99-99"'),
     null,
     { timeout: 10000 },
   )
   const btn = page.locator('#ts-virtual [part="trigger"]')
-  await btn.click
+  await btn.click()
   for (let i = 0; i < 30; i++) await btn.press('ArrowDown')
   await expect(btn).toHaveAttribute('aria-activedescendant', 'tree-opt-30', { timeout: 5000 })
   // 高亮项滚动进视口（viewport scrollTop > 0）
-  const scrolled = await page.evaluate( => {
+  const scrolled = await page.evaluate(() => {
     const el = document.querySelector('#ts-virtual')!
     const vp = el
       .shadowRoot!.querySelector('oas-virtual-list')!
@@ -3142,8 +3106,7 @@ test('tree-select virtual：键盘导航高亮滚动进视口且 aria-activedesc
   expect(scrolled).toBeGreaterThan(0)
   // Enter 勾选高亮行 → value 写回（trigger 显示成员标签，可见反馈）
   await btn.press('Enter')
-  await page.waitForFunction(
-     => document.querySelector('#ts-virtual')?.getAttribute('value')?.includes('m-0-29'),
+  await page.waitForFunction(() => document.querySelector('#ts-virtual')?.getAttribute('value')?.includes('m-0-29'),
     null,
     { timeout: 5000 },
   )
@@ -3161,17 +3124,17 @@ test('popover.md 虚拟画布：#virt-canvas 有可见宽度且提示文字单�
 }) => {
   await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
   await page.waitForSelector('#virt-canvas', { timeout: 15000 })
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const canvas = document.getElementById('virt-canvas')!
     const p = canvas.querySelector('p')!
-    const c = canvas.getBoundingClientRect
+    const c = canvas.getBoundingClientRect()
     // Range 包围全部文本：单行时 rect 高≈字号、宽≈整句；竖排（每字一行）时 高≈句长×行高、宽≈单字
-    const range = document.createRange
+    const range = document.createRange()
     range.selectNodeContents(p)
-    const t = range.getBoundingClientRect
+    const t = range.getBoundingClientRect()
     return {
       canvasWidth: c.width,
-      text: (p.textContent ?? '').trim,
+      text: (p.textContent ?? '').trim(),
       textWidth: t.width,
       textHeight: t.height,
     }
@@ -3189,23 +3152,23 @@ test('tree 自定义节点：#tree-custom 每行 .label 实际渲染宽度 > 0�
   await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tree-custom')
   await page.waitForTimeout(800)
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const tree = document.querySelector('#tree-custom')!
     return [...tree.shadowRoot!.querySelectorAll('[part="row"]')].map((row) => {
       const label = row.querySelector<HTMLElement>('.label')!
       const binder = label.querySelector<HTMLElement>('[data-node-label]')
-      const lb = label.getBoundingClientRect
-      const bb = binder?.getBoundingClientRect
+      const lb = label.getBoundingClientRect()
+      const bb = binder?.getBoundingClientRect()
       return {
         labelText: binder?.textContent ?? '',
         labelWidth: lb.width,
         binderWidth: bb?.width ?? 0,
-        rowWidth: row.getBoundingClientRect.width,
+        rowWidth: row.getBoundingClientRect().width,
       }
     })
   })
   expect(r.length).toBeGreaterThan(0)
-  for (const [i, item] of r.entries) {
+  for (const [i, item] of r.entries()) {
     expect(item.labelText.length, `第 ${i} 行 [data-node-label] 文字缺失`).toBeGreaterThan(0)
     expect(item.labelWidth, `第 ${i} 行 .label 渲染宽度为 0（被 flex 压没）`).toBeGreaterThan(24)
     expect(item.binderWidth, `第 ${i} 行 [data-node-label] 实际宽度为 0`).toBeGreaterThan(0)
@@ -3222,14 +3185,14 @@ test('tooltip 箭头：#tt-follow 打开后 .arrow 可见且位于面板顶部�
     timeout: 15000,
   })
   const canvas = page.locator('#vp-canvas')
-  await canvas.scrollIntoViewIfNeeded
-  await page.evaluate( => {
+  await canvas.scrollIntoViewIfNeeded()
+  await page.evaluate(() => {
     document.querySelector('#vp-canvas')?.scrollIntoView({ block: 'center' })
   })
   await page.waitForTimeout(300)
-  const box = (await canvas.boundingBox)!
+  const box = (await canvas.boundingBox())!
   await page.mouse.move(box.x + 60, box.y + 40)
-  await page.waitForFunction( => {
+  await page.waitForFunction(() => {
     const t = document.querySelector('#tt-follow')
     const tip = t?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
     return (
@@ -3237,12 +3200,12 @@ test('tooltip 箭头：#tt-follow 打开后 .arrow 可见且位于面板顶部�
       tip.querySelector('[data-popper-arrow]') != null
     )
   })
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const t = document.querySelector('#tt-follow')!
     const tip = t.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
     const arrow = tip.querySelector<HTMLElement>('[data-popper-arrow]')!
-    const tb = tip.getBoundingClientRect
-    const ab = arrow.getBoundingClientRect
+    const tb = tip.getBoundingClientRect()
+    const ab = arrow.getBoundingClientRect()
     return {
       placement: tip.getAttribute('data-placement'),
       arrowPart: arrow.getAttribute('part'),
@@ -3277,8 +3240,8 @@ test('popover 箭头：#pop-point 打开后 .arrow 可见且位于面板左缘�
   const r = await point.evaluate((pop) => {
     const p = pop.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
     const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')!
-    const pb = p.getBoundingClientRect
-    const ab = arrow.getBoundingClientRect
+    const pb = p.getBoundingClientRect()
+    const ab = arrow.getBoundingClientRect()
     return {
       arrowPart: arrow.getAttribute('part'),
       arrowVisible: ab.width > 0 && ab.height > 0,
@@ -3306,16 +3269,16 @@ test('tooltip arrow="false"：打开后无可见箭头元素（hidden 属性 + 0
 }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tt-arrow-off')
-  await page.evaluate( => {
+  await page.evaluate(() => {
     document.querySelector('#tt-arrow-off')!.setAttribute('open', '')
   })
   const tip = page.locator('#tt-arrow-off [part="tip"]')
   await expect(tip).toHaveAttribute('aria-hidden', 'false')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const host = document.querySelector('#tt-arrow-off')!
     const t = host.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
     const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
-    const ab = arrow.getBoundingClientRect
+    const ab = arrow.getBoundingClientRect()
     return {
       part: arrow.getAttribute('part'),
       hidden: arrow.hidden,
@@ -3338,7 +3301,7 @@ test('tooltip arrow-point-at-center：面板被视口边缘避让 clamp 偏移�
   await up(page, '#tt-arrow-center')
   // 把触发元素钉到视口左缘（placement 默认 top）：面板水平居中会被 clamp 到视口左缘，
   // 默认箭头会随面板中心偏移（脱离锚点），arrow-point-at-center 箭头必须仍指向锚点中心
-  await page.evaluate( => {
+  await page.evaluate(() => {
     const host = document.querySelector('#tt-arrow-center')!
     // 锚点是 oas-button 自定义元素宿主（内部 button 在它自己的 shadow 里）
     const btn = host.querySelector('oas-button') as HTMLElement
@@ -3349,14 +3312,14 @@ test('tooltip arrow-point-at-center：面板被视口边缘避让 clamp 偏移�
   })
   const tip = page.locator('#tt-arrow-center [part="tip"]')
   await expect(tip).toHaveAttribute('aria-hidden', 'false')
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const host = document.querySelector('#tt-arrow-center')!
     const t = host.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
     const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
     const btn = host.querySelector('oas-button')!
-    const tb = t.getBoundingClientRect
-    const ab = arrow.getBoundingClientRect
-    const bb = btn.getBoundingClientRect
+    const tb = t.getBoundingClientRect()
+    const ab = arrow.getBoundingClientRect()
+    const bb = btn.getBoundingClientRect()
     return {
       placement: t.getAttribute('data-placement'),
       arrowVisible: ab.width > 0 && ab.height > 0,
@@ -3383,18 +3346,18 @@ test('dropdown 箭头：#dd-arrow 打开后 .arrow 可见且位于面板顶部�
   await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#dd-arrow')
   const dd = page.locator('#dd-arrow')
-  await dd.locator(':scope > oas-button').click
-  await page.waitForFunction( => {
+  await dd.locator(':scope > oas-button').click()
+  await page.waitForFunction(() => {
     const d = document.querySelector('#dd-arrow')
     const anchor = d?.shadowRoot?.querySelector<HTMLElement>('.menu-anchor')
     return anchor != null && !anchor.hidden && anchor.getAttribute('data-placement') === 'bottom'
   })
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const d = document.querySelector('#dd-arrow')!
     const anchor = d.shadowRoot!.querySelector<HTMLElement>('.menu-anchor')!
     const arrow = anchor.querySelector<HTMLElement>('[data-popper-arrow]')!
-    const ab = anchor.getBoundingClientRect
-    const bb = arrow.getBoundingClientRect
+    const ab = anchor.getBoundingClientRect()
+    const bb = arrow.getBoundingClientRect()
     return {
       arrowPart: arrow.getAttribute('part'),
       arrowHidden: arrow.hasAttribute('hidden'),
@@ -3419,12 +3382,12 @@ test('dropdown 箭头 arrow="false"：#dd-arrow-none 打开后无箭头（hidden
   await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#dd-arrow-none')
   const dd = page.locator('#dd-arrow-none')
-  await dd.locator(':scope > oas-button').click
-  await page.waitForFunction( => {
+  await dd.locator(':scope > oas-button').click()
+  await page.waitForFunction(() => {
     const d = document.querySelector('#dd-arrow-none')
     return d?.shadowRoot?.querySelector<HTMLElement>('.menu-anchor')?.hidden === false
   })
-  const r = await page.evaluate( => {
+  const r = await page.evaluate(() => {
     const d = document.querySelector('#dd-arrow-none')!
     const anchor = d.shadowRoot!.querySelector<HTMLElement>('.menu-anchor')!
     const arrow = anchor.querySelector<HTMLElement>('[data-popper-arrow]')!
@@ -3436,5 +3399,5 @@ test('dropdown 箭头 arrow="false"：#dd-arrow-none 打开后无箭头（hidden
   expect(r.arrowExists, '骨架应保留').toBe(true)
   expect(r.arrowHidden, 'arrow="false" 应通过 hidden 隐藏箭头').toBe(true)
   // 菜单项照常渲染（穿透两层 shadow 断言，demo 数据为 1 项）
-  expect(await page.locator('#dd-arrow-none [part="item"]').count).toBe(1)
+  expect(await page.locator('#dd-arrow-none [part="item"]').count()).toBe(1)
 })

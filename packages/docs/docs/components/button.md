@@ -108,6 +108,44 @@
   <oas-button ghost type="danger" icon="trash">危险幽灵</oas-button>
 </DemoBlock>
 
+## 圆形
+
+`circle` 将按钮变为圆形，纯图标按钮等宽圆角合并为整圆。
+
+<DemoBlock title="圆形按钮">
+  <oas-button circle icon="search" aria-label="搜索"></oas-button>
+  <oas-button circle type="primary" icon="check" aria-label="确认"></oas-button>
+  <oas-button circle type="danger" icon="trash" aria-label="删除"></oas-button>
+</DemoBlock>
+
+## 图标位置
+
+`icon-position` 控制图标与文字的相对位置：`start`（默认，图标在左）或 `end`（图标在右）。
+
+<DemoBlock title="图标在右">
+  <oas-button icon-position="end" type="primary" icon="download">下载</oas-button>
+  <oas-button icon-position="end" icon="chevron-right">下一步</oas-button>
+</DemoBlock>
+
+## 链接按钮
+
+设置 `href` 后渲染为原生链接（`<a>`），支持 `target` 指定打开方式（`_blank` / `_self` 等）。
+
+<DemoBlock title="链接按钮">
+  <oas-button href="#">默认链接</oas-button>
+  <oas-button href="#" target="_blank" type="primary">新窗口打开</oas-button>
+</DemoBlock>
+
+## 朴素
+
+`plain` 为低对比浅色形态（透明底 + 弱化描边与文字），在浅色背景上更柔和。
+
+<DemoBlock title="朴素按钮">
+  <oas-button plain>朴素按钮</oas-button>
+  <oas-button plain type="primary">主要朴素</oas-button>
+  <oas-button plain type="danger">危险朴素</oas-button>
+</DemoBlock>
+
 ## API
 
 ### 属性
@@ -115,12 +153,17 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `block` | 占满父容器宽度（块级） | `boolean` | — |
+| `circle` | — | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `ghost` | 幽灵/描边形态，透明底 + 按 `type` 着色描边，hover 加深 | `boolean` | — |
+| `href` | — | `string` | — |
 | `icon` | 图标名（复用 oas-icon 图标集）；无文字时等宽、以图标名兜底名称 | `string` | — |
+| `icon-position` | — | `string` | `start` |
 | `loading` | 加载态 | `boolean` | — |
+| `plain` | — | `boolean` | — |
 | `round` | 胶囊圆角（`--oas-radius-full` / `999px`） | `boolean` | — |
 | `size` | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `ButtonSize` | `medium` |
+| `target` | — | `string` | — |
 | `type` | 类型 | `ButtonType` | `default` |
 
 ### 事件
