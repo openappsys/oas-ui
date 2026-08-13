@@ -169,7 +169,8 @@
       "size": "透传给子按钮的尺寸",
       "type": "透传给子按钮的类型",
       "value": "选中值（单选为单值，多选用逗号分隔）",
-      "vertical": "纵向堆叠，圆角合并方向改为上下"
+      "vertical": "纵向堆叠，圆角合并方向改为上下",
+      "pill": "胶囊形态：组整体首尾大圆角（`--oas-radius-full` / `999px`）"
     },
     "events": {
       "oas-change": "选中变化。单选 `detail: { value }`；多选 `detail: { value: [] }`"
@@ -1509,6 +1510,11 @@
       "repeat": "布尔，存在时平铺；缺省单枚居中",
       "text": "文字水印内容（与 image 二选一）"
     },
+    "events": {},
+    "slots": {}
+  },
+  "oas-button-group-separator": {
+    "attrs": {},
     "events": {},
     "slots": {}
   }

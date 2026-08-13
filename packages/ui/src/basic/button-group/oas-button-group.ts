@@ -14,54 +14,132 @@ const STYLE = `
   flex-direction: column;
   align-items: stretch;
 }
-/* 相邻按钮贴合，边框合并 */
-::slotted(oas-button) {
+/* 相邻按钮/嵌套组贴合，边框合并 */
+::slotted(oas-button),
+::slotted(oas-button-group) {
   position: relative;
 }
-::slotted(oas-button:not(:first-child)) {
+::slotted(oas-button:not(:first-child)),
+::slotted(oas-button-group:not(:first-child)) {
   margin-left: -1px;
 }
-:host([vertical]) ::slotted(oas-button:not(:first-child)) {
+:host([vertical]) ::slotted(oas-button:not(:first-child)),
+:host([vertical]) ::slotted(oas-button-group:not(:first-child)) {
   margin-left: 0;
   margin-top: -1px;
 }
-/* hover / 聚焦 / 选中时只亮当前项（置于相邻按钮之上） */
+/* 分隔符：贴合参与组内布局、线置顶覆盖相邻按钮边框，不参与圆角合并 */
+::slotted(oas-button-group-separator) {
+  position: relative;
+  z-index: 2;
+}
+/* hover / 聚焦 / 选中时只亮当前项（置于相邻按钮之上；分隔符 z-index 更高始终可见） */
 ::slotted(oas-button:hover),
 ::slotted(oas-button:focus-visible),
-::slotted(oas-button[aria-pressed='true']) {
+::slotted(oas-button[aria-pressed='true']),
+::slotted(oas-button-group:hover),
+::slotted(oas-button-group:focus-visible),
+::slotted(oas-button-group[aria-pressed='true']) {
   z-index: 1;
 }
-/* 横向：首/尾圆角，中间直角（::slotted 后不支持链 ::part，经自定义属性穿透到 button 内部） */
-::slotted(oas-button:first-child) {
+/* 横向：首/尾圆角，中间直角（::slotted 后不支持链 ::part，经自定义属性穿透到 button 内部）。
+   嵌套组作为整体一项：外层把首/尾单值经 --oas-button-group-start-radius/end-radius 穿透，
+   由内层再映射到自身首/尾按钮；独立使用（变量未注入）时回落自身圆角。 */
+::slotted(oas-button:first-child),
+::slotted(oas-button-group:first-child) {
   --oas-button-group-radius: var(--oas-radius-md) 0 0 var(--oas-radius-md);
+  --oas-button-group-start-radius: var(--oas-radius-md);
+  --oas-button-group-end-radius: 0;
 }
-::slotted(oas-button:last-child) {
+::slotted(oas-button:last-child),
+::slotted(oas-button-group:last-child) {
   --oas-button-group-radius: 0 var(--oas-radius-md) var(--oas-radius-md) 0;
+  --oas-button-group-start-radius: 0;
+  --oas-button-group-end-radius: var(--oas-radius-md);
 }
-::slotted(oas-button:not(:first-child):not(:last-child)) {
+::slotted(oas-button:not(:first-child):not(:last-child)),
+::slotted(oas-button-group:not(:first-child):not(:last-child)) {
   --oas-button-group-radius: 0;
+  --oas-button-group-start-radius: 0;
+  --oas-button-group-end-radius: 0;
 }
-::slotted(oas-button:only-child) {
+::slotted(oas-button:only-child),
+::slotted(oas-button-group:only-child) {
   --oas-button-group-radius: var(--oas-radius-md);
+  --oas-button-group-start-radius: var(--oas-radius-md);
+  --oas-button-group-end-radius: var(--oas-radius-md);
+}
+/* pill 胶囊：首/尾圆角改用 radius full（999px），组整体呈胶囊（横向：首左圆/尾右圆） */
+:host([pill]) ::slotted(oas-button:first-child),
+:host([pill]) ::slotted(oas-button-group:first-child) {
+  --oas-button-group-radius: var(--oas-radius-full, 999px) 0 0 var(--oas-radius-full, 999px);
+  --oas-button-group-start-radius: var(--oas-radius-full, 999px);
+  --oas-button-group-end-radius: 0;
+}
+:host([pill]) ::slotted(oas-button:last-child),
+:host([pill]) ::slotted(oas-button-group:last-child) {
+  --oas-button-group-radius: 0 var(--oas-radius-full, 999px) var(--oas-radius-full, 999px) 0;
+  --oas-button-group-start-radius: 0;
+  --oas-button-group-end-radius: var(--oas-radius-full, 999px);
+}
+:host([pill]) ::slotted(oas-button:not(:first-child):not(:last-child)),
+:host([pill]) ::slotted(oas-button-group:not(:first-child):not(:last-child)) {
+  --oas-button-group-radius: 0;
+  --oas-button-group-start-radius: 0;
+  --oas-button-group-end-radius: 0;
+}
+:host([pill]) ::slotted(oas-button:only-child),
+:host([pill]) ::slotted(oas-button-group:only-child) {
+  --oas-button-group-radius: var(--oas-radius-full, 999px);
+  --oas-button-group-start-radius: var(--oas-radius-full, 999px);
+  --oas-button-group-end-radius: var(--oas-radius-full, 999px);
 }
 /* 纵向：上/下圆角，中间直角 */
 :host([vertical]) ::slotted(oas-button) {
   --oas-button-group-width: 100%;
 }
-:host([vertical]) ::slotted(oas-button:first-child) {
+:host([vertical]) ::slotted(oas-button:first-child),
+:host([vertical]) ::slotted(oas-button-group:first-child) {
   --oas-button-group-radius: var(--oas-radius-md) var(--oas-radius-md) 0 0;
+  --oas-button-group-start-radius: var(--oas-radius-md);
+  --oas-button-group-end-radius: 0;
 }
-:host([vertical]) ::slotted(oas-button:last-child) {
+:host([vertical]) ::slotted(oas-button:last-child),
+:host([vertical]) ::slotted(oas-button-group:last-child) {
   --oas-button-group-radius: 0 0 var(--oas-radius-md) var(--oas-radius-md);
+  --oas-button-group-start-radius: 0;
+  --oas-button-group-end-radius: var(--oas-radius-md);
 }
-:host([vertical]) ::slotted(oas-button:only-child) {
+:host([vertical]) ::slotted(oas-button:only-child),
+:host([vertical]) ::slotted(oas-button-group:only-child) {
   --oas-button-group-radius: var(--oas-radius-md);
+  --oas-button-group-start-radius: var(--oas-radius-md);
+  --oas-button-group-end-radius: var(--oas-radius-md);
+}
+/* 纵向 pill：首上圆/尾下圆 */
+:host([vertical][pill]) ::slotted(oas-button:first-child),
+:host([vertical][pill]) ::slotted(oas-button-group:first-child) {
+  --oas-button-group-radius: var(--oas-radius-full, 999px) var(--oas-radius-full, 999px) 0 0;
+  --oas-button-group-start-radius: var(--oas-radius-full, 999px);
+  --oas-button-group-end-radius: 0;
+}
+:host([vertical][pill]) ::slotted(oas-button:last-child),
+:host([vertical][pill]) ::slotted(oas-button-group:last-child) {
+  --oas-button-group-radius: 0 0 var(--oas-radius-full, 999px) var(--oas-radius-full, 999px);
+  --oas-button-group-start-radius: 0;
+  --oas-button-group-end-radius: var(--oas-radius-full, 999px);
+}
+:host([vertical][pill]) ::slotted(oas-button:only-child),
+:host([vertical][pill]) ::slotted(oas-button-group:only-child) {
+  --oas-button-group-radius: var(--oas-radius-full, 999px);
+  --oas-button-group-start-radius: var(--oas-radius-full, 999px);
+  --oas-button-group-end-radius: var(--oas-radius-full, 999px);
 }
 `
 
 export class OASButtonGroup extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['type', 'size', 'vertical', 'value', 'multiple', 'disabled', 'aria-label']
+    return ['type', 'size', 'vertical', 'value', 'multiple', 'disabled', 'aria-label', 'pill']
   }
 
   private groupEl: HTMLElement | null = null
@@ -98,9 +176,11 @@ export class OASButtonGroup extends OASElement {
     const type = this.getAttr('type', '')
     const size = this.getAttr('size', '')
     const disabled = this.hasAttr('disabled')
+    const vertical = this.hasAttr('vertical')
     const selected = this.selectedValues
 
-    const buttons = [...this.querySelectorAll('oas-button')] as OASButton[]
+    // type/size 透传与选值标记只作用于直接子按钮；嵌套组作为整体一项自行管理内部按钮
+    const buttons = [...this.querySelectorAll<OASButton>(':scope > oas-button')]
     for (const btn of buttons) {
       // type/size 透传（组设置时统一覆盖子按钮）
       if (type) btn.setAttribute('type', type)
@@ -112,6 +192,16 @@ export class OASButtonGroup extends OASElement {
       } else {
         btn.removeAttribute('aria-pressed')
       }
+    }
+
+    // 外层 disabled 统一覆盖到嵌套组宿主（其自身 update 会禁用内部按钮）
+    const subs = [...this.querySelectorAll<OASButtonGroup>(':scope > oas-button-group')]
+    for (const sub of subs) sub.toggleAttribute('disabled', disabled)
+
+    // 分隔符方向跟随组朝向：横向组渲染竖线、纵向组渲染横线（由分隔符 :host([vertical]) CSS 切换）。
+    // 只作用于直接子分隔符——嵌套组内的分隔符由嵌套组自身同步，避免外层覆盖其独立朝向
+    for (const sep of this.querySelectorAll<HTMLElement>(':scope > oas-button-group-separator')) {
+      sep.toggleAttribute('vertical', vertical)
     }
 
     // 容器 role="group" + aria-label（默认走 i18n，可被 aria-label 属性覆盖）
@@ -136,6 +226,8 @@ export class OASButtonGroup extends OASElement {
   private handleItemClick = (e: Event): void => {
     const btn = e.target as OASButton
     if (!this.contains(btn) || !btn.hasAttribute('value')) return
+    // 嵌套组内的按钮由嵌套组自行处理（嵌套组作为整体一项，外层不透传选值）
+    if (btn.closest('oas-button-group') !== this) return
     if (this.hasAttr('disabled')) return
     const val = btn.getAttribute('value') ?? ''
     const current = this.selectedValues

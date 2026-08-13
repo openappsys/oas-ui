@@ -169,7 +169,8 @@
       "size": "Size passed to child buttons",
       "type": "Type passed to child buttons",
       "value": "Selected value (single value in single-select, comma-separated in multi-select)",
-      "vertical": "Stack vertically, merging corners top/bottom"
+      "vertical": "Stack vertically, merging corners top/bottom",
+      "pill": "Pill shape: large rounding on the group outer edges (`--oas-radius-full` / `999px`)"
     },
     "events": {
       "oas-change": "Selection changed. Single-select `detail: { value }`; multi-select `detail: { value: [] }`"
@@ -1509,6 +1510,11 @@
       "repeat": "Boolean; when present the unit is tiled, otherwise a single unit is centered",
       "text": "Text watermark content (either `text` or `image`)"
     },
+    "events": {},
+    "slots": {}
+  },
+  "oas-button-group-separator": {
+    "attrs": {},
     "events": {},
     "slots": {}
   }

@@ -99,6 +99,135 @@
   </oas-button-group>
 </DemoBlock>
 
+## Pill 胶囊形态
+
+`pill` 让整个按钮组呈胶囊形态：首/尾按钮圆角使用 `--oas-radius-full`（999px），横向首左圆/尾右圆、纵向首上圆/尾下圆，中间按钮保持直角。
+
+<DemoBlock title="Pill 胶囊形态">
+  <oas-button-group pill value="a" onoas-change="message.info('选中：' + event.detail.value)">
+    <oas-button value="a">选项 A</oas-button>
+    <oas-button value="b">选项 B</oas-button>
+    <oas-button value="c">选项 C</oas-button>
+  </oas-button-group>
+  <oas-button-group pill type="primary" style="margin-top: 8px">
+    <oas-button value="prev">上一页</oas-button>
+    <oas-button value="next">下一页</oas-button>
+  </oas-button-group>
+  <oas-button-group pill vertical style="margin-top: 8px">
+    <oas-button value="up">置顶</oas-button>
+    <oas-button value="mid">置中</oas-button>
+    <oas-button value="down">置底</oas-button>
+  </oas-button-group>
+</DemoBlock>
+
+## 分隔符
+
+组内可放 `<oas-button-group-separator>` 渲染一条分隔线：横向组为 1px 竖线、纵向组为 1px 横线（方向随组朝向自动同步）。分隔符贴合相邻按钮、不参与圆角合并，建议放在按钮 / 嵌套组之间。
+
+<DemoBlock title="分隔符">
+  <oas-button-group>
+    <oas-button value="copy">复制</oas-button>
+    <oas-button-group-separator></oas-button-group-separator>
+    <oas-button value="cut">剪切</oas-button>
+    <oas-button-group-separator></oas-button-group-separator>
+    <oas-button value="paste">粘贴</oas-button>
+  </oas-button-group>
+  <oas-button-group vertical style="margin-top: 8px">
+    <oas-button value="top">置顶</oas-button>
+    <oas-button-group-separator></oas-button-group-separator>
+    <oas-button value="middle">置中</oas-button>
+    <oas-button-group-separator></oas-button-group-separator>
+    <oas-button value="bottom">置底</oas-button>
+  </oas-button-group>
+</DemoBlock>
+
+## 嵌套组
+
+`oas-button-group` 内可再嵌 `oas-button-group`，嵌套组作为整体一项参与贴合与圆角合并：外层把首/尾圆角经 `--oas-button-group-start-radius` / `--oas-button-group-end-radius` 穿透给嵌套组首尾按钮。嵌套组作为整体独立管理内部按钮（外层 `type` / `size` 不透传），外层 `disabled` 会整体禁用嵌套组。
+
+<DemoBlock title="嵌套组">
+  <oas-button-group>
+    <oas-button-group>
+      <oas-button value="undo">撤销</oas-button>
+      <oas-button value="redo">重做</oas-button>
+    </oas-button-group>
+    <oas-button-group-separator></oas-button-group-separator>
+    <oas-button value="save">保存</oas-button>
+    <oas-button-group-separator></oas-button-group-separator>
+    <oas-button-group>
+      <oas-button value="prev">上一页</oas-button>
+      <oas-button value="next">下一页</oas-button>
+    </oas-button-group>
+  </oas-button-group>
+</DemoBlock>
+
+## 拆分按钮（Split Button）
+
+button-group + `oas-dropdown split` 编排拆分按钮：主按钮触发 `oas-action`（执行主操作），箭头按钮展开下拉菜单（菜单选择走 `oas-select`）。
+
+<DemoBlock title="拆分按钮（Split Button）">
+  <oas-space size="small">
+    <oas-dropdown split onoas-action="message.info('主按钮动作：保存')" onoas-select="message.info('选择：' + event.detail.value)" items='[{"label":"另存为","value":"save-as"},{"label":"导出 PDF","value":"pdf"},{"label":"删除","value":"delete","disabled":true}]'>
+      <oas-button-group>
+        <oas-button>保存</oas-button>
+      </oas-button-group>
+    </oas-dropdown>
+    <oas-dropdown split onoas-action="message.info('主按钮动作：发布')" onoas-select="message.info('选择：' + event.detail.value)" items='[{"label":"定时发布","value":"scheduled"},{"label":"存草稿","value":"draft"}]'>
+      <oas-button-group>
+        <oas-button type="primary">发布</oas-button>
+      </oas-button-group>
+    </oas-dropdown>
+  </oas-space>
+</DemoBlock>
+
+## 组合用法
+
+按钮组与浮层、输入框等现有组件编排组合。
+
+<DemoBlock title="按钮 + 浮层">
+  <oas-space size="small">
+    <oas-button-group>
+      <oas-button value="edit">编辑</oas-button>
+      <oas-button value="copy">复制</oas-button>
+    </oas-button-group>
+    <oas-dropdown items='[{"label":"粘贴为纯文本","value":"paste-text"},{"label":"粘贴为引用","value":"paste-quote"}]'>
+      <oas-button>粘贴</oas-button>
+    </oas-dropdown>
+    <oas-popover title="格式说明" content="支持 Markdown 快捷语法，回车发送。">
+      <oas-button>?</oas-button>
+    </oas-popover>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="按钮 + 输入">
+  <oas-space size="small">
+    <oas-input placeholder="搜索关键词" style="width: 220px"></oas-input>
+    <oas-button-group onoas-change="message.info('选中：' + event.detail.value)">
+      <oas-button value="search">搜索</oas-button>
+      <oas-button value="reset">重置</oas-button>
+    </oas-button-group>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="工具栏（多组组合）">
+  <oas-flex gap="8px" align="center" style="padding: 8px; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg)">
+    <oas-button-group aria-label="文本格式">
+      <oas-button value="bold">B</oas-button>
+      <oas-button value="italic">I</oas-button>
+      <oas-button value="underline">U</oas-button>
+    </oas-button-group>
+    <oas-button-group aria-label="对齐方式">
+      <oas-button value="left">左对齐</oas-button>
+      <oas-button value="center">居中</oas-button>
+      <oas-button value="right">右对齐</oas-button>
+    </oas-button-group>
+    <oas-button-group aria-label="导出格式">
+      <oas-button value="csv">CSV</oas-button>
+      <oas-button value="pdf">PDF</oas-button>
+    </oas-button-group>
+  </oas-flex>
+</DemoBlock>
+
 ## API
 
 ### 属性
@@ -108,10 +237,11 @@
 | `aria-label` | 组容器可访问名称（默认走 i18n「按钮组」） | — | — |
 | `disabled` | 禁用整个组 | `boolean` | — |
 | `multiple` | 多选模式 | `boolean` | — |
+| `pill` | 胶囊形态：组整体首尾大圆角（`--oas-radius-full` / `999px`） | — | — |
 | `size` | 透传给子按钮的尺寸 | `string` | — |
 | `type` | 透传给子按钮的类型 | `string` | — |
 | `value` | 选中值（单选为单值，多选用逗号分隔） | `string` | — |
-| `vertical` | 纵向堆叠，圆角合并方向改为上下 | — | — |
+| `vertical` | 纵向堆叠，圆角合并方向改为上下 | `boolean` | — |
 
 ### 事件
 

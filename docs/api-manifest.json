@@ -543,6 +543,7 @@
       },
       {
         "name": "vertical",
+        "type": "boolean",
         "observed": true
       },
       {
@@ -564,6 +565,10 @@
       {
         "name": "aria-label",
         "observed": true
+      },
+      {
+        "name": "pill",
+        "observed": true
       }
     ],
     "props": [
@@ -583,6 +588,15 @@
         "name": ""
       }
     ],
+    "unresolved": []
+  },
+  "oas-button-group-separator": {
+    "className": "OASButtonGroupSeparator",
+    "sourceFile": "packages/ui/src/basic/button-group/oas-button-group-separator.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [],
     "unresolved": []
   },
   "oas-label": {

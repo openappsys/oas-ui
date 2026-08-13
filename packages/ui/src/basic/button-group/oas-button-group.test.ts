@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASButtonGroup } from './index.js'
+import { OASButtonGroupSeparator } from './oas-button-group-separator.js'
 import '../button/index.js'
 
 function makeButton(value?: string, text = ''): HTMLElement {
@@ -126,5 +127,153 @@ describe('OASButtonGroup', () => {
     pressButtonAt(el, 0)
     expect(fired).toBe(false)
     expect(el.querySelector('oas-button')!.hasAttribute('aria-pressed')).toBe(false)
+  })
+})
+
+describe('OASButtonGroup 扩展：pill / 嵌套组 / 分隔符', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 读取组件 shadow 内联样式文本（happy-dom 不应用类样式，CSS 规则以文本断言） */
+  function styleText(el: OASButtonGroup): string {
+    return el.shadowRoot!.querySelector('style')!.textContent ?? ''
+  }
+
+  it('pill 进入 observedAttributes', () => {
+    expect(OASButtonGroup.observedAttributes).toContain('pill')
+  })
+
+  it('pill 胶囊：首/尾按钮圆角用 --oas-radius-full（横向首左圆/尾右圆）', () => {
+    const css = styleText(mountGroup({ pill: '' }))
+    expect(css).toContain(':host([pill]) ::slotted(oas-button:first-child)')
+    expect(css).toContain(
+      '--oas-button-group-radius: var(--oas-radius-full, 999px) 0 0 var(--oas-radius-full, 999px)',
+    )
+    expect(css).toContain(
+      '--oas-button-group-radius: 0 var(--oas-radius-full, 999px) var(--oas-radius-full, 999px) 0',
+    )
+    expect(css).toContain('--oas-button-group-start-radius: var(--oas-radius-full, 999px)')
+  })
+
+  it('pill + vertical：首上圆/尾下圆', () => {
+    const css = styleText(mountGroup({ pill: '', vertical: '' }))
+    expect(css).toContain(':host([vertical][pill])')
+    expect(css).toContain(
+      '--oas-button-group-radius: var(--oas-radius-full, 999px) var(--oas-radius-full, 999px) 0 0',
+    )
+    expect(css).toContain(
+      '--oas-button-group-radius: 0 0 var(--oas-radius-full, 999px) var(--oas-radius-full, 999px)',
+    )
+  })
+
+  it('嵌套组：CSS 与按钮同等处理（贴合/圆角合并），并经 start/end 变量穿透整体圆角', () => {
+    const css = styleText(mountGroup())
+    expect(css).toContain('::slotted(oas-button-group:not(:first-child))')
+    expect(css).toContain('::slotted(oas-button-group:first-child)')
+    expect(css).toContain('--oas-button-group-start-radius: var(--oas-radius-md)')
+    expect(css).toContain('--oas-button-group-end-radius: var(--oas-radius-md)')
+    expect(css).toContain('--oas-button-group-end-radius: 0')
+  })
+
+  it('嵌套组：作为整体一项，点击嵌套内按钮不改变外层选值', () => {
+    const el = new OASButtonGroup()
+    const sub = new OASButtonGroup()
+    sub.appendChild(makeButton('a', '内层'))
+    sub.appendChild(makeButton('b', '内层'))
+    el.appendChild(sub)
+    el.appendChild(makeButton('c', '外层'))
+    document.body.appendChild(el)
+
+    pressButton(sub, 'a')
+    expect(sub.getAttribute('value')).toBe('a')
+    expect(el.getAttribute('value')).toBeNull()
+    expect(sub.querySelector('oas-button[value="a"]')!.getAttribute('aria-pressed')).toBe('true')
+    expect(el.querySelector('oas-button[value="c"]')!.getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('嵌套组：外层 type/size 不透传进嵌套组（嵌套组自行管理内部按钮）', () => {
+    const el = new OASButtonGroup()
+    el.setAttribute('type', 'primary')
+    el.setAttribute('size', 'large')
+    const sub = new OASButtonGroup()
+    sub.appendChild(makeButton('a'))
+    el.appendChild(sub)
+    document.body.appendChild(el)
+
+    const innerBtn = sub.querySelector('oas-button')!
+    expect(innerBtn.getAttribute('type')).toBeNull()
+    expect(innerBtn.getAttribute('size')).toBeNull()
+  })
+
+  it('嵌套组：外层 disabled 透传到嵌套组宿主，进而禁用内部按钮', () => {
+    const el = new OASButtonGroup()
+    el.setAttribute('disabled', '')
+    const sub = new OASButtonGroup()
+    sub.appendChild(makeButton('a'))
+    el.appendChild(sub)
+    document.body.appendChild(el)
+
+    expect(sub.hasAttribute('disabled')).toBe(true)
+    expect(sub.querySelector('oas-button')!.hasAttribute('disabled')).toBe(true)
+  })
+
+  it('分隔符：注册为自定义元素并渲染线节点', () => {
+    expect(customElements.get('oas-button-group-separator')).toBe(OASButtonGroupSeparator)
+    const sep = document.createElement('oas-button-group-separator')
+    document.body.appendChild(sep)
+    expect(sep.shadowRoot!.querySelector('[part="line"]')).not.toBeNull()
+    expect(sep.shadowRoot!.querySelector('[part="line"]')!.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('分隔符：组 vertical 属性同步到分隔符（横向线），移除后恢复竖线', () => {
+    const el = new OASButtonGroup()
+    const sep = document.createElement('oas-button-group-separator')
+    el.appendChild(sep)
+    el.setAttribute('vertical', '')
+    document.body.appendChild(el)
+    expect(sep.hasAttribute('vertical')).toBe(true)
+    el.removeAttribute('vertical')
+    expect(sep.hasAttribute('vertical')).toBe(false)
+  })
+
+  it('分隔符：外层 vertical 不覆盖嵌套组内分隔符方向（各自同步）', () => {
+    const el = new OASButtonGroup()
+    el.setAttribute('vertical', '')
+    const sub = new OASButtonGroup()
+    const innerSep = document.createElement('oas-button-group-separator')
+    sub.appendChild(makeButton('a'))
+    sub.appendChild(innerSep)
+    sub.appendChild(makeButton('b'))
+    el.appendChild(sub)
+    document.body.appendChild(el)
+    expect(innerSep.hasAttribute('vertical')).toBe(false)
+  })
+
+  it('分隔符：CSS 贴合参与布局、不参与圆角合并', () => {
+    const css = styleText(mountGroup())
+    expect(css).toContain('::slotted(oas-button-group-separator)')
+    expect(css).toContain('z-index: 2')
+    // 分隔符不被首/尾圆角规则命中：无 --oas-button-group-radius 注入
+    const sepRule = css.match(/::slotted\(oas-button-group-separator\)\s*{[^}]*}/)?.[0]
+    expect(sepRule).toContain('position: relative')
+    expect(sepRule).not.toContain('--oas-button-group-radius')
+  })
+
+  it('带分隔符的组：选值逻辑仍正常', () => {
+    const el = new OASButtonGroup()
+    el.appendChild(makeButton('a'))
+    el.appendChild(document.createElement('oas-button-group-separator'))
+    el.appendChild(makeButton('b'))
+    document.body.appendChild(el)
+
+    pressButton(el, 'b')
+    expect(el.getAttribute('value')).toBe('b')
+    expect(el.querySelector('oas-button[value="b"]')!.getAttribute('aria-pressed')).toBe('true')
+    expect(el.querySelector('oas-button[value="a"]')!.getAttribute('aria-pressed')).toBe('false')
   })
 })
