@@ -27,6 +27,30 @@ A click-triggered popup panel that can hold a title, body text and arbitrary cus
   </oas-popover>
 </DemoBlock>
 
+## Arrow and viewport auto adjust
+
+By default an arrow pointing at the trigger element's edge is shown; `arrow="false"` hides the arrow; `arrow-point-at-center` makes the arrow point at the trigger element's center (when the panel is shifted by viewport-edge avoidance, the arrow still points at the anchor center). By default the panel automatically flips along the main axis and avoids the viewport edges when space is insufficient; `auto-adjust-overflow="false"` disables the auto adjust so the panel keeps the declared placement (it may overflow the viewport).
+
+<DemoBlock title="Arrow visibility and pointing">
+  <oas-space size="large" wrap>
+    <oas-popover id="pop-arrow-default" title="Default" content="Arrow is shown by default" placement="bottom">
+      <oas-button>Default</oas-button>
+    </oas-popover>
+    <oas-popover id="pop-arrow-off" title="No arrow" content="arrow=false: arrow hidden" placement="bottom" arrow="false">
+      <oas-button>No arrow</oas-button>
+    </oas-popover>
+    <oas-popover id="pop-arrow-center" title="Point at center" content="arrow-point-at-center: arrow points at the trigger center" placement="bottom" arrow-point-at-center>
+      <oas-button>Point at center</oas-button>
+    </oas-popover>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="Auto adjust disabled">
+  <oas-popover title="Keep placement" content="auto-adjust-overflow=false: the panel keeps the declared placement and may overflow the viewport." placement="bottom" auto-adjust-overflow="false">
+    <oas-button>Auto adjust off</oas-button>
+  </oas-popover>
+</DemoBlock>
+
 ## Custom content
 
 <DemoBlock title="Custom content (slot=content)">
@@ -170,6 +194,9 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `arrow` | Whether to show the arrow (default true; `arrow="false"` hides it, the element and `::part(arrow)` are kept) | `string` | `true` |
+| `arrow-point-at-center` | Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance) | `boolean` | — |
+| `auto-adjust-overflow` | Viewport-edge auto flip and avoidance (default true; `"false"` disables it, keeping the declared placement, which may overflow the viewport) | `string` | `true` |
 | `content` | Body text | `string` | — |
 | `focus-on-open` | Moves focus into the first focusable element of the panel when opened | `boolean` | — |
 | `open` | Controlled display (boolean attribute; shows when present) | `boolean` | — |

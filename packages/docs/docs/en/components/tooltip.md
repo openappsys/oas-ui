@@ -29,6 +29,34 @@ A simple text prompt bubble triggered on hover or keyboard focus.
 
 When space is insufficient, the tooltip automatically flips along the main axis and avoids the viewport edges.
 
+## Arrow
+
+By default an arrow pointing at the trigger element's edge is shown; `arrow="false"` hides the arrow; `arrow-point-at-center` makes the arrow point at the trigger element's center (when the panel is shifted by viewport-edge avoidance, the arrow still points at the anchor center).
+
+<DemoBlock title="Arrow visibility and pointing">
+  <oas-space size="large" wrap>
+    <oas-tooltip id="tt-arrow-default" content="Arrow is shown by default">
+      <oas-button>Default</oas-button>
+    </oas-tooltip>
+    <oas-tooltip id="tt-arrow-off" content="arrow=false: arrow hidden" arrow="false">
+      <oas-button>No arrow</oas-button>
+    </oas-tooltip>
+    <oas-tooltip id="tt-arrow-center" content="arrow-point-at-center: arrow points at the trigger center" arrow-point-at-center>
+      <oas-button>Point at center</oas-button>
+    </oas-tooltip>
+  </oas-space>
+</DemoBlock>
+
+## Viewport auto adjust
+
+By default the tooltip automatically flips along the main axis and avoids the viewport edges when space is insufficient; `auto-adjust-overflow="false"` disables the auto adjust so the panel keeps the declared placement (it may overflow the viewport).
+
+<DemoBlock title="Auto adjust disabled">
+  <oas-tooltip content="auto-adjust-overflow=false: keeps placement=bottom" placement="bottom" auto-adjust-overflow="false">
+    <oas-button>Auto adjust off</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
 ## Focus trigger
 
 <DemoBlock title="Trigger on keyboard focus">
@@ -205,6 +233,9 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `arrow` | Whether to show the arrow (default true; `arrow="false"` hides it, the element and `::part(arrow)` are kept) | `string` | `true` |
+| `arrow-point-at-center` | Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance) | `boolean` | — |
+| `auto-adjust-overflow` | Viewport-edge auto flip and avoidance (default true; `"false"` disables it, keeping the declared placement, which may overflow the viewport) | `string` | `true` |
 | `content` | Tooltip content text | `string` | — |
 | `open` | Controlled display (boolean attribute; shows when present) | `boolean` | — |
 | `placement` | Popup placement | `Placement` | `top` |

@@ -15,8 +15,8 @@ export interface NotificationOptions {
 
 let stackEl: HTMLElement | null = null
 
-function ensureStack(): HTMLElement {
-  const target = resolveMessageHost()
+function ensureStack: HTMLElement {
+  const target = resolveMessageHost
   if (stackEl && target.contains(stackEl)) return stackEl
   stackEl = document.createElement('div')
   stackEl.style.cssText =
@@ -36,7 +36,7 @@ function show(type: NotificationType, options: NotificationOptions): void {
     el.setAttribute('progress-position', options.progressPosition)
   }
   if (options.scrollable !== undefined) el.setAttribute('scrollable', String(options.scrollable))
-  ensureStack().appendChild(el)
+  ensureStack.appendChild(el)
 }
 
 export const notification = {
@@ -46,7 +46,7 @@ export const notification = {
   error: (options: NotificationOptions): void => show('error', options),
 }
 
-export function destroyAll(): void {
+export function destroyAll: void {
   if (stackEl) stackEl.innerHTML = ''
   stackEl = null
 }

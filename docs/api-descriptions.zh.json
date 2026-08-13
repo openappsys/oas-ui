@@ -430,6 +430,9 @@
   },
   "oas-dropdown": {
     "attrs": {
+      "arrow": "是否显示指向触发元素的箭头（`arrow=\"false\"` 隐藏，骨架保留）",
+      "arrow-point-at-center": "箭头固定指向面板中心（默认按触发元素投影定位，面板被视口避让偏移时箭头仍指向触发元素）",
+      "auto-adjust-overflow": "视口空间不足时自动翻转/避让（`auto-adjust-overflow=\"false\"` 关闭，面板可越出视口）",
       "items": "菜单项 JSON",
       "open": "受控显示（布尔属性，存在即展开）",
       "placement": "浮层位置",
@@ -917,6 +920,9 @@
   },
   "oas-popover": {
     "attrs": {
+      "arrow": "是否显示箭头（默认 true；`arrow=\"false\"` 隐藏，箭头元素与 `::part(arrow)` 保留）",
+      "arrow-point-at-center": "箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心）",
+      "auto-adjust-overflow": "视口边缘自动翻转与避让（默认 true；`\"false\"` 关闭，保持声明 placement，可能溢出视口）",
       "content": "正文文本",
       "focus-on-open": "打开时焦点移入面板内首个可聚焦元素",
       "open": "受控显示（布尔属性，存在即显示）",
@@ -1354,6 +1360,9 @@
   },
   "oas-tooltip": {
     "attrs": {
+      "arrow": "是否显示箭头（默认 true；`arrow=\"false\"` 隐藏，箭头元素与 `::part(arrow)` 保留）",
+      "arrow-point-at-center": "箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心）",
+      "auto-adjust-overflow": "视口边缘自动翻转与避让（默认 true；`\"false\"` 关闭，保持声明 placement，可能溢出视口）",
       "content": "提示内容文本",
       "open": "受控显示（布尔属性，存在即显示）",
       "placement": "浮层位置",

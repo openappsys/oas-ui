@@ -2945,6 +2945,23 @@
       {
         "name": "virtual-y",
         "observed": true
+      },
+      {
+        "name": "arrow",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "arrow-point-at-center",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "auto-adjust-overflow",
+        "type": "string",
+        "default": "true",
+        "observed": true
       }
     ],
     "props": [],
@@ -3008,6 +3025,23 @@
       {
         "name": "focus-on-open",
         "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "arrow",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "arrow-point-at-center",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "auto-adjust-overflow",
+        "type": "string",
+        "default": "true",
         "observed": true
       }
     ],
@@ -3097,6 +3131,23 @@
       {
         "name": "split",
         "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "arrow",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "arrow-point-at-center",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "auto-adjust-overflow",
+        "type": "string",
+        "default": "true",
         "observed": true
       }
     ],

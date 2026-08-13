@@ -49,7 +49,18 @@ const STYLE = `
 
 export class OAStooltip extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['open', 'content', 'placement', 'virtual', 'virtual-anchor', 'virtual-x', 'virtual-y']
+    return [
+      'open',
+      'content',
+      'placement',
+      'virtual',
+      'virtual-anchor',
+      'virtual-x',
+      'virtual-y',
+      'arrow',
+      'arrow-point-at-center',
+      'auto-adjust-overflow',
+    ]
   }
 
   private tipEl: HTMLElement | null = null
@@ -110,6 +121,9 @@ export class OAStooltip extends OASElement {
     this.tipEl.setAttribute('aria-hidden', String(!open))
     // 内容写入独立容器（不动箭头/骨架，避免 textContent 覆盖清掉箭头元素）
     this.tipEl.querySelector<HTMLElement>('.tip-content')!.textContent = this.getAttr('content', '')
+    // 箭头显隐：arrow 布尔属性默认 true（显示），arrow="false" 隐藏；元素与 ::part(arrow) 保留
+    const arrow = this.tipEl.querySelector<HTMLElement>('[data-popper-arrow]')
+    if (arrow) arrow.hidden = !this.showArrow()
     // open 状态迁移（受控 setAttribute 与 hover/focus 触发都会走到这里）→ oas-open-change
     if (this.prevOpen !== null && this.prevOpen !== open) {
       this.emit('open-change', { open })
@@ -118,6 +132,11 @@ export class OAStooltip extends OASElement {
     this.syncFollow(open)
     if (!open) return
     this.position()
+  }
+
+  /** arrow 布尔属性：默认 true（显示箭头），仅 arrow="false" 隐藏 */
+  private showArrow(): boolean {
+    return this.getAttr('arrow', 'true') !== 'false'
   }
 
   /** 计算当前锚点矩形：虚拟坐标 > 虚拟锚点元素 > 默认宿主锚点 */
@@ -139,24 +158,61 @@ export class OAStooltip extends OASElement {
     return this.anchor?.getBoundingClientRect() ?? null
   }
 
-  /** 定位写入：锚点矩形 + placement → computePosition → style/data-placement */
+  /** 定位写入：锚点矩形 + placement → computePosition → style/data-placement + 箭头指向 */
   private position(): void {
     if (!this.tipEl) return
     const anchorRect = this.anchorRect()
     if (!anchorRect) return
     const tipRect = this.tipEl.getBoundingClientRect()
     const placement = this.getAttr('placement', 'top') as Placement
+    const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
     const {
       top,
       left,
       placement: actual,
-    } = computePosition(anchorRect, tipRect, placement, {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    })
+    } = computePosition(
+      anchorRect,
+      tipRect,
+      placement,
+      { width: window.innerWidth, height: window.innerHeight },
+      undefined,
+      autoAdjust,
+    )
     this.tipEl.style.top = `${top}px`
     this.tipEl.style.left = `${left}px`
     this.tipEl.setAttribute('data-placement', actual)
+    this.positionArrow(anchorRect, actual)
+  }
+
+  /**
+   * 箭头交叉轴指向：arrow-point-at-center 时箭头对齐锚点中心（面板被视口避让
+   * 偏移后仍指向锚点），默认保持面板中心（CSS calc(50% - 4px) 的边缘对齐）。
+   * 锚点中心与面板中心重合（未偏移 / virtual 0 尺寸锚点）时不留内联样式，
+   * 两种模式视觉等价。
+   */
+  private positionArrow(anchorRect: DOMRect, actual: Placement): void {
+    if (!this.tipEl) return
+    const arrow = this.tipEl.querySelector<HTMLElement>('[data-popper-arrow]')
+    if (!arrow) return
+    arrow.style.left = ''
+    arrow.style.top = ''
+    if (!this.hasAttr('arrow-point-at-center')) return
+    const vertical = actual === 'top' || actual === 'bottom'
+    const rect = this.tipEl.getBoundingClientRect()
+    const popupEdge = vertical
+      ? parseFloat(this.tipEl.style.left)
+      : parseFloat(this.tipEl.style.top)
+    const anchorCrossCenter = vertical
+      ? anchorRect.left + anchorRect.width / 2
+      : anchorRect.top + anchorRect.height / 2
+    const size = vertical ? rect.width : rect.height
+    if (!Number.isFinite(size) || size <= 0) return
+    // 锚点中心映射到面板局部坐标，夹取到面板内（4px 边距），避免箭头探出面板
+    const local = anchorCrossCenter - popupEdge
+    const clamped = Math.max(4, Math.min(local, size - 4))
+    if (Math.abs(clamped - size / 2) <= 0.5) return // 与面板中心重合 → 走 CSS 居中
+    if (vertical) arrow.style.left = `${clamped - 4}px`
+    else arrow.style.top = `${clamped - 4}px`
   }
 
   /**

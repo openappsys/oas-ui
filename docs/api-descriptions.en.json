@@ -430,6 +430,9 @@
   },
   "oas-dropdown": {
     "attrs": {
+      "arrow": "Whether to show the arrow pointing at the trigger (`arrow=\"false\"` hides it; the skeleton is kept)",
+      "arrow-point-at-center": "Pin the arrow to the panel center (by default the arrow follows the trigger's projection, so it still points at the trigger even after viewport-avoidance shifting)",
+      "auto-adjust-overflow": "Auto-flip/avoid when there is not enough viewport space (`auto-adjust-overflow=\"false\"` disables it; the panel may overflow the viewport)",
       "items": "Menu items JSON",
       "open": "Controlled display (boolean attribute; expands when present)",
       "placement": "Popup placement",
@@ -917,6 +920,9 @@
   },
   "oas-popover": {
     "attrs": {
+      "arrow": "Whether to show the arrow (default true; `arrow=\"false\"` hides it, the element and `::part(arrow)` are kept)",
+      "arrow-point-at-center": "Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance)",
+      "auto-adjust-overflow": "Viewport-edge auto flip and avoidance (default true; `\"false\"` disables it, keeping the declared placement, which may overflow the viewport)",
       "content": "Body text",
       "focus-on-open": "Moves focus into the first focusable element of the panel when opened",
       "open": "Controlled display (boolean attribute; shows when present)",
@@ -1354,6 +1360,9 @@
   },
   "oas-tooltip": {
     "attrs": {
+      "arrow": "Whether to show the arrow (default true; `arrow=\"false\"` hides it, the element and `::part(arrow)` are kept)",
+      "arrow-point-at-center": "Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance)",
+      "auto-adjust-overflow": "Viewport-edge auto flip and avoidance (default true; `\"false\"` disables it, keeping the declared placement, which may overflow the viewport)",
       "content": "Tooltip content text",
       "open": "Controlled display (boolean attribute; shows when present)",
       "placement": "Popup placement",

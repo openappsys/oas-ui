@@ -105,4 +105,40 @@ describe('computePosition 浮层定位', () => {
       expect(pos.left).toBeLessThanOrEqual(viewport.width)
     })
   })
+
+  describe('auto-adjust-overflow=false（关闭视口自动调整）', () => {
+    // `autoAdjustOverflow: false`：flip 与视口避让都关闭，
+    // 保持声明 placement（可能溢出视口）。
+    it('空间不足不翻转：保持声明 placement', () => {
+      const pos = computePosition(
+        rect(100, 550, 200, 40),
+        rect(0, 0, 100, 50),
+        'bottom',
+        viewport,
+        8,
+        false,
+      )
+      expect(pos.placement).toBe('bottom')
+      expect(pos.top).toBe(598) // 550+40+8，无翻转
+    })
+
+    it('不避让视口边缘：left 可为负（溢出）', () => {
+      const pos = computePosition(
+        rect(0, 100, 40, 40),
+        rect(0, 0, 300, 50),
+        'bottom',
+        viewport,
+        8,
+        false,
+      )
+      expect(pos.placement).toBe('bottom')
+      expect(pos.left).toBe(-130) // 20 - 150，无 clamp
+      expect(pos.top).toBe(148)
+    })
+
+    it('第 6 参缺省 = true：仍翻转与避让（向后兼容）', () => {
+      const pos = computePosition(rect(100, 550, 200, 40), rect(0, 0, 100, 50), 'bottom', viewport)
+      expect(pos.placement).toBe('top')
+    })
+  })
 })

@@ -46,7 +46,7 @@
 
 ## 缎带角标
 
-`ribbon` 布尔属性或 `mode="ribbon"` 开启缎带角标（卡片上沿斜角折叠）。文本经 `text` 属性提供，默认位于右端（`placement="end"`），可用 `placement="start"` 切到左端。
+`ribbon` 布尔属性或 `mode="ribbon"` 开启缎带角标。文本经 `text` 属性提供，默认位于右端（`placement="end"`），可用 `placement="start"` 切到左端。
 
 <DemoBlock title="普通缎带">
   <oas-badge ribbon text="HOT" style="margin-inline-end: var(--oas-space-4)">

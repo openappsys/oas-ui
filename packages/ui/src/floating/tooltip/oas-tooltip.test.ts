@@ -21,6 +21,31 @@ function mountVirtual(attrs: Record<string, string> = {}): OAStooltip {
   return el
 }
 
+/** happy-dom 无布局引擎：stub 元素 getBoundingClientRect，让定位数学可精确断言 */
+function stubRect(
+  el: HTMLElement,
+  r: { left: number; top: number; width: number; height: number },
+): void {
+  el.getBoundingClientRect = () =>
+    ({
+      x: r.left,
+      y: r.top,
+      width: r.width,
+      height: r.height,
+      left: r.left,
+      top: r.top,
+      right: r.left + r.width,
+      bottom: r.top + r.height,
+      toJSON: () => ({}),
+    }) as DOMRect
+}
+
+/** 固定视口尺寸（定位越界/翻转/避让断言依赖确定性的 viewport） */
+function setViewport(w: number, h: number): void {
+  Object.defineProperty(window, 'innerWidth', { value: w, configurable: true })
+  Object.defineProperty(window, 'innerHeight', { value: h, configurable: true })
+}
+
 describe('OAStooltip', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -346,5 +371,115 @@ describe('OAStooltip', () => {
         `placement=${p} 箭头应悬面板${cases[p].edge}边`,
       ).toBe('-4px')
     }
+  })
+
+  // —— 箭头显隐（arrow，默认 true）——
+
+  it('arrow 默认 true：箭头可见（hidden=false）', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'top' })
+    await Promise.resolve()
+    const arrow = tip(el).querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow.hidden).toBe(false)
+    expect(arrow.hasAttribute('hidden')).toBe(false)
+  })
+
+  it('arrow="false"：隐藏箭头（hidden=true），元素与 part 保留', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'top', arrow: 'false' })
+    await Promise.resolve()
+    const arrow = tip(el).querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow).not.toBeNull()
+    expect(arrow.getAttribute('part')).toBe('arrow')
+    expect(arrow.hidden).toBe(true)
+  })
+
+  it('arrow 动态切换：arrow="false" ↔ 移除 → hidden 同步', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'top' })
+    await Promise.resolve()
+    const arrow = tip(el).querySelector<HTMLElement>('[data-popper-arrow]')!
+    el.setAttribute('arrow', 'false')
+    await Promise.resolve()
+    expect(arrow.hidden).toBe(true)
+    el.removeAttribute('arrow')
+    await Promise.resolve()
+    expect(arrow.hidden).toBe(false)
+  })
+
+  // —— 箭头指向锚点中心（arrow-point-at-center，默认 false）——
+
+  it('arrow-point-at-center：面板被视口边缘避让偏移时，箭头仍指向锚点中心（定位差异）', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'bottom' })
+    const t = tip(el)
+    stubRect(t, { left: 0, top: 0, width: 240, height: 36 })
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 12, top: 300, width: 64, height: 32 }) // 锚点中心 X = 44
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x') // 触发重定位（stub 尺寸生效）
+    await Promise.resolve()
+    // 面板被 clamp 到视口左缘：left = max(4, 44-120) = 4 → 面板中心 124 ≠ 锚点中心 44
+    expect(t.style.left).toBe('4px')
+    const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
+    // 默认（边缘对齐）：无内联偏移，箭头随面板居中（CSS calc(50% - 4px)）
+    expect(arrow.style.left).toBe('')
+    // 开启 point-at-center：箭头指向锚点中心（面板局部 X = 44 - 4 = 40 → left = 40 - 4 = 36px）
+    el.setAttribute('arrow-point-at-center', '')
+    await Promise.resolve()
+    expect(arrow.style.left).toBe('36px')
+    // 关闭后恢复 CSS 居中（无内联偏移）
+    el.removeAttribute('arrow-point-at-center')
+    await Promise.resolve()
+    expect(arrow.style.left).toBe('')
+  })
+
+  it('arrow-point-at-center：virtual 0 尺寸锚点与默认等价（无内联偏移）', async () => {
+    const el = mountVirtual({
+      virtual: '',
+      'virtual-x': '400',
+      'virtual-y': '300',
+      placement: 'bottom',
+      content: 'x',
+      open: '',
+      'arrow-point-at-center': '',
+    })
+    const t = tip(el)
+    stubRect(t, { left: 0, top: 0, width: 240, height: 36 })
+    setViewport(1280, 800)
+    el.setAttribute('virtual-x', '400') // 触发重定位
+    await Promise.resolve()
+    // 面板居中于锚点：箭头中心 = 锚点中心 = 面板中心 → 无需内联偏移（CSS 居中即指向锚点）
+    const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow.style.left).toBe('')
+  })
+
+  // —— 视口自动调整（auto-adjust-overflow，默认 true）——
+
+  it('auto-adjust-overflow 默认 true：空间不足自动翻转', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'bottom' })
+    const t = tip(el)
+    stubRect(t, { left: 0, top: 0, width: 240, height: 36 })
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 200, top: 760, width: 64, height: 32 }) // 锚点贴视口底
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.getAttribute('data-placement')).toBe('top')
+  })
+
+  it('auto-adjust-overflow="false"：空间不足不翻转，保持声明 placement', async () => {
+    const el = mount({
+      open: '',
+      content: 'x',
+      placement: 'bottom',
+      'auto-adjust-overflow': 'false',
+    })
+    const t = tip(el)
+    stubRect(t, { left: 0, top: 0, width: 240, height: 36 })
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 200, top: 760, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.getAttribute('data-placement')).toBe('bottom')
+    // 不避让：按声明 placement 数学放置（可能溢出视口底缘）
+    expect(t.style.top).toBe('800px') // 792 + 8
   })
 })

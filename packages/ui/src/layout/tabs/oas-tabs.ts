@@ -425,7 +425,7 @@ export class OASTabs extends OASElement {
 
     // 新增按钮（addable）：native button，Enter/Space 原生触发 click → oas-add。
     // 作为 tablist 直接子元素必须声明 role=tab（axe aria-required-children：tablist 只允许
-    // tab 子元素）。占位 tab 语义：aria-selected=false + tabindex=0，
+    // tab 子元素）。同款占位 tab 语义：aria-selected=false + tabindex=0，
     // Tab 键可到达（其余真实标签为 roving tabindex），读屏作为「未选中占位 tab」。
     this.addBtn = null
     if (addable) {

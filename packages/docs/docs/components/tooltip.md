@@ -29,6 +29,34 @@
 
 空间不足时自动沿主轴翻转，并在视口边缘避让。
 
+## 箭头
+
+默认显示指向触发元素边缘的箭头；`arrow="false"` 隐藏箭头；`arrow-point-at-center` 让箭头指向触发元素中心（视口边缘避让导致面板偏移时，箭头仍指向锚点中心）。
+
+<DemoBlock title="箭头显隐与指向">
+  <oas-space size="large" wrap>
+    <oas-tooltip id="tt-arrow-default" content="默认显示箭头">
+      <oas-button>默认</oas-button>
+    </oas-tooltip>
+    <oas-tooltip id="tt-arrow-off" content="arrow=false：隐藏箭头" arrow="false">
+      <oas-button>无箭头</oas-button>
+    </oas-tooltip>
+    <oas-tooltip id="tt-arrow-center" content="arrow-point-at-center：箭头指向触发元素中心" arrow-point-at-center>
+      <oas-button>指向中心</oas-button>
+    </oas-tooltip>
+  </oas-space>
+</DemoBlock>
+
+## 视口边缘自动调整
+
+默认空间不足时自动沿主轴翻转并避让视口边缘；`auto-adjust-overflow="false"` 关闭自动调整，面板保持声明 placement（可能溢出视口）。
+
+<DemoBlock title="关闭自动调整">
+  <oas-tooltip content="auto-adjust-overflow=false：保持 placement=bottom" placement="bottom" auto-adjust-overflow="false">
+    <oas-button>关闭自动调整</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
 ## 聚焦触发
 
 <DemoBlock title="键盘聚焦触发">
@@ -205,6 +233,9 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `arrow` | 是否显示箭头（默认 true；`arrow="false"` 隐藏，箭头元素与 `::part(arrow)` 保留） | `string` | `true` |
+| `arrow-point-at-center` | 箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心） | `boolean` | — |
+| `auto-adjust-overflow` | 视口边缘自动翻转与避让（默认 true；`"false"` 关闭，保持声明 placement，可能溢出视口） | `string` | `true` |
 | `content` | 提示内容文本 | `string` | — |
 | `open` | 受控显示（布尔属性，存在即显示） | `boolean` | — |
 | `placement` | 浮层位置 | `Placement` | `top` |

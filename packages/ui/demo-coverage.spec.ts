@@ -305,7 +305,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-dropdown', 'click', '（通用探针可能已翻转开合，这里再确认展开）'],
     ['oas-dropdown [role="menuitemradio"]', 'click', '选菜单项 → oas-select'],
     ['oas-dropdown[split]', 'click', '点拆分主按钮 → oas-action'],
-    ['oas-dropdown[split] [part="arrow"]', 'click', '点箭头 → 展开拆分菜单'],
+    ['oas-dropdown[split] [part="split-arrow"]', 'click', '点箭头 → 展开拆分菜单'],
     ['oas-dropdown[split] [role="menuitemradio"]', 'click', '选拆分菜单项 → oas-select'],
   ],
   contextmenu: [

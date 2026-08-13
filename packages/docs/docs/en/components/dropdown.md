@@ -45,6 +45,38 @@ A click-triggered menu that opens anchored to the trigger element.
   </oas-dropdown>
 </DemoBlock>
 
+## Arrow
+
+The menu panel shows an arrow pointing at the trigger element . The `arrow` attribute toggles it (shown by default; `arrow="false"` hides it). `arrow-point-at-center` pins the arrow to the panel center (by default the arrow follows the trigger's projection, so it still points at the trigger even after viewport-avoidance shifting). `auto-adjust-overflow` controls whether the placement auto-flips when there is not enough viewport space (enabled by default).
+
+<DemoBlock title="With arrow">
+  <oas-dropdown id="dd-arrow" placement="bottom" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+    <oas-button type="primary">With arrow</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+<DemoBlock title="Arrow visibility">
+  <oas-space size="small">
+    <oas-dropdown items='[{"label":"Edit","value":"edit"}]'>
+      <oas-button>Default (arrow)</oas-button>
+    </oas-dropdown>
+    <oas-dropdown id="dd-arrow-none" arrow="false" items='[{"label":"Edit","value":"edit"}]'>
+      <oas-button>arrow="false"</oas-button>
+    </oas-dropdown>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="Arrow at center & no overflow adjust">
+  <oas-space size="small">
+    <oas-dropdown arrow-point-at-center items='[{"label":"Edit","value":"edit"}]'>
+      <oas-button>arrow-point-at-center</oas-button>
+    </oas-dropdown>
+    <oas-dropdown auto-adjust-overflow="false" items='[{"label":"Edit","value":"edit"}]'>
+      <oas-button>auto-adjust-overflow="false"</oas-button>
+    </oas-dropdown>
+  </oas-space>
+</DemoBlock>
+
 ## Selection event
 
 <DemoBlock title="Selection event">
@@ -60,8 +92,8 @@ The `open` attribute is controlled: an external button can set/remove `open` to 
 
 <DemoBlock title="Controlled display (open attribute)">
   <oas-space size="small">
-    <oas-button type="primary" size="small" onclick="event.stopPropagation(); ddOpen(true)">Open</oas-button>
-    <oas-button size="small" onclick="event.stopPropagation(); ddOpen(false)">Close</oas-button>
+    <oas-button type="primary" size="small" onclick="event.stopPropagation; ddOpen(true)">Open</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation; ddOpen(false)">Close</oas-button>
     <oas-tag id="dd-open-status" type="info">open: false</oas-tag>
   </oas-space>
   <oas-dropdown id="dd-ctrl" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
@@ -125,7 +157,7 @@ A menu item with `loading: true` enters a loading state: it shows a spinning ind
 
 <script setup>
 import { onMounted } from 'vue'
-onMounted(() => {
+onMounted( => {
   window.ddLog = (e) => {
     const tag = document.getElementById('dd-result')
     if (tag) tag.textContent = `Selected: ${e.detail.value}`
@@ -134,14 +166,14 @@ onMounted(() => {
   const ctrl = document.getElementById('dd-ctrl')
   const openStatus = document.getElementById('dd-open-status')
   if (ctrl && openStatus) {
-    const syncOpen = () => {
+    const syncOpen =  => {
       openStatus.textContent = `open: ${ctrl.hasAttribute('open')}`
     }
     window.ddOpen = (open) => {
       if (open) ctrl.setAttribute('open', '')
       else ctrl.removeAttribute('open')
     }
-    syncOpen()
+    syncOpen
     // Clicking outside / Esc / selecting makes the component remove open; keep status synced with MutationObserver
     new MutationObserver(syncOpen).observe(ctrl, { attributes: true, attributeFilter: ['open'] })
   }
@@ -149,7 +181,7 @@ onMounted(() => {
   const val = document.getElementById('dd-value')
   const valueStatus = document.getElementById('dd-value-status')
   if (val && valueStatus) {
-    const syncValue = () => {
+    const syncValue =  => {
       valueStatus.textContent = `value: ${val.getAttribute('value') || '-'}`
     }
     window.ddValue = (v) => {
@@ -159,7 +191,7 @@ onMounted(() => {
     window.ddValueLog = (e) => {
       val.setAttribute('value', e.detail.value)
     }
-    syncValue()
+    syncValue
     // Selecting a menu item updates value in the component; keep status synced with MutationObserver
     new MutationObserver(syncValue).observe(val, { attributes: true, attributeFilter: ['value'] })
   }
@@ -185,14 +217,14 @@ onMounted(() => {
           asyncDd.setAttribute('items', JSON.stringify(items))
           // The component closes the menu right after forwarding the select event;
           // reopen on the next frame so the loading state is visible
-          window.setTimeout(() => asyncDd.setAttribute('open', ''), 0)
+          window.setTimeout( => asyncDd.setAttribute('open', ''), 0)
         } else {
           delete target.loading
           asyncDd.setAttribute('items', JSON.stringify(items))
         }
       }
       mark(true)
-      window.setTimeout(() => mark(false), 1500)
+      window.setTimeout( => mark(false), 1500)
     }
   }
 })
@@ -204,6 +236,9 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `arrow` | Whether to show the arrow pointing at the trigger (`arrow="false"` hides it; the skeleton is kept) | `string` | `true` |
+| `arrow-point-at-center` | Pin the arrow to the panel center (by default the arrow follows the trigger's projection, so it still points at the trigger even after viewport-avoidance shifting) | `boolean` | — |
+| `auto-adjust-overflow` | Auto-flip/avoid when there is not enough viewport space (`auto-adjust-overflow="false"` disables it; the panel may overflow the viewport) | `string` | `true` |
 | `items` | Menu items JSON | `string` | `[]` |
 | `open` | Controlled display (boolean attribute; expands when present) | `boolean` | — |
 | `placement` | Popup placement | `Placement` | `bottom` |

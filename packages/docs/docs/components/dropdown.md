@@ -45,6 +45,38 @@ items 项支持 `children` 数组级联子菜单（任意层级），hover / 点
   </oas-dropdown>
 </DemoBlock>
 
+## 箭头
+
+菜单面板带指向触发元素的箭头。`arrow` 属性控制显隐（默认显示，`arrow="false"` 隐藏）；`arrow-point-at-center` 让箭头固定指向面板中心（默认按触发元素投影定位，面板被视口避让偏移时箭头仍指向触发元素）；`auto-adjust-overflow` 控制视口空间不足时是否自动翻转（默认开启）。
+
+<DemoBlock title="带箭头">
+  <oas-dropdown id="dd-arrow" placement="bottom" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
+    <oas-button type="primary">带箭头</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+<DemoBlock title="箭头显隐">
+  <oas-space size="small">
+    <oas-dropdown items='[{"label":"编辑","value":"edit"}]'>
+      <oas-button>默认（箭头）</oas-button>
+    </oas-dropdown>
+    <oas-dropdown id="dd-arrow-none" arrow="false" items='[{"label":"编辑","value":"edit"}]'>
+      <oas-button>arrow="false"</oas-button>
+    </oas-dropdown>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="箭头指向中心与关闭翻转">
+  <oas-space size="small">
+    <oas-dropdown arrow-point-at-center items='[{"label":"编辑","value":"edit"}]'>
+      <oas-button>arrow-point-at-center</oas-button>
+    </oas-dropdown>
+    <oas-dropdown auto-adjust-overflow="false" items='[{"label":"编辑","value":"edit"}]'>
+      <oas-button>auto-adjust-overflow="false"</oas-button>
+    </oas-dropdown>
+  </oas-space>
+</DemoBlock>
+
 ## 选择事件
 
 <DemoBlock title="选择事件">
@@ -60,8 +92,8 @@ items 项支持 `children` 数组级联子菜单（任意层级），hover / 点
 
 <DemoBlock title="受控显示（open 属性）">
   <oas-space size="small">
-    <oas-button type="primary" size="small" onclick="event.stopPropagation(); ddOpen(true)">打开</oas-button>
-    <oas-button size="small" onclick="event.stopPropagation(); ddOpen(false)">关闭</oas-button>
+    <oas-button type="primary" size="small" onclick="event.stopPropagation; ddOpen(true)">打开</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation; ddOpen(false)">关闭</oas-button>
     <oas-tag id="dd-open-status" type="info">open: false</oas-tag>
   </oas-space>
   <oas-dropdown id="dd-ctrl" items='[{"label":"编辑","value":"edit"},{"label":"删除","value":"delete"}]'>
@@ -125,7 +157,7 @@ items 项支持 `children` 数组级联子菜单（任意层级），hover / 点
 
 <script setup>
 import { onMounted } from 'vue'
-onMounted(() => {
+onMounted( => {
   window.ddLog = (e) => {
     const tag = document.getElementById('dd-result')
     if (tag) tag.textContent = `已选择：${e.detail.value}`
@@ -134,14 +166,14 @@ onMounted(() => {
   const ctrl = document.getElementById('dd-ctrl')
   const openStatus = document.getElementById('dd-open-status')
   if (ctrl && openStatus) {
-    const syncOpen = () => {
+    const syncOpen =  => {
       openStatus.textContent = `open: ${ctrl.hasAttribute('open')}`
     }
     window.ddOpen = (open) => {
       if (open) ctrl.setAttribute('open', '')
       else ctrl.removeAttribute('open')
     }
-    syncOpen()
+    syncOpen
     // 点击外部 / Esc / 选择后由组件移除 open，用 MutationObserver 保持状态同步
     new MutationObserver(syncOpen).observe(ctrl, { attributes: true, attributeFilter: ['open'] })
   }
@@ -149,7 +181,7 @@ onMounted(() => {
   const val = document.getElementById('dd-value')
   const valueStatus = document.getElementById('dd-value-status')
   if (val && valueStatus) {
-    const syncValue = () => {
+    const syncValue =  => {
       valueStatus.textContent = `value: ${val.getAttribute('value') || '-'}`
     }
     window.ddValue = (v) => {
@@ -159,7 +191,7 @@ onMounted(() => {
     window.ddValueLog = (e) => {
       val.setAttribute('value', e.detail.value)
     }
-    syncValue()
+    syncValue
     // 选择菜单项由组件更新 value，用 MutationObserver 保持状态同步
     new MutationObserver(syncValue).observe(val, { attributes: true, attributeFilter: ['value'] })
   }
@@ -184,14 +216,14 @@ onMounted(() => {
           target.loading = true
           asyncDd.setAttribute('items', JSON.stringify(items))
           // 组件在 select 转发后同步关闭菜单，下一帧再重开以展示 loading 态
-          window.setTimeout(() => asyncDd.setAttribute('open', ''), 0)
+          window.setTimeout( => asyncDd.setAttribute('open', ''), 0)
         } else {
           delete target.loading
           asyncDd.setAttribute('items', JSON.stringify(items))
         }
       }
       mark(true)
-      window.setTimeout(() => mark(false), 1500)
+      window.setTimeout( => mark(false), 1500)
     }
   }
 })
@@ -203,6 +235,9 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `arrow` | 是否显示指向触发元素的箭头（`arrow="false"` 隐藏，骨架保留） | `string` | `true` |
+| `arrow-point-at-center` | 箭头固定指向面板中心（默认按触发元素投影定位，面板被视口避让偏移时箭头仍指向触发元素） | `boolean` | — |
+| `auto-adjust-overflow` | 视口空间不足时自动翻转/避让（`auto-adjust-overflow="false"` 关闭，面板可越出视口） | `string` | `true` |
 | `items` | 菜单项 JSON | `string` | `[]` |
 | `open` | 受控显示（布尔属性，存在即展开） | `boolean` | — |
 | `placement` | 浮层位置 | `Placement` | `bottom` |

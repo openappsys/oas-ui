@@ -110,6 +110,9 @@ export class OASPopover extends OASElement {
       'virtual-y',
       'virtual-anchor',
       'focus-on-open',
+      'arrow',
+      'arrow-point-at-center',
+      'auto-adjust-overflow',
     ]
   }
 
@@ -206,15 +209,55 @@ export class OASPopover extends OASElement {
       : this.anchor?.getBoundingClientRect()
     if (!anchorRect) return
     const panelRect = this.panel.getBoundingClientRect()
+    const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
     const { top, left, placement } = computePosition(
       anchorRect,
       panelRect,
       this.getAttr('placement', 'top') as Placement,
       { width: window.innerWidth, height: window.innerHeight },
+      undefined,
+      autoAdjust,
     )
     this.panel.style.top = `${top}px`
     this.panel.style.left = `${left}px`
     this.panel.setAttribute('data-placement', placement)
+    this.positionArrow(anchorRect, placement)
+  }
+
+  /** arrow 布尔属性：默认 true（显示箭头），仅 arrow="false" 隐藏 */
+  private showArrow(): boolean {
+    return this.getAttr('arrow', 'true') !== 'false'
+  }
+
+  /**
+   * 箭头交叉轴指向：arrow-point-at-center 时箭头对齐锚点中心（面板被视口避让
+   * 偏移后仍指向锚点），默认保持面板中心（CSS calc(50% - 4px) 的边缘对齐）。
+   * 锚点中心与面板中心重合（未偏移 / virtual 0 尺寸锚点）时不留内联样式。
+   * 逻辑同 tooltip。
+   */
+  private positionArrow(anchorRect: DOMRect, placement: Placement): void {
+    if (!this.panel) return
+    const arrow = this.panel.querySelector<HTMLElement>('[data-popper-arrow]')
+    if (!arrow) return
+    arrow.style.left = ''
+    arrow.style.top = ''
+    if (!this.hasAttr('arrow-point-at-center')) return
+    const vertical = placement === 'top' || placement === 'bottom'
+    const rect = this.panel.getBoundingClientRect()
+    const popupEdge = vertical
+      ? parseFloat(this.panel.style.left)
+      : parseFloat(this.panel.style.top)
+    const anchorCrossCenter = vertical
+      ? anchorRect.left + anchorRect.width / 2
+      : anchorRect.top + anchorRect.height / 2
+    const size = vertical ? rect.width : rect.height
+    if (!Number.isFinite(size) || size <= 0) return
+    // 锚点中心映射到面板局部坐标，夹取到面板内（4px 边距），避免箭头探出面板
+    const local = anchorCrossCenter - popupEdge
+    const clamped = Math.max(4, Math.min(local, size - 4))
+    if (Math.abs(clamped - size / 2) <= 0.5) return // 与面板中心重合 → 走 CSS 居中
+    if (vertical) arrow.style.left = `${clamped - 4}px`
+    else arrow.style.top = `${clamped - 4}px`
   }
 
   /**
@@ -258,6 +301,9 @@ export class OASPopover extends OASElement {
     if (!this.panel) return
     const open = this.hasAttr('open')
     this.panel.setAttribute('aria-hidden', String(!open))
+    // 箭头显隐：arrow 布尔属性默认 true（显示），arrow="false" 隐藏；元素与 ::part(arrow) 保留
+    const arrowEl = this.panel.querySelector<HTMLElement>('[data-popper-arrow]')
+    if (arrowEl) arrowEl.hidden = !this.showArrow()
     const titleEl = this.shadow.querySelector<HTMLElement>('[part="title"]')!
     const title = this.getAttr('title', '')
     titleEl.textContent = title

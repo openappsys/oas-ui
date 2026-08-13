@@ -30,6 +30,25 @@ function stubPanelRect(p: HTMLElement, w: number, h: number): void {
     }) as DOMRect
 }
 
+/** 通用 stub：任意元素固定矩形（锚点用） */
+function stubRect(
+  el: HTMLElement,
+  r: { left: number; top: number; width: number; height: number },
+): void {
+  el.getBoundingClientRect = () =>
+    ({
+      x: r.left,
+      y: r.top,
+      width: r.width,
+      height: r.height,
+      left: r.left,
+      top: r.top,
+      right: r.left + r.width,
+      bottom: r.top + r.height,
+      toJSON: () => ({}),
+    }) as DOMRect
+}
+
 /** 固定视口尺寸（定位越界/翻转断言依赖确定性的 viewport） */
 function setViewport(w: number, h: number): void {
   Object.defineProperty(window, 'innerWidth', { value: w, configurable: true })
@@ -309,5 +328,79 @@ describe('OASPopover', () => {
         ).toBe(expectBorder)
       }
     }
+  })
+
+  // —— 箭头显隐（arrow，默认 true）——
+
+  it('arrow 默认 true：箭头可见（hidden=false）', () => {
+    const el = mount({ open: '', title: 'x' })
+    const arrow = panelOf(el).querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow.hidden).toBe(false)
+    expect(arrow.hasAttribute('hidden')).toBe(false)
+  })
+
+  it('arrow="false"：隐藏箭头（hidden=true），元素与 part 保留', () => {
+    const el = mount({ open: '', title: 'x', arrow: 'false' })
+    const arrow = panelOf(el).querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow).not.toBeNull()
+    expect(arrow.getAttribute('part')).toBe('arrow')
+    expect(arrow.hidden).toBe(true)
+  })
+
+  it('arrow 动态切换：arrow="false" ↔ 移除 → hidden 同步', () => {
+    const el = mount({ open: '', title: 'x' })
+    const arrow = panelOf(el).querySelector<HTMLElement>('[data-popper-arrow]')!
+    el.setAttribute('arrow', 'false')
+    expect(arrow.hidden).toBe(true)
+    el.removeAttribute('arrow')
+    expect(arrow.hidden).toBe(false)
+  })
+
+  // —— 箭头指向锚点中心（arrow-point-at-center，默认 false）——
+
+  it('arrow-point-at-center：面板被视口边缘避让偏移时，箭头仍指向锚点中心（定位差异）', () => {
+    const el = mount({ open: '', placement: 'bottom' })
+    const p = panelOf(el)
+    stubPanelRect(p, 240, 60)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 12, top: 300, width: 64, height: 32 }) // 锚点中心 X = 44
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x') // 触发重定位（stub 尺寸生效）
+    // 面板被 clamp 到视口左缘：left = max(4, 44-120) = 4 → 面板中心 124 ≠ 锚点中心 44
+    expect(p.style.left).toBe('4px')
+    const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')!
+    // 默认（边缘对齐）：无内联偏移，箭头随面板居中
+    expect(arrow.style.left).toBe('')
+    // 开启 point-at-center：箭头指向锚点中心（面板局部 X = 44 - 4 = 40 → left = 36px）
+    el.setAttribute('arrow-point-at-center', '')
+    expect(arrow.style.left).toBe('36px')
+    // 关闭后恢复 CSS 居中
+    el.removeAttribute('arrow-point-at-center')
+    expect(arrow.style.left).toBe('')
+  })
+
+  // —— 视口自动调整（auto-adjust-overflow，默认 true）——
+
+  it('auto-adjust-overflow 默认 true：空间不足自动翻转', () => {
+    const el = mount({ open: '', placement: 'bottom' })
+    const p = panelOf(el)
+    stubPanelRect(p, 240, 60)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 200, top: 760, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    expect(p.getAttribute('data-placement')).toBe('top')
+  })
+
+  it('auto-adjust-overflow="false"：空间不足不翻转，保持声明 placement', () => {
+    const el = mount({ open: '', placement: 'bottom', 'auto-adjust-overflow': 'false' })
+    const p = panelOf(el)
+    stubPanelRect(p, 240, 60)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 200, top: 760, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    expect(p.getAttribute('data-placement')).toBe('bottom')
+    expect(p.style.top).toBe('800px') // 792 + 8，不避让视口底缘
   })
 })

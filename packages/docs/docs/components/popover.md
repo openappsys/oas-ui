@@ -27,6 +27,30 @@
   </oas-popover>
 </DemoBlock>
 
+## 箭头与视口自动调整
+
+默认显示指向触发元素边缘的箭头；`arrow="false"` 隐藏箭头；`arrow-point-at-center` 让箭头指向触发元素中心（视口边缘避让导致面板偏移时，箭头仍指向锚点中心）。默认空间不足时自动沿主轴翻转并避让视口边缘；`auto-adjust-overflow="false"` 关闭自动调整，面板保持声明 placement（可能溢出视口）。
+
+<DemoBlock title="箭头显隐与指向">
+  <oas-space size="large" wrap>
+    <oas-popover id="pop-arrow-default" title="默认" content="默认显示箭头" placement="bottom">
+      <oas-button>默认</oas-button>
+    </oas-popover>
+    <oas-popover id="pop-arrow-off" title="无箭头" content="arrow=false：隐藏箭头" placement="bottom" arrow="false">
+      <oas-button>无箭头</oas-button>
+    </oas-popover>
+    <oas-popover id="pop-arrow-center" title="指向中心" content="arrow-point-at-center：箭头指向触发元素中心" placement="bottom" arrow-point-at-center>
+      <oas-button>指向中心</oas-button>
+    </oas-popover>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="关闭自动调整">
+  <oas-popover title="保持方向" content="auto-adjust-overflow=false：面板保持声明 placement，可能溢出视口。" placement="bottom" auto-adjust-overflow="false">
+    <oas-button>关闭自动调整</oas-button>
+  </oas-popover>
+</DemoBlock>
+
 ## 自定义内容
 
 <DemoBlock title="自定义内容（slot=content）">
@@ -170,6 +194,9 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `arrow` | 是否显示箭头（默认 true；`arrow="false"` 隐藏，箭头元素与 `::part(arrow)` 保留） | `string` | `true` |
+| `arrow-point-at-center` | 箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心） | `boolean` | — |
+| `auto-adjust-overflow` | 视口边缘自动翻转与避让（默认 true；`"false"` 关闭，保持声明 placement，可能溢出视口） | `string` | `true` |
 | `content` | 正文文本 | `string` | — |
 | `focus-on-open` | 打开时焦点移入面板内首个可聚焦元素 | `boolean` | — |
 | `open` | 受控显示（布尔属性，存在即显示） | `boolean` | — |

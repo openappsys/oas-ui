@@ -169,11 +169,11 @@ const STYLE = `
 `
 
 export class OASCalendar extends OASElement {
-  static override get observedAttributes(): string[] {
+  static override get observedAttributes: string[] {
     return ['value', 'mode', 'min', 'max', 'show-week-number']
   }
 
-  private viewDate: Date = startOfDay(new Date())
+  private viewDate: Date = startOfDay(new Date)
   private focusDate: Date | null = null
   private monthPanel = false
   private userNavigated = false
@@ -184,17 +184,17 @@ export class OASCalendar extends OASElement {
   private modeInit = false
 
   /** disabled-date 走 property（回调无法用 JSON 表达），设置后即时重渲 */
-  get disabledDate(): ((d: Date) => boolean) | null {
+  get disabledDate: ((d: Date) => boolean) | null {
     return this._disabledDate
   }
 
   set disabledDate(fn: ((d: Date) => boolean) | null) {
     this._disabledDate = fn
-    if (this.isConnected) this.update()
+    if (this.isConnected) this.update
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
-  private template(): string {
+  private template: string {
     return `
       <style>${STYLE}</style>
       <div class="calendar" part="calendar">
@@ -210,38 +210,38 @@ export class OASCalendar extends OASElement {
   }
 
   /** 缓存节点引用 + 绑定导航/标题/今天/网格键盘事件（render 与水合路径共用） */
-  private bind(): void {
+  private bind: void {
     this.grid = this.shadow.querySelector<HTMLElement>('[part="grid"]')
     this.shadow
       .querySelector<HTMLElement>('[part="prev"]')
-      ?.addEventListener('click', () => this.navigate(-1))
+      ?.addEventListener('click',  => this.navigate(-1))
     this.shadow
       .querySelector<HTMLElement>('[part="next"]')
-      ?.addEventListener('click', () => this.navigate(1))
+      ?.addEventListener('click',  => this.navigate(1))
     this.shadow
       .querySelector<HTMLElement>('[part="title"]')
-      ?.addEventListener('click', () => this.togglePanel())
+      ?.addEventListener('click',  => this.togglePanel)
     this.shadow
       .querySelector<HTMLElement>('[part="today"]')
-      ?.addEventListener('click', () => this.goToday())
+      ?.addEventListener('click',  => this.goToday)
     this.grid?.addEventListener('keydown', (e) => this.handleGridKey(e as KeyboardEvent))
   }
 
-  protected override render(): void {
-    this.shadow.innerHTML = this.template()
-    this.bind()
-    this.update()
+  protected override render: void {
+    this.shadow.innerHTML = this.template
+    this.bind
+    this.update
   }
 
   /** 真水合：校验 SSR 快照结构（header 与 grid 存在）后直接接管，跳过 shadow 重建 */
-  protected override hydrate(): boolean {
+  protected override hydrate: boolean {
     if (!this.shadow.querySelector('[part="header"]')) return false
     if (!this.shadow.querySelector('[part="grid"]')) return false
-    this.bind()
+    this.bind
     return true
   }
 
-  protected override update(): void {
+  protected override update: void {
     const locale = resolveLocale(this)
     const mode = this.getAttr('mode', 'month')
     // mode 属性变化统一派发 oas-mode-change（受控宿主可据此重新设置 mode 保持模式）
@@ -252,7 +252,7 @@ export class OASCalendar extends OASElement {
       this.lastMode = mode
       this.emit('mode-change', { mode })
     }
-    const selected = this.selectedDate()
+    const selected = this.selectedDate
     // 未主动导航时，viewDate 跟随 value
     if (!this.userNavigated && selected) this.viewDate = startOfDay(selected)
 
@@ -284,12 +284,12 @@ export class OASCalendar extends OASElement {
     this.renderGrid(false)
   }
 
-  private selectedDate(): Date | null {
+  private selectedDate: Date | null {
     const raw = this.getAttr('value', '')
     if (!raw) return null
     const d = parseISODate(raw)
     if (!d) return null
-    if (this.getAttr('mode', 'month') === 'year') return new Date(d.getFullYear(), d.getMonth(), 1)
+    if (this.getAttr('mode', 'month') === 'year') return new Date(d.getFullYear, d.getMonth, 1)
     return startOfDay(d)
   }
 
@@ -298,7 +298,7 @@ export class OASCalendar extends OASElement {
     if (!grid) return
     const locale = resolveLocale(this)
     const mode = this.getAttr('mode', 'month')
-    const selected = this.selectedDate()
+    const selected = this.selectedDate
 
     if (this.monthPanel || mode === 'year') {
       grid.classList.add('months-view')
@@ -310,13 +310,13 @@ export class OASCalendar extends OASElement {
 
     const hadFocus =
       focusNow || (this.shadow.activeElement != null && grid.contains(this.shadow.activeElement))
-    const focus = this.focusDate ?? selected ?? startOfDay(new Date())
+    const focus = this.focusDate ?? selected ?? startOfDay(new Date)
 
     renderMonthGrid(grid, {
       viewDate: this.viewDate,
       locale,
       selected,
-      today: new Date(),
+      today: new Date,
       min: parseISODate(this.getAttr('min', '')),
       max: parseISODate(this.getAttr('max', '')),
       disabledDate: this._disabledDate ?? undefined,
@@ -327,7 +327,7 @@ export class OASCalendar extends OASElement {
     setRovingTab(grid, focus)
     if (hadFocus) {
       const cell = findDayButton(grid, focus)
-      cell?.focus()
+      cell?.focus
     }
   }
 
@@ -346,7 +346,7 @@ export class OASCalendar extends OASElement {
         btn.textContent = ''
         btn.appendChild(tpl.content.cloneNode(true))
         const binder = btn.querySelector<HTMLElement>('[data-cell-date]')
-        if (binder) binder.textContent = String(date.getDate())
+        if (binder) binder.textContent = String(date.getDate)
       }
       this.emit('cell-render', { date, element: btn })
     }
@@ -354,11 +354,11 @@ export class OASCalendar extends OASElement {
 
   private renderMonthPicker(grid: HTMLElement): void {
     const locale = resolveLocale(this)
-    const year = this.viewDate.getFullYear()
-    const selected = this.selectedDate()
+    const year = this.viewDate.getFullYear
+    const selected = this.selectedDate
     const mode = this.getAttr('mode', 'month')
     const selectedMonth =
-      mode === 'year' && selected?.getFullYear() === year ? selected.getMonth() : -1
+      mode === 'year' && selected?.getFullYear === year ? selected.getMonth : -1
     const cells: GridCell[] = []
     for (let m = 0; m < 12; m++) {
       cells.push({ date: new Date(year, m, 1), inMonth: true })
@@ -376,7 +376,7 @@ export class OASCalendar extends OASElement {
       )
       btn.setAttribute('aria-label', formatYearMonth(new Date(year, m, 1), locale))
       if (m === selectedMonth) btn.classList.add('selected')
-      btn.addEventListener('click', () => this.selectMonth(m))
+      btn.addEventListener('click',  => this.selectMonth(m))
       months.appendChild(btn)
     }
     grid.appendChild(months)
@@ -390,22 +390,22 @@ export class OASCalendar extends OASElement {
     } else {
       this.viewDate = addMonths(this.viewDate, dir)
     }
-    this.update()
+    this.update
   }
 
-  private togglePanel(): void {
+  private togglePanel: void {
     if (this.getAttr('mode', 'month') !== 'month') return
     this.monthPanel = !this.monthPanel
-    this.update()
+    this.update
   }
 
-  private goToday(): void {
-    const today = startOfDay(new Date())
+  private goToday: void {
+    const today = startOfDay(new Date)
     this.viewDate = today
     this.focusDate = today
     this.monthPanel = false
     this.userNavigated = true
-    this.update()
+    this.update
   }
 
   private selectDate(d: Date): void {
@@ -413,29 +413,29 @@ export class OASCalendar extends OASElement {
     this.setAttribute('value', iso)
     this.emit('change', { value: iso })
     this.focusDate = startOfDay(d)
-    this.update()
+    this.update
   }
 
   private selectMonth(m: number): void {
     const mode = this.getAttr('mode', 'month')
-    const value = `${this.viewDate.getFullYear()}-${String(m + 1).padStart(2, '0')}`
+    const value = `${this.viewDate.getFullYear}-${String(m + 1).padStart(2, '0')}`
     if (mode === 'year') {
       // 年模式选中月份：更新 value 并切回月视图。
       // 受控宿主可监听 oas-mode-change 后重新设置 mode="year" 保持年模式。
       this.setAttribute('value', value)
-      this.viewDate = new Date(this.viewDate.getFullYear(), m, 1)
+      this.viewDate = new Date(this.viewDate.getFullYear, m, 1)
       this.userNavigated = true
       this.monthPanel = false
       this.setAttribute('mode', 'month') // update 内统一派发 oas-mode-change
       this.emit('change', { value })
-      this.update()
+      this.update
       return
     }
     // month 模式：月选择面板选月 → 回到日视图
-    this.viewDate = new Date(this.viewDate.getFullYear(), m, 1)
+    this.viewDate = new Date(this.viewDate.getFullYear, m, 1)
     this.monthPanel = false
     this.userNavigated = true
-    this.update()
+    this.update
   }
 
   private handleGridKey(e: KeyboardEvent): void {
@@ -444,17 +444,17 @@ export class OASCalendar extends OASElement {
     const mode = this.getAttr('mode', 'month')
     // 月/年选择面板走原生按钮行为（Tab / Enter / Space）
     if (this.monthPanel || mode === 'year') return
-    const focus = this.focusDate ?? this.selectedDate() ?? startOfDay(new Date())
+    const focus = this.focusDate ?? this.selectedDate ?? startOfDay(new Date)
     if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      findDayButton(grid, focus)?.click()
+      e.preventDefault
+      findDayButton(grid, focus)?.click
       return
     }
     const next = moveGridDate(focus, e.key)
     if (!next) return
     const cell = findDayButton(grid, next)
     if (!cell || cell.classList.contains('disabled')) return
-    e.preventDefault()
+    e.preventDefault
     this.focusDate = next
     this.renderGrid(true)
   }

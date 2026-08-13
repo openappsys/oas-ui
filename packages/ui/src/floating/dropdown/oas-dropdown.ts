@@ -5,6 +5,12 @@ import '../menu/index.js' // 副作用：确保 oas-menu 已注册
 import type { OASMenu } from '../menu/index.js'
 import type { MenuItem } from '../menu/index.js'
 
+/** 浮层与触发元素的间隙（与 computePosition 的 GAP 一致） */
+const GAP = 8
+/** 箭头尺寸（8px 菱形）与箭头中心到面板圆角边的最短距离 */
+const ARROW_SIZE = 8
+const ARROW_PAD = 8
+
 const STYLE = `
 :host {
   display: inline-block;
@@ -62,11 +68,62 @@ const STYLE = `
 .menu-anchor[hidden] {
   display: none;
 }
+/* 箭头：8px 菱形旋转 45°，底色与菜单面板同色；按 data-placement 落在面板对应边上，尖端指向触发元素。
+   旋转后原 border-top/right/bottom/left 依次对应菱形右上/右下/左下/左上边，
+   取「汇于尖端」的两条外露边带边框色，与 oas-menu 的 1px 描边无缝衔接。
+   十字轴默认居中（var(--arrow-x/y) 兜底 calc(50% - 4px)）；point-at-center=false 时由 JS
+   写内联偏移，面板被视口避让偏移时箭头仍指向触发元素。 */
+.arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  background: var(--oas-color-bg);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+/* placement=bottom：面板在触发元素下方 → 箭头悬面板顶边、尖朝上 → 外露边=右上(border-top)+左上(border-left) */
+.menu-anchor[data-placement='bottom'] .arrow {
+  top: -4px;
+  left: var(--arrow-x, calc(50% - 4px));
+  border-top: 1px solid var(--oas-color-border);
+  border-left: 1px solid var(--oas-color-border);
+}
+/* placement=top：面板在触发元素上方 → 箭头悬面板底边、尖朝下 → 外露边=右下(border-right)+左下(border-bottom) */
+.menu-anchor[data-placement='top'] .arrow {
+  bottom: -4px;
+  left: var(--arrow-x, calc(50% - 4px));
+  border-right: 1px solid var(--oas-color-border);
+  border-bottom: 1px solid var(--oas-color-border);
+}
+/* placement=left：面板在触发元素左侧 → 箭头悬面板右边、尖朝右 → 外露边=右上(border-top)+右下(border-right) */
+.menu-anchor[data-placement='left'] .arrow {
+  right: -4px;
+  top: var(--arrow-y, calc(50% - 4px));
+  border-top: 1px solid var(--oas-color-border);
+  border-right: 1px solid var(--oas-color-border);
+}
+/* placement=right：面板在触发元素右侧 → 箭头悬面板左边、尖朝左 → 外露边=左上(border-left)+左下(border-bottom) */
+.menu-anchor[data-placement='right'] .arrow {
+  left: -4px;
+  top: var(--arrow-y, calc(50% - 4px));
+  border-left: 1px solid var(--oas-color-border);
+  border-bottom: 1px solid var(--oas-color-border);
+}
 `
 
 export class OASDropdown extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['open', 'items', 'value', 'placement', 'split']
+    return [
+      'open',
+      'items',
+      'value',
+      'placement',
+      'split',
+      'arrow',
+      'arrow-point-at-center',
+      'auto-adjust-overflow',
+    ]
   }
 
   private itemsList: MenuItem[] = []
@@ -74,6 +131,7 @@ export class OASDropdown extends OASElement {
   private anchorEl: HTMLElement | null = null
   private anchor: Element | null = null
   private arrowBtn: HTMLButtonElement | null = null
+  private arrowEl: HTMLElement | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -82,11 +140,12 @@ export class OASDropdown extends OASElement {
       <style>${STYLE}</style>
       <div class="split-group" part="split-group">
         <slot></slot>
-        <button class="arrow-btn" part="arrow" type="button" aria-haspopup="menu" aria-expanded="false">
+        <button class="arrow-btn" part="split-arrow" type="button" aria-haspopup="menu" aria-expanded="false">
           <svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false">${chevron}</svg>
         </button>
       </div>
       <div class="menu-anchor" part="menu" hidden>
+        <span class="arrow" part="arrow" data-popper-arrow aria-hidden="true"></span>
         <oas-menu tabindex="-1"></oas-menu>
       </div>
     `
@@ -98,6 +157,7 @@ export class OASDropdown extends OASElement {
     this.menuEl = this.shadow.querySelector('oas-menu')
     this.anchor = this.querySelector(':scope > *') ?? this
     this.arrowBtn = this.shadow.querySelector<HTMLButtonElement>('.arrow-btn')
+    this.arrowEl = this.shadow.querySelector('.arrow')
     this.anchor?.addEventListener('click', (e: Event) => {
       if (this.hasAttr('split')) {
         // 下拉按钮模式：主按钮只派发动作事件，不开菜单；箭头按钮负责开合
@@ -161,23 +221,16 @@ export class OASDropdown extends OASElement {
       this.arrowBtn.setAttribute('aria-expanded', String(open))
       this.arrowBtn.setAttribute('aria-label', this.t('dropdown.openMenu'))
     }
+    // 箭头显隐（arrow 默认显示，arrow="false" 隐藏）；骨架保留保证 DSD 快照/水合结构一致
+    if (this.arrowEl) {
+      this.arrowEl.toggleAttribute('hidden', this.getAttr('arrow', 'true') === 'false')
+    }
     if (open) {
       this.menuEl.setAttribute('items', JSON.stringify(this.itemsList))
       this.menuEl.setAttribute('value', this.getAttr('value', ''))
       this.anchorEl.hidden = false
       document.addEventListener('click', this.handleOutside)
-      const anchorRect = this.anchor?.getBoundingClientRect()
-      const menuRect = this.anchorEl.getBoundingClientRect()
-      if (anchorRect) {
-        const { top, left } = computePosition(
-          anchorRect,
-          menuRect,
-          this.getAttr('placement', 'bottom') as Placement,
-          { width: window.innerWidth, height: window.innerHeight },
-        )
-        this.anchorEl.style.top = `${top}px`
-        this.anchorEl.style.left = `${left}px`
-      }
+      this.position()
     } else {
       this.anchorEl.hidden = true
       document.removeEventListener('click', this.handleOutside)
@@ -188,6 +241,87 @@ export class OASDropdown extends OASElement {
           ?.querySelector('.menu')
           ?.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
       }
+    }
+  }
+
+  /**
+   * 面板定位：默认 computePosition（空间不足沿主轴翻转 + 视口边缘避让）；
+   * auto-adjust-overflow=false 时严格按请求 placement 计算，不翻转不避让（面板可越出视口，
+   * autoAdjustOverflow 同语义）。data-placement 供箭头 4 向定位 CSS 消费。
+   */
+  private position(): void {
+    if (!this.anchorEl || !this.anchor) return
+    const anchorRect = this.anchor.getBoundingClientRect()
+    const panelRect = this.anchorEl.getBoundingClientRect()
+    const placement = this.getAttr('placement', 'bottom') as Placement
+    if (this.getAttr('auto-adjust-overflow', 'true') === 'false') {
+      const anchorCenterX = anchorRect.left + anchorRect.width / 2
+      const anchorCenterY = anchorRect.top + anchorRect.height / 2
+      const raw: Record<Placement, { top: number; left: number }> = {
+        top: {
+          top: anchorRect.top - panelRect.height - GAP,
+          left: anchorCenterX - panelRect.width / 2,
+        },
+        bottom: { top: anchorRect.bottom + GAP, left: anchorCenterX - panelRect.width / 2 },
+        left: {
+          left: anchorRect.left - panelRect.width - GAP,
+          top: anchorCenterY - panelRect.height / 2,
+        },
+        right: { left: anchorRect.right + GAP, top: anchorCenterY - panelRect.height / 2 },
+      }
+      const p = raw[placement]
+      this.anchorEl.style.top = `${p.top}px`
+      this.anchorEl.style.left = `${p.left}px`
+      this.anchorEl.setAttribute('data-placement', placement)
+    } else {
+      const {
+        top,
+        left,
+        placement: actual,
+      } = computePosition(anchorRect, panelRect, placement, {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      })
+      this.anchorEl.style.top = `${top}px`
+      this.anchorEl.style.left = `${left}px`
+      this.anchorEl.setAttribute('data-placement', actual)
+    }
+    this.positionArrow()
+  }
+
+  /**
+   * 箭头定位：arrow-point-at-center=true 时箭头精确指向锚点中心（投影到面板边 + 边缘夹取，箭头尖端不越出面板圆角）；
+   * 面板被视口避让偏移后箭头仍指向触发元素。默认（无该属性）箭头保持面板居中（CSS calc）。
+   */
+  private positionArrow(): void {
+    if (!this.arrowEl || !this.anchorEl || !this.anchor) return
+    const show = this.getAttr('arrow', 'true') !== 'false'
+    // 默认箭头面板居中；arrow-point-at-center 时箭头精确指向锚点中心（与 tooltip/popover 及 pointAtCenter 语义一致）
+    if (!show || !this.hasAttr('arrow-point-at-center')) {
+      this.arrowEl.style.removeProperty('--arrow-x')
+      this.arrowEl.style.removeProperty('--arrow-y')
+      return
+    }
+    const anchorRect = this.anchor.getBoundingClientRect()
+    const panelRect = this.anchorEl.getBoundingClientRect()
+    const placement = this.anchorEl.getAttribute('data-placement')
+    const clamp = (v: number, max: number): number => Math.max(ARROW_PAD, Math.min(v, max))
+    if (placement === 'top' || placement === 'bottom') {
+      const center = anchorRect.left + anchorRect.width / 2
+      const x = clamp(
+        center - panelRect.left - ARROW_SIZE / 2,
+        panelRect.width - ARROW_PAD - ARROW_SIZE,
+      )
+      this.arrowEl.style.setProperty('--arrow-x', `${x}px`)
+      this.arrowEl.style.removeProperty('--arrow-y')
+    } else {
+      const center = anchorRect.top + anchorRect.height / 2
+      const y = clamp(
+        center - panelRect.top - ARROW_SIZE / 2,
+        panelRect.height - ARROW_PAD - ARROW_SIZE,
+      )
+      this.arrowEl.style.setProperty('--arrow-y', `${y}px`)
+      this.arrowEl.style.removeProperty('--arrow-x')
     }
   }
 

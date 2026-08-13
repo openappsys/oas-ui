@@ -46,7 +46,7 @@ When the value exceeds `max`, `max+` is displayed.
 
 ## Ribbon corner
 
-The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — an angled folded ribbon on the top edge of the wrapped content . Text is provided via the `text` attribute; it sits at the inline-end (`placement="end"`) by default and can be moved to `placement="start"`.
+The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — an angled folded ribbon on the top edge of the wrapped content (same style  Ribbon). Text is provided via the `text` attribute; it sits at the inline-end (`placement="end"`) by default and can be moved to `placement="start"`.
 
 <DemoBlock title="Basic ribbon">
   <oas-badge ribbon text="HOT" style="margin-inline-end: var(--oas-space-4)">
