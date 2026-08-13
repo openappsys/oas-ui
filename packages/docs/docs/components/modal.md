@@ -70,6 +70,28 @@
   </oas-modal>
 </DemoBlock>
 
+## 全屏对话框
+
+`fullscreen` 让对话框铺满视口（无圆角、无外边距）。优先级定义：**fullscreen 胜于 `width` / `centered` / `draggable`**——`width` 被忽略、`centered` 无布局差异、拖拽被禁用；Esc / 遮罩关闭与焦点陷阱、ARIA 行为照常。
+
+<DemoBlock title="全屏对话框">
+  <oas-button type="primary" onclick="document.querySelector('#modal-fullscreen').setAttribute('visible','')">打开全屏对话框</oas-button>
+  <oas-modal id="modal-fullscreen" title="全屏对话框" fullscreen width="640px" centered draggable>
+    <p>全屏对话框铺满视口、无圆角与边距。<code>width</code> / <code>centered</code> 被忽略、拖拽被禁用，Esc / 遮罩关闭照常。</p>
+  </oas-modal>
+</DemoBlock>
+
+## 命令式确认
+
+`confirm()` 命令式 API 基于 Promise，底层复用 `oas-modal`（返回 `Promise<void>`，确定 resolve、取消 reject）。传 `onOk` 异步回调可实现 **loading 态确认**：点击确定后 OK 按钮进入 loading（转圈、禁止重复触发），`onOk` resolve 后自动关闭并 resolve 外层 Promise；reject 则清除 loading、对话框保持打开可重试或取消。
+
+<DemoBlock title="命令式确认">
+  <oas-space>
+    <oas-button type="primary" onclick="openConfirmModal()">异步确认</oas-button>
+    <oas-button onclick="openConfirmLoading()">loading 态确认</oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## 事件反馈
 
 <DemoBlock title="事件反馈">
@@ -82,9 +104,21 @@
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
-  const { message } = await import('@oas-ui/ui')
+  const { message, confirm } = await import('@oas-ui/ui')
   window.message = message
   window.closeModal = (id) => document.getElementById(id).removeAttribute('visible')
+  window.openConfirmModal = () =>
+    confirm({ title: '确认操作', content: '模拟异步确认流程：确定 resolve、取消 reject。' })
+      .then(() => message.success('已确认'))
+      .catch(() => message.info('已取消'))
+  window.openConfirmLoading = () =>
+    confirm({
+      title: '确认提交',
+      content: '模拟异步提交：点击确定后 OK 按钮进入 loading，1.5 秒后自动关闭。',
+      onOk: () => new Promise((resolve) => setTimeout(resolve, 1500)),
+    })
+      .then(() => message.success('提交成功'))
+      .catch(() => message.info('已取消'))
 })
 </script>
 
@@ -96,6 +130,8 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `centered` | 对话框垂直居中显示 | `boolean` | — |
 | `draggable` | 可通过标题栏拖动对话框 | `boolean` | — |
+| `fullscreen` | 全屏显示：对话框铺满视口、无圆角与边距（优先级高于 width / centered / draggable） | `boolean` | — |
+| `loading` | 确定按钮进入 loading 态（禁用 + 转圈），禁止重复触发确定 | `boolean` | — |
 | `no-footer` | 隐藏底部操作按钮 | `boolean` | — |
 | `no-mask-close` | 禁用点击遮罩关闭 | `boolean` | — |
 | `title` | 标题文案 | `string` | — |

@@ -69,6 +69,42 @@
 
 列配置中 `fixed: 'left' | 'right'` 将该列表头与单元格设为 `position: sticky`（`left` / `right` 偏移按列宽自动累加），其余列可横向滚动；表头始终吸顶。
 
+## 行内编辑
+
+<DemoBlock title="双击单元格编辑（含操作列）">
+  <div style="width: 100%">
+    <oas-table id="table-edit" editable row-key="name" columns='[{"key":"name","title":"姓名","editable":true},{"key":"age","title":"年龄","editable":true,"width":"100px"},{"key":"city","title":"城市","editable":true},{"key":"position","title":"职位","editable":true,"editor":"select","editOptions":[{"label":"前端工程师","value":"frontend"},{"label":"后端工程师","value":"backend"},{"label":"产品经理","value":"pm"},{"label":"测试工程师","value":"qa"}]},{"key":"op","title":"操作","actions":true}]' data='[{"name":"张三","age":30,"city":"北京","position":"frontend"},{"name":"李四","age":25,"city":"上海","position":"backend"},{"name":"王五","age":35,"city":"深圳","position":"pm"},{"name":"赵六","age":28,"city":"杭州","position":"qa"}]'></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      最近编辑：<span id="table-edit-feedback">—</span>
+    </p>
+  </div>
+</DemoBlock>
+
+设置 `editable` 开启行内编辑，列配置 `editable: true` 标记可编辑列（`editor: 'input'` 文本输入 / `editor: 'select'` 下拉选择 + `editOptions`），`actions: true` 渲染操作列（编辑/保存/取消按钮）。双击单元格或聚焦后按 Enter / F2 进入编辑：Enter 或失焦提交、Esc 取消；提交派发 `oas-edit`（`detail: { rowIndex, key, column, value }`），取消派发 `oas-edit-cancel`。空值提交默认还原旧值（非破坏）。
+
+## 受控编辑
+
+<DemoBlock title="受控编辑（edit-controlled）">
+  <div style="width: 100%">
+    <oas-table id="table-edit-controlled" editable edit-controlled row-key="name" columns='[{"key":"name","title":"姓名","editable":true},{"key":"age","title":"年龄","editable":true,"width":"100px"},{"key":"city","title":"城市","editable":true}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"}]'></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      该表格为受控模式：组件提交时不自动回写 data，由宿主监听 oas-edit 后自行更新。
+    </p>
+  </div>
+</DemoBlock>
+
+`edit-controlled` 为受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`；宿主监听后自行更新 `data`（示例见下方脚本）。
+
+## 吸顶行
+
+<DemoBlock title="表头 + 前 N 行吸顶">
+  <div style="width: 100%">
+    <oas-table height="280" row-height="40" sticky-rows="3" row-key="id" columns='[{"key":"id","title":"ID","fixed":"left","width":"60px"},{"key":"name","title":"姓名","fixed":"left","width":"120px"},{"key":"age","title":"年龄","width":"80px"},{"key":"city","title":"城市","width":"100px"},{"key":"email","title":"邮箱","width":"220px"},{"key":"position","title":"职位","fixed":"right","width":"120px"}]' data='[{"id":1,"name":"张三","age":30,"city":"北京","email":"zhangsan@example.com","position":"前端工程师"},{"id":2,"name":"李四","age":25,"city":"上海","email":"lisi@example.com","position":"产品经理"},{"id":3,"name":"王五","age":35,"city":"深圳","email":"wangwu@example.com","position":"后端工程师"},{"id":4,"name":"赵六","age":28,"city":"杭州","email":"zhaoliu@example.com","position":"UI 设计师"},{"id":5,"name":"孙七","age":32,"city":"广州","email":"sunqi@example.com","position":"测试工程师"},{"id":6,"name":"周八","age":27,"city":"成都","email":"zhouba@example.com","position":"运营专员"},{"id":7,"name":"吴九","age":41,"city":"武汉","email":"wujiu@example.com","position":"技术总监"},{"id":8,"name":"郑十","age":24,"city":"南京","email":"zhengshi@example.com","position":"实习生"},{"id":9,"name":"冯十一","age":38,"city":"西安","email":"fengshiyi@example.com","position":"架构师"},{"id":10,"name":"陈十二","age":29,"city":"苏州","email":"chenshier@example.com","position":"数据分析师"},{"id":11,"name":"褚十三","age":33,"city":"天津","email":"chushisan@example.com","position":"项目经理"},{"id":12,"name":"卫十四","age":26,"city":"重庆","email":"weishisi@example.com","position":"运维工程师"}]'></oas-table>
+  </div>
+</DemoBlock>
+
+`sticky-rows="N"` 指定前 N 行吸顶于表头下方（配合滚动容器：设置 `height` 后表体可滚动）；与固定列（`fixed: 'left' | 'right'`）共存互不冲突。
+
 ## 大数据量（虚拟滚动）
 
 <DemoBlock title="万级数据虚拟滚动">
@@ -240,6 +276,28 @@ onMounted(() => {
     table?.setAttribute('loading', '')
     setTimeout(() => table?.removeAttribute('loading'), 2000)
   }
+
+  // 行内编辑 demo：编辑反馈
+  const editTable = document.querySelector('#table-edit')
+  editTable?.addEventListener('oas-edit', (e) => {
+    const { key, column, value } = e.detail
+    const el = document.querySelector('#table-edit-feedback')
+    if (el) el.textContent = `${key} 的「${column}」→ ${value}`
+  })
+  editTable?.addEventListener('oas-edit-cancel', () => {
+    const el = document.querySelector('#table-edit-feedback')
+    if (el) el.textContent = '已取消'
+  })
+
+  // 受控编辑 demo：宿主监听 oas-edit 回写 data（组件不自动更新）
+  const ctlTable = document.querySelector('#table-edit-controlled')
+  ctlTable?.addEventListener('oas-edit', (e) => {
+    const { key, column, value } = e.detail
+    const rows = JSON.parse(ctlTable.getAttribute('data'))
+    const row = rows.find((r) => r.name === key)
+    if (row) row[column] = value
+    ctlTable.setAttribute('data', JSON.stringify(rows))
+  })
 })
 </script>
 
@@ -251,8 +309,10 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `bordered` | 完整边框：单元格网格描边（外框由组件自带） | — | — |
 | `checkable` | 复选框多选开关 | `boolean` | — |
-| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `TableColumn[] \| string` | `[]` |
+| `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `TableColumn[] \| string` | `[]` |
 | `data` | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `Array<Record<string, unknown>> \| string` | `[]` |
+| `edit-controlled` | 受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`，由宿主监听后自行更新 `data` | `boolean` | — |
+| `editable` | 行内编辑开关（需配合列配置 `editable: true`；操作列 `actions: true` 同理） | `boolean` | — |
 | `empty-text` | 空态文案 | — | — |
 | `expanded` | 已展开行 key 集合（逗号分隔；树形父行/可展开行共用） | `string` | — |
 | `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
@@ -262,6 +322,7 @@ onMounted(() => {
 | `selected` | 选中行 key 集合（逗号分隔） | `string` | — |
 | `sort-key` | 受控排序；`sort-order` 取 `asc` / `desc` / 空 | `string` | — |
 | `sort-order` | 受控排序；`sort-order` 取 `asc` / `desc` / 空 | `SortOrder` | — |
+| `sticky-rows` | 吸顶行数（数字 N）：前 N 行吸顶于表头下方（配合滚动容器与固定列共存） | `string` | — |
 | `stripe` | 斑马纹：奇数/偶数行交替浅底色 | `boolean` | — |
 | `summary` | 合计配置 `[{ key, type: 'sum'\|'avg'\|'count', label? }]`，JSON 字符串 | `string` | — |
 
@@ -270,6 +331,8 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-check` | 复选框选中变化，`detail: { keys: string[] }` |
+| `oas-edit` | 行内编辑提交（Enter/失焦/操作列保存），`detail: { rowIndex, key, column, value }`；受控模式组件不回写 `data` |
+| `oas-edit-cancel` | 行内编辑取消（Esc/操作列取消/空值提交还原），`detail: { rowIndex, key, column, value }`（value 为原值） |
 | `oas-expand` | 行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }` |
 | `oas-row-click` | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
 | `oas-scroll` | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |

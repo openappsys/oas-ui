@@ -113,6 +113,10 @@ export const zhCN = {
   'table.selectRow': '选择行 {key}',
   'table.expand': '展开/收起',
   'table.summary': '合计',
+  'table.edit': '编辑',
+  'table.save': '保存',
+  'table.cancel': '取消',
+  'table.editCell': '编辑 {column}（行 {key}）',
   // list（列表）
   'list.empty': '暂无数据',
   // tree（树形控件）

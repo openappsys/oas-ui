@@ -74,6 +74,45 @@
 
 设置 `height` 开启虚拟化（搭配 `row-height` 定高）：树复用 `oas-virtual-list` 只渲染可见窗口内的节点，展开状态保存在 `expanded` 属性中，滚动与重渲染均不丢失。
 
+## 自定义节点渲染
+
+<DemoBlock title="自定义节点（图标 + 富文本）">
+  <div style="width: 100%">
+    <oas-tree id="tree-custom" expanded="proj-a" data='[{"key":"proj-a","label":"项目 A","children":[{"key":"task-1","label":"任务 1"},{"key":"task-2","label":"任务 2"},{"key":"task-3","label":"任务 3"}]},{"key":"proj-b","label":"项目 B","children":[{"key":"task-4","label":"任务 4"}]},{"key":"notes","label":"笔记"}]'>
+      <template slot="toggle">
+        <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M6 4 L10 8 L6 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </template>
+      <template slot="node">
+        <style>
+          .node-demo-glyph { width: 14px; height: 14px; color: var(--oas-color-primary); margin-right: var(--oas-space-1); vertical-align: -2px; }
+          .node-demo-count { margin-left: var(--oas-space-2); font-size: var(--oas-font-size-xs); color: var(--oas-color-text-primary); background: var(--oas-color-bg-hover); border-radius: 999px; padding: 0 6px; }
+          [data-node-label] { font-weight: 500; }
+        </style>
+        <svg class="node-demo-glyph" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <rect x="3" y="2.5" width="10" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M6 7.5 H10" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        <span data-node-label></span>
+        <span class="node-demo-count"></span>
+      </template>
+    </oas-tree>
+  </div>
+</DemoBlock>
+
+节点内容可用 `template[slot="node"]` 提供静态骨架（`[data-node-label]` 节点自动绑定节点 label），`template[slot="toggle"]` 可替换默认展开箭头；每个节点行渲染后派发 `oas-node-render`（`detail: { node, element }`），宿主可监听改写 `element` 为任意图标 / 富文本。示例中任务数徽标即由该事件写入；键盘与 ARIA（`treeitem` / `aria-expanded` / `aria-level`）在自定义渲染下保持不变。
+
+## 目录模式（文件浏览器）
+
+<DemoBlock title="目录模式（文件浏览器样式）">
+  <div style="width: 100%">
+    <oas-tree id="tree-dir" directory expanded="src,assets" data='[{"key":"src","label":"src","children":[{"key":"components","label":"components","children":[{"key":"button.tsx","label":"button.tsx","isLeaf":true},{"key":"tree.tsx","label":"tree.tsx","isLeaf":true}]},{"key":"index.ts","label":"index.ts","isLeaf":true}]},{"key":"assets","label":"assets","children":[{"key":"logo.svg","label":"logo.svg","isLeaf":true}]},{"key":"package.json","label":"package.json","isLeaf":true},{"key":"README.md","label":"README.md","isLeaf":true}]'></oas-tree>
+  </div>
+</DemoBlock>
+
+设置 `directory` 后按文件浏览器风格渲染：有 `children`（或懒加载下未加载）的节点显示文件夹图标，`isLeaf` / 无 `children` 的节点显示文件图标；文件夹按展开 / 收起切换图标，层级缩进与 hover 高亮行沿用行样式。
+
 ## 事件
 
 <DemoBlock title="选中与勾选事件">
@@ -113,6 +152,19 @@ onMounted(() => {
         : {}),
     }))
     virtual.setAttribute('data', JSON.stringify(nodes))
+  }
+
+  // 自定义节点 demo：oas-node-render 写入子任务数徽标（element 为节点 label 容器）
+  const custom = document.querySelector('#tree-custom')
+  if (custom) {
+    custom.addEventListener('oas-node-render', (e) => {
+      const { node, element } = e.detail
+      const badge = element.querySelector('.node-demo-count')
+      const count = node.children?.length ?? 0
+      if (badge) badge.textContent = count > 0 ? `${count} 项` : ''
+    })
+    // 监听挂载后强制重刷一次，保证初始渲染即带上徽标（upgrade 可能早于 onMounted）
+    custom.setAttribute('data', custom.getAttribute('data'))
   }
 
   // 懒加载 demo：监听 oas-load，模拟异步回填子节点后重设 data
@@ -196,6 +248,7 @@ onMounted(() => {
 | `checkable` | 是否显示复选框 | `boolean` | — |
 | `checked` | 勾选节点 key 集合（逗号分隔） | `string` | — |
 | `data` | 节点数据 `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`，JSON 字符串 | `TreeNode[] \| string` | `[]` |
+| `directory` | 目录模式：有 `children`（或懒加载下未加载）的节点显示文件夹图标，`isLeaf` / 无 `children` 的节点显示文件图标，文件夹按展开 / 收起切换图标 | `boolean` | — |
 | `draggable` | 节点可拖拽换序 / 换父，落点显示插入线 / 高亮，松手派发 `oas-node-drop` | `boolean` | — |
 | `expanded` | 展开节点 key 集合（逗号分隔） | `string` | — |
 | `height` | 虚拟滚动视口高度（px）；设置后开启大数据量虚拟化渲染 | `string` | `360` |
@@ -211,6 +264,14 @@ onMounted(() => {
 | `oas-check` | 勾选变化，`detail: { key, checked }` |
 | `oas-load` | 懒加载触发，`detail: { key }`；宿主回填 `children` 后重设 `data` 属性 |
 | `oas-node-drop` | 节点拖放，`detail: { dragKey, dropKey, position }`，`position` 为 `before` / `after` / `inner`；`dropKey` 为空字符串表示移入根 |
+| `oas-node-render` | 每个渲染的节点行派发，`detail: { node, element }`（element 为节点 label 容器，宿主可改写为图标 / 富文本） |
 | `oas-select` | 选中节点，`detail: { key, selected }` |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `template[slot="node"]` | 节点行静态模板，克隆到每个节点 label 容器；`[data-node-label]` 节点自动绑定节点 label |
+| `template[slot="toggle"]` | 展开按钮静态模板，克隆到每个可展开节点的展开按钮内（替换默认 › 图标） |
 
 > 节点字段说明：`isLeaf: true` 表示显式叶子（懒加载下不显示展开箭头）；`loaded: true` 表示已加载完成（配合 `children` 使用，避免重复触发加载）。

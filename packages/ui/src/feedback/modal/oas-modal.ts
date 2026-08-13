@@ -87,15 +87,68 @@ const STYLE = `
   border-color: var(--oas-color-primary);
   color: var(--oas-color-text-on-primary);
 }
+/* 全屏：铺满视口、无圆角/边距；规则后置 + 更高特异性，优先级高于 centered/width/draggable */
+:host([fullscreen]) .dialog {
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  border-radius: 0;
+  transform: none;
+}
+/* 全屏下拖拽语义失效：标题栏不显示 move 光标、恢复触摸默认行为 */
+:host([fullscreen]) .header {
+  cursor: default;
+  touch-action: auto;
+}
+/* 确定按钮 loading：内置 spinner（复用按钮的 oas-spin 动效，shadow 内 keyframes 隔离） */
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: oas-spin 0.8s linear infinite;
+  vertical-align: -0.125em;
+  margin-inline-end: var(--oas-space-1);
+}
+.spinner[hidden] {
+  display: none;
+}
+:host([loading]) .btn[part='ok'] {
+  opacity: 0.6;
+  cursor: default;
+}
+@keyframes oas-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 `
 
 export class OASModal extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['visible', 'title', 'no-footer', 'width', 'centered', 'draggable']
+    return [
+      'visible',
+      'title',
+      'no-footer',
+      'width',
+      'centered',
+      'draggable',
+      'fullscreen',
+      'loading',
+    ]
   }
 
   private previousFocus: HTMLElement | null = null
   private wasVisible = false
+
+  /**
+   * 确定按钮点击时不自动关闭、只派发 oas-ok，由宿主决定关闭时机。
+   * 仅 confirm 命令式 API（异步 onOk）内部使用，避免异步流程中 modal 先关后 loading。
+   */
+  deferOkClose = false
 
   // 拖拽状态：dragging 为内部状态属性（未观察），draggable 为用户属性
   private dragging = false
@@ -121,7 +174,10 @@ export class OASModal extends OASElement {
             : `
         <div class="footer" part="footer">
           <button class="btn" part="cancel" type="button"></button>
-          <button class="btn" part="ok" type="button"></button>
+          <button class="btn" part="ok" type="button">
+            <span class="spinner" part="spinner" hidden></span>
+            <span class="ok-label"></span>
+          </button>
         </div>`
         }
       </div>
@@ -142,7 +198,15 @@ export class OASModal extends OASElement {
     this.shadow
       .querySelector('[part="close"]')
       ?.addEventListener('click', () => this.close('cancel'))
-    this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => this.close('ok'))
+    this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => {
+      if (this.hasAttr('loading')) return
+      if (this.deferOkClose) {
+        // 异步确认（confirm onOk）：不关闭，由宿主决定关闭时机；loading 由宿主设置
+        this.emit('ok')
+        return
+      }
+      this.close('ok')
+    })
 
     // 可拖拽：标题栏 pointerdown 启动，move/up 监听在 document 保证指针移出仍跟随
     const header = this.shadow.querySelector<HTMLElement>('.header')
@@ -154,6 +218,7 @@ export class OASModal extends OASElement {
 
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') this.close('cancel')
+      if (e.key === 'Tab') this.trapFocus(e)
     }
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
@@ -175,6 +240,8 @@ export class OASModal extends OASElement {
 
   private startDrag(e: PointerEvent): void {
     if (!this.hasAttr('draggable')) return
+    // 全屏铺满视口，拖拽语义失效（优先级：fullscreen > draggable）
+    if (this.hasAttr('fullscreen')) return
     if (e.button !== 0 && e.pointerType !== 'touch') return
     // 标题栏上的关闭按钮不触发拖动
     if ((e.target as Element | null)?.closest('[part="close"]')) return
@@ -210,6 +277,72 @@ export class OASModal extends OASElement {
     document.removeEventListener('pointerup', this.endDrag)
   }
 
+  /** 对话框内可聚焦元素（按 DOM 顺序） */
+  private getFocusables(): HTMLElement[] {
+    return Array.from(
+      this.shadow.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    )
+  }
+
+  /**
+   * 解析当前真实聚焦元素。
+   * 真实浏览器对 open shadow DOM 返回内层元素；happy-dom 重定向为宿主（document.activeElement = host），
+   * 需回退 shadowRoot.activeElement 获取真实焦点。
+   */
+  private resolveActive(): HTMLElement | null {
+    const ae = document.activeElement
+    if (!ae) return null
+    if (this.shadow.contains(ae)) return ae as HTMLElement
+    if (ae === this) return this.shadow.activeElement as HTMLElement | null
+    return null
+  }
+
+  /**
+   * 焦点是否落在 modal 的可达区域：shadow 内元素，或 slot 分配的 light DOM 树
+   * （含嵌套自定义元素，穿透其 inner shadow）。用于判断 Tab 是否逃逸出对话框——
+   * 否则焦点在嵌套表单控件（如 slot 内 oas-input 的内层 input）时会被误判为逃逸并拉回。
+   */
+  private isWithinModalTree(node: Node | null): boolean {
+    while (node) {
+      if (node === this || node === this.shadow) return true
+      if (node instanceof ShadowRoot) node = node.host
+      else node = node.parentNode
+    }
+    return false
+  }
+
+  /** 焦点陷阱：Tab/Shift+Tab 在对话框内循环，焦点逃逸则拉回；多实例仅最上层接管 */
+  private trapFocus(e: KeyboardEvent): void {
+    if (!this.hasAttr('visible')) return
+    const visibles = [...document.querySelectorAll('oas-modal')].filter((m) =>
+      m.hasAttribute('visible'),
+    )
+    if (visibles[visibles.length - 1] !== this) return
+    const focusables = this.getFocusables()
+    if (focusables.length === 0) return
+    const first = focusables[0]!
+    const last = focusables[focusables.length - 1]!
+    const active = this.resolveActive()
+    // 逃逸判定：真实焦点不在 modal 树（shadow 或 slot 内容）内
+    if (active == null && !this.isWithinModalTree(document.activeElement)) {
+      // 焦点逃逸出对话框（含尚未移入）：Tab 拉回首个可聚焦元素
+      e.preventDefault()
+      first.focus()
+      return
+    }
+    if (active && e.shiftKey && active === first) {
+      e.preventDefault()
+      last.focus()
+      return
+    }
+    if (active && !e.shiftKey && active === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
+
   /** 关闭/确认：属性驱动约定——组件自管状态属性，同时派发事件供宿主响应 */
   private close(action: 'ok' | 'cancel'): void {
     this.removeAttribute('visible')
@@ -221,8 +354,19 @@ export class OASModal extends OASElement {
     if (!dialog) return
     const visible = this.hasAttr('visible')
     dialog.setAttribute('aria-hidden', String(!visible))
-    // 宽度：显式设置则覆盖主题默认 520px，未设置时回退 CSS 默认
-    dialog.style.width = this.getAttr('width')
+    const fullscreen = this.hasAttr('fullscreen')
+    // 全屏：data-fullscreen 驱动 CSS 铺满；同时清除内联 width/拖拽定位，防止覆盖全屏布局
+    if (fullscreen) dialog.setAttribute('data-fullscreen', '')
+    else dialog.removeAttribute('data-fullscreen')
+    if (fullscreen) {
+      dialog.style.width = ''
+      dialog.style.left = ''
+      dialog.style.top = ''
+      dialog.style.transform = ''
+    } else {
+      // 宽度：显式设置则覆盖主题默认 520px，未设置时回退 CSS 默认
+      dialog.style.width = this.getAttr('width')
+    }
     // 垂直居中：data-centered 驱动 CSS 布局，增删同步
     if (this.hasAttr('centered')) dialog.setAttribute('data-centered', '')
     else dialog.removeAttribute('data-centered')
@@ -231,11 +375,17 @@ export class OASModal extends OASElement {
     this.shadow
       .querySelector<HTMLElement>('[part="close"]')
       ?.setAttribute('aria-label', this.t('modal.close'))
-    const okBtn = this.shadow.querySelector<HTMLElement>('[part="ok"]')
+    const okBtn = this.shadow.querySelector<HTMLButtonElement>('[part="ok"]')
     const cancelBtn = this.shadow.querySelector<HTMLElement>('[part="cancel"]')
+    const loading = this.hasAttr('loading')
     if (okBtn) {
       okBtn.setAttribute('aria-label', this.t('modal.ok'))
-      okBtn.textContent = this.t('modal.ok')
+      okBtn.querySelector<HTMLElement>('.ok-label')!.textContent = this.t('modal.ok')
+      // loading：禁用确定 + aria-busy + spinner，禁止重复触发
+      okBtn.disabled = loading
+      okBtn.setAttribute('aria-busy', String(loading))
+      const spinner = okBtn.querySelector<HTMLElement>('.spinner')
+      if (spinner) spinner.hidden = !loading
     }
     if (cancelBtn) {
       cancelBtn.setAttribute('aria-label', this.t('modal.cancel'))

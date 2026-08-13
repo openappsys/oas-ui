@@ -109,27 +109,37 @@ img {
 `
 
 /**
- * oas-image —— 图片（v1.4 增强：内置预览浮层）。
+ * oas-image —— 图片（v1.4 增强：内置预览浮层；懒加载）。
  *
  * 属性：`src`/`alt`/`fit`/`placeholder`/`fallback` 保持既有行为；
+ * `lazy` 开启懒加载：用 IntersectionObserver 等图片进入视口才开始请求，
+ * 与 `placeholder`（等待期占位）/`fallback`（失败兜底）协作；
  * `preview` 存在时点击放大：全屏遮罩 + 居中大图，工具栏提供
  * 放大/缩小/旋转/下载，Esc 或点击遮罩关闭，打开聚焦关闭按钮、关闭还原焦点。
  * 焦点陷阱：Tab 在工具栏内循环，防止焦点逃逸到浮层外。
  *
  * 事件：`oas-preview`（打开时，detail `{ src }`）。
  *
- * 边界：浮层在 Shadow DOM 内随组件销毁；document keydown 监听在关闭时
+ * 懒加载边界：已在视口内（含缓存命中）同步判定立即加载，不等观察器异步回调；
+ * 环境不支持 IntersectionObserver（老浏览器/无观察器宿主）时退化为立即加载（渐进增强）；
+ * SSR/水合阶段不应用 src（快照为占位态），观察器在断开连接时统一清理；
+ * 加载中/待加载时宿主带 aria-busy，图片成功/失败后复位。
+ *
+ * 其他边界：浮层在 Shadow DOM 内随组件销毁；document keydown 监听在关闭时
  * 移除，并在断开连接时兜底清理（无孤儿浮层/监听）。
  */
 export class OASImage extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['src', 'alt', 'preview', 'fit', 'placeholder', 'fallback']
+    return ['src', 'alt', 'preview', 'fit', 'placeholder', 'fallback', 'lazy']
   }
 
   private loaded = false
   private failed = false
   private fallbackTried = false
   private lastSrc = ''
+  /** 懒加载：是否已对当前 src 发起加载（未触发前不设置 img src） */
+  private loadTriggered = false
+  private observer: IntersectionObserver | null = null
 
   // 预览状态
   private previewOpen = false
@@ -192,9 +202,11 @@ export class OASImage extends OASElement {
       if (e.target === e.currentTarget) this.closePreview()
     })
 
-    // 断开连接兜底：移除 document 监听（预览浮层随 Shadow DOM 销毁）
+    // 断开连接兜底：移除 document 监听 + 断开懒加载观察器（预览浮层随 Shadow DOM 销毁）
     this.onCleanup(() => {
       document.removeEventListener('keydown', this.onKey)
+      this.observer?.disconnect()
+      this.observer = null
     })
   }
 
@@ -235,6 +247,8 @@ export class OASImage extends OASElement {
   }
 
   private sync(): void {
+    // aria-busy：有 src 且未出结果（含懒加载等待期）→ true；成功/失败/无 src → false
+    this.setAttribute('aria-busy', String(!!this.lastSrc && !this.loaded && !this.failed))
     const img = this.shadow.querySelector<HTMLElement>('img')
     const ph = this.shadow.querySelector<HTMLElement>('[part="placeholder"]')
     const fb = this.shadow.querySelector<HTMLElement>('[part="fallback"]')
@@ -242,6 +256,61 @@ export class OASImage extends OASElement {
     img.hidden = this.failed || (this.hasAttr('placeholder') && !this.loaded)
     ph.hidden = !this.hasAttr('placeholder') || this.loaded || this.failed
     fb.hidden = !this.failed
+  }
+
+  /* ---------------- 懒加载 ---------------- */
+
+  /** 断开观察器（src 变化重挂 / 开始加载 / 卸载时） */
+  private disconnectObserver(): void {
+    this.observer?.disconnect()
+    this.observer = null
+  }
+
+  /**
+   * 懒加载观察器装配：视口内立即加载；否则挂 IO 等待进入视口。
+   * 环境不支持 IO（老浏览器/无观察器宿主）→ 退化为立即加载（渐进增强）。
+   */
+  private armLazy(): void {
+    if (this.loadTriggered) return
+    if (typeof IntersectionObserver === 'undefined') {
+      this.startLoad()
+      return
+    }
+    // 已在视口内（含图片缓存命中等场景）→ 立即加载，不等观察器异步回调
+    if (this.isInViewport()) {
+      this.startLoad()
+      return
+    }
+    this.observer ??= new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) this.startLoad()
+      }
+    })
+    this.observer.observe(this)
+  }
+
+  /** 懒加载触发点：进入视口 / 视口内直挂 / 环境不支持 IO */
+  private startLoad(): void {
+    if (this.loadTriggered) return
+    this.applySrc(this.getAttr('src', ''))
+  }
+
+  /** 对 img 应用 src 并刷新状态（非懒加载路径与懒加载触发路径共用） */
+  private applySrc(src: string): void {
+    this.disconnectObserver()
+    this.loadTriggered = true
+    this.shadow.querySelector<HTMLImageElement>('img')?.setAttribute('src', src)
+    this.sync()
+  }
+
+  /** 同步视口判定：布局未定/隐藏（零尺寸）视为不在视口，交给观察器等待 */
+  private isInViewport(): boolean {
+    if (!this.isConnected) return false
+    const rect = this.getBoundingClientRect()
+    if (rect.width === 0 && rect.height === 0) return false
+    const vw = window.innerWidth || 0
+    const vh = window.innerHeight || 0
+    return rect.top < vh && rect.bottom > 0 && rect.left < vw && rect.right > 0
   }
 
   /* ---------------- 预览浮层 ---------------- */
@@ -252,7 +321,8 @@ export class OASImage extends OASElement {
 
   private openPreview(): void {
     const mask = this.shadow.querySelector<HTMLElement>('.preview-mask')
-    if (!mask || this.previewOpen) return
+    // 懒加载等待期（img 无 src）/异常空 src 时不打开空预览
+    if (!mask || this.previewOpen || !this.currentSrc()) return
     this.previewOpen = true
     this.scale = 1
     this.rotation = 0
@@ -328,13 +398,32 @@ export class OASImage extends OASElement {
     const img = this.shadow.querySelector<HTMLImageElement>('img')
     if (!img) return
     const src = this.getAttr('src', '')
+    const lazy = this.hasAttr('lazy')
+
     if (src !== this.lastSrc) {
       this.lastSrc = src
       this.loaded = false
       this.failed = false
       this.fallbackTried = false
+      this.loadTriggered = false
+      this.disconnectObserver()
     }
-    img.setAttribute('src', src)
+
+    if (src) {
+      if (lazy && !this.loadTriggered) {
+        // 懒加载等待期：暂不设置 src（避免提前发请求），进入视口才加载
+        img.removeAttribute('src')
+        this.armLazy()
+      } else if (!this.loadTriggered) {
+        // 非懒加载（或环境不支持 IO）：立即开始加载
+        this.applySrc(src)
+      }
+    } else {
+      // 无 src：清空图片（懒加载不挂观察器，避免无谓开销）
+      img.removeAttribute('src')
+      this.loadTriggered = false
+    }
+
     img.setAttribute('alt', this.getAttr('alt', this.t('image.defaultAlt')))
     // 占位/失败文案走 locale registry（setLocale 切换自动刷新）
     const ph = this.shadow.querySelector<HTMLElement>('[part="placeholder"]')

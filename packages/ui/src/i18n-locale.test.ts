@@ -30,7 +30,7 @@ describe('组件文案 locale 切换（i18n 集成）', () => {
     const el = document.createElement('oas-modal')
     el.setAttribute('visible', '')
     document.body.appendChild(el)
-    const ok = el.shadowRoot!.querySelector<HTMLElement>('[part="ok"]')!
+    const ok = el.shadowRoot!.querySelector<HTMLElement>('[part="ok"] .ok-label')!
     const cancel = el.shadowRoot!.querySelector<HTMLElement>('[part="cancel"]')!
     const close = el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!
 

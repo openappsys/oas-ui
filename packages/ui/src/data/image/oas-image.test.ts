@@ -279,3 +279,170 @@ describe('OASImage preview 增强', () => {
     expect(img.getAttribute('alt')).toBe('示例')
   })
 })
+
+describe('OASImage lazy 懒加载', () => {
+  /** 可控 IntersectionObserver 桩：记录实例，测试手动触发回调 */
+  class FakeIO {
+    static instances: FakeIO[] = []
+    cb: (entries: Array<{ isIntersecting: boolean }>) => void
+    observed: Element[] = []
+    disconnected = false
+    constructor(cb: (entries: Array<{ isIntersecting: boolean }>) => void) {
+      this.cb = cb
+      FakeIO.instances.push(this)
+    }
+    observe(target: Element): void {
+      this.observed.push(target)
+    }
+    unobserve(): void {}
+    disconnect(): void {
+      this.disconnected = true
+    }
+  }
+
+  function mountLazy(extra: Record<string, string> = {}): OASImage {
+    const el = new OASImage()
+    el.setAttribute('src', '/a.png')
+    el.setAttribute('lazy', '')
+    for (const [k, v] of Object.entries(extra)) el.setAttribute(k, v)
+    document.body.appendChild(el)
+    return el
+  }
+
+  function imgOf(el: OASImage): HTMLImageElement {
+    return el.shadowRoot!.querySelector<HTMLImageElement>('img')!
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    FakeIO.instances = []
+    setLocale('zh-CN')
+    vi.stubGlobal('IntersectionObserver', FakeIO)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('不在视口内：不设置 src、创建观察器观察宿主、aria-busy=true', () => {
+    const el = mountLazy()
+    const img = imgOf(el)
+    expect(img.hasAttribute('src')).toBe(false)
+    expect(FakeIO.instances.length).toBe(1)
+    expect(FakeIO.instances[0]!.observed).toContain(el)
+    expect(el.getAttribute('aria-busy')).toBe('true')
+  })
+
+  it('进入视口（IO 回调 isIntersecting）：开始加载并断开观察器', () => {
+    const el = mountLazy()
+    const img = imgOf(el)
+    FakeIO.instances[0]!.cb([{ isIntersecting: true }])
+    expect(img.getAttribute('src')).toBe('/a.png')
+    expect(FakeIO.instances[0]!.disconnected).toBe(true)
+  })
+
+  it('加载成功后显示图片、aria-busy=false', () => {
+    const el = mountLazy()
+    const img = imgOf(el)
+    FakeIO.instances[0]!.cb([{ isIntersecting: true }])
+    img.dispatchEvent(new Event('load'))
+    expect(img.hasAttribute('hidden')).toBe(false)
+    expect(el.getAttribute('aria-busy')).toBe('false')
+  })
+
+  it('加载失败后 aria-busy 复位；fallback 协作（切换到兜底图，兜底加载中仍 busy）', () => {
+    const el = mountLazy({ fallback: '/fallback.png' })
+    const img = imgOf(el)
+    FakeIO.instances[0]!.cb([{ isIntersecting: true }])
+    img.dispatchEvent(new Event('error'))
+    // 首次失败：切换到兜底图继续加载（此时仍 busy）
+    expect(img.getAttribute('src')).toBe('/fallback.png')
+    expect(el.getAttribute('aria-busy')).toBe('true')
+    // 兜底图加载成功 → busy 复位
+    img.dispatchEvent(new Event('load'))
+    expect(el.getAttribute('aria-busy')).toBe('false')
+  })
+
+  it('兜底图也失败：显示失败占位且 aria-busy=false', () => {
+    const el = mountLazy({ fallback: '/fallback.png' })
+    const img = imgOf(el)
+    FakeIO.instances[0]!.cb([{ isIntersecting: true }])
+    img.dispatchEvent(new Event('error'))
+    img.dispatchEvent(new Event('error'))
+    expect(el.shadowRoot!.querySelector('[part="fallback"]')!.hasAttribute('hidden')).toBe(false)
+    expect(el.getAttribute('aria-busy')).toBe('false')
+  })
+
+  it('已在视口内（rect 命中视口）：立即加载，不创建观察器', () => {
+    const el = new OASImage()
+    el.setAttribute('src', '/a.png')
+    el.setAttribute('lazy', '')
+    el.getBoundingClientRect = () =>
+      ({
+        top: 0,
+        left: 0,
+        right: 300,
+        bottom: 200,
+        width: 300,
+        height: 200,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect
+    document.body.appendChild(el)
+    expect(imgOf(el).getAttribute('src')).toBe('/a.png')
+    expect(FakeIO.instances.length).toBe(0)
+  })
+
+  it('环境不支持 IO：退化为立即加载（渐进增强）', () => {
+    vi.stubGlobal('IntersectionObserver', undefined)
+    const el = mountLazy()
+    expect(imgOf(el).getAttribute('src')).toBe('/a.png')
+    expect(FakeIO.instances.length).toBe(0)
+  })
+
+  it('卸载时断开观察器（无孤儿观察）', () => {
+    const el = mountLazy()
+    const inst = FakeIO.instances[0]!
+    el.remove()
+    expect(inst.disconnected).toBe(true)
+  })
+
+  it('placeholder 协作：等待期显示占位、隐藏图片；进入视口仍占位；load 后切换', () => {
+    const el = mountLazy({ placeholder: '' })
+    const img = imgOf(el)
+    const ph = el.shadowRoot!.querySelector('[part="placeholder"]')!
+    expect(img.hasAttribute('hidden')).toBe(true)
+    expect(ph.hasAttribute('hidden')).toBe(false)
+
+    FakeIO.instances[0]!.cb([{ isIntersecting: true }])
+    // 加载中仍显示占位
+    expect(img.hasAttribute('hidden')).toBe(true)
+    expect(ph.hasAttribute('hidden')).toBe(false)
+
+    img.dispatchEvent(new Event('load'))
+    expect(img.hasAttribute('hidden')).toBe(false)
+    expect(ph.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('src 变化：懒加载重新等待视口，进入后加载新图', () => {
+    const el = mountLazy()
+    const img = imgOf(el)
+    el.setAttribute('src', '/b.png')
+    expect(img.hasAttribute('src')).toBe(false)
+    expect(FakeIO.instances.length).toBe(2)
+    FakeIO.instances[1]!.cb([{ isIntersecting: true }])
+    expect(img.getAttribute('src')).toBe('/b.png')
+  })
+
+  it('移除 lazy 属性：立即加载并断开观察器', () => {
+    const el = mountLazy()
+    const inst = FakeIO.instances[0]!
+    const img = imgOf(el)
+    el.removeAttribute('lazy')
+    expect(img.getAttribute('src')).toBe('/a.png')
+    expect(inst.disconnected).toBe(true)
+  })
+})

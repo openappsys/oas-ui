@@ -670,3 +670,354 @@ describe('OASTable 展示增强（stripe/bordered/summary/expand/tree）', () =>
     expect(cell.style.paddingLeft).toBe('64px')
   })
 })
+
+const EDIT_COLUMNS = JSON.stringify([
+  { key: 'name', title: '姓名', editable: true },
+  { key: 'age', title: '年龄', editable: true },
+  { key: 'city', title: '城市' },
+  {
+    key: 'position',
+    title: '职位',
+    editable: true,
+    editor: 'select',
+    editOptions: [
+      { label: '前端工程师', value: 'frontend' },
+      { label: '后端工程师', value: 'backend' },
+    ],
+  },
+  { key: 'op', title: '操作', actions: true },
+])
+const EDIT_DATA = JSON.stringify([
+  { name: '张三', age: 30, city: '北京', position: 'frontend' },
+  { name: '李四', age: 25, city: '上海', position: 'backend' },
+])
+
+describe('OASTable 行内编辑（inline editing）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const editMount = (extra: Record<string, string> = {}): OASTable =>
+    mount({ editable: '', 'row-key': 'name', columns: EDIT_COLUMNS, data: EDIT_DATA, ...extra })
+
+  const cellInput = (el: OASTable, row: number, col: number): HTMLInputElement | null =>
+    cells(el)[row * 5 + col]!.querySelector<HTMLInputElement>('input.cell-editor')
+
+  const cellSelect = (el: OASTable, row: number, col: number): HTMLSelectElement | null =>
+    cells(el)[row * 5 + col]!.querySelector<HTMLSelectElement>('select.cell-editor')
+
+  it('editable 列双击进入编辑：input 编辑器、列高亮、aria 标签', () => {
+    const el = editMount()
+    const td = cells(el)[0]!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = td.querySelector<HTMLInputElement>('input.cell-editor')
+    expect(input).not.toBeNull()
+    expect(input!.value).toBe('张三')
+    expect(td.getAttribute('data-editing')).toBe('true')
+    expect(td.classList.contains('editing')).toBe(true)
+    // 编辑状态列高亮：表头写入标记
+    const th = el.shadowRoot!.querySelector('th[data-key="name"]')!
+    expect(th.getAttribute('data-editing-col')).toBe('true')
+    // aria：编辑器有可读名称
+    expect(input!.getAttribute('aria-label')).toContain('姓名')
+    expect(input!.getAttribute('aria-label')).toContain('张三')
+  })
+
+  it('非 editable 列双击不进入编辑', () => {
+    const el = editMount()
+    cells(el)[2]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(cells(el)[2]!.querySelector('input.cell-editor')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[data-editing="true"]')).toBeNull()
+  })
+
+  it('editable 属性未开启时双击不进入编辑', () => {
+    const el = mount({ 'row-key': 'name', columns: EDIT_COLUMNS, data: EDIT_DATA })
+    cells(el)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(cells(el)[0]!.querySelector('input.cell-editor')).toBeNull()
+  })
+
+  it('可编辑单元格可聚焦，不可编辑列无 tabindex', () => {
+    const el = editMount()
+    expect(cells(el)[0]!.getAttribute('tabindex')).toBe('0')
+    expect(cells(el)[2]!.getAttribute('tabindex')).toBeNull()
+  })
+
+  it('select 编辑器：按列 editor 类型渲染下拉（选项 + 回填当前值）', () => {
+    const el = editMount()
+    cells(el)[3]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const select = cellSelect(el, 0, 3)
+    expect(select).not.toBeNull()
+    expect([...select!.options].map((o) => o.textContent)).toEqual(['前端工程师', '后端工程师'])
+    expect(select!.value).toBe('frontend')
+  })
+
+  it('Enter 提交（非受控）：回写 data、单元格文本更新、派发 oas-edit', () => {
+    const el = editMount()
+    let detail: unknown
+    el.addEventListener('oas-edit', (e: Event) => (detail = (e as CustomEvent).detail))
+    cells(el)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = cellInput(el, 0, 0)!
+    input.value = '张四'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    // 非受控：组件自行回写 data 属性
+    expect(el.getAttribute('data')).toContain('"张四"')
+    expect(cells(el)[0]!.textContent).toBe('张四')
+    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张四' })
+    // 编辑态退出：编辑器移除、表头高亮清除
+    expect(el.shadowRoot!.querySelector('input.cell-editor')).toBeNull()
+    expect(el.shadowRoot!.querySelector('th[data-editing-col="true"]')).toBeNull()
+  })
+
+  it('Enter 空值提交 → 还原旧值并派发 oas-edit-cancel（默认非破坏）', () => {
+    const el = editMount()
+    let detail: unknown
+    el.addEventListener('oas-edit-cancel', (e: Event) => (detail = (e as CustomEvent).detail))
+    cells(el)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = cellInput(el, 0, 0)!
+    input.value = ''
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(el.getAttribute('data')).not.toContain('"张四"')
+    expect(cells(el)[0]!.textContent).toBe('张三')
+    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张三' })
+  })
+
+  it('Esc 取消：值还原、数据不变、派发 oas-edit-cancel', () => {
+    const el = editMount()
+    let detail: unknown
+    el.addEventListener('oas-edit-cancel', (e: Event) => (detail = (e as CustomEvent).detail))
+    cells(el)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = cellInput(el, 0, 0)!
+    input.value = '张四'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(el.getAttribute('data')).toContain('"张三"')
+    expect(el.getAttribute('data')).not.toContain('"张四"')
+    expect(cells(el)[0]!.textContent).toBe('张三')
+    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张三' })
+  })
+
+  it('blur 提交：值变化后失焦提交', () => {
+    const el = editMount()
+    let detail: unknown
+    el.addEventListener('oas-edit', (e: Event) => (detail = (e as CustomEvent).detail))
+    cells(el)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = cellInput(el, 0, 0)!
+    input.value = '张四'
+    input.dispatchEvent(new FocusEvent('blur'))
+    expect(el.getAttribute('data')).toContain('"张四"')
+    expect(cells(el)[0]!.textContent).toBe('张四')
+    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张四' })
+  })
+
+  it('blur 空值 → 取消（非破坏）：数据不变、派发 oas-edit-cancel', () => {
+    const el = editMount()
+    let detail: unknown
+    el.addEventListener('oas-edit-cancel', (e: Event) => (detail = (e as CustomEvent).detail))
+    cells(el)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = cellInput(el, 0, 0)!
+    input.value = ''
+    input.dispatchEvent(new FocusEvent('blur'))
+    expect(el.getAttribute('data')).not.toContain('"张四"')
+    expect(cells(el)[0]!.textContent).toBe('张三')
+    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张三' })
+  })
+
+  it('数字列编辑：新值按原类型转数字回写', () => {
+    const el = editMount()
+    cells(el)[1]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = cellInput(el, 0, 1)!
+    input.value = '31'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    // age 原为 number：回写为数字 31 而非字符串
+    expect(el.getAttribute('data')).toContain('"age":31')
+  })
+
+  it('select 编辑器：change 提交选中值并显示 label', () => {
+    const el = editMount()
+    let detail: unknown
+    el.addEventListener('oas-edit', (e: Event) => (detail = (e as CustomEvent).detail))
+    cells(el)[3]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const select = cellSelect(el, 0, 3)!
+    select.value = 'backend'
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+    expect(el.getAttribute('data')).toContain('"backend"')
+    // 展示用选项 label
+    expect(cells(el)[3]!.textContent).toBe('后端工程师')
+    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'position', value: 'backend' })
+  })
+
+  it('受控模式（edit-controlled）：提交不回写 data，仅派发 oas-edit；宿主回写后重渲染', () => {
+    const el = editMount({ 'edit-controlled': '' })
+    let detail: unknown
+    el.addEventListener('oas-edit', (e: Event) => (detail = (e as CustomEvent).detail))
+    cells(el)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = cellInput(el, 0, 0)!
+    input.value = '张四'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    // 受控：组件不自动回写 data
+    expect(el.getAttribute('data')).not.toContain('"张四"')
+    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张四' })
+    // 宿主监听 oas-edit 自行更新 data → 重渲染新值
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '张四', age: 30, city: '北京', position: 'frontend' },
+        { name: '李四', age: 25, city: '上海', position: 'backend' },
+      ]),
+    )
+    expect(cells(el)[0]!.textContent).toBe('张四')
+  })
+
+  it('操作列：编辑/保存/取消按钮联动行内编辑，且不触发出选中', () => {
+    const el = editMount()
+    const tr = rows(el)[0]!
+    const actionTd = tr.querySelectorAll('td')[4] as HTMLTableCellElement
+    const editBtn = actionTd.querySelector<HTMLButtonElement>('.action-btn')
+    expect(editBtn).not.toBeNull()
+    expect(editBtn!.textContent).toBe('编辑')
+    editBtn!.click()
+    // 进入编辑：首个可编辑列出现输入框
+    const input = tr.querySelector<HTMLInputElement>('input.cell-editor')
+    expect(input).not.toBeNull()
+    expect(input!.value).toBe('张三')
+    // 操作列切换为 保存/取消
+    expect(actionTd.querySelector('.action-btn.save')).not.toBeNull()
+    expect(actionTd.querySelector('.action-btn.danger')).not.toBeNull()
+    input!.value = '王五'
+    actionTd.querySelector<HTMLButtonElement>('.action-btn.save')!.click()
+    expect(cells(el)[0]!.textContent).toBe('王五')
+    // 操作按钮不触发行选中
+    expect(el.getAttribute('selected')).toBeNull()
+  })
+
+  it('操作列取消按钮：还原旧值并派发 oas-edit-cancel', () => {
+    const el = editMount()
+    let detail: unknown
+    el.addEventListener('oas-edit-cancel', (e: Event) => (detail = (e as CustomEvent).detail))
+    const tr = rows(el)[0]!
+    const actionTd = tr.querySelectorAll('td')[4] as HTMLTableCellElement
+    actionTd.querySelector<HTMLButtonElement>('.action-btn')!.click()
+    const input = tr.querySelector<HTMLInputElement>('input.cell-editor')!
+    input.value = 'X'
+    actionTd.querySelector<HTMLButtonElement>('.action-btn.danger')!.click()
+    expect(cells(el)[0]!.textContent).toBe('张三')
+    expect(el.getAttribute('data')).toContain('"张三"')
+    expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张三' })
+  })
+
+  it('键盘：聚焦可编辑单元格按 Enter / F2 进入编辑', () => {
+    const el = editMount()
+    cells(el)[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(cellInput(el, 0, 0)).not.toBeNull()
+    cells(el)[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2', bubbles: true }))
+    // F2 已处于编辑态，值保持
+    expect(cellInput(el, 0, 0)!.value).toBe('张三')
+  })
+
+  it('外部重渲染（data 变化）时自动取消编辑，不留孤儿编辑器', () => {
+    const el = editMount()
+    cells(el)[0]!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(el.shadowRoot!.querySelector('input.cell-editor')).not.toBeNull()
+    el.setAttribute('data', EDIT_DATA)
+    expect(el.shadowRoot!.querySelector('input.cell-editor')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[data-editing="true"]')).toBeNull()
+  })
+
+  it('虚拟滚动下可编辑：窗口内单元格双击进入编辑', () => {
+    const el = editMount({ height: '120', 'row-height': '40' })
+    // 虚拟模式 tbody 首行是占位行，取首个数据行（tr.row）的首个 td
+    const td = rows(el)[0]!.querySelector('td')!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(td.querySelector('input.cell-editor')).not.toBeNull()
+  })
+})
+
+const STICKY_COLUMNS = JSON.stringify([
+  { key: 'id', title: 'ID', fixed: 'left', width: '60px' },
+  { key: 'name', title: '姓名' },
+  { key: 'age', title: '年龄', fixed: 'right', width: '80px' },
+])
+const STICKY_DATA = JSON.stringify(
+  Array.from({ length: 6 }, (_, i) => ({ id: i, name: `行${i}`, age: 20 + i })),
+)
+
+describe('OASTable 吸顶行（sticky-rows）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('sticky-rows=N：前 N 行标记吸顶并写入 top 偏移，其余行不受影响', () => {
+    const el = mount({ 'sticky-rows': '2', columns: STICKY_COLUMNS, data: STICKY_DATA })
+    const trs = rows(el)
+    expect(trs[0]!.getAttribute('data-sticky')).toBe('true')
+    expect(trs[1]!.getAttribute('data-sticky')).toBe('true')
+    expect(trs[2]!.getAttribute('data-sticky')).toBeNull()
+    // happy-dom 无排版：thead 高度 0 → top 全为 0px（真实高度由浏览器排版，主 agent 复核）
+    expect((trs[0]!.querySelector('td') as HTMLElement).style.top).toBe('0px')
+    expect((trs[1]!.querySelector('td') as HTMLElement).style.top).toBe('0px')
+    expect((trs[2]!.querySelector('td') as HTMLElement).style.top).toBe('')
+    // 样式表含吸顶规则
+    const css = el.shadowRoot!.querySelector('style')!.textContent
+    expect(css).toContain("tr[data-sticky='true'] td")
+  })
+
+  it('sticky-rows 与固定列共存：吸顶行保留横向固定偏移', () => {
+    const el = mount({ 'sticky-rows': '1', columns: STICKY_COLUMNS, data: STICKY_DATA })
+    const tr = rows(el)[0]!
+    expect(tr.getAttribute('data-sticky')).toBe('true')
+    const tds = tr.querySelectorAll('td')
+    expect(tds[0]!.getAttribute('data-fixed')).toBe('left')
+    expect((tds[0] as HTMLElement).style.left).toBe('0px')
+    expect((tds[0] as HTMLElement).style.top).toBe('0px')
+    expect(tds[2]!.getAttribute('data-fixed')).toBe('right')
+    expect((tds[2] as HTMLElement).style.right).toBe('0px')
+  })
+
+  it('虚拟滚动 + sticky-rows：吸顶行恒渲染，滚动后仍位于列表顶部', async () => {
+    const el = mount({
+      height: '120',
+      'row-height': '40',
+      'sticky-rows': '2',
+      columns: JSON.stringify([
+        { key: 'id', title: 'ID' },
+        { key: 'name', title: '姓名' },
+        { key: 'age', title: '年龄' },
+      ]),
+      data: JSON.stringify(
+        Array.from({ length: 50 }, (_, i) => ({ id: i, name: `行${i}`, age: i })),
+      ),
+    })
+    expect(rows(el)[0]!.getAttribute('data-sticky')).toBe('true')
+    expect(rows(el)[1]!.getAttribute('data-sticky')).toBe('true')
+    const wrap = scrollWrap(el)
+    wrap.scrollTop = 2000
+    wrap.dispatchEvent(new Event('scroll'))
+    await flushRaf()
+    const trs = rows(el)
+    // 滚到底后吸顶行仍在
+    expect(trs[0]!.getAttribute('data-sticky')).toBe('true')
+    expect(trs[1]!.getAttribute('data-sticky')).toBe('true')
+    expect(trs.at(-1)!.textContent).toContain('行49')
+  })
+
+  it('sticky-rows 未设置时不写入吸顶标记', () => {
+    const el = mount()
+    expect(rows(el)[0]!.getAttribute('data-sticky')).toBeNull()
+  })
+
+  it('sticky-rows 非法值回退为不吸顶', () => {
+    const el = mount({ 'sticky-rows': 'abc', columns: STICKY_COLUMNS, data: STICKY_DATA })
+    expect(rows(el)[0]!.getAttribute('data-sticky')).toBeNull()
+  })
+})

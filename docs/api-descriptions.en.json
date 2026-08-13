@@ -51,11 +51,17 @@
   "oas-avatar": {
     "attrs": {
       "alt": "Alternative text for the image",
+      "badge": "Badge text overlaid on the avatar's top-right corner; boolean form (no value) shows a dot",
+      "badge-color": "Badge color: `primary`/`success`/`warning`/`danger`",
+      "badge-dot": "Small dot badge variant (no text)",
+      "badge-placement": "Badge placement: `top-right` (default) / `bottom-right`",
       "size": "Avatar size (px)",
       "src": "Image URL; renders an image avatar when present"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "fallback": "Custom placeholder content when the image fails to load (or the avatar has no content)"
+    }
   },
   "oas-avatar-group": {
     "attrs": {
@@ -90,13 +96,21 @@
   },
   "oas-badge": {
     "attrs": {
+      "color": "Ribbon semantic color: `primary` / `success` / `warning` / `danger` (default `danger`)",
       "dot": "Dot mode",
       "max": "Upper limit",
+      "mode": "Mode: `count` (default, numeric/dot badge) or `ribbon` (ribbon corner, same as `ribbon` attribute)",
+      "placement": "Ribbon position: `start` (inline-start) / `end` (inline-end, default)",
+      "ribbon": "Ribbon corner mode (boolean, same as `mode=\"ribbon\"`)",
       "showZero": "Whether to show when value=0",
+      "text": "Ribbon text; the `ribbon` slot takes precedence when it has content",
       "value": "Number"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Wrapped content (card, button, etc.)",
+      "ribbon": "Custom ribbon content"
+    }
   },
   "oas-bottom-navigation": {
     "attrs": {
@@ -166,12 +180,19 @@
   },
   "oas-card": {
     "attrs": {
-      "hoverable": "Whether to enable the hover shadow",
+      "clickable": "Whole card clickable (focusable; click / Enter / Space dispatch `oas-click`)",
+      "cover-alt": "Cover image alt text (accessibility)",
+      "cover-src": "Cover image URL placed at the top of the card (object-fit: cover)",
+      "hoverable": "Whether to enable the hover shadow (shadow + lift + pointer)",
       "title": "Card title"
     },
-    "events": {},
+    "events": {
+      "oas-click": "Whole-card click (when `clickable`), detail contains originalEvent"
+    },
     "slots": {
       "": "Card content",
+      "actions": "Bottom action area (view / edit / delete button groups), with a divider above",
+      "cover": "Custom cover content (mutually exclusive with `cover-src`, which takes precedence)",
       "extra": "Extra area on the right of the title"
     }
   },
@@ -586,6 +607,7 @@
       "alt": "Alternative text",
       "fallback": "Fallback image URL to switch to on load failure; when not set, shows the \"图片加载失败\" placeholder",
       "fit": "`object-fit` value",
+      "lazy": "Lazy load: the image starts loading only when it enters the viewport (IntersectionObserver); loads immediately when already in the viewport; falls back to eager loading when unsupported",
       "placeholder": "Show a light gray placeholder before the image finishes loading",
       "preview": "Enable built-in preview: click to zoom + zoom/rotate/download + Esc to close + focus trap",
       "src": "Image URL"
@@ -756,6 +778,8 @@
     "attrs": {
       "centered": "Vertically center the dialog",
       "draggable": "Drag the dialog via its header",
+      "fullscreen": "Display fullscreen: the dialog fills the viewport without radius or margin (takes precedence over width / centered / draggable)",
+      "loading": "Put the OK button into loading state (disabled + spinner), blocking repeated confirms",
       "no-footer": "Hide footer action buttons",
       "no-mask-close": "Disable closing on mask click",
       "title": "Title text",
@@ -1122,8 +1146,10 @@
     "attrs": {
       "bordered": "Full border: draws a grid outline around cells (the outer frame is built in)",
       "checkable": "Enables checkbox multi-select",
-      "columns": "Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`, JSON string (declarative attribute channel; property assignment takes precedence)",
+      "columns": "Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`, JSON string (declarative attribute channel; property assignment takes precedence)",
       "data": "Row data `[{ [key]: value, children?, expand? }]`, JSON string (declarative attribute channel; property assignment takes precedence)",
+      "editable": "Inline editing switch (requires `editable: true` on columns; same for the `actions: true` operation column)",
+      "edit-controlled": "Controlled editing: does not write back `data` on submit, only fires `oas-edit`; the host listens and updates `data` itself",
       "empty-text": "Empty state text",
       "expanded": "Set of expanded row keys (comma-separated; shared by tree parent rows and expandable rows)",
       "height": "Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered",
@@ -1133,11 +1159,14 @@
       "selected": "Set of selected row keys (comma-separated)",
       "sort-key": "Controlled sort; `sort-order` is `asc` / `desc` / empty",
       "sort-order": "Controlled sort; `sort-order` is `asc` / `desc` / empty",
+      "sticky-rows": "Number of sticky rows (N): the first N rows stick below the header (coexists with the scroll container and fixed columns)",
       "stripe": "Zebra striping: alternating light background for odd/even rows",
       "summary": "Summary config `[{ key, type: 'sum'|'avg'|'count', label? }]`, JSON string"
     },
     "events": {
       "oas-check": "Checkbox selection change, `detail: { keys: string[] }`",
+      "oas-edit": "Inline edit submitted (Enter / blur / operation column save), `detail: { rowIndex, key, column, value }`; in controlled mode the component does not write back `data`",
+      "oas-edit-cancel": "Inline edit cancelled (Esc / operation column cancel / empty submit restores), `detail: { rowIndex, key, column, value }` (`value` is the original value)",
       "oas-expand": "Row expand/collapse (tree child rows or expandable content rows), `detail: { key, expanded }`",
       "oas-row-click": "Row click (also toggles selection when not checkable), `detail: { row, key }`",
       "oas-scroll": "Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }`",
@@ -1309,6 +1338,7 @@
       "checkable": "Whether to show checkboxes",
       "checked": "Set of checked node keys (comma-separated)",
       "data": "Node data `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`, JSON string",
+      "directory": "Directory mode: nodes with `children` (or not yet loaded under lazy) show a folder icon, nodes with `isLeaf` / no `children` show a file icon; the folder icon switches on expand / collapse",
       "draggable": "Nodes can be dragged to reorder / reparent; drop shows insertion line / highlight; release emits `oas-node-drop`",
       "expanded": "Set of expanded node keys (comma-separated)",
       "height": "Virtual scroll viewport height (px); setting it enables virtualized rendering for large data",
@@ -1321,9 +1351,13 @@
       "oas-check": "Check state change, `detail: { key, checked }`",
       "oas-load": "Lazy loading triggered, `detail: { key }`; the host refills `children` and resets the `data` attribute",
       "oas-node-drop": "Node dropped, `detail: { dragKey, dropKey, position }`; `position` is `before` / `after` / `inner`; an empty-string `dropKey` means moved to the root",
+      "oas-node-render": "Dispatched for each rendered node row, `detail: { node, element }` (element is the node label container; the host can rewrite it into icon / rich text)",
       "oas-select": "Node selected, `detail: { key, selected }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"node\"]": "Static row template cloned into each node label container; the `[data-node-label]` node is bound to the node label automatically",
+      "template[slot=\"toggle\"]": "Static expand button template cloned into each expandable node's toggle button (replaces the default › icon)"
+    }
   },
   "oas-tree-select": {
     "attrs": {

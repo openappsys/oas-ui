@@ -51,11 +51,17 @@
   "oas-avatar": {
     "attrs": {
       "alt": "图片替代文本",
+      "badge": "头像右上角叠加的徽标文本；布尔形式（无值）显示小圆点",
+      "badge-color": "徽标颜色：`primary`/`success`/`warning`/`danger`",
+      "badge-dot": "小圆点徽标变体（不显示文本）",
+      "badge-placement": "徽标位置：`top-right`（默认）/`bottom-right`",
       "size": "头像尺寸（px）",
       "src": "图片地址，存在时渲染图片头像"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "fallback": "图片加载失败（或头像无内容）时的自定义占位内容"
+    }
   },
   "oas-avatar-group": {
     "attrs": {
@@ -90,13 +96,21 @@
   },
   "oas-badge": {
     "attrs": {
+      "color": "缎带语义色：`primary` / `success` / `warning` / `danger`（默认 `danger`）",
       "dot": "小圆点模式",
       "max": "上限",
+      "mode": "模式：`count`（默认，数字/圆点徽标）或 `ribbon`（缎带角标，等价 `ribbon` 属性）",
+      "placement": "缎带位置：`start`（行首）/ `end`（行尾，默认）",
+      "ribbon": "缎带角标模式（布尔，等价 `mode=\"ribbon\"`）",
       "showZero": "value=0 时是否显示",
+      "text": "缎带文本；`slot=\"ribbon\"` 有内容时以插槽为准",
       "value": "数字"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "被包裹内容（卡片、按钮等）",
+      "ribbon": "缎带自定义内容"
+    }
   },
   "oas-bottom-navigation": {
     "attrs": {
@@ -166,12 +180,19 @@
   },
   "oas-card": {
     "attrs": {
-      "hoverable": "是否开启悬浮阴影",
+      "clickable": "整卡可点（focusable，点击/Enter/Space 派发 `oas-click`）",
+      "cover-alt": "封面图 alt 文本（无障碍）",
+      "cover-src": "封面图 URL，置于卡片顶部（object-fit: cover 自适应裁切）",
+      "hoverable": "是否开启悬浮阴影（阴影 + 上浮提升 + 指针）",
       "title": "卡片标题"
     },
-    "events": {},
+    "events": {
+      "oas-click": "整卡点击（`clickable` 时），detail 含 originalEvent"
+    },
     "slots": {
       "": "卡片内容",
+      "actions": "底部操作区（查看/编辑/删除等按钮组），上方带分隔线",
+      "cover": "自定义封面内容（与 `cover-src` 二选一，`cover-src` 优先）",
       "extra": "标题右侧扩展区"
     }
   },
@@ -586,6 +607,7 @@
       "alt": "替代文本",
       "fallback": "加载失败时切换的兜底图地址；未设置则显示「图片加载失败」占位",
       "fit": "`object-fit` 值",
+      "lazy": "懒加载：图片进入视口才发起加载（IntersectionObserver）；已位于视口内立即加载；环境不支持时退化为立即加载",
       "placeholder": "加载完成前显示浅灰占位",
       "preview": "开启内置预览：点击放大 + 缩放/旋转/下载 + Esc 关闭 + 焦点陷阱",
       "src": "图片地址"
@@ -756,6 +778,8 @@
     "attrs": {
       "centered": "对话框垂直居中显示",
       "draggable": "可通过标题栏拖动对话框",
+      "fullscreen": "全屏显示：对话框铺满视口、无圆角与边距（优先级高于 width / centered / draggable）",
+      "loading": "确定按钮进入 loading 态（禁用 + 转圈），禁止重复触发确定",
       "no-footer": "隐藏底部操作按钮",
       "no-mask-close": "禁用点击遮罩关闭",
       "title": "标题文案",
@@ -1122,8 +1146,10 @@
     "attrs": {
       "bordered": "完整边框：单元格网格描边（外框由组件自带）",
       "checkable": "复选框多选开关",
-      "columns": "列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）",
+      "columns": "列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）",
       "data": "行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）",
+      "editable": "行内编辑开关（需配合列配置 `editable: true`；操作列 `actions: true` 同理）",
+      "edit-controlled": "受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`，由宿主监听后自行更新 `data`",
       "empty-text": "空态文案",
       "expanded": "已展开行 key 集合（逗号分隔；树形父行/可展开行共用）",
       "height": "虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行",
@@ -1133,11 +1159,14 @@
       "selected": "选中行 key 集合（逗号分隔）",
       "sort-key": "受控排序；`sort-order` 取 `asc` / `desc` / 空",
       "sort-order": "受控排序；`sort-order` 取 `asc` / `desc` / 空",
+      "sticky-rows": "吸顶行数（数字 N）：前 N 行吸顶于表头下方（配合滚动容器与固定列共存）",
       "stripe": "斑马纹：奇数/偶数行交替浅底色",
       "summary": "合计配置 `[{ key, type: 'sum'|'avg'|'count', label? }]`，JSON 字符串"
     },
     "events": {
       "oas-check": "复选框选中变化，`detail: { keys: string[] }`",
+      "oas-edit": "行内编辑提交（Enter/失焦/操作列保存），`detail: { rowIndex, key, column, value }`；受控模式组件不回写 `data`",
+      "oas-edit-cancel": "行内编辑取消（Esc/操作列取消/空值提交还原），`detail: { rowIndex, key, column, value }`（value 为原值）",
       "oas-expand": "行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }`",
       "oas-row-click": "点击行（非 checkable 时同时切换选中），`detail: { row, key }`",
       "oas-scroll": "虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }`",
@@ -1309,6 +1338,7 @@
       "checkable": "是否显示复选框",
       "checked": "勾选节点 key 集合（逗号分隔）",
       "data": "节点数据 `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`，JSON 字符串",
+      "directory": "目录模式：有 `children`（或懒加载下未加载）的节点显示文件夹图标，`isLeaf` / 无 `children` 的节点显示文件图标，文件夹按展开 / 收起切换图标",
       "draggable": "节点可拖拽换序 / 换父，落点显示插入线 / 高亮，松手派发 `oas-node-drop`",
       "expanded": "展开节点 key 集合（逗号分隔）",
       "height": "虚拟滚动视口高度（px）；设置后开启大数据量虚拟化渲染",
@@ -1321,9 +1351,13 @@
       "oas-check": "勾选变化，`detail: { key, checked }`",
       "oas-load": "懒加载触发，`detail: { key }`；宿主回填 `children` 后重设 `data` 属性",
       "oas-node-drop": "节点拖放，`detail: { dragKey, dropKey, position }`，`position` 为 `before` / `after` / `inner`；`dropKey` 为空字符串表示移入根",
+      "oas-node-render": "每个渲染的节点行派发，`detail: { node, element }`（element 为节点 label 容器，宿主可改写为图标 / 富文本）",
       "oas-select": "选中节点，`detail: { key, selected }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"node\"]": "节点行静态模板，克隆到每个节点 label 容器；`[data-node-label]` 节点自动绑定节点 label",
+      "template[slot=\"toggle\"]": "展开按钮静态模板，克隆到每个可展开节点的展开按钮内（替换默认 › 图标）"
+    }
   },
   "oas-tree-select": {
     "attrs": {

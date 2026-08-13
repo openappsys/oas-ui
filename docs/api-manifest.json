@@ -179,6 +179,35 @@
         "name": "dot",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "ribbon",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "mode",
+        "type": "BadgeMode",
+        "default": "count",
+        "observed": true
+      },
+      {
+        "name": "color",
+        "type": "BadgeColor",
+        "default": "danger",
+        "observed": true
+      },
+      {
+        "name": "placement",
+        "type": "BadgePlacement",
+        "default": "end",
+        "observed": true
+      },
+      {
+        "name": "text",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
@@ -186,6 +215,9 @@
     "slots": [
       {
         "name": ""
+      },
+      {
+        "name": "ribbon"
       }
     ],
     "unresolved": []
@@ -2412,6 +2444,16 @@
         "observed": true
       },
       {
+        "name": "fullscreen",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "loading",
+        "type": "boolean",
+        "observed": true
+      },
+      {
         "name": "no-mask-close",
         "type": "boolean",
         "observed": false
@@ -3954,13 +3996,41 @@
         "name": "hoverable",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "cover-src",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "cover-alt",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "clickable",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [],
-    "events": [],
+    "events": [
+      {
+        "name": "oas-click",
+        "detail": "{ originalEvent: e }"
+      }
+    ],
     "slots": [
       {
         "name": ""
+      },
+      {
+        "name": "actions"
+      },
+      {
+        "name": "cover"
       },
       {
         "name": "extra"
@@ -3986,12 +4056,39 @@
       },
       {
         "name": "alt",
-        "observed": false
+        "observed": true
+      },
+      {
+        "name": "badge",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "badge-dot",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "badge-color",
+        "type": "string",
+        "default": "danger",
+        "observed": true
+      },
+      {
+        "name": "badge-placement",
+        "type": "string",
+        "default": "top-right",
+        "observed": true
       }
     ],
     "props": [],
     "events": [],
-    "slots": [],
+    "slots": [
+      {
+        "name": "fallback"
+      }
+    ],
     "unresolved": []
   },
   "oas-avatar-group": {
@@ -4054,6 +4151,11 @@
         "name": "fallback",
         "type": "string",
         "default": "",
+        "observed": true
+      },
+      {
+        "name": "lazy",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -4433,6 +4535,11 @@
         "name": "draggable",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "directory",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [
@@ -4462,9 +4569,20 @@
       {
         "name": "oas-select",
         "detail": "{ key: node.key, selected: true }"
+      },
+      {
+        "name": "oas-node-render",
+        "detail": "{ node, element: label }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": "template[slot=\"node\"]"
+      },
+      {
+        "name": "template[slot=\"toggle\"]"
+      }
+    ],
     "unresolved": []
   },
   "oas-table": {
@@ -4543,6 +4661,22 @@
         "observed": true
       },
       {
+        "name": "editable",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "edit-controlled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "sticky-rows",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
         "name": "selected",
         "type": "string",
         "default": "",
@@ -4585,6 +4719,14 @@
       {
         "name": "oas-scroll",
         "detail": "{ scrollTop: st, start: win.start, end: win.end }"
+      },
+      {
+        "name": "oas-edit-cancel",
+        "detail": "this.editDetail(st, st.oldValue)"
+      },
+      {
+        "name": "oas-edit",
+        "detail": "this.editDetail(st, value)"
       }
     ],
     "slots": [],

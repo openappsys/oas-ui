@@ -66,7 +66,7 @@ onMounted(async () => {
 
 | Method | Description |
 | --- | --- |
-| `confirm({ title?, content?, okText?, cancelText? })` | Opens a confirm dialog, returns `Promise<void>`; resolves on OK, rejects on cancel |
+| `confirm({ title?, content?, okText?, cancelText?, onOk? })` | Opens a confirm dialog, returns `Promise<void>`; resolves on OK, rejects on cancel; pass an async `onOk` for a loading confirmation (closes on resolve, stays open for retry on reject) |
 | `destroyAllConfirm()` | Close all confirm dialogs |
 
 - Reuses `oas-modal`; Esc / mask / cancel button all close it.

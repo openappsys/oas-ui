@@ -306,7 +306,15 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-tree[lazy] [part="toggle"]', 'click', '展开未加载节点（dir-a）→ oas-load'],
     ['oas-tree[draggable] [part="row"]', 'dragto', '拖第 1 行到第 2 行 → oas-node-drop'],
   ],
-  table: [['oas-table .expand-toggle-cell .toggle', 'click', '点行尾展开钮 → oas-expand']],
+  table: [
+    ['oas-table .expand-toggle-cell .toggle', 'click', '点行尾展开钮 → oas-expand'],
+    ['oas-table .action-btn', 'click', '操作列点编辑 → 进入编辑'],
+    ['oas-table input.cell-editor', 'fill:演示', '填充单元格 → 待提交'],
+    ['oas-table .action-btn.save', 'click', '点保存 → oas-edit'],
+    ['oas-table .action-btn', 'click', '再次进入编辑'],
+    ['oas-table input.cell-editor', 'fill:回退', '修改值'],
+    ['oas-table .action-btn.danger', 'click', '点取消 → oas-edit-cancel'],
+  ],
   'page-header': [
     [
       'oas-page-header[back] [part="back"]',

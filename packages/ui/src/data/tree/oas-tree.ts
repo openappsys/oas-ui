@@ -20,6 +20,14 @@ interface FlatRow {
   parent?: string
 }
 
+/** 目录模式内置图标（原创线性风格，16×16，currentColor 着色走 CSS 变量 token） */
+const FOLDER_ICON_SVG =
+  '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2.5 4.5 C2.5 3.95 2.95 3.5 3.5 3.5 H6.5 L8 5 H12.5 C13.05 5 13.5 5.45 13.5 6 V11 C13.5 11.55 13.05 12 12.5 12 H3.5 C2.95 12 2.5 11.55 2.5 11 Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>'
+const FOLDER_OPEN_ICON_SVG =
+  '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2.5 4.5 C2.5 3.95 2.95 3.5 3.5 3.5 H6.5 L8 5 H12.5 C13.05 5 13.5 5.45 13.5 6 V11 C13.5 11.55 13.05 12 12.5 12 H3.5 C2.95 12 2.5 11.55 2.5 11 Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M4.5 11.5 L5.5 7 H13.5 L12.5 11.5 Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>'
+const FILE_ICON_SVG =
+  '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 2 H8.5 L12 5.5 V13 C12 13.55 11.55 14 11 14 H4 C3.45 14 3 13.55 3 13 V3 C3 2.45 3.45 2 4 2 Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8.5 2 V5.5 H12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>'
+
 const STYLE = `
 :host {
   display: block;
@@ -119,8 +127,23 @@ const STYLE = `
   margin: 0;
   flex-shrink: 0;
 }
+.node-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--oas-color-text-secondary);
+}
+.node-icon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
 .label {
   user-select: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 `
 
@@ -218,8 +241,23 @@ const VIRTUAL_ROW_STYLE = `
   margin: 0;
   flex-shrink: 0;
 }
+.node-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--oas-color-text-secondary);
+}
+.node-icon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
 .label {
   user-select: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 `
 
@@ -242,6 +280,7 @@ export class OASTree extends OASElement {
       'row-height',
       'lazy',
       'draggable',
+      'directory',
     ]
   }
 
@@ -398,7 +437,7 @@ export class OASTree extends OASElement {
         toggle.setAttribute('part', 'toggle')
         toggle.setAttribute('aria-label', this.t('tree.expand'))
         toggle.setAttribute('aria-expanded', String(expanded.has(node.key)))
-        toggle.textContent = '›'
+        this.fillToggle(toggle)
         toggle.addEventListener('click', (e) => {
           e.stopPropagation()
           const exp = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
@@ -419,8 +458,8 @@ export class OASTree extends OASElement {
               this.load?.({ key: node.key })
             }
           }
+          // setAttribute 经 attributeChangedCallback 触发 update()，无需再显式重建
           this.setAttribute('expanded', [...exp].join(','))
-          this.update()
         })
         row.appendChild(toggle)
       }
@@ -431,6 +470,7 @@ export class OASTree extends OASElement {
       toggle.setAttribute('tabindex', '-1')
       row.appendChild(toggle)
     }
+    if (this.hasAttr('directory')) this.appendNodeIcon(row, node, expanded)
     if (this.hasAttr('checkable')) {
       const box = document.createElement('input')
       box.type = 'checkbox'
@@ -454,18 +494,19 @@ export class OASTree extends OASElement {
     }
     const label = document.createElement('span')
     label.className = 'label'
-    label.textContent = node.label
+    this.fillNodeLabel(label, node)
     row.appendChild(label)
     row.style.paddingLeft = `${depth * 24 + 8}px`
     row.addEventListener('click', () => {
       if (!node.disabled) {
         this.setAttribute('selected', node.key)
         this.emit('select', { key: node.key, selected: true })
-        this.update()
       }
     })
     if (this.hasAttr('draggable')) this.bindDrag(row, node)
     container.appendChild(row)
+    // 自定义节点渲染：宿主可监听改写 element（图标/富文本），机制与 select 的 oas-option-render 一致
+    this.emit('node-render', { node, element: label })
   }
 
   /**
@@ -478,6 +519,48 @@ export class OASTree extends OASElement {
     if (node.isLeaf || node.loaded === true) return false
     if (node.children !== undefined) return false // children: [] → 已加载为空
     return true
+  }
+
+  /** 展开按钮内容：template[slot="toggle"] 骨架克隆（替换默认 ›），缺省回落文本 */
+  private fillToggle(toggle: HTMLButtonElement): void {
+    const tpl = this.querySelector('template[slot="toggle"]')
+    if (tpl instanceof HTMLTemplateElement) {
+      toggle.appendChild(tpl.content.cloneNode(true))
+    } else {
+      toggle.textContent = '›'
+    }
+  }
+
+  /** 节点 label 渲染：template[slot="node"] 克隆 + [data-node-label] 绑定，缺省回落纯文本 */
+  private fillNodeLabel(labelEl: HTMLElement, node: TreeNode): void {
+    const tpl = this.querySelector('template[slot="node"]')
+    if (tpl instanceof HTMLTemplateElement) {
+      labelEl.appendChild(tpl.content.cloneNode(true))
+      const binder = labelEl.querySelector('[data-node-label]')
+      if (binder) binder.textContent = node.label
+    } else {
+      labelEl.textContent = node.label
+    }
+  }
+
+  /**
+   * 目录模式节点图标：以 children / isLeaf 判定目录（可展开）与文件，
+   * 文件夹按展开态切换关闭/打开两套图标；纯装饰（aria-hidden）。
+   */
+  private appendNodeIcon(row: HTMLElement, node: TreeNode, expanded: Set<string>): void {
+    const icon = document.createElement('span')
+    icon.className = 'node-icon'
+    icon.setAttribute('part', 'node-icon')
+    icon.setAttribute('aria-hidden', 'true')
+    const kind = this.isExpandable(node)
+      ? expanded.has(node.key)
+        ? 'folder-open'
+        : 'folder'
+      : 'file'
+    icon.setAttribute('data-kind', kind)
+    icon.innerHTML =
+      kind === 'file' ? FILE_ICON_SVG : kind === 'folder' ? FOLDER_ICON_SVG : FOLDER_OPEN_ICON_SVG
+    row.appendChild(icon)
   }
 
   /** 拖拽行：dragstart 记录 key，dragover/drop 计算插入位置并派发 oas-node-drop */

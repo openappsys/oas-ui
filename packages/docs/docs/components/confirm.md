@@ -66,7 +66,7 @@ onMounted(async () => {
 
 | 方法                                                  | 说明                                                        |
 | ----------------------------------------------------- | ----------------------------------------------------------- |
-| `confirm({ title?, content?, okText?, cancelText? })` | 打开确认框，返回 `Promise<void>`；确定 resolve、取消 reject |
+| `confirm({ title?, content?, okText?, cancelText?, onOk? })` | 打开确认框，返回 `Promise<void>`；确定 resolve、取消 reject；传 `onOk` 异步回调进入 loading 态确认（resolve 后关闭，reject 保持打开可重试） |
 | `destroyAllConfirm()`                                 | 关闭全部确认框                                              |
 
 - 复用 `oas-modal`，Esc / 遮罩 / 取消按钮均可关闭。

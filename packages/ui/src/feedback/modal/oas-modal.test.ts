@@ -180,6 +180,163 @@ describe('OASModal', () => {
     expect(dialog.style.top).toBe('')
     expect(dialog.style.transform).toBe('')
   })
+
+  // —— fullscreen 全屏（优先级：fullscreen > width/centered/draggable）——
+  it('fullscreen：dialog 标记 data-fullscreen 并清除内联宽度（width 被忽略）', async () => {
+    const el = mount({ visible: '', fullscreen: '', width: '640px' })
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
+    expect(dialog.getAttribute('data-fullscreen')).not.toBeNull()
+    expect(dialog.style.width).toBe('')
+    el.removeAttribute('fullscreen')
+    expect(dialog.getAttribute('data-fullscreen')).toBeNull()
+    expect(dialog.style.width).toBe('640px')
+  })
+
+  it('fullscreen + centered：标记共存，布局优先级由 CSS（fullscreen 后置规则）接管', async () => {
+    const el = mount({ visible: '', fullscreen: '', centered: '' })
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector('.dialog')!
+    expect(dialog.getAttribute('data-fullscreen')).not.toBeNull()
+    expect(dialog.getAttribute('data-centered')).not.toBeNull()
+  })
+
+  it('fullscreen + draggable：拖拽被禁用（优先级 fullscreen 胜出）', async () => {
+    const el = mount({ visible: '', fullscreen: '', draggable: '' })
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
+    el.shadowRoot!.querySelector('.header')!.dispatchEvent(pointer('pointerdown', 0, 0))
+    document.dispatchEvent(pointer('pointermove', 100, 50))
+    expect(el.hasAttribute('dragging')).toBe(false)
+    expect(dialog.style.left).toBe('')
+    expect(dialog.style.top).toBe('')
+  })
+
+  it('fullscreen 下 Esc / 遮罩关闭照常', async () => {
+    const el = mount({ visible: '', fullscreen: '' })
+    await Promise.resolve()
+    let cancel = 0
+    el.addEventListener('oas-cancel', () => cancel++)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(el.hasAttribute('visible')).toBe(false)
+    expect(cancel).toBe(1)
+    el.setAttribute('visible', '')
+    el.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(el.hasAttribute('visible')).toBe(false)
+  })
+
+  it('fullscreen 下 ARIA 与焦点行为不变（打开聚焦取消按钮，关闭还原来源焦点）', async () => {
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    outside.focus()
+    const el = mount({ visible: '', fullscreen: '' })
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector('.dialog')!
+    expect(dialog.getAttribute('aria-modal')).toBe('true')
+    expect(dialog.getAttribute('aria-hidden')).toBe('false')
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('[part="cancel"]'))
+    el.removeAttribute('visible')
+    await Promise.resolve()
+    expect(dialog.getAttribute('aria-hidden')).toBe('true')
+    expect(document.activeElement).toBe(outside)
+  })
+
+  // —— loading 确定按钮（禁止重复触发）——
+  it('loading：确定按钮 disabled + aria-busy + spinner 显示，移除后恢复', async () => {
+    const el = mount({ visible: '', loading: '' })
+    await Promise.resolve()
+    const okBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="ok"]')!
+    expect(okBtn.disabled).toBe(true)
+    expect(okBtn.getAttribute('aria-busy')).toBe('true')
+    expect(okBtn.querySelector('.spinner')!.hasAttribute('hidden')).toBe(false)
+    el.removeAttribute('loading')
+    await Promise.resolve()
+    expect(okBtn.disabled).toBe(false)
+    expect(okBtn.getAttribute('aria-busy')).toBe('false')
+    expect(okBtn.querySelector('.spinner')!.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('loading 期间点击确定不派发 oas-ok 也不关闭', async () => {
+    const el = mount({ visible: '', loading: '' })
+    await Promise.resolve()
+    let ok = 0
+    el.addEventListener('oas-ok', () => ok++)
+    ;(el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
+    expect(ok).toBe(0)
+    expect(el.hasAttribute('visible')).toBe(true)
+  })
+
+  it('loading 移除后可正常确定', async () => {
+    const el = mount({ visible: '', loading: '' })
+    await Promise.resolve()
+    el.removeAttribute('loading')
+    let ok = 0
+    el.addEventListener('oas-ok', () => ok++)
+    ;(el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
+    expect(ok).toBe(1)
+    expect(el.hasAttribute('visible')).toBe(false)
+  })
+
+  it('loading 中 Esc 仍可关闭', async () => {
+    const el = mount({ visible: '', loading: '' })
+    await Promise.resolve()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(el.hasAttribute('visible')).toBe(false)
+  })
+
+  // —— 焦点陷阱（全屏与普通模式共用）——
+  it('焦点陷阱：Tab 从末元素回到首元素，Shift+Tab 反向循环', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    const root = el.shadowRoot!
+    const close = root.querySelector<HTMLElement>('[part="close"]')!
+    const cancel = root.querySelector<HTMLElement>('[part="cancel"]')!
+    const ok = root.querySelector<HTMLElement>('[part="ok"]')!
+    ok.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    expect(root.activeElement).toBe(close)
+    close.focus()
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }),
+    )
+    expect(root.activeElement).toBe(ok)
+    // 中间元素 Tab 不触发 preventDefault（happy-dom 不实现原生 Tab 移动，故不断言位置）
+  })
+
+  it('焦点陷阱：焦点逃逸到对话框外时 Tab 拉回对话框内', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    outside.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('[part="close"]'))
+  })
+
+  it('焦点陷阱：焦点在 slot 内嵌套输入框时不拉回（Tab 不打断嵌套控件导航）', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    // 模拟表单 modal：slot 内放一个嵌套 input，焦点落在其内层
+    const input = document.createElement('input')
+    el.appendChild(input)
+    input.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    // happy-dom 无原生 Tab 移动，断言焦点未被拉回对话框按钮（仍在输入框）
+    expect(document.activeElement).toBe(input)
+  })
+
+  it('焦点陷阱：多实例并存时仅最上层 modal 接管', async () => {
+    const first = mount({ visible: '' })
+    await Promise.resolve()
+    const second = mount({ visible: '' })
+    await Promise.resolve()
+    const firstRoot = first.shadowRoot!
+    const secondRoot = second.shadowRoot!
+    secondRoot.querySelector<HTMLElement>('[part="ok"]')!.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    // 只有 second 接管陷阱 → Tab 从 ok 回到 second 的首个可聚焦元素
+    expect(secondRoot.activeElement).toBe(secondRoot.querySelector('[part="close"]'))
+  })
 })
 
 function pointer(type: string, clientX: number, clientY = 0): Event {

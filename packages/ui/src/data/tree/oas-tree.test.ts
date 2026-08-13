@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
-import { OASTree } from './index.js'
+import { OASTree, type TreeNode } from './index.js'
 
 const DATA = JSON.stringify([
   { key: 'a', label: '节点 A', children: [{ key: 'a-1', label: '子节点 1' }] },
@@ -470,5 +470,174 @@ describe('OASTree 声明式数据通道与真水合', () => {
     expect(snap.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
     snap.setAttribute('data', JSON.stringify([{ key: 'a', label: '回退节点' }]))
     expect(rows(snap)[0]!.textContent).toContain('回退节点')
+  })
+})
+
+function tpl(slot: string, html: string): HTMLTemplateElement {
+  const t = document.createElement('template')
+  t.setAttribute('slot', slot)
+  t.innerHTML = html
+  return t
+}
+
+describe('OASTree 自定义节点渲染', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('template[slot="node"]：骨架克隆到 label 容器，[data-node-label] 绑定节点 label', () => {
+    const el = mount()
+    el.appendChild(tpl('node', '<svg class="glyph"></svg><span data-node-label></span>'))
+    el.setAttribute('data', JSON.stringify([{ key: 'a', label: '自定义节点' }]))
+    const label = el.shadowRoot!.querySelector<HTMLElement>('[part="row"] .label')!
+    expect(label.querySelector('svg.glyph')).not.toBeNull()
+    expect(label.querySelector('[data-node-label]')!.textContent).toBe('自定义节点')
+  })
+
+  it('无 template 时回落纯文本（默认行为不变）', () => {
+    const el = mount()
+    expect(rows(el)[0]!.querySelector('.label')!.textContent).toBe('节点 A')
+    expect(rows(el)[0]!.querySelector('[data-node-label]')).toBeNull()
+  })
+
+  it('oas-node-render：每行派发 { node, element }，宿主改写 element 后 update 重建重新派发', () => {
+    const el = mount()
+    const details: Array<{ node: TreeNode; element: HTMLElement }> = []
+    el.addEventListener('oas-node-render', (e: Event) =>
+      details.push((e as CustomEvent).detail as never),
+    )
+    // 监听挂在前已渲染过，事件为增量派发
+    expect(details.length).toBe(0)
+    // 展开 a → 重建 a/a-1/b 三行 → 派发 3 次
+    el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.click()
+    expect(details.length).toBe(3)
+    const first = details[0]!
+    expect(first.node.key).toBe('a')
+    expect(first.element.classList.contains('label')).toBe(true)
+    // 宿主改写 element：清空后追加富文本
+    first.element.innerHTML = ''
+    const badge = document.createElement('em')
+    badge.textContent = '★'
+    first.element.appendChild(badge)
+    expect(rows(el)[0]!.querySelector('.label')!.contains(badge)).toBe(true)
+    // 再次 update 重建 → 改写内容被重建覆盖（回落纯文本）
+    el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.click()
+    expect(rows(el)[0]!.querySelector('.label')!.textContent).toBe('节点 A')
+  })
+
+  it('template[slot="toggle"]：替换默认展开箭头，aria/展开交互保持', () => {
+    const el = mount()
+    el.appendChild(tpl('toggle', '<svg class="chev"></svg>'))
+    el.setAttribute('data', el.getAttribute('data')!)
+    const toggle = el.shadowRoot!.querySelector('[part="toggle"]')!
+    expect(toggle.querySelector('svg.chev')).not.toBeNull()
+    expect(toggle.textContent!.includes('›')).toBe(false)
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+    expect(toggle.getAttribute('aria-label')).toBe('展开/收起')
+    ;(toggle as HTMLButtonElement).click()
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-expanded'),
+    ).toBe('true')
+  })
+
+  it('自定义渲染下 ARIA/键盘可达保持：treeitem 层级、点击展开、点击选中', () => {
+    const el = mount()
+    el.appendChild(tpl('node', '<span data-node-label></span>'))
+    el.setAttribute('data', el.getAttribute('data')!)
+    const row = rows(el)[0]!
+    expect(row.getAttribute('role')).toBe('treeitem')
+    expect(row.getAttribute('aria-level')).toBe('1')
+    const toggle = row.querySelector('[part="toggle"]')!
+    expect(toggle.tagName).toBe('BUTTON')
+    // 展开按钮是原生 button → Enter/Space 键盘可达（click 等价触发）
+    ;(toggle as HTMLButtonElement).click()
+    expect(el.getAttribute('expanded')).toContain('a')
+    // 子节点 ARIA 层级
+    const child = rows(el)[1]!
+    expect(child.getAttribute('role')).toBe('treeitem')
+    expect(child.getAttribute('aria-level')).toBe('2')
+    // 点击选中仍工作
+    child.click()
+    expect(el.getAttribute('selected')).toBe('a-1')
+  })
+
+  it('虚拟化下自定义节点模板同样生效', () => {
+    const el = mount({ height: '200', 'row-height': '32', data: BIG_DATA })
+    el.appendChild(tpl('node', '<span data-node-label></span>'))
+    el.setAttribute('data', el.getAttribute('data')!)
+    const label = virtualRows(el)[0]!.querySelector<HTMLElement>('.label')!
+    expect(label.querySelector('[data-node-label]')!.textContent).toContain('节点')
+  })
+})
+
+const DIR_DATA = JSON.stringify([
+  {
+    key: 'src',
+    label: 'src',
+    children: [{ key: 'index.ts', label: 'index.ts', isLeaf: true }],
+  },
+  { key: 'package.json', label: 'package.json', isLeaf: true },
+])
+
+function nodeKind(el: OASTree, index: number): string | null {
+  return rows(el)[index]!.querySelector('[part="node-icon"]')?.getAttribute('data-kind') ?? null
+}
+
+describe('OASTree 目录模式', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('children → 文件夹图标，isLeaf / 无 children → 文件图标', () => {
+    const el = mount({ directory: '', data: DIR_DATA })
+    expect(nodeKind(el, 0)).toBe('folder')
+    expect(nodeKind(el, 1)).toBe('file')
+  })
+
+  it('展开后文件夹图标切换 folder-open，收起恢复 folder', () => {
+    const el = mount({ directory: '', data: DIR_DATA })
+    expect(nodeKind(el, 0)).toBe('folder')
+    rows(el)[0]!.querySelector<HTMLElement>('[part="toggle"]')!.click()
+    expect(nodeKind(el, 0)).toBe('folder-open')
+    rows(el)[0]!.querySelector<HTMLElement>('[part="toggle"]')!.click()
+    expect(nodeKind(el, 0)).toBe('folder')
+  })
+
+  it('无 directory 属性不渲染目录图标', () => {
+    const el = mount({ data: DIR_DATA })
+    expect(el.shadowRoot!.querySelector('[part="node-icon"]')).toBeNull()
+  })
+
+  it('目录模式 ARIA：图标 aria-hidden、toggle aria-expanded 同步、缩进随层级', () => {
+    const el = mount({ directory: '', data: DIR_DATA })
+    const icon = el.shadowRoot!.querySelector<HTMLElement>('[part="node-icon"]')!
+    expect(icon.getAttribute('aria-hidden')).toBe('true')
+    const toggle = el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+    ;(toggle as HTMLButtonElement).click()
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-expanded'),
+    ).toBe('true')
+    expect(rows(el)[0]!.style.paddingLeft).toBe('8px')
+    expect(rows(el)[1]!.style.paddingLeft).toBe('32px')
+  })
+
+  it('directory + lazy：未加载节点视为文件夹，isLeaf 视为文件', () => {
+    const el = mount({ directory: '', lazy: '', data: LAZY_DATA })
+    expect(nodeKind(el, 0)).toBe('folder') // a 有 children
+    expect(nodeKind(el, 1)).toBe('folder') // b 未加载可展开
+    expect(nodeKind(el, 2)).toBe('file') // c isLeaf
   })
 })

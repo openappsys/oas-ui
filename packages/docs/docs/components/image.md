@@ -40,6 +40,14 @@
   width: 100%;
   height: 100%;
 }
+.lazy-list {
+  width: 100%;
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
 </style>
 
 ## 占位与兜底
@@ -66,6 +74,13 @@
 
 图片加载失败时默认显示「图片加载失败」占位；提供 `fallback` 属性可指定兜底图片地址，兜底图也失败时回退到占位文案。
 
+## 懒加载
+
+<DemoBlock title="懒加载长列表（滚动逐图加载）">
+  <p class="image-cap">设置 <code>lazy</code> 后图片进入视口才发起加载；配合 <code>placeholder</code> 展示「加载中」占位。向下滚动列表，观察占位 → 加载的过渡（视口内图片立即加载）。</p>
+  <div class="lazy-list" id="image-lazy-list"></div>
+</DemoBlock>
+
 ## 预览
 
 <DemoBlock title="点击预览（内置浮层）">
@@ -78,6 +93,19 @@
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
+  // 懒加载长列表：逐图进入视口才加载
+  const list = document.querySelector('#image-lazy-list')
+  if (list) {
+    for (let i = 1; i <= 12; i++) {
+      const el = document.createElement('oas-image')
+      el.setAttribute('lazy', '')
+      el.setAttribute('placeholder', '')
+      el.setAttribute('src', `https://picsum.photos/seed/isui-lazy-${i}/600/300`)
+      el.setAttribute('alt', `懒加载图片 ${i}`)
+      list.appendChild(el)
+    }
+  }
+
   const { message } = await import('@oas-ui/ui')
   window.message = message
   document.querySelector('#image-preview')?.addEventListener('oas-preview', (e) => {
@@ -96,6 +124,7 @@ onMounted(async () => {
 | `alt` | 替代文本 | — | — |
 | `fallback` | 加载失败时切换的兜底图地址；未设置则显示「图片加载失败」占位 | `string` | — |
 | `fit` | `object-fit` 值 | `string` | — |
+| `lazy` | 懒加载：图片进入视口才发起加载（IntersectionObserver）；已位于视口内立即加载；环境不支持时退化为立即加载 | `boolean` | — |
 | `placeholder` | 加载完成前显示浅灰占位 | `boolean` | — |
 | `preview` | 开启内置预览：点击放大 + 缩放/旋转/下载 + Esc 关闭 + 焦点陷阱 | `boolean` | — |
 | `src` | 图片地址 | `string` | — |

@@ -76,6 +76,43 @@
   </oas-avatar-group>
 </DemoBlock>
 
+## 徽标角标
+
+`badge` 在头像右上角叠加徽标（文本或布尔）；布尔形式（无值）显示小圆点；`badge-dot` 强制圆点变体；`badge-color` 切换彩色；`badge-placement` 可将角标放到右下角。
+
+<DemoBlock title="文字徽标">
+  <oas-avatar size="48" badge="99+">张</oas-avatar>
+  <oas-avatar size="48" badge="VIP" badge-color="primary">李</oas-avatar>
+  <oas-avatar size="48" badge="8" badge-color="success">王</oas-avatar>
+  <oas-avatar size="48" badge="3" badge-color="warning">赵</oas-avatar>
+</DemoBlock>
+
+<DemoBlock title="圆点徽标">
+  <oas-avatar size="48" badge-dot>钱</oas-avatar>
+  <oas-avatar size="48" badge-dot badge-color="success">孙</oas-avatar>
+  <oas-avatar size="48" badge-dot badge-color="warning">周</oas-avatar>
+</DemoBlock>
+
+<DemoBlock title="位置与图片头像">
+  <oas-avatar src="https://picsum.photos/seed/isui-avatar-b1/160" size="48" alt="头像四" badge="7"></oas-avatar>
+  <oas-avatar src="https://picsum.photos/seed/isui-avatar-b2/160" size="48" alt="头像五" badge="5" badge-placement="bottom-right"></oas-avatar>
+</DemoBlock>
+
+## 加载失败回退
+
+图片加载失败时自动回退到占位：优先 `fallback` 命名插槽内容，其次内容首字符，最后 `?`。
+
+<DemoBlock title="失败回退到首字符">
+  <oas-avatar src="https://invalid.example.com/missing.png" size="48" alt="加载失败">张</oas-avatar>
+  <oas-avatar src="https://invalid.example.com/missing.png" size="48" alt="加载失败"></oas-avatar>
+</DemoBlock>
+
+<DemoBlock title="自定义 fallback 插槽">
+  <oas-avatar src="https://invalid.example.com/missing.png" size="48" alt="加载失败">
+    <span slot="fallback" style="font-size: 20px; font-weight: 600">!</span>
+  </oas-avatar>
+</DemoBlock>
+
 ## 空态兜底
 
 <DemoBlock title="无内容兜底">
@@ -90,8 +127,16 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `alt` | 图片替代文本 | — | — |
+| `badge` | 头像右上角叠加的徽标文本；布尔形式（无值）显示小圆点 | `string` | — |
+| `badge-color` | 徽标颜色：`primary`/`success`/`warning`/`danger` | `string` | `danger` |
+| `badge-dot` | 小圆点徽标变体（不显示文本） | `boolean` | — |
+| `badge-placement` | 徽标位置：`top-right`（默认）/`bottom-right` | `string` | `top-right` |
 | `size` | 头像尺寸（px） | `string` | `32` |
 | `src` | 图片地址，存在时渲染图片头像 | `string` | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| `fallback` | 图片加载失败（或头像无内容）时的自定义占位内容 |
 
 ### oas-avatar-group
 
@@ -103,5 +148,3 @@
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
-
-> 说明：`alt` 在首次渲染时读取，未加入观察列表，动态修改需自行触发重渲染。

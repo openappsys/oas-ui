@@ -76,6 +76,43 @@ When `max` is set, the overflow is hidden and a `+N` count badge is shown at the
   </oas-avatar-group>
 </DemoBlock>
 
+## Badge Overlay
+
+`badge` overlays a badge on the avatar's top-right corner (text or boolean); the boolean form (no value) shows a small dot; `badge-dot` forces the dot variant; `badge-color` switches colors; `badge-placement` moves the badge to the bottom-right.
+
+<DemoBlock title="Text badges">
+  <oas-avatar size="48" badge="99+">A</oas-avatar>
+  <oas-avatar size="48" badge="VIP" badge-color="primary">B</oas-avatar>
+  <oas-avatar size="48" badge="8" badge-color="success">C</oas-avatar>
+  <oas-avatar size="48" badge="3" badge-color="warning">D</oas-avatar>
+</DemoBlock>
+
+<DemoBlock title="Dot badges">
+  <oas-avatar size="48" badge-dot>E</oas-avatar>
+  <oas-avatar size="48" badge-dot badge-color="success">F</oas-avatar>
+  <oas-avatar size="48" badge-dot badge-color="warning">G</oas-avatar>
+</DemoBlock>
+
+<DemoBlock title="Placement and image avatars">
+  <oas-avatar src="https://picsum.photos/seed/isui-avatar-b1/160" size="48" alt="Avatar 4" badge="7"></oas-avatar>
+  <oas-avatar src="https://picsum.photos/seed/isui-avatar-b2/160" size="48" alt="Avatar 5" badge="5" badge-placement="bottom-right"></oas-avatar>
+</DemoBlock>
+
+## Load-Failure Fallback
+
+When the image fails to load, the avatar automatically falls back to a placeholder: first the `fallback` named-slot content, then the first character of its content, and finally `?`.
+
+<DemoBlock title="Fallback to first character">
+  <oas-avatar src="https://invalid.example.com/missing.png" size="48" alt="Load failed">A</oas-avatar>
+  <oas-avatar src="https://invalid.example.com/missing.png" size="48" alt="Load failed"></oas-avatar>
+</DemoBlock>
+
+<DemoBlock title="Custom fallback slot">
+  <oas-avatar src="https://invalid.example.com/missing.png" size="48" alt="Load failed">
+    <span slot="fallback" style="font-size: 20px; font-weight: 600">!</span>
+  </oas-avatar>
+</DemoBlock>
+
 ## Empty Fallback
 
 <DemoBlock title="Empty fallback">
@@ -90,8 +127,16 @@ When `max` is set, the overflow is hidden and a `+N` count badge is shown at the
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `alt` | Alternative text for the image | — | — |
+| `badge` | Badge text overlaid on the avatar's top-right corner; boolean form (no value) shows a dot | `string` | — |
+| `badge-color` | Badge color: `primary`/`success`/`warning`/`danger` | `string` | `danger` |
+| `badge-dot` | Small dot badge variant (no text) | `boolean` | — |
+| `badge-placement` | Badge placement: `top-right` (default) / `bottom-right` | `string` | `top-right` |
 | `size` | Avatar size (px) | `string` | `32` |
 | `src` | Image URL; renders an image avatar when present | `string` | — |
+
+| Name | Description |
+| --- | --- |
+| `fallback` | Custom placeholder content when the image fails to load (or the avatar has no content) |
 
 ### oas-avatar-group
 

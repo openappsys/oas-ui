@@ -1227,3 +1227,469 @@ test('form inline：表单项水平排列（同一行）、label 在控件左侧
   expect(err.belowInput).toBe(true)
   expect(err.labelLeftOfInput).toBe(true)
 })
+
+test('badge ribbon：缎带可见、折叠角生效、语义色与 placement 渲染正确', async ({ page }) => {
+  // 曾现风险：ribbon 只有机制没有视觉（角标不显、无折叠角、颜色/位置不生效）
+  await page.goto('/components/badge.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-badge[ribbon] oas-card')
+  const r = await page.evaluate(() => {
+    const badges = [...document.querySelectorAll('oas-badge[ribbon]')]
+    const ribbonEl = (el: Element) => el.shadowRoot!.querySelector<HTMLElement>('.ribbon')
+    const cornerEl = (el: Element) => el.shadowRoot!.querySelector<HTMLElement>('.ribbon-corner')
+    const pick = (color?: string, placement?: string) => {
+      const b = badges.find((x) => {
+        if (color && x.getAttribute('color') !== color) return false
+        if (placement && x.getAttribute('placement') !== placement) return false
+        return x.hasAttribute('ribbon')
+      })
+      if (!b) return null
+      const rb = ribbonEl(b)!
+      const cs = getComputedStyle(rb)
+      return {
+        hidden: rb.hidden,
+        text: rb.textContent,
+        bg: cs.backgroundColor,
+        color: cs.color,
+        endRadius: cs.borderEndEndRadius,
+        cornerTransform: getComputedStyle(cornerEl(b)!).transform,
+        placementStart: rb.classList.contains('placement-start'),
+      }
+    }
+    const countEl = document.querySelector('oas-badge[value="5"]')
+    return {
+      default: pick(),
+      start: pick(undefined, 'start'),
+      success: pick('success'),
+      count: countEl?.shadowRoot?.querySelector<HTMLElement>('.badge')?.textContent ?? null,
+    }
+  })
+  // 默认缎带：可见、文本同步、danger 色、折叠角方形 + transform 生效
+  expect(r.default).not.toBeNull()
+  expect(r.default!.hidden).toBe(false)
+  expect(r.default!.text).toContain('HOT')
+  expect(r.default!.bg).toBe('rgb(220, 38, 38)')
+  expect(r.default!.color).not.toBe(r.default!.bg) // 文字色 ≠ 背景色（文字不可见曾现风险）
+  expect(r.default!.endRadius).toBe('0px')
+  expect(r.default!.cornerTransform).not.toBe('none')
+  // placement=start：换到行首
+  expect(r.start).not.toBeNull()
+  expect(r.start!.hidden).toBe(false)
+  expect(r.start!.placementStart).toBe(true)
+  // color=success：语义色生效（非 danger）
+  expect(r.success).not.toBeNull()
+  expect(r.success!.bg).toBe('rgb(22, 163, 74)')
+  // count 数字徽标与 ribbon 并存正常
+  expect(r.count).toBe('5')
+})
+
+// —— modal P0 补缺：fullscreen 全屏 + 命令式 confirm loading ——
+
+test('modal fullscreen：铺满视口、无圆角、width 被忽略、Esc/遮罩关闭照常', async ({ page }) => {
+  await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-modal[fullscreen]')
+  await page.evaluate(() => {
+    document.querySelector('#modal-fullscreen')?.setAttribute('visible', '')
+  })
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#modal-fullscreen')
+        ?.shadowRoot?.querySelector('.dialog[data-fullscreen]') != null,
+    null,
+    { timeout: 5000 },
+  )
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#modal-fullscreen')!
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('.dialog')!
+    const d = dialog.getBoundingClientRect()
+    return {
+      left: d.left,
+      top: d.top,
+      right: d.right,
+      bottom: d.bottom,
+      vw: window.innerWidth,
+      vh: window.innerHeight,
+      radius: getComputedStyle(dialog).borderRadius,
+      inlineWidth: dialog.style.width,
+      ariaModal: dialog.getAttribute('aria-modal'),
+      ariaHidden: dialog.getAttribute('aria-hidden'),
+    }
+  })
+  expect(r.left).toBeLessThanOrEqual(1)
+  expect(r.top).toBeLessThanOrEqual(1)
+  expect(r.right).toBeGreaterThanOrEqual(r.vw - 1)
+  expect(r.bottom).toBeGreaterThanOrEqual(r.vh - 1)
+  expect(r.radius).toBe('0px') // 无圆角
+  expect(r.inlineWidth).toBe('') // width 属性被忽略
+  expect(r.ariaModal).toBe('true')
+  expect(r.ariaHidden).toBe('false')
+  // Esc 关闭照常
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(
+    () => !document.querySelector('#modal-fullscreen')?.hasAttribute('visible'),
+    null,
+    { timeout: 5000 },
+  )
+})
+
+test('modal 命令式确认 loading：确定进入 loading、1.5s 后自动关闭并弹出成功 message', async ({
+  page,
+}) => {
+  await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button')
+  await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
+    timeout: 10000,
+  })
+  // 注意：openConfirmLoading() 返回 confirm 的 Promise（settle 于确定/取消），
+  // 用块语句包裹避免 page.evaluate 等待该 Promise
+  await page.evaluate(() => {
+    ;(window as any).openConfirmLoading()
+  })
+  await page.waitForFunction(() => document.querySelector('oas-modal[visible]') != null, null, {
+    timeout: 5000,
+  })
+  // 点击确定 → 对话框保持打开并进入 loading（OK 禁用 + aria-busy + spinner 可见）
+  await page.evaluate(() => {
+    const m = document.querySelector('oas-modal[visible]')!
+    ;(m.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
+  })
+  await page.waitForFunction(
+    () => {
+      const m = document.querySelector('oas-modal[visible]')
+      const ok = m?.shadowRoot?.querySelector<HTMLButtonElement>('[part="ok"]')
+      const spinner = m?.shadowRoot?.querySelector('[part="ok"] .spinner')
+      return (
+        ok != null &&
+        ok.disabled &&
+        ok.getAttribute('aria-busy') === 'true' &&
+        spinner != null &&
+        !spinner.hasAttribute('hidden')
+      )
+    },
+    null,
+    { timeout: 5000 },
+  )
+  // onOk resolve（1.5s）后自动关闭并弹成功 message
+  await page.waitForFunction(
+    () =>
+      document.querySelector('oas-modal[visible]') == null &&
+      document.querySelectorAll('oas-message').length > 0,
+    null,
+    { timeout: 8000 },
+  )
+})
+
+test('card clickable：整卡 role/tabindex 存活、点击派发 oas-click 有可见反馈、内部按钮不触发整卡', async ({
+  page,
+}) => {
+  // 曾现风险：clickable 属性被 Vue 剥离、整卡点击静默失败、actions 内按钮误触整卡
+  await page.goto('/components/card.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-card[clickable]')
+  await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
+    timeout: 10000,
+  })
+  // 整卡承担按钮语义（Vue 下 clickable 存活 → role/tabindex 同步）
+  const r = await page.evaluate(() => {
+    const card = document.querySelector('oas-card[clickable][cover-src]')!
+    const cover = card.shadowRoot!.querySelector('[part="cover-img"]')
+    const actions = card.shadowRoot!.querySelector('[part="actions"]')
+    return {
+      role: card.getAttribute('role'),
+      tabindex: card.getAttribute('tabindex'),
+      coverSrc: cover?.getAttribute('src') ?? '',
+      actionsHidden: actions?.hasAttribute('hidden') ?? true,
+    }
+  })
+  expect(r.role, 'clickable 卡片应带 role=button').toBe('button')
+  expect(r.tabindex).toBe('0')
+  expect(r.coverSrc).toContain('picsum')
+  expect(r.actionsHidden).toBe(false)
+
+  // 点击整卡 → message 可见反馈（demo 监听 oas-click 弹消息）
+  await page.evaluate(() => {
+    const card = document.querySelector('oas-card[clickable][cover-src]')!
+    ;(card.shadowRoot!.querySelector('[part="body"]') as HTMLElement).click()
+  })
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length > 0, null, {
+    timeout: 5000,
+  })
+  const msgCount = await page.locator('oas-message').count()
+  expect(msgCount).toBeGreaterThan(0)
+
+  // 点击 actions 内按钮 → 不派发整卡 oas-click（演示反馈应不重复弹出）
+  const before = await page.locator('oas-message').count()
+  await page.locator('oas-card[clickable][cover-src] oas-button').first().click()
+  await page.waitForTimeout(600)
+  const after = await page.locator('oas-message').count()
+  expect(after, '点内部按钮不应再触发整卡 oas-click').toBe(before)
+})
+
+test('table 行内编辑：Enter 提交后编辑器退出且列高亮清除', async ({ page }) => {
+  // 曾现 bug：编辑器内按 Enter 提交后，keydown 冒泡到单元格的 Enter 监听器，在已销毁的
+  // td 上重入编辑 → 列高亮残留、编辑态未退出。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-edit')
+  // 直接对首行「姓名」单元格派发 dblclick 进入编辑
+  // （Playwright 真实 dblclick 手势会把两次 click 派发给同一解析元素——首击触发行选中重建
+  //  后该元素已脱离文档，进入编辑会落到游离节点上；这里用 DOM 事件直派更确定）
+  await page.evaluate(() => {
+    const table = document.querySelector('#table-edit')!
+    const td = table.shadowRoot!.querySelector('tbody tr.row td')!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
+  })
+  await page.waitForFunction(
+    () => {
+      const t = document.querySelector('#table-edit')!
+      return !!t.shadowRoot!.querySelector('input.cell-editor')
+    },
+    null,
+    { timeout: 5000 },
+  )
+  const entered = await page.evaluate(() => {
+    const table = document.querySelector('#table-edit')!
+    return {
+      hasEditor: !!table.shadowRoot!.querySelector('input.cell-editor'),
+      editingCol: !!table.shadowRoot!.querySelector('th[data-editing-col="true"]'),
+    }
+  })
+  expect(entered.hasEditor).toBe(true)
+  expect(entered.editingCol).toBe(true)
+  await page.evaluate(() => {
+    const table = document.querySelector('#table-edit')!
+    const input = table.shadowRoot!.querySelector<HTMLInputElement>('input.cell-editor')!
+    input.value = '演示提交'
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true }),
+    )
+  })
+  await page.waitForFunction(
+    () => {
+      const t = document.querySelector('#table-edit')!
+      return !t.shadowRoot!.querySelector('input.cell-editor')
+    },
+    null,
+    { timeout: 5000 },
+  )
+  const after = await page.evaluate(() => {
+    const table = document.querySelector('#table-edit')!
+    return {
+      hasEditor: !!table.shadowRoot!.querySelector('input.cell-editor'),
+      editingCol: !!table.shadowRoot!.querySelector('th[data-editing-col="true"]'),
+      cellText: table.shadowRoot!.querySelector('tbody td')!.textContent,
+    }
+  })
+  expect(after.hasEditor, '提交后编辑器应退出').toBe(false)
+  expect(after.editingCol, '提交后列高亮应清除').toBe(false)
+  expect(after.cellText).toBe('演示提交')
+})
+
+test('table 吸顶行：sticky-rows 前 N 行带 data-sticky 且与固定列共存', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-table[sticky-rows]')
+  const r = await page.evaluate(() => {
+    const table = document.querySelector('oas-table[sticky-rows]')!
+    const rows = [...table.shadowRoot!.querySelectorAll('tbody tr.row')]
+    return rows.slice(0, 4).map((tr) => ({
+      sticky: tr.getAttribute('data-sticky'),
+      left: (tr.querySelector('td') as HTMLElement).style.left,
+      top: (tr.querySelector('td') as HTMLElement).style.top,
+    }))
+  })
+  expect(r[0]!.sticky).toBe('true')
+  expect(r[1]!.sticky).toBe('true')
+  expect(r[2]!.sticky).toBe('true')
+  expect(r[3]!.sticky).toBeNull()
+  // 固定列与吸顶行共存：sticky 行的固定单元格仍保留横向偏移
+  expect(r[0]!.left).toBe('0px')
+  expect(parseFloat(r[0]!.top), '吸顶行 top 应大于 0（表头下方）').toBeGreaterThan(0)
+})
+
+test('tree 自定义节点模板 + oas-node-render 渲染真实内容且 ARIA 保持', async ({ page }) => {
+  // 曾现缺口：tree 无自定义渲染能力，图标/富文本必须走宿主整段替换方案；
+  // 本次补 template[slot="node"] / template[slot="toggle"] 骨架 + oas-node-render 事件。
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tree-custom')
+  await page.waitForTimeout(600)
+  const r = await page.evaluate(() => {
+    const tree = document.querySelector('#tree-custom')!
+    const row = tree.shadowRoot!.querySelector('[part="row"]')!
+    const label = row.querySelector('.label')!
+    const toggle = row.querySelector('[part="toggle"]')!
+    return {
+      glyph: !!label.querySelector('svg.node-demo-glyph'),
+      boundText: label.querySelector('[data-node-label]')?.textContent ?? '',
+      badge: label.querySelector('.node-demo-count')?.textContent ?? '',
+      rowRole: row.getAttribute('role'),
+      rowLevel: row.getAttribute('aria-level'),
+      toggleTag: toggle?.tagName ?? '',
+      toggleExpanded: toggle?.getAttribute('aria-expanded') ?? '',
+    }
+  })
+  // 骨架模板渲染：图标 + [data-node-label] 绑定 + 徽标（oas-node-render 写入）
+  expect(r.glyph, '自定义节点应渲染骨架图标').toBe(true)
+  expect(r.boundText).toBe('项目 A')
+  expect(r.badge).toContain('3')
+  // ARIA 在自定义渲染下保持
+  expect(r.rowRole).toBe('treeitem')
+  expect(r.rowLevel).toBe('1')
+  expect(r.toggleTag, '展开按钮应为原生 button（键盘 Enter/Space 可达）').toBe('BUTTON')
+  expect(r.toggleExpanded).toBe('true')
+  // 展开按钮点击 → aria-expanded 翻转（自定义 toggle 模板下键盘/ARIA 不丢）
+  await page.evaluate(() => {
+    const tree = document.querySelector('#tree-custom')!
+    ;(tree.shadowRoot!.querySelector('[part="toggle"]') as HTMLElement).click()
+  })
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#tree-custom')!
+        .shadowRoot!.querySelector('[part="toggle"]')
+        ?.getAttribute('aria-expanded') === 'false',
+    null,
+    { timeout: 5000 },
+  )
+})
+
+test('tree 目录模式：文件夹/文件图标、展开态切换与 ARIA', async ({ page }) => {
+  // 曾现缺口：tree 无目录模式，文件浏览器场景需宿主自绘整行；
+  // 本次补 directory 属性：children/isLeaf 判定目录/文件，文件夹按展开态换图标。
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tree-dir')
+  await page.waitForTimeout(600)
+  const kinds = () =>
+    page.evaluate(() => {
+      const tree = document.querySelector('#tree-dir')!
+      return [...tree.shadowRoot!.querySelectorAll('[part="row"]')].map((row) => ({
+        kind: row.querySelector('[part="node-icon"]')?.getAttribute('data-kind') ?? '',
+        iconHidden: row.querySelector('[part="node-icon"]')?.getAttribute('aria-hidden') ?? '',
+        ariaExpanded: row.querySelector('[part="toggle"]')?.getAttribute('aria-expanded') ?? '',
+        label: row.querySelector('.label')?.textContent ?? '',
+      }))
+    })
+  const rows = await kinds()
+  // src(folder-open，expanded 初始含 src) components(folder) index.ts(file) …
+  expect(rows[0]!.label).toBe('src')
+  expect(rows[0]!.kind, '已展开文件夹应为 folder-open').toBe('folder-open')
+  expect(rows[1]!.label).toBe('components')
+  expect(rows[1]!.kind, '未展开文件夹应为 folder').toBe('folder')
+  expect(rows[2]!.label).toBe('index.ts')
+  expect(rows[2]!.kind, 'isLeaf 节点应为 file').toBe('file')
+  expect(rows[0]!.iconHidden, '目录图标应为纯装饰（aria-hidden）').toBe('true')
+  expect(rows[1]!.ariaExpanded).toBe('false')
+  // 点击 components 展开按钮 → 图标切 folder-open 且子文件出现
+  await page.evaluate(() => {
+    const tree = document.querySelector('#tree-dir')!
+    const row = [...tree.shadowRoot!.querySelectorAll('[part="row"]')][1]!
+    ;(row.querySelector('[part="toggle"]') as HTMLElement).click()
+  })
+  await page.waitForFunction(
+    () => {
+      const tree = document.querySelector('#tree-dir')!
+      const row = [...tree.shadowRoot!.querySelectorAll('[part="row"]')][1]!
+      return row.querySelector('[part="node-icon"]')?.getAttribute('data-kind') === 'folder-open'
+    },
+    null,
+    { timeout: 5000 },
+  )
+  const expanded = await kinds()
+  expect(expanded[1]!.ariaExpanded).toBe('true')
+  expect(
+    expanded.some((r) => r.label === 'tree.tsx' && r.kind === 'file'),
+    '展开后子文件行应出现且为 file 图标',
+  ).toBe(true)
+})
+
+test('avatar 徽标角标：badge 文本可见且带底色、dot 圆点不渲染文本', async ({ page }) => {
+  // 曾现缺口：avatar 无徽标能力，通知计数/在线状态需宿主自绘角标；
+  // 本次补 badge/badge-dot/badge-color/badge-placement 叠加角标（视觉对齐 oas-badge）。
+  await page.goto('/components/avatar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-avatar[badge="99+"]')
+  const textBadge = await page.evaluate(() => {
+    const el = document.querySelector('oas-avatar[badge="99+"]')!
+    const b = el.shadowRoot!.querySelector('[part="badge"]')!
+    const cs = getComputedStyle(b)
+    return { visible: !b.hasAttribute('hidden'), text: b.textContent, bg: cs.backgroundColor }
+  })
+  expect(textBadge.visible).toBe(true)
+  expect(textBadge.text).toBe('99+')
+  expect(textBadge.bg, '徽标应有非透明底色').not.toBe('rgba(0, 0, 0, 0)')
+
+  const dot = await page.evaluate(() => {
+    const el = document.querySelector('oas-avatar[badge-dot]')!
+    const b = el.shadowRoot!.querySelector('[part="badge"]')!
+    return { dot: b.classList.contains('dot'), text: b.textContent }
+  })
+  expect(dot.dot).toBe(true)
+  expect(dot.text).toBe('')
+})
+
+test('avatar 加载失败回退：404 图触发 img error 后回退首字符、状态保持', async ({ page }) => {
+  // 曾现缺口：avatar 图片加载失败显示裂图，无占位回退；本次补 onerror → fallback 插槽/首字符。
+  await page.goto('/components/avatar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-avatar[src*="invalid.example.com"]')
+  // 等 img error 触发 → fallback 容器显示
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('oas-avatar[src*="invalid.example.com"]')!
+      return el.shadowRoot!.querySelector('[part="fallback"]')!.hasAttribute('hidden') === false
+    },
+    null,
+    { timeout: 10000 },
+  )
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-avatar[src*="invalid.example.com"]')!
+    return {
+      imgHidden: el.shadowRoot!.querySelector('img')!.hasAttribute('hidden'),
+      text: el.shadowRoot!.querySelector('[part="text"]')!.textContent,
+    }
+  })
+  expect(r.imgHidden).toBe(true)
+  expect(r.text).toBe('张')
+})
+
+test('image 懒加载：视口外图片不加载（img 无 src、占位显示），滚动进入视口后逐图加载', async ({
+  page,
+}) => {
+  // 防回归：lazy 必须真正延迟请求——视口外 img 不得带 src；滚动后开始加载并断开观察器
+  await page.goto('/components/image.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-image[lazy]')
+  // 滚动列表到顶部：首屏在视口内的项已加载，视口外项仍为占位（无 src）
+  await page.locator('#image-lazy-list').evaluate((el) => (el.scrollTop = 0))
+  const state = await page.evaluate(() => {
+    const list = document.querySelector('#image-lazy-list')!
+    const imgs = [...list.querySelectorAll('oas-image[lazy]')]
+    const noSrc = imgs.filter((i) => {
+      const img = i.shadowRoot?.querySelector('img')
+      return img && !img.hasAttribute('src')
+    })
+    return { total: imgs.length, noSrc: noSrc.length }
+  })
+  expect(state.total).toBeGreaterThan(5)
+  expect(state.noSrc, '滚动列表底部应仍有未加载的懒加载项').toBeGreaterThan(0)
+  // 滚动到底部：所有项都应开始加载（img 带 src）
+  await page.locator('#image-lazy-list').evaluate((el) => (el.scrollTop = el.scrollHeight))
+  await page.waitForFunction(
+    () => {
+      const list = document.querySelector('#image-lazy-list')!
+      const imgs = [...list.querySelectorAll('oas-image[lazy]')]
+      return (
+        imgs.length > 0 &&
+        imgs.every((i) => {
+          const img = i.shadowRoot?.querySelector('img')
+          return img && img.hasAttribute('src')
+        })
+      )
+    },
+    null,
+    { timeout: 5000 },
+  )
+  // 状态机收尾：首批（列表首个）加载完成后 aria-busy 从 true 复位为 false
+  await page.waitForFunction(
+    () => {
+      const first = document.querySelector('#image-lazy-list oas-image[lazy]')!
+      return first.getAttribute('aria-busy') === 'false'
+    },
+    null,
+    { timeout: 15000 },
+  )
+})

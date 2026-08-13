@@ -70,6 +70,28 @@ A modal dialog for interrupting flows that require user confirmation or input.
   </oas-modal>
 </DemoBlock>
 
+## Fullscreen dialog
+
+`fullscreen` makes the dialog fill the viewport (no radius, no margin). Precedence: **fullscreen wins over `width` / `centered` / `draggable`** — `width` is ignored, `centered` has no layout effect, dragging is disabled; Esc / mask close, focus trap, and ARIA behavior stay the same.
+
+<DemoBlock title="Fullscreen dialog">
+  <oas-button type="primary" onclick="document.querySelector('#modal-fullscreen').setAttribute('visible','')">Open fullscreen dialog</oas-button>
+  <oas-modal id="modal-fullscreen" title="Fullscreen dialog" fullscreen width="640px" centered draggable>
+    <p>The fullscreen dialog fills the viewport without radius or margin. <code>width</code> / <code>centered</code> are ignored and dragging is disabled; Esc / mask close still work.</p>
+  </oas-modal>
+</DemoBlock>
+
+## Imperative confirm
+
+The imperative `confirm()` API is Promise-based and reuses `oas-modal` (returns `Promise<void>`; resolves on OK, rejects on cancel). Pass an async `onOk` callback for a **loading confirmation**: clicking OK puts the OK button into loading (spinner, no repeated triggers); on resolve the dialog closes and the outer promise resolves; on reject the loading clears and the dialog stays open for retry or cancel.
+
+<DemoBlock title="Imperative confirm">
+  <oas-space>
+    <oas-button type="primary" onclick="openConfirmModal()">Async confirm</oas-button>
+    <oas-button onclick="openConfirmLoading()">Loading confirm</oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## Event feedback
 
 <DemoBlock title="Event feedback">
@@ -82,9 +104,21 @@ A modal dialog for interrupting flows that require user confirmation or input.
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
-  const { message } = await import('@oas-ui/ui')
+  const { message, confirm } = await import('@oas-ui/ui')
   window.message = message
   window.closeModal = (id) => document.getElementById(id).removeAttribute('visible')
+  window.openConfirmModal = () =>
+    confirm({ title: 'Confirm action', content: 'Simulated async flow: resolve on OK, reject on cancel.' })
+      .then(() => message.success('Confirmed'))
+      .catch(() => message.info('Cancelled'))
+  window.openConfirmLoading = () =>
+    confirm({
+      title: 'Confirm submit',
+      content: 'Simulated async submit: the OK button enters loading after click and closes automatically after 1.5s.',
+      onOk: () => new Promise((resolve) => setTimeout(resolve, 1500)),
+    })
+      .then(() => message.success('Submitted'))
+      .catch(() => message.info('Cancelled'))
 })
 </script>
 
@@ -96,6 +130,8 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `centered` | Vertically center the dialog | `boolean` | — |
 | `draggable` | Drag the dialog via its header | `boolean` | — |
+| `fullscreen` | Display fullscreen: the dialog fills the viewport without radius or margin (takes precedence over width / centered / draggable) | `boolean` | — |
+| `loading` | Put the OK button into loading state (disabled + spinner), blocking repeated confirms | `boolean` | — |
 | `no-footer` | Hide footer action buttons | `boolean` | — |
 | `no-mask-close` | Disable closing on mask click | `boolean` | — |
 | `title` | Title text | `string` | — |

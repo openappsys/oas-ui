@@ -40,6 +40,14 @@ Set `object-fit` via `fit`, then fix the image container size with `::part(image
   width: 100%;
   height: 100%;
 }
+.lazy-list {
+  width: 100%;
+  max-height: 420px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-4);
+}
 </style>
 
 ## Placeholder and Fallback
@@ -66,6 +74,13 @@ Set `object-fit` via `fit`, then fix the image container size with `::part(image
 
 When the image fails to load, a "图片加载失败" placeholder is shown by default; the `fallback` attribute can specify a fallback image URL, and if the fallback also fails, it falls back to the placeholder text.
 
+## Lazy Loading
+
+<DemoBlock title="Lazy-loading long list (loads image by image while scrolling)">
+  <p class="image-cap">With <code>lazy</code>, an image only starts loading when it enters the viewport; pair it with <code>placeholder</code> to show a "Loading" placeholder. Scroll down the list and watch the placeholder → loaded transition (images already in the viewport load immediately).</p>
+  <div class="lazy-list" id="image-lazy-list"></div>
+</DemoBlock>
+
 ## Preview
 
 <DemoBlock title="Click to preview (built-in overlay)">
@@ -78,6 +93,19 @@ When the image fails to load, a "图片加载失败" placeholder is shown by def
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
+  // Lazy-loading long list: each image loads only when it enters the viewport
+  const list = document.querySelector('#image-lazy-list')
+  if (list) {
+    for (let i = 1; i <= 12; i++) {
+      const el = document.createElement('oas-image')
+      el.setAttribute('lazy', '')
+      el.setAttribute('placeholder', '')
+      el.setAttribute('src', `https://picsum.photos/seed/isui-lazy-${i}/600/300`)
+      el.setAttribute('alt', `Lazy image ${i}`)
+      list.appendChild(el)
+    }
+  }
+
   const { message } = await import('@oas-ui/ui')
   window.message = message
   document.querySelector('#image-preview')?.addEventListener('oas-preview', (e) => {
@@ -96,6 +124,7 @@ onMounted(async () => {
 | `alt` | Alternative text | — | — |
 | `fallback` | Fallback image URL to switch to on load failure; when not set, shows the "图片加载失败" placeholder | `string` | — |
 | `fit` | `object-fit` value | `string` | — |
+| `lazy` | Lazy load: the image starts loading only when it enters the viewport (IntersectionObserver); loads immediately when already in the viewport; falls back to eager loading when unsupported | `boolean` | — |
 | `placeholder` | Show a light gray placeholder before the image finishes loading | `boolean` | — |
 | `preview` | Enable built-in preview: click to zoom + zoom/rotate/download + Esc to close + focus trap | `boolean` | — |
 | `src` | Image URL | `string` | — |

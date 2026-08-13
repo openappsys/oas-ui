@@ -74,6 +74,45 @@ With `draggable`, nodes can be dragged to reorder or reparent: dropping on the u
 
 Setting `height` enables virtualization (with a fixed `row-height`): the tree reuses `oas-virtual-list` to render only the nodes in the visible window. The expanded state is kept in the `expanded` attribute and survives scrolling and re-renders.
 
+## Custom Node Rendering
+
+<DemoBlock title="Custom nodes (icon + rich text)">
+  <div style="width: 100%">
+    <oas-tree id="tree-custom" expanded="proj-a" data='[{"key":"proj-a","label":"Project A","children":[{"key":"task-1","label":"Task 1"},{"key":"task-2","label":"Task 2"},{"key":"task-3","label":"Task 3"}]},{"key":"proj-b","label":"Project B","children":[{"key":"task-4","label":"Task 4"}]},{"key":"notes","label":"Notes"}]'>
+      <template slot="toggle">
+        <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M6 4 L10 8 L6 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </template>
+      <template slot="node">
+        <style>
+          .node-demo-glyph { width: 14px; height: 14px; color: var(--oas-color-primary); margin-right: var(--oas-space-1); vertical-align: -2px; }
+          .node-demo-count { margin-left: var(--oas-space-2); font-size: var(--oas-font-size-xs); color: var(--oas-color-text-primary); background: var(--oas-color-bg-hover); border-radius: 999px; padding: 0 6px; }
+          [data-node-label] { font-weight: 500; }
+        </style>
+        <svg class="node-demo-glyph" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <rect x="3" y="2.5" width="10" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M6 7.5 H10" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        <span data-node-label></span>
+        <span class="node-demo-count"></span>
+      </template>
+    </oas-tree>
+  </div>
+</DemoBlock>
+
+Node content can be provided as a static skeleton via `template[slot="node"]` (the `[data-node-label]` node is bound to the node label automatically), and `template[slot="toggle"]` replaces the default expand arrow. After each node row renders, `oas-node-render` is emitted (`detail: { node, element }`); the host can listen and rewrite `element` into any icon / rich text. In this example the task-count badge is written by that event. Keyboard access and ARIA (`treeitem` / `aria-expanded` / `aria-level`) stay intact under custom rendering.
+
+## Directory Mode (File Browser)
+
+<DemoBlock title="Directory mode (file browser style)">
+  <div style="width: 100%">
+    <oas-tree id="tree-dir" directory expanded="src,assets" data='[{"key":"src","label":"src","children":[{"key":"components","label":"components","children":[{"key":"button.tsx","label":"button.tsx","isLeaf":true},{"key":"tree.tsx","label":"tree.tsx","isLeaf":true}]},{"key":"index.ts","label":"index.ts","isLeaf":true}]},{"key":"assets","label":"assets","children":[{"key":"logo.svg","label":"logo.svg","isLeaf":true}]},{"key":"package.json","label":"package.json","isLeaf":true},{"key":"README.md","label":"README.md","isLeaf":true}]'></oas-tree>
+  </div>
+</DemoBlock>
+
+With `directory`, the tree renders in a file-browser style: nodes with `children` (or not yet loaded under lazy) show a folder icon, nodes with `isLeaf` / no `children` show a file icon; the folder icon switches between collapsed / expanded, and the depth-based indent and hover row highlight follow the row styles.
+
 ## Events
 
 <DemoBlock title="Selection and check events">
@@ -113,6 +152,19 @@ onMounted(() => {
         : {}),
     }))
     virtual.setAttribute('data', JSON.stringify(nodes))
+  }
+
+  // Custom node demo: oas-node-render writes the task-count badge (element is the node label container)
+  const custom = document.querySelector('#tree-custom')
+  if (custom) {
+    custom.addEventListener('oas-node-render', (e) => {
+      const { node, element } = e.detail
+      const badge = element.querySelector('.node-demo-count')
+      const count = node.children?.length ?? 0
+      if (badge) badge.textContent = count > 0 ? `${count} items` : ''
+    })
+    // Force one refresh after attaching the listener so the initial render carries badges
+    custom.setAttribute('data', custom.getAttribute('data'))
   }
 
   // Lazy loading demo: listen to oas-load, simulate async child backfill, then reset data
@@ -196,6 +248,7 @@ onMounted(() => {
 | `checkable` | Whether to show checkboxes | `boolean` | — |
 | `checked` | Set of checked node keys (comma-separated) | `string` | — |
 | `data` | Node data `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`, JSON string | `TreeNode[] \| string` | `[]` |
+| `directory` | Directory mode: nodes with `children` (or not yet loaded under lazy) show a folder icon, nodes with `isLeaf` / no `children` show a file icon; the folder icon switches on expand / collapse | `boolean` | — |
 | `draggable` | Nodes can be dragged to reorder / reparent; drop shows insertion line / highlight; release emits `oas-node-drop` | `boolean` | — |
 | `expanded` | Set of expanded node keys (comma-separated) | `string` | — |
 | `height` | Virtual scroll viewport height (px); setting it enables virtualized rendering for large data | `string` | `360` |
@@ -211,6 +264,14 @@ onMounted(() => {
 | `oas-check` | Check state change, `detail: { key, checked }` |
 | `oas-load` | Lazy loading triggered, `detail: { key }`; the host refills `children` and resets the `data` attribute |
 | `oas-node-drop` | Node dropped, `detail: { dragKey, dropKey, position }`; `position` is `before` / `after` / `inner`; an empty-string `dropKey` means moved to the root |
+| `oas-node-render` | Dispatched for each rendered node row, `detail: { node, element }` (element is the node label container; the host can rewrite it into icon / rich text) |
 | `oas-select` | Node selected, `detail: { key, selected }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `template[slot="node"]` | Static row template cloned into each node label container; the `[data-node-label]` node is bound to the node label automatically |
+| `template[slot="toggle"]` | Static expand button template cloned into each expandable node's toggle button (replaces the default › icon) |
 
 > Node field notes: `isLeaf: true` marks an explicit leaf (no expand arrow under lazy loading); `loaded: true` marks a node as fully loaded (used with `children` to avoid triggering loading repeatedly).
