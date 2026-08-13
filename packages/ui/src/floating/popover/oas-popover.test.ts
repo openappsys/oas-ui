@@ -256,4 +256,58 @@ describe('OASPopover', () => {
       expect(document.activeElement).toBe(childTrigger)
     })
   })
+
+  // —— 箭头（arrow）——
+
+  it('箭头元素存在：part=arrow + data-popper-arrow + aria-hidden，不破坏面板内容', () => {
+    const el = mount({ open: '', title: '标题', content: '内容区' })
+    const p = panelOf(el)
+    const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')
+    expect(arrow).not.toBeNull()
+    expect(arrow!.getAttribute('part')).toBe('arrow')
+    expect(arrow!.getAttribute('aria-hidden')).toBe('true')
+    expect(p.querySelector('[part="title"]')!.textContent).toBe('标题')
+    expect(p.querySelector('[part="content"]')!.textContent).toBe('内容区')
+  })
+
+  it('virtual 各 placement：箭头随面板就位在对应边上（尖朝锚点），两条外露边带边框色', () => {
+    // computePosition 语义：placement=bottom 面板在锚点下方 → 箭头悬顶边(top:-4px、尖朝上)；
+    //   top → 底边(bottom:-4px)；left → 右边(right:-4px)；right → 左边(left:-4px)。
+    // 旋转 45° 后 border-top/right/bottom/left 依次对应菱形右上/右下/左下/左上边，
+    //   「汇于尖端」的两条外露边需带 1px 边框色与面板描边衔接。
+    const cases = {
+      bottom: { edge: 'top', borders: ['border-top-width', 'border-left-width'] },
+      top: { edge: 'bottom', borders: ['border-right-width', 'border-bottom-width'] },
+      left: { edge: 'right', borders: ['border-top-width', 'border-right-width'] },
+      right: { edge: 'left', borders: ['border-left-width', 'border-bottom-width'] },
+    } as const
+    for (const p of ['top', 'bottom', 'left', 'right'] as const) {
+      const el = mount({
+        open: '',
+        virtual: '',
+        'virtual-x': '400',
+        'virtual-y': '300',
+        placement: p,
+      })
+      const panel = panelOf(el)
+      const arrow = panel.querySelector<HTMLElement>('[data-popper-arrow]')!
+      expect(panel.getAttribute('data-placement')).toBe(p)
+      expect(arrow).not.toBeNull()
+      const cs = window.getComputedStyle(arrow)
+      const c = cases[p]
+      expect(cs.getPropertyValue(c.edge), `placement=${p} 箭头应落在面板${c.edge}边`).toBe('-4px')
+      // happy-dom 不解析 var() 颜色的 border 声明（getComputedStyle 返回空串），
+      // 边框对改由 shadow <style> 规则文本锁定——回归点：left/right 曾把外露边框对写反。
+      const styleText = el.shadowRoot!.querySelector('style')!.textContent!
+      const block = styleText.split(`.panel[data-placement='${p}'] .arrow {`)[1]!.split('}')[0]!
+      for (const prop of ['top', 'right', 'bottom', 'left']) {
+        const expectBorder = (c.borders as readonly string[]).includes(`border-${prop}-width`)
+        const hasBorder = block.includes(`border-${prop}: 1px solid var(--oas-color-border)`)
+        expect(
+          hasBorder,
+          `placement=${p} border-${prop} 应${expectBorder ? '' : '不'}出现在箭头规则中`,
+        ).toBe(expectBorder)
+      }
+    }
+  })
 })

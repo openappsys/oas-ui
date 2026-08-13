@@ -30,6 +30,46 @@ const STYLE = `
   font-size: var(--oas-font-size-md);
   line-height: 1.6;
 }
+/* 箭头：8px 正方形旋转 45°（菱形），底色与面板同色，按 data-placement 落在面板对应边上，尖端指向锚点。
+   旋转后原 border-top/right/bottom/left 依次对应菱形的右上/右下/左下/左上边——
+   取「汇于尖端」的两条外露边带边框色，与面板 1px 描边无缝衔接。 */
+.arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  background: var(--oas-color-bg);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+/* placement=bottom：面板在锚点下方 → 箭头悬面板顶边、尖朝上 → 外露边=右上(border-top)+左上(border-left) */
+.panel[data-placement='bottom'] .arrow {
+  top: -4px;
+  left: calc(50% - 4px);
+  border-top: 1px solid var(--oas-color-border);
+  border-left: 1px solid var(--oas-color-border);
+}
+/* placement=top：面板在锚点上方 → 箭头悬面板底边、尖朝下 → 外露边=右下(border-right)+左下(border-bottom) */
+.panel[data-placement='top'] .arrow {
+  bottom: -4px;
+  left: calc(50% - 4px);
+  border-right: 1px solid var(--oas-color-border);
+  border-bottom: 1px solid var(--oas-color-border);
+}
+/* placement=left：面板在锚点左侧 → 箭头悬面板右边、尖朝右 → 外露边=右上(border-top)+右下(border-right) */
+.panel[data-placement='left'] .arrow {
+  right: -4px;
+  top: calc(50% - 4px);
+  border-top: 1px solid var(--oas-color-border);
+  border-right: 1px solid var(--oas-color-border);
+}
+/* placement=right：面板在锚点右侧 → 箭头悬面板左边、尖朝左 → 外露边=左上(border-left)+左下(border-bottom) */
+.panel[data-placement='right'] .arrow {
+  left: -4px;
+  top: calc(50% - 4px);
+  border-left: 1px solid var(--oas-color-border);
+  border-bottom: 1px solid var(--oas-color-border);
+}
 `
 
 // 模块级浮层栈：所有打开中的 popover 按打开先后排序（后开者在上），
@@ -88,6 +128,7 @@ export class OASPopover extends OASElement {
       <div class="panel" part="panel" role="dialog" aria-hidden="true">
         <div class="title" part="title" id="pop-title"></div>
         <div class="body" part="body"><div class="content" part="content"></div><slot name="content"></slot></div>
+        <span class="arrow" part="arrow" data-popper-arrow aria-hidden="true"></span>
       </div>
     `
   }

@@ -20,6 +20,31 @@ const STYLE = `
 .tip[aria-hidden='true'] {
   display: none;
 }
+/* 箭头：8px 正方形旋转 45°，底色与气泡同色，按 data-placement 落在面板对应边上，尖端指向锚点中心 */
+.arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--oas-color-text-primary);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+.tip[data-placement='bottom'] .arrow {
+  top: -4px;
+  left: calc(50% - 4px);
+}
+.tip[data-placement='top'] .arrow {
+  bottom: -4px;
+  left: calc(50% - 4px);
+}
+.tip[data-placement='left'] .arrow {
+  right: -4px;
+  top: calc(50% - 4px);
+}
+.tip[data-placement='right'] .arrow {
+  left: -4px;
+  top: calc(50% - 4px);
+}
 `
 
 export class OAStooltip extends OASElement {
@@ -40,7 +65,10 @@ export class OAStooltip extends OASElement {
     return `
       <style>${STYLE}</style>
       <slot></slot>
-      <div class="tip" part="tip" role="tooltip" aria-hidden="true"></div>
+      <div class="tip" part="tip" role="tooltip" aria-hidden="true">
+        <span class="arrow" part="arrow" data-popper-arrow aria-hidden="true"></span>
+        <span class="tip-content" part="content"></span>
+      </div>
     `
   }
 
@@ -80,7 +108,8 @@ export class OAStooltip extends OASElement {
     if (!this.tipEl) return
     const open = this.hasAttr('open')
     this.tipEl.setAttribute('aria-hidden', String(!open))
-    this.tipEl.textContent = this.getAttr('content', '')
+    // 内容写入独立容器（不动箭头/骨架，避免 textContent 覆盖清掉箭头元素）
+    this.tipEl.querySelector<HTMLElement>('.tip-content')!.textContent = this.getAttr('content', '')
     // open 状态迁移（受控 setAttribute 与 hover/focus 触发都会走到这里）→ oas-open-change
     if (this.prevOpen !== null && this.prevOpen !== open) {
       this.emit('open-change', { open })

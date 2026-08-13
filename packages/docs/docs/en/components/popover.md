@@ -60,8 +60,8 @@ In `virtual` mode there is no real anchor (same as tooltip): the host positions 
 
 <DemoBlock title="Virtual triggering (canvas cursor tracking)">
   <oas-popover id="pop-virt" virtual virtual-x="0" virtual-y="0" placement="top" title="Canvas coordinate"></oas-popover>
-  <div id="virt-canvas" style="position: relative; height: 140px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg-hover);">
-    <p style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">Move the mouse to see coordinate hints</p>
+  <div id="virt-canvas" style="position: relative; height: 140px; width: 100%; min-width: 200px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg-hover);">
+    <p style="position: absolute; inset: 0; margin: 0; display: grid; place-items: center; text-align: center; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">Move the mouse to see coordinate hints</p>
   </div>
 </DemoBlock>
 

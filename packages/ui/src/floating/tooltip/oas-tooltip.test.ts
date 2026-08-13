@@ -72,7 +72,7 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     const t = tip(el)
     expect(t.getAttribute('aria-hidden')).toBe('false')
-    expect(t.textContent).toBe('坐标提示')
+    expect(t.querySelector<HTMLElement>('.tip-content')!.textContent).toBe('坐标提示')
     // 按虚拟坐标定位：placement 默认 top，锚点为 0 尺寸点
     expect(t.style.top).not.toBe('')
     expect(t.style.left).not.toBe('')
@@ -270,5 +270,81 @@ describe('OAStooltip', () => {
     el.setAttribute('content', 'y')
     await Promise.resolve()
     expect(fired).toEqual([])
+  })
+
+  // —— 箭头（arrow）——
+
+  it('箭头元素存在：part=arrow + data-popper-arrow + aria-hidden，内容写入独立容器', async () => {
+    const el = mount({ open: '', content: '提示内容', placement: 'top' })
+    await Promise.resolve()
+    const t = tip(el)
+    const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')
+    expect(arrow).not.toBeNull()
+    expect(arrow!.getAttribute('part')).toBe('arrow')
+    expect(arrow!.getAttribute('aria-hidden')).toBe('true')
+    // 内容写入 .tip-content，不会被 textContent 覆盖清掉箭头骨架
+    expect(t.querySelector<HTMLElement>('.tip-content')!.textContent).toBe('提示内容')
+    expect(t.querySelector('[data-popper-arrow]')).not.toBeNull()
+  })
+
+  it('内容更新不影响箭头元素（update 重建内容容器，箭头保留）', async () => {
+    const el = mount({ open: '', content: 'A', placement: 'top' })
+    await Promise.resolve()
+    el.setAttribute('content', 'B')
+    await Promise.resolve()
+    const t = tip(el)
+    expect(t.querySelector<HTMLElement>('.tip-content')!.textContent).toBe('B')
+    expect(t.querySelector('[data-popper-arrow]')).not.toBeNull()
+  })
+
+  it('virtual 各 placement：data-placement 写入后箭头元素随浮层就位（四向）', async () => {
+    for (const p of ['top', 'bottom', 'left', 'right'] as const) {
+      const el = mountVirtual({
+        virtual: '',
+        'virtual-x': '300',
+        'virtual-y': '200',
+        placement: p,
+        content: 'x',
+        open: '',
+      })
+      await Promise.resolve()
+      const t = tip(el)
+      // 视口中段坐标：四向均不翻转，data-placement 与请求一致
+      expect(t.getAttribute('data-placement')).toBe(p)
+      expect(t.querySelector('[data-popper-arrow]')).not.toBeNull()
+    }
+  })
+
+  it('各 placement：箭头定位 CSS 落在面板正确边（悬顶/底/左/右），中心对齐', async () => {
+    // happy-dom 无布局引擎（boundingBox 全 0），退化为断言箭头定位 CSS：
+    // computePosition 语义下 placement=bottom → 面板在锚点下方 → 箭头悬顶边(top:-4px、尖朝上)；
+    // top → 底边(bottom:-4px)；left → 右边(right:-4px)；right → 左边(left:-4px)。
+    // 中心对齐：left/right 用 calc(50% - 4px)（虚拟 0 尺寸锚点 → 面板中心即锚点中心）。
+    const cases = {
+      bottom: { edge: 'top' },
+      top: { edge: 'bottom' },
+      left: { edge: 'right' },
+      right: { edge: 'left' },
+    } as const
+    for (const p of ['top', 'bottom', 'left', 'right'] as const) {
+      const el = mountVirtual({
+        virtual: '',
+        'virtual-x': '300',
+        'virtual-y': '200',
+        placement: p,
+        content: 'x',
+        open: '',
+      })
+      await Promise.resolve()
+      const t = tip(el)
+      expect(t.getAttribute('data-placement')).toBe(p)
+      const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
+      const cs = window.getComputedStyle(arrow)
+      // 该 placement 对应的悬空边为 -4px（8px 方块半宽外探）
+      expect(
+        cs.getPropertyValue(cases[p].edge),
+        `placement=${p} 箭头应悬面板${cases[p].edge}边`,
+      ).toBe('-4px')
+    }
   })
 })

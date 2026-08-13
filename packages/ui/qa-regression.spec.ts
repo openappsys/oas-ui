@@ -3141,3 +3141,150 @@ test('tree-select virtual：键盘导航高亮滚动进视口且 aria-activedesc
     { timeout: 5000 },
   )
 })
+
+// —— 缺陷 10：popover 画布文字竖排 + tree 自定义节点文字被压没 + tooltip/popover 无箭头 ——
+// 曾现 bug1：popover.md 虚拟画布 #virt-canvas 无 in-flow 子元素，在 DemoBlock 的 flex 容器里
+//           宽度坍缩到 0，画布内提示 <p>（flex center）在 0 宽下每字一行竖排。
+// 曾现 bug2：tree .label 是 min-width:0 + overflow:hidden 的 flex 子项，dev/SSR 下被压缩到 0 宽，
+//           自定义节点文字（glyph 可见文字没有）完全不可见。
+// 曾现 bug3：tooltip/popover 完全没有箭头元素（grep arrow 零结果），用户期望小箭头指向锚点。
+
+test('popover.md 虚拟画布：#virt-canvas 有可见宽度且提示文字单行居中（不竖排）', async ({
+  page,
+}) => {
+  await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#virt-canvas', { timeout: 15000 })
+  const r = await page.evaluate(() => {
+    const canvas = document.getElementById('virt-canvas')!
+    const p = canvas.querySelector('p')!
+    const c = canvas.getBoundingClientRect()
+    // Range 包围全部文本：单行时 rect 高≈字号、宽≈整句；竖排（每字一行）时 高≈句长×行高、宽≈单字
+    const range = document.createRange()
+    range.selectNodeContents(p)
+    const t = range.getBoundingClientRect()
+    return {
+      canvasWidth: c.width,
+      text: (p.textContent ?? '').trim(),
+      textWidth: t.width,
+      textHeight: t.height,
+    }
+  })
+  expect(r.canvasWidth, '画布在 flex 容器里不应坍缩为 0').toBeGreaterThan(200)
+  expect(r.text).toContain('移动鼠标')
+  // 单行（不竖排）：文本包围盒宽度 ≥ 5 个汉字（约 70px）、高度 < 30px（1~2 行）
+  expect(r.textWidth, '文字应单行横向排列，而非每字一行竖排').toBeGreaterThan(70)
+  expect(r.textHeight).toBeLessThan(30)
+})
+
+test('tree 自定义节点：#tree-custom 每行 .label 实际渲染宽度 > 0（文字不被 flex 压没）', async ({
+  page,
+}) => {
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tree-custom')
+  await page.waitForTimeout(800)
+  const r = await page.evaluate(() => {
+    const tree = document.querySelector('#tree-custom')!
+    return [...tree.shadowRoot!.querySelectorAll('[part="row"]')].map((row) => {
+      const label = row.querySelector<HTMLElement>('.label')!
+      const binder = label.querySelector<HTMLElement>('[data-node-label]')
+      const lb = label.getBoundingClientRect()
+      const bb = binder?.getBoundingClientRect()
+      return {
+        labelText: binder?.textContent ?? '',
+        labelWidth: lb.width,
+        binderWidth: bb?.width ?? 0,
+        rowWidth: row.getBoundingClientRect().width,
+      }
+    })
+  })
+  expect(r.length).toBeGreaterThan(0)
+  for (const [i, item] of r.entries()) {
+    expect(item.labelText.length, `第 ${i} 行 [data-node-label] 文字缺失`).toBeGreaterThan(0)
+    expect(item.labelWidth, `第 ${i} 行 .label 渲染宽度为 0（被 flex 压没）`).toBeGreaterThan(24)
+    expect(item.binderWidth, `第 ${i} 行 [data-node-label] 实际宽度为 0`).toBeGreaterThan(0)
+  }
+  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix-tree-custom-label.png' })
+})
+
+test('tooltip 箭头：#tt-follow 打开后 .arrow 可见且位于面板顶部居中（placement=bottom 尖端朝上指向锚点）', async ({
+  page,
+}) => {
+  await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#tt-follow', { state: 'attached', timeout: 15000 })
+  await page.waitForFunction((s) => document.querySelector(s)?.shadowRoot != null, '#tt-follow', {
+    timeout: 15000,
+  })
+  const canvas = page.locator('#vp-canvas')
+  await canvas.scrollIntoViewIfNeeded()
+  await page.evaluate(() => {
+    document.querySelector('#vp-canvas')?.scrollIntoView({ block: 'center' })
+  })
+  await page.waitForTimeout(300)
+  const box = (await canvas.boundingBox())!
+  await page.mouse.move(box.x + 60, box.y + 40)
+  await page.waitForFunction(() => {
+    const t = document.querySelector('#tt-follow')
+    const tip = t?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
+    return (
+      tip?.getAttribute('aria-hidden') === 'false' &&
+      tip.querySelector('[data-popper-arrow]') != null
+    )
+  })
+  const r = await page.evaluate(() => {
+    const t = document.querySelector('#tt-follow')!
+    const tip = t.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
+    const arrow = tip.querySelector<HTMLElement>('[data-popper-arrow]')!
+    const tb = tip.getBoundingClientRect()
+    const ab = arrow.getBoundingClientRect()
+    return {
+      placement: tip.getAttribute('data-placement'),
+      arrowPart: arrow.getAttribute('part'),
+      arrowVisible: ab.width > 0 && ab.height > 0,
+      arrowAtTop: ab.top <= tb.top + 2, // 箭头横跨面板顶边（top: -4px → 旋转后更靠上）
+      arrowCentered: Math.abs(ab.left + ab.width / 2 - (tb.left + tb.width / 2)) <= 6,
+      arrowProtrudes: ab.top < tb.top, // 箭头尖端探出面板外沿
+    }
+  })
+  expect(r.placement, '画布中部 placement=bottom 不翻转').toBe('bottom')
+  expect(r.arrowPart).toBe('arrow')
+  expect(r.arrowVisible, '箭头应真实渲染（宽高 > 0）').toBe(true)
+  expect(r.arrowAtTop, 'bottom placement 箭头应在面板顶部').toBe(true)
+  expect(r.arrowCentered, '箭头应水平居中指向锚点').toBe(true)
+  expect(r.arrowProtrudes, '箭头尖端应探出面板外沿').toBe(true)
+  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix-tooltip-arrow.png' })
+})
+
+test('popover 箭头：#pop-point 打开后 .arrow 可见且位于面板左缘居中（placement=right 面板在锚点右侧，尖端朝左指向锚点）', async ({
+  page,
+}) => {
+  await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#pop-point', { state: 'attached', timeout: 15000 })
+  await page.waitForFunction((s) => document.querySelector(s)?.shadowRoot != null, '#pop-point', {
+    timeout: 15000,
+  })
+  const point = page.locator('#pop-point')
+  await point.evaluate((e) => e.setAttribute('open', ''))
+  const panel = point.locator('[part="panel"]')
+  await expect(panel).toHaveAttribute('aria-hidden', 'false')
+  await expect(panel).toHaveAttribute('data-placement', 'right')
+  const r = await point.evaluate((pop) => {
+    const p = pop.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+    const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')!
+    const pb = p.getBoundingClientRect()
+    const ab = arrow.getBoundingClientRect()
+    return {
+      arrowPart: arrow.getAttribute('part'),
+      arrowVisible: ab.width > 0 && ab.height > 0,
+      arrowAtLeft: ab.left <= pb.left + 2, // 箭头横跨面板左边（left: -4px → 旋转后更靠左）
+      arrowCentered: Math.abs(ab.top + ab.height / 2 - (pb.top + pb.height / 2)) <= 6,
+      arrowProtrudes: ab.left < pb.left, // 尖端探出面板外沿指向锚点
+    }
+  })
+  expect(r.arrowPart).toBe('arrow')
+  expect(r.arrowVisible, '箭头应真实渲染（宽高 > 0）').toBe(true)
+  expect(r.arrowAtLeft, 'right placement 箭头应在面板左缘').toBe(true)
+  expect(r.arrowCentered, '箭头应垂直居中指向锚点').toBe(true)
+  expect(r.arrowProtrudes, '箭头尖端应探出面板外沿').toBe(true)
+  await point.evaluate((e) => e.removeAttribute('open'))
+  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix-popover-arrow.png' })
+})

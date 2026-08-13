@@ -1277,7 +1277,7 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('</template>读屏文本</oas-visually-hidden>')
   })
 
-  it('oas-tooltip：触发 slot 原样保留 + 关闭态气泡骨架（aria-hidden=true + content 同步）', async () => {
+  it('oas-tooltip：触发 slot 原样保留 + 关闭态气泡骨架（aria-hidden=true + content 同步 + 箭头骨架）', async () => {
     const html = await renderToString(
       'oas-tooltip',
       { content: '提示', placement: 'bottom' },
@@ -1288,7 +1288,9 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('<oas-tooltip content="提示" placement="bottom">')
     expect(html).toContain('class="tip" part="tip" role="tooltip" aria-hidden="true"')
     // content 文本由 update 同步写入（关闭态也写文本，定位在触发时才算）
-    expect(html).toContain('>提示</div>')
+    expect(html).toContain('>提示</span>')
+    // 箭头骨架随 SSR 快照序列化，水合后 update 不会被 textContent 覆盖清除
+    expect(html).toContain('data-popper-arrow')
     expect(html).toContain('</template><button>悬停</button></oas-tooltip>')
   })
 
@@ -1304,6 +1306,8 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('class="panel" part="panel" role="dialog" aria-hidden="true"')
     expect(html).toContain('>标题<')
     expect(html).toContain('>内容<')
+    // 箭头骨架随 SSR 快照序列化
+    expect(html).toContain('data-popper-arrow')
     expect(html).toContain('</template><button>点击</button></oas-popover>')
   })
 

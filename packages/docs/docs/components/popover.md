@@ -60,8 +60,8 @@
 
 <DemoBlock title="虚拟触发（画布坐标跟随）">
   <oas-popover id="pop-virt" virtual virtual-x="0" virtual-y="0" placement="top" title="画布坐标"></oas-popover>
-  <div id="virt-canvas" style="position: relative; height: 140px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg-hover);">
-    <p style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">移动鼠标查看坐标提示</p>
+  <div id="virt-canvas" style="position: relative; height: 140px; width: 100%; min-width: 200px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg-hover);">
+    <p style="position: absolute; inset: 0; margin: 0; display: grid; place-items: center; text-align: center; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">移动鼠标查看坐标提示</p>
   </div>
 </DemoBlock>
 

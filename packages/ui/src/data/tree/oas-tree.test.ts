@@ -619,6 +619,26 @@ describe('OASTree 自定义节点渲染', () => {
     expect(el.getAttribute('selected')).toBe('a-1')
   })
 
+  it('label 防压扁：.label 显式 flex:1 1 auto + min-width，窄容器下 [data-node-label] 文字仍填入（回归：dev 下 label 被压缩到 0 宽文字不可见）', () => {
+    // CSS 层：普通路径与虚拟路径行样式都声明 flex-grow + 最小可见宽度
+    const el = mount()
+    const style = el.shadowRoot!.querySelector('style')!.textContent
+    expect(style).toMatch(/\.label\s*\{[^}]*flex:\s*1\s+1\s+auto/)
+    expect(style).toContain('min-width: var(--oas-control-height-sm, 24px)')
+    // 虚拟路径：注入 vlist shadow 的行样式同样防压扁
+    const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
+    const vStyle = vlist.shadowRoot!.querySelector('style[data-oas-tree-rows]')!.textContent
+    expect(vStyle).toMatch(/\.label\s*\{[^}]*flex:\s*1\s+1\s+auto/)
+    expect(vStyle).toContain('min-width: var(--oas-control-height-sm, 24px)')
+    // DOM 层：窄宿主下自定义节点 [data-node-label] 文本照常绑定
+    el.style.width = '80px'
+    el.appendChild(tpl('node', '<span data-node-label></span>'))
+    el.setAttribute('data', JSON.stringify([{ key: 'a', label: '窄容器节点' }]))
+    const label = rows(el)[0]!.querySelector<HTMLElement>('.label')!
+    expect(label.querySelector('[data-node-label]')!.textContent).toBe('窄容器节点')
+    expect(label.style.flexGrow).toBe('') // 布局能力由 shadow 内样式承担（happy-dom 不解析类样式）
+  })
+
   it('虚拟化下自定义节点模板同样生效', () => {
     const el = mount({ height: '200', 'row-height': '32', data: BIG_DATA })
     el.appendChild(tpl('node', '<span data-node-label></span>'))

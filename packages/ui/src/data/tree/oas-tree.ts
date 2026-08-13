@@ -140,7 +140,9 @@ const STYLE = `
 }
 .label {
   user-select: none;
-  min-width: 0;
+  /* 防压扁：label 占用行内剩余宽度且保证最小可见宽度，避免被 flex 压缩到 0 宽后文字/省略号全不可见 */
+  flex: 1 1 auto;
+  min-width: var(--oas-control-height-sm, 24px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -254,7 +256,9 @@ const VIRTUAL_ROW_STYLE = `
 }
 .label {
   user-select: none;
-  min-width: 0;
+  /* 防压扁：同普通路径，label 占行内剩余宽度 + 最小可见宽度，不被压缩到 0 */
+  flex: 1 1 auto;
+  min-width: var(--oas-control-height-sm, 24px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
