@@ -285,6 +285,13 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ],
     ['oas-modal[visible] [part="ok"]', 'click', '点确定 → oas-ok'],
   ],
+  message: [
+    [
+      'oas-message [part="close"]',
+      'click',
+      '点消息右上角关闭 ×（通用探针已点按钮创建消息）→ oas-close',
+    ],
+  ],
   popconfirm: [
     ['oas-popconfirm', 'click', '点触发器打开气泡'],
     ['oas-popconfirm [part="ok"]', 'click', '确认 → oas-ok'],
@@ -336,7 +343,18 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   collapse: [['oas-collapse-item [part="head"]', 'click', '点头部切换 → oas-change']],
   steps: [['oas-steps[clickable] [part="item"]', 'click', '点步骤项（整项可点）→ oas-change']],
-  tabs: [['oas-tabs[closable] .tab-close', 'click', '点标签关闭 × → oas-close']],
+  tabs: [
+    [
+      'oas-tabs[closable] .tab-close',
+      'domclick',
+      'DOM click 关闭 ×：真实点击触发 demo 弹 message 后，vitepress 搜索浮层会间歇性打开，backdrop 拦截后续 force-click',
+    ],
+    [
+      'oas-tabs[addable] [part="add-button"]',
+      'domclick',
+      'DOM click + 按钮：+ 在视口外远处，搜索浮层 backdrop 可能拦截真实点击 → oas-add',
+    ],
+  ],
   tree: [
     ['oas-tree[checkable] input[type="checkbox"]', 'click', '勾选 → oas-check'],
     ['oas-tree[lazy] [part="toggle"]', 'click', '展开未加载节点（dir-a）→ oas-load'],
@@ -427,7 +445,11 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
                   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20" rx="4" fill="#0b6cff"/></svg>',
                 ),
               }
-            : { name: 'demo.txt', mimeType: 'text/plain', buffer: Buffer.from('oas-ui demo file') }
+            : {
+                name: 'demo.txt',
+                mimeType: 'text/plain',
+                buffer: Buffer.from('oas-ui demo file'),
+              }
         const el = page.locator(sel).first()
         if (await el.count()) {
           await el.setInputFiles(payload, { timeout: 400 })

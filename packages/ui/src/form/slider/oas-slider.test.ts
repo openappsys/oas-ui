@@ -264,7 +264,7 @@ describe('OASSlider', () => {
 
   describe('range 范围模式', () => {
     it('value 为 JSON 数组：渲染两个 range 输入并同步，单值输入隐藏', () => {
-      const el = mount({ 'range': '', value: '[20, 80]' })
+      const el = mount({ range: '', value: '[20, 80]' })
       expect(byRole(el, 'range').hidden).toBe(true)
       expect(byRole(el, 'range-min').hidden).toBe(false)
       expect(byRole(el, 'range-max').hidden).toBe(false)
@@ -273,13 +273,13 @@ describe('OASSlider', () => {
     })
 
     it('value 为逗号分隔字符串同样可解析', () => {
-      const el = mount({ 'range': '', value: '30,70' })
+      const el = mount({ range: '', value: '30,70' })
       expect(Number(byRole(el, 'range-min').value)).toBe(30)
       expect(Number(byRole(el, 'range-max').value)).toBe(70)
     })
 
     it('拖动任一滑块派发 oas-input/oas-change，detail.value 为数组', () => {
-      const el = mount({ 'range': '', value: '[20, 80]' })
+      const el = mount({ range: '', value: '[20, 80]' })
       const min = byRole(el, 'range-min')
       const max = byRole(el, 'range-max')
       let inputDetail: unknown
@@ -300,7 +300,7 @@ describe('OASSlider', () => {
     it('range + show-input：min/max 两个数字输入框联动', () => {
       vi.useFakeTimers()
       try {
-        const el = mount({ 'range': '', 'show-input': '', value: '[20, 80]' })
+        const el = mount({ range: '', 'show-input': '', value: '[20, 80]' })
         const numMin = byRole(el, 'num-min')
         const numMax = byRole(el, 'num-max')
         expect(byRole(el, 'num').hidden).toBe(true)
@@ -327,7 +327,7 @@ describe('OASSlider', () => {
     it('范围输入越界：min 超过 max 时推着 max 走（约束范围）', () => {
       vi.useFakeTimers()
       try {
-        const el = mount({ 'range': '', 'show-input': '', min: '0', max: '100', value: '[20, 80]' })
+        const el = mount({ range: '', 'show-input': '', min: '0', max: '100', value: '[20, 80]' })
         const numMin = byRole(el, 'num-min')
         numMin.value = '120'
         numMin.dispatchEvent(new Event('input'))
@@ -340,7 +340,7 @@ describe('OASSlider', () => {
     })
 
     it('外部受控 setAttribute(value) 同步两个滑块', () => {
-      const el = mount({ 'range': '', value: '[20, 80]' })
+      const el = mount({ range: '', value: '[20, 80]' })
       el.setAttribute('value', '[10, 60]')
       expect(Number(byRole(el, 'range-min').value)).toBe(10)
       expect(Number(byRole(el, 'range-max').value)).toBe(60)
@@ -348,7 +348,7 @@ describe('OASSlider', () => {
 
     it('range + marks：落在 [lo, hi] 区间内的刻度高亮', () => {
       const el = mount({
-        'range': '',
+        range: '',
         value: '[20, 80]',
         min: '0',
         max: '100',
@@ -365,7 +365,7 @@ describe('OASSlider', () => {
 
   describe('reverse 反向', () => {
     it('range input 方向反转（dir=rtl，min 在右）', () => {
-      const el = mount({ 'reverse': '', value: '30' })
+      const el = mount({ reverse: '', value: '30' })
       expect(range(el).dir).toBe('rtl')
       const normal = mount({ value: '30' })
       expect(range(normal).dir).toBe('ltr')
@@ -375,26 +375,26 @@ describe('OASSlider', () => {
       const normal = mount({ value: '30', min: '0', max: '100' })
       expect(fillEl(normal).style.left).toBe('0%')
       expect(fillEl(normal).style.width).toBe('30%')
-      const el = mount({ 'reverse': '', value: '30', min: '0', max: '100' })
+      const el = mount({ reverse: '', value: '30', min: '0', max: '100' })
       expect(fillEl(el).style.left).toBe('auto')
       expect(fillEl(el).style.right).toBe('0%')
       expect(fillEl(el).style.width).toBe('30%')
     })
 
     it('范围模式填充区镜像：左端为 hi 的位置', () => {
-      const el = mount({ 'range': '', 'reverse': '', value: '[20, 80]', min: '0', max: '100' })
+      const el = mount({ range: '', reverse: '', value: '[20, 80]', min: '0', max: '100' })
       expect(fillEl(el).style.left).toBe('20%') // 100 - pct(hi=80)
       expect(fillEl(el).style.width).toBe('60%')
     })
 
     it('自定义滑块 data-pct 镜像（值 30 → 70%）', () => {
-      const el = mount({ 'reverse': '', 'show-tooltip': '', value: '30' })
+      const el = mount({ reverse: '', 'show-tooltip': '', value: '30' })
       expect(thumbEl(el, 'value').getAttribute('data-pct')).toBe('70')
     })
 
     it('marks 位置镜像（0/50/100 → 100/50/0）', () => {
       const el = mount({
-        'reverse': '',
+        reverse: '',
         min: '0',
         max: '100',
         marks: JSON.stringify([0, 50, 100]),
@@ -424,7 +424,7 @@ describe('OASSlider', () => {
     })
 
     it('range 模式下模板克隆到 min/max 两个滑块', async () => {
-      const el = mount({ 'range': '', 'show-tooltip': '', value: '[20, 80]' })
+      const el = mount({ range: '', 'show-tooltip': '', value: '[20, 80]' })
       el.innerHTML = '<template slot="custom-thumb"><b>●</b></template>'
       await new Promise((r) => setTimeout(r))
       expect(thumbEl(el, 'min').hidden).toBe(false)
@@ -474,7 +474,7 @@ describe('OASSlider', () => {
     })
 
     it('range 模式两个滑块分别带 min/max aria-label', () => {
-      const el = mount({ 'range': '', value: '[20, 80]' })
+      const el = mount({ range: '', value: '[20, 80]' })
       expect(byRole(el, 'range-min').getAttribute('aria-label')).toBe('最小值')
       expect(byRole(el, 'range-max').getAttribute('aria-label')).toBe('最大值')
     })

@@ -75,10 +75,14 @@ export const zhCN = {
   'tour.prev': '上一步',
   'tour.next': '下一步',
   'tour.finish': '完成',
+  // steps（步骤条）
+  'steps.prev': '上一步',
+  'steps.next': '下一步',
   // anchor（锚点导航）
   'anchor.nav': '锚点导航',
   // breadcrumb（面包屑）
   'breadcrumb.nav': '面包屑',
+  'breadcrumb.expand': '展开被折叠的面包屑项',
   // back-top（回到顶部）
   'backTop.backToTop': '回到顶部',
   // page-header（页头）
@@ -145,6 +149,8 @@ export const zhCN = {
   'tag.close': '关闭',
   // tabs（标签页）
   'tabs.close': '关闭',
+  'tabs.add': '新增标签',
+  'tabs.newTab': '新标签',
   // button-group（按钮组）
   'buttonGroup.group': '按钮组',
   // loading（加载态，通用兜底）

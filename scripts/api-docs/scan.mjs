@@ -38,7 +38,7 @@ const ATTR_HELPERS = new Set(['getAttr', 'hasAttr', 'injectValue'])
 // （如 oas-tabs 读 oas-tab-panel 的 badge），子组件源码里没有 getAttr/hasAttr
 // 调用点，AST 无法推导，故显式登记（observed:false，不参与 attributeChanged 联动）。
 const SUPPLEMENT_ATTRS = {
-  'oas-tab-panel': ['badge'],
+  'oas-tab-panel': ['badge', 'icon'],
 }
 
 // ---------- 组件目录清单：ui/src/index.ts 的副作用导入行 ----------

@@ -202,9 +202,7 @@ describe('OASTransfer', () => {
     ;(rightOptions(el)[0] as HTMLElement).click()
     toLeftBtn(el).click()
     expect(el.getAttribute('value')).toBe('["a"]')
-    expect(
-      el.shadowRoot!.querySelector('.listbox.right .option[aria-selected="true"]'),
-    ).toBeNull()
+    expect(el.shadowRoot!.querySelector('.listbox.right .option[aria-selected="true"]')).toBeNull()
   })
 
   it('one-way：左侧穿梭后该选项在左侧变为禁用且 value 更新', () => {

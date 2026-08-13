@@ -267,9 +267,7 @@ describe('OASCalendar', () => {
   it('宿主设置 mode 属性同样派发 oas-mode-change（受控通知）', () => {
     const el = mount({ value: '2026-08-09' })
     const details: unknown[] = []
-    el.addEventListener('oas-mode-change', (e: Event) =>
-      details.push((e as CustomEvent).detail),
-    )
+    el.addEventListener('oas-mode-change', (e: Event) => details.push((e as CustomEvent).detail))
     el.setAttribute('mode', 'year')
     expect(details).toEqual([{ mode: 'year' }])
     el.setAttribute('mode', 'month')

@@ -212,7 +212,7 @@ gtag('config', 'G-RXS142HBXF');`,
   },
   vite: {
     server: {
-      port: 5173,
+      port: 5174,
       strictPort: true, // 固定 5173，端口被占时直接报错而不是自增到 5174/5175
     },
     optimizeDeps: {

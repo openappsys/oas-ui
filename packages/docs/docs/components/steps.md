@@ -36,6 +36,22 @@
   <oas-steps clickable current="1" onoas-change="message.info('切换到第 ' + (event.detail.index + 1) + ' 步')" steps='[{"title":"创建订单","description":"填写订单信息"},{"title":"确认支付","description":"选择支付方式"},{"title":"完成发货","description":"等待收货"}]'></oas-steps>
 </DemoBlock>
 
+## 点状步骤
+
+`progress-dot` 将步骤指示器切换为圆点（当前步圆点放大并带柔光晕），连线为细线；配合 `clickable` 圆点可点击跳转（含键盘）。
+
+<DemoBlock title="点状步骤">
+  <oas-steps progress-dot clickable current="1" onoas-change="message.info('切换到第 ' + (event.detail.index + 1) + ' 步')" steps='[{"title":"创建订单"},{"title":"确认支付"},{"title":"完成发货"}]'></oas-steps>
+</DemoBlock>
+
+## 导航模式
+
+`navigation` 将步骤切换为箭头导航条：当前步骤主色高亮、前序步骤浅主色、等待步骤灰色，描述隐藏；步骤项隐式可点（无需 `clickable`）。底部提供「上一步 / 下一步」按钮（首步/末步对应禁用），点击步骤或按钮都会派发 `oas-change`（detail 为 `{ index }`）并切换当前步。
+
+<DemoBlock title="导航模式（上一步 / 下一步）">
+  <oas-steps navigation current="1" onoas-change="message.info('当前步骤：第 ' + (event.detail.index + 1) + ' 步')" steps='[{"title":"填写资料"},{"title":"确认信息"},{"title":"提交完成"}]'></oas-steps>
+</DemoBlock>
+
 ## 无描述
 
 <DemoBlock title="仅标题">
@@ -58,13 +74,15 @@
 | --- | --- | --- | --- |
 | `clickable` | 步骤可点击跳转（布尔，存在即开启） | `boolean` | — |
 | `current` | 当前步骤索引（0 起） | `string` | `0` |
-| `direction` | 方向 | `string` | `horizontal` |
+| `direction` | 方向（导航模式下强制横向） | `string` | `horizontal` |
+| `navigation` | 导航模式：箭头导航条 + 底部上一步/下一步按钮（布尔，存在即开启） | `boolean` | — |
+| `progress-dot` | 点状步骤：指示器为圆点、连线为细线（布尔，存在即开启） | `boolean` | — |
 | `steps` | `[{ title, description?, status? }]` JSON 字符串 | `StepItem[] \| string` | `[]` |
 
 ### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-change` | 点击可点击步骤时触发（含键盘触发）；`detail: { index }`（0 起） |
+| `oas-change` | 点击可点击步骤或导航按钮时触发（含键盘触发）；`detail: { index }`（0 起） |
 
 状态规则：显式 `status`（`wait` / `process` / `finish` / `error`）优先；未指定时按 `current` 推导——索引 `< current` 为 `finish`（✓），`=== current` 为 `process`，其余为 `wait`。

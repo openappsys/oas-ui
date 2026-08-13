@@ -2290,14 +2290,33 @@
         "observed": true
       },
       {
+        "name": "group",
+        "observed": true
+      },
+      {
         "name": "duration",
         "type": "string",
         "default": "3000",
+        "observed": true
+      },
+      {
+        "name": "count",
+        "type": "string",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "key",
         "observed": false
       }
     ],
     "props": [],
-    "events": [],
+    "events": [
+      {
+        "name": "oas-close",
+        "detail": "{ key: this.getAttr('key') || undefined }"
+      }
+    ],
     "slots": [],
     "unresolved": []
   },
@@ -3314,13 +3333,29 @@
         "type": "string",
         "default": "/",
         "observed": true
+      },
+      {
+        "name": "collapsed",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "max-items",
+        "type": "string",
+        "default": "4",
+        "observed": true
+      },
+      {
+        "name": "ellipsis",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [],
     "events": [
       {
         "name": "oas-select",
-        "detail": "{ value: item.href }"
+        "detail": "{ value: slot.href }"
       }
     ],
     "slots": [],
@@ -3568,6 +3603,16 @@
         "name": "clickable",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "progress-dot",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "navigation",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [
@@ -3663,6 +3708,11 @@
         "observed": true
       },
       {
+        "name": "addable",
+        "type": "boolean",
+        "observed": true
+      },
+      {
         "name": "tab-position",
         "type": "string",
         "default": "top",
@@ -3674,6 +3724,10 @@
       {
         "name": "oas-close",
         "detail": "{ key: value }"
+      },
+      {
+        "name": "oas-add",
+        "detail": "{ label: this.t('tabs.newTab') }"
       },
       {
         "name": "oas-change",
@@ -3705,6 +3759,10 @@
       },
       {
         "name": "badge",
+        "observed": false
+      },
+      {
+        "name": "icon",
         "observed": false
       }
     ],

@@ -528,7 +528,7 @@ export class OASSlider extends OASElement {
 
   /** label 点击聚焦委托：把焦点交给 shadow 内主滑块（配合 oas-form-item 的 label 点击代理） */
   override focus(options?: FocusOptions): void {
-    const target = this.hasAttr('range') ? this.minInput ?? this.input : this.input
+    const target = this.hasAttr('range') ? (this.minInput ?? this.input) : this.input
     target?.focus(options)
   }
 
@@ -714,8 +714,7 @@ export class OASSlider extends OASElement {
     const tipsVisible = this.hasAttr('show-tooltip') || this.dragging
 
     // 拖动中也启用自定义滑块：拖动时临时显示值气泡（无需 show-tooltip）
-    const useOverlay =
-      this.hasCustomThumb() || this.hasAttr('show-tooltip') || this.dragging
+    const useOverlay = this.hasCustomThumb() || this.hasAttr('show-tooltip') || this.dragging
 
     const [lo, hi] = isRange ? this.currentRange() : [min, Number(this.input?.value ?? 0)]
     const pctOf = (v: number): number => ((v - min) / span) * 100
@@ -815,7 +814,8 @@ export class OASSlider extends OASElement {
     const min = Number(this.getAttr('min', '0'))
     const max = Number(this.getAttr('max', '100'))
     const reverse = this.hasAttr('reverse')
-    const key = `${reverse ? 'r' : ''}:${min}:${max}|` + marks.map((m) => `${m.value}:${m.label}`).join('|')
+    const key =
+      `${reverse ? 'r' : ''}:${min}:${max}|` + marks.map((m) => `${m.value}:${m.label}`).join('|')
     if (key !== this.marksKey) {
       this.marksKey = key
       this.renderMarks(marksEl, marks, min, max)

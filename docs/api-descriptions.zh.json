@@ -125,11 +125,14 @@
   },
   "oas-breadcrumb": {
     "attrs": {
+      "collapsed": "折叠模式：items 数量超过 `max-items` 时中间项折叠为 `…`，点击展开下拉",
+      "ellipsis": "单行省略：面包屑不换行，超宽时链接文本以省略号截断",
       "items": "面包屑项 JSON",
+      "max-items": "折叠模式下最多可见的项数（含 `…`），非法值回退 `4`",
       "separator": "分隔符"
     },
     "events": {
-      "oas-select": "点击链接项，`detail: { value: href }`"
+      "oas-select": "点击链接项或折叠下拉项，`detail: { value: href }`"
     },
     "slots": {}
   },
@@ -778,6 +781,19 @@
     },
     "slots": {}
   },
+  "oas-message": {
+    "attrs": {
+      "count": "合并计数（>1 时内容后显示 `×n`）",
+      "duration": "自动关闭时长（ms），`0` 表示不自动关闭",
+      "group": "分组标识：同组消息合并为一条",
+      "key": "唯一标识：供 `message.update` / `message.destroy` 定位",
+      "type": "消息类型：`info`/`success`/`warning`/`error`"
+    },
+    "events": {
+      "oas-close": "消息关闭时派发（自动关闭/关闭按钮/`destroy`），`detail: { key? }`"
+    },
+    "slots": {}
+  },
   "oas-modal": {
     "attrs": {
       "centered": "对话框垂直居中显示",
@@ -1133,11 +1149,13 @@
     "attrs": {
       "clickable": "步骤可点击跳转（布尔，存在即开启）",
       "current": "当前步骤索引（0 起）",
-      "direction": "方向",
+      "direction": "方向（导航模式下强制横向）",
+      "navigation": "导航模式：箭头导航条 + 底部上一步/下一步按钮（布尔，存在即开启）",
+      "progress-dot": "点状步骤：指示器为圆点、连线为细线（布尔，存在即开启）",
       "steps": "`[{ title, description?, status? }]` JSON 字符串"
     },
     "events": {
-      "oas-change": "点击可点击步骤时触发（含键盘触发）；`detail: { index }`（0 起）"
+      "oas-change": "点击可点击步骤或导航按钮时触发（含键盘触发）；`detail: { index }`（0 起）"
     },
     "slots": {}
   },
@@ -1159,6 +1177,7 @@
   "oas-tab-panel": {
     "attrs": {
       "badge": "标签标题旁的徽标（数字或文本）",
+      "icon": "标签标题前的图标名（复用 `oas-icon` 图标集，如 `mail`）",
       "label": "标签文本",
       "value": "标签值"
     },
@@ -1200,11 +1219,13 @@
   "oas-tabs": {
     "attrs": {
       "active": "激活标签的 `value`",
+      "addable": "标签栏末尾显示 + 按钮，点击派发 `oas-add`（组件不自动新增面板）",
       "closable": "每个标签显示关闭 ×，点击派发 `oas-close`（组件不自动删除）",
       "tab-position": "标签栏位置：`top`（默认）/ `left` / `right` / `bottom`",
       "type": "样式变体：`line`（下划线，默认）/ `card`（卡片式）"
     },
     "events": {
+      "oas-add": "点击 + 新增按钮，`detail: { label }`（默认新标签文案「新标签」走 locale，宿主自定义或直接使用）",
       "oas-change": "切换，`detail: { value }`",
       "oas-close": "点击标签关闭 ×，`detail: { key }`（`key` 为该标签 `value`，组件不自动移除）"
     },

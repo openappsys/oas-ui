@@ -292,20 +292,18 @@ export class OASTransfer extends OASElement {
     this.rightListbox?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e, 'right'))
 
     // 虚拟滚动：复用 oas-virtual-list 的窗口计算，把每个可见项渲染为选项行
-    this.virtualLeft?.addEventListener(
-      'oas-item',
-      ((e: CustomEvent<{ index: number; item: TransferItem; element: HTMLElement }>) => {
-        const d = e.detail
-        if (d && d.item && d.element) this.createVirtualRow(d.item, d.element, 'left')
-      }) as EventListener,
-    )
-    this.virtualRight?.addEventListener(
-      'oas-item',
-      ((e: CustomEvent<{ index: number; item: TransferItem; element: HTMLElement }>) => {
-        const d = e.detail
-        if (d && d.item && d.element) this.createVirtualRow(d.item, d.element, 'right')
-      }) as EventListener,
-    )
+    this.virtualLeft?.addEventListener('oas-item', ((
+      e: CustomEvent<{ index: number; item: TransferItem; element: HTMLElement }>,
+    ) => {
+      const d = e.detail
+      if (d && d.item && d.element) this.createVirtualRow(d.item, d.element, 'left')
+    }) as EventListener)
+    this.virtualRight?.addEventListener('oas-item', ((
+      e: CustomEvent<{ index: number; item: TransferItem; element: HTMLElement }>,
+    ) => {
+      const d = e.detail
+      if (d && d.item && d.element) this.createVirtualRow(d.item, d.element, 'right')
+    }) as EventListener)
     // 键盘导航绑定在 vlist 视口（shadow 内），合成 keydown（composed=false）也能直达
     this.attachVirtualKey(this.virtualLeft, 'left')
     this.attachVirtualKey(this.virtualRight, 'right')
@@ -375,9 +373,7 @@ export class OASTransfer extends OASElement {
     const value = this.currentValue()
     if (this.hasAttr('one-way')) {
       return side === 'left'
-        ? this._data.map((i) =>
-            value.includes(i.key) ? { ...i, disabled: true } : { ...i },
-          )
+        ? this._data.map((i) => (value.includes(i.key) ? { ...i, disabled: true } : { ...i }))
         : this._data.filter((i) => value.includes(i.key))
     }
     return side === 'left'
@@ -507,7 +503,11 @@ export class OASTransfer extends OASElement {
   }
 
   /** 虚拟列表单行渲染：与静态模式同一套选中/禁用/点击语义 */
-  private createVirtualRow(item: TransferItem, container: HTMLElement, side: 'left' | 'right'): void {
+  private createVirtualRow(
+    item: TransferItem,
+    container: HTMLElement,
+    side: 'left' | 'right',
+  ): void {
     const row = document.createElement('div')
     row.className = 'option'
     row.setAttribute('part', 'option')

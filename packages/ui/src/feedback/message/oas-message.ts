@@ -51,7 +51,7 @@ export type MessageType = 'info' | 'success' | 'warning' | 'error'
 
 export class OASMessage extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['type']
+    return ['type', 'group', 'duration', 'count']
   }
 
   private timer: ReturnType<typeof setTimeout> | null = null
@@ -59,26 +59,77 @@ export class OASMessage extends OASElement {
   protected override render(): void {
     this.shadow.innerHTML = `
       <style>${STYLE}</style>
-      <div class="box" part="box" role="${this.getAttr('type', 'info') === 'error' ? 'alert' : 'status'}">
+      <div class="box" part="box" role="status">
         <span class="text" part="text"></span>
         <button class="close" part="close" aria-label="">✕</button>
       </div>
     `
-    const text = this.shadow.querySelector('.text')!
-    text.textContent = this.textContent
     this.shadow
       .querySelector<HTMLButtonElement>('.close')
-      ?.addEventListener('click', () => this.remove())
-    const duration = Number(this.getAttr('duration', '3000'))
-    if (duration > 0) {
-      this.timer = setTimeout(() => this.remove(), duration)
-    }
+      ?.addEventListener('click', () => this.close())
+    this.onCleanup(() => this.clearTimer())
+    this.syncRole()
+    this.syncText()
+    this.startTimer()
   }
 
   protected override update(): void {
+    this.syncRole()
+    this.syncText()
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
     this.shadow
       .querySelector<HTMLElement>('[part="close"]')
       ?.setAttribute('aria-label', this.t('message.close'))
+  }
+
+  /**
+   * 命令式层刷新入口：更新内容/类型/时长/合并计数并重置自动关闭计时。
+   * 更新内容必须经此方法——textContent 变更不触发 attributeChangedCallback，
+   * 无法靠 update() 增量同步。
+   */
+  refresh(content: string, type?: MessageType, duration?: number, count?: number): void {
+    this.textContent = content
+    if (type) this.setAttribute('type', type)
+    if (duration !== undefined) this.setAttribute('duration', String(duration))
+    if (count !== undefined) this.setAttribute('count', String(count))
+    this.syncText()
+    this.startTimer()
+  }
+
+  /** 关闭：派发 oas-close（detail 携带 key）后移除 */
+  close(): void {
+    this.clearTimer()
+    this.emit('close', { key: this.getAttr('key') || undefined })
+    this.remove()
+  }
+
+  private syncRole(): void {
+    const box = this.shadow.querySelector<HTMLElement>('[part="box"]')
+    if (!box) return
+    box.setAttribute('role', this.getAttr('type', 'info') === 'error' ? 'alert' : 'status')
+  }
+
+  private syncText(): void {
+    const textEl = this.shadow.querySelector<HTMLElement>('[part="text"]')
+    if (!textEl) return
+    const content = this.textContent ?? ''
+    const count = Number(this.getAttr('count', '0'))
+    // 分组合并计数 >1 时在内容后展示 `×n`
+    textEl.textContent = count > 1 ? `${content} ×${count}` : content
+  }
+
+  private startTimer(): void {
+    this.clearTimer()
+    const duration = Number(this.getAttr('duration', '3000'))
+    if (duration > 0) {
+      this.timer = setTimeout(() => this.close(), duration)
+    }
+  }
+
+  private clearTimer(): void {
+    if (this.timer) {
+      clearTimeout(this.timer)
+      this.timer = null
+    }
   }
 }

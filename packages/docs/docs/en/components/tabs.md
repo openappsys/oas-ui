@@ -93,6 +93,30 @@ The `badge` attribute of `oas-tab-panel` renders a badge (number or text) next t
   </oas-tabs>
 </DemoBlock>
 
+## Dynamic add/remove tabs
+
+`addable`: shows a + button at the end of the tab bar (`aria-label` from locale); clicking fires `oas-add` (`detail: { label }` — the default new-tab label "New tab" comes from locale, use it directly or customize it). The component does not add a panel — the host appends an `oas-tab-panel` on `oas-add` and the tab bar refreshes incrementally; combine with `closable` to add and remove. After adding, the selection and keyboard focus (roving tabindex) land on the new tab; after closing the active tab, focus moves to the remaining selected tab.
+
+<DemoBlock title="Dynamic add/remove tabs">
+  <oas-tabs id="tabs-editable" addable closable active="a">
+    <oas-tab-panel label="Tab 1" value="a"><p>Content 1: close with ×, add with +.</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 2" value="b"><p>Content 2: keep adding/removing.</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
+## Icon tabs
+
+The `icon` attribute of `oas-tab-panel` renders an icon before the tab title (reuses the `oas-icon` icon set) as an icon + text combo. You can also put a direct child with `slot="icon"` inside the panel as a custom icon (emoji / SVG etc.).
+
+<DemoBlock title="Icon tabs">
+  <oas-tabs id="tabs-icon" active="a">
+    <oas-tab-panel label="Star" value="a" icon="star"><p>Content 1: icon rendered via the `icon` attribute.</p></oas-tab-panel>
+    <oas-tab-panel label="Mail" value="b" icon="mail"><p>Content 2: icon + text combo.</p></oas-tab-panel>
+    <oas-tab-panel label="Search" value="c" icon="search"><p>Content 3.</p></oas-tab-panel>
+    <oas-tab-panel label="Custom" value="d"><span slot="icon">🚀</span><p>Content 4: custom icon via `slot="icon"`.</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
 ## Tab position
 
 `tab-position`: `top` (default — tabs in a horizontal row above the content) / `left` (tabs stacked on the left, content on the right) / `right` / `bottom`.
@@ -143,6 +167,34 @@ onMounted(async () => {
       closableTabs.setAttribute('active', first?.getAttribute('value') ?? '')
     }
   })
+
+  // Dynamic add/remove: the host listens for oas-add and appends a panel
+  // (label uses e.detail.label directly; customize as needed). oas-close
+  // removes the panel; if the active tab is closed, switch to the first remaining.
+  const editable = document.getElementById('tabs-editable')
+  let seq = 2
+  editable?.addEventListener('oas-add', (e) => {
+    const label = `${e.detail.label} ${++seq}`
+    const value = `new-${seq}`
+    const panel = document.createElement('oas-tab-panel')
+    panel.setAttribute('label', label)
+    panel.setAttribute('value', value)
+    panel.innerHTML = `<p>Content: ${label}, keep adding/removing.</p>`
+    editable.appendChild(panel)
+    editable.setAttribute('active', value)
+    message?.info(`Added tab "${label}"`)
+  })
+  editable?.addEventListener('oas-close', (e) => {
+    const key = e.detail.key
+    message?.info(`Closed tab "${key}"`)
+    const target = editable.querySelector(`oas-tab-panel[value="${key}"]`)
+    const wasActive = editable.getAttribute('active') === key
+    target?.remove()
+    if (wasActive) {
+      const first = editable.querySelector('oas-tab-panel')
+      editable.setAttribute('active', first?.getAttribute('value') ?? '')
+    }
+  })
 })
 </script>
 
@@ -153,12 +205,14 @@ onMounted(async () => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `active` | The `value` of the active tab | `string` | — |
+| `addable` | Shows a + button at the end of the tab bar; clicking fires `oas-add` (the component does not add a panel) | `boolean` | — |
 | `closable` | Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel) | `boolean` | — |
 | `tab-position` | Tab bar position: `top` (default) / `left` / `right` / `bottom` | `string` | `top` |
 | `type` | Style variant: `line` (underline, default) / `card` | `string` | `line` |
 
 | Event | Description |
 | --- | --- |
+| `oas-add` | The + button was clicked, `detail: { label }` (default new-tab label from locale; use it or customize it) |
 | `oas-change` | Switched, `detail: { value }` |
 | `oas-close` | A tab's close × was clicked, `detail: { key }` (`key` is that tab's `value`; the component does not remove the panel) |
 
@@ -172,6 +226,7 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `badge` | Badge next to the tab title (number or text) | — | — |
 | `hidden` | — | — | — |
+| `icon` | Icon name shown before the tab title (reuses the `oas-icon` icon set, e.g. `mail`) | — | — |
 | `label` | Tab text | — | — |
 | `value` | Tab value | — | — |
 

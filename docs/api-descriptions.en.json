@@ -125,11 +125,14 @@
   },
   "oas-breadcrumb": {
     "attrs": {
+      "collapsed": "Collapse mode: when there are more items than `max-items`, middle items collapse into `…`; click to expand the dropdown",
+      "ellipsis": "Single-line ellipsis: the breadcrumb never wraps; overflowing link text is truncated with an ellipsis",
       "items": "Breadcrumb items JSON",
+      "max-items": "Maximum number of visible items in collapse mode (including `…`); invalid values fall back to `4`",
       "separator": "Separator"
     },
     "events": {
-      "oas-select": "A link item was clicked, `detail: { value: href }`"
+      "oas-select": "A link item or a collapsed dropdown item was clicked, `detail: { value: href }`"
     },
     "slots": {}
   },
@@ -778,6 +781,19 @@
     },
     "slots": {}
   },
+  "oas-message": {
+    "attrs": {
+      "count": "Merge count (shows `×n` after content when > 1)",
+      "duration": "Auto-close duration (ms), `0` to keep open",
+      "group": "Group id: messages in the same group merge into one",
+      "key": "Unique id: used by `message.update` / `message.destroy`",
+      "type": "Message type: `info`/`success`/`warning`/`error`"
+    },
+    "events": {
+      "oas-close": "Emitted when the message closes (auto-close / close button / `destroy`), `detail: { key? }`"
+    },
+    "slots": {}
+  },
   "oas-modal": {
     "attrs": {
       "centered": "Vertically center the dialog",
@@ -1133,11 +1149,13 @@
     "attrs": {
       "clickable": "Steps are clickable to jump (boolean; enabled when present)",
       "current": "Current step index (0-based)",
-      "direction": "Direction",
+      "direction": "Direction (forced to horizontal in navigation mode)",
+      "navigation": "Navigation mode: arrow bar with a bottom Previous/Next button row (boolean; enabled when present)",
+      "progress-dot": "Progress-dot steps: dot indicators with a thin connector line (boolean; enabled when present)",
       "steps": "`[{ title, description?, status? }]` JSON string"
     },
     "events": {
-      "oas-change": "Fired when a clickable step is clicked (including keyboard triggers); `detail: { index }` (0-based)"
+      "oas-change": "Fired when a clickable step or a navigation button is clicked (including keyboard triggers); `detail: { index }` (0-based)"
     },
     "slots": {}
   },
@@ -1159,6 +1177,7 @@
   "oas-tab-panel": {
     "attrs": {
       "badge": "Badge next to the tab title (number or text)",
+      "icon": "Icon name shown before the tab title (reuses the `oas-icon` icon set, e.g. `mail`)",
       "label": "Tab text",
       "value": "Tab value"
     },
@@ -1200,11 +1219,13 @@
   "oas-tabs": {
     "attrs": {
       "active": "The `value` of the active tab",
+      "addable": "Shows a + button at the end of the tab bar; clicking fires `oas-add` (the component does not add a panel)",
       "closable": "Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel)",
       "tab-position": "Tab bar position: `top` (default) / `left` / `right` / `bottom`",
       "type": "Style variant: `line` (underline, default) / `card`"
     },
     "events": {
+      "oas-add": "The + button was clicked, `detail: { label }` (default new-tab label from locale; use it or customize it)",
       "oas-change": "Switched, `detail: { value }`",
       "oas-close": "A tab's close × was clicked, `detail: { key }` (`key` is that tab's `value`; the component does not remove the panel)"
     },

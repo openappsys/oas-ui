@@ -41,7 +41,8 @@ const STYLE = `
 .item:not(:last-child)::after {
   content: '';
   position: absolute;
-  top: var(--oas-control-height-sm);
+  /* 连接线垂直居中于指示器（--oas-control-height-sm 为指示器高度） */
+  top: calc(var(--oas-control-height-sm) / 2);
   left: 50%;
   width: 100%;
   height: 2px;
@@ -60,7 +61,8 @@ const STYLE = `
 }
 .steps[data-direction='vertical'] .item:not(:last-child)::after {
   top: var(--oas-control-height-sm);
-  left: var(--oas-control-height-sm);
+  /* 纵向连接线水平居中于指示器 */
+  left: calc(var(--oas-control-height-sm) / 2);
   width: 2px;
   height: 100%;
 }
@@ -121,11 +123,148 @@ const STYLE = `
   border-radius: var(--oas-radius-sm);
   box-shadow: var(--oas-focus-ring);
 }
+
+/* —— progress-dot 点状：圆点指示器 + 细连线，连线垂直居中于圆点 —— */
+.steps[data-progress-dot='true'] .icon {
+  border: none;
+  background: transparent;
+  font-size: 0;
+}
+.steps[data-progress-dot='true'] .icon::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--oas-color-text-disabled);
+}
+/* 当前步圆点放大并带柔光晕 */
+.steps[data-progress-dot='true'] .item[data-status='process'] .icon::before {
+  width: 10px;
+  height: 10px;
+  background: var(--oas-color-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--oas-color-primary) 18%, transparent);
+}
+.steps[data-progress-dot='true'] .item[data-status='finish'] .icon::before {
+  background: var(--oas-color-primary);
+}
+.steps[data-progress-dot='true'] .item[data-status='error'] .icon::before {
+  background: var(--oas-color-danger);
+}
+.steps[data-progress-dot='true'] .item:not(:last-child)::after {
+  /* 点状指示器无边框，中心在高度一半处：连线再上移 1px 对准圆心 */
+  top: calc(var(--oas-control-height-sm) / 2 - 1px);
+}
+.steps[data-progress-dot='true'][data-direction='vertical'] .item:not(:last-child)::after {
+  left: calc(var(--oas-control-height-sm) / 2 - 1px);
+}
+
+/* —— navigation 导航模式：箭头分格条 + 底部上一步/下一步 —— */
+.steps[data-navigation='true'] .item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: var(--oas-space-3) var(--oas-space-4);
+  padding-inline-start: var(--oas-space-5);
+  text-align: start;
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.steps[data-navigation='true'] .item[data-status='process'] {
+  background: var(--oas-color-primary);
+  color: var(--oas-color-text-on-primary);
+}
+.steps[data-navigation='true'] .item[data-status='finish'] {
+  background: color-mix(in srgb, var(--oas-color-primary) 15%, transparent);
+  color: var(--oas-color-primary);
+}
+.steps[data-navigation='true'] .item[data-status='error'] {
+  background: var(--oas-color-danger);
+  color: var(--oas-color-text-on-danger);
+}
+/* 非末项右缘伸出右向箭头，压在下一项左缘上形成 chevron 链 */
+.steps[data-navigation='true'] .item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inset-inline-end: -16px;
+  width: 16px;
+  background: inherit;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  z-index: 1;
+}
+.steps[data-navigation='true'] .item:hover {
+  filter: brightness(0.94);
+}
+.steps[data-navigation='true'] .item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--oas-color-text-primary);
+  z-index: 2;
+}
+.steps[data-navigation='true'] .icon {
+  display: none;
+}
+.steps[data-navigation='true'] .text {
+  margin-top: 0;
+  color: inherit;
+  font-size: var(--oas-font-size-md);
+  font-weight: 500;
+}
+.steps[data-navigation='true'] .desc {
+  display: none;
+}
+
+/* —— 导航模式底部操作区 —— */
+.nav {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--oas-space-2);
+  margin-top: var(--oas-space-4);
+}
+.nav[hidden] {
+  display: none;
+}
+.nav .btn {
+  height: var(--oas-control-height-md);
+  padding: 0 var(--oas-space-4);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  font-size: var(--oas-font-size-md);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--oas-transition-fast) var(--oas-ease-out),
+    border-color var(--oas-transition-fast) var(--oas-ease-out);
+}
+.nav .btn:hover:not(:disabled) {
+  border-color: var(--oas-color-primary);
+  color: var(--oas-color-primary);
+}
+.nav .btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.nav .btn.next {
+  background: var(--oas-color-primary);
+  border-color: var(--oas-color-primary);
+  color: var(--oas-color-text-on-primary);
+}
+.nav .btn.next:hover:not(:disabled) {
+  background: var(--oas-color-primary-hover);
+  border-color: var(--oas-color-primary-hover);
+}
+.nav .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 `
 
 export class OASSteps extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['steps', 'current', 'direction', 'clickable']
+    return ['steps', 'current', 'direction', 'clickable', 'progress-dot', 'navigation']
   }
 
   private _steps: StepItem[] = []
@@ -138,16 +277,30 @@ export class OASSteps extends OASElement {
     this.setAttribute('steps', typeof value === 'string' ? value : JSON.stringify(value))
   }
 
+  private nav: HTMLElement | null = null
+  private prevBtn: HTMLButtonElement | null = null
+  private nextBtn: HTMLButtonElement | null = null
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
       <style>${STYLE}</style>
       <div class="steps" part="steps"></div>
+      <div class="nav" part="nav" hidden>
+        <button class="btn" part="prev" type="button"></button>
+        <button class="btn next" part="next" type="button"></button>
+      </div>
     `
   }
 
   /** 缓存节点引用（render 与水合路径共用；步骤事件在 update 重建时绑定） */
-  private bind(): void {}
+  private bind(): void {
+    this.nav = this.shadow.querySelector('.nav')
+    this.prevBtn = this.shadow.querySelector<HTMLButtonElement>('[part="prev"]')
+    this.nextBtn = this.shadow.querySelector<HTMLButtonElement>('[part="next"]')
+    this.prevBtn?.addEventListener('click', () => this.navStep(-1))
+    this.nextBtn?.addEventListener('click', () => this.navStep(1))
+  }
 
   protected override render(): void {
     this.shadow.innerHTML = this.template()
@@ -162,15 +315,38 @@ export class OASSteps extends OASElement {
     return true
   }
 
+  /** 统一跳转：写 current + 派发 oas-change + 重刷 */
+  private goto(idx: number): void {
+    this.setAttribute('current', String(idx))
+    this.emit('change', { index: idx })
+    this.update()
+  }
+
+  /** 导航模式底部按钮：向相邻步切换 */
+  private navStep(dir: -1 | 1): void {
+    const last = this._steps.length - 1
+    const current = Math.min(Math.max(Number(this.getAttr('current', '0')) || 0, 0), last)
+    const target = current + dir
+    if (target < 0 || target > last) return
+    this.goto(target)
+  }
+
   protected override update(): void {
     const stepsEl = this.shadow.querySelector('.steps')
     if (!stepsEl) return
     this.parseSteps()
-    const direction = this.getAttr('direction', 'horizontal')
-    stepsEl.setAttribute('data-direction', direction)
     const clickable = this.hasAttr('clickable')
+    const navigation = this.hasAttr('navigation')
+    const progressDot = this.hasAttr('progress-dot')
+    // 导航模式固定横向＼�箭头分格条仅横向）
+    const direction = navigation ? 'horizontal' : this.getAttr('direction', 'horizontal')
+    stepsEl.setAttribute('data-direction', direction)
     if (clickable) stepsEl.setAttribute('data-clickable', 'true')
     else stepsEl.removeAttribute('data-clickable')
+    if (navigation) stepsEl.setAttribute('data-navigation', 'true')
+    else stepsEl.removeAttribute('data-navigation')
+    if (progressDot) stepsEl.setAttribute('data-progress-dot', 'true')
+    else stepsEl.removeAttribute('data-progress-dot')
     stepsEl.innerHTML = ''
     const current = Number(this.getAttr('current', '0')) || 0
     this._steps.forEach((step, idx) => {
@@ -179,31 +355,37 @@ export class OASSteps extends OASElement {
       item.setAttribute('part', 'item')
       const status = this.resolveStatus(step, idx, current)
       item.setAttribute('data-status', status)
-      const icon = document.createElement('span')
-      icon.className = 'icon'
-      icon.textContent = status === 'finish' ? '✓' : status === 'error' ? '✕' : String(idx + 1)
+      if (status === 'process') item.setAttribute('aria-current', 'step')
       const textWrap = document.createElement('div')
       const title = document.createElement('div')
       title.className = 'text'
       title.textContent = step.title
       textWrap.appendChild(title)
-      if (step.description) {
+      if (step.description && !navigation) {
         const desc = document.createElement('div')
         desc.className = 'desc'
         desc.textContent = step.description
         textWrap.appendChild(desc)
       }
-      item.append(icon, textWrap)
-      if (clickable) {
+      if (!navigation) {
+        const icon = document.createElement('span')
+        icon.className = 'icon'
+        if (progressDot) {
+          // 点状：指示器为装饰性圆点（CSS ::before 渲染），名称由标题承担
+          icon.setAttribute('aria-hidden', 'true')
+        } else {
+          icon.textContent = status === 'finish' ? '✓' : status === 'error' ? '✕' : String(idx + 1)
+        }
+        item.appendChild(icon)
+      }
+      item.appendChild(textWrap)
+      // 导航模式步骤隐式可点＼�；普通模式需 clickable 开启
+      const interactive = clickable || navigation
+      if (interactive) {
         // 整项承担按钮角色，键盘 Enter/Space 可达；点击派发 oas-change{index} 并切换 current
         item.setAttribute('role', 'button')
         item.setAttribute('tabindex', '0')
-        if (status === 'process') item.setAttribute('aria-current', 'step')
-        const goto = (): void => {
-          this.setAttribute('current', String(idx))
-          this.emit('change', { index: idx })
-          this.update()
-        }
+        const goto = (): void => this.goto(idx)
         item.addEventListener('click', goto)
         item.addEventListener('keydown', (e: Event) => {
           const k = e as KeyboardEvent
@@ -214,6 +396,19 @@ export class OASSteps extends OASElement {
       }
       stepsEl.appendChild(item)
     })
+    // 导航模式底部上一步/下一步（内置文案 locale 驱动，setLocale 切换自动重刷；无步骤时隐藏）
+    if (this.nav) {
+      if (navigation && this._steps.length > 0) this.nav.removeAttribute('hidden')
+      else this.nav.setAttribute('hidden', '')
+    }
+    if (this.prevBtn) {
+      this.prevBtn.textContent = this.t('steps.prev')
+      this.prevBtn.disabled = navigation && current <= 0
+    }
+    if (this.nextBtn) {
+      this.nextBtn.textContent = this.t('steps.next')
+      this.nextBtn.disabled = navigation && current >= this._steps.length - 1
+    }
   }
 
   /** 状态解析：显式 status 优先，否则按 current 推导（前序 finish / 当前 process / 其余 wait） */

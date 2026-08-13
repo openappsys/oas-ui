@@ -1899,11 +1899,7 @@ test('notification 进度条 progress-position=top：进度条切到描述上方
   await page.waitForFunction(() => typeof (window as any).notification !== 'undefined', null, {
     timeout: 10000,
   })
-  await page
-    .locator('.demo-block', { hasText: '带进度条' })
-    .locator('oas-button')
-    .nth(1)
-    .click()
+  await page.locator('.demo-block', { hasText: '带进度条' }).locator('oas-button').nth(1).click()
   await page.waitForFunction(
     () => document.querySelector('oas-notification[progress-position="top"]') != null,
     null,
@@ -1992,7 +1988,10 @@ test('calendar 模式切换：year 选中月份后自动切回月视图（value 
   await page.locator('#calendar-mode-year').click()
   await page.waitForFunction(() => {
     const el = document.querySelector('oas-calendar#calendar-mode')!
-    return el.getAttribute('mode') === 'year' && el.shadowRoot!.querySelectorAll('.month-cell').length === 12
+    return (
+      el.getAttribute('mode') === 'year' &&
+      el.shadowRoot!.querySelectorAll('.month-cell').length === 12
+    )
   })
   // 年视图下点 2026 年 7 月 → value 更新 + 自动切回月视图
   await page.evaluate(() => {
@@ -2058,11 +2057,15 @@ test('slider show-input：拖动滑块实时更新输入框、输入数字防抖
     num.value = '35'
     num.dispatchEvent(new Event('input', { bubbles: true }))
   })
-  await page.waitForFunction(() => {
-    const el = document.querySelector('oas-slider[show-input]')
-    const input = el?.shadowRoot?.querySelector<HTMLInputElement>('[data-role="range"]')
-    return input != null && Number(input.value) === 35
-  }, null, { timeout: 5000 })
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('oas-slider[show-input]')
+      const input = el?.shadowRoot?.querySelector<HTMLInputElement>('[data-role="range"]')
+      return input != null && Number(input.value) === 35
+    },
+    null,
+    { timeout: 5000 },
+  )
 })
 
 test('slider range：双滑块区间 + 双输入框联动且方向反向（reverse）生效', async ({ page }) => {
@@ -2140,4 +2143,374 @@ test('slider custom-thumb：模板内容克隆进滑块、值气泡显示当前�
   expect(r.tipVisible).toBe(true)
   expect(r.nativeHidden).toBe(true)
   expect(parseFloat(r.dataPct ?? '')).toBe(60)
+})
+
+test('message 分组与更新：同组合并计数、update/destroy 可见反馈', async ({ page }) => {
+  // 曾现风险：group/key 能力不透明，命令式 API 只有 show/close，同组消息堆叠、更新只能先关再弹。
+  // 现要求：同 group 合并为一条并递增计数；update(key, options) 原位改内容/类型；destroy(key) 关单条。
+  await page.goto('/components/message.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button')
+  await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
+    timeout: 10000,
+  })
+  // 同 group 连点两次 → 合并为一条且计数 ×2（demo 按钮带 group + duration 0，可连点）
+  const groupBlock = page.locator('.demo-block', { hasText: '分组消息' })
+  await groupBlock.locator('oas-button').nth(0).click()
+  await groupBlock.locator('oas-button').nth(0).click()
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length === 1, null, {
+    timeout: 5000,
+  })
+  let text = await page.evaluate(
+    () =>
+      document.querySelector('oas-message')?.shadowRoot?.querySelector('[part="text"]')
+        ?.textContent ?? '',
+  )
+  expect(text).toContain('保存成功')
+  expect(text).toContain('×2')
+  // 不同 group → 相互独立（2 条）
+  await groupBlock.locator('oas-button').nth(1).click()
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length === 2, null, {
+    timeout: 5000,
+  })
+  // update：点「开始上传」新建 key=upload，再点「更新为成功」→ 原位改类型/内容（计数不显示后缀）
+  const updateBlock = page.locator('.demo-block', { hasText: '更新消息' })
+  await updateBlock.locator('oas-button').nth(0).click()
+  await updateBlock.locator('oas-button').nth(1).click()
+  await page.waitForFunction(
+    () => document.querySelector('oas-message[key="upload"]')?.getAttribute('type') === 'success',
+    null,
+    { timeout: 5000 },
+  )
+  const upd = await page.evaluate(() => {
+    const el = document.querySelector('oas-message[key="upload"]')!
+    return {
+      text: el.shadowRoot!.querySelector('[part="text"]')!.textContent ?? '',
+      total: document.querySelectorAll('oas-message').length,
+    }
+  })
+  expect(upd.text).toBe('上传成功')
+  expect(upd.total).toBe(3)
+  // destroy：关闭指定 key，其余保留
+  await updateBlock.locator('oas-button').nth(2).click()
+  await page.waitForFunction(
+    () => document.querySelector('oas-message[key="upload"]') == null,
+    null,
+    {
+      timeout: 5000,
+    },
+  )
+  expect(await page.locator('oas-message').count()).toBe(2)
+  // 同组再点 → 计数继续累加（×3，分组合并后 count 持久）
+  await groupBlock.locator('oas-button').nth(0).click()
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('oas-message[group="save"]')
+        ?.shadowRoot?.querySelector('[part="text"]')
+        ?.textContent?.includes('×3') ?? false,
+    null,
+    { timeout: 5000 },
+  )
+})
+
+// —— breadcrumb P1 补缺：折叠（collapsed/max-items）+ 单行省略（ellipsis）——
+// 曾现缺口：长路径面包屑无处折叠、窄容器下换行/溢出。本次补 collapsed + max-items 中间折叠为 …，
+// 点击展开下拉查看全部＼�；ellipsis 单行省略 + 链接全文 title。
+
+test('breadcrumb 折叠：超出 max-items 中间项折叠为 …，点击展开下拉、点击项派发 oas-select', async ({
+  page,
+}) => {
+  await page.goto('/components/breadcrumb.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-breadcrumb#bc-collapsed')
+  // 折叠态：可见 item 4（首 + … + 末2），省略按钮可聚焦（aria-expanded=false）、下拉默认关闭
+  const r0 = await page.evaluate(() => {
+    const el = document.querySelector('oas-breadcrumb#bc-collapsed')!
+    const root = el.shadowRoot!
+    const btn = root.querySelector<HTMLButtonElement>('.ellipsis-btn')!
+    const dd = root.querySelector<HTMLElement>('.ellipsis-dropdown')!
+    return {
+      itemCount: root.querySelectorAll('nav > .item').length,
+      btnText: btn.textContent,
+      ariaExpanded: btn.getAttribute('aria-expanded'),
+      ariaLabel: btn.getAttribute('aria-label'),
+      open: dd.classList.contains('open'),
+      hiddenLabels: [...dd.querySelectorAll('a')].map((a) => a.textContent),
+      current: root.querySelector('[part="current"]')?.textContent ?? '',
+    }
+  })
+  expect(r0.itemCount).toBe(4)
+  expect(r0.btnText).toContain('…')
+  expect(r0.ariaExpanded).toBe('false')
+  expect(r0.ariaLabel).toBeTruthy()
+  expect(r0.open).toBe(false)
+  expect(r0.hiddenLabels).toEqual(['组件', '导航', '数据展示'])
+  expect(r0.current).toBe('面包屑')
+  // 点击 … 展开下拉
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-breadcrumb#bc-collapsed')!
+    el.shadowRoot!.querySelector<HTMLElement>('.ellipsis-btn')!.click()
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-breadcrumb#bc-collapsed')!
+    return el.shadowRoot!.querySelector('.ellipsis-dropdown')!.classList.contains('open')
+  })
+  // 点击折叠项：派发 oas-select（demo 输出可见反馈）+ 下拉关闭
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-breadcrumb#bc-collapsed')!
+    el.shadowRoot!.querySelector<HTMLElement>('.ellipsis-dropdown a')!.click()
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('oas-breadcrumb#bc-collapsed')!
+    return !el.shadowRoot!.querySelector('.ellipsis-dropdown')!.classList.contains('open')
+  })
+  const output = await page.locator('#bc-collapsed-result').textContent()
+  expect(output).toContain('已点击')
+})
+
+test('breadcrumb 单行省略：ellipsis 时 nav 不换行 class + 链接带全文 title', async ({ page }) => {
+  await page.goto('/components/breadcrumb.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-breadcrumb#bc-ellipsis')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-breadcrumb#bc-ellipsis')!
+    const root = el.shadowRoot!
+    const nav = root.querySelector('nav')!
+    const link = root.querySelector<HTMLAnchorElement>('nav > .item > [part="link"]')!
+    return {
+      ellipsis: nav.classList.contains('ellipsis'),
+      title: link.getAttribute('title'),
+    }
+  })
+  expect(r.ellipsis).toBe(true)
+  expect(r.title).toBeTruthy()
+})
+
+test('tabs 动态增删：+ 新增默认标签（locale 文案、选中、roving tabindex），× 关闭可见反馈', async ({
+  page,
+}) => {
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tabs[addable] oas-tab-panel')
+  const r1 = await page.evaluate(() => {
+    const t = document.querySelector('#tabs-editable')!
+    const add = t.shadowRoot!.querySelector<HTMLElement>('.tab-add')!
+    add.focus() // 模拟真实点击：先聚焦 + 按钮（键盘 Enter / 鼠标按下都会聚焦）
+    add.click()
+    // 排除 + 占位 tab（role=tab 但无 data-value，axe aria-required-children 需要它是 tab）
+    const tabs = [...t.shadowRoot!.querySelectorAll('[role="tab"][data-value]')]
+    const selected = tabs.find((b) => b.getAttribute('aria-selected') === 'true')!
+    return {
+      count: tabs.length,
+      selectedText: selected.textContent ?? '',
+      selectedTabIndex: selected.getAttribute('tabindex'),
+      otherTabIndexes: tabs.filter((b) => b !== selected).map((b) => b.getAttribute('tabindex')),
+      panelCount: t.querySelectorAll('oas-tab-panel').length,
+      focusOnNew: t.shadowRoot!.activeElement === selected,
+    }
+  })
+  expect(r1.count).toBe(3)
+  expect(r1.panelCount).toBe(3)
+  expect(r1.selectedText).toContain('新标签')
+  expect(r1.selectedTabIndex).toBe('0')
+  expect(r1.otherTabIndexes.every((v) => v === '-1')).toBe(true)
+  expect(r1.focusOnNew).toBe(true)
+
+  // 关闭新增的激活标签 → 面板移除 + 切回第一个 + 焦点仍在标签栏
+  const r2 = await page.evaluate(() => {
+    const t = document.querySelector('#tabs-editable')!
+    const key = t.getAttribute('active')!
+    const tabs = [...t.shadowRoot!.querySelectorAll('[role="tab"][data-value]')]
+    const idx = tabs.findIndex((b) => b.getAttribute('data-value') === key)
+    const close = tabs[idx]!.querySelector<HTMLElement>('.tab-close')!
+    close.focus() // 模拟真实鼠标点击 ×（mousedown 聚焦可聚焦的关闭位）
+    close.click()
+    const after = [...t.shadowRoot!.querySelectorAll('[role="tab"][data-value]')]
+    return {
+      panelCount: t.querySelectorAll('oas-tab-panel').length,
+      active: t.getAttribute('active'),
+      firstSelected: after[0]?.getAttribute('aria-selected'),
+      focusInTablist: !!after.find((b) => b === t.shadowRoot!.activeElement),
+    }
+  })
+  expect(r2.panelCount).toBe(2)
+  expect(r2.active).toBe('a')
+  expect(r2.firstSelected).toBe('true')
+  expect(r2.focusInTablist).toBe(true)
+})
+
+test('tabs 键盘方向键：焦点随 roving tabindex 移动、aria-selected 同步', async ({ page }) => {
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tabs oas-tab-panel')
+  const r = await page.evaluate(() => {
+    const t = document.querySelector('oas-tabs')!
+    const tablist = t.shadowRoot!.querySelector<HTMLElement>('[role="tablist"]')!
+    const first = t.shadowRoot!.querySelector<HTMLElement>('[role="tab"]')!
+    first.focus()
+    tablist.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    const tabs = [...t.shadowRoot!.querySelectorAll('[role="tab"]')]
+    return {
+      active: t.getAttribute('active'),
+      focusIndex: tabs.indexOf(t.shadowRoot!.activeElement as Element),
+      selectedIndex: tabs.findIndex((b) => b.getAttribute('aria-selected') === 'true'),
+      tabIndexes: tabs.map((b) => b.getAttribute('tabindex')),
+    }
+  })
+  expect(r.active).toBe('b')
+  expect(r.focusIndex).toBe(1)
+  expect(r.selectedIndex).toBe(1)
+  expect(r.tabIndexes).toEqual(['-1', '0', '-1'])
+})
+
+test('tabs 图标标签：icon 属性渲染 SVG，slot="icon" 自定义图标，均对读屏隐藏', async ({ page }) => {
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tabs#tabs-icon oas-tab-panel')
+  const r = await page.evaluate(() => {
+    const t = document.querySelector('#tabs-icon')!
+    const icons = [...t.shadowRoot!.querySelectorAll('.tab-icon')]
+    return {
+      svgCount: icons.filter((i) => i.querySelector('svg')).length,
+      texts: icons.map((i) => i.textContent ?? ''),
+      hidden: icons.every((i) => i.getAttribute('aria-hidden') === 'true'),
+    }
+  })
+  expect(r.svgCount).toBe(3) // star / mail / search
+  expect(r.texts.join('')).toContain('🚀')
+  expect(r.hidden).toBe(true)
+})
+
+// —— steps P1 补缺：点状（progress-dot）+ 导航模式（navigation）——
+// 曾现缺口：步骤只有序号圆点一种形态，无点状/导航形态；导航模式无内置上一步/下一步。
+// 本次补 progress-dot（圆点 + 细连线 + 点击/键盘切换）与 navigation（箭头导航条 + 底部按钮）。
+
+test('steps progress-dot：属性在 Vue demo 存活、指示器为装饰性圆点、连线细且对齐圆心', async ({
+  page,
+}) => {
+  await page.goto('/components/steps.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-steps[progress-dot]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-steps[progress-dot]')!
+    const root = el.shadowRoot!
+    const items = [...root.querySelectorAll('.item')]
+    const icons = items.map((it) => it.querySelector('.icon')!)
+    const line = getComputedStyle(items[0]!, '::after')
+    const iconRect = icons[0]!.getBoundingClientRect()
+    const itemRect = items[0]!.getBoundingClientRect()
+    return {
+      attrSurvived: el.getAttribute('progress-dot'),
+      dotMarked: root.querySelector('[part="steps"]')!.getAttribute('data-progress-dot'),
+      iconsEmpty: icons.every((i) => i.textContent === ''),
+      iconsAriaHidden: icons.every((i) => i.getAttribute('aria-hidden') === 'true'),
+      lineHeight: line.height,
+      lineTop: line.top,
+      iconCenterY: Math.round(iconRect.top + iconRect.height / 2 - itemRect.top),
+      processAriaCurrent: items
+        .find((i) => i.getAttribute('data-status') === 'process')
+        ?.getAttribute('aria-current'),
+      processDotWider: (() => {
+        const proc = items.find((i) => i.getAttribute('data-status') === 'process')!
+        const wait = items.find((i) => i.getAttribute('data-status') === 'wait')!
+        return (
+          parseFloat(getComputedStyle(proc.querySelector('.icon')!, '::before').width) >
+          parseFloat(getComputedStyle(wait.querySelector('.icon')!, '::before').width)
+        )
+      })(),
+    }
+  })
+  expect(r.attrSurvived, 'progress-dot 被 Vue 剥离').toBe('')
+  expect(r.dotMarked).toBe('true')
+  expect(r.iconsEmpty).toBe(true)
+  expect(r.iconsAriaHidden).toBe(true)
+  expect(r.lineHeight).toBe('2px')
+  // 连线贴近圆心（此前在指示器底部；24px 指示器中心 12，允许 1px 误差）
+  expect(Math.abs(parseFloat(r.lineTop) + 1 - r.iconCenterY)).toBeLessThanOrEqual(2)
+  expect(r.processAriaCurrent).toBe('step')
+  expect(r.processDotWider, '当前步圆点应放大').toBe(true)
+})
+
+test('steps navigation：底部上一步/下一步可见，点击切换 current 并弹 message 反馈，末步下一步禁用', async ({
+  page,
+}) => {
+  await page.goto('/components/steps.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-steps[navigation]')
+  await page.waitForFunction(() => typeof (window as any).message !== 'undefined', null, {
+    timeout: 10000,
+  })
+  const r0 = await page.evaluate(() => {
+    const el = document.querySelector('oas-steps[navigation]')!
+    const root = el.shadowRoot!
+    const nav = root.querySelector('[part="nav"]')!
+    const items = [...root.querySelectorAll('.item')]
+    const process = items.find((i) => i.getAttribute('data-status') === 'process')!
+    return {
+      attrSurvived: el.getAttribute('navigation'),
+      navMarked: root.querySelector('[part="steps"]')!.getAttribute('data-navigation'),
+      navVisible: !nav.hasAttribute('hidden'),
+      prevText: nav.querySelector<HTMLButtonElement>('[part="prev"]')!.textContent,
+      nextText: nav.querySelector<HTMLButtonElement>('[part="next"]')!.textContent,
+      prevDisabled: nav.querySelector<HTMLButtonElement>('[part="prev"]')!.disabled,
+      nextDisabled: nav.querySelector<HTMLButtonElement>('[part="next"]')!.disabled,
+      processAriaCurrent: process.getAttribute('aria-current'),
+      processBg: getComputedStyle(process).backgroundColor,
+      processColor: getComputedStyle(process.querySelector('.text')!).color,
+      itemClickable: items.every(
+        (i) => i.getAttribute('role') === 'button' && i.getAttribute('tabindex') === '0',
+      ),
+      descHidden: items.every((i) => !i.querySelector('.desc')),
+      arrowExists: getComputedStyle(items[0]!, '::after').width === '16px',
+    }
+  })
+  expect(r0.attrSurvived, 'navigation 被 Vue 剥离').toBe('')
+  expect(r0.navMarked).toBe('true')
+  expect(r0.navVisible).toBe(true)
+  expect(r0.prevText).toBe('上一步')
+  expect(r0.nextText).toBe('下一步')
+  expect(r0.prevDisabled).toBe(false)
+  expect(r0.nextDisabled).toBe(false)
+  expect(r0.processAriaCurrent).toBe('step')
+  expect(r0.processBg).toBe('rgb(11, 108, 255)') // --oas-color-primary（light）
+  expect(r0.processColor).toBe('rgb(255, 255, 255)') // --oas-color-text-on-primary
+  expect(r0.itemClickable).toBe(true)
+  expect(r0.descHidden).toBe(true)
+  expect(r0.arrowExists).toBe(true)
+
+  // 点击下一步 → current 前移 + oas-change 弹 message（可见反馈）
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-steps[navigation]')!
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!.click()
+  })
+  await page.waitForFunction(() => document.querySelectorAll('oas-message').length > 0, null, {
+    timeout: 5000,
+  })
+  const after = await page.evaluate(() => {
+    const el = document.querySelector('oas-steps[navigation]')!
+    const root = el.shadowRoot!
+    const msg = document.querySelector('oas-message')?.shadowRoot?.textContent ?? ''
+    const items = [...root.querySelectorAll('.item')]
+    const process = items.find((i) => i.getAttribute('data-status') === 'process')!
+    return {
+      current: el.getAttribute('current'),
+      processText: process.querySelector('.text')?.textContent,
+      msg,
+    }
+  })
+  expect(after.current).toBe('2')
+  expect(after.processText).toContain('提交完成')
+  expect(after.msg).toContain('当前步骤')
+  expect(after.msg).toContain('第 3 步')
+
+  // 末步下一步禁用
+  const lastDisabled = await page.evaluate(() => {
+    const el = document.querySelector('oas-steps[navigation]')!
+    return el.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!.disabled
+  })
+  expect(lastDisabled).toBe(true)
+
+  // 点击上一步回退 + 步骤项点击也可切换（点击第 1 项回到第 1 步）
+  await page.evaluate(() => {
+    const el = document.querySelector('oas-steps[navigation]')!
+    el.shadowRoot!.querySelector<HTMLElement>('.item')!.click()
+  })
+  await page.waitForFunction(
+    () => document.querySelector('oas-steps[navigation]')?.getAttribute('current') === '0',
+    null,
+    { timeout: 5000 },
+  )
 })

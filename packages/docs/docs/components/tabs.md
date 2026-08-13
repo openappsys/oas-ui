@@ -93,6 +93,30 @@
   </oas-tabs>
 </DemoBlock>
 
+## 动态增删标签
+
+`addable`：标签栏末尾显示 + 按钮（`aria-label` 走 locale），点击派发 `oas-add`（`detail: { label }`，默认新标签文案「新标签」走 locale，宿主可直接使用或自定义）。组件不自动新增面板，宿主监听 `oas-add` 追加 `oas-tab-panel` 即可，标签栏增量刷新；配合 `closable` 可同时增删。新增后选中态与键盘焦点（roving tabindex）自动落到新标签；关闭激活标签后焦点落到剩余选中标签。
+
+<DemoBlock title="动态增删标签">
+  <oas-tabs id="tabs-editable" addable closable active="a">
+    <oas-tab-panel label="标签一" value="a"><p>内容一：点 × 关闭，点 + 新增。</p></oas-tab-panel>
+    <oas-tab-panel label="标签二" value="b"><p>内容二：可继续增删。</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
+## 图标标签
+
+`oas-tab-panel` 的 `icon` 属性：标签标题前渲染图标（复用 `oas-icon` 图标集），图标 + 文字组合。也支持在面板内放一个 `slot="icon"` 的直接子元素作为自定义图标（emoji / SVG 等）。
+
+<DemoBlock title="图标标签">
+  <oas-tabs id="tabs-icon" active="a">
+    <oas-tab-panel label="收藏" value="a" icon="star"><p>内容一：icon 属性渲染图标。</p></oas-tab-panel>
+    <oas-tab-panel label="消息" value="b" icon="mail"><p>内容二：图标 + 文字组合。</p></oas-tab-panel>
+    <oas-tab-panel label="搜索" value="c" icon="search"><p>内容三。</p></oas-tab-panel>
+    <oas-tab-panel label="自定义" value="d"><span slot="icon">🚀</span><p>内容四：slot="icon" 自定义图标。</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
 ## 标签位置
 
 `tab-position`：`top`（默认，标签横向一排、内容在下方）/ `left`（标签纵排左侧、内容在右）/ `right` / `bottom`。
@@ -143,6 +167,33 @@ onMounted(async () => {
       closableTabs.setAttribute('active', first?.getAttribute('value') ?? '')
     }
   })
+
+  // 动态增删：宿主监听 oas-add 追加面板（label 直接用 e.detail.label，可自定义）；
+  // oas-close 关闭面板，激活标签被关闭时切到剩余第一个
+  const editable = document.getElementById('tabs-editable')
+  let seq = 2
+  editable?.addEventListener('oas-add', (e) => {
+    const label = `${e.detail.label} ${++seq}`
+    const value = `new-${seq}`
+    const panel = document.createElement('oas-tab-panel')
+    panel.setAttribute('label', label)
+    panel.setAttribute('value', value)
+    panel.innerHTML = `<p>内容：${label}，可继续增删。</p>`
+    editable.appendChild(panel)
+    editable.setAttribute('active', value)
+    message?.info(`新增标签「${label}」`)
+  })
+  editable?.addEventListener('oas-close', (e) => {
+    const key = e.detail.key
+    message?.info(`关闭标签「${key}」`)
+    const target = editable.querySelector(`oas-tab-panel[value="${key}"]`)
+    const wasActive = editable.getAttribute('active') === key
+    target?.remove()
+    if (wasActive) {
+      const first = editable.querySelector('oas-tab-panel')
+      editable.setAttribute('active', first?.getAttribute('value') ?? '')
+    }
+  })
 })
 </script>
 
@@ -153,12 +204,14 @@ onMounted(async () => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `active` | 激活标签的 `value` | `string` | — |
+| `addable` | 标签栏末尾显示 + 按钮，点击派发 `oas-add`（组件不自动新增面板） | `boolean` | — |
 | `closable` | 每个标签显示关闭 ×，点击派发 `oas-close`（组件不自动删除） | `boolean` | — |
 | `tab-position` | 标签栏位置：`top`（默认）/ `left` / `right` / `bottom` | `string` | `top` |
 | `type` | 样式变体：`line`（下划线，默认）/ `card`（卡片式） | `string` | `line` |
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-add` | 点击 + 新增按钮，`detail: { label }`（默认新标签文案「新标签」走 locale，宿主自定义或直接使用） |
 | `oas-change` | 切换，`detail: { value }` |
 | `oas-close` | 点击标签关闭 ×，`detail: { key }`（`key` 为该标签 `value`，组件不自动移除） |
 
@@ -172,6 +225,7 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `badge` | 标签标题旁的徽标（数字或文本） | — | — |
 | `hidden` | — | — | — |
+| `icon` | 标签标题前的图标名（复用 `oas-icon` 图标集，如 `mail`） | — | — |
 | `label` | 标签文本 | — | — |
 | `value` | 标签值 | — | — |
 

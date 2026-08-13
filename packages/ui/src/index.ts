@@ -168,6 +168,8 @@ export {
   destroyAll as destroyAllMessage,
   type MessageType,
   type MessageHandle,
+  type MessageOptions,
+  type MessageUpdateOptions,
 } from './feedback/message/index.js'
 export {
   OASNotification,
