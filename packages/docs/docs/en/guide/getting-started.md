@@ -1,12 +1,25 @@
 # Getting Started
 
-## Three-line setup (CDN)
+## CDN usage
+
+**Full bundle (simplest, registers all components)**: `cdn.js` is a pre-bundled IIFE file; just load it via a `<script>` tag:
 
 ```html
 <link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@1/index.css" />
 <script src="https://unpkg.com/@oas-ui/ui@1/dist/cdn.js"></script>
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
+
+**Import a single component on demand**: use the esm.sh short path (resolves dependencies automatically), which registers only that one component:
+
+```html
+<script type="module">
+  import 'https://esm.sh/@oas-ui/ui@1/basic/button'
+</script>
+<oas-button type="primary">Hello OAS-UI</oas-button>
+```
+
+> **CDN entry-point note**: the `oas-*.js` files under each component directory are pure class definitions (for bundler tree-shaking) and do **not** register anything; `customElements.define` runs in `index.js`. For direct CDN usage, use the full `cdn.js` above or the on-demand short path (resolved to `index.js` via the exports map). Do **not** import `dist/basic/button/oas-button.js` directly — the import succeeds but the element never registers, so nothing renders.
 
 ## Install (npm / pnpm / yarn)
 
