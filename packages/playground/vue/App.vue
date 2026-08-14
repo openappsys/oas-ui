@@ -28,16 +28,16 @@ function onSortChange(e: Event) {
 
     <div class="switch-row">
       <oas-button
-        size="sm"
+        size="small"
         @click="theme = 'light'"
         :type="theme === 'light' ? 'primary' : 'default'"
         >Light</oas-button
       >
-      <oas-button size="sm" @click="theme = 'dark'" :type="theme === 'dark' ? 'primary' : 'default'"
+      <oas-button size="small" @click="theme = 'dark'" :type="theme === 'dark' ? 'primary' : 'default'"
         >Dark</oas-button
       >
       <oas-button
-        size="sm"
+        size="small"
         @click="theme = 'high-contrast'"
         :type="theme === 'high-contrast' ? 'primary' : 'default'"
         >高对比</oas-button
@@ -57,7 +57,7 @@ function onSortChange(e: Event) {
 
     <div class="demo-block">
       <h3>抽屉 + 消息</h3>
-      <oas-button size="sm" @click=";(window as any).OASMessage?.success?.('Vue 侧成功提示')"
+      <oas-button size="small" @click=";(window as any).OASMessage?.success?.('Vue 侧成功提示')"
         >成功消息</oas-button
       >
     </div>

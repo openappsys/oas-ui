@@ -13,21 +13,21 @@ export default function App() {
 
       <div className="switch-row">
         <oas-button
-          size="sm"
+          size="small"
           onClick={() => setTheme('light')}
           type={theme === 'light' ? 'primary' : 'default'}
         >
           Light
         </oas-button>
         <oas-button
-          size="sm"
+          size="small"
           onClick={() => setTheme('dark')}
           type={theme === 'dark' ? 'primary' : 'default'}
         >
           Dark
         </oas-button>
         <oas-button
-          size="sm"
+          size="small"
           onClick={() => setTheme('high-contrast')}
           type={theme === 'high-contrast' ? 'primary' : 'default'}
         >
@@ -49,7 +49,7 @@ export default function App() {
           <oas-form-item label="邮箱" name="email" required>
             <oas-input name="email" placeholder="请输入邮箱" required></oas-input>
           </oas-form-item>
-          <oas-button type="primary" size="sm">
+          <oas-button type="primary" size="small">
             提交
           </oas-button>
         </oas-form>
@@ -63,7 +63,7 @@ export default function App() {
       <div className="demo-block">
         <h3>消息与确认（命令式 API）</h3>
         <oas-button
-          size="sm"
+          size="small"
           onClick={() =>
             (window as unknown as { OASMessage: Record<string, unknown> }).OASMessage?.success?.(
               'React 侧成功提示',
