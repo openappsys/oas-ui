@@ -42,8 +42,10 @@ const labels = computed(() =>
 
 /** 把浏览器序列化的单行 HTML 格式化为换行缩进（便于阅读；空元素 <x></x> 保持一行） */
 function formatHtml(html: string): string {
-  // 标签间换行：`>` 后非 `</` 才换行（空元素 `<x></x>` 的 `></` 保持一行）
-  const tokens = html.replace(/>(?!<\/)\s*</g, '>\n<').split('\n')
+  // 闭合标签间换行：`</x></y>` → `</x>\n</y>`（两个独立闭合标签不挤一行）
+  const step1 = html.replace(/<\/([\w-]+)>\s*<\//g, '</$1>\n</')
+  // 开标签前换行：`>` 后非 `</` 才换行（空元素 `<x></x>` 的 `></` 保持一行）
+  const tokens = step1.replace(/>(?!<\/)\s*</g, '>\n<').split('\n')
   let depth = 0
   const out: string[] = []
   for (const raw of tokens) {
