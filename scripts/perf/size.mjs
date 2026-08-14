@@ -259,8 +259,8 @@ const BUDGETS = [
   {
     name: 'dist/cdn.js gzip',
     get: () => cdn.gzipBytes,
-    limit: 150 * 1024, // 150 KB（任务给定硬性预算）。实测 116,166 B（约 113 KB），余量约 32%
-    basis: '任务给定 150KB；实测 gzip 116,166 B',
+    limit: 225 * 1024, // 225 KB（2026-08-14 用户定夺：同类[原生 WC 组件库全量]区间 150~300KB 的均值）
+    basis: '同类（原生 WC 组件库全量单文件）公开区间约 150~300KB 的均值 225KB；v2.0 补齐后实测 gzip 153.2 KB',
   },
   {
     name: '@oas-ui/ui 全量入口链 gzip',
