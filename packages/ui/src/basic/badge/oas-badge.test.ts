@@ -197,3 +197,254 @@ describe('OASBadge ribbon', () => {
     expect(r.classList.contains('color-success')).toBe(true)
   })
 })
+
+describe('OASBadge standalone 独立徽标', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('默认插槽无内容时回落静态行内（standalone class），有内容时角标定位', async () => {
+    const el = new OASBadge()
+    el.setAttribute('value', '5')
+    document.body.appendChild(el)
+    expect(badge(el)!.classList.contains('standalone')).toBe(true)
+    // 补上子内容 → 回落为角标定位
+    el.textContent = '通知'
+    await new Promise((r) => setTimeout(r, 0))
+    expect(badge(el)!.classList.contains('standalone')).toBe(false)
+  })
+
+  it('standalone 时数字仍正常显示', () => {
+    const el = new OASBadge()
+    el.setAttribute('value', '8')
+    document.body.appendChild(el)
+    expect(badge(el)!.hidden).toBe(false)
+    expect(badge(el)!.textContent).toBe('8')
+  })
+
+  it('standalone 时 dot 圆点正常显示', () => {
+    const el = new OASBadge()
+    el.setAttribute('dot', '')
+    document.body.appendChild(el)
+    expect(badge(el)!.hidden).toBe(false)
+    expect(badge(el)!.classList.contains('dot')).toBe(true)
+    expect(badge(el)!.classList.contains('standalone')).toBe(true)
+  })
+})
+
+describe('OASBadge 颜色全模式', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('color 语义色应用于 count 徽标（token + on-color 变量）', () => {
+    const el = mount({ value: '5', color: 'success' })
+    const b = badge(el)!
+    expect(b.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-color-success)')
+    expect(b.style.getPropertyValue('--oas-badge-on-color')).toBe(
+      'var(--oas-color-text-on-success)',
+    )
+  })
+
+  it('color 语义色应用于 dot 徽标', () => {
+    const el = mount({ dot: '', color: 'warning' })
+    const b = badge(el)!
+    expect(b.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-color-warning)')
+    expect(b.style.getPropertyValue('--oas-badge-on-color')).toBe(
+      'var(--oas-color-text-on-warning)',
+    )
+  })
+
+  it('color 预设名解析到 --oas-preset-* 变量（count 与 dot 均支持）', () => {
+    const presets = [
+      'magenta',
+      'red',
+      'volcano',
+      'orange',
+      'gold',
+      'lime',
+      'green',
+      'cyan',
+      'blue',
+      'geekblue',
+      'purple',
+    ]
+    for (const name of presets) {
+      const el = mount({ value: '3', color: name })
+      expect(badge(el)!.style.getPropertyValue('--oas-badge-bg'), `count preset=${name}`).toBe(
+        `var(--oas-preset-${name})`,
+      )
+    }
+    const d = mount({ dot: '', color: 'purple' })
+    expect(badge(d)!.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-preset-purple)')
+    expect(badge(d)!.style.getPropertyValue('--oas-badge-on-color')).toBe(
+      'var(--oas-color-text-on-primary)',
+    )
+  })
+
+  it('color 任意 CSS 色值：实心文字按底色亮度取黑/白', () => {
+    const el = mount({ value: '5', color: '#16a34a' })
+    expect(badge(el)!.style.getPropertyValue('--oas-badge-bg')).toBe('#16a34a')
+    expect(badge(el)!.style.getPropertyValue('--oas-badge-on-color')).toBe('#ffffff')
+    el.setAttribute('color', '#fbbf24')
+    expect(badge(el)!.style.getPropertyValue('--oas-badge-on-color')).toBe('#18181b')
+  })
+
+  it('无 color 时清除变量（CSS 回落默认 danger）', () => {
+    const el = mount({ value: '5', color: 'success' })
+    expect(badge(el)!.style.getPropertyValue('--oas-badge-bg')).not.toBe('')
+    el.removeAttribute('color')
+    expect(badge(el)!.style.getPropertyValue('--oas-badge-bg')).toBe('')
+    expect(badge(el)!.style.getPropertyValue('--oas-badge-on-color')).toBe('')
+  })
+
+  it('ribbon 支持预设名与任意色值（语义色 class 逻辑保留兼容）', () => {
+    const el = mount({ ribbon: '', text: 'HOT', color: 'purple' })
+    const r = ribbon(el)!
+    expect(r.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-preset-purple)')
+    expect(r.classList.contains('color-danger')).toBe(false)
+    el.setAttribute('color', '#7c3aed')
+    expect(r.style.getPropertyValue('--oas-badge-bg')).toBe('#7c3aed')
+    // 语义色 class 保留
+    el.setAttribute('color', 'success')
+    expect(r.classList.contains('color-success')).toBe(true)
+    expect(r.classList.contains('color-danger')).toBe(false)
+    expect(r.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-color-success)')
+  })
+})
+
+describe('OASBadge offset 偏移', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('offset="x,y" 叠加到角标 translate', () => {
+    const el = mount({ value: '5', offset: '10,5' })
+    expect(badge(el)!.style.transform).toBe('translate(calc(50% + 10px), calc(-50% + 5px))')
+  })
+
+  it('offset 非法值静默忽略（不设置内联 transform）', () => {
+    const el = mount({ value: '5', offset: 'abc' })
+    expect(badge(el)!.style.transform).toBe('')
+    el.setAttribute('offset', '10')
+    expect(badge(el)!.style.transform).toBe('')
+    el.setAttribute('offset', '-1,5')
+    expect(badge(el)!.style.transform).toBe('')
+  })
+
+  it('standalone 时不应用 offset（静态定位无 translate）', () => {
+    const el = new OASBadge()
+    el.setAttribute('value', '5')
+    el.setAttribute('offset', '10,5')
+    document.body.appendChild(el)
+    expect(badge(el)!.classList.contains('standalone')).toBe(true)
+    expect(badge(el)!.style.transform).toBe('')
+  })
+})
+
+describe('OASBadge status 状态点', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function statusEl(el: OASBadge): HTMLElement | null {
+    return el.shadowRoot!.querySelector<HTMLElement>('.status')
+  }
+
+  it('status 渲染「状态点 + text 文字」独立元素，与角标互斥', () => {
+    const el = mount({ status: 'success', text: '运行中', value: '5' })
+    const s = statusEl(el)!
+    expect(s.hidden).toBe(false)
+    expect(s.classList.contains('success')).toBe(true)
+    expect(s.querySelector<HTMLElement>('.status-dot')!.style.getPropertyValue('--oas-status-color')).toBe(
+      'var(--oas-color-success)',
+    )
+    expect(s.querySelector<HTMLElement>('.status-text')!.textContent).toBe('运行中')
+    // 互斥：badge 与 ribbon 隐藏
+    expect(badge(el)!.hidden).toBe(true)
+    expect(ribbon(el)!.hidden).toBe(true)
+  })
+
+  it('status=processing 带脉冲 class，映射 primary 色', () => {
+    const el = mount({ status: 'processing', text: '处理中' })
+    const s = statusEl(el)!
+    expect(s.hidden).toBe(false)
+    expect(s.classList.contains('processing')).toBe(true)
+    expect(s.querySelector<HTMLElement>('.status-dot')!.style.getPropertyValue('--oas-status-color')).toBe(
+      'var(--oas-color-primary)',
+    )
+  })
+
+  it('status 各语义色映射', () => {
+    const cases: Array<[string, string]> = [
+      ['error', 'var(--oas-color-danger)'],
+      ['warning', 'var(--oas-color-warning)'],
+      ['default', 'var(--oas-color-text-secondary)'],
+      ['success', 'var(--oas-color-success)'],
+      ['processing', 'var(--oas-color-primary)'],
+    ]
+    for (const [s, expectColor] of cases) {
+      const el = mount({ status: s, text: 'x' })
+      const dot = statusEl(el)!.querySelector<HTMLElement>('.status-dot')!
+      expect(dot.style.getPropertyValue('--oas-status-color'), `status=${s}`).toBe(expectColor)
+      expect(statusEl(el)!.hidden).toBe(false)
+    }
+  })
+
+  it('status 非法值隐藏；移除后角标恢复', () => {
+    const el = mount({ value: '5', status: 'foo' })
+    expect(statusEl(el)!.hidden).toBe(true)
+    expect(badge(el)!.hidden).toBe(false)
+    el.setAttribute('status', 'success')
+    expect(statusEl(el)!.hidden).toBe(false)
+    expect(badge(el)!.hidden).toBe(true)
+    el.removeAttribute('status')
+    expect(statusEl(el)!.hidden).toBe(true)
+    expect(badge(el)!.hidden).toBe(false)
+  })
+
+  it('status 优先于 ribbon：status 存在时缎带隐藏', () => {
+    const el = mount({ ribbon: '', text: 'HOT', status: 'warning' })
+    expect(statusEl(el)!.hidden).toBe(false)
+    expect(ribbon(el)!.hidden).toBe(true)
+  })
+})
+
+describe('OASBadge size 小尺寸', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('size="small" 徽标加 small class（count 与 dot）', () => {
+    const el = mount({ value: '5', size: 'small' })
+    expect(badge(el)!.classList.contains('small')).toBe(true)
+    const d = mount({ dot: '', size: 'small' })
+    expect(badge(d)!.classList.contains('small')).toBe(true)
+    expect(badge(d)!.classList.contains('dot')).toBe(true)
+  })
+
+  it('非 small 不加 class', () => {
+    const el = mount({ value: '5' })
+    expect(badge(el)!.classList.contains('small')).toBe(false)
+  })
+})

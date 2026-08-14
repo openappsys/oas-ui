@@ -447,8 +447,8 @@
       },
       {
         "name": "color",
-        "type": "BadgeColor",
-        "default": "danger",
+        "type": "BadgeColor | BadgePresetColor",
+        "default": "",
         "observed": true
       },
       {
@@ -459,6 +459,24 @@
       },
       {
         "name": "text",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "offset",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "status",
+        "type": "BadgeStatus",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "size",
         "type": "string",
         "default": "",
         "observed": true

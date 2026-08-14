@@ -96,19 +96,22 @@
   },
   "oas-badge": {
     "attrs": {
-      "color": "缎带语义色：`primary` / `success` / `warning` / `danger`（默认 `danger`）",
+      "color": "徽标颜色：4 语义色（`primary` / `success` / `warning` / `danger`）、任意 CSS 色值、或 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token，dark 自动调亮）。count / dot / ribbon 三种模式统一生效，实心文字色按底色亮度自动取黑/白保证可读",
       "dot": "小圆点模式",
       "max": "上限",
       "mode": "模式：`count`（默认，数字/圆点徽标）或 `ribbon`（缎带角标，等价 `ribbon` 属性）",
+      "offset": "角标偏移：`\"x,y\"`（px 数字），在右上角定位基础上额外平移；非法值（非数字、缺坐标）静默忽略",
       "placement": "缎带位置：`start`（行首）/ `end`（行尾，默认）",
       "ribbon": "缎带角标模式（布尔，等价 `mode=\"ribbon\"`）",
       "showZero": "value=0 时是否显示",
-      "text": "缎带文本；`slot=\"ribbon\"` 有内容时以插槽为准",
+      "size": "尺寸：`small`（小档，数字徽标高约 13px、dot 6px）",
+      "status": "状态点形态：`success` / `processing` / `default` / `error` / `warning`，渲染「状态点 + `text` 文字」的行内独立元素，与 ribbon / dot / count 模式互斥（设置时优先渲染）；`processing` 圆点带脉冲动画（`prefers-reduced-motion` 下停用）",
+      "text": "缎带或状态点文字；`slot=\"ribbon\"` 有内容时以插槽为准",
       "value": "数字"
     },
     "events": {},
     "slots": {
-      "": "被包裹内容（卡片、按钮等）",
+      "": "被包裹内容（卡片、按钮等）；无内容时徽标回落为独立行内展示",
       "ribbon": "缎带自定义内容"
     }
   },

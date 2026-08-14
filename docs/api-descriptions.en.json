@@ -96,19 +96,22 @@
   },
   "oas-badge": {
     "attrs": {
-      "color": "Ribbon semantic color: `primary` / `success` / `warning` / `danger` (default `danger`)",
+      "color": "Badge color: the four semantic colors (`primary` / `success` / `warning` / `danger`), any CSS color value, or one of the 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens, auto-brightened in dark). Applies uniformly across count / dot / ribbon; the solid text color is picked black/white by the background luminance for readability",
       "dot": "Dot mode",
       "max": "Upper limit",
       "mode": "Mode: `count` (default, numeric/dot badge) or `ribbon` (ribbon corner, same as `ribbon` attribute)",
+      "offset": "Corner offset: `\"x,y\"` (px numbers), shifts the badge from its default top-end position; invalid values (non-numeric, missing coordinate) are silently ignored",
       "placement": "Ribbon position: `start` (inline-start) / `end` (inline-end, default)",
       "ribbon": "Ribbon corner mode (boolean, same as `mode=\"ribbon\"`)",
       "showZero": "Whether to show when value=0",
-      "text": "Ribbon text; the `ribbon` slot takes precedence when it has content",
+      "size": "Size: `small` (compact tier, numeric badge ~13px tall, dot 6px)",
+      "status": "Status point: `success` / `processing` / `default` / `error` / `warning`, renders an inline standalone element of \"status dot + `text`\", mutually exclusive with ribbon / dot / count modes (rendered first when set); the `processing` dot pulses (`prefers-reduced-motion` disables it)",
+      "text": "Ribbon or status text; the `ribbon` slot takes precedence when it has content",
       "value": "Number"
     },
     "events": {},
     "slots": {
-      "": "Wrapped content (card, button, etc.)",
+      "": "Wrapped content (card, button, etc.); with no content the badge falls back to a standalone inline element",
       "ribbon": "Custom ribbon content"
     }
   },

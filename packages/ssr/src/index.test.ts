@@ -1205,7 +1205,8 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(capped).toContain('>99+</sup>')
 
     const dot = await renderToString('oas-badge', { value: '5', dot: '' }, '')
-    expect(dot).toContain('class="badge dot"')
+    // 无 slot 内容 → 回落 standalone 独立徽标（静态行内定位）
+    expect(dot).toContain('class="badge standalone dot"')
   })
 
   it('oas-button-group：组骨架 + 嵌套 oas-button DSD + 选中态 aria-pressed 同步', async () => {

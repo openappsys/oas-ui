@@ -534,10 +534,18 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 
 ### 增强（tag 第二轮）
 
-- **tag→预设色板**：color 支持 11 个预设名（magenta/ed/olcano/orange/gold/lime/green/cyan/lue/geekblue/purple，映射 --oas-preset-* token，dark 自动调亮）或任意 CSS 色值（现状逻辑不变）
+- **tag→预设色板**：color 支持 11 个预设名（magenta/red/volcano/orange/gold/lime/green/cyan/blue/geekblue/purple，映射 --oas-preset-* token，dark 自动调亮）或任意 CSS 色值（现状逻辑不变）
 - **tag→dot/processing**：dot 文字前状态小圆点；processing 脉冲动画（隐含 dot，prefers-reduced-motion 停用）
 - **tag→avatar 适配**：默认插槽放 oas-avatar/<img> 时尺寸随档位、圆形、负 margin 贴左缘
 - **tag→hit/strong/multiline**：hit 全不透明语义色描边；strong 加粗（600）；multiline 多行换行（与 max-width 省略互斥时 multiline 优先）
+
+### 增强（badge 第二轮）
+
+- **badge→standalone 独立徽标**：默认插槽无内容时徽标从 absolute 贴右上角回落为静态行内展示（inline-flex 不塌陷，可独立放在文本流/菜单行）
+- **badge→color 全模式**：count/dot/ribbon 统一支持 4 语义色（token + on-color 白字）、任意 CSS 色值、11 预设名（解析到 --oas-preset-* token）；实心文字色用 pickOnColor 按底色亮度取黑/白；ribbon 保留现有语义色 class 逻辑兼容
+- **badge→offset**：`offset="x,y"`（px 数字）叠加到 count/dot 角标右上角定位（现有 translate 基础上平移）；非法值静默忽略
+- **badge→status 状态点**：`status="success|processing|default|error|warning"` 渲染「状态点 + text 文字」行内独立元素（非角标定位）；processing 圆点脉冲（prefers-reduced-motion 停用）；语义色映射 success→success / processing→primary / error→danger / warning→warning / default→text-secondary；与 ribbon/dot/count 互斥（status 优先）
+- **badge→size**：`size="small"` 小尺寸档（count 高度 16→13px 左右、字号更小；dot 8→6px）
 
 ### 验收标准
 
