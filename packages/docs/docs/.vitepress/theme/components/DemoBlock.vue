@@ -28,6 +28,8 @@ const props = defineProps<{ title?: string; script?: string }>()
 const show = ref(false)
 const bodyEl = ref<HTMLElement | null>(null)
 const code = ref('')
+const templateCode = ref('')
+const scriptCode = ref('')
 const highlightedHtml = ref('')
 
 // UI 文案跟随页面 locale（zh-CN / en）
@@ -58,8 +60,9 @@ function formatHtml(html: string): string {
 onMounted(() => {
   // 取 light DOM 原始标签作为示例代码；script prop 提供补充注册/用法代码（完整使用方法）
   const html = (bodyEl.value?.innerHTML ?? '').replace(/<!--.*?-->/gs, '').trim()
-  const formatted = formatHtml(html)
-  code.value = props.script ? `${props.script.trim()}\n\n${formatted}` : formatted
+  templateCode.value = formatHtml(html)
+  scriptCode.value = props.script?.trim() ?? ''
+  code.value = scriptCode.value ? `${scriptCode.value}\n\n${templateCode.value}` : templateCode.value
 })
 
 function toggle(): void {
@@ -69,7 +72,7 @@ function toggle(): void {
 }
 
 /**
- * 用 Shiki 把示例代码按 HTML 语法高亮。
+ * 用 Shiki 把示例代码按 HTML 语法高亮；script prop 的 JS/TS 部分单独按 TS 高亮后拼接。
  * 双主题（github-light / github-dark）：token 色由行内 --shiki-light/--shiki-dark
  * 变量承载，暗色切换走 CSS（见全局 <style> 块），无需重渲染。
  * 动态 import：shiki 拆成懒加载 chunk；失败时保持纯文本，不阻断复制。
@@ -81,25 +84,34 @@ async function renderHighlight(): Promise<void> {
       { createHighlighterCore },
       { createJavaScriptRegexEngine },
       htmlLang,
+      tsLang,
       githubLight,
       githubDark,
     ] = await Promise.all([
       import('shiki/core'),
       import('shiki/engine/javascript'),
       import('shiki/langs/html.mjs'),
+      import('shiki/langs/typescript.mjs'),
       import('shiki/themes/github-light.mjs'),
       import('shiki/themes/github-dark.mjs'),
     ])
     const highlighter = await createHighlighterCore({
       themes: [githubLight.default, githubDark.default],
-      langs: [htmlLang.default],
+      langs: [htmlLang.default, tsLang.default],
       // JS 正则引擎，浏览器端无需加载 wasm
       engine: createJavaScriptRegexEngine(),
     })
-    highlightedHtml.value = await highlighter.codeToHtml(code.value, {
+    const htmlPart = await highlighter.codeToHtml(templateCode.value, {
       lang: 'html',
       themes: { light: 'github-light', dark: 'github-dark' },
     })
+    const jsPart = scriptCode.value
+      ? await highlighter.codeToHtml(scriptCode.value, {
+          lang: 'ts',
+          themes: { light: 'github-light', dark: 'github-dark' },
+        })
+      : ''
+    highlightedHtml.value = jsPart + htmlPart
   } catch (err) {
     console.error('[DemoBlock] Shiki 语法高亮失败，已回退为纯文本：', err)
   }
