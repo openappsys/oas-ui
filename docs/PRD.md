@@ -546,6 +546,9 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 - **badge→offset**：`offset="x,y"`（px 数字）叠加到 count/dot 角标右上角定位（现有 translate 基础上平移）；非法值静默忽略
 - **badge→status 状态点**：`status="success|processing|default|error|warning"` 渲染「状态点 + text 文字」行内独立元素（非角标定位）；processing 圆点脉冲（prefers-reduced-motion 停用）；语义色映射 success→success / processing→primary / error→danger / warning→warning / default→text-secondary；与 ribbon/dot/count 互斥（status 优先）
 - **badge→size**：`size="small"` 小尺寸档（count 高度 16→13px 左右、字号更小；dot 8→6px）
+- **badge→attention 吸引动画**：`attention="pulse"`（外圈脉冲扩散，脉冲色走 `--oas-badge-pulse-color` 自定义属性、默认跟随徽章底色）/ `attention="bounce"`（轻微上下弹跳，幅度约 -25%）；仅作用于 count/dot/standalone 徽标（ribbon 不受影响）；`prefers-reduced-motion` 下停用
+- **badge→corner 四角定位**：`corner="top-right|top-left|bottom-right|bottom-left"`（默认 top-right）定位 count/dot 角标；与 offset 关系：corner 快捷定角，offset 在 corner 结果上做屏幕坐标 px 精确微调（x 正向右、y 正向下，与 corner 朝向无关），先定角再平移可叠加；非法值静默回落 top-right
+- **badge→overlap 圆形内收**：包裹圆形内容（如头像）时角标向圆内收进圆边（平移幅度 50%→约 29%，1-√2/2 几何内收）；仅影响角标模式
 
 ### 验收标准
 

@@ -102,7 +102,7 @@ When no child content is wrapped, the badge falls back from the "top-end corner"
 
 ## Offset
 
-`offset="x,y"` (px numbers) shifts the corner badge from its default top-end position; invalid values (non-numeric, missing coordinate) are silently ignored.
+`offset="x,y"` (px numbers) shifts the corner badge from its default position; x is positive rightward and y positive downward (screen coordinates, independent of the corner direction). Invalid values (non-numeric, missing coordinate) are silently ignored. It composes with `corner`: pick the corner first, then fine-tune.
 
 <DemoBlock title="Offset">
   <oas-badge value="5" offset="10,5" style="margin-inline-end: var(--oas-space-5)">
@@ -110,6 +110,50 @@ When no child content is wrapped, the badge falls back from the "top-end corner"
   </oas-badge>
   <oas-badge value="5" offset="0,8">
     <oas-tag>Shift down</oas-tag>
+  </oas-badge>
+</DemoBlock>
+
+## Corner placement
+
+`corner` pins the badge to one of the four corners of the host: `top-right` (default) / `top-left` / `bottom-right` / `bottom-left`; invalid values silently fall back to `top-right`. `offset` is a precise fine-tune on top of the `corner` result (corner first, then shift; they compose).
+
+<DemoBlock title="Four corners">
+  <oas-badge value="5" style="margin-inline-end: var(--oas-space-5)">
+    <oas-tag>top-right default</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" corner="top-left" style="margin-inline-end: var(--oas-space-5)">
+    <oas-tag>top-left</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" corner="bottom-right" style="margin-inline-end: var(--oas-space-5)">
+    <oas-tag>bottom-right</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" corner="bottom-left">
+    <oas-tag>bottom-left</oas-tag>
+  </oas-badge>
+</DemoBlock>
+
+<DemoBlock title="corner + offset">
+  <oas-badge value="5" corner="bottom-left" offset="4,4" style="margin-inline-end: var(--oas-space-5)">
+    <oas-tag>bottom-left shifted right-down</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" corner="top-left" offset="0,6">
+    <oas-tag>top-left shifted down</oas-tag>
+  </oas-badge>
+</DemoBlock>
+
+## Circular overlap
+
+When wrapping circular content (e.g. an avatar), add `overlap` so the badge tucks inside the circle edge: the translate amount shrinks from 50% to ~29% (the 1-√2/2 geometric inset). Only affects corner badge mode.
+
+<DemoBlock title="overlap circular inset">
+  <oas-badge value="5" overlap style="margin-inline-end: var(--oas-space-5)">
+    <oas-avatar size="48">张</oas-avatar>
+  </oas-badge>
+  <oas-badge dot overlap color="success" style="margin-inline-end: var(--oas-space-5)">
+    <oas-avatar size="48">李</oas-avatar>
+  </oas-badge>
+  <oas-badge value="99" max="99" overlap corner="bottom-right">
+    <oas-avatar size="48">王</oas-avatar>
   </oas-badge>
 </DemoBlock>
 
@@ -138,6 +182,46 @@ When no child content is wrapped, the badge falls back from the "top-end corner"
   </oas-badge>
   <oas-badge dot size="small">
     <oas-tag>Small dot</oas-tag>
+  </oas-badge>
+</DemoBlock>
+
+## Attention animation
+
+`attention="pulse"` makes the badge emit a periodic outward pulse ring (the pulse color can be customized via `--oas-badge-pulse-color`, defaulting to the badge background); `attention="bounce"` makes the badge bounce up and down slightly. It only applies to count / dot / standalone badges (the ribbon is unaffected) and is disabled under `prefers-reduced-motion`.
+
+<DemoBlock title="pulse">
+  <oas-badge value="5" attention="pulse" style="margin-inline-end: var(--oas-space-5)">
+    <oas-tag>pulse</oas-tag>
+  </oas-badge>
+  <oas-badge dot attention="pulse" color="success" style="margin-inline-end: var(--oas-space-5)">
+    <oas-tag>dot pulse</oas-tag>
+  </oas-badge>
+  <oas-badge
+    value="3"
+    attention="pulse"
+    color="purple"
+    style="--oas-badge-pulse-color: var(--oas-color-warning)"
+  >
+    <oas-tag>custom pulse color</oas-tag>
+  </oas-badge>
+</DemoBlock>
+
+<DemoBlock title="bounce">
+  <oas-badge value="5" attention="bounce" style="margin-inline-end: var(--oas-space-5)">
+    <oas-tag>bounce</oas-tag>
+  </oas-badge>
+  <oas-badge dot attention="bounce" color="warning">
+    <oas-tag>dot bounce</oas-tag>
+  </oas-badge>
+</DemoBlock>
+
+## Native tooltip
+
+Adding the native `title` attribute to the badge host gives a hover tooltip with zero JS.
+
+<DemoBlock title="Native tooltip">
+  <oas-badge value="3" title="3 unread messages">
+    <oas-tag>Unread</oas-tag>
   </oas-badge>
 </DemoBlock>
 
@@ -264,11 +348,14 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `attention` | Attention animation: `pulse` (an outward pulse ring; the pulse color follows the `--oas-badge-pulse-color` custom property, defaulting to the badge background) / `bounce` (slight up-and-down bounce); applies only to count / dot / standalone badges (the ribbon is unaffected) and is disabled under `prefers-reduced-motion` | `BadgeAttention` | — |
 | `color` | Badge color: the four semantic colors (`primary` / `success` / `warning` / `danger`), any CSS color value, or one of the 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens, auto-brightened in dark). Applies uniformly across count / dot / ribbon; the solid text color is picked black/white by the background luminance for readability | `BadgeColor \| BadgePresetColor` | — |
+| `corner` | Corner placement: `top-right` (default) / `top-left` / `bottom-right` / `bottom-left`, affects count / dot corner badges only (the ribbon uses `placement`); `offset` fine-tunes in screen px on top of the corner result (x positive rightward, y positive downward, independent of the corner direction), corner first then shift, they compose; invalid values silently fall back to `top-right` | `BadgeCorner` | `top-right` |
 | `dot` | Dot mode | `boolean` | — |
 | `max` | Upper limit | `string` | — |
 | `mode` | Mode: `count` (default, numeric/dot badge) or `ribbon` (ribbon corner, same as `ribbon` attribute) | `BadgeMode` | `count` |
-| `offset` | Corner offset: `"x,y"` (px numbers), shifts the badge from its default top-end position; invalid values (non-numeric, missing coordinate) are silently ignored | `string` | — |
+| `offset` | Corner offset: `"x,y"` (px numbers), shifts the badge from its corner position (x positive rightward, y positive downward); composes with `corner` (corner first, then shift); invalid values (non-numeric, missing coordinate) are silently ignored | `string` | — |
+| `overlap` | Circular inset: when wrapping circular content (e.g. an avatar), the badge tucks inside the circle edge (the translate amount shrinks from 50% to ~29%, the 1-√2/2 geometric inset); affects corner badge mode only | `boolean` | — |
 | `placement` | Ribbon position: `start` (inline-start) / `end` (inline-end, default) | `BadgePlacement` | `end` |
 | `ribbon` | Ribbon corner mode (boolean, same as `mode="ribbon"`) | `boolean` | — |
 | `showZero` | Whether to show when value=0 | `boolean` | — |

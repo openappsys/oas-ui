@@ -96,11 +96,14 @@
   },
   "oas-badge": {
     "attrs": {
+      "attention": "Attention animation: `pulse` (an outward pulse ring; the pulse color follows the `--oas-badge-pulse-color` custom property, defaulting to the badge background) / `bounce` (slight up-and-down bounce); applies only to count / dot / standalone badges (the ribbon is unaffected) and is disabled under `prefers-reduced-motion`",
       "color": "Badge color: the four semantic colors (`primary` / `success` / `warning` / `danger`), any CSS color value, or one of the 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens, auto-brightened in dark). Applies uniformly across count / dot / ribbon; the solid text color is picked black/white by the background luminance for readability",
+      "corner": "Corner placement: `top-right` (default) / `top-left` / `bottom-right` / `bottom-left`, affects count / dot corner badges only (the ribbon uses `placement`); `offset` fine-tunes in screen px on top of the corner result (x positive rightward, y positive downward, independent of the corner direction), corner first then shift, they compose; invalid values silently fall back to `top-right`",
       "dot": "Dot mode",
       "max": "Upper limit",
       "mode": "Mode: `count` (default, numeric/dot badge) or `ribbon` (ribbon corner, same as `ribbon` attribute)",
-      "offset": "Corner offset: `\"x,y\"` (px numbers), shifts the badge from its default top-end position; invalid values (non-numeric, missing coordinate) are silently ignored",
+      "offset": "Corner offset: `\"x,y\"` (px numbers), shifts the badge from its corner position (x positive rightward, y positive downward); composes with `corner` (corner first, then shift); invalid values (non-numeric, missing coordinate) are silently ignored",
+      "overlap": "Circular inset: when wrapping circular content (e.g. an avatar), the badge tucks inside the circle edge (the translate amount shrinks from 50% to ~29%, the 1-√2/2 geometric inset); affects corner badge mode only",
       "placement": "Ribbon position: `start` (inline-start) / `end` (inline-end, default)",
       "ribbon": "Ribbon corner mode (boolean, same as `mode=\"ribbon\"`)",
       "showZero": "Whether to show when value=0",

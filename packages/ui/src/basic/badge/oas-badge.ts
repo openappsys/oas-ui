@@ -3,6 +3,10 @@ import { OASElement } from '@oas-ui/core'
 export type BadgeMode = 'count' | 'ribbon'
 export type BadgeColor = 'primary' | 'success' | 'warning' | 'danger'
 export type BadgePlacement = 'start' | 'end'
+/** 吸引动画：外圈脉冲扩散 / 轻微上下弹跳（仅 count/dot/standalone 徽标，ribbon 不受影响） */
+export type BadgeAttention = 'pulse' | 'bounce'
+/** 角标四角定位（默认 top-right；非法值静默回落） */
+export type BadgeCorner = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
 /** 状态点形态（行内独立元素，与角标模式互斥） */
 export type BadgeStatus = 'success' | 'processing' | 'default' | 'error' | 'warning'
 export type BadgeSize = 'small'
@@ -35,6 +39,16 @@ export const BADGE_PRESET_COLORS: readonly BadgePresetColor[] = [
 ]
 
 const VALID_STATUS: readonly string[] = ['success', 'processing', 'default', 'error', 'warning']
+const VALID_ATTENTION: readonly string[] = ['pulse', 'bounce']
+const VALID_CORNER: readonly string[] = ['top-right', 'top-left', 'bottom-right', 'bottom-left']
+
+/** corner 平移符号：X 向右为正，Y 向下为正（top 角 Y 为负） */
+const CORNER_SIGN: Record<string, { sx: string; sy: string }> = {
+  'top-right': { sx: '', sy: '-' },
+  'top-left': { sx: '-', sy: '-' },
+  'bottom-right': { sx: '', sy: '' },
+  'bottom-left': { sx: '-', sy: '' },
+}
 
 /** 状态点语义色映射（status 属性） */
 const STATUS_COLOR: Record<string, string> = {
@@ -146,6 +160,55 @@ const STYLE = `
   width: 6px;
   height: 6px;
 }
+/* corner 四角：仅切换 anchor 定位（translate 由 JS 内联写入，保证与 offset/overlap 叠加） */
+.badge.corner-top-left {
+  right: auto;
+  left: 0;
+}
+.badge.corner-bottom-right {
+  top: auto;
+  bottom: 0;
+}
+.badge.corner-bottom-left {
+  top: auto;
+  bottom: 0;
+  right: auto;
+  left: 0;
+}
+/* attention 吸引动画：pulse 外圈脉冲扩散（颜色走 --oas-badge-pulse-color，默认跟随徽章底色） */
+.badge.attention-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px var(--oas-badge-pulse-color, var(--oas-badge-bg, var(--oas-color-danger)));
+  animation: oas-badge-attn-pulse 2.2s var(--oas-ease-in-out) infinite;
+  pointer-events: none;
+}
+@keyframes oas-badge-attn-pulse {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  60%,
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
+  }
+}
+/* attention：bounce 轻微弹跳；动画覆盖内联 transform 期间用 --oas-badge-pos 保留基址（含 corner/offset 平移） */
+.badge.attention-bounce {
+  animation: oas-badge-attn-bounce 1.4s var(--oas-ease-in-out) infinite;
+}
+@keyframes oas-badge-attn-bounce {
+  0%,
+  100% {
+    transform: var(--oas-badge-pos, translate(50%, -50%));
+  }
+  50% {
+    transform: var(--oas-badge-pos, translate(50%, -50%)) translateY(-25%);
+  }
+}
 /* standalone 独立徽标：默认插槽无内容时回落静态行内展示（角标定位失效，作为独立元素放在文本流/菜单行） */
 .badge.standalone {
   position: static;
@@ -189,7 +252,9 @@ const STYLE = `
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .status.processing .status-dot {
+  .status.processing .status-dot,
+  .badge.attention-pulse::after,
+  .badge.attention-bounce {
     animation: none;
   }
 }
@@ -286,6 +351,9 @@ export class OASBadge extends OASElement {
       'offset',
       'status',
       'size',
+      'attention',
+      'corner',
+      'overlap',
     ]
   }
 
@@ -429,12 +497,45 @@ export class OASBadge extends OASElement {
           el.style.removeProperty('--oas-badge-on-color')
         }
 
-        // offset：叠加到角标右上角 translate；standalone/非法值静默忽略
+        // offset：叠加到角标 translate；standalone/非法值静默忽略
         const offset = parseOffset(this.getAttr('offset', ''))
+        // corner 四角定位（默认 top-right；非法值静默回落）
+        const corner = this.getAttr('corner', 'top-right') as BadgeCorner
+        const cornerName = (VALID_CORNER as readonly string[]).includes(corner)
+          ? corner
+          : 'top-right'
+        el.classList.toggle('corner-top-left', cornerName === 'top-left')
+        el.classList.toggle('corner-bottom-right', cornerName === 'bottom-right')
+        el.classList.toggle('corner-bottom-left', cornerName === 'bottom-left')
+        // overlap=circular：包裹圆形内容时平移幅度从 50% 收到 1-√2/2 ≈ 29.29%（几何内收）
+        const ratio = this.hasAttr('overlap') ? 29.29 : 50
+        const sign = CORNER_SIGN[cornerName]!
+        let pos = ''
         if (offset && !standalone) {
-          el.style.transform = `translate(calc(50% + ${offset.x}px), calc(-50% + ${offset.y}px))`
+          pos = `translate(calc(${sign.sx}${ratio}% + ${offset.x}px), calc(${sign.sy}${ratio}% + ${offset.y}px))`
+        } else if (!standalone && (cornerName !== 'top-right' || ratio !== 50)) {
+          pos = `translate(${sign.sx}${ratio}%, ${sign.sy}${ratio}%)`
+        }
+        if (pos) {
+          el.style.transform = pos
         } else {
           el.style.removeProperty('transform')
+        }
+
+        // attention 吸引动画（pulse 外圈脉冲 / bounce 弹跳）；非法值静默忽略；
+        // 仅作用于角标/独立徽标（ribbon 不受影响）。bounce 在动画覆盖 transform 期间
+        // 用 --oas-badge-pos 保留基址；独立徽标基址为恒等平移
+        const attention = this.getAttr('attention', '') as BadgeAttention
+        const validAttention = (VALID_ATTENTION as readonly string[]).includes(attention)
+        el.classList.toggle('attention-pulse', validAttention && attention === 'pulse')
+        el.classList.toggle('attention-bounce', validAttention && attention === 'bounce')
+        if (validAttention && attention === 'bounce') {
+          el.style.setProperty(
+            '--oas-badge-pos',
+            pos || (standalone ? 'translate(0, 0)' : 'translate(50%, -50%)'),
+          )
+        } else {
+          el.style.removeProperty('--oas-badge-pos')
         }
 
         el.classList.toggle('dot', dot)

@@ -480,6 +480,23 @@
         "type": "string",
         "default": "",
         "observed": true
+      },
+      {
+        "name": "attention",
+        "type": "BadgeAttention",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "corner",
+        "type": "BadgeCorner",
+        "default": "top-right",
+        "observed": true
+      },
+      {
+        "name": "overlap",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [],

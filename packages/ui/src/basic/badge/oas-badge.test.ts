@@ -448,3 +448,169 @@ describe('OASBadge size 小尺寸', () => {
     expect(badge(el)!.classList.contains('small')).toBe(false)
   })
 })
+
+describe('OASBadge attention 吸引动画', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('attention="pulse"/"bounce" 加对应 class，非法值回落无 class', () => {
+    const el = mount({ value: '5', attention: 'pulse' })
+    expect(badge(el)!.classList.contains('attention-pulse')).toBe(true)
+    expect(badge(el)!.classList.contains('attention-bounce')).toBe(false)
+    el.setAttribute('attention', 'bounce')
+    expect(badge(el)!.classList.contains('attention-bounce')).toBe(true)
+    expect(badge(el)!.classList.contains('attention-pulse')).toBe(false)
+    el.setAttribute('attention', 'spin')
+    expect(badge(el)!.classList.contains('attention-pulse')).toBe(false)
+    expect(badge(el)!.classList.contains('attention-bounce')).toBe(false)
+  })
+
+  it('attention 作用于 dot 与 standalone 徽标', () => {
+    const d = mount({ dot: '', attention: 'pulse' })
+    expect(badge(d)!.classList.contains('attention-pulse')).toBe(true)
+    const s = new OASBadge()
+    s.setAttribute('value', '5')
+    s.setAttribute('attention', 'bounce')
+    document.body.appendChild(s)
+    expect(badge(s)!.classList.contains('standalone')).toBe(true)
+    expect(badge(s)!.classList.contains('attention-bounce')).toBe(true)
+  })
+
+  it('bounce 时注入 --oas-badge-pos 基址（含 corner/offset 平移）', () => {
+    const el = mount({ value: '5', attention: 'bounce', corner: 'top-left', offset: '3,4' })
+    expect(badge(el)!.style.getPropertyValue('--oas-badge-pos')).toBe(
+      'translate(calc(-50% + 3px), calc(-50% + 4px))',
+    )
+    el.removeAttribute('attention')
+    expect(badge(el)!.style.getPropertyValue('--oas-badge-pos')).toBe('')
+  })
+
+  it('standalone + bounce 基址为恒等平移（不破坏静态定位）', () => {
+    const el = new OASBadge()
+    el.setAttribute('value', '5')
+    el.setAttribute('attention', 'bounce')
+    document.body.appendChild(el)
+    expect(badge(el)!.classList.contains('standalone')).toBe(true)
+    expect(badge(el)!.style.getPropertyValue('--oas-badge-pos')).toBe('translate(0, 0)')
+  })
+
+  it('prefers-reduced-motion 下 pulse/bounce 动画规则停用', () => {
+    const el = mount({ value: '5', attention: 'pulse' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    // 动画规则本体存在
+    expect(style).toContain('.badge.attention-pulse')
+    expect(style).toContain('.badge.attention-bounce')
+    // prefers-reduced-motion 媒体查询中存在停用规则
+    const mq = style.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\}/g) ?? []
+    expect(mq.length).toBeGreaterThan(0)
+    expect(mq.join('')).toContain('.attention-pulse')
+    expect(mq.join('')).toContain('.attention-bounce')
+  })
+})
+
+describe('OASBadge corner 四角定位', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('corner 四值切换定位 class 与 translate（默认 top-right 无内联 transform）', () => {
+    const el = mount({ value: '5' })
+    expect(badge(el)!.style.transform).toBe('')
+    el.setAttribute('corner', 'top-left')
+    expect(badge(el)!.classList.contains('corner-top-left')).toBe(true)
+    expect(badge(el)!.style.transform).toBe('translate(-50%, -50%)')
+    el.setAttribute('corner', 'bottom-right')
+    expect(badge(el)!.classList.contains('corner-bottom-right')).toBe(true)
+    expect(badge(el)!.style.transform).toBe('translate(50%, 50%)')
+    el.setAttribute('corner', 'bottom-left')
+    expect(badge(el)!.classList.contains('corner-bottom-left')).toBe(true)
+    expect(badge(el)!.style.transform).toBe('translate(-50%, 50%)')
+    el.setAttribute('corner', 'top-right')
+    expect(badge(el)!.classList.contains('corner-top-left')).toBe(false)
+    expect(badge(el)!.classList.contains('corner-bottom-right')).toBe(false)
+    expect(badge(el)!.classList.contains('corner-bottom-left')).toBe(false)
+    expect(badge(el)!.style.transform).toBe('')
+  })
+
+  it('corner 非法值静默回落 top-right', () => {
+    const el = mount({ value: '5', corner: 'north-east' })
+    expect(badge(el)!.style.transform).toBe('')
+    expect(badge(el)!.classList.contains('corner-top-left')).toBe(false)
+    expect(badge(el)!.classList.contains('corner-bottom-right')).toBe(false)
+    expect(badge(el)!.classList.contains('corner-bottom-left')).toBe(false)
+  })
+
+  it('corner 与 offset 叠加：transform 同时含 corner 平移与 offset px', () => {
+    const el = mount({ value: '5', corner: 'bottom-left', offset: '3,4' })
+    expect(badge(el)!.classList.contains('corner-bottom-left')).toBe(true)
+    expect(badge(el)!.style.transform).toBe('translate(calc(-50% + 3px), calc(50% + 4px))')
+    el.setAttribute('corner', 'top-left')
+    expect(badge(el)!.style.transform).toBe('translate(calc(-50% + 3px), calc(-50% + 4px))')
+  })
+})
+
+describe('OASBadge overlap 圆形内收', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('overlap 平移幅度从 50% 收到约 29%（1-√2/2）', () => {
+    const el = mount({ value: '5', overlap: '' })
+    expect(badge(el)!.style.transform).toBe('translate(29.29%, -29.29%)')
+    el.removeAttribute('overlap')
+    expect(badge(el)!.style.transform).toBe('')
+  })
+
+  it('overlap 与 offset/corner 叠加', () => {
+    const el = mount({ value: '5', overlap: '', offset: '3,4' })
+    expect(badge(el)!.style.transform).toBe('translate(calc(29.29% + 3px), calc(-29.29% + 4px))')
+    el.setAttribute('corner', 'bottom-right')
+    expect(badge(el)!.style.transform).toBe('translate(calc(29.29% + 3px), calc(29.29% + 4px))')
+    el.removeAttribute('offset')
+    expect(badge(el)!.style.transform).toBe('translate(29.29%, 29.29%)')
+  })
+
+  it('overlap 仅影响角标模式：standalone 无内联 transform', () => {
+    const el = new OASBadge()
+    el.setAttribute('value', '5')
+    el.setAttribute('overlap', '')
+    document.body.appendChild(el)
+    expect(badge(el)!.classList.contains('standalone')).toBe(true)
+    expect(badge(el)!.style.transform).toBe('')
+  })
+})
+
+describe('OASBadge ribbon 与 corner/attention 互不干扰', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('ribbon 不受 corner/attention 影响（placement 保留）', () => {
+    const el = mount({ ribbon: '', text: 'HOT', corner: 'bottom-left', attention: 'pulse' })
+    const r = ribbon(el)!
+    expect(r.classList.contains('corner-bottom-left')).toBe(false)
+    expect(r.classList.contains('attention-pulse')).toBe(false)
+    expect(r.classList.contains('attention-bounce')).toBe(false)
+    expect(r.classList.contains('placement-end')).toBe(true)
+    // 同宿主角标照常生效
+    expect(badge(el)!.classList.contains('corner-bottom-left')).toBe(true)
+    expect(badge(el)!.classList.contains('attention-pulse')).toBe(true)
+  })
+})

@@ -96,11 +96,14 @@
   },
   "oas-badge": {
     "attrs": {
+      "attention": "吸引动画：`pulse`（外圈脉冲扩散，脉冲色走 `--oas-badge-pulse-color` 自定义属性、默认跟随徽章底色）/ `bounce`（轻微上下弹跳）；仅作用于 count / dot / standalone 徽标（缎带不受影响），`prefers-reduced-motion` 下自动停用",
       "color": "徽标颜色：4 语义色（`primary` / `success` / `warning` / `danger`）、任意 CSS 色值、或 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token，dark 自动调亮）。count / dot / ribbon 三种模式统一生效，实心文字色按底色亮度自动取黑/白保证可读",
+      "corner": "角标四角定位：`top-right`（默认）/ `top-left` / `bottom-right` / `bottom-left`，仅影响 count / dot 角标（ribbon 用 `placement`）；`offset` 在其结果上做屏幕坐标 px 微调（x 正向右、y 正向下，与 corner 朝向无关），先定角再平移可叠加；非法值静默回落 `top-right`",
       "dot": "小圆点模式",
       "max": "上限",
       "mode": "模式：`count`（默认，数字/圆点徽标）或 `ribbon`（缎带角标，等价 `ribbon` 属性）",
-      "offset": "角标偏移：`\"x,y\"`（px 数字），在右上角定位基础上额外平移；非法值（非数字、缺坐标）静默忽略",
+      "offset": "角标偏移：`\"x,y\"`（px 数字），在角标定位基础上额外平移（x 正向右、y 正向下）；与 `corner` 可叠加（先定角再平移）；非法值（非数字、缺坐标）静默忽略",
+      "overlap": "圆形内收：包裹圆形内容（如头像）时角标向圆内收进圆边（平移幅度从 50% 收到约 29%，1-√2/2 几何内收）；仅影响角标模式",
       "placement": "缎带位置：`start`（行首）/ `end`（行尾，默认）",
       "ribbon": "缎带角标模式（布尔，等价 `mode=\"ribbon\"`）",
       "showZero": "value=0 时是否显示",
