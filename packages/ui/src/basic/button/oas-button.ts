@@ -478,9 +478,12 @@ a[part='button'].link:hover {
   text-decoration: underline;
   background: transparent;
 }
-/* solid 背景走 --oas-button-bg 变量（支持渐变覆盖，默认语义色）；仅 solid 生效，避免覆盖 filled/outlined 等形态 */
-button.primary:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link),
-a[part='button'].primary:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link) {
+/* solid 背景走 --oas-button-bg 变量（支持渐变覆盖，默认语义色）；仅 solid 生效，避免覆盖 filled/outlined 等形态。
+   :not() 链必须包在 :where() 里归零权重——裸写会把规则堆到 (0,6,1)，压死 hover/active/aria-pressed
+   选中态的 background（三态视觉反馈全失效，曾现 bug）；:where() 版 (0,1,1) 与上方 button.primary 同权重、
+   靠后取胜，恰好只承担默认底色覆盖职责。 */
+button.primary:where(:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link)),
+a[part='button'].primary:where(:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link)) {
   background: var(--oas-button-bg, var(--oas-color-primary));
 }
 /* press 反馈（wave 默认开）：按下轻微下沉 + 加深，克制不抢眼 */

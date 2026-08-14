@@ -3402,6 +3402,43 @@ test('dropdown 箭头 arrow="false"：#dd-arrow-none 打开后无箭头（hidden
   expect(await page.locator('#dd-arrow-none [part="item"]').count()).toBe(1)
 })
 
+test('button primary（solid）：hover/选中背景不被自定义底色兜底规则压死', async ({ page }) => {
+  // 曾现 bug：--oas-button-bg 覆盖规则的选择器带 :not() 链（权重 (0,6,1)），压死
+  // button.primary:hover / :active / :host([aria-pressed]) 的 background (0,2,1)——
+  // solid primary 按钮 hover 不加深、按钮组选中态无视觉反馈（只剩 1px 边框变色）。
+  // 修复：:not() 链包 :where() 归零权重。此处锁定「hover 与选中背景必须真实变化」。
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button[type="primary"]')
+  const btn = page.locator('oas-button[type="primary"]').first()
+  const readBg = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('oas-button[type="primary"]')!
+      return getComputedStyle(el.shadowRoot!.querySelector('button')!).backgroundColor
+    })
+  const normal = await readBg()
+  await btn.hover()
+  await page.waitForTimeout(400)
+  const hover = await readBg()
+  expect(hover, 'solid primary hover 背景应变深').not.toBe(normal)
+
+  // 按钮组选中态：点击后 aria-pressed=true 且底色与未选项可区分（primary-active）
+  await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button-group[type="primary"] oas-button')
+  const group = page.locator('oas-button-group[type="primary"]').first()
+  await group.locator('oas-button', { hasText: '中' }).click()
+  await page.mouse.move(0, 0) // 移开鼠标，排除 hover 色干扰，看纯选中态
+  await page.waitForTimeout(400)
+  const r = await page.evaluate(() => {
+    const g = document.querySelector('oas-button-group[type="primary"]')!
+    const btns = [...g.querySelectorAll('oas-button')]
+    const bg = (b: Element) =>
+      getComputedStyle(b.shadowRoot!.querySelector('button')!).backgroundColor
+    return { pressed: btns[1]!.getAttribute('aria-pressed'), selected: bg(btns[1]!), rest: bg(btns[0]!) }
+  })
+  expect(r.pressed).toBe('true')
+  expect(r.selected, '选中项底色应与未选项可区分').not.toBe(r.rest)
+})
+
 test('DemoBlock 示例代码：连排闭合标签逐行拆分（</svg></oas-icon> 不挤一行）', async ({
   page,
 }) => {
