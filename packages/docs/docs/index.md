@@ -1,3 +1,5 @@
+<img src="/favicon.svg" alt="Oasis UI" width="64" height="64" />
+
 # OAS-UI
 
 框架无关的 Web Components UI 组件库。
