@@ -8,8 +8,9 @@
 :root,
 :host {
   --oas-color-primary: #0b6cff;
-  --oas-color-primary-hover: #1f7dff;
-  --oas-color-primary-active: #0a5bd6;
+  /* hover 加深 15%、active 加深 25%（亮蓝色混合 black 幅度需更大才有明显视觉差异） */
+  --oas-color-primary-hover: color-mix(in srgb, var(--oas-color-primary) 85%, black);
+  --oas-color-primary-active: color-mix(in srgb, var(--oas-color-primary) 75%, black);
   --oas-color-success: #16a34a;
   --oas-color-warning: #d97706;
   --oas-color-danger: #dc2626;
@@ -82,8 +83,9 @@
 [data-theme="dark"],
 html.dark {
   --oas-color-primary: #4d9fff;
-  --oas-color-primary-hover: #63a8ff;
-  --oas-color-primary-active: #3a8ceb;
+  /* dark：hover 加深 15%、active 加深 25%（color-mix 自动跟随 primary） */
+  --oas-color-primary-hover: color-mix(in srgb, var(--oas-color-primary) 85%, black);
+  --oas-color-primary-active: color-mix(in srgb, var(--oas-color-primary) 75%, black);
   --oas-color-success: #4ade80;
   --oas-color-warning: #fbbf24;
   --oas-color-danger: #f87171;

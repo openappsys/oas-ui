@@ -8,8 +8,9 @@ import { OASThemeEditor } from './index.js'
  */
 const DEFAULT_VARS: Record<string, string> = {
   '--oas-color-primary': '#0b6cff',
-  '--oas-color-primary-hover': '#1f7dff',
-  '--oas-color-primary-active': '#0a5bd6',
+  // hover/active 已改 color-mix 加深派生（85%/75% black），此处写解析后的 hex 保持 mock 与真实 token 一致
+  '--oas-color-primary-hover': '#095cd9',
+  '--oas-color-primary-active': '#0851bf',
   '--oas-color-success': '#16a34a',
   '--oas-color-warning': '#d97706',
   '--oas-color-danger': '#dc2626',
