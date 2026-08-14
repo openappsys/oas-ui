@@ -140,6 +140,7 @@
     "attrs": {
       "autofocus": "自动聚焦：挂载后聚焦内部按钮（原生 autofocus 不穿透 Shadow DOM，组件转发）",
       "block": "占满父容器宽度（块级）",
+      "wrap": "长文换行：默认单行不换行（nowrap）；开启后受限宽内容换行、高度随内容增长",
       "disabled": "禁用",
       "ghost": "幽灵/描边形态，透明底 + 按 `type` 着色描边，hover 加深",
       "icon": "图标名（复用 oas-icon 图标集）；无文字时等宽、以图标名兜底名称",

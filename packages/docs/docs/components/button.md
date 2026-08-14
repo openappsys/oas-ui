@@ -203,11 +203,11 @@
 
 ## 长内容换行
 
-按钮默认单行；内容受限宽（父容器或 `width` / `max-width`）时自动换行、高度随内容增长（各档 `min-height` 兜底单行高度）。`icon-only` / `circle` 保持固定尺寸。
+按钮默认单行不换行（`white-space: nowrap`）；显式加 `wrap` 后，受限宽（父容器或 `width` / `max-width`）的长文本换行显示、高度随内容增长（单行时与默认等高）。
 
-<DemoBlock title="长内容换行">
-  <oas-button style="width: 120px;">这是一段会自动换行的长按钮文本</oas-button>
-  <oas-button type="primary" style="max-width: 160px;">窄容器里的主按钮长文本自动换行显示</oas-button>
+<DemoBlock title="wrap 长内容换行">
+  <oas-button wrap style="width: 120px;">这是一段会自动换行的长按钮文本</oas-button>
+  <oas-button wrap type="primary" style="max-width: 160px;">窄容器里的主按钮长文本自动换行显示</oas-button>
 </DemoBlock>
 
 ## API
@@ -234,6 +234,7 @@
 | `type` | 类型 | `ButtonType` | `default` |
 | `variant` | 形态（与 `type` 正交）：`solid`（默认实底）/ `outlined`（描边）/ `dashed`（虚线描边）/ `filled`（浅底）/ `text`（纯文字）/ `link`（链接样式） | `ButtonVariant \| ''` | — |
 | `wave` | 按下反馈：轻微下沉 + 加深（默认开）；`wave="false"` 关闭 | `string` | `true` |
+| `wrap` | 长文换行：默认单行不换行（nowrap）；开启后受限宽内容换行、高度随内容增长 | `boolean` | — |
 
 ### 事件
 

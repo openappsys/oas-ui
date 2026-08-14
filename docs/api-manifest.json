@@ -99,6 +99,11 @@
         "observed": true
       },
       {
+        "name": "wrap",
+        "type": "boolean",
+        "observed": true
+      },
+      {
         "name": "autofocus",
         "type": "boolean",
         "observed": false

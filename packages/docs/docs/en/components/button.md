@@ -203,11 +203,11 @@ Setting `href` renders a native link (`<a>`); `target` controls how it opens (`_
 
 ## Long content wrapping
 
-Buttons are single-line by default; when the width is constrained (parent container or `width` / `max-width`), long content wraps and the box grows with it (`min-height` keeps the single-line height of each size). `icon-only` / `circle` keep fixed dimensions.
+Buttons are single-line by default (`white-space: nowrap`). With the explicit `wrap` attribute, long text wraps within a constrained width (parent container or `width` / `max-width`) and the box grows with the content (same height as default when it fits on one line).
 
-<DemoBlock title="Long content wrapping">
-  <oas-button style="width: 120px;">A long button label that wraps automatically</oas-button>
-  <oas-button type="primary" style="max-width: 160px;">Long primary button text wraps in a narrow container</oas-button>
+<DemoBlock title="wrap for long content">
+  <oas-button wrap style="width: 120px;">A long button label that wraps automatically</oas-button>
+  <oas-button wrap type="primary" style="max-width: 160px;">Long primary button text wraps in a narrow container</oas-button>
 </DemoBlock>
 
 ## API
@@ -234,6 +234,7 @@ Buttons are single-line by default; when the width is constrained (parent contai
 | `type` | Type | `ButtonType` | `default` |
 | `variant` | Shape (orthogonal to `type`): `solid` (default filled) / `outlined` / `dashed` / `filled` (soft) / `text` / `link` | `ButtonVariant \| ''` | — |
 | `wave` | Press feedback: slight sink + darken (on by default); `wave="false"` disables | `string` | `true` |
+| `wrap` | Long-text wrapping: single-line nowrap by default; when enabled, content wraps within constrained widths and the box grows with it | `boolean` | — |
 
 ### Events
 

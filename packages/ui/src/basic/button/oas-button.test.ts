@@ -32,6 +32,14 @@ describe('OASButton', () => {
     expect(el.shadowRoot!.activeElement).toBe(shadowBtn(el))
   })
 
+  it('wrap：默认无 wrap class（nowrap），显式属性才加 wrap class', async () => {
+    const plain = mount({})
+    expect(shadowBtn(plain).classList.contains('wrap')).toBe(false)
+    const el = mount({ wrap: '' })
+    expect(shadowBtn(el).classList.contains('wrap')).toBe(true)
+    expect(OASButton.observedAttributes).toContain('wrap')
+  })
+
   it('渲染默认按钮：类型 default、尺寸 medium、含 slot 文本', async () => {
     const el = mount({}, '保存')
     const btn = shadowBtn(el)
