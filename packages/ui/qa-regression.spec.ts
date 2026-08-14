@@ -3401,3 +3401,31 @@ test('dropdown 箭头 arrow="false"：#dd-arrow-none 打开后无箭头（hidden
   // 菜单项照常渲染（穿透两层 shadow 断言，demo 数据为 1 项）
   expect(await page.locator('#dd-arrow-none [part="item"]').count()).toBe(1)
 })
+
+test('DemoBlock 示例代码：连排闭合标签逐行拆分（</svg></oas-icon> 不挤一行）', async ({
+  page,
+}) => {
+  // 曾现 bug：formatHtml 的「闭合标签间换行」正则把下一个闭合标签的 `</` 消费掉，
+  // `</path></svg></oas-icon>` 连排时第二次匹配失败 → duotone demo 代码里 </svg></oas-icon>
+  // 挤一行且其后缩进全乱（canvas demo 闭合标签前是文本不受影响，所以表现正常）。
+  // 修复：正则尾部 `</` 改前瞻不消费。此处锁定「连排闭合标签必须拆行 + 顶层标签不缩进」。
+  await page.goto('/components/icon.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('.demo-block', { state: 'attached' })
+  const block = page.locator('.demo-block', { hasText: 'duotone 双色' }).first()
+  await block.locator('.demo-block__toggle').click()
+  const code = block.locator('.demo-block__code code').first()
+  // 点击后异步高亮，自动重试等待非空
+  await expect(code).not.toBeEmpty()
+  const text = await code.innerText()
+  expect(text, '连排闭合标签不允许挤一行').not.toContain('</svg></oas-icon>')
+  expect(text).toContain('</svg>\n</oas-icon>')
+  // 顶层 oas-icon 之间换行且不缩进（depth 归零）
+  expect(text).toMatch(/<\/oas-icon>\n<oas-icon/)
+  // 空元素保持一行（canvas demo 的 <oas-icon ...></oas-icon> 不被拆）
+  const canvasBlock = page.locator('.demo-block', { hasText: 'canvas 占位框模式' }).first()
+  await canvasBlock.locator('.demo-block__toggle').click()
+  const canvasCode = canvasBlock.locator('.demo-block__code code').first()
+  await expect(canvasCode).not.toBeEmpty()
+  const canvasText = await canvasCode.innerText()
+  expect(canvasText).toContain('<oas-icon name="check" canvas="fixed"></oas-icon>')
+})
