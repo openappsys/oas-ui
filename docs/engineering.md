@@ -107,3 +107,4 @@
 - 无框架依赖：`packages/*` 运行时零第三方依赖（devDependencies 允许工具）
 - 提交信息：conventional commits（`feat:` `fix:` `test:` `docs:` `refactor:`），中文描述
 - 不提交 secrets、不提交 node_modules/dist
+- CSS `!important` 只用于「语义硬不变量」：`hidden` 不渲染、visually-hidden 不可见、reduced-motion 停动画等宿主本就不该覆盖的声明——它是对外防御（宿主全局 reset/工具类），跨树级联中内层树 important 优先是规范预留通道。**视觉默认值**（颜色/间距/hover 等可被主题化的表现）绝不用；组件内部规则互抢时用 important 压是层级失控信号，先重构选择器/结构（如 slot 不出盒、flex 化内容器）
