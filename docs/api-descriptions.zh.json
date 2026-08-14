@@ -628,7 +628,10 @@
       "duotone": "双色图标：分层着色（`--oas-icon-primary-color` / `--oas-icon-secondary-color` + 透明度），主要配合自定义双层 SVG",
       "swap-opacity": "交换双色图标的 primary / secondary 透明度",
       "canvas": "占位框模式：`fixed`（默认 1.25×1em）/ `auto`（自然宽 × 1em）/ `square`（1.25×1.25em）/ `roomy`（1.5×1.5em）",
-      "depth": "透明度层级：`1`（100%）~ `5`（20%），用于批量图标营造层次感"
+      "depth": "透明度层级：`1`（100%）~ `5`（20%），用于批量图标营造层次感",
+      "library": "远程图标库名（`registerIconLibrary` 注册的库），优先于 `name` 内置注册表",
+      "family": "图标族（传给库 resolver 的 family 参数，如描边/实心）",
+      "variant": "图标变体（传给库 resolver 的 variant 参数，如粗细）"
     },
     "events": {},
     "slots": {}

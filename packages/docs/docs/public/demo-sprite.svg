@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="sprite-star" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2 L14.6 8.3 L21 9.2 L16.5 13.6 L17.7 20.2 L12 16.9 L6.3 20.2 L7.5 13.6 L3 9.2 L9.4 8.3 Z"/>
+  </symbol>
+  <symbol id="sprite-heart" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 21 L10.6 19.8 C5.9 15.6 3 12.9 3 9.5 C3 6.9 5.1 4.8 7.7 4.8 C9.2 4.8 10.6 5.5 12 6.7 C13.4 5.5 14.8 4.8 16.3 4.8 C18.9 4.8 21 6.9 21 9.5 C21 12.9 18.1 15.6 13.4 19.8 Z"/>
+  </symbol>
+  <symbol id="sprite-check" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M9.6 16.6 L4.4 11.4 L2.4 13.4 L9.6 20.6 L21.6 8.6 L19.6 6.6 Z"/>
+  </symbol>
+</svg>

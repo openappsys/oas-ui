@@ -90,6 +90,32 @@ The `spin` attribute spins the icon infinitely (great for loading states); `rota
   <oas-icon name="custom-star" spin size="24" color="var(--oas-color-primary)"></oas-icon>
 </DemoBlock>
 
+## Remote icon libraries
+
+`registerIconLibrary(name, { resolver, mutator, spriteSheet })` registers a remote icon library:
+`resolver` maps an icon name to an SVG URL, which the component fetches on demand and inlines (color follows `color` / `currentColor`);
+`mutator` adjusts the SVG after inlining (e.g. restoring `stroke="currentColor"` for outline icons);
+`spriteSheet` renders `<use href="url#name">` instead of inlining the whole SVG.
+
+<DemoBlock title="CDN library (Lucide via jsDelivr, mutator for outline icons)">
+  <oas-icon library="lucide" name="heart" size="28" color="var(--oas-color-danger)"></oas-icon>
+  <oas-icon library="lucide" name="star" size="28" color="var(--oas-color-warning)"></oas-icon>
+  <oas-icon library="lucide" name="arrow-right" rotate="90" size="28" color="var(--oas-color-primary)"></oas-icon>
+</DemoBlock>
+
+<DemoBlock title="Local sprite sheet (<use> reference)">
+  <oas-icon library="demo-sprite" name="sprite-star" size="28" color="var(--oas-color-warning)"></oas-icon>
+  <oas-icon library="demo-sprite" name="sprite-heart" size="28" color="var(--oas-color-danger)"></oas-icon>
+  <oas-icon library="demo-sprite" name="sprite-check" size="28" color="var(--oas-color-success)"></oas-icon>
+</DemoBlock>
+
+<DemoBlock title="family variants (local demo-set)">
+  <oas-icon library="demo-set" name="star" size="28" color="var(--oas-color-primary)"></oas-icon>
+  <oas-icon library="demo-set" name="star" family="fill" size="28" color="var(--oas-color-primary)"></oas-icon>
+  <oas-icon library="demo-set" name="heart" size="28" color="var(--oas-color-danger)"></oas-icon>
+  <oas-icon library="demo-set" name="heart" family="fill" size="28" color="var(--oas-color-danger)"></oas-icon>
+</DemoBlock>
+
 ## Animation presets
 
 The `animation` attribute provides ready-to-use animations (respecting `prefers-reduced-motion`).
@@ -173,6 +199,38 @@ import { registerIcon } from '@oas-ui/ui'
 registerIcon('my-icon', '<path d="..."/>')
 ```
 
+<script setup>
+import { onMounted } from 'vue'
+onMounted(async () => {
+  const ui = await import('@oas-ui/ui')
+  // registerIconLibrary registers remote icon libraries (resolver resolves SVG URLs on demand)
+  ui.registerIconLibrary('lucide', {
+    resolver: (name) => `https://cdn.jsdelivr.net/npm/lucide-static@0.469.0/icons/${name}.svg`,
+    mutator: (svg) => {
+      svg.setAttribute('fill', 'none')
+      svg.setAttribute('stroke', 'currentColor')
+      svg.setAttribute('stroke-width', '2')
+      svg.setAttribute('stroke-linecap', 'round')
+      svg.setAttribute('stroke-linejoin', 'round')
+    },
+  })
+  ui.registerIconLibrary('demo-sprite', {
+    resolver: () => '/demo-sprite.svg',
+    spriteSheet: true,
+  })
+  ui.registerIconLibrary('demo-set', {
+    resolver: (name, family = 'outline') => `/demo-set/${family}/${name}.svg`,
+  })
+  // Re-set library after registration to trigger an update
+  for (const el of document.querySelectorAll('oas-icon[library]')) {
+    const lib = el.getAttribute('library')
+    if (!lib) continue
+    el.removeAttribute('library')
+    el.setAttribute('library', lib)
+  }
+})
+</script>
+
 ## API
 
 ### Attributes
@@ -184,14 +242,17 @@ registerIcon('my-icon', '<path d="..."/>')
 | `color` | Color (CSS value) | `string` | — |
 | `depth` | Opacity depth level: `1` (100%) ~ `5` (20%), for layered icon hierarchy | `string` | — |
 | `duotone` | Duotone icon: layered coloring (`--oas-icon-primary-color` / `--oas-icon-secondary-color` + opacity), mainly for custom dual-layer SVG | `boolean` | — |
+| `family` | Icon family (passed to the library resolver, e.g. outline/filled) | `string` | — |
 | `flip` | Flip mirror (`x` / `y` / `both` axes), combinable with `rotate` | `string` | — |
 | `label` | Accessible name; sets `role="img"` when provided | `string` | — |
+| `library` | Remote icon library name (registered via `registerIconLibrary`), takes precedence over the built-in `name` registry | `string` | — |
 | `name` | Icon name (kebab-case) | `IconName` | — |
 | `rotate` | Rotate by any angle (`rotate="45"` degrees) | `string` | — |
 | `size` | Size (px or em) | `string` | — |
 | `spin` | Spin animation: continuous rotation (loading) | `boolean` | — |
 | `src` | Custom icon URL: remote/local SVG, fetched and inlined (color follows `color` / `currentColor`) | `string` | — |
 | `swap-opacity` | Swap primary / secondary opacity of a duotone icon | `boolean` | — |
+| `variant` | Icon variant (passed to the library resolver, e.g. weight) | `string` | — |
 
 ### Slots
 

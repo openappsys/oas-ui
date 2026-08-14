@@ -628,7 +628,10 @@
       "duotone": "Duotone icon: layered coloring (`--oas-icon-primary-color` / `--oas-icon-secondary-color` + opacity), mainly for custom dual-layer SVG",
       "swap-opacity": "Swap primary / secondary opacity of a duotone icon",
       "canvas": "Canvas mode: `fixed` (default 1.25×1em) / `auto` (natural width × 1em) / `square` (1.25×1.25em) / `roomy` (1.5×1.5em)",
-      "depth": "Opacity depth level: `1` (100%) ~ `5` (20%), for layered icon hierarchy"
+      "depth": "Opacity depth level: `1` (100%) ~ `5` (20%), for layered icon hierarchy",
+      "library": "Remote icon library name (registered via `registerIconLibrary`), takes precedence over the built-in `name` registry",
+      "family": "Icon family (passed to the library resolver, e.g. outline/filled)",
+      "variant": "Icon variant (passed to the library resolver, e.g. weight)"
     },
     "events": {},
     "slots": {}

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { OASIcon, registerIcon } from './index.js'
+import { OASIcon, registerIcon, registerIconLibrary } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASIcon {
   const el = new OASIcon()
@@ -170,6 +170,192 @@ describe('OASIcon', () => {
       const el = mount({ name: 'custom-heart' })
       expect(svg(el)!.querySelector('path')?.getAttribute('d')).toBe('M2 2 L14 14')
       expect(el.shadowRoot!.querySelector('path')).not.toBeNull()
+    })
+  })
+
+  describe('registerIconLibrary 远程图标库', () => {
+    it('注册后 <oas-icon library name> 调 resolver + fetch 加载并内联渲染', async () => {
+      const resolver = vi.fn((name: string) => `/icons/${name}.svg`)
+      registerIconLibrary('lib-demo', { resolver })
+      const svgStr = '<svg viewBox="0 0 24 24"><path d="M2 2 L20 20"/></svg>'
+      const fetchMock = vi.fn(() =>
+        Promise.resolve({ ok: true, text: () => Promise.resolve(svgStr) }),
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      try {
+        const el = mount({ library: 'lib-demo', name: 'heart' })
+        expect(resolver).toHaveBeenCalledWith('heart', undefined, undefined)
+        await vi.waitFor(() => {
+          expect(svg(el)!.querySelector('path')?.getAttribute('d')).toBe('M2 2 L20 20')
+        })
+        expect(fetchMock).toHaveBeenCalledWith('/icons/heart.svg')
+        expect(svg(el)!.getAttribute('viewBox')).toBe('0 0 24 24')
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('加载失败静默兜底（空 svg，aria-hidden）', async () => {
+      registerIconLibrary('lib-fail', { resolver: (name: string) => `/nope/${name}.svg` })
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.reject(new Error('network'))),
+      )
+      try {
+        const el = mount({ library: 'lib-fail', name: 'star' })
+        await vi.waitFor(() => {
+          expect(svg(el)!.childNodes.length).toBe(0)
+        })
+        expect(el.getAttribute('aria-hidden')).toBe('true')
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('mutator 在加载内联后调用，收到渲染中的内部 svg 元素', async () => {
+      const mutator = vi.fn()
+      registerIconLibrary('lib-mut', {
+        resolver: (name: string) => `/m/${name}.svg`,
+        mutator,
+      })
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            text: () => Promise.resolve('<svg viewBox="0 0 24 24"><path d="M1 1"/></svg>'),
+          }),
+        ),
+      )
+      try {
+        const el = mount({ library: 'lib-mut', name: 'star' })
+        await vi.waitFor(() => {
+          expect(mutator).toHaveBeenCalledTimes(1)
+        })
+        const mutatorArg = mutator.mock.calls[0]?.[0]
+        expect(mutatorArg).toBe(svg(el))
+        // 内联内容已就位（mutator 在内容写入之后执行）
+        expect(svg(el)!.querySelector('path')?.getAttribute('d')).toBe('M1 1')
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('spriteSheet 模式渲染 <use href="url#name">，不 fetch 不内联', () => {
+      const resolver = vi.fn(() => '/demo-sprite.svg')
+      registerIconLibrary('lib-sprite', { resolver, spriteSheet: true })
+      const fetchMock = vi.fn()
+      vi.stubGlobal('fetch', fetchMock)
+      try {
+        const el = mount({ library: 'lib-sprite', name: 'heart' })
+        const use = svg(el)!.querySelector('use')
+        expect(use).not.toBeNull()
+        expect(use!.getAttribute('href')).toBe('/demo-sprite.svg#heart')
+        expect(fetchMock).not.toHaveBeenCalled()
+        // 外观控制仍生效（width 来自 size）
+        expect(svg(el)!.getAttribute('width')).toBe('1em')
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('library 未注册回退 name 逻辑（内置/registerIcon 均可用）', () => {
+      registerIcon('fallback-custom', '<path d="M1 1 L9 9"/>')
+      const builtin = mount({ library: 'unregistered', name: 'check' })
+      expect(builtin.shadowRoot!.querySelector('path')?.getAttribute('d')).toContain('M3.5 8.5')
+      const custom = mount({ library: 'unregistered', name: 'fallback-custom' })
+      expect(custom.shadowRoot!.querySelector('path')?.getAttribute('d')).toBe('M1 1 L9 9')
+    })
+
+    it('library 未注册且无有效 name → 空态兜底', () => {
+      const el = mount({ library: 'unregistered' })
+      expect(svg(el)!.childNodes.length).toBe(0)
+      expect(el.getAttribute('aria-hidden')).toBe('true')
+    })
+
+    it('family/variant 属性透传给 resolver', async () => {
+      const resolver = vi.fn(
+        (name: string, family?: string, variant?: string) => `/x/${family}/${variant}/${name}.svg`,
+      )
+      registerIconLibrary('lib-fv', { resolver })
+      const fetchMock = vi.fn(() =>
+        Promise.resolve({ ok: true, text: () => Promise.resolve('<svg viewBox="0 0 24 24"><path d="M1 1"/></svg>') }),
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      try {
+        const el = mount({ library: 'lib-fv', name: 'arrow-right', family: 'outlined', variant: 'sharp' })
+        expect(resolver).toHaveBeenCalledWith('arrow-right', 'outlined', 'sharp')
+        await vi.waitFor(() => {
+          expect(fetchMock).toHaveBeenCalledWith('/x/outlined/sharp/arrow-right.svg')
+        })
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('library 异步加载防竞态：切换图标后旧响应不覆盖', async () => {
+      let resolveA!: (r: { ok: boolean; text: () => Promise<string> }) => void
+      let resolveB!: (r: { ok: boolean; text: () => Promise<string> }) => void
+      registerIconLibrary('lib-race', { resolver: (name: string) => `/race/${name}.svg` })
+      const fetchMock = vi.fn((url: string) =>
+        url.includes('a.svg')
+          ? new Promise((r) => {
+              resolveA = r
+            })
+          : new Promise((r) => {
+              resolveB = r
+            }),
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      try {
+        const el = mount({ library: 'lib-race', name: 'a' })
+        el.setAttribute('name', 'b') // 后发请求先完成
+        resolveA({ ok: true, text: () => Promise.resolve('<svg viewBox="0 0 24 24"><path d="A"/></svg>') })
+        await Promise.resolve()
+        resolveB({ ok: true, text: () => Promise.resolve('<svg viewBox="0 0 24 24"><path d="B"/></svg>') })
+        await vi.waitFor(() => {
+          expect(svg(el)!.querySelector('path')?.getAttribute('d')).toBe('B')
+        })
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('library 图标支持 size/color/spin/rotate/flip/depth 外观组合', async () => {
+      registerIconLibrary('lib-look', { resolver: (name: string) => `/look/${name}.svg` })
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            text: () => Promise.resolve('<svg viewBox="0 0 24 24"><path d="M1 1"/></svg>'),
+          }),
+        ),
+      )
+      try {
+        const el = mount({
+          library: 'lib-look',
+          name: 'gear',
+          size: '24',
+          color: 'var(--oas-color-primary)',
+          spin: '',
+          rotate: '45',
+          flip: 'x',
+          depth: '2',
+        })
+        await vi.waitFor(() => {
+          expect(svg(el)!.querySelector('path')).not.toBeNull()
+        })
+        expect(svg(el)!.getAttribute('width')).toBe('24')
+        expect(el.style.color).toBe('var(--oas-color-primary)')
+        expect(svg(el)!.style.animation).toContain('oas-icon-spin')
+        const t = svg(el)!.style.transform
+        expect(t).toContain('rotate(45deg)')
+        expect(t).toContain('scaleX(-1)')
+        expect(svg(el)!.style.opacity).toBe('0.8')
+      } finally {
+        vi.unstubAllGlobals()
+      }
     })
   })
 

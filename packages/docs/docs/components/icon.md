@@ -90,6 +90,32 @@
   <oas-icon name="custom-star" spin size="24" color="var(--oas-color-primary)"></oas-icon>
 </DemoBlock>
 
+## 远程图标库
+
+`registerIconLibrary(name, { resolver, mutator, spriteSheet })` 注册远程图标库：
+`resolver` 把图标名解析为 SVG URL，组件按需 fetch 加载内联渲染（颜色跟随 `color`/`currentColor`）；
+`mutator` 在内联后调整 SVG（如描边图标补 `stroke="currentColor"`）；
+`spriteSheet` 模式渲染 `<use href="url#name">`，不内联整 SVG。
+
+<DemoBlock title="CDN 图标库（Lucide via jsDelivr，mutator 补描边）">
+  <oas-icon library="lucide" name="heart" size="28" color="var(--oas-color-danger)"></oas-icon>
+  <oas-icon library="lucide" name="star" size="28" color="var(--oas-color-warning)"></oas-icon>
+  <oas-icon library="lucide" name="arrow-right" rotate="90" size="28" color="var(--oas-color-primary)"></oas-icon>
+</DemoBlock>
+
+<DemoBlock title="sprite 表（本地，<use> 引用）">
+  <oas-icon library="demo-sprite" name="sprite-star" size="28" color="var(--oas-color-warning)"></oas-icon>
+  <oas-icon library="demo-sprite" name="sprite-heart" size="28" color="var(--oas-color-danger)"></oas-icon>
+  <oas-icon library="demo-sprite" name="sprite-check" size="28" color="var(--oas-color-success)"></oas-icon>
+</DemoBlock>
+
+<DemoBlock title="family 变体（本地 demo-set）">
+  <oas-icon library="demo-set" name="star" size="28" color="var(--oas-color-primary)"></oas-icon>
+  <oas-icon library="demo-set" name="star" family="fill" size="28" color="var(--oas-color-primary)"></oas-icon>
+  <oas-icon library="demo-set" name="heart" size="28" color="var(--oas-color-danger)"></oas-icon>
+  <oas-icon library="demo-set" name="heart" family="fill" size="28" color="var(--oas-color-danger)"></oas-icon>
+</DemoBlock>
+
 ## 动画预设
 
 `animation` 属性提供一组开箱即用的动画（尊重 `prefers-reduced-motion`，系统减弱动态时自动停用）。
@@ -226,11 +252,36 @@ onMounted(async () => {
     'custom-heart',
     '<path d="M8 14.2 C7.6 13.8 4.5 11.1 2.6 8.8 C1.1 7 0.8 5.4 1.6 4.1 C2.5 2.7 4.2 2.5 5.6 3.3 C6.4 3.8 7.3 4.9 8 6 C8.7 4.9 9.6 3.8 10.4 3.3 C11.8 2.5 13.5 2.7 14.4 4.1 C15.2 5.4 14.9 7 13.4 8.8 C11.5 11.1 8.4 13.8 8 14.2 Z" fill="currentColor"/>',
   )
+  // registerIconLibrary 注册远程图标库（resolver 按需解析 SVG URL）
+  ui.registerIconLibrary('lucide', {
+    resolver: (name) => `https://cdn.jsdelivr.net/npm/lucide-static@0.469.0/icons/${name}.svg`,
+    mutator: (svg) => {
+      svg.setAttribute('fill', 'none')
+      svg.setAttribute('stroke', 'currentColor')
+      svg.setAttribute('stroke-width', '2')
+      svg.setAttribute('stroke-linecap', 'round')
+      svg.setAttribute('stroke-linejoin', 'round')
+    },
+  })
+  ui.registerIconLibrary('demo-sprite', {
+    resolver: () => '/demo-sprite.svg',
+    spriteSheet: true,
+  })
+  ui.registerIconLibrary('demo-set', {
+    resolver: (name, family = 'outline') => `/demo-set/${family}/${name}.svg`,
+  })
   for (const el of document.querySelectorAll('oas-icon[name="custom-star"], oas-icon[name="custom-heart"]')) {
     const name = el.getAttribute('name')
     if (!name) continue
     el.removeAttribute('name')
     el.setAttribute('name', name)
+  }
+  // 注册库之后重设 library 触发更新
+  for (const el of document.querySelectorAll('oas-icon[library]')) {
+    const lib = el.getAttribute('library')
+    if (!lib) continue
+    el.removeAttribute('library')
+    el.setAttribute('library', lib)
   }
   const gallery = document.querySelector('#icon-gallery')
   if (!gallery) return
@@ -268,14 +319,17 @@ onMounted(async () => {
 | `color` | 颜色（CSS 色值） | `string` | — |
 | `depth` | 透明度层级：`1`（100%）~ `5`（20%），用于批量图标营造层次感 | `string` | — |
 | `duotone` | 双色图标：分层着色（`--oas-icon-primary-color` / `--oas-icon-secondary-color` + 透明度），主要配合自定义双层 SVG | `boolean` | — |
+| `family` | 图标族（传给库 resolver 的 family 参数，如描边/实心） | `string` | — |
 | `flip` | 翻转：镜像（`x` / `y` / `both` 轴），可与 `rotate` 组合 | `string` | — |
 | `label` | 可读名称；设置后 `role="img"` | `string` | — |
+| `library` | 远程图标库名（`registerIconLibrary` 注册的库），优先于 `name` 内置注册表 | `string` | — |
 | `name` | 图标名（kebab-case） | `IconName` | — |
 | `rotate` | 角度旋转：任意角度（`rotate="45"` 度数） | `string` | — |
 | `size` | 尺寸（px 或 em） | `string` | — |
 | `spin` | 旋转动画：无限旋转（loading 场景） | `boolean` | — |
 | `src` | 自定义图标地址：远程/本地 SVG URL，fetch 加载内联渲染（颜色跟随 `color` / `currentColor`） | `string` | — |
 | `swap-opacity` | 交换双色图标的 primary / secondary 透明度 | `boolean` | — |
+| `variant` | 图标变体（传给库 resolver 的 variant 参数，如粗细） | `string` | — |
 
 ### 插槽
 

@@ -21,6 +21,33 @@ function lookupIcon(name: string): string | undefined {
   return customIcons.get(name) ?? iconRegistry[name as IconName]
 }
 
+/**
+ * 远程图标库注册项。
+ * - resolver：图标名 → SVG URL（可携带 family/variant 属性参数），按需 fetch 加载
+ * - mutator：加载内联后调整 SVG（如 fill/stroke=currentColor）
+ * - spriteSheet：sprite 模式，URL 为同一张 sprite 表地址，渲染 `<use href="url#name">`，不内联整 SVG
+ */
+export interface IconLibraryOptions {
+  /** 图标名 → SVG URL */
+  resolver: (name: string, family?: string, variant?: string) => string
+  /** 加载内联后调整 SVG（如 fill/stroke=currentColor） */
+  mutator?: (svg: SVGElement) => void
+  /** sprite 模式：URL 含 #name 片段引用 sprite 表 symbol，渲染 <use> 而非内联 */
+  spriteSheet?: boolean
+}
+
+/** 图标库注册表（libraryName → 选项），模块级共享 */
+const iconLibraries = new Map<string, IconLibraryOptions>()
+
+/**
+ * 注册远程图标库。注册后通过 `<oas-icon library="xxx" name="yyy">` 使用：
+ * 组件调用 resolver 得到 SVG URL，按需 fetch 加载内联渲染（sprite 模式渲染 <use>）。
+ * 纯函数、无 DOM 依赖，可在 SSR/Node 环境调用。
+ */
+export function registerIconLibrary(name: string, options: IconLibraryOptions): void {
+  iconLibraries.set(name, options)
+}
+
 const STYLE = `
 :host {
   /* duotone 双层着色变量：用户可在宿主元素上通过自定义属性覆盖 */
@@ -194,6 +221,9 @@ export class OASIcon extends OASElement {
       'swap-opacity',
       'canvas',
       'depth',
+      'library',
+      'family',
+      'variant',
     ]
   }
 
@@ -238,28 +268,64 @@ export class OASIcon extends OASElement {
     }
   }
 
-  /** src 异步加载：fetch 远程/本地 SVG，解析后内联渲染（颜色走 currentColor） */
-  private loadSrc(src: string): void {
+  /** 通用远程 SVG 加载：fetch 文本 + 防竞态令牌（仅最新一次请求的响应写入），失败静默兜底 */
+  private fetchSvg(url: string, onSuccess: (text: string) => void): void {
     const id = ++this.fetchId
     const host = this.svgHost
     if (!host || typeof fetch !== 'function' || typeof document === 'undefined') return
-    fetch(src)
+    fetch(url)
       .then((res) => {
-        if (!res.ok) throw new Error(`icon fetch failed: ${src}`)
+        if (!res.ok) throw new Error(`icon fetch failed: ${url}`)
         return res.text()
       })
       .then((text) => {
         if (id !== this.fetchId || !this.svgHost) return
-        const wrapper = document.createElement('div')
-        wrapper.innerHTML = text
-        const outer = wrapper.querySelector('svg')
-        const svgHost = this.svgHost
-        svgHost.setAttribute('viewBox', outer?.getAttribute('viewBox') || '0 0 16 16')
-        svgHost.innerHTML = outer ? outer.innerHTML : text
+        onSuccess(text)
       })
       .catch(() => {
         // 加载失败静默兜底：保持空内容（aria-hidden 由 update 同步）
       })
+  }
+
+  /** src 异步加载：fetch 远程/本地 SVG，解析后内联渲染（颜色走 currentColor） */
+  private loadSrc(src: string): void {
+    this.fetchSvg(src, (text) => {
+      if (!this.svgHost) return
+      const wrapper = document.createElement('div')
+      wrapper.innerHTML = text
+      const outer = wrapper.querySelector('svg')
+      const svgHost = this.svgHost
+      svgHost.setAttribute('viewBox', outer?.getAttribute('viewBox') || '0 0 16 16')
+      svgHost.innerHTML = outer ? outer.innerHTML : text
+    })
+  }
+
+  /**
+   * library 异步加载：resolver 解析图标名 → SVG URL。
+   * sprite 模式渲染 `<use href="url#name">`（不 fetch 不内联）；
+   * 否则 fetch 内联渲染后调 mutator 调整 SVG（如 fill/stroke=currentColor）。
+   */
+  private loadLibrary(library: string, name: string, family: string, variant: string): void {
+    const options = iconLibraries.get(library)
+    const host = this.svgHost
+    if (!options || !host) return
+    const url = options.resolver(name, family || undefined, variant || undefined)
+    if (options.spriteSheet) {
+      // sprite 模式：使在途 src/library 请求失效，防止旧响应覆盖 <use>
+      ++this.fetchId
+      host.innerHTML = `<use href="${url}#${name}"></use>`
+      return
+    }
+    this.fetchSvg(url, (text) => {
+      if (!this.svgHost) return
+      const wrapper = document.createElement('div')
+      wrapper.innerHTML = text
+      const outer = wrapper.querySelector('svg')
+      const svgHost = this.svgHost
+      svgHost.setAttribute('viewBox', outer?.getAttribute('viewBox') || '0 0 16 16')
+      svgHost.innerHTML = outer ? outer.innerHTML : text
+      options.mutator?.(svgHost)
+    })
   }
 
   /** 增量同步外观：尺寸/颜色/变换/动画/透明度/duotone/aria */
@@ -330,8 +396,12 @@ export class OASIcon extends OASElement {
   protected override update(): void {
     const name = this.getAttr('name', '') as IconName
     const src = this.getAttr('src', '')
+    const library = this.getAttr('library', '')
+    const family = this.getAttr('family', '')
+    const variant = this.getAttr('variant', '')
     const slotSvg = this.slotSvg()
     const content = slotSvg ? undefined : src ? undefined : lookupIcon(name)
+    const libOptions = library ? iconLibraries.get(library) : undefined
 
     if (!this.svgHost) {
       this.shadow.innerHTML = this.template()
@@ -340,13 +410,17 @@ export class OASIcon extends OASElement {
     const host = this.svgHost
     if (!host) return
 
-    // 内容源优先级：slot 内联 svg > src 异步加载 > name 注册表
+    // 内容源优先级：slot 内联 svg > src 异步加载 > library 注册库 > name 注册表
     if (slotSvg) {
       this.renderSlotSvg(host, slotSvg)
     } else if (src) {
       host.innerHTML = ''
       host.removeAttribute('viewBox')
       this.loadSrc(src)
+    } else if (libOptions) {
+      host.innerHTML = ''
+      host.removeAttribute('viewBox')
+      this.loadLibrary(library, name, family, variant)
     } else if (content) {
       host.innerHTML = content
       host.setAttribute('viewBox', '0 0 16 16')
@@ -355,7 +429,7 @@ export class OASIcon extends OASElement {
       host.removeAttribute('viewBox')
     }
 
-    if (!slotSvg && !src && !content) {
+    if (!slotSvg && !src && !content && !libOptions) {
       // 空态兜底：保留骨架，清空内容与宿主样式
       host.removeAttribute('data-duotone')
       host.removeAttribute('data-swap')

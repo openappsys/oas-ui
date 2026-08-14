@@ -191,6 +191,24 @@
         "type": "string",
         "default": "",
         "observed": true
+      },
+      {
+        "name": "library",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "family",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "variant",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],

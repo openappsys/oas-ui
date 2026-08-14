@@ -19,7 +19,7 @@
 
 // ---------- basic ----------
 export { OASButton } from './basic/button/oas-button.js'
-export { OASIcon, registerIcon } from './basic/icon/oas-icon.js'
+export { OASIcon, registerIcon, registerIconLibrary } from './basic/icon/oas-icon.js'
 export { OASTag } from './basic/tag/oas-tag.js'
 export { OASBadge } from './basic/badge/oas-badge.js'
 export { OASSpace } from './basic/space/oas-space.js'
