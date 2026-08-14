@@ -63,10 +63,10 @@ a[part='button']:hover {
 button.has-icon {
   gap: var(--oas-space-2);
 }
-/* 纯图标按钮：等宽正方形（width = height），去除水平内边距 */
+/* 纯图标按钮：等宽正方形（width = height），去除水平内边距；优先级高于 size 档的 padding（large/xl 的 :not(.icon-only) 不覆盖） */
 button.icon-only {
   aspect-ratio: 1;
-  padding: 0;
+  padding: 0 !important;
 }
 /* 块级按钮占满父容器 */
 button.block {
@@ -221,6 +221,8 @@ button.danger:hover {
 :host([aria-pressed='true']) button.primary {
   background: var(--oas-color-primary-active);
   border-color: var(--oas-color-primary-active);
+  /* 选中态基础规则（:host([aria-pressed]) button）把文字设为主色，primary 深底上需白字 */
+  color: var(--oas-color-text-on-primary);
 }
 a[part='button'].primary {
   background: var(--oas-color-primary-active);
