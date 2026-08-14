@@ -32,10 +32,145 @@ Setting `label` exposes a readable name to screen readers.
   <oas-icon name="warning" label="Warning" color="var(--oas-color-warning)"></oas-icon>
 </DemoBlock>
 
+## Rotation & flipping
+
+The `spin` attribute spins the icon infinitely (great for loading states); `rotate` rotates by a fixed angle; `flip` mirrors it (combinable with `rotate`).
+
+<DemoBlock title="spin">
+  <oas-icon name="loading" spin size="24" color="var(--oas-color-primary)"></oas-icon>
+  <oas-icon name="gear" spin size="24"></oas-icon>
+  <oas-icon name="refresh" spin size="24" color="var(--oas-color-success)"></oas-icon>
+</DemoBlock>
+
+<DemoBlock title="rotate">
+  <oas-icon name="arrow-right" rotate="45" size="24"></oas-icon>
+  <oas-icon name="arrow-right" rotate="90" size="24"></oas-icon>
+  <oas-icon name="arrow-right" rotate="135" size="24" color="var(--oas-color-primary)"></oas-icon>
+  <oas-icon name="arrow-right" rotate="180" size="24" color="var(--oas-color-success)"></oas-icon>
+</DemoBlock>
+
+<DemoBlock title="flip">
+  <oas-icon name="arrow-right" flip="x" size="24"></oas-icon>
+  <oas-icon name="arrow-right" flip="y" size="24"></oas-icon>
+  <oas-icon name="arrow-right" flip="both" size="24"></oas-icon>
+  <oas-icon name="arrow-right" flip="x" rotate="45" size="24" color="var(--oas-color-primary)"></oas-icon>
+</DemoBlock>
+
+## Custom icons
+
+- `src`: fetch a local or CORS-enabled SVG URL and render it inline (color follows `color` / `currentColor`)
+- slot: put an inline `<svg>` inside the tag; it takes priority over `name`
+
+<DemoBlock title="src SVG">
+  <oas-icon src="/demo-icon.svg" size="24" color="var(--oas-color-primary)"></oas-icon>
+  <oas-icon src="/demo-icon.svg" size="24" color="var(--oas-color-danger)"></oas-icon>
+  <oas-icon src="/demo-icon.svg" size="32" color="var(--oas-color-success)"></oas-icon>
+</DemoBlock>
+
+<DemoBlock title="slot inline SVG (takes priority over name)">
+  <oas-icon size="24" color="var(--oas-color-primary)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2 L12 22 M2 12 L22 12" />
+    </svg>
+  </oas-icon>
+  <oas-icon size="24" color="var(--oas-color-danger)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 6 L12 18 L22 6" />
+    </svg>
+  </oas-icon>
+</DemoBlock>
+
+## Icon library registration
+
+`registerIcon(name, svg)` registers a custom icon for reuse by `name` (overriding built-in icons with the same name).
+
+<DemoBlock title="registerIcon custom icons">
+  <oas-icon name="custom-star" size="24" color="var(--oas-color-warning)"></oas-icon>
+  <oas-icon name="custom-heart" size="24" color="var(--oas-color-danger)"></oas-icon>
+  <oas-icon name="custom-star" spin size="24" color="var(--oas-color-primary)"></oas-icon>
+</DemoBlock>
+
+## Animation presets
+
+The `animation` attribute provides ready-to-use animations (respecting `prefers-reduced-motion`).
+
+<DemoBlock title="Animation presets">
+  <oas-icon name="gear" animation="spin" size="24" color="var(--oas-color-primary)"></oas-icon>
+  <oas-icon name="gear" animation="spin-pulse" size="24" color="var(--oas-color-primary)"></oas-icon>
+  <oas-icon name="heart" animation="beat" size="24" color="var(--oas-color-danger)"></oas-icon>
+  <oas-icon name="heart" animation="beat-fade" size="24" color="var(--oas-color-danger)"></oas-icon>
+  <oas-icon name="star" animation="bounce" size="24" color="var(--oas-color-warning)"></oas-icon>
+  <oas-icon name="arrow-right" animation="shake" size="24"></oas-icon>
+  <oas-icon name="refresh" animation="float" size="24" color="var(--oas-color-success)"></oas-icon>
+  <oas-icon name="mail" animation="swing" size="24"></oas-icon>
+  <oas-icon name="menu" animation="wag" size="24"></oas-icon>
+  <oas-icon name="close" animation="buzz" size="24"></oas-icon>
+  <oas-icon name="gear" animation="jello" size="24" color="var(--oas-color-primary)"></oas-icon>
+</DemoBlock>
+
+## Duotone
+
+`duotone` colors icon layers separately: `data-layer="primary"` / `data-layer="secondary"` (or the first two shape elements) are tinted with `--oas-icon-primary-color` / `--oas-icon-secondary-color`, with default opacity 1 / 0.4 (overridable on the host). `swap-opacity` swaps the two opacities. Built-in icons are monochrome, so this is mainly for custom two-layer SVGs.
+
+<DemoBlock title="Duotone">
+  <oas-icon duotone size="32" style="--oas-icon-primary-color: var(--oas-color-primary); --oas-icon-secondary-color: var(--oas-color-primary);">
+    <svg viewBox="0 0 24 24">
+      <path data-layer="secondary" d="M12 1.5 C6.2 1.5 1.5 6.2 1.5 12 C1.5 17.8 6.2 22.5 12 22.5 C17.8 22.5 22.5 17.8 22.5 12 C22.5 6.2 17.8 1.5 12 1.5 Z"/>
+      <path data-layer="primary" d="M12 6.5 L13.6 9.8 L17.2 10.4 L14.7 12.9 L15.3 16.4 L12 14.7 L8.7 16.4 L9.3 12.9 L6.8 10.4 L10.4 9.8 Z"/>
+    </svg>
+  </oas-icon>
+  <oas-icon duotone swap-opacity size="32" style="--oas-icon-primary-color: var(--oas-color-primary); --oas-icon-secondary-color: var(--oas-color-primary);">
+    <svg viewBox="0 0 24 24">
+      <path data-layer="secondary" d="M12 1.5 C6.2 1.5 1.5 6.2 1.5 12 C1.5 17.8 6.2 22.5 12 22.5 C17.8 22.5 22.5 17.8 22.5 12 C22.5 6.2 17.8 1.5 12 1.5 Z"/>
+      <path data-layer="primary" d="M12 6.5 L13.6 9.8 L17.2 10.4 L14.7 12.9 L15.3 16.4 L12 14.7 L8.7 16.4 L9.3 12.9 L6.8 10.4 L10.4 9.8 Z"/>
+    </svg>
+  </oas-icon>
+</DemoBlock>
+
+## Canvas modes
+
+`canvas` controls the icon placeholder box: `fixed` (1.25×1em) / `auto` (natural width × 1em) / `square` (1.25×1.25em) / `roomy` (1.5×1.5em); an explicit `size` wins.
+
+<DemoBlock title="Canvas modes">
+  <div style="display:flex; align-items:flex-end; gap: var(--oas-space-5); font-size: 32px; color: var(--oas-color-primary);">
+    <div style="display:flex; flex-direction:column; align-items:center; gap: 4px; font-size: 12px;">
+      <oas-icon name="check" canvas="fixed"></oas-icon>
+      <span>fixed</span>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap: 4px; font-size: 12px;">
+      <oas-icon name="check" canvas="auto"></oas-icon>
+      <span>auto</span>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap: 4px; font-size: 12px;">
+      <oas-icon name="check" canvas="square"></oas-icon>
+      <span>square</span>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap: 4px; font-size: 12px;">
+      <oas-icon name="check" canvas="roomy"></oas-icon>
+      <span>roomy</span>
+    </div>
+  </div>
+</DemoBlock>
+
+## Depth
+
+`depth` controls opacity levels (1=100% … 5=20%), useful for creating hierarchy in icon groups.
+
+<DemoBlock title="Depth">
+  <oas-icon name="star" depth="1" size="24" color="var(--oas-color-warning)"></oas-icon>
+  <oas-icon name="star" depth="2" size="24" color="var(--oas-color-warning)"></oas-icon>
+  <oas-icon name="star" depth="3" size="24" color="var(--oas-color-warning)"></oas-icon>
+  <oas-icon name="star" depth="4" size="24" color="var(--oas-color-warning)"></oas-icon>
+  <oas-icon name="star" depth="5" size="24" color="var(--oas-color-warning)"></oas-icon>
+</DemoBlock>
+
 ## On-demand import
 
 ```ts
 import { checkPath } from '@oas-ui/icons'
+import { registerIcon } from '@oas-ui/ui'
+
+registerIcon('my-icon', '<path d="..."/>')
 ```
 
 ## API
@@ -44,9 +179,24 @@ import { checkPath } from '@oas-ui/icons'
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `animation` | Animation presets: `spin` / `spin-pulse` / `spin-reverse` / `spin-snap` / `beat` / `fade` / `beat-fade` / `bounce` / `shake` / `swing` / `wag` / `buzz` / `float` / `jello` (respects prefers-reduced-motion) | `string` | — |
+| `canvas` | Canvas mode: `fixed` (default 1.25×1em) / `auto` (natural width × 1em) / `square` (1.25×1.25em) / `roomy` (1.5×1.5em) | `string` | — |
 | `color` | Color (CSS value) | `string` | — |
+| `depth` | Opacity depth level: `1` (100%) ~ `5` (20%), for layered icon hierarchy | `string` | — |
+| `duotone` | Duotone icon: layered coloring (`--oas-icon-primary-color` / `--oas-icon-secondary-color` + opacity), mainly for custom dual-layer SVG | `boolean` | — |
+| `flip` | Flip mirror (`x` / `y` / `both` axes), combinable with `rotate` | `string` | — |
 | `label` | Accessible name; sets `role="img"` when provided | `string` | — |
 | `name` | Icon name (kebab-case) | `IconName` | — |
+| `rotate` | Rotate by any angle (`rotate="45"` degrees) | `string` | — |
 | `size` | Size (px or em) | `string` | — |
+| `spin` | Spin animation: continuous rotation (loading) | `boolean` | — |
+| `src` | Custom icon URL: remote/local SVG, fetched and inlined (color follows `color` / `currentColor`) | `string` | — |
+| `swap-opacity` | Swap primary / secondary opacity of a duotone icon | `boolean` | — |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | — |
 
 Icon names: `alert-circle` `arrow-down` `arrow-left` `arrow-right` `arrow-up` `calendar` `check-circle` `check` `chevron-down` `chevron-left` `chevron-right` `chevron-up` `clock` `close-circle` `close` `copy` `download` `edit` `error` `external-link` `eye` `filter` `gear` `heart` `info` `loading` `lock` `mail` `menu` `minus` `more-vertical` `more` `plus` `refresh` `search` `sort` `star-filled` `star` `trash` `upload` `user` `warning`.

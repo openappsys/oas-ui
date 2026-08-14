@@ -619,7 +619,16 @@
       "color": "颜色（CSS 色值）",
       "label": "可读名称；设置后 `role=\"img\"`",
       "name": "图标名（kebab-case）",
-      "size": "尺寸（px 或 em）"
+      "size": "尺寸（px 或 em）",
+      "spin": "旋转动画：无限旋转（loading 场景）",
+      "rotate": "角度旋转：任意角度（`rotate=\"45\"` 度数）",
+      "flip": "翻转：镜像（`x` / `y` / `both` 轴），可与 `rotate` 组合",
+      "src": "自定义图标地址：远程/本地 SVG URL，fetch 加载内联渲染（颜色跟随 `color` / `currentColor`）",
+      "animation": "动画预设：`spin` / `spin-pulse` / `spin-reverse` / `spin-snap` / `beat` / `fade` / `beat-fade` / `bounce` / `shake` / `swing` / `wag` / `buzz` / `float` / `jello`（尊重 prefers-reduced-motion）",
+      "duotone": "双色图标：分层着色（`--oas-icon-primary-color` / `--oas-icon-secondary-color` + 透明度），主要配合自定义双层 SVG",
+      "swap-opacity": "交换双色图标的 primary / secondary 透明度",
+      "canvas": "占位框模式：`fixed`（默认 1.25×1em）/ `auto`（自然宽 × 1em）/ `square`（1.25×1.25em）/ `roomy`（1.5×1.5em）",
+      "depth": "透明度层级：`1`（100%）~ `5`（20%），用于批量图标营造层次感"
     },
     "events": {},
     "slots": {}

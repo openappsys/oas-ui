@@ -140,11 +140,66 @@
         "type": "string",
         "default": "",
         "observed": true
+      },
+      {
+        "name": "spin",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "rotate",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "flip",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "src",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "animation",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "duotone",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "swap-opacity",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "canvas",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "depth",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
     "events": [],
-    "slots": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
     "unresolved": []
   },
   "oas-tag": {

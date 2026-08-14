@@ -619,7 +619,16 @@
       "color": "Color (CSS value)",
       "label": "Accessible name; sets `role=\"img\"` when provided",
       "name": "Icon name (kebab-case)",
-      "size": "Size (px or em)"
+      "size": "Size (px or em)",
+      "spin": "Spin animation: continuous rotation (loading)",
+      "rotate": "Rotate by any angle (`rotate=\"45\"` degrees)",
+      "flip": "Flip mirror (`x` / `y` / `both` axes), combinable with `rotate`",
+      "src": "Custom icon URL: remote/local SVG, fetched and inlined (color follows `color` / `currentColor`)",
+      "animation": "Animation presets: `spin` / `spin-pulse` / `spin-reverse` / `spin-snap` / `beat` / `fade` / `beat-fade` / `bounce` / `shake` / `swing` / `wag` / `buzz` / `float` / `jello` (respects prefers-reduced-motion)",
+      "duotone": "Duotone icon: layered coloring (`--oas-icon-primary-color` / `--oas-icon-secondary-color` + opacity), mainly for custom dual-layer SVG",
+      "swap-opacity": "Swap primary / secondary opacity of a duotone icon",
+      "canvas": "Canvas mode: `fixed` (default 1.25×1em) / `auto` (natural width × 1em) / `square` (1.25×1.25em) / `roomy` (1.5×1.5em)",
+      "depth": "Opacity depth level: `1` (100%) ~ `5` (20%), for layered icon hierarchy"
     },
     "events": {},
     "slots": {}

@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { OASIcon } from './index.js'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { OASIcon, registerIcon } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASIcon {
   const el = new OASIcon()
@@ -12,6 +12,14 @@ function svg(el: OASIcon): SVGSVGElement | null {
   return el.shadowRoot!.querySelector('svg')
 }
 
+/** 构造带命名空间的 slot 内联 svg */
+function makeSlotSvg(viewBox: string, inner: string): SVGSVGElement {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  s.setAttribute('viewBox', viewBox)
+  s.innerHTML = inner
+  return s
+}
+
 describe('OASIcon', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -21,14 +29,20 @@ describe('OASIcon', () => {
     document.body.innerHTML = ''
   })
 
-  it('无 name 时渲染空 shadow（不报错）', () => {
+  it('无 name 时渲染空 svg（骨架保留，不报错）', () => {
     const el = mount()
-    expect(el.shadowRoot!.childNodes.length).toBe(0)
+    const s = svg(el)
+    expect(s).not.toBeNull()
+    expect(s!.childNodes.length).toBe(0)
+    expect(el.getAttribute('aria-hidden')).toBe('true')
   })
 
-  it('未知 name 渲染空 shadow（空态兜底）', () => {
+  it('未知 name 渲染空 svg（空态兜底）', () => {
     const el = mount({ name: 'not-exist' })
-    expect(el.shadowRoot!.childNodes.length).toBe(0)
+    const s = svg(el)
+    expect(s).not.toBeNull()
+    expect(s!.childNodes.length).toBe(0)
+    expect(el.getAttribute('aria-hidden')).toBe('true')
   })
 
   it('按 name 渲染对应图标 SVG', () => {
@@ -69,5 +83,208 @@ describe('OASIcon', () => {
     el.setAttribute('name', 'close')
     expect(el.shadowRoot!.querySelector('svg')).toBe(host)
     expect(el.shadowRoot!.querySelector('path')?.getAttribute('d')).toContain('M4 4 L12 12')
+  })
+
+  describe('spin / rotate / flip', () => {
+    it('spin 属性 → svg 无限旋转动画，移除后清除', () => {
+      const el = mount({ name: 'loading', spin: '' })
+      expect(svg(el)!.style.animation).toBe('oas-icon-spin 1s linear infinite')
+      el.removeAttribute('spin')
+      expect(svg(el)!.style.animation).toBe('')
+    })
+
+    it('rotate 属性 → 静态角度旋转', () => {
+      const el = mount({ name: 'check', rotate: '45' })
+      expect(svg(el)!.style.transform).toContain('rotate(45deg)')
+      el.setAttribute('rotate', '90')
+      expect(svg(el)!.style.transform).toContain('rotate(90deg)')
+    })
+
+    it('flip 属性 → 镜像翻转，与 rotate 可叠加', () => {
+      const el = mount({ name: 'check', flip: 'x' })
+      expect(svg(el)!.style.transform).toContain('scaleX(-1)')
+      el.setAttribute('flip', 'y')
+      expect(svg(el)!.style.transform).toContain('scaleY(-1)')
+      el.setAttribute('flip', 'both')
+      const t = svg(el)!.style.transform
+      expect(t).toContain('scaleX(-1)')
+      expect(t).toContain('scaleY(-1)')
+      el.setAttribute('rotate', '45')
+      const combined = svg(el)!.style.transform
+      expect(combined).toContain('rotate(45deg)')
+      expect(combined).toContain('scaleX(-1)')
+      expect(combined).toContain('scaleY(-1)')
+    })
+  })
+
+  describe('自定义图标（src / slot）', () => {
+    it('src 属性 → fetch 加载内联渲染（viewBox 同步、fill 走 currentColor）', async () => {
+      const svgStr = '<svg viewBox="0 0 24 24"><path d="M1 1 L5 5"/></svg>'
+      const fetchMock = vi.fn(() =>
+        Promise.resolve({ ok: true, text: () => Promise.resolve(svgStr) }),
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      try {
+        const el = mount({ name: 'check', src: '/demo-icon.svg' })
+        await vi.waitFor(() => {
+          expect(svg(el)!.querySelector('path')?.getAttribute('d')).toBe('M1 1 L5 5')
+        })
+        expect(svg(el)!.getAttribute('viewBox')).toBe('0 0 24 24')
+        expect(fetchMock).toHaveBeenCalledWith('/demo-icon.svg')
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('src 加载失败静默兜底（空 svg，aria-hidden）', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.reject(new Error('network'))),
+      )
+      try {
+        const el = mount({ name: 'check', src: '/missing.svg' })
+        await vi.waitFor(() => {
+          expect(svg(el)!.childNodes.length).toBe(0)
+        })
+        expect(el.getAttribute('aria-hidden')).toBe('true')
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
+
+    it('slot 内联 svg 优先于 name 渲染', () => {
+      const el = mount({ name: 'check' })
+      el.appendChild(makeSlotSvg('0 0 32 32', '<path d="M0 0 L9 9"/>'))
+      el.setAttribute('size', '32') // 触发 update
+      expect(svg(el)!.querySelector('path')?.getAttribute('d')).toBe('M0 0 L9 9')
+      expect(svg(el)!.getAttribute('viewBox')).toBe('0 0 32 32')
+      // 仍保留组件统一的外观控制（宽度来自 size）
+      expect(svg(el)!.getAttribute('width')).toBe('32')
+    })
+  })
+
+  describe('registerIcon 图标库注册', () => {
+    it('注册后 name 可用（自定义注册优先于内置注册表）', () => {
+      // 注意：用独有名字避免污染其他测试文件对内置 'check' 的断言（模块级注册表跨文件共享）
+      registerIcon('custom-heart', '<path d="M2 2 L14 14"/>')
+      const el = mount({ name: 'custom-heart' })
+      expect(svg(el)!.querySelector('path')?.getAttribute('d')).toBe('M2 2 L14 14')
+      expect(el.shadowRoot!.querySelector('path')).not.toBeNull()
+    })
+  })
+
+  describe('animation 动画预设', () => {
+    it('各预设映射到对应 CSS animation 简写', () => {
+      const cases: Array<[string, string]> = [
+        ['spin', 'oas-icon-spin 1s linear infinite'],
+        ['spin-pulse', 'oas-icon-spin 1.2s steps(8, end) infinite'],
+        ['spin-reverse', 'oas-icon-spin-reverse 1s linear infinite'],
+        ['spin-snap', 'oas-icon-spin-snap 2.4s ease-in-out infinite'],
+        ['beat', 'oas-icon-beat 1.2s ease-in-out infinite'],
+        ['fade', 'oas-icon-fade 1.5s ease-in-out infinite'],
+        ['beat-fade', 'oas-icon-beat-fade 1.6s ease-in-out infinite'],
+        ['bounce', 'oas-icon-bounce 1.5s ease-in-out infinite'],
+        ['shake', 'oas-icon-shake 0.8s linear infinite'],
+        ['swing', 'oas-icon-swing 2s ease-in-out infinite'],
+        ['wag', 'oas-icon-wag 1.5s ease-in-out infinite'],
+        ['buzz', 'oas-icon-buzz 0.9s linear infinite'],
+        ['float', 'oas-icon-float 3s ease-in-out infinite'],
+        ['jello', 'oas-icon-jello 1.2s linear infinite'],
+      ]
+      for (const [anim, expected] of cases) {
+        const el = mount({ name: 'check', animation: anim })
+        expect(svg(el)!.style.animation).toBe(expected)
+        el.remove()
+      }
+    })
+
+    it('非法 animation 值清空动画', () => {
+      const el = mount({ name: 'check', animation: 'nope' })
+      expect(svg(el)!.style.animation).toBe('')
+    })
+
+    it('spin 属性优先于 animation 时以 animation 为准（预设更完整）', () => {
+      const el = mount({ name: 'check', spin: '', animation: 'beat' })
+      expect(svg(el)!.style.animation).toContain('oas-icon-beat')
+    })
+
+    it('shadow 内定义全部 keyframes 且尊重 prefers-reduced-motion', () => {
+      const el = mount({ name: 'check' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent
+      expect(css).toContain('@keyframes oas-icon-spin')
+      expect(css).toContain('@keyframes oas-icon-jello')
+      expect(css).toContain('@media (prefers-reduced-motion: reduce)')
+    })
+  })
+
+  describe('duotone 双色', () => {
+    it('duotone/swap-opacity 切换 svg data 标记', () => {
+      const el = mount({ name: 'check', duotone: '' })
+      expect(svg(el)!.getAttribute('data-duotone')).toBe('true')
+      expect(svg(el)!.getAttribute('data-swap')).toBeNull()
+      el.setAttribute('swap-opacity', '')
+      expect(svg(el)!.getAttribute('data-swap')).toBe('true')
+      el.removeAttribute('duotone')
+      expect(svg(el)!.getAttribute('data-duotone')).toBeNull()
+      // swap-opacity 独立于 duotone 存在
+      expect(svg(el)!.getAttribute('data-swap')).toBe('true')
+      el.removeAttribute('swap-opacity')
+      expect(svg(el)!.getAttribute('data-swap')).toBeNull()
+    })
+
+    it('shadow 样式定义变量默认值（primary 1 / secondary 0.4）与分层着色规则', () => {
+      const el = mount({ name: 'check', duotone: '' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent
+      expect(css).toContain('--oas-icon-primary-opacity: 1')
+      expect(css).toContain('--oas-icon-secondary-opacity: 0.4')
+      expect(css).toContain("svg[data-duotone='true'] > :first-child")
+      expect(css).toContain("svg[data-duotone='true'] > :nth-child(2)")
+    })
+  })
+
+  describe('canvas 占位框模式', () => {
+    it('canvas 各模式控制 svg 宽高，size 显式优先', () => {
+      const el = mount({ name: 'check' })
+      expect(svg(el)!.getAttribute('width')).toBe('1em')
+      expect(svg(el)!.getAttribute('height')).toBe('1em')
+      el.setAttribute('canvas', 'fixed')
+      expect(svg(el)!.getAttribute('width')).toBe('1.25em')
+      expect(svg(el)!.getAttribute('height')).toBe('1em')
+      el.setAttribute('canvas', 'square')
+      expect(svg(el)!.getAttribute('width')).toBe('1.25em')
+      expect(svg(el)!.getAttribute('height')).toBe('1.25em')
+      el.setAttribute('canvas', 'roomy')
+      expect(svg(el)!.getAttribute('width')).toBe('1.5em')
+      expect(svg(el)!.getAttribute('height')).toBe('1.5em')
+      el.setAttribute('canvas', 'auto')
+      expect(svg(el)!.getAttribute('width')).toBeNull()
+      expect(svg(el)!.getAttribute('height')).toBe('1em')
+      // size 显式优先于 canvas
+      el.setAttribute('size', '24')
+      expect(svg(el)!.getAttribute('width')).toBe('24')
+      expect(svg(el)!.getAttribute('height')).toBe('24')
+    })
+  })
+
+  describe('depth 透明度层级', () => {
+    it('depth 1-5 对应 100%→20% 透明度', () => {
+      const el = mount({ name: 'check', depth: '1' })
+      expect(svg(el)!.style.opacity).toBe('1')
+      el.setAttribute('depth', '2')
+      expect(svg(el)!.style.opacity).toBe('0.8')
+      el.setAttribute('depth', '3')
+      expect(svg(el)!.style.opacity).toBe('0.6')
+      el.setAttribute('depth', '4')
+      expect(svg(el)!.style.opacity).toBe('0.4')
+      el.setAttribute('depth', '5')
+      expect(svg(el)!.style.opacity).toBe('0.2')
+      el.removeAttribute('depth')
+      expect(svg(el)!.style.opacity).toBe('')
+    })
+
+    it('非法 depth 忽略', () => {
+      const el = mount({ name: 'check', depth: '9' })
+      expect(svg(el)!.style.opacity).toBe('')
+    })
   })
 })

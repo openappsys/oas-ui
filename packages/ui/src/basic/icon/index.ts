@@ -5,3 +5,4 @@ if (!customElements.get('oas-icon')) {
 }
 
 export { OASIcon }
+export { registerIcon } from './oas-icon.js'

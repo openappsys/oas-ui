@@ -1,21 +1,215 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 
+/**
+ * 用户自定义图标注册表（name → 内联 SVG 片段）。
+ * 查询优先级高于内置 iconRegistry：同名时覆盖内置图标。
+ */
+const customIcons = new Map<string, string>()
+
+/**
+ * 注册自定义图标，注册后即可通过 `<oas-icon name="xxx">` 使用。
+ * 与内置图标同名时覆盖内置图标。
+ * 纯函数、无 DOM 依赖，可在 SSR/Node 环境调用。
+ */
+export function registerIcon(name: string, svg: string): void {
+  customIcons.set(name, svg)
+}
+
+/** 查表：自定义注册优先，其次内置图标集 */
+function lookupIcon(name: string): string | undefined {
+  return customIcons.get(name) ?? iconRegistry[name as IconName]
+}
+
+const STYLE = `
+:host {
+  /* duotone 双层着色变量：用户可在宿主元素上通过自定义属性覆盖 */
+  --oas-icon-primary-color: currentColor;
+  --oas-icon-secondary-color: currentColor;
+  --oas-icon-primary-opacity: 1;
+  --oas-icon-secondary-opacity: 0.4;
+}
+svg {
+  fill: currentColor;
+  transform-origin: center;
+}
+/* 用户经 slot 提供的原始 svg 不直接显示（内容已内联进内部 svg） */
+::slotted(svg) {
+  display: none;
+}
+/* duotone：优先 data-layer 显式分层，其次按前两个直接子图形元素着色 */
+svg[data-duotone='true'] [data-layer='primary'],
+svg[data-duotone='true'] > :first-child {
+  color: var(--oas-icon-primary-color);
+  opacity: var(--oas-icon-primary-opacity);
+}
+svg[data-duotone='true'] [data-layer='secondary'],
+svg[data-duotone='true'] > :nth-child(2) {
+  color: var(--oas-icon-secondary-color);
+  opacity: var(--oas-icon-secondary-opacity);
+}
+/* swap-opacity：交换两层透明度 */
+svg[data-duotone='true'][data-swap='true'] [data-layer='primary'],
+svg[data-duotone='true'][data-swap='true'] > :first-child {
+  opacity: var(--oas-icon-secondary-opacity);
+}
+svg[data-duotone='true'][data-swap='true'] [data-layer='secondary'],
+svg[data-duotone='true'][data-swap='true'] > :nth-child(2) {
+  opacity: var(--oas-icon-primary-opacity);
+}
+@keyframes oas-icon-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes oas-icon-spin-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+@keyframes oas-icon-spin-snap {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(45deg); }
+  12.5% { transform: rotate(45deg); }
+  22.5% { transform: rotate(90deg); }
+  25% { transform: rotate(90deg); }
+  35% { transform: rotate(135deg); }
+  37.5% { transform: rotate(135deg); }
+  47.5% { transform: rotate(180deg); }
+  50% { transform: rotate(180deg); }
+  60% { transform: rotate(225deg); }
+  62.5% { transform: rotate(225deg); }
+  72.5% { transform: rotate(270deg); }
+  75% { transform: rotate(270deg); }
+  85% { transform: rotate(315deg); }
+  87.5% { transform: rotate(315deg); }
+  97.5% { transform: rotate(360deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes oas-icon-beat {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.15); }
+}
+@keyframes oas-icon-fade {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@keyframes oas-icon-beat-fade {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+@keyframes oas-icon-bounce {
+  0%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-25%); }
+  50% { transform: translateY(0); }
+  70% { transform: translateY(-12%); }
+}
+@keyframes oas-icon-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-8%); }
+  20%, 40%, 60%, 80% { transform: translateX(8%); }
+}
+@keyframes oas-icon-swing {
+  0% { transform-origin: top center; transform: rotate(0deg); }
+  20% { transform: rotate(14deg); }
+  40% { transform: rotate(-11deg); }
+  60% { transform: rotate(7deg); }
+  80% { transform: rotate(-4deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes oas-icon-wag {
+  0% { transform-origin: bottom center; transform: rotate(0deg); }
+  20% { transform: rotate(9deg); }
+  40% { transform: rotate(-9deg); }
+  60% { transform: rotate(5deg); }
+  80% { transform: rotate(-5deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes oas-icon-buzz {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(3deg); }
+  20% { transform: rotate(-3deg); }
+  30% { transform: rotate(2.4deg); }
+  40% { transform: rotate(-2.4deg); }
+  50% { transform: rotate(1.8deg); }
+  60% { transform: rotate(-1.8deg); }
+  70% { transform: rotate(1.2deg); }
+  80% { transform: rotate(-1.2deg); }
+  90% { transform: rotate(0.6deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes oas-icon-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10%); }
+}
+@keyframes oas-icon-jello {
+  0%, 100% { transform: scale(1, 1); }
+  20% { transform: scale(1.08, 0.92); }
+  40% { transform: scale(0.92, 1.08); }
+  60% { transform: scale(1.04, 0.96); }
+  80% { transform: scale(0.96, 1.04); }
+}
+/* 尊重系统减弱动态偏好：一律停用图标动画 */
+@media (prefers-reduced-motion: reduce) {
+  svg { animation: none !important; }
+}
+`
+
+/** animation 属性预设 → CSS animation 简写（自制 keyframes，非第三方实现） */
+const ANIMATIONS: Record<string, string> = {
+  spin: 'oas-icon-spin 1s linear infinite',
+  'spin-pulse': 'oas-icon-spin 1.2s steps(8, end) infinite',
+  'spin-reverse': 'oas-icon-spin-reverse 1s linear infinite',
+  'spin-snap': 'oas-icon-spin-snap 2.4s ease-in-out infinite',
+  beat: 'oas-icon-beat 1.2s ease-in-out infinite',
+  fade: 'oas-icon-fade 1.5s ease-in-out infinite',
+  'beat-fade': 'oas-icon-beat-fade 1.6s ease-in-out infinite',
+  bounce: 'oas-icon-bounce 1.5s ease-in-out infinite',
+  shake: 'oas-icon-shake 0.8s linear infinite',
+  swing: 'oas-icon-swing 2s ease-in-out infinite',
+  wag: 'oas-icon-wag 1.5s ease-in-out infinite',
+  buzz: 'oas-icon-buzz 0.9s linear infinite',
+  float: 'oas-icon-float 3s ease-in-out infinite',
+  jello: 'oas-icon-jello 1.2s linear infinite',
+}
+
+/** canvas 占位框模式（auto 单独处理：自然宽 × 1em 高） */
+const CANVAS: Record<string, { w: string; h: string }> = {
+  fixed: { w: '1.25em', h: '1em' },
+  square: { w: '1.25em', h: '1.25em' },
+  roomy: { w: '1.5em', h: '1.5em' },
+}
+
 export class OASIcon extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['name', 'size', 'color', 'label']
+    return [
+      'name',
+      'size',
+      'color',
+      'label',
+      'spin',
+      'rotate',
+      'flip',
+      'src',
+      'animation',
+      'duotone',
+      'swap-opacity',
+      'canvas',
+      'depth',
+    ]
   }
 
   private svgHost: SVGSVGElement | null = null
+  /** src 异步加载的竞态令牌：仅最新一次请求的结果会写入 */
+  private fetchId = 0
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
-    return '<svg part="icon"></svg>'
+    return `<style>${STYLE}</style><svg part="icon"></svg><slot></slot>`
   }
 
-  /** 缓存节点引用（render 与水合路径共用） */
+  /** 缓存节点引用 + 绑定 slotchange（render 与水合路径共用） */
   private bind(): void {
     this.svgHost = this.shadow.querySelector('svg')
+    this.shadow.querySelector('slot')?.addEventListener('slotchange', () => this.update())
   }
 
   protected override render(): void {
@@ -29,40 +223,99 @@ export class OASIcon extends OASElement {
     return true
   }
 
-  protected override update(): void {
-    const name = this.getAttr('name', '') as IconName
-    const content = name ? iconRegistry[name] : undefined
+  /** 查询 light DOM 中用户经 slot 提供的内联 svg */
+  private slotSvg(): SVGSVGElement | null {
+    return this.querySelector('svg') as SVGSVGElement | null
+  }
 
-    if (!content) {
-      this.shadow.innerHTML = ''
-      this.svgHost = null
-      this.style.color = ''
-      this.setAttribute('aria-hidden', 'true')
-      this.removeAttribute('role')
-      this.removeAttribute('aria-label')
-      return
+  /** 将用户 slot 的内联 svg 内容克隆进内部 svgHost */
+  private renderSlotSvg(host: SVGSVGElement, slotSvg: SVGSVGElement): void {
+    const viewBox = slotSvg.getAttribute('viewBox')
+    host.setAttribute('viewBox', viewBox || '0 0 16 16')
+    host.innerHTML = ''
+    for (const child of Array.from(slotSvg.childNodes)) {
+      host.appendChild(child.cloneNode(true))
     }
+  }
 
-    if (!this.svgHost) {
-      this.shadow.innerHTML = this.template()
-      this.bind()
-    }
+  /** src 异步加载：fetch 远程/本地 SVG，解析后内联渲染（颜色走 currentColor） */
+  private loadSrc(src: string): void {
+    const id = ++this.fetchId
     const host = this.svgHost
-    if (!host) return
+    if (!host || typeof fetch !== 'function' || typeof document === 'undefined') return
+    fetch(src)
+      .then((res) => {
+        if (!res.ok) throw new Error(`icon fetch failed: ${src}`)
+        return res.text()
+      })
+      .then((text) => {
+        if (id !== this.fetchId || !this.svgHost) return
+        const wrapper = document.createElement('div')
+        wrapper.innerHTML = text
+        const outer = wrapper.querySelector('svg')
+        const svgHost = this.svgHost
+        svgHost.setAttribute('viewBox', outer?.getAttribute('viewBox') || '0 0 16 16')
+        svgHost.innerHTML = outer ? outer.innerHTML : text
+      })
+      .catch(() => {
+        // 加载失败静默兜底：保持空内容（aria-hidden 由 update 同步）
+      })
+  }
 
+  /** 增量同步外观：尺寸/颜色/变换/动画/透明度/duotone/aria */
+  private syncAppearance(host: SVGSVGElement): void {
+    // canvas 占位框模式（size 显式时优先，canvas 缺省保持旧行为 1em×1em）
     const size = this.getAttr('size', '')
-    const color = this.getAttr('color', '')
-    const label = this.getAttr('label', '')
-
-    host.innerHTML = content
-    host.setAttribute('viewBox', '0 0 16 16')
-    host.setAttribute('width', size || '1em')
-    host.setAttribute('height', size || '1em')
+    const canvas = this.getAttr('canvas', '')
+    if (size) {
+      host.setAttribute('width', size)
+      host.setAttribute('height', size)
+    } else if (canvas === 'auto') {
+      host.removeAttribute('width')
+      host.setAttribute('height', '1em')
+    } else if (canvas && CANVAS[canvas]) {
+      host.setAttribute('width', CANVAS[canvas].w)
+      host.setAttribute('height', CANVAS[canvas].h)
+    } else {
+      host.setAttribute('width', '1em')
+      host.setAttribute('height', '1em')
+    }
     host.setAttribute('aria-hidden', 'true')
     host.setAttribute('focusable', 'false')
 
-    this.style.color = color
+    // 颜色
+    this.style.color = this.getAttr('color', '')
 
+    // rotate + flip 静态变换叠加
+    const transforms: string[] = []
+    const rotate = this.getAttr('rotate', '')
+    if (rotate) transforms.push(`rotate(${rotate}deg)`)
+    const flip = this.getAttr('flip', '')
+    if (flip === 'x' || flip === 'both') transforms.push('scaleX(-1)')
+    if (flip === 'y' || flip === 'both') transforms.push('scaleY(-1)')
+    host.style.transform = transforms.join(' ')
+
+    // 动画：animation 属性优先，spin 为布尔快捷方式
+    const animation = this.getAttr('animation', '')
+    host.style.animation = animation
+      ? ANIMATIONS[animation] ?? ''
+      : this.hasAttr('spin')
+        ? ANIMATIONS.spin ?? ''
+        : ''
+
+    // depth 透明度层级：1=100% … 5=20%（整数运算避免浮点误差）
+    const depth = Number.parseInt(this.getAttr('depth', ''), 10)
+    host.style.opacity =
+      depth >= 1 && depth <= 5 ? String((6 - depth) / 5) : ''
+
+    // duotone / swap-opacity 标记（实际着色由 shadow CSS 按变量完成）
+    if (this.hasAttr('duotone')) host.setAttribute('data-duotone', 'true')
+    else host.removeAttribute('data-duotone')
+    if (this.hasAttr('swap-opacity')) host.setAttribute('data-swap', 'true')
+    else host.removeAttribute('data-swap')
+
+    // 无障碍：label 提供可读名称
+    const label = this.getAttr('label', '')
     if (label) {
       this.setAttribute('role', 'img')
       this.setAttribute('aria-label', label)
@@ -72,5 +325,50 @@ export class OASIcon extends OASElement {
       this.removeAttribute('role')
       this.removeAttribute('aria-label')
     }
+  }
+
+  protected override update(): void {
+    const name = this.getAttr('name', '') as IconName
+    const src = this.getAttr('src', '')
+    const slotSvg = this.slotSvg()
+    const content = slotSvg ? undefined : src ? undefined : lookupIcon(name)
+
+    if (!this.svgHost) {
+      this.shadow.innerHTML = this.template()
+      this.bind()
+    }
+    const host = this.svgHost
+    if (!host) return
+
+    // 内容源优先级：slot 内联 svg > src 异步加载 > name 注册表
+    if (slotSvg) {
+      this.renderSlotSvg(host, slotSvg)
+    } else if (src) {
+      host.innerHTML = ''
+      host.removeAttribute('viewBox')
+      this.loadSrc(src)
+    } else if (content) {
+      host.innerHTML = content
+      host.setAttribute('viewBox', '0 0 16 16')
+    } else {
+      host.innerHTML = ''
+      host.removeAttribute('viewBox')
+    }
+
+    if (!slotSvg && !src && !content) {
+      // 空态兜底：保留骨架，清空内容与宿主样式
+      host.removeAttribute('data-duotone')
+      host.removeAttribute('data-swap')
+      host.style.transform = ''
+      host.style.animation = ''
+      host.style.opacity = ''
+      this.style.color = ''
+      this.setAttribute('aria-hidden', 'true')
+      this.removeAttribute('role')
+      this.removeAttribute('aria-label')
+      return
+    }
+
+    this.syncAppearance(host)
   }
 }
