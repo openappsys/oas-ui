@@ -207,7 +207,7 @@ registerIcon('my-icon', '<path d="..."/>')
 ## 图标一览
 
 <DemoBlock title="全部图标（点击复制名称）">
-  <div id="icon-gallery" style="width: 100%"></div>
+  <div id="icon-wall" style="width: 100%"></div>
 </DemoBlock>
 
 <style>
@@ -323,7 +323,7 @@ onMounted(async () => {
     el.removeAttribute('library')
     el.setAttribute('library', lib)
   }
-  const gallery = document.querySelector('#icon-gallery')
+  const gallery = document.querySelector('#icon-wall')
   if (!gallery) return
   const grid = document.createElement('div')
   grid.className = 'icon-grid'

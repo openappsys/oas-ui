@@ -81,6 +81,20 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('aria-label="关闭"')
   })
 
+  it('oas-tag-group：组容器快照含 role/aria-label（i18n 默认）与子签', async () => {
+    const html = await renderToString(
+      'oas-tag-group',
+      { value: 'a' },
+      '<oas-tag checkable value="a">选项 A</oas-tag><oas-tag checkable value="b">选项 B</oas-tag>',
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('role="group"')
+    expect(html).toContain('aria-label="标签组"')
+    // 子签递归序列化 + checked 同步（value=a → 子签 A 选中；属性序列化为 key="" 形式）
+    expect(html).toContain('<oas-tag checkable="" value="a"')
+    expect(html).toContain('checked=""')
+  })
+
   it('oas-empty：默认文案走 locale registry（zh-CN 暂无数据）', async () => {
     const html = await renderToString('oas-empty', {}, '', { locale: 'zh-CN' })
     expect(html).toContain('<template shadowrootmode="open">')

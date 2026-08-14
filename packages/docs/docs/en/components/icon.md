@@ -97,19 +97,19 @@ The `spin` attribute spins the icon infinitely (great for loading states); `rota
 `mutator` adjusts the SVG after inlining (e.g. restoring `stroke="currentColor"` for outline icons);
 `spriteSheet` renders `<use href="url#name">` instead of inlining the whole SVG.
 
-<DemoBlock title="CDN library (Lucide via jsDelivr, mutator for outline icons)">
+<DemoBlock title="CDN library (Lucide via jsDelivr, mutator for outline icons)" :script="cdnScript">
   <oas-icon library="lucide" name="heart" size="28" color="var(--oas-color-danger)"></oas-icon>
   <oas-icon library="lucide" name="star" size="28" color="var(--oas-color-warning)"></oas-icon>
   <oas-icon library="lucide" name="arrow-right" rotate="90" size="28" color="var(--oas-color-primary)"></oas-icon>
 </DemoBlock>
 
-<DemoBlock title="Local sprite sheet (<use> reference)">
+<DemoBlock title="Local sprite sheet (<use> reference)" :script="spriteScript">
   <oas-icon library="demo-sprite" name="sprite-star" size="28" color="var(--oas-color-warning)"></oas-icon>
   <oas-icon library="demo-sprite" name="sprite-heart" size="28" color="var(--oas-color-danger)"></oas-icon>
   <oas-icon library="demo-sprite" name="sprite-check" size="28" color="var(--oas-color-success)"></oas-icon>
 </DemoBlock>
 
-<DemoBlock title="family variants (local demo-set)">
+<DemoBlock title="family variants (local demo-set)" :script="familyScript">
   <oas-icon library="demo-set" name="star" size="28" color="var(--oas-color-primary)"></oas-icon>
   <oas-icon library="demo-set" name="star" family="fill" size="28" color="var(--oas-color-primary)"></oas-icon>
   <oas-icon library="demo-set" name="heart" size="28" color="var(--oas-color-danger)"></oas-icon>
@@ -204,9 +204,69 @@ import { registerIcon } from '@oas-ui/ui'
 registerIcon('my-icon', '<path d="..."/>')
 ```
 
+## Icon gallery
+
+<DemoBlock title="All icons (click to copy name)">
+  <div id="icon-wall" style="width: 100%"></div>
+</DemoBlock>
+
+<style>
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--oas-space-2);
+  width: 100%;
+}
+.icon-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-3) var(--oas-space-1);
+  border-radius: var(--oas-radius-md);
+  cursor: pointer;
+  transition: background var(--oas-transition-fast) var(--oas-ease-out);
+}
+.icon-cell:hover {
+  background: var(--oas-color-bg-hover);
+}
+.icon-cell:hover oas-icon {
+  color: var(--oas-color-primary);
+}
+.icon-cell .icon-name {
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+  user-select: none;
+}
+</style>
+
 <script setup>
 import { onMounted } from 'vue'
-// Full example code for the code view (script prop): how registerIconLibrary maps variant to URL
+// Full example code for the code view (script prop): how registerIconLibrary is written
+const cdnScript = `import { registerIconLibrary } from '@oas-ui/ui'
+
+registerIconLibrary('lucide', {
+  resolver: (name) => \`https://cdn.jsdelivr.net/npm/lucide-static@0.469.0/icons/\${name}.svg\`,
+  mutator: (svg) => {
+    svg.setAttribute('fill', 'none')
+    svg.setAttribute('stroke', 'currentColor')
+    svg.setAttribute('stroke-width', '2')
+    svg.setAttribute('stroke-linecap', 'round')
+    svg.setAttribute('stroke-linejoin', 'round')
+  },
+})`
+const spriteScript = `import { registerIconLibrary } from '@oas-ui/ui'
+
+registerIconLibrary('demo-sprite', {
+  resolver: () => '/demo-sprite.svg',
+  spriteSheet: true,
+})`
+const familyScript = `import { registerIconLibrary } from '@oas-ui/ui'
+
+registerIconLibrary('demo-set', {
+  resolver: (name, family = 'outline') => \`/demo-set/\${family}/\${name}.svg\`,
+})`
 const variantScript = `import { registerIconLibrary } from '@oas-ui/ui'
 
 registerIconLibrary('demo-weight', {
@@ -214,7 +274,19 @@ registerIconLibrary('demo-weight', {
     variant === 'bold' ? '/demo-icon-bold.svg' : \`/\${name}.svg\`,
 })`
 onMounted(async () => {
-  const ui = await import('@oas-ui/ui')
+  const [{ iconNames }, ui] = await Promise.all([
+    import('@oas-ui/icons'),
+    import('@oas-ui/ui'),
+  ])
+  // registerIcon registers custom icons; re-set name afterwards to trigger a refresh
+  ui.registerIcon(
+    'custom-star',
+    '<path d="M8 1.2 L10.1 5.6 L14.9 6.3 L11.4 9.6 L12.3 14.4 L8 12 L3.7 14.4 L4.6 9.6 L1.1 6.3 L5.9 5.6 Z" fill="currentColor"/>',
+  )
+  ui.registerIcon(
+    'custom-heart',
+    '<path d="M8 14.2 C7.6 13.8 4.5 11.1 2.6 8.8 C1.1 7 0.8 5.4 1.6 4.1 C2.5 2.7 4.2 2.5 5.6 3.3 C6.4 3.8 7.3 4.9 8 6 C8.7 4.9 9.6 3.8 10.4 3.3 C11.8 2.5 13.5 2.7 14.4 4.1 C15.2 5.4 14.9 7 13.4 8.8 C11.5 11.1 8.4 13.8 8 14.2 Z" fill="currentColor"/>',
+  )
   // registerIconLibrary registers remote icon libraries (resolver resolves SVG URLs on demand)
   ui.registerIconLibrary('lucide', {
     resolver: (name) => `https://cdn.jsdelivr.net/npm/lucide-static@0.469.0/icons/${name}.svg`,
@@ -237,13 +309,41 @@ onMounted(async () => {
     resolver: (name, family, variant) =>
       variant === 'bold' ? '/demo-icon-bold.svg' : `/${name}.svg`,
   })
-  // Re-set library after registration to trigger an update
+  // Re-set name/library after registration to trigger an update
+  for (const el of document.querySelectorAll('oas-icon[name="custom-star"], oas-icon[name="custom-heart"]')) {
+    const name = el.getAttribute('name')
+    if (!name) continue
+    el.removeAttribute('name')
+    el.setAttribute('name', name)
+  }
   for (const el of document.querySelectorAll('oas-icon[library]')) {
     const lib = el.getAttribute('library')
     if (!lib) continue
     el.removeAttribute('library')
     el.setAttribute('library', lib)
   }
+  const gallery = document.querySelector('#icon-wall')
+  if (!gallery) return
+  const grid = document.createElement('div')
+  grid.className = 'icon-grid'
+  for (const name of iconNames) {
+    const cell = document.createElement('div')
+    cell.className = 'icon-cell'
+    cell.title = `Click to copy ${name}`
+    const icon = document.createElement('oas-icon')
+    icon.setAttribute('name', name)
+    icon.setAttribute('size', '22')
+    const label = document.createElement('span')
+    label.className = 'icon-name'
+    label.textContent = name
+    cell.append(icon, label)
+    cell.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(name)
+      ui.message.success(`Copied ${name}`)
+    })
+    grid.appendChild(cell)
+  }
+  gallery.appendChild(grid)
 })
 </script>
 

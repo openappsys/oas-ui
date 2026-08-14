@@ -86,6 +86,7 @@ import { ensureShim } from './shim.js'
 export const WHITELIST = [
   'oas-button',
   'oas-tag',
+  'oas-tag-group',
   'oas-empty',
   'oas-divider',
   'oas-text',
@@ -248,6 +249,8 @@ function fingerprintFor(tag: string): string {
 const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-button': '@oas-ui/ui/basic/button',
   'oas-tag': '@oas-ui/ui/basic/tag',
+  // tag-group 与 tag 同目录，装载一次注册两个 tag
+  'oas-tag-group': '@oas-ui/ui/basic/tag',
   'oas-empty': '@oas-ui/ui/feedback/empty',
   'oas-divider': '@oas-ui/ui/basic/divider',
   'oas-text': '@oas-ui/ui/basic/typography',
