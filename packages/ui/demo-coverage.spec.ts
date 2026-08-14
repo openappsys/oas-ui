@@ -149,7 +149,10 @@ const INTERACTIONS: Array<[string, string]> = [
 //   file:svg      设置 SVG 图片文件（走 accept 过滤但可用于触达 max 超限/预览）
 const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   carousel: [['oas-carousel [part="arrow-next"]', 'click', '点下一张箭头 → oas-change']],
-  tag: [['oas-tag[clickable]:not([disabled]) [part="tag"]', 'click', '点整签派发 oas-click']],
+  tag: [
+    ['oas-tag[clickable]:not([disabled]) [part="tag"]', 'click', '点整签派发 oas-click'],
+    ['oas-tag[checkable]:not([disabled]) [part="tag"]', 'click', '点可选中签切换 → oas-change'],
+  ],
   link: [['oas-link:not([disabled]) a', 'click']],
   typography: [
     ['oas-text[copyable] [part="copy"]', 'click', '无剪贴板权限 → oas-copy-error'],

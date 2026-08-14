@@ -1270,19 +1270,30 @@
   },
   "oas-tag": {
     "attrs": {
+      "checkable": "可选中：点击 / Enter / Space 切换 `checked` 并派发 `oas-change`；与 `closable` 互斥",
+      "checked": "选中态（`checkable` 时生效）",
       "chip": "胶囊",
       "clickable": "整签可点",
       "closable": "可关闭",
+      "color": "自定义颜色（任意 CSS 色值），覆盖 `type` 语义色；未指定 `variant` 时按 `filled` 渲染",
       "disabled": "禁用",
+      "href": "链接地址：设置后内部渲染为原生链接 `<a>`",
+      "icon": "图标名（复用 oas-icon 图标集），置于文字前，尺寸跟随字号",
+      "max-width": "标签内容最大宽度（如 `120px`），超出省略显示",
       "round": "圆角",
       "size": "尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警",
-      "type": "类型"
+      "target": "链接打开方式（`_blank` / `_self` 等），配合 `href`",
+      "type": "类型",
+      "variant": "形态（与 `type` 正交）：`outlined`（描边）/ `filled`（浅底）/ `solid`（实心）；缺省保持类型默认渲染"
     },
     "events": {
+      "oas-change": "`checkable` 时选中态切换，`detail: { checked }`",
       "oas-click": "整签点击（`clickable` 时），detail 含 originalEvent",
       "oas-close": "关闭，`cancelable`，preventDefault 阻止移除"
     },
-    "slots": {}
+    "slots": {
+      "": "标签内容"
+    }
   },
   "oas-text": {
     "attrs": {

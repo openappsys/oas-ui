@@ -83,24 +83,110 @@ The default slot can hold an icon — combining an icon and text forms an icon t
   <oas-tag chip closable type="info"><svg width="12" height="12" viewBox="0 0 16 16" style="vertical-align: -1px; margin-right: 4px;" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.5V8l2.5 1.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Scheduled</oas-tag>
 </DemoBlock>
 
+## Selectable
+
+`checkable` enables selection: click / Enter / Space toggles `checked` and dispatches `oas-change` (`detail: { checked }`); the selected state is a solid fill. `checkable` is mutually exclusive with `closable` (the close button is hidden).
+
+<DemoBlock title="checkable tags">
+  <oas-tag checkable onoas-change="message.info('Default ' + (event.detail.checked ? 'selected' : 'deselected'))">Default</oas-tag>
+  <oas-tag checkable checked type="success" onoas-change="message.info('Success ' + (event.detail.checked ? 'selected' : 'deselected'))">Success</oas-tag>
+  <oas-tag checkable chip type="primary" onoas-change="message.info('Chip ' + (event.detail.checked ? 'selected' : 'deselected'))">Chip</oas-tag>
+  <oas-tag checkable disabled type="warning">Disabled, not selectable</oas-tag>
+</DemoBlock>
+
+## Variants
+
+`variant` provides three shapes: `outlined` / `filled` / `solid`; when unset, the legacy type rendering is kept (`default` white bg with gray border, colored types soft fill, `primary` solid).
+
+<DemoBlock title="Outlined">
+  <oas-tag variant="outlined">Default</oas-tag>
+  <oas-tag variant="outlined" type="primary">Primary</oas-tag>
+  <oas-tag variant="outlined" type="success">Success</oas-tag>
+  <oas-tag variant="outlined" type="danger">Danger</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="Filled">
+  <oas-tag variant="filled">Default</oas-tag>
+  <oas-tag variant="filled" type="primary">Primary</oas-tag>
+  <oas-tag variant="filled" type="success">Success</oas-tag>
+  <oas-tag variant="filled" type="warning">Warning</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="Solid">
+  <oas-tag variant="solid">Default</oas-tag>
+  <oas-tag variant="solid" type="primary">Primary</oas-tag>
+  <oas-tag variant="solid" type="success">Success</oas-tag>
+  <oas-tag variant="solid" type="warning">Warning</oas-tag>
+  <oas-tag variant="solid" type="danger">Danger</oas-tag>
+</DemoBlock>
+
+## Custom color
+
+`color` accepts any CSS color value and overrides the `type` semantic color; it renders as `filled` when `variant` is unset.
+
+<DemoBlock title="color custom">
+  <oas-tag color="#7c3aed">Purple</oas-tag>
+  <oas-tag color="#0ea5e9" variant="outlined">Sky outlined</oas-tag>
+  <oas-tag color="#e11d48" variant="solid">Rose solid</oas-tag>
+  <oas-tag color="#16a34a" variant="filled">Green filled</oas-tag>
+</DemoBlock>
+
+## Icon
+
+The `icon` attribute reuses the oas-icon icon set; the icon renders before the text, sized to the font.
+
+<DemoBlock title="Icon tags">
+  <oas-tag icon="star" type="primary">Featured</oas-tag>
+  <oas-tag icon="check" type="success">Completed</oas-tag>
+  <oas-tag icon="clock" chip type="warning">Scheduled</oas-tag>
+  <oas-tag icon="mail" chip closable type="info">Mail</oas-tag>
+</DemoBlock>
+
+## Link
+
+When `href` is set, the tag renders a native `<a>` internally; `target` is passed through.
+
+<DemoBlock title="href link tags">
+  <oas-tag href="https://example.com" target="_blank" type="primary">Open in new tab</oas-tag>
+  <oas-tag href="https://example.com" variant="outlined">Outlined link</oas-tag>
+</DemoBlock>
+
+## Max width ellipsis
+
+`max-width` limits the tag content width; overflow is truncated with an ellipsis.
+
+<DemoBlock title="max-width ellipsis">
+  <oas-tag max-width="120px" type="primary">This is a very long tag label that will be truncated with an ellipsis when it exceeds the maximum width</oas-tag>
+  <oas-tag max-width="80px" chip>Short</oas-tag>
+</DemoBlock>
+
 ## API
 
 ### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `checkable` | Selectable: click / Enter / Space toggles `checked` and dispatches `oas-change`; mutually exclusive with `closable` | `boolean` | — |
+| `checked` | Checked state (effective when `checkable`) | `boolean` | — |
 | `chip` | Chip (pill radius + compact padding) | `boolean` | — |
 | `clickable` | Whole tag clickable (focusable, dispatches `oas-click`) | `boolean` | — |
 | `closable` | Closable | `boolean` | — |
+| `color` | Custom color (any CSS value), overrides the `type` semantic color; renders as `filled` when `variant` is unset | `string` | — |
 | `disabled` | Disabled (cannot be clicked or closed) | `boolean` | — |
+| `href` | Link URL: renders a native `<a>` when set | `string` | — |
+| `icon` | Icon name (reusing the oas-icon icon set), placed before the text, sized to the font | `string` | — |
+| `max-width` | Max width of the tag content (e.g. `120px`); overflow is truncated with an ellipsis | `string` | — |
 | `round` | Rounded | `boolean` | — |
 | `size` | Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning | `TagSize` | `medium` |
+| `target` | How the link opens (`_blank` / `_self` etc.), with `href` | `string` | — |
 | `type` | Type | `TagType` | `default` |
+| `variant` | Shape (orthogonal to `type`): `outlined` / `filled` / `solid`; when unset, keeps the legacy type rendering | `string` | — |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
+| `oas-change` | Selection toggled when `checkable`, `detail: { checked }` |
 | `oas-click` | Whole-tag click (when `clickable`), detail contains originalEvent |
 | `oas-close` | Close, `cancelable`; `preventDefault` prevents removal |
 
@@ -108,4 +194,4 @@ The default slot can hold an icon — combining an icon and text forms an icon t
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Tag content |

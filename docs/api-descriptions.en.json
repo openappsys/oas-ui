@@ -1270,19 +1270,30 @@
   },
   "oas-tag": {
     "attrs": {
+      "checkable": "Selectable: click / Enter / Space toggles `checked` and dispatches `oas-change`; mutually exclusive with `closable`",
+      "checked": "Checked state (effective when `checkable`)",
       "chip": "Chip (pill radius + compact padding)",
       "clickable": "Whole tag clickable (focusable, dispatches `oas-click`)",
       "closable": "Closable",
+      "color": "Custom color (any CSS value), overrides the `type` semantic color; renders as `filled` when `variant` is unset",
       "disabled": "Disabled (cannot be clicked or closed)",
+      "href": "Link URL: renders a native `<a>` when set",
+      "icon": "Icon name (reusing the oas-icon icon set), placed before the text, sized to the font",
+      "max-width": "Max width of the tag content (e.g. `120px`); overflow is truncated with an ellipsis",
       "round": "Rounded",
       "size": "Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning",
-      "type": "Type"
+      "target": "How the link opens (`_blank` / `_self` etc.), with `href`",
+      "type": "Type",
+      "variant": "Shape (orthogonal to `type`): `outlined` / `filled` / `solid`; when unset, keeps the legacy type rendering"
     },
     "events": {
+      "oas-change": "Selection toggled when `checkable`, `detail: { checked }`",
       "oas-click": "Whole-tag click (when `clickable`), detail contains originalEvent",
       "oas-close": "Close, `cancelable`; `preventDefault` prevents removal"
     },
-    "slots": {}
+    "slots": {
+      "": "Tag content"
+    }
   },
   "oas-text": {
     "attrs": {
