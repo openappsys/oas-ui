@@ -21,6 +21,37 @@ function normalizeButtonSize(raw: string): ButtonSize {
 
 const warnedSizes = new Set<string>()
 
+/**
+ * 自定义色实心底的文字色：按相对亮度取深/浅，保证对比可读。
+ * 支持 #rgb/#rrggbb/rgb(a) 解析；其余写法（var()/色名）返回 ''（走 CSS 兜底 token）。
+ */
+function pickOnColor(color: string): string {
+  let r = 0
+  let g = 0
+  let b = 0
+  const hex = color.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
+  const rgb = color.trim().match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i)
+  if (hex) {
+    const h = hex[1]!.length === 3 ? hex[1]!.replace(/(.)/g, '$1$1') : hex[1]!
+    r = parseInt(h.slice(0, 2), 16)
+    g = parseInt(h.slice(2, 4), 16)
+    b = parseInt(h.slice(4, 6), 16)
+  } else if (rgb) {
+    r = Number(rgb[1])
+    g = Number(rgb[2])
+    b = Number(rgb[3])
+  } else {
+    return ''
+  }
+  // W3C 相对亮度；0.35 阈值：亮底（如 #4d9fff）取深字、暗底（如 #7c3aed）取白字
+  const f = (v: number) => {
+    v /= 255
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+  }
+  const lum = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+  return lum > 0.35 ? '#18181b' : '#ffffff'
+}
+
 const STYLE = `
 :host {
   display: inline-block;
@@ -39,6 +70,8 @@ a[part='button'] {
   border: 1px solid var(--oas-color-border);
   background: var(--oas-color-bg);
   color: var(--oas-color-text-primary);
+  /* color 自定义色的兜底入口：无 type 时 outlined/filled/text 等形态也能吃到 --oas-button-color */
+  --btn-color: var(--oas-button-color, var(--oas-color-text-primary));
   font-size: var(--oas-font-size-md);
   height: var(--oas-control-height-md);
   padding: 0 var(--oas-space-4);
@@ -511,6 +544,20 @@ button.primary:where(:not(.filled):not(.outlined):not(.dashed):not(.text):not(.l
 a[part='button'].primary:where(:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link)) {
   background: var(--oas-button-bg, var(--oas-color-primary));
 }
+/* color 自定义色 + solid（默认形态）：无 type 也实心着色（覆盖 type 语义色）。
+   :where() 归零 :not() 链权重，与上方类型规则同级靠后取胜；hover/active 等状态规则仍优先 */
+button.has-color:where(:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link)),
+a[part='button'].has-color:where(:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link)) {
+  background: var(--oas-button-bg, var(--oas-button-color));
+  border-color: var(--oas-button-bg, var(--oas-button-color));
+  color: var(--oas-button-on-color, var(--oas-color-text-on-primary));
+}
+/* 自定义色实心 hover 加深（与状态色体系统一方向） */
+button.has-color:where(:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link)):hover,
+a[part='button'].has-color:where(:not(.filled):not(.outlined):not(.dashed):not(.text):not(.link)):hover {
+  background: color-mix(in srgb, var(--oas-button-bg, var(--oas-button-color)) 85%, black);
+  border-color: color-mix(in srgb, var(--oas-button-bg, var(--oas-button-color)) 85%, black);
+}
 /* press 反馈（wave 默认开）：按下轻微下沉 + 加深，克制不抢眼 */
 button.wave,
 a[part='button'].wave {
@@ -681,12 +728,19 @@ export class OASButton extends OASElement {
       iconOnly ? 'icon-only' : '',
       wave ? 'wave' : '',
       this.hasAttr('wrap') ? 'wrap' : '',
+      color ? 'has-color' : '',
     ]
       .filter(Boolean)
       .join(' ')
     // color 自定义色：覆盖 type 语义色（经 --oas-button-color 变量，CSS 配色处兜底引用）
-    if (color) this.btn.style.setProperty('--oas-button-color', color)
-    else this.btn.style.removeProperty('--oas-button-color')
+    if (color) {
+      this.btn.style.setProperty('--oas-button-color', color)
+      // 实心底文字色按底色亮度取黑/白（on-primary 对中间调自定义色可能不可读）
+      this.btn.style.setProperty('--oas-button-on-color', pickOnColor(color))
+    } else {
+      this.btn.style.removeProperty('--oas-button-color')
+      this.btn.style.removeProperty('--oas-button-on-color')
+    }
     this.btn.setAttribute('aria-busy', loading ? 'true' : 'false')
     // 链接按钮（a）无 disabled 属性，用 aria-disabled 承载禁用语义 + CSS 禁用态；button 用原生 disabled
     if (link) {

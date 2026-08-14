@@ -40,6 +40,13 @@ describe('OASButton', () => {
     expect(OASButton.observedAttributes).toContain('wrap')
   })
 
+  it('color：设置后加 has-color class 并注入 --oas-button-color（无 type 也生效）', async () => {
+    const el = mount({ color: '#7c3aed' })
+    const btn = shadowBtn(el)
+    expect(btn.classList.contains('has-color')).toBe(true)
+    expect(btn.style.getPropertyValue('--oas-button-color')).toBe('#7c3aed')
+  })
+
   it('渲染默认按钮：类型 default、尺寸 medium、含 slot 文本', async () => {
     const el = mount({}, '保存')
     const btn = shadowBtn(el)

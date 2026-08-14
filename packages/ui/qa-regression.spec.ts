@@ -3486,6 +3486,33 @@ test('icon 宿主 inline-flex：tag 内图标与文字中心线对齐（行高�
   expect(r.diff, '图标与文字中心线偏差应 ≤1px').toBeLessThanOrEqual(1)
 })
 
+test('button color 自定义色：无 type 也按 variant 着色，文字色按底色亮度自适应', async ({
+  page,
+}) => {
+  // 曾现 bug：--btn-color 只在 type 类上定义、solid 规则只认 primary——无 type 的 color
+  // 按钮全部渲染成灰色（自定义颜色 demo 肉眼可见失效）。修复：base 兜底 --btn-color +
+  // has-color 实心规则 + 文字色按底色亮度取黑/白（暗色主题下中间调底色配深字不可读）。
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button[color]')
+  const read = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('oas-button[color]')].map((el) => {
+        const cs = getComputedStyle(el.shadowRoot!.querySelector('button')!)
+        return { bg: cs.backgroundColor, border: cs.borderColor, color: cs.color }
+      }),
+    )
+  const light = await read()
+  expect(light[0]!.bg, '紫色实底').toBe('rgb(124, 58, 237)')
+  expect(light[0]!.color, '紫底白字').toBe('rgb(255, 255, 255)')
+  expect(light[1]!.border, '绿色描边').toBe('rgb(14, 159, 110)')
+  expect(light[2]!.bg, '粉色浅底（12% tint）').toContain('0.12')
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await page.waitForTimeout(300)
+  const dark = await read()
+  expect(dark[0]!.bg).toBe('rgb(124, 58, 237)')
+  expect(dark[0]!.color, '暗色下紫底仍是白字（亮度自适应）').toBe('rgb(255, 255, 255)')
+})
+
 test('button wrap：默认 nowrap 不换行，显式 wrap 才换行增高，icon-only 保持正方形', async ({
   page,
 }) => {
