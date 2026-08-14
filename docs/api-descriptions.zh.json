@@ -138,6 +138,7 @@
   },
   "oas-button": {
     "attrs": {
+      "autofocus": "自动聚焦：挂载后聚焦内部按钮（原生 autofocus 不穿透 Shadow DOM，组件转发）",
       "block": "占满父容器宽度（块级）",
       "disabled": "禁用",
       "ghost": "幽灵/描边形态，透明底 + 按 `type` 着色描边，hover 加深",

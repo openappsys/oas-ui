@@ -575,6 +575,11 @@ export class OASButton extends OASElement {
 
     // 文字经 slot 增删时重算「纯图标 / 有文字」布局
     this.shadow.querySelector('slot')?.addEventListener('slotchange', () => this.update())
+
+    // autofocus：转发到内部按钮（原生 autofocus 不穿透 shadow，挂载后手动聚焦一次）
+    if (this.hasAttr('autofocus')) {
+      queueMicrotask(() => this.btn?.focus())
+    }
   }
 
   protected override render(): void {

@@ -26,6 +26,12 @@ describe('OASButton', () => {
     document.body.innerHTML = ''
   })
 
+  it('autofocus：挂载后聚焦内部按钮（原生 autofocus 不穿透 shadow）', async () => {
+    const el = mount({ autofocus: '' })
+    await new Promise<void>((r) => queueMicrotask(() => r()))
+    expect(el.shadowRoot!.activeElement).toBe(shadowBtn(el))
+  })
+
   it('渲染默认按钮：类型 default、尺寸 medium、含 slot 文本', async () => {
     const el = mount({}, '保存')
     const btn = shadowBtn(el)

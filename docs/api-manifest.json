@@ -97,6 +97,11 @@
         "type": "string",
         "default": "",
         "observed": true
+      },
+      {
+        "name": "autofocus",
+        "type": "boolean",
+        "observed": false
       }
     ],
     "props": [],

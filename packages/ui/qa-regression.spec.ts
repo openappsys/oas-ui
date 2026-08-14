@@ -3446,7 +3446,9 @@ test('tag 插槽 svg 与文字同排（宿主全局 reset display:block 不顶�
       x.querySelector(':scope > svg'),
     )!
     const svg = t.querySelector(':scope > svg')!
-    const textNode = [...t.childNodes].find((nd) => nd.nodeType === 3 && nd.textContent.trim())!
+    const textNode = [...t.childNodes].find(
+      (nd) => nd.nodeType === 3 && (nd.textContent ?? '').trim(),
+    )!
     const range = document.createRange()
     range.selectNode(textNode)
     const tb = range.getBoundingClientRect()

@@ -192,6 +192,15 @@
   <oas-button auto-insert-space type="primary">确认提交订单</oas-button>
 </DemoBlock>
 
+## 自动聚焦
+
+`autofocus` 让按钮在页面加载后自动获得焦点（原生 `autofocus` 不穿透 Shadow DOM，组件挂载后转发聚焦到内部按钮）。
+
+<DemoBlock title="autofocus 自动聚焦">
+  <oas-button autofocus type="primary">加载后自动聚焦</oas-button>
+  <oas-button>普通按钮</oas-button>
+</DemoBlock>
+
 ## API
 
 ### 属性
@@ -199,6 +208,7 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `auto-insert-space` | 中文间自动空格：两个连续汉字间插入空格（排版优化，默认关） | `string` | — |
+| `autofocus` | 自动聚焦：挂载后聚焦内部按钮（原生 autofocus 不穿透 Shadow DOM，组件转发） | `boolean` | — |
 | `block` | 占满父容器宽度（块级） | `boolean` | — |
 | `circle` | 圆形按钮（纯图标场景，正方形 + 正圆角） | `boolean` | — |
 | `color` | 自定义颜色：覆盖 `type` 语义色（任意色值），优先级高于 `type` | `string` | — |

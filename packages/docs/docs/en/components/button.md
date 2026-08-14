@@ -192,6 +192,15 @@ Setting `href` renders a native link (`<a>`); `target` controls how it opens (`_
   <oas-button auto-insert-space type="primary">确认提交订单</oas-button>
 </DemoBlock>
 
+## Autofocus
+
+`autofocus` gives the button focus after page load (native `autofocus` does not pierce Shadow DOM; the component forwards focus to the inner button on mount).
+
+<DemoBlock title="autofocus">
+  <oas-button autofocus type="primary">Focused on load</oas-button>
+  <oas-button>Normal button</oas-button>
+</DemoBlock>
+
 ## API
 
 ### Attributes
@@ -199,6 +208,7 @@ Setting `href` renders a native link (`<a>`); `target` controls how it opens (`_
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `auto-insert-space` | CJK auto spacing: inserts a space between two consecutive CJK characters (off by default) | `string` | — |
+| `autofocus` | Autofocus: focuses the inner button on mount (native autofocus does not pierce Shadow DOM; the component forwards it) | `boolean` | — |
 | `block` | Fill the full width of the parent container (block level) | `boolean` | — |
 | `circle` | Circle button (icon-only, square + full rounding) | `boolean` | — |
 | `color` | Custom color: overrides the `type` semantic color (any color value) | `string` | — |
