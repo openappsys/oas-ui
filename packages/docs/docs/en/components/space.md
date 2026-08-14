@@ -27,27 +27,27 @@ A layout container with even horizontal/vertical spacing.
 `size` supports five tiers: `xs` (4px) / `small` (8px) / `medium` (12px, default) / `large` (24px) / `xl` (32px), or a numeric pixel value; invalid values fall back to `medium` with a warning.
 
 <DemoBlock title="Five spacing tiers">
-  <oas-space size="xs">
+  <oas-space size="xs" style="width: 100%;">
     <oas-tag>xs 4px</oas-tag>
     <oas-tag>Tag</oas-tag>
     <oas-tag>Tag</oas-tag>
   </oas-space>
-  <oas-space size="small">
+  <oas-space size="small" style="width: 100%;">
     <oas-tag>small 8px</oas-tag>
     <oas-tag>Tag</oas-tag>
     <oas-tag>Tag</oas-tag>
   </oas-space>
-  <oas-space size="medium">
+  <oas-space size="medium" style="width: 100%;">
     <oas-tag>medium 12px</oas-tag>
     <oas-tag>Tag</oas-tag>
     <oas-tag>Tag</oas-tag>
   </oas-space>
-  <oas-space size="large">
+  <oas-space size="large" style="width: 100%;">
     <oas-tag>large 24px</oas-tag>
     <oas-tag>Tag</oas-tag>
     <oas-tag>Tag</oas-tag>
   </oas-space>
-  <oas-space size="xl">
+  <oas-space size="xl" style="width: 100%;">
     <oas-tag>xl 32px</oas-tag>
     <oas-tag>Tag</oas-tag>
     <oas-tag>Tag</oas-tag>

@@ -27,27 +27,27 @@
 `size` 支持 `xs`（4px）/ `small`（8px）/ `medium`（12px，默认）/ `large`（24px）/ `xl`（32px）五档，或直接写数字像素；非法值回落 `medium` 并提示告警。
 
 <DemoBlock title="五种间距">
-  <oas-space size="xs">
+  <oas-space size="xs" style="width: 100%;">
     <oas-tag>xs 4px</oas-tag>
     <oas-tag>标签</oas-tag>
     <oas-tag>标签</oas-tag>
   </oas-space>
-  <oas-space size="small">
+  <oas-space size="small" style="width: 100%;">
     <oas-tag>small 8px</oas-tag>
     <oas-tag>标签</oas-tag>
     <oas-tag>标签</oas-tag>
   </oas-space>
-  <oas-space size="medium">
+  <oas-space size="medium" style="width: 100%;">
     <oas-tag>medium 12px</oas-tag>
     <oas-tag>标签</oas-tag>
     <oas-tag>标签</oas-tag>
   </oas-space>
-  <oas-space size="large">
+  <oas-space size="large" style="width: 100%;">
     <oas-tag>large 24px</oas-tag>
     <oas-tag>标签</oas-tag>
     <oas-tag>标签</oas-tag>
   </oas-space>
-  <oas-space size="xl">
+  <oas-space size="xl" style="width: 100%;">
     <oas-tag>xl 32px</oas-tag>
     <oas-tag>标签</oas-tag>
     <oas-tag>标签</oas-tag>
