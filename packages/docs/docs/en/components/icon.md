@@ -116,6 +116,11 @@ The `spin` attribute spins the icon infinitely (great for loading states); `rota
   <oas-icon library="demo-set" name="heart" family="fill" size="28" color="var(--oas-color-danger)"></oas-icon>
 </DemoBlock>
 
+<DemoBlock title="variant (e.g. stroke weight)" :script="variantScript">
+  <oas-icon library="demo-weight" name="demo-icon" size="28" color="var(--oas-color-primary)"></oas-icon>
+  <oas-icon library="demo-weight" name="demo-icon" variant="bold" size="28" color="var(--oas-color-primary)"></oas-icon>
+</DemoBlock>
+
 ## Animation presets
 
 The `animation` attribute provides ready-to-use animations (respecting `prefers-reduced-motion`).
@@ -201,6 +206,13 @@ registerIcon('my-icon', '<path d="..."/>')
 
 <script setup>
 import { onMounted } from 'vue'
+// Full example code for the code view (script prop): how registerIconLibrary maps variant to URL
+const variantScript = `import { registerIconLibrary } from '@oas-ui/ui'
+
+registerIconLibrary('demo-weight', {
+  resolver: (name, family, variant) =>
+    variant === 'bold' ? '/demo-icon-bold.svg' : \`/\${name}.svg\`,
+})`
 onMounted(async () => {
   const ui = await import('@oas-ui/ui')
   // registerIconLibrary registers remote icon libraries (resolver resolves SVG URLs on demand)
@@ -220,6 +232,10 @@ onMounted(async () => {
   })
   ui.registerIconLibrary('demo-set', {
     resolver: (name, family = 'outline') => `/demo-set/${family}/${name}.svg`,
+  })
+  ui.registerIconLibrary('demo-weight', {
+    resolver: (name, family, variant) =>
+      variant === 'bold' ? '/demo-icon-bold.svg' : `/${name}.svg`,
   })
   // Re-set library after registration to trigger an update
   for (const el of document.querySelectorAll('oas-icon[library]')) {

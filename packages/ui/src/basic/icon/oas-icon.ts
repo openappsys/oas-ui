@@ -303,13 +303,26 @@ export class OASIcon extends OASElement {
   private loadSrc(src: string): void {
     this.fetchSvg(src, (text) => {
       if (!this.svgHost) return
-      const wrapper = document.createElement('div')
-      wrapper.innerHTML = text
-      const outer = wrapper.querySelector('svg')
-      const svgHost = this.svgHost
-      svgHost.setAttribute('viewBox', outer?.getAttribute('viewBox') || '0 0 16 16')
-      svgHost.innerHTML = outer ? outer.innerHTML : text
+      this.applyFetchedSvg(this.svgHost, text)
     })
+  }
+
+  /** 把 fetch 到的 SVG 文本应用到 svgHost：外层 svg 的表现属性（fill/stroke 等，继承给子图形）
+      全量复制——只取 innerHTML 会把描边图标丢成纯填充块；width/height 由 size/canvas 管理除外 */
+  private applyFetchedSvg(host: SVGSVGElement, text: string): void {
+    const wrapper = document.createElement('div')
+    wrapper.innerHTML = text
+    const outer = wrapper.querySelector('svg')
+    if (!outer) {
+      host.innerHTML = text
+      return
+    }
+    for (const attr of Array.from(outer.attributes)) {
+      if (attr.name === 'width' || attr.name === 'height') continue
+      host.setAttribute(attr.name, attr.value)
+    }
+    if (!host.hasAttribute('viewBox')) host.setAttribute('viewBox', '0 0 16 16')
+    host.innerHTML = outer.innerHTML
   }
 
   /**
@@ -330,13 +343,8 @@ export class OASIcon extends OASElement {
     }
     this.fetchSvg(url, (text) => {
       if (!this.svgHost) return
-      const wrapper = document.createElement('div')
-      wrapper.innerHTML = text
-      const outer = wrapper.querySelector('svg')
-      const svgHost = this.svgHost
-      svgHost.setAttribute('viewBox', outer?.getAttribute('viewBox') || '0 0 16 16')
-      svgHost.innerHTML = outer ? outer.innerHTML : text
-      options.mutator?.(svgHost)
+      this.applyFetchedSvg(this.svgHost, text)
+      options.mutator?.(this.svgHost)
     })
   }
 

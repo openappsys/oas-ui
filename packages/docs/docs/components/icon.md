@@ -116,6 +116,11 @@
   <oas-icon library="demo-set" name="heart" family="fill" size="28" color="var(--oas-color-danger)"></oas-icon>
 </DemoBlock>
 
+<DemoBlock title="variant 变体（如粗细）" :script="variantScript">
+  <oas-icon library="demo-weight" name="demo-icon" size="28" color="var(--oas-color-primary)"></oas-icon>
+  <oas-icon library="demo-weight" name="demo-icon" variant="bold" size="28" color="var(--oas-color-primary)"></oas-icon>
+</DemoBlock>
+
 ## 动画预设
 
 `animation` 属性提供一组开箱即用的动画（尊重 `prefers-reduced-motion`，系统减弱动态时自动停用）。
@@ -262,6 +267,12 @@ const familyScript = `import { registerIconLibrary } from '@oas-ui/ui'
 registerIconLibrary('demo-set', {
   resolver: (name, family = 'outline') => \`/demo-set/\${family}/\${name}.svg\`,
 })`
+const variantScript = `import { registerIconLibrary } from '@oas-ui/ui'
+
+registerIconLibrary('demo-weight', {
+  resolver: (name, family, variant) =>
+    variant === 'bold' ? '/demo-icon-bold.svg' : \`/\${name}.svg\`,
+})`
 
 onMounted(async () => {
   const [{ iconNames }, ui] = await Promise.all([
@@ -294,6 +305,10 @@ onMounted(async () => {
   })
   ui.registerIconLibrary('demo-set', {
     resolver: (name, family = 'outline') => `/demo-set/${family}/${name}.svg`,
+  })
+  ui.registerIconLibrary('demo-weight', {
+    resolver: (name, family, variant) =>
+      variant === 'bold' ? '/demo-icon-bold.svg' : `/${name}.svg`,
   })
   for (const el of document.querySelectorAll('oas-icon[name="custom-star"], oas-icon[name="custom-heart"]')) {
     const name = el.getAttribute('name')

@@ -24,10 +24,11 @@ for (const page of PAGES) {
       const code = block.locator('.demo-block__code code')
       // 点击后代码块异步渲染（v-show + 高亮），用自动重试等待非空，避免并行高负载下读空 flaky
       await expect(code, `${page} 第 ${i + 1} 个 DemoBlock 示例代码为空`).not.toBeEmpty()
-      // 图标墙块（/components/icon.html 第 4 个 DemoBlock）源码只有 <div id="icon-gallery">，
-      // oas-icon 由 onMounted 动态 import 生成（纯 SVG 画廊），故按页+序精准豁免；
+      // 图标墙块源码只有 <div id="icon-gallery">，oas-icon 由 onMounted 动态 import 生成
+      // （纯 SVG 画廊），故按内容精准豁免（曾用序号豁免，demo 块增减后序号漂移误伤）；
       // 不放宽整页断言——其余所有 demo 块仍必须含 oas-* 标签。
-      const isIconWallBlock = page === '/components/icon.html' && i === 3
+      const blockHtml = await block.locator('.demo-block__body').innerHTML()
+      const isIconWallBlock = blockHtml.includes('id="icon-gallery"')
       if (!isIconWallBlock) {
         // 代码里应包含至少一个 oas- 组件标签
         await expect(code, `${page} 第 ${i + 1} 个 DemoBlock 无组件标签`).toContainText(
