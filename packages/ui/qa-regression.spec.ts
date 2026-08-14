@@ -3402,6 +3402,64 @@ test('dropdown 箭头 arrow="false"：#dd-arrow-none 打开后无箭头（hidden
   expect(await page.locator('#dd-arrow-none [part="item"]').count()).toBe(1)
 })
 
+test('icon slot 内联 SVG：源 svg 不渲染（slot display:none）且表现属性随克隆保留', async ({
+  page,
+}) => {
+  // 曾现 bug1：宿主全局 reset（img/svg{display:block}）跨树压过 shadow 普通 ::slotted 规则，
+  //           源 svg 黑色副本外露（duotone demo 一个图标渲染成两个）。修复：slot{display:none}。
+  // 曾现 bug2：克隆只拷 viewBox，fill/stroke 丢失 → 描边 svg 变实心块/不可见；
+  //           且组件 svg{fill:currentColor} 优先级高于 fill 表现属性。修复：属性全量复制 + 兜底改 :not([fill])。
+  await page.goto('/components/icon.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-icon[duotone]')
+  const r = await page.evaluate(() => {
+    const duo = document.querySelector('oas-icon[duotone]')!
+    const lightSvg = duo.querySelector(':scope > svg')!
+    const duoRect = lightSvg.getBoundingClientRect()
+    // slot 内联 SVG demo（描边 plus）：宿主 svg 应带 stroke/fill 属性且图形可见
+    const slotIcon = [...document.querySelectorAll('oas-icon')].find(
+      (el) => el.querySelector(':scope > svg')?.getAttribute('stroke') === 'currentColor',
+    )!
+    const hostSvg = slotIcon.shadowRoot!.querySelector('svg')!
+    const hostBox = hostSvg.getBoundingClientRect()
+    return {
+      srcHidden: duoRect.width === 0 && duoRect.height === 0,
+      hostHeight: Math.round(duo.getBoundingClientRect().height),
+      strokeKept: hostSvg.getAttribute('stroke'),
+      fillKept: hostSvg.getAttribute('fill'),
+      rendered: hostBox.width > 0 && hostBox.height > 0,
+    }
+  })
+  expect(r.srcHidden, '源 svg 不应渲染（黑色副本回归）').toBe(true)
+  expect(r.hostHeight, '宿主高度应等于图标尺寸（32），不被源 svg 撑高').toBe(32)
+  expect(r.strokeKept, 'stroke 表现属性应随克隆保留').toBe('currentColor')
+  expect(r.fillKept, 'fill 表现属性应随克隆保留').toBe('none')
+  expect(r.rendered).toBe(true)
+})
+
+test('tag 插槽 svg 与文字同排（宿主全局 reset display:block 不顶成竖排）', async ({ page }) => {
+  // 曾现 bug：文档站全局 reset img/svg{display:block} 把插槽手写 svg 顶成块级，图标标签竖排。
+  // 修复：.content 改 inline-flex（svg 被 block 化也只是横向 flex item）。
+  await page.goto('/components/tag.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tag')
+  const r = await page.evaluate(() => {
+    const t = [...document.querySelectorAll('oas-tag:not([icon])')].find((x) =>
+      x.querySelector(':scope > svg'),
+    )!
+    const svg = t.querySelector(':scope > svg')!
+    const textNode = [...t.childNodes].find((nd) => nd.nodeType === 3 && nd.textContent.trim())!
+    const range = document.createRange()
+    range.selectNode(textNode)
+    const tb = range.getBoundingClientRect()
+    const sb = svg.getBoundingClientRect()
+    return {
+      sameRow: Math.abs(sb.y + sb.height / 2 - (tb.y + tb.height / 2)) <= 3,
+      leftOfText: sb.x + sb.width <= tb.x + 6,
+    }
+  })
+  expect(r.sameRow, '插槽 svg 应与文字同一行').toBe(true)
+  expect(r.leftOfText, '插槽 svg 应在文字左侧').toBe(true)
+})
+
 test('icon 宿主 inline-flex：tag 内图标与文字中心线对齐（行高支撑偏心回归）', async ({
   page,
 }) => {

@@ -214,10 +214,17 @@ const STYLE = `
 .tag.disabled.checked:hover {
   filter: none;
 }
-/* 文字容器：撑开省略布局（min-width:0 允许在 flex 中收缩），truncate 时单行省略 */
+/* 文字容器：inline-flex 让插槽图标/文字横向排列居中——宿主页面常见全局 reset
+   （img/svg{display:block}）把插槽 svg 变 block 也只是 flex item 横排，打不中布局；
+   min-width:0 允许在 flex 中收缩；truncate/multiline 切回 block（省略/换行需要块流） */
 .tag .content {
-  display: block;
+  display: inline-flex;
+  align-items: center;
   min-width: 0;
+}
+.tag .content.truncate,
+.tag.multiline .content {
+  display: block;
 }
 .tag .content.truncate {
   overflow: hidden;

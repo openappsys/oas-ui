@@ -58,12 +58,18 @@ const STYLE = `
   --oas-icon-primary-opacity: 1;
   --oas-icon-secondary-opacity: 0.4;
 }
-svg {
+/* fill 默认值只在没有显式 fill 属性时兜底：CSS 优先级高于表现属性，
+   裸写 svg{fill} 会盖掉 slot/远程图标自带的 fill="none"（描边图标变实心块） */
+svg:not([fill]) {
   fill: currentColor;
+}
+svg {
   transform-origin: center;
 }
-/* 用户经 slot 提供的原始 svg 不直接显示（内容已内联进内部 svg） */
-::slotted(svg) {
+/* 用户经 slot 提供的原始 svg 不直接显示（内容已克隆进内部 svg）：
+   slot 不出盒则分配内容不渲染——shadow 内部规则，宿主页面全局 reset
+   （img/svg{display:block} 等）够不到，无需 ::slotted 对抗 */
+slot {
   display: none;
 }
 /* duotone：优先 data-layer 显式分层，其次按前两个直接子图形元素着色 */
@@ -260,10 +266,14 @@ export class OASIcon extends OASElement {
     return this.querySelector('svg') as SVGSVGElement | null
   }
 
-  /** 将用户 slot 的内联 svg 内容克隆进内部 svgHost */
+  /** 将用户 slot 的内联 svg 克隆进内部 svgHost（属性全量复制——fill/stroke 等表现属性
+      继承给子图形，只拷 viewBox 会丢描边变纯填充；width/height 由组件 size/canvas 管理除外） */
   private renderSlotSvg(host: SVGSVGElement, slotSvg: SVGSVGElement): void {
-    const viewBox = slotSvg.getAttribute('viewBox')
-    host.setAttribute('viewBox', viewBox || '0 0 16 16')
+    for (const attr of Array.from(slotSvg.attributes)) {
+      if (attr.name === 'width' || attr.name === 'height') continue
+      host.setAttribute(attr.name, attr.value)
+    }
+    if (!slotSvg.hasAttribute('viewBox')) host.setAttribute('viewBox', '0 0 16 16')
     host.innerHTML = ''
     for (const child of Array.from(slotSvg.childNodes)) {
       host.appendChild(child.cloneNode(true))
