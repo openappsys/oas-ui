@@ -110,6 +110,8 @@ export const en: LocaleMessages = {
   'tabs.add': 'Add tab',
   'tabs.newTab': 'New tab',
   'buttonGroup.group': 'Button group',
+  // compact (compact control group)
+  'compact.group': 'Compact group',
   'loading.loading': 'Loading…',
   'calendar.today': 'Today',
   'calendar.prevMonth': 'Previous month',

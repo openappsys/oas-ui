@@ -95,6 +95,18 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('checked=""')
   })
 
+  it('oas-compact：紧凑容器快照含 group role 与子控件', async () => {
+    const html = await renderToString(
+      'oas-compact',
+      {},
+      '<oas-input placeholder="关键词"></oas-input><oas-button type="primary">搜索</oas-button>',
+    )
+    expect(html).toContain('<template shadowrootmode="open">')
+    expect(html).toContain('role="group"')
+    expect(html).toContain('<oas-input')
+    expect(html).toContain('<oas-button')
+  })
+
   it('oas-empty：默认文案走 locale registry（zh-CN 暂无数据）', async () => {
     const html = await renderToString('oas-empty', {}, '', { locale: 'zh-CN' })
     expect(html).toContain('<template shadowrootmode="open">')

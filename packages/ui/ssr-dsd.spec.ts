@@ -526,6 +526,9 @@ test.beforeAll(async () => {
   const batch5Snaps = await Promise.all([
     renderToString('oas-badge', { value: '5' }, '消息'),
     renderToString('oas-button-group', { size: 'small' }),
+    // tag-group/compact 空内容（light DOM 子组件升级会带自身 shadow 改变布局，同 button-group 约定）
+    renderToString('oas-tag-group', {}),
+    renderToString('oas-compact', {}),
     renderToString('oas-icon', { name: 'check', size: '16' }),
     renderToString('oas-kbd', { keys: 'Ctrl C' }),
     renderToString('oas-label', { required: '' }, '姓名'),

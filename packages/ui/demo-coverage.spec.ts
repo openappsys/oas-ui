@@ -23,7 +23,12 @@ const TAG_OVERRIDE: Record<string, string> = { contextmenu: 'oas-context-menu' }
 const DEMO_OVERRIDE: Record<string, string> = {
   contextmenu: 'context-menu',
   'avatar-group': 'avatar',
+  compact: 'space',
 }
+// 同一目录多组件：dir -> 额外组件名（如 space 目录内的 oas-compact，demo 页共用 space.md）
+const DIR_EXTRA: Record<string, string[]> = { space: ['compact'] }
+// CSS-only 属性（只被 :host([x]) 规则消费、不经 getAttr/hasAttr，正则扫描不到）显式登记补覆盖
+const SUPPLEMENT_ATTRS: Record<string, string[]> = { compact: ['block'] }
 const IMPERATIVE = new Set([
   'message',
   'notification',
@@ -43,16 +48,18 @@ function walk(dir: string): string[] {
   return out
 }
 
-function extractCaps(dir: string): { attrs: string[]; events: string[] } {
-  const body = walk(dir)
-    .map((f) => readFileSync(f, 'utf8'))
-    .join('\n')
+function extractCaps(files: string[]): { attrs: string[]; events: string[] } {
+  const body = files.map((f) => readFileSync(f, 'utf8')).join('\n')
   const attrs = new Set<string>()
   for (const a of body.matchAll(/(?:getAttr|hasAttr|getBool|getNum)\(\s*['"`]([a-z0-9-]+)['"`]/g))
     attrs.add(a[1]!)
   const events = new Set<string>()
   for (const a of body.matchAll(/emit\(\s*['"`]([a-z-]+)['"`]/g)) events.add('oas-' + a[1]!)
   return { attrs: [...attrs].sort(), events: [...events].sort() }
+}
+
+function walkTs(dir: string): string[] {
+  return walk(dir).filter((f) => /\.ts$/.test(f) && !/\.(test|spec)\.ts$/.test(f))
 }
 
 function buildManifest(): Record<string, ManifestEntry> {
@@ -70,7 +77,20 @@ function buildManifest(): Record<string, ManifestEntry> {
       tag: TAG_OVERRIDE[name] || `oas-${name}`,
       demo: existsSync(join(DOCS_DIR, `${demoName}.md`)) ? demoName : null,
       imperative: IMPERATIVE.has(name),
-      ...extractCaps(abs),
+      ...extractCaps(walkTs(abs)),
+    }
+    // 同目录额外组件（oas-compact 等）：能力按各自类文件提取，demo 页与主组件一致
+    for (const extra of DIR_EXTRA[name] ?? []) {
+      const tag = TAG_OVERRIDE[extra] || `oas-${extra}`
+      const extraDemo = DEMO_OVERRIDE[extra] || demoName
+      const caps = extractCaps([join(abs, `oas-${extra}.ts`)])
+      caps.attrs.push(...(SUPPLEMENT_ATTRS[extra] ?? []))
+      manifest[extra] = {
+        tag,
+        demo: existsSync(join(DOCS_DIR, `${extraDemo}.md`)) ? extraDemo : null,
+        imperative: IMPERATIVE.has(extra),
+        ...caps,
+      }
     }
   }
   return manifest

@@ -87,6 +87,7 @@ export const WHITELIST = [
   'oas-button',
   'oas-tag',
   'oas-tag-group',
+  'oas-compact',
   'oas-empty',
   'oas-divider',
   'oas-text',
@@ -251,6 +252,8 @@ const TAG_ENTRY: Record<WhiteListTag, string> = {
   'oas-tag': '@oas-ui/ui/basic/tag',
   // tag-group 与 tag 同目录，装载一次注册两个 tag
   'oas-tag-group': '@oas-ui/ui/basic/tag',
+  // compact 与 space 同目录，装载一次注册两个 tag
+  'oas-compact': '@oas-ui/ui/basic/space',
   'oas-empty': '@oas-ui/ui/feedback/empty',
   'oas-divider': '@oas-ui/ui/basic/divider',
   'oas-text': '@oas-ui/ui/basic/typography',

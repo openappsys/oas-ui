@@ -537,6 +537,65 @@
         "type": "string",
         "default": "",
         "observed": true
+      },
+      {
+        "name": "separator",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "justify",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "reverse",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "fill",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "fill-ratio",
+        "type": "string",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      },
+      {
+        "name": "separator"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-compact": {
+    "className": "OASCompact",
+    "sourceFile": "packages/ui/src/basic/space/oas-compact.ts",
+    "attrs": [
+      {
+        "name": "vertical",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "block",
+        "observed": true
       }
     ],
     "props": [],

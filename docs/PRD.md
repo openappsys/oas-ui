@@ -530,7 +530,19 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 
 ### 详细需求
 
-- **tag-group**：属性 alue（单选单值 / 多选逗号分隔）、multiple（多选）、disabled（全组禁用）、ria-label（组容器可访问名称，默认走 i18n「标签组」）。事件：oas-change——单选 detail { value }、多选 detail { value: [] }。实现：slot 放 <oas-tag checkable value="x">，组在 capture 阶段拦截子签 oas-change 计算新 value 并同步所有子签 checked（子签事件不外泄，宿主只收到组级事件）；容器 ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可取消（点已选中项保持选中）；disabled 透传全组不可切。
+- **tag-group**：属性 alue（单选单值 / 多选逗号分隔）、multiple（多选）、disabled（全组禁用）、ria-label（组容器可访问名称，默认走 i18n「标签组」）。事件：oas-change——单选 detail { value }、多选 detail { value: [] }。实现：slot 放 <oas-tag checkable value="x">，组在 capture 阶段拦截子签 oas-change 计算新 value 并同步所有子签 checked（子签事件不外泄，宿主只收到组级事件）；容器 
+ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可取消（点已选中项保持选中）；disabled 透传全组不可切。
+
+### 增强（space 第二轮 + compact）
+
+- **space→separator**：`separator` 字符串在子项间插入分隔符（次要文字色）；`slot="separator"` 自定义分隔内容优先于字符串（如竖排分割线）。实现：update 幂等注入 `<span class="oas-space-separator">`（重复 update 不产生重复元素），slot 分隔元素去除 slot 标记后留在原位参与布局（投影到单一命名槽位会破坏「子项间」位置）；分隔符不参与 fill 缩放。SSR：渲染器触发 update 后序列化注入结果，快照确定。
+- **space→justify**：`justify="start|center|end|space-between|space-around|space-evenly"`（缺省不设 justify-content）
+- **space→reverse**：布尔 `reverse`，horizontal→`row-reverse`、vertical→`column-reverse`
+- **space→size 数组**：`size` 接受逗号分隔两值（如 `size="8,16"`）：横向 8px、纵向 16px（wrap 时生效）；单值保持现状；每段独立归一化（token/数字/非法回落告警）
+- **space→fill/fill-ratio**：`fill` 子项等分填满容器（flex: 1 等价物）；`fill-ratio`（百分比，默认 100）按比例分配——子项自身可设、容器级作缺省；fill 移除时清空子项 flex
+- **oas-compact**：紧凑容器，slot 内相邻表单控件（oas-button / oas-input / oas-input-number / oas-select）贴边合并边框（相邻 -1px 重叠）+ 首尾圆角、中间直角。圆角合并走 button-group 单一协议（`--oas-button-group-radius` 变量穿透，input/input-number/select 已补同名变量消费钩子）。属性：vertical（纵向贴合，圆角方向改上下）、disabled（透传全组禁用）、block（宽度 100%）。交互态：hover / 聚焦项 z-index 提升盖过相邻边框。边界：空组渲染不报错；slotchange 增减子项自动重算贴合/圆角。
+
+
 
 ### 增强（tag 第二轮）
 

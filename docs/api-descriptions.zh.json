@@ -329,6 +329,17 @@
     },
     "slots": {}
   },
+  "oas-compact": {
+    "attrs": {
+      "block": "宽度 100%（撑满父容器）",
+      "disabled": "透传全组禁用",
+      "vertical": "纵向贴合（相邻处上下 -1px 重叠，圆角方向改上下）"
+    },
+    "events": {},
+    "slots": {
+      "": "相邻表单控件（`oas-button` / `oas-input` / `oas-input-number` / `oas-select`）"
+    }
+  },
   "oas-command": {
     "attrs": {
       "items": "命令项 JSON",
@@ -1141,11 +1152,19 @@
     "attrs": {
       "align": "对齐",
       "direction": "方向",
-      "size": "间距：`xs`（4px）/ `small`（8px）/ `medium`（12px，默认）/ `large`（24px）/ `xl`（32px），或数字像素；非法值回落 `medium` 并告警",
+      "fill": "子项等分填满容器（`flex: 1` 等价物）",
+      "fill-ratio": "配合 `fill` 的分配比例（百分比，默认 100）：子项自身可设、容器级作缺省",
+      "justify": "主轴分布：`start` / `center` / `end` / `space-between` / `space-around` / `space-evenly`（缺省不设）",
+      "reverse": "反向排列：水平 → `row-reverse`、垂直 → `column-reverse`",
+      "separator": "子项间分隔符字符串（次要文字色）；`slot=\"separator\"` 自定义分隔优先于字符串",
+      "size": "间距：`xs`（4px）/ `small`（8px）/ `medium`（12px，默认）/ `large`（24px）/ `xl`（32px），或数字像素；逗号分隔两值（如 `8,16`）分别控制横向/纵向间距；非法值回落 `medium` 并告警",
       "wrap": "是否换行"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "子项",
+      "separator": "自定义分隔内容（如 `<oas-divider direction=\"vertical\">`），优先于 `separator` 字符串"
+    }
   },
   "oas-speed-dial": {
     "attrs": {

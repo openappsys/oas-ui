@@ -329,6 +329,17 @@
     },
     "slots": {}
   },
+  "oas-compact": {
+    "attrs": {
+      "block": "Width 100% (stretch to fill the parent container)",
+      "disabled": "Disable the whole group",
+      "vertical": "Vertical grouping (adjacent items overlap -1px vertically, corner merging switches to top/bottom)"
+    },
+    "events": {},
+    "slots": {
+      "": "Adjacent form controls (`oas-button` / `oas-input` / `oas-input-number` / `oas-select`)"
+    }
+  },
   "oas-command": {
     "attrs": {
       "items": "Command items JSON",
@@ -1141,11 +1152,19 @@
     "attrs": {
       "align": "Alignment",
       "direction": "Direction",
-      "size": "Spacing: `xs` (4px) / `small` (8px) / `medium` (12px, default) / `large` (24px) / `xl` (32px), or a numeric pixel value; invalid values fall back to `medium` with a warning",
+      "fill": "Make items grow equally to fill the container (the `flex: 1` equivalent)",
+      "fill-ratio": "Ratio for `fill` distribution (percent, default 100): items can set it individually, container-level acts as default",
+      "justify": "Main-axis distribution: `start` / `center` / `end` / `space-between` / `space-around` / `space-evenly` (unset by default)",
+      "reverse": "Reverse the main axis: horizontal → `row-reverse`, vertical → `column-reverse`",
+      "separator": "Separator string between items (secondary text color); `slot=\"separator\"` custom content takes priority",
+      "size": "Spacing: `xs` (4px) / `small` (8px) / `medium` (12px, default) / `large` (24px) / `xl` (32px), or a numeric pixel value; a comma-separated pair (e.g. `8,16`) controls horizontal/vertical spacing separately; invalid values fall back to `medium` with a warning",
       "wrap": "Whether to wrap"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Items",
+      "separator": "Custom separator content (e.g. `<oas-divider direction=\"vertical\">`), takes priority over the `separator` string"
+    }
   },
   "oas-speed-dial": {
     "attrs": {

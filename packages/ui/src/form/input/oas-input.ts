@@ -29,7 +29,8 @@ input {
   height: var(--oas-control-height-md);
   padding: 0 var(--oas-space-3);
   border: 1px solid var(--oas-color-border);
-  border-radius: var(--oas-radius-md);
+  /* compact/button-group 圆角合并协议：--oas-button-group-radius 优先，独立使用回落自身圆角 */
+  border-radius: var(--oas-button-group-radius, var(--oas-radius-md));
   background: var(--oas-color-bg);
   color: var(--oas-color-text-primary);
   font-size: var(--oas-font-size-md);

@@ -155,6 +155,8 @@ export const zhCN = {
   'tabs.newTab': '新标签',
   // button-group（按钮组）
   'buttonGroup.group': '按钮组',
+  // compact（紧凑组合容器）
+  'compact.group': '紧凑组合',
   // loading（加载态，通用兜底）
   'loading.loading': '加载中…',
   // calendar（日历）
