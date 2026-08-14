@@ -148,7 +148,8 @@ button:focus-visible {
   box-shadow: var(--oas-focus-ring);
 }
 /* 选中态（button-group 单/多选经 host aria-pressed 标记）；置于类型规则前，有色按钮由下方规则覆盖 */
-:host([aria-pressed='true']) button {
+:host([aria-pressed='true']) button,
+:host([aria-pressed='true']) a[part='button'] {
   color: var(--oas-color-primary);
   border-color: var(--oas-color-primary);
   background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
@@ -218,30 +219,26 @@ a[part='button'].danger {
 button.danger:hover {
   filter: brightness(0.94);
 }
-/* 有色 / text 按钮的选中态覆盖（选中比 hover 更深一档：0.85 vs 0.94） */
-:host([aria-pressed='true']) button.primary {
+/* 有色 / text 按钮的选中态覆盖（选中比 hover 更深一档：0.85 vs 0.94）。
+   anchor 变体必须与 button 一样带 :host([aria-pressed]) 前缀——曾现 bug：a 镜像规则丢了前缀，
+   带 href 的 primary/text 按钮静止时永久显示选中色 */
+:host([aria-pressed='true']) button.primary,
+:host([aria-pressed='true']) a[part='button'].primary {
   background: var(--oas-color-primary-active);
   border-color: var(--oas-color-primary-active);
   /* 选中态基础规则（:host([aria-pressed]) button）把文字设为主色，primary 深底上需白字 */
   color: var(--oas-color-text-on-primary);
 }
-a[part='button'].primary {
-  background: var(--oas-color-primary-active);
-  border-color: var(--oas-color-primary-active);
-}
 :host([aria-pressed='true']) button.success,
 :host([aria-pressed='true']) button.warning,
-:host([aria-pressed='true']) button.danger {
+:host([aria-pressed='true']) button.danger,
+:host([aria-pressed='true']) a[part='button'].success,
+:host([aria-pressed='true']) a[part='button'].warning,
+:host([aria-pressed='true']) a[part='button'].danger {
   filter: brightness(0.85);
 }
-a[part='button'].danger {
-  filter: brightness(0.9);
-}
-:host([aria-pressed='true']) button.text {
-  color: var(--oas-color-primary);
-  background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
-}
-a[part='button'].text {
+:host([aria-pressed='true']) button.text,
+:host([aria-pressed='true']) a[part='button'].text {
   color: var(--oas-color-primary);
   background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
 }

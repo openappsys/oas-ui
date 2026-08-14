@@ -3402,6 +3402,32 @@ test('dropdown 箭头 arrow="false"：#dd-arrow-none 打开后无箭头（hidden
   expect(await page.locator('#dd-arrow-none [part="item"]').count()).toBe(1)
 })
 
+test('button href anchor 变体：静止态不永久显示选中色（a 镜像规则的 :host 前缀回归）', async ({
+  page,
+}) => {
+  // 曾现 bug：选中态的 a[part='button'] 镜像规则丢了 :host([aria-pressed='true']) 前缀，
+  // 带 href 的 primary/text 按钮静止时永久渲染选中色（primary-active 深底）。
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button[href]')
+  const r = await page.evaluate(() => {
+    const pick = (cls: string) => {
+      const el = [...document.querySelectorAll('oas-button[href]')].find((e) =>
+        e.shadowRoot!.querySelector(`a[part=button].${cls}`),
+      )!
+      const a = el.shadowRoot!.querySelector('a[part=button]')!
+      const cs = getComputedStyle(a)
+      return { pressed: el.getAttribute('aria-pressed'), bg: cs.backgroundColor, filter: cs.filter }
+    }
+    return { primary: pick('primary'), default: pick('default') }
+  })
+  expect(r.primary.pressed).toBeNull()
+  expect(r.primary.bg, 'href primary 静止应为默认 primary 色，非选中深色').toBe(
+    'rgb(11, 108, 255)',
+  )
+  expect(r.primary.filter).toBe('none')
+  expect(r.default.bg, 'href 默认链接静止应为白底').toBe('rgb(255, 255, 255)')
+})
+
 test('button 语义色状态方向统一：success hover 变暗（0.94）、选中更深（0.85）', async ({
   page,
 }) => {
