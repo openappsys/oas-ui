@@ -40,8 +40,11 @@ a[part='button'] {
   background: var(--oas-color-bg);
   color: var(--oas-color-text-primary);
   font-size: var(--oas-font-size-md);
-  height: var(--oas-control-height-md);
-  padding: 0 var(--oas-space-4);
+  /* min-height 而非 height：默认单行（min-height 兜底档位高度），
+     内容受限宽时换行、盒随内容长高（长文/窄容器场景） */
+  min-height: var(--oas-control-height-md);
+  padding: 2px var(--oas-space-4);
+  text-align: center;
   /* button-group 通过自定义属性合并相邻圆角/拉满宽度（::slotted 后不支持链 ::part，故走变量穿透） */
   border-radius: var(--oas-button-group-radius, var(--oas-radius-md));
   width: var(--oas-button-group-width, auto);
@@ -243,21 +246,21 @@ button.danger:hover {
   background: color-mix(in srgb, var(--oas-color-primary) 12%, transparent);
 }
 button.small {
-  height: var(--oas-control-height-sm);
+  min-height: var(--oas-control-height-sm);
   font-size: var(--oas-font-size-sm);
-  padding: 0 var(--oas-space-2);
+  padding: 2px var(--oas-space-2);
 }
 a[part='button'].small {
-  height: var(--oas-control-height-sm);
+  min-height: var(--oas-control-height-sm);
   font-size: var(--oas-font-size-sm);
-  padding: 0 var(--oas-space-2);
+  padding: 2px var(--oas-space-2);
 }
 button.xs {
-  height: var(--oas-control-height-xs);
+  min-height: var(--oas-control-height-xs);
   font-size: var(--oas-font-size-xs);
 }
 a[part='button'].xs {
-  height: var(--oas-control-height-xs);
+  min-height: var(--oas-control-height-xs);
   font-size: var(--oas-font-size-xs);
 }
 button.xs:not(.icon-only) {
@@ -266,25 +269,48 @@ button.xs:not(.icon-only) {
   min-width: 44px;
 }
 button.large {
-  height: var(--oas-control-height-lg);
+  min-height: var(--oas-control-height-lg);
   font-size: var(--oas-font-size-lg);
-  padding: 0 var(--oas-space-5);
+  padding: 2px var(--oas-space-5);
 }
 a[part='button'].large {
-  height: var(--oas-control-height-lg);
+  min-height: var(--oas-control-height-lg);
   font-size: var(--oas-font-size-lg);
-  padding: 0 var(--oas-space-5);
+  padding: 2px var(--oas-space-5);
 }
 button.xl {
-  height: var(--oas-control-height-xl);
+  min-height: var(--oas-control-height-xl);
   font-size: var(--oas-font-size-xl);
 }
 a[part='button'].xl {
-  height: var(--oas-control-height-xl);
+  min-height: var(--oas-control-height-xl);
   font-size: var(--oas-font-size-xl);
 }
 button.xl:not(.icon-only) {
   padding: 0 var(--oas-space-6);
+}
+/* min-height 不是确定尺寸：icon-only / circle 需显式 height 维持正方形/正圆（aspect-ratio 依赖确定高） */
+button.icon-only,
+a[part='button'].icon-only,
+button.circle,
+a[part='button'].circle {
+  height: var(--oas-control-height-md);
+}
+button.small:is(.icon-only, .circle),
+a[part='button'].small:is(.icon-only, .circle) {
+  height: var(--oas-control-height-sm);
+}
+button.xs:is(.icon-only, .circle),
+a[part='button'].xs:is(.icon-only, .circle) {
+  height: var(--oas-control-height-xs);
+}
+button.large:is(.icon-only, .circle),
+a[part='button'].large:is(.icon-only, .circle) {
+  height: var(--oas-control-height-lg);
+}
+button.xl:is(.icon-only, .circle),
+a[part='button'].xl:is(.icon-only, .circle) {
+  height: var(--oas-control-height-xl);
 }
 button.text {
   border-color: transparent;

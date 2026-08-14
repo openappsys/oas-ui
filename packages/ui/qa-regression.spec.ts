@@ -3486,6 +3486,37 @@ test('icon 宿主 inline-flex：tag 内图标与文字中心线对齐（行高�
   expect(r.diff, '图标与文字中心线偏差应 ≤1px').toBeLessThanOrEqual(1)
 })
 
+test('button 长内容换行：受限宽时换行增高、普通按钮单行 32px、icon-only 保持正方形', async ({
+  page,
+}) => {
+  // 需求：默认单行，内容过长（受限宽）时换行、盒随内容长高（min-height 兜底）；
+  // icon-only/circle 用显式 height 保持正方形（aspect-ratio 依赖确定尺寸）。
+  await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button')
+  const r = await page.evaluate(() => {
+    const wrap = document.querySelector('oas-button[style*="width:120px"]')!
+    const wrapBtn = wrap.shadowRoot!.querySelector('button')!
+    const normal = [...document.querySelectorAll('oas-button')].find(
+      (b) => !b.getAttribute('style') && !b.getAttribute('icon') && b.textContent?.trim() === '普通按钮',
+    )!
+    const normalBtn = normal.shadowRoot!.querySelector('button')!
+    const iconOnly = document.querySelector('oas-button[icon]:not([style*="width"])')!
+    const iconBtn = iconOnly.shadowRoot!.querySelector('button')!
+    const wb = wrapBtn.getBoundingClientRect()
+    const nb = normalBtn.getBoundingClientRect()
+    const ib = iconBtn.getBoundingClientRect()
+    return {
+      wrapHeight: wb.height,
+      normalHeight: nb.height,
+      iconSquare: Math.abs(ib.width - ib.height) <= 1,
+      iconHeight: ib.height,
+    }
+  })
+  expect(r.normalHeight, '普通按钮单行高度应保持 32px').toBe(32)
+  expect(r.wrapHeight, '受限宽长文本应换行增高（>32px）').toBeGreaterThan(32)
+  expect(r.iconSquare, `icon-only 应保持正方形（实测高 ${r.iconHeight}px）`).toBe(true)
+})
+
 test('button href anchor 变体：静止态不永久显示选中色（a 镜像规则的 :host 前缀回归）', async ({
   page,
 }) => {

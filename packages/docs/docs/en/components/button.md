@@ -201,6 +201,15 @@ Setting `href` renders a native link (`<a>`); `target` controls how it opens (`_
   <oas-button>Normal button</oas-button>
 </DemoBlock>
 
+## Long content wrapping
+
+Buttons are single-line by default; when the width is constrained (parent container or `width` / `max-width`), long content wraps and the box grows with it (`min-height` keeps the single-line height of each size). `icon-only` / `circle` keep fixed dimensions.
+
+<DemoBlock title="Long content wrapping">
+  <oas-button style="width: 120px;">A long button label that wraps automatically</oas-button>
+  <oas-button type="primary" style="max-width: 160px;">Long primary button text wraps in a narrow container</oas-button>
+</DemoBlock>
+
 ## API
 
 ### Attributes

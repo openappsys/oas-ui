@@ -201,6 +201,15 @@
   <oas-button>普通按钮</oas-button>
 </DemoBlock>
 
+## 长内容换行
+
+按钮默认单行；内容受限宽（父容器或 `width` / `max-width`）时自动换行、高度随内容增长（各档 `min-height` 兜底单行高度）。`icon-only` / `circle` 保持固定尺寸。
+
+<DemoBlock title="长内容换行">
+  <oas-button style="width: 120px;">这是一段会自动换行的长按钮文本</oas-button>
+  <oas-button type="primary" style="max-width: 160px;">窄容器里的主按钮长文本自动换行显示</oas-button>
+</DemoBlock>
+
 ## API
 
 ### 属性
