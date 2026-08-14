@@ -188,6 +188,9 @@ export default defineConfig({
   description: '框架无关的 Web Components UI 组件库',
   lang: 'zh-CN',
   head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' }],
+    ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon-180.png' }],
     // Google Analytics 4（统计 ID G-RXS142HBXF）；SPA 路由切换的 page_view 由 theme 里 router.afterEach 补充
     [
       'script',
@@ -222,6 +225,7 @@ gtag('config', 'G-RXS142HBXF');`,
     },
   },
   themeConfig: {
+    logo: { light: '/favicon.svg', dark: '/favicon-dark.svg' },
     nav: [{ text: '指南', link: '/guide/getting-started' }],
     search: {
       provider: 'local',
@@ -280,6 +284,7 @@ gtag('config', 'G-RXS142HBXF');`,
       link: '/en/',
       description: 'Framework-agnostic Web Components UI library',
       themeConfig: {
+        logo: { light: '/favicon.svg', dark: '/favicon-dark.svg' },
         nav: [{ text: 'Guide', link: '/en/guide/getting-started' }],
         search: {
           provider: 'local',
