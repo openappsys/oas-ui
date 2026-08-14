@@ -97,19 +97,19 @@
 `mutator` 在内联后调整 SVG（如描边图标补 `stroke="currentColor"`）；
 `spriteSheet` 模式渲染 `<use href="url#name">`，不内联整 SVG。
 
-<DemoBlock title="CDN 图标库（Lucide via jsDelivr，mutator 补描边）">
+<DemoBlock title="CDN 图标库（Lucide via jsDelivr，mutator 补描边）" :script="cdnScript">
   <oas-icon library="lucide" name="heart" size="28" color="var(--oas-color-danger)"></oas-icon>
   <oas-icon library="lucide" name="star" size="28" color="var(--oas-color-warning)"></oas-icon>
   <oas-icon library="lucide" name="arrow-right" rotate="90" size="28" color="var(--oas-color-primary)"></oas-icon>
 </DemoBlock>
 
-<DemoBlock title="sprite 表（本地，<use> 引用）">
+<DemoBlock title="sprite 表（本地，<use> 引用）" :script="spriteScript">
   <oas-icon library="demo-sprite" name="sprite-star" size="28" color="var(--oas-color-warning)"></oas-icon>
   <oas-icon library="demo-sprite" name="sprite-heart" size="28" color="var(--oas-color-danger)"></oas-icon>
   <oas-icon library="demo-sprite" name="sprite-check" size="28" color="var(--oas-color-success)"></oas-icon>
 </DemoBlock>
 
-<DemoBlock title="family 变体（本地 demo-set）">
+<DemoBlock title="family 变体（本地 demo-set）" :script="familyScript">
   <oas-icon library="demo-set" name="star" size="28" color="var(--oas-color-primary)"></oas-icon>
   <oas-icon library="demo-set" name="star" family="fill" size="28" color="var(--oas-color-primary)"></oas-icon>
   <oas-icon library="demo-set" name="heart" size="28" color="var(--oas-color-danger)"></oas-icon>
@@ -238,6 +238,31 @@ registerIcon('my-icon', '<path d="..."/>')
 
 <script setup>
 import { onMounted } from 'vue'
+// 「查看代码」用的完整注册代码（script prop）：让使用者一眼看到 registerIconLibrary 怎么写
+const cdnScript = `import { registerIconLibrary } from '@oas-ui/ui'
+
+registerIconLibrary('lucide', {
+  resolver: (name) => \`https://cdn.jsdelivr.net/npm/lucide-static@0.469.0/icons/\${name}.svg\`,
+  mutator: (svg) => {
+    svg.setAttribute('fill', 'none')
+    svg.setAttribute('stroke', 'currentColor')
+    svg.setAttribute('stroke-width', '2')
+    svg.setAttribute('stroke-linecap', 'round')
+    svg.setAttribute('stroke-linejoin', 'round')
+  },
+})`
+const spriteScript = `import { registerIconLibrary } from '@oas-ui/ui'
+
+registerIconLibrary('demo-sprite', {
+  resolver: () => '/demo-sprite.svg',
+  spriteSheet: true,
+})`
+const familyScript = `import { registerIconLibrary } from '@oas-ui/ui'
+
+registerIconLibrary('demo-set', {
+  resolver: (name, family = 'outline') => \`/demo-set/\${family}/\${name}.svg\`,
+})`
+
 onMounted(async () => {
   const [{ iconNames }, ui] = await Promise.all([
     import('@oas-ui/icons'),

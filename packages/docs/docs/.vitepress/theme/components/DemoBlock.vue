@@ -24,7 +24,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useData } from 'vitepress'
 
-const props = defineProps<{ title?: string }>()
+const props = defineProps<{ title?: string; script?: string }>()
 const show = ref(false)
 const bodyEl = ref<HTMLElement | null>(null)
 const code = ref('')
@@ -38,9 +38,28 @@ const labels = computed(() =>
     : { show: '查看代码', hide: '收起代码', example: '示例代码', copy: '复制' },
 )
 
+/** 把浏览器序列化的单行 HTML 格式化为换行缩进（便于阅读；空元素 <x></x> 保持一行） */
+function formatHtml(html: string): string {
+  // 标签间换行：`>` 后非 `</` 才换行（空元素 `<x></x>` 的 `></` 保持一行）
+  const tokens = html.replace(/>(?!<\/)\s*</g, '>\n<').split('\n')
+  let depth = 0
+  const out: string[] = []
+  for (const raw of tokens) {
+    const t = raw.trim()
+    if (!t) continue
+    if (/^<\//.test(t)) depth = Math.max(0, depth - 1)
+    out.push('  '.repeat(depth) + t)
+    // 开标签进一级（排除：自闭合 `/>`、行内闭合 `... </x>` 同 token 已闭合）
+    if (/^<[^/!][^>]*>$/.test(t) && !/\/>$/.test(t) && !/<\/[a-z][\w-]*>\s*$/.test(t)) depth++
+  }
+  return out.join('\n')
+}
+
 onMounted(() => {
-  // 取 light DOM 原始标签作为示例代码
-  code.value = (bodyEl.value?.innerHTML ?? '').replace(/<!--.*?-->/gs, '').trim()
+  // 取 light DOM 原始标签作为示例代码；script prop 提供补充注册/用法代码（完整使用方法）
+  const html = (bodyEl.value?.innerHTML ?? '').replace(/<!--.*?-->/gs, '').trim()
+  const formatted = formatHtml(html)
+  code.value = props.script ? `${props.script.trim()}\n\n${formatted}` : formatted
 })
 
 function toggle(): void {
