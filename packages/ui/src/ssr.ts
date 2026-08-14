@@ -21,6 +21,7 @@
 export { OASButton } from './basic/button/oas-button.js'
 export { OASIcon, registerIcon, registerIconLibrary } from './basic/icon/oas-icon.js'
 export { OASTag } from './basic/tag/oas-tag.js'
+export { OASTagGroup } from './basic/tag/oas-tag-group.js'
 export { OASBadge } from './basic/badge/oas-badge.js'
 export { OASSpace } from './basic/space/oas-space.js'
 export { OASDivider } from './basic/divider/oas-divider.js'

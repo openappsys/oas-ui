@@ -364,7 +364,9 @@ describe('OASTag', () => {
       const el = mount({ color: '#7c3aed', type: 'primary' })
       const r = root(el)
       expect(r.style.getPropertyValue('--oas-tag-color')).toBe('#7c3aed')
-      expect(r.style.getPropertyValue('--oas-tag-color-deep')).toBe('color-mix(in srgb, #7c3aed 80%, black)')
+      expect(r.style.getPropertyValue('--oas-tag-color-deep')).toBe(
+        'color-mix(in srgb, #7c3aed 80%, black)',
+      )
       expect(r.classList.contains('filled')).toBe(true)
       expect(r.classList.contains('primary')).toBe(true)
     })
@@ -474,6 +476,128 @@ describe('OASTag', () => {
       const c2 = root(plain).querySelector<HTMLElement>('.content')
       expect(c2!.style.maxWidth).toBe('')
       expect(c2!.classList.contains('truncate')).toBe(false)
+    })
+  })
+
+  describe('dot / processing 状态点', () => {
+    it('dot：渲染 .dot 圆点且可见，移除后隐藏', () => {
+      const el = mount({ dot: '' })
+      const dot = root(el).querySelector<HTMLElement>('.dot')
+      expect(dot).not.toBeNull()
+      expect(dot!.hidden).toBe(false)
+      expect(dot!.getAttribute('aria-hidden')).toBe('true')
+      el.removeAttribute('dot')
+      expect(root(el).querySelector<HTMLElement>('.dot')!.hidden).toBe(true)
+    })
+
+    it('processing：隐含 dot（无 dot 属性也显示），.tag 带 processing class', () => {
+      const el = mount({ processing: '' })
+      const r = root(el)
+      expect(r.classList.contains('processing')).toBe(true)
+      expect(r.querySelector<HTMLElement>('.dot')!.hidden).toBe(false)
+    })
+
+    it('processing 动画 CSS：@keyframes 脉冲 + prefers-reduced-motion 停用', () => {
+      const el = mount({ processing: '' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+      expect(css).toContain('@keyframes oas-tag-pulse')
+      expect(css).toContain('animation')
+      expect(css).toContain('prefers-reduced-motion')
+      el.remove()
+    })
+
+    it('dot/processing 进入 observedAttributes', () => {
+      expect(OASTag.observedAttributes).toContain('dot')
+      expect(OASTag.observedAttributes).toContain('processing')
+    })
+  })
+
+  describe('hit / strong / multiline', () => {
+    it('hit/strong 映射 class', () => {
+      const el = mount({ hit: '', strong: '' })
+      const r = root(el)
+      expect(r.classList.contains('hit')).toBe(true)
+      expect(r.classList.contains('strong')).toBe(true)
+      expect(OASTag.observedAttributes).toContain('hit')
+      expect(OASTag.observedAttributes).toContain('strong')
+      el.remove()
+    })
+
+    it('multiline：class 生效且 .content 不截断（无 truncate、无 inline max-width）', () => {
+      const el = mount({ multiline: '' })
+      const r = root(el)
+      const content = r.querySelector<HTMLElement>('.content')
+      expect(r.classList.contains('multiline')).toBe(true)
+      expect(content!.classList.contains('truncate')).toBe(false)
+      expect(content!.style.maxWidth).toBe('')
+    })
+
+    it('multiline 与 max-width 同设：不省略但 max-width 仍约束盒宽（换行真实发生）', () => {
+      const el = mount({ multiline: '', 'max-width': '100px' })
+      const content = root(el).querySelector<HTMLElement>('.content')
+      expect(content!.classList.contains('truncate')).toBe(false)
+      expect(content!.style.maxWidth).toBe('100px')
+    })
+
+    it('移除 multiline 后恢复 max-width 省略行为', () => {
+      const el = mount({ multiline: '', 'max-width': '100px' })
+      el.removeAttribute('multiline')
+      const content = root(el).querySelector<HTMLElement>('.content')
+      expect(content!.classList.contains('truncate')).toBe(true)
+      expect(content!.style.maxWidth).toBe('100px')
+    })
+
+    it('multiline 进入 observedAttributes', () => {
+      expect(OASTag.observedAttributes).toContain('multiline')
+    })
+  })
+
+  describe('color 预设名', () => {
+    it('color="magenta" 解析为 --oas-preset-magenta 变量（含 deep 变体），缺省按 filled 渲染', () => {
+      const el = mount({ color: 'magenta' })
+      const r = root(el)
+      expect(r.style.getPropertyValue('--oas-tag-color')).toBe('var(--oas-preset-magenta)')
+      expect(r.style.getPropertyValue('--oas-tag-color-deep')).toBe(
+        'color-mix(in srgb, var(--oas-preset-magenta) 80%, black)',
+      )
+      expect(r.classList.contains('filled')).toBe(true)
+    })
+
+    it('全部预设名均可解析到对应 token', () => {
+      const presets = [
+        'magenta',
+        'red',
+        'volcano',
+        'orange',
+        'gold',
+        'lime',
+        'green',
+        'cyan',
+        'blue',
+        'geekblue',
+        'purple',
+      ]
+      for (const name of presets) {
+        const el = mount({ color: name })
+        expect(root(el).style.getPropertyValue('--oas-tag-color'), `preset=${name}`).toBe(
+          `var(--oas-preset-${name})`,
+        )
+        el.remove()
+      }
+    })
+
+    it('非法预设名按普通 CSS 色值处理（现状逻辑不变）', () => {
+      const el = mount({ color: '#7c3aed' })
+      expect(root(el).style.getPropertyValue('--oas-tag-color')).toBe('#7c3aed')
+      el.remove()
+    })
+
+    it('显式 variant 优先于预设名缺省 filled 推断', () => {
+      const el = mount({ color: 'blue', variant: 'solid' })
+      const r = root(el)
+      expect(r.style.getPropertyValue('--oas-tag-color')).toBe('var(--oas-preset-blue)')
+      expect(r.classList.contains('solid')).toBe(true)
+      expect(r.classList.contains('filled')).toBe(false)
     })
   })
 

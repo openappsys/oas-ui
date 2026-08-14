@@ -1275,13 +1275,18 @@
       "chip": "Chip (pill radius + compact padding)",
       "clickable": "Whole tag clickable (focusable, dispatches `oas-click`)",
       "closable": "Closable",
-      "color": "Custom color (any CSS value), overrides the `type` semantic color; renders as `filled` when `variant` is unset",
+      "color": "Custom color: 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens) or any CSS value, overrides the `type` semantic color; renders as `filled` when `variant` is unset",
       "disabled": "Disabled (cannot be clicked or closed)",
+      "dot": "Status dot before the text (8px, color follows `type` / `color`)",
+      "hit": "Heavy border: opaque semantic-color outline (follows the custom color when set)",
       "href": "Link URL: renders a native `<a>` when set",
       "icon": "Icon name (reusing the oas-icon icon set), placed before the text, sized to the font",
-      "max-width": "Max width of the tag content (e.g. `120px`); overflow is truncated with an ellipsis",
+      "max-width": "Max width of the tag content (e.g. `120px`); overflow is truncated with an ellipsis; with `multiline` it only constrains the width so content wraps",
+      "multiline": "Multiline: content wraps (auto height + vertical padding compensation); with `max-width` content wraps instead of being truncated",
+      "processing": "Pulsing status dot (implies `dot`); disabled under `prefers-reduced-motion`",
       "round": "Rounded",
       "size": "Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning",
+      "strong": "Bold text (font-weight 600)",
       "target": "How the link opens (`_blank` / `_self` etc.), with `href`",
       "type": "Type",
       "variant": "Shape (orthogonal to `type`): `outlined` / `filled` / `solid`; when unset, keeps the legacy type rendering"
@@ -1293,6 +1298,20 @@
     },
     "slots": {
       "": "Tag content"
+    }
+  },
+  "oas-tag-group": {
+    "attrs": {
+      "aria-label": "Accessible name of the group container (defaults to i18n \"Tag group\")",
+      "disabled": "Disables the whole group (children cannot toggle)",
+      "multiple": "Multi-select mode (`value` holds comma-separated selected values)",
+      "value": "Selected value: a single value for single-select, comma-separated for multi-select"
+    },
+    "events": {
+      "oas-change": "Selection change. Single: `detail: { value }`; multiple: `detail: { value: [] }`"
+    },
+    "slots": {
+      "": "Multiple `<oas-tag checkable value=\"x\">` children"
     }
   },
   "oas-text": {

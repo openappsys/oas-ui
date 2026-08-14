@@ -105,6 +105,7 @@ export const en: LocaleMessages = {
   'avatar.defaultAlt': 'Avatar',
   'typography.copy': 'Copy',
   'tag.close': 'Close',
+  'tagGroup.group': 'Tag group',
   'tabs.close': 'Close',
   'tabs.add': 'Add tab',
   'tabs.newTab': 'New tab',

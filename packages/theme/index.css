@@ -30,6 +30,19 @@
   --oas-color-bg-disabled: #f4f4f5;
   --oas-color-overlay: rgba(0, 0, 0, 0.5);
 
+  /* ===== 预设色板（tag 等组件 color 属性按名引用；dark 下走下方调亮变体） ===== */
+  --oas-preset-magenta: #eb2f96;
+  --oas-preset-red: #f5222d;
+  --oas-preset-volcano: #fa541c;
+  --oas-preset-orange: #fa8c16;
+  --oas-preset-gold: #faad14;
+  --oas-preset-lime: #a0d911;
+  --oas-preset-green: #52c41a;
+  --oas-preset-cyan: #13c2c2;
+  --oas-preset-blue: #1677ff;
+  --oas-preset-geekblue: #2f54eb;
+  --oas-preset-purple: #722ed1;
+
   --oas-font-size-xs: 12px;
   --oas-font-size-sm: 13px;
   --oas-font-size-md: 14px;
@@ -104,6 +117,18 @@ html.dark {
   --oas-color-bg-hover: #27272a;
   --oas-color-bg-disabled: #27272a;
   --oas-color-overlay: rgba(0, 0, 0, 0.6);
+  /* 预设色板 dark 变体：整体调亮一档，保证在深底上对比度达标 */
+  --oas-preset-magenta: #f759ab;
+  --oas-preset-red: #ff4d4f;
+  --oas-preset-volcano: #ff7a45;
+  --oas-preset-orange: #ffa940;
+  --oas-preset-gold: #ffc53d;
+  --oas-preset-lime: #bae637;
+  --oas-preset-green: #73d13d;
+  --oas-preset-cyan: #36cfc9;
+  --oas-preset-blue: #4096ff;
+  --oas-preset-geekblue: #597ef7;
+  --oas-preset-purple: #9254de;
 }
 
 [data-theme="high-contrast"] {

@@ -5,6 +5,33 @@ export type TagType = 'default' | 'primary' | 'success' | 'warning' | 'danger' |
 export type TagSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 /** variant 形态维度（正交 type 语义色）：outlined 描边 / filled 浅底 / solid 实心 */
 export type TagVariant = 'outlined' | 'filled' | 'solid'
+/** 预设色板名（映射 --oas-preset-* token，color 属性支持按名引用；非法名按普通色值处理） */
+export type TagPresetColor =
+  | 'magenta'
+  | 'red'
+  | 'volcano'
+  | 'orange'
+  | 'gold'
+  | 'lime'
+  | 'green'
+  | 'cyan'
+  | 'blue'
+  | 'geekblue'
+  | 'purple'
+
+export const PRESET_COLORS: readonly TagPresetColor[] = [
+  'magenta',
+  'red',
+  'volcano',
+  'orange',
+  'gold',
+  'lime',
+  'green',
+  'cyan',
+  'blue',
+  'geekblue',
+  'purple',
+]
 
 const VALID_TAG_SIZES: readonly TagSize[] = ['xs', 'small', 'medium', 'large', 'xl']
 const VALID_TAG_VARIANTS: readonly TagVariant[] = ['outlined', 'filled', 'solid']
@@ -197,6 +224,98 @@ const STYLE = `
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* ===== dot 状态点：文字前小圆点，颜色跟随 type/color(--oas-tag-color)；processing 带脉冲 ===== */
+.tag .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--oas-tag-color, var(--tag-color, var(--oas-color-text-secondary)));
+  flex-shrink: 0;
+}
+.tag .dot[hidden] {
+  display: none;
+}
+.tag.processing .dot {
+  animation: oas-tag-pulse 1.4s var(--oas-ease-in-out) infinite;
+}
+@keyframes oas-tag-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.65);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tag.processing .dot {
+    animation: none;
+  }
+}
+/* ===== hit 加重描边：全不透明语义色边框（color 时取 --oas-tag-color） ===== */
+.tag.hit {
+  border-color: var(--oas-tag-color, var(--tag-color-deep, var(--oas-color-primary)));
+}
+/* ===== strong 加粗 ===== */
+.tag.strong {
+  font-weight: 600;
+}
+/* ===== multiline 多行：height auto + 上下 padding 补偿；与 max-width 省略互斥时 multiline 优先（update 层保证） ===== */
+.tag.multiline {
+  height: auto;
+  padding-block: var(--oas-space-1);
+}
+.tag.multiline .content {
+  white-space: normal;
+  line-height: 1.5;
+}
+/* multiline 各档位最小高度对齐单行档位，避免换行后标签塌陷 */
+.tag.multiline.xs {
+  min-height: 16px;
+}
+.tag.multiline.small {
+  min-height: var(--oas-control-height-xs);
+}
+.tag.multiline.medium {
+  min-height: var(--oas-control-height-sm);
+}
+.tag.multiline.large {
+  min-height: var(--oas-control-height-md);
+}
+.tag.multiline.xl {
+  min-height: var(--oas-control-height-lg);
+}
+/* ===== avatar / img 头像适配：高度随 tag 档位、圆形、负 margin 贴左缘。
+   尺寸定义在 :host（slotted 元素的 var 解析走 light DOM 祖先链，.tag 内定义不可见）。
+   !important 压过 avatar host 的 inline width/height。 ===== */
+:host([size='xs']) {
+  --oas-tag-avatar-size: 12px;
+}
+:host([size='small']) {
+  --oas-tag-avatar-size: calc(var(--oas-control-height-xs) - 4px);
+}
+:host([size='large']) {
+  --oas-tag-avatar-size: calc(var(--oas-control-height-md) - 4px);
+}
+:host([size='xl']) {
+  --oas-tag-avatar-size: calc(var(--oas-control-height-lg) - 4px);
+}
+::slotted(oas-avatar),
+::slotted(img) {
+  width: var(--oas-tag-avatar-size, calc(var(--oas-control-height-sm) - 4px)) !important;
+  height: var(--oas-tag-avatar-size, calc(var(--oas-control-height-sm) - 4px)) !important;
+  margin-inline-start: calc(-1 * var(--oas-space-2));
+  border-radius: 50% !important;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+:host([chip]) ::slotted(oas-avatar),
+:host([chip]) ::slotted(img) {
+  margin-inline-start: calc(-1 * var(--oas-space-1));
+}
 /* 图标容器：icon 属性渲染 <oas-icon>，尺寸跟随字号 */
 .tag .icon {
   display: inline-flex;
@@ -248,6 +367,11 @@ export class OASTag extends OASElement {
       'href',
       'target',
       'max-width',
+      'dot',
+      'processing',
+      'hit',
+      'strong',
+      'multiline',
     ]
   }
 
@@ -267,6 +391,7 @@ export class OASTag extends OASElement {
     return `
       <style>${STYLE}</style>
       <${tag} class="tag" part="tag"${hrefAttr}>
+        <span class="dot" part="dot" aria-hidden="true" hidden></span>
         <span class="icon" part="icon" aria-hidden="true" hidden></span>
         <span class="content"><slot></slot></span>
         <button part="close" aria-label="" hidden>
@@ -361,7 +486,11 @@ export class OASTag extends OASElement {
   }
 
   /** href/target 增删会改变内部元素类型（span ↔ a），需重建 shadow；其余属性走 update() */
-  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+  override attributeChangedCallback(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null,
+  ): void {
     if ((name === 'href' || name === 'target') && this.hasRendered) {
       this.shadow.innerHTML = this.template()
       this.bind()
@@ -388,8 +517,15 @@ export class OASTag extends OASElement {
     // variant 形态维度：显式合法值生效；color 存在且未显式 variant 时按 filled 渲染（color 覆盖 type）
     const rawVariant = this.getAttr('variant', '')
     let variant = ''
-    if ((VALID_TAG_VARIANTS as readonly string[]).includes(rawVariant)) variant = rawVariant as TagVariant
+    if ((VALID_TAG_VARIANTS as readonly string[]).includes(rawVariant))
+      variant = rawVariant as TagVariant
     else if (color) variant = 'filled'
+
+    const dot = this.hasAttr('dot')
+    const processing = this.hasAttr('processing')
+    const hit = this.hasAttr('hit')
+    const strong = this.hasAttr('strong')
+    const multiline = this.hasAttr('multiline')
 
     this.tagRoot.className = [
       'tag',
@@ -402,14 +538,24 @@ export class OASTag extends OASElement {
       checkable && checked ? 'checked' : '',
       variant ? variant : '',
       disabled ? 'disabled' : '',
+      hit ? 'hit' : '',
+      strong ? 'strong' : '',
+      multiline ? 'multiline' : '',
+      processing ? 'processing' : '',
     ]
       .filter(Boolean)
       .join(' ')
 
-    // color 自定义色：注入到 .tag 内联 style（--oas-tag-color 本色；filled 文字用深色变体）
+    // color 自定义色：预设名解析到 --oas-preset-* token；非法名按普通 CSS 色值注入。
+    // 注入到 .tag 内联 style（--oas-tag-color 本色；filled 文字用深色变体）
     if (color) {
-      this.tagRoot.style.setProperty('--oas-tag-color', color)
-      this.tagRoot.style.setProperty('--oas-tag-color-deep', `color-mix(in srgb, ${color} 80%, black)`)
+      const isPreset = (PRESET_COLORS as readonly string[]).includes(color)
+      const base = isPreset ? `var(--oas-preset-${color})` : color
+      this.tagRoot.style.setProperty('--oas-tag-color', base)
+      this.tagRoot.style.setProperty(
+        '--oas-tag-color-deep',
+        `color-mix(in srgb, ${base} 80%, black)`,
+      )
     } else {
       this.tagRoot.style.removeProperty('--oas-tag-color')
       this.tagRoot.style.removeProperty('--oas-tag-color-deep')
@@ -444,12 +590,17 @@ export class OASTag extends OASElement {
       btn.setAttribute('aria-label', this.t('tag.close'))
     }
 
-    // max-width 超长省略：应用到默认插槽外的 .content 容器
+    // dot / processing 状态点：processing 隐含 dot（无需显式 dot 属性）
+    const dotEl = this.tagRoot.querySelector<HTMLElement>('.dot')
+    if (dotEl) dotEl.hidden = !(dot || processing)
+
+    // max-width 约束内容宽度：默认超长省略（truncate）；
+    // 与 multiline 同设时不省略，但 max-width 仍约束盒宽让换行真实发生
     const content = this.tagRoot.querySelector<HTMLElement>('.content')
     const maxWidth = this.getAttr('max-width', '')
     if (content) {
-      content.classList.toggle('truncate', !!maxWidth)
-      content.style.maxWidth = maxWidth || ''
+      content.classList.toggle('truncate', !!maxWidth && !multiline)
+      content.style.maxWidth = maxWidth
     }
 
     // icon 属性：默认插槽前渲染 <oas-icon>（复用图标集，尺寸跟随字号）；非法名隐藏

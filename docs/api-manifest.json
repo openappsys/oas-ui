@@ -306,6 +306,31 @@
         "type": "string",
         "default": "",
         "observed": true
+      },
+      {
+        "name": "dot",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "processing",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "hit",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "strong",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "multiline",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [],
@@ -320,6 +345,50 @@
       {
         "name": "oas-click",
         "detail": "{ originalEvent: e }"
+      }
+    ],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-tag-group": {
+    "className": "OASTagGroup",
+    "sourceFile": "packages/ui/src/basic/tag/oas-tag-group.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "multiple",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "aria-label",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "selectedValues",
+        "type": "string[]"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: next }"
       }
     ],
     "slots": [

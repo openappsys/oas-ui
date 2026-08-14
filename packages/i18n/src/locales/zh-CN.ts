@@ -147,6 +147,8 @@ export const zhCN = {
   'typography.copy': '复制',
   // tag（标签）
   'tag.close': '关闭',
+  // tag-group（标签组）
+  'tagGroup.group': '标签组',
   // tabs（标签页）
   'tabs.close': '关闭',
   'tabs.add': '新增标签',

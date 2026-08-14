@@ -152,6 +152,11 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   tag: [
     ['oas-tag[clickable]:not([disabled]) [part="tag"]', 'click', '点整签派发 oas-click'],
     ['oas-tag[checkable]:not([disabled]) [part="tag"]', 'click', '点可选中签切换 → oas-change'],
+    [
+      'oas-tag-group:not([disabled]) oas-tag[checkable]:not([disabled]) [part="tag"]',
+      'click',
+      '点组内可选中签 → 组 oas-change',
+    ],
   ],
   link: [['oas-link:not([disabled]) a', 'click']],
   typography: [

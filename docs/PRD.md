@@ -521,3 +521,26 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 - CHANGELOG v1.1~v1.9 回填完整，文档站 CHANGELOG 页可见
 - ssr 首载：白名单组件首次 renderToString 不再装载全量组件库（耗时显著下降，量级目标 < 200ms）
 - GitHub 公开 + npm 可装 + CI 绿 + 文档站可访问
+
+---
+
+## v2.0 能力补齐（进行中）
+
+> 面向通用组件能力的补充与增强，与既有版本互不冲突。
+
+### 详细需求
+
+- **tag-group**：属性 alue（单选单值 / 多选逗号分隔）、multiple（多选）、disabled（全组禁用）、ria-label（组容器可访问名称，默认走 i18n「标签组」）。事件：oas-change——单选 detail { value }、多选 detail { value: [] }。实现：slot 放 <oas-tag checkable value="x">，组在 capture 阶段拦截子签 oas-change 计算新 value 并同步所有子签 checked（子签事件不外泄，宿主只收到组级事件）；容器 ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可取消（点已选中项保持选中）；disabled 透传全组不可切。
+
+### 增强（tag 第二轮）
+
+- **tag→预设色板**：color 支持 11 个预设名（magenta/ed/olcano/orange/gold/lime/green/cyan/lue/geekblue/purple，映射 --oas-preset-* token，dark 自动调亮）或任意 CSS 色值（现状逻辑不变）
+- **tag→dot/processing**：dot 文字前状态小圆点；processing 脉冲动画（隐含 dot，prefers-reduced-motion 停用）
+- **tag→avatar 适配**：默认插槽放 oas-avatar/<img> 时尺寸随档位、圆形、负 margin 贴左缘
+- **tag→hit/strong/multiline**：hit 全不透明语义色描边；strong 加粗（600）；multiline 多行换行（与 max-width 省略互斥时 multiline 优先）
+
+### 验收标准
+
+- 新组件与增强 demo 进文档站（中英双版），覆盖各属性/事件/边界
+- tag-group 单选/多选/disabled 场景可交互并有可见反馈
+- 单测 + typecheck + build + e2e 全绿

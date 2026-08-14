@@ -1275,13 +1275,18 @@
       "chip": "胶囊",
       "clickable": "整签可点",
       "closable": "可关闭",
-      "color": "自定义颜色（任意 CSS 色值），覆盖 `type` 语义色；未指定 `variant` 时按 `filled` 渲染",
+      "color": "自定义颜色：支持 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token）或任意 CSS 色值，覆盖 `type` 语义色；未指定 `variant` 时按 `filled` 渲染",
       "disabled": "禁用",
+      "dot": "文字前渲染状态小圆点（8px，颜色跟随 `type` / `color`）",
+      "hit": "加重描边：语义色全不透明边框（有 `color` 时跟随自定义色）",
       "href": "链接地址：设置后内部渲染为原生链接 `<a>`",
       "icon": "图标名（复用 oas-icon 图标集），置于文字前，尺寸跟随字号",
-      "max-width": "标签内容最大宽度（如 `120px`），超出省略显示",
+      "max-width": "标签内容最大宽度（如 `120px`），超出省略显示；与 `multiline` 同设时不省略，仅约束宽度让内容换行",
+      "multiline": "多行：内容允许换行（高度自适应 + 上下 padding 补偿）；与 `max-width` 同设时换行而非省略",
+      "processing": "状态点脉冲动画（隐含 `dot`）；`prefers-reduced-motion` 下停用",
       "round": "圆角",
       "size": "尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警",
+      "strong": "文字加粗（font-weight 600）",
       "target": "链接打开方式（`_blank` / `_self` 等），配合 `href`",
       "type": "类型",
       "variant": "形态（与 `type` 正交）：`outlined`（描边）/ `filled`（浅底）/ `solid`（实心）；缺省保持类型默认渲染"
@@ -1293,6 +1298,20 @@
     },
     "slots": {
       "": "标签内容"
+    }
+  },
+  "oas-tag-group": {
+    "attrs": {
+      "aria-label": "组容器可访问名称（默认走 i18n「标签组」）",
+      "disabled": "禁用整个组（子签不可切）",
+      "multiple": "多选模式（`value` 逗号分隔多个选中值）",
+      "value": "选中值：单选为单值，多选用逗号分隔"
+    },
+    "events": {
+      "oas-change": "选中变化。单选 `detail: { value }`；多选 `detail: { value: [] }`"
+    },
+    "slots": {
+      "": "多个 `<oas-tag checkable value=\"x\">` 子签"
     }
   },
   "oas-text": {

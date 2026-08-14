@@ -59,6 +59,36 @@ Clicking × dispatches `oas-close` (cancelable; `preventDefault` can prevent rem
 
 <script setup>
 import { onMounted } from 'vue'
+// Full example code for the code view (script prop): drag & close-animation logic at a glance
+const dragScript = `// Native HTML5 drag reorder: dragstart records the index → drop reorders the array → re-render
+const wrap = document.getElementById('drag-tags')
+let order = ['Vue', 'React', 'Svelte', 'Solid']
+let from = -1
+const render = () => {
+  wrap.innerHTML = order.map((t) => \`<oas-tag closable draggable="true">\${t}</oas-tag>\`).join('')
+}
+wrap.addEventListener('dragstart', (e) => {
+  from = [...wrap.children].indexOf(e.target.closest('oas-tag'))
+})
+wrap.addEventListener('dragover', (e) => e.preventDefault())
+wrap.addEventListener('drop', (e) => {
+  e.preventDefault()
+  const to = [...wrap.children].indexOf(e.target.closest('oas-tag'))
+  if (from >= 0 && to >= 0 && from !== to) {
+    order.splice(to, 0, ...order.splice(from, 1))
+    render()
+  }
+})
+render()`
+const closeAnimScript = `// oas-close is cancelable: preventDefault stops the default removal, fade out first, then remove
+document.getElementById('close-anim').addEventListener('oas-close', (e) => {
+  e.preventDefault()
+  const tag = e.target
+  tag.style.transition = 'opacity 240ms, transform 240ms'
+  tag.style.opacity = '0'
+  tag.style.transform = 'scale(0.92)'
+  setTimeout(() => tag.remove(), 240)
+})`
 onMounted(async () => {
   const { message } = await import('@oas-ui/ui')
   window.message = message
@@ -68,6 +98,50 @@ onMounted(async () => {
   document.addEventListener('oas-click', (e) => {
     const text = (e.target?.textContent || 'tag').trim()
     window.message?.info(`Clicked "${text}"`)
+  })
+
+  // Drag-to-reorder demo: native HTML5 drag & drop over a set of closable tags
+  const dragWrap = document.getElementById('drag-tags')
+  if (dragWrap) {
+    let dragTags = ['Vue', 'React', 'Svelte', 'Solid']
+    const renderDragTags = () => {
+      dragWrap.innerHTML = dragTags
+        .map((t) => `<oas-tag closable draggable="true">${t}</oas-tag>`)
+        .join('')
+    }
+    let dragIndex = -1
+    dragWrap.addEventListener('dragstart', (e) => {
+      const tag = e.target.closest('oas-tag')
+      dragIndex = tag ? [...dragWrap.children].indexOf(tag) : -1
+      if (tag) tag.style.opacity = '0.4'
+    })
+    dragWrap.addEventListener('dragover', (e) => e.preventDefault())
+    dragWrap.addEventListener('drop', (e) => {
+      e.preventDefault()
+      const target = e.target.closest('oas-tag')
+      const to = target ? [...dragWrap.children].indexOf(target) : -1
+      if (dragIndex >= 0 && to >= 0 && dragIndex !== to) {
+        const [moved] = dragTags.splice(dragIndex, 1)
+        dragTags.splice(to, 0, moved)
+        renderDragTags()
+      }
+    })
+    dragWrap.addEventListener('dragend', () => {
+      dragIndex = -1
+      for (const t of dragWrap.children) t.style.opacity = ''
+    })
+    renderDragTags()
+  }
+
+  // Close animation demo: preventDefault + opacity/transform transition then remove
+  const closeAnim = document.getElementById('close-anim')
+  closeAnim?.addEventListener('oas-close', (e) => {
+    e.preventDefault()
+    const tag = e.target
+    tag.style.transition = 'opacity 240ms, transform 240ms'
+    tag.style.opacity = '0'
+    tag.style.transform = 'scale(0.92)'
+    setTimeout(() => tag.remove(), 240)
   })
 })
 </script>
@@ -160,9 +234,142 @@ When `href` is set, the tag renders a native `<a>` internally; `target` is passe
   <oas-tag max-width="80px" chip>Short</oas-tag>
 </DemoBlock>
 
+## Preset colors
+
+`color` accepts 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens, auto-brightened in dark theme); any CSS color value also works (see Custom color above). Unknown preset names are treated as plain color values.
+
+<DemoBlock title="Preset colors filled">
+  <oas-tag color="magenta">magenta</oas-tag>
+  <oas-tag color="red">red</oas-tag>
+  <oas-tag color="volcano">volcano</oas-tag>
+  <oas-tag color="orange">orange</oas-tag>
+  <oas-tag color="gold">gold</oas-tag>
+  <oas-tag color="lime">lime</oas-tag>
+  <oas-tag color="green">green</oas-tag>
+  <oas-tag color="cyan">cyan</oas-tag>
+  <oas-tag color="blue">blue</oas-tag>
+  <oas-tag color="geekblue">geekblue</oas-tag>
+  <oas-tag color="purple">purple</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="Preset colors solid">
+  <oas-tag color="magenta" variant="solid">magenta</oas-tag>
+  <oas-tag color="red" variant="solid">red</oas-tag>
+  <oas-tag color="volcano" variant="solid">volcano</oas-tag>
+  <oas-tag color="orange" variant="solid">orange</oas-tag>
+  <oas-tag color="gold" variant="solid">gold</oas-tag>
+  <oas-tag color="lime" variant="solid">lime</oas-tag>
+  <oas-tag color="green" variant="solid">green</oas-tag>
+  <oas-tag color="cyan" variant="solid">cyan</oas-tag>
+  <oas-tag color="blue" variant="solid">blue</oas-tag>
+  <oas-tag color="geekblue" variant="solid">geekblue</oas-tag>
+  <oas-tag color="purple" variant="solid">purple</oas-tag>
+</DemoBlock>
+
+## Status dot
+
+`dot` renders a small dot before the text (color follows `type` / `color`); `processing` adds a pulsing animation (disabled under `prefers-reduced-motion`) and implies `dot`.
+
+<DemoBlock title="dot status dots">
+  <oas-tag dot>Default</oas-tag>
+  <oas-tag dot type="success">Published</oas-tag>
+  <oas-tag dot type="warning">Reviewing</oas-tag>
+  <oas-tag dot color="magenta">Custom color dot</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="processing pulse">
+  <oas-tag processing type="primary">Processing</oas-tag>
+  <oas-tag processing type="warning">Waiting</oas-tag>
+  <oas-tag processing type="info" round>Polling</oas-tag>
+</DemoBlock>
+
+## Hit & emphasis
+
+`hit` draws an opaque semantic-color border (follows the custom color when set); `strong` makes the text bold (font-weight 600).
+
+<DemoBlock title="hit bordered">
+  <oas-tag hit>Default</oas-tag>
+  <oas-tag hit type="primary">Primary border</oas-tag>
+  <oas-tag hit color="green">Custom color border</oas-tag>
+  <oas-tag hit variant="outlined">Outlined hit</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="strong">
+  <oas-tag strong type="danger">Important</oas-tag>
+  <oas-tag strong chip type="primary">Bold chip</oas-tag>
+</DemoBlock>
+
+## Multiline
+
+`multiline` allows content to wrap (auto height + vertical padding compensation, for long content on mobile); when combined with `max-width`, the width constraint still applies — content wraps instead of being truncated.
+
+<DemoBlock title="multiline">
+  <oas-tag multiline max-width="220px" type="primary">This is a long tag label that wraps naturally in a narrow container on mobile instead of being truncated</oas-tag>
+  <oas-tag multiline max-width="220px" hit>A second multiline label showing the auto-height layout with vertical padding compensation</oas-tag>
+</DemoBlock>
+
+## Avatar tags
+
+When the default slot holds an `oas-avatar` (or `<img>`), it is adapted automatically: sized to the tag tier, circular, with a negative margin to hug the left edge.
+
+<DemoBlock title="Avatar tags">
+  <oas-tag chip><oas-avatar>J</oas-avatar>Jim</oas-tag>
+  <oas-tag type="primary"><oas-avatar>A</oas-avatar>Anna</oas-tag>
+  <oas-tag size="large"><oas-avatar>M</oas-avatar>Mike</oas-tag>
+  <oas-tag chip closable type="success"><oas-avatar>Z</oas-avatar>Zoe</oas-tag>
+</DemoBlock>
+
+## Drag to reorder
+
+A set of `closable` tags supports native HTML5 drag & drop reordering (`dragstart` / `dragover` / `drop`, re-rendered from the reordered array; no third-party dependency).
+
+<DemoBlock title="Drag to reorder" :script="dragScript">
+  <div id="drag-tags" style="display: inline-flex; flex-wrap: wrap; gap: 8px;"></div>
+</DemoBlock>
+
+## Close animation
+
+`oas-close` is a cancelable event: after `preventDefault` the tag is not removed automatically, so you can fade it out first and then remove it.
+
+<DemoBlock title="Close animation" :script="closeAnimScript">
+  <oas-space id="close-anim" size="small">
+    <oas-tag closable type="success">Fade out & remove</oas-tag>
+    <oas-tag closable type="info">Click × to animate</oas-tag>
+    <oas-tag closable type="danger">Animated close</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## Tag group
+
+`oas-tag-group` groups several `checkable` tags into a value selector: single-select (`value` as a single value) and multi-select (`multiple` + comma-separated `value`). Clicking a tag toggles selection and dispatches `oas-change` (single: `detail: { value }` / multiple: `detail: { value: [] }`); `disabled` disables the whole group. Child `checked` states are managed by the group (controlled).
+
+<DemoBlock title="tag-group single">
+  <oas-tag-group value="b" onoas-change="message.info('Selected: ' + event.detail.value)">
+    <oas-tag checkable value="a">Option A</oas-tag>
+    <oas-tag checkable value="b">Option B</oas-tag>
+    <oas-tag checkable value="c">Option C</oas-tag>
+  </oas-tag-group>
+</DemoBlock>
+
+<DemoBlock title="tag-group multiple">
+  <oas-tag-group multiple value="a,c" aria-label="Multi-select tag group" onoas-change="message.info('Selected: ' + event.detail.value.join(', '))">
+    <oas-tag checkable value="a">Tag A</oas-tag>
+    <oas-tag checkable value="b">Tag B</oas-tag>
+    <oas-tag checkable value="c">Tag C</oas-tag>
+  </oas-tag-group>
+</DemoBlock>
+
+<DemoBlock title="tag-group disabled">
+  <oas-tag-group disabled value="a" aria-label="Disabled tag group">
+    <oas-tag checkable value="a">Disabled A</oas-tag>
+    <oas-tag checkable value="b">Disabled B</oas-tag>
+    <oas-tag checkable value="c">Disabled C</oas-tag>
+  </oas-tag-group>
+</DemoBlock>
+
 ## API
 
-### Attributes
+### oas-tag
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -171,18 +378,21 @@ When `href` is set, the tag renders a native `<a>` internally; `target` is passe
 | `chip` | Chip (pill radius + compact padding) | `boolean` | — |
 | `clickable` | Whole tag clickable (focusable, dispatches `oas-click`) | `boolean` | — |
 | `closable` | Closable | `boolean` | — |
-| `color` | Custom color (any CSS value), overrides the `type` semantic color; renders as `filled` when `variant` is unset | `string` | — |
+| `color` | Custom color: 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens) or any CSS value, overrides the `type` semantic color; renders as `filled` when `variant` is unset | `string` | — |
 | `disabled` | Disabled (cannot be clicked or closed) | `boolean` | — |
+| `dot` | Status dot before the text (8px, color follows `type` / `color`) | `boolean` | — |
+| `hit` | Heavy border: opaque semantic-color outline (follows the custom color when set) | `boolean` | — |
 | `href` | Link URL: renders a native `<a>` when set | `string` | — |
 | `icon` | Icon name (reusing the oas-icon icon set), placed before the text, sized to the font | `string` | — |
-| `max-width` | Max width of the tag content (e.g. `120px`); overflow is truncated with an ellipsis | `string` | — |
+| `max-width` | Max width of the tag content (e.g. `120px`); overflow is truncated with an ellipsis; with `multiline` it only constrains the width so content wraps | `string` | — |
+| `multiline` | Multiline: content wraps (auto height + vertical padding compensation); with `max-width` content wraps instead of being truncated | `boolean` | — |
+| `processing` | Pulsing status dot (implies `dot`); disabled under `prefers-reduced-motion` | `boolean` | — |
 | `round` | Rounded | `boolean` | — |
 | `size` | Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning | `TagSize` | `medium` |
+| `strong` | Bold text (font-weight 600) | `boolean` | — |
 | `target` | How the link opens (`_blank` / `_self` etc.), with `href` | `string` | — |
 | `type` | Type | `TagType` | `default` |
 | `variant` | Shape (orthogonal to `type`): `outlined` / `filled` / `solid`; when unset, keeps the legacy type rendering | `string` | — |
-
-### Events
 
 | Event | Description |
 | --- | --- |
@@ -190,8 +400,25 @@ When `href` is set, the tag renders a native `<a>` internally; `target` is passe
 | `oas-click` | Whole-tag click (when `clickable`), detail contains originalEvent |
 | `oas-close` | Close, `cancelable`; `preventDefault` prevents removal |
 
-### Slots
-
 | Name | Description |
 | --- | --- |
 | default | Tag content |
+
+### oas-tag-group
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `aria-label` | Accessible name of the group container (defaults to i18n "Tag group") | — | — |
+| `disabled` | Disables the whole group (children cannot toggle) | `boolean` | — |
+| `multiple` | Multi-select mode (`value` holds comma-separated selected values) | `boolean` | — |
+| `value` | Selected value: a single value for single-select, comma-separated for multi-select | `string` | — |
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Selection change. Single: `detail: { value }`; multiple: `detail: { value: [] }` |
+
+| Name | Description |
+| --- | --- |
+| default | Multiple `<oas-tag checkable value="x">` children |
+
+> Tag group API table is generated by the generator.
