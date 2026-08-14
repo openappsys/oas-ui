@@ -19,6 +19,15 @@
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
 
+多个组件逐个短路径即可——**只下载用到的组件及其依赖链**（如 button 链 ≈ 21KB gzip，含 core 运行时与图标集），未用到的组件零开销：
+
+```html
+<script type="module">
+  import 'https://esm.sh/@oas-ui/ui@1/basic/button'
+  import 'https://esm.sh/@oas-ui/ui@1/basic/tag'
+</script>
+```
+
 > **CDN 路径入口说明**：组件目录下的 `oas-*.js` 是纯类定义（供打包器 tree-shaking），**不含注册副作用**；会执行 `customElements.define` 的是 `index.js`。CDN 直引请用上面的整包 `cdn.js` 或按需短路径（走 exports map 自动落到 `index.js`），**不要直引 `dist/basic/button/oas-button.js`**（import 成功但元素不注册、页面不渲染）。
 
 ## 安装（npm / pnpm / yarn）

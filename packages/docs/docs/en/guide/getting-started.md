@@ -19,6 +19,15 @@
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
 
+For multiple components, add one short path each — **only the components you use and their dependency chains are downloaded** (e.g. the button chain is ≈ 21KB gzip, including the core runtime and the icon set); unused components cost nothing:
+
+```html
+<script type="module">
+  import 'https://esm.sh/@oas-ui/ui@1/basic/button'
+  import 'https://esm.sh/@oas-ui/ui@1/basic/tag'
+</script>
+```
+
 > **CDN entry-point note**: the `oas-*.js` files under each component directory are pure class definitions (for bundler tree-shaking) and do **not** register anything; `customElements.define` runs in `index.js`. For direct CDN usage, use the full `cdn.js` above or the on-demand short path (resolved to `index.js` via the exports map). Do **not** import `dist/basic/button/oas-button.js` directly — the import succeeds but the element never registers, so nothing renders.
 
 ## Install (npm / pnpm / yarn)
