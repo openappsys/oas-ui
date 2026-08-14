@@ -189,7 +189,8 @@ a[part='button'].success {
   color: var(--oas-color-text-on-success);
 }
 button.success:hover {
-  filter: brightness(1.08);
+  /* hover 变暗、选中更深（0.94 → 0.85）：与 primary 的 color-mix 加深体系同向递进 */
+  filter: brightness(0.94);
 }
 button.warning {
   background: color-mix(in srgb, var(--oas-color-warning) 80%, black);
@@ -202,7 +203,7 @@ a[part='button'].warning {
   color: var(--oas-color-text-on-warning);
 }
 button.warning:hover {
-  filter: brightness(1.08);
+  filter: brightness(0.94);
 }
 button.danger {
   background: color-mix(in srgb, var(--oas-color-danger) 80%, black);
@@ -215,9 +216,9 @@ a[part='button'].danger {
   color: var(--oas-color-text-on-danger);
 }
 button.danger:hover {
-  filter: brightness(1.08);
+  filter: brightness(0.94);
 }
-/* 有色 / text 按钮的选中态覆盖 */
+/* 有色 / text 按钮的选中态覆盖（选中比 hover 更深一档：0.85 vs 0.94） */
 :host([aria-pressed='true']) button.primary {
   background: var(--oas-color-primary-active);
   border-color: var(--oas-color-primary-active);
@@ -231,7 +232,7 @@ a[part='button'].primary {
 :host([aria-pressed='true']) button.success,
 :host([aria-pressed='true']) button.warning,
 :host([aria-pressed='true']) button.danger {
-  filter: brightness(0.9);
+  filter: brightness(0.85);
 }
 a[part='button'].danger {
   filter: brightness(0.9);

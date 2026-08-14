@@ -3402,6 +3402,64 @@ test('dropdown 箭头 arrow="false"：#dd-arrow-none 打开后无箭头（hidden
   expect(await page.locator('#dd-arrow-none [part="item"]').count()).toBe(1)
 })
 
+test('button 语义色状态方向统一：success hover 变暗（0.94）、选中更深（0.85）', async ({
+  page,
+}) => {
+  // 曾现不一致：primary hover 变暗（color-mix 85% black），success/warning/danger hover
+  // 却用 brightness(1.08) 变亮——同库 hover 明暗方向相反。统一为变暗递进：hover 0.94、
+  // 选中 0.85（与 primary 的 85%/75% 两档比例对齐）。
+  await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button-group[type="primary"] oas-button')
+  // 页面无 success 组 demo，注入一个验证语义色规则（type 由组透传子按钮）
+  await page.evaluate(() => {
+    const g = document.querySelector('oas-button-group[type="primary"]')!
+    const clone = g.cloneNode(true) as HTMLElement
+    clone.setAttribute('type', 'success')
+    clone.removeAttribute('value')
+    g.parentElement!.appendChild(clone)
+  })
+  const sg = page.locator('oas-button-group[type="success"]').last()
+  const mid = sg.locator('oas-button', { hasText: '中' })
+  const readFilter = () =>
+    page.evaluate(() => {
+      const gs = [...document.querySelectorAll('oas-button-group[type="success"]')]
+      const b = [...gs[gs.length - 1]!.querySelectorAll('oas-button')][1]!
+      return getComputedStyle(b.shadowRoot!.querySelector('button')!).filter
+    })
+  expect(await readFilter()).toBe('none')
+  await mid.hover()
+  await page.waitForTimeout(400)
+  const hoverFilter = await readFilter()
+  expect(hoverFilter, 'success hover 应变暗（brightness < 1）').toBe('brightness(0.94)')
+  // 选中比 hover 更深
+  await mid.click()
+  await page.mouse.move(0, 0)
+  await page.waitForTimeout(400)
+  expect(await readFilter(), 'success 选中应比 hover 更深').toBe('brightness(0.85)')
+})
+
+test('button-group 有色组：分段缝常驻可见（非首按钮带 1px 半透明白缝，首按钮无）', async ({
+  page,
+}) => {
+  // 曾现缺陷：primary 等有色实心组静止时无缝合线，三段融成一整个按钮，
+  // 「多选一」结构不可发现。修复：非首按钮宿主外侧 box-shadow 画 1px 白缝。
+  await page.goto('/components/button-group.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-button-group[type="primary"] oas-button')
+  const r = await page.evaluate(() => {
+    const g = document.querySelector('oas-button-group[type="primary"]')!
+    return [...g.querySelectorAll('oas-button')].map((b) => getComputedStyle(b).boxShadow)
+  })
+  expect(r[0], '首按钮不应有缝').toBe('none')
+  expect(r[1], '非首按钮应有 1px 半透明白缝').toContain('rgba(255, 255, 255, 0.35)')
+  expect(r[2]).toContain('rgba(255, 255, 255, 0.35)')
+  // 默认（白底）组不受影响：按钮自带灰色边框，不画白缝
+  const defaultSeams = await page.evaluate(() => {
+    const g = document.querySelector('oas-button-group:not([type])')!
+    return [...g.querySelectorAll('oas-button')].map((b) => getComputedStyle(b).boxShadow)
+  })
+  expect(defaultSeams.every((s) => s === 'none'), '默认组不应画白缝').toBe(true)
+})
+
 test('button primary（solid）：hover/选中背景不被自定义底色兜底规则压死', async ({ page }) => {
   // 曾现 bug：--oas-button-bg 覆盖规则的选择器带 :not() 链（权重 (0,6,1)），压死
   // button.primary:hover / :active / :host([aria-pressed]) 的 background (0,2,1)——

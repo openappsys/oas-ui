@@ -28,6 +28,21 @@ const STYLE = `
   margin-left: 0;
   margin-top: -1px;
 }
+/* 有色实心组：分段缝常驻可见（白 35% 细线），静止也能读出「多选一」结构。
+   缝画在后项宿主外侧 1px（margin -1px 重叠区，后项压住前项边框）；
+   hover/选中项 z-index 提升后其边框自动盖过缝线，状态优先不打架 */
+:host([type='primary']:not([vertical])) ::slotted(oas-button:not(:first-child)),
+:host([type='success']:not([vertical])) ::slotted(oas-button:not(:first-child)),
+:host([type='warning']:not([vertical])) ::slotted(oas-button:not(:first-child)),
+:host([type='danger']:not([vertical])) ::slotted(oas-button:not(:first-child)) {
+  box-shadow: -1px 0 0 0 rgb(255 255 255 / 0.35);
+}
+:host([vertical][type='primary']) ::slotted(oas-button:not(:first-child)),
+:host([vertical][type='success']) ::slotted(oas-button:not(:first-child)),
+:host([vertical][type='warning']) ::slotted(oas-button:not(:first-child)),
+:host([vertical][type='danger']) ::slotted(oas-button:not(:first-child)) {
+  box-shadow: 0 -1px 0 0 rgb(255 255 255 / 0.35);
+}
 /* 分隔符：贴合参与组内布局、线置顶覆盖相邻按钮边框，不参与圆角合并 */
 ::slotted(oas-button-group-separator) {
   position: relative;
