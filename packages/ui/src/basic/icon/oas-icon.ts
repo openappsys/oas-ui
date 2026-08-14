@@ -50,6 +50,8 @@ export function registerIconLibrary(name: string, options: IconLibraryOptions): 
 
 const STYLE = `
 :host {
+  /* inline-flex：宿主收缩包裹 svg，消除 inline 上下文行高撑出基线支撑导致的垂直偏心 */
+  display: inline-flex;
   /* duotone 双层着色变量：用户可在宿主元素上通过自定义属性覆盖 */
   --oas-icon-primary-color: currentColor;
   --oas-icon-secondary-color: currentColor;

@@ -3402,6 +3402,30 @@ test('dropdown 箭头 arrow="false"：#dd-arrow-none 打开后无箭头（hidden
   expect(await page.locator('#dd-arrow-none [part="item"]').count()).toBe(1)
 })
 
+test('icon 宿主 inline-flex：tag 内图标与文字中心线对齐（行高支撑偏心回归）', async ({
+  page,
+}) => {
+  // 曾现 bug：oas-icon 宿主默认 inline，内部 svg 被继承 line-height 撑出基线支撑，
+  // 图标视觉中心比文字中心高 2px（tag icon 属性标签里肉眼可见不在一条线）。
+  // 修复：:host display: inline-flex 收缩包裹 svg。锁定「svg 中心 == 文字中心」。
+  await page.goto('/components/tag.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tag[icon]')
+  const r = await page.evaluate(() => {
+    const tag = document.querySelector('oas-tag[icon]')!
+    const root = tag.shadowRoot!
+    const iconHost = root.querySelector('.icon oas-icon')!
+    const svg = iconHost.shadowRoot!.querySelector('svg')!
+    const content = root.querySelector('.content')!
+    const cy = (el: Element) => {
+      const b = el.getBoundingClientRect()
+      return b.top + b.height / 2
+    }
+    return { diff: Math.abs(cy(svg) - cy(content)), hostDisplay: getComputedStyle(iconHost).display }
+  })
+  expect(r.hostDisplay).toBe('flex') // flex 容器内块化后的计算值
+  expect(r.diff, '图标与文字中心线偏差应 ≤1px').toBeLessThanOrEqual(1)
+})
+
 test('button href anchor 变体：静止态不永久显示选中色（a 镜像规则的 :host 前缀回归）', async ({
   page,
 }) => {
