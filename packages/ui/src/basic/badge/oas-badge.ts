@@ -791,39 +791,37 @@ const STYLE = `
 }
 
 /* ===== 非斜形态通用锚点（ribbon-anchor 8 位置：4 边中 + 4 角）=====
-   适用于 fold / banner / flag / side / seal / bookmark（斜形态 diagonal/triangle
-   有各自四角规则，见上）。anchor 定位缎带贴卡片边/角，形态自身形状与方向保持；
-   anchor 优先于 placement/ribbon-position/ribbon-direction/ribbon-vertical 兼容别名。
-   边中居中走 --oas-ribbon-anchor-x/y（translate 合成变量，见 .ribbon 基类）。
-   各形态宽度不同（fold 内容宽 / banner 全宽 / side 竖条），此处只控锚点 inset，
-   形态内部布局由各自规则负责。 */
+   适用于 fold / banner / flag / side / seal / bookmark；斜形态 diagonal/triangle
+   有各自四角规则（见上），此处 :not 排除避免 inset 冲突。
+   anchor 定位缎带贴卡片边/角，形态自身形状与方向保持；anchor 优先于 placement/
+   ribbon-position/ribbon-direction/ribbon-vertical 兼容别名。边中居中走合成 translate 变量。 */
 /* 4 角 */
-.ribbon.anchor-top-left {
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-top-left {
   top: var(--oas-space-2);
   bottom: auto;
   inset-inline-start: var(--oas-space-2);
   inset-inline-end: auto;
 }
-.ribbon.anchor-top-right {
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-top-right {
   top: var(--oas-space-2);
   bottom: auto;
   inset-inline-start: auto;
   inset-inline-end: var(--oas-space-2);
 }
-.ribbon.anchor-bottom-left {
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-bottom-left {
   top: auto;
   bottom: var(--oas-space-2);
   inset-inline-start: var(--oas-space-2);
   inset-inline-end: auto;
 }
-.ribbon.anchor-bottom-right {
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-bottom-right {
   top: auto;
   bottom: var(--oas-space-2);
   inset-inline-start: auto;
   inset-inline-end: var(--oas-space-2);
 }
 /* 4 边中：居中走合成 translate 变量（与 offset 叠加，见 .ribbon 基类） */
-.ribbon.anchor-top {
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-top {
   top: var(--oas-space-2);
   bottom: auto;
   inset-inline-start: 0;
@@ -831,7 +829,7 @@ const STYLE = `
   margin-inline: auto;
   width: fit-content;
 }
-.ribbon.anchor-bottom {
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-bottom {
   top: auto;
   bottom: var(--oas-space-2);
   inset-inline-start: 0;
@@ -839,14 +837,14 @@ const STYLE = `
   margin-inline: auto;
   width: fit-content;
 }
-.ribbon.anchor-left {
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-left {
   top: 50%;
   bottom: auto;
   inset-inline-start: var(--oas-space-2);
   inset-inline-end: auto;
   --oas-ribbon-anchor-y: -50%;
 }
-.ribbon.anchor-right {
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-right {
   top: 50%;
   bottom: auto;
   inset-inline-start: auto;
@@ -854,14 +852,16 @@ const STYLE = `
   --oas-ribbon-anchor-y: -50%;
 }
 /* anchor 时清掉兼容别名的定位（placement inset / position top / side 的 translateY / bookmark 的 direction） */
-.ribbon.anchor-top-left,
-.ribbon.anchor-top-right,
-.ribbon.anchor-bottom-left,
-.ribbon.anchor-bottom-right,
-.ribbon.anchor-top,
-.ribbon.anchor-bottom,
-.ribbon.anchor-left,
-.ribbon.anchor-right {
+/* anchor 时清掉兼容别名的定位（placement inset / position top / side 的 translateY /
+   bookmark 的 direction）；斜形态 diagonal/triangle 有 rotate 几何，排除避免清掉 */
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-top-left,
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-top-right,
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-bottom-left,
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-bottom-right,
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-top,
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-bottom,
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-left,
+.ribbon:not(.form-diagonal):not(.form-triangle).anchor-right {
   transform: none;
 }
 /* side 竖条在角锚点：保持竖排但贴角（去掉自身 50% 居中 transform 已由上方清空） */
@@ -898,23 +898,23 @@ const STYLE = `
 }
 
 /* fold 贴边探出：通用锚点层用正偏移，但 fold 有折叠角、贴边需负偏移探出（同 placement-end/start）。
-   仅 fold（无 form 标记，排除 banner/flag 等自身定位形态），规则后置覆盖通用锚点 */
-.ribbon.anchor-left:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark) {
+   仅 fold（无 form 标记，排除其他所有带 form 标记的形态），规则后置覆盖通用锚点 */
+.ribbon.anchor-left:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark):not(.form-diagonal):not(.form-triangle) {
   inset-inline-start: calc(var(--oas-space-2) * -1);
 }
-.ribbon.anchor-right:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark) {
+.ribbon.anchor-right:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark):not(.form-diagonal):not(.form-triangle) {
   inset-inline-end: calc(var(--oas-space-2) * -1);
 }
-.ribbon.anchor-top-left:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark) {
+.ribbon.anchor-top-left:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark):not(.form-diagonal):not(.form-triangle) {
   inset-inline-start: calc(var(--oas-space-2) * -1);
 }
-.ribbon.anchor-top-right:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark) {
+.ribbon.anchor-top-right:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark):not(.form-diagonal):not(.form-triangle) {
   inset-inline-end: calc(var(--oas-space-2) * -1);
 }
-.ribbon.anchor-bottom-left:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark) {
+.ribbon.anchor-bottom-left:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark):not(.form-diagonal):not(.form-triangle) {
   inset-inline-start: calc(var(--oas-space-2) * -1);
 }
-.ribbon.anchor-bottom-right:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark) {
+.ribbon.anchor-bottom-right:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark):not(.form-diagonal):not(.form-triangle) {
   inset-inline-end: calc(var(--oas-space-2) * -1);
 }
 

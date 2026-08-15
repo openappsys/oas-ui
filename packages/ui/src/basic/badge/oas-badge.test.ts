@@ -835,11 +835,11 @@ describe('OASBadge ribbon-form 形态维度', () => {
       'inset-inline-end: calc(var(--oas-diag-pin) - 70.5%)',
     )
     expect(cssRule(style, '.ribbon.form-diagonal.anchor-bottom-left')).toContain('bottom: calc(var(--oas-diag-pin) - var(--oas-badge-diagonal-height, 30px) / 2)')
-    // 非斜通用锚点：4 角贴边 + 4 边中（translate 合成变量居中）
-    expect(cssRule(style, '.ribbon.anchor-top-left')).toContain('top: var(--oas-space-2)')
-    expect(cssRule(style, '.ribbon.anchor-bottom-right')).toContain('bottom: var(--oas-space-2)')
-    expect(cssRule(style, '.ribbon.anchor-left')).toContain('--oas-ribbon-anchor-y: -50%')
-    expect(cssRule(style, '.ribbon.anchor-top')).toContain('margin-inline: auto')
+    // 非斜通用锚点：4 角贴边 + 4 边中（translate 合成变量居中），排除斜形态
+    expect(style).toMatch(/\.ribbon:not\(\.form-diagonal\):not\(\.form-triangle\)\.anchor-top-left \{\s*top: var\(--oas-space-2\)/)
+    expect(style).toMatch(/\.ribbon:not\(\.form-diagonal\):not\(\.form-triangle\)\.anchor-bottom-right \{\s*[^}]*bottom: var\(--oas-space-2\)/)
+    expect(style).toMatch(/\.ribbon:not\(\.form-diagonal\):not\(\.form-triangle\)\.anchor-left \{\s*[^}]*--oas-ribbon-anchor-y: -50%/)
+    expect(style).toMatch(/\.ribbon:not\(\.form-diagonal\):not\(\.form-triangle\)\.anchor-top \{\s*[^}]*margin-inline: auto/)
     // triangle：直角在右上，start 显式镜像
     expect(cssRule(style, '.ribbon.form-triangle.anchor-top-right')).toContain(
       'clip-path: polygon(0 0, 100% 0, 100% 100%)',
