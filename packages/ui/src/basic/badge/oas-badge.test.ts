@@ -885,13 +885,13 @@ describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
     expect(r.classList.contains('form-flag')).toBe(true)
     expect(r.hidden).toBe(false)
     const style = el.shadowRoot!.querySelector('style')!.textContent!
-    // end（默认，探出右端）：右端侧燕尾 V 缺口
+    // end（默认，探出右端）：右端侧燕尾 V 缺口（V 口凹进带身，深 10px 抵中线）
     expect(cssRule(style, '.ribbon.form-flag')).toContain(
-      'clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%)',
+      'clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%)',
     )
     // start 镜像：缺口在左端（clip-path 走元素本地坐标，不随锚点自动翻转）
     expect(cssRule(style, '.ribbon.form-flag.placement-start')).toContain(
-      'clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 50%)',
+      'clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 10px 50%)',
     )
     // 探出端锚点：end 右探 / start 左探（镜像）
     expect(cssRule(style, '.ribbon.form-flag.placement-end')).toContain(
@@ -1045,7 +1045,10 @@ describe('OASBadge premium 金属质感', () => {
     expect(premiumRule).toContain('background: linear-gradient')
     expect(premiumRule).toContain('color-mix')
     expect(premiumRule).toContain('border: 1px solid')
-    expect(cssRule(style, '.ribbon.premium .ribbon-text')).toContain('color-mix')
+    // 文字色：近黑 + 金属刻感 text-shadow（不再用 color-mix 棕金，可读性差）
+    const textRule = cssRule(style, '.ribbon.premium .ribbon-text')
+    expect(textRule).toContain('color: #1a1a1a')
+    expect(textRule).toContain('text-shadow')
   })
 
   it('premium 渐变走 --oas-preset-gold token（dark 自适应）', () => {

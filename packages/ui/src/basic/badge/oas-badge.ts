@@ -580,7 +580,8 @@ const STYLE = `
    折叠角须放进 clip 区域内（bottom 内侧角） */
 .ribbon.form-flag {
   border-radius: 0;
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
+  /* 燕尾缺口：V 口凹进带身（探出外端），缺口深 10px 抵带身中线 */
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%);
 }
 .ribbon.form-flag.placement-end {
   inset-inline-end: calc(var(--oas-space-2) * -1);
@@ -589,7 +590,7 @@ const STYLE = `
   inset-inline-end: auto;
   inset-inline-start: calc(var(--oas-space-2) * -1);
   /* 燕尾缺口镜像到左端（clip-path 走元素本地坐标，不随锚点自动翻转——同 bookmark 教训） */
-  clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 50%);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 10px 50%);
 }
 .ribbon.form-flag .ribbon-corner {
   top: auto;
@@ -633,6 +634,10 @@ const STYLE = `
   background: linear-gradient(90deg, transparent 0%, currentColor 100%);
   filter: brightness(70%);
 }
+/* 卷边端替代折叠角：rolled 时隐藏 corner（否则尖三角从卷边下探头） */
+.ribbon.rolled .ribbon-corner {
+  display: none;
+}
 .ribbon.rolled.placement-end:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal))::after {
   inset-inline-end: 0;
   border-start-end-radius: 999px;
@@ -666,7 +671,10 @@ const STYLE = `
   border: 1px solid color-mix(in srgb, var(--oas-preset-gold) 50%, black);
 }
 .ribbon.premium .ribbon-text {
-  color: color-mix(in srgb, var(--oas-preset-gold) 30%, black);
+  /* 金属刻感：近黑字 + 顶部 1px 亮边 text-shadow（凹刻效果，通行金属徽章做法） */
+  color: #1a1a1a;
+  font-weight: 600;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
 }
 /* 裁剪形态：box border 会被 clip-path 裁掉，改用 0 偏移 0 模糊的 drop-shadow 沿
    clip-path 轮廓描边（四向 1px，等效细描边，见 oas-badge 测试回归断言） */
