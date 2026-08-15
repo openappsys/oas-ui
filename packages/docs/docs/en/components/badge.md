@@ -317,7 +317,7 @@ The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — 
 
 ## Ribbon forms
 
-`ribbon-form` switches the ribbon shape: `fold` (default, straight band + folded corner) / `diagonal` (45° diagonal band sweeping from the top corner; the band extends outside the card, so the host needs `overflow: hidden` to clip it) / `triangle` (a pure corner triangle holding a small icon or `slot="ribbon"` content) / `bookmark` (a vertical tab hanging from the top edge with a swallow-tail notch) / `side` (a vertical strip hung at mid-height of the side edge) / `seal` (a circular serrated stamp with centered text) / `banner` (a full-width strip across the top edge with angled ends). Invalid values silently fall back to `fold`. The `ribbon-position` vertical trio only affects the `fold` shape; the other shapes have their own vertical placement.
+`ribbon-form` switches the ribbon shape: `fold` (default, straight band + folded corner) / `diagonal` (45° diagonal band sweeping from the top corner; the band extends outside the card, so the host needs `overflow: hidden` to clip it) / `triangle` (a pure corner triangle holding a small icon or `slot="ribbon"` content) / `bookmark` (a vertical tab hanging from the top edge with a swallow-tail notch) / `side` (a vertical strip hung at mid-height of the side edge) / `seal` (a circular serrated stamp with centered text) / `banner` (a full-width strip across the top edge with angled ends) / `flag` (a side swallow-tail banner: a horizontal band with a V notch at the protruding end, always facing the protruding side). Invalid values silently fall back to `fold`. The `ribbon-position` vertical trio only affects the `fold` shape; the other shapes have their own vertical placement. `rolled` is a boolean modifier that adds an end roll (a large end radius + an inner gradient darkening that reads as a rolled cylinder); it composes with `fold` / `banner` / `flag`. `wide` only applies to `diagonal`, turning it into a wide large-type diagonal band for big discount scenes; other shapes ignore it.
 
 <DemoBlock title="Ribbon forms">
   <oas-badge ribbon text="HOT" style="margin-inline-end: var(--oas-space-4)">
@@ -341,6 +341,15 @@ The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — 
   </oas-badge>
   <oas-badge ribbon text="LIMITED DEAL" ribbon-form="banner" placement="start">
     <oas-card><p>banner</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" ribbon-form="flag" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>flag (side swallow-tail)</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" rolled style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>fold + rolled end</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="50% OFF" ribbon-form="diagonal" wide style="overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 240px"><p>diagonal + wide</p></oas-card>
   </oas-badge>
 </DemoBlock>
 
@@ -441,13 +450,15 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 | `placement` | Ribbon position: `start` (inline-start) / `end` (inline-end, default) | `BadgePlacement` | `end` |
 | `premium` | Metallic treatment: a multi-stop gold gradient with a deep-gold fine outline (clipped shapes get the outline traced along their clip-path silhouette), text color auto-picked dark against the gold background; composes orthogonally with `color` with the priority `premium` > `color` > semantic default; works with every `ribbon-form`, dark theme adapts automatically (driven by the `--oas-preset-gold` token) | `boolean` | — |
 | `ribbon` | Ribbon corner mode (boolean, same as `mode="ribbon"`) | `boolean` | — |
-| `ribbon-form` | Ribbon shape: `fold` (default, straight band + folded corner) / `diagonal` (45° diagonal band from the top corner; the band extends outside the card, so the host needs `overflow: hidden` to clip it) / `triangle` (a pure corner triangle holding a small icon or `slot="ribbon"` content) / `bookmark` (a vertical tab hanging from the top edge with a swallow-tail notch) / `side` (a vertical strip hung at mid-height of the side edge) / `seal` (a circular serrated stamp with centered text) / `banner` (a full-width strip across the top edge with angled ends); the `ribbon-position` trio only affects `fold`, the other shapes have their own vertical placement, invalid values silently fall back to `fold` | `BadgeRibbonForm` | `fold` |
+| `ribbon-form` | Ribbon shape: `fold` (default, straight band + folded corner) / `diagonal` (45° diagonal band from the top corner; the band extends outside the card, so the host needs `overflow: hidden` to clip it) / `triangle` (a pure corner triangle holding a small icon or `slot="ribbon"` content) / `bookmark` (a vertical tab hanging from the top edge with a swallow-tail notch) / `side` (a vertical strip hung at mid-height of the side edge) / `seal` (a circular serrated stamp with centered text) / `banner` (a full-width strip across the top edge with angled ends) / `flag` (a side swallow-tail banner: a horizontal band with a V notch at the protruding end, always facing the protruding side); the `ribbon-position` trio only affects `fold`, the other shapes have their own vertical placement, invalid values silently fall back to `fold` | `BadgeRibbonForm` | `fold` |
 | `ribbon-position` | Ribbon vertical position: `hang` (default, hangs below the top edge) / `edge` (flush with the top edge) / `cross` (straddles the top edge, pressing against the card border for the strongest wrap-around feel); orthogonal to `placement` (start / end), affects the `ribbon-form="fold"` shape only, invalid values silently fall back to `hang` | `BadgeRibbonPosition` | `hang` |
+| `rolled` | End roll: a boolean modifier that adds a rolled edge to the protruding end (a large end radius + an inner gradient darkening that reads as a rolled cylinder; pure CSS). Composes with `fold` / `banner` / `flag`; other shapes silently ignore it | `boolean` | — |
 | `showZero` | Whether to show when value=0 | `boolean` | — |
 | `size` | Size: `small` (compact tier, numeric badge ~13px tall, dot 6px) | `string` | — |
 | `status` | Status point: `success` / `processing` / `default` / `error` / `warning`, renders an inline standalone element of "status dot + `text`", mutually exclusive with ribbon / dot / count modes (rendered first when set); the `processing` dot pulses (`prefers-reduced-motion` disables it) | `BadgeStatus` | — |
 | `text` | Ribbon or status text; the `ribbon` slot takes precedence when it has content | `string` | — |
 | `value` | Number | `string` | — |
+| `wide` | Wide large-type diagonal: only takes effect with `ribbon-form="diagonal"` (a band of about 200×32px with a raised font size and the text shift scaled to the band width, covering a larger corner area); other shapes silently ignore it | `boolean` | — |
 
 ### Slots
 

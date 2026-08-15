@@ -514,6 +514,16 @@
         "name": "premium",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "rolled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "wide",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [],

@@ -5,7 +5,7 @@ export type BadgeColor = 'primary' | 'success' | 'warning' | 'danger'
 export type BadgePlacement = 'start' | 'end'
 /** 缎带纵向位置：hang 挂沿下（默认）/ edge 贴顶边 / cross 骑跨顶边；非法值静默回落 hang */
 export type BadgeRibbonPosition = 'hang' | 'edge' | 'cross'
-/** 缎带形态：fold 直条+折叠（默认）/ diagonal 45° 对角斜带 / triangle 角落三角 / bookmark 顶边燕尾竖条 / side 侧边竖挂 / seal 圆形锯齿印章 / banner 顶部横贯横幅；非法值静默回落 fold */
+/** 缎带形态：fold 直条+折叠（默认）/ diagonal 45° 对角斜带 / triangle 角落三角 / bookmark 顶边燕尾竖条 / side 侧边竖挂 / seal 圆形锯齿印章 / banner 顶部横贯横幅 / flag 侧燕尾横旗（横条 + 探出端 V 缺口）；非法值静默回落 fold */
 export type BadgeRibbonForm =
   | 'fold'
   | 'diagonal'
@@ -14,6 +14,7 @@ export type BadgeRibbonForm =
   | 'side'
   | 'seal'
   | 'banner'
+  | 'flag'
 /** 吸引动画：外圈脉冲扩散 / 轻微上下弹跳（仅 count/dot/standalone 徽标，ribbon 不受影响） */
 export type BadgeAttention = 'pulse' | 'bounce'
 /** 角标四角定位（默认 top-right；非法值静默回落） */
@@ -60,6 +61,7 @@ const VALID_RIBBON_FORMS: readonly string[] = [
   'side',
   'seal',
   'banner',
+  'flag',
 ]
 
 /** corner 平移符号：X 向右为正，Y 向下为正（top 角 Y 为负） */
@@ -408,6 +410,30 @@ const STYLE = `
   transform: translateX(24px);
 }
 
+/* wide：宽幅大字版斜带（仅与 diagonal 组合，其他形态静默忽略——syncRibbon 只在 form=diagonal
+   时写入 wide class）。带身 200×32px、字号提升，覆盖更大角落区域（电商 % off 大斜幅场景）；
+   文字可读方向与现有平移逻辑一致：end 内半段在带左端 → 左移 1/4 带长（200×1/4=50px，与
+   96×1/4=24px 同比例），start 镜像右移 */
+.ribbon.form-diagonal.wide {
+  width: 200px;
+  height: 32px;
+  line-height: 32px;
+  top: -16px;
+  font-size: var(--oas-font-size-lg);
+}
+.ribbon.form-diagonal.wide.placement-end {
+  inset-inline-end: -100px;
+}
+.ribbon.form-diagonal.wide.placement-start {
+  inset-inline-start: -100px;
+}
+.ribbon.form-diagonal.wide .ribbon-text {
+  transform: translateX(-50px);
+}
+.ribbon.form-diagonal.wide.placement-start .ribbon-text {
+  transform: translateX(50px);
+}
+
 /* triangle：角落纯三角形（clip-path 直角三角）+ 内嵌小图标/slot 内容；placement 四角跟随镜像 */
 .ribbon.form-triangle {
   width: 44px;
@@ -549,6 +575,84 @@ const STYLE = `
   display: none;
 }
 
+/* flag：侧燕尾横旗（横条 + 探出外端侧燕尾 V 缺口；缺口始终朝探出端，placement start/end 镜像）。
+   底部挂点内侧保留折叠角——复用 .ribbon-corner 尖三角，但因条身 clip-path 会把条外元素裁掉，
+   折叠角须放进 clip 区域内（bottom 内侧角） */
+.ribbon.form-flag {
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
+}
+.ribbon.form-flag.placement-end {
+  inset-inline-end: calc(var(--oas-space-2) * -1);
+}
+.ribbon.form-flag.placement-start {
+  inset-inline-end: auto;
+  inset-inline-start: calc(var(--oas-space-2) * -1);
+  /* 燕尾缺口镜像到左端（clip-path 走元素本地坐标，不随锚点自动翻转——同 bookmark 教训） */
+  clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 50%);
+}
+.ribbon.form-flag .ribbon-corner {
+  top: auto;
+  bottom: 0;
+  width: var(--oas-space-2);
+  height: var(--oas-space-2);
+}
+.ribbon.form-flag.placement-end .ribbon-corner {
+  inset-inline-start: 0;
+  clip-path: polygon(0 100%, 0 0, 100% 100%);
+}
+.ribbon.form-flag.placement-start .ribbon-corner {
+  inset-inline-end: 0;
+  /* 折叠角随侧镜像 */
+  clip-path: polygon(100% 100%, 100% 0, 0 100%);
+}
+
+/* ===== rolled 端部卷边：探出外端做卷边（端部大圆角 + 内侧渐暗渐变模拟卷起圆柱，纯 CSS 原创）。
+   布尔修饰、独立开关：与 fold（基类/显式 form-fold）/ banner / flag 叠加，其他裁剪形态
+   （diagonal/triangle/bookmark/side/seal）经 :not 排除、静默忽略。:where 降权，便于 banner
+   双端卷边规则按源码顺序覆写 placement 单端规则（同权重后写胜出） */
+.ribbon.rolled:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal)).placement-end {
+  border-start-start-radius: var(--oas-radius-sm);
+  border-end-start-radius: var(--oas-radius-sm);
+  border-start-end-radius: 999px;
+  border-end-end-radius: 999px;
+}
+.ribbon.rolled:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal)).placement-start {
+  border-start-end-radius: var(--oas-radius-sm);
+  border-end-end-radius: var(--oas-radius-sm);
+  border-start-start-radius: 999px;
+  border-end-start-radius: 999px;
+}
+.ribbon.rolled:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal))::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--oas-space-3);
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 0%, currentColor 100%);
+  filter: brightness(70%);
+}
+.ribbon.rolled.placement-end:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal))::after {
+  inset-inline-end: 0;
+  border-start-end-radius: 999px;
+  border-end-end-radius: 999px;
+}
+.ribbon.rolled.placement-start:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal))::after {
+  inset-inline-start: 0;
+  background: linear-gradient(270deg, transparent 0%, currentColor 100%);
+  border-start-start-radius: 999px;
+  border-end-start-radius: 999px;
+}
+/* banner 双端卷边：横幅两端都卷（置于 placement 规则之后覆写） */
+.ribbon.rolled.form-banner::after {
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  width: auto;
+  border-radius: 0;
+  background: linear-gradient(90deg, currentColor 0%, transparent 12%, transparent 88%, currentColor 100%);
+}
+
 /* ===== premium 金属质感：金色渐变 + 深金描边；与 color 正交叠加（优先级 premium > color），
    规则置于全部 color 语义类之后保证覆盖；文字色按金底亮度取深色，dark 下 preset-gold 自动调亮 */
 .ribbon.premium {
@@ -570,7 +674,8 @@ const STYLE = `
 .ribbon.premium.form-bookmark,
 .ribbon.premium.form-seal,
 .ribbon.premium.form-diagonal,
-.ribbon.premium.form-banner {
+.ribbon.premium.form-banner,
+.ribbon.premium.form-flag {
   border: none;
   filter: drop-shadow(0 1px 0 color-mix(in srgb, var(--oas-preset-gold) 45%, black))
     drop-shadow(0 -1px 0 color-mix(in srgb, var(--oas-preset-gold) 45%, black))
@@ -603,6 +708,8 @@ export class OASBadge extends OASElement {
       'ribbon-position',
       'ribbon-form',
       'premium',
+      'rolled',
+      'wide',
     ]
   }
 
@@ -705,6 +812,14 @@ export class OASBadge extends OASElement {
     }
     // premium 金属质感：布尔属性加 class（正交于 color/form，视觉覆盖优先级见样式顺序）
     ribbonEl.classList.toggle('premium', this.hasAttr('premium'))
+    // rolled 端部卷边：布尔修饰（独立开关），class 恒写；视觉仅在 fold/banner/flag 生效
+    // （其余裁剪形态由样式 :not 排除，见 STYLE 注释）
+    ribbonEl.classList.toggle('rolled', this.hasAttr('rolled'))
+    // wide 宽幅大字斜带：仅与 diagonal 组合；其他形态静默忽略（不写入 class，无视觉影响）
+    ribbonEl.classList.toggle(
+      'wide',
+      formValid && form === 'diagonal' && this.hasAttr('wide'),
+    )
 
     // color 变量注入（语义色与 class 双保险；预设名/任意色值唯一生效路径）
     const resolved = resolveBadgeColor(color)

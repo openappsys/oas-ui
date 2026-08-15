@@ -565,6 +565,9 @@ ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可�
 - **badge→overlap 圆形内收**：包裹圆形内容（如头像）时角标向圆内收进圆边（平移幅度 50%→约 29%，1-√2/2 几何内收）；仅影响角标模式
 - **badge→ribbon-form 形态维度**：`ribbon-form="fold|diagonal|triangle|bookmark|side|seal|banner"`（默认 fold = 现行直条+折叠，向后兼容）。diagonal 45° 对角斜带跨顶角（宿主需 overflow:hidden 裁切，placement start/end 镜像 ±45°，文字随条旋转）；triangle 角落纯三角形 clip-path + 内嵌小图标（slot="ribbon" 内容）；bookmark 顶边垂挂竖条 + 底部燕尾 V 缺口；side 侧边竖挂（start 左/end 右镜像，折叠角在挂点）；seal 圆形锯齿印章（clip-path 锯齿多边形，文字居中）；banner 顶部横贯横幅（两端折角）。七形态全为 clip-path/CSS 几何，与 placement/color 正交；非法值静默回落 fold
 - **badge→premium 金属质感**：布尔 `premium` 金色金属渐变底（多段亮金→暗金）+ 深金细描边（clip-path 形态沿轮廓 drop-shadow 描边）+ 文字色按金底亮度取深色；与 ribbon-form 正交可叠加；优先级 premium > color > 语义色；dark 主题走 `--oas-preset-gold` token 自动适配
+- **badge→ribbon-form flag（侧燕尾横旗）**：`ribbon-form="flag"` 横条 + 探出外端侧燕尾 V 缺口（clip-path 多边形在端侧切 V 口，缺口始终朝探出端，placement start/end 镜像）；底部挂点内侧保留折叠角（复用 fold 的 corner 尖三角，因条身 clip-path 会把条外元素裁掉，折叠角置于条身 clip 区域内 bottom 内侧）
+- **badge→rolled 端部卷边**：布尔 `rolled` 给探出外端做卷边效果（端部大圆角 + 内侧渐暗渐变模拟卷起圆柱感，纯 CSS、原创）；独立开关，可叠加 fold / banner / flag，其余裁剪形态（diagonal/triangle/bookmark/side/seal）静默忽略
+- **badge→wide 宽幅大字斜带**：`wide` 修饰仅与 `ribbon-form="diagonal"` 组合（带身约 200×32px、字号提升、文字平移按宽比例 50px，与现有 96×24px 同逻辑，覆盖更大角落区域，电商 % off 大斜幅场景）；其他形态静默忽略（注释写明）
 
 ### 验收标准
 

@@ -741,7 +741,7 @@ describe('OASBadge ribbon-form 形态维度', () => {
     document.body.innerHTML = ''
   })
 
-  const FORMS = ['fold', 'diagonal', 'triangle', 'bookmark', 'side', 'seal', 'banner']
+  const FORMS = ['fold', 'diagonal', 'triangle', 'bookmark', 'side', 'seal', 'banner', 'flag']
 
   it('默认 fold：未设置 ribbon-form 不写任何 form-* class（基类即 fold，向后兼容）', () => {
     const el = mount({ ribbon: '', text: 'HOT' })
@@ -760,7 +760,7 @@ describe('OASBadge ribbon-form 形态维度', () => {
     }
   })
 
-  it('ribbon-form 七值 class 切换（互斥）', () => {
+  it('ribbon-form 八值 class 切换（互斥）', () => {
     for (const f of FORMS) {
       const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': f })
       const r = ribbon(el)!
@@ -870,6 +870,147 @@ describe('OASBadge ribbon-form 形态维度', () => {
   })
 })
 
+describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('flag 形态：class 生效，探出端 V 缺口 clip-path（缺口朝探出端，placement start/end 镜像）', () => {
+    const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'flag' })
+    const r = ribbon(el)!
+    expect(r.classList.contains('form-flag')).toBe(true)
+    expect(r.hidden).toBe(false)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    // end（默认，探出右端）：右端侧燕尾 V 缺口
+    expect(cssRule(style, '.ribbon.form-flag')).toContain(
+      'clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%)',
+    )
+    // start 镜像：缺口在左端（clip-path 走元素本地坐标，不随锚点自动翻转）
+    expect(cssRule(style, '.ribbon.form-flag.placement-start')).toContain(
+      'clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 50%)',
+    )
+    // 探出端锚点：end 右探 / start 左探（镜像）
+    expect(cssRule(style, '.ribbon.form-flag.placement-end')).toContain(
+      'inset-inline-end: calc(var(--oas-space-2) * -1)',
+    )
+    expect(cssRule(style, '.ribbon.form-flag.placement-start')).toContain(
+      'inset-inline-start: calc(var(--oas-space-2) * -1)',
+    )
+  })
+
+  it('flag 折叠角保留：复用 .ribbon-corner（置于条身 clip 区域内 bottom 内侧，start/end 镜像）', () => {
+    const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'flag' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toContain('.ribbon.form-flag .ribbon-corner')
+    expect(cssRule(style, '.ribbon.form-flag .ribbon-corner')).toContain('bottom: 0;')
+    expect(cssRule(style, '.ribbon.form-flag.placement-end .ribbon-corner')).toContain(
+      'inset-inline-start: 0',
+    )
+    expect(cssRule(style, '.ribbon.form-flag.placement-start .ribbon-corner')).toContain(
+      'inset-inline-end: 0',
+    )
+    expect(cssRule(style, '.ribbon.form-flag.placement-start .ribbon-corner')).toContain(
+      'clip-path: polygon(100% 100%, 100% 0, 0 100%)',
+    )
+  })
+
+  it('flag 与其他属性正交：color / placement 并存', () => {
+    const el = mount({
+      ribbon: '',
+      text: 'HOT',
+      'ribbon-form': 'flag',
+      placement: 'start',
+      color: 'success',
+    })
+    const r = ribbon(el)!
+    expect(r.classList.contains('form-flag')).toBe(true)
+    expect(r.classList.contains('placement-start')).toBe(true)
+    expect(r.classList.contains('color-success')).toBe(true)
+  })
+
+  it('rolled 布尔修饰：加 rolled class + 卷边几何规则存在（端部大圆角 + 渐暗渐变），移除后恢复', () => {
+    const el = mount({ ribbon: '', text: 'HOT', rolled: '' })
+    const r = ribbon(el)!
+    expect(r.classList.contains('rolled')).toBe(true)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    // 端部大圆角（探出端 pill）
+    expect(style).toContain('border-start-end-radius: 999px')
+    expect(style).toContain('border-end-end-radius: 999px')
+    // 内侧渐暗：currentColor 渐变 + brightness 压暗（纯 CSS 模拟卷起圆柱，无硬编码色值）
+    expect(style).toContain('linear-gradient(90deg, transparent 0%, currentColor 100%)')
+    expect(style).toContain('filter: brightness(70%)')
+    // 独立开关：移除属性后 class 移除
+    el.removeAttribute('rolled')
+    expect(r.classList.contains('rolled')).toBe(false)
+  })
+
+  it('rolled 排除裁剪形态：diagonal/triangle/bookmark/side/seal 经 :not 排除（不产生卷边视觉）', () => {
+    const el = mount({ ribbon: '', text: 'HOT', rolled: '' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toContain(
+      ':not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal)',
+    )
+  })
+
+  it('rolled 与 fold/banner/flag 叠加：class 并存', () => {
+    for (const f of ['fold', 'banner', 'flag']) {
+      const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': f, rolled: '' })
+      const r = ribbon(el)!
+      expect(r.classList.contains('rolled'), f).toBe(true)
+      expect(r.classList.contains(`form-${f}`), f).toBe(true)
+    }
+  })
+
+  it('rolled + banner：双端卷边（banner 规则置于 placement 单端规则后覆写）', () => {
+    const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'banner', rolled: '' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style.indexOf('.ribbon.rolled.form-banner::after')).toBeGreaterThan(
+      style.indexOf('.ribbon.rolled.placement-end:where'),
+    )
+    expect(cssRule(style, '.ribbon.rolled.form-banner::after')).toContain('inset-inline-start: 0;')
+    expect(cssRule(style, '.ribbon.rolled.form-banner::after')).toContain('inset-inline-end: 0;')
+  })
+
+  it('wide 宽幅大字斜带：仅与 diagonal 组合（尺寸/字号/平移按 200px 带宽比例）', () => {
+    const el = mount({ ribbon: '', text: '50% OFF', 'ribbon-form': 'diagonal', wide: '' })
+    const r = ribbon(el)!
+    expect(r.classList.contains('wide')).toBe(true)
+    expect(r.classList.contains('form-diagonal')).toBe(true)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    const wide = cssRule(style, '.ribbon.form-diagonal.wide')
+    expect(wide).toContain('width: 200px')
+    expect(wide).toContain('height: 32px')
+    expect(wide).toContain('font-size: var(--oas-font-size-lg)')
+    // 平移与现有逻辑一致：end 内半段左移 1/4 带长（200×1/4=50px），start 镜像右移
+    expect(cssRule(style, '.ribbon.form-diagonal.wide .ribbon-text')).toContain(
+      'transform: translateX(-50px)',
+    )
+    expect(cssRule(style, '.ribbon.form-diagonal.wide.placement-start .ribbon-text')).toContain(
+      'transform: translateX(50px)',
+    )
+  })
+
+  it('wide 非 diagonal 忽略：不写入 wide class', () => {
+    for (const f of ['fold', 'banner', 'flag', 'seal', 'triangle', 'bookmark', 'side']) {
+      const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': f, wide: '' })
+      expect(ribbon(el)!.classList.contains('wide'), f).toBe(false)
+    }
+  })
+
+  it('wide 增量更新：diagonal→seal 时 wide class 移除（不重建引用）', () => {
+    const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'diagonal', wide: '' })
+    const r = ribbon(el)!
+    expect(r.classList.contains('wide')).toBe(true)
+    el.setAttribute('ribbon-form', 'seal')
+    expect(ribbon(el)).toBe(r)
+    expect(r.classList.contains('wide')).toBe(false)
+  })
+})
+
 describe('OASBadge premium 金属质感', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -927,7 +1068,7 @@ describe('OASBadge premium 金属质感', () => {
   })
 
   it('premium 与形态正交：form 与 premium class 并存', () => {
-    for (const f of ['fold', 'seal', 'banner', 'diagonal', 'triangle', 'bookmark', 'side']) {
+    for (const f of ['fold', 'seal', 'banner', 'diagonal', 'triangle', 'bookmark', 'side', 'flag']) {
       const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': f, premium: '' })
       const r = ribbon(el)!
       expect(r.classList.contains('premium'), f).toBe(true)
