@@ -1160,47 +1160,29 @@ describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
     expect(r.classList.contains('ribbon-size-lg')).toBe(false)
   })
 
-  it('ribbon-anchor 统一锚点：形态-锚点矩阵（fold 侧+角 / side 侧+角 / banner 顶底 / seal 全）', () => {
-    // fold：left/right 边中 + 四角（横条贴左/右，纵向上下可调；横向中间不适合）
-    for (const a of ['left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right']) {
-      const el = mount({ ribbon: '', text: 'HOT', 'ribbon-anchor': a })
-      expect(ribbon(el)!.classList.contains(`anchor-${a}`), `fold+${a}`).toBe(true)
-    }
-    for (const a of ['top', 'bottom']) {
-      const el = mount({ ribbon: '', text: 'HOT', 'ribbon-anchor': a })
-      expect(ribbon(el)!.classList.contains(`anchor-${a}`), `fold+${a}`).toBe(false)
-    }
-    // side：left/right 边中 + 4 角；top/bottom 不支持
-    for (const a of ['left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right']) {
-      const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'side', 'ribbon-anchor': a })
-      expect(ribbon(el)!.classList.contains(`anchor-${a}`), `side+${a}`).toBe(true)
-    }
-    for (const a of ['top', 'bottom']) {
-      const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'side', 'ribbon-anchor': a })
-      expect(ribbon(el)!.classList.contains(`anchor-${a}`), `side+${a}`).toBe(false)
-    }
-    // banner：只有 top/bottom
-    for (const a of ['top', 'bottom']) {
-      const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'banner', 'ribbon-anchor': a })
-      expect(ribbon(el)!.classList.contains(`anchor-${a}`), `banner+${a}`).toBe(true)
-    }
-    for (const a of ['left', 'right', 'top-left', 'bottom-right']) {
-      const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'banner', 'ribbon-anchor': a })
-      expect(ribbon(el)!.classList.contains(`anchor-${a}`), `banner+${a}`).toBe(false)
-    }
-    // seal：8 位置全支持
-    for (const a of VALID_ANCHORS) {
-      const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'seal', 'ribbon-anchor': a })
-      expect(ribbon(el)!.classList.contains(`anchor-${a}`), `seal+${a}`).toBe(true)
-    }
-    // diagonal/triangle：只 4 角
-    for (const f of ['diagonal', 'triangle']) {
-      for (const a of ['top-left', 'bottom-right']) {
+  it('ribbon-anchor 统一锚点：非斜形态全 8 位置（fold/flag/side/banner/seal/bookmark），斜形态只 4 角', () => {
+    // 非斜形态：8 锚点全部支持（fold / side / banner / seal / bookmark / flag）
+    for (const f of ['fold', 'side', 'banner', 'seal', 'bookmark', 'flag']) {
+      for (const a of VALID_ANCHORS) {
         const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': f, 'ribbon-anchor': a })
         expect(ribbon(el)!.classList.contains(`anchor-${a}`), `${f}+${a}`).toBe(true)
       }
-      const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': f, 'ribbon-anchor': 'top' })
-      expect(ribbon(el)!.classList.contains('anchor-top'), `${f}+top`).toBe(false)
+    }
+    // fold 隐式（不设 ribbon-form）也支持 8 锚点
+    for (const a of VALID_ANCHORS) {
+      const el = mount({ ribbon: '', text: 'HOT', 'ribbon-anchor': a })
+      expect(ribbon(el)!.classList.contains(`anchor-${a}`), `implicit-fold+${a}`).toBe(true)
+    }
+    // 斜形态（diagonal/triangle）：只 4 角，边中锚点被忽略
+    for (const f of ['diagonal', 'triangle']) {
+      for (const a of ['top-left', 'top-right', 'bottom-left', 'bottom-right']) {
+        const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': f, 'ribbon-anchor': a })
+        expect(ribbon(el)!.classList.contains(`anchor-${a}`), `${f}+${a}`).toBe(true)
+      }
+      for (const a of ['top', 'bottom', 'left', 'right']) {
+        const el = mount({ ribbon: '', text: 'HOT', 'ribbon-form': f, 'ribbon-anchor': a })
+        expect(ribbon(el)!.classList.contains(`anchor-${a}`), `${f}+${a}`).toBe(false)
+      }
     }
     // 非法值回落：不写任何 anchor-* class
     const bad = mount({ ribbon: '', text: 'HOT', 'ribbon-anchor': 'middle' })

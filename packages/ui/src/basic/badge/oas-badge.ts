@@ -85,23 +85,18 @@ const VALID_RIBBON_ANCHORS: readonly string[] = [
   'bottom-left',
   'bottom-right',
 ]
-/** 形态-锚点矩阵：通用做法是形态与位置绑定（fold 顶边缎带 / side 侧条 / banner 横幅），
-    机械给所有形态塞 8 锚点违背形态语义。每个形态只支持"语义自然"的锚点集合：
-    - fold：left/right 边中 + 4 角（横条贴左/右，纵向上下可调；横向中间居中不适合）
-    - diagonal/triangle：4 角（斜带穿角）
-    - side：左右边中 + 4 角（竖条不贴上下边）
-    - banner：top/bottom（全宽横幅）
-    - seal：8 位置全支持（圆形贴哪都自然）
-    - bookmark：4 角 + 4 边中（书签贴边自然）
-    不支持组合的锚点静默回落形态默认位置；任意位置靠 offset 兜底 */
+/** 形态-锚点矩阵：斜形态（diagonal/triangle）穿角只认 4 角；非斜形态（fold/flag/banner/
+    side/seal/bookmark）认全部 8 位置（4 边中 + 4 角），rolled 修饰符自动跟随宿主形态。
+    任意位置靠 offset 微调兜底；不支持的锚点静默回落形态默认位置 */
 const FORM_ANCHORS: Record<string, readonly string[]> = {
-  fold: ['left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'],
+  fold: VALID_RIBBON_ANCHORS,
   diagonal: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
   triangle: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
-  side: ['left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'],
-  banner: ['top', 'bottom'],
+  side: VALID_RIBBON_ANCHORS,
+  banner: VALID_RIBBON_ANCHORS,
   seal: VALID_RIBBON_ANCHORS,
   bookmark: VALID_RIBBON_ANCHORS,
+  flag: VALID_RIBBON_ANCHORS,
 }
 const VALID_RIBBON_FORMS: readonly string[] = [
   'fold',
@@ -1216,17 +1211,31 @@ export class OASBadge extends OASElement {
     ribbonEl.classList.toggle('color-success', color === 'success')
     ribbonEl.classList.toggle('color-warning', color === 'warning')
     ribbonEl.classList.toggle('color-danger', color === 'danger')
-    ribbonEl.classList.toggle('placement-start', placement === 'start')
-    ribbonEl.classList.toggle('placement-end', placement !== 'start')
-    // ribbon-position 三选：edge/cross 命中间隔类，hang 与非法值均回落基类（不写额外标记）
-    ribbonEl.classList.toggle('position-edge', position === 'edge')
-    ribbonEl.classList.toggle('position-cross', position === 'cross')
     // ribbon-form 七形态：未显式设置（或非法值）回落 fold 且不写任何 form-* class（基类即 fold，向后兼容）
     const formValid =
       this.hasAttr('ribbon-form') && (VALID_RIBBON_FORMS as readonly string[]).includes(form)
     for (const name of VALID_RIBBON_FORMS) {
       ribbonEl.classList.toggle(`form-${name}`, formValid && form === name)
     }
+    // ribbon-anchor 统一锚点：形态-锚点矩阵（见 FORM_ANCHORS）。anchor 写 anchor-* class；
+    // 未设置时回落 placement/ribbon-position/ribbon-direction/ribbon-vertical 兼容别名。
+    // 非法值或该形态不支持的锚点静默回落（不写 class，走形态默认位置）
+    const anchor = this.getAttr('ribbon-anchor', '') as BadgeRibbonAnchor
+    const effectiveForm = formValid ? form : 'fold'
+    const allowedAnchors = FORM_ANCHORS[effectiveForm] ?? FORM_ANCHORS.fold!
+    const anchorValid =
+      (VALID_RIBBON_ANCHORS as readonly string[]).includes(anchor) &&
+      (allowedAnchors as readonly string[]).includes(anchor)
+    for (const name of VALID_RIBBON_ANCHORS) {
+      ribbonEl.classList.toggle(`anchor-${name}`, anchorValid && anchor === name)
+    }
+    // placement 兼容别名：anchor 有效时静默（避免其 inset 规则与 anchor 冲突拉宽形态），
+    // anchor 未设置时按 placement 写入（向后兼容）
+    ribbonEl.classList.toggle('placement-start', !anchorValid && placement === 'start')
+    ribbonEl.classList.toggle('placement-end', !anchorValid && placement !== 'start')
+    // ribbon-position 三选：edge/cross 命中间隔类，hang 与非法值均回落基类（不写额外标记）
+    ribbonEl.classList.toggle('position-edge', position === 'edge')
+    ribbonEl.classList.toggle('position-cross', position === 'cross')
     // ribbon-direction 尖头方向：仅 bookmark 形态生效；down 与非法值回落基类（不写标记），
     // left/right 写 direction-* class（其余形态忽略，同 wide 规矩）
     const dirValid =
@@ -1253,18 +1262,6 @@ export class OASBadge extends OASElement {
       formValid && form === 'diagonal' && (VALID_RIBBON_SIZES as readonly string[]).includes(size)
     ribbonEl.classList.toggle('ribbon-size-md', sizeValid && size === 'md')
     ribbonEl.classList.toggle('ribbon-size-lg', sizeValid && size === 'lg')
-    // ribbon-anchor 统一锚点：形态-锚点矩阵（见 FORM_ANCHORS）。anchor 写 anchor-* class；
-    // 未设置时回落 placement/ribbon-position/ribbon-direction/ribbon-vertical 兼容别名。
-    // 非法值或该形态不支持的锚点静默回落（不写 class，走形态默认位置）
-    const anchor = this.getAttr('ribbon-anchor', '') as BadgeRibbonAnchor
-    const effectiveForm = formValid ? form : 'fold'
-    const allowedAnchors = FORM_ANCHORS[effectiveForm] ?? FORM_ANCHORS.fold!
-    const anchorValid =
-      (VALID_RIBBON_ANCHORS as readonly string[]).includes(anchor) &&
-      (allowedAnchors as readonly string[]).includes(anchor)
-    for (const name of VALID_RIBBON_ANCHORS) {
-      ribbonEl.classList.toggle(`anchor-${name}`, anchorValid && anchor === name)
-    }
 
     // color 变量注入（语义色与 class 双保险；预设名/任意色值唯一生效路径）
     const resolved = resolveBadgeColor(color)
