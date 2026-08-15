@@ -5,6 +5,25 @@ export type BadgeColor = 'primary' | 'success' | 'warning' | 'danger'
 export type BadgePlacement = 'start' | 'end'
 /** 缎带纵向位置：hang 挂沿下（默认）/ edge 贴顶边 / cross 骑跨顶边；非法值静默回落 hang */
 export type BadgeRibbonPosition = 'hang' | 'edge' | 'cross'
+/** bookmark 燕尾尖头方向：down 朝下（默认，顶边垂挂）/ left 朝左（贴右缘、缺口朝卡内）/ right 朝右（贴左缘镜像）；非法值静默回落 down */
+export type BadgeRibbonDirection = 'down' | 'left' | 'right'
+/** bookmark 侧挂（left/right）纵向位置：top 贴顶边 / center 垂直居中（默认）/ bottom 贴底边；非法值回落 center */
+export type BadgeRibbonVertical = 'top' | 'center' | 'bottom'
+/** diagonal 斜带档位：sm 紧凑（默认）/ md 中等 / lg 宽幅大字；档位只改带宽/字号/钉点的
+    fallback 默认值，宿主 CSS 变量（--oas-badge-diagonal-*）优先级更高；非法值回落 sm */
+export type BadgeRibbonSize = 'sm' | 'md' | 'lg'
+/** 缎带锚点：8 位置预置（4 边中 + 4 角）。斜形态（diagonal/triangle）只认 4 角，
+    非斜形态认全部 8 位置；非法值静默回落。用于替代并统一 placement/ribbon-position
+    /ribbon-direction/ribbon-vertical 的定位职责（这些保留为兼容别名） */
+export type BadgeRibbonAnchor =
+  | 'top'
+  | 'right'
+  | 'bottom'
+  | 'left'
+  | 'top-left'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-right'
 /** 缎带形态：fold 直条+折叠（默认）/ diagonal 45° 对角斜带 / triangle 角落三角 / bookmark 顶边燕尾竖条 / side 侧边竖挂 / seal 圆形锯齿印章 / banner 顶部横贯横幅 / flag 侧燕尾横旗（横条 + 探出端 V 缺口）；非法值静默回落 fold */
 export type BadgeRibbonForm =
   | 'fold'
@@ -53,6 +72,37 @@ export const BADGE_PRESET_COLORS: readonly BadgePresetColor[] = [
 const VALID_STATUS: readonly string[] = ['success', 'processing', 'default', 'error', 'warning']
 const VALID_ATTENTION: readonly string[] = ['pulse', 'bounce']
 const VALID_CORNER: readonly string[] = ['top-right', 'top-left', 'bottom-right', 'bottom-left']
+const VALID_RIBBON_DIRECTIONS: readonly string[] = ['down', 'left', 'right']
+const VALID_RIBBON_VERTICALS: readonly string[] = ['top', 'center', 'bottom']
+const VALID_RIBBON_SIZES: readonly string[] = ['sm', 'md', 'lg']
+const VALID_RIBBON_ANCHORS: readonly string[] = [
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'top-left',
+  'top-right',
+  'bottom-left',
+  'bottom-right',
+]
+/** 形态-锚点矩阵：通用做法是形态与位置绑定（fold 顶边缎带 / side 侧条 / banner 横幅），
+    机械给所有形态塞 8 锚点违背形态语义。每个形态只支持"语义自然"的锚点集合：
+    - fold：left/right 边中 + 4 角（横条贴左/右，纵向上下可调；横向中间居中不适合）
+    - diagonal/triangle：4 角（斜带穿角）
+    - side：左右边中 + 4 角（竖条不贴上下边）
+    - banner：top/bottom（全宽横幅）
+    - seal：8 位置全支持（圆形贴哪都自然）
+    - bookmark：4 角 + 4 边中（书签贴边自然）
+    不支持组合的锚点静默回落形态默认位置；任意位置靠 offset 兜底 */
+const FORM_ANCHORS: Record<string, readonly string[]> = {
+  fold: ['left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'],
+  diagonal: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+  triangle: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+  side: ['left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'],
+  banner: ['top', 'bottom'],
+  seal: VALID_RIBBON_ANCHORS,
+  bookmark: VALID_RIBBON_ANCHORS,
+}
 const VALID_RIBBON_FORMS: readonly string[] = [
   'fold',
   'diagonal',
@@ -134,7 +184,7 @@ function resolveBadgeColor(color: string): { bg: string; on: string } {
 
 /** offset 属性解析："x,y" px 数字；非法值返回 null（静默忽略） */
 function parseOffset(raw: string): { x: string; y: string } | null {
-  const m = raw.trim().match(/^(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)$/)
+  const m = raw.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/)
   if (!m) return null
   return { x: m[1]!, y: m[2]! }
 }
@@ -308,6 +358,10 @@ const STYLE = `
   line-height: var(--oas-control-height-xs);
   font-size: var(--oas-font-size-xs);
   white-space: nowrap;
+  /* 定位合成：anchor 边中居中（--oas-ribbon-anchor-* 百分比）+ offset 任意微调（--oas-ribbon-offset-* px）
+     两者 calc 叠加，translate 独立属性与各形态 transform 共存 */
+  translate: calc(var(--oas-ribbon-anchor-x, 0px) + var(--oas-ribbon-offset-x, 0px))
+    calc(var(--oas-ribbon-anchor-y, 0px) + var(--oas-ribbon-offset-y, 0px));
   /* color 与背景同色：corner 经 currentColor 继承同色后由 brightness 压暗成折叠；
      color 属性（语义色 class / 预设名 / 任意色值）经 --oas-badge-bg 变量覆盖 */
   color: var(--oas-badge-bg, var(--oas-color-danger));
@@ -376,51 +430,79 @@ const STYLE = `
 }
 /* ===== ribbon-form 形态维度：fold（默认）直条+折叠即基类，不写额外标记 ===== */
 
-/* diagonal：经典 corner ribbon——带斜穿左上角：中心钉在角点内侧（约 25px,25px），rotate(-45°)
-   后两端分别被顶边线/左边线裁断（右上端在顶边线、左下端在左边线），左上角角尖为空白三角
-   外露（带不盖角点）。带长 141%（对角线）保证两端都越边；宿主需 overflow:hidden。
-   start 镜像穿右上角 */
+/* diagonal：经典 corner ribbon——带斜穿角点：中心钉在角点内侧（默认 pin 25px），rotate ±45°
+   后两端分别被两条边线裁断，角尖为空白三角外露（带不盖角点）。带长 141%（对角线）
+   保证两端都越边；宿主需 overflow:hidden。ribbon-anchor 四角锚点（top-left/top-right/
+   bottom-left/bottom-right）；placement-end/start 保留为 top-left/top-right 兼容别名。
+   尺寸档位 ribbon-size（sm 默认 / md / lg）只改 --oas-badge-diagonal-* 的 fallback，
+   宿主自定义属性优先级更高。 */
 .ribbon.form-diagonal {
-  /* 开放定制：带宽（默认 30px）、字号（默认 xs）、文字沿带向卡内偏移（默认 12px，防两端贴裁切线） */
-  --oas-badge-diagonal-height: 30px;
-  --oas-badge-diagonal-font: var(--oas-font-size-xs);
-  --oas-badge-diagonal-text-inset: 12px;
+  /* 派生钉点：宿主 --oas-badge-diagonal-pin 优先，未设置用档位 fallback（sm 25px） */
+  --oas-diag-pin: var(--oas-badge-diagonal-pin, 25px);
   width: 141%;
-  height: var(--oas-badge-diagonal-height);
-  line-height: var(--oas-badge-diagonal-height);
+  height: var(--oas-badge-diagonal-height, 30px);
+  line-height: var(--oas-badge-diagonal-height, 30px);
   padding: 0;
-  top: 10px;
   border-radius: 0;
-  font-size: var(--oas-badge-diagonal-font);
+  font-size: var(--oas-badge-diagonal-font, var(--oas-font-size-xs));
   text-align: center;
   transform-origin: center;
 }
+/* 兼容别名：placement-end=top-left / placement-start=top-right（anchor-* 未设置时回落） */
 .ribbon.form-diagonal.placement-end {
-  inset-inline-start: calc(25px - 70.5%);
+  top: calc(var(--oas-diag-pin) - var(--oas-badge-diagonal-height, 30px) / 2);
+  inset-inline-start: calc(var(--oas-diag-pin) - 70.5%);
   transform: rotate(-45deg);
 }
 .ribbon.form-diagonal.placement-start {
+  top: calc(var(--oas-diag-pin) - var(--oas-badge-diagonal-height, 30px) / 2);
   inset-inline-start: auto;
-  inset-inline-end: calc(25px - 70.5%);
+  inset-inline-end: calc(var(--oas-diag-pin) - 70.5%);
   transform: rotate(45deg);
 }
-/* 文字沿带向卡内偏移：带 rotate(-45°) 后子元素 translateX 正方向即带的"卡内右下"方向
-   （带端点朝卡外），因此 end 用正值把文字推向卡内、start 镜像用负值 */
+/* 四角锚点——每个角独立规则（避免组合选择器覆盖顺序歧义，也便于测试精确断言）。
+   置于 placement 兼容别名之后：anchor 设置时覆盖 placement-end/start（同特异性靠后生效） */
+.ribbon.form-diagonal.anchor-top-left {
+  top: calc(var(--oas-diag-pin) - var(--oas-badge-diagonal-height, 30px) / 2);
+  bottom: auto;
+  inset-inline-start: calc(var(--oas-diag-pin) - 70.5%);
+  inset-inline-end: auto;
+  transform: rotate(-45deg);
+}
+.ribbon.form-diagonal.anchor-top-right {
+  top: calc(var(--oas-diag-pin) - var(--oas-badge-diagonal-height, 30px) / 2);
+  bottom: auto;
+  inset-inline-start: auto;
+  inset-inline-end: calc(var(--oas-diag-pin) - 70.5%);
+  transform: rotate(45deg);
+}
+.ribbon.form-diagonal.anchor-bottom-left {
+  top: auto;
+  bottom: calc(var(--oas-diag-pin) - var(--oas-badge-diagonal-height, 30px) / 2);
+  inset-inline-start: calc(var(--oas-diag-pin) - 70.5%);
+  inset-inline-end: auto;
+  transform: rotate(45deg);
+}
+.ribbon.form-diagonal.anchor-bottom-right {
+  top: auto;
+  bottom: calc(var(--oas-diag-pin) - var(--oas-badge-diagonal-height, 30px) / 2);
+  inset-inline-start: auto;
+  inset-inline-end: calc(var(--oas-diag-pin) - 70.5%);
+  transform: rotate(-45deg);
+}
+/* 文字沿带向卡内偏移（可选微调）：rotate(-45°) 的带文字局部 +X 朝右上、rotate(45°) 朝右下，
+   默认 0（文字居中于带中心，几何已保证两端留边） */
+.ribbon.form-diagonal.anchor-top-left .ribbon-text,
+.ribbon.form-diagonal.anchor-bottom-right .ribbon-text,
 .ribbon.form-diagonal.placement-end .ribbon-text {
   display: block;
-  transform: translateX(var(--oas-badge-diagonal-text-inset));
+  transform: translateX(var(--oas-badge-diagonal-text-inset, 0px));
 }
+.ribbon.form-diagonal.anchor-top-right .ribbon-text,
+.ribbon.form-diagonal.anchor-bottom-left .ribbon-text,
 .ribbon.form-diagonal.placement-start .ribbon-text {
   display: block;
-  transform: translateX(calc(var(--oas-badge-diagonal-text-inset) * -1));
-}
-/* 带中心钉点：基础版 25px / wide 45px（wide 文字长，钉点更深避免两端被边线裁） */
-.ribbon.form-diagonal.wide.placement-end {
-  inset-inline-start: calc(45px - 70.5%);
-}
-.ribbon.form-diagonal.wide.placement-start {
-  inset-inline-start: auto;
-  inset-inline-end: calc(45px - 70.5%);
+  transform: translateX(calc(var(--oas-badge-diagonal-text-inset, 0px) * -1));
 }
 .ribbon.form-diagonal .ribbon-corner {
   display: none;
@@ -430,32 +512,72 @@ const STYLE = `
   display: block;
 }
 
-/* wide：宽幅大字版斜带（仅与 diagonal 组合，其他形态静默忽略）。
-   只覆盖定制变量的默认值；几何同基础版。字号取 md（lg 在小卡上两端贴裁切线），
-   用户可宿主覆盖 --oas-badge-diagonal-* 变量自定义带宽/字号/文字内移 */
-.ribbon.form-diagonal.wide {
-  --oas-badge-diagonal-height: 36px;
-  --oas-badge-diagonal-font: var(--oas-font-size-md);
-  --oas-badge-diagonal-text-inset: 24px;
+/* diagonal 尺寸档位：md / lg 在 sm（基础）之上增大带宽与字号，并把带中心钉点加深
+   （文字越长钉点越深，两端才不贴裁切线；对 md 字号约 31px 半长，lg 钉点 45px 时
+   两端各留约 23px 余量）。档位只改 fallback 默认值，宿主 --oas-badge-diagonal-* 优先 */
+.ribbon.form-diagonal.ribbon-size-md {
+  --oas-diag-pin: var(--oas-badge-diagonal-pin, 35px);
+  height: var(--oas-badge-diagonal-height, 33px);
+  line-height: var(--oas-badge-diagonal-height, 33px);
+  font-size: var(--oas-badge-diagonal-font, var(--oas-font-size-sm));
+}
+.ribbon.form-diagonal.ribbon-size-lg {
+  --oas-diag-pin: var(--oas-badge-diagonal-pin, 45px);
+  height: var(--oas-badge-diagonal-height, 36px);
+  line-height: var(--oas-badge-diagonal-height, 36px);
+  font-size: var(--oas-badge-diagonal-font, var(--oas-font-size-md));
 }
 
-/* triangle：角落纯三角形（clip-path 直角三角）+ 内嵌小图标/slot 内容；placement 四角跟随镜像 */
+/* triangle：角落纯三角形（clip-path 直角三角）+ 内嵌小图标/slot 内容。
+   ribbon-anchor 四角锚点（top-left/top-right/bottom-left/bottom-right），clip-path 直角
+   朝向锚点角、文字贴直角边；placement-end/start 保留为 top-left/top-right 兼容别名 */
 .ribbon.form-triangle {
   width: 44px;
   height: 44px;
   padding: 0;
-  top: 0;
   border-radius: 0;
   line-height: 1;
+}
+/* 兼容别名：placement-end=top-left / placement-start=top-right（anchor-* 未设置时回落） */
+.ribbon.form-triangle.placement-end {
+  top: 0;
+  inset-inline-end: 0;
   clip-path: polygon(0 0, 100% 0, 100% 100%);
 }
-.ribbon.form-triangle.placement-end {
-  inset-inline-end: 0;
-}
 .ribbon.form-triangle.placement-start {
+  top: 0;
   inset-inline-end: auto;
   inset-inline-start: 0;
   clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+/* 四角锚点（置于 placement 别名之后，anchor 设置时覆盖） */
+.ribbon.form-triangle.anchor-top-left {
+  top: 0;
+  bottom: auto;
+  inset-inline-start: 0;
+  inset-inline-end: auto;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.ribbon.form-triangle.anchor-top-right {
+  top: 0;
+  bottom: auto;
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+.ribbon.form-triangle.anchor-bottom-left {
+  top: auto;
+  bottom: 0;
+  inset-inline-start: 0;
+  inset-inline-end: auto;
+  clip-path: polygon(0 100%, 100% 100%, 0 0);
+}
+.ribbon.form-triangle.anchor-bottom-right {
+  top: auto;
+  bottom: 0;
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  clip-path: polygon(100% 100%, 100% 0, 0 100%);
 }
 .ribbon.form-triangle .ribbon-text {
   position: absolute;
@@ -464,6 +586,13 @@ const STYLE = `
   display: flex;
   align-items: center;
 }
+.ribbon.form-triangle.anchor-bottom-left .ribbon-text,
+.ribbon.form-triangle.anchor-bottom-right .ribbon-text {
+  top: auto;
+  bottom: var(--oas-space-1);
+}
+.ribbon.form-triangle.anchor-top-left .ribbon-text,
+.ribbon.form-triangle.anchor-bottom-left .ribbon-text,
 .ribbon.form-triangle.placement-start .ribbon-text {
   inset-inline-end: auto;
   inset-inline-start: var(--oas-space-1);
@@ -496,6 +625,42 @@ const STYLE = `
 }
 .ribbon.form-bookmark .ribbon-corner {
   display: none;
+}
+/* bookmark 燕尾尖头方向（ribbon-direction，仅 bookmark 生效）：
+   down 顶边垂挂、底部 V 缺口朝下（默认，见基类，竖条 40×56）；left/right 改为侧边竖挂——
+   条身贴对应边缘、高度收成一行文字（40×32），V 缺口朝对应方向；纵向位置由
+   ribbon-vertical 控制（center 默认垂直居中 / top 贴顶边 / bottom 贴底边）。
+   direction 是物理方向语义（RTL 下不翻转，同 drawer 的 placement），故用物理 left/right
+   定位而非逻辑属性；placement 对 left/right 不生效（规则后置覆盖） */
+.ribbon.form-bookmark.direction-left,
+.ribbon.form-bookmark.direction-right {
+  top: 50%;
+  transform: translateY(-50%);
+  left: auto;
+  right: auto;
+  height: 32px;
+  line-height: 32px;
+  white-space: nowrap;
+}
+.ribbon.form-bookmark.direction-left {
+  right: 0;
+  clip-path: polygon(28% 0, 100% 0, 100% 100%, 28% 100%, 0 50%);
+}
+.ribbon.form-bookmark.direction-right {
+  left: 0;
+  clip-path: polygon(0 0, 72% 0, 100% 50%, 72% 100%, 0 100%);
+}
+/* ribbon-vertical：top 贴顶边 / bottom 贴底边（center 走基类 50% 居中） */
+.ribbon.form-bookmark.direction-left.vertical-top,
+.ribbon.form-bookmark.direction-right.vertical-top {
+  top: 0;
+  transform: none;
+}
+.ribbon.form-bookmark.direction-left.vertical-bottom,
+.ribbon.form-bookmark.direction-right.vertical-bottom {
+  top: auto;
+  bottom: 0;
+  transform: none;
 }
 
 /* side：侧边竖挂（placement=start 左侧边中部 / end 镜像右侧），折叠角在挂点（条顶端）。
@@ -630,6 +795,226 @@ const STYLE = `
   clip-path: polygon(100% 100%, 100% 0, 0 100%);
 }
 
+/* ===== 非斜形态通用锚点（ribbon-anchor 8 位置：4 边中 + 4 角）=====
+   适用于 fold / banner / flag / side / seal / bookmark（斜形态 diagonal/triangle
+   有各自四角规则，见上）。anchor 定位缎带贴卡片边/角，形态自身形状与方向保持；
+   anchor 优先于 placement/ribbon-position/ribbon-direction/ribbon-vertical 兼容别名。
+   边中居中走 --oas-ribbon-anchor-x/y（translate 合成变量，见 .ribbon 基类）。
+   各形态宽度不同（fold 内容宽 / banner 全宽 / side 竖条），此处只控锚点 inset，
+   形态内部布局由各自规则负责。 */
+/* 4 角 */
+.ribbon.anchor-top-left {
+  top: var(--oas-space-2);
+  bottom: auto;
+  inset-inline-start: var(--oas-space-2);
+  inset-inline-end: auto;
+}
+.ribbon.anchor-top-right {
+  top: var(--oas-space-2);
+  bottom: auto;
+  inset-inline-start: auto;
+  inset-inline-end: var(--oas-space-2);
+}
+.ribbon.anchor-bottom-left {
+  top: auto;
+  bottom: var(--oas-space-2);
+  inset-inline-start: var(--oas-space-2);
+  inset-inline-end: auto;
+}
+.ribbon.anchor-bottom-right {
+  top: auto;
+  bottom: var(--oas-space-2);
+  inset-inline-start: auto;
+  inset-inline-end: var(--oas-space-2);
+}
+/* 4 边中：居中走合成 translate 变量（与 offset 叠加，见 .ribbon 基类） */
+.ribbon.anchor-top {
+  top: var(--oas-space-2);
+  bottom: auto;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  margin-inline: auto;
+  width: fit-content;
+}
+.ribbon.anchor-bottom {
+  top: auto;
+  bottom: var(--oas-space-2);
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  margin-inline: auto;
+  width: fit-content;
+}
+.ribbon.anchor-left {
+  top: 50%;
+  bottom: auto;
+  inset-inline-start: var(--oas-space-2);
+  inset-inline-end: auto;
+  --oas-ribbon-anchor-y: -50%;
+}
+.ribbon.anchor-right {
+  top: 50%;
+  bottom: auto;
+  inset-inline-start: auto;
+  inset-inline-end: var(--oas-space-2);
+  --oas-ribbon-anchor-y: -50%;
+}
+/* anchor 时清掉兼容别名的定位（placement inset / position top / side 的 translateY / bookmark 的 direction） */
+.ribbon.anchor-top-left,
+.ribbon.anchor-top-right,
+.ribbon.anchor-bottom-left,
+.ribbon.anchor-bottom-right,
+.ribbon.anchor-top,
+.ribbon.anchor-bottom,
+.ribbon.anchor-left,
+.ribbon.anchor-right {
+  transform: none;
+}
+/* side 竖条在角锚点：保持竖排但贴角（去掉自身 50% 居中 transform 已由上方清空） */
+.ribbon.form-side.anchor-top-left,
+.ribbon.form-side.anchor-top-right,
+.ribbon.form-side.anchor-bottom-left,
+.ribbon.form-side.anchor-bottom-right {
+  min-height: 0;
+  height: 56px;
+}
+/* bookmark 在通用锚点：direction/vertical 兼容别名被 anchor 覆盖（anchor 定位优先） */
+.ribbon.form-bookmark.anchor-top-left,
+.ribbon.form-bookmark.anchor-top-right,
+.ribbon.form-bookmark.anchor-bottom-left,
+.ribbon.form-bookmark.anchor-bottom-right,
+.ribbon.form-bookmark.anchor-top,
+.ribbon.form-bookmark.anchor-bottom,
+.ribbon.form-bookmark.anchor-left,
+.ribbon.form-bookmark.anchor-right {
+  top: 50%;
+  left: auto;
+  right: auto;
+  --oas-ribbon-anchor-y: -50%;
+}
+/* bookmark 顶部/底部锚点：保持顶边垂挂竖条，但允许锚点定位覆盖方向 */
+.ribbon.form-bookmark.anchor-top-left,
+.ribbon.form-bookmark.anchor-top-right,
+.ribbon.form-bookmark.anchor-bottom-left,
+.ribbon.form-bookmark.anchor-bottom-right {
+  top: 0;
+  bottom: 0;
+  --oas-ribbon-anchor-y: 0;
+  transform: none;
+}
+
+/* fold 贴边探出：通用锚点层用正偏移，但 fold 有折叠角、贴边需负偏移探出（同 placement-end/start）。
+   仅 fold（无 form 标记，排除 banner/flag 等自身定位形态），规则后置覆盖通用锚点 */
+.ribbon.anchor-left:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark) {
+  inset-inline-start: calc(var(--oas-space-2) * -1);
+}
+.ribbon.anchor-right:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark) {
+  inset-inline-end: calc(var(--oas-space-2) * -1);
+}
+.ribbon.anchor-top-left:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark) {
+  inset-inline-start: calc(var(--oas-space-2) * -1);
+}
+.ribbon.anchor-top-right:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark) {
+  inset-inline-end: calc(var(--oas-space-2) * -1);
+}
+.ribbon.anchor-bottom-left:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark) {
+  inset-inline-start: calc(var(--oas-space-2) * -1);
+}
+.ribbon.anchor-bottom-right:not(.form-banner):not(.form-flag):not(.form-side):not(.form-seal):not(.form-bookmark) {
+  inset-inline-end: calc(var(--oas-space-2) * -1);
+}
+
+/* 贴边端角去圆角（仅 fold）：只有挨着折叠角的那个角是直角，其余三个角保持圆角。
+   先重置四角为基类圆角（覆盖 placement-end 的 border-end-end-radius:0 干扰），
+   再单独设挨着折叠角的角为 0。anchor 是物理方向语义（left/right 不随 RTL 翻转） */
+/* 贴左缘 + 折叠角下沿（anchor-left / anchor-top-left）：左下角直角 */
+.ribbon.anchor-left:not(.form-banner):not(.form-flag),
+.ribbon.anchor-top-left:not(.form-banner):not(.form-flag) {
+  border-start-start-radius: var(--oas-radius-sm);
+  border-start-end-radius: var(--oas-radius-sm);
+  border-end-start-radius: 0;
+  border-end-end-radius: var(--oas-radius-sm);
+}
+/* 贴右缘 + 折叠角下沿（anchor-right / anchor-top-right）：右下角直角 */
+.ribbon.anchor-right:not(.form-banner):not(.form-flag),
+.ribbon.anchor-top-right:not(.form-banner):not(.form-flag) {
+  border-start-start-radius: var(--oas-radius-sm);
+  border-start-end-radius: var(--oas-radius-sm);
+  border-end-start-radius: var(--oas-radius-sm);
+  border-end-end-radius: 0;
+}
+/* 贴左缘 + 折叠角上沿（anchor-bottom-left）：左上角直角 */
+.ribbon.anchor-bottom-left:not(.form-banner):not(.form-flag) {
+  border-start-start-radius: 0;
+  border-start-end-radius: var(--oas-radius-sm);
+  border-end-start-radius: var(--oas-radius-sm);
+  border-end-end-radius: var(--oas-radius-sm);
+}
+/* 贴右缘 + 折叠角上沿（anchor-bottom-right）：右上角直角 */
+.ribbon.anchor-bottom-right:not(.form-banner):not(.form-flag) {
+  border-start-start-radius: var(--oas-radius-sm);
+  border-start-end-radius: 0;
+  border-end-start-radius: var(--oas-radius-sm);
+  border-end-end-radius: var(--oas-radius-sm);
+}
+/* 折叠角端点与朝向：端点由锚点的"侧"决定（贴左缘 → 左端 / 贴右缘 → 右端）；
+   上/下沿由纵向锚点决定（top 系 → 缎带下沿 / bottom 系 → 缎带上沿翻转）；
+   clip-path 走元素本地坐标，尖朝卡内方向需显式写出 */
+/* 贴左缘：折叠角在左端 */
+.ribbon.anchor-top-left:not(.form-banner):not(.form-flag) .ribbon-corner,
+.ribbon.anchor-bottom-left:not(.form-banner):not(.form-flag) .ribbon-corner,
+.ribbon.anchor-left:not(.form-banner):not(.form-flag) .ribbon-corner {
+  inset-inline-start: 0;
+  inset-inline-end: auto;
+}
+/* 贴右缘：折叠角在右端 */
+.ribbon.anchor-top-right:not(.form-banner):not(.form-flag) .ribbon-corner,
+.ribbon.anchor-bottom-right:not(.form-banner):not(.form-flag) .ribbon-corner,
+.ribbon.anchor-right:not(.form-banner):not(.form-flag) .ribbon-corner {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+}
+/* 顶部/边中锚点：折叠角在缎带下沿 */
+.ribbon.anchor-top-left:not(.form-banner):not(.form-flag) .ribbon-corner,
+.ribbon.anchor-top-right:not(.form-banner):not(.form-flag) .ribbon-corner,
+.ribbon.anchor-left:not(.form-banner):not(.form-flag) .ribbon-corner,
+.ribbon.anchor-right:not(.form-banner):not(.form-flag) .ribbon-corner {
+  top: 100%;
+  bottom: auto;
+}
+/* 底部锚点：折叠角在缎带上沿 */
+.ribbon.anchor-bottom-left:not(.form-banner):not(.form-flag) .ribbon-corner,
+.ribbon.anchor-bottom-right:not(.form-banner):not(.form-flag) .ribbon-corner {
+  top: auto;
+  bottom: 100%;
+}
+/* clip 方向：折叠角尖朝卡内（对照 placement-end 基准：贴右缘用 polygon(0 0, 100% 0, 0 100%) 直角左上、尖朝左下=卡内）。
+   贴左缘（left/top-left/bottom-left）→ 折叠角在左端、尖朝右下（卡内），用 placement-start 镜像 clip；
+   贴右缘（right/top-right/bottom-right）→ 折叠角在右端、尖朝左下（卡内），用 placement-end clip */
+/* 左缘侧边（anchor-left）：折叠角左端下沿、尖朝右下（卡内） */
+.ribbon.anchor-left:not(.form-banner):not(.form-flag) .ribbon-corner {
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+/* 右缘侧边（anchor-right）：折叠角右端下沿、尖朝左下（卡内） */
+.ribbon.anchor-right:not(.form-banner):not(.form-flag) .ribbon-corner {
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+/* 左缘顶角（anchor-top-left）：折叠角左端下沿、尖朝右下（卡内） */
+.ribbon.anchor-top-left:not(.form-banner):not(.form-flag) .ribbon-corner {
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+/* 右缘顶角（anchor-top-right）：折叠角右端下沿、尖朝左下（卡内） */
+.ribbon.anchor-top-right:not(.form-banner):not(.form-flag) .ribbon-corner {
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+/* 左缘底角（anchor-bottom-left）：折叠角左端上沿、尖朝右上（卡内，clip 垂直翻转左缘） */
+.ribbon.anchor-bottom-left:not(.form-banner):not(.form-flag) .ribbon-corner {
+  clip-path: polygon(100% 100%, 0 100%, 100% 0);
+}
+/* 右缘底角（anchor-bottom-right）：折叠角右端上沿、尖朝左上（卡内，clip 垂直翻转右缘） */
+.ribbon.anchor-bottom-right:not(.form-banner):not(.form-flag) .ribbon-corner {
+  clip-path: polygon(0 100%, 100% 100%, 0 0);
+}
+
 /* ===== rolled 端部卷边：卷边在卡片内侧端（同燕尾规则：徽标在右卷边在左、在左卷边在右），
    外端改为顶卡片边线（不再探出——无边线锚定的探出端是浮空，曾现缺陷）。
    布尔修饰、独立开关：与 fold（基类/显式 form-fold）/ flag 叠加；banner 有自己的双端折叠角
@@ -735,9 +1120,12 @@ export class OASBadge extends OASElement {
       'overlap',
       'ribbon-position',
       'ribbon-form',
+      'ribbon-direction',
+      'ribbon-vertical',
+      'ribbon-size',
+      'ribbon-anchor',
       'premium',
       'rolled',
-      'wide',
     ]
   }
 
@@ -820,6 +1208,7 @@ export class OASBadge extends OASElement {
     const placement = this.getAttr('placement', 'end') as BadgePlacement
     const position = this.getAttr('ribbon-position', 'hang') as BadgeRibbonPosition
     const form = this.getAttr('ribbon-form', 'fold') as BadgeRibbonForm
+    const direction = this.getAttr('ribbon-direction', 'down') as BadgeRibbonDirection
     const text = this.getAttr('text', '')
 
     // 语义色 class（兼容）：仅 4 语义色命中；预设名/任意色值走下方变量注入
@@ -838,21 +1227,59 @@ export class OASBadge extends OASElement {
     for (const name of VALID_RIBBON_FORMS) {
       ribbonEl.classList.toggle(`form-${name}`, formValid && form === name)
     }
+    // ribbon-direction 尖头方向：仅 bookmark 形态生效；down 与非法值回落基类（不写标记），
+    // left/right 写 direction-* class（其余形态忽略，同 wide 规矩）
+    const dirValid =
+      formValid &&
+      form === 'bookmark' &&
+      (VALID_RIBBON_DIRECTIONS as readonly string[]).includes(direction)
+    ribbonEl.classList.toggle('direction-left', dirValid && direction === 'left')
+    ribbonEl.classList.toggle('direction-right', dirValid && direction === 'right')
+    // ribbon-vertical 纵向位置：仅 bookmark 侧挂（left/right）生效；center 与非法值回落基类
+    // （不写标记，基类默认垂直居中），top/bottom 写 vertical-* class
+    const sideMount = dirValid && (direction === 'left' || direction === 'right')
+    const vertical = this.getAttr('ribbon-vertical', 'center') as BadgeRibbonVertical
+    ribbonEl.classList.toggle('vertical-top', sideMount && vertical === 'top')
+    ribbonEl.classList.toggle('vertical-bottom', sideMount && vertical === 'bottom')
     // premium 金属质感：布尔属性加 class（正交于 color/form，视觉覆盖优先级见样式顺序）
     ribbonEl.classList.toggle('premium', this.hasAttr('premium'))
     // rolled 端部卷边：布尔修饰（独立开关），class 恒写；视觉仅在 fold/banner/flag 生效
     // （其余裁剪形态由样式 :not 排除，见 STYLE 注释）
     ribbonEl.classList.toggle('rolled', this.hasAttr('rolled'))
-    // wide 宽幅大字斜带：仅与 diagonal 组合；其他形态静默忽略（不写入 class，无视觉影响）
-    ribbonEl.classList.toggle(
-      'wide',
-      formValid && form === 'diagonal' && this.hasAttr('wide'),
-    )
+    // ribbon-size 斜带档位：仅与 diagonal 组合；其他形态静默忽略（不写入 class，无视觉影响）。
+    // 档位只改 --oas-badge-diagonal-* 的 fallback 默认值，宿主 CSS 变量优先级更高
+    const size = this.getAttr('ribbon-size', 'sm') as BadgeRibbonSize
+    const sizeValid =
+      formValid && form === 'diagonal' && (VALID_RIBBON_SIZES as readonly string[]).includes(size)
+    ribbonEl.classList.toggle('ribbon-size-md', sizeValid && size === 'md')
+    ribbonEl.classList.toggle('ribbon-size-lg', sizeValid && size === 'lg')
+    // ribbon-anchor 统一锚点：形态-锚点矩阵（见 FORM_ANCHORS）。anchor 写 anchor-* class；
+    // 未设置时回落 placement/ribbon-position/ribbon-direction/ribbon-vertical 兼容别名。
+    // 非法值或该形态不支持的锚点静默回落（不写 class，走形态默认位置）
+    const anchor = this.getAttr('ribbon-anchor', '') as BadgeRibbonAnchor
+    const effectiveForm = formValid ? form : 'fold'
+    const allowedAnchors = FORM_ANCHORS[effectiveForm] ?? FORM_ANCHORS.fold!
+    const anchorValid =
+      (VALID_RIBBON_ANCHORS as readonly string[]).includes(anchor) &&
+      (allowedAnchors as readonly string[]).includes(anchor)
+    for (const name of VALID_RIBBON_ANCHORS) {
+      ribbonEl.classList.toggle(`anchor-${name}`, anchorValid && anchor === name)
+    }
 
     // color 变量注入（语义色与 class 双保险；预设名/任意色值唯一生效路径）
     const resolved = resolveBadgeColor(color)
     ribbonEl.style.setProperty('--oas-badge-bg', resolved.bg)
     ribbonEl.style.setProperty('--oas-badge-on-color', resolved.on)
+
+    // offset 任意位置微调：translate 独立属性与形态 transform 叠加；非法值移除
+    const ribbonOffset = parseOffset(this.getAttr('offset', ''))
+    if (ribbonOffset) {
+      ribbonEl.style.setProperty('--oas-ribbon-offset-x', `${ribbonOffset.x}px`)
+      ribbonEl.style.setProperty('--oas-ribbon-offset-y', `${ribbonOffset.y}px`)
+    } else {
+      ribbonEl.style.removeProperty('--oas-ribbon-offset-x')
+      ribbonEl.style.removeProperty('--oas-ribbon-offset-y')
+    }
 
     // text 属性走独立兜底元素（不写 slot 节点——写 slot 兜底会在部分浏览器触发
     // slotchange→update 无限循环卡死主线程）；slot 有 assigned 内容时兜底隐藏

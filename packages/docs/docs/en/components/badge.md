@@ -317,7 +317,7 @@ The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — 
 
 ## Ribbon forms
 
-`ribbon-form` switches the ribbon shape: `fold` (default, straight band + folded corner) / `diagonal` (45° diagonal band sweeping from the top corner; the band extends outside the card, so the host needs `overflow: hidden` to clip it) / `triangle` (a pure corner triangle holding a small icon or `slot="ribbon"` content) / `bookmark` (a vertical tab hanging from the top edge with a swallow-tail notch) / `side` (a vertical strip hung at mid-height of the side edge) / `seal` (a circular serrated stamp with centered text) / `banner` (a full-width strip across the top edge with angled ends) / `flag` (a side swallow-tail banner: a horizontal band with a V notch at the protruding end, always facing the protruding side). Invalid values silently fall back to `fold`. The `ribbon-position` vertical trio only affects the `fold` shape; the other shapes have their own vertical placement. `rolled` is a boolean modifier that adds an end roll (a large end radius + an inner gradient darkening that reads as a rolled cylinder); it composes with `fold` / `banner` / `flag`. `wide` only applies to `diagonal`, turning it into a wide large-type diagonal band for big discount scenes; other shapes ignore it.
+`ribbon-form` switches the ribbon shape: `fold` (default, straight band + folded corner) / `diagonal` (45° diagonal band sweeping from the top corner; the band extends outside the card, so the host needs `overflow: hidden` to clip it) / `triangle` (a pure corner triangle holding a small icon or `slot="ribbon"` content) / `bookmark` (a vertical tab hanging from the top edge with a swallow-tail notch) / `side` (a vertical strip hung at mid-height of the side edge) / `seal` (a circular serrated stamp with centered text) / `banner` (a full-width strip across the top edge with angled ends) / `flag` (a side swallow-tail banner: a horizontal band with a V notch at the protruding end, always facing the protruding side). Invalid values silently fall back to `fold`. `ribbon-direction` controls the notch direction of `bookmark` (`down` default, hanging from the top edge / `left`, tab on the right edge with the notch pointing left / `right`, tab on the left edge with the notch pointing right; physical-direction semantics, not flipped in RTL), and only takes effect for `bookmark`; `ribbon-vertical` controls the vertical position of the side-mount forms (`center` default, vertically centered / `top`, flush with the top edge / `bottom`, flush with the bottom edge). `ribbon-size` offers `sm` (default) / `md` / `lg` tiers for `diagonal` (a tier only changes the fallback band height / font size / pin depth; host `--oas-badge-diagonal-*` custom properties take precedence). The `ribbon-position` vertical trio only affects the `fold` shape; the other shapes have their own vertical placement. `offset` fine-tunes the position of every ribbon shape (`offset="x,y"` px shift, negative values allowed). `rolled` is a boolean modifier that adds an end roll (a large end radius + an inner gradient darkening that reads as a rolled cylinder); it composes with `fold` / `banner` / `flag`.
 
 <DemoBlock title="Ribbon forms">
   <oas-badge ribbon text="HOT" style="margin-inline-end: var(--oas-space-4)">
@@ -332,6 +332,18 @@ The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — 
   </oas-badge>
   <oas-badge ribbon text="NEW" ribbon-form="bookmark" style="margin-inline-end: var(--oas-space-4)">
     <oas-card><p>bookmark</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="NEW" ribbon-form="bookmark" ribbon-direction="left" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card style="width: 180px"><p>bookmark direction=left (notch left)</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="NEW" ribbon-form="bookmark" ribbon-direction="right">
+    <oas-card style="width: 180px"><p>bookmark direction=right (notch right)</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="NEW" ribbon-form="bookmark" ribbon-direction="left" ribbon-vertical="top" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card style="width: 180px"><p>bookmark left + vertical=top</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="NEW" ribbon-form="bookmark" ribbon-direction="right" ribbon-vertical="bottom" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card style="width: 180px"><p>bookmark right + vertical=bottom</p></oas-card>
   </oas-badge>
   <oas-badge ribbon text="HOT" ribbon-form="side" placement="start" style="margin-inline-end: var(--oas-space-4)">
     <oas-card><p>side</p></oas-card>
@@ -348,8 +360,75 @@ The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — 
   <oas-badge ribbon text="HOT" rolled style="margin-inline-end: var(--oas-space-4)">
     <oas-card><p>fold + rolled end</p></oas-card>
   </oas-badge>
-  <oas-badge ribbon text="50% OFF" ribbon-form="diagonal" wide style="overflow: hidden; border-radius: var(--oas-radius-lg)">
-    <oas-card style="width: 240px"><p>diagonal + wide</p></oas-card>
+  <oas-badge ribbon text="50% OFF" ribbon-form="diagonal" ribbon-size="lg" style="overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 240px"><p>diagonal + ribbon-size=lg</p></oas-card>
+  </oas-badge>
+</DemoBlock>
+
+`ribbon-size` offers three tiers for `diagonal` (`sm` default / `md` / `lg`); a tier only changes the fallback band height, font size and pin depth. The host can override `--oas-badge-diagonal-height` / `--oas-badge-diagonal-font` / `--oas-badge-diagonal-pin` / `--oas-badge-diagonal-text-inset` custom properties, which take precedence over the tier.
+
+<DemoBlock title="diagonal size tiers sm / md / lg">
+  <oas-badge ribbon text="HOT" ribbon-form="diagonal" style="margin-inline-end: var(--oas-space-4); overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 160px"><p>ribbon-size=sm (default)</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="SALE" ribbon-form="diagonal" ribbon-size="md" style="margin-inline-end: var(--oas-space-4); overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 160px"><p>ribbon-size=md</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="50% OFF" ribbon-form="diagonal" ribbon-size="lg" style="overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 200px"><p>ribbon-size=lg</p></oas-card>
+  </oas-badge>
+</DemoBlock>
+
+`offset` fine-tunes the position of every ribbon shape: `offset="x,y"` shifts by px on top of the shape's own anchor (x positive rightward, y positive downward, negative values allowed), composing orthogonally with `placement` / `ribbon-position` / `ribbon-vertical`.
+
+<DemoBlock title="Ribbon offset fine-tune">
+  <oas-badge ribbon text="NEW" ribbon-form="bookmark" ribbon-direction="left" offset="0,20" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card style="width: 180px"><p>bookmark left + offset=0,20</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" offset="0,-8" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>fold + offset=0,-8</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="SALE" ribbon-form="diagonal" offset="-30,0" style="overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 160px"><p>diagonal + offset=-30,0</p></oas-card>
+  </oas-badge>
+</DemoBlock>
+
+`ribbon-anchor` unifies the ribbon anchor, with the anchor set adapted per shape semantics (industry practice: shape and position are bound together):
+- **fold**: left/right edge centers + four corners (a horizontal band hugs left/right, with vertical position adjustable)
+- **diagonal / triangle**: four corners
+- **side**: left/right edge centers + four corners
+- **banner**: top/bottom (full-width banner)
+- **seal**: all 8 positions
+- **bookmark**: four corners + four edge centers
+Anchors pin the ribbon to an edge/corner (the fold notch auto-flips on bottom anchors), and `offset` fine-tunes any arbitrary position.
+
+<DemoBlock title="Ribbon anchors: angular corners">
+  <oas-badge ribbon text="HOT" ribbon-form="diagonal" ribbon-anchor="top-left" style="margin-inline-end: var(--oas-space-4); overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 160px"><p>diagonal top-left</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" ribbon-form="diagonal" ribbon-anchor="top-right" style="margin-inline-end: var(--oas-space-4); overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 160px"><p>diagonal top-right</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" ribbon-form="diagonal" ribbon-anchor="bottom-left" style="margin-inline-end: var(--oas-space-4); overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 160px"><p>diagonal bottom-left</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" ribbon-form="diagonal" ribbon-anchor="bottom-right" style="overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 160px"><p>diagonal bottom-right</p></oas-card>
+  </oas-badge>
+</DemoBlock>
+
+<DemoBlock title="Ribbon anchors: fold positions (hug left/right)">
+  <oas-badge ribbon text="HOT" ribbon-anchor="left" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card style="width: 160px"><p>fold left (edge center)</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" ribbon-anchor="right" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card style="width: 160px"><p>fold right (edge center)</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" ribbon-anchor="bottom-left" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card style="width: 160px"><p>fold bottom-left (notch flipped)</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" ribbon-anchor="bottom-right">
+    <oas-card style="width: 160px"><p>fold bottom-right (notch flipped)</p></oas-card>
   </oas-badge>
 </DemoBlock>
 
@@ -445,20 +524,23 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 | `dot` | Dot mode | `boolean` | — |
 | `max` | Upper limit | `string` | — |
 | `mode` | Mode: `count` (default, numeric/dot badge) or `ribbon` (ribbon corner, same as `ribbon` attribute) | `BadgeMode` | `count` |
-| `offset` | Corner offset: `"x,y"` (px numbers), shifts the badge from its corner position (x positive rightward, y positive downward); composes with `corner` (corner first, then shift); invalid values (non-numeric, missing coordinate) are silently ignored | `string` | — |
+| `offset` | Position fine-tune: `"x,y"` (px numbers, negative values allowed), shifts the corner badge or ribbon on top of its anchor position (x positive rightward, y positive downward); composes with `corner` / `placement` / `ribbon-vertical` (anchor first, then shift); invalid values (non-numeric, missing coordinate) are silently ignored | `string` | — |
 | `overlap` | Circular inset: when wrapping circular content (e.g. an avatar), the badge tucks inside the circle edge (the translate amount shrinks from 50% to ~29%, the 1-√2/2 geometric inset); affects corner badge mode only | `boolean` | — |
 | `placement` | Ribbon position: `start` (inline-start) / `end` (inline-end, default) | `BadgePlacement` | `end` |
 | `premium` | Metallic treatment: a multi-stop gold gradient with a deep-gold fine outline (clipped shapes get the outline traced along their clip-path silhouette), text color auto-picked dark against the gold background; composes orthogonally with `color` with the priority `premium` > `color` > semantic default; works with every `ribbon-form`, dark theme adapts automatically (driven by the `--oas-preset-gold` token) | `boolean` | — |
 | `ribbon` | Ribbon corner mode (boolean, same as `mode="ribbon"`) | `boolean` | — |
+| `ribbon-anchor` | Unified ribbon anchor, with the anchor set adapted per shape semantics: `fold` (left/right edge centers + four corners, a horizontal band hugs left/right with the vertical position adjustable), `diagonal`/`triangle` (four corners), `side` (left/right edge centers + four corners), `banner` (top/bottom), `seal` (all 8 positions), `bookmark` (four corners + four edge centers); an anchor pins the ribbon to an edge/corner (the fold notch auto-flips on bottom anchors) and `offset` fine-tunes any arbitrary position; when unset it falls back to the `placement` / `ribbon-position` / `ribbon-direction` / `ribbon-vertical` aliases, invalid values or unsupported anchor-shape combos silently fall back | `BadgeRibbonAnchor` | — |
+| `ribbon-direction` | Swallow-tail notch direction of `bookmark`: `down` (default, hangs from the top edge with the notch downward) / `left` (tab against the right edge with the notch pointing left) / `right` (tab against the left edge with the notch pointing right); physical-direction semantics (not flipped in RTL); only takes effect with `ribbon-form="bookmark"`, invalid values silently fall back to `down` | `BadgeRibbonDirection` | `down` |
 | `ribbon-form` | Ribbon shape: `fold` (default, straight band + folded corner) / `diagonal` (45° diagonal band from the top corner; the band extends outside the card, so the host needs `overflow: hidden` to clip it) / `triangle` (a pure corner triangle holding a small icon or `slot="ribbon"` content) / `bookmark` (a vertical tab hanging from the top edge with a swallow-tail notch) / `side` (a vertical strip hung at mid-height of the side edge) / `seal` (a circular serrated stamp with centered text) / `banner` (a full-width strip across the top edge with angled ends) / `flag` (a side swallow-tail banner: a horizontal band with a V notch at the protruding end, always facing the protruding side); the `ribbon-position` trio only affects `fold`, the other shapes have their own vertical placement, invalid values silently fall back to `fold` | `BadgeRibbonForm` | `fold` |
 | `ribbon-position` | Ribbon vertical position: `hang` (default, hangs below the top edge) / `edge` (flush with the top edge) / `cross` (straddles the top edge, pressing against the card border for the strongest wrap-around feel); orthogonal to `placement` (start / end), affects the `ribbon-form="fold"` shape only, invalid values silently fall back to `hang` | `BadgeRibbonPosition` | `hang` |
+| `ribbon-size` | Diagonal band size tier: `sm` (default, 30px tall / xs font) / `md` (33px / sm font, 35px pin) / `lg` (36px / md font, 45px pin, wide large-type scenes); a tier only changes the fallback of `--oas-badge-diagonal-*`, host custom properties take precedence; only takes effect with `ribbon-form="diagonal"`, invalid values silently fall back to `sm` | `BadgeRibbonSize` | `sm` |
+| `ribbon-vertical` | Vertical position of the side-mount `bookmark` forms (`ribbon-direction="left"` / `"right"`): `center` (default, vertically centered) / `top` (flush with the top edge) / `bottom` (flush with the bottom edge); only affects the side-mount forms, invalid values silently fall back to `center` | `BadgeRibbonVertical` | `center` |
 | `rolled` | End roll: a boolean modifier that adds a rolled edge to the protruding end (a large end radius + an inner gradient darkening that reads as a rolled cylinder; pure CSS). Composes with `fold` / `banner` / `flag`; other shapes silently ignore it | `boolean` | — |
 | `showZero` | Whether to show when value=0 | `boolean` | — |
 | `size` | Size: `small` (compact tier, numeric badge ~13px tall, dot 6px) | `string` | — |
 | `status` | Status point: `success` / `processing` / `default` / `error` / `warning`, renders an inline standalone element of "status dot + `text`", mutually exclusive with ribbon / dot / count modes (rendered first when set); the `processing` dot pulses (`prefers-reduced-motion` disables it) | `BadgeStatus` | — |
 | `text` | Ribbon or status text; the `ribbon` slot takes precedence when it has content | `string` | — |
 | `value` | Number | `string` | — |
-| `wide` | Wide large-type diagonal: only takes effect with `ribbon-form="diagonal"` (a band of about 200×32px with a raised font size and the text shift scaled to the band width, covering a larger corner area); other shapes silently ignore it | `boolean` | — |
 
 ### Slots
 

@@ -511,17 +511,36 @@
         "observed": true
       },
       {
+        "name": "ribbon-direction",
+        "type": "BadgeRibbonDirection",
+        "default": "down",
+        "observed": true
+      },
+      {
+        "name": "ribbon-vertical",
+        "type": "BadgeRibbonVertical",
+        "default": "center",
+        "observed": true
+      },
+      {
+        "name": "ribbon-size",
+        "type": "BadgeRibbonSize",
+        "default": "sm",
+        "observed": true
+      },
+      {
+        "name": "ribbon-anchor",
+        "type": "BadgeRibbonAnchor",
+        "default": "",
+        "observed": true
+      },
+      {
         "name": "premium",
         "type": "boolean",
         "observed": true
       },
       {
         "name": "rolled",
-        "type": "boolean",
-        "observed": true
-      },
-      {
-        "name": "wide",
         "type": "boolean",
         "observed": true
       }

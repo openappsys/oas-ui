@@ -567,7 +567,10 @@ ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可�
 - **badge→premium 金属质感**：布尔 `premium` 金色金属渐变底（多段亮金→暗金）+ 深金细描边（clip-path 形态沿轮廓 drop-shadow 描边）+ 文字色按金底亮度取深色；与 ribbon-form 正交可叠加；优先级 premium > color > 语义色；dark 主题走 `--oas-preset-gold` token 自动适配
 - **badge→ribbon-form flag（侧燕尾横旗）**：`ribbon-form="flag"` 横条 + 探出外端侧燕尾 V 缺口（clip-path 多边形在端侧切 V 口，缺口始终朝探出端，placement start/end 镜像）；底部挂点内侧保留折叠角（复用 fold 的 corner 尖三角，因条身 clip-path 会把条外元素裁掉，折叠角置于条身 clip 区域内 bottom 内侧）
 - **badge→rolled 端部卷边**：布尔 `rolled` 给探出外端做卷边效果（端部大圆角 + 内侧渐暗渐变模拟卷起圆柱感，纯 CSS、原创）；独立开关，可叠加 fold / banner / flag，其余裁剪形态（diagonal/triangle/bookmark/side/seal）静默忽略
-- **badge→wide 宽幅大字斜带**：`wide` 修饰仅与 `ribbon-form="diagonal"` 组合（带身约 200×32px、字号提升、文字平移按宽比例 50px，与现有 96×24px 同逻辑，覆盖更大角落区域，电商 % off 大斜幅场景）；其他形态静默忽略（注释写明）
+- **badge→ribbon-size 斜带档位**：`ribbon-size="sm|md|lg"`（默认 sm）给 diagonal 提供三档（带宽/字号/带中心钉点递增，lg 覆盖电商 % off 大斜幅场景）；档位只改 `--oas-badge-diagonal-*` 的 fallback 默认值，宿主自定义属性优先级更高；仅 diagonal 生效，非法值静默回落 sm
+- **badge→ribbon-direction 燕尾尖头方向**：`ribbon-direction="down|left|right"`（默认 down）控制 bookmark 燕尾缺口朝向（down 顶边垂挂尖头朝下；left 条身贴右缘、尖头朝左；right 贴左缘镜像；物理方向语义 RTL 不翻转）；仅 bookmark 生效，非法值回落 down
+- **badge→ribbon-vertical 侧挂纵向位置**：`ribbon-vertical="center|top|bottom"`（默认 center）控制 bookmark 侧挂（left/right）的纵向位置（贴顶边 / 垂直居中 / 贴底边）；仅侧挂生效，非法值回落 center
+- **badge→offset 缎带任意位置微调**：`offset="x,y"` 给所有缎带形态做 px 平移（先形态锚点再平移，translate 独立属性与形态 transform 叠加，支持负值）；与 placement / ribbon-position / ribbon-vertical 正交叠加；非法值静默忽略
 
 ### 验收标准
 
