@@ -716,14 +716,18 @@ describe('OASBadge 折叠角尖三角几何', () => {
     expect(corner).not.toContain('scaleY')
   })
 
-  it('start/end 镜像：两锚点规则都在，base 三角几何共用（clip-path 走元素本地坐标自动镜像）', () => {
+  it('start/end 镜像：end 共用 base 三角，start 显式镜像（clip-path 不随锚点自动翻转，曾现 bug）', () => {
     const el = mount({ ribbon: '', text: 'HOT' })
     const style = el.shadowRoot!.querySelector('style')!.textContent!
     expect(style).toContain('.ribbon.placement-end .ribbon-corner')
     expect(style).toContain('inset-inline-end: 0')
     expect(style).toContain('.ribbon.placement-start .ribbon-corner')
     expect(style).toContain('inset-inline-start: 0')
-    // placement 规则只设锚点，不含几何构造（三角形共用 base）
+    // end 规则只设锚点，不含几何构造（三角形共用 base）
     expect(cssRule(style, '.ribbon.placement-end .ribbon-corner')).not.toContain('clip-path')
+    // start 规则必须显式镜像三角（直角在右上）
+    expect(cssRule(style, '.ribbon.placement-start .ribbon-corner')).toContain(
+      'clip-path: polygon(100% 0, 0 0, 100% 100%)',
+    )
   })
 })

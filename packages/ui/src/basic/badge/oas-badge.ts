@@ -313,8 +313,8 @@ const STYLE = `
   color: var(--oas-color-text-on-warning);
 }
 /* 折叠角：尖三角（clip-path 三点三角，顶边沿缎带下沿、斜边折向内下），
-   经 currentColor 继承缎带底色 + brightness 压暗成折叠阴影；clip-path 走元素本地坐标，
-   start/end 仅切锚点自动镜像 */
+   经 currentColor 继承缎带底色 + brightness 压暗成折叠阴影；
+   start 侧必须显式镜像（clip-path 走元素本地坐标，不随锚点自动翻转——曾现 bug） */
 .ribbon-corner {
   position: absolute;
   top: 100%;
@@ -337,6 +337,8 @@ const STYLE = `
 }
 .ribbon.placement-start .ribbon-corner {
   inset-inline-start: 0;
+  /* 折叠三角随侧镜像：start 侧直角在右上（clip-path 不随锚点自动镜像，需显式翻） */
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
 }
 .ribbon[hidden] {
   display: none;

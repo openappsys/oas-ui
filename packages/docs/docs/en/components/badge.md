@@ -303,6 +303,18 @@ The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — 
   </oas-badge>
 </DemoBlock>
 
+<DemoBlock title="Ribbon position (placement=start, left side)">
+  <oas-badge ribbon text="HANG" ribbon-position="hang" placement="start" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>hang (hangs below)</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="EDGE" ribbon-position="edge" placement="start" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>edge (flush with top edge)</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="CROSS" ribbon-position="cross" placement="start">
+    <oas-card><p>cross (straddling top edge)</p></oas-card>
+  </oas-badge>
+</DemoBlock>
+
 ## Colored ribbon
 
 `color` supports the four semantic colors `primary` / `success` / `warning` / `danger`, following the theme (light/dark); preset names and arbitrary color values are also supported (injected via `--oas-preset-*` tokens / the raw value).

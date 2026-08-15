@@ -303,6 +303,18 @@ oas-badge#badge-dyn.bump::part(badge) {
   </oas-badge>
 </DemoBlock>
 
+<DemoBlock title="缎带位置（placement=start 左侧）">
+  <oas-badge ribbon text="HANG" ribbon-position="hang" placement="start" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>hang（挂沿下）</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="EDGE" ribbon-position="edge" placement="start" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>edge（贴顶边）</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="CROSS" ribbon-position="cross" placement="start">
+    <oas-card><p>cross（骑跨顶边）</p></oas-card>
+  </oas-badge>
+</DemoBlock>
+
 ## 彩色缎带
 
 `color` 支持 `primary` / `success` / `warning` / `danger` 四种语义色，与主题 light/dark 联动；同样支持预设名与任意色值（走 `--oas-preset-*` token / 原色值注入）。
