@@ -885,13 +885,13 @@ describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
     expect(r.classList.contains('form-flag')).toBe(true)
     expect(r.hidden).toBe(false)
     const style = el.shadowRoot!.querySelector('style')!.textContent!
-    // end（默认，探出右端）：右端侧燕尾 V 缺口（V 口凹进带身，深 10px 抵中线）
+    // end（默认，徽标在右上探出右缘）：燕尾缺口在内侧左端（V 口凹进带身，深 10px 抵中线）
     expect(cssRule(style, '.ribbon.form-flag')).toContain(
-      'clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%)',
-    )
-    // start 镜像：缺口在左端（clip-path 走元素本地坐标，不随锚点自动翻转）
-    expect(cssRule(style, '.ribbon.form-flag.placement-start')).toContain(
       'clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 10px 50%)',
+    )
+    // start 镜像：缺口在内侧右端（clip-path 走元素本地坐标，不随锚点自动翻转）
+    expect(cssRule(style, '.ribbon.form-flag.placement-start')).toContain(
+      'clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%)',
     )
     // 探出端锚点：end 右探 / start 左探（镜像）
     expect(cssRule(style, '.ribbon.form-flag.placement-end')).toContain(

@@ -580,8 +580,8 @@ const STYLE = `
    折叠角须放进 clip 区域内（bottom 内侧角） */
 .ribbon.form-flag {
   border-radius: 0;
-  /* 燕尾缺口：V 口凹进带身（探出外端），缺口深 10px 抵带身中线 */
-  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%);
+  /* 燕尾缺口：V 口凹进带身、始终朝卡片内侧端（徽标在右 → 缺口在左；在左 → 缺口在右） */
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 10px 50%);
 }
 .ribbon.form-flag.placement-end {
   inset-inline-end: calc(var(--oas-space-2) * -1);
@@ -589,8 +589,8 @@ const STYLE = `
 .ribbon.form-flag.placement-start {
   inset-inline-end: auto;
   inset-inline-start: calc(var(--oas-space-2) * -1);
-  /* 燕尾缺口镜像到左端（clip-path 走元素本地坐标，不随锚点自动翻转——同 bookmark 教训） */
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 10px 50%);
+  /* 燕尾缺口镜像到内侧右端（clip-path 走元素本地坐标，不随锚点自动翻转——同 bookmark 教训） */
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%);
 }
 .ribbon.form-flag .ribbon-corner {
   top: auto;
