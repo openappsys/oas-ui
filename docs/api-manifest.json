@@ -503,6 +503,17 @@
         "type": "BadgeRibbonPosition",
         "default": "hang",
         "observed": true
+      },
+      {
+        "name": "ribbon-form",
+        "type": "BadgeRibbonForm",
+        "default": "fold",
+        "observed": true
+      },
+      {
+        "name": "premium",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [],

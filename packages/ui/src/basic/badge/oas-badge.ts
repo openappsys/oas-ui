@@ -5,6 +5,15 @@ export type BadgeColor = 'primary' | 'success' | 'warning' | 'danger'
 export type BadgePlacement = 'start' | 'end'
 /** 缎带纵向位置：hang 挂沿下（默认）/ edge 贴顶边 / cross 骑跨顶边；非法值静默回落 hang */
 export type BadgeRibbonPosition = 'hang' | 'edge' | 'cross'
+/** 缎带形态：fold 直条+折叠（默认）/ diagonal 45° 对角斜带 / triangle 角落三角 / bookmark 顶边燕尾竖条 / side 侧边竖挂 / seal 圆形锯齿印章 / banner 顶部横贯横幅；非法值静默回落 fold */
+export type BadgeRibbonForm =
+  | 'fold'
+  | 'diagonal'
+  | 'triangle'
+  | 'bookmark'
+  | 'side'
+  | 'seal'
+  | 'banner'
 /** 吸引动画：外圈脉冲扩散 / 轻微上下弹跳（仅 count/dot/standalone 徽标，ribbon 不受影响） */
 export type BadgeAttention = 'pulse' | 'bounce'
 /** 角标四角定位（默认 top-right；非法值静默回落） */
@@ -43,6 +52,15 @@ export const BADGE_PRESET_COLORS: readonly BadgePresetColor[] = [
 const VALID_STATUS: readonly string[] = ['success', 'processing', 'default', 'error', 'warning']
 const VALID_ATTENTION: readonly string[] = ['pulse', 'bounce']
 const VALID_CORNER: readonly string[] = ['top-right', 'top-left', 'bottom-right', 'bottom-left']
+const VALID_RIBBON_FORMS: readonly string[] = [
+  'fold',
+  'diagonal',
+  'triangle',
+  'bookmark',
+  'side',
+  'seal',
+  'banner',
+]
 
 /** corner 平移符号：X 向右为正，Y 向下为正（top 角 Y 为负） */
 const CORNER_SIGN: Record<string, { sx: string; sy: string }> = {
@@ -117,6 +135,20 @@ function parseOffset(raw: string): { x: string; y: string } | null {
   const m = raw.trim().match(/^(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)$/)
   if (!m) return null
   return { x: m[1]!, y: m[2]! }
+}
+
+/**
+ * seal 印章锯齿：以元素中心为圆心、外/内半径交替采样生成锯齿多边形（百分比坐标）。
+ * clip-path 内嵌进 STYLE 模板，SSR 快照与客户端渲染共用同一份几何。
+ */
+function sealZigzag(teeth = 20, outer = 50, inner = 44): string {
+  const pts: string[] = []
+  for (let i = 0; i < teeth * 2; i++) {
+    const a = (i * Math.PI) / teeth - Math.PI / 2
+    const r = i % 2 === 0 ? outer : inner
+    pts.push(`${(50 + r * Math.cos(a)).toFixed(2)}% ${(50 + r * Math.sin(a)).toFixed(2)}%`)
+  }
+  return `polygon(${pts.join(', ')})`
 }
 
 const STYLE = `
@@ -340,6 +372,211 @@ const STYLE = `
   /* 折叠三角随侧镜像：start 侧直角在右上（clip-path 不随锚点自动镜像，需显式翻） */
   clip-path: polygon(100% 0, 0 0, 100% 100%);
 }
+/* ===== ribbon-form 形态维度：fold（默认）直条+折叠即基类，不写额外标记 ===== */
+
+/* diagonal：45° 对角斜缎带横跨顶角；宿主需 overflow:hidden 裁切，否则条身探出卡外。
+   placement end 逆时针 -45°（外端上翘折向顶角、条身斜向左下进卡）/ start 镜像顺时针 +45° */
+.ribbon.form-diagonal {
+  width: 96px;
+  height: 22px;
+  line-height: 22px;
+  padding: 0;
+  top: -11px;
+  border-radius: 0;
+  text-align: center;
+  transform-origin: center;
+}
+.ribbon.form-diagonal.placement-end {
+  inset-inline-end: -48px;
+  transform: rotate(-45deg);
+}
+.ribbon.form-diagonal.placement-start {
+  inset-inline-end: auto;
+  inset-inline-start: -48px;
+  transform: rotate(45deg);
+}
+.ribbon.form-diagonal .ribbon-corner {
+  display: none;
+}
+/* 斜带中心跨在卡片顶角——带身一半在卡外被裁，文字需落在可见内半段
+   （end 内半段在带左端 → 左移 1/4 带长；start 镜像右移） */
+.ribbon.form-diagonal .ribbon-text {
+  display: block;
+  transform: translateX(-24px);
+}
+.ribbon.form-diagonal.placement-start .ribbon-text {
+  transform: translateX(24px);
+}
+
+/* triangle：角落纯三角形（clip-path 直角三角）+ 内嵌小图标/slot 内容；placement 四角跟随镜像 */
+.ribbon.form-triangle {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  top: 0;
+  border-radius: 0;
+  line-height: 1;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+.ribbon.form-triangle.placement-end {
+  inset-inline-end: 0;
+}
+.ribbon.form-triangle.placement-start {
+  inset-inline-end: auto;
+  inset-inline-start: 0;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.ribbon.form-triangle .ribbon-text {
+  position: absolute;
+  top: var(--oas-space-1);
+  inset-inline-end: var(--oas-space-1);
+  display: flex;
+  align-items: center;
+}
+.ribbon.form-triangle.placement-start .ribbon-text {
+  inset-inline-end: auto;
+  inset-inline-start: var(--oas-space-1);
+}
+.ribbon.form-triangle .ribbon-corner {
+  display: none;
+}
+
+/* bookmark：顶边垂挂竖条 + 底部燕尾 V 缺口（clip-path polygon），贴顶边 */
+.ribbon.form-bookmark {
+  width: 40px;
+  height: 56px;
+  padding: 0 var(--oas-space-1);
+  top: 0;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.3;
+  clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%);
+}
+.ribbon.form-bookmark.placement-end {
+  inset-inline-end: var(--oas-space-3);
+}
+.ribbon.form-bookmark.placement-start {
+  inset-inline-end: auto;
+  inset-inline-start: var(--oas-space-3);
+}
+.ribbon.form-bookmark .ribbon-corner {
+  display: none;
+}
+
+/* side：侧边竖挂（placement=start 左侧边中部 / end 镜像右侧），折叠角在挂点（条顶端）。
+   竖排 writing-mode 写在 .ribbon-text 上（若写在条身，逻辑 inset 属性会随书写模式翻转） */
+.ribbon.form-side {
+  width: 22px;
+  height: auto;
+  min-height: 60px;
+  padding: var(--oas-space-2) 0;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ribbon.form-side .ribbon-text {
+  writing-mode: vertical-rl;
+  /* 拉丁字母直立堆叠（mixed 会整体躺倒 90° 不可读） */
+  text-orientation: upright;
+  letter-spacing: 1px;
+}
+.ribbon.form-side.placement-end {
+  inset-inline-end: calc(var(--oas-space-2) * -1);
+}
+.ribbon.form-side.placement-start {
+  inset-inline-end: auto;
+  inset-inline-start: calc(var(--oas-space-2) * -1);
+}
+.ribbon.form-side .ribbon-corner {
+  top: 0;
+  width: var(--oas-space-2);
+  height: var(--oas-space-2);
+}
+.ribbon.form-side.placement-start .ribbon-corner {
+  inset-inline-start: 0;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.ribbon.form-side.placement-end .ribbon-corner {
+  inset-inline-end: 0;
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+
+/* seal：圆形锯齿印章（clip-path 锯齿多边形，见 sealZigzag()），文字居中，骑跨角点 */
+.ribbon.form-seal {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+  clip-path: ${sealZigzag()};
+}
+.ribbon.form-seal.placement-end {
+  top: calc(var(--oas-space-2) * -1);
+  inset-inline-end: calc(var(--oas-space-2) * -1);
+}
+.ribbon.form-seal.placement-start {
+  top: calc(var(--oas-space-2) * -1);
+  inset-inline-end: auto;
+  inset-inline-start: calc(var(--oas-space-2) * -1);
+}
+.ribbon.form-seal .ribbon-corner {
+  display: none;
+}
+
+/* banner：顶部横贯横幅（横贯卡片顶部全宽，两端 45° 折角），贴顶边 */
+.ribbon.form-banner {
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  width: 100%;
+  top: 0;
+  border-radius: 0;
+  text-align: center;
+  padding: 0 var(--oas-space-3);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 20px) 100%, 20px 100%);
+}
+.ribbon.form-banner .ribbon-corner {
+  display: none;
+}
+
+/* ===== premium 金属质感：金色渐变 + 深金描边；与 color 正交叠加（优先级 premium > color），
+   规则置于全部 color 语义类之后保证覆盖；文字色按金底亮度取深色，dark 下 preset-gold 自动调亮 */
+.ribbon.premium {
+  color: var(--oas-preset-gold);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--oas-preset-gold) 82%, white) 0%,
+    var(--oas-preset-gold) 45%,
+    color-mix(in srgb, var(--oas-preset-gold) 55%, black) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--oas-preset-gold) 50%, black);
+}
+.ribbon.premium .ribbon-text {
+  color: color-mix(in srgb, var(--oas-preset-gold) 30%, black);
+}
+/* 裁剪形态：box border 会被 clip-path 裁掉，改用 0 偏移 0 模糊的 drop-shadow 沿
+   clip-path 轮廓描边（四向 1px，等效细描边，见 oas-badge 测试回归断言） */
+.ribbon.premium.form-triangle,
+.ribbon.premium.form-bookmark,
+.ribbon.premium.form-seal,
+.ribbon.premium.form-diagonal,
+.ribbon.premium.form-banner {
+  border: none;
+  filter: drop-shadow(0 1px 0 color-mix(in srgb, var(--oas-preset-gold) 45%, black))
+    drop-shadow(0 -1px 0 color-mix(in srgb, var(--oas-preset-gold) 45%, black))
+    drop-shadow(1px 0 0 color-mix(in srgb, var(--oas-preset-gold) 45%, black))
+    drop-shadow(-1px 0 0 color-mix(in srgb, var(--oas-preset-gold) 45%, black));
+}
 .ribbon[hidden] {
   display: none;
 }
@@ -364,6 +601,8 @@ export class OASBadge extends OASElement {
       'corner',
       'overlap',
       'ribbon-position',
+      'ribbon-form',
+      'premium',
     ]
   }
 
@@ -445,6 +684,7 @@ export class OASBadge extends OASElement {
     const color = this.getAttr('color', 'danger') as BadgeColor | BadgePresetColor
     const placement = this.getAttr('placement', 'end') as BadgePlacement
     const position = this.getAttr('ribbon-position', 'hang') as BadgeRibbonPosition
+    const form = this.getAttr('ribbon-form', 'fold') as BadgeRibbonForm
     const text = this.getAttr('text', '')
 
     // 语义色 class（兼容）：仅 4 语义色命中；预设名/任意色值走下方变量注入
@@ -457,6 +697,14 @@ export class OASBadge extends OASElement {
     // ribbon-position 三选：edge/cross 命中间隔类，hang 与非法值均回落基类（不写额外标记）
     ribbonEl.classList.toggle('position-edge', position === 'edge')
     ribbonEl.classList.toggle('position-cross', position === 'cross')
+    // ribbon-form 七形态：未显式设置（或非法值）回落 fold 且不写任何 form-* class（基类即 fold，向后兼容）
+    const formValid =
+      this.hasAttr('ribbon-form') && (VALID_RIBBON_FORMS as readonly string[]).includes(form)
+    for (const name of VALID_RIBBON_FORMS) {
+      ribbonEl.classList.toggle(`form-${name}`, formValid && form === name)
+    }
+    // premium 金属质感：布尔属性加 class（正交于 color/form，视觉覆盖优先级见样式顺序）
+    ribbonEl.classList.toggle('premium', this.hasAttr('premium'))
 
     // color 变量注入（语义色与 class 双保险；预设名/任意色值唯一生效路径）
     const resolved = resolveBadgeColor(color)

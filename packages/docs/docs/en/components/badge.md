@@ -315,6 +315,60 @@ The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — 
   </oas-badge>
 </DemoBlock>
 
+## Ribbon forms
+
+`ribbon-form` switches the ribbon shape: `fold` (default, straight band + folded corner) / `diagonal` (45° diagonal band sweeping from the top corner; the band extends outside the card, so the host needs `overflow: hidden` to clip it) / `triangle` (a pure corner triangle holding a small icon or `slot="ribbon"` content) / `bookmark` (a vertical tab hanging from the top edge with a swallow-tail notch) / `side` (a vertical strip hung at mid-height of the side edge) / `seal` (a circular serrated stamp with centered text) / `banner` (a full-width strip across the top edge with angled ends). Invalid values silently fall back to `fold`. The `ribbon-position` vertical trio only affects the `fold` shape; the other shapes have their own vertical placement.
+
+<DemoBlock title="Ribbon forms">
+  <oas-badge ribbon text="HOT" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>fold</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" ribbon-form="diagonal" style="margin-inline-end: var(--oas-space-4); overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 160px"><p>diagonal</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon ribbon-form="triangle" style="margin-inline-end: var(--oas-space-4)">
+    <oas-icon slot="ribbon" name="star" size="18"></oas-icon>
+    <oas-card><p>triangle</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="NEW" ribbon-form="bookmark" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>bookmark</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" ribbon-form="side" placement="start" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>side</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="BEST" ribbon-form="seal" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>seal</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="LIMITED DEAL" ribbon-form="banner" placement="start">
+    <oas-card><p>banner</p></oas-card>
+  </oas-badge>
+</DemoBlock>
+
+## Premium metallic
+
+`premium` adds a metallic gold treatment to the ribbon: a multi-stop light-gold-to-dark-gold gradient with a deep-gold fine outline (clipped shapes get the outline traced along their clip-path silhouette), and the text color is auto-picked dark against the gold background. It composes orthogonally with `color` with the priority `premium` > `color` > semantic default, and works with every `ribbon-form`; dark theme adapts automatically (driven by the `--oas-preset-gold` token).
+
+<DemoBlock title="Premium metallic">
+  <oas-badge ribbon text="HOT" premium style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>premium fold</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="LIMITED" premium color="success" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>premium overrides color</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="NEW" ribbon-form="bookmark" premium style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>premium bookmark</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="BEST" ribbon-form="seal" premium style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>premium seal</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" ribbon-form="diagonal" premium style="margin-inline-end: var(--oas-space-4); overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 160px"><p>premium diagonal</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="DEAL" ribbon-form="banner" premium placement="start">
+    <oas-card><p>premium banner</p></oas-card>
+  </oas-badge>
+</DemoBlock>
+
 ## Colored ribbon
 
 `color` supports the four semantic colors `primary` / `success` / `warning` / `danger`, following the theme (light/dark); preset names and arbitrary color values are also supported (injected via `--oas-preset-*` tokens / the raw value).
@@ -385,8 +439,10 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 | `offset` | Corner offset: `"x,y"` (px numbers), shifts the badge from its corner position (x positive rightward, y positive downward); composes with `corner` (corner first, then shift); invalid values (non-numeric, missing coordinate) are silently ignored | `string` | — |
 | `overlap` | Circular inset: when wrapping circular content (e.g. an avatar), the badge tucks inside the circle edge (the translate amount shrinks from 50% to ~29%, the 1-√2/2 geometric inset); affects corner badge mode only | `boolean` | — |
 | `placement` | Ribbon position: `start` (inline-start) / `end` (inline-end, default) | `BadgePlacement` | `end` |
+| `premium` | Metallic treatment: a multi-stop gold gradient with a deep-gold fine outline (clipped shapes get the outline traced along their clip-path silhouette), text color auto-picked dark against the gold background; composes orthogonally with `color` with the priority `premium` > `color` > semantic default; works with every `ribbon-form`, dark theme adapts automatically (driven by the `--oas-preset-gold` token) | `boolean` | — |
 | `ribbon` | Ribbon corner mode (boolean, same as `mode="ribbon"`) | `boolean` | — |
-| `ribbon-position` | Ribbon vertical position: `hang` (default, hangs below the top edge) / `edge` (flush with the top edge) / `cross` (straddles the top edge, pressing against the card border for the strongest wrap-around feel); orthogonal to `placement` (start / end), invalid values silently fall back to `hang` | `BadgeRibbonPosition` | `hang` |
+| `ribbon-form` | Ribbon shape: `fold` (default, straight band + folded corner) / `diagonal` (45° diagonal band from the top corner; the band extends outside the card, so the host needs `overflow: hidden` to clip it) / `triangle` (a pure corner triangle holding a small icon or `slot="ribbon"` content) / `bookmark` (a vertical tab hanging from the top edge with a swallow-tail notch) / `side` (a vertical strip hung at mid-height of the side edge) / `seal` (a circular serrated stamp with centered text) / `banner` (a full-width strip across the top edge with angled ends); the `ribbon-position` trio only affects `fold`, the other shapes have their own vertical placement, invalid values silently fall back to `fold` | `BadgeRibbonForm` | `fold` |
+| `ribbon-position` | Ribbon vertical position: `hang` (default, hangs below the top edge) / `edge` (flush with the top edge) / `cross` (straddles the top edge, pressing against the card border for the strongest wrap-around feel); orthogonal to `placement` (start / end), affects the `ribbon-form="fold"` shape only, invalid values silently fall back to `hang` | `BadgeRibbonPosition` | `hang` |
 | `showZero` | Whether to show when value=0 | `boolean` | — |
 | `size` | Size: `small` (compact tier, numeric badge ~13px tall, dot 6px) | `string` | — |
 | `status` | Status point: `success` / `processing` / `default` / `error` / `warning`, renders an inline standalone element of "status dot + `text`", mutually exclusive with ribbon / dot / count modes (rendered first when set); the `processing` dot pulses (`prefers-reduced-motion` disables it) | `BadgeStatus` | — |

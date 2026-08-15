@@ -563,6 +563,8 @@ ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可�
 - **badge→attention 吸引动画**：`attention="pulse"`（外圈脉冲扩散，脉冲色走 `--oas-badge-pulse-color` 自定义属性、默认跟随徽章底色）/ `attention="bounce"`（轻微上下弹跳，幅度约 -25%）；仅作用于 count/dot/standalone 徽标（ribbon 不受影响）；`prefers-reduced-motion` 下停用
 - **badge→corner 四角定位**：`corner="top-right|top-left|bottom-right|bottom-left"`（默认 top-right）定位 count/dot 角标；与 offset 关系：corner 快捷定角，offset 在 corner 结果上做屏幕坐标 px 精确微调（x 正向右、y 正向下，与 corner 朝向无关），先定角再平移可叠加；非法值静默回落 top-right
 - **badge→overlap 圆形内收**：包裹圆形内容（如头像）时角标向圆内收进圆边（平移幅度 50%→约 29%，1-√2/2 几何内收）；仅影响角标模式
+- **badge→ribbon-form 形态维度**：`ribbon-form="fold|diagonal|triangle|bookmark|side|seal|banner"`（默认 fold = 现行直条+折叠，向后兼容）。diagonal 45° 对角斜带跨顶角（宿主需 overflow:hidden 裁切，placement start/end 镜像 ±45°，文字随条旋转）；triangle 角落纯三角形 clip-path + 内嵌小图标（slot="ribbon" 内容）；bookmark 顶边垂挂竖条 + 底部燕尾 V 缺口；side 侧边竖挂（start 左/end 右镜像，折叠角在挂点）；seal 圆形锯齿印章（clip-path 锯齿多边形，文字居中）；banner 顶部横贯横幅（两端折角）。七形态全为 clip-path/CSS 几何，与 placement/color 正交；非法值静默回落 fold
+- **badge→premium 金属质感**：布尔 `premium` 金色金属渐变底（多段亮金→暗金）+ 深金细描边（clip-path 形态沿轮廓 drop-shadow 描边）+ 文字色按金底亮度取深色；与 ribbon-form 正交可叠加；优先级 premium > color > 语义色；dark 主题走 `--oas-preset-gold` token 自动适配
 
 ### 验收标准
 

@@ -315,6 +315,60 @@ oas-badge#badge-dyn.bump::part(badge) {
   </oas-badge>
 </DemoBlock>
 
+## 缎带形态
+
+`ribbon-form` 切换缎带形态：`fold`（默认，直条 + 折叠）/ `diagonal`（45° 对角斜带，条身探出卡外，宿主需 `overflow: hidden` 裁切）/ `triangle`（角落纯三角形，内容为小图标或 `slot="ribbon"`）/ `bookmark`（顶边垂挂 + 底部燕尾缺口）/ `side`（侧边竖挂）/ `seal`（圆形锯齿印章，文字居中）/ `banner`（顶部横贯横幅，两端折角）。非法值静默回落 `fold`。`ribbon-position` 纵向三选仅作用于 `fold` 形态，其余形态有各自的纵向定位。
+
+<DemoBlock title="缎带形态">
+  <oas-badge ribbon text="HOT" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>fold</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" ribbon-form="diagonal" style="margin-inline-end: var(--oas-space-4); overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 160px"><p>diagonal</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon ribbon-form="triangle" style="margin-inline-end: var(--oas-space-4)">
+    <oas-icon slot="ribbon" name="star" size="18"></oas-icon>
+    <oas-card><p>triangle</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="NEW" ribbon-form="bookmark" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>bookmark</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" ribbon-form="side" placement="start" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>side</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="奖" ribbon-form="seal" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>seal</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="限时特惠" ribbon-form="banner" placement="start">
+    <oas-card><p>banner</p></oas-card>
+  </oas-badge>
+</DemoBlock>
+
+## premium 金属质感
+
+`premium` 给缎带叠加金色金属质感：多段亮金→暗金渐变底 + 深金细描边（clip-path 形态沿轮廓描边），文字色按金底亮度自动取深色。与 `color` 正交叠加，优先级 `premium` > `color` > 语义色默认；与 `ribbon-form` 各形态均可组合，dark 主题自动适配（走 `--oas-preset-gold` token 联动）。
+
+<DemoBlock title="premium 金属质感">
+  <oas-badge ribbon text="HOT" premium style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>premium fold</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="限量" premium color="success" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>premium 覆盖 color</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="NEW" ribbon-form="bookmark" premium style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>premium bookmark</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="奖" ribbon-form="seal" premium style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>premium seal</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="HOT" ribbon-form="diagonal" premium style="margin-inline-end: var(--oas-space-4); overflow: hidden; border-radius: var(--oas-radius-lg)">
+    <oas-card style="width: 160px"><p>premium diagonal</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="限时" ribbon-form="banner" premium placement="start">
+    <oas-card><p>premium banner</p></oas-card>
+  </oas-badge>
+</DemoBlock>
+
 ## 彩色缎带
 
 `color` 支持 `primary` / `success` / `warning` / `danger` 四种语义色，与主题 light/dark 联动；同样支持预设名与任意色值（走 `--oas-preset-*` token / 原色值注入）。
@@ -385,8 +439,10 @@ oas-badge#badge-dyn.bump::part(badge) {
 | `offset` | 角标偏移：`"x,y"`（px 数字），在角标定位基础上额外平移（x 正向右、y 正向下）；与 `corner` 可叠加（先定角再平移）；非法值（非数字、缺坐标）静默忽略 | `string` | — |
 | `overlap` | 圆形内收：包裹圆形内容（如头像）时角标向圆内收进圆边（平移幅度从 50% 收到约 29%，1-√2/2 几何内收）；仅影响角标模式 | `boolean` | — |
 | `placement` | 缎带位置：`start`（行首）/ `end`（行尾，默认） | `BadgePlacement` | `end` |
+| `premium` | 金属质感：金色多段渐变底 + 深金细描边（clip-path 形态沿轮廓描边），文字色按金底亮度取深色；与 `color` 正交叠加，优先级 `premium` > `color` > 语义色默认；与 `ribbon-form` 各形态可组合，dark 主题自动适配（走 `--oas-preset-gold` token） | `boolean` | — |
 | `ribbon` | 缎带角标模式（布尔，等价 `mode="ribbon"`） | `boolean` | — |
-| `ribbon-position` | 缎带纵向位置：`hang`（默认，挂沿下）/ `edge`（贴顶边）/ `cross`（骑跨顶边，压住卡片顶边框，包裹感最强）；与 `placement`（start/end 横向）正交，非法值静默回落 `hang` | `BadgeRibbonPosition` | `hang` |
+| `ribbon-form` | 缎带形态：`fold`（默认，直条 + 折叠）/ `diagonal`（45° 对角斜带，条身探出卡外，宿主需 `overflow: hidden` 裁切）/ `triangle`（角落纯三角形，内容为小图标或 `slot="ribbon"`）/ `bookmark`（顶边垂挂 + 底部燕尾缺口）/ `side`（侧边竖挂）/ `seal`（圆形锯齿印章，文字居中）/ `banner`（顶部横贯横幅，两端折角）；`ribbon-position` 纵向三选仅作用于 `fold`，其余形态有各自纵向定位，非法值静默回落 `fold` | `BadgeRibbonForm` | `fold` |
+| `ribbon-position` | 缎带纵向位置：`hang`（默认，挂沿下）/ `edge`（贴顶边）/ `cross`（骑跨顶边，压住卡片顶边框，包裹感最强）；与 `placement`（start/end 横向）正交，仅作用于 `ribbon-form="fold"` 形态，非法值静默回落 `hang` | `BadgeRibbonPosition` | `hang` |
 | `showZero` | value=0 时是否显示 | `boolean` | — |
 | `size` | 尺寸：`small`（小档，数字徽标高约 13px、dot 6px） | `string` | — |
 | `status` | 状态点形态：`success` / `processing` / `default` / `error` / `warning`，渲染「状态点 + `text` 文字」的行内独立元素，与 ribbon / dot / count 模式互斥（设置时优先渲染）；`processing` 圆点带脉冲动画（`prefers-reduced-motion` 下停用） | `BadgeStatus` | — |
