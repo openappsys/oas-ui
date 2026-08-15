@@ -176,12 +176,58 @@
   </oas-space>
 </DemoBlock>
 
+## 行内嵌入
+
+`oas-space` 默认是块级 flex 容器；需要嵌在文字段落中时，给宿主加一行 `style="display: inline-flex"` 即可——行内是宿主 CSS 的事，不是组件属性。
+
+<DemoBlock title="行内嵌入文字段落">
+  <p>
+    正文中间嵌一组
+    <oas-space style="display: inline-flex" size="small">
+      <oas-tag>标签一</oas-tag>
+      <oas-tag type="success">标签二</oas-tag>
+    </oas-space>
+    标签，与文字同行、等距排列。
+  </p>
+</DemoBlock>
+
+## 响应式
+
+`direction` 与 `size` 支持断点简写：空格分隔的基础值 + 若干 `断点:值`（如 `direction="column md:row"`、`size="small md:large"`）。窗口在断点宽度以下时用基础值，达到断点宽度（移动优先 `min-width`）后切到断点值。
+
+断点表：
+
+| 断点 | 宽度 |
+| --- | --- |
+| `sm` | 640px |
+| `md` | 768px |
+| `lg` | 1024px |
+| `xl` | 1280px |
+
+<DemoBlock title="方向响应式：窄屏竖排、md 起横排">
+  <oas-space direction="column md:row" style="width: 100%">
+    <oas-button>按钮 1</oas-button>
+    <oas-button>按钮 2</oas-button>
+    <oas-button>按钮 3</oas-button>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="间距响应式：small 起、md 起 large">
+  <oas-space size="small md:large" wrap>
+    <oas-button>按钮 1</oas-button>
+    <oas-button>按钮 2</oas-button>
+    <oas-button>按钮 3</oas-button>
+    <oas-button>按钮 4</oas-button>
+    <oas-button>按钮 5</oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## 紧凑组合（oas-compact）
 
 `oas-compact` 让相邻表单控件（`oas-button` / `oas-input` / `oas-input-number` / `oas-select`）贴边合并边框：相邻处 -1px 重叠、首尾圆角、中间直角；支持 `vertical`（纵向贴合）、`disabled`（全组禁用）、`block`（宽度 100%）。
 
 <DemoBlock title="input + button 贴合">
-  <oas-compact>
+  <oas-compact aria-label="搜索组合">
     <oas-input value="oas-ui" placeholder="请输入关键词"></oas-input>
     <oas-button type="primary">查询</oas-button>
   </oas-compact>
@@ -220,13 +266,13 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `align` | 对齐 | `string` | — |
-| `direction` | 方向 | `SpaceDirection` | `horizontal` |
+| `direction` | 方向；支持断点简写：空格分隔的基础值 + 若干 `断点:值`（如 `column md:row`），断点表 `sm`=640px / `md`=768px / `lg`=1024px / `xl`=1280px（移动优先 min-width），低于断点用基础值 | `SpaceDirection` | `horizontal` |
 | `fill` | 子项等分填满容器（`flex: 1` 等价物） | `boolean` | — |
 | `fill-ratio` | 配合 `fill` 的分配比例（百分比，默认 100）：子项自身可设、容器级作缺省 | `string` | — |
 | `justify` | 主轴分布：`start` / `center` / `end` / `space-between` / `space-around` / `space-evenly`（缺省不设） | `string` | — |
 | `reverse` | 反向排列：水平 → `row-reverse`、垂直 → `column-reverse` | `boolean` | — |
 | `separator` | 子项间分隔符字符串（次要文字色）；`slot="separator"` 自定义分隔优先于字符串 | `string` | — |
-| `size` | 间距：`xs`（4px）/ `small`（8px）/ `medium`（12px，默认）/ `large`（24px）/ `xl`（32px），或数字像素；逗号分隔两值（如 `8,16`）分别控制横向/纵向间距；非法值回落 `medium` 并告警 | `string` | `medium` |
+| `size` | 间距：`xs`（4px）/ `small`（8px）/ `medium`（12px，默认）/ `large`（24px）/ `xl`（32px），或数字像素；逗号分隔两值（如 `8,16`）分别控制横向/纵向间距；支持断点简写（如 `small md:large`，断点表同 `direction`）；非法值回落 `medium` 并告警 | `string` | `medium` |
 | `wrap` | 是否换行 | `boolean` | — |
 
 | 名称 | 说明 |
@@ -238,6 +284,7 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `aria-label` | — | `boolean` | — |
 | `block` | 宽度 100%（撑满父容器） | — | — |
 | `disabled` | 透传全组禁用 | `boolean` | — |
 | `vertical` | 纵向贴合（相邻处上下 -1px 重叠，圆角方向改上下） | `boolean` | — |

@@ -202,4 +202,98 @@ describe('OASSpace', () => {
     el.removeAttribute('fill')
     expect(items[0]!.style.flex).toBe('')
   })
+
+  // ===== v2.0 能力补齐：响应式断点（direction/size 断点简写） =====
+
+  it('direction 断点简写：var() 兜底基础值 + 生成 @media 规则', () => {
+    const el = mount({ direction: 'column md:row' })
+    expect(el.style.flexDirection).toBe('var(--oas-space-direction, column)')
+    const css = el.shadowRoot!.querySelector('style[data-oas-space-breakpoints]')!.textContent!
+    expect(css).toContain(
+      '@media (min-width: 768px) { :host { --oas-space-direction: row } }',
+    )
+  })
+
+  it('size 断点简写：多断点生成对应 min-width 规则（变量名与值正确）', () => {
+    const el = mount({ size: 'small md:large xl:xl' })
+    expect(el.style.columnGap).toBe('var(--oas-space-column-gap, var(--oas-space-2))')
+    expect(el.style.rowGap).toBe('var(--oas-space-row-gap, var(--oas-space-2))')
+    const css = el.shadowRoot!.querySelector('style[data-oas-space-breakpoints]')!.textContent!
+    expect(css).toContain(
+      '@media (min-width: 768px) { :host { --oas-space-column-gap: var(--oas-space-5); --oas-space-row-gap: var(--oas-space-5) } }',
+    )
+    expect(css).toContain(
+      '@media (min-width: 1280px) { :host { --oas-space-column-gap: var(--oas-space-6); --oas-space-row-gap: var(--oas-space-6) } }',
+    )
+  })
+
+  it('断点简写与 reverse 组合：断点值同样应用 reverse', () => {
+    const el = mount({ direction: 'column md:row', reverse: '' })
+    expect(el.style.flexDirection).toBe('var(--oas-space-direction, column-reverse)')
+    const css = el.shadowRoot!.querySelector('style[data-oas-space-breakpoints]')!.textContent!
+    expect(css).toContain('--oas-space-direction: row-reverse')
+  })
+
+  it('size 断点值支持逗号 pair：横向/纵向分别切换', () => {
+    const el = mount({ size: '8,16 md:24,48' })
+    expect(el.style.columnGap).toBe('var(--oas-space-column-gap, 8px)')
+    expect(el.style.rowGap).toBe('var(--oas-space-row-gap, 16px)')
+    const css = el.shadowRoot!.querySelector('style[data-oas-space-breakpoints]')!.textContent!
+    expect(css).toContain(
+      '@media (min-width: 768px) { :host { --oas-space-column-gap: 24px; --oas-space-row-gap: 48px } }',
+    )
+  })
+
+  it('无断点纯值不生成 @media 规则（保持原内联直写）；移除断点后规则清空', () => {
+    const el = mount({ direction: 'vertical', size: 'large' })
+    expect(el.style.flexDirection).toBe('column')
+    expect(el.style.columnGap).toBe('var(--oas-space-5)')
+    const styleEl = el.shadowRoot!.querySelector('style[data-oas-space-breakpoints]')!
+    expect(styleEl.textContent).toBe('')
+    // 先带断点再移除：规则清空、回内联直写
+    el.setAttribute('direction', 'column md:row')
+    expect(styleEl.textContent).toContain('@media (min-width: 768px)')
+    el.setAttribute('direction', 'vertical')
+    expect(el.style.flexDirection).toBe('column')
+    expect(styleEl.textContent).toBe('')
+  })
+
+  it('非法断点名：丢弃该断点 + dev 告警（同值去重）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ direction: 'column foo:row' })
+    expect(el.style.flexDirection).toBe('var(--oas-space-direction, column)')
+    const css = el.shadowRoot!.querySelector('style[data-oas-space-breakpoints]')!.textContent!
+    expect(css).toBe('')
+    el.setAttribute('direction', 'column foo:row')
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+    el.remove()
+  })
+
+  it('非法断点值：回落基础值 + dev 告警', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ direction: 'column md:diagonal' })
+    const css = el.shadowRoot!.querySelector('style[data-oas-space-breakpoints]')!.textContent!
+    expect(css).toContain(
+      '@media (min-width: 768px) { :host { --oas-space-direction: column } }',
+    )
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+    el.remove()
+  })
+
+  it('SSR 快照含 @media 规则：shadow 样式与宿主 var() 兜底一并序列化', () => {
+    const el = mount({ direction: 'column md:row', size: 'small md:large' })
+    // 序列化 shadow 内容（renderToString 对 shadowRoot.innerHTML 原样输出；
+    // happy-dom 序列化带属性 style 为 `style data-oas-space-breakpoints=""`）
+    const shadowHtml = el.shadowRoot!.innerHTML
+    expect(shadowHtml).toContain('style data-oas-space-breakpoints')
+    expect(shadowHtml).toContain('@media (min-width: 768px)')
+    expect(shadowHtml).toContain('--oas-space-column-gap: var(--oas-space-5)')
+    // 序列化宿主 style 属性（renderToString 遍历 el.attributes 输出）
+    const styleAttr = el.getAttribute('style')!
+    expect(styleAttr).toContain('flex-direction: var(--oas-space-direction, column)')
+    expect(styleAttr).toContain('column-gap: var(--oas-space-column-gap, var(--oas-space-2))')
+    expect(styleAttr).toContain('row-gap: var(--oas-space-row-gap, var(--oas-space-2))')
+  })
 })

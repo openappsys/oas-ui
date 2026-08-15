@@ -540,6 +540,8 @@ ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可�
 - **space→reverse**：布尔 `reverse`，horizontal→`row-reverse`、vertical→`column-reverse`
 - **space→size 数组**：`size` 接受逗号分隔两值（如 `size="8,16"`）：横向 8px、纵向 16px（wrap 时生效）；单值保持现状；每段独立归一化（token/数字/非法回落告警）
 - **space→fill/fill-ratio**：`fill` 子项等分填满容器（flex: 1 等价物）；`fill-ratio`（百分比，默认 100）按比例分配——子项自身可设、容器级作缺省；fill 移除时清空子项 flex
+- **space→响应式断点**：`direction` 与 `size` 支持断点简写（空格分隔：基础值 + 若干 `断点:值`，如 `direction="column md:row"`、`size="small md:large"`）。断点常量移动优先 min-width（sm=640px / md=768px / lg=1024px / xl=1280px，@media 不支持 CSS 变量故为字面量）。实现：含断点时宿主内联样式改用 var() 兜底基础值（如 `flex-direction: var(--oas-space-direction, row)`），shadow 模板内置专用 `<style data-oas-space-breakpoints>`，update 生成 `@media (min-width: Npx) { :host { --oas-space-direction: … } }` 写入；SSR 快照同样产出（渲染器触发 update 后序列化 shadowRoot.innerHTML，两段路径一致）。无断点纯值保持原内联直写路径（不破坏既有行为）。非法断点名/非法值回落基础值 + dev 告警（同值去重）。
+- **space→行内嵌入**：demo 级能力——`<oas-space style="display: inline-flex">` 嵌在文字段落中间展示行内用法（inline 非组件属性，宿主一行 CSS 即可）。
 - **oas-compact**：紧凑容器，slot 内相邻表单控件（oas-button / oas-input / oas-input-number / oas-select）贴边合并边框（相邻 -1px 重叠）+ 首尾圆角、中间直角。圆角合并走 button-group 单一协议（`--oas-button-group-radius` 变量穿透，input/input-number/select 已补同名变量消费钩子）。属性：vertical（纵向贴合，圆角方向改上下）、disabled（透传全组禁用）、block（宽度 100%）。交互态：hover / 聚焦项 z-index 提升盖过相邻边框。边界：空组渲染不报错；slotchange 增减子项自动重算贴合/圆角。
 
 

@@ -1151,13 +1151,13 @@
   "oas-space": {
     "attrs": {
       "align": "对齐",
-      "direction": "方向",
+      "direction": "方向；支持断点简写：空格分隔的基础值 + 若干 `断点:值`（如 `column md:row`），断点表 `sm`=640px / `md`=768px / `lg`=1024px / `xl`=1280px（移动优先 min-width），低于断点用基础值",
       "fill": "子项等分填满容器（`flex: 1` 等价物）",
       "fill-ratio": "配合 `fill` 的分配比例（百分比，默认 100）：子项自身可设、容器级作缺省",
       "justify": "主轴分布：`start` / `center` / `end` / `space-between` / `space-around` / `space-evenly`（缺省不设）",
       "reverse": "反向排列：水平 → `row-reverse`、垂直 → `column-reverse`",
       "separator": "子项间分隔符字符串（次要文字色）；`slot=\"separator\"` 自定义分隔优先于字符串",
-      "size": "间距：`xs`（4px）/ `small`（8px）/ `medium`（12px，默认）/ `large`（24px）/ `xl`（32px），或数字像素；逗号分隔两值（如 `8,16`）分别控制横向/纵向间距；非法值回落 `medium` 并告警",
+      "size": "间距：`xs`（4px）/ `small`（8px）/ `medium`（12px，默认）/ `large`（24px）/ `xl`（32px），或数字像素；逗号分隔两值（如 `8,16`）分别控制横向/纵向间距；支持断点简写（如 `small md:large`，断点表同 `direction`）；非法值回落 `medium` 并告警",
       "wrap": "是否换行"
     },
     "events": {},

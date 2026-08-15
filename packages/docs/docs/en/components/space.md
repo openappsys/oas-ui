@@ -176,12 +176,58 @@ A layout container with even horizontal/vertical spacing.
   </oas-space>
 </DemoBlock>
 
+## Inline embedding
+
+`oas-space` is a block-level flex container by default; to embed it inside a paragraph of text, add `style="display: inline-flex"` on the host — inline display is a host CSS concern, not a component attribute.
+
+<DemoBlock title="Inline in a paragraph">
+  <p>
+    A paragraph with
+    <oas-space style="display: inline-flex" size="small">
+      <oas-tag>Tag 1</oas-tag>
+      <oas-tag type="success">Tag 2</oas-tag>
+    </oas-space>
+    tags on the same line, evenly spaced.
+  </p>
+</DemoBlock>
+
+## Responsive
+
+`direction` and `size` support a breakpoint shorthand: a space-separated base value plus any number of `breakpoint:value` pairs (e.g. `direction="column md:row"`, `size="small md:large"`). Below the breakpoint width the base value applies; once the width reaches a breakpoint (mobile-first `min-width`) the breakpoint value kicks in.
+
+Breakpoint table:
+
+| Breakpoint | Width |
+| --- | --- |
+| `sm` | 640px |
+| `md` | 768px |
+| `lg` | 1024px |
+| `xl` | 1280px |
+
+<DemoBlock title="Responsive direction: column on narrow, row from md">
+  <oas-space direction="column md:row" style="width: 100%">
+    <oas-button>Button 1</oas-button>
+    <oas-button>Button 2</oas-button>
+    <oas-button>Button 3</oas-button>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="Responsive size: small, then large from md">
+  <oas-space size="small md:large" wrap>
+    <oas-button>Button 1</oas-button>
+    <oas-button>Button 2</oas-button>
+    <oas-button>Button 3</oas-button>
+    <oas-button>Button 4</oas-button>
+    <oas-button>Button 5</oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## Compact group (oas-compact)
 
 `oas-compact` merges adjacent form controls (`oas-button` / `oas-input` / `oas-input-number` / `oas-select`): adjacent edges overlap by -1px to share borders, first/last items keep rounded corners while middle ones are squared; supports `vertical` (vertical grouping), `disabled` (disable the whole group) and `block` (width 100%).
 
 <DemoBlock title="input + button">
-  <oas-compact>
+  <oas-compact aria-label="Search group">
     <oas-input value="oas-ui" placeholder="Enter a keyword"></oas-input>
     <oas-button type="primary">Search</oas-button>
   </oas-compact>
@@ -220,13 +266,13 @@ A layout container with even horizontal/vertical spacing.
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `align` | Alignment | `string` | — |
-| `direction` | Direction | `SpaceDirection` | `horizontal` |
+| `direction` | Direction; supports breakpoint shorthand: a space-separated base value plus any `breakpoint:value` pairs (e.g. `column md:row`), breakpoints `sm`=640px / `md`=768px / `lg`=1024px / `xl`=1280px (mobile-first min-width), base value applies below the breakpoint | `SpaceDirection` | `horizontal` |
 | `fill` | Make items grow equally to fill the container (the `flex: 1` equivalent) | `boolean` | — |
 | `fill-ratio` | Ratio for `fill` distribution (percent, default 100): items can set it individually, container-level acts as default | `string` | — |
 | `justify` | Main-axis distribution: `start` / `center` / `end` / `space-between` / `space-around` / `space-evenly` (unset by default) | `string` | — |
 | `reverse` | Reverse the main axis: horizontal → `row-reverse`, vertical → `column-reverse` | `boolean` | — |
 | `separator` | Separator string between items (secondary text color); `slot="separator"` custom content takes priority | `string` | — |
-| `size` | Spacing: `xs` (4px) / `small` (8px) / `medium` (12px, default) / `large` (24px) / `xl` (32px), or a numeric pixel value; a comma-separated pair (e.g. `8,16`) controls horizontal/vertical spacing separately; invalid values fall back to `medium` with a warning | `string` | `medium` |
+| `size` | Spacing: `xs` (4px) / `small` (8px) / `medium` (12px, default) / `large` (24px) / `xl` (32px), or a numeric pixel value; a comma-separated pair (e.g. `8,16`) controls horizontal/vertical spacing separately; supports breakpoint shorthand (e.g. `small md:large`, breakpoints as in `direction`); invalid values fall back to `medium` with a warning | `string` | `medium` |
 | `wrap` | Whether to wrap | `boolean` | — |
 
 | Name | Description |
@@ -238,6 +284,7 @@ A layout container with even horizontal/vertical spacing.
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `aria-label` | — | `boolean` | — |
 | `block` | Width 100% (stretch to fill the parent container) | — | — |
 | `disabled` | Disable the whole group | `boolean` | — |
 | `vertical` | Vertical grouping (adjacent items overlap -1px vertically, corner merging switches to top/bottom) | `boolean` | — |

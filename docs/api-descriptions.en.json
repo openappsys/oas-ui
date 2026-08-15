@@ -1151,13 +1151,13 @@
   "oas-space": {
     "attrs": {
       "align": "Alignment",
-      "direction": "Direction",
+      "direction": "Direction; supports breakpoint shorthand: a space-separated base value plus any `breakpoint:value` pairs (e.g. `column md:row`), breakpoints `sm`=640px / `md`=768px / `lg`=1024px / `xl`=1280px (mobile-first min-width), base value applies below the breakpoint",
       "fill": "Make items grow equally to fill the container (the `flex: 1` equivalent)",
       "fill-ratio": "Ratio for `fill` distribution (percent, default 100): items can set it individually, container-level acts as default",
       "justify": "Main-axis distribution: `start` / `center` / `end` / `space-between` / `space-around` / `space-evenly` (unset by default)",
       "reverse": "Reverse the main axis: horizontal → `row-reverse`, vertical → `column-reverse`",
       "separator": "Separator string between items (secondary text color); `slot=\"separator\"` custom content takes priority",
-      "size": "Spacing: `xs` (4px) / `small` (8px) / `medium` (12px, default) / `large` (24px) / `xl` (32px), or a numeric pixel value; a comma-separated pair (e.g. `8,16`) controls horizontal/vertical spacing separately; invalid values fall back to `medium` with a warning",
+      "size": "Spacing: `xs` (4px) / `small` (8px) / `medium` (12px, default) / `large` (24px) / `xl` (32px), or a numeric pixel value; a comma-separated pair (e.g. `8,16`) controls horizontal/vertical spacing separately; supports breakpoint shorthand (e.g. `small md:large`, breakpoints as in `direction`); invalid values fall back to `medium` with a warning",
       "wrap": "Whether to wrap"
     },
     "events": {},

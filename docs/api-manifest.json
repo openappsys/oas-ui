@@ -596,6 +596,11 @@
       {
         "name": "block",
         "observed": true
+      },
+      {
+        "name": "aria-label",
+        "type": "boolean",
+        "observed": false
       }
     ],
     "props": [],
