@@ -106,6 +106,7 @@
       "overlap": "圆形内收：包裹圆形内容（如头像）时角标向圆内收进圆边（平移幅度从 50% 收到约 29%，1-√2/2 几何内收）；仅影响角标模式",
       "placement": "缎带位置：`start`（行首）/ `end`（行尾，默认）",
       "ribbon": "缎带角标模式（布尔，等价 `mode=\"ribbon\"`）",
+      "ribbon-position": "缎带纵向位置：`hang`（默认，挂沿下）/ `edge`（贴顶边）/ `cross`（骑跨顶边，压住卡片顶边框，包裹感最强）；与 `placement`（start/end 横向）正交，非法值静默回落 `hang`",
       "showZero": "value=0 时是否显示",
       "size": "尺寸：`small`（小档，数字徽标高约 13px、dot 6px）",
       "status": "状态点形态：`success` / `processing` / `default` / `error` / `warning`，渲染「状态点 + `text` 文字」的行内独立元素，与 ribbon / dot / count 模式互斥（设置时优先渲染）；`processing` 圆点带脉冲动画（`prefers-reduced-motion` 下停用）",

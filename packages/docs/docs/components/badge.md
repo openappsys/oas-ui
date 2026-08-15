@@ -287,6 +287,22 @@ oas-badge#badge-dyn.bump::part(badge) {
   </oas-badge>
 </DemoBlock>
 
+## 缎带位置
+
+`ribbon-position` 控制缎带的纵向位置：`hang`（默认，挂沿下）/ `edge`（贴顶边）/ `cross`（骑跨顶边，压住卡片顶边框，包裹感最强）。三种位置与 `placement`（start / end 横向）正交，两侧均生效。
+
+<DemoBlock title="缎带位置">
+  <oas-badge ribbon text="HANG" ribbon-position="hang" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>hang（默认，挂沿下）</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="EDGE" ribbon-position="edge" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>edge（贴顶边）</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="CROSS" ribbon-position="cross">
+    <oas-card><p>cross（骑跨顶边）</p></oas-card>
+  </oas-badge>
+</DemoBlock>
+
 ## 彩色缎带
 
 `color` 支持 `primary` / `success` / `warning` / `danger` 四种语义色，与主题 light/dark 联动；同样支持预设名与任意色值（走 `--oas-preset-*` token / 原色值注入）。
@@ -358,6 +374,7 @@ oas-badge#badge-dyn.bump::part(badge) {
 | `overlap` | 圆形内收：包裹圆形内容（如头像）时角标向圆内收进圆边（平移幅度从 50% 收到约 29%，1-√2/2 几何内收）；仅影响角标模式 | `boolean` | — |
 | `placement` | 缎带位置：`start`（行首）/ `end`（行尾，默认） | `BadgePlacement` | `end` |
 | `ribbon` | 缎带角标模式（布尔，等价 `mode="ribbon"`） | `boolean` | — |
+| `ribbon-position` | 缎带纵向位置：`hang`（默认，挂沿下）/ `edge`（贴顶边）/ `cross`（骑跨顶边，压住卡片顶边框，包裹感最强）；与 `placement`（start/end 横向）正交，非法值静默回落 `hang` | `BadgeRibbonPosition` | `hang` |
 | `showZero` | value=0 时是否显示 | `boolean` | — |
 | `size` | 尺寸：`small`（小档，数字徽标高约 13px、dot 6px） | `string` | — |
 | `status` | 状态点形态：`success` / `processing` / `default` / `error` / `warning`，渲染「状态点 + `text` 文字」的行内独立元素，与 ribbon / dot / count 模式互斥（设置时优先渲染）；`processing` 圆点带脉冲动画（`prefers-reduced-motion` 下停用） | `BadgeStatus` | — |

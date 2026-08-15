@@ -3,6 +3,8 @@ import { OASElement } from '@oas-ui/core'
 export type BadgeMode = 'count' | 'ribbon'
 export type BadgeColor = 'primary' | 'success' | 'warning' | 'danger'
 export type BadgePlacement = 'start' | 'end'
+/** 缎带纵向位置：hang 挂沿下（默认）/ edge 贴顶边 / cross 骑跨顶边；非法值静默回落 hang */
+export type BadgeRibbonPosition = 'hang' | 'edge' | 'cross'
 /** 吸引动画：外圈脉冲扩散 / 轻微上下弹跳（仅 count/dot/standalone 徽标，ribbon 不受影响） */
 export type BadgeAttention = 'pulse' | 'bounce'
 /** 角标四角定位（默认 top-right；非法值静默回落） */
@@ -278,6 +280,14 @@ const STYLE = `
   background-color: var(--oas-badge-bg, var(--oas-color-danger));
   border-radius: var(--oas-radius-sm);
 }
+/* ribbon-position 三选：hang（默认，基类 top）挂沿下 / edge 贴顶边 / cross 骑跨顶边；
+   仅改纵向 top，与 placement（横向锚点）正交，非法值回落基类 hang */
+.ribbon.position-edge {
+  top: 0;
+}
+.ribbon.position-cross {
+  top: -6px;
+}
 .ribbon-text {
   color: var(--oas-badge-on-color, var(--oas-color-text-on-danger));
 }
@@ -302,15 +312,16 @@ const STYLE = `
 .ribbon.color-warning .ribbon-text {
   color: var(--oas-color-text-on-warning);
 }
+/* 折叠角：尖三角（clip-path 三点三角，顶边沿缎带下沿、斜边折向内下），
+   经 currentColor 继承缎带底色 + brightness 压暗成折叠阴影；clip-path 走元素本地坐标，
+   start/end 仅切锚点自动镜像 */
 .ribbon-corner {
   position: absolute;
   top: 100%;
   width: var(--oas-space-2);
   height: var(--oas-space-2);
-  color: currentColor;
-  border: calc(var(--oas-space-2) / 2) solid;
-  transform: scaleY(0.75);
-  transform-origin: top;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
   filter: brightness(75%);
 }
 .ribbon.placement-end {
@@ -319,8 +330,6 @@ const STYLE = `
 }
 .ribbon.placement-end .ribbon-corner {
   inset-inline-end: 0;
-  border-inline-end-color: transparent;
-  border-block-end-color: transparent;
 }
 .ribbon.placement-start {
   inset-inline-start: calc(var(--oas-space-2) * -1);
@@ -328,8 +337,6 @@ const STYLE = `
 }
 .ribbon.placement-start .ribbon-corner {
   inset-inline-start: 0;
-  border-block-end-color: transparent;
-  border-inline-start-color: transparent;
 }
 .ribbon[hidden] {
   display: none;
@@ -354,6 +361,7 @@ export class OASBadge extends OASElement {
       'attention',
       'corner',
       'overlap',
+      'ribbon-position',
     ]
   }
 
@@ -434,6 +442,7 @@ export class OASBadge extends OASElement {
       this.hasAttr('ribbon') || (this.getAttr('mode', 'count') as BadgeMode) === 'ribbon'
     const color = this.getAttr('color', 'danger') as BadgeColor | BadgePresetColor
     const placement = this.getAttr('placement', 'end') as BadgePlacement
+    const position = this.getAttr('ribbon-position', 'hang') as BadgeRibbonPosition
     const text = this.getAttr('text', '')
 
     // 语义色 class（兼容）：仅 4 语义色命中；预设名/任意色值走下方变量注入
@@ -443,6 +452,9 @@ export class OASBadge extends OASElement {
     ribbonEl.classList.toggle('color-danger', color === 'danger')
     ribbonEl.classList.toggle('placement-start', placement === 'start')
     ribbonEl.classList.toggle('placement-end', placement !== 'start')
+    // ribbon-position 三选：edge/cross 命中间隔类，hang 与非法值均回落基类（不写额外标记）
+    ribbonEl.classList.toggle('position-edge', position === 'edge')
+    ribbonEl.classList.toggle('position-cross', position === 'cross')
 
     // color 变量注入（语义色与 class 双保险；预设名/任意色值唯一生效路径）
     const resolved = resolveBadgeColor(color)

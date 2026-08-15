@@ -106,6 +106,7 @@
       "overlap": "Circular inset: when wrapping circular content (e.g. an avatar), the badge tucks inside the circle edge (the translate amount shrinks from 50% to ~29%, the 1-√2/2 geometric inset); affects corner badge mode only",
       "placement": "Ribbon position: `start` (inline-start) / `end` (inline-end, default)",
       "ribbon": "Ribbon corner mode (boolean, same as `mode=\"ribbon\"`)",
+      "ribbon-position": "Ribbon vertical position: `hang` (default, hangs below the top edge) / `edge` (flush with the top edge) / `cross` (straddles the top edge, pressing against the card border for the strongest wrap-around feel); orthogonal to `placement` (start / end), invalid values silently fall back to `hang`",
       "showZero": "Whether to show when value=0",
       "size": "Size: `small` (compact tier, numeric badge ~13px tall, dot 6px)",
       "status": "Status point: `success` / `processing` / `default` / `error` / `warning`, renders an inline standalone element of \"status dot + `text`\", mutually exclusive with ribbon / dot / count modes (rendered first when set); the `processing` dot pulses (`prefers-reduced-motion` disables it)",

@@ -287,6 +287,22 @@ The `ribbon` boolean attribute (or `mode="ribbon"`) enables a ribbon corner — 
   </oas-badge>
 </DemoBlock>
 
+## Ribbon position
+
+`ribbon-position` controls the ribbon's vertical position: `hang` (default, hangs below the top edge) / `edge` (flush with the top edge) / `cross` (straddles the top edge, pressing against the card border for the strongest wrap-around feel). All three positions are orthogonal to `placement` (start / end) and work on both sides.
+
+<DemoBlock title="Ribbon position">
+  <oas-badge ribbon text="HANG" ribbon-position="hang" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>hang (default, hangs below)</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="EDGE" ribbon-position="edge" style="margin-inline-end: var(--oas-space-4)">
+    <oas-card><p>edge (flush with top edge)</p></oas-card>
+  </oas-badge>
+  <oas-badge ribbon text="CROSS" ribbon-position="cross">
+    <oas-card><p>cross (straddling top edge)</p></oas-card>
+  </oas-badge>
+</DemoBlock>
+
 ## Colored ribbon
 
 `color` supports the four semantic colors `primary` / `success` / `warning` / `danger`, following the theme (light/dark); preset names and arbitrary color values are also supported (injected via `--oas-preset-*` tokens / the raw value).
@@ -358,6 +374,7 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 | `overlap` | Circular inset: when wrapping circular content (e.g. an avatar), the badge tucks inside the circle edge (the translate amount shrinks from 50% to ~29%, the 1-√2/2 geometric inset); affects corner badge mode only | `boolean` | — |
 | `placement` | Ribbon position: `start` (inline-start) / `end` (inline-end, default) | `BadgePlacement` | `end` |
 | `ribbon` | Ribbon corner mode (boolean, same as `mode="ribbon"`) | `boolean` | — |
+| `ribbon-position` | Ribbon vertical position: `hang` (default, hangs below the top edge) / `edge` (flush with the top edge) / `cross` (straddles the top edge, pressing against the card border for the strongest wrap-around feel); orthogonal to `placement` (start / end), invalid values silently fall back to `hang` | `BadgeRibbonPosition` | `hang` |
 | `showZero` | Whether to show when value=0 | `boolean` | — |
 | `size` | Size: `small` (compact tier, numeric badge ~13px tall, dot 6px) | `string` | — |
 | `status` | Status point: `success` / `processing` / `default` / `error` / `warning`, renders an inline standalone element of "status dot + `text`", mutually exclusive with ribbon / dot / count modes (rendered first when set); the `processing` dot pulses (`prefers-reduced-motion` disables it) | `BadgeStatus` | — |

@@ -497,6 +497,12 @@
         "name": "overlap",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "ribbon-position",
+        "type": "BadgeRibbonPosition",
+        "default": "hang",
+        "observed": true
       }
     ],
     "props": [],

@@ -1278,7 +1278,7 @@ test('badge ribbon：缎带可见、折叠角生效、语义色与 placement 渲
         bg: cs.backgroundColor,
         color: textEl ? getComputedStyle(textEl).color : cs.color,
         endRadius: cs.borderEndEndRadius,
-        cornerTransform: getComputedStyle(cornerEl(b)!).transform,
+        cornerClip: getComputedStyle(cornerEl(b)!).clipPath,
         placementStart: rb.classList.contains('placement-start'),
       }
     }
@@ -1290,14 +1290,15 @@ test('badge ribbon：缎带可见、折叠角生效、语义色与 placement 渲
       count: countEl?.shadowRoot?.querySelector<HTMLElement>('.badge')?.textContent ?? null,
     }
   })
-  // 默认缎带：可见、文本同步、danger 色、折叠角方形 + transform 生效
+  // 默认缎带：可见、文本同步、danger 色、尖三角折叠角生效（clip-path 非 none）
   expect(r.default).not.toBeNull()
   expect(r.default!.hidden).toBe(false)
   expect(r.default!.text).toContain('HOT')
   expect(r.default!.bg).toBe('rgb(220, 38, 38)')
   expect(r.default!.color).not.toBe(r.default!.bg) // 文字色 ≠ 背景色（文字不可见曾现风险）
   expect(r.default!.endRadius).toBe('0px')
-  expect(r.default!.cornerTransform).not.toBe('none')
+  expect(r.default!.cornerClip).not.toBe('none')
+  expect(r.default!.cornerClip).toContain('polygon(')
   // placement=start：换到行首
   expect(r.start).not.toBeNull()
   expect(r.start!.hidden).toBe(false)

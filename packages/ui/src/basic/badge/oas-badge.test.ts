@@ -25,6 +25,13 @@ function ribbonFallback(el: OASBadge): HTMLElement | null {
   return el.shadowRoot!.querySelector<HTMLElement>('.ribbon-fallback')
 }
 
+/** 提取 shadow 样式里指定选择器对应的规则体（精确断言 class 驱动的 CSS 值） */
+function cssRule(style: string, selector: string): string {
+  const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const m = style.match(new RegExp(`${esc}\\s*\\{([\\s\\S]*?)\\}`))
+  return m ? m[1]! : ''
+}
+
 describe('OASBadge', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -612,5 +619,111 @@ describe('OASBadge ribbon 与 corner/attention 互不干扰', () => {
     // 同宿主角标照常生效
     expect(badge(el)!.classList.contains('corner-bottom-left')).toBe(true)
     expect(badge(el)!.classList.contains('attention-pulse')).toBe(true)
+  })
+})
+
+describe('OASBadge ribbon-position 纵向三选', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('默认 hang：无 position class、不写内联 top（回落基类 var(--oas-space-2)）', () => {
+    const el = mount({ ribbon: '', text: 'HOT' })
+    const r = ribbon(el)!
+    expect(r.classList.contains('position-edge')).toBe(false)
+    expect(r.classList.contains('position-cross')).toBe(false)
+    expect(r.style.top).toBe('')
+  })
+
+  it('edge 贴顶边：position-edge class 驱动 top: 0', () => {
+    const el = mount({ ribbon: '', text: 'HOT', 'ribbon-position': 'edge' })
+    const r = ribbon(el)!
+    expect(r.classList.contains('position-edge')).toBe(true)
+    expect(r.classList.contains('position-cross')).toBe(false)
+    expect(r.style.top).toBe('')
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(cssRule(style, '.ribbon.position-edge')).toContain('top: 0;')
+  })
+
+  it('cross 骑跨顶边：position-cross class 驱动 top: -6px', () => {
+    const el = mount({ ribbon: '', text: 'HOT', 'ribbon-position': 'cross' })
+    const r = ribbon(el)!
+    expect(r.classList.contains('position-cross')).toBe(true)
+    expect(r.classList.contains('position-edge')).toBe(false)
+    expect(r.style.top).toBe('')
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(cssRule(style, '.ribbon.position-cross')).toContain('top: -6px;')
+  })
+
+  it('非法值静默回落 hang（无 position class、不写内联）', () => {
+    const el = mount({ ribbon: '', text: 'HOT', 'ribbon-position': 'below' })
+    const r = ribbon(el)!
+    expect(r.classList.contains('position-edge')).toBe(false)
+    expect(r.classList.contains('position-cross')).toBe(false)
+    expect(r.style.top).toBe('')
+  })
+
+  it('属性切换增量更新：edge→cross 切 class 不重建引用', () => {
+    const el = mount({ ribbon: '', text: 'HOT', 'ribbon-position': 'edge' })
+    const r = ribbon(el)!
+    expect(r.classList.contains('position-edge')).toBe(true)
+    el.setAttribute('ribbon-position', 'cross')
+    expect(ribbon(el)).toBe(r)
+    expect(r.classList.contains('position-cross')).toBe(true)
+    expect(r.classList.contains('position-edge')).toBe(false)
+  })
+
+  it('与 placement 正交：placement=start + cross 同时生效（top 偏移与横向锚点互不干扰）', () => {
+    const el = mount({ ribbon: '', text: 'HOT', 'ribbon-position': 'cross', placement: 'start' })
+    const r = ribbon(el)!
+    expect(r.classList.contains('placement-start')).toBe(true)
+    expect(r.classList.contains('position-cross')).toBe(true)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    // cross 只改纵向 top；横向仍由 placement 控制（start → 左端 + 镜像折叠角）
+    expect(cssRule(style, '.ribbon.position-cross')).toContain('top: -6px;')
+    expect(style).toContain('.ribbon.placement-start .ribbon-corner')
+    expect(style).toContain('inset-inline-start: 0')
+  })
+
+  it('hang 基类 top 保留 var(--oas-space-2)（向后兼容现行行为）', () => {
+    const el = mount({ ribbon: '', text: 'HOT' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(cssRule(style, '.ribbon')).toContain('top: var(--oas-space-2);')
+  })
+})
+
+describe('OASBadge 折叠角尖三角几何', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('尖三角构造：clip-path 三点三角 + background currentColor + brightness 压暗；不再用 scaleY 压扁', () => {
+    const el = mount({ ribbon: '', text: 'HOT' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(el.shadowRoot!.querySelector('.ribbon-corner')).not.toBeNull()
+    const corner = cssRule(style, '.ribbon-corner')
+    expect(corner).toContain('clip-path: polygon(0 0, 100% 0, 0 100%)')
+    expect(corner).toContain('background: currentColor')
+    expect(corner).toContain('filter: brightness(75%)')
+    expect(corner).not.toContain('scaleY')
+  })
+
+  it('start/end 镜像：两锚点规则都在，base 三角几何共用（clip-path 走元素本地坐标自动镜像）', () => {
+    const el = mount({ ribbon: '', text: 'HOT' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toContain('.ribbon.placement-end .ribbon-corner')
+    expect(style).toContain('inset-inline-end: 0')
+    expect(style).toContain('.ribbon.placement-start .ribbon-corner')
+    expect(style).toContain('inset-inline-start: 0')
+    // placement 规则只设锚点，不含几何构造（三角形共用 base）
+    expect(cssRule(style, '.ribbon.placement-end .ribbon-corner')).not.toContain('clip-path')
   })
 })
