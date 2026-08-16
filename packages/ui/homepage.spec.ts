@@ -74,11 +74,28 @@ test.describe('官网首页', () => {
     for (let i = 0; i < 6; i++) {
       await expect(links.nth(i)).toHaveAttribute('href', /.+/)
     }
+    // 版心对齐回归：slot 节点是 .VPHome 裸子节点，无容器约束会顶满屏宽；
+    // 统计条/特性卡必须与 hero 容器左右边缘一致（1440 视口下 left=144）
+    const edges = await page.evaluate(() => {
+      const pick = (sel: string) => Math.round(document.querySelector(sel)?.getBoundingClientRect().left ?? -1)
+      return { hero: pick('.VPHero .container'), stats: pick('.stats-bar'), feature: pick('.feature-grid') }
+    })
+    expect(edges.stats).toBe(edges.hero)
+    expect(edges.feature).toBe(edges.hero)
   })
 
   test('英文首页 hero 渲染', async ({ page }) => {
     await page.goto('/en/', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('.VPHero h1')).toContainText('OAS-UI')
     await expect(page.locator('.VPHero .actions a')).toHaveCount(2)
+  })
+
+  test('页脚：中英双版版权与许可', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('.VPFooter')).toBeVisible()
+    await expect(page.locator('.VPFooter')).toContainText('MIT OR Apache-2.0')
+    await expect(page.locator('.VPFooter')).toContainText('OpenAppSys')
+    await page.goto('/en/', { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('.VPFooter')).toContainText('MIT OR Apache-2.0')
   })
 })

@@ -13,6 +13,15 @@
 .VPHero .image-bg {
   display: none;
 }
+/* slot 注入的统计条/特性卡是 .VPHome 裸子节点，无 .container 约束会顶满屏宽；
+   套用与 hero .container 同构的容器规则（1152px 居中 + 24px 内边距）保持版心对齐 */
+.stats-bar,
+.feature-grid {
+  max-width: 1152px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
 @media (max-width: 951px) {
   /* Vitepress 断点以下 hero 上下堆叠，组件墙全宽；
      .image 默认 aspect-ratio 拟高与负 bottom margin（-48px，默认 logo 的文字上提效果）
