@@ -81,20 +81,24 @@ onBeforeUnmount(() => {
   gap: var(--oas-space-3);
   align-items: flex-start;
 }
+.feature-grid {
+  padding: var(--oas-space-4) 0 var(--oas-space-6);
+}
 .feature-grid__head {
   text-align: center;
-  margin-bottom: var(--oas-space-5);
+  margin-bottom: var(--oas-space-6);
 }
 .feature-grid__title {
-  font-size: var(--oas-font-size-xl);
+  font-size: var(--oas-font-size-2xl, var(--oas-font-size-xl));
   font-weight: 600;
   color: var(--oas-color-text-primary);
-  margin: 0 0 var(--oas-space-2);
+  margin: 0 0 var(--oas-space-3);
 }
 .feature-grid__intro {
   font-size: var(--oas-font-size-sm);
   color: var(--oas-color-text-secondary);
-  margin: 0;
+  margin: 0 auto;
+  max-width: 640px;
 }
 .feature-grid__title {
   font-weight: 600;

@@ -8,7 +8,7 @@
           : '生态规模与性能的真实快照——没有营销话术，只有仓库里的实际数字。' }}
       </p>
     </header>
-    <oas-flex justify="center" gap="10px" wrap>
+    <oas-flex class="stats-bar__row" justify="center" gap="10px" wrap>
       <template v-for="(item, i) in numeric" :key="item.key">
         <oas-divider v-if="i > 0" direction="vertical"></oas-divider>
         <!-- prefix 必须走 attribute：Element.prototype.prefix 是只读命名空间前缀 getter，
@@ -55,22 +55,28 @@ const numeric = computed(() => {
 
 <style scoped>
 .stats-bar {
-  padding: var(--oas-space-4) 0 var(--oas-space-2);
+  padding: var(--oas-space-6) 0;
 }
 .stats-bar__head {
   text-align: center;
-  margin-bottom: var(--oas-space-3);
+  margin-bottom: var(--oas-space-5);
 }
 .stats-bar__title {
   font-size: var(--oas-font-size-xl);
   font-weight: 600;
   color: var(--oas-color-text-primary);
-  margin: 0 0 var(--oas-space-2);
+  margin: 0 0 var(--oas-space-3);
 }
 .stats-bar__intro {
   font-size: var(--oas-font-size-sm);
   color: var(--oas-color-text-secondary);
-  margin: 0;
+  margin: 0 auto;
+  max-width: 640px;
+}
+/* 直接给 oas-statistic 设 host 字号；custom element 不自动继承父级 font-size，
+   设在外层祖先（oas-flex）上无效，必须命中 host */
+.stats-bar oas-statistic {
+  font-size: 32px;
 }
 .stats-bar__version {
   color: var(--oas-color-text-secondary);
