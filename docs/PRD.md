@@ -578,6 +578,16 @@ ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可�
 - tag-group 单选/多选/disabled 场景可交互并有可见反馈
 - 单测 + typecheck + build + e2e 全绿
 
-### 官网首页（landing page）
+### 官网首页（landing page · v2）
 
-文档站首页（中英）从占位页升级为官网门面：Vitepress home 布局（hero + 双 CTA），hero 右栏为可交互组件墙、统计条（oas-statistic）、特性卡六张——全部用自家组件搭建（dogfooding 即产品展厅）。统计数字（组件数/CDN gzip/语言包/测试数/版本）由 `pnpm stats:gen` 从 git 内数据源生成 `stats.json`，CI `stats:check` 防漂移。验收：中英首页完整、组件墙可交互且 console 零告警、`pnpm test:e2e` 全绿（含 homepage.spec）、stats:check 进 CI。
+文档站首页（中英）以**产品力展示**为方向——首页是组件 demo 的展厅，不是工程属性卖点清单。
+
+板块流（中英各 6 区段）：hero + 数字一览 + 核心场景 + 代码速览 + 性能速览 + CTA 横幅 + 页脚。
+
+- **Hero 右栏**：oas-table 完整 demo（排序/分页/空态/loading 状态切换控件）——替代 v1 的 9 件套拼盘，传达「这库能做真应用」。
+- **核心场景**：3 张卡（表单 / 数据展示 / 反馈），每卡嵌真实可交互的迷你 demo——替代 v1 的 6 张工程属性卡。
+- **代码速览**：HTML 单例 + 4 个框架桥接图标卡（HTML/Vue/React/Svelte+Angular）——WC 是 HTML 标准，单例即足够。
+- **性能速览**：3 个真实 gzip 数字（CDN/按钮链/全量入口）由 `pnpm stats:gen` 扩 perf 字段从 `docs/perf-baseline.json` 读取，CI `stats:check` 防漂移。
+- **CTA 横幅**：三行安装命令 + 快速开始/GitHub 双按钮。
+
+dogfooding 硬性原则：所有自绘区块用自家 `oas-*` 组件搭建，首页即产品展厅。验收：中英首页完整、HeroTableDemo 状态切换真实可交互、三层范式（标题/导言/内容）齐全、`pnpm test:e2e` 全绿（含 homepage.spec）、stats:check 进 CI。

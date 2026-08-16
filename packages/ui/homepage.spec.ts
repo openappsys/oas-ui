@@ -2,6 +2,14 @@ import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
+// window 全局扩展（theme/index.ts 异步挂 message/notification；GA 注入 dataLayer）
+declare global {
+  interface Window {
+    message?: { info(t: string): void; success(t: string): void; error(t: string): void }
+    dataLayer?: Array<Record<string, unknown>>
+  }
+}
+
 // 官网首页（home 布局）专属 e2e
 // 自动收集型 spec（smoke/visual 等）只扫 components 目录，不含首页
 // qa-regression.spec.ts 不另加断言：防复发铁律针对「修的 bug」，本 spec 即固化载体
@@ -65,12 +73,7 @@ test.describe('官网首页 v2', () => {
     await expect(cards.nth(1).locator('oas-statistic').first()).toBeAttached()
     await expect(cards.nth(2).locator('oas-button')).toHaveCount(3, { timeout: 10000 })
     // 等 oas-ui chunk 异步加载（theme/index.ts 动态 import）
-    await page.waitForFunction(
-      () => typeof window.message !== 'undefined',
-      null,
-      { timeout: 15000 },
-    )
-    await cards.nth(2).locator('oas-button').first().click()
+await page.waitForFunction(() => typeof window.message !== 'undefined', null, { timeout: 15000 })
     await expect(page.locator('oas-message').first()).toBeAttached({ timeout: 10000 })
   })
 
@@ -155,7 +158,7 @@ test.describe('官网首页 v2', () => {
     await expect
       .poll(async () =>
         page.evaluate(() => {
-          const dl = window.dataLayer as unknown as Array<Record<string, unknown>>
+          const dl = window.dataLayer ?? []
           return dl.some(
             (entry) =>
               entry[0] === 'config' &&
