@@ -2,8 +2,8 @@
   "components": 117,
   "cdnGzipKB": 153.2,
   "locales": 2,
-  "tests": 2145,
-  "version": "1.9.1",
+  "tests": 2150,
+  "version": "2.0.0",
   "perf": {
     "cdnGzipKB": 153.2,
     "buttonChainKB": 20.7,

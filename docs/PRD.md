@@ -524,9 +524,26 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 
 ---
 
-## v2.0 能力补齐（进行中）
+## v2.0 能力补齐第一批（已完成，v2.0.0 已发布）
 
-> 面向通用组件能力的补充与增强，与既有版本互不冲突。
+> 面向通用组件能力的补充与增强第一批：P0/P1 高频能力。tag v2.0.0。
+
+### 已交付内容
+
+- **P0**：upload 照片墙（`list-type="picture-card/picture"`）+ 拖拽 + `oas-exceed`/`oas-preview` 插槽；date-picker `shortcuts`/`disabled-date`/`multiple`；select 自定义渲染（`oas-option-render`/`oas-tag-render`）+ 虚拟滚动；form `inline` 行内布局；table 行内编辑 + 吸顶行；modal 全屏 + 命令式确认（loading）；card 封面/操作区/hoverable/clickable；badge 缎带 ribbon；avatar 徽标 + fallback；tree 自定义节点 + 目录模式；image 懒加载
+- **P1**：transfer 搜索/单向/虚拟滚动；notification 进度条/可滚动；slider 输入联动/自定义滑块/reverse/range；calendar 自定义单元格/月年模式切换；message 分组/更新；tabs 动态增删 + 图标；steps 点状/导航模式；breadcrumb 折叠/省略
+- **修复批**：tree 自定义节点 Vue CSR 空白、tooltip/popover 箭头 4 placement 定位、tree SVG 尺寸属性等
+
+### 验收标准（均已达成）
+
+- 新能力 demo 进文档站（中英双版），覆盖各属性/事件/边界
+- 单测 + typecheck + build + e2e 全绿
+
+---
+
+## v2.1 逐组件能力深挖（进行中）
+
+> 原「v2.0 能力补齐」规划的 tag/badge/space/compact 内容整体移入本版本，连同 button/button-group/icon 能力补齐、floating 箭头、table 密度、官网首页改版。与既有版本互不冲突。
 
 ### 详细需求
 
