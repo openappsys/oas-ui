@@ -4,6 +4,12 @@
    组件内部文案由 Layout.vue 的 lang watcher 同步（@oas-ui/i18n setLocale） */
 
 /* ===== 官网首页（home 布局）：组件墙替换原生 hero 图片 ===== */
+/* hero 字号层级：.name 品牌名最大，.text 定位语降为 32px（Vitepress 默认两者同 56px 太笨重） */
+.VPHero .text {
+  font-size: 32px;
+  line-height: 44px;
+  letter-spacing: -0.01em;
+}
 /* 原生 .image-container 按图片尺寸约束（max-width 192px 级别），组件墙需要更宽 */
 .VPHero .image-container {
   max-width: none;
@@ -25,6 +31,19 @@
   margin: 0 auto;
   padding-left: 24px;
   padding-right: 24px;
+}
+/* 区块标题层级：所有 section 标题统一 24px/1.4 + 区分度（现为 20px 太扁平） */
+.stats-bar__title,
+.scene-showcase__title,
+.code-showcase__title,
+.perf-section__title {
+  font-size: 24px;
+  line-height: 1.4;
+}
+/* CTA 收窄：全宽 1152 太散，收成 max-width 720px 居中横幅 */
+.cta-band__card {
+  max-width: 720px;
+  margin: 0 auto;
 }
 @media (max-width: 951px) {
   /* Vitepress 断点以下 hero 上下堆叠，组件墙全宽；
