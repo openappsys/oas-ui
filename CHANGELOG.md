@@ -2,6 +2,41 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.0.0] - 2026-08-17
+
+### 新增
+
+- upload：`list-type="picture-card/picture"` 照片墙 + 拖拽上传补全 + `oas-exceed`（超数提示）/ `oas-preview`（预览）插槽
+- date-picker：`shortcuts` 快捷选项 / `disabled-date` 禁用日期 / `multiple` 多选
+- select：自定义渲染（`oas-option-render` / `oas-tag-render`）+ 虚拟滚动
+- form：`inline` 行内布局
+- table：行内编辑 + 吸顶行
+- modal：全屏模式 + 命令式确认（loading）
+- card：封面 / 操作区 / hoverable / clickable
+- badge：缎带 ribbon 角标
+- avatar：徽标 + fallback
+- tree：自定义节点 + 目录模式
+- image：懒加载
+- transfer：搜索 / 单向模式 / 虚拟滚动
+- notification：进度条 / 可滚动
+- slider：输入联动 / 自定义滑块 / reverse / range
+- calendar：自定义单元格 / 月年模式切换
+- message：分组 / 更新
+- tabs：动态增删 + 图标
+- steps：点状 / 导航模式
+- breadcrumb：折叠 / 省略
+
+### 修复
+
+- tree 自定义节点在 Vue CSR 下空白（Chromium `insertBefore` 直插 template 不填充 content，`slotTemplateFragment` 回退读 childNodes，dev+SSG 双形态渲染）
+- tooltip/popover 箭头 4 placement 定位修正（CSS + 几何 left/right 边框对）
+- tree 自定义节点 SVG 补 `width/height` 属性（light DOM style 不穿透 shadow DOM，无属性时撑满容器）+ label 最小宽度加固
+- upload 预览浮层拦截全页指针、ssr-dsd 水合回归、e2e 异步渲染 flaky 等测试链修复
+
+### 文档
+
+- 指南 CDN 引入示例修正（中英双版）
+
 ## [1.9.1] - 2026-08-13
 
 ### 工程
