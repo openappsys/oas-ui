@@ -5,6 +5,7 @@
     <template #home-features-before>
       <StatsBar />
       <SceneShowcase />
+      <CodeShowcase />
     </template>
     <template #home-features-after><FeatureGrid /></template>
   </DefaultTheme.Layout>
@@ -17,6 +18,7 @@ import { useData } from 'vitepress'
 import HeroTableDemo from './components/HeroTableDemo.vue'
 import StatsBar from './components/StatsBar.vue'
 import SceneShowcase from './components/SceneShowcase.vue'
+import CodeShowcase from './components/CodeShowcase.vue'
 import FeatureGrid from './components/FeatureGrid.vue'
 
 const { lang } = useData()
