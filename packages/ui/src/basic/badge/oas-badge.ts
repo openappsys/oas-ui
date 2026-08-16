@@ -376,62 +376,67 @@ const STYLE = `
 }
 /* ===== ribbon-form 形态维度：fold（默认）直条+折叠即基类，不写额外标记 ===== */
 
-/* diagonal：45° 对角斜缎带横跨顶角；宿主需 overflow:hidden 裁切，否则条身探出卡外。
-   placement end 逆时针 -45°（外端上翘折向顶角、条身斜向左下进卡）/ start 镜像顺时针 +45° */
+/* diagonal：经典 corner ribbon——带斜穿左上角：中心钉在角点内侧（约 25px,25px），rotate(-45°)
+   后两端分别被顶边线/左边线裁断（右上端在顶边线、左下端在左边线），左上角角尖为空白三角
+   外露（带不盖角点）。带长 141%（对角线）保证两端都越边；宿主需 overflow:hidden。
+   start 镜像穿右上角 */
 .ribbon.form-diagonal {
-  width: 96px;
-  height: 22px;
-  line-height: 22px;
+  /* 开放定制：带宽（默认 30px）、字号（默认 xs）、文字沿带向卡内偏移（默认 12px，防两端贴裁切线） */
+  --oas-badge-diagonal-height: 30px;
+  --oas-badge-diagonal-font: var(--oas-font-size-xs);
+  --oas-badge-diagonal-text-inset: 12px;
+  width: 141%;
+  height: var(--oas-badge-diagonal-height);
+  line-height: var(--oas-badge-diagonal-height);
   padding: 0;
-  top: -11px;
+  top: 10px;
   border-radius: 0;
+  font-size: var(--oas-badge-diagonal-font);
   text-align: center;
   transform-origin: center;
 }
 .ribbon.form-diagonal.placement-end {
-  inset-inline-end: -48px;
+  inset-inline-start: calc(25px - 70.5%);
   transform: rotate(-45deg);
 }
 .ribbon.form-diagonal.placement-start {
-  inset-inline-end: auto;
-  inset-inline-start: -48px;
+  inset-inline-start: auto;
+  inset-inline-end: calc(25px - 70.5%);
   transform: rotate(45deg);
+}
+/* 文字沿带向卡内偏移：带 rotate(-45°) 后子元素 translateX 正方向即带的"卡内右下"方向
+   （带端点朝卡外），因此 end 用正值把文字推向卡内、start 镜像用负值 */
+.ribbon.form-diagonal.placement-end .ribbon-text {
+  display: block;
+  transform: translateX(var(--oas-badge-diagonal-text-inset));
+}
+.ribbon.form-diagonal.placement-start .ribbon-text {
+  display: block;
+  transform: translateX(calc(var(--oas-badge-diagonal-text-inset) * -1));
+}
+/* 带中心钉点：基础版 25px / wide 45px（wide 文字长，钉点更深避免两端被边线裁） */
+.ribbon.form-diagonal.wide.placement-end {
+  inset-inline-start: calc(45px - 70.5%);
+}
+.ribbon.form-diagonal.wide.placement-start {
+  inset-inline-start: auto;
+  inset-inline-end: calc(45px - 70.5%);
 }
 .ribbon.form-diagonal .ribbon-corner {
   display: none;
 }
-/* 斜带中心跨在卡片顶角——带身一半在卡外被裁，文字需落在可见内半段
-   （end 内半段在带左端 → 左移 1/4 带长；start 镜像右移） */
+/* 文字居中于条带中心 = 角点 = 可见斜带中段，无需平移补偿 */
 .ribbon.form-diagonal .ribbon-text {
   display: block;
-  transform: translateX(-24px);
-}
-.ribbon.form-diagonal.placement-start .ribbon-text {
-  transform: translateX(24px);
 }
 
-/* wide：宽幅大字版斜带（仅与 diagonal 组合，其他形态静默忽略——syncRibbon 只在 form=diagonal
-   时写入 wide class）。带身 200×32px、字号提升，覆盖更大角落区域（电商 % off 大斜幅场景）；
-   文字可读方向与现有平移逻辑一致：end 内半段在带左端 → 左移 1/4 带长（200×1/4=50px，与
-   96×1/4=24px 同比例），start 镜像右移 */
+/* wide：宽幅大字版斜带（仅与 diagonal 组合，其他形态静默忽略）。
+   只覆盖定制变量的默认值；几何同基础版。字号取 md（lg 在小卡上两端贴裁切线），
+   用户可宿主覆盖 --oas-badge-diagonal-* 变量自定义带宽/字号/文字内移 */
 .ribbon.form-diagonal.wide {
-  width: 200px;
-  height: 32px;
-  line-height: 32px;
-  top: -16px;
-  font-size: var(--oas-font-size-lg);
-}
-.ribbon.form-diagonal.wide.placement-end {
-  inset-inline-end: -100px;
-}
-.ribbon.form-diagonal.wide.placement-start {
-  inset-inline-start: -100px;
-}
-.ribbon.form-diagonal.wide .ribbon-text {
-  transform: translateX(-50px);
-}
-.ribbon.form-diagonal.wide.placement-start .ribbon-text {
-  transform: translateX(50px);
+  --oas-badge-diagonal-height: 36px;
+  --oas-badge-diagonal-font: var(--oas-font-size-md);
+  --oas-badge-diagonal-text-inset: 24px;
 }
 
 /* triangle：角落纯三角形（clip-path 直角三角）+ 内嵌小图标/slot 内容；placement 四角跟随镜像 */
@@ -560,7 +565,8 @@ const STYLE = `
   display: none;
 }
 
-/* banner：顶部横贯横幅（横贯卡片顶部全宽，两端 45° 折角），贴顶边 */
+/* banner：顶部横贯横幅——横贯卡片顶部全宽、两端贴卡片边线，两端下方各一个折叠角
+   （缎带绕到卡片背后的折痕，暗色三角）：复用 .ribbon-corner 承载末端折叠 + ::before 承载首端折叠 */
 .ribbon.form-banner {
   inset-inline-start: 0;
   inset-inline-end: 0;
@@ -569,10 +575,26 @@ const STYLE = `
   border-radius: 0;
   text-align: center;
   padding: 0 var(--oas-space-3);
-  clip-path: polygon(0 0, 100% 0, calc(100% - 20px) 100%, 20px 100%);
 }
+/* 首端折叠角（::before 三角，右角在左上、斜边朝右下） */
+.ribbon.form-banner::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 0;
+  width: var(--oas-space-2);
+  height: var(--oas-space-2);
+  background: currentColor;
+  filter: brightness(75%);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+/* 末端折叠角：复用 .ribbon-corner，镜像三角（右角在右上、斜边朝左下） */
 .ribbon.form-banner .ribbon-corner {
-  display: none;
+  top: 100%;
+  inset-inline-end: 0;
+  width: var(--oas-space-2);
+  height: var(--oas-space-2);
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
 }
 
 /* flag：侧燕尾横旗（横条 + 探出外端侧燕尾 V 缺口；缺口始终朝探出端，placement start/end 镜像）。
@@ -583,12 +605,12 @@ const STYLE = `
   /* 燕尾缺口：V 口凹进带身、始终朝卡片内侧端（徽标在右 → 缺口在左；在左 → 缺口在右） */
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 10px 50%);
 }
+/* 外端贴卡片边线（不探出——无边线锚定的探出端是浮空，曾现缺陷） */
 .ribbon.form-flag.placement-end {
-  inset-inline-end: calc(var(--oas-space-2) * -1);
+  inset-inline-end: 0;
 }
 .ribbon.form-flag.placement-start {
-  inset-inline-end: auto;
-  inset-inline-start: calc(var(--oas-space-2) * -1);
+  inset-inline-start: 0;
   /* 燕尾缺口镜像到内侧右端（clip-path 走元素本地坐标，不随锚点自动翻转——同 bookmark 教训） */
   clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%);
 }
@@ -608,54 +630,52 @@ const STYLE = `
   clip-path: polygon(100% 100%, 100% 0, 0 100%);
 }
 
-/* ===== rolled 端部卷边：探出外端做卷边（端部大圆角 + 内侧渐暗渐变模拟卷起圆柱，纯 CSS 原创）。
-   布尔修饰、独立开关：与 fold（基类/显式 form-fold）/ banner / flag 叠加，其他裁剪形态
-   （diagonal/triangle/bookmark/side/seal）经 :not 排除、静默忽略。:where 降权，便于 banner
-   双端卷边规则按源码顺序覆写 placement 单端规则（同权重后写胜出） */
-.ribbon.rolled:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal)).placement-end {
-  border-start-start-radius: var(--oas-radius-sm);
-  border-end-start-radius: var(--oas-radius-sm);
-  border-start-end-radius: 999px;
-  border-end-end-radius: 999px;
+/* ===== rolled 端部卷边：卷边在卡片内侧端（同燕尾规则：徽标在右卷边在左、在左卷边在右），
+   外端改为顶卡片边线（不再探出——无边线锚定的探出端是浮空，曾现缺陷）。
+   布尔修饰、独立开关：与 fold（基类/显式 form-fold）/ flag 叠加；banner 有自己的双端折叠角
+   （rolled 时 banner 折叠角保留、不叠卷边）；其他裁剪形态（diagonal/triangle/bookmark/side/seal）
+   经 :not 排除、静默忽略。:where 降权便于覆写 */
+/* 外端顶边线：覆盖基类/flag 的探出负偏移 */
+.ribbon.rolled:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal):not(.form-banner)).placement-end {
+  inset-inline-end: 0;
 }
-.ribbon.rolled:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal)).placement-start {
-  border-start-end-radius: var(--oas-radius-sm);
-  border-end-end-radius: var(--oas-radius-sm);
+.ribbon.rolled:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal):not(.form-banner)).placement-start {
+  inset-inline-start: 0;
+}
+/* 内侧端卷边圆角（end → 左端 pill；start 镜像右端） */
+.ribbon.rolled:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal):not(.form-banner)).placement-end {
   border-start-start-radius: 999px;
   border-end-start-radius: 999px;
 }
-.ribbon.rolled:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal))::after {
+.ribbon.rolled:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal):not(.form-banner)).placement-start {
+  border-start-end-radius: 999px;
+  border-end-end-radius: 999px;
+}
+/* 卷边渐变贴内侧端（end → 左缘向右渐隐；start 镜像） */
+.ribbon.rolled:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal):not(.form-banner))::after {
   content: '';
   position: absolute;
   top: 0;
   bottom: 0;
   width: var(--oas-space-3);
   pointer-events: none;
-  background: linear-gradient(90deg, transparent 0%, currentColor 100%);
+  background: linear-gradient(90deg, currentColor 0%, transparent 100%);
   filter: brightness(70%);
 }
-/* 卷边端替代折叠角：rolled 时隐藏 corner（否则尖三角从卷边下探头） */
-.ribbon.rolled .ribbon-corner {
-  display: none;
-}
-.ribbon.rolled.placement-end:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal))::after {
-  inset-inline-end: 0;
-  border-start-end-radius: 999px;
-  border-end-end-radius: 999px;
-}
-.ribbon.rolled.placement-start:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal))::after {
+.ribbon.rolled.placement-end:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal):not(.form-banner))::after {
   inset-inline-start: 0;
-  background: linear-gradient(270deg, transparent 0%, currentColor 100%);
   border-start-start-radius: 999px;
   border-end-start-radius: 999px;
 }
-/* banner 双端卷边：横幅两端都卷（置于 placement 规则之后覆写） */
-.ribbon.rolled.form-banner::after {
-  inset-inline-start: 0;
+.ribbon.rolled.placement-start:where(:not(.form-diagonal):not(.form-triangle):not(.form-bookmark):not(.form-side):not(.form-seal):not(.form-banner))::after {
   inset-inline-end: 0;
-  width: auto;
-  border-radius: 0;
-  background: linear-gradient(90deg, currentColor 0%, transparent 12%, transparent 88%, currentColor 100%);
+  background: linear-gradient(270deg, currentColor 0%, transparent 100%);
+  border-start-end-radius: 999px;
+  border-end-end-radius: 999px;
+}
+/* 卷边端替代折叠角：rolled 时隐藏 corner（卷边自身就是内侧端的装饰） */
+.ribbon.rolled:where(:not(.form-banner)) .ribbon-corner {
+  display: none;
 }
 
 /* ===== premium 金属质感：金色渐变 + 深金描边；与 color 正交叠加（优先级 premium > color），

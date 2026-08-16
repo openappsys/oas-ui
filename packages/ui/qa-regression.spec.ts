@@ -1265,6 +1265,8 @@ test('badge ribbon：缎带可见、折叠角生效、语义色与 placement 渲
       const b = badges.find((x) => {
         if (color && x.getAttribute('color') !== color) return false
         if (placement && x.getAttribute('placement') !== placement) return false
+        // 只挑基础 fold 缎带（排除 ribbon-form/rolled/premium 等形态卡，它们的背景不是纯语义色）
+        if (x.hasAttribute('ribbon-form') || x.hasAttribute('rolled') || x.hasAttribute('premium')) return false
         return x.hasAttribute('ribbon') || x.getAttribute('mode') === 'ribbon'
       })
       if (!b) return null
