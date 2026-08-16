@@ -27,6 +27,10 @@ A countdown component that refreshes in real time, supports day/hour/minute/seco
   <span id="countdown-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
 
+## Font Size
+
+Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow the outer context; override with the CSS variable `--oas-countdown-font` (e.g. `32px`).
+
 ## API
 
 ### Attributes

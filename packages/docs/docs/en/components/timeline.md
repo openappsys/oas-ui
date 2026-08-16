@@ -59,6 +59,10 @@ Displays a series of event nodes in chronological order.
 
 Setting `pending` on an `oas-timeline-item` renders that node as a hollow dot with a dashed connector, meaning "in progress / coming soon"; a node without content shows the "敬请期待" text by default.
 
+## Font Size
+
+Font size follows the outer context (inherited) by default; override with the CSS variable `--oas-timeline-font` (e.g. `18px`).
+
 ## API
 
 ### oas-timeline-item

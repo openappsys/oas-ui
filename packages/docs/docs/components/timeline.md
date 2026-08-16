@@ -59,6 +59,10 @@
 
 给 `oas-timeline-item` 设置 `pending` 后，该节点显示为空心圆点 + 虚线连接，表示「进行中 / 敬请期待」；节点无内容时默认展示「敬请期待」文案。
 
+## 字号定制
+
+字号默认跟随外层 `font-size`（继承），可用 CSS 变量 `--oas-timeline-font` 显式定制（如 `18px`）。
+
 ## API
 
 ### oas-timeline-item

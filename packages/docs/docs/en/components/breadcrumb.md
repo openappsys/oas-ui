@@ -58,6 +58,10 @@ onMounted(() => {
 })
 </script>
 
+## Font Size
+
+Font size follows the outer context (inherited) by default; override with the CSS variable `--oas-breadcrumb-font` (e.g. `18px`).
+
 ## API
 
 ### Attributes

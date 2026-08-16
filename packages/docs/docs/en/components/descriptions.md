@@ -55,6 +55,10 @@ Displays read-only information in groups, suitable for detail page scenarios.
   </div>
 </DemoBlock>
 
+## Font Size
+
+The `oas-descriptions-item` font size follows the outer context (inherited) by default; override with the CSS variable `--oas-descriptions-item-font` (e.g. `18px`).
+
 ## API
 
 ### oas-descriptions

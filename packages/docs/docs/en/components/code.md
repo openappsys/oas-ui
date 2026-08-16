@@ -98,6 +98,10 @@ Tag names and attribute names are colored separately.
 
 When the language is unknown, the content is rendered as plain text (escaped) without errors.
 
+## Font Size
+
+Font size defaults to 0.875× the outer context (`0.875em`); override with the CSS variable `--oas-code-font`.
+
 ## API
 
 ### Attributes

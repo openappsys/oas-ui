@@ -102,6 +102,10 @@ onMounted(() => {
 })
 </script>
 
+## Font Size
+
+Font size follows the outer context (inherited) by default; override with the CSS variable `--oas-log-font` (e.g. `18px`).
+
 ## API
 
 ### Attributes

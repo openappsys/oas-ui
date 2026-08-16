@@ -102,6 +102,10 @@ onMounted(() => {
 })
 </script>
 
+## 字号定制
+
+字号默认跟随外层 `font-size`（继承），可用 CSS 变量 `--oas-log-font` 显式定制（如 `18px`）。
+
 ## API
 
 ### 属性

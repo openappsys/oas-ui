@@ -28,6 +28,10 @@
   <oas-gradient-text gradient='["#0b6cff", "#dc2626"]' direction="135deg" style="font-size: var(--oas-font-size-xl); font-weight: 600;">斜向渐变</oas-gradient-text>
 </DemoBlock>
 
+## 字号定制
+
+字号默认跟随外层 `font-size`（继承），可用 CSS 变量 `--oas-gradient-text-font` 显式定制（如 `18px`）。
+
 ## API
 
 ### 属性

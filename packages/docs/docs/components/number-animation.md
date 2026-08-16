@@ -21,6 +21,10 @@
   <span id="number-anim-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin-left: var(--oas-space-3)"></span>
 </DemoBlock>
 
+## 字号定制
+
+字号默认固定为 `--oas-font-size-lg`（16px，不随外层变化），可用 CSS 变量 `--oas-number-animation-font` 显式定制（如 `32px`）。
+
 ## API
 
 ### 属性

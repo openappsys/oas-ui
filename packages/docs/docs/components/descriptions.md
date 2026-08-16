@@ -55,6 +55,10 @@
   </div>
 </DemoBlock>
 
+## 字号定制
+
+`oas-descriptions-item` 字号默认跟随外层 `font-size`（继承），可用 CSS 变量 `--oas-descriptions-item-font` 显式定制（如 `18px`）。
+
 ## API
 
 ### oas-descriptions

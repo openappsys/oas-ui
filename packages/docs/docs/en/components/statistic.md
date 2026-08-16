@@ -34,6 +34,10 @@ Displays statistical values with `Intl.NumberFormat` thousands separators and pr
   <oas-statistic value="8846" loading></oas-statistic>
 </DemoBlock>
 
+## Font Size
+
+Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow the outer context; override with the CSS variable `--oas-statistic-font` (e.g. `32px`).
+
 ## API
 
 ### Attributes

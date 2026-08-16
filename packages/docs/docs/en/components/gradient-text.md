@@ -28,6 +28,10 @@ A purely presentational component that fills text with a gradient color, impleme
   <oas-gradient-text gradient='["#0b6cff", "#dc2626"]' direction="135deg" style="font-size: var(--oas-font-size-xl); font-weight: 600;">Diagonal Gradient</oas-gradient-text>
 </DemoBlock>
 
+## Font Size
+
+Font size follows the outer context (inherited) by default; override with the CSS variable `--oas-gradient-text-font` (e.g. `18px`).
+
 ## API
 
 ### Attributes

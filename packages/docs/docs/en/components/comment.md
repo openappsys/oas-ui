@@ -57,6 +57,10 @@ A purely presentational comment block container that assembles the author avatar
   </p>
 </DemoBlock>
 
+## Font Size
+
+Font size follows the outer context (inherited) by default; override with the CSS variable `--oas-comment-font` (e.g. `18px`).
+
 ## API
 
 ### Slots

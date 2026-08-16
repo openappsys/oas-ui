@@ -21,6 +21,10 @@ An animation component that eases a number from its current value to the target 
   <span id="number-anim-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin-left: var(--oas-space-3)"></span>
 </DemoBlock>
 
+## Font Size
+
+Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow the outer context; override with the CSS variable `--oas-number-animation-font` (e.g. `32px`).
+
 ## API
 
 ### Attributes

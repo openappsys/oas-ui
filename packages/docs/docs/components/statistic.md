@@ -34,6 +34,10 @@
   <oas-statistic value="8846" loading></oas-statistic>
 </DemoBlock>
 
+## 字号定制
+
+字号默认固定为 `--oas-font-size-lg`（16px，不随外层变化），可用 CSS 变量 `--oas-statistic-font` 显式定制（如 `32px`）。
+
 ## API
 
 ### 属性

@@ -64,6 +64,10 @@ Greek letters like `\alpha` and common operators such as `\times` `\div` `\pm` `
 
 Unknown commands are displayed literally without errors.
 
+## Font Size
+
+Font size follows the outer context (inherited) by default; override with the CSS variable `--oas-equation-font` (e.g. `18px`).
+
 ## API
 
 ### Attributes
