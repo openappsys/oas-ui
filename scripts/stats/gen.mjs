@@ -4,7 +4,7 @@
  *   - components：packages/ui/src/<group>/<component> 组件目录数（口径：组目录下含 index.ts 的直接子目录）
  *   - cdnGzipKB：docs/perf-baseline.json 的 size.packages['@oas-ui/ui'].cdn.gzipBytes（perf:size 产出）
  *   - locales：packages/i18n/src 下语言包文件（zh-CN.ts / en.ts 等，排除 index/types/registry*）
- *   - tests：packages/ 下全部 *.spec.ts（排除 node_modules/dist）中 it(/test( 声明计数（近似口径）
+ *   - tests：packages/ 下全部 *.spec.ts（e2e）与 *.test.ts（单测，排除 node_modules/dist）中 it(/test( 声明计数（近似口径）
  *   - version：packages/ui/package.json 的 version
  * 产物：packages/docs/docs/.vitepress/generated/stats.json（进 git）。
  * 刻意不含时间戳：stats:check 用 git diff --exit-code 防漂移，时间戳会造成永假失败。
@@ -37,13 +37,13 @@ const I18N_SRC = join(ROOT, 'packages/i18n/src')
 const LOCALE_RE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?\.ts$/
 const locales = readdirSync(I18N_SRC).filter((f) => LOCALE_RE.test(f)).length
 
-// 4) 测试用例数（it(/test( 行首声明；it.each 等模板写法不计，近似口径可接受）
+// 4) 测试用例数（单测 *.test.ts + e2e *.spec.ts；it(/test( 行首声明，it.each 等模板写法不计，近似口径可接受）
 function collectSpecs(dir, out) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     if (e.name === 'node_modules' || e.name === 'dist') continue
     const full = join(dir, e.name)
     if (e.isDirectory()) collectSpecs(full, out)
-    else if (e.name.endsWith('.spec.ts')) out.push(full)
+    else if (e.name.endsWith('.spec.ts') || e.name.endsWith('.test.ts')) out.push(full)
   }
   return out
 }
