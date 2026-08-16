@@ -1,5 +1,13 @@
 <template>
   <div class="stats-bar">
+    <header class="stats-bar__head">
+      <h2 class="stats-bar__title">{{ isEn ? 'At a glance' : '数字一览' }}</h2>
+      <p class="stats-bar__intro">
+        {{ isEn
+          ? 'Ecosystem size and performance at one glance — no marketing, only what the repo actually contains.'
+          : '生态规模与性能的真实快照——没有营销话术，只有仓库里的实际数字。' }}
+      </p>
+    </header>
     <oas-flex justify="center" gap="10px" wrap>
       <template v-for="(item, i) in numeric" :key="item.key">
         <oas-divider v-if="i > 0" direction="vertical"></oas-divider>
@@ -48,6 +56,21 @@ const numeric = computed(() => {
 <style scoped>
 .stats-bar {
   padding: var(--oas-space-4) 0 var(--oas-space-2);
+}
+.stats-bar__head {
+  text-align: center;
+  margin-bottom: var(--oas-space-3);
+}
+.stats-bar__title {
+  font-size: var(--oas-font-size-xl);
+  font-weight: 600;
+  color: var(--oas-color-text-primary);
+  margin: 0 0 var(--oas-space-2);
+}
+.stats-bar__intro {
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+  margin: 0;
 }
 .stats-bar__version {
   color: var(--oas-color-text-secondary);

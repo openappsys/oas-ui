@@ -27,6 +27,18 @@ test.describe('官网首页', () => {
     expect(errors).toEqual([])
   })
 
+  test('三层范式：各区段有标题/说明/内容', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    // 统计条：标题 + 一句话导言
+    await expect(page.locator('.stats-bar__title')).toContainText('数字一览')
+    await expect(page.locator('.stats-bar__intro')).toContainText('真实快照')
+    // 特性卡：标题 + 一句话导言
+    await expect(page.locator('.feature-grid__title')).toContainText('核心特性')
+    await expect(page.locator('.feature-grid__intro')).toContainText('工程决策')
+    // Hero 组件墙角标：可交互预览
+    await expect(page.locator('.hero-playground__badge')).toContainText('可交互预览')
+  })
+
   test('组件墙可交互：按钮出 message、switch 翻转、segmented 切换', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const hero = page.locator('.hero-playground')

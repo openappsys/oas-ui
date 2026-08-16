@@ -1,5 +1,6 @@
 <template>
   <div class="hero-playground">
+    <span class="hero-playground__badge">{{ isEn ? 'Live preview' : '可交互预览' }}</span>
     <oas-card>
       <oas-flex vertical gap="14px">
         <oas-flex gap="8px" wrap justify="center">
@@ -61,6 +62,16 @@ function bye() {
 <style scoped>
 .hero-playground {
   width: 100%;
+  position: relative;
+}
+.hero-playground__badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  letter-spacing: 0.04em;
+  pointer-events: none;
 }
 .hero-playground__slider {
   width: 120px;

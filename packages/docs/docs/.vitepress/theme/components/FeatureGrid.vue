@@ -1,5 +1,13 @@
 <template>
   <div class="feature-grid">
+    <header class="feature-grid__head">
+      <h2 class="feature-grid__title">{{ isEn ? 'Core features' : '核心特性' }}</h2>
+      <p class="feature-grid__intro">
+        {{ isEn
+          ? 'Six non-negotiable engineering decisions — no half-measures, no hidden trade-offs.'
+          : '六个不可妥协的工程决策——不打折扣，不藏隐性权衡。' }}
+      </p>
+    </header>
     <oas-grid :columns="cols" gap="16px">
       <a v-for="f in features" :key="f.title" class="feature-grid__link" :href="f.link">
         <oas-card hoverable>
@@ -72,6 +80,21 @@ onBeforeUnmount(() => {
   display: flex;
   gap: var(--oas-space-3);
   align-items: flex-start;
+}
+.feature-grid__head {
+  text-align: center;
+  margin-bottom: var(--oas-space-5);
+}
+.feature-grid__title {
+  font-size: var(--oas-font-size-xl);
+  font-weight: 600;
+  color: var(--oas-color-text-primary);
+  margin: 0 0 var(--oas-space-2);
+}
+.feature-grid__intro {
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+  margin: 0;
 }
 .feature-grid__title {
   font-weight: 600;
