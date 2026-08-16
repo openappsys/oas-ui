@@ -216,6 +216,7 @@ describe('OASTreeSelect 虚拟滚动（virtual）', () => {
   const flushRaf = (): Promise<void> =>
     new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
+  // 非 virtual 分支同步渲染 10001 个节点，jsdom 全量并发下实测 >11s，远超默认 5s 超时
   it('virtual：万级节点仅渲染可见窗口；非 virtual 全量渲染可见行', () => {
     const el = mount({ multiple: '', virtual: '', expanded: '["root"]', options: BIG })
     trigger(el).click()
@@ -227,7 +228,7 @@ describe('OASTreeSelect 虚拟滚动（virtual）', () => {
     const el2 = mount({ multiple: '', expanded: '["root"]', options: BIG })
     trigger(el2).click()
     expect(el2.shadowRoot!.querySelectorAll('[role="treeitem"]').length).toBe(10001)
-  })
+  }, 30000)
 
   it('virtual：滚动后窗口平移，padding 撑起滚动高度', async () => {
     const el = mount({ multiple: '', virtual: '', expanded: '["root"]', options: BIG })
