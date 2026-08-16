@@ -8,7 +8,8 @@ const STYLE = `
   display: block;
   font-family: inherit;
   color: var(--oas-color-text-primary);
-  font-size: var(--oas-font-size-md);
+  /* 日志流跟随外层字号；定制开口：--oas-log-font（行内文本按 em 比例跟随） */
+  font-size: var(--oas-log-font, inherit);
 }
 :host([hidden]) {
   display: none;
@@ -33,7 +34,8 @@ const STYLE = `
   padding-inline: var(--oas-space-3);
   line-height: 1.6;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
-  font-size: var(--oas-font-size-sm);
+  /* 等宽行按比例跟随 host（原 sm/md ≈ 13/14） */
+  font-size: 0.929em;
 }
 .row:hover {
   background: var(--oas-color-bg-hover);
@@ -63,7 +65,8 @@ const STYLE = `
   gap: var(--oas-space-2);
   padding: var(--oas-space-6);
   color: var(--oas-color-text-secondary);
-  font-size: var(--oas-font-size-sm);
+  /* 空态文本按比例跟随 host（原 sm/md ≈ 13/14） */
+  font-size: 0.929em;
 }
 .empty-icon {
   width: 48px;

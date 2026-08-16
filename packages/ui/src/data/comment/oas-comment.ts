@@ -5,7 +5,8 @@ const STYLE = `
   display: block;
   font-family: inherit;
   color: var(--oas-color-text-primary);
-  font-size: var(--oas-font-size-md);
+  /* 展示文本跟随外层字号；定制开口：--oas-comment-font（内部次级文本按 em 比例跟随） */
+  font-size: var(--oas-comment-font, inherit);
 }
 :host([hidden]) {
   display: none;
@@ -34,7 +35,8 @@ const STYLE = `
   font-weight: 600;
 }
 .time {
-  font-size: var(--oas-font-size-xs);
+  /* 次级文本按比例跟随 host（原 xs/md ≈ 12/14） */
+  font-size: 0.857em;
   color: var(--oas-color-text-secondary);
 }
 .content {

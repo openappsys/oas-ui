@@ -182,7 +182,8 @@ const STYLE = `
 :host {
   display: block;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: var(--oas-font-size-sm);
+  /* 代码字号跟随外层并略缩（0.875em 是跨库排版共识）；定制开口：--oas-code-font */
+  font-size: var(--oas-code-font, 0.875em);
   line-height: 1.6;
   color: var(--oas-color-text-primary);
 }
@@ -207,7 +208,8 @@ const STYLE = `
 }
 .lang {
   margin-right: auto;
-  font-size: var(--oas-font-size-xs);
+  /* 次级文本按比例跟随 host（原 xs/sm ≈ 12/13） */
+  font-size: 0.923em;
   color: var(--oas-color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -217,7 +219,7 @@ const STYLE = `
   border: none;
   background: transparent;
   padding: 0 var(--oas-space-1);
-  font-size: var(--oas-font-size-xs);
+  font-size: 0.923em;
   color: var(--oas-color-primary);
   cursor: pointer;
   font-family: inherit;

@@ -6,14 +6,16 @@ const STYLE = `
   flex-direction: column;
   gap: var(--oas-space-1);
   font-family: inherit;
-  font-size: var(--oas-font-size-md);
+  /* 描述项是展示文本，跟随外层字号；定制开口：--oas-descriptions-item-font */
+  font-size: var(--oas-descriptions-item-font, inherit);
 }
 :host([hidden]) {
   display: none;
 }
 .label {
   color: var(--oas-color-text-secondary);
-  font-size: var(--oas-font-size-sm);
+  /* 次级文本按比例跟随 host（原 sm/md ≈ 13/14） */
+  font-size: 0.929em;
 }
 .content {
   color: var(--oas-color-text-primary);

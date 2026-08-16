@@ -66,7 +66,7 @@ const isEn = computed(() => lang.value.startsWith('en'))
   gap: var(--oas-space-2);
 }
 .perf-section__item oas-statistic {
-  font-size: 28px;
+  --oas-statistic-font: 28px;
 }
 .perf-section__label {
   color: var(--oas-color-text-secondary);

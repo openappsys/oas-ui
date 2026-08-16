@@ -30,7 +30,9 @@ const STYLE = `
 :host {
   display: inline-block;
   font-family: inherit;
-  font-size: var(--oas-font-size-lg);
+  /* 大数字默认档位固定（语义同 h1，不随外层 font-size 意外变化）；
+     定制开口：组件级变量 --oas-countdown-font（如 32px） */
+  font-size: var(--oas-countdown-font, var(--oas-font-size-lg));
   color: var(--oas-color-text-primary);
   font-variant-numeric: tabular-nums;
 }

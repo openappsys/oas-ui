@@ -4,7 +4,8 @@ const STYLE = `
 :host {
   display: inline-block;
   font-family: inherit;
-  font-size: var(--oas-font-size-lg);
+  /* 特效文本跟随外层字号（同 span/p 排版直觉）；定制开口：--oas-gradient-text-font */
+  font-size: var(--oas-gradient-text-font, inherit);
 }
 :host([hidden]) {
   display: none;

@@ -311,7 +311,9 @@ export function renderLatex(code: string): string {
 const STYLE = `
 :host {
   display: inline-block;
-  font-size: var(--oas-font-size-lg);
+  /* 公式是正文内嵌特种文本，跟随外层字号（内部上下标/根号已全 em 相对）；
+     定制开口：--oas-equation-font */
+  font-size: var(--oas-equation-font, inherit);
   color: var(--oas-color-text-primary);
   line-height: 1.6;
 }

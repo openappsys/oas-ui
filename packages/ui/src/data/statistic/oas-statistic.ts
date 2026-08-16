@@ -6,8 +6,10 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
   color: var(--oas-color-text-primary);
-  font-size: var(--oas-font-size-lg);
   font-variant-numeric: tabular-nums;
+  /* 大数字默认档位固定（语义同 h1，不随外层 font-size 意外变化）；
+     定制开口：组件级变量 --oas-statistic-font（如 32px） */
+  font-size: var(--oas-statistic-font, var(--oas-font-size-lg));
 }
 :host([hidden]) {
   display: none;

@@ -9,7 +9,8 @@ const STYLE = `
 :host {
   display: block;
   font-family: inherit;
-  font-size: var(--oas-font-size-sm);
+  /* 面包屑是导航文本（非容器控件），跟随外层字号；定制开口：--oas-breadcrumb-font */
+  font-size: var(--oas-breadcrumb-font, inherit);
   color: var(--oas-color-text-secondary);
 }
 :host([hidden]) {
@@ -73,7 +74,7 @@ nav.ellipsis [part='current'] {
   background: transparent;
   padding: 0 var(--oas-space-1);
   font-family: inherit;
-  font-size: var(--oas-font-size-sm);
+  font-size: inherit;
   line-height: 1.6;
   color: var(--oas-color-text-secondary);
   cursor: pointer;
@@ -110,7 +111,7 @@ nav.ellipsis [part='current'] {
 .ellipsis-item {
   padding: var(--oas-space-1) var(--oas-space-3);
   border-radius: var(--oas-radius-sm);
-  font-size: var(--oas-font-size-sm);
+  font-size: inherit;
   color: var(--oas-color-text-secondary);
   white-space: nowrap;
   overflow: hidden;

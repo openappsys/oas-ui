@@ -6,7 +6,8 @@ const STYLE = `
   display: block;
   font-family: inherit;
   color: var(--oas-color-text-primary);
-  font-size: var(--oas-font-size-md);
+  /* 时间线内容跟随外层字号；定制开口：--oas-timeline-font（次级文本按 em 比例跟随） */
+  font-size: var(--oas-timeline-font, inherit);
 }
 :host([hidden]) {
   display: none;
@@ -46,7 +47,8 @@ const STYLE = `
 .dot[data-color='red'] { background: var(--oas-color-danger, #ff4d4f); }
 .dot[data-color='gray'] { background: var(--oas-color-text-secondary, #999); }
 .time {
-  font-size: var(--oas-font-size-xs);
+  /* 次级文本按比例跟随 host（原 xs/md ≈ 12/14） */
+  font-size: 0.857em;
   color: var(--oas-color-text-secondary);
   margin-bottom: var(--oas-space-1);
 }
@@ -74,7 +76,8 @@ const STYLE = `
 }
 .pending-text {
   color: var(--oas-color-text-secondary);
-  font-size: var(--oas-font-size-sm);
+  /* 次级文本按比例跟随 host（原 sm/md ≈ 13/14） */
+  font-size: 0.929em;
 }
 `
 

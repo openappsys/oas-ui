@@ -73,10 +73,10 @@ const numeric = computed(() => {
   margin: 0 auto;
   max-width: 640px;
 }
-/* 直接给 oas-statistic 设 host 字号；custom element 不自动继承父级 font-size，
-   设在外层祖先（oas-flex）上无效，必须命中 host */
+/* 统计数字字号走组件官方开口 --oas-statistic-font（大数字组件默认 lg 固定、
+   组件级变量显式覆盖；此前外层命中 host 的 font-size hack 已随变量开口移除） */
 .stats-bar oas-statistic {
-  font-size: 32px;
+  --oas-statistic-font: 32px;
 }
 .stats-bar__version {
   color: var(--oas-color-text-secondary);

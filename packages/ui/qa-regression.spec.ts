@@ -3861,3 +3861,77 @@ test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见�
     /transparent|rgba\(0, 0, 0, 0\)/,
   )
 })
+
+test('展示型组件字号继承：A 类跟随外层 font-size、B 类大数字默认固定且组件级变量可覆盖', async ({
+  page,
+}) => {
+  // 设计决策（详见组件 :host 注释）：
+  //   A 类展示文本（gradient-text/comment/equation/log/timeline/breadcrumb/descriptions-item）
+  //     :host font-size = var(--组件级变量, inherit) → 跟随外层；code 特例 0.875em 略缩
+  //   B 类大数字（statistic/countdown/number-animation）
+  //     :host font-size = var(--组件级变量, var(--全局lg)) → 默认固定 16px（语义同 h1），
+  //     组件级变量（--oas-statistic-font 等）显式覆盖
+  // 曾现 bug：首页统计条外层 font-size:32px 对 oas-statistic 无效（:host 显式全局 token 阻断继承）
+  await page.goto('/components/statistic.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-statistic')
+  const r = await page.evaluate(() => {
+    const wrap = document.createElement('div')
+    wrap.style.fontSize = '32px'
+    wrap.innerHTML = `
+      <oas-statistic value="42"></oas-statistic>
+      <oas-countdown value="60000"></oas-countdown>
+      <oas-number-animation value="42"></oas-number-animation>
+      <oas-gradient-text>g</oas-gradient-text>
+      <oas-comment author="a" content="c"></oas-comment>
+      <oas-equation code="x"></oas-equation>
+      <oas-log></oas-log>
+      <oas-timeline></oas-timeline>
+      <oas-breadcrumb items='[{"label":"a"}]'></oas-breadcrumb>
+      <oas-descriptions><oas-descriptions-item label="l">v</oas-descriptions-item></oas-descriptions>
+      <oas-code code="x"></oas-code>
+    `
+    document.body.append(wrap)
+    const fs = (sel: string, inner?: string) => {
+      const el = wrap.querySelector(sel)!
+      if (!inner) return getComputedStyle(el).fontSize
+      return getComputedStyle(el.shadowRoot!.querySelector(inner)!).fontSize
+    }
+    const out: Record<string, string> = {
+      statistic: fs('oas-statistic'),
+      countdown: fs('oas-countdown'),
+      numberAnimation: fs('oas-number-animation'),
+      gradientText: fs('oas-gradient-text'),
+      comment: fs('oas-comment'),
+      commentTime: fs('oas-comment', '.time'),
+      equation: fs('oas-equation'),
+      log: fs('oas-log'),
+      timeline: fs('oas-timeline'),
+      breadcrumb: fs('oas-breadcrumb'),
+      descriptionsItem: fs('oas-descriptions-item'),
+      code: fs('oas-code'),
+    }
+    // B 类开口验证：组件级变量覆盖
+    ;(wrap.querySelector('oas-statistic') as HTMLElement).style.setProperty(
+      '--oas-statistic-font',
+      '40px',
+    )
+    out.statisticOverride = getComputedStyle(wrap.querySelector('oas-statistic')!).fontSize
+    wrap.remove()
+    return out
+  })
+  // B 类：默认固定 lg(16px)，不随外层 32px；组件级变量开口生效
+  expect(r.statistic, 'statistic 默认固定 16px').toBe('16px')
+  expect(r.countdown, 'countdown 默认固定 16px').toBe('16px')
+  expect(r.numberAnimation, 'number-animation 默认固定 16px').toBe('16px')
+  expect(r.statisticOverride, '--oas-statistic-font 覆盖开口应生效').toBe('40px')
+  // A 类：跟随外层 32px（code 0.875em = 28px）
+  expect(r.gradientText).toBe('32px')
+  expect(r.comment).toBe('32px')
+  expect(r.commentTime, 'comment 次级文本 0.857em 比例跟随').toBe('27.424px')
+  expect(r.equation).toBe('32px')
+  expect(r.log).toBe('32px')
+  expect(r.timeline).toBe('32px')
+  expect(r.breadcrumb).toBe('32px')
+  expect(r.descriptionsItem).toBe('32px')
+  expect(r.code, 'code 0.875em 略缩跟随').toBe('28px')
+})
