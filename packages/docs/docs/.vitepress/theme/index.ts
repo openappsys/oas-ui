@@ -24,15 +24,16 @@ export default {
   Layout,
   enhanceApp({ app, router }) {
     app.component('DemoBlock', DemoBlock)
-    // gtag 的 config 只在页面整加载时触发一次 page_view，SPA 内路由切换需手动补发；
-    // 用 vitepress Router 的 onAfterRouteChange（enhanceApp 注入的 router 是 vitepress Router，无 vue-router 的 afterEach）
+    // gtag 的 config 只在页面整加载时触发一次 page_view，SPA 内路由切换需手动补发。
+    // vitepress Router 的钩子是实例属性（onAfterRouteChanged），必须赋值注册；
+    // 此前误写成「onAfterRouteChange?.(cb) 方法调用」——属性不存在，可选链静默短路，补发从未生效
     if (!import.meta.env.SSR) {
-      router.onAfterRouteChange?.((to) => {
+      router.onAfterRouteChanged = (to) => {
         const w = window as unknown as {
           gtag?: (cmd: string, id: string, opts?: { page_path?: string }) => void
         }
         w.gtag?.('config', 'G-RXS142HBXF', { page_path: to })
-      })
+      }
     }
   },
   setup() {

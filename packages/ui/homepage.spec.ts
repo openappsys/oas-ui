@@ -98,4 +98,27 @@ test.describe('官网首页', () => {
     await page.goto('/en/', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('.VPFooter')).toContainText('MIT OR Apache-2.0')
   })
+
+  test('SPA 路由切换 GA page_view 补发（onAfterRouteChanged 回归）', async ({ page }) => {
+    // 回归：v1.9.1 起补发注册误写为 onAfterRouteChange?.(cb) 方法调用——属性不存在，
+    // 可选链静默短路，SPA 补发从未生效；正确写法是给实例属性 onAfterRouteChanged 赋值
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    await page.waitForFunction(() => Array.isArray(window.dataLayer))
+    await page.click('.VPHero .actions a.brand')
+    await page.waitForURL(/guide\/getting-started/)
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const dl = window.dataLayer as unknown as Array<Record<string, unknown>>
+          return dl.some(
+            (entry) =>
+              entry[0] === 'config' &&
+              typeof entry[2] === 'object' &&
+              entry[2] !== null &&
+              'page_path' in (entry[2] as object),
+          )
+        }),
+      )
+      .toBe(true)
+  })
 })
