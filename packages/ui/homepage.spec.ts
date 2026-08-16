@@ -32,13 +32,14 @@ test.describe('官网首页 v2', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const demo = page.locator('.hero-table-demo')
     await expect(demo).toBeAttached()
-    await expect(demo.locator('oas-table tbody tr')).toHaveCount(5, { timeout: 5000 })
-    const controls = demo.locator('button').filter({ hasText: /排序|分页|空态|loading/i })
+    // oas-table 在数据前后各加一个 .spacer 行（吸顶布局占位）；数据行 class="row"、空态占位行无 class
+    await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(5, { timeout: 5000 })
+    const controls = demo.locator('oas-button').filter({ hasText: /排序|分页|空态|loading/i })
     await expect(controls).toHaveCount(4)
     await demo.getByRole('button', { name: /loading/i }).click()
-    await expect(demo.locator('oas-table')).toHaveAttribute('loading', '')
+    await expect(demo.locator('oas-table')).toHaveAttribute('loading', 'true')
     await demo.getByRole('button', { name: /空态/i }).click()
-    await expect(demo.locator('oas-table tbody tr')).toHaveCount(0)
+    await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(0)
   })
 
   test('StatsBar 数字与 stats.json 一致', async ({ page }) => {
@@ -62,12 +63,15 @@ test.describe('官网首页 v2', () => {
     await expect(cards).toHaveCount(3)
     await expect(cards.nth(0).locator('oas-form')).toBeAttached()
     await expect(cards.nth(1).locator('oas-statistic').first()).toBeAttached()
-    await expect(cards.nth(2).locator('oas-button')).toHaveCount(3, { timeout: 5000 })
-    await cards.nth(2).locator('oas-button').first().click()
+    await expect(cards.nth(2).locator('oas-button')).toHaveCount(3, { timeout: 10000 })
+    // 等 oas-ui chunk 异步加载（theme/index.ts 动态 import）
     await page.waitForFunction(
-      () => typeof (window as unknown as { message?: unknown }).message !== 'undefined',
+      () => typeof window.message !== 'undefined',
+      null,
+      { timeout: 15000 },
     )
-    await expect(page.locator('oas-message').first()).toBeAttached()
+    await cards.nth(2).locator('oas-button').first().click()
+    await expect(page.locator('oas-message').first()).toBeAttached({ timeout: 10000 })
   })
 
   test('CodeShowcase HTML 单例 + 4 个框架桥接图标卡', async ({ page }) => {

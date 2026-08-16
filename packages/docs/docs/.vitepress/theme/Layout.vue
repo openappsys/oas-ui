@@ -2,7 +2,10 @@
   <DefaultTheme.Layout>
     <!-- 官网首页（layout: home）专用 slot；非 home 页面这些 slot 不会被渲染 -->
     <template #home-hero-image><HeroTableDemo /></template>
-    <template #home-features-before><StatsBar /></template>
+    <template #home-features-before>
+      <StatsBar />
+      <SceneShowcase />
+    </template>
     <template #home-features-after><FeatureGrid /></template>
   </DefaultTheme.Layout>
 </template>
@@ -13,6 +16,7 @@ import DefaultTheme from 'vitepress/theme'
 import { useData } from 'vitepress'
 import HeroTableDemo from './components/HeroTableDemo.vue'
 import StatsBar from './components/StatsBar.vue'
+import SceneShowcase from './components/SceneShowcase.vue'
 import FeatureGrid from './components/FeatureGrid.vue'
 
 const { lang } = useData()
