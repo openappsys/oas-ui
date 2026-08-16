@@ -60,6 +60,11 @@ test.describe('官网首页', () => {
     await expect(bar).toContainText(String(stats.components))
     await expect(bar).toContainText(String(stats.cdnGzipKB))
     await expect(bar).toContainText(`v${stats.version}`)
+    // 标签防剥离回归：Element.prototype.prefix 是只读 getter，Vue 走 DOM prop 赋值会静默丢标签
+    // （prod 构建无 warn），必须断言标签文本真实渲染
+    await expect(bar).toContainText('组件')
+    await expect(bar).toContainText('CDN gzip')
+    await expect(bar).toContainText('测试用例')
   })
 
   test('FeatureGrid 六卡且链接非空', async ({ page }) => {

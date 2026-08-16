@@ -14,9 +14,17 @@
   display: none;
 }
 @media (max-width: 951px) {
-  /* Vitepress 断点以下 hero 上下堆叠，组件墙全宽 */
-  .VPHero .image-container {
+  /* Vitepress 断点以下 hero 上下堆叠，组件墙全宽；
+     .image 默认 aspect-ratio 拟高与负 bottom margin（-48px，默认 logo 的文字上提效果）
+     会在高卡片下方留幽灵空白并让标题压住卡片，须贴齐实际内容 */
+  .VPHero .image-container,
+  .VPHero .image {
     width: 100%;
     max-width: 520px;
+    aspect-ratio: auto;
+    min-height: 0;
+  }
+  .VPHero .image {
+    margin-bottom: 24px;
   }
 }

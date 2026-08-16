@@ -3,7 +3,9 @@
     <oas-flex justify="center" gap="10px" wrap>
       <template v-for="(item, i) in numeric" :key="item.key">
         <oas-divider v-if="i > 0" direction="vertical"></oas-divider>
-        <oas-statistic :value="item.value" :prefix="item.label" :suffix="item.suffix" :precision="item.precision"></oas-statistic>
+        <!-- prefix 必须走 attribute：Element.prototype.prefix 是只读命名空间前缀 getter，
+             Vue 检测 key in el 会走 DOM prop 赋值，撞只读 getter 静默丢标签（prod 无 warn） -->
+        <oas-statistic :value="item.value" :prefix.attr="item.label" :suffix.attr="item.suffix" :precision="item.precision"></oas-statistic>
       </template>
       <oas-divider direction="vertical"></oas-divider>
       <span class="stats-bar__version">v{{ stats.version }}</span>
