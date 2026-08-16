@@ -577,3 +577,7 @@ ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可�
 - 新组件与增强 demo 进文档站（中英双版），覆盖各属性/事件/边界
 - tag-group 单选/多选/disabled 场景可交互并有可见反馈
 - 单测 + typecheck + build + e2e 全绿
+
+### 官网首页（landing page）
+
+文档站首页（中英）从占位页升级为官网门面：Vitepress home 布局（hero + 双 CTA），hero 右栏为可交互组件墙、统计条（oas-statistic）、特性卡六张——全部用自家组件搭建（dogfooding 即产品展厅）。统计数字（组件数/CDN gzip/语言包/测试数/版本）由 `pnpm stats:gen` 从 git 内数据源生成 `stats.json`，CI `stats:check` 防漂移。验收：中英首页完整、组件墙可交互且 console 零告警、`pnpm test:e2e` 全绿（含 homepage.spec）、stats:check 进 CI。
