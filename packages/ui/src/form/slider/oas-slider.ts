@@ -53,6 +53,22 @@ const STYLE = `
   position: relative;
   height: 20px;
 }
+/* 灰色轨道底层：由 track-wrap 伪元素承担（DOM 序最前 = 最底层）。
+   原生 input 的 track 背景必须透明——range 模式 pointerdown 提升 input z-index 抢拖动权时，
+   若灰轨道画在原生 track 上会随之上浮盖住 .fill（蓝色区间填充消失） */
+.track-wrap::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--oas-color-border);
+}
+:host([disabled]) .track-wrap::before {
+  opacity: 0.6;
+}
 input[type="range"] {
   appearance: none;
   width: 100%;
@@ -69,7 +85,7 @@ input[type="range"] {
 input::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
-  background: var(--oas-color-border);
+  background: transparent;
 }
 input::-webkit-slider-thumb {
   appearance: none;
@@ -89,7 +105,7 @@ input::-webkit-slider-thumb:hover {
 input::-moz-range-track {
   height: 4px;
   border-radius: 2px;
-  background: var(--oas-color-border);
+  background: transparent;
 }
 input::-moz-range-thumb {
   width: 14px;
@@ -154,6 +170,11 @@ input:disabled {
   border: 2px solid var(--oas-color-primary);
   pointer-events: none;
   transition: transform var(--oas-transition-fast) var(--oas-ease-out);
+}
+/* author display:flex 会压过 UA [hidden] 规则，显式恢复隐藏（否则 hidden 滑块恒可见：
+   默认堆在轨道起点呈白圈、拖动后残留在值位置呈双滑块假象） */
+.custom-thumb[hidden] {
+  display: none;
 }
 :host(:hover) .custom-thumb {
   transform: translate(-50%, -50%) scale(1.15);
@@ -225,6 +246,11 @@ input:disabled {
   align-items: center;
   gap: var(--oas-space-1);
   flex: 0 0 auto;
+}
+/* 同类保护：无 show-input 时 inputs 整区 hidden，display:flex 不得压过 UA [hidden]
+   （否则空容器仍占 wrap 的 flex gap，轨道右侧多出一段间距） */
+.inputs[hidden] {
+  display: none;
 }
 .inputs input {
   appearance: none;
@@ -758,12 +784,13 @@ export class OASSlider extends OASElement {
     else this.removeAttribute('data-custom-thumb')
   }
 
-  /** 自定义滑块像素定位：thumb 中心随轨道可用宽度（总宽 - thumb 直径）平移 */
+  /** 自定义滑块像素定位：与原生 thumb「中心」对齐——原生 thumb 左缘 = pct×(总宽-直径)，
+      中心再 + 半径；custom-thumb 以 translate(-50%,-50%) 按中心定位，少了半径会偏左 7px */
   private thumbLeft(normPct: number): string {
     const input = this.hasAttr('range') ? (this.maxInput ?? this.input) : this.input
     const trackW = input?.clientWidth ?? 0
     if (!trackW) return `${normPct}%`
-    const pos = (normPct / 100) * (trackW - THUMB_SIZE)
+    const pos = (normPct / 100) * (trackW - THUMB_SIZE) + THUMB_SIZE / 2
     return `${pos}px`
   }
 
