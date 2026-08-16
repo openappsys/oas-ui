@@ -1053,6 +1053,39 @@ describe('OASBadge ribbon 形态细节：flag / rolled / wide', () => {
     )
   })
 
+  it('端部造型三形态：rounded 圆头 / zigzag 锯齿 / arrow 箭头（装饰端朝卡片内侧，placement 镜像）', () => {
+    // rounded：placement-end（徽标在右）→ 圆头在左端朝卡内；placement-start（徽标在左）→ 圆头在右端朝卡内
+    const elR = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'rounded' })
+    expect(ribbon(elR)!.classList.contains('form-rounded')).toBe(true)
+    const styleR = elR.shadowRoot!.querySelector('style')!.textContent!
+    expect(cssRule(styleR, '.ribbon.form-rounded.placement-end')).toContain('border-start-start-radius: 999px')
+    expect(cssRule(styleR, '.ribbon.form-rounded.placement-end')).toContain('border-end-start-radius: 999px')
+    expect(cssRule(styleR, '.ribbon.form-rounded.placement-start')).toContain('border-start-end-radius: 999px')
+    expect(cssRule(styleR, '.ribbon.form-rounded.placement-start')).toContain('border-end-end-radius: 999px')
+    // zigzag：placement-end → 锯齿在左端朝卡内（8px 齿）；placement-start → 锯齿在右端朝卡内（calc(100%-8px) 齿）
+    const elZ = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'zigzag' })
+    expect(ribbon(elZ)!.classList.contains('form-zigzag')).toBe(true)
+    const styleZ = elZ.shadowRoot!.querySelector('style')!.textContent!
+    expect(cssRule(styleZ, '.ribbon.form-zigzag.placement-end')).toContain('8px 62.5%')
+    expect(cssRule(styleZ, '.ribbon.form-zigzag.placement-start')).toContain('calc(100% - 8px) 62.5%')
+    // arrow：大箭头——元素加高 1.6 倍，头部大三角占满全高；placement-end 尖朝左 / placement-start 尖朝右
+    const elA = mount({ ribbon: '', text: 'HOT', 'ribbon-form': 'arrow' })
+    expect(ribbon(elA)!.classList.contains('form-arrow')).toBe(true)
+    const styleA = elA.shadowRoot!.querySelector('style')!.textContent!
+    expect(cssRule(styleA, '.ribbon.form-arrow')).toContain('height: calc(var(--oas-control-height-xs) * 1.6)')
+    expect(cssRule(styleA, '.ribbon.form-arrow.placement-end')).toContain(
+      'clip-path: polygon(\n    100% 18.75%,\n    22px 18.75%,\n    22px 0,\n    0 50%,\n    22px 100%,\n    22px 81.25%,\n    100% 81.25%\n  )',
+    )
+    expect(cssRule(styleA, '.ribbon.form-arrow.placement-start')).toContain(
+      'clip-path: polygon(\n    0 18.75%,\n    calc(100% - 22px) 18.75%,\n    calc(100% - 22px) 0,\n    100% 50%,\n    calc(100% - 22px) 100%,\n    calc(100% - 22px) 81.25%,\n    0 81.25%\n  )',
+    )
+    // 三形态折叠角在挂点外端（base 端）：placement-end 在右下、placement-start 在左下，与装饰端分两端
+    expect(cssRule(styleR, '.ribbon.form-rounded.placement-end .ribbon-corner')).toContain('inset-inline-end: 0')
+    expect(cssRule(styleR, '.ribbon.form-rounded.placement-start .ribbon-corner')).toContain('inset-inline-start: 0')
+    expect(cssRule(styleZ, '.ribbon.form-zigzag.placement-end .ribbon-corner')).toContain('inset-inline-end: 0')
+    expect(cssRule(styleA, '.ribbon.form-arrow.placement-end .ribbon-corner')).toContain('inset-inline-end: 0')
+  })
+
   it('flag 与其他属性正交：color / placement 并存', () => {
     const el = mount({
       ribbon: '',

@@ -34,6 +34,9 @@ export type BadgeRibbonForm =
   | 'seal'
   | 'banner'
   | 'flag'
+  | 'rounded'
+  | 'zigzag'
+  | 'arrow'
 /** 吸引动画：外圈脉冲扩散 / 轻微上下弹跳（仅 count/dot/standalone 徽标，ribbon 不受影响） */
 export type BadgeAttention = 'pulse' | 'bounce'
 /** 角标四角定位（默认 top-right；非法值静默回落） */
@@ -97,6 +100,9 @@ const FORM_ANCHORS: Record<string, readonly string[]> = {
   seal: VALID_RIBBON_ANCHORS,
   bookmark: VALID_RIBBON_ANCHORS,
   flag: VALID_RIBBON_ANCHORS,
+  rounded: VALID_RIBBON_ANCHORS,
+  zigzag: VALID_RIBBON_ANCHORS,
+  arrow: VALID_RIBBON_ANCHORS,
 }
 const VALID_RIBBON_FORMS: readonly string[] = [
   'fold',
@@ -107,6 +113,9 @@ const VALID_RIBBON_FORMS: readonly string[] = [
   'seal',
   'banner',
   'flag',
+  'rounded',
+  'zigzag',
+  'arrow',
 ]
 
 /** corner 平移符号：X 向右为正，Y 向下为正（top 角 Y 为负） */
@@ -788,6 +797,152 @@ const STYLE = `
   inset-inline-end: 0;
   /* 折叠角随侧镜像 */
   clip-path: polygon(100% 100%, 100% 0, 0 100%);
+}
+
+/* ===== 端部造型形态（rounded 圆头 / zigzag 锯齿 / arrow 箭头）：
+   横条 + 端部装饰造型，装饰端始终朝卡片内侧（同 flag"缺口朝内侧端"规则：
+   徽标在右（placement-end）→ 装饰在左端朝卡内；在左（placement-start）→ 装饰在右端朝卡内）。
+   左下保留折叠小三角（corner 置于挂点内侧，同 flag 复用逻辑） */
+
+/* rounded：圆头端（border-radius 即可；装饰端朝卡内） */
+.ribbon.form-rounded.placement-end {
+  inset-inline-end: 0;
+  /* 徽标在右 → 圆头在左端朝卡内 */
+  border-start-start-radius: 999px;
+  border-end-start-radius: 999px;
+}
+.ribbon.form-rounded.placement-start {
+  inset-inline-start: 0;
+  /* 徽标在左 → 圆头在右端朝卡内 */
+  border-start-end-radius: 999px;
+  border-end-end-radius: 999px;
+}
+/* 折叠角在挂点外端（base 端，缎带绕卡边缘处），与装饰端分两端（参考图语义：
+   折叠角在左下挂点、圆头在右端） */
+.ribbon.form-rounded .ribbon-corner {
+  top: auto;
+  bottom: 0;
+  width: var(--oas-space-2);
+  height: var(--oas-space-2);
+}
+.ribbon.form-rounded.placement-end .ribbon-corner {
+  /* 徽标在右 → 折叠角在右下挂点端（绕右缘），圆头在左端互不冲突 */
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  clip-path: polygon(100% 100%, 100% 0, 0 100%);
+}
+.ribbon.form-rounded.placement-start .ribbon-corner {
+  /* 徽标在左 → 折叠角在左下挂点端（绕左缘），圆头在右端互不冲突 */
+  inset-inline-end: auto;
+  inset-inline-start: 0;
+  clip-path: polygon(0 100%, 0 0, 100% 100%);
+}
+
+/* zigzag：锯齿端（clip-path 四齿；装饰端朝卡内） */
+.ribbon.form-zigzag {
+  border-radius: 0;
+}
+.ribbon.form-zigzag.placement-end {
+  inset-inline-end: 0;
+  /* 徽标在右 → 锯齿在左端朝卡内 */
+  clip-path: polygon(
+    100% 0,
+    0 0,
+    8px 12.5%,
+    0 25%,
+    8px 37.5%,
+    0 50%,
+    8px 62.5%,
+    0 75%,
+    8px 87.5%,
+    0 100%,
+    100% 100%
+  );
+}
+.ribbon.form-zigzag.placement-start {
+  inset-inline-start: 0;
+  /* 徽标在左 → 锯齿在右端朝卡内 */
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    calc(100% - 8px) 12.5%,
+    100% 25%,
+    calc(100% - 8px) 37.5%,
+    100% 50%,
+    calc(100% - 8px) 62.5%,
+    100% 75%,
+    calc(100% - 8px) 87.5%,
+    100% 100%,
+    0 100%
+  );
+}
+.ribbon.form-zigzag .ribbon-corner {
+  top: auto;
+  bottom: 0;
+  width: var(--oas-space-2);
+  height: var(--oas-space-2);
+}
+.ribbon.form-zigzag.placement-end .ribbon-corner {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  clip-path: polygon(100% 100%, 100% 0, 0 100%);
+}
+.ribbon.form-zigzag.placement-start .ribbon-corner {
+  inset-inline-end: auto;
+  inset-inline-start: 0;
+  clip-path: polygon(0 100%, 0 0, 100% 100%);
+}
+
+/* arrow：箭头端（大箭头：元素加高 1.6 倍，箭头头部大三角占满全高、比条身高，
+   文字垂直居中在条身；装饰端朝卡内） */
+.ribbon.form-arrow {
+  border-radius: 0;
+  height: calc(var(--oas-control-height-xs) * 1.6);
+  line-height: calc(var(--oas-control-height-xs) * 1.6);
+}
+.ribbon.form-arrow.placement-end {
+  inset-inline-end: 0;
+  /* 徽标在右 → 大箭头在左端朝卡内（尖朝左）；三角基边上下凸出条身（占满全高） */
+  padding-inline-start: 22px;
+  clip-path: polygon(
+    100% 18.75%,
+    22px 18.75%,
+    22px 0,
+    0 50%,
+    22px 100%,
+    22px 81.25%,
+    100% 81.25%
+  );
+}
+.ribbon.form-arrow.placement-start {
+  inset-inline-start: 0;
+  /* 徽标在左 → 大箭头在右端朝卡内（尖朝右）；三角基边上下凸出条身（占满全高） */
+  padding-inline-end: 22px;
+  clip-path: polygon(
+    0 18.75%,
+    calc(100% - 22px) 18.75%,
+    calc(100% - 22px) 0,
+    100% 50%,
+    calc(100% - 22px) 100%,
+    calc(100% - 22px) 81.25%,
+    0 81.25%
+  );
+}
+.ribbon.form-arrow .ribbon-corner {
+  top: auto;
+  bottom: 0;
+  width: var(--oas-space-2);
+  height: var(--oas-space-2);
+}
+.ribbon.form-arrow.placement-end .ribbon-corner {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  clip-path: polygon(100% 100%, 100% 0, 0 100%);
+}
+.ribbon.form-arrow.placement-start .ribbon-corner {
+  inset-inline-end: auto;
+  inset-inline-start: 0;
+  clip-path: polygon(0 100%, 0 0, 100% 100%);
 }
 
 /* ===== 非斜形态通用锚点（ribbon-anchor 8 位置：4 边中 + 4 角）=====
