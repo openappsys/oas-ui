@@ -1,9 +1,10 @@
 <template>
   <DefaultTheme.Layout>
     <!-- 官网首页（layout: home）专用 slot；非 home 页面这些 slot 不会被渲染 -->
+    <!-- VitePress 1.6 无 home-features-info slot：统计条挂 before、特性卡挂 after，保持 hero→统计→特性 的设计顺序 -->
     <template #home-hero-image><HeroPlayground /></template>
-    <template #home-features-after><StatsBar /></template>
-    <template #home-features-before><FeatureGrid /></template>
+    <template #home-features-before><StatsBar /></template>
+    <template #home-features-after><FeatureGrid /></template>
   </DefaultTheme.Layout>
 </template>
 
