@@ -36,33 +36,30 @@ test.describe('官网首页 v2', () => {
     expect(errors).toEqual([])
   })
 
-  test('HeroTableDemo 标志性大件：表格 + 排序/分页切换', async ({ page }) => {
+  test('HeroTableDemo 标志性大件：表格 + 4 个状态切换控件', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const demo = page.locator('.hero-table-demo')
     await expect(demo).toBeAttached()
-    // oas-table 在数据前后各加一个 .spacer 行（吸顶布局占位）；数据行 class="row"
+    // oas-table 在数据前后各加一个 .spacer 行（吸顶布局占位）；数据行 class="row"、空态占位行无 class
     await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(8, { timeout: 5000 })
-    // 排序切换：点击排序按钮 → sort-key="age"
-    const sortBtn = demo.locator('oas-button').filter({ hasText: /排序/i })
-    await expect(sortBtn).toHaveCount(1)
-    await sortBtn.click()
-    await expect(demo.locator('oas-table')).toHaveAttribute('sort-key', 'age')
+    const controls = demo.locator('oas-button').filter({ hasText: /排序|分页|空态|loading/i })
+    await expect(controls).toHaveCount(4)
     // 分页切换：8 行 → 切前 PAGE_SIZE=3 行 + 显示 oas-pagination
-    const pagerBtn = demo.locator('oas-button').filter({ hasText: /分页/i })
-    await pagerBtn.click()
+    await demo.getByRole('button', { name: /分页/i }).click()
     await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(3)
+    await expect(demo.locator('oas-table')).toHaveAttribute('checkable', 'true')
     const pager = demo.locator('oas-pagination')
     await expect(pager).toBeAttached()
-    // 翻页：oas-pagination 派 oas-change（detail.page=2）→ 显示后 3 行
-    await pager.evaluate((el) =>
-      el.dispatchEvent(new CustomEvent('oas-change', { detail: { page: 2, pageSize: 3 }, bubbles: true })),
-    )
+    // 翻页：oas-pagination 派 oas-change（detail.page=2）→ 显示后 3 行（钱八/孙九/周十）
+    await pager.evaluate((el) => el.dispatchEvent(new CustomEvent('oas-change', { detail: { page: 2, pageSize: 3 }, bubbles: true })))
     await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(3)
     // 最后一页只有 2 行（8 % 3 = 2）
-    await pager.evaluate((el) =>
-      el.dispatchEvent(new CustomEvent('oas-change', { detail: { page: 3, pageSize: 3 }, bubbles: true })),
-    )
+    await pager.evaluate((el) => el.dispatchEvent(new CustomEvent('oas-change', { detail: { page: 3, pageSize: 3 }, bubbles: true })))
     await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(2)
+    await demo.getByRole('button', { name: /loading/i }).click()
+    await expect(demo.locator('oas-table')).toHaveAttribute('loading', 'true')
+    await demo.getByRole('button', { name: /空态/i }).click()
+    await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(0)
   })
 
   test('StatsBar 数字与 stats.json 一致', async ({ page }) => {

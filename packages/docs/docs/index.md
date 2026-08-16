@@ -5,8 +5,8 @@ description: 一套组件，用于任何宿主——React / Vue / Svelte / 原�
 
 hero:
   name: OAS-UI
-  text: 一套 Web Components 组件，任何宿主开箱即用
-  tagline: 124 个组件 · TypeScript 全量类型 · light/dark 双主题 · tree-shakable · SSR + DSD
+  text: 框架无关的 Web Components UI 组件库
+  tagline: 一套组件，用于任何宿主——React / Vue / Svelte / 原生 HTML。TypeScript 全量类型 · tree-shakable · light/dark 双主题 · SSR + DSD。
   actions:
     - theme: brand
       text: 快速开始

@@ -9,13 +9,21 @@
           <oas-button size="small" :type="paged ? 'primary' : 'default'" @click="togglePaged">
             {{ isEn ? 'Pagination' : '分页' }}
           </oas-button>
+          <oas-button size="small" :type="empty ? 'primary' : 'default'" @click="toggleEmpty">
+            {{ isEn ? 'Empty' : '空态' }}
+          </oas-button>
+          <oas-button size="small" :type="loading ? 'primary' : 'default'" @click="toggleLoading">
+            {{ loading ? (isEn ? 'Stop loading' : '停止加载') : 'Loading' }}
+          </oas-button>
         </oas-flex>
         <oas-table
           row-key="name"
           :columns="columnsJson"
-          :data="pagedDataJson"
+          :data="empty ? '[]' : pagedDataJson"
           :sort-key="sortOn ? 'age' : null"
           sort-order="desc"
+          :checkable="paged"
+          :loading="loading || null"
           height="240"
         ></oas-table>
         <oas-pagination
@@ -39,12 +47,22 @@ const isEn = computed(() => lang.value.startsWith('en'))
 
 const sortOn = ref(false)
 const paged = ref(false)
+const empty = ref(false)
+const loading = ref(false)
 function toggleSort() {
   sortOn.value = !sortOn.value
 }
 function togglePaged() {
   paged.value = !paged.value
-  currentPage.value = 1
+  if (paged.value) empty.value = false
+  currentPage.value = 1 // 重置到第一页
+}
+function toggleEmpty() {
+  empty.value = !empty.value
+  if (empty.value) sortOn.value = false
+}
+function toggleLoading() {
+  loading.value = !loading.value
 }
 
 const rows = [
@@ -61,8 +79,11 @@ const rows = [
 const PAGE_SIZE = 3
 const currentPage = ref(1)
 function onPageChange(e: Event) {
-  const detail = (e as CustomEvent<{ page?: number }>).detail
+  const detail = (e as CustomEvent<{ page?: number; pageSize?: number }>).detail
   if (detail.page) currentPage.value = detail.page
+  if (detail.pageSize) {
+    // size 变了不直接切 data，只记下；演示用固定 PAGE_SIZE=3 即可
+  }
 }
 const pagedDataJson = computed(() => {
   if (!paged.value) return JSON.stringify(rows)
