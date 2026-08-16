@@ -44,10 +44,18 @@ test.describe('官网首页 v2', () => {
     await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(8, { timeout: 5000 })
     const controls = demo.locator('oas-button').filter({ hasText: /排序|分页|空态|loading/i })
     await expect(controls).toHaveCount(4)
-    // 分页切换：8 行 → 切前 PAGE_SIZE=3 行
+    // 分页切换：8 行 → 切前 PAGE_SIZE=3 行 + 显示 oas-pagination
     await demo.getByRole('button', { name: /分页/i }).click()
     await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(3)
     await expect(demo.locator('oas-table')).toHaveAttribute('checkable', 'true')
+    const pager = demo.locator('oas-pagination')
+    await expect(pager).toBeAttached()
+    // 翻页：oas-pagination 派 oas-change（detail.page=2）→ 显示后 3 行（钱八/孙九/周十）
+    await pager.evaluate((el) => el.dispatchEvent(new CustomEvent('oas-change', { detail: { page: 2, pageSize: 3 }, bubbles: true })))
+    await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(3)
+    // 最后一页只有 2 行（8 % 3 = 2）
+    await pager.evaluate((el) => el.dispatchEvent(new CustomEvent('oas-change', { detail: { page: 3, pageSize: 3 }, bubbles: true })))
+    await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(2)
     await demo.getByRole('button', { name: /loading/i }).click()
     await expect(demo.locator('oas-table')).toHaveAttribute('loading', 'true')
     await demo.getByRole('button', { name: /空态/i }).click()

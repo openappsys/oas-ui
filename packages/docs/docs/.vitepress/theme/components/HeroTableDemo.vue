@@ -19,13 +19,20 @@
         <oas-table
           row-key="name"
           :columns="columnsJson"
-          :data="empty ? '[]' : dataJson"
+          :data="empty ? '[]' : pagedDataJson"
           :sort-key="sortOn ? 'age' : null"
           sort-order="desc"
           :checkable="paged"
           :loading="loading || null"
           height="240"
         ></oas-table>
+        <oas-pagination
+          v-if="paged"
+          :total="rows.length"
+          :page-size="PAGE_SIZE"
+          :current="currentPage"
+          @oas-change="onPageChange"
+        ></oas-pagination>
       </oas-flex>
     </oas-card>
   </div>
@@ -48,6 +55,7 @@ function toggleSort() {
 function togglePaged() {
   paged.value = !paged.value
   if (paged.value) empty.value = false
+  currentPage.value = 1 // 重置到第一页
 }
 function toggleEmpty() {
   empty.value = !empty.value
@@ -69,6 +77,19 @@ const rows = [
 ]
 
 const PAGE_SIZE = 3
+const currentPage = ref(1)
+function onPageChange(e: Event) {
+  const detail = (e as CustomEvent<{ page?: number; pageSize?: number }>).detail
+  if (detail.page) currentPage.value = detail.page
+  if (detail.pageSize) {
+    // size 变了不直接切 data，只记下；演示用固定 PAGE_SIZE=3 即可
+  }
+}
+const pagedDataJson = computed(() => {
+  if (!paged.value) return JSON.stringify(rows)
+  const start = (currentPage.value - 1) * PAGE_SIZE
+  return JSON.stringify(rows.slice(start, start + PAGE_SIZE))
+})
 
 const columnsJson = computed(() =>
   JSON.stringify([
@@ -77,10 +98,6 @@ const columnsJson = computed(() =>
     { key: 'city', title: isEn.value ? 'City' : '城市' },
     { key: 'position', title: isEn.value ? 'Role' : '职位' },
   ]),
-)
-// 分页：paged=true 时切片显示前 PAGE_SIZE 行（演示用——真实应用应配 oas-pagination）
-const dataJson = computed(() =>
-  JSON.stringify(paged.value ? rows.slice(0, PAGE_SIZE) : rows),
 )
 </script>
 
