@@ -7,7 +7,10 @@
       <SceneShowcase />
       <CodeShowcase />
     </template>
-    <template #home-features-after><FeatureGrid /></template>
+    <template #home-features-after>
+      <PerfSection />
+      <FeatureGrid />
+    </template>
   </DefaultTheme.Layout>
 </template>
 
@@ -19,6 +22,7 @@ import HeroTableDemo from './components/HeroTableDemo.vue'
 import StatsBar from './components/StatsBar.vue'
 import SceneShowcase from './components/SceneShowcase.vue'
 import CodeShowcase from './components/CodeShowcase.vue'
+import PerfSection from './components/PerfSection.vue'
 import FeatureGrid from './components/FeatureGrid.vue'
 
 const { lang } = useData()

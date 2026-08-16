@@ -91,7 +91,7 @@ test.describe('官网首页 v2', () => {
     await expect(sec).toContainText(String(stats.perf.cdnGzipKB))
     await expect(sec).toContainText(String(stats.perf.buttonChainKB))
     await expect(sec).toContainText(String(stats.perf.fullEntryKB))
-    await expect(sec.locator('a[href*="perf"]')).toBeAttached()
+    await expect(sec.locator('a[href*="/guide"]')).toBeAttached()
   })
 
   test('CtaBand 收尾横幅 + 双按钮', async ({ page }) => {
