@@ -41,9 +41,13 @@ test.describe('官网首页 v2', () => {
     const demo = page.locator('.hero-table-demo')
     await expect(demo).toBeAttached()
     // oas-table 在数据前后各加一个 .spacer 行（吸顶布局占位）；数据行 class="row"、空态占位行无 class
-    await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(5, { timeout: 5000 })
+    await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(8, { timeout: 5000 })
     const controls = demo.locator('oas-button').filter({ hasText: /排序|分页|空态|loading/i })
     await expect(controls).toHaveCount(4)
+    // 分页切换：8 行 → 切前 PAGE_SIZE=3 行
+    await demo.getByRole('button', { name: /分页/i }).click()
+    await expect(demo.locator('oas-table tbody tr.row')).toHaveCount(3)
+    await expect(demo.locator('oas-table')).toHaveAttribute('checkable', 'true')
     await demo.getByRole('button', { name: /loading/i }).click()
     await expect(demo.locator('oas-table')).toHaveAttribute('loading', 'true')
     await demo.getByRole('button', { name: /空态/i }).click()

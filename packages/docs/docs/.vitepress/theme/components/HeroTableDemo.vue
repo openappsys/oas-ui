@@ -63,7 +63,12 @@ const rows = [
   { name: '王五', age: 35, city: '深圳', position: '后端工程师' },
   { name: '赵六', age: 28, city: '杭州', position: 'UI 设计师' },
   { name: '孙七', age: 32, city: '广州', position: '测试工程师' },
+  { name: '钱八', age: 40, city: '成都', position: '运维总监' },
+  { name: '孙九', age: 27, city: '武汉', position: '产品助理' },
+  { name: '周十', age: 33, city: '南京', position: '后端组长' },
 ]
+
+const PAGE_SIZE = 3
 
 const columnsJson = computed(() =>
   JSON.stringify([
@@ -73,7 +78,10 @@ const columnsJson = computed(() =>
     { key: 'position', title: isEn.value ? 'Role' : '职位' },
   ]),
 )
-const dataJson = JSON.stringify(rows)
+// 分页：paged=true 时切片显示前 PAGE_SIZE 行（演示用——真实应用应配 oas-pagination）
+const dataJson = computed(() =>
+  JSON.stringify(paged.value ? rows.slice(0, PAGE_SIZE) : rows),
+)
 </script>
 
 <style scoped>
