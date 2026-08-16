@@ -9,6 +9,7 @@
     </template>
     <template #home-features-after>
       <PerfSection />
+      <CtaBand />
       <FeatureGrid />
     </template>
   </DefaultTheme.Layout>
@@ -23,6 +24,7 @@ import StatsBar from './components/StatsBar.vue'
 import SceneShowcase from './components/SceneShowcase.vue'
 import CodeShowcase from './components/CodeShowcase.vue'
 import PerfSection from './components/PerfSection.vue'
+import CtaBand from './components/CtaBand.vue'
 import FeatureGrid from './components/FeatureGrid.vue'
 
 const { lang } = useData()
