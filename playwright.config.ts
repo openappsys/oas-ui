@@ -24,8 +24,10 @@ export default defineConfig({
     timeout: 120_000,
   },
   projects: [
-    // chromium 全量（默认 project 跑全部 spec）
-    { name: 'chromium', use: {} },
+    // 文档站相关（homepage.spec.ts）——只改 docs/index.md、theme/components/*、样式时跑
+    { name: 'docs-site', use: {}, testMatch: /homepage\.spec\.ts/ },
+    // 组件全量（默认 project 跑除 homepage 外的所有 spec）——改 oas-* 组件源码时跑
+    { name: 'chromium', use: {}, testIgnore: /homepage\.spec\.ts/ },
     // Firefox 抽样覆盖：全量 e2e 在 Firefox 上跑会翻倍耗时——不值。只挑能暴露
     // 浏览器专有渲染/兼容问题的 spec（视觉截图、全页冒烟、浏览器相关回归），
     // 交互密集或时序敏感的 spec（interaction/a11y/demo/onoas 等）留在 chromium
