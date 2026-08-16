@@ -106,7 +106,7 @@ test.describe('官网首页 v2', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('.stats-bar__title')).toContainText('数字一览')
     await expect(page.locator('.scene-showcase__title')).toContainText('核心场景')
-    await expect(page.locator('.code-showcase__title')).toContainText('代码速览')
+    await expect(page.locator('.code-showcase__title')).toContainText('像写 HTML 一样用')
     await expect(page.locator('.perf-section__title')).toContainText('性能速览')
     await expect(page.locator('.cta-band__title')).toBeAttached()
   })

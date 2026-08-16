@@ -15,20 +15,3 @@ hero:
       text: GitHub
       link: https://github.com/openappsys/oas-ui
 ---
-
-## 安装
-
-```bash
-pnpm add @oas-ui/ui @oas-ui/theme
-```
-
-```ts
-import '@oas-ui/theme'
-import '@oas-ui/ui'
-```
-
-然后直接写 HTML：
-
-```html
-<oas-button type="primary">开始使用</oas-button>
-```

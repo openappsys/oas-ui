@@ -16,7 +16,11 @@
 /* slot 注入的统计条/特性卡是 .VPHome 裸子节点，无 .container 约束会顶满屏宽；
    套用与 hero .container 同构的容器规则（1152px 居中 + 24px 内边距）保持版心对齐 */
 .stats-bar,
-.feature-grid {
+.feature-grid,
+.scene-showcase,
+.code-showcase,
+.perf-section,
+.cta-band {
   max-width: 1152px;
   margin: 0 auto;
   padding-left: 24px;
