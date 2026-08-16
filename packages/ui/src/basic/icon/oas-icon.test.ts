@@ -279,11 +279,19 @@ describe('OASIcon', () => {
       )
       registerIconLibrary('lib-fv', { resolver })
       const fetchMock = vi.fn(() =>
-        Promise.resolve({ ok: true, text: () => Promise.resolve('<svg viewBox="0 0 24 24"><path d="M1 1"/></svg>') }),
+        Promise.resolve({
+          ok: true,
+          text: () => Promise.resolve('<svg viewBox="0 0 24 24"><path d="M1 1"/></svg>'),
+        }),
       )
       vi.stubGlobal('fetch', fetchMock)
       try {
-        const el = mount({ library: 'lib-fv', name: 'arrow-right', family: 'outlined', variant: 'sharp' })
+        const el = mount({
+          library: 'lib-fv',
+          name: 'arrow-right',
+          family: 'outlined',
+          variant: 'sharp',
+        })
         expect(resolver).toHaveBeenCalledWith('arrow-right', 'outlined', 'sharp')
         await vi.waitFor(() => {
           expect(fetchMock).toHaveBeenCalledWith('/x/outlined/sharp/arrow-right.svg')
@@ -310,9 +318,15 @@ describe('OASIcon', () => {
       try {
         const el = mount({ library: 'lib-race', name: 'a' })
         el.setAttribute('name', 'b') // 后发请求先完成
-        resolveA({ ok: true, text: () => Promise.resolve('<svg viewBox="0 0 24 24"><path d="A"/></svg>') })
+        resolveA({
+          ok: true,
+          text: () => Promise.resolve('<svg viewBox="0 0 24 24"><path d="A"/></svg>'),
+        })
         await Promise.resolve()
-        resolveB({ ok: true, text: () => Promise.resolve('<svg viewBox="0 0 24 24"><path d="B"/></svg>') })
+        resolveB({
+          ok: true,
+          text: () => Promise.resolve('<svg viewBox="0 0 24 24"><path d="B"/></svg>'),
+        })
         await vi.waitFor(() => {
           expect(svg(el)!.querySelector('path')?.getAttribute('d')).toBe('B')
         })

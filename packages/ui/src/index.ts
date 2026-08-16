@@ -125,7 +125,12 @@ export type { TagType, TagSize, TagVariant, TagPresetColor } from './basic/tag/o
 export { OASTagGroup } from './basic/tag/oas-tag-group.js'
 export { OASBadge } from './basic/badge/oas-badge.js'
 export { OASSpace } from './basic/space/oas-space.js'
-export type { SpaceDirection, SpaceSize, SpaceAlign, SpaceJustify } from './basic/space/oas-space.js'
+export type {
+  SpaceDirection,
+  SpaceSize,
+  SpaceAlign,
+  SpaceJustify,
+} from './basic/space/oas-space.js'
 export { OASCompact } from './basic/space/oas-compact.js'
 export { OASDivider } from './basic/divider/oas-divider.js'
 export type { DividerDirection, DividerPosition } from './basic/divider/oas-divider.js'

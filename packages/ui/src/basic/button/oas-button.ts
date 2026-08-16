@@ -7,7 +7,14 @@ export type ButtonSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 export type ButtonVariant = 'solid' | 'outlined' | 'dashed' | 'filled' | 'text' | 'link'
 
 const VALID_BUTTON_SIZES: readonly ButtonSize[] = ['xs', 'small', 'medium', 'large', 'xl']
-const VALID_BUTTON_VARIANTS: readonly ButtonVariant[] = ['solid', 'outlined', 'dashed', 'filled', 'text', 'link']
+const VALID_BUTTON_VARIANTS: readonly ButtonVariant[] = [
+  'solid',
+  'outlined',
+  'dashed',
+  'filled',
+  'text',
+  'link',
+]
 
 /** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
 function normalizeButtonSize(raw: string): ButtonSize {
@@ -670,7 +677,11 @@ export class OASButton extends OASElement {
   }
 
   /** href/target 增删会改变内部元素类型（button ↔ a），需重建 shadow；其余属性走 update() */
-  override attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+  override attributeChangedCallback(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null,
+  ): void {
     if ((name === 'href' || name === 'target') && this.hasRendered) {
       this.shadow.innerHTML = this.template()
       this.bind()
@@ -786,7 +797,8 @@ export class OASButton extends OASElement {
 
   /** 中文间自动空格：slot 文本里两个连续 CJK 字符间插入空格（auto-insert-space 默认关，opt-in） */
   private applyAutoInsertSpace(): void {
-    if (!this.hasAttr('auto-insert-space') || this.getAttr('auto-insert-space', '') === 'false') return
+    if (!this.hasAttr('auto-insert-space') || this.getAttr('auto-insert-space', '') === 'false')
+      return
     // 遍历宿主直接文本节点，两个连续汉字间插空格（不破坏元素子节点结构）
     for (const node of Array.from(this.childNodes)) {
       if (node.nodeType !== Node.TEXT_NODE) continue

@@ -1339,8 +1339,7 @@ export class OASBadge extends OASElement {
     for (const name of VALID_STATUS) el.classList.toggle(name, status === name)
     const dot = el.querySelector<HTMLElement>('.status-dot')
     if (dot) {
-      const statusColor =
-        STATUS_COLOR[status as string] ?? 'var(--oas-color-text-secondary)'
+      const statusColor = STATUS_COLOR[status as string] ?? 'var(--oas-color-text-secondary)'
       dot.style.setProperty('--oas-status-color', statusColor)
     }
     const text = el.querySelector<HTMLElement>('.status-text')

@@ -31,7 +31,8 @@ test('button-group 多选点击切换选中态', async ({ page }) => {
   const b = page.locator('oas-button-group[multiple] oas-button[value="b"]')
   const before = await b.getAttribute('aria-pressed')
   await b.click()
-  await page.waitForFunction(() =>
+  await page.waitForFunction(
+    () =>
       document
         .querySelector('oas-button-group[multiple] oas-button[value="b"]')
         ?.getAttribute('aria-pressed') !== 'false',
@@ -1086,7 +1087,8 @@ test('upload picture-card：list-type 属性在 Vue demo 存活，预置照片�
   await page.goto('/components/upload.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#upload-full')
   // #upload-full 预置 3 张 SVG 图片（onMounted 异步 import 后设置 files）
-  await page.waitForFunction(() =>
+  await page.waitForFunction(
+    () =>
       document.querySelector('#upload-full')?.shadowRoot?.querySelectorAll('.card').length === 3,
     null,
     { timeout: 10000 },
@@ -1112,11 +1114,12 @@ test('upload 拖拽 drop：真实拖放文件到拖拽区即渲染', async ({ pa
   await page.evaluate(() => {
     const el = document.querySelector('#upload-drag')!
     const zone = el.shadowRoot!.querySelector('.zone')!
-    const dt = new DataTransfer
+    const dt = new DataTransfer()
     dt.items.add(new File(['hello'], 'drag.txt', { type: 'text/plain' }))
     zone.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }))
   })
-  await page.waitForFunction(() => document.querySelector('#upload-drag')?.shadowRoot?.querySelector('.item') != null,
+  await page.waitForFunction(
+    () => document.querySelector('#upload-drag')?.shadowRoot?.querySelector('.item') != null,
     null,
     { timeout: 5000 },
   )
@@ -1142,7 +1145,7 @@ test('upload 超限 max：drop 超过 max 的文件触发 oas-exceed 并弹出 m
   await page.evaluate(() => {
     const el = document.querySelector('#upload-wall-exceed')!
     const zone = el.shadowRoot!.querySelector('.zone')!
-    const dt = new DataTransfer
+    const dt = new DataTransfer()
     for (let i = 0; i < 4; i++) {
       dt.items.add(new File(['x'], `f${i}.png`, { type: 'image/png' }))
     }
@@ -1266,7 +1269,8 @@ test('badge ribbon：缎带可见、折叠角生效、语义色与 placement 渲
         if (color && x.getAttribute('color') !== color) return false
         if (placement && x.getAttribute('placement') !== placement) return false
         // 只挑基础 fold 缎带（排除 ribbon-form/rolled/premium 等形态卡，它们的背景不是纯语义色）
-        if (x.hasAttribute('ribbon-form') || x.hasAttribute('rolled') || x.hasAttribute('premium')) return false
+        if (x.hasAttribute('ribbon-form') || x.hasAttribute('rolled') || x.hasAttribute('premium'))
+          return false
         return x.hasAttribute('ribbon') || x.getAttribute('mode') === 'ribbon'
       })
       if (!b) return null
@@ -1320,7 +1324,8 @@ test('modal fullscreen：铺满视口、无圆角、width 被忽略、Esc/遮罩
   await page.evaluate(() => {
     document.querySelector('#modal-fullscreen')?.setAttribute('visible', '')
   })
-  await page.waitForFunction(() =>
+  await page.waitForFunction(
+    () =>
       document
         .querySelector('#modal-fullscreen')
         ?.shadowRoot?.querySelector('.dialog[data-fullscreen]') != null,
@@ -1354,7 +1359,8 @@ test('modal fullscreen：铺满视口、无圆角、width 被忽略、Esc/遮罩
   expect(r.ariaHidden).toBe('false')
   // Esc 关闭照常
   await page.keyboard.press('Escape')
-  await page.waitForFunction(() => !document.querySelector('#modal-fullscreen')?.hasAttribute('visible'),
+  await page.waitForFunction(
+    () => !document.querySelector('#modal-fullscreen')?.hasAttribute('visible'),
     null,
     { timeout: 5000 },
   )
@@ -1381,7 +1387,8 @@ test('modal 命令式确认 loading：确定进入 loading、1.5s 后自动关�
     const m = document.querySelector('oas-modal[visible]')!
     ;(m.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
   })
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const m = document.querySelector('oas-modal[visible]')
       const ok = m?.shadowRoot?.querySelector<HTMLButtonElement>('[part="ok"]')
       const spinner = m?.shadowRoot?.querySelector('[part="ok"] .spinner')
@@ -1397,7 +1404,8 @@ test('modal 命令式确认 loading：确定进入 loading、1.5s 后自动关�
     { timeout: 5000 },
   )
   // onOk resolve（1.5s）后自动关闭并弹成功 message
-  await page.waitForFunction(() =>
+  await page.waitForFunction(
+    () =>
       document.querySelector('oas-modal[visible]') == null &&
       document.querySelectorAll('oas-message').length > 0,
     null,
@@ -1463,7 +1471,8 @@ test('table 行内编辑：Enter 提交后编辑器退出且列高亮清除', as
     const td = table.shadowRoot!.querySelector('tbody tr.row td')!
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, composed: true }))
   })
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const t = document.querySelector('#table-edit')!
       return !!t.shadowRoot!.querySelector('input.cell-editor')
     },
@@ -1487,7 +1496,8 @@ test('table 行内编辑：Enter 提交后编辑器退出且列高亮清除', as
       new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, composed: true }),
     )
   })
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const t = document.querySelector('#table-edit')!
       return !t.shadowRoot!.querySelector('input.cell-editor')
     },
@@ -1570,7 +1580,8 @@ test('tree 自定义节点模板 + oas-node-render 渲染真实内容且 ARIA �
     const tree = document.querySelector('#tree-custom')!
     ;(tree.shadowRoot!.querySelector('[part="toggle"]') as HTMLElement).click()
   })
-  await page.waitForFunction(() =>
+  await page.waitForFunction(
+    () =>
       document
         .querySelector('#tree-custom')!
         .shadowRoot!.querySelector('[part="toggle"]')
@@ -1653,7 +1664,8 @@ test('tree 目录模式：文件夹/文件图标、展开态切换与 ARIA', asy
     const row = [...tree.shadowRoot!.querySelectorAll('[part="row"]')][1]!
     ;(row.querySelector('[part="toggle"]') as HTMLElement).click()
   })
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const tree = document.querySelector('#tree-dir')!
       const row = [...tree.shadowRoot!.querySelectorAll('[part="row"]')][1]!
       return row.querySelector('[part="node-icon"]')?.getAttribute('data-kind') === 'folder-open'
@@ -1698,7 +1710,8 @@ test('avatar 加载失败回退：404 图触发 img error 后回退首字符、�
   await page.goto('/components/avatar.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-avatar[src*="invalid.example.com"]')
   // 等 img error 触发 → fallback 容器显示
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const el = document.querySelector('oas-avatar[src*="invalid.example.com"]')!
       return el.shadowRoot!.querySelector('[part="fallback"]')!.hasAttribute('hidden') === false
     },
@@ -1723,7 +1736,8 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
   await page.goto('/components/image.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-image[lazy]')
   // 动态创建的懒加载列表由 demo onMounted 填充，静态首图存在不代表列表已建完
-  await page.waitForFunction(() => document.querySelectorAll('#image-lazy-list oas-image[lazy]').length >= 6,
+  await page.waitForFunction(
+    () => document.querySelectorAll('#image-lazy-list oas-image[lazy]').length >= 6,
     null,
     { timeout: 15000 },
   )
@@ -1752,7 +1766,8 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
       await new Promise((r) => setTimeout(r, 50))
     }
   })
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const list = document.querySelector('#image-lazy-list')!
       const imgs = [...list.querySelectorAll('oas-image[lazy]')]
       return (
@@ -1767,7 +1782,8 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
     { timeout: 10000 },
   )
   // 状态机收尾：首批（列表首个）加载完成后 aria-busy 从 true 复位为 false
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const first = document.querySelector('#image-lazy-list oas-image[lazy]')!
       return first.getAttribute('aria-busy') === 'false'
     },
@@ -1896,7 +1912,8 @@ test('notification 进度条：show-progress 渲染、动画时长与 duration �
     timeout: 10000,
   })
   await page.locator('.demo-block', { hasText: '带进度条' }).locator('oas-button').first().click()
-  await page.waitForFunction(() => document.querySelector('oas-notification[show-progress]') != null,
+  await page.waitForFunction(
+    () => document.querySelector('oas-notification[show-progress]') != null,
     null,
     { timeout: 5000 },
   )
@@ -1936,7 +1953,8 @@ test('notification 进度条 progress-position=top：进度条切到描述上方
     timeout: 10000,
   })
   await page.locator('.demo-block', { hasText: '带进度条' }).locator('oas-button').nth(1).click()
-  await page.waitForFunction(() => document.querySelector('oas-notification[progress-position="top"]') != null,
+  await page.waitForFunction(
+    () => document.querySelector('oas-notification[progress-position="top"]') != null,
     null,
     { timeout: 5000 },
   )
@@ -1969,7 +1987,8 @@ test('notification 长内容可滚动：描述区限高 + overflow-y auto 且真
     timeout: 10000,
   })
   await page.locator('.demo-block', { hasText: '长内容可滚动' }).locator('oas-button').click()
-  await page.waitForFunction(() =>
+  await page.waitForFunction(
+    () =>
       document
         .querySelector('oas-notification')
         ?.shadowRoot?.querySelector('[part="description"]')
@@ -2091,7 +2110,8 @@ test('slider show-input：拖动滑块实时更新输入框、输入数字防抖
     num.value = '35'
     num.dispatchEvent(new Event('input', { bubbles: true }))
   })
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const el = document.querySelector('oas-slider[show-input]')
       const input = el?.shadowRoot?.querySelector<HTMLInputElement>('[data-role="range"]')
       return input != null && Number(input.value) === 35
@@ -2193,7 +2213,8 @@ test('message 分组与更新：同组合并计数、update/destroy 可见反馈
   await page.waitForFunction(() => document.querySelectorAll('oas-message').length === 1, null, {
     timeout: 5000,
   })
-  let text = await page.evaluate(() =>
+  let text = await page.evaluate(
+    () =>
       document.querySelector('oas-message')?.shadowRoot?.querySelector('[part="text"]')
         ?.textContent ?? '',
   )
@@ -2208,7 +2229,8 @@ test('message 分组与更新：同组合并计数、update/destroy 可见反馈
   const updateBlock = page.locator('.demo-block', { hasText: '更新消息' })
   await updateBlock.locator('oas-button').nth(0).click()
   await updateBlock.locator('oas-button').nth(1).click()
-  await page.waitForFunction(() => document.querySelector('oas-message[key="upload"]')?.getAttribute('type') === 'success',
+  await page.waitForFunction(
+    () => document.querySelector('oas-message[key="upload"]')?.getAttribute('type') === 'success',
     null,
     { timeout: 5000 },
   )
@@ -2223,7 +2245,8 @@ test('message 分组与更新：同组合并计数、update/destroy 可见反馈
   expect(upd.total).toBe(3)
   // destroy：关闭指定 key，其余保留
   await updateBlock.locator('oas-button').nth(2).click()
-  await page.waitForFunction(() => document.querySelector('oas-message[key="upload"]') == null,
+  await page.waitForFunction(
+    () => document.querySelector('oas-message[key="upload"]') == null,
     null,
     {
       timeout: 5000,
@@ -2232,7 +2255,8 @@ test('message 分组与更新：同组合并计数、update/destroy 可见反馈
   expect(await page.locator('oas-message').count()).toBe(2)
   // 同组再点 → 计数继续累加（×3，分组合并后 count 持久）
   await groupBlock.locator('oas-button').nth(0).click()
-  await page.waitForFunction(() =>
+  await page.waitForFunction(
+    () =>
       document
         .querySelector('oas-message[group="save"]')
         ?.shadowRoot?.querySelector('[part="text"]')
@@ -2335,7 +2359,7 @@ test('tabs 动态增删：+ 新增默认标签（locale 文案、选中、roving
       focusOnNew: t.shadowRoot!.activeElement === selected,
     }
   })
-  expect(r1.count ).toBe(3)
+  expect(r1.count).toBe(3)
   expect(r1.panelCount).toBe(3)
   expect(r1.selectedText).toContain('新标签')
   expect(r1.selectedTabIndex).toBe('0')
@@ -2542,7 +2566,8 @@ test('steps navigation：底部上一步/下一步可见，点击切换 current 
     const el = document.querySelector('oas-steps[navigation]')!
     el.shadowRoot!.querySelector<HTMLElement>('.item')!.click()
   })
-  await page.waitForFunction(() => document.querySelector('oas-steps[navigation]')?.getAttribute('current') === '0',
+  await page.waitForFunction(
+    () => document.querySelector('oas-steps[navigation]')?.getAttribute('current') === '0',
     null,
     { timeout: 5000 },
   )
@@ -2562,7 +2587,8 @@ test('dropdown split：Vue demo 属性存活、箭头按钮 aria 同步、主按
   })
   // 点拆分主按钮（host 中心落在主按钮上）→ oas-action → tag 回显（可见反馈）
   await page.locator('#dd-split').click()
-  await page.waitForFunction(() => document.getElementById('dd-split-result')?.textContent === '主按钮已点击（oas-action）',
+  await page.waitForFunction(
+    () => document.getElementById('dd-split-result')?.textContent === '主按钮已点击（oas-action）',
     null,
     { timeout: 5000 },
   )
@@ -2596,7 +2622,8 @@ test('dropdown split：Vue demo 属性存活、箭头按钮 aria 同步、主按
 
   // 点箭头 → 展开菜单 + aria-expanded 同步
   await page.locator('#dd-split [part="split-arrow"]').click()
-  await page.waitForFunction(() =>
+  await page.waitForFunction(
+    () =>
       document.querySelector('#dd-split')?.hasAttribute('open') === true &&
       document
         .querySelector('#dd-split')!
@@ -2619,7 +2646,8 @@ test('dropdown loading 菜单项：spinner 视觉 + 禁点，异步恢复后还�
   await page.locator('#dd-async [role="menuitemradio"]', { hasText: '保存' }).first().click()
   // 等 demo 把「保存」置 loading（items 数据驱动）；menu 浮层在两层 shadow 内，
   // 这里只查 items 属性，元素态用穿透 locator 断言
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const dd = document.querySelector('#dd-async')!
       const save = JSON.parse(dd.getAttribute('items') ?? '[]').find(
         (i: { value: string }) => i.value === 'save',
@@ -2646,7 +2674,8 @@ test('dropdown loading 菜单项：spinner 视觉 + 禁点，异步恢复后还�
   expect(during.cursor).toBe('wait')
 
   // 等 1.5s 异步完成 → spinner 消失、禁点解除
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const dd = document.querySelector('#dd-async')!
       const save = JSON.parse(dd.getAttribute('items') ?? '[]').find(
         (i: { value: string }) => i.value === 'save',
@@ -2744,13 +2773,15 @@ test('tooltip virtual 坐标跟随：鼠标移入画布 tooltip 跟随显示、�
 
   // 移出画布 → tooltip 隐藏 + 状态反馈复位
   await page.mouse.move(box!.x + box!.width + 60, box!.y + 40)
-  await page.waitForFunction(() =>
+  await page.waitForFunction(
+    () =>
       document
         .querySelector('#tt-follow')
         ?.shadowRoot?.querySelector('[part="tip"]')
         ?.getAttribute('aria-hidden') === 'true',
   )
-  const closed = await page.evaluate(() => document.querySelector('#tt-follow-status')?.textContent ?? '',
+  const closed = await page.evaluate(
+    () => document.querySelector('#tt-follow-status')?.textContent ?? '',
   )
   expect(closed).toContain('未跟随')
 })
@@ -2846,7 +2877,8 @@ test('popover 嵌套：父关闭级联关闭子层、Esc 逐层关闭、Vue demo
   // 同时打开父子 → 子层可见且层级在父之上
   await parent.evaluate((e) => e.setAttribute('open', ''))
   await child.evaluate((e) => e.setAttribute('open', ''))
-  await page.waitForFunction(() =>
+  await page.waitForFunction(
+    () =>
       document
         .querySelector('#pop-child')
         ?.shadowRoot?.querySelector('[part="panel"]')
@@ -2878,7 +2910,8 @@ test('popover 嵌套：父关闭级联关闭子层、Esc 逐层关闭、Vue demo
   // 父关闭级联关闭子层
   await parent.evaluate((e) => e.setAttribute('open', ''))
   await child.evaluate((e) => e.setAttribute('open', ''))
-  await page.waitForFunction(() =>
+  await page.waitForFunction(
+    () =>
       document
         .querySelector('#pop-child')
         ?.shadowRoot?.querySelector('[part="panel"]')
@@ -2923,7 +2956,8 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
   expect(Math.abs(box.y - (90 - box.height / 2))).toBeLessThanOrEqual(2)
 
   // oas-open-change 可见反馈：demo 状态 tag 回显 open
-  await page.waitForFunction(() => document.getElementById('pop-point-status')?.textContent === 'open: true',
+  await page.waitForFunction(
+    () => document.getElementById('pop-point-status')?.textContent === 'open: true',
     null,
     { timeout: 5000 },
   )
@@ -2938,7 +2972,8 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
   await point.evaluate((e) => e.setAttribute('virtual-y', '500'))
   await point.evaluate((e) => e.setAttribute('open', ''))
   await expect(panel).toHaveAttribute('aria-hidden', 'false')
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const p = document
         .querySelector('#pop-point')!
         .shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
@@ -2986,7 +3021,8 @@ test('tree-select check-strategy：parent/child 勾选父级后值按策略过�
   // parent：勾选根节点「前端」→ value 只含 fe
   await page.locator('#ts-strategy-parent [part="trigger"]').click()
   await page.locator('#ts-strategy-parent [role="treeitem"]').first().click()
-  await page.waitForFunction(() => document.querySelector('#ts-strategy-parent')?.getAttribute('value') === '["fe"]',
+  await page.waitForFunction(
+    () => document.querySelector('#ts-strategy-parent')?.getAttribute('value') === '["fe"]',
     null,
     { timeout: 5000 },
   )
@@ -2997,7 +3033,8 @@ test('tree-select check-strategy：parent/child 勾选父级后值按策略过�
   // child：勾选根节点「前端」→ value 只含叶子
   await page.locator('#ts-strategy-child [part="trigger"]').click()
   await page.locator('#ts-strategy-child [role="treeitem"]').first().click()
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const v = document.querySelector('#ts-strategy-child')?.getAttribute('value')
       // demo 数据中 框架 的子节点顺序为 Vue 在前 React 在后
       return v === '["vue","react","css"]'
@@ -3012,12 +3049,14 @@ test('tree-select virtual：万级节点窗口化渲染、滚动窗口平移、�
   await page.goto('/components/tree-select.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ts-virtual')
   // 等注入的万级数据就绪（onMounted 经 options 属性通道写入）
-  await page.waitForFunction(() => document.querySelector('#ts-virtual')?.getAttribute('options')?.includes('"m-99-99"'),
+  await page.waitForFunction(
+    () => document.querySelector('#ts-virtual')?.getAttribute('options')?.includes('"m-99-99"'),
     null,
     { timeout: 10000 },
   )
   await page.locator('#ts-virtual [part="trigger"]').click()
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const el = document.querySelector('#ts-virtual')!
       return (
         el
@@ -3043,7 +3082,7 @@ test('tree-select virtual：万级节点窗口化渲染、滚动窗口平移、�
     }
   })
   expect(info.rendered).toBeLessThanOrEqual(20) // 万级只渲染窗口 + buffer
-  expect(info.first ).toBe('0')
+  expect(info.first).toBe('0')
   expect(info.itemsRole).toBe('tree')
   expect(info.itemRole).toBe('presentation')
   expect(info.ariaLevel).toBe('1')
@@ -3054,7 +3093,8 @@ test('tree-select virtual：万级节点窗口化渲染、滚动窗口平移、�
     const depts = Array.from({ length: 100 }, (_, i) => `dept-${i}`)
     document.querySelector('#ts-virtual')!.setAttribute('expanded', JSON.stringify(depts))
   })
-  await page.waitForFunction(() => {
+  await page.waitForFunction(
+    () => {
       const el = document.querySelector('#ts-virtual')!
       const inner = el
         .shadowRoot!.querySelector('oas-virtual-list')!
@@ -3068,7 +3108,8 @@ test('tree-select virtual：万级节点窗口化渲染、滚动窗口平移、�
   )
 
   // 滚动到 5000 行附近 → 窗口平移（真实浏览器 scroll 驱动 vlist 重算）
-  const after = await page.evaluate(() =>
+  const after = await page.evaluate(
+    () =>
       new Promise<{ first: string | null | undefined; count: number }>((resolve) => {
         const el = document.querySelector('#ts-virtual')!
         const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
@@ -3081,8 +3122,8 @@ test('tree-select virtual：万级节点窗口化渲染、滚动窗口平移、�
         })
       }),
   )
-  expect(after.first ).toBe('4996')
-  expect(after.count ).toBe(16)
+  expect(after.first).toBe('4996')
+  expect(after.count).toBe(16)
 })
 
 test('tree-select virtual：键盘导航高亮滚动进视口且 aria-activedescendant 跟随', async ({
@@ -3090,7 +3131,8 @@ test('tree-select virtual：键盘导航高亮滚动进视口且 aria-activedesc
 }) => {
   await page.goto('/components/tree-select.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#ts-virtual')
-  await page.waitForFunction(() => document.querySelector('#ts-virtual')?.getAttribute('options')?.includes('"m-99-99"'),
+  await page.waitForFunction(
+    () => document.querySelector('#ts-virtual')?.getAttribute('options')?.includes('"m-99-99"'),
     null,
     { timeout: 10000 },
   )
@@ -3109,7 +3151,8 @@ test('tree-select virtual：键盘导航高亮滚动进视口且 aria-activedesc
   expect(scrolled).toBeGreaterThan(0)
   // Enter 勾选高亮行 → value 写回（trigger 显示成员标签，可见反馈）
   await btn.press('Enter')
-  await page.waitForFunction(() => document.querySelector('#ts-virtual')?.getAttribute('value')?.includes('m-0-29'),
+  await page.waitForFunction(
+    () => document.querySelector('#ts-virtual')?.getAttribute('value')?.includes('m-0-29'),
     null,
     { timeout: 5000 },
   )
@@ -3465,9 +3508,7 @@ test('tag 插槽 svg 与文字同排（宿主全局 reset display:block 不顶�
   expect(r.leftOfText, '插槽 svg 应在文字左侧').toBe(true)
 })
 
-test('icon 宿主 inline-flex：tag 内图标与文字中心线对齐（行高支撑偏心回归）', async ({
-  page,
-}) => {
+test('icon 宿主 inline-flex：tag 内图标与文字中心线对齐（行高支撑偏心回归）', async ({ page }) => {
   // 曾现 bug：oas-icon 宿主默认 inline，内部 svg 被继承 line-height 撑出基线支撑，
   // 图标视觉中心比文字中心高 2px（tag icon 属性标签里肉眼可见不在一条线）。
   // 修复：:host display: inline-flex 收缩包裹 svg。锁定「svg 中心 == 文字中心」。
@@ -3483,7 +3524,10 @@ test('icon 宿主 inline-flex：tag 内图标与文字中心线对齐（行高�
       const b = el.getBoundingClientRect()
       return b.top + b.height / 2
     }
-    return { diff: Math.abs(cy(svg) - cy(content)), hostDisplay: getComputedStyle(iconHost).display }
+    return {
+      diff: Math.abs(cy(svg) - cy(content)),
+      hostDisplay: getComputedStyle(iconHost).display,
+    }
   })
   expect(r.hostDisplay).toBe('flex') // flex 容器内块化后的计算值
   expect(r.diff, '图标与文字中心线偏差应 ≤1px').toBeLessThanOrEqual(1)
@@ -3524,9 +3568,7 @@ test('button wrap：默认 nowrap 不换行，显式 wrap 才换行增高，icon
   await page.goto('/components/button.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-button[wrap]')
   const r = await page.evaluate(() => {
-    const wrapBtn = document
-      .querySelector('oas-button[wrap]')!
-      .shadowRoot!.querySelector('button')!
+    const wrapBtn = document.querySelector('oas-button[wrap]')!.shadowRoot!.querySelector('button')!
     const plain = [...document.querySelectorAll('oas-button')].find(
       (b) => b.textContent?.trim() === '普通按钮',
     )!
@@ -3568,9 +3610,7 @@ test('button href anchor 变体：静止态不永久显示选中色（a 镜像�
     return { primary: pick('primary'), default: pick('default') }
   })
   expect(r.primary.pressed).toBeNull()
-  expect(r.primary.bg, 'href primary 静止应为默认 primary 色，非选中深色').toBe(
-    'rgb(11, 108, 255)',
-  )
+  expect(r.primary.bg, 'href primary 静止应为默认 primary 色，非选中深色').toBe('rgb(11, 108, 255)')
   expect(r.primary.filter).toBe('none')
   expect(r.default.bg, 'href 默认链接静止应为白底').toBe('rgb(255, 255, 255)')
 })
@@ -3630,7 +3670,10 @@ test('button-group 有色组：分段缝常驻可见（非首按钮带 1px 半�
     const g = document.querySelector('oas-button-group:not([type])')!
     return [...g.querySelectorAll('oas-button')].map((b) => getComputedStyle(b).boxShadow)
   })
-  expect(defaultSeams.every((s) => s === 'none'), '默认组不应画白缝').toBe(true)
+  expect(
+    defaultSeams.every((s) => s === 'none'),
+    '默认组不应画白缝',
+  ).toBe(true)
 })
 
 test('button primary（solid）：hover/选中背景不被自定义底色兜底规则压死', async ({ page }) => {
@@ -3664,15 +3707,17 @@ test('button primary（solid）：hover/选中背景不被自定义底色兜底�
     const btns = [...g.querySelectorAll('oas-button')]
     const bg = (b: Element) =>
       getComputedStyle(b.shadowRoot!.querySelector('button')!).backgroundColor
-    return { pressed: btns[1]!.getAttribute('aria-pressed'), selected: bg(btns[1]!), rest: bg(btns[0]!) }
+    return {
+      pressed: btns[1]!.getAttribute('aria-pressed'),
+      selected: bg(btns[1]!),
+      rest: bg(btns[0]!),
+    }
   })
   expect(r.pressed).toBe('true')
   expect(r.selected, '选中项底色应与未选项可区分').not.toBe(r.rest)
 })
 
-test('DemoBlock 示例代码：连排闭合标签逐行拆分（</svg></oas-icon> 不挤一行）', async ({
-  page,
-}) => {
+test('DemoBlock 示例代码：连排闭合标签逐行拆分（</svg></oas-icon> 不挤一行）', async ({ page }) => {
   // 曾现 bug：formatHtml 的「闭合标签间换行」正则把下一个闭合标签的 `</` 消费掉，
   // `</path></svg></oas-icon>` 连排时第二次匹配失败 → duotone demo 代码里 </svg></oas-icon>
   // 挤一行且其后缩进全乱（canvas demo 闭合标签前是文本不受影响，所以表现正常）。
@@ -3739,9 +3784,7 @@ test('slider 基础用法：自定义滑块/数值输入区 hidden 真实隐藏�
   expect(after.maxThumb, '拖动后 max 自定义滑块不得残留').toBe('none')
 })
 
-test('slider range：拖动中自定义滑块中心与原生 thumb 中心对齐（无半径跳变）', async ({
-  page,
-}) => {
+test('slider range：拖动中自定义滑块中心与原生 thumb 中心对齐（无半径跳变）', async ({ page }) => {
   // 曾现 bug：thumbLeft() 返回的是原生 thumb「左缘」公式 pct*(w-size)，但 .custom-thumb 以
   // translate(-50%,-50%) 把它当「中心」用 → 拖动中空心环偏左半个直径（7px），松手切回
   // 原生实心 thumb 瞬间右跳 7px（用户感知「空心的会移位」）。
@@ -3769,7 +3812,9 @@ test('slider range：拖动中自定义滑块中心与原生 thumb 中心对齐�
     }
   })
   expect(r.visible, '拖动中自定义滑块应显示').toBe(true)
-  expect(Math.abs(r.delta), '自定义滑块中心与原生 thumb 中心偏差不得超 1.5px').toBeLessThanOrEqual(1.5)
+  expect(Math.abs(r.delta), '自定义滑块中心与原生 thumb 中心偏差不得超 1.5px').toBeLessThanOrEqual(
+    1.5,
+  )
 })
 
 test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见（灰轨道不得盖住 fill）', async ({
@@ -3812,5 +3857,7 @@ test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见�
   expect(r.fillBg, 'fill 应为 primary 填充色').not.toMatch(/transparent|rgba\(0, 0, 0, 0\)/)
   expect(r.raisedZ, 'pointerdown 后 z-index 提升逻辑仍应生效').toBe('2')
   // 视觉遮挡根因锁定：原生轨道背景必须透明，否则 z-index 提升后灰轨道盖住 fill
-  expect(r.trackBg, '原生轨道背景应透明（灰轨道由底层伪元素承担）').toMatch(/transparent|rgba\(0, 0, 0, 0\)/)
+  expect(r.trackBg, '原生轨道背景应透明（灰轨道由底层伪元素承担）').toMatch(
+    /transparent|rgba\(0, 0, 0, 0\)/,
+  )
 })

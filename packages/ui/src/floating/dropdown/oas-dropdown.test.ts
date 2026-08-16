@@ -12,10 +12,12 @@ const NESTED_ITEMS = JSON.stringify([
   {
     label: '文件',
     value: 'file',
-    children: [ {
+    children: [
+      {
         label: '新建',
         value: 'new',
-        children: [ { label: '文件', value: 'new-file' },
+        children: [
+          { label: '文件', value: 'new-file' },
           { label: '窗口', value: 'new-window' },
         ],
       },
@@ -26,7 +28,7 @@ const NESTED_ITEMS = JSON.stringify([
 ])
 
 function mount(attrs: Record<string, string> = {}): OASDropdown {
-  const el = new OASDropdown
+  const el = new OASDropdown()
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
   if (!attrs.items) el.setAttribute('items', ITEMS)
   el.innerHTML = `<button>操作</button>`

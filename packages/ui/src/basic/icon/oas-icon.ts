@@ -384,15 +384,14 @@ export class OASIcon extends OASElement {
     // 动画：animation 属性优先，spin 为布尔快捷方式
     const animation = this.getAttr('animation', '')
     host.style.animation = animation
-      ? ANIMATIONS[animation] ?? ''
+      ? (ANIMATIONS[animation] ?? '')
       : this.hasAttr('spin')
-        ? ANIMATIONS.spin ?? ''
+        ? (ANIMATIONS.spin ?? '')
         : ''
 
     // depth 透明度层级：1=100% … 5=20%（整数运算避免浮点误差）
     const depth = Number.parseInt(this.getAttr('depth', ''), 10)
-    host.style.opacity =
-      depth >= 1 && depth <= 5 ? String((6 - depth) / 5) : ''
+    host.style.opacity = depth >= 1 && depth <= 5 ? String((6 - depth) / 5) : ''
 
     // duotone / swap-opacity 标记（实际着色由 shadow CSS 按变量完成）
     if (this.hasAttr('duotone')) host.setAttribute('data-duotone', 'true')

@@ -214,7 +214,6 @@ export class OASSpace extends OASElement {
     // display 走 shadow :host 规则（见 SEPARATOR_STYLE 注释），update 不碰——
     // 宿主可一行 style="display:inline-flex" 覆盖为行内嵌入
 
-
     // direction：断点简写 → 宿主 var() 兜底基础值 + shadow @media 规则；纯基础值保持原内联直写
     const dirShorthand = parseBreakpointShorthand(direction)
     const dirBase =
@@ -265,9 +264,7 @@ export class OASSpace extends OASElement {
    * 序列化 shadowRoot.innerHTML 同步产出，两段路径一致）。无断点时清空。
    */
   private syncBreakpointStyle(directionCss: string, sizeCss: string): void {
-    const styleEl = this.shadow.querySelector<HTMLStyleElement>(
-      'style[data-oas-space-breakpoints]',
-    )
+    const styleEl = this.shadow.querySelector<HTMLStyleElement>('style[data-oas-space-breakpoints]')
     if (!styleEl) return
     styleEl.textContent = [directionCss, sizeCss].filter(Boolean).join('\n')
   }

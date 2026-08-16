@@ -95,7 +95,10 @@ describe('OASSpace', () => {
   // ===== v2.0 能力补齐：separator / justify / reverse / size 数组 / fill =====
 
   it('separator：字符串在相邻子项间注入分隔符', () => {
-    const el = mountWith({ separator: '|' }, '<button>一</button><button>二</button><button>三</button>')
+    const el = mountWith(
+      { separator: '|' },
+      '<button>一</button><button>二</button><button>三</button>',
+    )
     const seps = el.querySelectorAll<HTMLElement>(':scope > .oas-space-separator')
     expect(seps.length).toBe(2)
     expect(seps[0]!.textContent).toBe('|')
@@ -209,9 +212,7 @@ describe('OASSpace', () => {
     const el = mount({ direction: 'column md:row' })
     expect(el.style.flexDirection).toBe('var(--oas-space-direction, column)')
     const css = el.shadowRoot!.querySelector('style[data-oas-space-breakpoints]')!.textContent!
-    expect(css).toContain(
-      '@media (min-width: 768px) { :host { --oas-space-direction: row } }',
-    )
+    expect(css).toContain('@media (min-width: 768px) { :host { --oas-space-direction: row } }')
   })
 
   it('size 断点简写：多断点生成对应 min-width 规则（变量名与值正确）', () => {
@@ -274,9 +275,7 @@ describe('OASSpace', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = mount({ direction: 'column md:diagonal' })
     const css = el.shadowRoot!.querySelector('style[data-oas-space-breakpoints]')!.textContent!
-    expect(css).toContain(
-      '@media (min-width: 768px) { :host { --oas-space-direction: column } }',
-    )
+    expect(css).toContain('@media (min-width: 768px) { :host { --oas-space-direction: column } }')
     expect(warn).toHaveBeenCalledTimes(1)
     warn.mockRestore()
     el.remove()

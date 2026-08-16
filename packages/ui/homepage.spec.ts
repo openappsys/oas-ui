@@ -63,7 +63,7 @@ test.describe('官网首页 v2', () => {
     await expect(bar).toContainText('测试用例')
   })
 
-test('SceneShowcase 三张场景卡，每卡嵌迷你 demo', async ({ page }) => {
+  test('SceneShowcase 三张场景卡，每卡嵌迷你 demo', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const sec = page.locator('.scene-showcase')
     await expect(sec).toBeAttached()
