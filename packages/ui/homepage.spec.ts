@@ -31,14 +31,22 @@ test.describe('官网首页', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const hero = page.locator('.hero-playground')
     await expect(hero).toBeAttached()
-    // 按钮点击 → message 出现（window.message 由 theme 挂载）
+    // ui 包在 theme/index.ts 里懒加载（import('@oas-ui/ui')）后才挂载 window.message；
+    // domcontentloaded 时 chunk 可能未就绪，点击前等命令式 API 就绪（否则 hi() 静默失败）
+    await page.waitForFunction(() => {
+      const w = window as unknown as { message?: { info?: unknown } }
+      return typeof w.message?.info === 'function'
+    })
+    // 按钮点击 → message 出现（文本在 oas-message 的 shadow 内，用 host 定位断言）
     await hero.locator('oas-button').first().click()
-    await expect(page.getByText('来自 OAS-UI 的问候')).toBeVisible()
-    // switch 翻转
+    const msg = page.locator('oas-message')
+    await expect(msg).toBeVisible()
+    await expect(msg).toContainText('来自 OAS-UI 的问候')
+    // switch 翻转：role=switch + aria-checked 在 shadow 内 button 上（host 只反射 checked 布尔属性）
     const sw = hero.locator('oas-switch')
     await sw.click()
-    await expect(sw).toHaveAttribute('aria-checked', 'true')
-    // segmented 切换
+    await expect(sw.locator('[role="switch"]')).toHaveAttribute('aria-checked', 'true')
+    // segmented 切换：value 反射到 host 属性，radio 选项在 shadow 内
     const seg = hero.locator('oas-segmented')
     await seg.locator('[role="radio"]').nth(1).click()
     await expect(seg).toHaveAttribute('value', 'week')

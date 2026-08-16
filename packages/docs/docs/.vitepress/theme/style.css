@@ -2,3 +2,21 @@
 
 /* 中英切换统一走默认主题内置语言下拉（VPNavBarTranslations，locales 配置自动生成）；
    组件内部文案由 Layout.vue 的 lang watcher 同步（@oas-ui/i18n setLocale） */
+
+/* ===== 官网首页（home 布局）：组件墙替换原生 hero 图片 ===== */
+/* 原生 .image-container 按图片尺寸约束（max-width 192px 级别），组件墙需要更宽 */
+.VPHero .image-container {
+  max-width: none;
+  width: min(480px, 44vw);
+}
+/* 去掉原生图片背景光晕，组件墙自带卡片容器 */
+.VPHero .image-bg {
+  display: none;
+}
+@media (max-width: 951px) {
+  /* Vitepress 断点以下 hero 上下堆叠，组件墙全宽 */
+  .VPHero .image-container {
+    width: 100%;
+    max-width: 520px;
+  }
+}
