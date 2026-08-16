@@ -572,6 +572,10 @@ ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可�
 - **badge→ribbon-vertical 侧挂纵向位置**：`ribbon-vertical="center|top|bottom"`（默认 center）控制 bookmark 侧挂（left/right）的纵向位置（贴顶边 / 垂直居中 / 贴底边）；仅侧挂生效，非法值回落 center
 - **badge→offset 缎带任意位置微调**：`offset="x,y"` 给所有缎带形态做 px 平移（先形态锚点再平移，translate 独立属性与形态 transform 叠加，支持负值）；与 placement / ribbon-position / ribbon-vertical 正交叠加；非法值静默忽略
 
+### 增强（table 第二轮）
+
+- **table→size 密度档位**：`size="small|medium|large"`（默认 medium）三档密度——档位只改单元格 padding 与字号的默认值（small：8/12px + sm 字号；medium：12/16px + md 字号＝现状零回归；large：16/24px + lg 字号），全走 CSS 变量（`--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size`），宿主变量覆盖优先级高于档位；行内编辑器 padding/字号跟随档位；非法值回落 medium 并告警（同控件 size 惯例）；与 `row-height` 正交（虚拟滚动等定高场景行高由 row-height 决定，不受档位影响）。命名与控件 size 体系同词（small/medium/large），对齐 vision「API 对称」与「CSS 变量开放定制点」原则；tree 密度与全局尺寸上下文经同轮调研评估后明确不做（0/8 共识、WC 无 Provider 机制）
+
 ### 验收标准
 
 - 新组件与增强 demo 进文档站（中英双版），覆盖各属性/事件/边界

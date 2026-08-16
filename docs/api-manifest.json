@@ -5354,6 +5354,12 @@
         "observed": true
       },
       {
+        "name": "size",
+        "type": "string",
+        "default": "medium",
+        "observed": true
+      },
+      {
         "name": "selected",
         "type": "string",
         "default": "",

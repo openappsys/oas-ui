@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
@@ -1019,5 +1019,47 @@ describe('OASTable 吸顶行（sticky-rows）', () => {
   it('sticky-rows 非法值回退为不吸顶', () => {
     const el = mount({ 'sticky-rows': 'abc', columns: STICKY_COLUMNS, data: STICKY_DATA })
     expect(rows(el)[0]!.getAttribute('data-sticky')).toBeNull()
+  })
+})
+
+describe('OASTable size 密度档位', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('size 参与观察：small/medium/large 三档，默认 medium（无 size 属性）', () => {
+    expect(OASTable.observedAttributes).toContain('size')
+    const el = mount()
+    expect(el.getAttribute('size')).toBeNull() // 默认不写 attribute，CSS 落 medium 档
+    el.setAttribute('size', 'small')
+    expect(el.getAttribute('size')).toBe('small') // attribute 保留，:host([size]) 选择器命中
+    el.setAttribute('size', 'large')
+    expect(el.getAttribute('size')).toBe('large')
+  })
+
+  it('size 非法值回落 medium（无档位匹配）且 console.warn 一次（同值去重）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount({ size: 'huge' })
+    // 非法值不匹配任何 :host([size=...]) 档位选择器 → 视觉自然回落 medium 默认
+    expect(el.getAttribute('size')).toBe('huge')
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0]![0]).toContain('oas-table')
+    el.setAttribute('size', 'huge') // 同值不重复告警
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+    el.remove()
+  })
+
+  it('size 合法值不告警', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    for (const s of ['small', 'medium', 'large']) {
+      const el = mount({ size: s })
+      el.remove()
+    }
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
   })
 })

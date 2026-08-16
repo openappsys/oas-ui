@@ -3935,3 +3935,68 @@ test('展示型组件字号继承：A 类跟随外层 font-size、B 类大数字
   expect(r.descriptionsItem).toBe('32px')
   expect(r.code, 'code 0.875em 略缩跟随').toBe('28px')
 })
+
+test('table size 密度档位：small/medium/large 三档 padding+字号阶梯，组件级变量覆盖优先', async ({
+  page,
+}) => {
+  // 设计（size 三档密度）：档位全走 CSS 变量 token
+  // （--_cell-py/--_cell-px/font-size），宿主 --oas-table-* 变量优先级高于档位；
+  // row-height 显式值与档位正交（虚拟滚动行高由 row-height 管，不受档位影响）。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  // 首个 demo table 可能不可见（演示结构），本测试自建元素只需组件类已注册
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, {
+    timeout: 15000,
+  })
+  const r = await page.evaluate(() => {
+    const probe = (size: string | null) => {
+      const el = document.createElement('oas-table')
+      el.setAttribute('columns', JSON.stringify([{ key: 'a', title: 'A' }]))
+      el.setAttribute('data', JSON.stringify([{ a: 1 }]))
+      if (size) el.setAttribute('size', size)
+      document.body.append(el)
+      const td = el.shadowRoot!.querySelector('td')!
+      const cs = getComputedStyle(td)
+      const host = getComputedStyle(el)
+      const out = {
+        py: cs.paddingTop,
+        px: cs.paddingLeft,
+        hostFont: host.fontSize,
+        tdFont: cs.fontSize,
+      }
+      el.remove()
+      return out
+    }
+    const medium = probe(null)
+    const small = probe('small')
+    const large = probe('large')
+    // 变量覆盖优先于档位：small 档 + 自定义 padding-block 20px
+    const el = document.createElement('oas-table')
+    el.setAttribute('columns', JSON.stringify([{ key: 'a', title: 'A' }]))
+    el.setAttribute('data', JSON.stringify([{ a: 1 }]))
+    el.setAttribute('size', 'small')
+    el.style.setProperty('--oas-table-cell-padding-block', '20px')
+    document.body.append(el)
+    const overridePy = getComputedStyle(el.shadowRoot!.querySelector('td')!).paddingTop
+    el.remove()
+    return { medium, small, large, overridePy }
+  })
+  expect(r.medium, '默认 medium：12px 16px / 14px').toEqual({
+    py: '12px',
+    px: '16px',
+    hostFont: '14px',
+    tdFont: '14px',
+  })
+  expect(r.small, 'small：8px 12px / 13px').toEqual({
+    py: '8px',
+    px: '12px',
+    hostFont: '13px',
+    tdFont: '13px',
+  })
+  expect(r.large, 'large：16px 24px / 16px').toEqual({
+    py: '16px',
+    px: '24px',
+    hostFont: '16px',
+    tdFont: '16px',
+  })
+  expect(r.overridePy, '--oas-table-cell-padding-block 覆盖 small 档').toBe('20px')
+})

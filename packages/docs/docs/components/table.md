@@ -14,6 +14,18 @@
 
 点击可排列表头在升序 / 降序 / 取消之间循环。
 
+## 密度档位
+
+<DemoBlock title="size：small / medium（默认）/ large">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: 16px">
+    <oas-table size="small" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"}]' row-key="name"></oas-table>
+    <oas-table columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"}]' row-key="name"></oas-table>
+    <oas-table size="large" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+档位只改单元格 padding 与字号的默认值，全部走 CSS 变量：宿主可直接用 `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size` 覆盖（优先级高于档位）。非法值回落 `medium` 并告警。`row-height` 与档位正交：虚拟滚动等定高场景的行高由 `row-height` 决定，不受档位影响。
+
 ## 列对齐与宽度
 
 <DemoBlock title="对齐与宽度">
@@ -320,6 +332,7 @@ onMounted(() => {
 | `row-height` | 虚拟滚动每行固定高度（px） | `string` | `40` |
 | `row-key` | 行唯一键字段 | `string` | `key` |
 | `selected` | 选中行 key 集合（逗号分隔） | `string` | — |
+| `size` | 密度档位：`small` / `medium`（默认）/ `large`——只改单元格 padding 与字号默认值（全走 CSS 变量，可用 `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size` 覆盖，优先级高于档位）；非法值回落 `medium` 并告警；与 `row-height` 正交 | `string` | `medium` |
 | `sort-key` | 受控排序；`sort-order` 取 `asc` / `desc` / 空 | `string` | — |
 | `sort-order` | 受控排序；`sort-order` 取 `asc` / `desc` / 空 | `SortOrder` | — |
 | `sticky-rows` | 吸顶行数（数字 N）：前 N 行吸顶于表头下方（配合滚动容器与固定列共存） | `string` | — |

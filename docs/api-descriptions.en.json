@@ -1275,7 +1275,8 @@
       "sort-order": "Controlled sort; `sort-order` is `asc` / `desc` / empty",
       "sticky-rows": "Number of sticky rows (N): the first N rows stick below the header (coexists with the scroll container and fixed columns)",
       "stripe": "Zebra striping: alternating light background for odd/even rows",
-      "summary": "Summary config `[{ key, type: 'sum'|'avg'|'count', label? }]`, JSON string"
+      "summary": "Summary config `[{ key, type: 'sum'|'avg'|'count', label? }]`, JSON string",
+      "size": "Density preset: `small` / `medium` (default) / `large` — only changes default cell padding and font size (all via CSS variables; override with `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size`, which take precedence); invalid values fall back to `medium` with a warning; orthogonal to `row-height`"
     },
     "events": {
       "oas-check": "Checkbox selection change, `detail: { keys: string[] }`",

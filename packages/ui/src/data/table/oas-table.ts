@@ -30,6 +30,23 @@ export interface EditOption {
 
 export type SortOrder = '' | 'asc' | 'desc'
 
+/** 密度档位：与控件 size 体系同词（small/medium/large），默认 medium */
+export type TableSize = 'small' | 'medium' | 'large'
+
+const VALID_TABLE_SIZES: readonly TableSize[] = ['small', 'medium', 'large']
+
+const warnedSizes = new Set<string>()
+
+/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重，同控件惯例） */
+function normalizeTableSize(raw: string): TableSize {
+  if ((VALID_TABLE_SIZES as readonly string[]).includes(raw)) return raw as TableSize
+  if (!warnedSizes.has(raw)) {
+    warnedSizes.add(raw)
+    console.warn(`[oas-table] 非法 size "${raw}"，已回落 medium；合法值：small/medium/large`)
+  }
+  return 'medium'
+}
+
 /** 合计类型：求和 / 平均 / 计数 */
 export type SummaryType = 'sum' | 'avg' | 'count'
 
@@ -69,10 +86,26 @@ const STYLE = `
   display: block;
   font-family: inherit;
   color: var(--oas-color-text-primary);
-  font-size: var(--oas-font-size-md);
+  /* 密度档位 medium（默认）：size 属性只改这组内部变量的 fallback，
+     宿主可直接用 --oas-table-* 变量覆盖（优先级高于档位） */
+  font-size: var(--oas-table-font-size, var(--oas-font-size-md));
+  --_cell-py: var(--oas-table-cell-padding-block, var(--oas-space-3));
+  --_cell-px: var(--oas-table-cell-padding-inline, var(--oas-space-4));
   overflow: hidden;
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
+}
+/* 紧凑档：padding 降一档、字号 sm */
+:host([size='small']) {
+  font-size: var(--oas-table-font-size, var(--oas-font-size-sm));
+  --_cell-py: var(--oas-table-cell-padding-block, var(--oas-space-2));
+  --_cell-px: var(--oas-table-cell-padding-inline, var(--oas-space-3));
+}
+/* 宽松档：padding 升一档、字号 lg */
+:host([size='large']) {
+  font-size: var(--oas-table-font-size, var(--oas-font-size-lg));
+  --_cell-py: var(--oas-table-cell-padding-block, var(--oas-space-4));
+  --_cell-px: var(--oas-table-cell-padding-inline, var(--oas-space-5));
 }
 .table-scroll {
   overflow: auto;
@@ -85,7 +118,7 @@ table {
 }
 th {
   text-align: left;
-  padding: var(--oas-space-3) var(--oas-space-4);
+  padding: var(--_cell-py) var(--_cell-px);
   background: var(--oas-color-bg-hover);
   font-weight: 500;
   border-bottom: 1px solid var(--oas-color-border);
@@ -135,7 +168,7 @@ tr.row[data-selected='true'] td[data-fixed='right'] {
   background: var(--oas-color-primary-soft, rgba(24, 144, 255, 0.08));
 }
 td {
-  padding: var(--oas-space-3) var(--oas-space-4);
+  padding: var(--_cell-py) var(--_cell-px);
   border-bottom: 1px solid var(--oas-color-border);
 }
 tr:last-child td {
@@ -280,11 +313,12 @@ tr[data-sticky='true'] td[data-editing='true'] {
 td.editing .cell-editor {
   box-sizing: border-box;
   width: 100%;
-  padding: var(--oas-space-3) var(--oas-space-4);
+  /* 编辑态与常规单元格同密度：padding/字号跟随档位变量 */
+  padding: var(--_cell-py) var(--_cell-px);
   border: none;
   background: transparent;
   color: var(--oas-color-text-primary);
-  font-size: var(--oas-font-size-md);
+  font-size: inherit;
   font-family: inherit;
   line-height: inherit;
 }
@@ -346,6 +380,7 @@ export class OASTable extends OASElement {
       'editable',
       'edit-controlled',
       'sticky-rows',
+      'size',
     ]
   }
 
@@ -425,6 +460,9 @@ export class OASTable extends OASElement {
     // 外部重渲染（data/sort/selected 等变化）时先静默取消进行中的编辑，防止编辑 DOM 被整体重建静默销毁
     this.settleEdit()
     this.parse()
+    // 密度档位归一化：仅触发非法值告警副作用；档位视觉纯 CSS（:host([size]) 选择器），
+    // 非法值不匹配任何档位选择器 → 自然回落 medium 默认
+    normalizeTableSize(this.getAttr('size', 'medium'))
     const head = this.shadow.querySelector('thead')
     const body = this.shadow.querySelector('tbody')
     if (!head || !body) return

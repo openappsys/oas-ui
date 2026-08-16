@@ -1275,7 +1275,8 @@
       "sort-order": "受控排序；`sort-order` 取 `asc` / `desc` / 空",
       "sticky-rows": "吸顶行数（数字 N）：前 N 行吸顶于表头下方（配合滚动容器与固定列共存）",
       "stripe": "斑马纹：奇数/偶数行交替浅底色",
-      "summary": "合计配置 `[{ key, type: 'sum'|'avg'|'count', label? }]`，JSON 字符串"
+      "summary": "合计配置 `[{ key, type: 'sum'|'avg'|'count', label? }]`，JSON 字符串",
+      "size": "密度档位：`small` / `medium`（默认）/ `large`——只改单元格 padding 与字号默认值（全走 CSS 变量，可用 `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size` 覆盖，优先级高于档位）；非法值回落 `medium` 并告警；与 `row-height` 正交"
     },
     "events": {
       "oas-check": "复选框选中变化，`detail: { keys: string[] }`",

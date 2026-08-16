@@ -14,6 +14,18 @@ Displays structured data in a row-and-column grid with sorting, row selection, m
 
 Click a sortable column header to cycle through ascending / descending / no sort.
 
+## Density Sizes
+
+<DemoBlock title="size: small / medium (default) / large">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: 16px">
+    <oas-table size="small" columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"}]' row-key="name"></oas-table>
+    <oas-table columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"}]' row-key="name"></oas-table>
+    <oas-table size="large" columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+Each size only changes the default cell padding and font size, all via CSS variables: override with `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size` (takes precedence over the size preset). Invalid values fall back to `medium` with a warning. `row-height` is orthogonal to size: in fixed-row-height scenarios such as virtual scrolling, the row height is controlled by `row-height` and is not affected by the size preset.
+
 ## Column Alignment and Width
 
 <DemoBlock title="Alignment and width">
@@ -320,6 +332,7 @@ onMounted(() => {
 | `row-height` | Fixed row height for virtual scrolling (px) | `string` | `40` |
 | `row-key` | Unique key field of a row | `string` | `key` |
 | `selected` | Set of selected row keys (comma-separated) | `string` | — |
+| `size` | Density preset: `small` / `medium` (default) / `large` — only changes default cell padding and font size (all via CSS variables; override with `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size`, which take precedence); invalid values fall back to `medium` with a warning; orthogonal to `row-height` | `string` | `medium` |
 | `sort-key` | Controlled sort; `sort-order` is `asc` / `desc` / empty | `string` | — |
 | `sort-order` | Controlled sort; `sort-order` is `asc` / `desc` / empty | `SortOrder` | — |
 | `sticky-rows` | Number of sticky rows (N): the first N rows stick below the header (coexists with the scroll container and fixed columns) | `string` | — |
