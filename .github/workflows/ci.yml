@@ -28,6 +28,8 @@ jobs:
       # 发布前本地跑一遍核对即可（见 docs/engineering.md §4 性能基准）。
       - run: pnpm perf:size
       - run: pnpm api:check
+      # 官网首页统计数字防漂移（与 api:check 同机制：重新生成 + git diff）
+      - run: pnpm stats:check
   e2e:
     runs-on: ubuntu-latest
     strategy:
