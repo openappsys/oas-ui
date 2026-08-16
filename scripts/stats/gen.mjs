@@ -58,7 +58,15 @@ for (const f of specFiles) {
 // 5) 版本
 const version = JSON.parse(readFileSync(join(ROOT, 'packages/ui/package.json'), 'utf8')).version
 
-const stats = { components, cdnGzipKB, locales, tests, version }
+// 6) 性能数据（半自动——读 perf-baseline.json 的 size section；与 cdnGzipKB 同源避免重复计算）
+const toKB = (bytes) => Math.round(bytes / 102.4) / 10 // 一位小数
+const perf = {
+  cdnGzipKB, // 复用上面的 CDN 单文件 gzip（避免两处数字漂移）
+  buttonChainKB: toKB(baseline.size.components.button.gzipBytes),
+  fullEntryKB: toKB(baseline.size.packages['@oas-ui/ui'].fullEntry.gzipBytes),
+}
+
+const stats = { components, cdnGzipKB, locales, tests, version, perf }
 mkdirSync(dirname(OUT), { recursive: true })
 writeFileSync(OUT, `${JSON.stringify(stats, null, 2)}\n`)
 console.log(`[stats] ${JSON.stringify(stats)}\n[stats] 已写入 ${OUT}`)
