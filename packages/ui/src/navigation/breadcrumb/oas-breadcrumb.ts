@@ -61,7 +61,7 @@ nav.ellipsis [part='current'] {
   font-weight: 500;
   white-space: nowrap;
 }
-/* 折叠省略按钮：锚定下拉面板＼� */
+/* 折叠省略按钮：锚定下拉面板 */
 .ellipsis-wrap {
   position: relative;
   display: inline-flex;
@@ -194,7 +194,7 @@ export class OASBreadcrumb extends OASElement {
     const separator = this.getAttr('separator', '/')
 
     // 折叠：collapsed 且 items 数超过 max-items（默认 4）时，
-    // 保留首项 + 末 maxItems-2 项，中间项收进 … 下拉＼�
+    // 保留首项 + 末 maxItems-2 项，中间项收进 … 下拉
     const maxItems = this.maxItemsValue()
     const collapsed = this.hasAttr('collapsed') && items.length > maxItems
     const tailCount = Math.max(0, maxItems - 2)

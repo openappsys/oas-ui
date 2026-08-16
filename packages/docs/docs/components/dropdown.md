@@ -87,7 +87,7 @@ items 项支持 `children` 数组级联子菜单（任意层级），hover / 点
 
 ## 拆分下拉按钮
 
-`split` 属性开启下拉按钮模式＼�：主按钮 + 拆分箭头按钮。点箭头展开菜单，点主按钮派发 `oas-action`（绑定执行主操作，如保存）；菜单选择仍走 `oas-select`。
+`split` 属性开启下拉按钮模式：主按钮 + 拆分箭头按钮。点箭头展开菜单，点主按钮派发 `oas-action`（绑定执行主操作，如保存）；菜单选择仍走 `oas-select`。
 
 <DemoBlock title="拆分下拉按钮">
   <oas-dropdown split items='[{"label":"编辑","value":"edit"},{"label":"复制","value":"copy"},{"label":"删除","value":"delete"}]'>

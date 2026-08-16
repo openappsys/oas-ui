@@ -2264,7 +2264,7 @@ test('message 分组与更新：同组合并计数、update/destroy 可见反馈
 
 // —— breadcrumb P1 补缺：折叠（collapsed/max-items）+ 单行省略（ellipsis）——
 // 曾现缺口：长路径面包屑无处折叠、窄容器下换行/溢出。本次补 collapsed + max-items 中间折叠为 …，
-// 点击展开下拉查看全部＼�；ellipsis 单行省略 + 链接全文 title。
+// 点击展开下拉查看全部；ellipsis 单行省略 + 链接全文 title。
 
 test('breadcrumb 折叠：超出 max-items 中间项折叠为 …，点击展开下拉、点击项派发 oas-select', async ({
   page,
@@ -2565,7 +2565,7 @@ test('steps navigation：底部上一步/下一步可见，点击切换 current 
 })
 
 // —— dropdown P1 补缺：拆分下拉按钮（split）+ loading 菜单项 ——
-// 曾现缺口：下拉只有整体触发一种形态�拆分按钮；菜单项无 loading 态。
+// 曾现缺口：下拉只有整体触发一种形态、拆分按钮；菜单项无 loading 态。
 // 本批补：split（主按钮派发 oas-action + 箭头按钮开合菜单 + aria 同步）与菜单项 loading（spinner 禁点）。
 
 test('dropdown split：Vue demo 属性存活、箭头按钮 aria 同步、主按钮 oas-action 有可见反馈', async ({
@@ -3000,7 +3000,7 @@ test('popover virtual：virtual-x/virtual-y 定位 + 锚点元素跟随 + oas-op
 })
 
 // —— tree-select P1 补缺：勾选策略（check-strategy）+ 虚拟滚动（virtual）——
-// 曾现缺口：多选只有父子级联一种取值模型（父级勾选时子级全部进值）�
+// 曾现缺口：多选只有父子级联一种取值模型（父级勾选时子级全部进值）；
 // check-strategy（parent 只父级 / child 只叶子）；万级数据下拉无窗口化渲染。
 // 本批补：策略对比 demo 值回显、虚拟滚动窗口化渲染 + 滚动窗口平移 + 键盘导航 ARIA。
 

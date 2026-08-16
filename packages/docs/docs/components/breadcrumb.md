@@ -23,7 +23,7 @@
 
 ## 折叠模式
 
-`collapsed` + `max-items`：items 数量超过 `max-items`（默认 `4`）时，中间项折叠为 `…`，点击 `…` 展开下拉查看全部折叠项＼�。
+`collapsed` + `max-items`：items 数量超过 `max-items`（默认 `4`）时，中间项折叠为 `…`，点击 `…` 展开下拉查看全部折叠项。
 
 <DemoBlock title="折叠模式">
   <oas-breadcrumb id="bc-collapsed" collapsed max-items="4" onoas-select="breadcrumbLog(event)" items='[{"label":"首页","href":"/"},{"label":"组件","href":"/components"},{"label":"导航","href":"/components/anchor"},{"label":"数据展示","href":"/components/table"},{"label":"设置","href":"/components/settings"},{"label":"面包屑"}]'></oas-breadcrumb>

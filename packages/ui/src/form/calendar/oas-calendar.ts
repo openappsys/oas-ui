@@ -420,13 +420,13 @@ export class OASCalendar extends OASElement {
     const mode = this.getAttr('mode', 'month')
     const value = `${this.viewDate.getFullYear()}-${String(m + 1).padStart(2, '0')}`
     if (mode === 'year') {
-      // 年模式选中月份：更新 value 并切回月视图＼�。
+      // 年模式选中月份：更新 value 并切回月视图。
       // 受控宿主可监听 oas-mode-change 后重新设置 mode="year" 保持年模式。
       this.setAttribute('value', value)
       this.viewDate = new Date(this.viewDate.getFullYear(), m, 1)
       this.userNavigated = true
       this.monthPanel = false
-      this.setAttribute('mode', 'month') // update() 内统一派发 oas-mode-change
+      this.setAttribute('mode', 'month') // update 内统一派发 oas-mode-change
       this.emit('change', { value })
       this.update()
       return

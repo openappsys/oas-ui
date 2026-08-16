@@ -338,7 +338,7 @@ export class OASSteps extends OASElement {
     const clickable = this.hasAttr('clickable')
     const navigation = this.hasAttr('navigation')
     const progressDot = this.hasAttr('progress-dot')
-    // 导航模式固定横向＼�箭头分格条仅横向）
+    // 导航模式固定横向
     const direction = navigation ? 'horizontal' : this.getAttr('direction', 'horizontal')
     stepsEl.setAttribute('data-direction', direction)
     if (clickable) stepsEl.setAttribute('data-clickable', 'true')
@@ -379,13 +379,13 @@ export class OASSteps extends OASElement {
         item.appendChild(icon)
       }
       item.appendChild(textWrap)
-      // 导航模式步骤隐式可点＼�；普通模式需 clickable 开启
+      // 导航模式步骤隐式可点；普通模式需 clickable 开启
       const interactive = clickable || navigation
       if (interactive) {
         // 整项承担按钮角色，键盘 Enter/Space 可达；点击派发 oas-change{index} 并切换 current
         item.setAttribute('role', 'button')
         item.setAttribute('tabindex', '0')
-        const goto = (): void => this.goto(idx)
+        const goto: () => void = () => this.goto(idx)
         item.addEventListener('click', goto)
         item.addEventListener('keydown', (e: Event) => {
           const k = e as KeyboardEvent

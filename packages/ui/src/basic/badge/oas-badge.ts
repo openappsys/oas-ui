@@ -37,7 +37,7 @@ const STYLE = `
 .badge[hidden] {
   display: none;
 }
-/* 缎带：卡片上沿角标，斜角折叠敼�corner 三角 + brightness 折叠阴影） */
+/* 缎带：卡片上沿角标，斜角折叠效果Ribbon（corner 三角 + brightness 折叠阴影） */
 .ribbon {
   position: absolute;
   top: var(--oas-space-2);

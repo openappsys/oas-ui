@@ -5,7 +5,7 @@ export interface NotificationOptions {
   title: string
   description?: string
   duration?: number
-  /** 显示自动关闭倒计时进度条＼� */
+  /** 显示自动关闭倒计时进度条 */
   showProgress?: boolean
   /** 进度条位置：`bottom`（默认）或 `top` */
   progressPosition?: 'top' | 'bottom'

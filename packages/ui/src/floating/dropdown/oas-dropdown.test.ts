@@ -116,7 +116,7 @@ describe('OASDropdown', () => {
 })
 
 // —— P1 补缺：下拉按钮（split 模式）——
-// 主按钮 + 拆分箭头按钮：点箭头开菜单，主按钮点击派发 oas-action＼�。
+// 主按钮 + 拆分箭头按钮：点箭头开菜单，主按钮点击派发 oas-action。
 
 describe('OASDropdown split 下拉按钮', () => {
   beforeEach(() => {
@@ -185,7 +185,7 @@ describe('OASDropdown split 下拉按钮', () => {
     expect(anchorEl(el).hasAttribute('hidden')).toBe(true)
   })
 
-  it('split：打开菜单后点主按钮不开不关�），点箭头关闭', () => {
+  it('split：打开菜单后点主按钮不开不关，点箭头关闭', () => {
     const el = mount({ split: '' })
     arrowBtn(el).click()
     expect(el.hasAttribute('open')).toBe(true)
