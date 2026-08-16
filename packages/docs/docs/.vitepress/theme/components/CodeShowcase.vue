@@ -52,13 +52,13 @@ const codeSnippet = computed(() =>
 const bridges = computed(() =>
   isEn.value
     ? [
-        { icon: 'file', name: 'HTML', hint: 'No build step', link: '/guide/getting-started' },
+        { icon: 'edit', name: 'HTML', hint: 'No build step', link: '/guide/getting-started' },
         { icon: 'gear', name: 'Vue', hint: '@oas-ui/nuxt', link: '/guide/ssr' },
         { icon: 'gear', name: 'React', hint: '@oas-ui/next', link: '/guide/ssr' },
         { icon: 'plus', name: 'Svelte + Angular', hint: 'Plain custom elements', link: '/guide/getting-started' },
       ]
     : [
-        { icon: 'file', name: 'HTML', hint: '零构建步骤', link: '/guide/getting-started' },
+        { icon: 'edit', name: 'HTML', hint: '零构建步骤', link: '/guide/getting-started' },
         { icon: 'gear', name: 'Vue', hint: '@oas-ui/nuxt', link: '/guide/ssr' },
         { icon: 'gear', name: 'React', hint: '@oas-ui/next', link: '/guide/ssr' },
         { icon: 'plus', name: 'Svelte / Angular', hint: '原生自定义元素', link: '/guide/getting-started' },
