@@ -84,6 +84,8 @@
 
 文档站是 Vitepress SSG，静态构建产物部署到 Cloudflare（Workers Static Assets，`wrangler deploy`），绑定自定义域名 `oasui.dev`（域名 DNS 托管到 Cloudflare，自动 HTTPS）。
 
+**双域策略**：`oasui.dev` 为主域（可发音、可传播，去连字符可读化）；`oas-ui.dev`（与包名逐字符一致）持作 301 跳转域——Cloudflare 后台 → Rules → Redirect Rules，单条规则把 `oas-ui.dev/*` 301 到 `oasui.dev` 对应路径（保路径跳转，不在 wrangler.jsonc 里声明）。
+
 仓库根已提供 `wrangler.jsonc`（Workers 静态资产配置，`assets.directory` 指向构建产物；`$schema` 是 IDE 提示，本地未装 wrangler 时无害）。
 
 **部署流程（CI/远程 wrangler，本地无需安装 wrangler）**：
