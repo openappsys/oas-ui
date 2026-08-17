@@ -12,6 +12,29 @@
   <oas-link href="#" type="danger">危险链接</oas-link>
 </DemoBlock>
 
+## 颜色
+
+`color` 支持 11 个预设色名（明暗主题自动适配）或任意 CSS 色值（直接生效，优先于 `type` 语义色）。承载文字的色值按原值渲染，请自行确保对比度达标（WCAG AA 4.5:1）。
+
+<DemoBlock title="预设色板">
+  <oas-link href="#" color="magenta">magenta</oas-link>
+  <oas-link href="#" color="red">red</oas-link>
+  <oas-link href="#" color="volcano">volcano</oas-link>
+  <oas-link href="#" color="orange">orange</oas-link>
+  <oas-link href="#" color="gold">gold</oas-link>
+  <oas-link href="#" color="lime">lime</oas-link>
+  <oas-link href="#" color="green">green</oas-link>
+  <oas-link href="#" color="cyan">cyan</oas-link>
+  <oas-link href="#" color="blue">blue</oas-link>
+  <oas-link href="#" color="geekblue">geekblue</oas-link>
+  <oas-link href="#" color="purple">purple</oas-link>
+</DemoBlock>
+
+<DemoBlock title="自定义色值（优先于 type）">
+  <oas-link href="#" color="#0e7490">青碧色链接</oas-link>
+  <oas-link href="#" type="primary" color="#6d28d9">覆盖 primary 为紫色</oas-link>
+</DemoBlock>
+
 ## 下划线
 
 <DemoBlock title="下划线控制">
@@ -40,6 +63,7 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `color` | — | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `href` | 链接地址 | `string` | — |
 | `target` | 打开方式 | `string` | — |

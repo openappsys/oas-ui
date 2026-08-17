@@ -3,6 +3,8 @@ import AxeBuilder from '@axe-core/playwright'
 
 const PAGES = [
   '/components/button.html',
+  '/components/link.html',
+  '/components/divider.html',
   '/components/form.html',
   '/components/modal.html',
   '/components/menu.html',

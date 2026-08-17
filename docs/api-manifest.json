@@ -705,6 +705,12 @@
         "name": "strong",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "color",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
@@ -745,6 +751,12 @@
       },
       {
         "name": "target",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "color",
         "type": "string",
         "default": "",
         "observed": true

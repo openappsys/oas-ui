@@ -43,6 +43,25 @@
   --oas-preset-geekblue: #2f54eb;
   --oas-preset-purple: #722ed1;
 
+  /* 预设色板文字变体（-text）：文字承载面的达标深色（WCAG AA 4.5:1，对白底与灰卡底 #f5f5f5 双验，
+     本色达标者与本色同值；link 等纯文字组件 color 预设名映射到这里。填充/描边/装饰面用上方本色） */
+  --oas-preset-magenta-text: #cc2983;
+  --oas-preset-red-text: #da1e28;
+  --oas-preset-volcano-text: #c64216;
+  --oas-preset-orange-text: #a55c0f;
+  --oas-preset-gold-text: #94660c;
+  --oas-preset-lime-text: #5a7a0a;
+  --oas-preset-green-text: #357f11;
+  --oas-preset-cyan-text: #0c7c7c;
+  --oas-preset-blue-text: #146ae3;
+  --oas-preset-geekblue-text: #2f54eb;
+  --oas-preset-purple-text: #722ed1;
+
+  /* 语义色文字变体（-text）：文字承载面达标深色（AA；填充面用上方本色） */
+  --oas-color-success-text: #11813a;
+  --oas-color-warning-text: #a75c05;
+  --oas-color-danger-text: #d82525;
+
   --oas-font-size-xs: 12px;
   --oas-font-size-sm: 13px;
   --oas-font-size-md: 14px;
@@ -129,6 +148,22 @@ html.dark {
   --oas-preset-blue: #4096ff;
   --oas-preset-geekblue: #597ef7;
   --oas-preset-purple: #9254de;
+  /* 预设文字变体 dark：本色已对深底达标（purple 略提亮），与本色同值即达标 */
+  --oas-preset-magenta-text: #f759ab;
+  --oas-preset-red-text: #ff4d4f;
+  --oas-preset-volcano-text: #ff7a45;
+  --oas-preset-orange-text: #ffa940;
+  --oas-preset-gold-text: #ffc53d;
+  --oas-preset-lime-text: #bae637;
+  --oas-preset-green-text: #73d13d;
+  --oas-preset-cyan-text: #36cfc9;
+  --oas-preset-blue-text: #4096ff;
+  --oas-preset-geekblue-text: #597ef7;
+  --oas-preset-purple-text: #a26ee3;
+  /* 语义文字变体 dark：本色已达标，同值 */
+  --oas-color-success-text: #4ade80;
+  --oas-color-warning-text: #fbbf24;
+  --oas-color-danger-text: #f87171;
 }
 
 [data-theme="high-contrast"] {

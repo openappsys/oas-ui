@@ -179,6 +179,59 @@ describe('OASDivider', () => {
     })
   })
 
+  describe('color 属性（统一协议：11 预设名→token / 任意 CSS 色值直注入）', () => {
+    it('color 进入 observedAttributes', () => {
+      expect(OASDivider.observedAttributes).toContain('color')
+    })
+
+    it('预设名解析为 --oas-preset-* token：.divider 内联 --oas-divider-color', () => {
+      const el = mount({ color: 'geekblue' }, '')
+      const d = line(el)!
+      expect(d.style.getPropertyValue('--oas-divider-color')).toBe('var(--oas-preset-geekblue)')
+    })
+
+    it('11 预设名全量解析', () => {
+      const presets = [
+        'magenta',
+        'red',
+        'volcano',
+        'orange',
+        'gold',
+        'lime',
+        'green',
+        'cyan',
+        'blue',
+        'geekblue',
+        'purple',
+      ]
+      for (const name of presets) {
+        const el = mount({ color: name }, '')
+        expect(line(el)!.style.getPropertyValue('--oas-divider-color'), `preset=${name}`).toBe(
+          `var(--oas-preset-${name})`,
+        )
+        el.remove()
+      }
+    })
+
+    it('任意 CSS 色值直接注入（#hex）', () => {
+      const el = mount({ color: '#ff6b00' }, '')
+      expect(line(el)!.style.getPropertyValue('--oas-divider-color')).toBe('#ff6b00')
+    })
+
+    it('缺省不注入（回落边框 token）', () => {
+      const el = mount({}, '')
+      expect(line(el)!.style.getPropertyValue('--oas-divider-color')).toBe('')
+    })
+
+    it('动态切换 color 即时生效', () => {
+      const el = mount({ color: 'red' }, '')
+      el.setAttribute('color', '#00b96b')
+      expect(line(el)!.style.getPropertyValue('--oas-divider-color')).toBe('#00b96b')
+      el.removeAttribute('color')
+      expect(line(el)!.style.getPropertyValue('--oas-divider-color')).toBe('')
+    })
+  })
+
   describe('CSS 变量开口（width/color/spacing/title-inset）', () => {
     it('CSS：四个变量都有 fallback 接线（消费点）', () => {
       const el = mount({}, '')
