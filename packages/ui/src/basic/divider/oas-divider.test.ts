@@ -102,12 +102,20 @@ describe('OASDivider', () => {
       expect(line(mid)!.classList.contains('middle')).toBe(true)
     })
 
-    it('CSS：inset 起始侧留空 / middle 两侧留空', () => {
+    it('CSS：inset 起始侧留空（margin-left）/ middle 两侧留空（margin-left + margin-right），线段 flex:1 贯通', () => {
       const el = mount({}, '')
       const css = el.shadowRoot!.querySelector('style')!.textContent!
-      expect(css).toContain('.divider.inset::before')
-      expect(css).toContain('.divider.middle::before')
-      expect(css).toContain('.divider.middle::after')
+      expect(css).toMatch(
+        /\.divider\.inset::before\s*\{[^}]*margin-left:\s*var\(--oas-divider-title-inset/,
+      )
+      expect(css).toMatch(
+        /\.divider\.middle::before\s*\{[^}]*margin-left:\s*var\(--oas-divider-middle-inset/,
+      )
+      expect(css).toMatch(
+        /\.divider\.middle::after\s*\{[^}]*margin-right:\s*var\(--oas-divider-middle-inset/,
+      )
+      // 仅水平布局生效（vertical 排除）
+      expect(css).toMatch(/:host\(:not\(\[direction='vertical'\]\)\)\s*\.divider\.inset::before/)
     })
 
     it('无内容时 inset/middle 同样生效（空线缩进）', () => {
