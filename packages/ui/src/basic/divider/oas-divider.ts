@@ -2,6 +2,23 @@ import { OASElement } from '@oas-ui/core'
 
 export type DividerDirection = 'horizontal' | 'vertical'
 export type DividerPosition = 'left' | 'center' | 'right'
+export type DividerVariant = 'solid' | 'dashed' | 'dotted' | 'double'
+export type DividerSize = 'small' | 'medium' | 'large'
+
+const VALID_VARIANTS = ['solid', 'dashed', 'dotted', 'double'] as const
+const VALID_SIZES = ['small', 'medium', 'large'] as const
+
+const warnedValues = new Set<string>()
+
+/** 非法值告警：dev 下 console.warn 一次（同值去重），值本身走调用处的回落 */
+function warnOnce(kind: string, raw: string, fallback: string, valid: readonly string[]): void {
+  const key = `${kind}:${raw}`
+  if (warnedValues.has(key)) return
+  warnedValues.add(key)
+  console.warn(
+    `[oas-divider] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`,
+  )
+}
 
 const STYLE = `
 :host {
@@ -14,10 +31,28 @@ const STYLE = `
   width: auto;
   vertical-align: middle;
 }
+/* vertical 行内语境：高度 = 1em 文字行高（min-height 兜底）；有内容（文字在两线段间）时由内容撑高。
+   flex/grid 容器语境：容器默认 align-items:stretch 拉伸 host，.divider height:100% 跟随——
+   两语境都成立，无需 JS 探测容器。 */
+:host([direction='vertical']) .divider {
+  flex-direction: column;
+  width: var(--oas-divider-width, 1px);
+  height: 100%;
+  min-height: 1em;
+  margin: 0 var(--oas-space-3);
+  align-items: stretch;
+}
+:host([direction='vertical']) .divider::before,
+:host([direction='vertical']) .divider::after {
+  flex: 1;
+  width: var(--oas-divider-width, 1px);
+  height: auto;
+  background: var(--oas-divider-color, var(--oas-color-border-strong));
+}
 .divider {
   display: flex;
   align-items: center;
-  margin: var(--oas-space-4) 0;
+  margin: var(--oas-divider-spacing, var(--oas-space-4)) 0;
   color: var(--oas-color-text-primary);
   font-size: var(--oas-font-size-sm);
   gap: var(--oas-space-3);
@@ -29,44 +64,77 @@ const STYLE = `
 .divider::after {
   content: '';
   flex: 1;
-  height: 1px;
-  background: var(--oas-color-border-strong);
+  height: var(--oas-divider-width, 1px);
+  background: var(--oas-divider-color, var(--oas-color-border-strong));
 }
 .divider.left::before {
-  flex: 0 0 5%;
+  flex: 0 0 var(--oas-divider-title-inset, 5%);
 }
 .divider.right::after {
-  flex: 0 0 5%;
+  flex: 0 0 var(--oas-divider-title-inset, 5%);
 }
+/* 线型：dashed/dotted 用 repeating-linear-gradient（渐变线不受 height 约束），double 靠双层高度 */
 .divider.dashed::before,
 .divider.dashed::after {
   background: repeating-linear-gradient(
     to right,
-    var(--oas-color-border-strong) 0,
-    var(--oas-color-border-strong) 4px,
+    var(--oas-divider-color, var(--oas-color-border-strong)) 0,
+    var(--oas-divider-color, var(--oas-color-border-strong)) 4px,
     transparent 4px,
     transparent 8px
   );
 }
-:host([direction='vertical']) .divider {
-  flex-direction: column;
-  width: 1px;
-  height: 1em;
-  margin: 0 var(--oas-space-3);
-  align-items: stretch;
+.divider.dotted::before,
+.divider.dotted::after {
+  background: repeating-linear-gradient(
+    to right,
+    var(--oas-divider-color, var(--oas-color-border-strong)) 0,
+    var(--oas-divider-color, var(--oas-color-border-strong)) 2px,
+    transparent 2px,
+    transparent 6px
+  );
 }
-:host([direction='vertical']) .divider::before,
-:host([direction='vertical']) .divider::after {
-  flex: 1;
-  width: 1px;
-  height: auto;
-  background: var(--oas-color-border-strong);
+.divider.double::before,
+.divider.double::after {
+  /* 双线 = 上线 + 透明间隙 + 下线（各取线宽，间隙默认 3px 保证 1x 屏肉眼可辨） */
+  height: calc(2 * var(--oas-divider-width, 1px) + var(--oas-divider-double-gap, 3px));
+  border-top: var(--oas-divider-width, 1px) solid var(--oas-divider-color, var(--oas-color-border-strong));
+  border-bottom: var(--oas-divider-width, 1px) solid var(--oas-divider-color, var(--oas-color-border-strong));
+  background: transparent;
+}
+/* 缩进：inset 起始侧留空 / middle 两侧留空（宽度走变量开口，默认 5%） */
+.divider.inset::before {
+  flex: 0 0 var(--oas-divider-title-inset, 5%);
+}
+.divider.middle::before,
+.divider.middle::after {
+  flex: 0 0 var(--oas-divider-middle-inset, 16.67%);
+}
+/* size 间距档（仅水平布局生效；vertical 分支 margin 固定） */
+.divider.small {
+  margin: var(--oas-divider-spacing, var(--oas-space-2)) 0;
+}
+.divider.large {
+  margin: var(--oas-divider-spacing, var(--oas-space-6)) 0;
+}
+/* strong 强调文字：对齐主流库默认标题体观感（600 字重） */
+.divider.strong {
+  font-weight: 600;
 }
 `
 
 export class OASDivider extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['direction', 'dashed', 'content-position']
+    return [
+      'direction',
+      'dashed',
+      'content-position',
+      'variant',
+      'inset',
+      'middle',
+      'size',
+      'strong',
+    ]
   }
 
   private dividerEl: HTMLElement | null = null
@@ -102,12 +170,42 @@ export class OASDivider extends OASElement {
     const el = this.dividerEl
     if (!el) return
     const direction = this.getAttr('direction', 'horizontal') as DividerDirection
-    const dashed = this.hasAttr('dashed')
     const position = this.getAttr('content-position', 'center') as DividerPosition
 
-    el.classList.toggle('dashed', dashed)
+    // 线型：显式 variant 优先；否则 dashed 布尔兼容映射；默认 solid
+    let variant: DividerVariant = 'solid'
+    const rawVariant = this.getAttr('variant', '')
+    if (rawVariant) {
+      if ((VALID_VARIANTS as readonly string[]).includes(rawVariant)) {
+        variant = rawVariant as DividerVariant
+      } else {
+        warnOnce('variant', rawVariant, 'solid', VALID_VARIANTS)
+      }
+    } else if (this.hasAttr('dashed')) {
+      variant = 'dashed'
+    }
+
+    // size 间距档（仅水平布局生效）
+    let size: DividerSize = 'medium'
+    const rawSize = this.getAttr('size', '')
+    if (direction === 'horizontal' && rawSize) {
+      if ((VALID_SIZES as readonly string[]).includes(rawSize)) {
+        size = rawSize as DividerSize
+      } else {
+        warnOnce('size', rawSize, 'medium', VALID_SIZES)
+      }
+    }
+
+    el.classList.toggle('dashed', variant === 'dashed')
+    el.classList.toggle('dotted', variant === 'dotted')
+    el.classList.toggle('double', variant === 'double')
     el.classList.toggle('left', position === 'left')
     el.classList.toggle('right', position === 'right')
+    el.classList.toggle('inset', this.hasAttr('inset'))
+    el.classList.toggle('middle', this.hasAttr('middle'))
+    el.classList.toggle('small', size === 'small')
+    el.classList.toggle('large', size === 'large')
+    el.classList.toggle('strong', this.hasAttr('strong'))
     el.setAttribute('aria-orientation', direction)
     const slot = el.querySelector('slot') as HTMLSlotElement | null
     el.classList.toggle('empty', !slot?.assignedNodes().length)
