@@ -102,13 +102,16 @@ const STYLE = `
   border-bottom: var(--oas-divider-width, 1px) solid var(--oas-divider-color, var(--oas-color-border-strong));
   background: transparent;
 }
-/* 缩进：inset 起始侧留空 / middle 两侧留空（宽度走变量开口，默认 5%） */
-.divider.inset::before {
-  flex: 0 0 var(--oas-divider-title-inset, 5%);
+/* 缩进：inset 起始侧留空 / middle 两侧留空——线段外推留空（margin），线本身 flex:1 贯通。
+   仅水平布局生效（同 size 惯例）；宽度走变量开口。 */
+:host(:not([direction='vertical'])) .divider.inset::before {
+  margin-left: var(--oas-divider-title-inset, 5%);
 }
-.divider.middle::before,
-.divider.middle::after {
-  flex: 0 0 var(--oas-divider-middle-inset, 16.67%);
+:host(:not([direction='vertical'])) .divider.middle::before {
+  margin-left: var(--oas-divider-middle-inset, 16.67%);
+}
+:host(:not([direction='vertical'])) .divider.middle::after {
+  margin-right: var(--oas-divider-middle-inset, 16.67%);
 }
 /* size 间距档（仅水平布局生效；vertical 分支 margin 固定） */
 .divider.small {
