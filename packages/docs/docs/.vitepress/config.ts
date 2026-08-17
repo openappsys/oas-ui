@@ -226,7 +226,15 @@ gtag('config', 'G-RXS142HBXF');`,
   },
   themeConfig: {
     logo: { light: '/favicon.svg', dark: '/favicon-dark.svg' },
-    nav: [{ text: '指南', link: '/guide/getting-started' }],
+    nav: [
+      { text: '指南', link: '/guide/getting-started' },
+      {
+        text: 'GitHub',
+        link: 'https://github.com/openappsys/oas-ui',
+        target: '_blank',
+        rel: 'noopener',
+      },
+    ],
     footer: {
       message: '基于 MIT OR Apache-2.0 双许可发布',
       copyright: 'Copyright © 2026-present OpenAppSys',
@@ -289,7 +297,15 @@ gtag('config', 'G-RXS142HBXF');`,
       description: 'Framework-agnostic Web Components UI library',
       themeConfig: {
         logo: { light: '/favicon.svg', dark: '/favicon-dark.svg' },
-        nav: [{ text: 'Guide', link: '/en/guide/getting-started' }],
+        nav: [
+          { text: 'Guide', link: '/en/guide/getting-started' },
+          {
+            text: 'GitHub',
+            link: 'https://github.com/openappsys/oas-ui',
+            target: '_blank',
+            rel: 'noopener',
+          },
+        ],
         footer: {
           message: 'Released under the MIT OR Apache-2.0 License.',
           copyright: 'Copyright © 2026-present OpenAppSys',

@@ -1,29 +1,23 @@
 <template>
   <DefaultTheme.Layout>
     <!-- 官网首页（layout: home）专用 slot；非 home 页面这些 slot 不会被渲染 -->
-    <template #home-hero-image><HeroTableDemo /></template>
-    <template #home-features-before>
-      <StatsBar />
-      <SceneShowcase />
-      <CodeShowcase />
-    </template>
-    <template #home-features-after>
-      <PerfSection />
-      <CtaBand />
-    </template>
+    <template #home-hero-before><HomeHero /></template>
+    <template #home-hero-after><HomeUseCases /></template>
+    <template #home-features-before><HomeCode /></template>
+    <template #home-features-after><HomePerf /><HomeCta /><HomeFooter /></template>
   </DefaultTheme.Layout>
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
+import { onBeforeUnmount, onMounted, watch } from 'vue'
 import DefaultTheme from 'vitepress/theme'
 import { useData } from 'vitepress'
-import HeroTableDemo from './components/HeroTableDemo.vue'
-import StatsBar from './components/StatsBar.vue'
-import SceneShowcase from './components/SceneShowcase.vue'
-import CodeShowcase from './components/CodeShowcase.vue'
-import PerfSection from './components/PerfSection.vue'
-import CtaBand from './components/CtaBand.vue'
+import HomeHero from './components/HomeHero.vue'
+import HomeUseCases from './components/HomeUseCases.vue'
+import HomeCode from './components/HomeCode.vue'
+import HomePerf from './components/HomePerf.vue'
+import HomeCta from './components/HomeCta.vue'
+import HomeFooter from './components/HomeFooter.vue'
 
 const { lang } = useData()
 
@@ -47,4 +41,24 @@ async function applyI18n(next: 'zh-CN' | 'en'): Promise<void> {
   registerLocale(pack)
   setLocale(next)
 }
+
+// 首页滚动入场：观察 .home-reveal，进入视口时加 .in（尊重 prefers-reduced-motion）
+let io: IntersectionObserver | null = null
+function observeReveal(): void {
+  if (typeof window === 'undefined' || io) return
+  io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in')
+          io?.unobserve(entry.target)
+        }
+      }
+    },
+    { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
+  )
+  document.querySelectorAll('.home-reveal').forEach((el) => io?.observe(el))
+}
+onMounted(observeReveal)
+onBeforeUnmount(() => io?.disconnect())
 </script>

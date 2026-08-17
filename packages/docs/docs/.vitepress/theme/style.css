@@ -3,41 +3,61 @@
 /* 中英切换统一走默认主题内置语言下拉（VPNavBarTranslations，locales 配置自动生成）；
    组件内部文案由 Layout.vue 的 lang watcher 同步（@oas-ui/i18n setLocale） */
 
-/* ===== 官网首页（home 布局）：组件墙替换原生 hero 图片 ===== */
-/* 原生 .image-container 按图片尺寸约束（max-width 192px 级别），组件墙需要更宽 */
-.VPHero .image-container {
-  max-width: none;
-  width: min(480px, 44vw);
+/* ===== 官网首页（重设计版）：HomeHero / HomeUseCases / HomeCode / HomePerf / HomeCta ===== */
+/* 首页设计变量：浅色默认（:root），深色走 html.dark，跟随系统主题切换。
+   组件 scoped 样式一律引用 var(--home-*) 或 --oas-* 语义 token，禁止硬编码色值。 */
+:root {
+  --home-bg: #f7f8fc;
+  --home-text: #18181b;
+  --home-text-2: #52525b;
+  --home-text-3: #8b8b96;
+  --home-border: #e4e4e7;
+  --home-card-bg: #ffffff;
+  --home-card-bg-2: #fbfcff;
+  --home-glow: rgba(11, 108, 255, 0.14);
+  --home-glow-soft: rgba(11, 108, 255, 0.08);
+  --home-grad-text: linear-gradient(180deg, #18181b 30%, #3d6bd4);
+  --home-grad-strong: linear-gradient(100deg, #0b6cff 20%, #4d9fff 80%);
+  --home-hero-glow: rgba(11, 108, 255, 0.16);
+  --home-grid-line: rgba(11, 108, 255, 0.05);
+  --home-code-bg: #0d1117;
+  --home-code-border: #30363d;
+  --home-ok: #16a34a;
 }
-/* 去掉原生图片背景光晕，组件墙自带卡片容器 */
-.VPHero .image-bg {
-  display: none;
+html.dark {
+  --home-bg: #0a0a0f;
+  --home-text: #fafafa;
+  --home-text-2: #a1a1aa;
+  --home-text-3: #71717a;
+  --home-border: #3f3f46;
+  --home-card-bg: #1a1a20;
+  --home-card-bg-2: #101015;
+  --home-glow: rgba(77, 159, 255, 0.2);
+  --home-glow-soft: rgba(122, 162, 255, 0.1);
+  --home-grad-text: linear-gradient(180deg, #fff 30%, #8fb8ff);
+  --home-grad-strong: linear-gradient(100deg, #4d9fff 20%, #8fb8ff 80%);
+  --home-hero-glow: rgba(77, 159, 255, 0.3);
+  --home-grid-line: rgba(255, 255, 255, 0.035);
+  --home-code-bg: #0d1117;
+  --home-code-border: #30363d;
+  --home-ok: #4ade80;
 }
-/* slot 注入的统计条/特性卡是 .VPHome 裸子节点，无 .container 约束会顶满屏宽；
-   套用与 hero .container 同构的容器规则（1152px 居中 + 24px 内边距）保持版心对齐 */
-.stats-bar,
-.feature-grid,
-.scene-showcase,
-.code-showcase,
-.perf-section,
-.cta-band {
-  max-width: 1152px;
-  margin: 0 auto;
-  padding-left: 24px;
-  padding-right: 24px;
+
+/* 首页滚动入场：进入视口时 .in 上浮显现（尊重 prefers-reduced-motion） */
+.home-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s var(--oas-ease-out), transform 0.6s var(--oas-ease-out);
+  transition-delay: var(--d, 0s);
 }
-@media (max-width: 951px) {
-  /* Vitepress 断点以下 hero 上下堆叠，组件墙全宽；
-     .image 默认 aspect-ratio 拟高与负 bottom margin（-48px，默认 logo 的文字上提效果）
-     会在高卡片下方留幽灵空白并让标题压住卡片，须贴齐实际内容 */
-  .VPHero .image-container,
-  .VPHero .image {
-    width: 100%;
-    max-width: 520px;
-    aspect-ratio: auto;
-    min-height: 0;
-  }
-  .VPHero .image {
-    margin-bottom: 24px;
+.home-reveal.in {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
