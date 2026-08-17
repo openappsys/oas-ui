@@ -678,6 +678,33 @@
         "type": "DividerPosition",
         "default": "center",
         "observed": true
+      },
+      {
+        "name": "variant",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "inset",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "middle",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "strong",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [],
