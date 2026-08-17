@@ -541,9 +541,23 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 
 ---
 
-## v2.1 逐组件能力深挖（进行中）
+## v2.1 basic 族增强与官网首页 v2（已完成）
 
-> 原「v2.0 能力补齐」规划的 tag/badge/space/compact 内容整体移入本版本，连同 button/button-group/icon 能力补齐、floating 箭头、table 密度、官网首页改版。与既有版本互不冲突。
+> 原「v2.0 能力补齐」规划的 tag/badge/space/compact 内容整体移入本版本，连同 button/button-group/icon 能力增强、floating 箭头、table 密度、官网首页改版。与既有版本互不冲突。
+
+### 已交付内容
+
+- **basic 族增强**：button（variant 形态/color/wave/auto-insert-space/circle/icon-position/href/plain/target/autofocus/wrap）、button-group（pill/分隔符/嵌套组/拆分按钮）、icon（spin/rotate/flip/图标库注册/动画预设/duotone）、tag（预设色板/dot/processing/avatar 适配/hit/strong/multiline + oas-tag-group）、badge（standalone/color 全模式/offset/status/size/attention/corner/overlap/ribbon-form 七形态 + flag/rolled/premium/ribbon-size/direction/vertical/anchor 体系）、space（separator/justify/reverse/size 数组/fill/响应式断点）+ **oas-compact**
+- **floating 箭头**：tooltip/popover/dropdown 统一 arrow（默认显示）/arrow-point-at-center/auto-adjust-overflow
+- **table 密度档位**：size small/medium/large（CSS 变量开口）
+- **展示型组件字号继承**：A 类跟随外层/B 类组件级变量开口（11 组件）
+- **官网首页 v2**：产品力展示方向（hero oas-table demo + 场景卡 + 代码速览 + 真实 perf 数据 + CTA），后迭代 H05 深色沉浸风格
+- **收尾**：button demo 自定义色改 WCAG AA 达标值（#047857/#be185d，组件契约不变——自定义色按原值渲染，文档补对比度提醒）+ a11y 门禁转绿
+
+### 验收标准（均已达成）
+
+- 新组件与增强 demo 进文档站（中英双版），覆盖各属性/事件/边界
+- 单测（2216）+ typecheck + build + e2e（chromium 全量 + firefox 抽样）全绿
 
 ### 详细需求
 
@@ -591,13 +605,7 @@ ole="group"+ria-label。边界：零子签渲染空组不报错；单选不可�
 
 ### 增强（table 第二轮）
 
-- **table→size 密度档位**：`size="small|medium|large"`（默认 medium）三档密度——档位只改单元格 padding 与字号的默认值（small：8/12px + sm 字号；medium：12/16px + md 字号＝现状零回归；large：16/24px + lg 字号），全走 CSS 变量（`--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size`），宿主变量覆盖优先级高于档位；行内编辑器 padding/字号跟随档位；非法值回落 medium 并告警（同控件 size 惯例）；与 `row-height` 正交（虚拟滚动等定高场景行高由 row-height 决定，不受档位影响）。命名与控件 size 体系同词（small/medium/large），对齐 vision「API 对称」与「CSS 变量开放定制点」原则；tree 密度与全局尺寸上下文经同轮调研评估后明确不做（0/8 共识、WC 无 Provider 机制）
-
-### 验收标准
-
-- 新组件与增强 demo 进文档站（中英双版），覆盖各属性/事件/边界
-- tag-group 单选/多选/disabled 场景可交互并有可见反馈
-- 单测 + typecheck + build + e2e 全绿
+- **table→size 密度档位**：`size="small|medium|large"`（默认 medium）三档密度——档位只改单元格 padding 与字号的默认值（small：8/12px + sm 字号；medium：12/16px + md 字号＝现状零回归；large：16/24px + lg 字号），全走 CSS 变量（`--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size`），宿主变量覆盖优先级高于档位；行内编辑器 padding/字号跟随档位；非法值回落 medium 并告警（同控件 size 惯例）；与 `row-height` 正交（虚拟滚动等定高场景行高由 row-height 决定，不受档位影响）。命名与控件 size 体系同词（small/medium/large，主流三档密度惯例），对齐 vision「API 对称」与「CSS 变量开放定制点」原则；tree 密度与全局尺寸上下文评估后明确不做（Web Components 无 Provider 机制）
 
 ### 官网首页（landing page · v2）
 
