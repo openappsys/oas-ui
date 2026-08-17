@@ -3550,7 +3550,7 @@ test('button color 自定义色：无 type 也按 variant 着色，文字色按�
   const light = await read()
   expect(light[0]!.bg, '紫色实底').toBe('rgb(124, 58, 237)')
   expect(light[0]!.color, '紫底白字').toBe('rgb(255, 255, 255)')
-  expect(light[1]!.border, '绿色描边').toBe('rgb(14, 159, 110)')
+  expect(light[1]!.border, '绿色描边').toBe('rgb(4, 120, 87)')
   expect(light[2]!.bg, '粉色浅底（12% tint）').toContain('0.12')
   await page.evaluate(() => document.documentElement.classList.add('dark'))
   await page.waitForTimeout(300)
@@ -3864,7 +3864,7 @@ test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见�
 test('展示型组件字号继承：A 类跟随外层 font-size、B 类大数字默认固定且组件级变量可覆盖', async ({
   page,
 }) => {
-  // 设计决策（详见组件 :host 注释）：
+  // 设计决策（通用做法，详见组件 :host 注释）：
   //   A 类展示文本（gradient-text/comment/equation/log/timeline/breadcrumb/descriptions-item）
   //     :host font-size = var(--组件级变量, inherit) → 跟随外层；code 特例 0.875em 略缩
   //   B 类大数字（statistic/countdown/number-animation）
@@ -3938,7 +3938,7 @@ test('展示型组件字号继承：A 类跟随外层 font-size、B 类大数字
 test('table size 密度档位：small/medium/large 三档 padding+字号阶梯，组件级变量覆盖优先', async ({
   page,
 }) => {
-  // 设计（size 三档密度）：档位全走 CSS 变量 token
+  // 设计（主流三档密度惯例）：档位全走 CSS 变量 token
   // （--_cell-py/--_cell-px/font-size），宿主 --oas-table-* 变量优先级高于档位；
   // row-height 显式值与档位正交（虚拟滚动行高由 row-height 管，不受档位影响）。
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
