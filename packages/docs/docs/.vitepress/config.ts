@@ -228,6 +228,7 @@ gtag('config', 'G-RXS142HBXF');`,
     logo: { light: '/favicon.svg', dark: '/favicon-dark.svg' },
     nav: [
       { text: '指南', link: '/guide/getting-started' },
+      { text: '设计 Token', link: '/guide/tokens' },
       {
         text: 'GitHub',
         link: 'https://github.com/openappsys/oas-ui',
@@ -276,6 +277,7 @@ gtag('config', 'G-RXS142HBXF');`,
         items: [
           { text: '快速开始', link: '/guide/getting-started' },
           { text: '主题与自定义', link: '/guide/theming' },
+          { text: '设计 Token', link: '/guide/tokens' },
           { text: '无障碍（A11y）', link: '/guide/accessibility' },
           { text: 'SSR 边界策略', link: '/guide/ssr' },
           { text: '组件总览', link: '/components/' },
@@ -299,6 +301,7 @@ gtag('config', 'G-RXS142HBXF');`,
         logo: { light: '/favicon.svg', dark: '/favicon-dark.svg' },
         nav: [
           { text: 'Guide', link: '/en/guide/getting-started' },
+          { text: 'Tokens', link: '/en/guide/tokens' },
           {
             text: 'GitHub',
             link: 'https://github.com/openappsys/oas-ui',
@@ -337,6 +340,7 @@ gtag('config', 'G-RXS142HBXF');`,
             items: [
               { text: 'Getting Started', link: '/en/guide/getting-started' },
               { text: 'Theming', link: '/en/guide/theming' },
+              { text: 'Design Tokens', link: '/en/guide/tokens' },
               { text: 'Accessibility (A11y)', link: '/en/guide/accessibility' },
               { text: 'SSR Strategy', link: '/en/guide/ssr' },
               { text: 'Overview', link: '/en/components/' },

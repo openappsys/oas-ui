@@ -3,6 +3,7 @@ import DefaultTheme from 'vitepress/theme'
 import '@oas-ui/theme'
 import './style.css'
 import DemoBlock from './components/DemoBlock.vue'
+import TokenShowcase from './components/TokenShowcase.vue'
 import Layout from './Layout.vue'
 import { bindOnOas } from './onoas'
 
@@ -24,6 +25,7 @@ export default {
   Layout,
   enhanceApp({ app, router }) {
     app.component('DemoBlock', DemoBlock)
+    app.component('TokenShowcase', TokenShowcase)
     // gtag 的 config 只在页面整加载时触发一次 page_view，SPA 内路由切换需手动补发。
     // vitepress Router 的钩子是实例属性（onAfterRouteChanged），必须赋值注册；
     // 此前误写成「onAfterRouteChange?.(cb) 方法调用」——属性不存在，可选链静默短路，补发从未生效

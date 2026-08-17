@@ -68,6 +68,8 @@ React / Vue 中直接使用：
 
 原生三端（React/Vue/原生）均无需封装即可使用，事件通过 `oas-*` CustomEvent 桥接。
 
+> 想看实际效果？仓库里有搭配使用 React / Vue 的 [Playground](https://github.com/openappsys/oas-ui/tree/main/packages/playground)，`pnpm dev:react` / `pnpm dev:vue` 即可本地运行。
+
 ## 浏览器基线
 
 现代浏览器 evergreen 版本：Chrome / Edge / Firefox / Safari 最新两个大版本。其中：

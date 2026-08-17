@@ -69,6 +69,8 @@ Use directly in React / Vue:
 No wrappers are needed in any of the three environments (React/Vue/vanilla);
 events are bridged through `oas-*` CustomEvents.
 
+> Want to see it live? The repo ships a [Playground](https://github.com/openappsys/oas-ui/tree/main/packages/playground) for React / Vue — run `pnpm dev:react` / `pnpm dev:vue` locally.
+
 ## Browser support
 
 Modern evergreen browsers: latest two major versions of Chrome / Edge / Firefox / Safari. Specifically:

@@ -7,8 +7,8 @@
 验证 Web Components 在 **React 19** / **Vue 3** 真实宿主里的三类机制：
 
 - **事件桥接**：`oas-submit`、`oas-sort-change` 等自定义事件在两种框架里的监听方式与差异
-- **属性通道**：attribute（声明式字符串）vs property（宿主赋值）两条路径，含 Vue 的 `:prefix.attr` 强制 attribute 等坑
-- **主题联动**：宿主写根节点 `data-theme`，`oas-*` 组件随 token 变色（dark / high-contrast）
+- **属性通道**：attribute（声明式字符串）vs property（宿主赋值）两条路径；`prefix` 等撞名只读原生 property 的属性，组件已 override 反射兜底（见下），宿主直接写即可
+- **主题联动**：宿主写 `document.documentElement` 的 `data-theme`，`oas-*` 组件随 token 变色（dark / high-contrast）
 
 ## 跑法
 
@@ -27,7 +27,7 @@ React / Vue 各维护一份页面，**结构完全一致**（同一份清单，d
 2. 表单（oas-submit 桥接）
 3. 表格（attribute 通道 + sort-change 桥接）
 4. 消息（命令式 API）
-5. 框架特有块（React：属性传递通道；Vue：`:prefix.attr` 强制 attribute）
+5. 属性传递通道（select options JSON + input prefix）
 
 某一端异常时对照另一端即可定位是「框架桥接问题」还是「组件自身问题」。
 
@@ -37,6 +37,7 @@ React / Vue 各维护一份页面，**结构完全一致**（同一份清单，d
 - **Vue 3 原生支持**：`@oas-submit`、`@oas-sort-change` 直接可用。
 - **跨 shadow 无 submit 语义**：oas-form 内部 `<form>` 靠 submit 事件触发，shadow DOM 外的 oas-button 点击不会自动提交，需显式 `shadowRoot.querySelector('form').requestSubmit()`。
 - **消息 API**：`window.OASMessage` 不存在，必须 `import { message } from '@oas-ui/ui'` 后调用 `message.success(...)`。
+- **`prefix` 撞名原生只读 property 已由组件兜底**：DOM `Element.prototype.prefix` 是命名空间前缀只读 getter，Vue 宿主 `key in el` 判 prop 会误判走 property 赋值撞只读。组件（oas-input / oas-statistic / oas-mentions）已 `override get/set prefix` 反射到 attribute——Vue 写 `:prefix`、React 写 `prefix`、原生写 `prefix` 全部直接生效，**不再需要 `:prefix.attr`**（该写法是修复前的过时 workaround，无害但不必再教）。
 
 ## 缓存说明
 

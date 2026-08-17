@@ -7,8 +7,8 @@
           <p>
             {{
               isEn
-                ? 'A framework-agnostic Web Components UI library. One set of components, running everywhere — for any host.'
-                : '框架无关的 Web Components UI 组件库。一套组件，到处运行——适配任何宿主。'
+                ? 'A framework-agnostic Web Components UI library. One set of components, running everywhere — for plain HTML and most frameworks.'
+                : '框架无关的 Web Components UI 组件库。一套组件，到处运行——适配原生 HTML 和常见框架。'
             }}
           </p>
         </div>
