@@ -102,13 +102,13 @@ function onSortChange(e: Event) {
     </div>
 
     <div class="demo-block">
-      <h3>Vue 3 属性传递通道（prefix 须 :prefix.attr）</h3>
+      <h3>Vue 3 属性传递通道</h3>
       <oas-select
         placeholder="请选择"
         options='[{"value":"a","label":"选项 A"},{"value":"b","label":"选项 B"}]'
         style="width: 220px"
       ></oas-select>
-      <oas-input :prefix.attr="'¥'" placeholder="金额" style="width: 180px"></oas-input>
+      <oas-input prefix="¥" placeholder="金额" style="width: 180px"></oas-input>
     </div>
   </div>
 </template>
