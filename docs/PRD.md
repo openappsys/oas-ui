@@ -541,9 +541,10 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 
 ---
 
-## v2.1 basic 族增强与官网首页 v2（已完成）
+## v2.1 basic 族组件增强（进行中）
 
 > 原「v2.0 能力补齐」规划的 tag/badge/space/compact 内容整体移入本版本，连同 button/button-group/icon 能力增强、floating 箭头、table 密度、官网首页改版。与既有版本互不冲突。
+> **剩余工作：divider / link / typography / kbd / label / visually-hidden 六件逐个能力深挖（逐项补齐能力缺口）。**
 
 ### 已交付内容
 
@@ -554,10 +555,11 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 - **官网首页 v2**：产品力展示方向（hero oas-table demo + 场景卡 + 代码速览 + 真实 perf 数据 + CTA），后迭代 H05 深色沉浸风格
 - **收尾**：button demo 自定义色改 WCAG AA 达标值（#047857/#be185d，组件契约不变——自定义色按原值渲染，文档补对比度提醒）+ a11y 门禁转绿
 
-### 验收标准（均已达成）
+### 验收标准
 
 - 新组件与增强 demo 进文档站（中英双版），覆盖各属性/事件/边界
-- 单测（2216）+ typecheck + build + e2e（chromium 全量 + firefox 抽样）全绿
+- 剩余六件（divider/link/typography/kbd/label/visually-hidden）完成能力深挖并补齐缺口
+- 单测 + typecheck + build + e2e 全绿
 
 ### 详细需求
 
