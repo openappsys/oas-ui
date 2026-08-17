@@ -4053,6 +4053,50 @@ test('input 内嵌前后缀 slot：空 slot 无 data-slot-*、动态增删同步
   expect(r.afterRemove.paddingRight).toBe(r.basePadding)
 })
 
+test('link 色板达标：预设名映射 -text 达标 token、自定义色原值渲染、type 语义色改指 text 变体', async ({
+  page,
+}) => {
+  // v2.1 link 色板对齐（设计期文字 token 模型）：预设亮色（gold 等）白底本色不达标，
+  // 预设名映射 --oas-preset-*-text 达标 token；自定义色值原值渲染（责任在宿主）；
+  // 存量隐患修复：type=success/warning/danger 文字色改指 -text 变体（此前 3.3:1 不达 AA）。
+  await page.goto('/components/link.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-link')
+  const r = await page.evaluate(() => {
+    const block = [...document.querySelectorAll('.demo-block')].find((b) =>
+      b.textContent?.includes('magenta'),
+    )
+    const color = (name: string) =>
+      getComputedStyle(
+        block!.querySelector(`oas-link[color="${name}"]`)!.shadowRoot!.querySelector('a')!,
+      ).color
+    const sem = [...document.querySelectorAll('.demo-block')].find((b) =>
+      b.textContent?.includes('主要链接'),
+    )
+    const typeColor = (t: string) =>
+      getComputedStyle(sem!.querySelector(`oas-link[type="${t}"]`)!.shadowRoot!.querySelector('a')!)
+        .color
+    const custom = document.querySelector('oas-link[color="#0e7490"]')
+    return {
+      gold: color('gold'),
+      geekblue: color('geekblue'),
+      purple: color('purple'),
+      success: typeColor('success'),
+      warning: typeColor('warning'),
+      custom: getComputedStyle(custom!.shadowRoot!.querySelector('a')!).color,
+    }
+  })
+  // light 下预设亮色取 -text 深色变体（gold 本色 #faad14 白底 1.9:1，text 变体 #94660c 5.04:1）
+  expect(r.gold).toBe('rgb(148, 102, 12)')
+  // 本色达标者保本色
+  expect(r.geekblue).toBe('rgb(47, 84, 235)')
+  expect(r.purple).toBe('rgb(114, 46, 209)')
+  // type 语义色改 -text 变体
+  expect(r.success).toBe('rgb(17, 129, 58)')
+  expect(r.warning).toBe('rgb(167, 92, 5)')
+  // 自定义色值原值渲染（不做改写）
+  expect(r.custom).toBe('rgb(14, 116, 144)')
+})
+
 test('divider 线型/缩进/间距档/strong：variant 驱动、dashed 布尔兼容、变量开口、vertical 撑满', async ({
   page,
 }) => {
@@ -4085,7 +4129,9 @@ test('divider 线型/缩进/间距档/strong：variant 驱动、dashed 布尔兼
     document.body.appendChild(wrap)
     // spacing 变量注入实测
     const spacing = mk({})
-    spacing.shadowRoot!.querySelector('.divider')!.style.setProperty('--oas-divider-spacing', '0px')
+    spacing
+      .shadowRoot!.querySelector<HTMLElement>('.divider')!
+      .style.setProperty('--oas-divider-spacing', '0px')
     await new Promise((res) => setTimeout(res, 100))
     const spacingMargin = getComputedStyle(spacing.shadowRoot!.querySelector('.divider')!).marginTop
     const doubleH = mk({ variant: 'double' })

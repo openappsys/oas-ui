@@ -75,10 +75,29 @@
 
 ## 自定义样式
 
-线宽、线色、间距、文字侧留空均可通过 CSS 变量定制：
+`color` 属性支持 11 个预设色名（明暗主题自动适配）或任意 CSS 色值（直接生效，优先于预设与默认）；线宽、间距、文字侧留空走 CSS 变量：
+
+<DemoBlock title="预设色板">
+  <oas-divider color="magenta">magenta</oas-divider>
+  <oas-divider color="red">red</oas-divider>
+  <oas-divider color="volcano">volcano</oas-divider>
+  <oas-divider color="orange">orange</oas-divider>
+  <oas-divider color="gold">gold</oas-divider>
+  <oas-divider color="lime">lime</oas-divider>
+  <oas-divider color="green">green</oas-divider>
+  <oas-divider color="cyan">cyan</oas-divider>
+  <oas-divider color="blue">blue</oas-divider>
+  <oas-divider color="geekblue">geekblue</oas-divider>
+  <oas-divider color="purple">purple</oas-divider>
+</DemoBlock>
+
+<DemoBlock title="自定义色值（优先于预设）">
+  <oas-divider color="#0e7490" dashed>青碧色虚线</oas-divider>
+  <oas-divider color="#7c3aed">紫色实线</oas-divider>
+</DemoBlock>
 
 <DemoBlock title="CSS 变量">
-  <oas-divider style="--oas-divider-color: var(--oas-color-primary); --oas-divider-spacing: 8px;">主色线 + 紧凑间距</oas-divider>
+  <oas-divider style="--oas-divider-spacing: 8px;">紧凑间距</oas-divider>
   <oas-divider content-position="left" style="--oas-divider-title-inset: 120px;">文字侧固定留空 120px</oas-divider>
   <oas-divider style="--oas-divider-width: 2px;">2px 粗线</oas-divider>
 </DemoBlock>
@@ -98,6 +117,7 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `color` | — | `string` | — |
 | `content-position` | 内容位置 | `DividerPosition` | `center` |
 | `dashed` | 虚线 | `boolean` | — |
 | `direction` | 方向 | `DividerDirection` | `horizontal` |

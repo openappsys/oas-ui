@@ -5,6 +5,34 @@ export type DividerPosition = 'left' | 'center' | 'right'
 export type DividerVariant = 'solid' | 'dashed' | 'dotted' | 'double'
 export type DividerSize = 'small' | 'medium' | 'large'
 
+/** 预设色板名（映射 --oas-preset-* token，color 属性支持按名引用；统一协议见 ui-spec §4.1） */
+export type DividerPresetColor =
+  | 'magenta'
+  | 'red'
+  | 'volcano'
+  | 'orange'
+  | 'gold'
+  | 'lime'
+  | 'green'
+  | 'cyan'
+  | 'blue'
+  | 'geekblue'
+  | 'purple'
+
+export const DIVIDER_PRESET_COLORS: readonly DividerPresetColor[] = [
+  'magenta',
+  'red',
+  'volcano',
+  'orange',
+  'gold',
+  'lime',
+  'green',
+  'cyan',
+  'blue',
+  'geekblue',
+  'purple',
+]
+
 const VALID_VARIANTS = ['solid', 'dashed', 'dotted', 'double'] as const
 const VALID_SIZES = ['small', 'medium', 'large'] as const
 
@@ -137,6 +165,7 @@ export class OASDivider extends OASElement {
       'middle',
       'size',
       'strong',
+      'color',
     ]
   }
 
@@ -209,6 +238,14 @@ export class OASDivider extends OASElement {
     el.classList.toggle('small', size === 'small')
     el.classList.toggle('large', size === 'large')
     el.classList.toggle('strong', this.hasAttr('strong'))
+    // color 统一协议：预设名解析 --oas-preset-* token；任意 CSS 色值直注入（优先即胜）；缺省清空回落边框 token
+    const color = this.getAttr('color', '')
+    if (color) {
+      const isPreset = (DIVIDER_PRESET_COLORS as readonly string[]).includes(color)
+      el.style.setProperty('--oas-divider-color', isPreset ? `var(--oas-preset-${color})` : color)
+    } else {
+      el.style.removeProperty('--oas-divider-color')
+    }
     el.setAttribute('aria-orientation', direction)
     const slot = el.querySelector('slot') as HTMLSlotElement | null
     el.classList.toggle('empty', !slot?.assignedNodes().length)

@@ -114,6 +114,21 @@
 
 ## 4. 暗色与主题
 
+### 4.1 `color` 属性统一协议（凡有颜色修饰的组件适用）
+
+凡组件提供颜色修饰能力，一律走 `color` 属性，按三级优先解析（高 → 低）：
+
+1. **任意 CSS 色值**（`#ff6b00` / `rgb(...)` / `rgba(...)` 等）：直接注入，立即生效——宿主显式给定值，优先即胜
+2. **11 预设名**：`magenta / red / volcano / orange / gold / lime / green / cyan / blue / geekblue / purple`，解析为 `var(--oas-preset-<name>)`（明暗主题各有一份 token，dark 自动适配）；非法名按普通色值处理（与 CSS 色值语法重合时按色值，否则忽略/告警按各组件惯例）
+3. 组件默认语义色（缺省不设色）
+
+配套约束：
+
+- 预设 token 全库唯一来源：`packages/theme/index.css` 的 `--oas-preset-*`（含 dark 变体），**组件不得自造色值**
+- 已覆盖组件：tag / badge（v2.0 起）、divider / link（v2.1 起）；后续组件按此协议补齐
+- 承载文字的色值（link/文字类）有 WCAG 责任：色值按原值渲染不自动改写，demo 示例色必须达标（AA 4.5:1），文档明示对比度由宿主负责
+- 与 CSS 变量开口并存：`color` 属性是语义化高频通道，`--oas-<组件>-color` 变量是主题级批量通道，两者都有效时属性注入的具体度更高
+
 - 所有颜色必须同时有 light/dark 值；新增组件必须验证双主题
 - 主题切换通过 `data-theme="dark"` 在根元素切换，组件无需感知（只读 CSS 变量）
 - 自定义主题：宿主覆盖 `--oas-color-*` 基础 token 即可，文档站出覆盖指南

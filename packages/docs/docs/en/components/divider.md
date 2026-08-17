@@ -75,10 +75,29 @@ A vertical divider stretches to the full row height inside flex/grid containers;
 
 ## Custom styling
 
-Line width, color, spacing and the title-side gap are customizable via CSS variables:
+The `color` attribute accepts 11 preset names (auto-adapting to light/dark themes) or any CSS color value (takes effect immediately, overriding presets and defaults); line width, spacing and the title-side gap go through CSS variables:
+
+<DemoBlock title="Preset palette">
+  <oas-divider color="magenta">magenta</oas-divider>
+  <oas-divider color="red">red</oas-divider>
+  <oas-divider color="volcano">volcano</oas-divider>
+  <oas-divider color="orange">orange</oas-divider>
+  <oas-divider color="gold">gold</oas-divider>
+  <oas-divider color="lime">lime</oas-divider>
+  <oas-divider color="green">green</oas-divider>
+  <oas-divider color="cyan">cyan</oas-divider>
+  <oas-divider color="blue">blue</oas-divider>
+  <oas-divider color="geekblue">geekblue</oas-divider>
+  <oas-divider color="purple">purple</oas-divider>
+</DemoBlock>
+
+<DemoBlock title="Custom color values (highest priority)">
+  <oas-divider color="#0e7490" dashed>Teal dashed</oas-divider>
+  <oas-divider color="#7c3aed">Purple solid</oas-divider>
+</DemoBlock>
 
 <DemoBlock title="CSS variables">
-  <oas-divider style="--oas-divider-color: var(--oas-color-primary); --oas-divider-spacing: 8px;">Primary color + compact spacing</oas-divider>
+  <oas-divider style="--oas-divider-spacing: 8px;">Compact spacing</oas-divider>
   <oas-divider content-position="left" style="--oas-divider-title-inset: 120px;">Fixed 120px gap on the title side</oas-divider>
   <oas-divider style="--oas-divider-width: 2px;">2px thick line</oas-divider>
 </DemoBlock>
@@ -98,6 +117,7 @@ Line width, color, spacing and the title-side gap are customizable via CSS varia
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `color` | — | `string` | — |
 | `content-position` | Content position | `DividerPosition` | `center` |
 | `dashed` | Dashed | `boolean` | — |
 | `direction` | Direction | `DividerDirection` | `horizontal` |
