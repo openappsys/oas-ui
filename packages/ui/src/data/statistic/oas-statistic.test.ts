@@ -89,4 +89,42 @@ describe('OASStatistic', () => {
     el.setAttribute('value', '200.55')
     expect(valueEl(el).textContent).toBe('200.6')
   })
+
+  // ---- slot 内容分发（prefix / suffix slot，attribute 通道保留为 fallback） ----
+
+  it('无 slot 分发时回落 attribute 文本（fallback 渲染，现状行为不变）', () => {
+    const el = mount({ value: '12', prefix: '¥', suffix: '元' })
+    const prefixSlot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="prefix"]')!
+    const suffixSlot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="suffix"]')!
+    expect(prefixSlot.assignedNodes().length).toBe(0)
+    expect(suffixSlot.assignedNodes().length).toBe(0)
+    expect(text(el)).toContain('¥')
+    expect(text(el)).toContain('元')
+  })
+
+  it('slot 分发内容替换 fallback（attribute 文本不再渲染，分发优先）', async () => {
+    const el = mount({ value: '12', prefix: '¥' })
+    const icon = document.createElement('span')
+    icon.textContent = '💰'
+    icon.setAttribute('slot', 'prefix')
+    el.appendChild(icon)
+    await new Promise((r) => setTimeout(r, 0))
+    const prefixSlot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="prefix"]')!
+    expect(prefixSlot.assignedNodes()).toContain(icon)
+    expect(prefixSlot.assignedNodes().length).toBe(1)
+    // fallback 文本仍写入（分发时不渲染，更新无害）
+    const fallback = el.shadowRoot!.querySelector<HTMLElement>('[part="prefix"] [data-fallback]')!
+    expect(fallback.textContent).toBe('¥')
+  })
+
+  it('suffix slot 同样支持分发', async () => {
+    const el = mount({ value: '12', suffix: '元' })
+    const tag = document.createElement('span')
+    tag.textContent = 'K'
+    tag.setAttribute('slot', 'suffix')
+    el.appendChild(tag)
+    await new Promise((r) => setTimeout(r, 0))
+    const suffixSlot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="suffix"]')!
+    expect(suffixSlot.assignedNodes()).toContain(tag)
+  })
 })

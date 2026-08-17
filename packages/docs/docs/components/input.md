@@ -140,6 +140,20 @@ onMounted(() => {
 })
 </script>
 
+## 复杂前后缀（slot 分发）
+
+<DemoBlock title="slot=prefix / slot=suffix">
+  <oas-input placeholder="搜索用户名" style="width: 240px">
+    <oas-icon slot="prefix" name="search"></oas-icon>
+  </oas-input>
+  <oas-input placeholder="手机号" style="width: 240px">
+    <span slot="suffix">📱</span>
+  </oas-input>
+  <oas-input placeholder="金额" value="1280" prefix="¥" suffix=".00" style="width: 240px"></oas-input>
+</DemoBlock>
+
+简单文本用 `prefix` / `suffix` 属性；复杂内容（图标/按钮/徽标等）用同名 `slot="prefix"` / `slot="suffix"` 分发，slot 有内容时原生替换属性文本。
+
 ## API
 
 ### 属性
@@ -170,3 +184,10 @@ onMounted(() => {
 | `oas-clear` | 点击清除，`detail: { originalEvent }` |
 | `oas-enter` | 按 Enter（非输入法组合），`detail: { value }` |
 | `oas-input` | 输入中，`detail: { value }` |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `prefix` | 内嵌前置内容（图标/按钮等复杂内容，分发时优先于 `prefix` 属性文本）；简单文本用 `prefix` 属性即可 |
+| `suffix` | 内嵌后置内容（图标/按钮等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可 |

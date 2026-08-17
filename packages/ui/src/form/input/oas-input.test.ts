@@ -305,6 +305,87 @@ describe('OASInput', () => {
     input(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }))
     expect(fired).toBe(false)
   })
+
+  // ---- slot 内容分发（prefix / suffix slot，attribute 通道保留为 fallback） ----
+
+  function slotOf(el: OASInput, name: string): HTMLSlotElement {
+    return el.shadowRoot!.querySelector<HTMLSlotElement>(`slot[name="${name}"]`)!
+  }
+
+  it('无 slot 分发时回落 attribute 文本（fallback 渲染，现状行为不变）', () => {
+    const el = mount({ prefix: '$', suffix: '元' })
+    expect(slotOf(el, 'prefix').assignedNodes().length).toBe(0)
+    expect(slotOf(el, 'suffix').assignedNodes().length).toBe(0)
+    expect(part(el, 'prefix').textContent).toContain('$')
+    expect(part(el, 'suffix').textContent).toContain('元')
+    expect(part(el, 'prefix').hidden).toBe(false)
+    expect(el.hasAttribute('data-slot-prefix')).toBe(false)
+    expect(el.hasAttribute('data-slot-suffix')).toBe(false)
+  })
+
+  it('slot 分发内容替换 fallback，host 同步 data-slot-prefix', async () => {
+    const el = mount({ prefix: '$' })
+    const icon = document.createElement('span')
+    icon.textContent = 'ICON'
+    icon.setAttribute('slot', 'prefix')
+    el.appendChild(icon)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(slotOf(el, 'prefix').assignedNodes()).toContain(icon)
+    expect(part(el, 'prefix').hidden).toBe(false)
+    expect(el.hasAttribute('data-slot-prefix')).toBe(true)
+    // fallback 文本仍在树中（分发时不渲染，attribute 文本被替换）
+    const fallback = el.shadowRoot!.querySelector<HTMLElement>('[part="prefix"] [data-fallback]')!
+    expect(fallback.textContent).toBe('$')
+  })
+
+  it('slot 有内容时 attribute 文本变更只更新 fallback，分发内容不受影响', async () => {
+    const el = mount({ prefix: '$' })
+    const icon = document.createElement('span')
+    icon.textContent = 'ICON'
+    icon.setAttribute('slot', 'prefix')
+    el.appendChild(icon)
+    await new Promise((r) => setTimeout(r, 0))
+    el.setAttribute('prefix', '¥')
+    expect(slotOf(el, 'prefix').assignedNodes()).toContain(icon)
+    expect(part(el, 'prefix').hidden).toBe(false)
+    expect(el.hasAttribute('data-slot-prefix')).toBe(true)
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[part="prefix"] [data-fallback]')!.textContent,
+    ).toBe('¥')
+  })
+
+  it('动态增删 slot 内容：slotchange 后显隐与 data-slot-prefix 同步', async () => {
+    const el = mount()
+    expect(part(el, 'prefix').hidden).toBe(true)
+    expect(el.hasAttribute('data-slot-prefix')).toBe(false)
+    const icon = document.createElement('span')
+    icon.textContent = 'ICON'
+    icon.setAttribute('slot', 'prefix')
+    el.appendChild(icon)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(part(el, 'prefix').hidden).toBe(false)
+    expect(el.hasAttribute('data-slot-prefix')).toBe(true)
+    el.removeChild(icon)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(part(el, 'prefix').hidden).toBe(true)
+    expect(el.hasAttribute('data-slot-prefix')).toBe(false)
+  })
+
+  it('suffix slot 同样驱动显隐与 data-slot-suffix', async () => {
+    const el = mount()
+    const span = document.createElement('span')
+    span.textContent = 'SUFFIX'
+    span.setAttribute('slot', 'suffix')
+    el.appendChild(span)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(slotOf(el, 'suffix').assignedNodes()).toContain(span)
+    expect(part(el, 'suffix').hidden).toBe(false)
+    expect(el.hasAttribute('data-slot-suffix')).toBe(true)
+    el.removeChild(span)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.hasAttribute('data-slot-suffix')).toBe(false)
+    expect(part(el, 'suffix').hidden).toBe(true)
+  })
 })
 
 describe('OASInput focus 委托', () => {

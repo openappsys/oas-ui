@@ -140,6 +140,20 @@ onMounted(() => {
 })
 </script>
 
+## Complex Affixes (slot distribution)
+
+<DemoBlock title="slot=prefix / slot=suffix">
+  <oas-input placeholder="Search username" style="width: 240px">
+    <oas-icon slot="prefix" name="search"></oas-icon>
+  </oas-input>
+  <oas-input placeholder="Phone number" style="width: 240px">
+    <span slot="suffix">📱</span>
+  </oas-input>
+  <oas-input placeholder="Amount" value="1280" prefix="¥" suffix=".00" style="width: 240px"></oas-input>
+</DemoBlock>
+
+Use the `prefix` / `suffix` attributes for simple text; for complex content (icons/buttons/badges etc.) distribute via the same-named `slot="prefix"` / `slot="suffix"` slots — distributed content natively replaces the attribute text.
+
 ## API
 
 ### Attributes
@@ -170,3 +184,10 @@ onMounted(() => {
 | `oas-clear` | Cleared by click, `detail: { originalEvent }` |
 | `oas-enter` | Enter pressed (not IME composition), `detail: { value }` |
 | `oas-input` | While typing, `detail: { value }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `prefix` | Inline leading content (icons/buttons etc.; distributed content takes precedence over the `prefix` attribute text). For simple text use the `prefix` attribute |
+| `suffix` | Inline trailing content (icons/buttons etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute |

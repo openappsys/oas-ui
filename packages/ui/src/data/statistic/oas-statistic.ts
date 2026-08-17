@@ -53,9 +53,9 @@ export class OASStatistic extends OASElement {
     return `
       <style>${STYLE}</style>
       <div class="statistic" part="statistic">
-        <span class="prefix" part="prefix"></span>
+        <span class="prefix" part="prefix"><slot name="prefix"><span class="affix-fallback" data-fallback></span></slot></span>
         <span class="value" part="value"></span>
-        <span class="suffix" part="suffix"></span>
+        <span class="suffix" part="suffix"><slot name="suffix"><span class="affix-fallback" data-fallback></span></slot></span>
       </div>
     `
   }
@@ -84,9 +84,11 @@ export class OASStatistic extends OASElement {
     const suffixEl = this.shadow.querySelector<HTMLElement>('[part="suffix"]')
     if (!prefixEl || !valueEl || !suffixEl) return
 
-    // 增量更新前缀/后缀文本（不重建骨架占位外的结构）
-    prefixEl.textContent = this.getAttr('prefix', '')
-    suffixEl.textContent = this.getAttr('suffix', '')
+    // 增量更新前缀/后缀 fallback 文本（slot 有分发时不渲染，更新无害；不重建骨架占位外的结构）
+    const prefixFallback = this.shadow.querySelector<HTMLElement>('[part="prefix"] [data-fallback]')
+    const suffixFallback = this.shadow.querySelector<HTMLElement>('[part="suffix"] [data-fallback]')
+    if (prefixFallback) prefixFallback.textContent = this.getAttr('prefix', '')
+    if (suffixFallback) suffixFallback.textContent = this.getAttr('suffix', '')
 
     if (this.hasAttr('loading')) {
       valueEl.replaceChildren(this.buildSkeleton())

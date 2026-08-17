@@ -38,6 +38,19 @@
 
 字号默认固定为 `--oas-font-size-lg`（16px，不随外层变化），可用 CSS 变量 `--oas-statistic-font` 显式定制（如 `32px`）。
 
+## 复杂前后缀（slot 分发）
+
+<DemoBlock title="slot=prefix / slot=suffix">
+  <oas-statistic value="8846">
+    <oas-tag slot="prefix" type="primary">总收入</oas-tag>
+  </oas-statistic>
+  <oas-statistic value="99.9" precision="1">
+    <span slot="suffix">完成率</span>
+  </oas-statistic>
+</DemoBlock>
+
+简单文本用 `prefix` / `suffix` 属性；复杂内容（图标/标签/徽标等）用同名 `slot="prefix"` / `slot="suffix"` 分发，slot 有内容时原生替换属性文本。
+
 ## API
 
 ### 属性
@@ -50,5 +63,12 @@
 | `prefix` | 前后缀文案 | `string` | — |
 | `suffix` | 前后缀文案 | `string` | — |
 | `value` | 数值（数字字符串） | `string` | `0` |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `prefix` | 前置内容（图标/标签等复杂内容，分发时优先于 `prefix` 属性文本）；简单文本用 `prefix` 属性即可 |
+| `suffix` | 后置内容（图标/标签等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可 |
 
 无事件（纯展示）。

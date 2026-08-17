@@ -3999,3 +3999,56 @@ test('table size 密度档位：small/medium/large 三档 padding+字号阶梯�
   })
   expect(r.overridePy, '--oas-table-cell-padding-block 覆盖 small 档').toBe('20px')
 })
+
+// 回归：input prefix/suffix slot 空 slot 时不得产生 data-slot-*（曾用 assignedNodes({flatten:true})，
+// 空 slot 扁平化会包含 fallback 子节点 → 恒判有内容 → host 残留 data-slot-suffix、input 多出右内边距）
+test('input 内嵌前后缀 slot：空 slot 无 data-slot-*、动态增删同步（flatten fallback 恒真 bug 回归）', async ({
+  page,
+}) => {
+  await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-input')
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('oas-input')
+    el.setAttribute('placeholder', 'reg-slot')
+    document.body.appendChild(el)
+    await new Promise((res) => setTimeout(res, 200))
+    const shadow = el.shadowRoot!
+    const basePadding = getComputedStyle(shadow.querySelector('input')!).paddingRight
+    const q = (sel: string) => shadow.querySelector<HTMLElement>(sel)!
+    const empty = {
+      dataSlotPrefix: el.hasAttribute('data-slot-prefix'),
+      dataSlotSuffix: el.hasAttribute('data-slot-suffix'),
+      prefixHidden: q('[part="prefix"]').hidden,
+      suffixHidden: q('[part="suffix"]').hidden,
+    }
+    const sp = document.createElement('span')
+    sp.textContent = 'S'
+    sp.setAttribute('slot', 'suffix')
+    el.appendChild(sp)
+    await new Promise((res) => setTimeout(res, 200))
+    const withSuffix = {
+      dataSlotSuffix: el.hasAttribute('data-slot-suffix'),
+      suffixHidden: q('[part="suffix"]').hidden,
+      paddingRight: getComputedStyle(q('input')).paddingRight,
+    }
+    el.removeChild(sp)
+    await new Promise((res) => setTimeout(res, 200))
+    const afterRemove = {
+      dataSlotSuffix: el.hasAttribute('data-slot-suffix'),
+      suffixHidden: q('[part="suffix"]').hidden,
+      paddingRight: getComputedStyle(q('input')).paddingRight,
+    }
+    el.remove()
+    return { basePadding, empty, withSuffix, afterRemove }
+  })
+  expect(r.empty.dataSlotPrefix).toBe(false)
+  expect(r.empty.dataSlotSuffix).toBe(false)
+  expect(r.empty.prefixHidden).toBe(true)
+  expect(r.empty.suffixHidden).toBe(true)
+  expect(r.withSuffix.dataSlotSuffix).toBe(true)
+  expect(r.withSuffix.suffixHidden).toBe(false)
+  expect(r.withSuffix.paddingRight).not.toBe(r.basePadding)
+  expect(r.afterRemove.dataSlotSuffix).toBe(false)
+  expect(r.afterRemove.suffixHidden).toBe(true)
+  expect(r.afterRemove.paddingRight).toBe(r.basePadding)
+})

@@ -1123,7 +1123,14 @@
         "detail": "{ originalEvent: new MouseEvent('click') }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": "prefix"
+      },
+      {
+        "name": "suffix"
+      }
+    ],
     "unresolved": []
   },
   "oas-textarea": {
@@ -5544,7 +5551,14 @@
       }
     ],
     "events": [],
-    "slots": [],
+    "slots": [
+      {
+        "name": "prefix"
+      },
+      {
+        "name": "suffix"
+      }
+    ],
     "unresolved": []
   },
   "oas-ellipsis": {
