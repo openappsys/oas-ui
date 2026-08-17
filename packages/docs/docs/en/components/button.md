@@ -170,10 +170,12 @@ Setting `href` renders a native link (`<a>`); `target` controls how it opens (`_
 
 Color priority: `--oas-button-bg` (host-injected CSS variable, gradients allowed) > `color` attribute > `type` semantic color > default gray. In `outlined` / `filled` / `dashed` / `text` variants, `color` tints the border/text/light background; for solid buttons the text color is picked black or white by background luminance (stays readable in dark mode).
 
+Custom color values are rendered as-is (never rewritten) — make sure the text/background contrast meets WCAG AA (4.5:1).
+
 <DemoBlock title="Custom color">
   <oas-button color="#7c3aed">Purple solid</oas-button>
-  <oas-button color="#0e9f6e" variant="outlined">Green outlined</oas-button>
-  <oas-button color="#db2777" variant="filled">Pink filled</oas-button>
+  <oas-button color="#047857" variant="outlined">Green outlined</oas-button>
+  <oas-button color="#be185d" variant="filled">Pink filled</oas-button>
 </DemoBlock>
 
 ## Press feedback

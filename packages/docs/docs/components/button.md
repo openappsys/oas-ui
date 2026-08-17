@@ -170,10 +170,12 @@
 
 配色优先级：`--oas-button-bg`（宿主注入 CSS 变量，可放渐变）> `color` 属性 > `type` 语义色 > 默认灰底。`outlined` / `filled` / `dashed` / `text` 形态下 `color` 染边框/文字/浅底；实心形态的文字色按底色亮度自动取黑/白（暗色主题同样可读）。
 
+自定义色值按原值渲染（不自动改写），请自行确保文字与底色对比度达标（WCAG AA 4.5:1）。
+
 <DemoBlock title="自定义颜色">
   <oas-button color="#7c3aed">紫色实底</oas-button>
-  <oas-button color="#0e9f6e" variant="outlined">绿色描边</oas-button>
-  <oas-button color="#db2777" variant="filled">粉色浅底</oas-button>
+  <oas-button color="#047857" variant="outlined">绿色描边</oas-button>
+  <oas-button color="#be185d" variant="filled">粉色浅底</oas-button>
 </DemoBlock>
 
 ## 按下反馈
