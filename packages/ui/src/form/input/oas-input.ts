@@ -150,20 +150,25 @@ input:disabled:hover {
   display: none;
 }
 
-/* 有前缀/图标时 input 左侧留位，有后缀/图标/可清空时右侧留位 */
+/* 有前缀/图标时 input 左侧留位，有后缀/图标/可清空时右侧留位。
+   slot 分发（data-slot-*）与 attribute（prefix/suffix）两条通道等价驱动布局 */
 :host([prefix]) input,
+:host([data-slot-prefix]) input,
 :host([prefix-icon]) input {
   padding-left: var(--oas-space-8, 40px);
 }
-:host([prefix][prefix-icon]) input {
+:host([prefix][prefix-icon]) input,
+:host([data-slot-prefix][prefix-icon]) input {
   padding-left: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([suffix]) input,
+:host([data-slot-suffix]) input,
 :host([suffix-icon]) input,
 :host([clearable]) input {
   padding-right: var(--oas-space-8, 40px);
 }
 :host([clearable][suffix]) input,
+:host([clearable][data-slot-suffix]) input,
 :host([clearable][suffix-icon]) input {
   padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
@@ -174,10 +179,12 @@ input:disabled:hover {
 }
 :host([show-password][clearable]) input,
 :host([show-password][suffix]) input,
+:host([show-password][data-slot-suffix]) input,
 :host([show-password][suffix-icon]) input {
   padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([show-password][clearable][suffix]) input,
+:host([show-password][clearable][data-slot-suffix]) input,
 :host([show-password][clearable][suffix-icon]) input {
   padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px) + var(--oas-space-5, 24px));
 }
@@ -321,9 +328,9 @@ export class OASInput extends OASElement {
           <span class="addon" part="prepend" hidden></span>
           <span class="inner" part="inner">
             <span class="affix-icon" part="prefix-icon" hidden></span>
-            <span class="affix" part="prefix" hidden></span>
+            <span class="affix" part="prefix" hidden><slot name="prefix"><span class="affix-fallback" data-fallback></span></slot></span>
             <input part="input" />
-            <span class="affix" part="suffix" hidden></span>
+            <span class="affix" part="suffix" hidden><slot name="suffix"><span class="affix-fallback" data-fallback></span></slot></span>
             <span class="affix-icon" part="suffix-icon" hidden></span>
             <button class="clear-btn" part="clear" hidden>
               <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
@@ -375,6 +382,14 @@ export class OASInput extends OASElement {
       this.syncPasswordReveal()
       this.inputEl.focus()
     })
+
+    // 内嵌前后缀 slot：light DOM 分发内容增减时同步显隐与 host 布局标记。
+    // bind() 在 render/hydrate 二选一路径中各只执行一次，不存在重复注册；
+    // 初始分发状态由 connectedCallback 调用的 update() → syncAffixes() 读取。
+    const slotPrefix = this.shadow.querySelector<HTMLSlotElement>('slot[name="prefix"]')
+    const slotSuffix = this.shadow.querySelector<HTMLSlotElement>('slot[name="suffix"]')
+    slotPrefix?.addEventListener('slotchange', () => this.syncAffixes())
+    slotSuffix?.addEventListener('slotchange', () => this.syncAffixes())
   }
 
   protected override render(): void {
@@ -481,9 +496,11 @@ export class OASInput extends OASElement {
     setAddon(append, this.getAttr('addon-after', ''))
   }
 
-  /** 内嵌前后缀：prefix/suffix 文案 + prefix-icon/suffix-icon 图标（iconRegistry 内联 SVG） */
+  /** 内嵌前后缀：prefix/suffix 文案（attribute 文本为 slot fallback）+ prefix-icon/suffix-icon 图标（iconRegistry 内联 SVG）。
+   *  attribute 与 slot 双通道并行：slot 有分发时原生替换 fallback（零 JS 优先级判断），attribute 文本只写 fallback 不直接覆盖 span
+   *  （避免误清 slot 节点）；显隐 = 有 attribute 文本 || slot 有分发内容；slot 分发时给 host 打 data-slot-prefix/suffix 驱动 input 内边距。 */
   private syncAffixes(): void {
-    const render = (part: string, text: string, iconName: string): void => {
+    const renderIcon = (part: string, iconName: string): void => {
       const el = this.shadow.querySelector<HTMLElement>(`[part="${part}"]`)
       if (!el) return
       const content = iconName ? iconRegistry[iconName as IconName] : undefined
@@ -500,19 +517,32 @@ export class OASInput extends OASElement {
         svg.setAttribute('focusable', 'false')
         svg.innerHTML = content
         el.appendChild(svg)
-      } else if (text !== '') {
-        el.hidden = false
-        el.removeAttribute('aria-hidden')
-        el.textContent = text
       } else {
         el.hidden = true
+        el.removeAttribute('aria-hidden')
         el.textContent = ''
       }
     }
-    render('prefix-icon', '', this.getAttr('prefix-icon', ''))
-    render('prefix', this.getAttr('prefix', ''), '')
-    render('suffix-icon', '', this.getAttr('suffix-icon', ''))
-    render('suffix', this.getAttr('suffix', ''), '')
+    const renderAffix = (part: string, text: string, slotMark: string): void => {
+      const el = this.shadow.querySelector<HTMLElement>(`[part="${part}"]`)
+      if (!el) return
+      const slotEl = el.querySelector<HTMLSlotElement>('slot')
+      const fallback = el.querySelector<HTMLElement>('[data-fallback]')
+      if (fallback) fallback.textContent = text
+      // 注意不能用 flatten:true——空 slot 的扁平化结果会包含 fallback 子节点，导致恒判有内容
+      const slotHasContent =
+        slotEl !== null &&
+        slotEl.assignedNodes().some((n) => n.nodeType === 1 || (n.textContent ?? '').trim() !== '')
+      const visible = text !== '' || slotHasContent
+      el.hidden = !visible
+      // host 布局联动：slot 有内容时打标记驱动 input 内边距选择器（CSS :host([data-slot-*])）
+      if (slotHasContent) this.setAttribute(slotMark, '')
+      else this.removeAttribute(slotMark)
+    }
+    renderIcon('prefix-icon', this.getAttr('prefix-icon', ''))
+    renderAffix('prefix', this.getAttr('prefix', ''), 'data-slot-prefix')
+    renderIcon('suffix-icon', this.getAttr('suffix-icon', ''))
+    renderAffix('suffix', this.getAttr('suffix', ''), 'data-slot-suffix')
   }
 
   /** label 点击聚焦委托：把焦点交给 shadow 内主输入（配合 oas-form-item 的 label 点击代理） */

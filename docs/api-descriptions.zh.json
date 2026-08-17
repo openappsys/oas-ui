@@ -702,7 +702,10 @@
       "oas-enter": "按 Enter（非输入法组合），`detail: { value }`",
       "oas-input": "输入中，`detail: { value }`"
     },
-    "slots": {}
+    "slots": {
+      "prefix": "内嵌前置内容（图标/按钮等复杂内容，分发时优先于 `prefix` 属性文本）；简单文本用 `prefix` 属性即可",
+      "suffix": "内嵌后置内容（图标/按钮等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可"
+    }
   },
   "oas-input-number": {
     "attrs": {
@@ -1215,7 +1218,10 @@
       "value": "数值（数字字符串）"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "prefix": "前置内容（图标/标签等复杂内容，分发时优先于 `prefix` 属性文本）；简单文本用 `prefix` 属性即可",
+      "suffix": "后置内容（图标/标签等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可"
+    }
   },
   "oas-steps": {
     "attrs": {

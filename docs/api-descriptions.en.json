@@ -702,7 +702,10 @@
       "oas-enter": "Enter pressed (not IME composition), `detail: { value }`",
       "oas-input": "While typing, `detail: { value }`"
     },
-    "slots": {}
+    "slots": {
+      "prefix": "Inline leading content (icons/buttons etc.; distributed content takes precedence over the `prefix` attribute text). For simple text use the `prefix` attribute",
+      "suffix": "Inline trailing content (icons/buttons etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute"
+    }
   },
   "oas-input-number": {
     "attrs": {
@@ -1215,7 +1218,10 @@
       "value": "Numeric value (number string)"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "prefix": "Leading content (icons/tags etc.; distributed content takes precedence over the `prefix` attribute text). For simple text use the `prefix` attribute",
+      "suffix": "Trailing content (icons/tags etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute"
+    }
   },
   "oas-steps": {
     "attrs": {

@@ -38,6 +38,19 @@ Displays statistical values with `Intl.NumberFormat` thousands separators and pr
 
 Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow the outer context; override with the CSS variable `--oas-statistic-font` (e.g. `32px`).
 
+## Complex Prefix / Suffix (slot distribution)
+
+<DemoBlock title="slot=prefix / slot=suffix">
+  <oas-statistic value="8846">
+    <oas-tag slot="prefix" type="primary">Total income</oas-tag>
+  </oas-statistic>
+  <oas-statistic value="99.9" precision="1">
+    <span slot="suffix">completion</span>
+  </oas-statistic>
+</DemoBlock>
+
+Use the `prefix` / `suffix` attributes for simple text; for complex content (icons/tags/badges etc.) distribute via the same-named `slot="prefix"` / `slot="suffix"` slots — distributed content natively replaces the attribute text.
+
 ## API
 
 ### Attributes
@@ -50,5 +63,12 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 | `prefix` | Prefix / suffix text | `string` | — |
 | `suffix` | Prefix / suffix text | `string` | — |
 | `value` | Numeric value (number string) | `string` | `0` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `prefix` | Leading content (icons/tags etc.; distributed content takes precedence over the `prefix` attribute text). For simple text use the `prefix` attribute |
+| `suffix` | Trailing content (icons/tags etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute |
 
 No events (purely presentational).
