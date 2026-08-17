@@ -10,3 +10,7 @@ test-results/
 *.tsbuildinfo
 **/.vitepress/cache/
 **/.vitepress/dist/
+
+# playground 构建产物（hash 文件名，可从源码再生产）
+packages/playground/dist-react/
+packages/playground/dist-vue/
