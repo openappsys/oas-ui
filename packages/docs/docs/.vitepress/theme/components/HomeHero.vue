@@ -1,6 +1,7 @@
 <template>
   <section class="home-hero">
     <div class="hh-grid"></div>
+    <div class="hh-breathe"></div>
     <div class="hh-inner">
       <div class="hh-eyebrow">
         <span>OAS-UI</span>
@@ -91,8 +92,15 @@ function goGithub(): void {
   pointer-events: none;
   background:
     radial-gradient(52% 46% at 32% 24%, var(--home-hero-glow), transparent 62%),
-    radial-gradient(44% 42% at 72% 32%, var(--home-glow-soft), transparent 62%),
-    radial-gradient(40% 40% at 55% 82%, var(--home-hero-glow), transparent 60%);
+    radial-gradient(44% 42% at 72% 32%, var(--home-glow-soft), transparent 62%);
+}
+/* 第三颗光晕（底部中央，scroll 提示附近）单独呼吸，其余两颗静止 */
+.hh-breathe {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(40% 40% at 55% 82%, var(--home-hero-glow), transparent 60%);
+  animation: home-breathe 7s ease-in-out infinite;
 }
 .hh-inner {
   position: relative;

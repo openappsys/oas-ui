@@ -1,5 +1,5 @@
 <template>
-  <footer class="home-footer">
+  <footer class="home-section home-footer">
     <div class="hf-wrap">
       <div class="hf-grid">
         <div class="hf-brand">
@@ -50,7 +50,6 @@ const isEn = computed(() => lang.value.startsWith('en'))
 
 <style scoped>
 .home-footer {
-  border-top: 1px solid var(--home-border);
   padding: 52px 0 56px;
   background: var(--home-bg);
 }

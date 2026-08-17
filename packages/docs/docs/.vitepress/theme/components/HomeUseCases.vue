@@ -1,5 +1,5 @@
 <template>
-  <section class="home-cases">
+  <section class="home-section home-cases">
     <div class="hc-wrap">
       <header class="hc-head home-reveal">
         <div class="hc-kicker">USE CASES</div>
@@ -86,7 +86,6 @@ const who = computed(() =>
 .home-cases {
   position: relative;
   padding: 96px 0;
-  border-top: 1px solid var(--home-border);
   background: var(--home-bg);
 }
 .home-cases::after {

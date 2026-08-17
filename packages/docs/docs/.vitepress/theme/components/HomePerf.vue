@@ -1,5 +1,5 @@
 <template>
-  <section class="home-perf">
+  <section class="home-section home-perf">
     <div class="hp-wrap">
       <header class="hp-head home-reveal">
         <div class="hp-kicker">NUMBERS, NOT SLOGANS</div>
@@ -51,7 +51,6 @@ const isEn = computed(() => lang.value.startsWith('en'))
 .home-perf {
   position: relative;
   padding: 96px 0;
-  border-top: 1px solid var(--home-border);
   background: var(--home-bg);
 }
 .home-perf::after {

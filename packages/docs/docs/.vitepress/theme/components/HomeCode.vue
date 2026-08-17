@@ -1,5 +1,5 @@
 <template>
-  <section class="home-code">
+  <section class="home-section home-code">
     <div class="hcode-wrap">
       <header class="hcode-head home-reveal">
         <div class="hcode-kicker">DROP-IN</div>
@@ -129,7 +129,6 @@ const bridges = computed(() =>
 .home-code {
   position: relative;
   padding: 96px 0;
-  border-top: 1px solid var(--home-border);
   background: var(--home-bg);
 }
 .home-code::after {

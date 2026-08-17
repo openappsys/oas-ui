@@ -43,6 +43,31 @@ html.dark {
   --home-ok: #4ade80;
 }
 
+/* 首页 section 分隔光带：中心品牌色微光、两侧淡出的 1px 渐变线，
+   替代纯色 border-top，统一各屏之间的视觉过渡 */
+.home-section {
+  position: relative;
+}
+.home-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(960px, 88%);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--oas-color-primary) 45%, transparent) 30%,
+    var(--oas-color-primary) 50%,
+    color-mix(in srgb, var(--oas-color-primary) 45%, transparent) 70%,
+    transparent
+  );
+  box-shadow: 0 0 18px 1px color-mix(in srgb, var(--oas-color-primary) 22%, transparent);
+  pointer-events: none;
+}
+
 /* 首页滚动入场：进入视口时 .in 上浮显现（尊重 prefers-reduced-motion） */
 .home-reveal {
   opacity: 0;
@@ -54,10 +79,26 @@ html.dark {
   opacity: 1;
   transform: none;
 }
+
+/* 光晕呼吸：hero 背景光晕缓慢明暗脉动（opacity，GPU 友好） */
+@keyframes home-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-reveal {
     opacity: 1;
     transform: none;
     transition: none;
+  }
+  /* 禁用 hero scroll 提示处呼吸光晕 */
+  .home-hero .hh-breathe {
+    animation: none !important;
   }
 }
