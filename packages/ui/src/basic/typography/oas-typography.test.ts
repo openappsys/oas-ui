@@ -209,7 +209,7 @@ describe('OAS typography', () => {
       const el = mount(OASText, { 'line-clamp': '2' }, '很长很长很长的文本')
       const span = el.shadowRoot!.querySelector('.text')!
       expect(span.classList.contains('line-clamp')).toBe(true)
-      expect(span.style.getPropertyValue('--oas-line-clamp')).toBe('2')
+      expect((span as HTMLElement).style.getPropertyValue('--oas-line-clamp')).toBe('2')
     })
     it('line-clamp 与 ellipsis 互斥（line-clamp 优先，ellipsis 失效）', () => {
       const el = mount(OASText, { ellipsis: '', 'line-clamp': '3' }, '长文本')

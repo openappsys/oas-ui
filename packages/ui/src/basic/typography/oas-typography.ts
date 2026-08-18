@@ -5,9 +5,9 @@ export type TextType = 'default' | 'secondary' | 'success' | 'warning' | 'danger
 const TYPE_COLOR: Record<TextType, string> = {
   default: 'var(--oas-color-text-primary)',
   secondary: 'var(--oas-color-text-secondary)',
-  success: 'var(--oas-color-success)',
-  warning: 'var(--oas-color-warning)',
-  danger: 'var(--oas-color-danger)',
+  success: 'var(--oas-color-success-text)',
+  warning: 'var(--oas-color-warning-text)',
+  danger: 'var(--oas-color-danger-text)',
   disabled: 'var(--oas-color-text-disabled)',
 }
 
@@ -209,10 +209,11 @@ function createTypography(
       this.actionsEl = this.shadow.querySelector('.actions')
       this.copyBtn = this.shadow.querySelector('.copy-btn')
       this.copyBtn?.addEventListener('click', () => this.handleCopy())
-      // actions slot 内容变化同步显隐
-      this.shadow
-        .querySelector('slot[name="actions"]')
-        ?.addEventListener('slotchange', () => this.update())
+      // actions slot 内容变化同步显隐；监听器注册 onCleanup 防断开泄漏
+      const actionsSlot = this.shadow.querySelector('slot[name="actions"]')
+      const onSlotChange = () => this.update()
+      actionsSlot?.addEventListener('slotchange', onSlotChange)
+      this.onCleanup(() => actionsSlot?.removeEventListener('slotchange', onSlotChange))
     }
 
     protected override render(): void {

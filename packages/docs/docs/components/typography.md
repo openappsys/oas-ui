@@ -10,7 +10,7 @@
   <oas-text type="success">成功文本</oas-text>
   <oas-text type="warning">警告文本</oas-text>
   <oas-text type="danger">危险文本</oas-text>
-  <oas-text type="disabled">禁用文本</oas-text>
+  <oas-text type="disabled" data-a11y-exempt>禁用文本</oas-text>
 </DemoBlock>
 
 <DemoBlock title="修饰样式">
@@ -24,8 +24,8 @@
 
 <DemoBlock title="文字深度（depth）">
   <oas-text depth="1">一档弱化（说明文字）</oas-text>
-  <oas-text depth="2">二档弱化（次要说明）</oas-text>
-  <oas-text depth="3">三档弱化（最次要）</oas-text>
+  <oas-text depth="2" data-a11y-exempt>二档弱化（次要说明）</oas-text>
+  <oas-text depth="3" data-a11y-exempt>三档弱化（最次要）</oas-text>
 </DemoBlock>
 
 <DemoBlock title="换标签（tag）">
