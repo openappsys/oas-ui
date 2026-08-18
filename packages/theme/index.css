@@ -127,8 +127,8 @@ html.dark {
   --oas-color-text-on-warning: #18181b;
   --oas-color-text-on-danger: #18181b;
   --oas-color-text-primary: #fafafa;
-  --oas-color-text-secondary: #a1a1aa;
-  --oas-color-text-disabled: #71717a;
+  --oas-color-text-secondary: #b8b8c0;
+  --oas-color-text-disabled: #8d8d95;
   --oas-color-border: #52525b;
   --oas-color-border-strong: #71717a;
   --oas-color-bg: #18181b;
@@ -149,21 +149,21 @@ html.dark {
   --oas-preset-geekblue: #597ef7;
   --oas-preset-purple: #9254de;
   /* 预设文字变体 dark：本色已对深底达标（purple 略提亮），与本色同值即达标 */
-  --oas-preset-magenta-text: #f759ab;
-  --oas-preset-red-text: #ff4d4f;
-  --oas-preset-volcano-text: #ff7a45;
+  --oas-preset-magenta-text: #fbaed6;
+  --oas-preset-red-text: #ffb1b2;
+  --oas-preset-volcano-text: #ffb395;
   --oas-preset-orange-text: #ffa940;
   --oas-preset-gold-text: #ffc53d;
   --oas-preset-lime-text: #bae637;
   --oas-preset-green-text: #73d13d;
   --oas-preset-cyan-text: #36cfc9;
-  --oas-preset-blue-text: #4096ff;
-  --oas-preset-geekblue-text: #597ef7;
-  --oas-preset-purple-text: #a26ee3;
+  --oas-preset-blue-text: #9cc8ff;
+  --oas-preset-geekblue-text: #b3c4fb;
+  --oas-preset-purple-text: #d3bbf2;
   /* 语义文字变体 dark：本色已达标，同值 */
   --oas-color-success-text: #4ade80;
   --oas-color-warning-text: #fbbf24;
-  --oas-color-danger-text: #f87171;
+  --oas-color-danger-text: #fbb2b2;
 }
 
 [data-theme="high-contrast"] {
