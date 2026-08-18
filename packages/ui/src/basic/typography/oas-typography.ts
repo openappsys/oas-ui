@@ -50,8 +50,13 @@ const BASE_STYLE = `
 .text.code {
   font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 0.875em;
+  /* 内联代码框居中走通用做法：inline-flex 内容居中 + 行高收紧贴字形 + 对称 padding。
+     根源是中文字形走系统字体回退、与等宽字体度量不一致——flex 居中消解行盒度量差 */
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.35;
   background: var(--oas-color-bg-hover);
-  padding: 0.15em var(--oas-space-1);
+  padding: 0.2em var(--oas-space-1);
   border-radius: var(--oas-radius-sm);
   border: 1px solid var(--oas-color-border);
 }
