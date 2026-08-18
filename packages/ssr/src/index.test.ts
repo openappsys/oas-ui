@@ -128,6 +128,11 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(text).toContain('<template shadowrootmode="open">')
     expect(text).toContain('<oas-text type="secondary">')
     expect(text).toContain('</template>正文</oas-text>')
+    // 结构含 wrap/content/suffix/actions（v2.1 补齐后模板）
+    expect(text).toContain('class="wrap"')
+    expect(text).toContain('class="actions"')
+    expect(text).toContain('class="content"')
+    expect(text).toContain('class="suffix"')
 
     const title = await renderToString('oas-title', { level: '2' }, '标题')
     expect(title).toContain('<oas-title level="2">')

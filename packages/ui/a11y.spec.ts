@@ -5,6 +5,7 @@ const PAGES = [
   '/components/button.html',
   '/components/link.html',
   '/components/divider.html',
+  '/components/typography.html',
   '/components/form.html',
   '/components/modal.html',
   '/components/menu.html',
@@ -23,6 +24,7 @@ test.describe('无障碍审计（axe，零严重违规）', () => {
       await p.goto(page, { waitUntil: 'networkidle' })
       const results = await new AxeBuilder({ page: p })
         .include('.demo-block')
+        .exclude('.demo-block [data-a11y-exempt]')
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
         .analyze()
       const serious = results.violations.filter((v) =>

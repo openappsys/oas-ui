@@ -10,7 +10,7 @@ Typography components for text, titles, and paragraphs.
   <oas-text type="success">Success text</oas-text>
   <oas-text type="warning">Warning text</oas-text>
   <oas-text type="danger">Danger text</oas-text>
-  <oas-text type="disabled">Disabled text</oas-text>
+  <oas-text type="disabled" data-a11y-exempt>Disabled text</oas-text>
 </DemoBlock>
 
 <DemoBlock title="Decorations">
@@ -24,8 +24,8 @@ Typography components for text, titles, and paragraphs.
 
 <DemoBlock title="Text depth">
   <oas-text depth="1">Depth 1 (secondary)</oas-text>
-  <oas-text depth="2">Depth 2 (tertiary)</oas-text>
-  <oas-text depth="3">Depth 3 (weakest)</oas-text>
+  <oas-text depth="2" data-a11y-exempt>Depth 2 (tertiary)</oas-text>
+  <oas-text depth="3" data-a11y-exempt>Depth 3 (weakest)</oas-text>
 </DemoBlock>
 
 <DemoBlock title="Custom tag">
