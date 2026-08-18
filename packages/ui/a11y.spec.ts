@@ -6,6 +6,7 @@ const PAGES = [
   '/components/link.html',
   '/components/divider.html',
   '/components/typography.html',
+  '/components/kbd.html',
   '/components/form.html',
   '/components/modal.html',
   '/components/menu.html',
