@@ -13,6 +13,31 @@ Typography components for text, titles, and paragraphs.
   <oas-text type="disabled">Disabled text</oas-text>
 </DemoBlock>
 
+<DemoBlock title="Decorations">
+  <oas-text strong>Strong</oas-text>
+  <oas-text mark>Mark</oas-text>
+  <oas-text code>Code</oas-text>
+  <oas-text underline>Underline</oas-text>
+  <oas-text delete>Delete</oas-text>
+  <oas-text italic>Italic</oas-text>
+</DemoBlock>
+
+<DemoBlock title="Text depth">
+  <oas-text depth="1">Depth 1 (secondary)</oas-text>
+  <oas-text depth="2">Depth 2 (tertiary)</oas-text>
+  <oas-text depth="3">Depth 3 (weakest)</oas-text>
+</DemoBlock>
+
+<DemoBlock title="Custom tag">
+  <div style="display: flex; gap: 8px; align-items: baseline;">
+    <oas-text tag="sub">sub</oas-text>
+    <oas-text tag="sup">sup</oas-text>
+    <oas-text tag="ins">ins</oas-text>
+    <oas-text tag="mark">mark</oas-text>
+    <oas-text tag="b">b</oas-text>
+  </div>
+</DemoBlock>
+
 ## Ellipsis
 
 <DemoBlock title="Text ellipsis">
@@ -21,10 +46,39 @@ Typography components for text, titles, and paragraphs.
   </div>
 </DemoBlock>
 
+<DemoBlock title="Multiline ellipsis (line-clamp)">
+  <div style="max-width: 320px">
+    <oas-text line-clamp="2">This is a much longer piece of text. The line-clamp attribute limits it to at most two lines, truncating the rest with an ellipsis. Multiline ellipsis needs no measurement — pure CSS, ideal for card summaries and list intros.</oas-text>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="Ellipsis with suffix (ellipsis-suffix)">
+  <div style="max-width: 320px">
+    <oas-text ellipsis ellipsis-suffix="--William Shakespeare">To be, or not to be, that is the question: Whether 'tis nobler in the mind to suffer the slings and arrows of outrageous fortune</oas-text>
+  </div>
+</DemoBlock>
+
 ## Copyable
 
 <DemoBlock title="Copyable text">
   <oas-text copyable>Copyable text content</oas-text>
+</DemoBlock>
+
+<DemoBlock title="Custom copy text (copy-text)">
+  <oas-text copyable copy-text="npm i @oas-ui/ui">Install command: click copy to copy `npm i @oas-ui/ui`</oas-text>
+</DemoBlock>
+
+## Actions
+
+<DemoBlock title="Actions position">
+  <oas-text copyable actions-position="end">Copy button after text (default)</oas-text>
+  <br />
+  <oas-text copyable actions-position="start">Copy button before text</oas-text>
+  <br />
+  <oas-text>
+    Custom action content
+    <button slot="actions" onclick="alert('custom action')">Custom</button>
+  </oas-text>
 </DemoBlock>
 
 ## Title
@@ -60,10 +114,22 @@ Typography components for text, titles, and paragraphs.
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `actions-position` | — | `string` | `end` |
+| `code` | — | `boolean` | — |
+| `copy-text` | — | `string` | — |
 | `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
+| `delete` | — | `boolean` | — |
+| `depth` | — | `string` | — |
 | `ellipsis` | Single-line ellipsis when the text overflows its container | `boolean` | — |
+| `ellipsis-suffix` | — | `string` | — |
+| `italic` | — | — | — |
 | `level` | Heading level (1-5) | `string` | `3` |
+| `line-clamp` | — | `string` | — |
+| `mark` | — | — | — |
+| `strong` | — | — | — |
+| `tag` | — | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
+| `underline` | — | — | — |
 
 | Event | Description |
 | --- | --- |
@@ -73,15 +139,28 @@ Typography components for text, titles, and paragraphs.
 | Name | Description |
 | --- | --- |
 | default | — |
+| `actions` | — |
 
 ### oas-title
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `actions-position` | — | `string` | `end` |
+| `code` | — | `boolean` | — |
+| `copy-text` | — | `string` | — |
 | `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
+| `delete` | — | `boolean` | — |
+| `depth` | — | `string` | — |
 | `ellipsis` | Single-line ellipsis when the text overflows its container | `boolean` | — |
+| `ellipsis-suffix` | — | `string` | — |
+| `italic` | — | — | — |
 | `level` | Heading level (1-5) | `string` | `3` |
+| `line-clamp` | — | `string` | — |
+| `mark` | — | — | — |
+| `strong` | — | — | — |
+| `tag` | — | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
+| `underline` | — | — | — |
 
 | Event | Description |
 | --- | --- |
@@ -91,15 +170,28 @@ Typography components for text, titles, and paragraphs.
 | Name | Description |
 | --- | --- |
 | default | — |
+| `actions` | — |
 
 ### oas-paragraph
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `actions-position` | — | `string` | `end` |
+| `code` | — | `boolean` | — |
+| `copy-text` | — | `string` | — |
 | `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
+| `delete` | — | `boolean` | — |
+| `depth` | — | `string` | — |
 | `ellipsis` | Single-line ellipsis when the text overflows its container | `boolean` | — |
+| `ellipsis-suffix` | — | `string` | — |
+| `italic` | — | — | — |
 | `level` | Heading level (1-5) | `string` | `3` |
+| `line-clamp` | — | `string` | — |
+| `mark` | — | — | — |
+| `strong` | — | — | — |
+| `tag` | — | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
+| `underline` | — | — | — |
 
 | Event | Description |
 | --- | --- |
@@ -109,3 +201,4 @@ Typography components for text, titles, and paragraphs.
 | Name | Description |
 | --- | --- |
 | default | — |
+| `actions` | — |

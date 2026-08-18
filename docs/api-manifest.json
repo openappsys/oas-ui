@@ -781,6 +781,12 @@
     "sourceFile": "packages/ui/src/basic/typography/oas-typography.ts",
     "attrs": [
       {
+        "name": "level",
+        "type": "string",
+        "default": "3",
+        "observed": true
+      },
+      {
         "name": "type",
         "type": "TextType",
         "default": "default",
@@ -797,10 +803,66 @@
         "observed": true
       },
       {
-        "name": "level",
+        "name": "copy-text",
         "type": "string",
-        "default": "3",
-        "observed": false
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "ellipsis-suffix",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "actions-position",
+        "type": "string",
+        "default": "end",
+        "observed": true
+      },
+      {
+        "name": "line-clamp",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "tag",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "depth",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "strong",
+        "observed": true
+      },
+      {
+        "name": "mark",
+        "observed": true
+      },
+      {
+        "name": "code",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "underline",
+        "observed": true
+      },
+      {
+        "name": "delete",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "italic",
+        "observed": true
       }
     ],
     "props": [],
@@ -817,6 +879,9 @@
     "slots": [
       {
         "name": ""
+      },
+      {
+        "name": "actions"
       }
     ],
     "unresolved": []
@@ -845,7 +910,69 @@
       {
         "name": "copyable",
         "type": "boolean",
-        "observed": false
+        "observed": true
+      },
+      {
+        "name": "copy-text",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "ellipsis-suffix",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "actions-position",
+        "type": "string",
+        "default": "end",
+        "observed": true
+      },
+      {
+        "name": "line-clamp",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "tag",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "depth",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "strong",
+        "observed": true
+      },
+      {
+        "name": "mark",
+        "observed": true
+      },
+      {
+        "name": "code",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "underline",
+        "observed": true
+      },
+      {
+        "name": "delete",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "italic",
+        "observed": true
       }
     ],
     "props": [],
@@ -862,6 +989,9 @@
     "slots": [
       {
         "name": ""
+      },
+      {
+        "name": "actions"
       }
     ],
     "unresolved": []
@@ -870,6 +1000,12 @@
     "className": "OASParagraph",
     "sourceFile": "packages/ui/src/basic/typography/oas-typography.ts",
     "attrs": [
+      {
+        "name": "level",
+        "type": "string",
+        "default": "3",
+        "observed": true
+      },
       {
         "name": "type",
         "type": "TextType",
@@ -887,10 +1023,66 @@
         "observed": true
       },
       {
-        "name": "level",
+        "name": "copy-text",
         "type": "string",
-        "default": "3",
-        "observed": false
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "ellipsis-suffix",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "actions-position",
+        "type": "string",
+        "default": "end",
+        "observed": true
+      },
+      {
+        "name": "line-clamp",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "tag",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "depth",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "strong",
+        "observed": true
+      },
+      {
+        "name": "mark",
+        "observed": true
+      },
+      {
+        "name": "code",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "underline",
+        "observed": true
+      },
+      {
+        "name": "delete",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "italic",
+        "observed": true
       }
     ],
     "props": [],
@@ -907,6 +1099,9 @@
     "slots": [
       {
         "name": ""
+      },
+      {
+        "name": "actions"
       }
     ],
     "unresolved": []
