@@ -4123,6 +4123,60 @@ test('typography 补齐：修饰六布尔原生标签语义、line-clamp 两行�
   expect(r.d2).not.toBe(r.d3)
 })
 
+test('typography 省略约束链：ellipsis/ellipsis-suffix/line-clamp 均不溢出父容器（wrap 层 max-width 回归）', async ({
+  page,
+}) => {
+  // 曾现 bug：actions 功能引入 .wrap(inline-flex) 层后，max-width 约束链断裂
+  // （.text 的 max-width:100% 参照未定宽的 wrap → 整条链撑到内容全宽，suffix 卡片文字跑出卡片）。
+  // 修复：:host 与 .wrap 均加 max-width:100%，约束锚定到有确定宽度的父容器。
+  await page.goto('/components/typography.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-text')
+  const r = await page.evaluate(async () => {
+    const wrap300 = (el: HTMLElement) => {
+      const box = document.createElement('div')
+      box.style.maxWidth = '300px'
+      box.appendChild(el)
+      document.body.appendChild(box)
+      return box
+    }
+    const mk = (attrs: Record<string, string>, text: string) => {
+      const el = document.createElement('oas-text')
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+      el.textContent = text
+      return el
+    }
+    const longText =
+      'To be, or not to be, that is the question: Whether tis nobler in the mind to suffer'
+    const suffix = wrap300(mk({ ellipsis: '', 'ellipsis-suffix': '--结尾' }, longText))
+    const plain = wrap300(mk({ ellipsis: '' }, longText))
+    const clamp = wrap300(mk({ 'line-clamp': '2' }, longText))
+    await new Promise((res) => setTimeout(res, 100))
+    const measure = (el: HTMLElement) => {
+      const host = el.getBoundingClientRect()
+      const text = el.shadowRoot!.querySelector('.text')!.getBoundingClientRect()
+      const wrap = el.shadowRoot!.querySelector('.wrap')!.getBoundingClientRect()
+      return { host: host.width, text: text.width, wrap: wrap.width }
+    }
+    const suffixEl = suffix.querySelector('oas-text')! as HTMLElement
+    const out = {
+      suffix: measure(suffixEl),
+      plain: measure(plain.querySelector('oas-text')! as HTMLElement),
+      clamp: measure(clamp.querySelector('oas-text')! as HTMLElement),
+      suffixVisible: !(suffixEl.shadowRoot!.querySelector('.suffix') as HTMLElement).hidden,
+    }
+    suffix.remove()
+    plain.remove()
+    clamp.remove()
+    return out
+  })
+  for (const m of [r.suffix, r.plain, r.clamp]) {
+    expect(m.host).toBeLessThanOrEqual(301)
+    expect(m.wrap).toBeLessThanOrEqual(301)
+    expect(m.text).toBeLessThanOrEqual(301)
+  }
+  expect(r.suffixVisible).toBe(true)
+})
+
 test('link 色板达标：预设名映射 -text 达标 token、自定义色原值渲染、type 语义色改指 text 变体', async ({
   page,
 }) => {
