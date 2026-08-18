@@ -17,6 +17,12 @@ const BASE_STYLE = `
   font-family: inherit;
   color: var(--oas-color-text-primary);
 }
+/* wrap：text + actions 的 flex 容器（actions 前置/后置靠 order 生效） */
+.wrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+}
 .text {
   display: inline;
   margin: 0;
@@ -27,6 +33,90 @@ const BASE_STYLE = `
   white-space: nowrap;
   display: inline-block;
   max-width: 100%;
+}
+/* 修饰布尔：strong/mark/code/underline/delete/italic（class 驱动，语义与原生 strong/mark/code/u/del/em 对齐） */
+.text.strong {
+  font-weight: 600;
+}
+.text.mark {
+  background: color-mix(in srgb, var(--oas-color-warning) 18%, transparent);
+  padding: 0 var(--oas-space-1);
+  border-radius: var(--oas-radius-sm);
+}
+.text.code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.875em;
+  background: var(--oas-color-bg-hover);
+  padding: 0.15em var(--oas-space-1);
+  border-radius: var(--oas-radius-sm);
+  border: 1px solid var(--oas-color-border);
+}
+.text.underline {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.text.delete {
+  text-decoration: line-through;
+}
+.text.italic {
+  font-style: italic;
+}
+/* depth 三档弱化（纯 token 组合，无自造色值） */
+.text.depth-1 {
+  color: var(--oas-color-text-secondary);
+}
+.text.depth-2 {
+  color: color-mix(in srgb, var(--oas-color-text-secondary) 50%, var(--oas-color-text-disabled));
+}
+.text.depth-3 {
+  color: var(--oas-color-text-disabled);
+}
+/* 组合：delete + underline 同设时删除线优先（text-decoration 单值，delete 后写覆盖 underline） */
+.text.delete.underline {
+  text-decoration: line-through;
+}
+/* ellipsis-suffix：省略时后缀完整展示在省略号后（flex 布局，suffix 不收缩） */
+.text.ellipsis.has-suffix {
+  display: inline-flex;
+  max-width: 100%;
+}
+.text.ellipsis.has-suffix > .content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+/* line-clamp 多行省略：纯 CSS -webkit-line-clamp（行数走变量），与 ellipsis 互斥 */
+.text.line-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--oas-line-clamp, 2);
+  line-clamp: var(--oas-line-clamp, 2);
+  overflow: hidden;
+  max-width: 100%;
+}
+.suffix {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.suffix[hidden] {
+  display: none;
+}
+/* actions 操作条：复制/自定义按钮整体前置/后置 */
+.actions {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--oas-space-1);
+  margin-left: var(--oas-space-1);
+  order: 2;
+}
+.actions.start {
+  order: 0;
+  margin-left: 0;
+  margin-right: var(--oas-space-1);
+}
+.actions[hidden] {
+  display: none;
 }
 .copy-btn {
   appearance: none;
@@ -54,7 +144,9 @@ interface TypoOptions {
   part: string
 }
 
-type TypographyConstructor = CustomElementConstructor
+type TypographyConstructor = CustomElementConstructor & {
+  observedAttributes: string[]
+}
 
 function createTypography(
   tag: string,
@@ -64,10 +156,30 @@ function createTypography(
 
   class OASTypography extends OASElement {
     static override get observedAttributes(): string[] {
-      return levels ? ['level', 'type', 'ellipsis'] : ['type', 'ellipsis', 'copyable']
+      return [
+        'level',
+        'type',
+        'ellipsis',
+        'copyable',
+        'copy-text',
+        'ellipsis-suffix',
+        'actions-position',
+        'line-clamp',
+        'tag',
+        'depth',
+        'strong',
+        'mark',
+        'code',
+        'underline',
+        'delete',
+        'italic',
+      ]
     }
 
     private root: HTMLElement | null = null
+    private contentEl: HTMLElement | null = null
+    private suffixEl: HTMLElement | null = null
+    private actionsEl: HTMLElement | null = null
     private copyBtn: HTMLButtonElement | null = null
 
     /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -76,18 +188,31 @@ function createTypography(
       const tagName = levels ? (`h${level}` as const) : tag
       return `
         <style>${BASE_STYLE}</style>
-        <${tagName} class="text" part="${part}">
-          <slot></slot>
-        </${tagName}>
-        <button class="copy-btn" part="copy" hidden></button>
+        <span class="wrap" part="wrap">
+          <${tagName} class="text" part="${part}">
+            <span class="content" part="content"><slot></slot></span>
+            <span class="suffix" part="suffix" hidden></span>
+          </${tagName}>
+          <span class="actions" part="actions" hidden>
+            <slot name="actions"></slot>
+            <button class="copy-btn" part="copy" hidden></button>
+          </span>
+        </span>
       `
     }
 
     /** 缓存节点引用 + 绑定事件（render 与水合路径共用） */
     private bind(): void {
       this.root = this.shadow.querySelector('.text')
+      this.contentEl = this.shadow.querySelector('.content')
+      this.suffixEl = this.shadow.querySelector('.suffix')
+      this.actionsEl = this.shadow.querySelector('.actions')
       this.copyBtn = this.shadow.querySelector('.copy-btn')
       this.copyBtn?.addEventListener('click', () => this.handleCopy())
+      // actions slot 内容变化同步显隐
+      this.shadow
+        .querySelector('slot[name="actions"]')
+        ?.addEventListener('slotchange', () => this.update())
     }
 
     protected override render(): void {
@@ -102,38 +227,128 @@ function createTypography(
       return true
     }
 
-    protected override update(): void {
+    /** 合法 tag 白名单（换标签语义；危险标签 script/iframe 等天然不在列） */
+    private static readonly VALID_TAGS = new Set([
+      'span',
+      'p',
+      'div',
+      'b',
+      'strong',
+      'i',
+      'em',
+      'u',
+      's',
+      'del',
+      'ins',
+      'mark',
+      'code',
+      'sub',
+      'sup',
+      'small',
+      'abbr',
+      'cite',
+      'q',
+      'time',
+      'address',
+    ])
+
+    /** tag 换标签：合法则换（重建元素），非法忽略 */
+    private syncTag(targetTag: string): void {
       const root = this.root
       if (!root) return
+      if (root.tagName.toLowerCase() === targetTag) return
+      if (!OASTypography.VALID_TAGS.has(targetTag)) return
+      const next = document.createElement(targetTag)
+      next.className = root.className
+      next.style.cssText = root.style.cssText
+      next.setAttribute('part', part)
+      // content/suffix 子结构迁移（slot 投影跟随）
+      while (root.firstChild) next.appendChild(root.firstChild)
+      root.replaceWith(next)
+      this.root = next
+      // 换标签后 content/suffix 引用失效，重绑
+      this.contentEl = next.querySelector('.content')
+      this.suffixEl = next.querySelector('.suffix')
+    }
+
+    protected override update(): void {
+      // 换标签决策链（先全部做完，最后统一施加 class——syncTag 重建元素后 class 需基于新引用重跑）
       const type = this.getAttr('type', 'default') as TextType
+      const useCodeTag = this.hasAttr('code')
+      const useDelTag = this.hasAttr('delete')
+      const tagAttr = this.getAttr('tag', '')
+      const customTag =
+        tagAttr && OASTypography.VALID_TAGS.has(tagAttr.toLowerCase()) ? tagAttr.toLowerCase() : ''
+      const wantTag =
+        customTag || (useCodeTag ? 'code' : useDelTag ? 'del' : levels ? this.rootTagName() : tag)
+      if (this.root!.tagName.toLowerCase() !== wantTag) this.syncTag(wantTag)
+      // level（仅 title；与修饰 code/delete 冲突时 level 优先——标题语义重于修饰）
+      if (levels && !useCodeTag && !useDelTag && !customTag) {
+        const level = Math.min(Math.max(Number(this.getAttr('level', '3')) || 3, 1), 5)
+        const tagName = `h${level}` as const
+        if (this.root!.tagName.toLowerCase() !== tagName) this.syncTag(tagName)
+      }
+      const root = this.root
+      if (!root) return
       const ellipsis = this.hasAttr('ellipsis')
-      root.classList.toggle('ellipsis', ellipsis)
+      const lineClampRaw = this.getAttr('line-clamp', '')
+      const lineClamp = Number(lineClampRaw)
+      const hasLineClamp = Number.isInteger(lineClamp) && lineClamp >= 1 && lineClampRaw !== ''
+      // line-clamp 与 ellipsis 互斥：line-clamp 优先
+      const useEllipsis = ellipsis && !hasLineClamp
+      root.classList.toggle('ellipsis', useEllipsis)
+      root.classList.toggle('line-clamp', hasLineClamp)
+      if (hasLineClamp) root.style.setProperty('--oas-line-clamp', String(lineClamp))
+      else root.style.removeProperty('--oas-line-clamp')
+      // type 语义色
       for (const key of Object.keys(TYPE_COLOR) as TextType[]) {
         root.classList.toggle(key, key === type && type !== 'default')
       }
       root.style.color = type === 'default' ? '' : TYPE_COLOR[type]!
-      if (levels) {
-        const level = Math.min(Math.max(Number(this.getAttr('level', '3')) || 3, 1), 5)
-        const tagName = `h${level}` as const
-        if (root.tagName.toLowerCase() !== tagName) {
-          const next = document.createElement(tagName)
-          next.className = root.className
-          next.style.cssText = root.style.cssText
-          next.setAttribute('part', part)
-          root.replaceWith(next)
-          this.root = next
-        }
+      // depth 三档弱化（type 非 default 时忽略 depth——语义色优先）
+      const depthRaw = this.getAttr('depth', '')
+      const useDepth = type === 'default' && ['1', '2', '3'].includes(depthRaw)
+      for (const d of ['1', '2', '3']) {
+        root.classList.toggle(`depth-${d}`, useDepth && depthRaw === d)
       }
+      // 修饰六布尔（class 驱动样式；code/delete 换原生标签已在换标签链处理）
+      for (const b of ['strong', 'mark', 'code', 'underline', 'delete', 'italic'] as const) {
+        root.classList.toggle(b, this.hasAttr(b))
+      }
+      // suffix：ellipsis 或 line-clamp 开启时展示
+      const suffix = this.getAttr('ellipsis-suffix', '')
+      if (this.suffixEl) {
+        const showSuffix = suffix !== '' && (useEllipsis || hasLineClamp)
+        this.suffixEl.hidden = !showSuffix
+        if (showSuffix) this.suffixEl.textContent = suffix
+        root.classList.toggle('has-suffix', showSuffix)
+      }
+      // actions：有 slot 内容或 copyable 时展示；start 前置
+      const actionsSlot = this.shadow.querySelector('slot[name="actions"]') as HTMLSlotElement
+      const hasActionsContent = actionsSlot.assignedNodes().length > 0
+      if (this.actionsEl) {
+        this.actionsEl.hidden = !(hasActionsContent || this.hasAttr('copyable'))
+        this.actionsEl.classList.toggle(
+          'start',
+          this.getAttr('actions-position', 'end') === 'start',
+        )
+      }
+      // copyable 按钮
       if (this.copyBtn) {
         this.copyBtn.hidden = !this.hasAttr('copyable')
-        // 复制按钮内置文案走 locale registry（setLocale 切换自动刷新）
         this.copyBtn.setAttribute('aria-label', this.t('typography.copy'))
         this.copyBtn.textContent = this.t('typography.copy')
       }
     }
 
+    /** title 的默认标签（level 驱动） */
+    private rootTagName(): string {
+      const level = Math.min(Math.max(Number(this.getAttr('level', '3')) || 3, 1), 5)
+      return `h${level}`
+    }
+
     private async handleCopy(): Promise<void> {
-      const text = this.textContent ?? ''
+      const text = this.getAttr('copy-text', '') || this.textContent || ''
       try {
         if (navigator.clipboard) {
           await navigator.clipboard.writeText(text)
