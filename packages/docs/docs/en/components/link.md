@@ -10,6 +10,7 @@ A text link, an enhanced native `<a>`.
   <oas-link href="#" type="success">Success link</oas-link>
   <oas-link href="#" type="warning">Warning link</oas-link>
   <oas-link href="#" type="danger">Danger link</oas-link>
+  <oas-link href="#" type="info">Info link</oas-link>
 </DemoBlock>
 
 ## Color
@@ -37,9 +38,32 @@ The `color` attribute accepts 11 preset names (auto-adapting to light/dark theme
 
 ## Underline
 
-<DemoBlock title="Underline control">
-  <oas-link href="#">Underlined</oas-link>
-  <oas-link href="#" underline="false">No underline</oas-link>
+`underline` three modes: `hover` (default, appears on hover) / `always` (persistent) / `never` (none). Compat shorthands: bare `underline` or `underline="true"` = always, `underline="false"` = never.
+
+Underline offset and color are customizable via CSS variables: `--oas-link-underline-offset` (default 2px), `--oas-link-underline-color` (default follows text color).
+
+<DemoBlock title="Underline modes">
+  <oas-link href="#">hover (default, on hover)</oas-link>
+  <oas-link href="#" underline="always">always</oas-link>
+  <oas-link href="#" underline="never">never</oas-link>
+  <oas-link href="#" underline="always" style="--oas-link-underline-offset: 4px; --oas-link-underline-color: var(--oas-color-danger);">offset 4px + red underline</oas-link>
+</DemoBlock>
+
+## Icon
+
+The `icon` attribute adds an icon (name from the registry); `icon-position="start|end"` controls placement:
+
+<DemoBlock title="Links with icons">
+  <oas-link href="#" icon="search">Search docs</oas-link>
+  <oas-link href="#" icon="arrow-right" icon-position="end">View details</oas-link>
+</DemoBlock>
+
+## External
+
+`external` auto-adds `target="_blank"` + `rel="noopener noreferrer"` + an external-link icon:
+
+<DemoBlock title="External link">
+  <oas-link href="https://example.com" external>External docs</oas-link>
 </DemoBlock>
 
 ## Disabled & new window
@@ -65,10 +89,13 @@ Clicking dispatches the `oas-click` CustomEvent; `detail.originalEvent` is the n
 | --- | --- | --- | --- |
 | `color` | — | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
+| `external` | — | `boolean` | — |
 | `href` | Link URL | `string` | — |
+| `icon` | — | `string` | — |
+| `icon-position` | — | — | — |
 | `target` | Open behavior | `string` | — |
 | `type` | Type | `LinkType` | `default` |
-| `underline` | Underline | `string` | `true` |
+| `underline` | Underline | `string` | — |
 
 ### Events
 

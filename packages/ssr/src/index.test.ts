@@ -1284,7 +1284,7 @@ describe('@oas-ui/ssr renderToString', () => {
     const html = await renderToString('oas-link', { href: '/detail', type: 'primary' }, '详情')
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('<style>')
-    expect(html).toContain('<a part="link" href="/detail" class="primary" aria-disabled=')
+    expect(html).toContain('<a part="link" href="/detail" class="primary hover" aria-disabled=')
     expect(html).toContain('</template>详情</oas-link>')
   })
 
