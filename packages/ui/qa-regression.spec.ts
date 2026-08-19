@@ -4177,6 +4177,68 @@ test('typography 省略约束链：ellipsis/ellipsis-suffix/line-clamp 均不溢
   expect(r.suffixVisible).toBe(true)
 })
 
+test('link 三态下划线 + icon + external + rel：hover 悬停出下划线、图标前后位置、外链自动 target/rel/图标', async ({
+  page,
+}) => {
+  // v2.1 link 补齐回归：underline 三态（hover 默认悬停出现）+ icon/icon-position +
+  // external（自动 target=_blank + rel + 外链图标）+ rel 安全自动补。
+  await page.goto('/components/link.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-link')
+  const r = await page.evaluate(() => {
+    const block = [...document.querySelectorAll('.demo-block')].find((b) =>
+      b.textContent?.includes('hover'),
+    )
+    const links = [...block!.querySelectorAll('oas-link')]
+    const deco = (el: Element) =>
+      getComputedStyle(el.shadowRoot!.querySelector('a')!).textDecorationLine
+    return {
+      hoverRest: deco(links[0]!),
+      alwaysRest: deco(links[1]!),
+      neverRest: deco(links[2]!),
+      iconDemo: (() => {
+        const iconBlock = [...document.querySelectorAll('.demo-block')].find((b) =>
+          b.textContent?.includes('搜索文档'),
+        )
+        const withIcon = iconBlock!.querySelector('oas-link[icon]')!
+        const a = withIcon.shadowRoot!.querySelector('a')!
+        return {
+          firstIsIcon: a.firstElementChild!.classList.contains('icon'),
+          iconSvg: !!a.querySelector('.icon svg'),
+        }
+      })(),
+      external: (() => {
+        const ext = document.querySelector('oas-link[external]')!
+        const a = ext.shadowRoot!.querySelector('a')!
+        return {
+          target: a.getAttribute('target'),
+          rel: a.getAttribute('rel'),
+          iconAtEnd: a.lastElementChild!.classList.contains('icon-external'),
+        }
+      })(),
+    }
+  })
+  expect(r.hoverRest).not.toContain('underline') // 静止无下划线
+  expect(r.alwaysRest).toContain('underline') // 常驻
+  expect(r.neverRest).not.toContain('underline') // 无
+  expect(r.iconDemo.firstIsIcon).toBe(true) // 图标在文字前（start 默认）
+  expect(r.iconDemo.iconSvg).toBe(true)
+  expect(r.external.target).toBe('_blank')
+  expect(r.external.rel).toBe('noopener noreferrer')
+  expect(r.external.iconAtEnd).toBe(true)
+
+  // hover 悬停真交互：hover 态出下划线
+  const hoverLink = page.locator('oas-link').filter({ hasText: 'hover' }).first()
+  await hoverLink.hover()
+  await page.waitForTimeout(200)
+  const hoverDeco = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('oas-link')].find((l) =>
+      l.textContent?.includes('hover'),
+    )
+    return getComputedStyle(el!.shadowRoot!.querySelector('a')!).textDecorationLine
+  })
+  expect(hoverDeco).toContain('underline')
+})
+
 test('link 色板达标：预设名映射 -text 达标 token、自定义色原值渲染、type 语义色改指 text 变体', async ({
   page,
 }) => {
