@@ -71,44 +71,16 @@ label.disabled {
 .colon[hidden] {
   display: none;
 }
-/* tooltip 提示图标按钮 */
-.tooltip-btn {
-  appearance: none;
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: help;
-  color: var(--oas-color-text-secondary);
-  font-size: 0.875em;
-  line-height: 1;
-  display: inline-flex;
-}
-.tooltip-btn[hidden] {
-  display: none;
-}
-.tooltip-btn:hover {
-  color: var(--oas-color-primary);
-}
-.tooltip-btn:focus-visible {
-  outline: none;
-  box-shadow: var(--oas-focus-ring);
-}
 `
-
-/** tooltip 提示图标（原创简单 ? 圆） */
-const TOOLTIP_ICON_SVG =
-  '<svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M6.5 6.5a1.5 1.5 0 1 1 2.2 1.3c-.5.3-.7.6-.7 1.2"/><circle cx="8" cy="11" r="0.5" fill="currentColor"/></svg>'
 
 export class OASLabel extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['for', 'required', 'position', 'error', 'disabled', 'colon', 'tooltip', 'color']
+    return ['for', 'required', 'position', 'error', 'disabled', 'colon', 'color']
   }
 
   private labelEl: HTMLElement | null = null
   private requiredEl: HTMLElement | null = null
   private colonEl: HTMLElement | null = null
-  private tooltipBtn: HTMLElement | null = null
-  private tooltipWrap: HTMLElement | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -118,7 +90,6 @@ export class OASLabel extends OASElement {
         <span part="text"><slot></slot></span>
         <span part="required" class="required" aria-hidden="true" hidden>*</span>
         <span part="colon" class="colon" aria-hidden="true" hidden>:</span>
-        <oas-tooltip part="tooltip-wrap" hidden><button part="tooltip" class="tooltip-btn" type="button">${TOOLTIP_ICON_SVG}</button></oas-tooltip>
       </label>
     `
   }
@@ -128,8 +99,6 @@ export class OASLabel extends OASElement {
     this.labelEl = this.shadow.querySelector<HTMLElement>('[part="label"]')
     this.requiredEl = this.shadow.querySelector<HTMLElement>('[part="required"]')
     this.colonEl = this.shadow.querySelector<HTMLElement>('.colon')
-    this.tooltipBtn = this.shadow.querySelector<HTMLElement>('.tooltip-btn')
-    this.tooltipWrap = this.shadow.querySelector<HTMLElement>('[part="tooltip-wrap"]')
 
     // 点击代理聚焦 for 指向的目标控件（跨 Shadow DOM 原生 label 关联不可用，手动代理）
     const onClick = (e: MouseEvent) => {
@@ -182,23 +151,6 @@ export class OASLabel extends OASElement {
     this.labelEl.classList.toggle('disabled', this.hasAttr('disabled'))
     if (this.requiredEl) this.requiredEl.hidden = !required
     if (this.colonEl) this.colonEl.hidden = !this.hasAttr('colon')
-
-    // tooltip：oas-tooltip 包住图标按钮（复用 tooltip 组件的 hover 浮层，不自造浮层）。
-    // 懒加载注册：首次有 tooltip 属性时才 import floating/tooltip，避免 basic→floating 静态依赖链
-    const tooltipText = this.getAttr('tooltip', '')
-    if (this.tooltipWrap && this.tooltipBtn) {
-      const show = tooltipText !== ''
-      this.tooltipWrap.toggleAttribute('hidden', !show)
-      this.tooltipBtn.hidden = !show
-      if (show) {
-        this.tooltipWrap.setAttribute('content', tooltipText)
-        this.tooltipBtn.setAttribute('aria-label', this.t('label.tooltip') || '提示')
-        // 懒注册 oas-tooltip（幂等；已注册则跳过）
-        if (!customElements.get('oas-tooltip')) {
-          import('../../floating/tooltip/index.js').catch(() => {})
-        }
-      }
-    }
 
     // color 统一协议：预设名映射 --oas-preset-*-text 达标 token；任意 CSS 色值直注入；移除后回落
     const color = this.getAttr('color', '')

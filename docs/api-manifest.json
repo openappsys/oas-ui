@@ -1232,12 +1232,6 @@
         "observed": true
       },
       {
-        "name": "tooltip",
-        "type": "string",
-        "default": "",
-        "observed": true
-      },
-      {
         "name": "color",
         "type": "string",
         "default": "",

@@ -45,10 +45,12 @@
 
 ## 提示（tooltip）
 
-`tooltip` 在文本后渲染提示图标按钮，悬停出浮层（复用 `oas-tooltip`，组件内不做浮层）。
+label 自身不加提示属性——提示能力通过**组合** `oas-tooltip` 实现（组件套组件）：
 
-<DemoBlock title="提示图标">
-  <oas-label tooltip="用户名需 3-20 字符">用户名</oas-label>
+<DemoBlock title="组合 oas-tooltip">
+  <oas-tooltip content="用户名需 3-20 字符">
+    <oas-label>用户名</oas-label>
+  </oas-tooltip>
 </DemoBlock>
 
 ## 颜色
@@ -89,7 +91,6 @@
 | `for` | 目标控件 id，点击代理 `getElementById(for).focus()` | `string` | — |
 | `position` | 星号相对文本的位置 | `string` | `after` |
 | `required` | 追加必填 `*` 标记（`aria-hidden`） | `boolean` | — |
-| `tooltip` | — | `string` | — |
 
 ### 插槽
 

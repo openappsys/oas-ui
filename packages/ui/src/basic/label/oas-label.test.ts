@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASLabel } from './index.js'
-import '../../floating/tooltip/index.js'
 
 function mountLabel(attrs: Record<string, string> = {}, slot = '姓名'): OASLabel {
   const el = new OASLabel()
@@ -156,44 +155,6 @@ describe('OASLabel', () => {
       const label = labelEl(el)
       const texts = [...label.querySelectorAll('span')].map((s) => s.textContent)
       expect(texts).toContain(':')
-    })
-  })
-
-  describe('tooltip 提示', () => {
-    it('tooltip 进入 observedAttributes', () => {
-      expect(OASLabel.observedAttributes).toContain('tooltip')
-    })
-
-    it('tooltip 渲染提示图标按钮（aria-label 走 locale）', () => {
-      const el = mountLabel({ tooltip: '用户名需 3-20 字符' })
-      const tip = el.shadowRoot!.querySelector('.tooltip-btn')
-      expect(tip).not.toBeNull()
-      expect(tip!.getAttribute('aria-label')).toBeTruthy()
-    })
-
-    it('无 tooltip 不渲染图标', () => {
-      const el = mountLabel()
-      const tip = el.shadowRoot!.querySelector('.tooltip-btn') as HTMLElement
-      expect(tip.hidden).toBe(true)
-    })
-
-    it('tooltip 图标 hover 出浮层（复用 oas-tooltip，内容与 tooltip 值一致）', async () => {
-      const el = mountLabel({ tooltip: '用户名需 3-20 字符' })
-      const wrap = el.shadowRoot!.querySelector('[part="tooltip-wrap"]') as HTMLElement
-      expect(wrap).not.toBeNull()
-      expect(wrap.tagName.toLowerCase()).toBe('oas-tooltip')
-      expect(wrap.getAttribute('content')).toBe('用户名需 3-20 字符')
-      // 悬停图标按钮 → oas-tooltip 的 open 状态（懒注册后需等组件就位）
-      await new Promise((r) => setTimeout(r, 300))
-      const btn = el.shadowRoot!.querySelector('.tooltip-btn') as HTMLElement
-      btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, composed: true }))
-      await new Promise((r) => setTimeout(r, 300))
-      // oas-tooltip 的 open 状态或浮层出现（shadow 内 tip 元素 open）
-      const tip = wrap.shadowRoot?.querySelector('.tip')
-      const isOpen =
-        wrap.hasAttribute('open') ||
-        (tip && getComputedStyle(tip as HTMLElement).display !== 'none')
-      expect(isOpen).toBe(true)
     })
   })
 
