@@ -1,6 +1,49 @@
 import { OASElement } from '@oas-ui/core'
 
 export type CodeLanguage = 'js' | 'ts' | 'html' | 'css' | 'json' | string
+export type CodeSize = 'xs' | 'small' | 'medium' | 'large'
+export type CodeVariant = 'subtle' | 'outline' | 'plain' | 'solid'
+
+const VALID_SIZES = ['xs', 'small', 'medium', 'large'] as const
+const VALID_VARIANTS = ['subtle', 'outline', 'plain', 'solid'] as const
+
+/** 预设色板名（映射 --oas-preset-*-text 达标 token，color 属性支持按名引用；统一协议见 ui-spec §4.1） */
+export type CodePresetColor =
+  | 'magenta'
+  | 'red'
+  | 'volcano'
+  | 'orange'
+  | 'gold'
+  | 'lime'
+  | 'green'
+  | 'cyan'
+  | 'blue'
+  | 'geekblue'
+  | 'purple'
+
+export const CODE_PRESET_COLORS: readonly CodePresetColor[] = [
+  'magenta',
+  'red',
+  'volcano',
+  'orange',
+  'gold',
+  'lime',
+  'green',
+  'cyan',
+  'blue',
+  'geekblue',
+  'purple',
+]
+
+const warnedValues = new Set<string>()
+
+/** 非法值告警：dev 下 console.warn 一次（同值去重），值本身走调用处的回落 */
+function warnOnce(kind: string, raw: string, fallback: string, valid: readonly string[]): void {
+  const key = `${kind}:${raw}`
+  if (warnedValues.has(key)) return
+  warnedValues.add(key)
+  console.warn(`[oas-code] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
+}
 
 /** token 类别 → CSS class（配色见 STYLE 的 .tok-* 规则） */
 type TokenClass =
@@ -259,6 +302,47 @@ pre.code {
 .line-code {
   white-space: pre;
 }
+/* word-wrap：长代码换行不横向滚动 */
+.block.word-wrap .line-code {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+/* inline 行内代码：等宽+浅底小框，不块级不换行 */
+.inline {
+  display: inline-flex;
+  align-items: baseline;
+  padding: 0.1em var(--oas-space-1);
+  background: var(--oas-color-bg-hover);
+  border-radius: var(--oas-radius-sm);
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: var(--oas-code-color, var(--oas-color-text-primary));
+  white-space: nowrap;
+}
+/* inline variant 形态：subtle 默认浅底/outline 描边/plain 纯文字/solid 实底 */
+.inline.outline {
+  background: transparent;
+  border: 1px solid var(--oas-color-border-strong);
+}
+.inline.plain {
+  background: transparent;
+  padding: 0;
+}
+.inline.solid {
+  background: var(--oas-code-color, var(--oas-color-text-primary));
+  color: var(--oas-code-on-color, var(--oas-color-bg));
+}
+/* inline size 档位（字号档，medium 为现状零回归） */
+.inline.xs {
+  font-size: var(--oas-font-size-xs);
+}
+.inline.small {
+  font-size: var(--oas-font-size-sm);
+}
+.inline.large {
+  font-size: var(--oas-font-size-md);
+}
 /* 高亮 token 配色（只用 token） */
 .tok-keyword { color: var(--oas-color-primary); }
 .tok-string { color: var(--oas-color-success); }
@@ -287,7 +371,7 @@ pre.code {
  */
 export class OASCode extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['code', 'language', 'show-line-number', 'copyable']
+    return ['code', 'language', 'show-line-number', 'copyable', 'inline', 'word-wrap', 'trim', 'size', 'variant', 'color']
   }
 
   private copyTimer: ReturnType<typeof setTimeout> | null = null
@@ -296,6 +380,7 @@ export class OASCode extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
+      <code class="inline" part="inline" hidden></code>
       <div class="block" part="block">
         <div class="toolbar" part="toolbar">
           <span class="lang" part="language"></span>
@@ -333,10 +418,16 @@ export class OASCode extends OASElement {
     const inner = this.shadow.querySelector<HTMLElement>('[part="code-inner"]')
     const langEl = this.shadow.querySelector<HTMLElement>('[part="language"]')
     const copy = this.shadow.querySelector<HTMLButtonElement>('[part="copy"]')
+    const inlineEl = this.shadow.querySelector<HTMLElement>('[part="inline"]')
     if (!inner || !langEl || !copy) return
 
     const code = this.getAttr('code', '')
     const language = this.getAttr('language', '')
+    const inline = this.hasAttr('inline')
+
+    // trim：默认去首尾空白（多行源码书写惯例），trim="false" 保留
+    const trim = this.getAttr('trim', 'true') !== 'false'
+    const trimmed = trim ? code.trim() : code
 
     langEl.textContent = language
     langEl.hidden = language === ''
@@ -344,9 +435,51 @@ export class OASCode extends OASElement {
     copy.textContent = this.t('code.copy')
     copy.setAttribute('aria-label', this.t('code.copy'))
 
+    // inline 行内代码：无块级容器、无工具栏、无行号，单行渲染
+    if (inlineEl) {
+      if (inline) {
+        inlineEl.hidden = false
+        const blockEl = this.shadow.querySelector<HTMLElement>('.block')
+        if (blockEl) blockEl.hidden = true
+        // inline 的 variant / size / color 走 class + 变量
+        const variant = this.normalizeAttr('variant', VALID_VARIANTS, 'subtle')
+        const size = this.normalizeAttr('size', VALID_SIZES, 'medium')
+        const classes = [
+          'inline',
+          variant !== 'subtle' ? variant : '',
+          size !== 'medium' ? size : '',
+        ]
+          .filter(Boolean)
+          .join(' ')
+        if (classes) inlineEl.className = classes
+        else inlineEl.removeAttribute('class')
+        // color 统一协议
+        const color = this.getAttr('color', '')
+        if (color) {
+          const isPreset = (CODE_PRESET_COLORS as readonly string[]).includes(color)
+          inlineEl.style.setProperty(
+            '--oas-code-color',
+            isPreset ? `var(--oas-preset-${color}-text)` : color,
+          )
+        } else {
+          inlineEl.style.removeProperty('--oas-code-color')
+        }
+        // inline 内容：单行渲染（trim 后按行取首行——行内代码不跨行），走高亮
+        inlineEl.innerHTML = highlightLine(trimmed.split('\n')[0] ?? trimmed, language)
+        return
+      }
+      inlineEl.hidden = true
+    }
+
+    // word-wrap：块级容器换行
+    const blockEl = this.shadow.querySelector<HTMLElement>('.block')
+    if (blockEl) {
+      blockEl.classList.toggle('word-wrap', this.hasAttr('word-wrap'))
+    }
+
     // 按行渲染：可选行号 + 每行高亮
     const showLineNumber = this.hasAttr('show-line-number')
-    const lines = code.split('\n')
+    const lines = trimmed.split('\n')
     // 末行空串（源码常以 \n 结尾）不产生多余空行
     if (lines.length > 1 && lines[lines.length - 1] === '') lines.pop()
     inner.innerHTML = lines
@@ -355,6 +488,19 @@ export class OASCode extends OASElement {
           `<span class="line" part="line">${showLineNumber ? `<span class="line-number" part="line-number" aria-hidden="true">${i + 1}</span>` : ''}<code class="line-code">${highlightLine(line, language)}</code></span>`,
       )
       .join('\n')
+  }
+
+  /** 归一化枚举属性：非法值回落 + 告警 */
+  private normalizeAttr<T extends string>(
+    name: string,
+    valid: readonly T[],
+    fallback: T,
+  ): T {
+    const raw = this.getAttr(name, '')
+    if (!raw) return fallback
+    if ((valid as readonly string[]).includes(raw)) return raw as T
+    warnOnce(name, raw, fallback, valid)
+    return fallback
   }
 
   private async handleCopy(): Promise<void> {

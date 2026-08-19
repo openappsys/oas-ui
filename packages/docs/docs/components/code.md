@@ -98,6 +98,66 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 
 语言未知时按纯文本渲染（已转义），不报错。
 
+## 行内代码（inline）
+
+`inline` 渲染行内代码（等宽+浅底小框，不块级不换行，适合正文内嵌代码片段）：
+
+<DemoBlock title="行内代码">
+  <p>使用 <oas-code inline language="js" code='const a = 1'></oas-code> 声明常量，用 <oas-code inline language="js" code='console.log(a)'></oas-code> 输出。</p>
+</DemoBlock>
+
+## 换行（word-wrap）
+
+`word-wrap` 时长代码换行不横向滚动：
+
+<DemoBlock title="长代码换行">
+  <div style="width: 100%; max-width: 400px;">
+    <oas-code language="js" word-wrap code='const veryLongVariableName = someFunctionWithAVeryLongName(argumentOne, argumentTwo, argumentThree, argumentFour, argumentFive)'></oas-code>
+  </div>
+</DemoBlock>
+
+## 去首尾空白（trim）
+
+`trim` 默认 true（去首尾空白），`trim="false"` 保留：
+
+<DemoBlock title="trim 对照">
+  <oas-code language="js" code='\n  const a = 1\n  '></oas-code>
+  <oas-code language="js" trim="false" code='\n  const a = 1\n  '></oas-code>
+</DemoBlock>
+
+## 行内尺寸（size）
+
+`size` 四档（xs/small/medium/large，inline 语境字号档）：
+
+<DemoBlock title="行内尺寸">
+  <oas-code inline size="xs" language="js" code='const a = 1'></oas-code>
+  <oas-code inline size="small" language="js" code='const a = 1'></oas-code>
+  <oas-code inline language="js" code='const a = 1'></oas-code>
+  <oas-code inline size="large" language="js" code='const a = 1'></oas-code>
+</DemoBlock>
+
+## 行内形态（variant）
+
+`variant` 四形态（subtle 默认浅底 / outline 描边 / plain 纯文字 / solid 实底）：
+
+<DemoBlock title="行内形态">
+  <oas-code inline language="js" code='const a = 1'></oas-code>
+  <oas-code inline variant="outline" language="js" code='const a = 1'></oas-code>
+  <oas-code inline variant="plain" language="js" code='const a = 1'></oas-code>
+  <oas-code inline variant="solid" language="js" code='const a = 1'></oas-code>
+</DemoBlock>
+
+## 行内颜色（color）
+
+`color` 支持 11 个预设色名（明暗主题自动适配）或任意 CSS 色值（直接生效，优先于预设与默认）。inline 语境的文字色：
+
+<DemoBlock title="行内颜色">
+  <oas-code inline language="js" color="red" code='const a = 1'></oas-code>
+  <oas-code inline language="js" color="green" code='const a = 1'></oas-code>
+  <oas-code inline language="js" color="blue" code='const a = 1'></oas-code>
+  <oas-code inline language="js" color="#0e7490" code='const a = 1'></oas-code>
+</DemoBlock>
+
 ## 字号定制
 
 字号默认为外层字号的 0.875 倍（`0.875em`），可用 CSS 变量 `--oas-code-font` 显式定制。
@@ -109,9 +169,15 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `code` | 源代码原文 | `string` | — |
+| `color` | 行内文字色：支持 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*-text` token）或任意 CSS 色值 | `string` | — |
 | `copyable` | 显示复制按钮 | `string` | `true` |
+| `inline` | 行内代码模式：渲染为等宽浅底小框，适合正文内嵌代码片段 | `boolean` | — |
 | `language` | 语言：`js`/`ts`/`html`/`css`/`json`，未知按纯文本 | `string` | — |
 | `show-line-number` | 显示行号栏 | `boolean` | — |
+| `size` | 行内字号档：`xs` / `small` / `medium`（默认）/ `large`；非法值回落 `medium` 并告警 | — | — |
+| `trim` | 去首尾空白（默认 true，`trim="false"` 保留） | `string` | `true` |
+| `variant` | 行内形态：`subtle`（默认浅底）/ `outline`（描边）/ `plain`（纯文字）/ `solid`（实底）；非法值回落 `subtle` 并告警 | — | — |
+| `word-wrap` | 长代码换行显示，不横向滚动 | `boolean` | — |
 
 ### 事件
 

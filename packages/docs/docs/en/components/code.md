@@ -98,6 +98,66 @@ Tag names and attribute names are colored separately.
 
 When the language is unknown, the content is rendered as plain text (escaped) without errors.
 
+## Inline Code (inline)
+
+`inline` renders inline code (monospace with a light background box, non-block, no line breaks — for code snippets inside prose):
+
+<DemoBlock title="Inline code">
+  <p>Declare a constant with <oas-code inline language="js" code='const a = 1'></oas-code> and print it with <oas-code inline language="js" code='console.log(a)'></oas-code>.</p>
+</DemoBlock>
+
+## Word Wrap (word-wrap)
+
+With `word-wrap`, long code wraps instead of scrolling horizontally:
+
+<DemoBlock title="Long code wrapping">
+  <div style="width: 100%; max-width: 400px;">
+    <oas-code language="js" word-wrap code='const veryLongVariableName = someFunctionWithAVeryLongName(argumentOne, argumentTwo, argumentThree, argumentFour, argumentFive)'></oas-code>
+  </div>
+</DemoBlock>
+
+## Trimming (trim)
+
+`trim` defaults to true (strips leading/trailing whitespace); `trim="false"` preserves it:
+
+<DemoBlock title="trim comparison">
+  <oas-code language="js" code='\n  const a = 1\n  '></oas-code>
+  <oas-code language="js" trim="false" code='\n  const a = 1\n  '></oas-code>
+</DemoBlock>
+
+## Inline Size (size)
+
+`size` has four tiers (xs/small/medium/large — font-size tiers in inline context):
+
+<DemoBlock title="Inline sizes">
+  <oas-code inline size="xs" language="js" code='const a = 1'></oas-code>
+  <oas-code inline size="small" language="js" code='const a = 1'></oas-code>
+  <oas-code inline language="js" code='const a = 1'></oas-code>
+  <oas-code inline size="large" language="js" code='const a = 1'></oas-code>
+</DemoBlock>
+
+## Inline Variant (variant)
+
+`variant` has four styles (subtle light background by default / outline bordered / plain text only / solid filled):
+
+<DemoBlock title="Inline variants">
+  <oas-code inline language="js" code='const a = 1'></oas-code>
+  <oas-code inline variant="outline" language="js" code='const a = 1'></oas-code>
+  <oas-code inline variant="plain" language="js" code='const a = 1'></oas-code>
+  <oas-code inline variant="solid" language="js" code='const a = 1'></oas-code>
+</DemoBlock>
+
+## Inline Color (color)
+
+`color` accepts 11 preset color names (auto-adapting to light/dark themes) or any CSS color value (takes effect directly, overriding presets and the default). Controls the text color in inline context:
+
+<DemoBlock title="Inline colors">
+  <oas-code inline language="js" color="red" code='const a = 1'></oas-code>
+  <oas-code inline language="js" color="green" code='const a = 1'></oas-code>
+  <oas-code inline language="js" color="blue" code='const a = 1'></oas-code>
+  <oas-code inline language="js" color="#0e7490" code='const a = 1'></oas-code>
+</DemoBlock>
+
 ## Font Size
 
 Font size defaults to 0.875× the outer context (`0.875em`); override with the CSS variable `--oas-code-font`.
@@ -109,9 +169,15 @@ Font size defaults to 0.875× the outer context (`0.875em`); override with the C
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `code` | Raw source code | `string` | — |
+| `color` | Inline text color: accepts 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*-text` tokens) or any CSS color value | `string` | — |
 | `copyable` | Show the copy button | `string` | `true` |
+| `inline` | Inline code mode: renders as a monospace light-background box for code snippets inside prose | `boolean` | — |
 | `language` | Language: `js`/`ts`/`html`/`css`/`json`; unknown falls back to plain text | `string` | — |
 | `show-line-number` | Show the line number column | `boolean` | — |
+| `size` | Inline font-size tier: `xs` / `small` / `medium` (default) / `large`; invalid values fall back to `medium` with a warning | — | — |
+| `trim` | Strip leading/trailing whitespace (default true; `trim="false"` preserves it) | `string` | `true` |
+| `variant` | Inline style: `subtle` (default light background) / `outline` (bordered) / `plain` (text only) / `solid` (filled); invalid values fall back to `subtle` with a warning | — | — |
+| `word-wrap` | Wrap long code instead of horizontal scrolling | `boolean` | — |
 
 ### Events
 

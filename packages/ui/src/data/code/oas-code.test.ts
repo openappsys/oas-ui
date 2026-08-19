@@ -121,4 +121,136 @@ describe('OASCode', () => {
     expect(code).toBe(codeEl(el))
     expect(code.querySelector('.tok-keyword')).not.toBeNull()
   })
+
+  describe('inline 行内代码', () => {
+    it('inline 进入 observedAttributes', () => {
+      expect(OASCode.observedAttributes).toContain('inline')
+    })
+
+    it('inline 渲染行内代码（块级容器隐藏，inline 元素显示）', () => {
+      const el = mount({ code: 'const a = 1', inline: '' })
+      const block = el.shadowRoot!.querySelector('.block') as HTMLElement
+      const inline = el.shadowRoot!.querySelector('.inline') as HTMLElement
+      expect(block.hidden).toBe(true)
+      expect(inline.hidden).toBe(false)
+    })
+
+    it('inline + language 仍高亮', () => {
+      const el = mount({ code: 'const a = 1', language: 'js', inline: '' })
+      expect(el.shadowRoot!.querySelector('.tok-keyword')).not.toBeNull()
+    })
+  })
+
+  describe('word-wrap 换行', () => {
+    it('word-wrap 进入 observedAttributes', () => {
+      expect(OASCode.observedAttributes).toContain('word-wrap')
+    })
+
+    it('word-wrap 时 line-code 换行（white-space: pre-wrap）', () => {
+      const el = mount({ code: 'a'.repeat(200), 'word-wrap': '' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.block\.word-wrap\s+[^{]*\{[^}]*white-space:\s*pre-wrap/)
+    })
+
+    it('缺省不换行（无 word-wrap class）', () => {
+      const el = mount({ code: 'x' })
+      const block = el.shadowRoot!.querySelector('.block')!
+      expect(block.classList.contains('word-wrap')).toBe(false)
+    })
+  })
+
+  describe('trim 去首尾空白', () => {
+    it('trim 进入 observedAttributes', () => {
+      expect(OASCode.observedAttributes).toContain('trim')
+    })
+
+    it('默认 trim（首尾空白去除）', () => {
+      const el = mount({ code: '\n  const a = 1\n  ' })
+      const code = codeEl(el)
+      expect(code.textContent!.trim()).toBe('const a = 1')
+    })
+
+    it('trim="false" 保留首尾空白', () => {
+      const el = mount({ code: '\n  const a = 1\n  ', trim: 'false' })
+      const code = codeEl(el)
+      expect(code.textContent).toContain('\n')
+    })
+  })
+
+  describe('size 档位（inline 语境）', () => {
+    it('size 进入 observedAttributes', () => {
+      expect(OASCode.observedAttributes).toContain('size')
+    })
+
+    it('size 四档映射 class（缺省 medium 零回归）', () => {
+      for (const s of ['xs', 'small', 'large'] as const) {
+        const el = mount({ code: 'x', inline: '', size: s })
+        expect(el.shadowRoot!.querySelector('.inline')!.classList.contains(s)).toBe(true)
+        el.remove()
+      }
+      const md = mount({ code: 'x', inline: '' })
+      expect(md.shadowRoot!.querySelector('.inline')!.classList.contains('small')).toBe(false)
+    })
+
+    it('非法值回落 medium 并告警', () => {
+      const el = mount({ code: 'x', inline: '', size: 'xxl' })
+      expect(el.shadowRoot!.querySelector('.inline')!.classList.contains('xs')).toBe(false)
+    })
+  })
+
+  describe('variant 形态（inline 语境）', () => {
+    it('variant 进入 observedAttributes', () => {
+      expect(OASCode.observedAttributes).toContain('variant')
+    })
+
+    it('variant 四形态映射 class（subtle 默认）', () => {
+      for (const v of ['outline', 'plain', 'solid'] as const) {
+        const el = mount({ code: 'x', inline: '', variant: v })
+        expect(el.shadowRoot!.querySelector('.inline')!.classList.contains(v)).toBe(true)
+        el.remove()
+      }
+      const def = mount({ code: 'x', inline: '' })
+      expect(def.shadowRoot!.querySelector('.inline')!.classList.contains('outline')).toBe(false)
+    })
+
+    it('非法值回落 subtle 并告警', () => {
+      const el = mount({ code: 'x', inline: '', variant: 'wavy' })
+      expect(el.shadowRoot!.querySelector('.inline')!.classList.contains('outline')).toBe(false)
+    })
+
+    it('CSS：四形态规则存在', () => {
+      const el = mount({ code: 'x', inline: '' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.inline\.outline\s*{/)
+      expect(css).toMatch(/\.inline\.plain\s*{/)
+      expect(css).toMatch(/\.inline\.solid\s*{/)
+    })
+  })
+
+  describe('color 属性（统一协议：11 预设名→-text token / 任意 CSS 色值直注入）', () => {
+    it('color 进入 observedAttributes', () => {
+      expect(OASCode.observedAttributes).toContain('color')
+    })
+
+    it('预设名映射 --oas-preset-*-text 达标 token（inline 语境文字色）', () => {
+      const el = mount({ code: 'x', inline: '', color: 'geekblue' })
+      const inlineEl = el.shadowRoot!.querySelector('.inline') as HTMLElement
+      expect(inlineEl.style.getPropertyValue('--oas-code-color')).toBe('var(--oas-preset-geekblue-text)')
+    })
+
+    it('任意 CSS 色值直注入（#hex）', () => {
+      const el = mount({ code: 'x', inline: '', color: '#0e7490' })
+      const inlineEl = el.shadowRoot!.querySelector('.inline') as HTMLElement
+      expect(inlineEl.style.getPropertyValue('--oas-code-color')).toBe('#0e7490')
+    })
+
+    it('动态切换与移除即时生效', () => {
+      const el = mount({ code: 'x', inline: '', color: 'red' })
+      const inlineEl = el.shadowRoot!.querySelector('.inline') as HTMLElement
+      el.setAttribute('color', '#00b96b')
+      expect(inlineEl.style.getPropertyValue('--oas-code-color')).toBe('#00b96b')
+      el.removeAttribute('color')
+      expect(inlineEl.style.getPropertyValue('--oas-code-color')).toBe('')
+    })
+  })
 })

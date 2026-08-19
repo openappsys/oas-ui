@@ -282,7 +282,13 @@
       "code": "Raw source code",
       "copyable": "Show the copy button",
       "language": "Language: `js`/`ts`/`html`/`css`/`json`; unknown falls back to plain text",
-      "show-line-number": "Show the line number column"
+      "show-line-number": "Show the line number column",
+      "inline": "Inline code mode: renders as a monospace light-background box for code snippets inside prose",
+      "word-wrap": "Wrap long code instead of horizontal scrolling",
+      "trim": "Strip leading/trailing whitespace (default true; `trim=\"false\"` preserves it)",
+      "size": "Inline font-size tier: `xs` / `small` / `medium` (default) / `large`; invalid values fall back to `medium` with a warning",
+      "variant": "Inline style: `subtle` (default light background) / `outline` (bordered) / `plain` (text only) / `solid` (filled); invalid values fall back to `subtle` with a warning",
+      "color": "Inline text color: accepts 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*-text` tokens) or any CSS color value"
     },
     "events": {
       "oas-copy": "Copy succeeded, `detail: { text }`",
