@@ -6067,6 +6067,36 @@
         "type": "string",
         "default": "true",
         "observed": true
+      },
+      {
+        "name": "inline",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "word-wrap",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "trim",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "observed": true
+      },
+      {
+        "name": "variant",
+        "observed": true
+      },
+      {
+        "name": "color",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
