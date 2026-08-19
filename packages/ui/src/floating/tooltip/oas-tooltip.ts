@@ -6,6 +6,11 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
 }
+/* hidden 语义防御：UA 的 [hidden] display:none 是 UA 样式，:host 的 display:inline-block 会压过它——
+   显式补 :host([hidden]) 规则保住 hidden 语义（label 等组件模板里 hidden 的 tooltip 包裹层不应占位） */
+:host([hidden]) {
+  display: none;
+}
 .tip {
   position: fixed;
   z-index: var(--oas-z-tooltip, 1080);

@@ -1215,6 +1215,33 @@
         "type": "string",
         "default": "after",
         "observed": true
+      },
+      {
+        "name": "error",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "colon",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "tooltip",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "color",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
