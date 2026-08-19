@@ -57,10 +57,11 @@
   --oas-preset-geekblue-text: #2f54eb;
   --oas-preset-purple-text: #722ed1;
 
-  /* 语义色文字变体（-text）：文字承载面达标深色（AA；填充面用上方本色） */
+  /* 语义色文字变体（-text）：文字承载面达标深色（感知对比度 Lc≥60 双底实测；填充面用上方本色） */
   --oas-color-success-text: #11813a;
   --oas-color-warning-text: #a75c05;
   --oas-color-danger-text: #d82525;
+  --oas-color-info-text: #0891b2;
 
   --oas-font-size-xs: 12px;
   --oas-font-size-sm: 13px;
@@ -164,6 +165,7 @@ html.dark {
   --oas-color-success-text: #4ade80;
   --oas-color-warning-text: #fbbf24;
   --oas-color-danger-text: #fbb2b2;
+  --oas-color-info-text: #22d3ee;
 }
 
 [data-theme="high-contrast"] {

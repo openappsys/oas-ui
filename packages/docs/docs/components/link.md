@@ -10,6 +10,7 @@
   <oas-link href="#" type="success">成功链接</oas-link>
   <oas-link href="#" type="warning">警告链接</oas-link>
   <oas-link href="#" type="danger">危险链接</oas-link>
+  <oas-link href="#" type="info">信息链接</oas-link>
 </DemoBlock>
 
 ## 颜色
@@ -37,9 +38,32 @@
 
 ## 下划线
 
-<DemoBlock title="下划线控制">
-  <oas-link href="#">有下划线</oas-link>
-  <oas-link href="#" underline="false">无下划线</oas-link>
+`underline` 三态：`hover`（默认，悬停出现）/ `always`（常驻）/ `never`（无）。兼容写法：bare `underline` 或 `underline="true"` = always，`underline="false"` = never。
+
+下划线偏移与颜色可走 CSS 变量定制：`--oas-link-underline-offset`（缺省 2px）、`--oas-link-underline-color`（缺省跟随文字色）。
+
+<DemoBlock title="下划线三态">
+  <oas-link href="#">hover（默认，悬停出现）</oas-link>
+  <oas-link href="#" underline="always">always（常驻）</oas-link>
+  <oas-link href="#" underline="never">never（无）</oas-link>
+  <oas-link href="#" underline="always" style="--oas-link-underline-offset: 4px; --oas-link-underline-color: var(--oas-color-danger);">偏移 4px + 红色下划线</oas-link>
+</DemoBlock>
+
+## 图标
+
+`icon` 属性放图标（图标名走注册表），`icon-position="start|end"` 控制前后：
+
+<DemoBlock title="带图标链接">
+  <oas-link href="#" icon="search">搜索文档</oas-link>
+  <oas-link href="#" icon="arrow-right" icon-position="end">查看详情</oas-link>
+</DemoBlock>
+
+## 外链
+
+`external` 自动补 `target="_blank"` + `rel="noopener noreferrer"` + 外链图标：
+
+<DemoBlock title="外链">
+  <oas-link href="https://example.com" external>外部文档</oas-link>
 </DemoBlock>
 
 ## 禁用与新窗口
@@ -65,10 +89,13 @@
 | --- | --- | --- | --- |
 | `color` | — | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
+| `external` | — | `boolean` | — |
 | `href` | 链接地址 | `string` | — |
+| `icon` | — | `string` | — |
+| `icon-position` | — | — | — |
 | `target` | 打开方式 | `string` | — |
 | `type` | 类型 | `LinkType` | `default` |
-| `underline` | 下划线 | `string` | `true` |
+| `underline` | 下划线 | `string` | — |
 
 ### 事件
 

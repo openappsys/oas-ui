@@ -741,7 +741,7 @@
       {
         "name": "underline",
         "type": "string",
-        "default": "true",
+        "default": "",
         "observed": true
       },
       {
@@ -759,6 +759,21 @@
         "name": "color",
         "type": "string",
         "default": "",
+        "observed": true
+      },
+      {
+        "name": "icon",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "icon-position",
+        "observed": true
+      },
+      {
+        "name": "external",
+        "type": "boolean",
         "observed": true
       }
     ],

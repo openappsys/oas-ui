@@ -1,6 +1,8 @@
 import { OASElement } from '@oas-ui/core'
+import { iconRegistry, type IconName } from '@oas-ui/icons'
 
-export type LinkType = 'default' | 'primary' | 'success' | 'warning' | 'danger'
+export type LinkType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
+export type LinkUnderline = 'always' | 'hover' | 'never'
 
 /** 预设色板名（映射 --oas-preset-* token，color 属性支持按名引用；统一协议见 ui-spec §4.1） */
 export type LinkPresetColor =
@@ -30,15 +32,31 @@ export const LINK_PRESET_COLORS: readonly LinkPresetColor[] = [
   'purple',
 ]
 
+const VALID_UNDERLINE = ['always', 'hover', 'never'] as const
+
+const warnedValues = new Set<string>()
+
+/** 非法值告警：dev 下 console.warn 一次（同值去重），值本身走调用处的回落 */
+function warnOnce(kind: string, raw: string, fallback: string, valid: readonly string[]): void {
+  const key = `${kind}:${raw}`
+  if (warnedValues.has(key)) return
+  warnedValues.add(key)
+  console.warn(`[oas-link] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
+}
+
 const STYLE = `
 :host {
   display: inline-block;
   font-family: inherit;
 }
 a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-1);
   color: var(--oas-color-text-primary);
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: var(--oas-link-underline-offset, 2px);
+  text-decoration-color: var(--oas-link-underline-color, currentColor);
   cursor: pointer;
   font-size: var(--oas-font-size-md);
   transition: color var(--oas-transition-fast) var(--oas-ease-out);
@@ -50,7 +68,17 @@ a:focus-visible {
   outline: none;
   box-shadow: var(--oas-focus-ring);
 }
-a.no-underline {
+/* underline 三态：hover（默认，无下划线悬停出现）/ always（常驻）/ never（无） */
+a.hover {
+  text-decoration: none;
+}
+a.hover:hover {
+  text-decoration: underline;
+}
+a.always {
+  text-decoration: underline;
+}
+a.never {
   text-decoration: none;
 }
 a.primary {
@@ -67,6 +95,9 @@ a.warning {
 }
 a.danger {
   color: var(--oas-color-danger-text);
+}
+a.info {
+  color: var(--oas-color-info-text);
 }
 a[disabled] {
   cursor: not-allowed;
@@ -86,11 +117,28 @@ a.has-color:hover {
 :host-context(.dark) a.has-color:hover {
   color: color-mix(in srgb, var(--oas-link-color, var(--oas-color-text-primary)) 85%, white);
 }
+/* 图标：与文字同行（gap 由 a 的 inline-flex 提供），外链图标在末尾 */
+.icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.icon svg {
+  width: 1em;
+  height: 1em;
+  display: block;
+}
+.icon-external {
+  opacity: 0.7;
+}
 `
+
+/** 外链小图标（原创简单箭头↗） */
+const EXTERNAL_ICON_SVG =
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7"/><path d="M13 3L7 9"/><path d="M5 5H3v8h8v-2"/></svg>'
 
 export class OASLink extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['href', 'type', 'underline', 'disabled', 'target', 'color']
+    return ['href', 'type', 'underline', 'disabled', 'target', 'color', 'icon', 'icon-position', 'external']
   }
 
   private a: HTMLAnchorElement | null = null
@@ -131,31 +179,80 @@ export class OASLink extends OASElement {
     return true
   }
 
+  /** 从图标集取图标 SVG（复用 @oas-ui/icons 的 iconRegistry，与 oas-icon 同源） */
+  private iconSvg(name: string): string {
+    return iconRegistry[name as IconName] ?? ''
+  }
+
   protected override update(): void {
     const a = this.a
     if (!a) return
     const href = this.getAttr('href', '')
     const type = this.getAttr('type', 'default') as LinkType
-    const underline = this.getAttr('underline', 'true') !== 'false'
     const disabled = this.hasAttr('disabled')
     const target = this.getAttr('target', '')
+    const external = this.hasAttr('external')
 
     a.setAttribute('href', href)
-    if (target) a.setAttribute('target', target)
+    // external 自动 target=_blank；显式 target 优先（用户给了就听用户的）
+    const effectiveTarget = target || (external ? '_blank' : '')
+    if (effectiveTarget) a.setAttribute('target', effectiveTarget)
     else a.removeAttribute('target')
-    a.className = `${type}${underline ? '' : ' no-underline'}`
+    // 安全：凡 target=_blank 自动补 rel="noopener noreferrer"
+    if (effectiveTarget === '_blank') a.setAttribute('rel', 'noopener noreferrer')
+    else a.removeAttribute('rel')
+
+    // underline 三态：always/hover/never（默认 hover）；兼容 bare（=always）/"true"（=always）/"false"（=never）
+    let underline: LinkUnderline = 'hover'
+    const rawUnderline = this.getAttr('underline', '')
+    if (rawUnderline === '' && this.hasAttr('underline')) underline = 'always'
+    else if (rawUnderline === 'true') underline = 'always'
+    else if (rawUnderline === 'false') underline = 'never'
+    else if (rawUnderline && (VALID_UNDERLINE as readonly string[]).includes(rawUnderline)) {
+      underline = rawUnderline as LinkUnderline
+    } else if (rawUnderline) {
+      warnOnce('underline', rawUnderline, 'hover', VALID_UNDERLINE)
+    }
+
+    const classes = [type !== 'default' ? type : '', underline, this.hasAttr('color') ? 'has-color' : '']
+      .filter(Boolean)
+      .join(' ')
+    if (classes) a.className = classes
+    else a.removeAttribute('class')
     a.toggleAttribute('disabled', disabled)
     a.setAttribute('aria-disabled', disabled ? 'true' : 'false')
+
     // color 统一协议：预设名映射 --oas-preset-*-text（文字达标深色 token，明暗主题各一份）；
-    // 任意 CSS 色值直注入原值渲染（不自动改写，对比度责任在宿主，文档已明示）；移除后回落 type 语义色
+    // 任意 CSS 色值直注入原值渲染（不自动改写，对比度责任在宿主，文档已明示）
     const color = this.getAttr('color', '')
     if (color) {
       const isPreset = (LINK_PRESET_COLORS as readonly string[]).includes(color)
       a.style.setProperty('--oas-link-color', isPreset ? `var(--oas-preset-${color}-text)` : color)
-      a.classList.add('has-color')
     } else {
       a.style.removeProperty('--oas-link-color')
-      a.classList.remove('has-color')
+    }
+
+    // 图标：icon 属性（注册表名）+ external（自动外链图标）
+    // 结构：<span class="icon">svg</span> 按 icon-position 放前/后；external 图标额外带 icon-external class
+    // icon-position 缺省：显式 icon 默认 start（图标在文字前惯例）；
+    // external 外链图标默认 end（外链指示在文字后惯例）
+    const iconName = this.getAttr('icon', '')
+    const iconPosition = this.getAttr('icon-position', external && !iconName ? 'end' : 'start')
+    const wantIcon = iconName !== '' || external
+    const existingIcon = a.querySelector('.icon')
+    if (wantIcon) {
+      const svg = iconName ? this.iconSvg(iconName) : external ? EXTERNAL_ICON_SVG : ''
+      if (!svg) {
+        warnOnce('icon', iconName, '无图标（注册表无该名）', [])
+      }
+      const iconEl = existingIcon ?? a.insertBefore(document.createElement('span'), a.firstChild)
+      iconEl.className = `icon${external ? ' icon-external' : ''}`
+      iconEl.innerHTML = svg
+      // 位置：start=文字前（firstChild），end=文字后（appendChild）
+      if (iconPosition === 'end' && iconEl !== a.lastElementChild) a.appendChild(iconEl)
+      if (iconPosition === 'start' && iconEl !== a.firstElementChild) a.insertBefore(iconEl, a.firstChild)
+    } else if (existingIcon) {
+      existingIcon.remove()
     }
   }
 }
