@@ -1581,7 +1581,9 @@
     }
   },
   "oas-visually-hidden": {
-    "attrs": {},
+    "attrs": {
+      "focusable": "Visually hidden by default, revealed when content is focused (skip-link scenario)"
+    },
     "events": {},
     "slots": {
       "": "Passed-through content, visually hidden but readable and copyable by screen readers"
