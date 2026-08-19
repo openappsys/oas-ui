@@ -136,7 +136,9 @@ test.describe('官网首页（重设计版）', () => {
       .toBe(true)
   })
 
-  test('SPA 导航回首页后滚动入场动画可触发（回归：首载非首页时 reveal 永不显示）', async ({ page }) => {
+  test('SPA 导航回首页后滚动入场动画可触发（回归：首载非首页时 reveal 永不显示）', async ({
+    page,
+  }) => {
     // 首载落在组件页（非 home 布局）→ Layout onMounted 查不到 .home-reveal
     await page.goto('/components/button', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('.VPDoc')).toBeAttached()

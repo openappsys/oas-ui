@@ -1220,6 +1220,24 @@
         "type": "string",
         "default": "",
         "observed": true
+      },
+      {
+        "name": "variant",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "color",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
