@@ -1288,7 +1288,12 @@
   "oas-visually-hidden": {
     "className": "OASVisuallyHidden",
     "sourceFile": "packages/ui/src/basic/visually-hidden/oas-visually-hidden.ts",
-    "attrs": [],
+    "attrs": [
+      {
+        "name": "focusable",
+        "observed": true
+      }
+    ],
     "props": [],
     "events": [],
     "slots": [

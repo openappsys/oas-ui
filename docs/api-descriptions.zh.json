@@ -1581,7 +1581,9 @@
     }
   },
   "oas-visually-hidden": {
-    "attrs": {},
+    "attrs": {
+      "focusable": "默认视觉隐藏，内容聚焦时显形（skip-link 场景）"
+    },
     "events": {},
     "slots": {
       "": "透出的内容，视觉隐藏但对屏幕阅读器可读、可复制"

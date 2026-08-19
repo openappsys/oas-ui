@@ -13,6 +13,18 @@ const STYLE = `
   white-space: nowrap !important;
   border: 0 !important;
 }
+/* focusable：默认视觉隐藏，内容聚焦时显形（skip-link 场景——键盘用户 Tab 到跳转链接时显示）。
+   :focus-within 覆盖内容里任一可聚焦子元素；specificity 更高压过上方基础隐藏规则 */
+:host([focusable]:focus-within) {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  clip: none !important;
+  clip-path: none !important;
+  white-space: normal !important;
+}
 `
 
 /**
@@ -20,6 +32,10 @@ const STYLE = `
  * 纯展示组件，不派发任何事件、不含任何交互元素。
  */
 export class OASVisuallyHidden extends OASElement {
+  static override get observedAttributes(): string[] {
+    return ['focusable']
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `

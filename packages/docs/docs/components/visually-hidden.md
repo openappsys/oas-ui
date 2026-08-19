@@ -9,9 +9,24 @@
   <oas-visually-hidden>该表单仅能提交一次，提交前请确认内容无误。</oas-visually-hidden>
 </DemoBlock>
 
+## 焦点显形（focusable）
+
+`focusable` 时默认视觉隐藏，内容聚焦时显形——skip-link 场景（键盘用户 Tab 到「跳到主内容」链接时它要显示出来）。用 Tab 键切到下面链接看它出现：
+
+<DemoBlock title="焦点显形">
+  <oas-visually-hidden focusable>
+    <oas-link href="#main">跳到主内容</oas-link>
+  </oas-visually-hidden>
+  <p style="margin: 8px 0 0; font-size: 13px; color: var(--oas-color-text-secondary);">↑ 默认不可见；Tab 聚焦链接时显形</p>
+</DemoBlock>
+
 ## API
 
-该组件无属性，仅使用默认 slot 透出内容。
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `focusable` | 默认视觉隐藏，内容聚焦时显形（skip-link 场景） | — | — |
 
 ### 插槽
 
