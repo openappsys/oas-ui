@@ -85,16 +85,18 @@ describe('OASLink', () => {
     it('CSS：hover 态有 :hover 下划线规则、never 无下划线、always 常驻', () => {
       const el = mount({ href: '#' })
       const css = el.shadowRoot!.querySelector('style')!.textContent!
-      expect(css).toMatch(/a\.hover:hover\s*{[^}]*text-decoration:\s*underline/)
-      expect(css).toMatch(/a\.never\s*{[^}]*text-decoration:\s*none/)
-      expect(css).toMatch(/a\.always\s*{[^}]*text-decoration:\s*underline/)
+      expect(css).toMatch(/a\.hover:hover\s*{[^}]*text-decoration-line:\s*underline/)
+      expect(css).toMatch(/a\.never\s*{[^}]*text-decoration-line:\s*none/)
+      expect(css).toMatch(/a\.always\s*{[^}]*text-decoration-line:\s*underline/)
     })
 
     it('CSS 变量开口：--oas-link-underline-offset / --oas-link-underline-color', () => {
       const el = mount({ href: '#' })
       const css = el.shadowRoot!.querySelector('style')!.textContent!
       expect(css).toMatch(/text-underline-offset:\s*var\(--oas-link-underline-offset,\s*2px\)/)
-      expect(css).toMatch(/text-decoration-color:\s*var\(--oas-link-underline-color,\s*currentColor\)/)
+      expect(css).toMatch(
+        /text-decoration-color:\s*var\(--oas-link-underline-color,\s*currentColor\)/,
+      )
     })
   })
 
@@ -173,87 +175,86 @@ describe('OASLink', () => {
   })
 })
 
-  it('点击派发 oas-click（bubbles + composed）', () => {
-    const el = mount({ href: '#' })
-    let detail: unknown
-    el.addEventListener('oas-click', (e: Event) => (detail = e))
-    link(el).click()
-    expect((detail as CustomEvent).bubbles).toBe(true)
-    expect((detail as CustomEvent).composed).toBe(true)
+it('点击派发 oas-click（bubbles + composed）', () => {
+  const el = mount({ href: '#' })
+  let detail: unknown
+  el.addEventListener('oas-click', (e: Event) => (detail = e))
+  link(el).click()
+  expect((detail as CustomEvent).bubbles).toBe(true)
+  expect((detail as CustomEvent).composed).toBe(true)
+})
+
+it('属性变化增量更新：切换 type 不重建引用', () => {
+  const el = mount({ href: '#', type: 'primary' })
+  const a = link(el)
+  el.setAttribute('type', 'danger')
+  expect(link(el)).toBe(a)
+  expect(a.classList.contains('danger')).toBe(true)
+})
+
+describe('color 属性（统一协议：11 预设名→token / 任意 CSS 色值直注入）', () => {
+  it('color 进入 observedAttributes', () => {
+    expect(OASLink.observedAttributes).toContain('color')
   })
 
-  it('属性变化增量更新：切换 type 不重建引用', () => {
-    const el = mount({ href: '#', type: 'primary' })
-    const a = link(el)
-    el.setAttribute('type', 'danger')
-    expect(link(el)).toBe(a)
-    expect(a.classList.contains('danger')).toBe(true)
+  it('预设名映射 --oas-preset-*-text 达标文字 token（非本色）', () => {
+    const el = mount({ href: '#', color: 'geekblue' })
+    expect(link(el).style.getPropertyValue('--oas-link-color')).toBe(
+      'var(--oas-preset-geekblue-text)',
+    )
+    const gold = mount({ href: '#', color: 'gold' })
+    expect(link(gold).style.getPropertyValue('--oas-link-color')).toBe(
+      'var(--oas-preset-gold-text)',
+    )
   })
 
-  describe('color 属性（统一协议：11 预设名→token / 任意 CSS 色值直注入）', () => {
-    it('color 进入 observedAttributes', () => {
-      expect(OASLink.observedAttributes).toContain('color')
-    })
-
-    it('预设名映射 --oas-preset-*-text 达标文字 token（非本色）', () => {
-      const el = mount({ href: '#', color: 'geekblue' })
-      expect(link(el).style.getPropertyValue('--oas-link-color')).toBe(
-        'var(--oas-preset-geekblue-text)',
+  it('11 预设名全量映射 -text token', () => {
+    const presets = [
+      'magenta',
+      'red',
+      'volcano',
+      'orange',
+      'gold',
+      'lime',
+      'green',
+      'cyan',
+      'blue',
+      'geekblue',
+      'purple',
+    ]
+    for (const name of presets) {
+      const el = mount({ href: '#', color: name })
+      expect(link(el).style.getPropertyValue('--oas-link-color'), `preset=${name}`).toBe(
+        `var(--oas-preset-${name}-text)`,
       )
-      const gold = mount({ href: '#', color: 'gold' })
-      expect(link(gold).style.getPropertyValue('--oas-link-color')).toBe(
-        'var(--oas-preset-gold-text)',
-      )
-    })
-
-    it('11 预设名全量映射 -text token', () => {
-      const presets = [
-        'magenta',
-        'red',
-        'volcano',
-        'orange',
-        'gold',
-        'lime',
-        'green',
-        'cyan',
-        'blue',
-        'geekblue',
-        'purple',
-      ]
-      for (const name of presets) {
-        const el = mount({ href: '#', color: name })
-        expect(link(el).style.getPropertyValue('--oas-link-color'), `preset=${name}`).toBe(
-          `var(--oas-preset-${name}-text)`,
-        )
-        el.remove()
-      }
-    })
-
-    it('任意 CSS 色值直接注入（#hex）', () => {
-      const el = mount({ href: '#', color: '#0e7490' })
-      expect(link(el).style.getPropertyValue('--oas-link-color')).toBe('#0e7490')
-    })
-
-    it('color 优先于 type 语义色（has-color class 胜出）', () => {
-      const el = mount({ href: '#', type: 'primary', color: 'purple' })
-      expect(link(el).classList.contains('has-color')).toBe(true)
-    })
-
-    it('type 语义色改指 -text 达标变体（存量 3.3:1 隐患修复）', () => {
-      const el = mount({ href: '#', type: 'success' })
-      const css = el.shadowRoot!.querySelector('style')!.textContent!
-      expect(css).toMatch(/a\.success\s*\{[^}]*--oas-color-success-text/)
-      expect(css).toMatch(/a\.warning\s*\{[^}]*--oas-color-warning-text/)
-      expect(css).toMatch(/a\.danger\s*\{[^}]*--oas-color-danger-text/)
-    })
-
-    it('动态切换与移除即时生效', () => {
-      const el = mount({ href: '#', color: 'red' })
-      el.setAttribute('color', '#00b96b')
-      expect(link(el).style.getPropertyValue('--oas-link-color')).toBe('#00b96b')
-      el.removeAttribute('color')
-      expect(link(el).style.getPropertyValue('--oas-link-color')).toBe('')
-      expect(link(el).classList.contains('has-color')).toBe(false)
-    })
+      el.remove()
+    }
   })
 
+  it('任意 CSS 色值直接注入（#hex）', () => {
+    const el = mount({ href: '#', color: '#0e7490' })
+    expect(link(el).style.getPropertyValue('--oas-link-color')).toBe('#0e7490')
+  })
+
+  it('color 优先于 type 语义色（has-color class 胜出）', () => {
+    const el = mount({ href: '#', type: 'primary', color: 'purple' })
+    expect(link(el).classList.contains('has-color')).toBe(true)
+  })
+
+  it('type 语义色改指 -text 达标变体（存量 3.3:1 隐患修复）', () => {
+    const el = mount({ href: '#', type: 'success' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/a\.success\s*\{[^}]*--oas-color-success-text/)
+    expect(css).toMatch(/a\.warning\s*\{[^}]*--oas-color-warning-text/)
+    expect(css).toMatch(/a\.danger\s*\{[^}]*--oas-color-danger-text/)
+  })
+
+  it('动态切换与移除即时生效', () => {
+    const el = mount({ href: '#', color: 'red' })
+    el.setAttribute('color', '#00b96b')
+    expect(link(el).style.getPropertyValue('--oas-link-color')).toBe('#00b96b')
+    el.removeAttribute('color')
+    expect(link(el).style.getPropertyValue('--oas-link-color')).toBe('')
+    expect(link(el).classList.contains('has-color')).toBe(false)
+  })
+})
