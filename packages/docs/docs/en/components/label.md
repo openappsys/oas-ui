@@ -45,10 +45,12 @@ Without `for`, only text is rendered and clicks don't forward focus; long text w
 
 ## Tooltip
 
-`tooltip` renders a hint icon button after the text; hovering shows a floating layer (reuses `oas-tooltip` — the component doesn't build its own floating layer).
+The label itself has no tooltip attribute — the hint capability is achieved by **composing** with `oas-tooltip` (component wrapping component):
 
-<DemoBlock title="Hint icon">
-  <oas-label tooltip="Username must be 3-20 characters">Username</oas-label>
+<DemoBlock title="Compose with oas-tooltip">
+  <oas-tooltip content="Username must be 3-20 characters">
+    <oas-label>Username</oas-label>
+  </oas-tooltip>
 </DemoBlock>
 
 ## Color
@@ -89,7 +91,6 @@ Required-mark forms (asterisk + position) are covered by `required` + `position`
 | `for` | Target control id; click forwards to `getElementById(for).focus()` | `string` | — |
 | `position` | Position of the asterisk relative to the text | `string` | `after` |
 | `required` | Append a required `*` marker (`aria-hidden`) | `boolean` | — |
-| `tooltip` | — | `string` | — |
 
 ### Slots
 
