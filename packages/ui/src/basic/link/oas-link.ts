@@ -54,7 +54,7 @@ a {
   align-items: center;
   gap: var(--oas-space-1);
   color: var(--oas-color-text-primary);
-  text-decoration: underline;
+  text-decoration-line: underline;
   text-underline-offset: var(--oas-link-underline-offset, 2px);
   text-decoration-color: var(--oas-link-underline-color, currentColor);
   cursor: pointer;
@@ -70,16 +70,16 @@ a:focus-visible {
 }
 /* underline 三态：hover（默认，无下划线悬停出现）/ always（常驻）/ never（无） */
 a.hover {
-  text-decoration: none;
+  text-decoration-line: none;
 }
 a.hover:hover {
-  text-decoration: underline;
+  text-decoration-line: underline;
 }
 a.always {
-  text-decoration: underline;
+  text-decoration-line: underline;
 }
 a.never {
-  text-decoration: none;
+  text-decoration-line: none;
 }
 a.primary {
   color: var(--oas-color-primary);
@@ -102,7 +102,7 @@ a.info {
 a[disabled] {
   cursor: not-allowed;
   color: var(--oas-color-text-disabled);
-  text-decoration: none;
+  text-decoration-line: none;
   pointer-events: none;
 }
 /* color 统一协议：预设名映射 -text 达标 token、任意色值原值注入 --oas-link-color，has-color 胜过 type 语义色。
@@ -138,7 +138,17 @@ const EXTERNAL_ICON_SVG =
 
 export class OASLink extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['href', 'type', 'underline', 'disabled', 'target', 'color', 'icon', 'icon-position', 'external']
+    return [
+      'href',
+      'type',
+      'underline',
+      'disabled',
+      'target',
+      'color',
+      'icon',
+      'icon-position',
+      'external',
+    ]
   }
 
   private a: HTMLAnchorElement | null = null
@@ -179,9 +189,12 @@ export class OASLink extends OASElement {
     return true
   }
 
-  /** 从图标集取图标 SVG（复用 @oas-ui/icons 的 iconRegistry，与 oas-icon 同源） */
+  /** 从图标集取图标（复用 @oas-ui/icons 的 iconRegistry，与 oas-icon 同源）；
+   * 注册表值是 path 片段（非完整 svg），这里包 svg 壳（viewBox 16×16 与图标集一致） */
   private iconSvg(name: string): string {
-    return iconRegistry[name as IconName] ?? ''
+    const path = iconRegistry[name as IconName]
+    if (!path) return ''
+    return `<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">${path}</svg>`
   }
 
   protected override update(): void {
@@ -214,7 +227,11 @@ export class OASLink extends OASElement {
       warnOnce('underline', rawUnderline, 'hover', VALID_UNDERLINE)
     }
 
-    const classes = [type !== 'default' ? type : '', underline, this.hasAttr('color') ? 'has-color' : '']
+    const classes = [
+      type !== 'default' ? type : '',
+      underline,
+      this.hasAttr('color') ? 'has-color' : '',
+    ]
       .filter(Boolean)
       .join(' ')
     if (classes) a.className = classes
@@ -250,7 +267,8 @@ export class OASLink extends OASElement {
       iconEl.innerHTML = svg
       // 位置：start=文字前（firstChild），end=文字后（appendChild）
       if (iconPosition === 'end' && iconEl !== a.lastElementChild) a.appendChild(iconEl)
-      if (iconPosition === 'start' && iconEl !== a.firstElementChild) a.insertBefore(iconEl, a.firstChild)
+      if (iconPosition === 'start' && iconEl !== a.firstElementChild)
+        a.insertBefore(iconEl, a.firstChild)
     } else if (existingIcon) {
       existingIcon.remove()
     }
