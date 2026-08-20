@@ -634,3 +634,16 @@ v2.1.0 之后、组件 API 零变更的纯文档补丁，随 npm 分发自动生
 
 - **8 个发布包 README 中英双语化**：单文件 `[中文](#中文) | [English](#english)` 锚点切换，默认中文在上，顶部与 English 段前各一条切换栏（任何语言视图开头均可再切）；顺带完善各包安装/使用/相关包引用与文档站链接
 - **CDN 引用版本号 `@1` → `@2`**：文档站/README 中 unpkg 引用随主版本升级（2.x，解析最新 v2.1.x），`@N` 大版本区间语义避免写死
+
+## v2.1.2 菜单族反馈批次发布（已完成）
+
+集成反馈第二批（真实项目 oas-md-ka 集成反馈收尾），组件 API 扩展（menubar/menu 双向）：
+
+- **#4 menubar 多组单选独立勾选**：`value` 支持 JSON 对象字符串（`{"mode":"preview","theme":"dark"}`）按组 id 作用域独立记录；`type:"group"` 项的 `value` 作组 id，组内点选只更新该组；纯字符串保持全局单选兼容旧用法
+- **#5 动作项 `kind="action"`**：menubar/menu 叶子支持动作语义——渲染 `menuitem`（无 aria-checked、无勾选态）、点击只 emit `{value, kind:'action'}` 不写回 value；默认 radio 兼容
+- **#2 shortcut 快捷键**：menubar 叶子 `shortcut` 字段，右侧 kbd 视觉提示 + document 级 keydown 自动绑定（Ctrl+N 等，preventDefault 拦截浏览器默认，裸字母键不响应）
+- **#10/#10a 文档标注**：API 表说明事件 `detail` 的 `originalEvent` 非原生 Event、`data-value` 是内部定位属性宿主不应依赖
+- **#10-3 oas-menu 组作用域**：与 #4 同根，menu 的 group 项 value 作组 id + JSON value 按组独立勾选，同步生效
+- **事件 detail 联合类型**：api:scan 改进，同一事件多处 emit 且 detail 不同时合并为联合类型（如 `oas-select` = `{value} | {value, kind:'action'}`），editable/pagination/input-number 等分支 detail 一并补齐
+- **e2e CI flaky 修复**：demo-coverage 事件探针 upgrade 等待 4s→10s + 事件缺失自动重试（2 核 runner 高并发下组件 upgrade 慢所致）
+- **验收**：menubar 32 + menu 39 单测（全量 2375）、typecheck/build/api:check 全绿、e2e chromium 930 + firefox 抽样 343 全绿；浏览器实测多组独立勾选/动作项不勾选/Ctrl+N 触发/console 零告警
