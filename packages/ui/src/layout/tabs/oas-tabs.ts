@@ -606,9 +606,19 @@ export class OASTabs extends OASElement {
 
   /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
   private bind(): void {
-    this.shadow
-      .querySelector('.tablist')
-      ?.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
+    const tablist = this.shadow.querySelector('.tablist')
+    tablist?.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
+    // editable 重命名：dblclick 委托到稳定的 tablist 容器（innerHTML 重建会销毁逐个绑定的
+    // 按钮监听；且真实双击前两次 click 触发 activate→重建，直接绑 btn 会被销毁导致 dblclick 丢失）
+    tablist?.addEventListener('dblclick', (e: Event) => {
+      const btn = (e.target as HTMLElement).closest?.('[role="tab"][data-value]') as HTMLElement | null
+      if (!btn) return
+      const value = btn.getAttribute('data-value') ?? ''
+      const panel = this.panels.find((p) => (p.getAttribute('value') ?? '') === value)
+      if (!panel?.hasAttribute('editable')) return
+      e.stopPropagation()
+      this.startRename(btn, panel, value)
+    })
     // 宿主增删 oas-tab-panel（如 closable 场景外部移除面板）时增量刷新标签栏
     this.observer = new MutationObserver(() => this.update())
     this.observer.observe(this, { childList: true })
@@ -729,14 +739,6 @@ export class OASTabs extends OASElement {
       if (slotLabel) label.appendChild(slotLabel.cloneNode(true))
       else label.textContent = panel.getAttribute('label') ?? ''
       btn.appendChild(label)
-
-      // editable：双击标签进入重命名编辑态（label 替换为 input，Enter 确认 / Esc 取消）
-      if (panel.hasAttribute('editable')) {
-        btn.addEventListener('dblclick', (e: Event) => {
-          e.stopPropagation()
-          this.startRename(btn, panel, value)
-        })
-      }
 
       // 徽标：数字或文本，紧邻标题
       const badge = panel.getAttribute('badge')
@@ -1151,6 +1153,10 @@ export class OASTabs extends OASElement {
     // disabled 面板不可激活（键盘已跳过；此处防御性守卫，防宿主直接 setAttribute 到 disabled 值时面板错位）
     const panel = this.panels.find((p) => (p.getAttribute('value') ?? '') === value)
     if (panel?.hasAttribute('disabled')) return
+    // 重复点击已激活标签：不重建不派发（无谓 rebuild 会销毁双击目标，导致浏览器不派发 dblclick，
+    // editable 重命名失效）；焦点保持即可
+    const current = this.getAttr('active', '') || (this.panels[0]?.getAttribute('value') ?? '')
+    if (value === current) return
     // oas-before-change：切换前拦截点（cancelable），宿主 preventDefault 可 veto 本次切换
     if (!this.emit('before-change', { value }, { cancelable: true })) return
     this.setAttribute('active', value)
