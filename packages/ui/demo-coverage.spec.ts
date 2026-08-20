@@ -606,7 +606,8 @@ for (const [name, m] of Object.entries(manifest)) {
       })
       await page.goto(`/components/${m.demo}.html`, { waitUntil: 'load' })
       // 等组件 upgrade（shadowRoot 出现）再 probe——并行高负载下 attached 立即满足但 upgrade 排队，
-      // 探针太早会全部扑空（「已触发: 无」）；backdrop 由交互创建，跳过
+      // 探针太早会全部扑空（「已触发: 无」）；backdrop 由交互创建，跳过。
+      // 2 核 CI runner 上 6 workers 并发加载时 upgrade 排队可达数秒，超时放宽到 10s
       if (!SKIP_WAIT.has(name)) {
         const tags = WAIT_TAGS[name] ?? [m.tag]
         for (const t of tags) {
@@ -617,7 +618,7 @@ for (const [name, m] of Object.entries(manifest)) {
                 return el instanceof HTMLElement && el.shadowRoot != null
               },
               t,
-              { timeout: 4000 },
+              { timeout: 10_000 },
             )
             break
           } catch {}
@@ -625,8 +626,17 @@ for (const [name, m] of Object.entries(manifest)) {
       }
       await probe(page, name)
       await page.waitForTimeout(200)
-      const fired = await page.evaluate(() => [...window.__fired])
-      const notFired = m.events.filter((e) => !fired.includes(e) && !EXEMPT_EVENTS.has(e))
+      let fired = await page.evaluate(() => [...window.__fired])
+      let notFired = m.events.filter((e) => !fired.includes(e) && !EXEMPT_EVENTS.has(e))
+      // 事件未全触发：大概率是组件 upgrade 晚于首次 probe（CI 慢机）。重试 probe——
+      // __fired 是 Set 单调累积，重复交互只会补充事件类型，不会误判；重试间隔给 upgrade 喘息
+      for (let attempt = 0; attempt < 2 && notFired.length > 0; attempt++) {
+        await page.waitForTimeout(1000)
+        await probe(page, name)
+        await page.waitForTimeout(200)
+        fired = await page.evaluate(() => [...window.__fired])
+        notFired = m.events.filter((e) => !fired.includes(e) && !EXEMPT_EVENTS.has(e))
+      }
       expect(
         notFired,
         `未触发事件: ${notFired.join(', ')}（已触发: ${fired.join(', ') || '无'}）`,

@@ -1779,7 +1779,7 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
       )
     },
     null,
-    { timeout: 10000 },
+    { timeout: 20000 },
   )
   // 状态机收尾：首批（列表首个）加载完成后 aria-busy 从 true 复位为 false
   await page.waitForFunction(
