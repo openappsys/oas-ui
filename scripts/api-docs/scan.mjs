@@ -481,12 +481,22 @@ function literalDefault(node) {
 function extractEvents(cls, unresolved) {
   const events = []
   const seen = new Set()
+  // 同一事件多处 emit 且 detail 不同的：合并为联合类型（A | B），避免漏报分支（如 menubar action/radio）
+  const variants = new Map() // name -> Set<detailText>
   const add = (name, detail) => {
-    if (seen.has(name)) return
-    seen.add(name)
-    const item = { name }
-    if (detail) item.detail = detail
-    events.push(item)
+    if (!variants.has(name)) variants.set(name, new Set())
+    if (detail) variants.get(name).add(detail)
+  }
+  const flush = () => {
+    for (const [name, set] of variants) {
+      if (seen.has(name)) continue
+      seen.add(name)
+      const item = { name }
+      const list = [...set]
+      if (list.length > 0) item.detail = list.length > 1 ? list.join(' | ') : list[0]
+      events.push(item)
+    }
+    variants.clear()
   }
 
   walk(cls, (n) => {
@@ -550,6 +560,7 @@ function extractEvents(cls, unresolved) {
     unresolved.push(`emit 首参既非字符串字面量也无法回溯（${srcText(nameNode)}）`)
   })
 
+  flush()
   return events
 }
 

@@ -290,4 +290,169 @@ describe('OASMenubar', () => {
     )
     expect(insertItem).not.toBeNull()
   })
+
+  // ===== #4 多 radio 组独立 value 作用域（group 项 value 字段作为组 id）=====
+
+  const GROUP_ITEMS = JSON.stringify([
+    {
+      label: '视图',
+      value: 'view',
+      accessKey: 'v',
+      children: [
+        { type: 'group', label: '模式', value: 'mode', children: [
+          { label: '编辑', value: 'edit' },
+          { label: '预览', value: 'preview' },
+        ] },
+        { type: 'group', label: '主题', value: 'theme', children: [
+          { label: '浅色', value: 'light' },
+          { label: '暗色', value: 'dark' },
+        ] },
+      ],
+    },
+  ])
+
+  it('#4 JSON value 按组作用域：两组各自独立勾选', () => {
+    const el = mount({ items: GROUP_ITEMS, value: '{"mode":"preview","theme":"dark"}' })
+    const edit = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="edit"]')!
+    const preview = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="preview"]')!
+    const light = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="light"]')!
+    const dark = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dark"]')!
+    expect(preview.getAttribute('aria-checked')).toBe('true')
+    expect(edit.getAttribute('aria-checked')).toBe('false')
+    expect(dark.getAttribute('aria-checked')).toBe('true')
+    expect(light.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('#4 字符串 value 不穿透组作用域：组内叶子不被全局字符串命中', () => {
+    const el = mount({ items: GROUP_ITEMS, value: 'preview' })
+    const edit = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="edit"]')!
+    const preview = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="preview"]')!
+    const light = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="light"]')!
+    const dark = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dark"]')!
+    // 全部叶子都在组内（scope=mode/theme），字符串 value 只命中根作用域，故组内都不勾选（隔离）
+    expect(preview.getAttribute('aria-checked')).toBe('false')
+    expect(edit.getAttribute('aria-checked')).toBe('false')
+    expect(light.getAttribute('aria-checked')).toBe('false')
+    expect(dark.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('#4 无组 items + 字符串 value：根作用域叶子按现有全局命中（兼容）', () => {
+    const el = mount({ value: 'open' }) // 默认 ITEMS 无 group
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    const newItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
+    expect(open.getAttribute('aria-checked')).toBe('true')
+    expect(newItem.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('#4 组内点击写回该组 value（JSON 对象），不影响另一组', () => {
+    const el = mount({ items: GROUP_ITEMS, value: '{"mode":"preview","theme":"light"}' })
+    const dark = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dark"]')!
+    dark.click()
+    // 写回 JSON：mode 组保持 preview，theme 组更新为 dark
+    const v = JSON.parse(el.getAttribute('value')!)
+    expect(v.mode).toBe('preview')
+    expect(v.theme).toBe('dark')
+    // 勾选同步
+    const preview = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="preview"]')!
+    expect(preview.getAttribute('aria-checked')).toBe('true')
+    expect(dark.getAttribute('aria-checked')).toBe('true')
+    const light = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="light"]')!
+    expect(light.getAttribute('aria-checked')).toBe('false')
+  })
+
+  // ===== #5 动作项 kind =====
+
+  const ACTION_ITEMS = JSON.stringify([
+    {
+      label: '文件',
+      value: 'file',
+      accessKey: 'f',
+      children: [
+        { label: '打开', value: 'open', kind: 'action' },
+        { label: '保存', value: 'save', kind: 'action' },
+        { type: 'divider' },
+        { label: '模式', value: 'mode', kind: 'radio' },
+        { label: '主题', value: 'theme', kind: 'radio' },
+      ],
+    },
+  ])
+
+  it('#5 kind=action 渲染为 menuitem（无 radio 勾选态、无 aria-checked）', () => {
+    const el = mount({ items: ACTION_ITEMS, value: 'mode' })
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    expect(open.getAttribute('role')).toBe('menuitem')
+    expect(open.hasAttribute('aria-checked')).toBe(false)
+    expect(open.querySelector('.check')).toBeNull()
+    const mode = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="mode"]')!
+    expect(mode.getAttribute('role')).toBe('menuitemradio')
+    expect(mode.getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('#5 kind=action 点击不写回 value、不打勾，只 emit oas-select(kind=action)', () => {
+    const el = mount({ items: ACTION_ITEMS, value: 'mode' })
+    const events: unknown[] = []
+    el.addEventListener('oas-select', (e: Event) => events.push((e as CustomEvent).detail))
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    open.click()
+    expect(el.getAttribute('value')).toBe('mode') // 未改变
+    expect(open.getAttribute('aria-checked')).toBeNull()
+    expect(events).toEqual([{ value: 'open', kind: 'action' }])
+  })
+
+  it('#5 默认 kind=radio：不带 kind 字段的叶子保持现有行为', () => {
+    const el = mount() // 默认 ITEMS 无 kind 字段
+    const newItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
+    expect(newItem.getAttribute('role')).toBe('menuitemradio')
+    newItem.click()
+    expect(el.getAttribute('value')).toBe('new')
+    expect(newItem.getAttribute('aria-checked')).toBe('true')
+  })
+
+  // ===== #2 shortcut =====
+
+  const SHORTCUT_ITEMS = JSON.stringify([
+    {
+      label: '文件',
+      value: 'file',
+      accessKey: 'f',
+      children: [
+        { label: '新建', value: 'new', shortcut: 'Ctrl+N' },
+        { label: '打开', value: 'open', shortcut: 'Ctrl+O' },
+        { type: 'divider' },
+        { label: '保存', value: 'save', shortcut: 'Ctrl+S', kind: 'action' },
+      ],
+    },
+  ])
+
+  it('#2 shortcut 渲染为右侧 kbd 提示', () => {
+    const el = mount({ items: SHORTCUT_ITEMS })
+    const newItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
+    const kbd = newItem.querySelector('.shortcut')
+    expect(kbd).not.toBeNull()
+    expect(kbd!.textContent).toBe('Ctrl+N')
+  })
+
+  it('#2 document keydown 命中 shortcut 触发对应项 select', () => {
+    const el = mount({ items: SHORTCUT_ITEMS })
+    const events: unknown[] = []
+    el.addEventListener('oas-select', (e: Event) => events.push((e as CustomEvent).detail))
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'n', ctrlKey: true }))
+    expect(events).toEqual([{ value: 'new' }])
+    expect(el.getAttribute('value')).toBe('new')
+  })
+
+  it('#2 shortcut 不响应无修饰键的裸字母键', () => {
+    const el = mount({ items: SHORTCUT_ITEMS })
+    let count = 0
+    el.addEventListener('oas-select', () => count++)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'n' }))
+    expect(count).toBe(0)
+  })
+
+  it('#2 命中 shortcut 时 preventDefault（不触发浏览器默认）', () => {
+    const el = mount({ items: SHORTCUT_ITEMS })
+    const ev = new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true })
+    document.dispatchEvent(ev)
+    expect(ev.defaultPrevented).toBe(true)
+  })
 })

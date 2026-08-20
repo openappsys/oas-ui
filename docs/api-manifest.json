@@ -354,7 +354,7 @@
       },
       {
         "name": "oas-click",
-        "detail": "{ originalEvent: e }"
+        "detail": "{ originalEvent: e } | { originalEvent: k }"
       }
     ],
     "slots": [
@@ -393,7 +393,7 @@
     "events": [
       {
         "name": "oas-change",
-        "detail": "{ value: next }"
+        "detail": "{ value: next } | { value: val }"
       }
     ],
     "slots": [
@@ -1166,7 +1166,7 @@
     "events": [
       {
         "name": "oas-change",
-        "detail": "{ value: next }"
+        "detail": "{ value: next } | { value: val }"
       }
     ],
     "slots": [
@@ -1750,11 +1750,11 @@
     "events": [
       {
         "name": "oas-input",
-        "detail": "{ value: Number(this.input!.value) }"
+        "detail": "{ value: Number(this.input!.value) } | { value: this.currentRange() } | { value: Number(this.input?.value ?? 0) }"
       },
       {
         "name": "oas-change",
-        "detail": "{ value: Number(this.input!.value) }"
+        "detail": "{ value: Number(this.input!.value) } | { value: this.currentRange() } | { value: Number(this.input?.value ?? 0) }"
       }
     ],
     "slots": [
@@ -1956,11 +1956,11 @@
       },
       {
         "name": "oas-change",
-        "detail": "{ value: next }"
+        "detail": "{ value: next } | { value } | { value: [] } | { value: '' }"
       },
       {
         "name": "oas-clear",
-        "detail": "{ value: [...prev] }"
+        "detail": "{ value: [...prev] } | { value: prev[0] ?? '' }"
       },
       {
         "name": "oas-tag-render",
@@ -2079,7 +2079,7 @@
       },
       {
         "name": "oas-change",
-        "detail": "{ value: option.value }"
+        "detail": "{ value: option.value } | { value: '' }"
       },
       {
         "name": "oas-clear",
@@ -2208,7 +2208,7 @@
     "events": [
       {
         "name": "oas-change",
-        "detail": "{ value: values }"
+        "detail": "{ value: values } | { value: values[0] ?? '' }"
       }
     ],
     "slots": [],
@@ -2424,7 +2424,7 @@
       },
       {
         "name": "oas-change",
-        "detail": "{ value: iso }"
+        "detail": "{ value: iso } | { value }"
       }
     ],
     "slots": [
@@ -2496,7 +2496,7 @@
     "events": [
       {
         "name": "oas-change",
-        "detail": "{ value }"
+        "detail": "{ value } | { value: [toISODate(r.start), toISODate(r.end)] } | { value: [iso] } | { value: iso } | { value: values } | { value: [toISODate(this.range.start), toISODate(this.range.end)], }"
       }
     ],
     "slots": [],
@@ -2779,7 +2779,7 @@
     "events": [
       {
         "name": "oas-change",
-        "detail": "{ value: next }"
+        "detail": "{ value: next } | { value: item.value }"
       }
     ],
     "slots": [],
@@ -2988,7 +2988,7 @@
     "events": [
       {
         "name": "oas-cancel",
-        "detail": "{ value: oldValue }"
+        "detail": "{ value: oldValue } | { value: this.getAttr('value', '') }"
       },
       {
         "name": "oas-change",
@@ -3791,7 +3791,7 @@
     "events": [
       {
         "name": "oas-select",
-        "detail": "{ value: item.value }"
+        "detail": "{ value: item.value, kind: 'action' } | { value: item.value }"
       }
     ],
     "slots": [],
@@ -3980,7 +3980,7 @@
     "events": [
       {
         "name": "oas-select",
-        "detail": "{ value: item.value }"
+        "detail": "{ value: item.value, kind: 'action' } | { value: item.value }"
       }
     ],
     "slots": [],
@@ -4117,7 +4117,7 @@
     "events": [
       {
         "name": "oas-open",
-        "detail": "{ open: true }"
+        "detail": "{ open: true } | { open: false }"
       },
       {
         "name": "oas-select",
@@ -4183,7 +4183,7 @@
     "events": [
       {
         "name": "oas-select",
-        "detail": "{ value: slot.href }"
+        "detail": "{ value: slot.href } | { value: item.href }"
       }
     ],
     "slots": [],
@@ -4508,7 +4508,7 @@
     "events": [
       {
         "name": "oas-change",
-        "detail": "{ page }"
+        "detail": "{ page } | { page: 1, pageSize } | { page: target, pageSize }"
       }
     ],
     "slots": [],
@@ -4979,7 +4979,7 @@
     "events": [
       {
         "name": "oas-click",
-        "detail": "{ originalEvent: e }"
+        "detail": "{ originalEvent: e } | { originalEvent: k }"
       }
     ],
     "slots": [
@@ -5516,7 +5516,7 @@
     "events": [
       {
         "name": "oas-node-drop",
-        "detail": "{ dragKey: this.dragKey, dropKey: '', position: 'inner' }"
+        "detail": "{ dragKey: this.dragKey, dropKey: '', position: 'inner' } | { dragKey: this.dragKey, dropKey: node.key, position: this.dropPosition(row, e, node), }"
       },
       {
         "name": "oas-load",
@@ -5668,7 +5668,7 @@
     "events": [
       {
         "name": "oas-check",
-        "detail": "{ keys: selectAll.checked ? keys : [] }"
+        "detail": "{ keys: selectAll.checked ? keys : [] } | { keys: [...next] }"
       },
       {
         "name": "oas-row-click",
@@ -5933,7 +5933,7 @@
     "events": [
       {
         "name": "oas-finish",
-        "detail": "{ value: target }"
+        "detail": "{ value: target } | { value: this.to }"
       }
     ],
     "slots": [],
