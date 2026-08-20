@@ -237,8 +237,8 @@ DSD 静态快照解决的是"无 JS 时能看到结构"的渐进增强问题；�
 ## 三行引入（客户端）
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@1/index.css" />
-<script src="https://unpkg.com/@oas-ui/ui@1/dist/cdn.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
 ```
 
 ## 测试验证

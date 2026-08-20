@@ -5,8 +5,8 @@
 **Full bundle (simplest, registers all components)**: `cdn.js` is a pre-bundled IIFE file; just load it via a `<script>` tag:
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@1/index.css" />
-<script src="https://unpkg.com/@oas-ui/ui@1/dist/cdn.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
 
@@ -14,7 +14,7 @@
 
 ```html
 <script type="module">
-  import 'https://esm.sh/@oas-ui/ui@1/basic/button'
+  import 'https://esm.sh/@oas-ui/ui@2/basic/button'
 </script>
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
@@ -23,8 +23,8 @@ For multiple components, add one short path each — **only the components you u
 
 ```html
 <script type="module">
-  import 'https://esm.sh/@oas-ui/ui@1/basic/button'
-  import 'https://esm.sh/@oas-ui/ui@1/basic/tag'
+  import 'https://esm.sh/@oas-ui/ui@2/basic/button'
+  import 'https://esm.sh/@oas-ui/ui@2/basic/tag'
 </script>
 ```
 
