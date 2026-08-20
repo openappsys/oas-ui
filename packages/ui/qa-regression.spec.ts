@@ -472,7 +472,7 @@ test('pin-input 受控：外部动态切换 aria-invalid 即时同步 danger 边
 test('select 展开态 active 选项在暗色主题下文字/背景对比度 ≥ 4.5（on-primary token）', async ({
   page,
 }) => {
-  // 曾现 bug：.option.active 硬编码 color:#fff，暗色下 primary 变亮（#4d9fff）白字仅 ~2.7:1。
+  // 曾现 bug：.option.active 硬编码 color:#fff，暗色下 primary 变亮（旧值 #4d9fff）白字仅 ~2.7:1。
   // 修复：改用 --oas-color-text-on-primary（暗色为深色文字），回归锁定对比度。
   await page.goto('/components/select.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-select')
@@ -3739,7 +3739,7 @@ test('DemoBlock 示例代码：连排闭合标签逐行拆分（</svg></oas-icon
   const canvasCode = canvasBlock.locator('.demo-block__code code').first()
   await expect(canvasCode).not.toBeEmpty()
   const canvasText = await canvasCode.innerText()
-  expect(canvasText).toContain('<oas-icon name="check" canvas="fixed"></oas-icon>')
+  expect(canvasText).toContain('<oas-icon name="check" canvas="fixed" color="var(--oas-color-primary)"></oas-icon>')
 })
 
 test('slider 基础用法：自定义滑块/数值输入区 hidden 真实隐藏（默认与拖动后均无残留圆环）', async ({

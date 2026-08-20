@@ -8,8 +8,8 @@
   <div style="width: 100%">
     <oas-carousel>
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 200px">第一屏</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 200px">第二屏</div>
-      <div style="background: #374151; color: var(--oas-color-text-on-primary); height: 200px">第三屏</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 200px">第二屏</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 200px">第三屏</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -22,8 +22,8 @@
   <div style="width: 100%">
     <oas-carousel index="1">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">第一屏</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 160px">第二屏</div>
-      <div style="background: #4b5563; color: var(--oas-color-text-on-primary); height: 160px">第三屏</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">第二屏</div>
+      <div style="background: var(--oas-color-danger); color: var(--oas-color-text-on-danger); height: 160px">第三屏</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -36,8 +36,8 @@
   <div style="width: 100%">
     <oas-carousel autoplay interval="2000">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">自动 1</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 160px">自动 2</div>
-      <div style="background: #374151; color: var(--oas-color-text-on-primary); height: 160px">自动 3</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">自动 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">自动 3</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -52,8 +52,8 @@
   <div style="width: 100%">
     <oas-carousel arrows="always">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">第一屏</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 160px">第二屏</div>
-      <div style="background: #374151; color: var(--oas-color-text-on-primary); height: 160px">第三屏</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">第二屏</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">第三屏</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -62,8 +62,8 @@
   <div style="width: 100%">
     <oas-carousel arrows="hover">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">第一屏</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 160px">第二屏</div>
-      <div style="background: #374151; color: var(--oas-color-text-on-primary); height: 160px">第三屏</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">第二屏</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">第三屏</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -72,8 +72,8 @@
   <div style="width: 100%">
     <oas-carousel arrows="never">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">第一屏</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 160px">第二屏</div>
-      <div style="background: #374151; color: var(--oas-color-text-on-primary); height: 160px">第三屏</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">第二屏</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">第三屏</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -110,8 +110,8 @@
   <div style="width: 100%">
     <oas-carousel id="carousel-event">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">第一屏</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 160px">第二屏</div>
-      <div style="background: #4b5563; color: var(--oas-color-text-on-primary); height: 160px">第三屏</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">第二屏</div>
+      <div style="background: var(--oas-color-danger); color: var(--oas-color-text-on-danger); height: 160px">第三屏</div>
     </oas-carousel>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
       当前屏：<span id="carousel-current">1</span>

@@ -50,7 +50,7 @@ function pickOnColor(color: string): string {
   } else {
     return ''
   }
-  // W3C 相对亮度；0.35 阈值：亮底（如 #4d9fff）取深字、暗底（如 #7c3aed）取白字
+  // W3C 相对亮度；0.35 阈值：亮底（如暗色主题 primary）取深字、暗底（如 #7c3aed）取白字
   const f = (v: number) => {
     v /= 255
     return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
