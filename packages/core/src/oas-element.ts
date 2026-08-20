@@ -146,12 +146,15 @@ export abstract class OASElement extends HTMLElement {
 
   /**
    * 派发组件事件。命名统一 `oas-${name}`。
+   * @param options.cancelable 置 true 时事件可被 preventDefault；返回 dispatchEvent 结果
+   *   （false 表示被宿主 preventDefault），供组件实现「切换前拦截」类 veto 语义
    */
-  protected emit(name: string, detail?: unknown): void {
-    this.dispatchEvent(
+  protected emit(name: string, detail?: unknown, options?: { cancelable?: boolean }): boolean {
+    return this.dispatchEvent(
       new CustomEvent(`oas-${name}`, {
         bubbles: true,
         composed: true,
+        cancelable: options?.cancelable ?? false,
         detail,
       }),
     )

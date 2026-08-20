@@ -2,6 +2,39 @@ import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 import type { OASTabPanel } from './oas-tab-panel.js'
 
+export type TabsSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
+
+const VALID_TABS_SIZES: readonly TabsSize[] = ['xs', 'small', 'medium', 'large', 'xl']
+
+/** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
+function normalizeTabsSize(raw: string): TabsSize {
+  if ((VALID_TABS_SIZES as readonly string[]).includes(raw)) return raw as TabsSize
+  if (!warnedSizes.has(raw)) {
+    warnedSizes.add(raw)
+    console.warn(`[oas-tabs] 非法 size "${raw}"，已回落 medium；合法值：xs/small/medium/large/xl`)
+  }
+  return 'medium'
+}
+
+const warnedSizes = new Set<string>()
+
+export type TabsPanelMode = 'keep' | 'lazy' | 'destroy'
+export type TabsActivation = 'auto' | 'manual'
+
+const VALID_PANEL_MODES: readonly TabsPanelMode[] = ['keep', 'lazy', 'destroy']
+
+/** 非法 panel-mode 归一化：回落 keep 并在 dev 下 console.warn 一次（同值去重） */
+function normalizePanelMode(raw: string): TabsPanelMode {
+  if ((VALID_PANEL_MODES as readonly string[]).includes(raw)) return raw as TabsPanelMode
+  if (!warnedModes.has(raw)) {
+    warnedModes.add(raw)
+    console.warn(`[oas-tabs] 非法 panel-mode "${raw}"，已回落 keep；合法值：keep/lazy/destroy`)
+  }
+  return 'keep'
+}
+
+const warnedModes = new Set<string>()
+
 const STYLE = `
 :host {
   display: block;
@@ -14,7 +47,6 @@ const STYLE = `
 }
 .tablist {
   display: flex;
-  border-bottom: 1px solid var(--oas-color-border);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -32,6 +64,9 @@ const STYLE = `
   font-family: inherit;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
+  /* 标签不压缩不换行：溢出由滚动/更多下拉处理，而非挤压文字竖排（justified 均分模式以 flex:1 覆盖） */
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .tab[aria-selected='true'] {
   color: var(--oas-color-primary);
@@ -125,8 +160,10 @@ const STYLE = `
 }
 
 /* 卡片式（type=card）：标签带边框、激活标签与面板连通、四边有线 */
-:host(.oas-tabs--card) .tablist {
+:host(.oas-tabs--card) .nav {
   border-bottom: none;
+}
+:host(.oas-tabs--card) .tablist {
   gap: var(--oas-space-1);
 }
 :host(.oas-tabs--card) .tab {
@@ -160,10 +197,13 @@ const STYLE = `
   display: flex;
   flex-direction: column;
 }
-:host(.oas-tabs--bottom) .tablist {
+:host(.oas-tabs--bottom) .nav {
   order: 1;
   border-bottom: none;
   border-top: 1px solid var(--oas-color-border);
+}
+:host(.oas-tabs--bottom) .tablist {
+  border-bottom: none;
 }
 :host(.oas-tabs--bottom) .panel {
   order: 0;
@@ -186,10 +226,12 @@ const STYLE = `
   display: flex;
   align-items: stretch;
 }
+:host(.oas-tabs--vertical) .nav {
+  flex-shrink: 0;
+}
 :host(.oas-tabs--vertical) .tablist {
   flex-direction: column;
   border-bottom: none;
-  flex-shrink: 0;
 }
 :host(.oas-tabs--vertical) .tab {
   border-bottom: none;
@@ -200,7 +242,7 @@ const STYLE = `
   flex: 1;
   min-width: 0;
 }
-:host(.oas-tabs--left) .tablist {
+:host(.oas-tabs--left) .nav {
   border-right: 1px solid var(--oas-color-border);
 }
 :host(.oas-tabs--left) .tab {
@@ -213,7 +255,7 @@ const STYLE = `
 :host(.oas-tabs--left) .panel {
   padding-left: var(--oas-space-4);
 }
-:host(.oas-tabs--right) .tablist {
+:host(.oas-tabs--right) .nav {
   order: 1;
   border-left: 1px solid var(--oas-color-border);
 }
@@ -232,7 +274,7 @@ const STYLE = `
 }
 
 /* card 卡片式 + bottom：镜像顶部连通 */
-:host(.oas-tabs--card.oas-tabs--bottom) .tablist {
+:host(.oas-tabs--card.oas-tabs--bottom) .nav {
   border-top: none;
 }
 :host(.oas-tabs--card.oas-tabs--bottom) .tab {
@@ -271,11 +313,263 @@ const STYLE = `
   margin: 0;
   border-radius: var(--oas-radius-md);
 }
+
+/* disabled 标签：视觉降饱和 + 禁点光标（ui-spec §2.3） */
+.tab[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.tab[aria-disabled='true']:hover {
+  color: var(--oas-color-text-secondary);
+  background: none;
+}
+
+/* size 档位：CSS 变量开口，五档对齐 ui-spec §2.1；字号/内边距随档位 */
+:host(.oas-tabs--xs) .tab {
+  font-size: var(--oas-font-size-xs);
+  padding: var(--oas-space-1) var(--oas-space-2);
+}
+:host(.oas-tabs--small) .tab {
+  font-size: var(--oas-font-size-sm);
+  padding: var(--oas-space-1_5) var(--oas-space-3);
+}
+:host(.oas-tabs--large) .tab {
+  font-size: var(--oas-font-size-lg);
+  padding: var(--oas-space-2_5) var(--oas-space-5);
+}
+:host(.oas-tabs--xl) .tab {
+  font-size: var(--oas-font-size-xl);
+  padding: var(--oas-space-3) var(--oas-space-6);
+}
+
+/* centered：标签栏整体居中（横向时） */
+:host(.oas-tabs--centered) .tablist {
+  justify-content: center;
+}
+
+/* justified：标签均分占满宽度 */
+:host(.oas-tabs--justified) .tab {
+  flex: 1;
+  justify-content: center;
+}
+
+/* ===== 溢出滚动：nav 容器承载布局（替代原 tablist 容器角色），tablist 可滚动 ===== */
+.nav {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  min-width: 0;
+  border-bottom: 1px solid var(--oas-color-border);
+}
+/* 横向（默认）：nav 行向，tablist 横向滚动 */
+.tablist {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* 隐藏原生滚动条，由箭头控制 */
+  -ms-overflow-style: none;
+}
+.tablist::-webkit-scrollbar {
+  display: none;
+}
+
+/* 滚动箭头：flex 项（出现时不占位跳动由 hidden 控制），视觉次要、禁用降饱和 */
+.scroll-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 28px;
+  border: none;
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+}
+.scroll-btn[hidden] {
+  display: none;
+}
+.scroll-btn:hover:not(:disabled) {
+  color: var(--oas-color-primary);
+  background: var(--oas-color-bg-hover);
+}
+.scroll-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.scroll-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 纵向（left/right）：nav 列向，tablist 纵向滚动，箭头上下排列 */
+:host(.oas-tabs--vertical) .nav {
+  flex-direction: column;
+}
+:host(.oas-tabs--vertical) .tablist {
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-width: auto;
+  min-height: 0;
+}
+:host(.oas-tabs--vertical) .scroll-btn {
+  width: auto;
+  align-self: stretch;
+  height: 24px;
+}
+
+/* ===== more 溢出收缩下拉 ===== */
+/* more 模式：tablist 不滚动（收缩替代滚动），被收起的 tab 隐藏 */
+:host([more]) .tablist {
+  overflow: visible;
+}
+.tab[data-overflowed] {
+  display: none;
+}
+.more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--oas-radius-sm);
+  background: none;
+  color: var(--oas-color-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+}
+.more-btn[hidden] {
+  display: none;
+}
+.more-btn:hover {
+  color: var(--oas-color-primary);
+  background: var(--oas-color-bg-hover);
+}
+.more-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+/* 选中项被收进更多 → 更多按钮主色高亮标识 */
+.more-btn.more-btn--active {
+  color: var(--oas-color-primary);
+  font-weight: 500;
+}
+.more-dropdown {
+  position: absolute;
+  top: 100%;
+  inset-inline-end: 0;
+  z-index: 10;
+  min-width: 120px;
+  max-height: 280px;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--oas-space-1);
+  background: var(--oas-color-bg-elevated);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+}
+.more-dropdown[hidden] {
+  display: none;
+}
+.more-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  text-align: start;
+  padding: var(--oas-space-1_5) var(--oas-space-3);
+  border: none;
+  border-radius: var(--oas-radius-sm);
+  background: none;
+  color: var(--oas-color-text-primary);
+  font-size: var(--oas-font-size-md);
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.more-item:hover {
+  background: var(--oas-color-bg-hover);
+}
+.more-item:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.more-item[aria-current='true'] {
+  color: var(--oas-color-primary);
+  font-weight: 500;
+}
+
+/* ===== animated：选中态过渡 + 面板淡入（只动 color/border/opacity，不碰 layout） ===== */
+:host(.oas-tabs--animated) .tab {
+  transition:
+    color var(--oas-transition-base) var(--oas-ease-out),
+    border-color var(--oas-transition-base) var(--oas-ease-out),
+    background-color var(--oas-transition-base) var(--oas-ease-out);
+}
+:host(.oas-tabs--animated) .panel ::slotted(oas-tab-panel) {
+  animation: oas-tabs-fade-in var(--oas-transition-base) var(--oas-ease-out);
+}
+@keyframes oas-tabs-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ===== editable 重命名输入框：贴近标签文字样式，最小化视觉跳变 ===== */
+.tab-rename-input {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--oas-color-text-primary);
+  background: var(--oas-color-bg);
+  border: 1px solid var(--oas-color-primary);
+  border-radius: var(--oas-radius-sm);
+  padding: 0 var(--oas-space-1);
+  min-width: 60px;
+  outline: none;
+}
+
+/* ===== sortable 拖拽：拖过目标的高亮指示 ===== */
+.tab[draggable='true'] {
+  cursor: grab;
+}
+.tab--drag-over {
+  box-shadow: inset 2px 0 0 var(--oas-color-primary);
+}
+:host(.oas-tabs--vertical) .tab--drag-over {
+  box-shadow: inset 0 2px 0 var(--oas-color-primary);
+}
 `
 
 export class OASTabs extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['active', 'type', 'closable', 'addable', 'tab-position']
+    return [
+      'active',
+      'type',
+      'closable',
+      'addable',
+      'tab-position',
+      'size',
+      'centered',
+      'justified',
+      'without-scroll-controls',
+      'more',
+      'panel-mode',
+      'activation',
+      'animated',
+      'sortable',
+    ]
   }
 
   private panels: OASTabPanel[] = []
@@ -284,12 +578,28 @@ export class OASTabs extends OASElement {
   private addBtn: HTMLButtonElement | null = null
   /** 上次重建时的面板数（判断「点击 + 后宿主是否新增了面板」） */
   private prevPanelCount = -1
+  /** 溢出检测（ResizeObserver 监听 tablist 尺寸变化） */
+  private resizeObserver: ResizeObserver | null = null
+  /** more 下拉展开态 */
+  private moreOpen = false
+  /** 面板子节点暂存（lazy/destroy 模式：未激活面板内容移出 DOM 暂存） */
+  private stash = new WeakMap<HTMLElement, DocumentFragment>()
+  /** lazy 模式已访问过的面板 value（访问过即常驻，不再暂存） */
+  private visited = new Set<string>()
+  /** sortable 拖拽源标签 value */
+  private dragSource: string | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
       <style>${STYLE}</style>
-      <div class="tablist" part="tablist" role="tablist"></div>
+      <div class="nav" part="nav">
+        <button class="scroll-btn scroll-start" part="scroll-start" type="button" hidden aria-hidden="true" tabindex="-1"></button>
+        <div class="tablist" part="tablist" role="tablist"></div>
+        <button class="more-btn" part="more-button" type="button" hidden></button>
+        <button class="scroll-btn scroll-end" part="scroll-end" type="button" hidden aria-hidden="true" tabindex="-1"></button>
+        <div class="more-dropdown" part="more-dropdown" role="menu" hidden></div>
+      </div>
       <div class="panel" part="panel"><slot></slot></div>
     `
   }
@@ -303,6 +613,8 @@ export class OASTabs extends OASElement {
     this.observer = new MutationObserver(() => this.update())
     this.observer.observe(this, { childList: true })
     this.onCleanup(() => this.observer?.disconnect())
+    this.bindScroll()
+    this.bindMore()
   }
 
   protected override render(): void {
@@ -319,7 +631,8 @@ export class OASTabs extends OASElement {
   }
 
   protected override update(): void {
-    this.panels = [...this.querySelectorAll('oas-tab-panel')] as OASTabPanel[]
+    // 只取直接子面板：嵌套 tabs（panel 内再放 oas-tabs）的面板归内层管理，不误抓
+    this.panels = [...this.querySelectorAll(':scope > oas-tab-panel')] as OASTabPanel[]
     const tablist = this.shadow.querySelector('.tablist')
     if (!tablist) return
     // 样式变体：line（下划线，默认）/ card（卡片式）
@@ -332,8 +645,15 @@ export class OASTabs extends OASElement {
     this.classList.toggle('oas-tabs--left', position === 'left')
     this.classList.toggle('oas-tabs--right', position === 'right')
     this.classList.toggle('oas-tabs--bottom', position === 'bottom')
+    // size 五档（非法值归一化回落 medium）；centered/justified 布局
+    const size = normalizeTabsSize(this.getAttr('size', 'medium'))
+    for (const s of VALID_TABS_SIZES) this.classList.toggle(`oas-tabs--${s}`, s === size)
+    this.classList.toggle('oas-tabs--centered', this.hasAttr('centered'))
+    this.classList.toggle('oas-tabs--justified', this.hasAttr('justified'))
+    this.classList.toggle('oas-tabs--animated', this.hasAttr('animated'))
     const closable = this.hasAttr('closable')
     const addable = this.hasAttr('addable')
+    const sortable = this.hasAttr('sortable')
 
     // 重建前捕获 tablist 内焦点归属（动态增删后焦点恢复的依据）
     const focused = this.captureFocused()
@@ -348,15 +668,19 @@ export class OASTabs extends OASElement {
       const value = panel.getAttribute('value') ?? ''
       if (idx === 0) firstValue = value
       const isSelected = value === (active || firstValue)
+      const disabled = panel.hasAttribute('disabled')
       const btn = document.createElement('button')
       btn.className = 'tab'
       btn.classList.toggle('tab--card', type === 'card')
       btn.setAttribute('part', 'tab')
       btn.setAttribute('role', 'tab')
       btn.setAttribute('aria-selected', String(isSelected))
-      // roving tabindex：仅选中标签进 Tab 顺序，其余 tabindex=-1（动态增删后由
-      // restoreFocus 重新落地焦点，Tab/方向键流保持）
-      btn.setAttribute('tabindex', isSelected ? '0' : '-1')
+      // roving tabindex：仅选中标签进 Tab 顺序，其余 tabindex=-1；disabled 恒 -1 不可聚焦
+      btn.setAttribute('tabindex', isSelected && !disabled ? '0' : '-1')
+      if (disabled) {
+        btn.setAttribute('aria-disabled', 'true')
+        btn.disabled = true
+      }
       btn.setAttribute('data-value', value)
 
       // 图标：icon 属性（iconRegistry 内联 SVG）优先；否则取面板直接子元素
@@ -393,8 +717,26 @@ export class OASTabs extends OASElement {
 
       const label = document.createElement('span')
       label.className = 'tab-label'
-      label.textContent = panel.getAttribute('label') ?? ''
+      // slot="label" 自定义标签内容（通用的 slot 定制，fallback 到 label 属性纯文本）；
+      // 克隆面板直接子元素 [slot="label"]（该元素不被面板默认 slot 投影，专供标签位使用）
+      let slotLabel: HTMLElement | null = null
+      for (const child of panel.children) {
+        if (child.getAttribute('slot') === 'label') {
+          slotLabel = child as HTMLElement
+          break
+        }
+      }
+      if (slotLabel) label.appendChild(slotLabel.cloneNode(true))
+      else label.textContent = panel.getAttribute('label') ?? ''
       btn.appendChild(label)
+
+      // editable：双击标签进入重命名编辑态（label 替换为 input，Enter 确认 / Esc 取消）
+      if (panel.hasAttribute('editable')) {
+        btn.addEventListener('dblclick', (e: Event) => {
+          e.stopPropagation()
+          this.startRename(btn, panel, value)
+        })
+      }
 
       // 徽标：数字或文本，紧邻标题
       const badge = panel.getAttribute('badge')
@@ -429,6 +771,40 @@ export class OASTabs extends OASElement {
       }
 
       btn.addEventListener('click', () => this.activate(value))
+
+      // sortable：原生 HTML5 拖拽换位，drop 后 emit oas-reorder（宿主据此重排面板数据）
+      if (sortable && !disabled) {
+        btn.setAttribute('draggable', 'true')
+        btn.addEventListener('dragstart', (e: Event) => {
+          this.dragSource = value
+          const de = e as DragEvent
+          if (de.dataTransfer) {
+            de.dataTransfer.effectAllowed = 'move'
+            de.dataTransfer.setData('text/plain', value)
+          }
+        })
+        btn.addEventListener('dragover', (e: Event) => {
+          const de = e as DragEvent
+          de.preventDefault() // 必须 preventDefault 才允许 drop
+          if (de.dataTransfer) de.dataTransfer.dropEffect = 'move'
+          btn.classList.add('tab--drag-over')
+        })
+        btn.addEventListener('dragleave', () => btn.classList.remove('tab--drag-over'))
+        btn.addEventListener('drop', (e: Event) => {
+          const de = e as DragEvent
+          de.preventDefault()
+          btn.classList.remove('tab--drag-over')
+          const fromValue = this.dragSource ?? de.dataTransfer?.getData('text/plain') ?? ''
+          if (fromValue && fromValue !== value) this.reorder(fromValue, value)
+          this.dragSource = null
+        })
+        btn.addEventListener('dragend', () => {
+          this.dragSource = null
+          tablist
+            .querySelectorAll('.tab--drag-over')
+            .forEach((t) => t.classList.remove('tab--drag-over'))
+        })
+      }
       tablist.appendChild(btn)
     })
 
@@ -454,29 +830,329 @@ export class OASTabs extends OASElement {
     }
 
     const selected = active || firstValue
+    const panelMode = normalizePanelMode(this.getAttr('panel-mode', 'keep'))
     for (const panel of this.panels) {
-      const isActive = panel.getAttribute('value') === selected
+      const value = panel.getAttribute('value') ?? ''
+      const isActive = value === selected
       panel.hidden = !isActive
+      this.syncPanelContent(panel, value, isActive, panelMode)
     }
 
     // 重建后恢复焦点（点击 + / 关闭 / 方向键切换后焦点不丢）
     this.restoreFocus(focused, added)
+    // 重建后重新检测溢出（标签增删/尺寸变化后箭头显隐同步）
+    this.syncScrollControls()
+    this.syncMore()
   }
 
-  private handleKey(e: KeyboardEvent): void {
-    const values = this.panels.map((p) => p.getAttribute('value') ?? '')
-    const active = this.getAttr('active', '') || values[0] || ''
-    const idx = values.indexOf(active)
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      e.preventDefault()
-      this.activate(values[(idx + 1) % values.length] ?? '')
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      e.preventDefault()
-      this.activate(values[(idx - 1 + values.length) % values.length] ?? '')
+  /** 溢出滚动箭头：ResizeObserver 监听溢出变化 + scroll 事件更新箭头可用态 */
+  private bindScroll(): void {
+    const tablist = this.shadow.querySelector('.tablist') as HTMLElement | null
+    if (!tablist) return
+    const start = this.shadow.querySelector('.scroll-start') as HTMLButtonElement | null
+    const end = this.shadow.querySelector('.scroll-end') as HTMLButtonElement | null
+    if (!start || !end) return
+    // 箭头 aria-label 走 locale（ui-spec §2.3 文案禁硬编码）
+    start.setAttribute('aria-label', this.t('tabs.scrollPrev'))
+    end.setAttribute('aria-label', this.t('tabs.scrollNext'))
+    const vertical = this.isVertical()
+    const prevSvg = iconRegistry[vertical ? 'chevron-up' : 'chevron-left']
+    const nextSvg = iconRegistry[vertical ? 'chevron-down' : 'chevron-right']
+    start.innerHTML = `<svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false">${prevSvg}</svg>`
+    end.innerHTML = `<svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false">${nextSvg}</svg>`
+    start.addEventListener('click', () => this.scrollTabs(-1))
+    end.addEventListener('click', () => this.scrollTabs(1))
+    tablist.addEventListener('scroll', () => this.syncScrollControls(), { passive: true })
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => this.syncScrollControls())
+      this.resizeObserver.observe(tablist)
+      this.onCleanup(() => this.resizeObserver?.disconnect())
+    }
+    this.syncScrollControls()
+  }
+
+  private isVertical(): boolean {
+    const pos = this.getAttr('tab-position', 'top')
+    return pos === 'left' || pos === 'right'
+  }
+
+  /** 点击箭头滚动一段（约一个视口的 60%） */
+  private scrollTabs(dir: 1 | -1): void {
+    const tablist = this.shadow.querySelector('.tablist') as HTMLElement | null
+    if (!tablist) return
+    const vertical = this.isVertical()
+    const amount = (vertical ? tablist.clientHeight : tablist.clientWidth) * 0.6 * dir
+    if (vertical) tablist.scrollBy({ top: amount, behavior: 'smooth' })
+    else tablist.scrollBy({ left: amount, behavior: 'smooth' })
+  }
+
+  /** 按溢出与滚动位置同步箭头显隐/可用态（可外部触发：ResizeObserver / scroll / update） */
+  private syncScrollControls(): void {
+    const tablist = this.shadow.querySelector('.tablist') as HTMLElement | null
+    const start = this.shadow.querySelector('.scroll-start') as HTMLButtonElement | null
+    const end = this.shadow.querySelector('.scroll-end') as HTMLButtonElement | null
+    if (!tablist || !start || !end) return
+    // more 模式（收缩下拉）与滚动箭头互斥：more 开启时不走滚动箭头
+    const showControls = !this.hasAttr('without-scroll-controls') && !this.hasAttr('more')
+    const vertical = this.isVertical()
+    const scrollSize = vertical ? tablist.scrollHeight : tablist.scrollWidth
+    const clientSize = vertical ? tablist.clientHeight : tablist.clientWidth
+    const scrollPos = vertical ? tablist.scrollTop : tablist.scrollLeft
+    const overflow = showControls && scrollSize > clientSize + 1
+    start.hidden = !overflow
+    end.hidden = !overflow
+    if (!overflow) return
+    // 到起点禁用 prev，到终点禁用 next（阈值 1px 容差）
+    const atStart = scrollPos <= 1
+    const atEnd = scrollPos + clientSize >= scrollSize - 1
+    start.disabled = atStart
+    end.disabled = atEnd
+    start.setAttribute('aria-disabled', String(atStart))
+    end.setAttribute('aria-disabled', String(atEnd))
+  }
+
+  /** more 溢出收缩：绑定更多按钮点击弹/收下拉、外部点击收起 */
+  private bindMore(): void {
+    const moreBtn = this.shadow.querySelector('.more-btn') as HTMLButtonElement | null
+    if (!moreBtn) return
+    moreBtn.setAttribute('aria-label', this.t('tabs.more'))
+    moreBtn.setAttribute('aria-haspopup', 'menu')
+    moreBtn.setAttribute('aria-expanded', 'false')
+    moreBtn.innerHTML = `<svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false">${iconRegistry['more']}</svg>`
+    moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      this.moreOpen = !this.moreOpen
+      this.syncMoreDropdown()
+    })
+    // 外部点击收起（宿主 document 级，composed 跨 shadow）
+    const onDocClick = (e: Event) => {
+      if (!this.moreOpen) return
+      const path = e.composedPath()
+      if (!path.includes(moreBtn) && !path.includes(this.shadow.querySelector('.more-dropdown') as Node)) {
+        this.moreOpen = false
+        this.syncMoreDropdown()
+      }
+    }
+    document.addEventListener('click', onDocClick, true)
+    this.onCleanup(() => document.removeEventListener('click', onDocClick, true))
+  }
+
+  /**
+   * more 溢出策略：测量每个 tab 宽度累积，超出 nav 可用宽度（扣除更多按钮占位）的
+   * tab 标 data-overflowed 收进「更多」下拉。仅 more 属性开启时生效（与滚动箭头互斥）。
+   */
+  private syncMore(): void {
+    const moreBtn = this.shadow.querySelector('.more-btn') as HTMLButtonElement | null
+    const nav = this.shadow.querySelector('.nav') as HTMLElement | null
+    if (!moreBtn || !nav) return
+    if (!this.hasAttr('more')) {
+      moreBtn.hidden = true
+      return
+    }
+    const tabs = [
+      ...this.shadow.querySelectorAll<HTMLElement>('[role="tab"][data-value]'),
+    ]
+    // 可用宽度 = nav 宽 - 更多按钮占位（约 40px）- 余量
+    const avail = nav.clientWidth - 44
+    let acc = 0
+    let firstOverflow = -1
+    tabs.forEach((t, i) => {
+      acc += t.offsetWidth
+      if (firstOverflow === -1 && acc > avail) firstOverflow = i
+    })
+    const overflowed = firstOverflow !== -1
+    moreBtn.hidden = !overflowed
+    if (!overflowed) {
+      tabs.forEach((t) => t.removeAttribute('data-overflowed'))
+      this.moreOpen = false
+      this.syncMoreDropdown()
+      return
+    }
+    tabs.forEach((t, i) => {
+      if (i >= firstOverflow) t.setAttribute('data-overflowed', '')
+      else t.removeAttribute('data-overflowed')
+    })
+    // 选中项被收进更多 → 更多按钮高亮
+    const active = this.getAttr('active', '') || (tabs[0]?.getAttribute('data-value') ?? '')
+    const activeOverflowed = tabs.some(
+      (t) => t.getAttribute('data-value') === active && t.hasAttribute('data-overflowed'),
+    )
+    moreBtn.classList.toggle('more-btn--active', activeOverflowed)
+    this.renderMoreDropdown()
+  }
+
+  /** 渲染更多下拉内容（被收起的 tab 列表） */
+  private renderMoreDropdown(): void {
+    const dropdown = this.shadow.querySelector('.more-dropdown') as HTMLElement | null
+    if (!dropdown) return
+    dropdown.innerHTML = ''
+    const overflowed = [
+      ...this.shadow.querySelectorAll<HTMLElement>('[role="tab"][data-value][data-overflowed]'),
+    ]
+    const active = this.getAttr('active', '') || (this.panels[0]?.getAttribute('value') ?? '')
+    for (const tab of overflowed) {
+      const value = tab.getAttribute('data-value') ?? ''
+      const item = document.createElement('button')
+      item.className = 'more-item'
+      item.setAttribute('type', 'button')
+      item.setAttribute('role', 'menuitem')
+      item.setAttribute('data-value', value)
+      item.setAttribute('aria-current', String(value === active))
+      // 取面板 label 作下拉项文本
+      const panel = this.panels.find((p) => (p.getAttribute('value') ?? '') === value)
+      item.textContent = panel?.getAttribute('label') ?? value
+      item.addEventListener('click', () => {
+        this.moreOpen = false
+        this.activate(value)
+        this.syncMoreDropdown()
+      })
+      dropdown.appendChild(item)
     }
   }
 
+  /** 同步更多下拉展开态 */
+  private syncMoreDropdown(): void {
+    const dropdown = this.shadow.querySelector('.more-dropdown') as HTMLElement | null
+    const moreBtn = this.shadow.querySelector('.more-btn') as HTMLButtonElement | null
+    if (!dropdown || !moreBtn) return
+    dropdown.hidden = !this.moreOpen
+    moreBtn.setAttribute('aria-expanded', String(this.moreOpen))
+    if (this.moreOpen) this.renderMoreDropdown()
+  }
+
+  /**
+   * 面板内容显隐策略：keep=hidden 保留（默认）；lazy=未访问的未激活面板子节点暂存，
+   * 首次激活挂载并标记 visited（此后常驻）；destroy=切换即卸载非激活面板子节点、激活时重挂。
+   * 暂存/恢复操作的是面板 light DOM 子节点（Fragment 承载），不触发 tabs 的 childList observer
+   * （observer 监听的是 host 直接子节点 panel 增删，不监听 panel 内部）。
+   */
+  private syncPanelContent(
+    panel: HTMLElement,
+    value: string,
+    isActive: boolean,
+    mode: TabsPanelMode,
+  ): void {
+    if (mode === 'keep') return
+    if (isActive) {
+      // 激活：若曾暂存则恢复子节点，并标记已访问
+      const frag = this.stash.get(panel)
+      if (frag) {
+        panel.appendChild(frag)
+        this.stash.delete(panel)
+      }
+      this.visited.add(value)
+      return
+    }
+    // 未激活：lazy 仅暂存「未访问过」的；destroy 一律暂存
+    const shouldStash = mode === 'destroy' || (mode === 'lazy' && !this.visited.has(value))
+    if (shouldStash && !this.stash.has(panel) && panel.childNodes.length > 0) {
+      const frag = document.createDocumentFragment()
+      while (panel.firstChild) frag.appendChild(panel.firstChild)
+      this.stash.set(panel, frag)
+    }
+  }
+
+  private handleKey(e: KeyboardEvent): void {
+    // 可聚焦值 = 非 disabled 面板（disabled 不参与键盘导航循环）
+    const enabledValues = this.panels
+      .filter((p) => !p.hasAttribute('disabled'))
+      .map((p) => p.getAttribute('value') ?? '')
+    if (enabledValues.length === 0) return
+    const manual = this.getAttr('activation', 'auto') === 'manual'
+    const active = this.getAttr('active', '') || enabledValues[0] || ''
+    const idx = enabledValues.indexOf(active)
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      const next = enabledValues[(idx + 1) % enabledValues.length] ?? ''
+      if (manual) this.moveFocus(next)
+      else this.activate(next)
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      const prev = enabledValues[(idx - 1 + enabledValues.length) % enabledValues.length] ?? ''
+      if (manual) this.moveFocus(prev)
+      else this.activate(prev)
+    } else if (manual && (e.key === 'Enter' || e.key === ' ')) {
+      // 手动激活：Enter/Space 切换当前聚焦的标签（读屏/键盘确认语义）
+      const focused = (this.shadow.activeElement as HTMLElement)?.closest?.(
+        '[role="tab"][data-value]',
+      ) as HTMLElement | null
+      const value = focused?.getAttribute('data-value')
+      if (value) {
+        e.preventDefault()
+        this.activate(value)
+      }
+    }
+  }
+
+  /** 手动激活模式：移动 roving 焦点（更新 tabindex + 聚焦）但不切换 active */
+  private moveFocus(value: string): void {
+    const tablist = this.shadow.querySelector('.tablist')
+    if (!tablist) return
+    for (const el of tablist.querySelectorAll<HTMLElement>('[role="tab"][data-value]')) {
+      const isTarget = el.getAttribute('data-value') === value
+      el.setAttribute('tabindex', isTarget ? '0' : '-1')
+      if (isTarget) el.focus({ preventScroll: true })
+    }
+  }
+
+  /**
+   * editable 重命名：标签 label 替换为 input 进入编辑态。Enter 确认（emit oas-rename
+   * 并把新 label 写回面板属性后重渲染）；Esc 或失焦取消（恢复原 label，不发事件）。
+   * 输入期间拦截冒泡，避免触发标签点击/键盘导航。
+   */
+  private startRename(btn: HTMLElement, panel: HTMLElement, value: string): void {
+    const labelEl = btn.querySelector('.tab-label')
+    if (!labelEl || btn.querySelector('.tab-rename-input')) return
+    const original = panel.getAttribute('label') ?? ''
+    const input = document.createElement('input')
+    input.className = 'tab-rename-input'
+    input.value = original
+    input.setAttribute('aria-label', this.t('tabs.newTab'))
+    labelEl.replaceWith(input)
+    input.focus()
+    input.select()
+    const finish = (commit: boolean): void => {
+      const newLabel = input.value.trim()
+      if (commit && newLabel && newLabel !== original) {
+        panel.setAttribute('label', newLabel)
+        this.emit('rename', { value, label: newLabel })
+      }
+      // 恢复标签渲染（重渲染整个 tablist 恢复结构）
+      this.update()
+    }
+    input.addEventListener('keydown', (e: Event) => {
+      const k = e as KeyboardEvent
+      k.stopPropagation()
+      if (k.key === 'Enter') {
+        k.preventDefault()
+        finish(true)
+      } else if (k.key === 'Escape') {
+        k.preventDefault()
+        finish(false)
+      }
+    })
+    input.addEventListener('blur', () => finish(false))
+    input.addEventListener('click', (e) => e.stopPropagation())
+  }
+
+  /**
+   * sortable 拖拽换位：计算 from/to 索引并 emit oas-reorder（宿主据此重排面板顺序，
+   * 组件不自动移动 DOM——数据源是宿主的 oas-tab-panel 列表）。
+   */
+  private reorder(fromValue: string, toValue: string): void {
+    const values = this.panels.map((p) => p.getAttribute('value') ?? '')
+    const fromIndex = values.indexOf(fromValue)
+    const toIndex = values.indexOf(toValue)
+    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return
+    this.emit('reorder', { fromIndex, toIndex })
+  }
+
   private activate(value: string): void {
+    // disabled 面板不可激活（键盘已跳过；此处防御性守卫，防宿主直接 setAttribute 到 disabled 值时面板错位）
+    const panel = this.panels.find((p) => (p.getAttribute('value') ?? '') === value)
+    if (panel?.hasAttribute('disabled')) return
+    // oas-before-change：切换前拦截点（cancelable），宿主 preventDefault 可 veto 本次切换
+    if (!this.emit('before-change', { value }, { cancelable: true })) return
     this.setAttribute('active', value)
     this.emit('change', { value })
     this.update()

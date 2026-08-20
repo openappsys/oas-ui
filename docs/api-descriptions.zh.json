@@ -1294,7 +1294,9 @@
       "badge": "标签标题旁的徽标（数字或文本）",
       "icon": "标签标题前的图标名（复用 `oas-icon` 图标集，如 `mail`）",
       "label": "标签文本",
-      "value": "标签值"
+      "value": "标签值",
+      "disabled": "禁用该标签：不可聚焦/不可点、`aria-disabled`、视觉降饱和，键盘导航跳过",
+      "editable": "标签可双击重命名：双击进入输入框编辑态，Enter 确认（派发 `oas-rename`）/ Esc 取消"
     },
     "events": {},
     "slots": {}
@@ -1338,12 +1340,24 @@
       "addable": "标签栏末尾显示 + 按钮，点击派发 `oas-add`（组件不自动新增面板）",
       "closable": "每个标签显示关闭 ×，点击派发 `oas-close`（组件不自动删除）",
       "tab-position": "标签栏位置：`top`（默认）/ `left` / `right` / `bottom`",
-      "type": "样式变体：`line`（下划线，默认）/ `card`（卡片式）"
+      "type": "样式变体：`line`（下划线，默认）/ `card`（卡片式）",
+      "size": "标签档位：`xs/small/medium/large/xl`（默认 medium），字号/内边距随档位；非法值回落 medium 并告警",
+      "centered": "标签栏整体居中（横向时）",
+      "justified": "标签均分占满标签栏宽度",
+      "without-scroll-controls": "关闭溢出时的左右/上下滚动箭头（默认溢出自动显示箭头）",
+      "more": "溢出收缩为「更多」下拉（替代滚动箭头，二者互斥）；放不下的标签收进下拉，选中项被收起时更多按钮高亮",
+      "panel-mode": "面板显隐策略：`keep`（默认，hidden 保留 DOM）/ `lazy`（未访问的未激活面板不挂载，首次激活才渲染）/ `destroy`（切换即卸载非激活面板内容）",
+      "activation": "键盘激活模式：`auto`（默认，方向键立即切换）/ `manual`（方向键只移焦点，Enter/Space 才切换，a11y 手动激活）",
+      "animated": "选中态过渡 + 面板淡入动画（只动 color/border/opacity，不碰 layout）",
+      "sortable": "标签可拖拽换位（原生 HTML5 DnD），落点后派发 `oas-reorder`（宿主据此重排面板数据，组件不自动移动 DOM）"
     },
     "events": {
       "oas-add": "点击 + 新增按钮，`detail: { label }`（默认新标签文案「新标签」走 locale，宿主自定义或直接使用）",
       "oas-change": "切换，`detail: { value }`",
-      "oas-close": "点击标签关闭 ×，`detail: { key }`（`key` 为该标签 `value`，组件不自动移除）"
+      "oas-close": "点击标签关闭 ×，`detail: { key }`（`key` 为该标签 `value`，组件不自动移除）",
+      "oas-before-change": "切换前派发（cancelable），`detail: { value }`；宿主 `preventDefault()` 可 veto 本次切换（点击/键盘均生效；宿主直接 setAttribute 不触发）",
+      "oas-rename": "editable 标签双击重命名确认（Enter），`detail: { value, label }`；组件自动把新 label 写回面板，宿主可据此持久化",
+      "oas-reorder": "sortable 拖拽换位后派发，`detail: { fromIndex, toIndex }`；宿主据此重排 `oas-tab-panel` 顺序（组件不自动移动 DOM）"
     },
     "slots": {}
   },

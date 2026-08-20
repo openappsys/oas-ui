@@ -109,6 +109,9 @@ export const en: LocaleMessages = {
   'tabs.close': 'Close',
   'tabs.add': 'Add tab',
   'tabs.newTab': 'New tab',
+  'tabs.scrollPrev': 'Scroll tabs backward',
+  'tabs.scrollNext': 'Scroll tabs forward',
+  'tabs.more': 'More tabs',
   'buttonGroup.group': 'Button group',
   // compact (compact control group)
   'compact.group': 'Compact group',

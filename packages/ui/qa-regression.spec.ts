@@ -4497,3 +4497,26 @@ test('tabs 非激活项 hover 有视觉反馈（line 与 card 模式）', async 
   const after = await tab.evaluate((el) => getComputedStyle(el).backgroundColor)
   expect(after, 'hover 后背景应变化').not.toBe(before)
 })
+
+test('tabs 溢出（滚动/更多）时标签不压缩换行——white-space nowrap + flex-shrink 0（防文字竖排）', async ({
+  page,
+}) => {
+  // 缺陷固化：more/滚动模式下 tab 曾被 flex 压缩致文字逐字竖排（应 nowrap + flex-shrink:0 保持宽度，
+  // 溢出交给滚动箭头或「更多」下拉，而非挤压标签）
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tabs')
+  // 溢出滚动 demo 与 more demo 的标签都不该换行/压缩
+  for (const sel of ['.demo-block oas-tabs:not([more])', '.demo-block oas-tabs[more]']) {
+    const result = await page.locator(sel).first().evaluate((el) => {
+      const tabs = [...(el.shadowRoot?.querySelectorAll('[role="tab"][data-value]') ?? [])]
+      const t = tabs.find((x) => (x as HTMLElement).offsetWidth > 0)
+      if (!t) return null
+      const cs = getComputedStyle(t as HTMLElement)
+      return { whiteSpace: cs.whiteSpace, flexShrink: cs.flexShrink }
+    })
+    if (result) {
+      expect(result.whiteSpace, `${sel} 标签应 nowrap`).toBe('nowrap')
+      expect(result.flexShrink, `${sel} 标签应不压缩`).toBe('0')
+    }
+  }
+})
