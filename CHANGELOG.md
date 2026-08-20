@@ -2,6 +2,20 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.1.2] - 2026-08-20
+
+### 新增
+
+- **menubar/menu 多组单选独立勾选**（集成反馈 #4）：`value` 支持 JSON 对象字符串（`{"mode":"preview","theme":"dark"}`）按组 id 作用域独立记录；`type:"group"` 项的 `value` 作组 id，组内点选只更新该组；纯字符串保持全局单选兼容旧用法（menubar 与 menu 同步生效，即 #10-3）
+- **动作项 `kind="action"`**（集成反馈 #5）：menubar/menu 叶子支持动作语义——渲染 `menuitem`（无 aria-checked、无勾选态）、点击只 emit `{value, kind:'action'}` 不写回 value；默认 radio 兼容
+- **menubar `shortcut` 快捷键**（集成反馈 #2）：叶子 `shortcut` 字段，右侧 kbd 视觉提示 + document 级 keydown 自动绑定（Ctrl+N 等，preventDefault 拦截浏览器默认，裸字母键不响应）
+
+### 变更
+
+- **事件 detail 联合类型**：api:scan 改进——同一事件多处 emit 且 detail 不同时合并为联合类型（如 `oas-select` = `{value} | {value, kind:'action'}`），editable/pagination/input-number 等分支 detail 一并补齐
+- **e2e CI flaky 修复**：demo-coverage 事件探针 upgrade 等待 4s→10s + 事件缺失时自动重试（`__fired` 单调累积不误判）；image 懒加载全图加载判定超时 10s→20s（2 核 runner 高并发下组件 upgrade 慢所致）
+- **文档标注**（集成反馈 #10/#10a）：API 表说明事件 `detail` 的 `originalEvent` 非原生 Event（不能直接 `preventDefault()`）、`data-value` 是内部定位属性宿主不应依赖
+
 ## [2.1.1] - 2026-08-20
 
 ### 变更
