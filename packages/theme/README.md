@@ -1,8 +1,6 @@
 # @oas-ui/theme
 
-[中文](#中文) | [English](#english)
-
-## 中文
+## <a id="zh"></a> 中文 | [English](#en)
 
 OAS-UI 设计 token 包 —— CSS 变量体系：light / dark / high-contrast 三套主题色板、间距、字号、圆角等。通过 `html[data-theme="dark"]` 切换主题。
 
@@ -38,9 +36,7 @@ document.documentElement.dataset.theme = 'dark' // light | dark | high-contrast
 | --- | --- |
 | `@oas-ui/ui` | 组件库主包（基于本包 token 构建） |
 
-[中文](#中文) | [English](#english)
-
-## English
+## <a id="en"></a> [中文](#zh) | English
 
 `@oas-ui/theme` — the design token package of OAS-UI. A CSS variable system: light / dark / high-contrast color palettes, spacing, font sizes, radii, etc. Switch themes via `html[data-theme="dark"]`.
 

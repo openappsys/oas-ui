@@ -1,8 +1,6 @@
 # @oas-ui/ssr
 
-[中文](#中文) | [English](#english)
-
-## 中文
+## <a id="zh"></a> 中文 | [English](#en)
 
 OAS-UI 服务端渲染（SSR）包 —— 在 Node 环境将组件渲染为 Declarative Shadow DOM（DSD）静态快照，首屏不依赖 JS 即可呈现结构与样式，水合（upgrade）后组件接管交互。
 
@@ -31,9 +29,7 @@ const html = await renderToString('oas-button', { type: 'primary' }, '提交', {
 | `@oas-ui/next` | Next.js（App Router）集成 |
 | `@oas-ui/nuxt` | Nuxt 3 module 集成 |
 
-[中文](#中文) | [English](#english)
-
-## English
+## <a id="en"></a> [中文](#zh) | English
 
 `@oas-ui/ssr` — the server-side rendering (SSR) package of OAS-UI. Renders components to static Declarative Shadow DOM (DSD) snapshots on Node. Structure and styles are visible on first paint without JavaScript; interactivity is taken over after hydration (upgrade).
 

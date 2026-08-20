@@ -1,8 +1,6 @@
 # @oas-ui/core
 
-[中文](#中文) | [English](#english)
-
-## 中文
+## <a id="zh"></a> 中文 | [English](#en)
 
 OAS-UI 组件运行时基础包 —— 提供 `OASElement` 组件基类（Shadow DOM 生命周期、属性观察、`oas-*` 事件封装、locale / 配置注入、DSD 水合支持）。`@oas-ui/ui` 中所有组件均继承自该类。
 
@@ -27,9 +25,7 @@ import { OASElement } from '@oas-ui/core'
 | `@oas-ui/ui` | 组件库主包（基于本包构建） |
 | `@oas-ui/i18n` | 框架无关 locale registry |
 
-[中文](#中文) | [English](#english)
-
-## English
+## <a id="en"></a> [中文](#zh) | English
 
 `@oas-ui/core` — the runtime base package of OAS-UI. It provides the `OASElement` base class (Shadow DOM lifecycle, attribute observation, `oas-*` event helpers, locale / config injection, DSD hydration support). Every component in `@oas-ui/ui` extends this class.
 
