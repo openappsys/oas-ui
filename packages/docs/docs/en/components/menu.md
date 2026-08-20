@@ -124,13 +124,13 @@ onMounted(() => {
 | `items` | Menu items JSON (supports disabled / loading, icon, children submenus) | `string` | `[]` |
 | `mode` | Layout mode: `vertical` menu / `horizontal` top bar | — | — |
 | `theme` | Local theme: `dark` uses dark tokens (independent of the global theme) | — | — |
-| `value` | Current selected value | `string` | — |
+| `value` | Current selected value. Plain string means global single-select (no group, legacy-compatible); JSON object string (e.g. `{"sort":"name","view":"list"}`) scopes per group id — the `value` of a `type:"group"` item is the group id, picking inside a group only updates that group | `string` | — |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-select` | An item was selected, `detail: { value }` |
+| `oas-select` | Select an item, `detail: { value, kind? }`. `kind` only appears for action items (`kind: "action"`) as "action"; radio items omit `detail.kind` |
 
 `MenuItem` fields:
 

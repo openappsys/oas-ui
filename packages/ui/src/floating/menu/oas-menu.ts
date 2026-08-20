@@ -385,16 +385,19 @@ export class OASMenu extends OASElement {
     const menuEl = this.menuEl
     if (!menuEl) return
     menuEl.innerHTML = ''
-    const selected = this.getAttr('value', '')
-    this.renderLevel(menuEl, this.itemsList, selected, 0)
+    this.renderLevel(menuEl, this.itemsList, '', 0)
     this.syncOpen()
     this.syncActive()
   }
 
+  /**
+   * 递归渲染一层菜单。scope = 叶子归属的 radio 组 id（最近 `type:"group"` 祖先的 value，
+   * 无组为 ''）；group 递归时把组 id 传下去。
+   */
   private renderLevel(
     container: HTMLElement,
     items: MenuItem[],
-    selected: string,
+    scope: string,
     depth: number,
   ): void {
     const horizontal = this.getAttr('mode') === 'horizontal'
@@ -418,8 +421,10 @@ export class OASMenu extends OASElement {
         label.textContent = item.label ?? ''
         li.appendChild(label)
         container.appendChild(li)
+        // 组 id = 该 group 的 value；未声明 value 的 group 沿用外层作用域
+        const nextScope = item.value != null ? item.value : scope
         // 组内子项平铺在同一个列表层级
-        if (item.children) this.renderLevel(container, item.children, selected, depth)
+        if (item.children) this.renderLevel(container, item.children, nextScope, depth)
         continue
       }
       const li = document.createElement('li')
@@ -437,6 +442,9 @@ export class OASMenu extends OASElement {
       // 收起态（collapsed）下 label 隐藏，需以 aria-label 兜底可访问名称
       if (item.label) li.setAttribute('aria-label', item.label)
       const hasChildren = !!item.children && item.children.length > 0
+      const action = !hasChildren && item.kind === 'action'
+      // 组作用域标记：radio 叶子带所在组 id（无组为 ''）
+      if (!hasChildren && !action) li.dataset.scope = scope
       if (loading) {
         // loading 项：spinner 替换图标位（若后续恢复，items 重建即还原 icon）
         const spin = document.createElement('span')
@@ -473,13 +481,13 @@ export class OASMenu extends OASElement {
         sub.className = depth === 0 ? 'submenu submenu-1' : 'submenu'
         sub.setAttribute('part', 'submenu')
         sub.setAttribute('role', 'menu')
-        this.renderLevel(sub, item.children!, selected, depth + 1)
+        this.renderLevel(sub, item.children!, '', depth + 1)
         li.appendChild(sub)
       } else {
         const action = item.kind === 'action'
         li.setAttribute('role', action ? 'menuitem' : 'menuitemradio')
         if (!action) {
-          li.setAttribute('aria-checked', String(item.value === selected))
+          li.setAttribute('aria-checked', String(item.value === this.selectedValueOf(scope)))
           const check = document.createElement('span')
           check.className = 'check'
           check.textContent = '✓'
@@ -489,7 +497,7 @@ export class OASMenu extends OASElement {
         li.addEventListener('click', (e: MouseEvent) => {
           e.stopPropagation()
           if (item.disabled || item.loading) return
-          this.select(item)
+          this.select(item, scope)
         })
         li.addEventListener('mouseenter', () => {
           if (item.disabled || item.loading) return
@@ -567,12 +575,13 @@ export class OASMenu extends OASElement {
     el?.classList.add('active')
   }
 
-  private select(item: MenuItem): void {
+  private select(item: MenuItem, scope = ''): void {
     // action 项：动作语义，不参与 value 选中态（不写回、不打勾），只通知宿主
     if (item.kind === 'action') {
       this.emit('select', { value: item.value, kind: 'action' })
     } else {
-      this.setAttribute('value', item.value ?? '')
+      const next = this.writeValue(scope, item.value ?? '')
+      this.setAttribute('value', next)
       this.emit('select', { value: item.value })
     }
     // 级联浮出菜单惯例：选中叶子项后收回所有展开的子菜单（展开态是临时的）
@@ -580,6 +589,45 @@ export class OASMenu extends OASElement {
       this.expanded.clear()
       this.syncOpen()
     }
+  }
+
+  /** value 属性 → 组作用域映射。value 为 JSON 对象时按组 id 拆开，否则视为根作用域（''）单值。 */
+  private valueMap(): Record<string, string> {
+    const raw = this.getAttr('value', '')
+    try {
+      const parsed = JSON.parse(raw)
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const map: Record<string, string> = {}
+        for (const [k, v] of Object.entries(parsed)) {
+          if (typeof v === 'string') map[k] = v
+        }
+        return map
+      }
+    } catch {
+      // 非 JSON：视为纯字符串值，走根作用域
+    }
+    return { '': raw }
+  }
+
+  /** 指定作用域的当前选中值（未选中返回 ''） */
+  private selectedValueOf(scope: string): string {
+    return this.valueMap()[scope] ?? ''
+  }
+
+  /** 写回某个作用域的选中值；若组件 value 当前已是 JSON 对象则原位更新该组，否则整体转成 JSON 对象 */
+  private writeValue(scope: string, value: string): string {
+    const map = this.valueMap()
+    if (scope === '' && Object.keys(map).length === 1 && '' in map) {
+      return value // 根作用域单值：保持纯字符串形态
+    }
+    if (scope !== '' && Object.keys(map).length === 1 && '' in map) {
+      // 由纯字符串形态首次写入组作用域：转 JSON 对象（保留原根值或忽略）
+      return JSON.stringify({ ...map, [scope]: value })
+    }
+    const next = { ...map }
+    if (scope === '') delete next[''] // 根作用域不参与 JSON 形态
+    next[scope] = value
+    return JSON.stringify(next)
   }
 
   /** hover：级联展开到该项所在的单条路径（同级互斥），只切 class 不重建 */
@@ -679,7 +727,10 @@ export class OASMenu extends OASElement {
       if (active.children?.length) {
         this.enterSubmenu(active)
       } else {
-        this.select(active)
+        const activeEl = this.menuEl!.querySelector<HTMLElement>(
+          `[part="item"][data-value="${active.value}"]`,
+        )
+        this.select(active, activeEl?.dataset.scope ?? '')
       }
     } else if (e.key === 'Home') {
       this.activeIndex = enabled[0]!

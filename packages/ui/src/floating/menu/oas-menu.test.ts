@@ -581,4 +581,90 @@ describe('OASMenu loading 菜单项', () => {
     expect(items(el)[0]!.getAttribute('aria-expanded')).toBe('false')
     expect(items(el)[0]!.classList.contains('open')).toBe(false)
   })
+
+  // ===== 组作用域 value（与 menubar #4 同根）：group 项 value 作组 id，JSON 对象按组独立勾选 =====
+
+  const MULTI_GROUP_ITEMS = JSON.stringify([
+    {
+      type: 'group',
+      label: '排序',
+      value: 'sort',
+      children: [
+        { label: '按名称', value: 'name' },
+        { label: '按时间', value: 'time' },
+      ],
+    },
+    { type: 'divider' },
+    {
+      type: 'group',
+      label: '视图',
+      value: 'view',
+      children: [
+        { label: '列表', value: 'list' },
+        { label: '网格', value: 'grid' },
+      ],
+    },
+  ])
+
+  it('#10-3 JSON value 按组作用域：两组各自独立勾选', () => {
+    const el = mount({ items: MULTI_GROUP_ITEMS, value: '{"sort":"time","view":"grid"}' })
+    const name = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="name"]')!
+    const time = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="time"]')!
+    const list = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="list"]')!
+    const grid = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+    expect(time.getAttribute('aria-checked')).toBe('true')
+    expect(name.getAttribute('aria-checked')).toBe('false')
+    expect(grid.getAttribute('aria-checked')).toBe('true')
+    expect(list.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('#10-3 字符串 value 不穿透组作用域；无组 items 仍按现有全局命中', () => {
+    const el = mount({ items: MULTI_GROUP_ITEMS, value: 'name' })
+    const name = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="name"]')!
+    const time = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="time"]')!
+    // 组内叶子 scope=sort，字符串 value 只命中根作用域，故组内均不勾（隔离）
+    expect(name.getAttribute('aria-checked')).toBe('false')
+    expect(time.getAttribute('aria-checked')).toBe('false')
+    // 无组 items + 字符串 value：现有全局命中不变
+    const plain = mount({ value: 'about' })
+    const about = plain.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="about"]')!
+    expect(about.getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('#10-3 组内点击写回该组 value（JSON 对象），不影响另一组', () => {
+    const el = mount({ items: MULTI_GROUP_ITEMS, value: '{"sort":"name","view":"list"}' })
+    el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!.click()
+    const v = JSON.parse(el.getAttribute('value')!)
+    expect(v.sort).toBe('name') // 另一组保持
+    expect(v.view).toBe('grid')
+    // value 写回触发重建，重新查询节点断言勾选态
+    const time = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="time"]')!
+    const grid = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+    expect(time.getAttribute('aria-checked')).toBe('false')
+    expect(grid.getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('#10-3 action 项不参与组作用域勾选', () => {
+    const el = mount({
+      items: JSON.stringify([
+        {
+          type: 'group',
+          label: '排序',
+          value: 'sort',
+          children: [
+            { label: '按名称', value: 'name' },
+            { label: '按时间', value: 'time' },
+          ],
+        },
+        { type: 'divider' },
+        { label: '刷新', value: 'refresh', kind: 'action' },
+      ]),
+      value: '{"sort":"time"}',
+    })
+    const refresh = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="refresh"]')!
+    expect(refresh.getAttribute('role')).toBe('menuitem')
+    expect(refresh.hasAttribute('aria-checked')).toBe(false)
+    refresh.click()
+    expect(el.getAttribute('value')).toBe('{"sort":"time"}') // 未改变
+  })
 })
