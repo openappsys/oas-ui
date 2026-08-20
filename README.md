@@ -22,8 +22,8 @@ TypeScript 全量类型 · tree-shakable · light/dark 双主题 · SSR + DSD ·
 ### CDN（零构建）
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@1/index.css" />
-<script src="https://unpkg.com/@oas-ui/ui@1/dist/cdn.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
 
 <oas-button type="primary">主要按钮</oas-button>
 <oas-input placeholder="输入"></oas-input>
@@ -33,7 +33,7 @@ TypeScript 全量类型 · tree-shakable · light/dark 双主题 · SSR + DSD ·
 
 ```html
 <script type="module">
-  import 'https://esm.sh/@oas-ui/ui@1/basic/button'
+  import 'https://esm.sh/@oas-ui/ui@2/basic/button'
 </script>
 ```
 

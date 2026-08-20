@@ -5,8 +5,8 @@
 **整包（最简单，注册全部组件）**：`cdn.js` 是打包好的 IIFE 单文件，`<script>` 直接引入即可：
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@1/index.css" />
-<script src="https://unpkg.com/@oas-ui/ui@1/dist/cdn.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
 
@@ -14,7 +14,7 @@
 
 ```html
 <script type="module">
-  import 'https://esm.sh/@oas-ui/ui@1/basic/button'
+  import 'https://esm.sh/@oas-ui/ui@2/basic/button'
 </script>
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
@@ -23,8 +23,8 @@
 
 ```html
 <script type="module">
-  import 'https://esm.sh/@oas-ui/ui@1/basic/button'
-  import 'https://esm.sh/@oas-ui/ui@1/basic/tag'
+  import 'https://esm.sh/@oas-ui/ui@2/basic/button'
+  import 'https://esm.sh/@oas-ui/ui@2/basic/tag'
 </script>
 ```
 

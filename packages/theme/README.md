@@ -1,11 +1,77 @@
 # @oas-ui/theme
 
-OAS-UI 主题包 —— CSS 变量设计 token（light / dark / high-contrast 三套语义色、控件高度、字号、间距、圆角）。引入后 `html[data-theme="dark"]` 切换暗色。
+[中文](#中文) | [English](#english)
+
+## 中文
+
+OAS-UI 设计 token 包 —— CSS 变量体系：light / dark / high-contrast 三套主题色板、间距、字号、圆角等。通过 `html[data-theme="dark"]` 切换主题。
+
+### 安装
+
+```bash
+pnpm add @oas-ui/theme
+```
+
+### 使用
+
+CDN 引入：
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@1/index.css" />
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
 ```
+
+包管理方式：
 
 ```ts
 import '@oas-ui/theme'
 ```
+
+切换主题只需修改根节点属性：
+
+```js
+document.documentElement.dataset.theme = 'dark' // light | dark | high-contrast
+```
+
+### 相关包
+
+| 包 | 作用 |
+| --- | --- |
+| `@oas-ui/ui` | 组件库主包（基于本包 token 构建） |
+
+[中文](#中文) | [English](#english)
+
+## English
+
+`@oas-ui/theme` — the design token package of OAS-UI. A CSS variable system: light / dark / high-contrast color palettes, spacing, font sizes, radii, etc. Switch themes via `html[data-theme="dark"]`.
+
+### Install
+
+```bash
+pnpm add @oas-ui/theme
+```
+
+### Usage
+
+CDN:
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+```
+
+Via a package manager:
+
+```ts
+import '@oas-ui/theme'
+```
+
+Switch themes by setting the root attribute:
+
+```js
+document.documentElement.dataset.theme = 'dark' // light | dark | high-contrast
+```
+
+### Related packages
+
+| Package | Purpose |
+| --- | --- |
+| `@oas-ui/ui` | Main UI library (built on this package's tokens) |

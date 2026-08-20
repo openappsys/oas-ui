@@ -449,8 +449,8 @@ JS"); interactivity is still handled by the browser runtime, so the
 ## Three-line setup (client)
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@1/index.css" />
-<script src="https://unpkg.com/@oas-ui/ui@1/dist/cdn.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn.js"></script>
 ```
 
 ## Testing
