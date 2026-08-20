@@ -134,7 +134,7 @@ onMounted(async () => {
 | `auto-upload` | 添加后自动模拟上传 | `boolean` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `files` | 文件列表（property，`File[]`） | `File[]` | `[]` |
-| `list-type` | 列表样式：`list`（默认）/ `picture`（列表带小缩略图）/ `picture-card`（卡片缩略图墙） | `ListType` | `list` |
+| `list-type` | 列表样式：`list`（默认）/ `picture`（列表带小缩略图）/ `picture-card`（卡片缩略图墙） | `string` | `list` |
 | `max` | 最大文件数 | `string` | `0` |
 | `multiple` | 多选 | `boolean` | — |
 

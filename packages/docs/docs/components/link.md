@@ -87,12 +87,12 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `color` | — | `string` | — |
+| `color` | 颜色：支持 11 个预设名（映射 `--oas-preset-*-text` 达标 token）或任意 CSS 色值，覆盖 `type` 语义色 | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
-| `external` | — | `boolean` | — |
+| `external` | 外部链接：自动补 `target="_blank"`、`rel="noopener noreferrer"` 与外链图标 | `boolean` | — |
 | `href` | 链接地址 | `string` | — |
-| `icon` | — | `string` | — |
-| `icon-position` | — | — | — |
+| `icon` | 图标名（复用 oas-icon 图标集），置于文字前或后（见 `icon-position`） | `string` | — |
+| `icon-position` | 图标位置：`start`（默认，文字前）/ `end`（文字后）；仅 `external` 图标时缺省 `end` | — | — |
 | `target` | 打开方式 | `string` | — |
 | `type` | 类型 | `LinkType` | `default` |
 | `underline` | 下划线 | `string` | — |

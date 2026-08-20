@@ -84,10 +84,10 @@ label 自身不加提示属性——提示能力通过**组合** `oas-tooltip` �
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `colon` | — | `boolean` | — |
-| `color` | — | `string` | — |
-| `disabled` | — | `boolean` | — |
-| `error` | — | `boolean` | — |
+| `colon` | 文字后补冒号（`:`） | `boolean` | — |
+| `color` | 文字色：支持 11 个预设名（映射 `--oas-preset-*-text` 达标 token）或任意 CSS 色值 | `string` | — |
+| `disabled` | 禁用态（灰化不可点） | `boolean` | — |
+| `error` | 错误态（红色文字） | `boolean` | — |
 | `for` | 目标控件 id，点击代理 `getElementById(for).focus()` | `string` | — |
 | `position` | 星号相对文本的位置 | `string` | `after` |
 | `required` | 追加必填 `*` 标记（`aria-hidden`） | `boolean` | — |

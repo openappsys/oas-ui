@@ -84,10 +84,10 @@ Required-mark forms (asterisk + position) are covered by `required` + `position`
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `colon` | — | `boolean` | — |
-| `color` | — | `string` | — |
-| `disabled` | — | `boolean` | — |
-| `error` | — | `boolean` | — |
+| `colon` | Append a colon (`:`) after the label text | `boolean` | — |
+| `color` | Text color: accepts 11 preset names (mapped to `--oas-preset-*-text` compliant tokens) or any CSS color value | `string` | — |
+| `disabled` | Disabled state (grayed out, not clickable) | `boolean` | — |
+| `error` | Error state (red text) | `boolean` | — |
 | `for` | Target control id; click forwards to `getElementById(for).focus()` | `string` | — |
 | `position` | Position of the asterisk relative to the text | `string` | `after` |
 | `required` | Append a required `*` marker (`aria-hidden`) | `boolean` | — |

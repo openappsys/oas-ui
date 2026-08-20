@@ -87,12 +87,12 @@ Clicking dispatches the `oas-click` CustomEvent; `detail.originalEvent` is the n
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `color` | — | `string` | — |
+| `color` | Color: accepts 11 preset names (mapped to `--oas-preset-*-text` compliant tokens) or any CSS color value, overriding the `type` semantic color | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
-| `external` | — | `boolean` | — |
+| `external` | External link: automatically adds `target="_blank"`, `rel="noopener noreferrer"`, and an external-link icon | `boolean` | — |
 | `href` | Link URL | `string` | — |
-| `icon` | — | `string` | — |
-| `icon-position` | — | — | — |
+| `icon` | Icon name (from the oas-icon set), placed before or after the text (see `icon-position`) | `string` | — |
+| `icon-position` | Icon position: `start` (default, before the text) / `end` (after the text); defaults to `end` for the `external` icon only | — | — |
 | `target` | Open behavior | `string` | — |
 | `type` | Type | `LinkType` | `default` |
 | `underline` | Underline | `string` | — |

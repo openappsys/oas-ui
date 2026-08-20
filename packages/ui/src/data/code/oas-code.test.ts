@@ -235,7 +235,9 @@ describe('OASCode', () => {
     it('预设名映射 --oas-preset-*-text 达标 token（inline 语境文字色）', () => {
       const el = mount({ code: 'x', inline: '', color: 'geekblue' })
       const inlineEl = el.shadowRoot!.querySelector('.inline') as HTMLElement
-      expect(inlineEl.style.getPropertyValue('--oas-code-color')).toBe('var(--oas-preset-geekblue-text)')
+      expect(inlineEl.style.getPropertyValue('--oas-code-color')).toBe(
+        'var(--oas-preset-geekblue-text)',
+      )
     })
 
     it('任意 CSS 色值直注入（#hex）', () => {

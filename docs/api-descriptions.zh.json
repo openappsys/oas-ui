@@ -450,7 +450,13 @@
     "attrs": {
       "content-position": "内容位置",
       "dashed": "虚线",
-      "direction": "方向"
+      "direction": "方向",
+      "variant": "线型：`solid` / `dashed` / `dotted` / `double`；显式设置优先于 `dashed` 布尔（兼容写法）",
+      "inset": "缩进：水平线起点侧内缩（默认 5%，走 `--oas-divider-title-inset` 变量），与文字缩进对齐",
+      "middle": "对称缩进：水平线两侧等宽内缩（默认 16.67%，走 `--oas-divider-middle-inset` 变量）",
+      "size": "间距档位：`small` / `medium`（默认）/ `large`；仅水平布局生效",
+      "strong": "分隔文字加重（font-weight 600）",
+      "color": "颜色：支持 11 个预设名（映射 `--oas-preset-*` token）或任意 CSS 色值"
     },
     "events": {},
     "slots": {}
@@ -730,7 +736,10 @@
   },
   "oas-kbd": {
     "attrs": {
-      "keys": "空格分隔的按键序列，如 `\"ctrl shift k\"`"
+      "keys": "空格分隔的按键序列，如 `\"ctrl shift k\"`",
+      "variant": "形态：`raised`（默认，立体键帽）/ `outline`（描边）/ `subtle`（浅底）/ `plain`（纯文字）；非法值回落 `raised` 并告警",
+      "size": "尺寸档位：`small` / `medium`（默认）/ `large`；非法值回落 `medium` 并告警",
+      "color": "自定义颜色：支持 11 个预设名（映射 `--oas-preset-*-text` 达标 token）或任意 CSS 色值，键帽底色染浅 + 描边跟随"
     },
     "events": {},
     "slots": {}
@@ -739,7 +748,11 @@
     "attrs": {
       "for": "目标控件 id，点击代理 `getElementById(for).focus()`",
       "position": "星号相对文本的位置",
-      "required": "追加必填 `*` 标记（`aria-hidden`）"
+      "required": "追加必填 `*` 标记（`aria-hidden`）",
+      "error": "错误态（红色文字）",
+      "disabled": "禁用态（灰化不可点）",
+      "colon": "文字后补冒号（`:`）",
+      "color": "文字色：支持 11 个预设名（映射 `--oas-preset-*-text` 达标 token）或任意 CSS 色值"
     },
     "events": {},
     "slots": {}
@@ -750,7 +763,11 @@
       "href": "链接地址",
       "target": "打开方式",
       "type": "类型",
-      "underline": "下划线"
+      "underline": "下划线",
+      "color": "颜色：支持 11 个预设名（映射 `--oas-preset-*-text` 达标 token）或任意 CSS 色值，覆盖 `type` 语义色",
+      "icon": "图标名（复用 oas-icon 图标集），置于文字前或后（见 `icon-position`）",
+      "icon-position": "图标位置：`start`（默认，文字前）/ `end`（文字后）；仅 `external` 图标时缺省 `end`",
+      "external": "外部链接：自动补 `target=\"_blank\"`、`rel=\"noopener noreferrer\"` 与外链图标"
     },
     "events": {
       "oas-click": "点击，`detail: { originalEvent }`"
@@ -939,13 +956,27 @@
       "copyable": "显示复制按钮，点击复制文本内容",
       "ellipsis": "超出容器宽度后单行省略（nowrap + ellipsis）",
       "level": "标题级别（1–5）",
-      "type": "文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled`"
+      "type": "文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled`",
+      "copy-text": "自定义复制内容（缺省复制当前文本）",
+      "ellipsis-suffix": "省略时保留的后缀（如展开链接），与 `ellipsis` / `line-clamp` 同用",
+      "actions-position": "操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot=\"actions\"`",
+      "line-clamp": "多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合",
+      "tag": "渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等）",
+      "depth": "文字弱化档位：`1` / `2` / `3`（主色渐淡）；仅 `type=\"default\"` 时生效",
+      "strong": "加粗（font-weight 600，`<strong>` 语义）",
+      "mark": "高亮标记（浅黄底，`<mark>` 语义）",
+      "code": "行内代码样式（等宽字体 + 浅底）",
+      "underline": "下划线",
+      "delete": "删除线（`<del>` 语义）",
+      "italic": "斜体（`<em>` 语义）"
     },
     "events": {
       "oas-copy": "复制成功，`detail: { text }`",
       "oas-copy-error": "复制失败，`detail: { text }`"
     },
-    "slots": {}
+    "slots": {
+      "actions": "操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定"
+    }
   },
   "oas-pin-input": {
     "attrs": {
@@ -1367,13 +1398,27 @@
       "copyable": "显示复制按钮，点击复制文本内容",
       "ellipsis": "超出容器宽度后单行省略（nowrap + ellipsis）",
       "level": "标题级别（1–5）",
-      "type": "文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled`"
+      "type": "文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled`",
+      "copy-text": "自定义复制内容（缺省复制当前文本）",
+      "ellipsis-suffix": "省略时保留的后缀（如展开链接），与 `ellipsis` / `line-clamp` 同用",
+      "actions-position": "操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot=\"actions\"`",
+      "line-clamp": "多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合",
+      "tag": "渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等）",
+      "depth": "文字弱化档位：`1` / `2` / `3`（主色渐淡）；仅 `type=\"default\"` 时生效",
+      "strong": "加粗（font-weight 600，`<strong>` 语义）",
+      "mark": "高亮标记（浅黄底，`<mark>` 语义）",
+      "code": "行内代码样式（等宽字体 + 浅底）",
+      "underline": "下划线",
+      "delete": "删除线（`<del>` 语义）",
+      "italic": "斜体（`<em>` 语义）"
     },
     "events": {
       "oas-copy": "复制成功，`detail: { text }`",
       "oas-copy-error": "复制失败，`detail: { text }`"
     },
-    "slots": {}
+    "slots": {
+      "actions": "操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定"
+    }
   },
   "oas-textarea": {
     "attrs": {
@@ -1428,13 +1473,27 @@
       "copyable": "显示复制按钮，点击复制文本内容",
       "ellipsis": "超出容器宽度后单行省略（nowrap + ellipsis）",
       "level": "标题级别（1–5）",
-      "type": "文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled`"
+      "type": "文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled`",
+      "copy-text": "自定义复制内容（缺省复制当前文本）",
+      "ellipsis-suffix": "省略时保留的后缀（如展开链接），与 `ellipsis` / `line-clamp` 同用",
+      "actions-position": "操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot=\"actions\"`",
+      "line-clamp": "多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合",
+      "tag": "渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等）",
+      "depth": "文字弱化档位：`1` / `2` / `3`（主色渐淡）；仅 `type=\"default\"` 时生效",
+      "strong": "加粗（font-weight 600，`<strong>` 语义）",
+      "mark": "高亮标记（浅黄底，`<mark>` 语义）",
+      "code": "行内代码样式（等宽字体 + 浅底）",
+      "underline": "下划线",
+      "delete": "删除线（`<del>` 语义）",
+      "italic": "斜体（`<em>` 语义）"
     },
     "events": {
       "oas-copy": "复制成功，`detail: { text }`",
       "oas-copy-error": "复制失败，`detail: { text }`"
     },
-    "slots": {}
+    "slots": {
+      "actions": "操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定"
+    }
   },
   "oas-toggle-button": {
     "attrs": {

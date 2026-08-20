@@ -134,7 +134,7 @@ onMounted(async () => {
 | `auto-upload` | Auto-simulate upload after adding | `boolean` | — |
 | `disabled` | Disabled | `boolean` | — |
 | `files` | File list (property, `File[]`) | `File[]` | `[]` |
-| `list-type` | List style: `list` (default) / `picture` (rows with thumbnails) / `picture-card` (card thumbnail wall) | `ListType` | `list` |
+| `list-type` | List style: `list` (default) / `picture` (rows with thumbnails) / `picture-card` (card thumbnail wall) | `string` | `list` |
 | `max` | Maximum number of files | `string` | `0` |
 | `multiple` | Multiple selection | `boolean` | — |
 

@@ -371,7 +371,18 @@ pre.code {
  */
 export class OASCode extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['code', 'language', 'show-line-number', 'copyable', 'inline', 'word-wrap', 'trim', 'size', 'variant', 'color']
+    return [
+      'code',
+      'language',
+      'show-line-number',
+      'copyable',
+      'inline',
+      'word-wrap',
+      'trim',
+      'size',
+      'variant',
+      'color',
+    ]
   }
 
   private copyTimer: ReturnType<typeof setTimeout> | null = null
@@ -491,11 +502,7 @@ export class OASCode extends OASElement {
   }
 
   /** 归一化枚举属性：非法值回落 + 告警 */
-  private normalizeAttr<T extends string>(
-    name: string,
-    valid: readonly T[],
-    fallback: T,
-  ): T {
+  private normalizeAttr<T extends string>(name: string, valid: readonly T[], fallback: T): T {
     const raw = this.getAttr(name, '')
     if (!raw) return fallback
     if ((valid as readonly string[]).includes(raw)) return raw as T

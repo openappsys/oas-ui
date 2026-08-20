@@ -85,10 +85,10 @@ Nest inside other components via slot projection:
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `color` | — | `string` | — |
+| `color` | Custom color: accepts 11 preset names (mapped to `--oas-preset-*-text` compliant tokens) or any CSS color value; keycap background is tinted and the border follows | `string` | — |
 | `keys` | Space-separated key sequence, e.g. `"ctrl shift k"` | `string` | — |
-| `size` | — | `string` | — |
-| `variant` | — | `string` | — |
+| `size` | Size tier: `small` / `medium` (default) / `large`; invalid values fall back to `medium` with a warning | `string` | — |
+| `variant` | Style: `raised` (default, 3D keycap) / `outline` (bordered) / `subtle` (light background) / `plain` (text only); invalid values fall back to `raised` with a warning | `string` | — |
 
 ### Slots
 
