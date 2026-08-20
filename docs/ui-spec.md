@@ -45,9 +45,9 @@
 | `--oas-font-size-lg` | `16px` | 强调                           |
 | `--oas-font-size-xl` | `20px` | 标题                           |
 
-### 1.4 间距刻度（4px 基准）
+### 1.4 间距刻度（4px 基准，半档下划线命名）
 
-`--oas-space-1: 4px` `--oas-space-2: 8px` `--oas-space-3: 12px` `--oas-space-4: 16px` `--oas-space-5: 24px` `--oas-space-6: 32px`
+`--oas-space-1: 4px` `--oas-space-1_5: 6px` `--oas-space-2: 8px` `--oas-space-2_5: 10px` `--oas-space-3: 12px` `--oas-space-4: 16px` `--oas-space-4_5: 20px` `--oas-space-5: 24px` `--oas-space-6: 32px`
 
 ### 1.5 圆角
 

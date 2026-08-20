@@ -189,7 +189,11 @@ export class OASInputNumber extends OASElement {
   }
 
   private emitChange(): void {
-    this.emit('change', { value: Number(this.input?.value) || 0 })
+    const v = Number(this.input?.value) || 0
+    // 受控状态写回宿主 value 属性（与 switch/slider 一致的双向受控语义）：
+    // 宿主 getAttribute / 表单序列化可直接取最新值；写回触发的 update 为幂等同步，无循环
+    this.setAttribute('value', String(v))
+    this.emit('change', { value: v })
   }
 
   private syncControls(): void {

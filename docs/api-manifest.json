@@ -1812,7 +1812,7 @@
     "events": [
       {
         "name": "oas-change",
-        "detail": "{ value: Number(this.input?.value) || 0 }"
+        "detail": "{ value: v }"
       }
     ],
     "slots": [],

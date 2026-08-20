@@ -3739,7 +3739,9 @@ test('DemoBlock 示例代码：连排闭合标签逐行拆分（</svg></oas-icon
   const canvasCode = canvasBlock.locator('.demo-block__code code').first()
   await expect(canvasCode).not.toBeEmpty()
   const canvasText = await canvasCode.innerText()
-  expect(canvasText).toContain('<oas-icon name="check" canvas="fixed" color="var(--oas-color-primary)"></oas-icon>')
+  expect(canvasText).toContain(
+    '<oas-icon name="check" canvas="fixed" color="var(--oas-color-primary)"></oas-icon>',
+  )
 })
 
 test('slider 基础用法：自定义滑块/数值输入区 hidden 真实隐藏（默认与拖动后均无残留圆环）', async ({
@@ -4430,4 +4432,68 @@ test('code 行内/换行/尺寸/形态/颜色属性真实生效', async ({ page 
   // color 预设名注入 --oas-code-color 且计算色非默认
   expect(r.colorVar).toContain('var(--oas-preset-red-text)')
   expect(r.colorActual).not.toBe('rgb(24, 24, 27)')
+})
+
+test('slider/input-number 受控写回：交互后宿主 value 属性同步（真实浏览器）', async ({ page }) => {
+  // 集成反馈固化：曾单向受控不写回，宿主 getAttribute 永远初始值，集成方被迫缓存事件 detail
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[show-input]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider[show-input]')!
+    const num = el.shadowRoot!.querySelector<HTMLInputElement>(
+      '[role="textbox"], input[type="number"]',
+    )
+    return { before: el.getAttribute('value'), hasNum: !!num }
+  })
+  expect(r.before).not.toBeNull()
+  // 真实交互：改数值输入框并提交（change 事件）
+  const written = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider[show-input]')!
+    const num = el.shadowRoot!.querySelector<HTMLInputElement>('input[type="number"]')
+    if (!num) return null
+    num.value = '60'
+    num.dispatchEvent(new Event('change', { bubbles: true }))
+    return el.getAttribute('value')
+  })
+  expect(written).toBe('60')
+})
+
+test('modal 视口高度保护：dialog 限高 + body 可滚动（小窗口内容不溢出）', async ({ page }) => {
+  // 集成反馈固化：曾只限宽不限高，窗口比 modal 矮时标题/关闭钮被裁出视口够不到
+  await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-modal')
+  // 打开第一个基础 modal
+  await page
+    .locator('oas-button', { hasText: /基础|打开/ })
+    .first()
+    .click()
+  await page.waitForFunction(() => {
+    const m = document.querySelector('oas-modal[visible]')
+    return m?.shadowRoot?.querySelector('[part="dialog"]') != null
+  })
+  const r = await page.evaluate(() => {
+    const m = document.querySelector('oas-modal[visible]')!
+    const dialog = m.shadowRoot!.querySelector('[part="dialog"]') as HTMLElement
+    const body = m.shadowRoot!.querySelector('[part="body"]') as HTMLElement
+    return {
+      maxHeight: getComputedStyle(dialog).maxHeight,
+      display: getComputedStyle(dialog).display,
+      overflowY: getComputedStyle(body).overflowY,
+    }
+  })
+  expect(r.maxHeight).not.toBe('none')
+  expect(r.display).toBe('flex')
+  expect(r.overflowY).toBe('auto')
+})
+
+test('tabs 非激活项 hover 有视觉反馈（line 与 card 模式）', async ({ page }) => {
+  // 集成反馈固化：曾 .tab 无 hover 规则，悬停毫无反馈（选中项 hover 设计不变，选非激活项断言）
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tabs')
+  const tab = page.locator('oas-tabs [role="tab"][aria-selected="false"]').first()
+  const before = await tab.evaluate((el) => getComputedStyle(el).backgroundColor)
+  await tab.hover()
+  await page.waitForTimeout(300)
+  const after = await tab.evaluate((el) => getComputedStyle(el).backgroundColor)
+  expect(after, 'hover 后背景应变化').not.toBe(before)
 })

@@ -38,6 +38,11 @@ const STYLE = `
   border-bottom-color: var(--oas-color-primary);
   font-weight: 500;
 }
+/* 非激活项 hover 反馈：文字与背景向激活态靠拢一档（选中项 hover 不变） */
+.tab:not([aria-selected='true']):hover {
+  color: var(--oas-color-primary);
+  background: var(--oas-color-bg-hover);
+}
 .panel {
   padding-top: var(--oas-space-4);
 }
@@ -137,6 +142,10 @@ const STYLE = `
   z-index: 1;
   border-bottom: 1px solid var(--oas-color-bg);
   background: var(--oas-color-bg);
+}
+/* 卡片式非激活项 hover：浮起面向内容底色靠拢（激活是 bg，非激活是 bg-hover） */
+:host(.oas-tabs--card) .tab:not([aria-selected='true']):hover {
+  background: color-mix(in srgb, var(--oas-color-bg-hover) 50%, var(--oas-color-bg));
 }
 :host(.oas-tabs--card) .panel {
   margin-top: -1px;

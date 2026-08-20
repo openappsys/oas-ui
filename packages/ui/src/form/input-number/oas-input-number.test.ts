@@ -99,4 +99,21 @@ describe('OASInputNumber focus 委托', () => {
     el.focus()
     expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('input'))
   })
+
+  it('受控状态写回：输入提交/步进后 value 属性同步宿主（与 emit 值一致）', () => {
+    const el = mount({ value: '5' })
+    const i = input(el)
+    i.value = '8'
+    i.dispatchEvent(new Event('change'))
+    expect(el.getAttribute('value')).toBe('8')
+    // 步进按钮也写回
+    ;(el.shadowRoot!.querySelector('button[part="up"]') as HTMLButtonElement).click()
+    expect(el.getAttribute('value')).toBe('9')
+    // 写回不产生二次事件
+    let changeCount = 0
+    el.addEventListener('oas-change', () => changeCount++)
+    i.value = '3'
+    i.dispatchEvent(new Event('change'))
+    expect(changeCount).toBe(1)
+  })
 })

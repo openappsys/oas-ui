@@ -479,4 +479,49 @@ describe('OASSlider', () => {
       expect(byRole(el, 'range-max').getAttribute('aria-label')).toBe('最大值')
     })
   })
+
+  describe('受控状态写回（宿主 attr 可读）', () => {
+    it('单值拖动后 value 属性写回宿主（input 与 change 均同步）', () => {
+      const el = mount({ value: '20' })
+      const input = range(el)
+      input.value = '65'
+      input.dispatchEvent(new Event('input'))
+      expect(el.getAttribute('value')).toBe('65')
+      input.value = '70'
+      input.dispatchEvent(new Event('change'))
+      expect(el.getAttribute('value')).toBe('70')
+    })
+
+    it('range 双滑块拖动后 value 属性写回为 lo,hi 逗号分隔', () => {
+      const el = mount({ range: '', value: '10,80' })
+      const lo = byRole(el, 'range-min')
+      const hi = byRole(el, 'range-max')
+      lo.value = '25'
+      lo.dispatchEvent(new Event('input'))
+      hi.value = '75'
+      hi.dispatchEvent(new Event('change'))
+      expect(el.getAttribute('value')).toBe('25,75')
+    })
+
+    it('数值输入框提交后 value 属性同步写回', () => {
+      const el = mount({ 'show-input': '', value: '20' })
+      const num = byRole(el, 'num')
+      num.value = '70'
+      num.dispatchEvent(new Event('change'))
+      expect(el.getAttribute('value')).toBe('70')
+    })
+
+    it('写回不产生二次事件（setAttribute 循环防护）', () => {
+      const el = mount({ value: '20' })
+      const input = range(el)
+      let inputEvents = 0
+      let changeEvents = 0
+      el.addEventListener('oas-input', () => inputEvents++)
+      el.addEventListener('oas-change', () => changeEvents++)
+      input.value = '50'
+      input.dispatchEvent(new Event('change'))
+      expect(inputEvents).toBe(0)
+      expect(changeEvents).toBe(1)
+    })
+  })
 })
