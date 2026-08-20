@@ -117,15 +117,15 @@ The `color` attribute accepts 11 preset names (auto-adapting to light/dark theme
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `color` | — | `string` | — |
+| `color` | Color: accepts 11 preset names (mapped to `--oas-preset-*` tokens) or any CSS color value | `string` | — |
 | `content-position` | Content position | `DividerPosition` | `center` |
 | `dashed` | Dashed | `boolean` | — |
 | `direction` | Direction | `DividerDirection` | `horizontal` |
-| `inset` | — | `boolean` | — |
-| `middle` | — | `boolean` | — |
-| `size` | — | `string` | — |
-| `strong` | — | `boolean` | — |
-| `variant` | — | `string` | — |
+| `inset` | Indent: start-side inset of a horizontal line (default 5%, via `--oas-divider-title-inset`), aligned with the title inset | `boolean` | — |
+| `middle` | Symmetric inset: equal insets on both sides of a horizontal line (default 16.67%, via `--oas-divider-middle-inset`) | `boolean` | — |
+| `size` | Spacing tier: `small` / `medium` (default) / `large`; horizontal layout only | `string` | — |
+| `strong` | Bolder divider title (font-weight 600) | `boolean` | — |
+| `variant` | Line style: `solid` / `dashed` / `dotted` / `double`; an explicit value takes precedence over the `dashed` boolean (compat form) | `string` | — |
 
 ### Slots
 

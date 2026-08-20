@@ -370,9 +370,10 @@ function extractProps(cls) {
     if (!name || name === OBSERVED_GETTER) continue
 
     const isAccessor = m.kind === K.GetAccessor || m.kind === K.SetAccessor
-    // 公共字段：私有/受保护不抓，无类型注解不猜
+    // 私有/受保护成员一律不进 props（accessor 与公共字段同样过滤）
+    if (mods.includes(K.PrivateKeyword) || mods.includes(K.ProtectedKeyword)) continue
+    // 公共字段：无类型注解不猜
     if (!isAccessor) {
-      if (mods.includes(K.PrivateKeyword) || mods.includes(K.ProtectedKeyword)) continue
       if (!m.type) continue
     }
     let entry = propMap.get(name)

@@ -114,22 +114,22 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `actions-position` | — | `string` | `end` |
-| `code` | — | `boolean` | — |
-| `copy-text` | — | `string` | — |
+| `actions-position` | 操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot="actions"` | `string` | `end` |
+| `code` | 行内代码样式（等宽字体 + 浅底） | `boolean` | — |
+| `copy-text` | 自定义复制内容（缺省复制当前文本） | `string` | — |
 | `copyable` | 显示复制按钮，点击复制文本内容 | `boolean` | — |
-| `delete` | — | `boolean` | — |
-| `depth` | — | `string` | — |
+| `delete` | 删除线（`<del>` 语义） | `boolean` | — |
+| `depth` | 文字弱化档位：`1` / `2` / `3`（主色渐淡）；仅 `type="default"` 时生效 | `string` | — |
 | `ellipsis` | 超出容器宽度后单行省略（nowrap + ellipsis） | `boolean` | — |
-| `ellipsis-suffix` | — | `string` | — |
-| `italic` | — | — | — |
+| `ellipsis-suffix` | 省略时保留的后缀（如展开链接），与 `ellipsis` / `line-clamp` 同用 | `string` | — |
+| `italic` | 斜体（`<em>` 语义） | — | — |
 | `level` | 标题级别（1–5） | `string` | `3` |
-| `line-clamp` | — | `string` | — |
-| `mark` | — | — | — |
-| `strong` | — | — | — |
-| `tag` | — | `string` | — |
+| `line-clamp` | 多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合 | `string` | — |
+| `mark` | 高亮标记（浅黄底，`<mark>` 语义） | — | — |
+| `strong` | 加粗（font-weight 600，`<strong>` 语义） | — | — |
+| `tag` | 渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等） | `string` | — |
 | `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
-| `underline` | — | — | — |
+| `underline` | 下划线 | — | — |
 
 | 事件 | 说明 |
 | --- | --- |
@@ -139,28 +139,28 @@
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
-| `actions` | — |
+| `actions` | 操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定 |
 
 ### oas-title
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `actions-position` | — | `string` | `end` |
-| `code` | — | `boolean` | — |
-| `copy-text` | — | `string` | — |
+| `actions-position` | 操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot="actions"` | `string` | `end` |
+| `code` | 行内代码样式（等宽字体 + 浅底） | `boolean` | — |
+| `copy-text` | 自定义复制内容（缺省复制当前文本） | `string` | — |
 | `copyable` | 显示复制按钮，点击复制文本内容 | `boolean` | — |
-| `delete` | — | `boolean` | — |
-| `depth` | — | `string` | — |
+| `delete` | 删除线（`<del>` 语义） | `boolean` | — |
+| `depth` | 文字弱化档位：`1` / `2` / `3`（主色渐淡）；仅 `type="default"` 时生效 | `string` | — |
 | `ellipsis` | 超出容器宽度后单行省略（nowrap + ellipsis） | `boolean` | — |
-| `ellipsis-suffix` | — | `string` | — |
-| `italic` | — | — | — |
+| `ellipsis-suffix` | 省略时保留的后缀（如展开链接），与 `ellipsis` / `line-clamp` 同用 | `string` | — |
+| `italic` | 斜体（`<em>` 语义） | — | — |
 | `level` | 标题级别（1–5） | `string` | `3` |
-| `line-clamp` | — | `string` | — |
-| `mark` | — | — | — |
-| `strong` | — | — | — |
-| `tag` | — | `string` | — |
+| `line-clamp` | 多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合 | `string` | — |
+| `mark` | 高亮标记（浅黄底，`<mark>` 语义） | — | — |
+| `strong` | 加粗（font-weight 600，`<strong>` 语义） | — | — |
+| `tag` | 渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等） | `string` | — |
 | `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
-| `underline` | — | — | — |
+| `underline` | 下划线 | — | — |
 
 | 事件 | 说明 |
 | --- | --- |
@@ -170,28 +170,28 @@
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
-| `actions` | — |
+| `actions` | 操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定 |
 
 ### oas-paragraph
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `actions-position` | — | `string` | `end` |
-| `code` | — | `boolean` | — |
-| `copy-text` | — | `string` | — |
+| `actions-position` | 操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot="actions"` | `string` | `end` |
+| `code` | 行内代码样式（等宽字体 + 浅底） | `boolean` | — |
+| `copy-text` | 自定义复制内容（缺省复制当前文本） | `string` | — |
 | `copyable` | 显示复制按钮，点击复制文本内容 | `boolean` | — |
-| `delete` | — | `boolean` | — |
-| `depth` | — | `string` | — |
+| `delete` | 删除线（`<del>` 语义） | `boolean` | — |
+| `depth` | 文字弱化档位：`1` / `2` / `3`（主色渐淡）；仅 `type="default"` 时生效 | `string` | — |
 | `ellipsis` | 超出容器宽度后单行省略（nowrap + ellipsis） | `boolean` | — |
-| `ellipsis-suffix` | — | `string` | — |
-| `italic` | — | — | — |
+| `ellipsis-suffix` | 省略时保留的后缀（如展开链接），与 `ellipsis` / `line-clamp` 同用 | `string` | — |
+| `italic` | 斜体（`<em>` 语义） | — | — |
 | `level` | 标题级别（1–5） | `string` | `3` |
-| `line-clamp` | — | `string` | — |
-| `mark` | — | — | — |
-| `strong` | — | — | — |
-| `tag` | — | `string` | — |
+| `line-clamp` | 多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合 | `string` | — |
+| `mark` | 高亮标记（浅黄底，`<mark>` 语义） | — | — |
+| `strong` | 加粗（font-weight 600，`<strong>` 语义） | — | — |
+| `tag` | 渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等） | `string` | — |
 | `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
-| `underline` | — | — | — |
+| `underline` | 下划线 | — | — |
 
 | 事件 | 说明 |
 | --- | --- |
@@ -201,7 +201,7 @@
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
-| `actions` | — |
+| `actions` | 操作区插槽（复制/编辑等按钮），位置由 `actions-position` 决定 |
 
 同 oas-text 属性（修饰布尔/depth/tag/line-clamp/copy-text/ellipsis-suffix/actions-position 同样生效），`level` 1–5 驱动标签。
 

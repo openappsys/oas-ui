@@ -85,10 +85,10 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `color` | — | `string` | — |
+| `color` | 自定义颜色：支持 11 个预设名（映射 `--oas-preset-*-text` 达标 token）或任意 CSS 色值，键帽底色染浅 + 描边跟随 | `string` | — |
 | `keys` | 空格分隔的按键序列，如 `"ctrl shift k"` | `string` | — |
-| `size` | — | `string` | — |
-| `variant` | — | `string` | — |
+| `size` | 尺寸档位：`small` / `medium`（默认）/ `large`；非法值回落 `medium` 并告警 | `string` | — |
+| `variant` | 形态：`raised`（默认，立体键帽）/ `outline`（描边）/ `subtle`（浅底）/ `plain`（纯文字）；非法值回落 `raised` 并告警 | `string` | — |
 
 ### 插槽
 

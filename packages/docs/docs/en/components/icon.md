@@ -163,21 +163,21 @@ The `animation` attribute provides ready-to-use animations (respecting `prefers-
 `canvas` controls the icon placeholder box: `fixed` (1.25×1em) / `auto` (natural width × 1em) / `square` (1.25×1.25em) / `roomy` (1.5×1.5em); an explicit `size` wins.
 
 <DemoBlock title="Canvas modes">
-  <div style="display:flex; align-items:flex-end; gap: var(--oas-space-5); font-size: 32px; color: var(--oas-color-primary);">
+  <div style="display:flex; align-items:flex-end; gap: var(--oas-space-5); font-size: 32px;">
     <div style="display:flex; flex-direction:column; align-items:center; gap: 4px; font-size: 12px;">
-      <oas-icon name="check" canvas="fixed"></oas-icon>
+      <oas-icon name="check" canvas="fixed" color="var(--oas-color-primary)"></oas-icon>
       <span>fixed</span>
     </div>
     <div style="display:flex; flex-direction:column; align-items:center; gap: 4px; font-size: 12px;">
-      <oas-icon name="check" canvas="auto"></oas-icon>
+      <oas-icon name="check" canvas="auto" color="var(--oas-color-primary)"></oas-icon>
       <span>auto</span>
     </div>
     <div style="display:flex; flex-direction:column; align-items:center; gap: 4px; font-size: 12px;">
-      <oas-icon name="check" canvas="square"></oas-icon>
+      <oas-icon name="check" canvas="square" color="var(--oas-color-primary)"></oas-icon>
       <span>square</span>
     </div>
     <div style="display:flex; flex-direction:column; align-items:center; gap: 4px; font-size: 12px;">
-      <oas-icon name="check" canvas="roomy"></oas-icon>
+      <oas-icon name="check" canvas="roomy" color="var(--oas-color-primary)"></oas-icon>
       <span>roomy</span>
     </div>
   </div>

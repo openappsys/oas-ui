@@ -450,7 +450,13 @@
     "attrs": {
       "content-position": "Content position",
       "dashed": "Dashed",
-      "direction": "Direction"
+      "direction": "Direction",
+      "variant": "Line style: `solid` / `dashed` / `dotted` / `double`; an explicit value takes precedence over the `dashed` boolean (compat form)",
+      "inset": "Indent: start-side inset of a horizontal line (default 5%, via `--oas-divider-title-inset`), aligned with the title inset",
+      "middle": "Symmetric inset: equal insets on both sides of a horizontal line (default 16.67%, via `--oas-divider-middle-inset`)",
+      "size": "Spacing tier: `small` / `medium` (default) / `large`; horizontal layout only",
+      "strong": "Bolder divider title (font-weight 600)",
+      "color": "Color: accepts 11 preset names (mapped to `--oas-preset-*` tokens) or any CSS color value"
     },
     "events": {},
     "slots": {}
@@ -730,7 +736,10 @@
   },
   "oas-kbd": {
     "attrs": {
-      "keys": "Space-separated key sequence, e.g. `\"ctrl shift k\"`"
+      "keys": "Space-separated key sequence, e.g. `\"ctrl shift k\"`",
+      "variant": "Style: `raised` (default, 3D keycap) / `outline` (bordered) / `subtle` (light background) / `plain` (text only); invalid values fall back to `raised` with a warning",
+      "size": "Size tier: `small` / `medium` (default) / `large`; invalid values fall back to `medium` with a warning",
+      "color": "Custom color: accepts 11 preset names (mapped to `--oas-preset-*-text` compliant tokens) or any CSS color value; keycap background is tinted and the border follows"
     },
     "events": {},
     "slots": {}
@@ -739,7 +748,11 @@
     "attrs": {
       "for": "Target control id; click forwards to `getElementById(for).focus()`",
       "position": "Position of the asterisk relative to the text",
-      "required": "Append a required `*` marker (`aria-hidden`)"
+      "required": "Append a required `*` marker (`aria-hidden`)",
+      "error": "Error state (red text)",
+      "disabled": "Disabled state (grayed out, not clickable)",
+      "colon": "Append a colon (`:`) after the label text",
+      "color": "Text color: accepts 11 preset names (mapped to `--oas-preset-*-text` compliant tokens) or any CSS color value"
     },
     "events": {},
     "slots": {}
@@ -750,7 +763,11 @@
       "href": "Link URL",
       "target": "Open behavior",
       "type": "Type",
-      "underline": "Underline"
+      "underline": "Underline",
+      "color": "Color: accepts 11 preset names (mapped to `--oas-preset-*-text` compliant tokens) or any CSS color value, overriding the `type` semantic color",
+      "icon": "Icon name (from the oas-icon set), placed before or after the text (see `icon-position`)",
+      "icon-position": "Icon position: `start` (default, before the text) / `end` (after the text); defaults to `end` for the `external` icon only",
+      "external": "External link: automatically adds `target=\"_blank\"`, `rel=\"noopener noreferrer\"`, and an external-link icon"
     },
     "events": {
       "oas-click": "Click, `detail: { originalEvent }`"
@@ -939,13 +956,27 @@
       "copyable": "Show a copy button that copies the text content on click",
       "ellipsis": "Single-line ellipsis when the text overflows its container",
       "level": "Heading level (1-5)",
-      "type": "Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled`"
+      "type": "Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled`",
+      "copy-text": "Custom content to copy (defaults to the current text)",
+      "ellipsis-suffix": "Suffix preserved when ellipsized (e.g. an expand link); works with `ellipsis` / `line-clamp`",
+      "actions-position": "Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot=\"actions\"`",
+      "line-clamp": "Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix`",
+      "tag": "Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`)",
+      "depth": "Text softening tier: `1` / `2` / `3` (progressively lighter); only effective with `type=\"default\"`",
+      "strong": "Bold (font-weight 600, `<strong>` semantics)",
+      "mark": "Highlighted mark (light yellow background, `<mark>` semantics)",
+      "code": "Inline code style (monospace + light background)",
+      "underline": "Underline",
+      "delete": "Strikethrough (`<del>` semantics)",
+      "italic": "Italic (`<em>` semantics)"
     },
     "events": {
       "oas-copy": "Copy succeeded, `detail: { text }`",
       "oas-copy-error": "Copy failed, `detail: { text }`"
     },
-    "slots": {}
+    "slots": {
+      "actions": "Action slot (copy/edit buttons etc.); position determined by `actions-position`"
+    }
   },
   "oas-pin-input": {
     "attrs": {
@@ -1367,13 +1398,27 @@
       "copyable": "Show a copy button that copies the text content on click",
       "ellipsis": "Single-line ellipsis when the text overflows its container",
       "level": "Heading level (1-5)",
-      "type": "Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled`"
+      "type": "Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled`",
+      "copy-text": "Custom content to copy (defaults to the current text)",
+      "ellipsis-suffix": "Suffix preserved when ellipsized (e.g. an expand link); works with `ellipsis` / `line-clamp`",
+      "actions-position": "Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot=\"actions\"`",
+      "line-clamp": "Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix`",
+      "tag": "Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`)",
+      "depth": "Text softening tier: `1` / `2` / `3` (progressively lighter); only effective with `type=\"default\"`",
+      "strong": "Bold (font-weight 600, `<strong>` semantics)",
+      "mark": "Highlighted mark (light yellow background, `<mark>` semantics)",
+      "code": "Inline code style (monospace + light background)",
+      "underline": "Underline",
+      "delete": "Strikethrough (`<del>` semantics)",
+      "italic": "Italic (`<em>` semantics)"
     },
     "events": {
       "oas-copy": "Copy succeeded, `detail: { text }`",
       "oas-copy-error": "Copy failed, `detail: { text }`"
     },
-    "slots": {}
+    "slots": {
+      "actions": "Action slot (copy/edit buttons etc.); position determined by `actions-position`"
+    }
   },
   "oas-textarea": {
     "attrs": {
@@ -1428,13 +1473,27 @@
       "copyable": "Show a copy button that copies the text content on click",
       "ellipsis": "Single-line ellipsis when the text overflows its container",
       "level": "Heading level (1-5)",
-      "type": "Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled`"
+      "type": "Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled`",
+      "copy-text": "Custom content to copy (defaults to the current text)",
+      "ellipsis-suffix": "Suffix preserved when ellipsized (e.g. an expand link); works with `ellipsis` / `line-clamp`",
+      "actions-position": "Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot=\"actions\"`",
+      "line-clamp": "Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix`",
+      "tag": "Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`)",
+      "depth": "Text softening tier: `1` / `2` / `3` (progressively lighter); only effective with `type=\"default\"`",
+      "strong": "Bold (font-weight 600, `<strong>` semantics)",
+      "mark": "Highlighted mark (light yellow background, `<mark>` semantics)",
+      "code": "Inline code style (monospace + light background)",
+      "underline": "Underline",
+      "delete": "Strikethrough (`<del>` semantics)",
+      "italic": "Italic (`<em>` semantics)"
     },
     "events": {
       "oas-copy": "Copy succeeded, `detail: { text }`",
       "oas-copy-error": "Copy failed, `detail: { text }`"
     },
-    "slots": {}
+    "slots": {
+      "actions": "Action slot (copy/edit buttons etc.); position determined by `actions-position`"
+    }
   },
   "oas-toggle-button": {
     "attrs": {

@@ -114,22 +114,22 @@ Typography components for text, titles, and paragraphs.
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `actions-position` | — | `string` | `end` |
-| `code` | — | `boolean` | — |
-| `copy-text` | — | `string` | — |
+| `actions-position` | Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot="actions"` | `string` | `end` |
+| `code` | Inline code style (monospace + light background) | `boolean` | — |
+| `copy-text` | Custom content to copy (defaults to the current text) | `string` | — |
 | `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
-| `delete` | — | `boolean` | — |
-| `depth` | — | `string` | — |
+| `delete` | Strikethrough (`<del>` semantics) | `boolean` | — |
+| `depth` | Text softening tier: `1` / `2` / `3` (progressively lighter); only effective with `type="default"` | `string` | — |
 | `ellipsis` | Single-line ellipsis when the text overflows its container | `boolean` | — |
-| `ellipsis-suffix` | — | `string` | — |
-| `italic` | — | — | — |
+| `ellipsis-suffix` | Suffix preserved when ellipsized (e.g. an expand link); works with `ellipsis` / `line-clamp` | `string` | — |
+| `italic` | Italic (`<em>` semantics) | — | — |
 | `level` | Heading level (1-5) | `string` | `3` |
-| `line-clamp` | — | `string` | — |
-| `mark` | — | — | — |
-| `strong` | — | — | — |
-| `tag` | — | `string` | — |
+| `line-clamp` | Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix` | `string` | — |
+| `mark` | Highlighted mark (light yellow background, `<mark>` semantics) | — | — |
+| `strong` | Bold (font-weight 600, `<strong>` semantics) | — | — |
+| `tag` | Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`) | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
-| `underline` | — | — | — |
+| `underline` | Underline | — | — |
 
 | Event | Description |
 | --- | --- |
@@ -139,28 +139,28 @@ Typography components for text, titles, and paragraphs.
 | Name | Description |
 | --- | --- |
 | default | — |
-| `actions` | — |
+| `actions` | Action slot (copy/edit buttons etc.); position determined by `actions-position` |
 
 ### oas-title
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `actions-position` | — | `string` | `end` |
-| `code` | — | `boolean` | — |
-| `copy-text` | — | `string` | — |
+| `actions-position` | Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot="actions"` | `string` | `end` |
+| `code` | Inline code style (monospace + light background) | `boolean` | — |
+| `copy-text` | Custom content to copy (defaults to the current text) | `string` | — |
 | `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
-| `delete` | — | `boolean` | — |
-| `depth` | — | `string` | — |
+| `delete` | Strikethrough (`<del>` semantics) | `boolean` | — |
+| `depth` | Text softening tier: `1` / `2` / `3` (progressively lighter); only effective with `type="default"` | `string` | — |
 | `ellipsis` | Single-line ellipsis when the text overflows its container | `boolean` | — |
-| `ellipsis-suffix` | — | `string` | — |
-| `italic` | — | — | — |
+| `ellipsis-suffix` | Suffix preserved when ellipsized (e.g. an expand link); works with `ellipsis` / `line-clamp` | `string` | — |
+| `italic` | Italic (`<em>` semantics) | — | — |
 | `level` | Heading level (1-5) | `string` | `3` |
-| `line-clamp` | — | `string` | — |
-| `mark` | — | — | — |
-| `strong` | — | — | — |
-| `tag` | — | `string` | — |
+| `line-clamp` | Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix` | `string` | — |
+| `mark` | Highlighted mark (light yellow background, `<mark>` semantics) | — | — |
+| `strong` | Bold (font-weight 600, `<strong>` semantics) | — | — |
+| `tag` | Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`) | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
-| `underline` | — | — | — |
+| `underline` | Underline | — | — |
 
 | Event | Description |
 | --- | --- |
@@ -170,28 +170,28 @@ Typography components for text, titles, and paragraphs.
 | Name | Description |
 | --- | --- |
 | default | — |
-| `actions` | — |
+| `actions` | Action slot (copy/edit buttons etc.); position determined by `actions-position` |
 
 ### oas-paragraph
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `actions-position` | — | `string` | `end` |
-| `code` | — | `boolean` | — |
-| `copy-text` | — | `string` | — |
+| `actions-position` | Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot="actions"` | `string` | `end` |
+| `code` | Inline code style (monospace + light background) | `boolean` | — |
+| `copy-text` | Custom content to copy (defaults to the current text) | `string` | — |
 | `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
-| `delete` | — | `boolean` | — |
-| `depth` | — | `string` | — |
+| `delete` | Strikethrough (`<del>` semantics) | `boolean` | — |
+| `depth` | Text softening tier: `1` / `2` / `3` (progressively lighter); only effective with `type="default"` | `string` | — |
 | `ellipsis` | Single-line ellipsis when the text overflows its container | `boolean` | — |
-| `ellipsis-suffix` | — | `string` | — |
-| `italic` | — | — | — |
+| `ellipsis-suffix` | Suffix preserved when ellipsized (e.g. an expand link); works with `ellipsis` / `line-clamp` | `string` | — |
+| `italic` | Italic (`<em>` semantics) | — | — |
 | `level` | Heading level (1-5) | `string` | `3` |
-| `line-clamp` | — | `string` | — |
-| `mark` | — | — | — |
-| `strong` | — | — | — |
-| `tag` | — | `string` | — |
+| `line-clamp` | Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix` | `string` | — |
+| `mark` | Highlighted mark (light yellow background, `<mark>` semantics) | — | — |
+| `strong` | Bold (font-weight 600, `<strong>` semantics) | — | — |
+| `tag` | Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`) | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
-| `underline` | — | — | — |
+| `underline` | Underline | — | — |
 
 | Event | Description |
 | --- | --- |
@@ -201,4 +201,4 @@ Typography components for text, titles, and paragraphs.
 | Name | Description |
 | --- | --- |
 | default | — |
-| `actions` | — |
+| `actions` | Action slot (copy/edit buttons etc.); position determined by `actions-position` |

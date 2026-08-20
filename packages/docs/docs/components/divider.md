@@ -117,15 +117,15 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `color` | — | `string` | — |
+| `color` | 颜色：支持 11 个预设名（映射 `--oas-preset-*` token）或任意 CSS 色值 | `string` | — |
 | `content-position` | 内容位置 | `DividerPosition` | `center` |
 | `dashed` | 虚线 | `boolean` | — |
 | `direction` | 方向 | `DividerDirection` | `horizontal` |
-| `inset` | — | `boolean` | — |
-| `middle` | — | `boolean` | — |
-| `size` | — | `string` | — |
-| `strong` | — | `boolean` | — |
-| `variant` | — | `string` | — |
+| `inset` | 缩进：水平线起点侧内缩（默认 5%，走 `--oas-divider-title-inset` 变量），与文字缩进对齐 | `boolean` | — |
+| `middle` | 对称缩进：水平线两侧等宽内缩（默认 16.67%，走 `--oas-divider-middle-inset` 变量） | `boolean` | — |
+| `size` | 间距档位：`small` / `medium`（默认）/ `large`；仅水平布局生效 | `string` | — |
+| `strong` | 分隔文字加重（font-weight 600） | `boolean` | — |
+| `variant` | 线型：`solid` / `dashed` / `dotted` / `double`；显式设置优先于 `dashed` 布尔（兼容写法） | `string` | — |
 
 ### 插槽
 

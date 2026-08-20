@@ -389,12 +389,7 @@
         "observed": true
       }
     ],
-    "props": [
-      {
-        "name": "selectedValues",
-        "type": "string[]"
-      }
-    ],
+    "props": [],
     "events": [
       {
         "name": "oas-change",
@@ -1167,12 +1162,7 @@
         "observed": true
       }
     ],
-    "props": [
-      {
-        "name": "selectedValues",
-        "type": "string[]"
-      }
-    ],
+    "props": [],
     "events": [
       {
         "name": "oas-change",
@@ -2501,10 +2491,6 @@
       {
         "name": "disabledDate",
         "type": "((d: Date) => boolean) | null"
-      },
-      {
-        "name": "pickerType",
-        "type": "PickerType"
       }
     ],
     "events": [
@@ -2587,6 +2573,7 @@
       },
       {
         "name": "list-type",
+        "type": "string",
         "default": "list",
         "observed": true
       }
@@ -2596,10 +2583,6 @@
         "name": "files",
         "type": "File[]",
         "default": "[]"
-      },
-      {
-        "name": "listType",
-        "type": "ListType"
       }
     ],
     "events": [
