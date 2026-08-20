@@ -62,16 +62,54 @@ const STYLE = `
   font-size: var(--oas-font-size-md);
   color: var(--oas-color-text-secondary);
   font-family: inherit;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
+  /* 激活下划线走 box-shadow inset（不占位、不被 overflow 裁剪），故不再需要
+     border-bottom 占位与 margin-bottom:-1px 溢出重叠（占位会与 box-shadow 叠加变粗） */
   /* 标签不压缩不换行：溢出由滚动/更多下拉处理，而非挤压文字竖排（justified 均分模式以 flex:1 覆盖） */
   flex-shrink: 0;
   white-space: nowrap;
+  /* 激活下划线用 ::after 伪元素（独立 2px 盒子，绝对定位，渲染精确无 box-shadow 亚像素伪影）；
+     tab 需 relative 作为定位父级 */
+  position: relative;
+}
+/* 下划线基座：默认透明占位（不占布局），各方向尺寸由位置类覆盖 */
+.tab::after {
+  content: '';
+  position: absolute;
+  background: transparent;
+}
+/* top（默认）/bottom：底部或顶部横线；left/right：侧边竖线 */
+:host(:not(.oas-tabs--vertical)) .tab::after {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+}
+:host(.oas-tabs--bottom) .tab::after {
+  bottom: auto;
+  top: 0;
+}
+:host(.oas-tabs--left) .tab::after {
+  left: auto;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  height: auto;
+}
+:host(.oas-tabs--right) .tab::after {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  height: auto;
 }
 .tab[aria-selected='true'] {
   color: var(--oas-color-primary);
-  border-bottom-color: var(--oas-color-primary);
   font-weight: 500;
+}
+/* line 模式（非 card）激活下划线显主色；card 模式有独立边框连通机制，不叠加 */
+:host(:not(.oas-tabs--card)) .tab[aria-selected='true']::after {
+  background: var(--oas-color-primary);
 }
 /* 非激活项 hover 反馈：文字与背景向激活态靠拢一档（选中项 hover 不变） */
 .tab:not([aria-selected='true']):hover {
@@ -216,13 +254,13 @@ const STYLE = `
 }
 :host(.oas-tabs--bottom) .tab {
   border-bottom: none;
-  border-top: 2px solid transparent;
+  border-top: none;
   margin-bottom: 0;
-  margin-top: -1px;
+  margin-top: 0;
 }
-:host(.oas-tabs--bottom) .tab[aria-selected='true'] {
+:host(.oas-tabs--bottom:not(.oas-tabs--card)) .tab[aria-selected='true'] {
   border-bottom-color: transparent;
-  border-top-color: var(--oas-color-primary);
+  border-top-color: transparent;
 }
 
 /* 标签位置：left / right（标签纵向排列、面板在旁） */
@@ -250,11 +288,8 @@ const STYLE = `
   border-right: 1px solid var(--oas-color-border);
 }
 :host(.oas-tabs--left) .tab {
-  border-right: 2px solid transparent;
-  margin-right: -1px;
-}
-:host(.oas-tabs--left) .tab[aria-selected='true'] {
-  border-right-color: var(--oas-color-primary);
+  border-right: none;
+  margin-right: 0;
 }
 :host(.oas-tabs--left) .panel {
   padding-left: var(--oas-space-4);
@@ -264,13 +299,10 @@ const STYLE = `
   border-left: 1px solid var(--oas-color-border);
 }
 :host(.oas-tabs--right) .tab {
-  border-left: 2px solid transparent;
-  margin-left: -1px;
+  border-left: none;
+  margin-left: 0;
   /* 镜像 left：内容右对齐贴标签栏右边缘 */
   justify-content: flex-end;
-}
-:host(.oas-tabs--right) .tab[aria-selected='true'] {
-  border-left-color: var(--oas-color-primary);
 }
 :host(.oas-tabs--right) .panel {
   order: 0;

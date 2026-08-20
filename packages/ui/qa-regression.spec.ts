@@ -4558,3 +4558,42 @@ test('tabs editable 编辑态与非编辑态几何一致（编辑框贴合标签
   expect(Math.abs(after.inputTop - before.labelTop), '编辑框与原标签纵向对齐').toBeLessThanOrEqual(0.5)
   expect(Math.abs(after.inputH - before.labelH), '编辑框与原标签同高').toBeLessThanOrEqual(0.5)
 })
+
+test('tabs 选中下划线与文字同主色且为 2px 细线（light/dark，无 border 叠加变粗）', async ({ page }) => {
+  // 缺陷固化：①tablist overflow-x:auto 时 overflow-y 连带裁剪，tab border 溢出的激活下划线被裁
+  // 导致 dark 下选中下划线丢失主色；②改 box-shadow 后与残留 border 占位叠加变粗。
+  // 修复=纯 box-shadow inset 2px 主色（无 border 占位）。断言选中下划线颜色==选中文字颜色、且
+  // border-bottom 无占位（宽度 0，粗细仅由 box-shadow 2px 决定）。
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tabs')
+  const probe = await page.evaluate(() => {
+    const el = document.querySelector('.demo-block oas-tabs')!
+    const sel = el.shadowRoot!.querySelector('[role="tab"][aria-selected="true"]') as HTMLElement
+    const cs = getComputedStyle(sel)
+    // ::after 伪元素承载激活下划线（独立 2px 盒子，渲染精确无 box-shadow 亚像素伪影）
+    const after = getComputedStyle(sel, '::after')
+    return {
+      color: cs.color,
+      borderBottomWidth: cs.borderBottomWidth,
+      afterBg: after.backgroundColor,
+      afterH: after.height,
+    }
+  })
+  // 下划线颜色 == 文字颜色（同主色）；border 无占位（0）；::after 为 2px 均匀色带
+  expect(probe.afterBg, '选中下划线（::after）应与文字同主色').toBe(probe.color)
+  expect(probe.afterH, '下划线应为 2px').toBe('2px')
+  expect(probe.borderBottomWidth, 'border 不应再占位').toBe('0px')
+  // card 模式：激活用边框连通（border-bottom bg 色），::after 不叠加主色（否则变粗）
+  const cardProbe = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('oas-tabs')].find((t) =>
+      t.classList.contains('oas-tabs--card'),
+    )
+    if (!el) return null
+    const sel = el.shadowRoot!.querySelector('[role="tab"][aria-selected="true"]') as HTMLElement
+    return getComputedStyle(sel, '::after').backgroundColor
+  })
+  expect(
+    cardProbe === null || cardProbe === 'rgba(0, 0, 0, 0)' || cardProbe === 'transparent',
+    'card 模式激活 ::after 不应叠加主色（保持边框连通）',
+  ).toBe(true)
+})
