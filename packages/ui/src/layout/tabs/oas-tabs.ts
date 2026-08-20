@@ -94,12 +94,13 @@ const STYLE = `
   display: block;
 }
 
-/* 新增按钮（addable）：native button，+ 图标，focus 环可见 */
+/* 新增按钮（addable）：native button，+ 图标，focus 环可见；nav 内固定（滚动区外） */
 .tab-add {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   align-self: center;
+  flex-shrink: 0;
   width: 24px;
   height: 24px;
   margin-inline-start: var(--oas-space-1);
@@ -110,6 +111,9 @@ const STYLE = `
   cursor: pointer;
   color: var(--oas-color-text-secondary);
   font-family: inherit;
+}
+.tab-add[hidden] {
+  display: none;
 }
 .tab-add:hover {
   color: var(--oas-color-primary);
@@ -468,7 +472,6 @@ const STYLE = `
   z-index: 10;
   min-width: 120px;
   max-height: 280px;
-  overflow-y: auto;
   margin: 0;
   padding: var(--oas-space-1);
   background: var(--oas-color-bg-elevated);
@@ -480,6 +483,30 @@ const STYLE = `
 }
 .more-dropdown[hidden] {
   display: none;
+}
+.more-search {
+  flex-shrink: 0;
+  margin-bottom: var(--oas-space-1);
+  padding: var(--oas-space-1) var(--oas-space-2);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-sm);
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  font-size: var(--oas-font-size-sm);
+  font-family: inherit;
+  outline: none;
+}
+.more-search[hidden] {
+  display: none;
+}
+.more-search:focus-visible {
+  border-color: var(--oas-color-primary);
+  box-shadow: var(--oas-focus-ring);
+}
+.more-list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 .more-item {
   display: flex;
@@ -527,17 +554,23 @@ const STYLE = `
   }
 }
 
-/* ===== editable 重命名输入框：贴近标签文字样式，最小化视觉跳变 ===== */
+/* ===== editable 重命名输入框：与标签文字像素级对齐，避免编辑/非编辑态晃动 ===== */
 .tab-rename-input {
   font-family: inherit;
   font-size: inherit;
+  line-height: inherit;
   color: var(--oas-color-text-primary);
   background: var(--oas-color-bg);
-  border: 1px solid var(--oas-color-primary);
+  /* 用 outline 而非 border 做选中框：outline 不占布局空间，编辑框与原标签同高同位；
+     纵向 padding 取 0，box-sizing border-box + 固定行高与 label 一致 */
+  border: none;
+  outline: 1px solid var(--oas-color-primary);
+  outline-offset: 1px;
   border-radius: var(--oas-radius-sm);
-  padding: 0 var(--oas-space-1);
+  padding: 0;
+  margin: 0;
   min-width: 60px;
-  outline: none;
+  box-sizing: border-box;
 }
 
 /* ===== sortable 拖拽：拖过目标的高亮指示 ===== */
@@ -588,6 +621,8 @@ export class OASTabs extends OASElement {
   private visited = new Set<string>()
   /** sortable 拖拽源标签 value */
   private dragSource: string | null = null
+  /** 上次渲染的激活值（active 变化时滚动到可见；初始化为 undefined 以跳过首渲染滚动） */
+  private prevActiveValue: string | undefined = undefined
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -597,8 +632,12 @@ export class OASTabs extends OASElement {
         <button class="scroll-btn scroll-start" part="scroll-start" type="button" hidden aria-hidden="true" tabindex="-1"></button>
         <div class="tablist" part="tablist" role="tablist"></div>
         <button class="more-btn" part="more-button" type="button" hidden></button>
+        <button class="tab-add" part="add-button" type="button" role="button" hidden></button>
         <button class="scroll-btn scroll-end" part="scroll-end" type="button" hidden aria-hidden="true" tabindex="-1"></button>
-        <div class="more-dropdown" part="more-dropdown" role="menu" hidden></div>
+        <div class="more-dropdown" part="more-dropdown" role="menu" hidden>
+          <input class="more-search" part="more-search" type="text" hidden />
+          <div class="more-list"></div>
+        </div>
       </div>
       <div class="panel" part="panel"><slot></slot></div>
     `
@@ -623,6 +662,10 @@ export class OASTabs extends OASElement {
     this.observer = new MutationObserver(() => this.update())
     this.observer.observe(this, { childList: true })
     this.onCleanup(() => this.observer?.disconnect())
+    // + 按钮（template 占位，update 按需显隐）：click → oas-add
+    this.shadow.querySelector('.tab-add')?.addEventListener('click', () => {
+      this.emit('add', { label: this.t('tabs.newTab') })
+    })
     this.bindScroll()
     this.bindMore()
   }
@@ -810,25 +853,24 @@ export class OASTabs extends OASElement {
       tablist.appendChild(btn)
     })
 
-    // 新增按钮（addable）：native button，Enter/Space 原生触发 click → oas-add。
-    // 作为 tablist 直接子元素必须声明 role=tab（axe aria-required-children：tablist 只允许
-    // tab 子元素）。同款占位 tab 语义：aria-selected=false + tabindex=0，
-    // Tab 键可到达（其余真实标签为 roving tabindex），读屏作为「未选中占位 tab」。
+    // 新增按钮（addable）：nav 内固定（滚动区外），溢出时不随标签滚动被遮挡，始终可见。
+    // role=button（不再是 tablist 占位 tab——tablist 只含真 tab，更符合 axe aria-required-children）；
+    // Enter/Space 原生触发 click → oas-add；tabindex=0 进 Tab 顺序。
+    const add = this.shadow.querySelector<HTMLButtonElement>('.tab-add')
     this.addBtn = null
-    if (addable) {
-      const add = document.createElement('button')
-      add.className = 'tab-add'
-      add.setAttribute('part', 'add-button')
-      add.setAttribute('role', 'tab')
-      add.setAttribute('aria-selected', 'false')
-      add.setAttribute('tabindex', '0')
-      add.setAttribute('aria-label', this.t('tabs.add'))
-      add.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">${iconRegistry['plus']}</svg>`
-      add.addEventListener('click', () => {
-        this.emit('add', { label: this.t('tabs.newTab') })
-      })
-      this.addBtn = add
-      tablist.appendChild(add)
+    if (add) {
+      if (addable) {
+        add.hidden = false
+        add.removeAttribute('aria-hidden')
+        add.setAttribute('tabindex', '0')
+        add.setAttribute('aria-label', this.t('tabs.add'))
+        add.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">${iconRegistry['plus']}</svg>`
+        this.addBtn = add
+      } else {
+        add.hidden = true
+        add.setAttribute('aria-hidden', 'true')
+        add.setAttribute('tabindex', '-1')
+      }
     }
 
     const selected = active || firstValue
@@ -845,6 +887,15 @@ export class OASTabs extends OASElement {
     // 重建后重新检测溢出（标签增删/尺寸变化后箭头显隐同步）
     this.syncScrollControls()
     this.syncMore()
+    // active 变化（含宿主 setAttribute 驱动，如新增面板后激活）→ 新激活标签滚到可见区域；
+    // 溢出时新增/激活的标签可能在最右/最左被遮挡。首渲染不滚（prevActiveValue 初始化占位）。
+    const activeNow = this.getAttr('active', '') || firstValue
+    if (this.prevActiveValue === undefined) {
+      this.prevActiveValue = activeNow
+    } else if (activeNow !== this.prevActiveValue) {
+      this.prevActiveValue = activeNow
+      this.findTabByValue(activeNow)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    }
   }
 
   /** 溢出滚动箭头：ResizeObserver 监听溢出变化 + scroll 事件更新箭头可用态 */
@@ -865,6 +916,23 @@ export class OASTabs extends OASElement {
     start.addEventListener('click', () => this.scrollTabs(-1))
     end.addEventListener('click', () => this.scrollTabs(1))
     tablist.addEventListener('scroll', () => this.syncScrollControls(), { passive: true })
+    // 滚轮滑动：横向标签栏溢出时滚轮纵向滚动转为横向滑动标签（浏览器标签栏交互惯例）；
+    // 仅溢出时 preventDefault 拦截（不溢出放行页面纵向滚动）；纵向标签栏滚轮本就纵向，无需转换
+    tablist.addEventListener(
+      'wheel',
+      (e: Event) => {
+        const we = e as WheelEvent
+        if (this.isVertical()) return
+        const overflow = tablist.scrollWidth > tablist.clientWidth + 1
+        if (!overflow) return
+        // deltaY 优先（纵向滚轮转横向），兼顾触控板横向 deltaX
+        const delta = Math.abs(we.deltaY) >= Math.abs(we.deltaX) ? we.deltaY : we.deltaX
+        if (delta === 0) return
+        we.preventDefault()
+        tablist.scrollLeft += delta
+      },
+      { passive: false },
+    )
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => this.syncScrollControls())
       this.resizeObserver.observe(tablist)
@@ -937,6 +1005,12 @@ export class OASTabs extends OASElement {
     }
     document.addEventListener('click', onDocClick, true)
     this.onCleanup(() => document.removeEventListener('click', onDocClick, true))
+    // 搜索框输入实时过滤收起项
+    const search = this.shadow.querySelector('.more-search') as HTMLInputElement | null
+    search?.addEventListener('input', () => this.renderMoreDropdown())
+    // 搜索框内点击/键盘不冒泡收起下拉
+    search?.addEventListener('click', (e) => e.stopPropagation())
+    search?.addEventListener('keydown', (e) => e.stopPropagation())
   }
 
   /**
@@ -986,29 +1060,46 @@ export class OASTabs extends OASElement {
   /** 渲染更多下拉内容（被收起的 tab 列表） */
   private renderMoreDropdown(): void {
     const dropdown = this.shadow.querySelector('.more-dropdown') as HTMLElement | null
-    if (!dropdown) return
-    dropdown.innerHTML = ''
+    const list = this.shadow.querySelector('.more-list') as HTMLElement | null
+    const search = this.shadow.querySelector('.more-search') as HTMLInputElement | null
+    if (!dropdown || !list) return
+    list.innerHTML = ''
     const overflowed = [
       ...this.shadow.querySelectorAll<HTMLElement>('[role="tab"][data-value][data-overflowed]'),
     ]
     const active = this.getAttr('active', '') || (this.panels[0]?.getAttribute('value') ?? '')
+    // 搜索框：溢出项较多时才有意义（>5 个收起项才显示搜索）
+    const showSearch = overflowed.length > 5
+    if (search) {
+      search.hidden = !showSearch
+      if (showSearch) search.setAttribute('aria-label', this.t('tabs.more'))
+    }
+    const keyword = (search?.value ?? '').trim().toLowerCase()
+    let activeItem: HTMLElement | null = null
     for (const tab of overflowed) {
       const value = tab.getAttribute('data-value') ?? ''
+      const panel = this.panels.find((p) => (p.getAttribute('value') ?? '') === value)
+      const labelText = panel?.getAttribute('label') ?? value
       const item = document.createElement('button')
       item.className = 'more-item'
       item.setAttribute('type', 'button')
       item.setAttribute('role', 'menuitem')
       item.setAttribute('data-value', value)
       item.setAttribute('aria-current', String(value === active))
-      // 取面板 label 作下拉项文本
-      const panel = this.panels.find((p) => (p.getAttribute('value') ?? '') === value)
-      item.textContent = panel?.getAttribute('label') ?? value
+      item.textContent = labelText
+      // 搜索过滤：不匹配的收起项隐藏
+      if (keyword && !labelText.toLowerCase().includes(keyword)) item.hidden = true
       item.addEventListener('click', () => {
         this.moreOpen = false
         this.activate(value)
         this.syncMoreDropdown()
       })
-      dropdown.appendChild(item)
+      list.appendChild(item)
+      if (value === active) activeItem = item
+    }
+    // 打开下拉时选中项滚动到可见区域（selected 与其附近项进入视口）
+    if (activeItem && this.moreOpen) {
+      activeItem.scrollIntoView({ block: 'center' })
     }
   }
 
@@ -1019,7 +1110,15 @@ export class OASTabs extends OASElement {
     if (!dropdown || !moreBtn) return
     dropdown.hidden = !this.moreOpen
     moreBtn.setAttribute('aria-expanded', String(this.moreOpen))
-    if (this.moreOpen) this.renderMoreDropdown()
+    if (this.moreOpen) {
+      this.renderMoreDropdown()
+      // 打开时清空搜索并聚焦搜索框（有搜索时）
+      const search = this.shadow.querySelector('.more-search') as HTMLInputElement | null
+      if (search && !search.hidden) {
+        search.value = ''
+        search.focus({ preventScroll: true })
+      }
+    }
   }
 
   /**
@@ -1103,13 +1202,26 @@ export class OASTabs extends OASElement {
    * 输入期间拦截冒泡，避免触发标签点击/键盘导航。
    */
   private startRename(btn: HTMLElement, panel: HTMLElement, value: string): void {
-    const labelEl = btn.querySelector('.tab-label')
+    const labelEl = btn.querySelector('.tab-label') as HTMLElement | null
     if (!labelEl || btn.querySelector('.tab-rename-input')) return
     const original = panel.getAttribute('label') ?? ''
+    // 宽度贴合原标签（不用 input 默认宽度，防布局跳动）+ 随内容自适应增长
+    const baseWidth = labelEl.offsetWidth
+    const baseHeight = labelEl.offsetHeight
     const input = document.createElement('input')
     input.className = 'tab-rename-input'
     input.value = original
     input.setAttribute('aria-label', this.t('tabs.newTab'))
+    if (baseWidth > 0) input.style.width = `${baseWidth}px`
+    // 高度贴合原标签（input 固有高度 ≠ span 行高，差 1px 会致 tab 轻微晃动）
+    if (baseHeight > 0) input.style.height = `${baseHeight}px`
+    // 自适应：输入内容变长时宽度跟随（不小于原标签宽），缩短时回到原宽
+    const syncWidth = (): void => {
+      const contentW = input.scrollWidth
+      const w = Math.max(baseWidth, contentW)
+      if (w > 0) input.style.width = `${w}px`
+    }
+    input.addEventListener('input', syncWidth)
     labelEl.replaceWith(input)
     input.focus()
     input.select()
@@ -1133,7 +1245,8 @@ export class OASTabs extends OASElement {
         finish(false)
       }
     })
-    input.addEventListener('blur', () => finish(false))
+    // 失焦保存（通用 commit on blur：Enter 保存、Esc 取消、blur 保存）；内容未变则静默退出
+    input.addEventListener('blur', () => finish(true))
     input.addEventListener('click', (e) => e.stopPropagation())
   }
 
@@ -1167,16 +1280,19 @@ export class OASTabs extends OASElement {
   }
 
   /**
-   * 捕获 tablist 内当前焦点的归属：'add'（+ 按钮）| 'tab'/'close' + 标签 value |
-   * null（焦点不在 tablist 内，如初始渲染/宿主聚焦他处）。
+   * 捕获标签栏区域当前焦点的归属：'add'（+ 按钮，在 nav 固定区）| 'tab'/'close' + 标签 value |
+   * null（焦点不在标签栏内，如初始渲染/宿主聚焦他处）。
    * 注意：焦点在 shadow DOM 内时 document.activeElement 只返回宿主，
    * 必须用 this.shadow.activeElement 才能拿到真正聚焦的元素。
    */
   private captureFocused(): { type: 'tab' | 'close' | 'add'; value: string } | null {
+    const nav = this.shadow.querySelector('.nav')
     const tablist = this.shadow.querySelector('.tablist')
     const active = this.shadow.activeElement
-    if (!tablist || !tablist.contains(active)) return null
+    if (!nav || !nav.contains(active)) return null
+    // + 按钮在 nav 固定区（滚动区外）
     if (this.addBtn && active === this.addBtn) return { type: 'add', value: '' }
+    if (!tablist || !tablist.contains(active)) return null
     const btn = (active as HTMLElement).closest('[role="tab"]')
     if (!btn) return null
     const close = (active as HTMLElement).closest('.tab-close')

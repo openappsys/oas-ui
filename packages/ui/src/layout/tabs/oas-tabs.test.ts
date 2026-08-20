@@ -195,16 +195,19 @@ describe('OASTabs', () => {
     expect(add!.getAttribute('aria-label')).toBe('新增标签')
     expect(add!.getAttribute('part')).toBe('add-button')
     expect(add!.querySelector('svg')).not.toBeNull()
-    // a11y 回归：tablist 直接子元素必须带 role=tab（axe aria-required-children）；
-    // aria-selected=false 占位 tab + tabindex=0 保证 Tab 键可达
-    expect(add!.getAttribute('role')).toBe('tab')
-    expect(add!.getAttribute('aria-selected')).toBe('false')
+    // + 移出滚动区固定 nav：role=button（不再占位 tab），tabindex=0 进 Tab 顺序，可见
+    expect(add!.getAttribute('role')).toBe('button')
+    expect(add!.hasAttribute('hidden')).toBe(false)
     expect(add!.getAttribute('tabindex')).toBe('0')
+    // tablist 只含真 tab
+    const tablist = el.shadowRoot!.querySelector('[role="tablist"]')!
+    expect(tablist.contains(add)).toBe(false)
   })
 
-  it('未设置 addable 时不渲染 + 按钮', () => {
+  it('未设置 addable 时 + 按钮隐藏（template 占位存在但 hidden）', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('.tab-add')).toBeNull()
+    const add = el.shadowRoot!.querySelector<HTMLElement>('.tab-add')
+    expect(add!.hasAttribute('hidden')).toBe(true)
   })
 
   it('addable：点击 + 派发 oas-add，detail 携带默认新标签文案（走 locale）', () => {
@@ -312,17 +315,37 @@ describe('OASTabs', () => {
     expect(el.getAttribute('active')).toBe('a')
   })
 
-  it('a11y：addable 时 tablist 直接子元素全部为 tab，且 + 占位 tab 与选中标签均进 Tab 顺序', () => {
+  it('a11y：addable 时 tablist 只含真 tab（+ 按钮移出滚动区固定在 nav），+ 为 button 进 Tab 顺序', () => {
     const el = mount({ addable: '' })
-    const children = [...el.shadowRoot!.querySelector('[role="tablist"]')!.children]
-    // axe aria-required-children：tablist 只允许 tab 子元素
-    expect(children.every((c) => c.getAttribute('role') === 'tab')).toBe(true)
-    // Tab 顺序 = 选中标签(0) + + 占位(0)，其余 roving -1
-    expect(children.filter((c) => c.getAttribute('tabindex') === '0').length).toBe(2)
-    expect(children.filter((c) => c.getAttribute('tabindex') === '-1').length).toBe(1)
-    // + 占位为 aria-selected=false，不冒充选中项
-    const add = children.find((c) => c.classList.contains('tab-add'))!
-    expect(add.getAttribute('aria-selected')).toBe('false')
+    const tablist = el.shadowRoot!.querySelector('[role="tablist"]')!
+    const nav = el.shadowRoot!.querySelector('.nav')!
+    // tablist 直接子元素全部是真 tab（+ 已移出滚动区）
+    const children = [...tablist.children]
+    expect(children.every((c) => c.getAttribute('role') === 'tab' && c.hasAttribute('data-value'))).toBe(true)
+    // + 按钮在 nav（滚动区外），role=button、可聚焦
+    const add = nav.querySelector('.tab-add')!
+    expect(tablist.contains(add)).toBe(false) // 不在 tablist 内
+    expect(add.getAttribute('role')).toBe('button')
+    expect(add.getAttribute('tabindex')).toBe('0')
+  })
+
+  it('addable：溢出时 + 按钮固定在标签栏末尾，不随 tablist 滚动被遮挡', () => {
+    const el = new OASTabs()
+    el.setAttribute('addable', '')
+    el.innerHTML = Array.from(
+      { length: 10 },
+      (_, i) => `<oas-tab-panel label="标签${i}" value="t${i}"><p>c${i}</p></oas-tab-panel>`,
+    ).join('')
+    document.body.appendChild(el)
+    const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+    Object.defineProperty(tablist, 'scrollWidth', { value: 1200, configurable: true })
+    Object.defineProperty(tablist, 'clientWidth', { value: 400, configurable: true })
+    Object.defineProperty(tablist, 'scrollLeft', { value: 800, writable: true, configurable: true })
+    ;(el as any).update()
+    const add = el.shadowRoot!.querySelector('.tab-add')!
+    // + 在 nav（不在滚动的 tablist 内）→ 不随滚动位移，始终可见
+    expect(tablist.contains(add)).toBe(false)
+    expect((el.shadowRoot!.querySelector('.nav') as HTMLElement).contains(add)).toBe(true)
   })
 
   it('icon：tab 渲染 iconRegistry 内联 SVG，装饰性对读屏隐藏', () => {
@@ -812,6 +835,72 @@ describe('OASTabs', () => {
       expect(tabNew.querySelector('.tab-rename-input')).toBeNull()
       expect(tabNew.querySelector('.tab-label')!.textContent).toBe('文档一')
     })
+
+    it('失焦保存（commit on blur）：点击非编辑区域提交修改并派发 oas-rename', async () => {
+      // 通用（通用编辑场景）：失焦默认保存，取消走 Esc 显式表达
+      const el = mountEditable()
+      let detail: unknown
+      el.addEventListener('oas-rename', (e) => (detail = (e as CustomEvent).detail))
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      tabA.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      const input = tabA.querySelector('.tab-rename-input') as HTMLInputElement
+      input.value = '失焦保存的新名'
+      input.dispatchEvent(new FocusEvent('blur'))
+      await Promise.resolve()
+      expect(detail).toEqual({ value: 'a', label: '失焦保存的新名' })
+      const tabNew = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      expect(tabNew.querySelector('.tab-label')!.textContent).toBe('失焦保存的新名')
+    })
+
+    it('失焦时内容未变（或与原值相同）不派发事件', async () => {
+      const el = mountEditable()
+      let fired = 0
+      el.addEventListener('oas-rename', () => fired++)
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      tabA.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      const input = tabA.querySelector('.tab-rename-input') as HTMLInputElement
+      // 值未改，直接 blur——不应派发
+      input.dispatchEvent(new FocusEvent('blur'))
+      await Promise.resolve()
+      expect(fired).toBe(0)
+    })
+
+    it('编辑框初始宽度贴合原标签宽度（不用 input 默认宽度，防布局跳动）', () => {
+      const el = mountEditable()
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      const labelEl = tabA.querySelector('.tab-label') as HTMLElement
+      // mock 原标签宽度（jsdom 无布局）
+      Object.defineProperty(labelEl, 'offsetWidth', { value: 96, configurable: true })
+      tabA.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      const input = tabA.querySelector('.tab-rename-input') as HTMLInputElement
+      // 初始宽度应贴合原标签（非默认 209px 输入框宽度）
+      expect(input.style.width).toBe('96px')
+    })
+
+    it('编辑框高度贴合原标签高度（input 固有高度 ≠ span 行高，差值会致 tab 晃动）', () => {
+      const el = mountEditable()
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      const labelEl = tabA.querySelector('.tab-label') as HTMLElement
+      Object.defineProperty(labelEl, 'offsetWidth', { value: 96, configurable: true })
+      Object.defineProperty(labelEl, 'offsetHeight', { value: 18, configurable: true })
+      tabA.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      const input = tabA.querySelector('.tab-rename-input') as HTMLInputElement
+      expect(input.style.height).toBe('18px')
+    })
+
+    it('编辑框随输入内容自适应增长（input 事件更新宽度，不小于原标签宽）', () => {
+      const el = mountEditable()
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      const labelEl = tabA.querySelector('.tab-label') as HTMLElement
+      Object.defineProperty(labelEl, 'offsetWidth', { value: 96, configurable: true })
+      tabA.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      const input = tabA.querySelector('.tab-rename-input') as HTMLInputElement
+      // 输入更长内容，mock scrollWidth 增长
+      input.value = '这是一个非常非常长的新标签名称'
+      Object.defineProperty(input, 'scrollWidth', { value: 240, configurable: true })
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      expect(input.style.width).toBe('240px')
+    })
   })
 
   // ===== 批次 4c：sortable 拖拽排序 =====
@@ -894,6 +983,159 @@ describe('OASTabs', () => {
       // 普通标签仍是纯文本
       const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
       expect(tabA.querySelector('.tab-label')!.textContent).toBe('普通')
+    })
+  })
+
+  // ===== 批次 6a：滚轮横向滚动 + 新增自动滚到可见 =====
+
+  describe('滚轮滑动标签', () => {
+    function mountOverflow(): OASTabs {
+      const el = new OASTabs()
+      el.innerHTML = Array.from(
+        { length: 10 },
+        (_, i) => `<oas-tab-panel label="标签${i}" value="t${i}"><p>c${i}</p></oas-tab-panel>`,
+      ).join('')
+      document.body.appendChild(el)
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      Object.defineProperty(tablist, 'scrollWidth', { value: 1200, configurable: true })
+      Object.defineProperty(tablist, 'clientWidth', { value: 400, configurable: true })
+      return el
+    }
+
+    it('溢出时滚轮纵向滚动转为横向滑动标签（deltaY → scrollLeft）', () => {
+      const el = mountOverflow()
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      let scrollLeftVal = 0
+      Object.defineProperty(tablist, 'scrollLeft', {
+        get: () => scrollLeftVal,
+        set: (v) => (scrollLeftVal = v),
+        configurable: true,
+      })
+      tablist.dispatchEvent(
+        new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true }),
+      )
+      expect(scrollLeftVal).toBeGreaterThan(0)
+    })
+
+    it('未溢出时滚轮不拦截（放行页面正常滚动）', () => {
+      const el = mount()
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      Object.defineProperty(tablist, 'scrollWidth', { value: 300, configurable: true })
+      Object.defineProperty(tablist, 'clientWidth', { value: 300, configurable: true })
+      const ev = new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true })
+      tablist.dispatchEvent(ev)
+      // 未溢出：不 preventDefault，事件未被拦截
+      expect(ev.defaultPrevented).toBe(false)
+    })
+
+    it('溢出时滚轮拦截（preventDefault 阻止页面纵向滚动）', () => {
+      const el = mountOverflow()
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      Object.defineProperty(tablist, 'scrollLeft', { value: 0, writable: true, configurable: true })
+      const ev = new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true })
+      tablist.dispatchEvent(ev)
+      expect(ev.defaultPrevented).toBe(true)
+    })
+  })
+
+  describe('新增标签自动滚到可见', () => {
+    it('新增标签（溢出时在最右）激活后自动滚动到可见区域', async () => {
+      const el = new OASTabs()
+      el.setAttribute('addable', '')
+      el.innerHTML = Array.from(
+        { length: 8 },
+        (_, i) => `<oas-tab-panel label="标签${i}" value="t${i}"><p>c${i}</p></oas-tab-panel>`,
+      ).join('')
+      document.body.appendChild(el)
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      Object.defineProperty(tablist, 'scrollWidth', { value: 1200, configurable: true })
+      Object.defineProperty(tablist, 'clientWidth', { value: 400, configurable: true })
+      // 追踪 scrollIntoView 调用
+      const scrollCalls: string[] = []
+      const origSIV = Element.prototype.scrollIntoView
+      Element.prototype.scrollIntoView = function (this: Element) {
+        scrollCalls.push((this as HTMLElement).getAttribute?.('data-value') ?? 'unknown')
+      }
+      // 宿主新增一个面板（溢出时在最右）
+      const p = document.createElement('oas-tab-panel')
+      p.setAttribute('label', '新标签')
+      p.setAttribute('value', 'new-9')
+      el.appendChild(p)
+      el.setAttribute('active', 'new-9')
+      await Promise.resolve()
+      Element.prototype.scrollIntoView = origSIV
+      // 新激活的标签应被 scrollIntoView 滚到可见
+      expect(scrollCalls).toContain('new-9')
+    })
+  })
+
+  // ===== 批次 6c：more 下拉搜索 + 选中项定位 =====
+
+  describe('more 下拉搜索与选中定位', () => {
+    function mountMore(count = 10, eachWidth = 100, avail = 400): OASTabs {
+      const el = new OASTabs()
+      el.setAttribute('more', '')
+      el.innerHTML = Array.from(
+        { length: count },
+        (_, i) => `<oas-tab-panel label="标签${i + 1}" value="t${i}"><p>内容${i + 1}</p></oas-tab-panel>`,
+      ).join('')
+      document.body.appendChild(el)
+      const tabs = el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]')
+      tabs.forEach((t) => Object.defineProperty(t, 'offsetWidth', { value: eachWidth, configurable: true }))
+      const nav = el.shadowRoot!.querySelector('.nav') as HTMLElement
+      Object.defineProperty(nav, 'clientWidth', { value: avail, configurable: true })
+      ;(el as any).syncMore?.()
+      return el
+    }
+
+    it('more 下拉含搜索框（溢出时）', () => {
+      const el = mountMore()
+      const moreBtn = el.shadowRoot!.querySelector('.more-btn') as HTMLElement
+      moreBtn.click()
+      const search = el.shadowRoot!.querySelector('.more-search')
+      expect(search).not.toBeNull()
+      expect(search!.getAttribute('placeholder') ?? search!.getAttribute('aria-label')).toBeTruthy()
+    })
+
+    it('搜索过滤：输入关键字只显示匹配的收起项', async () => {
+      const el = mountMore(10, 100, 300) // 可用 300px → 约前 2 个可见，8 个收进下拉
+      const moreBtn = el.shadowRoot!.querySelector('.more-btn') as HTMLElement
+      moreBtn.click()
+      await Promise.resolve()
+      const search = el.shadowRoot!.querySelector('.more-search') as HTMLInputElement
+      const allItems = () => [...el.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')].filter((i) => !i.hidden)
+      const totalBefore = allItems().length
+      expect(totalBefore).toBeGreaterThan(0)
+      search.value = '标签9'
+      search.dispatchEvent(new Event('input', { bubbles: true }))
+      await Promise.resolve()
+      const filtered = allItems()
+      expect(filtered.length).toBe(1)
+      expect(filtered[0]!.textContent).toContain('标签9')
+    })
+
+    it('打开下拉时选中项滚动到可见（scrollIntoView）且高亮', async () => {
+      const el = mountMore(10, 100, 300)
+      el.setAttribute('active', 't9') // t9（标签10）被收进下拉
+      // setAttribute 触发 update 重建 tablist，offsetWidth mock 丢失，需重新 mock 再 syncMore
+      el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]').forEach((t) =>
+        Object.defineProperty(t, 'offsetWidth', { value: 100, configurable: true }),
+      )
+      ;(el as any).syncMore?.()
+      const scrollCalls: string[] = []
+      const origSIV = Element.prototype.scrollIntoView
+      Element.prototype.scrollIntoView = function (this: Element) {
+        scrollCalls.push((this as HTMLElement).getAttribute?.('data-value') ?? 'unknown')
+      }
+      const moreBtn = el.shadowRoot!.querySelector('.more-btn') as HTMLElement
+      moreBtn.click()
+      await Promise.resolve()
+      Element.prototype.scrollIntoView = origSIV
+      // 选中项（t9）应被 scrollIntoView 滚到可见
+      expect(scrollCalls).toContain('t9')
+      // 选中项高亮（aria-current）
+      const activeItem = el.shadowRoot!.querySelector('.more-item[data-value="t9"]')
+      expect(activeItem!.getAttribute('aria-current')).toBe('true')
     })
   })
 })
