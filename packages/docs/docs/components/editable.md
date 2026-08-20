@@ -77,7 +77,7 @@ onMounted(() => {
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-cancel` | 取消/空值提交（还原旧值），默认非破坏，`detail: { value: oldValue }` |
+| `oas-cancel` | 取消/空值提交（还原旧值），默认非破坏，`detail: { value: oldValue } \| { value: this.getAttr('value', '') }` |
 | `oas-change` | 提交新值，`detail: { value }` |
 
 键盘：展示态 `Enter`/空格/点击进入编辑；编辑态 `Enter` 提交、`Esc` 还原失焦。

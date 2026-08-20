@@ -77,7 +77,7 @@ onMounted(() => {
 
 | Event | Description |
 | --- | --- |
-| `oas-cancel` | Cancel/empty-value submit (reverts to old value), non-destructive by default, `detail: { value: oldValue }` |
+| `oas-cancel` | Cancel/empty-value submit (reverts to old value), non-destructive by default, `detail: { value: oldValue } \| { value: this.getAttr('value', '') }` |
 | `oas-change` | New value submitted, `detail: { value }` |
 
 Keyboard: in display mode `Enter`/Space/click enters edit mode; in edit mode `Enter` submits, `Esc` reverts and blurs.

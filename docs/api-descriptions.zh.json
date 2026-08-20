@@ -854,10 +854,10 @@
   "oas-menubar": {
     "attrs": {
       "items": "顶级菜单项 JSON（含子菜单 children）",
-      "value": "受控选中值（外部改即时同步勾选；内部选中自动写回）"
+      "value": "选中值。纯字符串时全局单选（无组场景，兼容旧用法）；JSON 对象字符串（如 `{\"mode\":\"preview\",\"theme\":\"dark\"}`）时按组 id 作用域独立记录——`type:\"group\"` 项的 `value` 作组 id"
     },
     "events": {
-      "oas-select": "选择某项，`detail: { value }`"
+      "oas-select": "选择某项，`detail: { value, kind? }`。`kind` 仅动作项（`kind: \"action\"`）出现，值为 `\"action\"`；radio 项 `detail.kind` 不出现"
     },
     "slots": {}
   },

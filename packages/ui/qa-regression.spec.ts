@@ -952,19 +952,19 @@ test('menu 多级子菜单贴近视口右缘：翻转后全部落在视口内', 
 
 test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内', async ({ page }) => {
   await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
-  await up(page, 'oas-menubar')
-  // 平移 menubar 到视口右缘
+  await up(page, '#menubar-basic')
+  // 平移 menubar 到视口右缘（基础用法 demo 含 view>zoom 两级子菜单）
   await page.evaluate(() => {
-    const mb = document.querySelector('oas-menubar') as HTMLElement
+    const mb = document.querySelector('#menubar-basic') as HTMLElement
     mb.style.cssText = 'position: fixed; right: 0; top: 240px; z-index: 9999'
     mb.dataset.e2eRightEdge = '1'
   })
   // hover 顶级「视图」展开一级下拉，hover 级联「缩放」展开二级子菜单（menubar 是 mouseenter 展开）
   await page
-    .locator('oas-menubar[data-e2e-right-edge] [part="top-item"][data-value="view"]')
+    .locator('#menubar-basic[data-e2e-right-edge] [part="top-item"][data-value="view"]')
     .hover()
   await page.waitForTimeout(150)
-  await page.locator('oas-menubar[data-e2e-right-edge] [part="item"][data-value="zoom"]').hover()
+  await page.locator('#menubar-basic[data-e2e-right-edge] [part="item"][data-value="zoom"]').hover()
   await page.waitForTimeout(200)
   const rects = await visibleSubmenuRects(page)
   expect(rects.length).toBeGreaterThanOrEqual(2) // 一级下拉 + 级联子菜单
@@ -975,7 +975,7 @@ test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内
   }
   // 右缘场景至少一级发生了翻转（级联 flip-left 或一级 flip-right 右对齐）
   const flipped = await page.evaluate(() => {
-    const mb = document.querySelector('oas-menubar')!
+    const mb = document.querySelector('#menubar-basic')!
     const subs = [...mb.shadowRoot!.querySelectorAll('[part="submenu"]')]
     return subs.some((s) => s.classList.contains('flip-left') || s.classList.contains('flip-right'))
   })

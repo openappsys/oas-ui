@@ -2,6 +2,33 @@
 
 桌面应用式顶部菜单条（文件 / 编辑 / 视图），点击 / 悬停展开子菜单（级联浮出），支持方向键、`Alt` 访问键与焦点陷阱。
 
+## 多组单选（radio 组独立勾选）
+
+`type: "group"` 项的 `value` 作为**组 id**，同一组内的叶子按该组独立记录选中值；`value` 属性传 JSON 对象（`{"组id":"选中值"}`）时各组互不干扰——「模式」和「主题」两组可各自显示打勾。
+
+<DemoBlock title="多组单选（组独立勾选）">
+  <oas-menubar id="menubar-groups" onoas-select="menubarGroupsLog(event)" value='{"mode":"preview","theme":"dark"}' items='[{"label":"视图","value":"view","accessKey":"v","children":[{"type":"group","label":"模式","value":"mode","children":[{"label":"编辑","value":"edit"},{"label":"预览","value":"preview"}]},{"type":"group","label":"主题","value":"theme","children":[{"label":"浅色","value":"light"},{"label":"暗色","value":"dark"}]}]}]'></oas-menubar>
+  <oas-tag id="menubar-groups-result" type="info">mode: preview, theme: dark</oas-tag>
+</DemoBlock>
+
+## 动作项（kind: "action"）
+
+`kind: "action"` 的叶子项按普通动作渲染（`menuitem`），无勾选态、点击**不写回** `value`、只派发 `oas-select`（`detail.kind === "action"`）——适合「打开 / 保存 / 关于」这类非设置项。
+
+<DemoBlock title="动作项（kind: action）">
+  <oas-menubar id="menubar-action" onoas-select="menubarActionLog(event)" value="mode" items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"打开","value":"open","kind":"action"},{"label":"保存","value":"save","kind":"action"},{"type":"divider"},{"label":"模式","value":"mode","kind":"radio"},{"label":"主题","value":"theme","kind":"radio"}]}]'></oas-menubar>
+  <oas-tag id="menubar-action-result" type="info">value: mode（动作项点击不改变）</oas-tag>
+</DemoBlock>
+
+## 快捷键（shortcut）
+
+`shortcut` 字段（如 `"Ctrl+N"`）：右侧渲染快捷键提示，并自动绑定 `document` 级 keydown——命中即触发对应项选择（`preventDefault` 拦截浏览器默认行为）。
+
+<DemoBlock title="快捷键（shortcut）">
+  <oas-menubar id="menubar-shortcut" onoas-select="menubarShortcutLog(event)" items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"新建","value":"new","shortcut":"Ctrl+N"},{"label":"打开","value":"open","shortcut":"Ctrl+O"},{"type":"divider"},{"label":"保存","value":"save","shortcut":"Ctrl+S","kind":"action"}]}]'></oas-menubar>
+  <oas-tag id="menubar-shortcut-result" type="info">按 Ctrl+N / Ctrl+O / Ctrl+S 试试</oas-tag>
+</DemoBlock>
+
 ## 基础用法
 
 <DemoBlock title="基础用法">
@@ -35,6 +62,25 @@
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
+  window.menubarGroupsLog = (e) => {
+    const tag = document.getElementById('menubar-groups-result')
+    if (tag) {
+      const v = JSON.parse(document.getElementById('menubar-groups')?.getAttribute('value') || '{}')
+      tag.textContent = `mode: ${v.mode || '-'}, theme: ${v.theme || '-'}`
+    }
+  }
+  window.menubarActionLog = (e) => {
+    const tag = document.getElementById('menubar-action-result')
+    if (tag) {
+      tag.textContent = e.detail.kind === 'action'
+        ? `动作：${e.detail.value}（value 不变）`
+        : `选中：${e.detail.value}（kind: radio）`
+    }
+  }
+  window.menubarShortcutLog = (e) => {
+    const tag = document.getElementById('menubar-shortcut-result')
+    if (tag) tag.textContent = `已触发：${e.detail.value}`
+  }
   window.menubarLog = (e) => {
     const tag = document.getElementById('menubar-result')
     if (tag) tag.textContent = `已选择：${e.detail.value}`
@@ -69,20 +115,24 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `items` | 顶级菜单项 JSON（含子菜单 children） | `string` | `[]` |
-| `value` | 受控选中值（外部改即时同步勾选；内部选中自动写回） | `string` | — |
+| `value` | 选中值。纯字符串时全局单选（无组场景，兼容旧用法）；JSON 对象字符串（如 `{"mode":"preview","theme":"dark"}`）时按组 id 作用域独立记录——`type:"group"` 项的 `value` 作组 id | `string` | — |
 
 ### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-select` | 选择某项，`detail: { value }` |
+| `oas-select` | 选择某项，`detail: { value, kind? }`。`kind` 仅动作项（`kind: "action"`）出现，值为 `"action"`；radio 项 `detail.kind` 不出现 |
+
+> **事件 detail 说明**：`oas-select` 的 `detail` 是组件内部对象（含 `value`/`kind`），**不是**原生 `Event`——不能 `preventDefault()` 或直接读原生 `event.target`。如需原生事件对象，在事件监听器上用外层参数（如 `addEventListener('oas-select', (e) => ...)` 的 `e` 是 CustomEvent，`e.detail` 才是组件数据）。
 
 `MenubarItem` 字段（继承 `MenuItem`）：
 
 | 字段       | 说明                                                        | 类型     |
 | ---------- | ----------------------------------------------------------- | -------- |
 | `label`    | 菜单文字                                                    | `string` |
-| `value`    | 选中值                                                      | `string` |
+| `value`    | 选中值（items JSON 中声明；渲染后宿主标签上对应 `data-value` 小写属性，供内部定位，宿主不应依赖其作为公共 API） | `string` |
+| `kind`     | 叶子项语义：`radio`（默认，可勾选、参与 value）/ `action`（动作项，无勾选态、点击不写回 value） | `string` |
+| `shortcut` | 快捷键提示（如 `"Ctrl+N"`）；渲染为右侧 kbd，并自动绑定 `document` 级 keydown（命中即选择该项、`preventDefault`） | `string` |
 | `accessKey`| `Alt` 访问键（单字符）；缺省取 label 首个 ASCII 字母        | `string` |
 | `disabled` | 禁用                                                        | `boolean`|
 | `children` | 子菜单项（可继续嵌套，级联向右浮出）                        | `MenubarItem[]` |

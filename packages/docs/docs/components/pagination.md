@@ -126,6 +126,6 @@ onMounted(() => {
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-change` | 翻页 `{ page }`；切换每页条数 `{ page: 1, pageSize }`；快速跳转 `{ page, pageSize }` |
+| `oas-change` | 翻页 `{ page }`；切换每页条数 `{ page: 1, pageSize }`；快速跳转 `{ page, pageSize }`，`detail: { page } \| { page: 1, pageSize } \| { page: target, pageSize }` |
 
 页码超出范围时自动省略，首尾翻页按钮在边界自动禁用。

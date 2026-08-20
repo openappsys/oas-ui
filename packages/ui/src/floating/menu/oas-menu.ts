@@ -3,6 +3,9 @@ import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type MenuItemType = 'item' | 'group' | 'divider'
 
+/** 叶子项语义类型：radio（默认，选中态打勾，参与 value）/ action（动作，无勾选态，不写回 value） */
+export type MenuItemKind = 'radio' | 'action'
+
 export interface MenuItem {
   label?: string
   value?: string
@@ -12,6 +15,8 @@ export interface MenuItem {
   icon?: string
   /** 菜单项类型：普通项（默认）/ 分组 / 分隔线 */
   type?: MenuItemType
+  /** 叶子项语义：radio（默认，可勾选）/ action（动作项，无勾选态、不写回 value） */
+  kind?: MenuItemKind
   /** 子菜单项，支持多级嵌套（任意层级）；group 的 children 平铺展示在同一层 */
   children?: MenuItem[]
 }
@@ -471,12 +476,16 @@ export class OASMenu extends OASElement {
         this.renderLevel(sub, item.children!, selected, depth + 1)
         li.appendChild(sub)
       } else {
-        li.setAttribute('role', 'menuitemradio')
-        li.setAttribute('aria-checked', String(item.value === selected))
-        const check = document.createElement('span')
-        check.className = 'check'
-        check.textContent = '✓'
-        li.append(label, check)
+        const action = item.kind === 'action'
+        li.setAttribute('role', action ? 'menuitem' : 'menuitemradio')
+        if (!action) {
+          li.setAttribute('aria-checked', String(item.value === selected))
+          const check = document.createElement('span')
+          check.className = 'check'
+          check.textContent = '✓'
+          li.appendChild(check)
+        }
+        li.append(label)
         li.addEventListener('click', (e: MouseEvent) => {
           e.stopPropagation()
           if (item.disabled || item.loading) return
@@ -559,8 +568,13 @@ export class OASMenu extends OASElement {
   }
 
   private select(item: MenuItem): void {
-    this.setAttribute('value', item.value ?? '')
-    this.emit('select', { value: item.value })
+    // action 项：动作语义，不参与 value 选中态（不写回、不打勾），只通知宿主
+    if (item.kind === 'action') {
+      this.emit('select', { value: item.value, kind: 'action' })
+    } else {
+      this.setAttribute('value', item.value ?? '')
+      this.emit('select', { value: item.value })
+    }
     // 级联浮出菜单惯例：选中叶子项后收回所有展开的子菜单（展开态是临时的）
     if (this.expanded.size > 0) {
       this.expanded.clear()

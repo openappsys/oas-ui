@@ -126,6 +126,6 @@ onMounted(() => {
 
 | Event | Description |
 | --- | --- |
-| `oas-change` | Flipping `{ page }`; page-size switch `{ page: 1, pageSize }`; quick jump `{ page, pageSize }` |
+| `oas-change` | Flipping `{ page }`; page-size switch `{ page: 1, pageSize }`; quick jump `{ page, pageSize }`, `detail: { page } \| { page: 1, pageSize } \| { page: target, pageSize }` |
 
 Page numbers are omitted automatically when out of range, and the first/last flip buttons are disabled at the boundaries.

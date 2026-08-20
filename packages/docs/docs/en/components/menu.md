@@ -139,6 +139,7 @@ onMounted(() => {
 | `label`    | Menu item text                                                     | `string`     |
 | `value`    | Selection value                                                    | `string`     |
 | `type`     | Item type: `item` (default) / `group` (group title) / `divider`    | `string`     |
+| `kind`     | Leaf semantics: `radio` (default, checkable) / `action` (action item, no checkmark, doesn't write back `value` on click) | `string` |
 | `icon`     | Icon name (a key of `@oas-ui/icons` iconRegistry)                | `string`     |
 | `disabled` | Disables the item                                                  | `boolean`    |
 | `children` | Submenu items array with the same shape as the parent (nested recursively) | `MenuItem[]` |

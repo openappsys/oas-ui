@@ -139,6 +139,7 @@ onMounted(() => {
 | `label`    | 菜单项文字                                                           | `string`     |
 | `value`    | 选中值                                                               | `string`     |
 | `type`     | 菜单项类型：`item`（默认）/ `group`（分组标题）/ `divider`（分隔线） | `string`     |
+| `kind`     | 叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、点击不写回 value） | `string` |
 | `icon`     | 图标名（`@oas-ui/icons` 的 iconRegistry 键）                       | `string`     |
 | `disabled` | 禁用该项                                                             | `boolean`    |
 | `children` | 子菜单项数组，结构与父项一致（可继续嵌套）                           | `MenuItem[]` |

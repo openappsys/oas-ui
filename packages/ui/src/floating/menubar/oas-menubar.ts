@@ -4,6 +4,8 @@ import type { MenuItem } from '../menu/index.js'
 export interface MenubarItem extends MenuItem {
   /** Alt 访问键（可选，单字符）；缺省时取 label 首个 ASCII 字母 */
   accessKey?: string
+  /** 快捷键提示（如 "Ctrl+N"）；自动绑定 document 级 keydown，命中即触发该项 select */
+  shortcut?: string
 }
 
 function firstAscii(label?: string): string | undefined {
@@ -128,6 +130,18 @@ const STYLE = `
 .subitem[aria-checked='true'] {
   color: var(--oas-color-primary);
   font-weight: 500;
+}
+.shortcut {
+  margin-left: var(--oas-space-3);
+  padding: 0 var(--oas-space-1);
+  font-size: var(--oas-font-size-sm);
+  font-family: var(--oas-font-family-mono, monospace);
+  color: var(--oas-color-text-secondary);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-xs);
+  background: var(--oas-color-bg-hover);
+  line-height: 1.6;
+  flex-shrink: 0;
 }
 .arrow {
   display: inline-flex;
@@ -355,7 +369,6 @@ export class OASMenubar extends OASElement {
     const barEl = this.barEl
     if (!barEl) return
     barEl.innerHTML = ''
-    const selected = this.getAttr('value', '')
     this.itemsList.forEach((item, idx) => {
       const wrap = document.createElement('div')
       wrap.className = 'top-wrap'
@@ -393,14 +406,22 @@ export class OASMenubar extends OASElement {
         ul.setAttribute('part', 'submenu')
         ul.setAttribute('role', 'menu')
         ul.dataset.parent = item.value ?? ''
-        this.renderSubLevel(ul, item.children, selected)
+        this.renderSubLevel(ul, item.children, '')
         wrap.appendChild(ul)
       }
       barEl.appendChild(wrap)
     })
   }
 
-  private renderSubLevel(container: HTMLElement, items: MenuItem[], selected: string): void {
+  /**
+   * 递归渲染一层子菜单。scope = 当前叶子归属的 radio 组 id（最近 `type:"group"` 祖先的
+   * `value` 字段；无组为 ''）；group 递归时把组 id 传下去。
+   */
+  private renderSubLevel(
+    container: HTMLElement,
+    items: MenuItem[],
+    scope: string,
+  ): void {
     for (const item of items) {
       if (item.type === 'divider') {
         const li = document.createElement('li')
@@ -420,18 +441,23 @@ export class OASMenubar extends OASElement {
         label.textContent = item.label ?? ''
         li.appendChild(label)
         container.appendChild(li)
-        if (item.children) this.renderSubLevel(container, item.children, selected)
+        // 组 id = 该 group 的 value；未声明 value 的 group 不改变作用域（沿用外层）
+        const nextScope = item.value != null ? item.value : scope
+        if (item.children) this.renderSubLevel(container, item.children, nextScope)
         continue
       }
       const hasChildren = !!item.children && item.children.length > 0
+      const action = !hasChildren && item.kind === 'action'
       const li = document.createElement('li')
       li.className = 'subitem'
       li.setAttribute('part', 'item')
-      li.setAttribute('role', hasChildren ? 'menuitem' : 'menuitemradio')
+      li.setAttribute('role', hasChildren ? 'menuitem' : action ? 'menuitem' : 'menuitemradio')
       li.setAttribute('tabindex', '-1')
       if (item.value != null) li.dataset.value = item.value
       li.setAttribute('aria-disabled', String(item.disabled ?? false))
       if (item.label) li.setAttribute('aria-label', item.label)
+      // 组作用域标记：radio 叶子带所在组 id（无组为 ''），syncSelection 按此判定勾选
+      if (!hasChildren && !action) li.dataset.scope = scope
       const label = document.createElement('span')
       label.className = 'label'
       label.textContent = item.label ?? ''
@@ -440,18 +466,31 @@ export class OASMenubar extends OASElement {
         li.setAttribute('aria-haspopup', 'menu')
         li.setAttribute('aria-expanded', 'false')
         li.append(this.createChevron())
-      } else {
-        li.setAttribute('aria-checked', String(item.value === selected))
+      } else if (!action) {
+        li.setAttribute('aria-checked', String(item.value === this.selectedValueOf(scope)))
         const check = document.createElement('span')
         check.className = 'check'
         check.textContent = '✓'
         li.appendChild(check)
+        if ((item as MenubarItem).shortcut) {
+          const kbd = document.createElement('kbd')
+          kbd.className = 'shortcut'
+          kbd.textContent = (item as MenubarItem).shortcut!
+          li.appendChild(kbd)
+        }
+      } else {
+        if ((item as MenubarItem).shortcut) {
+          const kbd = document.createElement('kbd')
+          kbd.className = 'shortcut'
+          kbd.textContent = (item as MenubarItem).shortcut!
+          li.appendChild(kbd)
+        }
       }
       li.addEventListener('click', () => {
         this.keyboardMode = false
         if (item.disabled) return
         if (hasChildren) this.toggleExpand(item.value ?? '')
-        else this.select(item)
+        else this.select(item, scope)
       })
       li.addEventListener('mouseenter', () => {
         this.keyboardMode = false
@@ -464,7 +503,7 @@ export class OASMenubar extends OASElement {
         sub.setAttribute('part', 'submenu')
         sub.setAttribute('role', 'menu')
         sub.dataset.parent = item.value ?? ''
-        this.renderSubLevel(sub, item.children!, selected)
+        this.renderSubLevel(sub, item.children!, '')
         li.appendChild(sub)
       }
       container.appendChild(li)
@@ -487,14 +526,54 @@ export class OASMenubar extends OASElement {
     return span
   }
 
-  /** value 变化 → 轻量同步叶子项勾选态（aria-checked，不重建 DOM） */
+  /**
+   * value 属性解析为组作用域映射：纯字符串 → { '': value }（根作用域，兼容现有全局命中）；
+   * JSON 对象（如 {"mode":"preview"}）→ 原样作为组 id → 选中值映射
+   */
+  private valueMap(): Record<string, string> {
+    const raw = this.getAttr('value', '')
+    if (!raw) return {}
+    try {
+      const parsed = JSON.parse(raw)
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed
+    } catch {}
+    return { '': raw }
+  }
+
+  /** 指定组作用域的选中值（无命中返回 undefined） */
+  private selectedValueOf(scope: string): string | undefined {
+    return this.valueMap()[scope]
+  }
+
+  /** 写回 value：仅根作用域 → 纯字符串（兼容现有）；含命名组 → JSON 对象 */
+  private writeValue(map: Record<string, string>): void {
+    const keys = Object.keys(map)
+    if (keys.length === 1 && keys[0] === '') this.setAttribute('value', map[''] ?? '')
+    else this.setAttribute('value', JSON.stringify(map))
+  }
+
+  /** 键盘路径的叶子作用域：从 DOM li 的 data-scope 读取（无组为 ''） */
+  private scopeOf(value: string): string {
+    const li = this.shadow?.querySelector<HTMLElement>(
+      `[part="item"][data-value="${value}"]`,
+    )
+    return li?.dataset.scope ?? ''
+  }
+
+  /** value 变化 → 轻量同步叶子项勾选态（aria-checked，不重建 DOM）；action 项无勾选态 */
   private syncSelection(): void {
     if (!this.shadow) return
-    const selected = this.getAttr('value', '')
+    const map = this.valueMap()
     for (const li of this.shadow.querySelectorAll<HTMLElement>('[part="item"]')) {
       // 带子菜单的项是父节点，无勾选态
       if (li.getAttribute('aria-haspopup') === 'menu') continue
-      li.setAttribute('aria-checked', String(li.dataset.value === selected))
+      // action 项（role=menuitem 且无 data-scope）不参与勾选，不设 aria-checked
+      if (li.getAttribute('role') === 'menuitem' && !li.hasAttribute('data-scope')) {
+        li.removeAttribute('aria-checked')
+        continue
+      }
+      const scope = li.dataset.scope ?? ''
+      li.setAttribute('aria-checked', String(li.dataset.value === map[scope]))
     }
   }
 
@@ -623,10 +702,18 @@ export class OASMenubar extends OASElement {
     this.syncRoving()
   }
 
-  private select(item: MenuItem): void {
-    // 非受控通道：内部选中直接写回 value（受控模式由宿主监听 oas-select 接管，
-    // 外部 setAttribute('value') 同样即时生效——value 在 observedAttributes 中）
-    this.setAttribute('value', item.value ?? '')
+  private select(item: MenuItem, scope = ''): void {
+    // action 项：动作语义，不参与 value 选中态（不写回、不打勾），只通知宿主
+    if (item.kind === 'action') {
+      this.emit('select', { value: item.value, kind: 'action' })
+      this.collapseAndFocusTop()
+      return
+    }
+    // radio 项：按组作用域写回（非受控通道）。组内更新该组选中值，其余组保留；
+    // 无组（scope=''）保持纯字符串 value 兼容现有
+    const map = this.valueMap()
+    map[scope] = item.value ?? ''
+    this.writeValue(map)
     this.emit('select', { value: item.value })
     this.collapseAndFocusTop()
   }
@@ -741,7 +828,7 @@ export class OASMenubar extends OASElement {
       const active = items[this.activeIndex]
       if (!active || active.disabled) return
       if (active.children?.length) this.enterSubmenu(active)
-      else this.select(active)
+      else this.select(active, this.scopeOf(active.value ?? ''))
     } else if (e.key === 'Escape') {
       e.preventDefault()
       this.collapseAndFocusTop()
@@ -760,8 +847,17 @@ export class OASMenubar extends OASElement {
     this.focusCurrent()
   }
 
-  /** 文档级键盘：Alt 访问键 + Alt 聚焦 + 子菜单 Tab 焦点陷阱 */
+  /** 文档级键盘：shortcut 快捷键 + Alt 访问键 + Alt 聚焦 + 子菜单 Tab 焦点陷阱 */
   private handleDocumentKey = (e: KeyboardEvent): void => {
+    // 快捷键（shortcut 字段）：命中即触发对应项 select（Ctrl+N / Ctrl+Shift+S 等）
+    const shortcutItem = this.matchShortcut(e)
+    if (shortcutItem) {
+      e.preventDefault()
+      if (shortcutItem.disabled) return
+      this.keyboardMode = true
+      this.select(shortcutItem, this.scopeOf(shortcutItem.value ?? ''))
+      return
+    }
     // Alt 单独按下：聚焦菜单栏第一个可用顶级项
     if (e.key === 'Alt' && !e.ctrlKey && !e.metaKey) {
       const first = this.topItems().findIndex((i) => !i.disabled)
@@ -820,5 +916,40 @@ export class OASMenubar extends OASElement {
     return [...ul.querySelectorAll<HTMLElement>('[part="item"]')].filter(
       (li) => li.getAttribute('aria-disabled') !== 'true',
     )
+  }
+
+  /** 解析快捷键字符串并匹配键盘事件；支持 Ctrl/Cmd/Shift/Alt 组合（如 "Ctrl+Shift+S"） */
+  private matchShortcut(e: KeyboardEvent): MenuItem | undefined {
+    const key = e.key.toLowerCase()
+    const find = (items: MenuItem[]): MenuItem | undefined => {
+      for (const item of items) {
+        if (item.children?.length) {
+          const found = find(item.children)
+          if (found) return found
+          continue
+        }
+        const sc = (item as MenubarItem).shortcut
+        if (!sc) continue
+        const parts = sc.split('+').map((p) => p.trim())
+        if (parts.length < 2) continue
+        const mods = new Set(parts.slice(0, -1).map((p) => p.toLowerCase()))
+        const hitKey = parts[parts.length - 1]!.toLowerCase()
+        const ctrl = mods.has('ctrl') || mods.has('control')
+        const meta = mods.has('meta') || mods.has('cmd') || mods.has('command')
+        const shift = mods.has('shift')
+        const alt = mods.has('alt') || mods.has('option')
+        if (
+          e.ctrlKey === ctrl &&
+          e.metaKey === meta &&
+          e.shiftKey === shift &&
+          e.altKey === alt &&
+          key === hitKey
+        ) {
+          return item
+        }
+      }
+      return undefined
+    }
+    return find(this.itemsList)
   }
 }
