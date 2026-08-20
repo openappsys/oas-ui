@@ -153,6 +153,9 @@ export const zhCN = {
   'tabs.close': '关闭',
   'tabs.add': '新增标签',
   'tabs.newTab': '新标签',
+  'tabs.scrollPrev': '向前滚动标签',
+  'tabs.scrollNext': '向后滚动标签',
+  'tabs.more': '更多标签',
   // button-group（按钮组）
   'buttonGroup.group': '按钮组',
   // compact（紧凑组合容器）

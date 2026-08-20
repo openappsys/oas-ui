@@ -12,7 +12,7 @@ const STYLE = `
 
 export class OASTabPanel extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['label', 'value', 'hidden']
+    return ['label', 'value', 'disabled', 'editable']
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */

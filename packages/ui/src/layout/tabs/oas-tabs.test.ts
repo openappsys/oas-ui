@@ -385,4 +385,515 @@ describe('OASTabs', () => {
     expect(lineHover).toContain('var(--oas-color-primary)')
     expect(cardHover).toContain('color-mix')
   })
+
+  // ===== 批次 1：disabled / size / centered / justified =====
+
+  describe('disabled tab', () => {
+    function mountDisabled(): OASTabs {
+      const el = new OASTabs()
+      el.innerHTML = `
+        <oas-tab-panel label="标签一" value="a"><p>内容一</p></oas-tab-panel>
+        <oas-tab-panel label="标签二" value="b" disabled><p>内容二</p></oas-tab-panel>
+        <oas-tab-panel label="标签三" value="c"><p>内容三</p></oas-tab-panel>
+      `
+      document.body.appendChild(el)
+      return el
+    }
+
+    it('disabled 标签渲染 aria-disabled + disabled 属性', () => {
+      const el = mountDisabled()
+      const tabs = el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"]')
+      expect(tabs[1]!.getAttribute('aria-disabled')).toBe('true')
+      expect(tabs[0]!.hasAttribute('aria-disabled')).toBe(false)
+    })
+
+    it('点击 disabled 标签不切换、不派发 oas-change', () => {
+      const el = mountDisabled()
+      let fired = 0
+      el.addEventListener('oas-change', () => fired++)
+      ;(el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"]')[1]!).click()
+      expect(fired).toBe(0)
+      expect(el.getAttribute('active')).toBeNull()
+    })
+
+    it('方向键跳过 disabled 标签', () => {
+      const el = mountDisabled()
+      const tablist = el.shadowRoot!.querySelector('[role="tablist"]')!
+      tablist.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+      // 从 a 出发，跳过 disabled 的 b，落到 c
+      expect(el.getAttribute('active')).toBe('c')
+    })
+
+    it('disabled 标签不可聚焦（tabindex -1）', () => {
+      const el = mountDisabled()
+      const tabs = el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"]')
+      expect(tabs[1]!.getAttribute('tabindex')).toBe('-1')
+    })
+  })
+
+  describe('size 档位', () => {
+    it('size 属性映射到 host 类，驱动标签尺寸', () => {
+      for (const size of ['small', 'large'] as const) {
+        const el = mount({ size })
+        expect(el.classList.contains(`oas-tabs--${size}`)).toBe(true)
+      }
+    })
+
+    it('size 样式走 CSS 变量（字号/内边距随档位变化）', () => {
+      const el = mount({ size: 'small' })
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(style).toMatch(/oas-tabs--small/)
+      expect(style).toMatch(/font-size/)
+    })
+
+    it('非法 size 值回落 medium 并告警', () => {
+      const warn: unknown[][] = []
+      const orig = console.warn
+      console.warn = (...a: unknown[]) => warn.push(a)
+      const el = mount({ size: 'huge' })
+      console.warn = orig
+      expect(el.classList.contains('oas-tabs--medium')).toBe(true)
+      expect(warn.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('centered / justified 布局', () => {
+    it('centered：标签栏居中', () => {
+      const el = mount({ centered: '' })
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(el.classList.contains('oas-tabs--centered')).toBe(true)
+      expect(style).toMatch(/oas-tabs--centered[^{]*\{[^}]*justify-content:\s*center/)
+    })
+
+    it('justified：标签均分占满', () => {
+      const el = mount({ justified: '' })
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(el.classList.contains('oas-tabs--justified')).toBe(true)
+      expect(style).toMatch(/oas-tabs--justified[^{]*\.tab[^{]*\{[^}]*flex:\s*1/)
+    })
+  })
+
+  // ===== 批次 2a：溢出滚动箭头 =====
+
+  describe('溢出滚动箭头', () => {
+    function mountMany(): OASTabs {
+      const el = new OASTabs()
+      const panels = Array.from(
+        { length: 10 },
+        (_, i) =>
+          `<oas-tab-panel label="标签${i + 1}" value="t${i}"><p>内容${i + 1}</p></oas-tab-panel>`,
+      ).join('')
+      el.innerHTML = panels
+      document.body.appendChild(el)
+      return el
+    }
+
+    /** mock tablist 的溢出几何（jsdom 无布局） */
+    function mockOverflow(el: OASTabs, scrollWidth: number, clientWidth: number): void {
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      Object.defineProperty(tablist, 'scrollWidth', { value: scrollWidth, configurable: true })
+      Object.defineProperty(tablist, 'clientWidth', { value: clientWidth, configurable: true })
+    }
+
+    it('溢出时出现滚动箭头，未溢出时隐藏', () => {
+      const el = mountMany()
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      // 未溢出：scrollWidth == clientWidth
+      mockOverflow(el, 500, 500)
+      el.dispatchEvent(new Event('resize'))
+      // 触发重新检测（调用内部 sync）
+      ;(el as any).syncScrollControls?.()
+      expect(el.shadowRoot!.querySelector('.scroll-start')!.hasAttribute('hidden')).toBe(true)
+      // 溢出
+      mockOverflow(el, 1000, 500)
+      ;(el as any).syncScrollControls?.()
+      expect(el.shadowRoot!.querySelector('.scroll-start')!.hasAttribute('hidden')).toBe(false)
+      expect(el.shadowRoot!.querySelector('.scroll-end')!.hasAttribute('hidden')).toBe(false)
+      void tablist
+    })
+
+    it('箭头 aria-label 走 locale，且为原生 button', () => {
+      const el = mountMany()
+      mockOverflow(el, 1000, 500)
+      ;(el as any).syncScrollControls?.()
+      const prev = el.shadowRoot!.querySelector('.scroll-start') as HTMLButtonElement
+      const next = el.shadowRoot!.querySelector('.scroll-end') as HTMLButtonElement
+      expect(prev.tagName).toBe('BUTTON')
+      expect(prev.getAttribute('aria-label')).toBe('向前滚动标签')
+      expect(next.getAttribute('aria-label')).toBe('向后滚动标签')
+    })
+
+    it('点击箭头滚动 tablist（scrollBy）', () => {
+      const el = mountMany()
+      mockOverflow(el, 1000, 500)
+      ;(el as any).syncScrollControls?.()
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      let scrolled = 0
+      tablist.scrollBy = ((opts: ScrollToOptions) => {
+        scrolled = (opts.left as number) ?? 0
+      }) as typeof tablist.scrollBy
+      ;(el.shadowRoot!.querySelector('.scroll-end') as HTMLElement).click()
+      expect(scrolled).toBeGreaterThan(0)
+    })
+
+    it('without-scroll-controls 关闭箭头（溢出也不显示）', () => {
+      const el = new OASTabs()
+      el.setAttribute('without-scroll-controls', '')
+      el.innerHTML = Array.from(
+        { length: 10 },
+        (_, i) => `<oas-tab-panel label="标签${i}" value="t${i}"><p>c</p></oas-tab-panel>`,
+      ).join('')
+      document.body.appendChild(el)
+      mockOverflow(el, 1000, 500)
+      ;(el as any).syncScrollControls?.()
+      expect(el.shadowRoot!.querySelector('.scroll-start')!.hasAttribute('hidden')).toBe(true)
+    })
+  })
+
+  // ===== 批次 2b：more 溢出收缩下拉 =====
+
+  describe('more 溢出收缩下拉', () => {
+    function mountMore(count = 8, eachWidth = 100, avail = 400): OASTabs {
+      const el = new OASTabs()
+      el.setAttribute('more', '')
+      el.innerHTML = Array.from(
+        { length: count },
+        (_, i) => `<oas-tab-panel label="标签${i + 1}" value="t${i}"><p>内容${i + 1}</p></oas-tab-panel>`,
+      ).join('')
+      document.body.appendChild(el)
+      // mock 每个 tab 的 offsetWidth 与 nav 可用宽度（jsdom 无布局）
+      const tabs = el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]')
+      tabs.forEach((t) => Object.defineProperty(t, 'offsetWidth', { value: eachWidth, configurable: true }))
+      const nav = el.shadowRoot!.querySelector('.nav') as HTMLElement
+      Object.defineProperty(nav, 'clientWidth', { value: avail, configurable: true })
+      return el
+    }
+
+    it('more 模式溢出：放不下的 tab 收进「更多」按钮触发的下拉', () => {
+      // 8 个 tab ×100px = 800px，可用 400px → 约前 3~4 个可见，其余进更多
+      const el = mountMore(8, 100, 400)
+      ;(el as any).syncMore?.()
+      const moreBtn = el.shadowRoot!.querySelector('.more-btn')
+      expect(moreBtn).not.toBeNull()
+      expect(moreBtn!.hasAttribute('hidden')).toBe(false)
+      // 可见区应隐藏部分 tab（收进下拉）
+      const hiddenTabs = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]')].filter(
+        (t) => t.hasAttribute('data-overflowed'),
+      )
+      expect(hiddenTabs.length).toBeGreaterThan(0)
+    })
+
+    it('more 不溢出：所有 tab 可见，无更多按钮', () => {
+      const el = mountMore(3, 100, 1000)
+      ;(el as any).syncMore?.()
+      const moreBtn = el.shadowRoot!.querySelector('.more-btn')
+      expect(moreBtn === null || moreBtn.hasAttribute('hidden')).toBe(true)
+    })
+
+    it('点击更多按钮弹出下拉，下拉项点击切换到对应面板', async () => {
+      const el = mountMore(8, 100, 400)
+      ;(el as any).syncMore?.()
+      const moreBtn = el.shadowRoot!.querySelector('.more-btn') as HTMLElement
+      moreBtn.click()
+      await Promise.resolve()
+      const dropdown = el.shadowRoot!.querySelector('.more-dropdown')
+      expect(dropdown).not.toBeNull()
+      expect(dropdown!.hasAttribute('hidden')).toBe(false)
+      const items = dropdown!.querySelectorAll('[data-value]')
+      expect(items.length).toBeGreaterThan(0)
+      let changed = ''
+      el.addEventListener('oas-change', (e) => (changed = (e as CustomEvent).detail.value))
+      ;(items[0] as HTMLElement).click()
+      await Promise.resolve()
+      expect(changed).not.toBe('')
+      expect(el.getAttribute('active')).toBe(changed)
+    })
+
+    it('选中项被收进更多时，更多按钮高亮标识', () => {
+      const el = mountMore(8, 100, 400)
+      el.setAttribute('active', 't7') // 最后一项，应被收进更多
+      ;(el as any).update()
+      ;(el as any).syncMore?.()
+      const moreBtn = el.shadowRoot!.querySelector('.more-btn') as HTMLElement
+      expect(moreBtn.classList.contains('more-btn--active')).toBe(true)
+    })
+  })
+
+  // ===== 批次 3a：panel-mode 面板显隐策略（keep/lazy/destroy） =====
+
+  describe('panel-mode 面板显隐策略', () => {
+    function mountMode(mode: string): OASTabs {
+      const el = new OASTabs()
+      el.setAttribute('panel-mode', mode)
+      el.innerHTML = `
+        <oas-tab-panel label="标签一" value="a"><p class="pa">内容一</p></oas-tab-panel>
+        <oas-tab-panel label="标签二" value="b"><p class="pb">内容二</p></oas-tab-panel>
+        <oas-tab-panel label="标签三" value="c"><p class="pc">内容三</p></oas-tab-panel>
+      `
+      document.body.appendChild(el)
+      return el
+    }
+    const panelOf = (el: OASTabs, v: string) =>
+      el.querySelector(`oas-tab-panel[value="${v}"]`) as HTMLElement
+
+    it('keep（默认）：未激活面板 hidden 但内容保留 DOM', () => {
+      const el = mountMode('keep')
+      expect(panelOf(el, 'b').hidden).toBe(true)
+      expect(panelOf(el, 'b').querySelector('.pb')).not.toBeNull() // 内容保留
+    })
+
+    it('lazy：未访问的未激活面板子节点被暂存（不挂载）', () => {
+      const el = mountMode('lazy')
+      // 初始激活 a；b/c 未访问，子节点被暂存
+      expect(panelOf(el, 'b').querySelector('.pb')).toBeNull()
+      expect(panelOf(el, 'c').querySelector('.pc')).toBeNull()
+      expect(panelOf(el, 'a').querySelector('.pa')).not.toBeNull() // 激活的正常
+    })
+
+    it('lazy：首次激活后面板内容挂载并保留（再次切走不卸载）', async () => {
+      const el = mountMode('lazy')
+      el.setAttribute('active', 'b')
+      await Promise.resolve()
+      expect(panelOf(el, 'b').querySelector('.pb')).not.toBeNull() // 首次激活挂载
+      el.setAttribute('active', 'a')
+      await Promise.resolve()
+      expect(panelOf(el, 'b').querySelector('.pb')).not.toBeNull() // 访问过后保留
+    })
+
+    it('destroy：切走时卸载非激活面板子节点，切回时重挂', async () => {
+      const el = mountMode('destroy')
+      expect(panelOf(el, 'a').querySelector('.pa')).not.toBeNull()
+      el.setAttribute('active', 'b')
+      await Promise.resolve()
+      expect(panelOf(el, 'a').querySelector('.pa')).toBeNull() // 切走卸载
+      expect(panelOf(el, 'b').querySelector('.pb')).not.toBeNull()
+      el.setAttribute('active', 'a')
+      await Promise.resolve()
+      expect(panelOf(el, 'a').querySelector('.pa')).not.toBeNull() // 切回重挂
+      expect(panelOf(el, 'b').querySelector('.pb')).toBeNull()
+    })
+
+    it('非法 panel-mode 回落 keep 并告警', () => {
+      const warn: unknown[][] = []
+      const orig = console.warn
+      console.warn = (...a: unknown[]) => warn.push(a)
+      mountMode('bogus')
+      console.warn = orig
+      expect(warn.length).toBeGreaterThan(0)
+    })
+  })
+
+  // ===== 批次 3b：activation 手动激活 =====
+
+  describe('activation 激活模式', () => {
+    it('auto（默认）：方向键立即切换面板', () => {
+      const el = mount()
+      el.shadowRoot!.querySelector('[role="tablist"]')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight' }),
+      )
+      expect(el.getAttribute('active')).toBe('b')
+    })
+
+    it('manual：方向键只移动焦点不切换，Enter 才切换', () => {
+      const el = mount({ activation: 'manual' })
+      const tablist = el.shadowRoot!.querySelector('[role="tablist"]')!
+      tablist.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+      // 焦点移到 b 但 active 未变
+      expect(el.getAttribute('active') ?? 'a').toBe('a')
+      // 焦点在 b 上按 Enter 切换
+      const tabB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+      tabB.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      expect(el.getAttribute('active')).toBe('b')
+    })
+  })
+
+  // ===== 批次 3c：animated 动画 =====
+
+  describe('animated 动画', () => {
+    it('animated 开启：标签选中态与面板过渡带 transition', () => {
+      const el = mount({ animated: '' })
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(el.classList.contains('oas-tabs--animated')).toBe(true)
+      expect(style).toMatch(/oas-tabs--animated[^{]*\.tab[^{]*\{[^}]*transition/)
+    })
+  })
+
+  // ===== 批次 4a：oas-before-change 切换前拦截 =====
+
+  describe('oas-before-change 拦截', () => {
+    it('默认不拦截：before-change 派发后正常切换', () => {
+      const el = mount()
+      let beforeDetail: unknown
+      el.addEventListener('oas-before-change', (e) => (beforeDetail = (e as CustomEvent).detail))
+      ;(el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"]')[1]!).click()
+      expect(beforeDetail).toEqual({ value: 'b' })
+      expect(el.getAttribute('active')).toBe('b')
+    })
+
+    it('preventDefault 拦截切换（active 不变、不派发 oas-change）', () => {
+      const el = mount()
+      el.addEventListener('oas-before-change', (e) => e.preventDefault())
+      let changed = 0
+      el.addEventListener('oas-change', () => changed++)
+      ;(el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"]')[1]!).click()
+      expect(changed).toBe(0)
+      expect(el.getAttribute('active')).toBeNull()
+    })
+
+    it('键盘切换同样可被拦截', () => {
+      const el = mount()
+      el.addEventListener('oas-before-change', (e) => e.preventDefault())
+      el.shadowRoot!.querySelector('[role="tablist"]')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight' }),
+      )
+      expect(el.getAttribute('active')).toBeNull()
+    })
+  })
+
+  // ===== 批次 4b：editable 双击重命名 =====
+
+  describe('editable 双击重命名', () => {
+    function mountEditable(): OASTabs {
+      const el = new OASTabs()
+      el.innerHTML = `
+        <oas-tab-panel label="文档一" value="a" editable><p>内容一</p></oas-tab-panel>
+        <oas-tab-panel label="文档二" value="b"><p>内容二</p></oas-tab-panel>
+      `
+      document.body.appendChild(el)
+      return el
+    }
+
+    it('editable 标签双击进入编辑态（label 替换为 input）', () => {
+      const el = mountEditable()
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      tabA.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      const input = tabA.querySelector('.tab-rename-input')
+      expect(input).not.toBeNull()
+      expect((input as HTMLInputElement).value).toBe('文档一')
+    })
+
+    it('非 editable 标签双击不进入编辑态', () => {
+      const el = mountEditable()
+      const tabB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+      tabB.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      expect(tabB.querySelector('.tab-rename-input')).toBeNull()
+    })
+
+    it('Enter 确认重命名，派发 oas-rename {value, label}', async () => {
+      const el = mountEditable()
+      let detail: unknown
+      el.addEventListener('oas-rename', (e) => (detail = (e as CustomEvent).detail))
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      tabA.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      const input = tabA.querySelector('.tab-rename-input') as HTMLInputElement
+      input.value = '重命名后'
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      await Promise.resolve()
+      expect(detail).toEqual({ value: 'a', label: '重命名后' })
+      // 编辑态退出：重建后的新标签无 input（label 已更新为新值）
+      const tabNew = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      expect(tabNew.querySelector('.tab-rename-input')).toBeNull()
+      expect(tabNew.querySelector('.tab-label')!.textContent).toBe('重命名后')
+    })
+
+    it('Esc 取消重命名，不派发事件', async () => {
+      const el = mountEditable()
+      let fired = 0
+      el.addEventListener('oas-rename', () => fired++)
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      tabA.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+      const input = tabA.querySelector('.tab-rename-input') as HTMLInputElement
+      input.value = '改了但取消'
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      await Promise.resolve()
+      expect(fired).toBe(0)
+      // 取消后恢复原 label，无 input
+      const tabNew = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      expect(tabNew.querySelector('.tab-rename-input')).toBeNull()
+      expect(tabNew.querySelector('.tab-label')!.textContent).toBe('文档一')
+    })
+  })
+
+  // ===== 批次 4c：sortable 拖拽排序 =====
+
+  describe('sortable 拖拽排序', () => {
+    it('sortable 标签可拖拽（draggable 属性）', () => {
+      const el = mount({ sortable: '' })
+      const tabs = el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]')
+      tabs.forEach((t) => expect(t.getAttribute('draggable')).toBe('true'))
+    })
+
+    it('非 sortable 标签不可拖拽', () => {
+      const el = mount()
+      const tabs = el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]')
+      tabs.forEach((t) => expect(t.getAttribute('draggable')).not.toBe('true'))
+    })
+
+    it('拖拽落点换位后派发 oas-reorder {fromIndex, toIndex}', () => {
+      const el = mount({ sortable: '' })
+      let detail: unknown
+      el.addEventListener('oas-reorder', (e) => (detail = (e as CustomEvent).detail))
+      const tabs = el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]')
+      const dataTransfer = {
+        setData: () => {},
+        getData: () => 'a',
+        effectAllowed: '',
+        dropEffect: '',
+      } as unknown as DataTransfer
+      // 拖 a 到 b 上
+      tabs[0]!.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }))
+      tabs[1]!.dispatchEvent(new DragEvent('dragover', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }))
+      tabs[1]!.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: dataTransfer as DataTransfer }))
+      expect(detail).toEqual({ fromIndex: 0, toIndex: 1 })
+    })
+  })
+
+  // ===== 批次 5a：嵌套 tabs =====
+
+  describe('嵌套 tabs', () => {
+    it('外层 tabs 只识别直接子面板，不抓嵌套 tabs 的面板', () => {
+      const el = new OASTabs()
+      el.innerHTML = `
+        <oas-tab-panel label="外层一" value="outer-a"><p>外层内容一</p></oas-tab-panel>
+        <oas-tab-panel label="外层二" value="outer-b">
+          <oas-tabs active="inner-x">
+            <oas-tab-panel label="内层甲" value="inner-x"><p>内层内容甲</p></oas-tab-panel>
+            <oas-tab-panel label="内层乙" value="inner-y"><p>内层内容乙</p></oas-tab-panel>
+          </oas-tabs>
+        </oas-tab-panel>
+      `
+      document.body.appendChild(el)
+      // 外层 tablist 只应有 2 个标签（不抓内层面板）
+      const outerTabs = el.shadowRoot!.querySelectorAll('[role="tab"][data-value]')
+      expect(outerTabs.length).toBe(2)
+      const values = [...outerTabs].map((t) => t.getAttribute('data-value'))
+      expect(values).toEqual(['outer-a', 'outer-b'])
+      // 内层 tabs 独立渲染自己的标签
+      const inner = el.querySelector('oas-tab-panel[value="outer-b"] oas-tabs') as OASTabs
+      const innerTabs = inner.shadowRoot!.querySelectorAll('[role="tab"][data-value]')
+      expect(innerTabs.length).toBe(2)
+      expect(inner.getAttribute('active')).toBe('inner-x')
+    })
+  })
+
+  // ===== 批次 5b：slot="label" 自定义标签 =====
+
+  describe('slot="label" 自定义标签', () => {
+    it('面板直接子元素 slot="label" 克隆进标签位（替代默认文本）', () => {
+      const el = new OASTabs()
+      el.innerHTML = `
+        <oas-tab-panel label="普通" value="a"><p>内容一</p></oas-tab-panel>
+        <oas-tab-panel label="自定义" value="b"><span slot="label"><strong style="color:red">富文本标签</strong></span><p>内容二</p></oas-tab-panel>
+      `
+      document.body.appendChild(el)
+      const tabB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+      const labelSlot = tabB.querySelector('.tab-label')
+      // 自定义内容克隆进标签位（含富文本节点）
+      expect(labelSlot!.querySelector('strong')).not.toBeNull()
+      expect(labelSlot!.textContent).toContain('富文本标签')
+      // 普通标签仍是纯文本
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      expect(tabA.querySelector('.tab-label')!.textContent).toBe('普通')
+    })
+  })
 })

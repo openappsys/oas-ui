@@ -387,6 +387,12 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       'domclick',
       'DOM click + 按钮：+ 在视口外远处，搜索浮层 backdrop 可能拦截真实点击 → oas-add',
     ],
+    ['#tabs-before [role="tab"][data-value="b"]', 'domclick', '点击触发 oas-before-change（+ oas-change）'],
+    ['#tabs-sortable', 'wait:300', '等 sortable demo 升级渲染'],
+    ['#tabs-sortable [role="tab"][data-value]', 'dragmock', '拖拽第 1 个标签到第 2 个 → oas-reorder'],
+    ['#tabs-rename [role="tab"][data-value="a"]', 'dblclick', '双击 editable 标签进入重命名输入态'],
+    ['#tabs-rename', 'wait:200', '等重命名输入框渲染'],
+    ['#tabs-rename', 'renamecommit:重命名X', '输入框赋值 + Enter 确认 → oas-rename'],
   ],
   tree: [
     ['oas-tree[checkable] input[type="checkbox"]', 'click', '勾选 → oas-check'],
@@ -507,8 +513,45 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
         if ((await els.count()) >= 2) {
           await els.nth(0).dragTo(els.nth(1), { timeout: 400, force: true })
         }
+      } else if (act === 'dblclick') {
+        // 双击（DOM dispatchEvent，规避真实双击的浮层 backdrop 拦截）
+        const el = page.locator(sel).first()
+        if (await el.count())
+          await el.evaluate((e) =>
+            (e as HTMLElement).dispatchEvent(new MouseEvent('dblclick', { bubbles: true })),
+          )
+      } else if (act === 'dragmock') {
+        // HTML5 DnD 模拟（dragstart/dragover/drop 序列，mock dataTransfer）：真实 dragTo 在
+        // 部分环境（button draggable / CI 高负载）drop 不命中，用 DOM 事件序列确定性触发
+        const els = page.locator(sel)
+        if ((await els.count()) >= 2) {
+          await els.nth(0).evaluate((src) => {
+            const dt = new DataTransfer()
+            src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt }))
+          })
+          await els.nth(1).evaluate((tgt) => {
+            const dt = new DataTransfer()
+            tgt.dispatchEvent(new DragEvent('dragover', { bubbles: true, dataTransfer: dt }))
+            tgt.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: dt }))
+          })
+        }
       } else if (act.startsWith('wait:')) {
         await page.waitForTimeout(Number(act.slice(5)))
+      } else if (act.startsWith('renamecommit:')) {
+        // tabs editable 重命名确认：dblclick 后输入框可能尚未就绪/焦点丢失，用 DOM 确定性提交
+        // ——找输入框赋值 + dispatch Enter（fill/press 分步在 CI 高负载下时序不稳）
+        const newLabel = act.slice(13)
+        const host = page.locator(sel).first()
+        if (await host.count()) {
+          await host.evaluate((el, label) => {
+            const root = (el as HTMLElement).shadowRoot
+            const input = root?.querySelector('.tab-rename-input') as HTMLInputElement | null
+            if (input) {
+              input.value = label
+              input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+            }
+          }, newLabel)
+        }
       }
     } catch {
       // 探针步骤失败不致命：其余步骤继续，事件覆盖以最终 __fired 为准

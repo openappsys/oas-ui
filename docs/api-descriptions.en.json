@@ -1294,7 +1294,9 @@
       "badge": "Badge next to the tab title (number or text)",
       "icon": "Icon name shown before the tab title (reuses the `oas-icon` icon set, e.g. `mail`)",
       "label": "Tab text",
-      "value": "Tab value"
+      "value": "Tab value",
+      "disabled": "Disable this tab: not focusable/clickable, `aria-disabled`, visually dimmed, skipped by keyboard navigation",
+      "editable": "Tab is renameable on double-click: enters an input editing state, Enter confirms (emits `oas-rename`) / Esc cancels"
     },
     "events": {},
     "slots": {}
@@ -1338,12 +1340,24 @@
       "addable": "Shows a + button at the end of the tab bar; clicking fires `oas-add` (the component does not add a panel)",
       "closable": "Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel)",
       "tab-position": "Tab bar position: `top` (default) / `left` / `right` / `bottom`",
-      "type": "Style variant: `line` (underline, default) / `card`"
+      "type": "Style variant: `line` (underline, default) / `card`",
+      "size": "Tab size: `xs/small/medium/large/xl` (default medium), font-size/padding follow the step; invalid values fall back to medium with a warning",
+      "centered": "Center the tab bar (when horizontal)",
+      "justified": "Distribute tabs evenly across the full tab bar width",
+      "without-scroll-controls": "Disable the overflow scroll arrows (shown by default when tabs overflow)",
+      "more": "Collapse overflowed tabs into a \"More\" dropdown instead of scroll arrows (mutually exclusive); the More button highlights when the active tab is collapsed",
+      "panel-mode": "Panel visibility strategy: `keep` (default, hidden keeps DOM) / `lazy` (unvisited inactive panels not mounted until first activation) / `destroy` (unmount inactive panel content on switch)",
+      "activation": "Keyboard activation: `auto` (default, arrow keys switch immediately) / `manual` (arrows move focus only, Enter/Space switches — a11y manual activation)",
+      "animated": "Selection transition + panel fade-in (animates color/border/opacity only, no layout)",
+      "sortable": "Tabs are drag-sortable (native HTML5 DnD); emits `oas-reorder` after drop (host reorders panel data accordingly, the component does not move DOM itself)"
     },
     "events": {
       "oas-add": "The + button was clicked, `detail: { label }` (default new-tab label from locale; use it or customize it)",
       "oas-change": "Switched, `detail: { value }`",
-      "oas-close": "A tab's close × was clicked, `detail: { key }` (`key` is that tab's `value`; the component does not remove the panel)"
+      "oas-close": "A tab's close × was clicked, `detail: { key }` (`key` is that tab's `value`; the component does not remove the panel)",
+      "oas-before-change": "Fired before switching (cancelable), `detail: { value }`; host `preventDefault()` vetoes the switch (click/keyboard both; direct setAttribute by host does not trigger)",
+      "oas-rename": "Editable tab rename confirmed via double-click + Enter, `detail: { value, label }`; the component writes the new label back to the panel, host may persist",
+      "oas-reorder": "Fired after sortable drag reorder, `detail: { fromIndex, toIndex }`; host reorders `oas-tab-panel` accordingly (the component does not move DOM itself)"
     },
     "slots": {}
   },
