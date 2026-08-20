@@ -4520,3 +4520,19 @@ test('tabs 溢出（滚动/更多）时标签不压缩换行——white-space no
     }
   }
 })
+
+test('tabs editable 真实双击进入重命名编辑态（真实 dblclick，非 dispatchEvent）', async ({ page }) => {
+  // 缺陷固化：真实双击前两次 click 触发 activate→update 重建 tablist，导致浏览器判定双击目标
+  // 已变而不派发 dblclick，重命名永不进入编辑态。修复=activate 重复点击守卫 + dblclick 委托到
+  // 稳定的 tablist 容器。此处用 Playwright 真实 dblclick 复现路径（dispatchEvent 无法暴露该 bug）。
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tabs-rename')
+  await page.locator('h2:has-text("可编辑重命名")').first().scrollIntoViewIfNeeded()
+  const tabA = page.locator('#tabs-rename [role="tab"][data-value="a"]')
+  await tabA.dblclick({ force: true })
+  await page.waitForTimeout(300)
+  const hasInput = await page.evaluate(
+    () => !!document.querySelector('#tabs-rename')!.shadowRoot!.querySelector('.tab-rename-input'),
+  )
+  expect(hasInput, '真实双击应进入重命名编辑态').toBe(true)
+})
