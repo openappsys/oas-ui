@@ -20,12 +20,12 @@
 
 | 语义 token                   | light            | dark             | 用途               |
 | ---------------------------- | ---------------- | ---------------- | ------------------ |
-| `--oas-color-primary`        | `#0b6cff`        | `#4d9fff`        | 主行动、选中、焦点 |
-| `--oas-color-primary-hover`  | `#1f7dff`        | `#63a8ff`        | primary hover      |
-| `--oas-color-primary-active` | `#0a5bd6`        | `#3a8ceb`        | primary active     |
+| `--oas-color-primary`        | `#0b6cff`        | `#9ecdff`        | 主行动、选中、焦点 |
+| `--oas-color-primary-hover`  | `#1f7dff`        | `#aad3ff`        | primary hover      |
+| `--oas-color-primary-active` | `#0a5bd6`        | `#b3d8ff`        | primary active     |
 | `--oas-color-success`        | `#16a34a`        | `#4ade80`        | 成功               |
 | `--oas-color-warning`        | `#d97706`        | `#fbbf24`        | 警告               |
-| `--oas-color-danger`         | `#dc2626`        | `#f87171`        | 危险/删除          |
+| `--oas-color-danger`         | `#dc2626`        | `#fbb2b2`        | 危险/删除          |
 | `--oas-color-text-primary`   | `#18181b`        | `#fafafa`        | 主文字             |
 | `--oas-color-text-secondary` | `#71717a`        | `#a1a1aa`        | 次级文字           |
 | `--oas-color-text-disabled`  | `#a1a1aa`        | `#71717a`        | 禁用文字           |

@@ -8,8 +8,8 @@ Cycles through multiple screens of content in the same viewport, with manual swi
   <div style="width: 100%">
     <oas-carousel>
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 200px">Slide 1</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 200px">Slide 2</div>
-      <div style="background: #374151; color: var(--oas-color-text-on-primary); height: 200px">Slide 3</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 200px">Slide 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 200px">Slide 3</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -22,8 +22,8 @@ Click the dots at the bottom to switch screens; autoplay is off by default.
   <div style="width: 100%">
     <oas-carousel index="1">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">Slide 1</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 160px">Slide 2</div>
-      <div style="background: #4b5563; color: var(--oas-color-text-on-primary); height: 160px">Slide 3</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">Slide 2</div>
+      <div style="background: var(--oas-color-danger); color: var(--oas-color-text-on-danger); height: 160px">Slide 3</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -36,8 +36,8 @@ Click the dots at the bottom to switch screens; autoplay is off by default.
   <div style="width: 100%">
     <oas-carousel autoplay interval="2000">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">Auto 1</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 160px">Auto 2</div>
-      <div style="background: #374151; color: var(--oas-color-text-on-primary); height: 160px">Auto 3</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">Auto 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">Auto 3</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -52,8 +52,8 @@ The left/right arrows support three display modes, controlled by the `arrows` at
   <div style="width: 100%">
     <oas-carousel arrows="always">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">Slide 1</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 160px">Slide 2</div>
-      <div style="background: #374151; color: var(--oas-color-text-on-primary); height: 160px">Slide 3</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">Slide 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">Slide 3</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -62,8 +62,8 @@ The left/right arrows support three display modes, controlled by the `arrows` at
   <div style="width: 100%">
     <oas-carousel arrows="hover">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">Slide 1</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 160px">Slide 2</div>
-      <div style="background: #374151; color: var(--oas-color-text-on-primary); height: 160px">Slide 3</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">Slide 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">Slide 3</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -72,8 +72,8 @@ The left/right arrows support three display modes, controlled by the `arrows` at
   <div style="width: 100%">
     <oas-carousel arrows="never">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">Slide 1</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 160px">Slide 2</div>
-      <div style="background: #374151; color: var(--oas-color-text-on-primary); height: 160px">Slide 3</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">Slide 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">Slide 3</div>
     </oas-carousel>
   </div>
 </DemoBlock>
@@ -110,8 +110,8 @@ Carousel items are not limited to color blocks — putting in an `<img>` or SVG 
   <div style="width: 100%">
     <oas-carousel id="carousel-event">
       <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">Slide 1</div>
-      <div style="background: #1f2937; color: var(--oas-color-text-on-primary); height: 160px">Slide 2</div>
-      <div style="background: #4b5563; color: var(--oas-color-text-on-primary); height: 160px">Slide 3</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">Slide 2</div>
+      <div style="background: var(--oas-color-danger); color: var(--oas-color-text-on-danger); height: 160px">Slide 3</div>
     </oas-carousel>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
       Current slide: <span id="carousel-current">1</span>

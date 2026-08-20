@@ -115,13 +115,16 @@
 
 [data-theme="dark"],
 html.dark {
-  --oas-color-primary: #4d9fff;
-  /* dark：hover 加深 15%、active 加深 25%（color-mix 自动跟随 primary） */
-  --oas-color-primary-hover: color-mix(in srgb, var(--oas-color-primary) 85%, black);
-  --oas-color-primary-active: color-mix(in srgb, var(--oas-color-primary) 75%, black);
+  /* 中间调缺陷修复：原 #4d9fff/#f87171 是中间调，深字白字都不达 Lc60（50.2/49.8）；
+     亮化到粉彩档（与 success/warning 同路线），配深字 73/71 达标。
+     面亮化后 hover/active 反转为提亮（dark 下激活变亮惯例），压暗会把对比度拉回不达标 */
+  --oas-color-primary: #9ecdff;
+  /* dark：hover 提亮 12%、active 提亮 22%（color-mix 自动跟随 primary） */
+  --oas-color-primary-hover: color-mix(in srgb, var(--oas-color-primary) 88%, white);
+  --oas-color-primary-active: color-mix(in srgb, var(--oas-color-primary) 78%, white);
   --oas-color-success: #4ade80;
   --oas-color-warning: #fbbf24;
-  --oas-color-danger: #f87171;
+  --oas-color-danger: #fbb2b2;
   /* 暗色下 primary/success/warning/danger 变亮，白色文字对比不足，改用深色文字保证 ≥4.5:1 */
   --oas-color-text-on-primary: #18181b;
   --oas-color-text-on-success: #18181b;
