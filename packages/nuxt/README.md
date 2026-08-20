@@ -1,8 +1,6 @@
 # @oas-ui/nuxt
 
-[中文](#中文) | [English](#english)
-
-## 中文
+## <a id="zh"></a> 中文 | [English](#en)
 
 OAS-UI 的 Nuxt 3 module —— SSR（DSD 快照）开箱即用。
 
@@ -55,9 +53,7 @@ import { renderOasToString } from '@oas-ui/nuxt/ssr'
 | `@oas-ui/ssr` | 服务端 DSD 渲染引擎 |
 | `@oas-ui/theme` | 设计 token（CSS 变量） |
 
-[中文](#中文) | [English](#english)
-
-## English
+## <a id="en"></a> [中文](#zh) | English
 
 `@oas-ui/nuxt` — the Nuxt 3 module for OAS-UI. SSR (DSD snapshots) works out of the box.
 

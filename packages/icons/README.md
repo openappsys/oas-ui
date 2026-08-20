@@ -1,8 +1,6 @@
 # @oas-ui/icons
 
-[中文](#中文) | [English](#english)
-
-## 中文
+## <a id="zh"></a> 中文 | [English](#en)
 
 OAS-UI 图标包 —— 纯 SVG 图标集合，tree-shakable，按需导出图标路径。与 `oas-icon` 组件搭配使用渲染任意图标。
 
@@ -32,9 +30,7 @@ import { alertCirclePath } from '@oas-ui/icons'
 | --- | --- |
 | `@oas-ui/ui` | 组件库主包（含 `oas-icon` 组件） |
 
-[中文](#中文) | [English](#english)
-
-## English
+## <a id="en"></a> [中文](#zh) | English
 
 `@oas-ui/icons` — the icon package of OAS-UI. A pure SVG icon collection, tree-shakable, exporting icon paths on demand. Pair with the `oas-icon` component to render any icon.
 

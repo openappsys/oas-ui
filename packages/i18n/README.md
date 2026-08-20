@@ -1,8 +1,6 @@
 # @oas-ui/i18n
 
-[中文](#中文) | [English](#english)
-
-## 中文
+## <a id="zh"></a> 中文 | [English](#en)
 
 OAS-UI 国际化包 —— 框架无关的 locale registry：`setLocale` / `registerLocale` / `t` 接口。内置 zh-CN / en 语言包，tree-shakable。
 
@@ -30,9 +28,7 @@ setLocale('zh-CN')
 | --- | --- |
 | `@oas-ui/ui` | 组件库主包（消费本包文案） |
 
-[中文](#中文) | [English](#english)
-
-## English
+## <a id="en"></a> [中文](#zh) | English
 
 `@oas-ui/i18n` — the internationalization package of OAS-UI. A framework-agnostic locale registry with `setLocale` / `registerLocale` / `t`. Built-in zh-CN and en locale packs, tree-shakable.
 

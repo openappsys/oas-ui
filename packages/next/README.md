@@ -1,8 +1,6 @@
 # @oas-ui/next
 
-[中文](#中文) | [English](#english)
-
-## 中文
+## <a id="zh"></a> 中文 | [English](#en)
 
 OAS-UI 的 Next.js（App Router）集成 —— RSC 服务端产 DSD 快照 + 客户端注册引导。
 
@@ -70,9 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 | `@oas-ui/ssr` | 服务端 DSD 渲染引擎 |
 | `@oas-ui/ui` | 组件库主包 |
 
-[中文](#中文) | [English](#english)
-
-## English
+## <a id="en"></a> [中文](#zh) | English
 
 `@oas-ui/next` — the Next.js (App Router) integration for OAS-UI. RSC server-side DSD snapshots + client registration bootstrapping.
 
