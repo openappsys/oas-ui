@@ -4536,3 +4536,25 @@ test('tabs editable 真实双击进入重命名编辑态（真实 dblclick，非
   )
   expect(hasInput, '真实双击应进入重命名编辑态').toBe(true)
 })
+
+test('tabs editable 编辑态与非编辑态几何一致（编辑框贴合标签宽高，不晃动）', async ({ page }) => {
+  // 缺陷固化：编辑框曾因 1px border + padding 比 label 高 1px，撑高 tab 致标签栏轻微晃动；
+  // 修复=outline 替代 border（不占位）+ 宽高贴合原 label。此处断言切换前后 tab 高度不变。
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tabs-rename')
+  await page.locator('h2:has-text("可编辑重命名")').first().scrollIntoViewIfNeeded()
+  const tabA = page.locator('#tabs-rename [role="tab"][data-value="a"]')
+  const before = await tabA.evaluate((el) => {
+    const label = el.querySelector('.tab-label')!.getBoundingClientRect()
+    return { tabH: el.getBoundingClientRect().height, labelTop: label.top, labelH: label.height }
+  })
+  await tabA.dblclick({ force: true })
+  await page.waitForTimeout(200)
+  const after = await tabA.evaluate((el) => {
+    const input = el.querySelector('.tab-rename-input')!.getBoundingClientRect()
+    return { tabH: el.getBoundingClientRect().height, inputTop: input.top, inputH: input.height }
+  })
+  expect(after.tabH, '编辑态不应撑高 tab').toBe(before.tabH)
+  expect(Math.abs(after.inputTop - before.labelTop), '编辑框与原标签纵向对齐').toBeLessThanOrEqual(0.5)
+  expect(Math.abs(after.inputH - before.labelH), '编辑框与原标签同高').toBeLessThanOrEqual(0.5)
+})

@@ -4598,12 +4598,12 @@
     "props": [],
     "events": [
       {
-        "name": "oas-close",
-        "detail": "{ key: value }"
-      },
-      {
         "name": "oas-add",
         "detail": "{ label: this.t('tabs.newTab') }"
+      },
+      {
+        "name": "oas-close",
+        "detail": "{ key: value }"
       },
       {
         "name": "oas-rename",

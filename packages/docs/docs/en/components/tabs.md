@@ -200,7 +200,7 @@ Add `disabled` to an `oas-tab-panel` to disable a single tab: not focusable/clic
 
 ## Overflow scrolling
 
-When there are more tabs than fit, the tab bar scrolls horizontally and shows left/right arrows automatically (vertical scroll + up/down arrows for `tab-position="left/right"`). `without-scroll-controls` hides the arrows (scrolling remains).
+When there are more tabs than fit, the tab bar scrolls horizontally with left/right arrows (vertical scroll + up/down arrows for `tab-position="left/right"`), and the mouse wheel also slides the tabs horizontally. `without-scroll-controls` hides the arrows (scrolling remains). Newly added/activated tabs auto-scroll into view (never hidden at the far end on overflow); the `addable` + button stays pinned at the end of the tab bar, never scrolled out of view.
 
 <DemoBlock title="Overflow scrolling">
   <div style="max-width: 420px">
@@ -220,7 +220,7 @@ When there are more tabs than fit, the tab bar scrolls horizontally and shows le
 
 ## More collapse dropdown
 
-`more`: collapse overflowed tabs into a trailing "More" dropdown instead of scroll arrows (mutually exclusive). The More button highlights in the primary color when the active tab is collapsed.
+`more`: collapse overflowed tabs into a trailing "More" dropdown instead of scroll arrows (mutually exclusive). The More button highlights in the primary color when the active tab is collapsed; with many collapsed items a search box at the top of the dropdown filters them live; when opened, the selected item auto-scrolls into view.
 
 <DemoBlock title="More collapse dropdown">
   <div style="max-width: 380px">
@@ -467,7 +467,6 @@ onMounted(async () => {
 | `badge` | Badge next to the tab title (number or text) | — | — |
 | `disabled` | Disable this tab: not focusable/clickable, `aria-disabled`, visually dimmed, skipped by keyboard navigation | — | — |
 | `editable` | Tab is renameable on double-click: enters an input editing state, Enter confirms (emits `oas-rename`) / Esc cancels | — | — |
-| `hidden` | — | — | — |
 | `icon` | Icon name shown before the tab title (reuses the `oas-icon` icon set, e.g. `mail`) | — | — |
 | `label` | Tab text | — | — |
 | `value` | Tab value | — | — |
