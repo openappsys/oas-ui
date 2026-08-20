@@ -1,6 +1,6 @@
 {
   "name": "@oas-ui/i18n",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "OAS-UI 国际化（locale registry + 语言包，组件内置文案统一入口）",
   "license": "MIT OR Apache-2.0",
   "repository": {

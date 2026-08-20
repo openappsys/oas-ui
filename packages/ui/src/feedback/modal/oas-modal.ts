@@ -21,6 +21,10 @@ const STYLE = `
   width: 520px;
   min-width: 360px;
   max-width: 90vw;
+  /* 视口高度保护：小窗口下不溢出（标题/关闭钮始终可达），超出部分由 body 滚动承载 */
+  max-height: var(--oas-modal-max-height, 90vh);
+  display: flex;
+  flex-direction: column;
   background: var(--oas-color-bg);
   border-radius: var(--oas-radius-lg);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
@@ -63,6 +67,10 @@ const STYLE = `
   padding: var(--oas-space-4);
   font-size: var(--oas-font-size-md);
   line-height: 1.6;
+  /* 超出滚动：flex 子项收缩锚定（min-height 归零才允许被 max-height 限住） */
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 .footer {
   display: flex;
@@ -93,6 +101,7 @@ const STYLE = `
   width: 100%;
   max-width: 100%;
   height: 100%;
+  max-height: none;
   border-radius: 0;
   transform: none;
 }

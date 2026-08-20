@@ -90,7 +90,46 @@ Modern evergreen browsers: latest two major versions of Chrome / Edge / Firefox 
 Three built-in themes: `light` / `dark` / `high-contrast`. See the
 [Theming guide](./theming) for customization.
 
+> **Your own CSS does not follow the theme automatically**: variables inside
+> components switch with `data-theme`, but styles you write yourself must
+> reference `var(--oas-color-*)` to follow along. The most common pitfall is a
+> page body without an explicit background — after switching to dark, components
+> turn dark while the page stays at the browser default white:
+
+> ```css
+> body {
+>   background: var(--oas-color-bg);
+>   color: var(--oas-color-text-primary);
+> }
+> ```
+
+## Event conventions (important)
+
+**All component events carry the `oas-` prefix**: `oas-change`, `oas-select`,
+`oas-input`, `oas-close`, etc. (each component's API table lists the full set
+and when they fire). This is deliberate — Web Components events bubble to
+window by default, and unprefixed `change`/`select` would collide with native
+events and host-framework synthetic events; the prefix makes the origin
+unambiguous.
+
+```ts
+// correct: oas- prefix
+menu.addEventListener('oas-select', (e) => console.log(e.detail))
+
+// wrong: never fires (a common first pitfall)
+menu.addEventListener('select', (e) => console.log(e.detail))
+```
+
+Controlled components (switch / radio-group / checkbox-group / slider /
+input-number, etc.) write the latest value **back to the host attribute** after
+user interaction (e.g. `value` / `checked`), so `el.getAttribute('value')`
+reads the current state directly, consistent with the `oas-change` event's
+`detail.value`.
+
 ## SSR
 
 For server-side rendering, refer to the [SSR strategy](./ssr): side-effect
 imports of the component library should only run on the client.
+
+For more integration questions (the `::part()` customization trap, event
+timing, etc.), see the [FAQ](./faq).

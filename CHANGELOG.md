@@ -2,6 +2,51 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.1.0] - 2026-08-20
+
+### 新增
+
+- **集成反馈批次**（真实项目集成反馈落地）：
+  - slider / input-number 受控状态写回宿主 `value` 属性（与 switch/radio-group 一致的双向受控语义，宿主 `getAttribute` / 表单序列化直接可读）
+  - modal 视口高度保护：`max-height: 90vh`（`--oas-modal-max-height` 可调）+ body 超出滚动（flex 列布局），小窗口下标题/关闭钮始终可达；fullscreen 不受限高影响
+  - tabs 非激活项 hover 反馈（line 模式背景 + 文字向激活态靠拢；card 模式浮起面向内容底色靠拢）
+  - 间距刻度补中间档：`--oas-space-1_5: 6px` / `2_5: 10px` / `4_5: 20px`
+  - 集成 FAQ 页（`::part()` 不能接属性选择器、无法穿透后代、事件时机、主题跟随等，中英双版）+ 快速开始补「事件约定（重要）」专段与自定义 CSS 主题跟随提示
+- button：`variant` 形态维度（solid/outlined/dashed/filled/text/link，与 type 正交）、`color` 自定义色、`wave` 按下反馈、`auto-insert-space` 中文间空格、`autofocus`、`wrap` 长文换行
+- button-group：`pill` 胶囊、分隔符（`oas-button-group-separator`）、嵌套组、拆分按钮组合用法
+- icon：`spin`/`rotate`/`flip`、`registerIcon` 单个注册、`registerIconLibrary` 远程图标库、`animation` 动画预设、`duotone` 双色、`canvas` 占位框、`depth` 透明度层级
+- tag：预设色板（11 色）、`dot`/`processing` 状态点、`hit`/`strong`、`multiline` 多行、`max-width` 省略、`checkable`/`checked` 可选中、`variant` 三形态、`color`、avatar 适配、键盘删除；新增 **oas-tag-group**（单选/多选选值组）
+- badge：`standalone` 独立徽标、`color` 全模式（语义/预设/任意色值）、`offset` 偏移、`status` 状态点、`attention` 吸引动画（pulse/bounce）、`corner` 四角定位、`overlap` 圆形内收、ribbon-form 七形态（diagonal/triangle/bookmark/side/seal/banner/flag/rolled/zigzag/rounded/arrow）+ `premium` 金属质感 + `ribbon-size`/`ribbon-direction`/`ribbon-vertical`/`ribbon-anchor` 位置体系 + `ribbon-position`（hang/edge/cross）
+- space：`separator` 分隔符（字符串 + `slot="separator"`）、`justify` 分布、`reverse` 反向、`size` 数组（横向/纵向两值）、`fill`/`fill-ratio` 填满、响应式断点简写（`direction="column md:row"`）；新增 **oas-compact**（相邻表单控件贴边合框：`vertical`/`disabled`/`block`）
+- divider：`variant` 四线型（solid/dashed/dotted/double）、`inset`/`middle` 缩进、`size` 三档间距、`strong` 强调文字、6 个 CSS 变量开口、vertical 在 flex/grid 容器自动撑满
+- link：`underline` 三态（hover 默认/always/never）、`icon` + `icon-position`、`external`（自动 target/rel/外链图标）、`rel` 安全自动补、`info` 语义色、`underline-offset`/`underline-color` 变量开口
+- typography：修饰六布尔（strong/mark/code/underline/delete/italic）、`tag` 换标签、`depth` 三档弱化、`line-clamp` 多行省略、`copy-text` 自定义复制内容、`ellipsis-suffix` 后缀保留、`actions` 操作条（slot + `actions-position`）
+- kbd：`variant` 四形态（raised/outline/subtle/plain）、`size` 三档、`color` 统一协议
+- label：`error` 红字、`disabled` 灰化、`colon` 冒号、`color`、tooltip 组合演示（oas-tooltip 套 label）
+- visually-hidden：`focusable` 焦点显形（skip-link 场景）
+- code：`inline` 行内代码（等宽浅底小框 + 高亮）、`word-wrap` 换行、`trim` 去首尾空白（默认 true）、`size` 四档（inline 语境）、`variant` 四形态（subtle/outline/plain/solid）、`color` 统一协议
+- table：`size` 密度档位（small/medium/large，CSS 变量开口）
+- 展示型组件字号继承：A 类跟随外层 / B 类组件级变量开口（11 组件）
+- 无障碍体系：对比度门禁换 WCAG 3 草案感知对比度算法（自实现公式 + contrast-gate 工具）、`-text` 达标 token 体系（22 预设/语义文字变体）、color 属性统一协议（11 预设名 + 任意 CSS 色值）
+- API 表自动化：`api:scan`（AST 扫描）+ `api:gen`（生成中英 API 章节）+ CI `api:check` 防漂移
+- 官网首页 v2：hero oas-table 标志性 demo + 场景卡 + HTML 代码速览 + 真实 perf 数据 + CTA，H05 深色沉浸风格
+
+### 修复
+
+- dark 主题中间调语义色不达标：primary `#4d9fff`→`#9ecdff`、danger `#f87171`→`#fbb2b2`（粉彩亮化 + 深字，感知对比度 Lc 50→73/71），hover/active 反转为提亮
+- typography 省略约束链（actions 引入 .wrap 层致 max-width 参照落空）、code 修饰内联框居中
+- link 下划线简写重置颜色（text-decoration 简写把 decoration-color 重置回 currentColor，改长写）
+- button：solid primary hover/active/选中背景被自定义底色规则压死、href anchor 静止态选中色、icon-only 等宽
+- icon：宿主 reset 防御（slot 不出盒 + 克隆表现属性）、inline-flex 收缩包裹防垂直偏心
+- 首页 SPA 导航回首页滚动入场动画失效（observer 单例复用）
+- kbd/typography slotchange 监听注册 onCleanup 防断开泄漏
+
+### 文档
+
+- basic 族 12 件 demo 中英双版全量补齐（新增能力全覆盖）
+- 35 条 API 空描述补录（divider/kbd/label/link/typography）
+- ui-spec §4.1 color 属性统一协议 + 色表同步
+
 ## [2.0.0] - 2026-08-17
 
 ### 新增

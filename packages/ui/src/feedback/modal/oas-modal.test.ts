@@ -337,6 +337,20 @@ describe('OASModal', () => {
     // 只有 second 接管陷阱 → Tab 从 ok 回到 second 的首个可聚焦元素
     expect(secondRoot.activeElement).toBe(secondRoot.querySelector('[part="close"]'))
   })
+
+  it('视口高度保护：dialog 限高（max-height）且 body 可滚动（overflow auto）', () => {
+    const el = mount({ visible: '' })
+    const dialog = el.shadowRoot!.querySelector<HTMLElement>('[part="dialog"]')!
+    const body = el.shadowRoot!.querySelector<HTMLElement>('[part="body"]')!
+    const csD = getComputedStyle(dialog)
+    const csB = getComputedStyle(body)
+    // 弹窗天然该有视口高度保护：小窗口下内容不得溢出（标题/关闭钮始终可达）
+    expect(csD.maxHeight).not.toBe('none')
+    expect(csD.display).toBe('flex')
+    expect(csD.flexDirection).toBe('column')
+    expect(csB.overflowY).toBe('auto')
+    expect(csB.flex).toContain('1')
+  })
 })
 
 function pointer(type: string, clientX: number, clientY = 0): Event {

@@ -290,8 +290,8 @@ const BUDGETS = [
   {
     name: '@oas-ui/theme index.css gzip',
     get: () => theme.gzipBytes,
-    limit: 2 * 1024, // 2 KB。实测 1,467 B，上浮约 40%（token 集平缓增长）
-    basis: '实测 gzip 1,467 B，上浮约 40%',
+    limit: 3 * 1024, // 3 KB。实测 gzip 2,642 B（dark 语义色达标修复 + -text/-on token 体系扩充），上浮约 13%
+    basis: '实测 gzip 2,642 B（v2.1 预设文字 -text token 22 个 + dark 语义色修复），上浮约 13%',
   },
 ]
 

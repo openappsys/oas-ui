@@ -383,6 +383,7 @@ export class OASSlider extends OASElement {
     // 单值滑块
     this.input?.addEventListener('input', () => {
       this.dragging = true
+      this.syncValueAttr()
       this.syncOverlay()
       this.syncNumInputs()
       this.syncMarkPassed()
@@ -390,6 +391,7 @@ export class OASSlider extends OASElement {
     })
     this.input?.addEventListener('change', () => {
       this.dragging = false
+      this.syncValueAttr()
       this.syncOverlay()
       this.syncNumInputs()
       this.syncMarkPassed()
@@ -402,6 +404,7 @@ export class OASSlider extends OASElement {
       r.addEventListener('input', () => {
         this.dragging = true
         this.clampRangeInputs()
+        this.syncValueAttr()
         this.syncOverlay()
         this.syncNumInputs()
         this.syncMarkPassed()
@@ -410,6 +413,7 @@ export class OASSlider extends OASElement {
       r.addEventListener('change', () => {
         this.dragging = false
         this.clampRangeInputs()
+        this.syncValueAttr()
         this.syncOverlay()
         this.syncNumInputs()
         this.syncMarkPassed()
@@ -636,6 +640,7 @@ export class OASSlider extends OASElement {
       return
     }
     this.applyNumber(role, v)
+    this.syncValueAttr()
     this.syncOverlay()
     this.syncMarkPassed()
     this.emitRangeEvents(emitChange)
@@ -678,6 +683,21 @@ export class OASSlider extends OASElement {
       } else {
         this.emit('input', { value: Number(this.input?.value ?? 0) })
       }
+    }
+  }
+
+  /**
+   * 受控状态写回宿主 value 属性（与 switch/radio-group 一致的双向受控语义）：
+   * 单值写数字字符串，range 写 "lo,hi" 逗号分隔。宿主 getAttribute / 表单序列化 /
+   * 外部读状态可直接取最新值，不必缓存 oas-change detail。
+   * 写回触发的 attributeChangedCallback → update() 为幂等同步（值相同无循环、不再 emit）。
+   */
+  private syncValueAttr(): void {
+    if (this.hasAttr('range')) {
+      const [lo, hi] = this.currentRange()
+      this.setAttribute('value', `${lo},${hi}`)
+    } else if (this.input) {
+      this.setAttribute('value', String(this.input.value))
     }
   }
 

@@ -541,10 +541,10 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 
 ---
 
-## v2.1 basic 族组件增强（进行中）
+## v2.1 basic 族组件增强（已完成）
 
 > 原「v2.0 能力补齐」规划的 tag/badge/space/compact 内容整体移入本版本，连同 button/button-group/icon 能力增强、floating 箭头、table 密度、官网首页改版。与既有版本互不冲突。
-> **剩余工作：divider / link / typography / kbd / label / visually-hidden 六件逐个能力深挖（逐项补齐能力缺口）。**
+> 六件深挖（divider/link/typography/kbd/label/visually-hidden）与 code 深挖已全部完成，basic 族 12 件全清。
 
 ### 已交付内容
 
@@ -553,13 +553,18 @@ Node-safe 入口、`@oas-ui/ssr` 渲染器、白名单试点、e2e 四条验收�
 - **table 密度档位**：size small/medium/large（CSS 变量开口）
 - **展示型组件字号继承**：A 类跟随外层/B 类组件级变量开口（11 组件）
 - **官网首页 v2**：产品力展示方向（hero oas-table demo + 场景卡 + 代码速览 + 真实 perf 数据 + CTA），后迭代 H05 深色沉浸风格
+- **六件深挖**：divider（variant 四线型/inset·middle 缩进/size 三档/strong/6 CSS 变量开口/vertical 在 flex·grid 撑满）、link（underline 三态 hover 默认/icon+icon-position/external 自动 target·rel/info 语义色/underline-offset·underline-color 变量开口）、typography（修饰六布尔 strong·mark·code·underline·delete·italic/tag 换标签/depth 三档/line-clamp/copy-text/ellipsis-suffix/actions 操作条）、kbd（variant 四形态 raised·outline·subtle·plain/size 三档/color 统一协议）、label（error 红字/disabled/colon/tooltip 组合演示/color/双击防选中）、visually-hidden（focusable 焦点显形，skip-link 场景）
+- **code 深挖**：inline 行内代码（等宽浅底小框 + 高亮）/word-wrap 换行/trim 去首尾空白（默认 true）/size 四档（inline 语境）/variant 四形态（subtle·outline·plain·solid）/color 统一协议
+- **无障碍体系**：对比度门禁换 WCAG 3 草案感知对比度算法（自实现公式对拍官方实现 12/12 同值 + contrast-gate 工具）、-text 达标 token 体系（22 预设/语义文字变体，明暗各一套）、color 属性统一协议（11 预设名 + 任意 CSS 色值，ui-spec §4.1）、dark 中间调语义色达标（primary #9ecdff/danger #fbb2b2，粉彩亮化 + 深字，Lc≥71）、a11y 扫描 22 页 + qa-regression 大幅扩充
+- **API 表自动化**：api:scan（AST 级扫描）+ api:gen（manifest ∪ descriptions 并集生成）+ CI api:check 防漂移；35 条空描述补录
+- **集成反馈批次**（真实项目 oas-md-ka 集成反馈，v2.1 收尾落地）：slider/input-number 受控写回宿主 value 属性（双向受控一致性）；modal 视口高度保护（max-height 90vh + body 滚动，小窗口关闭钮可达）；tabs 非激活项 hover 反馈（line/card 两模式）；间距刻度中间档（space-1_5/2_5/4_5 = 6/10/20px）；集成 FAQ 页 + 快速开始事件前缀专段（`oas-` 前缀设计动机与监听写法）。未纳入项（menubar shortcut 字段 / 多 radio 组 value 作用域 / 动作项 kind / 事件名无前缀属 breaking）待排期
 - **收尾**：button demo 自定义色改 WCAG AA 达标值（#047857/#be185d，组件契约不变——自定义色按原值渲染，文档补对比度提醒）+ a11y 门禁转绿
 
-### 验收标准
+### 验收标准（均已达成）
 
 - 新组件与增强 demo 进文档站（中英双版），覆盖各属性/事件/边界
-- 剩余六件（divider/link/typography/kbd/label/visually-hidden）完成能力深挖并补齐缺口
-- 单测 + typecheck + build + e2e 全绿
+- 六件（divider/link/typography/kbd/label/visually-hidden）+ code 完成能力深挖并补齐缺口（basic 族 12/12 全清）
+- 单测 2360 + typecheck + build + e2e 1283 全绿；perf:size 全过（theme 预算随 token 体系扩充上调 2→3KB）；perf:bench 复跑通过
 
 ### 详细需求
 

@@ -88,6 +88,31 @@ React / Vue 中直接使用：
 
 三套内置主题：`light` / `dark` / `high-contrast`，自定义见[主题指南](./theming)。
 
+> **自定义 CSS 不会自动跟主题**：组件内部变量会随 `data-theme` 切换，但你自己写的样式必须引用 `var(--oas-color-*)` 才会跟着变。最常见的坑是页面 body 没显式设底色，切暗色后组件全暗、页面仍是浏览器默认白底：
+
+> ```css
+> body {
+>   background: var(--oas-color-bg);
+>   color: var(--oas-color-text-primary);
+> }
+> ```
+
+## 事件约定（重要）
+
+**所有组件事件都带 `oas-` 前缀**：`oas-change`、`oas-select`、`oas-input`、`oas-close` 等（各组件 API 表的「事件」小节列出完整清单与触发时机）。这是刻意设计——Web Components 的事件默认会冒泡到 window，无前缀的 `change`/`select` 会与原生事件及宿主框架的合成事件互相污染；前缀让来源一目了然。
+
+```ts
+// 正确：oas- 前缀
+menu.addEventListener('oas-select', (e) => console.log(e.detail))
+
+// 错误：永远收不到（常见首坑）
+menu.addEventListener('select', (e) => console.log(e.detail))
+```
+
+受控组件（switch / radio-group / checkbox-group / slider / input-number 等）在用户交互后会把最新值**写回宿主属性**（如 `value` / `checked`），`el.getAttribute('value')` 可直接读取，与 `oas-change` 事件的 `detail.value` 一致。
+
 ## SSR
 
 服务端渲染环境请参考 [SSR 边界策略](./ssr)：组件库副作用导入只应在客户端执行。
+
+更多集成常见问题（`::part()` 定制陷阱、事件触发时机等）见 [FAQ](./faq)。

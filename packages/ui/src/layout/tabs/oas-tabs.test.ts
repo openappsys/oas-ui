@@ -371,4 +371,18 @@ describe('OASTabs', () => {
     // 图标在文字之前
     expect(btn.children[0]!.classList.contains('tab-icon')).toBe(true)
   })
+
+  it('非激活 tab hover 反馈：line 与 card 两模式均有规则且不覆盖选中项', () => {
+    const el = mount({ type: 'card' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    const lineHover =
+      style.match(/\.tab:not\(\[aria-selected='true'\]\):hover\s*\{[^}]*\}/)?.[0] ?? ''
+    const cardHover =
+      style.match(
+        /:host\(\.oas-tabs--card\) \.tab:not\(\[aria-selected='true'\]\):hover\s*\{[^}]*\}/,
+      )?.[0] ?? ''
+    expect(lineHover).toContain('background')
+    expect(lineHover).toContain('var(--oas-color-primary)')
+    expect(cardHover).toContain('color-mix')
+  })
 })
