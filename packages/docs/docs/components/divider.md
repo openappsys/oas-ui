@@ -95,6 +95,16 @@ vertical 模式下 `content-position` 支持 `top`（贴顶）/ `center`（默�
   </div>
 </DemoBlock>
 
+垂直分割线也支持缩进留空：`inset` 起始侧（顶部）留空 / `middle` 两侧（上下）留空，与水平分割线同变量（`--oas-divider-title-inset` / `--oas-divider-middle-inset`）。
+
+<DemoBlock title="垂直缩进留空">
+  <div style="display: flex; height: 128px; gap: 24px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
+    <oas-divider direction="vertical"></oas-divider>
+    <oas-divider direction="vertical" inset>inset 顶部留空</oas-divider>
+    <oas-divider direction="vertical" middle>middle 两侧留空</oas-divider>
+  </div>
+</DemoBlock>
+
 ## 自定义样式
 
 `color` 属性支持 11 个预设色名（明暗主题自动适配）或任意 CSS 色值（直接生效，优先于预设与默认）；线宽、间距、文字侧留空走 CSS 变量：
