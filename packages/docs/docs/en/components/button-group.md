@@ -34,6 +34,28 @@ Button group: combines multiple `oas-button` elements into a value-selection gro
   </oas-button-group>
 </DemoBlock>
 
+## Variant & round passthrough
+
+`variant` / `round` are passed through uniformly to all child buttons, just like `type` / `size` — set once on the group and every child button applies it. `variant` supports six shapes matching `oas-button`: `solid` (default) / `outlined` / `dashed` / `filled` / `text` / `link`; `round` gives child buttons a capsule rounding.
+
+<DemoBlock title="Variant & round passthrough">
+  <oas-button-group variant="outlined">
+    <oas-button value="a">Outlined</oas-button>
+    <oas-button value="b">Outlined</oas-button>
+    <oas-button value="c">Outlined</oas-button>
+  </oas-button-group>
+  <oas-button-group variant="dashed" type="primary" style="margin-top: 8px">
+    <oas-button value="a">Dashed</oas-button>
+    <oas-button value="b">Dashed</oas-button>
+    <oas-button value="c">Dashed</oas-button>
+  </oas-button-group>
+  <oas-button-group round style="margin-top: 8px">
+    <oas-button value="a">Option A</oas-button>
+    <oas-button value="b">Option B</oas-button>
+    <oas-button value="c">Option C</oas-button>
+  </oas-button-group>
+</DemoBlock>
+
 ## Single select
 
 Declare the current selection with `value`; clicking dispatches `oas-change` with `detail: { value }`.
@@ -80,6 +102,27 @@ Add `multiple` to enable multi-select; `value` uses comma-separated selected val
     <oas-button value="up">Top</oas-button>
     <oas-button value="mid">Middle</oas-button>
     <oas-button value="down">Bottom</oas-button>
+  </oas-button-group>
+</DemoBlock>
+
+## Spread
+
+`spread` makes child buttons equally share the full container width (common for mobile action bars / form footer button groups). Combine with `type` / `size` / `variant` / `pill`.
+
+<DemoBlock title="Spread">
+  <oas-button-group spread type="primary">
+    <oas-button value="confirm">Confirm</oas-button>
+    <oas-button value="cancel">Cancel</oas-button>
+  </oas-button-group>
+  <oas-button-group spread pill style="margin-top: 8px">
+    <oas-button value="a">Option A</oas-button>
+    <oas-button value="b">Option B</oas-button>
+    <oas-button value="c">Option C</oas-button>
+  </oas-button-group>
+  <oas-button-group spread variant="outlined" style="margin-top: 8px">
+    <oas-button value="save">Save</oas-button>
+    <oas-button value="publish">Publish</oas-button>
+    <oas-button value="delete">Delete</oas-button>
   </oas-button-group>
 </DemoBlock>
 
@@ -238,9 +281,12 @@ Compose button groups with existing components such as overlays and inputs.
 | `disabled` | Disable the whole group | `boolean` | — |
 | `multiple` | Multi-select mode | `boolean` | — |
 | `pill` | Pill shape: large rounding on the group outer edges (`--oas-radius-full` / `999px`) | — | — |
+| `round` | Group-level round passthrough to child buttons (set once, all capsule-rounded) | `boolean` | — |
 | `size` | Size passed to child buttons | `string` | — |
+| `spread` | Buttons flex:1 to fill the container width evenly (mobile action bars / form footer button groups) | — | — |
 | `type` | Type passed to child buttons | `string` | — |
 | `value` | Selected value (single value in single-select, comma-separated in multi-select) | `string` | — |
+| `variant` | Group-level variant passthrough to child buttons (set once, applies to all) | `string` | — |
 | `vertical` | Stack vertically, merging corners top/bottom | `boolean` | — |
 
 ### Events

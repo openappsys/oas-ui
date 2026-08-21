@@ -5,6 +5,8 @@
  * 新增组件内置文案必须先在此补 key（en 包同步补齐，completeness 测试兜底）。
  */
 export const zhCN = {
+  // badge（徽标）
+  'badge.notifications': '{count} 条未读通知',
   // modal（对话框）
   'modal.close': '关闭',
   'modal.ok': '确定',

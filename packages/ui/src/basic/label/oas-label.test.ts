@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASLabel } from './index.js'
 
 function mountLabel(attrs: Record<string, string> = {}, slot = '姓名'): OASLabel {
@@ -204,6 +204,109 @@ describe('OASLabel', () => {
       expect(labelEl(el).style.getPropertyValue('--oas-label-color')).toBe('#00b96b')
       el.removeAttribute('color')
       expect(labelEl(el).style.getPropertyValue('--oas-label-color')).toBe('')
+    })
+  })
+
+  describe('size 字号档（small/medium/large）', () => {
+    it('size 进入 observedAttributes', () => {
+      expect(OASLabel.observedAttributes).toContain('size')
+    })
+
+    it('small 映射 .small 类（sm 小字）', () => {
+      const el = mountLabel({ size: 'small' })
+      expect(labelEl(el).classList.contains('small')).toBe(true)
+      expect(labelEl(el).classList.contains('large')).toBe(false)
+    })
+
+    it('large 映射 .large 类（lg 大字）', () => {
+      const el = mountLabel({ size: 'large' })
+      expect(labelEl(el).classList.contains('large')).toBe(true)
+      expect(labelEl(el).classList.contains('small')).toBe(false)
+    })
+
+    it('默认（无 size）与 medium 均不加尺寸类（base 即 md 基准字号）', () => {
+      const none = mountLabel()
+      expect(labelEl(none).classList.contains('small')).toBe(false)
+      expect(labelEl(none).classList.contains('large')).toBe(false)
+      const medium = mountLabel({ size: 'medium' })
+      expect(labelEl(medium).classList.contains('small')).toBe(false)
+      expect(labelEl(medium).classList.contains('large')).toBe(false)
+    })
+
+    it('非法值回落 medium（不加尺寸类）并告警', () => {
+      const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const el = mountLabel({ size: 'huge' })
+      expect(labelEl(el).classList.contains('small')).toBe(false)
+      expect(labelEl(el).classList.contains('large')).toBe(false)
+      expect(spy).toHaveBeenCalled()
+      spy.mockRestore()
+    })
+
+    it('CSS：small 用 sm token、large 用 lg token', () => {
+      const el = mountLabel({ size: 'large' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/label\.small\s*{[^}]*--oas-font-size-sm/)
+      expect(css).toMatch(/label\.large\s*{[^}]*--oas-font-size-lg/)
+    })
+
+    it('动态切换即时生效', () => {
+      const el = mountLabel()
+      el.setAttribute('size', 'large')
+      expect(labelEl(el).classList.contains('large')).toBe(true)
+      el.removeAttribute('size')
+      expect(labelEl(el).classList.contains('large')).toBe(false)
+    })
+  })
+
+  describe('weight 字重档（regular/semibold）', () => {
+    it('weight 进入 observedAttributes', () => {
+      expect(OASLabel.observedAttributes).toContain('weight')
+    })
+
+    it('semibold 映射 .semibold 类（半粗强调）', () => {
+      const el = mountLabel({ weight: 'semibold' })
+      expect(labelEl(el).classList.contains('semibold')).toBe(true)
+    })
+
+    it('默认（无 weight）与 regular 均不加字重类', () => {
+      const none = mountLabel()
+      expect(labelEl(none).classList.contains('semibold')).toBe(false)
+      const regular = mountLabel({ weight: 'regular' })
+      expect(labelEl(regular).classList.contains('semibold')).toBe(false)
+    })
+
+    it('非法值回落 regular（不加字重类）并告警', () => {
+      const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const el = mountLabel({ weight: 'bold' })
+      expect(labelEl(el).classList.contains('semibold')).toBe(false)
+      expect(spy).toHaveBeenCalled()
+      spy.mockRestore()
+    })
+
+    it('CSS：semibold 字重 600', () => {
+      const el = mountLabel({ weight: 'semibold' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/label\.semibold\s*{[^}]*font-weight:\s*600/)
+    })
+
+    it('动态切换即时生效', () => {
+      const el = mountLabel()
+      el.setAttribute('weight', 'semibold')
+      expect(labelEl(el).classList.contains('semibold')).toBe(true)
+      el.removeAttribute('weight')
+      expect(labelEl(el).classList.contains('semibold')).toBe(false)
+    })
+  })
+
+  describe('点击代理聚焦（死代码清理回归：内部子节点点击仍聚焦）', () => {
+    it('点击 label 内部节点（part="text"）仍触发聚焦代理', () => {
+      const input = document.createElement('input')
+      input.id = 'name-input'
+      document.body.appendChild(input)
+      const el = mountLabel({ for: 'name-input' })
+      const inner = el.shadowRoot!.querySelector<HTMLElement>('[part="text"]')!
+      inner.click()
+      expect(document.activeElement).toBe(input)
     })
   })
 })

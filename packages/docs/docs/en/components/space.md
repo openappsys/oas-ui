@@ -176,6 +176,25 @@ A layout container with even horizontal/vertical spacing.
   </oas-space>
 </DemoBlock>
 
+## Spring spacer
+
+`oas-space` is itself a flex container, so placing an empty element with `style="flex: 1"` between items acts as a spring (spacer): it absorbs the remaining space and pushes the following items to the other end — e.g. a "title on the left + action group on the right" page header or toolbar, with no new attribute needed. To make all items stretch proportionally instead, use `fill` / `fill-ratio` (see "Fill items").
+
+<DemoBlock title="Spring spacer">
+  <oas-space style="width: 100%">
+    <oas-button type="text">Page title</oas-button>
+    <div style="flex: 1"></div>
+    <oas-button>Settings</oas-button>
+    <oas-button type="primary">Save</oas-button>
+  </oas-space>
+  <oas-space style="width: 100%">
+    <oas-tag>In progress</oas-tag>
+    <div style="flex: 1"></div>
+    <oas-button type="text">More</oas-button>
+    <oas-button type="primary">Submit</oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## Inline embedding
 
 `oas-space` is a block-level flex container by default; to embed it inside a paragraph of text, add `style="display: inline-flex"` on the host — inline display is a host CSS concern, not a component attribute.

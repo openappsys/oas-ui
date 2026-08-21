@@ -640,4 +640,178 @@ describe('OASTag', () => {
       expect(disabled.isConnected).toBe(true)
     })
   })
+
+  describe('close-icon / close-label 自定义关闭', () => {
+    it('close-label 覆盖关闭按钮 aria-label；移除后回退 locale「关闭」', () => {
+      const el = mount({ closable: '' })
+      const btn = root(el).querySelector('button')!
+      expect(btn.getAttribute('aria-label')).toBe('关闭')
+      el.setAttribute('close-label', '移除标签「测试」')
+      expect(btn.getAttribute('aria-label')).toBe('移除标签「测试」')
+      el.removeAttribute('close-label')
+      expect(btn.getAttribute('aria-label')).toBe('关闭')
+    })
+
+    it('close-icon 替换默认 × svg 为 oas-icon（名称跟随变化）；移除后还原默认 svg', () => {
+      const el = mount({ closable: '' })
+      const btn = root(el).querySelector('button')!
+      const iconWrap = btn.querySelector<HTMLElement>('.close-icon')
+      expect(iconWrap).not.toBeNull()
+      expect(iconWrap!.querySelector('svg')).not.toBeNull()
+      el.setAttribute('close-icon', 'trash')
+      expect(iconWrap!.querySelector('svg')).toBeNull()
+      expect(iconWrap!.querySelector('oas-icon')!.getAttribute('name')).toBe('trash')
+      el.setAttribute('close-icon', 'minus')
+      expect(iconWrap!.querySelector('oas-icon')!.getAttribute('name')).toBe('minus')
+      el.removeAttribute('close-icon')
+      expect(iconWrap!.querySelector('oas-icon')).toBeNull()
+      expect(iconWrap!.querySelector('svg')).not.toBeNull()
+    })
+
+    it('close-icon 非法图标名：保持默认 svg', () => {
+      const el = mount({ closable: '', 'close-icon': 'no-such-icon' })
+      const iconWrap = root(el).querySelector('button')!.querySelector<HTMLElement>('.close-icon')!
+      expect(iconWrap.querySelector('svg')).not.toBeNull()
+      expect(iconWrap.querySelector('oas-icon')).toBeNull()
+    })
+
+    it('close-icon / close-label 进入 observedAttributes', () => {
+      expect(OASTag.observedAttributes).toContain('close-icon')
+      expect(OASTag.observedAttributes).toContain('close-label')
+    })
+  })
+
+  describe('loading 异步关闭', () => {
+    it('loading：关闭按钮显示 spinner、禁用、aria-busy、loading class；移除后恢复', () => {
+      const el = mount({ closable: '' })
+      const btn = root(el).querySelector('button')!
+      const spinner = btn.querySelector<HTMLElement>('.spinner')
+      expect(spinner).not.toBeNull()
+      expect(spinner!.hidden).toBe(true)
+      expect(btn.disabled).toBe(false)
+      el.setAttribute('loading', '')
+      expect(spinner!.hidden).toBe(false)
+      expect(btn.disabled).toBe(true)
+      expect(btn.getAttribute('aria-busy')).toBe('true')
+      expect(btn.classList.contains('loading')).toBe(true)
+      el.removeAttribute('loading')
+      expect(spinner!.hidden).toBe(true)
+      expect(btn.disabled).toBe(false)
+      expect(btn.hasAttribute('aria-busy')).toBe(false)
+      expect(btn.classList.contains('loading')).toBe(false)
+    })
+
+    it('loading CSS：spinner 旋转动画 + 原关闭图标 visibility 隐藏（不并排）', () => {
+      const el = mount({ closable: '', loading: '' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+      expect(css).toContain('@keyframes oas-tag-spin')
+      expect(css).toContain('button.loading .close-icon')
+      expect(css).toContain('visibility: hidden')
+      expect(css).toContain('prefers-reduced-motion')
+      el.remove()
+    })
+
+    it('loading 时点关闭不派发 oas-close、不移除', () => {
+      const el = mount({ closable: '', loading: '' })
+      let fired = 0
+      el.addEventListener('oas-close', () => fired++)
+      root(el).querySelector('button')!.click()
+      expect(fired).toBe(0)
+      expect(el.isConnected).toBe(true)
+    })
+
+    it('loading 时 Backspace/Delete 不触发关闭', () => {
+      const el = mount({ closable: '', loading: '' })
+      let fired = 0
+      el.addEventListener('oas-close', () => fired++)
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }))
+      expect(fired).toBe(0)
+      expect(el.isConnected).toBe(true)
+    })
+
+    it('oas-close detail.done()：异步完成后退出 loading（配合 preventDefault 不自动移除）', () => {
+      const el = mount({ closable: '' })
+      let done: (() => void) | undefined
+      el.addEventListener('oas-close', (e: Event) => {
+        e.preventDefault()
+        el.setAttribute('loading', '')
+        done = (e as CustomEvent<{ done: () => void }>).detail.done
+      })
+      root(el).querySelector('button')!.click()
+      expect(el.hasAttribute('loading')).toBe(true)
+      // loading 期间再点被拦截
+      root(el).querySelector('button')!.click()
+      expect(el.isConnected).toBe(true)
+      done!()
+      expect(el.hasAttribute('loading')).toBe(false)
+      el.remove()
+    })
+
+    it('done() 幂等：多次调用不抛错、不重复处理', () => {
+      const el = mount({ closable: '' })
+      let done: (() => void) | undefined
+      el.addEventListener('oas-close', (e: Event) => {
+        e.preventDefault()
+        el.setAttribute('loading', '')
+        done = (e as CustomEvent<{ done: () => void }>).detail.done
+      })
+      root(el).querySelector('button')!.click()
+      done!()
+      expect(() => {
+        done!()
+        done!()
+      }).not.toThrow()
+      expect(el.hasAttribute('loading')).toBe(false)
+      el.remove()
+    })
+
+    it('无 preventDefault 时 done() 不影响默认移除（普通关闭路径不变）', () => {
+      const el = mount({ closable: '' })
+      el.addEventListener('oas-close', (e: Event) => {
+        ;(e as CustomEvent<{ done: () => void }>).detail.done()
+      })
+      root(el).querySelector('button')!.click()
+      expect(el.isConnected).toBe(false)
+    })
+
+    it('loading 进入 observedAttributes', () => {
+      expect(OASTag.observedAttributes).toContain('loading')
+    })
+  })
+
+  describe('checkable 选中勾选图标', () => {
+    it('checkable + checked：文字前渲染 √（默认 check），未选中/取消后隐藏', () => {
+      const el = mount({ checkable: '' })
+      const checkEl = root(el).querySelector<HTMLElement>('.checked-icon')
+      expect(checkEl).not.toBeNull()
+      expect(checkEl!.hidden).toBe(true)
+      el.click()
+      expect(checkEl!.hidden).toBe(false)
+      expect(checkEl!.querySelector('oas-icon')!.getAttribute('name')).toBe('check')
+      el.click()
+      expect(checkEl!.hidden).toBe(true)
+    })
+
+    it('checked-icon 自定义勾选图标名（如 star）', () => {
+      const el = mount({ checkable: '', checked: '', 'checked-icon': 'star' })
+      const oasIcon = root(el).querySelector<HTMLElement>('.checked-icon oas-icon')
+      expect(oasIcon).not.toBeNull()
+      expect(oasIcon!.getAttribute('name')).toBe('star')
+    })
+
+    it('checked-icon 非法名：隐藏勾选图标', () => {
+      const el = mount({ checkable: '', checked: '', 'checked-icon': 'no-such-icon' })
+      expect(root(el).querySelector<HTMLElement>('.checked-icon')!.hidden).toBe(true)
+      expect(root(el).querySelector('.checked-icon oas-icon')).toBeNull()
+    })
+
+    it('非 checkable：checked 存在也不渲染勾选图标', () => {
+      const el = mount({ checked: '' })
+      expect(root(el).querySelector<HTMLElement>('.checked-icon')!.hidden).toBe(true)
+    })
+
+    it('checked-icon 进入 observedAttributes', () => {
+      expect(OASTag.observedAttributes).toContain('checked-icon')
+    })
+  })
 })

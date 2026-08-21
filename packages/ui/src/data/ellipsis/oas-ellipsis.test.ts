@@ -142,6 +142,80 @@ describe('OASEllipsis', () => {
     expect(t.classList.contains('single')).toBe(true)
   })
 
+  describe('direction 省略方向（start 头部省略 / middle 中部省略，缺省 tail 零回归）', () => {
+    it('direction 进入 observedAttributes', () => {
+      expect(OASEllipsis.observedAttributes).toContain('direction')
+    })
+    it('direction="start"：单行溢出时加 start 类（省略头部保留尾部，direction:rtl 反转省略侧）', () => {
+      const el = mount({ text: '这是一段很长的文本', direction: 'start' })
+      forceOverflow(el, true)
+      const t = textEl(el)
+      expect(t.classList.contains('single')).toBe(true)
+      expect(t.classList.contains('start')).toBe(true)
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.text\.start\s*{[^}]*direction:\s*rtl/)
+      expect(css).toMatch(/\.text\.start\s*{[^}]*unicode-bidi:\s*plaintext/)
+    })
+    it('direction="start" 无溢出时不加 start 类（纯文本原样）', () => {
+      const el = mount({ text: '短文本', direction: 'start' })
+      expect(textEl(el).classList.contains('start')).toBe(false)
+      expect(textEl(el).textContent).toBe('短文本')
+    })
+    it('direction="middle"：单行溢出时首尾保留、中部以 … 省略', () => {
+      const full = '这是一段很长很长的用于中部省略演示的文本内容abcdefghijklmn'
+      const el = mount({ text: full, direction: 'middle' })
+      forceOverflow(el, true)
+      const content = textEl(el).textContent!
+      expect(content).toContain('…')
+      expect(content.startsWith('这是')).toBe(true)
+      expect(content.endsWith('jklmn')).toBe(true)
+      expect(content.length).toBeLessThan(full.length)
+      expect(textEl(el).classList.contains('single')).toBe(true)
+    })
+    it('direction="middle"：溢出时仍挂全文 tooltip（截短后可悬停看全文）', () => {
+      const el = mount({ text: '这是一段很长很长的用于中部省略演示的文本内容', direction: 'middle' })
+      forceOverflow(el, true)
+      const tip = el.shadowRoot!.querySelector('oas-tooltip')
+      expect(tip).not.toBeNull()
+      expect(tip!.getAttribute('content')).toContain('用于中部省略演示')
+    })
+    it('direction="middle" 无溢出时原样展示全文（不截断）', () => {
+      const el = mount({ text: '短文本', direction: 'middle' })
+      expect(textEl(el).textContent).toBe('短文本')
+    })
+    it('缺省 direction=tail：尾部省略行为不变（零回归）', () => {
+      const el = mount({ text: '长文本' })
+      forceOverflow(el, true)
+      const t = textEl(el)
+      expect(t.classList.contains('start')).toBe(false)
+      expect(t.textContent).toBe('长文本')
+    })
+    it('direction 非法值回落 tail（不截断、不加 start 类）', () => {
+      const el = mount({ text: '长文本', direction: 'end' })
+      forceOverflow(el, true)
+      const t = textEl(el)
+      expect(t.classList.contains('start')).toBe(false)
+      expect(t.textContent).toBe('长文本')
+    })
+    it('rows>=2 时 direction 不生效（多行 line-clamp 保持，不截断）', () => {
+      const el = mount({ text: '多行文本', rows: '2', direction: 'middle' })
+      const t = textEl(el)
+      expect(t.classList.contains('multi')).toBe(true)
+      expect(t.textContent).toBe('多行文本')
+    })
+    it('middle + expandable：展开后展示全文（无省略号）', () => {
+      const el = mount({
+        text: '长文本中部省略演示内容长文本中部省略演示内容',
+        direction: 'middle',
+        expandable: '',
+      })
+      forceOverflow(el, true)
+      toggleEl(el).click()
+      expect(textEl(el).textContent).toContain('演示')
+      expect(textEl(el).textContent).not.toContain('…')
+    })
+  })
+
   /** 模拟 DSD 水合：构造器 attachShadow 后注入「SSR 快照 + 指纹 meta」（等价于 DSD template 解析结果） */
   function dsdEllipsis(attrs: Record<string, string> = {}): OASEllipsis {
     const el = new OASEllipsis()

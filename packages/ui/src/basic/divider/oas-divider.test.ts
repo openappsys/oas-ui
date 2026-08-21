@@ -314,3 +314,66 @@ describe('OASDivider', () => {
     })
   })
 })
+
+describe('vertical 内容对齐（content-position 扩展 top/center/bottom）', () => {
+  it('vertical + content-position=top 映射 top class（贴顶）', () => {
+    const el = mount({ direction: 'vertical', 'content-position': 'top' }, '标题')
+    expect(line(el)!.classList.contains('top')).toBe(true)
+    expect(line(el)!.classList.contains('bottom')).toBe(false)
+  })
+
+  it('vertical + content-position=bottom 映射 bottom class（贴底）', () => {
+    const el = mount({ direction: 'vertical', 'content-position': 'bottom' }, '标题')
+    expect(line(el)!.classList.contains('bottom')).toBe(true)
+    expect(line(el)!.classList.contains('top')).toBe(false)
+  })
+
+  it('vertical 默认居中：无 top/bottom class', () => {
+    const el = mount({ direction: 'vertical' }, '标题')
+    expect(line(el)!.classList.contains('top')).toBe(false)
+    expect(line(el)!.classList.contains('bottom')).toBe(false)
+  })
+
+  it('horizontal 下 top/bottom 非法回落 center（无 class）并告警', () => {
+    const t = mount({ 'content-position': 'top' }, '标题')
+    expect(line(t)!.classList.contains('top')).toBe(false)
+    const b = mount({ 'content-position': 'bottom' }, '标题')
+    expect(line(b)!.classList.contains('bottom')).toBe(false)
+    expect(line(b)!.classList.contains('left')).toBe(false)
+    expect(line(b)!.classList.contains('right')).toBe(false)
+  })
+
+  it('vertical 下 left/right 非法回落 center（无 class）并告警', () => {
+    const l = mount({ direction: 'vertical', 'content-position': 'left' }, '标题')
+    expect(line(l)!.classList.contains('left')).toBe(false)
+    expect(line(l)!.classList.contains('top')).toBe(false)
+    expect(line(l)!.classList.contains('bottom')).toBe(false)
+    const r = mount({ direction: 'vertical', 'content-position': 'right' }, '标题')
+    expect(line(r)!.classList.contains('right')).toBe(false)
+  })
+
+  it('horizontal left/right 照常生效（零回归）', () => {
+    const el = mount({ 'content-position': 'right' }, '标题')
+    expect(line(el)!.classList.contains('right')).toBe(true)
+    expect(line(el)!.classList.contains('bottom')).toBe(false)
+  })
+
+  it('CSS：vertical top 贴顶（::before 缩为 title-inset）/ bottom 贴底（::after 缩为 title-inset），仅 vertical 生效', () => {
+    const el = mount({ direction: 'vertical' }, '')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const topRule = css.match(/:host\(\[direction='vertical'\]\)\s*\.divider\.top::before\s*{[^}]*}/)?.[0] ?? ''
+    expect(topRule).toMatch(/flex:\s*0 0 var\(--oas-divider-title-inset/)
+    const bottomRule =
+      css.match(/:host\(\[direction='vertical'\]\)\s*\.divider\.bottom::after\s*{[^}]*}/)?.[0] ?? ''
+    expect(bottomRule).toMatch(/flex:\s*0 0 var\(--oas-divider-title-inset/)
+  })
+
+  it('动态切换 content-position 即时生效', () => {
+    const el = mount({ direction: 'vertical' }, '标题')
+    el.setAttribute('content-position', 'bottom')
+    expect(line(el)!.classList.contains('bottom')).toBe(true)
+    el.setAttribute('content-position', 'top')
+    expect(line(el)!.classList.contains('bottom')).toBe(false)
+    expect(line(el)!.classList.contains('top')).toBe(true)
+  })
+})

@@ -44,6 +44,52 @@ function warnOnce(kind: string, raw: string, fallback: string, valid: readonly s
   console.warn(`[oas-kbd] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
 }
 
+/** 语义键名的键帽符号 + abbr title 全称（读屏可命名） */
+interface KbdKeyEntry {
+  symbol: string
+  label: string
+}
+
+/**
+ * 语义键名 → 符号映射表（对照通用 kbd 映射）：
+ * 键名（小写）命中即渲染符号并包 `<abbr title="全称">`，未命中按字面值渲染。
+ * 方向键/功能键符号无平台差异，mac 与 Windows 通用。
+ */
+const KBD_KEY_MAP: Record<string, KbdKeyEntry> = {
+  command: { symbol: '⌘', label: 'Command' },
+  cmd: { symbol: '⌘', label: 'Command' },
+  meta: { symbol: '⌘', label: 'Command' },
+  shift: { symbol: '⇧', label: 'Shift' },
+  ctrl: { symbol: '⌃', label: 'Control' },
+  control: { symbol: '⌃', label: 'Control' },
+  alt: { symbol: '⌥', label: 'Option' },
+  option: { symbol: '⌥', label: 'Option' },
+  opt: { symbol: '⌥', label: 'Option' },
+  enter: { symbol: '↵', label: 'Enter' },
+  return: { symbol: '↵', label: 'Return' },
+  backspace: { symbol: '⌫', label: 'Backspace' },
+  delete: { symbol: '⌦', label: 'Delete' },
+  escape: { symbol: '⎋', label: 'Escape' },
+  esc: { symbol: '⎋', label: 'Escape' },
+  tab: { symbol: '⇥', label: 'Tab' },
+  capslock: { symbol: '⇪', label: 'Caps Lock' },
+  caps: { symbol: '⇪', label: 'Caps Lock' },
+  up: { symbol: '↑', label: 'Up Arrow' },
+  down: { symbol: '↓', label: 'Down Arrow' },
+  left: { symbol: '←', label: 'Left Arrow' },
+  right: { symbol: '→', label: 'Right Arrow' },
+  arrowup: { symbol: '↑', label: 'Up Arrow' },
+  arrowdown: { symbol: '↓', label: 'Down Arrow' },
+  arrowleft: { symbol: '←', label: 'Left Arrow' },
+  arrowright: { symbol: '→', label: 'Right Arrow' },
+  space: { symbol: '␣', label: 'Space' },
+  spacebar: { symbol: '␣', label: 'Space' },
+  pageup: { symbol: '⇞', label: 'Page Up' },
+  pagedown: { symbol: '⇟', label: 'Page Down' },
+  home: { symbol: '↖', label: 'Home' },
+  end: { symbol: '↘', label: 'End' },
+}
+
 const STYLE = `
 :host {
   display: inline-flex;
@@ -103,6 +149,10 @@ kbd .key {
   border-radius: var(--oas-radius-sm);
   box-shadow: inset 0 -1px 0 var(--oas-color-border);
   font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+}
+/* 键帽内语义符号的 abbr：去默认下划线（title 仍生效于读屏/悬停提示） */
+kbd .key abbr {
+  text-decoration: none;
 }
 kbd .sep {
   color: var(--oas-color-text-secondary);
@@ -232,7 +282,16 @@ export class OASKbd extends OASElement {
       const cap = document.createElement('kbd')
       cap.className = 'key'
       cap.setAttribute('part', 'key')
-      cap.textContent = key
+      // 语义键名命中映射 → 符号 + abbr title 全称（读屏可命名）；未命中按字面值渲染
+      const entry = KBD_KEY_MAP[key.toLowerCase()]
+      if (entry) {
+        const abbr = document.createElement('abbr')
+        abbr.title = entry.label
+        abbr.textContent = entry.symbol
+        cap.appendChild(abbr)
+      } else {
+        cap.textContent = key
+      }
       this.keysEl!.appendChild(cap)
     })
   }

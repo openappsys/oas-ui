@@ -23,10 +23,10 @@ describe('OASKbd', () => {
   })
 
   it('keys 空格分隔渲染多块 + 加号连接', () => {
-    const el = mountKbd({ keys: 'ctrl shift k' })
+    const el = mountKbd({ keys: 'a b c' })
     const kbd = kbdEl(el)
     const keys = [...kbd.querySelectorAll('.key')]
-    expect(keys.map((k) => k.textContent)).toEqual(['ctrl', 'shift', 'k'])
+    expect(keys.map((k) => k.textContent)).toEqual(['a', 'b', 'c'])
     expect(kbd.querySelectorAll('.sep').length).toBe(2)
     expect(kbd.querySelector('.sep')!.textContent).toBe('+')
   })
@@ -59,6 +59,83 @@ describe('OASKbd', () => {
     el.addEventListener('oas-click', () => (fired = true))
     kbdEl(el).click()
     expect(fired).toBe(false)
+  })
+
+  describe('语义键名映射（命中 → 符号 + abbr title 全称；未命中 → 字面值）', () => {
+    it('command shift k → ⌘ ⇧ k，首个键帽内嵌 abbr title="Command"', () => {
+      const el = mountKbd({ keys: 'command shift k' })
+      const keys = [...kbdEl(el).querySelectorAll('.key')]
+      expect(keys.map((k) => k.textContent)).toEqual(['⌘', '⇧', 'k'])
+      const abbr = keys[0]!.querySelector('abbr')
+      expect(abbr).not.toBeNull()
+      expect(abbr!.getAttribute('title')).toBe('Command')
+      expect(abbr!.textContent).toBe('⌘')
+      // 未命中的字面键不包 abbr
+      expect(keys[2]!.querySelector('abbr')).toBeNull()
+    })
+
+    it('常见语义键名全量映射为符号', () => {
+      const table: Array<[string, string]> = [
+        ['command', '⌘'],
+        ['shift', '⇧'],
+        ['ctrl', '⌃'],
+        ['control', '⌃'],
+        ['alt', '⌥'],
+        ['option', '⌥'],
+        ['enter', '↵'],
+        ['return', '↵'],
+        ['backspace', '⌫'],
+        ['delete', '⌦'],
+        ['escape', '⎋'],
+        ['esc', '⎋'],
+        ['tab', '⇥'],
+        ['capslock', '⇪'],
+        ['up', '↑'],
+        ['down', '↓'],
+        ['left', '←'],
+        ['right', '→'],
+        ['space', '␣'],
+        ['pageup', '⇞'],
+        ['pagedown', '⇟'],
+        ['home', '↖'],
+        ['end', '↘'],
+        ['arrowup', '↑'],
+        ['arrowdown', '↓'],
+        ['arrowleft', '←'],
+        ['arrowright', '→'],
+      ]
+      for (const [name, symbol] of table) {
+        const el = mountKbd({ keys: name })
+        const key = kbdEl(el).querySelector('.key')!
+        expect(key.querySelector('abbr')!.textContent, `key=${name}`).toBe(symbol)
+        el.remove()
+      }
+    })
+
+    it('键名大小写不敏感匹配（Shift → ⇧）', () => {
+      const el = mountKbd({ keys: 'Shift Command' })
+      const keys = [...kbdEl(el).querySelectorAll('.key')].map((k) => k.textContent)
+      expect(keys).toEqual(['⇧', '⌘'])
+    })
+
+    it('未命中映射按字面值渲染（现有行为保留）', () => {
+      const el = mountKbd({ keys: 'k cmdline f1' })
+      const keys = [...kbdEl(el).querySelectorAll('.key')]
+      expect(keys.map((k) => k.textContent)).toEqual(['k', 'cmdline', 'f1'])
+    })
+
+    it('映射后加号连接与分隔符不受影响', () => {
+      const el = mountKbd({ keys: 'command shift k' })
+      const kbd = kbdEl(el)
+      expect(kbd.querySelectorAll('.sep').length).toBe(2)
+      expect(kbd.querySelector('.sep')!.textContent).toBe('+')
+    })
+
+    it('CSS：键帽内 abbr 不显示下划线（默认 dotted 干扰键帽视觉）', () => {
+      const el = mountKbd({ keys: 'command' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.key\s+abbr\s*{[^}]*text-decoration/)
+    })
   })
 
   describe('variant 形态（raised/outline/subtle/plain）', () => {

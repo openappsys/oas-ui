@@ -5,6 +5,8 @@ import type { LocaleMessages } from '../types.js'
  * 标注 LocaleMessages 保证缺 key 编译期报错（locale-completeness 测试再加运行时兜底）。
  */
 export const en: LocaleMessages = {
+  // badge (badge)
+  'badge.notifications': '{count} unread notifications',
   'modal.close': 'Close',
   'modal.ok': 'OK',
   'modal.cancel': 'Cancel',

@@ -10,6 +10,17 @@ A keyboard shortcut display component. `keys` is split by spaces into multiple k
   <oas-kbd keys="cmd c"></oas-kbd>
 </DemoBlock>
 
+## Semantic key names
+
+`keys` supports semantic key names auto-mapped to symbols (e.g. `command` → ⌘, `shift` → ⇧). Each mapped keycap embeds an `<abbr title="full name">` for screen readers and hover tooltips; unmapped names render literally (e.g. `k`, `f1`):
+
+<DemoBlock title="Semantic key name mapping">
+  <oas-kbd keys="command shift k"></oas-kbd>
+  <oas-kbd keys="ctrl alt delete"></oas-kbd>
+  <oas-kbd keys="escape pageup pagedown"></oas-kbd>
+  <oas-kbd keys="arrowup arrowdown arrowleft arrowright"></oas-kbd>
+</DemoBlock>
+
 ## Single key & empty state
 
 <DemoBlock title="Single key & empty state">

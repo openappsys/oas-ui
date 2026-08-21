@@ -36,6 +36,16 @@
   <oas-tag closable type="danger">关闭后消失</oas-tag>
 </DemoBlock>
 
+## 自定义关闭
+
+`close-icon` 自定义关闭按钮图标（oas-icon 图标集名，缺省 ×）；`close-label` 自定义关闭按钮的 aria-label（屏幕阅读器朗读，缺省走 locale「关闭」）。
+
+<DemoBlock title="自定义关闭图标与朗读文案">
+  <oas-tag closable close-icon="trash" type="danger">垃圾桶关闭</oas-tag>
+  <oas-tag closable close-icon="minus" type="info">减号关闭</oas-tag>
+  <oas-tag closable close-label="移除标签「测试」" type="success">自定义朗读文案</oas-tag>
+</DemoBlock>
+
 ## 胶囊与可点击
 
 `chip`：胶囊圆角 + 紧凑 padding；`clickable`：整签可点，点击/Enter/Space 派发 `oas-click`。
@@ -88,6 +98,17 @@ document.getElementById('close-anim').addEventListener('oas-close', (e) => {
   tag.style.opacity = '0'
   tag.style.transform = 'scale(0.92)'
   setTimeout(() => tag.remove(), 240)
+})`
+const asyncCloseScript = `// 异步关闭：preventDefault 阻止自动移除 → loading → 异步完成后 done() 退出 loading → remove
+document.getElementById('async-close').addEventListener('oas-close', (e) => {
+  e.preventDefault()
+  const tag = e.target
+  tag.setAttribute('loading', '')
+  setTimeout(() => {
+    e.detail.done()
+    window.message?.success('异步确认完成，标签已移除')
+    tag.remove()
+  }, 1200)
 })`
 onMounted(async () => {
   const { message } = await import('@oas-ui/ui')
@@ -143,6 +164,19 @@ onMounted(async () => {
     tag.style.transform = 'scale(0.92)'
     setTimeout(() => tag.remove(), 240)
   })
+
+  // 异步关闭 demo：preventDefault → loading（spinner）→ 异步完成后 done() 退出 loading → 移除
+  const asyncClose = document.getElementById('async-close')
+  asyncClose?.addEventListener('oas-close', (e) => {
+    e.preventDefault()
+    const tag = e.target
+    tag.setAttribute('loading', '')
+    setTimeout(() => {
+      e.detail.done()
+      window.message?.success('异步确认完成，标签已移除')
+      tag.remove()
+    }, 1200)
+  })
 })
 </script>
 
@@ -159,13 +193,19 @@ onMounted(async () => {
 
 ## 可选中
 
-`checkable` 开启可选中：点击 / Enter / Space 切换 `checked` 并派发 `oas-change`（`detail: { checked }`）；选中态为实心填充。`checkable` 与 `closable` 互斥（关闭按钮隐藏）。
+`checkable` 开启可选中：点击 / Enter / Space 切换 `checked` 并派发 `oas-change`（`detail: { checked }`）；选中态为实心填充，文字前渲染 √ 勾选图标（`checked-icon` 可自定义图标名）。`checkable` 与 `closable` 互斥（关闭按钮隐藏）。
 
 <DemoBlock title="checkable 可选中">
   <oas-tag checkable onoas-change="message.info('「默认」' + (event.detail.checked ? '已选中' : '已取消'))">默认</oas-tag>
   <oas-tag checkable checked type="success" onoas-change="message.info('「成功」' + (event.detail.checked ? '已选中' : '已取消'))">成功</oas-tag>
   <oas-tag checkable chip type="primary" onoas-change="message.info('「胶囊」' + (event.detail.checked ? '已选中' : '已取消'))">胶囊</oas-tag>
   <oas-tag checkable disabled type="warning">禁用不可选</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="checkable 勾选图标">
+  <oas-tag checkable checked onoas-change="message.info('「默认」' + (event.detail.checked ? '已选中' : '已取消'))">已选（√）</oas-tag>
+  <oas-tag checkable checked type="success" checked-icon="star" onoas-change="message.info('「星标」' + (event.detail.checked ? '已选中' : '已取消'))">星标勾选</oas-tag>
+  <oas-tag checkable chip type="primary" checked-icon="check-circle" onoas-change="message.info('「胶囊」' + (event.detail.checked ? '已选中' : '已取消'))">圆勾胶囊</oas-tag>
 </DemoBlock>
 
 ## 形态
@@ -339,6 +379,17 @@ onMounted(async () => {
   </oas-space>
 </DemoBlock>
 
+## 异步关闭
+
+`loading` 进入关闭加载态：关闭按钮显示 spinner 并禁点（`aria-busy` 同步）。宿主在 `oas-close` 中 `preventDefault` 阻止自动移除，做异步操作后调用 `event.detail.done()` 退出 loading，再手动移除标签。
+
+<DemoBlock title="异步关闭" :script="asyncCloseScript">
+  <oas-space id="async-close" size="small">
+    <oas-tag closable type="primary">点 × 模拟异步确认</oas-tag>
+    <oas-tag closable type="success">异步后移除</oas-tag>
+  </oas-space>
+</DemoBlock>
+
 ## 标签组
 
 `oas-tag-group` 把多个 `checkable` 签组合为选值组：单选（`value` 单值）与多选（`multiple` + 逗号分隔 `value`），点击签切换选中并派发 `oas-change`（单选 `detail: { value }` / 多选 `detail: { value: [] }`）；`disabled` 禁用整组。子签自身 `checked` 由组统一接管（受控）。
@@ -375,15 +426,19 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `checkable` | 可选中：点击 / Enter / Space 切换 `checked` 并派发 `oas-change`；与 `closable` 互斥 | `boolean` | — |
 | `checked` | 选中态（`checkable` 时生效） | `boolean` | — |
+| `checked-icon` | checkable 选中时标签前的勾选图标（iconRegistry 图标名，默认 check） | `string` | `check` |
 | `chip` | 胶囊 | `boolean` | — |
 | `clickable` | 整签可点 | `boolean` | — |
 | `closable` | 可关闭 | `boolean` | — |
+| `close-icon` | 自定义关闭按钮图标（iconRegistry 图标名），替换默认 × | `string` | — |
+| `close-label` | 关闭按钮的 aria-label（a11y 上下文朗读，如「移除标签 xx」），默认走 locale「关闭」 | `string` | — |
 | `color` | 自定义颜色：支持 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token）或任意 CSS 色值，覆盖 `type` 语义色；未指定 `variant` 时按 `filled` 渲染 | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
 | `dot` | 文字前渲染状态小圆点（8px，颜色跟随 `type` / `color`） | `boolean` | — |
 | `hit` | 加重描边：语义色全不透明边框（有 `color` 时跟随自定义色） | `boolean` | — |
 | `href` | 链接地址：设置后内部渲染为原生链接 `<a>` | `string` | — |
 | `icon` | 图标名（复用 oas-icon 图标集），置于文字前，尺寸跟随字号 | `string` | — |
+| `loading` | 加载态：关闭流程中转 spinner 并禁点（`oas-close` detail 含 `done()` 回调，宿主异步完成后调用退出 loading） | `boolean` | — |
 | `max-width` | 标签内容最大宽度（如 `120px`），超出省略显示；与 `multiline` 同设时不省略，仅约束宽度让内容换行 | `string` | — |
 | `multiline` | 多行：内容允许换行（高度自适应 + 上下 padding 补偿）；与 `max-width` 同设时换行而非省略 | `boolean` | — |
 | `processing` | 状态点脉冲动画（隐含 `dot`）；`prefers-reduced-motion` 下停用 | `boolean` | — |

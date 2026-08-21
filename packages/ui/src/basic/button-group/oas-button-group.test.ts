@@ -277,3 +277,75 @@ describe('OASButtonGroup 扩展：pill / 嵌套组 / 分隔符', () => {
     expect(el.querySelector('oas-button[value="a"]')!.getAttribute('aria-pressed')).toBe('false')
   })
 })
+
+describe('OASButtonGroup 扩展：spread 均分 / variant·round 透传', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 读取组件 shadow 内联样式文本（happy-dom 不应用类样式，CSS 规则以文本断言） */
+  function styleText(el: OASButtonGroup): string {
+    return el.shadowRoot!.querySelector('style')!.textContent ?? ''
+  }
+
+  it('spread / variant / round 进入 observedAttributes', () => {
+    expect(OASButtonGroup.observedAttributes).toContain('spread')
+    expect(OASButtonGroup.observedAttributes).toContain('variant')
+    expect(OASButtonGroup.observedAttributes).toContain('round')
+  })
+
+  it('spread：宿主占满父容器宽度、组内按钮 flex 等宽均分并拉满宿主', () => {
+    const css = styleText(mountGroup({ spread: '' }))
+    expect(css).toContain(':host([spread])')
+    expect(css).toContain(":host([spread]) [part='group']")
+    expect(css).toContain(':host([spread]) ::slotted(oas-button)')
+    expect(css).toContain('flex: 1 1 0')
+    expect(css).toContain('--oas-button-group-width: 100%')
+  })
+
+  it('spread：嵌套组作为整体一项等宽均分，不透传拉满到内部按钮', () => {
+    const css = styleText(mountGroup({ spread: '' }))
+    const nestedRule = css.match(
+      /:host\(\[spread\]\) ::slotted\(oas-button-group\)\s*\{[^}]*}/,
+    )?.[0]
+    expect(nestedRule).toContain('flex: 1 1 0')
+    expect(nestedRule).not.toContain('--oas-button-group-width')
+  })
+
+  it('variant/round 透传给子按钮（与 type/size 同构）', () => {
+    const el = mountGroup({ variant: 'outlined', round: '' })
+    for (const btn of el.querySelectorAll('oas-button')) {
+      expect(btn.getAttribute('variant')).toBe('outlined')
+      expect(btn.hasAttribute('round')).toBe(true)
+    }
+  })
+
+  it('组未设 variant/round 时不覆盖子按钮自身设置', () => {
+    const el = new OASButtonGroup()
+    const btn = makeButton('a')
+    btn.setAttribute('variant', 'link')
+    btn.setAttribute('round', '')
+    el.appendChild(btn)
+    document.body.appendChild(el)
+    expect(btn.getAttribute('variant')).toBe('link')
+    expect(btn.hasAttribute('round')).toBe(true)
+  })
+
+  it('嵌套组：外层 variant/round 不透传进嵌套组内部按钮', () => {
+    const el = new OASButtonGroup()
+    el.setAttribute('variant', 'outlined')
+    el.setAttribute('round', '')
+    const sub = new OASButtonGroup()
+    sub.appendChild(makeButton('a'))
+    el.appendChild(sub)
+    document.body.appendChild(el)
+
+    const innerBtn = sub.querySelector('oas-button')!
+    expect(innerBtn.getAttribute('variant')).toBeNull()
+    expect(innerBtn.hasAttribute('round')).toBe(false)
+  })
+})

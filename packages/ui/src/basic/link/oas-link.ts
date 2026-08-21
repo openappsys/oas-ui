@@ -3,6 +3,7 @@ import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type LinkType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
 export type LinkUnderline = 'always' | 'hover' | 'never'
+export type LinkSize = 'small' | 'medium' | 'large'
 
 /** 预设色板名（映射 --oas-preset-* token，color 属性支持按名引用；统一协议见 ui-spec §4.1） */
 export type LinkPresetColor =
@@ -33,6 +34,7 @@ export const LINK_PRESET_COLORS: readonly LinkPresetColor[] = [
 ]
 
 const VALID_UNDERLINE = ['always', 'hover', 'never'] as const
+const VALID_SIZES = ['small', 'medium', 'large'] as const
 
 const warnedValues = new Set<string>()
 
@@ -130,6 +132,25 @@ a.has-color:hover {
 .icon-external {
   opacity: 0.7;
 }
+/* size 字号档：small 小字辅助 / large 大字标题；medium 默认（base 已定 md） */
+a.small {
+  font-size: var(--oas-font-size-sm);
+}
+a.large {
+  font-size: var(--oas-font-size-lg);
+}
+/* loading 态：光标 progress 表达进行中；转圈图标由 .icon.spinning svg 旋转动画驱动（仅 loading 时加该 class） */
+a[loading] {
+  cursor: progress;
+}
+.icon.spinning svg {
+  animation: oas-link-spin 0.8s linear infinite;
+}
+@keyframes oas-link-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 `
 
 /** 外链小图标（原创简单箭头↗） */
@@ -148,6 +169,9 @@ export class OASLink extends OASElement {
       'icon',
       'icon-position',
       'external',
+      'download',
+      'size',
+      'loading',
     ]
   }
 
@@ -165,7 +189,8 @@ export class OASLink extends OASElement {
   private bind(): void {
     this.a = this.shadow.querySelector('a')
     this.a?.addEventListener('click', (e: MouseEvent) => {
-      if (this.hasAttr('disabled')) {
+      // disabled / loading 均拦截：不派发 oas-click、阻止默认跳转
+      if (this.hasAttr('disabled') || this.hasAttr('loading')) {
         e.preventDefault()
         e.stopPropagation()
         return
@@ -206,7 +231,18 @@ export class OASLink extends OASElement {
     const target = this.getAttr('target', '')
     const external = this.hasAttr('external')
 
+    // size 字号档：small/medium/large；非法值回落 medium + 告警（medium 默认不加 class）
+    let size: LinkSize = 'medium'
+    const rawSize = this.getAttr('size', '')
+    if (rawSize) {
+      if ((VALID_SIZES as readonly string[]).includes(rawSize)) size = rawSize as LinkSize
+      else warnOnce('size', rawSize, 'medium', VALID_SIZES)
+    }
+
     a.setAttribute('href', href)
+    // download 透传（原生 <a download>）：空值布尔也透传（浏览器用原链接文件名），移除属性即清除
+    if (this.hasAttr('download')) a.setAttribute('download', this.getAttr('download', ''))
+    else a.removeAttribute('download')
     // external 自动 target=_blank；显式 target 优先（用户给了就听用户的）
     const effectiveTarget = target || (external ? '_blank' : '')
     if (effectiveTarget) a.setAttribute('target', effectiveTarget)
@@ -231,6 +267,8 @@ export class OASLink extends OASElement {
       type !== 'default' ? type : '',
       underline,
       this.hasAttr('color') ? 'has-color' : '',
+      size === 'small' ? 'small' : '',
+      size === 'large' ? 'large' : '',
     ]
       .filter(Boolean)
       .join(' ')
@@ -238,6 +276,10 @@ export class OASLink extends OASElement {
     else a.removeAttribute('class')
     a.toggleAttribute('disabled', disabled)
     a.setAttribute('aria-disabled', disabled ? 'true' : 'false')
+    // loading：a 上打 loading 标记（CSS 光标/aria 同步）；与 disabled 互不干扰
+    const loading = this.hasAttr('loading')
+    a.toggleAttribute('loading', loading)
+    a.setAttribute('aria-busy', loading ? 'true' : 'false')
 
     // color 统一协议：预设名映射 --oas-preset-*-text（文字达标深色 token，明暗主题各一份）；
     // 任意 CSS 色值直注入原值渲染（不自动改写，对比度责任在宿主，文档已明示）
@@ -249,21 +291,29 @@ export class OASLink extends OASElement {
       a.style.removeProperty('--oas-link-color')
     }
 
-    // 图标：icon 属性（注册表名）+ external（自动外链图标）
+    // 图标：icon 属性（注册表名）+ external（自动外链图标）+ loading（转圈替换）
     // 结构：<span class="icon">svg</span> 按 icon-position 放前/后；external 图标额外带 icon-external class
     // icon-position 缺省：显式 icon 默认 start（图标在文字前惯例）；
     // external 外链图标默认 end（外链指示在文字后惯例）
     const iconName = this.getAttr('icon', '')
     const iconPosition = this.getAttr('icon-position', external && !iconName ? 'end' : 'start')
-    const wantIcon = iconName !== '' || external
+    // loading：显示转圈图标（替换原前置图标；原无图标时也在文字前补一个，加载反馈可感知）
+    const wantIcon = iconName !== '' || external || loading
     const existingIcon = a.querySelector('.icon')
     if (wantIcon) {
-      const svg = iconName ? this.iconSvg(iconName) : external ? EXTERNAL_ICON_SVG : ''
+      const svg = loading
+        ? this.iconSvg('loading')
+        : iconName
+          ? this.iconSvg(iconName)
+          : external
+            ? EXTERNAL_ICON_SVG
+            : ''
       if (!svg) {
         warnOnce('icon', iconName, '无图标（注册表无该名）', [])
       }
       const iconEl = existingIcon ?? a.insertBefore(document.createElement('span'), a.firstChild)
-      iconEl.className = `icon${external ? ' icon-external' : ''}`
+      // loading 时加 spinning（旋转动画），且不加 icon-external 的半透明（转圈要清晰可辨）
+      iconEl.className = `icon${external && !loading ? ' icon-external' : ''}${loading ? ' spinning' : ''}`
       iconEl.innerHTML = svg
       // 位置：start=文字前（firstChild），end=文字后（appendChild）
       if (iconPosition === 'end' && iconEl !== a.lastElementChild) a.appendChild(iconEl)

@@ -21,12 +21,28 @@
         "observed": true
       },
       {
-        "name": "loading",
+        "name": "disabled-focusable",
         "type": "boolean",
         "observed": true
       },
       {
+        "name": "loading",
+        "observed": true
+      },
+      {
+        "name": "loading-text",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
         "name": "icon",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "icon-end",
         "type": "string",
         "default": "",
         "observed": true
@@ -65,6 +81,18 @@
       },
       {
         "name": "target",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "download",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "rel",
         "type": "string",
         "default": "",
         "observed": true
@@ -341,6 +369,29 @@
         "name": "multiline",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "loading",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "close-icon",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "close-label",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "checked-icon",
+        "type": "string",
+        "default": "check",
+        "observed": true
       }
     ],
     "props": [],
@@ -447,6 +498,23 @@
         "observed": true
       },
       {
+        "name": "bordered",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "icon",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "variant",
+        "type": "BadgeVariant",
+        "default": "",
+        "observed": true
+      },
+      {
         "name": "placement",
         "type": "BadgePlacement",
         "default": "end",
@@ -472,7 +540,7 @@
       },
       {
         "name": "size",
-        "type": "string",
+        "type": "BadgeSize",
         "default": "",
         "observed": true
       },
@@ -670,8 +738,8 @@
       },
       {
         "name": "content-position",
-        "type": "DividerPosition",
-        "default": "center",
+        "type": "string",
+        "default": "",
         "observed": true
       },
       {
@@ -768,6 +836,23 @@
       },
       {
         "name": "external",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "download",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "loading",
         "type": "boolean",
         "observed": true
       }
@@ -872,6 +957,22 @@
       },
       {
         "name": "italic",
+        "observed": true
+      },
+      {
+        "name": "align",
+        "type": "AlignType",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "weight",
+        "type": "WeightType",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "numeric",
         "observed": true
       }
     ],
@@ -983,6 +1084,22 @@
       {
         "name": "italic",
         "observed": true
+      },
+      {
+        "name": "align",
+        "type": "AlignType",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "weight",
+        "type": "WeightType",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "numeric",
+        "observed": true
       }
     ],
     "props": [],
@@ -1093,6 +1210,22 @@
       {
         "name": "italic",
         "observed": true
+      },
+      {
+        "name": "align",
+        "type": "AlignType",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "weight",
+        "type": "WeightType",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "numeric",
+        "observed": true
       }
     ],
     "props": [],
@@ -1133,6 +1266,17 @@
         "observed": true
       },
       {
+        "name": "variant",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "round",
+        "type": "boolean",
+        "observed": true
+      },
+      {
         "name": "vertical",
         "type": "boolean",
         "observed": true
@@ -1159,6 +1303,10 @@
       },
       {
         "name": "pill",
+        "observed": true
+      },
+      {
+        "name": "spread",
         "observed": true
       }
     ],
@@ -1223,6 +1371,18 @@
       },
       {
         "name": "color",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "weight",
         "type": "string",
         "default": "",
         "observed": true
@@ -5969,6 +6129,12 @@
       {
         "name": "expandable",
         "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "direction",
+        "type": "string",
+        "default": "tail",
         "observed": true
       }
     ],

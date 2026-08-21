@@ -73,6 +73,18 @@
 
 垂直分割线在 flex/grid 容器内自动撑满容器行高；行内语境保持 1em 文字行高。
 
+### 垂直带文字对齐
+
+vertical 模式下 `content-position` 支持 `top`（贴顶）/ `center`（默认，居中）/ `bottom`（贴底），文字竖排在两线段之间；水平模式仅 `left` / `center` / `right` 生效，跨方向使用（如 horizontal + `top`、vertical + `left`）回落 `center` 并告警。贴顶/贴底的留白大小走 `--oas-divider-title-inset` 变量（缺省 5%）。
+
+<DemoBlock title="垂直带文字对齐">
+  <div style="display: flex; height: 64px; gap: 12px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
+    <oas-divider direction="vertical" content-position="top">贴顶</oas-divider>
+    <oas-divider direction="vertical">居中</oas-divider>
+    <oas-divider direction="vertical" content-position="bottom">贴底</oas-divider>
+  </div>
+</DemoBlock>
+
 ## 自定义样式
 
 `color` 属性支持 11 个预设色名（明暗主题自动适配）或任意 CSS 色值（直接生效，优先于预设与默认）；线宽、间距、文字侧留空走 CSS 变量：
@@ -118,7 +130,7 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `color` | 颜色：支持 11 个预设名（映射 `--oas-preset-*` token）或任意 CSS 色值 | `string` | — |
-| `content-position` | 内容位置 | `DividerPosition` | `center` |
+| `content-position` | 内容位置 | `string` | — |
 | `dashed` | 虚线 | `boolean` | — |
 | `direction` | 方向 | `DividerDirection` | `horizontal` |
 | `inset` | 缩进：水平线起点侧内缩（默认 5%，走 `--oas-divider-title-inset` 变量），与文字缩进对齐 | `boolean` | — |

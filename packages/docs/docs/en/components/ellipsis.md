@@ -32,6 +32,24 @@ From `rows="2"` on, `-webkit-line-clamp` is used; on multi-line ellipsis the too
 
 With `expandable`, the button only appears when the text actually overflows; once expanded, no ellipsis is applied, and the `oas-expand` / `oas-collapse` events can track the state.
 
+## Ellipsis direction (direction)
+
+<DemoBlock title="start: ellipsize head, keep tail">
+  <div style="width: 100%">
+    <oas-ellipsis direction="start" text="/usr/local/lib/node_modules/@oas-ui/ui/dist/index.js"></oas-ellipsis>
+  </div>
+  For long paths / file names: the head is truncated with an ellipsis while the trailing file name stays fully visible (pure CSS via `direction: rtl` + `unicode-bidi: plaintext`).
+</DemoBlock>
+
+<DemoBlock title="middle: keep head and tail, ellipsize the middle">
+  <div style="width: 100%">
+    <oas-ellipsis direction="middle" text="a9f3c2b7d4e8f1a6c3b9d2e7f4a8c1b6d3e9f2a7c4b1d8e6f3a9c2b7d4e1f8a6c3b9d2e7f4a8c1b6d3e9f2"></oas-ellipsis>
+  </div>
+  For hashes / transaction IDs: both ends stay recognizable while the middle is compressed with an ellipsis; hover to see the full text.
+</DemoBlock>
+
+`direction` values: `tail` (default, tail ellipsis) / `start` (head ellipsis) / `middle` (middle ellipsis; single-line only, ignored when `rows` ≥ 2).
+
 ## Disabling the Tooltip
 
 <DemoBlock title="Tooltip disabled">
@@ -46,6 +64,7 @@ With `expandable`, the button only appears when the text actually overflows; onc
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `direction` | Ellipsis direction: `end` (default, tail) / `start` (head) / `middle` (keep both ends, for long paths/hashes) | `string` | `tail` |
 | `expandable` | Show an "expand/collapse" button when overflowing | `boolean` | — |
 | `rows` | Number of lines to show (1 is single-line ellipsis, ≥2 multi-line `-webkit-line-clamp`) | `string` | `1` |
 | `text` | Text content | `string` | — |
