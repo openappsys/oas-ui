@@ -92,6 +92,100 @@
   </oas-space>
 </DemoBlock>
 
+## 多选（checkbox）
+
+`kind: "checkbox"` 的叶子项渲染为方块勾选框（`role="menuitemcheckbox"`，与 radio 的 ✓ 区分）；多选勾选集以 JSON 数组形态写入 `value`，点击某项后 `oas-select` 的 `detail` 携带 `checked`（本次点击后的勾选态）。
+
+<DemoBlock title="多选（checkbox）">
+  <oas-space direction="vertical" size="small">
+    <oas-menu id="menu-cb" style="width: 240px" value='["grid"]' onoas-select="menuCbLog(event)" items='[{"label":"显示网格线","value":"grid","kind":"checkbox"},{"label":"自动换行","value":"wrap","kind":"checkbox"},{"label":"深色模式","value":"dark","kind":"checkbox"}]'></oas-menu>
+    <oas-tag id="menu-cb-result" type="info">尚未勾选</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## 危险操作项
+
+`danger: true` 使用红色语义（`--oas-color-danger`），用于删除、退出登录等危险操作；hover / 键盘高亮时红底加深。
+
+<DemoBlock title="危险操作项（danger）">
+  <oas-space direction="vertical" size="small">
+    <oas-menu id="menu-danger" style="width: 200px" onoas-select="menuDangerLog(event)" items='[{"label":"编辑","value":"edit","icon":"edit"},{"type":"divider"},{"label":"删除","value":"delete","icon":"trash","danger":true},{"label":"退出登录","value":"logout","danger":true}]'></oas-menu>
+    <oas-tag id="menu-danger-result" type="info">尚未选择</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## 链接项（href）
+
+`href` 使菜单项渲染为 `<a>`（锚点语义：支持中键 / 右键新窗口，SEO 友好），`target` / `rel` 原样透传；点击仍会派发 `oas-select` 并写入选中态。示例链接用 `target="_blank"` 新开标签页，避免离开文档页。
+
+<DemoBlock title="链接项（href）">
+  <oas-space direction="vertical" size="small">
+    <oas-menu id="menu-href" style="width: 220px" onoas-select="menuHrefLog(event)" items='[{"label":"组件总览","value":"overview","href":"/components/","icon":"menu","target":"_blank","rel":"noopener"},{"label":"快速开始","value":"start","href":"/guide/getting-started","icon":"search","target":"_blank","rel":"noopener"},{"label":"普通项","value":"plain","icon":"star"}]'></oas-menu>
+    <oas-tag id="menu-href-result" type="info">尚未选择</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## 长菜单滚动
+
+`max-height` 限定菜单可视高度（纯数字自动补 `px`），超出部分在菜单内部滚动，适合长列表。
+
+<DemoBlock title="长菜单滚动（max-height）">
+  <oas-menu style="width: 200px" max-height="200" items='[{"label":"项目一","value":"p1"},{"label":"项目二","value":"p2"},{"label":"项目三","value":"p3"},{"label":"项目四","value":"p4"},{"label":"项目五","value":"p5"},{"label":"项目六","value":"p6"},{"label":"项目七","value":"p7"},{"label":"项目八","value":"p8"},{"label":"项目九","value":"p9"},{"label":"项目十","value":"p10"},{"label":"项目十一","value":"p11"},{"label":"项目十二","value":"p12"}]'></oas-menu>
+</DemoBlock>
+
+## 字符定位（typeahead）
+
+菜单聚焦后直接输入字符，即跳转到 `label` 匹配的项（连续字符缓冲，500ms 无输入自动重置；前缀匹配优先，无前缀则包含匹配）。示例标签带英文便于按键触发：按 `c` 跳到 Copy，继续按 `u`（组合 `cu`）跳到 Cut。
+
+<DemoBlock title="字符定位（typeahead）">
+  <oas-space direction="vertical" size="small">
+    <oas-menu id="menu-typeahead" style="width: 200px" items='[{"label":"Copy 复制","value":"copy","icon":"copy"},{"label":"Cut 剪切","value":"cut"},{"label":"Paste 粘贴","value":"paste"},{"label":"Undo 撤销","value":"undo"},{"label":"Redo 重做","value":"redo"}]'></oas-menu>
+    <oas-tag id="menu-typeahead-hint" type="info">菜单已聚焦，直接按键试试（如 c → Copy、cu → Cut）</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## inline 侧边导航
+
+`mode="inline"` 时子菜单就地展开（不浮出），是侧边导航的主流形态；展开 / 收起带高度过渡动画，支持多级嵌套。
+
+<DemoBlock title="inline 就地展开">
+  <div style="width: 100%; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <oas-menu mode="inline" style="width: 240px" items='[{"label":"工作台","value":"workspace","icon":"menu","children":[{"label":"概览","value":"overview"},{"label":"数据统计","value":"stats"}]},{"label":"项目管理","value":"project","icon":"star","children":[{"label":"进行中","value":"active","children":[{"label":"迭代一","value":"s1"},{"label":"迭代二","value":"s2"}]},{"label":"已完成","value":"done"}]},{"label":"设置","value":"settings","icon":"gear"}]'></oas-menu>
+  </div>
+</DemoBlock>
+
+## 受控展开
+
+`expanded`（JSON 数组）为受控属性：外部设置 / 更新它即可指定展开的子菜单集合；每次展开 / 收起派发 `oas-expand-change`（`detail: { expanded, value, isExpanded }`），受控场景下宿主据此把状态写回 `expanded`。
+
+<DemoBlock title="expanded 受控展开">
+  <oas-space>
+    <oas-button onclick="menuCtrlSet('workspace')">展开「工作台」</oas-button>
+    <oas-button onclick="menuCtrlSet('message')">展开「消息中心」</oas-button>
+    <oas-button onclick="menuCtrlCollapse()">全部收起</oas-button>
+  </oas-space>
+  <oas-menu id="menu-ctrl" mode="inline" style="width: 240px; margin-top: 8px" onoas-expand-change="menuCtrlChange(event)" items='[{"label":"工作台","value":"workspace","children":[{"label":"概览","value":"overview"}]},{"label":"消息中心","value":"message","children":[{"label":"收件箱","value":"inbox"}]},{"label":"设置","value":"settings"}]'></oas-menu>
+  <oas-tag id="menu-ctrl-result" type="info">尚未操作</oas-tag>
+</DemoBlock>
+
+## 手风琴
+
+`accordion`（配合 `mode="inline"`）使同级子菜单互斥：展开一个自动收起同级的其他展开项。
+
+<DemoBlock title="手风琴互斥（inline + accordion）">
+  <div style="width: 100%; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+    <oas-menu mode="inline" accordion style="width: 240px" items='[{"label":"账号管理","value":"account","children":[{"label":"个人资料","value":"profile"},{"label":"安全设置","value":"security"}]},{"label":"通知设置","value":"notice","children":[{"label":"站内信","value":"inbox"},{"label":"邮件通知","value":"email"}]},{"label":"偏好设置","value":"pref","children":[{"label":"外观主题","value":"theme"},{"label":"界面语言","value":"lang"}]}]'></oas-menu>
+  </div>
+</DemoBlock>
+
+## 水平溢出收纳
+
+`mode="horizontal"` 下容器宽度不足时，超宽的菜单项自动收进末尾「···」子菜单，导航条不换行、不截断。
+
+<DemoBlock title="水平溢出收纳">
+  <oas-menu mode="horizontal" style="width: 380px" items='[{"label":"首页","value":"home"},{"label":"产品中心","value":"products","icon":"menu"},{"label":"解决方案","value":"solutions","icon":"search"},{"label":"开发者文档","value":"docs"},{"label":"下载中心","value":"download","icon":"download"},{"label":"关于我们","value":"about","icon":"user"},{"label":"联系合作","value":"contact"},{"label":"帮助中心","value":"help"}]'></oas-menu>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -111,6 +205,48 @@ onMounted(() => {
     const tag = document.getElementById('menu-c-result')
     if (tag) tag.textContent = `已选择：${e.detail.value}`
   }
+  window.menuCbLog = (e) => {
+    const tag = document.getElementById('menu-cb-result')
+    const menu = document.getElementById('menu-cb')
+    if (tag && menu) {
+      let values = []
+      try {
+        values = JSON.parse(menu.getAttribute('value') || '[]')
+      } catch {
+        values = []
+      }
+      tag.textContent = values.length ? `已勾选：${values.join('、')}` : '未勾选任何项'
+    }
+  }
+  window.menuDangerLog = (e) => {
+    const tag = document.getElementById('menu-danger-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}`
+  }
+  window.menuHrefLog = (e) => {
+    const tag = document.getElementById('menu-href-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}`
+  }
+  window.menuCtrlSet = (value) => {
+    const menu = document.getElementById('menu-ctrl')
+    if (menu) menu.setAttribute('expanded', JSON.stringify([value]))
+  }
+  window.menuCtrlCollapse = () => {
+    const menu = document.getElementById('menu-ctrl')
+    if (menu) menu.setAttribute('expanded', '[]')
+  }
+  window.menuCtrlChange = (e) => {
+    const { expanded, value, isExpanded } = e.detail
+    const menu = document.getElementById('menu-ctrl')
+    // 受控：把组件内部展开状态同步回 expanded 属性
+    if (menu) menu.setAttribute('expanded', JSON.stringify(expanded))
+    const tag = document.getElementById('menu-ctrl-result')
+    if (tag) {
+      tag.textContent = `${isExpanded ? '展开' : '收起'}「${value}」；当前展开：${expanded.length ? expanded.join('、') : '（无）'}`
+    }
+  }
+  // typeahead：聚焦菜单，使字符定位立即可用
+  const ta = document.getElementById('menu-typeahead')
+  ta?.shadowRoot?.querySelector('.menu')?.focus({ preventScroll: true })
 })
 </script>
 
@@ -120,8 +256,11 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `accordion` | 手风琴互斥（inline 模式同级只展开一个子菜单） | `boolean` | — |
 | `collapsed` | 收起态（仅 vertical）：只显示图标，子菜单向右浮出 | — | — |
+| `expanded` | 受控展开项集合（JSON 数组字符串，inline 模式哪些子菜单展开）；非受控时内部管理 | `string` | — |
 | `items` | 菜单项 JSON（支持 disabled / loading 禁点、icon、children 子菜单） | `string` | `[]` |
+| `max-height` | 长菜单最大高度，超出内部滚动（数字补 px） | `string` | — |
 | `mode` | 布局模式：`vertical` 纵向菜单 / `horizontal` 顶部导航条 | — | — |
 | `theme` | 局部主题：`dark` 使用暗色 token（独立于全局主题） | — | — |
 | `value` | 当前选中值。纯字符串时全局单选（无组场景，兼容旧用法）；JSON 对象字符串（如 `{"sort":"name","view":"list"}`）时按组 id 作用域独立记录——`type:"group"` 项的 `value` 作组 id，组内点选只更新该组 | `string` | — |
@@ -130,6 +269,7 @@ onMounted(() => {
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-expand-change` | 子菜单展开状态变化，`detail: { expanded: string[], value, isExpanded }`（受控/非受控都派发） |
 | `oas-select` | 选择某项，`detail: { value, kind? }`。`kind` 仅动作项（`kind: "action"`）出现，值为 "action"；radio 项 `detail.kind` 不出现 |
 
 `MenuItem` 字段：
