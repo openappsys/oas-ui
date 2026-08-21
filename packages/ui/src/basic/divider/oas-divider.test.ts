@@ -267,9 +267,9 @@ describe('OASDivider', () => {
       const rule = css.match(/:host\(\[direction='vertical'\]\)\s*\.divider\s*{[^}]*}/)?.[0] ?? ''
       expect(rule).toMatch(/height:\s*100%/)
       expect(rule).toMatch(/min-height:\s*1em/)
-      // host 侧无 height 锁定（撑满前提）
+      // host 侧无 height 锁定（撑满前提）；只断属性声明，注释文字里的 height 字样不算
       const hostVertical = css.match(/:host\(\[direction='vertical'\]\)\s*{[^}]*}/)?.[0] ?? ''
-      expect(hostVertical).not.toMatch(/height/)
+      expect(hostVertical).not.toMatch(/^\s*height\s*:/m)
     })
   })
 

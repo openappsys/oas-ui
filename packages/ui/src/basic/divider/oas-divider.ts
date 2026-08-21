@@ -61,26 +61,32 @@ const STYLE = `
   display: inline-block;
   width: auto;
   vertical-align: middle;
+  /* flex/grid 容器语境：撑满容器交叉轴高度（确定高度，打破 host 高度由内容撑 →
+     .divider height:100% → 线段分配的循环依赖） */
+  align-self: stretch;
 }
 /* vertical 行内语境：高度 = 1em 文字行高（min-height 兜底）；有内容（文字在两线段间）时由内容撑高。
-   flex/grid 容器语境：容器默认 align-items:stretch 拉伸 host，.divider height:100% 跟随——
-   两语境都成立，无需 JS 探测容器。 */
+   flex/grid 容器语境：容器默认 align-items:stretch 拉伸 host，.divider height:100% 跟随。
+   内容包 .content 层（span 包裹 slot）：纯文本直接成 flex 子项时（slot display:contents），
+   伪元素线段的 flex:1 高度分配失效（线段 height 0 不显示）；包 span 后成为确定 flex item，分配可靠 */
 :host([direction='vertical']) .divider {
   flex-direction: column;
-  width: var(--oas-divider-width, 1px);
+  /* 容器宽度由内容（文字）撑，线段宽度单独控制在 ::before/::after——
+     容器不设线宽（否则文字被压成竖排） */
   height: 100%;
   min-height: 1em;
   margin: 0 var(--oas-space-3);
-  align-items: stretch;
+  align-items: center;
 }
 :host([direction='vertical']) .divider::before,
 :host([direction='vertical']) .divider::after {
-  flex: 1;
+  flex: 1 1 0;
   width: var(--oas-divider-width, 1px);
-  height: auto;
+  min-height: 0;
+  align-self: center;
   background: var(--oas-divider-color, var(--oas-color-border-strong));
 }
-/* vertical 内容对齐：top 贴顶（before 线段缩为 title-inset，内容被推到顶部）、bottom 贴底（after 线段缩短）；
+/* vertical 内容对齐：top 贴顶（before 线段缩为 title-inset，内容被推向顶部）、bottom 贴底（after 线段缩短）；
    与水平 left/right 同机制（线短一侧内容贴向），仅 vertical 生效 */
 :host([direction='vertical']) .divider.top::before {
   flex: 0 0 var(--oas-divider-title-inset, 5%);
@@ -95,6 +101,11 @@ const STYLE = `
   color: var(--oas-color-text-primary);
   font-size: var(--oas-font-size-sm);
   gap: var(--oas-space-3);
+}
+/* 内容包裹层：承载 slot 投影的文字/内容，作为确定的 flex 子项（替代 slot display:contents
+   直接暴露文本节点，保证线段在 vertical/horizontal 下的 flex 空间分配可靠） */
+.divider .content {
+  display: block;
 }
 .divider.empty {
   gap: 0;
@@ -187,7 +198,7 @@ export class OASDivider extends OASElement {
     return `
       <style>${STYLE}</style>
       <div class="divider" part="divider" role="separator">
-        <slot></slot>
+        <span class="content" part="content"><slot></slot></span>
       </div>
     `
   }
