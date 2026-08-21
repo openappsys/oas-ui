@@ -53,7 +53,7 @@ const isEn = computed(() => lang.value.startsWith('en'))
 
 <style scoped>
 .home-footer {
-  padding: 52px 0 56px;
+  padding: 52px 0 32px;
   background: var(--home-bg);
 }
 .hf-wrap {
