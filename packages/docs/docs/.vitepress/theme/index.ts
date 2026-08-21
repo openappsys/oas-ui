@@ -29,7 +29,8 @@ export default {
     // gtag 的 config 只在页面整加载时触发一次 page_view，SPA 内路由切换需手动补发。
     // vitepress Router 的钩子是实例属性（onAfterRouteChanged），必须赋值注册；
     // 此前误写成「onAfterRouteChange?.(cb) 方法调用」——属性不存在，可选链静默短路，补发从未生效
-    if (!import.meta.env.SSR) {
+    // 仅生产环境补发：dev 下 config.ts 不注入 gtag 脚本（w.gtag 不存在），此处一并跳过
+    if (!import.meta.env.SSR && import.meta.env.PROD) {
       router.onAfterRouteChanged = (to) => {
         const w = window as unknown as {
           gtag?: (cmd: string, id: string, opts?: { page_path?: string }) => void
