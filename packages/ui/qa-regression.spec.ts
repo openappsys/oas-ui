@@ -4597,3 +4597,39 @@ test('tabs 选中下划线与文字同主色且为 2px 细线（light/dark，无
     'card 模式激活 ::after 不应叠加主色（保持边框连通）',
   ).toBe(true)
 })
+
+test('tabs more 模式：点选收起项后激活项从「更多」出来到可见区，且相邻项一起可见', async ({ page }) => {
+  // 需求固化：more 下拉里点选一个被收起的 tab，它应连同前后相邻项一起出现在标签栏可见区
+  // （激活项永不藏在「更多」里，窗口滑动覆盖激活项+邻居，上下文连贯）。
+  await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tabs[more]')
+  await page.locator('h2:has-text("更多收缩")').first().scrollIntoViewIfNeeded()
+  const visibleValues = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('oas-tabs[more]')!
+      return [...el.shadowRoot!.querySelectorAll('[role="tab"][data-value]')]
+        .filter((t) => !t.hasAttribute('data-overflowed'))
+        .map((t) => t.getAttribute('data-value'))
+    })
+  const before = await visibleValues()
+  expect(before.length).toBeGreaterThan(0)
+  // 打开 more 下拉，点最后一个收起项
+  await page.evaluate(() => {
+    document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector<HTMLElement>('.more-btn')!.click()
+  })
+  await page.waitForTimeout(200)
+  const lastValue = await page.evaluate(() => {
+    const items = [...document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')]
+    return items[items.length - 1]?.getAttribute('data-value') ?? ''
+  })
+  await page.evaluate((v) => {
+    const items = [...document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')]
+    items.find((i) => i.getAttribute('data-value') === v)?.click()
+  }, lastValue)
+  await page.waitForTimeout(300)
+  const after = await visibleValues()
+  // 激活项（最后收起项）出来到可见区
+  expect(after, '激活项应从「更多」出来到可见区').toContain(lastValue)
+  // 相邻项也一起可见（窗口滑动覆盖激活项+邻居）
+  expect(after.length, '激活项+相邻项一起可见').toBeGreaterThan(1)
+})

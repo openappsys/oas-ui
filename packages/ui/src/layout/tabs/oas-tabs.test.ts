@@ -632,14 +632,8 @@ describe('OASTabs', () => {
       expect(el.getAttribute('active')).toBe(changed)
     })
 
-    it('选中项被收进更多时，更多按钮高亮标识', () => {
-      const el = mountMore(8, 100, 400)
-      el.setAttribute('active', 't7') // 最后一项，应被收进更多
-      ;(el as any).update()
-      ;(el as any).syncMore?.()
-      const moreBtn = el.shadowRoot!.querySelector('.more-btn') as HTMLElement
-      expect(moreBtn.classList.contains('more-btn--active')).toBe(true)
-    })
+    // 注：原「选中项被收进更多时，更多按钮高亮」场景已被「激活项可见窗口」设计取代——
+    // 激活 tab 永不收进「更多」（syncMore 窗口滑动保证激活项可见），该状态不再存在。
   })
 
   // ===== 批次 3a：panel-mode 面板显隐策略（keep/lazy/destroy） =====
@@ -1122,28 +1116,42 @@ describe('OASTabs', () => {
       expect(style).toMatch(/\.more-item\[hidden\]\s*\{[^}]*display:\s*none/)
     })
 
-    it('打开下拉时选中项滚动到可见（scrollIntoView）且高亮', async () => {
+    // 注：原「打开下拉时选中项滚动到可见（scrollIntoView）且高亮」场景已被「激活项可见窗口」
+    // 设计取代——激活 tab 永不收进「更多」，故无需在下拉里滚动定位选中项。
+
+    it('激活收起项后：激活项从「更多」出来到可见区，且相邻项一起可见（窗口滑动）', () => {
+      // 10 tab ×100px，avail 300-44=256：激活项 + 邻居构成可见窗口，窗口外收进更多
       const el = mountMore(10, 100, 300)
-      el.setAttribute('active', 't9') // t9（标签10）被收进下拉
-      // setAttribute 触发 update 重建 tablist，offsetWidth mock 丢失，需重新 mock 再 syncMore
+      el.setAttribute('active', 't8') // t8（标签9）原本在收起范围
+      // update 重建丢 mock，重新 mock
       el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]').forEach((t) =>
         Object.defineProperty(t, 'offsetWidth', { value: 100, configurable: true }),
       )
       ;(el as any).syncMore?.()
-      const scrollCalls: string[] = []
-      const origSIV = Element.prototype.scrollIntoView
-      Element.prototype.scrollIntoView = function (this: Element) {
-        scrollCalls.push((this as HTMLElement).getAttribute?.('data-value') ?? 'unknown')
-      }
-      const moreBtn = el.shadowRoot!.querySelector('.more-btn') as HTMLElement
-      moreBtn.click()
-      await Promise.resolve()
-      Element.prototype.scrollIntoView = origSIV
-      // 选中项（t9）应被 scrollIntoView 滚到可见
-      expect(scrollCalls).toContain('t9')
-      // 选中项高亮（aria-current）
-      const activeItem = el.shadowRoot!.querySelector('.more-item[data-value="t9"]')
-      expect(activeItem!.getAttribute('aria-current')).toBe('true')
+      const isVisible = (v: string) =>
+        !el.shadowRoot!.querySelector(`[role="tab"][data-value="${v}"]`)!.hasAttribute('data-overflowed')
+      // 激活项 t8 必须可见（不藏在更多里）
+      expect(isVisible('t8')).toBe(true)
+      // 相邻项（t7 或 t9）也可见（上下文连贯）
+      expect(isVisible('t7') || isVisible('t9')).toBe(true)
+      // 窗口前面的项（t0）被收进更多
+      expect(isVisible('t0')).toBe(false)
+    })
+
+    it('激活项在可见窗口内时，窗口前的项收进更多（more 下拉只含窗口外项）', () => {
+      const el = mountMore(10, 100, 300)
+      el.setAttribute('active', 't8')
+      el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]').forEach((t) =>
+        Object.defineProperty(t, 'offsetWidth', { value: 100, configurable: true }),
+      )
+      ;(el as any).syncMore?.()
+      ;(el.shadowRoot!.querySelector('.more-btn') as HTMLElement).click()
+      // more 下拉项不应含激活项 t8（它已出来到可见区）
+      const dropValues = [...el.shadowRoot!.querySelectorAll('.more-item')].map((i) =>
+        i.getAttribute('data-value'),
+      )
+      expect(dropValues).not.toContain('t8')
+      expect(dropValues.length).toBeGreaterThan(0)
     })
   })
 })
