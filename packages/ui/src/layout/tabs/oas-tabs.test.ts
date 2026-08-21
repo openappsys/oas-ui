@@ -573,10 +573,14 @@ describe('OASTabs', () => {
     })
   })
 
-  // ===== 批次 2b：more 溢出收缩下拉 =====
+  // ===== 批次 2b：more 视口外镜像下拉（滚动 + 视口外 tab 快捷跳转，通用） =====
 
-  describe('more 溢出收缩下拉', () => {
-    function mountMore(count = 8, eachWidth = 100, avail = 400): OASTabs {
+  describe('more 视口外镜像下拉', () => {
+    /**
+     * mock 滚动几何（jsdom 无布局）：tablist scrollWidth/clientWidth/scrollLeft +
+     * 各 tab offsetLeft/offsetWidth（每个 100px 宽，连续排布）
+     */
+    function mountMore(count = 10, eachWidth = 100, clientWidth = 400): OASTabs {
       const el = new OASTabs()
       el.setAttribute('more', '')
       el.innerHTML = Array.from(
@@ -584,56 +588,88 @@ describe('OASTabs', () => {
         (_, i) => `<oas-tab-panel label="标签${i + 1}" value="t${i}"><p>内容${i + 1}</p></oas-tab-panel>`,
       ).join('')
       document.body.appendChild(el)
-      // mock 每个 tab 的 offsetWidth 与 nav 可用宽度（jsdom 无布局）
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      Object.defineProperty(tablist, 'scrollWidth', { value: count * eachWidth, configurable: true })
+      Object.defineProperty(tablist, 'clientWidth', { value: clientWidth, configurable: true })
+      Object.defineProperty(tablist, 'scrollLeft', { value: 0, writable: true, configurable: true })
       const tabs = el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]')
-      tabs.forEach((t) => Object.defineProperty(t, 'offsetWidth', { value: eachWidth, configurable: true }))
-      const nav = el.shadowRoot!.querySelector('.nav') as HTMLElement
-      Object.defineProperty(nav, 'clientWidth', { value: avail, configurable: true })
+      tabs.forEach((t, i) => {
+        Object.defineProperty(t, 'offsetWidth', { value: eachWidth, configurable: true })
+        Object.defineProperty(t, 'offsetLeft', { value: i * eachWidth, configurable: true })
+      })
       return el
     }
 
-    it('more 模式溢出：放不下的 tab 收进「更多」按钮触发的下拉', () => {
-      // 8 个 tab ×100px = 800px，可用 400px → 约前 3~4 个可见，其余进更多
-      const el = mountMore(8, 100, 400)
+    it('more 模式 tab 全部渲染不隐藏（无 data-overflowed display 收缩）', () => {
+      const el = mountMore()
       ;(el as any).syncMore?.()
-      const moreBtn = el.shadowRoot!.querySelector('.more-btn')
-      expect(moreBtn).not.toBeNull()
-      expect(moreBtn!.hasAttribute('hidden')).toBe(false)
-      // 可见区应隐藏部分 tab（收进下拉）
-      const hiddenTabs = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]')].filter(
-        (t) => t.hasAttribute('data-overflowed'),
+      const hidden = [...el.shadowRoot!.querySelectorAll('[role="tab"][data-value]')].filter((t) =>
+        t.hasAttribute('data-overflowed'),
       )
-      expect(hiddenTabs.length).toBeGreaterThan(0)
+      expect(hidden.length).toBe(0)
     })
 
-    it('more 不溢出：所有 tab 可见，无更多按钮', () => {
-      const el = mountMore(3, 100, 1000)
+    it('溢出时 more 按钮显示，不溢出时隐藏', () => {
+      const el = mountMore(10, 100, 400) // 1000 > 400 溢出
       ;(el as any).syncMore?.()
-      const moreBtn = el.shadowRoot!.querySelector('.more-btn')
-      expect(moreBtn === null || moreBtn.hasAttribute('hidden')).toBe(true)
+      expect(el.shadowRoot!.querySelector('.more-btn')!.hasAttribute('hidden')).toBe(false)
+      const el2 = mountMore(3, 100, 1000) // 300 < 1000 不溢出
+      ;(el2 as any).syncMore?.()
+      expect(el2.shadowRoot!.querySelector('.more-btn')!.hasAttribute('hidden')).toBe(true)
     })
 
-    it('点击更多按钮弹出下拉，下拉项点击切换到对应面板', async () => {
-      const el = mountMore(8, 100, 400)
+    it('more 下拉列出当前滚动视口之外的 tab', () => {
+      const el = mountMore(10, 100, 400) // 视口 0~400，可见 t0-t3，视口外 t4-t9
       ;(el as any).syncMore?.()
-      const moreBtn = el.shadowRoot!.querySelector('.more-btn') as HTMLElement
-      moreBtn.click()
-      await Promise.resolve()
-      const dropdown = el.shadowRoot!.querySelector('.more-dropdown')
-      expect(dropdown).not.toBeNull()
-      expect(dropdown!.hasAttribute('hidden')).toBe(false)
-      const items = dropdown!.querySelectorAll('[data-value]')
-      expect(items.length).toBeGreaterThan(0)
-      let changed = ''
-      el.addEventListener('oas-change', (e) => (changed = (e as CustomEvent).detail.value))
-      ;(items[0] as HTMLElement).click()
-      await Promise.resolve()
-      expect(changed).not.toBe('')
-      expect(el.getAttribute('active')).toBe(changed)
+      ;(el.shadowRoot!.querySelector('.more-btn') as HTMLElement).click()
+      const dropValues = [...el.shadowRoot!.querySelectorAll('.more-item')].map((i) =>
+        i.getAttribute('data-value'),
+      )
+      // 视口外 t4-t9（下拉里），视口内 t0-t3 不在
+      expect(dropValues).toContain('t9')
+      expect(dropValues).not.toContain('t0')
+      expect(dropValues).not.toContain('t3')
     })
 
-    // 注：原「选中项被收进更多时，更多按钮高亮」场景已被「激活项可见窗口」设计取代——
-    // 激活 tab 永不收进「更多」（syncMore 窗口滑动保证激活项可见），该状态不再存在。
+    it('点选下拉项平滑滚动到可见区（scrollIntoView smooth）并激活', async () => {
+      const el = mountMore(10, 100, 400)
+      ;(el as any).syncMore?.()
+      ;(el.shadowRoot!.querySelector('.more-btn') as HTMLElement).click()
+      const scrollCalls: { behavior?: string }[] = []
+      const origSIV = Element.prototype.scrollIntoView
+      Element.prototype.scrollIntoView = function (this: Element, opts?: ScrollIntoViewOptions) {
+        scrollCalls.push(opts ?? {})
+      }
+      const item = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')].find(
+        (i) => i.getAttribute('data-value') === 't9',
+      )!
+      item.click()
+      await Promise.resolve()
+      Element.prototype.scrollIntoView = origSIV
+      // 点选后平滑滚动（smooth）到可见区 + 激活
+      expect(scrollCalls.some((o) => o.behavior === 'smooth')).toBe(true)
+      expect(el.getAttribute('active')).toBe('t9')
+    })
+
+    it('滚动后视口外集合更新（滚到中部后下拉内容变化）', async () => {
+      const el = mountMore(10, 100, 400)
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      ;(el as any).syncMore?.()
+      // 初始 scrollLeft=0：视口外 t4-t9
+      const before = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-offview]')].map(
+        (t) => t.getAttribute('data-value'),
+      )
+      expect(before).toContain('t9')
+      expect(before).not.toContain('t0')
+      // 滚到最右（scrollLeft=600）：视口 600~1000，t0-t3 滚出视口（左），t6-t9 可见
+      Object.defineProperty(tablist, 'scrollLeft', { value: 600, configurable: true })
+      ;(el as any).updateMoreOffview?.()
+      const after = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-offview]')].map(
+        (t) => t.getAttribute('data-value'),
+      )
+      expect(after).toContain('t0') // 左侧滚出
+      expect(after).not.toContain('t9') // 右侧已在视口
+    })
   })
 
   // ===== 批次 3a：panel-mode 面板显隐策略（keep/lazy/destroy） =====
@@ -1065,8 +1101,8 @@ describe('OASTabs', () => {
 
   // ===== 批次 6c：more 下拉搜索 + 选中项定位 =====
 
-  describe('more 下拉搜索与选中定位', () => {
-    function mountMore(count = 10, eachWidth = 100, avail = 400): OASTabs {
+  describe('more 下拉搜索', () => {
+    function mountMore(count = 10, eachWidth = 100, clientWidth = 400): OASTabs {
       const el = new OASTabs()
       el.setAttribute('more', '')
       el.innerHTML = Array.from(
@@ -1074,15 +1110,20 @@ describe('OASTabs', () => {
         (_, i) => `<oas-tab-panel label="标签${i + 1}" value="t${i}"><p>内容${i + 1}</p></oas-tab-panel>`,
       ).join('')
       document.body.appendChild(el)
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      Object.defineProperty(tablist, 'scrollWidth', { value: count * eachWidth, configurable: true })
+      Object.defineProperty(tablist, 'clientWidth', { value: clientWidth, configurable: true })
+      Object.defineProperty(tablist, 'scrollLeft', { value: 0, writable: true, configurable: true })
       const tabs = el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]')
-      tabs.forEach((t) => Object.defineProperty(t, 'offsetWidth', { value: eachWidth, configurable: true }))
-      const nav = el.shadowRoot!.querySelector('.nav') as HTMLElement
-      Object.defineProperty(nav, 'clientWidth', { value: avail, configurable: true })
+      tabs.forEach((t, i) => {
+        Object.defineProperty(t, 'offsetWidth', { value: eachWidth, configurable: true })
+        Object.defineProperty(t, 'offsetLeft', { value: i * eachWidth, configurable: true })
+      })
       ;(el as any).syncMore?.()
       return el
     }
 
-    it('more 下拉含搜索框（溢出时）', () => {
+    it('more 下拉含搜索框（视口外项 >5 时）', () => {
       const el = mountMore()
       const moreBtn = el.shadowRoot!.querySelector('.more-btn') as HTMLElement
       moreBtn.click()
@@ -1091,8 +1132,8 @@ describe('OASTabs', () => {
       expect(search!.getAttribute('placeholder') ?? search!.getAttribute('aria-label')).toBeTruthy()
     })
 
-    it('搜索过滤：输入关键字只显示匹配的收起项', async () => {
-      const el = mountMore(10, 100, 300) // 可用 300px → 约前 2 个可见，8 个收进下拉
+    it('搜索过滤：输入关键字只显示匹配的视口外项', async () => {
+      const el = mountMore(10, 100, 300) // 视口 300 → 视口外 t3-t9（7 个）
       const moreBtn = el.shadowRoot!.querySelector('.more-btn') as HTMLElement
       moreBtn.click()
       await Promise.resolve()
@@ -1116,42 +1157,24 @@ describe('OASTabs', () => {
       expect(style).toMatch(/\.more-item\[hidden\]\s*\{[^}]*display:\s*none/)
     })
 
-    // 注：原「打开下拉时选中项滚动到可见（scrollIntoView）且高亮」场景已被「激活项可见窗口」
-    // 设计取代——激活 tab 永不收进「更多」，故无需在下拉里滚动定位选中项。
-
-    it('激活收起项后：激活项从「更多」出来到可见区，且相邻项一起可见（窗口滑动）', () => {
-      // 10 tab ×100px，avail 300-44=256：激活项 + 邻居构成可见窗口，窗口外收进更多
-      const el = mountMore(10, 100, 300)
-      el.setAttribute('active', 't8') // t8（标签9）原本在收起范围
-      // update 重建丢 mock，重新 mock
-      el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]').forEach((t) =>
-        Object.defineProperty(t, 'offsetWidth', { value: 100, configurable: true }),
-      )
-      ;(el as any).syncMore?.()
-      const isVisible = (v: string) =>
-        !el.shadowRoot!.querySelector(`[role="tab"][data-value="${v}"]`)!.hasAttribute('data-overflowed')
-      // 激活项 t8 必须可见（不藏在更多里）
-      expect(isVisible('t8')).toBe(true)
-      // 相邻项（t7 或 t9）也可见（上下文连贯）
-      expect(isVisible('t7') || isVisible('t9')).toBe(true)
-      // 窗口前面的项（t0）被收进更多
-      expect(isVisible('t0')).toBe(false)
-    })
-
-    it('激活项在可见窗口内时，窗口前的项收进更多（more 下拉只含窗口外项）', () => {
-      const el = mountMore(10, 100, 300)
-      el.setAttribute('active', 't8')
-      el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]').forEach((t) =>
-        Object.defineProperty(t, 'offsetWidth', { value: 100, configurable: true }),
-      )
-      ;(el as any).syncMore?.()
+    it('点选视口外项后该项滚到可见（激活项+相邻项因连续排布一起进入视口）', async () => {
+      // 通用机制：more 下拉是视口外 tab 的镜像，点选后 scrollIntoView 平滑滚动到可见区，
+      // 激活项与相邻项因连续排布自然一起进入视口（无需 display 收缩 + 窗口滑动补丁）
+      const el = mountMore(10, 100, 400)
       ;(el.shadowRoot!.querySelector('.more-btn') as HTMLElement).click()
-      // more 下拉项不应含激活项 t8（它已出来到可见区）
-      const dropValues = [...el.shadowRoot!.querySelectorAll('.more-item')].map((i) =>
-        i.getAttribute('data-value'),
-      )
-      expect(dropValues).not.toContain('t8')
-      expect(dropValues.length).toBeGreaterThan(0)
+      const scrollCalls: { behavior?: string }[] = []
+      const origSIV = Element.prototype.scrollIntoView
+      Element.prototype.scrollIntoView = function (this: Element, opts?: ScrollIntoViewOptions) {
+        scrollCalls.push(opts ?? {})
+      }
+      const item = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')].find(
+        (i) => i.getAttribute('data-value') === 't9',
+      )!
+      item.click()
+      await Promise.resolve()
+      Element.prototype.scrollIntoView = origSIV
+      expect(scrollCalls.some((o) => o.behavior === 'smooth')).toBe(true)
+      expect(el.getAttribute('active')).toBe('t9')
     })
   })
 })

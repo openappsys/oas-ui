@@ -4598,38 +4598,48 @@ test('tabs 选中下划线与文字同主色且为 2px 细线（light/dark，无
   ).toBe(true)
 })
 
-test('tabs more 模式：点选收起项后激活项从「更多」出来到可见区，且相邻项一起可见', async ({ page }) => {
-  // 需求固化：more 下拉里点选一个被收起的 tab，它应连同前后相邻项一起出现在标签栏可见区
-  // （激活项永不藏在「更多」里，窗口滑动覆盖激活项+邻居，上下文连贯）。
+test('tabs more 模式（通用机制）：tab 全渲染不隐藏 + more 下拉列视口外 tab + 点选平滑滚动到可见区', async ({
+  page,
+}) => {
+  // 通用（滚动 + 视口外镜像下拉）：more 不再是 display:none 收缩，而是 tab 全部渲染 +
+  // tablist 可滚动，more 下拉列出当前滚动视口之外的 tab 作快捷跳转，点选后平滑滚动到可见区。
   await page.goto('/components/tabs.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-tabs[more]')
   await page.locator('h2:has-text("更多收缩")').first().scrollIntoViewIfNeeded()
-  const visibleValues = () =>
-    page.evaluate(() => {
-      const el = document.querySelector('oas-tabs[more]')!
-      return [...el.shadowRoot!.querySelectorAll('[role="tab"][data-value]')]
-        .filter((t) => !t.hasAttribute('data-overflowed'))
-        .map((t) => t.getAttribute('data-value'))
-    })
-  const before = await visibleValues()
-  expect(before.length).toBeGreaterThan(0)
-  // 打开 more 下拉，点最后一个收起项
+  // tab 全部渲染不隐藏（无 display 收缩）
+  const noHidden = await page.evaluate(() => {
+    const el = document.querySelector('oas-tabs[more]')!
+    return [...el.shadowRoot!.querySelectorAll<HTMLElement>('[role="tab"][data-value]')].every(
+      (t) => getComputedStyle(t).display !== 'none',
+    )
+  })
+  expect(noHidden, 'more 模式 tab 应全部渲染不隐藏').toBe(true)
+  // 打开 more 下拉，列出视口外 tab
   await page.evaluate(() => {
     document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector<HTMLElement>('.more-btn')!.click()
   })
   await page.waitForTimeout(200)
-  const lastValue = await page.evaluate(() => {
+  const dropCount = await page.evaluate(
+    () =>
+      document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll('.more-item').length,
+  )
+  expect(dropCount, 'more 下拉应列出视口外 tab').toBeGreaterThan(0)
+  // 点选最后一个视口外项 → 平滑滚动到可见 + 激活
+  const scrollBefore = await page.evaluate(
+    () => document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector('.tablist')!.scrollLeft,
+  )
+  await page.evaluate(() => {
     const items = [...document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')]
-    return items[items.length - 1]?.getAttribute('data-value') ?? ''
+    items[items.length - 1]?.click()
   })
-  await page.evaluate((v) => {
-    const items = [...document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')]
-    items.find((i) => i.getAttribute('data-value') === v)?.click()
-  }, lastValue)
-  await page.waitForTimeout(300)
-  const after = await visibleValues()
-  // 激活项（最后收起项）出来到可见区
-  expect(after, '激活项应从「更多」出来到可见区').toContain(lastValue)
-  // 相邻项也一起可见（窗口滑动覆盖激活项+邻居）
-  expect(after.length, '激活项+相邻项一起可见').toBeGreaterThan(1)
+  await page.waitForTimeout(600) // 等平滑滚动
+  const result = await page.evaluate(() => {
+    const el = document.querySelector('oas-tabs[more]')!
+    return {
+      active: el.getAttribute('active'),
+      scrollLeft: el.shadowRoot!.querySelector('.tablist')!.scrollLeft,
+    }
+  })
+  expect(result.active, '点选后应激活').toBeTruthy()
+  expect(result.scrollLeft, '点选视口外项应滚动到可见区').toBeGreaterThan(scrollBefore)
 })
