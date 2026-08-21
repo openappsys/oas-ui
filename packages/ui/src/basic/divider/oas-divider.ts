@@ -69,31 +69,59 @@ const STYLE = `
 /* vertical 行内语境：高度 = 1em 文字行高（min-height 兜底）；有内容（文字在两线段间）时由内容撑高。
    flex/grid 容器语境：容器默认 align-items:stretch 拉伸 host，.divider height:100% 跟随。
    内容包 .content 层（span 包裹 slot）：纯文本直接成 flex 子项时（slot display:contents），
-   伪元素线段的 flex:1 高度分配失效（线段 height 0 不显示）；包 span 后成为确定 flex item，分配可靠 */
+   伪元素线段的 flex:1 高度分配失效（线段 height 0 不显示）；包 span 后成为确定 flex item，分配可靠。
+   布局用 grid 行分配（行 % 相对容器高度，垂直方向的留空/对齐才能按高度比例生效） */
 :host([direction='vertical']) .divider {
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: 1fr auto 1fr;
   /* 容器宽度由内容（文字）撑，线段宽度单独控制在 ::before/::after——
      容器不设线宽（否则文字被压成竖排） */
   height: 100%;
   min-height: 1em;
   margin: 0 var(--oas-space-3);
-  align-items: center;
+  justify-items: center;
 }
 :host([direction='vertical']) .divider::before,
 :host([direction='vertical']) .divider::after {
-  flex: 1 1 0;
   width: var(--oas-divider-width, 1px);
   min-height: 0;
-  align-self: center;
+  align-self: stretch;
+  justify-self: center;
   background: var(--oas-divider-color, var(--oas-color-border-strong));
 }
-/* vertical 内容对齐：top 贴顶（before 线段缩为 title-inset，内容被推向顶部）、bottom 贴底（after 线段缩短）；
-   与水平 left/right 同机制（线短一侧内容贴向），仅 vertical 生效 */
-:host([direction='vertical']) .divider.top::before {
-  flex: 0 0 var(--oas-divider-title-inset, 5%);
+/* vertical 内容对齐：top 贴顶（before 线段行缩为 title-inset，内容被推向顶部）、bottom 贴底（after 行缩短）；
+   grid 行 % 相对容器高度，仅 vertical 生效 */
+:host([direction='vertical']) .divider.top {
+  grid-template-rows: var(--oas-divider-title-inset, 5%) auto 1fr;
 }
-:host([direction='vertical']) .divider.bottom::after {
-  flex: 0 0 var(--oas-divider-title-inset, 5%);
+:host([direction='vertical']) .divider.bottom {
+  grid-template-rows: 1fr auto var(--oas-divider-title-inset, 5%);
+}
+/* vertical 缩进留空：inset 顶部留空 / middle 上下留空——grid 行模板加空白行（行 % 相对容器高度）；
+   inset：顶部空白行 + 线段；middle：上下各一空白行。子项显式 grid-row 定位（空白行挤占首位） */
+:host([direction='vertical']) .divider.inset {
+  grid-template-rows: var(--oas-divider-title-inset, 5%) 1fr auto 1fr;
+}
+:host([direction='vertical']) .divider.inset::before {
+  grid-row: 2;
+}
+:host([direction='vertical']) .divider.inset .content {
+  grid-row: 3;
+}
+:host([direction='vertical']) .divider.inset::after {
+  grid-row: 4;
+}
+:host([direction='vertical']) .divider.middle {
+  grid-template-rows: var(--oas-divider-middle-inset, 16.67%) 1fr auto 1fr var(--oas-divider-middle-inset, 16.67%);
+}
+:host([direction='vertical']) .divider.middle::before {
+  grid-row: 2;
+}
+:host([direction='vertical']) .divider.middle .content {
+  grid-row: 3;
+}
+:host([direction='vertical']) .divider.middle::after {
+  grid-row: 4;
 }
 .divider {
   display: flex;

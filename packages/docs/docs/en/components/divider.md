@@ -88,10 +88,10 @@ In `vertical` mode, `content-position` accepts `top` (top-aligned) / `center` (d
 Text orientation on a vertical divider: `text-orientation="vertical"` renders the text vertically (following the line direction, top to bottom); default `horizontal` reads normally. Only meaningful for vertical dividers (ignored on horizontal ones).
 
 <DemoBlock title="Vertical text orientation">
-  <div style="display: flex; height: 128px; gap: 24px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
+  <div style="display: flex; height: 220px; gap: 24px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
     <oas-divider direction="vertical">Horizontal text</oas-divider>
-    <oas-divider direction="vertical" text-orientation="vertical">Vertical text here</oas-divider>
-    <oas-divider direction="vertical" text-orientation="vertical" content-position="top">Top vertical</oas-divider>
+    <oas-divider direction="vertical" text-orientation="vertical">Vertical text</oas-divider>
+    <oas-divider direction="vertical" text-orientation="vertical" content-position="top">Top</oas-divider>
   </div>
 </DemoBlock>
 

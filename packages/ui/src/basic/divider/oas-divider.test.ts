@@ -308,18 +308,21 @@ describe('OASDivider', () => {
   })
 
   describe('vertical 缩进（inset/middle）', () => {
-    it('vertical + inset：起始侧（顶部）留空——::before margin-top 走 inset 变量', () => {
+    it('vertical + inset：起始侧（顶部）留空——grid 顶部空白行走 inset 变量', () => {
       const el = mount({ direction: 'vertical', inset: '' }, '文字')
       const css = el.shadowRoot!.querySelector('style')!.textContent!
-      // 垂直 inset：顶部留空（::before margin-top 走 inset 变量）
-      expect(css).toMatch(/direction='vertical'\][^{]*\.divider\.inset\s*::before[^{]*\{[^}]*margin-top/)
+      // 垂直 inset：grid 行模板首行留空（行 % 相对容器高度，margin % 相对宽度不适用垂直）
+      expect(css).toMatch(/direction='vertical'\][^{]*\.divider\.inset\s*\{[^}]*grid-template-rows/)
+      expect(css).toMatch(/\.divider\.inset\s*\{[^}]*var\(--oas-divider-title-inset/)
     })
 
-    it('vertical + middle：两侧（上下）留空——::before margin-top + ::after margin-bottom 走 middle 变量', () => {
+    it('vertical + middle：两侧（上下）留空——grid 首末空白行走 middle 变量', () => {
       const el = mount({ direction: 'vertical', middle: '' }, '文字')
       const css = el.shadowRoot!.querySelector('style')!.textContent!
-      expect(css).toMatch(/direction='vertical'\][^{]*\.divider\.middle\s*::before[^{]*\{[^}]*margin-top/)
-      expect(css).toMatch(/direction='vertical'\][^{]*\.divider\.middle\s*::after[^{]*\{[^}]*margin-bottom/)
+      const rule = css.match(/direction='vertical'\][^{]*\.divider\.middle\s*\{[^}]*}/)?.[0] ?? ''
+      expect(rule).toMatch(/grid-template-rows/)
+      // middle 首尾各一空白行（首尾各一次 middle-inset 变量）
+      expect((rule.match(/--oas-divider-middle-inset/g) ?? []).length).toBeGreaterThanOrEqual(2)
     })
 
     it('vertical inset/middle 与水平同变量（--oas-divider-title-inset / --oas-divider-middle-inset）', () => {
@@ -417,14 +420,14 @@ describe('vertical 内容对齐（content-position 扩展 top/center/bottom）',
     expect(line(el)!.classList.contains('bottom')).toBe(false)
   })
 
-  it('CSS：vertical top 贴顶（::before 缩为 title-inset）/ bottom 贴底（::after 缩为 title-inset），仅 vertical 生效', () => {
+  it('CSS：vertical top 贴顶（首行缩为 title-inset）/ bottom 贴底（末行缩为 title-inset），仅 vertical 生效', () => {
     const el = mount({ direction: 'vertical' }, '')
     const css = el.shadowRoot!.querySelector('style')!.textContent!
-    const topRule = css.match(/:host\(\[direction='vertical'\]\)\s*\.divider\.top::before\s*{[^}]*}/)?.[0] ?? ''
-    expect(topRule).toMatch(/flex:\s*0 0 var\(--oas-divider-title-inset/)
+    const topRule = css.match(/:host\(\[direction='vertical'\]\)\s*\.divider\.top\s*{[^}]*}/)?.[0] ?? ''
+    expect(topRule).toMatch(/grid-template-rows:\s*var\(--oas-divider-title-inset/)
     const bottomRule =
-      css.match(/:host\(\[direction='vertical'\]\)\s*\.divider\.bottom::after\s*{[^}]*}/)?.[0] ?? ''
-    expect(bottomRule).toMatch(/flex:\s*0 0 var\(--oas-divider-title-inset/)
+      css.match(/:host\(\[direction='vertical'\]\)\s*\.divider\.bottom\s*{[^}]*}/)?.[0] ?? ''
+    expect(bottomRule).toMatch(/grid-template-rows:[^}]*var\(--oas-divider-title-inset/)
   })
 
   it('动态切换 content-position 即时生效', () => {
