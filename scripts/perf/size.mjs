@@ -272,8 +272,8 @@ const BUDGETS = [
   {
     name: '@oas-ui/ui/basic/button 链 gzip',
     get: () => componentMeasures.button.gzipBytes,
-    limit: 22 * 1024, // 22 KB。实测 17,906 B，上浮约 23%（链内含 icon 注册表，随图标库增长余量略大）
-    basis: '实测 gzip 17,906 B（含 core + 全量 icon 注册表），上浮约 23%',
+    limit: 26 * 1024, // 26 KB。实测 22,557 B（v2.1.3 button 双侧图标/loading 三件套/disabled-focusable/download-rel 增强后），上浮约 15%（链内含 icon 注册表，随图标库增长余量略大）
+    basis: '实测 gzip 22,557 B（含 core + 全量 icon 注册表，v2.1.3 能力增强后），上浮约 15%',
   },
   {
     name: '@oas-ui/ui/data/table 链 gzip',
