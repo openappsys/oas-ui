@@ -150,11 +150,29 @@ const STYLE = `
   --oas-button-group-start-radius: var(--oas-radius-full, 999px);
   --oas-button-group-end-radius: var(--oas-radius-full, 999px);
 }
+/* spread 均分铺满：宿主占满父容器宽度，组内按钮 flex 等宽均分
+   （移动端操作栏 / 表单底部按钮组形态）；均分覆盖横向与纵向，纵向本就拉伸铺满 */
+:host([spread]) {
+  display: flex;
+  width: 100%;
+}
+:host([spread]) [part='group'] {
+  display: flex;
+  width: 100%;
+}
+:host([spread]) ::slotted(oas-button) {
+  flex: 1 1 0;
+  --oas-button-group-width: 100%;
+}
+/* 嵌套组作为整体一项等宽均分，不透传拉满到内部按钮（由嵌套组自身布局管理） */
+:host([spread]) ::slotted(oas-button-group) {
+  flex: 1 1 0;
+}
 `
 
 export class OASButtonGroup extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['type', 'size', 'vertical', 'value', 'multiple', 'disabled', 'aria-label', 'pill']
+    return ['type', 'size', 'variant', 'round', 'vertical', 'value', 'multiple', 'disabled', 'aria-label', 'pill', 'spread']
   }
 
   private groupEl: HTMLElement | null = null
@@ -190,16 +208,20 @@ export class OASButtonGroup extends OASElement {
   protected override update(): void {
     const type = this.getAttr('type', '')
     const size = this.getAttr('size', '')
+    const variant = this.getAttr('variant', '')
+    const round = this.hasAttr('round')
     const disabled = this.hasAttr('disabled')
     const vertical = this.hasAttr('vertical')
     const selected = this.selectedValues
 
-    // type/size 透传与选值标记只作用于直接子按钮；嵌套组作为整体一项自行管理内部按钮
+    // type/size/variant/round 透传与选值标记只作用于直接子按钮；嵌套组作为整体一项自行管理内部按钮
     const buttons = [...this.querySelectorAll<OASButton>(':scope > oas-button')]
     for (const btn of buttons) {
-      // type/size 透传（组设置时统一覆盖子按钮）
+      // type/size/variant/round 透传（组设置时统一覆盖子按钮，与 type/size 同构：移除组属性不回写子按钮）
       if (type) btn.setAttribute('type', type)
       if (size) btn.setAttribute('size', size)
+      if (variant) btn.setAttribute('variant', variant)
+      if (round) btn.setAttribute('round', '')
       btn.toggleAttribute('disabled', disabled)
       if (btn.hasAttribute('value')) {
         const val = btn.getAttribute('value') ?? ''

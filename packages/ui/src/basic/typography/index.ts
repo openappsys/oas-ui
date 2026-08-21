@@ -14,4 +14,4 @@ if (!customElements.get('oas-paragraph')) {
 }
 
 export { OASText, OASTitle, OASParagraph }
-export type { TextType } from './oas-typography.js'
+export type { TextType, AlignType, WeightType } from './oas-typography.js'

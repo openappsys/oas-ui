@@ -54,6 +54,22 @@ When no child content is wrapped, the badge falls back from the "top-end corner"
   <span>System running <oas-badge dot color="green"></oas-badge></span>
 </DemoBlock>
 
+## Icon badge
+
+`icon` takes an iconRegistry icon name and renders a small icon inside the badge (e.g. a √ / ! status corner). It is mutually exclusive with `value` / `dot`: `icon` wins and shows the icon instead of a number/dot; an invalid icon name silently falls back to the numeric logic.
+
+<DemoBlock title="Icon badges">
+  <oas-badge icon="check" color="success" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>Done</oas-tag>
+  </oas-badge>
+  <oas-badge icon="warning" color="warning" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>Attention</oas-tag>
+  </oas-badge>
+  <oas-badge icon="error" color="danger">
+    <oas-tag>Failed</oas-tag>
+  </oas-badge>
+</DemoBlock>
+
 ## Badge colors
 
 `color` accepts the four semantic colors (`primary` / `success` / `warning` / `danger`), any CSS color value, and the 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens, auto-brightened in dark). It works uniformly across count / dot / ribbon modes; the solid text color is picked black/white by the background luminance for readability.
@@ -97,6 +113,25 @@ When no child content is wrapped, the badge falls back from the "top-end corner"
   </oas-badge>
   <oas-badge dot color="purple">
     <oas-tag>dot purple</oas-tag>
+  </oas-badge>
+</DemoBlock>
+
+## Outline variant
+
+`variant="outline"` switches to an outlined badge: a transparent background with the border and text following the `color` semantics (`solid` filled is the default; invalid values fall back). Good for stacking on images/colored surfaces; composes with the `bordered` white ring.
+
+<DemoBlock title="outline variant">
+  <oas-badge value="5" variant="outline" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>outline default</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" variant="outline" color="success" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>outline success</oas-tag>
+  </oas-badge>
+  <oas-badge dot variant="outline" color="warning" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>outline dot</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" variant="outline" color="#7c3aed" bordered>
+    <oas-tag>outline custom color + bordered</oas-tag>
   </oas-badge>
 </DemoBlock>
 
@@ -157,6 +192,22 @@ When wrapping circular content (e.g. an avatar), add `overlap` so the badge tuck
   </oas-badge>
 </DemoBlock>
 
+## White outline
+
+`bordered` adds a 2px background-color ring around the badge (`box-shadow: 0 0 0 2px var(--oas-color-bg)`) so it stands out against complex backgrounds like avatars/images; visual-only, never changes positioning (composes with `corner` / `offset` / `overlap`).
+
+<DemoBlock title="bordered white outline">
+  <oas-badge value="5" bordered style="margin-inline-end: var(--oas-space-5)">
+    <oas-avatar size="48">张</oas-avatar>
+  </oas-badge>
+  <oas-badge dot bordered color="success" style="margin-inline-end: var(--oas-space-5)">
+    <oas-avatar size="48">李</oas-avatar>
+  </oas-badge>
+  <oas-badge value="3" bordered corner="bottom-right" offset="2,2">
+    <oas-avatar size="48">王</oas-avatar>
+  </oas-badge>
+</DemoBlock>
+
 ## Status point
 
 `status` renders an inline standalone element of "status dot + `text`" (not a corner badge) and is mutually exclusive with ribbon / dot / count modes (rendered first when set). The `processing` dot pulses (`prefers-reduced-motion` disables it).
@@ -169,19 +220,34 @@ When wrapping circular content (e.g. an avatar), add `overlap` so the badge tuck
   <oas-badge status="warning" text="Warning"></oas-badge>
 </DemoBlock>
 
-## Small size
+## Size tiers
 
-`size="small"` provides a compact tier: numeric badge ~13px tall, dot shrinks to 6px.
+`size` provides three tiers: `small` (compact, numeric badge ~13px tall, dot 6px) / `medium` (default, ~16px, dot 8px) / `large` (~20px, dot 10px); invalid values silently fall back to `medium`.
 
-<DemoBlock title="Small size">
+<DemoBlock title="Size tiers small / medium / large">
   <oas-badge value="5" size="small" style="margin-inline-end: var(--oas-space-4)">
-    <oas-tag>Small count</oas-tag>
+    <oas-tag>small</oas-tag>
   </oas-badge>
   <oas-badge value="99" max="99" size="small" style="margin-inline-end: var(--oas-space-4)">
-    <oas-tag>Small 99+</oas-tag>
+    <oas-tag>small 99+</oas-tag>
   </oas-badge>
-  <oas-badge dot size="small">
-    <oas-tag>Small dot</oas-tag>
+  <oas-badge dot size="small" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>small dot</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>medium default</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" size="medium" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>medium explicit</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" size="large" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>large</oas-tag>
+  </oas-badge>
+  <oas-badge value="99" max="99" size="large" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>large 99+</oas-tag>
+  </oas-badge>
+  <oas-badge dot size="large">
+    <oas-tag>large dot</oas-tag>
   </oas-badge>
 </DemoBlock>
 
@@ -228,6 +294,8 @@ Adding the native `title` attribute to the badge host gives a hover tooltip with
 ## Dynamic increment
 
 `value` updates take effect immediately; the host can add an animation class on click for a transition feedback (this example uses `::part(badge)` for a scale/opacity micro-animation).
+
+The numeric badge carries `role="status"` + `aria-live="polite"` + `aria-atomic="true"`: whenever the number (including the max-truncated display value) changes, it announces via `aria-label` using the locale (e.g. "5 unread notifications") — no extra JS required.
 
 <DemoBlock title="Dynamic increment">
   <oas-badge id="badge-dyn" value="5">
@@ -528,9 +596,11 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `attention` | Attention animation: `pulse` (an outward pulse ring; the pulse color follows the `--oas-badge-pulse-color` custom property, defaulting to the badge background) / `bounce` (slight up-and-down bounce); applies only to count / dot / standalone badges (the ribbon is unaffected) and is disabled under `prefers-reduced-motion` | `BadgeAttention` | — |
+| `bordered` | White outline: boolean, adds a 2px background-color ring around the badge (box-shadow: 0 0 0 2px var(--oas-color-bg)) to separate it from an avatar/image background; visual-only, never changes positioning (composes with corner/offset/overlap) | `boolean` | — |
 | `color` | Badge color: the four semantic colors (`primary` / `success` / `warning` / `danger`), any CSS color value, or one of the 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens, auto-brightened in dark). Applies uniformly across count / dot / ribbon; the solid text color is picked black/white by the background luminance for readability | `BadgeColor \| BadgePresetColor` | — |
 | `corner` | Corner placement: `top-right` (default) / `top-left` / `bottom-right` / `bottom-left`, affects count / dot corner badges only (the ribbon uses `placement`); `offset` fine-tunes in screen px on top of the corner result (x positive rightward, y positive downward, independent of the corner direction), corner first then shift, they compose; invalid values silently fall back to `top-right` | `BadgeCorner` | `top-right` |
 | `dot` | Dot mode | `boolean` | — |
+| `icon` | In-badge icon: an iconRegistry icon name (e.g. check / warning), rendered as an inline SVG (1em following the badge font size, decorative and hidden from screen readers); mutually exclusive with value/dot (icon wins) | `string` | — |
 | `max` | Upper limit | `string` | — |
 | `mode` | Mode: `count` (default, numeric/dot badge) or `ribbon` (ribbon corner, same as `ribbon` attribute) | `BadgeMode` | `count` |
 | `offset` | Position fine-tune: `"x,y"` (px numbers, negative values allowed), shifts the corner badge or ribbon on top of its anchor position (x positive rightward, y positive downward); composes with `corner` / `placement` / `ribbon-vertical` (anchor first, then shift); invalid values (non-numeric, missing coordinate) are silently ignored | `string` | — |
@@ -546,10 +616,11 @@ The same `oas-badge` can serve as a count badge or a ribbon: the count badge is 
 | `ribbon-vertical` | Vertical position of the side-mount `bookmark` forms (`ribbon-direction="left"` / `"right"`): `center` (default, vertically centered) / `top` (flush with the top edge) / `bottom` (flush with the bottom edge); only affects the side-mount forms, invalid values silently fall back to `center` | `BadgeRibbonVertical` | `center` |
 | `rolled` | End roll: a boolean modifier that adds a rolled edge to the protruding end (a large end radius + an inner gradient darkening that reads as a rolled cylinder; pure CSS). Composes with `fold` / `banner` / `flag`; other shapes silently ignore it | `boolean` | — |
 | `showZero` | Whether to show when value=0 | `boolean` | — |
-| `size` | Size: `small` (compact tier, numeric badge ~13px tall, dot 6px) | `string` | — |
+| `size` | Size tier: small (compact, numeric badge ~13px tall, dot 6px) / medium (default, ~16px) / large (~20px, dot 10px); invalid values silently fall back to medium | `BadgeSize` | — |
 | `status` | Status point: `success` / `processing` / `default` / `error` / `warning`, renders an inline standalone element of "status dot + `text`", mutually exclusive with ribbon / dot / count modes (rendered first when set); the `processing` dot pulses (`prefers-reduced-motion` disables it) | `BadgeStatus` | — |
 | `text` | Ribbon or status text; the `ribbon` slot takes precedence when it has content | `string` | — |
 | `value` | Number | `string` | — |
+| `variant` | Variant: solid (default, filled) or outline (transparent background, border and text follow the color semantics); invalid values silently fall back to solid | `BadgeVariant` | — |
 
 ### Slots
 

@@ -115,10 +115,13 @@
       "ribbon-size": "Diagonal band size tier: `sm` (default, 30px tall / xs font) / `md` (33px / sm font, 35px pin) / `lg` (36px / md font, 45px pin, wide large-type scenes); a tier only changes the fallback of `--oas-badge-diagonal-*`, host custom properties take precedence; only takes effect with `ribbon-form=\"diagonal\"`, invalid values silently fall back to `sm`",
       "rolled": "End roll: a boolean modifier that adds a rolled edge to the protruding end (a large end radius + an inner gradient darkening that reads as a rolled cylinder; pure CSS). Composes with `fold` / `banner` / `flag`; other shapes silently ignore it",
       "showZero": "Whether to show when value=0",
-      "size": "Size: `small` (compact tier, numeric badge ~13px tall, dot 6px)",
+      "size": "Size tier: small (compact, numeric badge ~13px tall, dot 6px) / medium (default, ~16px) / large (~20px, dot 10px); invalid values silently fall back to medium",
       "status": "Status point: `success` / `processing` / `default` / `error` / `warning`, renders an inline standalone element of \"status dot + `text`\", mutually exclusive with ribbon / dot / count modes (rendered first when set); the `processing` dot pulses (`prefers-reduced-motion` disables it)",
       "text": "Ribbon or status text; the `ribbon` slot takes precedence when it has content",
-      "value": "Number"
+      "value": "Number",
+      "bordered": "White outline: boolean, adds a 2px background-color ring around the badge (box-shadow: 0 0 0 2px var(--oas-color-bg)) to separate it from an avatar/image background; visual-only, never changes positioning (composes with corner/offset/overlap)",
+      "icon": "In-badge icon: an iconRegistry icon name (e.g. check / warning), rendered as an inline SVG (1em following the badge font size, decorative and hidden from screen readers); mutually exclusive with value/dot (icon wins)",
+      "variant": "Variant: solid (default, filled) or outline (transparent background, border and text follow the color semantics); invalid values silently fall back to solid"
     },
     "events": {},
     "slots": {
@@ -170,7 +173,12 @@
       "variant": "Shape (orthogonal to `type`): `solid` (default filled) / `outlined` / `dashed` / `filled` (soft) / `text` / `link`",
       "color": "Custom color: overrides the `type` semantic color (any color value)",
       "wave": "Press feedback: slight sink + darken (on by default); `wave=\"false\"` disables",
-      "auto-insert-space": "CJK auto spacing: inserts a space between two consecutive CJK characters (off by default)"
+      "auto-insert-space": "CJK auto spacing: inserts a space between two consecutive CJK characters (off by default)",
+      "icon-end": "A second icon after the text (iconRegistry name), works with `icon`/`icon-position` — e.g. left icon + right dropdown arrow",
+      "loading-text": "Text shown while loading (e.g. \"Submitting…\"); replaces the label content when set",
+      "disabled-focusable": "Visually disabled but stays focusable/hoverable (aria-disabled + click intercepted), for tooltips explaining why",
+      "download": "Passthrough `download` attribute in link mode (href) for file-download buttons",
+      "rel": "Passthrough `rel` attribute in link mode (pair `noopener` with `target=\"_blank\"`)"
     },
     "events": {
       "oas-click": "Click, `detail: { originalEvent }`"
@@ -186,7 +194,10 @@
       "type": "Type passed to child buttons",
       "value": "Selected value (single value in single-select, comma-separated in multi-select)",
       "vertical": "Stack vertically, merging corners top/bottom",
-      "pill": "Pill shape: large rounding on the group outer edges (`--oas-radius-full` / `999px`)"
+      "pill": "Pill shape: large rounding on the group outer edges (`--oas-radius-full` / `999px`)",
+      "spread": "Buttons flex:1 to fill the container width evenly (mobile action bars / form footer button groups)",
+      "variant": "Group-level variant passthrough to child buttons (set once, applies to all)",
+      "round": "Group-level round passthrough to child buttons (set once, all capsule-rounded)"
     },
     "events": {
       "oas-change": "Selection changed. Single-select `detail: { value }`; multi-select `detail: { value: [] }`"
@@ -541,7 +552,8 @@
       "expandable": "Show an \"expand/collapse\" button when overflowing",
       "rows": "Number of lines to show (1 is single-line ellipsis, ≥2 multi-line `-webkit-line-clamp`)",
       "text": "Text content",
-      "tooltip": "Show a full-text tooltip on hover when overflowing"
+      "tooltip": "Show a full-text tooltip on hover when overflowing",
+      "direction": "Ellipsis direction: `end` (default, tail) / `start` (head) / `middle` (keep both ends, for long paths/hashes)"
     },
     "events": {
       "oas-collapse": "Collapsed, `detail: { expanded: false }`",
@@ -752,7 +764,9 @@
       "error": "Error state (red text)",
       "disabled": "Disabled state (grayed out, not clickable)",
       "colon": "Append a colon (`:`) after the label text",
-      "color": "Text color: accepts 11 preset names (mapped to `--oas-preset-*-text` compliant tokens) or any CSS color value"
+      "color": "Text color: accepts 11 preset names (mapped to `--oas-preset-*-text` compliant tokens) or any CSS color value",
+      "size": "Label font-size step: `small`/`medium` (default)/`large`",
+      "weight": "Label font weight: `regular` (default)/`semibold`"
     },
     "events": {},
     "slots": {}
@@ -767,7 +781,10 @@
       "color": "Color: accepts 11 preset names (mapped to `--oas-preset-*-text` compliant tokens) or any CSS color value, overriding the `type` semantic color",
       "icon": "Icon name (from the oas-icon set), placed before or after the text (see `icon-position`)",
       "icon-position": "Icon position: `start` (default, before the text) / `end` (after the text); defaults to `end` for the `external` icon only",
-      "external": "External link: automatically adds `target=\"_blank\"`, `rel=\"noopener noreferrer\"`, and an external-link icon"
+      "external": "External link: automatically adds `target=\"_blank\"`, `rel=\"noopener noreferrer\"`, and an external-link icon",
+      "download": "Passthrough `download` attribute (native `<a download>` file download)",
+      "size": "Font size step: `small`/`medium` (default)/`large`",
+      "loading": "Loading state: spinner replaces the leading icon and blocks clicks (async navigation/submit on click)"
     },
     "events": {
       "oas-click": "Click, `detail: { originalEvent }`"
@@ -1394,7 +1411,11 @@
       "strong": "Bold text (font-weight 600)",
       "target": "How the link opens (`_blank` / `_self` etc.), with `href`",
       "type": "Type",
-      "variant": "Shape (orthogonal to `type`): `outlined` / `filled` / `solid`; when unset, keeps the legacy type rendering"
+      "variant": "Shape (orthogonal to `type`): `outlined` / `filled` / `solid`; when unset, keeps the legacy type rendering",
+      "close-icon": "Custom close-button icon (iconRegistry name), replaces the default ×",
+      "close-label": "aria-label of the close button (a11y context, e.g. \"Remove tag xx\"); defaults to the locale \"Close\"",
+      "loading": "Loading state: spinner replaces the close icon and blocks clicks (`oas-close` detail has a `done()` callback the host calls after async work)",
+      "checked-icon": "Checkmark icon before a checked checkable tag (iconRegistry name, default check)"
     },
     "events": {
       "oas-change": "Selection toggled when `checkable`, `detail: { checked }`",
@@ -1436,7 +1457,10 @@
       "code": "Inline code style (monospace + light background)",
       "underline": "Underline",
       "delete": "Strikethrough (`<del>` semantics)",
-      "italic": "Italic (`<em>` semantics)"
+      "italic": "Italic (`<em>` semantics)",
+      "align": "Text alignment: `start`/`center`/`end`/`justify`",
+      "weight": "Font weight: `regular`/`medium`/`semibold`/`bold` (compatible with the strong boolean)",
+      "numeric": "Tabular figures (font-variant-numeric: tabular-nums) for aligned numeric columns in tables/stats"
     },
     "events": {
       "oas-copy": "Copy succeeded, `detail: { text }`",

@@ -127,9 +127,9 @@ a[part='button'].circle {
   padding: 0;
   border-radius: 50%;
 }
-/* 图标在右：icon 后置到文字之后 */
-button.icon-end .icon,
-a[part='button'].icon-end .icon {
+/* 图标在右：icon 后置到文字之后（icon-end 尾部图标天然在最后，用 :not 排除） */
+button.icon-end .icon:not([part='icon-end']),
+a[part='button'].icon-end .icon:not([part='icon-end']) {
   order: 2;
 }
 /* 朴素按钮：弱化填充（浅底 + 主色文字），text 已是朴素 */
@@ -578,6 +578,47 @@ a[part='button'].wave:active {
   transform: scale(0.97);
   filter: brightness(0.94);
 }
+/* disabled-focusable：视觉禁用（降饱和 + 禁用配色）但保持可聚焦/可 hover（供 tooltip 解释禁用原因）。
+   不设原生 disabled；点击由 JS 拦截。置于形态规则之后覆盖 type 的 hover/active 重着色，
+   同时归零 wave 的按下反馈（transform/filter），保证禁用外观恒定 */
+button.disabled-focusable,
+a[part='button'].disabled-focusable,
+button.disabled-focusable:hover,
+a[part='button'].disabled-focusable:hover,
+button.disabled-focusable:active,
+a[part='button'].disabled-focusable:active {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background: var(--oas-color-bg-disabled);
+  border-color: var(--oas-color-border);
+  color: var(--oas-color-text-disabled);
+  transform: none;
+  filter: none;
+}
+/* loading 态宽度稳定：spinner 绝对定位居中不撑宽；原文字/图标仅 visibility 隐藏（保留占位宽度），
+   loading 前后按钮宽度不变。带 loading-text 时原内容彻底移除，spinner 与 loading-text 流内布局 */
+button.loading,
+a[part='button'].loading {
+  position: relative;
+}
+button.loading .spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+button.loading slot,
+button.loading .icon {
+  visibility: hidden;
+}
+button.loading-with-text slot,
+button.loading-with-text .icon {
+  display: none;
+}
+button.loading-with-text .spinner {
+  position: static;
+  transform: none;
+}
 .spinner {
   width: 1em;
   height: 1em;
@@ -602,8 +643,11 @@ export class OASButton extends OASElement {
       'type',
       'size',
       'disabled',
+      'disabled-focusable',
       'loading',
+      'loading-text',
       'icon',
+      'icon-end',
       'block',
       'round',
       'ghost',
@@ -611,6 +655,8 @@ export class OASButton extends OASElement {
       'icon-position',
       'href',
       'target',
+      'download',
+      'rel',
       'plain',
       'variant',
       'color',
@@ -622,6 +668,19 @@ export class OASButton extends OASElement {
 
   private btn: HTMLElement | null = null
 
+  /** loading="auto"：宿主 oas-click 处理返回 Promise 期间是否处于自动加载态 */
+  private autoLoading = false
+  /** loading="auto"：本次点击收集到的宿主异步处理 Promise（resolve/reject 后退出 loading） */
+  private autoPromises: PromiseLike<unknown>[] = []
+  /** 被包装的 oas-click 宿主监听器（原函数 → 包装函数），removeEventListener 时反查解绑 */
+  private wrappedListeners = new WeakMap<EventListener, EventListener>()
+
+  constructor() {
+    super()
+    // 尽早安装 oas-click 监听包装：宿主监听一般在 connect/render 之后注册，需先于其生效
+    this.patchEventListener()
+  }
+
   /** 是否为链接按钮（渲染 <a> 而非 <button>） */
   private isLink(): boolean {
     return this.getAttr('href', '') !== ''
@@ -631,14 +690,24 @@ export class OASButton extends OASElement {
   private template(): string {
     const href = this.getAttr('href', '')
     const target = this.getAttr('target', '')
+    const download = this.getAttr('download', '')
+    const rel = this.getAttr('rel', '')
     const tag = href ? 'a' : 'button'
-    const hrefAttr = href ? ` href="${href}"${target ? ` target="${target}"` : ''}` : ''
+    const hrefAttr = [
+      href ? ` href="${href}"` : '',
+      target ? ` target="${target}"` : '',
+      // download 支持空值布尔（浏览器用原链接文件名），用 hasAttr 判断存在即透传
+      this.hasAttr('download') ? ` download="${download}"` : '',
+      rel ? ` rel="${rel}"` : '',
+    ].join('')
     return `
       <style>${STYLE}</style>
       <${tag} part="button"${hrefAttr}>
         <span class="spinner" part="spinner" hidden></span>
         <span class="icon" part="icon" aria-hidden="true" hidden></span>
         <slot></slot>
+        <span class="loading-text" hidden></span>
+        <span class="icon" part="icon-end" aria-hidden="true" hidden></span>
       </${tag}>
     `
   }
@@ -648,11 +717,27 @@ export class OASButton extends OASElement {
     this.btn = this.shadow.querySelector('button[part="button"], a[part="button"]')
 
     this.btn?.addEventListener('click', (e: MouseEvent) => {
-      if (this.hasAttr('disabled') || this.hasAttr('loading')) {
+      if (this.hasAttr('disabled') || this.hasAttr('disabled-focusable') || this.isLoading()) {
         e.preventDefault()
         return
       }
+      // loading="auto"：宿主 oas-click 处理返回 Promise 期间自动进入 loading（resolve/reject 后退出）
+      const isAuto = this.getAttribute('loading') === 'auto'
+      if (isAuto) {
+        this.autoLoading = true
+        this.autoPromises = []
+        this.update()
+      }
       this.emit('click', { originalEvent: e })
+      if (isAuto) {
+        if (this.autoPromises.length > 0) {
+          // allSettled：任一 reject 也不提前终止，全部 settle 后统一退出
+          void Promise.allSettled(this.autoPromises).then(() => this.exitAutoLoading())
+        } else {
+          // 宿主未返回 Promise：同步退出，不留 loading 残影
+          this.exitAutoLoading()
+        }
+      }
     })
 
     // 文字经 slot 增删时重算「纯图标 / 有文字」布局
@@ -662,6 +747,79 @@ export class OASButton extends OASElement {
     if (this.hasAttr('autofocus')) {
       queueMicrotask(() => this.btn?.focus())
     }
+  }
+
+  /**
+   * 包装宿主 addEventListener/removeEventListener（仅 oas-click 生效）：捕获宿主监听器
+   * 返回的 Promise，供 loading="auto" 自动 loading 使用。其余事件原样透传；
+   * 走原型方法避免递归（自身已被重写）。
+   */
+  private patchEventListener(): void {
+    const self = this
+    const addOriginal = EventTarget.prototype.addEventListener
+    const removeOriginal = EventTarget.prototype.removeEventListener
+
+    Object.defineProperty(this, 'addEventListener', {
+      configurable: true,
+      writable: true,
+      value: function (
+        this: OASButton,
+        type: string,
+        listener: EventListenerOrEventListenerObject | null,
+        options?: boolean | AddEventListenerOptions,
+      ) {
+        if (type === 'oas-click' && typeof listener === 'function') {
+          const fn = listener as EventListener
+          // 同一监听器重复注册时复用已有包装，避免双包装双触发
+          let wrapper = self.wrappedListeners.get(fn)
+          if (!wrapper) {
+            wrapper = (e: Event) => {
+              // EventListener 类型声明返回 void，实际宿主可能返回 Promise，按 unknown 取值
+              const ret = (fn as (evt: Event) => unknown)(e)
+              if (ret && typeof (ret as PromiseLike<unknown>).then === 'function') {
+                self.autoPromises.push(ret as PromiseLike<unknown>)
+              }
+            }
+            self.wrappedListeners.set(fn, wrapper)
+          }
+          return addOriginal.call(this, type, wrapper, options)
+        }
+        return addOriginal.call(this, type, listener, options)
+      },
+    })
+
+    Object.defineProperty(this, 'removeEventListener', {
+      configurable: true,
+      writable: true,
+      value: function (
+        this: OASButton,
+        type: string,
+        listener: EventListenerOrEventListenerObject | null,
+        options?: boolean | EventListenerOptions,
+      ) {
+        if (type === 'oas-click' && typeof listener === 'function') {
+          const fn = listener as EventListener
+          const wrapped = self.wrappedListeners.get(fn)
+          if (wrapped) self.wrappedListeners.delete(fn)
+          return removeOriginal.call(this, type, wrapped ?? listener, options)
+        }
+        return removeOriginal.call(this, type, listener, options)
+      },
+    })
+  }
+
+  /** 当前是否处于加载态：布尔 loading 属性（空值/任意值均算，仅 "auto" 除外）或 auto 自动加载中 */
+  private isLoading(): boolean {
+    const raw = this.getAttribute('loading')
+    return (raw != null && raw !== 'auto') || this.autoLoading
+  }
+
+  /** 退出 loading="auto" 自动加载态（宿主 Promise resolve/reject 后调用） */
+  private exitAutoLoading(): void {
+    if (!this.autoLoading) return
+    this.autoLoading = false
+    this.autoPromises = []
+    this.update()
   }
 
   protected override render(): void {
@@ -697,8 +855,11 @@ export class OASButton extends OASElement {
     // size 就近读取 config-provider 注入值（自身属性 > config-provider > medium）
     const size = normalizeButtonSize(this.injectValue('size', 'medium') as ButtonSize)
     const disabled = this.hasAttr('disabled')
-    const loading = this.hasAttr('loading')
+    const disabledFocusable = this.hasAttr('disabled-focusable')
+    const loading = this.isLoading()
+    const loadingText = this.getAttr('loading-text', '')
     const icon = this.getAttr('icon', '')
+    const iconEnd = this.getAttr('icon-end', '')
     const ghost = this.hasAttr('ghost')
     const block = this.hasAttr('block')
     const round = this.hasAttr('round')
@@ -720,7 +881,9 @@ export class OASButton extends OASElement {
     const color = this.getAttr('color', '')
     const wave = this.getAttr('wave', 'true') !== 'false'
 
-    const hasIcon = icon !== '' && iconRegistry[icon as IconName] !== undefined
+    const hasLeadingIcon = icon !== '' && iconRegistry[icon as IconName] !== undefined
+    const hasEndIcon = iconEnd !== '' && iconRegistry[iconEnd as IconName] !== undefined
+    const hasIcon = hasLeadingIcon || hasEndIcon
     const hasText = (this.textContent ?? '').trim().length > 0
     const iconOnly = hasIcon && !hasText
 
@@ -740,6 +903,9 @@ export class OASButton extends OASElement {
       wave ? 'wave' : '',
       this.hasAttr('wrap') ? 'wrap' : '',
       color ? 'has-color' : '',
+      disabledFocusable ? 'disabled-focusable' : '',
+      loading ? 'loading' : '',
+      loading && loadingText ? 'loading-with-text' : '',
     ]
       .filter(Boolean)
       .join(' ')
@@ -753,46 +919,69 @@ export class OASButton extends OASElement {
       this.btn.style.removeProperty('--oas-button-on-color')
     }
     this.btn.setAttribute('aria-busy', loading ? 'true' : 'false')
+    // aria-disabled 语义：disabled/loading 真禁用；disabled-focusable 视觉禁用但可聚焦
+    const ariaDisabled = disabled || loading || disabledFocusable
     // 链接按钮（a）无 disabled 属性，用 aria-disabled 承载禁用语义 + CSS 禁用态；button 用原生 disabled
     if (link) {
-      this.btn.setAttribute('aria-disabled', disabled || loading ? 'true' : 'false')
+      this.btn.setAttribute('aria-disabled', ariaDisabled ? 'true' : 'false')
+      // download/rel 透传（href 模式）：变化经 update 增量同步，不重建 DOM
+      const download = this.getAttr('download', '')
+      const rel = this.getAttr('rel', '')
+      if (this.hasAttr('download')) this.btn.setAttribute('download', download)
+      else this.btn.removeAttribute('download')
+      if (rel) this.btn.setAttribute('rel', rel)
+      else this.btn.removeAttribute('rel')
     } else {
       ;(this.btn as HTMLButtonElement).disabled = disabled || loading
+      if (disabledFocusable) this.btn.setAttribute('aria-disabled', 'true')
+      else this.btn.removeAttribute('aria-disabled')
     }
 
     const spinner = this.btn.querySelector<HTMLElement>('.spinner')
     if (spinner) spinner.hidden = !loading
 
+    // loading-text：loading 时替换 label 显示（hidden 由 update 控制显隐）
+    const loadingTextEl = this.btn.querySelector<HTMLElement>('.loading-text')
+    if (loadingTextEl) {
+      loadingTextEl.textContent = loadingText
+      loadingTextEl.hidden = !(loading && loadingText)
+    }
+
     // 图标：iconRegistry 内联 SVG（跟随 currentColor，装饰性对读屏隐藏）
     const iconEl = this.btn.querySelector<HTMLElement>('.icon')
-    if (iconEl) {
-      const content = hasIcon ? iconRegistry[icon as IconName] : undefined
-      iconEl.hidden = !content
-      iconEl.innerHTML = ''
-      if (content) {
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-        svg.setAttribute('viewBox', '0 0 16 16')
-        svg.setAttribute('width', '1em')
-        svg.setAttribute('height', '1em')
-        svg.setAttribute('aria-hidden', 'true')
-        svg.setAttribute('focusable', 'false')
-        svg.innerHTML = content
-        iconEl.appendChild(svg)
-      }
-    }
+    if (iconEl) this.renderIcon(iconEl, icon)
+    const endIconEl = this.btn.querySelector<HTMLElement>('[part="icon-end"]')
+    if (endIconEl) this.renderIcon(endIconEl, iconEnd)
 
     // 可访问名称：宿主 aria-label 优先；纯图标无文字时以图标名兜底
     const hostLabel = this.getAttribute('aria-label')
     if (hostLabel) {
       this.btn.setAttribute('aria-label', hostLabel)
     } else if (iconOnly) {
-      this.btn.setAttribute('aria-label', icon)
+      this.btn.setAttribute('aria-label', icon || iconEnd)
     } else {
       this.btn.removeAttribute('aria-label')
     }
 
     // 中文间自动空格（默认开）：两个连续汉字之间插入空格（中文排版优化）
     this.applyAutoInsertSpace()
+  }
+
+  /** 向图标容器注入 iconRegistry 内联 SVG：空名/无效名时隐藏（跟随 currentColor，装饰性对读屏隐藏） */
+  private renderIcon(el: HTMLElement, name: string): void {
+    const content = name ? iconRegistry[name as IconName] : undefined
+    el.hidden = !content
+    el.innerHTML = ''
+    if (content) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      svg.setAttribute('viewBox', '0 0 16 16')
+      svg.setAttribute('width', '1em')
+      svg.setAttribute('height', '1em')
+      svg.setAttribute('aria-hidden', 'true')
+      svg.setAttribute('focusable', 'false')
+      svg.innerHTML = content
+      el.appendChild(svg)
+    }
   }
 
   /** 中文间自动空格：slot 文本里两个连续 CJK 字符间插入空格（auto-insert-space 默认关，opt-in） */

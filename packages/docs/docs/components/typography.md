@@ -22,6 +22,42 @@
   <oas-text italic>斜体</oas-text>
 </DemoBlock>
 
+<DemoBlock title="自定义标记色（mark + CSS 变量）">
+  <oas-text mark>默认标记色</oas-text>
+  <br />
+  <oas-text mark style="--oas-text-mark-bg: #7c3aed">自定义标记色（--oas-text-mark-bg）</oas-text>
+</DemoBlock>
+
+<DemoBlock title="字重档（weight）">
+  <oas-text weight="regular">regular 常规</oas-text>
+  <oas-text weight="medium">medium 中等</oas-text>
+  <oas-text weight="semibold">semibold 半粗</oas-text>
+  <oas-text weight="bold">bold 粗体</oas-text>
+  <br />
+  <oas-text strong>strong（等价 semibold 字重）</oas-text>
+</DemoBlock>
+
+<DemoBlock title="数字等宽（numeric）">
+  <div style="display: flex; flex-direction: column; gap: 4px;">
+    <oas-text>默认数字：1 2 3 4 5 6 7 8 9 0</oas-text>
+    <oas-text numeric>tabular-nums：1 2 3 4 5 6 7 8 9 0</oas-text>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">
+    <oas-text>默认：12,345.67</oas-text>
+    <oas-text numeric>等宽：12,345.67</oas-text>
+    <oas-text numeric>等宽：1,234.56</oas-text>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="文本对齐（align）">
+  <div style="max-width: 360px; display: flex; flex-direction: column; gap: 4px;">
+    <oas-text align="start">start：左对齐（默认起点）</oas-text>
+    <oas-text align="center">center：居中对齐（标题居中高频场景）</oas-text>
+    <oas-text align="end">end：右对齐</oas-text>
+    <oas-paragraph align="justify">justify：两端对齐，适用于段落排版，通过拉伸词间距让左右边缘对齐。</oas-paragraph>
+  </div>
+</DemoBlock>
+
 <DemoBlock title="文字深度（depth）">
   <oas-text depth="1">一档弱化（说明文字）</oas-text>
   <oas-text depth="2">二档弱化（次要说明）</oas-text>
@@ -115,6 +151,7 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `actions-position` | 操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot="actions"` | `string` | `end` |
+| `align` | 文本对齐：`start`/`center`/`end`/`justify` | `AlignType` | — |
 | `code` | 行内代码样式（等宽字体 + 浅底） | `boolean` | — |
 | `copy-text` | 自定义复制内容（缺省复制当前文本） | `string` | — |
 | `copyable` | 显示复制按钮，点击复制文本内容 | `boolean` | — |
@@ -126,10 +163,12 @@
 | `level` | 标题级别（1–5） | `string` | `3` |
 | `line-clamp` | 多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合 | `string` | — |
 | `mark` | 高亮标记（浅黄底，`<mark>` 语义） | — | — |
+| `numeric` | 数字等宽（font-variant-numeric: tabular-nums），表格/统计数字列对齐 | — | — |
 | `strong` | 加粗（font-weight 600，`<strong>` 语义） | — | — |
 | `tag` | 渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等） | `string` | — |
 | `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | 下划线 | — | — |
+| `weight` | 字重：`regular`/`medium`/`semibold`/`bold`（与 strong 布尔兼容） | `WeightType` | — |
 
 | 事件 | 说明 |
 | --- | --- |
@@ -146,6 +185,7 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `actions-position` | 操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot="actions"` | `string` | `end` |
+| `align` | — | `AlignType` | — |
 | `code` | 行内代码样式（等宽字体 + 浅底） | `boolean` | — |
 | `copy-text` | 自定义复制内容（缺省复制当前文本） | `string` | — |
 | `copyable` | 显示复制按钮，点击复制文本内容 | `boolean` | — |
@@ -157,10 +197,12 @@
 | `level` | 标题级别（1–5） | `string` | `3` |
 | `line-clamp` | 多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合 | `string` | — |
 | `mark` | 高亮标记（浅黄底，`<mark>` 语义） | — | — |
+| `numeric` | — | — | — |
 | `strong` | 加粗（font-weight 600，`<strong>` 语义） | — | — |
 | `tag` | 渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等） | `string` | — |
 | `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | 下划线 | — | — |
+| `weight` | — | `WeightType` | — |
 
 | 事件 | 说明 |
 | --- | --- |
@@ -177,6 +219,7 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `actions-position` | 操作条位置：`start`（文字前）/ `end`（默认，文字后），配合 `slot="actions"` | `string` | `end` |
+| `align` | — | `AlignType` | — |
 | `code` | 行内代码样式（等宽字体 + 浅底） | `boolean` | — |
 | `copy-text` | 自定义复制内容（缺省复制当前文本） | `string` | — |
 | `copyable` | 显示复制按钮，点击复制文本内容 | `boolean` | — |
@@ -188,10 +231,12 @@
 | `level` | 标题级别（1–5） | `string` | `3` |
 | `line-clamp` | 多行省略行数（正整数），超出折叠省略；与 `ellipsis-suffix` 可组合 | `string` | — |
 | `mark` | 高亮标记（浅黄底，`<mark>` 语义） | — | — |
+| `numeric` | — | — | — |
 | `strong` | 加粗（font-weight 600，`<strong>` 语义） | — | — |
 | `tag` | 渲染标签：替换默认元素（如 `sub` / `sup` / `ins` / `em` / `strong` 等） | `string` | — |
 | `type` | 文本类型：`default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | 下划线 | — | — |
+| `weight` | — | `WeightType` | — |
 
 | 事件 | 说明 |
 | --- | --- |

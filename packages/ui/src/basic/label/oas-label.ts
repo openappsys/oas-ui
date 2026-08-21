@@ -28,6 +28,24 @@ export const LABEL_PRESET_COLORS: readonly LabelPresetColor[] = [
   'purple',
 ]
 
+/** 字号档位：small 小字辅助 / medium 基准 / large 大字强调（映射 --oas-font-size-{sm,md,lg}） */
+export type LabelSize = 'small' | 'medium' | 'large'
+/** 字重档位：regular 常规 / semibold 半粗强调 */
+export type LabelWeight = 'regular' | 'semibold'
+
+const VALID_SIZES = ['small', 'medium', 'large'] as const
+const VALID_WEIGHTS = ['regular', 'semibold'] as const
+
+const warnedValues = new Set<string>()
+
+/** 非法值告警：dev 下 console.warn 一次（同值去重），值本身走调用处的回落 */
+function warnOnce(kind: string, raw: string, fallback: string, valid: readonly string[]): void {
+  const key = `${kind}:${raw}`
+  if (warnedValues.has(key)) return
+  warnedValues.add(key)
+  console.warn(`[oas-label] 非法 ${kind} "${raw}"，已回落 ${fallback}；合法值：${valid.join('/')}`)
+}
+
 const STYLE = `
 :host {
   display: inline-block;
@@ -60,6 +78,17 @@ label.error {
 label.disabled {
   color: var(--oas-label-color, var(--oas-color-text-disabled));
 }
+/* size 字号档：small 小字辅助 / large 大字强调；medium 默认（base 已定 md） */
+label.small {
+  font-size: var(--oas-font-size-sm);
+}
+label.large {
+  font-size: var(--oas-font-size-lg);
+}
+/* weight 字重档：semibold 半粗强调；regular 默认（不加 class） */
+label.semibold {
+  font-weight: 600;
+}
 .required {
   color: var(--oas-color-danger);
   line-height: 1;
@@ -75,7 +104,7 @@ label.disabled {
 
 export class OASLabel extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['for', 'required', 'position', 'error', 'disabled', 'colon', 'color']
+    return ['for', 'required', 'position', 'error', 'disabled', 'colon', 'color', 'size', 'weight']
   }
 
   private labelEl: HTMLElement | null = null
@@ -94,7 +123,7 @@ export class OASLabel extends OASElement {
     `
   }
 
-  /** 缓存节点引用 + 绑定点击代理聚焦 + 双击防选中 + tooltip 浮层（render 与水合路径共用） */
+  /** 缓存节点引用 + 绑定点击代理聚焦 + 双击防选中（render 与水合路径共用） */
   private bind(): void {
     this.labelEl = this.shadow.querySelector<HTMLElement>('[part="label"]')
     this.requiredEl = this.shadow.querySelector<HTMLElement>('[part="required"]')
@@ -104,8 +133,6 @@ export class OASLabel extends OASElement {
     const onClick = (e: MouseEvent) => {
       const forId = this.getAttr('for', '')
       if (!forId) return
-      // tooltip 按钮的点击不触发聚焦代理（它是独立的交互点）
-      if ((e.target as HTMLElement)?.closest('.tooltip-btn')) return
       e.preventDefault()
       const target = document.getElementById(forId)
       if (target && typeof (target as HTMLElement).focus === 'function') {
@@ -151,6 +178,23 @@ export class OASLabel extends OASElement {
     this.labelEl.classList.toggle('disabled', this.hasAttr('disabled'))
     if (this.requiredEl) this.requiredEl.hidden = !required
     if (this.colonEl) this.colonEl.hidden = !this.hasAttr('colon')
+
+    // size 字号档：small/medium/large；非法值回落 medium + 告警（medium 默认不加 class）
+    let size: LabelSize = 'medium'
+    const rawSize = this.getAttr('size', '')
+    if (rawSize) {
+      if ((VALID_SIZES as readonly string[]).includes(rawSize)) size = rawSize as LabelSize
+      else warnOnce('size', rawSize, 'medium', VALID_SIZES)
+    }
+    this.labelEl.classList.toggle('small', size === 'small')
+    this.labelEl.classList.toggle('large', size === 'large')
+
+    // weight 字重档：regular/semibold；非法值回落 regular + 告警（regular 默认不加 class）
+    const rawWeight = this.getAttr('weight', '')
+    if (rawWeight && !(VALID_WEIGHTS as readonly string[]).includes(rawWeight)) {
+      warnOnce('weight', rawWeight, 'regular', VALID_WEIGHTS)
+    }
+    this.labelEl.classList.toggle('semibold', rawWeight === 'semibold')
 
     // color 统一协议：预设名映射 --oas-preset-*-text 达标 token；任意 CSS 色值直注入；移除后回落
     const color = this.getAttr('color', '')

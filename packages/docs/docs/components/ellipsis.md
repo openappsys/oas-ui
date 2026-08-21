@@ -32,6 +32,24 @@
 
 `expandable` 仅在文本实际溢出时显示按钮；展开后不再省略，`oas-expand` / `oas-collapse` 事件可追踪状态。
 
+## 省略方向（direction）
+
+<DemoBlock title="start：省略头部，保留尾部">
+  <div style="width: 100%">
+    <oas-ellipsis direction="start" text="/usr/local/lib/node_modules/@oas-ui/ui/dist/index.js"></oas-ellipsis>
+  </div>
+  长路径/文件名场景：头部被省略号截断，末尾文件名完整保留（`direction: rtl` + `unicode-bidi: plaintext` 纯 CSS 实现）。
+</DemoBlock>
+
+<DemoBlock title="middle：保留首尾，中部省略">
+  <div style="width: 100%">
+    <oas-ellipsis direction="middle" text="a9f3c2b7d4e8f1a6c3b9d2e7f4a8c1b6d3e9f2a7c4b1d8e6f3a9c2b7d4e1f8a6c3b9d2e7f4a8c1b6d3e9f2"></oas-ellipsis>
+  </div>
+  哈希/交易 ID 场景：首尾保留可辨认，中部以省略号压缩；悬停可查看完整内容。
+</DemoBlock>
+
+`direction` 取值：`tail`（默认，尾部省略）/ `start`（头部省略）/ `middle`（中部省略，仅单行生效，`rows`≥2 时忽略）。
+
 ## 关闭 tooltip
 
 <DemoBlock title="关闭 tooltip">
@@ -46,6 +64,7 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `direction` | 省略方向：`end`（默认尾部）/ `start`（头部）/ `middle`（中部保留首尾，长路径/哈希场景） | `string` | `tail` |
 | `expandable` | 溢出时显示「展开/收起」按钮 | `boolean` | — |
 | `rows` | 显示行数（1 为单行省略，≥2 多行 `-webkit-line-clamp`） | `string` | `1` |
 | `text` | 文本内容 | `string` | — |

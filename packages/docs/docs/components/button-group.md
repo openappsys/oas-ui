@@ -34,6 +34,28 @@
   </oas-button-group>
 </DemoBlock>
 
+## 变体与圆角透传
+
+`variant` / `round` 与 `type` / `size` 一样统一透传给组内所有子按钮：组上设一次，子按钮统一应用。`variant` 支持 `solid`（默认）/ `outlined` / `dashed` / `filled` / `text` / `link` 六种形态，取值与 `oas-button` 一致；`round` 让子按钮呈胶囊圆角。
+
+<DemoBlock title="变体与圆角透传">
+  <oas-button-group variant="outlined">
+    <oas-button value="a">描边</oas-button>
+    <oas-button value="b">描边</oas-button>
+    <oas-button value="c">描边</oas-button>
+  </oas-button-group>
+  <oas-button-group variant="dashed" type="primary" style="margin-top: 8px">
+    <oas-button value="a">虚线</oas-button>
+    <oas-button value="b">虚线</oas-button>
+    <oas-button value="c">虚线</oas-button>
+  </oas-button-group>
+  <oas-button-group round style="margin-top: 8px">
+    <oas-button value="a">选项 A</oas-button>
+    <oas-button value="b">选项 B</oas-button>
+    <oas-button value="c">选项 C</oas-button>
+  </oas-button-group>
+</DemoBlock>
+
 ## 单选
 
 通过 `value` 声明当前选中项，点击派发 `oas-change`，detail 为 `{ value }`。
@@ -80,6 +102,27 @@
     <oas-button value="up">置顶</oas-button>
     <oas-button value="mid">置中</oas-button>
     <oas-button value="down">置底</oas-button>
+  </oas-button-group>
+</DemoBlock>
+
+## Spread 均分铺满
+
+`spread` 让组内按钮等宽均分铺满容器宽度（移动端操作栏 / 表单底部按钮组的常见形态）。与 `type` / `size` / `variant` / `pill` 等组合使用。
+
+<DemoBlock title="Spread 均分铺满">
+  <oas-button-group spread type="primary">
+    <oas-button value="confirm">确定</oas-button>
+    <oas-button value="cancel">取消</oas-button>
+  </oas-button-group>
+  <oas-button-group spread pill style="margin-top: 8px">
+    <oas-button value="a">选项 A</oas-button>
+    <oas-button value="b">选项 B</oas-button>
+    <oas-button value="c">选项 C</oas-button>
+  </oas-button-group>
+  <oas-button-group spread variant="outlined" style="margin-top: 8px">
+    <oas-button value="save">保存</oas-button>
+    <oas-button value="publish">发布</oas-button>
+    <oas-button value="delete">删除</oas-button>
   </oas-button-group>
 </DemoBlock>
 
@@ -238,9 +281,12 @@ button-group + `oas-dropdown split` 编排拆分按钮：主按钮触发 `oas-ac
 | `disabled` | 禁用整个组 | `boolean` | — |
 | `multiple` | 多选模式 | `boolean` | — |
 | `pill` | 胶囊形态：组整体首尾大圆角（`--oas-radius-full` / `999px`） | — | — |
+| `round` | 组级 round 圆角透传子按钮（组设一次，子按钮统一胶囊圆角） | `boolean` | — |
 | `size` | 透传给子按钮的尺寸 | `string` | — |
+| `spread` | 组内按钮 flex:1 均分铺满容器宽度（移动端操作栏/表单底部按钮组） | — | — |
 | `type` | 透传给子按钮的类型 | `string` | — |
 | `value` | 选中值（单选为单值，多选用逗号分隔） | `string` | — |
+| `variant` | 组级 variant 形态透传子按钮（组设一次，子按钮统一应用） | `string` | — |
 | `vertical` | 纵向堆叠，圆角合并方向改为上下 | `boolean` | — |
 
 ### 事件

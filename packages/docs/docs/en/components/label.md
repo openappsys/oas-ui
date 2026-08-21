@@ -32,6 +32,25 @@ Without `for`, only text is rendered and clicks don't forward focus; long text w
   <oas-label>This is an especially long label text, used to demonstrate that long text wraps automatically without overflowing the container boundary. Please be patient while reading.</oas-label>
 </DemoBlock>
 
+## Size
+
+`size` controls the font size in three tiers: `small` for auxiliary text, `medium` (default) for base text, and `large` for emphasis — mapped to the `--oas-font-size-sm / md / lg` font tokens respectively.
+
+<DemoBlock title="Size tiers">
+  <oas-label size="small">Small label</oas-label>
+  <oas-label size="medium">Medium label</oas-label>
+  <oas-label size="large">Large label</oas-label>
+</DemoBlock>
+
+## Weight
+
+`weight` controls the font weight in two tiers: `regular` (default) and `semibold` for emphasis (`font-weight: 600`).
+
+<DemoBlock title="Weight tiers">
+  <oas-label>Regular-weight label</oas-label>
+  <oas-label weight="semibold">Semibold emphasized label</oas-label>
+</DemoBlock>
+
 ## States
 
 `error` renders validation-failure red text; `disabled` statically grays out (purely visual, doesn't block events — the associated control manages its own disabled); `colon` appends a colon after the text.
@@ -91,6 +110,8 @@ Required-mark forms (asterisk + position) are covered by `required` + `position`
 | `for` | Target control id; click forwards to `getElementById(for).focus()` | `string` | — |
 | `position` | Position of the asterisk relative to the text | `string` | `after` |
 | `required` | Append a required `*` marker (`aria-hidden`) | `boolean` | — |
+| `size` | Label font-size step: `small`/`medium` (default)/`large` | `string` | — |
+| `weight` | Label font weight: `regular` (default)/`semibold` | `string` | — |
 
 ### Slots
 

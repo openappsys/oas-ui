@@ -1,7 +1,8 @@
 import { OASElement } from '@oas-ui/core'
 
 export type DividerDirection = 'horizontal' | 'vertical'
-export type DividerPosition = 'left' | 'center' | 'right'
+/** 内容位置：水平布局 left/center/right，垂直布局 top/center/bottom（跨方向使用非法词会回落 center 并告警） */
+export type DividerPosition = 'left' | 'center' | 'right' | 'top' | 'bottom'
 export type DividerVariant = 'solid' | 'dashed' | 'dotted' | 'double'
 export type DividerSize = 'small' | 'medium' | 'large'
 
@@ -35,6 +36,8 @@ export const DIVIDER_PRESET_COLORS: readonly DividerPresetColor[] = [
 
 const VALID_VARIANTS = ['solid', 'dashed', 'dotted', 'double'] as const
 const VALID_SIZES = ['small', 'medium', 'large'] as const
+const VALID_HORIZONTAL_POSITIONS = ['left', 'center', 'right'] as const
+const VALID_VERTICAL_POSITIONS = ['top', 'center', 'bottom'] as const
 
 const warnedValues = new Set<string>()
 
@@ -76,6 +79,14 @@ const STYLE = `
   width: var(--oas-divider-width, 1px);
   height: auto;
   background: var(--oas-divider-color, var(--oas-color-border-strong));
+}
+/* vertical 内容对齐：top 贴顶（before 线段缩为 title-inset，内容被推到顶部）、bottom 贴底（after 线段缩短）；
+   与水平 left/right 同机制（线短一侧内容贴向），仅 vertical 生效 */
+:host([direction='vertical']) .divider.top::before {
+  flex: 0 0 var(--oas-divider-title-inset, 5%);
+}
+:host([direction='vertical']) .divider.bottom::after {
+  flex: 0 0 var(--oas-divider-title-inset, 5%);
 }
 .divider {
   display: flex;
@@ -202,7 +213,18 @@ export class OASDivider extends OASElement {
     const el = this.dividerEl
     if (!el) return
     const direction = this.getAttr('direction', 'horizontal') as DividerDirection
-    const position = this.getAttr('content-position', 'center') as DividerPosition
+    // content-position 按方向分流：水平 left/center/right，垂直 top/center/bottom；
+    // 跨方向词（horizontal+top、vertical+left 等）回落 center 并告警
+    let position: DividerPosition = 'center'
+    const rawPosition = this.getAttr('content-position', '')
+    const validPositions = direction === 'vertical' ? VALID_VERTICAL_POSITIONS : VALID_HORIZONTAL_POSITIONS
+    if (rawPosition) {
+      if ((validPositions as readonly string[]).includes(rawPosition)) {
+        position = rawPosition as DividerPosition
+      } else {
+        warnOnce('content-position', rawPosition, 'center', validPositions)
+      }
+    }
 
     // 线型：显式 variant 优先；否则 dashed 布尔兼容映射；默认 solid
     let variant: DividerVariant = 'solid'
@@ -233,6 +255,8 @@ export class OASDivider extends OASElement {
     el.classList.toggle('double', variant === 'double')
     el.classList.toggle('left', position === 'left')
     el.classList.toggle('right', position === 'right')
+    el.classList.toggle('top', position === 'top')
+    el.classList.toggle('bottom', position === 'bottom')
     el.classList.toggle('inset', this.hasAttr('inset'))
     el.classList.toggle('middle', this.hasAttr('middle'))
     el.classList.toggle('small', size === 'small')

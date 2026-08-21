@@ -258,3 +258,136 @@ describe('color 属性（统一协议：11 预设名→token / 任意 CSS 色值
     expect(link(el).classList.contains('has-color')).toBe(false)
   })
 })
+
+describe('download 透传（原生 <a download>）', () => {
+  it('download 进入 observedAttributes', () => {
+    expect(OASLink.observedAttributes).toContain('download')
+  })
+
+  it('download 有值透传', () => {
+    const el = mount({ href: '/file.pdf', download: 'report.pdf' })
+    expect(link(el).getAttribute('download')).toBe('report.pdf')
+  })
+
+  it('download 空值布尔：属性存在即透传（浏览器用原链接文件名）', () => {
+    const el = mount({ href: '/file.pdf', download: '' })
+    expect(link(el).hasAttribute('download')).toBe(true)
+  })
+
+  it('动态移除 download 后属性清除', () => {
+    const el = mount({ href: '/file.pdf', download: 'report.pdf' })
+    el.removeAttribute('download')
+    expect(link(el).hasAttribute('download')).toBe(false)
+  })
+
+  it('无 download 不注入', () => {
+    const el = mount({ href: '/file.pdf' })
+    expect(link(el).hasAttribute('download')).toBe(false)
+  })
+})
+
+describe('size 字号档（small/medium/large）', () => {
+  it('size 进入 observedAttributes；medium 默认无 class，small/large 映射 class', () => {
+    expect(OASLink.observedAttributes).toContain('size')
+    const md = mount({ href: '#' })
+    expect(link(md).classList.contains('small')).toBe(false)
+    expect(link(md).classList.contains('large')).toBe(false)
+    const sm = mount({ href: '#', size: 'small' })
+    expect(link(sm).classList.contains('small')).toBe(true)
+    const lg = mount({ href: '#', size: 'large' })
+    expect(link(lg).classList.contains('large')).toBe(true)
+  })
+
+  it('非法值回落 medium（无 class）并告警', () => {
+    const el = mount({ href: '#', size: 'xxl' })
+    expect(link(el).classList.contains('small')).toBe(false)
+    expect(link(el).classList.contains('large')).toBe(false)
+  })
+
+  it('CSS：size 档位改字号（走 --oas-font-size-* token，无硬编码 px）', () => {
+    const el = mount({ href: '#' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/a\.small\s*{[^}]*--oas-font-size-sm/)
+    expect(css).toMatch(/a\.large\s*{[^}]*--oas-font-size-lg/)
+  })
+
+  it('动态切换与移除 size 即时生效', () => {
+    const el = mount({ href: '#' })
+    el.setAttribute('size', 'large')
+    expect(link(el).classList.contains('large')).toBe(true)
+    el.removeAttribute('size')
+    expect(link(el).classList.contains('large')).toBe(false)
+  })
+})
+
+describe('loading 态（转圈替换前置图标 + 禁点击）', () => {
+  it('loading 进入 observedAttributes', () => {
+    expect(OASLink.observedAttributes).toContain('loading')
+  })
+
+  it('loading：点击不派发 oas-click 且阻止默认跳转', () => {
+    const el = mount({ href: 'https://example.com', loading: '' })
+    const a = link(el)
+    let fired = false
+    el.addEventListener('oas-click', () => (fired = true))
+    const evt = new MouseEvent('click', { cancelable: true, bubbles: true })
+    a.dispatchEvent(evt)
+    expect(evt.defaultPrevented).toBe(true)
+    expect(fired).toBe(false)
+  })
+
+  it('非 loading 照常派发 oas-click（回归）', () => {
+    const el = mount({ href: '#' })
+    let fired = false
+    el.addEventListener('oas-click', () => (fired = true))
+    link(el).click()
+    expect(fired).toBe(true)
+  })
+
+  it('loading 时前置图标替换为转圈（icon 位置保留、内容为 loading svg + spinning class）', () => {
+    const el = mount({ href: '#', icon: 'search', loading: '' })
+    const icon = el.shadowRoot!.querySelector<HTMLElement>('.icon')
+    expect(icon).not.toBeNull()
+    expect(icon!.classList.contains('spinning')).toBe(true)
+    expect(icon!.innerHTML).toContain('stroke="currentColor"')
+    // 位置不变：仍在文字前
+    expect(link(el).firstElementChild).toBe(icon)
+  })
+
+  it('loading 且无 icon：自动补转圈图标（文字前）', () => {
+    const el = mount({ href: '#', loading: '' })
+    const icon = el.shadowRoot!.querySelector('.icon')
+    expect(icon).not.toBeNull()
+    expect(link(el).firstElementChild!.classList.contains('icon')).toBe(true)
+  })
+
+  it('退出 loading 后恢复原图标（spinning 移除、原 svg 恢复）', () => {
+    const el = mount({ href: '#', icon: 'search', loading: '' })
+    const icon = el.shadowRoot!.querySelector<HTMLElement>('.icon')!
+    el.removeAttribute('loading')
+    expect(icon.classList.contains('spinning')).toBe(false)
+    // 恢复注册表 search 图标（path 以 M 开头、fill 壳）
+    expect(icon.innerHTML).toContain('<path')
+  })
+
+  it('loading 时 aria-busy=true，退出恢复 false', () => {
+    const el = mount({ href: '#', loading: '' })
+    expect(link(el).getAttribute('aria-busy')).toBe('true')
+    el.removeAttribute('loading')
+    expect(link(el).getAttribute('aria-busy')).toBe('false')
+  })
+
+  it('CSS：转圈动画规则（spinning svg 旋转）与 loading 光标 progress', () => {
+    const el = mount({ href: '#', loading: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/\.icon\.spinning svg/)
+    expect(css).toMatch(/@keyframes/)
+    expect(css).toMatch(/a\[loading\]\s*{[^}]*cursor:\s*progress/)
+  })
+
+  it('loading 与 disabled 互不干扰：disabled 仍有 aria-disabled', () => {
+    const el = mount({ href: '#', disabled: '', loading: '' })
+    expect(link(el).getAttribute('aria-disabled')).toBe('true')
+    expect(link(el).getAttribute('aria-busy')).toBe('true')
+  })
+})

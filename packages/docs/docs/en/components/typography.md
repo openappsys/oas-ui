@@ -22,6 +22,42 @@ Typography components for text, titles, and paragraphs.
   <oas-text italic>Italic</oas-text>
 </DemoBlock>
 
+<DemoBlock title="Custom mark color (mark + CSS variable)">
+  <oas-text mark>Default mark color</oas-text>
+  <br />
+  <oas-text mark style="--oas-text-mark-bg: #7c3aed">Custom mark color (--oas-text-mark-bg)</oas-text>
+</DemoBlock>
+
+<DemoBlock title="Font weight (weight)">
+  <oas-text weight="regular">regular</oas-text>
+  <oas-text weight="medium">medium</oas-text>
+  <oas-text weight="semibold">semibold</oas-text>
+  <oas-text weight="bold">bold</oas-text>
+  <br />
+  <oas-text strong>strong (equivalent to semibold weight)</oas-text>
+</DemoBlock>
+
+<DemoBlock title="Numeric (tabular-nums)">
+  <div style="display: flex; flex-direction: column; gap: 4px;">
+    <oas-text>Default digits: 1 2 3 4 5 6 7 8 9 0</oas-text>
+    <oas-text numeric>tabular-nums: 1 2 3 4 5 6 7 8 9 0</oas-text>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">
+    <oas-text>Default: 12,345.67</oas-text>
+    <oas-text numeric>Tabular: 12,345.67</oas-text>
+    <oas-text numeric>Tabular: 1,234.56</oas-text>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="Text alignment (align)">
+  <div style="max-width: 360px; display: flex; flex-direction: column; gap: 4px;">
+    <oas-text align="start">start: left-aligned (default start)</oas-text>
+    <oas-text align="center">center: centered (common for headings)</oas-text>
+    <oas-text align="end">end: right-aligned</oas-text>
+    <oas-paragraph align="justify">justify: justified for paragraphs, stretching word spacing so both edges align.</oas-paragraph>
+  </div>
+</DemoBlock>
+
 <DemoBlock title="Text depth">
   <oas-text depth="1">Depth 1 (secondary)</oas-text>
   <oas-text depth="2">Depth 2 (tertiary)</oas-text>
@@ -115,6 +151,7 @@ Typography components for text, titles, and paragraphs.
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `actions-position` | Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot="actions"` | `string` | `end` |
+| `align` | Text alignment: `start`/`center`/`end`/`justify` | `AlignType` | — |
 | `code` | Inline code style (monospace + light background) | `boolean` | — |
 | `copy-text` | Custom content to copy (defaults to the current text) | `string` | — |
 | `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
@@ -126,10 +163,12 @@ Typography components for text, titles, and paragraphs.
 | `level` | Heading level (1-5) | `string` | `3` |
 | `line-clamp` | Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix` | `string` | — |
 | `mark` | Highlighted mark (light yellow background, `<mark>` semantics) | — | — |
+| `numeric` | Tabular figures (font-variant-numeric: tabular-nums) for aligned numeric columns in tables/stats | — | — |
 | `strong` | Bold (font-weight 600, `<strong>` semantics) | — | — |
 | `tag` | Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`) | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | Underline | — | — |
+| `weight` | Font weight: `regular`/`medium`/`semibold`/`bold` (compatible with the strong boolean) | `WeightType` | — |
 
 | Event | Description |
 | --- | --- |
@@ -146,6 +185,7 @@ Typography components for text, titles, and paragraphs.
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `actions-position` | Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot="actions"` | `string` | `end` |
+| `align` | — | `AlignType` | — |
 | `code` | Inline code style (monospace + light background) | `boolean` | — |
 | `copy-text` | Custom content to copy (defaults to the current text) | `string` | — |
 | `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
@@ -157,10 +197,12 @@ Typography components for text, titles, and paragraphs.
 | `level` | Heading level (1-5) | `string` | `3` |
 | `line-clamp` | Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix` | `string` | — |
 | `mark` | Highlighted mark (light yellow background, `<mark>` semantics) | — | — |
+| `numeric` | — | — | — |
 | `strong` | Bold (font-weight 600, `<strong>` semantics) | — | — |
 | `tag` | Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`) | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | Underline | — | — |
+| `weight` | — | `WeightType` | — |
 
 | Event | Description |
 | --- | --- |
@@ -177,6 +219,7 @@ Typography components for text, titles, and paragraphs.
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `actions-position` | Action bar position: `start` (before the text) / `end` (default, after the text); pair with `slot="actions"` | `string` | `end` |
+| `align` | — | `AlignType` | — |
 | `code` | Inline code style (monospace + light background) | `boolean` | — |
 | `copy-text` | Custom content to copy (defaults to the current text) | `string` | — |
 | `copyable` | Show a copy button that copies the text content on click | `boolean` | — |
@@ -188,10 +231,12 @@ Typography components for text, titles, and paragraphs.
 | `level` | Heading level (1-5) | `string` | `3` |
 | `line-clamp` | Number of lines before multi-line ellipsis (positive integer); combinable with `ellipsis-suffix` | `string` | — |
 | `mark` | Highlighted mark (light yellow background, `<mark>` semantics) | — | — |
+| `numeric` | — | — | — |
 | `strong` | Bold (font-weight 600, `<strong>` semantics) | — | — |
 | `tag` | Render tag: replaces the default element (e.g. `sub` / `sup` / `ins` / `em` / `strong`) | `string` | — |
 | `type` | Text type: `default` / `secondary` / `success` / `warning` / `danger` / `disabled` | `TextType` | `default` |
 | `underline` | Underline | — | — |
+| `weight` | — | `WeightType` | — |
 
 | Event | Description |
 | --- | --- |

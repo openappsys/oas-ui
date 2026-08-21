@@ -5,4 +5,4 @@ if (!customElements.get('oas-link')) {
 }
 
 export { OASLink }
-export type { LinkType } from './oas-link.js'
+export type { LinkType, LinkSize } from './oas-link.js'
