@@ -102,3 +102,11 @@ html.dark {
     animation: none !important;
   }
 }
+
+/* 自定义首页用 HomeFooter 组件 + layout:home 的 footer:false，vitepress 默认 .VPHome 的
+   margin-bottom（96px，≥768px 时 128px，为默认 footer 预留）会残留成底部空白——自定义
+   footer 场景下去掉。vitepress 默认用带 scoped 属性选择器（.VPHome[data-v-*]）权重更高，
+   必须 !important 才能覆盖（含 min-width:768px 媒体查询内的 128px） */
+.VPHome {
+  margin-bottom: 0 !important;
+}
