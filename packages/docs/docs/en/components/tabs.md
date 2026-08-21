@@ -220,7 +220,7 @@ When there are more tabs than fit, the tab bar scrolls horizontally with left/ri
 
 ## More collapse dropdown
 
-`more`: collapse overflowed tabs into a trailing "More" dropdown instead of scroll arrows (mutually exclusive). With many collapsed items a search box at the top of the dropdown filters them live; selecting a collapsed tab brings it — together with its adjacent tabs — into view (the active tab never stays hidden in "More"; the window slides smoothly to cover the active tab and its neighbors). Newly added/activated tabs auto-scroll smoothly into view.
+`more`: when tabs overflow, the tab bar scrolls horizontally (wheel/drag), and a trailing "More" dropdown lists the tabs **outside the current scroll viewport** as quick shortcuts (all tabs stay rendered, none hidden — the industry-standard scroll + mirror approach). With many off-view items a search box at the top of the dropdown filters them live; selecting a dropdown item scrolls it smoothly into view (the active tab and its neighbors naturally come into view together thanks to their continuous layout). Newly added/activated tabs auto-scroll smoothly into view.
 
 <DemoBlock title="More collapse dropdown">
   <div style="max-width: 380px">

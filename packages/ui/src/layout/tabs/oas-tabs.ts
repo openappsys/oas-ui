@@ -457,19 +457,9 @@ const STYLE = `
   height: 24px;
 }
 
-/* ===== more 溢出收缩下拉 ===== */
-/* more 模式：tablist 不滚动（收缩替代滚动），被收起的 tab 隐藏 */
-:host([more]) .tablist {
-  overflow: visible;
-}
-.tab[data-overflowed] {
-  display: none;
-}
-/* more 模式窗口切换：从「更多」出来的 tab（display none→flex）触发 fade-in，
-   激活项与相邻项出现时有平滑过渡（正常滚动那样的视觉效果，不生硬跳变） */
-:host([more]) .tab:not([data-overflowed]) {
-  animation: oas-tabs-fade-in var(--oas-transition-base) var(--oas-ease-out);
-}
+/* ===== more 溢出：滚动 + 视口外镜像下拉（通用） =====
+   tab 全部渲染、tablist 可滚动（沿用默认 overflow-x:auto）；more 下拉列出
+   当前滚动视口外的 tab 作快捷跳转，点选平滑滚动到可见区。无 display 收缩。 */
 .more-btn {
   display: inline-flex;
   align-items: center;
@@ -961,7 +951,18 @@ export class OASTabs extends OASElement {
     end.innerHTML = `<svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false">${nextSvg}</svg>`
     start.addEventListener('click', () => this.scrollTabs(-1))
     end.addEventListener('click', () => this.scrollTabs(1))
-    tablist.addEventListener('scroll', () => this.syncScrollControls(), { passive: true })
+    tablist.addEventListener(
+      'scroll',
+      () => {
+        this.syncScrollControls()
+        // more 模式：滚动时视口外集合变化，更新下拉镜像
+        if (this.hasAttr('more')) {
+          this.updateMoreOffview()
+          if (this.moreOpen) this.renderMoreDropdown()
+        }
+      },
+      { passive: true },
+    )
     // 滚轮滑动：横向标签栏溢出时滚轮纵向滚动转为横向滑动标签（浏览器标签栏交互惯例）；
     // 仅溢出时 preventDefault 拦截（不溢出放行页面纵向滚动）；纵向标签栏滚轮本就纵向，无需转换
     tablist.addEventListener(
@@ -1063,102 +1064,68 @@ export class OASTabs extends OASElement {
    * more 溢出策略：测量每个 tab 宽度累积，超出 nav 可用宽度（扣除更多按钮占位）的
    * tab 标 data-overflowed 收进「更多」下拉。仅 more 属性开启时生效（与滚动箭头互斥）。
    */
+  /**
+   * more 模式（通用做法）：滚动 + 视口外镜像下拉。tab 全部渲染、tablist 可滚动
+   *（不 display:none 收缩），more 下拉列出「当前滚动视口之外的 tab」作快捷跳转；
+   * 点选下拉项 → scrollIntoView 平滑滚动到可见区 + 激活（激活项与相邻项因连续排布
+   * 自然一起进入视口）。
+   */
   private syncMore(): void {
     const moreBtn = this.shadow.querySelector('.more-btn') as HTMLButtonElement | null
-    const nav = this.shadow.querySelector('.nav') as HTMLElement | null
-    if (!moreBtn || !nav) return
+    const tablist = this.shadow.querySelector('.tablist') as HTMLElement | null
+    if (!moreBtn || !tablist) return
     if (!this.hasAttr('more')) {
       moreBtn.hidden = true
       return
     }
-    const tabs = [
-      ...this.shadow.querySelectorAll<HTMLElement>('[role="tab"][data-value]'),
-    ]
-    // 可用宽度 = nav 宽 - 更多按钮占位（约 40px）- 余量
-    const avail = nav.clientWidth - 44
-    const totalWidth = tabs.reduce((s, t) => s + t.offsetWidth, 0)
-    const overflowed = totalWidth > avail
-    moreBtn.hidden = !overflowed
-    if (!overflowed) {
-      tabs.forEach((t) => t.removeAttribute('data-overflowed'))
+    // 溢出才有更多按钮（more 按钮占用在 nav 固定区）
+    const overflow = tablist.scrollWidth > tablist.clientWidth + 1
+    moreBtn.hidden = !overflow
+    if (!overflow) {
       this.moreOpen = false
       this.syncMoreDropdown()
       return
     }
-
-    // 激活项可见窗口：激活 tab 永不藏在「更多」里。以激活项为锚向前后扩展相邻项，
-    // 直到宽度占满 avail；窗口外（前段 + 后段）收进更多。无激活项时退回从头收起。
-    const active = this.getAttr('active', '') || (tabs[0]?.getAttribute('data-value') ?? '')
-    const activeIdx = tabs.findIndex((t) => t.getAttribute('data-value') === active)
-    let visible: boolean[]
-    if (activeIdx === -1) {
-      // 无激活项：从头累积到 avail
-      let acc = 0
-      visible = tabs.map((t) => {
-        acc += t.offsetWidth
-        return acc <= avail
-      })
-    } else {
-      visible = tabs.map(() => false)
-      visible[activeIdx] = true
-      let used = tabs[activeIdx]!.offsetWidth
-      // 交替向左/右扩展相邻项（上下文连贯），宽度够就纳入窗口
-      let li = activeIdx - 1
-      let ri = activeIdx + 1
-      for (;;) {
-        const lw = li >= 0 ? tabs[li]!.offsetWidth : Infinity
-        const rw = ri < tabs.length ? tabs[ri]!.offsetWidth : Infinity
-        if (lw === Infinity && rw === Infinity) break
-        // 优先扩展较窄一侧（更省空间）；同宽优先左（阅读顺序）
-        if (lw <= rw && used + lw <= avail) {
-          visible[li] = true
-          used += lw
-          li--
-        } else if (rw !== Infinity && used + rw <= avail) {
-          visible[ri] = true
-          used += rw
-          ri++
-        } else if (lw !== Infinity && used + lw <= avail) {
-          visible[li] = true
-          used += lw
-          li--
-        } else {
-          break
-        }
-      }
-    }
-    tabs.forEach((t, i) => {
-      if (visible[i]) t.removeAttribute('data-overflowed')
-      else t.setAttribute('data-overflowed', '')
-    })
-    // 选中项被收进更多 → 更多按钮高亮（激活项可见窗口下不会收起，此处防御）
-    const activeOverflowed = tabs.some(
-      (t) => t.getAttribute('data-value') === active && t.hasAttribute('data-overflowed'),
-    )
-    moreBtn.classList.toggle('more-btn--active', activeOverflowed)
+    this.updateMoreOffview()
     this.renderMoreDropdown()
   }
 
-  /** 渲染更多下拉内容（被收起的 tab 列表） */
+  /** 计算并标记当前滚动视口之外的 tab（data-offview；左滚出 + 右滚出），滚动/resize 时更新 */
+  private updateMoreOffview(): void {
+    const tablist = this.shadow.querySelector('.tablist') as HTMLElement | null
+    if (!tablist || !this.hasAttr('more')) return
+    const vertical = this.isVertical()
+    const scrollStart = vertical ? tablist.scrollTop : tablist.scrollLeft
+    const clientSize = vertical ? tablist.clientHeight : tablist.clientWidth
+    const viewEnd = scrollStart + clientSize
+    for (const t of this.shadow.querySelectorAll<HTMLElement>('[role="tab"][data-value]')) {
+      const start = vertical ? t.offsetTop : t.offsetLeft
+      const end = start + (vertical ? t.offsetHeight : t.offsetWidth)
+      // 与视口有交集即视为可见（部分可见也算）
+      const offview = end <= scrollStart || start >= viewEnd
+      t.toggleAttribute('data-offview', offview)
+    }
+  }
+
+  /** 渲染更多下拉内容（当前滚动视口之外的 tab 列表，作快捷跳转） */
   private renderMoreDropdown(): void {
     const dropdown = this.shadow.querySelector('.more-dropdown') as HTMLElement | null
     const list = this.shadow.querySelector('.more-list') as HTMLElement | null
     const search = this.shadow.querySelector('.more-search') as HTMLInputElement | null
     if (!dropdown || !list) return
     list.innerHTML = ''
-    const overflowed = [
-      ...this.shadow.querySelectorAll<HTMLElement>('[role="tab"][data-value][data-overflowed]'),
+    const offview = [
+      ...this.shadow.querySelectorAll<HTMLElement>('[role="tab"][data-value][data-offview]'),
     ]
     const active = this.getAttr('active', '') || (this.panels[0]?.getAttribute('value') ?? '')
-    // 搜索框：溢出项较多时才有意义（>5 个收起项才显示搜索）
-    const showSearch = overflowed.length > 5
+    // 搜索框：视口外项较多时才有意义（>5 个才显示搜索）
+    const showSearch = offview.length > 5
     if (search) {
       search.hidden = !showSearch
       if (showSearch) search.setAttribute('aria-label', this.t('tabs.more'))
     }
     const keyword = (search?.value ?? '').trim().toLowerCase()
-    let activeItem: HTMLElement | null = null
-    for (const tab of overflowed) {
+    for (const tab of offview) {
       const value = tab.getAttribute('data-value') ?? ''
       const panel = this.panels.find((p) => (p.getAttribute('value') ?? '') === value)
       const labelText = panel?.getAttribute('label') ?? value
@@ -1169,19 +1136,16 @@ export class OASTabs extends OASElement {
       item.setAttribute('data-value', value)
       item.setAttribute('aria-current', String(value === active))
       item.textContent = labelText
-      // 搜索过滤：不匹配的收起项隐藏
+      // 搜索过滤：不匹配的视口外项隐藏
       if (keyword && !labelText.toLowerCase().includes(keyword)) item.hidden = true
       item.addEventListener('click', () => {
         this.moreOpen = false
-        this.activate(value)
         this.syncMoreDropdown()
+        // 点选视口外项：平滑滚动到可见区（激活项与相邻项因连续排布自然一起进入视口）+ 激活
+        tab.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
+        this.activate(value)
       })
       list.appendChild(item)
-      if (value === active) activeItem = item
-    }
-    // 打开下拉时选中项滚动到可见区域（平滑滚动；选中项与其附近项进入视口）
-    if (activeItem && this.moreOpen) {
-      activeItem.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }
   }
 
