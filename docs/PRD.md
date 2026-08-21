@@ -658,3 +658,20 @@ Tabs 组件按能力补齐全量补齐 + 首页页脚打磨：
 - **下划线渲染修复**：激活下划线在溢出滚动容器下被裁剪/叠加/亚像素伪影 → 改用 ::after 伪元素（独立 2px 盒子，渲染精确、不被裁剪），card 模式保持边框连通不叠加
 - **首页页脚**：页脚品牌位改真实 logo 图标（favicon.svg/dark 用 favicon-dark.svg，与导航栏一致）+ 消除底部 128px 空白（vitepress .VPHome 默认 margin 残留）+ 版权行底部间距 56px→32px
 - **验收**：tabs 单测 107（全量 2452）、typecheck/build/api:check 全绿、e2e chromium 935 + firefox 抽样 348 全绿、contrast-gate 0 违规、console 零告警；浏览器实测各能力正常渲染可交互
+
+## v2.1.4 basic 组件复核补齐发布（已完成）
+
+basic 族 12 组件按能力并集复核后的增量能力补齐 + divider 垂直方向能力完善：
+
+- **button**：`icon-end` 双侧内容（左图标+右下拉箭头）、loading 保持宽度（spinner 居中不撑宽）、`loading-text` 加载文本、`loading="auto"` 异步自动 loading（Promise 期间自动进出）、`disabled-focusable` 禁用可聚焦（挂 tooltip 解释原因）、`download`/`rel` 链接透传
+- **button-group**：`spread` 均分铺满、组级 `variant`/`round` 透传
+- **tag**：`close-icon` 自定义关闭图标 + `close-label` 朗读名、`loading` 异步关闭（`oas-close` detail 含 `done()` 回调）、`checked-icon` 选中勾选图标
+- **badge**：`bordered` 白描边（从背景分离）、`icon` 徽标内图标、aria-live 数字变化播报（role=status+aria-live=polite）、`variant="outline"` 描边形态、`size` 三档
+- **typography**（oas-text/title/paragraph）：`align` 对齐档、`weight` 字重档、`numeric` 数字等宽（表格数字列对齐）、mark 自定义色（`--oas-text-mark-bg` 变量开口）
+- **ellipsis**：`direction="start|middle"` 省略方向（保留首尾中部省略，长路径/哈希场景）
+- **link**：`download` 透传、`size` 字号档、`loading` 态（转圈+禁点）
+- **divider**：`content-position` 垂直分流（top/bottom 贴顶/贴底）、`text-orientation` 文字方向（横排/竖排）、垂直 inset/middle 缩进留空（grid 行留白，相对容器高度）
+- **kbd**：语义键名映射（command→⌘ 等 30 键 + abbr title 全称朗读）
+- **label**：`size`/`weight` 档
+- **space**：弹簧占位 demo（文档级）
+- **验收**：各组件单测全过（button 58/tag 70/badge 120/button-group 28/typography+ellipsis 24/link+divider 89/kbd 25/label 38）、全量 2599、typecheck/build/api:check 全绿、e2e chromium 935 + firefox 348、contrast-gate 0 违规、console 零告警；浏览器复核关键交互（loading 保宽、disabled-focusable、badge 描边、tag 选中√、divider 垂直对齐/竖排/缩进）
