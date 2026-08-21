@@ -73,6 +73,18 @@ A horizontal/vertical divider that separates content.
 
 A vertical divider stretches to the full row height inside flex/grid containers; in inline context it stays at 1em text height.
 
+### Vertical content alignment
+
+In `vertical` mode, `content-position` accepts `top` (top-aligned) / `center` (default, centered) / `bottom` (bottom-aligned); the text runs vertically between the two line segments. In `horizontal` mode only `left` / `center` / `right` apply — using a cross-direction value (e.g. `horizontal` + `top`, `vertical` + `left`) falls back to `center` with a console warning. The top/bottom inset goes through the `--oas-divider-title-inset` variable (default 5%).
+
+<DemoBlock title="Vertical text alignment">
+  <div style="display: flex; height: 64px; gap: 12px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
+    <oas-divider direction="vertical" content-position="top">Top</oas-divider>
+    <oas-divider direction="vertical">Center</oas-divider>
+    <oas-divider direction="vertical" content-position="bottom">Bottom</oas-divider>
+  </div>
+</DemoBlock>
+
 ## Custom styling
 
 The `color` attribute accepts 11 preset names (auto-adapting to light/dark themes) or any CSS color value (takes effect immediately, overriding presets and defaults); line width, spacing and the title-side gap go through CSS variables:
@@ -118,7 +130,7 @@ The `color` attribute accepts 11 preset names (auto-adapting to light/dark theme
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `color` | Color: accepts 11 preset names (mapped to `--oas-preset-*` tokens) or any CSS color value | `string` | — |
-| `content-position` | Content position | `DividerPosition` | `center` |
+| `content-position` | Content position | `string` | — |
 | `dashed` | Dashed | `boolean` | — |
 | `direction` | Direction | `DividerDirection` | `horizontal` |
 | `inset` | Indent: start-side inset of a horizontal line (default 5%, via `--oas-divider-title-inset`), aligned with the title inset | `boolean` | — |

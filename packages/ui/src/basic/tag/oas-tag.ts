@@ -37,6 +37,12 @@ const VALID_TAG_SIZES: readonly TagSize[] = ['xs', 'small', 'medium', 'large', '
 const VALID_TAG_VARIANTS: readonly TagVariant[] = ['outlined', 'filled', 'solid']
 const warnedSizes = new Set<string>()
 
+/** 默认关闭按钮 × 图标：template() 与 close-icon 移除后还原共用同一份结构（SSR 快照一致） */
+const DEFAULT_CLOSE_SVG = `
+          <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+            <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>`
+
 /** 非法 size 归一化：回落 medium 并在 dev 下 console.warn 一次（同值去重） */
 function normalizeTagSize(raw: string): TagSize {
   if ((VALID_TAG_SIZES as readonly string[]).includes(raw)) return raw as TagSize
@@ -354,6 +360,45 @@ const STYLE = `
   box-shadow: var(--oas-focus-ring);
   border-radius: 50%;
 }
+/* ===== 关闭按钮内容：默认 × svg 或 close-icon 自定义 oas-icon；loading 时被 spinner 替换 ===== */
+.tag button .close-icon {
+  display: inline-flex;
+  align-items: center;
+}
+/* loading 时隐藏原关闭图标（visibility 保留占位宽度，spinner 无缝替换不抖动） */
+.tag button.loading .close-icon {
+  visibility: hidden;
+}
+.tag button .spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: oas-tag-spin 0.8s linear infinite;
+}
+.tag button .spinner[hidden] {
+  display: none;
+}
+@keyframes oas-tag-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tag button .spinner {
+    animation: none;
+  }
+}
+/* ===== checkable 选中勾选图标：文字前 √（默认 check 图标，checked-icon 可自定义） ===== */
+.tag .checked-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.tag .checked-icon[hidden] {
+  display: none;
+}
 `
 
 export class OASTag extends OASElement {
@@ -379,6 +424,10 @@ export class OASTag extends OASElement {
       'hit',
       'strong',
       'multiline',
+      'loading',
+      'close-icon',
+      'close-label',
+      'checked-icon',
     ]
   }
 
@@ -400,23 +449,35 @@ export class OASTag extends OASElement {
       <${tag} class="tag" part="tag"${hrefAttr}>
         <span class="dot" part="dot" aria-hidden="true" hidden></span>
         <span class="icon" part="icon" aria-hidden="true" hidden></span>
+        <span class="checked-icon" aria-hidden="true" hidden></span>
         <span class="content"><slot></slot></span>
         <button part="close" aria-label="" hidden>
-          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
-            <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
+          <span class="close-icon" aria-hidden="true">${DEFAULT_CLOSE_SVG}</span>
+          <span class="spinner" aria-hidden="true" hidden></span>
         </button>
       </${tag}>
     `
   }
 
-  /** 关闭流程：派发 oas-close（cancelable），preventDefault 可阻止移除；disabled / checkable（与 closable 互斥）不可关 */
+  /**
+   * 关闭流程：派发 oas-close（cancelable），preventDefault 可阻止移除；
+   * disabled / checkable（与 closable 互斥）/ loading（异步关闭中）不可关。
+   * detail.done() 供宿主异步完成后退出 loading（幂等，可重复调用）。
+   */
   private closeTag(): void {
-    if (this.hasAttr('disabled') || this.hasAttr('checkable')) return
+    if (this.hasAttr('disabled') || this.hasAttr('checkable') || this.hasAttr('loading')) return
+    let doneCalled = false
     const event = new CustomEvent('oas-close', {
       bubbles: true,
       composed: true,
       cancelable: true,
+      detail: {
+        done: () => {
+          if (doneCalled) return
+          doneCalled = true
+          this.removeAttribute('loading')
+        },
+      },
     })
     const notPrevented = this.dispatchEvent(event)
     if (notPrevented) this.remove()
@@ -533,6 +594,7 @@ export class OASTag extends OASElement {
     const hit = this.hasAttr('hit')
     const strong = this.hasAttr('strong')
     const multiline = this.hasAttr('multiline')
+    const loading = this.hasAttr('loading')
 
     this.tagRoot.className = [
       'tag',
@@ -591,10 +653,34 @@ export class OASTag extends OASElement {
     if (btn) {
       // checkable 与 closable 互斥：checkable 时隐藏关闭按钮（closable 失效）
       btn.hidden = !closable || checkable
-      // disabled 不可关：原生 disabled 阻断点击与聚焦
-      btn.disabled = disabled
-      // 关闭按钮内置文案走 locale registry（setLocale 切换自动刷新）
-      btn.setAttribute('aria-label', this.t('tag.close'))
+      // disabled / loading 不可关：原生 disabled 阻断点击与聚焦
+      btn.disabled = disabled || loading
+      btn.classList.toggle('loading', loading)
+      // loading 语义：spinner 替换关闭图标；aria-busy 同步加载态
+      if (loading) btn.setAttribute('aria-busy', 'true')
+      else btn.removeAttribute('aria-busy')
+      // 关闭按钮 aria-label：close-label 自定义优先，缺省走 locale registry（setLocale 切换自动刷新）
+      const closeLabel = this.getAttr('close-label', '')
+      btn.setAttribute('aria-label', closeLabel || this.t('tag.close'))
+      // spinner：loading 时替换关闭图标内容
+      const spinner = btn.querySelector<HTMLElement>('.spinner')
+      if (spinner) spinner.hidden = !loading
+      // close-icon 自定义关闭图标：合法图标名替换默认 × svg；移除后还原默认 svg
+      const closeIconEl = btn.querySelector<HTMLElement>('.close-icon')
+      const closeIcon = this.getAttr('close-icon', '')
+      if (closeIconEl) {
+        const valid = closeIcon !== '' && iconRegistry[closeIcon as IconName] !== undefined
+        if (valid) {
+          if (closeIconEl.dataset.icon !== closeIcon) {
+            closeIconEl.innerHTML = `<oas-icon name="${closeIcon}"></oas-icon>`
+            closeIconEl.dataset.icon = closeIcon
+          }
+        } else if (closeIconEl.dataset.icon !== undefined) {
+          // 还原默认 × svg（与 SSR 模板结构一致）
+          closeIconEl.innerHTML = DEFAULT_CLOSE_SVG
+          delete closeIconEl.dataset.icon
+        }
+      }
     }
 
     // dot / processing 状态点：processing 隐含 dot（无需显式 dot 属性）
@@ -624,6 +710,23 @@ export class OASTag extends OASElement {
       } else {
         iconEl.innerHTML = ''
         delete iconEl.dataset.icon
+      }
+    }
+
+    // checked-icon：checkable + checked 时文字前渲染勾选图标（默认 check，checked-icon 可自定义）；非法名隐藏
+    const checkedIconEl = this.tagRoot.querySelector<HTMLElement>('.checked-icon')
+    const checkedIcon = this.getAttr('checked-icon', 'check')
+    if (checkedIconEl) {
+      const valid = checkedIcon !== '' && iconRegistry[checkedIcon as IconName] !== undefined
+      checkedIconEl.hidden = !(checkable && checked && valid)
+      if (valid) {
+        if (checkedIconEl.dataset.icon !== checkedIcon) {
+          checkedIconEl.innerHTML = `<oas-icon name="${checkedIcon}"></oas-icon>`
+          checkedIconEl.dataset.icon = checkedIcon
+        }
+      } else {
+        checkedIconEl.innerHTML = ''
+        delete checkedIconEl.dataset.icon
       }
     }
   }

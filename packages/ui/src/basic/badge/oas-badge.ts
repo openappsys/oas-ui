@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type BadgeMode = 'count' | 'ribbon'
 export type BadgeColor = 'primary' | 'success' | 'warning' | 'danger'
@@ -43,7 +44,10 @@ export type BadgeAttention = 'pulse' | 'bounce'
 export type BadgeCorner = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
 /** 状态点形态（行内独立元素，与角标模式互斥） */
 export type BadgeStatus = 'success' | 'processing' | 'default' | 'error' | 'warning'
-export type BadgeSize = 'small'
+/** 徽标尺寸档：small 紧凑 / medium 默认（基类即 medium）/ large 大档；非法值静默回落 medium */
+export type BadgeSize = 'small' | 'medium' | 'large'
+/** 形态：solid 实心（默认，不加 class）/ outline 描边（背景透明、边框与文字走 color 语义）；非法值静默回落 solid */
+export type BadgeVariant = 'solid' | 'outline'
 /** 预设色板名（映射 --oas-preset-* token，color 属性支持按名引用；非法名按普通色值处理） */
 export type BadgePresetColor =
   | 'magenta'
@@ -75,6 +79,8 @@ export const BADGE_PRESET_COLORS: readonly BadgePresetColor[] = [
 const VALID_STATUS: readonly string[] = ['success', 'processing', 'default', 'error', 'warning']
 const VALID_ATTENTION: readonly string[] = ['pulse', 'bounce']
 const VALID_CORNER: readonly string[] = ['top-right', 'top-left', 'bottom-right', 'bottom-left']
+const VALID_SIZES: readonly string[] = ['small', 'medium', 'large']
+const VALID_VARIANTS: readonly string[] = ['solid', 'outline']
 const VALID_RIBBON_DIRECTIONS: readonly string[] = ['down', 'left', 'right']
 const VALID_RIBBON_VERTICALS: readonly string[] = ['top', 'center', 'bottom']
 const VALID_RIBBON_SIZES: readonly string[] = ['sm', 'md', 'lg']
@@ -249,6 +255,45 @@ const STYLE = `
   min-width: 6px;
   width: 6px;
   height: 6px;
+}
+/* size=large 大档：数字徽标高约 20px、sm 字号；dot 10px。medium 为基类（16px / xs 字号），
+   显式 size="medium" 仅写 medium class（样式即基类） */
+.badge.large {
+  min-width: 20px;
+  height: 20px;
+  line-height: 20px;
+  border-radius: 10px;
+  font-size: var(--oas-font-size-sm);
+  padding: 0 var(--oas-space-2);
+}
+.badge.large.dot {
+  min-width: 10px;
+  width: 10px;
+  height: 10px;
+}
+/* bordered 白描边：2px 背景色外圈，从头像/图片背景分离。box-shadow 不参与布局，
+   与 corner/offset/overlap 定位天然联动（仅视觉叠加） */
+.badge.bordered {
+  box-shadow: 0 0 0 2px var(--oas-color-bg);
+}
+/* variant=outline 描边形态：背景透明、边框与文字走 color 语义色（--oas-badge-bg，
+   语义色/预设名/任意色值统一生效）；dot 为空心圆。solid（默认）不加 class */
+.badge.variant-outline {
+  background: transparent;
+  border: 1px solid var(--oas-badge-bg, var(--oas-color-danger));
+  color: var(--oas-badge-bg, var(--oas-color-danger));
+}
+.badge.variant-outline.dot {
+  background: transparent;
+}
+/* 图标徽标（icon 属性）：flex 居中，内联 SVG 1em 跟随徽标字号 */
+.badge.has-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.badge.has-icon svg {
+  display: block;
 }
 /* corner 四角：仅切换 anchor 定位（translate 由 JS 内联写入，保证与 offset/overlap 叠加） */
 .badge.corner-top-left {
@@ -1260,6 +1305,9 @@ export class OASBadge extends OASElement {
       'ribbon',
       'mode',
       'color',
+      'bordered',
+      'icon',
+      'variant',
       'placement',
       'text',
       'offset',
@@ -1289,7 +1337,7 @@ export class OASBadge extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
-      <sup class="badge" part="badge" hidden></sup>
+      <sup class="badge" part="badge" role="status" aria-live="polite" aria-atomic="true" hidden></sup>
       <span class="status" part="status" hidden>
         <span class="status-dot" part="status-dot" aria-hidden="true"></span>
         <span class="status-text" part="status-text"></span>
@@ -1467,8 +1515,18 @@ export class OASBadge extends OASElement {
         const standalone = !this.defaultSlotEl || this.defaultSlotEl.assignedNodes().length === 0
         el.classList.toggle('standalone', standalone)
 
-        // size 小尺寸档
-        el.classList.toggle('small', this.getAttr('size', '') === 'small')
+        // size 多尺寸档：small / medium（默认，基类即 medium）/ large；非法值静默回落 medium（不写 class）
+        const size = this.getAttr('size', '') as BadgeSize
+        const sizeValid = (VALID_SIZES as readonly string[]).includes(size)
+        el.classList.toggle('small', sizeValid && size === 'small')
+        el.classList.toggle('medium', sizeValid && size === 'medium')
+        el.classList.toggle('large', sizeValid && size === 'large')
+        // variant 形态：outline 描边（背景透明、边框/文字走 color 语义）；solid 默认不加 class
+        const variant = this.getAttr('variant', '') as BadgeVariant
+        const variantValid = (VALID_VARIANTS as readonly string[]).includes(variant)
+        el.classList.toggle('variant-outline', variantValid && variant === 'outline')
+        // bordered 白描边：2px 背景色 box-shadow（从头像/图片背景分离，视觉叠加不改定位）
+        el.classList.toggle('bordered', this.hasAttr('bordered'))
         // color 全模式：语义色 / 预设名 / 任意色值；无 color 时移除变量（CSS 回落默认 danger）
         const color = this.getAttr('color', '') as BadgeColor | BadgePresetColor
         if (color) {
@@ -1523,17 +1581,56 @@ export class OASBadge extends OASElement {
 
         el.classList.toggle('dot', dot)
 
-        if (dot) {
-          el.textContent = ''
+        // icon 徽标：icon 属性（iconRegistry 图标名）优先于 value/dot（互斥）；
+        // 非法图标名静默回落数字/圆点逻辑
+        const iconName = this.getAttr('icon', '')
+        const hasIcon = iconName !== '' && iconRegistry[iconName as IconName] !== undefined
+        el.classList.toggle('has-icon', hasIcon)
+
+        if (hasIcon) {
+          // 渲染 iconRegistry 内联 SVG（装饰性对读屏隐藏，1em 跟随徽标字号）；
+          // SVG 节点复用（增量更新不重建），仅图标名变化时重写内容
+          let svg = el.querySelector<SVGElement>('svg')
+          if (!svg) {
+            svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+            svg.setAttribute('viewBox', '0 0 16 16')
+            svg.setAttribute('width', '1em')
+            svg.setAttribute('height', '1em')
+            svg.setAttribute('aria-hidden', 'true')
+            svg.setAttribute('focusable', 'false')
+            el.appendChild(svg)
+          }
+          if (el.dataset.icon !== iconName) {
+            svg.innerHTML = iconRegistry[iconName as IconName]
+            el.dataset.icon = iconName
+          }
+          el.removeAttribute('aria-label')
           el.hidden = false
-        } else if (!hasValue || (value === 0 && !showZero)) {
-          el.hidden = true
         } else {
-          const max = this.getAttr('max', '')
-          const maxNum = max === '' ? NaN : Number(max)
-          const display = !Number.isNaN(maxNum) && value > maxNum ? `${maxNum}+` : String(value)
-          el.textContent = display
-          el.hidden = false
+          // 清理 icon 节点（切回数字/圆点模式时移除 SVG）
+          const svg = el.querySelector('svg')
+          if (svg) {
+            svg.remove()
+            delete el.dataset.icon
+          }
+
+          if (dot) {
+            el.textContent = ''
+            el.removeAttribute('aria-label')
+            el.hidden = false
+          } else if (!hasValue || (value === 0 && !showZero)) {
+            el.hidden = true
+            el.removeAttribute('aria-label')
+          } else {
+            const max = this.getAttr('max', '')
+            const maxNum = max === '' ? NaN : Number(max)
+            const display = !Number.isNaN(maxNum) && value > maxNum ? `${maxNum}+` : String(value)
+            el.textContent = display
+            el.hidden = false
+            // aria-live 播报：数字（含 max 截断显示值）变化时更新 aria-label，走 locale
+            // （如「5 条未读通知」），role="status" + aria-atomic 保证整段播报
+            el.setAttribute('aria-label', this.t('badge.notifications', { count: display }))
+          }
         }
       }
     }

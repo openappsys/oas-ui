@@ -36,6 +36,16 @@ Clicking × dispatches `oas-close` (cancelable; `preventDefault` can prevent rem
   <oas-tag closable type="danger">Removed after close</oas-tag>
 </DemoBlock>
 
+## Custom close
+
+`close-icon` customizes the close button icon (an oas-icon icon-set name, default ×); `close-label` customizes the close button's aria-label (screen-reader announcement, defaulting to the locale "Close").
+
+<DemoBlock title="Custom close icon & label">
+  <oas-tag closable close-icon="trash" type="danger">Trash close</oas-tag>
+  <oas-tag closable close-icon="minus" type="info">Minus close</oas-tag>
+  <oas-tag closable close-label="Remove the Test tag" type="success">Custom label</oas-tag>
+</DemoBlock>
+
 ## Chip & clickable
 
 `chip`: pill radius + compact padding; `clickable`: the whole tag is clickable, dispatching `oas-click` on click/Enter/Space.
@@ -88,6 +98,17 @@ document.getElementById('close-anim').addEventListener('oas-close', (e) => {
   tag.style.opacity = '0'
   tag.style.transform = 'scale(0.92)'
   setTimeout(() => tag.remove(), 240)
+})`
+const asyncCloseScript = `// Async close: preventDefault stops auto-removal → loading → after the async task, done() exits loading → remove
+document.getElementById('async-close').addEventListener('oas-close', (e) => {
+  e.preventDefault()
+  const tag = e.target
+  tag.setAttribute('loading', '')
+  setTimeout(() => {
+    e.detail.done()
+    window.message?.success('Async confirmed, tag removed')
+    tag.remove()
+  }, 1200)
 })`
 onMounted(async () => {
   const { message } = await import('@oas-ui/ui')
@@ -143,6 +164,19 @@ onMounted(async () => {
     tag.style.transform = 'scale(0.92)'
     setTimeout(() => tag.remove(), 240)
   })
+
+  // Async close demo: preventDefault → loading (spinner) → after async done() exits loading → remove
+  const asyncClose = document.getElementById('async-close')
+  asyncClose?.addEventListener('oas-close', (e) => {
+    e.preventDefault()
+    const tag = e.target
+    tag.setAttribute('loading', '')
+    setTimeout(() => {
+      e.detail.done()
+      window.message?.success('Async confirmed, tag removed')
+      tag.remove()
+    }, 1200)
+  })
 })
 </script>
 
@@ -159,13 +193,19 @@ The default slot can hold an icon — combining an icon and text forms an icon t
 
 ## Selectable
 
-`checkable` enables selection: click / Enter / Space toggles `checked` and dispatches `oas-change` (`detail: { checked }`); the selected state is a solid fill. `checkable` is mutually exclusive with `closable` (the close button is hidden).
+`checkable` enables selection: click / Enter / Space toggles `checked` and dispatches `oas-change` (`detail: { checked }`); the selected state is a solid fill with a √ check icon before the text (`checked-icon` can customize the icon name). `checkable` is mutually exclusive with `closable` (the close button is hidden).
 
 <DemoBlock title="checkable tags">
   <oas-tag checkable onoas-change="message.info('Default ' + (event.detail.checked ? 'selected' : 'deselected'))">Default</oas-tag>
   <oas-tag checkable checked type="success" onoas-change="message.info('Success ' + (event.detail.checked ? 'selected' : 'deselected'))">Success</oas-tag>
   <oas-tag checkable chip type="primary" onoas-change="message.info('Chip ' + (event.detail.checked ? 'selected' : 'deselected'))">Chip</oas-tag>
   <oas-tag checkable disabled type="warning">Disabled, not selectable</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="checkable check icons">
+  <oas-tag checkable checked onoas-change="message.info('Default ' + (event.detail.checked ? 'selected' : 'deselected'))">Selected (√)</oas-tag>
+  <oas-tag checkable checked type="success" checked-icon="star" onoas-change="message.info('Star ' + (event.detail.checked ? 'selected' : 'deselected'))">Star check</oas-tag>
+  <oas-tag checkable chip type="primary" checked-icon="check-circle" onoas-change="message.info('Chip ' + (event.detail.checked ? 'selected' : 'deselected'))">Circle-check chip</oas-tag>
 </DemoBlock>
 
 ## Variants
@@ -339,6 +379,17 @@ A set of `closable` tags supports native HTML5 drag & drop reordering (`dragstar
   </oas-space>
 </DemoBlock>
 
+## Async close
+
+`loading` enters the closing-loading state: the close button shows a spinner and is disabled (`aria-busy` synced). Inside `oas-close`, `preventDefault` stops the auto-removal, the host runs the async task, then calls `event.detail.done()` to exit loading before removing the tag.
+
+<DemoBlock title="Async close" :script="asyncCloseScript">
+  <oas-space id="async-close" size="small">
+    <oas-tag closable type="primary">Click × to simulate async confirm</oas-tag>
+    <oas-tag closable type="success">Removed after async</oas-tag>
+  </oas-space>
+</DemoBlock>
+
 ## Tag group
 
 `oas-tag-group` groups several `checkable` tags into a value selector: single-select (`value` as a single value) and multi-select (`multiple` + comma-separated `value`). Clicking a tag toggles selection and dispatches `oas-change` (single: `detail: { value }` / multiple: `detail: { value: [] }`); `disabled` disables the whole group. Child `checked` states are managed by the group (controlled).
@@ -375,15 +426,19 @@ A set of `closable` tags supports native HTML5 drag & drop reordering (`dragstar
 | --- | --- | --- | --- |
 | `checkable` | Selectable: click / Enter / Space toggles `checked` and dispatches `oas-change`; mutually exclusive with `closable` | `boolean` | — |
 | `checked` | Checked state (effective when `checkable`) | `boolean` | — |
+| `checked-icon` | Checkmark icon before a checked checkable tag (iconRegistry name, default check) | `string` | `check` |
 | `chip` | Chip (pill radius + compact padding) | `boolean` | — |
 | `clickable` | Whole tag clickable (focusable, dispatches `oas-click`) | `boolean` | — |
 | `closable` | Closable | `boolean` | — |
+| `close-icon` | Custom close-button icon (iconRegistry name), replaces the default × | `string` | — |
+| `close-label` | aria-label of the close button (a11y context, e.g. "Remove tag xx"); defaults to the locale "Close" | `string` | — |
 | `color` | Custom color: 11 preset names (`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`, mapped to `--oas-preset-*` tokens) or any CSS value, overrides the `type` semantic color; renders as `filled` when `variant` is unset | `string` | — |
 | `disabled` | Disabled (cannot be clicked or closed) | `boolean` | — |
 | `dot` | Status dot before the text (8px, color follows `type` / `color`) | `boolean` | — |
 | `hit` | Heavy border: opaque semantic-color outline (follows the custom color when set) | `boolean` | — |
 | `href` | Link URL: renders a native `<a>` when set | `string` | — |
 | `icon` | Icon name (reusing the oas-icon icon set), placed before the text, sized to the font | `string` | — |
+| `loading` | Loading state: spinner replaces the close icon and blocks clicks (`oas-close` detail has a `done()` callback the host calls after async work) | `boolean` | — |
 | `max-width` | Max width of the tag content (e.g. `120px`); overflow is truncated with an ellipsis; with `multiline` it only constrains the width so content wraps | `string` | — |
 | `multiline` | Multiline: content wraps (auto height + vertical padding compensation); with `max-width` content wraps instead of being truncated | `boolean` | — |
 | `processing` | Pulsing status dot (implies `dot`); disabled under `prefers-reduced-motion` | `boolean` | — |

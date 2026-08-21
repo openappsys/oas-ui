@@ -2,6 +2,21 @@ import { OASElement } from '@oas-ui/core'
 
 export type TextType = 'default' | 'secondary' | 'success' | 'warning' | 'danger' | 'disabled'
 
+export type AlignType = 'start' | 'center' | 'end' | 'justify'
+
+export type WeightType = 'regular' | 'medium' | 'semibold' | 'bold'
+
+/** align 合法档位（text-align 的 start/end 为逻辑值，RTL 安全；start 对应 left、end 对应 right） */
+const ALIGN_VALUES: readonly AlignType[] = ['start', 'center', 'end', 'justify']
+
+/** weight 档位 → font-weight 数值（与 strong 布尔 600 兼容：semibold 即 strong 字重） */
+const WEIGHT_MAP: Record<WeightType, string> = {
+  regular: '400',
+  medium: '500',
+  semibold: '600',
+  bold: '700',
+}
+
 const TYPE_COLOR: Record<TextType, string> = {
   default: 'var(--oas-color-text-primary)',
   secondary: 'var(--oas-color-text-secondary)',
@@ -38,14 +53,24 @@ const BASE_STYLE = `
   display: inline-block;
   max-width: 100%;
 }
-/* 修饰布尔：strong/mark/code/underline/delete/italic（class 驱动，语义与原生 strong/mark/code/u/del/em 对齐） */
+/* 修饰布尔：strong/mark/code/underline/delete/italic/numeric（class 驱动，语义与原生 strong/mark/code/u/del/em 对齐） */
 .text.strong {
   font-weight: 600;
 }
+/* mark 背景色走 CSS 变量开口 --oas-text-mark-bg：宿主可在元素/祖先上设置变量自定义标记色，
+   缺省回退 warning 语义色（dark/high-contrast 主题由 token 自动适配，组件不自造色值） */
 .text.mark {
-  background: color-mix(in srgb, var(--oas-color-warning) 18%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--oas-text-mark-bg, var(--oas-color-warning)) 18%,
+    transparent
+  );
   padding: 0 var(--oas-space-1);
   border-radius: var(--oas-radius-sm);
+}
+/* numeric 数字等宽：表格/统计数字列对齐（font-variant-numeric: tabular-nums） */
+.text.numeric {
+  font-variant-numeric: tabular-nums;
 }
 .text.code {
   font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
@@ -182,6 +207,9 @@ function createTypography(
         'underline',
         'delete',
         'italic',
+        'align',
+        'weight',
+        'numeric',
       ]
     }
 
@@ -321,10 +349,16 @@ function createTypography(
       for (const d of ['1', '2', '3']) {
         root.classList.toggle(`depth-${d}`, useDepth && depthRaw === d)
       }
-      // 修饰六布尔（class 驱动样式；code/delete 换原生标签已在换标签链处理）
-      for (const b of ['strong', 'mark', 'code', 'underline', 'delete', 'italic'] as const) {
+      // 修饰六布尔（class 驱动样式；code/delete 换原生标签已在换标签链处理）+ numeric 数字等宽
+      for (const b of ['strong', 'mark', 'code', 'underline', 'delete', 'italic', 'numeric'] as const) {
         root.classList.toggle(b, this.hasAttr(b))
       }
+      // 文本对齐（align 四档；text-align 的 start/end 为逻辑值，RTL 安全）
+      const align = this.getAttr('align', '') as AlignType
+      root.style.textAlign = (ALIGN_VALUES as readonly string[]).includes(align) ? align : ''
+      // 字重档（weight 四档；显式档经内联优先于 strong 布尔类的 600）
+      const weight = this.getAttr('weight', '') as WeightType
+      root.style.fontWeight = WEIGHT_MAP[weight] ? WEIGHT_MAP[weight] : ''
       // suffix：ellipsis 或 line-clamp 开启时展示
       const suffix = this.getAttr('ellipsis-suffix', '')
       if (this.suffixEl) {

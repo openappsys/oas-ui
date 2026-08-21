@@ -43,10 +43,34 @@
 
 ## 禁用与加载
 
+`disabled` 禁用按钮；`loading` 进入加载态——原文字保留占位（宽度不变）、spinner 居中显示，配 `loading-text` 可显示加载文案。
+
 <DemoBlock title="禁用与加载态">
   <oas-button disabled>禁用</oas-button>
-  <oas-button type="primary" loading>加载中</oas-button>
-  <oas-button type="success" loading>提交中</oas-button>
+  <oas-button type="primary" loading loading-text="加载中…">加载</oas-button>
+  <oas-button type="success" loading loading-text="提交中…">提交</oas-button>
+</DemoBlock>
+
+### 异步自动加载
+
+`loading="auto"` 时，`oas-click` 宿主处理返回 Promise 期间自动进入加载态，Promise resolve/reject 后自动退出。
+
+<DemoBlock title="异步提交自动 loading">
+  <oas-button type="primary" loading="auto" loading-text="提交中…" onoas-click="new Promise((r) => setTimeout(() => { message.success('提交完成'); r() }, 1500))">点击异步提交</oas-button>
+  <oas-button type="success" loading="auto" onoas-click="new Promise((r) => setTimeout(() => { message.success('保存成功'); r() }, 1200))">异步保存</oas-button>
+</DemoBlock>
+
+### 禁用但可聚焦
+
+`disabled-focusable` 呈现禁用外观（降饱和 + `aria-disabled`），但不设原生 `disabled`——仍可聚焦、可 hover，适合挂在 tooltip 上解释禁用原因；点击被组件拦截，不派发 `oas-click`。
+
+<DemoBlock title="禁用但可聚焦（配 tooltip 解释）">
+  <oas-tooltip content="需要先登录后才能执行此操作">
+    <oas-button type="primary" disabled-focusable>登录后可操作</oas-button>
+  </oas-tooltip>
+  <oas-tooltip content="当前没有可下载的文件">
+    <oas-button icon="download" disabled-focusable>下载报表</oas-button>
+  </oas-tooltip>
 </DemoBlock>
 
 ## 事件
@@ -127,13 +151,28 @@
   <oas-button icon-position="end" icon="chevron-right">下一步</oas-button>
 </DemoBlock>
 
+## 双侧图标
+
+`icon` 渲染文字前图标，`icon-end` 在文字后渲染第二个图标（均复用 oas-icon 图标集），两者可与 `icon-position` 并存。
+
+<DemoBlock title="双侧图标">
+  <oas-button type="primary" icon="download" icon-end="arrow-right">下载并继续</oas-button>
+  <oas-button icon="user" icon-end="chevron-right">下一步</oas-button>
+  <oas-button type="success" icon="check-circle" icon-end="arrow-right">确认并提交</oas-button>
+</DemoBlock>
+
 ## 链接按钮
 
-设置 `href` 后渲染为原生链接（`<a>`），支持 `target` 指定打开方式（`_blank` / `_self` 等）。
+设置 `href` 后渲染为原生链接（`<a>`），支持 `target` 指定打开方式（`_blank` / `_self` 等）；同时透传 `download`（文件下载）与 `rel`（链接关系）属性。
 
 <DemoBlock title="链接按钮">
   <oas-button href="#">默认链接</oas-button>
   <oas-button href="#" target="_blank" type="primary">新窗口打开</oas-button>
+</DemoBlock>
+
+<DemoBlock title="下载与 rel">
+  <oas-button href="/files/report.zip" download="季度报表.zip" type="primary">下载季度报表</oas-button>
+  <oas-button href="https://example.com" target="_blank" rel="noopener">外链（rel=noopener）</oas-button>
 </DemoBlock>
 
 ## 朴素
@@ -226,12 +265,17 @@
 | `circle` | 圆形按钮（纯图标场景，正方形 + 正圆角） | `boolean` | — |
 | `color` | 自定义颜色：覆盖 `type` 语义色（任意色值），优先级高于 `type` | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
+| `disabled-focusable` | 视觉禁用但保持可聚焦/可悬停（aria-disabled + 拦截点击），用于挂 tooltip 解释禁用原因 | `boolean` | — |
+| `download` | 链接模式（href）透传 `download` 属性（文件下载按钮） | `string` | — |
 | `ghost` | 幽灵/描边形态，透明底 + 按 `type` 着色描边，hover 加深 | `boolean` | — |
 | `href` | 链接地址：设置后渲染为原生链接 `<a>` | `string` | — |
 | `icon` | 图标名（复用 oas-icon 图标集）；无文字时等宽、以图标名兜底名称 | `string` | — |
+| `icon-end` | 文字后的第二个图标（iconRegistry 图标名），与 `icon`/`icon-position` 并存——「左图标+右下拉箭头」等双侧内容形态 | `string` | — |
 | `icon-position` | 图标位置：`start`（默认，图标在左）/ `end`（图标在右） | `string` | `start` |
-| `loading` | 加载态 | `boolean` | — |
+| `loading` | 加载态 | — | — |
+| `loading-text` | 加载态显示的文本（如「提交中…」），设置后 loading 时替换标签内容 | `string` | — |
 | `plain` | 朴素形态：低对比浅色（透明底 + 弱化描边文字），等价 `variant="filled"` | `boolean` | — |
+| `rel` | 链接模式（href）透传 `rel` 属性（`target="_blank"` 时配 `noopener` 安全） | `string` | — |
 | `round` | 胶囊圆角（`--oas-radius-full` / `999px`） | `boolean` | — |
 | `size` | 尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警 | `ButtonSize` | `medium` |
 | `target` | 链接打开方式（`_blank` / `_self` 等），配合 `href` | `string` | — |

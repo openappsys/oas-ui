@@ -115,10 +115,13 @@
       "ribbon-size": "diagonal 斜带尺寸档位：`sm`（默认，30px 带宽 / xs 字号）/ `md`（33px / sm 字号，钉点 35px）/ `lg`（36px / md 字号，钉点 45px，宽幅大字场景）；档位只改 `--oas-badge-diagonal-*` 的 fallback 默认值，宿主自定义属性优先级更高；仅 `ribbon-form=\"diagonal\"` 生效，非法值静默回落 `sm`",
       "rolled": "端部卷边：布尔修饰，给探出外端做卷边效果（端部大圆角 + 内侧渐暗渐变模拟卷起圆柱，纯 CSS）；可叠加 `fold` / `banner` / `flag`，其他形态静默忽略",
       "showZero": "value=0 时是否显示",
-      "size": "尺寸：`small`（小档，数字徽标高约 13px、dot 6px）",
+      "size": "尺寸档位：small（小档，数字徽标高约 13px、dot 6px）/ medium（默认，约 16px）/ large（大档，约 20px、dot 10px）；非法值静默回落 medium",
       "status": "状态点形态：`success` / `processing` / `default` / `error` / `warning`，渲染「状态点 + `text` 文字」的行内独立元素，与 ribbon / dot / count 模式互斥（设置时优先渲染）；`processing` 圆点带脉冲动画（`prefers-reduced-motion` 下停用）",
       "text": "缎带或状态点文字；`slot=\"ribbon\"` 有内容时以插槽为准",
-      "value": "数字"
+      "value": "数字",
+      "bordered": "白描边：布尔属性，徽标加 2px 背景色描边（box-shadow: 0 0 0 2px var(--oas-color-bg)），从头像/图片背景分离；仅视觉叠加不改定位（与 corner/offset/overlap 联动正常）",
+      "icon": "徽标内图标：iconRegistry 图标名（如 check / warning），渲染内联 SVG（1em 跟随徽标字号、装饰性对读屏隐藏）；与 value/dot 互斥（icon 优先）",
+      "variant": "形态：solid（默认，实心）或 outline（描边：背景透明、边框与文字走 color 语义色）；非法值静默回落 solid"
     },
     "events": {},
     "slots": {
@@ -170,7 +173,12 @@
       "variant": "形态（与 `type` 正交）：`solid`（默认实底）/ `outlined`（描边）/ `dashed`（虚线描边）/ `filled`（浅底）/ `text`（纯文字）/ `link`（链接样式）",
       "color": "自定义颜色：覆盖 `type` 语义色（任意色值），优先级高于 `type`",
       "wave": "按下反馈：轻微下沉 + 加深（默认开）；`wave=\"false\"` 关闭",
-      "auto-insert-space": "中文间自动空格：两个连续汉字间插入空格（排版优化，默认关）"
+      "auto-insert-space": "中文间自动空格：两个连续汉字间插入空格（排版优化，默认关）",
+      "icon-end": "文字后的第二个图标（iconRegistry 图标名），与 `icon`/`icon-position` 并存——「左图标+右下拉箭头」等双侧内容形态",
+      "loading-text": "加载态显示的文本（如「提交中…」），设置后 loading 时替换标签内容",
+      "disabled-focusable": "视觉禁用但保持可聚焦/可悬停（aria-disabled + 拦截点击），用于挂 tooltip 解释禁用原因",
+      "download": "链接模式（href）透传 `download` 属性（文件下载按钮）",
+      "rel": "链接模式（href）透传 `rel` 属性（`target=\"_blank\"` 时配 `noopener` 安全）"
     },
     "events": {
       "oas-click": "点击，`detail: { originalEvent }`"
@@ -186,7 +194,10 @@
       "type": "透传给子按钮的类型",
       "value": "选中值（单选为单值，多选用逗号分隔）",
       "vertical": "纵向堆叠，圆角合并方向改为上下",
-      "pill": "胶囊形态：组整体首尾大圆角（`--oas-radius-full` / `999px`）"
+      "pill": "胶囊形态：组整体首尾大圆角（`--oas-radius-full` / `999px`）",
+      "spread": "组内按钮 flex:1 均分铺满容器宽度（移动端操作栏/表单底部按钮组）",
+      "variant": "组级 variant 形态透传子按钮（组设一次，子按钮统一应用）",
+      "round": "组级 round 圆角透传子按钮（组设一次，子按钮统一胶囊圆角）"
     },
     "events": {
       "oas-change": "选中变化。单选 `detail: { value }`；多选 `detail: { value: [] }`"
@@ -541,7 +552,8 @@
       "expandable": "溢出时显示「展开/收起」按钮",
       "rows": "显示行数（1 为单行省略，≥2 多行 `-webkit-line-clamp`）",
       "text": "文本内容",
-      "tooltip": "溢出时悬停展示全文 tooltip"
+      "tooltip": "溢出时悬停展示全文 tooltip",
+      "direction": "省略方向：`end`（默认尾部）/ `start`（头部）/ `middle`（中部保留首尾，长路径/哈希场景）"
     },
     "events": {
       "oas-collapse": "收起，`detail: { expanded: false }`",
@@ -752,7 +764,9 @@
       "error": "错误态（红色文字）",
       "disabled": "禁用态（灰化不可点）",
       "colon": "文字后补冒号（`:`）",
-      "color": "文字色：支持 11 个预设名（映射 `--oas-preset-*-text` 达标 token）或任意 CSS 色值"
+      "color": "文字色：支持 11 个预设名（映射 `--oas-preset-*-text` 达标 token）或任意 CSS 色值",
+      "size": "label 文字字号档：`small`/`medium`（默认）/`large`",
+      "weight": "label 文字字重：`regular`（默认）/`semibold` 半粗强调"
     },
     "events": {},
     "slots": {}
@@ -767,7 +781,10 @@
       "color": "颜色：支持 11 个预设名（映射 `--oas-preset-*-text` 达标 token）或任意 CSS 色值，覆盖 `type` 语义色",
       "icon": "图标名（复用 oas-icon 图标集），置于文字前或后（见 `icon-position`）",
       "icon-position": "图标位置：`start`（默认，文字前）/ `end`（文字后）；仅 `external` 图标时缺省 `end`",
-      "external": "外部链接：自动补 `target=\"_blank\"`、`rel=\"noopener noreferrer\"` 与外链图标"
+      "external": "外部链接：自动补 `target=\"_blank\"`、`rel=\"noopener noreferrer\"` 与外链图标",
+      "download": "链接透传 `download` 属性（原生 `<a download>` 文件下载）",
+      "size": "字号档：`small`/`medium`（默认）/`large`",
+      "loading": "加载态：转圈图标替换前置图标 + 禁点击（点击后异步跳转/提交场景）"
     },
     "events": {
       "oas-click": "点击，`detail: { originalEvent }`"
@@ -1394,7 +1411,11 @@
       "strong": "文字加粗（font-weight 600）",
       "target": "链接打开方式（`_blank` / `_self` 等），配合 `href`",
       "type": "类型",
-      "variant": "形态（与 `type` 正交）：`outlined`（描边）/ `filled`（浅底）/ `solid`（实心）；缺省保持类型默认渲染"
+      "variant": "形态（与 `type` 正交）：`outlined`（描边）/ `filled`（浅底）/ `solid`（实心）；缺省保持类型默认渲染",
+      "close-icon": "自定义关闭按钮图标（iconRegistry 图标名），替换默认 ×",
+      "close-label": "关闭按钮的 aria-label（a11y 上下文朗读，如「移除标签 xx」），默认走 locale「关闭」",
+      "loading": "加载态：关闭流程中转 spinner 并禁点（`oas-close` detail 含 `done()` 回调，宿主异步完成后调用退出 loading）",
+      "checked-icon": "checkable 选中时标签前的勾选图标（iconRegistry 图标名，默认 check）"
     },
     "events": {
       "oas-change": "`checkable` 时选中态切换，`detail: { checked }`",
@@ -1436,7 +1457,10 @@
       "code": "行内代码样式（等宽字体 + 浅底）",
       "underline": "下划线",
       "delete": "删除线（`<del>` 语义）",
-      "italic": "斜体（`<em>` 语义）"
+      "italic": "斜体（`<em>` 语义）",
+      "align": "文本对齐：`start`/`center`/`end`/`justify`",
+      "weight": "字重：`regular`/`medium`/`semibold`/`bold`（与 strong 布尔兼容）",
+      "numeric": "数字等宽（font-variant-numeric: tabular-nums），表格/统计数字列对齐"
     },
     "events": {
       "oas-copy": "复制成功，`detail: { text }`",

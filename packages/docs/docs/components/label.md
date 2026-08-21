@@ -32,6 +32,25 @@
   <oas-label>这是一段特别长的标签文案，用于演示长文本自动换行不溢出容器边界的效果，请保持耐心阅读。</oas-label>
 </DemoBlock>
 
+## 尺寸
+
+`size` 控制字号三档：`small` 小字辅助 / `medium`（默认）基准字号 / `large` 大字强调，分别映射 `--oas-font-size-sm / md / lg` 字号 token。
+
+<DemoBlock title="尺寸档位">
+  <oas-label size="small">小号标签</oas-label>
+  <oas-label size="medium">中号标签</oas-label>
+  <oas-label size="large">大号标签</oas-label>
+</DemoBlock>
+
+## 字重
+
+`weight` 控制字重两档：`regular`（默认）常规 / `semibold` 半粗强调（`font-weight: 600`）。
+
+<DemoBlock title="字重档位">
+  <oas-label>常规字重的标签</oas-label>
+  <oas-label weight="semibold">半粗强调的标签</oas-label>
+</DemoBlock>
+
 ## 状态
 
 `error` 校验失败红字；`disabled` 静态灰化（纯视觉，不拦事件——关联控件自己管 disabled）；`colon` 文本后冒号。
@@ -91,6 +110,8 @@ label 自身不加提示属性——提示能力通过**组合** `oas-tooltip` �
 | `for` | 目标控件 id，点击代理 `getElementById(for).focus()` | `string` | — |
 | `position` | 星号相对文本的位置 | `string` | `after` |
 | `required` | 追加必填 `*` 标记（`aria-hidden`） | `boolean` | — |
+| `size` | label 文字字号档：`small`/`medium`（默认）/`large` | `string` | — |
+| `weight` | label 文字字重：`regular`（默认）/`semibold` 半粗强调 | `string` | — |
 
 ### 插槽
 

@@ -54,6 +54,22 @@
   <span>系统运行中 <oas-badge dot color="green"></oas-badge></span>
 </DemoBlock>
 
+## 图标徽标
+
+`icon` 传入 iconRegistry 图标名，徽标内渲染小图标（如状态角标放 √ / !）。与 `value` / `dot` 互斥：`icon` 优先显示图标，不渲染数字/圆点；非法图标名静默回落数字逻辑。
+
+<DemoBlock title="图标徽标">
+  <oas-badge icon="check" color="success" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>已完成</oas-tag>
+  </oas-badge>
+  <oas-badge icon="warning" color="warning" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>需注意</oas-tag>
+  </oas-badge>
+  <oas-badge icon="error" color="danger">
+    <oas-tag>已失败</oas-tag>
+  </oas-badge>
+</DemoBlock>
+
 ## 徽标颜色
 
 `color` 支持四种语义色（`primary` / `success` / `warning` / `danger`）、任意 CSS 色值、以及 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token，dark 自动调亮）。count / dot / ribbon 三种模式统一生效，实心文字色按底色亮度自动取黑/白保证可读。
@@ -97,6 +113,25 @@
   </oas-badge>
   <oas-badge dot color="purple">
     <oas-tag>dot purple</oas-tag>
+  </oas-badge>
+</DemoBlock>
+
+## 描边形态
+
+`variant="outline"` 切换为描边徽标：背景透明、边框与文字走 color 语义色（`solid` 实心为默认，非法值回落）。适合叠加在图片/彩色底上的场景；与 `bordered` 白描边可叠加。
+
+<DemoBlock title="outline 描边形态">
+  <oas-badge value="5" variant="outline" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>outline 默认</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" variant="outline" color="success" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>outline success</oas-tag>
+  </oas-badge>
+  <oas-badge dot variant="outline" color="warning" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>outline dot</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" variant="outline" color="#7c3aed" bordered>
+    <oas-tag>outline 自定义色 + bordered</oas-tag>
   </oas-badge>
 </DemoBlock>
 
@@ -157,6 +192,22 @@
   </oas-badge>
 </DemoBlock>
 
+## 白描边
+
+`bordered` 给徽标加 2px 背景色描边（`box-shadow: 0 0 0 2px var(--oas-color-bg)`），从头像/图片等复杂背景中分离出来；仅视觉叠加、不改定位，与 `corner` / `offset` / `overlap` 联动正常。
+
+<DemoBlock title="bordered 白描边">
+  <oas-badge value="5" bordered style="margin-inline-end: var(--oas-space-5)">
+    <oas-avatar size="48">张</oas-avatar>
+  </oas-badge>
+  <oas-badge dot bordered color="success" style="margin-inline-end: var(--oas-space-5)">
+    <oas-avatar size="48">李</oas-avatar>
+  </oas-badge>
+  <oas-badge value="3" bordered corner="bottom-right" offset="2,2">
+    <oas-avatar size="48">王</oas-avatar>
+  </oas-badge>
+</DemoBlock>
+
 ## 状态点
 
 `status` 渲染「状态点 + `text` 文字」的行内独立元素（非角标定位），与 ribbon / dot / count 模式互斥（设置时优先渲染状态点）。`processing` 圆点带脉冲动画（`prefers-reduced-motion` 下停用）。
@@ -169,19 +220,34 @@
   <oas-badge status="warning" text="警告"></oas-badge>
 </DemoBlock>
 
-## 小尺寸
+## 尺寸档位
 
-`size="small"` 提供紧凑档位：数字徽标高约 13px、dot 缩至 6px。
+`size` 提供三档：`small`（小档，数字徽标高约 13px、dot 6px）/ `medium`（默认，约 16px、dot 8px）/ `large`（大档，约 20px、dot 10px）；非法值静默回落 `medium`。
 
-<DemoBlock title="small 小尺寸">
+<DemoBlock title="尺寸档位 small / medium / large">
   <oas-badge value="5" size="small" style="margin-inline-end: var(--oas-space-4)">
-    <oas-tag>小号 count</oas-tag>
+    <oas-tag>small</oas-tag>
   </oas-badge>
   <oas-badge value="99" max="99" size="small" style="margin-inline-end: var(--oas-space-4)">
-    <oas-tag>小号 99+</oas-tag>
+    <oas-tag>small 99+</oas-tag>
   </oas-badge>
-  <oas-badge dot size="small">
-    <oas-tag>小号 dot</oas-tag>
+  <oas-badge dot size="small" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>small dot</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>medium 默认</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" size="medium" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>medium 显式</oas-tag>
+  </oas-badge>
+  <oas-badge value="5" size="large" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>large</oas-tag>
+  </oas-badge>
+  <oas-badge value="99" max="99" size="large" style="margin-inline-end: var(--oas-space-4)">
+    <oas-tag>large 99+</oas-tag>
+  </oas-badge>
+  <oas-badge dot size="large">
+    <oas-tag>large dot</oas-tag>
   </oas-badge>
 </DemoBlock>
 
@@ -228,6 +294,8 @@
 ## 动态增减
 
 `value` 变化即时反映；宿主可在点击按钮时为徽标添加动画 class 实现过渡反馈（本例通过 `::part(badge)` 做缩放/透明度小动画）。
+
+数字徽标内置 `role="status"` + `aria-live="polite"` + `aria-atomic="true"`：数字（含 max 截断显示值）变化时通过 `aria-label` 向屏幕阅读器播报，文案走 locale（如「5 条未读通知」），无需额外 JS。
 
 <DemoBlock title="动态增减">
   <oas-badge id="badge-dyn" value="5">
@@ -528,9 +596,11 @@ oas-badge#badge-dyn.bump::part(badge) {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `attention` | 吸引动画：`pulse`（外圈脉冲扩散，脉冲色走 `--oas-badge-pulse-color` 自定义属性、默认跟随徽章底色）/ `bounce`（轻微上下弹跳）；仅作用于 count / dot / standalone 徽标（缎带不受影响），`prefers-reduced-motion` 下自动停用 | `BadgeAttention` | — |
+| `bordered` | 白描边：布尔属性，徽标加 2px 背景色描边（box-shadow: 0 0 0 2px var(--oas-color-bg)），从头像/图片背景分离；仅视觉叠加不改定位（与 corner/offset/overlap 联动正常） | `boolean` | — |
 | `color` | 徽标颜色：4 语义色（`primary` / `success` / `warning` / `danger`）、任意 CSS 色值、或 11 个预设名（`magenta` / `red` / `volcano` / `orange` / `gold` / `lime` / `green` / `cyan` / `blue` / `geekblue` / `purple`，映射 `--oas-preset-*` token，dark 自动调亮）。count / dot / ribbon 三种模式统一生效，实心文字色按底色亮度自动取黑/白保证可读 | `BadgeColor \| BadgePresetColor` | — |
 | `corner` | 角标四角定位：`top-right`（默认）/ `top-left` / `bottom-right` / `bottom-left`，仅影响 count / dot 角标（ribbon 用 `placement`）；`offset` 在其结果上做屏幕坐标 px 微调（x 正向右、y 正向下，与 corner 朝向无关），先定角再平移可叠加；非法值静默回落 `top-right` | `BadgeCorner` | `top-right` |
 | `dot` | 小圆点模式 | `boolean` | — |
+| `icon` | 徽标内图标：iconRegistry 图标名（如 check / warning），渲染内联 SVG（1em 跟随徽标字号、装饰性对读屏隐藏）；与 value/dot 互斥（icon 优先） | `string` | — |
 | `max` | 上限 | `string` | — |
 | `mode` | 模式：`count`（默认，数字/圆点徽标）或 `ribbon`（缎带角标，等价 `ribbon` 属性） | `BadgeMode` | `count` |
 | `offset` | 位置微调：`"x,y"`（px 数字，支持负值），在角标/缎带定位基础上额外平移（x 正向右、y 正向下）；与 `corner` / `placement` / `ribbon-vertical` 可叠加（先定位再平移）；非法值（非数字、缺坐标）静默忽略 | `string` | — |
@@ -546,10 +616,11 @@ oas-badge#badge-dyn.bump::part(badge) {
 | `ribbon-vertical` | bookmark 侧挂（`ribbon-direction="left"` / `"right"`）的纵向位置：`center`（默认，垂直居中）/ `top`（贴顶边）/ `bottom`（贴底边）；仅侧挂生效，非法值静默回落 `center` | `BadgeRibbonVertical` | `center` |
 | `rolled` | 端部卷边：布尔修饰，给探出外端做卷边效果（端部大圆角 + 内侧渐暗渐变模拟卷起圆柱，纯 CSS）；可叠加 `fold` / `banner` / `flag`，其他形态静默忽略 | `boolean` | — |
 | `showZero` | value=0 时是否显示 | `boolean` | — |
-| `size` | 尺寸：`small`（小档，数字徽标高约 13px、dot 6px） | `string` | — |
+| `size` | 尺寸档位：small（小档，数字徽标高约 13px、dot 6px）/ medium（默认，约 16px）/ large（大档，约 20px、dot 10px）；非法值静默回落 medium | `BadgeSize` | — |
 | `status` | 状态点形态：`success` / `processing` / `default` / `error` / `warning`，渲染「状态点 + `text` 文字」的行内独立元素，与 ribbon / dot / count 模式互斥（设置时优先渲染）；`processing` 圆点带脉冲动画（`prefers-reduced-motion` 下停用） | `BadgeStatus` | — |
 | `text` | 缎带或状态点文字；`slot="ribbon"` 有内容时以插槽为准 | `string` | — |
 | `value` | 数字 | `string` | — |
+| `variant` | 形态：solid（默认，实心）或 outline（描边：背景透明、边框与文字走 color 语义色）；非法值静默回落 solid | `BadgeVariant` | — |
 
 ### 插槽
 

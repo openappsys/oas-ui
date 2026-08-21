@@ -283,7 +283,11 @@ describe('基础纯展示 + 浮层触发 + 框架容器 DSD 真水合批次 5', 
     const kb = upgradeFromSnapshot(OASKbd, kbSnap, (e) => e.setAttribute('keys', 'Ctrl C')).el
     expect(kb.shadowRoot!.querySelectorAll('[part="key"]').length).toBe(2)
     kb.setAttribute('keys', 'Shift X')
-    expect(kb.shadowRoot!.querySelector('[part="key"]')!.textContent).toBe('Shift')
+    // 语义键名 Shift → 映射为符号 ⇧（abbr title 全称）
+    expect(kb.shadowRoot!.querySelector('[part="key"]')!.textContent).toBe('⇧')
+    expect(
+      kb.shadowRoot!.querySelector('[part="key"] abbr')!.getAttribute('title'),
+    ).toBe('Shift')
 
     // oas-config-provider：水合后 theme 属性 → data-theme 同步
     const cpSnap = captureSnapshot(OASConfigProvider, (e) => e.setAttribute('theme', 'dark'))

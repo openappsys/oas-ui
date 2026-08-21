@@ -10,6 +10,17 @@
   <oas-kbd keys="cmd c"></oas-kbd>
 </DemoBlock>
 
+## 语义键名
+
+`keys` 支持语义键名自动映射为符号（如 `command` → ⌘、`shift` → ⇧），键帽内嵌 `<abbr title="全称">` 提供读屏全称与悬停提示；未命中映射的键名按字面值渲染（如 `k`、`f1`）：
+
+<DemoBlock title="语义键名映射">
+  <oas-kbd keys="command shift k"></oas-kbd>
+  <oas-kbd keys="ctrl alt delete"></oas-kbd>
+  <oas-kbd keys="escape pageup pagedown"></oas-kbd>
+  <oas-kbd keys="arrowup arrowdown arrowleft arrowright"></oas-kbd>
+</DemoBlock>
+
 ## 单键与空态
 
 <DemoBlock title="单键与空态">

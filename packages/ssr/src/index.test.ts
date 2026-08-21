@@ -1264,7 +1264,8 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).toContain('part="keys"')
     // 两个键帽 + 加号分隔
     expect(html.match(/part="key"/g)?.length).toBe(2)
-    expect(html).toContain('>Ctrl<')
+    // 语义键名 Ctrl → 符号 + abbr title 全称（读屏可命名）；未命中按字面值渲染
+    expect(html).toContain('<abbr title="Control">⌃</abbr>')
     expect(html).toContain('>C<')
     expect(html).toContain('aria-hidden="true"')
   })

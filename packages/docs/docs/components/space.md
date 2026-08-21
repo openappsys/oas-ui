@@ -176,6 +176,25 @@
   </oas-space>
 </DemoBlock>
 
+## 弹簧占位
+
+`oas-space` 本身是 flex 容器，在子项间放一个 `style="flex: 1"` 的空 div 即充当弹簧占位（spacer）：它吸收剩余空间，把后续子项推到容器另一端——「左侧标题 + 右侧操作组」的页头/工具条布局无需新增属性即可实现。若要让所有子项按比例弹性伸缩，则用 `fill` / `fill-ratio`（见「子项填满」）。
+
+<DemoBlock title="弹簧占位（spacer）">
+  <oas-space style="width: 100%">
+    <oas-button type="text">页面标题</oas-button>
+    <div style="flex: 1"></div>
+    <oas-button>设置</oas-button>
+    <oas-button type="primary">保存</oas-button>
+  </oas-space>
+  <oas-space style="width: 100%">
+    <oas-tag>进行中</oas-tag>
+    <div style="flex: 1"></div>
+    <oas-button type="text">更多</oas-button>
+    <oas-button type="primary">提交</oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## 行内嵌入
 
 `oas-space` 默认是块级 flex 容器；需要嵌在文字段落中时，给宿主加一行 `style="display: inline-flex"` 即可——行内是宿主 CSS 的事，不是组件属性。

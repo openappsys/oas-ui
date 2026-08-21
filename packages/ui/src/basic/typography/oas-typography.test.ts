@@ -287,6 +287,107 @@ describe('OAS typography', () => {
     })
   })
 
+  describe('align 文本对齐档（start/center/end/justify）', () => {
+    it('align 进入 observedAttributes', () => {
+      expect(OASText.observedAttributes).toContain('align')
+    })
+    it('align 四档映射 text-align（start/end 为逻辑值，RTL 安全）', () => {
+      for (const a of ['start', 'center', 'end', 'justify']) {
+        const el = mount(OASText, { align: a }, '文本')
+        expect((el.shadowRoot!.querySelector('.text') as HTMLElement).style.textAlign).toBe(a)
+        el.remove()
+      }
+    })
+    it('align 非法值忽略（回落无内联对齐）', () => {
+      const el = mount(OASText, { align: 'left' }, '文本')
+      expect((el.shadowRoot!.querySelector('.text') as HTMLElement).style.textAlign).toBe('')
+    })
+    it('align 动态切换即时生效', () => {
+      const el = mount(OASText, {}, '文本')
+      const span = el.shadowRoot!.querySelector('.text') as HTMLElement
+      el.setAttribute('align', 'end')
+      expect(span.style.textAlign).toBe('end')
+      el.removeAttribute('align')
+      expect(span.style.textAlign).toBe('')
+    })
+    it('align 对 title/paragraph 同样生效', () => {
+      const t = mount(OASTitle, { align: 'center' }, '标题')
+      expect((t.shadowRoot!.querySelector('.text') as HTMLElement).style.textAlign).toBe('center')
+      const p = mount(OASParagraph, { align: 'justify' }, '段落')
+      expect((p.shadowRoot!.querySelector('.text') as HTMLElement).style.textAlign).toBe('justify')
+    })
+  })
+
+  describe('weight 字重档（regular/medium/semibold/bold）', () => {
+    const MAP: Record<string, string> = {
+      regular: '400',
+      medium: '500',
+      semibold: '600',
+      bold: '700',
+    }
+    it('weight 进入 observedAttributes', () => {
+      expect(OASText.observedAttributes).toContain('weight')
+    })
+    it('weight 四档映射 font-weight', () => {
+      for (const [w, fw] of Object.entries(MAP)) {
+        const el = mount(OASText, { weight: w }, '文本')
+        expect((el.shadowRoot!.querySelector('.text') as HTMLElement).style.fontWeight).toBe(fw)
+        el.remove()
+      }
+    })
+    it('weight 非法值忽略（回落无内联字重）', () => {
+      const el = mount(OASText, { weight: 'black' }, '文本')
+      expect((el.shadowRoot!.querySelector('.text') as HTMLElement).style.fontWeight).toBe('')
+    })
+    it('weight 显式档优先于 strong 布尔（内联覆盖类 600）', () => {
+      const el = mount(OASText, { strong: '', weight: 'medium' }, '文本')
+      const span = el.shadowRoot!.querySelector('.text') as HTMLElement
+      expect(span.classList.contains('strong')).toBe(true)
+      expect(span.style.fontWeight).toBe('500')
+    })
+    it('weight 动态切换即时生效', () => {
+      const el = mount(OASText, {}, '文本')
+      const span = el.shadowRoot!.querySelector('.text') as HTMLElement
+      el.setAttribute('weight', 'bold')
+      expect(span.style.fontWeight).toBe('700')
+      el.removeAttribute('weight')
+      expect(span.style.fontWeight).toBe('')
+    })
+  })
+
+  describe('numeric 数字等宽（tabular-nums）', () => {
+    it('numeric 进入 observedAttributes 并映射 class + 样式规则', () => {
+      expect(OASText.observedAttributes).toContain('numeric')
+      const el = mount(OASText, { numeric: '' }, '1234567890')
+      expect(el.shadowRoot!.querySelector('.text')!.classList.contains('numeric')).toBe(true)
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.text\.numeric\s*{[^}]*font-variant-numeric:\s*tabular-nums/)
+    })
+    it('numeric 动态切换即时生效', () => {
+      const el = mount(OASText, {}, '文本')
+      const span = el.shadowRoot!.querySelector('.text')!
+      el.setAttribute('numeric', '')
+      expect(span.classList.contains('numeric')).toBe(true)
+      el.removeAttribute('numeric')
+      expect(span.classList.contains('numeric')).toBe(false)
+    })
+  })
+
+  describe('mark 自定义色（CSS 变量开口）', () => {
+    it('mark 背景色走 --oas-text-mark-bg 变量开口（缺省回退 warning 色）', () => {
+      const el = mount(OASText, { mark: '' }, '标记')
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(
+        /\.text\.mark\s*{[^}]*color-mix\(\s*in srgb,\s*var\(--oas-text-mark-bg,\s*var\(--oas-color-warning\)\)\s*18%,\s*transparent\s*\)/,
+      )
+    })
+    it('宿主可在元素上设置 --oas-text-mark-bg 覆盖标记色（变量继承进 shadow）', () => {
+      const el = mount(OASText, { mark: '' }, '标记')
+      el.style.setProperty('--oas-text-mark-bg', '#7c3aed')
+      expect(el.style.getPropertyValue('--oas-text-mark-bg')).toBe('#7c3aed')
+    })
+  })
+
   it('locale：复制按钮文案随 setLocale 切换', async () => {
     const el = mount(OASText, { copyable: '' }, '可复制内容')
     await Promise.resolve()

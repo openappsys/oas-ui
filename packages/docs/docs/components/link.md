@@ -73,6 +73,34 @@
   <oas-link href="https://example.com" target="_blank" type="primary">新窗口打开</oas-link>
 </DemoBlock>
 
+## 字号
+
+`size` 三档：`small`（小字辅助链接）/ `medium`（默认）/ `large`（大字标题链接），字号走 `--oas-font-size-*` token。
+
+<DemoBlock title="字号三档">
+  <oas-link href="#" size="small">小字辅助链接</oas-link>
+  <oas-link href="#">medium（默认）</oas-link>
+  <oas-link href="#" size="large">大字标题链接</oas-link>
+</DemoBlock>
+
+## 下载
+
+`download` 透传原生 `<a download>`：`download` 空值布尔时浏览器使用原链接文件名，带值时自定义文件名（与 `target="_blank"` 组合时浏览器会忽略 `download`）。
+
+<DemoBlock title="下载链接">
+  <oas-link href="/files/oas-ui-guide.pdf" download>下载指南（使用原文件名）</oas-link>
+  <oas-link href="/files/oas-ui-guide.pdf" download="oas-guide.pdf" icon="download" icon-position="end">下载指南（自定义文件名）</oas-link>
+</DemoBlock>
+
+## 加载中
+
+`loading` 进入加载态：转圈图标替换前置图标（无图标时自动补一个）、点击被拦截（不派发 `oas-click`、不跳转），适合点击后异步跳转/提交场景；`aria-busy` 同步标注。
+
+<DemoBlock title="加载中">
+  <oas-link href="#" loading>加载中（无图标自动补转圈）</oas-link>
+  <oas-link href="#" icon="search" loading>搜索中（替换前置图标）</oas-link>
+</DemoBlock>
+
 ## 事件
 
 <DemoBlock title="点击事件">
@@ -89,10 +117,13 @@
 | --- | --- | --- | --- |
 | `color` | 颜色：支持 11 个预设名（映射 `--oas-preset-*-text` 达标 token）或任意 CSS 色值，覆盖 `type` 语义色 | `string` | — |
 | `disabled` | 禁用 | `boolean` | — |
+| `download` | 链接透传 `download` 属性（原生 `<a download>` 文件下载） | `string` | — |
 | `external` | 外部链接：自动补 `target="_blank"`、`rel="noopener noreferrer"` 与外链图标 | `boolean` | — |
 | `href` | 链接地址 | `string` | — |
 | `icon` | 图标名（复用 oas-icon 图标集），置于文字前或后（见 `icon-position`） | `string` | — |
 | `icon-position` | 图标位置：`start`（默认，文字前）/ `end`（文字后）；仅 `external` 图标时缺省 `end` | — | — |
+| `loading` | 加载态：转圈图标替换前置图标 + 禁点击（点击后异步跳转/提交场景） | `boolean` | — |
+| `size` | 字号档：`small`/`medium`（默认）/`large` | `string` | — |
 | `target` | 打开方式 | `string` | — |
 | `type` | 类型 | `LinkType` | `default` |
 | `underline` | 下划线 | `string` | — |

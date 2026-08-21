@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import '@oas-ui/i18n' // 副作用：注册默认 zh-CN translator（aria-label 内置文案断言依赖）
 import { OASBadge } from './index.js'
 
 const VALID_ANCHORS = [
@@ -1405,5 +1406,243 @@ describe('OASBadge premium 金属质感', () => {
     el.setAttribute('premium', '')
     expect(ribbon(el)).toBe(r)
     expect(r.classList.contains('premium')).toBe(true)
+  })
+})
+
+describe('OASBadge bordered 白描边', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('bordered 布尔属性加 bordered class，移除后恢复', () => {
+    const el = mount({ value: '5', bordered: '' })
+    expect(badge(el)!.classList.contains('bordered')).toBe(true)
+    el.removeAttribute('bordered')
+    expect(badge(el)!.classList.contains('bordered')).toBe(false)
+  })
+
+  it('bordered 只加描边 box-shadow，不改定位（与 corner/offset 联动正常）', () => {
+    const el = mount({ value: '5', bordered: '', corner: 'bottom-left', offset: '3,4' })
+    const b = badge(el)!
+    expect(b.classList.contains('bordered')).toBe(true)
+    expect(b.classList.contains('corner-bottom-left')).toBe(true)
+    expect(b.style.transform).toBe('translate(calc(-50% + 3px), calc(50% + 4px))')
+  })
+
+  it('bordered 描边样式：2px 背景色 box-shadow（从头像/图片背景分离）', () => {
+    const el = mount({ value: '5', bordered: '' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(cssRule(style, '.badge.bordered')).toContain(
+      'box-shadow: 0 0 0 2px var(--oas-color-bg)',
+    )
+  })
+
+  it('dot 模式 bordered 同样生效', () => {
+    const el = mount({ dot: '', bordered: '' })
+    expect(badge(el)!.classList.contains('bordered')).toBe(true)
+  })
+})
+
+describe('OASBadge icon 徽标图标', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('icon 渲染 iconRegistry 内联 SVG（装饰性对读屏隐藏，尺寸跟随字号）', () => {
+    const el = mount({ icon: 'check' })
+    const b = badge(el)!
+    expect(b.hidden).toBe(false)
+    const svg = b.querySelector('svg')!
+    expect(svg).not.toBeNull()
+    expect(svg.getAttribute('aria-hidden')).toBe('true')
+    expect(svg.getAttribute('width')).toBe('1em')
+    expect(svg.innerHTML.length).toBeGreaterThan(0)
+  })
+
+  it('icon 优先于 value：icon+value 显示图标不显示数字', () => {
+    const el = mount({ icon: 'check', value: '5' })
+    const b = badge(el)!
+    expect(b.querySelector('svg')).not.toBeNull()
+    expect(b.textContent).not.toContain('5')
+    expect(b.classList.contains('dot')).toBe(false)
+  })
+
+  it('icon 与 dot 互斥：icon 优先（显示图标，dot class 保留但无圆点文本）', () => {
+    const el = mount({ icon: 'warning', dot: '' })
+    const b = badge(el)!
+    expect(b.querySelector('svg')).not.toBeNull()
+    expect(b.classList.contains('dot')).toBe(true)
+    expect(b.textContent).toBe('')
+  })
+
+  it('非法 icon 名回落：显示 value 数字', () => {
+    const el = mount({ icon: 'nope', value: '7' })
+    const b = badge(el)!
+    expect(b.querySelector('svg')).toBeNull()
+    expect(b.textContent).toBe('7')
+  })
+
+  it('移除 icon 后恢复数字；切换 icon 名复用 SVG 节点不重建引用', () => {
+    const el = mount({ icon: 'check', value: '5' })
+    const b = badge(el)!
+    const svg = b.querySelector('svg')!
+    el.setAttribute('icon', 'warning')
+    expect(badge(el)).toBe(b)
+    expect(b.querySelector('svg')).toBe(svg)
+    expect(svg.innerHTML.length).toBeGreaterThan(0)
+    el.removeAttribute('icon')
+    expect(b.querySelector('svg')).toBeNull()
+    expect(b.textContent).toBe('5')
+  })
+
+  it('standalone icon 徽标正常显示', () => {
+    const el = new OASBadge()
+    el.setAttribute('icon', 'check')
+    document.body.appendChild(el)
+    const b = badge(el)!
+    expect(b.hidden).toBe(false)
+    expect(b.classList.contains('standalone')).toBe(true)
+    expect(b.querySelector('svg')).not.toBeNull()
+  })
+})
+
+describe('OASBadge aria-live 播报', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('徽标元素带 role="status" + aria-live="polite" + aria-atomic="true"', () => {
+    const el = mount({ value: '5' })
+    const b = badge(el)!
+    expect(b.getAttribute('role')).toBe('status')
+    expect(b.getAttribute('aria-live')).toBe('polite')
+    expect(b.getAttribute('aria-atomic')).toBe('true')
+  })
+
+  it('数字显示时 aria-label 走 locale（zh-CN 默认「{count} 条未读通知」）', () => {
+    const el = mount({ value: '5' })
+    expect(badge(el)!.getAttribute('aria-label')).toBe('5 条未读通知')
+  })
+
+  it('数字变化时 aria-label 同步更新（max 截断用显示值）', () => {
+    const el = mount({ value: '5' })
+    el.setAttribute('value', '120')
+    el.setAttribute('max', '99')
+    expect(badge(el)!.getAttribute('aria-label')).toBe('99+ 条未读通知')
+  })
+
+  it('dot / icon 模式不设数字 aria-label', () => {
+    const d = mount({ dot: '' })
+    expect(badge(d)!.hasAttribute('aria-label')).toBe(false)
+    const i = mount({ icon: 'check' })
+    expect(badge(i)!.hasAttribute('aria-label')).toBe(false)
+  })
+
+  it('隐藏态（value=0 无 showZero）不设 aria-label', () => {
+    const el = mount({ value: '0' })
+    expect(badge(el)!.hidden).toBe(true)
+    expect(badge(el)!.hasAttribute('aria-label')).toBe(false)
+  })
+})
+
+describe('OASBadge variant outline 描边形态', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('variant="outline" 加 variant-outline class，移除后恢复', () => {
+    const el = mount({ value: '5', variant: 'outline' })
+    expect(badge(el)!.classList.contains('variant-outline')).toBe(true)
+    el.removeAttribute('variant')
+    expect(badge(el)!.classList.contains('variant-outline')).toBe(false)
+  })
+
+  it('非法 variant 值回落 solid：不写 class', () => {
+    const el = mount({ value: '5', variant: 'ghost' })
+    expect(badge(el)!.classList.contains('variant-outline')).toBe(false)
+  })
+
+  it('outline 样式：背景透明 + color 语义边框/文字（dot 空心圆）', () => {
+    const el = mount({ value: '5' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    const rule = cssRule(style, '.badge.variant-outline')
+    expect(rule).toContain('background: transparent')
+    expect(rule).toContain('border: 1px solid var(--oas-badge-bg, var(--oas-color-danger))')
+    expect(rule).toContain('color: var(--oas-badge-bg, var(--oas-color-danger))')
+    expect(cssRule(style, '.badge.variant-outline.dot')).toContain('background: transparent')
+  })
+
+  it('outline 与 dot/color 并存：dot class + 颜色变量正常注入', () => {
+    const el = mount({ dot: '', variant: 'outline', color: 'success' })
+    const b = badge(el)!
+    expect(b.classList.contains('variant-outline')).toBe(true)
+    expect(b.classList.contains('dot')).toBe(true)
+    expect(b.style.getPropertyValue('--oas-badge-bg')).toBe('var(--oas-color-success)')
+  })
+})
+
+describe('OASBadge size 多尺寸档', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('size="medium" 显式加 medium class（默认档）', () => {
+    const el = mount({ value: '5', size: 'medium' })
+    expect(badge(el)!.classList.contains('medium')).toBe(true)
+    expect(badge(el)!.classList.contains('small')).toBe(false)
+    expect(badge(el)!.classList.contains('large')).toBe(false)
+  })
+
+  it('size="large" 加 large class（count 与 dot）', () => {
+    const el = mount({ value: '5', size: 'large' })
+    expect(badge(el)!.classList.contains('large')).toBe(true)
+    expect(badge(el)!.classList.contains('small')).toBe(false)
+    const d = mount({ dot: '', size: 'large' })
+    expect(badge(d)!.classList.contains('large')).toBe(true)
+    expect(badge(d)!.classList.contains('dot')).toBe(true)
+  })
+
+  it('非法 size 值回落 medium：不写任何 size class（基类即默认档）', () => {
+    const el = mount({ value: '5', size: 'xl' })
+    expect(badge(el)!.classList.contains('small')).toBe(false)
+    expect(badge(el)!.classList.contains('medium')).toBe(false)
+    expect(badge(el)!.classList.contains('large')).toBe(false)
+  })
+
+  it('large 档 CSS：count 20px 高、sm 字号；dot 10px', () => {
+    const el = mount({ value: '5' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    const large = cssRule(style, '.badge.large')
+    expect(large).toContain('height: 20px')
+    expect(large).toContain('line-height: 20px')
+    expect(large).toContain('font-size: var(--oas-font-size-sm)')
+    expect(cssRule(style, '.badge.large.dot')).toContain('width: 10px')
+    expect(cssRule(style, '.badge.large.dot')).toContain('height: 10px')
+  })
+
+  it('small 档 CSS 保留（向后兼容）', () => {
+    const el = mount({ value: '5' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(cssRule(style, '.badge.small')).toContain('height: 13px')
   })
 })

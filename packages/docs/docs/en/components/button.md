@@ -43,10 +43,34 @@ Basic button component, an enhanced native `<button>`.
 
 ## Disabled & Loading
 
+`disabled` disables the button; `loading` enters the loading state — the original label keeps its space (width stays unchanged) and a spinner is centered; pair with `loading-text` to show a loading message.
+
 <DemoBlock title="Disabled and loading states">
   <oas-button disabled>Disabled</oas-button>
-  <oas-button type="primary" loading>Loading</oas-button>
-  <oas-button type="success" loading>Submitting</oas-button>
+  <oas-button type="primary" loading loading-text="Loading…">Load</oas-button>
+  <oas-button type="success" loading loading-text="Submitting…">Submit</oas-button>
+</DemoBlock>
+
+### Async auto loading
+
+With `loading="auto"`, the button automatically enters the loading state while the host `oas-click` handler returns a Promise, and exits after the Promise resolves or rejects.
+
+<DemoBlock title="Auto loading for async submit">
+  <oas-button type="primary" loading="auto" loading-text="Submitting…" onoas-click="new Promise((r) => setTimeout(() => { message.success('Submitted'); r() }, 1500))">Click to submit</oas-button>
+  <oas-button type="success" loading="auto" onoas-click="new Promise((r) => setTimeout(() => { message.success('Saved'); r() }, 1200))">Save async</oas-button>
+</DemoBlock>
+
+### Disabled but focusable
+
+`disabled-focusable` renders a disabled look (desaturated + `aria-disabled`) without a native `disabled` attribute — still focusable and hoverable, ideal for wrapping in a tooltip that explains why it is disabled; clicks are intercepted by the component and `oas-click` is not dispatched.
+
+<DemoBlock title="Disabled but focusable (with tooltip)">
+  <oas-tooltip content="You need to sign in first to perform this action">
+    <oas-button type="primary" disabled-focusable>Sign in to continue</oas-button>
+  </oas-tooltip>
+  <oas-tooltip content="There is no file to download">
+    <oas-button icon="download" disabled-focusable>Download report</oas-button>
+  </oas-tooltip>
 </DemoBlock>
 
 ## Events
@@ -127,13 +151,28 @@ Without text, the button becomes an equal-width square and needs an `aria-label`
   <oas-button icon-position="end" icon="chevron-right">Next</oas-button>
 </DemoBlock>
 
+## Dual icons
+
+`icon` renders an icon before the text and `icon-end` renders a second icon after the text (both reuse the oas-icon set); they can coexist with `icon-position`.
+
+<DemoBlock title="Dual icons">
+  <oas-button type="primary" icon="download" icon-end="arrow-right">Download & continue</oas-button>
+  <oas-button icon="user" icon-end="chevron-right">Next</oas-button>
+  <oas-button type="success" icon="check-circle" icon-end="arrow-right">Confirm & submit</oas-button>
+</DemoBlock>
+
 ## Link button
 
-Setting `href` renders a native link (`<a>`); `target` controls how it opens (`_blank` / `_self` etc.).
+Setting `href` renders a native link (`<a>`); `target` controls how it opens (`_blank` / `_self` etc.); `download` (file download) and `rel` (link relationship) are passed through.
 
 <DemoBlock title="Link buttons">
   <oas-button href="#">Default link</oas-button>
   <oas-button href="#" target="_blank" type="primary">Open in new tab</oas-button>
+</DemoBlock>
+
+<DemoBlock title="Download and rel">
+  <oas-button href="/files/report.zip" download="quarterly-report.zip" type="primary">Download quarterly report</oas-button>
+  <oas-button href="https://example.com" target="_blank" rel="noopener">External link (rel=noopener)</oas-button>
 </DemoBlock>
 
 ## Plain
@@ -226,12 +265,17 @@ Buttons are single-line by default (`white-space: nowrap`). With the explicit `w
 | `circle` | Circle button (icon-only, square + full rounding) | `boolean` | — |
 | `color` | Custom color: overrides the `type` semantic color (any color value) | `string` | — |
 | `disabled` | Disabled | `boolean` | — |
+| `disabled-focusable` | Visually disabled but stays focusable/hoverable (aria-disabled + click intercepted), for tooltips explaining why | `boolean` | — |
+| `download` | Passthrough `download` attribute in link mode (href) for file-download buttons | `string` | — |
 | `ghost` | Ghost/outline style: transparent background + outline colored by `type`, darkens on hover | `boolean` | — |
 | `href` | Link address: renders a native `<a>` when set | `string` | — |
 | `icon` | Icon name (reusing the oas-icon icon set); without text it becomes an equal-width square and uses the icon name as the fallback label | `string` | — |
+| `icon-end` | A second icon after the text (iconRegistry name), works with `icon`/`icon-position` — e.g. left icon + right dropdown arrow | `string` | — |
 | `icon-position` | Icon position: `start` (default, left) / `end` (right) | `string` | `start` |
-| `loading` | Loading state | `boolean` | — |
+| `loading` | Loading state | — | — |
+| `loading-text` | Text shown while loading (e.g. "Submitting…"); replaces the label content when set | `string` | — |
 | `plain` | Plain style: low-contrast soft (transparent bg + softened text), equals `variant="filled"` | `boolean` | — |
+| `rel` | Passthrough `rel` attribute in link mode (pair `noopener` with `target="_blank"`) | `string` | — |
 | `round` | Pill radius (`--oas-radius-full` / `999px`) | `boolean` | — |
 | `size` | Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning | `ButtonSize` | `medium` |
 | `target` | How the link opens (`_blank` / `_self` etc.), with `href` | `string` | — |
