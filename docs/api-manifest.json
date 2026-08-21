@@ -4593,6 +4593,49 @@
         "name": "sortable",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "trigger",
+        "type": "string",
+        "default": "click",
+        "observed": true
+      },
+      {
+        "name": "allow-deactivation",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "stacked",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "hide-indicator",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "scroll-position",
+        "type": "string",
+        "default": "auto",
+        "observed": true
+      },
+      {
+        "name": "reserve-selected-space",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "hide-content",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "items",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
@@ -4615,11 +4658,11 @@
       },
       {
         "name": "oas-before-change",
-        "detail": "{ value }"
+        "detail": "{ value: '' } | { value }"
       },
       {
         "name": "oas-change",
-        "detail": "{ value }"
+        "detail": "{ value: '' } | { value }"
       }
     ],
     "slots": [

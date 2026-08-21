@@ -1296,7 +1296,11 @@
       "label": "Tab text",
       "value": "Tab value",
       "disabled": "Disable this tab: not focusable/clickable, `aria-disabled`, visually dimmed, skipped by keyboard navigation",
-      "editable": "Tab is renameable on double-click: enters an input editing state, Enter confirms (emits `oas-rename`) / Esc cancels"
+      "editable": "Tab is renameable on double-click: enters an input editing state, Enter confirms (emits `oas-rename`) / Esc cancels",
+      "href": "Render the tab as a link: the tab becomes an `<a>` (anchor semantics: open in new window/middle-click/SEO-crawlable), works with target/rel",
+      "target": "Link target (only with href, e.g. `_blank`)",
+      "rel": "Link rel (only with href, e.g. `noopener`)",
+      "icon-only": "Icon-only tab: renders only the icon without text (label provides the aria-label fallback for an accessible name)"
     },
     "events": {},
     "slots": {}
@@ -1349,7 +1353,15 @@
       "panel-mode": "Panel visibility strategy: `keep` (default, hidden keeps DOM) / `lazy` (unvisited inactive panels not mounted until first activation) / `destroy` (unmount inactive panel content on switch)",
       "activation": "Keyboard activation: `auto` (default, arrow keys switch immediately) / `manual` (arrows move focus only, Enter/Space switches — a11y manual activation)",
       "animated": "Selection transition + panel fade-in (animates color/border/opacity only, no layout)",
-      "sortable": "Tabs are drag-sortable (native HTML5 DnD); emits `oas-reorder` after drop (host reorders panel data accordingly, the component does not move DOM itself)"
+      "sortable": "Tabs are drag-sortable (native HTML5 DnD); emits `oas-reorder` after drop (host reorders panel data accordingly, the component does not move DOM itself)",
+      "trigger": "Switch trigger: `click` (default) / `hover` (switch on hover; disabled tabs not triggered)",
+      "allow-deactivation": "Allow clicking the active tab to deactivate it (no selection); by default clicking the active tab keeps it active",
+      "stacked": "Icon on top, text below (vertically stacked tabs)",
+      "hide-indicator": "Hide the active indicator line (the ::after underline in line mode)",
+      "scroll-position": "Scroll alignment when scrolling the active/added tab into view: `auto` (default nearest) / `start` / `center` / `end`",
+      "reserve-selected-space": "Anti-jitter for bold selection: preload the selected-state text width so selected/unselected tabs keep the same width and do not shift on switch",
+      "hide-content": "Pure navigation mode: render the tab bar without the panel area (tabs act as a nav strip; the host takes over content/routing)",
+      "items": "Data-driven rendering: JSON array `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`; takes precedence over `oas-tab-panel` children when both present"
     },
     "events": {
       "oas-add": "The + button was clicked, `detail: { label }` (default new-tab label from locale; use it or customize it)",

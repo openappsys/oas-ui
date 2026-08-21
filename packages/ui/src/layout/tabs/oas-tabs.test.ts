@@ -1177,4 +1177,320 @@ describe('OASTabs', () => {
       expect(el.getAttribute('active')).toBe('t9')
     })
   })
+
+  // ===== 批次 7：trigger:hover / allow-deactivation / stacked / pageUp-Down / hide-indicator =====
+
+  describe('trigger:hover 悬停切换', () => {
+    it('默认 click：悬停不切换', () => {
+      const el = mount()
+      const tabB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+      tabB.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+      expect(el.getAttribute('active') ?? 'a').toBe('a')
+    })
+
+    it('trigger="hover"：悬停即切换并派发 oas-change', () => {
+      const el = mount({ trigger: 'hover' })
+      let changed = ''
+      el.addEventListener('oas-change', (e) => (changed = (e as CustomEvent).detail.value))
+      const tabB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+      tabB.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+      expect(el.getAttribute('active')).toBe('b')
+      expect(changed).toBe('b')
+    })
+
+    it('trigger="hover"：悬停 disabled 标签不切换', () => {
+      const el = new OASTabs()
+      el.setAttribute('trigger', 'hover')
+      el.innerHTML = `
+        <oas-tab-panel label="A" value="a"><p>a</p></oas-tab-panel>
+        <oas-tab-panel label="B" value="b" disabled><p>b</p></oas-tab-panel>
+      `
+      document.body.appendChild(el)
+      const tabB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+      tabB.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+      expect(el.getAttribute('active') ?? 'a').toBe('a')
+    })
+  })
+
+  describe('allow-deactivation 取消激活', () => {
+    it('默认：点击当前激活 tab 不取消（保持激活）', () => {
+      const el = mount({ active: 'a' })
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      tabA.click()
+      expect(el.getAttribute('active')).toBe('a')
+      expect(tabA.getAttribute('aria-selected')).toBe('true')
+    })
+
+    it('allow-deactivation：点击当前激活 tab 取消激活（无选中态）', () => {
+      const el = mount({ 'allow-deactivation': '', active: 'a' })
+      el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!.click()
+      expect(el.getAttribute('active')).toBe('')
+      // update 重建后重新查询断言选中态
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      expect(tabA.getAttribute('aria-selected')).toBe('false')
+    })
+
+    it('allow-deactivation：取消后点击其他 tab 正常激活', () => {
+      const el = mount({ 'allow-deactivation': '', active: 'a' })
+      el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!.click() // 取消 a
+      expect(el.getAttribute('active')).toBe('')
+      el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!.click()
+      expect(el.getAttribute('active')).toBe('b')
+    })
+  })
+
+  describe('stacked 图标上文字下', () => {
+    it('stacked：标签 flex-direction: column（图标上文字下）', () => {
+      const el = new OASTabs()
+      el.setAttribute('stacked', '')
+      el.innerHTML = '<oas-tab-panel label="消息" value="a" icon="mail"><p>内容</p></oas-tab-panel>'
+      document.body.appendChild(el)
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(el.classList.contains('oas-tabs--stacked')).toBe(true)
+      expect(style).toMatch(/oas-tabs--stacked[^{]*\.tab[^{]*\{[^}]*flex-direction:\s*column/)
+    })
+  })
+
+  describe('hide-indicator 隐藏激活指示线', () => {
+    it('hide-indicator：选中 tab 的 ::after 指示线隐藏', () => {
+      const el = mount({ 'hide-indicator': '' })
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(style).toMatch(/hide-indicator[^{]*::after[^{]*\{[^}]*display:\s*none|hide-indicator[^{]*\.tab::after/)
+    })
+  })
+
+  describe('PageUp/PageDown 键盘溢出滚动', () => {
+    function mountOverflowKb(): OASTabs {
+      const el = new OASTabs()
+      el.innerHTML = Array.from(
+        { length: 10 },
+        (_, i) => `<oas-tab-panel label="标签${i}" value="t${i}"><p>c${i}</p></oas-tab-panel>`,
+      ).join('')
+      document.body.appendChild(el)
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      Object.defineProperty(tablist, 'scrollWidth', { value: 1200, configurable: true })
+      Object.defineProperty(tablist, 'clientWidth', { value: 400, configurable: true })
+      return el
+    }
+
+    it('PageDown：溢出时向后滚动一屏', () => {
+      const el = mountOverflowKb()
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      let scrolled = 0
+      tablist.scrollBy = ((opts: ScrollToOptions) => {
+        scrolled = (opts.left as number) ?? 0
+      }) as typeof tablist.scrollBy
+      tablist.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true, cancelable: true }))
+      expect(scrolled).toBeGreaterThan(0)
+    })
+
+    it('PageUp：溢出时向前滚动一屏', () => {
+      const el = mountOverflowKb()
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      let scrolled = 0
+      tablist.scrollBy = ((opts: ScrollToOptions) => {
+        scrolled = (opts.left as number) ?? 0
+      }) as typeof tablist.scrollBy
+      tablist.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true, cancelable: true }))
+      expect(scrolled).toBeLessThan(0)
+    })
+  })
+
+  // ===== 批次 8：tab 即链接 + scroll-position =====
+
+  describe('tab 即链接（href/target/rel）', () => {
+    it('panel 设 href：tab 渲染为 <a> 链接（role=tab 保留）', () => {
+      const el = new OASTabs()
+      el.innerHTML = `
+        <oas-tab-panel label="首页" value="a" href="/home"><p>内容</p></oas-tab-panel>
+        <oas-tab-panel label="文档" value="b"><p>内容</p></oas-tab-panel>
+      `
+      document.body.appendChild(el)
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      expect(tabA.tagName).toBe('A')
+      expect(tabA.getAttribute('href')).toBe('/home')
+      expect(tabA.getAttribute('role')).toBe('tab')
+      // 无 href 的仍是 button
+      const tabB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!
+      expect(tabB.tagName).toBe('BUTTON')
+    })
+
+    it('href 链接透传 target/rel', () => {
+      const el = new OASTabs()
+      el.innerHTML = '<oas-tab-panel label="外链" value="a" href="https://x.com" target="_blank" rel="noopener"><p>c</p></oas-tab-panel>'
+      document.body.appendChild(el)
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      expect(tabA.getAttribute('target')).toBe('_blank')
+      expect(tabA.getAttribute('rel')).toBe('noopener')
+    })
+  })
+
+  describe('scroll-position 激活滚动定位', () => {
+    it('scroll-position="center"：激活滚动 inline 对齐 center', async () => {
+      const el = new OASTabs()
+      el.setAttribute('scroll-position', 'center')
+      el.innerHTML = Array.from(
+        { length: 8 },
+        (_, i) => `<oas-tab-panel label="标签${i}" value="t${i}"><p>c${i}</p></oas-tab-panel>`,
+      ).join('')
+      document.body.appendChild(el)
+      const scrollCalls: ScrollIntoViewOptions[] = []
+      const origSIV = Element.prototype.scrollIntoView
+      Element.prototype.scrollIntoView = function (this: Element, opts?: ScrollIntoViewOptions) {
+        scrollCalls.push(opts ?? {})
+      }
+      el.setAttribute('active', 't5')
+      await Promise.resolve()
+      Element.prototype.scrollIntoView = origSIV
+      expect(scrollCalls.some((o) => o.inline === 'center')).toBe(true)
+    })
+
+    it('默认（未设 scroll-position）：激活滚动 inline nearest', async () => {
+      const el = new OASTabs()
+      el.innerHTML = Array.from(
+        { length: 8 },
+        (_, i) => `<oas-tab-panel label="标签${i}" value="t${i}"><p>c${i}</p></oas-tab-panel>`,
+      ).join('')
+      document.body.appendChild(el)
+      const scrollCalls: ScrollIntoViewOptions[] = []
+      const origSIV = Element.prototype.scrollIntoView
+      Element.prototype.scrollIntoView = function (this: Element, opts?: ScrollIntoViewOptions) {
+        scrollCalls.push(opts ?? {})
+      }
+      el.setAttribute('active', 't5')
+      await Promise.resolve()
+      Element.prototype.scrollIntoView = origSIV
+      expect(scrollCalls.some((o) => o.inline === 'nearest')).toBe(true)
+    })
+  })
+
+  // ===== 批次 9：indicator 定制 + 增删图标 slot + 选中防抖 =====
+
+  describe('indicator 指示条定制（CSS 变量开口）', () => {
+    it('激活指示线 ::after 用 CSS 变量开口（--oas-tabs-indicator-color / -size）', () => {
+      const el = mount()
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(style).toContain('var(--oas-tabs-indicator-color')
+      expect(style).toContain('var(--oas-tabs-indicator-size')
+    })
+  })
+
+  describe('增删图标 slot 可替换', () => {
+    it('closable 关闭按钮支持 slot="close-icon" 自定义图标', () => {
+      const el = new OASTabs()
+      el.setAttribute('closable', '')
+      el.innerHTML = `
+        <oas-tab-panel label="标签一" value="a"><span slot="close-icon">✕✕</span><p>内容</p></oas-tab-panel>
+        <oas-tab-panel label="标签二" value="b"><p>内容</p></oas-tab-panel>
+      `
+      document.body.appendChild(el)
+      const closeA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"] .tab-close')!
+      expect(closeA.textContent).toContain('✕✕')
+      // 无 slot 的用默认 ×
+      const closeB = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"] .tab-close')!
+      expect(closeB.querySelector('svg')).not.toBeNull()
+    })
+
+    it('addable 新增按钮支持 slot="add-icon" 自定义图标', () => {
+      const el = new OASTabs()
+      el.setAttribute('addable', '')
+      el.innerHTML = `
+        <span slot="add-icon">＋＋</span>
+        <oas-tab-panel label="标签一" value="a"><p>内容</p></oas-tab-panel>
+      `
+      document.body.appendChild(el)
+      const add = el.shadowRoot!.querySelector<HTMLElement>('.tab-add')!
+      expect(add.textContent).toContain('＋＋')
+    })
+  })
+
+  describe('reserve-selected-space 选中加粗防抖', () => {
+    it('reserve-selected-space：tab 用 ::before 预载选中态文字固定宽度（选中加粗不抖动）', () => {
+      const el = mount({ 'reserve-selected-space': '' })
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(el.classList.contains('oas-tabs--reserve-space')).toBe(true)
+      // 防抖机制：::before 预载 label 文字 + font-weight 500 固定宽度
+      expect(style).toMatch(/reserve-space[^{]*\.tab/)
+    })
+  })
+
+  // ===== 批次 10：纯导航模式 + items 数据驱动 + iconOnly =====
+
+  describe('hide-content 纯导航模式', () => {
+    it('hide-content：渲染标签栏但不渲染面板区（tabs 当导航条）', () => {
+      const el = mount({ 'hide-content': '' })
+      const panel = el.shadowRoot!.querySelector('.panel')
+      expect(panel).toBeNull()
+      // 标签栏仍正常渲染
+      expect(el.shadowRoot!.querySelectorAll('[role="tab"]').length).toBe(2)
+    })
+
+    it('hide-content：切换仍派发 oas-change（宿主接管内容/路由）', () => {
+      const el = mount({ 'hide-content': '' })
+      let changed = ''
+      el.addEventListener('oas-change', (e) => (changed = (e as CustomEvent).detail.value))
+      el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="b"]')!.click()
+      expect(changed).toBe('b')
+    })
+
+    it('默认（无 hide-content）：渲染面板区', () => {
+      const el = mount()
+      expect(el.shadowRoot!.querySelector('.panel')).not.toBeNull()
+    })
+  })
+
+  describe('items 数据驱动', () => {
+    it('items JSON 渲染标签 + 面板（无需 oas-tab-panel 子元素）', () => {
+      const el = new OASTabs()
+      el.setAttribute('items', JSON.stringify([
+        { label: '首页', value: 'home' },
+        { label: '关于', value: 'about', icon: 'info' },
+      ]))
+      document.body.appendChild(el)
+      const tabs = el.shadowRoot!.querySelectorAll('[role="tab"][data-value]')
+      expect(tabs.length).toBe(2)
+      expect(tabs[0]!.getAttribute('data-value')).toBe('home')
+      // items 生成的面板存在
+      expect(el.querySelectorAll('oas-tab-panel').length).toBe(2)
+    })
+
+    it('items 数据驱动支持 icon/badge/disabled/href', () => {
+      const el = new OASTabs()
+      el.setAttribute('items', JSON.stringify([
+        { label: '首页', value: 'home', icon: 'mail', badge: '3' },
+        { label: '外链', value: 'ext', href: 'https://x.com' },
+        { label: '禁用', value: 'dis', disabled: true },
+      ]))
+      document.body.appendChild(el)
+      const home = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="home"]')!
+      expect(home.querySelector('.tab-icon')).not.toBeNull()
+      expect(home.querySelector('.tab-badge')).not.toBeNull()
+      const ext = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="ext"]')!
+      expect(ext.tagName).toBe('A')
+      const dis = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="dis"]')!
+      expect(dis.getAttribute('aria-disabled')).toBe('true')
+    })
+
+    it('items 与 oas-tab-panel 子元素并存时 items 优先（items 渲染，子元素忽略）', () => {
+      const el = new OASTabs()
+      el.setAttribute('items', JSON.stringify([{ label: 'A', value: 'a' }]))
+      el.innerHTML = '<oas-tab-panel label="子元素" value="child"><p>c</p></oas-tab-panel>'
+      document.body.appendChild(el)
+      const tabs = el.shadowRoot!.querySelectorAll('[role="tab"][data-value]')
+      expect(tabs.length).toBe(1)
+      expect(tabs[0]!.getAttribute('data-value')).toBe('a')
+    })
+  })
+
+  describe('icon-only 纯图标标签', () => {
+    it('panel icon-only：标签只渲染图标无文字（需 aria-label 兜底）', () => {
+      const el = new OASTabs()
+      el.innerHTML = '<oas-tab-panel label="消息" value="a" icon="mail" icon-only><p>内容</p></oas-tab-panel>'
+      document.body.appendChild(el)
+      const tabA = el.shadowRoot!.querySelector<HTMLElement>('[role="tab"][data-value="a"]')!
+      expect(tabA.querySelector('.tab-icon')).not.toBeNull()
+      expect(tabA.querySelector('.tab-label')).toBeNull() // 无文字
+      expect(tabA.getAttribute('aria-label')).toBe('消息') // aria 兜底
+    })
+  })
 })
