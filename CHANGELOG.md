@@ -2,6 +2,28 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.1.4] - 2026-08-22
+
+### 新增
+
+- **basic 族 12 组件能力复核补齐**（能力并集）：
+  - button：`icon-end` 双侧内容（左图标+右下拉箭头）、loading 保持宽度（spinner 居中不撑宽）、`loading-text` 加载文本、`loading="auto"` 异步自动 loading、`disabled-focusable` 禁用可聚焦、`download`/`rel` 透传
+  - button-group：`spread` 均分铺满、组级 `variant`/`round` 透传
+  - tag：`close-icon` 自定义关闭图标 + `close-label` 朗读名、`loading` 异步关闭（`oas-close` detail 含 `done()` 回调）、`checked-icon` 选中勾选图标
+  - badge：`bordered` 白描边、`icon` 徽标内图标、aria-live 数字变化播报、`variant="outline"` 描边形态、`size` 三档
+  - typography：`align` 对齐档、`weight` 字重档、`numeric` 数字等宽、mark 自定义色（`--oas-text-mark-bg`）
+  - ellipsis：`direction="start|middle"` 省略方向（保留首尾中部省略）
+  - link：`download` 透传、`size` 字号档、`loading` 态
+  - divider：垂直 `content-position`（top/bottom 贴顶/贴底）、`text-orientation` 文字方向（横排/竖排）、垂直 `inset`/`middle` 缩进留空
+  - kbd：语义键名映射（command→⌘ 等 30 键 + abbr 全称朗读）
+  - label：`size`/`weight` 档
+  - space：弹簧占位 demo（文档级）
+
+### 修复
+
+- **divider 垂直带文字渲染**：容器宽度被压成线宽致文字竖排 + slot display:contents 致线段不显示 → content 包裹层 + 容器宽度由内容撑；垂直 inset/middle 留空改 grid 行模板（行%相对容器高度，margin%相对宽度不适用垂直）
+- **button 链体积预算顶格**：button 能力增强后实测 22.5KB 超预算 29B，预算上调 22KB→26KB
+
 ## [2.1.3] - 2026-08-21
 
 ### 新增

@@ -1,7 +1,18 @@
 {
   "name": "@oas-ui/ui",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "description": "OAS-UI 框架无关 Web Components UI 组件库",
+  "keywords": [
+    "web-components",
+    "custom-elements",
+    "shadow-dom",
+    "ui",
+    "ui-components",
+    "component-library",
+    "design-system",
+    "framework-agnostic",
+    "oas-ui"
+  ],
   "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
