@@ -319,7 +319,8 @@ describe('OASDivider', () => {
     it('vertical + middle：两侧（上下）留空——grid 首末空白行走 middle 变量', () => {
       const el = mount({ direction: 'vertical', middle: '' }, '文字')
       const css = el.shadowRoot!.querySelector('style')!.textContent!
-      const rule = css.match(/direction='vertical'\][^{]*\.divider\.middle\s*\{[^}]*}/)?.[0] ?? ''
+      // 只匹配含 grid-template-rows 的独立 .middle 规则（合并规则仅声明 display:grid）
+      const rule = css.match(/direction='vertical'\][^{]*\.divider\.middle\s*\{[^}]*grid-template-rows:[^}]*}/)?.[0] ?? ''
       expect(rule).toMatch(/grid-template-rows/)
       // middle 首尾各一空白行（首尾各一次 middle-inset 变量）
       expect((rule.match(/--oas-divider-middle-inset/g) ?? []).length).toBeGreaterThanOrEqual(2)
@@ -420,14 +421,39 @@ describe('vertical 内容对齐（content-position 扩展 top/center/bottom）',
     expect(line(el)!.classList.contains('bottom')).toBe(false)
   })
 
-  it('CSS：vertical top 贴顶（首行缩为 title-inset）/ bottom 贴底（末行缩为 title-inset），仅 vertical 生效', () => {
+  it('CSS：vertical top 贴顶（before 线段缩为 title-inset）/ bottom 贴底（after 线段缩短），仅 vertical 生效', () => {
     const el = mount({ direction: 'vertical' }, '')
     const css = el.shadowRoot!.querySelector('style')!.textContent!
-    const topRule = css.match(/:host\(\[direction='vertical'\]\)\s*\.divider\.top\s*{[^}]*}/)?.[0] ?? ''
-    expect(topRule).toMatch(/grid-template-rows:\s*var\(--oas-divider-title-inset/)
+    // top/bottom 用 flex-basis % 相对容器高度（与水平 left/right 同机制）
+    const topRule =
+      css.match(/:host\(\[direction='vertical'\]\)\s*\.divider\.top::before\s*{[^}]*}/)?.[0] ?? ''
+    expect(topRule).toMatch(/flex:\s*0\s+0\s+var\(--oas-divider-title-inset/)
     const bottomRule =
-      css.match(/:host\(\[direction='vertical'\]\)\s*\.divider\.bottom\s*{[^}]*}/)?.[0] ?? ''
-    expect(bottomRule).toMatch(/grid-template-rows:[^}]*var\(--oas-divider-title-inset/)
+      css.match(/:host\(\[direction='vertical'\]\)\s*\.divider\.bottom::after\s*{[^}]*}/)?.[0] ?? ''
+    expect(bottomRule).toMatch(/flex:\s*0\s+0\s+var\(--oas-divider-title-inset/)
+  })
+
+  it('CSS：vertical 基础布局为 column flex（线段 flex:1 分配），仅 inset/middle 切换 grid 行模板', () => {
+    const el = mount({ direction: 'vertical' }, '')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const baseRule = css.match(/:host\(\[direction='vertical'\]\)\s*\.divider\s*{[^}]*}/)?.[0] ?? ''
+    expect(baseRule).toMatch(/flex-direction:\s*column/)
+    expect(baseRule).not.toMatch(/display:\s*grid/)
+    // inset/middle 的 display:grid 由合并规则声明（独立规则只写 grid-template-rows）
+    expect(css).toMatch(/display:\s*grid/)
+    // grid 规则必须覆盖通用 align-items:center（否则线段块轴居中 → auto 高度 0 不显示），
+    // 用 align-items:stretch 撑满 1fr 行
+    expect(css).toMatch(/\.divider\.inset,[^{]*\.[^{]*\s*\{[^}]*align-items:\s*stretch/)
+  })
+
+  it('CSS：vertical 线段 height:auto（覆盖基础 height:1px，grid 模式 stretch 才能撑满线段行）', () => {
+    const el = mount({ direction: 'vertical' }, '')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const lineRule =
+      css.match(/:host\(\[direction='vertical'\]\)\s*\.divider::after\s*{[^}]*}/)?.[0] ?? ''
+    expect(lineRule).toMatch(/flex:\s*1\s+1\s+0/)
+    expect(lineRule).toMatch(/height:\s*auto/)
+    expect(lineRule).toMatch(/width:\s*var\(--oas-divider-width/)
   })
 
   it('动态切换 content-position 即时生效', () => {
