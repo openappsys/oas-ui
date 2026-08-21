@@ -2,6 +2,24 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.1.3] - 2026-08-21
+
+### 新增
+
+- **Tabs 能力全量补齐**（能力补齐）：
+  - 基础：`oas-tab-panel` `disabled` 禁用、`size` 五档、`centered`/`justified` 布局、溢出滚动+左右箭头（`without-scroll-controls` 关闭）、滚轮横向滑动
+  - 溢出 `more`：滚动 + 视口外标签镜像下拉（通用机制，标签不隐藏），搜索过滤、点选平滑滚动到可见区（激活项与相邻项一起进入视口）
+  - 面板显隐 `panel-mode`（keep/lazy/destroy）、键盘激活 `activation`（auto/manual）、`animated` 动画、`oas-before-change` 切换前拦截（cancelable，preventDefault veto）
+  - `editable` 双击重命名（失焦保存、宽高贴合原标签）、`sortable` 拖拽换位（`oas-reorder`）、嵌套 tabs（`:scope` 只认直接子面板）、`slot="label"` 自定义标签
+  - 新增/激活标签自动平滑滚动到可见区、`addable` + 按钮固定标签栏末尾不随滚动遮挡
+  - 能力复核补齐：`trigger="hover"`、`allow-deactivation`、`stacked` 图标堆叠、`icon-only` 纯图标、指示线定制（`--oas-tabs-indicator-color`/`--oas-tabs-indicator-size`）+ `hide-indicator`、`reserve-selected-space` 选中防抖、tab 即链接（`href`/`target`/`rel`）、`hide-content` 纯导航、`items` 数据驱动、`scroll-position` 滚动定位、PageUp/PageDown 键盘溢出滚动、`slot="add-icon"`/`slot="close-icon"` 图标自定义
+
+### 修复
+
+- **Tabs 选中下划线渲染**：溢出滚动容器下被裁剪/叠加/亚像素伪影 → 改用 `::after` 伪元素（独立 2px 盒子，渲染精确、不被裁剪、粗细均匀），card 模式保持边框连通不叠加
+- **more 下拉搜索过滤视觉不生效**：`.more-item[hidden]` 显式 `display:none`（`.more-item` 的 `display:flex` 曾覆盖 UA hidden 致数据过滤但视觉仍显示）
+- **首页页脚**：品牌位 `</>` 符号改真实 logo 图标（favicon.svg / dark 用 favicon-dark.svg，与导航栏一致）；消除底部 128px 空白（vitepress `.VPHome` 默认 margin 残留）；版权行底部间距 56px→32px
+
 ## [2.1.2] - 2026-08-20
 
 ### 新增
