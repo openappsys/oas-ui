@@ -75,10 +75,10 @@
 
 ### 垂直带文字对齐
 
-vertical 模式下 `content-position` 支持 `top`（贴顶）/ `center`（默认，居中）/ `bottom`（贴底），文字竖排在两线段之间；水平模式仅 `left` / `center` / `right` 生效，跨方向使用（如 horizontal + `top`、vertical + `left`）回落 `center` 并告警。贴顶/贴底的留白大小走 `--oas-divider-title-inset` 变量（缺省 5%）。
+vertical 模式下 `content-position` 支持 `top`（贴顶）/ `center`（默认，居中）/ `bottom`（贴底），文字横排、竖线按对齐分布在文字两侧（贴顶时竖线从文字向下延伸、贴底时向上、居中上下各一段）；水平模式仅 `left` / `center` / `right` 生效，跨方向使用（如 horizontal + `top`、vertical + `left`）回落 `center` 并告警。贴顶/贴底的留白大小走 `--oas-divider-title-inset` 变量（缺省 5%）。
 
 <DemoBlock title="垂直带文字对齐">
-  <div style="display: flex; height: 64px; gap: 12px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
+  <div style="display: flex; height: 128px; gap: 12px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
     <oas-divider direction="vertical" content-position="top">贴顶</oas-divider>
     <oas-divider direction="vertical">居中</oas-divider>
     <oas-divider direction="vertical" content-position="bottom">贴底</oas-divider>
