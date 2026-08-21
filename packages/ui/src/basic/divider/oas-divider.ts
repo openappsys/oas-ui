@@ -168,6 +168,17 @@ const STYLE = `
 :host(:not([direction='vertical'])) .divider.middle::after {
   margin-right: var(--oas-divider-middle-inset, 16.67%);
 }
+/* 垂直缩进：inset 起始侧（顶部）留空 / middle 两侧（上下）留空——与水平同变量，
+   垂直方向用 margin-top/margin-bottom 留空（对应水平 margin-left/right） */
+:host([direction='vertical']) .divider.inset::before {
+  margin-top: var(--oas-divider-title-inset, 5%);
+}
+:host([direction='vertical']) .divider.middle::before {
+  margin-top: var(--oas-divider-middle-inset, 16.67%);
+}
+:host([direction='vertical']) .divider.middle::after {
+  margin-bottom: var(--oas-divider-middle-inset, 16.67%);
+}
 /* size 间距档（仅水平布局生效；vertical 分支 margin 固定） */
 .divider.small {
   margin: var(--oas-divider-spacing, var(--oas-space-2)) 0;

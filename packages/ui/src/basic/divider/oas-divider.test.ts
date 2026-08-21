@@ -307,6 +307,31 @@ describe('OASDivider', () => {
     })
   })
 
+  describe('vertical 缩进（inset/middle）', () => {
+    it('vertical + inset：起始侧（顶部）留空——::before margin-top 走 inset 变量', () => {
+      const el = mount({ direction: 'vertical', inset: '' }, '文字')
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      // 垂直 inset：顶部留空（::before margin-top 走 inset 变量）
+      expect(css).toMatch(/direction='vertical'\][^{]*\.divider\.inset\s*::before[^{]*\{[^}]*margin-top/)
+    })
+
+    it('vertical + middle：两侧（上下）留空——::before margin-top + ::after margin-bottom 走 middle 变量', () => {
+      const el = mount({ direction: 'vertical', middle: '' }, '文字')
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/direction='vertical'\][^{]*\.divider\.middle\s*::before[^{]*\{[^}]*margin-top/)
+      expect(css).toMatch(/direction='vertical'\][^{]*\.divider\.middle\s*::after[^{]*\{[^}]*margin-bottom/)
+    })
+
+    it('vertical inset/middle 与水平同变量（--oas-divider-title-inset / --oas-divider-middle-inset）', () => {
+      const el = mount({ direction: 'vertical', inset: '' }, '文字')
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toContain('--oas-divider-title-inset')
+      const elM = mount({ direction: 'vertical', middle: '' }, '文字')
+      const cssM = elM.shadowRoot!.querySelector('style')!.textContent!
+      expect(cssM).toContain('--oas-divider-middle-inset')
+    })
+  })
+
   it('属性变化增量更新：切换 direction 即时生效', () => {
     const el = mount({}, '')
     const d = line(el)!
