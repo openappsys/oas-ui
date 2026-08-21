@@ -2,6 +2,14 @@
   "name": "@oas-ui/icons",
   "version": "2.1.4",
   "description": "OAS-UI 图标（原创内联 SVG）",
+  "keywords": [
+    "icons",
+    "svg",
+    "svg-icons",
+    "icon-library",
+    "inline-svg",
+    "oas-ui"
+  ],
   "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
