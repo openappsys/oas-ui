@@ -1296,7 +1296,11 @@
       "label": "标签文本",
       "value": "标签值",
       "disabled": "禁用该标签：不可聚焦/不可点、`aria-disabled`、视觉降饱和，键盘导航跳过",
-      "editable": "标签可双击重命名：双击进入输入框编辑态，Enter 确认（派发 `oas-rename`）/ Esc 取消"
+      "editable": "标签可双击重命名：双击进入输入框编辑态，Enter 确认（派发 `oas-rename`）/ Esc 取消",
+      "href": "tab 渲染为链接：该标签渲染为 `<a>`（锚点语义：右键新窗口/中键打开/SEO 可爬），搭配 target/rel",
+      "target": "链接 target（仅 href 时生效，如 `_blank`）",
+      "rel": "链接 rel（仅 href 时生效，如 `noopener`）",
+      "icon-only": "纯图标标签：只渲染图标无文字（需 label 提供 aria-label 兜底可访问名称）"
     },
     "events": {},
     "slots": {}
@@ -1349,7 +1353,15 @@
       "panel-mode": "面板显隐策略：`keep`（默认，hidden 保留 DOM）/ `lazy`（未访问的未激活面板不挂载，首次激活才渲染）/ `destroy`（切换即卸载非激活面板内容）",
       "activation": "键盘激活模式：`auto`（默认，方向键立即切换）/ `manual`（方向键只移焦点，Enter/Space 才切换，a11y 手动激活）",
       "animated": "选中态过渡 + 面板淡入动画（只动 color/border/opacity，不碰 layout）",
-      "sortable": "标签可拖拽换位（原生 HTML5 DnD），落点后派发 `oas-reorder`（宿主据此重排面板数据，组件不自动移动 DOM）"
+      "sortable": "标签可拖拽换位（原生 HTML5 DnD），落点后派发 `oas-reorder`（宿主据此重排面板数据，组件不自动移动 DOM）",
+      "trigger": "切换触发方式：`click`（默认）/ `hover`（悬停即切换，disabled 不触发）",
+      "allow-deactivation": "允许点击当前激活标签取消激活（无选中态）；默认重复点击已激活标签保持激活",
+      "stacked": "图标在上、文字在下（纵向堆叠标签）",
+      "hide-indicator": "隐藏激活指示线（line 模式的 ::after 下划线）",
+      "scroll-position": "激活标签滚动定位策略：`auto`（默认 nearest）/ `start` / `center` / `end`（激活/新增标签滚动到可见时的对齐位置）",
+      "reserve-selected-space": "选中加粗防抖：预载选中态文字宽度，选中/未选中标签宽度一致、切换不抖动",
+      "hide-content": "纯导航模式：渲染标签栏但不渲染面板区（tabs 当导航条，宿主接管内容/路由）",
+      "items": "数据驱动渲染：JSON 数组 `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`，与 `oas-tab-panel` 子元素并存时 items 优先"
     },
     "events": {
       "oas-add": "点击 + 新增按钮，`detail: { label }`（默认新标签文案「新标签」走 locale，宿主自定义或直接使用）",

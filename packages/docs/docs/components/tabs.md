@@ -218,6 +218,16 @@
   </div>
 </DemoBlock>
 
+`scroll-position`：激活/新增标签滚动到可见区时的对齐位置——`auto`（默认 nearest，最小滚动）/ `start` / `center` / `end`。
+
+<DemoBlock title="激活滚动居中">
+  <div style="max-width: 420px">
+    <oas-tabs scroll-position="center" active="t6">
+      <oas-tab-panel v-for="i in 12" :key="i" :label="'标签' + i" :value="'t' + i"><p>内容 {{ i }}</p></oas-tab-panel>
+    </oas-tabs>
+  </div>
+</DemoBlock>
+
 ## 更多收缩下拉
 
 `more`：溢出时标签栏可横向滚动（滚轮/拖拽），末尾「更多」下拉列出**当前滚动视口之外**的标签作快捷跳转（标签全部渲染不隐藏，通用的滚动+镜像做法）；视口外项较多时下拉顶部带搜索框可实时过滤；点选下拉项平滑滚动到可见区（激活项与相邻项因连续排布自然一起进入视口）。新增/激活的标签会自动平滑滚动到可见区域。
@@ -343,6 +353,114 @@
   </oas-tabs>
 </DemoBlock>
 
+## 悬停切换
+
+`trigger="hover"`：悬停标签即切换（默认 `click`）。disabled 标签悬停不触发。
+
+<DemoBlock title="悬停切换">
+  <oas-tabs trigger="hover" active="a">
+    <oas-tab-panel label="标签一" value="a"><p>内容一：悬停标签即切换。</p></oas-tab-panel>
+    <oas-tab-panel label="标签二" value="b"><p>内容二</p></oas-tab-panel>
+    <oas-tab-panel label="标签三" value="c"><p>内容三</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
+## 取消激活
+
+`allow-deactivation`：点击当前激活标签取消其激活（进入无选中态）；默认重复点击已激活标签保持激活。
+
+<DemoBlock title="取消激活">
+  <oas-tabs allow-deactivation active="a">
+    <oas-tab-panel label="标签一" value="a"><p>内容一：再点一次当前标签可取消激活。</p></oas-tab-panel>
+    <oas-tab-panel label="标签二" value="b"><p>内容二</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
+## 图标堆叠与纯图标
+
+`stacked`：图标在上、文字在下（纵向堆叠）。`icon-only`（oas-tab-panel）：纯图标标签无文字（label 提供 aria-label 兜底可访问名称）。
+
+<DemoBlock title="图标堆叠 + 纯图标">
+  <oas-space direction="vertical" size="large" style="width: 100%">
+    <oas-tabs stacked active="a">
+      <oas-tab-panel label="收藏" value="a" icon="star"><p>内容一：图标上文字下。</p></oas-tab-panel>
+      <oas-tab-panel label="消息" value="b" icon="mail"><p>内容二</p></oas-tab-panel>
+      <oas-tab-panel label="搜索" value="c" icon="search"><p>内容三</p></oas-tab-panel>
+    </oas-tabs>
+    <oas-tabs active="a">
+      <oas-tab-panel label="收藏" value="a" icon="star" icon-only><p>内容一：纯图标标签（悬停看 tooltip 语义靠 aria-label）。</p></oas-tab-panel>
+      <oas-tab-panel label="消息" value="b" icon="mail" icon-only><p>内容二</p></oas-tab-panel>
+      <oas-tab-panel label="设置" value="c" icon="gear" icon-only><p>内容三</p></oas-tab-panel>
+    </oas-tabs>
+  </oas-space>
+</DemoBlock>
+
+## 指示线定制
+
+激活指示线（line 模式 ::after）走 CSS 变量开口：`--oas-tabs-indicator-color`（颜色）、`--oas-tabs-indicator-size`（厚度）。`hide-indicator` 直接隐藏指示线。
+
+<DemoBlock title="指示线定制">
+  <oas-space direction="vertical" size="large" style="width: 100%">
+    <oas-tabs active="a" style="--oas-tabs-indicator-color: var(--oas-color-success); --oas-tabs-indicator-size: 3px">
+      <oas-tab-panel label="标签一" value="a"><p>内容一：自定义指示线颜色与厚度。</p></oas-tab-panel>
+      <oas-tab-panel label="标签二" value="b"><p>内容二</p></oas-tab-panel>
+    </oas-tabs>
+    <oas-tabs hide-indicator active="a">
+      <oas-tab-panel label="标签一" value="a"><p>内容一：隐藏激活指示线。</p></oas-tab-panel>
+      <oas-tab-panel label="标签二" value="b"><p>内容二</p></oas-tab-panel>
+    </oas-tabs>
+  </oas-space>
+</DemoBlock>
+
+## 选中防抖
+
+`reserve-selected-space`：选中标签文字加粗时预载宽度，选中/未选中标签宽度一致、切换不抖动（选中态 font-weight 500 不撑宽）。
+
+<DemoBlock title="选中防抖">
+  <oas-tabs reserve-selected-space active="a">
+    <oas-tab-panel label="标签一" value="a"><p>内容一：切换标签宽度不抖动。</p></oas-tab-panel>
+    <oas-tab-panel label="标签二二" value="b"><p>内容二</p></oas-tab-panel>
+    <oas-tab-panel label="标签三三三" value="c"><p>内容三</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
+## 链接标签
+
+`oas-tab-panel` 设 `href`：该标签渲染为 `<a>` 链接（锚点语义：右键新窗口/中键打开/SEO 可爬），搭配 `target`/`rel`。适合标签即页面路由的场景。
+
+<DemoBlock title="链接标签">
+  <oas-tabs active="a">
+    <oas-tab-panel label="组件总览" value="a" href="/components/"><p>内容一：我是链接，可右键新窗口打开。</p></oas-tab-panel>
+    <oas-tab-panel label="GitHub" value="b" href="https://github.com/openappsys/oas-ui" target="_blank" rel="noopener"><p>内容二：外链新窗口。</p></oas-tab-panel>
+    <oas-tab-panel label="普通" value="c"><p>内容三：无 href 仍是普通标签。</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
+## 纯导航模式
+
+`hide-content`：只渲染标签栏、不渲染面板区——tabs 当导航条用（切换只派发 `oas-change`，内容/路由由宿主接管）。
+
+<DemoBlock title="纯导航模式">
+  <oas-tabs hide-content active="a">
+    <oas-tab-panel label="首页" value="a"></oas-tab-panel>
+    <oas-tab-panel label="文档" value="b"></oas-tab-panel>
+    <oas-tab-panel label="设置" value="c"></oas-tab-panel>
+  </oas-tabs>
+  <p style="color: var(--oas-color-text-secondary); font-size: 13px; margin-top: 8px">上方只有标签栏，无面板区；切换只发事件，内容由宿主接管。</p>
+</DemoBlock>
+
+## 数据驱动
+
+`items`：JSON 数组数据驱动渲染（与 `oas-tab-panel` 子元素并存时 items 优先）。每项支持 `label / value / icon / badge / disabled / href / target / rel / closable / editable / iconOnly`。
+
+<DemoBlock title="数据驱动">
+  <oas-tabs
+    active="home"
+    items='[{"label":"首页","value":"home","icon":"star"},{"label":"消息","value":"msg","icon":"mail","badge":"5"},{"label":"文档","value":"doc","href":"/components/"},{"label":"禁用","value":"dis","disabled":true}]'
+  ></oas-tabs>
+</DemoBlock>
+
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -434,15 +552,23 @@ onMounted(async () => {
 | `activation` | 键盘激活模式：`auto`（默认，方向键立即切换）/ `manual`（方向键只移焦点，Enter/Space 才切换，a11y 手动激活） | `string` | `auto` |
 | `active` | 激活标签的 `value` | `string` | — |
 | `addable` | 标签栏末尾显示 + 按钮，点击派发 `oas-add`（组件不自动新增面板） | `boolean` | — |
+| `allow-deactivation` | 允许点击当前激活标签取消激活（无选中态）；默认重复点击已激活标签保持激活 | `boolean` | — |
 | `animated` | 选中态过渡 + 面板淡入动画（只动 color/border/opacity，不碰 layout） | `boolean` | — |
 | `centered` | 标签栏整体居中（横向时） | `boolean` | — |
 | `closable` | 每个标签显示关闭 ×，点击派发 `oas-close`（组件不自动删除） | `boolean` | — |
+| `hide-content` | 纯导航模式：渲染标签栏但不渲染面板区（tabs 当导航条，宿主接管内容/路由） | `boolean` | — |
+| `hide-indicator` | 隐藏激活指示线（line 模式的 ::after 下划线） | `boolean` | — |
+| `items` | 数据驱动渲染：JSON 数组 `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`，与 `oas-tab-panel` 子元素并存时 items 优先 | `string` | — |
 | `justified` | 标签均分占满标签栏宽度 | `boolean` | — |
 | `more` | 溢出收缩为「更多」下拉（替代滚动箭头，二者互斥）；放不下的标签收进下拉，选中项被收起时更多按钮高亮 | `boolean` | — |
 | `panel-mode` | 面板显隐策略：`keep`（默认，hidden 保留 DOM）/ `lazy`（未访问的未激活面板不挂载，首次激活才渲染）/ `destroy`（切换即卸载非激活面板内容） | `string` | `keep` |
+| `reserve-selected-space` | 选中加粗防抖：预载选中态文字宽度，选中/未选中标签宽度一致、切换不抖动 | `boolean` | — |
+| `scroll-position` | 激活标签滚动定位策略：`auto`（默认 nearest）/ `start` / `center` / `end`（激活/新增标签滚动到可见时的对齐位置） | `string` | `auto` |
 | `size` | 标签档位：`xs/small/medium/large/xl`（默认 medium），字号/内边距随档位；非法值回落 medium 并告警 | `string` | `medium` |
 | `sortable` | 标签可拖拽换位（原生 HTML5 DnD），落点后派发 `oas-reorder`（宿主据此重排面板数据，组件不自动移动 DOM） | `boolean` | — |
+| `stacked` | 图标在上、文字在下（纵向堆叠标签） | `boolean` | — |
 | `tab-position` | 标签栏位置：`top`（默认）/ `left` / `right` / `bottom` | `string` | `top` |
+| `trigger` | 切换触发方式：`click`（默认）/ `hover`（悬停即切换，disabled 不触发） | `string` | `click` |
 | `type` | 样式变体：`line`（下划线，默认）/ `card`（卡片式） | `string` | `line` |
 | `without-scroll-controls` | 关闭溢出时的左右/上下滚动箭头（默认溢出自动显示箭头） | `boolean` | — |
 
@@ -466,8 +592,12 @@ onMounted(async () => {
 | `badge` | 标签标题旁的徽标（数字或文本） | — | — |
 | `disabled` | 禁用该标签：不可聚焦/不可点、`aria-disabled`、视觉降饱和，键盘导航跳过 | — | — |
 | `editable` | 标签可双击重命名：双击进入输入框编辑态，Enter 确认（派发 `oas-rename`）/ Esc 取消 | — | — |
+| `href` | tab 渲染为链接：该标签渲染为 `<a>`（锚点语义：右键新窗口/中键打开/SEO 可爬），搭配 target/rel | — | — |
 | `icon` | 标签标题前的图标名（复用 `oas-icon` 图标集，如 `mail`） | — | — |
+| `icon-only` | 纯图标标签：只渲染图标无文字（需 label 提供 aria-label 兜底可访问名称） | — | — |
 | `label` | 标签文本 | — | — |
+| `rel` | 链接 rel（仅 href 时生效，如 `noopener`） | — | — |
+| `target` | 链接 target（仅 href 时生效，如 `_blank`） | — | — |
 | `value` | 标签值 | — | — |
 
 | 名称 | 说明 |

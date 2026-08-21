@@ -218,6 +218,16 @@ When there are more tabs than fit, the tab bar scrolls horizontally with left/ri
   </div>
 </DemoBlock>
 
+`scroll-position`: alignment when scrolling the active/added tab into view — `auto` (default nearest, minimal scroll) / `start` / `center` / `end`.
+
+<DemoBlock title="Scroll active to center">
+  <div style="max-width: 420px">
+    <oas-tabs scroll-position="center" active="t6">
+      <oas-tab-panel v-for="i in 12" :key="i" :label="'Tab ' + i" :value="'t' + i"><p>Content {{ i }}</p></oas-tab-panel>
+    </oas-tabs>
+  </div>
+</DemoBlock>
+
 ## More collapse dropdown
 
 `more`: when tabs overflow, the tab bar scrolls horizontally (wheel/drag), and a trailing "More" dropdown lists the tabs **outside the current scroll viewport** as quick shortcuts (all tabs stay rendered, none hidden — the industry-standard scroll + mirror approach). With many off-view items a search box at the top of the dropdown filters them live; selecting a dropdown item scrolls it smoothly into view (the active tab and its neighbors naturally come into view together thanks to their continuous layout). Newly added/activated tabs auto-scroll smoothly into view.
@@ -343,6 +353,113 @@ Place a direct child element with `slot="label"` inside `oas-tab-panel` to fully
   </oas-tabs>
 </DemoBlock>
 
+## Hover switching
+
+`trigger="hover"`: switch tabs on hover (default `click`). Disabled tabs are not triggered on hover.
+
+<DemoBlock title="Hover switching">
+  <oas-tabs trigger="hover" active="a">
+    <oas-tab-panel label="Tab 1" value="a"><p>Content 1: switch on hover.</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 2" value="b"><p>Content 2</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 3" value="c"><p>Content 3</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
+## Allow deactivation
+
+`allow-deactivation`: clicking the currently active tab deactivates it (no selection). By default, clicking the active tab keeps it active.
+
+<DemoBlock title="Allow deactivation">
+  <oas-tabs allow-deactivation active="a">
+    <oas-tab-panel label="Tab 1" value="a"><p>Content 1: click the active tab again to deactivate.</p></oas-tab-panel>
+    <oas-tab-panel label="Tab 2" value="b"><p>Content 2</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
+## Stacked &amp; icon-only
+
+`stacked`: icon on top, text below (vertically stacked). `icon-only` (on oas-tab-panel): icon-only tab without text (label provides the aria-label fallback for an accessible name).
+
+<DemoBlock title="Stacked + icon-only">
+  <oas-space direction="vertical" size="large" style="width: 100%">
+    <oas-tabs stacked active="a">
+      <oas-tab-panel label="Star" value="a" icon="star"><p>Content 1: icon on top, text below.</p></oas-tab-panel>
+      <oas-tab-panel label="Mail" value="b" icon="mail"><p>Content 2</p></oas-tab-panel>
+      <oas-tab-panel label="Search" value="c" icon="search"><p>Content 3</p></oas-tab-panel>
+    </oas-tabs>
+    <oas-tabs active="a">
+      <oas-tab-panel label="Star" value="a" icon="star" icon-only><p>Content 1: icon-only tab.</p></oas-tab-panel>
+      <oas-tab-panel label="Mail" value="b" icon="mail" icon-only><p>Content 2</p></oas-tab-panel>
+      <oas-tab-panel label="Settings" value="c" icon="gear" icon-only><p>Content 3</p></oas-tab-panel>
+    </oas-tabs>
+  </oas-space>
+</DemoBlock>
+
+## Indicator customization
+
+The active indicator line (line-mode ::after) exposes CSS variables: `--oas-tabs-indicator-color` (color) and `--oas-tabs-indicator-size` (thickness). `hide-indicator` hides the indicator entirely.
+
+<DemoBlock title="Indicator customization">
+  <oas-space direction="vertical" size="large" style="width: 100%">
+    <oas-tabs active="a" style="--oas-tabs-indicator-color: var(--oas-color-success); --oas-tabs-indicator-size: 3px">
+      <oas-tab-panel label="Tab 1" value="a"><p>Content 1: custom indicator color and thickness.</p></oas-tab-panel>
+      <oas-tab-panel label="Tab 2" value="b"><p>Content 2</p></oas-tab-panel>
+    </oas-tabs>
+    <oas-tabs hide-indicator active="a">
+      <oas-tab-panel label="Tab 1" value="a"><p>Content 1: indicator hidden.</p></oas-tab-panel>
+      <oas-tab-panel label="Tab 2" value="b"><p>Content 2</p></oas-tab-panel>
+    </oas-tabs>
+  </oas-space>
+</DemoBlock>
+
+## Anti-jitter on selection
+
+`reserve-selected-space`: preload the selected-state text width so selected/unselected tabs keep the same width and do not shift when switching (selected uses font-weight 500 without widening the tab).
+
+<DemoBlock title="Anti-jitter on selection">
+  <oas-tabs reserve-selected-space active="a">
+    <oas-tab-panel label="Tab 1" value="a"><p>Content 1: no width shift on switch.</p></oas-tab-panel>
+    <oas-tab-panel label="Tab Two" value="b"><p>Content 2</p></oas-tab-panel>
+    <oas-tab-panel label="Tab Three Three" value="c"><p>Content 3</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
+## Link tabs
+
+Set `href` on `oas-tab-panel` to render that tab as an `<a>` link (anchor semantics: open in new window/middle-click/SEO-crawlable), with `target`/`rel`. Good for tabs-as-page-routes scenarios.
+
+<DemoBlock title="Link tabs">
+  <oas-tabs active="a">
+    <oas-tab-panel label="Components" value="a" href="/components/"><p>Content 1: I'm a link, right-click to open in a new window.</p></oas-tab-panel>
+    <oas-tab-panel label="GitHub" value="b" href="https://github.com/openappsys/oas-ui" target="_blank" rel="noopener"><p>Content 2: external link in a new window.</p></oas-tab-panel>
+    <oas-tab-panel label="Plain" value="c"><p>Content 3: without href it stays a normal tab.</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
+## Pure navigation mode
+
+`hide-content`: render only the tab bar without the panel area — tabs act as a nav strip (switching only emits `oas-change`; content/routing is the host's job).
+
+<DemoBlock title="Pure navigation mode">
+  <oas-tabs hide-content active="a">
+    <oas-tab-panel label="Home" value="a"></oas-tab-panel>
+    <oas-tab-panel label="Docs" value="b"></oas-tab-panel>
+    <oas-tab-panel label="Settings" value="c"></oas-tab-panel>
+  </oas-tabs>
+  <p style="color: var(--oas-color-text-secondary); font-size: 13px; margin-top: 8px">Only the tab bar above, no panel area; switching only fires an event, content is the host's job.</p>
+</DemoBlock>
+
+## Data-driven
+
+`items`: render from a JSON array (takes precedence over `oas-tab-panel` children when both present). Each item supports `label / value / icon / badge / disabled / href / target / rel / closable / editable / iconOnly`.
+
+<DemoBlock title="Data-driven">
+  <oas-tabs
+    active="home"
+    items='[{"label":"Home","value":"home","icon":"star"},{"label":"Messages","value":"msg","icon":"mail","badge":"5"},{"label":"Docs","value":"doc","href":"/components/"},{"label":"Disabled","value":"dis","disabled":true}]'
+  ></oas-tabs>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -435,15 +552,23 @@ onMounted(async () => {
 | `activation` | Keyboard activation: `auto` (default, arrow keys switch immediately) / `manual` (arrows move focus only, Enter/Space switches — a11y manual activation) | `string` | `auto` |
 | `active` | The `value` of the active tab | `string` | — |
 | `addable` | Shows a + button at the end of the tab bar; clicking fires `oas-add` (the component does not add a panel) | `boolean` | — |
+| `allow-deactivation` | Allow clicking the active tab to deactivate it (no selection); by default clicking the active tab keeps it active | `boolean` | — |
 | `animated` | Selection transition + panel fade-in (animates color/border/opacity only, no layout) | `boolean` | — |
 | `centered` | Center the tab bar (when horizontal) | `boolean` | — |
 | `closable` | Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel) | `boolean` | — |
+| `hide-content` | Pure navigation mode: render the tab bar without the panel area (tabs act as a nav strip; the host takes over content/routing) | `boolean` | — |
+| `hide-indicator` | Hide the active indicator line (the ::after underline in line mode) | `boolean` | — |
+| `items` | Data-driven rendering: JSON array `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`; takes precedence over `oas-tab-panel` children when both present | `string` | — |
 | `justified` | Distribute tabs evenly across the full tab bar width | `boolean` | — |
 | `more` | Collapse overflowed tabs into a "More" dropdown instead of scroll arrows (mutually exclusive); the More button highlights when the active tab is collapsed | `boolean` | — |
 | `panel-mode` | Panel visibility strategy: `keep` (default, hidden keeps DOM) / `lazy` (unvisited inactive panels not mounted until first activation) / `destroy` (unmount inactive panel content on switch) | `string` | `keep` |
+| `reserve-selected-space` | Anti-jitter for bold selection: preload the selected-state text width so selected/unselected tabs keep the same width and do not shift on switch | `boolean` | — |
+| `scroll-position` | Scroll alignment when scrolling the active/added tab into view: `auto` (default nearest) / `start` / `center` / `end` | `string` | `auto` |
 | `size` | Tab size: `xs/small/medium/large/xl` (default medium), font-size/padding follow the step; invalid values fall back to medium with a warning | `string` | `medium` |
 | `sortable` | Tabs are drag-sortable (native HTML5 DnD); emits `oas-reorder` after drop (host reorders panel data accordingly, the component does not move DOM itself) | `boolean` | — |
+| `stacked` | Icon on top, text below (vertically stacked tabs) | `boolean` | — |
 | `tab-position` | Tab bar position: `top` (default) / `left` / `right` / `bottom` | `string` | `top` |
+| `trigger` | Switch trigger: `click` (default) / `hover` (switch on hover; disabled tabs not triggered) | `string` | `click` |
 | `type` | Style variant: `line` (underline, default) / `card` | `string` | `line` |
 | `without-scroll-controls` | Disable the overflow scroll arrows (shown by default when tabs overflow) | `boolean` | — |
 
@@ -467,8 +592,12 @@ onMounted(async () => {
 | `badge` | Badge next to the tab title (number or text) | — | — |
 | `disabled` | Disable this tab: not focusable/clickable, `aria-disabled`, visually dimmed, skipped by keyboard navigation | — | — |
 | `editable` | Tab is renameable on double-click: enters an input editing state, Enter confirms (emits `oas-rename`) / Esc cancels | — | — |
+| `href` | Render the tab as a link: the tab becomes an `<a>` (anchor semantics: open in new window/middle-click/SEO-crawlable), works with target/rel | — | — |
 | `icon` | Icon name shown before the tab title (reuses the `oas-icon` icon set, e.g. `mail`) | — | — |
+| `icon-only` | Icon-only tab: renders only the icon without text (label provides the aria-label fallback for an accessible name) | — | — |
 | `label` | Tab text | — | — |
+| `rel` | Link rel (only with href, e.g. `noopener`) | — | — |
+| `target` | Link target (only with href, e.g. `_blank`) | — | — |
 | `value` | Tab value | — | — |
 
 | Name | Description |

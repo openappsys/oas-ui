@@ -71,6 +71,14 @@ const STYLE = `
      tab 需 relative 作为定位父级 */
   position: relative;
 }
+/* tab 即链接（panel 设 href 渲染 <a>）：去链接默认下划线/颜色，继承 tab 样式 */
+a.tab {
+  text-decoration: none;
+  color: var(--oas-color-text-secondary);
+}
+a.tab[aria-selected='true'] {
+  color: var(--oas-color-primary);
+}
 /* 下划线基座：默认透明占位（不占布局），各方向尺寸由位置类覆盖 */
 .tab::after {
   content: '';
@@ -82,7 +90,7 @@ const STYLE = `
   left: 0;
   right: 0;
   bottom: 0;
-  height: 2px;
+  height: var(--oas-tabs-indicator-size, 2px);
 }
 :host(.oas-tabs--bottom) .tab::after {
   bottom: auto;
@@ -93,14 +101,14 @@ const STYLE = `
   right: 0;
   top: 0;
   bottom: 0;
-  width: 2px;
+  width: var(--oas-tabs-indicator-size, 2px);
   height: auto;
 }
 :host(.oas-tabs--right) .tab::after {
   left: 0;
   top: 0;
   bottom: 0;
-  width: 2px;
+  width: var(--oas-tabs-indicator-size, 2px);
   height: auto;
 }
 .tab[aria-selected='true'] {
@@ -109,7 +117,7 @@ const STYLE = `
 }
 /* line 模式（非 card）激活下划线显主色；card 模式有独立边框连通机制，不叠加 */
 :host(:not(.oas-tabs--card)) .tab[aria-selected='true']::after {
-  background: var(--oas-color-primary);
+  background: var(--oas-tabs-indicator-color, var(--oas-color-primary));
 }
 /* 非激活项 hover 反馈：文字与背景向激活态靠拢一档（选中项 hover 不变） */
 .tab:not([aria-selected='true']):hover {
@@ -615,6 +623,29 @@ const STYLE = `
 :host(.oas-tabs--vertical) .tab--drag-over {
   box-shadow: inset 0 2px 0 var(--oas-color-primary);
 }
+
+/* ===== stacked：图标在上、文字在下（纵向堆叠） ===== */
+:host(.oas-tabs--stacked) .tab {
+  flex-direction: column;
+  gap: var(--oas-space-1);
+}
+
+/* ===== hide-indicator：隐藏激活指示线（line 模式 ::after） ===== */
+:host(.oas-tabs--hide-indicator) .tab::after {
+  display: none;
+}
+
+/* ===== reserve-selected-space：选中加粗（font-weight 500）防抖 =====
+   ::before 用 attr(data-label) 预载选中态文字宽度（不可见、height:0 不占高、参与撑宽），
+   选中/未选中 tab 宽度一致，切换不抖动 */
+:host(.oas-tabs--reserve-space) .tab-label::before {
+  content: attr(data-label);
+  display: block;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  font-weight: 500;
+}
 `
 
 export class OASTabs extends OASElement {
@@ -634,6 +665,14 @@ export class OASTabs extends OASElement {
       'activation',
       'animated',
       'sortable',
+      'trigger',
+      'allow-deactivation',
+      'stacked',
+      'hide-indicator',
+      'scroll-position',
+      'reserve-selected-space',
+      'hide-content',
+      'items',
     ]
   }
 
@@ -655,9 +694,11 @@ export class OASTabs extends OASElement {
   private dragSource: string | null = null
   /** 上次渲染的激活值（active 变化时滚动到可见；初始化为 undefined 以跳过首渲染滚动） */
   private prevActiveValue: string | undefined = undefined
+  /** items 数据驱动同步中标志（防止生成 panel 触发 MutationObserver 导致 update 无限循环） */
+  private itemsSyncing = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
-  private template(): string {
+  private template(hideContent = false): string {
     return `
       <style>${STYLE}</style>
       <div class="nav" part="nav">
@@ -671,7 +712,7 @@ export class OASTabs extends OASElement {
           <div class="more-list"></div>
         </div>
       </div>
-      <div class="panel" part="panel"><slot></slot></div>
+      ${hideContent ? '' : '<div class="panel" part="panel"><slot></slot></div>'}
     `
   }
 
@@ -703,7 +744,8 @@ export class OASTabs extends OASElement {
   }
 
   protected override render(): void {
-    this.shadow.innerHTML = this.template()
+    // hide-content：纯导航模式（tabs 当导航条，不渲染面板区），宿主接管内容/路由
+    this.shadow.innerHTML = this.template(this.hasAttr('hide-content'))
     this.bind()
     this.update()
   }
@@ -715,7 +757,58 @@ export class OASTabs extends OASElement {
     return true
   }
 
+  /**
+   * items 数据驱动：items 属性（JSON 数组 [{label, value, icon?, badge?, disabled?, href?,
+   * target?, rel?, closable?, editable?, iconOnly?}]）存在时生成对应 oas-tab-panel 子元素。
+   * 与子元素并存时 items 优先（清掉非 items 生成的面板）。itemsSyncing 守卫防止
+   * MutationObserver 触发的 update 无限循环。
+   */
+  private syncItemsToPanels(): void {
+    const raw = this.getAttr('items', '')
+    if (!raw) return
+    if (this.itemsSyncing) return
+    let items: Array<Record<string, unknown>> = []
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) items = parsed
+    } catch {
+      return
+    }
+    this.itemsSyncing = true
+    try {
+      // 一致性检查：现有面板 value 序列与 items 一致则跳过（防 MutationObserver 重复 update 重建）
+      const existing = [...this.querySelectorAll(':scope > oas-tab-panel')].map(
+        (p) => p.getAttribute('value'),
+      )
+      const itemValues = items.map((i) => String(i.value ?? ''))
+      const same =
+        existing.length === itemValues.length && existing.every((v, i) => v === itemValues[i])
+      if (same) return
+      // 清掉现有直接子面板（items 优先，子元素忽略）
+      for (const p of [...this.querySelectorAll(':scope > oas-tab-panel')]) p.remove()
+      for (const item of items) {
+        const panel = document.createElement('oas-tab-panel')
+        if (typeof item.label === 'string') panel.setAttribute('label', item.label)
+        if (typeof item.value === 'string') panel.setAttribute('value', item.value)
+        if (typeof item.icon === 'string') panel.setAttribute('icon', item.icon)
+        if (item.badge != null) panel.setAttribute('badge', String(item.badge))
+        if (item.disabled) panel.setAttribute('disabled', '')
+        if (typeof item.href === 'string') panel.setAttribute('href', item.href)
+        if (typeof item.target === 'string') panel.setAttribute('target', item.target)
+        if (typeof item.rel === 'string') panel.setAttribute('rel', item.rel)
+        if (item.closable) panel.setAttribute('closable', '')
+        if (item.editable) panel.setAttribute('editable', '')
+        if (item.iconOnly) panel.setAttribute('icon-only', '')
+        this.appendChild(panel)
+      }
+    } finally {
+      this.itemsSyncing = false
+    }
+  }
+
   protected override update(): void {
+    // items 数据驱动：items 属性存在时按其生成 oas-tab-panel（与子元素并存时 items 优先）
+    this.syncItemsToPanels()
     // 只取直接子面板：嵌套 tabs（panel 内再放 oas-tabs）的面板归内层管理，不误抓
     this.panels = [...this.querySelectorAll(':scope > oas-tab-panel')] as OASTabPanel[]
     const tablist = this.shadow.querySelector('.tablist')
@@ -736,9 +829,14 @@ export class OASTabs extends OASElement {
     this.classList.toggle('oas-tabs--centered', this.hasAttr('centered'))
     this.classList.toggle('oas-tabs--justified', this.hasAttr('justified'))
     this.classList.toggle('oas-tabs--animated', this.hasAttr('animated'))
+    this.classList.toggle('oas-tabs--stacked', this.hasAttr('stacked'))
+    this.classList.toggle('oas-tabs--hide-indicator', this.hasAttr('hide-indicator'))
+    this.classList.toggle('oas-tabs--reserve-space', this.hasAttr('reserve-selected-space'))
     const closable = this.hasAttr('closable')
     const addable = this.hasAttr('addable')
     const sortable = this.hasAttr('sortable')
+    const triggerHover = this.getAttr('trigger', 'click') === 'hover'
+    const reserveSpace = this.hasAttr('reserve-selected-space')
 
     // 重建前捕获 tablist 内焦点归属（动态增删后焦点恢复的依据）
     const focused = this.captureFocused()
@@ -747,24 +845,38 @@ export class OASTabs extends OASElement {
 
     tablist.className = `tablist${vertical ? ' tablist--vertical' : ''}`
     tablist.innerHTML = ''
-    const active = this.getAttr('active', '')
+    // 激活值解析：宿主设了 active 属性就用其值（含 allow-deactivation 取消后的 ''=无选中态）；
+    // 未设 active 属性才回退第一项
+    const active = this.hasAttr('active') ? this.getAttr('active', '') : ''
+    const hasActiveAttr = this.hasAttr('active')
     let firstValue = ''
     this.panels.forEach((panel, idx) => {
       const value = panel.getAttribute('value') ?? ''
       if (idx === 0) firstValue = value
-      const isSelected = value === (active || firstValue)
+      const resolvedActive = hasActiveAttr ? active : firstValue
+      const isSelected = resolvedActive !== '' && value === resolvedActive
       const disabled = panel.hasAttribute('disabled')
-      const btn = document.createElement('button')
+      // tab 即链接：panel 设 href 时渲染 <a>（锚点语义：右键新窗口/中键打开/SEO 可爬）；
+      // 否则 button。role=tab 保持不变
+      const href = panel.getAttribute('href')
+      const btn = document.createElement(href ? 'a' : 'button') as HTMLElement
       btn.className = 'tab'
       btn.classList.toggle('tab--card', type === 'card')
       btn.setAttribute('part', 'tab')
       btn.setAttribute('role', 'tab')
       btn.setAttribute('aria-selected', String(isSelected))
+      if (href) {
+        btn.setAttribute('href', href)
+        const target = panel.getAttribute('target')
+        const rel = panel.getAttribute('rel')
+        if (target) btn.setAttribute('target', target)
+        if (rel) btn.setAttribute('rel', rel)
+      }
       // roving tabindex：仅选中标签进 Tab 顺序，其余 tabindex=-1；disabled 恒 -1 不可聚焦
       btn.setAttribute('tabindex', isSelected && !disabled ? '0' : '-1')
       if (disabled) {
         btn.setAttribute('aria-disabled', 'true')
-        btn.disabled = true
+        if (!href) (btn as HTMLButtonElement).disabled = true
       }
       btn.setAttribute('data-value', value)
 
@@ -811,9 +923,20 @@ export class OASTabs extends OASElement {
           break
         }
       }
-      if (slotLabel) label.appendChild(slotLabel.cloneNode(true))
-      else label.textContent = panel.getAttribute('label') ?? ''
-      btn.appendChild(label)
+      // icon-only：纯图标标签（无文字），aria-label 兜底可访问名称
+      const iconOnly = panel.hasAttribute('icon-only')
+      if (iconOnly) {
+        btn.setAttribute('aria-label', panel.getAttribute('label') ?? value)
+      } else if (slotLabel) label.appendChild(slotLabel.cloneNode(true))
+      else {
+        const text = panel.getAttribute('label') ?? ''
+        label.textContent = text
+        // reserve-selected-space：data-label 供 ::before 预载选中态（font-weight 500）宽度，
+        // 选中加粗不撑宽 tab、不抖动
+        if (reserveSpace) label.setAttribute('data-label', text)
+      }
+      // icon-only：纯图标标签不渲染 label（文字）
+      if (!iconOnly) btn.appendChild(label)
 
       // 徽标：数字或文本，紧邻标题
       const badge = panel.getAttribute('badge')
@@ -832,7 +955,16 @@ export class OASTabs extends OASElement {
         close.className = 'tab-close'
         close.setAttribute('tabindex', '-1')
         close.setAttribute('aria-label', this.t('tabs.close'))
-        close.innerHTML = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`
+        // slot="close-icon" 自定义关闭图标（克隆面板直接子元素），fallback 默认 ×
+        let slotClose: HTMLElement | null = null
+        for (const child of panel.children) {
+          if (child.getAttribute('slot') === 'close-icon') {
+            slotClose = child as HTMLElement
+            break
+          }
+        }
+        if (slotClose) close.appendChild(slotClose.cloneNode(true))
+        else close.innerHTML = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`
         close.addEventListener('click', (e: Event) => {
           e.stopPropagation()
           this.emit('close', { key: value })
@@ -848,6 +980,10 @@ export class OASTabs extends OASElement {
       }
 
       btn.addEventListener('click', () => this.activate(value))
+      // trigger:hover：悬停即切换（disabled 不触发）；mouseenter 不冒泡故逐个绑定
+      if (triggerHover && !disabled) {
+        btn.addEventListener('mouseenter', () => this.activate(value))
+      }
 
       // sortable：原生 HTML5 拖拽换位，drop 后 emit oas-reorder（宿主据此重排面板数据）
       if (sortable && !disabled) {
@@ -896,7 +1032,20 @@ export class OASTabs extends OASElement {
         add.removeAttribute('aria-hidden')
         add.setAttribute('tabindex', '0')
         add.setAttribute('aria-label', this.t('tabs.add'))
-        add.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">${iconRegistry['plus']}</svg>`
+        // slot="add-icon" 自定义新增图标（克隆 host 直接子元素），fallback 默认 +
+        let slotAdd: HTMLElement | null = null
+        for (const child of this.children) {
+          if (child.getAttribute('slot') === 'add-icon') {
+            slotAdd = child as HTMLElement
+            break
+          }
+        }
+        if (slotAdd) {
+          add.innerHTML = ''
+          add.appendChild(slotAdd.cloneNode(true))
+        } else {
+          add.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">${iconRegistry['plus']}</svg>`
+        }
         this.addBtn = add
       } else {
         add.hidden = true
@@ -905,11 +1054,12 @@ export class OASTabs extends OASElement {
       }
     }
 
-    const selected = active || firstValue
+    // 面板显隐：与上方选中解析一致——宿主设了 active（含 '' 无选中态）就用其值，未设才回退第一项
+    const selected = hasActiveAttr ? active : firstValue
     const panelMode = normalizePanelMode(this.getAttr('panel-mode', 'keep'))
     for (const panel of this.panels) {
       const value = panel.getAttribute('value') ?? ''
-      const isActive = value === selected
+      const isActive = selected !== '' && value === selected
       panel.hidden = !isActive
       this.syncPanelContent(panel, value, isActive, panelMode)
     }
@@ -926,9 +1076,13 @@ export class OASTabs extends OASElement {
       this.prevActiveValue = activeNow
     } else if (activeNow !== this.prevActiveValue) {
       this.prevActiveValue = activeNow
+      // scroll-position：激活滚动定位策略（auto/nearest 默认、start/center/end）；横向管 inline、纵向管 block
+      const pos = this.getAttr('scroll-position', 'auto')
+      const align = pos === 'auto' ? 'nearest' : (pos as ScrollLogicalPosition)
+      const vertical = this.isVertical()
       this.findTabByValue(activeNow)?.scrollIntoView({
-        block: 'nearest',
-        inline: 'nearest',
+        block: vertical ? align : 'nearest',
+        inline: vertical ? 'nearest' : align,
         behavior: 'smooth',
       })
     }
@@ -1228,6 +1382,20 @@ export class OASTabs extends OASElement {
         e.preventDefault()
         this.activate(value)
       }
+    } else if (e.key === 'PageDown' || e.key === 'PageUp') {
+      // 溢出时 PageDown/PageUp 滚动一屏（键盘可达的溢出滚动）
+      const tablist = this.shadow.querySelector('.tablist') as HTMLElement | null
+      if (!tablist) return
+      const vertical = this.isVertical()
+      const size = vertical ? tablist.clientHeight : tablist.clientWidth
+      const overflow = vertical
+        ? tablist.scrollHeight > tablist.clientHeight + 1
+        : tablist.scrollWidth > tablist.clientWidth + 1
+      if (!overflow) return
+      e.preventDefault()
+      const amount = size * (e.key === 'PageDown' ? 1 : -1)
+      if (vertical) tablist.scrollBy({ top: amount, behavior: 'smooth' })
+      else tablist.scrollBy({ left: amount, behavior: 'smooth' })
     }
   }
 
@@ -1312,10 +1480,18 @@ export class OASTabs extends OASElement {
     // disabled 面板不可激活（键盘已跳过；此处防御性守卫，防宿主直接 setAttribute 到 disabled 值时面板错位）
     const panel = this.panels.find((p) => (p.getAttribute('value') ?? '') === value)
     if (panel?.hasAttribute('disabled')) return
-    // 重复点击已激活标签：不重建不派发（无谓 rebuild 会销毁双击目标，导致浏览器不派发 dblclick，
-    // editable 重命名失效）；焦点保持即可
     const current = this.getAttr('active', '') || (this.panels[0]?.getAttribute('value') ?? '')
-    if (value === current) return
+    // 重复点击已激活标签：allow-deactivation 时取消激活（无选中态），否则不重建不派发
+    //（无谓 rebuild 会销毁双击目标，导致浏览器不派发 dblclick，editable 重命名失效）
+    if (value === current) {
+      if (this.hasAttr('allow-deactivation')) {
+        if (!this.emit('before-change', { value: '' }, { cancelable: true })) return
+        this.setAttribute('active', '')
+        this.emit('change', { value: '' })
+        this.update()
+      }
+      return
+    }
     // oas-before-change：切换前拦截点（cancelable），宿主 preventDefault 可 veto 本次切换
     if (!this.emit('before-change', { value }, { cancelable: true })) return
     this.setAttribute('active', value)
