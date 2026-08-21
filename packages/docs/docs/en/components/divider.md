@@ -75,10 +75,10 @@ A vertical divider stretches to the full row height inside flex/grid containers;
 
 ### Vertical content alignment
 
-In `vertical` mode, `content-position` accepts `top` (top-aligned) / `center` (default, centered) / `bottom` (bottom-aligned); the text runs vertically between the two line segments. In `horizontal` mode only `left` / `center` / `right` apply — using a cross-direction value (e.g. `horizontal` + `top`, `vertical` + `left`) falls back to `center` with a console warning. The top/bottom inset goes through the `--oas-divider-title-inset` variable (default 5%).
+In `vertical` mode, `content-position` accepts `top` (top-aligned) / `center` (default, centered) / `bottom` (bottom-aligned); the text reads horizontally while the vertical line runs on either side of it (top-aligned: the line extends downward from the text; bottom-aligned: upward; centered: a segment on each side). In `horizontal` mode only `left` / `center` / `right` apply — using a cross-direction value (e.g. `horizontal` + `top`, `vertical` + `left`) falls back to `center` with a console warning. The top/bottom inset goes through the `--oas-divider-title-inset` variable (default 5%).
 
 <DemoBlock title="Vertical text alignment">
-  <div style="display: flex; height: 64px; gap: 12px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
+  <div style="display: flex; height: 128px; gap: 12px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
     <oas-divider direction="vertical" content-position="top">Top</oas-divider>
     <oas-divider direction="vertical">Center</oas-divider>
     <oas-divider direction="vertical" content-position="bottom">Bottom</oas-divider>
