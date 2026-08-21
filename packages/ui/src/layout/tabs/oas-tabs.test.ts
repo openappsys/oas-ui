@@ -1114,6 +1114,14 @@ describe('OASTabs', () => {
       expect(filtered[0]!.textContent).toContain('标签9')
     })
 
+    it('搜索过滤的 hidden 项真正不渲染（CSS .more-item[hidden]{display:none}，防 display:flex 覆盖 UA hidden）', () => {
+      // 缺陷固化：.more-item 的 display:flex 会覆盖 [hidden] 的 UA display:none，导致过滤后
+      // 数据层 hidden=true 但视觉仍显示。必须显式 .more-item[hidden]{display:none}。
+      const el = mountMore(10, 100, 300)
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(style).toMatch(/\.more-item\[hidden\]\s*\{[^}]*display:\s*none/)
+    })
+
     it('打开下拉时选中项滚动到可见（scrollIntoView）且高亮', async () => {
       const el = mountMore(10, 100, 300)
       el.setAttribute('active', 't9') // t9（标签10）被收进下拉

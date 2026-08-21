@@ -555,6 +555,11 @@ const STYLE = `
   cursor: pointer;
   white-space: nowrap;
 }
+/* 搜索过滤隐藏：.more-item 的 display:flex 会覆盖 [hidden] 的 UA display:none，
+   必须显式补 hidden 规则，否则过滤后数据层 hidden 但视觉仍显示（机制对≠感知对） */
+.more-item[hidden] {
+  display: none;
+}
 .more-item:hover {
   background: var(--oas-color-bg-hover);
 }
