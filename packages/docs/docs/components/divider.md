@@ -85,6 +85,16 @@ vertical 模式下 `content-position` 支持 `top`（贴顶）/ `center`（默�
   </div>
 </DemoBlock>
 
+垂直分割线的文字方向：`text-orientation="vertical"` 让文字竖排（跟随竖线方向，从上到下），默认 `horizontal` 横排。仅 vertical 分割线有意义（水平分割线忽略）。
+
+<DemoBlock title="垂直竖排文字">
+  <div style="display: flex; height: 128px; gap: 24px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
+    <oas-divider direction="vertical">横排文字</oas-divider>
+    <oas-divider direction="vertical" text-orientation="vertical">竖排文字内容</oas-divider>
+    <oas-divider direction="vertical" text-orientation="vertical" content-position="top">顶部竖排</oas-divider>
+  </div>
+</DemoBlock>
+
 ## 自定义样式
 
 `color` 属性支持 11 个预设色名（明暗主题自动适配）或任意 CSS 色值（直接生效，优先于预设与默认）；线宽、间距、文字侧留空走 CSS 变量：
@@ -137,6 +147,7 @@ vertical 模式下 `content-position` 支持 `top`（贴顶）/ `center`（默�
 | `middle` | 对称缩进：水平线两侧等宽内缩（默认 16.67%，走 `--oas-divider-middle-inset` 变量） | `boolean` | — |
 | `size` | 间距档位：`small` / `medium`（默认）/ `large`；仅水平布局生效 | `string` | — |
 | `strong` | 分隔文字加重（font-weight 600） | `boolean` | — |
+| `text-orientation` | 垂直分割线的文字方向：horizontal（默认横排）/ ertical（竖排，跟随竖线方向从上到下）；仅 vertical 分割线有意义 | `string` | — |
 | `variant` | 线型：`solid` / `dashed` / `dotted` / `double`；显式设置优先于 `dashed` 布尔（兼容写法） | `string` | — |
 
 ### 插槽

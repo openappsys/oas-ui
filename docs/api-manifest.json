@@ -743,6 +743,12 @@
         "observed": true
       },
       {
+        "name": "text-orientation",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
         "name": "variant",
         "type": "string",
         "default": "",
