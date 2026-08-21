@@ -3,7 +3,10 @@
     <div class="hf-wrap">
       <div class="hf-grid">
         <div class="hf-brand">
-          <div class="hf-logo"><span class="hf-logo-mark">&lt;/&gt;</span> OAS-UI</div>
+          <div class="hf-logo">
+            <img class="hf-logo-img" :src="isDark ? '/favicon-dark.svg' : '/favicon.svg'" alt="OAS-UI" width="26" height="26" />
+            OAS-UI
+          </div>
           <p>
             {{
               isEn
@@ -44,7 +47,7 @@
 import { computed } from 'vue'
 import { useData } from 'vitepress'
 
-const { lang } = useData()
+const { lang, isDark } = useData()
 const isEn = computed(() => lang.value.startsWith('en'))
 </script>
 
@@ -72,18 +75,11 @@ const isEn = computed(() => lang.value.startsWith('en'))
   font-size: 15px;
   color: var(--oas-color-text-primary);
 }
-.hf-logo-mark {
+.hf-logo-img {
   width: 26px;
   height: 26px;
   border-radius: 7px;
-  background: linear-gradient(135deg, var(--oas-color-primary), #7aa2ff);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--oas-color-text-on-primary);
-  font-size: 12px;
-  font-family: var(--oas-font-family-mono, ui-monospace, Consolas, monospace);
-  font-weight: 700;
+  display: block;
 }
 .hf-brand p {
   margin-top: 14px;
