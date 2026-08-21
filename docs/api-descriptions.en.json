@@ -407,10 +407,14 @@
   },
   "oas-context-menu": {
     "attrs": {
-      "items": "Menu items JSON"
+      "items": "Menu items JSON",
+      "open": "Controlled open state (writable externally)",
+      "long-press-delay": "Long-press duration in ms for touch trigger (default 500)",
+      "close-on-scroll": "Close the menu on page scroll (default true)"
     },
     "events": {
-      "oas-select": "An item was selected, `detail: { value }`"
+      "oas-select": "An item was selected, `detail: { value }`",
+      "oas-open-change": "Menu open state changed, `detail: { open: boolean }`"
     },
     "slots": {}
   },
@@ -498,11 +502,19 @@
       "open": "Controlled display (boolean attribute; expands when present)",
       "placement": "Popup placement",
       "split": "Split button mode (boolean attribute): main button + arrow button; arrow opens the menu, main button fires oas-action",
-      "value": "Current selected value"
+      "value": "Current selected value",
+      "trigger": "Trigger: `click` (default) / `hover` / `focus`; space-separated for multiple (e.g. `\"click hover\"`)",
+      "hover-delay": "Open delay in ms on hover trigger (default 150)",
+      "hover-hide-delay": "Close delay in ms on hover trigger (default 100)",
+      "disabled": "Disable entirely: no trigger response",
+      "hide-on-click": "Close after selecting an item (default true; false keeps it open for multi-select)",
+      "close-on-scroll": "Close the popover on page scroll (default repositions to follow; true closes on scroll)",
+      "offset": "Gap in px between popover and trigger (default 8)"
     },
     "events": {
       "oas-action": "Main button clicked in split mode, `detail: { originalEvent }`",
-      "oas-select": "An item was selected, `detail: { value }`"
+      "oas-select": "An item was selected, `detail: { value }`",
+      "oas-open-change": "Popover open state changed, `detail: { open: boolean }` (including external setAttribute; controlled loop)"
     },
     "slots": {}
   },
@@ -862,10 +874,14 @@
       "items": "Menu items JSON (supports disabled / loading, icon, children submenus)",
       "mode": "Layout mode: `vertical` menu / `horizontal` top bar",
       "theme": "Local theme: `dark` uses dark tokens (independent of the global theme)",
-      "value": "Current selected value. Plain string means global single-select (no group, legacy-compatible); JSON object string (e.g. `{\"sort\":\"name\",\"view\":\"list\"}`) scopes per group id — the `value` of a `type:\"group\"` item is the group id, picking inside a group only updates that group"
+      "value": "Current selected value. Plain string means global single-select (no group, legacy-compatible); JSON object string (e.g. `{\"sort\":\"name\",\"view\":\"list\"}`) scopes per group id — the `value` of a `type:\"group\"` item is the group id, picking inside a group only updates that group",
+      "max-height": "Max height of a long menu; scrolls internally beyond it (number gets px appended)",
+      "expanded": "Controlled expanded set (JSON array string; which submenus are open in inline mode); internally managed when uncontrolled",
+      "accordion": "Accordion mutual exclusion (inline mode: only one sibling submenu open at a time)"
     },
     "events": {
-      "oas-select": "Select an item, `detail: { value, kind? }`. `kind` only appears for action items (`kind: \"action\"`) as \"action\"; radio items omit `detail.kind`"
+      "oas-select": "Select an item, `detail: { value, kind? }`. `kind` only appears for action items (`kind: \"action\"`) as \"action\"; radio items omit `detail.kind`",
+      "oas-expand-change": "Submenu expand state changed, `detail: { expanded: string[], value, isExpanded }` (fired both controlled and uncontrolled)"
     },
     "slots": {}
   },

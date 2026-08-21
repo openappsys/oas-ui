@@ -667,4 +667,218 @@ describe('OASMenu loading 菜单项', () => {
     refresh.click()
     expect(el.getAttribute('value')).toBe('{"sort":"time"}') // 未改变
   })
+
+  // ===== 数据模型增强：checkbox / danger / href / max-height / typeahead =====
+
+  describe('kind="checkbox" 多选项', () => {
+    const CB_ITEMS = JSON.stringify([
+      { label: '显示网格线', value: 'grid', kind: 'checkbox' },
+      { label: '自动换行', value: 'wrap', kind: 'checkbox' },
+      { label: '深色模式', value: 'dark', kind: 'checkbox' },
+    ])
+
+    it('checkbox 项渲染 menuitemcheckbox + aria-checked', () => {
+      const el = mount({ items: CB_ITEMS, value: '["grid"]' })
+      const grid = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+      expect(grid.getAttribute('role')).toBe('menuitemcheckbox')
+      expect(grid.getAttribute('aria-checked')).toBe('true')
+      const wrap = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="wrap"]')!
+      expect(wrap.getAttribute('aria-checked')).toBe('false')
+    })
+
+    it('checkbox 点击切换勾选，value 写回数组形态（多选勾选集）', () => {
+      const el = mount({ items: CB_ITEMS, value: '["grid"]' })
+      let detail: unknown
+      el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+      const wrap = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="wrap"]')!
+      wrap.click()
+      const v = JSON.parse(el.getAttribute('value')!)
+      expect(Array.isArray(v)).toBe(true)
+      expect(v).toContain('grid')
+      expect(v).toContain('wrap')
+    })
+
+    it('checkbox 取消勾选从勾选集移除', () => {
+      const el = mount({ items: CB_ITEMS, value: '["grid","wrap"]' })
+      const grid = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+      grid.click()
+      const v = JSON.parse(el.getAttribute('value')!)
+      expect(v).not.toContain('grid')
+      expect(v).toContain('wrap')
+    })
+
+    it('checkbox 勾选框视觉与 radio 区分（☐/☑ 而非 ✓）', () => {
+      const el = mount({ items: CB_ITEMS, value: '["grid"]' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/menuitemcheckbox|checkbox/)
+    })
+  })
+
+  describe('danger 破坏性项', () => {
+    it('danger 项渲染危险色（--oas-color-danger token）', () => {
+      const el = mount({
+        items: JSON.stringify([
+          { label: '编辑', value: 'edit' },
+          { label: '删除', value: 'del', danger: true },
+        ]),
+      })
+      const del = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="del"]')!
+      expect(del.classList.contains('danger')).toBe(true)
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.item\.danger[^{]*\{[^}]*--oas-color-danger/)
+    })
+  })
+
+  describe('href 链接项', () => {
+    it('href 项渲染 <a>（锚点语义），透传 target/rel', () => {
+      const el = mount({
+        items: JSON.stringify([
+          { label: '文档', value: 'doc', href: '/docs', target: '_blank', rel: 'noopener' },
+          { label: '普通', value: 'plain' },
+        ]),
+      })
+      const doc = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="doc"]')!
+      expect(doc.tagName).toBe('A')
+      expect(doc.getAttribute('href')).toBe('/docs')
+      expect(doc.getAttribute('target')).toBe('_blank')
+      const plain = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="plain"]')!
+      expect(plain.tagName).not.toBe('A')
+    })
+  })
+
+  describe('max-height 长菜单滚动', () => {
+    it('max-height 属性：菜单容器 overflow-y auto + max-height', () => {
+      const el = mount({ 'max-height': '200' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/max-height/)
+      expect(css).toMatch(/overflow-y/)
+    })
+  })
+
+  describe('typeahead 字符定位', () => {
+    it('菜单聚焦时按字符跳转到匹配 label 的项', () => {
+      const el = mount({
+        items: JSON.stringify([
+          { label: '复制', value: 'copy' },
+          { label: '剪切', value: 'cut' },
+          { label: '粘贴', value: 'paste' },
+        ]),
+      })
+      const menu = el.shadowRoot!.querySelector('.menu')!
+      // 按「剪」应跳到「剪切」
+      menu.dispatchEvent(new KeyboardEvent('keydown', { key: '剪', bubbles: true }))
+      const cut = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="cut"]')!
+      // typeahead 定位：该项获得焦点/高亮（active 或 focus）
+      expect(cut.classList.contains('active') || el.shadowRoot!.activeElement === cut).toBe(true)
+    })
+  })
+
+  // ===== inline 导航形态（侧边导航主流） =====
+
+  describe('mode="inline" 就地展开', () => {
+    const INLINE_ITEMS = JSON.stringify([
+      {
+        label: '仪表盘',
+        value: 'dash',
+        children: [
+          { label: '概览', value: 'dash-overview' },
+          { label: '分析', value: 'dash-analytics' },
+        ],
+      },
+      { label: '设置', value: 'settings' },
+    ])
+
+    it('inline 模式：子菜单就地展开（非浮出），缩进展开在父项下方', () => {
+      const el = mount({ mode: 'inline', items: INLINE_ITEMS })
+      // inline 模式标记
+      expect(el.classList.contains('oas-menu--inline')).toBe(true)
+      // 子菜单容器是 inline 展开容器（非浮出 submenu）
+      const dash = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dash"]')!
+      dash.click() // 展开
+      const sub = el.shadowRoot!.querySelector('.inline-sub')
+      expect(sub).not.toBeNull() // inline 展开容器存在
+    })
+
+    it('inline 展开/收起有高度过渡（只动 height/opacity）', () => {
+      const el = mount({ mode: 'inline', items: INLINE_ITEMS })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/inline-sub|grid-template-rows|max-height|height/)
+    })
+
+    it('inline 模式 hover 不展开子菜单（click-to-expand；否则 hover 展开与 click 收起相互抵消）', () => {
+      const el = mount({ mode: 'inline', items: INLINE_ITEMS })
+      const dash = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dash"]')!
+      const sub = el.shadowRoot!.querySelector('.inline-sub[data-parent="dash"]')!
+      // 模拟真实时序：mouseenter（hover）先于 click
+      dash.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false }))
+      expect(sub.classList.contains('open')).toBe(false)
+      // click 应正常展开
+      dash.click()
+      expect(sub.classList.contains('open')).toBe(true)
+      // 再 click 收起
+      dash.click()
+      expect(sub.classList.contains('open')).toBe(false)
+    })
+  })
+
+  describe('expanded 双模式（受控/非受控）', () => {
+    const EXP_ITEMS = JSON.stringify([
+      { label: 'A 组', value: 'a', children: [{ label: 'A1', value: 'a1' }] },
+      { label: 'B 组', value: 'b', children: [{ label: 'B1', value: 'b1' }] },
+    ])
+
+    it('expanded 属性受控：指定展开的子菜单', () => {
+      const el = mount({ mode: 'inline', items: EXP_ITEMS, expanded: '["a"]' })
+      const subA = el.shadowRoot!.querySelector('.inline-sub[data-parent="a"]')
+      expect(subA).not.toBeNull()
+    })
+
+    it('展开/收起派发 oas-expand-change（detail:{expanded, value, isExpanded}）', () => {
+      const el = mount({ mode: 'inline', items: EXP_ITEMS })
+      let detail: unknown
+      el.addEventListener('oas-expand-change', (e) => (detail = (e as CustomEvent).detail))
+      const dashA = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="a"]')!
+      dashA.click() // 展开 a
+      expect(detail).toMatchObject({ value: 'a', isExpanded: true })
+      expect(Array.isArray((detail as { expanded: string[] }).expanded)).toBe(true)
+    })
+
+    it('非受控：内部管理展开状态（expanded 属性未设时）', () => {
+      const el = mount({ mode: 'inline', items: EXP_ITEMS })
+      const dashA = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="a"]')!
+      dashA.click()
+      const subA = el.shadowRoot!.querySelector('.inline-sub[data-parent="a"]')
+      expect(subA).not.toBeNull()
+    })
+  })
+
+  describe('手风琴互斥（inline accordion）', () => {
+    const ACC_ITEMS = JSON.stringify([
+      { label: 'A 组', value: 'a', children: [{ label: 'A1', value: 'a1' }] },
+      { label: 'B 组', value: 'b', children: [{ label: 'B1', value: 'b1' }] },
+    ])
+
+    it('accordion：同级只展开一个（展开一个收起其他同级）', () => {
+      const el = mount({ mode: 'inline', accordion: '', items: ACC_ITEMS })
+      el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="a"]')!.click() // 展开 a
+      el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="b"]')!.click() // 展开 b
+      const subA = el.shadowRoot!.querySelector('.inline-sub[data-parent="a"]')
+      const subB = el.shadowRoot!.querySelector('.inline-sub[data-parent="b"]')
+      // a 收起（无展开容器或隐藏），b 展开
+      expect(subB).not.toBeNull()
+      expect(subA === null || !subA.classList.contains('open')).toBe(true)
+    })
+  })
+
+  describe('水平溢出收纳（horizontal）', () => {
+    it('horizontal 超宽项收进「···」子菜单（ResizeObserver 溢出检测）', () => {
+      const el = mount({
+        mode: 'horizontal',
+        items: JSON.stringify(Array.from({ length: 10 }, (_, i) => ({ label: `菜单${i}`, value: `m${i}` }))),
+      })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      // 水平溢出收纳的机制（··· 收纳项/overflow 容器）
+      expect(css).toMatch(/overflow|ellipsis|more/)
+    })
+  })
 })

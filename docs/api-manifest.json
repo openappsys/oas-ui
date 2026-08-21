@@ -3951,13 +3951,34 @@
       {
         "name": "theme",
         "observed": true
+      },
+      {
+        "name": "max-height",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "expanded",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "accordion",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [],
     "events": [
       {
         "name": "oas-select",
-        "detail": "{ value: item.value, kind: 'action' } | { value: item.value }"
+        "detail": "{ value: item.value, kind: 'action' } | { value: item.value, checked: checked.has(v) } | { value: item.value }"
+      },
+      {
+        "name": "oas-expand-change",
+        "detail": "{ expanded: [...this.expanded], value, isExpanded: willExpandMore } | { expanded: [...this.expanded], value, isExpanded: willExpand }"
       }
     ],
     "slots": [],
@@ -3986,7 +4007,7 @@
       },
       {
         "name": "placement",
-        "type": "Placement",
+        "type": "string",
         "default": "bottom",
         "observed": true
       },
@@ -4011,6 +4032,40 @@
         "type": "string",
         "default": "true",
         "observed": true
+      },
+      {
+        "name": "trigger",
+        "type": "string",
+        "default": "click",
+        "observed": true
+      },
+      {
+        "name": "hover-delay",
+        "observed": true
+      },
+      {
+        "name": "hover-hide-delay",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "hide-on-click",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "close-on-scroll",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "offset",
+        "observed": true
       }
     ],
     "props": [],
@@ -4022,6 +4077,10 @@
       {
         "name": "oas-select",
         "detail": "{ value: detail.value }"
+      },
+      {
+        "name": "oas-open-change",
+        "detail": "{ open }"
       }
     ],
     "slots": [
@@ -4040,6 +4099,23 @@
         "type": "string",
         "default": "[]",
         "observed": true
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "long-press-delay",
+        "type": "string",
+        "default": "500",
+        "observed": true
+      },
+      {
+        "name": "close-on-scroll",
+        "type": "string",
+        "default": "true",
+        "observed": true
       }
     ],
     "props": [],
@@ -4047,6 +4123,10 @@
       {
         "name": "oas-select",
         "detail": "{ value: detail.value }"
+      },
+      {
+        "name": "oas-open-change",
+        "detail": "{ open }"
       }
     ],
     "slots": [

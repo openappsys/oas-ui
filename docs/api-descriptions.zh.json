@@ -407,10 +407,14 @@
   },
   "oas-context-menu": {
     "attrs": {
-      "items": "菜单项 JSON"
+      "items": "菜单项 JSON",
+      "open": "受控展开态（外部可写）",
+      "long-press-delay": "移动端长按触发时长毫秒数（默认 500）",
+      "close-on-scroll": "页面滚动时关闭菜单（默认 true）"
     },
     "events": {
-      "oas-select": "选择某项，`detail: { value }`"
+      "oas-select": "选择某项，`detail: { value }`",
+      "oas-open-change": "菜单开合变化，`detail: { open: boolean }`"
     },
     "slots": {}
   },
@@ -498,11 +502,19 @@
       "open": "受控显示（布尔属性，存在即展开）",
       "placement": "浮层位置",
       "split": "拆分下拉按钮（布尔属性）：主按钮 + 箭头按钮，点箭头开菜单、主按钮派发 oas-action",
-      "value": "当前选中值"
+      "value": "当前选中值",
+      "trigger": "触发方式：`click`（默认）/ `hover` / `focus`，空格分隔可多选（如 `\"click hover\"`）",
+      "hover-delay": "hover 触发时展开延迟毫秒数（默认 150）",
+      "hover-hide-delay": "hover 触发时收起延迟毫秒数（默认 100）",
+      "disabled": "整体禁用：不响应任何触发",
+      "hide-on-click": "选中项后是否关闭（默认 true；false 时选中不关闭，多选/勾选场景）",
+      "close-on-scroll": "页面滚动时关闭浮层（默认重定位跟随；true 时滚动即关）",
+      "offset": "浮层与触发器的间距像素（默认 8）"
     },
     "events": {
       "oas-action": "拆分模式下点击主按钮，`detail: { originalEvent }`",
-      "oas-select": "选择某项，`detail: { value }`"
+      "oas-select": "选择某项，`detail: { value }`",
+      "oas-open-change": "浮层开合变化，`detail: { open: boolean }`（含外部 setAttribute 触发，受控闭环）"
     },
     "slots": {}
   },
@@ -862,10 +874,14 @@
       "items": "菜单项 JSON（支持 disabled / loading 禁点、icon、children 子菜单）",
       "mode": "布局模式：`vertical` 纵向菜单 / `horizontal` 顶部导航条",
       "theme": "局部主题：`dark` 使用暗色 token（独立于全局主题）",
-      "value": "当前选中值。纯字符串时全局单选（无组场景，兼容旧用法）；JSON 对象字符串（如 `{\"sort\":\"name\",\"view\":\"list\"}`）时按组 id 作用域独立记录——`type:\"group\"` 项的 `value` 作组 id，组内点选只更新该组"
+      "value": "当前选中值。纯字符串时全局单选（无组场景，兼容旧用法）；JSON 对象字符串（如 `{\"sort\":\"name\",\"view\":\"list\"}`）时按组 id 作用域独立记录——`type:\"group\"` 项的 `value` 作组 id，组内点选只更新该组",
+      "max-height": "长菜单最大高度，超出内部滚动（数字补 px）",
+      "expanded": "受控展开项集合（JSON 数组字符串，inline 模式哪些子菜单展开）；非受控时内部管理",
+      "accordion": "手风琴互斥（inline 模式同级只展开一个子菜单）"
     },
     "events": {
-      "oas-select": "选择某项，`detail: { value, kind? }`。`kind` 仅动作项（`kind: \"action\"`）出现，值为 \"action\"；radio 项 `detail.kind` 不出现"
+      "oas-select": "选择某项，`detail: { value, kind? }`。`kind` 仅动作项（`kind: \"action\"`）出现，值为 \"action\"；radio 项 `detail.kind` 不出现",
+      "oas-expand-change": "子菜单展开状态变化，`detail: { expanded: string[], value, isExpanded }`（受控/非受控都派发）"
     },
     "slots": {}
   },

@@ -330,11 +330,11 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   alert: [['oas-alert[closeable] [part="close"]', 'click', '点关闭钮 → oas-close']],
   dropdown: [
-    ['oas-dropdown', 'click', '（通用探针可能已翻转开合，这里再确认展开）'],
-    ['oas-dropdown [role="menuitemradio"]', 'click', '选菜单项 → oas-select'],
-    ['oas-dropdown[split]', 'click', '点拆分主按钮 → oas-action'],
-    ['oas-dropdown[split] [part="split-arrow"]', 'click', '点箭头 → 展开拆分菜单'],
-    ['oas-dropdown[split] [role="menuitemradio"]', 'click', '选拆分菜单项 → oas-select'],
+    ['#dd-split > oas-button', 'domclick', '点拆分主按钮（精确定位非 disabled 的 split demo）→ oas-action'],
+    ['#dd-split [part="split-arrow"]', 'domclick', '点箭头 → 展开拆分菜单'],
+    ['#dd-split [role="menuitemradio"]', 'domclick', '选拆分菜单项 → oas-select'],
+    ['oas-dropdown:not([split]):not([disabled])', 'domclick', '普通下拉展开'],
+    ['oas-dropdown:not([split]):not([disabled]) [role="menuitemradio"]', 'domclick', '选菜单项 → oas-select'],
   ],
   contextmenu: [
     ['oas-context-menu', 'rightclick', '右键打开菜单'],

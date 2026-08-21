@@ -131,6 +131,8 @@ export const en: LocaleMessages = {
   'datePicker.shortcutThisMonth': 'This month',
   'datePicker.shortcutThisYear': 'This year',
   'dropdown.openMenu': 'Open menu',
+  // menu（菜单）
+  'menu.more': 'More menu items',
   'timePicker.placeholder': 'Please select time',
   'timePicker.hour': 'Hour',
   'timePicker.minute': 'Minute',

@@ -10,6 +10,39 @@ A click-triggered menu that opens anchored to the trigger element.
   </oas-dropdown>
 </DemoBlock>
 
+## Trigger
+
+The `trigger` attribute controls how the menu opens: `click` (default) / `hover` / `focus`, multi-selectable with spaces (e.g. `"click hover"`). With hover, `hover-delay` / `hover-hide-delay` debounce open/close (default 150 / 100ms — without a delay hover flickers). The hover area is the trigger plus the floating panel (moving across the gap does not close it).
+
+<DemoBlock title="Hover trigger">
+  <oas-dropdown trigger="hover" items='[{"label":"Edit","value":"edit"},{"label":"Copy","value":"copy"},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Hover to open</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+<DemoBlock title="Focus trigger">
+  <oas-dropdown trigger="focus" items='[{"label":"Edit","value":"edit"},{"label":"Copy","value":"copy"},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Focus to open (Tab or click)</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+<DemoBlock title="Multiple triggers (click + hover)">
+  <oas-dropdown trigger="click hover" items='[{"label":"Edit","value":"edit"},{"label":"Copy","value":"copy"},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Click or hover</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+<DemoBlock title="Custom hover delays">
+  <oas-space size="small">
+    <oas-dropdown trigger="hover" hover-delay="400" items='[{"label":"Edit","value":"edit"}]'>
+      <oas-button>hover-delay=400</oas-button>
+    </oas-dropdown>
+    <oas-dropdown trigger="hover" hover-hide-delay="400" items='[{"label":"Edit","value":"edit"}]'>
+      <oas-button>hover-hide-delay=400</oas-button>
+    </oas-dropdown>
+  </oas-space>
+</DemoBlock>
+
 ## Placement
 
 <DemoBlock title="Four directions">
@@ -25,6 +58,27 @@ A click-triggered menu that opens anchored to the trigger element.
   <oas-dropdown placement="right" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
     <oas-button>Right</oas-button>
   </oas-dropdown>
+</DemoBlock>
+
+## 12-way placement
+
+`placement` supports 12 directions: each of the four bases (`top / bottom / left / right`) pairs with a cross-axis `-start` / `-end` align (`bottom-start` — the panel's left edge aligns with the trigger's left edge — is the most common form). When the panel flips along the main axis due to lack of space, the align suffix is preserved (`bottom-start` → `top-start`), and the aligned position is still clamped to the viewport.
+
+<DemoBlock title="12-way placement">
+  <oas-space size="small">
+    <oas-dropdown placement="bottom-start" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+      <oas-button>bottom-start</oas-button>
+    </oas-dropdown>
+    <oas-dropdown placement="bottom-end" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+      <oas-button>bottom-end</oas-button>
+    </oas-dropdown>
+    <oas-dropdown placement="right-start" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+      <oas-button>right-start</oas-button>
+    </oas-dropdown>
+    <oas-dropdown placement="top-end" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+      <oas-button>top-end</oas-button>
+    </oas-dropdown>
+  </oas-space>
 </DemoBlock>
 
 ## Nested submenus
@@ -43,6 +97,21 @@ A click-triggered menu that opens anchored to the trigger element.
   <oas-dropdown items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete","disabled":true}]'>
     <oas-button>Actions</oas-button>
   </oas-dropdown>
+</DemoBlock>
+
+## Disabled dropdown
+
+`disabled` disables the whole dropdown: click / hover / focus triggers are ignored, the split arrow button is disabled, the host is desaturated (opacity .6) and syncs `aria-disabled`.
+
+<DemoBlock title="Disabled dropdown">
+  <oas-space size="small">
+    <oas-dropdown disabled items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+      <oas-button>Disabled (click)</oas-button>
+    </oas-dropdown>
+    <oas-dropdown disabled split items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+      <oas-button>Disabled (split)</oas-button>
+    </oas-dropdown>
+  </oas-space>
 </DemoBlock>
 
 ## Arrow
@@ -86,6 +155,17 @@ The menu panel shows an arrow pointing at the trigger element . The `arrow` attr
   <oas-tag id="dd-result" type="info">Nothing selected</oas-tag>
 </DemoBlock>
 
+## Keep open after select
+
+`hide-on-click` controls whether selecting a menu item closes the menu (default `true` — close on select; `"false"` keeps it open, useful for multi-select / check scenarios).
+
+<DemoBlock title="Keep open after select">
+  <oas-dropdown id="dd-keep" hide-on-click="false" items='[{"label":"Edit","value":"edit"},{"label":"Copy","value":"copy"},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Keep open</oas-button>
+  </oas-dropdown>
+  <oas-tag id="dd-keep-result" type="info">Nothing selected</oas-tag>
+</DemoBlock>
+
 ## Controlled display
 
 The `open` attribute is controlled: an external button can set/remove `open` to show/hide the menu (clicking outside / pressing Esc / selecting an item still closes it).
@@ -98,6 +178,40 @@ The `open` attribute is controlled: an external button can set/remove `open` to 
   </oas-space>
   <oas-dropdown id="dd-ctrl" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
     <oas-button>Trigger element</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
+## Open-change event
+
+The component fires `oas-open-change` (`detail: { open }`) whenever it opens or closes itself (click / hover / focus / Esc / outside click / select) — the host can sync state in controlled mode (same semantics as tooltip / popover; externally writing `open` also triggers it).
+
+<DemoBlock title="oas-open-change event">
+  <oas-space size="small">
+    <oas-dropdown id="dd-open-change" trigger="click hover" onoas-open-change="ddOpenChange(event)" items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+      <oas-button>Click or hover</oas-button>
+    </oas-dropdown>
+    <oas-tag id="dd-open-change-status" type="info">open: false</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## Offset & scroll
+
+`offset` adjusts the gap between the panel and the trigger (default 8px). When the page scrolls, the panel repositions to follow the trigger (fixing the fixed-positioning detachment); `close-on-scroll` closes it on scroll instead.
+
+<DemoBlock title="Offset">
+  <oas-space size="small">
+    <oas-dropdown placement="bottom-start" items='[{"label":"Edit","value":"edit"}]'>
+      <oas-button>Default (8px)</oas-button>
+    </oas-dropdown>
+    <oas-dropdown placement="bottom-start" offset="16" items='[{"label":"Edit","value":"edit"}]'>
+      <oas-button>offset=16</oas-button>
+    </oas-dropdown>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="Close on scroll">
+  <oas-dropdown id="dd-scroll" close-on-scroll items='[{"label":"Edit","value":"edit"},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Open then scroll the page</oas-button>
   </oas-dropdown>
 </DemoBlock>
 
@@ -201,6 +315,22 @@ onMounted(() => {
     if (tag) tag.textContent = `Main button clicked (${e.type})`
   }
 
+  const keepDd = document.getElementById('dd-keep')
+  const keepResult = document.getElementById('dd-keep-result')
+  if (keepDd && keepResult) {
+    keepDd.addEventListener('oas-select', (e) => {
+      keepResult.textContent = `Selected: ${e.detail.value} (menu stays open)`
+    })
+  }
+
+  const openChangeDd = document.getElementById('dd-open-change')
+  const openChangeStatus = document.getElementById('dd-open-change-status')
+  if (openChangeDd && openChangeStatus) {
+    window.ddOpenChange = (e) => {
+      openChangeStatus.textContent = `open: ${e.detail.open}`
+    }
+  }
+
   const asyncDd = document.getElementById('dd-async')
   const asyncStatus = document.getElementById('dd-async-status')
   if (asyncDd && asyncStatus) {
@@ -239,10 +369,17 @@ onMounted(() => {
 | `arrow` | Whether to show the arrow pointing at the trigger (`arrow="false"` hides it; the skeleton is kept) | `string` | `true` |
 | `arrow-point-at-center` | Pin the arrow to the panel center (by default the arrow follows the trigger's projection, so it still points at the trigger even after viewport-avoidance shifting) | `boolean` | — |
 | `auto-adjust-overflow` | Auto-flip/avoid when there is not enough viewport space (`auto-adjust-overflow="false"` disables it; the panel may overflow the viewport) | `string` | `true` |
+| `close-on-scroll` | Close the popover on page scroll (default repositions to follow; true closes on scroll) | `boolean` | — |
+| `disabled` | Disable entirely: no trigger response | `boolean` | — |
+| `hide-on-click` | Close after selecting an item (default true; false keeps it open for multi-select) | `string` | `true` |
+| `hover-delay` | Open delay in ms on hover trigger (default 150) | — | — |
+| `hover-hide-delay` | Close delay in ms on hover trigger (default 100) | — | — |
 | `items` | Menu items JSON | `string` | `[]` |
+| `offset` | Gap in px between popover and trigger (default 8) | — | — |
 | `open` | Controlled display (boolean attribute; expands when present) | `boolean` | — |
-| `placement` | Popup placement | `Placement` | `bottom` |
+| `placement` | Popup placement | `string` | `bottom` |
 | `split` | Split button mode (boolean attribute): main button + arrow button; arrow opens the menu, main button fires oas-action | `boolean` | — |
+| `trigger` | Trigger: `click` (default) / `hover` / `focus`; space-separated for multiple (e.g. `"click hover"`) | `string` | `click` |
 | `value` | Current selected value | `string` | — |
 
 ### Events
@@ -250,6 +387,7 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-action` | Main button clicked in split mode, `detail: { originalEvent }` |
+| `oas-open-change` | Popover open state changed, `detail: { open: boolean }` (including external setAttribute; controlled loop) |
 | `oas-select` | An item was selected, `detail: { value }` |
 
 ### Slots
