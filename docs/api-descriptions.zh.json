@@ -467,7 +467,8 @@
       "middle": "对称缩进：水平线两侧等宽内缩（默认 16.67%，走 `--oas-divider-middle-inset` 变量）",
       "size": "间距档位：`small` / `medium`（默认）/ `large`；仅水平布局生效",
       "strong": "分隔文字加重（font-weight 600）",
-      "color": "颜色：支持 11 个预设名（映射 `--oas-preset-*` token）或任意 CSS 色值"
+      "color": "颜色：支持 11 个预设名（映射 `--oas-preset-*` token）或任意 CSS 色值",
+      "text-orientation": "垂直分割线的文字方向：horizontal（默认横排）/ \u000bertical（竖排，跟随竖线方向从上到下）；仅 vertical 分割线有意义"
     },
     "events": {},
     "slots": {}

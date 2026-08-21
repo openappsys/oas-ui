@@ -85,6 +85,16 @@ In `vertical` mode, `content-position` accepts `top` (top-aligned) / `center` (d
   </div>
 </DemoBlock>
 
+Text orientation on a vertical divider: `text-orientation="vertical"` renders the text vertically (following the line direction, top to bottom); default `horizontal` reads normally. Only meaningful for vertical dividers (ignored on horizontal ones).
+
+<DemoBlock title="Vertical text orientation">
+  <div style="display: flex; height: 128px; gap: 24px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
+    <oas-divider direction="vertical">Horizontal text</oas-divider>
+    <oas-divider direction="vertical" text-orientation="vertical">Vertical text here</oas-divider>
+    <oas-divider direction="vertical" text-orientation="vertical" content-position="top">Top vertical</oas-divider>
+  </div>
+</DemoBlock>
+
 ## Custom styling
 
 The `color` attribute accepts 11 preset names (auto-adapting to light/dark themes) or any CSS color value (takes effect immediately, overriding presets and defaults); line width, spacing and the title-side gap go through CSS variables:
@@ -137,6 +147,7 @@ The `color` attribute accepts 11 preset names (auto-adapting to light/dark theme
 | `middle` | Symmetric inset: equal insets on both sides of a horizontal line (default 16.67%, via `--oas-divider-middle-inset`) | `boolean` | — |
 | `size` | Spacing tier: `small` / `medium` (default) / `large`; horizontal layout only | `string` | — |
 | `strong` | Bolder divider title (font-weight 600) | `boolean` | — |
+| `text-orientation` | Text orientation on a vertical divider: horizontal (default, reads normally) / ertical (vertical, top-to-bottom along the line); only meaningful for vertical dividers | `string` | — |
 | `variant` | Line style: `solid` / `dashed` / `dotted` / `double`; an explicit value takes precedence over the `dashed` boolean (compat form) | `string` | — |
 
 ### Slots
