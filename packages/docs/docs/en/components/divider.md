@@ -95,6 +95,16 @@ Text orientation on a vertical divider: `text-orientation="vertical"` renders th
   </div>
 </DemoBlock>
 
+Vertical dividers also support inset spacing: `inset` (top-side spacing) / `middle` (both top and bottom spacing), sharing the same variables as horizontal dividers (`--oas-divider-title-inset` / `--oas-divider-middle-inset`).
+
+<DemoBlock title="Vertical inset">
+  <div style="display: flex; height: 128px; gap: 24px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
+    <oas-divider direction="vertical"></oas-divider>
+    <oas-divider direction="vertical" inset>inset top space</oas-divider>
+    <oas-divider direction="vertical" middle>middle both sides</oas-divider>
+  </div>
+</DemoBlock>
+
 ## Custom styling
 
 The `color` attribute accepts 11 preset names (auto-adapting to light/dark themes) or any CSS color value (takes effect immediately, overriding presets and defaults); line width, spacing and the title-side gap go through CSS variables:
