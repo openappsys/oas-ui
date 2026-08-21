@@ -38,6 +38,7 @@ const VALID_VARIANTS = ['solid', 'dashed', 'dotted', 'double'] as const
 const VALID_SIZES = ['small', 'medium', 'large'] as const
 const VALID_HORIZONTAL_POSITIONS = ['left', 'center', 'right'] as const
 const VALID_VERTICAL_POSITIONS = ['top', 'center', 'bottom'] as const
+const VALID_TEXT_ORIENTATIONS = ['horizontal', 'vertical'] as const
 
 const warnedValues = new Set<string>()
 
@@ -106,6 +107,10 @@ const STYLE = `
    直接暴露文本节点，保证线段在 vertical/horizontal 下的 flex 空间分配可靠） */
 .divider .content {
   display: block;
+}
+/* text-orientation=vertical：垂直分割线里文字竖排（跟随竖线方向，从上到下，中文竖排习惯） */
+:host([direction='vertical']) .divider.text-vertical .content {
+  writing-mode: vertical-rl;
 }
 .divider.empty {
   gap: 0;
@@ -182,6 +187,7 @@ export class OASDivider extends OASElement {
       'direction',
       'dashed',
       'content-position',
+      'text-orientation',
       'variant',
       'inset',
       'middle',
@@ -273,6 +279,17 @@ export class OASDivider extends OASElement {
     el.classList.toggle('small', size === 'small')
     el.classList.toggle('large', size === 'large')
     el.classList.toggle('strong', this.hasAttr('strong'))
+    // text-orientation：仅 vertical 分割线有意义（水平分割线忽略）。vertical 值 → 文字竖排
+    let textVertical = false
+    const rawTextOrientation = this.getAttr('text-orientation', '')
+    if (rawTextOrientation) {
+      if (rawTextOrientation === 'vertical' || rawTextOrientation === 'horizontal') {
+        textVertical = rawTextOrientation === 'vertical'
+      } else {
+        warnOnce('text-orientation', rawTextOrientation, 'horizontal', VALID_TEXT_ORIENTATIONS)
+      }
+    }
+    el.classList.toggle('text-vertical', direction === 'vertical' && textVertical)
     // color 统一协议：预设名解析 --oas-preset-* token；任意 CSS 色值直注入（优先即胜）；缺省清空回落边框 token
     const color = this.getAttr('color', '')
     if (color) {

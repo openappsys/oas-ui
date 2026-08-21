@@ -467,7 +467,8 @@
       "middle": "Symmetric inset: equal insets on both sides of a horizontal line (default 16.67%, via `--oas-divider-middle-inset`)",
       "size": "Spacing tier: `small` / `medium` (default) / `large`; horizontal layout only",
       "strong": "Bolder divider title (font-weight 600)",
-      "color": "Color: accepts 11 preset names (mapped to `--oas-preset-*` tokens) or any CSS color value"
+      "color": "Color: accepts 11 preset names (mapped to `--oas-preset-*` tokens) or any CSS color value",
+      "text-orientation": "Text orientation on a vertical divider: horizontal (default, reads normally) / \u000bertical (vertical, top-to-bottom along the line); only meaningful for vertical dividers"
     },
     "events": {},
     "slots": {}

@@ -273,6 +273,40 @@ describe('OASDivider', () => {
     })
   })
 
+  describe('text-orientation 文字方向（vertical 模式）', () => {
+    it('默认 horizontal：文字横排（.content 无 writing-mode）', () => {
+      const el = mount({ direction: 'vertical' }, '文字')
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      const el2 = el.shadowRoot!.querySelector('.content')!
+      expect(getComputedStyle(el2).writingMode).not.toBe('vertical-rl')
+      expect(css).not.toMatch(/text-orientation['\]]/) // 未设属性
+    })
+
+    it('text-orientation="vertical"：文字竖排（writing-mode: vertical-rl）', () => {
+      const el = mount({ direction: 'vertical', 'text-orientation': 'vertical' }, '文字内容')
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/text-vertical[^{]*\.content[^{]*\{[^}]*writing-mode:\s*vertical-rl/)
+      const content = el.shadowRoot!.querySelector('.content')!
+      expect(getComputedStyle(content).writingMode).toBe('vertical-rl')
+    })
+
+    it('text-orientation 非法值回落 horizontal 并告警', () => {
+      const warn: unknown[][] = []
+      const orig = console.warn
+      console.warn = (...a: unknown[]) => warn.push(a)
+      const el = mount({ direction: 'vertical', 'text-orientation': 'bogus' }, '文字')
+      console.warn = orig
+      expect(warn.length).toBeGreaterThan(0)
+      expect(el.shadowRoot!.querySelector('.content')).not.toBeNull()
+    })
+
+    it('horizontal（默认）模式 text-orientation=vertical 不生效（仅 vertical 分割线有意义）', () => {
+      const el = mount({ 'text-orientation': 'vertical' }, '文字')
+      const content = el.shadowRoot!.querySelector('.content')!
+      expect(getComputedStyle(content).writingMode).not.toBe('vertical-rl')
+    })
+  })
+
   it('属性变化增量更新：切换 direction 即时生效', () => {
     const el = mount({}, '')
     const d = line(el)!
