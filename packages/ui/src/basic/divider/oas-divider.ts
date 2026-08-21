@@ -70,35 +70,48 @@ const STYLE = `
    flex/grid 容器语境：容器默认 align-items:stretch 拉伸 host，.divider height:100% 跟随。
    内容包 .content 层（span 包裹 slot）：纯文本直接成 flex 子项时（slot display:contents），
    伪元素线段的 flex:1 高度分配失效（线段 height 0 不显示）；包 span 后成为确定 flex item，分配可靠。
-   布局用 grid 行分配（行 % 相对容器高度，垂直方向的留空/对齐才能按高度比例生效） */
+   基础布局用 column flex（线段 flex:1 分配、top/bottom 用 flex-basis % 相对高度对齐）；
+   仅 inset/middle 切换 grid 行模板——flex 只有 3 个子项（线段/内容/线段），无法表达
+   "留空+线段+内容+线段+留空" 五段结构，grid 行 % 相对容器高度（margin % 相对宽度不适用垂直） */
 :host([direction='vertical']) .divider {
-  display: grid;
-  grid-template-rows: 1fr auto 1fr;
+  flex-direction: column;
   /* 容器宽度由内容（文字）撑，线段宽度单独控制在 ::before/::after——
      容器不设线宽（否则文字被压成竖排） */
   height: 100%;
   min-height: 1em;
   margin: 0 var(--oas-space-3);
-  justify-items: center;
+  align-items: center;
 }
 :host([direction='vertical']) .divider::before,
 :host([direction='vertical']) .divider::after {
+  flex: 1 1 0;
   width: var(--oas-divider-width, 1px);
+  /* 覆盖基础 height:1px：grid（inset/middle）模式 align-self 默认 stretch 需 height:auto 才能
+     撑满线段行（否则竖线缩成 1px×1px 点不显示）；flex 模式由 flex-basis:0 接管主轴高度 */
+  height: auto;
   min-height: 0;
-  align-self: stretch;
-  justify-self: center;
   background: var(--oas-divider-color, var(--oas-color-border-strong));
 }
-/* vertical 内容对齐：top 贴顶（before 线段行缩为 title-inset，内容被推向顶部）、bottom 贴底（after 行缩短）；
-   grid 行 % 相对容器高度，仅 vertical 生效 */
-:host([direction='vertical']) .divider.top {
-  grid-template-rows: var(--oas-divider-title-inset, 5%) auto 1fr;
+/* vertical 内容对齐：top 贴顶（before 线段缩为 title-inset，内容被推向顶部）、bottom 贴底（after 线段缩短）；
+   flex-basis % 相对容器高度，与水平 left/right 同机制（线短一侧内容贴向），仅 vertical 生效 */
+:host([direction='vertical']) .divider.top::before {
+  flex: 0 0 var(--oas-divider-title-inset, 5%);
 }
-:host([direction='vertical']) .divider.bottom {
-  grid-template-rows: 1fr auto var(--oas-divider-title-inset, 5%);
+:host([direction='vertical']) .divider.bottom::after {
+  flex: 0 0 var(--oas-divider-title-inset, 5%);
 }
-/* vertical 缩进留空：inset 顶部留空 / middle 上下留空——grid 行模板加空白行（行 % 相对容器高度）；
-   inset：顶部空白行 + 线段；middle：上下各一空白行。子项显式 grid-row 定位（空白行挤占首位） */
+/* vertical 缩进留空：inset 顶部留空 / middle 上下留空——切换 grid 行模板，首/末空白行 % 相对容器高度
+   （与水平同变量 --oas-divider-title-inset / --oas-divider-middle-inset）。线段显式 grid-row 定位
+   到 1fr 行（空白行挤占首/末位），align-self 默认 stretch + height:auto 撑满线段行。
+   inset/middle 组合 top/bottom 时以 inset/middle 的空白行为准（后者源序靠后覆盖） */
+:host([direction='vertical']) .divider.inset,
+:host([direction='vertical']) .divider.middle {
+  display: grid;
+  justify-items: center;
+  /* 覆盖通用 .divider 的 align-items:center（grid 下会把线段块轴居中 → auto 高度 0 不显示），
+     stretch 让线段撑满 1fr 行；水平居中由 justify-items:center 承担 */
+  align-items: stretch;
+}
 :host([direction='vertical']) .divider.inset {
   grid-template-rows: var(--oas-divider-title-inset, 5%) 1fr auto 1fr;
 }
@@ -186,7 +199,8 @@ const STYLE = `
   background: transparent;
 }
 /* 缩进：inset 起始侧留空 / middle 两侧留空——线段外推留空（margin），线本身 flex:1 贯通。
-   仅水平布局生效（同 size 惯例）；宽度走变量开口。 */
+   仅水平布局生效（同 size 惯例）；宽度走变量开口。垂直缩进不走 margin（margin % 相对宽度不适用），
+   由上方 grid 行模板的空白行实现（行 % 相对容器高度） */
 :host(:not([direction='vertical'])) .divider.inset::before {
   margin-left: var(--oas-divider-title-inset, 5%);
 }
@@ -195,17 +209,6 @@ const STYLE = `
 }
 :host(:not([direction='vertical'])) .divider.middle::after {
   margin-right: var(--oas-divider-middle-inset, 16.67%);
-}
-/* 垂直缩进：inset 起始侧（顶部）留空 / middle 两侧（上下）留空——与水平同变量，
-   垂直方向用 margin-top/margin-bottom 留空（对应水平 margin-left/right） */
-:host([direction='vertical']) .divider.inset::before {
-  margin-top: var(--oas-divider-title-inset, 5%);
-}
-:host([direction='vertical']) .divider.middle::before {
-  margin-top: var(--oas-divider-middle-inset, 16.67%);
-}
-:host([direction='vertical']) .divider.middle::after {
-  margin-bottom: var(--oas-divider-middle-inset, 16.67%);
 }
 /* size 间距档（仅水平布局生效；vertical 分支 margin 固定） */
 .divider.small {

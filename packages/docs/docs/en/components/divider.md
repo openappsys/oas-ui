@@ -78,7 +78,7 @@ A vertical divider stretches to the full row height inside flex/grid containers;
 In `vertical` mode, `content-position` accepts `top` (top-aligned) / `center` (default, centered) / `bottom` (bottom-aligned); the text reads horizontally while the vertical line runs on either side of it (top-aligned: the line extends downward from the text; bottom-aligned: upward; centered: a segment on each side). In `horizontal` mode only `left` / `center` / `right` apply — using a cross-direction value (e.g. `horizontal` + `top`, `vertical` + `left`) falls back to `center` with a console warning. The top/bottom inset goes through the `--oas-divider-title-inset` variable (default 5%).
 
 <DemoBlock title="Vertical text alignment">
-  <div style="display: flex; height: 128px; gap: 12px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
+  <div style="display: flex; height: 220px; gap: 12px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
     <oas-divider direction="vertical" content-position="top">Top</oas-divider>
     <oas-divider direction="vertical">Center</oas-divider>
     <oas-divider direction="vertical" content-position="bottom">Bottom</oas-divider>
@@ -98,7 +98,7 @@ Text orientation on a vertical divider: `text-orientation="vertical"` renders th
 Vertical dividers also support inset spacing: `inset` (top-side spacing) / `middle` (both top and bottom spacing), sharing the same variables as horizontal dividers (`--oas-divider-title-inset` / `--oas-divider-middle-inset`).
 
 <DemoBlock title="Vertical inset">
-  <div style="display: flex; height: 128px; gap: 24px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
+  <div style="display: flex; height: 220px; gap: 24px; border: 1px dashed var(--oas-color-border); padding: 0 12px;">
     <oas-divider direction="vertical"></oas-divider>
     <oas-divider direction="vertical" inset>inset top space</oas-divider>
     <oas-divider direction="vertical" middle>middle both sides</oas-divider>
