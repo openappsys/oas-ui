@@ -465,6 +465,11 @@ const STYLE = `
 .tab[data-overflowed] {
   display: none;
 }
+/* more 模式窗口切换：从「更多」出来的 tab（display none→flex）触发 fade-in，
+   激活项与相邻项出现时有平滑过渡（正常滚动那样的视觉效果，不生硬跳变） */
+:host([more]) .tab:not([data-overflowed]) {
+  animation: oas-tabs-fade-in var(--oas-transition-base) var(--oas-ease-out);
+}
 .more-btn {
   display: inline-flex;
   align-items: center;
@@ -931,7 +936,11 @@ export class OASTabs extends OASElement {
       this.prevActiveValue = activeNow
     } else if (activeNow !== this.prevActiveValue) {
       this.prevActiveValue = activeNow
-      this.findTabByValue(activeNow)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+      this.findTabByValue(activeNow)?.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest',
+        behavior: 'smooth',
+      })
     }
   }
 
@@ -1067,13 +1076,8 @@ export class OASTabs extends OASElement {
     ]
     // 可用宽度 = nav 宽 - 更多按钮占位（约 40px）- 余量
     const avail = nav.clientWidth - 44
-    let acc = 0
-    let firstOverflow = -1
-    tabs.forEach((t, i) => {
-      acc += t.offsetWidth
-      if (firstOverflow === -1 && acc > avail) firstOverflow = i
-    })
-    const overflowed = firstOverflow !== -1
+    const totalWidth = tabs.reduce((s, t) => s + t.offsetWidth, 0)
+    const overflowed = totalWidth > avail
     moreBtn.hidden = !overflowed
     if (!overflowed) {
       tabs.forEach((t) => t.removeAttribute('data-overflowed'))
@@ -1081,12 +1085,53 @@ export class OASTabs extends OASElement {
       this.syncMoreDropdown()
       return
     }
-    tabs.forEach((t, i) => {
-      if (i >= firstOverflow) t.setAttribute('data-overflowed', '')
-      else t.removeAttribute('data-overflowed')
-    })
-    // 选中项被收进更多 → 更多按钮高亮
+
+    // 激活项可见窗口：激活 tab 永不藏在「更多」里。以激活项为锚向前后扩展相邻项，
+    // 直到宽度占满 avail；窗口外（前段 + 后段）收进更多。无激活项时退回从头收起。
     const active = this.getAttr('active', '') || (tabs[0]?.getAttribute('data-value') ?? '')
+    const activeIdx = tabs.findIndex((t) => t.getAttribute('data-value') === active)
+    let visible: boolean[]
+    if (activeIdx === -1) {
+      // 无激活项：从头累积到 avail
+      let acc = 0
+      visible = tabs.map((t) => {
+        acc += t.offsetWidth
+        return acc <= avail
+      })
+    } else {
+      visible = tabs.map(() => false)
+      visible[activeIdx] = true
+      let used = tabs[activeIdx]!.offsetWidth
+      // 交替向左/右扩展相邻项（上下文连贯），宽度够就纳入窗口
+      let li = activeIdx - 1
+      let ri = activeIdx + 1
+      for (;;) {
+        const lw = li >= 0 ? tabs[li]!.offsetWidth : Infinity
+        const rw = ri < tabs.length ? tabs[ri]!.offsetWidth : Infinity
+        if (lw === Infinity && rw === Infinity) break
+        // 优先扩展较窄一侧（更省空间）；同宽优先左（阅读顺序）
+        if (lw <= rw && used + lw <= avail) {
+          visible[li] = true
+          used += lw
+          li--
+        } else if (rw !== Infinity && used + rw <= avail) {
+          visible[ri] = true
+          used += rw
+          ri++
+        } else if (lw !== Infinity && used + lw <= avail) {
+          visible[li] = true
+          used += lw
+          li--
+        } else {
+          break
+        }
+      }
+    }
+    tabs.forEach((t, i) => {
+      if (visible[i]) t.removeAttribute('data-overflowed')
+      else t.setAttribute('data-overflowed', '')
+    })
+    // 选中项被收进更多 → 更多按钮高亮（激活项可见窗口下不会收起，此处防御）
     const activeOverflowed = tabs.some(
       (t) => t.getAttribute('data-value') === active && t.hasAttribute('data-overflowed'),
     )
@@ -1134,9 +1179,9 @@ export class OASTabs extends OASElement {
       list.appendChild(item)
       if (value === active) activeItem = item
     }
-    // 打开下拉时选中项滚动到可见区域（selected 与其附近项进入视口）
+    // 打开下拉时选中项滚动到可见区域（平滑滚动；选中项与其附近项进入视口）
     if (activeItem && this.moreOpen) {
-      activeItem.scrollIntoView({ block: 'center' })
+      activeItem.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }
   }
 
