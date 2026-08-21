@@ -1,6 +1,6 @@
 {
   "name": "@oas-ui/next",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "OAS-UI Next.js（App Router）集成——RSC OasComponent 服务端产 DSD 快照 + OasRegistry 客户端注册引导",
   "license": "MIT OR Apache-2.0",
   "type": "module",

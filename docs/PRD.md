@@ -647,3 +647,14 @@ v2.1.0 之后、组件 API 零变更的纯文档补丁，随 npm 分发自动生
 - **事件 detail 联合类型**：api:scan 改进，同一事件多处 emit 且 detail 不同时合并为联合类型（如 `oas-select` = `{value} | {value, kind:'action'}`），editable/pagination/input-number 等分支 detail 一并补齐
 - **e2e CI flaky 修复**：demo-coverage 事件探针 upgrade 等待 4s→10s + 事件缺失自动重试（2 核 runner 高并发下组件 upgrade 慢所致）
 - **验收**：menubar 32 + menu 39 单测（全量 2375）、typecheck/build/api:check 全绿、e2e chromium 930 + firefox 抽样 343 全绿；浏览器实测多组独立勾选/动作项不勾选/Ctrl+N 触发/console 零告警
+
+## v2.1.3 Tabs 能力补齐发布（已完成）
+
+Tabs 组件按能力补齐全量补齐 + 首页页脚打磨：
+
+- **Tabs 能力全量补齐**（能力补齐）：disabled 禁用、size 五档、centered/justified 布局、溢出滚动+箭头（`without-scroll-controls` 可关）、more 溢出（滚动+视口外镜像下拉，含搜索过滤+点选平滑滚动到可见）、panel-mode（keep/lazy/destroy 面板显隐策略）、activation（auto/manual 手动激活）、animated 动画、oas-before-change 切换前拦截（cancelable veto）、editable 双击重命名（失焦保存）、sortable 拖拽换位、嵌套 tabs（:scope 直接子面板）、slot=label 自定义标签
+- **Tabs 二次补缺**：滚轮横向滑动、新增/激活标签自动滚到可见、+ 按钮固定标签栏末尾、more 下拉搜索+选中定位；editable 打磨（真实双击、失焦保存、宽高贴合、几何对齐）；more 重构为通用机制（滚动+视口外镜像）
+- **Tabs 能力复核补齐**：trigger:hover、allow-deactivation、stacked、icon-only、指示线 CSS 变量+hide-indicator、reserve-selected-space 选中防抖、tab 即链接（href/target/rel）、hide-content 纯导航、items 数据驱动、scroll-position 滚动定位、PageUp/PageDown 键盘溢出滚动、add/close 图标 slot
+- **下划线渲染修复**：激活下划线在溢出滚动容器下被裁剪/叠加/亚像素伪影 → 改用 ::after 伪元素（独立 2px 盒子，渲染精确、不被裁剪），card 模式保持边框连通不叠加
+- **首页页脚**：页脚品牌位改真实 logo 图标（favicon.svg/dark 用 favicon-dark.svg，与导航栏一致）+ 消除底部 128px 空白（vitepress .VPHome 默认 margin 残留）+ 版权行底部间距 56px→32px
+- **验收**：tabs 单测 107（全量 2452）、typecheck/build/api:check 全绿、e2e chromium 935 + firefox 抽样 348 全绿、contrast-gate 0 违规、console 零告警；浏览器实测各能力正常渲染可交互
