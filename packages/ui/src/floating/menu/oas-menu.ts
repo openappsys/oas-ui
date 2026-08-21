@@ -3,8 +3,8 @@ import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type MenuItemType = 'item' | 'group' | 'divider'
 
-/** 叶子项语义类型：radio（默认，选中态打勾，参与 value）/ action（动作，无勾选态，不写回 value） */
-export type MenuItemKind = 'radio' | 'action'
+/** 叶子项语义类型：radio（默认，选中态打勾，参与 value）/ action（动作，无勾选态，不写回 value）/ checkbox（多选勾选，value 为数组勾选集） */
+export type MenuItemKind = 'radio' | 'action' | 'checkbox'
 
 export interface MenuItem {
   label?: string
@@ -15,8 +15,14 @@ export interface MenuItem {
   icon?: string
   /** 菜单项类型：普通项（默认）/ 分组 / 分隔线 */
   type?: MenuItemType
-  /** 叶子项语义：radio（默认，可勾选）/ action（动作项，无勾选态、不写回 value） */
+  /** 叶子项语义：radio（默认，可勾选）/ action（动作项，无勾选态、不写回 value）/ checkbox（多选勾选，value 数组勾选集） */
   kind?: MenuItemKind
+  /** 破坏性项：红色语义（删除/退出等危险操作） */
+  danger?: boolean
+  /** 链接项：渲染 <a>（锚点语义，选中即跳转），搭配 target/rel */
+  href?: string
+  target?: string
+  rel?: string
   /** 子菜单项，支持多级嵌套（任意层级）；group 的 children 平铺展示在同一层 */
   children?: MenuItem[]
 }
@@ -116,6 +122,90 @@ const STYLE = `
 .item[aria-checked='true'] .check {
   opacity: 1;
 }
+/* checkbox 勾选框：与 radio 的 ✓ 区分——方块边框（未勾空框、勾选主色填充+✓） */
+.check--box {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--oas-color-border-strong);
+  border-radius: var(--oas-radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 1; /* checkbox 的框始终显示（区别于 radio 的 ✓ 仅勾选显示） */
+}
+.item[role='menuitemcheckbox'][aria-checked='true'] .check--box {
+  background: var(--oas-color-primary);
+  border-color: var(--oas-color-primary);
+}
+.item[role='menuitemcheckbox'][aria-checked='true'] .check--box::after {
+  content: '✓';
+  color: var(--oas-color-text-on-primary);
+  font-size: var(--oas-font-size-xs);
+  line-height: 1;
+}
+/* danger 破坏性项：红色语义（文字+图标同色系，hover/active 加深） */
+.item.danger {
+  color: var(--oas-color-danger);
+}
+.item.danger:hover,
+.item.danger.active {
+  background: color-mix(in srgb, var(--oas-color-danger) 12%, transparent);
+  color: var(--oas-color-danger);
+}
+/* max-height：长菜单内部滚动 */
+:host([max-height]) .menu {
+  overflow-y: auto;
+  max-height: var(--oas-menu-max-height, none);
+}
+/* ===== inline 导航形态：子菜单就地展开（非浮出） ===== */
+/* inline 展开容器：默认收起（grid-template-rows 0fr 过渡），open 展开（1fr） */
+.inline-sub {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows var(--oas-transition-base) var(--oas-ease-out);
+  /* 父项 li 是 flex 行（icon/label/arrow），inline-sub 作为其子元素须占满整行并换行到下方，
+     否则会成为 flex 子项与 arrow 并排（子项跑到父项右侧） */
+  flex: 1 1 100%;
+  width: 100%;
+}
+.inline-sub > ul {
+  min-height: 0;
+  overflow: hidden;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.inline-sub.open {
+  grid-template-rows: 1fr;
+}
+/* inline 父项允许换行：inline-sub（flex: 1 1 100%）换到父项内容下方 */
+:host(.oas-menu--inline) .item {
+  flex-wrap: wrap;
+}
+/* inline 子项缩进层级视觉 */
+.inline-sub .item {
+  padding-left: calc(var(--oas-space-4) + var(--oas-space-2));
+}
+/* inline 模式展开箭头：chevron-down 指示（就地展开方向） */
+:host(.oas-menu--inline) .item[aria-haspopup] .arrow {
+  transition: transform var(--oas-transition-base) var(--oas-ease-out);
+}
+:host(.oas-menu--inline) .item.open .arrow {
+  transform: rotate(90deg);
+}
+/* ===== 水平溢出收纳：超宽项收进「···」收纳子菜单 ===== */
+/* 被收项在主流隐藏（data-collapsed），收纳子菜单里镜像显示 */
+:host([mode='horizontal']) .item[data-collapsed] {
+  display: none;
+}
+.menu-more {
+  flex-shrink: 0;
+}
+.menu-more[hidden] {
+  display: none;
+}
 .arrow {
   display: inline-flex;
   align-items: center;
@@ -200,6 +290,9 @@ const STYLE = `
   flex-direction: row;
   align-items: center;
   padding: var(--oas-space-1);
+  /* 水平收纳前提：容器宽度受 host 约束（host 设宽度时 .menu 不超宽），超出项收进「···」 */
+  max-width: 100%;
+  overflow: hidden;
 }
 /* 水平模式一级子菜单向下浮出；二级及以上仍向右 */
 :host([mode='horizontal']) .submenu-1 {
@@ -228,7 +321,7 @@ const STYLE = `
 
 export class OASMenu extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['items', 'value', 'mode', 'collapsed', 'theme']
+    return ['items', 'value', 'mode', 'collapsed', 'theme', 'max-height', 'expanded', 'accordion']
   }
 
   private itemsList: MenuItem[] = []
@@ -238,6 +331,13 @@ export class OASMenu extends OASElement {
   /** 已展开的子菜单 value 集合（单条展开路径） */
   private expanded = new Set<string>()
   private menuEl: HTMLElement | null = null
+  /** typeahead 字符缓冲（连续输入定位匹配项） + 超时定时器 */
+  private typeaheadBuffer = ''
+  private typeaheadTimer: ReturnType<typeof setTimeout> | null = null
+  /** 水平溢出收纳的 ResizeObserver（horizontal 模式容器宽度变化时重算收纳） */
+  private overflowObserver: ResizeObserver | null = null
+  /** 水平溢出收纳项「···」元素引用（渲染时捕获，syncOverflowCollapse 更新显隐与子菜单内容） */
+  private moreItemEl: HTMLElement | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -267,6 +367,12 @@ export class OASMenu extends OASElement {
     this.onCleanup(() => window.removeEventListener('resize', reposition))
     window.addEventListener('scroll', reposition, true)
     this.onCleanup(() => window.removeEventListener('scroll', reposition, true))
+    // 水平溢出收纳：horizontal 模式监听容器宽度变化，重算收纳
+    if (typeof ResizeObserver !== 'undefined') {
+      this.overflowObserver = new ResizeObserver(() => this.syncOverflowCollapse())
+      this.overflowObserver.observe(this)
+      this.onCleanup(() => this.overflowObserver?.disconnect())
+    }
   }
 
   protected override render(): void {
@@ -285,7 +391,46 @@ export class OASMenu extends OASElement {
   protected override update(): void {
     this.parseItems()
     this.syncTheme()
+    this.syncMaxHeight()
+    this.syncInlineMode()
+    this.syncExpandedAttr()
     this.renderItems()
+    // 渲染后检测水平溢出收纳（horizontal 模式）；requestAnimationFrame 等布局完成
+    // （update 在 render 后但 flex 布局可能未完成，clientWidth 此时不可靠）
+    if (this.getAttr('mode') === 'horizontal') {
+      requestAnimationFrame(() => this.syncOverflowCollapse())
+    }
+  }
+
+  /** inline 模式类标记 + accordion 标记 */
+  private syncInlineMode(): void {
+    this.classList.toggle('oas-menu--inline', this.getAttr('mode') === 'inline')
+    this.classList.toggle('oas-menu--accordion', this.hasAttr('accordion'))
+  }
+
+  /** expanded 受控：expanded 属性（JSON 数组）存在时驱动内部 expanded Set */
+  private syncExpandedAttr(): void {
+    const raw = this.getAttr('expanded', '')
+    if (!raw) return // 非受控：内部管理
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        this.expanded = new Set(parsed.filter((v): v is string => typeof v === 'string'))
+      }
+    } catch {
+      // 非法 JSON 忽略
+    }
+  }
+
+  /** max-height 属性 → CSS 变量（数字补 px，其余原样） */
+  private syncMaxHeight(): void {
+    const raw = this.getAttr('max-height', '')
+    if (raw) {
+      const v = /^\d+$/.test(raw) ? `${raw}px` : raw
+      this.style.setProperty('--oas-menu-max-height', v)
+    } else {
+      this.style.removeProperty('--oas-menu-max-height')
+    }
   }
 
   private parseItems(): void {
@@ -401,6 +546,7 @@ export class OASMenu extends OASElement {
     depth: number,
   ): void {
     const horizontal = this.getAttr('mode') === 'horizontal'
+    const inline = this.getAttr('mode') === 'inline'
     for (const item of items) {
       if (item.type === 'divider') {
         const li = document.createElement('li')
@@ -427,9 +573,15 @@ export class OASMenu extends OASElement {
         if (item.children) this.renderLevel(container, item.children, nextScope, depth)
         continue
       }
-      const li = document.createElement('li')
+      // href 链接项：渲染 <a>（锚点语义：右键新窗口/中键/SEO）；否则 <li>
+      const li = document.createElement(item.href ? 'a' : 'li') as HTMLElement
       li.className = 'item'
       li.setAttribute('part', 'item')
+      if (item.href) {
+        li.setAttribute('href', item.href)
+        if (item.target) li.setAttribute('target', item.target)
+        if (item.rel) li.setAttribute('rel', item.rel)
+      }
       if (item.value != null) li.dataset.value = item.value
       const loading = item.loading ?? false
       const inert = item.disabled || loading
@@ -476,21 +628,39 @@ export class OASMenu extends OASElement {
           if (item.disabled || item.loading) return
           this.hoverExpand(item.value ?? '')
         })
-        // 子菜单始终渲染，显隐由 .open class 控制（hover 不重建 DOM）
-        const sub = document.createElement('ul')
-        sub.className = depth === 0 ? 'submenu submenu-1' : 'submenu'
-        sub.setAttribute('part', 'submenu')
-        sub.setAttribute('role', 'menu')
-        this.renderLevel(sub, item.children!, '', depth + 1)
-        li.appendChild(sub)
+        // 子菜单：inline 模式就地展开（inline-sub 容器，在父项 li 之后缩进展开）；
+        // 非 inline 浮出（ul.submenu，显隐由 .open class 控制，hover 不重建 DOM）
+        if (inline) {
+          const subWrap = document.createElement('div')
+          subWrap.className = 'inline-sub'
+          subWrap.setAttribute('data-parent', item.value ?? '')
+          // inline-sub 是结构包裹层（无 role）；role=menu 在内部 ul 上（aria-required-children：
+          // role=menu 需 menuitem 子元素，包裹层 div 不应冒充 menu）
+          const subUl = document.createElement('ul')
+          subUl.setAttribute('role', 'menu')
+          this.renderLevel(subUl, item.children!, '', depth + 1)
+          subWrap.appendChild(subUl)
+          li.appendChild(subWrap)
+        } else {
+          const sub = document.createElement('ul')
+          sub.className = depth === 0 ? 'submenu submenu-1' : 'submenu'
+          sub.setAttribute('part', 'submenu')
+          sub.setAttribute('role', 'menu')
+          this.renderLevel(sub, item.children!, '', depth + 1)
+          li.appendChild(sub)
+        }
       } else {
         const action = item.kind === 'action'
-        li.setAttribute('role', action ? 'menuitem' : 'menuitemradio')
+        const checkbox = item.kind === 'checkbox'
+        // role：action=menuitem（无勾选态）/ checkbox=menuitemcheckbox / radio（默认）=menuitemradio
+        li.setAttribute('role', action ? 'menuitem' : checkbox ? 'menuitemcheckbox' : 'menuitemradio')
+        // danger 破坏性项：红色语义
+        if (item.danger) li.classList.add('danger')
         if (!action) {
-          li.setAttribute('aria-checked', String(item.value === this.selectedValueOf(scope)))
+          li.setAttribute('aria-checked', String(checkbox ? this.isChecked(item.value) : item.value === this.selectedValueOf(scope)))
           const check = document.createElement('span')
-          check.className = 'check'
-          check.textContent = '✓'
+          check.className = checkbox ? 'check check--box' : 'check'
+          check.textContent = checkbox ? '' : '✓'
           li.appendChild(check)
         }
         li.append(label)
@@ -505,6 +675,35 @@ export class OASMenu extends OASElement {
         })
       }
       container.appendChild(li)
+    }
+    // 水平溢出收纳：horizontal 顶层末尾渲染「···」收纳项（menu-more），子菜单是被收项镜像
+    if (horizontal && depth === 0) {
+      const moreLi = document.createElement('li')
+      moreLi.className = 'item menu-more'
+      moreLi.setAttribute('part', 'item')
+      moreLi.setAttribute('role', 'menuitem')
+      moreLi.setAttribute('aria-haspopup', 'menu')
+      moreLi.setAttribute('aria-expanded', 'false')
+      moreLi.dataset.value = '__more__' // 收纳项固定 value（syncOpen 按此同步展开态）
+      moreLi.setAttribute('aria-label', this.t('menu.more'))
+      moreLi.hidden = true // 默认隐藏，溢出时 syncOverflowCollapse 显示
+      const moreLabel = document.createElement('span')
+      moreLabel.className = 'label'
+      moreLabel.textContent = '···'
+      moreLi.appendChild(moreLabel)
+      const moreArrow = this.createIcon('chevron-down', 'arrow')
+      if (moreArrow) moreLi.appendChild(moreArrow)
+      const moreSub = document.createElement('ul')
+      moreSub.className = 'submenu submenu-1 menu-more-sub'
+      moreSub.setAttribute('role', 'menu')
+      moreLi.appendChild(moreSub)
+      moreLi.addEventListener('click', (e: MouseEvent) => {
+        e.stopPropagation()
+        this.toggleExpand('__more__')
+      })
+      moreLi.addEventListener('mouseenter', () => this.hoverExpand('__more__'))
+      container.appendChild(moreLi)
+      this.moreItemEl = moreLi
     }
   }
 
@@ -534,6 +733,11 @@ export class OASMenu extends OASElement {
       li.classList.toggle('open', open)
       if (open) li.setAttribute('aria-expanded', 'true')
       else if (li.hasAttribute('aria-haspopup')) li.setAttribute('aria-expanded', 'false')
+    }
+    // inline 模式：inline-sub 就地展开容器显隐（expanded 含父 value 时展开）
+    for (const sub of this.menuEl.querySelectorAll<HTMLElement>('.inline-sub')) {
+      const open = this.expanded.has(sub.dataset.parent ?? '')
+      sub.classList.toggle('open', open)
     }
     this.syncSubmenuPositions()
   }
@@ -579,6 +783,14 @@ export class OASMenu extends OASElement {
     // action 项：动作语义，不参与 value 选中态（不写回、不打勾），只通知宿主
     if (item.kind === 'action') {
       this.emit('select', { value: item.value, kind: 'action' })
+    } else if (item.kind === 'checkbox') {
+      // checkbox 项：多选勾选集，value 为 JSON 数组；点击切换存留
+      const checked = this.checkedSet()
+      const v = item.value ?? ''
+      if (checked.has(v)) checked.delete(v)
+      else checked.add(v)
+      this.setAttribute('value', JSON.stringify([...checked]))
+      this.emit('select', { value: item.value, checked: checked.has(v) })
     } else {
       const next = this.writeValue(scope, item.value ?? '')
       this.setAttribute('value', next)
@@ -589,6 +801,23 @@ export class OASMenu extends OASElement {
       this.expanded.clear()
       this.syncOpen()
     }
+  }
+
+  /** checkbox 勾选集（value 为 JSON 数组时解析，否则空集） */
+  private checkedSet(): Set<string> {
+    const raw = this.getAttr('value', '')
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return new Set(parsed.filter((v): v is string => typeof v === 'string'))
+    } catch {
+      // 非数组：空勾选集
+    }
+    return new Set()
+  }
+
+  /** checkbox 项是否勾选（在勾选集内） */
+  private isChecked(value: string | undefined): boolean {
+    return value != null && this.checkedSet().has(value)
   }
 
   /** value 属性 → 组作用域映射。value 为 JSON 对象时按组 id 拆开，否则视为根作用域（''）单值。 */
@@ -633,6 +862,9 @@ export class OASMenu extends OASElement {
   /** hover：级联展开到该项所在的单条路径（同级互斥），只切 class 不重建 */
   private hoverExpand(value: string): void {
     if (!value) return
+    // inline 模式是 click-to-expand（就地展开），hover 不展开——否则悬停先展开、点击又收起，
+    // 鼠标用户永远展不开（hoverExpand 与 toggleExpand 相互抵消）
+    if (this.getAttr('mode') === 'inline') return
     const chain = this.chainOf(value)
     if (chain.length === 0) return
     const item = this.findItem(value)
@@ -645,12 +877,113 @@ export class OASMenu extends OASElement {
 
   /** 点击：展开/收起子菜单 */
   private toggleExpand(value: string): void {
-    if (this.expanded.has(value)) {
-      this.expanded = new Set(this.chainOf(value).slice(0, -1))
-    } else {
-      this.expanded = new Set(this.chainOf(value))
+    // 水平收纳项「···」：非数据项，直接切换其展开态（不走 chainOf——不在 items 树里）
+    if (value === '__more__') {
+      const next = new Set(this.expanded)
+      const willExpandMore = !next.has('__more__')
+      if (willExpandMore) next.add('__more__')
+      else next.delete('__more__')
+      this.expanded = next
+      this.emit('expand-change', { expanded: [...this.expanded], value, isExpanded: willExpandMore })
+      this.syncOpen()
+      return
     }
+    const inline = this.getAttr('mode') === 'inline'
+    const accordion = this.hasAttr('accordion')
+    let willExpand: boolean
+    if (inline) {
+      // inline 多点展开集合：切换该项展开态；accordion 同级互斥（展开一个收起其他同级）
+      const next = new Set(this.expanded)
+      if (next.has(value)) {
+        next.delete(value)
+        willExpand = false
+      } else {
+        if (accordion) {
+          // 同级互斥：收起与该 value 同级的其他展开项
+          const siblings = this.siblingValuesOf(value)
+          for (const s of siblings) next.delete(s)
+        }
+        next.add(value)
+        willExpand = true
+      }
+      this.expanded = next
+    } else {
+      // 浮出模式：单条展开路径（现状）
+      if (this.expanded.has(value)) {
+        this.expanded = new Set(this.chainOf(value).slice(0, -1))
+        willExpand = false
+      } else {
+        this.expanded = new Set(this.chainOf(value))
+        willExpand = true
+      }
+    }
+    // oas-expand-change：展开状态变化时派发（受控/非受控都派发；受控时宿主据此更新 expanded 属性）
+    this.emit('expand-change', { expanded: [...this.expanded], value, isExpanded: willExpand })
     this.syncOpen()
+  }
+
+  /** 该 value 同级（同一父级 children 里）的其他有子菜单项的 value 集合（手风琴互斥用） */
+  private siblingValuesOf(value: string): string[] {
+    const chain = this.chainOf(value)
+    const parentChain = chain.slice(0, -1)
+    // 找父级的 children
+    let levelItems = this.itemsList
+    for (const ancestorValue of parentChain) {
+      const found = levelItems.find((i) => i.value === ancestorValue)
+      levelItems = found?.children ?? []
+    }
+    return levelItems.filter((i) => i.children?.length && i.value !== value).map((i) => i.value ?? '')
+  }
+
+  /** 水平溢出收纳：horizontal 模式容器宽度不足时，超宽项收进末尾「···」收纳子菜单 */
+  private syncOverflowCollapse(): void {
+    if (this.getAttr('mode') !== 'horizontal') return
+    const menuEl = this.menuEl
+    if (!menuEl) return
+    // 顶层项（排除收纳项本身）
+    const topItems = [...menuEl.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]')]
+    if (topItems.length === 0) return
+    const avail = menuEl.clientWidth
+    // 累积宽度，超出可用宽度的标记 data-collapsed
+    let acc = 0
+    let firstOverflow = -1
+    topItems.forEach((t, i) => {
+      acc += t.offsetWidth
+      if (firstOverflow === -1 && acc > avail) firstOverflow = i
+    })
+    const hasOverflow = firstOverflow !== -1
+    topItems.forEach((t, i) => {
+      t.toggleAttribute('data-collapsed', hasOverflow && i >= firstOverflow)
+    })
+    // 收纳项「···」显隐 + 子菜单内容（被收项镜像，点击激活对应 value）
+    const moreItem = this.moreItemEl ?? menuEl.querySelector<HTMLElement>('.menu-more')
+    if (!moreItem) return
+    moreItem.hidden = !hasOverflow
+    const moreSub = moreItem.querySelector<HTMLElement>('.menu-more-sub')
+    if (moreSub && hasOverflow) {
+      moreSub.innerHTML = ''
+      const collapsed = topItems.filter((t) => t.hasAttribute('data-collapsed'))
+      for (const t of collapsed) {
+        const value = t.getAttribute('data-value') ?? ''
+        const item = this.findItem(value)
+        if (!item) continue
+        const li = document.createElement('li')
+        li.className = 'item'
+        li.setAttribute('part', 'item')
+        li.setAttribute('role', 'menuitem')
+        li.setAttribute('data-value', value)
+        const label = document.createElement('span')
+        label.className = 'label'
+        label.textContent = item.label ?? value
+        li.appendChild(label)
+        li.addEventListener('click', (e: MouseEvent) => {
+          e.stopPropagation()
+          if (item.disabled || item.loading) return
+          this.select(item, '')
+        })
+        moreSub.appendChild(li)
+      }
+    }
   }
 
   private findItem(value: string): MenuItem | undefined {
@@ -736,10 +1069,37 @@ export class OASMenu extends OASElement {
       this.activeIndex = enabled[0]!
     } else if (e.key === 'End') {
       this.activeIndex = enabled[enabled.length - 1]!
+    } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      // typeahead：可打印字符跳转匹配 label 的项（连续字符缓冲 + 超时重置）
+      e.preventDefault()
+      this.typeahead(e.key)
     } else {
       return
     }
     this.syncOpen()
     this.syncActive()
+  }
+
+  /** typeahead：缓冲字符序列，跳转当前层 label 匹配的项（startsWith 优先，includes 兜底），超时 500ms 重置 */
+  private typeahead(char: string): void {
+    this.typeaheadBuffer += char.toLowerCase()
+    if (this.typeaheadTimer) clearTimeout(this.typeaheadTimer)
+    this.typeaheadTimer = setTimeout(() => {
+      this.typeaheadBuffer = ''
+    }, 500)
+    const items = this.currentItems()
+    const buf = this.typeaheadBuffer
+    // 匹配：label startsWith 优先，无则 includes
+    const match = (pred: (s: string) => boolean) =>
+      items.findIndex((i) => !i.disabled && !i.loading && i.label && pred(i.label.toLowerCase()))
+    let idx = match((s) => s.startsWith(buf))
+    if (idx === -1) idx = match((s) => s.includes(buf))
+    if (idx === -1) return
+    this.activeIndex = idx
+    const item = items[idx]
+    if (item) {
+      const el = this.menuEl!.querySelector<HTMLElement>(`[part="item"][data-value="${item.value}"]`)
+      el?.focus({ preventScroll: true })
+    }
   }
 }

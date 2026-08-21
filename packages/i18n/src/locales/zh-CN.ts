@@ -180,6 +180,8 @@ export const zhCN = {
   'datePicker.shortcutThisYear': '今年',
   // dropdown（下拉菜单）
   'dropdown.openMenu': '打开菜单',
+  // menu（菜单）
+  'menu.more': '更多菜单项',
   // time-picker（时间选择器）
   'timePicker.placeholder': '请选择时间',
   'timePicker.hour': '时',
