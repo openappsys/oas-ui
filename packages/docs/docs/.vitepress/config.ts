@@ -191,19 +191,24 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' }],
     ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon-180.png' }],
-    // Google Analytics 4（统计 ID G-RXS142HBXF）；SPA 路由切换的 page_view 由 theme 里 router.afterEach 补充
-    [
-      'script',
-      { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-RXS142HBXF' },
-    ],
-    [
-      'script',
-      {},
-      `window.dataLayer = window.dataLayer || [];
+    // Google Analytics 4（统计 ID G-RXS142HBXF）——仅生产构建注入；dev 环境（vitepress dev，NODE_ENV=development）不加载
+    // SPA 路由切换的 page_view 由 theme 里 router.afterEach 补充（同样仅 PROD）
+    ...(process.env.NODE_ENV === 'production'
+      ? [
+          [
+            'script',
+            { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-RXS142HBXF' },
+          ] as [string, Record<string, string>],
+          [
+            'script',
+            {},
+            `window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-RXS142HBXF');`,
-    ],
+          ] as [string, Record<string, string>, string],
+        ]
+      : []),
   ],
   vue: {
     template: {
