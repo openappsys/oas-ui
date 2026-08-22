@@ -1164,4 +1164,91 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     expect(tip(el).getAttribute('aria-hidden')).toBe('false')
   })
+
+  // ================= 回归：hover 与 focus 两条触发路径定位一致 =================
+  // 缺陷：tip-enter 进场动画 scale(0.9) 污染 getBoundingClientRect，定位按缩小 10% 的
+  // 尺寸计算；且 focusin → setOpen(true) 的同值 setAttribute 仍触发 attributeChangedCallback
+  // （Chromium 实测），导致 focus 路径多跑一次重定位——两条路径落点分歧。
+
+  /** 模拟进场动画进行中：getBoundingClientRect 被 scale(0.9) 缩小，布局尺寸 offset* 为真值 */
+  function stubAnimTip(t: HTMLElement, real: { width: number; height: number }): void {
+    stubRect(t, { left: 0, top: 0, width: real.width * 0.9, height: real.height * 0.9 })
+    Object.defineProperty(t, 'offsetWidth', { value: real.width, configurable: true })
+    Object.defineProperty(t, 'offsetHeight', { value: real.height, configurable: true })
+  }
+
+  it('定位测量用布局尺寸：不受进场动画 scale(0.9) 污染（top = 锚点顶 - 真实高 - 8）', async () => {
+    const el = mount({ content: '提示在上方', placement: 'top' })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 400, top: 300, width: 64, height: 32 })
+    stubAnimTip(t, { width: 81, height: 32 }) // 动画中 gBCR=72.9x28.8，布局真值 81x32
+    setViewport(1280, 800)
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    // 真实布局尺寸：top = 300 - 32 - 8 = 260；left = (400+32) - 81/2 = 391.5
+    expect(t.style.top).toBe('260px')
+    expect(t.style.left).toBe('391.5px')
+    // 当前缺陷（按 72.9x28.8 计算）会得到 263.2px / 395.55px
+  })
+
+  it('focus 通道在已打开时不重复写 open 属性（同值 setAttribute 也触发 update/重定位）', async () => {
+    const el = mount({ content: 'x', placement: 'top' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    expect(el.hasAttribute('open')).toBe(true)
+    const spy = vi.spyOn(el, 'setAttribute')
+    // 已打开状态下焦点到达（click → mousedown → focusin 路径）
+    btn.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await Promise.resolve()
+    expect(spy).not.toHaveBeenCalledWith('open', '')
+    spy.mockRestore()
+  })
+
+  it('hover 打开与 focus 打开落点一致（同一 placement 不因触发方式改变位置）', async () => {
+    setViewport(1280, 800)
+    // hover 路径（动画进行中测量）
+    const a = mount({ content: '提示在上方', placement: 'top' })
+    await Promise.resolve()
+    const ta = tip(a)
+    const btnA = a.querySelector('button')!
+    stubRect(btnA, { left: 400, top: 300, width: 64, height: 32 })
+    stubAnimTip(ta, { width: 81, height: 32 })
+    btnA.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    // focus 路径（全新实例：等价几何，动画已结束、gBCR 为真值）
+    const b = mount({ content: '提示在上方', placement: 'top' })
+    await Promise.resolve()
+    const tb = tip(b)
+    const btnB = b.querySelector('button')!
+    stubRect(btnB, { left: 400, top: 300, width: 64, height: 32 })
+    stubAnimTip(tb, { width: 81, height: 32 })
+    Object.defineProperty(tb, 'offsetWidth', { value: 81, configurable: true })
+    Object.defineProperty(tb, 'offsetHeight', { value: 32, configurable: true })
+    stubRect(tb, { left: 0, top: 0, width: 81, height: 32 })
+    btnB.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await Promise.resolve()
+    expect(tb.style.top).toBe(ta.style.top)
+    expect(tb.style.left).toBe(ta.style.left)
+  })
+
+  it('arrow-point-at-center 箭头 clamp 用布局尺寸（视口避让偏移后箭头指向锚点）', async () => {
+    // 锚点贴右缘：面板被视口避让左移，箭头 clamp 到面板内时按真实布局尺寸（81 宽）
+    const el = mount({ content: 'x', placement: 'top', 'arrow-point-at-center': '' })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 450, top: 300, width: 60, height: 32 })
+    stubAnimTip(t, { width: 81, height: 32 })
+    setViewport(500, 800)
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    // 真实尺寸：left = clamp(480-40.5, 4, 500-81-4=415) = 415 → local=480-415=65 → arrow 65-4=61px
+    const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow.style.left).toBe('61px')
+    // 当前缺陷（72.9 宽）会得到 52.9px
+  })
 })
