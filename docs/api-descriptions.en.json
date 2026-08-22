@@ -742,7 +742,7 @@
     "attrs": {
       "append-to": "Positioning container selector (e.g. `#panel`): the card is absolutely positioned inside that container (container is promoted to a relative positioning context), coordinates translated accordingly; defaults to `position: fixed` viewport coordinates",
       "arrow": "Whether to show the arrow, default true; `arrow=\"false\"` hides it (the arrow element and `::part(arrow)` remain)",
-      "arrow-merge": "Corner-merged arrow mode: for *-start/*-end placements the arrow fuses with the panel corner into a right-angle triangle (the matching corner radius is zeroed); no effect for centered placements",
+      "arrow-merge": "Corner-merged arrow mode: for *-start/*-end placements a right triangle merges flush with the panel corner — legs collinear with the panel edges (their strokes continue the panel border band), tip pointing orthogonally toward the anchor; the matching corner radius is zeroed; no effect for centered placements",
       "arrow-point-at-center": "Point the arrow at the trigger center (keeps pointing at the anchor after viewport clamping); by default the arrow stays at the panel center",
       "auto-adjust-overflow": "Auto-adjust at viewport edges (flip/clamp), default true; `\"false\"` disables it and positions strictly per the declared placement (the popup may overflow the viewport)",
       "close-delay": "Close delay in ms, separate from open-delay; falls back to the `delay` alias, then to 150",
@@ -1158,7 +1158,7 @@
     "attrs": {
       "append-to": "Portal mount target: the panel moves into the target container (`body` or a CSS selector) when opened and moves back into the host shadow when closed; for panels clipped by host containers (overflow)",
       "arrow": "Whether to show the arrow (default true; `arrow=\"false\"` hides it, the element and `::part(arrow)` are kept)",
-      "arrow-merge": "Merge the arrow with the panel corner (C1): the arrow sits flush at the corresponding corner and the adjacent corner radius is zeroed into a right triangle; only takes effect for *-start/*-end placements, center placements are unaffected",
+      "arrow-merge": "Merge the arrow with the panel corner (C1): a right triangle merges flush with the panel corner — legs collinear with the panel edges (their strokes continue the panel border band), tip pointing orthogonally toward the anchor; the matching corner radius is zeroed; only takes effect for *-start/*-end placements, center placements are unaffected",
       "arrow-point-at-center": "Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance)",
       "auto-adjust-overflow": "Viewport-edge auto flip and avoidance (default true; `\"false\"` disables it, keeping the declared placement, which may overflow the viewport)",
       "auto-close": "Auto close after opening for the given duration in ms, e.g. `auto-close=\"3000\"`; not set means no auto close",

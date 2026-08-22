@@ -1136,19 +1136,155 @@ describe('OASPopover fresh / auto-close / arrow-merge', () => {
     expect(el.hasAttribute('open')).toBe(true)
   })
 
-  it('arrow-merge：面板写 data-arrow-merge，-start/-end 位置箭头贴角 + 圆角归零规则', () => {
+  // ================= arrow-merge 直角三角形态（对齐 tooltip 的「直角三角贴角共边」） =================
+  // 曾现缺陷：merge 箭头沿用 8×8 方块 rotate(45deg) 旋转菱形、菱心骑在面板角点上、尖端
+  // 沿 45° 斜向凸出——不指向锚点，观感「怪」（tooltip 同款用户反馈缺陷族）。改为通用
+  // 形态：不旋转方块整悬面板外贴角 + clip-path 裁直角三角——直角顶点贴面板角点，两条
+  // 直角边与角两边共线，尖端正交外探 8px 指向锚点侧。popover 面板有 1px 描边：箭头贴角
+  // 让位 1px（主轴边压进面板描边带、起止侧边 -1px），两条直角边的描边（--pop-border）
+  // 恰好与面板描边带共带续接，斜边不描边（clip 裁平，视觉干净）。
+
+  /** shadow 内 STYLE 文本（空白折叠后做规则断言） */
+  function mergeCss(el: OASPopover): string {
+    return (el.shadowRoot!.querySelector('style')!.textContent ?? '').replace(/\s+/g, ' ')
+  }
+
+  it('arrow-merge：面板写 data-arrow-merge，center placement 不触发贴角规则（仅 -start/-end 生效）', () => {
     const el = mount({ open: '', placement: 'bottom-start', 'arrow-merge': '' })
-    const p = panelOf(el)
-    expect(p.hasAttribute('data-arrow-merge')).toBe(true)
-    const styleText = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(styleText).toMatch(/\[data-placement='bottom-start'\]\[data-arrow-merge\]/)
-    expect(styleText).toContain('border-top-left-radius: 0')
+    expect(panelOf(el).hasAttribute('data-arrow-merge')).toBe(true)
+    const css = mergeCss(el)
+    expect(css).toMatch(/\[data-placement='bottom-start'\]\[data-arrow-merge\]/)
+    expect(css).toContain('border-top-left-radius: 0')
+    // bottom 无后缀 → 不匹配贴角规则
+    expect(css).not.toMatch(/\[data-placement='bottom'\]\[data-arrow-merge\]/)
   })
 
-  it('arrow-merge：center placement 不触发贴角规则（仅 -start/-end 生效）', () => {
-    const el = mount({ open: '', placement: 'bottom', 'arrow-merge': '' })
-    const styleText = el.shadowRoot!.querySelector('style')!.textContent!
-    // bottom 无后缀 → 不匹配贴角规则
-    expect(styleText).not.toMatch(/\[data-placement='bottom'\]\[data-arrow-merge\]/)
+  it('arrow-merge 逐角置零：8 个 -start/-end placement 的角 radius 规则各就各位', () => {
+    const css = mergeCss(mount())
+    const cornerOf: Record<string, string> = {
+      // bottom 系箭头悬顶边：start→左上角、end→右上角
+      'bottom-start': 'border-top-left-radius: 0;',
+      'bottom-end': 'border-top-right-radius: 0;',
+      // top 系箭头悬底边：start→左下角、end→右下角
+      'top-start': 'border-bottom-left-radius: 0;',
+      'top-end': 'border-bottom-right-radius: 0;',
+      // left 系箭头悬右边：start→右上角、end→右下角
+      'left-start': 'border-top-right-radius: 0;',
+      'left-end': 'border-bottom-right-radius: 0;',
+      // right 系箭头悬左边：start→左上角、end→左下角
+      'right-start': 'border-top-left-radius: 0;',
+      'right-end': 'border-bottom-left-radius: 0;',
+    }
+    for (const [p, decl] of Object.entries(cornerOf)) {
+      expect(css, `merge ${p} 应置零 ${decl}`).toContain(
+        `[data-placement='${p}'][data-arrow-merge] { ${decl} }`,
+      )
+    }
+  })
+
+  it('arrow-merge 直角三角贴角共边：8 向箭头盒整悬面板外、transform none、描边仅直角两边、clip-path 直角三角', () => {
+    const css = mergeCss(mount())
+    const B = '1px solid var(--pop-border)'
+    // 盒定位：主轴边外 -8px（压进面板描边带 1px 共带）、起止侧边 -1px（描边带对齐）；
+    // 不旋转 + 描边只留两条直角边（斜边 clip 裁平不描边）+ clip-path 直角三角
+    const rules: Record<string, string> = {
+      'bottom-start': `top: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-bottom: ${B}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
+      'bottom-end': `top: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-bottom: ${B}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
+      'top-start': `bottom: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-top: ${B}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
+      'top-end': `bottom: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-top: ${B}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
+      'left-start': `right: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-left: ${B}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
+      'left-end': `right: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-left: ${B}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
+      'right-start': `left: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-right: ${B}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
+      'right-end': `left: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-right: ${B}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
+    }
+    for (const [p, decl] of Object.entries(rules)) {
+      expect(css, `merge ${p} 箭头应为直角三角贴角共边`).toContain(
+        `.panel[data-placement='${p}'][data-arrow-merge] .arrow { ${decl} }`,
+      )
+    }
+    // 旧「菱形骑角」规则（基向前缀 + 半宽 -4px 骑角）不得残留
+    expect(css).not.toMatch(/\[data-placement\^='bottom'\]\[data-arrow-merge\] \.arrow/)
+    expect(css).not.toMatch(/\[data-placement\^='top'\]\[data-arrow-merge\] \.arrow/)
+    expect(css).not.toMatch(/\[data-placement\^='left'\]\[data-arrow-merge\] \.arrow/)
+    expect(css).not.toMatch(/\[data-placement\^='right'\]\[data-arrow-merge\] \.arrow/)
+  })
+
+  it('arrow-merge 8 向三角几何：直角顶点贴面板角、两直角边与角两边共线、尖端正交外探 8px 指向锚点侧', () => {
+    const css = mergeCss(mount())
+    // 每向：clip-path 顶点（盒内 8×8 百分比坐标）→ 面板角点位于盒的哪个角 + 三角朝向
+    // corner: 面板角点在箭头盒内的位置；edge: 贴边腿顶点相对角点的位移（沿面板边向内 8px，
+    // 该腿与面板真实边段共边）；tip: 尖端相对角点的正交位移 8px（指向锚点侧）
+    const geom: Record<string, { corner: [number, number]; edge: [number, number]; tip: [number, number] }> =
+      {
+        // bottom 系：盒悬顶边上方 → 角点在盒底边；start 贴左（贴边腿向右）、end 贴右（向左）；尖端朝上
+        'bottom-start': { corner: [0, 8], edge: [8, 0], tip: [0, -8] },
+        'bottom-end': { corner: [8, 8], edge: [-8, 0], tip: [0, -8] },
+        // top 系：盒悬底边下方 → 角点在盒顶边；尖端朝下
+        'top-start': { corner: [0, 0], edge: [8, 0], tip: [0, 8] },
+        'top-end': { corner: [8, 0], edge: [-8, 0], tip: [0, 8] },
+        // left 系：盒悬右边右侧 → 角点在盒左边；贴边腿沿面板右边（start 向下、end 向上）；尖端朝右
+        'left-start': { corner: [0, 0], edge: [0, 8], tip: [8, 0] },
+        'left-end': { corner: [0, 8], edge: [0, -8], tip: [8, 0] },
+        // right 系：盒悬左边左侧 → 角点在盒右边；尖端朝左
+        'right-start': { corner: [8, 0], edge: [0, 8], tip: [-8, 0] },
+        'right-end': { corner: [8, 8], edge: [0, -8], tip: [-8, 0] },
+      }
+    // 从 STYLE 文本解析某 placement 的 clip-path 顶点（百分比 → 8×8 盒内 px 坐标）
+    const verticesOf = (p: string): Array<[number, number]> => {
+      const m = css.match(
+        new RegExp(
+          `\\.panel\\[data-placement='${p}'\\]\\[data-arrow-merge\\] \\.arrow \\{ [^}]*clip-path: polygon\\(([^)]+)\\)`,
+        ),
+      )
+      if (!m) throw new Error(`merge ${p} 规则缺失`)
+      return m[1]!.split(',').map((v) => {
+        const [xs, ys] = v.trim().split(/\s+/)
+        return [(parseFloat(xs!) / 100) * 8, (parseFloat(ys!) / 100) * 8] as [number, number]
+      })
+    }
+    const near = (a: number, b: number): boolean => Math.abs(a - b) < 1e-6
+    for (const [p, { corner, edge, tip }] of Object.entries(geom)) {
+      const vs = verticesOf(p)
+      expect(vs.length, `${p} clip-path 应为三角（3 顶点）`).toBe(3)
+      // 找直角顶点：与另两顶点构成的向量内积为 0
+      const rightIdx = vs.findIndex((v, i) => {
+        const a = vs[(i + 1) % 3]!
+        const b = vs[(i + 2) % 3]!
+        return near((a[0] - v[0]) * (b[0] - v[0]) + (a[1] - v[1]) * (b[1] - v[1]), 0)
+      })
+      expect(rightIdx, `${p} clip-path 应含直角顶点`).toBeGreaterThanOrEqual(0)
+      const rv = vs[rightIdx]!
+      // 直角顶点精确落面板角点（角点在盒内的已知位置）
+      expect(near(rv[0], corner[0]) && near(rv[1], corner[1]), `${p} 直角顶点应落面板角点`).toBe(true)
+      // 另两顶点：一个沿面板边向内 8px（贴边腿与面板真实边段共边）、一个为尖端
+      // （角点 + 正交位移 8px 指向锚点侧）
+      const others = vs.filter((_, i) => i !== rightIdx)
+      const isEdge = (v: [number, number]): boolean =>
+        near(v[0] - rv[0], edge[0]) && near(v[1] - rv[1], edge[1])
+      const isTip = (v: [number, number]): boolean =>
+        near(v[0] - rv[0], tip[0]) && near(v[1] - rv[1], tip[1])
+      expect(
+        (isEdge(others[0]!) && isTip(others[1]!)) || (isTip(others[0]!) && isEdge(others[1]!)),
+        `${p} 两直角边应分别与面板边共边（向内 8px）与正交外探尖端（8px）`,
+      ).toBe(true)
+    }
+  })
+
+  it('arrow-merge + arrow-point-at-center：箭头钉死角点，不写内联偏移（直角三角不脱离角）', () => {
+    const el = mount({
+      open: '',
+      placement: 'bottom-start',
+      'arrow-merge': '',
+      'arrow-point-at-center': '',
+    })
+    const p = panelOf(el)
+    stubPanelRect(p, 240, 60)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 12, top: 300, width: 64, height: 32 }) // 锚点中心≠面板中心（有内联偏移动机）
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x') // 触发重定位
+    const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('')
+    expect(arrow.style.getPropertyValue('--arrow-y')).toBe('')
   })
 })

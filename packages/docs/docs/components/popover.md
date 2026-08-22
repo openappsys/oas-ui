@@ -466,7 +466,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `append-to` | portal 挂载点：打开时面板移入目标容器（`body` 或 CSS 选择器），关闭移回宿主 shadow；适合面板被宿主容器裁剪（overflow）的场景 | `string` | — |
 | `arrow` | 是否显示箭头（默认 true；`arrow="false"` 隐藏，箭头元素与 `::part(arrow)` 保留） | `string` | `true` |
-| `arrow-merge` | 箭头与面板角融合（C1）：箭头贴到面板对应角、邻角圆角归零成直角三角；仅 *-start/*-end 位置生效，center placement 不触发 | `boolean` | — |
+| `arrow-merge` | 箭头与面板角融合（C1）：直角三角与面板角共边融合——直角贴角点、直角边与面板两边共线（描边与面板描边共带续接），尖端正交指向锚点，对应角圆角归零；仅 *-start/*-end 位置生效，center placement 不触发 | `boolean` | — |
 | `arrow-point-at-center` | 箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心） | `boolean` | — |
 | `auto-adjust-overflow` | 视口边缘自动翻转与避让（默认 true；`"false"` 关闭，保持声明 placement，可能溢出视口） | `string` | `true` |
 | `auto-close` | 打开后超时自动关闭（毫秒），如 `auto-close="3000"`；未设置不自动关闭 | `string` | — |
