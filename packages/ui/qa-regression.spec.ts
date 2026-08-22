@@ -3545,6 +3545,10 @@ test('tooltip arrow-point-at-center：面板被视口边缘避让 clamp 偏移�
 // 16px 贴不上（12 向仅 bottom 两向正确）。
 // 曾现缺陷 3：窄气泡（交叉轴 < 箭头底宽 8√2≈11.31 + 2×radius）圆角曲线侵入箭头底边
 // 衔接区，接缝两侧各 ~1.5px 凹口（空内容 16px 气泡像素剖面 14.13→11.1 骤缩实测）。
+// 曾现缺陷 4（用户两轮反馈）：merge 修正后箭头仍是 8×8 方块 rotate(45deg) 旋转菱形，
+// 菱心骑在角点上、尖端沿 45° 斜向凸出——斜向不指向锚点，观感「怪」。改为直角三角贴角
+// 共边（通用形态）：箭头不旋转、整悬面板外贴角 + clip-path 裁直角三角——直角顶点
+// 精确落面板角点，两直角边与角两边共线，尖端正交外探 8px 指向锚点侧。
 
 test('tooltip 箭头形态（用户场景）：top 方向底部箭头完整菱形、悬底边居中、尖端距锚点 2.34px 不相交', async ({
   page,
@@ -3603,13 +3607,13 @@ test('tooltip 箭头形态（用户场景）：top 方向底部箭头完整菱�
   await page.mouse.move(8, 8)
 })
 
-test('tooltip merge 贴角 8 向：箭头菱心骑正确角点 + 该角 radius 置零（真级联逐向验证）', async ({
+test('tooltip merge 直角三角贴角共边 8 向：直角点贴面板角点、两直角边共线、尖端正交指向锚点侧（真级联逐向验证）', async ({
   page,
 }) => {
   await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#tt-arrow-default')
   await page.evaluate(() => {
-    // 锚点钉视口中央：排除 auto-adjust 翻转/避让对 12 向的干扰
+    // 锚点钉视口中央：排除 auto-adjust 翻转/避让对 8 向的干扰
     const host = document.querySelector('#tt-arrow-default')!
     const btn = host.querySelector('oas-button') as HTMLElement
     btn.style.position = 'fixed'
@@ -3618,20 +3622,109 @@ test('tooltip merge 贴角 8 向：箭头菱心骑正确角点 + 该角 radius �
   })
   const results = await page.evaluate(async () => {
     const host = document.querySelector('#tt-arrow-default')!
-    // 每向：placement → 期望角点（主轴边 × 起止侧）与应置零的角 radius 属性
-    const cases: Array<[string, string]> = [
-      ['bottom-start', 'borderTopLeftRadius'],
-      ['bottom-end', 'borderTopRightRadius'],
-      ['top-start', 'borderBottomLeftRadius'],
-      ['top-end', 'borderBottomRightRadius'],
-      ['left-start', 'borderTopRightRadius'],
-      ['left-end', 'borderBottomRightRadius'],
-      ['right-start', 'borderTopLeftRadius'],
-      ['right-end', 'borderBottomLeftRadius'],
+    // 每向几何契约：cornerEdges 面板角点（tip rect 边）、edge 贴边腿位移（沿面板边向内 8px）、
+    // tip 尖端位移（角点正交外探 8px 指向锚点侧）、flush 盒贴角（[箭头边, 面板边]）、
+    // cornerProp 应置零的角 radius
+    const cases: Array<{
+      p: string
+      cornerEdges: ['left' | 'right', 'top' | 'bottom']
+      edge: [number, number]
+      tip: [number, number]
+      flush: Array<['left' | 'right' | 'top' | 'bottom', 'left' | 'right' | 'top' | 'bottom']>
+      cornerProp: string
+    }> = [
+      {
+        p: 'bottom-start',
+        cornerEdges: ['left', 'top'],
+        edge: [8, 0],
+        tip: [0, -8],
+        flush: [
+          ['left', 'left'],
+          ['bottom', 'top'],
+        ],
+        cornerProp: 'borderTopLeftRadius',
+      },
+      {
+        p: 'bottom-end',
+        cornerEdges: ['right', 'top'],
+        edge: [-8, 0],
+        tip: [0, -8],
+        flush: [
+          ['right', 'right'],
+          ['bottom', 'top'],
+        ],
+        cornerProp: 'borderTopRightRadius',
+      },
+      {
+        p: 'top-start',
+        cornerEdges: ['left', 'bottom'],
+        edge: [8, 0],
+        tip: [0, 8],
+        flush: [
+          ['left', 'left'],
+          ['top', 'bottom'],
+        ],
+        cornerProp: 'borderBottomLeftRadius',
+      },
+      {
+        p: 'top-end',
+        cornerEdges: ['right', 'bottom'],
+        edge: [-8, 0],
+        tip: [0, 8],
+        flush: [
+          ['right', 'right'],
+          ['top', 'bottom'],
+        ],
+        cornerProp: 'borderBottomRightRadius',
+      },
+      {
+        p: 'left-start',
+        cornerEdges: ['right', 'top'],
+        edge: [0, 8],
+        tip: [8, 0],
+        flush: [
+          ['left', 'right'],
+          ['top', 'top'],
+        ],
+        cornerProp: 'borderTopRightRadius',
+      },
+      {
+        p: 'left-end',
+        cornerEdges: ['right', 'bottom'],
+        edge: [0, -8],
+        tip: [8, 0],
+        flush: [
+          ['left', 'right'],
+          ['bottom', 'bottom'],
+        ],
+        cornerProp: 'borderBottomRightRadius',
+      },
+      {
+        p: 'right-start',
+        cornerEdges: ['left', 'top'],
+        edge: [0, 8],
+        tip: [-8, 0],
+        flush: [
+          ['right', 'left'],
+          ['top', 'top'],
+        ],
+        cornerProp: 'borderTopLeftRadius',
+      },
+      {
+        p: 'right-end',
+        cornerEdges: ['left', 'bottom'],
+        edge: [0, -8],
+        tip: [-8, 0],
+        flush: [
+          ['right', 'left'],
+          ['bottom', 'bottom'],
+        ],
+        cornerProp: 'borderBottomLeftRadius',
+      },
     ]
     const out: Array<Record<string, string | number | boolean>> = []
-    for (const [p, cornerProp] of cases) {
-      host.setAttribute('placement', p)
+    for (const c of cases) {
+      host.setAttribute('placement', c.p)
       host.setAttribute('arrow-position', 'merge')
       host.setAttribute('open', '')
       await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
@@ -3640,26 +3733,52 @@ test('tooltip merge 贴角 8 向：箭头菱心骑正确角点 + 该角 radius �
       const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
       const tb = t.getBoundingClientRect()
       const ab = arrow.getBoundingClientRect()
-      const side = p.split('-')[0]
-      const align = p.split('-')[1]
-      // 角点：主轴边（bottom→顶边 / top→底边 / left→右边 / right→左边）× 起止侧（start→左/上、end→右/下）
-      // top/bottom 系：主轴边定 Y、align 定 X；left/right 系：主轴边定 X、align 定 Y
-      const cornerX =
-        side === 'left' ? tb.right : side === 'right' ? tb.left : align === 'start' ? tb.left : tb.right
-      const cornerY =
-        side === 'bottom'
-          ? tb.top
-          : side === 'top'
-            ? tb.bottom
-            : align === 'start'
-              ? tb.top
-              : tb.bottom
+      const cs = getComputedStyle(arrow)
+      // clip-path polygon 顶点（百分比）→ 页面坐标
+      let verts: number[][] = []
+      const m = cs.clipPath && cs.clipPath.match(/polygon\(([^)]+)\)/)
+      if (m) {
+        verts = m[1]!.split(',').map((v) => {
+          const [xs, ys] = v.trim().split(/\s+/)
+          const fx = xs!.endsWith('%') ? (parseFloat(xs!) / 100) * ab.width : parseFloat(xs!)
+          const fy = ys!.endsWith('%') ? (parseFloat(ys!) / 100) * ab.height : parseFloat(ys!)
+          return [ab.left + fx, ab.top + fy]
+        })
+      }
+      // 直角顶点（与另两顶点向量内积为 0）到面板角点的偏差
+      const corner: [number, number] = [tb[c.cornerEdges[0]], tb[c.cornerEdges[1]]]
+      let rv: number[] | null = null
+      let others: number[][] = []
+      if (verts.length === 3) {
+        for (let i = 0; i < 3; i++) {
+          const a = verts[(i + 1) % 3]!
+          const b = verts[(i + 2) % 3]!
+          const v = verts[i]!
+          if (Math.abs((a[0]! - v[0]!) * (b[0]! - v[0]!) + (a[1]! - v[1]!) * (b[1]! - v[1]!)) < 0.01) {
+            rv = v
+            others = verts.filter((_, j) => j !== i)
+          }
+        }
+      }
+      const near = (v: number[], exp: [number, number]) =>
+        Math.abs(v[0]! - (rv![0]! + exp[0])) <= 0.5 && Math.abs(v[1]! - (rv![1]! + exp[1])) <= 0.5
       out.push({
-        p,
+        p: c.p,
         actual: t.getAttribute('data-placement') ?? '',
-        dx: +(cornerX - (ab.left + ab.right) / 2).toFixed(2),
-        dy: +(cornerY - (ab.top + ab.bottom) / 2).toFixed(2),
-        cornerZero: getComputedStyle(t)[cornerProp as 'borderTopLeftRadius'] === '0px',
+        transformNone: cs.transform === 'none',
+        hasPolygon: verts.length === 3,
+        // 直角点与面板角点重合
+        rdx: rv ? +(rv[0]! - corner[0]).toFixed(2) : NaN,
+        rdy: rv ? +(rv[1]! - corner[1]).toFixed(2) : NaN,
+        // 盒贴角：主轴边外悬 + 起止侧边线贴齐
+        fdx: +c.flush.map(([ak, tk]) => ab[ak] - tb[tk])[0]!.toFixed(2),
+        fdy: +c.flush.map(([ak, tk]) => ab[ak] - tb[tk])[1]!.toFixed(2),
+        // 两直角边：一条沿面板边向内 8px（共边）、一条正交外探 8px 尖端（指向锚点侧）
+        legsOk:
+          rv !== null &&
+          ((near(others[0]!, c.edge) && near(others[1]!, c.tip)) ||
+            (near(others[0]!, c.tip) && near(others[1]!, c.edge))),
+        cornerZero: getComputedStyle(t)[c.cornerProp as 'borderTopLeftRadius'] === '0px',
       })
       host.removeAttribute('open')
       await new Promise((res) => setTimeout(res, 40))
@@ -3671,8 +3790,13 @@ test('tooltip merge 贴角 8 向：箭头菱心骑正确角点 + 该角 radius �
   })
   for (const r of results) {
     expect(r.actual, `${r.p} 中置视口不应翻转`).toBe(r.p)
-    expect(Math.abs(r.dx as number), `${r.p} 箭头菱心应骑在角点 X`).toBeLessThanOrEqual(0.7)
-    expect(Math.abs(r.dy as number), `${r.p} 箭头菱心应骑在角点 Y`).toBeLessThanOrEqual(0.7)
+    expect(r.transformNone, `${r.p} 箭头不旋转（直角三角形态）`).toBe(true)
+    expect(r.hasPolygon, `${r.p} clip-path 应裁出三角`).toBe(true)
+    expect(Math.abs(r.rdx as number), `${r.p} 三角直角点应与面板角点重合 X`).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(r.rdy as number), `${r.p} 三角直角点应与面板角点重合 Y`).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(r.fdx as number), `${r.p} 箭头盒应贴角（主轴外悬/侧边贴齐）X`).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(r.fdy as number), `${r.p} 箭头盒应贴角（主轴外悬/侧边贴齐）Y`).toBeLessThanOrEqual(0.5)
+    expect(r.legsOk, `${r.p} 直角边与面板边共边 + 尖端正交外探 8px 指向锚点侧`).toBe(true)
     expect(r.cornerZero, `${r.p} 对应角 radius 应置零`).toBe(true)
   }
 })
