@@ -4710,11 +4710,37 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
   const pop = await menu.evaluate((host) => {
     const sub = host.shadowRoot!.querySelector<HTMLElement>('.menu-more-sub')!
     const r = sub.getBoundingClientRect()
-    const kids = sub.querySelectorAll('[role="menuitem"]').length
+    const kids = sub.querySelectorAll('[role="menuitemradio"]').length
     if (getComputedStyle(sub).display === 'none' || r.height === 0) return { visible: false, kids }
     const hit = document.elementFromPoint(r.x + r.width / 2, r.y + Math.min(r.height / 2, 40))
     return { visible: hit === host, kids }
   })
   expect(pop.kids, '弹层应镜像全部收纳项').toBe(st.collapsedCount)
   expect(pop.visible, '收纳弹层应真实可见（不被裁剪）').toBe(true)
+  // 选中弹层内某项（弹层此时仍开着，勿再点「···」否则会收起）→ 条上无 ✓（项被收不可见），
+  // 「···」高亮（child-selected + 主色 + aria-current），弹层镜像项带 radio 选中态
+  // （选中项在溢出弹层里时由收纳指示器高亮表达）
+  await menu.locator('.menu-more-sub [role="menuitemradio"]').first().click()
+  await page.waitForTimeout(400) // 等 value 写回 → update → rAF 重建镜像
+  const sel = await menu.evaluate((host) => {
+    const root = host.shadowRoot!.querySelector('.menu')!
+    const more = root.querySelector<HTMLElement>('.menu-more')!
+    const firstMirror = root.querySelector<HTMLElement>('.menu-more-sub [role="menuitemradio"]')
+    const visibleChecked = [...root.querySelectorAll<HTMLElement>(':scope > [part="item"]:not(.menu-more)')]
+      .filter((t) => !t.hasAttribute('data-collapsed'))
+      .some((t) => t.getAttribute('aria-checked') === 'true')
+    return {
+      value: host.getAttribute('value'),
+      moreCls: more.className,
+      moreColor: getComputedStyle(more).color,
+      moreAriaCurrent: more.getAttribute('aria-current'),
+      mirrorChecked: firstMirror?.getAttribute('aria-checked'),
+      visibleChecked,
+    }
+  })
+  expect(sel.value, '选中值应写回').toBeTruthy()
+  expect(sel.visibleChecked, '条上可见项不应带 ✓（选中项被收纳）').toBe(false)
+  expect(sel.moreCls, '「···」应有 child-selected 高亮').toContain('child-selected')
+  expect(sel.moreAriaCurrent, '「···」应有 aria-current').toBe('true')
+  expect(sel.mirrorChecked, '镜像项应有选中态').toBe('true')
 })

@@ -206,6 +206,23 @@ const STYLE = `
 .menu-more[hidden] {
   display: none;
 }
+/* 选中项被收纳时「···」高亮：与条上选中项（aria-checked=true）同风格 */
+.menu-more.child-selected {
+  color: var(--oas-color-primary);
+  font-weight: 500;
+}
+/* 「···」弹层：右对齐其右缘（它在条末尾，向左开会超出容器右缘被 overflow-x:clip 裁掉）；
+   且重置 color/font-weight——child-selected 的高亮色只作用于「···」本身，不继承进弹层镜像项。
+   特异性须压过 :host([mode='horizontal']) .submenu-1（同为 (0,3,0)，源码序它更靠后会赢），
+   用 .menu-more > .menu-more-sub 加子代组合升权。
+   注意 color 必须用 --oas-color-text-primary（组件已有 token），
+   勿用 --oas-color-text（无此 token，var 未定义会回退成继承色） */
+:host([mode='horizontal']) .menu-more > .menu-more-sub {
+  left: auto;
+  right: 0;
+  color: var(--oas-color-text-primary);
+  font-weight: normal;
+}
 .arrow {
   display: inline-flex;
   align-items: center;
@@ -995,8 +1012,15 @@ export class OASMenu extends OASElement {
         const li = document.createElement('li')
         li.className = 'item'
         li.setAttribute('part', 'item')
-        li.setAttribute('role', 'menuitem')
+        // 镜像项与主流一致的 radio 语义：role=menuitemradio + aria-checked + 前导 ✓
+        // （选中收纳项后弹层内可见选中态，否则用户在弹层里得不到任何反馈）
+        li.setAttribute('role', 'menuitemradio')
+        li.setAttribute('aria-checked', String(value === this.selectedValueOf('')))
         li.setAttribute('data-value', value)
+        const check = document.createElement('span')
+        check.className = 'check'
+        check.textContent = '✓'
+        li.appendChild(check)
         const label = document.createElement('span')
         label.className = 'label'
         label.textContent = item.label ?? value
@@ -1009,6 +1033,14 @@ export class OASMenu extends OASElement {
         moreSub.appendChild(li)
       }
     }
+    // 「···」高亮：当前选中项被收纳时，收纳项显示选中态（选中项在溢出弹层里，
+    // 条上看不到 ✓，由收纳指示器本身高亮表达"选中项在其中"）+ aria-current 供读屏
+    const selectedInside =
+      hasOverflow && !!this.selectedValueOf('') &&
+      topItems.some((t) => t.hasAttribute('data-collapsed') && t.dataset.value === this.selectedValueOf(''))
+    moreItem.classList.toggle('child-selected', selectedInside)
+    if (selectedInside) moreItem.setAttribute('aria-current', 'true')
+    else moreItem.removeAttribute('aria-current')
   }
 
   private findItem(value: string): MenuItem | undefined {
