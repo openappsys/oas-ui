@@ -47,7 +47,7 @@
   </oas-space>
 </DemoBlock>
 
-`arrow-position="merge"` 让箭头与面板圆角融合成直角三角（仅 `*-start` / `*-end` placement 生效）。
+`arrow-position="merge"` 让箭头与面板角融合成直角三角尖（通用形态，仅 `*-start` / `*-end` placement 生效）：直角三角贴角、直角边与面板两边共线，尖端正交指向锚点所在侧。
 
 <DemoBlock title="箭头 merge 融合模式">
   <oas-tooltip content="箭头与面板角融合" placement="bottom-start" arrow-position="merge">
@@ -463,7 +463,7 @@ onMounted(() => {
 | `append-to` | 浮层挂载点：`body` 或 CSS 选择器。把浮层移入目标容器的独立 shadow（样式作用域保真），脱离 `overflow: hidden` / transform 等裁剪上下文；挂载期间 `::part(tip)` 无法从宿主穿透，定制走 CSS 变量或类选择器 | `string` | — |
 | `arrow` | 是否显示箭头（默认 true；`arrow="false"` 隐藏，箭头元素与 `::part(arrow)` 保留） | `string` | `true` |
 | `arrow-point-at-center` | 箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心） | `boolean` | — |
-| `arrow-position` | 箭头形态：`center`（默认，箭头在面板边缘居中）/ `merge`（仅 `*-start`/`*-end` placement 生效，箭头与面板圆角融合成直角三角） | `string` | `center` |
+| `arrow-position` | 箭头形态：`center`（默认，箭头在面板边缘居中）/ `merge`（仅 `*-start`/`*-end` placement 生效，直角三角与面板角共边融合：直角贴角点、直角边与面板两边共线，尖端正交指向锚点，通用形态） | `string` | `center` |
 | `auto-adjust-overflow` | 视口边缘自动翻转与避让（默认 true；`"false"` 关闭，保持声明 placement，可能溢出视口） | `string` | `true` |
 | `auto-close` | 打开后自动关闭时长（ms），`0` 或缺省不自动关闭 | — | — |
 | `close-delay` | 隐藏延迟（ms，默认 0）：mouseleave/focusout 后延迟关闭 | — | — |

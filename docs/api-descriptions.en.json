@@ -1722,7 +1722,7 @@
       "append-to": "Popup mount point: `body` or a CSS selector. Moves the popup into an isolated shadow inside the target container (styles stay scoped), escaping clipping contexts such as `overflow: hidden` / transform; while mounted, `::part(tip)` cannot pierce from the host — customize via CSS variables or class selectors",
       "arrow": "Whether to show the arrow (default true; `arrow=\"false\"` hides it, the element and `::part(arrow)` are kept)",
       "arrow-point-at-center": "Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance)",
-      "arrow-position": "Arrow shape: `center` (default, arrow centered on the panel edge) / `merge` (only for `*-start`/`*-end` placements; the arrow merges with the panel corner into a right triangle)",
+      "arrow-position": "Arrow shape: `center` (default, arrow centered on the panel edge) / `merge` (only for `*-start`/`*-end` placements; a right triangle merges flush with the panel corner — legs collinear with the panel edges, tip pointing orthogonally toward the anchor)",
       "auto-adjust-overflow": "Viewport-edge auto flip and avoidance (default true; `\"false\"` disables it, keeping the declared placement, which may overflow the viewport)",
       "auto-close": "Auto-close after opening (ms); `0` or absent disables it",
       "close-delay": "Hide delay (ms, default 0): close after mouseleave/focusout",
