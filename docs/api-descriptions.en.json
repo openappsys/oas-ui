@@ -871,6 +871,7 @@
   "oas-menu": {
     "attrs": {
       "collapsed": "Collapsed state (vertical only): icons only, submenus pop to the right",
+      "close-on-select": "Whether expanded submenus collapse after a leaf item is selected. Defaults by mode: inline side navigation keeps them open, flyout modes collapse; checkbox items never collapse on toggle",
       "items": "Menu items JSON (supports disabled / loading, icon, children submenus)",
       "mode": "Layout mode: `vertical` menu / `horizontal` top bar",
       "theme": "Local theme: `dark` uses dark tokens (independent of the global theme)",
