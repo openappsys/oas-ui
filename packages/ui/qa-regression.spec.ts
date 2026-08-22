@@ -4676,3 +4676,45 @@ test('menu 水平模式子菜单浮层不被裁剪——.menu 容器 overflow-x:
   expect(result!.overflowX, '容器应只裁横轴（clip）').toBe('clip')
   expect(result!.hitIsHost, `子菜单区域应命中菜单宿主（实际命中 ${result!.hitTag}）`).toBe(true)
 })
+
+test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项被误纳入收纳计算致自身 data-collapsed 隐藏）', async ({
+  page,
+}) => {
+  // 缺陷固化：syncOverflowCollapse 的顶层项选择器把「···」收纳项也算进数据项，
+  // 它排在末尾总被标记 data-collapsed（display:none）——溢出时项被裁掉但「···」永不出现。
+  // 另：测量前须复位 data-collapsed（display:none 宽为 0 会误判无溢出），且收纳项自身占宽须扣除。
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu')
+  const menu = page.locator('oas-menu[mode="horizontal"][style*="380px"]')
+  await menu.scrollIntoViewIfNeeded()
+  await page.waitForTimeout(400) // 等 rAF 测量
+  const st = await menu.evaluate((host) => {
+    const root = host.shadowRoot!.querySelector('.menu')!
+    const items = [...root.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]:not(.menu-more)')]
+    const more = root.querySelector<HTMLElement>('.menu-more')!
+    const visible = items.filter((t) => !t.hasAttribute('data-collapsed'))
+    const lastVisible = visible[visible.length - 1]
+    return {
+      collapsedCount: items.length - visible.length,
+      moreVisible: getComputedStyle(more).display !== 'none' && more.offsetWidth > 0,
+      // 末个可见项文本不被截断（scrollWidth 不超过盒宽）
+      lastItemClipped: lastVisible ? lastVisible.scrollWidth > lastVisible.offsetWidth + 1 : false,
+    }
+  })
+  expect(st.collapsedCount, '应有溢出项被收纳').toBeGreaterThan(0)
+  expect(st.moreVisible, '「···」收纳项应可见').toBe(true)
+  expect(st.lastItemClipped, '末个可见项不应截断').toBe(false)
+  // 点击「···」→ 镜像弹层真实可见（elementFromPoint 命中宿主）
+  await menu.locator('.menu-more').click()
+  await page.waitForTimeout(300)
+  const pop = await menu.evaluate((host) => {
+    const sub = host.shadowRoot!.querySelector<HTMLElement>('.menu-more-sub')!
+    const r = sub.getBoundingClientRect()
+    const kids = sub.querySelectorAll('[role="menuitem"]').length
+    if (getComputedStyle(sub).display === 'none' || r.height === 0) return { visible: false, kids }
+    const hit = document.elementFromPoint(r.x + r.width / 2, r.y + Math.min(r.height / 2, 40))
+    return { visible: hit === host, kids }
+  })
+  expect(pop.kids, '弹层应镜像全部收纳项').toBe(st.collapsedCount)
+  expect(pop.visible, '收纳弹层应真实可见（不被裁剪）').toBe(true)
+})
