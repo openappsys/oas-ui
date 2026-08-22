@@ -4643,3 +4643,36 @@ test('tabs more 模式（通用机制）：tab 全渲染不隐藏 + more 下拉�
   expect(result.active, '点选后应激活').toBeTruthy()
   expect(result.scrollLeft, '点选视口外项应滚动到可见区').toBeGreaterThan(scrollBefore)
 })
+
+test('menu 水平模式子菜单浮层不被裁剪——.menu 容器 overflow-x:clip（曾 overflow:hidden 双轴裁剪致浮层不可见）', async ({
+  page,
+}) => {
+  // 缺陷固化：水平收纳引入 .menu{overflow:hidden}，把向下浮出的一级子菜单（及「···」收纳弹层）
+  // 一并裁剪——display/rect 正常（机制断言全绿）但视觉不可见。用 elementFromPoint 验证真实命中。
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu')
+  const menu = page.locator('oas-menu[mode="horizontal"]').first()
+  await menu.scrollIntoViewIfNeeded()
+  // hover「产品」展开一级子菜单
+  const item = menu.locator('[data-value="products"]')
+  await item.hover()
+  await page.waitForTimeout(400)
+  const result = await item.evaluate((li) => {
+    const host = li.getRootNode() instanceof ShadowRoot ? (li.getRootNode() as ShadowRoot).host : null
+    const menuRoot = host?.shadowRoot?.querySelector('.menu') as HTMLElement | null
+    const sub = li.querySelector(':scope > .submenu') as HTMLElement | null
+    if (!host || !menuRoot || !sub) return null
+    const r = sub.getBoundingClientRect()
+    const hit = document.elementFromPoint(r.x + r.width / 2, r.y + Math.min(r.height / 2, 40))
+    return {
+      overflowX: getComputedStyle(menuRoot).overflowX,
+      subVisible: getComputedStyle(sub).display !== 'none' && r.height > 0,
+      hitIsHost: hit === host, // 子菜单可见时，其区域命中应落在 oas-menu（shadow 重定向到宿主）
+      hitTag: hit?.tagName ?? null,
+    }
+  })
+  expect(result, '子菜单应已展开').not.toBeNull()
+  expect(result!.subVisible, '子菜单应 display 可见').toBe(true)
+  expect(result!.overflowX, '容器应只裁横轴（clip）').toBe('clip')
+  expect(result!.hitIsHost, `子菜单区域应命中菜单宿主（实际命中 ${result!.hitTag}）`).toBe(true)
+})
