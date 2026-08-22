@@ -290,9 +290,12 @@ const STYLE = `
   flex-direction: row;
   align-items: center;
   padding: var(--oas-space-1);
-  /* 水平收纳前提：容器宽度受 host 约束（host 设宽度时 .menu 不超宽），超出项收进「···」 */
+  /* 水平收纳前提：容器宽度受 host 约束（host 设宽度时 .menu 不超宽），超出项收进「···」。
+     用 overflow-x: clip 而非 overflow:hidden——hidden 会双轴裁剪，把向下浮出的一级子菜单
+     （及「···」收纳弹层）一并裁掉（display/rect 正常但视觉不可见）；clip 只裁横轴、纵轴放行 */
   max-width: 100%;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 /* 水平模式一级子菜单向下浮出；二级及以上仍向右 */
 :host([mode='horizontal']) .submenu-1 {
