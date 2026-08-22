@@ -3824,6 +3824,90 @@
         "type": "string",
         "default": "true",
         "observed": true
+      },
+      {
+        "name": "trigger",
+        "type": "string",
+        "default": "hover focus",
+        "observed": true
+      },
+      {
+        "name": "open-delay",
+        "observed": true
+      },
+      {
+        "name": "close-delay",
+        "observed": true
+      },
+      {
+        "name": "touch-delay",
+        "observed": true
+      },
+      {
+        "name": "skip-delay-duration",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "interactive",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "append-to",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "offset",
+        "observed": true
+      },
+      {
+        "name": "skidding",
+        "observed": true
+      },
+      {
+        "name": "collision-padding",
+        "observed": true
+      },
+      {
+        "name": "color",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "max-width",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "fresh",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "auto-close",
+        "observed": true
+      },
+      {
+        "name": "trigger-keys",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "arrow-position",
+        "type": "string",
+        "default": "center",
+        "observed": true
       }
     ],
     "props": [],
@@ -3836,6 +3920,9 @@
     "slots": [
       {
         "name": ""
+      },
+      {
+        "name": "content"
       }
     ],
     "unresolved": []
@@ -3863,7 +3950,7 @@
       },
       {
         "name": "placement",
-        "type": "Placement",
+        "type": "string",
         "default": "top",
         "observed": true
       },
@@ -3904,6 +3991,118 @@
         "name": "auto-adjust-overflow",
         "type": "string",
         "default": "true",
+        "observed": true
+      },
+      {
+        "name": "trigger",
+        "type": "string",
+        "default": "click",
+        "observed": true
+      },
+      {
+        "name": "hover-delay",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "hover-hide-delay",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "open-delay",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "close-delay",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "width",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "offset",
+        "observed": true
+      },
+      {
+        "name": "initial-focus",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "append-to",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "collision-padding",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "fallback-placements",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "hide-when-detached",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "closable",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "color",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "modal",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "trigger-keys",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "fresh",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "auto-close",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "arrow-merge",
+        "type": "boolean",
         "observed": true
       }
     ],
@@ -4165,22 +4364,96 @@
       },
       {
         "name": "placement",
-        "type": "Placement",
+        "type": "string",
         "default": "top",
         "observed": true
       },
       {
         "name": "delay",
+        "observed": true
+      },
+      {
+        "name": "open-delay",
+        "observed": true
+      },
+      {
+        "name": "close-delay",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "arrow",
         "type": "string",
-        "default": "100",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "arrow-point-at-center",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "offset",
+        "observed": true
+      },
+      {
+        "name": "skidding",
+        "observed": true
+      },
+      {
+        "name": "width",
+        "observed": true
+      },
+      {
+        "name": "append-to",
+        "observed": true
+      },
+      {
+        "name": "collision-padding",
+        "observed": true
+      },
+      {
+        "name": "fallback-placements",
+        "observed": true
+      },
+      {
+        "name": "hide-when-detached",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "auto-adjust-overflow",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "group",
+        "observed": true
+      },
+      {
+        "name": "arrow-merge",
+        "type": "boolean",
         "observed": true
       }
     ],
     "props": [],
-    "events": [],
+    "events": [
+      {
+        "name": "oas-open-change",
+        "detail": "{ open }"
+      }
+    ],
     "slots": [
       {
         "name": ""
+      },
+      {
+        "name": "content"
       }
     ],
     "unresolved": []
@@ -4191,7 +4464,6 @@
     "attrs": [
       {
         "name": "items",
-        "type": "string",
         "default": "[]",
         "observed": true
       },
@@ -4199,16 +4471,130 @@
         "name": "open",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "value",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "selected",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "hotkey",
+        "type": "string",
+        "default": "mod+k",
+        "observed": true
+      },
+      {
+        "name": "should-filter",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "loading",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "limit",
+        "type": "string",
+        "default": "50",
+        "observed": true
+      },
+      {
+        "name": "recent",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "recent-storage-key",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "close-on-select",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "multiple",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "virtual",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "item-height",
+        "type": "string",
+        "default": "36",
+        "observed": true
       }
     ],
-    "props": [],
+    "props": [
+      {
+        "name": "items",
+        "type": "CommandItem[] | string",
+        "default": "[]"
+      },
+      {
+        "name": "filter",
+        "type": "((query: string, items: CommandItem[]) => CommandItem[]) | null"
+      },
+      {
+        "name": "query",
+        "type": "string",
+        "default": ""
+      }
+    ],
     "events": [
       {
-        "name": "oas-select",
+        "name": "oas-input",
+        "detail": "{ value: v }"
+      },
+      {
+        "name": "oas-open-change",
+        "detail": "{ open: true } | { open: false }"
+      },
+      {
+        "name": "oas-active",
         "detail": "{ value: item.value }"
+      },
+      {
+        "name": "oas-select",
+        "detail": "{ value: item.value } | { values: [...this.multiValues] }"
+      },
+      {
+        "name": "oas-page-change",
+        "detail": "{ title: item.label, depth: this.pages.length, direction: 'push' } | { title: page.title, depth: this.pages.length, direction: 'pop' }"
+      },
+      {
+        "name": "oas-view-change",
+        "detail": "{ view, title: item.label } | { view: '', title: '' }"
+      },
+      {
+        "name": "oas-change",
+        "detail": "{ values: [...this.multiValues] }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": "empty"
+      },
+      {
+        "name": "footer"
+      }
+    ],
     "unresolved": []
   },
   "oas-menubar": {
@@ -4226,13 +4612,76 @@
         "type": "string",
         "default": "",
         "observed": true
+      },
+      {
+        "name": "open",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "trigger",
+        "observed": true
+      },
+      {
+        "name": "loop",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "side",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "align",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "offset",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "show-arrow",
+        "observed": true
+      },
+      {
+        "name": "close-on-select",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "orientation",
+        "observed": true
+      },
+      {
+        "name": "breakpoint",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
     "events": [
       {
+        "name": "oas-open-change",
+        "detail": "{ value: openValue, open: openValue !== '' }"
+      },
+      {
         "name": "oas-select",
-        "detail": "{ value: item.value, kind: 'action' } | { value: item.value }"
+        "detail": "{ value: item.value, kind: 'action' } | { value: item.value, checked: checked.has(v) } | { value: item.value }"
       }
     ],
     "slots": [],
@@ -4247,10 +4696,60 @@
         "type": "string",
         "default": "[]",
         "observed": true
+      },
+      {
+        "name": "value",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "delay-duration",
+        "type": "string",
+        "default": "200",
+        "observed": true
+      },
+      {
+        "name": "skip-delay-duration",
+        "type": "string",
+        "default": "300",
+        "observed": true
+      },
+      {
+        "name": "orientation",
+        "type": "string",
+        "default": "horizontal",
+        "observed": true
+      },
+      {
+        "name": "columns",
+        "type": "string",
+        "default": "2",
+        "observed": true
+      },
+      {
+        "name": "backdrop",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "keep-mounted",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "arrow",
+        "type": "string",
+        "default": "true",
+        "observed": true
       }
     ],
     "props": [],
     "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value }"
+      },
       {
         "name": "oas-select",
         "detail": "{ value: item.value }"
@@ -4262,7 +4761,36 @@
   "oas-toolbar": {
     "className": "OASToolbar",
     "sourceFile": "packages/ui/src/floating/toolbar/oas-toolbar.ts",
-    "attrs": [],
+    "attrs": [
+      {
+        "name": "orientation",
+        "type": "string",
+        "default": "horizontal",
+        "observed": true
+      },
+      {
+        "name": "loop",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "focusable-when-disabled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "type": "string",
+        "default": "",
+        "observed": true
+      }
+    ],
     "props": [],
     "events": [],
     "slots": [
@@ -4270,6 +4798,113 @@
         "name": ""
       }
     ],
+    "unresolved": []
+  },
+  "oas-toolbar-toggle": {
+    "className": "OASToolbarToggle",
+    "sourceFile": "packages/ui/src/floating/toolbar/oas-toolbar-toggle.ts",
+    "attrs": [
+      {
+        "name": "items",
+        "default": "[]",
+        "observed": true
+      },
+      {
+        "name": "value",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "multiple",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "type": "string",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [
+      {
+        "name": "items",
+        "type": "ToolbarToggleItem[] | string",
+        "default": "[]"
+      },
+      {
+        "name": "selectedValues",
+        "type": "string[]"
+      },
+      {
+        "name": "currentValue",
+        "type": "string"
+      }
+    ],
+    "events": [
+      {
+        "name": "oas-change",
+        "detail": "{ value: next } | { value: item.value }"
+      }
+    ],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-toolbar-separator": {
+    "className": "OASToolbarSeparator",
+    "sourceFile": "packages/ui/src/floating/toolbar/oas-toolbar-separator.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-toolbar-input": {
+    "className": "OASToolbarInput",
+    "sourceFile": "packages/ui/src/floating/toolbar/oas-toolbar-input.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "placeholder",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "type": "string",
+        "default": "",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [
+      {
+        "name": "oas-input",
+        "detail": "{ value: this.input!.value }"
+      },
+      {
+        "name": "oas-change",
+        "detail": "{ value: this.input!.value }"
+      }
+    ],
+    "slots": [],
     "unresolved": []
   },
   "oas-config-provider": {
@@ -4429,13 +5064,60 @@
         "name": "ellipsis",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "items-before-collapse",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "items-after-collapse",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "collapse-text",
+        "type": "string",
+        "default": "…",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "type": "string",
+        "default": "medium",
+        "observed": true
+      },
+      {
+        "name": "max-item-width",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "color",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "variant",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "active-last",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [],
     "events": [
       {
         "name": "oas-select",
-        "detail": "{ value: slot.href } | { value: item.href }"
+        "detail": "{ value: item.href }"
       }
     ],
     "slots": [],
@@ -4461,15 +5143,110 @@
         "type": "string",
         "default": "32px",
         "observed": true
+      },
+      {
+        "name": "visibility-height",
+        "type": "string",
+        "default": "400",
+        "observed": true
+      },
+      {
+        "name": "target",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "duration",
+        "type": "string",
+        "default": "400",
+        "observed": true
+      },
+      {
+        "name": "easing",
+        "type": "string",
+        "default": "quart-out",
+        "observed": true
+      },
+      {
+        "name": "shape",
+        "type": "string",
+        "default": "circle",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "type": "string",
+        "default": "medium",
+        "observed": true
+      },
+      {
+        "name": "theme",
+        "type": "string",
+        "default": "light",
+        "observed": true
+      },
+      {
+        "name": "transition",
+        "type": "string",
+        "default": "fade",
+        "observed": true
+      },
+      {
+        "name": "show-progress",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "reverse",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "expand",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "position",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "append-to",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "tooltip",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "badge",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
     "events": [
       {
         "name": "oas-click"
+      },
+      {
+        "name": "oas-visibility-change",
+        "detail": "{ visible: shown }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
     "unresolved": []
   },
   "oas-anchor": {
@@ -4492,6 +5269,91 @@
         "type": "string",
         "default": "0",
         "observed": true
+      },
+      {
+        "name": "scroll-container",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "target-offset",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "direction",
+        "type": "string",
+        "default": "vertical",
+        "observed": true
+      },
+      {
+        "name": "affix",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "affix-offset",
+        "type": "string",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "bounds",
+        "type": "string",
+        "default": "5",
+        "observed": true
+      },
+      {
+        "name": "block",
+        "type": "ScrollBlock",
+        "default": "start",
+        "observed": true
+      },
+      {
+        "name": "hash",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "replace",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "duration",
+        "type": "string",
+        "default": "300",
+        "observed": true
+      },
+      {
+        "name": "size",
+        "type": "string",
+        "default": "medium",
+        "observed": true
+      },
+      {
+        "name": "variant",
+        "type": "string",
+        "default": "default",
+        "observed": true
+      },
+      {
+        "name": "internal-scrollable",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "animation",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "get-current-anchor",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [
@@ -4499,15 +5361,41 @@
         "name": "items",
         "type": "AnchorItem[] | string",
         "default": "[]"
+      },
+      {
+        "name": "scrollContainer",
+        "type": "HTMLElement | string | null"
+      },
+      {
+        "name": "getCurrentAnchor",
+        "type": "((activeHref: string) => string) | null"
       }
     ],
     "events": [
       {
         "name": "oas-change",
-        "detail": "{ href: item.href }"
+        "detail": "{ href, prevHref }"
       }
     ],
     "slots": [],
+    "unresolved": []
+  },
+  "oas-anchor-target": {
+    "className": "OASAnchorTarget",
+    "sourceFile": "packages/ui/src/navigation/anchor/oas-anchor.ts",
+    "attrs": [
+      {
+        "name": "id",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
     "unresolved": []
   },
   "oas-tour": {
@@ -4520,14 +5408,224 @@
         "observed": true
       },
       {
+        "name": "current",
+        "type": "string",
+        "default": "0",
+        "observed": true
+      },
+      {
         "name": "steps",
         "default": "[]",
         "observed": true
       },
       {
-        "name": "current",
+        "name": "placement",
+        "type": "TourPlacement",
+        "default": "bottom",
+        "observed": true
+      },
+      {
+        "name": "arrow",
         "type": "string",
-        "default": "0",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "mask",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "type",
+        "type": "string",
+        "default": "default",
+        "observed": true
+      },
+      {
+        "name": "gap",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "keyboard",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "show-close",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "close-icon",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "mask-click-behavior",
+        "type": "string",
+        "default": "close",
+        "observed": true
+      },
+      {
+        "name": "target-area-clickable",
+        "type": "string",
+        "default": "false",
+        "observed": true
+      },
+      {
+        "name": "disabled-interaction",
+        "observed": true
+      },
+      {
+        "name": "scroll-into-view-options",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "scroll-padding",
+        "observed": true
+      },
+      {
+        "name": "auto-reposition",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "progress-text",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "show-progress",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "show-bullets",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "indicators",
+        "type": "string",
+        "default": "dots",
+        "observed": true
+      },
+      {
+        "name": "hide-prev",
+        "observed": true
+      },
+      {
+        "name": "hide-skip",
+        "observed": true
+      },
+      {
+        "name": "hide-next",
+        "observed": true
+      },
+      {
+        "name": "hide-counter",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "next-button-props",
+        "observed": true
+      },
+      {
+        "name": "prev-button-props",
+        "observed": true
+      },
+      {
+        "name": "skip-button-props",
+        "observed": true
+      },
+      {
+        "name": "finish-button-props",
+        "observed": true
+      },
+      {
+        "name": "advance-on-click",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "mode",
+        "type": "string",
+        "default": "popup",
+        "observed": true
+      },
+      {
+        "name": "lock-scroll",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "close-on-press-escape",
+        "type": "string",
+        "default": "true",
+        "observed": true
+      },
+      {
+        "name": "wait-for-element",
+        "observed": true
+      },
+      {
+        "name": "skip-missing-element",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "z-index",
+        "observed": true
+      },
+      {
+        "name": "append-to",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "dont-show-again",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "storage-key",
+        "type": "string",
+        "default": "oas-tour-dismiss",
+        "observed": true
+      },
+      {
+        "name": "persist",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "typewriter",
+        "type": "string",
+        "default": "false",
+        "observed": true
+      },
+      {
+        "name": "typewriter-speed",
+        "type": "string",
+        "default": "20",
+        "observed": true
+      },
+      {
+        "name": "hints",
+        "type": "string",
+        "default": "[]",
         "observed": true
       }
     ],
@@ -4540,17 +5638,47 @@
     ],
     "events": [
       {
-        "name": "oas-finish"
-      },
-      {
         "name": "oas-step",
-        "detail": "{ index: this.current }"
+        "detail": "{ index, current: index, total: this._steps.length, next: index < this._steps.length - 1 ? index + 1 : null, prev: index > 0 ? index - 1 : null, }"
       },
       {
-        "name": "oas-cancel"
+        "name": "oas-skip",
+        "detail": "{ index: this.current, total: this._steps.length }"
+      },
+      {
+        "name": "oas-close",
+        "detail": "{ index: this.current, total: this._steps.length }"
+      },
+      {
+        "name": "oas-finish",
+        "detail": "{ index: this.current, total: this._steps.length }"
+      },
+      {
+        "name": "oas-cancel",
+        "detail": "{ index: this.current, total: this._steps.length, source }"
+      },
+      {
+        "name": "oas-dismiss",
+        "detail": "{}"
+      },
+      {
+        "name": "oas-destroy",
+        "detail": "{ index: this.current, total: this._steps.length }"
+      },
+      {
+        "name": "oas-highlight-start",
+        "detail": "{ index: this.current, total: this._steps.length }"
+      },
+      {
+        "name": "oas-highlight-end",
+        "detail": "{ index: this.current, total: this._steps.length }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": "cover"
+      }
+    ],
     "unresolved": []
   },
   "oas-bottom-navigation": {

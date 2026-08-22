@@ -94,18 +94,29 @@ describe('OASMenubar', () => {
     expect(openSubmenus(el).length).toBe(0)
   })
 
-  it('hover 顶级项展开子菜单', () => {
+  it('click 首开：无开态时 hover 顶级项不展开（需点击首开）', () => {
     const el = mount()
     topItems(el)[1]!.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(topItems(el)[1]!.getAttribute('aria-expanded')).toBe('false')
+    expect(openSubmenus(el).length).toBe(0)
+  })
+
+  it('click 首开：有开态后 hover 顶级项切换', () => {
+    const el = mount()
+    topItems(el)[0]!.click()
+    expect(openSubmenus(el).length).toBe(1)
+    topItems(el)[1]!.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(topItems(el)[0]!.getAttribute('aria-expanded')).toBe('false')
     expect(topItems(el)[1]!.getAttribute('aria-expanded')).toBe('true')
   })
 
-  it('鼠标移出菜单栏收起全部', () => {
+  it('鼠标移出菜单栏收起全部（click 首开后）', () => {
     const el = mount()
-    topItems(el)[0]!.dispatchEvent(new MouseEvent('mouseenter'))
+    topItems(el)[0]!.click()
     expect(openSubmenus(el).length).toBe(1)
     bar(el).dispatchEvent(new MouseEvent('mouseleave'))
     expect(openSubmenus(el).length).toBe(0)
+    expect(el.getAttribute('open')).toBe('')
   })
 
   it('方向键在顶级项间移动（active 高亮）', () => {
@@ -454,5 +465,379 @@ describe('OASMenubar', () => {
     const ev = new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true })
     document.dispatchEvent(ev)
     expect(ev.defaultPrevented).toBe(true)
+  })
+})
+
+// ===== A 档：checkbox 复选项（复用 oas-menu kind=checkbox） =====
+
+const CHECKBOX_ITEMS = JSON.stringify([
+  {
+    label: '文件',
+    value: 'file',
+    accessKey: 'f',
+    children: [
+      { label: '显示网格线', value: 'grid', kind: 'checkbox' },
+      { label: '自动换行', value: 'wrap', kind: 'checkbox' },
+      { type: 'divider' },
+      { label: '保存', value: 'save', kind: 'action' },
+      { label: '打开', value: 'open' },
+    ],
+  },
+])
+
+describe('checkbox 复选项（A 档）', () => {
+  it('渲染 menuitemcheckbox + aria-checked 由 value 数组驱动', () => {
+    const el = mount({ items: CHECKBOX_ITEMS, value: '["grid"]' })
+    const grid = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+    expect(grid.getAttribute('role')).toBe('menuitemcheckbox')
+    expect(grid.getAttribute('aria-checked')).toBe('true')
+    expect(grid.querySelector('.check--box')).not.toBeNull()
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="wrap"]')!
+    expect(wrap.getAttribute('aria-checked')).toBe('false')
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    expect(open.getAttribute('role')).toBe('menuitemradio')
+    expect(open.querySelector('.check--box')).toBeNull()
+  })
+
+  it('点击切换勾选：value 写回数组 + oas-select detail 带 checked', () => {
+    const el = mount({ items: CHECKBOX_ITEMS, value: '["grid"]' })
+    const details: unknown[] = []
+    el.addEventListener('oas-select', (e) => details.push((e as CustomEvent).detail))
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="wrap"]')!
+    wrap.click()
+    const v = JSON.parse(el.getAttribute('value')!)
+    expect(v).toEqual(['grid', 'wrap'])
+    expect(details).toEqual([{ value: 'wrap', checked: true }])
+    expect(wrap.getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('取消勾选从勾选集移除（checked: false）', () => {
+    const el = mount({ items: CHECKBOX_ITEMS, value: '["grid","wrap"]' })
+    const details: unknown[] = []
+    el.addEventListener('oas-select', (e) => details.push((e as CustomEvent).detail))
+    const grid = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+    grid.click()
+    const v = JSON.parse(el.getAttribute('value')!)
+    expect(v).toEqual(['wrap'])
+    expect(details).toEqual([{ value: 'grid', checked: false }])
+  })
+
+  it('勾选切换不收起子菜单（连续勾选场景，对比 radio 收起）', () => {
+    const el = mount({ items: CHECKBOX_ITEMS })
+    topItems(el)[0]!.click()
+    expect(openSubmenus(el).length).toBe(1)
+    const grid = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+    grid.click()
+    expect(openSubmenus(el).length).toBe(1)
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    open.click()
+    expect(openSubmenus(el).length).toBe(0)
+  })
+})
+
+// ===== A 档：typeahead 字符定位 =====
+
+describe('typeahead 字符定位（A 档）', () => {
+  it('顶级菜单行按字符跳转（startsWith）', () => {
+    const el = mount()
+    key(el, '编')
+    expect(topItems(el)[1]!.classList.contains('active')).toBe(true)
+  })
+
+  it('顶级菜单行连续字符缓冲匹配（"编辑" 命中 label 前缀）', () => {
+    const el = mount()
+    key(el, '编')
+    key(el, '辑')
+    expect(topItems(el)[1]!.classList.contains('active')).toBe(true)
+  })
+
+  it('子菜单内按字符跳转（startsWith 优先）', () => {
+    const el = mount()
+    key(el, 'ArrowDown') // 打开 文件
+    key(el, '打')
+    expect(subItems(el)[1]!.classList.contains('active')).toBe(true)
+  })
+
+  it('typeahead 跳过 disabled 项', () => {
+    const el = mount()
+    key(el, 'ArrowDown') // 打开 文件
+    key(el, '关') // 关闭(disabled) 被跳过，无命中则保持原项
+    expect(subItems(el)[0]!.classList.contains('active')).toBe(true)
+  })
+})
+
+// ===== A 档：打开项受控（open 属性 + oas-open-change） =====
+
+describe('打开项受控 open（A 档）', () => {
+  it('open 列入 observedAttributes', () => {
+    expect(OASMenubar.observedAttributes).toContain('open')
+  })
+
+  it('外部 setAttribute(open) 打开/切换/关闭顶级菜单', () => {
+    const el = mount()
+    el.setAttribute('open', 'file')
+    expect(topItems(el)[0]!.getAttribute('aria-expanded')).toBe('true')
+    expect(openSubmenus(el).length).toBe(1)
+    el.setAttribute('open', 'edit')
+    expect(topItems(el)[1]!.getAttribute('aria-expanded')).toBe('true')
+    expect(topItems(el)[0]!.getAttribute('aria-expanded')).toBe('false')
+    el.setAttribute('open', '')
+    expect(openSubmenus(el).length).toBe(0)
+  })
+
+  it('内部点击写回 open 属性并派发 oas-open-change（detail.value + open）', () => {
+    const el = mount()
+    const details: unknown[] = []
+    el.addEventListener('oas-open-change', (e) => details.push((e as CustomEvent).detail))
+    topItems(el)[1]!.click()
+    expect(el.getAttribute('open')).toBe('edit')
+    expect(details).toEqual([{ value: 'edit', open: true }])
+    topItems(el)[1]!.click()
+    expect(el.getAttribute('open')).toBe('')
+    expect(details).toEqual([
+      { value: 'edit', open: true },
+      { value: '', open: false },
+    ])
+  })
+
+  it('hover 切换顶级菜单也派发 oas-open-change', () => {
+    const el = mount()
+    const details: unknown[] = []
+    el.addEventListener('oas-open-change', (e) => details.push((e as CustomEvent).detail))
+    topItems(el)[0]!.click()
+    topItems(el)[1]!.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(details.at(-1)).toEqual({ value: 'edit', open: true })
+  })
+
+  it('外部 setAttribute(open) 也派发 oas-open-change（库内受控约定，同 dropdown）', () => {
+    const el = mount()
+    const details: unknown[] = []
+    el.addEventListener('oas-open-change', (e) => details.push((e as CustomEvent).detail))
+    el.setAttribute('open', 'file')
+    expect(details).toEqual([{ value: 'file', open: true }])
+  })
+})
+
+// ===== A 档：trigger 配置 =====
+
+describe('trigger 触发方式（B 档）', () => {
+  it('trigger="hover" 保持 hover 直开（无需先点击）', () => {
+    const el = mount({ trigger: 'hover' })
+    topItems(el)[1]!.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(topItems(el)[1]!.getAttribute('aria-expanded')).toBe('true')
+    expect(openSubmenus(el).length).toBe(1)
+  })
+})
+
+// ===== A 档：图标（顶级项 + 子项 icon） =====
+
+describe('图标 icon（A 档）', () => {
+  const ICON_ITEMS = JSON.stringify([
+    {
+      label: '文件',
+      value: 'file',
+      icon: 'gear',
+      children: [{ label: '新建', value: 'new', icon: 'plus' }],
+    },
+  ])
+  it('顶级项与子项渲染 SVG 图标', () => {
+    const el = mount({ items: ICON_ITEMS })
+    const top = topItems(el)[0]!
+    expect(top.querySelector('svg')).not.toBeNull()
+    const sub = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
+    expect(sub.querySelector('svg')).not.toBeNull()
+  })
+})
+
+// ===== B 档：loop 循环开关 =====
+
+describe('loop 循环导航开关（B 档）', () => {
+  it('loop="false"：顶级移动至边界停止不循环', () => {
+    const el = mount({ loop: 'false' })
+    key(el, 'ArrowLeft') // 已在 0，不循环到末尾
+    expect(topItems(el)[0]!.classList.contains('active')).toBe(true)
+    key(el, 'ArrowRight')
+    key(el, 'ArrowRight')
+    expect(topItems(el)[2]!.classList.contains('active')).toBe(true)
+    key(el, 'ArrowRight') // 边界停止
+    expect(topItems(el)[2]!.classList.contains('active')).toBe(true)
+  })
+
+  it('缺省 loop 循环（现有行为保持）', () => {
+    const el = mount()
+    key(el, 'ArrowLeft') // 从 0 循环到末尾
+    expect(topItems(el)[2]!.classList.contains('active')).toBe(true)
+  })
+})
+
+// ===== B 档：整栏 disabled =====
+
+describe('整栏 disabled（B 档）', () => {
+  const DISABLED_SHORTCUT_ITEMS = JSON.stringify([
+    {
+      label: '文件',
+      value: 'file',
+      accessKey: 'f',
+      children: [
+        { label: '新建', value: 'new', shortcut: 'Ctrl+N' },
+        { label: '保存', value: 'save', shortcut: 'Ctrl+S', kind: 'action' },
+      ],
+    },
+  ])
+
+  it('disabled：点击/键盘/shortcut/accessKey 全部拦截 + aria-disabled', () => {
+    const el = mount({ items: DISABLED_SHORTCUT_ITEMS, disabled: '' })
+    const events: unknown[] = []
+    el.addEventListener('oas-select', (e) => events.push((e as CustomEvent).detail))
+    expect(bar(el).getAttribute('aria-disabled')).toBe('true')
+    topItems(el)[0]!.click()
+    expect(openSubmenus(el).length).toBe(0)
+    key(el, 'ArrowRight')
+    // 仅 1 个顶级项：键盘不移动、无新项获得 active
+    expect(topItems(el).length).toBe(1)
+    expect(topItems(el)[0]!.classList.contains('active')).toBe(true)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'n', ctrlKey: true }))
+    expect(events).toEqual([])
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', altKey: true }))
+    expect(openSubmenus(el).length).toBe(0)
+  })
+})
+
+// ===== B 档：弹出定位 side/align/offset =====
+
+describe('弹出定位 side/align/offset（B 档）', () => {
+  function firstSub(el: OASMenubar): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"][data-parent="file"]')!
+  }
+
+  it('side/align 类 + offset 变量应用到一级下拉', () => {
+    const el = mount({ side: 'top', align: 'end', offset: '8' })
+    topItems(el)[0]!.click()
+    const sub = firstSub(el)
+    expect(sub.classList.contains('side-top')).toBe(true)
+    expect(sub.classList.contains('align-end')).toBe(true)
+    expect(sub.style.getPropertyValue('--popup-offset')).toBe('8px')
+  })
+
+  it('缺省 side=bottom align=start（水平）', () => {
+    const el = mount()
+    topItems(el)[0]!.click()
+    const sub = firstSub(el)
+    expect(sub.classList.contains('side-bottom')).toBe(true)
+    expect(sub.classList.contains('align-start')).toBe(true)
+  })
+
+  it('orientation="vertical" 缺省 side=right', () => {
+    const el = mount({ orientation: 'vertical' })
+    topItems(el)[0]!.click()
+    expect(firstSub(el).classList.contains('side-right')).toBe(true)
+  })
+})
+
+// ===== B 档：close-on-select 勾选不收起策略 =====
+
+describe('close-on-select（B 档）', () => {
+  it('缺省选中收起（桌面菜单栏共识）', () => {
+    const el = mount()
+    topItems(el)[0]!.click()
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    open.click()
+    expect(openSubmenus(el).length).toBe(0)
+  })
+
+  it('close-on-select="false"：选中叶子后子菜单保持展开（连选场景）', () => {
+    const el = mount({ 'close-on-select': 'false' })
+    topItems(el)[0]!.click()
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    open.click()
+    expect(openSubmenus(el).length).toBe(1)
+    const newItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
+    newItem.click()
+    expect(openSubmenus(el).length).toBe(1)
+  })
+})
+
+// ===== C 档：竖排 orientation =====
+
+describe('orientation="vertical"（C 档）', () => {
+  it('bar 竖排 + 键盘上下移动顶级、右键开子菜单、左键返回', () => {
+    const el = mount({ orientation: 'vertical' })
+    expect(bar(el).classList.contains('vertical')).toBe(true)
+    key(el, 'ArrowDown')
+    expect(topItems(el)[1]!.classList.contains('active')).toBe(true)
+    key(el, 'ArrowRight') // 打开 编辑 子菜单
+    expect(topItems(el)[1]!.getAttribute('aria-expanded')).toBe('true')
+    expect(el.shadowRoot!.activeElement!.textContent).toContain('撤销')
+    key(el, 'ArrowLeft') // 返回顶级
+    expect(openSubmenus(el).length).toBe(0)
+    expect(el.shadowRoot!.activeElement).toBe(topItems(el)[1])
+  })
+})
+
+// ===== C 档：breakpoint 移动端汉堡收纳 =====
+
+describe('breakpoint 移动端汉堡（C 档）', () => {
+  const origMq = window.matchMedia
+  afterEach(() => {
+    window.matchMedia = origMq
+  })
+
+  function stubMatchMedia(matches: boolean): void {
+    window.matchMedia = ((query: string) => ({
+      matches,
+      media: query,
+      onchange: null,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent: () => true,
+    })) as unknown as typeof window.matchMedia
+  }
+
+  it('窄宽（<=breakpoint）：bar 隐藏、汉堡按钮渲染，点击展开汉堡菜单', () => {
+    stubMatchMedia(true)
+    const el = mount({ breakpoint: '600' })
+    expect(el.classList.contains('oas-menubar--mobile')).toBe(true)
+    expect(bar(el).classList.contains('mobile')).toBe(true)
+    const burger = el.shadowRoot!.querySelector<HTMLElement>('[part="hamburger"]')!
+    expect(burger).not.toBeNull()
+    burger.click()
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('.hamburger-panel')!
+    expect(panel.classList.contains('open')).toBe(true)
+    expect(burger.getAttribute('aria-expanded')).toBe('true')
+    expect(panel.querySelectorAll<HTMLElement>('[part="item"]').length).toBeGreaterThan(0)
+    // 点击叶子项 → oas-select + 面板收起
+    let detail: unknown
+    el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    panel.querySelector<HTMLElement>('[part="item"][data-value="new"]')!.click()
+    expect(detail).toEqual({ value: 'new' })
+    expect(panel.classList.contains('open')).toBe(false)
+  })
+
+  it('宽屏（>breakpoint）：汉堡隐藏、正常 bar', () => {
+    stubMatchMedia(false)
+    const el = mount({ breakpoint: '600' })
+    expect(el.classList.contains('oas-menubar--mobile')).toBe(false)
+    expect(bar(el).classList.contains('mobile')).toBe(false)
+  })
+})
+
+// ===== C 档：show-arrow 与方向感知动画 =====
+
+describe('show-arrow 与方向感知动画（C 档）', () => {
+  it('样式表含箭头规则、pop keyframes 与 reduced-motion 降级', () => {
+    const el = mount({ 'show-arrow': '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/show-arrow/)
+    expect(css).toMatch(/@keyframes oas-menubar-pop/)
+    expect(css).toMatch(/prefers-reduced-motion/)
+  })
+
+  it('展开时按弹出方向设置 transform-origin（方向感知）', () => {
+    const el = mount()
+    topItems(el)[0]!.click()
+    const sub = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"][data-parent="file"]')!
+    expect(sub.style.transformOrigin).toContain('top') // side=bottom → 顶部开口
   })
 })

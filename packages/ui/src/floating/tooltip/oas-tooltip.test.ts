@@ -482,4 +482,686 @@ describe('OAStooltip', () => {
     // 不避让：按声明 placement 数学放置（可能溢出视口底缘）
     expect(t.style.top).toBe('800px') // 792 + 8
   })
+
+  // ================= A1 placement 12 向 =================
+
+  it('placement 12 向：top-start 面板左缘对齐锚点左缘，data-placement 保留', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'top-start' })
+    const t = tip(el)
+    stubRect(t, { left: 0, top: 0, width: 120, height: 36 })
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 200, top: 300, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.getAttribute('data-placement')).toBe('top-start')
+    expect(t.style.left).toBe('200px') // 锚点左缘
+    expect(t.style.top).toBe('256px') // 300 - 36 - 8
+  })
+
+  it('placement 12 向：bottom-end 面板右缘对齐锚点右缘', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'bottom-end' })
+    const t = tip(el)
+    stubRect(t, { left: 0, top: 0, width: 120, height: 36 })
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 200, top: 300, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.getAttribute('data-placement')).toBe('bottom-end')
+    expect(t.style.left).toBe('144px') // 264 - 120（锚点右缘对齐面板右缘）
+    expect(t.style.top).toBe('340px') // 332 + 8
+  })
+
+  it('placement 12 向：left-start 面板顶缘对齐锚点顶缘', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'left-start' })
+    const t = tip(el)
+    stubRect(t, { left: 0, top: 0, width: 120, height: 36 })
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 200, top: 300, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.getAttribute('data-placement')).toBe('left-start')
+    expect(t.style.top).toBe('300px') // 锚点顶缘
+    expect(t.style.left).toBe('72px') // 200 - 120 - 8
+  })
+
+  it('placement 12 向：right-end 空间不足时翻转保留 end 对齐 → left-end', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'right-end' })
+    const t = tip(el)
+    stubRect(t, { left: 0, top: 0, width: 120, height: 36 })
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 1200, top: 300, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.getAttribute('data-placement')).toBe('left-end')
+    expect(t.style.top).toBe('296px') // 332 - 36（end 对齐保留）
+  })
+
+  // ================= A2 trigger 触发方式 =================
+
+  it('trigger="click"：点击打开，再点关闭', async () => {
+    const el = mount({ trigger: 'click', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('trigger 多选（"hover click"）：hover 与 click 都生效', async () => {
+    const el = mount({ trigger: 'hover click', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+  })
+
+  it('trigger="manual"：hover/click 都不触发，仅受控 open', async () => {
+    const el = mount({ trigger: 'manual', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    btn.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+  })
+
+  it('trigger 不含 focus：focusin 不触发', async () => {
+    const el = mount({ trigger: 'hover', content: 'x' })
+    await Promise.resolve()
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
+      new FocusEvent('focusin', { bubbles: true }),
+    )
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('trigger 不含 hover：mouseenter 不触发', async () => {
+    const el = mount({ trigger: 'focus', content: 'x' })
+    await Promise.resolve()
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: true }),
+    )
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('trigger 默认 hover+focus：mouseenter 触发（向后兼容）', async () => {
+    const el = mount({ content: 'x' })
+    await Promise.resolve()
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: true }),
+    )
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+  })
+
+  // ================= A4 open-delay / close-delay =================
+
+  it('open-delay="100"：mouseenter 后 100ms 才打开', async () => {
+    vi.useFakeTimers()
+    // skip-delay-duration="0" 隔离全局 skipDelay 状态（模块级 lastCloseAt 跨测试残留）
+    const el = mount({
+      trigger: 'hover',
+      'open-delay': '100',
+      'skip-delay-duration': '0',
+      content: 'x',
+    })
+    await Promise.resolve()
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: true }),
+    )
+    vi.advanceTimersByTime(99)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+    vi.advanceTimersByTime(2)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+    vi.useRealTimers()
+  })
+
+  it('close-delay="100"：mouseleave 后 100ms 才关闭', async () => {
+    vi.useFakeTimers()
+    const el = mount({ trigger: 'hover', 'close-delay': '100', content: 'x' })
+    await Promise.resolve()
+    el.setAttribute('open', '')
+    vi.advanceTimersByTime(0)
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    vi.advanceTimersByTime(99)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+    vi.advanceTimersByTime(2)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+    vi.useRealTimers()
+  })
+
+  it('open-delay 期间 mouseleave：取消打开（不残留下一个定时器）', async () => {
+    vi.useFakeTimers()
+    const el = mount({ trigger: 'hover', 'open-delay': '100', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    btn.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    vi.advanceTimersByTime(200)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+    vi.useRealTimers()
+  })
+
+  // ================= A5 富内容 content 插槽 =================
+
+  it('slot="content" 富内容：优先于 content 属性显示', async () => {
+    const el = mount({ open: '', content: '属性文本', placement: 'top' })
+    const rich = document.createElement('strong')
+    rich.slot = 'content'
+    rich.textContent = '富内容'
+    el.appendChild(rich)
+    await Promise.resolve()
+    const t = tip(el)
+    // 插槽有内容 → 属性文本容器隐藏，插槽分配到富内容节点
+    expect(t.querySelector<HTMLElement>('.tip-content')!.hidden).toBe(true)
+    const slot = t.querySelector<HTMLSlotElement>('slot[name="content"]')!
+    expect(slot.assignedNodes().length).toBe(1)
+    expect(slot.assignedNodes()[0]!.textContent).toBe('富内容')
+  })
+
+  it('无 content 插槽：content 属性文本显示', async () => {
+    const el = mount({ open: '', content: '纯文本', placement: 'top' })
+    await Promise.resolve()
+    const t = tip(el)
+    expect(t.querySelector<HTMLElement>('.tip-content')!.hidden).toBe(false)
+    expect(t.querySelector<HTMLElement>('.tip-content')!.textContent).toContain('纯文本')
+  })
+
+  it('插槽富内容移除后回退 content 属性文本', async () => {
+    const el = mount({ open: '', content: '属性文本' })
+    const rich = document.createElement('em')
+    rich.slot = 'content'
+    rich.textContent = '富'
+    el.appendChild(rich)
+    await Promise.resolve()
+    expect(tip(el).querySelector<HTMLElement>('.tip-content')!.hidden).toBe(true)
+    rich.remove()
+    await Promise.resolve()
+    const t = tip(el)
+    expect(t.querySelector<HTMLElement>('.tip-content')!.hidden).toBe(false)
+    expect(t.querySelector<HTMLElement>('.tip-content')!.textContent).toContain('属性文本')
+  })
+
+  // ================= A6 Esc 关闭 + aria-describedby =================
+
+  it('Esc 关闭打开中的 tooltip（document keydown）', async () => {
+    const el = mount({ open: '', content: 'x' })
+    await Promise.resolve()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await Promise.resolve()
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('Esc 关闭后触发元素焦点还原', async () => {
+    const el = mount({ open: '', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.focus = vi.fn()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await Promise.resolve()
+    expect(btn.focus).toHaveBeenCalled()
+  })
+
+  it('aria-describedby：打开时触发元素关联 tip id（role=tooltip）', async () => {
+    const el = mount({ open: '', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    const tid = btn.getAttribute('aria-describedby')
+    expect(tid).toBeTruthy()
+    const tipEl = el.shadowRoot!.getElementById(tid!)
+    expect(tipEl).not.toBeNull()
+    expect(tipEl!.getAttribute('role')).toBe('tooltip')
+  })
+
+  it('关闭时移除 aria-describedby', async () => {
+    const el = mount({ content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    expect(btn.getAttribute('aria-describedby')).toBeTruthy()
+    el.removeAttribute('open')
+    await Promise.resolve()
+    expect(btn.getAttribute('aria-describedby')).toBeNull()
+  })
+
+  it('virtual 模式：无触发元素，不设 aria-describedby', async () => {
+    const el = mountVirtual({ virtual: '', 'virtual-x': '100', 'virtual-y': '100', open: '', content: 'x' })
+    await Promise.resolve()
+    expect(el.getAttribute('aria-describedby')).toBeNull()
+  })
+
+  // ================= A7 max-width =================
+
+  it('max-width 属性：覆盖默认 240px（token 开口）', async () => {
+    const el = mount({ open: '', content: 'x', 'max-width': '320' })
+    await Promise.resolve()
+    expect(tip(el).style.maxWidth).toBe('320px')
+  })
+
+  it('max-width 移除后回落（清空内联）', async () => {
+    const el = mount({ open: '', content: 'x', 'max-width': '320' })
+    await Promise.resolve()
+    el.removeAttribute('max-width')
+    await Promise.resolve()
+    expect(tip(el).style.maxWidth).toBe('')
+  })
+
+  // ================= A8 disabled =================
+
+  it('disabled：hover 不触发', async () => {
+    const el = mount({ disabled: '', content: 'x' })
+    await Promise.resolve()
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: true }),
+    )
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('disabled：受控 open 也不显示', async () => {
+    const el = mount({ disabled: '', open: '', content: 'x' })
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('移除 disabled 后恢复触发', async () => {
+    const el = mount({ disabled: '', content: 'x' })
+    await Promise.resolve()
+    el.removeAttribute('disabled')
+    await Promise.resolve()
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: true }),
+    )
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+  })
+
+  // ================= B1 动画 =================
+
+  it('打开时 tip 进入显示态（aria-hidden=false + 动画 class）', async () => {
+    const el = mount({ open: '', content: 'x' })
+    await Promise.resolve()
+    const t = tip(el)
+    expect(t.getAttribute('aria-hidden')).toBe('false')
+    expect(t.classList.contains('tip-enter')).toBe(true)
+  })
+
+  it('方向感知动画：transform-origin 随 data-placement 设置（top → bottom center）', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'top' })
+    const t = tip(el)
+    stubRect(t, { left: 0, top: 0, width: 120, height: 36 })
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 200, top: 300, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.getAttribute('data-placement')).toBe('top')
+    // 动画机制通过 CSS 规则驱动（transform-origin 由 data-placement 选择器控制），
+    // happy-dom 不解析 CSS 规则 → 断言 STYLE 文本包含方向感知规则
+    const styleText = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(styleText).toContain("[data-placement^='top']")
+  })
+
+  // ================= B2 延迟组 / 全局单例（skipDelay） =================
+
+  it('skip-delay-duration：上次关闭后立即打开另一个 → 跳过 open-delay', async () => {
+    vi.useFakeTimers()
+    const a = mount({ trigger: 'hover', content: 'a' })
+    const btnA = a.querySelector('button')!
+    btnA.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    vi.advanceTimersByTime(0)
+    btnA.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    vi.advanceTimersByTime(0)
+    // 关闭后立刻 hover 下一个（open-delay=200 应被跳过）
+    const b = mount({ trigger: 'hover', 'open-delay': '200', content: 'b' })
+    ;(b.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: true }),
+    )
+    vi.advanceTimersByTime(0)
+    expect(tip(b).getAttribute('aria-hidden')).toBe('false')
+    vi.useRealTimers()
+  })
+
+  it('超过 skip-delay-duration 后恢复 open-delay', async () => {
+    vi.useFakeTimers()
+    const a = mount({ trigger: 'hover', content: 'a' })
+    const btnA = a.querySelector('button')!
+    btnA.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    vi.advanceTimersByTime(0)
+    btnA.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    vi.advanceTimersByTime(0)
+    // 等待超过 skip-delay（默认 300ms）
+    vi.advanceTimersByTime(400)
+    const b = mount({ trigger: 'hover', 'open-delay': '200', content: 'b' })
+    ;(b.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: true }),
+    )
+    vi.advanceTimersByTime(199)
+    expect(tip(b).getAttribute('aria-hidden')).toBe('true')
+    vi.advanceTimersByTime(2)
+    expect(tip(b).getAttribute('aria-hidden')).toBe('false')
+    vi.useRealTimers()
+  })
+
+  it('skip-delay-duration="0"：关闭跳过延迟组（每次都要延迟）', async () => {
+    vi.useFakeTimers()
+    const a = mount({ trigger: 'hover', content: 'a' })
+    const btnA = a.querySelector('button')!
+    btnA.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    vi.advanceTimersByTime(0)
+    btnA.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    vi.advanceTimersByTime(0)
+    const b = mount({
+      trigger: 'hover',
+      'open-delay': '200',
+      'skip-delay-duration': '0',
+      content: 'b',
+    })
+    ;(b.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: true }),
+    )
+    vi.advanceTimersByTime(0)
+    expect(tip(b).getAttribute('aria-hidden')).toBe('true')
+    vi.advanceTimersByTime(200)
+    expect(tip(b).getAttribute('aria-hidden')).toBe('false')
+    vi.useRealTimers()
+  })
+
+  // ================= B3 interactive 可悬停浮层 =================
+
+  it('interactive：tip 自身可悬停（mouseenter 取消关闭，mouseleave 排程关闭）', async () => {
+    vi.useFakeTimers()
+    const el = mount({ interactive: '', 'close-delay': '100', content: 'x' })
+    await Promise.resolve()
+    el.setAttribute('open', '')
+    vi.advanceTimersByTime(0)
+    // 鼠标从触发元素移入浮层
+    const t = tip(el)
+    t.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    vi.advanceTimersByTime(200) // 超过 close-delay 仍保持打开
+    expect(t.getAttribute('aria-hidden')).toBe('false')
+    t.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    vi.advanceTimersByTime(100)
+    expect(t.getAttribute('aria-hidden')).toBe('true')
+    vi.useRealTimers()
+  })
+
+  // ================= B4 contextmenu 右键触发 =================
+
+  it('trigger 含 contextmenu：右键打开（不阻止系统菜单）', async () => {
+    const el = mount({ trigger: 'contextmenu', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+  })
+
+  it('trigger 不含 contextmenu：右键不打开', async () => {
+    const el = mount({ trigger: 'hover', content: 'x' })
+    await Promise.resolve()
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, cancelable: true }),
+    )
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+  })
+
+  // ================= B5 touch 长按触发 =================
+
+  it('trigger 含 touch：pointerdown 长按后打开（touch-delay 默认 500ms）', async () => {
+    vi.useFakeTimers()
+    const el = mount({ trigger: 'touch', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    vi.advanceTimersByTime(499)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+    vi.advanceTimersByTime(2)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+    vi.useRealTimers()
+  })
+
+  it('touch 长按中途 pointerup 取消打开', async () => {
+    vi.useFakeTimers()
+    const el = mount({ trigger: 'touch', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    btn.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
+    vi.advanceTimersByTime(600)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+    vi.useRealTimers()
+  })
+
+  // ================= B6 append-to 挂载点 =================
+
+  it('append-to="body"：tip 移入 document.body 的 portal host（样式保真）', async () => {
+    const el = mount({ open: '', content: 'x', 'append-to': 'body' })
+    await Promise.resolve()
+    const host = document.body.querySelector<HTMLElement>('[data-oas-tooltip-portal]')
+    expect(host).not.toBeNull()
+    const t = host!.shadowRoot!.querySelector('[part="tip"]')!
+    expect(t).not.toBeNull()
+    expect(t.getAttribute('aria-hidden')).toBe('false')
+    // 原 shadow 内不再包含 tip（已移出）
+    expect(el.shadowRoot!.querySelector('[part="tip"]')).toBeNull()
+  })
+
+  it('append-to="#target"：tip 移入指定容器的 portal host', async () => {
+    const target = document.createElement('div')
+    target.id = 'tt-target'
+    document.body.appendChild(target)
+    const el = mount({ open: '', content: 'x', 'append-to': '#tt-target' })
+    await Promise.resolve()
+    const host = target.querySelector<HTMLElement>('[data-oas-tooltip-portal]')
+    expect(host).not.toBeNull()
+    const t = host!.shadowRoot!.querySelector('[part="tip"]')!
+    expect(t).not.toBeNull()
+  })
+
+  it('append-to 动态移除：tip 移回原 shadow，portal host 销毁', async () => {
+    const el = mount({ open: '', content: 'x', 'append-to': 'body' })
+    await Promise.resolve()
+    el.removeAttribute('append-to')
+    await Promise.resolve()
+    expect(el.shadowRoot!.querySelector('[part="tip"]')).not.toBeNull()
+    expect(document.body.querySelector('[data-oas-tooltip-portal]')).toBeNull()
+  })
+
+  it('无 append-to：tip 留在原 shadow（默认挂载）', async () => {
+    const el = mount({ open: '', content: 'x' })
+    await Promise.resolve()
+    expect(el.shadowRoot!.querySelector('[part="tip"]')).not.toBeNull()
+    expect(document.body.querySelector('[data-oas-tooltip-portal]')).toBeNull()
+  })
+
+  // ================= B9 双轴偏移 offset / skidding =================
+
+  it('offset="16"：主轴距离 16px（默认 8）', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'bottom', offset: '16' })
+    const t = tip(el)
+    stubRect(t, { left: 0, top: 0, width: 120, height: 36 })
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 200, top: 300, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.style.top).toBe('348px') // 332 + 16
+  })
+
+  it('skidding="10"：交叉轴偏移 +10px', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'bottom', skidding: '10' })
+    const t = tip(el)
+    stubRect(t, { left: 0, top: 0, width: 120, height: 36 })
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 200, top: 300, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    // 底部居中 x = 锚点中心 232 - popup 半宽 60 = 172 → +10 = 182
+    expect(t.style.left).toBe('182px')
+  })
+
+  // ================= B10 颜色变体（token） =================
+
+  it('color="primary"：tip 背景走 primary token（含暗色变体）', async () => {
+    const el = mount({ open: '', content: 'x', color: 'primary' })
+    await Promise.resolve()
+    const t = tip(el)
+    expect(t.style.getPropertyValue('--oas-tooltip-bg')).toBe('var(--oas-color-primary)')
+    expect(t.style.getPropertyValue('--oas-tooltip-color')).toBe('var(--oas-color-text-on-primary)')
+  })
+
+  it('color="success"：语义色映射 token', async () => {
+    const el = mount({ open: '', content: 'x', color: 'success' })
+    await Promise.resolve()
+    expect(tip(el).style.getPropertyValue('--oas-tooltip-bg')).toBe('var(--oas-color-success)')
+  })
+
+  it('color 移除后回落到默认（清空变量）', async () => {
+    const el = mount({ open: '', content: 'x', color: 'primary' })
+    await Promise.resolve()
+    el.removeAttribute('color')
+    await Promise.resolve()
+    expect(tip(el).style.getPropertyValue('--oas-tooltip-bg')).toBe('')
+  })
+
+  // ================= B12 禁用触发元素兼容（span 包裹） =================
+
+  it('触发元素为 disabled button：hover 不派发 → 绑定宿主仍然生效', async () => {
+    const el = new OAStooltip()
+    el.setAttribute('content', 'x')
+    el.innerHTML = '<button disabled>不可用</button>'
+    document.body.appendChild(el)
+    await Promise.resolve()
+    // disabled button 不派发 mouse 事件 → 在宿主（oas-tooltip）上派发 pointerenter
+    el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: false }))
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+  })
+
+  it('span 包裹 disabled button：hover span 即触发', async () => {
+    const el = new OAStooltip()
+    el.setAttribute('content', 'x')
+    el.innerHTML = '<span><button disabled>不可用</button></span>'
+    document.body.appendChild(el)
+    await Promise.resolve()
+    ;(el.querySelector('span') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: false }),
+    )
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+  })
+
+  // ================= B13 碰撞细调 collision-padding =================
+
+  it('collision-padding="20"：视口避让边距 20px（默认 4）', async () => {
+    const el = mount({
+      open: '',
+      content: 'x',
+      placement: 'bottom',
+      'collision-padding': '20',
+    })
+    const t = tip(el)
+    stubRect(t, { left: 0, top: 0, width: 240, height: 36 })
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 0, top: 300, width: 64, height: 32 }) // 锚点贴左缘 → 避让
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.style.left).toBe('20px')
+  })
+
+  // ================= C1 箭头 merge 模式 =================
+
+  it('arrow-position="merge" + *-start placement：箭头融角 data 属性', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'bottom-start', 'arrow-position': 'merge' })
+    await Promise.resolve()
+    const t = tip(el)
+    expect(t.getAttribute('data-arrow-position')).toBe('merge')
+  })
+
+  // ================= C2 fresh =================
+
+  it('fresh 默认：关闭时内容仍更新（每次属性变化即时同步）', async () => {
+    const el = mount({ content: 'a' })
+    await Promise.resolve()
+    el.setAttribute('content', 'b')
+    await Promise.resolve()
+    expect(tip(el).textContent).toContain('b')
+  })
+
+  // ================= C3 auto-close =================
+
+  it('auto-close="200"：打开后 200ms 自动关闭', async () => {
+    vi.useFakeTimers()
+    const el = mount({ trigger: 'click', 'auto-close': '200', content: 'x' })
+    await Promise.resolve()
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    )
+    vi.advanceTimersByTime(0)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+    vi.advanceTimersByTime(200)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+    vi.useRealTimers()
+  })
+
+  // ================= C4 trigger-keys =================
+
+  it('trigger-keys="F1"：焦点在触发元素上按 F1 打开', async () => {
+    // trigger="hover" 排除 focus 通道，隔离验证 trigger-keys 独立生效
+    const el = mount({ trigger: 'hover', 'trigger-keys': 'F1', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true') // hover trigger 下 focus 不打开
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'F1', bubbles: true }))
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+  })
+
+  it('trigger-keys 不匹配的按键不打开', async () => {
+    const el = mount({ trigger: 'hover', 'trigger-keys': 'F1', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await Promise.resolve()
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+  })
+
+  // ================= 延迟 + interactive 组合：关闭后焦点还原 =================
+
+  it('Esc 关闭后 hover 再次打开正常（定时器无孤儿）', async () => {
+    const el = mount({ content: 'x' })
+    await Promise.resolve()
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await Promise.resolve()
+    ;(el.querySelector('button') as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: true }),
+    )
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+  })
 })

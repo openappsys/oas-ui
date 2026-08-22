@@ -1,4 +1,5 @@
 import type { Theme } from 'vitepress'
+import { onMounted } from 'vue'
 import DefaultTheme from 'vitepress/theme'
 import '@oas-ui/theme'
 import './style.css'
@@ -6,19 +7,6 @@ import DemoBlock from './components/DemoBlock.vue'
 import TokenShowcase from './components/TokenShowcase.vue'
 import Layout from './Layout.vue'
 import { bindOnOas } from './onoas'
-
-if (!import.meta.env.SSR) {
-  // Web Components 需在浏览器环境注册；SSR 构建阶段跳过
-  import('@oas-ui/ui').then((mod) => {
-    // demo 内联事件（onclick / onoas-*）在全局作用域 eval，需要命令式 API 挂到 window
-    const w = window as unknown as Record<string, unknown>
-    w.message = mod.message
-    w.toast = mod.toast
-    w.notification = mod.notification
-    w.loadingBar = mod.loadingBar
-    w.confirm = mod.confirm
-  })
-}
 
 export default {
   extends: DefaultTheme,
@@ -41,8 +29,25 @@ export default {
   },
   setup() {
     if (typeof window !== 'undefined') {
-      // 延迟到首帧，确保 demo 元素已渲染
-      requestAnimationFrame(() => bindOnOas(document))
+      // 组件注册（customElements.define）与命令式 API 挂载必须推迟到 onMounted——
+      // 即整个应用树水合完成之后。若在模块求值期注册，组件 chunk 与水合 chunk 的
+      // 到达顺序是竞态：元素升级早于水合时，在 connectedCallback 里迁移宿主的组件
+      // （如 back-top 的 append-to teleport）会改动水合前的 DOM 结构，触发
+      // 「Hydration completed but contains mismatches.」error。
+      // onMounted 后注册则升级必然晚于水合，对全部组件页确定性成立。
+      onMounted(() => {
+        import('@oas-ui/ui').then((mod) => {
+          // demo 内联事件（onclick / onoas-*）在全局作用域 eval，需要命令式 API 挂到 window
+          const w = window as unknown as Record<string, unknown>
+          w.message = mod.message
+          w.toast = mod.toast
+          w.notification = mod.notification
+          w.loadingBar = mod.loadingBar
+          w.confirm = mod.confirm
+        })
+        // 延迟到首帧，确保 demo 元素已渲染
+        requestAnimationFrame(() => bindOnOas(document))
+      })
     }
   },
 } satisfies Theme

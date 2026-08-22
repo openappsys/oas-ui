@@ -227,7 +227,13 @@ export { OASHoverCard } from './floating/hover-card/oas-hover-card.js'
 export { OASCommand, type CommandItem } from './floating/command/index.js'
 export { OASMenubar, type MenubarItem } from './floating/menubar/index.js'
 export { OASNavigationMenu, type NavItem } from './floating/navigation-menu/index.js'
-export { OASToolbar } from './floating/toolbar/index.js'
+export {
+  OASToolbar,
+  OASToolbarToggle,
+  OASToolbarSeparator,
+  OASToolbarInput,
+  type ToolbarToggleItem,
+} from './floating/toolbar/index.js'
 export { OASConfigProvider } from './floating/config-provider/oas-config-provider.js'
 export { OASApp } from './floating/app/oas-app.js'
 export { OASScrollArea } from './floating/scroll-area/oas-scroll-area.js'
@@ -235,7 +241,7 @@ export { OASSpeedDial, type SpeedDialAction } from './floating/speed-dial/oas-sp
 export { OASThemeEditor } from './floating/theme-editor/index.js'
 export { OASBreadcrumb, type BreadcrumbItem } from './navigation/breadcrumb/index.js'
 export { OASBackTop } from './navigation/back-top/oas-back-top.js'
-export { OASAnchor, type AnchorItem } from './navigation/anchor/index.js'
+export { OASAnchor, OASAnchorTarget, type AnchorItem } from './navigation/anchor/index.js'
 export { OASTour, type TourStep } from './navigation/tour/index.js'
 export { OASBottomNavigation, type BottomNavItem } from './navigation/bottom-navigation/index.js'
 export { OASSegmented, type SegmentedOption } from './layout/segmented/index.js'

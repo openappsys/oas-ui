@@ -19,14 +19,38 @@
   },
   "oas-anchor": {
     "attrs": {
-      "active": "当前高亮 href",
-      "items": "锚点项 JSON",
-      "offset": "高亮判定偏移（px）"
+      "active": "当前高亮 href（受控：外部设置/清除立即生效；滚动联动接管后回写）",
+      "items": "锚点项 JSON；项支持 `children` 多级嵌套、`target`（如 `_blank`）、`targetOffset` 项级落点偏移",
+      "offset": "高亮判定偏移（px）：章节顶越检测线的提前量",
+      "scroll-container": "滚动容器选择器或元素 id；未设置时监听视口（window）",
+      "target-offset": "点击定位落点偏移（px），避让固定头；未设置时回退 `offset`；项级 `targetOffset` 优先",
+      "direction": "布局方向：`vertical` / `horizontal`",
+      "affix": "启用吸附（sticky 定位，随滚动视口/容器吸附）",
+      "affix-offset": "吸附时距滚动视口顶部的距离（px）",
+      "bounds": "触发边界（px，默认 5）：章节顶越检测线的额外提前量，避免高亮抖动",
+      "block": "滚动落点对齐：`start` / `center` / `end`",
+      "hash": "点击是否更新 URL hash（默认 true；`false` 关闭）",
+      "replace": "历史控制：用 `history.replaceState` 替换历史而非 pushState",
+      "duration": "平滑滚动时长（ms，默认 300；`0` 立即定位）",
+      "size": "尺寸档位：`small` / `medium` / `large`",
+      "variant": "样式变体：`default`（轨道+墨水条）/ `underline`（滑动下划线）/ `lineless`（无轴线）/ `block`（块状背景）",
+      "internal-scrollable": "锚点栏自身内部滚动（max-height + overflow-y: auto）",
+      "animation": "平滑滚动开关（默认 true；`false` 立即定位）",
+      "get-current-anchor": "自定义高亮策略：属性指定全局函数名，接收滚动算出的候选 href，返回实际应高亮 href；亦可用 property `getCurrentAnchor` 传入函数"
     },
     "events": {
-      "oas-change": "点击锚点，`detail: { href }`"
+      "oas-change": "高亮切换（点击或滚动联动均派发），`detail: { href, prevHref }`"
     },
     "slots": {}
+  },
+  "oas-anchor-target": {
+    "attrs": {
+      "id": "目标标记 id：同步到内部 `part=target` 元素，锚点项以此为滚动定位目标"
+    },
+    "events": {},
+    "slots": {
+      "": "被标记的目标内容（如多级标题）"
+    }
   },
   "oas-aspect-ratio": {
     "attrs": {
@@ -73,14 +97,32 @@
   },
   "oas-back-top": {
     "attrs": {
+      "append-to": "teleport 挂载点：CSS 选择器，连接后把组件迁移到该容器下（不设置则保持原位）",
+      "badge": "角标内容：按钮右上角小徽标显示的文本/数字",
       "bottom": "距视口底部距离",
+      "duration": "平滑滚动时长（毫秒），默认 400；0 或 `prefers-reduced-motion` 时直接跳转",
+      "easing": "滚动缓动函数：`linear` / `ease` / `ease-in` / `ease-out` / `ease-in-out` / `quad-*` / `cubic-*` / `quart-*` / `quint-*` / `expo-*` / `circ-*` / `back-*`，默认 `quart-out`",
+      "expand": "撑满条模式：按钮撑满视口底部全宽（内容横向居中），忽略 `position` / `bottom` / `right` 定位",
+      "position": "8 方位枚举：`top-left` / `top-center` / `top-right` / `middle-left` / `middle-right` / `bottom-left` / `bottom-center` / `bottom-right`；设置后替代 `bottom` / `right` 数值定位（`middle-*` 垂直居中），非法值静默回落 `bottom` / `right`",
+      "reverse": "反向模式：变为「滚到底部」按钮（靠近容器底部时隐藏，点击滚动到容器底部）",
       "right": "距视口右侧距离",
-      "visible": "是否显示按钮"
+      "shape": "按钮形状：`circle`（默认圆形）/ `square`（方角）",
+      "show-progress": "滚动进度环：按钮边缘显示当前滚动进度（SVG 圆环，按 `target` 容器滚动范围计算）",
+      "size": "尺寸档位：`small`（32px）/ `medium`（默认 40px）/ `large`（48px）",
+      "target": "滚动目标容器：CSS 选择器；设置后监听该容器滚动并滚动回其顶部/底部（默认 window）",
+      "theme": "主题变体：`light`（默认浅色）/ `primary`（主色填充）/ `dark`（深色底，dark 主题下自动反色保持对比）",
+      "tooltip": "悬停提示文本：hover / 键盘聚焦时显示气泡提示",
+      "transition": "进出场过渡：`fade`（默认淡入淡出）/ `scale`（缩放）/ `none`（无过渡），`prefers-reduced-motion` 下自动停用",
+      "visibility-height": "滚动阈值（px）：滚动超过该值自动显示按钮，默认 400",
+      "visible": "受控显隐：存在即受控模式（完全由宿主控制显隐，滚动不干预）；不存在则按滚动阈值自动显隐"
     },
     "events": {
-      "oas-click": "点击按钮（随后平滑滚动到顶部）"
+      "oas-click": "点击按钮（随后滚动到目标容器顶部/底部）",
+      "oas-visibility-change": "显隐状态变化，`detail: { visible: boolean }`（受控与非受控切换都会派发，挂载时的初始同步不派发）"
     },
-    "slots": {}
+    "slots": {
+      "": "自定义按钮内容（有内容时替换内置箭头图标）"
+    }
   },
   "oas-backdrop": {
     "attrs": {
@@ -142,14 +184,22 @@
   },
   "oas-breadcrumb": {
     "attrs": {
+      "active-last": "末项保持可点击：当前页（末项）带 `href` 时渲染为链接（仍带 `aria-current=\"page\"`）",
+      "collapse-text": "自定义折叠省略号的文本（默认 `…`）",
       "collapsed": "折叠模式：items 数量超过 `max-items` 时中间项折叠为 `…`，点击展开下拉",
+      "color": "视觉变体：当前项与链接 hover 使用指定语义色（`primary`/`success`/`warning`/`danger`/`info`）",
       "ellipsis": "单行省略：面包屑不换行，超宽时链接文本以省略号截断",
-      "items": "面包屑项 JSON",
+      "items": "面包屑项 JSON：`label`/`href`/`icon`/`disabled`/`target`/`separator`/`dropdown`/`maxWidth`/`active`",
+      "items-after-collapse": "折叠省略号之后保留的项数（默认 `max-items - 2`）",
+      "items-before-collapse": "折叠省略号之前保留的项数（默认 `1`）",
+      "max-item-width": "全局单项最大宽度（px）：超出省略号截断 + `title` 悬停提示；项级 `maxWidth` 可覆盖",
       "max-items": "折叠模式下最多可见的项数（含 `…`），非法值回退 `4`",
-      "separator": "分隔符"
+      "separator": "分隔符（支持图标名，如 `chevron-right`）",
+      "size": "尺寸档位：`small`/`medium`（默认）/`large`",
+      "variant": "样式变体：`underline`（链接与当前项常驻下划线）"
     },
     "events": {
-      "oas-select": "点击链接项或折叠下拉项，`detail: { value: href }`"
+      "oas-select": "点击链接项、折叠下拉项或项下拉菜单项；`detail: { value: href }`（真实链接不阻止默认跳转，宿主可拦截做路由）"
     },
     "slots": {}
   },
@@ -367,13 +417,34 @@
   },
   "oas-command": {
     "attrs": {
-      "items": "命令项 JSON",
-      "open": "是否打开（受控；选择 / Esc 后自动移除）"
+      "items": "命令项 JSON（根页；子页由 item.page 提供，含 icon / shortcut / description / page / view / forceMount / separator 字段）",
+      "open": "是否打开（受控；选择 / Esc 后自动移除，打开/关闭各派发一次 `oas-open-change`）",
+      "value": "搜索词（受控；宿主监听 `oas-input` 回写实现双向）",
+      "selected": "当前高亮项 value（受控；方向键/悬停派发 `oas-active`，宿主回写生效）",
+      "hotkey": "唤起快捷键组合，如 `ctrl+k` / `meta+shift+p`（逗号分隔多组，支持 mod/meta/ctrl/alt/shift）；`false` 关闭内置监听（默认 `mod+k`）",
+      "should-filter": "`false` 关闭内置过滤与打分排序（过滤交给宿主，接异步/服务端数据源）",
+      "loading": "异步加载占位态（列表显示加载行 + `aria-busy`）",
+      "limit": "渲染条数上限（默认 `50`；虚拟滚动不受限）",
+      "recent": "记录最近使用（选中项按最近优先置顶，去重，上限 10 条）",
+      "recent-storage-key": "最近使用 localStorage 持久化键（需配合 `recent`；跨实例恢复）",
+      "close-on-select": "选中后是否关闭面板（默认 true；`false` 支持连续执行）",
+      "multiple": "多选命令模式（勾选切换 + footer 批量执行）",
+      "virtual": "虚拟滚动（大数据量窗口渲染，复用 oas-virtual-list）",
+      "item-height": "虚拟滚动行高（默认 `36`）"
     },
     "events": {
-      "oas-select": "执行某项，`detail: { value }`"
+      "oas-select": "执行某项，`detail: { value }`；多选确认 `detail: { values }`",
+      "oas-open-change": "面板打开/关闭，`detail: { open }`",
+      "oas-input": "搜索词输入，`detail: { value }`（`should-filter=false` 外部过滤的请求通道）",
+      "oas-active": "高亮项变化，`detail: { value }`（受控 selected 的回写依据）",
+      "oas-change": "多选勾选变化，`detail: { values }`",
+      "oas-page-change": "子页推入/回退，`detail: { title, depth, direction }`（`direction: push|pop`）",
+      "oas-view-change": "视图进出，`detail: { view, title }`（退出时 `view: ''`）"
     },
-    "slots": {}
+    "slots": {
+      "empty": "空结果自定义渲染（组件内用 `el.query` 读当前搜索词，如「创建 xyz」入口）",
+      "footer": "底部自定义条（默认显示 `↑↓ 选择 / ↵ 执行 / esc 关闭` 提示）"
+    }
   },
   "oas-comment": {
     "attrs": {},
@@ -669,14 +740,34 @@
   },
   "oas-hover-card": {
     "attrs": {
+      "append-to": "定位容器选择器（如 `#panel`）：设置后卡片改为绝对定位在该容器内（容器提升为相对定位上下文），坐标随容器换算；未设置时走 `position: fixed` 视口坐标",
+      "arrow": "是否显示箭头，默认 true；`arrow=\"false\"` 隐藏，箭头元素与 `::part(arrow)` 保留",
+      "arrow-merge": "箭头贴角融合模式：*-start/*-end 位置下箭头与面板圆角融合成直角三角（对应角圆角清零），居中位置不生效",
+      "arrow-point-at-center": "箭头指向触发器中心（面板被视口避让偏移后仍指向锚点）；默认箭头保持面板中心",
+      "auto-adjust-overflow": "视口边缘自动调整（翻转/夹取），默认 true；`\"false\"` 关闭，按声明 placement 严格定位（浮层可越出视口）",
+      "close-delay": "关闭延迟（毫秒），与 open-delay 分离；未设置时回退 `delay` 别名，再回退默认 150",
+      "collision-padding": "视口夹取边距（px），默认 4",
       "content": "内容文本",
-      "delay": "显隐延迟（毫秒）",
+      "delay": "显隐延迟（毫秒），兼容别名：`open-delay`/`close-delay` 未设置时同时作用于打开与关闭；分别设置时以各自为准",
+      "disabled": "禁用浮层显示：hover/focus 触发不再打开；受控 `open` 属性仍可显隐",
+      "fallback-placements": "自定义回退序列（逗号分隔基向，如 `left,top`）：请求 placement 空间不足时按序列依次尝试；缺省默认翻转到对向",
+      "group": "延迟组名：同 `group` 值的组件共享延迟，指针在组内成员间连续移动时后一个跳过 open-delay 立即打开、前一个立即关闭",
+      "hide-when-detached": "锚点滚出视口（完全脱离）时隐藏卡片，保留 open 语义，滚动回来自动恢复",
+      "offset": "主轴距离（px，面板与触发器的间距），默认 8",
       "open": "受控显示（布尔属性，存在即显示）",
-      "placement": "浮层位置",
-      "title": "标题文本"
+      "open-delay": "打开延迟（毫秒），与 close-delay 分离；未设置时回退 `delay` 别名，再回退默认 300",
+      "placement": "浮层位置，12 向：top/bottom/left/right × start/中心/end（如 `bottom-start`）",
+      "skidding": "交叉轴偏移（px），沿垂直于主轴的轴平移",
+      "title": "标题文本",
+      "width": "宽度定制：数值（px）或 `trigger`/`target`（与触发器同宽）；未设置走 CSS min-width"
     },
-    "events": {},
-    "slots": {}
+    "events": {
+      "oas-open-change": "open 状态变化（显示/关闭）时派发，`detail: { open }`"
+    },
+    "slots": {
+      "": "触发器（首个非 `slot=\"content\"` 子元素），hover/focus 触发",
+      "content": "富内容插槽：卡片内的自由 HTML 预览（链接/按钮等，可交互）"
+    }
   },
   "oas-icon": {
     "attrs": {
@@ -889,10 +980,22 @@
   "oas-menubar": {
     "attrs": {
       "items": "顶级菜单项 JSON（含子菜单 children）",
-      "value": "选中值。纯字符串时全局单选（无组场景，兼容旧用法）；JSON 对象字符串（如 `{\"mode\":\"preview\",\"theme\":\"dark\"}`）时按组 id 作用域独立记录——`type:\"group\"` 项的 `value` 作组 id"
+      "value": "选中值。纯字符串时全局单选（无组场景，兼容旧用法）；JSON 对象字符串（如 `{\"mode\":\"preview\",\"theme\":\"dark\"}`）时按组 id 作用域独立记录——`type:\"group\"` 项的 `value` 作组 id；JSON 数组字符串（如 `[\"grid\",\"wrap\"]`）时为 checkbox 勾选集（`kind:\"checkbox\"` 项多选）",
+      "open": "当前打开的顶级菜单 value（`open=\"\"` 表示全部收起）。受控属性（observedAttributes）：外部 `setAttribute('open', ...)` 即时打开/切换/关闭；内部点击/hover/键盘变化会写回本属性并派发 `oas-open-change`，宿主可监听接管",
+      "trigger": "顶级菜单触发方式：`click`（默认，首开需点击、打开后 hover 切换——桌面应用共识）/ `hover`（hover 直开）",
+      "loop": "方向键循环导航开关，缺省 `true`（边界循环）；显式 `loop=\"false\"` 时边界停止",
+      "disabled": "整栏禁用：顶级项/子项点击、键盘导航、shortcut 快捷键、Alt 访问键全部拦截，视觉降饱和",
+      "side": "一级下拉弹出侧：`bottom`（水平缺省）/ `top` / `left` / `right`（竖排缺省）；级联子菜单不受影响",
+      "align": "一级下拉对齐：`start`（缺省）/ `center` / `end`；`side` 为 top/bottom 时沿水平轴，为 left/right 时沿垂直轴",
+      "offset": "一级下拉与触发器间距（px，缺省 4）",
+      "show-arrow": "显示弹出层指向触发器的视觉箭头",
+      "close-on-select": "选中叶子项后是否收起展开的子菜单，缺省 `true`（桌面菜单栏共识）；`close-on-select=\"false\"` 保持展开（连选场景）；`kind:\"checkbox\"` 项勾选切换永不收起",
+      "orientation": "排列方向：`horizontal`（缺省）/ `vertical`（竖排：bar 纵向、一级下拉缺省向右弹、键盘上下移动顶级）",
+      "breakpoint": "移动端断点（px，如 `600`）：视口宽度 ≤ 断点时 bar 折叠为汉堡按钮 + 弹出菜单（窄宽收纳）"
     },
     "events": {
-      "oas-select": "选择某项，`detail: { value, kind? }`。`kind` 仅动作项（`kind: \"action\"`）出现，值为 `\"action\"`；radio 项 `detail.kind` 不出现"
+      "oas-select": "选择某项，`detail: { value, kind?, checked? }`。`kind` 仅动作项（`kind: \"action\"`）出现，值为 `\"action\"`；checkbox 项带 `checked`（切换后勾选态）；radio 项 `detail.kind` 不出现",
+      "oas-open-change": "顶级打开菜单变化，`detail: { value, open }`（`value` = 当前打开顶级菜单 value，`open` = 是否打开）。受控 `setAttribute('open')` 与内部点击/hover/键盘触发都会派发（首帧不派发）"
     },
     "slots": {}
   },
@@ -942,10 +1045,19 @@
   },
   "oas-navigation-menu": {
     "attrs": {
-      "items": "导航项 JSON（层级结构）"
+      "items": "导航项 JSON（层级结构；叶子项可带 `description` 描述与 `icon` 图标渲染大面板链接卡）",
+      "value": "受控打开项（顶级触发器 value，空字符串 = 关闭；存在时打开态以属性为准，交互仅派发 `oas-change` 由宿主更新）",
+      "delay-duration": "hover 开合延迟（毫秒），默认 200；点击/键盘立即生效不受影响",
+      "skip-delay-duration": "跳过延迟窗口（毫秒），默认 300：关闭后窗口内再次 hover 其他项直接打开跳过延迟",
+      "orientation": "布局方向：`horizontal`（默认）/ `vertical`（面板在触发器右侧）",
+      "columns": "面板网格列数，默认 2（大面板多列链接卡）",
+      "backdrop": "打开时显示遮罩（点击遮罩关闭）",
+      "keep-mounted": "关闭时保留面板 DOM 不销毁（供爬虫索引/SEO）",
+      "arrow": "弹出层指向箭头，默认显示；`arrow=\"false\"` 隐藏"
     },
     "events": {
-      "oas-select": "选择某项，`detail: { value }`"
+      "oas-select": "选择某项（顶级叶子链接或面板链接卡），`detail: { value }`",
+      "oas-change": "打开项变化，`detail: { value }`（value 为打开的顶级项 value，空字符串 = 关闭）"
     },
     "slots": {}
   },
@@ -1044,18 +1156,38 @@
   },
   "oas-popover": {
     "attrs": {
+      "append-to": "portal 挂载点：打开时面板移入目标容器（`body` 或 CSS 选择器），关闭移回宿主 shadow；适合面板被宿主容器裁剪（overflow）的场景",
       "arrow": "是否显示箭头（默认 true；`arrow=\"false\"` 隐藏，箭头元素与 `::part(arrow)` 保留）",
+      "arrow-merge": "箭头与面板角融合（C1）：箭头贴到面板对应角、邻角圆角归零成直角三角；仅 *-start/*-end 位置生效，center placement 不触发",
       "arrow-point-at-center": "箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心）",
       "auto-adjust-overflow": "视口边缘自动翻转与避让（默认 true；`\"false\"` 关闭，保持声明 placement，可能溢出视口）",
+      "auto-close": "打开后超时自动关闭（毫秒），如 `auto-close=\"3000\"`；未设置不自动关闭",
+      "closable": "面板右上角显示关闭按钮（`part=\"close\"`），点击关闭并还原焦点到触发元素",
+      "close-delay": "通用关闭延迟（毫秒，默认 0；非 hover 触发路径生效，hover 路径优先 hover-hide-delay）",
+      "collision-padding": "视口边缘夹取边距（px，默认 4），面板贴边避让时保留的间距",
+      "color": "颜色变体：`primary` / `success` / `warning` / `danger`（面板 tint 底 + 语义色描边，走 token 派生变量含 dark 变体）；未设置或非法值保持默认中性面板",
       "content": "正文文本",
+      "disabled": "整体禁用：click / hover / focus / contextmenu / trigger-keys 触发均不响应，宿主降饱和并同步 aria-disabled",
+      "fallback-placements": "自定义回退序列（逗号或空格分隔，如 `\"left, right\"`）：请求 placement 放不下时按序列逐一尝试 fit，首个 fit 者胜出，全不 fit 取序列末位并夹取；未设置走默认主轴翻转",
       "focus-on-open": "打开时焦点移入面板内首个可聚焦元素",
+      "fresh": "关闭时也持续更新内容（默认关闭态冻结内容，打开时写入最新值；fresh 开启后关闭态同步写入）",
+      "hover-delay": "hover 触发时打开防抖延时（毫秒，默认 150；未设置回落 open-delay）",
+      "hover-hide-delay": "hover 触发时关闭防抖延时（毫秒，默认 100；未设置回落 close-delay）",
+      "hide-when-detached": "锚点完全脱离视口时隐藏面板（打开语义保留，避免孤悬屏外）",
+      "initial-focus": "打开时聚焦指定选择器元素（宿主 light DOM 优先，含 slot 内容；解析不到回落 focus-on-open），优先级高于 focus-on-open",
+      "modal": "modal 化：全屏遮罩 + 焦点陷阱（Tab 面板内循环）+ 滚动锁 + aria-modal；点击遮罩关闭",
+      "offset": "双轴偏移：`\"主轴距离\"` 或 `\"主轴距离, 交叉轴偏移\"`（px，默认 8, 0），如 `offset=\"12, 20\"`",
       "open": "受控显示（布尔属性，存在即显示）",
-      "placement": "浮层位置",
+      "open-delay": "通用打开延迟（毫秒，默认 0；非 hover 触发路径生效，hover 路径优先 hover-delay）",
+      "placement": "浮层位置（12 向：四基向 top/bottom/left/right 各配 -start/-end 交叉轴对齐）",
       "title": "标题文本",
+      "trigger": "触发方式：`click`（默认）/ `hover` / `focus` / `contextmenu` / `manual`，空格分隔可多选（如 `\"click hover\"`）",
+      "trigger-keys": "指定按键在触发元素聚焦时切换开合（空格分隔，如 `\"Enter Space\"`）；未设置无按键绑定",
       "virtual": "虚拟触发模式（同 tooltip，不依赖锚点元素）",
       "virtual-anchor": "虚拟锚点元素选择器（virtual-x/virtual-y 未设置时生效）",
       "virtual-x": "虚拟锚点 x（视口坐标，px）",
-      "virtual-y": "虚拟锚点 y（视口坐标，px）"
+      "virtual-y": "虚拟锚点 y（视口坐标，px）",
+      "width": "面板宽度：数字（px）/ `\"trigger\"`（与触发元素同宽）/ 任意 CSS 值（如 `50%`、`240px`）；未设置保持默认"
     },
     "events": {
       "oas-open-change": "open 状态变化，`detail: { open }`"
@@ -1587,12 +1719,29 @@
   },
   "oas-tooltip": {
     "attrs": {
+      "append-to": "浮层挂载点：`body` 或 CSS 选择器。把浮层移入目标容器的独立 shadow（样式作用域保真），脱离 `overflow: hidden` / transform 等裁剪上下文；挂载期间 `::part(tip)` 无法从宿主穿透，定制走 CSS 变量或类选择器",
       "arrow": "是否显示箭头（默认 true；`arrow=\"false\"` 隐藏，箭头元素与 `::part(arrow)` 保留）",
       "arrow-point-at-center": "箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心）",
+      "arrow-position": "箭头形态：`center`（默认，箭头在面板边缘居中）/ `merge`（仅 `*-start`/`*-end` placement 生效，箭头与面板圆角融合成直角三角）",
       "auto-adjust-overflow": "视口边缘自动翻转与避让（默认 true；`\"false\"` 关闭，保持声明 placement，可能溢出视口）",
-      "content": "提示内容文本",
+      "auto-close": "打开后自动关闭时长（ms），`0` 或缺省不自动关闭",
+      "close-delay": "隐藏延迟（ms，默认 0）：mouseleave/focusout 后延迟关闭",
+      "collision-padding": "视口边缘避让边距（px，默认 4）：浮层被视口夹取时与边缘保留的距离",
+      "color": "颜色变体：语义色 `primary`/`success`/`warning`/`danger`、11 预设名（如 `magenta`、`blue`）或任意 CSS 色值；全部走 token（含 dark 变体），箭头底色同步",
+      "content": "提示内容文本（`slot=\"content\"` 富内容存在时优先于属性文本）",
+      "disabled": "禁用：tooltip 不显示（hover / 受控 open 均不生效）",
+      "fresh": "内容新鲜度（默认 true）：关闭期间内容变化也即时同步；`\"false\"` 时关闭期间冻结内容，再次打开才更新",
+      "interactive": "浮层可悬停：鼠标移入浮层不关闭（`pointer-events: auto`），浮层内链接可达",
+      "max-width": "浮层最大宽度（数字补 px 或 CSS 长度，默认走 `--oas-tooltip-max-width` token 240px）",
+      "offset": "主轴距离（px，默认 8）：浮层与锚点沿主轴的间隔",
       "open": "受控显示（布尔属性，存在即显示）",
-      "placement": "浮层位置",
+      "open-delay": "显示延迟（ms，默认 0）：mouseenter/focusin 后延迟打开；`skip-delay-duration` 命中时跳过",
+      "placement": "浮层位置（12 向：top/bottom/left/right × start/center/end）",
+      "skidding": "交叉轴偏移（px，默认 0）：top/bottom 系列沿水平轴（正右负左）、left/right 系列沿垂直轴（正下负上）",
+      "skip-delay-duration": "全局延迟组阈值（ms，默认 300）：某 tooltip 关闭后这段时间内打开下一个 tooltip 时跳过 open-delay 立即显示（连续悬停响应连贯）；`\"0\"` 关闭该行为",
+      "touch-delay": "touch 长按触发时长（ms，默认 500）：`trigger` 含 `touch` 时 pointerdown 长按到点打开，提前抬手/移出取消",
+      "trigger": "触发方式（空格分隔多选）：`hover` / `focus` / `click` / `contextmenu` / `touch` / `manual`，默认 `hover focus`；`manual` 完全受控",
+      "trigger-keys": "指定按键（空格分隔，如 `F1`）：焦点在触发元素上时按该键打开",
       "virtual": "虚拟触发模式：不绑定宿主触发元素，`open` 完全受外部控制，位置由 `virtual-anchor` 或 `virtual-x`/`virtual-y` 指定（适合图表点位、拖拽中的浮层提示）",
       "virtual-anchor": "虚拟锚点元素选择器（如 `#chart-point-1`），tooltip 按该元素矩形定位；与 `virtual-x`/`virtual-y` 二选一，坐标优先",
       "virtual-x": "虚拟锚点视口 X 坐标（px，如鼠标 `clientX`），与 `virtual-y` 同时设置时按坐标定位",
@@ -1602,21 +1751,114 @@
       "oas-open-change": "open 状态变化（显示/隐藏）时派发，`detail: { open }`"
     },
     "slots": {
-      "": "触发元素（hover/focus 触发）；`virtual` 虚拟模式下可省略"
+      "": "触发元素（hover/focus 触发）；`virtual` 虚拟模式下可省略",
+      "content": "富内容（存在时优先于 `content` 属性文本显示）"
     }
+  },
+  "oas-toolbar": {
+    "attrs": {
+      "disabled": "整栏禁用（`aria-disabled` + `inert`，子项不参与 roving）",
+      "focusable-when-disabled": "禁用时子项保持可聚焦（`aria-disabled` + 点击拦截，适合挂 tooltip 解释禁用原因）",
+      "loop": "方向键循环导航开关：缺省开启；`false` 时在首尾停止",
+      "orientation": "布局方向：`horizontal`（默认）/ `vertical`（纵向，方向键随向导航、分隔符自动变横线）",
+      "size": "尺寸档位：`small` / `medium`（默认）/ `large`"
+    },
+    "events": {},
+    "slots": {
+      "": "工具栏控件：按钮 / oas-button / 切换组 / 输入框 / 链接 / 分隔符等"
+    }
+  },
+  "oas-toolbar-input": {
+    "attrs": {
+      "disabled": "禁用",
+      "placeholder": "占位提示",
+      "size": "尺寸档位（small/medium/large），缺省跟随最近 oas-toolbar",
+      "value": "预设值（受控入口；事件不带写回，宿主可监听更新）"
+    },
+    "events": {
+      "oas-change": "Enter 或失焦提交，`detail: { value }`",
+      "oas-input": "输入中，`detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-toolbar-separator": {
+    "attrs": {},
+    "events": {},
+    "slots": {}
+  },
+  "oas-toolbar-toggle": {
+    "attrs": {
+      "disabled": "整组禁用",
+      "items": "选项 JSON（property 赋值单向反射 attribute）",
+      "multiple": "多选模式（每项独立切换）",
+      "size": "尺寸档位（small/medium/large），缺省跟随最近 oas-toolbar",
+      "value": "当前值：单选为字符串；多选为 JSON 数组字符串"
+    },
+    "events": {
+      "oas-change": "切换，`detail: { value: string | string[] }`"
+    },
+    "slots": {}
   },
   "oas-tour": {
     "attrs": {
-      "current": "当前步骤索引",
       "open": "开始引导（布尔属性，存在即启动）",
-      "steps": "步骤 JSON"
+      "current": "当前步骤索引",
+      "steps": "步骤 JSON（`TourStep[] | string`）；property 赋值支持函数/元素 target",
+      "placement": "弹层方位：12 向（top/bottom/left/right × start/end/center）+ `center`（空 target 居中）；默认 `bottom`；空间不足自动翻转；step 级可覆盖",
+      "arrow": "是否显示箭头（布尔，默认 true，`false` 隐藏）",
+      "mask": "遮罩开关/定制：`false` 关闭（非模态）或 `{\"color\",\"style\"}` 定制颜色样式（默认 true）；step 级可覆盖",
+      "type": "弹层类型：`default` / `primary`（主色底弹层，非模态场景强调）",
+      "gap": "高亮内边距：数字（padding px）或 `{\"padding\",\"radius\"}`（半径）；默认 padding 4",
+      "keyboard": "键盘 ←/→ 推进步骤（默认 true，`false` 关闭）",
+      "show-close": "显示关闭按钮（默认 true，`false` 隐藏）",
+      "close-icon": "自定义关闭按钮内容（HTML 字符串）",
+      "mask-click-behavior": "遮罩点击行为：`close`（默认）/ `next`（推进）/ `none`（忽略）",
+      "target-area-clickable": "高亮区可交互（拦截层隐藏，点击穿透目标）",
+      "disabled-interaction": "禁止高亮区交互（拦截层覆盖目标）",
+      "scroll-into-view-options": "滚动到目标的 `scrollIntoView` options（JSON，默认 `{\"behavior\":\"smooth\",\"block\":\"center\"}`）",
+      "scroll-padding": "滚动到目标时的留白（px，写目标 scroll-margin）",
+      "auto-reposition": "滚动/resize 时自动重定位（默认 true）",
+      "progress-text": "进度文本模板：`{{current}}/{{total}}` 替换；设置后计数区用模板渲染",
+      "show-progress": "弹层顶部进度条（宽度随步骤推进）",
+      "show-bullets": "圆点指示器（点击圆点跳步）",
+      "indicators": "计数样式：`dots`（默认）/ `number` / `none`",
+      "hide-prev": "隐藏上一步按钮",
+      "hide-skip": "隐藏跳过按钮",
+      "hide-next": "隐藏下一步按钮",
+      "hide-counter": "隐藏步骤计数",
+      "next-button-props": "下一步按钮透传属性（JSON 对象，如 `{\"data-x\":\"1\"}`）",
+      "prev-button-props": "上一步按钮透传属性（JSON 对象）",
+      "skip-button-props": "跳过按钮透传属性（JSON 对象）",
+      "finish-button-props": "完成按钮透传属性（JSON 对象）",
+      "advance-on-click": "点击高亮区推进下一步（交互式引导）",
+      "mode": "弹层模式：`popup`（默认）/ `dialog`（无目标居中对话框）；step 级可覆盖",
+      "lock-scroll": "引导期间锁定页面滚动（关闭恢复）",
+      "close-on-press-escape": "Esc 关闭（默认 true）",
+      "wait-for-element": "等待目标出现（毫秒，异步步骤；全局默认，step 级 `waitForElement` 优先）",
+      "skip-missing-element": "目标缺失/等待超时跳过该步骤（默认停在当前步骤）",
+      "z-index": "遮罩层级（默认 `--oas-z-modal`）",
+      "append-to": "挂载点：`body` 或 CSS 选择器（整个浮层移入目标容器）",
+      "dont-show-again": "「不再显示」开关（布尔；关闭时勾选则记忆到 localStorage）",
+      "storage-key": "localStorage 记忆键（`dont-show-again` / `persist` / hint dismiss 共用）",
+      "persist": "多页引导：open/current 状态持久化到 localStorage，重新连接时恢复",
+      "typewriter": "打字机动画：描述逐字显示",
+      "typewriter-speed": "打字机速率（ms/字符，默认 20）",
+      "hints": "hints 信标模式：JSON `[{id,selector,title,description,placement,dismissable}]`，常驻脉冲点，点击弹气泡，`dismissable` 关闭后记忆"
     },
     "events": {
-      "oas-cancel": "跳过 / Esc 取消",
-      "oas-finish": "最后一步点击「完成」",
-      "oas-step": "步骤切换，`detail: { index }`"
+      "oas-step": "步骤切换，`detail: { index, current, total, next, prev }`",
+      "oas-finish": "最后一步点击「完成」，`detail: { index, total }`",
+      "oas-cancel": "跳过 / Esc / 遮罩点击关闭，`detail: { index, total, source }`（source: skip/esc/close/mask）",
+      "oas-skip": "点击「跳过」按钮，`detail: { index, total }`",
+      "oas-close": "点击关闭按钮，`detail: { index, total }`",
+      "oas-highlight-start": "步骤高亮开始（异步等待命中后），`detail: { index, total }`",
+      "oas-highlight-end": "步骤高亮完成，`detail: { index, total }`",
+      "oas-destroy": "引导关闭（含外部移除 open），`detail: { index, total }`",
+      "oas-dismiss": "「不再显示」命中，引导启动被拦截"
     },
-    "slots": {}
+    "slots": {
+      "cover": "步骤封面富内容（插槽优先于 step.cover 图片）"
+    }
   },
   "oas-transfer": {
     "attrs": {
