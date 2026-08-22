@@ -675,3 +675,13 @@ basic 族 12 组件按能力并集复核后的增量能力补齐 + divider 垂�
 - **label**：`size`/`weight` 档
 - **space**：弹簧占位 demo（文档级）
 - **验收**：各组件单测全过（button 58/tag 70/badge 120/button-group 28/typography+ellipsis 24/link+divider 89/kbd 25/label 38）、全量 2599、typecheck/build/api:check 全绿、e2e chromium 935 + firefox 348、contrast-gate 0 违规、console 零告警；浏览器复核关键交互（loading 保宽、disabled-focusable、badge 描边、tag 选中√、divider 垂直对齐/竖排/缩进）
+
+## v2.1.5 menu/dropdown/contextmenu 能力补齐发布（已完成）
+
+floating 导航族三组件按能力并集补齐 + 水平收纳/inline 形态多轮实测修复：
+
+- **menu**：`kind="checkbox"` 多选项、`danger` 危险项、`href/target/rel` 链接项、`max-height` 长菜单滚动、typeahead 字符定位、`mode="inline"` 就地展开（高度过渡+箭头旋转）、`expanded` 受控 + `oas-expand-change`、`accordion` 手风琴同级互斥、horizontal 溢出收纳「···」（ResizeObserver + 镜像弹层 + i18n）、`close-on-select` 选中收起策略（缺省分形态/显式覆盖/checkbox 豁免）、「···」弹层选中反馈（镜像 ✓ + child-selected 高亮）
+- **dropdown**：`trigger` click/hover/focus 多选、`hover-delay`/`hover-hide-delay` 防抖、`placement` 12 向、`oas-open-change`、整体 `disabled`、`hide-on-click`、开合动画（transform-origin 感知方向）、`close-on-scroll`、`offset`
+- **contextmenu**：`long-press-delay` 长按触发、`show(x,y)`/`close()` 编程式、受控 `open` + `oas-open-change`、右键别处关闭、`close-on-scroll`
+- **实测修复**（用户视角验证门禁驱动）：inline hover/click 抵消展不开、inline-sub flex 并排、inline-sub role 嵌套 axe 违规、水平浮层 overflow 裁剪不可见、「···」收纳项自身被收、「···」弹层右缘截断+颜色继承、inline 选中/移出误收起
+- **验收**：menu 64 + dropdown 52 + contextmenu 21 单测（全量 2673）、typecheck/build/api:check 全绿、e2e chromium 937 + firefox 350、axe 零严重违规、console 零告警；浏览器实测 light/dark 全交互链（inline 展开/手风琴互斥/受控展开/水平收纳弹层选中反馈/close-on-select 对照/dropdown hover 面板/contextmenu 各触发）

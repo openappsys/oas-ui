@@ -2,6 +2,23 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.1.5] - 2026-08-22
+
+### 新增
+
+- **menu/dropdown/contextmenu 三组件能力补齐**（能力并集）：
+  - menu：`kind="checkbox"` 多选项（menuitemcheckbox + 方块勾选框，勾选集 JSON 数组写入 value）、`danger` 危险项（红色语义）、`href/target/rel` 链接项、`max-height` 长菜单滚动、typeahead 字符定位（缓冲 + 500ms 超时）、`mode="inline"` 就地展开（高度过渡 + 箭头旋转，侧边导航主流形态）、`expanded` 受控展开 + `oas-expand-change` 事件、`accordion` 手风琴同级互斥、horizontal 溢出收纳「···」（ResizeObserver 检测 + 收纳项镜像弹层 + i18n）、`close-on-select` 选中收起策略（缺省分形态：inline 不收/浮出收，显式覆盖，checkbox 项豁免）
+  - dropdown：`trigger` click/hover/focus 多选、`hover-delay`/`hover-hide-delay` 防抖、`placement` 12 向、`oas-open-change` 开合事件、整体 `disabled`、`hide-on-click`、开合动画（fade+scale + transform-origin 感知方向）、`close-on-scroll`、`offset` 偏移
+  - contextmenu：`long-press-delay` 长按触发（触屏右键等价）、`show(x, y)`/`close()` 编程式开合、受控 `open` + `oas-open-change`、右键别处关闭、`close-on-scroll`
+- **「···」收纳弹层选中反馈**：镜像项 radio 语义（aria-checked + 前导 ✓）、选中项被收纳时「···」child-selected 主色高亮 + aria-current
+
+### 修复
+
+- **menu inline 形态三连修**：hover 展开与 click 收起相互抵消致鼠标用户展不开（inline 改纯 click-to-expand）；inline-sub 作为 flex 子项与箭头并排（子项跑父项右侧 → 整行换行）；inline-sub 包裹层冒充 role=menu 致 axe aria-required-children/parent 严重违规（role 移到内部 ul）
+- **menu 水平模式浮层裁剪三连修**：`.menu` 容器 overflow:hidden 双轴裁剪致子菜单浮层不可见（改 overflow-x:clip + overflow-y:visible）；「···」收纳项被误纳入收纳计算致自身隐藏（选择器排除 + 测量前复位 + 收纳项占宽扣除）；「···」弹层右缘截断 + child-selected 高亮色继承进弹层（右对齐右缘 + 颜色字重重置）
+- **menu inline 展开态误收**：select() 与 mouseleave 的清空逻辑对全模式生效（inline 侧边导航展开态是持续导航上下文，双双加模式门控；浮出形态保持瞬态收起惯例）
+- **docs**：GA 仅生产环境注入（dev 不加载 gtag）
+
 ## [2.1.4] - 2026-08-22
 
 ### 新增
