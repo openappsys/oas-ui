@@ -109,12 +109,16 @@ const STYLE = `
 .tip[data-placement='right-end'] .arrow {
   bottom: 16px;
 }
-/* ===== C1 箭头 merge 模式：箭头与面板圆角融合成直角三角（仅 *-start/*-end 生效） =====
-   箭头菱心骑在「主轴边 × 起止侧」的角点上，该角 radius 置零，箭头斜边与面板边缘拼成
-   直角三角尖角。逐角写死（不能用 $='-start'/'-end' 后缀匹配——它对 12 向恒取顶角/恒写
-   水平轴，top 系零错角、left-start 箭头会被拉到对侧边、*-end 箭头距角 16px 贴不上）：
-   bottom 系悬顶边（start→左上角、end→右上角）、top 系悬底边（start→左下角、end→右下角）、
-   left 系悬右边（start→右上角、end→右下角）、right 系悬左边（start→左上角、end→左下角） */
+/* ===== C1 箭头 merge 模式：直角三角与面板角共边融合（仅 *-start/*-end 生效） =====
+   该角 radius 置零；箭头为不旋转的 8px 方块整悬面板外、贴齐角两边（主轴边外 -8px、
+   起止侧边线对齐 0），clip-path 裁成直角三角——直角顶点精确落面板角点，两条直角边
+   与面板角两边共线，斜边 45° 朝面板内，尖端从角点正交外探 8px 指向锚点侧
+   （视觉是「面板角本身伸出的直角尖」）。逐向写死（不能用 $='-start'/'-end' 后缀
+   匹配——它对 12 向恒取顶角/恒写水平轴，top 系零错角、left-start 箭头会被拉到
+   对侧边、*-end 箭头距角 16px 贴不上）：
+   bottom 系悬顶边（start→左上角、end→右上角）、top 系悬底边（start→左下角、
+   end→右下角）、left 系悬右边（start→右上角、end→右下角）、right 系悬左边
+   （start→左上角、end→左下角） */
 .tip[data-arrow-position='merge'][data-placement='bottom-start'] {
   border-top-left-radius: 0;
 }
@@ -139,23 +143,56 @@ const STYLE = `
 .tip[data-arrow-position='merge'][data-placement='right-end'] {
   border-bottom-left-radius: 0;
 }
-/* 箭头贴角：交叉轴拉到角点（覆盖 start/end 的 16px 让位规则；主轴悬边规则不变；
-   top/bottom 系交叉轴是水平（left/right）、left/right 系是垂直（top/bottom）） */
-.tip[data-arrow-position='merge'][data-placement='bottom-start'] .arrow,
+/* 箭头直角三角贴角：盒整悬面板外（主轴边外 -8px）、起止侧边线贴齐（覆盖 16px 让位
+   与 center 居中规则），transform 还原不旋转（覆盖基础菱形 rotate(45deg)），clip-path
+   裁直角三角——polygon 的 90° 顶点即面板角点（盒贴角 + 顶点在盒角） */
+.tip[data-arrow-position='merge'][data-placement='bottom-start'] .arrow {
+  top: -8px;
+  left: 0;
+  transform: none;
+  clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
+}
+.tip[data-arrow-position='merge'][data-placement='bottom-end'] .arrow {
+  top: -8px;
+  right: 0;
+  transform: none;
+  clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
+}
 .tip[data-arrow-position='merge'][data-placement='top-start'] .arrow {
-  left: -4px;
+  bottom: -8px;
+  left: 0;
+  transform: none;
+  clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
 }
-.tip[data-arrow-position='merge'][data-placement='bottom-end'] .arrow,
 .tip[data-arrow-position='merge'][data-placement='top-end'] .arrow {
-  right: -4px;
+  bottom: -8px;
+  right: 0;
+  transform: none;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
 }
-.tip[data-arrow-position='merge'][data-placement='left-start'] .arrow,
+.tip[data-arrow-position='merge'][data-placement='left-start'] .arrow {
+  right: -8px;
+  top: 0;
+  transform: none;
+  clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
+}
+.tip[data-arrow-position='merge'][data-placement='left-end'] .arrow {
+  right: -8px;
+  bottom: 0;
+  transform: none;
+  clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
+}
 .tip[data-arrow-position='merge'][data-placement='right-start'] .arrow {
-  top: -4px;
+  left: -8px;
+  top: 0;
+  transform: none;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
 }
-.tip[data-arrow-position='merge'][data-placement='left-end'] .arrow,
 .tip[data-arrow-position='merge'][data-placement='right-end'] .arrow {
-  bottom: -4px;
+  left: -8px;
+  bottom: 0;
+  transform: none;
+  clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
 }
 @media (prefers-reduced-motion: reduce) {
   .tip.tip-enter {
@@ -757,6 +794,9 @@ export class OAStooltip extends OASElement {
     arrow.style.left = ''
     arrow.style.top = ''
     if (!this.hasAttr('arrow-point-at-center')) return
+    // C1 merge：箭头由 CSS 钉死面板角点（直角三角贴角共边），内联偏移会让三角盒
+    // 脱离角点、破坏共边衔接——跳过指向中心计算
+    if (this.getAttr('arrow-position', 'center') === 'merge') return
     const vertical = actual.startsWith('top') || actual.startsWith('bottom')
     const rect = this.tipEl.getBoundingClientRect()
     // 交叉轴尺寸用布局尺寸（offset*，不受进场动画 scale 污染），0 时回落 rect
