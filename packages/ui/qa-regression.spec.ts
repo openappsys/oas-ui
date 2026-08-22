@@ -2964,8 +2964,10 @@ test('tooltip 触发路径一致性：hover 与 click 打开的落点/方向逐�
     }, SEL)
   const waitOpen = () =>
     page.waitForFunction((s) => {
-      const tip = document.querySelector(s)?.shadowRoot?.querySelector('[part="tip"]')
-      return tip?.getAttribute('aria-hidden') === 'false' && tip.style.top !== ''
+      const tip = document
+        .querySelector(s)
+        ?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
+      return !!tip && tip.getAttribute('aria-hidden') === 'false' && tip.style.top !== ''
     }, SEL)
   const waitClosed = () =>
     page.waitForFunction((s) => {
@@ -3532,6 +3534,185 @@ test('tooltip arrow-point-at-center：面板被视口边缘避让 clamp 偏移�
     Math.abs(r.arrowCenterX - r.btnCenterX),
     `箭头中心(${r.arrowCenterX.toFixed(1)})应指向锚点中心(${r.btnCenterX.toFixed(1)})`,
   ).toBeLessThanOrEqual(6)
+})
+
+// —— 缺陷回归：tooltip 箭头形态（用户反馈「底部箭头形态异常」同类缺陷族）——
+// 曾现缺陷 1：hover 打开时 tip-enter 动画 scale(0.9) 污染定位测量，气泡按缩小 10% 的
+// 尺寸落位 → 气泡中线偏离锚点中线 ~4px、主轴间距缩水 ~3.2px，箭头尖端（探出 5.66px）
+// 反向扎进锚点按钮（gap 8−5.66=2.34px 被吃成负值）——肉眼观感即「箭头偏移/压按钮/变形」。
+// 曾现缺陷 2：merge 贴角规则用 $='-start'/'-end' 后缀匹配、恒置零顶角、恒写水平轴——
+// top 系零错角（圆角残留 × 菱形交界豁口）、left-start 箭头被拉到对侧边、*-end 箭头距角
+// 16px 贴不上（12 向仅 bottom 两向正确）。
+// 曾现缺陷 3：窄气泡（交叉轴 < 箭头底宽 8√2≈11.31 + 2×radius）圆角曲线侵入箭头底边
+// 衔接区，接缝两侧各 ~1.5px 凹口（空内容 16px 气泡像素剖面 14.13→11.1 骤缩实测）。
+
+test('tooltip 箭头形态（用户场景）：top 方向底部箭头完整菱形、悬底边居中、尖端距锚点 2.34px 不相交', async ({
+  page,
+}) => {
+  await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tooltip[placement="top"]')
+  // 「四个方向」demo 的 上 按钮（placement="top"，tooltip 在按钮上方 → 箭头悬气泡底边）
+  const host = page.locator('oas-tooltip[placement="top"]').first()
+  const anchor = host.locator(':scope > oas-button')
+  await anchor.scrollIntoViewIfNeeded()
+  await page.waitForTimeout(200)
+  const box = (await anchor.boundingBox())!
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 4 })
+  await page.waitForTimeout(300) // 等进场动画（150ms）播完取静止态
+  const r = await host.evaluate((el) => {
+    const t = el.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
+    const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
+    const an = el.querySelector('oas-button')!
+    const tb = t.getBoundingClientRect()
+    const ab = arrow.getBoundingClientRect()
+    const bb = an.getBoundingClientRect()
+    const tm = getComputedStyle(arrow).transform.match(/matrix\(([^)]+)\)/)
+    const n = tm?.[1]?.split(',').map(Number) ?? []
+    const pureRot =
+      n.length === 6 &&
+      Math.abs(n[0]! - n[3]!) < 0.01 &&
+      Math.abs(n[1]! + n[2]!) < 0.01 &&
+      Math.abs(n[0]! * n[3]! - n[1]! * n[2]! - 1) < 0.01 &&
+      n[4] === 0 &&
+      n[5] === 0
+    return {
+      placement: t.getAttribute('data-placement'),
+      arrowW: ab.width,
+      arrowH: ab.height,
+      // 菱心（rect 中心）应恰落气泡底边，且与气泡中线重合
+      centerOnEdge: Math.abs((ab.top + ab.bottom) / 2 - tb.bottom),
+      arrowVsTipCenter: Math.abs((ab.left + ab.right) / 2 - (tb.left + tb.right) / 2),
+      // 尖端（rect.bottom）到锚点顶边 = offset 8 − 半对角线 5.66 = 2.34
+      apexGap: bb.top - ab.bottom,
+      tipVsAnchorCenter: Math.abs((tb.left + tb.right) / 2 - (bb.left + bb.right) / 2),
+      overlap: !(ab.right <= bb.left || ab.left >= bb.right || ab.bottom <= bb.top || ab.top >= bb.bottom),
+      pureRot,
+    }
+  })
+  expect(r.placement).toBe('top')
+  expect(r.arrowW, '旋转方块 bounding rect 宽 ≈ 8√2').toBeCloseTo(11.31, 1)
+  expect(r.arrowH, '旋转方块 bounding rect 高 ≈ 8√2').toBeCloseTo(11.31, 1)
+  expect(r.pureRot, '箭头 transform 应为纯 rotate(45deg)（无缩放/平移残留）').toBe(true)
+  expect(r.centerOnEdge, '菱心应悬在气泡底边上').toBeLessThanOrEqual(0.7)
+  expect(r.arrowVsTipCenter, '箭头应居气泡中线').toBeLessThanOrEqual(0.7)
+  expect(r.tipVsAnchorCenter, '气泡中线应对齐锚点中线（动画污染测量曾致 ~4px 偏移）').toBeLessThanOrEqual(0.7)
+  // 修复前（scale 污染测量）：gap = 8 − 3.2 − 5.66 ≈ −0.86（扎进按钮）
+  expect(r.apexGap, `箭头尖端距锚点应为 2.34px（实测 ${r.apexGap.toFixed(2)}）`).toBeGreaterThan(1.5)
+  expect(r.apexGap).toBeLessThan(3.2)
+  expect(r.overlap, '箭头不得与锚点按钮相交').toBe(false)
+  await page.mouse.move(8, 8)
+})
+
+test('tooltip merge 贴角 8 向：箭头菱心骑正确角点 + 该角 radius 置零（真级联逐向验证）', async ({
+  page,
+}) => {
+  await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tt-arrow-default')
+  await page.evaluate(() => {
+    // 锚点钉视口中央：排除 auto-adjust 翻转/避让对 12 向的干扰
+    const host = document.querySelector('#tt-arrow-default')!
+    const btn = host.querySelector('oas-button') as HTMLElement
+    btn.style.position = 'fixed'
+    btn.style.left = '560px'
+    btn.style.top = '380px'
+  })
+  const results = await page.evaluate(async () => {
+    const host = document.querySelector('#tt-arrow-default')!
+    // 每向：placement → 期望角点（主轴边 × 起止侧）与应置零的角 radius 属性
+    const cases: Array<[string, string]> = [
+      ['bottom-start', 'borderTopLeftRadius'],
+      ['bottom-end', 'borderTopRightRadius'],
+      ['top-start', 'borderBottomLeftRadius'],
+      ['top-end', 'borderBottomRightRadius'],
+      ['left-start', 'borderTopRightRadius'],
+      ['left-end', 'borderBottomRightRadius'],
+      ['right-start', 'borderTopLeftRadius'],
+      ['right-end', 'borderBottomLeftRadius'],
+    ]
+    const out: Array<Record<string, string | number | boolean>> = []
+    for (const [p, cornerProp] of cases) {
+      host.setAttribute('placement', p)
+      host.setAttribute('arrow-position', 'merge')
+      host.setAttribute('open', '')
+      await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
+      await new Promise((res) => setTimeout(res, 60))
+      const t = host.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
+      const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
+      const tb = t.getBoundingClientRect()
+      const ab = arrow.getBoundingClientRect()
+      const side = p.split('-')[0]
+      const align = p.split('-')[1]
+      // 角点：主轴边（bottom→顶边 / top→底边 / left→右边 / right→左边）× 起止侧（start→左/上、end→右/下）
+      // top/bottom 系：主轴边定 Y、align 定 X；left/right 系：主轴边定 X、align 定 Y
+      const cornerX =
+        side === 'left' ? tb.right : side === 'right' ? tb.left : align === 'start' ? tb.left : tb.right
+      const cornerY =
+        side === 'bottom'
+          ? tb.top
+          : side === 'top'
+            ? tb.bottom
+            : align === 'start'
+              ? tb.top
+              : tb.bottom
+      out.push({
+        p,
+        actual: t.getAttribute('data-placement') ?? '',
+        dx: +(cornerX - (ab.left + ab.right) / 2).toFixed(2),
+        dy: +(cornerY - (ab.top + ab.bottom) / 2).toFixed(2),
+        cornerZero: getComputedStyle(t)[cornerProp as 'borderTopLeftRadius'] === '0px',
+      })
+      host.removeAttribute('open')
+      await new Promise((res) => setTimeout(res, 40))
+    }
+    // 还原 demo 现场属性
+    host.removeAttribute('arrow-position')
+    host.setAttribute('placement', 'top')
+    return out
+  })
+  for (const r of results) {
+    expect(r.actual, `${r.p} 中置视口不应翻转`).toBe(r.p)
+    expect(Math.abs(r.dx as number), `${r.p} 箭头菱心应骑在角点 X`).toBeLessThanOrEqual(0.7)
+    expect(Math.abs(r.dy as number), `${r.p} 箭头菱心应骑在角点 Y`).toBeLessThanOrEqual(0.7)
+    expect(r.cornerZero, `${r.p} 对应角 radius 应置零`).toBe(true)
+  }
+})
+
+test('tooltip 窄气泡圆角封顶：空内容 16px 气泡 radius 收到 (16−11.31)/2≈2.34px，箭头底边与直边段齐宽', async ({
+  page,
+}) => {
+  await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(
+    () => {
+      const h = Array.from(document.querySelectorAll('oas-tooltip')).find((x) =>
+        x.textContent?.includes('无内容提示'),
+      )
+      return h?.shadowRoot != null
+    },
+    undefined,
+    { timeout: 15000 },
+  )
+  const host = page.locator('oas-tooltip', { hasText: '无内容提示' })
+  await host.locator(':scope > oas-button').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(200)
+  await host.evaluate((el) => el.setAttribute('open', ''))
+  await page.waitForTimeout(300) // 等动画播完（offset* 本不受影响，取静止态断言收敛值）
+  const r = await host.evaluate((el) => {
+    const t = el.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
+    const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
+    const tb = t.getBoundingClientRect()
+    const ab = arrow.getBoundingClientRect()
+    return {
+      width: tb.width,
+      crossVar: t.style.getPropertyValue('--oas-tip-cross'),
+      radius: parseFloat(getComputedStyle(t).borderRadius),
+      arrowW: ab.width,
+    }
+  })
+  expect(r.width, '空内容气泡应只有 padding 宽（16px）').toBeCloseTo(16, 0)
+  expect(r.crossVar, 'position() 应写入交叉轴布局尺寸').toBe('16px')
+  expect(r.radius, `radius 应封顶 2.34px（实测 ${r.radius}）`).toBeCloseTo(2.34, 1)
+  expect(r.arrowW).toBeCloseTo(11.31, 1)
+  await host.evaluate((el) => el.removeAttribute('open'))
 })
 
 // —— dropdown 箭头——

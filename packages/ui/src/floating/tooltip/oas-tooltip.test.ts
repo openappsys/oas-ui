@@ -1251,4 +1251,120 @@ describe('OAStooltip', () => {
     expect(arrow.style.left).toBe('61px')
     // 当前缺陷（72.9 宽）会得到 52.9px
   })
+
+  // ================= 回归：箭头形态（merge 12 向贴角 + 窄气泡圆角封顶） =================
+  // 曾现缺陷：merge 规则用 $='-start'/'-end' 后缀匹配、恒置零「顶」角、恒写水平轴偏移——
+  // top 系零错角（该零底角却零了顶角，圆角残留 × 菱形交界出豁口）、left-start 箭头被
+  // left:-4px 拉到对侧边、left/right-end 箭头距角 16px 未贴上且零错角（12 向仅 bottom
+  // 两向正确）；窄气泡（交叉轴 < 箭头底宽 8√2≈11.31 + 2×radius）时圆角曲线侵入箭头
+  // 底边衔接区，接缝两侧凹口（空内容 16px 气泡实测剖面 14.13→11.1 骤缩）。
+
+  /** shadow 内 STYLE 文本（空白折叠后做规则断言） */
+  function styleCss(el: OAStooltip): string {
+    return (el.shadowRoot!.querySelector('style')!.textContent ?? '').replace(/\s+/g, ' ')
+  }
+
+  it('merge 逐角置零：8 个 -start/--end placement 的角 radius 规则各就各位', () => {
+    const css = styleCss(mount())
+    const cornerOf: Record<string, string> = {
+      // bottom 系箭头悬顶边：start→左上角、end→右上角
+      'bottom-start': 'border-top-left-radius: 0;',
+      'bottom-end': 'border-top-right-radius: 0;',
+      // top 系箭头悬底边：start→左下角、end→右下角
+      'top-start': 'border-bottom-left-radius: 0;',
+      'top-end': 'border-bottom-right-radius: 0;',
+      // left 系箭头悬右边：start→右上角、end→右下角
+      'left-start': 'border-top-right-radius: 0;',
+      'left-end': 'border-bottom-right-radius: 0;',
+      // right 系箭头悬左边：start→左上角、end→左下角
+      'right-start': 'border-top-left-radius: 0;',
+      'right-end': 'border-bottom-left-radius: 0;',
+    }
+    for (const [p, decl] of Object.entries(cornerOf)) {
+      expect(css, `merge ${p} 应置零 ${decl}`).toContain(
+        `[data-arrow-position='merge'][data-placement='${p}'] { ${decl} }`,
+      )
+    }
+    // 旧的后缀匹配规则（恒置零顶角）不得残留
+    expect(css).not.toContain("[data-placement$='-start']")
+    expect(css).not.toContain("[data-placement$='-end']")
+  })
+
+  it('merge 箭头贴角交叉轴：top/bottom 系写 left/right、left/right 系写 top/bottom', () => {
+    const css = styleCss(mount())
+    expect(css).toContain(
+      ".tip[data-arrow-position='merge'][data-placement='bottom-start'] .arrow, .tip[data-arrow-position='merge'][data-placement='top-start'] .arrow { left: -4px; }",
+    )
+    expect(css).toContain(
+      ".tip[data-arrow-position='merge'][data-placement='bottom-end'] .arrow, .tip[data-arrow-position='merge'][data-placement='top-end'] .arrow { right: -4px; }",
+    )
+    expect(css).toContain(
+      ".tip[data-arrow-position='merge'][data-placement='left-start'] .arrow, .tip[data-arrow-position='merge'][data-placement='right-start'] .arrow { top: -4px; }",
+    )
+    expect(css).toContain(
+      ".tip[data-arrow-position='merge'][data-placement='left-end'] .arrow, .tip[data-arrow-position='merge'][data-placement='right-end'] .arrow { bottom: -4px; }",
+    )
+  })
+
+  it('窄气泡圆角封顶公式：radius = max(0, min(token, (交叉轴-11.31)/2))，未写变量时不封顶', () => {
+    const css = styleCss(mount())
+    expect(css).toContain(
+      'border-radius: max(0px, min(var(--oas-radius-sm), calc((var(--oas-tip-cross, 999px) - 11.31px) / 2)));',
+    )
+  })
+
+  it('position() 写入 --oas-tip-cross：top/bottom 系取 offsetWidth（布局尺寸，不受动画污染）', async () => {
+    const el = mount({ content: '提示在上方', placement: 'top' })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 400, top: 300, width: 64, height: 32 })
+    stubAnimTip(t, { width: 81, height: 32 })
+    setViewport(1280, 800)
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    // 布局真值 81（非动画中的 72.9）；81 > 11.31 + 2×radius → CSS 不实际封顶，但变量已挂
+    expect(t.style.getPropertyValue('--oas-tip-cross')).toBe('81px')
+  })
+
+  it('left/right 系取 offsetHeight 作交叉轴', async () => {
+    const el = mount({ content: 'x', placement: 'right' })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 300, top: 300, width: 64, height: 32 })
+    stubAnimTip(t, { width: 60, height: 32 })
+    setViewport(1280, 800)
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    expect(t.style.getPropertyValue('--oas-tip-cross')).toBe('32px')
+  })
+
+  it('窄气泡（offsetWidth=16）：--oas-tip-cross=16px，CSS 封顶 (16-11.31)/2=2.34px 消除接缝凹口', async () => {
+    const el = mount({ content: '', placement: 'bottom' })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 400, top: 300, width: 64, height: 32 })
+    stubRect(t, { left: 0, top: 0, width: 16, height: 24 })
+    Object.defineProperty(t, 'offsetWidth', { value: 16, configurable: true })
+    Object.defineProperty(t, 'offsetHeight', { value: 24, configurable: true })
+    setViewport(1280, 800)
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    expect(t.style.getPropertyValue('--oas-tip-cross')).toBe('16px')
+  })
+
+  it('无布局尺寸（offsetWidth=0，happy-dom 无引擎）：不写变量，回落不封顶', async () => {
+    const el = mount({ content: 'x', placement: 'top' })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 400, top: 300, width: 64, height: 32 })
+    stubRect(t, { left: 0, top: 0, width: 81, height: 32 })
+    setViewport(1280, 800)
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    expect(t.style.getPropertyValue('--oas-tip-cross')).toBe('')
+  })
 })
