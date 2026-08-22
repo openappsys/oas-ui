@@ -2929,6 +2929,74 @@ test('tooltip virtual-anchor：hover 图表点位 tooltip 锚定该点显示、�
   expect(r1.content).toContain('Q3')
 })
 
+// —— tooltip 定位一致性回归：hover 与 focus(click) 两条触发路径 ——
+// 曾现缺陷：tip-enter 进场动画 scale(0.9) 污染 getBoundingClientRect（打开瞬间按缩小
+// ~10% 的尺寸计算居中/间距），且 click → focusin 的同值 setAttribute('open') 仍触发
+// attributeChangedCallback 重定位（Chromium 实测）——两条路径测量时机不同，
+// 同一 placement 落点分歧（hover 打开后点击会跳位、间距/居中偏差随 tip 尺寸放大）。
+test('tooltip 触发路径一致性：hover 与 click 打开的落点/方向逐像素一致（placement=top 上方 8px 居中）', async ({
+  page,
+}) => {
+  await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  const SEL = 'oas-tooltip[placement="top"]'
+  await page.waitForSelector(SEL, { state: 'attached', timeout: 15000 })
+  await page.waitForFunction((s) => document.querySelector(s)?.shadowRoot != null, SEL, {
+    timeout: 15000,
+  })
+  const btn = page.locator(`${SEL} > *`).first()
+  await btn.scrollIntoViewIfNeeded()
+  await page.waitForTimeout(300)
+
+  const read = () =>
+    page.evaluate((s) => {
+      const t = document.querySelector(s)!
+      const tip = t.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
+      const anchor = t.querySelector(':scope > *')!
+      const tb = tip.getBoundingClientRect()
+      const ab = anchor.getBoundingClientRect()
+      return {
+        placement: tip.getAttribute('data-placement'),
+        inlineTop: tip.style.top,
+        inlineLeft: tip.style.left,
+        gapAbove: Math.round(ab.top - tb.bottom),
+        centerOff: Math.round(ab.left + ab.width / 2 - (tb.left + tb.width / 2)),
+      }
+    }, SEL)
+  const waitOpen = () =>
+    page.waitForFunction((s) => {
+      const tip = document.querySelector(s)?.shadowRoot?.querySelector('[part="tip"]')
+      return tip?.getAttribute('aria-hidden') === 'false' && tip.style.top !== ''
+    }, SEL)
+  const waitClosed = () =>
+    page.waitForFunction((s) => {
+      const tip = document.querySelector(s)?.shadowRoot?.querySelector('[part="tip"]')
+      return tip?.getAttribute('aria-hidden') === 'true'
+    }, SEL)
+
+  // hover 打开 → 等进场动画结束再量（动画中 rect 被 scale 污染）
+  await btn.hover()
+  await waitOpen()
+  await page.waitForTimeout(250)
+  const hoverState = await read()
+  expect(hoverState.placement).toBe('top')
+  expect(hoverState.gapAbove, 'placement=top 间距应精确 8px').toBe(8)
+  expect(hoverState.centerOff, '浮层应水平居中于锚点').toBe(0)
+
+  // 移开关闭 → click 重新打开（mousedown → focusin 路径）
+  await page.mouse.move(8, 8)
+  await waitClosed()
+  await btn.click()
+  await waitOpen()
+  await page.waitForTimeout(250)
+  const clickState = await read()
+  expect(clickState.placement).toBe('top')
+  expect(clickState.gapAbove).toBe(8)
+  expect(clickState.centerOff).toBe(0)
+  // 同一 placement 两条触发路径落点逐像素一致
+  expect(clickState.inlineTop).toBe(hoverState.inlineTop)
+  expect(clickState.inlineLeft).toBe(hoverState.inlineLeft)
+})
+
 // —— popover P1 补缺：嵌套浮层（nested）+ 虚拟触发（virtual）——
 // 曾现缺口：popover 面板内无法再开子浮层（父关闭时子面板残留）、无图表/画布坐标提示能力。
 // 本次补：父关闭级联关闭子层、Esc 逐层关闭并还原焦点；virtual 模式（同 tooltip 的
