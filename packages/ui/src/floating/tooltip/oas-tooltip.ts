@@ -15,7 +15,11 @@ const STYLE = `
   position: fixed;
   z-index: var(--oas-z-tooltip, 1080);
   padding: var(--oas-space-1) var(--oas-space-2);
-  border-radius: var(--oas-radius-sm);
+  /* 圆角封顶（箭头接缝防收腰）：箭头底宽 = 8px 方形旋转 45° 的对角投影 8√2 ≈ 11.31px，
+     气泡交叉轴直边段（尺寸 − 2×radius）小于它时，圆角曲线侵入箭头底边衔接区，接缝两侧
+     出现凹口（空内容等窄气泡尤为明显）。--oas-tip-cross 由 position() 写入实际交叉轴
+     布局尺寸，radius 封顶保证直边段 ≥ 箭头底宽；变量缺省 999px → 不封顶（token 定制保真） */
+  border-radius: max(0px, min(var(--oas-radius-sm), calc((var(--oas-tip-cross, 999px) - 11.31px) / 2)));
   background: var(--oas-tooltip-bg, var(--oas-color-text-primary));
   color: var(--oas-tooltip-color, var(--oas-color-bg));
   font-size: var(--oas-font-size-sm);
@@ -106,18 +110,52 @@ const STYLE = `
   bottom: 16px;
 }
 /* ===== C1 箭头 merge 模式：箭头与面板圆角融合成直角三角（仅 *-start/*-end 生效） =====
-   箭头贴面板角（start→左/上角、end→右/下角），面板该角 radius 置零，视觉上箭头边与面板边共线 */
-.tip[data-arrow-position='merge'][data-placement$='-start'] {
+   箭头菱心骑在「主轴边 × 起止侧」的角点上，该角 radius 置零，箭头斜边与面板边缘拼成
+   直角三角尖角。逐角写死（不能用 $='-start'/'-end' 后缀匹配——它对 12 向恒取顶角/恒写
+   水平轴，top 系零错角、left-start 箭头会被拉到对侧边、*-end 箭头距角 16px 贴不上）：
+   bottom 系悬顶边（start→左上角、end→右上角）、top 系悬底边（start→左下角、end→右下角）、
+   left 系悬右边（start→右上角、end→右下角）、right 系悬左边（start→左上角、end→左下角） */
+.tip[data-arrow-position='merge'][data-placement='bottom-start'] {
   border-top-left-radius: 0;
 }
-.tip[data-arrow-position='merge'][data-placement$='-end'] {
+.tip[data-arrow-position='merge'][data-placement='bottom-end'] {
   border-top-right-radius: 0;
 }
-.tip[data-arrow-position='merge'][data-placement$='-start'] .arrow {
+.tip[data-arrow-position='merge'][data-placement='top-start'] {
+  border-bottom-left-radius: 0;
+}
+.tip[data-arrow-position='merge'][data-placement='top-end'] {
+  border-bottom-right-radius: 0;
+}
+.tip[data-arrow-position='merge'][data-placement='left-start'] {
+  border-top-right-radius: 0;
+}
+.tip[data-arrow-position='merge'][data-placement='left-end'] {
+  border-bottom-right-radius: 0;
+}
+.tip[data-arrow-position='merge'][data-placement='right-start'] {
+  border-top-left-radius: 0;
+}
+.tip[data-arrow-position='merge'][data-placement='right-end'] {
+  border-bottom-left-radius: 0;
+}
+/* 箭头贴角：交叉轴拉到角点（覆盖 start/end 的 16px 让位规则；主轴悬边规则不变；
+   top/bottom 系交叉轴是水平（left/right）、left/right 系是垂直（top/bottom）） */
+.tip[data-arrow-position='merge'][data-placement='bottom-start'] .arrow,
+.tip[data-arrow-position='merge'][data-placement='top-start'] .arrow {
   left: -4px;
 }
-.tip[data-arrow-position='merge'][data-placement$='-end'] .arrow {
+.tip[data-arrow-position='merge'][data-placement='bottom-end'] .arrow,
+.tip[data-arrow-position='merge'][data-placement='top-end'] .arrow {
   right: -4px;
+}
+.tip[data-arrow-position='merge'][data-placement='left-start'] .arrow,
+.tip[data-arrow-position='merge'][data-placement='right-start'] .arrow {
+  top: -4px;
+}
+.tip[data-arrow-position='merge'][data-placement='left-end'] .arrow,
+.tip[data-arrow-position='merge'][data-placement='right-end'] .arrow {
+  bottom: -4px;
 }
 @media (prefers-reduced-motion: reduce) {
   .tip.tip-enter {
@@ -668,7 +706,24 @@ export class OAStooltip extends OASElement {
     this.tipEl.style.top = `${top}px`
     this.tipEl.style.left = `${left}px`
     this.tipEl.setAttribute('data-placement', actual)
+    this.syncRadiusCap(actual)
     this.positionArrow(anchorRect, actual)
+  }
+
+  /**
+   * 窄气泡圆角封顶（箭头接缝防收腰）：气泡交叉轴直边段（尺寸 − 2×radius）小于箭头底宽
+   * （8px 方形旋转 45° 的对角投影 8√2 ≈ 11.31px）时，圆角曲线侵入箭头底边衔接区，
+   * 接缝两侧出现凹口（空内容等窄气泡尤为明显）。把交叉轴布局尺寸写入
+   * --oas-tip-cross，由 .tip 的 border-radius max/min 表达式封顶，保证直边段 ≥ 箭头底宽。
+   * 布局尺寸优先 offset*（不受 tip-enter 动画 scale 污染）；无布局尺寸（无布局引擎的
+   * 测试环境）时移除变量回落不封顶，token 定制保真。
+   */
+  private syncRadiusCap(actual: Placement): void {
+    if (!this.tipEl) return
+    const vertical = actual.startsWith('top') || actual.startsWith('bottom')
+    const cross = vertical ? this.tipEl.offsetWidth : this.tipEl.offsetHeight
+    if (cross > 0) this.tipEl.style.setProperty('--oas-tip-cross', `${cross}px`)
+    else this.tipEl.style.removeProperty('--oas-tip-cross')
   }
 
   /**
