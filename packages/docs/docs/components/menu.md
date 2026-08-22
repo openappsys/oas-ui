@@ -168,6 +168,25 @@
   <oas-tag id="menu-ctrl-result" type="info">尚未操作</oas-tag>
 </DemoBlock>
 
+## 选中不收起
+
+浮出形态（vertical / horizontal）默认选中叶子项即收起展开的子菜单（展开态是临时的）；`close-on-select="false"` 可保持展开，适合在浮层里连续选多项。`mode="inline"` 侧边导航默认不收（用户需看到所在分区），`close-on-select="true"` 可改为收起。`kind="checkbox"` 项的勾选切换永不收起。
+
+<DemoBlock title="选中不收起（close-on-select）">
+  <oas-space direction="vertical" size="large">
+    <div style="width: 100%; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <p style="margin: 0 0 var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">vertical + close-on-select="false"：点叶子后子菜单保持展开</p>
+      <oas-menu id="menu-keep-open" close-on-select="false" style="width: 200px" onoas-select="menuKeepOpenLog(event)" items='[{"label":"编辑","value":"edit","children":[{"label":"复制","value":"copy"},{"label":"剪切","value":"cut"}]},{"label":"文件","value":"file","children":[{"label":"打开","value":"open","children":[{"label":"最近文件","value":"recent"},{"label":"项目","value":"project"}]}]},{"label":"视图","value":"view"}]'></oas-menu>
+      <oas-tag id="menu-keep-open-result" type="info">尚未选择</oas-tag>
+    </div>
+    <div style="width: 100%; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <p style="margin: 0 0 var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">inline + close-on-select="true"：点叶子后收起父级子菜单</p>
+      <oas-menu id="menu-inline-close" mode="inline" close-on-select="true" style="width: 240px" onoas-select="menuInlineCloseLog(event)" items='[{"label":"仪表盘","value":"dash","children":[{"label":"概览","value":"dash-overview"},{"label":"分析","value":"dash-analytics"}]},{"label":"设置","value":"settings"}]'></oas-menu>
+      <oas-tag id="menu-inline-close-result" type="info">尚未选择</oas-tag>
+    </div>
+  </oas-space>
+</DemoBlock>
+
 ## 手风琴
 
 `accordion`（配合 `mode="inline"`）使同级子菜单互斥：展开一个自动收起同级的其他展开项。
@@ -226,6 +245,14 @@ onMounted(() => {
     const tag = document.getElementById('menu-href-result')
     if (tag) tag.textContent = `已选择：${e.detail.value}`
   }
+  window.menuKeepOpenLog = (e) => {
+    const tag = document.getElementById('menu-keep-open-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}（子菜单保持展开）`
+  }
+  window.menuInlineCloseLog = (e) => {
+    const tag = document.getElementById('menu-inline-close-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}（父级已收起）`
+  }
   window.menuCtrlSet = (value) => {
     const menu = document.getElementById('menu-ctrl')
     if (menu) menu.setAttribute('expanded', JSON.stringify([value]))
@@ -257,6 +284,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `accordion` | 手风琴互斥（inline 模式同级只展开一个子菜单） | `boolean` | — |
+| `close-on-select` | 选中叶子项后是否收起展开的子菜单。缺省分形态：inline 侧边导航不收、浮出形态收；checkbox 项勾选切换永不收起 | `string` | — |
 | `collapsed` | 收起态（仅 vertical）：只显示图标，子菜单向右浮出 | — | — |
 | `expanded` | 受控展开项集合（JSON 数组字符串，inline 模式哪些子菜单展开）；非受控时内部管理 | `string` | — |
 | `items` | 菜单项 JSON（支持 disabled / loading 禁点、icon、children 子菜单） | `string` | `[]` |

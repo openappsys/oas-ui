@@ -168,6 +168,25 @@ With `mode="inline"` submenus expand in place (no flyout) — the mainstream sid
   <oas-tag id="menu-ctrl-result" type="info">Not touched yet</oas-tag>
 </DemoBlock>
 
+## Keep open on select
+
+Flyout modes (vertical / horizontal) collapse expanded submenus after a leaf is selected by default (expansion is temporary); `close-on-select="false"` keeps them open — handy for picking several items in a row. `mode="inline"` side navigation keeps submenus open by default (users need to see their section); `close-on-select="true"` changes that to collapse. `kind="checkbox"` items never collapse on toggle.
+
+<DemoBlock title="Keep open on select (close-on-select)">
+  <oas-space direction="vertical" size="large">
+    <div style="width: 100%; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <p style="margin: 0 0 var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">vertical + close-on-select="false": the submenu stays open after picking a leaf</p>
+      <oas-menu id="menu-keep-open" close-on-select="false" style="width: 200px" onoas-select="menuKeepOpenLog(event)" items='[{"label":"Edit","value":"edit","children":[{"label":"Copy","value":"copy"},{"label":"Cut","value":"cut"}]},{"label":"File","value":"file","children":[{"label":"Open","value":"open","children":[{"label":"Recent files","value":"recent"},{"label":"Project","value":"project"}]}]},{"label":"View","value":"view"}]'></oas-menu>
+      <oas-tag id="menu-keep-open-result" type="info">Nothing selected</oas-tag>
+    </div>
+    <div style="width: 100%; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <p style="margin: 0 0 var(--oas-space-2); font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">inline + close-on-select="true": the parent collapses after picking a leaf</p>
+      <oas-menu id="menu-inline-close" mode="inline" close-on-select="true" style="width: 240px" onoas-select="menuInlineCloseLog(event)" items='[{"label":"Dashboard","value":"dash","children":[{"label":"Overview","value":"dash-overview"},{"label":"Analytics","value":"dash-analytics"}]},{"label":"Settings","value":"settings"}]'></oas-menu>
+      <oas-tag id="menu-inline-close-result" type="info">Nothing selected</oas-tag>
+    </div>
+  </oas-space>
+</DemoBlock>
+
 ## Accordion
 
 `accordion` (with `mode="inline"`) makes sibling submenus mutually exclusive: expanding one automatically collapses the other open siblings.
@@ -226,6 +245,14 @@ onMounted(() => {
     const tag = document.getElementById('menu-href-result')
     if (tag) tag.textContent = `Selected: ${e.detail.value}`
   }
+  window.menuKeepOpenLog = (e) => {
+    const tag = document.getElementById('menu-keep-open-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value} (submenu stays open)`
+  }
+  window.menuInlineCloseLog = (e) => {
+    const tag = document.getElementById('menu-inline-close-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value} (parent collapsed)`
+  }
   window.menuCtrlSet = (value) => {
     const menu = document.getElementById('menu-ctrl')
     if (menu) menu.setAttribute('expanded', JSON.stringify([value]))
@@ -257,6 +284,7 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `accordion` | Accordion mutual exclusion (inline mode: only one sibling submenu open at a time) | `boolean` | — |
+| `close-on-select` | Whether expanded submenus collapse after a leaf item is selected. Defaults by mode: inline side navigation keeps them open, flyout modes collapse; checkbox items never collapse on toggle | `string` | — |
 | `collapsed` | Collapsed state (vertical only): icons only, submenus pop to the right | — | — |
 | `expanded` | Controlled expanded set (JSON array string; which submenus are open in inline mode); internally managed when uncontrolled | `string` | — |
 | `items` | Menu items JSON (supports disabled / loading, icon, children submenus) | `string` | `[]` |

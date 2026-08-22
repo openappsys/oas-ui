@@ -193,6 +193,35 @@ describe('OASMenu', () => {
     expect(parent.getAttribute('aria-expanded')).toBe('false')
   })
 
+  it('对照：非 inline（vertical 浮出）模式选中叶子项后仍按惯例收起全部展开（行为不回归）', () => {
+    const el = mount({ items: NESTED_ITEMS })
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    topItems(el)[0]!.click() // 展开 编辑
+    expect(topItems(el)[0]!.classList.contains('open')).toBe(true)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="copy"]')!.click()
+    expect(detail).toEqual({ value: 'copy' })
+    const parent = topItems(el)[0]!
+    expect(parent.classList.contains('open')).toBe(false)
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('对照：浮出（vertical）模式鼠标移出菜单仍收起全部展开（瞬态浮层惯例，不回归）', () => {
+    const el = mount({ items: NESTED_ITEMS })
+    const parent = topItems(el)[0]!
+    // click 展开
+    parent.click()
+    expect(parent.classList.contains('open')).toBe(true)
+    el.shadowRoot!.querySelector('.menu')!.dispatchEvent(new MouseEvent('mouseleave'))
+    expect(parent.classList.contains('open')).toBe(false)
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+    // hover 展开同样受 mouseleave 收起约束
+    parent.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(parent.classList.contains('open')).toBe(true)
+    el.shadowRoot!.querySelector('.menu')!.dispatchEvent(new MouseEvent('mouseleave'))
+    expect(parent.classList.contains('open')).toBe(false)
+  })
+
   it('ArrowRight 进入子菜单，ArrowLeft 返回', () => {
     const el = mount({ items: NESTED_ITEMS })
     const menu = el.shadowRoot!.querySelector('[role="menu"]')!
@@ -819,6 +848,33 @@ describe('OASMenu loading 菜单项', () => {
       dash.click()
       expect(sub.classList.contains('open')).toBe(false)
     })
+
+    it('inline 模式：选中叶子项后父级 inline-sub 保持展开（侧边导航不收起），oas-select 正常派发', () => {
+      const el = mount({ mode: 'inline', items: INLINE_ITEMS })
+      const dash = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dash"]')!
+      dash.click() // 展开父项
+      const sub = el.shadowRoot!.querySelector('.inline-sub[data-parent="dash"]')!
+      expect(sub.classList.contains('open')).toBe(true)
+      let detail: unknown
+      el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+      // 点叶子子项（value 写回触发全量重建，需重新查询）
+      el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dash-overview"]')!.click()
+      expect(detail).toEqual({ value: 'dash-overview' })
+      const subAfter = el.shadowRoot!.querySelector('.inline-sub[data-parent="dash"]')!
+      expect(subAfter.classList.contains('open')).toBe(true)
+    })
+
+    it('inline 模式：鼠标移出菜单容器不收起展开的子菜单（侧边导航持续上下文，缺陷回归）', () => {
+      const el = mount({ mode: 'inline', items: INLINE_ITEMS })
+      const dash = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dash"]')!
+      dash.click() // 展开父项
+      const sub = el.shadowRoot!.querySelector('.inline-sub[data-parent="dash"]')!
+      expect(sub.classList.contains('open')).toBe(true)
+      // 鼠标移出整个菜单容器：inline 是持续导航上下文，展开态不受移出影响
+      el.shadowRoot!.querySelector('.menu')!.dispatchEvent(new MouseEvent('mouseleave'))
+      const subAfter = el.shadowRoot!.querySelector('.inline-sub[data-parent="dash"]')!
+      expect(subAfter.classList.contains('open')).toBe(true)
+    })
   })
 
   describe('expanded 双模式（受控/非受控）', () => {
@@ -868,6 +924,19 @@ describe('OASMenu loading 菜单项', () => {
       expect(subB).not.toBeNull()
       expect(subA === null || !subA.classList.contains('open')).toBe(true)
     })
+
+    it('inline + accordion：选中叶子项后同样不收起父级子菜单', () => {
+      const el = mount({ mode: 'inline', accordion: '', items: ACC_ITEMS })
+      el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="a"]')!.click() // 展开 a
+      const subA = el.shadowRoot!.querySelector('.inline-sub[data-parent="a"]')!
+      expect(subA.classList.contains('open')).toBe(true)
+      let detail: unknown
+      el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+      el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="a1"]')!.click()
+      expect(detail).toEqual({ value: 'a1' })
+      const subAfter = el.shadowRoot!.querySelector('.inline-sub[data-parent="a"]')!
+      expect(subAfter.classList.contains('open')).toBe(true)
+    })
   })
 
   describe('水平溢出收纳（horizontal）', () => {
@@ -880,5 +949,110 @@ describe('OASMenu loading 菜单项', () => {
       // 水平溢出收纳的机制（··· 收纳项/overflow 容器）
       expect(css).toMatch(/overflow|ellipsis|more/)
     })
+  })
+})
+
+// ===== close-on-select：选中叶子项后是否收起展开的子菜单 =====
+// 缺省按形态：inline 侧边导航不收（用户需看到所在分区）、浮出（vertical/horizontal）收（展开态是临时的）；
+// 显式 close-on-select="false" 任何形态都不收、close-on-select="true" 任何形态都收；
+// kind="checkbox" 项的勾选切换永不收起（连续勾选场景，通用做法）。
+
+describe('close-on-select 选中收起策略', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  const NESTED2 = JSON.stringify([
+    {
+      label: '编辑',
+      value: 'edit',
+      children: [
+        { label: '复制', value: 'copy' },
+        { label: '剪切', value: 'cut' },
+      ],
+    },
+    { label: '视图', value: 'view' },
+  ])
+
+  const INLINE2 = JSON.stringify([
+    {
+      label: '仪表盘',
+      value: 'dash',
+      children: [
+        { label: '概览', value: 'dash-overview' },
+        { label: '分析', value: 'dash-analytics' },
+      ],
+    },
+    { label: '设置', value: 'settings' },
+  ])
+
+  it('浮出（vertical）默认：点叶子后收起展开的子菜单（既有行为对照，不回归）', () => {
+    const el = mount({ items: NESTED2 })
+    el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.click()
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.classList.contains('open'),
+    ).toBe(true)
+    el.shadowRoot!.querySelector<HTMLElement>('[data-value="copy"]')!.click()
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!
+    expect(parent.classList.contains('open')).toBe(false)
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+    expect(el.getAttribute('value')).toBe('copy')
+  })
+
+  it('浮出 + close-on-select="false"：点叶子后子菜单保持展开（连选多项场景）', () => {
+    const el = mount({ items: NESTED2, 'close-on-select': 'false' })
+    el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.click()
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.classList.contains('open'),
+    ).toBe(true)
+    el.shadowRoot!.querySelector<HTMLElement>('[data-value="copy"]')!.click()
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!
+    expect(parent.classList.contains('open')).toBe(true)
+    expect(parent.getAttribute('aria-expanded')).toBe('true')
+    expect(el.getAttribute('value')).toBe('copy')
+  })
+
+  // inline 默认不收起：既有「mode="inline" 就地展开」describe 的
+  // 「inline 模式：选中叶子项后父级 inline-sub 保持展开」已覆盖，不重复
+
+  it('inline + close-on-select="true"：点叶子后收起父级子菜单', () => {
+    const el = mount({ mode: 'inline', items: INLINE2, 'close-on-select': 'true' })
+    el.shadowRoot!.querySelector<HTMLElement>('[data-value="dash"]')!.click()
+    const sub = el.shadowRoot!.querySelector('.inline-sub[data-parent="dash"]')!
+    expect(sub.classList.contains('open')).toBe(true)
+    el.shadowRoot!.querySelector<HTMLElement>('[data-value="dash-overview"]')!.click()
+    const subAfter = el.shadowRoot!.querySelector('.inline-sub[data-parent="dash"]')!
+    expect(subAfter.classList.contains('open')).toBe(false)
+    expect(el.getAttribute('value')).toBe('dash-overview')
+  })
+
+  it('浮出 + checkbox 子项：点 checkbox 项后不收起（连续勾选场景，即使默认浮出应收）', () => {
+    const el = mount({
+      items: JSON.stringify([
+        {
+          label: '显示',
+          value: 'display',
+          children: [
+            { label: '网格线', value: 'gridlines', kind: 'checkbox' },
+            { label: '标尺', value: 'ruler', kind: 'checkbox' },
+          ],
+        },
+        { label: '视图', value: 'view' },
+      ]),
+    })
+    el.shadowRoot!.querySelector<HTMLElement>('[data-value="display"]')!.click()
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[data-value="display"]')!.classList.contains('open'),
+    ).toBe(true)
+    el.shadowRoot!.querySelector<HTMLElement>('[data-value="gridlines"]')!.click()
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[data-value="display"]')!
+    expect(parent.classList.contains('open')).toBe(true)
+    expect(parent.getAttribute('aria-expanded')).toBe('true')
+    // 勾选态正常写回 value（JSON 数组）
+    expect(JSON.parse(el.getAttribute('value')!)).toContain('gridlines')
   })
 })
