@@ -943,9 +943,21 @@ export class OASMenu extends OASElement {
     if (this.getAttr('mode') !== 'horizontal') return
     const menuEl = this.menuEl
     if (!menuEl) return
-    // 顶层项（排除收纳项本身）
-    const topItems = [...menuEl.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]')]
+    // 顶层项（排除收纳项本身——它是镜像容器不是数据项；曾误纳入计算致自己被 data-collapsed 隐藏）
+    const topItems = [...menuEl.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]:not(.menu-more)')]
     if (topItems.length === 0) return
+    const moreItem = this.moreItemEl ?? menuEl.querySelector<HTMLElement>('.menu-more')
+    // 先复位再测量：collapsed 项 display:none 宽为 0，收纳项隐藏时也不占宽，
+    // 直接量会把「已收纳状态」误判成「无溢出」（RO 再次触发时全部弹回）
+    topItems.forEach((t) => t.removeAttribute('data-collapsed'))
+    if (moreItem) moreItem.hidden = true
+    // 显示收纳项量出其宽度（有溢出时它要占位，可用宽度须扣除；无溢出最后会再隐藏）
+    let moreWidth = 0
+    if (moreItem) {
+      moreItem.hidden = false
+      moreWidth = moreItem.offsetWidth
+      moreItem.hidden = true
+    }
     const avail = menuEl.clientWidth
     // 累积宽度，超出可用宽度的标记 data-collapsed
     let acc = 0
@@ -954,12 +966,22 @@ export class OASMenu extends OASElement {
       acc += t.offsetWidth
       if (firstOverflow === -1 && acc > avail) firstOverflow = i
     })
-    const hasOverflow = firstOverflow !== -1
+    let hasOverflow = firstOverflow !== -1
+    if (hasOverflow && moreWidth > 0) {
+      // 有溢出：收纳项自身占 moreWidth，重算首个溢出项（可用宽度 - 收纳项宽）
+      const avail2 = avail - moreWidth
+      acc = 0
+      firstOverflow = -1
+      topItems.forEach((t, i) => {
+        acc += t.offsetWidth
+        if (firstOverflow === -1 && acc > avail2) firstOverflow = i
+      })
+      if (firstOverflow === -1) firstOverflow = topItems.length - 1 // 兜底：至少收一项腾位
+    }
     topItems.forEach((t, i) => {
       t.toggleAttribute('data-collapsed', hasOverflow && i >= firstOverflow)
     })
     // 收纳项「···」显隐 + 子菜单内容（被收项镜像，点击激活对应 value）
-    const moreItem = this.moreItemEl ?? menuEl.querySelector<HTMLElement>('.menu-more')
     if (!moreItem) return
     moreItem.hidden = !hasOverflow
     const moreSub = moreItem.querySelector<HTMLElement>('.menu-more-sub')
