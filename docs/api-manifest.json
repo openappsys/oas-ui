@@ -3968,6 +3968,12 @@
         "name": "accordion",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "close-on-select",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],

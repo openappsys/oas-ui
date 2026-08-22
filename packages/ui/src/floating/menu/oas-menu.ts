@@ -341,7 +341,17 @@ const STYLE = `
 
 export class OASMenu extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['items', 'value', 'mode', 'collapsed', 'theme', 'max-height', 'expanded', 'accordion']
+    return [
+      'items',
+      'value',
+      'mode',
+      'collapsed',
+      'theme',
+      'max-height',
+      'expanded',
+      'accordion',
+      'close-on-select',
+    ]
   }
 
   private itemsList: MenuItem[] = []
@@ -372,9 +382,11 @@ export class OASMenu extends OASElement {
     const menuEl = this.shadow.querySelector<HTMLElement>('.menu')!
     this.menuEl = menuEl
     menuEl.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
-    // 鼠标移出整个菜单时收起所有浮层
+    // 鼠标移出整个菜单时收起所有浮层（仅浮出形态：vertical/horizontal 的 popup 子菜单是
+    // 瞬态浮层，移出收起是通行惯例；inline 侧边导航的展开态是持续导航上下文——
+    // 可能还受控于宿主 expanded 属性，鼠标移出菜单区域不得收起）
     menuEl.addEventListener('mouseleave', () => {
-      if (this.expanded.size > 0) {
+      if (this.getAttr('mode') !== 'inline' && this.expanded.size > 0) {
         this.expanded.clear()
         this.syncOpen()
       }
@@ -799,6 +811,15 @@ export class OASMenu extends OASElement {
     el?.classList.add('active')
   }
 
+  /** 选中叶子项后是否收起展开的子菜单。缺省按形态：inline 侧边导航不收（一致）、
+      浮出形态收（主流默认）；显式 close-on-select="true"/"false" 覆盖缺省。 */
+  private closeOnSelect(): boolean {
+    // 布尔属性语义：存在即 true（含 close-on-select="" 空值），仅显式 "false" 关闭；
+    // 未设置（hasAttr 为 false）时按形态缺省——inline 不收、浮出（vertical/horizontal）收
+    if (!this.hasAttr('close-on-select')) return this.getAttr('mode') !== 'inline'
+    return this.getAttr('close-on-select', '') !== 'false'
+  }
+
   private select(item: MenuItem, scope = ''): void {
     // action 项：动作语义，不参与 value 选中态（不写回、不打勾），只通知宿主
     if (item.kind === 'action') {
@@ -816,8 +837,9 @@ export class OASMenu extends OASElement {
       this.setAttribute('value', next)
       this.emit('select', { value: item.value })
     }
-    // 级联浮出菜单惯例：选中叶子项后收回所有展开的子菜单（展开态是临时的）
-    if (this.expanded.size > 0) {
+    // 选中后子菜单展开态：checkbox 项勾选切换永不收起（连续勾选场景）；
+    // 其余按 close-on-select（缺省分形态：inline 不收、浮出收）
+    if (item.kind !== 'checkbox' && this.closeOnSelect() && this.expanded.size > 0) {
       this.expanded.clear()
       this.syncOpen()
     }

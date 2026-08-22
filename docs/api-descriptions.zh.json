@@ -871,6 +871,7 @@
   "oas-menu": {
     "attrs": {
       "collapsed": "收起态（仅 vertical）：只显示图标，子菜单向右浮出",
+      "close-on-select": "选中叶子项后是否收起展开的子菜单。缺省分形态：inline 侧边导航不收、浮出形态收；checkbox 项勾选切换永不收起",
       "items": "菜单项 JSON（支持 disabled / loading 禁点、icon、children 子菜单）",
       "mode": "布局模式：`vertical` 纵向菜单 / `horizontal` 顶部导航条",
       "theme": "局部主题：`dark` 使用暗色 token（独立于全局主题）",
