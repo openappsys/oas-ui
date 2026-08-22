@@ -151,31 +151,93 @@ const STYLE = `
   border-left: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
 }
-/* arrow-merge（C1 独家项）：*-start/*-end 位置箭头贴角与面板圆角融合成直角三角
-   —— 交叉轴贴角 + 对应角圆角清零（arrow-merge 语义） */
-.card.arrow-merge[data-placement^='bottom'][data-placement$='-start'] .arrow {
-  left: -4px;
+/* arrow-merge（C1）：直角三角与面板角共边融合（通用形态，仅 *-start/*-end 生效，
+    center placement 不触发）。箭头为不旋转的 8px 方块整悬面板外、贴齐角两边，clip-path
+    裁成直角三角——直角顶点贴面板角点，两条直角边与面板角两边共线，斜边 45° 朝面板内，
+    尖端从角点正交外探 8px 指向锚点侧（视觉是「面板角本身伸出的直角尖」）。
+    面板有 1px 描边：箭头盒贴角边让位 1px（主轴边外 -8px 压进面板描边带、起止侧边 -1px），
+    两条直角边上的描边恰好与面板描边带共带续接，斜边不描边（clip 裁平，视觉干净）。
+    逐向写死（不能用 ^前缀 + $='-start'/'-end' 后缀匹配——它对 12 向恒取顶角/恒写水平轴，
+    top 系零错角、left-start 箭头会被拉到对侧边；且后缀规则与居中 calc 同设 left/top 时
+    over-constrained，*-end 让位边被忽略、箭头留在居中位）：bottom 系悬顶边
+    （start→左上角、end→右上角）、top 系悬底边（start→左下角、end→右下角）、left 系
+    悬右边（start→右上角、end→右下角）、right 系悬左边（start→左上角、end→左下角）。
+    -end 向显式 left/top: auto 解除与基础居中 calc 的 over-constrained，让位边才生效 */
+.card.arrow-merge[data-placement='bottom-start'] .arrow {
+  top: -8px;
+  left: -1px;
+  transform: none;
+  border: none;
+  border-left: 1px solid var(--oas-color-border);
+  border-bottom: 1px solid var(--oas-color-border);
+  clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
 }
-.card.arrow-merge[data-placement^='bottom'][data-placement$='-end'] .arrow {
-  right: -4px;
+.card.arrow-merge[data-placement='bottom-end'] .arrow {
+  top: -8px;
+  right: -1px;
+  left: auto;
+  transform: none;
+  border: none;
+  border-right: 1px solid var(--oas-color-border);
+  border-bottom: 1px solid var(--oas-color-border);
+  clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
 }
-.card.arrow-merge[data-placement^='top'][data-placement$='-start'] .arrow {
-  left: -4px;
+.card.arrow-merge[data-placement='top-start'] .arrow {
+  bottom: -8px;
+  left: -1px;
+  transform: none;
+  border: none;
+  border-left: 1px solid var(--oas-color-border);
+  border-top: 1px solid var(--oas-color-border);
+  clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
 }
-.card.arrow-merge[data-placement^='top'][data-placement$='-end'] .arrow {
-  right: -4px;
+.card.arrow-merge[data-placement='top-end'] .arrow {
+  bottom: -8px;
+  right: -1px;
+  left: auto;
+  transform: none;
+  border: none;
+  border-right: 1px solid var(--oas-color-border);
+  border-top: 1px solid var(--oas-color-border);
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
 }
-.card.arrow-merge[data-placement^='left'][data-placement$='-start'] .arrow {
-  top: -4px;
+.card.arrow-merge[data-placement='left-start'] .arrow {
+  right: -8px;
+  top: -1px;
+  transform: none;
+  border: none;
+  border-top: 1px solid var(--oas-color-border);
+  border-left: 1px solid var(--oas-color-border);
+  clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
 }
-.card.arrow-merge[data-placement^='left'][data-placement$='-end'] .arrow {
-  bottom: -4px;
+.card.arrow-merge[data-placement='left-end'] .arrow {
+  right: -8px;
+  bottom: -1px;
+  top: auto;
+  transform: none;
+  border: none;
+  border-bottom: 1px solid var(--oas-color-border);
+  border-left: 1px solid var(--oas-color-border);
+  clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
 }
-.card.arrow-merge[data-placement^='right'][data-placement$='-start'] .arrow {
-  top: -4px;
+.card.arrow-merge[data-placement='right-start'] .arrow {
+  left: -8px;
+  top: -1px;
+  transform: none;
+  border: none;
+  border-top: 1px solid var(--oas-color-border);
+  border-right: 1px solid var(--oas-color-border);
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
 }
-.card.arrow-merge[data-placement^='right'][data-placement$='-end'] .arrow {
-  bottom: -4px;
+.card.arrow-merge[data-placement='right-end'] .arrow {
+  left: -8px;
+  bottom: -1px;
+  top: auto;
+  transform: none;
+  border: none;
+  border-bottom: 1px solid var(--oas-color-border);
+  border-right: 1px solid var(--oas-color-border);
+  clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
 }
 .card.arrow-merge[data-placement='bottom-start'] {
   border-top-left-radius: 0;
@@ -695,6 +757,9 @@ export class OASHoverCard extends OASElement {
     arrow.style.left = ''
     arrow.style.top = ''
     if (!this.hasAttr('arrow-point-at-center')) return
+    // arrow-merge（C1）：箭头由 CSS 钉死面板角点（直角三角贴角共边），内联偏移会让三角盒
+    // 脱离角点、破坏与面板角的共边衔接——跳过指向中心计算
+    if (this.hasAttr('arrow-merge')) return
     const vertical = placement.startsWith('top') || placement.startsWith('bottom')
     const rect = this.card.getBoundingClientRect()
     const popupEdge = vertical

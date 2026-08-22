@@ -219,7 +219,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `append-to` | 定位容器选择器（如 `#panel`）：设置后卡片改为绝对定位在该容器内（容器提升为相对定位上下文），坐标随容器换算；未设置时走 `position: fixed` 视口坐标 | — | — |
 | `arrow` | 是否显示箭头，默认 true；`arrow="false"` 隐藏，箭头元素与 `::part(arrow)` 保留 | `string` | `true` |
-| `arrow-merge` | 箭头贴角融合模式：*-start/*-end 位置下箭头与面板圆角融合成直角三角（对应角圆角清零），居中位置不生效 | `boolean` | — |
+| `arrow-merge` | 箭头贴角融合模式：*-start/*-end 位置下直角三角与面板角共边融合——直角贴角点、直角边与面板两边共线（描边与面板描边共带续接），尖端正交指向锚点，对应角圆角归零；居中位置不生效 | `boolean` | — |
 | `arrow-point-at-center` | 箭头指向触发器中心（面板被视口避让偏移后仍指向锚点）；默认箭头保持面板中心 | `boolean` | — |
 | `auto-adjust-overflow` | 视口边缘自动调整（翻转/夹取），默认 true；`"false"` 关闭，按声明 placement 严格定位（浮层可越出视口） | `string` | `true` |
 | `close-delay` | 关闭延迟（毫秒），与 open-delay 分离；未设置时回退 `delay` 别名，再回退默认 150 | — | — |
