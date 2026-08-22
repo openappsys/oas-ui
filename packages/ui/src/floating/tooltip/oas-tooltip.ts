@@ -365,8 +365,12 @@ export class OAStooltip extends OASElement {
   setOpen(open: boolean): void {
     if (this.hasAttr('virtual')) return
     if (this.hasAttr('disabled')) return
-    if (open) this.setAttribute('open', '')
-    else {
+    if (open) {
+      // 状态未变时不重复写属性：同值 setAttribute 也会触发 attributeChangedCallback
+      // （Chromium 实测），click → focusin 路径会多跑一次 update/重定位，
+      // 与 hover 单开的落点产生分歧
+      if (!this.hasAttr('open')) this.setAttribute('open', '')
+    } else if (this.hasAttr('open')) {
       this.removeAttribute('open')
       lastCloseAt = Date.now()
     }
@@ -646,7 +650,7 @@ export class OAStooltip extends OASElement {
     if (!this.tipEl) return
     const anchorRect = this.anchorRect()
     if (!anchorRect) return
-    const tipRect = this.tipEl.getBoundingClientRect()
+    const popup = this.popupRect()
     const placement = this.getAttr('placement', 'top') as Placement
     const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
     const offset = this.getNum('offset', 8)
@@ -654,7 +658,7 @@ export class OAStooltip extends OASElement {
     const padding = this.getNum('collision-padding', 4)
     const { top, left, placement: actual } = computePosition(
       anchorRect,
-      tipRect,
+      popup,
       placement,
       { width: window.innerWidth, height: window.innerHeight },
       offset,
@@ -665,6 +669,25 @@ export class OAStooltip extends OASElement {
     this.tipEl.style.left = `${left}px`
     this.tipEl.setAttribute('data-placement', actual)
     this.positionArrow(anchorRect, actual)
+  }
+
+  /**
+   * 浮层自身尺寸测量：优先 offsetWidth/offsetHeight（布局尺寸，不含 transform）。
+   * tip-enter 进场动画的 scale(0.9) 会污染 getBoundingClientRect（打开瞬间的首帧测量
+   * 拿到缩小 ~10% 的宽高），导致居中/间距/翻转判定按错误尺寸计算，且不同触发路径
+   * （hover 即时打开 vs focus 稍后重定位）测量时机不同会造成落点分歧。
+   * offset* 为 0 时（无布局引擎的测试环境 / display:none）回落 getBoundingClientRect。
+   */
+  private popupRect(): DOMRect {
+    const rect = this.tipEl!.getBoundingClientRect()
+    return {
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      width: this.tipEl!.offsetWidth || rect.width,
+      height: this.tipEl!.offsetHeight || rect.height,
+    } as DOMRect
   }
 
   /**
@@ -681,13 +704,17 @@ export class OAStooltip extends OASElement {
     if (!this.hasAttr('arrow-point-at-center')) return
     const vertical = actual.startsWith('top') || actual.startsWith('bottom')
     const rect = this.tipEl.getBoundingClientRect()
+    // 交叉轴尺寸用布局尺寸（offset*，不受进场动画 scale 污染），0 时回落 rect
+    const crossSize = vertical
+      ? this.tipEl.offsetWidth || rect.width
+      : this.tipEl.offsetHeight || rect.height
     const popupEdge = vertical
       ? parseFloat(this.tipEl.style.left)
       : parseFloat(this.tipEl.style.top)
     const anchorCrossCenter = vertical
       ? anchorRect.left + anchorRect.width / 2
       : anchorRect.top + anchorRect.height / 2
-    const size = vertical ? rect.width : rect.height
+    const size = crossSize
     if (!Number.isFinite(size) || size <= 0) return
     // 锚点中心映射到面板局部坐标，夹取到面板内（4px 边距），避免箭头探出面板
     const local = anchorCrossCenter - popupEdge
