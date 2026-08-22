@@ -17,7 +17,7 @@ const HOVER_DELAY = 150
 const HOVER_HIDE_DELAY = 100
 
 /** 12 向 placement 的主轴基向（跨轴对齐后缀 -start/-end 由 position() 另行应用） */
-type PlacementBase = Placement
+type PlacementBase = 'top' | 'bottom' | 'left' | 'right'
 /** 交叉轴对齐后缀：''=居中，start/end=面板边贴合锚点边 */
 type Align = '' | 'start' | 'end'
 
@@ -521,7 +521,8 @@ export class OASDropdown extends OASElement {
       const r = computePosition(anchorRect, panelRect, base, viewport, offset)
       top = r.top
       left = r.left
-      baseActual = r.placement
+      // 入参为 4 向基向（center 对齐），引擎返回 placement 必为 4 向基向（含翻转），类型上收窄
+      baseActual = r.placement as PlacementBase
     } else {
       const anchorCenterX = anchorRect.left + anchorRect.width / 2
       const anchorCenterY = anchorRect.top + anchorRect.height / 2

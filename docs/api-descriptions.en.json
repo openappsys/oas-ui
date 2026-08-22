@@ -19,14 +19,38 @@
   },
   "oas-anchor": {
     "attrs": {
-      "active": "Currently highlighted href",
-      "items": "Anchor items JSON",
-      "offset": "Highlight offset in px"
+      "active": "Currently highlighted href (controlled: external set/remove takes effect immediately; the scroll spy writes it back)",
+      "items": "Anchor items JSON; items support `children` (multi-level nesting), `target` (e.g. `_blank`) and per-item `targetOffset`",
+      "offset": "Highlight detection offset in px: how early a section's top crosses the detection line",
+      "scroll-container": "Scroll container selector or element id; when unset the viewport (window) is used",
+      "target-offset": "Click landing offset in px (avoids fixed headers); falls back to `offset` when unset; per-item `targetOffset` wins",
+      "direction": "Layout direction: `vertical` / `horizontal`",
+      "affix": "Enable affix (sticky positioning, sticks to the scroll viewport/container)",
+      "affix-offset": "Distance from the scroll viewport top when affixed (px)",
+      "bounds": "Trigger boundary (px, default 5): extra lead for a section's top crossing the detection line, avoids highlight flicker",
+      "block": "Scroll landing alignment: `start` / `center` / `end`",
+      "hash": "Whether clicking updates the URL hash (default true; `false` disables)",
+      "replace": "History control: use `history.replaceState` instead of pushState",
+      "duration": "Smooth scroll duration in ms (default 300; `0` jumps instantly)",
+      "size": "Size: `small` / `medium` / `large`",
+      "variant": "Style variant: `default` (rail + moving ink) / `underline` (sliding underline) / `lineless` (no axis) / `block` (filled background)",
+      "internal-scrollable": "Make the anchor list itself internally scrollable (max-height + overflow-y: auto)",
+      "animation": "Smooth scroll switch (default true; `false` jumps instantly)",
+      "get-current-anchor": "Custom highlight strategy: attribute names a global function that receives the computed candidate href and returns the actual href to highlight; the `getCurrentAnchor` property also accepts a function"
     },
     "events": {
-      "oas-change": "An anchor was clicked, `detail: { href }`"
+      "oas-change": "Fired on highlight change (both click and scroll-driven), `detail: { href, prevHref }`"
     },
     "slots": {}
+  },
+  "oas-anchor-target": {
+    "attrs": {
+      "id": "Target marker id: synced to the inner `part=target` element, used by anchor items as the scroll landing target"
+    },
+    "events": {},
+    "slots": {
+      "": "The marked target content (e.g. multi-level headings)"
+    }
   },
   "oas-aspect-ratio": {
     "attrs": {
@@ -73,14 +97,32 @@
   },
   "oas-back-top": {
     "attrs": {
+      "append-to": "Teleport mount point: a CSS selector; on connect the component is moved under that container (kept in place when unset)",
+      "badge": "Badge content: text/number shown in a small badge at the button's top-right corner",
       "bottom": "Distance from the viewport bottom",
+      "duration": "Smooth-scroll duration (ms), default 400; 0 or `prefers-reduced-motion` jumps directly",
+      "easing": "Scroll easing function: `linear` / `ease` / `ease-in` / `ease-out` / `ease-in-out` / `quad-*` / `cubic-*` / `quart-*` / `quint-*` / `expo-*` / `circ-*` / `back-*`, default `quart-out`",
+      "expand": "Full-width bar mode: the button spans the full viewport bottom (content centered horizontally); ignores `position` / `bottom` / `right`",
+      "position": "8-direction enum: `top-left` / `top-center` / `top-right` / `middle-left` / `middle-right` / `bottom-left` / `bottom-center` / `bottom-right`; replaces the numeric `bottom` / `right` positioning when set (`middle-*` vertically centers); invalid values silently fall back to `bottom` / `right`",
+      "reverse": "Reverse mode: becomes a \"scroll to bottom\" button (hidden near the container bottom; clicking scrolls to the container bottom)",
       "right": "Distance from the viewport right edge",
-      "visible": "Whether the button is shown"
+      "shape": "Button shape: `circle` (default, round) / `square` (square corners)",
+      "show-progress": "Scroll progress ring: a progress ring around the button edge (SVG circle computed over the `target` container scroll range)",
+      "size": "Size tier: `small` (32px) / `medium` (default, 40px) / `large` (48px)",
+      "target": "Scroll target container: a CSS selector; when set the component listens to that container's scroll and scrolls back to its top/bottom (default: window)",
+      "theme": "Theme variant: `light` (default, light) / `primary` (primary fill) / `dark` (dark surface, auto-inverted in dark theme to keep contrast)",
+      "tooltip": "Hover hint text: shows a bubble tooltip on hover / keyboard focus",
+      "transition": "Enter/exit transition: `fade` (default, fade in/out) / `scale` (zoom) / `none`; disabled under `prefers-reduced-motion`",
+      "visibility-height": "Scroll threshold (px): the button auto-shows once scrolled beyond it, default 400",
+      "visible": "Controlled visibility: when present the host fully controls show/hide (scroll does not interfere); when absent the button auto-toggles by the scroll threshold"
     },
     "events": {
-      "oas-click": "The button was clicked (then smooth-scrolls to the top)"
+      "oas-click": "The button was clicked (then scrolls to the target container top/bottom)",
+      "oas-visibility-change": "Visibility state changed, `detail: { visible: boolean }` (dispatched on both controlled and uncontrolled switches; the initial sync on mount is not dispatched)"
     },
-    "slots": {}
+    "slots": {
+      "": "Custom button content (replaces the built-in arrow icon when present)"
+    }
   },
   "oas-backdrop": {
     "attrs": {
@@ -142,14 +184,22 @@
   },
   "oas-breadcrumb": {
     "attrs": {
+      "active-last": "Keep the last item clickable: when the current (last) item has `href`, render it as a link (still carrying `aria-current=\"page\"`)",
+      "collapse-text": "Custom text for the collapse ellipsis (default `…`)",
       "collapsed": "Collapse mode: when there are more items than `max-items`, middle items collapse into `…`; click to expand the dropdown",
+      "color": "Visual variant: the current item and link hover use the specified semantic color (`primary`/`success`/`warning`/`danger`/`info`)",
       "ellipsis": "Single-line ellipsis: the breadcrumb never wraps; overflowing link text is truncated with an ellipsis",
-      "items": "Breadcrumb items JSON",
+      "items": "Breadcrumb items JSON: `label`/`href`/`icon`/`disabled`/`target`/`separator`/`dropdown`/`maxWidth`/`active`",
+      "items-after-collapse": "Number of items kept after the collapse ellipsis (default `max-items - 2`)",
+      "items-before-collapse": "Number of items kept before the collapse ellipsis (default `1`)",
+      "max-item-width": "Global max width per item (px): overflow is truncated with an ellipsis + `title` tooltip; per-item `maxWidth` overrides",
       "max-items": "Maximum number of visible items in collapse mode (including `…`); invalid values fall back to `4`",
-      "separator": "Separator"
+      "separator": "Separator (supports icon names, e.g. `chevron-right`)",
+      "size": "Size preset: `small`/`medium` (default)/`large`",
+      "variant": "Style variant: `underline` (links and the current item are permanently underlined)"
     },
     "events": {
-      "oas-select": "A link item or a collapsed dropdown item was clicked, `detail: { value: href }`"
+      "oas-select": "A link item, a collapsed dropdown item, or an item dropdown item was clicked; `detail: { value: href }` (real links do not block default navigation; hosts may intercept for routing)"
     },
     "slots": {}
   },
@@ -367,13 +417,34 @@
   },
   "oas-command": {
     "attrs": {
-      "items": "Command items JSON",
-      "open": "Whether open (controlled; auto-removed after selection / Esc)"
+      "items": "Command items JSON (root page; sub-pages via `item.page`, supports `icon` / `shortcut` / `description` / `page` / `view` / `forceMount` / `separator` fields)",
+      "open": "Whether open (controlled; auto-removed after selection / Esc; fires `oas-open-change` on open and close)",
+      "value": "Search query (controlled; two-way via `oas-input` echo-back)",
+      "selected": "Active item value (controlled; arrow keys / hover fire `oas-active` for the host to echo back)",
+      "hotkey": "Invocation shortcut combos, e.g. `ctrl+k` / `meta+shift+p` (comma-separated for multiple; supports mod/meta/ctrl/alt/shift); `false` disables the built-in listener (default `mod+k`)",
+      "should-filter": "`false` disables built-in filtering and score sorting (filtering delegated to the host, for async/server data sources)",
+      "loading": "Async loading placeholder (loading row in the list + `aria-busy`)",
+      "limit": "Max rendered items (default `50`; not applied in virtual mode)",
+      "recent": "Track recently used (selected items pinned to top, deduped, capped at 10)",
+      "recent-storage-key": "localStorage key for recent persistence (requires `recent`; restored across instances)",
+      "close-on-select": "Close the panel after selecting (default true; `false` keeps it open for consecutive actions)",
+      "multiple": "Multiple-select mode (toggle checks + batch run via the footer confirm button)",
+      "virtual": "Virtual scrolling for large datasets (reuses oas-virtual-list)",
+      "item-height": "Virtual row height (default `36`)"
     },
     "events": {
-      "oas-select": "A command was executed, `detail: { value }`"
+      "oas-select": "A command was executed, `detail: { value }`; multi-select confirm `detail: { values }`",
+      "oas-open-change": "Panel opened/closed, `detail: { open }`",
+      "oas-input": "Search input, `detail: { value }` (request channel for `should-filter=false` external filtering)",
+      "oas-active": "Active item changed, `detail: { value }` (basis for controlled `selected` echo-back)",
+      "oas-change": "Multi-select toggle, `detail: { values }`",
+      "oas-page-change": "Sub-page pushed/popped, `detail: { title, depth, direction }` (`direction: push|pop`)",
+      "oas-view-change": "View entered/exited, `detail: { view, title }` (exiting sends `view: ''`)"
     },
-    "slots": {}
+    "slots": {
+      "empty": "Custom empty state (read the current query via `el.query`, e.g. a \"create xyz\" entry)",
+      "footer": "Custom footer bar (defaults to `↑↓ navigate / ↵ select / esc close` hints)"
+    }
   },
   "oas-comment": {
     "attrs": {},
@@ -669,14 +740,34 @@
   },
   "oas-hover-card": {
     "attrs": {
+      "append-to": "Positioning container selector (e.g. `#panel`): the card is absolutely positioned inside that container (container is promoted to a relative positioning context), coordinates translated accordingly; defaults to `position: fixed` viewport coordinates",
+      "arrow": "Whether to show the arrow, default true; `arrow=\"false\"` hides it (the arrow element and `::part(arrow)` remain)",
+      "arrow-merge": "Corner-merged arrow mode: for *-start/*-end placements the arrow fuses with the panel corner into a right-angle triangle (the matching corner radius is zeroed); no effect for centered placements",
+      "arrow-point-at-center": "Point the arrow at the trigger center (keeps pointing at the anchor after viewport clamping); by default the arrow stays at the panel center",
+      "auto-adjust-overflow": "Auto-adjust at viewport edges (flip/clamp), default true; `\"false\"` disables it and positions strictly per the declared placement (the popup may overflow the viewport)",
+      "close-delay": "Close delay in ms, separate from open-delay; falls back to the `delay` alias, then to 150",
+      "collision-padding": "Viewport clamping padding in px, default 4",
       "content": "Content text",
-      "delay": "Show/hide delay in milliseconds",
+      "delay": "Show/hide delay in ms, legacy alias: applies to both open and close when `open-delay`/`close-delay` are unset; individual values win when set",
+      "disabled": "Disable the popup: hover/focus triggers no longer open it; the controlled `open` attribute still works",
+      "fallback-placements": "Custom fallback sequence (comma-separated bases, e.g. `left,top`): tried in order when the requested placement lacks space; defaults to flipping to the opposite side",
+      "group": "Delay group name: components sharing the same `group` value share delays — moving between members skips the open-delay (opens immediately) and closes the previous one immediately",
+      "hide-when-detached": "Hide the card when the anchor is fully scrolled out of the viewport; keeps the open state and restores automatically when scrolled back",
+      "offset": "Main-axis distance in px (gap between popup and trigger), default 8",
       "open": "Controlled display (boolean attribute; shows when present)",
-      "placement": "Popup placement",
-      "title": "Title text"
+      "open-delay": "Open delay in ms, separate from close-delay; falls back to the `delay` alias, then to 300",
+      "placement": "Popup placement, 12 directions: top/bottom/left/right × start/center/end (e.g. `bottom-start`)",
+      "skidding": "Cross-axis offset in px, shifts along the axis perpendicular to the main axis",
+      "title": "Title text",
+      "width": "Width customization: number (px) or `trigger`/`target` (same width as the trigger); falls back to CSS min-width"
     },
-    "events": {},
-    "slots": {}
+    "events": {
+      "oas-open-change": "Dispatched when the open state changes, `detail: { open }`"
+    },
+    "slots": {
+      "": "Trigger (first non-`slot=\"content\"` child), triggered on hover/focus",
+      "content": "Rich content slot: free-form HTML preview inside the card (links/buttons etc., interactive)"
+    }
   },
   "oas-icon": {
     "attrs": {
@@ -889,10 +980,22 @@
   "oas-menubar": {
     "attrs": {
       "items": "Top-level menu items JSON (with submenu `children`)",
-      "value": "Selected value. As a plain string it is a single global selection (no-group scenarios, backward compatible); as a JSON object string (e.g. `{\"mode\":\"preview\",\"theme\":\"dark\"}`) selections are recorded per group id — the `value` of a `type:\"group\"` item acts as the group id"
+      "value": "Selected value. As a plain string it is a single global selection (no-group scenarios, backward compatible); as a JSON object string (e.g. `{\"mode\":\"preview\",\"theme\":\"dark\"}`) selections are recorded per group id — the `value` of a `type:\"group\"` item acts as the group id; as a JSON array string (e.g. `[\"grid\",\"wrap\"]`) it is the checkbox checked-set (`kind:\"checkbox\"` items, multi-select)",
+      "open": "Value of the currently open top-level menu (`open=\"\"` closes all). Controlled attribute (in `observedAttributes`): an external `setAttribute('open', ...)` opens/switches/closes immediately; internal click/hover/keyboard changes write it back and dispatch `oas-open-change`, letting the host take over",
+      "trigger": "Top-level menu trigger: `click` (default, click to open first, then hover switches — desktop convention) / `hover` (hover opens directly)",
+      "loop": "Arrow-key wrap-around toggle, default `true` (loops at edges); explicit `loop=\"false\"` stops at the edges",
+      "disabled": "Disable the whole bar: top-level/sub-item clicks, keyboard navigation, shortcut hotkeys and Alt access keys are all blocked; visually desaturated",
+      "side": "First-level popup side: `bottom` (default horizontal) / `top` / `left` / `right` (default vertical); cascading submenus are unaffected",
+      "align": "First-level popup alignment: `start` (default) / `center` / `end`; with `side` top/bottom it aligns on the horizontal axis, with left/right on the vertical axis",
+      "offset": "Gap between the first-level popup and its trigger (px, default 4)",
+      "show-arrow": "Show a visual arrow on the popup pointing at the trigger",
+      "close-on-select": "Whether selecting a leaf closes the open submenu, default `true` (desktop menubar convention); `close-on-select=\"false\"` keeps it open (multi-select scenario); `kind:\"checkbox\"` items never close on toggle",
+      "orientation": "Arrangement direction: `horizontal` (default) / `vertical` (bar stacks vertically, first-level popups default to the right, arrow keys move top-level items up/down)",
+      "breakpoint": "Mobile breakpoint (px, e.g. `600`): when the viewport width is ≤ the breakpoint the bar collapses into a hamburger button + popup menu (narrow-width folding)"
     },
     "events": {
-      "oas-select": "An item was selected, `detail: { value, kind? }`. `kind` only appears for action items (`kind: \"action\"`); radio items omit `detail.kind`"
+      "oas-select": "An item was selected, `detail: { value, kind?, checked? }`. `kind` only appears for action items (`kind: \"action\"`); checkbox items carry `checked` (new checked state); radio items omit `detail.kind`",
+      "oas-open-change": "The open top-level menu changed, `detail: { value, open }` (`value` = currently open top-level menu value, `open` = whether anything is open). Fired both on controlled `setAttribute('open')` and internal click/hover/keyboard changes (not on the first frame)"
     },
     "slots": {}
   },
@@ -942,10 +1045,19 @@
   },
   "oas-navigation-menu": {
     "attrs": {
-      "items": "Navigation items JSON (hierarchical)"
+      "items": "Navigation items JSON (hierarchical; leaf items can carry `description` text and an `icon` to render mega-panel link cards)",
+      "value": "Controlled open item (top-level trigger value; empty string = closed; when present the open state follows the attribute and interactions only dispatch `oas-change` for the host to update)",
+      "delay-duration": "Hover open/close delay in ms, default 200; clicks and keyboard are immediate",
+      "skip-delay-duration": "Skip-delay window in ms, default 300: hovering another trigger within this window after a close opens it immediately",
+      "orientation": "Layout direction: `horizontal` (default) / `vertical` (panel appears to the right of triggers)",
+      "columns": "Panel grid columns, default 2 (mega-panel multi-column link cards)",
+      "backdrop": "Show an overlay when open (clicking the overlay closes)",
+      "keep-mounted": "Keep the panel DOM mounted when closed (crawler/SEO indexing)",
+      "arrow": "Pointer arrow on the popup, shown by default; `arrow=\"false\"` hides it"
     },
     "events": {
-      "oas-select": "An item was selected, `detail: { value }`"
+      "oas-select": "An item was selected (top-level leaf link or panel link card), `detail: { value }`",
+      "oas-change": "The open item changed, `detail: { value }` (value is the open top-level item value; empty string = closed)"
     },
     "slots": {}
   },
@@ -1044,18 +1156,38 @@
   },
   "oas-popover": {
     "attrs": {
+      "append-to": "Portal mount target: the panel moves into the target container (`body` or a CSS selector) when opened and moves back into the host shadow when closed; for panels clipped by host containers (overflow)",
       "arrow": "Whether to show the arrow (default true; `arrow=\"false\"` hides it, the element and `::part(arrow)` are kept)",
+      "arrow-merge": "Merge the arrow with the panel corner (C1): the arrow sits flush at the corresponding corner and the adjacent corner radius is zeroed into a right triangle; only takes effect for *-start/*-end placements, center placements are unaffected",
       "arrow-point-at-center": "Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance)",
       "auto-adjust-overflow": "Viewport-edge auto flip and avoidance (default true; `\"false\"` disables it, keeping the declared placement, which may overflow the viewport)",
+      "auto-close": "Auto close after opening for the given duration in ms, e.g. `auto-close=\"3000\"`; not set means no auto close",
+      "closable": "Show a close button at the panel's top-right (`part=\"close\"`); clicking it closes and restores focus to the trigger",
+      "close-delay": "Generic close delay in ms (default 0; used by non-hover trigger paths, hover paths prefer hover-hide-delay)",
+      "collision-padding": "Viewport-edge clamping padding in px (default 4), the gap kept when the panel avoids viewport edges",
+      "color": "Color variant: `primary` / `success` / `warning` / `danger` (tinted panel background + semantic border, derived from tokens including dark variants); unset or invalid keeps the neutral panel",
       "content": "Body text",
+      "disabled": "Disable the whole popover: click / hover / focus / contextmenu / trigger-keys triggers are all ignored; the host is desaturated and aria-disabled is synced",
+      "fallback-placements": "Custom fallback sequence (comma or space separated, e.g. `\"left, right\"`): when the requested placement does not fit, each candidate in the sequence is tried for fit; the first fit wins, if none fit the last one is clamped; unset uses the default main-axis flip",
       "focus-on-open": "Moves focus into the first focusable element of the panel when opened",
+      "fresh": "Keep updating the content while closed (by default the content is frozen while closed and the latest value is written when opened; with fresh the closed state keeps writing)",
+      "hover-delay": "Hover-trigger open debounce in ms (default 150; falls back to open-delay when unset)",
+      "hover-hide-delay": "Hover-trigger close debounce in ms (default 100; falls back to close-delay when unset)",
+      "hide-when-detached": "Hide the panel when the anchor is fully detached from the viewport (the open state is kept, avoiding a panel floating off-screen)",
+      "initial-focus": "Focus the element matched by the selector when opened (host light DOM first, including slot content; falls back to focus-on-open when unresolvable), higher priority than focus-on-open",
+      "modal": "Modal mode: full-screen backdrop + focus trap (Tab cycles inside the panel) + scroll lock + aria-modal; clicking the backdrop closes",
+      "offset": "Dual-axis offset: `\"main distance\"` or `\"main distance, cross offset\"` in px (default 8, 0), e.g. `offset=\"12, 20\"`",
       "open": "Controlled display (boolean attribute; shows when present)",
-      "placement": "Popup placement",
+      "open-delay": "Generic open delay in ms (default 0; used by non-hover trigger paths, hover paths prefer hover-delay)",
+      "placement": "Popup placement (12 directions: four bases top/bottom/left/right each with -start/-end cross-axis alignment)",
       "title": "Title text",
+      "trigger": "Trigger method: `click` (default) / `hover` / `focus` / `contextmenu` / `manual`, space separated for multiple (e.g. `\"click hover\"`)",
+      "trigger-keys": "Toggle open when the listed keys are pressed while the trigger is focused (space separated, e.g. `\"Enter Space\"`); no key binding when unset",
       "virtual": "Virtual trigger mode (same as tooltip; no anchor element)",
       "virtual-anchor": "Virtual anchor element selector (used when virtual-x/virtual-y are unset)",
       "virtual-x": "Virtual anchor x (viewport coordinate, px)",
-      "virtual-y": "Virtual anchor y (viewport coordinate, px)"
+      "virtual-y": "Virtual anchor y (viewport coordinate, px)",
+      "width": "Panel width: a number (px) / `\"trigger\"` (same width as the trigger) / any CSS value (e.g. `50%`, `240px`); unset keeps the default"
     },
     "events": {
       "oas-open-change": "open state changed, `detail: { open }`"
@@ -1587,12 +1719,29 @@
   },
   "oas-tooltip": {
     "attrs": {
+      "append-to": "Popup mount point: `body` or a CSS selector. Moves the popup into an isolated shadow inside the target container (styles stay scoped), escaping clipping contexts such as `overflow: hidden` / transform; while mounted, `::part(tip)` cannot pierce from the host — customize via CSS variables or class selectors",
       "arrow": "Whether to show the arrow (default true; `arrow=\"false\"` hides it, the element and `::part(arrow)` are kept)",
       "arrow-point-at-center": "Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance)",
+      "arrow-position": "Arrow shape: `center` (default, arrow centered on the panel edge) / `merge` (only for `*-start`/`*-end` placements; the arrow merges with the panel corner into a right triangle)",
       "auto-adjust-overflow": "Viewport-edge auto flip and avoidance (default true; `\"false\"` disables it, keeping the declared placement, which may overflow the viewport)",
-      "content": "Tooltip content text",
+      "auto-close": "Auto-close after opening (ms); `0` or absent disables it",
+      "close-delay": "Hide delay (ms, default 0): close after mouseleave/focusout",
+      "collision-padding": "Viewport-edge avoidance margin (px, default 4): the distance kept from the edge when the popup is clamped",
+      "color": "Color variant: semantic `primary`/`success`/`warning`/`danger`, one of the 11 preset names (e.g. `magenta`, `blue`), or any CSS color. All go through tokens (with dark variants); the arrow background follows",
+      "content": "Tooltip content text (the `slot=\"content\"` rich content takes precedence when present)",
+      "disabled": "Disabled: the tooltip never shows (neither hover nor a controlled `open`)",
+      "fresh": "Content freshness (default true): content changes are synced immediately even while closed; `\"false\"` freezes the content while closed, updating on next open",
+      "interactive": "Hoverable popup: moving the mouse into the popup keeps it open (`pointer-events: auto`), links inside stay reachable",
+      "max-width": "Popup max width (number in px or CSS length; defaults to the `--oas-tooltip-max-width` token, 240px)",
+      "offset": "Main-axis distance (px, default 8): the gap between the popup and the anchor along the main axis",
       "open": "Controlled display (boolean attribute; shows when present)",
-      "placement": "Popup placement",
+      "open-delay": "Show delay (ms, default 0): open after mouseenter/focusin; skipped when `skip-delay-duration` hits",
+      "placement": "Popup placement (12 directions: top/bottom/left/right × start/center/end)",
+      "skidding": "Cross-axis offset (px, default 0): top/bottom placements shift horizontally (positive right, negative left); left/right placements shift vertically (positive down, negative up)",
+      "skip-delay-duration": "Global delay-group threshold (ms, default 300): when a tooltip closes, the next one opened within this window skips its open-delay and shows immediately (responsive for consecutive hovers); `\"0\"` disables it",
+      "touch-delay": "Touch long-press trigger duration (ms, default 500): with `touch` in `trigger`, pointerdown held to the threshold opens; releasing/moving out earlier cancels",
+      "trigger": "Trigger modes (space-separated multi-select): `hover` / `focus` / `click` / `contextmenu` / `touch` / `manual`, default `hover focus`; `manual` is fully controlled",
+      "trigger-keys": "Specified keys (space-separated, e.g. `F1`): pressing one while the trigger is focused opens the tooltip",
       "virtual": "Virtual trigger mode: not bound to a host trigger element; `open` is fully controlled externally and the position is set by `virtual-anchor` or `virtual-x`/`virtual-y` (for chart points, floating hints during drag)",
       "virtual-anchor": "Anchor element selector (e.g. `#chart-point-1`); the tooltip is positioned by that element's rect. Mutually exclusive with `virtual-x`/`virtual-y` (coordinates take precedence)",
       "virtual-x": "Virtual anchor viewport X coordinate (px, e.g. mouse `clientX`); position by coordinates when set together with `virtual-y`",
@@ -1602,21 +1751,114 @@
       "oas-open-change": "Fired when the `open` state changes (show/hide), `detail: { open }`"
     },
     "slots": {
-      "": "Trigger element (hover/focus trigger); optional in `virtual` mode"
+      "": "Trigger element (hover/focus trigger); optional in `virtual` mode",
+      "content": "Rich content (takes precedence over the `content` attribute text when present)"
     }
+  },
+  "oas-toolbar": {
+    "attrs": {
+      "disabled": "Disable the whole toolbar (`aria-disabled` + `inert`; items skip roving)",
+      "focusable-when-disabled": "Keep items focusable while disabled (`aria-disabled` + clicks blocked; handy for tooltips explaining why)",
+      "loop": "Wrap-around arrow navigation: on by default; `false` stops at the ends",
+      "orientation": "Layout direction: `horizontal` (default) / `vertical` (arrow navigation follows the axis; separator becomes a horizontal line)",
+      "size": "Size step: `small` / `medium` (default) / `large`"
+    },
+    "events": {},
+    "slots": {
+      "": "Toolbar controls: buttons / oas-button / toggle group / input / links / separators, etc."
+    }
+  },
+  "oas-toolbar-input": {
+    "attrs": {
+      "disabled": "Disabled",
+      "placeholder": "Placeholder text",
+      "size": "Size step (small/medium/large); defaults to the nearest oas-toolbar's size",
+      "value": "Preset value (controlled entry; events do not write back, listen to update)"
+    },
+    "events": {
+      "oas-change": "Committed on Enter or blur, `detail: { value }`",
+      "oas-input": "While typing, `detail: { value }`"
+    },
+    "slots": {}
+  },
+  "oas-toolbar-separator": {
+    "attrs": {},
+    "events": {},
+    "slots": {}
+  },
+  "oas-toolbar-toggle": {
+    "attrs": {
+      "disabled": "Disable the whole group",
+      "items": "Options JSON (property assignment reflects one-way to the attribute)",
+      "multiple": "Multiple-select mode (each item toggles independently)",
+      "size": "Size step (small/medium/large); defaults to the nearest oas-toolbar's size",
+      "value": "Current value: string for single-select; JSON array string for multiple-select"
+    },
+    "events": {
+      "oas-change": "Toggle, `detail: { value: string | string[] }`"
+    },
+    "slots": {}
   },
   "oas-tour": {
     "attrs": {
-      "current": "Current step index",
       "open": "Start the tour (boolean attribute; starts when present)",
-      "steps": "Steps JSON"
+      "current": "Current step index",
+      "steps": "Steps JSON (`TourStep[] | string`); property assignment supports function/element targets",
+      "placement": "Popup placement: 12 directions (top/bottom/left/right × start/end/center) + `center` (centered when no target); default `bottom`; auto-flips when space is insufficient; step-level override",
+      "arrow": "Whether to show the arrow (boolean, default true; `false` hides)",
+      "mask": "Overlay switch/customization: `false` to disable (non-modal) or `{\"color\",\"style\"}` to customize (default true); step-level override",
+      "type": "Popup type: `default` / `primary` (primary-colored popup for non-modal emphasis)",
+      "gap": "Highlight padding: number (padding px) or `{\"padding\",\"radius\"}`; default padding 4",
+      "keyboard": "Keyboard ←/→ to advance steps (default true; `false` disables)",
+      "show-close": "Show the close button (default true; `false` hides)",
+      "close-icon": "Custom close button content (HTML string)",
+      "mask-click-behavior": "Overlay click behavior: `close` (default) / `next` (advance) / `none` (ignore)",
+      "target-area-clickable": "Highlight area is interactive (interceptor hidden, clicks pass through to target)",
+      "disabled-interaction": "Disable interaction on the highlighted area (interceptor covers target)",
+      "scroll-into-view-options": "`scrollIntoView` options for scrolling to the target (JSON; default `{\"behavior\":\"smooth\",\"block\":\"center\"}`)",
+      "scroll-padding": "Padding when scrolling to the target (px; applied as target scroll-margin)",
+      "auto-reposition": "Auto reposition on scroll/resize (default true)",
+      "progress-text": "Progress text template: `{{current}}/{{total}}` replacement; when set, the counter area uses the template",
+      "show-progress": "Progress bar at the top of the popup (width advances with steps)",
+      "show-bullets": "Dot indicators (click a dot to jump)",
+      "indicators": "Counter style: `dots` (default) / `number` / `none`",
+      "hide-prev": "Hide the previous button",
+      "hide-skip": "Hide the skip button",
+      "hide-next": "Hide the next button",
+      "hide-counter": "Hide the step counter",
+      "next-button-props": "Props passed through to the next button (JSON object, e.g. `{\"data-x\":\"1\"}`)",
+      "prev-button-props": "Props passed through to the previous button (JSON object)",
+      "skip-button-props": "Props passed through to the skip button (JSON object)",
+      "finish-button-props": "Props passed through to the finish button (JSON object)",
+      "advance-on-click": "Click the highlighted area to advance to the next step (interactive tour)",
+      "mode": "Popup mode: `popup` (default) / `dialog` (centered dialog without target); step-level override",
+      "lock-scroll": "Lock page scrolling during the tour (restored on close)",
+      "close-on-press-escape": "Close on Esc (default true)",
+      "wait-for-element": "Wait for the target to appear (ms, async steps; global default, step-level `waitForElement` wins)",
+      "skip-missing-element": "Skip the step when the target is missing / wait times out (default stays on the current step)",
+      "z-index": "Overlay z-index (default `--oas-z-modal`)",
+      "append-to": "Mount point: `body` or a CSS selector (moves the whole overlay into the target container)",
+      "dont-show-again": "Don't show again switch (boolean; if checked on close, remembered in localStorage)",
+      "storage-key": "localStorage key (shared by `dont-show-again` / `persist` / hint dismiss)",
+      "persist": "Multi-page tour: open/current state persisted to localStorage and restored on reconnect",
+      "typewriter": "Typewriter animation: description revealed character by character",
+      "typewriter-speed": "Typewriter speed (ms per character, default 20)",
+      "hints": "Hints beacon mode: JSON `[{id,selector,title,description,placement,dismissable}]`; persistent pulsing beacons, click to open a bubble, `dismissable` is remembered after close"
     },
     "events": {
-      "oas-cancel": "Skipped or cancelled via Esc",
-      "oas-finish": "\"Finish\" was clicked on the last step",
-      "oas-step": "The step changed, `detail: { index }`"
+      "oas-step": "Step changed, `detail: { index, current, total, next, prev }`",
+      "oas-finish": "Finish was clicked on the last step, `detail: { index, total }`",
+      "oas-cancel": "Skipped / Esc / overlay click, `detail: { index, total, source }` (source: skip/esc/close/mask)",
+      "oas-skip": "Skip button clicked, `detail: { index, total }`",
+      "oas-close": "Close button clicked, `detail: { index, total }`",
+      "oas-highlight-start": "Step highlight started (after async wait resolves), `detail: { index, total }`",
+      "oas-highlight-end": "Step highlight completed, `detail: { index, total }`",
+      "oas-destroy": "Tour closed (including external removal of `open`), `detail: { index, total }`",
+      "oas-dismiss": "Don't show again matched; tour start was blocked"
     },
-    "slots": {}
+    "slots": {
+      "cover": "Step cover rich content (slot takes precedence over the step.cover image)"
+    }
   },
   "oas-transfer": {
     "attrs": {
@@ -1738,3 +1980,5 @@
     "slots": {}
   }
 }
+
+

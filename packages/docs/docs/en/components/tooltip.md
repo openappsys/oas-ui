@@ -47,6 +47,14 @@ By default an arrow pointing at the trigger element's edge is shown; `arrow="fal
   </oas-space>
 </DemoBlock>
 
+`arrow-position="merge"` merges the arrow with the panel corner into a right triangle (only for `*-start` / `*-end` placements).
+
+<DemoBlock title="Arrow merge mode">
+  <oas-tooltip content="Arrow merged into the corner" placement="bottom-start" arrow-position="merge">
+    <oas-button>bottom-start + merge</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
 ## Viewport auto adjust
 
 By default the tooltip automatically flips along the main axis and avoids the viewport edges when space is insufficient; `auto-adjust-overflow="false"` disables the auto adjust so the panel keeps the declared placement (it may overflow the viewport).
@@ -160,7 +168,209 @@ Virtual mode (`virtual`) does not bind to a host trigger element: `open` is full
   font-size: var(--oas-font-size-sm);
   color: var(--oas-color-text-secondary);
 }
+.vp-clip {
+  overflow: hidden;
+  border: 1px dashed var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  padding: var(--oas-space-4);
+  display: inline-block;
+}
 </style>
+
+## Triggers
+
+The `trigger` attribute supports space-separated multi-selection: `hover` / `focus` / `click` / `contextmenu` / `touch` (long press) / `manual` (fully controlled). Defaults to `hover focus`.
+
+<DemoBlock title="Click trigger">
+  <oas-tooltip trigger="click" content="Click me to see the tooltip">
+    <oas-button>Click trigger</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+<DemoBlock title="Context menu trigger">
+  <oas-tooltip trigger="contextmenu" content="Right-click to show the tooltip">
+    <oas-button>Right-click me</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+<DemoBlock title="Manual trigger">
+  <oas-space size="small">
+    <oas-button size="small" onclick="manualTip(true)">Show</oas-button>
+    <oas-button size="small" onclick="manualTip(false)">Hide</oas-button>
+  </oas-space>
+  <oas-tooltip id="tip-manual" trigger="manual" content="Only controlled by the open attribute">
+    <oas-button>Controlled trigger</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+## Show / hide delay
+
+`open-delay` / `close-delay` control the delay (ms) before showing/hiding on hover, avoiding accidental triggers when moving across quickly.
+
+<DemoBlock title="Open and close delays">
+  <oas-tooltip trigger="hover" open-delay="300" close-delay="200" content="Shows 300ms after hover, hides 200ms after leave">
+    <oas-button>300ms delayed show</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+When moving quickly across multiple triggers, `skip-delay-duration` (default 300ms) makes the next tooltip skip its open-delay and appear immediately, keeping the interaction responsive.
+
+<DemoBlock title="Delay group (skip-delay-duration)">
+  <oas-space size="large" wrap>
+    <oas-tooltip trigger="hover" open-delay="300" skip-delay-duration="500" content="First: 300ms delayed">
+      <oas-button>Hover me (moving from the previous one shows instantly)</oas-button>
+    </oas-tooltip>
+    <oas-tooltip trigger="hover" open-delay="300" skip-delay-duration="500" content="Second: skips the delay when moving from the first">
+      <oas-button>Then hover me</oas-button>
+    </oas-tooltip>
+  </oas-space>
+</DemoBlock>
+
+On touch devices, `trigger="touch"` shows on long press (`touch-delay` controls the hold duration, default 500ms).
+
+<DemoBlock title="Touch long-press trigger">
+  <oas-tooltip trigger="touch" touch-delay="600" content="Shows after a 600ms long press (touch)">
+    <oas-button>Long-press me (touch)</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+## Rich content
+
+The `content` attribute shows plain text; for rich content (links, icons, multiple lines) use the `slot="content"` slot. The slot takes precedence over the attribute text.
+
+<DemoBlock title="Rich content slot">
+  <oas-tooltip placement="top">
+    <oas-button>Hover for rich content</oas-button>
+    <span slot="content">
+      <oas-space size="small" direction="vertical">
+        <span><strong>Key hint</strong></span>
+        <span>Can include a <a href="#" onclick="return false">link</a> or icons</span>
+        <oas-icon name="info" size="16" color="var(--oas-color-primary)"></oas-icon>
+      </oas-space>
+    </span>
+  </oas-tooltip>
+</DemoBlock>
+
+## Keyboard accessibility
+
+While open, pressing <kbd>Esc</kbd> closes the tooltip and restores focus to the trigger; while open, the trigger is linked to the popup via `aria-describedby` (readable by screen readers).
+
+<DemoBlock title="Esc close + aria-describedby">
+  <oas-tooltip id="tip-esc" content="Press Esc to close me" placement="bottom">
+    <oas-button>Focus and press Esc</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+`trigger-keys` lets you specify keys (space-separated) that open the tooltip when focused, e.g. `trigger-keys="F1"`.
+
+<DemoBlock title="trigger-keys open">
+  <oas-tooltip trigger="hover" trigger-keys="F1" content="Focus and press F1 to open">
+    <oas-button>Focus and press F1</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+## Max width
+
+The default max width is `240px` (opened via the `--oas-tooltip-max-width` token); the `max-width` attribute overrides it (number or CSS length).
+
+<DemoBlock title="Custom max width">
+  <oas-tooltip content="This content is very long, very long, very long, very long, very long, very long, very long, very long, very long, very long, very long" max-width="360" placement="bottom">
+    <oas-button>max-width=360</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+## Disabled
+
+With `disabled`, the tooltip never shows (neither hover nor a controlled `open`).
+
+<DemoBlock title="Disabled">
+  <oas-tooltip disabled content="Never shown">
+    <oas-button>Disabled tooltip</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+## Hoverable popup
+
+`interactive` keeps the popup open while hovering it (links inside stay reachable).
+
+<DemoBlock title="Interactive popup">
+  <oas-tooltip interactive placement="bottom" content="Hovering the popup keeps it open; links inside are clickable">
+    <oas-button>Interactive</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+## Offset and collision
+
+`offset` controls the main-axis distance (default 8px), `skidding` the cross-axis offset, and `collision-padding` the viewport-edge avoidance margin (default 4px).
+
+<DemoBlock title="offset / skidding">
+  <oas-tooltip content="offset=16 keeps it farther" offset="16" placement="bottom">
+    <oas-button>offset=16</oas-button>
+  </oas-tooltip>
+  <oas-tooltip content="skidding=24 shifts right" skidding="24" placement="bottom">
+    <oas-button>skidding=24</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+<DemoBlock title="collision-padding">
+  <oas-tooltip content="Keeps 20px from the left edge" collision-padding="20" placement="bottom">
+    <oas-button>collision-padding=20</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+## Color variants
+
+The `color` attribute supports semantic colors (`primary` / `success` / `warning` / `danger`), the 11 preset names (e.g. `magenta`, `blue`), or any CSS color. All of them go through tokens (with dark variants).
+
+<DemoBlock title="Color variants">
+  <oas-space size="large" wrap>
+    <oas-tooltip content="Primary tooltip" color="primary">
+      <oas-button>primary</oas-button>
+    </oas-tooltip>
+    <oas-tooltip content="Success tooltip" color="success">
+      <oas-button>success</oas-button>
+    </oas-tooltip>
+    <oas-tooltip content="Warning tooltip" color="warning">
+      <oas-button>warning</oas-button>
+    </oas-tooltip>
+    <oas-tooltip content="Danger tooltip" color="danger">
+      <oas-button>danger</oas-button>
+    </oas-tooltip>
+  </oas-space>
+</DemoBlock>
+
+## Mount point
+
+`append-to` mounts the popup into the given container (`body` or a CSS selector), escaping clipping contexts such as an `overflow: hidden` ancestor.
+
+<DemoBlock title="append-to body">
+  <div class="vp-clip">
+    <oas-tooltip content="Fully visible even though the parent clips overflow" append-to="body" placement="bottom">
+      <oas-button>Mount to body</oas-button>
+    </oas-tooltip>
+  </div>
+</DemoBlock>
+
+## Auto close
+
+`auto-close` (ms) closes the tooltip automatically after it opens — useful for onboarding hints.
+
+<DemoBlock title="Auto close">
+  <oas-tooltip trigger="click" auto-close="1500" content="Closes automatically after 1.5s">
+    <oas-button>Click, then it auto-closes</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+## Fresh content
+
+`fresh` is enabled by default: content changes are synced immediately even while closed (reopening always shows the latest). `fresh="false"` freezes the content while closed.
+
+<DemoBlock title="Fresh content sync">
+  <oas-tooltip id="tip-fresh" content="Initial content" trigger="hover">
+    <oas-button>Hover to view (buttons below change the content)</oas-button>
+  </oas-tooltip>
+  <oas-button size="small" onclick="freshChange()">Change content</oas-button>
+</DemoBlock>
 
 ## Edge cases
 
@@ -224,6 +434,23 @@ onMounted(() => {
       attributeFilter: ['open'],
     })
   }
+
+  // manual trigger: external buttons control show/hide
+  const manualTip = document.getElementById('tip-manual')
+  if (manualTip) {
+    window.manualTip = (open) => {
+      if (open) manualTip.setAttribute('open', '')
+      else manualTip.removeAttribute('open')
+    }
+  }
+
+  // fresh demo: change content dynamically to show sync while closed
+  const freshTip = document.getElementById('tip-fresh')
+  if (freshTip) {
+    window.freshChange = () => {
+      freshTip.setAttribute('content', `Content updated: ${new Date().toLocaleTimeString()}`)
+    }
+  }
 })
 </script>
 
@@ -233,12 +460,29 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `append-to` | Popup mount point: `body` or a CSS selector. Moves the popup into an isolated shadow inside the target container (styles stay scoped), escaping clipping contexts such as `overflow: hidden` / transform; while mounted, `::part(tip)` cannot pierce from the host — customize via CSS variables or class selectors | `string` | — |
 | `arrow` | Whether to show the arrow (default true; `arrow="false"` hides it, the element and `::part(arrow)` are kept) | `string` | `true` |
 | `arrow-point-at-center` | Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance) | `boolean` | — |
+| `arrow-position` | Arrow shape: `center` (default, arrow centered on the panel edge) / `merge` (only for `*-start`/`*-end` placements; the arrow merges with the panel corner into a right triangle) | `string` | `center` |
 | `auto-adjust-overflow` | Viewport-edge auto flip and avoidance (default true; `"false"` disables it, keeping the declared placement, which may overflow the viewport) | `string` | `true` |
-| `content` | Tooltip content text | `string` | — |
+| `auto-close` | Auto-close after opening (ms); `0` or absent disables it | — | — |
+| `close-delay` | Hide delay (ms, default 0): close after mouseleave/focusout | — | — |
+| `collision-padding` | Viewport-edge avoidance margin (px, default 4): the distance kept from the edge when the popup is clamped | — | — |
+| `color` | Color variant: semantic `primary`/`success`/`warning`/`danger`, one of the 11 preset names (e.g. `magenta`, `blue`), or any CSS color. All go through tokens (with dark variants); the arrow background follows | `string` | — |
+| `content` | Tooltip content text (the `slot="content"` rich content takes precedence when present) | `string` | — |
+| `disabled` | Disabled: the tooltip never shows (neither hover nor a controlled `open`) | `boolean` | — |
+| `fresh` | Content freshness (default true): content changes are synced immediately even while closed; `"false"` freezes the content while closed, updating on next open | `string` | `true` |
+| `interactive` | Hoverable popup: moving the mouse into the popup keeps it open (`pointer-events: auto`), links inside stay reachable | `boolean` | — |
+| `max-width` | Popup max width (number in px or CSS length; defaults to the `--oas-tooltip-max-width` token, 240px) | `string` | — |
+| `offset` | Main-axis distance (px, default 8): the gap between the popup and the anchor along the main axis | — | — |
 | `open` | Controlled display (boolean attribute; shows when present) | `boolean` | — |
-| `placement` | Popup placement | `Placement` | `top` |
+| `open-delay` | Show delay (ms, default 0): open after mouseenter/focusin; skipped when `skip-delay-duration` hits | — | — |
+| `placement` | Popup placement (12 directions: top/bottom/left/right × start/center/end) | `Placement` | `top` |
+| `skidding` | Cross-axis offset (px, default 0): top/bottom placements shift horizontally (positive right, negative left); left/right placements shift vertically (positive down, negative up) | — | — |
+| `skip-delay-duration` | Global delay-group threshold (ms, default 300): when a tooltip closes, the next one opened within this window skips its open-delay and shows immediately (responsive for consecutive hovers); `"0"` disables it | — | — |
+| `touch-delay` | Touch long-press trigger duration (ms, default 500): with `touch` in `trigger`, pointerdown held to the threshold opens; releasing/moving out earlier cancels | — | — |
+| `trigger` | Trigger modes (space-separated multi-select): `hover` / `focus` / `click` / `contextmenu` / `touch` / `manual`, default `hover focus`; `manual` is fully controlled | `string` | `hover focus` |
+| `trigger-keys` | Specified keys (space-separated, e.g. `F1`): pressing one while the trigger is focused opens the tooltip | `string` | — |
 | `virtual` | Virtual trigger mode: not bound to a host trigger element; `open` is fully controlled externally and the position is set by `virtual-anchor` or `virtual-x`/`virtual-y` (for chart points, floating hints during drag) | `boolean` | — |
 | `virtual-anchor` | Anchor element selector (e.g. `#chart-point-1`); the tooltip is positioned by that element's rect. Mutually exclusive with `virtual-x`/`virtual-y` (coordinates take precedence) | — | — |
 | `virtual-x` | Virtual anchor viewport X coordinate (px, e.g. mouse `clientX`); position by coordinates when set together with `virtual-y` | — | — |
@@ -255,5 +499,6 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | Trigger element (hover/focus trigger); optional in `virtual` mode |
+| `content` | Rich content (takes precedence over the `content` attribute text when present) |
 
 `oas-open-change`: fired when the `open` state changes (show/hide), `detail: { open }`. Shown/hidden on hover or focus; `role="tooltip"`, the popup uses `pointer-events: none` so it never blocks interactions.

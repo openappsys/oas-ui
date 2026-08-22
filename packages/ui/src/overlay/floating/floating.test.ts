@@ -106,6 +106,149 @@ describe('computePosition 浮层定位', () => {
     })
   })
 
+  describe('12 向 placement（start/end 对齐）', () => {
+    const a = rect(200, 200, 120, 40) // 锚点 200-320 x 200-240
+    const p = rect(0, 0, 80, 30)
+
+    it('top-start：面板左缘对齐锚点左缘，上方', () => {
+      const pos = computePosition(a, p, 'top-start', viewport)
+      expect(pos.placement).toBe('top-start')
+      expect(pos.left).toBe(200)
+      expect(pos.top).toBe(200 - 30 - 8)
+    })
+
+    it('top-end：面板右缘对齐锚点右缘，上方', () => {
+      const pos = computePosition(a, p, 'top-end', viewport)
+      expect(pos.placement).toBe('top-end')
+      expect(pos.left).toBe(320 - 80)
+      expect(pos.top).toBe(200 - 30 - 8)
+    })
+
+    it('bottom-start：面板左缘对齐锚点左缘，下方', () => {
+      const pos = computePosition(a, p, 'bottom-start', viewport)
+      expect(pos.placement).toBe('bottom-start')
+      expect(pos.left).toBe(200)
+      expect(pos.top).toBe(240 + 8)
+    })
+
+    it('bottom-end：面板右缘对齐锚点右缘，下方', () => {
+      const pos = computePosition(a, p, 'bottom-end', viewport)
+      expect(pos.placement).toBe('bottom-end')
+      expect(pos.left).toBe(320 - 80)
+      expect(pos.top).toBe(240 + 8)
+    })
+
+    it('left-start：面板顶缘对齐锚点顶缘，左侧', () => {
+      const pos = computePosition(a, p, 'left-start', viewport)
+      expect(pos.placement).toBe('left-start')
+      expect(pos.left).toBe(200 - 80 - 8)
+      expect(pos.top).toBe(200)
+    })
+
+    it('left-end：面板底缘对齐锚点底缘，左侧', () => {
+      const pos = computePosition(a, p, 'left-end', viewport)
+      expect(pos.placement).toBe('left-end')
+      expect(pos.left).toBe(200 - 80 - 8)
+      expect(pos.top).toBe(240 - 30)
+    })
+
+    it('right-start：面板顶缘对齐锚点顶缘，右侧', () => {
+      const pos = computePosition(a, p, 'right-start', viewport)
+      expect(pos.placement).toBe('right-start')
+      expect(pos.left).toBe(320 + 8)
+      expect(pos.top).toBe(200)
+    })
+
+    it('right-end：面板底缘对齐锚点底缘，右侧', () => {
+      const pos = computePosition(a, p, 'right-end', viewport)
+      expect(pos.placement).toBe('right-end')
+      expect(pos.left).toBe(320 + 8)
+      expect(pos.top).toBe(240 - 30)
+    })
+
+    it('空间不足翻转时保留 start/end 对齐：top-start → bottom-start', () => {
+      const nearTop = rect(200, 0, 120, 40)
+      const pos = computePosition(nearTop, p, 'top-start', viewport)
+      expect(pos.placement).toBe('bottom-start')
+      expect(pos.left).toBe(200)
+    })
+
+    it('空间不足翻转时保留 start/end 对齐：right-end → left-end', () => {
+      const nearRight = rect(750, 200, 40, 40)
+      const pos = computePosition(nearRight, p, 'right-end', viewport)
+      expect(pos.placement).toBe('left-end')
+    })
+  })
+
+  describe('skidding（交叉轴偏移）', () => {
+    it('top 系列：skidding 正值沿交叉轴正方向偏移（向右）', () => {
+      const pos = computePosition(
+        rect(200, 200, 120, 40),
+        rect(0, 0, 80, 30),
+        'top',
+        viewport,
+        8,
+        true,
+        { skidding: 10 },
+      )
+      expect(pos.left).toBe(230) // 居中 220（260 - 40）+ 10
+    })
+
+    it('top-start + skidding：start 对齐基础上再偏移', () => {
+      const pos = computePosition(
+        rect(200, 200, 120, 40),
+        rect(0, 0, 80, 30),
+        'top-start',
+        viewport,
+        8,
+        true,
+        { skidding: -5 },
+      )
+      expect(pos.left).toBe(200 - 5)
+    })
+
+    it('left 系列：skidding 正值沿纵向正方向偏移（向下）', () => {
+      const pos = computePosition(
+        rect(200, 200, 120, 40),
+        rect(0, 0, 80, 30),
+        'left',
+        viewport,
+        8,
+        true,
+        { skidding: 6 },
+      )
+      expect(pos.top).toBe(211) // 居中 205（220 - 15）+ 6
+    })
+  })
+
+  describe('collisionPadding（视口边缘边距）', () => {
+    it('collisionPadding=16：避让后距视口边缘 16px（默认 4）', () => {
+      const pos = computePosition(
+        rect(0, 100, 40, 40),
+        rect(0, 0, 300, 50),
+        'bottom',
+        viewport,
+        8,
+        true,
+        { collisionPadding: 16 },
+      )
+      expect(pos.left).toBe(16) // 默认 4 → 现在 16
+    })
+
+    it('collisionPadding 不影响有空间时的位置', () => {
+      const pos = computePosition(
+        rect(300, 200, 100, 40),
+        rect(0, 0, 100, 50),
+        'bottom',
+        viewport,
+        8,
+        true,
+        { collisionPadding: 20 },
+      )
+      expect(pos.left).toBe(300) // 350 - 50
+    })
+  })
+
   describe('auto-adjust-overflow=false（关闭视口自动调整）', () => {
     // `autoAdjustOverflow: false`：flip 与视口避让都关闭，
     // 保持声明 placement（可能溢出视口）。

@@ -59,6 +59,86 @@ The `value` attribute is controlled (it is in `observedAttributes`): an external
   <oas-menubar id="mb-value" items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new"},{"label":"Open","value":"open"},{"type":"divider"},{"label":"Quit","value":"quit"}]},{"label":"Edit","value":"edit","accessKey":"e","children":[{"label":"Undo","value":"undo"},{"label":"Redo","value":"redo"}]}]'></oas-menubar>
 </DemoBlock>
 
+## Checkbox items and keep-open (checkbox + close-on-select)
+
+Leaves with `kind: "checkbox"` toggle a multi-select checked set (`value` is a JSON array); toggling a checkbox does **not** close the submenu (continuous toggling). `close-on-select="false"` keeps the submenu open even after radio/action selections.
+
+<DemoBlock title="Checkbox + close-on-select">
+  <oas-menubar id="menubar-checkbox" onoas-select="menubarCheckboxLog(event)" close-on-select="false" value='["grid"]' items='[{"label":"View","value":"view","accessKey":"v","children":[{"type":"group","label":"Show","children":[{"label":"Gridlines","value":"grid","kind":"checkbox"},{"label":"Ruler","value":"ruler","kind":"checkbox"}]},{"type":"divider"},{"label":"Fullscreen","value":"fullscreen"}]}]'></oas-menubar>
+  <oas-tag id="menubar-checkbox-result" type="info">Checked: ["grid"]</oas-tag>
+</DemoBlock>
+
+## Controlled open (open)
+
+The `open` attribute holds the value of the currently open top-level menu (`open=""` closes all). Controlled attribute: an external `setAttribute('open', ...)` opens/switches/closes immediately; internal changes write `open` back and dispatch `oas-open-change` (`detail: { value, open }`) for the host to take over.
+
+<DemoBlock title="Controlled open (open attribute)">
+  <oas-space size="small">
+    <oas-button size="small" onclick="mbOpen('file')">Open "File"</oas-button>
+    <oas-button size="small" onclick="mbOpen('edit')">Open "Edit"</oas-button>
+    <oas-button size="small" onclick="mbOpen('')">Close</oas-button>
+    <oas-tag id="mb-open-status" type="info">open: -</oas-tag>
+  </oas-space>
+  <oas-menubar id="mb-open" items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new"},{"label":"Open","value":"open"}]},{"label":"Edit","value":"edit","accessKey":"e","children":[{"label":"Undo","value":"undo"},{"label":"Redo","value":"redo"}]}]'></oas-menubar>
+</DemoBlock>
+
+## Trigger mode and arrow-key wrap (trigger / loop)
+
+`trigger="click"` (default): a top-level menu **opens on click first**; once one is open, hovering another top-level item switches to it (desktop convention). `trigger="hover"` opens directly on hover. `loop="false"` disables wrap-around at the edges.
+
+<DemoBlock title="Hover opens directly (trigger)">
+  <oas-menubar onoas-select="menubarLog2(event)" trigger="hover" items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new"},{"label":"Open","value":"open"}]},{"label":"Edit","value":"edit","accessKey":"e","children":[{"label":"Undo","value":"undo"}]}]'></oas-menubar>
+  <oas-tag id="menubar-trigger-result" type="info">hover opens directly (no click-first)</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="No wrap-around (loop)">
+  <oas-menubar loop="false" items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new"}]},{"label":"Edit","value":"edit","accessKey":"e","children":[{"label":"Undo","value":"undo"}]},{"label":"View","value":"view","accessKey":"v","children":[{"label":"Fullscreen","value":"fullscreen"}]}]'></oas-menubar>
+  <oas-tag type="info">← stops at the first, → stops at the last</oas-tag>
+</DemoBlock>
+
+## Disabled bar (disabled)
+
+`disabled` disables the whole bar: top-level/sub-item clicks, keyboard navigation, shortcut hotkeys and Alt access keys are all blocked.
+
+<DemoBlock title="Disabled bar (disabled)">
+  <oas-menubar disabled items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new"}]},{"label":"Edit","value":"edit","accessKey":"e","children":[{"label":"Undo","value":"undo"}]}]'></oas-menubar>
+  <oas-tag type="info">The whole bar is inert</oas-tag>
+</DemoBlock>
+
+## Popup positioning and arrow (side / align / offset / show-arrow)
+
+`side` controls the first-level popup side (default `bottom`), `align` its alignment (default `start`), `offset` the gap to the trigger (px); `show-arrow` draws a visual arrow pointing at the trigger.
+
+<DemoBlock title="Popup positioning + arrow (side / align / offset / show-arrow)">
+  <oas-menubar side="top" align="end" offset="8" show-arrow items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new"},{"label":"Open","value":"open"}]},{"label":"Edit","value":"edit","accessKey":"e","children":[{"label":"Undo","value":"undo"}]}]'></oas-menubar>
+  <oas-tag type="info">side=top / align=end / offset=8 / show-arrow</oas-tag>
+</DemoBlock>
+
+## Vertical orientation (orientation)
+
+`orientation="vertical"`: the bar stacks vertically, first-level popups default to the right; ↑/↓ move between top-level items, → opens a submenu.
+
+<DemoBlock title="Vertical (orientation)">
+  <oas-menubar orientation="vertical" items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new"},{"label":"Open","value":"open"}]},{"label":"Edit","value":"edit","accessKey":"e","children":[{"label":"Undo","value":"undo"},{"label":"Redo","value":"redo"}]}]'></oas-menubar>
+</DemoBlock>
+
+## Mobile hamburger folding (breakpoint)
+
+`breakpoint="600"`: when the viewport is ≤ 600px wide the bar folds into a hamburger button + popup menu (narrow-width folding); widen the window to restore the full bar.
+
+<DemoBlock title="Mobile hamburger (breakpoint)">
+  <oas-menubar id="menubar-mobile" breakpoint="600" onoas-select="menubarMobileLog(event)" items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new"},{"label":"Open","value":"open"}]},{"label":"Edit","value":"edit","accessKey":"e","children":[{"label":"Undo","value":"undo"}]}]'></oas-menubar>
+  <oas-tag id="menubar-mobile-result" type="info">Shrink the window (≤600px) to try the hamburger</oas-tag>
+</DemoBlock>
+
+## Icons (icon)
+
+Both top-level items and sub-items accept an `icon` field (icon-set name); icons follow the text color.
+
+<DemoBlock title="Icons (icon)">
+  <oas-menubar items='[{"label":"File","value":"file","icon":"gear","children":[{"label":"New","value":"new","icon":"plus"},{"label":"Open","value":"open","icon":"search"},{"label":"Save","value":"save","icon":"download"}]},{"label":"Account","value":"account","icon":"user","children":[{"label":"Profile","value":"profile","icon":"user"},{"label":"Log out","value":"logout","icon":"close"}]}]'></oas-menubar>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -90,6 +170,20 @@ onMounted(() => {
     if (tag) tag.textContent = `Selected: ${e.detail.value}`
   }
 
+  window.menubarCheckboxLog = (e) => {
+    const tag = document.getElementById('menubar-checkbox-result')
+    const mb = document.getElementById('menubar-checkbox')
+    if (tag && mb) {
+      const v = JSON.parse(mb.getAttribute('value') || '[]')
+      tag.textContent = `Checked: ${JSON.stringify(v)} (checkbox keeps open)`
+    }
+  }
+
+  window.menubarMobileLog = (e) => {
+    const tag = document.getElementById('menubar-mobile-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value} (hamburger mode)`
+  }
+
   const mb = document.getElementById('mb-value')
   const status = document.getElementById('mb-value-status')
   if (mb && status) {
@@ -105,6 +199,22 @@ onMounted(() => {
     sync()
     new MutationObserver(sync).observe(mb, { attributes: true, attributeFilter: ['value'] })
   }
+
+  const mbOpenEl = document.getElementById('mb-open')
+  const mbOpenStatus = document.getElementById('mb-open-status')
+  if (mbOpenEl && mbOpenStatus) {
+    const syncOpen = () => {
+      mbOpenStatus.textContent = `open: ${mbOpenEl.getAttribute('open') || '(closed)'}`
+    }
+    window.mbOpen = (v) => {
+      // open is in observedAttributes: setAttribute triggers an immediate open/close
+      mbOpenEl.setAttribute('open', v)
+    }
+    // Internal changes (clicking a top-level item / hover switch) also write back open + dispatch oas-open-change
+    mbOpenEl.addEventListener('oas-open-change', () => syncOpen())
+    syncOpen()
+    new MutationObserver(syncOpen).observe(mbOpenEl, { attributes: true, attributeFilter: ['open'] })
+  }
 })
 </script>
 
@@ -114,14 +224,26 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `align` | First-level popup alignment: `start` (default) / `center` / `end`; with `side` top/bottom it aligns on the horizontal axis, with left/right on the vertical axis | `string` | — |
+| `breakpoint` | Mobile breakpoint (px, e.g. `600`): when the viewport width is ≤ the breakpoint the bar collapses into a hamburger button + popup menu (narrow-width folding) | `string` | — |
+| `close-on-select` | Whether selecting a leaf closes the open submenu, default `true` (desktop menubar convention); `close-on-select="false"` keeps it open (multi-select scenario); `kind:"checkbox"` items never close on toggle | `string` | — |
+| `disabled` | Disable the whole bar: top-level/sub-item clicks, keyboard navigation, shortcut hotkeys and Alt access keys are all blocked; visually desaturated | `boolean` | — |
 | `items` | Top-level menu items JSON (with submenu `children`) | `string` | `[]` |
-| `value` | Selected value. As a plain string it is a single global selection (no-group scenarios, backward compatible); as a JSON object string (e.g. `{"mode":"preview","theme":"dark"}`) selections are recorded per group id — the `value` of a `type:"group"` item acts as the group id | `string` | — |
+| `loop` | Arrow-key wrap-around toggle, default `true` (loops at edges); explicit `loop="false"` stops at the edges | `string` | — |
+| `offset` | Gap between the first-level popup and its trigger (px, default 4) | `string` | — |
+| `open` | Value of the currently open top-level menu (`open=""` closes all). Controlled attribute (in `observedAttributes`): an external `setAttribute('open', ...)` opens/switches/closes immediately; internal click/hover/keyboard changes write it back and dispatch `oas-open-change`, letting the host take over | `string` | — |
+| `orientation` | Arrangement direction: `horizontal` (default) / `vertical` (bar stacks vertically, first-level popups default to the right, arrow keys move top-level items up/down) | — | — |
+| `show-arrow` | Show a visual arrow on the popup pointing at the trigger | — | — |
+| `side` | First-level popup side: `bottom` (default horizontal) / `top` / `left` / `right` (default vertical); cascading submenus are unaffected | `string` | — |
+| `trigger` | Top-level menu trigger: `click` (default, click to open first, then hover switches — desktop convention) / `hover` (hover opens directly) | — | — |
+| `value` | Selected value. As a plain string it is a single global selection (no-group scenarios, backward compatible); as a JSON object string (e.g. `{"mode":"preview","theme":"dark"}`) selections are recorded per group id — the `value` of a `type:"group"` item acts as the group id; as a JSON array string (e.g. `["grid","wrap"]`) it is the checkbox checked-set (`kind:"checkbox"` items, multi-select) | `string` | — |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-select` | An item was selected, `detail: { value, kind? }`. `kind` only appears for action items (`kind: "action"`); radio items omit `detail.kind` |
+| `oas-open-change` | The open top-level menu changed, `detail: { value, open }` (`value` = currently open top-level menu value, `open` = whether anything is open). Fired both on controlled `setAttribute('open')` and internal click/hover/keyboard changes (not on the first frame) |
+| `oas-select` | An item was selected, `detail: { value, kind?, checked? }`. `kind` only appears for action items (`kind: "action"`); checkbox items carry `checked` (new checked state); radio items omit `detail.kind` |
 
 > **Event detail note**: the `detail` of `oas-select` is a component-internal object (`value`/`kind`) — **not** a native `Event`, so you can't `preventDefault()` on it or read a native `event.target` from it. To reach the native event, use the outer parameter of your listener (e.g. in `addEventListener('oas-select', (e) => ...)`, `e` is a `CustomEvent` and `e.detail` is the component data).
 

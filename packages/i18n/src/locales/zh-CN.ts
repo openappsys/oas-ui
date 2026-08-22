@@ -77,6 +77,11 @@ export const zhCN = {
   'tour.prev': '上一步',
   'tour.next': '下一步',
   'tour.finish': '完成',
+  'tour.close': '关闭',
+  'tour.dontShowAgain': '不再显示',
+  'tour.hint': '提示',
+  'tour.hintGotIt': '知道了',
+  'tour.progress': '引导进度',
   // steps（步骤条）
   'steps.prev': '上一步',
   'steps.next': '下一步',
@@ -180,6 +185,8 @@ export const zhCN = {
   'datePicker.shortcutThisYear': '今年',
   // dropdown（下拉菜单）
   'dropdown.openMenu': '打开菜单',
+  // popover（气泡卡片）
+  'popover.close': '关闭',
   // menu（菜单）
   'menu.more': '更多菜单项',
   // time-picker（时间选择器）
@@ -259,12 +266,25 @@ export const zhCN = {
   'command.empty': '无匹配命令',
   'command.search': '搜索命令',
   'command.label': '命令面板',
+  'command.loading': '正在加载命令…',
+  'command.noResults': '未找到与「{query}」匹配的命令',
+  'command.recent': '最近使用',
+  'command.back': '返回上一级',
+  'command.footer.navigate': '选择',
+  'command.footer.select': '执行',
+  'command.footer.close': '关闭',
+  'command.multiRun': '执行 {n} 项',
   // menubar（应用菜单栏）
   'menubar.label': '菜单栏',
+  'menubar.menu': '菜单',
   // navigation-menu（多级导航）
   'navigationMenu.label': '导航',
   // toolbar（工具栏）
   'toolbar.label': '工具栏',
+  'toolbar.more': '更多工具',
+  'toolbar.toggleGroup': '切换组',
+  'toolbar.input': '工具栏输入框',
+  'toolbar.item': '工具栏项',
   // log（日志流）
   'log.empty': '暂无日志',
   // theme-editor（主题编辑器）
