@@ -959,12 +959,15 @@ test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内
     mb.style.cssText = 'position: fixed; right: 0; top: 240px; z-index: 9999'
     mb.dataset.e2eRightEdge = '1'
   })
-  // hover 顶级「视图」展开一级下拉，hover 级联「缩放」展开二级子菜单（menubar 是 mouseenter 展开）
+  // click 首开「视图」展开一级下拉，hover 级联「缩放」展开二级子菜单
+  // （限定 .bar 作用域：汉堡面板里渲染了同一份 items 镜像，[part="item"] 会重复命中）
   await page
-    .locator('#menubar-basic[data-e2e-right-edge] [part="top-item"][data-value="view"]')
-    .hover()
+    .locator('#menubar-basic[data-e2e-right-edge] .bar [part="top-item"][data-value="view"]')
+    .click()
   await page.waitForTimeout(150)
-  await page.locator('#menubar-basic[data-e2e-right-edge] [part="item"][data-value="zoom"]').hover()
+  await page
+    .locator('#menubar-basic[data-e2e-right-edge] .bar [part="item"][data-value="zoom"]')
+    .hover()
   await page.waitForTimeout(200)
   const rects = await visibleSubmenuRects(page)
   expect(rects.length).toBeGreaterThanOrEqual(2) // 一级下拉 + 级联子菜单
@@ -981,6 +984,38 @@ test('menubar 多级子菜单贴近视口右缘：翻转后全部落在视口内
   })
   expect(flipped, '贴右缘的子菜单应翻转（flip-left/flip-right），而非被裁掉').toBe(true)
   await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix8-menubar-flip.png' })
+})
+
+test('menubar click 首开语义：无开态 hover 不展开、开态 hover 切换顶级（桌面共识回归）', async ({
+  page,
+}) => {
+  await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#menubar-basic')
+  // 无开态：hover 顶级「视图」不展开
+  await page.locator('#menubar-basic [part="top-item"][data-value="view"]').hover()
+  await page.waitForTimeout(120)
+  const closed = await page.evaluate(() => {
+    const mb = document.querySelector('#menubar-basic')!
+    const sub = mb.shadowRoot!.querySelector('[part="submenu"][data-parent="view"]')!
+    return !sub.classList.contains('open')
+  })
+  expect(closed, '无开态时 hover 顶级项不应展开（click 首开）').toBe(true)
+  // 点击「文件」首开
+  await page.locator('#menubar-basic [part="top-item"][data-value="file"]').click()
+  await page.waitForTimeout(120)
+  // hover「编辑」切换：编辑展开、文件收起
+  await page.locator('#menubar-basic [part="top-item"][data-value="edit"]').hover()
+  await page.waitForTimeout(150)
+  const switched = await page.evaluate(() => {
+    const mb = document.querySelector('#menubar-basic')!
+    const sub = (v: string) =>
+      mb.shadowRoot!.querySelector(`[part="submenu"][data-parent="${v}"]`)!
+    return {
+      editOpen: sub('edit').classList.contains('open'),
+      fileOpen: sub('file').classList.contains('open'),
+    }
+  })
+  expect(switched).toEqual({ editOpen: true, fileOpen: false })
 })
 
 test('dropdown 多级子菜单贴近视口右缘：翻转后全部落在视口内', async ({ page }) => {
@@ -2273,6 +2308,21 @@ test('message 分组与更新：同组合并计数、update/destroy 可见反馈
 test('breadcrumb 折叠：超出 max-items 中间项折叠为 …，点击展开下拉、点击项派发 oas-select', async ({
   page,
 }) => {
+  // 真实链接不阻止默认行为（原生跳转）。测试模拟 SPA 宿主拦截导航：capture 阶段 preventDefault，
+  // 事件仍派发 oas-select（宿主可借此做路由），页面不卸载。
+  // 注意：shadow DOM 内锚点点击在 document 层 target 已重定向为宿主，须用 composedPath() 找锚点。
+  await page.addInitScript(() => {
+    document.addEventListener(
+      'click',
+      (e) => {
+        const a = (e.composedPath() as Array<Element | EventTarget>).find(
+          (n): n is HTMLAnchorElement => n instanceof HTMLAnchorElement,
+        )
+        if (a && a.getAttribute('href') && a.getAttribute('href') !== '#') e.preventDefault()
+      },
+      true,
+    )
+  })
   await page.goto('/components/breadcrumb.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-breadcrumb#bc-collapsed')
   // 折叠态：可见 item 4（首 + … + 末2），省略按钮可聚焦（aria-expanded=false）、下拉默认关闭
@@ -2317,6 +2367,37 @@ test('breadcrumb 折叠：超出 max-items 中间项折叠为 …，点击展开
     return !el.shadowRoot!.querySelector('.ellipsis-dropdown')!.classList.contains('open')
   })
   const output = await page.locator('#bc-collapsed-result').textContent()
+  expect(output).toContain('已点击')
+})
+
+test('breadcrumb 真实链接：原生跳转不阻止 + oas-select 照常派发（target=_blank 新窗）', async ({
+  page,
+}) => {
+  await page.goto('/components/breadcrumb.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-breadcrumb#bc-real')
+  // 链接为真实 <a href>（原生跳转能力保留），target=_blank 自动补 rel（第 2 个链接）
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-breadcrumb#bc-real')!
+    const root = el.shadowRoot!
+    const links = [...root.querySelectorAll<HTMLAnchorElement>('a[part="link"]')]
+    return {
+      count: links.length,
+      href: links[1]!.getAttribute('href'),
+      target: links[1]!.getAttribute('target'),
+      rel: links[1]!.getAttribute('rel'),
+    }
+  })
+  expect(r.href).toBeTruthy()
+  expect(r.target).toBe('_blank')
+  expect(r.rel).toContain('noopener')
+  // 点击 target=_blank 链接：新窗口打开（原生跳转）+ oas-select 派发（demo tag 反馈，页面不卸载）
+  const first = page.locator('oas-breadcrumb#bc-real a[part="link"]').nth(1)
+  const popup = page.waitForEvent('popup')
+  await first.click()
+  const pop = await popup
+  expect(pop.url()).not.toBe('about:blank')
+  await pop.close()
+  const output = await page.locator('#bc-real-result').textContent()
   expect(output).toContain('已点击')
 })
 
@@ -3357,6 +3438,9 @@ test('tooltip arrow-point-at-center：面板被视口边缘避让 clamp 偏移�
   })
   const tip = page.locator('#tt-arrow-center [part="tip"]')
   await expect(tip).toHaveAttribute('aria-hidden', 'false')
+  // tooltip 新增入场动画（fade/scale 150ms）：动画进行中面板/箭头的 getBoundingClientRect
+  // 受 transform 缩放影响会偏几 px，等动画播完再量几何（静止态箭头精确指向锚点中心，已实测）
+  await page.waitForTimeout(250)
   const r = await page.evaluate(() => {
     const host = document.querySelector('#tt-arrow-center')!
     const t = host.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
@@ -4743,4 +4827,146 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
   expect(sel.moreCls, '「···」应有 child-selected 高亮').toContain('child-selected')
   expect(sel.moreAriaCurrent, '「···」应有 aria-current').toBe('true')
   expect(sel.mirrorChecked, '镜像项应有选中态').toBe('true')
+})
+
+test('hover-card 浮层可悬停：触发器 → 卡片跨间隙移动不闪关', async ({ page }) => {
+  await page.goto('/components/hover-card.html', { waitUntil: 'domcontentloaded' })
+  const sel = 'oas-hover-card:has([slot="content"])'
+  await up(page, sel)
+  // demo 块可能在首屏下方，先把触发器滚进视口（视口外元素收不到指针事件）
+  await page.evaluate((s) => {
+    document
+      .querySelector(s)
+      ?.querySelector('oas-button')
+      ?.scrollIntoView({ block: 'center' })
+  }, sel)
+  await page.waitForTimeout(300)
+  const trigger = await page.evaluate((s) => {
+    const host = document.querySelector(s) as HTMLElement
+    const el = host.querySelector('oas-button') as HTMLElement
+    const r = el.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  }, sel)
+  // hover 触发器 → 卡片打开（open-delay 300ms）
+  await page.mouse.move(trigger.x, trigger.y)
+  await page.waitForFunction(
+    (s) => {
+      const host = document.querySelector(s) as HTMLElement
+      return (
+        host?.shadowRoot?.querySelector('[part="card"]')?.getAttribute('aria-hidden') === 'false'
+      )
+    },
+    sel,
+    { timeout: 5000 },
+  )
+  // 读取已打开的卡片区域，指针移入卡片 → 等过 close-delay → 仍打开（不闪关）
+  const card = await page.evaluate((s) => {
+    const host = document.querySelector(s) as HTMLElement
+    const el = host?.shadowRoot?.querySelector('[part="card"]') as HTMLElement
+    const r = el.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  }, sel)
+  await page.mouse.move(card.x, card.y)
+  await page.waitForTimeout(600)
+  const stillOpen = await page.evaluate((s) => {
+    const host = document.querySelector(s) as HTMLElement
+    return (
+      host?.shadowRoot?.querySelector('[part="card"]')?.getAttribute('aria-hidden') === 'false'
+    )
+  }, sel)
+  expect(stillOpen, '移入卡片后应保持打开（不闪关）').toBe(true)
+})
+
+test('back-top append-to 不触发 SSR 水合告警（组件 chunk 先于水合 chunk 到达的竞态时序）', async ({
+  page,
+}) => {
+  // 缺陷回归：connectedCallback 即时把宿主 teleport 进 append-to 容器，组件 chunk
+  // （customElements.define）先于页面 chunk（Vue mount 水合链）到达时，水合在 SSR
+  // 原位置找不到节点 → console error「Hydration completed but contains mismatches.」。
+  // 修复：teleport 推迟到文档 load 后（水合必然已完成）。此处反向延迟页面 chunk
+  // （2500ms > 组件 chunk ~1MB 的本地传输耗时）强制「先升级后水合」的竞态时序。
+  const errs: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error') errs.push(m.text())
+  })
+  page.on('pageerror', (e) => errs.push(`pageerror: ${e.message}`))
+  await page.route(/components_back-top\.md\..*\.js$/, async (route) => {
+    await new Promise((r) => setTimeout(r, 2500))
+    await route.continue()
+  })
+  await page.goto('/components/back-top.html', { waitUntil: 'load' })
+  // 等竞态时序完整走完：页面 chunk 到达 → mount/水合 → onMounted 注册组件 → 升级 → teleport
+  await page.waitForFunction(() => !!document.querySelector('#bt-app-root > oas-back-top'), null, {
+    timeout: 15000,
+  })
+
+  const hydrationErrs = errs.filter((e) => /[Hh]ydration/.test(e))
+  expect(hydrationErrs, '竞态时序下 console 不得出现水合 mismatch error').toEqual([])
+})
+
+test('toolbar-toggle 选中态主题可见——light/dark 下选中与未选中背景可区分（曾识图验收：dark 选中态不可见）', async ({
+  page,
+}) => {
+  // 缺陷固化：识图验收在 dark 下点击 toggle 后选中与未选中几乎一致（陈旧产物假象）。
+  // 回归断言走「点击 → 计算样式」全链路：选中项背景必须等于当前主题的 primary
+  // 计算色（token 怎么调都跟随），且与未选中（透明底）可区分；dark 下文字色同步校验。
+  await page.goto('/components/toolbar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-toolbar-toggle')
+
+  /** 读当前主题下某 token 的计算 rgb（临时元素 color 解析，var() 在页面上下文求值） */
+  const tokenRgb = (token: string) =>
+    page.evaluate((t) => {
+      const el = document.createElement('div')
+      el.style.color = `var(${t})`
+      document.body.appendChild(el)
+      const v = getComputedStyle(el).color
+      el.remove()
+      return v
+    }, token)
+
+  /** 读 tb-align 组各按钮的 pressed/背景/文字色计算样式 */
+  const readAlign = () =>
+    page.evaluate(() => {
+      const tg = document.querySelector('oas-toolbar-toggle#tb-align')!
+      return [...(tg.shadowRoot?.querySelectorAll<HTMLButtonElement>('button.item') || [])].map(
+        (b) => {
+          const cs = getComputedStyle(b)
+          return { text: b.textContent, pressed: b.getAttribute('aria-pressed'), bg: cs.backgroundColor, color: cs.color }
+        },
+      )
+    })
+
+  // ---- light：选中=primary 蓝底，未选中=透明底 ----
+  const primaryLight = await tokenRgb('--oas-color-primary')
+  let btns = await readAlign()
+  const selL = btns.find((b) => b.pressed === 'true')!
+  const unselL = btns.find((b) => b.pressed === 'false')!
+  expect(selL.bg, `light 选中项背景应为 primary（${primaryLight}）`).toBe(primaryLight)
+  expect(unselL.bg, 'light 未选中项背景应为透明').toBe('rgba(0, 0, 0, 0)')
+  expect(selL.bg, 'light 选中/未选中背景必须可区分').not.toBe(unselL.bg)
+
+  // ---- dark：token 切换后选中项背景跟随 dark primary（识图缺陷场景） ----
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  await page.waitForTimeout(400)
+  const primaryDark = await tokenRgb('--oas-color-primary')
+  expect(primaryDark, 'dark token 应与 light 不同（主题已切换）').not.toBe(primaryLight)
+
+  // 点击未选中项（复现识图操作路径：点击后读计算样式）
+  await page.evaluate(() => {
+    const tg = document.querySelector('oas-toolbar-toggle#tb-align')!
+    const btn = [...(tg.shadowRoot?.querySelectorAll<HTMLButtonElement>('button.item') || [])].find(
+      (b) => b.getAttribute('aria-pressed') === 'false',
+    )!
+    btn.click()
+  })
+  await page.waitForTimeout(300)
+
+  btns = await readAlign()
+  const selD = btns.find((b) => b.pressed === 'true')!
+  const unselD = btns.find((b) => b.pressed === 'false')!
+  expect(selD.bg, `dark 点击后选中项背景应为 dark primary（${primaryDark}）`).toBe(primaryDark)
+  expect(unselD.bg, 'dark 未选中项背景应为透明').toBe('rgba(0, 0, 0, 0)')
+  expect(selD.bg, 'dark 选中/未选中背景必须可区分（识图缺陷场景）').not.toBe(unselD.bg)
+  // 文字色：选中（on-primary 深字）与未选中（text-primary 亮字）可区分
+  expect(selD.color, 'dark 选中/未选中文字色必须可区分').not.toBe(unselD.color)
 })

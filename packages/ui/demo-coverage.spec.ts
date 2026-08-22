@@ -139,7 +139,7 @@ const INTERACTIONS: Array<[string, string]> = [
   ['oas-popconfirm button', 'click'],
   ['oas-modal button', 'click'],
   ['oas-drawer button', 'click'],
-  ['oas-breadcrumb a', 'click'],
+  ['oas-breadcrumb a[href="#"]', 'click'],
   ['oas-pagination button', 'click'],
   ['oas-back-top', 'click'],
   ['oas-float-button button', 'click'],
@@ -341,8 +341,20 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-context-menu [role="menuitemradio"]', 'click', '点菜单项 → oas-select'],
   ],
   command: [
-    ['oas-command', 'open', '受控 open 打开面板'],
+    ['oas-command', 'open', '受控 open 打开面板 → oas-open-change'],
+    ['oas-command [part="search"]', 'press:ArrowDown', '方向键移动 → oas-active'],
     ['oas-command [part="option"]', 'click', '选命令 → oas-select'],
+    // 多面板同时打开堆叠时真实点击会被顶层面板拦截，改 DOM click 直达目标
+    ['#command-multi [part="option"]', 'domclick', '多选勾选 → oas-change'],
+    ['#command-multi [part="confirm"]', 'domclick', '批量执行 → oas-select'],
+    ['#command-pages [part="option"]', 'domclick', '进子页 → oas-page-change(push)'],
+    ['#command-pages [part="back"]', 'domclick', '面包屑回退 → oas-page-change(pop)'],
+    ['#command-filter [part="search"]', 'fill:o', '外部过滤输入 → oas-input'],
+    ['#command-views [part="option"]', 'domclick', '进视图 → oas-view-change'],
+  ],
+  'hover-card': [
+    ['oas-button:has-text("显示") button', 'domclick', '受控显示 → oas-open-change'],
+    ['oas-button:has-text("隐藏") button', 'domclick', '受控隐藏 → oas-open-change'],
   ],
   menubar: [
     [
@@ -351,6 +363,20 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       'DOM click 避开 mouseenter 展开与 click 收起的抵消',
     ],
     ['oas-menubar [part="item"]', 'click', '点子菜单项 → oas-select'],
+  ],
+  toolbar: [
+    [
+      'oas-toolbar-toggle[multiple] [part="item"]',
+      'click:n0',
+      '点多选切换组（加粗）→ oas-change',
+    ],
+    [
+      'oas-toolbar-toggle:not([multiple]) [part="item"]',
+      'click:n1',
+      '点单选对齐组第 2 项 → oas-change',
+    ],
+    ['oas-toolbar-input input', 'fill:x', '输入 → oas-input'],
+    ['oas-toolbar-input input', 'press:Enter', 'Enter 提交 → oas-change'],
   ],
   'navigation-menu': [
     ['oas-navigation-menu [part="top-item"]', 'domclick'],
@@ -416,7 +442,16 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ],
   ],
   splitter: [['oas-splitter [part="splitter"]', 'drag', '拖拽分隔条 → oas-resize']],
-  tour: [['oas-tour [part="skip"]', 'click', '跳过 → oas-cancel（通用探针已点开始引导）']],
+  tour: [
+    ['oas-tour .beacon', 'click', '点信标 → 打开气泡'],
+    ['oas-tour [part="hint-dismiss"]', 'click', '知道了 → 关闭气泡'],
+    ['oas-tour [part="bullet"]', 'click', '圆点跳步 → oas-step'],
+    ['oas-tour [part="next"]', 'click', '下一步 → oas-step'],
+    ['oas-tour [part="close"]', 'click', '关闭按钮 → oas-close'],
+    ['oas-tour [part="skip"]', 'click', '跳过 → oas-skip + oas-cancel + oas-destroy'],
+    ['oas-tour [part="mask-top"]', 'click', '遮罩点击 → oas-cancel'],
+    ['oas-button:has-text("已记忆则不显示") button', 'click', '预置记忆并打开 → oas-dismiss'],
+  ],
 }
 
 /** 真实点击，失败回落 DOM click（隐藏/浮层关闭态下 handler 仍会执行） */

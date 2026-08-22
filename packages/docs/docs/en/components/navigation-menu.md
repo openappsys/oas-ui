@@ -1,18 +1,56 @@
 # NavigationMenu
 
-A website-style multi-level navigation bar: hover / keyboard expands submenus (cascading popups); leaf items with `href` render as links.
+A website-style multi-level navigation bar: top-level triggers open a unified viewport panel (mega-panel multi-column link cards) on hover/click, with delayed open/close, a controlled open value, and full keyboard navigation. Leaf items with `href` render as links.
 
-## Basic usage
+## Basic usage (mega panel)
 
 <DemoBlock title="Basic usage">
-  <oas-navigation-menu id="nav-basic" onoas-select="navLog(event)" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components"},{"label":"Docs","value":"docs","href":"/docs"},{"label":"More","value":"more","children":[{"label":"Blog","value":"blog","href":"/blog"},{"label":"Community","value":"community","href":"/community"}]}]},{"label":"Pricing","value":"pricing","href":"/pricing"},{"label":"About","value":"about","href":"/about"}]'></oas-navigation-menu>
+  <oas-navigation-menu keep-mounted id="nav-basic" onoas-select="navLog(event)" onoas-change="navChange(event)" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ ready-to-use components"},{"label":"Docs","value":"docs","href":"/docs","icon":"book","description":"Full API docs and guides"},{"label":"More","value":"more","children":[{"label":"Blog","value":"blog","href":"/blog"},{"label":"Community","value":"community","href":"/community"}]}]},{"label":"Pricing","value":"pricing","href":"/pricing"},{"label":"About","value":"about","href":"/about"}]'></oas-navigation-menu>
   <oas-tag id="nav-result" type="info">Nothing selected</oas-tag>
+</DemoBlock>
+
+## Controlled open (value + oas-change)
+
+<DemoBlock title="Controlled open">
+  <oas-button-group>
+    <oas-button id="nav-open-a" size="small">Open Products</oas-button>
+    <oas-button id="nav-open-b" size="small">Open Resources</oas-button>
+    <oas-button id="nav-close" size="small">Close</oas-button>
+  </oas-button-group>
+  <br />
+  <oas-navigation-menu id="nav-controlled" value="products" onoas-change="navControlled(event)" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ ready-to-use components"},{"label":"Docs","value":"docs","href":"/docs","icon":"book","description":"Full API docs and guides"}]},{"label":"Resources","value":"resources","children":[{"label":"Themes","value":"themes","href":"/themes","icon":"star","description":"Theming and tokens"},{"label":"Guide","value":"guide","href":"/guide","icon":"mail","description":"Getting started and best practices"}]},{"label":"Pricing","value":"pricing","href":"/pricing"}]'></oas-navigation-menu>
+  <oas-tag id="nav-controlled-result" type="info">Currently open: products</oas-tag>
+</DemoBlock>
+
+## Delayed open/close
+
+<DemoBlock title="Delayed open/close">
+  <oas-navigation-menu delay-duration="300" skip-delay-duration="500" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","description":"30+ components"},{"label":"Docs","value":"docs","href":"/docs","description":"API docs"}]},{"label":"Resources","value":"resources","children":[{"label":"Themes","value":"themes","href":"/themes","description":"Theming"},{"label":"Guide","value":"guide","href":"/guide","description":"Getting started"}]}]'></oas-navigation-menu>
+</DemoBlock>
+
+## Vertical orientation
+
+<DemoBlock title="Vertical">
+  <oas-navigation-menu orientation="vertical" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ components"},{"label":"Docs","value":"docs","href":"/docs","icon":"book","description":"API docs"}]},{"label":"Pricing","value":"pricing","href":"/pricing"},{"label":"About","value":"about","href":"/about"}]'></oas-navigation-menu>
+</DemoBlock>
+
+## Multi-column grid
+
+<DemoBlock title="Multi-column grid (columns=3)">
+  <oas-navigation-menu columns="3" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ components"},{"label":"Docs","value":"docs","href":"/docs","icon":"book","description":"API docs"},{"label":"Themes","value":"themes","href":"/themes","icon":"star","description":"Theming"},{"label":"Guide","value":"guide","href":"/guide","icon":"mail","description":"Getting started"},{"label":"Blog","value":"blog","href":"/blog","icon":"edit","description":"Tech blog"},{"label":"Community","value":"community","href":"/community","icon":"user","description":"User community"}]}]'></oas-navigation-menu>
+</DemoBlock>
+
+## Backdrop + keep-mounted + arrow
+
+<DemoBlock title="Backdrop + keep-mounted + arrow">
+  <oas-navigation-menu backdrop keep-mounted arrow items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ components"},{"label":"Docs","value":"docs","href":"/docs","icon":"book","description":"API docs"}]}]'></oas-navigation-menu>
+  <p class="demo-tip">backdrop shows an overlay when open; keep-mounted keeps the panel DOM after closing; arrow shows the pointer arrow.</p>
 </DemoBlock>
 
 ## Disabled items
 
 <DemoBlock title="Disabled items">
-  <oas-navigation-menu items='[{"label":"Home","value":"home","href":"/"},{"label":"Products","value":"products","children":[{"label":"Components","value":"components"},{"label":"Docs","value":"docs","disabled":true}]}]'></oas-navigation-menu>
+  <oas-navigation-menu items='[{"label":"Home","value":"home","href":"/"},{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components"},{"label":"Docs","value":"docs","href":"/docs","disabled":true}]}]'></oas-navigation-menu>
 </DemoBlock>
 
 <script setup>
@@ -22,6 +60,19 @@ onMounted(() => {
     const tag = document.getElementById('nav-result')
     if (tag) tag.textContent = `Selected: ${e.detail.value}`
   }
+  window.navChange = (e) => {
+    const tag = document.getElementById('nav-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value || '(closed)'}`
+  }
+  window.navControlled = (e) => {
+    const tag = document.getElementById('nav-controlled-result')
+    if (tag) tag.textContent = `Currently open: ${e.detail.value || '(closed)'}`
+  }
+  const controlled = document.getElementById('nav-controlled')
+  const setOpen = (v) => controlled && controlled.setAttribute('value', v)
+  document.getElementById('nav-open-a')?.addEventListener('click', () => setOpen('products'))
+  document.getElementById('nav-open-b')?.addEventListener('click', () => setOpen('resources'))
+  document.getElementById('nav-close')?.addEventListener('click', () => setOpen(''))
 })
 </script>
 
@@ -31,23 +82,35 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `items` | Navigation items JSON (hierarchical) | `string` | `[]` |
+| `arrow` | Pointer arrow on the popup, shown by default; `arrow="false"` hides it | `string` | `true` |
+| `backdrop` | Show an overlay when open (clicking the overlay closes) | `boolean` | — |
+| `columns` | Panel grid columns, default 2 (mega-panel multi-column link cards) | `string` | `2` |
+| `delay-duration` | Hover open/close delay in ms, default 200; clicks and keyboard are immediate | `string` | `200` |
+| `items` | Navigation items JSON (hierarchical; leaf items can carry `description` text and an `icon` to render mega-panel link cards) | `string` | `[]` |
+| `keep-mounted` | Keep the panel DOM mounted when closed (crawler/SEO indexing) | `boolean` | — |
+| `orientation` | Layout direction: `horizontal` (default) / `vertical` (panel appears to the right of triggers) | `string` | `horizontal` |
+| `skip-delay-duration` | Skip-delay window in ms, default 300: hovering another trigger within this window after a close opens it immediately | `string` | `300` |
+| `value` | Controlled open item (top-level trigger value; empty string = closed; when present the open state follows the attribute and interactions only dispatch `oas-change` for the host to update) | `string` | — |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-select` | An item was selected, `detail: { value }` |
+| `oas-change` | The open item changed, `detail: { value }` (value is the open top-level item value; empty string = closed) |
+| `oas-select` | An item was selected (top-level leaf link or panel link card), `detail: { value }` |
 
 `NavItem` fields (inherits `MenuItem`):
 
-| Field      | Description                                                       | Type       |
-| ---------- | ----------------------------------------------------------------- | ---------- |
-| `label`    | Navigation text                                                   | `string`   |
-| `value`    | Selection value                                                   | `string`   |
-| `href`     | Link URL (optional); leaf items with `href` render as `<a>` and are navigable | `string` |
-| `target`   | Link open target (optional)                                       | `string`   |
-| `disabled` | Disabled                                                          | `boolean`  |
-| `children` | Sub navigation items (nested recursively, cascading to the right) | `NavItem[]`|
+| Field         | Description                                            | Type      |
+| ------------- | ------------------------------------------------------ | --------- |
+| `label`       | Navigation text                                        | `string`  |
+| `value`       | Selection value                                        | `string`  |
+| `href`        | Link URL (optional); leaf items with `href` render as `<a>` and are navigable | `string` |
+| `target`      | Link open target (optional)                            | `string`  |
+| `icon`        | Icon name (optional); panel link-card icon             | `string`  |
+| `description` | Link-card description (optional); rendered under the title in mega-panel mode | `string` |
+| `active`      | Current-page marker (optional); renders `aria-current="page"` on the link | `boolean` |
+| `disabled`    | Disabled                                               | `boolean` |
+| `children`    | Sub navigation items (optional); a top-level item with children opens the mega panel, and panel children with children render as an inline secondary sub-nav | `NavItem[]` |
 
-Interaction: hover expands a submenu, click toggles; keyboard `←`/`→` switches top level, `↓`/`Enter` opens, `↑` opens and focuses the last item, `→` enters a cascading submenu, `←` returns to the parent, `Esc` closes everything and refocuses the top level. While a submenu is open, `Tab` cycles among its items (focus trap); after selection it collapses and fires `oas-select`.
+Interaction: hover (after `delay-duration`) / click a top-level trigger to open the unified viewport panel; click a panel link card to select and fire `oas-select`; the open item change fires `oas-change`. Clicking outside closes; `Esc` closes the panel; `←`/`→` (vertical `↑`/`↓`) switch top level, `↓` (vertical `→`) opens the panel and focuses the first item, `↓`/`↑` move within the panel, `→` expands an inline secondary sub-nav, `Enter` selects; while the panel is open `Tab` cycles among panel items (focus trap).

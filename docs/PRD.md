@@ -150,7 +150,8 @@
 - **hover-card**：悬停/聚焦预览、延迟显隐、浮层定位 ✅
 - **breadcrumb**：`items`、分隔符、当前页不可点 ✅
 - **tour**：`steps` 定位到锚点、遮罩高亮、上一步/下一步/跳过、Esc 取消 ✅
-- **anchor**：`items` 滚动定位、IntersectionObserver scroll spy、当前项高亮 ✅
+- **anchor**：`items` 滚动定位（支持 `children` 多级嵌套）、scroll spy 高亮（`scroll-container` 指定滚动容器 / `offset`+`bounds` 判定线 / `get-current-anchor` 自定义策略）、点击落点（`target-offset` / `block` / `duration` / `animation`）、滚动联动 `oas-change`（含新旧值）、`affix` 吸附、轨道+移动墨水条、`variant`/`size` 变体、`hash`/`replace` 历史控制、`internal-scrollable`、`scrollTo` 实例方法、项级 `target` 外部链接 ✅
+- **oas-anchor-target**：目标标记组件，`id` 同步到内部 `part=target`，作为锚点项滚动定位目标（替代手写标题 id）✅
 - **back-top**：回到顶部、`bottom/right` 定位、平滑滚动 ✅
 
 ### 验收标准
@@ -685,3 +686,22 @@ floating 导航族三组件按能力并集补齐 + 水平收纳/inline 形态多
 - **contextmenu**：`long-press-delay` 长按触发、`show(x,y)`/`close()` 编程式、受控 `open` + `oas-open-change`、右键别处关闭、`close-on-scroll`
 - **实测修复**（用户视角验证门禁驱动）：inline hover/click 抵消展不开、inline-sub flex 并排、inline-sub role 嵌套 axe 违规、水平浮层 overflow 裁剪不可见、「···」收纳项自身被收、「···」弹层右缘截断+颜色继承、inline 选中/移出误收起
 - **验收**：menu 64 + dropdown 52 + contextmenu 21 单测（全量 2673）、typecheck/build/api:check 全绿、e2e chromium 937 + firefox 350、axe 零严重违规、console 零告警；浏览器实测 light/dark 全交互链（inline 展开/手风琴互斥/受控展开/水平收纳弹层选中反馈/close-on-select 对照/dropdown hover 面板/contextmenu 各触发）
+
+## v2.1.6 导航与浮层族 11 组件能力补齐（已完成，待发布）
+
+tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navigation-menu/toolbar 按能力并集（能力横向补齐，A/B/C 档全做，唯一豁免：command 内置模糊搜索并入未来打包勾选特性）：
+
+- **tooltip**：placement 12 向、trigger 多选（hover/click/focus/contextmenu/touch/manual）、open/close-delay、富内容插槽、Esc + aria-describedby（WCAG 1.4.13）、max-width token、disabled、方向感知动画、interactive 可悬停、skip-delay 延迟组、append-to portal、双轴偏移、color 变体、禁用触发兼容、collision-padding、箭头 merge/fresh/auto-close/trigger-keys（C 档全做）
+- **popover**：trigger 多选 + hover 防抖、placement 12 向、宽度定制 + width='trigger'、初始焦点指定、关闭按钮 + 声明式关层、append-to、颜色变体、碰撞细调（fallback-placements/hide-when-detached）、modal 化（backdrop+焦点锁+滚动锁）、arrow-merge/fresh/auto-close/trigger-keys；嵌套级联 + Esc 栈保持领先
+- **hover-card**：浮层可悬停不闪关（立身修复）、富内容插槽、open/close-delay 分离、箭头、oas-open-change、role 语义修正（去 dialog）、方向感知动画、延迟组、宽度定制、append-to、碰撞细调
+- **breadcrumb**：项 icon、图标分隔符、真实链接 href/target（不再吞默认跳转）、disabled、折叠保留数可配、项下拉菜单、单项截断 + title、size、键盘导航、active 语义、schema.org BreadcrumbList JSON-LD、color/underline 变体、part 扩展
+- **anchor**：scroll-container 指定滚动容器、target-offset 落点偏移、children 多级嵌套、横向模式、滚动联动 oas-change（含新旧值）、affix 吸附、轨道+移动墨水条、bounds、get-current-anchor、block 落点、hash/replace、duration、variant/size、scrollTo 方法、oas-anchor-target 新组件
+- **back-top**：visibility-height 阈值自动显隐（默认 400）、target 目标容器、默认插槽、duration、进出场动画、shape/size/theme、26 种 easing、显隐受控 + oas-visibility-change、append-to、reduced-motion 降级、进度环、reverse 滚底、expand 撑满条、tooltip/badge、8 方位
+- **tour**：placement 12 向 + 溢出翻转、scrollIntoView、滚动/resize 重定位、箭头、mask 开关 + 非模态、type=primary、gap 可配、键盘 ←/→、show-close、step 级覆盖、遮罩点击行为、高亮区可交互、指示器定制、cover 插槽、异步步骤、生命周期事件、dialog 模式、锁滚动、hints 信标、「不再显示」记忆、多页引导、打字机 + 进度条、append-to
+- **command**：项图标、快捷键 kbd 标注、loading、should-filter=false 外部过滤、空态插槽、hotkey 可配/可关、oas-open-change、匹配高亮、嵌套页面 + 面包屑回退、最近使用（localStorage）、自定义过滤函数、description、打分排序、limit、footer 插槽、分隔符、搜索/选中受控、close-on-select、forceMount 创建型、虚拟滚动、面板内嵌视图、多选
+- **menubar**：checkbox 项、typeahead、打开项受控 + oas-open-change、click 首开语义（开后 hover 切换）、icon、trigger 配置、loop、整栏 disabled、side/align/offset 弹出定位、close-on-select、breakpoint 汉堡收纳、箭头、方向感知动画、竖排
+- **navigation-menu**：大面板内容形态（多列网格链接卡 icon+标题+描述）、延迟开合 + skip-delay、value 受控 + oas-change、chevron 箭头、外部点击关闭、Link active/aria-current、viewport 统一容器宽高过渡 + 方向位移动画、indicator 指示条、vertical、面板内二级子导航、backdrop、keep-mounted、箭头、面板滚动兜底；disclosure navigation 语义（不用 menu role）
+- **toolbar**：oas-toolbar（orientation vertical/loop/disabled/focusable-when-disabled/size 三档/data-toolbar-far 右对齐/链接项 part/水平溢出收纳「···」镜像弹层/is-attached 贴边形态/复合部件方向键豁免）+ 新部件 oas-toolbar-toggle（单/多选受控 + aria-pressed + 内部 roving）/ oas-toolbar-separator（role=separator 自适应方向）/ oas-toolbar-input（单 Tab 停靠输入）
+- **共享**：浮层定位引擎升级 12 向 + skidding + collisionPadding（tooltip/popover/hover-card/tour 复用）
+- **实测修复**：toolbar SSR 溢出误判（happy-dom 假溢出致快照隐藏项、水合布局漂移 9px；溢出判定改 scrollWidth>clientWidth 防 shrink-to-fit 假溢出）；popover 退场动画延迟 aria-hidden（语义状态立即落地 + .oas-closing 保显播完）；back-top append-to 竞态致 Vue 水合 mismatch（组件级 load 后 teleport + 站点级注册移至水合后）；toolbar is-attached 样式缺失
+- **验收**：单测 tooltip 78 / popover 90 / hover-card 35 / breadcrumb 33 / anchor 41 / back-top 35 / tour 60 / command 67 / menubar 61 / navigation-menu 36 / toolbar 43 / 定位引擎 30（全量 3120）、typecheck/build 全绿、e2e chromium 944 + firefox 抽样 355、ssr-dsd 11/11、console 零告警；识图验收 light+dark 全 11 页通过（33 张截图逐张核对）
