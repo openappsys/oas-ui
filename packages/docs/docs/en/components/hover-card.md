@@ -219,7 +219,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `append-to` | Positioning container selector (e.g. `#panel`): the card is absolutely positioned inside that container (container is promoted to a relative positioning context), coordinates translated accordingly; defaults to `position: fixed` viewport coordinates | — | — |
 | `arrow` | Whether to show the arrow, default true; `arrow="false"` hides it (the arrow element and `::part(arrow)` remain) | `string` | `true` |
-| `arrow-merge` | Corner-merged arrow mode: for *-start/*-end placements the arrow fuses with the panel corner into a right-angle triangle (the matching corner radius is zeroed); no effect for centered placements | `boolean` | — |
+| `arrow-merge` | Corner-merged arrow mode: for *-start/*-end placements a right triangle merges flush with the panel corner — legs collinear with the panel edges (their strokes continue the panel border band), tip pointing orthogonally toward the anchor; the matching corner radius is zeroed; no effect for centered placements | `boolean` | — |
 | `arrow-point-at-center` | Point the arrow at the trigger center (keeps pointing at the anchor after viewport clamping); by default the arrow stays at the panel center | `boolean` | — |
 | `auto-adjust-overflow` | Auto-adjust at viewport edges (flip/clamp), default true; `"false"` disables it and positions strictly per the declared placement (the popup may overflow the viewport) | `string` | `true` |
 | `close-delay` | Close delay in ms, separate from open-delay; falls back to the `delay` alias, then to 150 | — | — |

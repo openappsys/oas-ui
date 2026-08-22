@@ -390,12 +390,12 @@
 - 基础运行时 `@oas-ui/core`、主题 token、图标库
 - 新增 Button、Icon、Tag、Badge、Space、Divider、Link、Typography
 
-[1.0.0]: https://github.com/oas-ui/oas-ui/releases/tag/v1.0.0
-[1.1.0]: https://github.com/oas-ui/oas-ui/tree/v1.1.0
-[1.2.0]: https://github.com/oas-ui/oas-ui/tree/v1.2.0
-[1.3.0]: https://github.com/oas-ui/oas-ui/tree/v1.3.0
-[1.4.0]: https://github.com/oas-ui/oas-ui/tree/v1.4.0
-[1.5.0]: https://github.com/oas-ui/oas-ui/tree/v1.5.0
-[1.6.0]: https://github.com/oas-ui/oas-ui/tree/v1.6.0
-[1.7.0]: https://github.com/oas-ui/oas-ui/tree/v1.7.0
-[1.8.0]: https://github.com/oas-ui/oas-ui/tree/v1.8.0
+[1.0.0]: https://github.com/openappsys/oas-ui/releases/tag/v1.0.0
+[1.1.0]: https://github.com/openappsys/oas-ui/tree/v1.1.0
+[1.2.0]: https://github.com/openappsys/oas-ui/tree/v1.2.0
+[1.3.0]: https://github.com/openappsys/oas-ui/tree/v1.3.0
+[1.4.0]: https://github.com/openappsys/oas-ui/tree/v1.4.0
+[1.5.0]: https://github.com/openappsys/oas-ui/tree/v1.5.0
+[1.6.0]: https://github.com/openappsys/oas-ui/tree/v1.6.0
+[1.7.0]: https://github.com/openappsys/oas-ui/tree/v1.7.0
+[1.8.0]: https://github.com/openappsys/oas-ui/tree/v1.8.0

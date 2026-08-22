@@ -217,43 +217,91 @@ const STYLE = `
   border-left: 1px solid var(--pop-border);
   border-bottom: 1px solid var(--pop-border);
 }
-/* arrow-merge（C1）：箭头贴到面板角上、对应邻角圆角归零，与面板角融合成直角三角——
-   仅 *-start/*-end 位置生效（箭头十字轴贴起始/结束角），center placement 不触发 */
-.panel[data-placement^='bottom'][data-arrow-merge] .arrow {
-  top: -4px;
-}
-.panel[data-placement^='top'][data-arrow-merge] .arrow {
-  bottom: -4px;
-}
-.panel[data-placement^='left'][data-arrow-merge] .arrow {
-  right: -4px;
-}
-.panel[data-placement^='right'][data-arrow-merge] .arrow {
-  left: -4px;
-}
+/* arrow-merge（C1）：直角三角与面板角共边融合（通用形态，仅 *-start/*-end 生效，
+    center placement 不触发）。箭头为不旋转的 8px 方块整悬面板外、贴齐角两边，clip-path
+    裁成直角三角——直角顶点贴面板角点，两条直角边与面板角两边共线，斜边 45° 朝面板内，
+    尖端从角点正交外探 8px 指向锚点侧（视觉是「面板角本身伸出的直角尖」）。
+    面板有 1px 描边：箭头盒贴角边让位 1px（主轴边外 -8px 压进面板描边带、起止侧边 -1px），
+    两条直角边上的描边（--pop-border）恰好与面板描边带共带续接，斜边不描边（clip 裁平，
+    视觉干净）。逐向写死（不能用 $='-start'/'-end' 后缀匹配——它对 12 向恒取顶角/恒写
+    水平轴，见 tooltip 同款教训）：bottom 系悬顶边（start→左上角、end→右上角）、top 系
+    悬底边（start→左下角、end→右下角）、left 系悬右边（start→右上角、end→右下角）、
+    right 系悬左边（start→左上角、end→左下角） */
 .panel[data-placement='bottom-start'][data-arrow-merge] .arrow {
-  left: -4px;
+  top: -8px;
+  left: -1px;
+  transform: none;
+  border: none;
+  border-left: 1px solid var(--pop-border);
+  border-bottom: 1px solid var(--pop-border);
+  clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
 }
 .panel[data-placement='bottom-end'][data-arrow-merge] .arrow {
-  right: -4px;
+  top: -8px;
+  right: -1px;
+  left: auto;
+  transform: none;
+  border: none;
+  border-right: 1px solid var(--pop-border);
+  border-bottom: 1px solid var(--pop-border);
+  clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
 }
 .panel[data-placement='top-start'][data-arrow-merge] .arrow {
-  left: -4px;
+  bottom: -8px;
+  left: -1px;
+  transform: none;
+  border: none;
+  border-left: 1px solid var(--pop-border);
+  border-top: 1px solid var(--pop-border);
+  clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
 }
 .panel[data-placement='top-end'][data-arrow-merge] .arrow {
-  right: -4px;
+  bottom: -8px;
+  right: -1px;
+  left: auto;
+  transform: none;
+  border: none;
+  border-right: 1px solid var(--pop-border);
+  border-top: 1px solid var(--pop-border);
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
 }
 .panel[data-placement='left-start'][data-arrow-merge] .arrow {
-  top: -4px;
+  right: -8px;
+  top: -1px;
+  transform: none;
+  border: none;
+  border-top: 1px solid var(--pop-border);
+  border-left: 1px solid var(--pop-border);
+  clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
 }
 .panel[data-placement='left-end'][data-arrow-merge] .arrow {
-  bottom: -4px;
+  right: -8px;
+  bottom: -1px;
+  top: auto;
+  transform: none;
+  border: none;
+  border-bottom: 1px solid var(--pop-border);
+  border-left: 1px solid var(--pop-border);
+  clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
 }
 .panel[data-placement='right-start'][data-arrow-merge] .arrow {
-  top: -4px;
+  left: -8px;
+  top: -1px;
+  transform: none;
+  border: none;
+  border-top: 1px solid var(--pop-border);
+  border-right: 1px solid var(--pop-border);
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
 }
 .panel[data-placement='right-end'][data-arrow-merge] .arrow {
-  bottom: -4px;
+  left: -8px;
+  bottom: -1px;
+  top: auto;
+  transform: none;
+  border: none;
+  border-bottom: 1px solid var(--pop-border);
+  border-right: 1px solid var(--pop-border);
+  clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
 }
 .panel[data-placement='bottom-start'][data-arrow-merge] {
   border-top-left-radius: 0;
@@ -882,6 +930,9 @@ export class OASPopover extends OASElement {
     arrow.style.removeProperty('--arrow-x')
     arrow.style.removeProperty('--arrow-y')
     if (!this.hasAttr('arrow-point-at-center') || !this.showArrow()) return
+    // arrow-merge（C1）：箭头由 CSS 钉死面板角点（直角三角贴角共边），内联偏移会让三角盒
+    // 脱离角点、破坏与面板角的共边衔接——跳过指向中心计算
+    if (this.hasAttr('arrow-merge')) return
     const panelRect = this.panel.getBoundingClientRect()
     const clampV = (v: number, max: number): number =>
       Math.max(ARROW_PAD, Math.min(v, max))
@@ -1122,7 +1173,7 @@ export class OASPopover extends OASElement {
     else this.panel?.removeAttribute('data-color')
   }
 
-  /** arrow-merge（C1）：面板写 data-arrow-merge，CSS 仅在 *-start/*-end 位置应用贴角与圆角归零 */
+  /** arrow-merge（C1）：面板写 data-arrow-merge，CSS 仅在 *-start/*-end 位置应用直角三角贴角共边与圆角归零 */
   private syncArrowMerge(): void {
     this.panel?.toggleAttribute('data-arrow-merge', this.hasAttr('arrow-merge'))
   }
