@@ -87,6 +87,104 @@ An item with `disabled: true` renders as non-interactive text (`aria-disabled="t
   <oas-breadcrumb collapsed max-items="4" collapse-text="More" items='[{"label":"Home","href":"/"},{"label":"Components","href":"/components"},{"label":"Navigation","href":"/components/anchor"},{"label":"Data Display","href":"/components/table"},{"label":"Feedback","href":"/components/alert"},{"label":"Breadcrumb"}]'></oas-breadcrumb>
 </DemoBlock>
 
+## Collapse expand event
+
+Clicking the collapse ellipsis to **expand** the dropdown fires `oas-collapse-click` with `detail: { collapsedItems }` (the original array of collapsed items) — hosts can draw their own collapse panel; collapsing does not fire it.
+
+<DemoBlock title="Collapse expand event (oas-collapse-click)">
+  <oas-breadcrumb id="bc-collapse-ev" collapsed max-items="4" onoas-collapse-click="breadcrumbCollapseLog(event)" items='[{"label":"Home","href":"/"},{"label":"Components","href":"/components"},{"label":"Navigation","href":"/components/anchor"},{"label":"Data Display","href":"/components/table"},{"label":"Settings","href":"/components/settings"},{"label":"Breadcrumb"}]'></oas-breadcrumb>
+  <oas-tag id="bc-collapse-ev-result" type="info">Not expanded yet</oas-tag>
+</DemoBlock>
+
+## Declarative child channel
+
+Besides the `items` JSON, you can write items declaratively with `<oas-breadcrumb-item>` (the `items` attribute **wins when explicitly set**). The default slot text is the label; attributes map to the `items` fields: `href`/`target`/`icon`/`disabled`/`max-width`/`separator`/`dropdown`/`active`. Child additions/removals, attribute and text changes re-render automatically.
+
+<DemoBlock title="Child channel basic">
+  <oas-breadcrumb>
+    <oas-breadcrumb-item href="/">Home</oas-breadcrumb-item>
+    <oas-breadcrumb-item href="/components">Components</oas-breadcrumb-item>
+    <oas-breadcrumb-item>Breadcrumb</oas-breadcrumb-item>
+  </oas-breadcrumb>
+</DemoBlock>
+
+<DemoBlock title="With icons and attributes">
+  <oas-breadcrumb>
+    <oas-breadcrumb-item href="/" icon="star">Home</oas-breadcrumb-item>
+    <oas-breadcrumb-item href="/components" target="_blank">Components (new tab)</oas-breadcrumb-item>
+    <oas-breadcrumb-item disabled>Deprecated</oas-breadcrumb-item>
+    <oas-breadcrumb-item max-width="110" href="/components/breadcrumb">A rather long breadcrumb item title</oas-breadcrumb-item>
+  </oas-breadcrumb>
+</DemoBlock>
+
+### Custom separators (child channel)
+
+Place `<oas-breadcrumb-separator>` between two items; its content can be arbitrary nodes (text / icon / inline elements). The per-item `separator` attribute accepts text or icon names, and a `slot="separator"` child element accepts arbitrary nodes.
+
+<DemoBlock title="Standalone separator element">
+  <oas-breadcrumb>
+    <oas-breadcrumb-item href="/">Home</oas-breadcrumb-item>
+    <oas-breadcrumb-separator>→</oas-breadcrumb-separator>
+    <oas-breadcrumb-item href="/components">Components</oas-breadcrumb-item>
+    <oas-breadcrumb-separator><span style="color: var(--oas-color-primary)">›</span></oas-breadcrumb-separator>
+    <oas-breadcrumb-item>Breadcrumb</oas-breadcrumb-item>
+  </oas-breadcrumb>
+</DemoBlock>
+
+<DemoBlock title="Per-item separator (attribute / slot)">
+  <oas-breadcrumb>
+    <oas-breadcrumb-item href="/" separator="heart">Home</oas-breadcrumb-item>
+    <oas-breadcrumb-item href="/components">Components<span slot="separator">·</span></oas-breadcrumb-item>
+    <oas-breadcrumb-item>Breadcrumb</oas-breadcrumb-item>
+  </oas-breadcrumb>
+</DemoBlock>
+
+## Hierarchy indentation visual
+
+The breadcrumb is flat by default; a pure-CSS trick can produce an indented "level" look (hide separators + indent items in order — no API involved). Idea: make `::part(nav)` vertical, hide `::part(separator)`, and increase `padding-left` on `::part(item):nth-child()` by occurrence order.
+
+<DemoBlock title="Hierarchy indentation (pure CSS)">
+  <oas-breadcrumb class="bc-hierarchy" separator="/" items='[{"label":"Home","href":"/"},{"label":"Components","href":"/components"},{"label":"Navigation","href":"/components/anchor"},{"label":"Breadcrumb"}]'></oas-breadcrumb>
+</DemoBlock>
+
+<style>
+.bc-hierarchy::part(nav) {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--oas-space-1);
+}
+.bc-hierarchy::part(separator) {
+  display: none;
+}
+.bc-hierarchy::part(item):nth-child(3) {
+  padding-left: 20px;
+}
+.bc-hierarchy::part(item):nth-child(5) {
+  padding-left: 40px;
+}
+.bc-hierarchy::part(item):nth-child(7) {
+  padding-left: 60px;
+}
+</style>
+
+## Item with dropdown (oas-dropdown combo)
+
+The `dropdown` attribute on `oas-breadcrumb-item` turns the item into a dropdown trigger (link-list menu; selecting an item fires `oas-select`). Combined with `oas-dropdown` you get richer menu content; selections from both channels can feed one shared state.
+
+<DemoBlock title="Item with dropdown">
+  <oas-breadcrumb onoas-select="breadcrumbMenuLog(event)">
+    <oas-breadcrumb-item href="/">Home</oas-breadcrumb-item>
+    <oas-breadcrumb-item dropdown='[{"label":"Components overview","href":"/components"},{"label":"Navigation","href":"/components/anchor"},{"label":"Deprecated","href":"/gone","disabled":true}]'>More</oas-breadcrumb-item>
+    <oas-breadcrumb-item>Breadcrumb</oas-breadcrumb-item>
+  </oas-breadcrumb>
+  <div style="margin-top: 8px">
+    <oas-dropdown items='[{"label":"Breadcrumb docs","value":"breadcrumb"},{"label":"Anchor docs","value":"anchor"}]' placement="bottom" onoas-select="breadcrumbMenuLog(event)">
+      <oas-button type="default" size="small">oas-dropdown combo menu</oas-button>
+    </oas-dropdown>
+  </div>
+  <oas-tag id="bc-menu-result" type="info">Nothing selected</oas-tag>
+</DemoBlock>
+
 ## Single-line ellipsis
 
 `ellipsis`: the breadcrumb never wraps; link text is truncated with an ellipsis when the container is narrow, and links keep the full `title` (hover to see the complete name).
@@ -190,6 +288,17 @@ onMounted(() => {
       if (tag) tag.textContent = `Clicked: ${e.detail.value}`
     }
   }
+  window.breadcrumbCollapseLog = (e) => {
+    const tag = document.getElementById('bc-collapse-ev-result')
+    if (tag) {
+      const labels = e.detail.collapsedItems.map((i) => i.label).join(', ')
+      tag.textContent = `Expanded: ${e.detail.collapsedItems.length} collapsed (${labels})`
+    }
+  }
+  window.breadcrumbMenuLog = (e) => {
+    const tag = document.getElementById('bc-menu-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value ?? e.detail.href ?? ''}`
+  }
 })
 </script>
 
@@ -199,7 +308,7 @@ Font size follows the outer context (inherited) by default; override with the CS
 
 ## API
 
-### Attributes
+### oas-breadcrumb
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -217,10 +326,32 @@ Font size follows the outer context (inherited) by default; override with the CS
 | `size` | Size preset: `small`/`medium` (default)/`large` | `string` | `medium` |
 | `variant` | Style variant: `underline` (links and the current item are permanently underlined) | `string` | — |
 
-### Events
-
 | Event | Description |
 | --- | --- |
+| `oas-collapse-click` | Fired when the collapse ellipsis is clicked to expand the dropdown (not fired when collapsing), `detail: { collapsedItems }` (the original array of collapsed items, for hosts that want a custom collapse panel) |
 | `oas-select` | A link item, a collapsed dropdown item, or an item dropdown item was clicked; `detail: { value: href }` (real links do not block default navigation; hosts may intercept for routing) |
+
+### oas-breadcrumb-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `active` | Explicitly mark this item as current (`aria-current="page"`); defaults to the last item | — | — |
+| `disabled` | Disabled item: rendered as non-interactive text (`aria-disabled`) | — | — |
+| `dropdown` | Link-list dropdown for the item (JSON, e.g. `[{"label":"Child","href":"/a"}]`); the item renders as a dropdown trigger | — | — |
+| `href` | Link URL: with `href` the item renders as a native `<a>` (real navigation + still fires `oas-select`) | — | — |
+| `icon` | Leading icon (`@oas-ui/icons` registry icon name) | — | — |
+| `max-width` | Per-item max width (px): overflow is truncated with an ellipsis + `title` tooltip | — | — |
+| `separator` | Per-item separator: overrides the global `separator` (text or icon name); a `slot="separator"` child element also accepts arbitrary nodes | — | — |
+| `target` | Link target (`_blank` automatically adds `noopener noreferrer`) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Breadcrumb item label content (default slot text) |
+
+### oas-breadcrumb-separator
+
+| Name | Description |
+| --- | --- |
+| default | Separator content: arbitrary nodes (text / icon / inline elements) |
 
 `nav` + `aria-label="面包屑"`, the last item has `aria-current="page"` and is not clickable.

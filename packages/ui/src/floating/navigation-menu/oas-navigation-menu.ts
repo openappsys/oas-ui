@@ -11,6 +11,8 @@ export interface NavItem extends MenuItem {
   description?: string
   /** 当前页标记：链接渲染 aria-current="page"（顶级与面板链接均生效） */
   active?: boolean
+  /** 二级级联子导航（面板内）：带 sub 的项渲染二级触发器，点击在面板内打开覆盖式二级面板 */
+  sub?: NavItem[]
 }
 
 const STYLE = `
@@ -136,6 +138,19 @@ const STYLE = `
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
+}
+/* 视口边界碰撞翻转：右缘溢出右对齐（flip-right）、下缘溢出向上弹（flip-up）；竖排右缘不足向左弹 */
+.viewport.flip-right {
+  left: auto;
+  right: 0;
+}
+.viewport.flip-up {
+  top: auto;
+  bottom: calc(100% + var(--oas-space-1));
+}
+.viewport.vertical.flip-left {
+  left: auto;
+  right: calc(100% + var(--oas-space-1));
 }
 .viewport.vertical {
   top: 0;
@@ -308,6 +323,138 @@ const STYLE = `
     transform: none;
   }
 }
+/* ===== Sub 二级级联：面板内覆盖式二级面板（见 openSubPanel 设计决策注释） ===== */
+.sub-trigger {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--oas-color-text-primary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-md);
+  font-weight: 500;
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-radius: var(--oas-radius-sm);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-1);
+}
+.sub-trigger:hover,
+.sub-trigger[aria-expanded='true'] {
+  background: var(--oas-color-bg-hover);
+}
+.sub-trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.sub-trigger .sub-chevron {
+  display: inline-flex;
+  align-items: center;
+  color: var(--oas-color-text-secondary);
+  transition: transform 0.2s ease;
+}
+.sub-trigger[aria-expanded='true'] .sub-chevron {
+  transform: rotate(90deg);
+}
+.sub-trigger .sub-chevron svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+.sub-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: var(--oas-space-2);
+  background: var(--oas-color-bg);
+  overflow: auto;
+  box-sizing: border-box;
+}
+.sub-panel[hidden] {
+  display: none;
+}
+.sub-panel.open {
+  animation: nav-sub-in 0.22s var(--oas-ease-out, ease-out);
+}
+@keyframes nav-sub-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.sub-back {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--oas-color-text-secondary);
+  font-family: inherit;
+  font-size: var(--oas-font-size-sm);
+  padding: var(--oas-space-1) var(--oas-space-2);
+  border-radius: var(--oas-radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  margin-bottom: var(--oas-space-1);
+}
+.sub-back:hover {
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-primary);
+}
+.sub-back:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.sub-back svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+.sub-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--oas-space-1);
+}
+.sub-links a {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border-radius: var(--oas-radius-sm);
+  color: var(--oas-color-text-primary);
+  text-decoration: none;
+  cursor: pointer;
+}
+.sub-links a:hover {
+  background: var(--oas-color-bg-hover);
+}
+.sub-links a:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+.sub-links a[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+/* ===== panel-footer 营销位插槽：面板底部，有内容才显示 ===== */
+.panel-footer {
+  border-top: 1px solid var(--oas-color-border);
+  margin-top: var(--oas-space-2);
+  padding-top: var(--oas-space-2);
+}
+.panel-footer[hidden] {
+  display: none;
+}
 `
 
 let viewportSeq = 0
@@ -324,6 +471,7 @@ export class OASNavigationMenu extends OASElement {
       'backdrop',
       'keep-mounted',
       'arrow',
+      'loop',
     ]
   }
 
@@ -335,7 +483,10 @@ export class OASNavigationMenu extends OASElement {
   private indicatorEl: HTMLElement | null = null
   private arrowEl: HTMLElement | null = null
   private backdropEl: HTMLElement | null = null
+  private subPanelEl: HTMLElement | null = null
+  private panelFooterEl: HTMLElement | null = null
   private viewportId = `oas-nav-panel-${viewportSeq++}`
+  private subPanelId = `oas-nav-sub-${viewportSeq++}`
 
   /** 内部打开项（非受控模式；受控模式以 value 属性为准） */
   private openValue: string | null = null
@@ -343,6 +494,8 @@ export class OASNavigationMenu extends OASElement {
   private prevOpenValue: string | null = null
   /** 面板内 inline 二级子导航当前展开的 section（常开一项） */
   private openSection: string | null = null
+  /** 面板内覆盖式二级面板（Sub 级联）当前打开项 value；null = 未打开 */
+  private openSub: string | null = null
   /** 键盘导航当前层级焦点索引（顶级 activeIndex / 面板 panelIndex） */
   private activeIndex = 0
   private panelIndex = 0
@@ -364,6 +517,8 @@ export class OASNavigationMenu extends OASElement {
         <div class="viewport" part="viewport">
           <span class="arrow" part="arrow" aria-hidden="true"></span>
           <div class="panel" part="panel"></div>
+          <div class="panel-footer" part="panel-footer" hidden><slot name="panel-footer"></slot></div>
+          <div class="sub-panel" part="sub-panel" hidden></div>
         </div>
         <div class="backdrop" part="backdrop" aria-hidden="true"></div>
       </div>
@@ -379,7 +534,13 @@ export class OASNavigationMenu extends OASElement {
     this.indicatorEl = this.shadow.querySelector('.indicator')
     this.arrowEl = this.shadow.querySelector('.arrow')
     this.backdropEl = this.shadow.querySelector('.backdrop')
+    this.subPanelEl = this.shadow.querySelector('.sub-panel')
+    this.panelFooterEl = this.shadow.querySelector('.panel-footer')
     this.viewportEl?.setAttribute('id', this.viewportId)
+    this.subPanelEl?.setAttribute('id', this.subPanelId)
+    // 营销位插槽内容动态增减 → 重算容器显隐（宿主后插内容也能生效）
+    const footerSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="panel-footer"]')
+    footerSlot?.addEventListener('slotchange', () => this.syncPanelFooter())
     this.navEl?.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
     this.navEl?.addEventListener('mouseleave', () => this.scheduleClose())
     // 指针进入面板区域不关闭（悬停区域 = bar + 面板）
@@ -430,6 +591,41 @@ export class OASNavigationMenu extends OASElement {
     this.syncIndicator()
     this.syncActive()
     this.syncRoving()
+    this.syncPanelFooter()
+  }
+
+  /** panel-footer 营销位插槽容器：有内容才显示（宿主放 CTA 卡片） */
+  private syncPanelFooter(): void {
+    const wrap = this.panelFooterEl
+    if (!wrap) return
+    wrap.hidden = this.querySelectorAll('[slot="panel-footer"]').length === 0
+    // 插槽显隐变化影响 viewport 高度过渡目标，重算尺寸变量
+    this.syncViewportSize()
+  }
+
+  /** viewport 尺寸变量（--vp-w/--vp-h）：面板内容 + 营销位 + 覆盖式二级面板（打开时） */
+  private syncViewportSize(): void {
+    const vp = this.viewportEl
+    const p = this.panelEl
+    if (!vp || !p) return
+    const footer = this.panelFooterEl
+    const sub = this.subPanelEl
+    // 二级面板打开时以其内容为准（覆盖主面板）；否则主面板 + 营销位
+    if (sub && this.openSub && !sub.hidden) {
+      const w = sub.scrollWidth
+      const h = sub.scrollHeight
+      if (w > 0) vp.style.setProperty('--vp-w', `${w}px`)
+      if (h > 0) vp.style.setProperty('--vp-h', `${h}px`)
+      return
+    }
+    const w = p.scrollWidth
+    let h = p.scrollHeight
+    if (footer && !footer.hidden) {
+      const fh = footer.offsetHeight
+      if (fh > 0) h += fh + 4
+    }
+    if (w > 0) vp.style.setProperty('--vp-w', `${w}px`)
+    if (h > 0) vp.style.setProperty('--vp-h', `${h}px`)
   }
 
   private parseItems(): void {
@@ -486,6 +682,11 @@ export class OASNavigationMenu extends OASElement {
   private columns(): number {
     const n = Number.parseInt(this.getAttr('columns', '2'), 10)
     return Number.isFinite(n) && n >= 1 ? n : 2
+  }
+
+  /** loop 循环导航开关：缺省 true（保持既有循环行为），仅显式 "false" 关闭 */
+  private loopEnabled(): boolean {
+    return this.getAttr('loop', '') !== 'false'
   }
 
   private findItem(value: string): NavItem | undefined {
@@ -586,8 +787,11 @@ export class OASNavigationMenu extends OASElement {
       p.innerHTML = ''
       return
     }
-    // 常开一项：默认展开第一个 inline 二级子导航 section
-    const firstSection = item.children.find((c) => c.children?.length)
+    // 切换顶级触发器 → 二级覆盖面板复位（主面板重渲染）
+    this.openSub = null
+    if (this.subPanelEl) this.subPanelEl.hidden = true
+    // 常开一项：默认展开第一个 inline 二级子导航 section（排除 Sub 二级触发器）
+    const firstSection = item.children.find((c) => c.children?.length && !(c as NavItem).sub)
     if (!this.openSection && firstSection?.value) this.openSection = firstSection.value
     const grid = document.createElement('ul')
     grid.className = 'grid'
@@ -605,10 +809,14 @@ export class OASNavigationMenu extends OASElement {
     }
     p.innerHTML = ''
     p.appendChild(grid)
+    this.syncViewportSize()
   }
 
   private appendPanelCell(grid: HTMLElement, item: MenuItem): void {
-    if (item.children?.length) {
+    if ((item as NavItem).sub?.length) {
+      // Sub 二级级联：渲染二级触发器（优先于 inline section）
+      grid.appendChild(this.buildSubTrigger(item as NavItem))
+    } else if (item.children?.length) {
       grid.appendChild(this.buildSection(item as NavItem))
     } else {
       grid.appendChild(this.buildCard(item as NavItem))
@@ -722,6 +930,155 @@ export class OASNavigationMenu extends OASElement {
     }
   }
 
+  // ================= Sub 二级级联（面板内覆盖式二级面板） =================
+  //
+  // 设计决策：采用「面板内 absolute 覆盖式二级面板」，而非 viewport 级联换内容。
+  // 理由：本组件 viewport 是单一面板容器（width/height 过渡 + data-motion 方向动画），
+  // 多级内容交替塞进同一容器会破坏尺寸过渡连续性、并让主面板上下文丢失；
+  // 覆盖式保留主面板 DOM 于底层，二级面板 absolute inset:0 覆盖其上（slide-in 动画），
+  // Esc/ArrowLeft 逐层回退零成本。与现有 inline section 折叠并存（sub 字段优先于 children）。
+  // 限制：二级面板内不再支持三级级联（sub 的 sub 不渲染）；焦点链见 handleSubKey。
+
+  /** 二级触发器（按钮）：面板格内渲染，点击开/关覆盖式二级面板 */
+  private buildSubTrigger(item: NavItem): HTMLElement {
+    const li = document.createElement('li')
+    li.className = 'section'
+    li.setAttribute('part', 'section')
+    if (item.value != null) li.dataset.value = item.value
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'sub-trigger'
+    btn.setAttribute('part', 'sub-trigger')
+    if (item.value != null) btn.dataset.value = item.value
+    btn.setAttribute('aria-expanded', 'false')
+    btn.setAttribute('aria-controls', this.subPanelId)
+    btn.setAttribute('aria-haspopup', 'menu')
+    const label = document.createElement('span')
+    label.textContent = item.label ?? ''
+    btn.appendChild(label)
+    const chevron = document.createElement('span')
+    chevron.className = 'sub-chevron'
+    chevron.setAttribute('aria-hidden', 'true')
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    svg.setAttribute('viewBox', '0 0 16 16')
+    svg.setAttribute('width', '1em')
+    svg.setAttribute('height', '1em')
+    svg.setAttribute('aria-hidden', 'true')
+    svg.setAttribute('focusable', 'false')
+    svg.innerHTML =
+      '<path d="M6 4 L10 8 L6 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+    chevron.appendChild(svg)
+    btn.appendChild(chevron)
+    btn.addEventListener('click', () => {
+      this.keyboardMode = false
+      if (this.openSub === item.value) this.closeSubPanel()
+      else this.openSubPanel(item.value ?? '')
+    })
+    li.appendChild(btn)
+    return li
+  }
+
+  /** 渲染覆盖式二级面板内容：返回按钮 + sub 子项链接（href 叶子渲染 <a>） */
+  private renderSubPanel(): void {
+    const sp = this.subPanelEl
+    if (!sp) return
+    const item = this.openSub ? this.findItem(this.openSub) : undefined
+    const sub = item?.sub ?? []
+    sp.innerHTML = ''
+    const back = document.createElement('button')
+    back.type = 'button'
+    back.className = 'sub-back'
+    back.setAttribute('part', 'sub-back')
+    back.setAttribute('aria-label', this.t('navigationMenu.back'))
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    svg.setAttribute('viewBox', '0 0 16 16')
+    svg.setAttribute('width', '1em')
+    svg.setAttribute('height', '1em')
+    svg.setAttribute('aria-hidden', 'true')
+    svg.setAttribute('focusable', 'false')
+    svg.innerHTML =
+      '<path d="M10 4 L6 8 L10 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+    back.appendChild(svg)
+    back.append(this.t('navigationMenu.back'))
+    back.addEventListener('click', () => this.closeSubPanel())
+    sp.appendChild(back)
+    const ul = document.createElement('ul')
+    ul.className = 'sub-links'
+    ul.setAttribute('role', 'list')
+    for (const s of sub) {
+      const li = document.createElement('li')
+      const a = document.createElement('a')
+      a.className = 'sub-link'
+      a.setAttribute('part', 'sub-link')
+      a.setAttribute('href', s.href ?? '#')
+      if (s.target) a.setAttribute('target', s.target)
+      if (s.active) a.setAttribute('aria-current', 'page')
+      if (s.disabled) a.setAttribute('aria-disabled', 'true')
+      if (s.value != null) a.dataset.value = s.value
+      a.textContent = s.label ?? ''
+      a.addEventListener('click', (e: Event) => {
+        e.stopPropagation()
+        if (s.disabled) {
+          e.preventDefault()
+          return
+        }
+        this.select(s)
+      })
+      li.appendChild(a)
+      ul.appendChild(li)
+    }
+    sp.appendChild(ul)
+  }
+
+  /** 打开二级面板：渲染内容 + 显隐 + 焦点移入首项（键盘/鼠标共用） */
+  private openSubPanel(value: string): void {
+    this.openSub = value
+    this.renderSubPanel()
+    this.syncSubOpen()
+    this.keyboardMode = true
+    this.panelIndex = this.firstEnabledSubIndex()
+    this.focusSubPanel()
+    this.syncViewportSize()
+  }
+
+  /** 关闭二级面板：焦点回触发器（Esc/ArrowLeft/返回按钮/再点触发器） */
+  private closeSubPanel(): void {
+    const value = this.openSub
+    this.openSub = null
+    this.syncSubOpen()
+    this.syncViewportSize()
+    if (value) {
+      const trig = this.shadow.querySelector<HTMLElement>(`[part="sub-trigger"][data-value="${value}"]`)
+      ;(trig as HTMLElement | null)?.focus()
+    }
+  }
+
+  /** 二级面板开合同步：显隐 + 触发器 aria-expanded + 尺寸过渡 */
+  private syncSubOpen(): void {
+    const sp = this.subPanelEl
+    if (sp) sp.hidden = !this.openSub
+    for (const t of this.shadow.querySelectorAll<HTMLElement>('[part="sub-trigger"]')) {
+      t.setAttribute('aria-expanded', String(this.openSub === (t.dataset.value ?? '')))
+    }
+  }
+
+  private subFocusables(): HTMLElement[] {
+    const sp = this.subPanelEl
+    if (!sp) return []
+    return [...sp.querySelectorAll<HTMLElement>('[part="sub-link"]')]
+  }
+
+  private firstEnabledSubIndex(): number {
+    const list = this.subFocusables()
+    return list.findIndex((el) => el.getAttribute('aria-disabled') !== 'true')
+  }
+
+  private focusSubPanel(): void {
+    const list = this.subFocusables()
+    const el = list[this.panelIndex]
+    if (el) el.focus()
+  }
+
   /** 用 iconRegistry 渲染图标（内联 SVG，跟随 currentColor） */
   private createIcon(icon: string, className = 'icon'): HTMLElement | null {
     const content = iconRegistry[icon as IconName]
@@ -772,6 +1129,10 @@ export class OASNavigationMenu extends OASElement {
     const prev = this.effectiveOpen()
     if (prev === value) return
     if (prev && !value) this.lastCloseAt = Date.now()
+    // 切换/关闭顶级触发器 → 面板级状态（section 折叠 + Sub 二级面板）复位
+    this.openSection = null
+    this.openSub = null
+    if (this.subPanelEl) this.subPanelEl.hidden = true
     if (!this.hasAttr('value')) this.openValue = value || null
     this.emit('change', { value })
     const open = this.effectiveOpen()
@@ -883,6 +1244,66 @@ export class OASNavigationMenu extends OASElement {
     if (this.backdropEl) {
       this.backdropEl.classList.toggle('open', !!open && this.hasAttr('backdrop'))
     }
+    // 碰撞翻转（右缘/下缘溢出）在每次开合/切换时重算
+    this.syncViewportPosition()
+  }
+
+  /**
+   * 碰撞/翻转检测：viewport 固定 top:100% left:0（竖排 left:100%），
+   * 右缘溢出时 right 对齐（flip-right），下缘溢出时向上弹（flip-up），竖排右缘不足向左弹（flip-left）。
+   * 水平右边界取「视口右缘 与 导航栏右缘」较小值——窄容器内面板也不越出容器。
+   * 尺寸用 offsetWidth/scrollWidth（transform 免疫），位置用 getBoundingClientRect（面板/栏无 scale 动画）。
+   */
+  private syncViewportPosition(): void {
+    const vp = this.viewportEl
+    const bar = this.barEl
+    if (!vp || !bar) return
+    const open = this.effectiveOpen()
+    if (!open) {
+      vp.classList.remove('flip-right', 'flip-up', 'flip-left')
+      return
+    }
+    const margin = 8
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const size = this.viewportContentSize()
+    if (this.isVertical()) {
+      const barRect = bar.getBoundingClientRect()
+      const rightEdge = barRect.left + bar.offsetWidth + size.w
+      vp.classList.toggle('flip-left', rightEdge > vw - margin)
+      vp.classList.remove('flip-right')
+    } else {
+      const barRect = bar.getBoundingClientRect()
+      const navRect = this.navEl?.getBoundingClientRect()
+      const navRight = navRect?.right ?? 0
+      // 右边界 = min(视口, 导航栏右缘)；navRight 为 0（未布局/测试环境）回退视口
+      const boundRight = navRight > 0 ? Math.min(vw, navRight) : vw
+      const rightEdge = barRect.left + size.w
+      vp.classList.toggle('flip-right', rightEdge > boundRight - margin)
+      vp.classList.remove('flip-left')
+    }
+    const vpRect = vp.getBoundingClientRect()
+    const bottom = vpRect.top + size.h
+    vp.classList.toggle('flip-up', bottom > vh - margin)
+  }
+
+  /** 面板内容尺寸（主面板 + 营销位；二级面板打开时以二级内容为准）——翻转/尺寸过渡共用 */
+  private viewportContentSize(): { w: number; h: number } {
+    const p = this.panelEl
+    const w = p?.scrollWidth ?? 0
+    let h = p?.scrollHeight ?? 0
+    const footer = this.panelFooterEl
+    if (footer && !footer.hidden) {
+      const fh = footer.offsetHeight
+      if (fh > 0) h += fh + 4
+    }
+    const sub = this.subPanelEl
+    if (sub && this.openSub && !sub.hidden) {
+      const sw = sub.scrollWidth
+      const sh = sub.scrollHeight
+      return { w: sw > 0 ? sw : w, h: sh > 0 ? sh : h }
+    }
+    return { w, h }
   }
 
   private syncIndicator(): void {
@@ -908,12 +1329,21 @@ export class OASNavigationMenu extends OASElement {
         ind.style.setProperty('--ind-w', `${w}px`)
       }
     }
-    // viewport 尺寸过渡：测量面板内容
+    // 箭头跟随触发器：指向当前打开触发器中心（--arrow-x/y 由 JS 写入，此前 CSS 引用但从不 setProperty）
+    const ar = this.arrowEl
+    if (ar) {
+      if (this.isVertical()) {
+        const cy = trigger.offsetTop + trigger.offsetHeight / 2 - 4 // 半箭头高 4px
+        ar.style.setProperty('--arrow-y', `${cy}px`)
+      } else {
+        const cx = trigger.offsetLeft + trigger.offsetWidth / 2 - 4 // 半箭头宽 4px
+        ar.style.setProperty('--arrow-x', `${cx}px`)
+      }
+    }
+    // viewport 尺寸过渡：测量面板内容（含营销位/二级面板）
     const vp = this.viewportEl
-    const p = this.panelEl
-    if (vp && p) {
-      const w = p.scrollWidth
-      const h = p.scrollHeight
+    if (vp) {
+      const { w, h } = this.viewportContentSize()
       if (w > 0) vp.style.setProperty('--vp-w', `${w}px`)
       if (h > 0) vp.style.setProperty('--vp-h', `${h}px`)
     }
@@ -956,7 +1386,11 @@ export class OASNavigationMenu extends OASElement {
 
   private handleKey(e: KeyboardEvent): void {
     const open = this.effectiveOpen()
-    const inPanel = !!open && !!this.panelEl?.contains(this.shadow.activeElement as Node)
+    const active = this.shadow.activeElement as Node | null
+    const inPanel =
+      !!open &&
+      ((active != null && this.panelEl?.contains(active)) ||
+        (active != null && this.subPanelEl?.contains(active)))
     if (inPanel) {
       this.handlePanelKey(e)
       return
@@ -1035,6 +1469,11 @@ export class OASNavigationMenu extends OASElement {
   }
 
   private handlePanelKey(e: KeyboardEvent): void {
+    // 二级覆盖面板打开：键盘在其内部独立处理（Esc/ArrowLeft 逐层回退，不动主面板）
+    if (this.openSub) {
+      this.handleSubKey(e)
+      return
+    }
     const focusables = this.panelFocusables()
     const enabled = focusables.map((el, i) => (el.getAttribute('aria-disabled') === 'true' ? -1 : i)).filter((i) => i >= 0)
     if (enabled.length === 0) return
@@ -1051,6 +1490,10 @@ export class OASNavigationMenu extends OASElement {
         const sec = cur.closest('[part="section"]')
         const first = sec?.querySelector<HTMLElement>('[part="section-links"] a')
         ;(first as HTMLElement | null)?.focus()
+      } else if (cur?.getAttribute('part') === 'sub-trigger') {
+        // 二级触发器 → 展开二级面板并聚焦首项（级联进入）
+        e.preventDefault()
+        this.openSubPanel(cur.dataset.value ?? '')
       }
     } else if (e.key === 'ArrowLeft') {
       const inSection = cur?.closest('[part="section-links"]')
@@ -1093,12 +1536,46 @@ export class OASNavigationMenu extends OASElement {
     this.syncActive()
   }
 
+  /** 二级覆盖面板内键盘：上下移动、Enter 选择、Esc/ArrowLeft 回退到主面板（焦点回触发器） */
+  private handleSubKey(e: KeyboardEvent): void {
+    const list = this.subFocusables()
+    const enabled = list
+      .map((el, i) => (el.getAttribute('aria-disabled') === 'true' ? -1 : i))
+      .filter((i) => i >= 0)
+    if (enabled.length === 0) return
+    this.keyboardMode = true
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      const cur = enabled.indexOf(this.panelIndex)
+      const next = (cur + (e.key === 'ArrowDown' ? 1 : -1) + enabled.length) % enabled.length
+      this.panelIndex = enabled[next]!
+      this.focusSubPanel()
+    } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
+      e.preventDefault()
+      this.closeSubPanel()
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      const cur = this.shadow.activeElement as HTMLElement | null
+      cur?.click()
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      this.panelIndex = enabled[0]!
+      this.focusSubPanel()
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      this.panelIndex = enabled[enabled.length - 1]!
+      this.focusSubPanel()
+    }
+  }
+
   private panelFocusables(): HTMLElement[] {
+    // 二级覆盖面板打开时，焦点集合 = 二级面板项（主面板不可达）
+    if (this.openSub) return this.subFocusables()
     const p = this.panelEl
     if (!p) return []
     return [
       ...p.querySelectorAll<HTMLElement>(
-        '[part="card-link"], [part="section-title"], [part="section-links"] a',
+        '[part="card-link"], [part="section-title"], [part="sub-trigger"], [part="section-links"] a',
       ),
     ]
   }
@@ -1112,6 +1589,11 @@ export class OASNavigationMenu extends OASElement {
     const len = enabled.length
     if (len === 0) return
     const cur = enabled.indexOf(this.activeIndex)
+    if (!this.loopEnabled()) {
+      const next = cur + dir
+      if (next >= 0 && next < len) this.activeIndex = enabled[next]!
+      return
+    }
     this.activeIndex = enabled[(cur + dir + len) % len]!
   }
 
@@ -1135,7 +1617,11 @@ export class OASNavigationMenu extends OASElement {
     if (e.key !== 'Tab' || !this.effectiveOpen()) return
     const focusables = this.panelFocusables()
     if (focusables.length === 0) return
-    if (!this.panelEl?.contains(this.shadow.activeElement as Node)) return
+    const active = this.shadow.activeElement as Node | null
+    const inPanel =
+      (active != null && this.panelEl?.contains(active)) ||
+      (active != null && this.subPanelEl?.contains(active))
+    if (!inPanel) return
     e.preventDefault()
     const current = focusables.indexOf(this.shadow.activeElement as HTMLElement)
     const next = e.shiftKey

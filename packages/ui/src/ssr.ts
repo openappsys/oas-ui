@@ -103,6 +103,8 @@ export { OASThemeEditor } from './floating/theme-editor/oas-theme-editor.js'
 
 // ---------- navigation ----------
 export { OASBreadcrumb } from './navigation/breadcrumb/oas-breadcrumb.js'
+export { OASBreadcrumbItem } from './navigation/breadcrumb/oas-breadcrumb-item.js'
+export { OASBreadcrumbSeparator } from './navigation/breadcrumb/oas-breadcrumb-separator.js'
 export { OASBackTop } from './navigation/back-top/oas-back-top.js'
 export { OASAnchor, OASAnchorTarget } from './navigation/anchor/oas-anchor.js'
 export { OASTour } from './navigation/tour/oas-tour.js'

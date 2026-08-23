@@ -48,21 +48,22 @@ Tracks the current section on scroll and highlights it automatically; clicking a
   </div>
 </DemoBlock>
 
-## Click event
+## Click events
 
-Both clicking an anchor and scroll-driven highlight changes dispatch `oas-change` with `detail: { href, prevHref }`.
+`oas-click` and `oas-change` are separate: **clicking** an anchor fires `oas-click` (`detail: { href, item }`); both clicks and **scroll-driven** highlight changes fire `oas-change` (`detail: { href, prevHref }`) — listen to `oas-click` when you want to react to user actions only.
 
-<DemoBlock title="Click event (oas-change)">
+<DemoBlock title="Click events (oas-click / oas-change separation)">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
-    <oas-anchor style="width: 128px; flex-shrink: 0" onoas-change="anchorLog(event)" scroll-container="#anchor-sc-4" items='[{"href":"#anchor-sec-6","title":"Chapter 1"},{"href":"#anchor-sec-7","title":"Chapter 2"}]'></oas-anchor>
+    <oas-anchor style="width: 128px; flex-shrink: 0" onoas-click="anchorClickLog(event)" onoas-change="anchorLog(event)" scroll-container="#anchor-sc-4" items='[{"href":"#anchor-sec-6","title":"Chapter 1"},{"href":"#anchor-sec-7","title":"Chapter 2"}]'></oas-anchor>
     <div id="anchor-sc-4" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-6" style="margin-top: 0">Chapter 1</h4>
-      <p style="color: var(--oas-color-text-secondary)">Click the left anchor to see the event output.</p>
+      <p style="color: var(--oas-color-text-secondary)">Click a left anchor: only oas-click fires. Scroll this container to switch highlights: only oas-change fires.</p>
       <h4 id="anchor-sec-7">Chapter 2</h4>
-      <p style="color: var(--oas-color-text-secondary)">Scrolling this container also fires the event (with old and new values).</p>
+      <p style="color: var(--oas-color-text-secondary)">oas-click carries the full item (href/title etc.).</p>
     </div>
   </div>
-  <oas-tag id="anchor-result" type="info">Nothing clicked</oas-tag>
+  <oas-tag id="anchor-result" type="info" style="margin-top: 8px">Nothing clicked</oas-tag>
+  <oas-tag id="anchor-click-result" type="info" style="margin-top: 8px; margin-left: 8px">No oas-click yet</oas-tag>
 </DemoBlock>
 
 ## Controlled highlight
@@ -91,7 +92,7 @@ Both clicking an anchor and scroll-driven highlight changes dispatch `oas-change
 
 ## Click landing offset and alignment
 
-`target-offset` controls the distance between the target and the container top after clicking (avoids fixed headers); it falls back to `offset` when unset. `block` controls the landing alignment (`start` / `center` / `end`); `duration` controls the smooth scroll duration, while `animation="false"` or `duration="0"` jumps instantly.
+`target-offset` controls the distance between the target and the container top after clicking (avoids fixed headers); it falls back to `offset` when unset. `block` controls the landing alignment (`start` / `center` / `end` / `nearest` — nearest does not scroll when the target is already fully visible, minimal scroll); `duration` controls the smooth scroll duration, while `animation="false"` or `duration="0"` jumps instantly.
 
 <DemoBlock title="Click landing (target-offset / block / duration / animation)">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
@@ -116,6 +117,21 @@ Both clicking an anchor and scroll-driven highlight changes dispatch `oas-change
       <p style="color: var(--oas-color-text-secondary)">block="center": the target section is vertically centered in the container.</p>
       <h4 id="anchor-sec-m2">Chapter 2</h4>
       <p style="color: var(--oas-color-text-secondary)">Click me to see the centered landing.</p>
+    </div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="Minimal scroll landing (block=nearest)">
+  <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
+    <oas-anchor style="width: 128px; flex-shrink: 0" block="nearest" scroll-container="#anchor-sc-12" items='[{"href":"#anchor-sec-n1","title":"Chapter 1"},{"href":"#anchor-sec-n2","title":"Chapter 2"},{"href":"#anchor-sec-n3","title":"Chapter 3"}]'></oas-anchor>
+    <div id="anchor-sc-12" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <h4 id="anchor-sec-n1" style="margin-top: 0">Chapter 1</h4>
+      <p style="color: var(--oas-color-text-secondary)">block="nearest": no scroll at all when the target is already fully visible.</p>
+      <p style="color: var(--oas-color-text-secondary)">Click "Chapter 3" first to scroll to the bottom, then click "Chapter 1" — if Chapter 1 is already visible nothing scrolls (minimal scroll).</p>
+      <h4 id="anchor-sec-n2" style="margin-top: var(--oas-space-4)">Chapter 2</h4>
+      <p style="color: var(--oas-color-text-secondary)">A target below the container scrolls just enough for its bottom to appear.</p>
+      <h4 id="anchor-sec-n3" style="margin-top: var(--oas-space-4)">Chapter 3</h4>
+      <p style="color: var(--oas-color-text-secondary)">A target above the container scrolls just enough for its top to appear.</p>
     </div>
   </div>
 </DemoBlock>
@@ -276,6 +292,10 @@ onMounted(() => {
     const tag = document.getElementById('anchor-result')
     if (tag) tag.textContent = `Located: ${e.detail.href} (previous ${e.detail.prevHref || 'none'})`
   }
+  window.anchorClickLog = (e) => {
+    const tag = document.getElementById('anchor-click-result')
+    if (tag) tag.textContent = `oas-click: ${e.detail.href} (${e.detail.item.title})`
+  }
   window.anchorSetActive = (href) => document.getElementById('anchor-ctrl').setAttribute('active', href)
   window.anchorLogHistory = (e) => {
     const tag = document.getElementById('anchor-history-result')
@@ -299,7 +319,7 @@ onMounted(() => {
 | `affix` | Enable affix (sticky positioning, sticks to the scroll viewport/container) | `boolean` | — |
 | `affix-offset` | Distance from the scroll viewport top when affixed (px) | `string` | `0` |
 | `animation` | Smooth scroll switch (default true; `false` jumps instantly) | `string` | `true` |
-| `block` | Scroll landing alignment: `start` / `center` / `end` | `ScrollBlock` | `start` |
+| `block` | Scroll landing alignment: `start` / `center` / `end` / `nearest` (does not scroll when the target is already fully visible — minimal scroll; aligns to top when above, to bottom when below) | `ScrollBlock` | `start` |
 | `bounds` | Trigger boundary (px, default 5): extra lead for a section's top crossing the detection line, avoids highlight flicker | `string` | `5` |
 | `direction` | Layout direction: `vertical` / `horizontal` | `string` | `vertical` |
 | `duration` | Smooth scroll duration in ms (default 300; `0` jumps instantly) | `string` | `300` |
@@ -317,6 +337,7 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-change` | Fired on highlight change (both click and scroll-driven), `detail: { href, prevHref }` |
+| `oas-click` | Fired when a user clicks an anchor item (separate from the scroll-driven `oas-change`, so hosts can react to user actions only; also fires for external-link `target` items), `detail: { href, item }` |
 
 ### oas-anchor-target
 

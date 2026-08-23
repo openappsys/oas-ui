@@ -706,6 +706,16 @@ tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navig
 - **实测修复**：toolbar SSR 溢出误判（happy-dom 假溢出致快照隐藏项、水合布局漂移 9px；溢出判定改 scrollWidth>clientWidth 防 shrink-to-fit 假溢出）；popover 退场动画延迟 aria-hidden（语义状态立即落地 + .oas-closing 保显播完）；back-top append-to 竞态致 Vue 水合 mismatch（组件级 load 后 teleport + 站点级注册移至水合后）；toolbar is-attached 样式缺失
 - **验收**：单测 tooltip 78 / popover 90 / hover-card 35 / breadcrumb 33 / anchor 41 / back-top 35 / tour 60 / command 67 / menubar 61 / navigation-menu 36 / toolbar 43 / 定位引擎 30（全量 3120）、typecheck/build 全绿、e2e chromium 944 + firefox 抽样 355、ssr-dsd 11/11、console 零告警；识图验收 light+dark 全 11 页通过（33 张截图逐张核对）
 
+## 导航复核批（breadcrumb / anchor 能力增量与缺陷修复）
+
+breadcrumb 子元素声明式通道试点 + 折叠/下拉缺陷修复；anchor 点击事件分离 + resize 重算 + 滚动节流 + 最小滚动落点。
+
+- **oas-breadcrumb-item**（新子元素组件）：面包屑项声明式通道。默认插槽文本为 label，属性对齐 items 字段（href/target/icon/disabled/max-width/separator/dropdown/active）；`items` 属性显式设置时数据驱动优先，否则解析子元素收敛到同一渲染路径；子元素增删/属性/文本变化经 MutationObserver 重渲染（结构化数据注入 script 自排除防循环）
+- **oas-breadcrumb-separator**（新子元素组件）：面包屑分隔符声明式通道。置于两个项之间，内容为任意节点（文本/图标/内联元素）；项级 `separator` 属性或 slot="separator" 内联节点亦支持
+- **breadcrumb 增强**：折叠省略号展开派发 `oas-collapse-click`（detail 含被折叠项数组，宿主可自定义折叠面板）；ellipsis 模式 `overflow-x: clip + overflow-y: visible` 修复项下拉被 nav 自裁剪；下拉面板水平翻转（打开时按 offsetWidth 判定，右缘超视口 `right:0` 回折）；层级缩进视觉 demo（纯 CSS）；项挂下拉菜单组合 demo
+- **anchor 增强**：`oas-click` 事件分离（detail `{ href, item }`，与滚动联动 `oas-change` 分离，宿主可只响应用户操作；target 外部链接点击同样派发）；window resize（passive + rAF 节流）重算高亮与墨水条（容器宽度变化后不因无滚动而过期）；滚动监听 rAF 节流（每帧最多一次计算）；`block=nearest` 最小滚动落点（目标已可见则不滚动，在上方对齐顶部/在下方对齐底部）
+- **验收**：breadcrumb 43 + anchor 51 单测、typecheck/build 全绿、api:scan/api:gen 同步、demo 中英双语；浏览器实测待复核：子元素通道各形态、折叠事件反馈、窄视口下拉回折、resize 后 ink 对齐、block=nearest 连续短章节点击
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
