@@ -66,9 +66,9 @@ pnpm add @oas-ui/next   # Next.js: RSC OasComponent + OasRegistry client registr
 
 ## Documentation
 
-Full component docs and live demos: [oasui.dev](https://oasui.dev).
+Full component docs and live demos: [oas-ui.dev](https://oas-ui.dev).
 
-SSR / DSD guide: the [SSR page](https://oasui.dev/guide/ssr) on the docs site and the `@oas-ui/ssr` package.
+SSR / DSD guide: the [SSR page](https://oas-ui.dev/guide/ssr) on the docs site and the `@oas-ui/ssr` package.
 
 ## Package Layout
 
