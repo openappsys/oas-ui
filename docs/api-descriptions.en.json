@@ -28,7 +28,7 @@
       "affix": "Enable affix (sticky positioning, sticks to the scroll viewport/container)",
       "affix-offset": "Distance from the scroll viewport top when affixed (px)",
       "bounds": "Trigger boundary (px, default 5): extra lead for a section's top crossing the detection line, avoids highlight flicker",
-      "block": "Scroll landing alignment: `start` / `center` / `end`",
+      "block": "Scroll landing alignment: `start` / `center` / `end` / `nearest` (does not scroll when the target is already fully visible — minimal scroll; aligns to top when above, to bottom when below)",
       "hash": "Whether clicking updates the URL hash (default true; `false` disables)",
       "replace": "History control: use `history.replaceState` instead of pushState",
       "duration": "Smooth scroll duration in ms (default 300; `0` jumps instantly)",
@@ -39,7 +39,8 @@
       "get-current-anchor": "Custom highlight strategy: attribute names a global function that receives the computed candidate href and returns the actual href to highlight; the `getCurrentAnchor` property also accepts a function"
     },
     "events": {
-      "oas-change": "Fired on highlight change (both click and scroll-driven), `detail: { href, prevHref }`"
+      "oas-change": "Fired on highlight change (both click and scroll-driven), `detail: { href, prevHref }`",
+      "oas-click": "Fired when a user clicks an anchor item (separate from the scroll-driven `oas-change`, so hosts can react to user actions only; also fires for external-link `target` items), `detail: { href, item }`"
     },
     "slots": {}
   },
@@ -199,9 +200,33 @@
       "variant": "Style variant: `underline` (links and the current item are permanently underlined)"
     },
     "events": {
-      "oas-select": "A link item, a collapsed dropdown item, or an item dropdown item was clicked; `detail: { value: href }` (real links do not block default navigation; hosts may intercept for routing)"
+      "oas-select": "A link item, a collapsed dropdown item, or an item dropdown item was clicked; `detail: { value: href }` (real links do not block default navigation; hosts may intercept for routing)",
+      "oas-collapse-click": "Fired when the collapse ellipsis is clicked to expand the dropdown (not fired when collapsing), `detail: { collapsedItems }` (the original array of collapsed items, for hosts that want a custom collapse panel)"
     },
     "slots": {}
+  },
+  "oas-breadcrumb-item": {
+    "attrs": {
+      "active": "Explicitly mark this item as current (`aria-current=\"page\"`); defaults to the last item",
+      "disabled": "Disabled item: rendered as non-interactive text (`aria-disabled`)",
+      "dropdown": "Link-list dropdown for the item (JSON, e.g. `[{\"label\":\"Child\",\"href\":\"/a\"}]`); the item renders as a dropdown trigger",
+      "href": "Link URL: with `href` the item renders as a native `<a>` (real navigation + still fires `oas-select`)",
+      "icon": "Leading icon (`@oas-ui/icons` registry icon name)",
+      "max-width": "Per-item max width (px): overflow is truncated with an ellipsis + `title` tooltip",
+      "separator": "Per-item separator: overrides the global `separator` (text or icon name); a `slot=\"separator\"` child element also accepts arbitrary nodes",
+      "target": "Link target (`_blank` automatically adds `noopener noreferrer`)"
+    },
+    "events": {},
+    "slots": {
+      "": "Breadcrumb item label content (default slot text)"
+    }
+  },
+  "oas-breadcrumb-separator": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "Separator content: arbitrary nodes (text / icon / inline elements)"
+    }
   },
   "oas-button": {
     "attrs": {
@@ -1000,7 +1025,10 @@
       "oas-select": "An item was selected, `detail: { value, kind?, checked? }`. `kind` only appears for action items (`kind: \"action\"`); checkbox items carry `checked` (new checked state); radio items omit `detail.kind`",
       "oas-open-change": "The open top-level menu changed, `detail: { value, open }` (`value` = currently open top-level menu value, `open` = whether anything is open). Fired both on controlled `setAttribute('open')` and internal click/hover/keyboard changes (not on the first frame)"
     },
-    "slots": {}
+    "slots": {
+      "start": "Leading decorative slot (e.g. logo): `<div slot=\"start\">` renders when it has content; keyboard navigation skips it",
+      "end": "Trailing decorative slot (e.g. avatar): `<div slot=\"end\">` renders when it has content; keyboard navigation skips it"
+    }
   },
   "oas-message": {
     "attrs": {
@@ -1056,13 +1084,16 @@
       "columns": "Panel grid columns, default 2 (mega-panel multi-column link cards)",
       "backdrop": "Show an overlay when open (clicking the overlay closes)",
       "keep-mounted": "Keep the panel DOM mounted when closed (crawler/SEO indexing)",
-      "arrow": "Pointer arrow on the popup, shown by default; `arrow=\"false\"` hides it"
+      "arrow": "Pointer arrow on the popup, shown by default; `arrow=\"false\"` hides it",
+      "loop": "Top-level arrow-key wrap-around toggle, default `true` (loops at edges); explicit `loop=\"false\"` stops at the edges (aligned with menubar)"
     },
     "events": {
-      "oas-select": "An item was selected (top-level leaf link or panel link card), `detail: { value }`",
+      "oas-select": "An item was selected (top-level leaf link, panel link card or secondary sub-nav link), `detail: { value }`",
       "oas-change": "The open item changed, `detail: { value }` (value is the open top-level item value; empty string = closed)"
     },
-    "slots": {}
+    "slots": {
+      "panel-footer": "Marketing slot at the bottom of the panel: `<div slot=\"panel-footer\">` (CTA cards etc.) renders a footer container inside the panel when it has content"
+    }
   },
   "oas-number-animation": {
     "attrs": {

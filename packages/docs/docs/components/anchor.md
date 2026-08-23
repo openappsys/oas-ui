@@ -50,19 +50,20 @@
 
 ## 点击事件
 
-点击锚点或滚动联动切换高亮都会派发 `oas-change`，`detail: { href, prevHref }` 携带新旧值。
+`oas-click` 与 `oas-change` 分离：**点击**锚点派发 `oas-click`（`detail: { href, item }`），点击与**滚动联动**切换高亮都派发 `oas-change`（`detail: { href, prevHref }`）——宿主想只响应用户操作时监听 `oas-click` 即可。
 
-<DemoBlock title="点击事件（oas-change）">
+<DemoBlock title="点击事件（oas-click / oas-change 分离）">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
-    <oas-anchor style="width: 128px; flex-shrink: 0" onoas-change="anchorLog(event)" scroll-container="#anchor-sc-4" items='[{"href":"#anchor-sec-6","title":"第一章"},{"href":"#anchor-sec-7","title":"第二章"}]'></oas-anchor>
+    <oas-anchor style="width: 128px; flex-shrink: 0" onoas-click="anchorClickLog(event)" onoas-change="anchorLog(event)" scroll-container="#anchor-sc-4" items='[{"href":"#anchor-sec-6","title":"第一章"},{"href":"#anchor-sec-7","title":"第二章"}]'></oas-anchor>
     <div id="anchor-sc-4" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
       <h4 id="anchor-sec-6" style="margin-top: 0">第一章</h4>
-      <p style="color: var(--oas-color-text-secondary)">点击左侧锚点，查看事件输出。</p>
+      <p style="color: var(--oas-color-text-secondary)">点击左侧锚点：仅派发 oas-click；滚动该容器切换高亮：仅派发 oas-change。</p>
       <h4 id="anchor-sec-7">第二章</h4>
-      <p style="color: var(--oas-color-text-secondary)">滚动该容器切换高亮同样会派发事件（含前后值）。</p>
+      <p style="color: var(--oas-color-text-secondary)">oas-click 的 detail 含完整 item（href/title 等）。</p>
     </div>
   </div>
-  <oas-tag id="anchor-result" type="info">尚未点击</oas-tag>
+  <oas-tag id="anchor-result" type="info" style="margin-top: 8px">尚未点击</oas-tag>
+  <oas-tag id="anchor-click-result" type="info" style="margin-top: 8px; margin-left: 8px">无 oas-click</oas-tag>
 </DemoBlock>
 
 ## 受控高亮
@@ -91,7 +92,7 @@
 
 ## 点击落点偏移与对齐
 
-`target-offset` 控制点击后目标距容器顶的距离（避让固定头），未设置时回退 `offset`；`block` 控制落点对齐（`start` / `center` / `end`）；`duration` 控制平滑滚动时长，`animation="false"` 或 `duration="0"` 立即定位。
+`target-offset` 控制点击后目标距容器顶的距离（避让固定头），未设置时回退 `offset`；`block` 控制落点对齐（`start` / `center` / `end` / `nearest`——nearest 目标已可见则不滚动、最小滚动量）；`duration` 控制平滑滚动时长，`animation="false"` 或 `duration="0"` 立即定位。
 
 <DemoBlock title="点击落点（target-offset / block / duration / animation）">
   <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
@@ -116,6 +117,21 @@
       <p style="color: var(--oas-color-text-secondary)">block="center"：目标章节垂直居中于容器。</p>
       <h4 id="anchor-sec-m2">第二章</h4>
       <p style="color: var(--oas-color-text-secondary)">点我试试居中落点效果。</p>
+    </div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="最小滚动落点（block=nearest）">
+  <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
+    <oas-anchor style="width: 128px; flex-shrink: 0" block="nearest" scroll-container="#anchor-sc-12" items='[{"href":"#anchor-sec-n1","title":"第一章"},{"href":"#anchor-sec-n2","title":"第二章"},{"href":"#anchor-sec-n3","title":"第三章"}]'></oas-anchor>
+    <div id="anchor-sc-12" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <h4 id="anchor-sec-n1" style="margin-top: 0">第一章</h4>
+      <p style="color: var(--oas-color-text-secondary)">block="nearest"：目标已完全可见则完全不滚动。</p>
+      <p style="color: var(--oas-color-text-secondary)">先点「第三章」滚到底，再点「第一章」——若第一章已可见则不发生滚动（最小滚动量）。</p>
+      <h4 id="anchor-sec-n2" style="margin-top: var(--oas-space-4)">第二章</h4>
+      <p style="color: var(--oas-color-text-secondary)">目标在容器下方时只滚到其底部刚可见。</p>
+      <h4 id="anchor-sec-n3" style="margin-top: var(--oas-space-4)">第三章</h4>
+      <p style="color: var(--oas-color-text-secondary)">目标在容器上方时只滚到其顶部刚可见。</p>
     </div>
   </div>
 </DemoBlock>
@@ -276,6 +292,10 @@ onMounted(() => {
     const tag = document.getElementById('anchor-result')
     if (tag) tag.textContent = `已定位：${e.detail.href}（前值 ${e.detail.prevHref || '无'}）`
   }
+  window.anchorClickLog = (e) => {
+    const tag = document.getElementById('anchor-click-result')
+    if (tag) tag.textContent = `oas-click：${e.detail.href}（${e.detail.item.title}）`
+  }
   window.anchorSetActive = (href) => document.getElementById('anchor-ctrl').setAttribute('active', href)
   window.anchorLogHistory = (e) => {
     const tag = document.getElementById('anchor-history-result')
@@ -299,7 +319,7 @@ onMounted(() => {
 | `affix` | 启用吸附（sticky 定位，随滚动视口/容器吸附） | `boolean` | — |
 | `affix-offset` | 吸附时距滚动视口顶部的距离（px） | `string` | `0` |
 | `animation` | 平滑滚动开关（默认 true；`false` 立即定位） | `string` | `true` |
-| `block` | 滚动落点对齐：`start` / `center` / `end` | `ScrollBlock` | `start` |
+| `block` | 滚动落点对齐：`start` / `center` / `end` / `nearest`（目标已可见则不滚动，最小滚动量；在上方对齐顶部、在下方对齐底部） | `ScrollBlock` | `start` |
 | `bounds` | 触发边界（px，默认 5）：章节顶越检测线的额外提前量，避免高亮抖动 | `string` | `5` |
 | `direction` | 布局方向：`vertical` / `horizontal` | `string` | `vertical` |
 | `duration` | 平滑滚动时长（ms，默认 300；`0` 立即定位） | `string` | `300` |
@@ -317,6 +337,7 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 高亮切换（点击或滚动联动均派发），`detail: { href, prevHref }` |
+| `oas-click` | 用户点击锚点项（与滚动联动的 `oas-change` 分离，宿主可只响应用户操作；外部链接 `target` 项同样派发），`detail: { href, item }` |
 
 ### oas-anchor-target
 

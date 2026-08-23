@@ -5958,3 +5958,69 @@ test('popover virtual 定点：(160,90) 标记点可见且箭头对准该点（�
     ;(window as unknown as { popPointHide: () => void }).popPointHide()
   })
 })
+
+// —— 缺陷回归：navigation-menu 面板箭头跟随触发器 ——
+// 曾现缺陷：CSS 引用 var(--arrow-x,24px)/var(--arrow-y,24px) 但 JS 从未写入，
+// 箭头永远停在 24px 默认位、不指向打开的触发器。修复后按当前触发器中心写入变量。
+test('navigation-menu 箭头跟随触发器：面板箭头 --arrow-x 随触发器切换而移动', async ({ page }) => {
+  await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#nav-arrow')
+  const r = await page.evaluate(async () => {
+    const host = document.querySelector('#nav-arrow')!
+    host.scrollIntoView({ block: 'center' })
+    await new Promise((res) => setTimeout(res, 300))
+    const triggers = [...host.shadowRoot!.querySelectorAll<HTMLElement>('[aria-expanded]')]
+    const t0 = triggers[0]
+    const t1 = triggers[1]
+    if (!t0 || !t1) return { skip: true as const }
+    t0.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await new Promise((res) => setTimeout(res, 450))
+    const arrow1 = host.shadowRoot!.querySelector<HTMLElement>('.arrow, [class*="arrow"]')
+    const x1 = arrow1 ? arrow1.style.getPropertyValue('--arrow-x') : ''
+    t0.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    await new Promise((res) => setTimeout(res, 400))
+    t1.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await new Promise((res) => setTimeout(res, 450))
+    const arrow2 = host.shadowRoot!.querySelector<HTMLElement>('.arrow, [class*="arrow"]')
+    const x2 = arrow2 ? arrow2.style.getPropertyValue('--arrow-x') : ''
+    return { skip: false as const, x1, x2 }
+  })
+  if (r.skip) return // demo 结构变化时跳过而非误报
+  expect(r.x1, '箭头变量应被 JS 写入（非空）').not.toBe('')
+  expect(r.x2, '箭头变量应被 JS 写入（非空）').not.toBe('')
+  expect(r.x1, '箭头位置应随触发器切换而变化').not.toBe(r.x2)
+})
+
+// —— 缺陷回归：breadcrumb ellipsis 模式项下拉不被 nav 自裁剪 ——
+// 曾现缺陷：nav.ellipsis 的 overflow:hidden 双轴裁剪会裁掉向下展开的项下拉面板。
+// 修复为 overflow-x:clip + overflow-y:visible（只裁横轴防溢出闪动，纵轴放行下拉）。
+test('breadcrumb ellipsis 模式项下拉不被裁剪：面板 elementFromPoint 真实命中', async ({ page }) => {
+  await page.goto('/components/breadcrumb.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-breadcrumb')
+  const r = await page.evaluate(async () => {
+    const host = [...document.querySelectorAll('oas-breadcrumb')].find((b) =>
+      (b.getAttribute('items') || '').includes('"dropdown"'),
+    )
+    if (!host) return { skip: true as const }
+    host.scrollIntoView({ block: 'center' })
+    await new Promise((res) => setTimeout(res, 300))
+    const trig = host.shadowRoot!.querySelector<HTMLElement>('[aria-haspopup]')
+    if (!trig) return { skip: true as const }
+    trig.click()
+    await new Promise((res) => setTimeout(res, 400))
+    const panel = host.shadowRoot!.querySelector<HTMLElement>('.menu-panel.open')
+    if (!panel) return { skip: false as const, open: false }
+    const rect = panel.getBoundingClientRect()
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, Math.min(rect.top + 8, rect.bottom - 4))
+    return {
+      skip: false as const,
+      open: true,
+      height: rect.height,
+      hitInside: !!hit && (host.shadowRoot!.contains(hit) || host.contains(hit)),
+    }
+  })
+  if (r.skip) return
+  expect(r.open, '下拉面板应打开').toBe(true)
+  expect(r.height, '下拉面板应有高度').toBeGreaterThan(20)
+  expect(r.hitInside, '下拉面板顶部应真实可见（不被 nav overflow 裁剪）').toBe(true)
+})

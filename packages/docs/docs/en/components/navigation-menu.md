@@ -53,6 +53,49 @@ A website-style multi-level navigation bar: top-level triggers open a unified vi
   <oas-navigation-menu items='[{"label":"Home","value":"home","href":"/"},{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components"},{"label":"Docs","value":"docs","href":"/docs","disabled":true}]}]'></oas-navigation-menu>
 </DemoBlock>
 
+## Arrow follows the trigger
+
+By default the popup arrow doesn't point at any trigger; once the panel opens, JS writes the arrow position from the current trigger's offset/width, and the arrow follows when you switch triggers.
+
+<DemoBlock title="Arrow follows the trigger">
+  <oas-navigation-menu id="nav-arrow" delay-duration="0" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components"},{"label":"Docs","value":"docs","href":"/docs"}]},{"label":"Resources","value":"resources","children":[{"label":"Themes","value":"themes","href":"/themes"},{"label":"Guide","value":"guide","href":"/guide"}]},{"label":"Pricing","value":"pricing","href":"/pricing"}]'></oas-navigation-menu>
+  <p class="demo-tip">Hover/click "Products" then "Resources": the arrow follows the open trigger.</p>
+</DemoBlock>
+
+## Collision flip in narrow viewports
+
+When the panel is wider than the remaining viewport, collisions are handled automatically: right-edge overflow switches to right-alignment (never leaves the viewport), bottom overflow flips up; with enough space it stays in its normal position.
+
+<DemoBlock title="Narrow container collision flip">
+  <div style="width: 260px">
+    <oas-navigation-menu id="nav-flip" delay-duration="0" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","description":"30+ ready-to-use components"},{"label":"Design system","value":"design","href":"/design","description":"Visual language and tokens"},{"label":"Theming","value":"theming","href":"/theming","description":"Three-layer token architecture"}]}]'></oas-navigation-menu>
+  </div>
+  <p class="demo-tip">Container is 260px: when there's no room on the right, the panel right-aligns and stays fully inside the container/viewport.</p>
+</DemoBlock>
+
+## Sub second-level cascade
+
+A panel item with a `sub` field (second-level nav data) renders a "sub trigger"; clicking opens an overlay second-level panel inside the panel (slide-in cascade animation): `Esc` / `←` steps back to the main panel (focus returns to the trigger), another `Esc` closes the whole panel; `↓` moves between the second-level links (skipping disabled ones), `Enter` selects. Coexists with the inline section folding (`sub` takes precedence over `children`).
+
+<DemoBlock title="Sub second-level cascade">
+  <oas-navigation-menu id="nav-sub" delay-duration="0" onoas-select="navSubLog(event)" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ ready-to-use components"},{"label":"Learn","value":"learn","sub":[{"label":"Docs","value":"docs","href":"/docs"},{"label":"Tutorials","value":"tutorial","href":"/tutorial"},{"label":"Community","value":"community","href":"/community"},{"label":"Showcase","value":"showcase","href":"/showcase"}]}]},{"label":"Pricing","value":"pricing","href":"/pricing"}]'></oas-navigation-menu>
+  <oas-tag id="nav-sub-result" type="info">Click "Learn" to expand the second-level nav inside the panel</oas-tag>
+</DemoBlock>
+
+## Marketing slot (panel-footer)
+
+`slot="panel-footer"` renders a footer container at the bottom of the panel (CTA cards etc.) — only when it has content; it opens together with the panel, and the `--vp-h` height transition includes it.
+
+<DemoBlock title="panel-footer marketing slot">
+  <oas-navigation-menu id="nav-footer" delay-duration="0" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ ready-to-use components"},{"label":"Docs","value":"docs","href":"/docs","icon":"book","description":"Full API docs and guides"}]}]'>
+    <div slot="panel-footer" style="display: flex; gap: 12px; align-items: center; justify-content: space-between">
+      <span style="font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">Want to talk about your needs first?</span>
+      <oas-button size="small" type="primary">Book a demo</oas-button>
+    </div>
+  </oas-navigation-menu>
+  <p class="demo-tip">A marketing area appears at the bottom of the panel (only rendered when it has content).</p>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -67,6 +110,10 @@ onMounted(() => {
   window.navControlled = (e) => {
     const tag = document.getElementById('nav-controlled-result')
     if (tag) tag.textContent = `Currently open: ${e.detail.value || '(closed)'}`
+  }
+  window.navSubLog = (e) => {
+    const tag = document.getElementById('nav-sub-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value}`
   }
   const controlled = document.getElementById('nav-controlled')
   const setOpen = (v) => controlled && controlled.setAttribute('value', v)
@@ -88,6 +135,7 @@ onMounted(() => {
 | `delay-duration` | Hover open/close delay in ms, default 200; clicks and keyboard are immediate | `string` | `200` |
 | `items` | Navigation items JSON (hierarchical; leaf items can carry `description` text and an `icon` to render mega-panel link cards) | `string` | `[]` |
 | `keep-mounted` | Keep the panel DOM mounted when closed (crawler/SEO indexing) | `boolean` | — |
+| `loop` | Top-level arrow-key wrap-around toggle, default `true` (loops at edges); explicit `loop="false"` stops at the edges (aligned with menubar) | `string` | — |
 | `orientation` | Layout direction: `horizontal` (default) / `vertical` (panel appears to the right of triggers) | `string` | `horizontal` |
 | `skip-delay-duration` | Skip-delay window in ms, default 300: hovering another trigger within this window after a close opens it immediately | `string` | `300` |
 | `value` | Controlled open item (top-level trigger value; empty string = closed; when present the open state follows the attribute and interactions only dispatch `oas-change` for the host to update) | `string` | — |
@@ -97,7 +145,13 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-change` | The open item changed, `detail: { value }` (value is the open top-level item value; empty string = closed) |
-| `oas-select` | An item was selected (top-level leaf link or panel link card), `detail: { value }` |
+| `oas-select` | An item was selected (top-level leaf link, panel link card or secondary sub-nav link), `detail: { value }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `panel-footer` | Marketing slot at the bottom of the panel: `<div slot="panel-footer">` (CTA cards etc.) renders a footer container inside the panel when it has content |
 
 `NavItem` fields (inherits `MenuItem`):
 

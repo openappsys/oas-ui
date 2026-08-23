@@ -14,6 +14,24 @@ function mount(): OASBreadcrumb {
   return el
 }
 
+const LONG_ITEMS = JSON.stringify([
+  { label: '首页', href: '/' },
+  { label: '组件', href: '/components' },
+  { label: '导航', href: '/components/anchor' },
+  { label: '数据展示', href: '/components/table' },
+  { label: '反馈', href: '/components/alert' },
+  { label: '面包屑' },
+])
+
+function mountWith(attrs: Record<string, string>): OASBreadcrumb {
+  const el = new OASBreadcrumb()
+  for (const [k, v] of Object.entries(attrs)) {
+    el.setAttribute(k, v)
+  }
+  document.body.appendChild(el)
+  return el
+}
+
 describe('OASBreadcrumb', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -40,24 +58,6 @@ describe('OASBreadcrumb', () => {
     ;(el.shadowRoot!.querySelector('[part="link"]') as HTMLElement).click()
     expect(detail).toEqual({ value: '/' })
   })
-
-  const LONG_ITEMS = JSON.stringify([
-    { label: '首页', href: '/' },
-    { label: '组件', href: '/components' },
-    { label: '导航', href: '/components/anchor' },
-    { label: '数据展示', href: '/components/table' },
-    { label: '反馈', href: '/components/alert' },
-    { label: '面包屑' },
-  ])
-
-  function mountWith(attrs: Record<string, string>): OASBreadcrumb {
-    const el = new OASBreadcrumb()
-    for (const [k, v] of Object.entries(attrs)) {
-      el.setAttribute(k, v)
-    }
-    document.body.appendChild(el)
-    return el
-  }
 
   it('collapsed 且 items 超过 max-items：中间项折叠为 …，下拉默认关闭', () => {
     const el = mountWith({ items: LONG_ITEMS, collapsed: '', 'max-items': '4' })
@@ -558,5 +558,176 @@ describe('OASBreadcrumb', () => {
     const el2 = mountWith({ items: LONG_ITEMS, collapsed: '', 'max-items': '4' })
     expect(el2.shadowRoot!.querySelector('[part="ellipsis"]')).not.toBeNull()
     expect(el2.shadowRoot!.querySelector('[part="ellipsis-menu"]')).not.toBeNull()
+  })
+})
+
+// ===== 子元素声明式通道（oas-breadcrumb-item / oas-breadcrumb-separator） =====
+
+/** 子元素通道挂载：innerHTML 填 light DOM 子元素后 append（触发 render → 解析） */
+function mountChildren(html: string): OASBreadcrumb {
+  const el = document.createElement('oas-breadcrumb') as OASBreadcrumb
+  el.innerHTML = html
+  document.body.appendChild(el)
+  return el
+}
+
+describe('子元素声明式通道', () => {
+  it('基础：oas-breadcrumb-item 解析为内部模型渲染（链接/当前页/分隔符/icon）', () => {
+    const el = mountChildren(`
+      <oas-breadcrumb-item href="/">首页</oas-breadcrumb-item>
+      <oas-breadcrumb-item href="/components">组件</oas-breadcrumb-item>
+      <oas-breadcrumb-item href="/components/breadcrumb" icon="star">面包屑</oas-breadcrumb-item>
+    `)
+    const root = el.shadowRoot!
+    expect(root.querySelectorAll('.item').length).toBe(3)
+    expect(root.querySelectorAll('.sep').length).toBe(2)
+    const links = [...root.querySelectorAll<HTMLAnchorElement>('a[part="link"]')]
+    expect(links.length).toBe(2)
+    expect(links[0]!.getAttribute('href')).toBe('/')
+    expect(links[0]!.textContent).toBe('首页')
+    // 末项为当前页（aria-current=page，非链接）
+    const cur = root.querySelector('[part="current"]')!
+    expect(cur.getAttribute('aria-current')).toBe('page')
+    expect(cur.textContent).toBe('面包屑')
+    // 项 icon 通道生效
+    expect(root.querySelector('[part="icon"]')).not.toBeNull()
+  })
+
+  it('items 属性显式设置时优先（子元素被忽略）', () => {
+    const el = document.createElement('oas-breadcrumb')
+    el.setAttribute(
+      'items',
+      JSON.stringify([{ label: '数据项', href: '/data' }, { label: '末项' }]),
+    )
+    el.innerHTML = `<oas-breadcrumb-item href="/">首页</oas-breadcrumb-item>`
+    document.body.appendChild(el)
+    const root = el.shadowRoot!
+    const link = root.querySelector<HTMLAnchorElement>('a[part="link"]')!
+    expect(link.getAttribute('href')).toBe('/data')
+    expect(link.textContent).toBe('数据项')
+    expect(root.querySelectorAll('.item').length).toBe(2)
+  })
+
+  it('子元素属性映射：href/target/disabled/max-width/dropdown', () => {
+    const el = mountChildren(`
+      <oas-breadcrumb-item href="/" target="_blank">首页</oas-breadcrumb-item>
+      <oas-breadcrumb-item disabled>已下线</oas-breadcrumb-item>
+      <oas-breadcrumb-item href="/x" max-width="80">很长的一项</oas-breadcrumb-item>
+      <oas-breadcrumb-item dropdown='[{"label":"子项A","href":"/a"}]'>更多</oas-breadcrumb-item>
+      <oas-breadcrumb-item>末项</oas-breadcrumb-item>
+    `)
+    const root = el.shadowRoot!
+    const links = [...root.querySelectorAll<HTMLAnchorElement>('a[part="link"]')]
+    expect(links[0]!.target).toBe('_blank')
+    expect(links[0]!.getAttribute('rel')).toContain('noopener')
+    expect(root.querySelector('[part="disabled"]')!.getAttribute('aria-disabled')).toBe('true')
+    const truncated = links.find((l) => l.textContent === '很长的一项')!
+    expect(truncated.querySelector('.item-text')!.getAttribute('style')).toContain('80px')
+    const ddBtn = root.querySelector<HTMLButtonElement>('button.dropdown-trigger')!
+    expect(ddBtn).not.toBeNull()
+    ddBtn.click()
+    const panel = root.querySelector('.item-dropdown')!
+    expect(panel.classList.contains('open')).toBe(true)
+    expect([...panel.querySelectorAll('a')].map((a) => a.textContent)).toEqual(['子项A'])
+  })
+
+  it('子元素变化（MutationObserver）重渲染', async () => {
+    const el = mountChildren(`<oas-breadcrumb-item>首页</oas-breadcrumb-item>`)
+    expect(el.shadowRoot!.querySelectorAll('.item').length).toBe(1)
+    const item = document.createElement('oas-breadcrumb-item')
+    item.textContent = '组件'
+    el.appendChild(item)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.shadowRoot!.querySelectorAll('.item').length).toBe(2)
+  })
+
+  it('独立 oas-breadcrumb-separator 作为任意节点分隔符', () => {
+    const el = mountChildren(`
+      <oas-breadcrumb-item href="/">首页</oas-breadcrumb-item>
+      <oas-breadcrumb-separator>→</oas-breadcrumb-separator>
+      <oas-breadcrumb-item href="/components">组件</oas-breadcrumb-item>
+      <oas-breadcrumb-item>末项</oas-breadcrumb-item>
+    `)
+    const seps = [...el.shadowRoot!.querySelectorAll('.sep')]
+    expect(seps.length).toBe(2)
+    expect(seps[0]!.textContent).toBe('→')
+    expect(seps[1]!.textContent).toBe('/') // 其余沿用默认分隔符
+  })
+
+  it('项级 separator 属性（图标名）覆盖全局', () => {
+    const el = mountChildren(`
+      <oas-breadcrumb-item href="/" separator="heart">首页</oas-breadcrumb-item>
+      <oas-breadcrumb-item>组件</oas-breadcrumb-item>
+      <oas-breadcrumb-item>末项</oas-breadcrumb-item>
+    `)
+    const seps = [...el.shadowRoot!.querySelectorAll('.sep')]
+    expect(seps[0]!.querySelector('svg')).not.toBeNull()
+    expect(seps[1]!.textContent).toBe('/')
+  })
+
+  it('项级 separator 内联节点（slot="separator"）：标签内容不受污染、节点原样保留', () => {
+    const el = mountChildren(`
+      <oas-breadcrumb-item href="/">首页<span slot="separator">›</span></oas-breadcrumb-item>
+      <oas-breadcrumb-item>组件</oas-breadcrumb-item>
+      <oas-breadcrumb-item>末项</oas-breadcrumb-item>
+    `)
+    const root = el.shadowRoot!
+    const seps = [...root.querySelectorAll('.sep')]
+    expect(seps[0]!.textContent).toBe('›')
+    expect(seps[0]!.querySelector('span')).not.toBeNull()
+    // 标签只含默认插槽文本
+    expect(root.querySelector('a[part="link"]')!.textContent).toBe('首页')
+  })
+})
+
+// ===== 折叠展开事件 / 下拉缺陷修复 =====
+
+describe('折叠展开事件与下拉缺陷修复', () => {
+  it('oas-collapse-click：展开省略号下拉时派发，detail 含被折叠项数组', () => {
+    const el = mountWith({ items: LONG_ITEMS, collapsed: '', 'max-items': '4' })
+    const root = el.shadowRoot!
+    const details: Array<{ collapsedItems: Array<{ label: string }> }> = []
+    el.addEventListener('oas-collapse-click', (e: Event) =>
+      details.push((e as CustomEvent).detail),
+    )
+    root.querySelector<HTMLButtonElement>('.ellipsis-btn')!.click()
+    expect(details.length).toBe(1)
+    expect(details[0]!.collapsedItems.map((i) => i.label)).toEqual(['组件', '导航', '数据展示'])
+    // 收起不派发；再次展开才派发
+    root.querySelector<HTMLButtonElement>('.ellipsis-btn')!.click()
+    root.querySelector<HTMLButtonElement>('.ellipsis-btn')!.click()
+    expect(details.length).toBe(2)
+  })
+
+  it('ellipsis 模式：nav 用 overflow-x: clip + overflow-y: visible（纵轴放行下拉不被自裁剪）', () => {
+    const el = mountWith({ items: ITEMS, ellipsis: '' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    const block = style.split('nav.ellipsis')[1]!.split('}')[0]!
+    expect(block).toContain('overflow-x: clip')
+    expect(block).toContain('overflow-y: visible')
+  })
+
+  it('下拉水平翻转：面板右缘超出视口时加 flip-right，空间充足则移除', () => {
+    const el = mountWith({ items: LONG_ITEMS, collapsed: '', 'max-items': '4' })
+    const root = el.shadowRoot!
+    const btn = root.querySelector<HTMLButtonElement>('.ellipsis-btn')!
+    const panel = root.querySelector<HTMLElement>('.ellipsis-dropdown')!
+    Object.defineProperty(panel, 'offsetWidth', { value: 200, configurable: true })
+    // 窄视口：按钮右缘 380 + 面板 200 > 500 - 8 → 翻转
+    Object.defineProperty(btn, 'getBoundingClientRect', {
+      value: () => ({ right: 380 } as DOMRect),
+      configurable: true,
+    })
+    Object.defineProperty(window, 'innerWidth', { value: 500, configurable: true })
+    btn.click()
+    expect(panel.classList.contains('flip-right')).toBe(true)
+    // 空间充足：按钮右缘 100 + 200 < 500 → 不翻转（重新展开时重新判定）
+    Object.defineProperty(btn, 'getBoundingClientRect', {
+      value: () => ({ right: 100 } as DOMRect),
+      configurable: true,
+    })
+    btn.click() // 收起
+    btn.click() // 重新展开
+    expect(panel.classList.contains('flip-right')).toBe(false)
   })
 })

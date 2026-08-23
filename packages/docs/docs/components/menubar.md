@@ -139,6 +139,45 @@
   <oas-menubar items='[{"label":"文件","value":"file","icon":"gear","children":[{"label":"新建","value":"new","icon":"plus"},{"label":"打开","value":"open","icon":"search"},{"label":"保存","value":"save","icon":"download"}]},{"label":"账户","value":"account","icon":"user","children":[{"label":"资料","value":"profile","icon":"user"},{"label":"登出","value":"logout","icon":"close"}]}]'></oas-menubar>
 </DemoBlock>
 
+## 链接导航（href）
+
+叶子项（子菜单内与顶级叶子）带 `href` 时渲染为真链接 `<a>`：可右键新窗口、中键新开、利于 SEO；点击仍照常派发 `oas-select` 并写回 `value`（链接默认跳转不拦截）。`target="_blank"` 自动补 `rel="noopener"`。
+
+<DemoBlock title="链接导航（href 真链接）">
+  <oas-menubar id="menubar-href" onoas-select="menubarHrefLog(event)" items='[{"label":"文档","value":"docs","accessKey":"d","href":"/guide/intro"},{"label":"社区","value":"community","accessKey":"c","href":"/community","target":"_blank","children":[{"label":"讨论区","value":"forum","href":"/community/forum","target":"_blank"},{"label":"贡献指南","value":"contrib","href":"/community/contrib"}]}]'></oas-menubar>
+  <oas-tag id="menubar-href-result" type="info">点叶子项会导航并派发 oas-select</oas-tag>
+</DemoBlock>
+
+## 水平溢出收纳（···）
+
+容器宽度不足时，放不下的顶级项自动收进末尾「···」收纳项，点击弹层显示被收项（点选即选中）；选中项被收纳时「···」高亮。仅水平模式；竖排与移动端汉堡不收纳。被收纳的含子菜单顶级项在弹层内按叶子项点选（弹层内不展开级联子菜单）。
+
+<DemoBlock title="水平溢出收纳（窄容器自动收进 ···）">
+  <oas-menubar id="menubar-overflow" style="width: 380px" onoas-select="menubarOverflowLog(event)" items='[{"label":"首页","value":"home"},{"label":"产品中心","value":"products","children":[{"label":"组件库","value":"components"},{"label":"主题定制","value":"theming"}]},{"label":"解决方案","value":"solutions"},{"label":"开发者文档","value":"docs"},{"label":"下载中心","value":"download"},{"label":"关于我们","value":"about"},{"label":"帮助中心","value":"help"}]'></oas-menubar>
+  <oas-tag id="menubar-overflow-result" type="info">容器固定 380px，超宽项收进「···」</oas-tag>
+</DemoBlock>
+
+## 半选态（indeterminate）
+
+`kind: "checkbox"` 项支持 `indeterminate: true`：渲染 `aria-checked="mixed"` + 方块内横线减号（区别于全选的 ✓），供父子联动「部分选中」场景——半选状态由宿主算好后随 items JSON 传入，点击切换勾选后宿主可更新 items 取消半选标记。
+
+<DemoBlock title="checkbox 半选（indeterminate）">
+  <oas-menubar id="menubar-indeterminate" onoas-select="menubarIndeterminateLog(event)" value='["all","grid"]' items='[{"label":"视图","value":"view","accessKey":"v","children":[{"type":"group","label":"显示","children":[{"label":"全选","value":"all","kind":"checkbox","indeterminate":true},{"label":"网格线","value":"grid","kind":"checkbox"},{"label":"标尺","value":"ruler","kind":"checkbox"}]}]}]'></oas-menubar>
+  <oas-tag id="menubar-indeterminate-result" type="info">「全选」为半选（mixed）</oas-tag>
+</DemoBlock>
+
+## 头尾插槽（start / end）
+
+`slot="start"`（logo 位）/ `slot="end"`（头像位）装饰插槽：有内容时在 bar 内渲染，键盘导航自动跳过（不参与方向键/焦点陷阱）。
+
+<DemoBlock title="start / end 插槽（logo / 头像）">
+  <oas-menubar items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"新建","value":"new"},{"label":"打开","value":"open"}]},{"label":"编辑","value":"edit","accessKey":"e","children":[{"label":"撤销","value":"undo"}]}]'>
+    <oas-avatar slot="start" size="28">O</oas-avatar>
+    <oas-avatar slot="end" size="28" src="https://picsum.photos/seed/isui-mb-avatar/80">U</oas-avatar>
+  </oas-menubar>
+  <p class="demo-tip">start 位放 logo 文字/图形，end 位放头像；方向键在菜单项间移动，不会跳进插槽。</p>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -182,6 +221,25 @@ onMounted(() => {
   window.menubarMobileLog = (e) => {
     const tag = document.getElementById('menubar-mobile-result')
     if (tag) tag.textContent = `已选择：${e.detail.value}（汉堡模式）`
+  }
+
+  window.menubarHrefLog = (e) => {
+    const tag = document.getElementById('menubar-href-result')
+    if (tag) tag.textContent = `oas-select：${e.detail.value}（已渲染为 <a> 真链接）`
+  }
+
+  window.menubarOverflowLog = (e) => {
+    const tag = document.getElementById('menubar-overflow-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}（来自「···」弹层或条上）`
+  }
+
+  window.menubarIndeterminateLog = (e) => {
+    const tag = document.getElementById('menubar-indeterminate-result')
+    const mb = document.getElementById('menubar-indeterminate')
+    if (tag && mb) {
+      const v = JSON.parse(mb.getAttribute('value') || '[]')
+      tag.textContent = `勾选集: ${JSON.stringify(v)}（「全选」仍标 mixed，宿主可随 items 更新半选标记）`
+    }
   }
 
   const mb = document.getElementById('mb-value')
@@ -247,6 +305,13 @@ onMounted(() => {
 | --- | --- |
 | `oas-open-change` | 顶级打开菜单变化，`detail: { value, open }`（`value` = 当前打开顶级菜单 value，`open` = 是否打开）。受控 `setAttribute('open')` 与内部点击/hover/键盘触发都会派发（首帧不派发） |
 | `oas-select` | 选择某项，`detail: { value, kind?, checked? }`。`kind` 仅动作项（`kind: "action"`）出现，值为 `"action"`；checkbox 项带 `checked`（切换后勾选态）；radio 项 `detail.kind` 不出现 |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `end` | 栏尾装饰位（如头像）：`<div slot="end">` 有内容时显示，键盘导航跳过 |
+| `start` | 栏首装饰位（如 logo）：`<div slot="start">` 有内容时显示，键盘导航跳过 |
 
 > **事件 detail 说明**：`oas-select` 的 `detail` 是组件内部对象（含 `value`/`kind`），**不是**原生 `Event`——不能 `preventDefault()` 或直接读原生 `event.target`。如需原生事件对象，在事件监听器上用外层参数（如 `addEventListener('oas-select', (e) => ...)` 的 `e` 是 CustomEvent，`e.detail` 才是组件数据）。
 

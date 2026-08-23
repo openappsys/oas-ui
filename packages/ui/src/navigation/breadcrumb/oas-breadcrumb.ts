@@ -23,6 +23,11 @@ export interface BreadcrumbItem {
 /** 图标名集合（O(1) 判断 separator / icon 是否图标名） */
 const ICON_NAMES = new Set<string>(iconNames)
 
+/** 子元素通道内部扩展：任意节点分隔符（JSON 通道无法表达），不透出公共 BreadcrumbItem */
+interface BreadcrumbItemInternal extends BreadcrumbItem {
+  separatorNode?: Node
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -39,10 +44,13 @@ nav {
   align-items: center;
   flex-wrap: wrap;
 }
-/* ellipsis 单行省略：容器不换行、整体超宽截断，链接文本各自省略 */
+/* ellipsis 单行省略：容器不换行、整体超宽截断，链接文本各自省略。
+   用 overflow-x: clip + overflow-y: visible 而非 overflow: hidden——hidden 双轴裁剪，
+   会把项下拉面板（.menu-panel 在 nav 内绝对定位向下浮出）一并裁掉；clip 只裁横轴、纵轴放行 */
 nav.ellipsis {
   flex-wrap: nowrap;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 nav.ellipsis .item {
   min-width: 0;
@@ -167,6 +175,11 @@ nav.ellipsis .item-text {
 }
 .menu-panel.open {
   display: block;
+}
+/* 下拉水平翻转：面板右缘超出视口（窄视口长链接）时 right:0 对齐回折进视口（JS 检测后切类） */
+.menu-panel.flip-right {
+  left: auto;
+  right: 0;
 }
 /* 折叠省略按钮：锚定下拉面板 */
 .ellipsis-btn {
@@ -340,6 +353,9 @@ export class OASBreadcrumb extends OASElement {
   /** 折叠/下拉展开状态（key：'ellipsis' 或 'dd-<序列序号>'，跨 update 重建保留；互斥展开） */
   private openDropdowns = new Set<string>()
 
+  /** 子元素通道观察器：light DOM 里 oas-breadcrumb-item/separator 增删或属性/文本变化 → 重渲染 */
+  private childObserver: MutationObserver | null = null
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
@@ -372,6 +388,8 @@ export class OASBreadcrumb extends OASElement {
   protected override update(): void {
     const nav = this.shadow.querySelector('nav')
     if (!nav) return
+    // 子元素通道：items 属性未显式设置时监听 light DOM 子元素变化（重连后重建观察器）
+    this.ensureChildObserver()
     // 导航 aria-label locale 驱动（setLocale 切换自动重刷）
     nav.setAttribute('aria-label', this.t('breadcrumb.nav'))
     // ellipsis：单行省略模式（nav 容器不换行 + 链接文本各自省略）
@@ -380,7 +398,8 @@ export class OASBreadcrumb extends OASElement {
     this.syncColor(nav)
     this.syncVariant(nav)
     nav.innerHTML = ''
-    const items = this.parseItems()
+    // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
+    const items = this.hasAttribute('items') ? this.parseItems() : this.parseChildItems()
     const separator = this.getAttr('separator', '/')
     const maxItemWidth = this.widthValue(this.getAttr('max-item-width', ''))
 
@@ -425,7 +444,13 @@ export class OASBreadcrumb extends OASElement {
       }
       nav.appendChild(span)
       if (!isLast) {
-        nav.appendChild(this.buildSeparator(slot === 'ellipsis' ? separator : (slot.item.separator ?? separator)))
+        // 项级分隔符优先级：任意节点（子元素通道）> separator 文本/图标名 > 全局
+        let sepValue: string | Node = separator
+        if (slot !== 'ellipsis') {
+          const item = slot.item as BreadcrumbItemInternal
+          sepValue = item.separatorNode ?? (item.separator as string | undefined) ?? separator
+        }
+        nav.appendChild(this.buildSeparator(sepValue))
       }
     })
     this.syncStructuredData(items)
@@ -443,6 +468,123 @@ export class OASBreadcrumb extends OASElement {
     } catch {
       return []
     }
+  }
+
+  // ===== 子元素声明式通道 =====
+
+  /**
+   * 子元素通道解析层：把 light DOM 的 `<oas-breadcrumb-item>` / `<oas-breadcrumb-separator>`
+   * 收敛为内部 items 模型（单一渲染路径）。独立 separator 元素归属前一项之后的分隔位置；
+   * 项级 separator 支持属性（文本/图标名）或 slot="separator" 任意节点。
+   */
+  private parseChildItems(): BreadcrumbItemInternal[] {
+    const items: BreadcrumbItemInternal[] = []
+    for (const child of Array.from(this.children)) {
+      if (child.tagName === 'OAS-BREADCRUMB-ITEM') {
+        const item = this.childToItem(child)
+        items.push(item)
+      } else if (child.tagName === 'OAS-BREADCRUMB-SEPARATOR' && items.length > 0) {
+        items[items.length - 1]!.separatorNode = this.separatorContent(child)
+      }
+    }
+    return items
+  }
+
+  /** 单个子元素 → 内部 item（默认插槽文本为 label，属性对齐 items 字段） */
+  private childToItem(el: Element): BreadcrumbItemInternal {
+    const item: BreadcrumbItemInternal = {
+      label: this.childLabel(el),
+      disabled: el.hasAttribute('disabled'),
+      active: el.hasAttribute('active'),
+    }
+    const href = el.getAttribute('href')
+    if (href) item.href = href
+    const target = el.getAttribute('target')
+    if (target) item.target = target
+    const icon = el.getAttribute('icon')
+    if (icon) item.icon = icon
+    const sepAttr = el.getAttribute('separator')
+    if (sepAttr) item.separator = sepAttr
+    const sepNode = this.slottedSeparator(el)
+    if (sepNode) item.separatorNode = sepNode
+    const maxW = el.getAttribute('max-width')
+    if (maxW) {
+      const n = Number.parseFloat(maxW)
+      if (Number.isFinite(n) && n > 0) item.maxWidth = n
+    }
+    const dd = el.getAttribute('dropdown')
+    if (dd) item.dropdown = this.parseDropdown(dd)
+    return item
+  }
+
+  /** 默认插槽 label 文本：排除 slot="separator" 子元素（separator 内容不混入标签） */
+  private childLabel(el: Element): string {
+    let text = ''
+    for (const node of el.childNodes) {
+      if (node instanceof Element && node.getAttribute('slot') === 'separator') continue
+      text += node.textContent ?? ''
+    }
+    return text
+  }
+
+  /** 项级 separator 内联节点：slot="separator" 子元素的内容（任意节点） */
+  private slottedSeparator(el: Element): Node | null {
+    const slotted = Array.from(el.children).find((c) => c.getAttribute('slot') === 'separator')
+    return slotted ? this.separatorContent(slotted) : null
+  }
+
+  /**
+   * 取分隔符内容节点：oas-breadcrumb-separator 元素仅作容器（自身 display:none），
+   * 克隆其内容避免载体样式传染；其他任意节点原样克隆（保留自身样式）。
+   */
+  private separatorContent(el: Element): Node {
+    if (el.tagName === 'OAS-BREADCRUMB-SEPARATOR') {
+      const frag = document.createDocumentFragment()
+      for (const node of el.childNodes) frag.appendChild(document.importNode(node, true))
+      return frag
+    }
+    return document.importNode(el, true)
+  }
+
+  /** dropdown 属性 JSON 归一化（非法/非数组回退空数组） */
+  private parseDropdown(raw: string): BreadcrumbItem[] | undefined {
+    try {
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return undefined
+      const rows = parsed.filter((i): i is BreadcrumbItem => i && typeof i.label === 'string')
+      return rows.length > 0 ? rows : undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  /** 子元素通道观察器：只监听 light DOM 子元素；结构化数据注入的 script 增删是自身动作，忽略防循环 */
+  private ensureChildObserver(): void {
+    if (this.childObserver) return
+    const observer = new MutationObserver((mutations) => {
+      const isSelfScript = mutations.every(
+        (m) =>
+          m.type === 'childList' &&
+          m.target === this &&
+          [...m.addedNodes, ...m.removedNodes].every(
+            (n) => n.nodeType === Node.ELEMENT_NODE && (n as Element).tagName === 'SCRIPT',
+          ),
+      )
+      if (isSelfScript) return
+      this.update()
+    })
+    observer.observe(this, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+      attributeFilter: ['href', 'target', 'icon', 'disabled', 'max-width', 'separator', 'dropdown', 'active', 'slot'],
+    })
+    this.childObserver = observer
+    this.onCleanup(() => {
+      observer.disconnect()
+      this.childObserver = null
+    })
   }
 
   /** max-items 归一化：非法值回退默认 4 */
@@ -613,11 +755,17 @@ export class OASBreadcrumb extends OASElement {
     return plain
   }
 
-  /** 分隔符：值匹配图标名 → 渲染 svg，否则文本 */
-  private buildSeparator(value: string): HTMLElement {
+  /** 分隔符：任意节点（子元素通道）原样克隆 → 图标名 → 文本 */
+  private buildSeparator(value: string | Node): HTMLElement {
     const sep = document.createElement('span')
     sep.className = 'sep'
     sep.setAttribute('part', 'separator')
+    if (value instanceof Node) {
+      // 任意节点分隔符：装饰性内容，对读屏隐藏
+      sep.setAttribute('aria-hidden', 'true')
+      sep.appendChild(document.importNode(value, true))
+      return sep
+    }
     if (ICON_NAMES.has(value as IconName)) {
       const svg = this.iconSvg(value)
       if (svg) {
@@ -647,7 +795,10 @@ export class OASBreadcrumb extends OASElement {
     btn.textContent = this.getAttr('collapse-text', '…')
     btn.addEventListener('click', (e: MouseEvent) => {
       e.stopPropagation()
+      // 展开下拉时派发折叠事件（detail 带被折叠项原始数组），宿主可自定义折叠面板
+      const opening = !this.openDropdowns.has('ellipsis')
       this.toggleDropdown('ellipsis')
+      if (opening) this.emit('collapse-click', { collapsedItems: hiddenItems })
     })
     btn.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Escape') this.toggleDropdown('ellipsis', false)
@@ -781,11 +932,24 @@ export class OASBreadcrumb extends OASElement {
       const open = this.openDropdowns.has(c.key)
       c.panel.classList.toggle('open', open)
       c.btn.setAttribute('aria-expanded', String(open))
+      if (open) this.placePanel(c.panel, c.btn)
     }
     if (this.openDropdowns.size > 0) {
       document.addEventListener('click', this.handleOutsideClick)
     } else {
       document.removeEventListener('click', this.handleOutsideClick)
+    }
+  }
+
+  /** 下拉水平翻转：面板右缘超出视口（offsetWidth 布局尺寸判定）→ right:0 对齐回折进视口 */
+  private placePanel(panel: HTMLElement, btn: HTMLElement): void {
+    const rect = btn.getBoundingClientRect()
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0
+    const panelWidth = panel.offsetWidth
+    if (viewportWidth > 0 && panelWidth > 0 && rect.right + panelWidth > viewportWidth - 8) {
+      panel.classList.add('flip-right')
+    } else {
+      panel.classList.remove('flip-right')
     }
   }
 

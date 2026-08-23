@@ -85,6 +85,13 @@ function spyScrollTo(): ReturnType<typeof vi.spyOn> {
   return vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
 }
 
+/** 滚动/尺寸计算经 rAF 节流：默认 rAF stub 不执行回调，手动执行最新注册帧（模拟一帧） */
+function flushRaf(): void {
+  const raf = requestAnimationFrame as unknown as { mock: { calls: Array<[FrameRequestCallback]> } }
+  const cb = raf.mock.calls.at(-1)?.[0]
+  if (cb) cb(performance.now() + 100_000)
+}
+
 function stubHistory(): { push: ReturnType<typeof vi.spyOn>; replace: ReturnType<typeof vi.spyOn> } {
   const push = vi.spyOn(window.history, 'pushState').mockImplementation(() => {})
   const replace = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {})
@@ -170,6 +177,7 @@ describe('OASAnchor', () => {
 
     function scroll(sc: ReturnType<typeof scenario>): void {
       sc.container.dispatchEvent(new Event('scroll'))
+      flushRaf()
     }
 
     it('选择器指定滚动容器：滚动切换高亮并派发 oas-change（含新旧值）', () => {
@@ -232,6 +240,7 @@ describe('OASAnchor', () => {
         s.getBoundingClientRect = () => rect(tops[i]!) as DOMRect
       })
       window.dispatchEvent(new Event('scroll'))
+      flushRaf()
       expect(activeLink(el)).toBe('#section1')
       // 继续滚动：s1 滚出视口、s2 到达检测线
       sections.forEach((s, i) => {
@@ -239,6 +248,7 @@ describe('OASAnchor', () => {
         s.getBoundingClientRect = () => rect(tops[i]!) as DOMRect
       })
       window.dispatchEvent(new Event('scroll'))
+      flushRaf()
       expect(activeLink(el)).toBe('#section2')
     })
 
@@ -430,6 +440,7 @@ describe('OASAnchor', () => {
       )
       const fire = (): void => {
         container.dispatchEvent(new Event('scroll'))
+        flushRaf()
       }
       // 滚到 1.2.1 小节：其 top 越过检测线（line=105），前面各项也越过
       for (const [el2, r] of map) {
@@ -517,9 +528,11 @@ describe('OASAnchor', () => {
       })
       el.setAttribute('scroll-container', '#scenario-sc')
       container.dispatchEvent(new Event('scroll'))
+      flushRaf()
       expect(activeLink(el)).toBe('#section1') // 默认 bounds=5 → line=105 → s2(110) 未过线
       el.setAttribute('bounds', '15')
       container.dispatchEvent(new Event('scroll'))
+      flushRaf()
       expect(activeLink(el)).toBe('#section2') // line=115 → s2(110) 过线
     })
   })
@@ -550,6 +563,7 @@ describe('OASAnchor', () => {
         details.push((e as CustomEvent).detail.href as string),
       )
       container.dispatchEvent(new Event('scroll'))
+      flushRaf()
       expect(activeLink(el)).toBe('#section3')
       expect(details).toEqual(['#section3'])
     })
@@ -576,6 +590,7 @@ describe('OASAnchor', () => {
         s.getBoundingClientRect = () => rect(tops[i]!) as DOMRect
       })
       container.dispatchEvent(new Event('scroll'))
+      flushRaf()
       expect(activeLink(el)).toBe('#section2')
     })
   })
@@ -673,6 +688,206 @@ describe('OASAnchor', () => {
       expect(el.shadowRoot!.querySelector('nav')!.classList.contains('internal-scrollable')).toBe(
         true,
       )
+    })
+  })
+
+  describe('oas-click 事件分离（用户点击 vs 滚动联动）', () => {
+    it('点击锚点派发 oas-click（detail 含 href 与完整 item）', () => {
+      const el = mount()
+      const clicks: Array<{ href: string; item: { href: string; title: string } }> = []
+      el.addEventListener('oas-click', (e: Event) => clicks.push((e as CustomEvent).detail))
+      stubRafInstant()
+      spyScrollTo()
+      stubHistory()
+      ;(el.shadowRoot!.querySelector('[part="link"]') as HTMLElement).click()
+      expect(clicks.length).toBe(1)
+      expect(clicks[0]!.href).toBe('#section1')
+      expect(clicks[0]!.item).toMatchObject({ href: '#section1', title: '第一节' })
+    })
+
+    it('滚动联动只派发 oas-change，不派发 oas-click', () => {
+      const container = document.createElement('div')
+      container.id = 'scroll-only-sc'
+      container.style.overflow = 'auto'
+      const sections = ['section1', 'section2', 'section3'].map((id) => {
+        const d = document.createElement('div')
+        d.id = id
+        container.appendChild(d)
+        return d
+      })
+      const el = new OASAnchor()
+      el.setAttribute('items', ITEMS)
+      el.setAttribute('scroll-container', '#scroll-only-sc')
+      document.body.append(container, el)
+      container.getBoundingClientRect = () => rect(100) as DOMRect
+      sections.forEach((s, i) => {
+        const tops = [100, 400, 700]
+        s.getBoundingClientRect = () => rect(tops[i]!) as DOMRect
+      })
+      let clicks = 0
+      let changes = 0
+      el.addEventListener('oas-click', () => clicks++)
+      el.addEventListener('oas-change', () => changes++)
+      container.dispatchEvent(new Event('scroll'))
+      flushRaf()
+      expect(changes).toBe(1)
+      expect(clicks).toBe(0)
+    })
+
+    it('外部链接项（target=_blank）点击仍派发 oas-click，不派发 oas-change', () => {
+      const el = mount({
+        items: JSON.stringify([
+          { href: 'https://example.com/docs', title: '外部文档', target: '_blank' },
+        ]),
+      })
+      const clicks: Array<{ href: string }> = []
+      let changes = 0
+      el.addEventListener('oas-click', (e: Event) => clicks.push((e as CustomEvent).detail))
+      el.addEventListener('oas-change', () => changes++)
+      el.shadowRoot!.querySelector<HTMLAnchorElement>('[part="link"]')!.click()
+      expect(clicks.length).toBe(1)
+      expect(clicks[0]!.href).toBe('https://example.com/docs')
+      expect(changes).toBe(0)
+    })
+  })
+
+  describe('resize 重算（高亮 + 墨水条）', () => {
+    it('window resize（rAF 节流）重算高亮：布局变化后高亮不因无滚动而过期', () => {
+      const container = document.createElement('div')
+      container.id = 'resize-sc'
+      container.style.overflow = 'auto'
+      container.style.height = '240px'
+      const sections = ['section1', 'section2', 'section3'].map((id) => {
+        const d = document.createElement('div')
+        d.id = id
+        container.appendChild(d)
+        return d
+      })
+      const el = new OASAnchor()
+      el.setAttribute('items', ITEMS)
+      el.setAttribute('scroll-container', '#resize-sc')
+      document.body.append(container, el)
+      container.getBoundingClientRect = () => rect(100) as DOMRect
+      // 初始滚动：s2 过检测线
+      sections.forEach((s, i) => {
+        const tops = [-200, 100, 400]
+        s.getBoundingClientRect = () => rect(tops[i]!) as DOMRect
+      })
+      container.dispatchEvent(new Event('scroll'))
+      flushRaf()
+      expect(activeLink(el)).toBe('#section2')
+      // 容器宽度变化 → 章节位置整体下移 → resize 重算回落 s1（无滚动触发）
+      sections.forEach((s, i) => {
+        const tops = [200, 500, 800]
+        s.getBoundingClientRect = () => rect(tops[i]!) as DOMRect
+      })
+      window.dispatchEvent(new Event('resize'))
+      flushRaf()
+      expect(activeLink(el)).toBe('#section1')
+    })
+
+    it('resize 后当前项不变时仍重定位墨水条（布局变化）', () => {
+      const el = mount({ active: '#section2' })
+      const link = linksOf(el)[1]!
+      Object.defineProperty(link, 'offsetTop', { value: 40, configurable: true })
+      Object.defineProperty(link, 'offsetHeight', { value: 28, configurable: true })
+      el.setAttribute('active', '#section2')
+      const ink = el.shadowRoot!.querySelector<HTMLElement>('.ink')!
+      expect(ink.style.top).toBe('40px')
+      // 布局变化：offsetTop 改变 → resize 后 ink 跟随新位置
+      Object.defineProperty(link, 'offsetTop', { value: 88, configurable: true })
+      window.dispatchEvent(new Event('resize'))
+      flushRaf()
+      expect(ink.style.top).toBe('88px')
+    })
+  })
+
+  describe('block=nearest 最小滚动落点', () => {
+    function viewportSection(top = 400): HTMLElement {
+      const d = document.createElement('div')
+      d.id = 'section1'
+      document.body.appendChild(d)
+      d.getBoundingClientRect = () => rect(top) as DOMRect
+      return d
+    }
+
+    it('目标已完全可见：不滚动（最小滚动量语义）', () => {
+      const el = mount({ 'target-offset': '0', block: 'nearest' })
+      viewportSection(100)
+      Object.defineProperty(window, 'innerHeight', { value: 600, configurable: true })
+      Object.defineProperty(window, 'scrollY', { value: 0, configurable: true })
+      const spy = spyScrollTo()
+      stubHistory()
+      ;(el.shadowRoot!.querySelector('[part="link"]') as HTMLElement).click()
+      expect(spy).not.toHaveBeenCalled()
+    })
+
+    it('目标在视口下方：最小滚动使目标底部对齐视口底', () => {
+      const el = mount({ 'target-offset': '0', block: 'nearest' })
+      viewportSection(400)
+      Object.defineProperty(window, 'innerHeight', { value: 600, configurable: true })
+      Object.defineProperty(window, 'scrollY', { value: 0, configurable: true })
+      const spy = spyScrollTo()
+      stubRafInstant()
+      stubHistory()
+      ;(el.shadowRoot!.querySelector('[part="link"]') as HTMLElement).click()
+      expect(spy).toHaveBeenCalledWith(0, 40) // 400 - 600 + 240
+    })
+
+    it('目标在视口上方：对齐顶部（最小滚动露出）', () => {
+      const el = mount({ 'target-offset': '0', block: 'nearest' })
+      viewportSection(-100)
+      Object.defineProperty(window, 'scrollY', { value: 800, configurable: true })
+      const spy = spyScrollTo()
+      stubRafInstant()
+      stubHistory()
+      ;(el.shadowRoot!.querySelector('[part="link"]') as HTMLElement).click()
+      expect(spy).toHaveBeenCalledWith(0, 700) // -100 + 800
+    })
+
+    it('容器内目标已可见：不滚动', () => {
+      const container = document.createElement('div')
+      container.id = 'nearest-sc'
+      container.style.overflow = 'auto'
+      container.style.height = '240px'
+      const s1 = document.createElement('div')
+      s1.id = 'section1'
+      container.appendChild(s1)
+      const el = new OASAnchor()
+      el.setAttribute('items', ITEMS)
+      el.setAttribute('scroll-container', '#nearest-sc')
+      el.setAttribute('block', 'nearest')
+      document.body.append(container, el)
+      // happy-dom 不计算布局：显式给定容器可视高度（nearest 判定依赖 clientHeight）
+      Object.defineProperty(container, 'clientHeight', { value: 240, configurable: true })
+      container.getBoundingClientRect = () => rect(100) as DOMRect
+      s1.getBoundingClientRect = () => rect(100) as DOMRect // contentTop=0，整块在容器内
+      stubRafInstant()
+      stubHistory()
+      ;(el.shadowRoot!.querySelector('[part="link"]') as HTMLElement).click()
+      expect(container.scrollTop).toBe(0)
+    })
+
+    it('容器内目标在下方：滚动到底部对齐（最小滚动量）', () => {
+      const container = document.createElement('div')
+      container.id = 'nearest-sc2'
+      container.style.overflow = 'auto'
+      container.style.height = '240px'
+      const s1 = document.createElement('div')
+      s1.id = 'section1'
+      container.appendChild(s1)
+      const el = new OASAnchor()
+      el.setAttribute('items', ITEMS)
+      el.setAttribute('scroll-container', '#nearest-sc2')
+      el.setAttribute('block', 'nearest')
+      document.body.append(container, el)
+      Object.defineProperty(container, 'clientHeight', { value: 240, configurable: true })
+      container.getBoundingClientRect = () => rect(100) as DOMRect
+      s1.getBoundingClientRect = () => rect(400) as DOMRect // contentTop=300
+      stubRafInstant()
+      stubHistory()
+      ;(el.shadowRoot!.querySelector('[part="link"]') as HTMLElement).click()
+      expect(container.scrollTop).toBe(300) // 300 - 240 + 240
     })
   })
 

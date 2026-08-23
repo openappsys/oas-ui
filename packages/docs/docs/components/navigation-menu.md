@@ -53,6 +53,49 @@
   <oas-navigation-menu items='[{"label":"首页","value":"home","href":"/"},{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components"},{"label":"文档","value":"docs","href":"/docs","disabled":true}]}]'></oas-navigation-menu>
 </DemoBlock>
 
+## 箭头跟随触发器
+
+弹出层箭头默认停在不指向任何触发器；打开面板后箭头位置由 JS 按当前触发器的位置/宽度写入，切换触发器时箭头跟随移动。
+
+<DemoBlock title="箭头跟随触发器">
+  <oas-navigation-menu id="nav-arrow" delay-duration="0" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components"},{"label":"文档","value":"docs","href":"/docs"}]},{"label":"资源","value":"resources","children":[{"label":"主题","value":"themes","href":"/themes"},{"label":"指南","value":"guide","href":"/guide"}]},{"label":"定价","value":"pricing","href":"/pricing"}]'></oas-navigation-menu>
+  <p class="demo-tip">依次悬停/点击「产品」「资源」：箭头跟随指向打开的触发器。</p>
+</DemoBlock>
+
+## 窄视口碰撞翻转
+
+面板宽于剩余视口时自动处理碰撞：右缘溢出改为右对齐（不越出视口），下缘不足向上弹；空间充足时保持正常位置。
+
+<DemoBlock title="窄容器碰撞翻转">
+  <div style="width: 260px">
+    <oas-navigation-menu id="nav-flip" delay-duration="0" items='[{"label":"产品","value":"products","children":[{"label":"组件库","value":"components","href":"/components","description":"30+ 开箱即用组件"},{"label":"设计规范","value":"design","href":"/design","description":"视觉语言与令牌"},{"label":"主题定制","value":"theming","href":"/theming","description":"三层层级令牌"}]}]'></oas-navigation-menu>
+  </div>
+  <p class="demo-tip">容器宽 260px：面板右侧放不下时 right 对齐，仍完整落在容器/视口内。</p>
+</DemoBlock>
+
+## Sub 二级级联
+
+面板项带 `sub` 字段（二级导航数据）时渲染「二级触发器」，点击在面板内打开覆盖式二级面板（slide-in 级联动画）：`Esc` / `←` 逐层回退到主面板（焦点回触发器），再 `Esc` 关闭整个面板；`↓` 在二级链接间移动、跳过禁用项，`Enter` 选择。与 inline section 折叠并存（`sub` 优先于 `children`）。
+
+<DemoBlock title="Sub 二级级联">
+  <oas-navigation-menu id="nav-sub" delay-duration="0" onoas-select="navSubLog(event)" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"grid","description":"30+ 开箱即用组件"},{"label":"学习中心","value":"learn","sub":[{"label":"文档","value":"docs","href":"/docs"},{"label":"教程","value":"tutorial","href":"/tutorial"},{"label":"社区","value":"community","href":"/community"},{"label":"案例","value":"showcase","href":"/showcase"}]}]},{"label":"定价","value":"pricing","href":"/pricing"}]'></oas-navigation-menu>
+  <oas-tag id="nav-sub-result" type="info">点「学习中心」在面板内展开二级导航</oas-tag>
+</DemoBlock>
+
+## 营销位插槽（panel-footer）
+
+`slot="panel-footer"` 在面板底部渲染营销位容器（CTA 卡片等），有内容才显示；与面板联动打开，`--vp-h` 高度过渡自动把营销位计入。
+
+<DemoBlock title="panel-footer 营销位插槽">
+  <oas-navigation-menu id="nav-footer" delay-duration="0" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"grid","description":"30+ 开箱即用组件"},{"label":"文档","value":"docs","href":"/docs","icon":"book","description":"完整 API 文档与指南"}]}]'>
+    <div slot="panel-footer" style="display: flex; gap: 12px; align-items: center; justify-content: space-between">
+      <span style="font-size: var(--oas-font-size-sm); color: var(--oas-color-text-secondary)">想先聊聊需求？</span>
+      <oas-button size="small" type="primary">预约演示</oas-button>
+    </div>
+  </oas-navigation-menu>
+  <p class="demo-tip">面板底部出现营销区（仅在有内容时渲染）。</p>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -67,6 +110,10 @@ onMounted(() => {
   window.navControlled = (e) => {
     const tag = document.getElementById('nav-controlled-result')
     if (tag) tag.textContent = `当前打开：${e.detail.value || '（关闭）'}`
+  }
+  window.navSubLog = (e) => {
+    const tag = document.getElementById('nav-sub-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}`
   }
   const controlled = document.getElementById('nav-controlled')
   const setOpen = (v) => controlled && controlled.setAttribute('value', v)
@@ -88,6 +135,7 @@ onMounted(() => {
 | `delay-duration` | hover 开合延迟（毫秒），默认 200；点击/键盘立即生效不受影响 | `string` | `200` |
 | `items` | 导航项 JSON（层级结构；叶子项可带 `description` 描述与 `icon` 图标渲染大面板链接卡） | `string` | `[]` |
 | `keep-mounted` | 关闭时保留面板 DOM 不销毁（供爬虫索引/SEO） | `boolean` | — |
+| `loop` | 顶级方向键循环导航开关，缺省 `true`（边界循环）；显式 `loop="false"` 时边界停止（与 menubar 对齐） | `string` | — |
 | `orientation` | 布局方向：`horizontal`（默认）/ `vertical`（面板在触发器右侧） | `string` | `horizontal` |
 | `skip-delay-duration` | 跳过延迟窗口（毫秒），默认 300：关闭后窗口内再次 hover 其他项直接打开跳过延迟 | `string` | `300` |
 | `value` | 受控打开项（顶级触发器 value，空字符串 = 关闭；存在时打开态以属性为准，交互仅派发 `oas-change` 由宿主更新） | `string` | — |
@@ -97,7 +145,13 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 打开项变化，`detail: { value }`（value 为打开的顶级项 value，空字符串 = 关闭） |
-| `oas-select` | 选择某项（顶级叶子链接或面板链接卡），`detail: { value }` |
+| `oas-select` | 选择某项（顶级叶子链接、面板链接卡或二级子导航链接），`detail: { value }` |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `panel-footer` | 面板底部营销位插槽：`<div slot="panel-footer">`（CTA 卡片等）有内容时面板底部渲染插槽容器 |
 
 `NavItem` 字段（继承 `MenuItem`）：
 

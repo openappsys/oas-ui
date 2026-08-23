@@ -139,6 +139,45 @@ Both top-level items and sub-items accept an `icon` field (icon-set name); icons
   <oas-menubar items='[{"label":"File","value":"file","icon":"gear","children":[{"label":"New","value":"new","icon":"plus"},{"label":"Open","value":"open","icon":"search"},{"label":"Save","value":"save","icon":"download"}]},{"label":"Account","value":"account","icon":"user","children":[{"label":"Profile","value":"profile","icon":"user"},{"label":"Log out","value":"logout","icon":"close"}]}]'></oas-menubar>
 </DemoBlock>
 
+## Link navigation (href)
+
+Leaves (both inside submenus and top-level leaves) with `href` render as real `<a>` links: right-click new window and middle-click open work natively, good for SEO; clicks still dispatch `oas-select` and write back `value` (the link's default navigation is not blocked). `target="_blank"` automatically adds `rel="noopener"`.
+
+<DemoBlock title="Link navigation (real href links)">
+  <oas-menubar id="menubar-href" onoas-select="menubarHrefLog(event)" items='[{"label":"Docs","value":"docs","accessKey":"d","href":"/guide/intro"},{"label":"Community","value":"community","accessKey":"c","href":"/community","target":"_blank","children":[{"label":"Forum","value":"forum","href":"/community/forum","target":"_blank"},{"label":"Contribute","value":"contrib","href":"/community/contrib"}]}]'></oas-menubar>
+  <oas-tag id="menubar-href-result" type="info">Clicking a leaf navigates and fires oas-select</oas-tag>
+</DemoBlock>
+
+## Horizontal overflow folding (···)
+
+When the container is too narrow, top-level items that don't fit fold into a trailing "···" item; clicking it opens a popup with the folded items (selecting works). When the selected item is folded, "···" highlights. Only in horizontal mode; vertical and the mobile hamburger don't fold. A folded top-level item that has a submenu is treated as a plain selectable item inside the popup (cascading submenus are not expanded there).
+
+<DemoBlock title="Overflow folding (narrow container)">
+  <oas-menubar id="menubar-overflow" style="width: 380px" onoas-select="menubarOverflowLog(event)" items='[{"label":"Home","value":"home"},{"label":"Products","value":"products","children":[{"label":"Components","value":"components"},{"label":"Theming","value":"theming"}]},{"label":"Solutions","value":"solutions"},{"label":"Developer docs","value":"docs"},{"label":"Downloads","value":"download"},{"label":"About","value":"about"},{"label":"Help","value":"help"}]'></oas-menubar>
+  <oas-tag id="menubar-overflow-result" type="info">Container fixed at 380px; overflowing items fold into "···"</oas-tag>
+</DemoBlock>
+
+## Indeterminate checkboxes
+
+`kind: "checkbox"` items support `indeterminate: true`: they render `aria-checked="mixed"` with a horizontal dash inside the box (distinct from the ✓ of a fully checked item), for parent/child "partially selected" scenarios. The half-selected state is computed by the host and passed via the items JSON; after toggling, the host can update the items to clear the flag.
+
+<DemoBlock title="Indeterminate checkbox">
+  <oas-menubar id="menubar-indeterminate" onoas-select="menubarIndeterminateLog(event)" value='["all","grid"]' items='[{"label":"View","value":"view","accessKey":"v","children":[{"type":"group","label":"Show","children":[{"label":"Select all","value":"all","kind":"checkbox","indeterminate":true},{"label":"Gridlines","value":"grid","kind":"checkbox"},{"label":"Ruler","value":"ruler","kind":"checkbox"}]}]}]'></oas-menubar>
+  <oas-tag id="menubar-indeterminate-result" type="info">"Select all" is in the mixed state</oas-tag>
+</DemoBlock>
+
+## Leading/trailing slots (start / end)
+
+`slot="start"` (logo position) / `slot="end"` (avatar position) decorative slots: rendered inside the bar when they have content; keyboard navigation skips them automatically (not part of arrow keys or the focus trap).
+
+<DemoBlock title="start / end slots (logo / avatar)">
+  <oas-menubar items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new"},{"label":"Open","value":"open"}]},{"label":"Edit","value":"edit","accessKey":"e","children":[{"label":"Undo","value":"undo"}]}]'>
+    <oas-avatar slot="start" size="28">O</oas-avatar>
+    <oas-avatar slot="end" size="28" src="https://picsum.photos/seed/isui-mb-avatar/80">U</oas-avatar>
+  </oas-menubar>
+  <p class="demo-tip">Put a logo/graphic in `start` and an avatar in `end`; arrow keys move between menu items and never jump into the slots.</p>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -182,6 +221,25 @@ onMounted(() => {
   window.menubarMobileLog = (e) => {
     const tag = document.getElementById('menubar-mobile-result')
     if (tag) tag.textContent = `Selected: ${e.detail.value} (hamburger mode)`
+  }
+
+  window.menubarHrefLog = (e) => {
+    const tag = document.getElementById('menubar-href-result')
+    if (tag) tag.textContent = `oas-select: ${e.detail.value} (rendered as a real <a> link)`
+  }
+
+  window.menubarOverflowLog = (e) => {
+    const tag = document.getElementById('menubar-overflow-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value} (from "···" popup or the bar)`
+  }
+
+  window.menubarIndeterminateLog = (e) => {
+    const tag = document.getElementById('menubar-indeterminate-result')
+    const mb = document.getElementById('menubar-indeterminate')
+    if (tag && mb) {
+      const v = JSON.parse(mb.getAttribute('value') || '[]')
+      tag.textContent = `Checked: ${JSON.stringify(v)} ("Select all" stays mixed; host can clear the flag via items)`
+    }
   }
 
   const mb = document.getElementById('mb-value')
@@ -244,6 +302,13 @@ onMounted(() => {
 | --- | --- |
 | `oas-open-change` | The open top-level menu changed, `detail: { value, open }` (`value` = currently open top-level menu value, `open` = whether anything is open). Fired both on controlled `setAttribute('open')` and internal click/hover/keyboard changes (not on the first frame) |
 | `oas-select` | An item was selected, `detail: { value, kind?, checked? }`. `kind` only appears for action items (`kind: "action"`); checkbox items carry `checked` (new checked state); radio items omit `detail.kind` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `end` | Trailing decorative slot (e.g. avatar): `<div slot="end">` renders when it has content; keyboard navigation skips it |
+| `start` | Leading decorative slot (e.g. logo): `<div slot="start">` renders when it has content; keyboard navigation skips it |
 
 > **Event detail note**: the `detail` of `oas-select` is a component-internal object (`value`/`kind`) — **not** a native `Event`, so you can't `preventDefault()` on it or read a native `event.target` from it. To reach the native event, use the outer parameter of your listener (e.g. in `addEventListener('oas-select', (e) => ...)`, `e` is a `CustomEvent` and `e.detail` is the component data).
 

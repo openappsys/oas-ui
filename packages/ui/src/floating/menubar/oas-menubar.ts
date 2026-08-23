@@ -7,6 +7,8 @@ export interface MenubarItem extends MenuItem {
   accessKey?: string
   /** 快捷键提示（如 "Ctrl+N"）；自动绑定 document 级 keydown，命中即触发该项 select */
   shortcut?: string
+  /** checkbox 半选态（仅 kind="checkbox" 项生效）：渲染 aria-checked="mixed" + 减号视觉；由宿主计算父子联动后随 items JSON 传入 */
+  indeterminate?: boolean
 }
 
 function firstAscii(label?: string): string | undefined {
@@ -75,6 +77,59 @@ const STYLE = `
 :host([orientation='vertical']) .top-item {
   justify-content: flex-start;
   width: 100%;
+}
+:host([orientation='vertical']) .bar-items {
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+}
+:host([orientation='vertical']) .top-wrap {
+  width: 100%;
+}
+/* ===== start/end 具名插槽（logo/头像装饰位）：有内容才显示，键盘 roving 天然跳过（非 top-item） ===== */
+.bar-start,
+.bar-end {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  flex-shrink: 0;
+}
+.bar-start[hidden],
+.bar-end[hidden] {
+  display: none;
+}
+.bar-start {
+  margin-right: var(--oas-space-1);
+}
+.bar-end {
+  margin-left: var(--oas-space-1);
+}
+/* 顶级项容器：独立 flex 行（与 start/end 插槽并存），水平溢出收纳测量以此为宽 */
+.bar-items {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-1);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* ===== 水平溢出收纳：超宽顶级项收进「···」收纳弹层（仅水平模式） ===== */
+.top-wrap[data-collapsed] {
+  display: none;
+}
+.more-item {
+  flex-shrink: 0;
+}
+/* 选中项被收纳时「···」高亮：与条上选中项同风格 */
+.more-item.child-selected {
+  color: var(--oas-color-primary);
+  font-weight: 500;
+}
+/* 收纳弹层右对齐其右缘（在条末尾，向左开会超出容器右缘被裁掉）；
+   与一级下拉的 side/align 类互斥——syncSubmenuPositions 对该弹层跳过几何类注入 */
+.submenu.more-popup {
+  left: auto;
+  right: 0;
+  transform-origin: top right;
 }
 /* ===== 整栏 disabled：降饱和 + 禁指针（键盘拦截走 JS） ===== */
 :host([disabled]) .bar,
@@ -340,6 +395,18 @@ const STYLE = `
   font-size: var(--oas-font-size-xs);
   line-height: 1;
 }
+/* checkbox 半选态（indeterminate）：aria-checked="mixed" → 主色方块 + 居中横线减号（原创 CSS，token 取色） */
+.subitem[role='menuitemcheckbox'][aria-checked='mixed'] .check--box {
+  background: var(--oas-color-primary);
+  border-color: var(--oas-color-primary);
+}
+.subitem[role='menuitemcheckbox'][aria-checked='mixed'] .check--box::before {
+  content: '';
+  width: 8px;
+  height: 2px;
+  background: var(--oas-color-text-on-primary);
+  border-radius: 1px;
+}
 .shortcut {
   margin-left: var(--oas-space-3);
   padding: 0 var(--oas-space-1);
@@ -471,12 +538,22 @@ export class OASMenubar extends OASElement {
   /** typeahead 字符缓冲（连续输入定位匹配项）+ 超时定时器 */
   private typeaheadBuffer = ''
   private typeaheadTimer: ReturnType<typeof setTimeout> | null = null
+  /** 水平溢出收纳：被收纳顶级项的 value 列表（弹层镜像 + 键盘导航用） */
+  private collapsedValues: string[] = []
+  /** 水平溢出收纳项「···」的容器引用（渲染时捕获，syncOverflowCollapse 更新显隐与弹层内容） */
+  private moreItemEl: HTMLElement | null = null
+  /** 水平溢出收纳的 ResizeObserver（容器宽度变化时重算收纳） */
+  private overflowObserver: ResizeObserver | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
       <style>${STYLE}</style>
-      <div class="bar" part="bar" role="menubar"></div>
+      <div class="bar" part="bar" role="menubar">
+        <div class="bar-start" part="bar-start" role="presentation" hidden><slot name="start"></slot></div>
+        <div class="bar-items" part="bar-items"></div>
+        <div class="bar-end" part="bar-end" role="presentation" hidden><slot name="end"></slot></div>
+      </div>
       <div class="hamburger-wrap">
         <button type="button" class="hamburger" part="hamburger" aria-haspopup="menu" aria-expanded="false"></button>
         <ul class="submenu hamburger-panel" part="submenu" role="menu"></ul>
@@ -538,6 +615,17 @@ export class OASMenubar extends OASElement {
     this.onCleanup(() => document.removeEventListener('pointerdown', this.handleDocumentPointerDown))
     document.addEventListener('keydown', this.handleDocumentKey)
     this.onCleanup(() => document.removeEventListener('keydown', this.handleDocumentKey))
+    // typeahead 缓冲定时器：断开连接时清理，避免残留
+    this.onCleanup(() => {
+      if (this.typeaheadTimer) clearTimeout(this.typeaheadTimer)
+      this.typeaheadTimer = null
+    })
+    // 水平溢出收纳：仅水平模式容器宽度变化时重算（竖排/移动端汉堡不收纳）
+    if (typeof ResizeObserver !== 'undefined') {
+      this.overflowObserver = new ResizeObserver(() => this.syncOverflowCollapse())
+      this.overflowObserver.observe(this)
+      this.onCleanup(() => this.overflowObserver?.disconnect())
+    }
   }
 
   protected override render(): void {
@@ -565,6 +653,7 @@ export class OASMenubar extends OASElement {
     this.barEl?.setAttribute('aria-label', this.t('menubar.label'))
     this.barEl?.setAttribute('aria-disabled', String(this.isBarDisabled()))
     this.syncOrientation()
+    this.syncBarSlots()
     this.syncOpenFromAttr()
     // 顶级打开值迁移 → oas-open-change（受控 setAttribute 与 click/hover/键盘触发都会走到这里）
     const openValue = this.openTopValue()
@@ -577,6 +666,21 @@ export class OASMenubar extends OASElement {
     this.syncOpen()
     this.syncActive()
     this.syncRoving()
+    // 渲染后检测水平溢出收纳（仅水平模式）；requestAnimationFrame 等 flex 布局完成
+    // （update 在 render 后但布局可能未完成，此时 clientWidth/offsetWidth 不可靠）
+    if (this.getAttr('orientation') !== 'vertical' && !this.mobileMode) {
+      requestAnimationFrame(() => this.syncOverflowCollapse())
+    }
+  }
+
+  /** start/end 具名插槽容器：有内容才显示（logo/头像位；键盘 roving 天然跳过——非 [part="top-item"]） */
+  private syncBarSlots(): void {
+    if (!this.shadow) return
+    for (const name of ['start', 'end']) {
+      const wrap = this.shadow.querySelector<HTMLElement>(`[part="bar-${name}"]`)
+      if (!wrap) continue
+      wrap.hidden = this.querySelectorAll(`[slot="${name}"]`).length === 0
+    }
   }
 
   /** 竖排形态类（供 CSS 与测试定位） */
@@ -676,15 +780,44 @@ export class OASMenubar extends OASElement {
     return Number.isFinite(n) ? n : 4
   }
 
-  /** 当前键盘导航层级的可导航项（group 内联展开，divider/组标题跳过） */
+  /** 当前键盘导航层级的可导航项（group 内联展开，divider/组标题跳过）；
+      水平模式顶级追加「···」收纳项（overflow 收纳的顶级项在弹层内展开） */
   private currentItems(): MenuItem[] {
     let items: MenuItem[] = this.itemsList
     for (const v of this.activeStack) {
+      if (v === '__more__') {
+        // 收纳弹层层级：返回被收纳的顶级项（镜像数据，与 DOM 弹层镜像一一对应）
+        return this.flattenLevel(
+          this.itemsList.filter((i) => i.value != null && this.collapsedValues.includes(i.value)),
+        )
+      }
       const parent = items.find((i) => i.value === v)
       if (!parent || !parent.children) return []
       items = parent.children
     }
-    return this.flattenLevel(items)
+    const flat = this.flattenLevel(items)
+    const more = this.morePseudoItem()
+    if (more) flat.push(more as MenuItem)
+    return flat
+  }
+
+  /** 收纳项「···」的伪数据项：仅水平模式且有被收项时存在（children = 被收顶级项） */
+  private morePseudoItem(): MenubarItem | null {
+    if (this.mobileMode) return null
+    if (this.getAttr('orientation') === 'vertical') return null
+    if (this.collapsedValues.length === 0) return null
+    return {
+      label: '···',
+      value: '__more__',
+      children: this.itemsList.filter((i) => i.value != null && this.collapsedValues.includes(i.value)),
+    }
+  }
+
+  /** 收纳弹层 DOM 元素（键盘导航在弹层内时的查询作用域） */
+  private moreSubmenu(): HTMLElement | null {
+    return (
+      this.shadow?.querySelector<HTMLElement>('[part="submenu"][data-parent="__more__"]') ?? null
+    )
   }
 
   private flattenLevel(items: MenuItem[]): MenuItem[] {
@@ -741,24 +874,47 @@ export class OASMenubar extends OASElement {
     return first ?? ''
   }
 
-  /** 当前激活子菜单所在顶级项的索引（键盘上下文） */
+  /** 当前激活子菜单所在顶级项的索引（键盘上下文）；收纳弹层内指向「···」收纳项 */
   private parentTopIndex(): number {
     const first = this.activeStack[0]
     if (first == null) return -1
+    if (first === '__more__') return this.topLevelItems().length - 1
     return this.topItems().findIndex((i) => i.value === first)
+  }
+
+  /** 顶级导航项（含收纳项「···」，若存在）——键盘/焦点索引统一以此为准 */
+  private topLevelItems(): MenuItem[] {
+    const flat = this.flattenLevel(this.itemsList)
+    const more = this.morePseudoItem()
+    if (more) flat.push(more as MenuItem)
+    return flat
   }
 
   /** 全量渲染一次（含所有子菜单与汉堡面板），显隐由 .open class 控制，不随 hover 重建 */
   private renderMenubar(): void {
     const barEl = this.barEl
     if (!barEl) return
-    barEl.innerHTML = ''
+    const itemsEl = barEl.querySelector<HTMLElement>('.bar-items')
+    const container = itemsEl ?? barEl
+    container.innerHTML = ''
     this.itemsList.forEach((item, idx) => {
       const wrap = document.createElement('div')
       wrap.className = 'top-wrap'
-      const btn = document.createElement('button')
+      // wrap 带 data-value 供水平溢出收纳测量/镜像定位（键盘按钮 data-value 只供 roving 定位）
+      if (item.value != null) wrap.dataset.value = item.value
+      const hasChildren = !!item.children?.length
+      // 叶子项带 href 渲染为 <a>（真链接：SEO/中键新开/右键新窗口天然可用），保留 oas-select 派发
+      const btn = document.createElement(hasChildren || !item.href ? 'button' : 'a')
       btn.className = 'top-item'
       btn.setAttribute('part', 'top-item')
+      if (!hasChildren && item.href) {
+        btn.setAttribute('href', item.href)
+        if (item.target) btn.setAttribute('target', item.target)
+        if (item.target === '_blank') {
+          if (!item.rel) btn.setAttribute('rel', 'noopener')
+          else if (!/\bnoopener\b/i.test(item.rel)) btn.setAttribute('rel', `${item.rel} noopener`)
+        }
+      }
       btn.setAttribute('type', 'button')
       btn.setAttribute('role', 'menuitem')
       btn.setAttribute('aria-haspopup', 'menu')
@@ -800,8 +956,47 @@ export class OASMenubar extends OASElement {
         this.renderSubLevel(ul, item.children, '')
         wrap.appendChild(ul)
       }
-      barEl.appendChild(wrap)
+      container.appendChild(wrap)
     })
+    // 水平溢出收纳「···」：仅水平模式渲染（竖排/移动端汉堡不收纳）；默认隐藏，溢出时 syncOverflowCollapse 显示
+    if (!this.mobileMode && this.getAttr('orientation') !== 'vertical') {
+      const moreWrap = document.createElement('div')
+      moreWrap.className = 'top-wrap'
+      moreWrap.dataset.value = '__more__'
+      const moreBtn = document.createElement('button')
+      moreBtn.className = 'top-item more-item'
+      moreBtn.setAttribute('part', 'top-item')
+      moreBtn.setAttribute('type', 'button')
+      moreBtn.setAttribute('role', 'menuitem')
+      moreBtn.setAttribute('aria-haspopup', 'menu')
+      moreBtn.setAttribute('aria-expanded', 'false')
+      moreBtn.setAttribute('tabindex', '-1')
+      moreBtn.dataset.value = '__more__'
+      moreBtn.setAttribute('aria-label', this.t('menubar.more'))
+      moreBtn.textContent = '···'
+      moreBtn.hidden = true
+      moreBtn.addEventListener('click', () => {
+        this.keyboardMode = false
+        if (this.isBarDisabled()) return
+        this.toggleExpand('__more__')
+      })
+      moreBtn.addEventListener('mouseenter', () => {
+        this.keyboardMode = false
+        if (this.isBarDisabled()) return
+        if (this.getAttr('trigger') === 'hover' || this.expanded.size > 0) {
+          this.hoverExpand('__more__')
+        }
+      })
+      const moreSub = document.createElement('ul')
+      moreSub.className = 'submenu popup-first more-popup'
+      moreSub.setAttribute('part', 'submenu')
+      moreSub.setAttribute('role', 'menu')
+      moreSub.dataset.parent = '__more__'
+      moreWrap.appendChild(moreBtn)
+      moreWrap.appendChild(moreSub)
+      container.appendChild(moreWrap)
+      this.moreItemEl = moreWrap
+    }
     // 汉堡面板内容（与 bar 同一份 items 数据，顶级项渲染为 subitem）
     if (this.hamburgerPanel) {
       this.hamburgerPanel.innerHTML = ''
@@ -824,7 +1019,7 @@ export class OASMenubar extends OASElement {
         li.className = 'divider'
         li.setAttribute('part', 'divider')
         li.setAttribute('role', 'separator')
-        li.setAttribute('aria-hidden', 'true')
+        // aria-hidden 与 role=separator 语义互斥（同设会让 role 对 AT 失效），只保留 role
         container.appendChild(li)
         continue
       }
@@ -845,7 +1040,8 @@ export class OASMenubar extends OASElement {
       const hasChildren = !!item.children && item.children.length > 0
       const action = !hasChildren && item.kind === 'action'
       const checkbox = !hasChildren && item.kind === 'checkbox'
-      const li = document.createElement('li')
+      // 叶子项带 href 渲染为 <a>（真链接语义），有子菜单的父项仍是 li
+      const li = document.createElement(!hasChildren && item.href ? 'a' : 'li') as HTMLElement
       li.className = 'subitem'
       li.setAttribute('part', 'item')
       li.setAttribute(
@@ -853,6 +1049,14 @@ export class OASMenubar extends OASElement {
         hasChildren ? 'menuitem' : action ? 'menuitem' : checkbox ? 'menuitemcheckbox' : 'menuitemradio',
       )
       li.setAttribute('tabindex', '-1')
+      if (!hasChildren && item.href) {
+        li.setAttribute('href', item.href)
+        if (item.target) li.setAttribute('target', item.target)
+        if (item.target === '_blank') {
+          if (!item.rel) li.setAttribute('rel', 'noopener')
+          else if (!/\bnoopener\b/i.test(item.rel)) li.setAttribute('rel', `${item.rel} noopener`)
+        }
+      }
       if (item.value != null) li.dataset.value = item.value
       li.setAttribute('aria-disabled', String((item.disabled ?? false) || this.isBarDisabled()))
       if (item.label) li.setAttribute('aria-label', item.label)
@@ -889,10 +1093,14 @@ export class OASMenubar extends OASElement {
         this.renderSubLevel(sub, item.children!, '')
         li.appendChild(sub)
       } else if (!action) {
-        li.setAttribute(
-          'aria-checked',
-          String(checkbox ? this.isChecked(item.value) : item.value === this.selectedValueOf(scope)),
-        )
+        if (checkbox) {
+          const mixed = (item as MenubarItem).indeterminate === true
+          // 半选态由宿主数据驱动（aria-checked=mixed），DOM 标记供 syncSelection 增量同步时沿用
+          if (mixed) li.dataset.mixed = 'true'
+          li.setAttribute('aria-checked', mixed ? 'mixed' : String(this.isChecked(item.value)))
+        } else {
+          li.setAttribute('aria-checked', String(item.value === this.selectedValueOf(scope)))
+        }
         const check = document.createElement('span')
         check.className = checkbox ? 'check check--box' : 'check'
         if (!checkbox) check.textContent = '✓'
@@ -1038,7 +1246,11 @@ export class OASMenubar extends OASElement {
         continue
       }
       if (li.getAttribute('role') === 'menuitemcheckbox') {
-        li.setAttribute('aria-checked', String(checked.has(li.dataset.value ?? '')))
+        // indeterminate（宿主数据传入，DOM 标记 dataset.mixed）→ aria-checked=mixed，不随勾选集改写
+        li.setAttribute(
+          'aria-checked',
+          li.dataset.mixed === 'true' ? 'mixed' : String(checked.has(li.dataset.value ?? '')),
+        )
         continue
       }
       const scope = li.dataset.scope ?? ''
@@ -1076,44 +1288,52 @@ export class OASMenubar extends OASElement {
   /**
    * 子菜单视口边界翻转 + 一级下拉定位几何。翻转由样式表类表达，本方法只做测量与切类；
    * 多级嵌套逐级检测（DOM 序外层先于内层，内层 rect 反映外层翻转后的真实布局）。
+   * 测量抗污染：宽度/高度一律用 offsetWidth/offsetHeight（transform 免疫）——
+   * 进场动画 scale 0.96→1 会污染 getBoundingClientRect 的宽高（同帧测量取到动画起点），
+   * 位置仍用 getBoundingClientRect（父项不受动画影响；子项原点即自身左上角，scale 不位移）。
    */
   private syncSubmenuPositions(): void {
     if (!this.shadow) return
     const margin = 8
     const vw = window.innerWidth
     const vh = window.innerHeight
+    const barRight = this.barEl?.getBoundingClientRect().right ?? vw
     for (const sub of this.shadow.querySelectorAll<HTMLElement>('[part="submenu"].open')) {
       // 级联子菜单的父项是 li；一级下拉的容器是 div（wrap），closest('li') 为 null 时回退直接父元素
       const parentItem = (sub.closest('li') ?? sub.parentElement) as HTMLElement | null
       if (!parentItem) continue
-      const itemRect = parentItem.getBoundingClientRect()
-      const subRect = sub.getBoundingClientRect()
+      const parentLeft = parentItem.getBoundingClientRect().left
+      const itemWidth = parentItem.offsetWidth
+      const subWidth = sub.offsetWidth
+      const subHeight = sub.offsetHeight
       const isNested = !!parentItem.parentElement?.closest('[part="submenu"]')
       if (isNested) {
         // 级联：右侧不足向左展开、底部不足向上
-        sub.classList.toggle('flip-left', itemRect.right + subRect.width > vw - margin)
+        sub.classList.toggle('flip-left', parentLeft + itemWidth + subWidth > vw - margin)
         sub.classList.remove('flip-right')
-        const subRectV = sub.getBoundingClientRect()
-        sub.classList.toggle('flip-up', subRectV.bottom > vh - margin)
+        const subTop = sub.getBoundingClientRect().top
+        sub.classList.toggle('flip-up', subTop + subHeight > vh - margin)
         sub.classList.remove('flip-down')
       } else {
         const side = this.popupSide()
+        // 一级下拉右边界：视口与 bar 右缘取小（bar 在窄容器内被 max-width 约束时，越过 bar 会被裁）
+        const rightBound = Math.min(vw, barRight) - margin
         if (side === 'right') {
-          sub.classList.toggle('flip-left', itemRect.right + subRect.width > vw - margin)
+          sub.classList.toggle('flip-left', parentLeft + itemWidth + subWidth > vw - margin)
           sub.classList.remove('flip-right')
         } else if (side === 'left') {
-          sub.classList.toggle('flip-right', itemRect.left - subRect.width < margin)
+          sub.classList.toggle('flip-right', parentLeft - subWidth < margin)
           sub.classList.remove('flip-left')
         } else {
-          sub.classList.toggle('flip-right', itemRect.left + subRect.width > vw - margin)
+          sub.classList.toggle('flip-right', parentLeft + subWidth > rightBound)
           sub.classList.remove('flip-left')
         }
-        const subRectV = sub.getBoundingClientRect()
+        const subTop = sub.getBoundingClientRect().top
         if (side === 'top') {
-          sub.classList.toggle('flip-down', subRectV.top < margin)
+          sub.classList.toggle('flip-down', subTop < margin)
           sub.classList.remove('flip-up')
         } else {
-          sub.classList.toggle('flip-up', subRectV.bottom > vh - margin)
+          sub.classList.toggle('flip-up', subTop + subHeight > vh - margin)
           sub.classList.remove('flip-down')
         }
         // 翻转后清除 align-center 的 translate，避免双重位移
@@ -1123,8 +1343,9 @@ export class OASMenubar extends OASElement {
         }
       }
     }
-    // 一级下拉几何类（side/align/offset）+ 方向感知动画开口
+    // 一级下拉几何类（side/align/offset）+ 方向感知动画开口；收纳弹层跳过（固定右对齐 .more-popup）
     for (const sub of this.shadow.querySelectorAll<HTMLElement>('.popup-first')) {
+      if (sub.dataset.parent === '__more__') continue
       const side = this.popupSide()
       const align = this.popupAlign()
       sub.classList.remove('side-top', 'side-bottom', 'side-left', 'side-right')
@@ -1139,8 +1360,11 @@ export class OASMenubar extends OASElement {
     }
   }
 
-  /** 弹出动画开口方向：一级按 side/align，级联向右（flip-left 向左）；翻转后开口反向 */
+  /** 弹出动画开口方向：一级按 side/align，级联向右（flip-left 向左）；翻转后开口反向；收纳弹层固定右上 */
   private popupOrigin(sub: HTMLElement): string {
+    if (sub.dataset.parent === '__more__') {
+      return sub.classList.contains('flip-up') ? 'bottom right' : 'top right'
+    }
     const isNested = !!sub.parentElement?.closest('[part="submenu"]')
     if (isNested) return sub.classList.contains('flip-left') ? 'right top' : 'left top'
     const side = this.popupSide()
@@ -1158,6 +1382,143 @@ export class OASMenubar extends OASElement {
     if (a === 'center') return 'center'
     if (a === 'end') return 'right'
     return 'left'
+  }
+
+  /**
+   * 水平溢出收纳：水平模式容器宽度不足时，超宽顶级项收进末尾「···」收纳弹层。
+   * 仅水平模式；竖排/移动端汉堡不收纳（各自形态不需要）。
+   * 测量用 offsetWidth/clientWidth（transform 免疫）；先复位再测量——collapsed 项 display:none
+   * 宽为 0，直接量会把「已收纳状态」误判成「无溢出」（RO 再次触发时全部弹回）。
+   */
+  private syncOverflowCollapse(): void {
+    const barEl = this.barEl
+    if (!barEl) return
+    if (this.getAttr('orientation') === 'vertical' || this.mobileMode) {
+      this.collapsedValues = []
+      return
+    }
+    const itemsEl = barEl.querySelector<HTMLElement>('.bar-items') ?? barEl
+    const moreWrap = this.moreItemEl
+    const topEls = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
+    const dataEls = topEls.filter((w) => w.dataset.value !== '__more__')
+    if (dataEls.length === 0) return
+    // 复位再测量
+    dataEls.forEach((w) => w.removeAttribute('data-collapsed'))
+    if (moreWrap) moreWrap.hidden = true
+    // 显示收纳项量出其宽度（有溢出时它要占位，可用宽度须扣除；无溢出最后会再隐藏）
+    let moreWidth = 0
+    if (moreWrap) {
+      moreWrap.hidden = false
+      moreWidth = moreWrap.offsetWidth
+      moreWrap.hidden = true
+    }
+    const avail = itemsEl.clientWidth
+    let acc = 0
+    let firstOverflow = -1
+    dataEls.forEach((w, i) => {
+      acc += w.offsetWidth
+      if (firstOverflow === -1 && acc > avail) firstOverflow = i
+    })
+    let hasOverflow = firstOverflow !== -1
+    if (hasOverflow && moreWidth > 0) {
+      // 有溢出：收纳项自身占 moreWidth，重算首个溢出项（可用宽度 - 收纳项宽）
+      const avail2 = avail - moreWidth
+      acc = 0
+      firstOverflow = -1
+      dataEls.forEach((w, i) => {
+        acc += w.offsetWidth
+        if (firstOverflow === -1 && acc > avail2) firstOverflow = i
+      })
+      if (firstOverflow === -1) firstOverflow = dataEls.length - 1 // 兜底：至少收一项腾位
+    }
+    dataEls.forEach((w, i) => {
+      w.toggleAttribute('data-collapsed', hasOverflow && i >= firstOverflow)
+    })
+    this.collapsedValues = hasOverflow
+      ? dataEls.filter((w, i) => i >= firstOverflow).map((w) => w.dataset.value ?? '').filter(Boolean)
+      : []
+    // 收纳项「···」显隐 + 弹层内容（被收项镜像，点击选中对应 value）
+    if (!moreWrap) return
+    moreWrap.hidden = !hasOverflow
+    const moreBtn = moreWrap.querySelector<HTMLElement>('.more-item')
+    if (moreBtn) moreBtn.hidden = !hasOverflow
+    const moreSub = moreWrap.querySelector<HTMLElement>('[part="submenu"]')
+    if (moreSub && hasOverflow) {
+      moreSub.innerHTML = ''
+      for (const v of this.collapsedValues) {
+        const item = this.findItem(v)
+        if (item) moreSub.appendChild(this.buildMoreMirror(item))
+      }
+    }
+    // 「···」高亮：选中项（radio 根值 / checkbox 勾选集）被收纳时，收纳项显示选中态
+    // （选中项在溢出弹层里条上看不到 ✓，由收纳指示器本身高亮表达"选中项在其中"）+ aria-current 供读屏
+    const checked = this.checkedSet()
+    const rootValue = this.selectedValueOf('')
+    const selectedInside =
+      hasOverflow &&
+      this.collapsedValues.some((v) => v === rootValue || checked.has(v))
+    moreBtn?.classList.toggle('child-selected', selectedInside)
+    if (selectedInside) moreBtn?.setAttribute('aria-current', 'true')
+    else moreBtn?.removeAttribute('aria-current')
+  }
+
+  /**
+   * 收纳弹层镜像项：被收顶级项按叶子项渲染（保留 kind 语义与 href 链接）。
+   * 限制记录：被收纳的含子菜单顶级项在弹层内不展开级联子菜单，按叶子项点选
+   * （弹层内展开子菜单需嵌套浮层 + 焦点链翻倍，本期只支持叶子语义，与 menu 收纳行为一致）。
+   */
+  private buildMoreMirror(item: MenuItem): HTMLElement {
+    const checkbox = item.kind === 'checkbox'
+    const action = item.kind === 'action'
+    const mixed = checkbox && (item as MenubarItem).indeterminate === true
+    const li = document.createElement(item.href ? 'a' : 'li') as HTMLElement
+    li.className = 'subitem more-mirror'
+    li.setAttribute('part', 'item')
+    li.setAttribute('role', action ? 'menuitem' : checkbox ? 'menuitemcheckbox' : 'menuitemradio')
+    li.setAttribute('tabindex', '-1')
+    if (item.href) {
+      li.setAttribute('href', item.href)
+      if (item.target) li.setAttribute('target', item.target)
+      if (item.target === '_blank') {
+        if (!item.rel) li.setAttribute('rel', 'noopener')
+        else if (!/\bnoopener\b/i.test(item.rel)) li.setAttribute('rel', `${item.rel} noopener`)
+      }
+    }
+    if (item.value != null) li.dataset.value = item.value
+    if (mixed) li.dataset.mixed = 'true'
+    li.setAttribute('aria-disabled', String((item.disabled ?? false) || this.isBarDisabled()))
+    if (item.label) li.setAttribute('aria-label', item.label)
+    if (item.danger) li.classList.add('danger')
+    if (item.icon) {
+      const ic = this.createIcon(item.icon)
+      if (ic) li.appendChild(ic)
+    }
+    if (!action) {
+      li.setAttribute(
+        'aria-checked',
+        mixed ? 'mixed' : String(checkbox ? this.isChecked(item.value) : item.value === this.selectedValueOf('')),
+      )
+      const check = document.createElement('span')
+      check.className = checkbox ? 'check check--box' : 'check'
+      if (!checkbox) check.textContent = '✓'
+      li.appendChild(check)
+    }
+    const label = document.createElement('span')
+    label.className = 'label'
+    label.textContent = item.label ?? ''
+    li.appendChild(label)
+    li.addEventListener('click', (e: Event) => {
+      e.stopPropagation()
+      this.keyboardMode = false
+      if (item.disabled || this.isBarDisabled()) return
+      this.select(item, '')
+    })
+    li.addEventListener('mouseenter', () => {
+      this.keyboardMode = false
+      if (item.disabled || this.isBarDisabled()) return
+      this.hoverExpand(item.value ?? '')
+    })
+    return li
   }
 
   /** 键盘激活态 → .active class（不重建 DOM）；移动端在汉堡面板内作用 */
@@ -1184,7 +1545,8 @@ export class OASMenubar extends OASElement {
     }
     if (this.isBarDisabled()) return
     const topIdx = this.activeStack.length === 0 ? this.activeIndex : this.parentTopIndex()
-    const top = this.topItems()[topIdx]
+    // 顶级序列含收纳项「···」（topLevelItems 而非 topItems）
+    const top = this.topLevelItems()[topIdx]
     if (top?.value != null) {
       const sel = this.mobileMode ? '[part="item"]' : '[part="top-item"]'
       root
@@ -1193,9 +1555,10 @@ export class OASMenubar extends OASElement {
     }
   }
 
-  /** 当前导航作用域：移动端 = 汉堡面板（bar 隐藏），桌面 = shadow 全量 */
+  /** 当前导航作用域：移动端 = 汉堡面板（bar 隐藏）；收纳弹层打开时 = 弹层本身（避免命中条上隐藏项）；桌面 = shadow 全量 */
   private navRoot(): ShadowRoot | HTMLElement {
     if (this.mobileMode && this.hamburgerPanel) return this.hamburgerPanel
+    if (this.activeStack[0] === '__more__') return this.moreSubmenu() ?? this.shadow
     return this.shadow
   }
 
@@ -1208,7 +1571,8 @@ export class OASMenubar extends OASElement {
       return
     }
     if (this.activeStack.length === 0) {
-      const top = this.topItems()[this.activeIndex]
+      // 顶级序列含收纳项「···」（topLevelItems 而非 topItems）
+      const top = this.topLevelItems()[this.activeIndex]
       if (top?.value == null) return
       const sel = this.mobileMode ? '[part="item"]' : '[part="top-item"]'
       root.querySelector<HTMLElement>(`${sel}[data-value="${top.value}"]`)?.focus()
@@ -1222,6 +1586,17 @@ export class OASMenubar extends OASElement {
   /** hover：级联展开到该项所在路径（同级互斥），同步导航上下文但不移动焦点 */
   private hoverExpand(value: string): void {
     if (!value) return
+    // 收纳项「···」：非数据项，直接切到其展开态（弹层 = 被收项镜像）
+    if (value === '__more__') {
+      const next = new Set(['__more__'])
+      if (next.size === this.expanded.size && [...next].every((v) => this.expanded.has(v))) return
+      this.expanded = next
+      this.activeStack = ['__more__']
+      this.syncOpen()
+      this.syncActive()
+      this.syncRoving()
+      return
+    }
     const chain = this.chainOf(value)
     if (chain.length === 0) return
     const item = this.findItem(value)
@@ -1240,6 +1615,18 @@ export class OASMenubar extends OASElement {
 
   /** 点击：展开/收起子菜单 */
   private toggleExpand(value: string): void {
+    // 收纳项「···」：非数据项，直接切换其展开态（不走 chainOf——不在 items 树里）
+    if (value === '__more__') {
+      const next = new Set(this.expanded)
+      if (next.has('__more__')) next.delete('__more__')
+      else next.add('__more__')
+      this.expanded = next
+      this.activeStack = [...next]
+      this.syncOpen()
+      this.syncActive()
+      this.syncRoving()
+      return
+    }
     if (this.expanded.has(value)) {
       this.expanded = new Set(this.chainOf(value).slice(0, -1))
       this.activeStack = [...this.expanded]

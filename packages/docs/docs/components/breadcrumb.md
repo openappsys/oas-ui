@@ -87,6 +87,104 @@
   <oas-breadcrumb collapsed max-items="4" collapse-text="展开" items='[{"label":"首页","href":"/"},{"label":"组件","href":"/components"},{"label":"导航","href":"/components/anchor"},{"label":"数据展示","href":"/components/table"},{"label":"反馈","href":"/components/alert"},{"label":"面包屑"}]'></oas-breadcrumb>
 </DemoBlock>
 
+## 折叠展开事件
+
+点击折叠省略号**展开**下拉时派发 `oas-collapse-click`，`detail: { collapsedItems }` 携带被折叠的原始项数组——宿主可据此自绘折叠面板；收起时不派发。
+
+<DemoBlock title="折叠展开事件（oas-collapse-click）">
+  <oas-breadcrumb id="bc-collapse-ev" collapsed max-items="4" onoas-collapse-click="breadcrumbCollapseLog(event)" items='[{"label":"首页","href":"/"},{"label":"组件","href":"/components"},{"label":"导航","href":"/components/anchor"},{"label":"数据展示","href":"/components/table"},{"label":"设置","href":"/components/settings"},{"label":"面包屑"}]'></oas-breadcrumb>
+  <oas-tag id="bc-collapse-ev-result" type="info">尚未展开</oas-tag>
+</DemoBlock>
+
+## 子元素声明式通道
+
+除 `items` JSON 外，可用 `<oas-breadcrumb-item>` 子元素声明式书写（`items` 属性**显式设置时优先**）。默认插槽文本为 label，属性对齐 `items` 字段：`href`/`target`/`icon`/`disabled`/`max-width`/`separator`/`dropdown`/`active`。子元素增删、属性与文本变化会自动重渲染。
+
+<DemoBlock title="子元素基础">
+  <oas-breadcrumb>
+    <oas-breadcrumb-item href="/">首页</oas-breadcrumb-item>
+    <oas-breadcrumb-item href="/components">组件</oas-breadcrumb-item>
+    <oas-breadcrumb-item>面包屑</oas-breadcrumb-item>
+  </oas-breadcrumb>
+</DemoBlock>
+
+<DemoBlock title="带图标与属性">
+  <oas-breadcrumb>
+    <oas-breadcrumb-item href="/" icon="star">首页</oas-breadcrumb-item>
+    <oas-breadcrumb-item href="/components" target="_blank">组件（新窗口）</oas-breadcrumb-item>
+    <oas-breadcrumb-item disabled>已下线</oas-breadcrumb-item>
+    <oas-breadcrumb-item max-width="110" href="/components/breadcrumb">一个较长的面包屑项标题</oas-breadcrumb-item>
+  </oas-breadcrumb>
+</DemoBlock>
+
+### 自定义分隔符（子元素）
+
+`<oas-breadcrumb-separator>` 置于两个项之间，内容为任意节点（文本 / 图标 / 内联元素）；项级 `separator` 属性支持文本或图标名，`slot="separator"` 子元素可传任意节点。
+
+<DemoBlock title="独立分隔符元素">
+  <oas-breadcrumb>
+    <oas-breadcrumb-item href="/">首页</oas-breadcrumb-item>
+    <oas-breadcrumb-separator>→</oas-breadcrumb-separator>
+    <oas-breadcrumb-item href="/components">组件</oas-breadcrumb-item>
+    <oas-breadcrumb-separator><span style="color: var(--oas-color-primary)">›</span></oas-breadcrumb-separator>
+    <oas-breadcrumb-item>面包屑</oas-breadcrumb-item>
+  </oas-breadcrumb>
+</DemoBlock>
+
+<DemoBlock title="项级 separator（属性 / slot）">
+  <oas-breadcrumb>
+    <oas-breadcrumb-item href="/" separator="heart">首页</oas-breadcrumb-item>
+    <oas-breadcrumb-item href="/components">组件<span slot="separator">·</span></oas-breadcrumb-item>
+    <oas-breadcrumb-item>面包屑</oas-breadcrumb-item>
+  </oas-breadcrumb>
+</DemoBlock>
+
+## 层级缩进视觉
+
+面包屑默认平铺；纯 CSS 即可做出「逐级缩进」的层级视觉（分隔符隐藏 + 项按序缩进，不进 API）。思路：`::part(nav)` 改纵向排列、`::part(separator)` 隐藏、`::part(item):nth-child()` 按出现次序递增缩进。
+
+<DemoBlock title="层级缩进（纯 CSS）">
+  <oas-breadcrumb class="bc-hierarchy" separator="/" items='[{"label":"首页","href":"/"},{"label":"组件","href":"/components"},{"label":"导航","href":"/components/anchor"},{"label":"面包屑"}]'></oas-breadcrumb>
+</DemoBlock>
+
+<style>
+.bc-hierarchy::part(nav) {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--oas-space-1);
+}
+.bc-hierarchy::part(separator) {
+  display: none;
+}
+.bc-hierarchy::part(item):nth-child(3) {
+  padding-left: 20px;
+}
+.bc-hierarchy::part(item):nth-child(5) {
+  padding-left: 40px;
+}
+.bc-hierarchy::part(item):nth-child(7) {
+  padding-left: 60px;
+}
+</style>
+
+## 项挂菜单（oas-dropdown 组合）
+
+`oas-breadcrumb-item` 的 `dropdown` 属性把该项渲染为下拉触发器（链接列表菜单，点击项派发 `oas-select`）；与 `oas-dropdown` 组合可实现更丰富的菜单内容，两个通道的选中反馈可联动到同一状态。
+
+<DemoBlock title="项挂菜单">
+  <oas-breadcrumb onoas-select="breadcrumbMenuLog(event)">
+    <oas-breadcrumb-item href="/">首页</oas-breadcrumb-item>
+    <oas-breadcrumb-item dropdown='[{"label":"组件总览","href":"/components"},{"label":"导航组件","href":"/components/anchor"},{"label":"已下线","href":"/gone","disabled":true}]'>更多</oas-breadcrumb-item>
+    <oas-breadcrumb-item>面包屑</oas-breadcrumb-item>
+  </oas-breadcrumb>
+  <div style="margin-top: 8px">
+    <oas-dropdown items='[{"label":"面包屑文档","value":"breadcrumb"},{"label":"锚点文档","value":"anchor"}]' placement="bottom" onoas-select="breadcrumbMenuLog(event)">
+      <oas-button type="default" size="small">oas-dropdown 组合菜单</oas-button>
+    </oas-dropdown>
+  </div>
+  <oas-tag id="bc-menu-result" type="info">尚未选择</oas-tag>
+</DemoBlock>
+
 ## 单行省略
 
 `ellipsis`：面包屑不换行，容器过窄时链接文本以省略号截断，链接保留全文 `title`（悬停可见完整名称）。
@@ -190,6 +288,17 @@ onMounted(() => {
       if (tag) tag.textContent = `已点击：${e.detail.value}`
     }
   }
+  window.breadcrumbCollapseLog = (e) => {
+    const tag = document.getElementById('bc-collapse-ev-result')
+    if (tag) {
+      const labels = e.detail.collapsedItems.map((i) => i.label).join('、')
+      tag.textContent = `已展开：折叠 ${e.detail.collapsedItems.length} 项（${labels}）`
+    }
+  }
+  window.breadcrumbMenuLog = (e) => {
+    const tag = document.getElementById('bc-menu-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value ?? e.detail.href ?? ''}`
+  }
 })
 </script>
 
@@ -199,7 +308,7 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-breadcrumb
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -217,10 +326,32 @@ onMounted(() => {
 | `size` | 尺寸档位：`small`/`medium`（默认）/`large` | `string` | `medium` |
 | `variant` | 样式变体：`underline`（链接与当前项常驻下划线） | `string` | — |
 
-### 事件
-
 | 事件 | 说明 |
 | --- | --- |
+| `oas-collapse-click` | 折叠省略号被点击展开下拉（收起不派发），`detail: { collapsedItems }`（被折叠的原始项数组，宿主可自定义折叠面板） |
 | `oas-select` | 点击链接项、折叠下拉项或项下拉菜单项；`detail: { value: href }`（真实链接不阻止默认跳转，宿主可拦截做路由） |
+
+### oas-breadcrumb-item
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `active` | 显式标记当前项（`aria-current="page"`），默认取末项 | — | — |
+| `disabled` | 禁用项：渲染为非交互文本（aria-disabled） | — | — |
+| `dropdown` | 项带下拉菜单：链接列表 JSON（如 `[{"label":"子项","href":"/a"}]`），项渲染为下拉触发器 | — | — |
+| `href` | 链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`） | — | — |
+| `icon` | 前置图标（`@oas-ui/icons` 注册表图标名） | — | — |
+| `max-width` | 单项最大宽度（px）：超出省略号截断 + `title` 悬停提示 | — | — |
+| `separator` | 项级分隔符：覆盖全局 `separator`（支持文本或图标名）；亦可用 `slot="separator"` 子元素传任意节点 | — | — |
+| `target` | 链接 target（`_blank` 时自动补 `noopener noreferrer`） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 面包屑项 label 内容（默认插槽文本） |
+
+### oas-breadcrumb-separator
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 分隔符内容：任意节点（文本 / 图标 / 内联元素） |
 
 `nav` + `aria-label="面包屑"`，末项 `aria-current="page"` 且不可点击。

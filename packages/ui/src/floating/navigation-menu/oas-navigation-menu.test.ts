@@ -2,6 +2,19 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import '@oas-ui/i18n'
 import { OASNavigationMenu } from './index.js'
 
+// 文件级钩子：覆盖所有 describe（含新增能力测试块）。
+// happy-dom 缺陷规避：Document 内部 activeElement symbol 跨测试残留指向已移除
+// 子树时，ShadowRoot.activeElement 遍历会崩溃（blur 因 symbol≠getter 结果是 no-op，
+// 用 body.focus() 覆盖 symbol 复位）
+beforeEach(() => {
+  document.body.innerHTML = ''
+})
+
+afterEach(() => {
+  document.body.focus()
+  document.body.innerHTML = ''
+})
+
 // 大面板形态：顶级项带 children 打开统一 viewport 面板；面板内多列网格链接卡（icon+标题+描述）+ inline 二级子导航
 const ITEMS = JSON.stringify([
   {
@@ -521,5 +534,225 @@ describe('OASNavigationMenu', () => {
     el.setAttribute('items', JSON.stringify([{ label: '首页', value: 'home', href: '/' }]))
     expect(topItems(el).length).toBe(1)
     expect(topItems(el)[0]!.textContent).toBe('首页')
+  })
+})
+
+// ============ 箭头跟随触发器（--arrow-x / --arrow-y） ============
+
+describe('箭头跟随触发器', () => {
+  it('打开后按当前触发器位置写入 --arrow-x（水平：offsetLeft + 半宽 - 半箭头）', () => {
+    const el = mount({ 'delay-duration': '0' })
+    const trigger = topItems(el)[0]!
+    Object.defineProperty(trigger, 'offsetLeft', { value: 120, configurable: true })
+    Object.defineProperty(trigger, 'offsetWidth', { value: 80, configurable: true })
+    trigger.click()
+    const ar = el.shadowRoot!.querySelector<HTMLElement>('[part="arrow"]')!
+    expect(ar.style.getPropertyValue('--arrow-x')).toBe('156px') // 120 + 40 - 4
+  })
+
+  it('切换触发器后箭头位置更新（跟随新打开项）', () => {
+    const el = mount({ items: SWITCH_ITEMS, 'delay-duration': '0' })
+    const first = topItems(el)[0]!
+    const second = topItems(el)[1]!
+    Object.defineProperty(first, 'offsetLeft', { value: 0, configurable: true })
+    Object.defineProperty(first, 'offsetWidth', { value: 80, configurable: true })
+    Object.defineProperty(second, 'offsetLeft', { value: 200, configurable: true })
+    Object.defineProperty(second, 'offsetWidth', { value: 80, configurable: true })
+    first.click()
+    const ar = el.shadowRoot!.querySelector<HTMLElement>('[part="arrow"]')!
+    expect(ar.style.getPropertyValue('--arrow-x')).toBe('36px') // 0 + 40 - 4
+    second.click()
+    expect(ar.style.getPropertyValue('--arrow-x')).toBe('236px') // 200 + 40 - 4
+  })
+
+  it('竖排写入 --arrow-y（垂直中心）', () => {
+    const el = mount({ orientation: 'vertical', 'delay-duration': '0' })
+    const trigger = topItems(el)[0]!
+    Object.defineProperty(trigger, 'offsetTop', { value: 30, configurable: true })
+    Object.defineProperty(trigger, 'offsetHeight', { value: 40, configurable: true })
+    trigger.click()
+    const ar = el.shadowRoot!.querySelector<HTMLElement>('[part="arrow"]')!
+    expect(ar.style.getPropertyValue('--arrow-y')).toBe('46px') // 30 + 20 - 4
+  })
+})
+
+// ============ 碰撞/翻转（窄视口右缘 / 下缘） ============
+
+describe('碰撞翻转', () => {
+  it('面板宽于剩余视口：右缘溢出 flip-right（right 对齐）', () => {
+    const el = mount({ 'delay-duration': '0' })
+    const p = panel(el)
+    Object.defineProperty(p, 'scrollWidth', { value: 400, configurable: true })
+    Object.defineProperty(window, 'innerWidth', { value: 300, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+    topItems(el)[0]!.click()
+    expect(viewport(el).classList.contains('flip-right')).toBe(true)
+  })
+
+  it('面板底部超出视口下缘：flip-up 向上弹', () => {
+    const el = mount({ 'delay-duration': '0' })
+    const p = panel(el)
+    Object.defineProperty(p, 'scrollHeight', { value: 200, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 300, configurable: true })
+    Object.defineProperty(window, 'innerWidth', { value: 1024, configurable: true })
+    Object.defineProperty(viewport(el), 'getBoundingClientRect', {
+      value: () => ({ top: 400, bottom: 400, left: 0, right: 0, width: 0, height: 0, x: 0, y: 0, toJSON() {} }),
+      configurable: true,
+    })
+    topItems(el)[0]!.click()
+    expect(viewport(el).classList.contains('flip-up')).toBe(true)
+  })
+
+  it('空间充足时不翻转', () => {
+    const el = mount({ 'delay-duration': '0' })
+    Object.defineProperty(window, 'innerWidth', { value: 2000, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 2000, configurable: true })
+    topItems(el)[0]!.click()
+    expect(viewport(el).classList.contains('flip-right')).toBe(false)
+    expect(viewport(el).classList.contains('flip-up')).toBe(false)
+  })
+})
+
+// ============ loop 循环开关 ============
+
+describe('loop 循环开关', () => {
+  it('缺省循环：首项 ArrowLeft 回绕到末项', () => {
+    const el = mount({ items: SWITCH_ITEMS })
+    key(el, 'ArrowLeft')
+    expect(topItems(el)[2]!.classList.contains('active')).toBe(true)
+  })
+
+  it('loop="false"：边界停止不循环', () => {
+    const el = mount({ items: SWITCH_ITEMS, loop: 'false' })
+    key(el, 'ArrowLeft') // 首项不回绕
+    expect(topItems(el)[0]!.classList.contains('active')).toBe(true)
+    key(el, 'ArrowRight')
+    key(el, 'ArrowRight')
+    expect(topItems(el)[2]!.classList.contains('active')).toBe(true)
+    key(el, 'ArrowRight') // 末项停止
+    expect(topItems(el)[2]!.classList.contains('active')).toBe(true)
+  })
+
+  it('loop 列入 observedAttributes', () => {
+    expect(OASNavigationMenu.observedAttributes).toContain('loop')
+  })
+})
+
+// ============ Sub 二级级联（面板内覆盖式二级面板） ============
+
+const SUB_ITEMS = JSON.stringify([
+  {
+    label: '产品',
+    value: 'products',
+    children: [
+      { label: '组件', value: 'components', href: '/components' },
+      {
+        label: '学习中心',
+        value: 'learn',
+        sub: [
+          { label: '文档', value: 'docs', href: '/docs' },
+          { label: '教程', value: 'tutorial', href: '/tutorial' },
+          { label: '社区', value: 'community', href: '/community', disabled: true },
+        ],
+      },
+    ],
+  },
+])
+
+describe('Sub 二级级联', () => {
+  it('面板内带 sub 字段的项渲染二级触发器（非 section/card）', () => {
+    const el = mount({ items: SUB_ITEMS, 'delay-duration': '0' })
+    topItems(el)[0]!.click()
+    const trig = el.shadowRoot!.querySelector<HTMLElement>('[part="sub-trigger"]')!
+    expect(trig).not.toBeNull()
+    expect(trig.textContent).toContain('学习中心')
+    expect(trig.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('点击二级触发器打开覆盖式二级面板：内容为 sub 链接列表，焦点移入首项', () => {
+    const el = mount({ items: SUB_ITEMS, 'delay-duration': '0' })
+    topItems(el)[0]!.click()
+    const trig = el.shadowRoot!.querySelector<HTMLElement>('[part="sub-trigger"]')!
+    trig.click()
+    const sp = el.shadowRoot!.querySelector<HTMLElement>('[part="sub-panel"]')!
+    expect(sp.hidden).toBe(false)
+    expect(trig.getAttribute('aria-expanded')).toBe('true')
+    const links = sp.querySelectorAll<HTMLElement>('[part="sub-link"]')
+    expect(links.length).toBe(3)
+    expect(links[0]!.getAttribute('href')).toBe('/docs')
+    expect(links[1]!.getAttribute('href')).toBe('/tutorial')
+    expect(links[2]!.getAttribute('aria-disabled')).toBe('true')
+    // 焦点进入二级面板首项
+    expect(el.shadowRoot!.activeElement).toBe(links[0])
+  })
+
+  it('二级面板内点选链接 → oas-select 并整体关闭；Esc 逐层回退', () => {
+    const el = mount({ items: SUB_ITEMS, 'delay-duration': '0' })
+    const details: unknown[] = []
+    el.addEventListener('oas-select', (e) => details.push((e as CustomEvent).detail))
+    topItems(el)[0]!.click()
+    const trig = el.shadowRoot!.querySelector<HTMLElement>('[part="sub-trigger"]')!
+    trig.click()
+    const sp = el.shadowRoot!.querySelector<HTMLElement>('[part="sub-panel"]')!
+    // Esc：逐层回退 → 二级面板关闭、主面板仍开、焦点回触发器
+    nav(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(sp.hidden).toBe(true)
+    expect(isOpen(el)).toBe(true)
+    expect(el.shadowRoot!.activeElement).toBe(trig)
+    // 主面板 Esc：整体关闭
+    nav(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(isOpen(el)).toBe(false)
+    // 再开一次走点选
+    topItems(el)[0]!.click()
+    el.shadowRoot!.querySelector<HTMLElement>('[part="sub-trigger"]')!.click()
+    sp.querySelector<HTMLElement>('[part="sub-link"]')!.click()
+    expect(details.at(-1)).toEqual({ value: 'docs' })
+    expect(isOpen(el)).toBe(false)
+  })
+
+  it('二级面板内键盘上下移动、跳过 disabled；ArrowLeft 返回主面板', () => {
+    const el = mount({ items: SUB_ITEMS, 'delay-duration': '0' })
+    topItems(el)[0]!.click()
+    el.shadowRoot!.querySelector<HTMLElement>('[part="sub-trigger"]')!.click()
+    const links = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="sub-link"]')]
+    nav(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' })) // 跳过 disabled 教程 → 社区后回绕到 文档
+    expect(el.shadowRoot!.activeElement).toBe(links[1])
+    nav(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
+    const trig = el.shadowRoot!.querySelector<HTMLElement>('[part="sub-trigger"]')!
+    expect(el.shadowRoot!.activeElement).toBe(trig)
+  })
+
+  it('切换顶级触发器时二级面板复位', () => {
+    const el = mount({ items: SWITCH_ITEMS, 'delay-duration': '0' })
+    topItems(el)[0]!.click()
+    topItems(el)[1]!.click()
+    const sp = el.shadowRoot!.querySelector<HTMLElement>('[part="sub-panel"]')!
+    expect(sp.hidden).toBe(true)
+  })
+})
+
+// ============ panel-footer 营销位插槽 ============
+
+describe('panel-footer 插槽', () => {
+  it('无内容时容器隐藏；有内容时面板底部渲染', () => {
+    const el = mount({ 'delay-duration': '0' })
+    topItems(el)[0]!.click()
+    const footer = el.shadowRoot!.querySelector<HTMLElement>('[part="panel-footer"]')!
+    expect(footer).not.toBeNull()
+    expect(footer.hidden).toBe(true)
+
+    const withFooter = mount({ 'delay-duration': '0' })
+    const cta = document.createElement('a')
+    cta.slot = 'panel-footer'
+    cta.href = '/start'
+    cta.textContent = '立即开始'
+    withFooter.appendChild(cta)
+    withFooter.setAttribute('items', withFooter.getAttribute('items')!) // 触发 update 重算
+    topItems(withFooter)[0]!.click()
+    const footer2 = withFooter.shadowRoot!.querySelector<HTMLElement>('[part="panel-footer"]')!
+    expect(footer2.hidden).toBe(false)
+    expect(footer2.querySelector('slot')).not.toBeNull()
+    // 插槽投影的营销内容在 light DOM（shadow 容器只负责承接 slot）
+    expect(withFooter.querySelector('[slot="panel-footer"]')!.textContent).toContain('立即开始')
   })
 })
