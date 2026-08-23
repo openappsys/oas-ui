@@ -107,7 +107,7 @@ describe('OAS typography', () => {
       expect(css).toMatch(/\.text\.underline\s*{/)
       expect(css).toMatch(/\.text\.strong\s*{/)
       expect(css).toMatch(/\.text\.italic\s*{/)
-      // code 内联框居中走 flex 内容居中 + 行高收紧（通用做法，消解字体回退度量差）
+      // code 内联框居中走 flex 内容居中 + 行高收紧（消解字体回退度量差）
       expect(css).toMatch(/\.text\.code\s*{[^}]*display:\s*inline-flex/)
       expect(css).toMatch(/\.text\.code\s*{[^}]*align-items:\s*center/)
       expect(css).toMatch(/\.text\.code\s*{[^}]*line-height:\s*1\.35/)

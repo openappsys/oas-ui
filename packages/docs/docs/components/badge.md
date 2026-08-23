@@ -470,7 +470,7 @@ oas-badge#badge-dyn.bump::part(badge) {
   </oas-badge>
 </DemoBlock>
 
-`ribbon-anchor` 统一缎带锚点，锚点集合按形态语义适配（通用做法：形态与位置绑定）：
+`ribbon-anchor` 统一缎带锚点，锚点集合按形态语义适配（形态与位置绑定）：
 - **fold**：左右边中 + 四角（横条贴左/右，纵向上下可调）
 - **diagonal / triangle**：四角
 - **side**：左右边中 + 四角
