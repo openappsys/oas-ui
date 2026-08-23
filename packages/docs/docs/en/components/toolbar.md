@@ -139,6 +139,21 @@ Add `data-toolbar-far` to an item: everything from that item onward is pushed to
   </oas-toolbar>
 </DemoBlock>
 
+## start / end named slots
+
+`slot="start"` content renders at the front of the toolbar, `slot="end"` at the tail (visual order: start → default → end; roving and overflow collapse follow this order). Prefer named slots for grouping; `data-toolbar-far` remains for backward compatibility (pushes an item to the far end — semantically close to the `end` slot), new code should prefer the `end` slot.
+
+<DemoBlock title="start / end slots">
+  <oas-toolbar>
+    <oas-toolbar-toggle slot="start" multiple value='["bold"]' items='[{"label":"Bold","value":"bold"},{"label":"Italic","value":"italic"},{"label":"Underline","value":"underline"}]'></oas-toolbar-toggle>
+    <button>Save</button>
+    <button>Print</button>
+    <oas-toolbar-separator></oas-toolbar-separator>
+    <oas-toolbar-input slot="end" placeholder="Search…"></oas-toolbar-input>
+    <button slot="end">Help</button>
+  </oas-toolbar>
+</DemoBlock>
+
 ## Toolbar input widget
 
 `oas-toolbar-input`: joins roving as a single tab stop (composite special case — while focus is inside the input, arrow keys are consumed by text editing; `Tab` leaves and toolbar navigation continues). `oas-input` fires while typing, `oas-change` on Enter/blur commit.
@@ -158,7 +173,7 @@ Add `data-toolbar-far` to an item: everything from that item onward is pushed to
 When the container is too narrow, overflowing items are folded into a "···" popup (`ResizeObserver` watches the width; click "···" to open mirrored items, clicking a mirror dispatches to the original control; the "···" highlights when a selected value is folded inside). Try shrinking the container below.
 
 <DemoBlock title="Overflow collapse">
-  <div style="width: 300px; overflow: hidden">
+  <div style="width: 300px; overflow-x: clip">
     <oas-toolbar id="tb-overflow">
       <oas-toolbar-toggle value="bold" items='[{"label":"Bold","value":"bold"},{"label":"Italic","value":"italic"},{"label":"Underline","value":"underline"}]'></oas-toolbar-toggle>
       <oas-toolbar-separator></oas-toolbar-separator>
@@ -234,6 +249,8 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | Toolbar controls: buttons / oas-button / toggle group / input / links / separators, etc. |
+| `end` | Content at the tail of the toolbar (rendered after the default content; participates in roving and overflow collapse; semantically close to `data-toolbar-far`, prefer this slot for new code) |
+| `start` | Content at the front of the toolbar (rendered before the default content; participates in roving and overflow collapse) |
 
 ### oas-toolbar-toggle
 

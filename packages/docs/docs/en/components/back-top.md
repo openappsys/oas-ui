@@ -56,6 +56,18 @@ The default slot renders custom content (it replaces the built-in arrow icon whe
   <oas-back-top target="#bt-scroll-box" visibility-height="200" bottom="96px" right="80px"></oas-back-top>
 </DemoBlock>
 
+## Nested scroll container auto-detection
+
+When `target` is unset the component auto-detects the nearest scrollable ancestor (no selector needed): drop it inside any nested scroll container and it will listen to that container and scroll back to its top. An explicit `target` always takes priority over auto-detection.
+
+<DemoBlock title="Nested scroll container auto-attach">
+  <div id="bt-auto-box" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
+    <p style="color: var(--oas-color-text-secondary)">This is a nested scroll container: the component inside auto-attaches to it (no target set here). Once you scroll past 100px the button at the bottom-right appears; clicking goes back to the container top.</p>
+    <p style="margin-top: 600px; color: var(--oas-color-text-secondary)">Container bottom — scroll back and try it.</p>
+    <oas-back-top visibility-height="100" bottom="48px" right="48px"></oas-back-top>
+  </div>
+</DemoBlock>
+
 ## Scroll duration & easing
 
 `duration` controls the scroll duration (ms); `easing` selects the easing curve (default `quart-out`).
@@ -130,10 +142,18 @@ The default slot renders custom content (it replaces the built-in arrow icon whe
 
 ## Tooltip & badge
 
-`tooltip` shows a bubble hint on hover / keyboard focus; `badge` shows content in a small badge at the button's top-right corner.
+`tooltip` shows a bubble hint on hover / keyboard focus (linked to the button via `aria-describedby` for screen readers); `badge` shows content in a small badge at the button's top-right corner.
 
 <DemoBlock title="Tooltip & badge">
   <oas-back-top visible tooltip="Back to top" badge="3" bottom="560px" right="96px"></oas-back-top>
+</DemoBlock>
+
+## Draggable
+
+`draggable` enables drag positioning: press and hold the button and drag to move it freely (movement beyond 4px counts as a drag and does not trigger scroll-to-top; within 4px it counts as a click and still scrolls to the top). The position is persisted to `localStorage` (key `oas-back-top-pos`, clearable by the host to reset).
+
+<DemoBlock title="Draggable">
+  <oas-back-top visible draggable tooltip="Hold and drag to move" bottom="620px"></oas-back-top>
 </DemoBlock>
 
 ## Mount point
@@ -162,6 +182,7 @@ onMounted(async () => {
 | `append-to` | Teleport mount point: a CSS selector; on connect the component is moved under that container (kept in place when unset) | `string` | — |
 | `badge` | Badge content: text/number shown in a small badge at the button's top-right corner | `string` | — |
 | `bottom` | Distance from the viewport bottom | `string` | `32px` |
+| `draggable` | Drag positioning: press and drag to move the button freely (movement beyond 4px counts as a drag and does not trigger scroll-to-top; within 4px it counts as a click and still scrolls to the top). Position is persisted to localStorage (key `oas-back-top-pos`, clearable by the host to reset) | `boolean` | — |
 | `duration` | Smooth-scroll duration (ms), default 400; 0 or `prefers-reduced-motion` jumps directly | `string` | `400` |
 | `easing` | Scroll easing function: `linear` / `ease` / `ease-in` / `ease-out` / `ease-in-out` / `quad-*` / `cubic-*` / `quart-*` / `quint-*` / `expo-*` / `circ-*` / `back-*`, default `quart-out` | `string` | `quart-out` |
 | `expand` | Full-width bar mode: the button spans the full viewport bottom (content centered horizontally); ignores `position` / `bottom` / `right` | `boolean` | — |
@@ -171,7 +192,7 @@ onMounted(async () => {
 | `shape` | Button shape: `circle` (default, round) / `square` (square corners) | `string` | `circle` |
 | `show-progress` | Scroll progress ring: a progress ring around the button edge (SVG circle computed over the `target` container scroll range) | `boolean` | — |
 | `size` | Size tier: `small` (32px) / `medium` (default, 40px) / `large` (48px) | `string` | `medium` |
-| `target` | Scroll target container: a CSS selector; when set the component listens to that container's scroll and scrolls back to its top/bottom (default: window) | `string` | — |
+| `target` | Scroll target container: a CSS selector; when set the component listens to that container's scroll and scrolls back to its top/bottom; when unset it auto-detects the nearest scrollable ancestor (cached across disconnect/reconnect), falling back to window | `string` | — |
 | `theme` | Theme variant: `light` (default, light) / `primary` (primary fill) / `dark` (dark surface, auto-inverted in dark theme to keep contrast) | `string` | `light` |
 | `tooltip` | Hover hint text: shows a bubble tooltip on hover / keyboard focus | `string` | — |
 | `transition` | Enter/exit transition: `fade` (default, fade in/out) / `scale` (zoom) / `none`; disabled under `prefers-reduced-motion` | `string` | `fade` |

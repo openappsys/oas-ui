@@ -139,6 +139,21 @@
   </oas-toolbar>
 </DemoBlock>
 
+## start / end 命名插槽
+
+`slot="start"` 内容渲染在工具栏前部、`slot="end"` 渲染在尾端（视觉顺序：start → 默认 → end，roving 与溢出收纳都按此顺序）。推荐用命名插槽做分区；`data-toolbar-far` 为存量兼容（把项推到远端，与 `end` 插槽语义接近），新代码优先使用 `end` 插槽。
+
+<DemoBlock title="start / end 插槽">
+  <oas-toolbar>
+    <oas-toolbar-toggle slot="start" multiple value='["bold"]' items='[{"label":"加粗","value":"bold"},{"label":"斜体","value":"italic"},{"label":"下划线","value":"underline"}]'></oas-toolbar-toggle>
+    <button>保存</button>
+    <button>打印</button>
+    <oas-toolbar-separator></oas-toolbar-separator>
+    <oas-toolbar-input slot="end" placeholder="搜索…"></oas-toolbar-input>
+    <button slot="end">帮助</button>
+  </oas-toolbar>
+</DemoBlock>
+
 ## 工具栏内输入框
 
 `oas-toolbar-input`：参与 roving 的单 Tab 停靠（复合组件特例——焦点在输入框内时方向键由文本编辑消费，`Tab` 离开继续工具栏导航）。`oas-input` 输入中、`oas-change` Enter/失焦提交。
@@ -158,7 +173,7 @@
 容器宽度不足时，超出项自动收进末尾「···」弹层（`ResizeObserver` 监听宽度，点击「···」展开镜像项，镜像项点击派发到原控件；被收纳的选中项会让「···」高亮）。收窄下方容器宽度试试。
 
 <DemoBlock title="溢出收纳">
-  <div style="width: 300px; overflow: hidden">
+  <div style="width: 300px; overflow-x: clip">
     <oas-toolbar id="tb-overflow">
       <oas-toolbar-toggle value="bold" items='[{"label":"加粗","value":"bold"},{"label":"斜体","value":"italic"},{"label":"下划线","value":"underline"}]'></oas-toolbar-toggle>
       <oas-toolbar-separator></oas-toolbar-separator>
@@ -234,6 +249,8 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 工具栏控件：按钮 / oas-button / 切换组 / 输入框 / 链接 / 分隔符等 |
+| `end` | 工具栏尾端内容（渲染在默认内容之后，参与 roving 与溢出收纳；与 `data-toolbar-far` 语义接近，推荐优先使用） |
+| `start` | 工具栏前部内容（渲染在默认内容之前，参与 roving 与溢出收纳） |
 
 ### oas-toolbar-toggle
 

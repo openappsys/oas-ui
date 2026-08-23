@@ -101,6 +101,7 @@
       "append-to": "teleport 挂载点：CSS 选择器，连接后把组件迁移到该容器下（不设置则保持原位）",
       "badge": "角标内容：按钮右上角小徽标显示的文本/数字",
       "bottom": "距视口底部距离",
+      "draggable": "可拖拽定位：按住拖动自由移动位置（位移超过 4px 算拖拽、不触发回顶；以内算点击仍回顶）；位置持久化到 localStorage（key 为 `oas-back-top-pos`，宿主可清理重置）",
       "duration": "平滑滚动时长（毫秒），默认 400；0 或 `prefers-reduced-motion` 时直接跳转",
       "easing": "滚动缓动函数：`linear` / `ease` / `ease-in` / `ease-out` / `ease-in-out` / `quad-*` / `cubic-*` / `quart-*` / `quint-*` / `expo-*` / `circ-*` / `back-*`，默认 `quart-out`",
       "expand": "撑满条模式：按钮撑满视口底部全宽（内容横向居中），忽略 `position` / `bottom` / `right` 定位",
@@ -110,7 +111,7 @@
       "shape": "按钮形状：`circle`（默认圆形）/ `square`（方角）",
       "show-progress": "滚动进度环：按钮边缘显示当前滚动进度（SVG 圆环，按 `target` 容器滚动范围计算）",
       "size": "尺寸档位：`small`（32px）/ `medium`（默认 40px）/ `large`（48px）",
-      "target": "滚动目标容器：CSS 选择器；设置后监听该容器滚动并滚动回其顶部/底部（默认 window）",
+      "target": "滚动目标容器：CSS 选择器；设置后监听该容器滚动并滚动回其顶部/底部；缺省时自动探测最近的滚动祖先容器（结果缓存，断开重连不清），无则监听 window",
       "theme": "主题变体：`light`（默认浅色）/ `primary`（主色填充）/ `dark`（深色底，dark 主题下自动反色保持对比）",
       "tooltip": "悬停提示文本：hover / 键盘聚焦时显示气泡提示",
       "transition": "进出场过渡：`fade`（默认淡入淡出）/ `scale`（缩放）/ `none`（无过渡），`prefers-reduced-motion` 下自动停用",
@@ -1799,7 +1800,9 @@
     },
     "events": {},
     "slots": {
-      "": "工具栏控件：按钮 / oas-button / 切换组 / 输入框 / 链接 / 分隔符等"
+      "": "工具栏控件：按钮 / oas-button / 切换组 / 输入框 / 链接 / 分隔符等",
+      "start": "工具栏前部内容（渲染在默认内容之前，参与 roving 与溢出收纳）",
+      "end": "工具栏尾端内容（渲染在默认内容之后，参与 roving 与溢出收纳；与 `data-toolbar-far` 语义接近，推荐优先使用）"
     }
   },
   "oas-toolbar-input": {

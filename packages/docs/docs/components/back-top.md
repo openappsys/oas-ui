@@ -56,6 +56,18 @@
   <oas-back-top target="#bt-scroll-box" visibility-height="200" bottom="96px" right="80px"></oas-back-top>
 </DemoBlock>
 
+## 嵌套滚动容器自动吸附
+
+`target` 缺省时自动探测最近的滚动祖先容器（无需手写选择器）：把组件放进任意嵌套滚动容器内，它就会自动监听该容器滚动并滚动回其顶部。显式设置 `target` 时优先于自动探测。
+
+<DemoBlock title="嵌套滚动容器自动吸附">
+  <div id="bt-auto-box" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
+    <p style="color: var(--oas-color-text-secondary)">这是嵌套滚动容器：组件放在容器内部时自动吸附该容器（此处未设置 target），向下滚动超过 100px 后右下角按钮出现，点击回到容器顶部。</p>
+    <p style="margin-top: 600px; color: var(--oas-color-text-secondary)">容器底部——滚动回来试试。</p>
+    <oas-back-top visibility-height="100" bottom="48px" right="48px"></oas-back-top>
+  </div>
+</DemoBlock>
+
 ## 滚动时长与缓动
 
 `duration` 控制滚动时长（毫秒）；`easing` 选择缓动曲线（默认 `quart-out`）。
@@ -130,10 +142,18 @@
 
 ## 提示与徽标
 
-`tooltip` 悬停/键盘聚焦时显示气泡提示；`badge` 在按钮右上角显示角标内容。
+`tooltip` 悬停/键盘聚焦时显示气泡提示（读屏时通过 `aria-describedby` 关联到按钮）；`badge` 在按钮右上角显示角标内容。
 
 <DemoBlock title="提示与徽标">
   <oas-back-top visible tooltip="回到顶部" badge="3" bottom="560px" right="96px"></oas-back-top>
+</DemoBlock>
+
+## 可拖拽
+
+`draggable` 开启拖拽定位：按住按钮拖动即可自由移动位置（位移超过 4px 算拖拽、不触发回顶；4px 内算点击，仍执行回到顶部）。位置持久化到 `localStorage`（key 为 `oas-back-top-pos`，宿主可清理重置）。
+
+<DemoBlock title="可拖拽">
+  <oas-back-top visible draggable tooltip="按住拖动可移动位置" bottom="620px"></oas-back-top>
 </DemoBlock>
 
 ## 挂载点
@@ -162,6 +182,7 @@ onMounted(async () => {
 | `append-to` | teleport 挂载点：CSS 选择器，连接后把组件迁移到该容器下（不设置则保持原位） | `string` | — |
 | `badge` | 角标内容：按钮右上角小徽标显示的文本/数字 | `string` | — |
 | `bottom` | 距视口底部距离 | `string` | `32px` |
+| `draggable` | 可拖拽定位：按住拖动自由移动位置（位移超过 4px 算拖拽、不触发回顶；以内算点击仍回顶）；位置持久化到 localStorage（key 为 `oas-back-top-pos`，宿主可清理重置） | `boolean` | — |
 | `duration` | 平滑滚动时长（毫秒），默认 400；0 或 `prefers-reduced-motion` 时直接跳转 | `string` | `400` |
 | `easing` | 滚动缓动函数：`linear` / `ease` / `ease-in` / `ease-out` / `ease-in-out` / `quad-*` / `cubic-*` / `quart-*` / `quint-*` / `expo-*` / `circ-*` / `back-*`，默认 `quart-out` | `string` | `quart-out` |
 | `expand` | 撑满条模式：按钮撑满视口底部全宽（内容横向居中），忽略 `position` / `bottom` / `right` 定位 | `boolean` | — |
@@ -171,7 +192,7 @@ onMounted(async () => {
 | `shape` | 按钮形状：`circle`（默认圆形）/ `square`（方角） | `string` | `circle` |
 | `show-progress` | 滚动进度环：按钮边缘显示当前滚动进度（SVG 圆环，按 `target` 容器滚动范围计算） | `boolean` | — |
 | `size` | 尺寸档位：`small`（32px）/ `medium`（默认 40px）/ `large`（48px） | `string` | `medium` |
-| `target` | 滚动目标容器：CSS 选择器；设置后监听该容器滚动并滚动回其顶部/底部（默认 window） | `string` | — |
+| `target` | 滚动目标容器：CSS 选择器；设置后监听该容器滚动并滚动回其顶部/底部；缺省时自动探测最近的滚动祖先容器（结果缓存，断开重连不清），无则监听 window | `string` | — |
 | `theme` | 主题变体：`light`（默认浅色）/ `primary`（主色填充）/ `dark`（深色底，dark 主题下自动反色保持对比） | `string` | `light` |
 | `tooltip` | 悬停提示文本：hover / 键盘聚焦时显示气泡提示 | `string` | — |
 | `transition` | 进出场过渡：`fade`（默认淡入淡出）/ `scale`（缩放）/ `none`（无过渡），`prefers-reduced-motion` 下自动停用 | `string` | `fade` |
