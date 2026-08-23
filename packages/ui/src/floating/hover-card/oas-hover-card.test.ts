@@ -93,7 +93,7 @@ describe('OASHoverCard', () => {
     expect(card(el).getAttribute('aria-hidden')).toBe('false')
   })
 
-  // —— A10 富内容插槽 ——
+  // —— 富内容插槽 ——
 
   it('slot="content" 命名插槽：富内容渲染进卡片', async () => {
     const el = new OASHoverCard()
@@ -118,7 +118,7 @@ describe('OASHoverCard', () => {
     expect(card(el).getAttribute('aria-hidden')).toBe('false')
   })
 
-  // —— A9 浮层可悬停不闪关（悬停区域 = 触发器 + 卡片）——
+  // —— 浮层可悬停不闪关（悬停区域 = 触发器 + 卡片）——
 
   it('离开触发器排队关闭，指针进入卡片取消关闭（跨间隙不闪关）', async () => {
     const el = mount({ open: '', 'close-delay': '200' })
@@ -159,7 +159,7 @@ describe('OASHoverCard', () => {
     expect(card(el).getAttribute('aria-hidden')).toBe('true')
   })
 
-  // —— A1 placement 12 向 ——
+  // —— placement 12 向 ——
 
   it('12 向 placement 全部写入 data-placement', async () => {
     const cases = [
@@ -240,7 +240,7 @@ describe('OASHoverCard', () => {
     }
   })
 
-  // —— A11 open-delay / close-delay 分离 ——
+  // —— open-delay / close-delay 分离 ——
 
   it('open-delay / close-delay 分别生效（互不干扰）', async () => {
     const el = mount({ title: 'x', 'open-delay': '400', 'close-delay': '800' })
@@ -265,7 +265,7 @@ describe('OASHoverCard', () => {
     expect(card(el).getAttribute('aria-hidden')).toBe('false')
   })
 
-  // —— A8 disabled ——
+  // —— disabled ——
 
   it('disabled：hover / focus 均不触发打开', async () => {
     const el = mount({ disabled: '', 'open-delay': '0' })
@@ -275,7 +275,7 @@ describe('OASHoverCard', () => {
     expect(card(el).getAttribute('aria-hidden')).toBe('true')
   })
 
-  // —— A12 箭头 ——
+  // —— 箭头 ——
 
   it('箭头元素存在（part=arrow + data-popper-arrow），arrow="false" 隐藏', async () => {
     const el = mount({ open: '', content: 'x', placement: 'top' })
@@ -308,7 +308,7 @@ describe('OASHoverCard', () => {
     expect(cs2.getPropertyValue('left')).toBe('calc(50% - 4px)')
   })
 
-  // —— A13 oas-open-change ——
+  // —— oas-open-change ——
 
   it('受控 open 变化派发 oas-open-change 双向', async () => {
     const el = mount({ content: 'x' })
@@ -350,7 +350,7 @@ describe('OASHoverCard', () => {
     expect(fired).toEqual([])
   })
 
-  // —— A14 role 语义修正（去 dialog）——
+  // —— role 语义修正（去 dialog）——
 
   it('无 role=dialog（屏幕阅读器不再误判为对话框）', async () => {
     const el = mount({ open: '', title: 'x' })
@@ -367,7 +367,7 @@ describe('OASHoverCard', () => {
     expect(card(el).getAttribute('aria-hidden')).toBe('false')
   })
 
-  // —— B1 方向感知动画 ——
+  // —— 方向感知动画 ——
 
   it('入场动画：样式含 fade/scale keyframes + reduced-motion 关闭', async () => {
     const el = mount({ open: '' })
@@ -392,7 +392,7 @@ describe('OASHoverCard', () => {
     expect(card(el).style.transformOrigin).toBe('left top')
   })
 
-  // —— B9 双轴偏移 ——
+  // —— 双轴偏移 ——
 
   it('offset 主轴距离', async () => {
     const el = mount({ placement: 'bottom', offset: '20' })
@@ -414,7 +414,7 @@ describe('OASHoverCard', () => {
     expect(card(el).style.left).toBe('275px')
   })
 
-  // —— B6 append-to 挂载点 ——
+  // —— append-to 挂载点 ——
 
   it('append-to：卡片移入目标容器的 portal host（独立 shadow + STYLE 保真），关闭移回、host 无孤儿', async () => {
     // 曾缺陷（P5 扫描实锤，与 popover P2 同族）：append-to 只做 absolute + 坐标换算，
@@ -476,7 +476,7 @@ describe('OASHoverCard', () => {
     expect(card(el).style.left).toBe('186px')
   })
 
-  // —— B13 碰撞细调 ——
+  // —— 碰撞细调 ——
 
   it('collision-padding 视口夹取边距', async () => {
     setViewport(800, 600)
@@ -560,7 +560,7 @@ describe('OASHoverCard', () => {
     expect(card(el).style.width).toBe('150px')
   })
 
-  // —— C11 延迟组（HoverCard.Group 语义）——
+  // —— 延迟组（HoverCard.Group 语义）——
 
   it('组内连续悬停：后一个立即打开、前一个立即关闭', async () => {
     const a = mount({ title: 'A', group: 'g1', 'open-delay': '500' })
@@ -588,7 +588,7 @@ describe('OASHoverCard', () => {
     expect(card(c).getAttribute('aria-hidden')).toBe('false')
   })
 
-  // —— C1 箭头 merge 模式（直角三角贴角共边，对齐 tooltip/popover 形态） ——
+  // —— 箭头 merge 模式（直角三角贴角共边，对齐 tooltip/popover 形态） ——
 
   /** shadow 内 STYLE 文本（空白折叠后做规则断言） */
   function mergeCss(el: OASHoverCard): string {
@@ -745,6 +745,130 @@ describe('OASHoverCard', () => {
     const arrow = card(el).querySelector<HTMLElement>('[data-popper-arrow]')!
     expect(arrow.style.left).toBe('')
     expect(arrow.style.top).toBe('')
+  })
+
+  // —— 滚动跟随默认开启（缺陷修复：仅 hide-when-detached 才挂 scroll 监听，默认锚点滚走卡片悬空）——
+
+  it('滚动后卡片仍贴锚点（scroll 重定位默认开启，sticky=partial 为默认值）', async () => {
+    const el = mount({ placement: 'bottom' })
+    await Promise.resolve()
+    stubPositionBaseline(el)
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    expect(card(el).style.top).toBe('248px') // 200+40+8
+    // 模拟滚动：锚点下移 120px → scroll 事件（rAF 节流后）重定位
+    stubRect(anchorOf(el), { left: 300, top: 320, width: 120, height: 40 })
+    window.dispatchEvent(new Event('scroll'))
+    vi.advanceTimersByTime(20)
+    expect(card(el).style.top).toBe('368px') // 320+40+8
+    // resize 同样触发重定位
+    stubRect(anchorOf(el), { left: 300, top: 120, width: 120, height: 40 })
+    window.dispatchEvent(new Event('resize'))
+    vi.advanceTimersByTime(20)
+    expect(card(el).style.top).toBe('168px') // 120+40+8
+  })
+
+  // —— sticky 三档（off / partial / always）——
+
+  it('sticky="off"：显式关闭滚动重定位（滚动后卡片不动）', async () => {
+    const el = mount({ placement: 'bottom', sticky: 'off' })
+    await Promise.resolve()
+    stubPositionBaseline(el)
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    expect(card(el).style.top).toBe('248px')
+    stubRect(anchorOf(el), { left: 300, top: 320, width: 120, height: 40 })
+    window.dispatchEvent(new Event('scroll'))
+    vi.advanceTimersByTime(20)
+    expect(card(el).style.top).toBe('248px') // 不重定位
+  })
+
+  it('sticky="always"：锚点滚出视口后卡片吸附视口边缘（贴边不消失）', async () => {
+    setViewport(800, 600)
+    const el = mount({ placement: 'top', sticky: 'always' })
+    await Promise.resolve()
+    stubRect(anchorOf(el), { left: 300, top: -200, width: 120, height: 40 })
+    stubRect(card(el), { left: 0, top: 0, width: 200, height: 100 })
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    expect(card(el).classList.contains('oas-detached')).toBe(false)
+    expect(card(el).style.top).toBe('4px') // 吸附视口顶边（collision-padding 4）
+    expect(card(el).getAttribute('data-placement')).toBe('top')
+  })
+
+  it('sticky="always" + hide-when-detached：锚点滚出仍贴边不隐藏（always 优先于脱离隐藏）', async () => {
+    setViewport(800, 600)
+    const el = mount({ placement: 'top', sticky: 'always', 'hide-when-detached': '' })
+    await Promise.resolve()
+    stubRect(anchorOf(el), { left: 300, top: -200, width: 120, height: 40 })
+    stubRect(card(el), { left: 0, top: 0, width: 200, height: 100 })
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    expect(card(el).classList.contains('oas-detached')).toBe(false)
+    expect(card(el).style.top).toBe('4px')
+  })
+
+  it('sticky=partial（默认）+ hide-when-detached：锚点滚出即隐藏（脱离隐藏语义保留）', async () => {
+    setViewport(800, 600)
+    const el = mount({ placement: 'top', 'hide-when-detached': '' })
+    await Promise.resolve()
+    stubRect(anchorOf(el), { left: 300, top: -200, width: 120, height: 40 })
+    stubRect(card(el), { left: 0, top: 0, width: 200, height: 100 })
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    expect(card(el).classList.contains('oas-detached')).toBe(true)
+  })
+
+  // —— collision-boundary 自定义碰撞边界 ——
+
+  it('collision-boundary（选择器）：视口夹取边界换成目标元素 rect（多祖先取第一个命中）', async () => {
+    setViewport(800, 600)
+    const boundary = document.createElement('div')
+    boundary.id = 'hc-cb'
+    document.body.appendChild(boundary)
+    stubRect(boundary, { left: 0, top: 0, width: 400, height: 300 })
+    const el = mount({ placement: 'bottom', 'collision-boundary': '#hc-cb' })
+    await Promise.resolve()
+    stubRect(anchorOf(el), { left: 350, top: 100, width: 100, height: 40 })
+    stubRect(card(el), { left: 0, top: 0, width: 200, height: 100 })
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    // 锚点中心 x=400 → left=300；卡片右缘 500 越出边界（400）→ 夹取到 400-200-4=196
+    // （视口 800 内本无需夹取，证明夹取边界已替换）
+    expect(card(el).style.left).toBe('196px')
+    // 纵向不受影响：bottom → top = 100+40+8 = 148
+    expect(card(el).style.top).toBe('148px')
+  })
+
+  it('collisionBoundary property 通道接受元素（与选择器通道等价）', async () => {
+    setViewport(800, 600)
+    const boundary = document.createElement('div')
+    document.body.appendChild(boundary)
+    stubRect(boundary, { left: 0, top: 0, width: 400, height: 300 })
+    const el = mount({ placement: 'bottom' })
+    await Promise.resolve()
+    el.collisionBoundary = boundary
+    stubRect(anchorOf(el), { left: 350, top: 100, width: 100, height: 40 })
+    stubRect(card(el), { left: 0, top: 0, width: 200, height: 100 })
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    expect(card(el).style.left).toBe('196px')
+  })
+
+  it('collision-boundary：翻转判定同样基于边界（边界内放不下时翻转，视口内本可放下）', async () => {
+    setViewport(800, 600)
+    const boundary = document.createElement('div')
+    boundary.id = 'hc-cb2'
+    document.body.appendChild(boundary)
+    stubRect(boundary, { left: 0, top: 0, width: 400, height: 300 })
+    const el = mount({ placement: 'bottom', 'collision-boundary': '#hc-cb2' })
+    await Promise.resolve()
+    stubRect(anchorOf(el), { left: 100, top: 240, width: 100, height: 40 }) // anchor.bottom=280
+    stubRect(card(el), { left: 0, top: 0, width: 200, height: 100 })
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    // bottom 需 280+100+8=388，边界高 300 放不下 → 翻转 top（视口 600 内 388 本可放下）
+    expect(card(el).getAttribute('data-placement')).toBe('top')
   })
 })
 

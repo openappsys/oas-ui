@@ -87,7 +87,7 @@ When the target is off-screen the tour scrolls to it (`scroll-into-view-options`
 
 ## Keyboard navigation and indicators
 
-`keyboard` (enabled by default) advances steps with ←/→; `show-bullets` renders clickable dot indicators; `show-progress` shows a top progress bar; `progress-text` is a template (`{{current}}/{{total}}`) for custom counter text; `indicators="number"` shows a numeric counter.
+`keyboard` (enabled by default) advances steps with ←/→; `show-bullets` renders clickable dot indicators; `show-progress` shows a top progress bar; `progress-text` is a template (placeholders `current`/`total`, each wrapped in double curly braces) for custom counter text; `indicators="number"` shows a numeric counter.
 
 <DemoBlock title="Keyboard + dots + progress bar">
   <oas-space>
@@ -241,6 +241,41 @@ With `dont-show-again`, checking "Don't show this again" on close remembers the 
   <div id="tour-pp1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">Mount target</div>
 </DemoBlock>
 
+## Advanced customization (dual-axis gap / arrow aiming / no auto-reposition)
+
+`gap` supports a dual-axis `offset` (`number` for all sides / `[horizontal, vertical]` array, orthogonal to `padding`); `arrow-point-at-center` keeps the arrow pointing at the target center after viewport avoidance shifts the popup; `auto-reposition="false"` disables overflow flipping and viewport avoidance (keeps the declared placement).
+
+<DemoBlock title="Dual-axis gap + arrow at center + no auto-reposition">
+  <oas-space>
+    <oas-button type="primary" onclick="document.getElementById('tour-gap2').setAttribute('open','')">Dual-axis gap offset</oas-button>
+    <oas-button onclick="document.getElementById('tour-center-arrow').setAttribute('open','')">Arrow at center</oas-button>
+    <oas-button onclick="document.getElementById('tour-noflip').setAttribute('open','')">No auto-reposition</oas-button>
+  </oas-space>
+  <oas-tour id="tour-gap2" gap='{"offset":[16,24]}' steps='[{"selector":"#tour-g1","title":"Dual-axis gap","description":"offset:[16,24]: the highlight and mask hole expand 16px horizontally / 24px vertically."}]'></oas-tour>
+  <oas-tour id="tour-center-arrow" arrow-point-at-center steps='[{"selector":"#tour-g2","title":"Arrow points to the center","description":"The target sits near the left edge; after viewport avoidance shifts the popup, the arrow still aims at the target center."}]'></oas-tour>
+  <oas-tour id="tour-noflip" auto-reposition="false" steps='[{"selector":"#tour-g3","title":"No auto-reposition","description":"auto-reposition=false: the popup keeps its declared bottom placement (the overflowing part is off-viewport), for comparison with the default auto-flip."}]'></oas-tour>
+  <div id="tour-g1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">Dual-axis gap target</div>
+  <div id="tour-g2" style="margin-top: 12px; margin-left: 24px; width: 120px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">Left-edge target</div>
+  <div id="tour-g3" style="position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); height: 56px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; background: var(--oas-color-bg)">Bottom target (viewport edge)</div>
+</DemoBlock>
+
+## Custom indicators and actions (slots)
+
+`slot="indicators"` replaces the built-in dots/number indicator (render with the `current`/`total` from the `oas-step` event); `slot="actions"` replaces the whole built-in button area with your own controls.
+
+<DemoBlock title="Custom indicators and actions">
+  <oas-button type="primary" onclick="document.getElementById('tour-slots').setAttribute('open','')">Start tour</oas-button>
+  <oas-tour id="tour-slots" show-bullets onoas-step="tourSlotsSync(event)" steps='[{"selector":"#tour-sl1","title":"Custom indicators","description":"slot=indicators replaces the built-in dots/number indicator."},{"selector":"#tour-sl2","title":"Custom actions","description":"slot=actions replaces the whole button area; custom buttons control stepping."}]'>
+    <span slot="indicators" class="tour-slots-ind">1 / 2</span>
+    <div slot="actions" style="display: flex; gap: 8px; align-items: center">
+      <oas-button size="small" onclick="tourSlotsGo(-1)">Previous</oas-button>
+      <oas-button type="primary" size="small" onclick="tourSlotsGo(1)">Next</oas-button>
+    </div>
+  </oas-tour>
+  <div id="tour-sl1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">Custom slot target 1</div>
+  <div id="tour-sl2" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">Custom slot target 2</div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -293,6 +328,19 @@ onMounted(async () => {
     el.setAttribute('steps', steps ?? '[]')
     parent?.appendChild(el)
   }
+  // Custom slots: sync the indicator text with the step; custom action buttons control stepping
+  window.tourSlotsGo = (d) => {
+    const tour = document.getElementById('tour-slots')
+    if (!tour) return
+    const cur = Number(tour.getAttribute('current') ?? '0') + d
+    tour.setAttribute('current', String(cur))
+  }
+  window.tourSlotsSync = (e) => {
+    const tour = document.getElementById('tour-slots')
+    if (!tour) return
+    const ind = tour.querySelector('[slot="indicators"]')
+    if (ind) ind.textContent = `${e.detail.current + 1} / ${e.detail.total}`
+  }
 })
 </script>
 
@@ -305,14 +353,15 @@ onMounted(async () => {
 | `advance-on-click` | Click the highlighted area to advance to the next step (interactive tour) | `boolean` | — |
 | `append-to` | Mount point: `body` or a CSS selector (moves the whole overlay into the target container) | `string` | — |
 | `arrow` | Whether to show the arrow (boolean, default true; `false` hides) | `string` | `true` |
-| `auto-reposition` | Auto reposition on scroll/resize (default true) | `string` | `true` |
+| `arrow-point-at-center` | Arrow points to the target center projection (stays accurate after viewport avoidance shifts the popup; by default the arrow sticks to the placement edge) | `boolean` | — |
+| `auto-reposition` | Auto reposition on scroll/resize + overflow flip/viewport avoidance (default true; `false` keeps the declared placement without flipping or avoidance) | `string` | `true` |
 | `close-icon` | Custom close button content (HTML string) | `string` | — |
 | `close-on-press-escape` | Close on Esc (default true) | `string` | `true` |
 | `current` | Current step index | `string` | `0` |
 | `disabled-interaction` | Disable interaction on the highlighted area (interceptor covers target) | — | — |
 | `dont-show-again` | Don't show again switch (boolean; if checked on close, remembered in localStorage) | `boolean` | — |
 | `finish-button-props` | Props passed through to the finish button (JSON object) | — | — |
-| `gap` | Highlight padding: number (padding px) or `{"padding","radius"}`; default padding 4 | `string` | — |
+| `gap` | Highlight padding: number (padding px) or `{"padding","radius","offset"}`; `offset` expands the highlight outward (number for all sides / `[horizontal, vertical]` dual-axis, orthogonal to padding); default padding 4 | `string` | — |
 | `hide-counter` | Hide the step counter | `boolean` | — |
 | `hide-next` | Hide the next button | — | — |
 | `hide-prev` | Hide the previous button | — | — |
@@ -329,7 +378,7 @@ onMounted(async () => {
 | `persist` | Multi-page tour: open/current state persisted to localStorage and restored on reconnect | `boolean` | — |
 | `placement` | Popup placement: 12 directions (top/bottom/left/right × start/end/center) + `center` (centered when no target); default `bottom`; auto-flips when space is insufficient; step-level override | `TourPlacement` | `bottom` |
 | `prev-button-props` | Props passed through to the previous button (JSON object) | — | — |
-| `progress-text` | Progress text template: `{{current}}/{{total}}` replacement; when set, the counter area uses the template | `string` | — |
+| `progress-text` | Progress text template: `current`/`total` placeholders each wrapped in double curly braces; when set, the counter area uses the template | `string` | — |
 | `scroll-into-view-options` | `scrollIntoView` options for scrolling to the target (JSON; default `{"behavior":"smooth","block":"center"}`) | `string` | — |
 | `scroll-padding` | Padding when scrolling to the target (px; applied as target scroll-margin) | — | — |
 | `show-bullets` | Dot indicators (click a dot to jump) | `boolean` | — |
@@ -364,6 +413,8 @@ onMounted(async () => {
 
 | Name | Description |
 | --- | --- |
+| `actions` | Custom action area (replaces the whole built-in button area; hides the built-in prev/skip/next buttons when present) |
 | `cover` | Step cover rich content (slot takes precedence over the step.cover image) |
+| `indicators` | Custom indicator area (render with the `oas-step` current/total; hides the built-in dots/number indicator when present) |
 
-The overlay highlights the target, `role="dialog"` + `aria-modal="true"`; supports "Previous / Next / Skip", keyboard ←/→ and Esc.
+The overlay highlights the target, `role="dialog"` + `aria-modal="true"` (downgraded to `aria-modal="false"` in non-modal form when `mask="false"`); supports "Previous / Next / Skip", keyboard ←/→ and Esc.

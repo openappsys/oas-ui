@@ -143,6 +143,39 @@ The arrow is shown by default; `arrow="false"` hides it; `arrow-point-at-center`
   </oas-space>
 </DemoBlock>
 
+## Scroll follow & stickiness
+
+Scrolling inside a scroll container repositions the card by default (`sticky=partial`); once the anchor leaves the viewport it hides per `hide-when-detached` (or clamps to the viewport edge when not enabled). `sticky="always"` pins the card to the viewport edge once the anchor scrolls out (stays visible). `sticky="off"` explicitly disables scroll repositioning.
+
+<DemoBlock title="sticky three modes (inside a scroll container)">
+  <div style="height: 220px; overflow: auto; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)">
+    <div style="height: 520px; padding: var(--oas-space-4); display: flex; gap: 16px; align-items: flex-start">
+      <oas-hover-card title="partial (default)" content="Repositions with the anchor on scroll." placement="bottom">
+        <oas-button>sticky=partial</oas-button>
+      </oas-hover-card>
+      <oas-hover-card title="always" content="Pins to the viewport edge once the anchor scrolls out." placement="bottom" sticky="always">
+        <oas-button>sticky=always</oas-button>
+      </oas-hover-card>
+      <oas-hover-card title="off" content="No repositioning on scroll." placement="bottom" sticky="off">
+        <oas-button>sticky=off</oas-button>
+      </oas-hover-card>
+    </div>
+  </div>
+</DemoBlock>
+
+## Custom collision boundary
+
+`collision-boundary`: flips and clamps against the specified element's rect instead of the viewport (first match in multi-ancestor scenes); the `collisionBoundary` property accepts an element directly.
+
+<DemoBlock title="collision-boundary (boundary container)">
+  <oas-space size="small">
+    <oas-hover-card title="Title" content="The card is clamped inside the boundary container below (not the viewport)." placement="bottom" collision-boundary="#hc-cb-box">
+      <oas-button>Hover to view</oas-button>
+    </oas-hover-card>
+  </oas-space>
+  <div id="hc-cb-box" style="position: relative; width: 320px; height: 200px; margin-top: 16px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></div>
+</DemoBlock>
+
 ## Disabled
 
 `disabled`: hover/focus no longer opens the popup (the controlled `open` attribute still works).
@@ -223,6 +256,7 @@ onMounted(() => {
 | `arrow-point-at-center` | Point the arrow at the trigger center (keeps pointing at the anchor after viewport clamping); by default the arrow stays at the panel center | `boolean` | — |
 | `auto-adjust-overflow` | Auto-adjust at viewport edges (flip/clamp), default true; `"false"` disables it and positions strictly per the declared placement (the popup may overflow the viewport) | `string` | `true` |
 | `close-delay` | Close delay in ms, separate from open-delay; falls back to the `delay` alias, then to 150 | — | — |
+| `collision-boundary` | Custom collision boundary (selector string, first match in multi-ancestor scenes; the `collisionBoundary` property accepts an element directly): flips and clamps against that element's rect instead of the viewport | `Element \| null` | — |
 | `collision-padding` | Viewport clamping padding in px, default 4 | — | — |
 | `content` | Content text | `string` | — |
 | `delay` | Show/hide delay in ms, legacy alias: applies to both open and close when `open-delay`/`close-delay` are unset; individual values win when set | — | — |
@@ -235,6 +269,7 @@ onMounted(() => {
 | `open-delay` | Open delay in ms, separate from close-delay; falls back to the `delay` alias, then to 300 | — | — |
 | `placement` | Popup placement, 12 directions: top/bottom/left/right × start/center/end (e.g. `bottom-start`) | `string` | `top` |
 | `skidding` | Cross-axis offset in px, shifts along the axis perpendicular to the main axis | — | — |
+| `sticky` | Scroll stickiness: `partial` (default) repositions with the anchor on scroll and hides per `hide-when-detached` once the anchor leaves the viewport (or clamps to the viewport edge when not enabled); `always` pins the card to the viewport edge once the anchor scrolls out (stays visible); `off` disables scroll repositioning | `string` | `partial` |
 | `title` | Title text | `string` | — |
 | `width` | Width customization: number (px) or `trigger`/`target` (same width as the trigger); falls back to CSS min-width | — | — |
 

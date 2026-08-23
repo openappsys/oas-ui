@@ -821,7 +821,7 @@ export class OASBreadcrumb extends OASElement {
     focusables[next]!.focus()
   }
 
-  // ===== C 档：结构化数据（schema.org BreadcrumbList JSON-LD） =====
+  // ===== 结构化数据（schema.org BreadcrumbList JSON-LD） =====
 
   /**
    * 向宿主 light DOM 注入 BreadcrumbList JSON-LD（SEO 结构化数据）。

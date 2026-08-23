@@ -99,7 +99,7 @@ describe('OASNavigationMenu', () => {
     document.body.innerHTML = ''
   })
 
-  // ============ A 档：大面板内容形态 ============
+  // ============ 大面板内容形态 ============
 
   it('渲染 role=navigation + aria-label；顶级触发器为 button（disclosure 模式，无 menuitem role）', () => {
     const el = mount()
@@ -166,7 +166,7 @@ describe('OASNavigationMenu', () => {
     expect(panelItems(el).some((li) => li.textContent!.includes('主题'))).toBe(true)
   })
 
-  // ============ A 档：延迟开合 ============
+  // ============ 延迟开合 ============
 
   it('hover 顶级触发器延迟打开（delay-duration 默认 200ms），未到时间不开', () => {
     vi.useFakeTimers()
@@ -232,7 +232,7 @@ describe('OASNavigationMenu', () => {
     vi.useRealTimers()
   })
 
-  // ============ A 档：受控 value + oas-change ============
+  // ============ 受控 value + oas-change ============
 
   it('value 属性受控打开面板（打开项 = value）', () => {
     const el = mount({ value: 'products' })
@@ -265,7 +265,7 @@ describe('OASNavigationMenu', () => {
     expect(viewport(el).getAttribute('data-value')).toBe('products')
   })
 
-  // ============ A 档：外部点击关闭 + Link active / aria-current ============
+  // ============ 外部点击关闭 + Link active / aria-current ============
 
   it('外部 pointerdown 关闭面板', () => {
     const el = mount({ 'delay-duration': '0' })
@@ -292,7 +292,7 @@ describe('OASNavigationMenu', () => {
     expect(link.getAttribute('aria-current')).toBe('page')
   })
 
-  // ============ B 档：Viewport / data-motion / Indicator ============
+  // ============ Viewport / data-motion / Indicator ============
 
   it('切换打开项设置面板 data-motion 方向（from-start / from-end）', () => {
     const el = mount({ 'delay-duration': '0' })
@@ -313,7 +313,7 @@ describe('OASNavigationMenu', () => {
     expect(ind.getAttribute('data-state')).toBe('open')
   })
 
-  // ============ B 档：orientation="vertical" ============
+  // ============ orientation="vertical" ============
 
   it('orientation="vertical"：bar 竖排（data-orientation + vertical class），面板右侧展开', () => {
     const el = mount({ orientation: 'vertical' })
@@ -322,7 +322,7 @@ describe('OASNavigationMenu', () => {
     expect(viewport(el).classList.contains('vertical')).toBe(true)
   })
 
-  // ============ B 档：面板内 inline 二级子导航（常开一项） ============
+  // ============ 面板内 inline 二级子导航（常开一项） ============
 
   it('面板内带 children 的项渲染 inline 二级子导航：标题 + 子链接列表', () => {
     const el = mount({ 'delay-duration': '0' })
@@ -375,7 +375,7 @@ describe('OASNavigationMenu', () => {
     expect(titles[1]!.getAttribute('aria-expanded')).toBe('true')
   })
 
-  // ============ C 档：Backdrop / keep-mounted / arrow / max-height ============
+  // ============ Backdrop / keep-mounted / arrow / max-height ============
 
   it('backdrop 属性：打开时显示遮罩，点击遮罩关闭', () => {
     const el = mount({ backdrop: '', 'delay-duration': '0' })

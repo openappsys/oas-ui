@@ -54,7 +54,7 @@
 
 - **体积基准（CI 强制）**：`pnpm perf:size`。基于 `pnpm build` 后的发布产物 dist 统计各包体积（ui 全量入口链 / cdn.js / theme / core / i18n / icons / ssr）+ button/table/form 单组件按需链（静态 import 图遍历，验证 tree-shaking 叙事），超预算非零退出；预算定档依据见 `docs/perf-baseline.md` §4，基线数据与断言结果写入 `docs/perf-baseline.json`（生成物，勿手改）。已在 `.github/workflows/ci.yml` test job 接线（build 之后）。
 - **渲染基准（本地/发布前）**：`pnpm perf:bench`。happy-dom 环境测代表性组件首渲染与增量更新耗时（100 次迭代取均值/中位数），量级断言防退化。渲染耗时波动大，**不进 CI**；发布前本地跑一遍核对。
-- **横向对比**：`docs/perf-baseline.md` §3（中性口径，参考值一律标「约」）。
+- **自评摘要**：`docs/perf-baseline.md` §3（体积/渲染对自身基线与预算的自评）。
 - **发布前核对流程**：改动组件/依赖/构建配置后，发布前依次跑 `pnpm build && pnpm perf:size && pnpm perf:bench`；超预算或渲染 p95 明显退化时，在发布说明中给出原因与后续优化计划。
 - **注意**：渲染基准用 happy-dom 合成环境（无排版/合成管线），数值只用于相对对比与退化监测，不代表真实浏览器首帧数字；如需真实基线，另用 Playwright/Lighthouse 采集。
 

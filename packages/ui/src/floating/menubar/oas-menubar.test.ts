@@ -468,7 +468,7 @@ describe('OASMenubar', () => {
   })
 })
 
-// ===== A 档：checkbox 复选项（复用 oas-menu kind=checkbox） =====
+// ===== checkbox 复选项（复用 oas-menu kind=checkbox） =====
 
 const CHECKBOX_ITEMS = JSON.stringify([
   {
@@ -485,7 +485,7 @@ const CHECKBOX_ITEMS = JSON.stringify([
   },
 ])
 
-describe('checkbox 复选项（A 档）', () => {
+describe('checkbox 复选项', () => {
   it('渲染 menuitemcheckbox + aria-checked 由 value 数组驱动', () => {
     const el = mount({ items: CHECKBOX_ITEMS, value: '["grid"]' })
     const grid = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
@@ -535,9 +535,9 @@ describe('checkbox 复选项（A 档）', () => {
   })
 })
 
-// ===== A 档：typeahead 字符定位 =====
+// ===== typeahead 字符定位 =====
 
-describe('typeahead 字符定位（A 档）', () => {
+describe('typeahead 字符定位', () => {
   it('顶级菜单行按字符跳转（startsWith）', () => {
     const el = mount()
     key(el, '编')
@@ -566,9 +566,9 @@ describe('typeahead 字符定位（A 档）', () => {
   })
 })
 
-// ===== A 档：打开项受控（open 属性 + oas-open-change） =====
+// ===== 打开项受控（open 属性 + oas-open-change） =====
 
-describe('打开项受控 open（A 档）', () => {
+describe('打开项受控 open', () => {
   it('open 列入 observedAttributes', () => {
     expect(OASMenubar.observedAttributes).toContain('open')
   })
@@ -618,9 +618,9 @@ describe('打开项受控 open（A 档）', () => {
   })
 })
 
-// ===== A 档：trigger 配置 =====
+// ===== trigger 配置 =====
 
-describe('trigger 触发方式（B 档）', () => {
+describe('trigger 触发方式', () => {
   it('trigger="hover" 保持 hover 直开（无需先点击）', () => {
     const el = mount({ trigger: 'hover' })
     topItems(el)[1]!.dispatchEvent(new MouseEvent('mouseenter'))
@@ -629,9 +629,9 @@ describe('trigger 触发方式（B 档）', () => {
   })
 })
 
-// ===== A 档：图标（顶级项 + 子项 icon） =====
+// ===== 图标（顶级项 + 子项 icon） =====
 
-describe('图标 icon（A 档）', () => {
+describe('图标 icon', () => {
   const ICON_ITEMS = JSON.stringify([
     {
       label: '文件',
@@ -649,9 +649,9 @@ describe('图标 icon（A 档）', () => {
   })
 })
 
-// ===== B 档：loop 循环开关 =====
+// ===== loop 循环开关 =====
 
-describe('loop 循环导航开关（B 档）', () => {
+describe('loop 循环导航开关', () => {
   it('loop="false"：顶级移动至边界停止不循环', () => {
     const el = mount({ loop: 'false' })
     key(el, 'ArrowLeft') // 已在 0，不循环到末尾
@@ -670,9 +670,9 @@ describe('loop 循环导航开关（B 档）', () => {
   })
 })
 
-// ===== B 档：整栏 disabled =====
+// ===== 整栏 disabled =====
 
-describe('整栏 disabled（B 档）', () => {
+describe('整栏 disabled', () => {
   const DISABLED_SHORTCUT_ITEMS = JSON.stringify([
     {
       label: '文件',
@@ -703,9 +703,9 @@ describe('整栏 disabled（B 档）', () => {
   })
 })
 
-// ===== B 档：弹出定位 side/align/offset =====
+// ===== 弹出定位 side/align/offset =====
 
-describe('弹出定位 side/align/offset（B 档）', () => {
+describe('弹出定位 side/align/offset', () => {
   function firstSub(el: OASMenubar): HTMLElement {
     return el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"][data-parent="file"]')!
   }
@@ -734,9 +734,9 @@ describe('弹出定位 side/align/offset（B 档）', () => {
   })
 })
 
-// ===== B 档：close-on-select 勾选不收起策略 =====
+// ===== close-on-select 勾选不收起策略 =====
 
-describe('close-on-select（B 档）', () => {
+describe('close-on-select', () => {
   it('缺省选中收起（桌面菜单栏共识）', () => {
     const el = mount()
     topItems(el)[0]!.click()
@@ -757,9 +757,9 @@ describe('close-on-select（B 档）', () => {
   })
 })
 
-// ===== C 档：竖排 orientation =====
+// ===== 竖排 orientation =====
 
-describe('orientation="vertical"（C 档）', () => {
+describe('orientation="vertical"', () => {
   it('bar 竖排 + 键盘上下移动顶级、右键开子菜单、左键返回', () => {
     const el = mount({ orientation: 'vertical' })
     expect(bar(el).classList.contains('vertical')).toBe(true)
@@ -774,9 +774,9 @@ describe('orientation="vertical"（C 档）', () => {
   })
 })
 
-// ===== C 档：breakpoint 移动端汉堡收纳 =====
+// ===== breakpoint 移动端汉堡收纳 =====
 
-describe('breakpoint 移动端汉堡（C 档）', () => {
+describe('breakpoint 移动端汉堡', () => {
   const origMq = window.matchMedia
   afterEach(() => {
     window.matchMedia = origMq
@@ -823,9 +823,9 @@ describe('breakpoint 移动端汉堡（C 档）', () => {
   })
 })
 
-// ===== C 档：show-arrow 与方向感知动画 =====
+// ===== show-arrow 与方向感知动画 =====
 
-describe('show-arrow 与方向感知动画（C 档）', () => {
+describe('show-arrow 与方向感知动画', () => {
   it('样式表含箭头规则、pop keyframes 与 reduced-motion 降级', () => {
     const el = mount({ 'show-arrow': '' })
     const css = el.shadowRoot!.querySelector('style')!.textContent!

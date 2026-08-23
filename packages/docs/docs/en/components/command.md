@@ -207,6 +207,21 @@ The item field `view` defines a view: selecting it renders the form/panel carrie
   </oas-space>
 </DemoBlock>
 
+## Mount container (append-to)
+
+`append-to`: the whole panel (backdrop + palette) moves into a portal host inside the target container (isolated shadow + style injection + slot bridging — `empty`/`footer`/`view-*` slot content travels with the panel), for nested transform / stacking-context scenarios.
+
+<DemoBlock title="append-to mount container">
+  <oas-space size="small">
+    <oas-button id="command-append-btn" type="primary">Open (the panel mounts into the container below)</oas-button>
+    <oas-tag id="command-append-result" type="info">Nothing selected</oas-tag>
+  </oas-space>
+  <oas-command id="command-append" append-to="#command-append-panel" hotkey="false" items='[{"label":"Open file","value":"open-file"},{"label":"Save","value":"save"}]'>
+    <span slot="footer">↑↓ navigate · ↵ select · esc close (travels with the panel)</span>
+  </oas-command>
+  <div id="command-append-panel" style="position: relative; height: 240px; margin-top: 16px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></div>
+</DemoBlock>
+
 ## Virtual scrolling
 
 `virtual` enables windowed rendering for large datasets (reuses oas-virtual-list; falls back to full rendering when groups or recents are present). This demo preloads 20,000 commands and renders only the visible window.
@@ -440,6 +455,15 @@ onMounted(() => {
     if (tag) tag.textContent = `Selected: ${e.detail.value}`
   })
 
+  // append-to mount container
+  document.getElementById('command-append-btn')?.addEventListener('click', () => {
+    document.getElementById('command-append')?.setAttribute('open', '')
+  })
+  document.getElementById('command-append')?.addEventListener('oas-select', (e) => {
+    const tag = document.getElementById('command-append-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value}`
+  })
+
   // Virtual scrolling: preload 20,000 items
   const virtualEl = document.getElementById('command-virtual')
   if (virtualEl) {
@@ -466,6 +490,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `append-to` | Mount container selector (e.g. `#panel`): the whole panel (backdrop + palette) moves into a portal host inside the target container (isolated shadow + style injection + slot bridging — empty/footer/view-* slots travel with the panel), for nested transform/stacking-context scenarios; without it the panel is fixed-positioned inside the component's own shadow | `string` | — |
 | `close-on-select` | Close the panel after selecting (default true; `false` keeps it open for consecutive actions) | `string` | — |
 | `hotkey` | Invocation shortcut combos, e.g. `ctrl+k` / `meta+shift+p` (comma-separated for multiple; supports mod/meta/ctrl/alt/shift); `false` disables the built-in listener (default `mod+k`) | `string` | `mod+k` |
 | `item-height` | Virtual row height (default `36`) | `string` | `36` |

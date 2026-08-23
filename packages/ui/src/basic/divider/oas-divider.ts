@@ -217,7 +217,7 @@ const STYLE = `
 .divider.large {
   margin: var(--oas-divider-spacing, var(--oas-space-6)) 0;
 }
-/* strong 强调文字：对齐主流库默认标题体观感（600 字重） */
+/* strong 强调文字：标题体观感（600 字重） */
 .divider.strong {
   font-weight: 600;
 }
