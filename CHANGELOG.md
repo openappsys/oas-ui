@@ -194,7 +194,7 @@
 
 ### 变更
 
-- select 多选标签默认换行自适应高度，折叠由 `max-tag-count` 显式启用（对齐通用做法）
+- select 多选标签默认换行自适应高度，折叠由 `max-tag-count` 显式启用
 - slider 补 Firefox 轨道伪元素（`::-moz-range-track/thumb`）
 - 多级子菜单视口边界翻转（menu/dropdown/context-menu/menubar，flip-left/flip-right/flip-up）
 - rate 半选改 clip-path 半黄半灰垂直分割

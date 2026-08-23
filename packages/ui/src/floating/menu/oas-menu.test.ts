@@ -955,7 +955,7 @@ describe('OASMenu loading 菜单项', () => {
 // ===== close-on-select：选中叶子项后是否收起展开的子菜单 =====
 // 缺省按形态：inline 侧边导航不收（用户需看到所在分区）、浮出（vertical/horizontal）收（展开态是临时的）；
 // 显式 close-on-select="false" 任何形态都不收、close-on-select="true" 任何形态都收；
-// kind="checkbox" 项的勾选切换永不收起（连续勾选场景，通用做法）。
+// kind="checkbox" 项的勾选切换永不收起（连续勾选场景）。
 
 describe('close-on-select 选中收起策略', () => {
   beforeEach(() => {

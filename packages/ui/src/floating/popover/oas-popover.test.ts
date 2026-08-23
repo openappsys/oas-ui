@@ -377,9 +377,9 @@ describe('OASPopover', () => {
     expect(arrow.hidden).toBe(false)
   })
 
-  // —— 箭头指向锚点中心（arrow-point-at-center，默认 false）——
+  // —— 箭头永远跟随锚点（用户实测：窄视口 clamp 后默认箭头不指宿主）——
 
-  it('arrow-point-at-center：面板被视口边缘避让偏移时，箭头仍指向锚点中心（定位差异）', () => {
+  it('箭头默认跟随锚点：面板被视口边缘 clamp 平移时，箭头仍指向锚点中心（无需 arrow-point-at-center）', () => {
     const el = mount({ open: '', placement: 'bottom' })
     const p = panelOf(el)
     stubPanelRect(p, 240, 60)
@@ -391,17 +391,11 @@ describe('OASPopover', () => {
     expect(p.style.left).toBe('4px')
     const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')!
     // happy-dom 的 stub 矩形不随 style.left 更新：把面板矩形同步为实际落位（left=4）后
-    // 触发重定位，验证箭头投影仍指向锚点中心：44 - 4 - 4 = 36
+    // 触发重定位，验证箭头投影跟随锚点中心：44 - 4 - 4 = 36
     stubRect(p, { left: 4, top: 340, width: 240, height: 60 })
     el.setAttribute('content', 'y')
-    // 默认（边缘对齐）：无内联偏移，箭头随面板居中（--arrow-x 兜底 calc(50% - 4px)）
-    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('')
-    // 开启 point-at-center：箭头指向锚点中心（面板局部 X = 44 - 4 = 40 → --arrow-x = 36px）
-    el.setAttribute('arrow-point-at-center', '')
+    // 默认（无 arrow-point-at-center）：clamp 后箭头也跟随锚点中心 → --arrow-x = 36px
     expect(arrow.style.getPropertyValue('--arrow-x')).toBe('36px')
-    // 关闭后恢复 CSS 居中
-    el.removeAttribute('arrow-point-at-center')
-    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('')
   })
 
   // —— 视口自动调整（auto-adjust-overflow，默认 true）——
@@ -706,10 +700,12 @@ describe('OASPopover 12 向箭头对准锚点（-start/-end 贴向对齐端部�
     }
   })
 
-  it('center（无后缀）placement：箭头保持 CSS 居中兜底，不写内联偏移', () => {
+  it('center（无后缀）placement：箭头跟随锚点中心（未 clamp 时计算值与 CSS 中心一致）', () => {
+    // 新契约：箭头永远跟随锚点，clamp 平移后不漂移；
+    // 未 clamp 时 bottom：锚点中心 440、面板 left=340（居中未避让）→ 440-340-4=96 = calc(50%-4px)
     const el = openWithSyncedRect('bottom')
     const arrow = panelOf(el).querySelector<HTMLElement>('[data-popper-arrow]')!
-    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('')
+    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('96px')
     expect(arrow.style.getPropertyValue('--arrow-y')).toBe('')
   })
 
