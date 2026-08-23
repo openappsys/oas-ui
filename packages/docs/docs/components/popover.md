@@ -334,7 +334,9 @@
     <oas-button size="small" onclick="event.stopPropagation(); popPointHide()">关闭</oas-button>
     <oas-tag id="pop-point-status" type="info">open: false</oas-tag>
   </oas-space>
-  <oas-popover id="pop-point" virtual virtual-x="160" virtual-y="90" placement="right" title="定点提示" content="由 virtual-x / virtual-y 指定锚点坐标，适合图表数据点提示。"></oas-popover>
+  <!-- 虚拟锚点标记：与面板同用视口坐标（fixed），打开时显示在 (160,90)，箭头对准该点 -->
+  <div id="pop-point-mark" aria-hidden="true" style="position: fixed; left: 160px; top: 90px; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--oas-color-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--oas-color-primary) 30%, transparent); pointer-events: none; z-index: 999; opacity: 0; transition: opacity 0.15s ease;"></div>
+  <oas-popover id="pop-point" virtual virtual-x="160" virtual-y="90" placement="right" title="定点提示" content="由 virtual-x / virtual-y 指定锚点坐标，箭头对准标记点，适合图表数据点提示。"></oas-popover>
 </DemoBlock>
 
 <DemoBlock title="虚拟触发（锚点元素跟随）">
@@ -408,15 +410,25 @@ onMounted(() => {
     canvas.addEventListener('mouseleave', () => virt.removeAttribute('open'))
   }
 
-  // 虚拟触发：锚点坐标定位（宿主显式指定 virtual-x/virtual-y 后打开）
+  // 虚拟触发：锚点坐标定位（宿主显式指定 virtual-x/virtual-y 后打开）；
+  // 标记点与面板同用视口坐标（fixed），「箭头对准哪里」视觉可答
   const point = document.getElementById('pop-point')
+  const pointMark = document.getElementById('pop-point-mark')
   if (point) {
     window.popPointShow = (x, y) => {
       point.setAttribute('virtual-x', String(x))
       point.setAttribute('virtual-y', String(y))
       point.setAttribute('open', '')
+      if (pointMark) {
+        pointMark.style.left = `${x}px`
+        pointMark.style.top = `${y}px`
+        pointMark.style.opacity = '1'
+      }
     }
-    window.popPointHide = () => point.removeAttribute('open')
+    window.popPointHide = () => {
+      point.removeAttribute('open')
+      if (pointMark) pointMark.style.opacity = '0'
+    }
     // oas-open-change 可见反馈：状态 tag 回显 open
     const st = document.getElementById('pop-point-status')
     point.addEventListener('oas-open-change', (e) => {
