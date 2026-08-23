@@ -75,7 +75,7 @@ const BASE_STYLE = `
 .text.code {
   font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 0.875em;
-  /* 内联代码框居中走通用做法：inline-flex 内容居中 + 行高收紧贴字形 + 对称 padding。
+  /* 内联代码框居中：inline-flex 内容居中 + 行高收紧贴字形 + 对称 padding。
      根源是中文字形走系统字体回退、与等宽字体度量不一致——flex 居中消解行盒度量差 */
   display: inline-flex;
   align-items: center;

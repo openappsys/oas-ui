@@ -937,13 +937,11 @@ export class OASPopover extends OASElement {
   }
 
   /**
-   * 箭头定位（通用做法：箭头指向锚点在面板指向边的中心投影，夹取在面板边内）。
-   * 对准锚点的三种情形：
-   * 1. arrow-point-at-center 显式开启（含面板被视口避让偏移后仍对准锚点中心）；
-   * 2. -start/-end 对齐 placement：面板边贴合锚点边、居中箭头会脱离锚点投影区间——
-   *    箭头贴向对齐端部并对准锚点中心投影（用户实测 P1：12 向箭头没对准宿主）；
-   * 3. virtual 虚拟锚点（virtual-x/y 坐标点 / virtual-anchor 元素）：箭头指向锚点本身（P6）。
-   * 其余（center 对齐 + 真实锚点）保持 CSS 居中兜底——面板居中于锚点时居中即对准。
+   * 箭头定位：箭头永远指向锚点在面板指向边的中心投影（夹取在面板边内）——面板被
+   * 视口边缘 clamp 平移后箭头仍跟随锚点，不停在面板中点。
+   * 全 placement 生效（center 未 clamp 时计算值即面板中心，与 CSS 兜底一致）；
+   * arrow-merge 除外：箭头由 CSS 钉死面板角点（直角三角贴角共边），内联偏移会让三角盒
+   * 脱离角点、破坏与面板角的共边衔接——跳过指向计算。
    * 12 向 placement 下按基向判断主轴（data-placement 前缀匹配）。
    */
   private positionArrow(anchorRect: DOMRect, placement: string): void {
@@ -953,11 +951,7 @@ export class OASPopover extends OASElement {
     arrow.style.removeProperty('--arrow-x')
     arrow.style.removeProperty('--arrow-y')
     if (!this.showArrow()) return
-    // arrow-merge（C1）：箭头由 CSS 钉死面板角点（直角三角贴角共边），内联偏移会让三角盒
-    // 脱离角点、破坏与面板角的共边衔接——跳过指向中心计算
     if (this.hasAttr('arrow-merge')) return
-    const aligned = placement.endsWith('-start') || placement.endsWith('-end')
-    if (!(this.hasAttr('arrow-point-at-center') || aligned || this.hasAttr('virtual'))) return
     const panelRect = this.panel.getBoundingClientRect()
     const clampV = (v: number, max: number): number =>
       Math.max(ARROW_PAD, Math.min(v, max))

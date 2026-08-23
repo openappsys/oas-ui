@@ -111,7 +111,7 @@ A click / hover / focus triggered popup panel that can hold a title, body text a
       <oas-button>width="280"</oas-button>
     </oas-popover>
     <oas-popover id="pop-width-trigger" title="Same as trigger" content="width=trigger: panel width equals the trigger width." placement="bottom" width="trigger">
-      <oas-button style="width: 220px">width="trigger" (trigger is 220px)</oas-button>
+      <oas-button style="width: 220px">width="trigger" (220px)</oas-button>
     </oas-popover>
     <oas-popover title="Percentage width" content="width=50%: 50% of the host width." placement="bottom" width="50%">
       <oas-button>width="50%"</oas-button>
