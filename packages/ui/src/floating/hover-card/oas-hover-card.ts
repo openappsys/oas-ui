@@ -10,24 +10,27 @@ function parsePlacement(raw: string): { base: Base; align: Align } {
   return { base: m[1] as Base, align: (m[2] ?? '') as Align }
 }
 
-/** 主轴是否有足够空间容纳浮层（gap 即 offset 距离，padding 即视口边距） */
-function fits(
-  anchor: DOMRect,
-  popup: DOMRect,
-  base: Base,
-  offset: number,
-  viewport: { width: number; height: number },
-  padding: number,
-): boolean {
+/** 碰撞边界 rect（默认视口，可换成自定义元素；原点系与页面坐标一致） */
+interface BoundaryRect {
+  left: number
+  top: number
+  right: number
+  bottom: number
+  width: number
+  height: number
+}
+
+/** 主轴是否有足够空间容纳浮层（gap 即 offset 距离，padding 即边界内边距；判定基于边界 rect 原点） */
+function fits(anchor: DOMRect, popup: DOMRect, base: Base, offset: number, boundary: BoundaryRect, padding: number): boolean {
   switch (base) {
     case 'top':
-      return anchor.top - popup.height - offset >= padding
+      return anchor.top - popup.height - offset >= boundary.top + padding
     case 'bottom':
-      return anchor.bottom + popup.height + offset <= viewport.height - padding
+      return anchor.bottom + popup.height + offset <= boundary.bottom - padding
     case 'left':
-      return anchor.left - popup.width - offset >= padding
+      return anchor.left - popup.width - offset >= boundary.left + padding
     case 'right':
-      return anchor.right + popup.width + offset <= viewport.width - padding
+      return anchor.right + popup.width + offset <= boundary.right - padding
   }
 }
 
@@ -696,10 +699,10 @@ export class OASHoverCard extends OASElement {
     if (vertical) left += skidding
     else top += skidding
 
-    // 碰撞边界夹取：collision-padding 定制边距（默认视口，可换成自定义元素 rect）
+    // 碰撞边界夹取：collision-padding 定制边距（以边界 rect 原点计算，默认视口，可换成自定义元素 rect）
     if (autoAdjust) {
-      left = Math.max(padding, Math.min(left, boundary.width - cardRect.width - padding))
-      top = Math.max(padding, Math.min(top, boundary.height - cardRect.height - padding))
+      left = Math.max(boundary.left + padding, Math.min(left, boundary.right - cardRect.width - padding))
+      top = Math.max(boundary.top + padding, Math.min(top, boundary.bottom - cardRect.height - padding))
     }
 
     const actual = actualBase + (align ? `-${align}` : '')
@@ -722,13 +725,21 @@ export class OASHoverCard extends OASElement {
    * 解析碰撞边界：property 通道元素优先，否则属性选择器（querySelector 取第一个命中，
    * 即多祖先场景的最近命中），都无则回落视口。
    */
-  private resolveBoundary(): { width: number; height: number } {
+  private resolveBoundary(): BoundaryRect {
     const el = this.collisionBoundaryEl ?? this.resolveBoundaryFromAttr()
     if (el) {
       const r = el.getBoundingClientRect()
-      return { width: r.width, height: r.height }
+      // 保留完整 rect（含原点）：边界可能在页面任意位置，丢原点会让夹取/翻转折算回视口原点系
+      return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }
     }
-    return { width: window.innerWidth, height: window.innerHeight }
+    return {
+      left: 0,
+      top: 0,
+      right: window.innerWidth,
+      bottom: window.innerHeight,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }
   }
 
   private resolveBoundaryFromAttr(): Element | null {

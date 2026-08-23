@@ -4009,6 +4009,37 @@ test('popover arrow-merge 直角三角贴角共边 8 向：直角点贴面板角
   }
 })
 
+// —— 缺陷回归：hover-card collision-boundary 坐标系 ——
+// 曾现缺陷：碰撞边界解析只取目标元素 rect 的宽高、丢原点，夹取与翻转按视口 (0,0) 原点系
+// 折算——边界位于页面中部时卡片被夹到视口左上角（完全脱离边界容器与锚点）。
+// 修复：边界解析保留完整 rect（left/top/right/bottom），fits 判定与夹取均以边界原点计算。
+test('hover-card collision-boundary：边界在页面中部时卡片被夹取在边界容器 rect 内（真实几何断言）', async ({
+  page,
+}) => {
+  await page.goto('/components/hover-card.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-hover-card[collision-boundary]')
+  const r = await page.evaluate(async () => {
+    const host = document.querySelector('oas-hover-card[collision-boundary]')!
+    ;(host.firstElementChild as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await new Promise((res) => setTimeout(res, 500))
+    const card = host.shadowRoot!.querySelector('.card') as HTMLElement
+    const box = document.querySelector('#hc-cb-box') as HTMLElement
+    const c = card.getBoundingClientRect()
+    const b = box.getBoundingClientRect()
+    return {
+      open: card.getAttribute('aria-hidden') === 'false',
+      card: { l: c.left, t: c.top, r: c.right, b: c.bottom },
+      box: { l: b.left, t: b.top, r: b.right, b: b.bottom },
+    }
+  })
+  expect(r.open).toBe(true)
+  // 卡片完整落在边界容器 rect 内（允许 0.5px 亚像素误差）
+  expect(r.card.l).toBeGreaterThanOrEqual(r.box.l - 0.5)
+  expect(r.card.r).toBeLessThanOrEqual(r.box.r + 0.5)
+  expect(r.card.t).toBeGreaterThanOrEqual(r.box.t - 0.5)
+  expect(r.card.b).toBeLessThanOrEqual(r.box.b + 0.5)
+})
+
 // —— 缺陷回归：hover-card arrow-merge 箭头形态（与 tooltip/popover merge 同款缺陷族）——
 // 曾现缺陷：arrow-merge 沿用 8×8 方块 rotate(45deg) 旋转菱形、菱心骑在面板角点上、尖端
 // 沿 45° 斜向凸出——不指向锚点，观感「怪」；且旧规则基向前缀 + 后缀匹配 + 半宽 -4px 骑角，

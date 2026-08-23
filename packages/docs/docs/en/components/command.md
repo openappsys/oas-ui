@@ -4,9 +4,9 @@ A command palette (⌘K to invoke, hotkey configurable) — search filtering, sc
 
 ## Basic usage
 
-<DemoBlock title="Basic usage (open with ⌘K / Ctrl+K)">
-  <oas-command id="command-basic" onoas-select="commandLog(event)" items='[{"label":"New file","value":"new-file","keywords":["create","file"],"group":"File"},{"label":"Open file","value":"open-file","group":"File"},{"label":"Save","value":"save","group":"File"},{"label":"Undo","value":"undo","keywords":["ctrl z"],"group":"Edit"},{"label":"Redo","value":"redo","keywords":["ctrl y"],"group":"Edit"},{"label":"Select all","value":"select-all","keywords":["select"],"group":"Edit"}]'></oas-command>
-  <oas-tag id="command-result" type="info">Press ⌘K / Ctrl+K to open the command palette, or control open externally</oas-tag>
+<DemoBlock title="Basic usage (open with ⌘J / Ctrl+J)">
+  <oas-command id="command-basic" hotkey="mod+j" onoas-select="commandLog(event)" items='[{"label":"New file","value":"new-file","keywords":["create","file"],"group":"File"},{"label":"Open file","value":"open-file","group":"File"},{"label":"Save","value":"save","group":"File"},{"label":"Undo","value":"undo","keywords":["ctrl z"],"group":"Edit"},{"label":"Redo","value":"redo","keywords":["ctrl y"],"group":"Edit"},{"label":"Select all","value":"select-all","keywords":["select"],"group":"Edit"}]'></oas-command>
+  <oas-tag id="command-result" type="info">Press ⌘J / Ctrl+J to open the command palette, or control open externally (the docs site search uses Ctrl+K, so this demo uses Ctrl+J)</oas-tag>
 </DemoBlock>
 
 ## Controlled open
@@ -219,7 +219,7 @@ The item field `view` defines a view: selecting it renders the form/panel carrie
   <oas-command id="command-append" append-to="#command-append-panel" hotkey="false" items='[{"label":"Open file","value":"open-file"},{"label":"Save","value":"save"}]'>
     <span slot="footer">↑↓ navigate · ↵ select · esc close (travels with the panel)</span>
   </oas-command>
-  <div id="command-append-panel" style="position: relative; height: 240px; margin-top: 16px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></div>
+  <div id="command-append-panel" style="position: relative; width: 100%; height: 240px; margin-top: 16px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></div>
 </DemoBlock>
 
 ## Virtual scrolling

@@ -4,9 +4,9 @@
 
 ## 基础用法
 
-<DemoBlock title="基础用法（⌘K / Ctrl+K 打开）">
-  <oas-command id="command-basic" onoas-select="commandLog(event)" items='[{"label":"新建文件","value":"new-file","keywords":["create","file"],"group":"文件"},{"label":"打开文件","value":"open-file","group":"文件"},{"label":"保存文件","value":"save","group":"文件"},{"label":"撤销","value":"undo","keywords":["ctrl z"],"group":"编辑"},{"label":"重做","value":"redo","keywords":["ctrl y"],"group":"编辑"},{"label":"全选","value":"select-all","keywords":["select"],"group":"编辑"}]'></oas-command>
-  <oas-tag id="command-result" type="info">按 ⌘K / Ctrl+K 打开命令面板，或外部控制 open</oas-tag>
+<DemoBlock title="基础用法（⌘J / Ctrl+J 打开）">
+  <oas-command id="command-basic" hotkey="mod+j" onoas-select="commandLog(event)" items='[{"label":"新建文件","value":"new-file","keywords":["create","file"],"group":"文件"},{"label":"打开文件","value":"open-file","group":"文件"},{"label":"保存文件","value":"save","group":"文件"},{"label":"撤销","value":"undo","keywords":["ctrl z"],"group":"编辑"},{"label":"重做","value":"redo","keywords":["ctrl y"],"group":"编辑"},{"label":"全选","value":"select-all","keywords":["select"],"group":"编辑"}]'></oas-command>
+  <oas-tag id="command-result" type="info">按 ⌘J / Ctrl+J 打开命令面板，或外部控制 open（文档站搜索占用 Ctrl+K，演示改用 Ctrl+J）</oas-tag>
 </DemoBlock>
 
 ## 受控打开
@@ -219,7 +219,7 @@
   <oas-command id="command-append" append-to="#command-append-panel" hotkey="false" items='[{"label":"打开文件","value":"open-file"},{"label":"保存文件","value":"save"}]'>
     <span slot="footer">↑↓ 选择 · ↵ 执行 · esc 关闭（随面板迁移）</span>
   </oas-command>
-  <div id="command-append-panel" style="position: relative; height: 240px; margin-top: 16px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></div>
+  <div id="command-append-panel" style="position: relative; width: 100%; height: 240px; margin-top: 16px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></div>
 </DemoBlock>
 
 ## 虚拟滚动
