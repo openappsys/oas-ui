@@ -870,5 +870,27 @@ describe('OASHoverCard', () => {
     // bottom 需 280+100+8=388，边界高 300 放不下 → 翻转 top（视口 600 内 388 本可放下）
     expect(card(el).getAttribute('data-placement')).toBe('top')
   })
+
+  it('collision-boundary 坐标系：边界位于页面中部时，夹取与翻转均以边界 rect 原点计算（而非视口原点）', async () => {
+    setViewport(1280, 800)
+    const boundary = document.createElement('div')
+    boundary.id = 'hc-cb-mid'
+    document.body.appendChild(boundary)
+    // 边界在页面中部（原点非 0）：真实滚动页面中的常见形态
+    stubRect(boundary, { left: 500, top: 300, width: 320, height: 200 })
+    const el = mount({ placement: 'bottom', 'collision-boundary': '#hc-cb-mid' })
+    await Promise.resolve()
+    // 锚点在边界内右半：中心 x=760
+    stubRect(anchorOf(el), { left: 710, top: 360, width: 100, height: 40 })
+    stubRect(card(el), { left: 0, top: 0, width: 200, height: 100 })
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    // 期望 left = 760 - 100 = 660；但边界右缘 820，卡片右缘 660+200=860 越界
+    // → 夹取到 820 - 200 - 4 = 616（以边界 right 为基准，而非视口宽）
+    expect(card(el).style.left).toBe('616px')
+    // 纵向：bottom → top = 360 + 40 + 8 = 408，边界底部 500 - 100 = 400 < 508 放不下 → 翻转 top
+    // 翻转后 top = 360 - 100 - 8 = 252 ≥ 边界顶 300？252 < 304 也放不下 → 仍用声明 bottom（候选耗尽），夹取到 500 - 100 - 4 = 396
+    expect(card(el).style.top).toBe('396px')
+  })
 })
 
