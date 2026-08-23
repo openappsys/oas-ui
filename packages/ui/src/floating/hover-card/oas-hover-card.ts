@@ -58,6 +58,9 @@ const STYLE = `
   padding: var(--oas-space-4);
   min-width: 200px;
   color: var(--oas-color-text-primary);
+  /* portal（append-to）时 host 为 pointer-events:none（不吞页面指针），卡片显式 auto
+     保持可悬停（跨间隙移动不闪关）；非 portal 下与默认值等价 */
+  pointer-events: auto;
   /* 入场动画：fade + scale，transform-origin 由 JS 按 placement 写入（方向感知） */
   animation: oas-hc-in 150ms var(--oas-ease-out);
 }
@@ -156,7 +159,8 @@ const STYLE = `
     裁成直角三角——直角顶点贴面板角点，两条直角边与面板角两边共线，斜边 45° 朝面板内，
     尖端从角点正交外探 8px 指向锚点侧（视觉是「面板角本身伸出的直角尖」）。
     面板有 1px 描边：箭头盒贴角边让位 1px（主轴边外 -8px 压进面板描边带、起止侧边 -1px），
-    两条直角边上的描边恰好与面板描边带共带续接，斜边不描边（clip 裁平，视觉干净）。
+    两条直角边上的描边恰好与面板描边带共带续接；斜边（汇于尖端的主要外露边）用 45°/135°
+     渐变带补 1px 法向线（斜边=盒对角线恰落渐变 50% 等值线，clip 保留内侧 1px；P3 同款修复）。
     逐向写死（不能用 ^前缀 + $='-start'/'-end' 后缀匹配——它对 12 向恒取顶角/恒写水平轴，
     top 系零错角、left-start 箭头会被拉到对侧边；且后缀规则与居中 calc 同设 left/top 时
     over-constrained，*-end 让位边被忽略、箭头留在居中位）：bottom 系悬顶边
@@ -170,7 +174,8 @@ const STYLE = `
   border: none;
   border-left: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
-  clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
+  background: linear-gradient(45deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
+   clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
 }
 .card.arrow-merge[data-placement='bottom-end'] .arrow {
   top: -8px;
@@ -180,7 +185,8 @@ const STYLE = `
   border: none;
   border-right: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
-  clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
+  background: linear-gradient(135deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
+   clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
 }
 .card.arrow-merge[data-placement='top-start'] .arrow {
   bottom: -8px;
@@ -189,7 +195,8 @@ const STYLE = `
   border: none;
   border-left: 1px solid var(--oas-color-border);
   border-top: 1px solid var(--oas-color-border);
-  clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
+  background: linear-gradient(135deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
+   clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
 }
 .card.arrow-merge[data-placement='top-end'] .arrow {
   bottom: -8px;
@@ -199,7 +206,8 @@ const STYLE = `
   border: none;
   border-right: 1px solid var(--oas-color-border);
   border-top: 1px solid var(--oas-color-border);
-  clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
+  background: linear-gradient(45deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
+   clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
 }
 .card.arrow-merge[data-placement='left-start'] .arrow {
   right: -8px;
@@ -208,7 +216,8 @@ const STYLE = `
   border: none;
   border-top: 1px solid var(--oas-color-border);
   border-left: 1px solid var(--oas-color-border);
-  clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
+  background: linear-gradient(135deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
+   clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
 }
 .card.arrow-merge[data-placement='left-end'] .arrow {
   right: -8px;
@@ -218,7 +227,8 @@ const STYLE = `
   border: none;
   border-bottom: 1px solid var(--oas-color-border);
   border-left: 1px solid var(--oas-color-border);
-  clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
+  background: linear-gradient(45deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
+   clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
 }
 .card.arrow-merge[data-placement='right-start'] .arrow {
   left: -8px;
@@ -227,7 +237,8 @@ const STYLE = `
   border: none;
   border-top: 1px solid var(--oas-color-border);
   border-right: 1px solid var(--oas-color-border);
-  clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
+  background: linear-gradient(45deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
+   clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
 }
 .card.arrow-merge[data-placement='right-end'] .arrow {
   left: -8px;
@@ -237,7 +248,8 @@ const STYLE = `
   border: none;
   border-bottom: 1px solid var(--oas-color-border);
   border-right: 1px solid var(--oas-color-border);
-  clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
+  background: linear-gradient(135deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
+   clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
 }
 .card.arrow-merge[data-placement='bottom-start'] {
   border-top-left-radius: 0;
@@ -299,9 +311,8 @@ export class OASHoverCard extends OASElement {
   private prevOpen: boolean | null = null
   /** 最近一次 open 状态变化时刻（延迟组判断「连续悬停」用） */
   private recentOpenAt = 0
-  /** append-to 容器定位上下文（提升为相对定位，关闭时还原） */
-  private appendContainer: Element | null = null
-  private appendOrigPos: string | null = null
+  /** B6 append-to：portal host 容器（目标容器内的 div + 独立 shadow，样式作用域保真） */
+  private portalHost: HTMLElement | null = null
   /** hide-when-detached 滚动监听 */
   private detachWatchOn = false
   private detachRaf = 0
@@ -345,7 +356,7 @@ export class OASHoverCard extends OASElement {
       if (this.showTimer) clearTimeout(this.showTimer)
       if (this.hideTimer) clearTimeout(this.hideTimer)
       this.unregisterGroup()
-      this.detachAppend()
+      this.destroyPortal()
       this.stopDetachedWatch()
     })
   }
@@ -527,11 +538,13 @@ export class OASHoverCard extends OASElement {
     // 显示与语义共用一个开关：关闭时 aria-hidden=true（隐藏 + 读屏忽略），
     // 打开时 aria-hidden=false（内容以普通内容暴露，无 dialog 误导语义）
     this.card.setAttribute('aria-hidden', String(!open))
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
+    // 从 this.card 查（而非 this.shadow）：portal（append-to）期间卡片在 portal host 的
+    // shadow 内，原 shadow 查询会落空
+    this.card.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
       'title',
       '',
     )
-    this.shadow.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr(
+    this.card.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr(
       'content',
       '',
     )
@@ -551,7 +564,7 @@ export class OASHoverCard extends OASElement {
       this.syncDetachedWatch(true)
     } else {
       this.card.classList.remove('oas-detached')
-      this.detachAppend()
+      this.destroyPortal()
       this.syncDetachedWatch(false)
     }
   }
@@ -575,7 +588,18 @@ export class OASHoverCard extends OASElement {
   private position(): void {
     if (!this.card || !this.anchor) return
     const anchorRect = this.anchor.getBoundingClientRect()
-    const cardRect = this.card.getBoundingClientRect()
+    // 测量宽高用布局尺寸（offset*，不受进场动画 scale 污染——P5 扫描实锤：动画中间帧把
+    // rect 宽缩小 ~5%，bottom-end 右缘对齐漂移十余 px、箭头脱离锚点）；0（无布局引擎的
+    // 测试环境 / display:none）时回落 rect
+    const rawRect = this.card.getBoundingClientRect()
+    const cardRect = {
+      left: rawRect.left,
+      top: rawRect.top,
+      right: rawRect.right,
+      bottom: rawRect.bottom,
+      width: this.card.offsetWidth || rawRect.width,
+      height: this.card.offsetHeight || rawRect.height,
+    } as DOMRect
     const viewport = { width: window.innerWidth, height: window.innerHeight }
     const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
 
@@ -677,41 +701,70 @@ export class OASHoverCard extends OASElement {
   }
 
   /**
-   * 写定位 + append-to 定位容器（B6）+ 动画原点（B1 方向感知）+ 箭头指向。
-   * append-to：卡片改为绝对定位在目标容器内（容器提升为相对定位上下文），
-   * 坐标 = 视口坐标 - 容器左上角；未设置时走 position:fixed 视口坐标。
+   * 写定位 + append-to portal（B6）+ 动画原点（B1 方向感知）+ 箭头指向。
+   * append-to（P5 修复，与 popover/tooltip 统一架构）：卡片移入目标容器内的 portal
+   * host（div + 独立 open shadow + STYLE 注入，样式作用域保真）。曾缺陷：只做
+   * absolute + 坐标换算、卡片并未移进容器——absolute 相对页面无关 positioned 祖先，
+   * 参照物全错 → 定位彻底错乱。portal 后卡片保持 fixed 视口坐标，无需换算。
    */
   private writePosition(top: number, left: number, placement: string, anchorRect: DOMRect): void {
     if (!this.card) return
-    const selector = this.getAttr('append-to')
-    const container = selector ? document.querySelector(selector) : null
-    if (container) {
-      this.card.style.position = 'absolute'
-      if (!this.appendContainer) {
-        this.appendContainer = container
-        this.appendOrigPos = (container as HTMLElement).style.position
-        ;(container as HTMLElement).style.position = 'relative'
-      }
-      const cRect = container.getBoundingClientRect()
-      this.card.style.top = `${top - cRect.top}px`
-      this.card.style.left = `${left - cRect.left}px`
-    } else {
-      this.card.style.position = ''
-      this.card.style.top = `${top}px`
-      this.card.style.left = `${left}px`
-    }
+    this.syncPortal()
+    this.card.style.top = `${top}px`
+    this.card.style.left = `${left}px`
     this.card.setAttribute('data-placement', placement)
     this.setAnimOrigin(placement)
     this.positionArrow(anchorRect, placement)
   }
 
-  /** append-to 容器还原（关闭/断开连接时） */
-  private detachAppend(): void {
-    if (!this.appendContainer) return
-    ;(this.appendContainer as HTMLElement).style.position = this.appendOrigPos ?? ''
-    this.appendContainer = null
-    this.appendOrigPos = null
-    if (this.card) this.card.style.position = ''
+  /** portal 挂载：打开且设置 append-to 时把卡片移入目标容器的 portal host（幂等复用） */
+  private syncPortal(): void {
+    const sel = this.getAttr('append-to', '').trim()
+    if (!sel || !this.card || !this.hasAttr('open')) {
+      this.destroyPortal()
+      return
+    }
+    const target = sel === 'body' ? document.body : document.querySelector(sel)
+    if (!target) {
+      this.destroyPortal()
+      return
+    }
+    if (this.portalHost && this.portalHost.parentElement === target) {
+      this.bridgeSlotContent(this.portalHost)
+      return
+    }
+    this.destroyPortal()
+    const host = document.createElement('div')
+    host.setAttribute('data-oas-hover-card-portal', '')
+    host.style.cssText =
+      'position: fixed; inset: 0; pointer-events: none; z-index: var(--oas-z-tooltip, 1080);'
+    target.appendChild(host)
+    const root = host.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${STYLE}</style>`
+    root.appendChild(this.card)
+    this.portalHost = host
+    this.bridgeSlotContent(host)
+  }
+
+  /** slot 桥接：宿主 light DOM 的 [slot=content] 节点移入 portal host light DOM（跨 host 分配不断供） */
+  private bridgeSlotContent(host: HTMLElement): void {
+    for (const n of this.querySelectorAll<HTMLElement>('[slot="content"]')) {
+      host.appendChild(n)
+    }
+  }
+
+  /** portal 拆除：卡片移回原 shadow，slot 节点移回宿主，host 移除无孤儿 */
+  private destroyPortal(): void {
+    const host = this.portalHost
+    if (!host) return
+    this.portalHost = null
+    if (this.card && host.shadowRoot?.contains(this.card)) {
+      this.shadow.appendChild(this.card)
+    }
+    for (const n of host.querySelectorAll<HTMLElement>('[slot="content"]')) {
+      this.appendChild(n)
+    }
+    host.remove()
   }
 
   /**
@@ -746,8 +799,11 @@ export class OASHoverCard extends OASElement {
   }
 
   /**
-   * 箭头交叉轴指向：arrow-point-at-center 时箭头对齐锚点中心（面板被视口避让
-   * 偏移后仍指向锚点），默认保持面板中心（CSS calc(50% - 4px) 的边缘对齐）。
+   * 箭头交叉轴指向（通用做法：箭头指向锚点在面板指向边的中心投影，夹取在面板边内）：
+   * - arrow-point-at-center 显式开启（面板被视口避让偏移后仍指向锚点中心）；
+   * - -start/-end 对齐 placement：面板边贴合锚点边、居中箭头会脱离锚点投影区间——
+   *   箭头贴向对齐端部并对准锚点中心投影（用户实测 P1 同款修复，与 popover 一致）。
+   * 其余（center 对齐）保持面板中心（CSS calc(50% - 4px) 的边缘对齐兜底）。
    * 12 向 placement 按基向前缀判断主轴。
    */
   private positionArrow(anchorRect: DOMRect, placement: string): void {
@@ -756,7 +812,8 @@ export class OASHoverCard extends OASElement {
     if (!arrow) return
     arrow.style.left = ''
     arrow.style.top = ''
-    if (!this.hasAttr('arrow-point-at-center')) return
+    const aligned = placement.endsWith('-start') || placement.endsWith('-end')
+    if (!aligned && !this.hasAttr('arrow-point-at-center')) return
     // arrow-merge（C1）：箭头由 CSS 钉死面板角点（直角三角贴角共边），内联偏移会让三角盒
     // 脱离角点、破坏与面板角的共边衔接——跳过指向中心计算
     if (this.hasAttr('arrow-merge')) return

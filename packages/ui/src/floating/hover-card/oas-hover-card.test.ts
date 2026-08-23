@@ -10,7 +10,11 @@ function mount(attrs: Record<string, string> = {}): OASHoverCard {
 }
 
 function card(el: OASHoverCard): HTMLElement {
-  return el.shadowRoot!.querySelector('[part="card"]')!
+  // append-to portal 期间卡片在 portal host 的 shadow 内，需两处查
+  return (el.shadowRoot!.querySelector('[part="card"]') ??
+    document.querySelector<HTMLElement>('[data-oas-hover-card-portal]')?.shadowRoot?.querySelector(
+      '[part="card"]',
+    ))!
 }
 
 function anchorOf(el: OASHoverCard): HTMLElement {
@@ -210,6 +214,32 @@ describe('OASHoverCard', () => {
     expect(card(el).getAttribute('data-placement')).toBe('top')
   })
 
+  it('-start/-end 8 向：箭头内联偏移指向锚点中心投影（对准宿主，不再恒居中，P1 同款修复）', async () => {
+    // stubPositionBaseline：锚点 {300,200,120,40}（中心 360,220）、卡片 200x100、gap 8：
+    //   bottom/top-start 卡片 left=300、-end 卡片 left=220；
+    //   left/right-start 卡片 top=200、-end 卡片 top=140
+    const cases: Record<string, { prop: 'left' | 'top'; value: string }> = {
+      'bottom-start': { prop: 'left', value: '56px' }, // 360-300-4
+      'bottom-end': { prop: 'left', value: '136px' }, // 360-220-4
+      'top-start': { prop: 'left', value: '56px' },
+      'top-end': { prop: 'left', value: '136px' },
+      'left-start': { prop: 'top', value: '16px' }, // 220-200-4
+      'left-end': { prop: 'top', value: '76px' }, // 220-140-4
+      'right-start': { prop: 'top', value: '16px' },
+      'right-end': { prop: 'top', value: '76px' },
+    }
+    for (const [placement, { prop, value }] of Object.entries(cases)) {
+      const el = mount({ placement })
+      await Promise.resolve()
+      stubPositionBaseline(el)
+      setViewport(1280, 800)
+      el.setAttribute('open', '')
+      await Promise.resolve()
+      const arrow = card(el).querySelector<HTMLElement>('[data-popper-arrow]')!
+      expect(arrow.style[prop], `${placement} 箭头应指向锚点中心投影（${prop}=${value}）`).toBe(value)
+    }
+  })
+
   // —— A11 open-delay / close-delay 分离 ——
 
   it('open-delay / close-delay 分别生效（互不干扰）', async () => {
@@ -269,8 +299,13 @@ describe('OASHoverCard', () => {
     const cs = window.getComputedStyle(card(el).querySelector<HTMLElement>('[data-popper-arrow]')!)
     // bottom 系 → 箭头悬面板顶边
     expect(cs.getPropertyValue('top')).toBe('-4px')
-    // 中心对齐（无 arrow-point-at-center）：left 走 calc 居中
-    expect(cs.getPropertyValue('left')).toBe('calc(50% - 4px)')
+    // -start 对齐：箭头内联偏移指向锚点中心投影（对准宿主）；
+    // center 对齐（无 arrow-point-at-center）走 calc 居中兜底
+    expect(cs.getPropertyValue('left')).toBe('56px') // 360 - 300 - 4
+    el.setAttribute('placement', 'bottom')
+    await Promise.resolve()
+    const cs2 = window.getComputedStyle(card(el).querySelector<HTMLElement>('[data-popper-arrow]')!)
+    expect(cs2.getPropertyValue('left')).toBe('calc(50% - 4px)')
   })
 
   // —— A13 oas-open-change ——
@@ -379,21 +414,66 @@ describe('OASHoverCard', () => {
     expect(card(el).style.left).toBe('275px')
   })
 
-  // —— B6 append-to 挂载点/定位容器 ——
+  // —— B6 append-to 挂载点 ——
 
-  it('append-to：卡片改为绝对定位在容器内，容器提升为定位上下文', async () => {
+  it('append-to：卡片移入目标容器的 portal host（独立 shadow + STYLE 保真），关闭移回、host 无孤儿', async () => {
+    // 曾缺陷（P5 扫描实锤，与 popover P2 同族）：append-to 只做 absolute + 坐标换算，
+    // 卡片并未移进容器——absolute 相对的是页面无关 positioned 祖先，top - cRect.top
+    // 参照物全错 → 定位彻底错乱（实测卡片跑到视口外 -2591px）
     const target = document.createElement('div')
     target.id = 'hc-target'
     document.body.appendChild(target)
     const el = mount({ open: '', 'append-to': '#hc-target' })
     await Promise.resolve()
-    expect(target.style.position).toBe('relative')
-    expect(card(el).style.position).toBe('absolute')
-    // 关闭后恢复 fixed + 容器还原
+    const host = target.querySelector<HTMLElement>('[data-oas-hover-card-portal]')
+    expect(host).not.toBeNull()
+    expect(host!.shadowRoot!.contains(card(el))).toBe(true)
+    // 样式作用域保真：portal shadow 内注入同一份 STYLE
+    expect(host!.shadowRoot!.querySelector('style')!.textContent).toContain('.card')
+    expect(el.shadowRoot!.contains(card(el))).toBe(false)
+    // 关闭：卡片移回原 shadow，host 移除
     el.removeAttribute('open')
     await Promise.resolve()
-    expect(card(el).style.position).toBe('')
-    expect(target.style.position).toBe('')
+    expect(el.shadowRoot!.contains(card(el))).toBe(true)
+    expect(target.querySelector('[data-oas-hover-card-portal]')).toBeNull()
+  })
+
+  it('append-to + slot 富内容：slotted 节点桥接到 portal host light DOM（跨 host 分配不断供）', async () => {
+    const target = document.createElement('div')
+    target.id = 'hc-target-2'
+    document.body.appendChild(target)
+    const el = mount({ open: '', 'append-to': '#hc-target-2' })
+    await Promise.resolve()
+    const rich = document.createElement('b')
+    rich.setAttribute('slot', 'content')
+    rich.textContent = '富内容'
+    el.appendChild(rich)
+    el.setAttribute('content', 'y') // 触发 update 桥接后加节点
+    await Promise.resolve()
+    const host = target.querySelector<HTMLElement>('[data-oas-hover-card-portal]')!
+    expect(host.contains(rich)).toBe(true)
+    const slot = card(el).querySelector('slot[name="content"]') as HTMLSlotElement
+    expect(slot.assignedNodes()).toContain(rich)
+    el.removeAttribute('open')
+    await Promise.resolve()
+    expect(el.contains(rich)).toBe(true)
+  })
+
+  it('定位测量用布局尺寸（offsetWidth/offsetHeight）：进场动画 scale 不污染 bottom-end 右缘对齐', async () => {
+    // 曾缺陷（P5 扫描实锤）：position() 用 getBoundingClientRect 测宽，进场动画
+    // scale(0.95) 中间帧把宽缩小 ~5% → bottom-end 面板右缘对齐漂移十余 px、箭头脱离锚点
+    setViewport(1280, 800)
+    const el = mount({ placement: 'bottom-end' })
+    await Promise.resolve()
+    stubRect(anchorOf(el), { left: 300, top: 200, width: 120, height: 40 }) // 锚点右缘 420
+    // rect 被动画污染（宽 234*0.95≈222），offsetWidth/Height 提供真实布局尺寸
+    stubRect(card(el), { left: 0, top: 0, width: 222.3, height: 95 })
+    Object.defineProperty(card(el), 'offsetWidth', { value: 234, configurable: true })
+    Object.defineProperty(card(el), 'offsetHeight', { value: 100, configurable: true })
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    // 右缘对齐用布局宽：420 - 234 = 186（污染宽会得 197.7，右缘漂 11.7px）
+    expect(card(el).style.left).toBe('186px')
   })
 
   // —— B13 碰撞细调 ——
@@ -553,24 +633,28 @@ describe('OASHoverCard', () => {
     }
   })
 
-  it('arrow-merge 直角三角贴角共边：8 向箭头盒整悬面板外、transform none、描边仅直角两边、clip-path 直角三角', () => {
+  it('arrow-merge 直角三角贴角共边：8 向箭头盒整悬面板外、transform none、描边覆盖汇于尖端的两条边（直角边 + 斜边渐变）', () => {
     const css = mergeCss(mount())
     const B = '1px solid var(--oas-color-border)'
     // 盒定位：主轴边外 -8px（压进面板描边带 1px 共带）、起止侧边 -1px（描边带对齐，
     // -end 向显式 left/top: auto 解除与居中 calc 的 over-constrained——否则让位边被忽略）；
-    // 不旋转 + 描边只留两条直角边（斜边 clip 裁平不描边）+ clip-path 直角三角
+    // 不旋转 + 描边策略（P3 同款修复）：直角边用 border（与面板描边共带续接）、
+    // 斜边（汇于尖端的主要外露边）用 45°/135° 渐变带补 1px 法向线（斜边=盒对角线，
+    // 恰落渐变 50% 等值线，clip 保留内侧 1px）+ clip-path 直角三角
+    const grad = (angle: number) =>
+      `linear-gradient(${angle}deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px))`
     const rules: Record<string, string> = {
-      'bottom-start': `top: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-bottom: ${B}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
-      'bottom-end': `top: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-bottom: ${B}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
-      'top-start': `bottom: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-top: ${B}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
-      'top-end': `bottom: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-top: ${B}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
-      'left-start': `right: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-left: ${B}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
-      'left-end': `right: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-left: ${B}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
-      'right-start': `left: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-right: ${B}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
-      'right-end': `left: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-right: ${B}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
+      'bottom-start': `top: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-bottom: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
+      'bottom-end': `top: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-bottom: ${B}; background: ${grad(135)}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
+      'top-start': `bottom: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-top: ${B}; background: ${grad(135)}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
+      'top-end': `bottom: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-top: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
+      'left-start': `right: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-left: ${B}; background: ${grad(135)}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
+      'left-end': `right: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-left: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
+      'right-start': `left: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-right: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
+      'right-end': `left: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-right: ${B}; background: ${grad(135)}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
     }
     for (const [p, decl] of Object.entries(rules)) {
-      expect(css, `merge ${p} 箭头应为直角三角贴角共边`).toContain(
+      expect(css, `merge ${p} 箭头应为直角三角贴角共边（斜边渐变描边）`).toContain(
         `.card.arrow-merge[data-placement='${p}'] .arrow { ${decl} }`,
       )
     }

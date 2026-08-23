@@ -659,6 +659,104 @@ describe('OASPopover 12 向 placement', () => {
   })
 })
 
+describe('OASPopover 12 向箭头对准锚点（-start/-end 贴向对齐端部并指向锚点）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => unmountAll())
+
+  /** mountOpen 打开（面板 200x100、锚点 {400,300,80,32}、视口 1280x800）后，
+   *  把面板 stub rect 同步为实际落位再触发一次重定位——positionArrow 读面板
+   *  getBoundingClientRect 计算箭头局部坐标（真实浏览器由强制布局保证同步） */
+  function openWithSyncedRect(placement: string, extra: Record<string, string> = {}): OASPopover {
+    const el = mountOpen({ placement, ...extra })
+    const p = panelOf(el)
+    stubRect(p, {
+      left: parseFloat(p.style.left),
+      top: parseFloat(p.style.top),
+      width: 200,
+      height: 100,
+    })
+    el.setAttribute('content', 'sync') // 触发重定位（箭头用同步后的面板 rect 计算）
+    return el
+  }
+
+  it('-start/-end 8 向：箭头内联偏移指向锚点中心投影（对准宿主，不再恒居中）', () => {
+    // mountOpen 基准：锚点 {400,300,80,32}（中心 440,316）；面板 200x100：
+    //   bottom/top-start 面板 left=400、-end 面板 left=280；
+    //   left/right-start 面板 top=300、-end 面板 top=232
+    const cases: Record<string, { prop: string; value: string }> = {
+      'bottom-start': { prop: '--arrow-x', value: '36px' }, // 440-400-4
+      'bottom-end': { prop: '--arrow-x', value: '156px' }, // 440-280-4
+      'top-start': { prop: '--arrow-x', value: '36px' },
+      'top-end': { prop: '--arrow-x', value: '156px' },
+      'left-start': { prop: '--arrow-y', value: '12px' }, // 316-300-4
+      'left-end': { prop: '--arrow-y', value: '80px' }, // 316-232-4
+      'right-start': { prop: '--arrow-y', value: '12px' },
+      'right-end': { prop: '--arrow-y', value: '80px' },
+    }
+    for (const [placement, { prop, value }] of Object.entries(cases)) {
+      const el = openWithSyncedRect(placement)
+      const arrow = panelOf(el).querySelector<HTMLElement>('[data-popper-arrow]')!
+      expect(
+        arrow.style.getPropertyValue(prop),
+        `${placement} 箭头应指向锚点中心投影（${prop}=${value}）`,
+      ).toBe(value)
+    }
+  })
+
+  it('center（无后缀）placement：箭头保持 CSS 居中兜底，不写内联偏移', () => {
+    const el = openWithSyncedRect('bottom')
+    const arrow = panelOf(el).querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('')
+    expect(arrow.style.getPropertyValue('--arrow-y')).toBe('')
+  })
+
+  it('锚点中心投影越出面板边时箭头夹取（clamp 到面板内不越界）', () => {
+    const el = mount({ placement: 'bottom-start' })
+    stubRect(el.querySelector('button')!, { left: 400, top: 300, width: 400, height: 32 }) // 锚点比面板宽
+    stubPanelRect(panelOf(el), 200, 100)
+    setViewport(1280, 800)
+    el.setAttribute('open', '')
+    const p = panelOf(el)
+    stubRect(p, { left: parseFloat(p.style.left), top: parseFloat(p.style.top), width: 200, height: 100 })
+    el.setAttribute('content', 'sync')
+    // 面板 [400,600]、锚点中心 X=600 → 裸算 196 超过 200-8-8=184 → 夹取 184
+    const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('184px')
+  })
+
+  it('virtual 坐标点：箭头指向虚拟锚点坐标（P6 定夺：箭头对准点本身）', () => {
+    const el = mount({ virtual: '', 'virtual-x': '160', 'virtual-y': '90', placement: 'right' })
+    const p = panelOf(el)
+    stubPanelRect(p, 200, 60)
+    setViewport(1280, 800)
+    el.setAttribute('open', '')
+    stubRect(p, { left: parseFloat(p.style.left), top: parseFloat(p.style.top), width: 200, height: 60 })
+    el.setAttribute('content', 'sync')
+    // 面板 top = 90-30 = 60；箭头 y = 90 - 60 - 4 = 26px
+    const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow.style.getPropertyValue('--arrow-y')).toBe('26px')
+  })
+
+  it('virtual 点近视口缘翻转后：箭头仍指向虚拟点（避让偏移不失准）', () => {
+    const el = mount({ virtual: '', 'virtual-x': '1200', 'virtual-y': '200', placement: 'right' })
+    const p = panelOf(el)
+    stubPanelRect(p, 200, 60)
+    setViewport(1280, 800)
+    el.setAttribute('open', '')
+    expect(p.getAttribute('data-placement')).toBe('left') // 翻转
+    stubRect(p, { left: parseFloat(p.style.left), top: parseFloat(p.style.top), width: 200, height: 60 })
+    el.setAttribute('content', 'sync')
+    // 翻转 left：面板 left = 1200-200-8 = 992、箭头 x = 1200 - 992 - 4 = 204 > 184 → 夹 184？
+    // 等等——翻转后箭头悬面板右边（right 系基向 left → ^='left' 悬 right 边），--arrow-y 才是交叉轴：
+    // left 基向是垂直交叉轴 → 箭头 y = 200 - 170 - 4 = 26px
+    const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow.style.getPropertyValue('--arrow-y')).toBe('26px')
+  })
+})
+
 describe('OASPopover 宽度（width）与偏移（offset 双轴）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -814,41 +912,94 @@ describe('OASPopover portal（append-to）', () => {
 
   afterEach(() => unmountAll())
 
-  /** 面板可能被 portal 出 shadow（append-to），需在 shadow 与 body 两处查 */
+  /** body 上的 portal host（每实例一个，data-oas-popover-portal 标记） */
+  function portalHostOf(): HTMLElement | null {
+    return document.querySelector<HTMLElement>('[data-oas-popover-portal]')
+  }
+
+  /** 面板可能被 portal 出 shadow（append-to），需在原 shadow 与 portal host shadow 两处查 */
   function panelAnywhere(el: OASPopover): HTMLElement {
     return (el.shadowRoot!.querySelector('[part="panel"]') ??
+      portalHostOf()?.shadowRoot?.querySelector('[part="panel"]') ??
       document.body.querySelector('[part="panel"]')) as HTMLElement
   }
 
-  it('append-to="body"：打开时面板移入 body，关闭移回 shadow', () => {
+  it('append-to="body"：面板移入 body 的 portal host（独立 shadow + STYLE 注入保真），关闭移回 shadow、host 无孤儿', () => {
+    // 曾缺陷（P2）：裸 appendChild 到 body——面板脱离 shadow 树后 scoped CSS 全部失效
+    // （position:fixed / 背景 / 边框 / 圆角丢失），以 static 掉到文档流末尾且随滚动乱飘
     const el = mount({ open: '', 'append-to': 'body' })
     const p = panelAnywhere(el)
-    expect(document.body.contains(p)).toBe(true)
+    const host = portalHostOf()
+    expect(host).not.toBeNull()
+    expect(document.body.contains(host!)).toBe(true)
+    expect(host!.shadowRoot!.contains(p)).toBe(true)
     expect(el.shadowRoot!.contains(p)).toBe(false)
+    // 样式作用域保真：portal shadow 内注入同一份 STYLE
+    const st = host!.shadowRoot!.querySelector('style')
+    expect(st).not.toBeNull()
+    expect(st!.textContent).toContain('.panel')
+    // 关闭：面板移回原 shadow，host 从 body 移除（无孤儿产物）
     el.removeAttribute('open')
     expect(el.shadowRoot!.contains(p)).toBe(true)
+    expect(portalHostOf()).toBeNull()
   })
 
-  it('append-to 选择器：面板移入指定容器', () => {
+  it('append-to 选择器：portal host 挂到指定容器', () => {
     const port = document.createElement('div')
     port.id = 'pop-port'
     document.body.appendChild(port)
     const el = mount({ open: '', 'append-to': '#pop-port' })
-    expect(port.contains(panelAnywhere(el))).toBe(true)
+    const host = port.querySelector<HTMLElement>('[data-oas-popover-portal]')
+    expect(host).not.toBeNull()
+    expect(host!.shadowRoot!.contains(panelAnywhere(el))).toBe(true)
   })
 
-  it('append-to：面板移入 body 后点击面板内部不触发外部点击关闭', () => {
+  it('append-to：slot 内容桥接——slotted 节点随面板移入 portal host light DOM（跨 host 分配不断供），关闭移回宿主', () => {
+    const el = mount({ open: '', 'append-to': 'body' })
+    const inner = document.createElement('button')
+    inner.setAttribute('slot', 'content')
+    inner.textContent = '面板按钮'
+    el.appendChild(inner)
+    el.setAttribute('content', 'x') // 触发 update（后加的 slot 节点也要桥接）
+    const host = portalHostOf()!
+    expect(host.contains(inner)).toBe(true)
+    // slot 分配生效：面板内 slot 的 assignedNodes 含桥接节点
+    const slot = panelAnywhere(el).querySelector('slot[name="content"]') as HTMLSlotElement
+    expect(slot.assignedNodes()).toContain(inner)
+    el.removeAttribute('open')
+    expect(el.contains(inner)).toBe(true)
+  })
+
+  it('append-to：portal 后点击面板内部不触发外部点击关闭', () => {
     const el = mount({ open: '', 'append-to': 'body' })
     const p = panelAnywhere(el)
     p.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(el.hasAttribute('open')).toBe(true)
   })
 
-  it('append-to：断开连接时面板不残留于 body（孤儿防御）', () => {
+  it('append-to：断开连接时面板与 slot 节点移回、portal host 不残留于 body（孤儿防御）', () => {
     const el = mount({ open: '', 'append-to': 'body' })
+    const inner = document.createElement('button')
+    inner.setAttribute('slot', 'content')
+    el.appendChild(inner)
+    el.setAttribute('content', 'x')
     const p = panelAnywhere(el)
     el.remove()
     expect(document.body.contains(p)).toBe(false)
+    expect(portalHostOf()).toBeNull()
+    expect(el.contains(inner)).toBe(true)
+    expect(el.shadowRoot!.contains(p)).toBe(true)
+  })
+
+  it('append-to + modal：portal host z 序高于遮罩层（面板抬到遮罩之上）', () => {
+    const el = mount({ open: '', 'append-to': 'body', modal: '' })
+    const host = portalHostOf()!
+    expect(host.style.zIndex).toContain('--oas-z-overlay')
+    const plain = mount({ open: '', 'append-to': 'body' })
+    const hosts = document.querySelectorAll('[data-oas-popover-portal]')
+    const plainHost = hosts[hosts.length - 1] as HTMLElement
+    expect(plainHost.style.zIndex).toContain('--oas-z-dropdown')
+    expect(plain).toBeTruthy()
   })
 })
 
@@ -956,6 +1107,17 @@ describe('OASPopover 关闭按钮与声明式关层', () => {
     btn.click()
     expect(el.hasAttribute('open')).toBe(false)
     expect(document.activeElement).toBe(trigger)
+  })
+
+  it('closable：面板挂 oas-closable 类（CSS .panel.oas-closable .close-btn 显示规则的钩子，右上角 ✕ 可见）', () => {
+    // 回归点：close-btn 默认 display:none，可见性由 `.panel.oas-closable .close-btn` 驱动；
+    // 曾缺陷——CSS 有该规则但无人给面板挂类，✕ 永不显示（hidden 移除了也看不见）
+    const el = mount({ open: '', closable: '', title: 'x' })
+    expect(panelOf(el).classList.contains('oas-closable')).toBe(true)
+    el.removeAttribute('closable')
+    expect(panelOf(el).classList.contains('oas-closable')).toBe(false)
+    el.setAttribute('closable', '')
+    expect(panelOf(el).classList.contains('oas-closable')).toBe(true)
   })
 
   it('无 closable：关闭按钮隐藏', () => {
@@ -1182,23 +1344,28 @@ describe('OASPopover fresh / auto-close / arrow-merge', () => {
     }
   })
 
-  it('arrow-merge 直角三角贴角共边：8 向箭头盒整悬面板外、transform none、描边仅直角两边、clip-path 直角三角', () => {
+  it('arrow-merge 直角三角贴角共边：8 向箭头盒整悬面板外、transform none、描边覆盖汇于尖端的两条边（直角边 + 斜边）', () => {
     const css = mergeCss(mount())
     const B = '1px solid var(--pop-border)'
     // 盒定位：主轴边外 -8px（压进面板描边带 1px 共带）、起止侧边 -1px（描边带对齐）；
-    // 不旋转 + 描边只留两条直角边（斜边 clip 裁平不描边）+ clip-path 直角三角
+    // 不旋转 + 描边策略（用户实测 P3 修复）：直角边（贴面板边、与面板描边共带续接）用 border；
+    // 斜边（汇于尖端的主要外露边）用 45°/135° 渐变带补 1px 法向线——斜边精确落在渐变 50%
+    // 等值线上（盒对角线上），clip 保留三角内侧 1px。曾缺陷：斜边不描边导致箭头尖端轮廓缺失、
+    // 观感是「无轮廓的白色补丁」而非箭头
+    const grad = (angle: number) =>
+      `linear-gradient(${angle}deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px))`
     const rules: Record<string, string> = {
-      'bottom-start': `top: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-bottom: ${B}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
-      'bottom-end': `top: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-bottom: ${B}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
-      'top-start': `bottom: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-top: ${B}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
-      'top-end': `bottom: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-top: ${B}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
-      'left-start': `right: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-left: ${B}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
-      'left-end': `right: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-left: ${B}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
-      'right-start': `left: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-right: ${B}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
-      'right-end': `left: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-right: ${B}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
+      'bottom-start': `top: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-bottom: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
+      'bottom-end': `top: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-bottom: ${B}; background: ${grad(135)}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
+      'top-start': `bottom: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-top: ${B}; background: ${grad(135)}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
+      'top-end': `bottom: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-top: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
+      'left-start': `right: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-left: ${B}; background: ${grad(135)}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
+      'left-end': `right: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-left: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
+      'right-start': `left: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-right: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
+      'right-end': `left: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-right: ${B}; background: ${grad(135)}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
     }
     for (const [p, decl] of Object.entries(rules)) {
-      expect(css, `merge ${p} 箭头应为直角三角贴角共边`).toContain(
+      expect(css, `merge ${p} 箭头应为直角三角贴角共边（斜边渐变描边）`).toContain(
         `.panel[data-placement='${p}'][data-arrow-merge] .arrow { ${decl} }`,
       )
     }
@@ -1207,6 +1374,33 @@ describe('OASPopover fresh / auto-close / arrow-merge', () => {
     expect(css).not.toMatch(/\[data-placement\^='top'\]\[data-arrow-merge\] \.arrow/)
     expect(css).not.toMatch(/\[data-placement\^='left'\]\[data-arrow-merge\] \.arrow/)
     expect(css).not.toMatch(/\[data-placement\^='right'\]\[data-arrow-merge\] \.arrow/)
+  })
+
+  it('arrow-merge 斜边渐变角度几何：斜边精确落渐变 50% 等值线（45° 斜边配 45deg、反斜配 135deg）', () => {
+    // 盒 8x8：斜边 (0%,0%)→(100%,100%)（主对角线）时轴 (1,-1)=45deg 命中；
+    // 斜边 (100%,0%)→(0%,100%)（反对角线）时轴 (1,1)=135deg 命中。
+    // 45/135deg 渐变的 gradient line 沿对角方向、长度 8√2，斜边恰在 50% 处（垂直于轴）
+    const diagonalOf: Record<string, 'main' | 'anti'> = {
+      'bottom-start': 'main',
+      'bottom-end': 'anti',
+      'top-start': 'anti',
+      'top-end': 'main',
+      'left-start': 'anti',
+      'left-end': 'main',
+      'right-start': 'main',
+      'right-end': 'anti',
+    }
+    const css = mergeCss(mount())
+    for (const [p, diag] of Object.entries(diagonalOf)) {
+      const angle = diag === 'main' ? 45 : 135
+      const m = css.match(
+        new RegExp(
+          `\\.panel\\[data-placement='${p}'\\]\\[data-arrow-merge\\] \\.arrow \\{ [^}]*background: linear-gradient\\((\\d+)deg`,
+        ),
+      )
+      expect(m, `merge ${p} 应有斜边渐变`).not.toBeNull()
+      expect(Number(m![1]), `merge ${p} 斜边 ${diag} 对角线应配 ${angle}deg 渐变`).toBe(angle)
+    }
   })
 
   it('arrow-merge 8 向三角几何：直角顶点贴面板角、两直角边与角两边共线、尖端正交外探 8px 指向锚点侧', () => {

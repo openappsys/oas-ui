@@ -991,6 +991,27 @@ describe('OAStooltip', () => {
     expect(document.body.querySelector('[data-oas-tooltip-portal]')).toBeNull()
   })
 
+  it('append-to + slot 富内容：slotted 节点桥接到 portal host light DOM（跨 host 分配不断供），拆除移回宿主', async () => {
+    // 曾缺陷（与 popover P2 同族）：tip 移入 portal shadow 后，宿主 light DOM 的
+    // [slot=content] 节点分配不到（slot 分配只看直接 host）→ 富内容在 portal 下不显示
+    const el = mount({ open: '', content: 'x', 'append-to': 'body' })
+    const rich = document.createElement('b')
+    rich.setAttribute('slot', 'content')
+    rich.textContent = '富内容'
+    el.appendChild(rich)
+    el.setAttribute('content', 'y') // 触发 update → ensurePortal 桥接后加的 slot 节点
+    await Promise.resolve()
+    const host = document.body.querySelector<HTMLElement>('[data-oas-tooltip-portal]')!
+    expect(host.contains(rich)).toBe(true)
+    const t = host.shadowRoot!.querySelector('[part="tip"]')!
+    const slot = t.querySelector('slot[name="content"]') as HTMLSlotElement
+    expect(slot.assignedNodes()).toContain(rich)
+    // 拆除（动态移除 append-to）：节点移回宿主
+    el.removeAttribute('append-to')
+    await Promise.resolve()
+    expect(el.contains(rich)).toBe(true)
+  })
+
   // ================= B9 双轴偏移 offset / skidding =================
 
   it('offset="16"：主轴距离 16px（默认 8）', async () => {

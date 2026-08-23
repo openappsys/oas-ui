@@ -47,6 +47,9 @@ const STYLE = `
   min-width: 200px;
   color: var(--oas-color-text-primary);
   outline: none;
+  /* portal（append-to）时 host 为 pointer-events:none（不吞页面指针），
+     面板显式 auto 保持可交互；非 portal 下与默认值等价 */
+  pointer-events: auto;
 }
 .panel[aria-hidden='true'] {
   display: none;
@@ -217,92 +220,105 @@ const STYLE = `
   border-left: 1px solid var(--pop-border);
   border-bottom: 1px solid var(--pop-border);
 }
-/* arrow-merge（C1）：直角三角与面板角共边融合（通用形态，仅 *-start/*-end 生效，
-    center placement 不触发）。箭头为不旋转的 8px 方块整悬面板外、贴齐角两边，clip-path
-    裁成直角三角——直角顶点贴面板角点，两条直角边与面板角两边共线，斜边 45° 朝面板内，
-    尖端从角点正交外探 8px 指向锚点侧（视觉是「面板角本身伸出的直角尖」）。
-    面板有 1px 描边：箭头盒贴角边让位 1px（主轴边外 -8px 压进面板描边带、起止侧边 -1px），
-    两条直角边上的描边（--pop-border）恰好与面板描边带共带续接，斜边不描边（clip 裁平，
-    视觉干净）。逐向写死（不能用 $='-start'/'-end' 后缀匹配——它对 12 向恒取顶角/恒写
-    水平轴，见 tooltip 同款教训）：bottom 系悬顶边（start→左上角、end→右上角）、top 系
-    悬底边（start→左下角、end→右下角）、left 系悬右边（start→右上角、end→右下角）、
-    right 系悬左边（start→左上角、end→左下角） */
-.panel[data-placement='bottom-start'][data-arrow-merge] .arrow {
-  top: -8px;
-  left: -1px;
-  transform: none;
-  border: none;
-  border-left: 1px solid var(--pop-border);
-  border-bottom: 1px solid var(--pop-border);
-  clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
-}
-.panel[data-placement='bottom-end'][data-arrow-merge] .arrow {
-  top: -8px;
-  right: -1px;
-  left: auto;
-  transform: none;
-  border: none;
-  border-right: 1px solid var(--pop-border);
-  border-bottom: 1px solid var(--pop-border);
-  clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
-}
-.panel[data-placement='top-start'][data-arrow-merge] .arrow {
-  bottom: -8px;
-  left: -1px;
-  transform: none;
-  border: none;
-  border-left: 1px solid var(--pop-border);
-  border-top: 1px solid var(--pop-border);
-  clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
-}
-.panel[data-placement='top-end'][data-arrow-merge] .arrow {
-  bottom: -8px;
-  right: -1px;
-  left: auto;
-  transform: none;
-  border: none;
-  border-right: 1px solid var(--pop-border);
-  border-top: 1px solid var(--pop-border);
-  clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
-}
-.panel[data-placement='left-start'][data-arrow-merge] .arrow {
-  right: -8px;
-  top: -1px;
-  transform: none;
-  border: none;
-  border-top: 1px solid var(--pop-border);
-  border-left: 1px solid var(--pop-border);
-  clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
-}
-.panel[data-placement='left-end'][data-arrow-merge] .arrow {
-  right: -8px;
-  bottom: -1px;
-  top: auto;
-  transform: none;
-  border: none;
-  border-bottom: 1px solid var(--pop-border);
-  border-left: 1px solid var(--pop-border);
-  clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
-}
-.panel[data-placement='right-start'][data-arrow-merge] .arrow {
-  left: -8px;
-  top: -1px;
-  transform: none;
-  border: none;
-  border-top: 1px solid var(--pop-border);
-  border-right: 1px solid var(--pop-border);
-  clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
-}
-.panel[data-placement='right-end'][data-arrow-merge] .arrow {
-  left: -8px;
-  bottom: -1px;
-  top: auto;
-  transform: none;
-  border: none;
-  border-bottom: 1px solid var(--pop-border);
-  border-right: 1px solid var(--pop-border);
-  clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
-}
+ /* arrow-merge（C1）：直角三角与面板角共边融合（通用形态，仅 *-start/*-end 生效，
+     center placement 不触发）。箭头为不旋转的 8px 方块整悬面板外、贴齐角两边，clip-path
+     裁成直角三角——直角顶点贴面板角点，两条直角边与面板角两边共线，斜边 45° 朝面板内，
+     尖端从角点正交外探 8px 指向锚点侧（视觉是「面板角本身伸出的直角尖」）。
+     面板有 1px 描边，箭头描边策略（汇于尖端的两条外露边都要有轮廓线，同菱形箭头惯例）：
+     - 直角边（贴面板边）：border 1px（--pop-border），盒贴角让位 1px（主轴边外 -8px 压进
+       面板描边带、起止侧边 -1px）后与面板描边带共带续接；
+     - 斜边（汇于尖端的主要外露边）：45°/135° 渐变带补 1px 法向线——斜边恰为盒的对角线，
+       垂直于渐变轴且落在 50% 等值线上，clip 保留三角内侧 1px。主对角线（左上→右下）
+       配 45deg、反对角线配 135deg。曾缺陷：斜边不描边，尖端轮廓缺失，观感是
+       「无轮廓的白色补丁」而非箭头（用户实测 P3）。
+     逐向写死（不能用 $='-start'/'-end' 后缀匹配——它对 12 向恒取顶角/恒写水平轴，
+     见 tooltip 同款教训）：bottom 系悬顶边（start→左上角、end→右上角）、top 系
+     悬底边（start→左下角、end→右下角）、left 系悬右边（start→右上角、end→右下角）、
+     right 系悬左边（start→左上角、end→左下角） */
+ .panel[data-placement='bottom-start'][data-arrow-merge] .arrow {
+   top: -8px;
+   left: -1px;
+   transform: none;
+   border: none;
+   border-left: 1px solid var(--pop-border);
+   border-bottom: 1px solid var(--pop-border);
+   background: linear-gradient(45deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
+   clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
+ }
+ .panel[data-placement='bottom-end'][data-arrow-merge] .arrow {
+   top: -8px;
+   right: -1px;
+   left: auto;
+   transform: none;
+   border: none;
+   border-right: 1px solid var(--pop-border);
+   border-bottom: 1px solid var(--pop-border);
+   background: linear-gradient(135deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
+   clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
+ }
+ .panel[data-placement='top-start'][data-arrow-merge] .arrow {
+   bottom: -8px;
+   left: -1px;
+   transform: none;
+   border: none;
+   border-left: 1px solid var(--pop-border);
+   border-top: 1px solid var(--pop-border);
+   background: linear-gradient(135deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
+   clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
+ }
+ .panel[data-placement='top-end'][data-arrow-merge] .arrow {
+   bottom: -8px;
+   right: -1px;
+   left: auto;
+   transform: none;
+   border: none;
+   border-right: 1px solid var(--pop-border);
+   border-top: 1px solid var(--pop-border);
+   background: linear-gradient(45deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
+   clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
+ }
+ .panel[data-placement='left-start'][data-arrow-merge] .arrow {
+   right: -8px;
+   top: -1px;
+   transform: none;
+   border: none;
+   border-top: 1px solid var(--pop-border);
+   border-left: 1px solid var(--pop-border);
+   background: linear-gradient(135deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
+   clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
+ }
+ .panel[data-placement='left-end'][data-arrow-merge] .arrow {
+   right: -8px;
+   bottom: -1px;
+   top: auto;
+   transform: none;
+   border: none;
+   border-bottom: 1px solid var(--pop-border);
+   border-left: 1px solid var(--pop-border);
+   background: linear-gradient(45deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
+   clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
+ }
+ .panel[data-placement='right-start'][data-arrow-merge] .arrow {
+   left: -8px;
+   top: -1px;
+   transform: none;
+   border: none;
+   border-top: 1px solid var(--pop-border);
+   border-right: 1px solid var(--pop-border);
+   background: linear-gradient(45deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
+   clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
+ }
+ .panel[data-placement='right-end'][data-arrow-merge] .arrow {
+   left: -8px;
+   bottom: -1px;
+   top: auto;
+   transform: none;
+   border: none;
+   border-bottom: 1px solid var(--pop-border);
+   border-right: 1px solid var(--pop-border);
+   background: linear-gradient(135deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
+   clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
+ }
 .panel[data-placement='bottom-start'][data-arrow-merge] {
   border-top-left-radius: 0;
 }
@@ -480,6 +496,8 @@ export class OASPopover extends OASElement {
   private scrollRaf = 0
   /** modal 滚动锁是否已挂（幂等守卫：open 期间多次 update 不重复加锁） */
   private modalLocked = false
+  /** B6 append-to：portal host 容器（目标容器内的 div + 独立 shadow，样式作用域保真） */
+  private portalHost: HTMLElement | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -593,6 +611,8 @@ export class OASPopover extends OASElement {
       window.removeEventListener('scroll', this.onScroll, { capture: true })
       window.removeEventListener('resize', this.onScroll)
     })
+    // portal 拆除兜底（disconnectedCallback 已显式调用，cleanup 再兜一层，幂等无孤儿）
+    this.onCleanup(() => this.destroyPortal())
   }
 
   protected override render(): void {
@@ -607,11 +627,9 @@ export class OASPopover extends OASElement {
     return true
   }
 
-  /** 断开连接时把 portal 出的面板移回 shadow（否则面板孤儿于 body） */
+  /** 断开连接时拆除 portal（面板与 slot 节点移回、host 移除，不留孤儿于 body） */
   override disconnectedCallback(): void {
-    if (this.panel && this.panel.parentNode && this.panel.parentNode !== this.shadow) {
-      this.shadow.appendChild(this.panel)
-    }
+    this.destroyPortal()
     this.scrollFollow = false
     super.disconnectedCallback()
   }
@@ -919,9 +937,14 @@ export class OASPopover extends OASElement {
   }
 
   /**
-   * 箭头定位：arrow-point-at-center=true 时箭头精确指向锚点中心（投影到面板边 + 边缘夹取，
-   * 箭头尖端不越出面板圆角）；面板被视口避让偏移后箭头仍指向触发元素。默认（无该属性）
-   * 箭头保持面板居中（CSS calc 兜底）。12 向 placement 下按基向判断主轴（data-placement 前缀匹配）。
+   * 箭头定位（通用做法：箭头指向锚点在面板指向边的中心投影，夹取在面板边内）。
+   * 对准锚点的三种情形：
+   * 1. arrow-point-at-center 显式开启（含面板被视口避让偏移后仍对准锚点中心）；
+   * 2. -start/-end 对齐 placement：面板边贴合锚点边、居中箭头会脱离锚点投影区间——
+   *    箭头贴向对齐端部并对准锚点中心投影（用户实测 P1：12 向箭头没对准宿主）；
+   * 3. virtual 虚拟锚点（virtual-x/y 坐标点 / virtual-anchor 元素）：箭头指向锚点本身（P6）。
+   * 其余（center 对齐 + 真实锚点）保持 CSS 居中兜底——面板居中于锚点时居中即对准。
+   * 12 向 placement 下按基向判断主轴（data-placement 前缀匹配）。
    */
   private positionArrow(anchorRect: DOMRect, placement: string): void {
     if (!this.panel) return
@@ -929,10 +952,12 @@ export class OASPopover extends OASElement {
     if (!arrow) return
     arrow.style.removeProperty('--arrow-x')
     arrow.style.removeProperty('--arrow-y')
-    if (!this.hasAttr('arrow-point-at-center') || !this.showArrow()) return
+    if (!this.showArrow()) return
     // arrow-merge（C1）：箭头由 CSS 钉死面板角点（直角三角贴角共边），内联偏移会让三角盒
     // 脱离角点、破坏与面板角的共边衔接——跳过指向中心计算
     if (this.hasAttr('arrow-merge')) return
+    const aligned = placement.endsWith('-start') || placement.endsWith('-end')
+    if (!(this.hasAttr('arrow-point-at-center') || aligned || this.hasAttr('virtual'))) return
     const panelRect = this.panel.getBoundingClientRect()
     const clampV = (v: number, max: number): number =>
       Math.max(ARROW_PAD, Math.min(v, max))
@@ -1021,18 +1046,68 @@ export class OASPopover extends OASElement {
   // —— portal（B6 append-to）——
 
   /**
-   * portal 挂载：open 且设置 append-to 时把面板移入目标容器（body 或选择器）；
-   * 关闭移回 shadow。定位基于视口坐标（fixed），移出后计算不受宿主影响。
+   * portal 挂载（P2 修复：样式作用域保真 + slot 内容桥接）：
+   * 打开且设置 append-to 时，面板移入目标容器内的 portal host（div + 独立 open shadow，
+   * STYLE 注入其中）。曾缺陷：裸 appendChild 到 body——面板脱离 shadow 树后 scoped CSS
+   * 全部失效（position:fixed / 背景 / 边框 / 圆角丢失），以 static 掉到文档流末尾、
+   * 随页面滚动乱飘（「Portal 面板不能稳定」）。定位基于视口坐标（fixed），移出后计算
+   * 不受宿主影响；关闭移回原 shadow，host 销毁无孤儿。
+   * host 不吞指针（pointer-events:none），面板自身显式 auto（STYLE .panel 规则）保持可交互；
+   * modal 形态 host z 序抬到遮罩（--oas-z-overlay）之上，普通形态 --oas-z-dropdown。
+   * slot 桥接：面板内 <slot name="content"> 的分配只看「直接 host」——面板搬进新 shadow 后
+   * 原宿主 light DOM 的 [slot=content] 节点分配不到。桥接做法：把这些节点同步移入 portal
+   * host 的 light DOM（物理同 host，分配恢复），关闭时移回宿主。
    */
   private syncPortal(open: boolean): void {
     const sel = this.getAttr('append-to', '').trim()
-    if (!sel || !this.panel) return
+    if (!sel || !this.panel || !open) {
+      this.destroyPortal()
+      return
+    }
     const target = sel === 'body' ? document.body : document.querySelector(sel)
-    if (open && target && this.panel.parentNode !== target) {
-      target.appendChild(this.panel)
-    } else if (!open && this.panel.parentNode !== this.shadow) {
+    if (!target) {
+      this.destroyPortal()
+      return
+    }
+    if (this.portalHost && this.portalHost.parentElement === target) {
+      this.bridgeSlotContent(this.portalHost)
+      return
+    }
+    this.destroyPortal()
+    const host = document.createElement('div')
+    host.setAttribute('data-oas-popover-portal', '')
+    host.style.cssText = `position: fixed; inset: 0; pointer-events: none; z-index: ${
+      this.hasAttr('modal')
+        ? 'calc(var(--oas-z-overlay, 1040) + 1)'
+        : 'var(--oas-z-dropdown, 1000)'
+    };`
+    target.appendChild(host)
+    const root = host.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${STYLE}</style>`
+    root.appendChild(this.panel)
+    this.portalHost = host
+    this.bridgeSlotContent(host)
+  }
+
+  /** slot 桥接：宿主 light DOM 的 [slot=content] 节点移入 portal host light DOM（幂等，已在内为 no-op） */
+  private bridgeSlotContent(host: HTMLElement): void {
+    for (const n of this.querySelectorAll<HTMLElement>('[slot="content"]')) {
+      host.appendChild(n)
+    }
+  }
+
+  /** portal 拆除：面板移回原 shadow（引用与监听保留），slot 节点移回宿主，host 移除无孤儿 */
+  private destroyPortal(): void {
+    const host = this.portalHost
+    if (!host) return
+    this.portalHost = null
+    if (this.panel && host.shadowRoot?.contains(this.panel)) {
       this.shadow.appendChild(this.panel)
     }
+    for (const n of host.querySelectorAll<HTMLElement>('[slot="content"]')) {
+      this.appendChild(n)
+    }
+    host.remove()
   }
 
   // —— modal（C5）——
@@ -1145,22 +1220,27 @@ export class OASPopover extends OASElement {
     const open = this.hasAttr('open')
     if (!open && !this.hasAttr('fresh') && this.contentWritten) return
     this.contentWritten = true
-    const titleEl = this.shadow.querySelector<HTMLElement>('[part="title"]')!
+    // 从 this.panel 查（而非 this.shadow）：portal（append-to）期间面板在 portal host 的
+    // shadow 内，原 shadow 查询会落空
+    const titleEl = this.panel.querySelector<HTMLElement>('[part="title"]')!
     const title = this.getAttr('title', '')
     titleEl.textContent = title
     if (title) this.panel.setAttribute('aria-labelledby', 'pop-title')
     else this.panel.removeAttribute('aria-labelledby')
-    this.shadow.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr(
+    this.panel.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr(
       'content',
       '',
     )
   }
 
-  /** 头部显隐：无标题且非 closable 时整行折叠（关闭按钮仍保留在 DOM） */
+  /** 头部显隐：无标题且非 closable 时整行折叠（关闭按钮仍保留在 DOM）；
+   *  closable 时面板挂 oas-closable 类——close-btn 默认 display:none，
+   *  可见性由 `.panel.oas-closable .close-btn` 规则驱动（hidden 只管冗余语义） */
   private syncHead(): void {
-    const head = this.shadow.querySelector<HTMLElement>('.head')
+    const head = this.panel?.querySelector<HTMLElement>('.head')
     if (!head) return
     head.classList.toggle('oas-empty', this.getAttr('title', '') === '' && !this.hasAttr('closable'))
+    this.panel?.classList.toggle('oas-closable', this.hasAttr('closable'))
     this.closeBtn?.toggleAttribute('hidden', !this.hasAttr('closable'))
     this.closeBtn?.setAttribute('aria-label', this.t('popover.close'))
   }
