@@ -277,8 +277,10 @@ export const zhCN = {
   // menubar（应用菜单栏）
   'menubar.label': '菜单栏',
   'menubar.menu': '菜单',
+  'menubar.more': '更多菜单项',
   // navigation-menu（多级导航）
   'navigationMenu.label': '导航',
+  'navigationMenu.back': '返回',
   // toolbar（工具栏）
   'toolbar.label': '工具栏',
   'toolbar.more': '更多工具',

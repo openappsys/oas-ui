@@ -28,7 +28,7 @@
       "affix": "启用吸附（sticky 定位，随滚动视口/容器吸附）",
       "affix-offset": "吸附时距滚动视口顶部的距离（px）",
       "bounds": "触发边界（px，默认 5）：章节顶越检测线的额外提前量，避免高亮抖动",
-      "block": "滚动落点对齐：`start` / `center` / `end`",
+      "block": "滚动落点对齐：`start` / `center` / `end` / `nearest`（目标已可见则不滚动，最小滚动量；在上方对齐顶部、在下方对齐底部）",
       "hash": "点击是否更新 URL hash（默认 true；`false` 关闭）",
       "replace": "历史控制：用 `history.replaceState` 替换历史而非 pushState",
       "duration": "平滑滚动时长（ms，默认 300；`0` 立即定位）",
@@ -39,7 +39,8 @@
       "get-current-anchor": "自定义高亮策略：属性指定全局函数名，接收滚动算出的候选 href，返回实际应高亮 href；亦可用 property `getCurrentAnchor` 传入函数"
     },
     "events": {
-      "oas-change": "高亮切换（点击或滚动联动均派发），`detail: { href, prevHref }`"
+      "oas-change": "高亮切换（点击或滚动联动均派发），`detail: { href, prevHref }`",
+      "oas-click": "用户点击锚点项（与滚动联动的 `oas-change` 分离，宿主可只响应用户操作；外部链接 `target` 项同样派发），`detail: { href, item }`"
     },
     "slots": {}
   },
@@ -199,9 +200,33 @@
       "variant": "样式变体：`underline`（链接与当前项常驻下划线）"
     },
     "events": {
-      "oas-select": "点击链接项、折叠下拉项或项下拉菜单项；`detail: { value: href }`（真实链接不阻止默认跳转，宿主可拦截做路由）"
+      "oas-select": "点击链接项、折叠下拉项或项下拉菜单项；`detail: { value: href }`（真实链接不阻止默认跳转，宿主可拦截做路由）",
+      "oas-collapse-click": "折叠省略号被点击展开下拉（收起不派发），`detail: { collapsedItems }`（被折叠的原始项数组，宿主可自定义折叠面板）"
     },
     "slots": {}
+  },
+  "oas-breadcrumb-item": {
+    "attrs": {
+      "active": "显式标记当前项（`aria-current=\"page\"`），默认取末项",
+      "disabled": "禁用项：渲染为非交互文本（aria-disabled）",
+      "dropdown": "项带下拉菜单：链接列表 JSON（如 `[{\"label\":\"子项\",\"href\":\"/a\"}]`），项渲染为下拉触发器",
+      "href": "链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`）",
+      "icon": "前置图标（`@oas-ui/icons` 注册表图标名）",
+      "max-width": "单项最大宽度（px）：超出省略号截断 + `title` 悬停提示",
+      "separator": "项级分隔符：覆盖全局 `separator`（支持文本或图标名）；亦可用 `slot=\"separator\"` 子元素传任意节点",
+      "target": "链接 target（`_blank` 时自动补 `noopener noreferrer`）"
+    },
+    "events": {},
+    "slots": {
+      "": "面包屑项 label 内容（默认插槽文本）"
+    }
+  },
+  "oas-breadcrumb-separator": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "分隔符内容：任意节点（文本 / 图标 / 内联元素）"
+    }
   },
   "oas-button": {
     "attrs": {
@@ -1000,7 +1025,10 @@
       "oas-select": "选择某项，`detail: { value, kind?, checked? }`。`kind` 仅动作项（`kind: \"action\"`）出现，值为 `\"action\"`；checkbox 项带 `checked`（切换后勾选态）；radio 项 `detail.kind` 不出现",
       "oas-open-change": "顶级打开菜单变化，`detail: { value, open }`（`value` = 当前打开顶级菜单 value，`open` = 是否打开）。受控 `setAttribute('open')` 与内部点击/hover/键盘触发都会派发（首帧不派发）"
     },
-    "slots": {}
+    "slots": {
+      "start": "栏首装饰位（如 logo）：`<div slot=\"start\">` 有内容时显示，键盘导航跳过",
+      "end": "栏尾装饰位（如头像）：`<div slot=\"end\">` 有内容时显示，键盘导航跳过"
+    }
   },
   "oas-message": {
     "attrs": {
@@ -1056,13 +1084,16 @@
       "columns": "面板网格列数，默认 2（大面板多列链接卡）",
       "backdrop": "打开时显示遮罩（点击遮罩关闭）",
       "keep-mounted": "关闭时保留面板 DOM 不销毁（供爬虫索引/SEO）",
-      "arrow": "弹出层指向箭头，默认显示；`arrow=\"false\"` 隐藏"
+      "arrow": "弹出层指向箭头，默认显示；`arrow=\"false\"` 隐藏",
+      "loop": "顶级方向键循环导航开关，缺省 `true`（边界循环）；显式 `loop=\"false\"` 时边界停止（与 menubar 对齐）"
     },
     "events": {
-      "oas-select": "选择某项（顶级叶子链接或面板链接卡），`detail: { value }`",
+      "oas-select": "选择某项（顶级叶子链接、面板链接卡或二级子导航链接），`detail: { value }`",
       "oas-change": "打开项变化，`detail: { value }`（value 为打开的顶级项 value，空字符串 = 关闭）"
     },
-    "slots": {}
+    "slots": {
+      "panel-footer": "面板底部营销位插槽：`<div slot=\"panel-footer\">`（CTA 卡片等）有内容时面板底部渲染插槽容器"
+    }
   },
   "oas-number-animation": {
     "attrs": {

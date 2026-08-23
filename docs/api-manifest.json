@@ -4707,7 +4707,14 @@
         "detail": "{ value: item.value, kind: 'action' } | { value: item.value, checked: checked.has(v) } | { value: item.value }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": "end"
+      },
+      {
+        "name": "start"
+      }
+    ],
     "unresolved": []
   },
   "oas-navigation-menu": {
@@ -4765,6 +4772,12 @@
         "type": "string",
         "default": "true",
         "observed": true
+      },
+      {
+        "name": "loop",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
@@ -4778,7 +4791,11 @@
         "detail": "{ value: item.value }"
       }
     ],
-    "slots": [],
+    "slots": [
+      {
+        "name": "panel-footer"
+      }
+    ],
     "unresolved": []
   },
   "oas-toolbar": {
@@ -5141,9 +5158,72 @@
       {
         "name": "oas-select",
         "detail": "{ value: item.href }"
+      },
+      {
+        "name": "oas-collapse-click",
+        "detail": "{ collapsedItems: hiddenItems }"
       }
     ],
     "slots": [],
+    "unresolved": []
+  },
+  "oas-breadcrumb-item": {
+    "className": "OASBreadcrumbItem",
+    "sourceFile": "packages/ui/src/navigation/breadcrumb/oas-breadcrumb-item.ts",
+    "attrs": [
+      {
+        "name": "href",
+        "observed": true
+      },
+      {
+        "name": "target",
+        "observed": true
+      },
+      {
+        "name": "icon",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "max-width",
+        "observed": true
+      },
+      {
+        "name": "separator",
+        "observed": true
+      },
+      {
+        "name": "dropdown",
+        "observed": true
+      },
+      {
+        "name": "active",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-breadcrumb-separator": {
+    "className": "OASBreadcrumbSeparator",
+    "sourceFile": "packages/ui/src/navigation/breadcrumb/oas-breadcrumb-separator.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
     "unresolved": []
   },
   "oas-back-top": {
@@ -5395,6 +5475,10 @@
       }
     ],
     "events": [
+      {
+        "name": "oas-click",
+        "detail": "{ href: item.href, item }"
+      },
       {
         "name": "oas-change",
         "detail": "{ href, prevHref }"

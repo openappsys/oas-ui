@@ -1,6 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import '@oas-ui/i18n'
 import { OASMenubar } from './index.js'
+
+// 文件级钩子：覆盖所有 describe（含新增能力测试块）。
+// happy-dom 缺陷规避：Document 内部 activeElement symbol 跨测试残留指向已移除
+// 子树时，ShadowRoot.activeElement 遍历会崩溃（blur 因 symbol≠getter 结果是 no-op，
+// 用 body.focus() 覆盖 symbol 复位）
+beforeEach(() => {
+  document.body.innerHTML = ''
+})
+
+afterEach(() => {
+  document.body.focus()
+  document.body.innerHTML = ''
+})
 
 const ITEMS = JSON.stringify([
   {
@@ -50,7 +63,10 @@ function bar(el: OASMenubar): HTMLElement {
 }
 
 function topItems(el: OASMenubar): HTMLElement[] {
-  return [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="top-item"]')]
+  // 排除水平溢出收纳项「···」（非数据项，part 相同但 data-value="__more__"）
+  return [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="top-item"]')].filter(
+    (b) => b.dataset.value !== '__more__',
+  )
 }
 
 /** 所有子菜单项（含级联层级） */
@@ -839,5 +855,283 @@ describe('show-arrow 与方向感知动画', () => {
     topItems(el)[0]!.click()
     const sub = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"][data-parent="file"]')!
     expect(sub.style.transformOrigin).toContain('top') // side=bottom → 顶部开口
+  })
+})
+
+// ===== 子项/顶级叶子 href 真链接 =====
+
+const HREF_ITEMS = JSON.stringify([
+  {
+    label: '文件',
+    value: 'file',
+    accessKey: 'f',
+    children: [
+      { label: '打开文档', value: 'open', href: '/docs/open' },
+      { label: '外链', value: 'ext', href: 'https://example.com/x', target: '_blank' },
+      { label: '普通项', value: 'plain' },
+    ],
+  },
+  { label: '帮助', value: 'help', href: '/help' },
+])
+
+describe('href 真链接', () => {
+  it('叶子项带 href 渲染为 <a>（保留 part/data-value 供键盘与同步定位）', () => {
+    const el = mount({ items: HREF_ITEMS })
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    expect(open.tagName).toBe('A')
+    expect(open.getAttribute('href')).toBe('/docs/open')
+    expect(open.getAttribute('part')).toBe('item')
+    const plain = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="plain"]')!
+    expect(plain.tagName).toBe('LI')
+  })
+
+  it('顶级叶子带 href 渲染为 <a>（有子菜单的仍是 button）', () => {
+    const el = mount({ items: HREF_ITEMS })
+    const help = topItems(el)[1]!
+    expect(help.tagName).toBe('A')
+    expect(help.getAttribute('href')).toBe('/help')
+    expect(help.getAttribute('role')).toBe('menuitem')
+    expect(help.getAttribute('tabindex')).toBe('-1') // roving 语义保留
+    expect(topItems(el)[0]!.tagName).toBe('BUTTON') // 有子菜单仍是触发器
+  })
+
+  it('target="_blank" 自动补 rel="noopener"', () => {
+    const el = mount({ items: HREF_ITEMS })
+    const ext = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="ext"]')!
+    expect(ext.getAttribute('target')).toBe('_blank')
+    expect(ext.getAttribute('rel')).toMatch(/noopener/)
+  })
+
+  it('href 叶子点击仍派发 oas-select 并写回 value（链接默认跳转不拦截）', () => {
+    const el = mount({ items: HREF_ITEMS })
+    const events: unknown[] = []
+    el.addEventListener('oas-select', (e) => events.push((e as CustomEvent).detail))
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    open.click()
+    expect(events).toEqual([{ value: 'open' }])
+    expect(el.getAttribute('value')).toBe('open')
+  })
+
+  it('href 叶子键盘可达：Enter 选中派发 oas-select（键盘导航链路不因标签变化断裂）', () => {
+    const el = mount({ items: HREF_ITEMS })
+    let detail: unknown
+    el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    key(el, 'ArrowDown') // 打开 文件，聚焦首子项 打开文档（href 叶子）
+    key(el, 'Enter')
+    expect(detail).toEqual({ value: 'open' })
+  })
+})
+
+// ===== divider 语义互斥 =====
+
+describe('divider 语义', () => {
+  it('divider 只保留 role=separator，不设 aria-hidden（二者互斥，aria-hidden 会让 role 对 AT 失效）', () => {
+    const el = mount({
+      items: JSON.stringify([
+        {
+          label: '文件',
+          value: 'file',
+          children: [{ label: '新建', value: 'new' }, { type: 'divider' }, { label: '退出', value: 'quit' }],
+        },
+      ]),
+    })
+    const divider = el.shadowRoot!.querySelector<HTMLElement>('[part="divider"]')!
+    expect(divider.getAttribute('role')).toBe('separator')
+    expect(divider.hasAttribute('aria-hidden')).toBe(false)
+  })
+})
+
+// ===== 测量污染修复：syncSubmenuPositions 用 offsetWidth/offsetHeight =====
+
+describe('子菜单测量用 offsetWidth（transform 免疫）', () => {
+  it('宽度测量走 offsetWidth：rect 全 0（happy-dom 无布局）时仍能按 offsetWidth 判定右侧翻转', () => {
+    const el = mount()
+    topItems(el)[0]!.click()
+    const sub = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"][data-parent="file"]')!
+    // 模拟：子菜单很宽/很高（offsetWidth/offsetHeight），视口很小——若用 rect.width/height（=0）不会翻转
+    Object.defineProperty(sub, 'offsetWidth', { value: 500, configurable: true })
+    Object.defineProperty(sub, 'offsetHeight', { value: 600, configurable: true })
+    Object.defineProperty(window, 'innerWidth', { value: 300, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 400, configurable: true })
+    topItems(el)[0]!.click() // 收起
+    topItems(el)[0]!.click() // 重新展开触发 syncSubmenuPositions
+    expect(sub.classList.contains('flip-right')).toBe(true)
+    expect(sub.classList.contains('flip-up')).toBe(true) // 底部高度也按 offsetHeight 判定
+  })
+})
+
+// ===== checkbox indeterminate 半选 =====
+
+const INDETERMINATE_ITEMS = JSON.stringify([
+  {
+    label: '视图',
+    value: 'view',
+    accessKey: 'v',
+    children: [
+      { label: '全选', value: 'all', kind: 'checkbox', indeterminate: true },
+      { label: '网格线', value: 'grid', kind: 'checkbox' },
+    ],
+  },
+])
+
+describe('checkbox indeterminate 半选', () => {
+  it('indeterminate: true → aria-checked="mixed"，渲染半选减号视觉 CSS', () => {
+    const el = mount({ items: INDETERMINATE_ITEMS })
+    const all = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="all"]')!
+    expect(all.getAttribute('role')).toBe('menuitemcheckbox')
+    expect(all.getAttribute('aria-checked')).toBe('mixed')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/aria-checked='mixed'/)
+  })
+
+  it('普通 checkbox 不受影响（aria-checked 仍为 true/false）', () => {
+    const el = mount({ items: INDETERMINATE_ITEMS, value: '["grid"]' })
+    const grid = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+    expect(grid.getAttribute('aria-checked')).toBe('true')
+  })
+})
+
+// ===== start/end 命名插槽（logo/头像位） =====
+
+describe('start/end 插槽', () => {
+  it('bar 内渲染 slot="start"/"end" 容器；无内容时隐藏', () => {
+    const el = mount()
+    const start = el.shadowRoot!.querySelector<HTMLElement>('[part="bar-start"]')!
+    const end = el.shadowRoot!.querySelector<HTMLElement>('[part="bar-end"]')!
+    expect(start).not.toBeNull()
+    expect(end).not.toBeNull()
+    expect(start.hidden).toBe(true)
+    expect(end.hidden).toBe(true)
+    expect(start.querySelector('slot')!.getAttribute('name')).toBe('start')
+  })
+
+  it('有插槽内容时容器显示，键盘方向键跳过装饰内容', () => {
+    const el = mount()
+    const logo = document.createElement('span')
+    logo.slot = 'start'
+    logo.textContent = 'LOGO'
+    el.appendChild(logo)
+    el.setAttribute('items', el.getAttribute('items')!) // 触发 update 重算插槽容器
+    const start = el.shadowRoot!.querySelector<HTMLElement>('[part="bar-start"]')!
+    expect(start.hidden).toBe(false)
+    // 键盘导航：焦点只在导航树（top-item/子项）间移动，不落入插槽容器
+    key(el, 'ArrowRight')
+    expect(topItems(el)[1]!.classList.contains('active')).toBe(true)
+    key(el, 'ArrowRight')
+    expect(topItems(el)[2]!.classList.contains('active')).toBe(true)
+    key(el, 'ArrowDown') // 打开 视图 子菜单，聚焦首子项
+    const openSub = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"].open')!
+    expect(openSub.contains(el.shadowRoot!.activeElement)).toBe(true)
+    expect(el.shadowRoot!.activeElement!.getAttribute('part')).toBe('item')
+  })
+})
+
+// ===== 水平溢出收纳（ellipsis） =====
+
+const MANY_ITEMS = JSON.stringify([
+  { label: '首页', value: 'home' },
+  { label: '产品', value: 'products', children: [{ label: '组件', value: 'components' }] },
+  { label: '解决方案', value: 'solutions' },
+  { label: '开发者文档', value: 'docs' },
+  { label: '关于我们', value: 'about' },
+])
+
+describe('水平溢出收纳（ellipsis）', () => {
+  it('水平模式渲染「···」收纳项（默认隐藏）；竖排不渲染', () => {
+    const el = mount({ items: MANY_ITEMS })
+    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')
+    expect(more).not.toBeNull()
+    expect(more!.hidden).toBe(true)
+    const v = mount({ items: MANY_ITEMS, orientation: 'vertical' })
+    expect(v.shadowRoot!.querySelector('[data-value="__more__"]')).toBeNull()
+  })
+
+  it('容器不足时超宽项收进「···」（data-collapsed + 弹层镜像），点击镜像项派发 oas-select', async () => {
+    const el = mount({ items: MANY_ITEMS })
+    const itemsEl = el.shadowRoot!.querySelector<HTMLElement>('.bar-items')!
+    Object.defineProperty(itemsEl, 'clientWidth', { value: 120, configurable: true })
+    const wraps = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
+    const dataWraps = wraps.filter((w) => w.dataset.value !== '__more__')
+    for (const w of dataWraps) Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
+    const moreWrap = itemsEl.querySelector<HTMLElement>(':scope > .top-wrap[data-value="__more__"]')
+    Object.defineProperty(moreWrap!, 'offsetWidth', { value: 40, configurable: true })
+    await new Promise((r) => requestAnimationFrame(r))
+    const collapsed = dataWraps.filter((w) => w.hasAttribute('data-collapsed'))
+    expect(collapsed.length).toBeGreaterThan(0)
+    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')!
+    expect(more.hidden).toBe(false)
+    // 打开「···」弹层：显示被收项镜像
+    more.click()
+    expect(more.getAttribute('aria-expanded')).toBe('true')
+    const moreSub = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"][data-parent="__more__"]')!
+    expect(moreSub.classList.contains('open')).toBe(true)
+    const mirrors = moreSub.querySelectorAll<HTMLElement>('[part="item"]')
+    expect(mirrors.length).toBe(collapsed.length)
+    // 点击镜像项 → oas-select + 收起
+    const events: unknown[] = []
+    el.addEventListener('oas-select', (e) => events.push((e as CustomEvent).detail))
+    ;(mirrors[0] as HTMLElement).click()
+    expect(events.length).toBe(1)
+    expect(more.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('选中项被收纳时「···」高亮（child-selected + aria-current）', async () => {
+    const el = mount({ items: MANY_ITEMS })
+    const itemsEl = el.shadowRoot!.querySelector<HTMLElement>('.bar-items')!
+    Object.defineProperty(itemsEl, 'clientWidth', { value: 80, configurable: true })
+    const wraps = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
+    const dataWraps = wraps.filter((w) => w.dataset.value !== '__more__')
+    for (const w of dataWraps) Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
+    await new Promise((r) => requestAnimationFrame(r))
+    el.setAttribute('value', 'solutions') // 被收纳项
+    await new Promise((r) => requestAnimationFrame(r)) // 等重算「···」高亮
+    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')!
+    expect(more.classList.contains('child-selected')).toBe(true)
+    expect(more.getAttribute('aria-current')).toBe('true')
+  })
+
+  it('无溢出时「···」保持隐藏，所有项留在条上', async () => {
+    const el = mount({ items: MANY_ITEMS })
+    await new Promise((r) => requestAnimationFrame(r))
+    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')!
+    expect(more.hidden).toBe(true)
+    const collapsed = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.top-wrap[data-collapsed]')]
+    expect(collapsed.length).toBe(0)
+  })
+
+  it('键盘可达：End 移到「···」，ArrowDown 打开弹层聚焦首镜像项，Esc 收回', async () => {
+    const el = mount({ items: MANY_ITEMS })
+    const itemsEl = el.shadowRoot!.querySelector<HTMLElement>('.bar-items')!
+    Object.defineProperty(itemsEl, 'clientWidth', { value: 80, configurable: true })
+    const wraps = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
+    const dataWraps = wraps.filter((w) => w.dataset.value !== '__more__')
+    for (const w of dataWraps) Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
+    await new Promise((r) => requestAnimationFrame(r))
+    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')!
+    key(el, 'End') // 「···」在顶级导航序列末位，End 直接落到它
+    expect(more.classList.contains('active')).toBe(true)
+    key(el, 'ArrowDown') // 打开弹层并聚焦首镜像项
+    expect(more.getAttribute('aria-expanded')).toBe('true')
+    const mirrors = el.shadowRoot!.querySelectorAll<HTMLElement>(
+      '[part="submenu"][data-parent="__more__"] [part="item"]',
+    )
+    expect(mirrors.length).toBeGreaterThan(0)
+    expect(el.shadowRoot!.activeElement).toBe(mirrors[0])
+    key(el, 'Escape') // 收回并聚焦回「···」
+    expect(more.getAttribute('aria-expanded')).toBe('false')
+    expect(el.shadowRoot!.activeElement).toBe(more)
+  })
+})
+
+// ===== typeaheadTimer 断开清理 =====
+
+describe('typeaheadTimer 断开清理', () => {
+  it('断开连接时清理 typeahead 定时器（advanceTimers 不抛错、无残留）', () => {
+    vi.useFakeTimers()
+    const el = mount()
+    key(el, '文') // 触发 typeahead 缓冲 + 500ms 定时器
+    el.remove()
+    expect(() => vi.advanceTimersByTime(600)).not.toThrow()
+    vi.useRealTimers()
   })
 })

@@ -158,7 +158,7 @@ nav.size-large [part='link'] {
 `
 
 /** 滚动落点对齐方式 */
-type ScrollBlock = 'start' | 'center' | 'end'
+type ScrollBlock = 'start' | 'center' | 'end' | 'nearest'
 
 export class OASAnchor extends OASElement {
   static override get observedAttributes(): string[] {
@@ -221,6 +221,8 @@ export class OASAnchor extends OASElement {
   private activeHref = ''
   private spyRoot: Window | HTMLElement | null = null
   private scrollRafId = 0
+  /** 滚动/尺寸监听的计算 rAF 句柄（每帧最多计算一次） */
+  private scrollComputeRafId = 0
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -300,6 +302,8 @@ export class OASAnchor extends OASElement {
     const { containerEl } = this.resolveContainer()
     const root: Window | HTMLElement = containerEl ?? window
     root.addEventListener('scroll', this.handleScroll, { passive: true })
+    // 容器/视口宽度变化 → 高亮与墨水条可能过期（横向 ink 错位），resize 重算（rAF 节流）
+    window.addEventListener('resize', this.handleResize, { passive: true })
     this.spyRoot = root
   }
 
@@ -308,9 +312,14 @@ export class OASAnchor extends OASElement {
       this.spyRoot.removeEventListener('scroll', this.handleScroll)
       this.spyRoot = null
     }
+    window.removeEventListener('resize', this.handleResize)
     if (this.scrollRafId) {
       cancelAnimationFrame(this.scrollRafId)
       this.scrollRafId = 0
+    }
+    if (this.scrollComputeRafId) {
+      cancelAnimationFrame(this.scrollComputeRafId)
+      this.scrollComputeRafId = 0
     }
   }
 
@@ -338,12 +347,34 @@ export class OASAnchor extends OASElement {
     }
   }
 
+  /** 滚动监听：rAF 节流——每帧最多计算一次（长文档高频滚动不重复同步计算） */
   private handleScroll = (): void => {
     // 目标可能晚于挂载出现（动态渲染），滚动时补采一次
     if (this.flatTargets.length === 0) this.collectTargets()
     if (this.flatTargets.length === 0) return
+    this.scheduleCompute()
+  }
+
+  /** 窗口/容器尺寸变化：布局改变后高亮与墨水条可能过期，重算（rAF 节流） */
+  private handleResize = (): void => {
+    this.scheduleCompute(true)
+  }
+
+  /** 统一计算入口：rAF 合并同帧多次触发；forceInk 时当前项不变也重定位墨水条 */
+  private scheduleCompute(forceInk = false): void {
+    if (this.scrollComputeRafId) return
+    this.scrollComputeRafId = requestAnimationFrame(() => {
+      this.scrollComputeRafId = 0
+      this.computeAndApply(forceInk)
+    })
+  }
+
+  private computeAndApply(forceInk: boolean): void {
     const next = this.computeCurrent()
-    if (next === this.activeHref) return
+    if (next === this.activeHref) {
+      if (forceInk) this.positionInk()
+      return
+    }
     const prev = this.activeHref
     this.activeHref = next
     this.renderActive()
@@ -354,6 +385,8 @@ export class OASAnchor extends OASElement {
   /** 当前高亮判定：最后一个顶越检测线（containerTop + offset + bounds）的章节；
    *  无目标过线时回退首项；get-current-anchor 可自定义策略 */
   private computeCurrent(): string {
+    // 无目标（未挂载/目标缺失）时保持当前高亮，供 resize 等路径安全返回
+    if (this.flatTargets.length === 0) return this.activeHref
     const offset = Number(this.getAttr('offset', '0')) || 0
     const bounds = Number(this.getAttr('bounds', '5')) || 0
     const { containerEl } = this.resolveContainer()
@@ -379,6 +412,8 @@ export class OASAnchor extends OASElement {
   }
 
   private handleLinkClick = (item: AnchorItem, e: MouseEvent): void => {
+    // 用户点击事件独立派发（与滚动联动的 oas-change 分离），detail 带完整 item
+    this.emit('click', { href: item.href, item })
     // item 级 target（如 _blank）：交给浏览器默认行为（新窗口等），不拦截、不滚动、不发 change
     if (item.target) return
     e.preventDefault()
@@ -421,6 +456,29 @@ export class OASAnchor extends OASElement {
       explicitOffset !== null
         ? explicitOffset
         : Number(this.getAttr('target-offset', '')) || Number(this.getAttr('offset', '0')) || 0
+    // block=nearest：最小滚动量语义——目标已完全可见则不滚动；
+    // 目标在上方对齐顶部、在下方对齐底部（不套用落点偏移，偏移只属于 start）
+    if (block === 'nearest') {
+      if (containerEl) {
+        const cRect = containerEl.getBoundingClientRect()
+        const clientHeight = containerEl.clientHeight
+        const contentTop = targetRect.top - cRect.top + containerEl.scrollTop
+        if (contentTop >= 0 && contentTop + targetHeight <= clientHeight) return
+        this.smoothScrollTo(
+          containerEl,
+          contentTop < 0 ? Math.max(0, contentTop) : contentTop - clientHeight + targetHeight,
+        )
+      } else {
+        const clientHeight = window.innerHeight || document.documentElement.clientHeight || 0
+        const contentTop = targetRect.top + (window.scrollY || 0)
+        if (targetRect.top >= 0 && targetRect.top + targetHeight <= clientHeight) return
+        this.smoothScrollTo(
+          window,
+          targetRect.top < 0 ? Math.max(0, contentTop) : contentTop - clientHeight + targetHeight,
+        )
+      }
+      return
+    }
     let y: number
     if (containerEl) {
       const cRect = containerEl.getBoundingClientRect()
