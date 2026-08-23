@@ -217,7 +217,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `append-to` | Positioning container selector (e.g. `#panel`): the card is absolutely positioned inside that container (container is promoted to a relative positioning context), coordinates translated accordingly; defaults to `position: fixed` viewport coordinates | — | — |
+| `append-to` | Positioning container selector (e.g. `#panel`): the card is absolutely positioned inside that container (container is promoted to a relative positioning context), coordinates translated accordingly; defaults to `position: fixed` viewport coordinates | `string` | — |
 | `arrow` | Whether to show the arrow, default true; `arrow="false"` hides it (the arrow element and `::part(arrow)` remain) | `string` | `true` |
 | `arrow-merge` | Corner-merged arrow mode: for *-start/*-end placements a right triangle merges flush with the panel corner — legs collinear with the panel edges (their strokes continue the panel border band), tip pointing orthogonally toward the anchor; the matching corner radius is zeroed; no effect for centered placements | `boolean` | — |
 | `arrow-point-at-center` | Point the arrow at the trigger center (keeps pointing at the anchor after viewport clamping); by default the arrow stays at the panel center | `boolean` | — |

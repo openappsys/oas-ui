@@ -3984,7 +3984,6 @@
       },
       {
         "name": "arrow-point-at-center",
-        "type": "boolean",
         "observed": true
       },
       {
@@ -4410,6 +4409,8 @@
       },
       {
         "name": "append-to",
+        "type": "string",
+        "default": "",
         "observed": true
       },
       {
