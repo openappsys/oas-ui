@@ -87,7 +87,7 @@
 
 ## 键盘导航与指示器
 
-`keyboard`（默认开启）支持 ←/→ 推进步骤；`show-bullets` 圆点指示器可点击跳步；`show-progress` 顶部进度条；`progress-text` 模板（`{{current}}/{{total}}`）自定义计数文本；`indicators="number"` 数字计数。
+`keyboard`（默认开启）支持 ←/→ 推进步骤；`show-bullets` 圆点指示器可点击跳步；`show-progress` 顶部进度条；`progress-text` 模板（占位符 `current`/`total`，各以双花括号包裹）自定义计数文本；`indicators="number"` 数字计数。
 
 <DemoBlock title="键盘导航 + 圆点 + 进度条">
   <oas-space>
@@ -241,6 +241,41 @@
   <div id="tour-pp1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">挂载目标</div>
 </DemoBlock>
 
+## 高级定制（gap 双轴 / 箭头指向 / 关闭自动翻转）
+
+`gap` 支持 `offset` 双轴外扩（`number` 四周同值 / `[水平, 垂直]` 数组，与 `padding` 正交）；`arrow-point-at-center` 让箭头在弹层被视口避让偏移后仍指向目标中心；`auto-reposition="false"` 关闭溢出翻转与视口避让（保持声明 placement）。
+
+<DemoBlock title="gap 双轴 + 箭头指向中心 + 关闭自动翻转">
+  <oas-space>
+    <oas-button type="primary" onclick="document.getElementById('tour-gap2').setAttribute('open','')">gap 双轴 offset</oas-button>
+    <oas-button onclick="document.getElementById('tour-center-arrow').setAttribute('open','')">箭头指向中心</oas-button>
+    <oas-button onclick="document.getElementById('tour-noflip').setAttribute('open','')">关闭自动翻转</oas-button>
+  </oas-space>
+  <oas-tour id="tour-gap2" gap='{"offset":[16,24]}' steps='[{"selector":"#tour-g1","title":"gap 双轴 offset","description":"offset:[16,24]：水平 16px / 垂直 24px 外扩高亮与遮罩孔。"}]'></oas-tour>
+  <oas-tour id="tour-center-arrow" arrow-point-at-center steps='[{"selector":"#tour-g2","title":"箭头指向目标中心","description":"目标贴近左缘、弹层被视口避让偏移后，箭头仍指向目标中心。"}]'></oas-tour>
+  <oas-tour id="tour-noflip" auto-reposition="false" steps='[{"selector":"#tour-g3","title":"关闭自动翻转","description":"auto-reposition=false：弹层保持底部声明位置（溢出视口部分不可见），用于对比默认的自动翻转。"}]'></oas-tour>
+  <div id="tour-g1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">gap 双轴目标</div>
+  <div id="tour-g2" style="margin-top: 12px; margin-left: 24px; width: 120px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">贴左目标</div>
+  <div id="tour-g3" style="position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); height: 56px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; background: var(--oas-color-bg)">贴底目标（视口底部）</div>
+</DemoBlock>
+
+## 自定义指示器与动作区（插槽）
+
+`slot="indicators"` 替换内置圆点/数字指示器（宿主用 `oas-step` 事件的 `current/total` 渲染）；`slot="actions"` 替换整个内置按钮区，用自定义按钮控制跳步。
+
+<DemoBlock title="自定义指示器与动作区">
+  <oas-button type="primary" onclick="document.getElementById('tour-slots').setAttribute('open','')">开始引导</oas-button>
+  <oas-tour id="tour-slots" show-bullets onoas-step="tourSlotsSync(event)" steps='[{"selector":"#tour-sl1","title":"自定义指示器","description":"slot=indicators 替换内置圆点/数字指示器。"},{"selector":"#tour-sl2","title":"自定义动作区","description":"slot=actions 替换整个按钮区，用自定义按钮控制跳步。"}]'>
+    <span slot="indicators" class="tour-slots-ind">1 / 2</span>
+    <div slot="actions" style="display: flex; gap: 8px; align-items: center">
+      <oas-button size="small" onclick="tourSlotsGo(-1)">上一步</oas-button>
+      <oas-button type="primary" size="small" onclick="tourSlotsGo(1)">下一步</oas-button>
+    </div>
+  </oas-tour>
+  <div id="tour-sl1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">自定义插槽目标一</div>
+  <div id="tour-sl2" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">自定义插槽目标二</div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -293,6 +328,19 @@ onMounted(async () => {
     el.setAttribute('steps', steps ?? '[]')
     parent?.appendChild(el)
   }
+  // 自定义插槽：指示器文本随步骤同步；动作区按钮控制跳步
+  window.tourSlotsGo = (d) => {
+    const tour = document.getElementById('tour-slots')
+    if (!tour) return
+    const cur = Number(tour.getAttribute('current') ?? '0') + d
+    tour.setAttribute('current', String(cur))
+  }
+  window.tourSlotsSync = (e) => {
+    const tour = document.getElementById('tour-slots')
+    if (!tour) return
+    const ind = tour.querySelector('[slot="indicators"]')
+    if (ind) ind.textContent = `${e.detail.current + 1} / ${e.detail.total}`
+  }
 })
 </script>
 
@@ -307,14 +355,15 @@ onMounted(async () => {
 | `advance-on-click` | 点击高亮区推进下一步（交互式引导） | `boolean` | — |
 | `append-to` | 挂载点：`body` 或 CSS 选择器（整个浮层移入目标容器） | `string` | — |
 | `arrow` | 是否显示箭头（布尔，默认 true，`false` 隐藏） | `string` | `true` |
-| `auto-reposition` | 滚动/resize 时自动重定位（默认 true） | `string` | `true` |
+| `arrow-point-at-center` | 箭头指向目标中心投影（弹层被视口避让偏移后仍指准；默认箭头贴 placement 对齐端） | `boolean` | — |
+| `auto-reposition` | 滚动/resize 时自动重定位 + 溢出翻转/视口避让（默认 true；`false` 关闭翻转与避让，保持声明位置） | `string` | `true` |
 | `close-icon` | 自定义关闭按钮内容（HTML 字符串） | `string` | — |
 | `close-on-press-escape` | Esc 关闭（默认 true） | `string` | `true` |
 | `current` | 当前步骤索引 | `string` | `0` |
 | `disabled-interaction` | 禁止高亮区交互（拦截层覆盖目标） | — | — |
 | `dont-show-again` | 「不再显示」开关（布尔；关闭时勾选则记忆到 localStorage） | `boolean` | — |
 | `finish-button-props` | 完成按钮透传属性（JSON 对象） | — | — |
-| `gap` | 高亮内边距：数字（padding px）或 `{"padding","radius"}`（半径）；默认 padding 4 | `string` | — |
+| `gap` | 高亮内边距：数字（padding px）或 `{"padding","radius","offset"}`；`offset` 为高亮外扩间距（number 四周同值 / `[水平, 垂直]` 双轴，与 padding 正交）；默认 padding 4 | `string` | — |
 | `hide-counter` | 隐藏步骤计数 | `boolean` | — |
 | `hide-next` | 隐藏下一步按钮 | — | — |
 | `hide-prev` | 隐藏上一步按钮 | — | — |
@@ -331,7 +380,7 @@ onMounted(async () => {
 | `persist` | 多页引导：open/current 状态持久化到 localStorage，重新连接时恢复 | `boolean` | — |
 | `placement` | 弹层方位：12 向（top/bottom/left/right × start/end/center）+ `center`（空 target 居中）；默认 `bottom`；空间不足自动翻转；step 级可覆盖 | `TourPlacement` | `bottom` |
 | `prev-button-props` | 上一步按钮透传属性（JSON 对象） | — | — |
-| `progress-text` | 进度文本模板：`{{current}}/{{total}}` 替换；设置后计数区用模板渲染 | `string` | — |
+| `progress-text` | 进度文本模板：以双花括号包裹的 `current`/`total` 占位符替换（如 current/total 各包一层花括号）；设置后计数区用模板渲染 | `string` | — |
 | `scroll-into-view-options` | 滚动到目标的 `scrollIntoView` options（JSON，默认 `{"behavior":"smooth","block":"center"}`） | `string` | — |
 | `scroll-padding` | 滚动到目标时的留白（px，写目标 scroll-margin） | — | — |
 | `show-bullets` | 圆点指示器（点击圆点跳步） | `boolean` | — |
@@ -366,6 +415,8 @@ onMounted(async () => {
 
 | 名称 | 说明 |
 | --- | --- |
+| `actions` | 自定义动作区（替换整个内置按钮区；有内容时隐藏内置 prev/skip/next 按钮） |
 | `cover` | 步骤封面富内容（插槽优先于 step.cover 图片） |
+| `indicators` | 自定义指示器区（宿主用 `oas-step` 的 current/total 渲染；有内容时隐藏内置圆点/数字指示器） |
 
-遮罩高亮目标，`role="dialog"` + `aria-modal="true"`；支持「上一步 / 下一步 / 跳过」、键盘 ←/→ 与 Esc。
+遮罩高亮目标，`role="dialog"` + `aria-modal="true"`（`mask="false"` 非模态时降级为 `aria-modal="false"`）；支持「上一步 / 下一步 / 跳过」、键盘 ←/→ 与 Esc。

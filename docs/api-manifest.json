@@ -4440,9 +4440,25 @@
         "name": "arrow-merge",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "sticky",
+        "type": "string",
+        "default": "partial",
+        "observed": true
+      },
+      {
+        "name": "collision-boundary",
+        "default": "",
+        "observed": true
       }
     ],
-    "props": [],
+    "props": [
+      {
+        "name": "collisionBoundary",
+        "type": "Element | null"
+      }
+    ],
     "events": [
       {
         "name": "oas-open-change",
@@ -4539,6 +4555,12 @@
         "name": "item-height",
         "type": "string",
         "default": "36",
+        "observed": true
+      },
+      {
+        "name": "append-to",
+        "type": "string",
+        "default": "",
         "observed": true
       }
     ],
@@ -5432,6 +5454,11 @@
         "observed": true
       },
       {
+        "name": "arrow-point-at-center",
+        "type": "boolean",
+        "observed": true
+      },
+      {
         "name": "mask",
         "type": "string",
         "default": "true",
@@ -5677,7 +5704,13 @@
     ],
     "slots": [
       {
+        "name": "actions"
+      },
+      {
         "name": "cover"
+      },
+      {
+        "name": "indicators"
       }
     ],
     "unresolved": []

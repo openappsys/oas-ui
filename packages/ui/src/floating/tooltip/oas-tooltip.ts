@@ -109,7 +109,7 @@ const STYLE = `
 .tip[data-placement='right-end'] .arrow {
   bottom: 16px;
 }
-/* ===== C1 箭头 merge 模式：直角三角与面板角共边融合（仅 *-start/*-end 生效） =====
+/* ===== 箭头 merge 模式：直角三角与面板角共边融合（仅 *-start/*-end 生效） =====
    该角 radius 置零；箭头为不旋转的 8px 方块整悬面板外、贴齐角两边（主轴边外 -8px、
    起止侧边线对齐 0），clip-path 裁成直角三角——直角顶点精确落面板角点，两条直角边
    与面板角两边共线，斜边 45° 朝面板内，尖端从角点正交外探 8px 指向锚点侧
@@ -225,7 +225,7 @@ function onTipKey(e: KeyboardEvent): void {
   top.restoreFocus()
 }
 
-// ============ B2 全局单例 skipDelay：记录上次关闭时刻，连续悬停跳过 open-delay ============
+// ============ 全局单例 skipDelay：记录上次关闭时刻，连续悬停跳过 open-delay ============
 let lastCloseAt = 0
 
 export function shouldSkipDelay(duration: number): boolean {
@@ -249,26 +249,26 @@ export class OAStooltip extends OASElement {
       'arrow',
       'arrow-point-at-center',
       'auto-adjust-overflow',
-      // A2 触发方式 / A4 延迟
+      // 触发方式 / 延迟
       'trigger',
       'open-delay',
       'close-delay',
       'touch-delay',
-      // B2 延迟组
+      // 延迟组
       'skip-delay-duration',
-      // A8 disabled / B3 interactive / B4 contextmenu / B5 touch
+      // disabled / interactive / contextmenu / touch
       'disabled',
       'interactive',
-      // B6 挂载点
+      // 挂载点
       'append-to',
-      // B9 双轴偏移 / B13 碰撞细调
+      // 双轴偏移 / 碰撞细调
       'offset',
       'skidding',
       'collision-padding',
-      // B10 颜色变体 / A7 max-width
+      // 颜色变体 / max-width
       'color',
       'max-width',
-      // C2 fresh / C3 auto-close / C4 trigger-keys / C1 merge
+      // fresh / auto-close / trigger-keys / merge
       'fresh',
       'auto-close',
       'trigger-keys',
@@ -280,21 +280,21 @@ export class OAStooltip extends OASElement {
   private anchor: Element | null = null
   /** 上次 open 状态（null = 未初始化，首帧不派发事件） */
   private prevOpen: boolean | null = null
-  /** A6 Esc 关闭后 restoreFocus 的 focusin 会重新触发打开——关闭瞬间置位，忽略下一条 focusin */
+  /** Esc 关闭后 restoreFocus 的 focusin 会重新触发打开——关闭瞬间置位，忽略下一条 focusin */
   private suppressFocusOpen = false
   /** virtual-anchor 元素跟随的监听是否已挂 */
   private followOpen = false
   private followRaf = 0
-  /** 延迟显示/隐藏定时器（A4，经 onCleanup 清理，无孤儿） */
+  /** 延迟显示/隐藏定时器（经 onCleanup 清理，无孤儿） */
   private showTimer: ReturnType<typeof setTimeout> | null = null
   private hideTimer: ReturnType<typeof setTimeout> | null = null
-  /** touch 长按定时器（B5） */
+  /** touch 长按定时器 */
   private touchTimer: ReturnType<typeof setTimeout> | null = null
-  /** auto-close 定时器（C3） */
+  /** auto-close 定时器 */
   private autoTimer: ReturnType<typeof setTimeout> | null = null
-  /** 富内容插槽（A5） */
+  /** 富内容插槽 */
   private contentSlot: HTMLSlotElement | null = null
-  /** B6 append-to：portal host 容器（目标容器内的 div + 独立 shadow，样式作用域保真） */
+  /** append-to：portal host 容器（目标容器内的 div + 独立 shadow，样式作用域保真） */
   private portalHost: HTMLElement | null = null
   /** tip 唯一 id（aria-describedby 指向，A6） */
   private tipId = ''
@@ -340,7 +340,7 @@ export class OAStooltip extends OASElement {
       // 富内容插槽：slotchange → 内容源切换（属性文本 ↔ 插槽）
       this.contentSlot = this.tipEl.querySelector('slot[name="content"]')
       this.contentSlot?.addEventListener('slotchange', () => this.syncContent())
-      // interactive（B3）：tip 自身 mouseenter 取消关闭、mouseleave 排程关闭
+      // interactive：tip 自身 mouseenter 取消关闭、mouseleave 排程关闭
       this.tipEl.addEventListener('mouseenter', () => {
         if (this.hasAttr('interactive')) this.cancelHide()
       })
@@ -349,11 +349,11 @@ export class OAStooltip extends OASElement {
       })
     }
 
-    // A2 触发系统：统一绑定所有通道，handler 内按 trigger 属性启停（属性变化无需重绑）
+    // 触发系统：统一绑定所有通道，handler 内按 trigger 属性启停（属性变化无需重绑）
     this.anchor?.addEventListener('mouseenter', () => this.scheduleShow('hover'))
     this.anchor?.addEventListener('mouseleave', () => this.scheduleHide('hover'))
     this.anchor?.addEventListener('focusin', () => {
-      // A6 Esc 关闭还原焦点后，下一条 focusin 是"还原"而非用户交互——跳过
+      // Esc 关闭还原焦点后，下一条 focusin 是"还原"而非用户交互——跳过
       if (this.suppressFocusOpen) {
         this.suppressFocusOpen = false
         return
@@ -368,11 +368,11 @@ export class OAStooltip extends OASElement {
     })
     this.anchor?.addEventListener('contextmenu', () => {
       if (!this.triggerHas('contextmenu')) return
-      // 不 preventDefault：保留浏览器系统菜单，仅打开 tooltip（B4）
+      // 不 preventDefault：保留浏览器系统菜单，仅打开 tooltip
       this.setOpen(true)
     })
     this.anchor?.addEventListener('keydown', (e) => this.onTriggerKey(e as KeyboardEvent))
-    // B5 touch 长按：pointerdown 起 timer，up/cancel/leave 取消
+    // touch 长按：pointerdown 起 timer，up/cancel/leave 取消
     this.anchor?.addEventListener('pointerdown', (e) => this.onTouchStart(e as PointerEvent))
     this.anchor?.addEventListener('pointerup', () => this.cancelTouch())
     this.anchor?.addEventListener('pointercancel', () => this.cancelTouch())
@@ -389,7 +389,7 @@ export class OAStooltip extends OASElement {
     })
   }
 
-  /** C4 trigger-keys：焦点在触发元素上时按指定键打开 */
+  /** trigger-keys：焦点在触发元素上时按指定键打开 */
   private onTriggerKey(e: KeyboardEvent): void {
     const keys = this.getAttr('trigger-keys', '').split(/\s+/).filter(Boolean)
     if (keys.length && keys.includes(e.key)) {
@@ -397,7 +397,7 @@ export class OAStooltip extends OASElement {
     }
   }
 
-  /** B5 touch 长按：pointerdown 起 touch-delay 定时（默认 500ms），到点打开 */
+  /** touch 长按：pointerdown 起 touch-delay 定时（默认 500ms），到点打开 */
   private onTouchStart(e: PointerEvent): void {
     if (!this.triggerHas('touch')) return
     if (e.pointerType === 'mouse') return // 桌面鼠标不走长按（touch/pen 才触发）
@@ -452,7 +452,7 @@ export class OAStooltip extends OASElement {
   }
 
   /**
-   * A4 延迟打开：open-delay ms 后 open；B2 skipDelay 命中时跳过延迟立即打开。
+   * 延迟打开：open-delay ms 后 open；skipDelay 命中时跳过延迟立即打开。
    * hover 快速切换（open 定时未到又离开）会被 scheduleHide 取消，无残留定时器。
    * focus 通道单独走 open-delay（skipDelay 仅作用于连续 hover）。
    */
@@ -470,7 +470,7 @@ export class OAStooltip extends OASElement {
     this.showTimer = setTimeout(() => this.setOpen(true), delay)
   }
 
-  /** A4 延迟关闭：close-delay ms 后 close */
+  /** 延迟关闭：close-delay ms 后 close */
   private scheduleHide(trigger: 'hover' | 'focus'): void {
     if (!this.triggerHas(trigger)) return
     if (this.hasAttr('virtual')) return
@@ -514,7 +514,7 @@ export class OAStooltip extends OASElement {
   }
 
   /**
-   * A6 aria-describedby：打开时触发元素关联 tip id（role=tooltip 的描述关系）。
+   * aria-describedby：打开时触发元素关联 tip id（role=tooltip 的描述关系）。
    * 虚拟模式无触发元素，跳过。关闭时移除（解除关联，避免描述残留）。
    */
   private syncDescribedBy(open: boolean): void {
@@ -524,7 +524,7 @@ export class OAStooltip extends OASElement {
   }
 
   /**
-   * B6 append-to 挂载点：把 tip 移入目标容器内的 portal host（div + 独立 open shadow，
+   * append-to 挂载点：把 tip 移入目标容器内的 portal host（div + 独立 open shadow，
    * STYLE 注入其中保证样式作用域保真）。移入后 ::part(tip) 无法从宿主穿透
    * （跨 shadow 不可用），需用 CSS 变量或类选择器定制——文档明示。
    * append-to 移除时 tip 移回原 shadow，portal host 销毁。
@@ -583,7 +583,7 @@ export class OAStooltip extends OASElement {
     }
   }
 
-  /** A5 富内容源切换：slot 有 assignedNodes → 隐藏属性文本容器；否则显示属性文本 */
+  /** 富内容源切换：slot 有 assignedNodes → 隐藏属性文本容器；否则显示属性文本 */
   private syncContent(): void {
     if (!this.tipEl || !this.contentSlot) return
     const hasRich = this.contentSlot.assignedNodes({ flatten: true }).length > 0
@@ -593,7 +593,7 @@ export class OAStooltip extends OASElement {
   }
 
   /**
-   * B10 颜色变体（ui-spec §4.1 协议）：语义 4 色 + 11 预设名 + 任意 CSS 色值。
+   * 颜色变体（ui-spec §4.1 协议）：语义 4 色 + 11 预设名 + 任意 CSS 色值。
    * 通过 tip 上的 --oas-tooltip-bg / --oas-tooltip-color 变量注入（token 引用，含 dark 变体），
    * 箭头底色同 --oas-tooltip-bg。移除 color 属性后清空变量回落默认（text-primary/bg）。
    */
@@ -649,7 +649,7 @@ export class OAStooltip extends OASElement {
     return lum > 0.35 ? 'var(--oas-color-text-primary)' : 'var(--oas-color-text-on-primary)'
   }
 
-  /** A7 max-width：数字补 px 或 CSS 长度（token 开口 --oas-tooltip-max-width 兜底 240px） */
+  /** max-width：数字补 px 或 CSS 长度（token 开口 --oas-tooltip-max-width 兜底 240px） */
   private syncMaxWidth(): void {
     if (!this.tipEl) return
     const raw = this.getAttr('max-width', '')
@@ -660,7 +660,7 @@ export class OAStooltip extends OASElement {
     this.tipEl.style.maxWidth = /^\d+$/.test(raw) ? `${raw}px` : raw
   }
 
-  /** C3 auto-close：打开后 auto-close ms 自动关闭（0 或缺省 = 不自动关闭） */
+  /** auto-close：打开后 auto-close ms 自动关闭（0 或缺省 = 不自动关闭） */
   private syncAutoClose(open: boolean): void {
     if (this.autoTimer) {
       clearTimeout(this.autoTimer)
@@ -675,13 +675,13 @@ export class OAStooltip extends OASElement {
     if (!this.tipEl) return
     const open = this.hasAttr('open') && !this.hasAttr('disabled')
     this.tipEl.setAttribute('aria-hidden', String(!open))
-    // B1 动画：打开时加 tip-enter（播放方向感知进场动画）；关闭移除
+    // 动画：打开时加 tip-enter（播放方向感知进场动画）；关闭移除
     this.tipEl.classList.toggle('tip-enter', open)
-    // A8 disabled：禁用时数据属性同步（供 :host 无感知时的样式/语义钩子）
+    // disabled：禁用时数据属性同步（供 :host 无感知时的样式/语义钩子）
     this.tipEl.setAttribute('data-interactive', this.hasAttr('interactive') ? 'true' : 'false')
-    // C1 merge 箭头：data-arrow-position 同步（CSS 按 placement 选择器融合）
+    // merge 箭头：data-arrow-position 同步（CSS 按 placement 选择器融合）
     this.tipEl.setAttribute('data-arrow-position', this.getAttr('arrow-position', 'center'))
-    // A5 内容：fresh 默认 true（关闭时也持续更新）；fresh="false" 仅打开时写入
+    // 内容：fresh 默认 true（关闭时也持续更新）；fresh="false" 仅打开时写入
     const fresh = this.getAttr('fresh', 'true') !== 'false'
     if (fresh || open) {
       this.tipEl.querySelector<HTMLElement>('.tip-content')!.textContent = this.getAttr(
@@ -693,12 +693,12 @@ export class OAStooltip extends OASElement {
     // 箭头显隐：arrow 布尔属性默认 true（显示），arrow="false" 隐藏；元素与 ::part(arrow) 保留
     const arrow = this.tipEl.querySelector<HTMLElement>('[data-popper-arrow]')
     if (arrow) arrow.hidden = !this.showArrow()
-    // B10 颜色变体 / A7 max-width
+    // 颜色变体 / max-width
     this.syncColor()
     this.syncMaxWidth()
-    // A6 aria-describedby 关联
+    // aria-describedby 关联
     this.syncDescribedBy(open)
-    // C3 auto-close
+    // auto-close
     this.syncAutoClose(open)
     // open 状态迁移（受控 setAttribute 与触发都会走到这里）→ oas-open-change
     if (this.prevOpen !== null && this.prevOpen !== open) {
@@ -708,7 +708,7 @@ export class OAStooltip extends OASElement {
     // 模块级浮层栈（Esc 关闭用）：打开注册、关闭注销
     if (open) registerTip(this)
     else unregisterTip(this)
-    // B6 append-to 挂载点
+    // append-to 挂载点
     this.ensurePortal()
     this.syncFollow(open)
     if (!open) return
@@ -813,7 +813,7 @@ export class OAStooltip extends OASElement {
     arrow.style.left = ''
     arrow.style.top = ''
     if (!this.hasAttr('arrow-point-at-center')) return
-    // C1 merge：箭头由 CSS 钉死面板角点（直角三角贴角共边），内联偏移会让三角盒
+    // merge：箭头由 CSS 钉死面板角点（直角三角贴角共边），内联偏移会让三角盒
     // 脱离角点、破坏共边衔接——跳过指向中心计算
     if (this.getAttr('arrow-position', 'center') === 'merge') return
     const vertical = actual.startsWith('top') || actual.startsWith('bottom')

@@ -79,6 +79,9 @@ const SHORTCUT_SYMBOLS: Record<string, string> = {
 
 const MAX_RECENTS = 10
 
+/** 组件实例级 listbox 容器 id 的自增序列（aria-controls 唯一 id） */
+let commandSeq = 0
+
 const STYLE = `
 :host {
   display: block;
@@ -96,6 +99,39 @@ const STYLE = `
   align-items: flex-start;
   justify-content: center;
   padding-top: 20vh;
+  /* append-to portal host 为 pointer-events:none（不吞页面指针，pointer-events 可继承）——
+     遮罩与面板显式恢复可交互 */
+  pointer-events: auto;
+}
+/* 开合过渡：overlay 整体淡入（背景遮罩 + 面板随父淡入）、panel 自身轻微上移；
+   只动 transform/opacity（command 无浮层定位测量，不污染测量；reduced-motion 关闭） */
+.overlay:not([hidden]) {
+  animation: oas-command-fade 160ms var(--oas-ease-out);
+}
+.overlay:not([hidden]) .panel {
+  animation: oas-command-rise 160ms var(--oas-ease-out);
+}
+@keyframes oas-command-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes oas-command-rise {
+  from {
+    transform: translateY(8px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .overlay:not([hidden]),
+  .overlay:not([hidden]) .panel {
+    animation: none;
+  }
 }
 .overlay[hidden] {
   display: none;
@@ -426,6 +462,7 @@ export class OASCommand extends OASElement {
       'multiple',
       'virtual',
       'item-height',
+      'append-to',
     ]
   }
 
@@ -463,6 +500,15 @@ export class OASCommand extends OASElement {
   private recentsLoaded = false
   private multiValues: string[] = []
   private _filter: ((query: string, items: CommandItem[]) => CommandItem[]) | null = null
+  /** append-to：portal host 容器（目标容器内 div + 独立 shadow + STYLE 注入 + 插槽桥接） */
+  private portalHost: HTMLElement | null = null
+  /** listbox 容器 id（组件内生成唯一，aria-controls 指向） */
+  private listboxId = ''
+  private vlistId = ''
+  /** document keydown 幂等重挂守卫（断开重连后 update() 恢复，防丢失） */
+  private keyBound = false
+  /** document keydown 处理器（bind 时注入实现；幂等重挂保证 remove 用同一引用） */
+  private onDocumentKey: ((e: KeyboardEvent) => void) | null = null
 
   /** property 通道（Vue/React 把 items 识别为实例属性走赋值；setter 反射到 attribute 统一解析链路） */
   get items(): CommandItem[] {
@@ -535,6 +581,12 @@ export class OASCommand extends OASElement {
     this.emptyTextEl = this.shadow.querySelector('.empty-text')
     this.emptySlotEl = this.shadow.querySelector('slot[name="empty"]')
     this.confirmEl = this.shadow.querySelector('.confirm')
+    // aria-controls：listbox / 虚拟列表容器分配组件内唯一 id（模板为 SSR 纯函数，
+    // id 在 bind 阶段运行时写入，SSR 快照不含，避免序列号跨进程漂移破坏 DSD 匹配）
+    this.listboxId = `oas-command-list-${++commandSeq}`
+    this.vlistId = `oas-command-vlist-${commandSeq}`
+    this.listEl?.setAttribute('id', this.listboxId)
+    this.vlist?.setAttribute('id', this.vlistId)
 
     this.searchEl?.addEventListener('input', () => {
       const v = this.searchEl?.value ?? ''
@@ -588,8 +640,24 @@ export class OASCommand extends OASElement {
       // 焦点陷阱：打开时 Tab 在面板内循环
       if (e.key === 'Tab' && this.hasAttr('open')) this.trapTab(e)
     }
-    document.addEventListener('keydown', onDocumentKey)
-    this.onCleanup(() => document.removeEventListener('keydown', onDocumentKey))
+    this.onDocumentKey = onDocumentKey
+    this.updateDocumentKey()
+  }
+
+  /**
+   * 幂等重挂 document keydown（hotkey 唤起 / Esc 关闭 / Tab 焦点陷阱）。
+   * 缺陷修复：bind() 仅 render 时执行一次，断开重连后 cleanup 已移除监听但不再重挂——
+   * 重连后 hotkey / Esc / Tab 陷阱全部失效（与 tour 同款）。update() 每次连接都调用本方法，
+   * keyBound 守卫保证同周期内不重复挂载、断开时 cleanup 复位标记。
+   */
+  private updateDocumentKey(): void {
+    if (this.keyBound || !this.onDocumentKey) return
+    this.keyBound = true
+    document.addEventListener('keydown', this.onDocumentKey)
+    this.onCleanup(() => {
+      this.keyBound = false
+      if (this.onDocumentKey) document.removeEventListener('keydown', this.onDocumentKey)
+    })
   }
 
   protected override render(): void {
@@ -609,6 +677,8 @@ export class OASCommand extends OASElement {
   protected override update(): void {
     if (this.pages.length === 0) this.parseItems()
     const open = this.hasAttr('open')
+    // 断开重连恢复 document keydown（幂等，见 updateDocumentKey 注释）
+    this.updateDocumentKey()
     if (this.overlayEl) this.overlayEl.hidden = !open
     if (this.panelEl) this.panelEl.setAttribute('aria-label', this.t('command.label'))
     if (this.searchEl) {
@@ -992,11 +1062,84 @@ export class OASCommand extends OASElement {
     return scored.map((s) => s.item)
   }
 
+  // ==================== append-to（家族一致：portal host 独立 shadow + STYLE 注入 + 插槽桥接） ====================
+
+  /**
+   * portal 挂载（与 hover-card 同架构）：打开且设置 append-to 时把整个 overlay
+   * 移入目标容器的 portal host（div + 独立 open shadow + STYLE 注入，样式作用域保真），
+   * 并把 light DOM 的插槽节点（empty/footer/view-*）桥接到 host light DOM——
+   * 面板内 slot 元素移入 portal shadow 后，分配源变成 host light DOM，不桥接则跨 host 断供。
+   * 幂等：host 已挂在同一目标容器时只重跑桥接（宿主动态插入插槽节点后的增量同步）。
+   */
+  private syncPortal(): void {
+    const sel = this.getAttr('append-to', '').trim()
+    if (!sel || !this.overlayEl || !this.hasAttr('open')) {
+      this.destroyPortal()
+      return
+    }
+    const target = sel === 'body' ? document.body : this.queryPortalTarget(sel)
+    if (!target) {
+      this.destroyPortal()
+      return
+    }
+    if (this.portalHost && this.portalHost.parentElement === target) {
+      this.bridgeSlotContent(this.portalHost)
+      return
+    }
+    this.destroyPortal()
+    const host = document.createElement('div')
+    host.setAttribute('data-oas-command-portal', '')
+    host.style.cssText =
+      'position: fixed; inset: 0; pointer-events: none; z-index: var(--oas-z-modal, 1050);'
+    target.appendChild(host)
+    const root = host.attachShadow({ mode: 'open' })
+    root.innerHTML = `<style>${STYLE}</style>`
+    root.appendChild(this.overlayEl)
+    this.portalHost = host
+    this.bridgeSlotContent(host)
+  }
+
+  /** 解析 append-to 目标容器（非法选择器回落 null，静默留在原 shadow） */
+  private queryPortalTarget(sel: string): HTMLElement | null {
+    try {
+      return document.querySelector(sel)
+    } catch {
+      return null
+    }
+  }
+
+  /** 插槽桥接：宿主 light DOM 的 empty / footer / view-* 节点移入 portal host light DOM */
+  private bridgeSlotContent(host: HTMLElement): void {
+    for (const n of this.querySelectorAll<HTMLElement>(
+      '[slot="empty"], [slot="footer"], [slot^="view-"]',
+    )) {
+      host.appendChild(n)
+    }
+  }
+
+  /** portal 拆除：overlay 移回原 shadow，插槽节点移回宿主，host 移除无孤儿 */
+  private destroyPortal(): void {
+    const host = this.portalHost
+    if (!host) return
+    this.portalHost = null
+    if (this.overlayEl && host.shadowRoot?.contains(this.overlayEl)) {
+      this.shadow.appendChild(this.overlayEl)
+    }
+    for (const n of host.querySelectorAll<HTMLElement>('[slot]')) {
+      this.appendChild(n)
+    }
+    host.remove()
+  }
+
   private renderList(): void {
     const listEl = this.listEl
     const emptyEl = this.emptyEl
     const vlist = this.vlist
     if (!listEl || !emptyEl) return
+    // append-to：幂等同步 portal 挂载（打开时 overlay 移入目标容器；关闭/未配置时拆回）
+    this.syncPortal()
+    // aria-controls：默认指向常规 listbox（虚拟滚动路径再覆写为虚拟列表容器）
+    this.searchEl?.setAttribute('aria-controls', this.listboxId)
     this.visibleItems = []
 
     // 视图模式：隐藏列表/空态，展示动态插槽
@@ -1064,6 +1207,8 @@ export class OASCommand extends OASElement {
       vlist.setAttribute('height', '320')
       vlist.setAttribute('item-height', String(this.virtualItemHeight()))
       vlist.items = visible
+      // aria-controls：虚拟模式下 listbox 角色在虚拟列表容器上
+      this.searchEl?.setAttribute('aria-controls', this.vlistId)
       return
     }
 
@@ -1386,9 +1531,11 @@ export class OASCommand extends OASElement {
     const list = focusable.filter((el): el is HTMLElement => el !== null)
     if (list.length === 0) return
     e.preventDefault()
-    // 用 shadow.activeElement 定位：happy-dom 下 document.activeElement 只会回到宿主，
-    // 真实浏览器里两者一致（取 shadow 内真实聚焦元素）。
-    const current = list.indexOf(this.shadow.activeElement as HTMLElement)
+    // 用当前焦点所在的 shadow root 定位：append-to portal 期间面板在 portal host 的
+    // shadow 内，取 portal shadow 的 activeElement；非 portal 走自身 shadow
+    // （happy-dom 下 document.activeElement 只会回到宿主，真实浏览器里两者一致）。
+    const activeRoot = this.portalHost?.shadowRoot ?? this.shadow
+    const current = list.indexOf(activeRoot.activeElement as HTMLElement)
     const next = e.shiftKey
       ? (current - 1 + list.length) % list.length
       : (current + 1) % list.length

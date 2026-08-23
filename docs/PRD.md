@@ -687,11 +687,11 @@ floating 导航族三组件按能力并集补齐 + 水平收纳/inline 形态多
 - **实测修复**（用户视角验证门禁驱动）：inline hover/click 抵消展不开、inline-sub flex 并排、inline-sub role 嵌套 axe 违规、水平浮层 overflow 裁剪不可见、「···」收纳项自身被收、「···」弹层右缘截断+颜色继承、inline 选中/移出误收起
 - **验收**：menu 64 + dropdown 52 + contextmenu 21 单测（全量 2673）、typecheck/build/api:check 全绿、e2e chromium 937 + firefox 350、axe 零严重违规、console 零告警；浏览器实测 light/dark 全交互链（inline 展开/手风琴互斥/受控展开/水平收纳弹层选中反馈/close-on-select 对照/dropdown hover 面板/contextmenu 各触发）
 
-## v2.1.6 导航与浮层族 11 组件能力补齐（已完成，待发布）
+## v2.2.2 导航与浮层族 11 组件能力补齐（已随 v2.2.2 发布）
 
-tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navigation-menu/toolbar 按能力并集（能力横向补齐，A/B/C 档全做，唯一豁免：command 内置模糊搜索并入未来打包勾选特性）：
+tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navigation-menu/toolbar 按能力并集全量补齐（唯一豁免：command 内置模糊搜索并入未来打包勾选特性）：
 
-- **tooltip**：placement 12 向、trigger 多选（hover/click/focus/contextmenu/touch/manual）、open/close-delay、富内容插槽、Esc + aria-describedby（WCAG 1.4.13）、max-width token、disabled、方向感知动画、interactive 可悬停、skip-delay 延迟组、append-to portal、双轴偏移、color 变体、禁用触发兼容、collision-padding、箭头 merge/fresh/auto-close/trigger-keys（C 档全做）
+- **tooltip**：placement 12 向、trigger 多选（hover/click/focus/contextmenu/touch/manual）、open/close-delay、富内容插槽、Esc + aria-describedby（WCAG 1.4.13）、max-width token、disabled、方向感知动画、interactive 可悬停、skip-delay 延迟组、append-to portal、双轴偏移、color 变体、禁用触发兼容、collision-padding、箭头 merge/fresh/auto-close/trigger-keys
 - **popover**：trigger 多选 + hover 防抖、placement 12 向、宽度定制 + width='trigger'、初始焦点指定、关闭按钮 + 声明式关层、append-to、颜色变体、碰撞细调（fallback-placements/hide-when-detached）、modal 化（backdrop+焦点锁+滚动锁）、arrow-merge/fresh/auto-close/trigger-keys；嵌套级联 + Esc 栈保持领先
 - **hover-card**：浮层可悬停不闪关（立身修复）、富内容插槽、open/close-delay 分离、箭头、oas-open-change、role 语义修正（去 dialog）、方向感知动画、延迟组、宽度定制、append-to、碰撞细调
 - **breadcrumb**：项 icon、图标分隔符、真实链接 href/target（不再吞默认跳转）、disabled、折叠保留数可配、项下拉菜单、单项截断 + title、size、键盘导航、active 语义、schema.org BreadcrumbList JSON-LD、color/underline 变体、part 扩展
@@ -705,3 +705,19 @@ tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navig
 - **共享**：浮层定位引擎升级 12 向 + skidding + collisionPadding（tooltip/popover/hover-card/tour 复用）
 - **实测修复**：toolbar SSR 溢出误判（happy-dom 假溢出致快照隐藏项、水合布局漂移 9px；溢出判定改 scrollWidth>clientWidth 防 shrink-to-fit 假溢出）；popover 退场动画延迟 aria-hidden（语义状态立即落地 + .oas-closing 保显播完）；back-top append-to 竞态致 Vue 水合 mismatch（组件级 load 后 teleport + 站点级注册移至水合后）；toolbar is-attached 样式缺失
 - **验收**：单测 tooltip 78 / popover 90 / hover-card 35 / breadcrumb 33 / anchor 41 / back-top 35 / tour 60 / command 67 / menubar 61 / navigation-menu 36 / toolbar 43 / 定位引擎 30（全量 3120）、typecheck/build 全绿、e2e chromium 944 + firefox 抽样 355、ssr-dsd 11/11、console 零告警；识图验收 light+dark 全 11 页通过（33 张截图逐张核对）
+
+## 后续 backlog：独立组件条目（按需立项）
+
+部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
+
+### oas-float-button 浮动按钮家族
+
+悬浮于页面或容器边缘的浮动动作按钮。关键能力：单个/分组/菜单三种模式（分组含展开方向、触发方式、受控展开）、链接化（href/target）、徽标集成（状态点/数字封顶）；back-top 为其「回到顶部」形态，现有 back-top 能力保持。
+
+### oas-app-bar 应用栏
+
+页面/工具区顶部的应用栏布局条。关键能力：可收起工具栏（collapse 汉堡收起/展开）、扩展区（extended 扩展内容插槽）、absolute/floating 背景与浮动形态等页头页框布局能力。
+
+### oas-sidebar 侧边导航栏
+
+可折叠成图标栏形态的侧边导航容器。关键能力：collapse 折叠/展开切换、折叠态图标栏（配 tooltip 提示）；menu 的 collapse 形态归属此条目。

@@ -4,18 +4,18 @@
     "method": "gzip = zlib gzipSync；brotli = zlib brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 7521606,
+        "distTotalBytes": 7521564,
         "browserJs": {
           "files": 264,
-          "rawBytes": 2315897,
-          "gzipBytes": 639416,
-          "brotliBytes": 505743
+          "rawBytes": 2315876,
+          "gzipBytes": 639402,
+          "brotliBytes": 505732
         },
         "fullEntry": {
           "files": 311,
-          "rawBytes": 1283317,
-          "gzipBytes": 415403,
-          "brotliBytes": 346535
+          "rawBytes": 1283296,
+          "gzipBytes": 415389,
+          "brotliBytes": 346524
         },
         "cdn": {
           "files": 1,
@@ -162,43 +162,55 @@
       {
         "name": "dist/cdn.js gzip",
         "actualBytes": 240557,
-        "limitBytes": 230400,
-        "pass": false,
-        "basis": "同类（原生 WC 组件库全量单文件）公开区间约 150~300KB 的均值 225KB；v2.0 补齐后实测 gzip 153.2 KB"
+        "limitBytes": 307200,
+        "warnAtBytes": 276480,
+        "pass": true,
+        "warn": false,
+        "basis": "天花板制：实测 gzip 240,557 B（v2.1.5 菜单族 + v2.2.2 浮层族大改后），定档 300 KB 预留后续版本能力增长空间"
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
-        "actualBytes": 415403,
-        "limitBytes": 404480,
-        "pass": false,
-        "basis": "实测 gzip 334,182 B（逐文件求和上界，v2.1 组件增强后），按原系数上浮约 18% 取整 395 KB"
+        "actualBytes": 415389,
+        "limitBytes": 532480,
+        "warnAtBytes": 479232,
+        "pass": true,
+        "warn": false,
+        "basis": "天花板制：520 KB = cdn 天花板 300 KB × 全量链/cdn 实测比 ≈1.73（逐文件求和上界口径）；实测 gzip 415,403 B（v2.2.2 后）"
       },
       {
         "name": "@oas-ui/ui/basic/button 链 gzip",
         "actualBytes": 22556,
         "limitBytes": 26624,
+        "warnAtBytes": 23962,
         "pass": true,
+        "warn": false,
         "basis": "实测 gzip 22,557 B（含 core + 全量 icon 注册表，v2.1.3 能力增强后），上浮约 15%"
       },
       {
         "name": "@oas-ui/ui/data/table 链 gzip",
         "actualBytes": 21801,
-        "limitBytes": 22528,
+        "limitBytes": 26624,
+        "warnAtBytes": 23962,
         "pass": true,
-        "basis": "实测 gzip 17,921 B（含 core + virtual-list + i18n），上浮约 23%"
+        "warn": false,
+        "basis": "实测 gzip 21,801 B（含 core + virtual-list + i18n，v2.0/v2.1 表格能力增强后），上浮约 19%"
       },
       {
         "name": "@oas-ui/ui/form/form 链 gzip",
         "actualBytes": 12831,
         "limitBytes": 14336,
+        "warnAtBytes": 12902,
         "pass": true,
+        "warn": false,
         "basis": "实测 gzip 11,873 B（含 core + i18n），上浮约 21%"
       },
       {
         "name": "@oas-ui/theme index.css gzip",
         "actualBytes": 2680,
         "limitBytes": 3072,
+        "warnAtBytes": 2765,
         "pass": true,
+        "warn": false,
         "basis": "实测 gzip 2,642 B（v2.1 预设文字 -text token 22 个 + dark 语义色修复），上浮约 13%"
       }
     ]

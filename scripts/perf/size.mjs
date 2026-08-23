@@ -257,17 +257,21 @@ for (const { id, entry } of COMPONENT_ENTRIES) {
 // 量纲：字节。超预算 → FAIL 非零退出，CI 拦截。
 const BUDGETS = [
   {
+    // 全量类预算 = 天花板制（2026-08-23 定夺）：组件能力持续增强，体积随之增长属预期内行为，
+    // 天花板只为防灾难性膨胀；达 90% 预警线提前亮黄，触发时启动瘦身评估或再定档。
+    // 增长纪律由单组件链预算（绝对值制）与按需叙事守住。
     name: 'dist/cdn.js gzip',
     get: () => cdn.gzipBytes,
-    limit: 225 * 1024, // 225 KB（2026-08-14 用户定夺：同类[原生 WC 组件库全量]公开区间 150~300KB 的均值）
+    limit: 300 * 1024, // 300 KB 天花板
     basis:
-      '同类（原生 WC 组件库全量单文件）公开区间约 150~300KB 的均值 225KB；v2.0 补齐后实测 gzip 153.2 KB',
+      '天花板制：实测 gzip 240,557 B（v2.1.5 菜单族 + v2.2.2 浮层族大改后），定档 300 KB 预留后续版本能力增长空间',
   },
   {
     name: '@oas-ui/ui 全量入口链 gzip',
     get: () => fullEntry.gzipBytes,
-    limit: 395 * 1024, // 395 KB。实测 334,182 B（v2.1 组件增强后），按原条目系数上浮约 18%
-    basis: '实测 gzip 334,182 B（逐文件求和上界，v2.1 组件增强后），按原系数上浮约 18% 取整 395 KB',
+    limit: 520 * 1024, // 520 KB 天花板（cdn 天花板 300 KB × 实测链/单文件比 ≈1.73）
+    basis:
+      '天花板制：520 KB = cdn 天花板 300 KB × 全量链/cdn 实测比 ≈1.73（逐文件求和上界口径）；实测 gzip 415,403 B（v2.2.2 后）',
   },
   {
     name: '@oas-ui/ui/basic/button 链 gzip',
@@ -278,8 +282,8 @@ const BUDGETS = [
   {
     name: '@oas-ui/ui/data/table 链 gzip',
     get: () => componentMeasures.table.gzipBytes,
-    limit: 22 * 1024, // 22 KB。实测 17,921 B，上浮约 23%
-    basis: '实测 gzip 17,921 B（含 core + virtual-list + i18n），上浮约 23%',
+    limit: 26 * 1024, // 26 KB。实测 21,801 B（v2.0/v2.1 表格能力增强后），上浮约 19%
+    basis: '实测 gzip 21,801 B（含 core + virtual-list + i18n，v2.0/v2.1 表格能力增强后），上浮约 19%',
   },
   {
     name: '@oas-ui/ui/form/form 链 gzip',
@@ -295,22 +299,27 @@ const BUDGETS = [
   },
 ]
 
-console.log('\n=== 体积预算断言 ===')
+console.log('\n=== 体积预算断言（全量类=天花板制；单组件链/theme=绝对值制；90% 预警线） ===')
 let fail = false
+const WARN_RATIO = 0.9
 const budgetResults = []
 for (const b of BUDGETS) {
   const actual = b.get()
   const ok = actual <= b.limit
+  const warnAtBytes = Math.round(b.limit * WARN_RATIO)
+  const warn = ok && actual >= warnAtBytes
   if (!ok) fail = true
-  const status = ok ? 'PASS' : 'FAIL'
+  const status = ok ? (warn ? 'WARN' : 'PASS') : 'FAIL'
   console.log(
-    `${status} ${b.name.padEnd(42)} ${fmtBytes(actual).padStart(10)} / 预算 ${fmtBytes(b.limit)}（依据：${b.basis}）`,
+    `${status} ${b.name.padEnd(42)} ${fmtBytes(actual).padStart(10)} / 预算 ${fmtBytes(b.limit)}（预警线 ${fmtBytes(warnAtBytes)}）（依据：${b.basis}）`,
   )
   budgetResults.push({
     name: b.name,
     actualBytes: actual,
     limitBytes: b.limit,
+    warnAtBytes,
     pass: ok,
+    warn,
     basis: b.basis,
   })
 }

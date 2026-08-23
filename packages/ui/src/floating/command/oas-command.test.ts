@@ -216,7 +216,7 @@ describe('OASCommand', () => {
     expect(options(el).map((o) => o.textContent)).toEqual(['新增', '删除'])
   })
 
-  // ============ A 档：图标 / 快捷键标注 / description / 分隔符 ============
+  // ============ 图标 / 快捷键标注 / description / 分隔符 ============
 
   it('项图标（icon 字段渲染 svg）', () => {
     const el = mount({
@@ -274,7 +274,7 @@ describe('OASCommand', () => {
     expect(fired).toBe(0)
   })
 
-  // ============ A 档：loading 态 ============
+  // ============ loading 态 ============
 
   it('loading 态：显示占位行并置 aria-busy', () => {
     const el = mount({ open: '', loading: '' })
@@ -283,7 +283,7 @@ describe('OASCommand', () => {
     expect(options(el).length).toBe(0)
   })
 
-  // ============ A 档：should-filter=false 外部过滤 ============
+  // ============ should-filter=false 外部过滤 ============
 
   it('should-filter=false：输入不本地过滤，全部项保留 + 派发 oas-input', () => {
     const el = mount({ open: '', 'should-filter': 'false' })
@@ -294,7 +294,7 @@ describe('OASCommand', () => {
     expect(options(el).length).toBe(4)
   })
 
-  // ============ A 档：空态插槽 ============
+  // ============ 空态插槽 ============
 
   it('空态插槽：slot="empty" 内容替换默认空态文案', () => {
     const el = mount({ open: '' })
@@ -311,7 +311,7 @@ describe('OASCommand', () => {
     expect(slot.assignedNodes()[0]!.textContent).toBe('自定义空态')
   })
 
-  // ============ A 档：hotkey 可配置/可关 ============
+  // ============ hotkey 可配置/可关 ============
 
   it('hotkey 可配置：ctrl+shift+p 才触发', () => {
     const el = mount({ hotkey: 'ctrl+shift+p' })
@@ -349,7 +349,7 @@ describe('OASCommand', () => {
     expect(el.hasAttribute('open')).toBe(true)
   })
 
-  // ============ A 档：oas-open-change 事件 ============
+  // ============ oas-open-change 事件 ============
 
   it('oas-open-change：打开与关闭各派发一次', () => {
     const el = mount()
@@ -371,7 +371,7 @@ describe('OASCommand', () => {
     expect(detail).toEqual({ open: false })
   })
 
-  // ============ A 档：匹配字符高亮 ============
+  // ============ 匹配字符高亮 ============
 
   it('匹配字符高亮：搜索词包 mark 标签，textContent 保持完整', () => {
     const el = mount({ open: '' })
@@ -383,7 +383,7 @@ describe('OASCommand', () => {
     expect(row.textContent).toBe('打开文件')
   })
 
-  // ============ B 档：匹配度打分排序 ============
+  // ============ 匹配度打分排序 ============
 
   it('匹配度打分：label 包含 > keywords 命中，最匹配项排前', () => {
     const el = mount({
@@ -410,7 +410,7 @@ describe('OASCommand', () => {
     expect(options(el).map((o) => o.textContent)).toEqual(['文件管理', '打开文件'])
   })
 
-  // ============ B 档：limit 渲染上限 ============
+  // ============ limit 渲染上限 ============
 
   it('limit 限制渲染条数', () => {
     const items = JSON.stringify(
@@ -420,7 +420,7 @@ describe('OASCommand', () => {
     expect(options(el).length).toBe(3)
   })
 
-  // ============ B 档：自定义过滤函数（filter property） ============
+  // ============ 自定义过滤函数（filter property） ============
 
   it('filter property 函数接管过滤', () => {
     const el = mount({ open: '' })
@@ -436,7 +436,7 @@ describe('OASCommand', () => {
     expect(options(el).map((o) => o.textContent)).toEqual(['打开文件'])
   })
 
-  // ============ B 档：footer ============
+  // ============ footer ============
 
   it('footer：打开时显示默认快捷键提示条（含 locale 文案）', () => {
     const el = mount({ open: '' })
@@ -467,7 +467,7 @@ describe('OASCommand', () => {
     expect(q(el, '.footer')!.hidden).toBe(false)
   })
 
-  // ============ B 档：value 受控（搜索词双向） ============
+  // ============ value 受控（搜索词双向） ============
 
   it('value 受控：初始值同步输入框并过滤', () => {
     const el = mount({ open: '', value: '打开' })
@@ -499,7 +499,7 @@ describe('OASCommand', () => {
     expect(el.hasAttribute('value')).toBe(false)
   })
 
-  // ============ B 档：selected 受控（选中项） ============
+  // ============ selected 受控（选中项） ============
 
   it('selected 受控：外部值定位高亮项', () => {
     const el = mount({ open: '', selected: 'open-file' })
@@ -523,7 +523,7 @@ describe('OASCommand', () => {
     expect(detail).toEqual({ value: 'open-file' })
   })
 
-  // ============ B 档：close-on-select ============
+  // ============ close-on-select ============
 
   it('close-on-select="false"：选中后不关闭', () => {
     const el = mount({ open: '', 'close-on-select': 'false' })
@@ -534,7 +534,7 @@ describe('OASCommand', () => {
     expect(el.hasAttribute('open')).toBe(true)
   })
 
-  // ============ B 档：forceMount ============
+  // ============ forceMount ============
 
   it('forceMount 项忽略过滤强制显示（创建型入口）', () => {
     const el = mount({
@@ -548,7 +548,7 @@ describe('OASCommand', () => {
     expect(options(el).map((o) => o.textContent)).toEqual(['创建「xyz」'])
   })
 
-  // ============ B 档：嵌套页面 / 面包屑回退 ============
+  // ============ 嵌套页面 / 面包屑回退 ============
 
   it('page 子页：进入子页渲染子项 + 面包屑 + oas-page-change(push)', () => {
     const el = mount({
@@ -667,7 +667,7 @@ describe('OASCommand', () => {
     expect(q(el, '.breadcrumb')!.hidden).toBe(true)
   })
 
-  // ============ B 档：最近使用 / 历史 ============
+  // ============ 最近使用 / 历史 ============
 
   it('recent：选中项记录并按最近优先置顶（去重）', () => {
     const el = mount({ open: '', recent: '' })
@@ -702,7 +702,7 @@ describe('OASCommand', () => {
     expect(options(el2)[0]!.textContent).toBe('打开文件')
   })
 
-  // ============ B 档：视图插槽（Raycast 风格面板内视图） ============
+  // ============ 视图插槽（Raycast 风格面板内视图） ============
 
   it('view 视图：选中进入视图插槽 + oas-view-change，Esc 回退', () => {
     const el = mount({
@@ -726,7 +726,7 @@ describe('OASCommand', () => {
     expect(options(el).length).toBe(1)
   })
 
-  // ============ C 档：多选命令（multiple） ============
+  // ============ 多选命令（multiple） ============
 
   it('multiple：点击切换勾选并派发 oas-change', () => {
     const el = mount({ open: '', multiple: '' })
@@ -770,7 +770,7 @@ describe('OASCommand', () => {
     expect(el.shadowRoot!.querySelector<HTMLElement>('.check')!.hidden).toBe(false)
   })
 
-  // ============ C 档：虚拟滚动 ============
+  // ============ 虚拟滚动 ============
 
   it('virtual：只渲染可见窗口（不渲染全量）', () => {
     const items = JSON.stringify(
@@ -829,5 +829,132 @@ describe('OASCommand', () => {
     expect(el.query).toBe('')
     fireInput(el, '打开')
     expect(el.query).toBe('打开')
+  })
+
+  // ============ 断开重连后 document keydown 幂等重挂 ============
+
+  it('断开重连后 hotkey / Esc 仍生效（document keydown 幂等重挂，update() 恢复）', () => {
+    const el = mount()
+    el.remove()
+    document.body.appendChild(el)
+    // 重连后 Ctrl+K 唤起
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))
+    expect(el.hasAttribute('open')).toBe(true)
+    // Esc 关闭
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  // ============ 面板开合过渡动画 ============
+
+  it('开合过渡动画：overlay fade + panel 轻微上移（仅 transform/opacity），reduced-motion 关闭', () => {
+    const el = mount()
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toContain('@keyframes oas-command-fade')
+    expect(style).toContain('@keyframes oas-command-rise')
+    expect(style).toMatch(/transform:\s*translateY\(8px\)/)
+    expect(style).toContain('prefers-reduced-motion')
+    // 动画只动 transform/opacity（不碰布局属性，杜绝污染测量）
+    const rise = style.match(/@keyframes oas-command-rise\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(rise).not.toMatch(/opacity|top|left|width|height|margin|padding/)
+    expect(rise).toMatch(/translateY/)
+    const fade = style.match(/@keyframes oas-command-fade\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(fade).toMatch(/opacity/)
+    expect(fade).not.toMatch(/transform/)
+  })
+
+  // ============ search aria-controls ============
+
+  it('search aria-controls 指向 listbox 容器 id（组件内生成唯一 id）', () => {
+    const el = mount({ open: '' })
+    const list = q(el, '[part="list"]')!
+    expect(list.getAttribute('role')).toBe('listbox')
+    expect(list.id).toMatch(/^oas-command-list-\d+$/)
+    expect(search(el).getAttribute('aria-controls')).toBe(list.id)
+  })
+
+  it('aria-controls 在虚拟滚动模式指向虚拟列表容器', () => {
+    const items = JSON.stringify(
+      Array.from({ length: 1000 }, (_, i) => ({ label: `命令 ${i}`, value: `c${i}` })),
+    )
+    const el = mount({ open: '', virtual: '', items })
+    const vlist = el.shadowRoot!.querySelector<HTMLElement>('oas-virtual-list')!
+    expect(search(el).getAttribute('aria-controls')).toBe(vlist.id)
+  })
+
+  it('多个实例 listbox id 唯一', () => {
+    const a = mount({ open: '' })
+    const b = mount({ open: '' })
+    const la = q(a, '[part="list"]')!
+    const lb = q(b, '[part="list"]')!
+    expect(la.id).not.toBe(lb.id)
+  })
+
+  // ============ append-to（portal host 独立 shadow + STYLE 注入 + 插槽桥接） ============
+
+  it('append-to：overlay 移入目标容器 portal host（独立 shadow + STYLE 注入），关闭移回无孤儿', () => {
+    const target = document.createElement('div')
+    target.id = 'cmd-target'
+    document.body.appendChild(target)
+    const el = mount({ open: '', 'append-to': '#cmd-target' })
+    const host = target.querySelector<HTMLElement>('[data-oas-command-portal]')
+    expect(host).not.toBeNull()
+    // overlay 整体移入 portal shadow（样式作用域保真）
+    const hostOverlay = host!.shadowRoot!.querySelector<HTMLElement>('[part="overlay"]')
+    expect(hostOverlay).not.toBeNull()
+    expect(hostOverlay!.hidden).toBe(false)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="overlay"]')).toBeNull()
+    const portalCss = host!.shadowRoot!.querySelector('style')!.textContent!
+    expect(portalCss).toContain('.panel')
+    // host 为 pointer-events:none（不吞页面指针），overlay 显式恢复可交互（pointer-events 可继承）
+    expect(portalCss).toMatch(/\.overlay\s*\{[^}]*pointer-events:\s*auto/)
+    // 关闭：overlay 移回原 shadow，host 移除
+    el.removeAttribute('open')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="overlay"]')).not.toBeNull()
+    expect(target.querySelector('[data-oas-command-portal]')).toBeNull()
+  })
+
+  it('append-to + slot="footer"：插槽节点桥接到 portal host light DOM，跨 host 分配不断供', () => {
+    const target = document.createElement('div')
+    target.id = 'cmd-target-2'
+    document.body.appendChild(target)
+    const el = mount({ open: '', 'append-to': '#cmd-target-2' })
+    const custom = document.createElement('span')
+    custom.slot = 'footer'
+    custom.textContent = '自定义底部'
+    el.appendChild(custom)
+    // 触发重渲染让 syncPortal 把新插入的插槽节点桥接进 host
+    el.setAttribute('items', JSON.stringify([{ label: 'x', value: 'y' }]))
+    const host = target.querySelector<HTMLElement>('[data-oas-command-portal]')!
+    expect(host.contains(custom)).toBe(true)
+    const slot = host.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="footer"]')!
+    expect(slot.assignedNodes()).toContain(custom)
+    // 自定义底部替换默认提示条（跨 host 分配仍生效）
+    expect(host.shadowRoot!.querySelector<HTMLElement>('.hints')!.hidden).toBe(true)
+    // 关闭：插槽节点移回宿主，host 无孤儿
+    el.removeAttribute('open')
+    expect(el.contains(custom)).toBe(true)
+    expect(target.querySelector('[data-oas-command-portal]')).toBeNull()
+  })
+
+  it('append-to：Tab 焦点陷阱在 portal 模式仍生效（按 portal shadow activeElement 定位循环）', () => {
+    const target = document.createElement('div')
+    target.id = 'cmd-target-3'
+    document.body.appendChild(target)
+    const el = mount({ open: '', 'append-to': '#cmd-target-3' })
+    const host = target.querySelector<HTMLElement>('[data-oas-command-portal]')!
+    const searchInPortal = host.shadowRoot!.querySelector<HTMLInputElement>('[part="search"]')!
+    searchInPortal.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }))
+    const rows = [...host.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]')]
+    expect(host.shadowRoot!.activeElement).toBe(rows[0])
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }))
+    expect(host.shadowRoot!.activeElement).toBe(rows[1])
+  })
+
+  it('append-to 未命中容器：静默回退自身 shadow（不抛错不孤儿）', () => {
+    const el = mount({ open: '', 'append-to': '#cmd-missing' })
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="overlay"]')).not.toBeNull()
+    expect(document.querySelector('[data-oas-command-portal]')).toBeNull()
   })
 })

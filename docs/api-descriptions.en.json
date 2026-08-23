@@ -430,7 +430,8 @@
       "close-on-select": "Close the panel after selecting (default true; `false` keeps it open for consecutive actions)",
       "multiple": "Multiple-select mode (toggle checks + batch run via the footer confirm button)",
       "virtual": "Virtual scrolling for large datasets (reuses oas-virtual-list)",
-      "item-height": "Virtual row height (default `36`)"
+      "item-height": "Virtual row height (default `36`)",
+      "append-to": "Mount container selector (e.g. `#panel`): the whole panel (backdrop + palette) moves into a portal host inside the target container (isolated shadow + style injection + slot bridging — empty/footer/view-* slots travel with the panel), for nested transform/stacking-context scenarios; without it the panel is fixed-positioned inside the component's own shadow"
     },
     "events": {
       "oas-select": "A command was executed, `detail: { value }`; multi-select confirm `detail: { values }`",
@@ -758,6 +759,8 @@
       "open-delay": "Open delay in ms, separate from close-delay; falls back to the `delay` alias, then to 300",
       "placement": "Popup placement, 12 directions: top/bottom/left/right × start/center/end (e.g. `bottom-start`)",
       "skidding": "Cross-axis offset in px, shifts along the axis perpendicular to the main axis",
+      "sticky": "Scroll stickiness: `partial` (default) repositions with the anchor on scroll and hides per `hide-when-detached` once the anchor leaves the viewport (or clamps to the viewport edge when not enabled); `always` pins the card to the viewport edge once the anchor scrolls out (stays visible); `off` disables scroll repositioning",
+      "collision-boundary": "Custom collision boundary (selector string, first match in multi-ancestor scenes; the `collisionBoundary` property accepts an element directly): flips and clamps against that element's rect instead of the viewport",
       "title": "Title text",
       "width": "Width customization: number (px) or `trigger`/`target` (same width as the trigger); falls back to CSS min-width"
     },
@@ -1806,9 +1809,10 @@
       "steps": "Steps JSON (`TourStep[] | string`); property assignment supports function/element targets",
       "placement": "Popup placement: 12 directions (top/bottom/left/right × start/end/center) + `center` (centered when no target); default `bottom`; auto-flips when space is insufficient; step-level override",
       "arrow": "Whether to show the arrow (boolean, default true; `false` hides)",
+      "arrow-point-at-center": "Arrow points to the target center projection (stays accurate after viewport avoidance shifts the popup; by default the arrow sticks to the placement edge)",
       "mask": "Overlay switch/customization: `false` to disable (non-modal) or `{\"color\",\"style\"}` to customize (default true); step-level override",
       "type": "Popup type: `default` / `primary` (primary-colored popup for non-modal emphasis)",
-      "gap": "Highlight padding: number (padding px) or `{\"padding\",\"radius\"}`; default padding 4",
+      "gap": "Highlight padding: number (padding px) or `{\"padding\",\"radius\",\"offset\"}`; `offset` expands the highlight outward (number for all sides / `[horizontal, vertical]` dual-axis, orthogonal to padding); default padding 4",
       "keyboard": "Keyboard ←/→ to advance steps (default true; `false` disables)",
       "show-close": "Show the close button (default true; `false` hides)",
       "close-icon": "Custom close button content (HTML string)",
@@ -1817,8 +1821,8 @@
       "disabled-interaction": "Disable interaction on the highlighted area (interceptor covers target)",
       "scroll-into-view-options": "`scrollIntoView` options for scrolling to the target (JSON; default `{\"behavior\":\"smooth\",\"block\":\"center\"}`)",
       "scroll-padding": "Padding when scrolling to the target (px; applied as target scroll-margin)",
-      "auto-reposition": "Auto reposition on scroll/resize (default true)",
-      "progress-text": "Progress text template: `{{current}}/{{total}}` replacement; when set, the counter area uses the template",
+      "auto-reposition": "Auto reposition on scroll/resize + overflow flip/viewport avoidance (default true; `false` keeps the declared placement without flipping or avoidance)",
+      "progress-text": "Progress text template: `current`/`total` placeholders each wrapped in double curly braces; when set, the counter area uses the template",
       "show-progress": "Progress bar at the top of the popup (width advances with steps)",
       "show-bullets": "Dot indicators (click a dot to jump)",
       "indicators": "Counter style: `dots` (default) / `number` / `none`",
@@ -1857,7 +1861,9 @@
       "oas-dismiss": "Don't show again matched; tour start was blocked"
     },
     "slots": {
-      "cover": "Step cover rich content (slot takes precedence over the step.cover image)"
+      "cover": "Step cover rich content (slot takes precedence over the step.cover image)",
+      "indicators": "Custom indicator area (render with the `oas-step` current/total; hides the built-in dots/number indicator when present)",
+      "actions": "Custom action area (replaces the whole built-in button area; hides the built-in prev/skip/next buttons when present)"
     }
   },
   "oas-transfer": {

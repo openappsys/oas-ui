@@ -207,6 +207,21 @@
   </oas-space>
 </DemoBlock>
 
+## 挂载容器
+
+`append-to`：整个面板（遮罩 + 面板）移入指定容器的 portal host（独立 shadow + 样式注入 + 插槽桥接，`empty`/`footer`/`view-*` 插槽内容随面板迁移），适合嵌套 transform / stacking context 场景。
+
+<DemoBlock title="append-to 挂载容器">
+  <oas-space size="small">
+    <oas-button id="command-append-btn" type="primary">打开（面板挂载到下方容器）</oas-button>
+    <oas-tag id="command-append-result" type="info">尚未选择</oas-tag>
+  </oas-space>
+  <oas-command id="command-append" append-to="#command-append-panel" hotkey="false" items='[{"label":"打开文件","value":"open-file"},{"label":"保存文件","value":"save"}]'>
+    <span slot="footer">↑↓ 选择 · ↵ 执行 · esc 关闭（随面板迁移）</span>
+  </oas-command>
+  <div id="command-append-panel" style="position: relative; height: 240px; margin-top: 16px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></div>
+</DemoBlock>
+
 ## 虚拟滚动
 
 `virtual` 开启虚拟滚动（大数据量窗口渲染，复用 oas-virtual-list；有分组/最近项时自动回退全量渲染）。本 demo 预置 20000 条命令，只渲染可见窗口。
@@ -438,6 +453,15 @@ onMounted(() => {
     if (tag) tag.textContent = `已选择：${e.detail.value}`
   })
 
+  // append-to 挂载容器
+  document.getElementById('command-append-btn')?.addEventListener('click', () => {
+    document.getElementById('command-append')?.setAttribute('open', '')
+  })
+  document.getElementById('command-append')?.addEventListener('oas-select', (e) => {
+    const tag = document.getElementById('command-append-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}`
+  })
+
   // 虚拟滚动：预置 20000 条
   const virtualEl = document.getElementById('command-virtual')
   if (virtualEl) {
@@ -463,6 +487,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `append-to` | 挂载容器选择器（如 `#panel`）：整个面板（遮罩 + 面板）移入目标容器的 portal host（独立 shadow + 样式注入 + 插槽桥接，empty/footer/view-* 插槽随面板迁移），适合嵌套 transform/stacking context 场景；未设置时面板在组件自身 shadow 内 fixed 定位 | `string` | — |
 | `close-on-select` | 选中后是否关闭面板（默认 true；`false` 支持连续执行） | `string` | — |
 | `hotkey` | 唤起快捷键组合，如 `ctrl+k` / `meta+shift+p`（逗号分隔多组，支持 mod/meta/ctrl/alt/shift）；`false` 关闭内置监听（默认 `mod+k`） | `string` | `mod+k` |
 | `item-height` | 虚拟滚动行高（默认 `36`） | `string` | `36` |
