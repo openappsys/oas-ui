@@ -74,6 +74,11 @@ const POSITIONS: Record<string, { top?: string; bottom?: string; left?: string; 
 const RING_RADIUS = 18
 const RING_C = 2 * Math.PI * RING_RADIUS
 
+/** 拖拽位移阈值（px）：在此范围内视为点击（执行回顶），超过视为拖拽（不触发点击） */
+const DRAG_THRESHOLD = 4
+/** 拖拽位置持久化 key（宿主可清理 localStorage 重置位置） */
+const DRAG_POS_KEY = 'oas-back-top-pos'
+
 const STYLE = `
 :host {
   display: inline-block;
@@ -171,6 +176,15 @@ const STYLE = `
 }
 .btn:active {
   background: var(--oas-color-bg-hover);
+}
+/* draggable 拖拽定位：拖拽态指针反馈（grab/grabbing）+ 禁止选中文本（拖拽不选中按钮内容） */
+:host(.draggable) .btn {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+:host(.draggable.dragging) .btn {
+  cursor: grabbing;
 }
 :host([data-theme='primary']) .btn {
   border-color: transparent;
@@ -319,6 +333,7 @@ export class OASBackTop extends OASElement {
       'append-to',
       'tooltip',
       'badge',
+      'draggable',
     ]
   }
 
@@ -340,12 +355,32 @@ export class OASBackTop extends OASElement {
   private scrollTarget: Element | Window = window
   private scrollListenerBound = false
   private scrollRaf = 0
+  /** target 缺省时自动探测到的最近可滚祖先（缓存，断开重连不清） */
+  private detectedScrollParent: Element | Window | null = null
+
+  /** 拖拽持久化的自由定位坐标（left/top，相对视口） */
+  private dragPos: { left: number; top: number } | null = null
+  /** 是否已尝试读取 localStorage（幂等：draggable 移除再恢复时沿用已读结果） */
+  private dragPosLoaded = false
+  /** 进行中的拖拽会话 */
+  private dragState:
+    | { pointerId: number; startX: number; startY: number; startLeft: number; startTop: number; moved: boolean }
+    | null = null
+  /** 拖拽超阈值后抑制随之合成的一次 click（区分拖拽与点击） */
+  private suppressClick = false
 
   constructor() {
     super()
     // 宿主级点击兜底：真实点击（按钮在 shadow 内冒泡到宿主）与 demo 探针的 DOM click
     // 兜底路径（隐藏态 0 命中区 → el.click()）都走这里，且随元素生命周期天然存活
     this.addEventListener('click', this.handleClick)
+    // draggable 属性会开启浏览器原生拖拽，拦截 dragstart 让位给自研 pointer 拖拽
+    this.addEventListener('dragstart', (e) => e.preventDefault())
+    // 拖拽会话（pointer 捕获 + 移动定位 + 释放持久化）——监听宿主自身，不随断开丢失
+    this.addEventListener('pointerdown', this.handlePointerDown)
+    this.addEventListener('pointermove', this.handlePointerMove)
+    this.addEventListener('pointerup', this.handlePointerUp)
+    this.addEventListener('pointercancel', this.handlePointerCancel)
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -363,7 +398,7 @@ export class OASBackTop extends OASElement {
           <circle class="ring-track" part="ring-track" cx="20" cy="20" r="${RING_RADIUS}" fill="none" stroke-dasharray="${RING_C}"></circle>
           <circle class="ring-bar" part="ring-bar" cx="20" cy="20" r="${RING_RADIUS}" fill="none" stroke-dasharray="${RING_C}" stroke-dashoffset="${RING_C}"></circle>
         </svg>
-        <span class="tooltip" part="tooltip" role="tooltip" aria-hidden="true" hidden></span>
+        <span class="tooltip" part="tooltip" role="tooltip" id="tip" aria-hidden="true" hidden></span>
         <span class="badge" part="badge" aria-hidden="true" hidden></span>
       </button>
     `
@@ -453,6 +488,11 @@ export class OASBackTop extends OASElement {
 
   private handleClick = (e: Event): void => {
     void e
+    // 拖拽超阈值后浏览器会在捕获目标（宿主）上合成一次 click → 消费并复位
+    if (this.suppressClick) {
+      this.suppressClick = false
+      return
+    }
     if (!this.btn?.classList.contains('show')) return
     this.emit('click')
     this.scrollToEdge()
@@ -463,6 +503,35 @@ export class OASBackTop extends OASElement {
     if (!this.hasAttr('visible')) this.syncScrollVisibility()
   }
 
+  /**
+   * 判定一个元素是否为可滚容器：computed overflow 为 auto/scroll/overlay
+   * 且内容确实溢出（scrollHeight/scrollWidth > clientHeight/clientWidth）。
+   * 两轴都查（overflow 简写在部分环境下不回写 overflowX/Y，兜底读简写本身）。
+   */
+  private isScrollContainer(el: Element): boolean {
+    const cs = getComputedStyle(el)
+    const h = el as HTMLElement
+    const overflowY = cs.overflowY || cs.overflow
+    const overflowX = cs.overflowX || cs.overflow
+    if ((overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') && h.scrollHeight > h.clientHeight) {
+      return true
+    }
+    if ((overflowX === 'auto' || overflowX === 'scroll' || overflowX === 'overlay') && h.scrollWidth > h.clientWidth) {
+      return true
+    }
+    return false
+  }
+
+  /** 自宿主向上遍历，找最近可滚祖先；找不到回落 window */
+  private detectScrollParent(): Element | Window {
+    let el = this.parentElement
+    while (el) {
+      if (this.isScrollContainer(el)) return el
+      el = el.parentElement
+    }
+    return window
+  }
+
   private resolveScrollTarget(): Element | Window {
     const t = this.getAttr('target', '')
     if (t) {
@@ -470,10 +539,14 @@ export class OASBackTop extends OASElement {
         const el = document.querySelector(t)
         if (el) return el
       } catch {
-        // 非法选择器：回落 window
+        // 非法选择器：回落自动探测
       }
     }
-    return window
+    // target 缺省：自动探测最近可滚祖先，结果缓存（断开重连不清，避免重复遍历）
+    if (this.detectedScrollParent == null) {
+      this.detectedScrollParent = this.detectScrollParent()
+    }
+    return this.detectedScrollParent
   }
 
   /** 幂等绑定/切换滚动监听（target 属性变化时自动重挂；断开重连由 update 恢复） */
@@ -650,6 +723,13 @@ export class OASBackTop extends OASElement {
       this.style.bottom = '0'
       return
     }
+    // draggable：有已持久化的自由坐标时用 left/top 记录的实际位置（忽略 bottom/right 预设）
+    if (this.hasAttr('draggable') && this.dragPos) {
+      this.setAttribute('data-pos', 'free')
+      this.style.left = `${this.dragPos.left}px`
+      this.style.top = `${this.dragPos.top}px`
+      return
+    }
     const pos = this.getAttr('position', '')
     const p = POSITIONS[pos]
     if (p) {
@@ -674,6 +754,104 @@ export class OASBackTop extends OASElement {
     this.style.right = this.getAttr('right', '32px')
   }
 
+  // ---------- draggable 拖拽定位（pointer 捕获 + 自由定位 + 持久化） ----------
+
+  /** 读取持久化位置（幂等；存储不可用/数据损坏时静默走默认定位） */
+  private maybeRestoreDragPos(): void {
+    if (this.dragPosLoaded || !this.hasAttr('draggable')) return
+    this.dragPosLoaded = true
+    try {
+      const raw = window.localStorage.getItem(DRAG_POS_KEY)
+      if (!raw) return
+      const p = JSON.parse(raw) as { left?: unknown; top?: unknown }
+      if (p && typeof p === 'object' && Number.isFinite(p.left) && Number.isFinite(p.top)) {
+        this.dragPos = { left: p.left as number, top: p.top as number }
+      }
+    } catch {
+      // 存储不可用 / 数据损坏：忽略，走默认定位
+    }
+  }
+
+  private handlePointerDown = (e: PointerEvent): void => {
+    if (!this.hasAttr('draggable')) return
+    if (e.button !== 0) return
+    // 新会话先复位抑制标记（上一次拖拽若被 pointercancel 中断可能残留）
+    this.suppressClick = false
+    const rect = this.getBoundingClientRect()
+    this.dragState = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      startLeft: rect.left,
+      startTop: rect.top,
+      moved: false,
+    }
+    this.classList.add('dragging')
+    try {
+      this.setPointerCapture(e.pointerId)
+    } catch {
+      // 环境不支持指针捕获：退化为移动/释放监听跟踪（无捕获也能完成拖拽）
+    }
+  }
+
+  private handlePointerMove = (e: PointerEvent): void => {
+    const d = this.dragState
+    if (!d || e.pointerId !== d.pointerId) return
+    const dx = e.clientX - d.startX
+    const dy = e.clientY - d.startY
+    // 阈值内视为点击（不移动）；超过阈值进入拖拽
+    if (!d.moved && Math.abs(dx) <= DRAG_THRESHOLD && Math.abs(dy) <= DRAG_THRESHOLD) return
+    d.moved = true
+    // 惯性边界夹取：left/top 夹在视口内（固定定位相对视口，拖出视口回夹）
+    const maxX = Math.max(0, window.innerWidth - this.offsetWidth)
+    const maxY = Math.max(0, window.innerHeight - this.offsetHeight)
+    const left = Math.min(Math.max(0, d.startLeft + dx), maxX)
+    const top = Math.min(Math.max(0, d.startTop + dy), maxY)
+    this.dragPos = { left, top }
+    this.style.left = `${left}px`
+    this.style.top = `${top}px`
+    this.style.bottom = ''
+    this.style.right = ''
+  }
+
+  private endDrag(pointerId: number): void {
+    if (!this.dragState || this.dragState.pointerId !== pointerId) return
+    try {
+      this.releasePointerCapture(pointerId)
+    } catch {
+      // 指针已失效：忽略释放失败
+    }
+    this.dragState = null
+    this.classList.remove('dragging')
+  }
+
+  private handlePointerUp = (e: PointerEvent): void => {
+    const d = this.dragState
+    if (!d || e.pointerId !== d.pointerId) return
+    if (d.moved) {
+      // 超阈值是拖拽：抑制随后的合成 click，并持久化位置
+      this.suppressClick = true
+      this.persistDragPos()
+    }
+    this.endDrag(e.pointerId)
+  }
+
+  private handlePointerCancel = (e: PointerEvent): void => {
+    const d = this.dragState
+    if (!d || e.pointerId !== d.pointerId) return
+    if (d.moved) this.persistDragPos()
+    this.endDrag(e.pointerId)
+  }
+
+  private persistDragPos(): void {
+    if (!this.dragPos) return
+    try {
+      window.localStorage.setItem(DRAG_POS_KEY, JSON.stringify(this.dragPos))
+    } catch {
+      // 存储不可用（隐私模式等）：位置仅本次会话生效
+    }
+  }
+
   protected override update(): void {
     const btn = this.btn
     if (!btn) return
@@ -692,6 +870,11 @@ export class OASBackTop extends OASElement {
     if (this.tooltipEl) {
       this.tooltipEl.hidden = !tipText
       if (tipText) this.tooltipEl.textContent = tipText
+      // 读屏可达：tooltip 开启时 aria-describedby 关联按钮（SR 可读提示文本）；
+      // 关闭时移除关联并恢复 aria-hidden（配合 hidden 双保险）
+      this.tooltipEl.setAttribute('aria-hidden', tipText ? 'false' : 'true')
+      if (tipText) btn.setAttribute('aria-describedby', this.tooltipEl.id)
+      else btn.removeAttribute('aria-describedby')
     }
     const badgeText = this.getAttr('badge', '')
     if (this.badgeEl) {
@@ -700,6 +883,10 @@ export class OASBackTop extends OASElement {
     }
     // 插槽内容 → 箭头图标显隐
     this.syncSlot()
+    // draggable：持久化位置恢复 + 拖拽态钩子 + touch-action:none（拖拽时禁止手势滚动）
+    this.classList.toggle('draggable', this.hasAttr('draggable'))
+    this.style.touchAction = this.hasAttr('draggable') ? 'none' : ''
+    this.maybeRestoreDragPos()
     // 定位
     this.applyPosition()
     // 显隐（受控 / 非受控双模式）

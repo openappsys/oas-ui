@@ -6024,3 +6024,42 @@ test('breadcrumb ellipsis 模式项下拉不被裁剪：面板 elementFromPoint 
   expect(r.height, '下拉面板应有高度').toBeGreaterThan(20)
   expect(r.hitInside, '下拉面板顶部应真实可见（不被 nav overflow 裁剪）').toBe(true)
 })
+
+// —— 缺陷回归：toolbar 溢出收纳的子项防收缩 ——
+// 曾现缺陷：slotted 子项无 flex-shrink:0，窄容器下被 flex 压扁成窄条，
+// scrollWidth 恒等于 clientWidth，溢出收纳判定永不触发（「···」不出现）。
+// 修复：::slotted(*) flex-shrink:0，溢出真实出现后由 syncOverflow 收纳。
+test('toolbar 窄容器子项防收缩：项保持固有宽度、溢出触发「···」、弹层镜像项为 menuitemcheckbox', async ({
+  page,
+}) => {
+  await page.goto('/components/toolbar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tb-overflow')
+  const r = await page.evaluate(async () => {
+    const host = document.querySelector('#tb-overflow')!
+    host.scrollIntoView({ block: 'center' })
+    await new Promise((res) => setTimeout(res, 500))
+    const more = host.shadowRoot!.querySelector<HTMLElement>('.more')
+    const kids = [...host.children].filter((k) => !k.hasAttribute('data-collapsed'))
+    const collapsed = [...host.children].filter((k) => k.hasAttribute('data-collapsed'))
+    // 至少一个文本按钮未被压扁（宽度 > 按钮内容合理下限）
+    const textBtn = kids.find((k) => (k.textContent || '').trim().length >= 2)
+    const minW = textBtn ? textBtn.getBoundingClientRect().width : 0
+    let panelRoles: string[] = []
+    if (more && !more.hidden) {
+      more.click()
+      await new Promise((res) => setTimeout(res, 400))
+      const panel = host.shadowRoot!.querySelector<HTMLElement>('.more-panel')
+      if (panel && !panel.hidden) {
+        panelRoles = [...panel.querySelectorAll('[role]')].map((n) => n.getAttribute('role') || '')
+      }
+    }
+    return { moreVisible: !!more && !more.hidden, collapsedCount: collapsed.length, minW: minW | 0, panelRoles }
+  })
+  expect(r.moreVisible, '「···」收纳项应可见').toBe(true)
+  expect(r.collapsedCount, '应有被收纳项').toBeGreaterThan(0)
+  expect(r.minW, '未收纳按钮不应被压扁（两字中文按钮固有宽约 24px+，压扁态为 ~13px）').toBeGreaterThan(24)
+  expect(r.panelRoles.length, '弹层应有镜像项').toBeGreaterThan(0)
+  for (const role of r.panelRoles) {
+    expect(['menuitem', 'menuitemcheckbox'], '镜像项角色应为 menuitem/menuitemcheckbox').toContain(role)
+  }
+})

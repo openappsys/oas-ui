@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import '@oas-ui/i18n'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
@@ -346,6 +346,146 @@ describe('OASToolbar 属性增强', () => {
     moreBtn.click()
     panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(panel.hidden).toBe(true)
+  })
+
+  // ---------- 重连丢失修复（document pointerdown / ResizeObserver 恢复） ----------
+  it('断开→重连后 document 外点关闭与 ResizeObserver 重算仍生效（监听不随断连丢失）', () => {
+    let lastRO: { cb: () => void; observed: Element[] } | null = null
+    class FakeRO {
+      cb: () => void
+      observed: Element[] = []
+      constructor(cb: () => void) {
+        this.cb = cb
+        lastRO = this
+      }
+      observe(el: Element) {
+        this.observed.push(el)
+      }
+      disconnect() {}
+      unobserve() {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
+    try {
+      const el = mount('<button>一</button><button>二</button>')
+      const moreBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="more"]')!
+      const panel = el.shadowRoot!.querySelector<HTMLElement>('[part="more-panel"]')!
+      expect(lastRO).not.toBeNull()
+      // 断开 → 重连：重连后 ResizeObserver 重新 observe 本宿主
+      el.remove()
+      document.body.appendChild(el)
+      expect(lastRO!.observed).toContain(el)
+      // 外点关闭弹层恢复
+      moreBtn.click()
+      expect(panel.hidden).toBe(false)
+      document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+      expect(panel.hidden).toBe(true)
+      // 宽度变化重算收纳恢复：mock 宽度后触发 RO 回调 → 项被收纳
+      Object.defineProperty(el, 'clientWidth', { value: 120, configurable: true })
+      Object.defineProperty(el, 'scrollWidth', { value: 300, configurable: true })
+      for (const b of el.querySelectorAll('button')) {
+        Object.defineProperty(b, 'offsetWidth', { value: 60, configurable: true })
+      }
+      Object.defineProperty(moreBtn, 'offsetWidth', { value: 20, configurable: true })
+      lastRO!.cb()
+      expect(buttons(el)[1]!.hasAttribute('data-collapsed')).toBe(true)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  // ---------- 溢出弹层视口下缘翻转 ----------
+  it('溢出弹层：面板下缘超出视口时向上翻转（flip-up），空间足够时不翻转', () => {
+    const el = mount('<button>一</button><button>二</button>')
+    const moreBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="more"]')!
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('[part="more-panel"]')!
+    Object.defineProperty(window, 'innerHeight', { value: 700, configurable: true })
+    // 面板下缘 900 > 视口 700 → 向上弹
+    Object.defineProperty(panel, 'getBoundingClientRect', {
+      value: () =>
+        ({ top: 200, bottom: 900, left: 0, right: 160, width: 160, height: 700, x: 0, y: 200 }) as DOMRect,
+      configurable: true,
+    })
+    moreBtn.click()
+    expect(panel.hidden).toBe(false)
+    expect(panel.classList.contains('flip-up')).toBe(true)
+    // 空间足够（下缘 500 < 700）→ 不翻转
+    Object.defineProperty(panel, 'getBoundingClientRect', {
+      value: () =>
+        ({ top: 200, bottom: 500, left: 0, right: 160, width: 160, height: 300, x: 0, y: 200 }) as DOMRect,
+      configurable: true,
+    })
+    moreBtn.click()
+    moreBtn.click()
+    expect(panel.classList.contains('flip-up')).toBe(false)
+  })
+
+  // ---------- 镜像项语义：menuitemcheckbox + aria-checked ----------
+  it('镜像项：toggle 镜像用 role=menuitemcheckbox + aria-checked，勾选走 CSS 前置样式（无文本前缀）', () => {
+    const el = mount(
+      '<oas-toolbar-toggle multiple value=\'["bold"]\' items=\'[{"label":"加粗","value":"bold"},{"label":"斜体","value":"italic"}]\'></oas-toolbar-toggle>',
+    )
+    Object.defineProperty(el, 'clientWidth', { value: 100, configurable: true })
+    Object.defineProperty(el, 'scrollWidth', { value: 300, configurable: true })
+    for (const c of [...el.children]) {
+      Object.defineProperty(c, 'offsetWidth', { value: 160, configurable: true })
+    }
+    const moreBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="more"]')!
+    Object.defineProperty(moreBtn, 'offsetWidth', { value: 20, configurable: true })
+    el.syncOverflow()
+    expect(moreBtn.hidden).toBe(false)
+    moreBtn.click()
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('[part="more-panel"]')!
+    const mirrors = panel.querySelectorAll<HTMLButtonElement>('[role="menuitemcheckbox"]')
+    expect(mirrors.length).toBe(2)
+    expect(mirrors[0]!.getAttribute('aria-checked')).toBe('true')
+    expect(mirrors[1]!.getAttribute('aria-checked')).toBe('false')
+    expect(mirrors[0]!.textContent).toBe('加粗')
+    expect(mirrors[0]!.textContent).not.toContain('✓')
+    // 勾选样式：CSS 前置（token 取色），替代文本前缀
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    const rule = css.split(".mirror[aria-checked='true']::before {")[1]?.split('}')[0] ?? ''
+    expect(rule, '勾选前置样式必须存在').not.toBe('')
+    expect(rule).toContain('var(--oas-color-primary)')
+    expect(rule).not.toMatch(/#[0-9a-f]{3,8}\b/i)
+    // 弹层键盘（Esc 关闭）覆盖 checkbox 镜像项
+    panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(panel.hidden).toBe(true)
+  })
+
+  // ---------- start/end 命名插槽 ----------
+  it('start/end 命名插槽：渲染顺序 start → 默认 → end，roving 依视觉顺序（首项在 start）', () => {
+    const el = mount(
+      '<button id="tb-def">中</button><button id="tb-start" slot="start">左</button><button id="tb-end" slot="end">右</button>',
+    )
+    const st = el.querySelector('#tb-start')!
+    const def = el.querySelector('#tb-def')!
+    const en = el.querySelector('#tb-end')!
+    expect(st.getAttribute('tabindex')).toBe('0')
+    expect(def.getAttribute('tabindex')).toBe('-1')
+    expect(en.getAttribute('tabindex')).toBe('-1')
+    ;(st as HTMLElement).focus()
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    expect(document.activeElement).toBe(def)
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    expect(document.activeElement).toBe(en)
+    // 循环回 start
+    el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    expect(document.activeElement).toBe(st)
+  })
+
+  it('slotchange 后新增 slot="end" 项自动参与 roving（尾端）', () => {
+    const el = mount('<button>一</button>')
+    const btn = document.createElement('button')
+    btn.textContent = '尾端'
+    btn.setAttribute('slot', 'end')
+    el.appendChild(btn)
+    return new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        expect(btn.getAttribute('tabindex')).toBe('-1')
+        expect(buttons(el)[0]!.getAttribute('tabindex')).toBe('0')
+        resolve()
+      })
+    })
   })
 })
 

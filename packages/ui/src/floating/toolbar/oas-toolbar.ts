@@ -19,6 +19,12 @@ const STYLE = `
 :host([hidden]) {
   display: none;
 }
+/* 子项防收缩：flex 默认 shrink=1 会把项压扁（scrollWidth 恒等于 clientWidth），
+   溢出收纳的 scrollWidth>clientWidth 判定永不触发、按钮被挤成窄条——
+   防收缩后溢出真实出现，超宽项由 syncOverflow 收进「···」 */
+::slotted(*) {
+  flex-shrink: 0;
+}
 :host([orientation='vertical']) {
   flex-direction: column;
   align-items: stretch;
@@ -126,6 +132,11 @@ const STYLE = `
   display: flex;
   flex-direction: column;
 }
+/* 弹层向下展开超出视口下缘时向上翻转（max-height 320px 兜底保留） */
+.more-panel.flip-up {
+  top: auto;
+  bottom: calc(100% + var(--oas-space-1));
+}
 .more-panel[hidden] {
   display: none;
 }
@@ -153,6 +164,13 @@ const STYLE = `
   cursor: not-allowed;
   opacity: 0.5;
 }
+/* 镜像勾选项：menuitemcheckbox 语义，勾选由 CSS 前置样式表达（token 取色，替代文本前缀） */
+.mirror[aria-checked='true']::before {
+  content: '✓';
+  margin-inline-end: var(--oas-space-1);
+  color: var(--oas-color-primary);
+  font-weight: 600;
+}
 /* 弹层打开时：溢出裁剪让位，弹层可见（含向左超出宿主左缘的部分） */
 :host(.overflow-open) {
   z-index: 20;
@@ -179,11 +197,12 @@ export class OASToolbar extends OASElement {
     return ['orientation', 'loop', 'disabled', 'focusable-when-disabled', 'size']
   }
 
-  private slotEl: HTMLSlotElement | null = null
   private moreBtn: HTMLButtonElement | null = null
   private morePanel: HTMLElement | null = null
   /** 水平溢出收纳的 ResizeObserver（容器宽度变化时重算收纳） */
   private overflowObserver: ResizeObserver | null = null
+  /** document 外点关闭器与 ResizeObserver 是否已注册（断开重连由 update 幂等恢复） */
+  private boundExternals = false
   /** 弹层是否打开（「···」点开/收起） */
   private moreOpen = false
   /** focusable-when-disabled 模式下由本组件打 aria-disabled 的项（解除禁用时恢复） */
@@ -195,7 +214,9 @@ export class OASToolbar extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
+      <slot name="start"></slot>
       <slot></slot>
+      <slot name="end"></slot>
       <button class="more" part="more" type="button" aria-haspopup="menu" aria-expanded="false" hidden>···</button>
       <div class="more-panel" part="more-panel" role="menu" hidden></div>
     `
@@ -204,16 +225,18 @@ export class OASToolbar extends OASElement {
   /** 缓存节点引用 + 绑定事件（render 与水合路径共用） */
   private bind(): void {
     this.setAttribute('role', 'toolbar')
-    this.slotEl = this.shadow.querySelector('slot')
-    this.slotEl?.addEventListener('slotchange', () => {
-      this.syncSize()
-      this.syncFar()
-      this.syncLinkParts()
-      this.syncRoving()
-      this.syncOverflow()
-    })
+    // 三个插槽（start/默认/end）任一内容变化都触发全量同步
+    for (const s of this.shadow.querySelectorAll<HTMLSlotElement>('slot')) {
+      s.addEventListener('slotchange', () => {
+        this.syncSize()
+        this.syncFar()
+        this.syncLinkParts()
+        this.syncRoving()
+        this.syncOverflow()
+      })
+    }
     this.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
-    // 「···」弹层交互：点按开合、内部键盘导航、外部点击关闭
+    // 「···」弹层交互：点按开合、内部键盘导航、外部点击关闭（document 监听由 update 幂等恢复）
     this.moreBtn = this.shadow.querySelector('.more')
     this.morePanel = this.shadow.querySelector('.more-panel')
     this.moreBtn?.addEventListener('click', () => {
@@ -221,14 +244,6 @@ export class OASToolbar extends OASElement {
       else this.openMore()
     })
     this.morePanel?.addEventListener('keydown', (e) => this.handlePanelKey(e as KeyboardEvent))
-    const onDocPointer = (e: PointerEvent): void => {
-      if (!this.moreOpen) return
-      const path = e.composedPath()
-      if (path.includes(this)) return
-      this.closeMore()
-    }
-    document.addEventListener('pointerdown', onDocPointer)
-    this.onCleanup(() => document.removeEventListener('pointerdown', onDocPointer))
     // focusable-when-disabled：禁用但可聚焦，点击拦截（capture 先于子元素处理器）
     this.addEventListener(
       'click',
@@ -240,12 +255,6 @@ export class OASToolbar extends OASElement {
       },
       true,
     )
-    // 水平溢出收纳：容器宽度变化时重算收纳
-    if (typeof ResizeObserver !== 'undefined') {
-      this.overflowObserver = new ResizeObserver(() => this.syncOverflow())
-      this.overflowObserver.observe(this)
-      this.onCleanup(() => this.overflowObserver?.disconnect())
-    }
   }
 
   protected override render(): void {
@@ -275,6 +284,43 @@ export class OASToolbar extends OASElement {
     this.syncLinkParts()
     this.syncRoving()
     this.syncOverflow()
+    // document 外点关闭器 + ResizeObserver：断开重连由 update 幂等恢复（防重连后丢失）
+    this.syncExternalListeners()
+  }
+
+  /**
+   * 幂等注册/恢复「document 级」监听（参照 back-top updateScrollTarget 的 update() 恢复模式）：
+   * - document pointerdown 弹层外点关闭器
+   * - ResizeObserver 宽度变化重算收纳
+   *
+   * 为什么在 update() 恢复：断连时 onCleanup 会移除它们，重连只走 update()（rendered 已 true
+   * 不再跑 render/bind）——若只注册在 bind()，重连后弹层外点关闭与宽度重算永久丢失。
+   * boundExternals 守卫保证同一连接周期只注册一次（属性变化触发多次 update 不重复注册）。
+   */
+  private syncExternalListeners(): void {
+    if (this.boundExternals) return
+    const onDocPointer = (e: PointerEvent): void => {
+      if (!this.moreOpen) return
+      const path = e.composedPath()
+      if (path.includes(this)) return
+      this.closeMore()
+    }
+    document.addEventListener('pointerdown', onDocPointer)
+    this.onCleanup(() => {
+      document.removeEventListener('pointerdown', onDocPointer)
+      this.boundExternals = false
+      this.closeMore()
+    })
+    // 水平溢出收纳：容器宽度变化时重算收纳
+    if (typeof ResizeObserver !== 'undefined') {
+      this.overflowObserver = new ResizeObserver(() => this.syncOverflow())
+      this.overflowObserver.observe(this)
+      this.onCleanup(() => {
+        this.overflowObserver?.disconnect()
+        this.overflowObserver = null
+      })
+    }
+    this.boundExternals = true
   }
 
   /** 整栏禁用：aria-disabled + inert（真禁用）/ focusable-when-disabled（可聚焦禁交互） */
@@ -346,21 +392,33 @@ export class OASToolbar extends OASElement {
    */
   private items(): HTMLElement[] {
     const focusableDisabled = this.hasAttr('disabled') && this.hasAttr('focusable-when-disabled')
-    return [...this.children].filter((c): c is HTMLElement => {
-      const el = c as HTMLElement
-      if (el.tagName === 'OAS-TOOLBAR-SEPARATOR') return false
-      if (el.hasAttribute('data-toolbar-ignore')) return false
-      if (el.hasAttribute('aria-hidden')) return false
-      if (el.hasAttribute('disabled')) return false
-      if (el.getAttribute('aria-disabled') === 'true' && !focusableDisabled) return false
-      const tag = el.tagName
-      const role = el.getAttribute('role')
-      if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return true
-      if (tag === 'A' && el.hasAttribute('href')) return true
-      if (role && INTERACTIVE_ROLES.has(role)) return true
-      if (tag.includes('-')) return true
-      return false
-    })
+    return [...this.children]
+      .filter((c): c is HTMLElement => {
+        const el = c as HTMLElement
+        if (el.tagName === 'OAS-TOOLBAR-SEPARATOR') return false
+        if (el.hasAttribute('data-toolbar-ignore')) return false
+        if (el.hasAttribute('aria-hidden')) return false
+        if (el.hasAttribute('disabled')) return false
+        if (el.getAttribute('aria-disabled') === 'true' && !focusableDisabled) return false
+        const tag = el.tagName
+        const role = el.getAttribute('role')
+        if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return true
+        if (tag === 'A' && el.hasAttribute('href')) return true
+        if (role && INTERACTIVE_ROLES.has(role)) return true
+        if (tag.includes('-')) return true
+        return false
+      })
+      // 按视觉顺序排序：slot="start" → 默认 → slot="end"（与 shadow 内插槽渲染顺序一致，
+      // 保证 roving/溢出收纳的索引与用户看到的位置一致）
+      .sort((a, b) => this.slotRank(a) - this.slotRank(b))
+  }
+
+  /** 插槽视觉位次：start 前部 / 默认中部 / end 尾端 */
+  private slotRank(el: HTMLElement): number {
+    const s = el.getAttribute('slot')
+    if (s === 'start') return 0
+    if (s === 'end') return 2
+    return 1
   }
 
   /** roving tabindex：只把当前项放入 Tab 序列，其余 -1；整栏真禁用时不设 tabindex */
@@ -520,7 +578,7 @@ export class OASToolbar extends OASElement {
     return false
   }
 
-  /** 弹层镜像：被收项 → role=menuitem 按钮，点击派发到原控件 */
+  /** 弹层镜像：被收项 → role=menuitem 按钮（toggle 项为 menuitemcheckbox），点击派发到原控件 */
   private renderMoreMirror(collapsed: HTMLElement[]): void {
     const panel = this.morePanel
     if (!panel) return
@@ -532,7 +590,10 @@ export class OASToolbar extends OASElement {
         for (const item of toggle.items) {
           const btn = this.createMirrorButton(item.label, t, item.value)
           if (item.disabled) btn.disabled = true
-          btn.textContent = (selected.includes(item.value) ? '✓ ' : '') + item.label
+          // toggle 镜像项语义：menuitemcheckbox + aria-checked（勾选由 CSS 前置样式表达）
+          btn.setAttribute('role', 'menuitemcheckbox')
+          btn.setAttribute('aria-checked', String(selected.includes(item.value)))
+          btn.textContent = item.label
           panel.appendChild(btn)
         }
         continue
@@ -584,7 +645,12 @@ export class OASToolbar extends OASElement {
     this.morePanel.hidden = false
     this.moreBtn.setAttribute('aria-expanded', 'true')
     this.classList.add('overflow-open')
-    const first = this.morePanel.querySelector<HTMLButtonElement>('[role="menuitem"]:not([disabled])')
+    // 视口下缘翻转（防御：面板固定向下展开，底部超视口时向上弹；max-height 320px 兜底保留）
+    const rect = this.morePanel.getBoundingClientRect()
+    this.morePanel.classList.toggle('flip-up', rect.bottom > (window.innerHeight || 0))
+    const first = this.morePanel.querySelector<HTMLButtonElement>(
+      '[role="menuitem"]:not([disabled]), [role="menuitemcheckbox"]:not([disabled])',
+    )
     first?.focus()
   }
 
@@ -608,7 +674,9 @@ export class OASToolbar extends OASElement {
       return
     }
     const items = [
-      ...this.morePanel!.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])'),
+      ...this.morePanel!.querySelectorAll<HTMLButtonElement>(
+        '[role="menuitem"]:not([disabled]), [role="menuitemcheckbox"]:not([disabled])',
+      ),
     ]
     if (items.length === 0) return
     if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {

@@ -504,6 +504,94 @@ describe('OASBackTop', () => {
     expect(el.shadowRoot!.querySelector('[part="badge"]')!.hasAttribute('hidden')).toBe(true)
   })
 
+  // ---------- target 缺省自动探测（嵌套滚动容器内自动吸附） ----------
+  it('target 缺省：自动吸附最近可滚祖先容器（overflow auto/scroll 且内容溢出）', () => {
+    const outer = document.createElement('div')
+    outer.style.overflow = 'auto'
+    Object.defineProperty(outer, 'scrollHeight', { value: 1200, configurable: true })
+    Object.defineProperty(outer, 'clientHeight', { value: 400, configurable: true })
+    const inner = document.createElement('div')
+    outer.appendChild(inner)
+    document.body.appendChild(outer)
+    const el = new OASBackTop()
+    inner.appendChild(el)
+    const btn = el.shadowRoot!.querySelector('[part="btn"]')!
+    outer.scrollTop = 500
+    outer.dispatchEvent(new Event('scroll'))
+    expect(btn.getAttribute('aria-hidden')).toBe('false')
+  })
+
+  it('target 缺省：探测结果缓存，断开重连后仍监听同一容器（连断不清）', () => {
+    const outer = document.createElement('div')
+    outer.style.overflow = 'auto'
+    Object.defineProperty(outer, 'scrollHeight', { value: 1200, configurable: true })
+    Object.defineProperty(outer, 'clientHeight', { value: 400, configurable: true })
+    document.body.appendChild(outer)
+    const el = new OASBackTop()
+    outer.appendChild(el)
+    const btn = el.shadowRoot!.querySelector('[part="btn"]')!
+    outer.scrollTop = 500
+    outer.dispatchEvent(new Event('scroll'))
+    expect(btn.getAttribute('aria-hidden')).toBe('false')
+    // 断开 → 重连：仍吸附同一容器
+    el.remove()
+    document.body.appendChild(el)
+    outer.scrollTop = 0
+    outer.dispatchEvent(new Event('scroll'))
+    expect(btn.getAttribute('aria-hidden')).toBe('true')
+    outer.scrollTop = 600
+    outer.dispatchEvent(new Event('scroll'))
+    expect(btn.getAttribute('aria-hidden')).toBe('false')
+  })
+
+  it('target 显式设置优先于自动探测（不会吸附可滚祖先）', () => {
+    const outer = document.createElement('div')
+    outer.style.overflow = 'auto'
+    Object.defineProperty(outer, 'scrollHeight', { value: 1200, configurable: true })
+    Object.defineProperty(outer, 'clientHeight', { value: 400, configurable: true })
+    const boxA = mockBox('bt-auto-prio', { scrollTop: 0, scrollHeight: 1200, clientHeight: 400 })
+    outer.appendChild(boxA)
+    document.body.appendChild(outer)
+    const el = new OASBackTop()
+    el.setAttribute('target', '#bt-auto-prio')
+    boxA.appendChild(el)
+    const btn = el.shadowRoot!.querySelector('[part="btn"]')!
+    // target 容器滚动 → 显示
+    boxA.scrollTop = 500
+    boxA.dispatchEvent(new Event('scroll'))
+    expect(btn.getAttribute('aria-hidden')).toBe('false')
+    // 祖先容器滚动 → 不影响（显式 target 顶替自动探测）
+    boxA.scrollTop = 0
+    boxA.dispatchEvent(new Event('scroll'))
+    expect(btn.getAttribute('aria-hidden')).toBe('true')
+    outer.scrollTop = 500
+    outer.dispatchEvent(new Event('scroll'))
+    expect(btn.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  // ---------- tooltip 读屏可达（aria-describedby） ----------
+  it('tooltip 开启时按钮 aria-describedby 关联提示文本，提示元素可被读屏读取', () => {
+    const el = new OASBackTop()
+    el.setAttribute('visible', '')
+    el.setAttribute('tooltip', '回到顶部')
+    document.body.appendChild(el)
+    const btn = el.shadowRoot!.querySelector('[part="btn"]')!
+    const tip = el.shadowRoot!.querySelector('[part="tooltip"]')!
+    expect(tip.id).toBeTruthy()
+    expect(btn.getAttribute('aria-describedby')).toBe(tip.id)
+    expect(tip.getAttribute('aria-hidden')).toBe('false')
+  })
+
+  it('无 tooltip 时按钮不设 aria-describedby，提示元素保持读屏隐藏', () => {
+    const el = new OASBackTop()
+    el.setAttribute('visible', '')
+    document.body.appendChild(el)
+    const btn = el.shadowRoot!.querySelector('[part="btn"]')!
+    const tip = el.shadowRoot!.querySelector('[part="tooltip"]')!
+    expect(btn.getAttribute('aria-describedby')).toBeNull()
+    expect(tip.getAttribute('aria-hidden')).toBe('true')
+  })
+
   // ---------- 点击 / 可访问性 / 清理 ----------
   it('可见时点击派发 oas-click', () => {
     const el = new OASBackTop()
@@ -565,5 +653,163 @@ describe('OASBackTop', () => {
     setWindowScrollY(500)
     fireWindowScroll()
     expect(btn.getAttribute('aria-hidden')).toBe('false')
+  })
+
+  // ---------- draggable 拖拽定位 ----------
+  describe('draggable 拖拽定位', () => {
+    const DRAG_POS_KEY = 'oas-back-top-pos'
+
+    beforeEach(() => {
+      window.localStorage.removeItem(DRAG_POS_KEY)
+    })
+
+    afterEach(() => {
+      window.localStorage.removeItem(DRAG_POS_KEY)
+    })
+
+    /** 挂载一个 draggable 可见按钮，并 mock 几何（happy-dom 无布局） */
+    function mountDraggable(): OASBackTop {
+      const el = new OASBackTop()
+      el.setAttribute('visible', '')
+      el.setAttribute('draggable', '')
+      document.body.appendChild(el)
+      Object.defineProperty(el, 'offsetWidth', { value: 40, configurable: true })
+      Object.defineProperty(el, 'offsetHeight', { value: 40, configurable: true })
+      Object.defineProperty(window, 'innerWidth', { value: 1000, configurable: true })
+      Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
+      return el
+    }
+
+    it('pointer 拖拽移动更新 left/top（free 定位），pointerup 持久化 localStorage', () => {
+      const el = mountDraggable()
+      vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+        left: 900,
+        top: 700,
+        width: 40,
+        height: 40,
+      } as DOMRect)
+      el.dispatchEvent(
+        new PointerEvent('pointerdown', { pointerId: 1, clientX: 900, clientY: 700, button: 0, bubbles: true }),
+      )
+      el.dispatchEvent(
+        new PointerEvent('pointermove', { pointerId: 1, clientX: 500, clientY: 100, bubbles: true }),
+      )
+      expect(el.style.left).toBe('500px')
+      expect(el.style.top).toBe('100px')
+      expect(el.style.bottom).toBe('')
+      expect(el.style.right).toBe('')
+      el.dispatchEvent(
+        new PointerEvent('pointerup', { pointerId: 1, clientX: 500, clientY: 100, bubbles: true }),
+      )
+      expect(JSON.parse(window.localStorage.getItem(DRAG_POS_KEY)!)).toEqual({ left: 500, top: 100 })
+    })
+
+    it('位移在阈值内（≤4px）算点击：仍派发 oas-click 并回顶', () => {
+      const spy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+      const el = mountDraggable()
+      el.setAttribute('duration', '0')
+      let fired = 0
+      el.addEventListener('oas-click', () => fired++)
+      el.dispatchEvent(
+        new PointerEvent('pointerdown', { pointerId: 1, clientX: 100, clientY: 100, button: 0, bubbles: true }),
+      )
+      el.dispatchEvent(
+        new PointerEvent('pointermove', { pointerId: 1, clientX: 102, clientY: 101, bubbles: true }),
+      )
+      el.dispatchEvent(
+        new PointerEvent('pointerup', { pointerId: 1, clientX: 102, clientY: 101, bubbles: true }),
+      )
+      ;(el.shadowRoot!.querySelector('[part="btn"]') as HTMLElement).click()
+      expect(fired).toBe(1)
+      expect(spy).toHaveBeenCalledWith({ top: 0, behavior: 'auto' })
+    })
+
+    it('位移超阈值算拖拽：抑制随后的点击（不派发 oas-click），下一次真实点击恢复正常', () => {
+      const el = mountDraggable()
+      let fired = 0
+      el.addEventListener('oas-click', () => fired++)
+      el.dispatchEvent(
+        new PointerEvent('pointerdown', { pointerId: 1, clientX: 900, clientY: 700, button: 0, bubbles: true }),
+      )
+      el.dispatchEvent(
+        new PointerEvent('pointermove', { pointerId: 1, clientX: 500, clientY: 700, bubbles: true }),
+      )
+      el.dispatchEvent(
+        new PointerEvent('pointerup', { pointerId: 1, clientX: 500, clientY: 700, bubbles: true }),
+      )
+      // 拖拽结束后浏览器会在捕获目标上合成 click → 被抑制
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      expect(fired).toBe(0)
+      // 下一次真实点击恢复正常
+      ;(el.shadowRoot!.querySelector('[part="btn"]') as HTMLElement).click()
+      expect(fired).toBe(1)
+    })
+
+    it('持久化恢复：连接时读取 localStorage 位置（left/top 优先于 bottom/right）', () => {
+      window.localStorage.setItem(DRAG_POS_KEY, JSON.stringify({ left: 120, top: 300 }))
+      const el = new OASBackTop()
+      el.setAttribute('visible', '')
+      el.setAttribute('draggable', '')
+      document.body.appendChild(el)
+      expect(el.style.left).toBe('120px')
+      expect(el.style.top).toBe('300px')
+      expect(el.style.bottom).toBe('')
+      expect(el.style.right).toBe('')
+    })
+
+    it('拖出视口边界回夹（left/top 夹在视口内）', () => {
+      const el = mountDraggable()
+      vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+        left: 900,
+        top: 700,
+        width: 40,
+        height: 40,
+      } as DOMRect)
+      el.dispatchEvent(
+        new PointerEvent('pointerdown', { pointerId: 1, clientX: 900, clientY: 700, button: 0, bubbles: true }),
+      )
+      el.dispatchEvent(
+        new PointerEvent('pointermove', { pointerId: 1, clientX: 2000, clientY: 1500, bubbles: true }),
+      )
+      // 视口 1000×800、按钮 40×40 → 最大 left=960、最大 top=760
+      expect(el.style.left).toBe('960px')
+      expect(el.style.top).toBe('760px')
+    })
+
+    it('pointercancel 清理拖拽会话：dragging 类移除、已移动位置持久化', () => {
+      const el = mountDraggable()
+      vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+        left: 900,
+        top: 700,
+        width: 40,
+        height: 40,
+      } as DOMRect)
+      el.dispatchEvent(
+        new PointerEvent('pointerdown', { pointerId: 7, clientX: 900, clientY: 700, button: 0, bubbles: true }),
+      )
+      expect(el.classList.contains('dragging')).toBe(true)
+      el.dispatchEvent(
+        new PointerEvent('pointermove', { pointerId: 7, clientX: 600, clientY: 500, bubbles: true }),
+      )
+      el.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 7, bubbles: true }))
+      expect(el.classList.contains('dragging')).toBe(false)
+      // 中断时已移动的位置同样落盘（不丢拖拽结果）
+      expect(JSON.parse(window.localStorage.getItem(DRAG_POS_KEY)!)).toEqual({ left: 600, top: 500 })
+      // 会话已清理：后续同 pointerId 的 move 不再移动
+      el.dispatchEvent(new PointerEvent('pointermove', { pointerId: 7, clientX: 300, clientY: 300, bubbles: true }))
+      expect(el.style.left).toBe('600px')
+    })
+
+    it('draggable 时宿主 touch-action:none + 拖拽态 cursor（grab/grabbing）规则存在', () => {
+      const el = mountDraggable()
+      expect(el.style.touchAction).toBe('none')
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toContain('cursor: grab')
+      expect(css).toContain('cursor: grabbing')
+      expect(css).not.toMatch(/#[0-9a-f]{3,8}\b/i)
+      // 非 draggable：touch-action 复位
+      el.removeAttribute('draggable')
+      expect(el.style.touchAction).toBe('')
+    })
   })
 })
