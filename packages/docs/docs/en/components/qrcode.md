@@ -5,7 +5,7 @@ A QR code component based on a **pure TypeScript, zero-dependency encoder** (bui
 ## Basic Usage
 
 <DemoBlock title="Basic QR code">
-  <oas-qrcode value="https://oasui.dev" aria-label="QR code for the official website"></oas-qrcode>
+  <oas-qrcode value="https://oas-ui.dev" aria-label="QR code for the official website"></oas-qrcode>
 </DemoBlock>
 
 `value` accepts arbitrary text (numeric / alphanumeric / byte modes are chosen automatically); the default size is 128px.
@@ -14,8 +14,8 @@ A QR code component based on a **pure TypeScript, zero-dependency encoder** (bui
 
 <DemoBlock title="Custom size">
   <div style="width: 100%; display: flex; gap: var(--oas-space-5); align-items: flex-start; flex-wrap: wrap">
-    <oas-qrcode value="https://oasui.dev" size="96" aria-label="Small QR code"></oas-qrcode>
-    <oas-qrcode value="https://oasui.dev" size="160" aria-label="Large QR code"></oas-qrcode>
+    <oas-qrcode value="https://oas-ui.dev" size="96" aria-label="Small QR code"></oas-qrcode>
+    <oas-qrcode value="https://oas-ui.dev" size="160" aria-label="Large QR code"></oas-qrcode>
   </div>
 </DemoBlock>
 
@@ -24,7 +24,7 @@ A QR code component based on a **pure TypeScript, zero-dependency encoder** (bui
 ## Error Correction Level
 
 <DemoBlock title="error-correction">
-  <oas-qrcode value="https://oasui.dev" error-correction="l" aria-label="L-level error correction QR code"></oas-qrcode>
+  <oas-qrcode value="https://oas-ui.dev" error-correction="l" aria-label="L-level error correction QR code"></oas-qrcode>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     `error-correction` accepts `l/m/q/h`, but the current in-house encoder only implements **L-level** correction; m/q/h are normalized to l (it still renders normally and scanning is unaffected). Higher correction levels will be completed with encoder iterations.
   </p>
@@ -41,7 +41,7 @@ When `value` is empty, a "暂无内容" placeholder is shown; when the content e
 ## Accessibility
 
 <DemoBlock title="aria-label">
-  <oas-qrcode value="https://oasui.dev" aria-label="QR code linking to the product detail page"></oas-qrcode>
+  <oas-qrcode value="https://oas-ui.dev" aria-label="QR code linking to the product detail page"></oas-qrcode>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     The container has `role="img"`; the `aria-label` attribute takes precedence, otherwise it falls back to the locale default copy (Chinese "二维码" / English "QR code"), readable by screen readers.
   </p>

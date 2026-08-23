@@ -317,7 +317,7 @@ test.beforeAll(async () => {
     renderToString('oas-avatar', { src: PNG_1PX, size: '40' }),
     renderToString('oas-avatar-group', { max: '3' }),
     renderToString('oas-image', { src: PNG_1PX, preview: '', alt: '示例图' }),
-    renderToString('oas-qrcode', { value: 'https://oasui.dev', size: '96' }),
+    renderToString('oas-qrcode', { value: 'https://oas-ui.dev', size: '96' }),
     renderToString('oas-watermark', { text: '内部资料' }, '<div>水印覆盖内容</div>'),
     renderToString('oas-collapse', { active: 'a' }),
     renderToString('oas-collapse-item', { header: '面板标题' }),

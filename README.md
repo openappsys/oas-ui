@@ -66,9 +66,9 @@ pnpm add @oas-ui/next   # Next.js：RSC OasComponent + OasRegistry 客户端注�
 
 ## 文档
 
-完整组件文档与 demo：[oasui.dev](https://oasui.dev)。
+完整组件文档与 demo：[oas-ui.dev](https://oas-ui.dev)。
 
-SSR / DSD 指南见文档站 [SSR 页](https://oasui.dev/guide/ssr)与 `@oas-ui/ssr` 包。
+SSR / DSD 指南见文档站 [SSR 页](https://oas-ui.dev/guide/ssr)与 `@oas-ui/ssr` 包。
 
 ## 包结构
 

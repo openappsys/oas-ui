@@ -64,7 +64,7 @@ import '@oas-ui/ui/basic/button'
 
 ### 文档
 
-完整组件文档与 demo：[文档站](https://oasui.dev) · [GitHub](https://github.com/openappsys/oas-ui)
+完整组件文档与 demo：[文档站](https://oas-ui.dev) · [GitHub](https://github.com/openappsys/oas-ui)
 
 ## <a id="en"></a> [中文](#zh) | English
 
@@ -130,4 +130,4 @@ Server-side rendering (DSD snapshots) is provided by `@oas-ui/ssr`. See the SSR 
 
 ### Documentation
 
-Full component docs and demos: [Docs site](https://oasui.dev) · [GitHub](https://github.com/openappsys/oas-ui)
+Full component docs and demos: [Docs site](https://oas-ui.dev) · [GitHub](https://github.com/openappsys/oas-ui)
