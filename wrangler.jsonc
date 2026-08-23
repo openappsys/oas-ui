@@ -1,4 +1,4 @@
-// wrangler.jsonc —— Cloudflare Workers 静态资产部署配置（文档站，域名 oasui.dev）
+// wrangler.jsonc —— Cloudflare Workers 静态资产部署配置（文档站，域名 oas-ui.dev）
 // 构建后执行：pnpm build（全量拓扑序：core/i18n 先出 d.ts，ui 次，docs 最后）
 // 然后：wrangler deploy（assets 目录上传为静态资产，自定义域名在 Cloudflare 后台绑定）
 // Node 版本：NODE_VERSION=22

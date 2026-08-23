@@ -80,11 +80,11 @@
 - **granular token（90 天期，应急）**：npm → Access Tokens → Granular（限 `@oas-ui/*` + publish，可勾 Bypass 2FA 免每次 OTP）→ 写入用户级 `~/.npmrc`（**勿提交仓库**），到期重新生成
 - 可选最严姿态：包 Settings → Publishing access → "Require 2FA and disallow tokens"，则 token 全废，本地只能交互式、CI 只能 OIDC
 
-## 6. 文档站部署（Cloudflare + oasui.dev）
+## 6. 文档站部署（Cloudflare + oas-ui.dev）
 
-文档站是 Vitepress SSG，静态构建产物部署到 Cloudflare（Workers Static Assets，`wrangler deploy`），绑定自定义域名 `oasui.dev`（域名 DNS 托管到 Cloudflare，自动 HTTPS）。
+文档站是 Vitepress SSG，静态构建产物部署到 Cloudflare（Workers Static Assets，`wrangler deploy`），绑定自定义域名 `oas-ui.dev`（域名 DNS 托管到 Cloudflare，自动 HTTPS）。
 
-**双域策略**：`oasui.dev` 为主域（可发音、可传播，去连字符可读化）；`oas-ui.dev`（与包名逐字符一致）持作 301 跳转域——Cloudflare 后台 → Rules → Redirect Rules，单条规则把 `oas-ui.dev/*` 301 到 `oasui.dev` 对应路径（保路径跳转，不在 wrangler.jsonc 里声明）。
+**双域策略**：`oas-ui.dev` 为主域（可发音、可传播，去连字符可读化）；`oas-ui.dev`（与包名逐字符一致）持作 301 跳转域——Cloudflare 后台 → Rules → Redirect Rules，单条规则把 `oas-ui.dev/*` 301 到 `oas-ui.dev` 对应路径（保路径跳转，不在 wrangler.jsonc 里声明）。
 
 仓库根已提供 `wrangler.jsonc`（Workers 静态资产配置，`assets.directory` 指向构建产物；`$schema` 是 IDE 提示，本地未装 wrangler 时无害）。
 
@@ -93,7 +93,7 @@
 1. 构建：`pnpm install --frozen-lockfile && pnpm build`
    - 必须全量 `pnpm build`（拓扑序 core→i18n→icons→theme→ui→…→docs）：ui 的 `tsconfig.build.json` paths 指向 `../core/dist/index.d.ts`、`../i18n/dist/index.d.ts`，**只 build ui 会因 core/i18n 的 d.ts 未生成而 tsc 报基类缺失**（如 `OASTour` 的 `extends OASElement` 失效）；docs build 依赖 ui dist，拓扑序自动先构建
 2. 部署：CI 中用 Cloudflare 官方 action（`cloudflare/wrangler-action`）或 `npx wrangler deploy`（上传 `packages/docs/docs/.vitepress/dist` 为静态资产，凭证用 Cloudflare API token，存 CI secret）
-3. 绑域名：Cloudflare 后台 → Workers → 该项目 → Custom Domains → Add `oasui.dev`
+3. 绑域名：Cloudflare 后台 → Workers → 该项目 → Custom Domains → Add `oas-ui.dev`
 
 **要点**：
 
