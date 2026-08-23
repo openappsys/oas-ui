@@ -154,6 +154,59 @@ describe('A 定位与滚动', () => {
     el.setAttribute('arrow', 'false')
     expect(arrow.hidden).toBe(true)
   })
+
+  it('auto-reposition="false"：不翻转、不夹取（保持声明 placement 与原始坐标）', async () => {
+    window.innerHeight = 600
+    window.innerWidth = 800
+    const el = mount({ 'auto-reposition': 'false' })
+    setTargetRect('step1', rect(100, 540, 120, 60))
+    el.setAttribute('open', '')
+    await tick()
+    const p = popup(el)
+    p.getBoundingClientRect = () => rect(0, 0, 200, 80)
+    forceUpdate(el)
+    // 底部空间不足也不翻转到 top
+    expect(p.getAttribute('data-placement')).toBe('bottom')
+    // 不做视口避让：top = 540+60+8 = 608 > 600
+    expect(p.style.top).toBe('608px')
+  })
+
+  it('-start/-end 对齐：箭头内联偏移指向目标中心投影（不再固定 16px）', async () => {
+    const el = mount({ placement: 'bottom-start' })
+    el.setAttribute('open', '')
+    await tick()
+    const p = popup(el)
+    p.getBoundingClientRect = () => rect(0, 0, 200, 80)
+    forceUpdate(el)
+    const arrow = el.shadowRoot!.querySelector<HTMLElement>('[data-popper-arrow]')!
+    // bottom-start：popup 左缘 = 目标左缘（100），目标中心 X=160 → 箭头 left = 160-100-4 = 56
+    expect(arrow.style.left).toBe('56px')
+  })
+
+  it('arrow-point-at-center：弹层被视口夹取偏移后箭头仍指向目标中心', async () => {
+    const el = mount({ 'arrow-point-at-center': 'true' })
+    setTargetRect('step1', rect(10, 100, 120, 40))
+    el.setAttribute('open', '')
+    await tick()
+    const p = popup(el)
+    p.getBoundingClientRect = () => rect(0, 0, 200, 80)
+    forceUpdate(el)
+    const arrow = el.shadowRoot!.querySelector<HTMLElement>('[data-popper-arrow]')!
+    // bottom 中心对齐 + 目标贴左缘：popup left 被夹取到 4，目标中心 X=70 → 箭头 left = 70-4-4 = 62
+    expect(arrow.style.left).toBe('62px')
+  })
+
+  it('无 arrow-point-at-center：center 对齐箭头保持 CSS 居中（不写内联偏移）', async () => {
+    const el = mount()
+    setTargetRect('step1', rect(10, 100, 120, 40))
+    el.setAttribute('open', '')
+    await tick()
+    const p = popup(el)
+    p.getBoundingClientRect = () => rect(0, 0, 200, 80)
+    forceUpdate(el)
+    const arrow = el.shadowRoot!.querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow.style.left).toBe('')
+  })
 })
 
 describe('A 遮罩与形态', () => {
@@ -204,6 +257,50 @@ describe('A 遮罩与形态', () => {
     const h = el.shadowRoot!.querySelector<HTMLElement>('.highlight')!
     expect(h.style.top).toBe('90px')
     expect(h.style.borderRadius).toBe('16px')
+  })
+
+  it('gap offset 双轴：{"offset":[10,20]} 水平/垂直独立外扩', async () => {
+    const el = mount({ gap: '{"offset":[10,20]}' })
+    el.setAttribute('open', '')
+    await tick()
+    const h = el.shadowRoot!.querySelector<HTMLElement>('.highlight')!
+    expect(h.style.top).toBe('76px') // 100 - 4(padding) - 20(垂直)
+    expect(h.style.left).toBe('86px') // 100 - 4 - 10(水平)
+    expect(h.style.width).toBe('148px') // 120 + (4+10)*2
+    expect(h.style.height).toBe('88px') // 40 + (4+20)*2
+  })
+
+  it('gap offset 数字：{"offset":6} 四周统一外扩', async () => {
+    const el = mount({ gap: '{"offset":6}' })
+    el.setAttribute('open', '')
+    await tick()
+    const h = el.shadowRoot!.querySelector<HTMLElement>('.highlight')!
+    expect(h.style.top).toBe('90px') // 100 - 4 - 6
+    expect(h.style.left).toBe('90px')
+  })
+
+  it('step 级 gap offset（property 通道对象）', async () => {
+    const el = mount()
+    el.steps = [{ target: document.getElementById('step1')!, title: 's1', gap: { offset: [5, 10] } }]
+    el.setAttribute('open', '')
+    await tick()
+    const h = el.shadowRoot!.querySelector<HTMLElement>('.highlight')!
+    expect(h.style.top).toBe('86px') // 100 - 4 - 10
+    expect(h.style.left).toBe('91px') // 100 - 4 - 5
+  })
+
+  it('mask="false" 非模态：aria-modal 降级为 false（读屏不误判模态）', async () => {
+    const el = mount({ mask: 'false' })
+    el.setAttribute('open', '')
+    await tick()
+    expect(popup(el).getAttribute('aria-modal')).toBe('false')
+  })
+
+  it('mask 默认模态：aria-modal="true"', async () => {
+    const el = mount()
+    el.setAttribute('open', '')
+    await tick()
+    expect(popup(el).getAttribute('aria-modal')).toBe('true')
   })
 
   it('遮罩点击行为：mask-click-behavior=close → 点遮罩派发 oas-cancel 并关闭', async () => {
@@ -334,6 +431,40 @@ describe('A 导航与按钮', () => {
     expect(skipped).toBe(1)
     expect(cancelled).toBe(1)
     expect(destroyed).toBe(1)
+  })
+
+  it('断开→重连后 Esc / 方向键仍生效（keydown 幂等重挂）', async () => {
+    const el = mount()
+    el.setAttribute('open', '')
+    await tick()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
+    expect(el.getAttribute('current')).toBe('1')
+    // 断开：cleanup 移除 document keydown
+    el.remove()
+    // 重连：update 路径幂等重挂 keydown
+    document.body.appendChild(el)
+    let cancelled = 0
+    el.addEventListener('oas-cancel', () => cancelled++)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(cancelled).toBe(1)
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('slot="actions"：有内容时隐藏内置 prev/skip/next 按钮', () => {
+    const el = mount()
+    const custom = document.createElement('div')
+    custom.setAttribute('slot', 'actions')
+    const b = document.createElement('button')
+    b.textContent = '自定义下一步'
+    custom.appendChild(b)
+    el.appendChild(custom)
+    el.setAttribute('open', '')
+    const shadow = el.shadowRoot!
+    expect(shadow.querySelector<HTMLElement>('[part="prev"]')!.style.display).toBe('none')
+    expect(shadow.querySelector<HTMLElement>('[part="skip"]')!.style.display).toBe('none')
+    expect(shadow.querySelector<HTMLElement>('[part="next"]')!.style.display).toBe('none')
+    const slotEl = shadow.querySelector<HTMLSlotElement>('slot[name="actions"]')!
+    expect(slotEl.assignedNodes().length).toBe(1)
   })
 })
 
@@ -475,6 +606,28 @@ describe('B 步骤配置与内容', () => {
     inter.click()
     expect(el.getAttribute('current')).toBe('1')
   })
+
+  it('advance-on-click：步骤间 target 不同 → 旧 target 无残留 click 监听', async () => {
+    const el = mount({ 'advance-on-click': 'true', 'target-area-clickable': 'true' })
+    el.setAttribute('open', '')
+    await tick()
+    const t1 = document.getElementById('step1')!
+    const t2 = document.getElementById('step2')!
+    let finished = 0
+    el.addEventListener('oas-finish', () => finished++)
+    // 点击 step1 目标 → 推进到第 2 步（目标切换为 step2）
+    t1.click()
+    expect(el.getAttribute('current')).toBe('1')
+    // 旧目标 step1 上的监听必须已移除：再点它不应推进/关闭
+    t1.click()
+    expect(el.getAttribute('current')).toBe('1')
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(finished).toBe(0)
+    // 新目标 step2 监听仍在：点它完成引导
+    t2.click()
+    expect(finished).toBe(1)
+    expect(el.hasAttribute('open')).toBe(false)
+  })
 })
 
 describe('B 指示器与生命周期', () => {
@@ -494,6 +647,27 @@ describe('B 指示器与生命周期', () => {
     const el = mount({ indicators: 'number' })
     el.setAttribute('open', '')
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="step-count"]')!.textContent).toContain('1')
+  })
+
+  it('slot="indicators"：有内容时隐藏内置圆点/数字指示器', () => {
+    const el = mount({ 'show-bullets': 'true' })
+    const custom = document.createElement('span')
+    custom.setAttribute('slot', 'indicators')
+    custom.textContent = '2 / 2'
+    el.appendChild(custom)
+    el.setAttribute('open', '')
+    const shadow = el.shadowRoot!
+    expect(shadow.querySelector<HTMLElement>('[part="step-count"]')!.style.display).toBe('none')
+    expect(shadow.querySelector<HTMLElement>('[part="bullets"]')!.style.display).toBe('none')
+    const slotEl = shadow.querySelector<HTMLSlotElement>('slot[name="indicators"]')!
+    expect(slotEl.assignedNodes().length).toBe(1)
+  })
+
+  it('slot="indicators" 无内容：内置指示器照常显示', () => {
+    const el = mount({ 'show-bullets': 'true' })
+    el.setAttribute('open', '')
+    const bullets = el.shadowRoot!.querySelector<HTMLElement>('[part="bullets"]')!
+    expect(bullets.style.display).not.toBe('none')
   })
 
   it('生命周期：oas-highlight-start / oas-highlight-end / oas-destroy', async () => {
@@ -528,7 +702,7 @@ describe('B 指示器与生命周期', () => {
   })
 })
 
-describe('C 档：hints / 记忆 / 多页 / 打字机 / 挂载', () => {
+describe('hints / 记忆 / 多页 / 打字机 / 挂载', () => {
   it('hints 信标渲染并定位到目标中心', async () => {
     const hints = JSON.stringify([
       { id: 'h1', selector: '#step1', title: '提示一', description: '这里有个功能' },
@@ -622,6 +796,30 @@ describe('C 档：hints / 记忆 / 多页 / 打字机 / 挂载', () => {
     expect(el.shadowRoot!.querySelector('.overlay')).toBeNull()
   })
 
+  it('append-to + slot="cover"：cover 内容桥接到 portal host light DOM，关闭移回宿主', async () => {
+    const el = mount({ 'append-to': 'body' })
+    const cover = document.createElement('div')
+    cover.setAttribute('slot', 'cover')
+    cover.textContent = '封面富内容'
+    el.appendChild(cover)
+    el.setAttribute('open', '')
+    await tick()
+    const portalHost = document.querySelector<HTMLElement>('[data-oas-tour-portal]')!
+    expect(portalHost).not.toBeNull()
+    // 宿主 light DOM 不再持有 cover 节点（已桥接到 portal host）
+    expect(el.querySelector('[slot="cover"]')).toBeNull()
+    const bridged = portalHost.querySelector<HTMLElement>('[slot="cover"]')
+    expect(bridged).not.toBeNull()
+    expect(bridged!.textContent).toBe('封面富内容')
+    // popup 内 <slot name="cover"> 能跨 host 分配到桥接节点（不断供）
+    const slotEl = portalHost.shadowRoot!.querySelector<HTMLSlotElement>('.popup slot[name="cover"]')!
+    expect(slotEl.assignedNodes().some((n) => n.textContent === '封面富内容')).toBe(true)
+    // 关闭：portal 拆除，节点移回宿主，无孤儿
+    el.removeAttribute('open')
+    expect(document.querySelector('[data-oas-tour-portal]')).toBeNull()
+    expect(el.querySelector('[slot="cover"]')?.textContent).toBe('封面富内容')
+  })
+
   it('z-index 属性 → overlay 内联 zIndex', async () => {
     const el = mount({ 'z-index': '9999' })
     el.setAttribute('open', '')
@@ -681,7 +879,7 @@ describe('既有行为回归', () => {
 
 // ===== SSR 快照结构：新增部件必须在模板中保持（水合 probe 依赖） =====
 describe('SSR 模板结构', () => {
-  it('模板包含遮罩/高亮/弹层/箭头/进度/关闭/圆点容器', () => {
+  it('模板包含遮罩/高亮/弹层/箭头/进度/关闭/圆点容器与命名插槽', () => {
     const el = new OASTour()
     el.setAttribute('steps', STEPS)
     document.body.appendChild(el)
@@ -694,6 +892,9 @@ describe('SSR 模板结构', () => {
     expect(shadow.querySelector('.close')).not.toBeNull()
     expect(shadow.querySelector('.hints')).not.toBeNull()
     expect(shadow.querySelector('.hint-popup')).not.toBeNull()
+    expect(shadow.querySelector('slot[name="cover"]')).not.toBeNull()
+    expect(shadow.querySelector('slot[name="indicators"]')).not.toBeNull()
+    expect(shadow.querySelector('slot[name="actions"]')).not.toBeNull()
   })
 })
 

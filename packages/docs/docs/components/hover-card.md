@@ -143,6 +143,39 @@ hover / 聚焦触发，浮层可悬停不闪关的富内容预览卡片。支持
   </oas-space>
 </DemoBlock>
 
+## 滚动跟随与吸附
+
+滚动容器内滚动时，卡片默认（`sticky=partial`）跟随锚点重定位，锚点滚出视口后按 `hide-when-detached` 隐藏（未开启则夹取贴视口边）；`sticky="always"` 锚点滚出视口后卡片吸附视口边缘（贴边不消失）；`sticky="off"` 显式关闭滚动重定位。
+
+<DemoBlock title="sticky 三档（滚动容器内）">
+  <div style="height: 220px; overflow: auto; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)">
+    <div style="height: 520px; padding: var(--oas-space-4); display: flex; gap: 16px; align-items: flex-start">
+      <oas-hover-card title="partial（默认）" content="滚动时跟随锚点重定位。" placement="bottom">
+        <oas-button>sticky=partial</oas-button>
+      </oas-hover-card>
+      <oas-hover-card title="always" content="锚点滚出视口后吸附视口边缘（贴边不消失）。" placement="bottom" sticky="always">
+        <oas-button>sticky=always</oas-button>
+      </oas-hover-card>
+      <oas-hover-card title="off" content="滚动时不重定位。" placement="bottom" sticky="off">
+        <oas-button>sticky=off</oas-button>
+      </oas-hover-card>
+    </div>
+  </div>
+</DemoBlock>
+
+## 自定义碰撞边界
+
+`collision-boundary`：翻转判定与夹取边界换成指定元素 rect（默认视口），多祖先场景取第一个命中；property 通道 `collisionBoundary` 可直接传元素。
+
+<DemoBlock title="collision-boundary（边界容器）">
+  <oas-space size="small">
+    <oas-hover-card title="标题" content="卡片被夹取在下方边界容器内（而非视口）。" placement="bottom" collision-boundary="#hc-cb-box">
+      <oas-button>悬停查看</oas-button>
+    </oas-hover-card>
+  </oas-space>
+  <div id="hc-cb-box" style="position: relative; width: 320px; height: 200px; margin-top: 16px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></div>
+</DemoBlock>
+
 ## 禁用
 
 `disabled`：hover / focus 不再触发显示（受控 `open` 仍可显隐）。
@@ -223,6 +256,7 @@ onMounted(() => {
 | `arrow-point-at-center` | 箭头指向触发器中心（面板被视口避让偏移后仍指向锚点）；默认箭头保持面板中心 | `boolean` | — |
 | `auto-adjust-overflow` | 视口边缘自动调整（翻转/夹取），默认 true；`"false"` 关闭，按声明 placement 严格定位（浮层可越出视口） | `string` | `true` |
 | `close-delay` | 关闭延迟（毫秒），与 open-delay 分离；未设置时回退 `delay` 别名，再回退默认 150 | — | — |
+| `collision-boundary` | 自定义碰撞边界（选择器字符串，多祖先取第一个命中；property 通道 `collisionBoundary` 可直接传元素）：设置后翻转判定与夹取边界换成该元素 rect，默认视口 | `Element \| null` | — |
 | `collision-padding` | 视口夹取边距（px），默认 4 | — | — |
 | `content` | 内容文本 | `string` | — |
 | `delay` | 显隐延迟（毫秒），兼容别名：`open-delay`/`close-delay` 未设置时同时作用于打开与关闭；分别设置时以各自为准 | — | — |
@@ -235,6 +269,7 @@ onMounted(() => {
 | `open-delay` | 打开延迟（毫秒），与 close-delay 分离；未设置时回退 `delay` 别名，再回退默认 300 | — | — |
 | `placement` | 浮层位置，12 向：top/bottom/left/right × start/中心/end（如 `bottom-start`） | `string` | `top` |
 | `skidding` | 交叉轴偏移（px），沿垂直于主轴的轴平移 | — | — |
+| `sticky` | 滚动吸附策略：`partial`（默认）滚动时重定位跟随锚点，锚点滚出视口后按 `hide-when-detached` 隐藏（未开启则夹取贴视口边）；`always` 锚点滚出视口后卡片吸附视口边缘（贴边不消失）；`off` 显式关闭滚动重定位 | `string` | `partial` |
 | `title` | 标题文本 | `string` | — |
 | `width` | 宽度定制：数值（px）或 `trigger`/`target`（与触发器同宽）；未设置走 CSS min-width | — | — |
 

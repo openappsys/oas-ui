@@ -483,7 +483,7 @@ describe('OAStooltip', () => {
     expect(t.style.top).toBe('800px') // 792 + 8
   })
 
-  // ================= A1 placement 12 向 =================
+  // ================= placement 12 向 =================
 
   it('placement 12 向：top-start 面板左缘对齐锚点左缘，data-placement 保留', async () => {
     const el = mount({ open: '', content: 'x', placement: 'top-start' })
@@ -540,7 +540,7 @@ describe('OAStooltip', () => {
     expect(t.style.top).toBe('296px') // 332 - 36（end 对齐保留）
   })
 
-  // ================= A2 trigger 触发方式 =================
+  // ================= trigger 触发方式 =================
 
   it('trigger="click"：点击打开，再点关闭', async () => {
     const el = mount({ trigger: 'click', content: 'x' })
@@ -607,7 +607,7 @@ describe('OAStooltip', () => {
     expect(tip(el).getAttribute('aria-hidden')).toBe('false')
   })
 
-  // ================= A4 open-delay / close-delay =================
+  // ================= open-delay / close-delay =================
 
   it('open-delay="100"：mouseenter 后 100ms 才打开', async () => {
     vi.useFakeTimers()
@@ -656,7 +656,7 @@ describe('OAStooltip', () => {
     vi.useRealTimers()
   })
 
-  // ================= A5 富内容 content 插槽 =================
+  // ================= 富内容 content 插槽 =================
 
   it('slot="content" 富内容：优先于 content 属性显示', async () => {
     const el = mount({ open: '', content: '属性文本', placement: 'top' })
@@ -696,7 +696,7 @@ describe('OAStooltip', () => {
     expect(t.querySelector<HTMLElement>('.tip-content')!.textContent).toContain('属性文本')
   })
 
-  // ================= A6 Esc 关闭 + aria-describedby =================
+  // ================= Esc 关闭 + aria-describedby =================
 
   it('Esc 关闭打开中的 tooltip（document keydown）', async () => {
     const el = mount({ open: '', content: 'x' })
@@ -745,7 +745,7 @@ describe('OAStooltip', () => {
     expect(el.getAttribute('aria-describedby')).toBeNull()
   })
 
-  // ================= A7 max-width =================
+  // ================= max-width =================
 
   it('max-width 属性：覆盖默认 240px（token 开口）', async () => {
     const el = mount({ open: '', content: 'x', 'max-width': '320' })
@@ -761,7 +761,7 @@ describe('OAStooltip', () => {
     expect(tip(el).style.maxWidth).toBe('')
   })
 
-  // ================= A8 disabled =================
+  // ================= disabled =================
 
   it('disabled：hover 不触发', async () => {
     const el = mount({ disabled: '', content: 'x' })
@@ -791,7 +791,7 @@ describe('OAStooltip', () => {
     expect(tip(el).getAttribute('aria-hidden')).toBe('false')
   })
 
-  // ================= B1 动画 =================
+  // ================= 动画 =================
 
   it('打开时 tip 进入显示态（aria-hidden=false + 动画 class）', async () => {
     const el = mount({ open: '', content: 'x' })
@@ -817,7 +817,7 @@ describe('OAStooltip', () => {
     expect(styleText).toContain("[data-placement^='top']")
   })
 
-  // ================= B2 延迟组 / 全局单例（skipDelay） =================
+  // ================= 延迟组 / 全局单例（skipDelay） =================
 
   it('skip-delay-duration：上次关闭后立即打开另一个 → 跳过 open-delay', async () => {
     vi.useFakeTimers()
@@ -882,7 +882,7 @@ describe('OAStooltip', () => {
     vi.useRealTimers()
   })
 
-  // ================= B3 interactive 可悬停浮层 =================
+  // ================= interactive 可悬停浮层 =================
 
   it('interactive：tip 自身可悬停（mouseenter 取消关闭，mouseleave 排程关闭）', async () => {
     vi.useFakeTimers()
@@ -901,7 +901,7 @@ describe('OAStooltip', () => {
     vi.useRealTimers()
   })
 
-  // ================= B4 contextmenu 右键触发 =================
+  // ================= contextmenu 右键触发 =================
 
   it('trigger 含 contextmenu：右键打开（不阻止系统菜单）', async () => {
     const el = mount({ trigger: 'contextmenu', content: 'x' })
@@ -922,7 +922,7 @@ describe('OAStooltip', () => {
     expect(tip(el).getAttribute('aria-hidden')).toBe('true')
   })
 
-  // ================= B5 touch 长按触发 =================
+  // ================= touch 长按触发 =================
 
   it('trigger 含 touch：pointerdown 长按后打开（touch-delay 默认 500ms）', async () => {
     vi.useFakeTimers()
@@ -949,7 +949,7 @@ describe('OAStooltip', () => {
     vi.useRealTimers()
   })
 
-  // ================= B6 append-to 挂载点 =================
+  // ================= append-to 挂载点 =================
 
   it('append-to="body"：tip 移入 document.body 的 portal host（样式保真）', async () => {
     const el = mount({ open: '', content: 'x', 'append-to': 'body' })
@@ -1012,7 +1012,7 @@ describe('OAStooltip', () => {
     expect(el.contains(rich)).toBe(true)
   })
 
-  // ================= B9 双轴偏移 offset / skidding =================
+  // ================= 双轴偏移 offset / skidding =================
 
   it('offset="16"：主轴距离 16px（默认 8）', async () => {
     const el = mount({ open: '', content: 'x', placement: 'bottom', offset: '16' })
@@ -1039,7 +1039,7 @@ describe('OAStooltip', () => {
     expect(t.style.left).toBe('182px')
   })
 
-  // ================= B10 颜色变体（token） =================
+  // ================= 颜色变体（token） =================
 
   it('color="primary"：tip 背景走 primary token（含暗色变体）', async () => {
     const el = mount({ open: '', content: 'x', color: 'primary' })
@@ -1063,7 +1063,7 @@ describe('OAStooltip', () => {
     expect(tip(el).style.getPropertyValue('--oas-tooltip-bg')).toBe('')
   })
 
-  // ================= B12 禁用触发元素兼容（span 包裹） =================
+  // ================= 禁用触发元素兼容（span 包裹） =================
 
   it('触发元素为 disabled button：hover 不派发 → 绑定宿主仍然生效', async () => {
     const el = new OAStooltip()
@@ -1090,7 +1090,7 @@ describe('OAStooltip', () => {
     expect(tip(el).getAttribute('aria-hidden')).toBe('false')
   })
 
-  // ================= B13 碰撞细调 collision-padding =================
+  // ================= 碰撞细调 collision-padding =================
 
   it('collision-padding="20"：视口避让边距 20px（默认 4）', async () => {
     const el = mount({
@@ -1109,7 +1109,7 @@ describe('OAStooltip', () => {
     expect(t.style.left).toBe('20px')
   })
 
-  // ================= C1 箭头 merge 模式 =================
+  // ================= 箭头 merge 模式 =================
 
   it('arrow-position="merge" + *-start placement：箭头融角 data 属性', async () => {
     const el = mount({ open: '', content: 'x', placement: 'bottom-start', 'arrow-position': 'merge' })
@@ -1118,7 +1118,7 @@ describe('OAStooltip', () => {
     expect(t.getAttribute('data-arrow-position')).toBe('merge')
   })
 
-  // ================= C2 fresh =================
+  // ================= fresh =================
 
   it('fresh 默认：关闭时内容仍更新（每次属性变化即时同步）', async () => {
     const el = mount({ content: 'a' })
@@ -1128,7 +1128,7 @@ describe('OAStooltip', () => {
     expect(tip(el).textContent).toContain('b')
   })
 
-  // ================= C3 auto-close =================
+  // ================= auto-close =================
 
   it('auto-close="200"：打开后 200ms 自动关闭', async () => {
     vi.useFakeTimers()
@@ -1144,7 +1144,7 @@ describe('OAStooltip', () => {
     vi.useRealTimers()
   })
 
-  // ================= C4 trigger-keys =================
+  // ================= trigger-keys =================
 
   it('trigger-keys="F1"：焦点在触发元素上按 F1 打开', async () => {
     // trigger="hover" 排除 focus 通道，隔离验证 trigger-keys 独立生效

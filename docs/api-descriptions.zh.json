@@ -430,7 +430,8 @@
       "close-on-select": "选中后是否关闭面板（默认 true；`false` 支持连续执行）",
       "multiple": "多选命令模式（勾选切换 + footer 批量执行）",
       "virtual": "虚拟滚动（大数据量窗口渲染，复用 oas-virtual-list）",
-      "item-height": "虚拟滚动行高（默认 `36`）"
+      "item-height": "虚拟滚动行高（默认 `36`）",
+      "append-to": "挂载容器选择器（如 `#panel`）：整个面板（遮罩 + 面板）移入目标容器的 portal host（独立 shadow + 样式注入 + 插槽桥接，empty/footer/view-* 插槽随面板迁移），适合嵌套 transform/stacking context 场景；未设置时面板在组件自身 shadow 内 fixed 定位"
     },
     "events": {
       "oas-select": "执行某项，`detail: { value }`；多选确认 `detail: { values }`",
@@ -758,6 +759,8 @@
       "open-delay": "打开延迟（毫秒），与 close-delay 分离；未设置时回退 `delay` 别名，再回退默认 300",
       "placement": "浮层位置，12 向：top/bottom/left/right × start/中心/end（如 `bottom-start`）",
       "skidding": "交叉轴偏移（px），沿垂直于主轴的轴平移",
+      "sticky": "滚动吸附策略：`partial`（默认）滚动时重定位跟随锚点，锚点滚出视口后按 `hide-when-detached` 隐藏（未开启则夹取贴视口边）；`always` 锚点滚出视口后卡片吸附视口边缘（贴边不消失）；`off` 显式关闭滚动重定位",
+      "collision-boundary": "自定义碰撞边界（选择器字符串，多祖先取第一个命中；property 通道 `collisionBoundary` 可直接传元素）：设置后翻转判定与夹取边界换成该元素 rect，默认视口",
       "title": "标题文本",
       "width": "宽度定制：数值（px）或 `trigger`/`target`（与触发器同宽）；未设置走 CSS min-width"
     },
@@ -1158,7 +1161,7 @@
     "attrs": {
       "append-to": "portal 挂载点：打开时面板移入目标容器（`body` 或 CSS 选择器），关闭移回宿主 shadow；适合面板被宿主容器裁剪（overflow）的场景",
       "arrow": "是否显示箭头（默认 true；`arrow=\"false\"` 隐藏，箭头元素与 `::part(arrow)` 保留）",
-      "arrow-merge": "箭头与面板角融合（C1）：直角三角与面板角共边融合——直角贴角点、直角边与面板两边共线（描边与面板描边共带续接），尖端正交指向锚点，对应角圆角归零；仅 *-start/*-end 位置生效，center placement 不触发",
+      "arrow-merge": "箭头与面板角融合：直角三角与面板角共边融合——直角贴角点、直角边与面板两边共线（描边与面板描边共带续接），尖端正交指向锚点，对应角圆角归零；仅 *-start/*-end 位置生效，center placement 不触发",
       "arrow-point-at-center": "箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心）",
       "auto-adjust-overflow": "视口边缘自动翻转与避让（默认 true；`\"false\"` 关闭，保持声明 placement，可能溢出视口）",
       "auto-close": "打开后超时自动关闭（毫秒），如 `auto-close=\"3000\"`；未设置不自动关闭",
@@ -1806,9 +1809,10 @@
       "steps": "步骤 JSON（`TourStep[] | string`）；property 赋值支持函数/元素 target",
       "placement": "弹层方位：12 向（top/bottom/left/right × start/end/center）+ `center`（空 target 居中）；默认 `bottom`；空间不足自动翻转；step 级可覆盖",
       "arrow": "是否显示箭头（布尔，默认 true，`false` 隐藏）",
+      "arrow-point-at-center": "箭头指向目标中心投影（弹层被视口避让偏移后仍指准；默认箭头贴 placement 对齐端）",
       "mask": "遮罩开关/定制：`false` 关闭（非模态）或 `{\"color\",\"style\"}` 定制颜色样式（默认 true）；step 级可覆盖",
       "type": "弹层类型：`default` / `primary`（主色底弹层，非模态场景强调）",
-      "gap": "高亮内边距：数字（padding px）或 `{\"padding\",\"radius\"}`（半径）；默认 padding 4",
+      "gap": "高亮内边距：数字（padding px）或 `{\"padding\",\"radius\",\"offset\"}`；`offset` 为高亮外扩间距（number 四周同值 / `[水平, 垂直]` 双轴，与 padding 正交）；默认 padding 4",
       "keyboard": "键盘 ←/→ 推进步骤（默认 true，`false` 关闭）",
       "show-close": "显示关闭按钮（默认 true，`false` 隐藏）",
       "close-icon": "自定义关闭按钮内容（HTML 字符串）",
@@ -1817,8 +1821,8 @@
       "disabled-interaction": "禁止高亮区交互（拦截层覆盖目标）",
       "scroll-into-view-options": "滚动到目标的 `scrollIntoView` options（JSON，默认 `{\"behavior\":\"smooth\",\"block\":\"center\"}`）",
       "scroll-padding": "滚动到目标时的留白（px，写目标 scroll-margin）",
-      "auto-reposition": "滚动/resize 时自动重定位（默认 true）",
-      "progress-text": "进度文本模板：`{{current}}/{{total}}` 替换；设置后计数区用模板渲染",
+      "auto-reposition": "滚动/resize 时自动重定位 + 溢出翻转/视口避让（默认 true；`false` 关闭翻转与避让，保持声明位置）",
+      "progress-text": "进度文本模板：以双花括号包裹的 `current`/`total` 占位符替换（如 current/total 各包一层花括号）；设置后计数区用模板渲染",
       "show-progress": "弹层顶部进度条（宽度随步骤推进）",
       "show-bullets": "圆点指示器（点击圆点跳步）",
       "indicators": "计数样式：`dots`（默认）/ `number` / `none`",
@@ -1857,7 +1861,9 @@
       "oas-dismiss": "「不再显示」命中，引导启动被拦截"
     },
     "slots": {
-      "cover": "步骤封面富内容（插槽优先于 step.cover 图片）"
+      "cover": "步骤封面富内容（插槽优先于 step.cover 图片）",
+      "indicators": "自定义指示器区（宿主用 `oas-step` 的 current/total 渲染；有内容时隐藏内置圆点/数字指示器）",
+      "actions": "自定义动作区（替换整个内置按钮区；有内容时隐藏内置 prev/skip/next 按钮）"
     }
   },
   "oas-transfer": {

@@ -66,7 +66,7 @@ const STYLE = `
 .panel.oas-modal {
   z-index: calc(var(--oas-z-overlay, 1040) + 1);
 }
-/* 颜色变体（B10）：语义色 tint 底 + 语义色描边，全部由 token 派生的 color-mix 构成，
+/* 颜色变体：语义色 tint 底 + 语义色描边，全部由 token 派生的 color-mix 构成，
    dark 主题自动跟随（token 已含 dark 变体）；箭头底色/描边走同一组 --pop-* 变量 */
 .panel[data-color='primary'] {
   --pop-bg: color-mix(in srgb, var(--oas-color-primary) 10%, var(--oas-color-bg));
@@ -220,7 +220,7 @@ const STYLE = `
   border-left: 1px solid var(--pop-border);
   border-bottom: 1px solid var(--pop-border);
 }
- /* arrow-merge（C1）：直角三角与面板角共边融合（通用形态，仅 *-start/*-end 生效，
+ /* arrow-merge：直角三角与面板角共边融合（通用形态，仅 *-start/*-end 生效，
      center placement 不触发）。箭头为不旋转的 8px 方块整悬面板外、贴齐角两边，clip-path
      裁成直角三角——直角顶点贴面板角点，两条直角边与面板角两边共线，斜边 45° 朝面板内，
      尖端从角点正交外探 8px 指向锚点侧（视觉是「面板角本身伸出的直角尖」）。
@@ -442,28 +442,28 @@ export class OASPopover extends OASElement {
       'arrow',
       'arrow-point-at-center',
       'auto-adjust-overflow',
-      // —— A2/A3/A4 触发方式与延迟 ——
+      // —— A2/A3/触发方式与延迟 ——
       'trigger',
       'hover-delay',
       'hover-hide-delay',
       'open-delay',
       'close-delay',
       'disabled',
-      // —— B7 宽度 / B9 双轴偏移 ——
+      // —— 宽度 / 双轴偏移 ——
       'width',
       'offset',
-      // —— B8 初始焦点 ——
+      // —— 初始焦点 ——
       'initial-focus',
-      // —— B6 portal ——
+      // —— portal ——
       'append-to',
-      // —— B13 碰撞细调 ——
+      // —— 碰撞细调 ——
       'collision-padding',
       'fallback-placements',
       'hide-when-detached',
-      // —— B14 关闭按钮 / 声明式关层 / B10 颜色变体 ——
+      // —— 关闭按钮 / 声明式关层 / 颜色变体 ——
       'closable',
       'color',
-      // —— C5 modal / C4 trigger-keys / C2 fresh / C3 auto-close / C1 arrow-merge ——
+      // —— modal / trigger-keys / fresh / auto-close / arrow-merge ——
       'modal',
       'trigger-keys',
       'fresh',
@@ -496,7 +496,7 @@ export class OASPopover extends OASElement {
   private scrollRaf = 0
   /** modal 滚动锁是否已挂（幂等守卫：open 期间多次 update 不重复加锁） */
   private modalLocked = false
-  /** B6 append-to：portal host 容器（目标容器内的 div + 独立 shadow，样式作用域保真） */
+  /** append-to：portal host 容器（目标容器内的 div + 独立 shadow，样式作用域保真） */
   private portalHost: HTMLElement | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -549,7 +549,7 @@ export class OASPopover extends OASElement {
     // focus 触发：聚焦开、失焦（焦点移出宿主/面板）关
     this.addEventListener('focusin', this.onFocusIn)
     this.addEventListener('focusout', this.onFocusOut)
-    // trigger-keys（C4）：指定按键在触发元素聚焦时切换开合
+    // trigger-keys：指定按键在触发元素聚焦时切换开合
     this.anchor?.addEventListener('keydown', (e) => {
       const ke = e as KeyboardEvent
       const keys = this.getAttr('trigger-keys', '').split(/\s+/).filter(Boolean)
@@ -561,12 +561,12 @@ export class OASPopover extends OASElement {
     // 外部点击关闭（面板移入 body 后 composedPath 仍含面板自身，见 handleOutside）
     this.onCleanup(() => unregisterLayer(this))
     this.onCleanup(() => document.removeEventListener('click', this.handleOutside))
-    // 关闭按钮（B14）
+    // 关闭按钮
     this.closeBtn?.addEventListener('click', () => {
       this.removeAttribute('open')
       this.restoreFocus()
     })
-    // 声明式关层（B14）：内容内 data-popover="close" 元素点击即关。
+    // 声明式关层：内容内 data-popover="close" 元素点击即关。
     // 双绑宿主 + 面板：宿主监听覆盖常规场景（happy-dom 亦不实现 slotted 事件穿 shadow），
     // 面板监听覆盖 append-to portal 后（面板在 body，事件不再经宿主）；open 守卫保证双触发幂等
     const onDeclarativeClose = (e: MouseEvent): void => {
@@ -967,7 +967,7 @@ export class OASPopover extends OASElement {
   }
 
   /**
-   * 宽度定制（B7）：width 数字 → px；'trigger' → 与触发元素同宽；其余按 CSS 值（如 50%、240px）。
+   * 宽度定制：width 数字 → px；'trigger' → 与触发元素同宽；其余按 CSS 值（如 50%、240px）。
    * 虚拟 0 尺寸点位（宽 0）视为未设置，保留 min-width 兜底。
    */
   private syncWidth(): void {
@@ -986,7 +986,7 @@ export class OASPopover extends OASElement {
     this.panel.style.width = Number.isFinite(n) && raw !== '' ? `${n}px` : raw
   }
 
-  // —— 初始焦点（B8）与焦点移入 ——
+  // —— 初始焦点与焦点移入 ——
 
   /**
    * 打开瞬间的焦点策略（优先级：modal 必聚焦 > initial-focus 指定选择器 > focus-on-open 首个可聚焦）：
@@ -1037,10 +1037,10 @@ export class OASPopover extends OASElement {
     this.panel.focus()
   }
 
-  // —— portal（B6 append-to）——
+  // —— portal（append-to）——
 
   /**
-   * portal 挂载（P2 修复：样式作用域保真 + slot 内容桥接）：
+   * portal 挂载（样式作用域保真 + slot 内容桥接）：
    * 打开且设置 append-to 时，面板移入目标容器内的 portal host（div + 独立 open shadow，
    * STYLE 注入其中）。曾缺陷：裸 appendChild 到 body——面板脱离 shadow 树后 scoped CSS
    * 全部失效（position:fixed / 背景 / 边框 / 圆角丢失），以 static 掉到文档流末尾、
@@ -1104,7 +1104,7 @@ export class OASPopover extends OASElement {
     host.remove()
   }
 
-  // —— modal（C5）——
+  // —— modal——
 
   /**
    * modal 化同步：backdrop 显隐 + aria-modal + 滚动锁 + 焦点陷阱。
@@ -1206,7 +1206,7 @@ export class OASPopover extends OASElement {
   // —— 内容（fresh C2）/ 其余属性同步 ——
 
   /**
-   * fresh 语义（C2）：默认（无 fresh）关闭状态下不重写 content/title（冻结，打开时写入最新值）；
+   * fresh 语义：默认（无 fresh）关闭状态下不重写 content/title（冻结，打开时写入最新值）；
    * fresh 开启时关闭状态也持续更新。首次写入始终放行（覆盖 SSR 初始内容）。
    */
   private syncText(): void {
@@ -1239,7 +1239,7 @@ export class OASPopover extends OASElement {
     this.closeBtn?.setAttribute('aria-label', this.t('popover.close'))
   }
 
-  /** 颜色变体（B10）：合法语义色写 data-color（CSS 走 token 派生变量），未知值保持中性 */
+  /** 颜色变体：合法语义色写 data-color（CSS 走 token 派生变量），未知值保持中性 */
   private syncColor(): void {
     const c = this.getAttr('color', '').trim()
     const valid = c === 'primary' || c === 'success' || c === 'warning' || c === 'danger'
@@ -1247,12 +1247,12 @@ export class OASPopover extends OASElement {
     else this.panel?.removeAttribute('data-color')
   }
 
-  /** arrow-merge（C1）：面板写 data-arrow-merge，CSS 仅在 *-start/*-end 位置应用直角三角贴角共边与圆角归零 */
+  /** arrow-merge：面板写 data-arrow-merge，CSS 仅在 *-start/*-end 位置应用直角三角贴角共边与圆角归零 */
   private syncArrowMerge(): void {
     this.panel?.toggleAttribute('data-arrow-merge', this.hasAttr('arrow-merge'))
   }
 
-  /** auto-close（C3）：打开后计时自动关闭（open 期间重设；关闭/重开时清理） */
+  /** auto-close：打开后计时自动关闭（open 期间重设；关闭/重开时清理） */
   private syncAutoClose(open: boolean): void {
     if (this.autoCloseTimer) {
       clearTimeout(this.autoCloseTimer)

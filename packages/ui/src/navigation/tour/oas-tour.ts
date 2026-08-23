@@ -39,8 +39,9 @@ export interface TourStep {
   /** step 级遮罩覆盖：false 关闭（非模态）/ { color, style } 定制 */
   mask?: boolean | TourMaskConfig
   type?: 'default' | 'primary'
-  /** 高亮内边距（数字=padding，px）或 { padding, radius } */
-  gap?: number | { padding?: number; radius?: number }
+  /** 高亮内边距（数字=padding，px）或 { padding, radius, offset }；
+   *  offset 为高亮外扩间距（number = 四周同值 / [水平, 垂直] 双轴），与 padding 正交 */
+  gap?: number | { padding?: number; radius?: number; offset?: number | [number, number] }
   /** popup / dialog（无目标居中对话框） */
   mode?: 'popup' | 'dialog'
   /** 等待目标出现（毫秒），超时按 skipMissingElement 决定跳过或 fallback */
@@ -87,10 +88,21 @@ const STYLE = `
 :host([open]) .overlay {
   display: block;
 }
+/* portal（append-to）模式：overlay 移入 portal host shadow 后，:host 变成 portal host，
+   其无 open 属性导致 :host([open]) 不命中、整层永隐——由 ensurePortal 在 portal host 上
+   镜像 open 态（data-open 属性）驱动显示，与 :host([open]) 规则互为两处作用域的分支 */
+:host([data-open]) .overlay {
+  display: block;
+}
 .mask-seg {
   position: fixed;
   background: var(--oas-tour-mask-color, var(--oas-color-overlay));
   pointer-events: auto;
+  /* 与 .highlight 同参的位置过渡：步骤切换时遮罩孔与高亮框同步就位，避免短暂错位 */
+  transition: top var(--oas-transition-base) var(--oas-ease-out),
+    left var(--oas-transition-base) var(--oas-ease-out),
+    width var(--oas-transition-base) var(--oas-ease-out),
+    height var(--oas-transition-base) var(--oas-ease-out);
 }
 .highlight {
   position: fixed;
@@ -400,6 +412,9 @@ const STYLE = `
   .highlight {
     transition: none;
   }
+  .mask-seg {
+    transition: none;
+  }
 }
 .hint-popup {
   position: fixed;
@@ -451,9 +466,9 @@ export class OASTour extends OASElement {
       'open',
       'current',
       'steps',
-      // A 档
       'placement',
       'arrow',
+      'arrow-point-at-center',
       'mask',
       'type',
       'gap',
@@ -466,7 +481,6 @@ export class OASTour extends OASElement {
       'scroll-into-view-options',
       'scroll-padding',
       'auto-reposition',
-      // B 档
       'progress-text',
       'show-progress',
       'show-bullets',
@@ -485,7 +499,6 @@ export class OASTour extends OASElement {
       'close-on-press-escape',
       'wait-for-element',
       'skip-missing-element',
-      // C 档
       'z-index',
       'append-to',
       'dont-show-again',
@@ -527,6 +540,10 @@ export class OASTour extends OASElement {
   private prevFocused: HTMLElement | null = null
   /** advance-on-click 挂在目标上的 click 监听是否已绑定 */
   private advanceBound = false
+  /** advance-on-click 实际挂载监听的元素引用（unbind 用记录值而非重新解析，防 goTo 改 current 后解绑错目标） */
+  private advanceTarget: HTMLElement | null = null
+  /** document keydown 监听是否已绑定（断开重连由 update 幂等重挂，参照 back-top 的 updateScrollTarget 守卫模式） */
+  private keydownBound = false
 
   /** Vue/React 会把 steps 识别为实例属性走 property 赋值；字符串反射到 attribute 统一解析链路 */
   get steps(): TourStep[] | string {
@@ -565,10 +582,12 @@ export class OASTour extends OASElement {
           <div class="footer">
             <div class="step-count" part="step-count"></div>
             <div class="bullets" part="bullets"></div>
+            <slot name="indicators" part="indicators"></slot>
             <div class="actions" part="actions">
               <button class="btn" part="skip" type="button"></button>
               <button class="btn" part="prev" type="button"></button>
               <button class="btn" part="next" type="button"></button>
+              <slot name="actions"></slot>
             </div>
           </div>
           <label class="dont-show" part="dont-show">
@@ -620,21 +639,10 @@ export class OASTour extends OASElement {
     this.interceptor?.addEventListener('click', () => {
       if (this.hasAttr('advance-on-click')) this.next()
     })
-    // 键盘：Esc 取消 + ←/→ 推进（可开关）
-    const onKey = (e: KeyboardEvent): void => {
-      if (!this.hasAttr('open')) return
-      if (e.key === 'Escape') {
-        if (this.getAttr('close-on-press-escape', 'true') !== 'false') this.cancel('esc')
-      } else if (e.key === 'ArrowRight' && this.getAttr('keyboard', 'true') !== 'false') {
-        e.preventDefault()
-        this.next()
-      } else if (e.key === 'ArrowLeft' && this.getAttr('keyboard', 'true') !== 'false') {
-        e.preventDefault()
-        this.prev()
-      }
+    // 命名插槽内容变化（宿主动态塞入/移除 slot 内容）→ 增量同步显隐
+    for (const s of this.shadow.querySelectorAll<HTMLSlotElement>('slot')) {
+      s.addEventListener('slotchange', () => this.update())
     }
-    document.addEventListener('keydown', onKey)
-    this.onCleanup(() => document.removeEventListener('keydown', onKey))
     this.onCleanup(() => {
       this.clearTypewriter()
       if (this.waitTimer) clearTimeout(this.waitTimer)
@@ -642,7 +650,36 @@ export class OASTour extends OASElement {
       this.destroyPortal()
       this.restoreScrollLock()
       this.unbindAdvance()
+      this.unbindKeydown()
     })
+  }
+
+  /** 键盘：Esc 取消 + ←/→ 推进（可开关）。幂等重挂：首次 render 后断开重连
+   *  由 update() 每次调用本方法恢复（参照 back-top updateScrollTarget 的守卫模式） */
+  private bindKeydown(): void {
+    if (this.keydownBound) return
+    this.keydownBound = true
+    document.addEventListener('keydown', this.onKey)
+    this.onCleanup(() => this.unbindKeydown())
+  }
+
+  private unbindKeydown(): void {
+    if (!this.keydownBound) return
+    this.keydownBound = false
+    document.removeEventListener('keydown', this.onKey)
+  }
+
+  private onKey = (e: KeyboardEvent): void => {
+    if (!this.hasAttr('open')) return
+    if (e.key === 'Escape') {
+      if (this.getAttr('close-on-press-escape', 'true') !== 'false') this.cancel('esc')
+    } else if (e.key === 'ArrowRight' && this.getAttr('keyboard', 'true') !== 'false') {
+      e.preventDefault()
+      this.next()
+    } else if (e.key === 'ArrowLeft' && this.getAttr('keyboard', 'true') !== 'false') {
+      e.preventDefault()
+      this.prev()
+    }
   }
 
   protected override render(): void {
@@ -794,29 +831,48 @@ export class OASTour extends OASElement {
     const host = document.createElement('div')
     host.setAttribute('data-oas-tour-portal', '')
     host.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: var(--oas-z-modal, 1050);'
+    // portal shadow 内 :host 是 portal host，:host([open]) 不命中——镜像 open 态驱动 overlay 显示
+    if (this.hasAttr('open')) host.setAttribute('data-open', '')
     target.appendChild(host)
     const root = host.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${STYLE}</style>`
     if (this.overlay) root.appendChild(this.overlay)
     if (this.hintsEl) root.appendChild(this.hintsEl)
     if (this.hintPopupEl) root.appendChild(this.hintPopupEl)
+    // 先登记 portalHost 再桥接：bridgeSlots 移动插槽节点会触发同步 slotchange → 重入 update()
+    // → ensurePortal，若此时 portalHost 仍为 null 会新建第二个 host 并把 overlay 再次移走
+    // （孤儿 host + 递归隐患）
     this.portalHost = host
+    this.bridgeSlots(host)
+  }
+
+  /** 命名插槽桥接：宿主 light DOM 的 [slot=cover/indicators/actions] 节点移入 portal host
+   *  light DOM（popup 随 overlay 进入 portal shadow 后，插槽只分配 portal host 的 light
+   *  子节点——不移桥则宿主塞的插槽内容跨 host 断供消失） */
+  private bridgeSlots(host: HTMLElement): void {
+    for (const n of this.querySelectorAll<HTMLElement>('[slot="cover"], [slot="indicators"], [slot="actions"]')) {
+      host.appendChild(n)
+    }
   }
 
   private destroyPortal(): void {
-    if (this.portalHost) {
-      if (this.overlay && this.portalHost.shadowRoot?.contains(this.overlay)) {
-        this.shadow.appendChild(this.overlay)
-      }
-      if (this.hintsEl && this.portalHost.shadowRoot?.contains(this.hintsEl)) {
-        this.shadow.appendChild(this.hintsEl)
-      }
-      if (this.hintPopupEl && this.portalHost.shadowRoot?.contains(this.hintPopupEl)) {
-        this.shadow.appendChild(this.hintPopupEl)
-      }
-      this.portalHost.remove()
-      this.portalHost = null
+    const host = this.portalHost
+    if (!host) return
+    // 先摘除引用：移回插槽节点会触发 slotchange → 重入 update → destroyPortal，重入直接短路
+    this.portalHost = null
+    if (this.overlay && host.shadowRoot?.contains(this.overlay)) {
+      this.shadow.appendChild(this.overlay)
     }
+    if (this.hintsEl && host.shadowRoot?.contains(this.hintsEl)) {
+      this.shadow.appendChild(this.hintsEl)
+    }
+    if (this.hintPopupEl && host.shadowRoot?.contains(this.hintPopupEl)) {
+      this.shadow.appendChild(this.hintPopupEl)
+    }
+    for (const n of host.querySelectorAll<HTMLElement>('[slot]')) {
+      this.appendChild(n)
+    }
+    host.remove()
   }
 
   /** 滚动/resize 重定位：capture 捕获容器滚动 + resize，rAF 节流 */
@@ -862,13 +918,14 @@ export class OASTour extends OASElement {
       return
     }
     target.addEventListener('click', this.onAdvance)
+    // 记录实际绑定元素：unbind 用记录值解绑（goTo 已先改 current，重新解析会解绑错目标导致旧监听残留）
+    this.advanceTarget = target
     this.advanceBound = true
   }
   private unbindAdvance(): void {
     if (!this.advanceBound) return
-    const step = this._steps[this.current]
-    const t = step ? this.resolveTarget(step) : null
-    t?.removeEventListener('click', this.onAdvance)
+    this.advanceTarget?.removeEventListener('click', this.onAdvance)
+    this.advanceTarget = null
     this.advanceBound = false
   }
   private onAdvance = (): void => {
@@ -885,7 +942,7 @@ export class OASTour extends OASElement {
   /** 打字机动画：逐字渲染描述（typewriter 开关，typewriter-speed 控制速率） */
   private startTypewriter(text: string): void {
     this.clearTypewriter()
-    const desc = this.shadow.querySelector<HTMLElement>('[part="desc"]')
+    const desc = this.popup?.querySelector<HTMLElement>('[part="desc"]')
     if (!desc) return
     if (this.getAttr('typewriter', 'false') !== 'true') {
       desc.textContent = text
@@ -901,11 +958,23 @@ export class OASTour extends OASElement {
     }, speed)
   }
 
-  /** gap 解析：数字 → { padding, radius }；JSON 对象 */
-  private resolveGap(step: TourStep): { padding: number; radius: string } {
+  /** gap 解析：数字 → { padding }；JSON 对象 → { padding, radius, offsetH, offsetV } */
+  private resolveGap(step: TourStep): { padding: number; radius: string; offsetH: number; offsetV: number } {
     const raw = step.gap ?? this.getAttr('gap', '')
     let padding = 4
     let radius = 'var(--oas-radius-md)'
+    let offsetH = 0
+    let offsetV = 0
+    // offset 双轴：number 四周同值 / [水平, 垂直] 数组
+    const applyOffset = (o: unknown): void => {
+      if (typeof o === 'number' && Number.isFinite(o)) {
+        offsetH = o
+        offsetV = o
+      } else if (Array.isArray(o) && o.length >= 2) {
+        offsetH = typeof o[0] === 'number' && Number.isFinite(o[0]) ? o[0] : 0
+        offsetV = typeof o[1] === 'number' && Number.isFinite(o[1]) ? o[1] : 0
+      }
+    }
     if (typeof raw === 'number') padding = raw
     else if (typeof raw === 'string' && raw !== '') {
       const n = Number(raw)
@@ -917,18 +986,20 @@ export class OASTour extends OASElement {
             if (typeof o.padding === 'number') padding = o.padding
             if (typeof o.radius === 'number') radius = `${o.radius}px`
             else if (typeof o.radius === 'string') radius = o.radius
+            if ('offset' in o) applyOffset((o as { offset?: unknown }).offset)
           }
         } catch {
           /* 非法 gap 回落默认 */
         }
       }
     } else if (raw && typeof raw === 'object') {
-      const o = raw as { padding?: number; radius?: number | string }
+      const o = raw as { padding?: number; radius?: number | string; offset?: number | [number, number] }
       if (typeof o.padding === 'number') padding = o.padding
       if (typeof o.radius === 'number') radius = `${o.radius}px`
       else if (typeof o.radius === 'string') radius = o.radius
+      if (o.offset !== undefined) applyOffset(o.offset)
     }
-    return { padding, radius }
+    return { padding, radius, offsetH, offsetV }
   }
 
   /** mask 解析：boolean 开关 + { color, style } 定制 */
@@ -969,30 +1040,32 @@ export class OASTour extends OASElement {
     return p
   }
 
-  /** 按钮显隐 + props 透传 */
+  /** 按钮显隐 + props 透传。
+   *  弹层内部件一律从 this.popup 查询：append-to portal 期间 popup 已移入 portal host shadow，
+   *  this.shadow 查询会落空（曾缺陷：portal 后步骤推进时 syncButtons 等取 null 崩溃） */
   private syncButtons(step: TourStep): void {
-    const shadow = this.shadow
+    const popup = this.popup!
     const last = this.current >= this._steps.length - 1
     const hide = (part: 'prev' | 'skip' | 'next', stepFlag?: boolean): boolean =>
       stepFlag ?? this.hasAttr(`hide-${part}`)
     const setHidden = (part: 'prev' | 'skip' | 'next' | 'step-count', hidden: boolean): void => {
-      const el = shadow.querySelector<HTMLElement>(`[part="${part}"]`)
+      const el = popup.querySelector<HTMLElement>(`[part="${part}"]`)
       if (el) el.style.display = hidden ? 'none' : ''
     }
     setHidden('prev', hide('prev', step.hidePrev))
     setHidden('skip', hide('skip', step.hideSkip))
     setHidden('next', hide('next', step.hideNext))
     setHidden('step-count', this.hasAttr('hide-counter'))
-    const nextBtn = shadow.querySelector<HTMLButtonElement>('[part="next"]')!
+    const nextBtn = popup.querySelector<HTMLButtonElement>('[part="next"]')!
     nextBtn.textContent = last ? this.t('tour.finish') : this.t('tour.next')
-    const prevBtn = shadow.querySelector<HTMLButtonElement>('[part="prev"]')!
+    const prevBtn = popup.querySelector<HTMLButtonElement>('[part="prev"]')!
     prevBtn.textContent = this.t('tour.prev')
     prevBtn.disabled = this.current === 0
-    const skipBtn = shadow.querySelector<HTMLButtonElement>('[part="skip"]')!
+    const skipBtn = popup.querySelector<HTMLButtonElement>('[part="skip"]')!
     skipBtn.textContent = this.t('tour.skip')
     // 按钮 props 透传：全局 + step 级合并（step 优先）
     const applyProps = (part: string, props: TourButtonProps | undefined): void => {
-      const btn = shadow.querySelector<HTMLElement>(`[part="${part}"]`)
+      const btn = popup.querySelector<HTMLElement>(`[part="${part}"]`)
       if (!btn) return
       const merged: TourButtonProps = { ...this.parseProps(this.getAttr(`${part}-button-props`, '')), ...props }
       for (const [k, v] of Object.entries(merged)) {
@@ -1003,6 +1076,13 @@ export class OASTour extends OASElement {
     applyProps('next', step.nextButtonProps)
     applyProps('prev', step.prevButtonProps)
     applyProps('skip', step.skipButtonProps)
+    // 自定义动作区插槽：宿主塞入 slot="actions" 内容时隐藏整个内置按钮区
+    const actionsSlot = popup.querySelector<HTMLSlotElement>('slot[name="actions"]')
+    if (actionsSlot && actionsSlot.assignedNodes({ flatten: true }).length > 0) {
+      setHidden('prev', true)
+      setHidden('skip', true)
+      setHidden('next', true)
+    }
   }
 
   private parseProps(raw: string): TourButtonProps {
@@ -1015,12 +1095,12 @@ export class OASTour extends OASElement {
     }
   }
 
-  /** 步骤计数 / 进度文本模板 / 进度条 / 指示器 */
+  /** 步骤计数 / 进度文本模板 / 进度条 / 指示器（弹层内部件从 this.popup 查，portal 兼容） */
   private syncCounter(step: TourStep): void {
-    const shadow = this.shadow
+    const popup = this.popup!
     const total = this._steps.length
     const index = this.current
-    const counter = shadow.querySelector<HTMLElement>('[part="step-count"]')!
+    const counter = popup.querySelector<HTMLElement>('[part="step-count"]')!
     const template = this.getAttr('progress-text', '')
     const indicators = step.mode === 'dialog' || this.getAttr('indicators', 'dots') === 'number' || template
       ? 'number'
@@ -1033,7 +1113,7 @@ export class OASTour extends OASElement {
       counter.textContent = ''
     }
     // 进度条：show-progress 时宽度 = (current+1)/total
-    const bar = shadow.querySelector<HTMLElement>('[part="progress"]')!
+    const bar = popup.querySelector<HTMLElement>('[part="progress"]')!
     if (this.hasAttr('show-progress')) {
       bar.style.display = ''
       bar.style.width = `${((index + 1) / total) * 100}%`
@@ -1041,7 +1121,7 @@ export class OASTour extends OASElement {
       bar.style.display = 'none'
     }
     // 圆点指示器（show-bullets）
-    const bullets = shadow.querySelector<HTMLElement>('[part="bullets"]')!
+    const bullets = popup.querySelector<HTMLElement>('[part="bullets"]')!
     if (this.hasAttr('show-bullets')) {
       bullets.style.display = ''
       bullets.setAttribute('aria-label', this.t('tour.progress'))
@@ -1054,12 +1134,19 @@ export class OASTour extends OASElement {
     } else {
       bullets.style.display = 'none'
     }
+    // 自定义指示器插槽：宿主塞入 slot="indicators" 内容时，隐藏内置圆点/数字指示器
+    const indicatorsSlot = popup.querySelector<HTMLSlotElement>('slot[name="indicators"]')
+    if (indicatorsSlot && indicatorsSlot.assignedNodes({ flatten: true }).length > 0) {
+      counter.style.display = 'none'
+      bullets.style.display = 'none'
+    }
   }
 
-  /** cover 富内容：slot="cover" 插槽优先，否则 step.cover 图片 */
+  /** cover 富内容：slot="cover" 插槽优先，否则 step.cover 图片（弹层内部件从 this.popup 查，portal 兼容） */
   private syncCover(step: TourStep): void {
-    const cover = this.shadow.querySelector<HTMLElement>('[part="cover"]')!
-    const img = this.shadow.querySelector<HTMLImageElement>('.cover-img')!
+    const popup = this.popup!
+    const cover = popup.querySelector<HTMLElement>('[part="cover"]')!
+    const img = popup.querySelector<HTMLImageElement>('.cover-img')!
     const hasSlot = cover.querySelector('slot')!.assignedNodes({ flatten: true }).length > 0
     if (hasSlot) {
       img.hidden = true
@@ -1078,7 +1165,7 @@ export class OASTour extends OASElement {
 
   /** 关闭按钮：show-close 开关 + close-icon 自定义内容 */
   private syncClose(): void {
-    const btn = this.shadow.querySelector<HTMLElement>('[part="close"]')!
+    const btn = this.popup!.querySelector<HTMLElement>('[part="close"]')!
     btn.style.display = this.hasAttr('show-close') && this.getAttr('show-close', 'true') === 'false' ? 'none' : ''
     btn.setAttribute('aria-label', this.t('tour.close'))
     const icon = this.getAttr('close-icon', '')
@@ -1092,11 +1179,12 @@ export class OASTour extends OASElement {
 
   /** 不再显示 checkbox 文案（locale） */
   private syncDontShow(): void {
-    const label = this.shadow.querySelector<HTMLElement>('[part="dont-show"]')!
-    const checked = this.shadow.querySelector<HTMLInputElement>('[part="dont-show"] input')!
+    const popup = this.popup!
+    const label = popup.querySelector<HTMLElement>('[part="dont-show"]')!
+    const checked = popup.querySelector<HTMLInputElement>('[part="dont-show"] input')!
     if (this.hasAttr('dont-show-again')) {
       label.style.display = ''
-      this.shadow.querySelector<HTMLElement>('.dont-show-text')!.textContent = this.t('tour.dontShowAgain')
+      popup.querySelector<HTMLElement>('.dont-show-text')!.textContent = this.t('tour.dontShowAgain')
       // 勾选态不被重复 update 清掉（用户已勾选）
       if (!this.dontShowChecked) checked.checked = false
     } else {
@@ -1115,15 +1203,19 @@ export class OASTour extends OASElement {
     const placement = this.resolvePlacement(step, !!target)
     const viewport = { width: window.innerWidth || 800, height: window.innerHeight || 600 }
     const p = gap.padding
+    const oh = gap.offsetH
+    const ov = gap.offsetV
 
     // 遮罩 4 段 + 高亮框 + 拦截层（有目标时）
     this.highlight.style.display = 'block'
     if (target) {
       const r = target.getBoundingClientRect()
-      const top = r.top - p
-      const left = r.left - p
-      const w = r.width + p * 2
-      const h = r.height + p * 2
+      const top = r.top - p - ov
+      const left = r.left - p - oh
+      const w = r.width + (p + oh) * 2
+      const h = r.height + (p + ov) * 2
+      const holeRight = r.right + p + oh
+      const holeBottom = r.bottom + p + ov
       this.highlight.style.top = `${top}px`
       this.highlight.style.left = `${left}px`
       this.highlight.style.width = `${w}px`
@@ -1134,12 +1226,12 @@ export class OASTour extends OASElement {
       this.interceptor.style.left = `${left}px`
       this.interceptor.style.width = `${w}px`
       this.interceptor.style.height = `${h}px`
-      // 4 段遮罩：上下左右围孔
+      // 4 段遮罩：上下左右围孔（孔 = 目标 + padding + offset 外扩）
       const segs: Record<string, { top: number; left: number; width: number; height: number }> = {
         top: { top: 0, left: 0, width: viewport.width, height: Math.max(0, top) },
-        bottom: { top: r.bottom + p, left: 0, width: viewport.width, height: Math.max(0, viewport.height - r.bottom - p) },
+        bottom: { top: holeBottom, left: 0, width: viewport.width, height: Math.max(0, viewport.height - holeBottom) },
         left: { top, left: 0, width: Math.max(0, left), height: h },
-        right: { top, left: r.right + p, width: Math.max(0, viewport.width - r.right - p), height: h },
+        right: { top, left: holeRight, width: Math.max(0, viewport.width - holeRight), height: h },
       }
       for (const seg of this.maskSegs) {
         const s = segs[seg.dataset.maskSeg ?? ''] ?? segs.top!
@@ -1162,6 +1254,8 @@ export class OASTour extends OASElement {
       if (mask.color) seg.style.background = mask.color
       else seg.style.removeProperty('background')
     }
+    // aria-modal 随模态性同步：mask 关闭 = 非模态，降级读屏语义（WCAG 惯例）
+    this.popup.setAttribute('aria-modal', mask.show ? 'true' : 'false')
     if (mask.style) this.overlay.style.cssText = `position: fixed; inset: 0; ${mask.style}`
     else if (this.getAttr('append-to', '') === '') this.overlay.style.cssText = ''
     // z-index 可配（mask.style 会清掉内联，需重新应用）
@@ -1178,20 +1272,53 @@ export class OASTour extends OASElement {
     if (!target) return
     const anchor = target.getBoundingClientRect()
     const popupRect = this.popup.getBoundingClientRect()
-    const autoAdjust = this.getAttr('auto-reposition', 'true') === 'true' || true
-    void autoAdjust
+    // auto-reposition：true（默认）开启溢出翻转 + 视口避让；false 保持声明 placement 不做避让
+    const autoAdjust = this.getAttr('auto-reposition', 'true') !== 'false'
     const { top, left, placement: actual } = computePosition(
       anchor,
       popupRect,
       placement as Placement,
       viewport,
       8,
-      true,
+      autoAdjust,
     )
     this.popup.style.top = `${top}px`
     this.popup.style.left = `${left}px`
     this.popup.style.transform = ''
     this.popup.setAttribute('data-placement', actual)
+    this.positionArrow(anchor, actual)
+  }
+
+  /** 箭头交叉轴指向（与 hover-card positionArrow 同源）：
+   *  - -start/-end 对齐 placement：CSS 固定 16px 在弹层被视口夹取/目标比弹层窄时会错指——
+   *    按锚点中心投影写内联偏移并夹取在弹层边内；
+   *  - arrow-point-at-center 显式开启：center 对齐在弹层被夹取偏移后仍指向锚点中心；
+   *  - 其余（center 对齐且无 point-at-center）保持 CSS calc(50% - 4px) 居中兜底。
+   *  tour 无 merge 形态（箭头永远居中于锚点投影），无需 hover-card 的 arrow-merge 守卫。 */
+  private positionArrow(anchorRect: DOMRect, placement: string): void {
+    if (!this.popup) return
+    if (placement === 'center') return
+    if (this.getAttr('arrow', 'true') === 'false') return
+    const arrow = this.popup.querySelector<HTMLElement>('[data-popper-arrow]')
+    if (!arrow) return
+    arrow.style.left = ''
+    arrow.style.top = ''
+    const aligned = placement.endsWith('-start') || placement.endsWith('-end')
+    if (!aligned && !this.hasAttr('arrow-point-at-center')) return
+    const vertical = placement.startsWith('top') || placement.startsWith('bottom')
+    const rect = this.popup.getBoundingClientRect()
+    const popupEdge = vertical ? parseFloat(this.popup.style.left) : parseFloat(this.popup.style.top)
+    const anchorCrossCenter = vertical
+      ? anchorRect.left + anchorRect.width / 2
+      : anchorRect.top + anchorRect.height / 2
+    const size = vertical ? rect.width : rect.height
+    if (!Number.isFinite(size) || size <= 0) return
+    // 锚点中心映射到弹层局部坐标，夹取到弹层边内（4px 边距），避免箭头探出弹层
+    const local = anchorCrossCenter - popupEdge
+    const clamped = Math.max(4, Math.min(local, size - 4))
+    if (Math.abs(clamped - size / 2) <= 0.5) return // 与弹层中心重合 → 走 CSS 居中
+    if (vertical) arrow.style.left = `${clamped - 4}px`
+    else arrow.style.top = `${clamped - 4}px`
   }
 
   /** 高亮区交互开关：拦截层显示 = 禁止交互（target-area-clickable 放行） */
@@ -1326,6 +1453,8 @@ export class OASTour extends OASElement {
 
   protected override update(): void {
     if (!this.highlight || !this.popup) return
+    // 键盘监听幂等重挂：首次 render 绑定的监听在断开时被 cleanup 移除，重连必须恢复
+    this.bindKeydown()
     this.parseSteps()
     this.restorePersist()
     this.current = Math.min(
@@ -1343,7 +1472,7 @@ export class OASTour extends OASElement {
     this.syncClose()
     this.syncDontShow()
     // 箭头显隐：arrow 布尔属性默认 true（显示），arrow="false" 隐藏（元素与 ::part(arrow) 保留）
-    const arrow = this.shadow.querySelector<HTMLElement>('[data-popper-arrow]')
+    const arrow = this.popup!.querySelector<HTMLElement>('[data-popper-arrow]')
     if (arrow) arrow.hidden = this.getAttr('arrow', 'true') === 'false'
     this.syncButtons(this._steps[this.current] ?? {})
     // open 状态迁移：true → false 派发 oas-destroy（外部移除 open 也覆盖）
@@ -1363,6 +1492,7 @@ export class OASTour extends OASElement {
     if (!open) {
       this.clearTypewriter()
       this.unbindAdvance()
+      this.destroyPortal()
       this.savePersist()
       this.syncFollow(false)
       return
@@ -1370,7 +1500,7 @@ export class OASTour extends OASElement {
     this.savePersist()
     const step = this._steps[this.current]
     if (!step) return
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = step.title ?? ''
+    this.popup!.querySelector<HTMLElement>('[part="title"]')!.textContent = step.title ?? ''
     this.startTypewriter(step.description ?? '')
     this.syncCounter(step)
     this.syncCover(step)

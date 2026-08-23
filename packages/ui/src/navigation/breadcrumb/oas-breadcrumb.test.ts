@@ -161,7 +161,7 @@ describe('OASBreadcrumb', () => {
     expect(item.textContent).toBe('无链接')
   })
 
-  // ===== A 档：项 icon / 图标分隔符 / 真实链接 / disabled / 折叠保留数 =====
+  // ===== 项 icon / 图标分隔符 / 真实链接 / disabled / 折叠保留数 =====
 
   it('A1 项 icon：item.icon 渲染前置 svg（part=icon），无效图标名不渲染', () => {
     const el = mountWith({
@@ -299,7 +299,7 @@ describe('OASBreadcrumb', () => {
     expect(root.querySelectorAll('.item').length).toBe(4) // 首页 + … + 反馈 + 面包屑
   })
 
-  // ===== B 档：项下拉菜单 / 单项截断 / size / 末项可点 / 键盘导航 / 自定义省略号 =====
+  // ===== 项下拉菜单 / 单项截断 / size / 末项可点 / 键盘导航 / 自定义省略号 =====
 
   it('B1 项带下拉菜单：dropdown 项渲染触发器，点击展开/收起', () => {
     const el = mountWith({
@@ -497,7 +497,7 @@ describe('OASBreadcrumb', () => {
     expect(el.shadowRoot!.querySelector('.ellipsis-btn')!.textContent).toBe('展开')
   })
 
-  // ===== C 档：结构化数据 / color/variant / part 体系 =====
+  // ===== 结构化数据 / color/variant / part 体系 =====
 
   it('C1 结构化数据：light DOM 注入 BreadcrumbList JSON-LD（仅含 href 项）', () => {
     const el = mount()

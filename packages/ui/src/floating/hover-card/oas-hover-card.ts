@@ -32,7 +32,7 @@ function fits(
 }
 
 /**
- * 延迟组注册表（C11 / B2 语义）：同 group 名的组件共享延迟——
+ * 延迟组注册表：同 group 名的组件共享延迟——
  * 指针从一个成员移到另一个成员时，后一个跳过 open-delay 立即打开、
  * 前一个立即关闭（不再等 close-delay）。
  */
@@ -154,7 +154,7 @@ const STYLE = `
   border-left: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
 }
-/* arrow-merge（C1）：直角三角与面板角共边融合（通用形态，仅 *-start/*-end 生效，
+/* arrow-merge：直角三角与面板角共边融合（通用形态，仅 *-start/*-end 生效，
     center placement 不触发）。箭头为不旋转的 8px 方块整悬面板外、贴齐角两边，clip-path
     裁成直角三角——直角顶点贴面板角点，两条直角边与面板角两边共线，斜边 45° 朝面板内，
     尖端从角点正交外探 8px 指向锚点侧（视觉是「面板角本身伸出的直角尖」）。
@@ -300,6 +300,8 @@ export class OASHoverCard extends OASElement {
       'auto-adjust-overflow',
       'group',
       'arrow-merge',
+      'sticky',
+      'collision-boundary',
     ]
   }
 
@@ -311,13 +313,24 @@ export class OASHoverCard extends OASElement {
   private prevOpen: boolean | null = null
   /** 最近一次 open 状态变化时刻（延迟组判断「连续悬停」用） */
   private recentOpenAt = 0
-  /** B6 append-to：portal host 容器（目标容器内的 div + 独立 shadow，样式作用域保真） */
+  /** append-to：portal host 容器（目标容器内的 div + 独立 shadow，样式作用域保真） */
   private portalHost: HTMLElement | null = null
-  /** hide-when-detached 滚动监听 */
-  private detachWatchOn = false
-  private detachRaf = 0
+  /** collision-boundary property 通道持有的元素（优先于属性选择器） */
+  private collisionBoundaryEl: Element | null = null
+  /** 滚动/缩放重定位监听（默认挂载；sticky=off 或未打开时移除） */
+  private scrollWatchOn = false
+  private scrollRaf = 0
   /** 已注册的延迟组名（动态变更时先注销旧组） */
   private groupRegistered = ''
+
+  /** collision-boundary property 通道（宿主直接传元素；与属性选择器并存，property 优先） */
+  get collisionBoundary(): Element | null {
+    return this.collisionBoundaryEl
+  }
+  set collisionBoundary(el: Element | null) {
+    this.collisionBoundaryEl = el
+    if (this.isConnected && this.hasAttr('open')) this.position()
+  }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -336,7 +349,7 @@ export class OASHoverCard extends OASElement {
   /**
    * 缓存节点引用 + 绑定 hover/focus 触发 + 注册延迟组（render 与水合路径共用）。
    *
-   * 悬停区域 = 触发器 + 浮层卡片（A9）：触发器 mouseenter/mouseleave 与卡片
+   * 悬停区域 = 触发器 + 浮层卡片：触发器 mouseenter/mouseleave 与卡片
    * mouseenter/mouseleave 各自独立监听——离开触发器排队关闭后，指针在 close-delay
    * 内进入卡片即取消关闭（跨间隙移动不闪关）；卡内 slotted 内容属于卡片子树，
    * 悬停其上保持打开。
@@ -357,7 +370,7 @@ export class OASHoverCard extends OASElement {
       if (this.hideTimer) clearTimeout(this.hideTimer)
       this.unregisterGroup()
       this.destroyPortal()
-      this.stopDetachedWatch()
+      this.stopScrollWatch()
     })
   }
 
@@ -467,7 +480,7 @@ export class OASHoverCard extends OASElement {
     }
   }
 
-  // —— 延迟（A11：open-delay / close-delay 分离；delay 为兼容别名）——
+  // —— 延迟（open-delay / close-delay 分离；delay 为兼容别名）——
 
   private scheduleOpen(): void {
     if (this.showTimer) return
@@ -506,7 +519,7 @@ export class OASHoverCard extends OASElement {
     return Number.isFinite(n) && n >= 0 ? n : fb
   }
 
-  // —— 延迟组注册（C11）——
+  // —— 延迟组注册——
 
   private syncGroup(): void {
     const g = this.getAttr('group')
@@ -561,11 +574,11 @@ export class OASHoverCard extends OASElement {
     this.prevOpen = open
     if (open) {
       this.position()
-      this.syncDetachedWatch(true)
+      this.syncScrollWatch(true)
     } else {
       this.card.classList.remove('oas-detached')
       this.destroyPortal()
-      this.syncDetachedWatch(false)
+      this.syncScrollWatch(false)
     }
   }
 
@@ -601,30 +614,35 @@ export class OASHoverCard extends OASElement {
       height: this.card.offsetHeight || rawRect.height,
     } as DOMRect
     const viewport = { width: window.innerWidth, height: window.innerHeight }
+    // collision-boundary：碰撞/夹取边界可换成指定元素 rect（默认视口）
+    const boundary = this.resolveBoundary()
     const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
+    const sticky = this.getAttr('sticky', 'partial')
 
-    // B13 hide-when-detached：锚点完全脱离视口 → 隐藏卡片（保留 open 语义，滚动回来自动恢复）
-    if (autoAdjust && this.hasAttr('hide-when-detached')) {
-      const detached =
-        anchorRect.bottom < 0 ||
-        anchorRect.top > viewport.height ||
-        anchorRect.right < 0 ||
-        anchorRect.left > viewport.width
-      if (detached) {
-        this.card.classList.add('oas-detached')
-        return
-      }
-      this.card.classList.remove('oas-detached')
+    // 锚点是否完全脱离视口（脱离隐藏与 always 吸附共用判定）
+    const detached =
+      anchorRect.bottom < 0 ||
+      anchorRect.top > viewport.height ||
+      anchorRect.right < 0 ||
+      anchorRect.left > viewport.width
+
+    // hide-when-detached：锚点完全脱离视口 → 隐藏卡片（保留 open 语义，滚动回来自动恢复）。
+    // sticky=always 优先：锚点滚出后吸附视口边缘（贴边不消失），脱离隐藏不生效
+    if (autoAdjust && this.hasAttr('hide-when-detached') && sticky !== 'always' && detached) {
+      this.card.classList.add('oas-detached')
+      return
     }
+    this.card.classList.remove('oas-detached')
 
     const { base, align } = parsePlacement(this.getAttr('placement', 'top'))
     const offset = this.num(this.getAttr('offset'), 8)
     const skidding = this.num(this.getAttr('skidding'), 0)
     const padding = this.num(this.getAttr('collision-padding'), 4)
 
-    // 主向选择：fallback-placements 自定义回退序列；缺省时默认翻转到对向
+    // 主向选择：fallback-placements 自定义回退序列；缺省时默认翻转到对向。
+    // sticky=always 且锚点已脱离：跳过翻转（按声明 placement 贴边保位，避免滚动时对向翻转跳动）
     let actualBase = base
-    if (autoAdjust) {
+    if (autoAdjust && !(sticky === 'always' && detached)) {
       const flips: Record<Base, Base> = {
         top: 'bottom',
         bottom: 'top',
@@ -634,7 +652,7 @@ export class OASHoverCard extends OASElement {
       const fallbacks = this.parseFallbacks()
       const candidates = fallbacks.length ? [base, ...fallbacks] : [base, flips[base]]
       for (const cand of candidates) {
-        if (fits(anchorRect, cardRect, cand, offset, viewport, padding)) {
+        if (fits(anchorRect, cardRect, cand, offset, boundary, padding)) {
           actualBase = cand
           break
         }
@@ -678,10 +696,10 @@ export class OASHoverCard extends OASElement {
     if (vertical) left += skidding
     else top += skidding
 
-    // 视口夹取：collision-padding 定制边距
+    // 碰撞边界夹取：collision-padding 定制边距（默认视口，可换成自定义元素 rect）
     if (autoAdjust) {
-      left = Math.max(padding, Math.min(left, viewport.width - cardRect.width - padding))
-      top = Math.max(padding, Math.min(top, viewport.height - cardRect.height - padding))
+      left = Math.max(padding, Math.min(left, boundary.width - cardRect.width - padding))
+      top = Math.max(padding, Math.min(top, boundary.height - cardRect.height - padding))
     }
 
     const actual = actualBase + (align ? `-${align}` : '')
@@ -701,8 +719,32 @@ export class OASHoverCard extends OASElement {
   }
 
   /**
-   * 写定位 + append-to portal（B6）+ 动画原点（B1 方向感知）+ 箭头指向。
-   * append-to（P5 修复，与 popover/tooltip 统一架构）：卡片移入目标容器内的 portal
+   * 解析碰撞边界：property 通道元素优先，否则属性选择器（querySelector 取第一个命中，
+   * 即多祖先场景的最近命中），都无则回落视口。
+   */
+  private resolveBoundary(): { width: number; height: number } {
+    const el = this.collisionBoundaryEl ?? this.resolveBoundaryFromAttr()
+    if (el) {
+      const r = el.getBoundingClientRect()
+      return { width: r.width, height: r.height }
+    }
+    return { width: window.innerWidth, height: window.innerHeight }
+  }
+
+  private resolveBoundaryFromAttr(): Element | null {
+    const sel = this.getAttr('collision-boundary', '').trim()
+    if (!sel) return null
+    try {
+      return document.querySelector(sel)
+    } catch {
+      // 非法选择器：回落视口
+      return null
+    }
+  }
+
+  /**
+   * 写定位 + append-to portal+ 动画原点（方向感知）+ 箭头指向。
+   * append-to（与 popover/tooltip 统一架构）：卡片移入目标容器内的 portal
    * host（div + 独立 open shadow + STYLE 注入，样式作用域保真）。曾缺陷：只做
    * absolute + 坐标换算、卡片并未移进容器——absolute 相对页面无关 positioned 祖先，
    * 参照物全错 → 定位彻底错乱。portal 后卡片保持 fixed 视口坐标，无需换算。
@@ -814,7 +856,7 @@ export class OASHoverCard extends OASElement {
     arrow.style.top = ''
     const aligned = placement.endsWith('-start') || placement.endsWith('-end')
     if (!aligned && !this.hasAttr('arrow-point-at-center')) return
-    // arrow-merge（C1）：箭头由 CSS 钉死面板角点（直角三角贴角共边），内联偏移会让三角盒
+    // arrow-merge：箭头由 CSS 钉死面板角点（直角三角贴角共边），内联偏移会让三角盒
     // 脱离角点、破坏与面板角的共边衔接——跳过指向中心计算
     if (this.hasAttr('arrow-merge')) return
     const vertical = placement.startsWith('top') || placement.startsWith('bottom')
@@ -835,31 +877,35 @@ export class OASHoverCard extends OASElement {
     else arrow.style.top = `${clamped - 4}px`
   }
 
-  // —— hide-when-detached 滚动重查 ——
+  // —— 滚动/缩放重定位（默认开启；sticky=off 显式关闭；always 贴边） ——
 
-  private syncDetachedWatch(on: boolean): void {
+  /**
+   * 幂等挂载/切换滚动监听：打开且 sticky≠off 时挂 window scroll（capture 捕获任意滚动容器）
+   * + resize，滚动/缩放后 rAF 节流重定位。hide-when-detached 的脱离隐藏判定在 position()
+   * 内完成（保留原语义），监听本身与脱离模式解耦。
+   */
+  private syncScrollWatch(on: boolean): void {
     if (typeof window === 'undefined') return
-    const track = on && this.hasAttr('hide-when-detached')
-    if (track && !this.detachWatchOn) {
-      this.detachWatchOn = true
-      window.addEventListener('scroll', this.onDetachedScroll, { capture: true, passive: true })
-      window.addEventListener('resize', this.onDetachedScroll)
-      this.onCleanup(() => this.stopDetachedWatch())
-    } else if (!track && this.detachWatchOn) {
-      this.stopDetachedWatch()
+    const track = on && this.getAttr('sticky', 'partial') !== 'off'
+    if (track && !this.scrollWatchOn) {
+      this.scrollWatchOn = true
+      window.addEventListener('scroll', this.onViewportScroll, { capture: true, passive: true })
+      window.addEventListener('resize', this.onViewportScroll)
+    } else if (!track && this.scrollWatchOn) {
+      this.stopScrollWatch()
     }
   }
 
-  private stopDetachedWatch(): void {
-    if (!this.detachWatchOn) return
-    this.detachWatchOn = false
-    window.removeEventListener('scroll', this.onDetachedScroll, { capture: true })
-    window.removeEventListener('resize', this.onDetachedScroll)
+  private stopScrollWatch(): void {
+    if (!this.scrollWatchOn) return
+    this.scrollWatchOn = false
+    window.removeEventListener('scroll', this.onViewportScroll, { capture: true })
+    window.removeEventListener('resize', this.onViewportScroll)
   }
 
-  private onDetachedScroll = (): void => {
-    cancelAnimationFrame(this.detachRaf)
-    this.detachRaf = requestAnimationFrame(() => {
+  private onViewportScroll = (): void => {
+    cancelAnimationFrame(this.scrollRaf)
+    this.scrollRaf = requestAnimationFrame(() => {
       if (this.hasAttr('open')) this.position()
     })
   }

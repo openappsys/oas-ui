@@ -52,7 +52,7 @@ describe('OASBackTop', () => {
     vi.restoreAllMocks()
   })
 
-  // ---------- A 档：visibility-height 自动显隐 ----------
+  // ---------- visibility-height 自动显隐 ----------
   it('默认隐藏，滚动超过 visibility-height（默认 400）自动显示并派发 oas-visibility-change', () => {
     const el = new OASBackTop()
     document.body.appendChild(el)
@@ -126,7 +126,7 @@ describe('OASBackTop', () => {
     expect(events).toEqual([true, false])
   })
 
-  // ---------- A 档：target 目标容器 ----------
+  // ---------- target 目标容器 ----------
   it('target 目标容器滚动自动显隐', () => {
     const box = mockBox('bt-box', { scrollTop: 0, scrollHeight: 1200, clientHeight: 400 })
     const el = new OASBackTop()
@@ -175,7 +175,7 @@ describe('OASBackTop', () => {
     expect(btn.getAttribute('aria-hidden')).toBe('false')
   })
 
-  // ---------- A 档：默认插槽 ----------
+  // ---------- 默认插槽 ----------
   it('默认插槽自定义内容（有内容时隐藏内置箭头）', () => {
     const el = new OASBackTop()
     el.setAttribute('visible', '')
@@ -195,7 +195,7 @@ describe('OASBackTop', () => {
     expect(icon.classList.contains('hidden')).toBe(false)
   })
 
-  // ---------- B 档：duration / easing 滚动动画 ----------
+  // ---------- duration / easing 滚动动画 ----------
   it('duration=0 直接跳转', () => {
     const spy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
     const el = new OASBackTop()
@@ -269,7 +269,7 @@ describe('OASBackTop', () => {
     expect(spy).toHaveBeenCalledWith({ top: 0, behavior: 'auto' })
   })
 
-  // ---------- B 档：进出场过渡 / shape / size / theme ----------
+  // ---------- 进出场过渡 / shape / size / theme ----------
   it('transition/shape/size/theme 变体默认值', () => {
     const el = new OASBackTop()
     document.body.appendChild(el)
@@ -307,7 +307,7 @@ describe('OASBackTop', () => {
     expect(css).not.toContain('#18181b')
   })
 
-  // ---------- B 档：显隐受控双模式 + 变更事件（已覆盖上方） + append-to + reduced-motion（已覆盖） ----------
+  // ---------- 显隐受控双模式 + 变更事件（已覆盖上方） + append-to + reduced-motion（已覆盖） ----------
   it('append-to 挂载点：连接后迁移到目标容器', () => {
     const wrap = document.createElement('div')
     const target = document.createElement('div')
@@ -379,7 +379,7 @@ describe('OASBackTop', () => {
     })
   })
 
-  // ---------- C 档：show-progress 进度环 ----------
+  // ---------- show-progress 进度环 ----------
   it('show-progress 滚动进度环随滚动更新', () => {
     const box = mockBox('bt-prog', { scrollTop: 0, scrollHeight: 1000, clientHeight: 400 })
     const el = new OASBackTop()
@@ -425,7 +425,7 @@ describe('OASBackTop', () => {
     expect(Number(bar.getAttribute('stroke-dashoffset'))).toBeCloseTo(RING_C, 1)
   })
 
-  // ---------- C 档：reverse 反向滚到底 ----------
+  // ---------- reverse 反向滚到底 ----------
   it('reverse 反向模式：靠近底部隐藏，点击滚到容器底部', () => {
     const box = mockBox('bt-rev', { scrollTop: 0, scrollHeight: 1000, clientHeight: 400 })
     const el = new OASBackTop()
@@ -447,7 +447,7 @@ describe('OASBackTop', () => {
     expect(box.scrollTop).toBe(600)
   })
 
-  // ---------- C 档：expand 撑满条 / position 方位 / tooltip / badge ----------
+  // ---------- expand 撑满条 / position 方位 / tooltip / badge ----------
   it('expand 撑满条贴底全宽', () => {
     const el = new OASBackTop()
     el.setAttribute('visible', '')
