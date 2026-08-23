@@ -4836,6 +4836,12 @@
     "slots": [
       {
         "name": ""
+      },
+      {
+        "name": "end"
+      },
+      {
+        "name": "start"
       }
     ],
     "unresolved": []
@@ -5332,6 +5338,11 @@
         "name": "badge",
         "type": "string",
         "default": "",
+        "observed": true
+      },
+      {
+        "name": "draggable",
+        "type": "boolean",
         "observed": true
       }
     ],

@@ -101,6 +101,7 @@
       "append-to": "Teleport mount point: a CSS selector; on connect the component is moved under that container (kept in place when unset)",
       "badge": "Badge content: text/number shown in a small badge at the button's top-right corner",
       "bottom": "Distance from the viewport bottom",
+      "draggable": "Drag positioning: press and drag to move the button freely (movement beyond 4px counts as a drag and does not trigger scroll-to-top; within 4px it counts as a click and still scrolls to the top). Position is persisted to localStorage (key `oas-back-top-pos`, clearable by the host to reset)",
       "duration": "Smooth-scroll duration (ms), default 400; 0 or `prefers-reduced-motion` jumps directly",
       "easing": "Scroll easing function: `linear` / `ease` / `ease-in` / `ease-out` / `ease-in-out` / `quad-*` / `cubic-*` / `quart-*` / `quint-*` / `expo-*` / `circ-*` / `back-*`, default `quart-out`",
       "expand": "Full-width bar mode: the button spans the full viewport bottom (content centered horizontally); ignores `position` / `bottom` / `right`",
@@ -110,7 +111,7 @@
       "shape": "Button shape: `circle` (default, round) / `square` (square corners)",
       "show-progress": "Scroll progress ring: a progress ring around the button edge (SVG circle computed over the `target` container scroll range)",
       "size": "Size tier: `small` (32px) / `medium` (default, 40px) / `large` (48px)",
-      "target": "Scroll target container: a CSS selector; when set the component listens to that container's scroll and scrolls back to its top/bottom (default: window)",
+      "target": "Scroll target container: a CSS selector; when set the component listens to that container's scroll and scrolls back to its top/bottom; when unset it auto-detects the nearest scrollable ancestor (cached across disconnect/reconnect), falling back to window",
       "theme": "Theme variant: `light` (default, light) / `primary` (primary fill) / `dark` (dark surface, auto-inverted in dark theme to keep contrast)",
       "tooltip": "Hover hint text: shows a bubble tooltip on hover / keyboard focus",
       "transition": "Enter/exit transition: `fade` (default, fade in/out) / `scale` (zoom) / `none`; disabled under `prefers-reduced-motion`",
@@ -1799,7 +1800,9 @@
     },
     "events": {},
     "slots": {
-      "": "Toolbar controls: buttons / oas-button / toggle group / input / links / separators, etc."
+      "": "Toolbar controls: buttons / oas-button / toggle group / input / links / separators, etc.",
+      "start": "Content at the front of the toolbar (rendered before the default content; participates in roving and overflow collapse)",
+      "end": "Content at the tail of the toolbar (rendered after the default content; participates in roving and overflow collapse; semantically close to `data-toolbar-far`, prefer this slot for new code)"
     }
   },
   "oas-toolbar-input": {
