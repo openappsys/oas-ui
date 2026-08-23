@@ -541,7 +541,10 @@ export class OAStooltip extends OASElement {
       this.destroyPortal()
       return
     }
-    if (this.portalHost && this.portalHost.parentElement === target) return
+    if (this.portalHost && this.portalHost.parentElement === target) {
+      this.bridgeSlotContent(this.portalHost)
+      return
+    }
     this.destroyPortal()
     const host = document.createElement('div')
     host.setAttribute('data-oas-tooltip-portal', '')
@@ -551,6 +554,19 @@ export class OAStooltip extends OASElement {
     root.innerHTML = `<style>${STYLE}</style>`
     root.appendChild(this.tipEl)
     this.portalHost = host
+    this.bridgeSlotContent(host)
+  }
+
+  /**
+   * slot 桥接（与 popover P2 同族修复）：tip 内 <slot name="content"> 的分配只看「直接
+   * host」——tip 搬进 portal shadow 后宿主 light DOM 的 [slot=content] 节点分配不到
+   * （富内容在 portal 下不显示）。桥接：把这些节点同步移入 portal host 的 light DOM
+   * （物理同 host，分配恢复），拆除时移回宿主。幂等（已在 host 内为 no-op）。
+   */
+  private bridgeSlotContent(host: HTMLElement): void {
+    for (const n of this.querySelectorAll<HTMLElement>('[slot="content"]')) {
+      host.appendChild(n)
+    }
   }
 
   private destroyPortal(): void {
@@ -558,6 +574,9 @@ export class OAStooltip extends OASElement {
       // tip 移回原 shadow（保留其内部结构；STYLE 在原 shadow 内）
       if (this.tipEl && this.portalHost.shadowRoot?.contains(this.tipEl)) {
         this.shadow.appendChild(this.tipEl)
+      }
+      for (const n of this.portalHost.querySelectorAll<HTMLElement>('[slot="content"]')) {
+        this.appendChild(n)
       }
       this.portalHost.remove()
       this.portalHost = null

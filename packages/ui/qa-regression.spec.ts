@@ -5761,3 +5761,169 @@ test('toolbar-toggle 选中态主题可见——light/dark 下选中与未选中
   // 文字色：选中（on-primary 深字）与未选中（text-primary 亮字）可区分
   expect(selD.color, 'dark 选中/未选中文字色必须可区分').not.toBe(unselD.color)
 })
+
+// —— 缺陷回归：popover 用户实测六条（12 向箭头对准 / portal 样式保真 / closable X / virtual 点标记）——
+// 曾现缺陷：① -start/-end 箭头恒 CSS 居中、脱离锚点投影区间（箭头没对准宿主）；
+// ② append-to 裸 appendChild 到 body，面板脱离 shadow 树后 scoped CSS 全失效
+//   （static 掉文档流末尾、随滚动乱飘）；③ closable 的 X 显示规则钩子（.panel.oas-closable）
+//   无人挂类，✕ 永不显示；④ virtual 定点无视觉标记，「对准哪里」不可感知。
+
+test('popover 12 向箭头对准锚点：demo 4 实例箭头中心落在锚点投影区间内（曾恒居中脱离锚点）', async ({
+  page,
+}) => {
+  await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
+  const firstSel = '.demo-block__body oas-popover[placement="bottom-start"]'
+  await page.locator(firstSel).first().waitFor({ state: 'attached', timeout: 15000 })
+  await page.waitForFunction(
+    () =>
+      document.querySelectorAll('oas-popover').length > 0 &&
+      [...document.querySelectorAll('oas-popover')].every((e) => (e as HTMLElement).shadowRoot != null),
+  )
+  for (const pl of ['bottom-start', 'bottom-end', 'right-start', 'top-end']) {
+    const sel = `.demo-block__body oas-popover[placement="${pl}"]`
+    const pop = page.locator(sel).first()
+    await pop.scrollIntoViewIfNeeded()
+    await pop.click()
+    await page.waitForTimeout(350)
+    const r = await page.evaluate((s) => {
+      const pop = document.querySelector(s)!
+      const panel = pop.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+      const arrow = panel.querySelector<HTMLElement>('[data-popper-arrow]')!
+      const anchor = pop.querySelector<HTMLElement>(':scope > *')!
+      const ab = arrow.getBoundingClientRect()
+      const nb = anchor.getBoundingClientRect()
+      const placement = panel.getAttribute('data-placement')!
+      const vertical = placement.startsWith('top') || placement.startsWith('bottom')
+      const cx = ab.left + ab.width / 2
+      const cy = ab.top + ab.height / 2
+      return vertical
+        ? { ok: cx >= nb.left - 2 && cx <= nb.right + 2 }
+        : { ok: cy >= nb.top - 2 && cy <= nb.bottom + 2 }
+    }, sel)
+    expect(r.ok, `${pl} 箭头中心应落在锚点投影区间内`).toBe(true)
+    await page.evaluate((s) => document.querySelector(s)!.removeAttribute('open'), sel)
+    await page.waitForTimeout(120)
+  }
+})
+
+test('popover portal 样式保真：append-to 面板 fixed + 有背景边框，滚动跟随锚点（曾 scoped CSS 全失效掉文档流末尾）', async ({
+  page,
+}) => {
+  await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('oas-popover[append-to="body"]', { timeout: 15000 })
+  await page.waitForFunction(() => {
+    const e = document.querySelector('oas-popover[append-to="body"]')
+    return !!e && (e as HTMLElement).shadowRoot != null
+  })
+  const sel = 'oas-popover[append-to="body"]'
+  const pop = page.locator(sel).first()
+  await pop.scrollIntoViewIfNeeded()
+  await pop.click()
+  await page.waitForTimeout(350)
+  const r1 = await page.evaluate((s) => {
+    const pop = document.querySelector(s)!
+    const host = document.querySelector<HTMLElement>('[data-oas-popover-portal]')
+    const panel =
+      (host?.shadowRoot?.querySelector<HTMLElement>('[part="panel"]') ?? null) ||
+      pop.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+    const cs = getComputedStyle(panel)
+    const anchor = pop.querySelector<HTMLElement>(':scope > *')!
+    return {
+      hostInBody: !!host && document.body.contains(host),
+      panelInHostShadow: !!host?.shadowRoot?.contains(panel),
+      position: cs.position,
+      hasBg: cs.backgroundColor !== 'rgba(0, 0, 0, 0)',
+      hasBorder: cs.borderTopWidth !== '0px',
+      gapOk: Math.abs(panel.getBoundingClientRect().top - anchor.getBoundingClientRect().bottom - 8) <= 2,
+    }
+  }, sel)
+  expect(r1.hostInBody, 'portal host 应挂在 body').toBe(true)
+  expect(r1.panelInHostShadow, '面板应在 portal host 的独立 shadow 内（样式作用域保真）').toBe(true)
+  expect(r1.position, '面板应保持 fixed（曾失效为 static）').toBe('fixed')
+  expect(r1.hasBg, '面板应有背景色（曾透明）').toBe(true)
+  expect(r1.hasBorder, '面板应有边框（曾无边框）').toBe(true)
+  expect(r1.gapOk, '面板应在锚点下方 8px').toBe(true)
+  // 滚动跟随：面板与锚点视口坐标同步
+  await page.evaluate(() => window.scrollBy(0, 300))
+  await page.waitForTimeout(400)
+  const r2 = await page.evaluate((s) => {
+    const pop = document.querySelector(s)!
+    const host = document.querySelector<HTMLElement>('[data-oas-popover-portal]')
+    const panel = host?.shadowRoot?.querySelector<HTMLElement>('[part="panel"]')!
+    const anchor = pop.querySelector<HTMLElement>(':scope > *')!
+    return Math.abs(panel.getBoundingClientRect().top - anchor.getBoundingClientRect().bottom - 8) <= 2
+  }, sel)
+  expect(r2, '滚动后面板应跟随锚点（曾乱飘）').toBe(true)
+  await page.evaluate((s) => document.querySelector(s)!.removeAttribute('open'), sel)
+})
+
+test('popover closable：右上角 ✕ 按钮真实可见（display 非 none 且有尺寸，曾 CSS 类钩子缺失永不显示）', async ({
+  page,
+}) => {
+  await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('oas-popover[closable]', { timeout: 15000 })
+  await page.waitForFunction(() => {
+    const e = document.querySelector('oas-popover[closable]')
+    return !!e && (e as HTMLElement).shadowRoot != null
+  })
+  const sel = 'oas-popover[closable]'
+  const pop = page.locator(sel).first()
+  await pop.scrollIntoViewIfNeeded()
+  await pop.click()
+  await page.waitForTimeout(350)
+  const r = await page.evaluate((s) => {
+    const pop = document.querySelector(s)!
+    const panel = pop.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+    const btn = panel.querySelector<HTMLElement>('[part="close"]')!
+    const cs = getComputedStyle(btn)
+    const b = btn.getBoundingClientRect()
+    const pb = panel.getBoundingClientRect()
+    return {
+      display: cs.display,
+      visible: b.width > 0 && b.height > 0,
+      atTopRight: b.right <= pb.right + 2 && b.top >= pb.top && b.top <= pb.top + 24,
+    }
+  }, sel)
+  expect(r.display, '✕ 应可见（display 非 none，曾规则钩子 .panel.oas-closable 无人挂类）').not.toBe('none')
+  expect(r.visible, '✕ 应有渲染尺寸').toBe(true)
+  expect(r.atTopRight, '✕ 应位于面板右上角').toBe(true)
+  await page.evaluate((s) => document.querySelector(s)!.removeAttribute('open'), sel)
+})
+
+test('popover virtual 定点：(160,90) 标记点可见且箭头对准该点（曾无标记、对准哪里不可感知）', async ({
+  page,
+}) => {
+  await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#pop-point', { state: 'attached', timeout: 15000 })
+  await page.waitForFunction(() => {
+    const e = document.querySelector('#pop-point')
+    return !!e && (e as HTMLElement).shadowRoot != null
+  })
+  await page.evaluate(() => {
+    document.getElementById('pop-point')!.scrollIntoView({ block: 'center' })
+    ;(window as unknown as { popPointShow: (x: number, y: number) => void }).popPointShow(160, 90)
+  })
+  await page.waitForTimeout(400)
+  const r = await page.evaluate(() => {
+    const pop = document.getElementById('pop-point')!
+    const panel = pop.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+    const arrow = panel.querySelector<HTMLElement>('[data-popper-arrow]')!
+    const mark = document.getElementById('pop-point-mark')!
+    const ab = arrow.getBoundingClientRect()
+    const mb = mark.getBoundingClientRect()
+    const cs = getComputedStyle(mark)
+    return {
+      markVisible: cs.opacity !== '0' && mb.width > 0,
+      markCenter: { x: mb.left + mb.width / 2, y: mb.top + mb.height / 2 },
+      arrowCenter: { x: ab.left + ab.width / 2, y: ab.top + ab.height / 2 },
+    }
+  })
+  expect(r.markVisible, '虚拟锚点标记应可见').toBe(true)
+  expect(Math.abs(r.markCenter.x - 160), '标记中心应在视口 x=160').toBeLessThanOrEqual(1)
+  expect(Math.abs(r.markCenter.y - 90), '标记中心应在视口 y=90').toBeLessThanOrEqual(1)
+  // placement=right：箭头垂直中心对准点 y=90
+  expect(Math.abs(r.arrowCenter.y - 90), '箭头应对准虚拟锚点坐标点（P6 定夺）').toBeLessThanOrEqual(3)
+  await page.evaluate(() => {
+    ;(window as unknown as { popPointHide: () => void }).popPointHide()
+  })
+})
