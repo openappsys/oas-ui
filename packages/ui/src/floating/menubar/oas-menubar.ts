@@ -638,6 +638,13 @@ export class OASMenubar extends OASElement {
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('.bar')) return false
     this.bind()
+    // 快照可能烤有零宽环境的误判收纳态（或宿主宽度与快照期不同）——
+    // 水合后等真实布局重算一次（update 的 rAF 重算不覆盖 hydrate 路径）
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        if (this.isConnected) this.syncOverflowCollapse()
+      })
+    }
     return true
   }
 
@@ -995,6 +1002,10 @@ export class OASMenubar extends OASElement {
       moreWrap.appendChild(moreBtn)
       moreWrap.appendChild(moreSub)
       container.appendChild(moreWrap)
+      // 初始态整体隐藏（壳 + 按钮都藏）：溢出时由 syncOverflowCollapse 显示。
+      // 若只藏按钮，SSR 序列化时壳仍占位（rAF 未来得及跑），快照宽度含空壳、
+      // 升级后重算隐藏 → 水合前后布局漂移
+      moreWrap.hidden = true
       this.moreItemEl = moreWrap
     }
     // 汉堡面板内容（与 bar 同一份 items 数据，顶级项渲染为 subitem）
@@ -1402,6 +1413,19 @@ export class OASMenubar extends OASElement {
     const topEls = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
     const dataEls = topEls.filter((w) => w.dataset.value !== '__more__')
     if (dataEls.length === 0) return
+    // 零宽守卫：SSR shim / 未布局环境 clientWidth=0 而项宽可读，会误判全溢出——
+    // 把全部项收进「···」烤进快照，升级后无真实容器约束永远恢复不了。
+    // 零宽时不判定（保持全部可见 + 收纳项隐藏），等真实布局（rAF/ResizeObserver）再算。
+    if (itemsEl.clientWidth <= 0) {
+      dataEls.forEach((w) => w.removeAttribute('data-collapsed'))
+      this.collapsedValues = []
+      if (moreWrap) {
+        moreWrap.hidden = true
+        const moreBtn = moreWrap.querySelector<HTMLElement>('.more-item')
+        if (moreBtn) moreBtn.hidden = true
+      }
+      return
+    }
     // 复位再测量
     dataEls.forEach((w) => w.removeAttribute('data-collapsed'))
     if (moreWrap) moreWrap.hidden = true
