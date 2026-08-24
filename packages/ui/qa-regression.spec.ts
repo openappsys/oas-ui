@@ -6146,3 +6146,39 @@ test('toolbar 窄容器子项防收缩：项保持固有宽度、溢出触发「
     )
   }
 })
+
+// —— 缺陷回归：icon duotone 显式 data-layer 分层被元素序 fallback 劫持 ——
+// 曾现缺陷：[data-layer='primary'/'secondary'] 显式分层规则与「前两个直接子元素」
+// fallback 规则特异性相同（0,2,1）且 fallback 声明在后——SVG 按自然绘制序摆放
+// （底色层在前、主图形在后）时，primary 层命中 > :nth-child(2) 的 secondary
+// fallback，opacity 双双错乱（primary 变 0.4 / swap 两层全 1），双色观感消失。
+// 修复：fallback 选择器加 :not([data-layer])——显式分层永远优先，序号兜底只管未标记的 SVG。
+test('icon duotone：显式 data-layer 分层的透明度不被元素序 fallback 覆盖（真实 computed 断言）', async ({
+  page,
+}) => {
+  await page.goto('/components/icon.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-icon[duotone]')
+  const r = await page.evaluate(() => {
+    const icons = [...document.querySelectorAll('oas-icon[duotone]')]
+    return icons.map((el) => {
+      const svg = el.shadowRoot!.querySelector('svg')!
+      const layers = [...svg.querySelectorAll('path')].map((pt) => ({
+        layer: pt.getAttribute('data-layer'),
+        opacity: getComputedStyle(pt).opacity,
+      }))
+      return { swap: svg.getAttribute('data-swap'), layers }
+    })
+  })
+  // 非 swap 图标：primary=1 / secondary=0.4（demo SVG 绘制序 secondary 在前）
+  const normal = r.find((x) => !x.swap)
+  const normalPrimary = normal?.layers.find((l) => l.layer === 'primary')
+  const normalSecondary = normal?.layers.find((l) => l.layer === 'secondary')
+  expect(normalPrimary?.opacity, 'primary 层应为全实（opacity 1）').toBe('1')
+  expect(normalSecondary?.opacity, 'secondary 层应为半透明（opacity 0.4）').toBe('0.4')
+  // swap 图标：两层透明度互换（primary=0.4 / secondary=1）
+  const swapped = r.find((x) => x.swap)
+  const swapPrimary = swapped?.layers.find((l) => l.layer === 'primary')
+  const swapSecondary = swapped?.layers.find((l) => l.layer === 'secondary')
+  expect(swapPrimary?.opacity, 'swap 后 primary 层应为 0.4').toBe('0.4')
+  expect(swapSecondary?.opacity, 'swap 后 secondary 层应为 1').toBe('1')
+})
