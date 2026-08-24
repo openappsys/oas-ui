@@ -6490,3 +6490,32 @@ test('tour append-to=body：portal host 显示 + 弹窗非零尺寸 + 高亮框�
   expect(r.popupH, '弹窗应有高度').toBeGreaterThan(20)
   expect(r.hlOnTarget, '高亮应框住挂载目标').toBe(true)
 })
+
+// —— 缺陷回归：tour typewriter 布尔属性误判致打字机不生效（用户实测：没看到逐字效果） ——
+// 曾现缺陷：typewriter 是 opt-in 布尔属性，getAttribute 对无值布尔返回 ''，检查
+// getAttr('typewriter')!=='true' 把布尔写法误判为关（''!=='true' → 跳过打字机全量赋值）。
+// 修复：改 hasAttr + getAttr(...)!=='false' 判定。
+test('tour typewriter：描述逐字增长（非一次性全显示）', async ({ page }) => {
+  await page.goto('/components/tour.html', { waitUntil: 'networkidle' })
+  await page.waitForSelector('#tour-tw', { state: 'attached', timeout: 15000 })
+  await page.waitForFunction(() => document.querySelector('#tour-tw')?.shadowRoot != null, { timeout: 15000 })
+  const samples = await page.evaluate(async () => {
+    const btn = [...document.querySelectorAll('oas-button')].find(
+      (x) => /开始引导/.test(x.textContent) && x.closest('.demo-block')?.textContent.includes('打字机动画'),
+    )!
+    const host = document.querySelector('#tour-tw')!
+    btn.scrollIntoView({ block: 'center' })
+    btn.click()
+    const desc = () => host.shadowRoot!.querySelector('[part="desc"]')!.textContent ?? ''
+    const out: number[] = []
+    for (let i = 0; i < 5; i++) {
+      out.push(desc().length)
+      await new Promise((r) => setTimeout(r, 150))
+    }
+    return out
+  })
+  // 逐字增长：长度应随时间递增（非一开始就满长）
+  expect(samples[0], '初始应未显示完整').toBeLessThan(samples[samples.length - 1])
+  const increasing = samples.every((v, i) => i === 0 || v >= samples[i - 1])
+  expect(increasing, '描述长度应单调递增（逐字出现）').toBe(true)
+})
