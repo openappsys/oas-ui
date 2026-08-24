@@ -6381,3 +6381,75 @@ test('dropdown 关闭过程箭头与面板透明度逐帧同步（不慢一拍�
     expect(Math.abs(s.arrow - s.menu), '箭头与面板 opacity 应逐帧同步（差 ≤0.05）').toBeLessThanOrEqual(0.05)
   }
 })
+
+// —— 复核：tour 步骤推进流程（用户对「点下一步就消失」的反馈实测验证） ——
+test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完成 + 不消失，点完成才关闭', async ({ page }) => {
+  await page.goto('/components/tour.html', { waitUntil: 'networkidle' })
+  await page.waitForSelector('#tour-basic', { state: 'attached', timeout: 15000 })
+  await page.waitForFunction(() => document.querySelector('#tour-basic')?.shadowRoot != null, { timeout: 15000 })
+  const step = async () =>
+    page.evaluate(() => {
+      const host = document.querySelector('#tour-basic')!
+      const sr = host.shadowRoot!
+      const hl = sr.querySelector('.highlight, [part=highlight]') as HTMLElement | null
+      const popup = sr.querySelector('.popup, [part=popup]')
+      const hlR = hl?.getBoundingClientRect()
+      const b1 = document.querySelector('#tour-b1')?.getBoundingClientRect()
+      const b2 = document.querySelector('#tour-b2')?.getBoundingClientRect()
+      const near = (a: any, b: any) => a && b && Math.abs(a.x - b.x) < 10 && Math.abs(a.y - b.y) < 10
+      return {
+        open: host.hasAttribute('open'),
+        current: host.getAttribute('current'),
+        onB1: near(hlR, b1),
+        onB2: near(hlR, b2),
+        popupText: popup ? popup.textContent!.replace(/\s+/g, ' ').slice(0, 30) : null,
+        btnText: (sr.querySelector('[part=next]') as HTMLElement)?.textContent?.trim(),
+      }
+    })
+  await page.evaluate(() => {
+    const btn = [...document.querySelectorAll('oas-button')].find((x) => /开始引导/.test(x.textContent))!
+    ;(btn as HTMLElement).click()
+  })
+  await page.waitForTimeout(500)
+  const s1 = await step()
+  expect(s1.open, '打开后 open').toBe(true)
+  expect(s1.onB1, 'step1 高亮在区域一').toBe(true)
+  // 点下一步
+  await page.evaluate(() => (document.querySelector('#tour-basic')!.shadowRoot!.querySelector('[part=next]') as HTMLElement).click())
+  await page.waitForTimeout(500)
+  const s2 = await step()
+  expect(s2.open, '点下一步后不应消失').toBe(true)
+  expect(s2.current, '应推进到第 2 步').toBe('1')
+  expect(s2.onB2, '点下一步后高亮应移到区域二').toBe(true)
+  expect(s2.onB1, '不应还停留在区域一').toBe(false)
+  expect(s2.btnText, '最后一步按钮应变「完成」').toBe('完成')
+  // 点完成才关闭
+  await page.evaluate(() => (document.querySelector('#tour-basic')!.shadowRoot!.querySelector('[part=next]') as HTMLElement).click())
+  await page.waitForTimeout(400)
+  const s3 = await step()
+  expect(s3.open, '点完成后才关闭').toBe(false)
+})
+
+// —— 缺陷回归：tour 弹窗 pointer-events:none 致点击穿透遮罩误关（用户实测：点弹窗任意位置消失） ——
+// 曾现缺陷：.overlay 是 pointer-events:none，.popup 未补 auto 继承 none → 整个弹窗点击透明，
+// 真实鼠标点击穿透到下层遮罩（pointer-events:auto）触发 onMaskClick 关闭。
+// 元素级 .click() 跳过命中测试会造成假通过——必须用真实鼠标点击（page.mouse，带命中测试）验证。
+test('tour 弹窗可交互：真实鼠标点击弹窗内部不关闭（pointer-events 修复回归）', async ({ page }) => {
+  await page.goto('/components/tour.html', { waitUntil: 'networkidle' })
+  // tour 宿主关闭态零尺寸（overlay/popup display:none），up() 的 visible 判定不适用——用 attached + shadowRoot
+  await page.waitForSelector('#tour-basic', { state: 'attached', timeout: 15000 })
+  await page.waitForFunction(() => document.querySelector('#tour-basic')?.shadowRoot != null, { timeout: 15000 })
+  await page.evaluate(() => {
+    ;[...document.querySelectorAll('oas-button')].find((x) => /开始引导/.test(x.textContent))!.click()
+  })
+  await page.waitForTimeout(500)
+  const center = await page.evaluate(() => {
+    const r = document.querySelector('#tour-basic')!.shadowRoot!.querySelector('.popup')!.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  })
+  // 真实鼠标点击弹窗中心（带 pointerdown + 命中测试）
+  await page.mouse.click(center.x, center.y)
+  await page.waitForTimeout(400)
+  const open = await page.evaluate(() => document.querySelector('#tour-basic')!.hasAttribute('open'))
+  expect(open, '真实点击弹窗内部不应关闭（pointer-events 须为 auto）').toBe(true)
+})

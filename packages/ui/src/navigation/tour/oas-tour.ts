@@ -125,6 +125,9 @@ const STYLE = `
 .popup {
   position: fixed;
   z-index: 3;
+  /* 弹层必须可交互（含按钮）：.overlay 是 pointer-events:none（点穿遮罩区走 mask-click 行为），
+     弹层不补 auto 会继承 none → 整个弹窗点击透明、点击穿透到下层遮罩被误判外部点击而关闭 */
+  pointer-events: auto;
   background: var(--oas-tour-popup-bg, var(--oas-color-bg));
   border-radius: var(--oas-radius-md);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--oas-color-overlay) 32%, transparent);
