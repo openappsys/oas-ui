@@ -40,7 +40,7 @@
 - 测试：`pnpm test`（单测+行为）；单文件 `pnpm vitest run packages/ui/src/basic/button/oas-button.test.ts`
 - 类型：`pnpm typecheck`
 - 构建：`pnpm build`；e2e：`pnpm test:e2e`
-- 演示：`pnpm dev`（predev 先跑 ui build 保证 dist 完整，再并行起 core/i18n/icons/ui 的 watch 构建 + Vitepress dev，固定 5173 端口 strictPort，被占即报错不自增；dev 与生产共用 `packages/*/dist`，改组件源码 → watch 构建更新 dist → dev server 自动 full reload，无需重启/清缓存）
+- 演示：`pnpm dev`（predev 先跑 ui build 保证 dist 完整，再并行起 core/i18n/icons/ui 的 watch 构建 + Vitepress dev，固定 5175 端口 strictPort，被占即报错不自增；dev 与生产共用 `packages/*/dist`，改组件源码 → watch 构建更新 dist → dev server 自动 full reload，无需重启/清缓存）
 - **提交纪律**：涉及组件/样式/Shadow DOM 的改动，提交前必跑 `pnpm build`（happy-dom 与 vue-tsc 均抓不到 scoped CSS 语法错误，只有真实构建能抓）
 
 ### API 表格自动化
@@ -99,7 +99,7 @@
 
 - `docs build` 依赖 `@oas-ui/ui` 的 dist（workspace symlink）——全量 `pnpm build` 拓扑序自动先构建 ui，无需手动指定
 - `base: '/'`（自定义域名，无子路径）；`404.html` 由 Vitepress 自动生成（深层直达兜底）
-- 本地预览：`pnpm dev`（5173，dev 链路自带 watch 构建）
+- 本地预览：`pnpm dev`（5175，dev 链路自带 watch 构建）
 - 备选：Cloudflare Pages（UI 连 Git 自动构建，构建命令同上、输出目录 `packages/docs/docs/.vitepress/dist`）
 
 ## 7. 代码规范

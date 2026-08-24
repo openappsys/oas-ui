@@ -30,8 +30,8 @@
 - 类型：`pnpm typecheck`
 - e2e：`pnpm test:e2e`（playwright + axe；chromium 全量 + firefox 抽样跑 visual/smoke/qa-regression 子集，抽样说明见 docs/engineering.md §2 跨浏览器抽样）
 - 构建：`pnpm build`（含 d.ts）
-- 演示：`pnpm dev`（同时起 core/i18n/icons/ui 的 watch 构建 + Vitepress dev，固定 5173 端口 strictPort；改动 package.json 脚本/依赖后必须手动验证能启动）
-- **dev 链路（无盲区）**：dev 与生产共用同一份 `packages/*/dist`（workspace symlink 直连真实产物，vitepress 不预构建 linked 包，`.vitepress/config.ts` 已 `optimizeDeps.exclude` 兜底）。`pnpm dev` 会自动 predev（先跑 ui build 保证首次 dist 完整），再并行起 watch 构建 + dev server。**改组件源码 → watch 构建自动更新 dist → dev server 自动 full reload 生效，不重启、不清缓存**；ui 的 watch 构建已配 `emptyOutDir: false`（避免 Windows 上 dev server 占用 dist 文件句柄时 `vite build --watch` 清目录触发 EPERM）。docs 的 md 改动走原生 HMR。shadow DOM 里 `::slotted()` 后不支持链 `::part()`，跨 shadow 改内部样式走 CSS 自定义属性穿透。⚠️ **Windows 已知缺陷**：pnpm workspace symlink + Vite 内存模块图在 dist 被 watch 重写时可能不失效——磁盘 dist 是最新但 dev 页面仍服务旧组件（表现：新增属性/方法不生效、新 demo 空白或布局乱、`observedAttributes` 缺新项）。遇此现象**重启 `pnpm dev` 或删 `packages/docs/.vitepress/cache`** 即恢复；若重启后仍怪，先查 5173/5174 是否有陈旧残留进程。
+- 演示：`pnpm dev`（同时起 core/i18n/icons/ui 的 watch 构建 + Vitepress dev，固定 5175 端口 strictPort；改动 package.json 脚本/依赖后必须手动验证能启动）
+- **dev 链路（无盲区）**：dev 与生产共用同一份 `packages/*/dist`（workspace symlink 直连真实产物，vitepress 不预构建 linked 包，`.vitepress/config.ts` 已 `optimizeDeps.exclude` 兜底）。`pnpm dev` 会自动 predev（先跑 ui build 保证首次 dist 完整），再并行起 watch 构建 + dev server。**改组件源码 → watch 构建自动更新 dist → dev server 自动 full reload 生效，不重启、不清缓存**；ui 的 watch 构建已配 `emptyOutDir: false`（避免 Windows 上 dev server 占用 dist 文件句柄时 `vite build --watch` 清目录触发 EPERM）。docs 的 md 改动走原生 HMR。shadow DOM 里 `::slotted()` 后不支持链 `::part()`，跨 shadow 改内部样式走 CSS 自定义属性穿透。⚠️ **Windows 已知缺陷**：pnpm workspace symlink + Vite 内存模块图在 dist 被 watch 重写时可能不失效——磁盘 dist 是最新但 dev 页面仍服务旧组件（表现：新增属性/方法不生效、新 demo 空白或布局乱、`observedAttributes` 缺新项）。遇此现象**重启 `pnpm dev` 或删 `packages/docs/.vitepress/cache`** 即恢复；若重启后仍怪，先查 5175/5176 是否有陈旧残留进程。
 - **提交纪律**：涉及组件/Shadow DOM 样式的提交，提交前必跑 `pnpm build`（单测与 typecheck 抓不到 scoped CSS 语法错误）
 - **API 防漂移**：`pnpm api:check`（CI 强制）。md 的 `## API` 章节是生成物，禁止手改——改组件属性/事件/插槽后跑 `pnpm api:scan && pnpm api:gen`；改说明文案改 `docs/api-descriptions.{zh,en}.json` 再 gen（详见 engineering.md §4 API 表格自动化）
 
@@ -41,7 +41,7 @@
 
 **触发条件**：改动组件源码，或改动 demo 的交互/结构时必做（纯文档/单测/类型等不影响渲染的改动可跳过浏览器验证）。
 
-**验证环境**：人工/截图审查用 `pnpm dev`（5173，dev 链路自带 watch 构建，改组件源码后等自动 full reload 即可，无需重启/清缓存）；自动化 e2e 用 `pnpm test:e2e`（4173 preview，webServer 自动 build docs + preview，改组件源码后须先 `pnpm --filter @oas-ui/ui build`，否则 preview 用旧 dist）。截图用 playwright。
+**验证环境**：人工/截图审查用 `pnpm dev`（5175，dev 链路自带 watch 构建，改组件源码后等自动 full reload 即可，无需重启/清缓存）；自动化 e2e 用 `pnpm test:e2e`（4173 preview，webServer 自动 build docs + preview，改组件源码后须先 `pnpm --filter @oas-ui/ui build`，否则 preview 用旧 dist）。截图用 playwright。
 
 - **新增文档站页面后必跑全量 e2e**：smoke/dark/code/visual/console-sweep/vue-prop-hijack 等 spec 用 `readdirSync` 自动收集 components 目录，新页面会被自动纳入（总览页无 demo 块曾致 4 个 spec 失败漏检）
 - **陈旧 preview 陷阱**：e2e 遇大批量离奇失败先查 4173 是否有残留旧 preview 进程（旧 server 吐旧 HTML 引用已删除的 chunk → 404 雪崩），杀掉后由 playwright 自起
