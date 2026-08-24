@@ -36,8 +36,12 @@ describe('OASLayout 侧栏槽与 Sider 折叠（模板实测缺陷回归）', ()
     const layout = new OASLayout()
     layout.innerHTML = `<div slot="sider">自定义侧栏</div><oas-content>内容</oas-content>`
     document.body.appendChild(layout)
-    expect(layout.shadowRoot!.querySelector('[part="root"]')!.getAttribute('data-has-sider')).toBe('true')
-    expect(layout.shadowRoot!.querySelector('[part="root"]')!.classList.contains('has-sider')).toBe(true)
+    expect(layout.shadowRoot!.querySelector('[part="root"]')!.getAttribute('data-has-sider')).toBe(
+      'true',
+    )
+    expect(layout.shadowRoot!.querySelector('[part="root"]')!.classList.contains('has-sider')).toBe(
+      true,
+    )
   })
 
   it('#7 sider 宽度走 CSS 变量（--oas-sider-width / collapsed）', () => {
@@ -60,9 +64,13 @@ describe('OASLayout 侧栏槽与 Sider 折叠（模板实测缺陷回归）', ()
     document.body.appendChild(sider)
     expect(sider.hasAttribute('collapsed')).toBe(false)
     // 派发折叠事件（模拟 oas-sidebar 的 oas-collapse）
-    inner.dispatchEvent(new CustomEvent('oas-collapse', { bubbles: true, detail: { collapsed: true } }))
+    inner.dispatchEvent(
+      new CustomEvent('oas-collapse', { bubbles: true, detail: { collapsed: true } }),
+    )
     expect(sider.hasAttribute('collapsed'), '折叠后 sider 应同步 collapsed').toBe(true)
-    inner.dispatchEvent(new CustomEvent('oas-collapse', { bubbles: true, detail: { collapsed: false } }))
+    inner.dispatchEvent(
+      new CustomEvent('oas-collapse', { bubbles: true, detail: { collapsed: false } }),
+    )
     expect(sider.hasAttribute('collapsed'), '展开后 sider 应移除 collapsed').toBe(false)
   })
 })

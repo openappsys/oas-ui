@@ -991,7 +991,8 @@ export class OASTour extends OASElement {
     if (!desc) return
     // typewriter 是 opt-in 布尔属性：getAttribute 对无值布尔返回 '' 而非 'true'，
     // 用 getAttr(...)!=='true' 判定会把布尔写法误判为关（'' !== 'true' → 跳过打字机）
-    const typewriterOn = this.hasAttr('typewriter') && this.getAttr('typewriter', 'true') !== 'false'
+    const typewriterOn =
+      this.hasAttr('typewriter') && this.getAttr('typewriter', 'true') !== 'false'
     if (!typewriterOn) {
       desc.textContent = text
       return
@@ -1396,7 +1397,10 @@ export class OASTour extends OASElement {
     if (typeof step.targetAreaClickable === 'boolean') return step.targetAreaClickable
     // target-area-clickable 是布尔属性：bare（无值）时 getAttribute 返回 ''，
     // getAttr(...)!=='false' 同时兼容 bare / ="true" / ="false"（同 typewriter 修法）
-    return this.hasAttr('target-area-clickable') && this.getAttr('target-area-clickable', 'true') !== 'false'
+    return (
+      this.hasAttr('target-area-clickable') &&
+      this.getAttr('target-area-clickable', 'true') !== 'false'
+    )
   }
 
   /** 目标滚动到视口 + scroll-padding 生效（scroll-margin 标准方案） */
