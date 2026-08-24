@@ -562,17 +562,20 @@ describe('OASNavigationMenu', () => {
 // ============ 箭头跟随触发器（--arrow-x / --arrow-y） ============
 
 describe('箭头跟随触发器', () => {
-  it('打开后按当前触发器位置写入 --arrow-x（水平：offsetLeft + 半宽 - 半箭头）', () => {
+  // 箭头挂 nav 直下（viewport 外），坐标系 = 触发器相对 nav 的 offset（nav 打开期间静止，
+  // 不随面板 width/height 过渡漂移；垂直/翻转形态无需 rect 投影追算）
+  it('打开后按触发器中心相对 nav 的 offset 写 --arrow-x（水平）', async () => {
     const el = mount({ 'delay-duration': '0' })
     const trigger = topItems(el)[0]!
     Object.defineProperty(trigger, 'offsetLeft', { value: 120, configurable: true })
     Object.defineProperty(trigger, 'offsetWidth', { value: 80, configurable: true })
     trigger.click()
+    await new Promise((r) => requestAnimationFrame(() => r(null)))
     const ar = el.shadowRoot!.querySelector<HTMLElement>('[part="arrow"]')!
-    expect(ar.style.getPropertyValue('--arrow-x')).toBe('156px') // 120 + 40 - 4
+    expect(ar.style.getPropertyValue('--arrow-x')).toBe('154px') // 120 + 40 - 6
   })
 
-  it('切换触发器后箭头位置更新（跟随新打开项）', () => {
+  it('切换触发器后箭头位置更新（跟随新打开项）', async () => {
     const el = mount({ items: SWITCH_ITEMS, 'delay-duration': '0' })
     const first = topItems(el)[0]!
     const second = topItems(el)[1]!
@@ -581,23 +584,26 @@ describe('箭头跟随触发器', () => {
     Object.defineProperty(second, 'offsetLeft', { value: 200, configurable: true })
     Object.defineProperty(second, 'offsetWidth', { value: 80, configurable: true })
     first.click()
+    await new Promise((r) => requestAnimationFrame(() => r(null)))
     const ar = el.shadowRoot!.querySelector<HTMLElement>('[part="arrow"]')!
-    expect(ar.style.getPropertyValue('--arrow-x')).toBe('36px') // 0 + 40 - 4
+    expect(ar.style.getPropertyValue('--arrow-x')).toBe('34px') // 0 + 40 - 6
     second.click()
-    expect(ar.style.getPropertyValue('--arrow-x')).toBe('236px') // 200 + 40 - 4
+    await new Promise((r) => requestAnimationFrame(() => r(null)))
+    expect(ar.style.getPropertyValue('--arrow-x')).toBe('234px') // 200 + 40 - 6
   })
 
-  it('竖排写入 --arrow-y（垂直中心）', () => {
+  it('竖排写 --arrow-y + vertical 形态类（贴面板左边线指向触发器）', async () => {
     const el = mount({ orientation: 'vertical', 'delay-duration': '0' })
     const trigger = topItems(el)[0]!
     Object.defineProperty(trigger, 'offsetTop', { value: 30, configurable: true })
     Object.defineProperty(trigger, 'offsetHeight', { value: 40, configurable: true })
     trigger.click()
+    await new Promise((r) => requestAnimationFrame(() => r(null)))
     const ar = el.shadowRoot!.querySelector<HTMLElement>('[part="arrow"]')!
-    expect(ar.style.getPropertyValue('--arrow-y')).toBe('46px') // 30 + 20 - 4
+    expect(ar.style.getPropertyValue('--arrow-y')).toBe('44px') // 30 + 20 - 6
+    expect(ar.classList.contains('vertical')).toBe(true)
   })
 })
-
 // ============ 碰撞/翻转（窄视口右缘 / 下缘） ============
 
 describe('碰撞翻转', () => {

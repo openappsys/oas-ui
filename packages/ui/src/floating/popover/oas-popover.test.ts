@@ -333,7 +333,7 @@ describe('OASPopover', () => {
       expect(arrow).not.toBeNull()
       const cs = window.getComputedStyle(arrow)
       const c = cases[p]
-      expect(cs.getPropertyValue(c.edge), `placement=${p} 箭头应落在面板${c.edge}边`).toBe('-4px')
+      expect(cs.getPropertyValue(c.edge), `placement=${p} 箭头应落在面板${c.edge}边`).toBe('-6px')
       // happy-dom 不解析 var() 颜色的 border 声明（getComputedStyle 返回空串），
       // 边框对改由 shadow <style> 规则文本锁定——回归点：left/right 曾把外露边框对写反。
       // 12 向 placement（bottom-start 等）使 data-placement 带对齐后缀，箭头落边规则用前缀匹配；

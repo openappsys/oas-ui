@@ -369,7 +369,7 @@ describe('OAStooltip', () => {
       expect(
         cs.getPropertyValue(cases[p].edge),
         `placement=${p} 箭头应悬面板${cases[p].edge}边`,
-      ).toBe('-4px')
+      ).toBe('-6px')
     }
   })
 

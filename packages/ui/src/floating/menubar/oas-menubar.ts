@@ -269,8 +269,8 @@ const STYLE = `
 :host([show-arrow]) .submenu.popup-first::before {
   content: '';
   position: absolute;
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   background: var(--oas-color-bg);
   z-index: -1;
 }
@@ -296,6 +296,19 @@ const STYLE = `
   border-right: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
   transform: rotate(45deg);
+}
+/* side-top 的 align 定位（与 side-bottom 对称）：缺省无 left/right 时 position:absolute
+   落在面板内容起始位（左缘附近），右对齐触发器时箭头会偏左不指触发器 */
+:host([show-arrow]) .submenu.popup-first.side-top.align-start::before {
+  left: 12px;
+}
+:host([show-arrow]) .submenu.popup-first.side-top.align-center::before {
+  left: 50%;
+  margin-left: -5px;
+}
+:host([show-arrow]) .submenu.popup-first.side-top.align-end::before {
+  left: auto;
+  right: 12px;
 }
 :host([show-arrow]) .submenu.popup-first.side-right::before {
   left: -6px;

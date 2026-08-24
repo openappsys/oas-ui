@@ -6182,3 +6182,165 @@ test('icon duotone：显式 data-layer 分层的透明度不被元素序 fallbac
   expect(swapPrimary?.opacity, 'swap 后 primary 层应为 0.4').toBe('0.4')
   expect(swapSecondary?.opacity, 'swap 后 secondary 层应为 1').toBe('1')
 })
+
+// —— 缺陷回归：menubar show-arrow 的 side-top 缺 align 定位分支，箭头错位 ——
+// 曾现缺陷：show-arrow 只给 side-bottom 配了 align-start/center/end 的 left/right 定位，
+// side-top 缺三档（只有通用 bottom/rotate 规则）——position:absolute 无 left/right 时停在
+// 面板内容起始位（左缘附近），而面板右对齐触发器时箭头偏左、不指向触发器右端。
+// 修复：side-top 补 align-start/center/end 三档（与 side-bottom 对称）。
+test('menubar show-arrow side-top align-end 箭头右对齐触发器（右缘 12px，不落面板左端）', async ({ page }) => {
+  await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menubar[show-arrow][side="top"]')
+  const r = await page.evaluate(async () => {
+    const host = document.querySelector('oas-menubar[show-arrow][side="top"]')!
+    host.scrollIntoView({ block: 'center' })
+    await new Promise((res) => setTimeout(res, 300))
+    const trig = host.shadowRoot!.querySelector('.top-item') as HTMLElement
+    trig.click()
+    await new Promise((res) => setTimeout(res, 450))
+    const popup = host.shadowRoot!.querySelector('.submenu.popup-first.open')!
+    const cs = getComputedStyle(popup, '::before')
+    return { left: cs.left, right: cs.right }
+  })
+  // align=end：箭头应 right:12px（靠近面板右缘=触发器右缘），不应落回左端
+  expect(r.right, 'side-top align-end 箭头应 right:12px（面板右缘）').toContain('12px')
+  // left 在 right 定位下 getComputedStyle 返回计算值（面板宽-12-10 附近，即靠右），
+  // 不可能是小值（若落左端 left≈左缘、right 会为负）
+  const leftPx = parseFloat(r.left)
+  expect(leftPx, '箭头左缘应靠面板右侧（远离左端）').toBeGreaterThan(80)
+})
+
+// —— 缺陷回归：navigation-menu 箭头坐标系 + 营销位高度账 ——
+// 曾现缺陷①：箭头用触发器 offsetLeft（相对 bar）但在 viewport 内定位，垂直/翻转形态
+// viewport 原点漂移后箭头错位（指到宿主外）；垂直形态另有横→竖排重排的同帧旧值问题。
+// 修复：箭头挂 nav 直下（viewport 外），坐标系=触发器相对 nav 的 offset（静止），
+// rAF 等重排后写入。缺陷②：营销位高度手工拼「+4」与 .panel-footer 的 margin+padding+border
+// 实际结构差 13px，且打开瞬间测量比终态少 5px——底缘被裁 3px。修复：真实布局计法
+// （offsetHeight+marginTop+1）+ rAF 终态重算。
+test('navigation-menu 箭头几何对准触发器中心（水平+垂直）且营销位不溢出面板（真实 rect 断言）', async ({
+  page,
+}) => {
+  await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-navigation-menu')
+  const probe = async (sel: string, vertical: boolean) =>
+    page.evaluate(
+      async ({ sel, vertical }) => {
+        const host = document.querySelector(sel as string) as HTMLElement | null
+        if (!host) return null
+        host.scrollIntoView({ block: 'center' })
+        await new Promise((res) => setTimeout(res, 250))
+        const trig = [...host.shadowRoot!.querySelectorAll<HTMLElement>('[aria-expanded]')][0]
+        trig?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+        await new Promise((res) => setTimeout(res, 650))
+        const ar = host.shadowRoot!.querySelector('.arrow') as HTMLElement
+        const vp = host.shadowRoot!.querySelector('.viewport') as HTMLElement
+        const pf = host.shadowRoot!.querySelector('.panel-footer') as HTMLElement | null
+        const tr = trig!.getBoundingClientRect()
+        const arR = ar.getBoundingClientRect()
+        const vr = vp.getBoundingClientRect()
+        const fr = pf && !pf.hidden ? pf.getBoundingClientRect() : null
+        return {
+          trigC: vertical ? (tr.top + tr.bottom) / 2 : (tr.left + tr.right) / 2,
+          arrowC: vertical ? (arR.top + arR.bottom) / 2 : (arR.left + arR.right) / 2,
+          // 箭头跨边悬置（探出面板边缘）：顶部可探出面板顶缘之上，但左右两侧不越面板、
+          // 探出量收敛（顶边探出 ≤ 8px，不悬空漂离）
+          arrowInVp: arR.left >= vr.left - 2 && arR.right <= vr.right + 2 && vr.top - arR.top <= 8 && arR.bottom <= vr.bottom + 2,
+          pfOverflow: fr ? Math.round(fr.bottom - vr.bottom) : null,
+        }
+      },
+      { sel, vertical },
+    )
+  const horiz = await probe('#nav-arrow', false)
+  expect(horiz).not.toBeNull()
+  expect(Math.abs(horiz!.arrowC - horiz!.trigC), '水平箭头中心对准触发器中心（±2px）').toBeLessThanOrEqual(2)
+  expect(horiz!.arrowInVp, '箭头不越出面板').toBe(true)
+  const vert = await probe('oas-navigation-menu[orientation="vertical"]', true)
+  expect(vert).not.toBeNull()
+  expect(Math.abs(vert!.arrowC - vert!.trigC), '垂直箭头中心对准触发器中心（±2px）').toBeLessThanOrEqual(2)
+  const footer = await probe('#nav-footer', false)
+  expect(footer).not.toBeNull()
+  expect(footer!.pfOverflow, '营销位底缘不超出面板（≤0px 溢出）').toBeLessThanOrEqual(0)
+})
+
+// —— 缺陷回归：navigation-menu 面板碰撞翻转后箭头脱节 ——
+// 曾现缺陷：箭头位置写死「面板在 nav 下方/右侧」，flip-up（面板翻到触发器上方）后
+// 箭头仍留在翻转前位置——悬空在面板外 49px 且背对触发器。修复：syncViewportPosition
+// 把 flip 类镜像到箭头，CSS flip 变体换边贴合面板、尖端反向指向触发器。
+test('navigation-menu flip-up 后箭头贴面板底边指向触发器（不悬空脱节）', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 420 })
+  await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#nav-arrow')
+  const r = await page.evaluate(async () => {
+    const host = document.querySelector('#nav-arrow')!
+    host.scrollIntoView({ block: 'end' })
+    await new Promise((res) => setTimeout(res, 300))
+    const trig = [...host.shadowRoot!.querySelectorAll<HTMLElement>('[aria-expanded]')][0]
+    trig?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await new Promise((res) => setTimeout(res, 700))
+    const ar = host.shadowRoot!.querySelector('.arrow') as HTMLElement
+    const vp = host.shadowRoot!.querySelector('.viewport') as HTMLElement
+    const tr = trig!.getBoundingClientRect()
+    const arR = ar.getBoundingClientRect()
+    const vr = vp.getBoundingClientRect()
+    const cs = getComputedStyle(ar)
+    return {
+      flipUp: vp.classList.contains('flip-up'),
+      arrowFlip: ar.classList.contains('flip-up'),
+      // flip-up 箭头朝向：贴面板底边、尖朝下指触发器——rotate45 菱形用右下两描边边
+      // （border-right + border-bottom）构成 ▼ chevron；非 rotate 矩阵或缺描边即方向错
+      tipDown: cs.transform.includes('matrix') && parseFloat(cs.borderRightWidth) > 0 && parseFloat(cs.borderBottomWidth) > 0,
+      // 面板在触发器上方；箭头应贴面板底边（顶部 ≥ 面板底-8，底部 ≤ 面板底+8）
+      arrowAttachedToPanel: arR.top >= vr.bottom - 8 && arR.bottom <= vr.bottom + 8,
+      // 箭头在触发器与面板之间（不悬空到面板另一侧之外）
+      arrowOnTriggerSide: arR.bottom <= tr.top + 2,
+      arrowXCentered: Math.abs((arR.left + arR.right) / 2 - (tr.left + tr.right) / 2) <= 2,
+    }
+  })
+  expect(r.flipUp, '短视口应触发 flip-up').toBe(true)
+  expect(r.arrowFlip, '箭头应镜像 flip-up 类').toBe(true)
+  expect(r.tipDown, 'flip-up 箭头尖端应朝下（clip-path 含底边中点，不反装）').toBe(true)
+  expect(r.arrowAttachedToPanel, '箭头应贴翻转后面板底边').toBe(true)
+  expect(r.arrowOnTriggerSide, '箭头应在触发器一侧').toBe(true)
+  expect(r.arrowXCentered, '箭头 X 向对准触发器中心').toBe(true)
+})
+
+// —— 缺陷回归：navigation-menu 箭头内缩面板（用户三连实测揪出） ——
+// 曾现缺陷：箭头 clip-path 直角三角 top:calc(100%+space-1-1px) 高 6px——5px 埋在面板
+// 内部、仅 1px 探出顶边，视觉上缩成面板里的小凹槽而非「从面板探出的箭头」。
+// 修复：改 menubar 同款 rotate45 描边菱形、跨面板边缘悬置（探出侧指向宿主）。
+test('navigation-menu 箭头跨面板边缘探出指向宿主（rotate45 悬置，不内缩面板）', async ({
+  page,
+}) => {
+  await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#nav-arrow')
+  const r = await page.evaluate(async () => {
+    const host = document.querySelector('#nav-arrow')!
+    host.scrollIntoView({ block: 'center' })
+    await new Promise((res) => setTimeout(res, 250))
+    const trig = [...host.shadowRoot!.querySelectorAll<HTMLElement>('[aria-expanded]')][0]
+    trig?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await new Promise((res) => setTimeout(res, 600))
+    const ar = host.shadowRoot!.querySelector('.arrow') as HTMLElement
+    const vp = host.shadowRoot!.querySelector('.viewport') as HTMLElement
+    const tr = trig!.getBoundingClientRect()
+    const arR = ar.getBoundingClientRect()
+    const vr = vp.getBoundingClientRect()
+    const cs = getComputedStyle(ar)
+    return {
+      // 探出面板顶缘：箭头顶部必须在面板顶之上（跨边悬置，不内缩）
+      protrudeAbove: arR.top < vr.top,
+      protrudeAmount: Math.round(vr.top - arR.top),
+      // rotate45 菱形形态（computed transform 为旋转矩阵，描边 chevron 指向宿主）
+      isRotated: cs.transform.includes('matrix'),
+      hasBorder: parseFloat(cs.borderTopWidth) > 0,
+      panelBelowTrigger: vr.top > tr.bottom,
+      arrowXCentered: Math.abs((arR.left + arR.right) / 2 - (tr.left + tr.right) / 2) <= 2,
+    }
+  })
+  expect(r.protrudeAbove, '箭头应探出面板顶缘（跨边悬置，不内缩面板）').toBe(true)
+  expect(r.protrudeAmount, '探出量应明显（≥3px）').toBeGreaterThanOrEqual(3)
+  expect(r.isRotated, '箭头应为 rotate45 菱形').toBe(true)
+  expect(r.hasBorder, '箭头应有描边 chevron 轮廓').toBe(true)
+  expect(r.panelBelowTrigger, '面板应在触发器下方').toBe(true)
+  expect(r.arrowXCentered, '箭头 X 向对准触发器中心').toBe(true)
+})

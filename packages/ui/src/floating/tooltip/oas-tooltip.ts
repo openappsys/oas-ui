@@ -65,24 +65,24 @@ const STYLE = `
 /* 箭头：8px 正方形旋转 45°，底色与气泡同色，按 data-placement 落在面板对应边上，尖端指向锚点中心 */
 .arrow {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   background: var(--oas-tooltip-bg, var(--oas-color-text-primary));
   transform: rotate(45deg);
   pointer-events: none;
 }
 /* ===== 主轴悬边（12 向通用：bottom 系悬顶边、top 系悬底边、left 系悬右边、right 系悬左边） ===== */
 .tip[data-placement^='bottom'] .arrow {
-  top: -4px;
+  top: -6px;
 }
 .tip[data-placement^='top'] .arrow {
-  bottom: -4px;
+  bottom: -6px;
 }
 .tip[data-placement^='left'] .arrow {
-  right: -4px;
+  right: -6px;
 }
 .tip[data-placement^='right'] .arrow {
-  left: -4px;
+  left: -6px;
 }
 /* ===== 交叉轴（12 向：center 居中、start 靠起点侧 16px、end 靠终点侧 16px） ===== */
 .tip[data-placement='top'] .arrow,

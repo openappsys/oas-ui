@@ -300,7 +300,7 @@ describe('OASHoverCard', () => {
     expect(card(el).getAttribute('data-placement')).toBe('bottom-start')
     const cs = window.getComputedStyle(card(el).querySelector<HTMLElement>('[data-popper-arrow]')!)
     // bottom 系 → 箭头悬面板顶边
-    expect(cs.getPropertyValue('top')).toBe('-4px')
+    expect(cs.getPropertyValue('top')).toBe('-6px')
     // -start 对齐：箭头内联偏移指向锚点中心投影（对准宿主）；
     // center 对齐（无 arrow-point-at-center）走 calc 居中兜底
     expect(cs.getPropertyValue('left')).toBe('56px') // 360 - 300 - 4
