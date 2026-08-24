@@ -6453,3 +6453,40 @@ test('tour 弹窗可交互：真实鼠标点击弹窗内部不关闭（pointer-e
   const open = await page.evaluate(() => document.querySelector('#tour-basic')!.hasAttribute('open'))
   expect(open, '真实点击弹窗内部不应关闭（pointer-events 须为 auto）').toBe(true)
 })
+
+// —— 缺陷回归：tour append-to portal host display:none 致浮层 0×0 不可见（用户实测：点了没反应） ——
+// 曾现缺陷：ensurePortal 镜像 data-open 属性，但共享 STYLE 的 :host([open]) 显示门控只认 open
+// 属性——portal host（普通 div，只有 data-open）不命中 → display:none，浮层全 0×0 不可见。
+// 修复：host 显示规则同时认 [open] 与 [data-open]。
+test('tour append-to=body：portal host 显示 + 弹窗非零尺寸 + 高亮框住挂载目标', async ({ page }) => {
+  await page.goto('/components/tour.html', { waitUntil: 'networkidle' })
+  await page.waitForSelector('#tour-portal', { state: 'attached', timeout: 15000 })
+  await page.waitForFunction(() => document.querySelector('#tour-portal')?.shadowRoot != null, { timeout: 15000 })
+  await page.evaluate(() => {
+    const btn = [...document.querySelectorAll('oas-button')].find((x) => /append-to body/.test(x.textContent))!
+    btn.scrollIntoView({ block: 'center' })
+    btn.click()
+  })
+  await page.waitForTimeout(800)
+  const r = await page.evaluate(() => {
+    const ph = [...document.body.children].find((c) => c.shadowRoot && c.shadowRoot.querySelector('.popup'))
+    if (!ph) return { noPortal: true }
+    const sr = ph.shadowRoot
+    const popup = sr.querySelector('.popup')!
+    const hl = sr.querySelector('.highlight')
+    const target = document.querySelector('#tour-pp1')!
+    const rect = (el: Element) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height } }
+    const pr = rect(popup)
+    const hr = hl ? rect(hl) : null
+    const tr = rect(target)
+    return {
+      hostDisplay: getComputedStyle(ph).display,
+      popupW: pr.w, popupH: pr.h,
+      hlOnTarget: hr ? Math.abs(hr.x - tr.x) < 12 && Math.abs(hr.y - tr.y) < 12 : false,
+    }
+  })
+  expect(r.hostDisplay, 'portal host 应显示').not.toBe('none')
+  expect(r.popupW, '弹窗应有宽度').toBeGreaterThan(50)
+  expect(r.popupH, '弹窗应有高度').toBeGreaterThan(20)
+  expect(r.hlOnTarget, '高亮应框住挂载目标').toBe(true)
+})
