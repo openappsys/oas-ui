@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 /** 菜单项：label 必填；value 用于 `oas-select` 事件；icon 在折叠态显示（可选） */
 export interface SidebarItem {
@@ -168,6 +169,14 @@ aside {
 .item:hover {
   background: var(--oas-color-bg-hover);
 }
+.item.active {
+  background: color-mix(in srgb, var(--oas-color-primary) 14%, transparent);
+  color: var(--oas-color-primary);
+  font-weight: 500;
+}
+.item.active .icon {
+  color: var(--oas-color-primary);
+}
 .item[hidden] {
   display: none;
 }
@@ -244,7 +253,7 @@ aside {
  */
 export class OASSidebar extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['collapsed', 'items', 'width', 'mobile-breakpoint']
+    return ['collapsed', 'items', 'width', 'mobile-breakpoint', 'active', 'drawer-open']
   }
 
   private _items: SidebarItem[] = []
@@ -274,7 +283,7 @@ export class OASSidebar extends OASElement {
         </div>
         <button part="toggle" type="button" aria-expanded="true"></button>
       </aside>
-      <button part="trigger" type="button" hidden>☰</button>
+      <button part="trigger" type="button" hidden><svg viewBox="0 0 16 16" width="1.25em" height="1.25em" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 4.5 H13 M3 8 H13 M3 11.5 H13"/></svg></button>
       <div class="mask" part="mask"></div>
     `
   }
@@ -384,6 +393,7 @@ export class OASSidebar extends OASElement {
     if (!nav) return
     this.parseItems()
     nav.innerHTML = ''
+    const active = this.getAttr('active', '')
     for (const item of this._items) {
       const btn = document.createElement('button')
       btn.className = 'item'
@@ -391,10 +401,22 @@ export class OASSidebar extends OASElement {
       btn.type = 'button'
       btn.setAttribute('aria-label', item.label)
       btn.dataset.value = item.value
+      const isActive = item.value === active
+      if (isActive) {
+        btn.classList.add('active')
+        btn.setAttribute('aria-current', 'page')
+      }
       const icon = document.createElement('span')
       icon.className = 'icon'
-      if (item.icon) icon.textContent = item.icon
-      else icon.hidden = true
+      const iconSvg = item.icon ? this.iconSvg(item.icon) : null
+      if (iconSvg) {
+        icon.innerHTML = iconSvg
+      } else if (item.icon) {
+        // 非注册表名下的自定义图标名：回退文本（不静默丢失）
+        icon.textContent = item.icon
+      } else {
+        icon.hidden = true
+      }
       const label = document.createElement('span')
       label.className = 'label'
       label.textContent = item.label
@@ -407,6 +429,13 @@ export class OASSidebar extends OASElement {
       })
       nav.appendChild(btn)
     }
+  }
+
+  /** 图标名（注册表）→ 内联 SVG（fill/stroke=currentColor，随禁用/激活态着色） */
+  private iconSvg(name: string): string | null {
+    const path = iconRegistry[name as IconName] ?? null
+    if (!path) return null
+    return `<svg viewBox="0 0 16 16" width="1.25em" height="1.25em" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`
   }
 
   private parseItems(): void {
