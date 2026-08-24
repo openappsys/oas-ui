@@ -185,8 +185,8 @@ const STYLE = `
    12 向 placement 使 data-placement 带 -start/-end 后缀，落边规则用属性前缀匹配（^=）。 */
 .arrow {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   box-sizing: border-box;
   background: var(--pop-bg);
   transform: rotate(45deg);
@@ -194,28 +194,28 @@ const STYLE = `
 }
 /* placement 基向=bottom：面板在触发元素下方 → 箭头悬面板顶边、尖朝上 → 外露边=右上(border-top)+左上(border-left) */
 .panel[data-placement^='bottom'] .arrow {
-  top: -4px;
+  top: -6px;
   left: var(--arrow-x, calc(50% - 4px));
   border-top: 1px solid var(--pop-border);
   border-left: 1px solid var(--pop-border);
 }
 /* placement 基向=top：面板在触发元素上方 → 箭头悬面板底边、尖朝下 → 外露边=右下(border-right)+左下(border-bottom) */
 .panel[data-placement^='top'] .arrow {
-  bottom: -4px;
+  bottom: -6px;
   left: var(--arrow-x, calc(50% - 4px));
   border-right: 1px solid var(--pop-border);
   border-bottom: 1px solid var(--pop-border);
 }
 /* placement 基向=left：面板在触发元素左侧 → 箭头悬面板右边、尖朝右 → 外露边=右上(border-top)+右下(border-right) */
 .panel[data-placement^='left'] .arrow {
-  right: -4px;
+  right: -6px;
   top: var(--arrow-y, calc(50% - 4px));
   border-top: 1px solid var(--pop-border);
   border-right: 1px solid var(--pop-border);
 }
 /* placement 基向=right：面板在触发元素右侧 → 箭头悬面板左边、尖朝左 → 外露边=左上(border-left)+左下(border-bottom) */
 .panel[data-placement^='right'] .arrow {
-  left: -4px;
+  left: -6px;
   top: var(--arrow-y, calc(50% - 4px));
   border-left: 1px solid var(--pop-border);
   border-bottom: 1px solid var(--pop-border);

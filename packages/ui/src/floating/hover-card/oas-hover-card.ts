@@ -124,8 +124,8 @@ const STYLE = `
    取「汇于尖端」的两条外露边带边框色，与面板 1px 描边无缝衔接。 */
 .arrow {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   box-sizing: border-box;
   background: var(--oas-color-bg);
   transform: rotate(45deg);
@@ -135,7 +135,7 @@ const STYLE = `
 .card[data-placement='bottom'] .arrow,
 .card[data-placement='bottom-start'] .arrow,
 .card[data-placement='bottom-end'] .arrow {
-  top: -4px;
+  top: -6px;
   left: calc(50% - 4px);
   border-top: 1px solid var(--oas-color-border);
   border-left: 1px solid var(--oas-color-border);
@@ -143,7 +143,7 @@ const STYLE = `
 .card[data-placement='top'] .arrow,
 .card[data-placement='top-start'] .arrow,
 .card[data-placement='top-end'] .arrow {
-  bottom: -4px;
+  bottom: -6px;
   left: calc(50% - 4px);
   border-right: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
@@ -151,7 +151,7 @@ const STYLE = `
 .card[data-placement='left'] .arrow,
 .card[data-placement='left-start'] .arrow,
 .card[data-placement='left-end'] .arrow {
-  right: -4px;
+  right: -6px;
   top: calc(50% - 4px);
   border-top: 1px solid var(--oas-color-border);
   border-right: 1px solid var(--oas-color-border);
@@ -159,7 +159,7 @@ const STYLE = `
 .card[data-placement='right'] .arrow,
 .card[data-placement='right-start'] .arrow,
 .card[data-placement='right-end'] .arrow {
-  left: -4px;
+  left: -6px;
   top: calc(50% - 4px);
   border-left: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);

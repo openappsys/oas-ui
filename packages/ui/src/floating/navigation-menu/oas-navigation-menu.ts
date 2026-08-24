@@ -265,22 +265,49 @@ const STYLE = `
   cursor: not-allowed;
   opacity: 0.5;
 }
-/* 弹出层箭头（指向触发器的视觉箭头） */
-.arrow {
+/* 弹出层箭头（指向宿主触发器）：rotate45 描边菱形（与 menubar 统一）——
+   跨面板边缘悬置（探出侧指向宿主），不内缩进面板内部；坐标系=触发器相对 nav 的 offset。 */
+.nav > .arrow {
   position: absolute;
-  top: -5px;
+  top: calc(100% + var(--oas-space-1) - 6px);
   left: var(--arrow-x, 24px);
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   background: var(--oas-color-bg);
   border-left: 1px solid var(--oas-color-border);
   border-top: 1px solid var(--oas-color-border);
   transform: rotate(45deg);
+  z-index: calc(var(--oas-z-dropdown, 1000) + 1);
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
-.viewport.vertical .arrow {
+/* 垂直形态：贴面板左边线（尖朝左指向触发器） */
+.nav > .arrow.vertical {
   top: var(--arrow-y, 24px);
-  left: -5px;
-  transform: rotate(135deg);
+  left: calc(100% + var(--oas-space-1) - 6px);
+  border-top: none;
+  border-bottom: 1px solid var(--oas-color-border);
+}
+/* flip-up（面板翻到触发器上方）：箭头贴面板底边、尖朝下 */
+.nav > .arrow.flip-up {
+  top: auto;
+  bottom: calc(100% + var(--oas-space-1) - 6px);
+  border-left: none;
+  border-top: none;
+  border-right: 1px solid var(--oas-color-border);
+  border-bottom: 1px solid var(--oas-color-border);
+}
+/* 垂直 flip-left（面板翻到触发器左侧）：箭头贴面板右边、尖朝右 */
+.nav > .arrow.vertical.flip-left {
+  left: auto;
+  right: calc(100% + var(--oas-space-1) - 6px);
+  border-bottom: none;
+  border-left: none;
+  border-right: 1px solid var(--oas-color-border);
+  border-top: 1px solid var(--oas-color-border);
+}
+.nav.open > .arrow {
+  opacity: 1;
 }
 /* 遮罩（可选 backdrop 属性时打开） */
 .backdrop {
@@ -514,8 +541,8 @@ export class OASNavigationMenu extends OASElement {
         <div class="bar" part="bar">
           <span class="indicator" part="indicator" data-state="closed" aria-hidden="true"></span>
         </div>
+        <span class="arrow" part="arrow" aria-hidden="true"></span>
         <div class="viewport" part="viewport">
-          <span class="arrow" part="arrow" aria-hidden="true"></span>
           <div class="panel" part="panel"></div>
           <div class="panel-footer" part="panel-footer" hidden><slot name="panel-footer"></slot></div>
           <div class="sub-panel" part="sub-panel" hidden></div>
@@ -603,7 +630,9 @@ export class OASNavigationMenu extends OASElement {
     this.syncViewportSize()
   }
 
-  /** viewport 尺寸变量（--vp-w/--vp-h）：面板内容 + 营销位 + 覆盖式二级面板（打开时） */
+  /** viewport 尺寸变量（--vp-w/--vp-h）：面板内容 + 营销位 + 覆盖式二级面板（打开时）。
+   *  营销位按真实布局计（offsetHeight 含自身 padding；外距与上边分隔线一并计入）——
+   *  手工拼「+4」与 .panel-footer 的 margin+padding+border 实际结构不符会裁切底部。 */
   private syncViewportSize(): void {
     const vp = this.viewportEl
     const p = this.panelEl
@@ -622,7 +651,10 @@ export class OASNavigationMenu extends OASElement {
     let h = p.scrollHeight
     if (footer && !footer.hidden) {
       const fh = footer.offsetHeight
-      if (fh > 0) h += fh + 4
+      if (fh > 0) {
+        const mt = parseFloat(getComputedStyle(footer).marginTop) || 0
+        h += fh + mt + 1 // +1 分隔线上边框（viewport 为 content-box，height 即内容高）
+      }
     }
     if (w > 0) vp.style.setProperty('--vp-w', `${w}px`)
     if (h > 0) vp.style.setProperty('--vp-h', `${h}px`)
@@ -1230,6 +1262,7 @@ export class OASNavigationMenu extends OASElement {
   private syncOpen(): void {
     if (!this.shadow) return
     const open = this.effectiveOpen()
+    this.navEl?.classList.toggle('open', !!open)
     this.viewportEl?.classList.toggle('open', !!open)
     this.viewportEl?.setAttribute('data-value', open)
     this.viewportEl?.classList.toggle('vertical', this.isVertical())
@@ -1246,6 +1279,7 @@ export class OASNavigationMenu extends OASElement {
     }
     if (this.arrowEl) {
       this.arrowEl.hidden = this.getAttr('arrow', 'true') === 'false'
+      this.arrowEl.classList.toggle('vertical', this.isVertical())
     }
     if (this.backdropEl) {
       this.backdropEl.classList.toggle('open', !!open && this.hasAttr('backdrop'))
@@ -1291,9 +1325,17 @@ export class OASNavigationMenu extends OASElement {
     const vpRect = vp.getBoundingClientRect()
     const bottom = vpRect.top + size.h
     vp.classList.toggle('flip-up', bottom > vh - margin)
+    // 箭头镜像 flip 状态：箭头挂 nav 下（viewport 外），面板翻转后箭头须换边贴合面板、
+    // 尖端反向指向触发器——不镜像的话箭头悬空在翻转前的位置、背对触发器
+    if (this.arrowEl) {
+      this.arrowEl.classList.toggle('flip-up', vp.classList.contains('flip-up'))
+      this.arrowEl.classList.toggle('flip-left', vp.classList.contains('flip-left'))
+    }
   }
 
-  /** 面板内容尺寸（主面板 + 营销位；二级面板打开时以二级内容为准）——翻转/尺寸过渡共用 */
+  /** 面板内容尺寸（主面板 + 营销位；二级面板打开时以二级内容为准）——翻转/尺寸过渡共用。
+   *  营销位按真实布局计（offsetHeight 含自身 padding；外距与上边分隔线一并计入），
+   *  手工拼「+4」与 .panel-footer 的 margin+padding+border 实际结构不符会裁切底部。 */
   private viewportContentSize(): { w: number; h: number } {
     const p = this.panelEl
     const w = p?.scrollWidth ?? 0
@@ -1301,7 +1343,10 @@ export class OASNavigationMenu extends OASElement {
     const footer = this.panelFooterEl
     if (footer && !footer.hidden) {
       const fh = footer.offsetHeight
-      if (fh > 0) h += fh + 4
+      if (fh > 0) {
+        const mt = parseFloat(getComputedStyle(footer).marginTop) || 0
+        h += fh + mt + 1 // +1 分隔线上边框（viewport 为 content-box，height 即内容高）
+      }
     }
     const sub = this.subPanelEl
     if (sub && this.openSub && !sub.hidden) {
@@ -1337,23 +1382,33 @@ export class OASNavigationMenu extends OASElement {
         ind.style.setProperty('--ind-w', `${w}px`)
       }
     }
-    // 箭头跟随触发器：指向当前打开触发器中心（--arrow-x/y 由 JS 写入，此前 CSS 引用但从不 setProperty）
+    // 箭头跟随触发器：箭头挂在 nav 直下（viewport 外），坐标系=触发器相对 nav 的 offset——
+    // nav 在打开期间静止，面板 width/height 过渡不再牵动箭头；垂直/翻转形态天然正确
+    // （旧实现 offsetLeft 相对 bar 但箭头在 viewport 内定位，坐标系错位致箭头指偏/越界）。
+    // 垂直形态开面板会 toggle bar 的 vertical 类触发横→竖排重排，同帧 offsetTop 是旧布局值——
+    // rAF 等一帧重排后写入。viewport 尺寸变量同帧重算（打开瞬间面板内容布局未稳，
+    // 同步测量会比终态少几像素，营销位底缘被裁）。
+    requestAnimationFrame(() => {
+      if (!this.effectiveOpen() || !this.isConnected) return
+      this.writeArrow(trigger)
+      this.syncViewportSize()
+    })
+  }
+
+  /** 箭头位置写入：触发器中心投影到 nav 坐标系（offsetLeft/offsetTop 相对 bar，
+   *  补偿 bar 相对 nav 的偏移——箭头定位上下文是 nav，触发器 offsetParent 是 bar） */
+  private writeArrow(trigger: HTMLElement): void {
     const ar = this.arrowEl
-    if (ar) {
-      if (this.isVertical()) {
-        const cy = trigger.offsetTop + trigger.offsetHeight / 2 - 4 // 半箭头高 4px
-        ar.style.setProperty('--arrow-y', `${cy}px`)
-      } else {
-        const cx = trigger.offsetLeft + trigger.offsetWidth / 2 - 4 // 半箭头宽 4px
-        ar.style.setProperty('--arrow-x', `${cx}px`)
-      }
-    }
-    // viewport 尺寸过渡：测量面板内容（含营销位/二级面板）
-    const vp = this.viewportEl
-    if (vp) {
-      const { w, h } = this.viewportContentSize()
-      if (w > 0) vp.style.setProperty('--vp-w', `${w}px`)
-      if (h > 0) vp.style.setProperty('--vp-h', `${h}px`)
+    const bar = this.barEl
+    if (!ar || !bar) return
+    const bx = bar.offsetLeft
+    const by = bar.offsetTop
+    if (this.isVertical()) {
+      const cy = by + trigger.offsetTop + trigger.offsetHeight / 2 - 6 // 半箭头高 6px（箭头高 12，与浮层家族一致）
+      ar.style.setProperty('--arrow-y', `${cy}px`)
+    } else {
+      const cx = bx + trigger.offsetLeft + trigger.offsetWidth / 2 - 6 // 半箭头宽 6px（箭头宽 12，与浮层家族一致）
+      ar.style.setProperty('--arrow-x', `${cx}px`)
     }
   }
 

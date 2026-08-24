@@ -316,8 +316,8 @@ const STYLE = `
 /* 箭头：8px 方块旋转 45°，底色随弹层（default 用弹层底、primary 用主色） */
 .arrow {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   background: var(--oas-tour-popup-bg, var(--oas-color-bg));
   transform: rotate(45deg);
   pointer-events: none;
@@ -326,16 +326,16 @@ const STYLE = `
   background: var(--oas-color-primary);
 }
 .popup[data-placement^='bottom'] .arrow {
-  top: -4px;
+  top: -6px;
 }
 .popup[data-placement^='top'] .arrow {
-  bottom: -4px;
+  bottom: -6px;
 }
 .popup[data-placement^='left'] .arrow {
-  right: -4px;
+  right: -6px;
 }
 .popup[data-placement^='right'] .arrow {
-  left: -4px;
+  left: -6px;
 }
 .popup[data-placement='top'] .arrow,
 .popup[data-placement='bottom'] .arrow {
