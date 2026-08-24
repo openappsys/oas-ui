@@ -67,7 +67,10 @@ const STYLE = `
 :host {
   display: none;
 }
-:host([open]) {
+/* portal（append-to）模式：portal host 是普通 div、镜像的是 data-open 而非 open 属性，
+   只认 [open] 会让 portal host 永隐（display:none → 内部全 0×0）——须同时认 data-open */
+:host([open]),
+:host([data-open]) {
   display: block;
 }
 :host([hidden]) {
