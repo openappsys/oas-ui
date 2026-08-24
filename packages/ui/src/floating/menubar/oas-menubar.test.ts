@@ -1046,6 +1046,22 @@ describe('水平溢出收纳（ellipsis）', () => {
     expect(v.shadowRoot!.querySelector('[data-value="__more__"]')).toBeNull()
   })
 
+  it('零宽环境（SSR/未布局）不判定溢出：clientWidth=0 时项保持可见、「···」保持隐藏，不把误判的收纳态烤进快照', async () => {
+    const el = mount({ items: MANY_ITEMS })
+    const itemsEl = el.shadowRoot!.querySelector<HTMLElement>('.bar-items')!
+    // 模拟 SSR shim 环境：容器 clientWidth=0（无布局）但项 offsetWidth 可读
+    // （shim 的元素属性返回非零 offsetWidth，零宽守卫必须拦住这种假溢出）
+    Object.defineProperty(itemsEl, 'clientWidth', { value: 0, configurable: true })
+    const wraps = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
+    for (const w of wraps) Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
+    await new Promise((r) => requestAnimationFrame(r))
+    await new Promise((r) => requestAnimationFrame(r))
+    const collapsed = [...itemsEl.querySelectorAll(':scope > .top-wrap[data-collapsed]')]
+    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')
+    expect(collapsed, '零宽环境不得给项标 data-collapsed（快照会烤进误判态）').toHaveLength(0)
+    expect(more!.hidden, '零宽环境「···」保持隐藏').toBe(true)
+  })
+
   it('容器不足时超宽项收进「···」（data-collapsed + 弹层镜像），点击镜像项派发 oas-select', async () => {
     const el = mount({ items: MANY_ITEMS })
     const itemsEl = el.shadowRoot!.querySelector<HTMLElement>('.bar-items')!

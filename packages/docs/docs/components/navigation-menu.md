@@ -68,7 +68,7 @@
 
 <DemoBlock title="窄容器碰撞翻转">
   <div style="width: 260px">
-    <oas-navigation-menu id="nav-flip" delay-duration="0" items='[{"label":"产品","value":"products","children":[{"label":"组件库","value":"components","href":"/components","description":"30+ 开箱即用组件"},{"label":"设计规范","value":"design","href":"/design","description":"视觉语言与令牌"},{"label":"主题定制","value":"theming","href":"/theming","description":"三层层级令牌"}]}]'></oas-navigation-menu>
+    <oas-navigation-menu id="nav-flip" delay-duration="0" loop="false" items='[{"label":"产品","value":"products","children":[{"label":"组件库","value":"components","href":"/components","description":"30+ 开箱即用组件"},{"label":"设计规范","value":"design","href":"/design","description":"视觉语言与令牌"},{"label":"主题定制","value":"theming","href":"/theming","description":"三层层级令牌"}]}]'></oas-navigation-menu>
   </div>
   <p class="demo-tip">容器宽 260px：面板右侧放不下时 right 对齐，仍完整落在容器/视口内。</p>
 </DemoBlock>

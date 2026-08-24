@@ -1,27 +1,27 @@
 {
   "size": {
-    "generatedAt": "2026-08-23",
+    "generatedAt": "2026-08-24",
     "method": "gzip = zlib gzipSync；brotli = zlib brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 7521564,
+        "distTotalBytes": 7821279,
         "browserJs": {
-          "files": 264,
-          "rawBytes": 2315876,
-          "gzipBytes": 639402,
-          "brotliBytes": 505732
+          "files": 266,
+          "rawBytes": 2392948,
+          "gzipBytes": 661115,
+          "brotliBytes": 520643
         },
         "fullEntry": {
-          "files": 311,
-          "rawBytes": 1283296,
-          "gzipBytes": 415389,
-          "brotliBytes": 346524
+          "files": 313,
+          "rawBytes": 1324797,
+          "gzipBytes": 426258,
+          "brotliBytes": 355435
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 1063120,
-          "gzipBytes": 240557,
-          "brotliBytes": 172901
+          "rawBytes": 1098522,
+          "gzipBytes": 251376,
+          "brotliBytes": 178883
         }
       },
       "@oas-ui/theme": {
@@ -39,9 +39,9 @@
       },
       "@oas-ui/i18n": {
         "files": 7,
-        "rawBytes": 24200,
-        "gzipBytes": 9009,
-        "brotliBytes": 7395
+        "rawBytes": 24350,
+        "gzipBytes": 9026,
+        "brotliBytes": 7412
       },
       "@oas-ui/icons": {
         "files": 46,
@@ -122,9 +122,9 @@
         "entry": "data/table",
         "spec": "@oas-ui/ui/data/table",
         "files": 10,
-        "rawBytes": 65196,
-        "gzipBytes": 21801,
-        "brotliBytes": 18081,
+        "rawBytes": 65272,
+        "gzipBytes": 21810,
+        "brotliBytes": 18089,
         "fileList": [
           "packages/ui/dist/data/table/index.js",
           "packages/i18n/dist/index.js",
@@ -142,9 +142,9 @@
         "entry": "form/form",
         "spec": "@oas-ui/ui/form/form",
         "files": 9,
-        "rawBytes": 31870,
-        "gzipBytes": 12831,
-        "brotliBytes": 10494,
+        "rawBytes": 31946,
+        "gzipBytes": 12840,
+        "brotliBytes": 10502,
         "fileList": [
           "packages/ui/dist/form/form/index.js",
           "packages/i18n/dist/index.js",
@@ -161,7 +161,7 @@
     "budgets": [
       {
         "name": "dist/cdn.js gzip",
-        "actualBytes": 240557,
+        "actualBytes": 251376,
         "limitBytes": 307200,
         "warnAtBytes": 276480,
         "pass": true,
@@ -170,7 +170,7 @@
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
-        "actualBytes": 415389,
+        "actualBytes": 426258,
         "limitBytes": 532480,
         "warnAtBytes": 479232,
         "pass": true,
@@ -188,7 +188,7 @@
       },
       {
         "name": "@oas-ui/ui/data/table 链 gzip",
-        "actualBytes": 21801,
+        "actualBytes": 21810,
         "limitBytes": 26624,
         "warnAtBytes": 23962,
         "pass": true,
@@ -197,7 +197,7 @@
       },
       {
         "name": "@oas-ui/ui/form/form 链 gzip",
-        "actualBytes": 12831,
+        "actualBytes": 12840,
         "limitBytes": 14336,
         "warnAtBytes": 12902,
         "pass": true,
