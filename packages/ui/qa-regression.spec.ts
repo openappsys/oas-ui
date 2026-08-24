@@ -6440,7 +6440,7 @@ test('tour 弹窗可交互：真实鼠标点击弹窗内部不关闭（pointer-e
   await page.waitForSelector('#tour-basic', { state: 'attached', timeout: 15000 })
   await page.waitForFunction(() => document.querySelector('#tour-basic')?.shadowRoot != null, { timeout: 15000 })
   await page.evaluate(() => {
-    ;[...document.querySelectorAll('oas-button')].find((x) => /开始引导/.test(x.textContent))!.click()
+    ;[...document.querySelectorAll<HTMLElement>('oas-button')].find((x) => /开始引导/.test(x.textContent))!.click()
   })
   await page.waitForTimeout(500)
   const center = await page.evaluate(() => {
@@ -6463,7 +6463,7 @@ test('tour append-to=body：portal host 显示 + 弹窗非零尺寸 + 高亮框�
   await page.waitForSelector('#tour-portal', { state: 'attached', timeout: 15000 })
   await page.waitForFunction(() => document.querySelector('#tour-portal')?.shadowRoot != null, { timeout: 15000 })
   await page.evaluate(() => {
-    const btn = [...document.querySelectorAll('oas-button')].find((x) => /append-to body/.test(x.textContent))!
+    const btn = [...document.querySelectorAll<HTMLElement>('oas-button')].find((x) => /append-to body/.test(x.textContent))!
     btn.scrollIntoView({ block: 'center' })
     btn.click()
   })
@@ -6471,7 +6471,7 @@ test('tour append-to=body：portal host 显示 + 弹窗非零尺寸 + 高亮框�
   const r = await page.evaluate(() => {
     const ph = [...document.body.children].find((c) => c.shadowRoot && c.shadowRoot.querySelector('.popup'))
     if (!ph) return { noPortal: true }
-    const sr = ph.shadowRoot
+    const sr = ph.shadowRoot!
     const popup = sr.querySelector('.popup')!
     const hl = sr.querySelector('.highlight')
     const target = document.querySelector('#tour-pp1')!
@@ -6500,7 +6500,7 @@ test('tour typewriter：描述逐字增长（非一次性全显示）', async ({
   await page.waitForSelector('#tour-tw', { state: 'attached', timeout: 15000 })
   await page.waitForFunction(() => document.querySelector('#tour-tw')?.shadowRoot != null, { timeout: 15000 })
   const samples = await page.evaluate(async () => {
-    const btn = [...document.querySelectorAll('oas-button')].find(
+    const btn = [...document.querySelectorAll<HTMLElement>('oas-button')].find(
       (x) => /开始引导/.test(x.textContent) && x.closest('.demo-block')?.textContent.includes('打字机动画'),
     )!
     const host = document.querySelector('#tour-tw')!
@@ -6515,8 +6515,8 @@ test('tour typewriter：描述逐字增长（非一次性全显示）', async ({
     return out
   })
   // 逐字增长：长度应随时间递增（非一开始就满长）
-  expect(samples[0], '初始应未显示完整').toBeLessThan(samples[samples.length - 1])
-  const increasing = samples.every((v, i) => i === 0 || v >= samples[i - 1])
+  expect(samples[0]!, '初始应未显示完整').toBeLessThan(samples[samples.length - 1]!)
+  const increasing = samples.every((v, i) => i === 0 || v >= (samples[i - 1] ?? 0))
   expect(increasing, '描述长度应单调递增（逐字出现）').toBe(true)
 })
 
@@ -6531,7 +6531,7 @@ test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现
   await page.evaluate(() => window.scrollTo(0, 0))
   await page.waitForTimeout(200)
   await page.evaluate(() => {
-    const btn = [...document.querySelectorAll('oas-button')].find((x) => x.textContent.trim() === '高亮区可交互')!
+    const btn = [...document.querySelectorAll<HTMLElement>('oas-button')].find((x) => x.textContent.trim() === '高亮区可交互')!
     btn.click()
   })
   // 采样滚动期间弹窗隐藏 + 停止后正确显示
@@ -6556,7 +6556,7 @@ test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现
     expect(s.opacity, '滚动期间弹窗应近透明(隐藏，不在错位处闪现)').toBeLessThan(0.1)
   }
   // 滚动停止后弹窗应正确显示（placement 已设、opacity 1）
-  const settled = samples[samples.length - 1]
+  const settled = samples[samples.length - 1]!
   expect(settled.opacity, '滚动停止后弹窗显示').toBe(1)
   expect(settled.placement, '滚动停止后 placement 已设').not.toBeNull()
   expect(settled.pending, '滚动停止后不再待定').toBe(false)
