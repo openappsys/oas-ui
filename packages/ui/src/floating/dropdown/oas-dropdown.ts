@@ -98,6 +98,15 @@ const STYLE = `
 .menu-anchor.oas-closing oas-menu {
   animation: oas-drop-out ${ANIM_MS}ms var(--oas-ease-in-out);
 }
+/* 箭头与面板同节奏开合（仅透明度）：动画只挂 oas-menu 时，箭头是兄弟节点无动画——
+   打开瞬间箭头先显（描边线先亮后融）、关闭时箭头原地留守慢一拍消失。
+   补与面板同时长的 fade，只动 opacity 不碰 rotate(45deg)，两端时序对齐 */
+.menu-anchor:not([hidden]) .arrow {
+  animation: oas-drop-arrow-in ${ANIM_MS}ms var(--oas-ease-out);
+}
+.menu-anchor.oas-closing .arrow {
+  animation: oas-drop-arrow-out ${ANIM_MS}ms var(--oas-ease-in-out);
+}
 @keyframes oas-drop-in {
   from {
     opacity: 0;
@@ -118,9 +127,27 @@ const STYLE = `
     transform: scale(0.96);
   }
 }
+/* 箭头开合（仅透明度，与面板 fade 同步；不掺 transform 防覆盖 rotate(45deg)） */
+@keyframes oas-drop-arrow-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes oas-drop-arrow-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
 /* 减少动效偏好：禁用开合动画（退场时 JS 检测到 reduce 直接隐藏，不等动画时长） */
 @media (prefers-reduced-motion: reduce) {
-  .menu-anchor oas-menu {
+  .menu-anchor oas-menu,
+  .menu-anchor .arrow {
     animation: none;
   }
 }
