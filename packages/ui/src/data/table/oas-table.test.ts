@@ -1067,14 +1067,22 @@ describe('OASTable size 密度档位', () => {
 describe('OASTable 单元格渲染与 hidden（模板实测缺陷回归）', () => {
   it('#9 尊重 [hidden]：table.hidden=true 时 display:none（:host 覆盖修复）', () => {
     const el = mount()
-    expect(el.shadowRoot!.querySelector('style')!.textContent).toMatch(/:host\(\[hidden\]\)\s*\{\s*display:\s*none/)
+    expect(el.shadowRoot!.querySelector('style')!.textContent).toMatch(
+      /:host\(\[hidden\]\)\s*\{\s*display:\s*none/,
+    )
     el.hidden = true
     expect(getComputedStyle(el).display).toBe('none')
   })
 
   it('#8 单元格 render 返回元素（tag/avatar/badge 富内容）直接挂载（非纯文本）', () => {
     const el = new OASTable()
-    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '姓名' }, { key: 'status', title: '状态' }]))
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '姓名' },
+        { key: 'status', title: '状态' },
+      ]),
+    )
     el.setAttribute('data', JSON.stringify([{ name: '张三', status: '启用' }]))
     // property 通道传含 render 函数（返回 span 元素）
     el.columns = [

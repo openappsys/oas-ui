@@ -417,7 +417,10 @@ export class OASTable extends OASElement {
       this.setAttribute('columns', value)
       return
     }
-    if (Array.isArray(value) && value.some((c) => c && (typeof c.render === 'function' || typeof c.editor === 'function'))) {
+    if (
+      Array.isArray(value) &&
+      value.some((c) => c && (typeof c.render === 'function' || typeof c.editor === 'function'))
+    ) {
       // 列定义含函数（render/editors）：JSON 序列化会丢函数 → 直接存内存并标记，跳过 attribute 重解析
       this._columns = value.filter((c) => c && typeof c.key === 'string')
       this._columnsFromProperty = true
@@ -1470,7 +1473,9 @@ export class OASTable extends OASElement {
     if (!this._columnsFromProperty) {
       try {
         const cols = JSON.parse(this.getAttr('columns', '[]'))
-        this._columns = Array.isArray(cols) ? cols.filter((c) => c && typeof c.key === 'string') : []
+        this._columns = Array.isArray(cols)
+          ? cols.filter((c) => c && typeof c.key === 'string')
+          : []
       } catch {
         this._columns = []
       }
