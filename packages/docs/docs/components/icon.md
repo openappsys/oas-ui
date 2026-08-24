@@ -144,13 +144,13 @@
 `duotone` 把图标分层着色：`data-layer="primary"` / `data-layer="secondary"`（或前两个图形元素）分别用 `--oas-icon-primary-color` / `--oas-icon-secondary-color` 上色，透明度默认 primary 1 / secondary 0.4（变量可在宿主覆盖）。`swap-opacity` 交换两层透明度。内置图标为单色，主要配合自定义双层 SVG 使用。
 
 <DemoBlock title="duotone 双色">
-  <oas-icon duotone size="32" style="--oas-icon-primary-color: var(--oas-color-primary); --oas-icon-secondary-color: var(--oas-color-primary);">
+  <oas-icon duotone size="32" style="--oas-icon-primary-color: var(--oas-color-primary); --oas-icon-secondary-color: color-mix(in srgb, var(--oas-color-primary) 35%, var(--oas-color-bg));">
     <svg viewBox="0 0 24 24">
       <path data-layer="secondary" d="M12 1.5 C6.2 1.5 1.5 6.2 1.5 12 C1.5 17.8 6.2 22.5 12 22.5 C17.8 22.5 22.5 17.8 22.5 12 C22.5 6.2 17.8 1.5 12 1.5 Z"/>
       <path data-layer="primary" d="M12 6.5 L13.6 9.8 L17.2 10.4 L14.7 12.9 L15.3 16.4 L12 14.7 L8.7 16.4 L9.3 12.9 L6.8 10.4 L10.4 9.8 Z"/>
     </svg>
   </oas-icon>
-  <oas-icon duotone swap-opacity size="32" style="--oas-icon-primary-color: var(--oas-color-primary); --oas-icon-secondary-color: var(--oas-color-primary);">
+  <oas-icon duotone swap-opacity size="32" style="--oas-icon-primary-color: var(--oas-color-primary); --oas-icon-secondary-color: color-mix(in srgb, var(--oas-color-primary) 35%, var(--oas-color-bg));">
     <svg viewBox="0 0 24 24">
       <path data-layer="secondary" d="M12 1.5 C6.2 1.5 1.5 6.2 1.5 12 C1.5 17.8 6.2 22.5 12 22.5 C17.8 22.5 22.5 17.8 22.5 12 C22.5 6.2 17.8 1.5 12 1.5 Z"/>
       <path data-layer="primary" d="M12 6.5 L13.6 9.8 L17.2 10.4 L14.7 12.9 L15.3 16.4 L12 14.7 L8.7 16.4 L9.3 12.9 L6.8 10.4 L10.4 9.8 Z"/>
