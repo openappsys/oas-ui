@@ -690,7 +690,9 @@ describe('OASMenu loading 菜单项', () => {
       ]),
       value: '{"sort":"time"}',
     })
-    const refresh = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="refresh"]')!
+    const refresh = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="item"][data-value="refresh"]',
+    )!
     expect(refresh.getAttribute('role')).toBe('menuitem')
     expect(refresh.hasAttribute('aria-checked')).toBe(false)
     refresh.click()
@@ -858,7 +860,9 @@ describe('OASMenu loading 菜单项', () => {
       let detail: unknown
       el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
       // 点叶子子项（value 写回触发全量重建，需重新查询）
-      el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dash-overview"]')!.click()
+      el.shadowRoot!.querySelector<HTMLElement>(
+        '[part="item"][data-value="dash-overview"]',
+      )!.click()
       expect(detail).toEqual({ value: 'dash-overview' })
       const subAfter = el.shadowRoot!.querySelector('.inline-sub[data-parent="dash"]')!
       expect(subAfter.classList.contains('open')).toBe(true)
@@ -943,7 +947,9 @@ describe('OASMenu loading 菜单项', () => {
     it('horizontal 超宽项收进「···」子菜单（ResizeObserver 溢出检测）', () => {
       const el = mount({
         mode: 'horizontal',
-        items: JSON.stringify(Array.from({ length: 10 }, (_, i) => ({ label: `菜单${i}`, value: `m${i}` }))),
+        items: JSON.stringify(
+          Array.from({ length: 10 }, (_, i) => ({ label: `菜单${i}`, value: `m${i}` })),
+        ),
       })
       const css = el.shadowRoot!.querySelector('style')!.textContent!
       // 水平溢出收纳的机制（··· 收纳项/overflow 容器）
@@ -1046,7 +1052,9 @@ describe('close-on-select 选中收起策略', () => {
     })
     el.shadowRoot!.querySelector<HTMLElement>('[data-value="display"]')!.click()
     expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[data-value="display"]')!.classList.contains('open'),
+      el
+        .shadowRoot!.querySelector<HTMLElement>('[data-value="display"]')!
+        .classList.contains('open'),
     ).toBe(true)
     el.shadowRoot!.querySelector<HTMLElement>('[data-value="gridlines"]')!.click()
     const parent = el.shadowRoot!.querySelector<HTMLElement>('[data-value="display"]')!

@@ -12,9 +12,9 @@ function mount(attrs: Record<string, string> = {}): OASHoverCard {
 function card(el: OASHoverCard): HTMLElement {
   // append-to portal 期间卡片在 portal host 的 shadow 内，需两处查
   return (el.shadowRoot!.querySelector('[part="card"]') ??
-    document.querySelector<HTMLElement>('[data-oas-hover-card-portal]')?.shadowRoot?.querySelector(
-      '[part="card"]',
-    ))!
+    document
+      .querySelector<HTMLElement>('[data-oas-hover-card-portal]')
+      ?.shadowRoot?.querySelector('[part="card"]'))!
 }
 
 function anchorOf(el: OASHoverCard): HTMLElement {
@@ -236,7 +236,9 @@ describe('OASHoverCard', () => {
       el.setAttribute('open', '')
       await Promise.resolve()
       const arrow = card(el).querySelector<HTMLElement>('[data-popper-arrow]')!
-      expect(arrow.style[prop], `${placement} 箭头应指向锚点中心投影（${prop}=${value}）`).toBe(value)
+      expect(arrow.style[prop], `${placement} 箭头应指向锚点中心投影（${prop}=${value}）`).toBe(
+        value,
+      )
     }
   })
 
@@ -674,21 +676,23 @@ describe('OASHoverCard', () => {
     // 每向：clip-path 顶点（盒内 8×8 百分比坐标）→ 面板角点位于盒的哪个角 + 三角朝向
     // corner: 面板角点在箭头盒内的位置；edge: 贴边腿顶点相对角点的位移（沿面板边向内 8px，
     // 该腿与面板真实边段共边）；tip: 尖端相对角点的正交位移 8px（指向锚点侧）
-    const geom: Record<string, { corner: [number, number]; edge: [number, number]; tip: [number, number] }> =
-      {
-        // bottom 系：盒悬顶边上方 → 角点在盒底边；start 贴左（贴边腿向右）、end 贴右（向左）；尖端朝上
-        'bottom-start': { corner: [0, 8], edge: [8, 0], tip: [0, -8] },
-        'bottom-end': { corner: [8, 8], edge: [-8, 0], tip: [0, -8] },
-        // top 系：盒悬底边下方 → 角点在盒顶边；尖端朝下
-        'top-start': { corner: [0, 0], edge: [8, 0], tip: [0, 8] },
-        'top-end': { corner: [8, 0], edge: [-8, 0], tip: [0, 8] },
-        // left 系：盒悬右边右侧 → 角点在盒左边；贴边腿沿面板右边（start 向下、end 向上）；尖端朝右
-        'left-start': { corner: [0, 0], edge: [0, 8], tip: [8, 0] },
-        'left-end': { corner: [0, 8], edge: [0, -8], tip: [8, 0] },
-        // right 系：盒悬左边左侧 → 角点在盒右边；尖端朝左
-        'right-start': { corner: [8, 0], edge: [0, 8], tip: [-8, 0] },
-        'right-end': { corner: [8, 8], edge: [0, -8], tip: [-8, 0] },
-      }
+    const geom: Record<
+      string,
+      { corner: [number, number]; edge: [number, number]; tip: [number, number] }
+    > = {
+      // bottom 系：盒悬顶边上方 → 角点在盒底边；start 贴左（贴边腿向右）、end 贴右（向左）；尖端朝上
+      'bottom-start': { corner: [0, 8], edge: [8, 0], tip: [0, -8] },
+      'bottom-end': { corner: [8, 8], edge: [-8, 0], tip: [0, -8] },
+      // top 系：盒悬底边下方 → 角点在盒顶边；尖端朝下
+      'top-start': { corner: [0, 0], edge: [8, 0], tip: [0, 8] },
+      'top-end': { corner: [8, 0], edge: [-8, 0], tip: [0, 8] },
+      // left 系：盒悬右边右侧 → 角点在盒左边；贴边腿沿面板右边（start 向下、end 向上）；尖端朝右
+      'left-start': { corner: [0, 0], edge: [0, 8], tip: [8, 0] },
+      'left-end': { corner: [0, 8], edge: [0, -8], tip: [8, 0] },
+      // right 系：盒悬左边左侧 → 角点在盒右边；尖端朝左
+      'right-start': { corner: [8, 0], edge: [0, 8], tip: [-8, 0] },
+      'right-end': { corner: [8, 8], edge: [0, -8], tip: [-8, 0] },
+    }
     // 从 STYLE 文本解析某 placement 的 clip-path 顶点（百分比 → 8×8 盒内 px 坐标）
     const verticesOf = (p: string): Array<[number, number]> => {
       const m = css.match(
@@ -715,7 +719,9 @@ describe('OASHoverCard', () => {
       expect(rightIdx, `${p} clip-path 应含直角顶点`).toBeGreaterThanOrEqual(0)
       const rv = vs[rightIdx]!
       // 直角顶点精确落面板角点（角点在盒内的已知位置）
-      expect(near(rv[0], corner[0]) && near(rv[1], corner[1]), `${p} 直角顶点应落面板角点`).toBe(true)
+      expect(near(rv[0], corner[0]) && near(rv[1], corner[1]), `${p} 直角顶点应落面板角点`).toBe(
+        true,
+      )
       // 另两顶点：一个沿面板边向内 8px（贴边腿与面板真实边段共边）、一个为尖端
       // （角点 + 正交位移 8px 指向锚点侧）
       const others = vs.filter((_, i) => i !== rightIdx)
@@ -893,4 +899,3 @@ describe('OASHoverCard', () => {
     expect(card(el).style.top).toBe('396px')
   })
 })
-

@@ -548,7 +548,8 @@ export class OAStooltip extends OASElement {
     this.destroyPortal()
     const host = document.createElement('div')
     host.setAttribute('data-oas-tooltip-portal', '')
-    host.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: var(--oas-z-tooltip, 1080);'
+    host.style.cssText =
+      'position: fixed; inset: 0; pointer-events: none; z-index: var(--oas-z-tooltip, 1080);'
     target.appendChild(host)
     const root = host.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${STYLE}</style>`
@@ -611,8 +612,9 @@ export class OAStooltip extends OASElement {
       warning: ['var(--oas-color-warning)', 'var(--oas-color-text-on-warning)'],
       danger: ['var(--oas-color-danger)', 'var(--oas-color-text-on-danger)'],
     }
-    const preset =
-      /^(magenta|red|volcano|orange|gold|lime|green|cyan|blue|geekblue|purple)$/.test(color)
+    const preset = /^(magenta|red|volcano|orange|gold|lime|green|cyan|blue|geekblue|purple)$/.test(
+      color,
+    )
     const { bg, on } = semantic[color]
       ? { bg: semantic[color][0], on: semantic[color][1] }
       : preset
@@ -750,7 +752,11 @@ export class OAStooltip extends OASElement {
     const offset = this.getNum('offset', 8)
     const skidding = this.getNum('skidding', 0)
     const padding = this.getNum('collision-padding', 4)
-    const { top, left, placement: actual } = computePosition(
+    const {
+      top,
+      left,
+      placement: actual,
+    } = computePosition(
       anchorRect,
       popup,
       placement,

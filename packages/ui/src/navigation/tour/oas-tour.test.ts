@@ -250,7 +250,7 @@ describe('A 遮罩与形态', () => {
     expect(h.style.height).toBe('56px') // 40 + 16
   })
 
-  it("gap 对象 {padding,radius} → 高亮内边距 + 圆角", async () => {
+  it('gap 对象 {padding,radius} → 高亮内边距 + 圆角', async () => {
     const el = mount({ gap: '{"padding":10,"radius":16}' })
     el.setAttribute('open', '')
     await tick()
@@ -281,7 +281,9 @@ describe('A 遮罩与形态', () => {
 
   it('step 级 gap offset（property 通道对象）', async () => {
     const el = mount()
-    el.steps = [{ target: document.getElementById('step1')!, title: 's1', gap: { offset: [5, 10] } }]
+    el.steps = [
+      { target: document.getElementById('step1')!, title: 's1', gap: { offset: [5, 10] } },
+    ]
     el.setAttribute('open', '')
     await tick()
     const h = el.shadowRoot!.querySelector<HTMLElement>('.highlight')!
@@ -383,7 +385,7 @@ describe('A 导航与按钮', () => {
     el.setAttribute('open', '')
     let closed = 0
     el.addEventListener('oas-close', () => closed++)
-    ;(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!).click()
+    el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.click()
     expect(closed).toBe(1)
     expect(el.hasAttribute('open')).toBe(false)
   })
@@ -397,11 +399,18 @@ describe('A 导航与按钮', () => {
   it('close-icon 自定义关闭按钮内容（HTML）', async () => {
     const el = mount({ 'close-icon': '<b>X</b>' })
     el.setAttribute('open', '')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.innerHTML).toContain('<b>X</b>')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.innerHTML).toContain(
+      '<b>X</b>',
+    )
   })
 
   it('hide-prev / hide-skip / hide-next / hide-counter 控制显隐', async () => {
-    const el = mount({ 'hide-prev': 'true', 'hide-skip': 'true', 'hide-next': 'true', 'hide-counter': 'true' })
+    const el = mount({
+      'hide-prev': 'true',
+      'hide-skip': 'true',
+      'hide-next': 'true',
+      'hide-counter': 'true',
+    })
     el.setAttribute('open', '')
     await tick()
     const shadow = el.shadowRoot!
@@ -427,7 +436,7 @@ describe('A 导航与按钮', () => {
     el.addEventListener('oas-skip', () => skipped++)
     el.addEventListener('oas-cancel', () => cancelled++)
     el.addEventListener('oas-destroy', () => destroyed++)
-    ;(el.shadowRoot!.querySelector<HTMLElement>('[part="skip"]')!).click()
+    el.shadowRoot!.querySelector<HTMLElement>('[part="skip"]')!.click()
     expect(skipped).toBe(1)
     expect(cancelled).toBe(1)
     expect(destroyed).toBe(1)
@@ -527,9 +536,7 @@ describe('B 步骤配置与内容', () => {
   it('waitForElement：目标缺失时等待出现后再高亮', async () => {
     vi.useFakeTimers()
     try {
-      const steps = JSON.stringify([
-        { selector: '#late', title: '延迟目标', waitForElement: 200 },
-      ])
+      const steps = JSON.stringify([{ selector: '#late', title: '延迟目标', waitForElement: 200 }])
       const el = mount({}, steps)
       el.setAttribute('open', '')
       const h = el.shadowRoot!.querySelector<HTMLElement>('.highlight')!
@@ -586,7 +593,9 @@ describe('B 步骤配置与内容', () => {
   it('progress-text 模板：{{current}}/{{total}} 替换', async () => {
     const el = mount({ 'progress-text': '{{current}}/{{total}} 步' })
     el.setAttribute('open', '')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="step-count"]')!.textContent).toContain('1/2')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="step-count"]')!.textContent).toContain(
+      '1/2',
+    )
   })
 
   it('show-progress：进度条宽度随步骤推进（内联宽度百分比）', async () => {
@@ -646,7 +655,9 @@ describe('B 指示器与生命周期', () => {
   it('indicators=number：步骤序号显示', async () => {
     const el = mount({ indicators: 'number' })
     el.setAttribute('open', '')
-    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="step-count"]')!.textContent).toContain('1')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="step-count"]')!.textContent).toContain(
+      '1',
+    )
   })
 
   it('slot="indicators"：有内容时隐藏内置圆点/数字指示器', () => {
@@ -680,7 +691,7 @@ describe('B 指示器与生命周期', () => {
     await tick()
     expect(fired).toContain('start')
     expect(fired).toContain('end')
-    ;(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!).click()
+    el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.click()
     expect(fired).toContain('destroy')
   })
 
@@ -725,7 +736,7 @@ describe('hints / 记忆 / 多页 / 打字机 / 挂载', () => {
     const bubble = el.shadowRoot!.querySelector<HTMLElement>('.hint-popup')!
     expect(bubble.hidden).toBe(false)
     expect(bubble.textContent).toContain('这里有个功能')
-    ;(bubble.querySelector<HTMLElement>('[part="hint-dismiss"]')!).click()
+    bubble.querySelector<HTMLElement>('[part="hint-dismiss"]')!.click()
     expect(bubble.hidden).toBe(true)
   })
 
@@ -736,7 +747,7 @@ describe('hints / 记忆 / 多页 / 打字机 / 挂载', () => {
     const el = mount({ hints })
     await tick()
     el.shadowRoot!.querySelector<HTMLButtonElement>('.beacon')!.click()
-    ;(el.shadowRoot!.querySelector<HTMLElement>('[part="hint-dismiss"]')!).click()
+    el.shadowRoot!.querySelector<HTMLElement>('[part="hint-dismiss"]')!.click()
     expect(localStorage.getItem('oas-tour-hint-h1')).toBe('1')
     forceUpdate(el)
     expect(el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.beacon').length).toBe(0)
@@ -750,7 +761,7 @@ describe('hints / 记忆 / 多页 / 打字机 / 挂载', () => {
     cb.dispatchEvent(new Event('change'))
     let dismissed = 0
     el.addEventListener('oas-dismiss', () => dismissed++)
-    ;(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!).click()
+    el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.click()
     expect(localStorage.getItem('oas-tour-test')).toBe('1')
     el.setAttribute('open', '')
     expect(el.hasAttribute('open')).toBe(false)
@@ -812,7 +823,9 @@ describe('hints / 记忆 / 多页 / 打字机 / 挂载', () => {
     expect(bridged).not.toBeNull()
     expect(bridged!.textContent).toBe('封面富内容')
     // popup 内 <slot name="cover"> 能跨 host 分配到桥接节点（不断供）
-    const slotEl = portalHost.shadowRoot!.querySelector<HTMLSlotElement>('.popup slot[name="cover"]')!
+    const slotEl = portalHost.shadowRoot!.querySelector<HTMLSlotElement>(
+      '.popup slot[name="cover"]',
+    )!
     expect(slotEl.assignedNodes().some((n) => n.textContent === '封面富内容')).toBe(true)
     // 关闭：portal 拆除，节点移回宿主，无孤儿
     el.removeAttribute('open')
@@ -897,4 +910,3 @@ describe('SSR 模板结构', () => {
     expect(shadow.querySelector('slot[name="actions"]')).not.toBeNull()
   })
 })
-

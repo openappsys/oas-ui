@@ -173,7 +173,10 @@ describe('OASEllipsis', () => {
       expect(textEl(el).classList.contains('single')).toBe(true)
     })
     it('direction="middle"：溢出时仍挂全文 tooltip（截短后可悬停看全文）', () => {
-      const el = mount({ text: '这是一段很长很长的用于中部省略演示的文本内容', direction: 'middle' })
+      const el = mount({
+        text: '这是一段很长很长的用于中部省略演示的文本内容',
+        direction: 'middle',
+      })
       forceOverflow(el, true)
       const tip = el.shadowRoot!.querySelector('oas-tooltip')
       expect(tip).not.toBeNull()

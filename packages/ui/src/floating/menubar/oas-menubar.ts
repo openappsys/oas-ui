@@ -612,7 +612,9 @@ export class OASMenubar extends OASElement {
     })
     // 移动端外部点击关闭汉堡面板
     document.addEventListener('pointerdown', this.handleDocumentPointerDown)
-    this.onCleanup(() => document.removeEventListener('pointerdown', this.handleDocumentPointerDown))
+    this.onCleanup(() =>
+      document.removeEventListener('pointerdown', this.handleDocumentPointerDown),
+    )
     document.addEventListener('keydown', this.handleDocumentKey)
     this.onCleanup(() => document.removeEventListener('keydown', this.handleDocumentKey))
     // typeahead 缓冲定时器：断开连接时清理，避免残留
@@ -816,7 +818,9 @@ export class OASMenubar extends OASElement {
     return {
       label: '···',
       value: '__more__',
-      children: this.itemsList.filter((i) => i.value != null && this.collapsedValues.includes(i.value)),
+      children: this.itemsList.filter(
+        (i) => i.value != null && this.collapsedValues.includes(i.value),
+      ),
     }
   }
 
@@ -1019,11 +1023,7 @@ export class OASMenubar extends OASElement {
    * 递归渲染一层子菜单。scope = 当前叶子归属的 radio 组 id（最近 `type:"group"` 祖先的
    * `value` 字段；无组为 ''）；group 递归时把组 id 传下去。checkbox 项不参与 radio 组。
    */
-  private renderSubLevel(
-    container: HTMLElement,
-    items: MenuItem[],
-    scope: string,
-  ): void {
+  private renderSubLevel(container: HTMLElement, items: MenuItem[], scope: string): void {
     for (const item of items) {
       if (item.type === 'divider') {
         const li = document.createElement('li')
@@ -1057,7 +1057,13 @@ export class OASMenubar extends OASElement {
       li.setAttribute('part', 'item')
       li.setAttribute(
         'role',
-        hasChildren ? 'menuitem' : action ? 'menuitem' : checkbox ? 'menuitemcheckbox' : 'menuitemradio',
+        hasChildren
+          ? 'menuitem'
+          : action
+            ? 'menuitem'
+            : checkbox
+              ? 'menuitemcheckbox'
+              : 'menuitemradio',
       )
       li.setAttribute('tabindex', '-1')
       if (!hasChildren && item.href) {
@@ -1237,9 +1243,7 @@ export class OASMenubar extends OASElement {
 
   /** 键盘路径的叶子作用域：从 DOM li 的 data-scope 读取（无组为 ''） */
   private scopeOf(value: string): string {
-    const li = this.shadow?.querySelector<HTMLElement>(
-      `[part="item"][data-value="${value}"]`,
-    )
+    const li = this.shadow?.querySelector<HTMLElement>(`[part="item"][data-value="${value}"]`)
     return li?.dataset.scope ?? ''
   }
 
@@ -1348,8 +1352,12 @@ export class OASMenubar extends OASElement {
           sub.classList.remove('flip-down')
         }
         // 翻转后清除 align-center 的 translate，避免双重位移
-        if (sub.classList.contains('flip-up') || sub.classList.contains('flip-down') ||
-            sub.classList.contains('flip-left') || sub.classList.contains('flip-right')) {
+        if (
+          sub.classList.contains('flip-up') ||
+          sub.classList.contains('flip-down') ||
+          sub.classList.contains('flip-left') ||
+          sub.classList.contains('flip-right')
+        ) {
           sub.style.transform = 'none'
         }
       }
@@ -1459,7 +1467,10 @@ export class OASMenubar extends OASElement {
       w.toggleAttribute('data-collapsed', hasOverflow && i >= firstOverflow)
     })
     this.collapsedValues = hasOverflow
-      ? dataEls.filter((w, i) => i >= firstOverflow).map((w) => w.dataset.value ?? '').filter(Boolean)
+      ? dataEls
+          .filter((w, i) => i >= firstOverflow)
+          .map((w) => w.dataset.value ?? '')
+          .filter(Boolean)
       : []
     // 收纳项「···」显隐 + 弹层内容（被收项镜像，点击选中对应 value）
     if (!moreWrap) return
@@ -1479,8 +1490,7 @@ export class OASMenubar extends OASElement {
     const checked = this.checkedSet()
     const rootValue = this.selectedValueOf('')
     const selectedInside =
-      hasOverflow &&
-      this.collapsedValues.some((v) => v === rootValue || checked.has(v))
+      hasOverflow && this.collapsedValues.some((v) => v === rootValue || checked.has(v))
     moreBtn?.classList.toggle('child-selected', selectedInside)
     if (selectedInside) moreBtn?.setAttribute('aria-current', 'true')
     else moreBtn?.removeAttribute('aria-current')
@@ -1520,7 +1530,9 @@ export class OASMenubar extends OASElement {
     if (!action) {
       li.setAttribute(
         'aria-checked',
-        mixed ? 'mixed' : String(checkbox ? this.isChecked(item.value) : item.value === this.selectedValueOf('')),
+        mixed
+          ? 'mixed'
+          : String(checkbox ? this.isChecked(item.value) : item.value === this.selectedValueOf('')),
       )
       const check = document.createElement('span')
       check.className = checkbox ? 'check check--box' : 'check'
@@ -1914,12 +1926,8 @@ export class OASMenubar extends OASElement {
     if (item) {
       const root = this.navRoot()
       const sel =
-        this.mobileMode || this.activeStack.length > 0
-          ? '[part="item"]'
-          : '[part="top-item"]'
-      const el = root.querySelector<HTMLElement>(
-        `${sel}[data-value="${item.value}"]`,
-      )
+        this.mobileMode || this.activeStack.length > 0 ? '[part="item"]' : '[part="top-item"]'
+      const el = root.querySelector<HTMLElement>(`${sel}[data-value="${item.value}"]`)
       el?.focus({ preventScroll: true })
     }
   }

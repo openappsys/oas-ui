@@ -276,7 +276,8 @@ export class OASDivider extends OASElement {
     // 跨方向词（horizontal+top、vertical+left 等）回落 center 并告警
     let position: DividerPosition = 'center'
     const rawPosition = this.getAttr('content-position', '')
-    const validPositions = direction === 'vertical' ? VALID_VERTICAL_POSITIONS : VALID_HORIZONTAL_POSITIONS
+    const validPositions =
+      direction === 'vertical' ? VALID_VERTICAL_POSITIONS : VALID_HORIZONTAL_POSITIONS
     if (rawPosition) {
       if ((validPositions as readonly string[]).includes(rawPosition)) {
         position = rawPosition as DividerPosition

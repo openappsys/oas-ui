@@ -21,7 +21,13 @@ const ITEMS = JSON.stringify([
     label: '产品',
     value: 'products',
     children: [
-      { label: '组件', value: 'components', href: '/components', icon: 'star', description: '30+ 组件' },
+      {
+        label: '组件',
+        value: 'components',
+        href: '/components',
+        icon: 'star',
+        description: '30+ 组件',
+      },
       { label: '文档', value: 'docs', href: '/docs', icon: 'user', description: 'API 文档' },
       {
         label: '更多',
@@ -46,8 +52,16 @@ const ITEMS = JSON.stringify([
 
 // 两个带 children 的顶级项 + 一个叶子，用于面板切换 / 延迟 / skip-delay 测试
 const SWITCH_ITEMS = JSON.stringify([
-  { label: '产品', value: 'products', children: [{ label: '组件', value: 'components', href: '/components' }] },
-  { label: '资源', value: 'resources', children: [{ label: '博客', value: 'blog', href: '/blog' }] },
+  {
+    label: '产品',
+    value: 'products',
+    children: [{ label: '组件', value: 'components', href: '/components' }],
+  },
+  {
+    label: '资源',
+    value: 'resources',
+    children: [{ label: '博客', value: 'blog', href: '/blog' }],
+  },
   { label: '定价', value: 'pricing', href: '/pricing' },
 ])
 
@@ -295,7 +309,11 @@ describe('OASNavigationMenu', () => {
     const el = mount({
       items: JSON.stringify([
         { label: '首页', value: 'home', href: '/', active: true },
-        { label: '产品', value: 'products', children: [{ label: '组件', value: 'components', href: '/components', active: true }] },
+        {
+          label: '产品',
+          value: 'products',
+          children: [{ label: '组件', value: 'components', href: '/components', active: true }],
+        },
       ]),
       'delay-duration': '0',
     })
@@ -493,10 +511,14 @@ describe('OASNavigationMenu', () => {
   it('键盘导航跳过 disabled 面板项', () => {
     const el = mount({
       items: JSON.stringify([
-        { label: '产品', value: 'products', children: [
-          { label: '只读', value: 'ro', disabled: true },
-          { label: '组件', value: 'components', href: '/components' },
-        ] },
+        {
+          label: '产品',
+          value: 'products',
+          children: [
+            { label: '只读', value: 'ro', disabled: true },
+            { label: '组件', value: 'components', href: '/components' },
+          ],
+        },
       ]),
     })
     key(el, 'ArrowDown') // 打开，跳过 disabled 聚焦 组件
@@ -596,7 +618,17 @@ describe('碰撞翻转', () => {
     Object.defineProperty(window, 'innerHeight', { value: 300, configurable: true })
     Object.defineProperty(window, 'innerWidth', { value: 1024, configurable: true })
     Object.defineProperty(viewport(el), 'getBoundingClientRect', {
-      value: () => ({ top: 400, bottom: 400, left: 0, right: 0, width: 0, height: 0, x: 0, y: 0, toJSON() {} }),
+      value: () => ({
+        top: 400,
+        bottom: 400,
+        left: 0,
+        right: 0,
+        width: 0,
+        height: 0,
+        x: 0,
+        y: 0,
+        toJSON() {},
+      }),
       configurable: true,
     })
     topItems(el)[0]!.click()

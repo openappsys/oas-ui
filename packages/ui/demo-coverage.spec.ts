@@ -103,7 +103,13 @@ const manifest = buildManifest()
 test.describe.configure({ mode: 'parallel' })
 
 // 需特殊触发、通用探针难以触达的事件：定时器/滚动/步骤流/填满/折叠下拉展开
-const EXEMPT_EVENTS = new Set(['oas-finish', 'oas-scroll', 'oas-step', 'oas-complete', 'oas-collapse-click'])
+const EXEMPT_EVENTS = new Set([
+  'oas-finish',
+  'oas-scroll',
+  'oas-step',
+  'oas-complete',
+  'oas-collapse-click',
+])
 
 // manifest 的 tag 与真实注册 tag 不一致的组件（demo 页用真实 tag 渲染）
 const WAIT_TAGS: Record<string, string[]> = {
@@ -330,11 +336,19 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   alert: [['oas-alert[closeable] [part="close"]', 'click', '点关闭钮 → oas-close']],
   dropdown: [
-    ['#dd-split > oas-button', 'domclick', '点拆分主按钮（精确定位非 disabled 的 split demo）→ oas-action'],
+    [
+      '#dd-split > oas-button',
+      'domclick',
+      '点拆分主按钮（精确定位非 disabled 的 split demo）→ oas-action',
+    ],
     ['#dd-split [part="split-arrow"]', 'domclick', '点箭头 → 展开拆分菜单'],
     ['#dd-split [role="menuitemradio"]', 'domclick', '选拆分菜单项 → oas-select'],
     ['oas-dropdown:not([split]):not([disabled])', 'domclick', '普通下拉展开'],
-    ['oas-dropdown:not([split]):not([disabled]) [role="menuitemradio"]', 'domclick', '选菜单项 → oas-select'],
+    [
+      'oas-dropdown:not([split]):not([disabled]) [role="menuitemradio"]',
+      'domclick',
+      '选菜单项 → oas-select',
+    ],
   ],
   contextmenu: [
     ['oas-context-menu', 'rightclick', '右键打开菜单'],
@@ -365,11 +379,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-menubar [part="item"]', 'click', '点子菜单项 → oas-select'],
   ],
   toolbar: [
-    [
-      'oas-toolbar-toggle[multiple] [part="item"]',
-      'click:n0',
-      '点多选切换组（加粗）→ oas-change',
-    ],
+    ['oas-toolbar-toggle[multiple] [part="item"]', 'click:n0', '点多选切换组（加粗）→ oas-change'],
     [
       'oas-toolbar-toggle:not([multiple]) [part="item"]',
       'click:n1',
@@ -413,9 +423,17 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       'domclick',
       'DOM click + 按钮：+ 在视口外远处，搜索浮层 backdrop 可能拦截真实点击 → oas-add',
     ],
-    ['#tabs-before [role="tab"][data-value="b"]', 'domclick', '点击触发 oas-before-change（+ oas-change）'],
+    [
+      '#tabs-before [role="tab"][data-value="b"]',
+      'domclick',
+      '点击触发 oas-before-change（+ oas-change）',
+    ],
     ['#tabs-sortable', 'wait:300', '等 sortable demo 升级渲染'],
-    ['#tabs-sortable [role="tab"][data-value]', 'dragmock', '拖拽第 1 个标签到第 2 个 → oas-reorder'],
+    [
+      '#tabs-sortable [role="tab"][data-value]',
+      'dragmock',
+      '拖拽第 1 个标签到第 2 个 → oas-reorder',
+    ],
     ['#tabs-rename [role="tab"][data-value="a"]', 'dblclick', '双击 editable 标签进入重命名输入态'],
     ['#tabs-rename', 'wait:200', '等重命名输入框渲染'],
     ['#tabs-rename', 'renamecommit:重命名X', '输入框赋值 + Enter 确认 → oas-rename'],

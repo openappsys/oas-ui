@@ -317,12 +317,16 @@ describe('OASCommand', () => {
     const el = mount({ hotkey: 'ctrl+shift+p' })
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
     expect(el.hasAttribute('open')).toBe(false)
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', ctrlKey: true, shiftKey: true }))
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'p', ctrlKey: true, shiftKey: true }),
+    )
     expect(el.hasAttribute('open')).toBe(true)
     // 缺 shift 不触发（严格匹配）
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', ctrlKey: true }))
     expect(el.hasAttribute('open')).toBe(true)
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', ctrlKey: true, shiftKey: true }))
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'p', ctrlKey: true, shiftKey: true }),
+    )
     expect(el.hasAttribute('open')).toBe(false)
   })
 

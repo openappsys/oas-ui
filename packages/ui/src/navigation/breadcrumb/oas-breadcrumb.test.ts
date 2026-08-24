@@ -305,7 +305,13 @@ describe('OASBreadcrumb', () => {
     const el = mountWith({
       items: JSON.stringify([
         { label: '首页', href: '/' },
-        { label: '更多', dropdown: [{ label: '子项A', href: '/a' }, { label: '子项B', href: '/b' }] },
+        {
+          label: '更多',
+          dropdown: [
+            { label: '子项A', href: '/a' },
+            { label: '子项B', href: '/b' },
+          ],
+        },
         { label: '面包屑' },
       ]),
     })
@@ -330,7 +336,13 @@ describe('OASBreadcrumb', () => {
     const el = mountWith({
       items: JSON.stringify([
         { label: '首页', href: '/' },
-        { label: '更多', dropdown: [{ label: '子项A', href: '/a' }, { label: '子项B', href: '/b' }] },
+        {
+          label: '更多',
+          dropdown: [
+            { label: '子项A', href: '/a' },
+            { label: '子项B', href: '/b' },
+          ],
+        },
         { label: '面包屑' },
       ]),
     })
@@ -451,7 +463,10 @@ describe('OASBreadcrumb', () => {
     expect(link.getAttribute('href')).toContain('/breadcrumb')
     // 无 active-last 时末项仍是 current span
     const el2 = mountWith({
-      items: JSON.stringify([{ label: '首页', href: '/' }, { label: '末页', href: '/last' }]),
+      items: JSON.stringify([
+        { label: '首页', href: '/' },
+        { label: '末页', href: '/last' },
+      ]),
     })
     expect(el2.shadowRoot!.querySelector('[part="current"]')).not.toBeNull()
     expect(el2.shadowRoot!.querySelector('a[aria-current="page"]')).toBeNull()
@@ -493,7 +508,12 @@ describe('OASBreadcrumb', () => {
   })
 
   it('B7 collapse-text：自定义省略号文本', () => {
-    const el = mountWith({ items: LONG_ITEMS, collapsed: '', 'max-items': '4', 'collapse-text': '展开' })
+    const el = mountWith({
+      items: LONG_ITEMS,
+      collapsed: '',
+      'max-items': '4',
+      'collapse-text': '展开',
+    })
     expect(el.shadowRoot!.querySelector('.ellipsis-btn')!.textContent).toBe('展开')
   })
 
@@ -525,7 +545,10 @@ describe('OASBreadcrumb', () => {
     expect(el.querySelectorAll('script[data-oas-breadcrumb-ld]').length).toBe(1)
     el.setAttribute(
       'items',
-      JSON.stringify([{ label: '首页', href: '/' }, { label: '新项', href: '/new' }]),
+      JSON.stringify([
+        { label: '首页', href: '/' },
+        { label: '新项', href: '/new' },
+      ]),
     )
     expect(el.querySelectorAll('script[data-oas-breadcrumb-ld]').length).toBe(1)
     expect(el.querySelector('script')!.textContent).toContain('/new')
@@ -687,9 +710,7 @@ describe('折叠展开事件与下拉缺陷修复', () => {
     const el = mountWith({ items: LONG_ITEMS, collapsed: '', 'max-items': '4' })
     const root = el.shadowRoot!
     const details: Array<{ collapsedItems: Array<{ label: string }> }> = []
-    el.addEventListener('oas-collapse-click', (e: Event) =>
-      details.push((e as CustomEvent).detail),
-    )
+    el.addEventListener('oas-collapse-click', (e: Event) => details.push((e as CustomEvent).detail))
     root.querySelector<HTMLButtonElement>('.ellipsis-btn')!.click()
     expect(details.length).toBe(1)
     expect(details[0]!.collapsedItems.map((i) => i.label)).toEqual(['组件', '导航', '数据展示'])
@@ -715,7 +736,7 @@ describe('折叠展开事件与下拉缺陷修复', () => {
     Object.defineProperty(panel, 'offsetWidth', { value: 200, configurable: true })
     // 窄视口：按钮右缘 380 + 面板 200 > 500 - 8 → 翻转
     Object.defineProperty(btn, 'getBoundingClientRect', {
-      value: () => ({ right: 380 } as DOMRect),
+      value: () => ({ right: 380 }) as DOMRect,
       configurable: true,
     })
     Object.defineProperty(window, 'innerWidth', { value: 500, configurable: true })
@@ -723,7 +744,7 @@ describe('折叠展开事件与下拉缺陷修复', () => {
     expect(panel.classList.contains('flip-right')).toBe(true)
     // 空间充足：按钮右缘 100 + 200 < 500 → 不翻转（重新展开时重新判定）
     Object.defineProperty(btn, 'getBoundingClientRect', {
-      value: () => ({ right: 100 } as DOMRect),
+      value: () => ({ right: 100 }) as DOMRect,
       configurable: true,
     })
     btn.click() // 收起

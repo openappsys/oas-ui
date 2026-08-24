@@ -350,7 +350,15 @@ function createTypography(
         root.classList.toggle(`depth-${d}`, useDepth && depthRaw === d)
       }
       // 修饰六布尔（class 驱动样式；code/delete 换原生标签已在换标签链处理）+ numeric 数字等宽
-      for (const b of ['strong', 'mark', 'code', 'underline', 'delete', 'italic', 'numeric'] as const) {
+      for (const b of [
+        'strong',
+        'mark',
+        'code',
+        'underline',
+        'delete',
+        'italic',
+        'numeric',
+      ] as const) {
         root.classList.toggle(b, this.hasAttr(b))
       }
       // 文本对齐（align 四档；text-align 的 start/end 为逻辑值，RTL 安全）

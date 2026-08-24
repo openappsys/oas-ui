@@ -107,22 +107,16 @@ describe('OASBackTop', () => {
       events.push((e as CustomEvent<{ visible: boolean }>).detail.visible)
     })
     el.setAttribute('visible', '')
-    expect(el.shadowRoot!.querySelector('[part="btn"]')!.getAttribute('aria-hidden')).toBe(
-      'false',
-    )
+    expect(el.shadowRoot!.querySelector('[part="btn"]')!.getAttribute('aria-hidden')).toBe('false')
     // 受控模式：滚动不改变显隐
     setWindowScrollY(500)
     fireWindowScroll()
-    expect(el.shadowRoot!.querySelector('[part="btn"]')!.getAttribute('aria-hidden')).toBe(
-      'false',
-    )
+    expect(el.shadowRoot!.querySelector('[part="btn"]')!.getAttribute('aria-hidden')).toBe('false')
     // 回到顶部后移除受控属性 → 回到滚动阈值控制 → 隐藏
     setWindowScrollY(0)
     fireWindowScroll()
     el.removeAttribute('visible')
-    expect(el.shadowRoot!.querySelector('[part="btn"]')!.getAttribute('aria-hidden')).toBe(
-      'true',
-    )
+    expect(el.shadowRoot!.querySelector('[part="btn"]')!.getAttribute('aria-hidden')).toBe('true')
     expect(events).toEqual([true, false])
   })
 
@@ -689,10 +683,21 @@ describe('OASBackTop', () => {
         height: 40,
       } as DOMRect)
       el.dispatchEvent(
-        new PointerEvent('pointerdown', { pointerId: 1, clientX: 900, clientY: 700, button: 0, bubbles: true }),
+        new PointerEvent('pointerdown', {
+          pointerId: 1,
+          clientX: 900,
+          clientY: 700,
+          button: 0,
+          bubbles: true,
+        }),
       )
       el.dispatchEvent(
-        new PointerEvent('pointermove', { pointerId: 1, clientX: 500, clientY: 100, bubbles: true }),
+        new PointerEvent('pointermove', {
+          pointerId: 1,
+          clientX: 500,
+          clientY: 100,
+          bubbles: true,
+        }),
       )
       expect(el.style.left).toBe('500px')
       expect(el.style.top).toBe('100px')
@@ -701,7 +706,10 @@ describe('OASBackTop', () => {
       el.dispatchEvent(
         new PointerEvent('pointerup', { pointerId: 1, clientX: 500, clientY: 100, bubbles: true }),
       )
-      expect(JSON.parse(window.localStorage.getItem(DRAG_POS_KEY)!)).toEqual({ left: 500, top: 100 })
+      expect(JSON.parse(window.localStorage.getItem(DRAG_POS_KEY)!)).toEqual({
+        left: 500,
+        top: 100,
+      })
     })
 
     it('位移在阈值内（≤4px）算点击：仍派发 oas-click 并回顶', () => {
@@ -711,10 +719,21 @@ describe('OASBackTop', () => {
       let fired = 0
       el.addEventListener('oas-click', () => fired++)
       el.dispatchEvent(
-        new PointerEvent('pointerdown', { pointerId: 1, clientX: 100, clientY: 100, button: 0, bubbles: true }),
+        new PointerEvent('pointerdown', {
+          pointerId: 1,
+          clientX: 100,
+          clientY: 100,
+          button: 0,
+          bubbles: true,
+        }),
       )
       el.dispatchEvent(
-        new PointerEvent('pointermove', { pointerId: 1, clientX: 102, clientY: 101, bubbles: true }),
+        new PointerEvent('pointermove', {
+          pointerId: 1,
+          clientX: 102,
+          clientY: 101,
+          bubbles: true,
+        }),
       )
       el.dispatchEvent(
         new PointerEvent('pointerup', { pointerId: 1, clientX: 102, clientY: 101, bubbles: true }),
@@ -729,10 +748,21 @@ describe('OASBackTop', () => {
       let fired = 0
       el.addEventListener('oas-click', () => fired++)
       el.dispatchEvent(
-        new PointerEvent('pointerdown', { pointerId: 1, clientX: 900, clientY: 700, button: 0, bubbles: true }),
+        new PointerEvent('pointerdown', {
+          pointerId: 1,
+          clientX: 900,
+          clientY: 700,
+          button: 0,
+          bubbles: true,
+        }),
       )
       el.dispatchEvent(
-        new PointerEvent('pointermove', { pointerId: 1, clientX: 500, clientY: 700, bubbles: true }),
+        new PointerEvent('pointermove', {
+          pointerId: 1,
+          clientX: 500,
+          clientY: 700,
+          bubbles: true,
+        }),
       )
       el.dispatchEvent(
         new PointerEvent('pointerup', { pointerId: 1, clientX: 500, clientY: 700, bubbles: true }),
@@ -766,10 +796,21 @@ describe('OASBackTop', () => {
         height: 40,
       } as DOMRect)
       el.dispatchEvent(
-        new PointerEvent('pointerdown', { pointerId: 1, clientX: 900, clientY: 700, button: 0, bubbles: true }),
+        new PointerEvent('pointerdown', {
+          pointerId: 1,
+          clientX: 900,
+          clientY: 700,
+          button: 0,
+          bubbles: true,
+        }),
       )
       el.dispatchEvent(
-        new PointerEvent('pointermove', { pointerId: 1, clientX: 2000, clientY: 1500, bubbles: true }),
+        new PointerEvent('pointermove', {
+          pointerId: 1,
+          clientX: 2000,
+          clientY: 1500,
+          bubbles: true,
+        }),
       )
       // 视口 1000×800、按钮 40×40 → 最大 left=960、最大 top=760
       expect(el.style.left).toBe('960px')
@@ -785,18 +826,39 @@ describe('OASBackTop', () => {
         height: 40,
       } as DOMRect)
       el.dispatchEvent(
-        new PointerEvent('pointerdown', { pointerId: 7, clientX: 900, clientY: 700, button: 0, bubbles: true }),
+        new PointerEvent('pointerdown', {
+          pointerId: 7,
+          clientX: 900,
+          clientY: 700,
+          button: 0,
+          bubbles: true,
+        }),
       )
       expect(el.classList.contains('dragging')).toBe(true)
       el.dispatchEvent(
-        new PointerEvent('pointermove', { pointerId: 7, clientX: 600, clientY: 500, bubbles: true }),
+        new PointerEvent('pointermove', {
+          pointerId: 7,
+          clientX: 600,
+          clientY: 500,
+          bubbles: true,
+        }),
       )
       el.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 7, bubbles: true }))
       expect(el.classList.contains('dragging')).toBe(false)
       // 中断时已移动的位置同样落盘（不丢拖拽结果）
-      expect(JSON.parse(window.localStorage.getItem(DRAG_POS_KEY)!)).toEqual({ left: 600, top: 500 })
+      expect(JSON.parse(window.localStorage.getItem(DRAG_POS_KEY)!)).toEqual({
+        left: 600,
+        top: 500,
+      })
       // 会话已清理：后续同 pointerId 的 move 不再移动
-      el.dispatchEvent(new PointerEvent('pointermove', { pointerId: 7, clientX: 300, clientY: 300, bubbles: true }))
+      el.dispatchEvent(
+        new PointerEvent('pointermove', {
+          pointerId: 7,
+          clientX: 300,
+          clientY: 300,
+          bubbles: true,
+        }),
+      )
       expect(el.style.left).toBe('600px')
     })
 

@@ -48,7 +48,10 @@ function splitPlacement(placement: Placement): {
   }
 }
 
-function joinPlacement(main: 'top' | 'bottom' | 'left' | 'right', align: 'start' | 'end' | 'center'): Placement {
+function joinPlacement(
+  main: 'top' | 'bottom' | 'left' | 'right',
+  align: 'start' | 'end' | 'center',
+): Placement {
   return align === 'center' ? main : `${main}-${align}`
 }
 
@@ -100,7 +103,10 @@ export function computePosition(
     }
 
     if (!fits(actualMain)) {
-      const flipped: Record<'top' | 'bottom' | 'left' | 'right', 'top' | 'bottom' | 'left' | 'right'> = {
+      const flipped: Record<
+        'top' | 'bottom' | 'left' | 'right',
+        'top' | 'bottom' | 'left' | 'right'
+      > = {
         top: 'bottom',
         bottom: 'top',
         left: 'right',

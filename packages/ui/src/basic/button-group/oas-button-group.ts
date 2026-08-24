@@ -172,7 +172,19 @@ const STYLE = `
 
 export class OASButtonGroup extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['type', 'size', 'variant', 'round', 'vertical', 'value', 'multiple', 'disabled', 'aria-label', 'pill', 'spread']
+    return [
+      'type',
+      'size',
+      'variant',
+      'round',
+      'vertical',
+      'value',
+      'multiple',
+      'disabled',
+      'aria-label',
+      'pill',
+      'spread',
+    ]
   }
 
   private groupEl: HTMLElement | null = null

@@ -228,7 +228,10 @@ export class OASContextMenu extends OASElement {
     if (!touch) return
     const dx = touch.clientX - this.longPressX
     const dy = touch.clientY - this.longPressY
-    if (Math.abs(dx) > OASContextMenu.MOVE_THRESHOLD || Math.abs(dy) > OASContextMenu.MOVE_THRESHOLD) {
+    if (
+      Math.abs(dx) > OASContextMenu.MOVE_THRESHOLD ||
+      Math.abs(dy) > OASContextMenu.MOVE_THRESHOLD
+    ) {
       window.clearTimeout(this.longPressTimer)
     }
   }

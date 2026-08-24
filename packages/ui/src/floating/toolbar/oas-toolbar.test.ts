@@ -2,12 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import '@oas-ui/i18n'
 import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
-import {
-  OASToolbar,
-  OASToolbarToggle,
-  OASToolbarSeparator,
-  OASToolbarInput,
-} from './index.js'
+import { OASToolbar, OASToolbarToggle, OASToolbarSeparator, OASToolbarInput } from './index.js'
 import '../../basic/button/index.js'
 
 function mount(innerHTML = ''): OASToolbar {
@@ -18,7 +13,12 @@ function mount(innerHTML = ''): OASToolbar {
 }
 
 /** 把 `<oas-xxx attr="v" bare>` 字符串转成可控创建的 widget（attrs 逐个 setAttribute 后 append） */
-function mountWidget<T extends HTMLElement>(cls: new () => T, tag: string, attrs: string, items?: string): T {
+function mountWidget<T extends HTMLElement>(
+  cls: new () => T,
+  tag: string,
+  attrs: string,
+  items?: string,
+): T {
   const el = new cls()
   if (items != null) el.setAttribute('items', items)
   for (const m of attrs.matchAll(/([a-z-]+)="([^"]*)"/g)) {
@@ -222,7 +222,9 @@ describe('OASToolbar 属性增强', () => {
   })
 
   it('size：宿主 CSS 变量 + 每个子项 data-size', () => {
-    const el = mount('<button>一</button><oas-toolbar-toggle items=\'[{"label":"A","value":"a"}]\'></oas-toolbar-toggle>')
+    const el = mount(
+      '<button>一</button><oas-toolbar-toggle items=\'[{"label":"A","value":"a"}]\'></oas-toolbar-toggle>',
+    )
     el.setAttribute('size', 'small')
     expect(el.style.getPropertyValue('--oas-toolbar-size')).toBe('small')
     for (const c of [...el.children]) {
@@ -402,7 +404,16 @@ describe('OASToolbar 属性增强', () => {
     // 面板下缘 900 > 视口 700 → 向上弹
     Object.defineProperty(panel, 'getBoundingClientRect', {
       value: () =>
-        ({ top: 200, bottom: 900, left: 0, right: 160, width: 160, height: 700, x: 0, y: 200 }) as DOMRect,
+        ({
+          top: 200,
+          bottom: 900,
+          left: 0,
+          right: 160,
+          width: 160,
+          height: 700,
+          x: 0,
+          y: 200,
+        }) as DOMRect,
       configurable: true,
     })
     moreBtn.click()
@@ -411,7 +422,16 @@ describe('OASToolbar 属性增强', () => {
     // 空间足够（下缘 500 < 700）→ 不翻转
     Object.defineProperty(panel, 'getBoundingClientRect', {
       value: () =>
-        ({ top: 200, bottom: 500, left: 0, right: 160, width: 160, height: 300, x: 0, y: 200 }) as DOMRect,
+        ({
+          top: 200,
+          bottom: 500,
+          left: 0,
+          right: 160,
+          width: 160,
+          height: 300,
+          x: 0,
+          y: 200,
+        }) as DOMRect,
       configurable: true,
     })
     moreBtn.click()

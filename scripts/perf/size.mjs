@@ -283,7 +283,8 @@ const BUDGETS = [
     name: '@oas-ui/ui/data/table 链 gzip',
     get: () => componentMeasures.table.gzipBytes,
     limit: 26 * 1024, // 26 KB。实测 21,801 B（v2.0/v2.1 表格能力增强后），上浮约 19%
-    basis: '实测 gzip 21,801 B（含 core + virtual-list + i18n，v2.0/v2.1 表格能力增强后），上浮约 19%',
+    basis:
+      '实测 gzip 21,801 B（含 core + virtual-list + i18n，v2.0/v2.1 表格能力增强后），上浮约 19%',
   },
   {
     name: '@oas-ui/ui/form/form 链 gzip',
