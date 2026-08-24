@@ -326,14 +326,24 @@ describe('OASMenubar', () => {
       value: 'view',
       accessKey: 'v',
       children: [
-        { type: 'group', label: '模式', value: 'mode', children: [
-          { label: '编辑', value: 'edit' },
-          { label: '预览', value: 'preview' },
-        ] },
-        { type: 'group', label: '主题', value: 'theme', children: [
-          { label: '浅色', value: 'light' },
-          { label: '暗色', value: 'dark' },
-        ] },
+        {
+          type: 'group',
+          label: '模式',
+          value: 'mode',
+          children: [
+            { label: '编辑', value: 'edit' },
+            { label: '预览', value: 'preview' },
+          ],
+        },
+        {
+          type: 'group',
+          label: '主题',
+          value: 'theme',
+          children: [
+            { label: '浅色', value: 'light' },
+            { label: '暗色', value: 'dark' },
+          ],
+        },
       ],
     },
   ])
@@ -341,7 +351,9 @@ describe('OASMenubar', () => {
   it('#4 JSON value 按组作用域：两组各自独立勾选', () => {
     const el = mount({ items: GROUP_ITEMS, value: '{"mode":"preview","theme":"dark"}' })
     const edit = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="edit"]')!
-    const preview = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="preview"]')!
+    const preview = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="item"][data-value="preview"]',
+    )!
     const light = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="light"]')!
     const dark = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dark"]')!
     expect(preview.getAttribute('aria-checked')).toBe('true')
@@ -353,7 +365,9 @@ describe('OASMenubar', () => {
   it('#4 字符串 value 不穿透组作用域：组内叶子不被全局字符串命中', () => {
     const el = mount({ items: GROUP_ITEMS, value: 'preview' })
     const edit = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="edit"]')!
-    const preview = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="preview"]')!
+    const preview = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="item"][data-value="preview"]',
+    )!
     const light = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="light"]')!
     const dark = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="dark"]')!
     // 全部叶子都在组内（scope=mode/theme），字符串 value 只命中根作用域，故组内都不勾选（隔离）
@@ -380,7 +394,9 @@ describe('OASMenubar', () => {
     expect(v.mode).toBe('preview')
     expect(v.theme).toBe('dark')
     // 勾选同步
-    const preview = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="preview"]')!
+    const preview = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="item"][data-value="preview"]',
+    )!
     expect(preview.getAttribute('aria-checked')).toBe('true')
     expect(dark.getAttribute('aria-checked')).toBe('true')
     const light = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="light"]')!
@@ -931,7 +947,11 @@ describe('divider 语义', () => {
         {
           label: '文件',
           value: 'file',
-          children: [{ label: '新建', value: 'new' }, { type: 'divider' }, { label: '退出', value: 'quit' }],
+          children: [
+            { label: '新建', value: 'new' },
+            { type: 'divider' },
+            { label: '退出', value: 'quit' },
+          ],
         },
       ]),
     })
@@ -1039,7 +1059,9 @@ const MANY_ITEMS = JSON.stringify([
 describe('水平溢出收纳（ellipsis）', () => {
   it('水平模式渲染「···」收纳项（默认隐藏）；竖排不渲染', () => {
     const el = mount({ items: MANY_ITEMS })
-    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')
+    const more = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="top-item"][data-value="__more__"]',
+    )
     expect(more).not.toBeNull()
     expect(more!.hidden).toBe(true)
     const v = mount({ items: MANY_ITEMS, orientation: 'vertical' })
@@ -1053,11 +1075,14 @@ describe('水平溢出收纳（ellipsis）', () => {
     // （shim 的元素属性返回非零 offsetWidth，零宽守卫必须拦住这种假溢出）
     Object.defineProperty(itemsEl, 'clientWidth', { value: 0, configurable: true })
     const wraps = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
-    for (const w of wraps) Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
+    for (const w of wraps)
+      Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
     await new Promise((r) => requestAnimationFrame(r))
     await new Promise((r) => requestAnimationFrame(r))
     const collapsed = [...itemsEl.querySelectorAll(':scope > .top-wrap[data-collapsed]')]
-    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')
+    const more = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="top-item"][data-value="__more__"]',
+    )
     expect(collapsed, '零宽环境不得给项标 data-collapsed（快照会烤进误判态）').toHaveLength(0)
     expect(more!.hidden, '零宽环境「···」保持隐藏').toBe(true)
   })
@@ -1068,18 +1093,23 @@ describe('水平溢出收纳（ellipsis）', () => {
     Object.defineProperty(itemsEl, 'clientWidth', { value: 120, configurable: true })
     const wraps = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
     const dataWraps = wraps.filter((w) => w.dataset.value !== '__more__')
-    for (const w of dataWraps) Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
+    for (const w of dataWraps)
+      Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
     const moreWrap = itemsEl.querySelector<HTMLElement>(':scope > .top-wrap[data-value="__more__"]')
     Object.defineProperty(moreWrap!, 'offsetWidth', { value: 40, configurable: true })
     await new Promise((r) => requestAnimationFrame(r))
     const collapsed = dataWraps.filter((w) => w.hasAttribute('data-collapsed'))
     expect(collapsed.length).toBeGreaterThan(0)
-    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')!
+    const more = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="top-item"][data-value="__more__"]',
+    )!
     expect(more.hidden).toBe(false)
     // 打开「···」弹层：显示被收项镜像
     more.click()
     expect(more.getAttribute('aria-expanded')).toBe('true')
-    const moreSub = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"][data-parent="__more__"]')!
+    const moreSub = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="submenu"][data-parent="__more__"]',
+    )!
     expect(moreSub.classList.contains('open')).toBe(true)
     const mirrors = moreSub.querySelectorAll<HTMLElement>('[part="item"]')
     expect(mirrors.length).toBe(collapsed.length)
@@ -1097,11 +1127,14 @@ describe('水平溢出收纳（ellipsis）', () => {
     Object.defineProperty(itemsEl, 'clientWidth', { value: 80, configurable: true })
     const wraps = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
     const dataWraps = wraps.filter((w) => w.dataset.value !== '__more__')
-    for (const w of dataWraps) Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
+    for (const w of dataWraps)
+      Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
     await new Promise((r) => requestAnimationFrame(r))
     el.setAttribute('value', 'solutions') // 被收纳项
     await new Promise((r) => requestAnimationFrame(r)) // 等重算「···」高亮
-    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')!
+    const more = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="top-item"][data-value="__more__"]',
+    )!
     expect(more.classList.contains('child-selected')).toBe(true)
     expect(more.getAttribute('aria-current')).toBe('true')
   })
@@ -1109,7 +1142,9 @@ describe('水平溢出收纳（ellipsis）', () => {
   it('无溢出时「···」保持隐藏，所有项留在条上', async () => {
     const el = mount({ items: MANY_ITEMS })
     await new Promise((r) => requestAnimationFrame(r))
-    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')!
+    const more = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="top-item"][data-value="__more__"]',
+    )!
     expect(more.hidden).toBe(true)
     const collapsed = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.top-wrap[data-collapsed]')]
     expect(collapsed.length).toBe(0)
@@ -1121,9 +1156,12 @@ describe('水平溢出收纳（ellipsis）', () => {
     Object.defineProperty(itemsEl, 'clientWidth', { value: 80, configurable: true })
     const wraps = [...itemsEl.querySelectorAll<HTMLElement>(':scope > .top-wrap')]
     const dataWraps = wraps.filter((w) => w.dataset.value !== '__more__')
-    for (const w of dataWraps) Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
+    for (const w of dataWraps)
+      Object.defineProperty(w, 'offsetWidth', { value: 60, configurable: true })
     await new Promise((r) => requestAnimationFrame(r))
-    const more = el.shadowRoot!.querySelector<HTMLElement>('[part="top-item"][data-value="__more__"]')!
+    const more = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="top-item"][data-value="__more__"]',
+    )!
     key(el, 'End') // 「···」在顶级导航序列末位，End 直接落到它
     expect(more.classList.contains('active')).toBe(true)
     key(el, 'ArrowDown') // 打开弹层并聚焦首镜像项

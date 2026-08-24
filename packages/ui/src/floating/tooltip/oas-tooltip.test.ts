@@ -740,7 +740,13 @@ describe('OAStooltip', () => {
   })
 
   it('virtual 模式：无触发元素，不设 aria-describedby', async () => {
-    const el = mountVirtual({ virtual: '', 'virtual-x': '100', 'virtual-y': '100', open: '', content: 'x' })
+    const el = mountVirtual({
+      virtual: '',
+      'virtual-x': '100',
+      'virtual-y': '100',
+      open: '',
+      content: 'x',
+    })
     await Promise.resolve()
     expect(el.getAttribute('aria-describedby')).toBeNull()
   })
@@ -1112,7 +1118,12 @@ describe('OAStooltip', () => {
   // ================= 箭头 merge 模式 =================
 
   it('arrow-position="merge" + *-start placement：箭头融角 data 属性', async () => {
-    const el = mount({ open: '', content: 'x', placement: 'bottom-start', 'arrow-position': 'merge' })
+    const el = mount({
+      open: '',
+      content: 'x',
+      placement: 'bottom-start',
+      'arrow-position': 'merge',
+    })
     await Promise.resolve()
     const t = tip(el)
     expect(t.getAttribute('data-arrow-position')).toBe('merge')
@@ -1342,7 +1353,9 @@ describe('OAStooltip', () => {
       )
     }
     // 旧「菱心骑角」规则（盒半宽 -4px 居中骑角）不得残留
-    expect(css).not.toContain("[data-arrow-position='merge'][data-placement='bottom-start'] .arrow,")
+    expect(css).not.toContain(
+      "[data-arrow-position='merge'][data-placement='bottom-start'] .arrow,",
+    )
     expect(css).not.toContain("[data-arrow-position='merge'][data-placement='left-start'] .arrow,")
   })
 
@@ -1351,7 +1364,10 @@ describe('OAStooltip', () => {
     // 每向：clip-path 顶点（盒内 8×8 百分比坐标）→ 面板角点位于盒的哪个角 + 三角朝向
     // corner: 面板角点在箭头盒内的位置；edge: 贴边腿顶点相对角点的位移（沿面板边向内 8px，
     // 该腿与面板真实边段共边）；tip: 尖端相对角点的正交位移 8px（指向锚点侧）
-    const geom: Record<string, { corner: [number, number]; edge: [number, number]; tip: [number, number] }> = {
+    const geom: Record<
+      string,
+      { corner: [number, number]; edge: [number, number]; tip: [number, number] }
+    > = {
       // bottom 系：盒悬顶边上方 → 角点在盒底边；start 贴左（贴边腿向右）、end 贴右（向左）；尖端朝上
       'bottom-start': { corner: [0, 8], edge: [8, 0], tip: [0, -8] },
       'bottom-end': { corner: [8, 8], edge: [-8, 0], tip: [0, -8] },
@@ -1391,7 +1407,9 @@ describe('OAStooltip', () => {
       expect(rightIdx, `${p} clip-path 应含直角顶点`).toBeGreaterThanOrEqual(0)
       const rv = vs[rightIdx]!
       // 直角顶点精确落面板角点（角点在盒内的已知位置）
-      expect(near(rv[0], corner[0]) && near(rv[1], corner[1]), `${p} 直角顶点应落面板角点`).toBe(true)
+      expect(near(rv[0], corner[0]) && near(rv[1], corner[1]), `${p} 直角顶点应落面板角点`).toBe(
+        true,
+      )
       // 另两顶点：一个沿面板边向内 8px（贴边腿与面板真实边段共边）、一个为尖端
       // （角点 + 正交位移 8px 指向锚点侧）
       const others = vs.filter((_, i) => i !== rightIdx)

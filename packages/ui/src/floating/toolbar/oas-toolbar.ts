@@ -392,25 +392,28 @@ export class OASToolbar extends OASElement {
    */
   private items(): HTMLElement[] {
     const focusableDisabled = this.hasAttr('disabled') && this.hasAttr('focusable-when-disabled')
-    return [...this.children]
-      .filter((c): c is HTMLElement => {
-        const el = c as HTMLElement
-        if (el.tagName === 'OAS-TOOLBAR-SEPARATOR') return false
-        if (el.hasAttribute('data-toolbar-ignore')) return false
-        if (el.hasAttribute('aria-hidden')) return false
-        if (el.hasAttribute('disabled')) return false
-        if (el.getAttribute('aria-disabled') === 'true' && !focusableDisabled) return false
-        const tag = el.tagName
-        const role = el.getAttribute('role')
-        if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return true
-        if (tag === 'A' && el.hasAttribute('href')) return true
-        if (role && INTERACTIVE_ROLES.has(role)) return true
-        if (tag.includes('-')) return true
-        return false
-      })
-      // 按视觉顺序排序：slot="start" → 默认 → slot="end"（与 shadow 内插槽渲染顺序一致，
-      // 保证 roving/溢出收纳的索引与用户看到的位置一致）
-      .sort((a, b) => this.slotRank(a) - this.slotRank(b))
+    return (
+      [...this.children]
+        .filter((c): c is HTMLElement => {
+          const el = c as HTMLElement
+          if (el.tagName === 'OAS-TOOLBAR-SEPARATOR') return false
+          if (el.hasAttribute('data-toolbar-ignore')) return false
+          if (el.hasAttribute('aria-hidden')) return false
+          if (el.hasAttribute('disabled')) return false
+          if (el.getAttribute('aria-disabled') === 'true' && !focusableDisabled) return false
+          const tag = el.tagName
+          const role = el.getAttribute('role')
+          if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA')
+            return true
+          if (tag === 'A' && el.hasAttribute('href')) return true
+          if (role && INTERACTIVE_ROLES.has(role)) return true
+          if (tag.includes('-')) return true
+          return false
+        })
+        // 按视觉顺序排序：slot="start" → 默认 → slot="end"（与 shadow 内插槽渲染顺序一致，
+        // 保证 roving/溢出收纳的索引与用户看到的位置一致）
+        .sort((a, b) => this.slotRank(a) - this.slotRank(b))
+    )
   }
 
   /** 插槽视觉位次：start 前部 / 默认中部 / end 尾端 */
@@ -605,7 +608,11 @@ export class OASToolbar extends OASElement {
     }
   }
 
-  private createMirrorButton(label: string, origin: HTMLElement, value?: string): HTMLButtonElement {
+  private createMirrorButton(
+    label: string,
+    origin: HTMLElement,
+    value?: string,
+  ): HTMLButtonElement {
     const btn = document.createElement('button')
     btn.type = 'button'
     btn.className = 'mirror'

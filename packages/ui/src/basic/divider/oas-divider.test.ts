@@ -320,7 +320,10 @@ describe('OASDivider', () => {
       const el = mount({ direction: 'vertical', middle: '' }, '文字')
       const css = el.shadowRoot!.querySelector('style')!.textContent!
       // 只匹配含 grid-template-rows 的独立 .middle 规则（合并规则仅声明 display:grid）
-      const rule = css.match(/direction='vertical'\][^{]*\.divider\.middle\s*\{[^}]*grid-template-rows:[^}]*}/)?.[0] ?? ''
+      const rule =
+        css.match(
+          /direction='vertical'\][^{]*\.divider\.middle\s*\{[^}]*grid-template-rows:[^}]*}/,
+        )?.[0] ?? ''
       expect(rule).toMatch(/grid-template-rows/)
       // middle 首尾各一空白行（首尾各一次 middle-inset 变量）
       expect((rule.match(/--oas-divider-middle-inset/g) ?? []).length).toBeGreaterThanOrEqual(2)

@@ -591,12 +591,25 @@ export class OASDropdown extends OASElement {
         : placement.startsWith('left')
           ? 'left'
           : 'right'
-    const align: Align = placement.endsWith('-start') ? 'start' : placement.endsWith('-end') ? 'end' : ''
-    const cross = (s: string, e: string): string => (align === 'start' ? s : align === 'end' ? e : 'center')
+    const align: Align = placement.endsWith('-start')
+      ? 'start'
+      : placement.endsWith('-end')
+        ? 'end'
+        : ''
+    const cross = (s: string, e: string): string =>
+      align === 'start' ? s : align === 'end' ? e : 'center'
     const originX =
-      base === 'top' || base === 'bottom' ? cross('left', 'right') : base === 'left' ? 'right' : 'left'
+      base === 'top' || base === 'bottom'
+        ? cross('left', 'right')
+        : base === 'left'
+          ? 'right'
+          : 'left'
     const originY =
-      base === 'left' || base === 'right' ? cross('top', 'bottom') : base === 'top' ? 'bottom' : 'top'
+      base === 'left' || base === 'right'
+        ? cross('top', 'bottom')
+        : base === 'top'
+          ? 'bottom'
+          : 'top'
     this.anchorEl?.style.setProperty('--oas-origin-x', originX)
     this.anchorEl?.style.setProperty('--oas-origin-y', originY)
   }

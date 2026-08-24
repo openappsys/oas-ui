@@ -723,7 +723,9 @@ export class OASTabs extends OASElement {
     // editable 重命名：dblclick 委托到稳定的 tablist 容器（innerHTML 重建会销毁逐个绑定的
     // 按钮监听；且真实双击前两次 click 触发 activate→重建，直接绑 btn 会被销毁导致 dblclick 丢失）
     tablist?.addEventListener('dblclick', (e: Event) => {
-      const btn = (e.target as HTMLElement).closest?.('[role="tab"][data-value]') as HTMLElement | null
+      const btn = (e.target as HTMLElement).closest?.(
+        '[role="tab"][data-value]',
+      ) as HTMLElement | null
       if (!btn) return
       const value = btn.getAttribute('data-value') ?? ''
       const panel = this.panels.find((p) => (p.getAttribute('value') ?? '') === value)
@@ -777,8 +779,8 @@ export class OASTabs extends OASElement {
     this.itemsSyncing = true
     try {
       // 一致性检查：现有面板 value 序列与 items 一致则跳过（防 MutationObserver 重复 update 重建）
-      const existing = [...this.querySelectorAll(':scope > oas-tab-panel')].map(
-        (p) => p.getAttribute('value'),
+      const existing = [...this.querySelectorAll(':scope > oas-tab-panel')].map((p) =>
+        p.getAttribute('value'),
       )
       const itemValues = items.map((i) => String(i.value ?? ''))
       const same =
@@ -964,7 +966,8 @@ export class OASTabs extends OASElement {
           }
         }
         if (slotClose) close.appendChild(slotClose.cloneNode(true))
-        else close.innerHTML = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`
+        else
+          close.innerHTML = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`
         close.addEventListener('click', (e: Event) => {
           e.stopPropagation()
           this.emit('close', { key: value })
@@ -1199,7 +1202,10 @@ export class OASTabs extends OASElement {
     const onDocClick = (e: Event) => {
       if (!this.moreOpen) return
       const path = e.composedPath()
-      if (!path.includes(moreBtn) && !path.includes(this.shadow.querySelector('.more-dropdown') as Node)) {
+      if (
+        !path.includes(moreBtn) &&
+        !path.includes(this.shadow.querySelector('.more-dropdown') as Node)
+      ) {
         this.moreOpen = false
         this.syncMoreDropdown()
       }

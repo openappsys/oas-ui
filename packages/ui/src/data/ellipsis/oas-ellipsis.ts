@@ -206,7 +206,9 @@ export class OASEllipsis extends OASElement {
     if (client <= 0 || scroll <= client) return full
     const keepTotal = Math.max(side * 2 + 1, Math.floor(full.length * (client / scroll)))
     const each = Math.max(side, Math.floor((keepTotal - 1) / 2))
-    return full.slice(0, Math.min(each, full.length)) + '…' + full.slice(Math.max(0, full.length - each))
+    return (
+      full.slice(0, Math.min(each, full.length)) + '…' + full.slice(Math.max(0, full.length - each))
+    )
   }
 
   /** 行数归一：至少 1 行；非法值回退 1 */

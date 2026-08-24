@@ -25,11 +25,19 @@ const EASINGS: Record<string, (t: number) => number> = {
   'expo-in': (t) => (t === 0 ? 0 : Math.pow(2, 10 * t - 10)),
   'expo-out': (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t)),
   'expo-in-out': (t) =>
-    t === 0 ? 0 : t === 1 ? 1 : t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2,
+    t === 0
+      ? 0
+      : t === 1
+        ? 1
+        : t < 0.5
+          ? Math.pow(2, 20 * t - 10) / 2
+          : (2 - Math.pow(2, -20 * t + 10)) / 2,
   'circ-in': (t) => 1 - Math.sqrt(1 - Math.pow(t, 2)),
   'circ-out': (t) => Math.sqrt(1 - Math.pow(t - 1, 2)),
   'circ-in-out': (t) =>
-    t < 0.5 ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2,
+    t < 0.5
+      ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2
+      : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2,
   'back-in': (t) => {
     const c1 = 1.70158
     const c3 = c1 + 1
@@ -59,7 +67,17 @@ function prefersReducedMotion(): boolean {
 }
 
 /** 8 方位枚举 → 宿主定位（expand 模式下被忽略） */
-const POSITIONS: Record<string, { top?: string; bottom?: string; left?: string; right?: string; centerX?: boolean; centerY?: boolean }> = {
+const POSITIONS: Record<
+  string,
+  {
+    top?: string
+    bottom?: string
+    left?: string
+    right?: string
+    centerX?: boolean
+    centerY?: boolean
+  }
+> = {
   'top-left': { top: '0', left: '0' },
   'top-center': { top: '0', centerX: true },
   'top-right': { top: '0', right: '0' },
@@ -363,9 +381,14 @@ export class OASBackTop extends OASElement {
   /** 是否已尝试读取 localStorage（幂等：draggable 移除再恢复时沿用已读结果） */
   private dragPosLoaded = false
   /** 进行中的拖拽会话 */
-  private dragState:
-    | { pointerId: number; startX: number; startY: number; startLeft: number; startTop: number; moved: boolean }
-    | null = null
+  private dragState: {
+    pointerId: number
+    startX: number
+    startY: number
+    startLeft: number
+    startTop: number
+    moved: boolean
+  } | null = null
   /** 拖拽超阈值后抑制随之合成的一次 click（区分拖拽与点击） */
   private suppressClick = false
 
@@ -513,10 +536,16 @@ export class OASBackTop extends OASElement {
     const h = el as HTMLElement
     const overflowY = cs.overflowY || cs.overflow
     const overflowX = cs.overflowX || cs.overflow
-    if ((overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') && h.scrollHeight > h.clientHeight) {
+    if (
+      (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') &&
+      h.scrollHeight > h.clientHeight
+    ) {
       return true
     }
-    if ((overflowX === 'auto' || overflowX === 'scroll' || overflowX === 'overlay') && h.scrollWidth > h.clientWidth) {
+    if (
+      (overflowX === 'auto' || overflowX === 'scroll' || overflowX === 'overlay') &&
+      h.scrollWidth > h.clientWidth
+    ) {
       return true
     }
     return false

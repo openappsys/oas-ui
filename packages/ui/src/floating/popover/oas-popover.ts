@@ -896,10 +896,18 @@ export class OASPopover extends OASElement {
       }
     }
 
-    const r = computePosition(anchorRect, panelRect, actual as Placement, viewport, distance, autoAdjust, {
-      skidding: skid,
-      collisionPadding: padding,
-    })
+    const r = computePosition(
+      anchorRect,
+      panelRect,
+      actual as Placement,
+      viewport,
+      distance,
+      autoAdjust,
+      {
+        skidding: skid,
+        collisionPadding: padding,
+      },
+    )
     this.panel.style.top = `${r.top}px`
     this.panel.style.left = `${r.left}px`
     this.panel.setAttribute('data-placement', r.placement)
@@ -920,13 +928,25 @@ export class OASPopover extends OASElement {
         : placement.startsWith('left')
           ? 'left'
           : 'right'
-    const align: Align = placement.endsWith('-start') ? 'start' : placement.endsWith('-end') ? 'end' : ''
+    const align: Align = placement.endsWith('-start')
+      ? 'start'
+      : placement.endsWith('-end')
+        ? 'end'
+        : ''
     const cross = (s: string, e: string): string =>
       align === 'start' ? s : align === 'end' ? e : 'center'
     const originX =
-      base === 'top' || base === 'bottom' ? cross('left', 'right') : base === 'left' ? 'right' : 'left'
+      base === 'top' || base === 'bottom'
+        ? cross('left', 'right')
+        : base === 'left'
+          ? 'right'
+          : 'left'
     const originY =
-      base === 'left' || base === 'right' ? cross('top', 'bottom') : base === 'top' ? 'bottom' : 'top'
+      base === 'left' || base === 'right'
+        ? cross('top', 'bottom')
+        : base === 'top'
+          ? 'bottom'
+          : 'top'
     this.panel?.style.setProperty('--oas-origin-x', originX)
     this.panel?.style.setProperty('--oas-origin-y', originY)
   }
@@ -953,15 +973,20 @@ export class OASPopover extends OASElement {
     if (!this.showArrow()) return
     if (this.hasAttr('arrow-merge')) return
     const panelRect = this.panel.getBoundingClientRect()
-    const clampV = (v: number, max: number): number =>
-      Math.max(ARROW_PAD, Math.min(v, max))
+    const clampV = (v: number, max: number): number => Math.max(ARROW_PAD, Math.min(v, max))
     if (placement.startsWith('top') || placement.startsWith('bottom')) {
       const center = anchorRect.left + anchorRect.width / 2
-      const x = clampV(center - panelRect.left - ARROW_SIZE / 2, panelRect.width - ARROW_PAD - ARROW_SIZE)
+      const x = clampV(
+        center - panelRect.left - ARROW_SIZE / 2,
+        panelRect.width - ARROW_PAD - ARROW_SIZE,
+      )
       arrow.style.setProperty('--arrow-x', `${x}px`)
     } else {
       const center = anchorRect.top + anchorRect.height / 2
-      const y = clampV(center - panelRect.top - ARROW_SIZE / 2, panelRect.height - ARROW_PAD - ARROW_SIZE)
+      const y = clampV(
+        center - panelRect.top - ARROW_SIZE / 2,
+        panelRect.height - ARROW_PAD - ARROW_SIZE,
+      )
       arrow.style.setProperty('--arrow-y', `${y}px`)
     }
   }
@@ -1001,7 +1026,8 @@ export class OASPopover extends OASElement {
     }
     const sel = this.getAttr('initial-focus', '').trim()
     if (sel) {
-      const target = this.querySelector<HTMLElement>(sel) ?? document.querySelector<HTMLElement>(sel)
+      const target =
+        this.querySelector<HTMLElement>(sel) ?? document.querySelector<HTMLElement>(sel)
       if (target) {
         target.focus()
         return
@@ -1071,9 +1097,7 @@ export class OASPopover extends OASElement {
     const host = document.createElement('div')
     host.setAttribute('data-oas-popover-portal', '')
     host.style.cssText = `position: fixed; inset: 0; pointer-events: none; z-index: ${
-      this.hasAttr('modal')
-        ? 'calc(var(--oas-z-overlay, 1040) + 1)'
-        : 'var(--oas-z-dropdown, 1000)'
+      this.hasAttr('modal') ? 'calc(var(--oas-z-overlay, 1040) + 1)' : 'var(--oas-z-dropdown, 1000)'
     };`
     target.appendChild(host)
     const root = host.attachShadow({ mode: 'open' })
@@ -1233,7 +1257,10 @@ export class OASPopover extends OASElement {
   private syncHead(): void {
     const head = this.panel?.querySelector<HTMLElement>('.head')
     if (!head) return
-    head.classList.toggle('oas-empty', this.getAttr('title', '') === '' && !this.hasAttr('closable'))
+    head.classList.toggle(
+      'oas-empty',
+      this.getAttr('title', '') === '' && !this.hasAttr('closable'),
+    )
     this.panel?.classList.toggle('oas-closable', this.hasAttr('closable'))
     this.closeBtn?.toggleAttribute('hidden', !this.hasAttr('closable'))
     this.closeBtn?.setAttribute('aria-label', this.t('popover.close'))

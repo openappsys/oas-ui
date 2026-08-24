@@ -628,9 +628,9 @@ export class OASTour extends OASElement {
     this.shadow.querySelector('[part="dont-show"] input')?.addEventListener('change', (e) => {
       this.dontShowChecked = (e.target as HTMLInputElement).checked
     })
-    this.shadow.querySelector('[part="hint-dismiss"]')?.addEventListener('click', () =>
-      this.dismissHint(),
-    )
+    this.shadow
+      .querySelector('[part="hint-dismiss"]')
+      ?.addEventListener('click', () => this.dismissHint())
     // 遮罩点击行为：四段遮罩共用 handler
     for (const seg of this.maskSegs) {
       seg.addEventListener('click', () => this.onMaskClick())
@@ -698,16 +698,17 @@ export class OASTour extends OASElement {
   private parseSteps(): void {
     if (this._stepsRaw) {
       this._steps = this._stepsRaw.filter(
-        (s) =>
-          s &&
-          (typeof s.title === 'string' || s.target || s.selector),
+        (s) => s && (typeof s.title === 'string' || s.target || s.selector),
       )
       return
     }
     try {
       const parsed = JSON.parse(this.getAttr('steps', '[]'))
       this._steps = Array.isArray(parsed)
-        ? parsed.filter((s): s is TourStep => s && (typeof s.selector === 'string' || typeof s.title === 'string'))
+        ? parsed.filter(
+            (s): s is TourStep =>
+              s && (typeof s.selector === 'string' || typeof s.title === 'string'),
+          )
         : []
     } catch {
       this._steps = []
@@ -821,7 +822,8 @@ export class OASTour extends OASElement {
       this.destroyPortal()
       return
     }
-    const target = sel === 'body' ? document.body : (document.querySelector(sel) as HTMLElement | null)
+    const target =
+      sel === 'body' ? document.body : (document.querySelector(sel) as HTMLElement | null)
     if (!target) {
       this.destroyPortal()
       return
@@ -830,7 +832,8 @@ export class OASTour extends OASElement {
     this.destroyPortal()
     const host = document.createElement('div')
     host.setAttribute('data-oas-tour-portal', '')
-    host.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: var(--oas-z-modal, 1050);'
+    host.style.cssText =
+      'position: fixed; inset: 0; pointer-events: none; z-index: var(--oas-z-modal, 1050);'
     // portal shadow 内 :host 是 portal host，:host([open]) 不命中——镜像 open 态驱动 overlay 显示
     if (this.hasAttr('open')) host.setAttribute('data-open', '')
     target.appendChild(host)
@@ -850,7 +853,9 @@ export class OASTour extends OASElement {
    *  light DOM（popup 随 overlay 进入 portal shadow 后，插槽只分配 portal host 的 light
    *  子节点——不移桥则宿主塞的插槽内容跨 host 断供消失） */
   private bridgeSlots(host: HTMLElement): void {
-    for (const n of this.querySelectorAll<HTMLElement>('[slot="cover"], [slot="indicators"], [slot="actions"]')) {
+    for (const n of this.querySelectorAll<HTMLElement>(
+      '[slot="cover"], [slot="indicators"], [slot="actions"]',
+    )) {
       host.appendChild(n)
     }
   }
@@ -913,7 +918,11 @@ export class OASTour extends OASElement {
     if (!target || !this.hasAttr('advance-on-click')) return
     const step = this._steps[this.current]
     if (step?.advanceOnClick === false) return
-    if (step && this.getAttr('target-area-clickable', 'false') === 'false' && !step.targetAreaClickable) {
+    if (
+      step &&
+      this.getAttr('target-area-clickable', 'false') === 'false' &&
+      !step.targetAreaClickable
+    ) {
       // interceptor 显示时点击走 interceptor，无需挂目标
       return
     }
@@ -959,7 +968,12 @@ export class OASTour extends OASElement {
   }
 
   /** gap 解析：数字 → { padding }；JSON 对象 → { padding, radius, offsetH, offsetV } */
-  private resolveGap(step: TourStep): { padding: number; radius: string; offsetH: number; offsetV: number } {
+  private resolveGap(step: TourStep): {
+    padding: number
+    radius: string
+    offsetH: number
+    offsetV: number
+  } {
     const raw = step.gap ?? this.getAttr('gap', '')
     let padding = 4
     let radius = 'var(--oas-radius-md)'
@@ -993,7 +1007,11 @@ export class OASTour extends OASElement {
         }
       }
     } else if (raw && typeof raw === 'object') {
-      const o = raw as { padding?: number; radius?: number | string; offset?: number | [number, number] }
+      const o = raw as {
+        padding?: number
+        radius?: number | string
+        offset?: number | [number, number]
+      }
       if (typeof o.padding === 'number') padding = o.padding
       if (typeof o.radius === 'number') radius = `${o.radius}px`
       else if (typeof o.radius === 'string') radius = o.radius
@@ -1067,7 +1085,10 @@ export class OASTour extends OASElement {
     const applyProps = (part: string, props: TourButtonProps | undefined): void => {
       const btn = popup.querySelector<HTMLElement>(`[part="${part}"]`)
       if (!btn) return
-      const merged: TourButtonProps = { ...this.parseProps(this.getAttr(`${part}-button-props`, '')), ...props }
+      const merged: TourButtonProps = {
+        ...this.parseProps(this.getAttr(`${part}-button-props`, '')),
+        ...props,
+      }
       for (const [k, v] of Object.entries(merged)) {
         if (v === '') btn.setAttribute(k, '')
         else btn.setAttribute(k, v)
@@ -1102,11 +1123,14 @@ export class OASTour extends OASElement {
     const index = this.current
     const counter = popup.querySelector<HTMLElement>('[part="step-count"]')!
     const template = this.getAttr('progress-text', '')
-    const indicators = step.mode === 'dialog' || this.getAttr('indicators', 'dots') === 'number' || template
-      ? 'number'
-      : this.getAttr('indicators', 'dots')
+    const indicators =
+      step.mode === 'dialog' || this.getAttr('indicators', 'dots') === 'number' || template
+        ? 'number'
+        : this.getAttr('indicators', 'dots')
     if (template) {
-      counter.textContent = template.replace(/\{\{current\}\}/g, String(index + 1)).replace(/\{\{total\}\}/g, String(total))
+      counter.textContent = template
+        .replace(/\{\{current\}\}/g, String(index + 1))
+        .replace(/\{\{total\}\}/g, String(total))
     } else if (indicators === 'number') {
       counter.textContent = `${index + 1} / ${total}`
     } else {
@@ -1166,7 +1190,8 @@ export class OASTour extends OASElement {
   /** 关闭按钮：show-close 开关 + close-icon 自定义内容 */
   private syncClose(): void {
     const btn = this.popup!.querySelector<HTMLElement>('[part="close"]')!
-    btn.style.display = this.hasAttr('show-close') && this.getAttr('show-close', 'true') === 'false' ? 'none' : ''
+    btn.style.display =
+      this.hasAttr('show-close') && this.getAttr('show-close', 'true') === 'false' ? 'none' : ''
     btn.setAttribute('aria-label', this.t('tour.close'))
     const icon = this.getAttr('close-icon', '')
     if (icon) {
@@ -1184,7 +1209,8 @@ export class OASTour extends OASElement {
     const checked = popup.querySelector<HTMLInputElement>('[part="dont-show"] input')!
     if (this.hasAttr('dont-show-again')) {
       label.style.display = ''
-      popup.querySelector<HTMLElement>('.dont-show-text')!.textContent = this.t('tour.dontShowAgain')
+      popup.querySelector<HTMLElement>('.dont-show-text')!.textContent =
+        this.t('tour.dontShowAgain')
       // 勾选态不被重复 update 清掉（用户已勾选）
       if (!this.dontShowChecked) checked.checked = false
     } else {
@@ -1229,7 +1255,12 @@ export class OASTour extends OASElement {
       // 4 段遮罩：上下左右围孔（孔 = 目标 + padding + offset 外扩）
       const segs: Record<string, { top: number; left: number; width: number; height: number }> = {
         top: { top: 0, left: 0, width: viewport.width, height: Math.max(0, top) },
-        bottom: { top: holeBottom, left: 0, width: viewport.width, height: Math.max(0, viewport.height - holeBottom) },
+        bottom: {
+          top: holeBottom,
+          left: 0,
+          width: viewport.width,
+          height: Math.max(0, viewport.height - holeBottom),
+        },
         left: { top, left: 0, width: Math.max(0, left), height: h },
         right: { top, left: holeRight, width: Math.max(0, viewport.width - holeRight), height: h },
       }
@@ -1274,14 +1305,11 @@ export class OASTour extends OASElement {
     const popupRect = this.popup.getBoundingClientRect()
     // auto-reposition：true（默认）开启溢出翻转 + 视口避让；false 保持声明 placement 不做避让
     const autoAdjust = this.getAttr('auto-reposition', 'true') !== 'false'
-    const { top, left, placement: actual } = computePosition(
-      anchor,
-      popupRect,
-      placement as Placement,
-      viewport,
-      8,
-      autoAdjust,
-    )
+    const {
+      top,
+      left,
+      placement: actual,
+    } = computePosition(anchor, popupRect, placement as Placement, viewport, 8, autoAdjust)
     this.popup.style.top = `${top}px`
     this.popup.style.left = `${left}px`
     this.popup.style.transform = ''
@@ -1307,7 +1335,9 @@ export class OASTour extends OASElement {
     if (!aligned && !this.hasAttr('arrow-point-at-center')) return
     const vertical = placement.startsWith('top') || placement.startsWith('bottom')
     const rect = this.popup.getBoundingClientRect()
-    const popupEdge = vertical ? parseFloat(this.popup.style.left) : parseFloat(this.popup.style.top)
+    const popupEdge = vertical
+      ? parseFloat(this.popup.style.left)
+      : parseFloat(this.popup.style.top)
     const anchorCrossCenter = vertical
       ? anchorRect.left + anchorRect.width / 2
       : anchorRect.top + anchorRect.height / 2
@@ -1368,7 +1398,10 @@ export class OASTour extends OASElement {
 
   private savePersist(): void {
     if (!this.hasAttr('persist') || !this.persistRestored) return
-    safeSet(this.storageKey(), JSON.stringify({ open: this.hasAttr('open'), current: this.current }))
+    safeSet(
+      this.storageKey(),
+      JSON.stringify({ open: this.hasAttr('open'), current: this.current }),
+    )
   }
 
   /** hints 信标：常驻脉冲点 + 点击气泡 + dismiss 记忆（与 open 无关，常驻渲染） */
@@ -1415,7 +1448,8 @@ export class OASTour extends OASElement {
       bubble.hidden = false
       bubble.querySelector<HTMLElement>('.hint-title')!.textContent = entry.hint.title ?? ''
       bubble.querySelector<HTMLElement>('.hint-desc')!.textContent = entry.hint.description ?? ''
-      bubble.querySelector<HTMLElement>('[part="hint-dismiss"]')!.textContent = this.t('tour.hintGotIt')
+      bubble.querySelector<HTMLElement>('[part="hint-dismiss"]')!.textContent =
+        this.t('tour.hintGotIt')
       const bubbleRect = bubble.getBoundingClientRect()
       const { top, left } = computePosition(
         entry.rect,

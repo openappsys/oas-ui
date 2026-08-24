@@ -57,27 +57,21 @@ function mount(attrs: Record<string, string> = {}): OASAnchor {
 
 /** 一次性跑完的 rAF：入参时刻必然 > performance.now()，单帧推进到终点 */
 function stubRafInstant(): void {
-  vi.stubGlobal(
-    'requestAnimationFrame',
-    (cb: FrameRequestCallback): number => {
-      cb(performance.now() + 100_000)
-      return 1
-    },
-  )
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => {
+    cb(performance.now() + 100_000)
+    return 1
+  })
   vi.stubGlobal('cancelAnimationFrame', vi.fn())
 }
 
 /** 按 stepMs 逐帧推进 rAF（验证多帧插值滚动） */
 function stubRafFrames(stepMs: number): void {
   let base = 0
-  vi.stubGlobal(
-    'requestAnimationFrame',
-    (cb: FrameRequestCallback): number => {
-      base += stepMs
-      cb(performance.now() + base)
-      return base
-    },
-  )
+  vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback): number => {
+    base += stepMs
+    cb(performance.now() + base)
+    return base
+  })
   vi.stubGlobal('cancelAnimationFrame', vi.fn())
 }
 
@@ -92,7 +86,10 @@ function flushRaf(): void {
   if (cb) cb(performance.now() + 100_000)
 }
 
-function stubHistory(): { push: ReturnType<typeof vi.spyOn>; replace: ReturnType<typeof vi.spyOn> } {
+function stubHistory(): {
+  push: ReturnType<typeof vi.spyOn>
+  replace: ReturnType<typeof vi.spyOn>
+} {
   const push = vi.spyOn(window.history, 'pushState').mockImplementation(() => {})
   const replace = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {})
   return { push, replace }
@@ -101,7 +98,10 @@ function stubHistory(): { push: ReturnType<typeof vi.spyOn>; replace: ReturnType
 describe('OASAnchor', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
-    vi.stubGlobal('requestAnimationFrame', vi.fn(() => 0))
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 0),
+    )
     vi.stubGlobal('cancelAnimationFrame', vi.fn())
   })
 
@@ -449,7 +449,11 @@ describe('OASAnchor', () => {
       }
       fire()
       expect(activeLink(el)).toBe('#section1-2-1')
-      expect(linksOf(el).find((l) => l.getAttribute('href') === '#section1-2-1')?.getAttribute('aria-current')).toBe('true')
+      expect(
+        linksOf(el)
+          .find((l) => l.getAttribute('href') === '#section1-2-1')
+          ?.getAttribute('aria-current'),
+      ).toBe('true')
       expect(details.at(-1)).toBe('#section1-2-1')
     })
   })
@@ -637,7 +641,9 @@ describe('OASAnchor', () => {
 
     it('variant 样式变体映射 nav class', () => {
       const el = mount({ variant: 'underline' })
-      expect(el.shadowRoot!.querySelector('nav')!.classList.contains('variant-underline')).toBe(true)
+      expect(el.shadowRoot!.querySelector('nav')!.classList.contains('variant-underline')).toBe(
+        true,
+      )
       const block = mount({ variant: 'block' })
       expect(block.shadowRoot!.querySelector('nav')!.classList.contains('variant-block')).toBe(true)
     })
