@@ -6519,3 +6519,45 @@ test('tour typewriter：描述逐字增长（非一次性全显示）', async ({
   const increasing = samples.every((v, i) => i === 0 || v >= samples[i - 1])
   expect(increasing, '描述长度应单调递增（逐字出现）').toBe(true)
 })
+
+// —— 缺陷回归：tour 首次打开目标在视口外时弹窗闪现错位 ——
+// 曾现缺陷：目标初始在视口外，position() 按错位目标位置算「安全兜底位」显示弹窗，
+// scrollToTarget 平滑滚动期间弹窗卡在错位处（长滚动时明显），滚动末尾才跳正——「首次点击错位」。
+// 修复：目标需滚动进视口时弹窗进入「定位待定」（opacity 0 隐藏），scrollend/定位正确后显示。
+test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现错位），滚动停止后正确显示', async ({ page }) => {
+  await page.goto('/components/tour.html', { waitUntil: 'networkidle' })
+  await page.waitForSelector('#tour-interact', { state: 'attached', timeout: 15000 })
+  await page.waitForFunction(() => document.querySelector('#tour-interact')?.shadowRoot != null, { timeout: 15000 })
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await page.waitForTimeout(200)
+  await page.evaluate(() => {
+    const btn = [...document.querySelectorAll('oas-button')].find((x) => x.textContent.trim() === '高亮区可交互')!
+    btn.click()
+  })
+  // 采样滚动期间弹窗隐藏 + 停止后正确显示
+  const samples = await page.evaluate(async () => {
+    const host = document.querySelector('#tour-interact')!
+    const popup = host.shadowRoot!.querySelector('.popup') as HTMLElement
+    const out: Array<{ pending: boolean; opacity: number; placement: string | null }> = []
+    for (let k = 0; k < 12; k++) {
+      out.push({
+        pending: popup.classList.contains('oas-tour-pending'),
+        opacity: parseFloat(getComputedStyle(popup).opacity),
+        placement: popup.getAttribute('data-placement'),
+      })
+      await new Promise((r) => setTimeout(r, 150))
+    }
+    return out
+  })
+  // 滚动期间弹窗应隐藏（pending 或 opacity 0 / placement null）
+  const duringScroll = samples.filter((s) => s.pending)
+  expect(duringScroll.length, '滚动期间应有定位待定(隐藏)的帧').toBeGreaterThan(0)
+  for (const s of duringScroll) {
+    expect(s.opacity, '滚动期间弹窗应近透明(隐藏，不在错位处闪现)').toBeLessThan(0.1)
+  }
+  // 滚动停止后弹窗应正确显示（placement 已设、opacity 1）
+  const settled = samples[samples.length - 1]
+  expect(settled.opacity, '滚动停止后弹窗显示').toBe(1)
+  expect(settled.placement, '滚动停止后 placement 已设').not.toBeNull()
+  expect(settled.pending, '滚动停止后不再待定').toBe(false)
+})

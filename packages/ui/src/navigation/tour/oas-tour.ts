@@ -131,6 +131,9 @@ const STYLE = `
   /* 弹层必须可交互（含按钮）：.overlay 是 pointer-events:none（点穿遮罩区走 mask-click 行为），
      弹层不补 auto 会继承 none → 整个弹窗点击透明、点击穿透到下层遮罩被误判外部点击而关闭 */
   pointer-events: auto;
+  /* 定位待定：滚动把目标带进视口期间先不显示（避免按错位的目标位置闪现），
+     scrollend 定位正确后才显示；无 transition（过渡会软化隐藏导致闪现） */
+  opacity: 1;
   background: var(--oas-tour-popup-bg, var(--oas-color-bg));
   border-radius: var(--oas-radius-md);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--oas-color-overlay) 32%, transparent);
@@ -140,6 +143,10 @@ const STYLE = `
   font-family: inherit;
   color: var(--oas-color-text-primary);
   outline: none;
+}
+.popup.oas-tour-pending {
+  opacity: 0;
+  pointer-events: none;
 }
 .popup[data-type='primary'] {
   background: var(--oas-color-primary);
@@ -894,9 +901,14 @@ export class OASTour extends OASElement {
       this.followOpen = true
       window.addEventListener('scroll', this.onFollowScroll, { capture: true, passive: true })
       window.addEventListener('resize', this.onFollowScroll)
+      // scrollend：平滑滚动到目标结束后（不再有 scroll 事件）精确定位一次——
+      // 长距离 smooth 滚动期间 scroll 事件的 rAF 定位可能跟不上/未触发，弹窗卡在错位处
+      // （首次打开目标在视口外时尤为明显）。scrollend 只在滚动完全停止后派发一次，兜底纠偏。
+      window.addEventListener('scrollend', this.onScrollEnd)
       this.onCleanup(() => {
         window.removeEventListener('scroll', this.onFollowScroll, { capture: true })
         window.removeEventListener('resize', this.onFollowScroll)
+        window.removeEventListener('scrollend', this.onScrollEnd)
       })
     } else if (!track && this.followOpen) {
       this.unbindFollow()
@@ -908,6 +920,7 @@ export class OASTour extends OASElement {
     this.followOpen = false
     window.removeEventListener('scroll', this.onFollowScroll, { capture: true })
     window.removeEventListener('resize', this.onFollowScroll)
+    window.removeEventListener('scrollend', this.onScrollEnd)
   }
 
   private onFollowScroll = (): void => {
@@ -916,6 +929,23 @@ export class OASTour extends OASElement {
       if (this.hasAttr('hints')) this.renderHints()
       if (this.hasAttr('open')) this.position()
     })
+  }
+
+  /** scrollend 兜底：平滑滚动停止后精确重定位并显示弹窗（滚动期间处于定位待定隐藏态） */
+  private onScrollEnd = (): void => {
+    cancelAnimationFrame(this.followRaf)
+    if (this.hasAttr('open')) {
+      this.position()
+      this.popup?.classList.remove('oas-tour-pending')
+    }
+  }
+
+  /** 目标是否需要滚动才能完整进入视口（决定是否进入「定位待定」隐藏期，防按错位位置闪现） */
+  private targetNeedsScroll(target: HTMLElement): boolean {
+    const r = target.getBoundingClientRect()
+    const vh = window.innerHeight
+    const vw = window.innerWidth
+    return r.top < 0 || r.bottom > vh || r.left < 0 || r.right > vw
   }
 
   /** advance-on-click：目标可交互时在目标上临时挂 click 推进监听 */
@@ -1364,7 +1394,9 @@ export class OASTour extends OASElement {
   private allowTargetInteraction(step: TourStep): boolean {
     if (step.disabledInteraction) return false
     if (typeof step.targetAreaClickable === 'boolean') return step.targetAreaClickable
-    return this.getAttr('target-area-clickable', 'false') === 'true'
+    // target-area-clickable 是布尔属性：bare（无值）时 getAttribute 返回 ''，
+    // getAttr(...)!=='false' 同时兼容 bare / ="true" / ="false"（同 typewriter 修法）
+    return this.hasAttr('target-area-clickable') && this.getAttr('target-area-clickable', 'true') !== 'false'
   }
 
   /** 目标滚动到视口 + scroll-padding 生效（scroll-margin 标准方案） */
@@ -1576,6 +1608,11 @@ export class OASTour extends OASElement {
       return
     }
     if (target) this.scrollToTarget(target)
+    // 滚动目标进视口期间弹窗进入「定位待定」：先隐藏（防按错位目标位置闪现），
+    // scrollend 定位正确后移除 class 显示。目标无位移/已在视口时无需待定。
+    if (target && this.targetNeedsScroll(target)) {
+      this.popup?.classList.add('oas-tour-pending')
+    }
     this.position()
     this.syncFollow(open)
     this.ensurePortal()
