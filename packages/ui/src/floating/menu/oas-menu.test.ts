@@ -743,6 +743,13 @@ describe('OASMenu loading 菜单项', () => {
       const css = el.shadowRoot!.querySelector('style')!.textContent!
       expect(css).toMatch(/menuitemcheckbox|checkbox/)
     })
+
+    it('checkbox 勾选框与标签之间有间距（非紧贴，与 .icon/.spin 同档）', () => {
+      const el = mount({ items: CB_ITEMS, value: '["grid"]' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      const boxRule = /\.check--box\s*\{[^}]*\}/.exec(css)?.[0] ?? ''
+      expect(boxRule).toMatch(/margin-right:\s*var\(--oas-space-2\)/)
+    })
   })
 
   describe('danger 破坏性项', () => {
