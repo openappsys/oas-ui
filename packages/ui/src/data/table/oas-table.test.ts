@@ -1063,3 +1063,40 @@ describe('OASTable size 密度档位', () => {
     warn.mockRestore()
   })
 })
+
+describe('OASTable 单元格渲染与 hidden（模板实测缺陷回归）', () => {
+  it('#9 尊重 [hidden]：table.hidden=true 时 display:none（:host 覆盖修复）', () => {
+    const el = mount()
+    expect(el.shadowRoot!.querySelector('style')!.textContent).toMatch(/:host\(\[hidden\]\)\s*\{\s*display:\s*none/)
+    el.hidden = true
+    expect(getComputedStyle(el).display).toBe('none')
+  })
+
+  it('#8 单元格 render 返回元素（tag/avatar/badge 富内容）直接挂载（非纯文本）', () => {
+    const el = new OASTable()
+    el.setAttribute('columns', JSON.stringify([{ key: 'name', title: '姓名' }, { key: 'status', title: '状态' }]))
+    el.setAttribute('data', JSON.stringify([{ name: '张三', status: '启用' }]))
+    // property 通道传含 render 函数（返回 span 元素）
+    el.columns = [
+      { key: 'name', title: '姓名' },
+      {
+        key: 'status',
+        title: '状态',
+        render: (row: Record<string, unknown>) => {
+          const span = document.createElement('span')
+          span.textContent = `[${String(row.status)}]`
+          return span
+        },
+      },
+    ]
+    document.body.appendChild(el)
+    const r = rows(el)[0]!
+    const cells = r.querySelectorAll('td')
+    // status 列（第 2 列）应含 span 元素而非纯文本
+    const statusCell = cells[1]!
+    expect(statusCell.querySelector('span')).toBeTruthy()
+    expect(statusCell.querySelector('span')!.textContent).toBe('[启用]')
+    // 单元格挂载的是 span 元素（非单个纯文本节点）：firstChild 为元素
+    expect(statusCell.firstChild!.nodeType).toBe(Node.ELEMENT_NODE)
+  })
+})
