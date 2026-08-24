@@ -394,9 +394,9 @@ onMounted(async () => {
 | `skip-missing-element` | 目标缺失/等待超时跳过该步骤（默认停在当前步骤） | `boolean` | — |
 | `steps` | 步骤 JSON（`TourStep[] \| string`）；property 赋值支持函数/元素 target | `TourStep[] \| string` | `[]` |
 | `storage-key` | localStorage 记忆键（`dont-show-again` / `persist` / hint dismiss 共用） | `string` | `oas-tour-dismiss` |
-| `target-area-clickable` | 高亮区可交互（拦截层隐藏，点击穿透目标） | `string` | `false` |
+| `target-area-clickable` | 高亮区可交互（拦截层隐藏，点击穿透目标） | `string` | `true` |
 | `type` | 弹层类型：`default` / `primary`（主色底弹层，非模态场景强调） | `string` | `default` |
-| `typewriter` | 打字机动画：描述逐字显示 | `string` | `false` |
+| `typewriter` | 打字机动画：描述逐字显示 | `string` | `true` |
 | `typewriter-speed` | 打字机速率（ms/字符，默认 20） | `string` | `20` |
 | `wait-for-element` | 等待目标出现（毫秒，异步步骤；全局默认，step 级 `waitForElement` 优先） | — | — |
 | `z-index` | 遮罩层级（默认 `--oas-z-modal`） | — | — |
