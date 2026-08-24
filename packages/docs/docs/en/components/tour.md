@@ -388,9 +388,9 @@ onMounted(async () => {
 | `skip-missing-element` | Skip the step when the target is missing / wait times out (default stays on the current step) | `boolean` | — |
 | `steps` | Steps JSON (`TourStep[] \| string`); property assignment supports function/element targets | `TourStep[] \| string` | `[]` |
 | `storage-key` | localStorage key (shared by `dont-show-again` / `persist` / hint dismiss) | `string` | `oas-tour-dismiss` |
-| `target-area-clickable` | Highlight area is interactive (interceptor hidden, clicks pass through to target) | `string` | `false` |
+| `target-area-clickable` | Highlight area is interactive (interceptor hidden, clicks pass through to target) | `string` | `true` |
 | `type` | Popup type: `default` / `primary` (primary-colored popup for non-modal emphasis) | `string` | `default` |
-| `typewriter` | Typewriter animation: description revealed character by character | `string` | `false` |
+| `typewriter` | Typewriter animation: description revealed character by character | `string` | `true` |
 | `typewriter-speed` | Typewriter speed (ms per character, default 20) | `string` | `20` |
 | `wait-for-element` | Wait for the target to appear (ms, async steps; global default, step-level `waitForElement` wins) | — | — |
 | `z-index` | Overlay z-index (default `--oas-z-modal`) | — | — |

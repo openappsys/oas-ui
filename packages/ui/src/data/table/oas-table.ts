@@ -1100,7 +1100,11 @@ export class OASTable extends OASElement {
       const opt = col.editOptions.find((o) => String(o.value) === String(raw ?? ''))
       if (opt) return opt.label
     }
-    if (col.render) return String(col.render(row))
+    if (col.render) {
+      // summary/合计等文本路径：render 可能返回 Node/元素（cellNode 用之），此处只取字符串或回退原文
+      const rendered = col.render(row)
+      return typeof rendered === 'string' ? rendered : String(raw ?? '')
+    }
     return String(raw ?? '')
   }
 
