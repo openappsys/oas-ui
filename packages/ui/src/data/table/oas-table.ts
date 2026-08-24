@@ -9,7 +9,8 @@ export interface TableColumn {
   align?: 'left' | 'center' | 'right'
   /** 固定列：'left' | 'right'（配合 sticky 定位实现横向滚动时固定） */
   fixed?: 'left' | 'right'
-  render?: (row: Record<string, unknown>) => string
+  /** 单元格渲染钩子：返回字符串（按 `data-*` 值或富内容标记渲染）或一个 Node/HTMLElement（tag/avatar/badge 等） */
+  render?: (row: Record<string, unknown>) => string | Node
   /** 合计：'sum' | 'avg' | 'count'（列级简单配置；复杂配置走表格级 summary 属性） */
   summary?: 'sum' | 'avg' | 'count'
   /** 行内编辑：该列可编辑（配合表格级 `editable` 属性开关） */
@@ -94,6 +95,10 @@ const STYLE = `
   overflow: hidden;
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
+}
+/* 尊重 [hidden] 语义：:host display:block 会覆盖 UA 的 [hidden]{display:none}，需显式补 */
+:host([hidden]) {
+  display: none;
 }
 /* 紧凑档：padding 降一档、字号 sm */
 :host([size='small']) {
@@ -385,6 +390,8 @@ export class OASTable extends OASElement {
   }
 
   private _columns: TableColumn[] = []
+  /** 列定义经 property 赋值且含函数（render/editors）时置真——跳过 attribute 重解析（序列化会丢函数） */
+  private _columnsFromProperty = false
   private _data: Array<Record<string, unknown>> = []
   private scrollRaf = 0
   /** 恢复 scrollTop 触发的下一次 scroll 事件需忽略，防止重入死循环 */
@@ -405,6 +412,19 @@ export class OASTable extends OASElement {
     return this._columns
   }
   set columns(value: TableColumn[] | string) {
+    if (typeof value === 'string') {
+      this._columnsFromProperty = false
+      this.setAttribute('columns', value)
+      return
+    }
+    if (Array.isArray(value) && value.some((c) => c && (typeof c.render === 'function' || typeof c.editor === 'function'))) {
+      // 列定义含函数（render/editors）：JSON 序列化会丢函数 → 直接存内存并标记，跳过 attribute 重解析
+      this._columns = value.filter((c) => c && typeof c.key === 'string')
+      this._columnsFromProperty = true
+      this.update()
+      return
+    }
+    this._columnsFromProperty = false
     this.setAttribute('columns', typeof value === 'string' ? value : JSON.stringify(value))
   }
   get data(): Array<Record<string, unknown>> {
@@ -668,7 +688,9 @@ export class OASTable extends OASElement {
       if (col.actions) {
         this.renderActionCell(td, tr)
       } else {
-        td.appendChild(document.createTextNode(this.cellText(col, row)))
+        // cellNode 优先渲染返回的 Node/元素（tag/avatar/badge 等富内容），否则纯文本
+        const node = this.cellNode(col, row)
+        if (node) td.appendChild(node)
       }
       // 可编辑单元格：可聚焦，Enter/F2/双击进入编辑（仅响应单元格自身事件，
       // 编辑器内部按键/双击会冒泡到此，需排除避免提交后被重入编辑）
@@ -1078,8 +1100,28 @@ export class OASTable extends OASElement {
       const opt = col.editOptions.find((o) => String(o.value) === String(raw ?? ''))
       if (opt) return opt.label
     }
-    if (col.render) return col.render(row)
+    if (col.render) return String(col.render(row))
     return String(raw ?? '')
+  }
+
+  /** 单元格渲染：render 返回 Node/元素则直接挂载（富内容），否则文本节点 */
+  private cellNode(col: TableColumn, row: Record<string, unknown>): Node | null {
+    if (col.actions) return null
+    const raw = row[col.key]
+    // select 编辑器：非编辑态展示 label（editOptions 映射），与 cellText 一致
+    if (col.editor === 'select' && Array.isArray(col.editOptions) && col.editOptions.length > 0) {
+      const opt = col.editOptions.find((o) => String(o.value) === String(raw ?? ''))
+      return document.createTextNode(opt ? opt.label : String(raw ?? ''))
+    }
+    if (col.render) {
+      const rendered = col.render(row)
+      return rendered == null
+        ? document.createTextNode(String(raw ?? ''))
+        : typeof rendered === 'string'
+          ? document.createTextNode(rendered)
+          : rendered
+    }
+    return document.createTextNode(String(raw ?? ''))
   }
 
   /** 双击 / Enter / F2 / 操作列按钮 → 进入编辑模式 */
@@ -1420,11 +1462,14 @@ export class OASTable extends OASElement {
   }
 
   private parse(): void {
-    try {
-      const cols = JSON.parse(this.getAttr('columns', '[]'))
-      this._columns = Array.isArray(cols) ? cols.filter((c) => c && typeof c.key === 'string') : []
-    } catch {
-      this._columns = []
+    // 列定义经 property 赋值且含函数时，内存 `_columns` 已是权威（attribute JSON 无函数），跳过重解析
+    if (!this._columnsFromProperty) {
+      try {
+        const cols = JSON.parse(this.getAttr('columns', '[]'))
+        this._columns = Array.isArray(cols) ? cols.filter((c) => c && typeof c.key === 'string') : []
+      } catch {
+        this._columns = []
+      }
     }
     try {
       const rows = JSON.parse(this.getAttr('data', '[]'))

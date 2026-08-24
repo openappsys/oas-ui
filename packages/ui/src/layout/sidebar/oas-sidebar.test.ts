@@ -233,3 +233,47 @@ describe('OASSidebar（可折叠侧栏）', () => {
     expect(nav.getAttribute('aria-label')).toBe('侧栏导航')
   })
 })
+
+describe('OASSidebar 受控高亮与图标渲染（模板实测缺陷回归）', () => {
+  it('active 受控属性：对应 value 的菜单项渲染 active 高亮 + aria-current', () => {
+    stubMatchMedia(false)
+    const el = mount({ items: '[{"label":"首页","value":"home"},{"label":"设置","value":"settings"}]', active: 'settings' })
+    const items = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
+    const active = items.find((b) => b.getAttribute('aria-current') === 'page')
+    expect(active, '应有一个 aria-current=page 的项').toBeTruthy()
+    expect(active!.querySelector('.label')!.textContent).toBe('设置')
+    expect(active!.classList.contains('active')).toBe(true)
+    // 切换 active → 高亮迁移
+    el.setAttribute('active', 'home')
+    const items2 = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
+    expect(items2.find((b) => b.getAttribute('aria-current') === 'page')!.querySelector('.label')!.textContent).toBe('首页')
+  })
+
+  it('drawer-open 进 observedAttributes：setAttribute 后抽屉重绘', () => {
+    stubMatchMedia(true)
+    const el = mount()
+    expect(el.shadowRoot!.querySelector('.panel')!.classList.contains('drawer-open')).toBe(false)
+    el.setAttribute('drawer-open', '')
+    expect(el.shadowRoot!.querySelector('.panel')!.classList.contains('drawer-open')).toBe(true)
+    el.removeAttribute('drawer-open')
+    expect(el.shadowRoot!.querySelector('.panel')!.classList.contains('drawer-open')).toBe(false)
+  })
+
+  it('移动端触发按钮用 SVG 图标（非 emoji 文本）', () => {
+    stubMatchMedia(true)
+    const el = mount()
+    const trigger = el.shadowRoot!.querySelector('[part="trigger"]')!
+    expect(trigger.querySelector('svg'), 'trigger 应含 svg 图标而非文本').toBeTruthy()
+    expect(trigger.textContent!.trim(), '不应是 ☰/文本').not.toMatch(/☰|⋯|汉堡/)
+  })
+
+  it('items.icon 支持注册表图标名渲染为 SVG（非纯文本）', () => {
+    stubMatchMedia(false)
+    const el = mount({ items: '[{"label":"首页","value":"home","icon":"star"},{"label":"设置","value":"settings"}]' })
+    const items = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
+    const withIcon = items[0]!.querySelector('.icon')!
+    const withoutIcon = items[1]!.querySelector('.icon') as HTMLElement
+    expect(withIcon.querySelector('svg'), '有 icon 的项应渲染 svg').toBeTruthy()
+    expect(withoutIcon.hidden).toBe(true)
+  })
+})

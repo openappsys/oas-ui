@@ -74,7 +74,9 @@ export class OASLayout extends OASElement {
   protected override update(): void {
     const struct = this.shadow.querySelector<HTMLElement>('.struct')
     if (!struct) return
-    const hasSider = this.querySelector('oas-sider') !== null
+    // 用 slot="sider" 判定而非标签 oas-sider：允许任意元素（oas-sider/div 等）进左轨，
+    // 否则非 oas-sider 的 slot 元素会静默渲染成全宽顶带且无警告
+    const hasSider = this.querySelector('[slot="sider"]') !== null
     struct.classList.toggle('has-sider', hasSider)
     struct.setAttribute('data-has-sider', String(hasSider))
   }
