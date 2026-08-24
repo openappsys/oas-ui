@@ -59,10 +59,10 @@ onMounted(() => {
     basic.lines = [
       '$ pnpm dev',
       '> oas-ui@0.1.0 dev',
-      '> vitepress dev docs --port 5173',
+      '> vitepress dev docs --port 5175',
       '',
       '  vitepress v1.0.0',
-      '  ➜ Local: http://localhost:5173/',
+      '  ➜ Local: http://localhost:5175/',
       '  ➜ Network: use --host to expose',
       '[debug] 组件注册完成：oas-log / oas-masonry / oas-comment',
     ]
