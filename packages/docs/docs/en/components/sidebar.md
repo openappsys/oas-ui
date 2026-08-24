@@ -107,8 +107,9 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `active` | Value of the currently-highlighted menu item (controlled: set/clear immediately re-renders highlight) | `string` | — |
 | `collapsed` | Controlled collapse to an icon strip (present means collapsed) | `boolean` | — |
-| `drawer-open` | — | `boolean` | — |
+| `drawer-open` | Mobile drawer open state (controlled: set opens, clear closes; auto-removed when breakpoint returns to desktop) | `boolean` | — |
 | `items` | Menu items JSON `[{label, value, icon?}]` | `SidebarItem[] \| string` | `[]` |
 | `mobile-breakpoint` | Mobile breakpoint (px); narrower than this becomes an overlay drawer | — | — |
 | `width` | Expanded width; defaults to the `--oas-sidebar-width` token | — | — |

@@ -4182,7 +4182,7 @@
       },
       {
         "name": "oas-expand-change",
-        "detail": "{ expanded: [...this.expanded], value, isExpanded: willExpandMore } | { expanded: [...this.expanded], value, isExpanded: willExpand }"
+        "detail": "{ expanded: [...this.expanded], value, isExpanded: willExpandMore, } | { expanded: [...this.expanded], value, isExpanded: willExpand }"
       }
     ],
     "slots": [],
@@ -5598,7 +5598,7 @@
       {
         "name": "target-area-clickable",
         "type": "string",
-        "default": "false",
+        "default": "true",
         "observed": true
       },
       {
@@ -5736,7 +5736,7 @@
       {
         "name": "typewriter",
         "type": "string",
-        "default": "false",
+        "default": "true",
         "observed": true
       },
       {
@@ -6493,9 +6493,15 @@
         "observed": true
       },
       {
+        "name": "active",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
         "name": "drawer-open",
         "type": "boolean",
-        "observed": false
+        "observed": true
       }
     ],
     "props": [

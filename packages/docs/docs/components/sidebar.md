@@ -107,8 +107,9 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `active` | 当前高亮菜单项 value（受控：外部设置/清除立即高亮迁移，重绘） | `string` | — |
 | `collapsed` | 受控折叠，收窄为图标条（存在即折叠） | `boolean` | — |
-| `drawer-open` | — | `boolean` | — |
+| `drawer-open` | 移动端抽屉打开态（受控：设置即开、清除即收；断点回桌面自动移除） | `boolean` | — |
 | `items` | 菜单项 JSON `[{label, value, icon?}]` | `SidebarItem[] \| string` | `[]` |
 | `mobile-breakpoint` | 移动端断点（px），窄于该值变覆盖式抽屉 | — | — |
 | `width` | 展开宽度，默认走 `--oas-sidebar-width` token | — | — |

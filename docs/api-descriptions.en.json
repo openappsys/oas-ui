@@ -1343,7 +1343,9 @@
       "collapsed": "Controlled collapse to an icon strip (present means collapsed)",
       "items": "Menu items JSON `[{label, value, icon?}]`",
       "mobile-breakpoint": "Mobile breakpoint (px); narrower than this becomes an overlay drawer",
-      "width": "Expanded width; defaults to the `--oas-sidebar-width` token"
+      "width": "Expanded width; defaults to the `--oas-sidebar-width` token",
+      "active": "Value of the currently-highlighted menu item (controlled: set/clear immediately re-renders highlight)",
+      "drawer-open": "Mobile drawer open state (controlled: set opens, clear closes; auto-removed when breakpoint returns to desktop)"
     },
     "events": {
       "oas-collapse": "`detail: { collapsed: boolean }`; When fired: Desktop collapse button toggled",
@@ -2020,5 +2022,3 @@
     "slots": {}
   }
 }
-
-
