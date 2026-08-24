@@ -147,7 +147,11 @@
   <oas-tour id="tour-interact" target-area-clickable steps='[{"selector":"#tour-ai1","title":"高亮区可交互","description":"target-area-clickable：高亮目标上的按钮/链接可直接点击（遮罩不拦截）。"}]'></oas-tour>
   <oas-tour id="tour-disabled" disabled-interaction steps='[{"selector":"#tour-ai1","title":"禁止高亮区交互","description":"disabled-interaction：高亮区拦截层覆盖，目标不可点击。"}]'></oas-tour>
   <oas-tour id="tour-adv" advance-on-click steps='[{"selector":"#tour-ai1","title":"点我试试","description":"点击高亮区域直接进入下一步。"},{"selector":"#tour-ai2","title":"又前进一步","description":"交互式引导：点高亮区即推进。"}]'></oas-tour>
-  <div id="tour-ai1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">高亮交互目标一</div>
+  <oas-tag id="tour-ai-result" type="info" style="margin-bottom: 4px">目标内按钮未被点击</oas-tag>
+  <div id="tour-ai1" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; gap: 8px">
+    高亮交互目标一
+    <oas-button size="small" type="primary" onclick="window.__tourAiClick=(window.__tourAiClick||0)+1;document.getElementById('tour-ai-result').textContent='目标内按钮已点击 ×'+window.__tourAiClick+'（遮罩未拦截）'">点我验证可交互</oas-button>
+  </div>
   <div id="tour-ai2" style="margin-top: 12px; height: 60px; padding: 0 12px; white-space: nowrap; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center">高亮交互目标二</div>
 </DemoBlock>
 
