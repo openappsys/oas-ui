@@ -959,7 +959,10 @@ export class OASTour extends OASElement {
     this.clearTypewriter()
     const desc = this.popup?.querySelector<HTMLElement>('[part="desc"]')
     if (!desc) return
-    if (this.getAttr('typewriter', 'false') !== 'true') {
+    // typewriter 是 opt-in 布尔属性：getAttribute 对无值布尔返回 '' 而非 'true'，
+    // 用 getAttr(...)!=='true' 判定会把布尔写法误判为关（'' !== 'true' → 跳过打字机）
+    const typewriterOn = this.hasAttr('typewriter') && this.getAttr('typewriter', 'true') !== 'false'
+    if (!typewriterOn) {
       desc.textContent = text
       return
     }
