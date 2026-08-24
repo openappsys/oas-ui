@@ -68,7 +68,7 @@ When the panel is wider than the remaining viewport, collisions are handled auto
 
 <DemoBlock title="Narrow container collision flip">
   <div style="width: 260px">
-    <oas-navigation-menu id="nav-flip" delay-duration="0" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","description":"30+ ready-to-use components"},{"label":"Design system","value":"design","href":"/design","description":"Visual language and tokens"},{"label":"Theming","value":"theming","href":"/theming","description":"Three-layer token architecture"}]}]'></oas-navigation-menu>
+    <oas-navigation-menu id="nav-flip" delay-duration="0" loop="false" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","description":"30+ ready-to-use components"},{"label":"Design system","value":"design","href":"/design","description":"Visual language and tokens"},{"label":"Theming","value":"theming","href":"/theming","description":"Three-layer token architecture"}]}]'></oas-navigation-menu>
   </div>
   <p class="demo-tip">Container is 260px: when there's no room on the right, the panel right-aligns and stays fully inside the container/viewport.</p>
 </DemoBlock>

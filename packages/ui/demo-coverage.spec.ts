@@ -102,8 +102,8 @@ const manifest = buildManifest()
 // mode: 'parallel' 让各组件 test 分发到多个 worker；每个 test 独立 page 且无共享状态，隔离安全。
 test.describe.configure({ mode: 'parallel' })
 
-// 需特殊触发、通用探针难以触达的事件：定时器/滚动/步骤流/填满
-const EXEMPT_EVENTS = new Set(['oas-finish', 'oas-scroll', 'oas-step', 'oas-complete'])
+// 需特殊触发、通用探针难以触达的事件：定时器/滚动/步骤流/填满/折叠下拉展开
+const EXEMPT_EVENTS = new Set(['oas-finish', 'oas-scroll', 'oas-step', 'oas-complete', 'oas-collapse-click'])
 
 // manifest 的 tag 与真实注册 tag 不一致的组件（demo 页用真实 tag 渲染）
 const WAIT_TAGS: Record<string, string[]> = {

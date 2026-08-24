@@ -706,15 +706,38 @@ tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navig
 - **实测修复**：toolbar SSR 溢出误判（happy-dom 假溢出致快照隐藏项、水合布局漂移 9px；溢出判定改 scrollWidth>clientWidth 防 shrink-to-fit 假溢出）；popover 退场动画延迟 aria-hidden（语义状态立即落地 + .oas-closing 保显播完）；back-top append-to 竞态致 Vue 水合 mismatch（组件级 load 后 teleport + 站点级注册移至水合后）；toolbar is-attached 样式缺失
 - **验收**：单测 tooltip 78 / popover 90 / hover-card 35 / breadcrumb 33 / anchor 41 / back-top 35 / tour 60 / command 67 / menubar 61 / navigation-menu 36 / toolbar 43 / 定位引擎 30（全量 3120）、typecheck/build 全绿、e2e chromium 944 + firefox 抽样 355、ssr-dsd 11/11、console 零告警；识图验收 light+dark 全 11 页通过（33 张截图逐张核对）
 
-## 导航复核批（breadcrumb / anchor 能力增量与缺陷修复）
+## v2.2.3 导航与浮层族复核批（9 组件能力增量与缺陷修复）
 
-breadcrumb 子元素声明式通道试点 + 折叠/下拉缺陷修复；anchor 点击事件分离 + resize 重算 + 滚动节流 + 最小滚动落点。
+对 tooltip/popover 之外的 9 件（hover-card/tour/command/breadcrumb/anchor/menubar/navigation-menu/back-top/toolbar）按组件深挖流程复核：差距补齐 + 缺陷族排查修复 + 浏览器实测验证。三组滚动推进（浮层系→导航系→独立件）。
 
-- **oas-breadcrumb-item**（新子元素组件）：面包屑项声明式通道。默认插槽文本为 label，属性对齐 items 字段（href/target/icon/disabled/max-width/separator/dropdown/active）；`items` 属性显式设置时数据驱动优先，否则解析子元素收敛到同一渲染路径；子元素增删/属性/文本变化经 MutationObserver 重渲染（结构化数据注入 script 自排除防循环）
-- **oas-breadcrumb-separator**（新子元素组件）：面包屑分隔符声明式通道。置于两个项之间，内容为任意节点（文本/图标/内联元素）；项级 `separator` 属性或 slot="separator" 内联节点亦支持
-- **breadcrumb 增强**：折叠省略号展开派发 `oas-collapse-click`（detail 含被折叠项数组，宿主可自定义折叠面板）；ellipsis 模式 `overflow-x: clip + overflow-y: visible` 修复项下拉被 nav 自裁剪；下拉面板水平翻转（打开时按 offsetWidth 判定，右缘超视口 `right:0` 回折）；层级缩进视觉 demo（纯 CSS）；项挂下拉菜单组合 demo
-- **anchor 增强**：`oas-click` 事件分离（detail `{ href, item }`，与滚动联动 `oas-change` 分离，宿主可只响应用户操作；target 外部链接点击同样派发）；window resize（passive + rAF 节流）重算高亮与墨水条（容器宽度变化后不因无滚动而过期）；滚动监听 rAF 节流（每帧最多一次计算）；`block=nearest` 最小滚动落点（目标已可见则不滚动，在上方对齐顶部/在下方对齐底部）
-- **验收**：breadcrumb 43 + anchor 51 单测、typecheck/build 全绿、api:scan/api:gen 同步、demo 中英双语；浏览器实测待复核：子元素通道各形态、折叠事件反馈、窄视口下拉回折、resize 后 ink 对齐、block=nearest 连续短章节点击
+### 浮层系（tour/hover-card/command）
+
+- **tour 缺陷修复 7 项**：断开重连后 document keydown 丢失（update() 幂等重挂，恢复 Esc/方向键）、advance-on-click 换步旧目标残留 click 监听、append-to 后 slot=cover/indicators/actions 断供（portal host 桥接，连带修 portal 态 overlay 显隐/步骤推进/关闭拆除三处）、-start/-end 箭头被视口夹取后错指（positionArrow 投影+clamp）、auto-reposition 属性实装（原恒真死代码）、mask=false 时 aria-modal 降级、高亮框与遮罩孔过渡对齐（mask-seg 同参 transition）
+- **tour 能力 4 项**：gap offset 双轴（[水平,垂直]）、arrow-point-at-center、slot=indicators 自定义指示器、slot=actions 自定义动作区
+- **hover-card**：滚动/resize 重定位默认开启（原仅 hide-when-detached 挂监听，锚点滚走卡片悬空——缺陷级）+ sticky 三档（off/partial/always 贴边不消失）+ collision-boundary 自定义碰撞边界（选择器 + property 双通道；**坐标系缺陷修复**：边界解析丢 rect 原点致夹取/翻转按视口原点折算、边界在页面中部时卡片飞向视口左上——单测 stub left=0 掩盖，浏览器实测发现）
+- **command**：keydown 重连丢失（幂等重挂）+ 开合过渡动画（reduced-motion 降级）+ search aria-controls 关联 listbox + append-to portal（插槽桥接家族一致化）
+- **验证**：tour 75 / hover-card 51 / command 76 单测；16+ 截图 light/dark 识图；collision-boundary 坐标系与几何回归入 qa-regression（双浏览器）
+
+### 导航系（breadcrumb/anchor/menubar/navigation-menu）
+
+- **breadcrumb 双通道试点（架构决策）**：`<oas-breadcrumb-item>`/`<oas-breadcrumb-separator>` 子元素声明式通道——items 属性显式设置时数据驱动优先，否则子元素解析收敛到同一渲染路径（MutationObserver 响应变化）；分隔符任意节点。全库「声明式子元素通道」的试点范式，验证后分批推广其余 items 组件
+- **breadcrumb**：oas-collapse-click 折叠展开事件（detail 带被折叠项）；ellipsis 自裁剪修复（overflow-x:clip + overflow-y:visible）；下拉水平翻转；层级缩进纯 CSS demo、项挂菜单组合 demo
+- **anchor**：oas-click 事件分离（与滚动联动 oas-change 区分）；resize 重算（缺陷级补齐）；滚动 rAF 节流；block=nearest 最小滚动落点
+- **menubar**：子项 href 真链接（渲染 `<a>` 保留 select/键盘/aria，中键新开可用）；水平溢出收纳「···」（offsetWidth 测量+复位再测+镜像弹层+选中反馈，仅水平模式）；checkbox indeterminate 半选（aria-checked=mixed + 横线减号）；start/end 插槽；缺陷修复三处（scale 动画污染定位测量改布局尺寸、divider role/aria-hidden 互斥、typeaheadTimer 清理）；**SSR 溢出误判三连修（e2e 水合漂移 38px 驱动）**——零宽守卫（clientWidth=0 不判定，防误判态烤进快照）+ 收纳壳创建态整体隐藏（原只藏按钮，快照含 34px 空壳）+ 水合后 rAF 重算（hydrate 路径原无重算通道）
+- **navigation-menu**：面板箭头跟随触发器（CSS 引用 --arrow-x/--arrow-y 但 JS 从未写入的 bug 修复）；viewport 碰撞翻转（右缘/下缘/竖排左缘）；面板内二级子导航（sub 字段 + 覆盖式二级面板 + 级联动画 + Esc/← 逐层回退，与 section 折叠并存）；loop 属性对齐 menubar；panel-footer 营销位插槽
+- **验证**：breadcrumb 43 / anchor 51 / menubar 79 / navigation-menu 51 单测；箭头跟随与 ellipsis 裁剪入 qa-regression（双浏览器）；17 截图识图；五个初判异常经 DOM 精诊全部洗清（采集探针问题）
+
+### 独立件（back-top/toolbar）
+
+- **back-top**：target 缺省自动探测最近可滚祖先；tooltip 读屏可达（aria-describedby 关联）；draggable 拖拽（pointer 捕获 + 视口夹取 + 4px 点击/拖拽阈值 + 位置持久化恢复）
+- **toolbar**：断开重连后 pointerdown/ResizeObserver 永久丢失修复（update() 恢复模式）；弹层下缘翻转；镜像项 menuitemcheckbox 语义（CSS 勾选替换 ✓ 文本）；start/end 插槽；**溢出收纳防收缩（浏览器实测真缺陷）**：slotted 项无 flex-shrink:0 被压扁成窄条、scrollWidth 恒等 clientWidth 收纳永不触发——修复 + 几何回归（双浏览器）
+- **验证**：back-top 47 / toolbar 45 单测；拖拽/半选/弹层识图确认
+
+### 复核批汇总
+
+- **验收**：全量单测 3255 / typecheck / build / api:scan+gen / e2e chromium 全量 1337 + firefox 抽样（ssr-dsd 真水合 38px 漂移修复后全绿）/ perf:size 六项 PASS（cdn 245.5KB < 300KB 天花板）/ trace 门禁 0 命中 / dev 浏览器实测 40+ 截图 light+dark console 零告警
+- **缺陷固化回归 6 条**：hover-card collision-boundary 坐标系、navigation-menu 箭头跟随、breadcrumb ellipsis 裁剪、toolbar 防收缩、menubar 零宽守卫（单测）、demo-coverage 探针豁免补录
+- **demo 探针**：navigation-menu loop 演示补录、oas-collapse-click 纳入事件豁免清单（需折叠交互序列）
 
 ## 后续 backlog：独立组件条目（按需立项）
 
