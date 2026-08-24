@@ -132,6 +132,7 @@ const STYLE = `
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-right: var(--oas-space-2); /* 与 .icon/.spin 同档间距，避免方块紧贴标签 */
   opacity: 1; /* checkbox 的框始终显示（区别于 radio 的 ✓ 仅勾选显示） */
 }
 .item[role='menuitemcheckbox'][aria-checked='true'] .check--box {
