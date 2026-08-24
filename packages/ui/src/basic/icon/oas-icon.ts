@@ -72,24 +72,27 @@ svg {
 slot {
   display: none;
 }
-/* duotone：优先 data-layer 显式分层，其次按前两个直接子图形元素着色 */
+/* duotone：优先 data-layer 显式分层，其次按前两个直接子图形元素着色。
+   fallback 选择器带 :not([data-layer])——与显式规则特异性相同（0,2,1），
+   不排除的话声明序在后的序号兜底会压过显式分层（SVG 按绘制序摆放时
+   底色层在前，primary 命中 > :nth-child(2) 的 secondary 兜底，透明度错乱） */
 svg[data-duotone='true'] [data-layer='primary'],
-svg[data-duotone='true'] > :first-child {
+svg[data-duotone='true'] > :first-child:not([data-layer]) {
   color: var(--oas-icon-primary-color);
   opacity: var(--oas-icon-primary-opacity);
 }
 svg[data-duotone='true'] [data-layer='secondary'],
-svg[data-duotone='true'] > :nth-child(2) {
+svg[data-duotone='true'] > :nth-child(2):not([data-layer]) {
   color: var(--oas-icon-secondary-color);
   opacity: var(--oas-icon-secondary-opacity);
 }
 /* swap-opacity：交换两层透明度 */
 svg[data-duotone='true'][data-swap='true'] [data-layer='primary'],
-svg[data-duotone='true'][data-swap='true'] > :first-child {
+svg[data-duotone='true'][data-swap='true'] > :first-child:not([data-layer]) {
   opacity: var(--oas-icon-secondary-opacity);
 }
 svg[data-duotone='true'][data-swap='true'] [data-layer='secondary'],
-svg[data-duotone='true'][data-swap='true'] > :nth-child(2) {
+svg[data-duotone='true'][data-swap='true'] > :nth-child(2):not([data-layer]) {
   opacity: var(--oas-icon-primary-opacity);
 }
 @keyframes oas-icon-spin {
