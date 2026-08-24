@@ -21,7 +21,14 @@ interface BoundaryRect {
 }
 
 /** 主轴是否有足够空间容纳浮层（gap 即 offset 距离，padding 即边界内边距；判定基于边界 rect 原点） */
-function fits(anchor: DOMRect, popup: DOMRect, base: Base, offset: number, boundary: BoundaryRect, padding: number): boolean {
+function fits(
+  anchor: DOMRect,
+  popup: DOMRect,
+  base: Base,
+  offset: number,
+  boundary: BoundaryRect,
+  padding: number,
+): boolean {
   switch (base) {
     case 'top':
       return anchor.top - popup.height - offset >= boundary.top + padding
@@ -556,10 +563,7 @@ export class OASHoverCard extends OASElement {
     this.card.setAttribute('aria-hidden', String(!open))
     // 从 this.card 查（而非 this.shadow）：portal（append-to）期间卡片在 portal host 的
     // shadow 内，原 shadow 查询会落空
-    this.card.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
-      'title',
-      '',
-    )
+    this.card.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr('title', '')
     this.card.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr(
       'content',
       '',
@@ -701,8 +705,14 @@ export class OASHoverCard extends OASElement {
 
     // 碰撞边界夹取：collision-padding 定制边距（以边界 rect 原点计算，默认视口，可换成自定义元素 rect）
     if (autoAdjust) {
-      left = Math.max(boundary.left + padding, Math.min(left, boundary.right - cardRect.width - padding))
-      top = Math.max(boundary.top + padding, Math.min(top, boundary.bottom - cardRect.height - padding))
+      left = Math.max(
+        boundary.left + padding,
+        Math.min(left, boundary.right - cardRect.width - padding),
+      )
+      top = Math.max(
+        boundary.top + padding,
+        Math.min(top, boundary.bottom - cardRect.height - padding),
+      )
     }
 
     const actual = actualBase + (align ? `-${align}` : '')
@@ -730,7 +740,14 @@ export class OASHoverCard extends OASElement {
     if (el) {
       const r = el.getBoundingClientRect()
       // 保留完整 rect（含原点）：边界可能在页面任意位置，丢原点会让夹取/翻转折算回视口原点系
-      return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height }
+      return {
+        left: r.left,
+        top: r.top,
+        right: r.right,
+        bottom: r.bottom,
+        width: r.width,
+        height: r.height,
+      }
     }
     return {
       left: 0,
@@ -833,7 +850,11 @@ export class OASHoverCard extends OASElement {
         : placement.startsWith('left')
           ? 'left'
           : 'right'
-    const align: Align = placement.endsWith('-start') ? 'start' : placement.endsWith('-end') ? 'end' : ''
+    const align: Align = placement.endsWith('-start')
+      ? 'start'
+      : placement.endsWith('-end')
+        ? 'end'
+        : ''
     const cross = (s: string, e: string): string =>
       align === 'start' ? s : align === 'end' ? e : 'center'
     const originX =
@@ -872,9 +893,7 @@ export class OASHoverCard extends OASElement {
     if (this.hasAttr('arrow-merge')) return
     const vertical = placement.startsWith('top') || placement.startsWith('bottom')
     const rect = this.card.getBoundingClientRect()
-    const popupEdge = vertical
-      ? parseFloat(this.card.style.left)
-      : parseFloat(this.card.style.top)
+    const popupEdge = vertical ? parseFloat(this.card.style.left) : parseFloat(this.card.style.top)
     const anchorCrossCenter = vertical
       ? anchorRect.left + anchorRect.width / 2
       : anchorRect.top + anchorRect.height / 2

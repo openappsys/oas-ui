@@ -17,16 +17,7 @@ const ITEM_STYLE = `
  */
 export class OASBreadcrumbItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return [
-      'href',
-      'target',
-      'icon',
-      'disabled',
-      'max-width',
-      'separator',
-      'dropdown',
-      'active',
-    ]
+    return ['href', 'target', 'icon', 'disabled', 'max-width', 'separator', 'dropdown', 'active']
   }
 
   protected override render(): void {

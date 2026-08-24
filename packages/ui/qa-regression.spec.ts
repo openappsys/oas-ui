@@ -1008,8 +1008,7 @@ test('menubar click 首开语义：无开态 hover 不展开、开态 hover 切�
   await page.waitForTimeout(150)
   const switched = await page.evaluate(() => {
     const mb = document.querySelector('#menubar-basic')!
-    const sub = (v: string) =>
-      mb.shadowRoot!.querySelector(`[part="submenu"][data-parent="${v}"]`)!
+    const sub = (v: string) => mb.shadowRoot!.querySelector(`[part="submenu"][data-parent="${v}"]`)!
     return {
       editOpen: sub('edit').classList.contains('open'),
       fileOpen: sub('file').classList.contains('open'),
@@ -2964,9 +2963,7 @@ test('tooltip 触发路径一致性：hover 与 click 打开的落点/方向逐�
     }, SEL)
   const waitOpen = () =>
     page.waitForFunction((s) => {
-      const tip = document
-        .querySelector(s)
-        ?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
+      const tip = document.querySelector(s)?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
       return !!tip && tip.getAttribute('aria-hidden') === 'false' && tip.style.top !== ''
     }, SEL)
   const waitClosed = () =>
@@ -3589,7 +3586,12 @@ test('tooltip 箭头形态（用户场景）：top 方向底部箭头完整菱�
       // 尖端（rect.bottom）到锚点顶边 = offset 8 − 半对角线 5.66 = 2.34
       apexGap: bb.top - ab.bottom,
       tipVsAnchorCenter: Math.abs((tb.left + tb.right) / 2 - (bb.left + bb.right) / 2),
-      overlap: !(ab.right <= bb.left || ab.left >= bb.right || ab.bottom <= bb.top || ab.top >= bb.bottom),
+      overlap: !(
+        ab.right <= bb.left ||
+        ab.left >= bb.right ||
+        ab.bottom <= bb.top ||
+        ab.top >= bb.bottom
+      ),
       pureRot,
     }
   })
@@ -3599,9 +3601,14 @@ test('tooltip 箭头形态（用户场景）：top 方向底部箭头完整菱�
   expect(r.pureRot, '箭头 transform 应为纯 rotate(45deg)（无缩放/平移残留）').toBe(true)
   expect(r.centerOnEdge, '菱心应悬在气泡底边上').toBeLessThanOrEqual(0.7)
   expect(r.arrowVsTipCenter, '箭头应居气泡中线').toBeLessThanOrEqual(0.7)
-  expect(r.tipVsAnchorCenter, '气泡中线应对齐锚点中线（动画污染测量曾致 ~4px 偏移）').toBeLessThanOrEqual(0.7)
+  expect(
+    r.tipVsAnchorCenter,
+    '气泡中线应对齐锚点中线（动画污染测量曾致 ~4px 偏移）',
+  ).toBeLessThanOrEqual(0.7)
   // 修复前（scale 污染测量）：gap = 8 − 3.2 − 5.66 ≈ −0.86（扎进按钮）
-  expect(r.apexGap, `箭头尖端距锚点应为 2.34px（实测 ${r.apexGap.toFixed(2)}）`).toBeGreaterThan(1.5)
+  expect(r.apexGap, `箭头尖端距锚点应为 2.34px（实测 ${r.apexGap.toFixed(2)}）`).toBeGreaterThan(
+    1.5,
+  )
   expect(r.apexGap).toBeLessThan(3.2)
   expect(r.overlap, '箭头不得与锚点按钮相交').toBe(false)
   await page.mouse.move(8, 8)
@@ -3754,7 +3761,9 @@ test('tooltip merge 直角三角贴角共边 8 向：直角点贴面板角点、
           const a = verts[(i + 1) % 3]!
           const b = verts[(i + 2) % 3]!
           const v = verts[i]!
-          if (Math.abs((a[0]! - v[0]!) * (b[0]! - v[0]!) + (a[1]! - v[1]!) * (b[1]! - v[1]!)) < 0.01) {
+          if (
+            Math.abs((a[0]! - v[0]!) * (b[0]! - v[0]!) + (a[1]! - v[1]!) * (b[1]! - v[1]!)) < 0.01
+          ) {
             rv = v
             others = verts.filter((_, j) => j !== i)
           }
@@ -3792,10 +3801,20 @@ test('tooltip merge 直角三角贴角共边 8 向：直角点贴面板角点、
     expect(r.actual, `${r.p} 中置视口不应翻转`).toBe(r.p)
     expect(r.transformNone, `${r.p} 箭头不旋转（直角三角形态）`).toBe(true)
     expect(r.hasPolygon, `${r.p} clip-path 应裁出三角`).toBe(true)
-    expect(Math.abs(r.rdx as number), `${r.p} 三角直角点应与面板角点重合 X`).toBeLessThanOrEqual(0.5)
-    expect(Math.abs(r.rdy as number), `${r.p} 三角直角点应与面板角点重合 Y`).toBeLessThanOrEqual(0.5)
-    expect(Math.abs(r.fdx as number), `${r.p} 箭头盒应贴角（主轴外悬/侧边贴齐）X`).toBeLessThanOrEqual(0.5)
-    expect(Math.abs(r.fdy as number), `${r.p} 箭头盒应贴角（主轴外悬/侧边贴齐）Y`).toBeLessThanOrEqual(0.5)
+    expect(Math.abs(r.rdx as number), `${r.p} 三角直角点应与面板角点重合 X`).toBeLessThanOrEqual(
+      0.5,
+    )
+    expect(Math.abs(r.rdy as number), `${r.p} 三角直角点应与面板角点重合 Y`).toBeLessThanOrEqual(
+      0.5,
+    )
+    expect(
+      Math.abs(r.fdx as number),
+      `${r.p} 箭头盒应贴角（主轴外悬/侧边贴齐）X`,
+    ).toBeLessThanOrEqual(0.5)
+    expect(
+      Math.abs(r.fdy as number),
+      `${r.p} 箭头盒应贴角（主轴外悬/侧边贴齐）Y`,
+    ).toBeLessThanOrEqual(0.5)
     expect(r.legsOk, `${r.p} 直角边与面板边共边 + 尖端正交外探 8px 指向锚点侧`).toBe(true)
     expect(r.cornerZero, `${r.p} 对应角 radius 应置零`).toBe(true)
   }
@@ -3943,7 +3962,9 @@ test('popover arrow-merge 直角三角贴角共边 8 向：直角点贴面板角
           const a = verts[(i + 1) % 3]!
           const b = verts[(i + 2) % 3]!
           const v = verts[i]!
-          if (Math.abs((a[0]! - v[0]!) * (b[0]! - v[0]!) + (a[1]! - v[1]!) * (b[1]! - v[1]!)) < 0.01) {
+          if (
+            Math.abs((a[0]! - v[0]!) * (b[0]! - v[0]!) + (a[1]! - v[1]!) * (b[1]! - v[1]!)) < 0.01
+          ) {
             rv = v
             others = verts.filter((_, j) => j !== i)
           }
@@ -3999,8 +4020,14 @@ test('popover arrow-merge 直角三角贴角共边 8 向：直角点贴面板角
     expect(r.hasPolygon, `${r.p} clip-path 应裁出三角`).toBe(true)
     expect(r.boxW, `${r.p} 箭头盒应为 8px 宽（不旋转）`).toBeCloseTo(8, 1)
     expect(r.boxH, `${r.p} 箭头盒应为 8px 高（不旋转）`).toBeCloseTo(8, 1)
-    expect(r.rdx, `${r.p} 直角点相对面板角点 X 应为 ${r.vdx}（描边带让位）`).toBeCloseTo(r.vdx as number, 1)
-    expect(r.rdy, `${r.p} 直角点相对面板角点 Y 应为 ${r.vdy}（描边带让位）`).toBeCloseTo(r.vdy as number, 1)
+    expect(r.rdx, `${r.p} 直角点相对面板角点 X 应为 ${r.vdx}（描边带让位）`).toBeCloseTo(
+      r.vdx as number,
+      1,
+    )
+    expect(r.rdy, `${r.p} 直角点相对面板角点 Y 应为 ${r.vdy}（描边带让位）`).toBeCloseTo(
+      r.vdy as number,
+      1,
+    )
     expect(r.legsOk, `${r.p} 直角边与面板边共边 + 尖端正交外探 8px 指向锚点侧`).toBe(true)
     expect(r.legsOnly, `${r.p} 描边应仅在两条直角边上`).toBe(true)
     expect(r.othersZero, `${r.p} 斜边与其余边不得有描边`).toBe(true)
@@ -4020,7 +4047,9 @@ test('hover-card collision-boundary：边界在页面中部时卡片被夹取在
   await up(page, 'oas-hover-card[collision-boundary]')
   const r = await page.evaluate(async () => {
     const host = document.querySelector('oas-hover-card[collision-boundary]')!
-    ;(host.firstElementChild as HTMLElement).dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    ;(host.firstElementChild as HTMLElement).dispatchEvent(
+      new MouseEvent('mouseenter', { bubbles: true }),
+    )
     await new Promise((res) => setTimeout(res, 500))
     const card = host.shadowRoot!.querySelector('.card') as HTMLElement
     const box = document.querySelector('#hc-cb-box') as HTMLElement
@@ -4184,7 +4213,9 @@ test('hover-card arrow-merge 直角三角贴角共边 8 向：直角点贴面板
           const a = verts[(i + 1) % 3]!
           const b = verts[(i + 2) % 3]!
           const v = verts[i]!
-          if (Math.abs((a[0]! - v[0]!) * (b[0]! - v[0]!) + (a[1]! - v[1]!) * (b[1]! - v[1]!)) < 0.01) {
+          if (
+            Math.abs((a[0]! - v[0]!) * (b[0]! - v[0]!) + (a[1]! - v[1]!) * (b[1]! - v[1]!)) < 0.01
+          ) {
             rv = v
             others = verts.filter((_, j) => j !== i)
           }
@@ -4240,8 +4271,14 @@ test('hover-card arrow-merge 直角三角贴角共边 8 向：直角点贴面板
     expect(r.hasPolygon, `${r.p} clip-path 应裁出三角`).toBe(true)
     expect(r.boxW, `${r.p} 箭头盒应为 8px 宽（不旋转）`).toBeCloseTo(8, 1)
     expect(r.boxH, `${r.p} 箭头盒应为 8px 高（不旋转）`).toBeCloseTo(8, 1)
-    expect(r.rdx, `${r.p} 直角点相对面板角点 X 应为 ${r.vdx}（描边带让位）`).toBeCloseTo(r.vdx as number, 1)
-    expect(r.rdy, `${r.p} 直角点相对面板角点 Y 应为 ${r.vdy}（描边带让位）`).toBeCloseTo(r.vdy as number, 1)
+    expect(r.rdx, `${r.p} 直角点相对面板角点 X 应为 ${r.vdx}（描边带让位）`).toBeCloseTo(
+      r.vdx as number,
+      1,
+    )
+    expect(r.rdy, `${r.p} 直角点相对面板角点 Y 应为 ${r.vdy}（描边带让位）`).toBeCloseTo(
+      r.vdy as number,
+      1,
+    )
     expect(r.legsOk, `${r.p} 直角边与面板边共边 + 尖端正交外探 8px 指向锚点侧`).toBe(true)
     expect(r.legsOnly, `${r.p} 描边应仅在两条直角边上`).toBe(true)
     expect(r.othersZero, `${r.p} 斜边与其余边不得有描边`).toBe(true)
@@ -5413,13 +5450,16 @@ test('tabs 溢出（滚动/更多）时标签不压缩换行——white-space no
   await up(page, 'oas-tabs')
   // 溢出滚动 demo 与 more demo 的标签都不该换行/压缩
   for (const sel of ['.demo-block oas-tabs:not([more])', '.demo-block oas-tabs[more]']) {
-    const result = await page.locator(sel).first().evaluate((el) => {
-      const tabs = [...(el.shadowRoot?.querySelectorAll('[role="tab"][data-value]') ?? [])]
-      const t = tabs.find((x) => (x as HTMLElement).offsetWidth > 0)
-      if (!t) return null
-      const cs = getComputedStyle(t as HTMLElement)
-      return { whiteSpace: cs.whiteSpace, flexShrink: cs.flexShrink }
-    })
+    const result = await page
+      .locator(sel)
+      .first()
+      .evaluate((el) => {
+        const tabs = [...(el.shadowRoot?.querySelectorAll('[role="tab"][data-value]') ?? [])]
+        const t = tabs.find((x) => (x as HTMLElement).offsetWidth > 0)
+        if (!t) return null
+        const cs = getComputedStyle(t as HTMLElement)
+        return { whiteSpace: cs.whiteSpace, flexShrink: cs.flexShrink }
+      })
     if (result) {
       expect(result.whiteSpace, `${sel} 标签应 nowrap`).toBe('nowrap')
       expect(result.flexShrink, `${sel} 标签应不压缩`).toBe('0')
@@ -5427,7 +5467,9 @@ test('tabs 溢出（滚动/更多）时标签不压缩换行——white-space no
   }
 })
 
-test('tabs editable 真实双击进入重命名编辑态（真实 dblclick，非 dispatchEvent）', async ({ page }) => {
+test('tabs editable 真实双击进入重命名编辑态（真实 dblclick，非 dispatchEvent）', async ({
+  page,
+}) => {
   // 缺陷固化：真实双击前两次 click 触发 activate→update 重建 tablist，导致浏览器判定双击目标
   // 已变而不派发 dblclick，重命名永不进入编辑态。修复=activate 重复点击守卫 + dblclick 委托到
   // 稳定的 tablist 容器。此处用 Playwright 真实 dblclick 复现路径（dispatchEvent 无法暴露该 bug）。
@@ -5461,11 +5503,15 @@ test('tabs editable 编辑态与非编辑态几何一致（编辑框贴合标签
     return { tabH: el.getBoundingClientRect().height, inputTop: input.top, inputH: input.height }
   })
   expect(after.tabH, '编辑态不应撑高 tab').toBe(before.tabH)
-  expect(Math.abs(after.inputTop - before.labelTop), '编辑框与原标签纵向对齐').toBeLessThanOrEqual(0.5)
+  expect(Math.abs(after.inputTop - before.labelTop), '编辑框与原标签纵向对齐').toBeLessThanOrEqual(
+    0.5,
+  )
   expect(Math.abs(after.inputH - before.labelH), '编辑框与原标签同高').toBeLessThanOrEqual(0.5)
 })
 
-test('tabs 选中下划线与文字同主色且为 2px 细线（light/dark，无 border 叠加变粗）', async ({ page }) => {
+test('tabs 选中下划线与文字同主色且为 2px 细线（light/dark，无 border 叠加变粗）', async ({
+  page,
+}) => {
   // 缺陷固化：①tablist overflow-x:auto 时 overflow-y 连带裁剪，tab border 溢出的激活下划线被裁
   // 导致 dark 下选中下划线丢失主色；②改 box-shadow 后与残留 border 占位叠加变粗。
   // 修复=纯 box-shadow inset 2px 主色（无 border 占位）。断言选中下划线颜色==选中文字颜色、且
@@ -5522,7 +5568,10 @@ test('tabs more 模式（通用机制）：tab 全渲染不隐藏 + more 下拉�
   expect(noHidden, 'more 模式 tab 应全部渲染不隐藏').toBe(true)
   // 打开 more 下拉，列出视口外 tab
   await page.evaluate(() => {
-    document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector<HTMLElement>('.more-btn')!.click()
+    document
+      .querySelector('oas-tabs[more]')!
+      .shadowRoot!.querySelector<HTMLElement>('.more-btn')!
+      .click()
   })
   await page.waitForTimeout(200)
   const dropCount = await page.evaluate(
@@ -5532,10 +5581,15 @@ test('tabs more 模式（通用机制）：tab 全渲染不隐藏 + more 下拉�
   expect(dropCount, 'more 下拉应列出视口外 tab').toBeGreaterThan(0)
   // 点选最后一个视口外项 → 平滑滚动到可见 + 激活
   const scrollBefore = await page.evaluate(
-    () => document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector('.tablist')!.scrollLeft,
+    () =>
+      document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelector('.tablist')!.scrollLeft,
   )
   await page.evaluate(() => {
-    const items = [...document.querySelector('oas-tabs[more]')!.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')]
+    const items = [
+      ...document
+        .querySelector('oas-tabs[more]')!
+        .shadowRoot!.querySelectorAll<HTMLElement>('.more-item'),
+    ]
     items[items.length - 1]?.click()
   })
   await page.waitForTimeout(600) // 等平滑滚动
@@ -5564,7 +5618,8 @@ test('menu 水平模式子菜单浮层不被裁剪——.menu 容器 overflow-x:
   await item.hover()
   await page.waitForTimeout(400)
   const result = await item.evaluate((li) => {
-    const host = li.getRootNode() instanceof ShadowRoot ? (li.getRootNode() as ShadowRoot).host : null
+    const host =
+      li.getRootNode() instanceof ShadowRoot ? (li.getRootNode() as ShadowRoot).host : null
     const menuRoot = host?.shadowRoot?.querySelector('.menu') as HTMLElement | null
     const sub = li.querySelector(':scope > .submenu') as HTMLElement | null
     if (!host || !menuRoot || !sub) return null
@@ -5596,7 +5651,9 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
   await page.waitForTimeout(400) // 等 rAF 测量
   const st = await menu.evaluate((host) => {
     const root = host.shadowRoot!.querySelector('.menu')!
-    const items = [...root.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]:not(.menu-more)')]
+    const items = [
+      ...root.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]:not(.menu-more)'),
+    ]
     const more = root.querySelector<HTMLElement>('.menu-more')!
     const visible = items.filter((t) => !t.hasAttribute('data-collapsed'))
     const lastVisible = visible[visible.length - 1]
@@ -5632,7 +5689,9 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
     const root = host.shadowRoot!.querySelector('.menu')!
     const more = root.querySelector<HTMLElement>('.menu-more')!
     const firstMirror = root.querySelector<HTMLElement>('.menu-more-sub [role="menuitemradio"]')
-    const visibleChecked = [...root.querySelectorAll<HTMLElement>(':scope > [part="item"]:not(.menu-more)')]
+    const visibleChecked = [
+      ...root.querySelectorAll<HTMLElement>(':scope > [part="item"]:not(.menu-more)'),
+    ]
       .filter((t) => !t.hasAttribute('data-collapsed'))
       .some((t) => t.getAttribute('aria-checked') === 'true')
     return {
@@ -5657,10 +5716,7 @@ test('hover-card 浮层可悬停：触发器 → 卡片跨间隙移动不闪关'
   await up(page, sel)
   // demo 块可能在首屏下方，先把触发器滚进视口（视口外元素收不到指针事件）
   await page.evaluate((s) => {
-    document
-      .querySelector(s)
-      ?.querySelector('oas-button')
-      ?.scrollIntoView({ block: 'center' })
+    document.querySelector(s)?.querySelector('oas-button')?.scrollIntoView({ block: 'center' })
   }, sel)
   await page.waitForTimeout(300)
   const trigger = await page.evaluate((s) => {
@@ -5692,9 +5748,7 @@ test('hover-card 浮层可悬停：触发器 → 卡片跨间隙移动不闪关'
   await page.waitForTimeout(600)
   const stillOpen = await page.evaluate((s) => {
     const host = document.querySelector(s) as HTMLElement
-    return (
-      host?.shadowRoot?.querySelector('[part="card"]')?.getAttribute('aria-hidden') === 'false'
-    )
+    return host?.shadowRoot?.querySelector('[part="card"]')?.getAttribute('aria-hidden') === 'false'
   }, sel)
   expect(stillOpen, '移入卡片后应保持打开（不闪关）').toBe(true)
 })
@@ -5753,7 +5807,12 @@ test('toolbar-toggle 选中态主题可见——light/dark 下选中与未选中
       return [...(tg.shadowRoot?.querySelectorAll<HTMLButtonElement>('button.item') || [])].map(
         (b) => {
           const cs = getComputedStyle(b)
-          return { text: b.textContent, pressed: b.getAttribute('aria-pressed'), bg: cs.backgroundColor, color: cs.color }
+          return {
+            text: b.textContent,
+            pressed: b.getAttribute('aria-pressed'),
+            bg: cs.backgroundColor,
+            color: cs.color,
+          }
         },
       )
     })
@@ -5808,7 +5867,9 @@ test('popover 12 向箭头对准锚点：demo 4 实例箭头中心落在锚点�
   await page.waitForFunction(
     () =>
       document.querySelectorAll('oas-popover').length > 0 &&
-      [...document.querySelectorAll('oas-popover')].every((e) => (e as HTMLElement).shadowRoot != null),
+      [...document.querySelectorAll('oas-popover')].every(
+        (e) => (e as HTMLElement).shadowRoot != null,
+      ),
   )
   for (const pl of ['bottom-start', 'bottom-end', 'right-start', 'top-end']) {
     const sel = `.demo-block__body oas-popover[placement="${pl}"]`
@@ -5865,7 +5926,9 @@ test('popover portal 样式保真：append-to 面板 fixed + 有背景边框，�
       position: cs.position,
       hasBg: cs.backgroundColor !== 'rgba(0, 0, 0, 0)',
       hasBorder: cs.borderTopWidth !== '0px',
-      gapOk: Math.abs(panel.getBoundingClientRect().top - anchor.getBoundingClientRect().bottom - 8) <= 2,
+      gapOk:
+        Math.abs(panel.getBoundingClientRect().top - anchor.getBoundingClientRect().bottom - 8) <=
+        2,
     }
   }, sel)
   expect(r1.hostInBody, 'portal host 应挂在 body').toBe(true)
@@ -5882,7 +5945,9 @@ test('popover portal 样式保真：append-to 面板 fixed + 有背景边框，�
     const host = document.querySelector<HTMLElement>('[data-oas-popover-portal]')
     const panel = host?.shadowRoot?.querySelector<HTMLElement>('[part="panel"]')!
     const anchor = pop.querySelector<HTMLElement>(':scope > *')!
-    return Math.abs(panel.getBoundingClientRect().top - anchor.getBoundingClientRect().bottom - 8) <= 2
+    return (
+      Math.abs(panel.getBoundingClientRect().top - anchor.getBoundingClientRect().bottom - 8) <= 2
+    )
   }, sel)
   expect(r2, '滚动后面板应跟随锚点（曾乱飘）').toBe(true)
   await page.evaluate((s) => document.querySelector(s)!.removeAttribute('open'), sel)
@@ -5915,7 +5980,10 @@ test('popover closable：右上角 ✕ 按钮真实可见（display 非 none 且
       atTopRight: b.right <= pb.right + 2 && b.top >= pb.top && b.top <= pb.top + 24,
     }
   }, sel)
-  expect(r.display, '✕ 应可见（display 非 none，曾规则钩子 .panel.oas-closable 无人挂类）').not.toBe('none')
+  expect(
+    r.display,
+    '✕ 应可见（display 非 none，曾规则钩子 .panel.oas-closable 无人挂类）',
+  ).not.toBe('none')
   expect(r.visible, '✕ 应有渲染尺寸').toBe(true)
   expect(r.atTopRight, '✕ 应位于面板右上角').toBe(true)
   await page.evaluate((s) => document.querySelector(s)!.removeAttribute('open'), sel)
@@ -5953,7 +6021,9 @@ test('popover virtual 定点：(160,90) 标记点可见且箭头对准该点（�
   expect(Math.abs(r.markCenter.x - 160), '标记中心应在视口 x=160').toBeLessThanOrEqual(1)
   expect(Math.abs(r.markCenter.y - 90), '标记中心应在视口 y=90').toBeLessThanOrEqual(1)
   // placement=right：箭头垂直中心对准点 y=90
-  expect(Math.abs(r.arrowCenter.y - 90), '箭头应对准虚拟锚点坐标点（P6 定夺）').toBeLessThanOrEqual(3)
+  expect(Math.abs(r.arrowCenter.y - 90), '箭头应对准虚拟锚点坐标点（P6 定夺）').toBeLessThanOrEqual(
+    3,
+  )
   await page.evaluate(() => {
     ;(window as unknown as { popPointHide: () => void }).popPointHide()
   })
@@ -6011,7 +6081,10 @@ test('breadcrumb ellipsis 模式项下拉不被裁剪：面板 elementFromPoint 
     const panel = host.shadowRoot!.querySelector<HTMLElement>('.menu-panel.open')
     if (!panel) return { skip: false as const, open: false }
     const rect = panel.getBoundingClientRect()
-    const hit = document.elementFromPoint(rect.left + rect.width / 2, Math.min(rect.top + 8, rect.bottom - 4))
+    const hit = document.elementFromPoint(
+      rect.left + rect.width / 2,
+      Math.min(rect.top + 8, rect.bottom - 4),
+    )
     return {
       skip: false as const,
       open: true,
@@ -6053,13 +6126,23 @@ test('toolbar 窄容器子项防收缩：项保持固有宽度、溢出触发「
         panelRoles = [...panel.querySelectorAll('[role]')].map((n) => n.getAttribute('role') || '')
       }
     }
-    return { moreVisible: !!more && !more.hidden, collapsedCount: collapsed.length, minW: minW | 0, panelRoles }
+    return {
+      moreVisible: !!more && !more.hidden,
+      collapsedCount: collapsed.length,
+      minW: minW | 0,
+      panelRoles,
+    }
   })
   expect(r.moreVisible, '「···」收纳项应可见').toBe(true)
   expect(r.collapsedCount, '应有被收纳项').toBeGreaterThan(0)
-  expect(r.minW, '未收纳按钮不应被压扁（两字中文按钮固有宽约 24px+，压扁态为 ~13px）').toBeGreaterThan(24)
+  expect(
+    r.minW,
+    '未收纳按钮不应被压扁（两字中文按钮固有宽约 24px+，压扁态为 ~13px）',
+  ).toBeGreaterThan(24)
   expect(r.panelRoles.length, '弹层应有镜像项').toBeGreaterThan(0)
   for (const role of r.panelRoles) {
-    expect(['menuitem', 'menuitemcheckbox'], '镜像项角色应为 menuitem/menuitemcheckbox').toContain(role)
+    expect(['menuitem', 'menuitemcheckbox'], '镜像项角色应为 menuitem/menuitemcheckbox').toContain(
+      role,
+    )
   }
 })

@@ -478,7 +478,13 @@ describe('新增能力：icon-end / loading 宽度稳定 / loading-text / loadin
   it('loading="auto"：宿主 oas-click 返回 Promise 期间进入 loading，resolve 后退出', async () => {
     const el = mount({ loading: 'auto' }, '保存')
     let resolveFn!: () => void
-    el.addEventListener('oas-click', () => new Promise<void>((r) => { resolveFn = r }))
+    el.addEventListener(
+      'oas-click',
+      () =>
+        new Promise<void>((r) => {
+          resolveFn = r
+        }),
+    )
     const btn = shadowBtn(el)
     btn.click()
     // 同步进入 loading：禁用 + loading class + aria-busy
@@ -502,7 +508,13 @@ describe('新增能力：icon-end / loading 宽度稳定 / loading-text / loadin
   it('loading="auto"：宿主处理 reject 后也退出 loading', async () => {
     const el = mount({ loading: 'auto' }, '保存')
     let rejectFn!: () => void
-    el.addEventListener('oas-click', () => new Promise<void>((_, rj) => { rejectFn = rj }))
+    el.addEventListener(
+      'oas-click',
+      () =>
+        new Promise<void>((_, rj) => {
+          rejectFn = rj
+        }),
+    )
     const btn = shadowBtn(el)
     btn.click()
     expect(btn.disabled).toBe(true)
@@ -516,7 +528,9 @@ describe('新增能力：icon-end / loading 宽度稳定 / loading-text / loadin
   it('loading="auto"：宿主处理未返回 Promise 时点击后立即退出（不卡 loading）', async () => {
     const el = mount({ loading: 'auto' }, '保存')
     let called = 0
-    el.addEventListener('oas-click', () => { called++ })
+    el.addEventListener('oas-click', () => {
+      called++
+    })
     const btn = shadowBtn(el)
     btn.click()
     expect(called).toBe(1)

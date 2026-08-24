@@ -609,11 +609,13 @@ export class OASCommand extends OASElement {
     this.backBtn?.addEventListener('click', () => this.popPage())
     this.confirmEl?.addEventListener('click', () => this.confirmMulti())
     // 虚拟滚动：复用 oas-virtual-list 的窗口计算，把每个可见项渲染为选项行
-    this.vlist?.addEventListener('oas-item', ((e: CustomEvent<{
-      index: number
-      item: CommandItem
-      element: HTMLElement
-    }>) => {
+    this.vlist?.addEventListener('oas-item', ((
+      e: CustomEvent<{
+        index: number
+        item: CommandItem
+        element: HTMLElement
+      }>,
+    ) => {
       const d = e.detail
       if (d && d.item && d.element) this.fillOptionRow(d.element, d.item, d.index)
     }) as EventListener)
@@ -970,8 +972,7 @@ export class OASCommand extends OASElement {
         if (Array.isArray(parsed)) {
           this.recents = parsed
             .filter(
-              (r): r is RecentEntry =>
-                !!r && typeof r === 'object' && typeof r.value === 'string',
+              (r): r is RecentEntry => !!r && typeof r === 'object' && typeof r.value === 'string',
             )
             .slice(0, MAX_RECENTS)
         }
@@ -1317,7 +1318,11 @@ export class OASCommand extends OASElement {
     row.setAttribute('aria-disabled', String(item.disabled ?? false))
     row.setAttribute(
       'aria-selected',
-      String(this.hasAttr('multiple') ? this.multiValues.includes(item.value) : shownIndex === this.activeIndex),
+      String(
+        this.hasAttr('multiple')
+          ? this.multiValues.includes(item.value)
+          : shownIndex === this.activeIndex,
+      ),
     )
     row.setAttribute('data-value', item.value)
     row.setAttribute('data-index', String(shownIndex))
@@ -1400,7 +1405,10 @@ export class OASCommand extends OASElement {
   /** 快捷键标注渲染：符号映射 + 大写键名 */
   private fillShortcut(el: HTMLElement, shortcut: string): void {
     const kbd = document.createElement('kbd')
-    const parts = shortcut.split('+').map((p) => p.trim()).filter(Boolean)
+    const parts = shortcut
+      .split('+')
+      .map((p) => p.trim())
+      .filter(Boolean)
     parts.forEach((p, i) => {
       if (i > 0) {
         const sep = document.createElement('span')
@@ -1497,7 +1505,8 @@ export class OASCommand extends OASElement {
     // 多选确认按钮：有勾选时显示
     const showConfirm = this.hasAttr('multiple') && this.multiValues.length > 0
     confirm.hidden = !showConfirm
-    if (showConfirm) confirm.textContent = this.t('command.multiRun', { n: this.multiValues.length })
+    if (showConfirm)
+      confirm.textContent = this.t('command.multiRun', { n: this.multiValues.length })
   }
 
   private fillHints(): void {

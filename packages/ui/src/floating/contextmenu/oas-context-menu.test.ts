@@ -249,7 +249,9 @@ describe('OASContextMenu', () => {
       await Promise.resolve()
       document.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 999, clientY: 999 }))
       expect(anchor(el).hasAttribute('hidden')).toBe(true)
-      target.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 80, clientY: 70 }))
+      target.dispatchEvent(
+        new MouseEvent('contextmenu', { bubbles: true, clientX: 80, clientY: 70 }),
+      )
       await Promise.resolve()
       expect(anchor(el).hasAttribute('hidden')).toBe(false)
     })

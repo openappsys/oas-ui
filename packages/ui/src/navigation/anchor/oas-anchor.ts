@@ -599,7 +599,9 @@ export class OASAnchor extends OASElement {
   private parseItems(): void {
     try {
       const parsed = JSON.parse(this.getAttr('items', '[]'))
-      this._items = Array.isArray(parsed) ? parsed.filter((i): i is AnchorItem => this.isValidItem(i)) : []
+      this._items = Array.isArray(parsed)
+        ? parsed.filter((i): i is AnchorItem => this.isValidItem(i))
+        : []
     } catch {
       this._items = []
     }
@@ -658,9 +660,9 @@ export class OASAnchor extends OASElement {
     const walk = (root: HTMLElement): void => {
       for (const li of Array.from(root.children)) {
         const liEl = li as HTMLElement
-        const a = Array.from(liEl.children).find(
-          (c) => c.getAttribute('part') === 'link',
-        ) as HTMLAnchorElement | undefined
+        const a = Array.from(liEl.children).find((c) => c.getAttribute('part') === 'link') as
+          | HTMLAnchorElement
+          | undefined
         if (!a) continue
         const item: AnchorItem = {
           href: a.getAttribute('href') ?? '',
@@ -672,8 +674,8 @@ export class OASAnchor extends OASElement {
         if (to !== undefined) item.targetOffset = Number(to)
         a.addEventListener('click', (e: MouseEvent) => this.handleLinkClick(item, e))
         this.flatItems.push(item)
-        const sub = Array.from(liEl.children).find(
-          (c) => (c as HTMLElement).classList.contains('anchor-children'),
+        const sub = Array.from(liEl.children).find((c) =>
+          (c as HTMLElement).classList.contains('anchor-children'),
         ) as HTMLElement | undefined
         if (sub) walk(sub)
       }

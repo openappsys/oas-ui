@@ -1436,9 +1436,7 @@ describe('OASBadge bordered 白描边', () => {
   it('bordered 描边样式：2px 背景色 box-shadow（从头像/图片背景分离）', () => {
     const el = mount({ value: '5', bordered: '' })
     const style = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(cssRule(style, '.badge.bordered')).toContain(
-      'box-shadow: 0 0 0 2px var(--oas-color-bg)',
-    )
+    expect(cssRule(style, '.badge.bordered')).toContain('box-shadow: 0 0 0 2px var(--oas-color-bg)')
   })
 
   it('dot 模式 bordered 同样生效', () => {

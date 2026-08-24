@@ -685,11 +685,19 @@ export class OASMenu extends OASElement {
         const action = item.kind === 'action'
         const checkbox = item.kind === 'checkbox'
         // role：action=menuitem（无勾选态）/ checkbox=menuitemcheckbox / radio（默认）=menuitemradio
-        li.setAttribute('role', action ? 'menuitem' : checkbox ? 'menuitemcheckbox' : 'menuitemradio')
+        li.setAttribute(
+          'role',
+          action ? 'menuitem' : checkbox ? 'menuitemcheckbox' : 'menuitemradio',
+        )
         // danger 破坏性项：红色语义
         if (item.danger) li.classList.add('danger')
         if (!action) {
-          li.setAttribute('aria-checked', String(checkbox ? this.isChecked(item.value) : item.value === this.selectedValueOf(scope)))
+          li.setAttribute(
+            'aria-checked',
+            String(
+              checkbox ? this.isChecked(item.value) : item.value === this.selectedValueOf(scope),
+            ),
+          )
           const check = document.createElement('span')
           check.className = checkbox ? 'check check--box' : 'check'
           check.textContent = checkbox ? '' : '✓'
@@ -850,7 +858,8 @@ export class OASMenu extends OASElement {
     const raw = this.getAttr('value', '')
     try {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) return new Set(parsed.filter((v): v is string => typeof v === 'string'))
+      if (Array.isArray(parsed))
+        return new Set(parsed.filter((v): v is string => typeof v === 'string'))
     } catch {
       // 非数组：空勾选集
     }
@@ -926,7 +935,11 @@ export class OASMenu extends OASElement {
       if (willExpandMore) next.add('__more__')
       else next.delete('__more__')
       this.expanded = next
-      this.emit('expand-change', { expanded: [...this.expanded], value, isExpanded: willExpandMore })
+      this.emit('expand-change', {
+        expanded: [...this.expanded],
+        value,
+        isExpanded: willExpandMore,
+      })
       this.syncOpen()
       return
     }
@@ -974,7 +987,9 @@ export class OASMenu extends OASElement {
       const found = levelItems.find((i) => i.value === ancestorValue)
       levelItems = found?.children ?? []
     }
-    return levelItems.filter((i) => i.children?.length && i.value !== value).map((i) => i.value ?? '')
+    return levelItems
+      .filter((i) => i.children?.length && i.value !== value)
+      .map((i) => i.value ?? '')
   }
 
   /** 水平溢出收纳：horizontal 模式容器宽度不足时，超宽项收进末尾「···」收纳子菜单 */
@@ -983,7 +998,9 @@ export class OASMenu extends OASElement {
     const menuEl = this.menuEl
     if (!menuEl) return
     // 顶层项（排除收纳项本身——它是镜像容器不是数据项；曾误纳入计算致自己被 data-collapsed 隐藏）
-    const topItems = [...menuEl.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]:not(.menu-more)')]
+    const topItems = [
+      ...menuEl.querySelectorAll<HTMLElement>(':scope > [part="item"][data-value]:not(.menu-more)'),
+    ]
     if (topItems.length === 0) return
     const moreItem = this.moreItemEl ?? menuEl.querySelector<HTMLElement>('.menu-more')
     // 先复位再测量：collapsed 项 display:none 宽为 0，收纳项隐藏时也不占宽，
@@ -1058,8 +1075,11 @@ export class OASMenu extends OASElement {
     // 「···」高亮：当前选中项被收纳时，收纳项显示选中态（选中项在溢出弹层里，
     // 条上看不到 ✓，由收纳指示器本身高亮表达"选中项在其中"）+ aria-current 供读屏
     const selectedInside =
-      hasOverflow && !!this.selectedValueOf('') &&
-      topItems.some((t) => t.hasAttribute('data-collapsed') && t.dataset.value === this.selectedValueOf(''))
+      hasOverflow &&
+      !!this.selectedValueOf('') &&
+      topItems.some(
+        (t) => t.hasAttribute('data-collapsed') && t.dataset.value === this.selectedValueOf(''),
+      )
     moreItem.classList.toggle('child-selected', selectedInside)
     if (selectedInside) moreItem.setAttribute('aria-current', 'true')
     else moreItem.removeAttribute('aria-current')
@@ -1177,7 +1197,9 @@ export class OASMenu extends OASElement {
     this.activeIndex = idx
     const item = items[idx]
     if (item) {
-      const el = this.menuEl!.querySelector<HTMLElement>(`[part="item"][data-value="${item.value}"]`)
+      const el = this.menuEl!.querySelector<HTMLElement>(
+        `[part="item"][data-value="${item.value}"]`,
+      )
       el?.focus({ preventScroll: true })
     }
   }

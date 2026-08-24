@@ -713,7 +713,8 @@ export class OASNavigationMenu extends OASElement {
     for (const t of [...barEl.querySelectorAll<HTMLElement>('[part="top-item"]')]) t.remove()
     this.itemsList.forEach((item, idx) => {
       const hasChildren = !!item.children?.length
-      const el = hasChildren || !item.href ? document.createElement('button') : document.createElement('a')
+      const el =
+        hasChildren || !item.href ? document.createElement('button') : document.createElement('a')
       el.className = 'top-item'
       el.setAttribute('part', 'top-item')
       if (item.value != null) el.dataset.value = item.value
@@ -1048,7 +1049,9 @@ export class OASNavigationMenu extends OASElement {
     this.syncSubOpen()
     this.syncViewportSize()
     if (value) {
-      const trig = this.shadow.querySelector<HTMLElement>(`[part="sub-trigger"][data-value="${value}"]`)
+      const trig = this.shadow.querySelector<HTMLElement>(
+        `[part="sub-trigger"][data-value="${value}"]`,
+      )
       ;(trig as HTMLElement | null)?.focus()
     }
   }
@@ -1168,7 +1171,10 @@ export class OASNavigationMenu extends OASElement {
       clearTimeout(this.openTimer)
       this.openTimer = null
     }
-    const skip = this.skipDelay() > 0 && this.lastCloseAt > 0 && Date.now() - this.lastCloseAt < this.skipDelay()
+    const skip =
+      this.skipDelay() > 0 &&
+      this.lastCloseAt > 0 &&
+      Date.now() - this.lastCloseAt < this.skipDelay()
     const delay = skip ? 0 : this.delayDuration()
     if (delay <= 0) {
       this.open(value)
@@ -1312,7 +1318,9 @@ export class OASNavigationMenu extends OASElement {
     if (!ind || !barEl) return
     const open = this.effectiveOpen()
     if (!open) return
-    const trigger = this.shadow.querySelector<HTMLElement>(`[part="top-item"][data-value="${open}"]`)
+    const trigger = this.shadow.querySelector<HTMLElement>(
+      `[part="top-item"][data-value="${open}"]`,
+    )
     if (!trigger) return
     if (this.isVertical()) {
       const y = trigger.offsetTop
@@ -1372,13 +1380,19 @@ export class OASNavigationMenu extends OASElement {
   private focusCurrent(): void {
     if (!this.keyboardMode) return
     const open = this.effectiveOpen()
-    if (open && this.shadow.activeElement && this.panelEl?.contains(this.shadow.activeElement as Node)) {
+    if (
+      open &&
+      this.shadow.activeElement &&
+      this.panelEl?.contains(this.shadow.activeElement as Node)
+    ) {
       return
     }
     if (!open) {
       const item = this.itemsList[this.activeIndex]
       if (item?.value == null) return
-      this.shadow.querySelector<HTMLElement>(`[part="top-item"][data-value="${item.value}"]`)?.focus()
+      this.shadow
+        .querySelector<HTMLElement>(`[part="top-item"][data-value="${item.value}"]`)
+        ?.focus()
     }
   }
 
@@ -1475,7 +1489,9 @@ export class OASNavigationMenu extends OASElement {
       return
     }
     const focusables = this.panelFocusables()
-    const enabled = focusables.map((el, i) => (el.getAttribute('aria-disabled') === 'true' ? -1 : i)).filter((i) => i >= 0)
+    const enabled = focusables
+      .map((el, i) => (el.getAttribute('aria-disabled') === 'true' ? -1 : i))
+      .filter((i) => i >= 0)
     if (enabled.length === 0) return
     this.keyboardMode = true
     const cur = this.shadow.activeElement as HTMLElement | null
@@ -1499,7 +1515,9 @@ export class OASNavigationMenu extends OASElement {
       const inSection = cur?.closest('[part="section-links"]')
       if (inSection) {
         e.preventDefault()
-        const title = inSection.closest('[part="section"]')?.querySelector<HTMLElement>('[part="section-title"]')
+        const title = inSection
+          .closest('[part="section"]')
+          ?.querySelector<HTMLElement>('[part="section-title"]')
         ;(title as HTMLElement | null)?.focus()
       } else {
         // 面板第一项 ← 收起并回顶级
