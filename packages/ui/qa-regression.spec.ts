@@ -6344,3 +6344,40 @@ test('navigation-menu 箭头跨面板边缘探出指向宿主（rotate45 悬置�
   expect(r.panelBelowTrigger, '面板应在触发器下方').toBe(true)
   expect(r.arrowXCentered, '箭头 X 向对准触发器中心').toBe(true)
 })
+
+// —— 缺陷回归：dropdown 箭头开合时序与面板错位 ——
+// 曾现缺陷：开合动画只挂 oas-menu（fade+scale），箭头是兄弟节点无动画——
+// 打开瞬间箭头先显（描边线先亮后融）、关闭时箭头原地留守慢一拍消失。
+// 修复：箭头补与面板同时长的 fade（仅透明度），两端时序对齐。
+test('dropdown 关闭过程箭头与面板透明度逐帧同步（不慢一拍消失）', async ({ page }) => {
+  await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-dropdown')
+  await page.evaluate(() => {
+    const h = document.querySelector('oas-dropdown')!
+    h.scrollIntoView({ block: 'center' })
+    ;(h.shadowRoot!.querySelector('button') as HTMLElement).click()
+  })
+  await page.waitForTimeout(400)
+  // 触发关闭并多帧采样
+  const samples = await page.evaluate(async () => {
+    const h = document.querySelector('oas-dropdown')!
+    const menu = h.shadowRoot!.querySelector('oas-menu')!
+    const arrow = h.shadowRoot!.querySelector('.arrow')!
+    const out: Array<{ menu: number; arrow: number }> = []
+    document.body.click()
+    for (let i = 0; i < 4; i++) {
+      await new Promise((r) => setTimeout(r, 30))
+      out.push({
+        menu: parseFloat(getComputedStyle(menu).opacity),
+        arrow: parseFloat(getComputedStyle(arrow).opacity),
+      })
+    }
+    return out
+  })
+  // 关闭过程中至少有一帧处于淡出中（opacity 在 0~1 之间），且每帧箭头与面板同步
+  const fading = samples.filter((s) => s.menu > 0 && s.menu < 1)
+  expect(fading.length, '应采样到淡出过程帧').toBeGreaterThan(0)
+  for (const s of fading) {
+    expect(Math.abs(s.arrow - s.menu), '箭头与面板 opacity 应逐帧同步（差 ≤0.05）').toBeLessThanOrEqual(0.05)
+  }
+})
