@@ -6188,7 +6188,9 @@ test('icon duotone：显式 data-layer 分层的透明度不被元素序 fallbac
 // side-top 缺三档（只有通用 bottom/rotate 规则）——position:absolute 无 left/right 时停在
 // 面板内容起始位（左缘附近），而面板右对齐触发器时箭头偏左、不指向触发器右端。
 // 修复：side-top 补 align-start/center/end 三档（与 side-bottom 对称）。
-test('menubar show-arrow side-top align-end 箭头右对齐触发器（右缘 12px，不落面板左端）', async ({ page }) => {
+test('menubar show-arrow side-top align-end 箭头右对齐触发器（右缘 12px，不落面板左端）', async ({
+  page,
+}) => {
   await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-menubar[show-arrow][side="top"]')
   const r = await page.evaluate(async () => {
@@ -6244,7 +6246,11 @@ test('navigation-menu 箭头几何对准触发器中心（水平+垂直）且营
           arrowC: vertical ? (arR.top + arR.bottom) / 2 : (arR.left + arR.right) / 2,
           // 箭头跨边悬置（探出面板边缘）：顶部可探出面板顶缘之上，但左右两侧不越面板、
           // 探出量收敛（顶边探出 ≤ 8px，不悬空漂离）
-          arrowInVp: arR.left >= vr.left - 2 && arR.right <= vr.right + 2 && vr.top - arR.top <= 8 && arR.bottom <= vr.bottom + 2,
+          arrowInVp:
+            arR.left >= vr.left - 2 &&
+            arR.right <= vr.right + 2 &&
+            vr.top - arR.top <= 8 &&
+            arR.bottom <= vr.bottom + 2,
           pfOverflow: fr ? Math.round(fr.bottom - vr.bottom) : null,
         }
       },
@@ -6252,11 +6258,17 @@ test('navigation-menu 箭头几何对准触发器中心（水平+垂直）且营
     )
   const horiz = await probe('#nav-arrow', false)
   expect(horiz).not.toBeNull()
-  expect(Math.abs(horiz!.arrowC - horiz!.trigC), '水平箭头中心对准触发器中心（±2px）').toBeLessThanOrEqual(2)
+  expect(
+    Math.abs(horiz!.arrowC - horiz!.trigC),
+    '水平箭头中心对准触发器中心（±2px）',
+  ).toBeLessThanOrEqual(2)
   expect(horiz!.arrowInVp, '箭头不越出面板').toBe(true)
   const vert = await probe('oas-navigation-menu[orientation="vertical"]', true)
   expect(vert).not.toBeNull()
-  expect(Math.abs(vert!.arrowC - vert!.trigC), '垂直箭头中心对准触发器中心（±2px）').toBeLessThanOrEqual(2)
+  expect(
+    Math.abs(vert!.arrowC - vert!.trigC),
+    '垂直箭头中心对准触发器中心（±2px）',
+  ).toBeLessThanOrEqual(2)
   const footer = await probe('#nav-footer', false)
   expect(footer).not.toBeNull()
   expect(footer!.pfOverflow, '营销位底缘不超出面板（≤0px 溢出）').toBeLessThanOrEqual(0)
@@ -6288,7 +6300,10 @@ test('navigation-menu flip-up 后箭头贴面板底边指向触发器（不悬�
       arrowFlip: ar.classList.contains('flip-up'),
       // flip-up 箭头朝向：贴面板底边、尖朝下指触发器——rotate45 菱形用右下两描边边
       // （border-right + border-bottom）构成 ▼ chevron；非 rotate 矩阵或缺描边即方向错
-      tipDown: cs.transform.includes('matrix') && parseFloat(cs.borderRightWidth) > 0 && parseFloat(cs.borderBottomWidth) > 0,
+      tipDown:
+        cs.transform.includes('matrix') &&
+        parseFloat(cs.borderRightWidth) > 0 &&
+        parseFloat(cs.borderBottomWidth) > 0,
       // 面板在触发器上方；箭头应贴面板底边（顶部 ≥ 面板底-8，底部 ≤ 面板底+8）
       arrowAttachedToPanel: arR.top >= vr.bottom - 8 && arR.bottom <= vr.bottom + 8,
       // 箭头在触发器与面板之间（不悬空到面板另一侧之外）
@@ -6378,15 +6393,22 @@ test('dropdown 关闭过程箭头与面板透明度逐帧同步（不慢一拍�
   const fading = samples.filter((s) => s.menu > 0 && s.menu < 1)
   expect(fading.length, '应采样到淡出过程帧').toBeGreaterThan(0)
   for (const s of fading) {
-    expect(Math.abs(s.arrow - s.menu), '箭头与面板 opacity 应逐帧同步（差 ≤0.05）').toBeLessThanOrEqual(0.05)
+    expect(
+      Math.abs(s.arrow - s.menu),
+      '箭头与面板 opacity 应逐帧同步（差 ≤0.05）',
+    ).toBeLessThanOrEqual(0.05)
   }
 })
 
 // —— 复核：tour 步骤推进流程（用户对「点下一步就消失」的反馈实测验证） ——
-test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完成 + 不消失，点完成才关闭', async ({ page }) => {
+test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完成 + 不消失，点完成才关闭', async ({
+  page,
+}) => {
   await page.goto('/components/tour.html', { waitUntil: 'networkidle' })
   await page.waitForSelector('#tour-basic', { state: 'attached', timeout: 15000 })
-  await page.waitForFunction(() => document.querySelector('#tour-basic')?.shadowRoot != null, { timeout: 15000 })
+  await page.waitForFunction(() => document.querySelector('#tour-basic')?.shadowRoot != null, {
+    timeout: 15000,
+  })
   const step = async () =>
     page.evaluate(() => {
       const host = document.querySelector('#tour-basic')!
@@ -6396,7 +6418,8 @@ test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完�
       const hlR = hl?.getBoundingClientRect()
       const b1 = document.querySelector('#tour-b1')?.getBoundingClientRect()
       const b2 = document.querySelector('#tour-b2')?.getBoundingClientRect()
-      const near = (a: any, b: any) => a && b && Math.abs(a.x - b.x) < 10 && Math.abs(a.y - b.y) < 10
+      const near = (a: any, b: any) =>
+        a && b && Math.abs(a.x - b.x) < 10 && Math.abs(a.y - b.y) < 10
       return {
         open: host.hasAttribute('open'),
         current: host.getAttribute('current'),
@@ -6407,7 +6430,9 @@ test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完�
       }
     })
   await page.evaluate(() => {
-    const btn = [...document.querySelectorAll('oas-button')].find((x) => /开始引导/.test(x.textContent))!
+    const btn = [...document.querySelectorAll('oas-button')].find((x) =>
+      /开始引导/.test(x.textContent),
+    )!
     ;(btn as HTMLElement).click()
   })
   await page.waitForTimeout(500)
@@ -6415,7 +6440,11 @@ test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完�
   expect(s1.open, '打开后 open').toBe(true)
   expect(s1.onB1, 'step1 高亮在区域一').toBe(true)
   // 点下一步
-  await page.evaluate(() => (document.querySelector('#tour-basic')!.shadowRoot!.querySelector('[part=next]') as HTMLElement).click())
+  await page.evaluate(() =>
+    (
+      document.querySelector('#tour-basic')!.shadowRoot!.querySelector('[part=next]') as HTMLElement
+    ).click(),
+  )
   await page.waitForTimeout(500)
   const s2 = await step()
   expect(s2.open, '点下一步后不应消失').toBe(true)
@@ -6424,7 +6453,11 @@ test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完�
   expect(s2.onB1, '不应还停留在区域一').toBe(false)
   expect(s2.btnText, '最后一步按钮应变「完成」').toBe('完成')
   // 点完成才关闭
-  await page.evaluate(() => (document.querySelector('#tour-basic')!.shadowRoot!.querySelector('[part=next]') as HTMLElement).click())
+  await page.evaluate(() =>
+    (
+      document.querySelector('#tour-basic')!.shadowRoot!.querySelector('[part=next]') as HTMLElement
+    ).click(),
+  )
   await page.waitForTimeout(400)
   const s3 = await step()
   expect(s3.open, '点完成后才关闭').toBe(false)
@@ -6438,19 +6471,28 @@ test('tour 弹窗可交互：真实鼠标点击弹窗内部不关闭（pointer-e
   await page.goto('/components/tour.html', { waitUntil: 'networkidle' })
   // tour 宿主关闭态零尺寸（overlay/popup display:none），up() 的 visible 判定不适用——用 attached + shadowRoot
   await page.waitForSelector('#tour-basic', { state: 'attached', timeout: 15000 })
-  await page.waitForFunction(() => document.querySelector('#tour-basic')?.shadowRoot != null, { timeout: 15000 })
+  await page.waitForFunction(() => document.querySelector('#tour-basic')?.shadowRoot != null, {
+    timeout: 15000,
+  })
   await page.evaluate(() => {
-    ;[...document.querySelectorAll<HTMLElement>('oas-button')].find((x) => /开始引导/.test(x.textContent))!.click()
+    ;[...document.querySelectorAll<HTMLElement>('oas-button')]
+      .find((x) => /开始引导/.test(x.textContent))!
+      .click()
   })
   await page.waitForTimeout(500)
   const center = await page.evaluate(() => {
-    const r = document.querySelector('#tour-basic')!.shadowRoot!.querySelector('.popup')!.getBoundingClientRect()
+    const r = document
+      .querySelector('#tour-basic')!
+      .shadowRoot!.querySelector('.popup')!
+      .getBoundingClientRect()
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
   })
   // 真实鼠标点击弹窗中心（带 pointerdown + 命中测试）
   await page.mouse.click(center.x, center.y)
   await page.waitForTimeout(400)
-  const open = await page.evaluate(() => document.querySelector('#tour-basic')!.hasAttribute('open'))
+  const open = await page.evaluate(() =>
+    document.querySelector('#tour-basic')!.hasAttribute('open'),
+  )
   expect(open, '真实点击弹窗内部不应关闭（pointer-events 须为 auto）').toBe(true)
 })
 
@@ -6458,30 +6500,42 @@ test('tour 弹窗可交互：真实鼠标点击弹窗内部不关闭（pointer-e
 // 曾现缺陷：ensurePortal 镜像 data-open 属性，但共享 STYLE 的 :host([open]) 显示门控只认 open
 // 属性——portal host（普通 div，只有 data-open）不命中 → display:none，浮层全 0×0 不可见。
 // 修复：host 显示规则同时认 [open] 与 [data-open]。
-test('tour append-to=body：portal host 显示 + 弹窗非零尺寸 + 高亮框住挂载目标', async ({ page }) => {
+test('tour append-to=body：portal host 显示 + 弹窗非零尺寸 + 高亮框住挂载目标', async ({
+  page,
+}) => {
   await page.goto('/components/tour.html', { waitUntil: 'networkidle' })
   await page.waitForSelector('#tour-portal', { state: 'attached', timeout: 15000 })
-  await page.waitForFunction(() => document.querySelector('#tour-portal')?.shadowRoot != null, { timeout: 15000 })
+  await page.waitForFunction(() => document.querySelector('#tour-portal')?.shadowRoot != null, {
+    timeout: 15000,
+  })
   await page.evaluate(() => {
-    const btn = [...document.querySelectorAll<HTMLElement>('oas-button')].find((x) => /append-to body/.test(x.textContent))!
+    const btn = [...document.querySelectorAll<HTMLElement>('oas-button')].find((x) =>
+      /append-to body/.test(x.textContent),
+    )!
     btn.scrollIntoView({ block: 'center' })
     btn.click()
   })
   await page.waitForTimeout(800)
   const r = await page.evaluate(() => {
-    const ph = [...document.body.children].find((c) => c.shadowRoot && c.shadowRoot.querySelector('.popup'))
+    const ph = [...document.body.children].find(
+      (c) => c.shadowRoot && c.shadowRoot.querySelector('.popup'),
+    )
     if (!ph) return { noPortal: true }
     const sr = ph.shadowRoot!
     const popup = sr.querySelector('.popup')!
     const hl = sr.querySelector('.highlight')
     const target = document.querySelector('#tour-pp1')!
-    const rect = (el: Element) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height } }
+    const rect = (el: Element) => {
+      const r = el.getBoundingClientRect()
+      return { x: r.x, y: r.y, w: r.width, h: r.height }
+    }
     const pr = rect(popup)
     const hr = hl ? rect(hl) : null
     const tr = rect(target)
     return {
       hostDisplay: getComputedStyle(ph).display,
-      popupW: pr.w, popupH: pr.h,
+      popupW: pr.w,
+      popupH: pr.h,
       hlOnTarget: hr ? Math.abs(hr.x - tr.x) < 12 && Math.abs(hr.y - tr.y) < 12 : false,
     }
   })
@@ -6498,10 +6552,14 @@ test('tour append-to=body：portal host 显示 + 弹窗非零尺寸 + 高亮框�
 test('tour typewriter：描述逐字增长（非一次性全显示）', async ({ page }) => {
   await page.goto('/components/tour.html', { waitUntil: 'networkidle' })
   await page.waitForSelector('#tour-tw', { state: 'attached', timeout: 15000 })
-  await page.waitForFunction(() => document.querySelector('#tour-tw')?.shadowRoot != null, { timeout: 15000 })
+  await page.waitForFunction(() => document.querySelector('#tour-tw')?.shadowRoot != null, {
+    timeout: 15000,
+  })
   const samples = await page.evaluate(async () => {
     const btn = [...document.querySelectorAll<HTMLElement>('oas-button')].find(
-      (x) => /开始引导/.test(x.textContent) && x.closest('.demo-block')?.textContent.includes('打字机动画'),
+      (x) =>
+        /开始引导/.test(x.textContent) &&
+        x.closest('.demo-block')?.textContent.includes('打字机动画'),
     )!
     const host = document.querySelector('#tour-tw')!
     btn.scrollIntoView({ block: 'center' })
@@ -6524,14 +6582,20 @@ test('tour typewriter：描述逐字增长（非一次性全显示）', async ({
 // 曾现缺陷：目标初始在视口外，position() 按错位目标位置算「安全兜底位」显示弹窗，
 // scrollToTarget 平滑滚动期间弹窗卡在错位处（长滚动时明显），滚动末尾才跳正——「首次点击错位」。
 // 修复：目标需滚动进视口时弹窗进入「定位待定」（opacity 0 隐藏），scrollend/定位正确后显示。
-test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现错位），滚动停止后正确显示', async ({ page }) => {
+test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现错位），滚动停止后正确显示', async ({
+  page,
+}) => {
   await page.goto('/components/tour.html', { waitUntil: 'networkidle' })
   await page.waitForSelector('#tour-interact', { state: 'attached', timeout: 15000 })
-  await page.waitForFunction(() => document.querySelector('#tour-interact')?.shadowRoot != null, { timeout: 15000 })
+  await page.waitForFunction(() => document.querySelector('#tour-interact')?.shadowRoot != null, {
+    timeout: 15000,
+  })
   await page.evaluate(() => window.scrollTo(0, 0))
   await page.waitForTimeout(200)
   await page.evaluate(() => {
-    const btn = [...document.querySelectorAll<HTMLElement>('oas-button')].find((x) => x.textContent.trim() === '高亮区可交互')!
+    const btn = [...document.querySelectorAll<HTMLElement>('oas-button')].find(
+      (x) => x.textContent.trim() === '高亮区可交互',
+    )!
     btn.click()
   })
   // 采样滚动期间弹窗隐藏 + 停止后正确显示

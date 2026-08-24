@@ -237,7 +237,10 @@ describe('OASSidebar（可折叠侧栏）', () => {
 describe('OASSidebar 受控高亮与图标渲染（模板实测缺陷回归）', () => {
   it('active 受控属性：对应 value 的菜单项渲染 active 高亮 + aria-current', () => {
     stubMatchMedia(false)
-    const el = mount({ items: '[{"label":"首页","value":"home"},{"label":"设置","value":"settings"}]', active: 'settings' })
+    const el = mount({
+      items: '[{"label":"首页","value":"home"},{"label":"设置","value":"settings"}]',
+      active: 'settings',
+    })
     const items = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
     const active = items.find((b) => b.getAttribute('aria-current') === 'page')
     expect(active, '应有一个 aria-current=page 的项').toBeTruthy()
@@ -246,7 +249,10 @@ describe('OASSidebar 受控高亮与图标渲染（模板实测缺陷回归）',
     // 切换 active → 高亮迁移
     el.setAttribute('active', 'home')
     const items2 = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
-    expect(items2.find((b) => b.getAttribute('aria-current') === 'page')!.querySelector('.label')!.textContent).toBe('首页')
+    expect(
+      items2.find((b) => b.getAttribute('aria-current') === 'page')!.querySelector('.label')!
+        .textContent,
+    ).toBe('首页')
   })
 
   it('drawer-open 进 observedAttributes：setAttribute 后抽屉重绘', () => {
@@ -269,7 +275,9 @@ describe('OASSidebar 受控高亮与图标渲染（模板实测缺陷回归）',
 
   it('items.icon 支持注册表图标名渲染为 SVG（非纯文本）', () => {
     stubMatchMedia(false)
-    const el = mount({ items: '[{"label":"首页","value":"home","icon":"star"},{"label":"设置","value":"settings"}]' })
+    const el = mount({
+      items: '[{"label":"首页","value":"home","icon":"star"},{"label":"设置","value":"settings"}]',
+    })
     const items = [...el.shadowRoot!.querySelectorAll('[part="item"]')]
     const withIcon = items[0]!.querySelector('.icon')!
     const withoutIcon = items[1]!.querySelector('.icon') as HTMLElement
