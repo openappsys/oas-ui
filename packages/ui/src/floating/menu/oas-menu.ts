@@ -369,6 +369,8 @@ export class OASMenu extends OASElement {
   private overflowObserver: ResizeObserver | null = null
   /** 水平溢出收纳项「···」元素引用（渲染时捕获，syncOverflowCollapse 更新显隐与子菜单内容） */
   private moreItemEl: HTMLElement | null = null
+  /** 子元素通道观察器：light DOM 里 oas-menu-item/group/divider 增删或属性/文本变化 → 重解析渲染 */
+  private childObserver: MutationObserver | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -422,7 +424,11 @@ export class OASMenu extends OASElement {
   }
 
   protected override update(): void {
-    this.parseItems()
+    // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
+    this.ensureChildObserver()
+    // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
+    if (this.hasAttribute('items')) this.parseItems()
+    else this.parseChildItems()
     this.syncTheme()
     this.syncMaxHeight()
     this.syncInlineMode()
@@ -481,6 +487,116 @@ export class OASMenu extends OASElement {
       this.itemsList = []
     }
     this.pruneState()
+  }
+
+  // ===== 子元素声明式通道 =====
+
+  /**
+   * 子元素通道解析层：把 light DOM 的 `<oas-menu-item>` / `<oas-menu-group>` /
+   * `<oas-menu-divider>` 收敛为内部 items 模型（与 parseItems 单一渲染路径，
+   * 后续 pruneState/render 全部无感）。
+   */
+  private parseChildItems(): void {
+    this.itemsList = this.parseChildLevel(this.children)
+    this.pruneState()
+  }
+
+  /** 解析一层子元素为 MenuItem[]（仅识别数据载体元素，其余 light DOM 内容忽略） */
+  private parseChildLevel(elements: HTMLCollection | Element[]): MenuItem[] {
+    const items: MenuItem[] = []
+    for (const child of Array.from(elements)) {
+      if (child.tagName === 'OAS-MENU-ITEM') {
+        items.push(this.childToMenuItem(child))
+      } else if (child.tagName === 'OAS-MENU-GROUP') {
+        items.push(this.childToGroup(child))
+      } else if (child.tagName === 'OAS-MENU-DIVIDER') {
+        items.push({ type: 'divider' })
+      }
+    }
+    return items
+  }
+
+  /** 单个 <oas-menu-item> → MenuItem（默认插槽文本为 label，属性对齐 items 字段；嵌套子元素递归为 children） */
+  private childToMenuItem(el: Element): MenuItem {
+    const item: MenuItem = { label: this.childLabel(el) }
+    const value = el.getAttribute('value')
+    if (value) item.value = value
+    if (el.hasAttribute('disabled')) item.disabled = true
+    if (el.hasAttribute('loading')) item.loading = true
+    const icon = el.getAttribute('icon')
+    if (icon) item.icon = icon
+    const kind = el.getAttribute('kind')
+    if (kind) item.kind = kind as MenuItemKind
+    if (el.hasAttribute('danger')) item.danger = true
+    const href = el.getAttribute('href')
+    if (href) item.href = href
+    const target = el.getAttribute('target')
+    if (target) item.target = target
+    const rel = el.getAttribute('rel')
+    if (rel) item.rel = rel
+    const children = this.parseChildLevel(el.children)
+    if (children.length > 0) item.children = children
+    return item
+  }
+
+  /** 单个 <oas-menu-group> → 分组项（label/value 属性 + 子元素平铺 children） */
+  private childToGroup(el: Element): MenuItem {
+    const item: MenuItem = { type: 'group', label: el.getAttribute('label') ?? '' }
+    const value = el.getAttribute('value')
+    if (value) item.value = value
+    const children = this.parseChildLevel(el.children)
+    if (children.length > 0) item.children = children
+    return item
+  }
+
+  /** 默认插槽 label 文本：跳过嵌套数据载体元素（其文本属于子菜单而非 label） */
+  private childLabel(el: Element): string {
+    let text = ''
+    for (const node of el.childNodes) {
+      if (node instanceof Element) {
+        const tag = node.tagName
+        if (tag === 'OAS-MENU-ITEM' || tag === 'OAS-MENU-GROUP' || tag === 'OAS-MENU-DIVIDER') {
+          continue
+        }
+      }
+      text += node.textContent ?? ''
+    }
+    return text.trim()
+  }
+
+  /**
+   * 子元素通道观察器：只监听 light DOM 子元素（数据载体增删/属性/文本变化 → 重解析）。
+   * 组件自身动作不写 light DOM，无需自引用守卫。
+   */
+  private ensureChildObserver(): void {
+    if (this.childObserver) return
+    const observer = new MutationObserver(() => {
+      this.update()
+    })
+    observer.observe(this, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+      attributeFilter: [
+        'value',
+        'disabled',
+        'loading',
+        'icon',
+        'kind',
+        'danger',
+        'href',
+        'target',
+        'rel',
+        'label',
+        'slot',
+      ],
+    })
+    this.childObserver = observer
+    this.onCleanup(() => {
+      observer.disconnect()
+      this.childObserver = null
+    })
   }
 
   /** theme="dark" 时局部注入暗色 token（data-theme 到自身，子树继承），独立于全局主题 */

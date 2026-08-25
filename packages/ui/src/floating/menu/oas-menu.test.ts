@@ -1071,3 +1071,168 @@ describe('close-on-select 选中收起策略', () => {
     expect(JSON.parse(el.getAttribute('value')!)).toContain('gridlines')
   })
 })
+
+// ===== 子元素声明式通道（oas-menu-item / oas-menu-group / oas-menu-divider） =====
+// 与 breadcrumb 试点同范式：items 属性显式设置时数据驱动优先，否则解析子元素收敛到同一渲染路径
+
+/** 子元素通道挂载：innerHTML 填 light DOM 子元素后 append（触发 render → 解析） */
+function mountMenuChildren(html: string, attrs: Record<string, string> = {}): OASMenu {
+  const el = document.createElement('oas-menu') as OASMenu
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+  el.innerHTML = html
+  document.body.appendChild(el)
+  return el
+}
+
+describe('子元素声明式通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('基础：普通项/分组/divider/嵌套子菜单混排解析渲染，aria 与点击选中行为与 items 通道一致', () => {
+    const el = mountMenuChildren(`
+      <oas-menu-group label="导航">
+        <oas-menu-item value="home">首页</oas-menu-item>
+        <oas-menu-item value="about">关于</oas-menu-item>
+      </oas-menu-group>
+      <oas-menu-divider></oas-menu-divider>
+      <oas-menu-item value="settings">设置</oas-menu-item>
+      <oas-menu-item value="edit">编辑
+        <oas-menu-item value="copy">复制</oas-menu-item>
+        <oas-menu-item value="cut">剪切</oas-menu-item>
+      </oas-menu-item>
+    `)
+    const root = el.shadowRoot!
+    // role=menu 骨架一致
+    expect(root.querySelector('[role="menu"]')).not.toBeNull()
+    // 分组标题平铺渲染 + 组内子项同层
+    const group = root.querySelector<HTMLElement>('[part="group"]')!
+    expect(group.textContent).toBe('导航')
+    const menuChildren = [...root.querySelector('.menu')!.children]
+    expect(menuChildren.filter((c) => c.classList.contains('item')).length).toBe(4)
+    expect(menuChildren.filter((c) => c.classList.contains('divider')).length).toBe(1)
+    // 嵌套子菜单项：hover/点击展开出子项（aria 语义与 items 通道一致）
+    const edit = root.querySelector<HTMLElement>('[part="item"][data-value="edit"]')!
+    expect(edit.getAttribute('role')).toBe('menuitem')
+    expect(edit.getAttribute('aria-haspopup')).toBe('menu')
+    edit.click()
+    expect(edit.classList.contains('open')).toBe(true)
+    const copy = root.querySelector<HTMLElement>('[part="item"][data-value="copy"]')!
+    expect(copy.getAttribute('role')).toBe('menuitemradio')
+    copy.click()
+    expect(el.getAttribute('value')).toBe('copy')
+  })
+
+  it('items 属性显式设置时优先（子元素被忽略）', () => {
+    const el = mountMenuChildren(
+      `<oas-menu-item value="home">首页</oas-menu-item>`,
+      { items: JSON.stringify([{ label: '数据项', value: 'data' }, { label: '末项', value: 'last' }]) },
+    )
+    const labels = items(el).map((i) => i.querySelector('.label')?.textContent)
+    expect(labels).toEqual(['数据项', '末项'])
+    expect(el.shadowRoot!.querySelector('[data-value="home"]')).toBeNull()
+  })
+
+  it('属性映射：checkbox 勾选 / danger 红字 / href 链接项 / loading / disabled', () => {
+    const el = mountMenuChildren(`
+      <oas-menu-item value="grid" kind="checkbox">网格线</oas-menu-item>
+      <oas-menu-item value="del" danger>删除</oas-menu-item>
+      <oas-menu-item value="docs" href="/guide" target="_blank" rel="noopener">文档</oas-menu-item>
+      <oas-menu-item value="save" loading>加载中</oas-menu-item>
+      <oas-menu-item value="off" disabled>禁用</oas-menu-item>
+    `)
+    const root = el.shadowRoot!
+    // checkbox：menuitemcheckbox + 方块勾选框，点击写回数组
+    const grid = root.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+    expect(grid.getAttribute('role')).toBe('menuitemcheckbox')
+    expect(grid.querySelector('.check--box')).not.toBeNull()
+    grid.click()
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['grid'])
+    // danger 红字类
+    expect(root.querySelector('[data-value="del"]')!.classList.contains('danger')).toBe(true)
+    // href 链接项渲染为 <a>
+    const docs = root.querySelector<HTMLAnchorElement>('[part="item"][data-value="docs"]')!
+    expect(docs.tagName).toBe('A')
+    expect(docs.getAttribute('href')).toBe('/guide')
+    expect(docs.getAttribute('target')).toBe('_blank')
+    expect(docs.getAttribute('rel')).toBe('noopener')
+    // loading：spinner + aria-busy + 禁点
+    const save = root.querySelector<HTMLElement>('[part="item"][data-value="save"]')!
+    expect(save.classList.contains('loading')).toBe(true)
+    expect(save.getAttribute('aria-busy')).toBe('true')
+    expect(save.getAttribute('aria-disabled')).toBe('true')
+    expect(save.querySelector('.spin')).not.toBeNull()
+    let saveSelected = false
+    el.addEventListener('oas-select', () => (saveSelected = true))
+    save.click()
+    expect(saveSelected).toBe(false)
+    // disabled 禁点
+    const off = root.querySelector<HTMLElement>('[part="item"][data-value="off"]')!
+    expect(off.getAttribute('aria-disabled')).toBe('true')
+    let offSelected = false
+    el.addEventListener('oas-select', () => (offSelected = true))
+    off.click()
+    expect(offSelected).toBe(false)
+  })
+
+  it('MutationObserver：运行时 append oas-menu-item 后菜单刷新出现新项', async () => {
+    const el = mountMenuChildren(`<oas-menu-item value="home">首页</oas-menu-item>`)
+    expect(items(el).length).toBe(1)
+    const item = document.createElement('oas-menu-item')
+    item.setAttribute('value', 'about')
+    item.textContent = '关于'
+    el.appendChild(item)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(items(el).length).toBe(2)
+    expect(el.shadowRoot!.querySelector('[part="item"][data-value="about"]')).not.toBeNull()
+  })
+
+  it('value 勾选语义：radio 组单选（子元素通道下与 items 通道一致）', () => {
+    const el = mountMenuChildren(
+      `
+      <oas-menu-group label="模式" value="mode">
+        <oas-menu-item value="preview">预览</oas-menu-item>
+        <oas-menu-item value="edit">编辑</oas-menu-item>
+      </oas-menu-group>
+    `,
+      { value: '{"mode":"preview"}' },
+    )
+    const root = el.shadowRoot!
+    const preview = root.querySelector<HTMLElement>('[part="item"][data-value="preview"]')!
+    const edit = root.querySelector<HTMLElement>('[part="item"][data-value="edit"]')!
+    expect(preview.getAttribute('aria-checked')).toBe('true')
+    expect(edit.getAttribute('aria-checked')).toBe('false')
+    edit.click()
+    expect(el.getAttribute('value')).toBe('{"mode":"edit"}')
+    // value 写回触发重建，重新查询节点断言勾选态
+    const editAfter = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="edit"]')!
+    const previewAfter = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="item"][data-value="preview"]',
+    )!
+    expect(editAfter.getAttribute('aria-checked')).toBe('true')
+    expect(previewAfter.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('value 勾选语义：checkbox 勾选集数组（子元素通道下与 items 通道一致）', () => {
+    const el = mountMenuChildren(
+      `
+      <oas-menu-item value="grid" kind="checkbox">网格线</oas-menu-item>
+      <oas-menu-item value="ruler" kind="checkbox">标尺</oas-menu-item>
+    `,
+      { value: '["grid"]' },
+    )
+    const root = el.shadowRoot!
+    const grid = root.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+    const ruler = root.querySelector<HTMLElement>('[part="item"][data-value="ruler"]')!
+    expect(grid.getAttribute('aria-checked')).toBe('true')
+    expect(ruler.getAttribute('aria-checked')).toBe('false')
+    ruler.click()
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['grid', 'ruler'])
+    grid.click()
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['ruler'])
+  })
+})

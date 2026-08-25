@@ -96,6 +96,38 @@ A panel item with a `sub` field (second-level nav data) renders a "sub trigger";
   <p class="demo-tip">A marketing area appears at the bottom of the panel (only rendered when it has content).</p>
 </DemoBlock>
 
+## Declarative child channel
+
+Besides the `items` JSON, you can write items declaratively with `<oas-navigation-menu-item>` (the `items` attribute **wins when explicitly set**). The default slot text is the label; attributes map to the `NavItem`/`MenuItem` scalar fields (`value`/`href`/`target`/`icon`/`description`/`active`/`disabled` etc.). Direct child items recurse into `children` (inline second-level nav inside the panel); an item with the `sub` attribute parses its children into the overlay second-level nav; `<oas-navigation-menu-group>` is the group carrier (`type: "group"` semantics — its items are flattened into the grid). Child additions/removals, attribute and text changes re-render automatically.
+
+<DemoBlock title="Child channel basic">
+  <oas-navigation-menu id="nav-child" delay-duration="0" onoas-select="navChildLog(event)">
+    <oas-navigation-menu-item value="products">Products
+      <oas-navigation-menu-item value="components" href="/components" icon="star" description="30+ ready-to-use components">Components</oas-navigation-menu-item>
+      <oas-navigation-menu-item value="docs" href="/docs" icon="book" description="Full API docs and guides">Docs</oas-navigation-menu-item>
+    </oas-navigation-menu-item>
+    <oas-navigation-menu-item value="pricing" href="/pricing">Pricing</oas-navigation-menu-item>
+    <oas-navigation-menu-item value="about" href="/about">About</oas-navigation-menu-item>
+  </oas-navigation-menu>
+  <oas-tag id="nav-child-result" type="info">Not selected yet</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="Second-level cascade (sub) and groups">
+  <oas-navigation-menu id="nav-child-sub" delay-duration="0">
+    <oas-navigation-menu-item value="products">Products
+      <oas-navigation-menu-group>
+        <oas-navigation-menu-item value="components" href="/components" icon="star" description="30+ components">Components</oas-navigation-menu-item>
+        <oas-navigation-menu-item value="themes" href="/themes" icon="heart" description="Theming and tokens">Themes</oas-navigation-menu-item>
+      </oas-navigation-menu-group>
+      <oas-navigation-menu-item value="learn" sub>Learn
+        <oas-navigation-menu-item value="docs" href="/docs">Docs</oas-navigation-menu-item>
+        <oas-navigation-menu-item value="tutorial" href="/tutorial">Tutorials</oas-navigation-menu-item>
+      </oas-navigation-menu-item>
+    </oas-navigation-menu-item>
+  </oas-navigation-menu>
+  <p class="demo-tip">With the `sub` attribute the children render as an overlay second-level nav inside the panel; group carrier items are flattened into the grid.</p>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -115,6 +147,10 @@ onMounted(() => {
     const tag = document.getElementById('nav-sub-result')
     if (tag) tag.textContent = `Selected: ${e.detail.value}`
   }
+  window.navChildLog = (e) => {
+    const tag = document.getElementById('nav-child-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value}`
+  }
   const controlled = document.getElementById('nav-controlled')
   const setOpen = (v) => controlled && controlled.setAttribute('value', v)
   document.getElementById('nav-open-a')?.addEventListener('click', () => setOpen('products'))
@@ -125,7 +161,7 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-navigation-menu
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -140,18 +176,45 @@ onMounted(() => {
 | `skip-delay-duration` | Skip-delay window in ms, default 300: hovering another trigger within this window after a close opens it immediately | `string` | `300` |
 | `value` | Controlled open item (top-level trigger value; empty string = closed; when present the open state follows the attribute and interactions only dispatch `oas-change` for the host to update) | `string` | — |
 
-### Events
-
 | Event | Description |
 | --- | --- |
 | `oas-change` | The open item changed, `detail: { value }` (value is the open top-level item value; empty string = closed) |
 | `oas-select` | An item was selected (top-level leaf link, panel link card or secondary sub-nav link), `detail: { value }` |
 
-### Slots
-
 | Name | Description |
 | --- | --- |
 | `panel-footer` | Marketing slot at the bottom of the panel: `<div slot="panel-footer">` (CTA cards etc.) renders a footer container inside the panel when it has content |
+
+### oas-navigation-menu-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `active` | Current-page marker: the link renders `aria-current="page"` (applies to top-level and panel links) | — | — |
+| `danger` | Destructive item (red semantics) | — | — |
+| `description` | Link-card description: rendered under the title in mega-panel mode | — | — |
+| `disabled` | Disabled: renders aria-disabled and blocks clicks/keyboard/hover | — | — |
+| `href` | Link URL: leaf items with `href` render as `<a>` (top-level and panel link cards) | — | — |
+| `icon` | Icon name (`@oas-ui/icons` registry icon name): panel link-card icon | — | — |
+| `kind` | Leaf item semantics: `radio` (default) / `action` / `checkbox` | — | — |
+| `loading` | Loading: blocks interaction until data-driven recovery | — | — |
+| `rel` | Link rel (custom, e.g. `noopener`) | — | — |
+| `sub` | Boolean: when present its direct child items parse into `sub` (overlay second-level nav inside the panel); otherwise they recurse into `children` (inline secondary sub-nav) | — | — |
+| `target` | Link open target (e.g. `_blank`) | — | — |
+| `value` | Selection value (required): top-level triggers and panel items use it for open/select/keyboard | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Navigation item label content (default slot text; direct child items/group carriers are excluded) |
+
+### oas-navigation-menu-group
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `label` | Optional group title (not rendered by this component's panel — it only carries data, matching the `type: "group"` field of the JSON channel) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Grouped navigation items (`oas-navigation-menu-item` children, flattened into the grid when the panel renders) |
 
 `NavItem` fields (inherits `MenuItem`):
 
