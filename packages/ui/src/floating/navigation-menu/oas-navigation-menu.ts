@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 import type { MenuItem } from '../menu/index.js'
+import type { MenuItemKind } from '../menu/oas-menu.js'
 
 export interface NavItem extends MenuItem {
   /** 链接地址（可选）；带 href 的叶子项渲染为 <a> */
@@ -515,6 +516,9 @@ export class OASNavigationMenu extends OASElement {
   private viewportId = `oas-nav-panel-${viewportSeq++}`
   private subPanelId = `oas-nav-sub-${viewportSeq++}`
 
+  /** 子元素通道观察器：light DOM 里 oas-navigation-menu-item/group 增删或属性/文本变化 → 重渲染 */
+  private childObserver: MutationObserver | null = null
+
   /** 内部打开项（非受控模式；受控模式以 value 属性为准） */
   private openValue: string | null = null
   /** 上一个打开项（计算 data-motion 方向） */
@@ -581,6 +585,8 @@ export class OASNavigationMenu extends OASElement {
     this.backdropEl?.addEventListener('click', () => this.close())
     document.addEventListener('pointerdown', this.handleDocPointer)
     document.addEventListener('keydown', this.handleDocumentKey)
+    // 子元素通道：items 属性未显式设置时监听 light DOM 子元素变化（render 与水合路径共用）
+    this.ensureChildObserver()
     this.onCleanup(() => {
       document.removeEventListener('pointerdown', this.handleDocPointer)
       document.removeEventListener('keydown', this.handleDocumentKey)
@@ -603,7 +609,8 @@ export class OASNavigationMenu extends OASElement {
   }
 
   protected override update(): void {
-    this.parseItems()
+    // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
+    this.itemsList = this.hasAttribute('items') ? this.parseItems() : this.parseChildItems()
     this.pruneState()
     this.navEl?.setAttribute('aria-label', this.t('navigationMenu.label'))
     this.renderBar()
@@ -660,10 +667,10 @@ export class OASNavigationMenu extends OASElement {
     if (h > 0) vp.style.setProperty('--vp-h', `${h}px`)
   }
 
-  private parseItems(): void {
+  private parseItems(): NavItem[] {
     try {
       const parsed = JSON.parse(this.getAttr('items', '[]'))
-      this.itemsList = Array.isArray(parsed)
+      return Array.isArray(parsed)
         ? parsed.filter((i): i is NavItem => {
             if (!i || typeof i !== 'object') return false
             if (i.type === 'divider') return true
@@ -672,8 +679,120 @@ export class OASNavigationMenu extends OASElement {
           })
         : []
     } catch {
-      this.itemsList = []
+      return []
     }
+  }
+
+  // ===== 子元素声明式通道 =====
+
+  /**
+   * 子元素通道解析层：把 light DOM 的 `<oas-navigation-menu-item>` / `<oas-navigation-menu-group>`
+   * 收敛为内部 items 模型（单一渲染路径）。项缺 value 属性时跳过（与 JSON 通道
+   * `typeof value === 'string'` 的过滤语义一致——open/select/键盘都依赖 value）。
+   */
+  private parseChildItems(): NavItem[] {
+    return this.childItems(this)
+  }
+
+  /** 递归收集容器内的导航项载体（宿主 / 项元素 / 分组元素通用） */
+  private childItems(container: Element): NavItem[] {
+    const items: NavItem[] = []
+    for (const child of Array.from(container.children)) {
+      if (child.tagName === 'OAS-NAVIGATION-MENU-ITEM') {
+        if (!child.hasAttribute('value')) continue
+        items.push(this.childToItem(child))
+      } else if (child.tagName === 'OAS-NAVIGATION-MENU-GROUP') {
+        const group: NavItem = { type: 'group', children: this.childItems(child) }
+        const label = child.getAttribute('label')
+        if (label) group.label = label
+        items.push(group)
+      }
+    }
+    return items
+  }
+
+  /** 单个子元素 → 内部 item（默认插槽文本为 label，属性对齐 NavItem/MenuItem 标量字段） */
+  private childToItem(el: Element): NavItem {
+    const item: NavItem = {
+      label: this.childLabel(el).trim(),
+      value: el.getAttribute('value') ?? '',
+    }
+    const href = el.getAttribute('href')
+    if (href) item.href = href
+    const target = el.getAttribute('target')
+    if (target) item.target = target
+    const rel = el.getAttribute('rel')
+    if (rel) item.rel = rel
+    const icon = el.getAttribute('icon')
+    if (icon) item.icon = icon
+    const description = el.getAttribute('description')
+    if (description) item.description = description
+    const kind = el.getAttribute('kind')
+    if (kind) item.kind = kind as MenuItemKind
+    if (el.hasAttribute('active')) item.active = true
+    if (el.hasAttribute('disabled')) item.disabled = true
+    if (el.hasAttribute('loading')) item.loading = true
+    if (el.hasAttribute('danger')) item.danger = true
+    // 嵌套：带 sub 属性的项，其直接子项解析为 sub（面板内覆盖式二级导航）；否则为 children
+    const nested = this.childItems(el)
+    if (nested.length > 0) {
+      if (el.hasAttribute('sub')) item.sub = nested
+      else item.children = nested
+    }
+    return item
+  }
+
+  /** 默认插槽 label 文本：排除嵌套数据载体（item/group）与命名插槽元素（如 slot="panel-footer"） */
+  private childLabel(el: Element): string {
+    let text = ''
+    for (const node of el.childNodes) {
+      if (node instanceof Element) {
+        if (node.getAttribute('slot') != null) continue
+        if (
+          node.tagName === 'OAS-NAVIGATION-MENU-ITEM' ||
+          node.tagName === 'OAS-NAVIGATION-MENU-GROUP'
+        ) {
+          continue
+        }
+      }
+      text += node.textContent ?? ''
+    }
+    return text
+  }
+
+  /** 子元素通道观察器：只监听 light DOM 子元素；自身动作不改 light DOM，无循环守卫需求 */
+  private ensureChildObserver(): void {
+    if (this.childObserver) return
+    const observer = new MutationObserver(() => {
+      this.update()
+    })
+    observer.observe(this, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+      attributeFilter: [
+        'value',
+        'href',
+        'target',
+        'rel',
+        'icon',
+        'description',
+        'active',
+        'disabled',
+        'loading',
+        'kind',
+        'danger',
+        'sub',
+        'label',
+        'slot',
+      ],
+    })
+    this.childObserver = observer
+    this.onCleanup(() => {
+      observer.disconnect()
+      this.childObserver = null
+    })
   }
 
   private pruneState(): void {

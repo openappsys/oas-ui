@@ -285,6 +285,48 @@ Setting `target` (e.g. `_blank`) on an item leaves the default behavior to the b
   <oas-anchor items='[{"href":"https://example.com","title":"External docs","target":"_blank"},{"href":"https://example.com/faq","title":"External FAQ","target":"_blank"}]'></oas-anchor>
 </DemoBlock>
 
+## Declarative child channel
+
+Besides the `items` JSON, you can write items declaratively with `<oas-anchor-item>` (the `items` attribute **wins when explicitly set**). The default slot text is the title; attributes map to the `AnchorItem` fields: `href`/`target`/`target-offset`; direct child `<oas-anchor-item>` elements recurse into `children` multi-level nesting (indented, and they participate in scroll highlighting too). Child additions/removals, attribute and text changes re-render automatically.
+
+<DemoBlock title="Child channel basic">
+  <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
+    <oas-anchor style="width: 160px; flex-shrink: 0" scroll-container="#anchor-sc-child">
+      <oas-anchor-item href="#anchor-child-1">Chapter 1</oas-anchor-item>
+      <oas-anchor-item href="#anchor-child-2">Chapter 2</oas-anchor-item>
+    </oas-anchor>
+    <div id="anchor-sc-child" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <oas-anchor-target id="anchor-child-1"><h4 style="margin-top: 0">Chapter 1</h4></oas-anchor-target>
+      <p style="color: var(--oas-color-text-secondary)">Write anchor items declaratively with oas-anchor-item; scroll highlighting behaves the same as the items channel.</p>
+      <oas-anchor-target id="anchor-child-2"><h4 style="margin-top: var(--oas-space-4)">Chapter 2</h4></oas-anchor-target>
+      <p style="color: var(--oas-color-text-secondary)">Clicking an anchor scrolls smoothly to the target section.</p>
+    </div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="Nesting and attributes (children / target-offset)">
+  <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
+    <oas-anchor style="width: 160px; flex-shrink: 0" target-offset="80" scroll-container="#anchor-sc-child2">
+      <oas-anchor-item href="#anchor-child2-1">Chapter 1
+        <oas-anchor-item href="#anchor-child2-1-1">1.1 Sub-section</oas-anchor-item>
+        <oas-anchor-item href="#anchor-child2-1-2">1.2 Sub-section</oas-anchor-item>
+      </oas-anchor-item>
+      <oas-anchor-item href="#anchor-child2-2" target-offset="40">Chapter 2</oas-anchor-item>
+    </oas-anchor>
+    <div id="anchor-sc-child2" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <oas-anchor-target id="anchor-child2-1"><h4 style="margin-top: 0">Chapter 1</h4></oas-anchor-target>
+      <oas-anchor-target id="anchor-child2-1-1"><h5 style="margin-top: var(--oas-space-4)">1.1 Sub-section</h5></oas-anchor-target>
+      <oas-anchor-target id="anchor-child2-1-2"><h5 style="margin-top: var(--oas-space-4)">1.2 Sub-section</h5></oas-anchor-target>
+      <oas-anchor-target id="anchor-child2-2"><h4 style="margin-top: var(--oas-space-4)">Chapter 2</h4></oas-anchor-target>
+      <p style="color: var(--oas-color-text-secondary)">A per-item `target-offset` overrides the global landing offset; child items also participate in scroll highlighting.</p>
+      <p style="color: var(--oas-color-text-secondary)">Scroll to the bottom of this section and watch the left-side highlight follow.</p>
+      <p style="color: var(--oas-color-text-secondary)">Click "Chapter 2" on the left to smooth-scroll to this section.</p>
+      <p style="color: var(--oas-color-text-secondary)">Extra content to make the container overflow and scroll.</p>
+      <p style="color: var(--oas-color-text-secondary)">One more paragraph to ensure scrollability.</p>
+    </div>
+  </div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -348,6 +390,18 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | default | The marked target content (e.g. multi-level headings) |
+
+### oas-anchor-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `href` | Anchor target: `#id` (or an external URL; combine with `target` for external links) | — | — |
+| `target` | Link target (e.g. `_blank`): when set, the default browser behavior is not intercepted (`rel="noopener noreferrer"` is added automatically) | — | — |
+| `target-offset` | Per-item click landing offset (px), overriding the global `target-offset`; invalid values are ignored | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Anchor item title content (default slot text; direct `oas-anchor-item` children are excluded) |
 
 Scroll spy based on the scroll container (viewport by default); clicking smooth-scrolls to the target; `nav` + `aria-label="Anchor navigation"`, the current item has `aria-current="true"`.
 

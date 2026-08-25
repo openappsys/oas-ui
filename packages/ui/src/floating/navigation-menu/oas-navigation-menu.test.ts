@@ -794,3 +794,170 @@ describe('panel-footer 插槽', () => {
     expect(withFooter.querySelector('[slot="panel-footer"]')!.textContent).toContain('立即开始')
   })
 })
+
+// ===== 子元素声明式通道（oas-navigation-menu-item / oas-navigation-menu-group） =====
+
+/** 子元素通道挂载：innerHTML 填 light DOM 子元素后 append（触发 render → 解析） */
+function mountChildren(html: string, attrs: Record<string, string> = {}): OASNavigationMenu {
+  const el = document.createElement('oas-navigation-menu') as OASNavigationMenu
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+  el.innerHTML = html
+  document.body.appendChild(el)
+  return el
+}
+
+describe('子元素声明式通道', () => {
+  it('基础：oas-navigation-menu-item 解析渲染顶级触发器与多列链接卡（icon+标题+描述）', () => {
+    const el = mountChildren(
+      `<oas-navigation-menu-item value="products">产品` +
+        `<oas-navigation-menu-item value="components" href="/components" icon="star" description="30+ 组件">组件</oas-navigation-menu-item>` +
+        `<oas-navigation-menu-item value="docs" href="/docs" icon="book" description="API 文档">文档</oas-navigation-menu-item>` +
+        `</oas-navigation-menu-item>` +
+        `<oas-navigation-menu-item value="pricing" href="/pricing">定价</oas-navigation-menu-item>`,
+      { 'delay-duration': '0' },
+    )
+    // 顶级触发器：label 取默认插槽文本，带 children 的为 button，叶子带 href 为链接
+    expect(topItems(el).length).toBe(2)
+    expect(topItems(el)[0]!.textContent).toBe('产品')
+    expect(topItems(el)[0]!.getAttribute('aria-label')).toBe('产品')
+    expect(topItems(el)[0]!.tagName).toBe('BUTTON')
+    expect(topItems(el)[1]!.tagName).toBe('A')
+    expect(topItems(el)[1]!.getAttribute('href')).toBe('/pricing')
+    // 打开面板：多列网格链接卡（icon + 标题 + description）
+    topItems(el)[0]!.click()
+    expect(isOpen(el)).toBe(true)
+    const cards = panelItems(el).filter((li) => li.querySelector('[part="card-link"]'))
+    expect(cards.length).toBe(2)
+    expect(cards[0]!.textContent).toContain('组件')
+    expect(cards[0]!.textContent).toContain('30+ 组件')
+    expect(cards[0]!.querySelector('.icon svg')).not.toBeNull()
+    expect(cards[0]!.querySelector('a[href="/components"]')).not.toBeNull()
+  })
+
+  it('items 属性显式设置时优先（子元素被忽略）', () => {
+    const el = document.createElement('oas-navigation-menu') as OASNavigationMenu
+    el.setAttribute('items', JSON.stringify([{ label: '数据项', value: 'data', href: '/data' }]))
+    el.innerHTML = `<oas-navigation-menu-item value="home" href="/">首页</oas-navigation-menu-item>`
+    document.body.appendChild(el)
+    const items = topItems(el)
+    expect(items.length).toBe(1)
+    expect(items[0]!.textContent).toBe('数据项')
+    expect(items[0]!.getAttribute('href')).toBe('/data')
+  })
+
+  it('无 sub 属性的嵌套子项递归为 children（面板内 inline 二级子导航）', () => {
+    const el = mountChildren(
+      `<oas-navigation-menu-item value="products">产品` +
+        `<oas-navigation-menu-item value="more">更多` +
+        `<oas-navigation-menu-item value="blog" href="/blog">博客</oas-navigation-menu-item>` +
+        `<oas-navigation-menu-item value="community" href="/community">社区</oas-navigation-menu-item>` +
+        `</oas-navigation-menu-item>` +
+        `</oas-navigation-menu-item>`,
+      { 'delay-duration': '0' },
+    )
+    topItems(el)[0]!.click()
+    const section = el.shadowRoot!.querySelector<HTMLElement>('[part="section"]')!
+    expect(section).not.toBeNull()
+    expect(section.textContent).toContain('更多')
+    const links = [...section.querySelectorAll<HTMLElement>('[part="section-links"] a')]
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/blog', '/community'])
+  })
+
+  it('带 sub 属性的项：子项解析为 sub（面板内覆盖式二级导航）', () => {
+    const el = mountChildren(
+      `<oas-navigation-menu-item value="products">产品` +
+        `<oas-navigation-menu-item value="components" href="/components">组件</oas-navigation-menu-item>` +
+        `<oas-navigation-menu-item value="learn" sub>学习中心` +
+        `<oas-navigation-menu-item value="docs" href="/docs">文档</oas-navigation-menu-item>` +
+        `<oas-navigation-menu-item value="tutorial" href="/tutorial">教程</oas-navigation-menu-item>` +
+        `</oas-navigation-menu-item>` +
+        `</oas-navigation-menu-item>`,
+      { 'delay-duration': '0' },
+    )
+    topItems(el)[0]!.click()
+    const trig = el.shadowRoot!.querySelector<HTMLElement>('[part="sub-trigger"]')!
+    expect(trig).not.toBeNull()
+    expect(trig.textContent).toContain('学习中心')
+    trig.click()
+    const sp = el.shadowRoot!.querySelector<HTMLElement>('[part="sub-panel"]')!
+    expect(sp.hidden).toBe(false)
+    const links = [...sp.querySelectorAll<HTMLElement>('[part="sub-link"]')]
+    expect(links.length).toBe(2)
+    expect(links[0]!.getAttribute('href')).toBe('/docs')
+    expect(links[1]!.getAttribute('href')).toBe('/tutorial')
+  })
+
+  it('oas-navigation-menu-group 分组载体：组内子项平铺渲染进网格', () => {
+    const el = mountChildren(
+      `<oas-navigation-menu-item value="products">产品` +
+        `<oas-navigation-menu-group>` +
+        `<oas-navigation-menu-item value="components" href="/components" icon="star" description="30+ 组件">组件</oas-navigation-menu-item>` +
+        `<oas-navigation-menu-item value="docs" href="/docs" icon="book" description="API 文档">文档</oas-navigation-menu-item>` +
+        `</oas-navigation-menu-group>` +
+        `</oas-navigation-menu-item>`,
+      { 'delay-duration': '0' },
+    )
+    topItems(el)[0]!.click()
+    const cards = panelItems(el).filter((li) => li.querySelector('[part="card-link"]'))
+    expect(cards.length).toBe(2)
+    expect(cards[0]!.querySelector('a[href="/components"]')).not.toBeNull()
+    expect(cards[1]!.querySelector('a[href="/docs"]')).not.toBeNull()
+  })
+
+  it('子元素变化（MutationObserver）动态重渲染：增删与属性更新', async () => {
+    const el = mountChildren(
+      `<oas-navigation-menu-item value="home" href="/">首页</oas-navigation-menu-item>`,
+    )
+    expect(topItems(el).length).toBe(1)
+    const item = document.createElement('oas-navigation-menu-item')
+    item.setAttribute('value', 'about')
+    item.setAttribute('href', '/about')
+    item.textContent = '关于'
+    el.appendChild(item)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(topItems(el).length).toBe(2)
+    expect(topItems(el)[1]!.textContent).toBe('关于')
+    // 属性变化 → 重渲染
+    item.setAttribute('href', '/changed')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(topItems(el)[1]!.getAttribute('href')).toBe('/changed')
+    // 移除 → 回到 1
+    el.querySelector('oas-navigation-menu-item')!.remove()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(topItems(el).length).toBe(1)
+  })
+
+  it('Link active/aria-current 在子元素通道下行为不变（顶级与面板链接）', () => {
+    const el = mountChildren(
+      `<oas-navigation-menu-item value="home" href="/" active>首页</oas-navigation-menu-item>` +
+        `<oas-navigation-menu-item value="products">产品` +
+        `<oas-navigation-menu-item value="components" href="/components" active>组件</oas-navigation-menu-item>` +
+        `</oas-navigation-menu-item>`,
+      { 'delay-duration': '0' },
+    )
+    expect(topItems(el)[0]!.getAttribute('aria-current')).toBe('page')
+    topItems(el)[1]!.click()
+    const link = panel(el).querySelector<HTMLElement>('a[href="/components"]')!
+    expect(link.getAttribute('aria-current')).toBe('page')
+  })
+
+  it('target/disabled 等标量字段映射 + 面板链接卡选择事件', () => {
+    const el = mountChildren(
+      `<oas-navigation-menu-item value="home" href="/" target="_blank">首页</oas-navigation-menu-item>` +
+        `<oas-navigation-menu-item value="products">产品` +
+        `<oas-navigation-menu-item value="components" href="/components">组件</oas-navigation-menu-item>` +
+        `</oas-navigation-menu-item>` +
+        `<oas-navigation-menu-item value="ro" disabled>只读</oas-navigation-menu-item>`,
+      { 'delay-duration': '0' },
+    )
+    expect(topItems(el)[0]!.tagName).toBe('A')
+    expect(topItems(el)[0]!.getAttribute('target')).toBe('_blank')
+    expect(topItems(el)[2]!.getAttribute('aria-disabled')).toBe('true')
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    topItems(el)[1]!.click()
+    panelItems(el)[0]!.click()
+    expect(detail).toEqual({ value: 'components' })
+    expect(isOpen(el)).toBe(false)
+  })
+})

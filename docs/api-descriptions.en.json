@@ -44,6 +44,17 @@
     },
     "slots": {}
   },
+  "oas-anchor-item": {
+    "attrs": {
+      "href": "Anchor target: `#id` (or an external URL; combine with `target` for external links)",
+      "target": "Link target (e.g. `_blank`): when set, the default browser behavior is not intercepted (`rel=\"noopener noreferrer\"` is added automatically)",
+      "target-offset": "Per-item click landing offset (px), overriding the global `target-offset`; invalid values are ignored"
+    },
+    "events": {},
+    "slots": {
+      "": "Anchor item title content (default slot text; direct `oas-anchor-item` children are excluded)"
+    }
+  },
   "oas-anchor-target": {
     "attrs": {
       "id": "Target marker id: synced to the inner `part=target` element, used by anchor items as the scroll landing target"
@@ -1013,6 +1024,40 @@
     },
     "slots": {}
   },
+  "oas-menu-item": {
+    "attrs": {
+      "value": "Selection value (data-carrier field of the declarative child channel)",
+      "disabled": "Disable this item",
+      "loading": "Loading state: renders a spinner and blocks clicks; restored by data updates",
+      "icon": "Leading icon (`@oas-ui/icons` registry icon name)",
+      "kind": "Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back `value`) / `checkbox` (multi-select, `value` is the checked-set array)",
+      "danger": "Destructive item: danger color semantics (delete/logout operations)",
+      "href": "Link URL: with `href` the item renders as a native `<a>` (real navigation + still fires `oas-select`)",
+      "target": "Link target (with `href`)",
+      "rel": "Link rel (with `href`)"
+    },
+    "events": {},
+    "slots": {
+      "": "Menu item label content (default slot text); direct child `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` elements recursively become the submenu `children`"
+    }
+  },
+  "oas-menu-group": {
+    "attrs": {
+      "label": "Group title (small secondary text, not clickable)",
+      "value": "Radio group id (picking inside the group only updates that group's selected value)"
+    },
+    "events": {},
+    "slots": {
+      "": "Group items: child `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` elements flatten to the same level"
+    }
+  },
+  "oas-menu-divider": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "Divider data carrier (no attributes; the host parses it as `type: \"divider\"`)"
+    }
+  },
   "oas-menubar": {
     "attrs": {
       "items": "Top-level menu items JSON (with submenu `children`)",
@@ -1036,6 +1081,42 @@
     "slots": {
       "start": "Leading decorative slot (e.g. logo): `<div slot=\"start\">` renders when it has content; keyboard navigation skips it",
       "end": "Trailing decorative slot (e.g. avatar): `<div slot=\"end\">` renders when it has content; keyboard navigation skips it"
+    }
+  },
+  "oas-menubar-item": {
+    "attrs": {
+      "value": "Selection value (data-carrier field of the declarative child channel)",
+      "disabled": "Disable this item",
+      "icon": "Leading icon (`@oas-ui/icons` registry icon name)",
+      "kind": "Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back `value`) / `checkbox` (multi-select, `value` is the checked-set array)",
+      "danger": "Destructive item: danger color semantics (delete/logout operations)",
+      "href": "Link URL: with `href` the item renders as a native `<a>` (real navigation + still fires `oas-select`)",
+      "target": "Link target (with `href`)",
+      "rel": "Link rel (with `href`)",
+      "shortcut": "Shortcut hint (e.g. `\"Ctrl+N\"`): rendered as a trailing kbd + a document-level keydown binding that triggers select on hit",
+      "access-key": "Alt access key (single character); defaults to the first ASCII letter of the label",
+      "indeterminate": "Checkbox indeterminate state: renders `aria-checked=\"mixed\"` + a dash inside the box (only for `kind=\"checkbox\"` items)"
+    },
+    "events": {},
+    "slots": {
+      "": "Menubar item label content (default slot text); direct child `<oas-menubar-item>`/`<oas-menubar-group>`/`<oas-menubar-divider>` elements recursively become the submenu `children`"
+    }
+  },
+  "oas-menubar-group": {
+    "attrs": {
+      "label": "Group title (small secondary text, not clickable)",
+      "value": "Radio group id (picking inside the group only updates that group's selected value)"
+    },
+    "events": {},
+    "slots": {
+      "": "Group items: child `<oas-menubar-item>`/`<oas-menubar-group>`/`<oas-menubar-divider>` elements flatten to the same level"
+    }
+  },
+  "oas-menubar-divider": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "Divider data carrier (no attributes; the host parses it as `type: \"divider\"`)"
     }
   },
   "oas-message": {
@@ -1101,6 +1182,35 @@
     },
     "slots": {
       "panel-footer": "Marketing slot at the bottom of the panel: `<div slot=\"panel-footer\">` (CTA cards etc.) renders a footer container inside the panel when it has content"
+    }
+  },
+  "oas-navigation-menu-group": {
+    "attrs": {
+      "label": "Optional group title (not rendered by this component's panel — it only carries data, matching the `type: \"group\"` field of the JSON channel)"
+    },
+    "events": {},
+    "slots": {
+      "": "Grouped navigation items (`oas-navigation-menu-item` children, flattened into the grid when the panel renders)"
+    }
+  },
+  "oas-navigation-menu-item": {
+    "attrs": {
+      "active": "Current-page marker: the link renders `aria-current=\"page\"` (applies to top-level and panel links)",
+      "danger": "Destructive item (red semantics)",
+      "description": "Link-card description: rendered under the title in mega-panel mode",
+      "disabled": "Disabled: renders aria-disabled and blocks clicks/keyboard/hover",
+      "href": "Link URL: leaf items with `href` render as `<a>` (top-level and panel link cards)",
+      "icon": "Icon name (`@oas-ui/icons` registry icon name): panel link-card icon",
+      "kind": "Leaf item semantics: `radio` (default) / `action` / `checkbox`",
+      "loading": "Loading: blocks interaction until data-driven recovery",
+      "rel": "Link rel (custom, e.g. `noopener`)",
+      "sub": "Boolean: when present its direct child items parse into `sub` (overlay second-level nav inside the panel); otherwise they recurse into `children` (inline secondary sub-nav)",
+      "target": "Link open target (e.g. `_blank`)",
+      "value": "Selection value (required): top-level triggers and panel items use it for open/select/keyboard"
+    },
+    "events": {},
+    "slots": {
+      "": "Navigation item label content (default slot text; direct child items/group carriers are excluded)"
     }
   },
   "oas-number-animation": {

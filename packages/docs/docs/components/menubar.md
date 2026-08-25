@@ -148,6 +148,43 @@
   <oas-tag id="menubar-href-result" type="info">点叶子项会导航并派发 oas-select</oas-tag>
 </DemoBlock>
 
+## 子元素声明式通道
+
+除 `items` JSON 外，可用 `<oas-menubar-item>` / `<oas-menubar-group>` / `<oas-menubar-divider>` 子元素声明式书写（`items` 属性**显式设置时优先**，未设置时解析子元素收敛到同一渲染路径）。默认插槽文本为 label，属性对齐 `MenubarItem` 字段：`value` / `disabled` / `icon` / `kind` / `danger` / `href` / `target` / `rel` / `shortcut` / `access-key` / `indeterminate`；`<oas-menubar-item>` 内直接嵌套子元素即递归为子菜单，`<oas-menubar-group>` 的 `label` 属性为组标题（`value` 可作 radio 组 id），组内子元素平铺同层。子元素增删、属性与文本变化会自动重渲染（MutationObserver）。
+
+<DemoBlock title="子元素声明式（分组 / 分隔线 / 嵌套 / checkbox / indeterminate / shortcut / danger / href）">
+  <oas-space direction="vertical" size="small">
+    <oas-menubar id="menubar-decl" onoas-select="menubarDeclLog(event)">
+      <oas-menubar-item value="file" access-key="f">文件
+        <oas-menubar-group label="最近">
+          <oas-menubar-item value="proj-a">项目 A</oas-menubar-item>
+          <oas-menubar-item value="proj-b">项目 B</oas-menubar-item>
+        </oas-menubar-group>
+        <oas-menubar-divider></oas-menubar-divider>
+        <oas-menubar-item value="save" shortcut="Ctrl+S" kind="action">保存</oas-menubar-item>
+        <oas-menubar-item value="docs" href="/components/" target="_blank" rel="noopener">组件文档</oas-menubar-item>
+      </oas-menubar-item>
+      <oas-menubar-item value="view" access-key="v">视图
+        <oas-menubar-item value="all" kind="checkbox" indeterminate>全选</oas-menubar-item>
+        <oas-menubar-item value="grid" kind="checkbox">网格线</oas-menubar-item>
+        <oas-menubar-item value="del" danger>删除</oas-menubar-item>
+      </oas-menubar-item>
+    </oas-menubar>
+    <oas-tag id="menubar-decl-result" type="info">尚未选择（试试 Alt+F 打开「文件」、Ctrl+S 触发保存）</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="动态增删（MutationObserver 自动刷新）">
+  <oas-space direction="vertical" size="small">
+    <oas-button size="small" onclick="menubarDeclAdd()">追加顶级项</oas-button>
+    <oas-menubar id="menubar-decl-dyn">
+      <oas-menubar-item value="file">文件
+        <oas-menubar-item value="new">新建</oas-menubar-item>
+      </oas-menubar-item>
+    </oas-menubar>
+  </oas-space>
+</DemoBlock>
+
 ## 水平溢出收纳（···）
 
 容器宽度不足时，放不下的顶级项自动收进末尾「···」收纳项，点击弹层显示被收项（点选即选中）；选中项被收纳时「···」高亮。仅水平模式；竖排与移动端汉堡不收纳。被收纳的含子菜单顶级项在弹层内按叶子项点选（弹层内不展开级联子菜单）。
@@ -228,6 +265,20 @@ onMounted(() => {
     if (tag) tag.textContent = `oas-select：${e.detail.value}（已渲染为 <a> 真链接）`
   }
 
+  window.menubarDeclLog = (e) => {
+    const tag = document.getElementById('menubar-decl-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}（来自子元素声明式通道）`
+  }
+  window.menubarDeclAdd = () => {
+    const mb = document.getElementById('menubar-decl-dyn')
+    if (!mb) return
+    const n = mb.children.length + 1
+    const item = document.createElement('oas-menubar-item')
+    item.setAttribute('value', `dyn-${n}`)
+    item.textContent = `动态项 ${n}`
+    mb.appendChild(item)
+  }
+
   window.menubarOverflowLog = (e) => {
     const tag = document.getElementById('menubar-overflow-result')
     if (tag) tag.textContent = `已选择：${e.detail.value}（来自「···」弹层或条上）`
@@ -281,7 +332,7 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-menubar
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -299,19 +350,52 @@ onMounted(() => {
 | `trigger` | 顶级菜单触发方式：`click`（默认，首开需点击、打开后 hover 切换——桌面应用共识）/ `hover`（hover 直开） | — | — |
 | `value` | 选中值。纯字符串时全局单选（无组场景，兼容旧用法）；JSON 对象字符串（如 `{"mode":"preview","theme":"dark"}`）时按组 id 作用域独立记录——`type:"group"` 项的 `value` 作组 id；JSON 数组字符串（如 `["grid","wrap"]`）时为 checkbox 勾选集（`kind:"checkbox"` 项多选） | `string` | — |
 
-### 事件
-
 | 事件 | 说明 |
 | --- | --- |
 | `oas-open-change` | 顶级打开菜单变化，`detail: { value, open }`（`value` = 当前打开顶级菜单 value，`open` = 是否打开）。受控 `setAttribute('open')` 与内部点击/hover/键盘触发都会派发（首帧不派发） |
 | `oas-select` | 选择某项，`detail: { value, kind?, checked? }`。`kind` 仅动作项（`kind: "action"`）出现，值为 `"action"`；checkbox 项带 `checked`（切换后勾选态）；radio 项 `detail.kind` 不出现 |
 
-### 插槽
-
 | 名称 | 说明 |
 | --- | --- |
 | `end` | 栏尾装饰位（如头像）：`<div slot="end">` 有内容时显示，键盘导航跳过 |
 | `start` | 栏首装饰位（如 logo）：`<div slot="start">` 有内容时显示，键盘导航跳过 |
+
+### oas-menubar-item
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `access-key` | Alt 访问键（单字符）；缺省取 label 首个 ASCII 字母 | — | — |
+| `danger` | 破坏性项：红色语义（删除/退出等危险操作） | — | — |
+| `disabled` | 禁用该项 | — | — |
+| `href` | 链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`） | — | — |
+| `icon` | 前置图标（`@oas-ui/icons` 注册表图标名） | — | — |
+| `indeterminate` | checkbox 半选态：渲染 `aria-checked="mixed"` + 方块内横线减号（仅 `kind="checkbox"` 项生效） | — | — |
+| `kind` | 叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集） | — | — |
+| `rel` | 链接 rel（配合 href） | — | — |
+| `shortcut` | 快捷键提示（如 `"Ctrl+N"`）：右侧 kbd 提示 + document 级 keydown 命中触发 select | — | — |
+| `target` | 链接 target（配合 href） | — | — |
+| `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 菜单栏项 label 内容（默认插槽文本）；直接子元素 `<oas-menubar-item>`/`<oas-menubar-group>`/`<oas-menubar-divider>` 递归为子菜单 children |
+
+### oas-menubar-group
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `label` | 分组标题（组标题小字、次要色、不可点） | — | — |
+| `value` | radio 组 id（组内点选只更新该组选中值） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 组内菜单项：子元素 `<oas-menubar-item>`/`<oas-menubar-group>`/`<oas-menubar-divider>` 平铺同层 |
+
+### oas-menubar-divider
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 分隔线数据载体（无属性，宿主解析为 `type: "divider"`） |
 
 > **事件 detail 说明**：`oas-select` 的 `detail` 是组件内部对象（含 `value`/`kind`），**不是**原生 `Event`——不能 `preventDefault()` 或直接读原生 `event.target`。如需原生事件对象，在事件监听器上用外层参数（如 `addEventListener('oas-select', (e) => ...)` 的 `e` 是 CustomEvent，`e.detail` 才是组件数据）。
 

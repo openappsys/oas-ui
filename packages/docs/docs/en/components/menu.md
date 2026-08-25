@@ -73,6 +73,41 @@ Menu items with `type: "group"` render as a section with a group title (small te
   <oas-menu style="width: 200px" items='[{"label":"Edit","value":"edit","icon":"edit"},{"label":"Copy","value":"copy","icon":"copy"},{"type":"divider"},{"label":"Delete","value":"delete","icon":"trash"}]'></oas-menu>
 </DemoBlock>
 
+## Declarative child channel
+
+Besides the `items` JSON, you can write items declaratively with `<oas-menu-item>` / `<oas-menu-group>` / `<oas-menu-divider>` (the `items` attribute **wins when explicitly set**; otherwise child elements are parsed and converge to the same render path). The default slot text is the label; attributes map to the `items` fields: `value` / `disabled` / `loading` / `icon` / `kind` / `danger` / `href` / `target` / `rel`. Nesting child elements directly inside `<oas-menu-item>` recursively becomes a submenu; `<oas-menu-group>` uses its `label` attribute as the group title (`value` can serve as a radio group id) and flattens its children to the same level. Child additions/removals, attribute and text changes re-render automatically (MutationObserver).
+
+<DemoBlock title="Declarative child channel (group / divider / nesting / checkbox / danger / href)">
+  <oas-space direction="vertical" size="small">
+    <oas-menu id="menu-decl" style="width: 240px" value='["grid"]' onoas-select="menuDeclLog(event)">
+      <oas-menu-group label="Navigation">
+        <oas-menu-item value="home">Home</oas-menu-item>
+        <oas-menu-item value="docs" href="/components/" target="_blank" rel="noopener">Component docs</oas-menu-item>
+      </oas-menu-group>
+      <oas-menu-divider></oas-menu-divider>
+      <oas-menu-item value="edit">Edit
+        <oas-menu-item value="copy">Copy</oas-menu-item>
+        <oas-menu-item value="cut">Cut</oas-menu-item>
+      </oas-menu-item>
+      <oas-menu-item value="grid" kind="checkbox">Show gridlines</oas-menu-item>
+      <oas-menu-item value="wrap" kind="checkbox">Word wrap</oas-menu-item>
+      <oas-menu-divider></oas-menu-divider>
+      <oas-menu-item value="delete" danger>Delete</oas-menu-item>
+    </oas-menu>
+    <oas-tag id="menu-decl-result" type="info">Nothing selected</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="Dynamic add/remove (MutationObserver auto-refresh)">
+  <oas-space direction="vertical" size="small">
+    <oas-button size="small" onclick="menuDeclAdd()">Append an item</oas-button>
+    <oas-menu id="menu-decl-dyn" style="width: 200px">
+      <oas-menu-item value="home">Home</oas-menu-item>
+      <oas-menu-item value="settings">Settings</oas-menu-item>
+    </oas-menu>
+  </oas-space>
+</DemoBlock>
+
 ## Dark menu
 
 `theme="dark"` applies dark tokens locally (dark background + light text) to the menu, independent of the global theme; when unset, it follows the global theme.
@@ -245,6 +280,19 @@ onMounted(() => {
     const tag = document.getElementById('menu-href-result')
     if (tag) tag.textContent = `Selected: ${e.detail.value}`
   }
+  window.menuDeclLog = (e) => {
+    const tag = document.getElementById('menu-decl-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value}`
+  }
+  window.menuDeclAdd = () => {
+    const menu = document.getElementById('menu-decl-dyn')
+    if (!menu) return
+    const n = menu.children.length + 1
+    const item = document.createElement('oas-menu-item')
+    item.setAttribute('value', `dyn-${n}`)
+    item.textContent = `Dynamic item ${n}`
+    menu.appendChild(item)
+  }
   window.menuKeepOpenLog = (e) => {
     const tag = document.getElementById('menu-keep-open-result')
     if (tag) tag.textContent = `Selected: ${e.detail.value} (submenu stays open)`
@@ -279,7 +327,7 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-menu
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -293,12 +341,45 @@ onMounted(() => {
 | `theme` | Local theme: `dark` uses dark tokens (independent of the global theme) | — | — |
 | `value` | Current selected value. Plain string means global single-select (no group, legacy-compatible); JSON object string (e.g. `{"sort":"name","view":"list"}`) scopes per group id — the `value` of a `type:"group"` item is the group id, picking inside a group only updates that group | `string` | — |
 
-### Events
-
 | Event | Description |
 | --- | --- |
 | `oas-expand-change` | Submenu expand state changed, `detail: { expanded: string[], value, isExpanded }` (fired both controlled and uncontrolled) |
 | `oas-select` | Select an item, `detail: { value, kind? }`. `kind` only appears for action items (`kind: "action"`) as "action"; radio items omit `detail.kind` |
+
+### oas-menu-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `danger` | Destructive item: danger color semantics (delete/logout operations) | — | — |
+| `disabled` | Disable this item | — | — |
+| `href` | Link URL: with `href` the item renders as a native `<a>` (real navigation + still fires `oas-select`) | — | — |
+| `icon` | Leading icon (`@oas-ui/icons` registry icon name) | — | — |
+| `kind` | Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back `value`) / `checkbox` (multi-select, `value` is the checked-set array) | — | — |
+| `loading` | Loading state: renders a spinner and blocks clicks; restored by data updates | — | — |
+| `rel` | Link rel (with `href`) | — | — |
+| `target` | Link target (with `href`) | — | — |
+| `value` | Selection value (data-carrier field of the declarative child channel) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Menu item label content (default slot text); direct child `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` elements recursively become the submenu `children` |
+
+### oas-menu-group
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `label` | Group title (small secondary text, not clickable) | — | — |
+| `value` | Radio group id (picking inside the group only updates that group's selected value) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Group items: child `<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>` elements flatten to the same level |
+
+### oas-menu-divider
+
+| Name | Description |
+| --- | --- |
+| default | Divider data carrier (no attributes; the host parses it as `type: "divider"`) |
 
 `MenuItem` fields:
 
