@@ -1350,12 +1350,16 @@
       "expand-on-hover": "Temporarily expand the collapsed icon strip on hover (visual only; does not change controlled collapsed)",
       "shortcut": "Enable Ctrl/Cmd+B collapse toggling (off by default to avoid hijacking a global key)",
       "side": "Drawer side: left (default) / right (mobile drawer slides from the right, trigger on the right)",
-      "variant": "Variant: sidebar (default flush) / floating (radius + shadow) / inset (radius + background contrast)"
+      "variant": "Variant: sidebar (default flush) / floating (radius + shadow) / inset (radius + background contrast)",
+      "resizable": "Edge drag-resize (shows a drag rail on the host edge; desktop non-collapsed only)",
+      "resize-min": "Minimum resize width (px, default 160)",
+      "resize-max": "Maximum resize width (px, default 480)"
     },
     "events": {
       "oas-collapse": "`detail: { collapsed: boolean }`; When fired: Desktop collapse button toggled",
       "oas-select": "`detail: { value: string, label: string }`; When fired: A menu item was selected (also collapses the drawer on mobile)",
-      "oas-action": "`detail: { value: string, action: string, label: string }`; When fired: an item hover action button is clicked (does not fire oas-select)"
+      "oas-action": "`detail: { value: string, action: string, label: string }`; When fired: an item hover action button is clicked (does not fire oas-select)",
+      "oas-resize": "`detail: { width: number }`; When fired: drag-resize ends / arrow keys adjust the width"
     },
     "slots": {}
   },

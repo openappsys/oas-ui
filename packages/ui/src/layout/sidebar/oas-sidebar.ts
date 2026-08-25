@@ -305,6 +305,43 @@ aside {
   margin: var(--oas-space-2, 8px) var(--oas-space-3, 12px);
   background: var(--oas-color-border);
 }
+/* 边缘拖拽条（resizable）：贴宿主右缘，桌面态显示；折叠/移动态隐藏 */
+[part='rail'] {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: 6px;
+  margin-inline-end: -3px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 1;
+}
+[part='rail']::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 2px;
+  width: 2px;
+  background: transparent;
+  border-radius: 2px;
+  transition: background var(--oas-transition-fast, 120ms) var(--oas-ease-out);
+}
+[part='rail']:hover::after,
+[part='rail']:focus-visible::after,
+:host([data-resizing]) [part='rail']::after {
+  background: var(--oas-color-primary);
+}
+:host(:not([data-mobile])[collapsed]) [part='rail'],
+:host([data-mobile]) [part='rail'] {
+  display: none;
+}
+:host {
+  position: relative;
+}
+:host([data-resizing]) {
+  user-select: none;
+  transition: none;
+}
 /* 骨架屏：loading 态脉冲骨架行（与宿主 bg-hover 底色区分开，用主文字色低透明度混色） */
 .skeleton {
   height: var(--oas-control-height-lg, 40px);
@@ -458,6 +495,9 @@ export class OASSidebar extends OASElement {
       'shortcut',
       'side',
       'variant',
+      'resizable',
+      'resize-min',
+      'resize-max',
     ]
   }
 
@@ -491,6 +531,7 @@ export class OASSidebar extends OASElement {
           <div class="foot" part="foot"><slot name="footer"></slot></div>
         </div>
         <button part="toggle" type="button" aria-expanded="true"></button>
+        <div part="rail" role="separator" aria-orientation="vertical" tabindex="0" hidden></div>
       </aside>
       <button part="trigger" type="button" hidden><svg viewBox="0 0 16 16" width="1.25em" height="1.25em" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 4.5 H13 M3 8 H13 M3 11.5 H13"/></svg></button>
       <div class="mask" part="mask"></div>
@@ -529,8 +570,90 @@ export class OASSidebar extends OASElement {
     const nav = this.shadow.querySelector('.nav')
     nav?.addEventListener('keydown', (e) => this.onNavKey(e))
 
+    // 边缘拖拽条（resizable）：pointer 拖拽调宽 + 方向键微调
+    const rail = this.shadow.querySelector<HTMLElement>('[part="rail"]')
+    rail?.addEventListener('pointerdown', (e) => this.startRailDrag(e))
+    rail?.addEventListener('keydown', (e) => this.onRailKey(e))
+
     this.syncMq()
     this.onCleanup(() => this.mq?.removeEventListener('change', this.mqListener))
+  }
+
+  /** rail 拖拽：以 width 属性为唯一事实源（update 会写入 CSS 变量，不冲突） */
+  private railDragging = false
+  private railStartX = 0
+  private railStartWidth = 0
+
+  private resizeMin(): number {
+    return Number(this.getAttr('resize-min', '160')) || 160
+  }
+  private resizeMax(): number {
+    return Number(this.getAttr('resize-max', '480')) || 480
+  }
+
+  private startRailDrag(e: Event): void {
+    const pe = e as PointerEvent
+    if (pe.button !== 0 && pe.pointerType !== 'touch') return
+    e.preventDefault()
+    this.railDragging = true
+    this.railStartX = pe.clientX
+    this.railStartWidth = this.getBoundingClientRect().width
+    this.setAttribute('data-resizing', '')
+    document.addEventListener('pointermove', this.onRailDrag)
+    document.addEventListener('pointerup', this.endRailDrag, { once: true })
+  }
+
+  private onRailDrag = (e: PointerEvent): void => {
+    if (!this.railDragging) return
+    // side=right 的侧栏在屏幕右侧，向左拖才变宽（delta 取反）
+    const sign = this.getAttr('side') === 'right' ? -1 : 1
+    const next = this.railStartWidth + sign * (e.clientX - this.railStartX)
+    this.setWidthPx(next)
+  }
+
+  private endRailDrag = (): void => {
+    if (!this.railDragging) return
+    this.railDragging = false
+    this.removeAttribute('data-resizing')
+    document.removeEventListener('pointermove', this.onRailDrag)
+    this.emit('resize', { width: this.currentWidthPx() })
+  }
+
+  /** 当前宽度 px（width 属性优先，回落实际盒宽） */
+  private currentWidthPx(): number {
+    const fromAttr = parseInt(this.getAttr('width', '0'), 10)
+    return Number.isFinite(fromAttr) && fromAttr > 0
+      ? fromAttr
+      : this.getBoundingClientRect().width
+  }
+
+  /** 方向键微调宽度（±8px；Home/End 跳最小/最大） */
+  private onRailKey(e: Event): void {
+    const ke = e as KeyboardEvent
+    const step = 8
+    const sign = this.getAttr('side') === 'right' ? -1 : 1
+    const cur = this.currentWidthPx()
+    if (ke.key === 'ArrowRight') {
+      ke.preventDefault()
+      this.setWidthPx(cur + sign * step)
+    } else if (ke.key === 'ArrowLeft') {
+      ke.preventDefault()
+      this.setWidthPx(cur - sign * step)
+    } else if (ke.key === 'Home') {
+      ke.preventDefault()
+      this.setWidthPx(this.resizeMin())
+    } else if (ke.key === 'End') {
+      ke.preventDefault()
+      this.setWidthPx(this.resizeMax())
+    } else {
+      return
+    }
+    this.emit('resize', { width: this.currentWidthPx() })
+  }
+
+  private setWidthPx(px: number): void {
+    const clamped = Math.round(Math.min(this.resizeMax(), Math.max(this.resizeMin(), px)))
+    this.setAttribute('width', `${clamped}px`)
   }
 
   protected override render(): void {
@@ -622,6 +745,14 @@ export class OASSidebar extends OASElement {
     }
     if (trigger) trigger.setAttribute('aria-label', this.t('sidebar.openMenu'))
     if (close) close.setAttribute('aria-label', this.t('sidebar.closeMenu'))
+
+    // 边缘拖拽条：仅桌面 + resizable + 非折叠时显示；aria-label 走 locale
+    const rail = this.shadow.querySelector<HTMLElement>('[part="rail"]')
+    if (rail) {
+      const showRail = this.hasAttr('resizable') && !mobile && !this.hasAttr('collapsed')
+      rail.hidden = !showRail
+      if (showRail) rail.setAttribute('aria-label', this.t('sidebar.resize'))
+    }
 
     // width 属性 → 覆盖展开宽度 token
     const width = this.getAttr('width')

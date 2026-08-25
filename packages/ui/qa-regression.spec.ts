@@ -6684,3 +6684,57 @@ test('oas-splitter + sidebar：拖拽分割条 sidebar 宽度实时跟随（不�
   expect(mono, '拖拽过程宽度应单调不减小').toBe(true)
   expect(r.percentAfter, 'percent 应随拖拽增大').not.toBe('22')
 })
+
+// —— 缺陷回归：sidebar resizable 边缘拖拽调宽（内置 rail 形态） ——
+// 设计定夺：拖拽调宽内置（resizable rail）优于 splitter 组合（组合有 width="100%" 写法
+// 门槛 + 强制 split-pane 布局）。本断言真实拖拽 rail 边缘，验证宽度实时跟随并写回 width 属性。
+test('sidebar resizable：拖拽 rail 边缘宽度实时跟随并写回 width 属性（内置 rail）', async ({
+  page,
+}) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(
+    () => document.querySelector('#sidebar-resizable')?.shadowRoot != null,
+    undefined,
+    { timeout: 15000 },
+  )
+  const r = await page.evaluate(async () => {
+    const sb = document.querySelector('#sidebar-resizable') as HTMLElement
+    sb.scrollIntoView({ block: 'center' })
+    await new Promise((res) => setTimeout(res, 300))
+    const rail = sb.shadowRoot!.querySelector('[part="rail"]') as HTMLElement
+    const rect = rail.getBoundingClientRect()
+    const cx = rect.x + rect.width / 2
+    const cy = rect.y + rect.height / 2
+    const w0 = Math.round(sb.getBoundingClientRect().width)
+    rail.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, clientX: cx, clientY: cy, button: 0 }),
+    )
+    const widths: number[] = []
+    for (let i = 1; i <= 3; i++) {
+      document.dispatchEvent(
+        new PointerEvent('pointermove', { bubbles: true, clientX: cx + i * 30, clientY: cy }),
+      )
+      await new Promise((res) => setTimeout(res, 60))
+      widths.push(Math.round(sb.getBoundingClientRect().width))
+    }
+    document.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true, clientX: cx + 90, clientY: cy }),
+    )
+    await new Promise((res) => setTimeout(res, 200))
+    return {
+      w0,
+      widths,
+      widthAttr: sb.getAttribute('width'),
+      logText: document.getElementById('sidebar-resize-log')?.textContent ?? '',
+      railHidden: rail.hidden,
+    }
+  })
+  expect(r.railHidden, 'resizable 态 rail 应显示').toBe(false)
+  expect(r.w0, '初始宽度应为 220（width 属性值）').toBe(220)
+  expect(r.widths.length, '拖拽采样应有宽度读数').toBe(3)
+  const mono = r.widths.every((w, i) => i === 0 || w > r.widths[i - 1]!)
+  expect(mono, '拖拽过程宽度应单调递增').toBe(true)
+  expect(r.widths[2], '拖拽后宽度应增大').toBeGreaterThan(r.w0)
+  expect(r.widthAttr, '拖拽应写回 width 属性').toBe(`${r.widths[2]}px`)
+  expect(r.logText, 'oas-resize 事件应更新 demo 日志').toContain(`${r.widths[2]}px`)
+})

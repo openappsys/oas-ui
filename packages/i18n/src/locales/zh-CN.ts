@@ -104,6 +104,7 @@ export const zhCN = {
   'sidebar.expand': '展开侧栏',
   'sidebar.openMenu': '打开侧栏',
   'sidebar.closeMenu': '关闭侧栏',
+  'sidebar.resize': '调整侧栏宽度',
   // float-button（悬浮按钮）
   'floatButton.action': '悬浮操作',
   // toggle-group（切换组）
