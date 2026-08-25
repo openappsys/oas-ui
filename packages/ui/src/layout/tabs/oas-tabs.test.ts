@@ -719,6 +719,67 @@ describe('OASTabs', () => {
       expect(after).toContain('t0') // 左侧滚出
       expect(after).not.toContain('t9') // 右侧已在视口
     })
+
+    it('键盘导航：moreBtn Enter/ArrowDown 打开并聚焦第一项；ArrowUp/Down/Home/End 遍历；Enter 激活；Escape 收起回焦 moreBtn（键盘可达溢出标签）', async () => {
+      const el = mountMore(10, 100, 400)
+      ;(el as any).syncMore?.()
+      const moreBtn = el.shadowRoot!.querySelector('.more-btn') as HTMLElement
+      // moreBtn ArrowDown 打开下拉并聚焦第一项（非搜索框）
+      moreBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+      const items = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')]
+      expect(items.length).toBeGreaterThan(0)
+      const activeEl = el.shadowRoot!.activeElement as HTMLElement
+      expect(activeEl.classList.contains('more-item'), '打开后首焦点应落第一项').toBe(true)
+      expect(activeEl.getAttribute('data-value')).toBe(items[0]!.getAttribute('data-value'))
+      // ArrowDown 移到下一项
+      el.shadowRoot!.querySelector('.more-dropdown')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+      )
+      expect(el.shadowRoot!.activeElement).toBe(items[1])
+      // ArrowUp 回上一项
+      el.shadowRoot!.querySelector('.more-dropdown')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }),
+      )
+      expect(el.shadowRoot!.activeElement).toBe(items[0])
+      // End 跳末项
+      el.shadowRoot!.querySelector('.more-dropdown')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'End', bubbles: true }),
+      )
+      expect(el.shadowRoot!.activeElement).toBe(items[items.length - 1])
+      // Home 回首项
+      el.shadowRoot!.querySelector('.more-dropdown')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Home', bubbles: true }),
+      )
+      expect(el.shadowRoot!.activeElement).toBe(items[0])
+      // Enter 激活当前项（等价点选：滚动 + 激活 value）
+      const firstValue = items[0]!.getAttribute('data-value')!
+      el.shadowRoot!.querySelector('.more-dropdown')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      )
+      await Promise.resolve()
+      expect(el.getAttribute('active')).toBe(firstValue)
+      // 重新打开后 Escape 收起并回焦 moreBtn
+      moreBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+      el.shadowRoot!.querySelector('.more-dropdown')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      )
+      expect(el.shadowRoot!.querySelector('.more-dropdown')!.hasAttribute('hidden')).toBe(true)
+      expect(el.shadowRoot!.activeElement).toBe(moreBtn)
+    })
+
+    it('搜索框键盘：ArrowDown 从搜索进入第一项、Escape 从搜索收起（焦点不再卡死在搜索框）', () => {
+      const el = mountMore(10, 100, 400)
+      ;(el as any).syncMore?.()
+      ;(el.shadowRoot!.querySelector('.more-btn') as HTMLElement).click()
+      const search = el.shadowRoot!.querySelector('.more-search') as HTMLInputElement
+      if (search.hidden) return // 项 ≤5 无搜索框则跳过
+      search.focus()
+      const items = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.more-item')]
+      search.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+      expect(el.shadowRoot!.activeElement).toBe(items[0])
+      search.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      expect(el.shadowRoot!.querySelector('.more-dropdown')!.hasAttribute('hidden')).toBe(true)
+    })
   })
 
   // ===== 批次 3a：panel-mode 面板显隐策略（keep/lazy/destroy） =====

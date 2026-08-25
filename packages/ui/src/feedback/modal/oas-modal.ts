@@ -71,6 +71,21 @@ const STYLE = `
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+  /* 滚动边缘指示（CSS-only scroll shadow）：上下边缘渐隐阴影提示该方向还有内容——
+     上下 bg 覆盖层随内容滚动、到边缘时遮住阴影；径向阴影固定在视口边缘（background-attachment 分层） */
+  background-color: var(--oas-color-bg);
+  background-image:
+    linear-gradient(var(--oas-color-bg) 30%, transparent),
+    linear-gradient(transparent, var(--oas-color-bg) 70%),
+    radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.12), transparent),
+    radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.12), transparent);
+  background-repeat: no-repeat;
+  background-size:
+    100% 24px,
+    100% 24px,
+    100% 12px,
+    100% 12px;
+  background-attachment: local, local, scroll, scroll;
 }
 .footer {
   display: flex;
