@@ -83,7 +83,7 @@ Switch to the card style with `type="card"`: every tab has its own border, the a
 
 ## Right-click menu (new tab + bulk close)
 
-`context-menu`: right-click any tab to open an action menu — New tab / Close / Close others / Close all to the left / Close all to the right / Close all (a separator sits between "New tab" and the close group). "New tab" fires `oas-add` (same contract as the `addable` + button); each close operation fires `oas-close` (`detail: { key }`) once per target tab, and the host removes the matching panels (same contract as `closable`). The popup closes on outside click or Escape.
+`context-menu`: right-click any tab to open an action menu — New / Close / Close others / Close all to the left / Close all to the right / Close all (a separator sits between "New" and the close group). "New" fires `oas-add` (same contract as the `addable` + button; `detail.label` is the locale default name and hosts are free to ignore it and use their own — real-world tabs often mean "new file" and the like, so the menu label stays the neutral "New"); each close operation fires `oas-close` (`detail: { key }`) once per target tab, and the host removes the matching panels (same contract as `closable`). The popup closes on outside click or Escape.
 
 <DemoBlock title="Right-click bulk close (context-menu)">
   <oas-tabs id="tabs-contextmenu" closable context-menu active="b">
@@ -95,7 +95,9 @@ Switch to the card style with `type="card"`: every tab has its own border, the a
   </oas-tabs>
 </DemoBlock>
 
-> Right-click “Products” and try “New tab” and “Close all to the left” / “Close others” — "New tab" fires `oas-add` and the host appends a panel; each close fires `oas-close` once per key, and the host removes the matching panels.
+> Right-click “Products” and try “New” and “Close all to the left” / “Close others” — "New" fires `oas-add` and the host appends a panel; each close fires `oas-close` once per key, and the host removes the matching panels.
+
+> Hosts can reword the menu per business domain (e.g. "New file"): override individual locale keys — `setLocale({ name: 'en', messages: { ...en, 'tabs.ctxNew': 'New file' } })` (import `setLocale`/`en` from `@oas-ui/i18n`; same-name registration overwrites, touch only the keys you need).
 
 ## Badges
 
@@ -598,7 +600,7 @@ onMounted(async () => {
 | `animated` | Selection transition + panel fade-in (animates color/border/opacity only, no layout) | `boolean` | — |
 | `centered` | Center the tab bar (when horizontal) | `boolean` | — |
 | `closable` | Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel) | `boolean` | — |
-| `context-menu` | Right-click action menu on tabs (New tab / Close / Close others / Close all to the left / Close all to the right / Close all; New tab fires oas-add, each close fires oas-close once per target tab) | `boolean` | — |
+| `context-menu` | Right-click action menu on tabs (New / Close / Close others / Close all to the left / Close all to the right / Close all; New fires oas-add, each close fires oas-close once per target tab) | `boolean` | — |
 | `hide-content` | Pure navigation mode: render the tab bar without the panel area (tabs act as a nav strip; the host takes over content/routing) | `boolean` | — |
 | `hide-indicator` | Hide the active indicator line (the ::after underline in line mode) | `boolean` | — |
 | `items` | Data-driven rendering: JSON array `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`; takes precedence over `oas-tab-panel` children when both present | `string` | — |

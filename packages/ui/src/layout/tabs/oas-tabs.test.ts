@@ -47,7 +47,7 @@ describe('OASTabs', () => {
     expect(tabs[0]!.getAttribute('aria-selected')).toBe('true')
   })
 
-  it('context-menu：右键标签弹菜单（6 项：新标签/关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部，新建与关闭族间有分隔线）；无属性不弹', () => {
+  it('context-menu：右键标签弹菜单（6 项：新建/关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部，新建与关闭族间有分隔线）；无属性不弹', () => {
     const el = mountMany(['a', 'b', 'c'], { 'context-menu': '' })
     rightClickTab(el, 'b')
     const menu = el.shadowRoot!.querySelector('.ctx-menu') as HTMLElement
@@ -56,7 +56,7 @@ describe('OASTabs', () => {
     const items = [...menu.querySelectorAll<HTMLElement>('.ctx-item')]
     expect(items.length).toBe(6)
     expect(items.map((i) => i.textContent)).toEqual([
-      '新标签',
+      '新建',
       '关闭',
       '关闭其他',
       '关闭左侧所有',
@@ -112,7 +112,7 @@ describe('OASTabs', () => {
     expect(keys).toEqual(['a', 'b', 'c', 'd'])
   })
 
-  it('context-menu 新标签：派发 oas-add（与 addable + 按钮同契约），菜单自闭合', () => {
+  it('context-menu 新建：菜单项文案为中性「新建」；派发 oas-add（detail.label 走 locale 默认产物名，与 addable + 按钮同契约），菜单自闭合', () => {
     const el = mountMany(['a', 'b'], { 'context-menu': '' })
     const adds: unknown[] = []
     el.addEventListener('oas-add', (e) => adds.push((e as CustomEvent).detail))
@@ -128,7 +128,7 @@ describe('OASTabs', () => {
     const menu = el.shadowRoot!.querySelector('.ctx-menu')!
     const items = [...menu.querySelectorAll<HTMLElement>('.ctx-item')]
     const active = (): string => el.shadowRoot!.activeElement?.textContent ?? ''
-    expect(active()).toBe('新标签') // 打开即聚焦首项
+    expect(active()).toBe('新建') // 打开即聚焦首项
     items[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
     expect(active()).toBe('关闭')
     items[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
@@ -136,7 +136,7 @@ describe('OASTabs', () => {
     ;[...menu.querySelectorAll<HTMLElement>('.ctx-item')][5]!.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
     )
-    expect(active()).toBe('新标签') // 末项 ArrowDown 循环回首项
+    expect(active()).toBe('新建') // 末项 ArrowDown 循环回首项
     ;[...menu.querySelectorAll<HTMLElement>('.ctx-item')][0]!.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }),
     )

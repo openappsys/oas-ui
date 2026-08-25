@@ -83,7 +83,7 @@
 
 ## 右键菜单（新建 + 批量关闭）
 
-`context-menu`：右键任意标签弹出操作菜单——新标签 / 关闭 / 关闭其他 / 关闭左侧所有 / 关闭右侧所有 / 关闭全部（新建与关闭族间有分隔线）。新建派发 `oas-add`（与 `addable` 的 + 按钮同一契约）；关闭类每项按目标集合逐个派发 `oas-close`（`detail: { key }`），宿主按 key 移除对应面板即可（与 `closable` 同一契约）。弹层支持外部点击 / Escape 关闭。
+`context-menu`：右键任意标签弹出操作菜单——新建 / 关闭 / 关闭其他 / 关闭左侧所有 / 关闭右侧所有 / 关闭全部（新建与关闭族间有分隔线）。新建派发 `oas-add`（与 `addable` 的 + 按钮同一契约，`detail.label` 是 locale 默认产物名，宿主可忽略自行命名——实际场景多为「新建文件」等宿主语义，菜单项文案保持中性「新建」）；关闭类每项按目标集合逐个派发 `oas-close`（`detail: { key }`），宿主按 key 移除对应面板即可（与 `closable` 同一契约）。弹层支持外部点击 / Escape 关闭。
 
 <DemoBlock title="右键批量关闭（context-menu）">
   <oas-tabs id="tabs-contextmenu" closable context-menu active="b">
@@ -95,7 +95,9 @@
   </oas-tabs>
 </DemoBlock>
 
-> 右键「商品」试试「新标签」与「关闭左侧所有」/「关闭其他」——新建派发 `oas-add` 宿主追加面板；关闭按 key 逐个派发 `oas-close`，宿主移除对应面板。
+> 右键「商品」试试「新建」与「关闭左侧所有」/「关闭其他」——新建派发 `oas-add` 宿主追加面板；关闭按 key 逐个派发 `oas-close`，宿主移除对应面板。
+
+> 宿主可按业务改文案（如「新建文件」）：覆盖 locale 个别键即可——`setLocale({ name: 'zh-CN', messages: { ...zhCN, 'tabs.ctxNew': '新建文件' } })`（从 `@oas-ui/i18n` 导入 `setLocale`/`zhCN`；同名注册即覆盖，只动需要的键）。
 
 ## 徽标
 
@@ -598,7 +600,7 @@ onMounted(async () => {
 | `animated` | 选中态过渡 + 面板淡入动画（只动 color/border/opacity，不碰 layout） | `boolean` | — |
 | `centered` | 标签栏整体居中（横向时） | `boolean` | — |
 | `closable` | 每个标签显示关闭 ×，点击派发 `oas-close`（组件不自动删除） | `boolean` | — |
-| `context-menu` | 标签右键操作菜单（新标签/关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部；新建派发 oas-add，关闭类按目标集合逐个派发 oas-close） | `boolean` | — |
+| `context-menu` | 标签右键操作菜单（新建/关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部；新建派发 oas-add，关闭类按目标集合逐个派发 oas-close） | `boolean` | — |
 | `hide-content` | 纯导航模式：渲染标签栏但不渲染面板区（tabs 当导航条，宿主接管内容/路由） | `boolean` | — |
 | `hide-indicator` | 隐藏激活指示线（line 模式的 ::after 下划线） | `boolean` | — |
 | `items` | 数据驱动渲染：JSON 数组 `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`，与 `oas-tab-panel` 子元素并存时 items 优先 | `string` | — |
