@@ -706,7 +706,7 @@ tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navig
 - **实测修复**：toolbar SSR 溢出误判（happy-dom 假溢出致快照隐藏项、水合布局漂移 9px；溢出判定改 scrollWidth>clientWidth 防 shrink-to-fit 假溢出）；popover 退场动画延迟 aria-hidden（语义状态立即落地 + .oas-closing 保显播完）；back-top append-to 竞态致 Vue 水合 mismatch（组件级 load 后 teleport + 站点级注册移至水合后）；toolbar is-attached 样式缺失
 - **验收**：单测 tooltip 78 / popover 90 / hover-card 35 / breadcrumb 33 / anchor 41 / back-top 35 / tour 60 / command 67 / menubar 61 / navigation-menu 36 / toolbar 43 / 定位引擎 30（全量 3120）、typecheck/build 全绿、e2e chromium 944 + firefox 抽样 355、ssr-dsd 11/11、console 零告警；识图验收 light+dark 全 11 页通过（33 张截图逐张核对）
 
-## v2.2.3 导航与浮层族复核批（9 组件能力增量与缺陷修复）
+## v2.2.3 导航与浮层族复核批（9 组件能力增量与缺陷修复）→ 已发布
 
 对 tooltip/popover 之外的 9 件（hover-card/tour/command/breadcrumb/anchor/menubar/navigation-menu/back-top/toolbar）按组件深挖流程复核：差距补齐 + 缺陷族排查修复 + 浏览器实测验证。三组滚动推进（浮层系→导航系→独立件）。
 
@@ -735,9 +735,23 @@ tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navig
 
 ### 复核批汇总
 
-- **验收**：全量单测 3255 / typecheck / build / api:scan+gen / e2e chromium 全量 1337 + firefox 抽样（ssr-dsd 真水合 38px 漂移修复后全绿）/ perf:size 六项 PASS（cdn 245.5KB < 300KB 天花板）/ trace 门禁 0 命中 / dev 浏览器实测 40+ 截图 light+dark console 零告警
+- **验收**：全量单测 3280 / typecheck / build / api:scan+gen / e2e chromium 全量 969 + firefox 抽样（ssr-dsd 真水合 38px 漂移修复后全绿）/ perf:size 六项 PASS（cdn 245.5KB < 300KB 天花板）/ trace 门禁 0 命中 / dev 浏览器实测 40+ 截图 light+dark console 零告警 / 感知对比度门禁 exit 0
 - **缺陷固化回归 6 条**：hover-card collision-boundary 坐标系、navigation-menu 箭头跟随、breadcrumb ellipsis 裁剪、toolbar 防收缩、menubar 零宽守卫（单测）、demo-coverage 探针豁免补录
 - **demo 探针**：navigation-menu loop 演示补录、oas-collapse-click 纳入事件豁免清单（需折叠交互序列）
+
+### 模板实测第二批（oas-ui-templates 集成反馈）
+
+- **浮层箭头统一与 merge 修复**：标准菱形箭头全家族统一 12px/-6px（居中 calc -6px、ARROW_SIZE 12 对齐盒尺寸）；merge 贴角直角三角独立固定 8px 盒——popover/hover-card merge 描边三修（去方向性 drop-shadow 致左缘视觉偏移、去贴面板融合边描边线、斜边渐变带加粗同直角边观感）
+- **icons**：arrow-up/arrow-down 方向画反修复（svg 源顶点互换 + 方向类几何断言固化）；icon generate 脚本原子化（中断不毁 src/icons）；duotone 分层/双色两处修复
+- **tour 缺陷 5 连修**：append-to portal host display:none 致浮层 0×0 不可见、弹窗 pointer-events:none 穿透误关、typewriter 布尔属性误判、首打开目标视口外闪现错位、demo 高亮区可交互化
+- **layout/sidebar/sider/table 模板缺陷 9 项**：sidebar active 受控（aria-current）+ drawer-open 纳入观察 + 触发按钮 SVG 化 + items.icon 注册表 SVG 渲染；layout sider slot 判据改 `slot="sider"`；sider 折叠联动内部 sidebar + 宽度 CSS 变量开口；table 单元格 render 支持 Node/元素富内容 + columns property 保留函数 + `:host([hidden])` 修复
+- **select 下拉定位**：`.dropdown` 从宿主 absolute 改 `position: fixed` + computePosition 锚定（与 combobox 一致），逃出祖先 overflow 容器不再逼出滚动条
+- **tabs more 下拉语义纠偏**：offview 判定从「完全滚出」改为「不完全可见」（部分滚出也算），空下拉消除；ResizeObserver 回调补 syncMore（缩窗不出现/扩窗不撤回双向修复）
+- **menubar shortcut 契约**：「修饰键+键」直接绑定；单键仅限功能键（F1-F12）绑定，其余单键仅展示不绑定；文档明示
+- **menu checkbox**：多选方格与标签补 margin 间距（深色实测挤文字）
+- **sidebar items.group 分组**：连续同组项前渲染组标题节点（part=group，弱化语义色、纯展示；折叠态隐藏/抽屉态显示），items 向后兼容
+- **tabs tab-badge 颜色开口**：背景/文字从写死 danger 改 `--oas-tabs-badge-bg/--oas-tabs-badge-color`（默认 danger 兼容）+ part="badge"，宿主可中性化
+- **验证**：全量单测 3280 / e2e chromium 969 / 感知对比度门禁 exit 0 / 截图识图 light+dark 全过
 
 ## 后续 backlog：独立组件条目（按需立项）
 
