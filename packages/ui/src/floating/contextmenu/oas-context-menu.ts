@@ -1,7 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
 import type { OASMenu } from '../menu/index.js'
-import type { MenuItem } from '../menu/index.js'
+import type { MenuItem, MenuItemKind } from '../menu/index.js'
 
 const STYLE = `
 :host {
@@ -28,6 +28,8 @@ export class OASContextMenu extends OASElement {
   private itemsList: MenuItem[] = []
   private menuEl: OASMenu | null = null
   private anchorEl: HTMLElement | null = null
+  /** 子元素通道观察器：light DOM 里 oas-context-menu-item/group/divider 增删或属性/文本变化 → 重解析渲染 */
+  private childObserver: MutationObserver | null = null
 
   /** 长按计时器句柄（touch 长按触发，移动端无右键的替代） */
   private longPressTimer = 0
@@ -127,6 +129,8 @@ export class OASContextMenu extends OASElement {
 
   protected override update(): void {
     if (!this.menuEl || !this.anchorEl) return
+    // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
+    this.ensureChildObserver()
     const open = this.hasAttr('open')
     this.anchorEl.hidden = !open
     // open 状态迁移（受控 setAttribute 与右键/长按/show(x,y) 触发都会走到这里）→ oas-open-change
@@ -135,7 +139,9 @@ export class OASContextMenu extends OASElement {
     }
     this.prevOpen = open
     if (open) {
-      this.parseItems()
+      // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
+      if (this.hasAttribute('items')) this.parseItems()
+      else this.parseChildItems()
       this.menuEl.setAttribute('items', JSON.stringify(this.itemsList))
       if (!this.wasOpen) {
         // 打开瞬间：用缓存的触发坐标定位（无坐标则不定位，保持快照/上次位置）
@@ -251,5 +257,118 @@ export class OASContextMenu extends OASElement {
     } catch {
       this.itemsList = []
     }
+  }
+
+  // ===== 子元素声明式通道 =====
+
+  /**
+   * 子元素通道解析层：把 light DOM 的 `<oas-context-menu-item>` / `<oas-context-menu-group>` /
+   * `<oas-context-menu-divider>` 收敛为内部 items 模型（与 parseItems 单一渲染路径）。
+   * 右键区域等非载体元素不在识别清单里，天然被忽略（不会误当菜单项）。
+   */
+  private parseChildItems(): void {
+    this.itemsList = this.parseChildLevel(this.children)
+  }
+
+  /** 解析一层子元素为 MenuItem[]（仅识别数据载体元素，其余 light DOM 内容忽略） */
+  private parseChildLevel(elements: HTMLCollection | Element[]): MenuItem[] {
+    const items: MenuItem[] = []
+    for (const child of Array.from(elements)) {
+      if (child.tagName === 'OAS-CONTEXT-MENU-ITEM') {
+        items.push(this.childToMenuItem(child))
+      } else if (child.tagName === 'OAS-CONTEXT-MENU-GROUP') {
+        items.push(this.childToGroup(child))
+      } else if (child.tagName === 'OAS-CONTEXT-MENU-DIVIDER') {
+        items.push({ type: 'divider' })
+      }
+    }
+    return items
+  }
+
+  /** 单个 <oas-context-menu-item> → MenuItem（默认插槽文本为 label，属性对齐 items 字段；嵌套子元素递归为 children） */
+  private childToMenuItem(el: Element): MenuItem {
+    const item: MenuItem = { label: this.childLabel(el) }
+    const value = el.getAttribute('value')
+    if (value) item.value = value
+    if (el.hasAttribute('disabled')) item.disabled = true
+    if (el.hasAttribute('loading')) item.loading = true
+    const icon = el.getAttribute('icon')
+    if (icon) item.icon = icon
+    const kind = el.getAttribute('kind')
+    if (kind) item.kind = kind as MenuItemKind
+    if (el.hasAttribute('danger')) item.danger = true
+    const href = el.getAttribute('href')
+    if (href) item.href = href
+    const target = el.getAttribute('target')
+    if (target) item.target = target
+    const rel = el.getAttribute('rel')
+    if (rel) item.rel = rel
+    const children = this.parseChildLevel(el.children)
+    if (children.length > 0) item.children = children
+    return item
+  }
+
+  /** 单个 <oas-context-menu-group> → 分组项（label/value 属性 + 子元素平铺 children） */
+  private childToGroup(el: Element): MenuItem {
+    const item: MenuItem = { type: 'group', label: el.getAttribute('label') ?? '' }
+    const value = el.getAttribute('value')
+    if (value) item.value = value
+    const children = this.parseChildLevel(el.children)
+    if (children.length > 0) item.children = children
+    return item
+  }
+
+  /** 默认插槽 label 文本：跳过嵌套数据载体元素（其文本属于子菜单而非 label） */
+  private childLabel(el: Element): string {
+    let text = ''
+    for (const node of el.childNodes) {
+      if (node instanceof Element) {
+        const tag = node.tagName
+        if (
+          tag === 'OAS-CONTEXT-MENU-ITEM' ||
+          tag === 'OAS-CONTEXT-MENU-GROUP' ||
+          tag === 'OAS-CONTEXT-MENU-DIVIDER'
+        ) {
+          continue
+        }
+      }
+      text += node.textContent ?? ''
+    }
+    return text.trim()
+  }
+
+  /**
+   * 子元素通道观察器：只监听 light DOM 子元素（数据载体增删/属性/文本变化 → 重解析）。
+   * 组件自身动作不写 light DOM，无需自引用守卫。
+   */
+  private ensureChildObserver(): void {
+    if (this.childObserver) return
+    const observer = new MutationObserver(() => {
+      this.update()
+    })
+    observer.observe(this, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+      attributeFilter: [
+        'value',
+        'disabled',
+        'loading',
+        'icon',
+        'kind',
+        'danger',
+        'href',
+        'target',
+        'rel',
+        'label',
+        'slot',
+      ],
+    })
+    this.childObserver = observer
+    this.onCleanup(() => {
+      observer.disconnect()
+      this.childObserver = null
+    })
   }
 }

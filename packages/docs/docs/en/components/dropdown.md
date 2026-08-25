@@ -269,6 +269,40 @@ A menu item with `loading: true` enters a loading state: it shows a spinning ind
   </oas-space>
 </DemoBlock>
 
+## Declarative child-element channel
+
+Besides the `items` JSON, you can declare the menu with `<oas-dropdown-item>` / `<oas-dropdown-group>` / `<oas-dropdown-divider>` child elements (the `items` attribute **wins when set explicitly**; otherwise children are parsed and converge to the same rendering path). Default slot text becomes the label; attributes map to the `items` fields: `value` / `disabled` / `loading` / `icon` / `kind` / `danger` / `href` / `target` / `rel`. Nested elements inside an `<oas-dropdown-item>` become cascading submenus recursively; an `<oas-dropdown-group>`'s `label` is the group title (`value` can act as a radio-group id) and its children flatten to the same level. Adding/removing children or changing their attributes/text re-renders automatically (MutationObserver).
+
+<DemoBlock title="Declarative children (group / divider / nested / checkbox / danger / href)">
+  <oas-dropdown id="dd-decl" onoas-select="ddDeclLog(event)" placement="bottom-start">
+    <oas-button type="primary">Actions</oas-button>
+    <oas-dropdown-group label="Navigation">
+      <oas-dropdown-item value="home">Home</oas-dropdown-item>
+      <oas-dropdown-item value="docs" href="/components/" target="_blank" rel="noopener">Component docs</oas-dropdown-item>
+    </oas-dropdown-group>
+    <oas-dropdown-divider></oas-dropdown-divider>
+    <oas-dropdown-item value="edit">Edit
+      <oas-dropdown-item value="copy">Copy</oas-dropdown-item>
+      <oas-dropdown-item value="cut">Cut</oas-dropdown-item>
+    </oas-dropdown-item>
+    <oas-dropdown-item value="grid" kind="checkbox">Show gridlines</oas-dropdown-item>
+    <oas-dropdown-divider></oas-dropdown-divider>
+    <oas-dropdown-item value="delete" danger>Delete</oas-dropdown-item>
+  </oas-dropdown>
+  <oas-tag id="dd-decl-result" type="info">Nothing selected</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="Dynamic add/remove (MutationObserver auto refresh)">
+  <oas-space size="small">
+    <oas-button size="small" onclick="ddDeclAdd()">Append an item</oas-button>
+  </oas-space>
+  <oas-dropdown id="dd-decl-dyn" placement="bottom-start">
+    <oas-button>Dynamic menu</oas-button>
+    <oas-dropdown-item value="home">Home</oas-dropdown-item>
+    <oas-dropdown-item value="settings">Settings</oas-dropdown-item>
+  </oas-dropdown>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -357,12 +391,28 @@ onMounted(() => {
       window.setTimeout(() => mark(false), 1500)
     }
   }
+
+  // Declarative child-element channel: show selection + append an item at runtime (MutationObserver re-renders)
+  window.ddDeclLog = (e) => {
+    const tag = document.getElementById('dd-decl-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value} (declarative child channel)`
+  }
+  const declDyn = document.getElementById('dd-decl-dyn')
+  if (declDyn) {
+    window.ddDeclAdd = () => {
+      const n = declDyn.querySelectorAll('oas-dropdown-item').length
+      const item = document.createElement('oas-dropdown-item')
+      item.setAttribute('value', `extra-${n}`)
+      item.textContent = `Dynamic item ${n}`
+      declDyn.appendChild(item)
+    }
+  }
 })
 </script>
 
 ## API
 
-### Attributes
+### oas-dropdown
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -382,18 +432,49 @@ onMounted(() => {
 | `trigger` | Trigger: `click` (default) / `hover` / `focus`; space-separated for multiple (e.g. `"click hover"`) | `string` | `click` |
 | `value` | Current selected value | `string` | — |
 
-### Events
-
 | Event | Description |
 | --- | --- |
 | `oas-action` | Main button clicked in split mode, `detail: { originalEvent }` |
 | `oas-open-change` | Popover open state changed, `detail: { open: boolean }` (including external setAttribute; controlled loop) |
 | `oas-select` | An item was selected, `detail: { value }` |
 
-### Slots
-
 | Name | Description |
 | --- | --- |
 | default | — |
+
+### oas-dropdown-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `danger` | Destructive item: red semantics (delete/exit etc.) | — | — |
+| `disabled` | Disable this item | — | — |
+| `href` | Link address: with href the item renders as a native `<a>` (real navigation + still emits `oas-select`) | — | — |
+| `icon` | Leading icon (icon name from the `@oas-ui/icons` registry) | — | — |
+| `kind` | Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back value) / `checkbox` (multi-select, value is the checked-set array) | — | — |
+| `loading` | Loading: renders a spinner and blocks clicks; recovers when data-driven | — | — |
+| `rel` | Link rel (with href) | — | — |
+| `target` | Link target (with href) | — | — |
+| `value` | Selected value (data-carrier field of the declarative child-element channel) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Dropdown item label content (default slot text); direct child `<oas-dropdown-item>` elements recursively become the submenu `children` |
+
+### oas-dropdown-group
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `label` | Group title (small, secondary color, not clickable) | — | — |
+| `value` | Radio-group id (selecting inside the group only updates that group's value) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Group items: child `<oas-dropdown-item>` elements flatten to the same level |
+
+### oas-dropdown-divider
+
+| Name | Description |
+| --- | --- |
+| default | Divider data carrier (no attributes; the host parses it as `type: "divider"`) |
 
 Clicking the trigger toggles visibility; clicking outside / pressing Esc / selecting an item closes it. The floating menu is an inner `oas-menu` (`role="menu"`, leaf items `menuitemradio`, items with submenus `menuitem`) supporting cascading submenus and keyboard navigation.

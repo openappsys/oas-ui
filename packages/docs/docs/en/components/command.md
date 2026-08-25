@@ -117,6 +117,28 @@ The item field `page` (array of commands) defines a sub-page: selecting it enter
   </oas-space>
 </DemoBlock>
 
+## Declarative child-element channel
+
+Besides the `items` JSON, commands can be declared with `<oas-command-item>` child elements (`items` **takes precedence when explicitly set**; otherwise the child elements are parsed and converge onto the same rendering path). The default slot text becomes the label, and attributes align with the `items` fields: `value` / `group` / `disabled` / `icon` / `shortcut` / `description` / `view` / `force-mount` / `separator`; `keywords` is a comma-separated string participating in search matching. Nested `<oas-command-item>` elements directly inside an item recursively become its `page` sub-page. Child additions/removals, attribute and text changes re-render automatically (MutationObserver).
+
+<DemoBlock title="Declarative children (groups / separator / shortcuts / nested sub-page)">
+  <oas-command id="command-decl" hotkey="false" onoas-select="commandDeclLog(event)">
+    <oas-command-item value="new-file" group="File" shortcut="meta+n" description="Create a blank document">New file</oas-command-item>
+    <oas-command-item value="open-file" group="File" shortcut="ctrl+o" description="Open recent documents">Open file</oas-command-item>
+    <oas-command-item value="sep1" separator>Separator</oas-command-item>
+    <oas-command-item value="theme">Change theme
+      <oas-command-item value="light">Light</oas-command-item>
+      <oas-command-item value="dark">Dark</oas-command-item>
+    </oas-command-item>
+    <oas-command-item value="undo" group="Edit" shortcut="ctrl+z">Undo</oas-command-item>
+  </oas-command>
+  <oas-space size="small">
+    <oas-button id="command-decl-btn" type="primary">Open (no `items` set — uses the child channel)</oas-button>
+    <oas-button id="command-decl-add" type="default">Dynamically append an item</oas-button>
+    <oas-tag id="command-decl-result" type="info">Nothing selected</oas-tag>
+  </oas-space>
+</DemoBlock>
+
 ## Recent history
 
 `recent` tracks recently used commands: selected items are pinned to the top (deduped, capped at 10); `recent-storage-key` enables localStorage persistence (restored across instances). This demo swaps the item set after selection to simulate "command set changes" — reopen to see the "Recent" group.
@@ -363,6 +385,25 @@ onMounted(() => {
     if (tag) tag.textContent = `Selected: ${e.detail.value}`
   })
 
+  // Declarative child channel: open + dynamic append (MutationObserver auto-refresh)
+  const declEl = document.getElementById('command-decl')
+  if (declEl) {
+    window.commandDeclLog = (e) => {
+      const tag = document.getElementById('command-decl-result')
+      if (tag) tag.textContent = `Selected: ${e.detail.value}`
+    }
+    document.getElementById('command-decl-add')?.addEventListener('click', () => {
+      const n = declEl.children.length + 1
+      const item = document.createElement('oas-command-item')
+      item.setAttribute('value', `dyn-${n}`)
+      item.textContent = `Dynamic command ${n}`
+      declEl.appendChild(item)
+    })
+  }
+  document.getElementById('command-decl-btn')?.addEventListener('click', () => {
+    document.getElementById('command-decl')?.setAttribute('open', '')
+  })
+
   // Recent history: swap the command set after selection so the "Recent" group is visible on reopen
   const recentEl = document.getElementById('command-recent')
   const RECENT_NEXT = [
@@ -486,7 +527,7 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-command
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -506,8 +547,6 @@ onMounted(() => {
 | `value` | Search query (controlled; two-way via `oas-input` echo-back) | `string` | — |
 | `virtual` | Virtual scrolling for large datasets (reuses oas-virtual-list) | `boolean` | — |
 
-### Events
-
 | Event | Description |
 | --- | --- |
 | `oas-active` | Active item changed, `detail: { value }` (basis for controlled `selected` echo-back) |
@@ -518,12 +557,29 @@ onMounted(() => {
 | `oas-select` | A command was executed, `detail: { value }`; multi-select confirm `detail: { values }` |
 | `oas-view-change` | View entered/exited, `detail: { view, title }` (exiting sends `view: ''`) |
 
-### Slots
-
 | Name | Description |
 | --- | --- |
 | `empty` | Custom empty state (read the current query via `el.query`, e.g. a "create xyz" entry) |
 | `footer` | Custom footer bar (defaults to `↑↓ navigate / ↵ select / esc close` hints) |
+
+### oas-command-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `description` | Secondary description line | — | — |
+| `disabled` | Disable this item (not selectable via Enter/click, skipped by arrow keys) | — | — |
+| `force-mount` | Ignore filtering and always render (create-type entry) | — | — |
+| `group` | Group name (optional); same-group items render a group title | — | — |
+| `icon` | Item icon: SVG path `d` string or a full `<svg>` markup | — | — |
+| `keywords` | Search keywords (comma-separated string, trimmed into `string[]`), matched in addition to the label | — | — |
+| `separator` | Render as a separator row (not navigable/selectable) | — | — |
+| `shortcut` | Shortcut label (right-aligned kbd), e.g. `meta+p` / `ctrl+shift+s` | — | — |
+| `value` | Selection value (data-carrier field of the declarative child channel) | — | — |
+| `view` | View slot name: selecting enters `<slot name="view-{view}">` (in-panel view) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Command item label content (default slot text); direct child `<oas-command-item>` elements recursively become the `page` sub-page |
 
 `CommandItem` fields:
 

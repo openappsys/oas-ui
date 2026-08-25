@@ -3,7 +3,7 @@ import { iconRegistry } from '@oas-ui/icons'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
 import '../menu/index.js' // 副作用：确保 oas-menu 已注册
 import type { OASMenu } from '../menu/index.js'
-import type { MenuItem } from '../menu/index.js'
+import type { MenuItem, MenuItemKind } from '../menu/index.js'
 
 /** 浮层与触发元素的默认间隙（offset 属性缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
@@ -220,6 +220,8 @@ export class OASDropdown extends OASElement {
   private itemsList: MenuItem[] = []
   private menuEl: OASMenu | null = null
   private anchorEl: HTMLElement | null = null
+  /** 子元素通道观察器：light DOM 里 oas-dropdown-item/group/divider 增删或属性/文本变化 → 重解析渲染 */
+  private childObserver: MutationObserver | null = null
   private anchor: Element | null = null
   private arrowBtn: HTMLButtonElement | null = null
   private arrowEl: HTMLElement | null = null
@@ -450,7 +452,11 @@ export class OASDropdown extends OASElement {
   }
 
   protected override update(): void {
-    this.parseItems()
+    // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
+    this.ensureChildObserver()
+    // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
+    if (this.hasAttribute('items')) this.parseItems()
+    else this.parseChildItems()
     const open = this.hasAttr('open')
     if (!this.menuEl || !this.anchorEl) return
     // 拆分箭头按钮的可访问性：haspopup=menu + expanded 随 open 同步 + locale 可访问名称 + disabled 跟随
@@ -723,5 +729,118 @@ export class OASDropdown extends OASElement {
     } catch {
       this.itemsList = []
     }
+  }
+
+  // ===== 子元素声明式通道 =====
+
+  /**
+   * 子元素通道解析层：把 light DOM 的 `<oas-dropdown-item>` / `<oas-dropdown-group>` /
+   * `<oas-dropdown-divider>` 收敛为内部 items 模型（与 parseItems 单一渲染路径）。
+   * 触发按钮等非载体元素不在识别清单里，天然被忽略（不会误当菜单项）。
+   */
+  private parseChildItems(): void {
+    this.itemsList = this.parseChildLevel(this.children)
+  }
+
+  /** 解析一层子元素为 MenuItem[]（仅识别数据载体元素，其余 light DOM 内容忽略） */
+  private parseChildLevel(elements: HTMLCollection | Element[]): MenuItem[] {
+    const items: MenuItem[] = []
+    for (const child of Array.from(elements)) {
+      if (child.tagName === 'OAS-DROPDOWN-ITEM') {
+        items.push(this.childToMenuItem(child))
+      } else if (child.tagName === 'OAS-DROPDOWN-GROUP') {
+        items.push(this.childToGroup(child))
+      } else if (child.tagName === 'OAS-DROPDOWN-DIVIDER') {
+        items.push({ type: 'divider' })
+      }
+    }
+    return items
+  }
+
+  /** 单个 <oas-dropdown-item> → MenuItem（默认插槽文本为 label，属性对齐 items 字段；嵌套子元素递归为 children） */
+  private childToMenuItem(el: Element): MenuItem {
+    const item: MenuItem = { label: this.childLabel(el) }
+    const value = el.getAttribute('value')
+    if (value) item.value = value
+    if (el.hasAttribute('disabled')) item.disabled = true
+    if (el.hasAttribute('loading')) item.loading = true
+    const icon = el.getAttribute('icon')
+    if (icon) item.icon = icon
+    const kind = el.getAttribute('kind')
+    if (kind) item.kind = kind as MenuItemKind
+    if (el.hasAttribute('danger')) item.danger = true
+    const href = el.getAttribute('href')
+    if (href) item.href = href
+    const target = el.getAttribute('target')
+    if (target) item.target = target
+    const rel = el.getAttribute('rel')
+    if (rel) item.rel = rel
+    const children = this.parseChildLevel(el.children)
+    if (children.length > 0) item.children = children
+    return item
+  }
+
+  /** 单个 <oas-dropdown-group> → 分组项（label/value 属性 + 子元素平铺 children） */
+  private childToGroup(el: Element): MenuItem {
+    const item: MenuItem = { type: 'group', label: el.getAttribute('label') ?? '' }
+    const value = el.getAttribute('value')
+    if (value) item.value = value
+    const children = this.parseChildLevel(el.children)
+    if (children.length > 0) item.children = children
+    return item
+  }
+
+  /** 默认插槽 label 文本：跳过嵌套数据载体元素（其文本属于子菜单而非 label） */
+  private childLabel(el: Element): string {
+    let text = ''
+    for (const node of el.childNodes) {
+      if (node instanceof Element) {
+        const tag = node.tagName
+        if (
+          tag === 'OAS-DROPDOWN-ITEM' ||
+          tag === 'OAS-DROPDOWN-GROUP' ||
+          tag === 'OAS-DROPDOWN-DIVIDER'
+        ) {
+          continue
+        }
+      }
+      text += node.textContent ?? ''
+    }
+    return text.trim()
+  }
+
+  /**
+   * 子元素通道观察器：只监听 light DOM 子元素（数据载体增删/属性/文本变化 → 重解析）。
+   * 组件自身动作不写 light DOM，无需自引用守卫。
+   */
+  private ensureChildObserver(): void {
+    if (this.childObserver) return
+    const observer = new MutationObserver(() => {
+      this.update()
+    })
+    observer.observe(this, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+      attributeFilter: [
+        'value',
+        'disabled',
+        'loading',
+        'icon',
+        'kind',
+        'danger',
+        'href',
+        'target',
+        'rel',
+        'label',
+        'slot',
+      ],
+    })
+    this.childObserver = observer
+    this.onCleanup(() => {
+      observer.disconnect()
+      this.childObserver = null
+    })
   }
 }

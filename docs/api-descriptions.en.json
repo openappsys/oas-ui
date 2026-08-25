@@ -527,6 +527,40 @@
     },
     "slots": {}
   },
+  "oas-context-menu-divider": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "Divider data carrier (no attributes; the host parses it as `type: \"divider\"`)"
+    }
+  },
+  "oas-context-menu-group": {
+    "attrs": {
+      "label": "Group title (small, secondary color, not clickable)",
+      "value": "Radio-group id (selecting inside the group only updates that group's value)"
+    },
+    "events": {},
+    "slots": {
+      "": "Group items: child `<oas-context-menu-item>` elements flatten to the same level"
+    }
+  },
+  "oas-context-menu-item": {
+    "attrs": {
+      "value": "Selected value (data-carrier field of the declarative child-element channel)",
+      "disabled": "Disable this item",
+      "loading": "Loading: renders a spinner and blocks clicks; recovers when data-driven",
+      "icon": "Leading icon (icon name from the `@oas-ui/icons` registry)",
+      "kind": "Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back value) / `checkbox` (multi-select, value is the checked-set array)",
+      "danger": "Destructive item: red semantics (delete/exit etc.)",
+      "href": "Link address: with href the item renders as a native `<a>` (real navigation + still emits `oas-select`)",
+      "target": "Link target (with href)",
+      "rel": "Link rel (with href)"
+    },
+    "events": {},
+    "slots": {
+      "": "Context-menu item label content (default slot text); direct child `<oas-context-menu-item>` elements recursively become the submenu `children`"
+    }
+  },
   "oas-countdown": {
     "attrs": {
       "format": "Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds",
@@ -626,6 +660,40 @@
       "oas-open-change": "Popover open state changed, `detail: { open: boolean }` (including external setAttribute; controlled loop)"
     },
     "slots": {}
+  },
+  "oas-dropdown-divider": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "Divider data carrier (no attributes; the host parses it as `type: \"divider\"`)"
+    }
+  },
+  "oas-dropdown-group": {
+    "attrs": {
+      "label": "Group title (small, secondary color, not clickable)",
+      "value": "Radio-group id (selecting inside the group only updates that group's value)"
+    },
+    "events": {},
+    "slots": {
+      "": "Group items: child `<oas-dropdown-item>` elements flatten to the same level"
+    }
+  },
+  "oas-dropdown-item": {
+    "attrs": {
+      "value": "Selected value (data-carrier field of the declarative child-element channel)",
+      "disabled": "Disable this item",
+      "loading": "Loading: renders a spinner and blocks clicks; recovers when data-driven",
+      "icon": "Leading icon (icon name from the `@oas-ui/icons` registry)",
+      "kind": "Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back value) / `checkbox` (multi-select, value is the checked-set array)",
+      "danger": "Destructive item: red semantics (delete/exit etc.)",
+      "href": "Link address: with href the item renders as a native `<a>` (real navigation + still emits `oas-select`)",
+      "target": "Link target (with href)",
+      "rel": "Link rel (with href)"
+    },
+    "events": {},
+    "slots": {
+      "": "Dropdown item label content (default slot text); direct child `<oas-dropdown-item>` elements recursively become the submenu `children`"
+    }
   },
   "oas-dynamic-input": {
     "attrs": {
@@ -2148,5 +2216,23 @@
     "attrs": {},
     "events": {},
     "slots": {}
+  },
+  "oas-command-item": {
+    "attrs": {
+      "value": "Selection value (data-carrier field of the declarative child channel)",
+      "group": "Group name (optional); same-group items render a group title",
+      "disabled": "Disable this item (not selectable via Enter/click, skipped by arrow keys)",
+      "icon": "Item icon: SVG path `d` string or a full `<svg>` markup",
+      "shortcut": "Shortcut label (right-aligned kbd), e.g. `meta+p` / `ctrl+shift+s`",
+      "description": "Secondary description line",
+      "view": "View slot name: selecting enters `<slot name=\"view-{view}\">` (in-panel view)",
+      "force-mount": "Ignore filtering and always render (create-type entry)",
+      "separator": "Render as a separator row (not navigable/selectable)",
+      "keywords": "Search keywords (comma-separated string, trimmed into `string[]`), matched in addition to the label"
+    },
+    "events": {},
+    "slots": {
+      "": "Command item label content (default slot text); direct child `<oas-command-item>` elements recursively become the `page` sub-page"
+    }
   }
 }
