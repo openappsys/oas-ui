@@ -264,8 +264,8 @@ aside {
 .item-badge + .chevron {
   margin-inline-start: var(--oas-space-2, 8px);
 }
-/* 嵌套子项：缩进 + 左侧引导线 */
-.sub {
+/* 嵌套子菜单容器：缩进 + 左侧引导线（类名 .submenu 与嵌套按钮 .item.sub 区分，避免样式串扰） */
+.submenu {
   display: flex;
   flex-direction: column;
   gap: var(--oas-space-1, 4px);
@@ -869,7 +869,7 @@ export class OASSidebar extends OASElement {
       chevron.innerHTML = this.chevronSvg()
       btn.appendChild(chevron)
       subWrap = document.createElement('div')
-      subWrap.className = 'sub'
+      subWrap.className = 'submenu'
       subWrap.setAttribute('part', 'submenu')
       subWrap.hidden = !expanded
       for (const child of item.children!) {

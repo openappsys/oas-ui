@@ -509,6 +509,27 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(css).toMatch(/\[variant='inset'\][^}]*border-radius/)
   })
 
+  it('嵌套子菜单容器类名 .submenu 与嵌套按钮 .item.sub 不冲突（防容器样式串扰到按钮致激活背景溢出面板）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items:
+        '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
+    })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 容器规则（margin/border/padding-inline-start）只作用于 .submenu，不作用于 .sub（嵌套按钮类名）
+    expect(css).toMatch(/\.submenu\s*\{[^}]*margin-inline-start/)
+    expect(css).toMatch(/\.submenu\s*\{[^}]*border-inline-start/)
+    expect(css).not.toMatch(/\.sub\s*\{[^}]*margin-inline-start/)
+    // 嵌套按钮不带容器 margin/border（否则激活背景右移溢出面板右缘）
+    const subBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"] [part="item"]')!
+    const cs = getComputedStyle(subBtn)
+    expect(cs.marginLeft === '' || cs.marginLeft === '0px', '嵌套按钮不应有容器 margin').toBe(true)
+    expect(
+      cs.borderLeftWidth === '' || cs.borderLeftWidth === '0px' || cs.borderLeftWidth === 'initial',
+      '嵌套按钮不应有容器 border',
+    ).toBe(true)
+  })
+
   it('item hover 与宿主底色区分：hover 走 --oas-sidebar-item-hover-bg（默认 text-primary 6% 混色，不再与宿主 bg-hover 同 token）；active hover 加深一档', () => {
     stubMatchMedia(false)
     const el = mount()
