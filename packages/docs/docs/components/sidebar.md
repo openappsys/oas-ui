@@ -113,7 +113,7 @@
 
 <DemoBlock title="徽标与项操作">
   <div style="height: 260px; width: 100%; display: flex">
-    <oas-sidebar id="sidebar-badge-action" items='[{"label":"收件箱","value":"inbox","icon":"📥","badge":"12"},{"label":"通知","value":"notice","icon":"🔔","badge":"3"},{"label":"项目","value":"proj","icon":"📁","actions":[{"icon":"✏️","value":"edit","label":"编辑"},{"icon":"🗑️","value":"delete","label":"删除"}]}]'></oas-sidebar>
+    <oas-sidebar id="sidebar-badge-action" onoas-action="sidebarActionLog(event)" items='[{"label":"收件箱","value":"inbox","icon":"📥","badge":"12"},{"label":"通知","value":"notice","icon":"🔔","badge":"3"},{"label":"项目","value":"proj","icon":"📁","actions":[{"icon":"✏️","value":"edit","label":"编辑"},{"icon":"🗑️","value":"delete","label":"删除"}]}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
       <p>悬停「项目」项出现操作按钮；点击派发 <code>oas-action</code> 事件。</p>
       <oas-tag id="sidebar-action-log" type="info">尚无操作</oas-tag>
@@ -195,6 +195,20 @@
   </div>
 </DemoBlock>
 
+## 拖拽调宽（resizable）
+
+`resizable` 属性在宿主右缘显示拖拽条，拖拽实时调宽（写回 `width` 属性）；`resize-min`/`resize-max` 夹取范围（默认 160~480）；拖拽条支持方向键微调（±8px，`Home/End` 跳最小/最大）；松手/微调时派发 `oas-resize`。仅桌面非折叠态可用（折叠/移动态自动隐藏）。
+
+<DemoBlock title="resizable 边缘拖拽调宽">
+  <div style="height: 280px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-resizable" resizable resize-min="180" resize-max="400" onoas-resize="sidebarResizeLog(event)" width="220px" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据看板","value":"dash","icon":"📊"},{"label":"设置","value":"settings","icon":"⚙️"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      拖侧栏右缘的拖拽条实时调宽；聚焦拖拽条也可用方向键微调。
+      <oas-tag id="sidebar-resize-log" type="info">当前宽度 220px</oas-tag>
+    </div>
+  </div>
+</DemoBlock>
+
 ## 拖拽调宽（oas-splitter 组合）
 
 侧栏宽度调整推荐用 `oas-splitter` 分割面板组合实现（无需内置 rail）：侧栏置于分割面板左侧，拖拽分割条即调宽。
@@ -259,10 +273,13 @@
 | `items` | 菜单项 JSON `[{label, value, icon?, group?, badge?, children?, actions?}]`（支持分隔线条目 `{type:"divider"}`；children 嵌套子菜单） | `SidebarEntry[] \| string` | `[]` |
 | `loading` | 骨架屏加载态（存在即显示脉冲骨架；数值为骨架行数，默认 4） | `string` | `4` |
 | `mobile-breakpoint` | 移动端断点（px），窄于该值变覆盖式抽屉 | — | — |
+| `resizable` | 边缘拖拽调宽（存在即显示宿主边缘拖拽条；仅桌面非折叠态可用） | `boolean` | — |
+| `resize-max` | 拖拽调宽最大宽度（px，默认 480） | `string` | `480` |
+| `resize-min` | 拖拽调宽最小宽度（px，默认 160） | `string` | `160` |
 | `shortcut` | 开启 Ctrl/Cmd+B 折叠切换（默认关闭，避免劫持全局键） | `boolean` | — |
 | `side` | 抽屉侧向：left（默认）/ right（移动抽屉从右侧滑入、触发按钮居右） | — | — |
 | `variant` | 形态：sidebar（默认贴边）/ floating（悬浮圆角阴影）/ inset（内嵌圆角背景） | — | — |
-| `width` | 展开宽度，默认走 `--oas-sidebar-width` token | — | — |
+| `width` | 展开宽度，默认走 `--oas-sidebar-width` token | `string` | `0` |
 
 ### 事件
 
@@ -270,6 +287,7 @@
 | --- | --- |
 | `oas-action` | `detail: { value: string, action: string, label: string }`；触发时机：点击项悬停操作按钮时（不触发 oas-select） |
 | `oas-collapse` | `detail: { collapsed: boolean }`；触发时机：桌面折叠按钮切换时 |
+| `oas-resize` | `detail: { width: number }`；触发时机：拖拽调宽松手时 / 方向键微调宽度时 |
 | `oas-select` | `detail: { value: string, label: string }`；触发时机：选中菜单项时（移动端同时收起抽屉） |
 
 ### 插槽
@@ -283,3 +301,17 @@
 ### 部件（part）
 
 `root` / `panel` / `head` / `close` / `nav` / `body` / `foot` / `toggle`（桌面折叠）/ `trigger`（移动触发）/ `mask` / `item`；头尾与主体内容分别通过 `slot="header"`、默认 slot、`slot="footer"` 注入。
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  window.sidebarActionLog = (e) => {
+    const tag = document.getElementById('sidebar-action-log')
+    if (tag) tag.textContent = `操作：${e.detail.label}（${e.detail.action}）`
+  }
+  window.sidebarResizeLog = (e) => {
+    const tag = document.getElementById('sidebar-resize-log')
+    if (tag) tag.textContent = `当前宽度 ${e.detail.width}px`
+  }
+})
+</script>

@@ -508,4 +508,86 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(css).toMatch(/\[variant='floating'\][^}]*box-shadow/)
     expect(css).toMatch(/\[variant='inset'\][^}]*border-radius/)
   })
+
+  it('resizable：边缘拖拽条显隐（resizable 显示；无属性/折叠/移动态隐藏）', () => {
+    stubMatchMedia(false)
+    const el = mount({ resizable: '' })
+    const rail = el.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
+    expect(rail.hidden).toBe(false)
+    expect(rail.getAttribute('aria-label')).toBe('调整侧栏宽度')
+    const elNo = mount()
+    expect(elNo.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!.hidden).toBe(true)
+    const elCollapsed = mount({ resizable: '', collapsed: '' })
+    expect(elCollapsed.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!.hidden).toBe(true)
+    stubMatchMedia(true)
+    const elMobile = mount({ resizable: '' })
+    expect(elMobile.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!.hidden).toBe(true)
+  })
+
+  it('resizable：拖拽 rail 写 width 属性（夹取 min/max）+ 松手派发 oas-resize', () => {
+    stubMatchMedia(false)
+    const el = mount({ resizable: '', width: '240px' })
+    // happy-dom 无布局：stub host 宽度
+    Object.defineProperty(el, 'getBoundingClientRect', {
+      value: () => ({ width: 240, x: 0, y: 0, top: 0, left: 0, right: 240, bottom: 600, height: 600, toJSON: () => ({}) }),
+      configurable: true,
+    })
+    const rail = el.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
+    let detail: unknown
+    el.addEventListener('oas-resize', (e) => (detail = (e as CustomEvent).detail))
+    rail.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, button: 0 }))
+    document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 160 }))
+    expect(el.getAttribute('width')).toBe('300px')
+    document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 40 }))
+    expect(el.getAttribute('width')).toBe('180px')
+    // min 夹取（默认 160）
+    document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: -100 }))
+    expect(el.getAttribute('width')).toBe('160px')
+    // max 夹取（默认 480）
+    document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 1000 }))
+    expect(el.getAttribute('width')).toBe('480px')
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 200 }))
+    expect(detail).toEqual({ width: 480 })
+    // 拖拽后 width 属性驱动 CSS 变量（update 写入，不被清除）
+    expect(el.style.getPropertyValue('--oas-sidebar-width')).toBe('480px')
+  })
+
+  it('resizable：side=right 拖拽方向取反（向左拖变宽）', () => {
+    stubMatchMedia(false)
+    const el = mount({ resizable: '', side: 'right', width: '240px' })
+    Object.defineProperty(el, 'getBoundingClientRect', {
+      value: () => ({ width: 240, x: 0, y: 0, top: 0, left: 0, right: 240, bottom: 600, height: 600, toJSON: () => ({}) }),
+      configurable: true,
+    })
+    const rail = el.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
+    rail.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, button: 0 }))
+    document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 40 }))
+    expect(el.getAttribute('width')).toBe('300px')
+    document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 40 }))
+  })
+
+  it('resizable：方向键微调宽度（±8）+ Home/End 跳 min/max + resize-min/max 生效', () => {
+    stubMatchMedia(false)
+    const el = mount({ resizable: '', width: '240px', 'resize-min': '200', 'resize-max': '300' })
+    Object.defineProperty(el, 'getBoundingClientRect', {
+      value: () => ({ width: 240, x: 0, y: 0, top: 0, left: 0, right: 240, bottom: 600, height: 600, toJSON: () => ({}) }),
+      configurable: true,
+    })
+    const rail = el.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
+    rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(el.getAttribute('width')).toBe('248px')
+    // 再按 5 次 → 288；继续按 → 夹到 max 300
+    for (let i = 0; i < 5; i++) rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(el.getAttribute('width')).toBe('288px')
+    rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(el.getAttribute('width')).toBe('300px')
+    rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }))
+    expect(el.getAttribute('width')).toBe('200px')
+    rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    expect(el.getAttribute('width')).toBe('200px')
+    rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
+    expect(el.getAttribute('width')).toBe('300px')
+  })
 })
