@@ -31,9 +31,38 @@ const STYLE = `
   flex: 1;
   min-width: 0;
 }
+/* ===== viewport：视口锁定模式（admin 场景——顶栏固定 + 侧栏/内容各自独立滚动） =====
+   默认仍是整页滚动模型（min-height 100%）；viewport 属性 opt-in 锁定高度：
+   100dvh 优先（移动端地址栏友好）、100vh 级联回退；--oas-layout-height 开口
+   供宿主改 100% / calc(100vh - 顶部条) 等 */
+:host([viewport]) {
+  height: 100vh;
+  height: var(--oas-layout-height, 100dvh);
+  min-height: 0;
+}
+.struct.is-viewport {
+  height: 100%;
+  min-height: 0;
+}
+.struct.is-viewport .main {
+  min-height: 0;
+}
+/* 各区独立滚动：任意槽内容超视口时在本区内滚，页面整体不出滚动条 */
+.struct.is-viewport .sider-part {
+  overflow-y: auto;
+  min-height: 0;
+}
+.struct.is-viewport .content-part {
+  overflow-y: auto;
+  min-height: 0;
+}
 `
 
 export class OASLayout extends OASElement {
+  static override get observedAttributes(): string[] {
+    return ['viewport']
+  }
+
   private observer: MutationObserver | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -79,5 +108,9 @@ export class OASLayout extends OASElement {
     const hasSider = this.querySelector('[slot="sider"]') !== null
     struct.classList.toggle('has-sider', hasSider)
     struct.setAttribute('data-has-sider', String(hasSider))
+    // viewport：CSS 走 :host([viewport])，这里同步结构层类钩子（struct/main/part 级滚动规则）
+    const viewport = this.hasAttr('viewport')
+    struct.classList.toggle('is-viewport', viewport)
+    struct.setAttribute('data-viewport', String(viewport))
   }
 }
