@@ -55,6 +55,10 @@ const STYLE = `
   padding: var(--oas-space-4);
   border-bottom: 1px solid var(--oas-color-border);
 }
+/* hidden 属性会被本类 .header{display:flex} 作者级覆盖，需显式补回（与 .cover[hidden] 同款兜底） */
+.header[hidden] {
+  display: none;
+}
 .title {
   font-weight: 600;
   font-size: var(--oas-font-size-lg);
