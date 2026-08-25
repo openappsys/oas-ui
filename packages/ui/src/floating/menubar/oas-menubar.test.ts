@@ -492,7 +492,7 @@ describe('OASMenubar', () => {
     expect(count).toBe(0)
   })
 
-  it('#19 单键非打印键（F9/Delete 等）shortcut 也走绑定路径（此前单键被跳过只剩显示）', () => {
+  it('#19 单键功能键（F1-F12）shortcut 绑定并触发（无修饰键）', () => {
     const el = mount({
       items: JSON.stringify([{ label: '刷新', value: 'refresh', shortcut: 'F9' }]),
     })
@@ -500,6 +500,16 @@ describe('OASMenubar', () => {
     el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'F9' }))
     expect(detail).toEqual({ value: 'refresh' })
+  })
+
+  it('#19 单键非功能键（Delete/字母等）不绑定、仅展示——不劫持全局输入', () => {
+    const el = mount({
+      items: JSON.stringify([{ label: '删除', value: 'delete', shortcut: 'Delete' }]),
+    })
+    let count = 0
+    el.addEventListener('oas-select', () => count++)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete' }))
+    expect(count).toBe(0)
   })
 
   it('#2 命中 shortcut 时 preventDefault（不触发浏览器默认）', () => {

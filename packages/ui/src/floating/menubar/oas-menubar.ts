@@ -2112,9 +2112,9 @@ export class OASMenubar extends OASElement {
         const parts = sc.split('+').map((p) => p.trim())
         const hitKey = parts[parts.length - 1]!.toLowerCase()
         const mods = new Set(parts.slice(0, -1).map((p) => p.toLowerCase()))
-        // 单键 shortcut（无修饰键）：打印字符键（字母/数字）需带修饰键，否则劫持全局输入；
-        // 单键非打印键（F9/Delete/Esc/方向键等）允许单独绑定——此前单键一律跳过只剩显示，语义误导
-        if (mods.size === 0 && /^[a-z0-9]$/.test(hitKey)) continue
+        // 绑定规则：「修饰键+键」直接绑定（如 Ctrl+N）；单键仅限功能键（F1-F12）可绑定，
+        // 其余单键（字母/数字/Delete/Esc 等）仅作展示不绑定，避免劫持全局键盘输入
+        if (mods.size === 0 && !/^f\d{1,2}$/.test(hitKey)) continue
         const ctrl = mods.has('ctrl') || mods.has('control')
         const meta = mods.has('meta') || mods.has('cmd') || mods.has('command')
         const shift = mods.has('shift')
