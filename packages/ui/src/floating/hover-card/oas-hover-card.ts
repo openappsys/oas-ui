@@ -136,7 +136,7 @@ const STYLE = `
 .card[data-placement='bottom-start'] .arrow,
 .card[data-placement='bottom-end'] .arrow {
   top: -6px;
-  left: calc(50% - 4px);
+  left: calc(50% - 6px);
   border-top: 1px solid var(--oas-color-border);
   border-left: 1px solid var(--oas-color-border);
 }
@@ -144,7 +144,7 @@ const STYLE = `
 .card[data-placement='top-start'] .arrow,
 .card[data-placement='top-end'] .arrow {
   bottom: -6px;
-  left: calc(50% - 4px);
+  left: calc(50% - 6px);
   border-right: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
 }
@@ -152,7 +152,7 @@ const STYLE = `
 .card[data-placement='left-start'] .arrow,
 .card[data-placement='left-end'] .arrow {
   right: -6px;
-  top: calc(50% - 4px);
+  top: calc(50% - 6px);
   border-top: 1px solid var(--oas-color-border);
   border-right: 1px solid var(--oas-color-border);
 }
@@ -160,7 +160,7 @@ const STYLE = `
 .card[data-placement='right-start'] .arrow,
 .card[data-placement='right-end'] .arrow {
   left: -6px;
-  top: calc(50% - 4px);
+  top: calc(50% - 6px);
   border-left: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
 }
@@ -177,13 +177,18 @@ const STYLE = `
     （start→左上角、end→右上角）、top 系悬底边（start→左下角、end→右下角）、left 系
     悬右边（start→右上角、end→右下角）、right 系悬左边（start→左上角、end→左下角）。
     -end 向显式 left/top: auto 解除与基础居中 calc 的 over-constrained，让位边才生效 */
+.card.arrow-merge .arrow {
+  width: 8px;
+  height: 8px;
+  /* 贴边（靠面板的那条边）是融合边——不留描边线，只在外露的两条边留描边，才能像 tooltip 那样干净地和面板角融合 */
+}
 .card.arrow-merge[data-placement='bottom-start'] .arrow {
   top: -8px;
   left: -1px;
   transform: none;
   border: none;
   border-left: 1px solid var(--oas-color-border);
-  border-bottom: 1px solid var(--oas-color-border);
+
   background: linear-gradient(45deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
    clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
 }
@@ -194,7 +199,7 @@ const STYLE = `
   transform: none;
   border: none;
   border-right: 1px solid var(--oas-color-border);
-  border-bottom: 1px solid var(--oas-color-border);
+
   background: linear-gradient(135deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
    clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
 }
@@ -204,7 +209,7 @@ const STYLE = `
   transform: none;
   border: none;
   border-left: 1px solid var(--oas-color-border);
-  border-top: 1px solid var(--oas-color-border);
+
   background: linear-gradient(135deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
    clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
 }
@@ -215,7 +220,7 @@ const STYLE = `
   transform: none;
   border: none;
   border-right: 1px solid var(--oas-color-border);
-  border-top: 1px solid var(--oas-color-border);
+
   background: linear-gradient(45deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
    clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
 }
@@ -225,7 +230,7 @@ const STYLE = `
   transform: none;
   border: none;
   border-top: 1px solid var(--oas-color-border);
-  border-left: 1px solid var(--oas-color-border);
+
   background: linear-gradient(135deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
    clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
 }
@@ -236,7 +241,7 @@ const STYLE = `
   transform: none;
   border: none;
   border-bottom: 1px solid var(--oas-color-border);
-  border-left: 1px solid var(--oas-color-border);
+
   background: linear-gradient(45deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
    clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
 }
@@ -246,7 +251,7 @@ const STYLE = `
   transform: none;
   border: none;
   border-top: 1px solid var(--oas-color-border);
-  border-right: 1px solid var(--oas-color-border);
+
   background: linear-gradient(45deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
    clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
 }
@@ -257,7 +262,7 @@ const STYLE = `
   transform: none;
   border: none;
   border-bottom: 1px solid var(--oas-color-border);
-  border-right: 1px solid var(--oas-color-border);
+
   background: linear-gradient(135deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px));
    clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
 }
@@ -877,7 +882,7 @@ export class OASHoverCard extends OASElement {
    * - arrow-point-at-center 显式开启（面板被视口避让偏移后仍指向锚点中心）；
    * - -start/-end 对齐 placement：面板边贴合锚点边、居中箭头会脱离锚点投影区间——
    *   箭头贴向对齐端部并对准锚点中心投影（用户实测 P1 同款修复，与 popover 一致）。
-   * 其余（center 对齐）保持面板中心（CSS calc(50% - 4px) 的边缘对齐兜底）。
+   * 其余（center 对齐）保持面板中心（CSS calc(50% - 6px) 的边缘对齐兜底）。
    * 12 向 placement 按基向前缀判断主轴。
    */
   private positionArrow(anchorRect: DOMRect, placement: string): void {

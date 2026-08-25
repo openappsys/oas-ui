@@ -8,7 +8,7 @@ import type { MenuItem } from '../menu/index.js'
 /** 浮层与触发元素的默认间隙（offset 属性缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
 /** 箭头尺寸（8px 菱形）与箭头中心到面板圆角边的最短距离 */
-const ARROW_SIZE = 8
+const ARROW_SIZE = 12
 const ARROW_PAD = 8
 /** 开合动画时长（ms）：入场/退场 keyframes 与 JS 退场隐藏延时共用，改这里需同步下方 CSS 的 `animation` 时长 */
 const ANIM_MS = 150
@@ -169,28 +169,28 @@ const STYLE = `
 /* placement 基向=bottom：面板在触发元素下方 → 箭头悬面板顶边、尖朝上 → 外露边=右上(border-top)+左上(border-left) */
 .menu-anchor[data-placement^='bottom'] .arrow {
   top: -6px;
-  left: var(--arrow-x, calc(50% - 4px));
+  left: var(--arrow-x, calc(50% - 6px));
   border-top: 1px solid var(--oas-color-border);
   border-left: 1px solid var(--oas-color-border);
 }
 /* placement 基向=top：面板在触发元素上方 → 箭头悬面板底边、尖朝下 → 外露边=右下(border-right)+左下(border-bottom) */
 .menu-anchor[data-placement^='top'] .arrow {
   bottom: -6px;
-  left: var(--arrow-x, calc(50% - 4px));
+  left: var(--arrow-x, calc(50% - 6px));
   border-right: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
 }
 /* placement 基向=left：面板在触发元素左侧 → 箭头悬面板右边、尖朝右 → 外露边=右上(border-top)+右下(border-right) */
 .menu-anchor[data-placement^='left'] .arrow {
   right: -6px;
-  top: var(--arrow-y, calc(50% - 4px));
+  top: var(--arrow-y, calc(50% - 6px));
   border-top: 1px solid var(--oas-color-border);
   border-right: 1px solid var(--oas-color-border);
 }
 /* placement 基向=right：面板在触发元素右侧 → 箭头悬面板左边、尖朝左 → 外露边=左上(border-left)+左下(border-bottom) */
 .menu-anchor[data-placement^='right'] .arrow {
   left: -6px;
-  top: var(--arrow-y, calc(50% - 4px));
+  top: var(--arrow-y, calc(50% - 6px));
   border-left: 1px solid var(--oas-color-border);
   border-bottom: 1px solid var(--oas-color-border);
 }

@@ -63,6 +63,24 @@
   </div>
 </DemoBlock>
 
+## 受控高亮
+
+`active` 为受控属性：外部设置 / 清除即可迁移当前高亮菜单项（无需点击）。
+
+<DemoBlock title="受控 active">
+  <oas-space>
+    <oas-button type="primary" size="small" onclick="document.getElementById('sidebar-active').setAttribute('active','dashboard')">高亮「数据看板」</oas-button>
+    <oas-button size="small" onclick="document.getElementById('sidebar-active').setAttribute('active','settings')">高亮「设置」</oas-button>
+    <oas-button size="small" onclick="document.getElementById('sidebar-active').removeAttribute('active')">清除高亮</oas-button>
+  </oas-space>
+  <div style="height: 240px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-active" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据看板","value":"dashboard","icon":"📊"},{"label":"订单管理","value":"orders","icon":"📦"},{"label":"设置","value":"settings","icon":"⚙️"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      外部按钮设置 <code>active</code> 控制当前高亮菜单项；清除后恢复默认（无高亮，取末项）。
+    </div>
+  </div>
+</DemoBlock>
+
 ## 自定义宽度
 
 `width` 属性覆盖展开宽度（默认走 `--oas-sidebar-width` token）；折叠态仍收窄为图标条。

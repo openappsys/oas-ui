@@ -338,13 +338,13 @@ describe('OASDropdown 箭头（arrow）', () => {
     expect(arrow.style.getPropertyValue('--arrow-y')).toBe('')
   })
 
-  it('arrow-point-at-center=true：不写内联偏移，箭头居中（CSS calc(50% - 4px) 兜底）', () => {
+  it('arrow-point-at-center=true：不写内联偏移，箭头居中（CSS calc(50% - 6px) 兜底）', () => {
     const el = mountOpen({ placement: 'bottom', 'arrow-point-at-center': '' })
     const arrow = arrowOf(el)
-    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('86px')
+    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('84px')
     expect(arrow.style.getPropertyValue('--arrow-y')).toBe('')
     const styleText = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(styleText).toContain('left: var(--arrow-x, calc(50% - 4px))')
+    expect(styleText).toContain('left: var(--arrow-x, calc(50% - 6px))')
   })
 
   it('auto-adjust-overflow=false：视口不足不翻转（placement 严格保持请求值，可越出视口）', () => {
@@ -556,7 +556,7 @@ describe('OASDropdown 12 向 placement', () => {
     stubRect(anchorEl(el), { left: 400, top: 340, width: 200, height: 100 })
     window.dispatchEvent(new Event('scroll'))
     await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
-    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('36px')
+    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('34px')
   })
 })
 

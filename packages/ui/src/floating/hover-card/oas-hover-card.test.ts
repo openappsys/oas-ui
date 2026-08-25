@@ -307,7 +307,7 @@ describe('OASHoverCard', () => {
     el.setAttribute('placement', 'bottom')
     await Promise.resolve()
     const cs2 = window.getComputedStyle(card(el).querySelector<HTMLElement>('[data-popper-arrow]')!)
-    expect(cs2.getPropertyValue('left')).toBe('calc(50% - 4px)')
+    expect(cs2.getPropertyValue('left')).toBe('calc(50% - 6px)')
   })
 
   // —— oas-open-change ——
@@ -641,19 +641,20 @@ describe('OASHoverCard', () => {
     // 盒定位：主轴边外 -8px（压进面板描边带 1px 共带）、起止侧边 -1px（描边带对齐，
     // -end 向显式 left/top: auto 解除与居中 calc 的 over-constrained——否则让位边被忽略）；
     // 不旋转 + 描边策略（P3 同款修复）：直角边用 border（与面板描边共带续接）、
-    // 斜边（汇于尖端的主要外露边）用 45°/135° 渐变带补 1px 法向线（斜边=盒对角线，
-    // 恰落渐变 50% 等值线，clip 保留内侧 1px）+ clip-path 直角三角
+    // 斜边（汇于尖端的主要外露边）用 45°/135° 渐变带补 2px 法向线（45° 抗锯齿下与直角边 1px 同观感；斜边=盒对角线，
+    // 恰落渐变 50% 等值线，clip 保留内侧）。贴面板的那条直角边是「融合边」不留描边，
+    // 只在外露的两条边留线，否则融合处多一条线、观感割裂 + clip-path 直角三角
     const grad = (angle: number) =>
       `linear-gradient(${angle}deg, var(--oas-color-bg) 0 calc(50% - 1px), var(--oas-color-border) calc(50% - 1px) calc(50% + 1px), var(--oas-color-bg) calc(50% + 1px))`
     const rules: Record<string, string> = {
-      'bottom-start': `top: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-bottom: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
-      'bottom-end': `top: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-bottom: ${B}; background: ${grad(135)}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
-      'top-start': `bottom: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-top: ${B}; background: ${grad(135)}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
-      'top-end': `bottom: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-top: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
-      'left-start': `right: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-left: ${B}; background: ${grad(135)}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
-      'left-end': `right: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-left: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
-      'right-start': `left: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-right: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
-      'right-end': `left: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-right: ${B}; background: ${grad(135)}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
+      'bottom-start': `top: -8px; left: -1px; transform: none; border: none; border-left: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
+      'bottom-end': `top: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; background: ${grad(135)}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
+      'top-start': `bottom: -8px; left: -1px; transform: none; border: none; border-left: ${B}; background: ${grad(135)}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
+      'top-end': `bottom: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
+      'left-start': `right: -8px; top: -1px; transform: none; border: none; border-top: ${B}; background: ${grad(135)}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
+      'left-end': `right: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
+      'right-start': `left: -8px; top: -1px; transform: none; border: none; border-top: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
+      'right-end': `left: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; background: ${grad(135)}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
     }
     for (const [p, decl] of Object.entries(rules)) {
       expect(css, `merge ${p} 箭头应为直角三角贴角共边（斜边渐变描边）`).toContain(
