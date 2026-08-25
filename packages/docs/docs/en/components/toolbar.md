@@ -26,6 +26,30 @@ A container for groups of tool controls: `role="toolbar"` + `aria-label`, `Tab` 
   <oas-tag id="tb-editor-result" type="info">Style: bold, underline | Align: left</oas-tag>
 </DemoBlock>
 
+## Declarative Child-Element Channel
+
+Besides the `items` JSON, you can declare toggle-group options declaratively with `<oas-toolbar-toggle-item>` child elements (the `items` attribute *takes precedence when explicitly set*; otherwise child elements are parsed and converge into the same rendering path). The default slot text is the label; attributes map to the `ToolbarToggleItem` fields: `value` / `disabled`. Child additions, removals, attribute and text changes re-render automatically (MutationObserver); `aria-pressed` single/multiple semantics are identical to the items channel, and toolbar integration (overflow collapse, arrow-key navigation) is unaffected.
+
+<DemoBlock title="Toggle group declarative child elements">
+  <oas-toolbar id="tb-decl">
+    <oas-toolbar-toggle id="tb-decl-style" multiple value='["bold"]'>
+      <oas-toolbar-toggle-item value="bold">Bold</oas-toolbar-toggle-item>
+      <oas-toolbar-toggle-item value="italic">Italic</oas-toolbar-toggle-item>
+      <oas-toolbar-toggle-item value="underline">Underline</oas-toolbar-toggle-item>
+    </oas-toolbar-toggle>
+    <oas-toolbar-separator></oas-toolbar-separator>
+    <oas-toolbar-toggle id="tb-decl-align" value="left">
+      <oas-toolbar-toggle-item value="left">Align left</oas-toolbar-toggle-item>
+      <oas-toolbar-toggle-item value="center">Align center</oas-toolbar-toggle-item>
+      <oas-toolbar-toggle-item value="right" disabled>Align right (disabled)</oas-toolbar-toggle-item>
+    </oas-toolbar-toggle>
+  </oas-toolbar>
+  <oas-space size="small">
+    <oas-button id="tb-decl-add" size="small">Add one dynamically</oas-button>
+    <oas-tag id="tb-decl-result" type="info">Style: bold | Align: left</oas-tag>
+  </oas-space>
+</DemoBlock>
+
 ## Separator widget
 
 `oas-toolbar-separator` replaces the old `oas-divider + data-toolbar-ignore` combo: it sets `role="separator"` automatically, is excluded from roving navigation, and its line direction follows the toolbar orientation (vertical line inside a horizontal toolbar, horizontal line inside a vertical one).
@@ -231,6 +255,26 @@ onMounted(() => {
     search.addEventListener('oas-change', syncInput)
   }
   syncInput()
+
+  // Declarative child-element channel: selection feedback + dynamic append (MutationObserver auto-refresh)
+  const declStyle = document.getElementById('tb-decl-style')
+  const declAlign = document.getElementById('tb-decl-align')
+  const declTag = document.getElementById('tb-decl-result')
+  const syncDecl = () => {
+    if (!declStyle || !declAlign || !declTag) return
+    const s = JSON.parse(declStyle.getAttribute('value') || '[]')
+    declTag.textContent = `Style: ${s.join(', ') || 'none'} | Align: ${declAlign.getAttribute('value') || 'none'}`
+  }
+  document.getElementById('tb-decl')?.addEventListener('oas-change', syncDecl)
+  syncDecl()
+  document.getElementById('tb-decl-add')?.addEventListener('click', () => {
+    if (!declAlign) return
+    const n = declAlign.children.length + 1
+    const item = document.createElement('oas-toolbar-toggle-item')
+    item.setAttribute('value', `dyn-${n}`)
+    item.textContent = `Dynamic ${n}`
+    declAlign.appendChild(item)
+  })
 })
 </script>
 
@@ -280,7 +324,18 @@ onMounted(() => {
 | `oas-change` | Committed on Enter or blur, `detail: { value }` |
 | `oas-input` | While typing, `detail: { value }` |
 
+### oas-toolbar-toggle-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disable this item (not clickable; skipped by arrow keys) | — | — |
+| `value` | Item value (data-carrier field of the declarative child-element channel) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Button label (default slot text) |
+
 - The host has `role="toolbar"` + `aria-orientation`; `aria-label` comes from the locale key (`toolbar.label`)
 - Children that join roving: native controls (`button`/`input`/`select`/`textarea`/`a[href]`), interactive `role`s, custom elements (tag contains `-`); `oas-toolbar-separator`, `data-toolbar-ignore` and `aria-hidden` are excluded, `disabled`/`aria-disabled` are skipped automatically (aria-disabled items stay focusable in `focusable-when-disabled` mode)
 - Keyboard: `Tab` enters (only the current item is tab-reachable), `←`/`→` (or `↑`/`↓`) moves between controls, `Home`/`End` jumps to the first/last; while focus is inside the toggle group/input the arrow keys belong to the widget (`Tab` leaves and toolbar navigation continues)
-- Overflow collapse: `ResizeObserver` watches the width, overflowing items fold into a "···" popup (horizontal only)
+- Overflow collapse: `ResizeObserver` tracks width; overflowing items fold into the "···" panel (horizontal only)

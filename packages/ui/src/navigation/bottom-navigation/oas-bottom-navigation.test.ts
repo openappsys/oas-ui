@@ -170,3 +170,109 @@ describe('OASBottomNavigation', () => {
     expect(tabs(el)[0]).not.toBe(first)
   })
 })
+
+// ===== 子元素声明式通道（oas-bottom-navigation-item） =====
+// 与 menu/breadcrumb 同范式：items 属性显式设置时数据驱动优先，否则解析子元素收敛到同一渲染路径
+
+/** 子元素通道挂载：innerHTML 填 light DOM 子元素后 append（触发 render → 解析） */
+function mountChildren(html: string, attrs: Record<string, string> = {}): OASBottomNavigation {
+  const el = document.createElement('oas-bottom-navigation') as OASBottomNavigation
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+  el.innerHTML = html
+  document.body.appendChild(el)
+  return el
+}
+
+describe('OASBottomNavigation 子元素声明式通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('注册 oas-bottom-navigation-item 自定义元素', () => {
+    expect(customElements.get('oas-bottom-navigation-item')).not.toBeNull()
+  })
+
+  it('基础：子元素渲染 label/icon SVG/aria，点击选中派发 oas-change 与 items 通道一致', () => {
+    const el = mountChildren(`
+      <oas-bottom-navigation-item value="home" icon="user">首页</oas-bottom-navigation-item>
+      <oas-bottom-navigation-item value="search" icon="search">搜索</oas-bottom-navigation-item>
+      <oas-bottom-navigation-item value="mine" icon="gear">我的</oas-bottom-navigation-item>
+    `)
+    const ts = tabs(el)
+    expect(ts.length).toBe(3)
+    expect(ts[0]!.getAttribute('role')).toBe('tab')
+    expect(ts[0]!.querySelector('.tab-label')!.textContent).toBe('首页')
+    expect(ts[0]!.querySelector('svg'), 'icon 注册表名应渲染 SVG').not.toBeNull()
+    // 未指定 value 默认选中第一项
+    expect(ts[0]!.getAttribute('aria-selected')).toBe('true')
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    ts[2]!.click()
+    expect(el.getAttribute('value')).toBe('mine')
+    expect(detail).toEqual({ value: 'mine' })
+  })
+
+  it('items 属性显式设置时优先（子元素被忽略）', () => {
+    const el = mountChildren(
+      `<oas-bottom-navigation-item value="child" icon="user">子项</oas-bottom-navigation-item>`,
+      {
+        items: JSON.stringify([
+          { label: '数据项', value: 'data' },
+          { label: '末项', value: 'last' },
+        ]),
+      },
+    )
+    const ts = tabs(el)
+    expect(ts.length).toBe(2)
+    expect(ts.map((t) => t.querySelector('.tab-label')!.textContent)).toEqual(['数据项', '末项'])
+  })
+
+  it('属性映射：disabled 项 aria-disabled、不可聚焦、点击不派发', () => {
+    const el = mountChildren(`
+      <oas-bottom-navigation-item value="a">一</oas-bottom-navigation-item>
+      <oas-bottom-navigation-item value="b" disabled>二</oas-bottom-navigation-item>
+    `)
+    const b = tabs(el)[1]!
+    expect(b.getAttribute('aria-disabled')).toBe('true')
+    expect(b.tabIndex).toBe(-1)
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    b.click()
+    expect(fired).toBe(0)
+    expect(el.getAttribute('value')).toBeNull()
+  })
+
+  it('MutationObserver：运行时 append oas-bottom-navigation-item 后列表刷新', async () => {
+    const el = mountChildren(
+      `<oas-bottom-navigation-item value="home" icon="user">首页</oas-bottom-navigation-item>`,
+    )
+    expect(tabs(el).length).toBe(1)
+    const item = document.createElement('oas-bottom-navigation-item')
+    item.setAttribute('value', 'about')
+    item.setAttribute('icon', 'search')
+    item.textContent = '关于'
+    el.appendChild(item)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(tabs(el).length).toBe(2)
+    expect(tabs(el)[1]!.querySelector('.tab-label')!.textContent).toBe('关于')
+    expect(tabs(el)[1]!.querySelector('svg')).not.toBeNull()
+  })
+
+  it('value 选中态跟随（子元素通道下与 items 通道一致）', () => {
+    const el = mountChildren(
+      `
+      <oas-bottom-navigation-item value="home" icon="user">首页</oas-bottom-navigation-item>
+      <oas-bottom-navigation-item value="search" icon="search">搜索</oas-bottom-navigation-item>
+      `,
+      { value: 'search' },
+    )
+    const ts = tabs(el)
+    expect(ts[0]!.getAttribute('aria-selected')).toBe('false')
+    expect(ts[1]!.getAttribute('aria-selected')).toBe('true')
+    expect(ts[1]!.tabIndex).toBe(0)
+  })
+})

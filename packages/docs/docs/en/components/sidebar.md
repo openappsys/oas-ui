@@ -260,9 +260,46 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
   </oas-layout>
 </DemoBlock>
 
+## Declarative child channel
+
+Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oas-sidebar-divider>` child elements (the `items` attribute **takes priority when explicitly set**; otherwise children are parsed and converge to the same rendering path). The default slot text becomes the label; attributes map to the `SidebarItem` fields: `value` / `icon` / `group` / `badge` (all-digit strings convert to `number`, otherwise stay `string`); nesting child elements directly inside `<oas-sidebar-item>` recursively becomes the nested `children` (dividers allowed). Child additions/removals, attribute and text changes re-render automatically (MutationObserver). **Boundary**: `actions` (hover action buttons) are an object array that does not fit scalar attribute mapping — use the `items` JSON when you need them.
+
+<DemoBlock title="Declarative children (group / divider / nested / badge)">
+  <div style="height: 340px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-decl" active="users">
+      <oas-sidebar-item value="dash" icon="star" group="Overview">Dashboard</oas-sidebar-item>
+      <oas-sidebar-item value="trend" icon="star" group="Overview">Live Trends</oas-sidebar-item>
+      <oas-sidebar-divider></oas-sidebar-divider>
+      <oas-sidebar-item value="biz" icon="star">Business
+        <oas-sidebar-item value="orders">Orders</oas-sidebar-item>
+        <oas-sidebar-item value="users">Users</oas-sidebar-item>
+      </oas-sidebar-item>
+      <oas-sidebar-item value="inbox" icon="star" badge="12">Inbox</oas-sidebar-item>
+    </oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      “Overview” is a group title; divider, nested submenu (auto-expanded by the active child) and badge behave identically to the `items` channel.
+    </div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="Dynamic add/remove (MutationObserver auto-refresh)">
+  <oas-space direction="vertical" style="width: 100%">
+    <oas-button size="small" onclick="sidebarDeclAdd()">Add an item</oas-button>
+    <div style="height: 200px; width: 100%; display: flex">
+      <oas-sidebar id="sidebar-decl-dyn">
+        <oas-sidebar-item value="home" icon="star">Home</oas-sidebar-item>
+        <oas-sidebar-item value="settings" icon="star">Settings</oas-sidebar-item>
+      </oas-sidebar>
+      <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+        Click the button to append a menu item; the sidebar refreshes automatically.
+      </div>
+    </div>
+  </oas-space>
+</DemoBlock>
+
 ## API
 
-### Attributes
+### oas-sidebar
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -281,8 +318,6 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
 | `variant` | Variant: sidebar (default flush) / floating (radius + shadow) / inset (radius + background contrast) | — | — |
 | `width` | Expanded width; defaults to the `--oas-sidebar-width` token | `string` | `0` |
 
-### Events
-
 | Event | Description |
 | --- | --- |
 | `oas-action` | `detail: { value: string, action: string, label: string }`; When fired: an item hover action button is clicked (does not fire oas-select) |
@@ -290,13 +325,30 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
 | `oas-resize` | `detail: { width: number }`; When fired: drag-resize ends / arrow keys adjust the width |
 | `oas-select` | `detail: { value: string, label: string }`; When fired: A menu item was selected (also collapses the drawer on mobile) |
 
-### Slots
-
 | Name | Description |
 | --- | --- |
 | default | — |
 | `footer` | — |
 | `header` | — |
+
+### oas-sidebar-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `badge` | Count badge (all-digit strings convert to `number`, otherwise stay `string`; matches `SidebarItem.badge`'s `string \| number`) | — | — |
+| `group` | Group name (consecutive items in the same group get a group title before the group's first item) | — | — |
+| `icon` | Leading icon (`@oas-ui/icons` registry icon name; shown in the collapsed icon strip) | — | — |
+| `value` | Selection value (data-carrier field of the declarative child channel) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Sidebar item label content (default slot text); direct child `<oas-sidebar-item>` (and `<oas-sidebar-divider>`) elements recursively become the nested `children` |
+
+### oas-sidebar-divider
+
+| Name | Description |
+| --- | --- |
+| default | Divider data carrier (no attributes; the host parses it as `{type:"divider"}`) |
 
 ### Parts
 
@@ -312,6 +364,15 @@ onMounted(() => {
   window.sidebarResizeLog = (e) => {
     const tag = document.getElementById('sidebar-resize-log')
     if (tag) tag.textContent = `Current width ${e.detail.width}px`
+  }
+  window.sidebarDeclAdd = () => {
+    const sidebar = document.getElementById('sidebar-decl-dyn')
+    if (!sidebar) return
+    const n = sidebar.children.length + 1
+    const item = document.createElement('oas-sidebar-item')
+    item.setAttribute('value', `dyn-${n}`)
+    item.textContent = `Dynamic item ${n}`
+    sidebar.appendChild(item)
   }
 })
 </script>

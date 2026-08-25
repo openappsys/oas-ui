@@ -528,6 +528,8 @@ export class OASSidebar extends OASElement {
   private expanded = new Set<string>()
   /** 嵌套父项含激活子项时自动展开（记录已自动展开的，避免渲染循环反复重置用户手动操作） */
   private autoExpanded = new Set<string>()
+  /** 子元素通道观察器：light DOM 里 oas-sidebar-item/divider 增删或属性/文本变化 → 重解析渲染 */
+  private childObserver: MutationObserver | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -718,6 +720,8 @@ export class OASSidebar extends OASElement {
   }
 
   protected override update(): void {
+    // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
+    this.ensureChildObserver()
     this.syncMq()
     const mobile = this.mq?.matches ?? false
     // 桌面态不允许残留抽屉浮层（防孤儿）
@@ -779,7 +783,9 @@ export class OASSidebar extends OASElement {
   private renderItems(collapsed: boolean): void {
     const nav = this.shadow.querySelector<HTMLElement>('.nav')
     if (!nav) return
-    this.parseItems()
+    // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
+    if (this.hasAttribute('items')) this.parseItems()
+    else this.parseChildItems()
     nav.innerHTML = ''
     // loading 骨架屏：渲染脉冲骨架行，不渲染菜单
     if (this.hasAttr('loading')) {
@@ -1014,6 +1020,86 @@ export class OASSidebar extends OASElement {
         : undefined,
     }
     return item
+  }
+
+  // ===== 子元素声明式通道 =====
+
+  /**
+   * 子元素通道解析层：把 light DOM 的 `<oas-sidebar-item>` / `<oas-sidebar-divider>`
+   * 收敛为内部 _items 模型（与 parseItems 单一渲染路径，renderItems 无感）。
+   */
+  private parseChildItems(): void {
+    this._items = this.parseChildLevel(this.children)
+  }
+
+  /** 解析一层子元素为 SidebarEntry[]（仅识别数据载体元素，其余 light DOM 内容忽略） */
+  private parseChildLevel(elements: HTMLCollection | Element[]): SidebarEntry[] {
+    const items: SidebarEntry[] = []
+    for (const child of Array.from(elements)) {
+      if (child.tagName === 'OAS-SIDEBAR-ITEM') {
+        items.push(this.childToSidebarItem(child))
+      } else if (child.tagName === 'OAS-SIDEBAR-DIVIDER') {
+        items.push({ type: 'divider' })
+      }
+    }
+    return items
+  }
+
+  /** 单个 <oas-sidebar-item> → SidebarItem（默认插槽文本为 label，属性对齐 items 字段；
+      嵌套子元素递归为 children，与 items 通道一致支持 children 内分隔线） */
+  private childToSidebarItem(el: Element): SidebarItem {
+    const item: SidebarItem = {
+      label: this.childLabel(el),
+      value: el.getAttribute('value') ?? '',
+    }
+    const icon = el.getAttribute('icon')
+    if (icon) item.icon = icon
+    const group = el.getAttribute('group')
+    if (group) item.group = group
+    const badge = el.getAttribute('badge')
+    if (badge) {
+      // 数字语义：纯数字字符串转 number，其余保留 string（对齐 SidebarItem.badge 的 string|number）
+      item.badge = /^\d+$/.test(badge) ? Number(badge) : badge
+    }
+    const children = this.parseChildLevel(el.children)
+    if (children.length > 0) item.children = children as SidebarItem[]
+    return item
+  }
+
+  /** 默认插槽 label 文本：跳过嵌套数据载体元素（其文本属于子菜单而非 label） */
+  private childLabel(el: Element): string {
+    let text = ''
+    for (const node of el.childNodes) {
+      if (node instanceof Element) {
+        const tag = node.tagName
+        if (tag === 'OAS-SIDEBAR-ITEM' || tag === 'OAS-SIDEBAR-DIVIDER') continue
+      }
+      text += node.textContent ?? ''
+    }
+    return text.trim()
+  }
+
+  /**
+   * 子元素通道观察器：只监听 light DOM 子元素（数据载体增删/属性/文本变化 → 重解析）。
+   * 组件自身动作不写 light DOM，无需自引用守卫；挂 update() 首行（断开重连后重建，幂等）。
+   */
+  private ensureChildObserver(): void {
+    if (this.childObserver) return
+    const observer = new MutationObserver(() => {
+      this.update()
+    })
+    observer.observe(this, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+      attributeFilter: ['value', 'icon', 'group', 'badge'],
+    })
+    this.childObserver = observer
+    this.onCleanup(() => {
+      observer.disconnect()
+      this.childObserver = null
+    })
   }
 
   /** 桌面折叠切换：受控属性 + 派发事件供宿主响应 */

@@ -26,6 +26,30 @@
   <oas-tag id="tb-editor-result" type="info">样式: bold, underline | 对齐: left</oas-tag>
 </DemoBlock>
 
+## 子元素声明式通道
+
+除 `items` JSON 外，可用 `<oas-toolbar-toggle-item>` 子元素声明式书写切换组选项（`items` 属性*显式设置时优先*，未设置时解析子元素收敛到同一渲染路径）。默认插槽文本为 label，属性对齐 `ToolbarToggleItem` 字段：`value` / `disabled`。子元素增删、属性与文本变化会自动重渲染（MutationObserver）；`aria-pressed` 单选/多选语义与 items 通道完全一致，溢出收纳、方向键导航等工具栏集成不受影响。
+
+<DemoBlock title="切换组子元素声明式">
+  <oas-toolbar id="tb-decl">
+    <oas-toolbar-toggle id="tb-decl-style" multiple value='["bold"]'>
+      <oas-toolbar-toggle-item value="bold">加粗</oas-toolbar-toggle-item>
+      <oas-toolbar-toggle-item value="italic">斜体</oas-toolbar-toggle-item>
+      <oas-toolbar-toggle-item value="underline">下划线</oas-toolbar-toggle-item>
+    </oas-toolbar-toggle>
+    <oas-toolbar-separator></oas-toolbar-separator>
+    <oas-toolbar-toggle id="tb-decl-align" value="left">
+      <oas-toolbar-toggle-item value="left">左对齐</oas-toolbar-toggle-item>
+      <oas-toolbar-toggle-item value="center">居中</oas-toolbar-toggle-item>
+      <oas-toolbar-toggle-item value="right" disabled>右对齐（禁用）</oas-toolbar-toggle-item>
+    </oas-toolbar-toggle>
+  </oas-toolbar>
+  <oas-space size="small">
+    <oas-button id="tb-decl-add" size="small">动态追加一项</oas-button>
+    <oas-tag id="tb-decl-result" type="info">样式: bold | 对齐: left</oas-tag>
+  </oas-space>
+</DemoBlock>
+
 ## 分隔符部件
 
 `oas-toolbar-separator` 取代旧的 `oas-divider + data-toolbar-ignore` 组合：自动 `role="separator"`、自动排除出 roving 导航，线段方向随工具栏横纵自动切换（横向工具栏内是竖线、纵向工具栏内是横线）。
@@ -231,6 +255,26 @@ onMounted(() => {
     search.addEventListener('oas-change', syncInput)
   }
   syncInput()
+
+  // 切换组子元素声明式：选中反馈 + 动态追加（MutationObserver 自动刷新）
+  const declStyle = document.getElementById('tb-decl-style')
+  const declAlign = document.getElementById('tb-decl-align')
+  const declTag = document.getElementById('tb-decl-result')
+  const syncDecl = () => {
+    if (!declStyle || !declAlign || !declTag) return
+    const s = JSON.parse(declStyle.getAttribute('value') || '[]')
+    declTag.textContent = `样式: ${s.join(', ') || '无'} | 对齐: ${declAlign.getAttribute('value') || '无'}`
+  }
+  document.getElementById('tb-decl')?.addEventListener('oas-change', syncDecl)
+  syncDecl()
+  document.getElementById('tb-decl-add')?.addEventListener('click', () => {
+    if (!declAlign) return
+    const n = declAlign.children.length + 1
+    const item = document.createElement('oas-toolbar-toggle-item')
+    item.setAttribute('value', `dyn-${n}`)
+    item.textContent = `动态 ${n}`
+    declAlign.appendChild(item)
+  })
 })
 </script>
 
@@ -279,6 +323,17 @@ onMounted(() => {
 | --- | --- |
 | `oas-change` | Enter 或失焦提交，`detail: { value }` |
 | `oas-input` | 输入中，`detail: { value }` |
+
+### oas-toolbar-toggle-item
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 禁用该项（点击不可选，方向键跳过） | — | — |
+| `value` | 选项值（子元素声明式通道的数据载体字段） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 按钮文案（默认插槽文本） |
 
 - 宿主 `role="toolbar"` + `aria-orientation`，`aria-label` 走 locale key（`toolbar.label`，默认「工具栏」）
 - 参与 roving 的子元素：native 控件（`button`/`input`/`select`/`textarea`/`a[href]`）、交互 `role`、自定义元素（tag 含 `-`）；`oas-toolbar-separator`、`data-toolbar-ignore`、`aria-hidden` 排除，`disabled`/`aria-disabled` 自动跳过（`focusable-when-disabled` 模式下 aria-disabled 项保持可聚焦）

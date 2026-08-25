@@ -110,6 +110,26 @@
 
 设置 `virtual` 后仅渲染可视窗口（复用 `oas-virtual-list` 的窗口计算，首尾 padding 撑起滚动高度），万级选项滚动流畅；`item-height` 可调定高（默认 `36`）。键盘 `↑`/`↓` 导航时窗口自动跟随高亮项，`aria-activedescendant` 保持指向可见项；带 `group` 的选项自动回退全量渲染。
 
+## 子元素声明式通道
+
+除 `options` JSON 外，可用 `<oas-option>` 子元素声明式书写选项（对齐原生 `<select><option>` 心智：默认插槽文本为 label，属性对齐 `options` 字段——`value` / `disabled` / `group` 分组标题）。`options` 属性*显式设置时优先*，未设置时解析子元素收敛到同一渲染路径（虚拟滚动 / 分组 / 搜索等能力完全一致）。子元素增删、属性与文本变化会自动重渲染（MutationObserver）。
+
+<DemoBlock title="子元素声明式（对齐原生 select 心智）">
+  <oas-space size="small" direction="vertical">
+    <oas-select id="select-decl" placeholder="选择水果" value="banana">
+      <oas-option value="apple" group="温带水果">苹果</oas-option>
+      <oas-option value="banana" group="温带水果">香蕉</oas-option>
+      <oas-option value="orange" group="热带水果">橙子</oas-option>
+      <oas-option value="mango" group="热带水果">芒果</oas-option>
+      <oas-option value="other" disabled>其他（禁用）</oas-option>
+    </oas-select>
+    <oas-space size="small">
+      <oas-button id="select-decl-add" size="small">动态追加选项</oas-button>
+      <oas-tag id="select-decl-result" type="info">oas-change: banana</oas-tag>
+    </oas-space>
+  </oas-space>
+</DemoBlock>
+
 ## 事件
 
 <DemoBlock title="变化事件">
@@ -185,12 +205,27 @@ onMounted(() => {
       ),
     )
   }
+
+  // 子元素声明式通道 demo：选中反馈 + 动态追加（MutationObserver 自动刷新）
+  const declSelect = document.getElementById('select-decl')
+  const declResult = document.getElementById('select-decl-result')
+  declSelect?.addEventListener('oas-change', (e) => {
+    declResult.textContent = `oas-change: ${e.detail.value}`
+  })
+  document.getElementById('select-decl-add')?.addEventListener('click', () => {
+    if (!declSelect) return
+    const n = declSelect.children.length + 1
+    const opt = document.createElement('oas-option')
+    opt.setAttribute('value', `dyn-${n}`)
+    opt.textContent = `动态水果 ${n}`
+    declSelect.appendChild(opt)
+  })
 })
 </script>
 
 ## API
 
-### 属性
+### oas-select
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -208,8 +243,6 @@ onMounted(() => {
 | `value` | 当前值（多选为 JSON 数组） | — | — |
 | `virtual` | 大数据量虚拟滚动：只渲染可视窗口，滚动流畅（复用 oas-virtual-list）；带 `group` 的选项自动回退全量渲染 | `boolean` | — |
 
-### 事件
-
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 选择/清空变化，`detail: { value }` |
@@ -218,12 +251,22 @@ onMounted(() => {
 | `oas-option-render` | 每个渲染的选项行派发，`detail: { index, option, element }`（element 为选项 label 容器，宿主可改写为图标/富文本） |
 | `oas-tag-render` | 多选标签渲染时派发，`detail: { value, label, element }`（element 为标签文本容器，宿主可改写） |
 
-### 插槽
-
 | 名称 | 说明 |
 | --- | --- |
 | `template[slot="option"]` | 选项行静态模板，克隆到每个选项 label 容器；`[data-option-label]` 节点自动绑定选项 label |
 | `template[slot="tag"]` | 多选标签静态模板，克隆到每个 chip 的文本容器；`[data-tag-label]` 节点自动绑定标签 label |
+
+### oas-option
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 禁用该项（不可选） | — | — |
+| `group` | 分组标题（可选）：同组连续渲染组标题（不可选），组内选项缩进 | — | — |
+| `value` | 选项值（子元素声明式通道的数据载体字段） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 选项 label 内容（默认插槽文本） |
 
 > `options` 中带 `group` 字段的选项按组渲染组标题（不可选），组内选项缩进；键盘导航跨组连续。
 

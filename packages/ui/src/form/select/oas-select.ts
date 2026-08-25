@@ -4,7 +4,7 @@ import type { OASVirtualList } from '../../data/virtual-list/index.js'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
 import { OASElement } from '@oas-ui/core'
 
-interface Option {
+export interface Option {
   label: string
   value: string
   disabled?: boolean
@@ -324,6 +324,8 @@ export class OASSelect extends OASElement {
   private listbox: HTMLElement | null = null
   private vlist: OASVirtualList | null = null
   private _options: Option[] = []
+  /** 子元素通道观察器：light DOM 里 oas-option 增删或属性/文本变化 → 重解析渲染 */
+  private childObserver: MutationObserver | null = null
 
   /** Vue/React 会把 options 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
   get options(): Option[] {
@@ -419,6 +421,8 @@ export class OASSelect extends OASElement {
   }
 
   protected override update(): void {
+    // 子元素通道观察器（重连后重建；options 属性显式时子元素被忽略，观察器空转无副作用）
+    this.ensureChildObserver()
     this.parseOptions()
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
     this.shadow
@@ -851,14 +855,72 @@ export class OASSelect extends OASElement {
   }
 
   private parseOptions(): void {
-    try {
-      const parsed = JSON.parse(this.getAttr('options', '[]'))
-      this._options = Array.isArray(parsed)
-        ? parsed.filter((o): o is Option => o && typeof o.value === 'string')
-        : []
-    } catch {
-      this._options = []
+    // 双通道：options 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 options 模型渲染。
+    // 收敛点在虚拟/非虚拟两条渲染路径之前的唯一数据入口，两路径都吃到子元素通道数据
+    if (this.hasAttribute('options')) {
+      try {
+        const parsed = JSON.parse(this.getAttr('options', '[]'))
+        this._options = Array.isArray(parsed)
+          ? parsed.filter((o): o is Option => o && typeof o.value === 'string')
+          : []
+      } catch {
+        this._options = []
+      }
+    } else {
+      this._options = this.parseChildOptions()
     }
+  }
+
+  // ===== 子元素声明式通道 =====
+
+  /** 解析 light DOM 的 `<oas-option>` 数据载体为 Option[]（其余 light DOM 内容忽略） */
+  private parseChildOptions(): Option[] {
+    const options: Option[] = []
+    for (const child of Array.from(this.children)) {
+      if (child.tagName === 'OAS-OPTION') options.push(this.childToOption(child))
+    }
+    return options
+  }
+
+  /** 单个 <oas-option> → Option（默认插槽文本为 label，属性对齐 options 字段） */
+  private childToOption(el: Element): Option {
+    const option: Option = { label: this.childLabel(el), value: el.getAttribute('value') ?? '' }
+    if (el.hasAttribute('disabled')) option.disabled = true
+    const group = el.getAttribute('group')
+    if (group) option.group = group
+    return option
+  }
+
+  /** 默认插槽 label 文本（trim） */
+  private childLabel(el: Element): string {
+    let text = ''
+    for (const node of el.childNodes) {
+      text += node.textContent ?? ''
+    }
+    return text.trim()
+  }
+
+  /**
+   * 子元素通道观察器：只监听 light DOM 子元素（数据载体增删/属性/文本变化 → 重解析）。
+   * 组件自身动作不写 light DOM，无需自引用守卫。
+   */
+  private ensureChildObserver(): void {
+    if (this.childObserver) return
+    const observer = new MutationObserver(() => {
+      this.update()
+    })
+    observer.observe(this, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+      attributeFilter: ['value', 'disabled', 'group', 'slot'],
+    })
+    this.childObserver = observer
+    this.onCleanup(() => {
+      observer.disconnect()
+      this.childObserver = null
+    })
   }
 
   private intAttr(name: string): number | null {

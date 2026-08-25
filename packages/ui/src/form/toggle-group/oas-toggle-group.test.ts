@@ -150,3 +150,118 @@ describe('OASToggleGroup', () => {
     expect(buttons(el).length).toBe(0)
   })
 })
+
+describe('OASToggleGroup 子元素声明式通道（oas-toggle-item）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 以 oas-toggle-item 子元素构建切换组，opts: [value, label, extraAttrs?] */
+  function childGroup(
+    opts: Array<[string, string, Record<string, string>?]>,
+    hostAttrs: Record<string, string> = {},
+  ): OASToggleGroup {
+    const el = new OASToggleGroup()
+    for (const [k, v] of Object.entries(hostAttrs)) el.setAttribute(k, v)
+    for (const [value, label, attrs] of opts) {
+      const item = document.createElement('oas-toggle-item')
+      item.setAttribute('value', value)
+      item.textContent = label
+      for (const [k, v] of Object.entries(attrs ?? {})) item.setAttribute(k, v)
+      el.appendChild(item)
+    }
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('基础：oas-toggle-item 解析渲染，单选 radio 语义 + aria-checked 跟随 value', () => {
+    const el = childGroup(
+      [
+        ['day', '日'],
+        ['week', '周'],
+        ['month', '月'],
+      ],
+      { value: 'week' },
+    )
+    const btns = buttons(el)
+    expect(btns.length).toBe(3)
+    expect(btns.map((b) => b.textContent)).toEqual(['日', '周', '月'])
+    expect(group(el).getAttribute('role')).toBe('radiogroup')
+    expect(btns[0]!.getAttribute('role')).toBe('radio')
+    expect(btns[0]!.getAttribute('aria-checked')).toBe('false')
+    expect(btns[1]!.getAttribute('aria-checked')).toBe('true')
+    // 点击切换 + oas-change（与 items 通道一致）
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    btns[2]!.click()
+    expect(el.getAttribute('value')).toBe('month')
+    expect(detail).toEqual({ value: 'month' })
+  })
+
+  it('items 显式优先：items 属性并存时子元素被忽略', () => {
+    const el = new OASToggleGroup()
+    el.setAttribute('items', ITEMS)
+    const item = document.createElement('oas-toggle-item')
+    item.setAttribute('value', 'child-only')
+    item.textContent = '子元素独有'
+    el.appendChild(item)
+    document.body.appendChild(el)
+    const btns = buttons(el)
+    expect(btns.length).toBe(3)
+    expect(btns.every((b) => b.textContent !== '子元素独有')).toBe(true)
+  })
+
+  it('属性映射：disabled 拦截选择 + aria-disabled + tabindex=-1，不参与键盘导航', () => {
+    const el = childGroup([
+      ['a', 'A'],
+      ['b', 'B', { disabled: '' }],
+    ])
+    const btns = buttons(el)
+    expect(btns[1]!.getAttribute('aria-disabled')).toBe('true')
+    expect(btns[1]!.tabIndex).toBe(-1)
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    btns[1]!.click()
+    expect(fired).toBe(0)
+    // 键盘方向键跳过禁用项
+    key(el, 'ArrowRight')
+    expect(btns[0]!.getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('MutationObserver：运行时 append oas-toggle-item 后刷新出现新按钮', async () => {
+    const el = childGroup([['a', 'A']])
+    expect(buttons(el).length).toBe(1)
+    const item = document.createElement('oas-toggle-item')
+    item.setAttribute('value', 'b')
+    item.textContent = 'B'
+    el.appendChild(item)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(buttons(el).length).toBe(2)
+    expect(buttons(el)[1]!.textContent).toBe('B')
+  })
+
+  it('multiple 语义在子元素通道下不变：checkbox 多选切换 + value 数组', () => {
+    const el = childGroup(
+      [
+        ['bold', '加粗'],
+        ['italic', '斜体'],
+      ],
+      { multiple: '', value: '["bold"]' },
+    )
+    const btns = buttons(el)
+    expect(group(el).getAttribute('role')).toBe('group')
+    expect(btns[0]!.getAttribute('role')).toBe('checkbox')
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    btns[1]!.click()
+    expect(el.getAttribute('value')).toBe('["bold","italic"]')
+    expect(detail).toEqual({ value: ['bold', 'italic'] })
+    btns[0]!.click()
+    expect(detail).toEqual({ value: ['italic'] })
+    expect(btns[0]!.getAttribute('aria-checked')).toBe('false')
+  })
+})

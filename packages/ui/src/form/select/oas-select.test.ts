@@ -623,3 +623,135 @@ describe('OASSelect 虚拟滚动（virtual）', () => {
     expect(vlistOf(el).hidden).toBe(true)
   })
 })
+
+describe('OASSelect 子元素声明式通道（oas-option）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 以 oas-option 子元素构建 select（子元素通道），opts: [value, label, extraAttrs?] */
+  function childSelect(
+    opts: Array<[string, string, Record<string, string>?]>,
+    hostAttrs: Record<string, string> = {},
+  ): OASSelect {
+    const el = new OASSelect()
+    for (const [k, v] of Object.entries(hostAttrs)) el.setAttribute(k, v)
+    for (const [value, label, attrs] of opts) {
+      const opt = document.createElement('oas-option')
+      opt.setAttribute('value', value)
+      opt.textContent = label
+      for (const [k, v] of Object.entries(attrs ?? {})) opt.setAttribute(k, v)
+      el.appendChild(opt)
+    }
+    document.body.appendChild(el)
+    return el
+  }
+
+  function vlistOf(el: OASSelect): HTMLElement {
+    return el.shadowRoot!.querySelector('oas-virtual-list')!
+  }
+
+  it('基础：oas-option 混排（含 group 分组标题）解析渲染，打开下拉选项齐全', () => {
+    const el = childSelect([
+      ['apple', '苹果', { group: '温带水果' }],
+      ['banana', '香蕉', { group: '温带水果' }],
+      ['orange', '橙子', { group: '热带水果' }],
+      ['other', '其他'],
+    ])
+    open(el)
+    const headers = [...el.shadowRoot!.querySelectorAll('.option-group')].map((h) => h.textContent)
+    expect(headers).toEqual(['温带水果', '热带水果'])
+    // 组标题不可选（无 role=option），组内选项缩进
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(4)
+    expect(el.shadowRoot!.querySelectorAll('.option.grouped').length).toBe(3)
+    expect(trigger(el).textContent).toContain('请选择')
+  })
+
+  it('options 显式优先：options 属性并存时子元素被忽略', () => {
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    const opt = document.createElement('oas-option')
+    opt.setAttribute('value', 'child-only')
+    opt.textContent = '子元素独有'
+    el.appendChild(opt)
+    document.body.appendChild(el)
+    open(el)
+    const rows = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    expect(rows.length).toBe(3)
+    expect(rows.every((r) => !r.textContent!.includes('子元素独有'))).toBe(true)
+  })
+
+  it('属性映射：disabled 拦截选择，aria-disabled 同步', () => {
+    const el = childSelect([
+      ['apple', '苹果'],
+      ['banana', '香蕉', { disabled: '' }],
+    ])
+    open(el)
+    const rows = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    expect(rows[1]!.getAttribute('aria-disabled')).toBe('true')
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    ;(rows[1] as HTMLElement).click()
+    expect(fired).toBe(0)
+    expect(el.getAttribute('value')).toBeNull()
+  })
+
+  it('MutationObserver：运行时 append oas-option 后下拉刷新', async () => {
+    const el = childSelect([['apple', '苹果']])
+    open(el)
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(1)
+    const opt = document.createElement('oas-option')
+    opt.setAttribute('value', 'grape')
+    opt.textContent = '葡萄'
+    el.appendChild(opt)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(2)
+    expect(el.shadowRoot!.textContent).toContain('葡萄')
+  })
+
+  it('选中/事件：点选子元素通道项派发 oas-change，detail 与 options 通道一致', () => {
+    const el = childSelect([
+      ['apple', '苹果'],
+      ['banana', '香蕉'],
+      ['orange', '橙子'],
+    ])
+    open(el)
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    const rows = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    ;(rows[1] as HTMLElement).click()
+    expect(el.getAttribute('value')).toBe('banana')
+    expect(trigger(el).textContent).toContain('香蕉')
+    expect(detail).toEqual({ value: 'banana' })
+    // 多选：detail 为数组，与 options 通道一致
+    const el2 = childSelect(
+      [
+        ['apple', '苹果'],
+        ['banana', '香蕉'],
+      ],
+      { multiple: '' },
+    )
+    open(el2)
+    let multiDetail: unknown
+    el2.addEventListener('oas-change', (e: Event) => (multiDetail = (e as CustomEvent).detail))
+    const rows2 = [...el2.shadowRoot!.querySelectorAll('[role="option"]')]
+    ;(rows2[0] as HTMLElement).click()
+    ;(rows2[1] as HTMLElement).click()
+    expect(multiDetail).toEqual({ value: ['apple', 'banana'] })
+  })
+
+  it('虚拟滚动模式与子元素通道共存：数据入口在收敛点之前，两路径均吃到子元素数据', () => {
+    const el = childSelect([['apple', '苹果'], ['banana', '香蕉']], { virtual: '' })
+    open(el)
+    // 虚拟路径：vlist 可见且窗口行渲染（非虚拟 listbox 隐藏）
+    const vlist = vlistOf(el)
+    expect(vlist.hidden).toBe(false)
+    const rows = [...vlist.shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')]
+    expect(rows.length).toBe(2)
+    expect(rows[0]!.textContent).toContain('苹果')
+  })
+})

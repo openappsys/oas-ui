@@ -54,9 +54,21 @@ onMounted(() => {
 })
 </script>
 
+## Declarative child channel
+
+Besides the `items` JSON, items can be declared with `<oas-bottom-navigation-item>` child elements (the `items` attribute **takes priority when explicitly set**; otherwise children are parsed and converge to the same rendering path). The default slot text becomes the label; attributes map to the `BottomNavItem` fields: `value` / `icon` / `disabled`. Child additions/removals, attribute and text changes re-render automatically (MutationObserver).
+
+<DemoBlock title="Declarative children (icon / disabled)">
+  <oas-bottom-navigation id="bn-decl" value="home" style="width: 100%; max-width: 480px">
+    <oas-bottom-navigation-item value="home" icon="user">Home</oas-bottom-navigation-item>
+    <oas-bottom-navigation-item value="discover" icon="heart" disabled>Discover</oas-bottom-navigation-item>
+    <oas-bottom-navigation-item value="mine" icon="gear">Mine</oas-bottom-navigation-item>
+  </oas-bottom-navigation>
+</DemoBlock>
+
 ## API
 
-### Attributes
+### oas-bottom-navigation
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -64,11 +76,21 @@ onMounted(() => {
 | `items` | Navigation items JSON | `string` | `[]` |
 | `value` | Value of the active item; defaults to the first available item | — | — |
 
-### Events
-
 | Event | Description |
 | --- | --- |
 | `oas-change` | The active item changed, `detail: { value }` |
+
+### oas-bottom-navigation-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disable this item (not selectable, skipped by keyboard) | — | — |
+| `icon` | Leading icon (`@oas-ui/icons` registry icon name) | — | — |
+| `value` | Selection value (data-carrier field of the declarative child channel) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Bottom-navigation item label content (default slot text) |
 
 `BottomNavItem` fields:
 

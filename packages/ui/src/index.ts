@@ -151,7 +151,7 @@ export { OASSwitch } from './form/switch/oas-switch.js'
 export { OASSlider } from './form/slider/oas-slider.js'
 export { OASInputNumber } from './form/input-number/oas-input-number.js'
 export { OASRate } from './form/rate/oas-rate.js'
-export { OASSelect } from './form/select/oas-select.js'
+export { OASSelect, OASOption, type Option } from './form/select/index.js'
 export { OASAutoComplete } from './form/auto-complete/oas-auto-complete.js'
 export { OASCombobox } from './form/combobox/oas-combobox.js'
 export { OASCascader } from './form/cascader/oas-cascader.js'
@@ -166,7 +166,11 @@ export { OASUpload } from './form/upload/oas-upload.js'
 export { OASTransfer, type TransferItem } from './form/transfer/index.js'
 export { OASColorPicker } from './form/color-picker/oas-color-picker.js'
 export { OASToggleButton } from './form/toggle-button/oas-toggle-button.js'
-export { OASToggleGroup, type ToggleItem } from './form/toggle-group/oas-toggle-group.js'
+export {
+  OASToggleGroup,
+  OASToggleItem,
+  type ToggleItem,
+} from './form/toggle-group/index.js'
 export { OASPinInput } from './form/pin-input/oas-pin-input.js'
 export { OASDynamicInput } from './form/dynamic-input/oas-dynamic-input.js'
 export { OASDynamicTags } from './form/dynamic-tags/oas-dynamic-tags.js'
@@ -245,6 +249,7 @@ export {
 export {
   OASToolbar,
   OASToolbarToggle,
+  OASToolbarToggleItem,
   OASToolbarSeparator,
   OASToolbarInput,
   type ToolbarToggleItem,
@@ -263,7 +268,11 @@ export {
 export { OASBackTop } from './navigation/back-top/oas-back-top.js'
 export { OASAnchor, OASAnchorItem, OASAnchorTarget, type AnchorItem } from './navigation/anchor/index.js'
 export { OASTour, type TourStep } from './navigation/tour/index.js'
-export { OASBottomNavigation, type BottomNavItem } from './navigation/bottom-navigation/index.js'
+export {
+  OASBottomNavigation,
+  OASBottomNavigationItem,
+  type BottomNavItem,
+} from './navigation/bottom-navigation/index.js'
 export { OASSegmented, type SegmentedOption } from './layout/segmented/index.js'
 export { OASFlex } from './layout/flex/oas-flex.js'
 export { OASSteps, type StepItem } from './layout/steps/index.js'
@@ -275,7 +284,12 @@ export { OASPageHeader } from './layout/page-header/oas-page-header.js'
 export { OASFloatButton } from './layout/float-button/oas-float-button.js'
 export { OASLayout, OASHeader, OASSider, OASContent, OASFooter } from './layout/layout/index.js'
 export { OASGrid, OASGridItem } from './layout/grid/index.js'
-export { OASSidebar, type SidebarItem } from './layout/sidebar/index.js'
+export {
+  OASSidebar,
+  OASSidebarItem,
+  OASSidebarDivider,
+  type SidebarItem,
+} from './layout/sidebar/index.js'
 export { OASContainer } from './layout/container/index.js'
 export { OASCard } from './data/card/oas-card.js'
 export { OASAvatar } from './data/avatar/oas-avatar.js'

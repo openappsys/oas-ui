@@ -101,8 +101,12 @@ export class OASToolbarToggle extends OASElement {
   private itemsList: ToolbarToggleItem[] = []
   private buttons: HTMLButtonElement[] = []
   private group: HTMLElement | null = null
-  private lastItemsRaw = ''
+  private lastItemsRaw: string | null = ''
   private lastMultiple = false
+  /** 子元素通道结构签名（上次比对基准）；与 lastItemsRaw 互斥标记当前数据源 */
+  private lastChildSig = ''
+  /** 子元素通道观察器：light DOM 里 oas-toolbar-toggle-item 增删或属性/文本变化 → 重解析渲染 */
+  private childObserver: MutationObserver | null = null
   /** 组内 roving 焦点项下标（多选模式移动焦点用；单选跟随选中值） */
   private focusIndex = 0
 
@@ -164,19 +168,94 @@ export class OASToolbarToggle extends OASElement {
   }
 
   protected override update(): void {
-    const itemsRaw = this.getAttribute('items') ?? ''
-    const itemsChanged = itemsRaw !== this.lastItemsRaw
-    this.lastItemsRaw = itemsRaw
-    this.parseItems()
+    // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
+    this.ensureChildObserver()
     const multiple = this.hasAttr('multiple')
     const multipleChanged = multiple !== this.lastMultiple
     this.lastMultiple = multiple
+    let itemsChanged: boolean
+    // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染。
+    // items 通道沿用增量比对（原文未变化跳过全量重建）；子元素通道按结构签名比对，
+    // 数据源切换（items ⇄ 子元素）由 lastItemsRaw/lastChildSig 互斥标记强制触发重建
+    if (this.hasAttribute('items')) {
+      const itemsRaw = this.getAttribute('items') ?? ''
+      itemsChanged = itemsRaw !== this.lastItemsRaw
+      this.lastItemsRaw = itemsRaw
+      this.lastChildSig = ''
+      this.parseItems()
+    } else {
+      const sig = this.childSig()
+      itemsChanged = sig !== this.lastChildSig || this.lastItemsRaw !== null
+      this.lastChildSig = sig
+      this.lastItemsRaw = null
+      this.parseChildItems()
+    }
     this.syncSize()
     if (itemsChanged || multipleChanged) {
       this.renderItems()
     } else {
       this.syncState()
     }
+  }
+
+  // ===== 子元素声明式通道 =====
+
+  /** 子元素通道签名：轻量序列化 light DOM 数据载体（tag + 属性 + 文本），供增量比对跳过无变化重建 */
+  private childSig(): string {
+    const walk = (el: Element): string => {
+      let s = `${el.tagName}:`
+      for (const a of Array.from(el.attributes)) s += `${a.name}=${a.value};`
+      s += `#${el.textContent ?? ''}`
+      return s
+    }
+    return Array.from(this.children).map(walk).join('|')
+  }
+
+  /** 解析 light DOM 的 `<oas-toolbar-toggle-item>` 数据载体为 ToolbarToggleItem[]（其余 light DOM 内容忽略） */
+  private parseChildItems(): void {
+    const items: ToolbarToggleItem[] = []
+    for (const child of Array.from(this.children)) {
+      if (child.tagName !== 'OAS-TOOLBAR-TOGGLE-ITEM') continue
+      const item: ToolbarToggleItem = {
+        label: this.childLabel(child),
+        value: child.getAttribute('value') ?? '',
+      }
+      if (child.hasAttribute('disabled')) item.disabled = true
+      items.push(item)
+    }
+    this.itemsList = items
+  }
+
+  /** 默认插槽 label 文本（trim） */
+  private childLabel(el: Element): string {
+    let text = ''
+    for (const node of el.childNodes) {
+      text += node.textContent ?? ''
+    }
+    return text.trim()
+  }
+
+  /**
+   * 子元素通道观察器：只监听 light DOM 子元素（数据载体增删/属性/文本变化 → 重解析）。
+   * 组件自身动作不写 light DOM，无需自引用守卫。
+   */
+  private ensureChildObserver(): void {
+    if (this.childObserver) return
+    const observer = new MutationObserver(() => {
+      this.update()
+    })
+    observer.observe(this, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+      attributeFilter: ['value', 'disabled', 'slot'],
+    })
+    this.childObserver = observer
+    this.onCleanup(() => {
+      observer.disconnect()
+      this.childObserver = null
+    })
   }
 
   private parseItems(): void {
