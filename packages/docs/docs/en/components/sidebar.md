@@ -202,8 +202,8 @@ For resizable width, compose with `oas-splitter` instead of a built-in rail: pla
 <DemoBlock title="oas-splitter + sidebar">
   <div style="height: 280px; width: 100%">
     <oas-splitter percent="22" min="12" max="45">
-      <oas-sidebar slot="left" style="--oas-sidebar-width: 100%" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Data","value":"data","icon":"📊"},{"label":"Settings","value":"s","icon":"⚙️"}]'></oas-sidebar>
-      <div slot="right" style="padding: var(--oas-space-4)">Drag the splitter handle to resize the sidebar (it fills the left pane with `--oas-sidebar-width: 100%`).</div>
+      <oas-sidebar slot="left" width="100%" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Data","value":"data","icon":"📊"},{"label":"Settings","value":"s","icon":"⚙️"}]'></oas-sidebar>
+      <div slot="right" style="padding: var(--oas-space-4)">Drag the splitter handle to resize the sidebar (it fills the left pane with `width="100%"`, tracking the pane width in real time).</div>
     </oas-splitter>
   </div>
 </DemoBlock>
