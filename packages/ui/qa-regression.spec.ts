@@ -6647,7 +6647,7 @@ test('oas-splitter + sidebar：拖拽分割条 sidebar 宽度实时跟随（不�
   )
   const r = await page.evaluate(async () => {
     const sp = document.querySelector('oas-splitter')!
-    const sb = sp.querySelector('oas-sidebar')!
+    const sb = sp.querySelector('oas-sidebar')! as HTMLElement
     sp.scrollIntoView({ block: 'center' })
     await new Promise((res) => setTimeout(res, 300))
     const handle = sp.shadowRoot!.querySelector('[part="splitter"]') as HTMLElement
