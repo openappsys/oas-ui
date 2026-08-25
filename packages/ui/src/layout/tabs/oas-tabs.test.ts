@@ -23,11 +23,102 @@ describe('OASTabs', () => {
     document.body.innerHTML = ''
   })
 
+  function mountMany(values: string[], attrs: Record<string, string> = {}): OASTabs {
+    const el = new OASTabs()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = values
+      .map((v) => `<oas-tab-panel label="标签${v}" value="${v}"><p>内容${v}</p></oas-tab-panel>`)
+      .join('')
+    document.body.appendChild(el)
+    return el
+  }
+
+  function rightClickTab(el: OASTabs, value: string): void {
+    const tab = el.shadowRoot!.querySelector(`[role="tab"][data-value="${value}"]`) as HTMLElement
+    tab.dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, clientX: 200, clientY: 100 }),
+    )
+  }
+
   it('渲染标签栏，默认激活第一项', () => {
     const el = mount()
     const tabs = el.shadowRoot!.querySelectorAll('[role="tab"]')
     expect(tabs.length).toBe(2)
     expect(tabs[0]!.getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('context-menu：右键标签弹批量关闭菜单（5 项：关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部）；无属性不弹', () => {
+    const el = mountMany(['a', 'b', 'c'], { 'context-menu': '' })
+    rightClickTab(el, 'b')
+    const menu = el.shadowRoot!.querySelector('.ctx-menu') as HTMLElement
+    expect(menu.hidden).toBe(false)
+    expect(menu.getAttribute('part')).toBe('context-menu')
+    const items = [...menu.querySelectorAll<HTMLElement>('.ctx-item')]
+    expect(items.length).toBe(5)
+    expect(items.map((i) => i.textContent)).toEqual([
+      '关闭',
+      '关闭其他',
+      '关闭左侧所有',
+      '关闭右侧所有',
+      '关闭全部',
+    ])
+    expect(items[4]!.classList.contains('danger')).toBe(true)
+    // 无 context-menu 属性：右键不弹（先 blur 第一个实例的焦点元素——happy-dom 跨 shadow
+    // activeElement 的 getter bug：焦点在 el1 shadow 时查询 el2 shadow.activeElement 会崩，
+    // 真实浏览器无此问题，故此处仅测试环境失焦）
+    ;(el.shadowRoot!.activeElement as HTMLElement | null)?.blur()
+    const el2 = mountMany(['a', 'b'], {})
+    rightClickTab(el2, 'b')
+    expect(el2.shadowRoot!.querySelector('.ctx-menu')).toBeNull()
+  })
+
+  it('context-menu 关闭当前：仅对当前标签派发一次 oas-close', () => {
+    const el = mountMany(['a', 'b', 'c'], { 'context-menu': '' })
+    const keys: string[] = []
+    el.addEventListener('oas-close', (e) => keys.push((e as CustomEvent).detail.key))
+    rightClickTab(el, 'b')
+    const items = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')]
+    items[0]!.click() // 关闭
+    expect(keys).toEqual(['b'])
+    expect(el.shadowRoot!.querySelector('.ctx-menu')!.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('context-menu 关闭其他/左侧所有/右侧所有/关闭全部：按目标集合逐个派发 oas-close', () => {
+    const el = mountMany(['a', 'b', 'c', 'd'], { 'context-menu': '' })
+    const keys: string[] = []
+    el.addEventListener('oas-close', (e) => keys.push((e as CustomEvent).detail.key))
+    // 关闭其他（对 b）
+    rightClickTab(el, 'b')
+    ;[...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')][1]!.click()
+    expect(keys).toEqual(['a', 'c', 'd'])
+    // 关闭左侧所有（对 c）
+    keys.length = 0
+    rightClickTab(el, 'c')
+    ;[...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')][2]!.click()
+    expect(keys).toEqual(['a', 'b'])
+    // 关闭右侧所有（对 b）
+    keys.length = 0
+    rightClickTab(el, 'b')
+    ;[...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')][3]!.click()
+    expect(keys).toEqual(['c', 'd'])
+    // 关闭全部
+    keys.length = 0
+    rightClickTab(el, 'b')
+    ;[...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')][4]!.click()
+    expect(keys).toEqual(['a', 'b', 'c', 'd'])
+  })
+
+  it('context-menu 外部点击/Escape 关闭弹层', () => {
+    const el = mountMany(['a', 'b'], { 'context-menu': '' })
+    rightClickTab(el, 'b')
+    const menu = el.shadowRoot!.querySelector('.ctx-menu') as HTMLElement
+    expect(menu.hidden).toBe(false)
+    document.body.click()
+    expect(menu.hasAttribute('hidden')).toBe(true)
+    rightClickTab(el, 'b')
+    expect(menu.hidden).toBe(false)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(menu.hasAttribute('hidden')).toBe(true)
   })
 
   it('点击标签切换并派发 oas-change', async () => {
