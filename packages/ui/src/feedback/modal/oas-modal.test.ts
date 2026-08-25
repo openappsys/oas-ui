@@ -35,6 +35,19 @@ describe('OASModal', () => {
     )
   })
 
+  it('body 滚动边缘有视觉指示（CSS-only scroll shadow：上下 bg 覆盖层 local + 径向阴影 scroll 分层）', () => {
+    const el = mount({ visible: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const bodyRule = css.match(/\.body\s*\{[^}]*\}/)?.[0] ?? ''
+    expect(bodyRule, 'body 应有 bg 覆盖层（local attachment，边缘遮住阴影）').toContain(
+      'background-attachment: local, local, scroll, scroll',
+    )
+    expect(bodyRule, 'body 应有上下径向阴影（scroll attachment 固定视口边缘）').toContain(
+      'radial-gradient',
+    )
+    expect(bodyRule).toContain('background-color: var(--oas-color-bg)')
+  })
+
   it('点击确定派发 oas-ok', async () => {
     const el = mount({ visible: '' })
     await Promise.resolve()
