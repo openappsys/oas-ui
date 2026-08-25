@@ -113,7 +113,7 @@ Items support `badge` count badges (colors via `--oas-sidebar-badge-bg/-color` v
 
 <DemoBlock title="Badges and item actions">
   <div style="height: 260px; width: 100%; display: flex">
-    <oas-sidebar id="sidebar-badge-action" items='[{"label":"Inbox","value":"inbox","icon":"📥","badge":"12"},{"label":"Notifications","value":"notice","icon":"🔔","badge":"3"},{"label":"Projects","value":"proj","icon":"📁","actions":[{"icon":"✏️","value":"edit","label":"Edit"},{"icon":"🗑️","value":"delete","label":"Delete"}]}]'></oas-sidebar>
+    <oas-sidebar id="sidebar-badge-action" onoas-action="sidebarActionLog(event)" items='[{"label":"Inbox","value":"inbox","icon":"📥","badge":"12"},{"label":"Notifications","value":"notice","icon":"🔔","badge":"3"},{"label":"Projects","value":"proj","icon":"📁","actions":[{"icon":"✏️","value":"edit","label":"Edit"},{"icon":"🗑️","value":"delete","label":"Delete"}]}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
       <p>Hover “Projects” to reveal action buttons; clicking fires an <code>oas-action</code> event.</p>
       <oas-tag id="sidebar-action-log" type="info">No action yet</oas-tag>
@@ -195,6 +195,20 @@ The `variant` attribute: `sidebar` (default, flush) / `floating` (margin + radiu
   </div>
 </DemoBlock>
 
+## Resizable width (resizable)
+
+The `resizable` attribute shows a drag rail on the host edge for real-time resizing (writes back to the `width` attribute); `resize-min`/`resize-max` clamp the range (default 160–480); the rail supports arrow keys (±8px, `Home/End` jumps to min/max); `oas-resize` fires on drag end or key adjustments. Desktop non-collapsed only (hidden when collapsed or on mobile).
+
+<DemoBlock title="resizable edge drag-resize">
+  <div style="height: 280px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-resizable" resizable resize-min="180" resize-max="400" onoas-resize="sidebarResizeLog(event)" width="220px" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Dashboard","value":"dash","icon":"📊"},{"label":"Settings","value":"settings","icon":"⚙️"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      Drag the rail on the sidebar's right edge to resize in real time; focus the rail and use arrow keys too.
+      <oas-tag id="sidebar-resize-log" type="info">Current width 220px</oas-tag>
+    </div>
+  </div>
+</DemoBlock>
+
 ## Resizable width (oas-splitter)
 
 For resizable width, compose with `oas-splitter` instead of a built-in rail: place the sidebar in the left pane and drag the splitter handle to resize.
@@ -259,10 +273,13 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
 | `items` | Menu items JSON `[{label, value, icon?, group?, badge?, children?, actions?}]` (supports divider entries `{type:"divider"}`; children for nested submenus) | `SidebarEntry[] \| string` | `[]` |
 | `loading` | Skeleton loading state (shows a pulsing skeleton when present; value sets row count, default 4) | `string` | `4` |
 | `mobile-breakpoint` | Mobile breakpoint (px); narrower than this becomes an overlay drawer | — | — |
+| `resizable` | Edge drag-resize (shows a drag rail on the host edge; desktop non-collapsed only) | `boolean` | — |
+| `resize-max` | Maximum resize width (px, default 480) | `string` | `480` |
+| `resize-min` | Minimum resize width (px, default 160) | `string` | `160` |
 | `shortcut` | Enable Ctrl/Cmd+B collapse toggling (off by default to avoid hijacking a global key) | `boolean` | — |
 | `side` | Drawer side: left (default) / right (mobile drawer slides from the right, trigger on the right) | — | — |
 | `variant` | Variant: sidebar (default flush) / floating (radius + shadow) / inset (radius + background contrast) | — | — |
-| `width` | Expanded width; defaults to the `--oas-sidebar-width` token | — | — |
+| `width` | Expanded width; defaults to the `--oas-sidebar-width` token | `string` | `0` |
 
 ### Events
 
@@ -270,6 +287,7 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
 | --- | --- |
 | `oas-action` | `detail: { value: string, action: string, label: string }`; When fired: an item hover action button is clicked (does not fire oas-select) |
 | `oas-collapse` | `detail: { collapsed: boolean }`; When fired: Desktop collapse button toggled |
+| `oas-resize` | `detail: { width: number }`; When fired: drag-resize ends / arrow keys adjust the width |
 | `oas-select` | `detail: { value: string, label: string }`; When fired: A menu item was selected (also collapses the drawer on mobile) |
 
 ### Slots
@@ -283,3 +301,17 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
 ### Parts
 
 `root` / `panel` / `head` / `close` / `nav` / `body` / `foot` / `toggle` (desktop collapse) / `trigger` (mobile trigger) / `mask` / `item`; the header and footer content are injected via `slot="header"`, the default slot and `slot="footer"` respectively.
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  window.sidebarActionLog = (e) => {
+    const tag = document.getElementById('sidebar-action-log')
+    if (tag) tag.textContent = `Action: ${e.detail.label} (${e.detail.action})`
+  }
+  window.sidebarResizeLog = (e) => {
+    const tag = document.getElementById('sidebar-resize-log')
+    if (tag) tag.textContent = `Current width ${e.detail.width}px`
+  }
+})
+</script>

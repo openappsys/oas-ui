@@ -75,6 +75,7 @@ export const en: LocaleMessages = {
   'sidebar.expand': 'Expand sidebar',
   'sidebar.openMenu': 'Open sidebar',
   'sidebar.closeMenu': 'Close sidebar',
+  'sidebar.resize': 'Resize sidebar',
   'floatButton.action': 'Quick actions',
   'toggleGroup.group': 'Toggle group',
   'speedDial.actions': 'Actions',

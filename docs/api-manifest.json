@@ -6486,6 +6486,8 @@
       },
       {
         "name": "width",
+        "type": "string",
+        "default": "0",
         "observed": true
       },
       {
@@ -6525,6 +6527,23 @@
       {
         "name": "variant",
         "observed": true
+      },
+      {
+        "name": "resizable",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "resize-min",
+        "type": "string",
+        "default": "160",
+        "observed": true
+      },
+      {
+        "name": "resize-max",
+        "type": "string",
+        "default": "480",
+        "observed": true
       }
     ],
     "props": [
@@ -6535,6 +6554,10 @@
       }
     ],
     "events": [
+      {
+        "name": "oas-resize",
+        "detail": "{ width: this.currentWidthPx() }"
+      },
       {
         "name": "oas-select",
         "detail": "{ value: item.value, label: item.label }"

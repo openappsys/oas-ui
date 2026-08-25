@@ -1350,12 +1350,16 @@
       "expand-on-hover": "折叠图标条悬停临时展开（纯视觉态，不改 collapsed 受控）",
       "shortcut": "开启 Ctrl/Cmd+B 折叠切换（默认关闭，避免劫持全局键）",
       "side": "抽屉侧向：left（默认）/ right（移动抽屉从右侧滑入、触发按钮居右）",
-      "variant": "形态：sidebar（默认贴边）/ floating（悬浮圆角阴影）/ inset（内嵌圆角背景）"
+      "variant": "形态：sidebar（默认贴边）/ floating（悬浮圆角阴影）/ inset（内嵌圆角背景）",
+      "resizable": "边缘拖拽调宽（存在即显示宿主边缘拖拽条；仅桌面非折叠态可用）",
+      "resize-min": "拖拽调宽最小宽度（px，默认 160）",
+      "resize-max": "拖拽调宽最大宽度（px，默认 480）"
     },
     "events": {
       "oas-collapse": "`detail: { collapsed: boolean }`；触发时机：桌面折叠按钮切换时",
       "oas-select": "`detail: { value: string, label: string }`；触发时机：选中菜单项时（移动端同时收起抽屉）",
-      "oas-action": "`detail: { value: string, action: string, label: string }`；触发时机：点击项悬停操作按钮时（不触发 oas-select）"
+      "oas-action": "`detail: { value: string, action: string, label: string }`；触发时机：点击项悬停操作按钮时（不触发 oas-select）",
+      "oas-resize": "`detail: { width: number }`；触发时机：拖拽调宽松手时 / 方向键微调宽度时"
     },
     "slots": {}
   },
