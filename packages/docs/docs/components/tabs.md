@@ -81,9 +81,9 @@
 
 > 关闭非激活标签：标签立即消失（可见反馈）。关闭激活标签：自动切到剩余第一个标签，并弹出消息提示。
 
-## 右键批量关闭
+## 右键菜单（新建 + 批量关闭）
 
-`context-menu`：右键任意标签弹出批量关闭菜单——关闭 / 关闭其他 / 关闭左侧所有 / 关闭右侧所有 / 关闭全部。每项按目标集合逐个派发 `oas-close`（`detail: { key }`），宿主按 key 移除对应面板即可（与 `closable` 同一契约）。弹层支持外部点击 / Escape 关闭。
+`context-menu`：右键任意标签弹出操作菜单——新标签 / 关闭 / 关闭其他 / 关闭左侧所有 / 关闭右侧所有 / 关闭全部（新建与关闭族间有分隔线）。新建派发 `oas-add`（与 `addable` 的 + 按钮同一契约）；关闭类每项按目标集合逐个派发 `oas-close`（`detail: { key }`），宿主按 key 移除对应面板即可（与 `closable` 同一契约）。弹层支持外部点击 / Escape 关闭。
 
 <DemoBlock title="右键批量关闭（context-menu）">
   <oas-tabs id="tabs-contextmenu" closable context-menu active="b">
@@ -95,7 +95,7 @@
   </oas-tabs>
 </DemoBlock>
 
-> 右键「商品」试试「关闭左侧所有」/「关闭其他」——按 key 逐个派发 `oas-close`，宿主移除对应面板。
+> 右键「商品」试试「新标签」与「关闭左侧所有」/「关闭其他」——新建派发 `oas-add` 宿主追加面板；关闭按 key 逐个派发 `oas-close`，宿主移除对应面板。
 
 ## 徽标
 
@@ -527,8 +527,20 @@ onMounted(async () => {
     }
   })
 
-  // 右键批量关闭：宿主按 oas-close 的 key 逐个移除面板（与 closable 同一契约）
+  // 右键菜单：新建派发 oas-add（宿主追加面板并激活）；关闭按 oas-close 的 key 逐个移除面板（与 closable 同一契约）
   const ctxTabs = document.getElementById('tabs-contextmenu')
+  let ctxSeq = 0
+  ctxTabs?.addEventListener('oas-add', (e) => {
+    ctxSeq += 1
+    const value = `new-${ctxSeq}`
+    const panel = document.createElement('oas-tab-panel')
+    panel.setAttribute('label', `${e.detail.label} ${ctxSeq}`)
+    panel.setAttribute('value', value)
+    panel.innerHTML = `<p>新建的标签页（${value}）</p>`
+    ctxTabs.appendChild(panel)
+    ctxTabs.setAttribute('active', value)
+    message?.info(`新建标签「${value}」`)
+  })
   ctxTabs?.addEventListener('oas-close', (e) => {
     const key = e.detail.key
     message?.info(`关闭标签「${key}」`)
@@ -586,7 +598,7 @@ onMounted(async () => {
 | `animated` | 选中态过渡 + 面板淡入动画（只动 color/border/opacity，不碰 layout） | `boolean` | — |
 | `centered` | 标签栏整体居中（横向时） | `boolean` | — |
 | `closable` | 每个标签显示关闭 ×，点击派发 `oas-close`（组件不自动删除） | `boolean` | — |
-| `context-menu` | 标签右键批量关闭菜单（关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部；每项按目标集合逐个派发 oas-close） | `boolean` | — |
+| `context-menu` | 标签右键操作菜单（新标签/关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部；新建派发 oas-add，关闭类按目标集合逐个派发 oas-close） | `boolean` | — |
 | `hide-content` | 纯导航模式：渲染标签栏但不渲染面板区（tabs 当导航条，宿主接管内容/路由） | `boolean` | — |
 | `hide-indicator` | 隐藏激活指示线（line 模式的 ::after 下划线） | `boolean` | — |
 | `items` | 数据驱动渲染：JSON 数组 `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`，与 `oas-tab-panel` 子元素并存时 items 优先 | `string` | — |
