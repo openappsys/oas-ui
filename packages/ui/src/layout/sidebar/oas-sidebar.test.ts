@@ -509,6 +509,20 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(css).toMatch(/\[variant='inset'\][^}]*border-radius/)
   })
 
+  it('嵌套无图标项保留图标占位（图标占位不隐藏 + 宽度保留 24px，供子项 label 缩进对齐父项右侧）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items:
+        '[{"label":"父项","value":"biz","icon":"star","children":[{"label":"子项","value":"users"}]}]',
+    })
+    const child = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"] [part="item"]')!
+    const childIcon = child.querySelector('.icon') as HTMLElement
+    // 嵌套无图标项：图标占位保留（不 hidden + 宽度 24px → label 缩进，不与父项齐平/更靠左）
+    expect(childIcon.hidden, '嵌套无图标项图标占位不应隐藏').toBe(false)
+    expect(getComputedStyle(childIcon).width, '嵌套图标占位宽度应保留（24px）').toBe('24px')
+    // 像素级 label 缩进对齐（子 label 缩进父 label 右侧）由 qa-regression e2e 真布局断言覆盖
+  })
+
   it('嵌套子菜单容器类名 .submenu 与嵌套按钮 .item.sub 不冲突（防容器样式串扰到按钮致激活背景溢出面板）', () => {
     stubMatchMedia(false)
     const el = mount({
