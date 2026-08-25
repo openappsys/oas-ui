@@ -753,6 +753,46 @@ tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navig
 - **tabs tab-badge 颜色开口**：背景/文字从写死 danger 改 `--oas-tabs-badge-bg/--oas-tabs-badge-color`（默认 danger 兼容）+ part="badge"，宿主可中性化
 - **验证**：全量单测 3280 / e2e chromium 969 / 感知对比度门禁 exit 0 / 截图识图 light+dark 全过
 
+## v2.2.4 layout 域深挖批（tabs/sidebar/layout 能力增量与模板实测缺陷修复）→ 已发布
+
+模板实测第三批（oas-ui-templates 集成反馈）聚焦 layout 域：tabs 右键菜单新能力、sidebar 全量补齐、layout 视口锁定，连同品牌标识定稿。
+
+### tabs 右键操作菜单（context-menu，新能力）
+
+- 右键任意标签弹操作菜单：新建 / 关闭 / 关闭其他 / 关闭左侧所有 / 关闭右侧所有 / 关闭全部（新建与关闭族间分隔线、关闭全部 danger 色）
+- 契约复用零变更：新建派发 `oas-add`（与 addable + 按钮同源）；关闭类按目标集合逐个派发 `oas-close`（与 closable 同源，宿主按 key 移除面板）
+- 文案两层语义：菜单项中性「新建」（`tabs.ctxNew`）；`detail.label` 携带 locale 默认产物名（宿主可忽略）；宿主 `setLocale` 展开覆盖业务文案（docs 有示例）
+- menu 模式键盘 roving：打开聚焦首项、ArrowUp/Down 循环、Home/End 跳首末、Enter 执行、Escape 关闭；外部点击关闭；光标定位 fixed + 视口夹取
+
+### tabs more 下拉键盘可达（无障碍缺陷修复）
+
+moreBtn 键盘打开聚焦第一项 + 列表 roving（ArrowUp/Down/Home/End/Enter/Space）+ Escape 回焦触发器 + 搜索框 ArrowDown 进列表/Escape 收起——此前仅鼠标可达，键盘用户无法到达溢出标签
+
+### sidebar 全量补齐批（能力补齐 + 实测缺陷修复）
+
+- **能力**：嵌套子菜单（children、激活子项自动展开/折叠隐藏/缩进引导线）、折叠态 tooltip、键盘导航、shortcut（Ctrl/Cmd+B）、badge（`--oas-sidebar-badge-*`）、divider、loading 骨架屏（行数可配）、expand-on-hover（不改 collapsed 受控）、variant（sidebar/floating/inset）、side=right、actions 悬停操作（`oas-action`）、多 sidebar 共存、`items.group` 分组标题
+- **resizable 内置拖拽调宽**：宿主边缘拖拽条（part=rail）实时改宽写回 `width` 属性、resize-min/max（默认 160~480）、键盘 ±8/Home/End、`oas-resize`；仅桌面非折叠态
+- **实测缺陷修复**：hover 零对比（`--oas-sidebar-item-hover-bg` text-primary 6% + active hover 加深）；嵌套子菜单两视觉缺陷（`.sub` 类名冲突激活背景溢出右缘 → `.submenu` 隔离；无图标子项缩进错乱 → 图标占位 + label 缩进父项右侧）；splitter 组合内联 style 被 update 清除（`width="100%"` 属性化）
+
+### layout 视口锁定 + sider/sidebar 宽度契约（模板实测两条）
+
+- **`viewport` 属性（新能力）**：admin 场景 opt-in——布局锁定视口高（`var(--oas-layout-height, 100dvh)`，100vh 级联回退，变量开口），顶栏/底栏固定、侧栏/内容各自独立滚动；默认整页滚动模型不变
+- **宽度契约「sider 管轨道、sidebar 填满」**：sidebar `:host-context(oas-sider)` width:100%（内嵌填满轨道 200、折叠跟随 64）、sider 内嵌卸轨道 padding 16、height:100% 打通内嵌滚动链；独立使用仍走 `--oas-sidebar-width`（220）——两变量职责清晰，改任一侧不错位
+- **工程坑记录**：`:host(:has())` Chromium scoped CSS 不生效（matches true 但声明被忽略）→ MutationObserver 同步 data-embed；`::slotted()` 特异性压不过内层 `:host` → 跨 shadow 覆盖用内层 `:host-context`
+
+### 其他
+
+- **modal body 滚动边缘指示**：CSS-only scroll shadow（顶部无阴影/中部双阴影/底部仅顶阴影），长内容滚动边界可辨
+- **card**：无 title 时 header 33px 空占位修复（`.header[hidden]` 兜底）
+- **icons generate 加固**：并发竞态（临时目录按进程隔离）+ dev watch 句柄 EPERM（目录原子替换退避重试——发布构建与 pnpm dev 并行必现级）
+- **品牌标识定稿**：新 logo `<(w)>` 三版对比定稿紧凑版；favicon 全套重生成（svg 双主题 + 5 尺寸 png）
+- **docs 首页**：「性能速览→三行代码」屏间渐变分隔光带补齐（`.home-divider` 元素版，与 `.home-section::before` 同位同款）
+
+### 验收
+
+- 全量单测 3318 / typecheck / build / api:check / perf:size 六项 PASS（cdn 253.8KB < 300KB 天花板）/ e2e 1370（chromium 全量 + firefox 抽样 + docs-site）/ trace 门禁 0 命中 / 浏览器实测截图识图 light+dark 全过 / console 零告警
+- 新增回归：tabs context-menu 单测 5 例 + e2e；layout viewport/宽度对齐 e2e 像素断言 2 例；sidebar hover/嵌套/splitter/resize e2e；homepage 分隔线 e2e
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
