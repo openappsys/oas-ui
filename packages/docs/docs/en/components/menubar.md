@@ -22,7 +22,7 @@ Leaves with `kind: "action"` render as plain actions (`menuitem`): no checkmark,
 
 ## Shortcuts (shortcut)
 
-The `shortcut` field (e.g. `"Ctrl+N"`): renders a key hint on the right, and auto-binds a `document`-level keydown — pressing the combo selects that item (`preventDefault` blocks the browser default).
+The `shortcut` field (e.g. `"Ctrl+N"`): renders a key hint on the right, and auto-binds a `document`-level keydown — pressing the combo selects that item (`preventDefault` blocks the browser default). Binding rules: `modifier+key` combos bind directly; single keys bind only for function keys (F1–F12) — any other single key (letters/digits/Delete etc.) is display-only and not bound.
 
 <DemoBlock title="Shortcuts">
   <oas-menubar id="menubar-shortcut" onoas-select="menubarShortcutLog(event)" items='[{"label":"File","value":"file","accessKey":"f","children":[{"label":"New","value":"new","shortcut":"Ctrl+N"},{"label":"Open","value":"open","shortcut":"Ctrl+O"},{"type":"divider"},{"label":"Save","value":"save","shortcut":"Ctrl+S","kind":"action"}]}]'></oas-menubar>

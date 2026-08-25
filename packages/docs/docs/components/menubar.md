@@ -22,7 +22,7 @@
 
 ## 快捷键（shortcut）
 
-`shortcut` 字段（如 `"Ctrl+N"`）：右侧渲染快捷键提示，并自动绑定 `document` 级 keydown——命中即触发对应项选择（`preventDefault` 拦截浏览器默认行为）。
+`shortcut` 字段（如 `"Ctrl+N"`）：右侧渲染快捷键提示，并自动绑定 `document` 级 keydown——命中即触发对应项选择（`preventDefault` 拦截浏览器默认行为）。绑定规则：`修饰键+键` 直接绑定；单键仅限功能键（F1–F12）可绑定，其余单键（字母/数字/Delete 等）仅作展示不绑定。
 
 <DemoBlock title="快捷键（shortcut）">
   <oas-menubar id="menubar-shortcut" onoas-select="menubarShortcutLog(event)" items='[{"label":"文件","value":"file","accessKey":"f","children":[{"label":"新建","value":"new","shortcut":"Ctrl+N"},{"label":"打开","value":"open","shortcut":"Ctrl+O"},{"type":"divider"},{"label":"保存","value":"save","shortcut":"Ctrl+S","kind":"action"}]}]'></oas-menubar>
