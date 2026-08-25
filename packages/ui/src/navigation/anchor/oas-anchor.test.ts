@@ -961,3 +961,143 @@ describe('OASAnchorTarget', () => {
     expect(t.shadowRoot!.querySelector('[part="target"]')!.hasAttribute('id')).toBe(false)
   })
 })
+
+// ===== 子元素声明式通道（oas-anchor-item） =====
+
+/** 子元素通道挂载：innerHTML 填 light DOM 子元素后 append（触发 render → 解析） */
+function mountChildren(html: string, attrs: Record<string, string> = {}): OASAnchor {
+  const el = document.createElement('oas-anchor') as OASAnchor
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+  el.innerHTML = html
+  document.body.appendChild(el)
+  return el
+}
+
+describe('子元素声明式通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 0),
+    )
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    document.body.innerHTML = ''
+  })
+
+  it('基础：oas-anchor-item 解析渲染（href/title/多级嵌套缩进）', () => {
+    const el = mountChildren(
+      `<oas-anchor-item href="#section1">第一章<oas-anchor-item href="#section1-1">1.1 小节</oas-anchor-item></oas-anchor-item>` +
+        `<oas-anchor-item href="#section2">第二章</oas-anchor-item>`,
+    )
+    const links = linksOf(el)
+    expect(links.length).toBe(3)
+    expect(links[0]!.getAttribute('href')).toBe('#section1')
+    expect(links[0]!.textContent).toBe('第一章')
+    expect(links.map((l) => l.textContent)).toEqual(['第一章', '1.1 小节', '第二章'])
+    // 多级嵌套缩进结构（与 items 通道一致）
+    const list = el.shadowRoot!.querySelector('.list')!
+    const firstLi = list.children[0] as HTMLElement
+    expect(firstLi.dataset.level).toBe('1')
+    const sub = firstLi.querySelector<HTMLElement>('ul.anchor-children')!
+    expect(sub.children.length).toBe(1)
+    expect((sub.children[0] as HTMLElement).dataset.level).toBe('2')
+  })
+
+  it('items 属性显式设置时优先（子元素被忽略）', () => {
+    const el = document.createElement('oas-anchor') as OASAnchor
+    el.setAttribute('items', JSON.stringify([{ href: '#data', title: '数据项' }]))
+    el.innerHTML = `<oas-anchor-item href="#child">子元素项</oas-anchor-item>`
+    document.body.appendChild(el)
+    const links = linksOf(el)
+    expect(links.length).toBe(1)
+    expect(links[0]!.getAttribute('href')).toBe('#data')
+    expect(links[0]!.textContent).toBe('数据项')
+  })
+
+  it('target/target-offset 属性映射（rel=noopener + data-target-offset）', () => {
+    const el = mountChildren(
+      `<oas-anchor-item href="https://example.com" target="_blank" target-offset="40">外部</oas-anchor-item>` +
+        `<oas-anchor-item href="#section1" target-offset="80">第一章</oas-anchor-item>`,
+    )
+    const links = linksOf(el)
+    expect(links[0]!.getAttribute('target')).toBe('_blank')
+    expect(links[0]!.getAttribute('rel')).toBe('noopener noreferrer')
+    expect(links[0]!.dataset.targetOffset).toBe('40')
+    expect(links[1]!.dataset.targetOffset).toBe('80')
+  })
+
+  it('item 级 target-offset 覆盖全局 target-offset（点击落点）', () => {
+    const el = mountChildren(
+      `<oas-anchor-item href="#section1" target-offset="40">第一章</oas-anchor-item>`,
+      { 'target-offset': '120' },
+    )
+    // 前面 block=nearest 测试把 window.scrollY 改为 800（defineProperty 不复原），此处显式归零
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true })
+    const d = document.createElement('div')
+    d.id = 'section1'
+    document.body.appendChild(d)
+    d.getBoundingClientRect = () => rect(400) as DOMRect
+    const spy = spyScrollTo()
+    stubRafInstant()
+    stubHistory()
+    ;(el.shadowRoot!.querySelector('[part="link"]') as HTMLElement).click()
+    expect(spy).toHaveBeenCalledWith(0, 360)
+  })
+
+  it('子元素变化（MutationObserver）动态重渲染：增删与属性更新', async () => {
+    const el = mountChildren(`<oas-anchor-item href="#section1">第一章</oas-anchor-item>`)
+    expect(linksOf(el).length).toBe(1)
+    const item = document.createElement('oas-anchor-item')
+    item.setAttribute('href', '#section2')
+    item.textContent = '第二章'
+    el.appendChild(item)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(linksOf(el).length).toBe(2)
+    // 属性变化 → 重渲染
+    item.setAttribute('href', '#changed')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(linksOf(el)[1]!.getAttribute('href')).toBe('#changed')
+    // 移除 → 回到 1
+    el.querySelector('oas-anchor-item')!.remove()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(linksOf(el).length).toBe(1)
+  })
+
+  it('滚动联动高亮在子元素通道下不变（oas-anchor-target 目标存在时）', () => {
+    const container = document.createElement('div')
+    container.id = 'child-sc'
+    container.style.overflow = 'auto'
+    document.body.appendChild(container)
+    const targets: HTMLElement[] = []
+    for (const id of ['child-target-1', 'child-target-2']) {
+      const t = document.createElement('oas-anchor-target')
+      t.setAttribute('id', id)
+      t.appendChild(document.createElement('h4'))
+      document.body.appendChild(t)
+      targets.push(t)
+    }
+    const el = mountChildren(
+      `<oas-anchor-item href="#child-target-1">第一章</oas-anchor-item>` +
+        `<oas-anchor-item href="#child-target-2">第二章</oas-anchor-item>`,
+      { 'scroll-container': '#child-sc' },
+    )
+    container.getBoundingClientRect = () => rect(100) as DOMRect
+    targets[0]!.getBoundingClientRect = () => rect(100) as DOMRect
+    targets[1]!.getBoundingClientRect = () => rect(400) as DOMRect
+    // 初始：s1 过检测线（line=105）→ 高亮第一章
+    container.dispatchEvent(new Event('scroll'))
+    flushRaf()
+    expect(activeLink(el)).toBe('#child-target-1')
+    // 滚动：s1 滚出、s2 顶到检测线 → 高亮切到第二章（oas-change 联动）
+    targets[0]!.getBoundingClientRect = () => rect(-200) as DOMRect
+    targets[1]!.getBoundingClientRect = () => rect(100) as DOMRect
+    container.dispatchEvent(new Event('scroll'))
+    flushRaf()
+    expect(activeLink(el)).toBe('#child-target-2')
+  })
+})

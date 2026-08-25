@@ -148,6 +148,43 @@ Leaves (both inside submenus and top-level leaves) with `href` render as real `<
   <oas-tag id="menubar-href-result" type="info">Clicking a leaf navigates and fires oas-select</oas-tag>
 </DemoBlock>
 
+## Declarative child channel
+
+Besides the `items` JSON, you can write items declaratively with `<oas-menubar-item>` / `<oas-menubar-group>` / `<oas-menubar-divider>` (the `items` attribute **wins when explicitly set**; otherwise child elements are parsed and converge to the same render path). The default slot text is the label; attributes map to the `MenubarItem` fields: `value` / `disabled` / `icon` / `kind` / `danger` / `href` / `target` / `rel` / `shortcut` / `access-key` / `indeterminate`. Nesting child elements directly inside `<oas-menubar-item>` recursively becomes a submenu; `<oas-menubar-group>` uses its `label` attribute as the group title (`value` can serve as a radio group id) and flattens its children to the same level. Child additions/removals, attribute and text changes re-render automatically (MutationObserver).
+
+<DemoBlock title="Declarative child channel (group / divider / nesting / checkbox / indeterminate / shortcut / danger / href)">
+  <oas-space direction="vertical" size="small">
+    <oas-menubar id="menubar-decl" onoas-select="menubarDeclLog(event)">
+      <oas-menubar-item value="file" access-key="f">File
+        <oas-menubar-group label="Recent">
+          <oas-menubar-item value="proj-a">Project A</oas-menubar-item>
+          <oas-menubar-item value="proj-b">Project B</oas-menubar-item>
+        </oas-menubar-group>
+        <oas-menubar-divider></oas-menubar-divider>
+        <oas-menubar-item value="save" shortcut="Ctrl+S" kind="action">Save</oas-menubar-item>
+        <oas-menubar-item value="docs" href="/components/" target="_blank" rel="noopener">Component docs</oas-menubar-item>
+      </oas-menubar-item>
+      <oas-menubar-item value="view" access-key="v">View
+        <oas-menubar-item value="all" kind="checkbox" indeterminate>Select all</oas-menubar-item>
+        <oas-menubar-item value="grid" kind="checkbox">Gridlines</oas-menubar-item>
+        <oas-menubar-item value="del" danger>Delete</oas-menubar-item>
+      </oas-menubar-item>
+    </oas-menubar>
+    <oas-tag id="menubar-decl-result" type="info">Nothing selected (try Alt+F to open "File", Ctrl+S to trigger Save)</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="Dynamic add/remove (MutationObserver auto-refresh)">
+  <oas-space direction="vertical" size="small">
+    <oas-button size="small" onclick="menubarDeclAdd()">Append a top-level item</oas-button>
+    <oas-menubar id="menubar-decl-dyn">
+      <oas-menubar-item value="file">File
+        <oas-menubar-item value="new">New</oas-menubar-item>
+      </oas-menubar-item>
+    </oas-menubar>
+  </oas-space>
+</DemoBlock>
+
 ## Horizontal overflow folding (···)
 
 When the container is too narrow, top-level items that don't fit fold into a trailing "···" item; clicking it opens a popup with the folded items (selecting works). When the selected item is folded, "···" highlights. Only in horizontal mode; vertical and the mobile hamburger don't fold. A folded top-level item that has a submenu is treated as a plain selectable item inside the popup (cascading submenus are not expanded there).
@@ -228,6 +265,20 @@ onMounted(() => {
     if (tag) tag.textContent = `oas-select: ${e.detail.value} (rendered as a real <a> link)`
   }
 
+  window.menubarDeclLog = (e) => {
+    const tag = document.getElementById('menubar-decl-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value} (via declarative child channel)`
+  }
+  window.menubarDeclAdd = () => {
+    const mb = document.getElementById('menubar-decl-dyn')
+    if (!mb) return
+    const n = mb.children.length + 1
+    const item = document.createElement('oas-menubar-item')
+    item.setAttribute('value', `dyn-${n}`)
+    item.textContent = `Dynamic item ${n}`
+    mb.appendChild(item)
+  }
+
   window.menubarOverflowLog = (e) => {
     const tag = document.getElementById('menubar-overflow-result')
     if (tag) tag.textContent = `Selected: ${e.detail.value} (from "···" popup or the bar)`
@@ -278,7 +329,7 @@ onMounted(() => {
 
 ## API
 
-### Attributes
+### oas-menubar
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -296,19 +347,52 @@ onMounted(() => {
 | `trigger` | Top-level menu trigger: `click` (default, click to open first, then hover switches — desktop convention) / `hover` (hover opens directly) | — | — |
 | `value` | Selected value. As a plain string it is a single global selection (no-group scenarios, backward compatible); as a JSON object string (e.g. `{"mode":"preview","theme":"dark"}`) selections are recorded per group id — the `value` of a `type:"group"` item acts as the group id; as a JSON array string (e.g. `["grid","wrap"]`) it is the checkbox checked-set (`kind:"checkbox"` items, multi-select) | `string` | — |
 
-### Events
-
 | Event | Description |
 | --- | --- |
 | `oas-open-change` | The open top-level menu changed, `detail: { value, open }` (`value` = currently open top-level menu value, `open` = whether anything is open). Fired both on controlled `setAttribute('open')` and internal click/hover/keyboard changes (not on the first frame) |
 | `oas-select` | An item was selected, `detail: { value, kind?, checked? }`. `kind` only appears for action items (`kind: "action"`); checkbox items carry `checked` (new checked state); radio items omit `detail.kind` |
 
-### Slots
-
 | Name | Description |
 | --- | --- |
 | `end` | Trailing decorative slot (e.g. avatar): `<div slot="end">` renders when it has content; keyboard navigation skips it |
 | `start` | Leading decorative slot (e.g. logo): `<div slot="start">` renders when it has content; keyboard navigation skips it |
+
+### oas-menubar-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `access-key` | Alt access key (single character); defaults to the first ASCII letter of the label | — | — |
+| `danger` | Destructive item: danger color semantics (delete/logout operations) | — | — |
+| `disabled` | Disable this item | — | — |
+| `href` | Link URL: with `href` the item renders as a native `<a>` (real navigation + still fires `oas-select`) | — | — |
+| `icon` | Leading icon (`@oas-ui/icons` registry icon name) | — | — |
+| `indeterminate` | Checkbox indeterminate state: renders `aria-checked="mixed"` + a dash inside the box (only for `kind="checkbox"` items) | — | — |
+| `kind` | Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back `value`) / `checkbox` (multi-select, `value` is the checked-set array) | — | — |
+| `rel` | Link rel (with `href`) | — | — |
+| `shortcut` | Shortcut hint (e.g. `"Ctrl+N"`): rendered as a trailing kbd + a document-level keydown binding that triggers select on hit | — | — |
+| `target` | Link target (with `href`) | — | — |
+| `value` | Selection value (data-carrier field of the declarative child channel) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Menubar item label content (default slot text); direct child `<oas-menubar-item>`/`<oas-menubar-group>`/`<oas-menubar-divider>` elements recursively become the submenu `children` |
+
+### oas-menubar-group
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `label` | Group title (small secondary text, not clickable) | — | — |
+| `value` | Radio group id (picking inside the group only updates that group's selected value) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Group items: child `<oas-menubar-item>`/`<oas-menubar-group>`/`<oas-menubar-divider>` elements flatten to the same level |
+
+### oas-menubar-divider
+
+| Name | Description |
+| --- | --- |
+| default | Divider data carrier (no attributes; the host parses it as `type: "divider"`) |
 
 > **Event detail note**: the `detail` of `oas-select` is a component-internal object (`value`/`kind`) — **not** a native `Event`, so you can't `preventDefault()` on it or read a native `event.target` from it. To reach the native event, use the outer parameter of your listener (e.g. in `addEventListener('oas-select', (e) => ...)`, `e` is a `CustomEvent` and `e.detail` is the component data).
 

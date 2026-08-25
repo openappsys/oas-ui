@@ -186,6 +186,9 @@ export class OASAnchor extends OASElement {
 
   private _items: AnchorItem[] = []
 
+  /** 子元素通道观察器：light DOM 里 oas-anchor-item 增删或属性/文本变化 → 重渲染 */
+  private childObserver: MutationObserver | null = null
+
   /** Vue/React 会把 items 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
   get items(): AnchorItem[] {
     return this._items
@@ -247,10 +250,10 @@ export class OASAnchor extends OASElement {
   }
 
   /** 真水合：校验 SSR 快照结构（nav 存在）后直接接管，跳过 shadow 重建；
-   *  预置 items 指纹，使 update 跳过列表重建，保留快照中的链接节点（无闪动） */
+   *  预置 items 指纹（含子元素通道的稳定序列化），使 update 跳过列表重建，保留快照中的链接节点（无闪动） */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('nav')) return false
-    this.itemsFingerprint = this.getAttr('items', '[]')
+    this.itemsFingerprint = this.computeFingerprint()
     this.bind()
     return true
   }
@@ -260,9 +263,12 @@ export class OASAnchor extends OASElement {
     if (!nav) return
     // 导航 aria-label locale 驱动（setLocale 切换自动重刷）
     nav.setAttribute('aria-label', this.t('anchor.nav'))
-    const itemsStr = this.getAttr('items', '[]')
-    if (itemsStr !== this.itemsFingerprint) {
-      this.itemsFingerprint = itemsStr
+    // 子元素通道：items 属性未显式设置时监听 light DOM 子元素变化（重连后重建观察器）
+    this.ensureChildObserver()
+    // 双通道指纹：items 属性显式设置时取属性原串，否则用子元素解析结果的稳定序列化
+    const fingerprint = this.computeFingerprint()
+    if (fingerprint !== this.itemsFingerprint) {
+      this.itemsFingerprint = fingerprint
       this.parseItems()
       this.rebuildList()
     } else if (this.flatItems.length === 0) {
@@ -274,6 +280,15 @@ export class OASAnchor extends OASElement {
     this.applyActive()
     this.attachSpy()
     this.applyAffix()
+  }
+
+  /** 双通道指纹：items 属性显式设置时数据驱动优先；否则子元素通道稳定序列化（避免每次 update 重建） */
+  private computeFingerprint(): string {
+    return this.hasAttribute('items') ? this.getAttr('items', '[]') : this.childFingerprint()
+  }
+
+  private childFingerprint(): string {
+    return JSON.stringify(this.parseChildItems())
   }
 
   private syncModifiers(nav: HTMLElement): void {
@@ -597,14 +612,84 @@ export class OASAnchor extends OASElement {
   }
 
   private parseItems(): void {
-    try {
-      const parsed = JSON.parse(this.getAttr('items', '[]'))
-      this._items = Array.isArray(parsed)
-        ? parsed.filter((i): i is AnchorItem => this.isValidItem(i))
-        : []
-    } catch {
-      this._items = []
+    if (this.hasAttribute('items')) {
+      try {
+        const parsed = JSON.parse(this.getAttr('items', '[]'))
+        this._items = Array.isArray(parsed)
+          ? parsed.filter((i): i is AnchorItem => this.isValidItem(i))
+          : []
+      } catch {
+        this._items = []
+      }
+    } else {
+      // 子元素通道：items 属性未显式设置时收敛子元素到同一 _items 模型
+      this._items = this.parseChildItems()
     }
+  }
+
+  // ===== 子元素声明式通道 =====
+
+  /** 子元素通道解析层：把 light DOM 的 `<oas-anchor-item>` 收敛为内部 items 模型（单一渲染路径） */
+  private parseChildItems(): AnchorItem[] {
+    return this.collectAnchorItems(this)
+  }
+
+  /** 递归收集容器内的锚点项载体（宿主 / 项元素通用）：直接子 oas-anchor-item 递归为 children */
+  private collectAnchorItems(container: Element): AnchorItem[] {
+    const items: AnchorItem[] = []
+    for (const child of Array.from(container.children)) {
+      if (child.tagName !== 'OAS-ANCHOR-ITEM') continue
+      items.push(this.childToItem(child))
+    }
+    return items
+  }
+
+  /** 单个子元素 → 内部 item（默认插槽文本为 title，属性对齐 AnchorItem 字段） */
+  private childToItem(el: Element): AnchorItem {
+    const item: AnchorItem = {
+      href: el.getAttribute('href') ?? '',
+      title: this.childTitle(el),
+    }
+    const target = el.getAttribute('target')
+    if (target) item.target = target
+    const offset = el.getAttribute('target-offset')
+    if (offset) {
+      const n = Number.parseFloat(offset)
+      if (Number.isFinite(n)) item.targetOffset = n
+    }
+    const nested = this.collectAnchorItems(el)
+    if (nested.length > 0) item.children = nested
+    return item
+  }
+
+  /** 默认插槽 title 文本：排除嵌套 oas-anchor-item 数据载体 */
+  private childTitle(el: Element): string {
+    let text = ''
+    for (const node of el.childNodes) {
+      if (node instanceof Element && node.tagName === 'OAS-ANCHOR-ITEM') continue
+      text += node.textContent ?? ''
+    }
+    return text.trim()
+  }
+
+  /** 子元素通道观察器：只监听 light DOM 子元素；宿主自身的 active 等属性变化不在此列（走 attributeChanged 正常链路） */
+  private ensureChildObserver(): void {
+    if (this.childObserver) return
+    const observer = new MutationObserver(() => {
+      this.update()
+    })
+    observer.observe(this, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+      attributeFilter: ['href', 'target', 'target-offset', 'slot'],
+    })
+    this.childObserver = observer
+    this.onCleanup(() => {
+      observer.disconnect()
+      this.childObserver = null
+    })
   }
 
   private isValidItem(i: unknown): i is AnchorItem {

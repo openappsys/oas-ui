@@ -4188,6 +4188,91 @@
     "slots": [],
     "unresolved": []
   },
+  "oas-menu-item": {
+    "className": "OASMenuItem",
+    "sourceFile": "packages/ui/src/floating/menu/oas-menu-item.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "loading",
+        "observed": true
+      },
+      {
+        "name": "icon",
+        "observed": true
+      },
+      {
+        "name": "kind",
+        "observed": true
+      },
+      {
+        "name": "danger",
+        "observed": true
+      },
+      {
+        "name": "href",
+        "observed": true
+      },
+      {
+        "name": "target",
+        "observed": true
+      },
+      {
+        "name": "rel",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-menu-group": {
+    "className": "OASMenuGroup",
+    "sourceFile": "packages/ui/src/floating/menu/oas-menu-group.ts",
+    "attrs": [
+      {
+        "name": "label",
+        "observed": true
+      },
+      {
+        "name": "value",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-menu-divider": {
+    "className": "OASMenuDivider",
+    "sourceFile": "packages/ui/src/floating/menu/oas-menu-divider.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
   "oas-dropdown": {
     "className": "OASDropdown",
     "sourceFile": "packages/ui/src/floating/dropdown/oas-dropdown.ts",
@@ -4717,6 +4802,99 @@
     ],
     "unresolved": []
   },
+  "oas-menubar-item": {
+    "className": "OASMenubarItem",
+    "sourceFile": "packages/ui/src/floating/menubar/oas-menubar-item.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "icon",
+        "observed": true
+      },
+      {
+        "name": "kind",
+        "observed": true
+      },
+      {
+        "name": "danger",
+        "observed": true
+      },
+      {
+        "name": "href",
+        "observed": true
+      },
+      {
+        "name": "target",
+        "observed": true
+      },
+      {
+        "name": "rel",
+        "observed": true
+      },
+      {
+        "name": "shortcut",
+        "observed": true
+      },
+      {
+        "name": "access-key",
+        "observed": true
+      },
+      {
+        "name": "indeterminate",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-menubar-group": {
+    "className": "OASMenubarGroup",
+    "sourceFile": "packages/ui/src/floating/menubar/oas-menubar-group.ts",
+    "attrs": [
+      {
+        "name": "label",
+        "observed": true
+      },
+      {
+        "name": "value",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-menubar-divider": {
+    "className": "OASMenubarDivider",
+    "sourceFile": "packages/ui/src/floating/menubar/oas-menubar-divider.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
   "oas-navigation-menu": {
     "className": "OASNavigationMenu",
     "sourceFile": "packages/ui/src/floating/navigation-menu/oas-navigation-menu.ts",
@@ -4794,6 +4972,86 @@
     "slots": [
       {
         "name": "panel-footer"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-navigation-menu-item": {
+    "className": "OASNavigationMenuItem",
+    "sourceFile": "packages/ui/src/floating/navigation-menu/oas-navigation-menu-item.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "observed": true
+      },
+      {
+        "name": "href",
+        "observed": true
+      },
+      {
+        "name": "target",
+        "observed": true
+      },
+      {
+        "name": "rel",
+        "observed": true
+      },
+      {
+        "name": "icon",
+        "observed": true
+      },
+      {
+        "name": "description",
+        "observed": true
+      },
+      {
+        "name": "active",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "loading",
+        "observed": true
+      },
+      {
+        "name": "kind",
+        "observed": true
+      },
+      {
+        "name": "danger",
+        "observed": true
+      },
+      {
+        "name": "sub",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-navigation-menu-group": {
+    "className": "OASNavigationMenuGroup",
+    "sourceFile": "packages/ui/src/floating/navigation-menu/oas-navigation-menu-group.ts",
+    "attrs": [
+      {
+        "name": "label",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
       }
     ],
     "unresolved": []
@@ -5504,6 +5762,32 @@
     "attrs": [
       {
         "name": "id",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-anchor-item": {
+    "className": "OASAnchorItem",
+    "sourceFile": "packages/ui/src/navigation/anchor/oas-anchor-item.ts",
+    "attrs": [
+      {
+        "name": "href",
+        "observed": true
+      },
+      {
+        "name": "target",
+        "observed": true
+      },
+      {
+        "name": "target-offset",
         "observed": true
       }
     ],

@@ -285,6 +285,48 @@
   <oas-anchor items='[{"href":"https://example.com","title":"外部文档","target":"_blank"},{"href":"https://example.com/faq","title":"FAQ 外部页","target":"_blank"}]'></oas-anchor>
 </DemoBlock>
 
+## 子元素声明式通道
+
+除 `items` JSON 外，可用 `<oas-anchor-item>` 子元素声明式书写（`items` 属性**显式设置时优先**）。默认插槽文本为 title；属性对齐 `AnchorItem` 字段：`href`/`target`/`target-offset`；直接子 `<oas-anchor-item>` 递归为 `children` 多级嵌套（层级缩进，同样参与滚动高亮）。子元素增删、属性与文本变化会自动重渲染。
+
+<DemoBlock title="子元素基础">
+  <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
+    <oas-anchor style="width: 160px; flex-shrink: 0" scroll-container="#anchor-sc-child">
+      <oas-anchor-item href="#anchor-child-1">第一章</oas-anchor-item>
+      <oas-anchor-item href="#anchor-child-2">第二章</oas-anchor-item>
+    </oas-anchor>
+    <div id="anchor-sc-child" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <oas-anchor-target id="anchor-child-1"><h4 style="margin-top: 0">第一章</h4></oas-anchor-target>
+      <p style="color: var(--oas-color-text-secondary)">用 oas-anchor-item 声明式书写锚点项；滚动联动高亮与 items 通道一致。</p>
+      <oas-anchor-target id="anchor-child-2"><h4 style="margin-top: var(--oas-space-4)">第二章</h4></oas-anchor-target>
+      <p style="color: var(--oas-color-text-secondary)">点击锚点平滑滚动定位到对应章节。</p>
+    </div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="嵌套与属性（children / target-offset）">
+  <div style="display: flex; gap: 16px; width: 100%; align-items: stretch">
+    <oas-anchor style="width: 160px; flex-shrink: 0" target-offset="80" scroll-container="#anchor-sc-child2">
+      <oas-anchor-item href="#anchor-child2-1">第一章
+        <oas-anchor-item href="#anchor-child2-1-1">1.1 小节</oas-anchor-item>
+        <oas-anchor-item href="#anchor-child2-1-2">1.2 小节</oas-anchor-item>
+      </oas-anchor-item>
+      <oas-anchor-item href="#anchor-child2-2" target-offset="40">第二章</oas-anchor-item>
+    </oas-anchor>
+    <div id="anchor-sc-child2" style="flex: 1; height: 240px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4)">
+      <oas-anchor-target id="anchor-child2-1"><h4 style="margin-top: 0">第一章</h4></oas-anchor-target>
+      <oas-anchor-target id="anchor-child2-1-1"><h5 style="margin-top: var(--oas-space-4)">1.1 小节</h5></oas-anchor-target>
+      <oas-anchor-target id="anchor-child2-1-2"><h5 style="margin-top: var(--oas-space-4)">1.2 小节</h5></oas-anchor-target>
+      <oas-anchor-target id="anchor-child2-2"><h4 style="margin-top: var(--oas-space-4)">第二章</h4></oas-anchor-target>
+      <p style="color: var(--oas-text-secondary, var(--oas-color-text-secondary))">项级 `target-offset` 覆盖全局落点偏移；子项同样参与滚动高亮。</p>
+      <p style="color: var(--oas-color-text-secondary)">滚动到本节底部，左侧高亮会随滚动联动迁移。</p>
+      <p style="color: var(--oas-color-text-secondary)">点击左侧「第二章」可平滑滚动定位到本节。</p>
+      <p style="color: var(--oas-color-text-secondary)">内容撑高以演示滚动联动（容器 240px 高）。</p>
+      <p style="color: var(--oas-color-text-secondary)">再多一段文字确保溢出可滚。</p>
+    </div>
+  </div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -348,6 +390,18 @@ onMounted(() => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 被标记的目标内容（如多级标题） |
+
+### oas-anchor-item
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `href` | 锚点目标：`#id`（或外链地址；外链建议搭配 `target`） | — | — |
+| `target` | 链接 target（如 `_blank`）：设置后不拦截默认行为，交由浏览器打开（自动补 `rel="noopener noreferrer"`） | — | — |
+| `target-offset` | 项级点击落点偏移（px），优先于全局 `target-offset`；非法值忽略 | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 锚点项 title 内容（默认插槽文本；直接子 `oas-anchor-item` 不计入） |
 
 基于滚动容器（默认视口）的 scroll spy；点击平滑滚动定位；`nav` + `aria-label="锚点导航"`，当前项 `aria-current="true"`。
 

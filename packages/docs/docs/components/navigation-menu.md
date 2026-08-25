@@ -96,6 +96,38 @@
   <p class="demo-tip">面板底部出现营销区（仅在有内容时渲染）。</p>
 </DemoBlock>
 
+## 子元素声明式通道
+
+除 `items` JSON 外，可用 `<oas-navigation-menu-item>` 子元素声明式书写（`items` 属性**显式设置时优先**）。默认插槽文本为 label；属性对齐 `NavItem`/`MenuItem` 标量字段（`value`/`href`/`target`/`icon`/`description`/`active`/`disabled` 等）。直接子项默认递归为 `children`（面板内 inline 二级子导航）；带 `sub` 属性的项其子项解析为面板内覆盖式二级导航；`<oas-navigation-menu-group>` 为分组载体（`type: "group"` 语义，组内子项平铺进网格）。子元素增删、属性与文本变化会自动重渲染。
+
+<DemoBlock title="子元素基础">
+  <oas-navigation-menu id="nav-child" delay-duration="0" onoas-select="navChildLog(event)">
+    <oas-navigation-menu-item value="products">产品
+      <oas-navigation-menu-item value="components" href="/components" icon="star" description="30+ 开箱即用组件">组件</oas-navigation-menu-item>
+      <oas-navigation-menu-item value="docs" href="/docs" icon="book" description="完整 API 文档与指南">文档</oas-navigation-menu-item>
+    </oas-navigation-menu-item>
+    <oas-navigation-menu-item value="pricing" href="/pricing">定价</oas-navigation-menu-item>
+    <oas-navigation-menu-item value="about" href="/about">关于</oas-navigation-menu-item>
+  </oas-navigation-menu>
+  <oas-tag id="nav-child-result" type="info">尚未选择</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="二级级联（sub）与分组（group）">
+  <oas-navigation-menu id="nav-child-sub" delay-duration="0">
+    <oas-navigation-menu-item value="products">产品
+      <oas-navigation-menu-group>
+        <oas-navigation-menu-item value="components" href="/components" icon="star" description="30+ 组件">组件</oas-navigation-menu-item>
+        <oas-navigation-menu-item value="themes" href="/themes" icon="heart" description="主题定制与令牌">主题</oas-navigation-menu-item>
+      </oas-navigation-menu-group>
+      <oas-navigation-menu-item value="learn" sub>学习中心
+        <oas-navigation-menu-item value="docs" href="/docs">文档</oas-navigation-menu-item>
+        <oas-navigation-menu-item value="tutorial" href="/tutorial">教程</oas-navigation-menu-item>
+      </oas-navigation-menu-item>
+    </oas-navigation-menu-item>
+  </oas-navigation-menu>
+  <p class="demo-tip">带 `sub` 属性的项：子项渲染为面板内覆盖式二级导航；分组载体内的子项平铺进网格。</p>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -115,6 +147,10 @@ onMounted(() => {
     const tag = document.getElementById('nav-sub-result')
     if (tag) tag.textContent = `已选择：${e.detail.value}`
   }
+  window.navChildLog = (e) => {
+    const tag = document.getElementById('nav-child-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}`
+  }
   const controlled = document.getElementById('nav-controlled')
   const setOpen = (v) => controlled && controlled.setAttribute('value', v)
   document.getElementById('nav-open-a')?.addEventListener('click', () => setOpen('products'))
@@ -125,7 +161,7 @@ onMounted(() => {
 
 ## API
 
-### 属性
+### oas-navigation-menu
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -140,18 +176,45 @@ onMounted(() => {
 | `skip-delay-duration` | 跳过延迟窗口（毫秒），默认 300：关闭后窗口内再次 hover 其他项直接打开跳过延迟 | `string` | `300` |
 | `value` | 受控打开项（顶级触发器 value，空字符串 = 关闭；存在时打开态以属性为准，交互仅派发 `oas-change` 由宿主更新） | `string` | — |
 
-### 事件
-
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 打开项变化，`detail: { value }`（value 为打开的顶级项 value，空字符串 = 关闭） |
 | `oas-select` | 选择某项（顶级叶子链接、面板链接卡或二级子导航链接），`detail: { value }` |
 
-### 插槽
-
 | 名称 | 说明 |
 | --- | --- |
 | `panel-footer` | 面板底部营销位插槽：`<div slot="panel-footer">`（CTA 卡片等）有内容时面板底部渲染插槽容器 |
+
+### oas-navigation-menu-item
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `active` | 当前页标记：链接渲染 `aria-current="page"`（顶级与面板链接均生效） | — | — |
+| `danger` | 破坏性项（红色语义） | — | — |
+| `description` | 链接卡描述：大面板形态下渲染在标题下方 | — | — |
+| `disabled` | 禁用：渲染 aria-disabled，禁点（点击/键盘/hover 均拦截） | — | — |
+| `href` | 链接地址：带 href 的叶子项渲染为 `<a>`（顶级与面板链接卡均生效） | — | — |
+| `icon` | 图标名（`@oas-ui/icons` 注册表图标名）：面板链接卡图标 | — | — |
+| `kind` | 叶子项语义：`radio`（默认）/ `action` / `checkbox` | — | — |
+| `loading` | 加载中：禁点，由数据驱动恢复 | — | — |
+| `rel` | 链接 rel（自定义，如 `noopener`） | — | — |
+| `sub` | 布尔：存在时其直接子项解析为 `sub`（面板内覆盖式二级导航）；否则递归为 `children`（inline 二级子导航） | — | — |
+| `target` | 链接打开方式（如 `_blank`） | — | — |
+| `value` | 选中值（必须）：顶级触发器与面板项的 value，open/select/键盘都依赖 | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 导航项 label 内容（默认插槽文本；直接子项/分组载体不计入） |
+
+### oas-navigation-menu-group
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `label` | 分组标题（可选；本组件面板渲染不展示分组标题，仅承载数据，与 JSON 通道 `type: "group"` 字段一致） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 组内导航项（`oas-navigation-menu-item` 子元素，面板渲染时平铺进网格） |
 
 `NavItem` 字段（继承 `MenuItem`）：
 

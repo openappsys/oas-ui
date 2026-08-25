@@ -1209,3 +1209,154 @@ describe('typeaheadTimer 断开清理', () => {
     vi.useRealTimers()
   })
 })
+
+// ===== 子元素声明式通道（oas-menubar-item / oas-menubar-group / oas-menubar-divider） =====
+// 与 breadcrumb 试点同范式：items 属性显式设置时数据驱动优先，否则解析子元素收敛到同一渲染路径
+
+/** 子元素通道挂载：innerHTML 填 light DOM 子元素后 append（触发 render → 解析），不设 items 属性 */
+function mountMenubarChildren(
+  html: string,
+  attrs: Record<string, string> = {},
+): OASMenubar {
+  const el = document.createElement('oas-menubar') as OASMenubar
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+  el.innerHTML = html
+  document.body.appendChild(el)
+  return el
+}
+
+describe('子元素声明式通道', () => {
+  it('基础：顶级项/子菜单/分组/divider/嵌套子菜单混排解析渲染，子菜单嵌套可展开', () => {
+    const el = mountMenubarChildren(`
+      <oas-menubar-item value="file">文件
+        <oas-menubar-item value="new">新建</oas-menubar-item>
+        <oas-menubar-group label="最近">
+          <oas-menubar-item value="recent-a">项目A</oas-menubar-item>
+        </oas-menubar-group>
+        <oas-menubar-divider></oas-menubar-divider>
+        <oas-menubar-item value="quit">退出</oas-menubar-item>
+      </oas-menubar-item>
+      <oas-menubar-item value="edit">编辑
+        <oas-menubar-item value="zoom">缩放
+          <oas-menubar-item value="zoom-in">放大</oas-menubar-item>
+        </oas-menubar-item>
+      </oas-menubar-item>
+    `)
+    expect(topItems(el).length).toBe(2)
+    expect(topItems(el)[0]!.dataset.value).toBe('file')
+    expect(topItems(el)[0]!.getAttribute('role')).toBe('menuitem')
+    topItems(el)[0]!.click()
+    expect(openSubmenus(el).length).toBe(1)
+    // 子菜单内：叶子项/组标题/分隔线齐备（作用域限定 bar——hamburger 面板内是同一份 items 副本）
+    const fileSub = el.shadowRoot!.querySelector(
+      '[part="bar"] .top-wrap[data-value="file"] > [part="submenu"]',
+    )!
+    expect(fileSub.querySelector('.group-label')).not.toBeNull()
+    expect(fileSub.querySelectorAll('[part="divider"]').length).toBe(1)
+    const newItem = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="item"][data-value="new"]',
+    )!
+    expect(newItem.getAttribute('role')).toBe('menuitemradio')
+    // 嵌套子菜单：点「缩放」展开级联
+    el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="zoom"]')!.click()
+    expect(openSubmenus(el).length).toBe(2)
+    const zoomIn = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="item"][data-value="zoom-in"]',
+    )!
+    expect(zoomIn).not.toBeNull()
+    zoomIn.click()
+    expect(el.getAttribute('value')).toBe('zoom-in')
+  })
+
+  it('items 属性显式设置时优先（子元素被忽略）', () => {
+    const el = mountMenubarChildren(
+      `<oas-menubar-item value="home">首页</oas-menubar-item>`,
+      { items: JSON.stringify([{ label: '数据项', value: 'data' }]) },
+    )
+    expect(topItems(el).length).toBe(1)
+    expect(topItems(el)[0]!.dataset.value).toBe('data')
+    expect(topItems(el)[0]!.textContent).toBe('数据项')
+    expect(el.shadowRoot!.querySelector('[part="top-item"][data-value="home"]')).toBeNull()
+  })
+
+  it('属性映射：shortcut 字段映射（kbd 渲染 + document 快捷键触发）、checkbox indeterminate、danger、href', () => {
+    const el = mountMenubarChildren(`
+      <oas-menubar-item value="edit">编辑
+        <oas-menubar-item value="save" shortcut="Ctrl+S">保存</oas-menubar-item>
+        <oas-menubar-item value="all" kind="checkbox" indeterminate>全选</oas-menubar-item>
+        <oas-menubar-item value="grid" kind="checkbox">网格</oas-menubar-item>
+        <oas-menubar-item value="del" danger>删除</oas-menubar-item>
+        <oas-menubar-item value="docs" href="/guide">文档</oas-menubar-item>
+      </oas-menubar-item>
+    `)
+    const root = el.shadowRoot!
+    // shortcut：kbd 提示 + document 级 keydown 触发 select
+    const save = root.querySelector<HTMLElement>('[part="item"][data-value="save"]')!
+    expect(save.querySelector('.shortcut')!.textContent).toBe('Ctrl+S')
+    const events: unknown[] = []
+    el.addEventListener('oas-select', (e: Event) => events.push((e as CustomEvent).detail))
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true }))
+    expect(events).toEqual([{ value: 'save' }])
+    // checkbox indeterminate：aria-checked=mixed + dataset.mixed
+    const all = root.querySelector<HTMLElement>('[part="item"][data-value="all"]')!
+    expect(all.getAttribute('role')).toBe('menuitemcheckbox')
+    expect(all.getAttribute('aria-checked')).toBe('mixed')
+    expect(all.dataset.mixed).toBe('true')
+    // checkbox 普通勾选：点击写回数组
+    const grid = root.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+    expect(grid.getAttribute('role')).toBe('menuitemcheckbox')
+    grid.click()
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['grid'])
+    // danger 红字类
+    expect(
+      root.querySelector('[part="item"][data-value="del"]')!.classList.contains('danger'),
+    ).toBe(true)
+    // href 链接项渲染为 <a>
+    const docs = root.querySelector<HTMLAnchorElement>('[part="item"][data-value="docs"]')!
+    expect(docs.tagName).toBe('A')
+    expect(docs.getAttribute('href')).toBe('/guide')
+  })
+
+  it('MutationObserver：运行时 append oas-menubar-item 后菜单栏刷新出现新顶级项', async () => {
+    const el = mountMenubarChildren(`<oas-menubar-item value="file">文件</oas-menubar-item>`)
+    expect(topItems(el).length).toBe(1)
+    const item = document.createElement('oas-menubar-item')
+    item.setAttribute('value', 'edit')
+    item.textContent = '编辑'
+    el.appendChild(item)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(topItems(el).length).toBe(2)
+    expect(
+      el.shadowRoot!.querySelector('[part="top-item"][data-value="edit"]'),
+    ).not.toBeNull()
+  })
+
+  it('value 勾选语义：radio 组单选 + checkbox 数组（子元素通道下与 items 通道一致）', () => {
+    const el = mountMenubarChildren(
+      `
+      <oas-menubar-item value="view">视图
+        <oas-menubar-group label="模式" value="mode">
+          <oas-menubar-item value="preview">预览</oas-menubar-item>
+          <oas-menubar-item value="edit">编辑</oas-menubar-item>
+        </oas-menubar-group>
+        <oas-menubar-item value="grid" kind="checkbox">网格</oas-menubar-item>
+      </oas-menubar-item>
+    `,
+      { value: '{"mode":"preview"}' },
+    )
+    const root = el.shadowRoot!
+    const preview = root.querySelector<HTMLElement>('[part="item"][data-value="preview"]')!
+    const edit = root.querySelector<HTMLElement>('[part="item"][data-value="edit"]')!
+    expect(preview.getAttribute('aria-checked')).toBe('true')
+    expect(edit.getAttribute('aria-checked')).toBe('false')
+    edit.click()
+    expect(el.getAttribute('value')).toBe('{"mode":"edit"}')
+    // menubar value 变化走 syncSelection 增量同步（不重建 DOM），节点直接读
+    expect(edit.getAttribute('aria-checked')).toBe('true')
+    expect(preview.getAttribute('aria-checked')).toBe('false')
+    // checkbox 数组：初始空集，点击写回数组
+    const grid = root.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+    grid.click()
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['grid'])
+  })
+})
