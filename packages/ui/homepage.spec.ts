@@ -93,6 +93,28 @@ test.describe('官网首页（重设计版）', () => {
     await expect(cta.locator('oas-button')).toHaveCount(2, { timeout: 5000 })
   })
 
+  // 回归：性能速览与「三行代码」屏之间曾缺渐变分隔线（home-cta 两个伪元素被
+  // 网格/光晕占用，挂不了 .home-section::before，改显式 .home-divider 元素承载）
+  test('各屏分隔光带齐全：含性能速览→三行代码交界（.home-divider 回归）', async ({
+    page,
+  }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    const divider = page.locator('.home-cta > .home-divider')
+    await expect(divider).toBeAttached()
+    await expect(divider).toHaveCSS('height', '1px')
+    // 位置：贴 home-cta 顶部（与其他屏 .home-section::before 的 top:0 同位）
+    const box = await divider.boundingBox()
+    const ctaTop = await page.evaluate(
+      () => document.querySelector('.home-cta')!.getBoundingClientRect().top + window.scrollY,
+    )
+    expect(Math.abs(box!.y - ctaTop), '分隔线应贴 CTA 屏顶').toBeLessThan(1)
+    // 渐变线本体非透明（品牌蓝渐变 + 光晕）
+    const bg = await divider.evaluate((el) => getComputedStyle(el).backgroundImage)
+    expect(bg).toContain('linear-gradient')
+    const shadow = await divider.evaluate((el) => getComputedStyle(el).boxShadow)
+    expect(shadow).not.toBe('none')
+  })
+
   test('英文首页渲染 + 中英切换链路', async ({ page }) => {
     await page.goto('/en/', { waitUntil: 'domcontentloaded' })
     const hero = page.locator('.home-hero')

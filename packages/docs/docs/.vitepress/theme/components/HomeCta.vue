@@ -1,5 +1,8 @@
 <template>
   <section class="home-cta">
+    <!-- 与其他屏的 .home-section::before 分隔光带同款同位（本节 ::before 被
+         网格背景占用，两个伪元素均有职，故用显式元素承载分隔线） -->
+    <div class="home-divider" aria-hidden="true"></div>
     <div class="hcta-wrap">
       <div class="hcta-card home-reveal">
       <div class="hcta-grid">
