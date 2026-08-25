@@ -202,8 +202,8 @@
 <DemoBlock title="oas-splitter + sidebar">
   <div style="height: 280px; width: 100%">
     <oas-splitter percent="22" min="12" max="45">
-      <oas-sidebar slot="left" style="--oas-sidebar-width: 100%" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据","value":"data","icon":"📊"},{"label":"设置","value":"s","icon":"⚙️"}]'></oas-sidebar>
-      <div slot="right" style="padding: var(--oas-space-4)">拖拽中间分割条调整侧栏宽度（侧栏以 `--oas-sidebar-width: 100%` 填满左面板）。</div>
+      <oas-sidebar slot="left" width="100%" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据","value":"data","icon":"📊"},{"label":"设置","value":"s","icon":"⚙️"}]'></oas-sidebar>
+      <div slot="right" style="padding: var(--oas-space-4)">拖拽中间分割条调整侧栏宽度（侧栏以 `width="100%"` 填满左面板，宽度实时跟随）。</div>
     </oas-splitter>
   </div>
 </DemoBlock>
