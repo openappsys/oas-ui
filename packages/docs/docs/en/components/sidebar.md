@@ -81,6 +81,19 @@ On narrow screens the sidebar automatically becomes an overlay drawer: the float
   </div>
 </DemoBlock>
 
+## Groups
+
+Menu `items` support an optional `group` field: consecutive items in the same group get a group title rendered before the group's first item (display-only, non-clickable). Group titles are hidden in the collapsed icon strip and shown in the mobile drawer.
+
+<DemoBlock title="Groups (items.group)">
+  <div style="height: 300px; width: 100%; display: flex">
+    <oas-sidebar items='[{"label":"Dashboard","value":"dash","icon":"📊","group":"Overview"},{"label":"Live Trends","value":"trend","icon":"📈","group":"Overview"},{"label":"Orders","value":"orders","icon":"📦","group":"Business"},{"label":"Products","value":"goods","icon":"🛍️","group":"Business"},{"label":"Users","value":"users","icon":"👥","group":"Business"},{"label":"Profile","value":"me","icon":"👤"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      “Overview” and “Business” are group titles; “Profile” has no `group` field and renders flat.
+    </div>
+  </div>
+</DemoBlock>
+
 ## Custom width
 
 The `width` attribute overrides the expanded width (defaults to the `--oas-sidebar-width` token); the collapsed state still narrows to an icon strip.
@@ -128,7 +141,7 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
 | `active` | Value of the currently-highlighted menu item (controlled: set/clear immediately re-renders highlight) | `string` | — |
 | `collapsed` | Controlled collapse to an icon strip (present means collapsed) | `boolean` | — |
 | `drawer-open` | Mobile drawer open state (controlled: set opens, clear closes; auto-removed when breakpoint returns to desktop) | `boolean` | — |
-| `items` | Menu items JSON `[{label, value, icon?}]` | `SidebarItem[] \| string` | `[]` |
+| `items` | Menu items JSON [{label, value, icon?, group?}] (group: renders a display-only group title before each group’s first item; hidden when collapsed) | `SidebarItem[] \| string` | `[]` |
 | `mobile-breakpoint` | Mobile breakpoint (px); narrower than this becomes an overlay drawer | — | — |
 | `width` | Expanded width; defaults to the `--oas-sidebar-width` token | — | — |
 

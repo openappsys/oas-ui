@@ -1341,7 +1341,7 @@
   "oas-sidebar": {
     "attrs": {
       "collapsed": "Controlled collapse to an icon strip (present means collapsed)",
-      "items": "Menu items JSON `[{label, value, icon?}]`",
+      "items": "Menu items JSON [{label, value, icon?, group?}] (group: renders a display-only group title before each group’s first item; hidden when collapsed)",
       "mobile-breakpoint": "Mobile breakpoint (px); narrower than this becomes an overlay drawer",
       "width": "Expanded width; defaults to the `--oas-sidebar-width` token",
       "active": "Value of the currently-highlighted menu item (controlled: set/clear immediately re-renders highlight)",

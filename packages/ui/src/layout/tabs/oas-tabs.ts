@@ -170,7 +170,7 @@ a.tab[aria-selected='true'] {
   box-shadow: var(--oas-focus-ring);
 }
 
-/* tab 徽标：数字/文本小圆角标签 */
+/* tab 徽标：数字/文本小圆角标签（颜色走 --oas-tabs-badge-bg/-color 开口，默认 danger） */
 .tab-badge {
   display: inline-flex;
   align-items: center;
@@ -180,8 +180,8 @@ a.tab[aria-selected='true'] {
   box-sizing: border-box;
   padding: 0 var(--oas-space-1);
   border-radius: 8px;
-  background: var(--oas-color-danger);
-  color: var(--oas-color-text-on-danger);
+  background: var(--oas-tabs-badge-bg, var(--oas-color-danger));
+  color: var(--oas-tabs-badge-color, var(--oas-color-text-on-danger));
   font-size: var(--oas-font-size-xs);
   line-height: 16px;
   white-space: nowrap;
@@ -940,11 +940,12 @@ export class OASTabs extends OASElement {
       // icon-only：纯图标标签不渲染 label（文字）
       if (!iconOnly) btn.appendChild(label)
 
-      // 徽标：数字或文本，紧邻标题
+      // 徽标：数字或文本，紧邻标题（part="badge" 供宿主 ::part 定制；色值走 --oas-tabs-badge-* 变量）
       const badge = panel.getAttribute('badge')
       if (badge) {
         const badgeEl = document.createElement('span')
         badgeEl.className = 'tab-badge'
+        badgeEl.setAttribute('part', 'badge')
         badgeEl.textContent = badge
         btn.appendChild(badgeEl)
       }
