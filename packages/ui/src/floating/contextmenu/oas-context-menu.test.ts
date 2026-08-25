@@ -284,3 +284,160 @@ describe('OASContextMenu', () => {
     })
   })
 })
+
+// —— 子元素声明式通道（oas-context-menu-item / oas-context-menu-group / oas-context-menu-divider）——
+// 与 menu 子元素通道同范式：items 属性显式设置时数据驱动优先，否则解析子元素收敛到同一渲染路径。
+// 载体元素直接继承 menu 系数据载体（display:none + observedAttributes + render），宿主零重复实现。
+
+/** 子元素通道挂载：light DOM 填右键区域 + 数据载体（不设 items 属性） */
+function mountContextChild(html: string, attrs: Record<string, string> = {}): OASContextMenu {
+  const el = document.createElement('oas-context-menu') as OASContextMenu
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+  el.innerHTML = html
+  document.body.appendChild(el)
+  return el
+}
+
+describe('OASContextMenu 子元素声明式通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.useRealTimers()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.useRealTimers()
+  })
+
+  it('基础：普通项/分组/divider/嵌套子菜单混排解析渲染，右键打开后菜单项齐全、点击选中事件 detail 与 items 通道一致', async () => {
+    const el = mountContextChild(`
+      <div>右键区域</div>
+      <oas-context-menu-group label="剪贴板">
+        <oas-context-menu-item value="copy">复制</oas-context-menu-item>
+        <oas-context-menu-item value="paste">粘贴</oas-context-menu-item>
+      </oas-context-menu-group>
+      <oas-context-menu-divider></oas-context-menu-divider>
+      <oas-context-menu-item value="edit">编辑
+        <oas-context-menu-item value="select-all">全选</oas-context-menu-item>
+      </oas-context-menu-item>
+    `)
+    el.querySelector('div')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
+    await Promise.resolve()
+    const root = innerMenuRoot(el)
+    // 分组标题 + 组内子项 + divider + 嵌套项（顶层 item = 复制/粘贴/编辑）
+    expect(root.querySelector<HTMLElement>('[part="group"]')!.textContent).toBe('剪贴板')
+    const menuChildren = [...root.querySelector('.menu')!.children]
+    expect(menuChildren.filter((c) => c.classList.contains('item')).length).toBe(3)
+    expect(menuChildren.filter((c) => c.classList.contains('divider')).length).toBe(1)
+    // 嵌套子菜单 hover 展开出子项（与 items 通道一致）
+    const edit = root.querySelector<HTMLElement>('[part="item"][data-value="edit"]')!
+    expect(edit.getAttribute('role')).toBe('menuitem')
+    edit.dispatchEvent(new MouseEvent('mouseenter'))
+    expect(edit.getAttribute('aria-expanded')).toBe('true')
+    expect(root.querySelector('[part="item"][data-value="select-all"]')).not.toBeNull()
+    // 点击选中事件 detail 与 items 通道一致（{ value } + 关闭）
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(root.querySelector('[part="item"][data-value="copy"]') as HTMLElement).click()
+    expect(detail).toEqual({ value: 'copy' })
+    expect(anchor(el).hasAttribute('hidden')).toBe(true)
+  })
+
+  it('items 属性显式设置时优先（子元素被忽略）', async () => {
+    const el = mountContextChild(
+      `<div>右键区域</div><oas-context-menu-item value="home">首页</oas-context-menu-item>`,
+      { items: JSON.stringify([{ label: '数据项', value: 'data' }]) },
+    )
+    el.querySelector('div')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
+    await Promise.resolve()
+    const labels = [...innerMenuRoot(el).querySelectorAll('[part="item"] .label')].map(
+      (l) => l.textContent,
+    )
+    expect(labels).toEqual(['数据项'])
+    expect(innerMenuRoot(el).querySelector('[data-value="home"]')).toBeNull()
+  })
+
+  it('属性映射：checkbox 勾选 / danger 红字 / href 链接项 / loading / disabled', async () => {
+    const el = mountContextChild(`
+      <div>右键区域</div>
+      <oas-context-menu-item value="grid" kind="checkbox">网格线</oas-context-menu-item>
+      <oas-context-menu-item value="del" danger>删除</oas-context-menu-item>
+      <oas-context-menu-item value="docs" href="/guide" target="_blank" rel="noopener">文档</oas-context-menu-item>
+      <oas-context-menu-item value="save" loading>加载中</oas-context-menu-item>
+      <oas-context-menu-item value="off" disabled>禁用</oas-context-menu-item>
+    `)
+    el.querySelector('div')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
+    await Promise.resolve()
+    const root = innerMenuRoot(el)
+    // checkbox：menuitemcheckbox + 方块勾选框
+    const grid = root.querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+    expect(grid.getAttribute('role')).toBe('menuitemcheckbox')
+    expect(grid.querySelector('.check--box')).not.toBeNull()
+    // danger 红字类
+    expect(root.querySelector('[data-value="del"]')!.classList.contains('danger')).toBe(true)
+    // href 链接项渲染为 <a>
+    const docs = root.querySelector<HTMLAnchorElement>('[part="item"][data-value="docs"]')!
+    expect(docs.tagName).toBe('A')
+    expect(docs.getAttribute('href')).toBe('/guide')
+    expect(docs.getAttribute('target')).toBe('_blank')
+    expect(docs.getAttribute('rel')).toBe('noopener')
+    // loading：spinner + aria-busy + 禁点
+    const save = root.querySelector<HTMLElement>('[part="item"][data-value="save"]')!
+    expect(save.classList.contains('loading')).toBe(true)
+    expect(save.getAttribute('aria-busy')).toBe('true')
+    expect(save.getAttribute('aria-disabled')).toBe('true')
+    expect(save.querySelector('.spin')).not.toBeNull()
+    // disabled 禁点
+    const off = root.querySelector<HTMLElement>('[part="item"][data-value="off"]')!
+    expect(off.getAttribute('aria-disabled')).toBe('true')
+    // loading/disabled 点击不派发 select
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    save.click()
+    off.click()
+    expect(detail).toBeUndefined()
+    // checkbox 点击：勾选写回内层菜单 value（数组），宿主转发 { value }（与 items 通道一致）
+    grid.click()
+    expect(detail).toMatchObject({ value: 'grid' })
+    expect(
+      innerMenuRoot(el).querySelector<HTMLElement>('[part="item"][data-value="grid"]')!.getAttribute(
+        'aria-checked',
+      ),
+    ).toBe('true')
+    // contextmenu 宿主不写回 value（既有语义，仅转发事件）
+    expect(el.getAttribute('value')).toBeNull()
+  })
+
+  it('MutationObserver：运行时 append oas-context-menu-item 后菜单刷新出现新项', async () => {
+    const el = mountContextChild(`
+      <div>右键区域</div>
+      <oas-context-menu-item value="copy">复制</oas-context-menu-item>
+    `)
+    el.querySelector('div')!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
+    await Promise.resolve()
+    expect(innerMenuRoot(el).querySelectorAll('[part="item"]').length).toBe(1)
+    const item = document.createElement('oas-context-menu-item')
+    item.setAttribute('value', 'paste')
+    item.textContent = '粘贴'
+    el.appendChild(item)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(innerMenuRoot(el).querySelectorAll('[part="item"]').length).toBe(2)
+    expect(innerMenuRoot(el).querySelector('[part="item"][data-value="paste"]')).not.toBeNull()
+  })
+
+  it('右键打开定位 + Escape 关闭不受影响（子元素通道下同样走定位/Esc 关闭路径）', async () => {
+    const el = mountContextChild(`
+      <div>右键区域</div>
+      <oas-context-menu-item value="copy">复制</oas-context-menu-item>
+    `)
+    el.querySelector('div')!.dispatchEvent(
+      new MouseEvent('contextmenu', { bubbles: true, clientX: 120, clientY: 80 }),
+    )
+    await Promise.resolve()
+    expect(anchor(el).hasAttribute('hidden')).toBe(false)
+    expect(anchor(el).getAttribute('style')).toContain('120px')
+    expect(anchor(el).getAttribute('style')).toContain('80px')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(anchor(el).hasAttribute('hidden')).toBe(true)
+  })
+})

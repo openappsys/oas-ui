@@ -78,6 +78,40 @@ The menu is fixed-positioned; scrolling the page or an inner scroll container cl
   </div>
 </DemoBlock>
 
+## Declarative child-element channel
+
+Besides the `items` JSON, you can declare the menu with `<oas-context-menu-item>` / `<oas-context-menu-group>` / `<oas-context-menu-divider>` child elements (the `items` attribute **wins when set explicitly**; otherwise children are parsed and converge to the same rendering path). Default slot text becomes the label; attributes map to the `items` fields: `value` / `disabled` / `loading` / `icon` / `kind` / `danger` / `href` / `target` / `rel`. Nested elements inside an `<oas-context-menu-item>` become cascading submenus recursively; an `<oas-context-menu-group>`'s `label` is the group title (`value` can act as a radio-group id) and its children flatten to the same level. Adding/removing children or changing their attributes/text re-renders automatically (MutationObserver).
+
+<DemoBlock title="Declarative children (group / divider / nested / danger / href)">
+  <oas-context-menu id="cm-decl" onoas-select="cmDeclLog(event)">
+    <div style="width: 260px; height: 140px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">Right-click here to see the declarative menu</div>
+    <oas-context-menu-group label="Clipboard">
+      <oas-context-menu-item value="copy">Copy</oas-context-menu-item>
+      <oas-context-menu-item value="paste">Paste</oas-context-menu-item>
+    </oas-context-menu-group>
+    <oas-context-menu-divider></oas-context-menu-divider>
+    <oas-context-menu-item value="new">New
+      <oas-context-menu-item value="new-file">File</oas-context-menu-item>
+      <oas-context-menu-item value="new-folder">Folder</oas-context-menu-item>
+    </oas-context-menu-item>
+    <oas-context-menu-item value="docs" href="/components/" target="_blank" rel="noopener">Component docs</oas-context-menu-item>
+    <oas-context-menu-divider></oas-context-menu-divider>
+    <oas-context-menu-item value="delete" danger>Delete</oas-context-menu-item>
+  </oas-context-menu>
+  <oas-tag id="cm-decl-result" type="info">Nothing selected</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="Dynamic add/remove (MutationObserver auto refresh)">
+  <oas-space size="small" style="margin-bottom: 8px">
+    <oas-button size="small" onclick="cmDeclAdd()">Append an item</oas-button>
+  </oas-space>
+  <oas-context-menu id="cm-decl-dyn">
+    <div style="width: 260px; height: 100px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">Right-click me; click the button above to append an item</div>
+    <oas-context-menu-item value="copy">Copy</oas-context-menu-item>
+    <oas-context-menu-item value="paste">Paste</oas-context-menu-item>
+  </oas-context-menu>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -99,12 +133,28 @@ onMounted(() => {
     e?.stopPropagation()
     cm.close()
   }
+
+  // Declarative child-element channel: show selection + append an item at runtime (MutationObserver re-renders)
+  window.cmDeclLog = (e) => {
+    const tag = document.getElementById('cm-decl-result')
+    if (tag) tag.textContent = `Selected: ${e.detail.value} (declarative child channel)`
+  }
+  const declDyn = document.getElementById('cm-decl-dyn')
+  if (declDyn) {
+    window.cmDeclAdd = () => {
+      const n = declDyn.querySelectorAll('oas-context-menu-item').length
+      const item = document.createElement('oas-context-menu-item')
+      item.setAttribute('value', `extra-${n}`)
+      item.textContent = `Dynamic item ${n}`
+      declDyn.appendChild(item)
+    }
+  }
 })
 </script>
 
 ## API
 
-### Attributes
+### oas-context-menu
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -113,17 +163,48 @@ onMounted(() => {
 | `long-press-delay` | Long-press duration in ms for touch trigger (default 500) | `string` | `500` |
 | `open` | Controlled open state (writable externally) | `boolean` | — |
 
-### Events
-
 | Event | Description |
 | --- | --- |
 | `oas-open-change` | Menu open state changed, `detail: { open: boolean }` |
 | `oas-select` | An item was selected, `detail: { value }` |
 
-### Slots
-
 | Name | Description |
 | --- | --- |
 | default | — |
+
+### oas-context-menu-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `danger` | Destructive item: red semantics (delete/exit etc.) | — | — |
+| `disabled` | Disable this item | — | — |
+| `href` | Link address: with href the item renders as a native `<a>` (real navigation + still emits `oas-select`) | — | — |
+| `icon` | Leading icon (icon name from the `@oas-ui/icons` registry) | — | — |
+| `kind` | Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back value) / `checkbox` (multi-select, value is the checked-set array) | — | — |
+| `loading` | Loading: renders a spinner and blocks clicks; recovers when data-driven | — | — |
+| `rel` | Link rel (with href) | — | — |
+| `target` | Link target (with href) | — | — |
+| `value` | Selected value (data-carrier field of the declarative child-element channel) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Context-menu item label content (default slot text); direct child `<oas-context-menu-item>` elements recursively become the submenu `children` |
+
+### oas-context-menu-group
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `label` | Group title (small, secondary color, not clickable) | — | — |
+| `value` | Radio-group id (selecting inside the group only updates that group's value) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Group items: child `<oas-context-menu-item>` elements flatten to the same level |
+
+### oas-context-menu-divider
+
+| Name | Description |
+| --- | --- |
+| default | Divider data carrier (no attributes; the host parses it as `type: "divider"`) |
 
 Opens at the mouse position; closes on Esc / outside click / selection; `role="menu"` + `menuitem`.

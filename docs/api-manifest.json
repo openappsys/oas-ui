@@ -4379,6 +4379,33 @@
     ],
     "unresolved": []
   },
+  "oas-dropdown-item": {
+    "className": "OASDropdownItem",
+    "sourceFile": "packages/ui/src/floating/dropdown/oas-dropdown-item.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-dropdown-group": {
+    "className": "OASDropdownGroup",
+    "sourceFile": "packages/ui/src/floating/dropdown/oas-dropdown-group.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-dropdown-divider": {
+    "className": "OASDropdownDivider",
+    "sourceFile": "packages/ui/src/floating/dropdown/oas-dropdown-divider.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
   "oas-context-menu": {
     "className": "OASContextMenu",
     "sourceFile": "packages/ui/src/floating/contextmenu/oas-context-menu.ts",
@@ -4423,6 +4450,33 @@
         "name": ""
       }
     ],
+    "unresolved": []
+  },
+  "oas-context-menu-item": {
+    "className": "OASContextMenuItem",
+    "sourceFile": "packages/ui/src/floating/contextmenu/oas-context-menu-item.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-context-menu-group": {
+    "className": "OASContextMenuGroup",
+    "sourceFile": "packages/ui/src/floating/contextmenu/oas-context-menu-group.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [],
+    "unresolved": []
+  },
+  "oas-context-menu-divider": {
+    "className": "OASContextMenuDivider",
+    "sourceFile": "packages/ui/src/floating/contextmenu/oas-context-menu-divider.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [],
     "unresolved": []
   },
   "oas-hover-card": {
@@ -4701,6 +4755,60 @@
       },
       {
         "name": "footer"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-command-item": {
+    "className": "OASCommandItem",
+    "sourceFile": "packages/ui/src/floating/command/oas-command-item.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "observed": true
+      },
+      {
+        "name": "group",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "icon",
+        "observed": true
+      },
+      {
+        "name": "shortcut",
+        "observed": true
+      },
+      {
+        "name": "description",
+        "observed": true
+      },
+      {
+        "name": "view",
+        "observed": true
+      },
+      {
+        "name": "force-mount",
+        "observed": true
+      },
+      {
+        "name": "separator",
+        "observed": true
+      },
+      {
+        "name": "keywords",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
       }
     ],
     "unresolved": []

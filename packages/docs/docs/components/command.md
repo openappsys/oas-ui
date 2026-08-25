@@ -117,6 +117,28 @@
   </oas-space>
 </DemoBlock>
 
+## 子元素声明式通道
+
+除 `items` JSON 外，可用 `<oas-command-item>` 子元素声明式书写命令（`items` 属性**显式设置时优先**，未设置时解析子元素收敛到同一渲染路径）。默认插槽文本为 label，属性对齐 `items` 字段：`value` / `group` / `disabled` / `icon` / `shortcut` / `description` / `view` / `force-mount` / `separator`；`keywords` 为逗号分隔字符串参与搜索匹配。`<oas-command-item>` 内直接嵌套子元素即递归为 `page` 子页。子元素增删、属性与文本变化会自动重渲染（MutationObserver）。
+
+<DemoBlock title="子元素声明式（分组 / separator / shortcut / 嵌套子页）">
+  <oas-command id="command-decl" hotkey="false" onoas-select="commandDeclLog(event)">
+    <oas-command-item value="new-file" group="文件" shortcut="meta+n" description="创建空白文档">新建文件</oas-command-item>
+    <oas-command-item value="open-file" group="文件" shortcut="ctrl+o" description="打开最近文档">打开文件</oas-command-item>
+    <oas-command-item value="sep1" separator>分隔</oas-command-item>
+    <oas-command-item value="theme">更改主题
+      <oas-command-item value="light">浅色</oas-command-item>
+      <oas-command-item value="dark">深色</oas-command-item>
+    </oas-command-item>
+    <oas-command-item value="undo" group="编辑" shortcut="ctrl+z">撤销</oas-command-item>
+  </oas-command>
+  <oas-space size="small">
+    <oas-button id="command-decl-btn" type="primary">打开（items 未设置，走子元素通道）</oas-button>
+    <oas-button id="command-decl-add" type="default">动态追加一项</oas-button>
+    <oas-tag id="command-decl-result" type="info">尚未选择</oas-tag>
+  </oas-space>
+</DemoBlock>
+
 ## 最近使用
 
 `recent` 开启最近使用：选中项按最近优先置顶（去重，上限 10 条）；`recent-storage-key` 启用 localStorage 持久化（跨实例恢复）。本 demo 选中后模拟「命令集变化」切换 items，重开可见「最近使用」组。
@@ -361,6 +383,25 @@ onMounted(() => {
     if (tag) tag.textContent = `已选择：${e.detail.value}`
   })
 
+  // 子元素声明式通道：打开 + 动态追加（MutationObserver 自动刷新）
+  const declEl = document.getElementById('command-decl')
+  if (declEl) {
+    window.commandDeclLog = (e) => {
+      const tag = document.getElementById('command-decl-result')
+      if (tag) tag.textContent = `已选择：${e.detail.value}`
+    }
+    document.getElementById('command-decl-add')?.addEventListener('click', () => {
+      const n = declEl.children.length + 1
+      const item = document.createElement('oas-command-item')
+      item.setAttribute('value', `dyn-${n}`)
+      item.textContent = `动态命令 ${n}`
+      declEl.appendChild(item)
+    })
+  }
+  document.getElementById('command-decl-btn')?.addEventListener('click', () => {
+    document.getElementById('command-decl')?.setAttribute('open', '')
+  })
+
   // 最近使用：选中后模拟命令集变化，重开可见「最近使用」组
   const recentEl = document.getElementById('command-recent')
   const RECENT_NEXT = [
@@ -483,7 +524,7 @@ onMounted(() => {
 </script>
 ## API
 
-### 属性
+### oas-command
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -503,8 +544,6 @@ onMounted(() => {
 | `value` | 搜索词（受控；宿主监听 `oas-input` 回写实现双向） | `string` | — |
 | `virtual` | 虚拟滚动（大数据量窗口渲染，复用 oas-virtual-list） | `boolean` | — |
 
-### 事件
-
 | 事件 | 说明 |
 | --- | --- |
 | `oas-active` | 高亮项变化，`detail: { value }`（受控 selected 的回写依据） |
@@ -515,12 +554,29 @@ onMounted(() => {
 | `oas-select` | 执行某项，`detail: { value }`；多选确认 `detail: { values }` |
 | `oas-view-change` | 视图进出，`detail: { view, title }`（退出时 `view: ''`） |
 
-### 插槽
-
 | 名称 | 说明 |
 | --- | --- |
 | `empty` | 空结果自定义渲染（组件内用 `el.query` 读当前搜索词，如「创建 xyz」入口） |
 | `footer` | 底部自定义条（默认显示 `↑↓ 选择 / ↵ 执行 / esc 关闭` 提示） |
+
+### oas-command-item
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `description` | 副标题（description） | — | — |
+| `disabled` | 禁用该项（Enter/点击不可选，方向键跳过） | — | — |
+| `force-mount` | 忽略过滤强制显示（创建型入口） | — | — |
+| `group` | 分组名（可选），同组项渲染分组标题 | — | — |
+| `icon` | 项图标：SVG path d 字符串或完整 `<svg>` 标记 | — | — |
+| `keywords` | 搜索关键词（逗号分隔字符串，trim 去空后解析为 string[]），参与 label 之外的匹配 | — | — |
+| `separator` | 渲染为分隔行（不可导航/不可选中） | — | — |
+| `shortcut` | 快捷键标注（右对齐 kbd），如 `meta+p` / `ctrl+shift+s` | — | — |
+| `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
+| `view` | 视图插槽名：选中进入 `<slot name="view-{view}">`（面板内嵌视图） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 命令项 label 内容（默认插槽文本）；直接子元素 `<oas-command-item>` 递归为 `page` 子页 |
 
 `CommandItem` 字段：
 

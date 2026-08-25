@@ -527,6 +527,40 @@
     },
     "slots": {}
   },
+  "oas-context-menu-divider": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "分隔线数据载体（无属性，宿主解析为 `type: \"divider\"`）"
+    }
+  },
+  "oas-context-menu-group": {
+    "attrs": {
+      "label": "分组标题（组标题小字、次要色、不可点）",
+      "value": "radio 组 id（组内点选只更新该组选中值）"
+    },
+    "events": {},
+    "slots": {
+      "": "组内菜单项：子元素 `<oas-context-menu-item>` 平铺同层"
+    }
+  },
+  "oas-context-menu-item": {
+    "attrs": {
+      "value": "选中值（子元素声明式通道的数据载体字段）",
+      "disabled": "禁用该项",
+      "loading": "加载中：渲染 spinner、禁点，由数据驱动恢复",
+      "icon": "前置图标（`@oas-ui/icons` 注册表图标名）",
+      "kind": "叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集）",
+      "danger": "破坏性项：红色语义（删除/退出等危险操作）",
+      "href": "链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`）",
+      "target": "链接 target（配合 href）",
+      "rel": "链接 rel（配合 href）"
+    },
+    "events": {},
+    "slots": {
+      "": "右键菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-context-menu-item>` 递归为子菜单 children"
+    }
+  },
   "oas-countdown": {
     "attrs": {
       "format": "模板：`DD`/`D` 天、`HH`/`H` 时、`mm`/`m` 分、`ss`/`s` 秒",
@@ -626,6 +660,40 @@
       "oas-open-change": "浮层开合变化，`detail: { open: boolean }`（含外部 setAttribute 触发，受控闭环）"
     },
     "slots": {}
+  },
+  "oas-dropdown-divider": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "分隔线数据载体（无属性，宿主解析为 `type: \"divider\"`）"
+    }
+  },
+  "oas-dropdown-group": {
+    "attrs": {
+      "label": "分组标题（组标题小字、次要色、不可点）",
+      "value": "radio 组 id（组内点选只更新该组选中值）"
+    },
+    "events": {},
+    "slots": {
+      "": "组内菜单项：子元素 `<oas-dropdown-item>` 平铺同层"
+    }
+  },
+  "oas-dropdown-item": {
+    "attrs": {
+      "value": "选中值（子元素声明式通道的数据载体字段）",
+      "disabled": "禁用该项",
+      "loading": "加载中：渲染 spinner、禁点，由数据驱动恢复",
+      "icon": "前置图标（`@oas-ui/icons` 注册表图标名）",
+      "kind": "叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集）",
+      "danger": "破坏性项：红色语义（删除/退出等危险操作）",
+      "href": "链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`）",
+      "target": "链接 target（配合 href）",
+      "rel": "链接 rel（配合 href）"
+    },
+    "events": {},
+    "slots": {
+      "": "下拉菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-dropdown-item>` 递归为子菜单 children"
+    }
   },
   "oas-dynamic-input": {
     "attrs": {
@@ -2148,5 +2216,23 @@
     "attrs": {},
     "events": {},
     "slots": {}
+  },
+  "oas-command-item": {
+    "attrs": {
+      "value": "选中值（子元素声明式通道的数据载体字段）",
+      "group": "分组名（可选），同组项渲染分组标题",
+      "disabled": "禁用该项（Enter/点击不可选，方向键跳过）",
+      "icon": "项图标：SVG path d 字符串或完整 `<svg>` 标记",
+      "shortcut": "快捷键标注（右对齐 kbd），如 `meta+p` / `ctrl+shift+s`",
+      "description": "副标题（description）",
+      "view": "视图插槽名：选中进入 `<slot name=\"view-{view}\">`（面板内嵌视图）",
+      "force-mount": "忽略过滤强制显示（创建型入口）",
+      "separator": "渲染为分隔行（不可导航/不可选中）",
+      "keywords": "搜索关键词（逗号分隔字符串，trim 去空后解析为 string[]），参与 label 之外的匹配"
+    },
+    "events": {},
+    "slots": {
+      "": "命令项 label 内容（默认插槽文本）；直接子元素 `<oas-command-item>` 递归为 `page` 子页"
+    }
   }
 }
