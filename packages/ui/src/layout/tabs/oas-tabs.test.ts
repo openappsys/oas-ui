@@ -624,6 +624,15 @@ describe('OASTabs', () => {
       expect(el2.shadowRoot!.querySelector('.more-btn')!.hasAttribute('hidden')).toBe(true)
     })
 
+    it('#18 溢出但无 tab 完全滚出视口时（部分溢出区间），more 按钮应隐藏防空下拉', () => {
+      // overflow=400>391，但 t3 仅部分滚出（300<视口 390、400 未滚出）→ 无 data-offview tab
+      const el = mountMore(4, 100, 390)
+      ;(el as any).syncMore?.()
+      expect(el.shadowRoot!.querySelector('.more-btn')!.hasAttribute('hidden')).toBe(true)
+      const offview = el.shadowRoot!.querySelectorAll('[role="tab"][data-offview]').length
+      expect(offview).toBe(0)
+    })
+
     it('more 下拉列出当前滚动视口之外的 tab', () => {
       const el = mountMore(10, 100, 400) // 视口 0~400，可见 t0-t3，视口外 t4-t9
       ;(el as any).syncMore?.()

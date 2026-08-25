@@ -1138,7 +1138,11 @@ export class OASTabs extends OASElement {
       { passive: false },
     )
     if (typeof ResizeObserver !== 'undefined') {
-      this.resizeObserver = new ResizeObserver(() => this.syncScrollControls())
+      this.resizeObserver = new ResizeObserver(() => {
+        this.syncScrollControls()
+        // more 模式：resize 时也要同步 more 按钮可视与 offview（此前漏掉 → 缩窗不出现/扩窗不撤回）
+        this.syncMore()
+      })
       this.resizeObserver.observe(tablist)
       this.onCleanup(() => this.resizeObserver?.disconnect())
     }
@@ -1239,14 +1243,19 @@ export class OASTabs extends OASElement {
       return
     }
     // 溢出才有更多按钮（more 按钮占用在 nav 固定区）
-    const overflow = tablist.scrollWidth > tablist.clientWidth + 1
+    let overflow = tablist.scrollWidth > tablist.clientWidth + 1
+    if (overflow) {
+      this.updateMoreOffview()
+      // 部分溢出区间：overflow 真但无任何 tab 完全滚出视口 → 下拉为空，按钮应隐藏
+      overflow =
+        this.shadow.querySelectorAll('[role="tab"][data-value][data-offview]').length > 0
+    }
     moreBtn.hidden = !overflow
     if (!overflow) {
       this.moreOpen = false
       this.syncMoreDropdown()
       return
     }
-    this.updateMoreOffview()
     this.renderMoreDropdown()
   }
 

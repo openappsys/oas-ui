@@ -492,6 +492,16 @@ describe('OASMenubar', () => {
     expect(count).toBe(0)
   })
 
+  it('#19 单键非打印键（F9/Delete 等）shortcut 也走绑定路径（此前单键被跳过只剩显示）', () => {
+    const el = mount({
+      items: JSON.stringify([{ label: '刷新', value: 'refresh', shortcut: 'F9' }]),
+    })
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'F9' }))
+    expect(detail).toEqual({ value: 'refresh' })
+  })
+
   it('#2 命中 shortcut 时 preventDefault（不触发浏览器默认）', () => {
     const el = mount({ items: SHORTCUT_ITEMS })
     const ev = new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true })
