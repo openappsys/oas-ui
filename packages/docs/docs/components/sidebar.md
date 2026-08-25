@@ -81,6 +81,19 @@
   </div>
 </DemoBlock>
 
+## 分组
+
+菜单项 `items` 支持可选 `group` 字段：连续同组项在组首项前渲染组标题（纯展示、不可点）；折叠态组标题隐藏，移动抽屉态正常显示。
+
+<DemoBlock title="分组（items.group）">
+  <div style="height: 300px; width: 100%; display: flex">
+    <oas-sidebar items='[{"label":"仪表盘","value":"dash","icon":"📊","group":"概览"},{"label":"实时趋势","value":"trend","icon":"📈","group":"概览"},{"label":"订单管理","value":"orders","icon":"📦","group":"业务"},{"label":"商品管理","value":"goods","icon":"🛍️","group":"业务"},{"label":"用户管理","value":"users","icon":"👥","group":"业务"},{"label":"个人中心","value":"me","icon":"👤"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      「概览」「业务」为组标题；「个人中心」无 group 字段，平铺显示。
+    </div>
+  </div>
+</DemoBlock>
+
 ## 自定义宽度
 
 `width` 属性覆盖展开宽度（默认走 `--oas-sidebar-width` token）；折叠态仍收窄为图标条。
@@ -128,7 +141,7 @@
 | `active` | 当前高亮菜单项 value（受控：外部设置/清除立即高亮迁移，重绘） | `string` | — |
 | `collapsed` | 受控折叠，收窄为图标条（存在即折叠） | `boolean` | — |
 | `drawer-open` | 移动端抽屉打开态（受控：设置即开、清除即收；断点回桌面自动移除） | `boolean` | — |
-| `items` | 菜单项 JSON `[{label, value, icon?}]` | `SidebarItem[] \| string` | `[]` |
+| `items` | 菜单项 JSON [{label, value, icon?, group?}]（group：连续同组项前渲染组标题，纯展示；折叠态隐藏） | `SidebarItem[] \| string` | `[]` |
 | `mobile-breakpoint` | 移动端断点（px），窄于该值变覆盖式抽屉 | — | — |
 | `width` | 展开宽度，默认走 `--oas-sidebar-width` token | — | — |
 

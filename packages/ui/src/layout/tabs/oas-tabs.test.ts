@@ -135,6 +135,17 @@ describe('OASTabs', () => {
     expect(badges[1]!.textContent).toBe('新')
   })
 
+  it('badge 徽标带 part="badge"，颜色走 --oas-tabs-badge-bg/-color 变量开口（默认 danger）', () => {
+    const el = new OASTabs()
+    el.innerHTML = '<oas-tab-panel label="标签" value="a" badge="3"><p>c</p></oas-tab-panel>'
+    document.body.appendChild(el)
+    const badge = el.shadowRoot!.querySelector('.tab-badge')!
+    expect(badge.getAttribute('part')).toBe('badge')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('var(--oas-tabs-badge-bg, var(--oas-color-danger))')
+    expect(css).toContain('var(--oas-tabs-badge-color, var(--oas-color-text-on-danger))')
+  })
+
   it('tab-position=left：host 与 tablist 带纵向布局类名', () => {
     const el = mount({ 'tab-position': 'left' })
     expect(el.classList.contains('oas-tabs--vertical')).toBe(true)
