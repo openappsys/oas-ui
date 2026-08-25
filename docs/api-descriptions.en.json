@@ -1575,7 +1575,8 @@
       "scroll-position": "Scroll alignment when scrolling the active/added tab into view: `auto` (default nearest) / `start` / `center` / `end`",
       "reserve-selected-space": "Anti-jitter for bold selection: preload the selected-state text width so selected/unselected tabs keep the same width and do not shift on switch",
       "hide-content": "Pure navigation mode: render the tab bar without the panel area (tabs act as a nav strip; the host takes over content/routing)",
-      "items": "Data-driven rendering: JSON array `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`; takes precedence over `oas-tab-panel` children when both present"
+      "items": "Data-driven rendering: JSON array `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`; takes precedence over `oas-tab-panel` children when both present",
+      "context-menu": "Right-click bulk-close menu on tabs (Close / Close others / Close all to the left / Close all to the right / Close all; fires oas-close once per target tab)"
     },
     "events": {
       "oas-add": "The + button was clicked, `detail: { label }` (default new-tab label from locale; use it or customize it)",
