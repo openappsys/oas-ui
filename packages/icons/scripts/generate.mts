@@ -15,7 +15,9 @@ import { resolve, join, basename, extname } from 'node:path'
 const root = resolve(import.meta.dirname, '..')
 const svgDir = join(root, 'svg')
 const iconsDir = join(root, 'src/icons')
-const tmpDir = join(root, '.gen-tmp')
+// 临时目录按进程隔离：并发构建（root build 与 docs build 同时触发 generate）互不踩踏——
+// 曾因共享 .gen-tmp 被并发进程清空临时产物，导致 iconsDir 删空后 rename 失败、43 个图标全灭（2026-08 实测）
+const tmpDir = join(root, `.gen-tmp-${process.pid}`)
 
 function camel(name: string): string {
   return name.replace(/-([a-z0-9])/g, (_, c: string) => c.toUpperCase())
