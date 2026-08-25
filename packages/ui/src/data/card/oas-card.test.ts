@@ -29,6 +29,18 @@ describe('OASCard', () => {
     expect(sr.querySelector('slot')).not.toBeNull()
   })
 
+  it('无 title 且无 extra：header 应设 hidden（逻辑层）', () => {
+    const el = mount({}, '<p>卡片内容</p>')
+    expect(part(el, 'header').hidden).toBe(true)
+  })
+
+  it('header[hidden] CSS 兜底：作者级 .header{display:flex} 不覆盖 hidden 属性（渲染层不空占位）', () => {
+    const el = mount({}, '<p>卡片内容</p>')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 与 .cover[hidden] 同款兜底（46-50 行有 cover 先例，header 曾是遗漏）
+    expect(css).toMatch(/\.header\[hidden\]\s*\{[^}]*display:\s*none/)
+  })
+
   it('hoverable 时带悬浮阴影类', () => {
     const el = mount({ hoverable: '' })
     expect(part(el, 'card').classList.contains('hoverable')).toBe(true)
