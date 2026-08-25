@@ -509,6 +509,17 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(css).toMatch(/\[variant='inset'\][^}]*border-radius/)
   })
 
+  it('item hover 与宿主底色区分：hover 走 --oas-sidebar-item-hover-bg（默认 text-primary 6% 混色，不再与宿主 bg-hover 同 token）；active hover 加深一档', () => {
+    stubMatchMedia(false)
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // hover 不再用 --oas-color-bg-hover（与宿主底色同 token → 零对比）
+    expect(css).toMatch(/\.item:hover\s*\{[^}]*--oas-sidebar-item-hover-bg/)
+    expect(css).toMatch(/\.item:hover\s*\{[^}]*color-mix\(in srgb, var\(--oas-color-text-primary\) 6%/)
+    // active:hover 有独立加深档（14% → 20%）
+    expect(css).toMatch(/\.item\.active:hover\s*\{[^}]*color-mix\(in srgb, var\(--oas-color-primary\) 20%/)
+  })
+
   it('resizable：边缘拖拽条显隐（resizable 显示；无属性/折叠/移动态隐藏）', () => {
     stubMatchMedia(false)
     const el = mount({ resizable: '' })

@@ -189,12 +189,19 @@ aside {
   text-align: start;
 }
 .item:hover {
-  background: var(--oas-color-bg-hover);
+  background: var(
+    --oas-sidebar-item-hover-bg,
+    color-mix(in srgb, var(--oas-color-text-primary) 6%, transparent)
+  );
 }
 .item.active {
   background: color-mix(in srgb, var(--oas-color-primary) 14%, transparent);
   color: var(--oas-color-primary);
   font-weight: 500;
+}
+/* active 项 hover 也有反馈：主色浅调加深一档（原与常态同色调，hover 无变化） */
+.item.active:hover {
+  background: color-mix(in srgb, var(--oas-color-primary) 20%, transparent);
 }
 .item.active .icon {
   color: var(--oas-color-primary);
