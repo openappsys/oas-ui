@@ -1,6 +1,7 @@
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
+import { computePosition, type Placement } from '../../overlay/floating/index.js'
 import { OASElement } from '@oas-ui/core'
 
 interface Option {
@@ -241,11 +242,10 @@ const STYLE = `
   display: block;
 }
 .dropdown {
-  position: absolute;
-  z-index: 10;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
+  /* fixed + computePosition 锚定 trigger 下方：逃出祖先 overflow 容器（模态滚动 body 等），
+     不再为该容器贡献溢出逼出滚动条（与 combobox 同思路，见 oas-select 定位契约） */
+  position: fixed;
+  z-index: var(--oas-z-dropdown, 1000);
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
@@ -447,6 +447,7 @@ export class OASSelect extends OASElement {
     }
     if (this.openState) {
       document.addEventListener('click', this.handleOutsideClick)
+      this.positionDropdown()
       const current = this.currentValues()
       const idx =
         current.length > 0 ? this.visibleOptions().findIndex((o) => o.value === current[0]) : 0
@@ -465,6 +466,20 @@ export class OASSelect extends OASElement {
       this.openState = false
     }
     this.syncDropdown()
+  }
+
+  /** fixed 定位：锚定 trigger 下方，空间不足自动翻转避让，宽度对齐 trigger（同 combobox） */
+  private positionDropdown(): void {
+    if (!this.dropdown || !this.triggerEl) return
+    const anchorRect = this.triggerEl.getBoundingClientRect()
+    const panelRect = this.dropdown.getBoundingClientRect()
+    const { top, left } = computePosition(anchorRect, panelRect, 'bottom' as Placement, {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    })
+    this.dropdown.style.top = `${top}px`
+    this.dropdown.style.left = `${left}px`
+    this.dropdown.style.width = `${anchorRect.width}px`
   }
 
   /** trigger 键盘：Esc 关闭；关闭态 Enter/Space/↑/↓ 展开；展开态 ↑/↓ 移动、Enter 选中 */
