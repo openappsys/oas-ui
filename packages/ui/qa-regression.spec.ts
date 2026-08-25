@@ -6738,3 +6738,36 @@ test('sidebar resizable：拖拽 rail 边缘宽度实时跟随并写回 width �
   expect(r.widthAttr, '拖拽应写回 width 属性').toBe(`${r.widths[2]}px`)
   expect(r.logText, 'oas-resize 事件应更新 demo 日志').toContain(`${r.widths[2]}px`)
 })
+// —— 缺陷回归：sidebar 嵌套子菜单 label 缩进对齐（不得与父项齐平/更靠左） ——
+// 曾现缺陷：嵌套无图标项 icon 占位被 hidden 折叠，子项 label 与父项 label 齐平甚至偏左
+//（实测子 label 比父 label 左 3px），层级错乱。修复：嵌套无图标项保留图标占位（24px），
+// 子项 label 缩进父项 label 右侧。本断言真布局测量 label x 坐标。
+test('sidebar 嵌套子菜单：无图标子项 label 缩进父项 label 右侧（层级不错乱）', async ({
+  page,
+}) => {
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(
+    () => document.querySelector('oas-sidebar[active="users"]')?.shadowRoot != null,
+    undefined,
+    { timeout: 15000 },
+  )
+  const r = await page.evaluate(() => {
+    const sb = document.querySelector('oas-sidebar[active="users"]')!
+    const items = [...sb.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
+    const parent = items.find((i) => i.dataset.value === 'biz')!
+    const child = items.find((i) => i.dataset.value === 'orders')!
+    const parentLabelX = parent.querySelector('.label')!.getBoundingClientRect().left
+    const childLabelX = child.querySelector('.label')!.getBoundingClientRect().left
+    const childIcon = child.querySelector('.icon') as HTMLElement
+    return {
+      parentLabelX: Math.round(parentLabelX),
+      childLabelX: Math.round(childLabelX),
+      indent: Math.round(childLabelX - parentLabelX),
+      childIconHidden: childIcon.hidden,
+      childIconWidth: Math.round(childIcon.getBoundingClientRect().width),
+    }
+  })
+  expect(r.childIconHidden, '嵌套无图标项图标占位不应隐藏').toBe(false)
+  expect(r.childIconWidth, '嵌套图标占位应保留宽度').toBeGreaterThan(0)
+  expect(r.indent, '子项 label 应缩进父项 label 右侧（不得齐平/更靠左）').toBeGreaterThan(0)
+})
