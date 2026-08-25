@@ -51,6 +51,12 @@ const STYLE = `
 :host([collapsed]) {
   width: var(--oas-sidebar-collapsed-width, 64px);
 }
+/* 在 oas-sider 轨道内：填满轨道（宽度契约「sider 管轨道、sidebar 填满」）。
+   :host-context(oas-sider) 特异性 (0,1,1) 高于 :host 默认宽 (0,1,0) 稳覆盖；
+   低于 [collapsed]/[data-mobile] (0,2,0)，折叠态与移动抽屉态不受影响 */
+:host-context(oas-sider) {
+  width: 100%;
+}
 /* 移动端：宿主不占布局空间（抽屉/触发按钮均为 fixed 定位） */
 :host([data-mobile]) {
   width: auto;

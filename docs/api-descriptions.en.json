@@ -904,6 +904,13 @@
     "events": {},
     "slots": {}
   },
+  "oas-layout": {
+    "attrs": {
+      "viewport": "Viewport-locked mode: locks the layout to the viewport height (100dvh by default, cascading back to 100vh; overridable via `--oas-layout-height` to 100%/calc()), header/footer fixed while the sider and content scroll independently; default is the full-page scrolling model"
+    },
+    "events": {},
+    "slots": {}
+  },
   "oas-link": {
     "attrs": {
       "disabled": "Disabled",
