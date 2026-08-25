@@ -62,7 +62,7 @@ const STYLE = `
 .tip[data-interactive='true'] {
   pointer-events: auto;
 }
-/* 箭头：8px 正方形旋转 45°，底色与气泡同色，按 data-placement 落在面板对应边上，尖端指向锚点中心 */
+/* 箭头：12px 正方形旋转 45°，底色与气泡同色，按 data-placement 落在面板对应边上，尖端指向锚点中心 */
 .arrow {
   position: absolute;
   width: 12px;
@@ -87,7 +87,7 @@ const STYLE = `
 /* ===== 交叉轴（12 向：center 居中、start 靠起点侧 16px、end 靠终点侧 16px） ===== */
 .tip[data-placement='top'] .arrow,
 .tip[data-placement='bottom'] .arrow {
-  left: calc(50% - 4px);
+  left: calc(50% - 6px);
 }
 .tip[data-placement='top-start'] .arrow,
 .tip[data-placement='bottom-start'] .arrow {
@@ -99,7 +99,7 @@ const STYLE = `
 }
 .tip[data-placement='left'] .arrow,
 .tip[data-placement='right'] .arrow {
-  top: calc(50% - 4px);
+  top: calc(50% - 6px);
 }
 .tip[data-placement='left-start'] .arrow,
 .tip[data-placement='right-start'] .arrow {
@@ -118,7 +118,13 @@ const STYLE = `
    对侧边、*-end 箭头距角 16px 贴不上）：
    bottom 系悬顶边（start→左上角、end→右上角）、top 系悬底边（start→左下角、
    end→右下角）、left 系悬右边（start→右上角、end→右下角）、right 系悬左边
-   （start→左上角、end→左下角） */
+    （start→左上角、end→左下角） */
+/* merge 固定 8px 盒（独立于标准 12px 菱形）：几何契约（直角顶点贴角点 / 边 8px、尖 8px）按 8px 校准，
+   不随 .arrow 统一尺寸走——merge 是面板角贴角直角三角，与标准菱形是两套视觉。 */
+.tip[data-arrow-position='merge'] .arrow {
+  width: 8px;
+  height: 8px;
+}
 .tip[data-arrow-position='merge'][data-placement='bottom-start'] {
   border-top-left-radius: 0;
 }
@@ -749,7 +755,7 @@ export class OAStooltip extends OASElement {
     const popup = this.popupRect()
     const placement = this.getAttr('placement', 'top') as Placement
     const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
-    const offset = this.getNum('offset', 8)
+    const offset = this.getNum('offset', 10)
     const skidding = this.getNum('skidding', 0)
     const padding = this.getNum('collision-padding', 4)
     const {
