@@ -624,13 +624,36 @@ describe('OASTabs', () => {
       expect(el2.shadowRoot!.querySelector('.more-btn')!.hasAttribute('hidden')).toBe(true)
     })
 
-    it('#18 溢出但无 tab 完全滚出视口时（部分溢出区间），more 按钮应隐藏防空下拉', () => {
-      // overflow=400>391，但 t3 仅部分滚出（300<视口 390、400 未滚出）→ 无 data-offview tab
+    it('#18 部分滚出的 tab 也计入 offview 并进下拉（按钮显示、下拉非空）', () => {
+      // overflow=400>391，t3 部分滚出（右缘 400 > 视口 390）→ 计入 offview；下拉含 t3，按钮显示
       const el = mountMore(4, 100, 390)
       ;(el as any).syncMore?.()
-      expect(el.shadowRoot!.querySelector('.more-btn')!.hasAttribute('hidden')).toBe(true)
-      const offview = el.shadowRoot!.querySelectorAll('[role="tab"][data-offview]').length
-      expect(offview).toBe(0)
+      expect(el.shadowRoot!.querySelector('.more-btn')!.hasAttribute('hidden')).toBe(false)
+      const offview = [...el.shadowRoot!.querySelectorAll('[role="tab"][data-offview]')].map((t) =>
+        t.getAttribute('data-value'),
+      )
+      expect(offview).toEqual(['t3'])
+      // 下拉非空：点开 more 应有条目
+      ;(el.shadowRoot!.querySelector('.more-btn') as HTMLElement).click()
+      expect(el.shadowRoot!.querySelectorAll('.more-item').length).toBeGreaterThan(0)
+    })
+
+    it('#18 offview 判定为「不完全可见」：部分滚出右缘/左缘都计入，完全可见不计入', () => {
+      // 视口 390，t3 右缘 400 超出 → offview；t0-t2 完全可见 → 不计入
+      const el = mountMore(4, 100, 390)
+      ;(el as any).updateMoreOffview?.()
+      const offview = [...el.shadowRoot!.querySelectorAll('[role="tab"][data-offview]')].map((t) =>
+        t.getAttribute('data-value'),
+      )
+      expect(offview).toEqual(['t3'])
+      // 滚出 50px：视口变 50~440，t0 左缘部分滚出（0<50）计入 offview；t3（300-400 全在视口内）不计入
+      const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
+      ;(tablist as any).scrollLeft = 50
+      ;(el as any).updateMoreOffview?.()
+      const offview2 = [...el.shadowRoot!.querySelectorAll('[role="tab"][data-offview]')].map(
+        (t) => t.getAttribute('data-value'),
+      )
+      expect(offview2).toEqual(['t0'])
     })
 
     it('more 下拉列出当前滚动视口之外的 tab', () => {

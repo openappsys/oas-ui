@@ -1242,24 +1242,20 @@ export class OASTabs extends OASElement {
       moreBtn.hidden = true
       return
     }
-    // 溢出才有更多按钮（more 按钮占用在 nav 固定区）
-    let overflow = tablist.scrollWidth > tablist.clientWidth + 1
-    if (overflow) {
-      this.updateMoreOffview()
-      // 部分溢出区间：overflow 真但无任何 tab 完全滚出视口 → 下拉为空，按钮应隐藏
-      overflow =
-        this.shadow.querySelectorAll('[role="tab"][data-value][data-offview]').length > 0
-    }
+    // 溢出才有更多按钮（more 按钮占用在 nav 固定区）。溢出即意味着有 tab 不完全可见
+    //（部分滚出也算，进下拉），故下拉必非空——无需额外判空
+    const overflow = tablist.scrollWidth > tablist.clientWidth + 1
     moreBtn.hidden = !overflow
     if (!overflow) {
       this.moreOpen = false
       this.syncMoreDropdown()
       return
     }
+    this.updateMoreOffview()
     this.renderMoreDropdown()
   }
 
-  /** 计算并标记当前滚动视口之外的 tab（data-offview；左滚出 + 右滚出），滚动/resize 时更新 */
+  /** 计算并标记「不完全可见」的 tab（data-offview；左滚出 + 右滚出 + 部分滚出），滚动/resize 时更新 */
   private updateMoreOffview(): void {
     const tablist = this.shadow.querySelector('.tablist') as HTMLElement | null
     if (!tablist || !this.hasAttr('more')) return
@@ -1270,8 +1266,8 @@ export class OASTabs extends OASElement {
     for (const t of this.shadow.querySelectorAll<HTMLElement>('[role="tab"][data-value]')) {
       const start = vertical ? t.offsetTop : t.offsetLeft
       const end = start + (vertical ? t.offsetHeight : t.offsetWidth)
-      // 与视口有交集即视为可见（部分可见也算）
-      const offview = end <= scrollStart || start >= viewEnd
+      // 不完全可见即收进 more（部分滚出也算；floor 容差避免 0.5px 抖动）
+      const offview = start < scrollStart || Math.floor(end) > Math.floor(viewEnd)
       t.toggleAttribute('data-offview', offview)
     }
   }
