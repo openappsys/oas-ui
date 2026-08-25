@@ -1576,7 +1576,7 @@
       "reserve-selected-space": "选中加粗防抖：预载选中态文字宽度，选中/未选中标签宽度一致、切换不抖动",
       "hide-content": "纯导航模式：渲染标签栏但不渲染面板区（tabs 当导航条，宿主接管内容/路由）",
       "items": "数据驱动渲染：JSON 数组 `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`，与 `oas-tab-panel` 子元素并存时 items 优先",
-      "context-menu": "标签右键批量关闭菜单（关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部；每项按目标集合逐个派发 oas-close）"
+      "context-menu": "标签右键操作菜单（新标签/关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部；新建派发 oas-add，关闭类按目标集合逐个派发 oas-close）"
     },
     "events": {
       "oas-add": "点击 + 新增按钮，`detail: { label }`（默认新标签文案「新标签」走 locale，宿主自定义或直接使用）",

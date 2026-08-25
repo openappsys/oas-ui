@@ -47,22 +47,26 @@ describe('OASTabs', () => {
     expect(tabs[0]!.getAttribute('aria-selected')).toBe('true')
   })
 
-  it('context-menu：右键标签弹批量关闭菜单（5 项：关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部）；无属性不弹', () => {
+  it('context-menu：右键标签弹菜单（6 项：新标签/关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部，新建与关闭族间有分隔线）；无属性不弹', () => {
     const el = mountMany(['a', 'b', 'c'], { 'context-menu': '' })
     rightClickTab(el, 'b')
     const menu = el.shadowRoot!.querySelector('.ctx-menu') as HTMLElement
     expect(menu.hidden).toBe(false)
     expect(menu.getAttribute('part')).toBe('context-menu')
     const items = [...menu.querySelectorAll<HTMLElement>('.ctx-item')]
-    expect(items.length).toBe(5)
+    expect(items.length).toBe(6)
     expect(items.map((i) => i.textContent)).toEqual([
+      '新标签',
       '关闭',
       '关闭其他',
       '关闭左侧所有',
       '关闭右侧所有',
       '关闭全部',
     ])
-    expect(items[4]!.classList.contains('danger')).toBe(true)
+    expect(items[5]!.classList.contains('danger')).toBe(true)
+    // 新建与关闭族之间的分隔线
+    const divider = menu.querySelector('.ctx-divider')
+    expect(divider?.getAttribute('role')).toBe('separator')
     // 无 context-menu 属性：右键不弹（先 blur 第一个实例的焦点元素——happy-dom 跨 shadow
     // activeElement 的 getter bug：焦点在 el1 shadow 时查询 el2 shadow.activeElement 会崩，
     // 真实浏览器无此问题，故此处仅测试环境失焦）
@@ -78,7 +82,7 @@ describe('OASTabs', () => {
     el.addEventListener('oas-close', (e) => keys.push((e as CustomEvent).detail.key))
     rightClickTab(el, 'b')
     const items = [...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')]
-    items[0]!.click() // 关闭
+    items[1]!.click() // 关闭
     expect(keys).toEqual(['b'])
     expect(el.shadowRoot!.querySelector('.ctx-menu')!.hasAttribute('hidden')).toBe(true)
   })
@@ -89,23 +93,54 @@ describe('OASTabs', () => {
     el.addEventListener('oas-close', (e) => keys.push((e as CustomEvent).detail.key))
     // 关闭其他（对 b）
     rightClickTab(el, 'b')
-    ;[...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')][1]!.click()
+    ;[...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')][2]!.click()
     expect(keys).toEqual(['a', 'c', 'd'])
     // 关闭左侧所有（对 c）
     keys.length = 0
     rightClickTab(el, 'c')
-    ;[...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')][2]!.click()
+    ;[...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')][3]!.click()
     expect(keys).toEqual(['a', 'b'])
     // 关闭右侧所有（对 b）
     keys.length = 0
     rightClickTab(el, 'b')
-    ;[...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')][3]!.click()
+    ;[...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')][4]!.click()
     expect(keys).toEqual(['c', 'd'])
     // 关闭全部
     keys.length = 0
     rightClickTab(el, 'b')
-    ;[...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')][4]!.click()
+    ;[...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')][5]!.click()
     expect(keys).toEqual(['a', 'b', 'c', 'd'])
+  })
+
+  it('context-menu 新标签：派发 oas-add（与 addable + 按钮同契约），菜单自闭合', () => {
+    const el = mountMany(['a', 'b'], { 'context-menu': '' })
+    const adds: unknown[] = []
+    el.addEventListener('oas-add', (e) => adds.push((e as CustomEvent).detail))
+    rightClickTab(el, 'b')
+    ;[...el.shadowRoot!.querySelectorAll<HTMLElement>('.ctx-item')][0]!.click()
+    expect(adds).toEqual([{ label: '新标签' }])
+    expect(el.shadowRoot!.querySelector('.ctx-menu')!.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('context-menu 键盘 roving：ArrowDown/ArrowUp/Home/End 在菜单项间移动焦点，循环回绕', () => {
+    const el = mountMany(['a', 'b'], { 'context-menu': '' })
+    rightClickTab(el, 'b')
+    const menu = el.shadowRoot!.querySelector('.ctx-menu')!
+    const items = [...menu.querySelectorAll<HTMLElement>('.ctx-item')]
+    const active = (): string => el.shadowRoot!.activeElement?.textContent ?? ''
+    expect(active()).toBe('新标签') // 打开即聚焦首项
+    items[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(active()).toBe('关闭')
+    items[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
+    expect(active()).toBe('关闭全部')
+    ;[...menu.querySelectorAll<HTMLElement>('.ctx-item')][5]!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+    )
+    expect(active()).toBe('新标签') // 末项 ArrowDown 循环回首项
+    ;[...menu.querySelectorAll<HTMLElement>('.ctx-item')][0]!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }),
+    )
+    expect(active()).toBe('关闭全部') // 首项 ArrowUp 循环到末项
   })
 
   it('context-menu 外部点击/Escape 关闭弹层', () => {

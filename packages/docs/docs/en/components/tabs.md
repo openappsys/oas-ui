@@ -81,9 +81,9 @@ Switch to the card style with `type="card"`: every tab has its own border, the a
 
 > Closing an inactive tab: the tab disappears immediately (visible feedback). Closing the active tab: it automatically switches to the first remaining tab and shows a message.
 
-## Right-click bulk close
+## Right-click menu (new tab + bulk close)
 
-`context-menu`: right-click any tab to open a bulk-close menu — Close / Close others / Close all to the left / Close all to the right / Close all. Each operation fires `oas-close` (`detail: { key }`) once per target tab, and the host removes the matching panels (same contract as `closable`). The popup closes on outside click or Escape.
+`context-menu`: right-click any tab to open an action menu — New tab / Close / Close others / Close all to the left / Close all to the right / Close all (a separator sits between "New tab" and the close group). "New tab" fires `oas-add` (same contract as the `addable` + button); each close operation fires `oas-close` (`detail: { key }`) once per target tab, and the host removes the matching panels (same contract as `closable`). The popup closes on outside click or Escape.
 
 <DemoBlock title="Right-click bulk close (context-menu)">
   <oas-tabs id="tabs-contextmenu" closable context-menu active="b">
@@ -95,7 +95,7 @@ Switch to the card style with `type="card"`: every tab has its own border, the a
   </oas-tabs>
 </DemoBlock>
 
-> Right-click “Products” and try “Close all to the left” / “Close others” — `oas-close` fires once per key, and the host removes the matching panels.
+> Right-click “Products” and try “New tab” and “Close all to the left” / “Close others” — "New tab" fires `oas-add` and the host appends a panel; each close fires `oas-close` once per key, and the host removes the matching panels.
 
 ## Badges
 
@@ -527,8 +527,20 @@ onMounted(async () => {
     }
   })
 
-  // Right-click bulk close: the host removes panels one by one per oas-close key (same contract as closable)
+  // Right-click menu: "New tab" fires oas-add (the host appends and activates a panel); each close removes the panel per oas-close key (same contract as closable)
   const ctxTabs = document.getElementById('tabs-contextmenu')
+  let ctxSeq = 0
+  ctxTabs?.addEventListener('oas-add', (e) => {
+    ctxSeq += 1
+    const value = `new-${ctxSeq}`
+    const panel = document.createElement('oas-tab-panel')
+    panel.setAttribute('label', `${e.detail.label} ${ctxSeq}`)
+    panel.setAttribute('value', value)
+    panel.innerHTML = `<p>Newly created tab (${value})</p>`
+    ctxTabs.appendChild(panel)
+    ctxTabs.setAttribute('active', value)
+    message?.info(`New tab "${value}"`)
+  })
   ctxTabs?.addEventListener('oas-close', (e) => {
     const key = e.detail.key
     message?.info(`Closed tab "${key}"`)
@@ -586,7 +598,7 @@ onMounted(async () => {
 | `animated` | Selection transition + panel fade-in (animates color/border/opacity only, no layout) | `boolean` | — |
 | `centered` | Center the tab bar (when horizontal) | `boolean` | — |
 | `closable` | Shows a close × on every tab; clicking fires `oas-close` (the component does not remove the panel) | `boolean` | — |
-| `context-menu` | Right-click bulk-close menu on tabs (Close / Close others / Close all to the left / Close all to the right / Close all; fires oas-close once per target tab) | `boolean` | — |
+| `context-menu` | Right-click action menu on tabs (New tab / Close / Close others / Close all to the left / Close all to the right / Close all; New tab fires oas-add, each close fires oas-close once per target tab) | `boolean` | — |
 | `hide-content` | Pure navigation mode: render the tab bar without the panel area (tabs act as a nav strip; the host takes over content/routing) | `boolean` | — |
 | `hide-indicator` | Hide the active indicator line (the ::after underline in line mode) | `boolean` | — |
 | `items` | Data-driven rendering: JSON array `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`; takes precedence over `oas-tab-panel` children when both present | `string` | — |
