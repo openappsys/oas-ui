@@ -1203,6 +1203,20 @@ export class OASTabs extends OASElement {
       this.moreOpen = !this.moreOpen
       this.syncMoreDropdown()
     })
+    // moreBtn 键盘：Enter/Space/ArrowDown 打开并聚焦第一个可见项（键盘可达溢出标签）
+    moreBtn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+        e.preventDefault()
+        if (!this.moreOpen) {
+          this.moreOpen = true
+          this.syncMoreDropdown()
+        }
+        this.focusFirstMoreItem()
+      } else if (e.key === 'Escape' && this.moreOpen) {
+        e.preventDefault()
+        this.closeMore()
+      }
+    })
     // 外部点击收起（宿主 document 级，composed 跨 shadow）
     const onDocClick = (e: Event) => {
       if (!this.moreOpen) return
@@ -1217,12 +1231,77 @@ export class OASTabs extends OASElement {
     }
     document.addEventListener('click', onDocClick, true)
     this.onCleanup(() => document.removeEventListener('click', onDocClick, true))
-    // 搜索框输入实时过滤收起项
+    // 搜索框输入实时过滤收起项；键盘 ArrowDown 进入列表项、Escape 收起
     const search = this.shadow.querySelector('.more-search') as HTMLInputElement | null
     search?.addEventListener('input', () => this.renderMoreDropdown())
-    // 搜索框内点击/键盘不冒泡收起下拉
+    // 搜索框内点击不冒泡收起下拉；键盘：输入不冒泡（过滤），ArrowDown 进列表、Escape 收起
     search?.addEventListener('click', (e) => e.stopPropagation())
-    search?.addEventListener('keydown', (e) => e.stopPropagation())
+    search?.addEventListener('keydown', (e) => {
+      e.stopPropagation()
+      const ke = e as KeyboardEvent
+      if (ke.key === 'ArrowDown') {
+        ke.preventDefault()
+        this.focusFirstMoreItem()
+      } else if (ke.key === 'Escape') {
+        ke.preventDefault()
+        this.closeMore()
+      }
+    })
+    // 下拉容器键盘导航：ArrowUp/Down/Home/End 遍历可见项、Enter/Space 激活、Escape 收起回 moreBtn
+    const moreDropdown = this.shadow.querySelector('.more-dropdown') as HTMLElement | null
+    moreDropdown?.addEventListener('keydown', (e) => this.onMoreDropdownKey(e))
+  }
+
+  /** 当前可见的下拉项（未被搜索过滤隐藏的 menuitem） */
+  private visibleMoreItems(): HTMLElement[] {
+    return [...this.shadow.querySelectorAll<HTMLElement>('.more-item')].filter((i) => !i.hidden)
+  }
+
+  /** 聚焦第一个可见下拉项（打开后首焦点落第一项，非搜索框） */
+  private focusFirstMoreItem(): void {
+    this.visibleMoreItems()[0]?.focus()
+  }
+
+  /** 收起下拉并回焦 moreBtn（键盘路径闭环） */
+  private closeMore(): void {
+    if (!this.moreOpen) return
+    this.moreOpen = false
+    this.syncMoreDropdown()
+    const moreBtn = this.shadow.querySelector('.more-btn') as HTMLButtonElement | null
+    moreBtn?.focus({ preventScroll: true })
+  }
+
+  /** 下拉容器键盘导航 */
+  private onMoreDropdownKey(e: Event): void {
+    const ke = e as KeyboardEvent
+    const items = this.visibleMoreItems()
+    const activeEl = this.shadow.activeElement as HTMLElement | null
+    const idx = activeEl ? items.indexOf(activeEl) : -1
+    if (ke.key === 'Escape') {
+      ke.preventDefault()
+      this.closeMore()
+      return
+    }
+    if (ke.key === 'ArrowDown' || ke.key === 'ArrowUp' || ke.key === 'Home' || ke.key === 'End') {
+      if (!items.length) return
+      ke.preventDefault()
+      let next = 0
+      if (ke.key === 'ArrowDown') next = idx < 0 ? 0 : (idx + 1) % items.length
+      else if (ke.key === 'ArrowUp')
+        next = idx < 0 ? items.length - 1 : (idx - 1 + items.length) % items.length
+      else if (ke.key === 'Home') next = 0
+      else next = items.length - 1
+      items[next]?.focus()
+      return
+    }
+    if (ke.key === 'Enter' || ke.key === ' ') {
+      // 激活当前聚焦项（真实使用时 keydown 源自聚焦项冒泡；用 activeElement 更稳，不依赖 event.target）
+      const focused = this.shadow.activeElement as HTMLElement | null
+      if (focused && focused.classList.contains('more-item')) {
+        ke.preventDefault()
+        focused.click()
+      }
+    }
   }
 
   /**
@@ -1324,12 +1403,10 @@ export class OASTabs extends OASElement {
     moreBtn.setAttribute('aria-expanded', String(this.moreOpen))
     if (this.moreOpen) {
       this.renderMoreDropdown()
-      // 打开时清空搜索并聚焦搜索框（有搜索时）
+      // 打开时清空搜索；首焦点落第一个可见项（非搜索框，键盘用户直达溢出标签）
       const search = this.shadow.querySelector('.more-search') as HTMLInputElement | null
-      if (search && !search.hidden) {
-        search.value = ''
-        search.focus({ preventScroll: true })
-      }
+      if (search && !search.hidden) search.value = ''
+      this.focusFirstMoreItem()
     }
   }
 
