@@ -260,9 +260,46 @@
   </oas-layout>
 </DemoBlock>
 
+## 子元素声明式通道
+
+除 `items` JSON 外，可用 `<oas-sidebar-item>` / `<oas-sidebar-divider>` 子元素声明式书写（`items` 属性**显式设置时优先**，未设置时解析子元素收敛到同一渲染路径）。默认插槽文本为 label，属性对齐 `SidebarItem` 字段：`value` / `icon` / `group` / `badge`（纯数字字符串转 number，其余保留 string）；`<oas-sidebar-item>` 内直接嵌套子元素即递归为嵌套 children（可含分隔线）。子元素增删、属性与文本变化会自动重渲染（MutationObserver）。**边界**：`actions`（悬停操作按钮）是对象数组，不适合子元素标量映射，需要时请用 `items` JSON。
+
+<DemoBlock title="子元素声明式（分组 / 分隔线 / 嵌套 / 徽标）">
+  <div style="height: 340px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-decl" active="users">
+      <oas-sidebar-item value="dash" icon="star" group="概览">仪表盘</oas-sidebar-item>
+      <oas-sidebar-item value="trend" icon="star" group="概览">实时趋势</oas-sidebar-item>
+      <oas-sidebar-divider></oas-sidebar-divider>
+      <oas-sidebar-item value="biz" icon="star">业务管理
+        <oas-sidebar-item value="orders">订单管理</oas-sidebar-item>
+        <oas-sidebar-item value="users">用户管理</oas-sidebar-item>
+      </oas-sidebar-item>
+      <oas-sidebar-item value="inbox" icon="star" badge="12">收件箱</oas-sidebar-item>
+    </oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      「概览」为组标题；分隔线、嵌套子菜单（含激活子项自动展开）与徽标行为均与 `items` 通道一致。
+    </div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="动态增删（MutationObserver 自动刷新）">
+  <oas-space direction="vertical" style="width: 100%">
+    <oas-button size="small" onclick="sidebarDeclAdd()">追加一项</oas-button>
+    <div style="height: 200px; width: 100%; display: flex">
+      <oas-sidebar id="sidebar-decl-dyn">
+        <oas-sidebar-item value="home" icon="star">首页</oas-sidebar-item>
+        <oas-sidebar-item value="settings" icon="star">设置</oas-sidebar-item>
+      </oas-sidebar>
+      <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+        点击按钮追加菜单项，侧栏自动刷新。
+      </div>
+    </div>
+  </oas-space>
+</DemoBlock>
+
 ## API
 
-### 属性
+### oas-sidebar
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -281,8 +318,6 @@
 | `variant` | 形态：sidebar（默认贴边）/ floating（悬浮圆角阴影）/ inset（内嵌圆角背景） | — | — |
 | `width` | 展开宽度，默认走 `--oas-sidebar-width` token | `string` | `0` |
 
-### 事件
-
 | 事件 | 说明 |
 | --- | --- |
 | `oas-action` | `detail: { value: string, action: string, label: string }`；触发时机：点击项悬停操作按钮时（不触发 oas-select） |
@@ -290,13 +325,30 @@
 | `oas-resize` | `detail: { width: number }`；触发时机：拖拽调宽松手时 / 方向键微调宽度时 |
 | `oas-select` | `detail: { value: string, label: string }`；触发时机：选中菜单项时（移动端同时收起抽屉） |
 
-### 插槽
-
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
 | `footer` | — |
 | `header` | — |
+
+### oas-sidebar-item
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `badge` | 徽标计数（纯数字字符串转 number，其余保留 string；对齐 SidebarItem.badge 的 string\|number） | — | — |
+| `group` | 分组名（连续同组项在组首项前渲染组标题） | — | — |
+| `icon` | 前置图标（`@oas-ui/icons` 注册表图标名；折叠图标条态显示） | — | — |
+| `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 侧栏菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-sidebar-item>`（及 `<oas-sidebar-divider>`）递归为嵌套 children |
+
+### oas-sidebar-divider
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 分隔线数据载体（无属性，宿主解析为 `{type:"divider"}`） |
 
 ### 部件（part）
 
@@ -312,6 +364,15 @@ onMounted(() => {
   window.sidebarResizeLog = (e) => {
     const tag = document.getElementById('sidebar-resize-log')
     if (tag) tag.textContent = `当前宽度 ${e.detail.width}px`
+  }
+  window.sidebarDeclAdd = () => {
+    const sidebar = document.getElementById('sidebar-decl-dyn')
+    if (!sidebar) return
+    const n = sidebar.children.length + 1
+    const item = document.createElement('oas-sidebar-item')
+    item.setAttribute('value', `dyn-${n}`)
+    item.textContent = `动态项 ${n}`
+    sidebar.appendChild(item)
   }
 })
 </script>

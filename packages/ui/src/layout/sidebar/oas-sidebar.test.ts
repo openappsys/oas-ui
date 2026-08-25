@@ -637,3 +637,208 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(el.getAttribute('width')).toBe('300px')
   })
 })
+
+// ===== 子元素声明式通道（oas-sidebar-item / oas-sidebar-divider） =====
+// 与 menu/breadcrumb 同范式：items 属性显式设置时数据驱动优先，否则解析子元素收敛到同一渲染路径
+
+/** 子元素通道挂载：innerHTML 填 light DOM 子元素后 append（触发 render → 解析） */
+function mountSidebarChildren(html: string, attrs: Record<string, string> = {}): OASSidebar {
+  const el = document.createElement('oas-sidebar') as OASSidebar
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+  el.innerHTML = html
+  document.body.appendChild(el)
+  return el
+}
+
+describe('OASSidebar 子元素声明式通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('注册 oas-sidebar-item / oas-sidebar-divider 自定义元素', () => {
+    expect(customElements.get('oas-sidebar-item')).not.toBeNull()
+    expect(customElements.get('oas-sidebar-divider')).not.toBeNull()
+  })
+
+  it('基础：普通项/分组/divider/嵌套 children 混排解析渲染，与 items 通道一致', () => {
+    stubMatchMedia(false)
+    const el = mountSidebarChildren(`
+      <oas-sidebar-item value="dash" icon="star" group="概览">仪表盘</oas-sidebar-item>
+      <oas-sidebar-item value="orders" icon="star" group="概览">订单</oas-sidebar-item>
+      <oas-sidebar-divider></oas-sidebar-divider>
+      <oas-sidebar-item value="biz" icon="star">业务管理
+        <oas-sidebar-item value="users">用户</oas-sidebar-item>
+        <oas-sidebar-item value="roles">角色</oas-sidebar-item>
+      </oas-sidebar-item>
+    `)
+    const root = el.shadowRoot!
+    // 分组标题渲染一次（组首项前）
+    const titles = [...root.querySelectorAll('[part="group"]')]
+    expect(titles.length).toBe(1)
+    expect(titles[0]!.textContent).toBe('概览')
+    // 分隔线
+    expect(root.querySelectorAll('[part="divider"]').length).toBe(1)
+    // 顶层 3 项 + 嵌套 2 项
+    const items = root.querySelectorAll<HTMLElement>('[part="item"]')
+    expect(items.length).toBe(5)
+    expect(items[0]!.querySelector('.label')!.textContent).toBe('仪表盘')
+    expect(items[4]!.querySelector('.label')!.textContent).toBe('角色')
+    // 嵌套父项：默认收起，点击展开/收起（与 items 通道一致）
+    const parent = root.querySelector<HTMLElement>('[part="item"][data-value="biz"]')!
+    const sub = root.querySelector<HTMLElement>('[part="submenu"]')!
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+    expect(sub.hidden).toBe(true)
+    expect(sub.querySelectorAll('[part="item"]').length).toBe(2)
+    parent.click()
+    expect(parent.getAttribute('aria-expanded')).toBe('true')
+    expect(sub.hidden).toBe(false)
+  })
+
+  it('items 属性显式设置时优先（子元素被忽略）', () => {
+    stubMatchMedia(false)
+    const el = mountSidebarChildren(
+      `<oas-sidebar-item value="child">子项</oas-sidebar-item>`,
+      {
+        items: JSON.stringify([
+          { label: '数据项', value: 'data' },
+          { label: '末项', value: 'last' },
+        ]),
+      },
+    )
+    const labels = [...el.shadowRoot!.querySelectorAll('[part="item"] .label')].map(
+      (l) => l.textContent,
+    )
+    expect(labels).toEqual(['数据项', '末项'])
+    expect(el.shadowRoot!.querySelector('[data-value="child"]')).toBeNull()
+  })
+
+  it('属性映射：badge 数字/字符串、icon 注册表名渲染 SVG、group 组标题', () => {
+    stubMatchMedia(false)
+    const el = mountSidebarChildren(`
+      <oas-sidebar-item value="inbox" icon="star" badge="12" group="消息">收件箱</oas-sidebar-item>
+      <oas-sidebar-item value="notice" badge="hot">通知</oas-sidebar-item>
+    `)
+    const root = el.shadowRoot!
+    // 内部模型：纯数字 badge 转 number、非数字留 string（对齐 SidebarItem.badge 的 string|number）
+    const model = (el as unknown as { _items: Array<{ badge?: string | number }> })._items
+    expect(model[0]!.badge).toBe(12)
+    expect(model[1]!.badge).toBe('hot')
+    // 渲染层：徽标文本一致
+    const badges = [...root.querySelectorAll('[part="badge"]')]
+    expect(badges.length).toBe(2)
+    expect(badges[0]!.textContent).toBe('12')
+    expect(badges[1]!.textContent).toBe('hot')
+    // icon 注册表名 → SVG
+    expect(root.querySelector('[data-value="inbox"] .icon svg')).not.toBeNull()
+    // group 组标题
+    expect(root.querySelector('[part="group"]')!.textContent).toBe('消息')
+  })
+
+  it('MutationObserver：运行时 append oas-sidebar-item 后侧栏刷新出现新项', async () => {
+    stubMatchMedia(false)
+    const el = mountSidebarChildren(`<oas-sidebar-item value="home">首页</oas-sidebar-item>`)
+    expect(el.shadowRoot!.querySelectorAll('[part="item"]').length).toBe(1)
+    const item = document.createElement('oas-sidebar-item')
+    item.setAttribute('value', 'about')
+    item.textContent = '关于'
+    el.appendChild(item)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.shadowRoot!.querySelectorAll('[part="item"]').length).toBe(2)
+    expect(el.shadowRoot!.querySelector('[data-value="about"]')).not.toBeNull()
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[data-value="about"] .label')!.textContent,
+    ).toBe('关于')
+  })
+
+  it('MutationObserver：子项 badge 属性变化后徽标自动刷新', async () => {
+    stubMatchMedia(false)
+    const el = mountSidebarChildren(`<oas-sidebar-item value="inbox">收件箱</oas-sidebar-item>`)
+    expect(el.shadowRoot!.querySelector('[part="badge"]')).toBeNull()
+    el.querySelector('oas-sidebar-item')!.setAttribute('badge', '5')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.shadowRoot!.querySelector('[part="badge"]')!.textContent).toBe('5')
+  })
+
+  it('折叠态：collapsed + 子元素通道 → 图标条渲染（label 隐藏、tooltip 可达、分组标题隐藏）', () => {
+    stubMatchMedia(false)
+    const el = mountSidebarChildren(
+      `
+      <oas-sidebar-item value="home" icon="star" group="导航">首页</oas-sidebar-item>
+      <oas-sidebar-item value="settings">设置</oas-sidebar-item>
+      `,
+      { collapsed: '' },
+    )
+    const root = el.shadowRoot!
+    const items = [...root.querySelectorAll<HTMLElement>('[part="item"]')]
+    expect(items.length).toBe(2)
+    // 有 icon 项可见；无 icon 项整体隐藏（与 items 通道一致）
+    expect(items[0]!.hidden).toBe(false)
+    expect(items[1]!.hidden).toBe(true)
+    // 图标项包 tooltip（label 提示、placement=right）
+    const tip = root.querySelector('oas-tooltip')!
+    expect(tip.getAttribute('content')).toBe('首页')
+    expect(tip.getAttribute('placement')).toBe('right')
+    expect(tip.querySelector('[part="item"]')).not.toBeNull()
+    // 分组标题渲染但折叠态 CSS 隐藏（与 items 通道同一规则）
+    expect(root.querySelector('[part="group"]')!.textContent).toBe('导航')
+    const css = root.querySelector('style')!.textContent!
+    expect(css).toMatch(/collapsed\][^{]*\.group-title\s*\{[^}]*display:\s*none/)
+    expect(css).toMatch(/collapsed\][^{]*\.item \.label\s*\{[^}]*display:\s*none/)
+  })
+
+  it('嵌套父项展开/收起与子项选中在子元素通道下不变（collapsed 子树隐藏）', () => {
+    stubMatchMedia(false)
+    const el = mountSidebarChildren(`
+      <oas-sidebar-item value="biz" icon="star">业务管理
+        <oas-sidebar-item value="users">用户</oas-sidebar-item>
+      </oas-sidebar-item>
+    `)
+    const root = el.shadowRoot!
+    const parent = root.querySelector<HTMLElement>('[part="item"][data-value="biz"]')!
+    const sub = root.querySelector<HTMLElement>('[part="submenu"]')!
+    // 父项点击只切换展开，不派发 select
+    let selectCount = 0
+    el.addEventListener('oas-select', () => selectCount++)
+    parent.click()
+    expect(parent.getAttribute('aria-expanded')).toBe('true')
+    expect(sub.hidden).toBe(false)
+    expect(selectCount).toBe(0)
+    // 子项点击派发 oas-select
+    let detail: unknown
+    el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    root.querySelector<HTMLElement>('[part="submenu"] [part="item"]')!.click()
+    expect(detail).toEqual({ value: 'users', label: '用户' })
+    // 再点父项收起
+    parent.click()
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+    expect(sub.hidden).toBe(true)
+    // 折叠态：嵌套父项子树初始隐藏（与 items 通道一致；collapsed 触发重渲染，重新查询节点）
+    el.setAttribute('collapsed', '')
+    const parent2 = root.querySelector<HTMLElement>('[part="item"][data-value="biz"]')!
+    const sub2 = root.querySelector<HTMLElement>('[part="submenu"]')!
+    expect(sub2.hidden, '折叠态下嵌套父项子树初始隐藏').toBe(true)
+    // 折叠态点击父项：切换展开态（子树可见），与 items 通道同构行为一致
+    parent2.click()
+    expect(parent2.getAttribute('aria-expanded')).toBe('true')
+    expect(sub2.hidden).toBe(false)
+    // 同构 items 通道对照：折叠态初始子树同样隐藏
+    const elItems = mount({
+      collapsed: '',
+      items: JSON.stringify([
+        {
+          label: '业务管理',
+          value: 'biz',
+          icon: 'star',
+          children: [{ label: '用户', value: 'users' }],
+        },
+      ]),
+    })
+    expect(elItems.shadowRoot!.querySelector<HTMLElement>('[part="submenu"]')!.hidden).toBe(true)
+  })
+})

@@ -195,6 +195,17 @@
     },
     "slots": {}
   },
+  "oas-bottom-navigation-item": {
+    "attrs": {
+      "value": "Selection value (data-carrier field of the declarative child channel)",
+      "icon": "Leading icon (`@oas-ui/icons` registry icon name)",
+      "disabled": "Disable this item (not selectable, skipped by keyboard)"
+    },
+    "events": {},
+    "slots": {
+      "": "Bottom-navigation item label content (default slot text)"
+    }
+  },
   "oas-breadcrumb": {
     "attrs": {
       "active-last": "Keep the last item clickable: when the current (last) item has `href`, render it as a link (still carrying `aria-current=\"page\"`)",
@@ -1292,6 +1303,17 @@
     },
     "slots": {}
   },
+  "oas-option": {
+    "attrs": {
+      "disabled": "Disable this option (not selectable)",
+      "group": "Group title (optional): options in the same group render a consecutive group title (not selectable), items are indented",
+      "value": "Option value (data-carrier field of the declarative child-element channel)"
+    },
+    "events": {},
+    "slots": {
+      "": "Option label content (default slot text)"
+    }
+  },
   "oas-page-header": {
     "attrs": {
       "back": "Whether to show the back button",
@@ -1547,6 +1569,25 @@
       "oas-resize": "`detail: { width: number }`; When fired: drag-resize ends / arrow keys adjust the width"
     },
     "slots": {}
+  },
+  "oas-sidebar-divider": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "Divider data carrier (no attributes; the host parses it as `{type:\"divider\"}`)"
+    }
+  },
+  "oas-sidebar-item": {
+    "attrs": {
+      "value": "Selection value (data-carrier field of the declarative child channel)",
+      "icon": "Leading icon (`@oas-ui/icons` registry icon name; shown in the collapsed icon strip)",
+      "group": "Group name (consecutive items in the same group get a group title before the group's first item)",
+      "badge": "Count badge (all-digit strings convert to `number`, otherwise stay `string`; matches `SidebarItem.badge`'s `string | number`)"
+    },
+    "events": {},
+    "slots": {
+      "": "Sidebar item label content (default slot text); direct child `<oas-sidebar-item>` (and `<oas-sidebar-divider>`) elements recursively become the nested `children`"
+    }
   },
   "oas-skeleton": {
     "attrs": {
@@ -1939,6 +1980,16 @@
     },
     "slots": {}
   },
+  "oas-toggle-item": {
+    "attrs": {
+      "disabled": "Disable this item (not clickable; skipped by arrow keys)",
+      "value": "Item value (data-carrier field of the declarative child-element channel)"
+    },
+    "events": {},
+    "slots": {
+      "": "Button label (default slot text)"
+    }
+  },
   "oas-toggle-group": {
     "attrs": {
       "items": "Options JSON (property assignment reflects to attribute)",
@@ -2033,6 +2084,16 @@
       "oas-change": "Toggle, `detail: { value: string | string[] }`"
     },
     "slots": {}
+  },
+  "oas-toolbar-toggle-item": {
+    "attrs": {
+      "disabled": "Disable this item (not clickable; skipped by arrow keys)",
+      "value": "Item value (data-carrier field of the declarative child-element channel)"
+    },
+    "events": {},
+    "slots": {
+      "": "Button label (default slot text)"
+    }
   },
   "oas-tour": {
     "attrs": {

@@ -54,9 +54,21 @@ onMounted(() => {
 })
 </script>
 
+## 子元素声明式通道
+
+除 `items` JSON 外，可用 `<oas-bottom-navigation-item>` 子元素声明式书写（`items` 属性**显式设置时优先**，未设置时解析子元素收敛到同一渲染路径）。默认插槽文本为 label，属性对齐 `BottomNavItem` 字段：`value` / `icon` / `disabled`。子元素增删、属性与文本变化会自动重渲染（MutationObserver）。
+
+<DemoBlock title="子元素声明式（icon / disabled）">
+  <oas-bottom-navigation id="bn-decl" value="home" style="width: 100%; max-width: 480px">
+    <oas-bottom-navigation-item value="home" icon="user">首页</oas-bottom-navigation-item>
+    <oas-bottom-navigation-item value="discover" icon="heart" disabled>发现</oas-bottom-navigation-item>
+    <oas-bottom-navigation-item value="mine" icon="gear">我的</oas-bottom-navigation-item>
+  </oas-bottom-navigation>
+</DemoBlock>
+
 ## API
 
-### 属性
+### oas-bottom-navigation
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -64,11 +76,21 @@ onMounted(() => {
 | `items` | 导航项 JSON | `string` | `[]` |
 | `value` | 激活项 value，未指定默认激活第一个可用项 | — | — |
 
-### 事件
-
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 切换激活项，`detail: { value }` |
+
+### oas-bottom-navigation-item
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 禁用该项（不可选中、键盘跳过） | — | — |
+| `icon` | 前置图标（`@oas-ui/icons` 注册表图标名） | — | — |
+| `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 底部导航项 label 内容（默认插槽文本） |
 
 `BottomNavItem` 字段：
 

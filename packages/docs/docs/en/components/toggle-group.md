@@ -42,6 +42,26 @@ Item-level `disabled: true` disables that item; disabled items are skipped in ke
 
 Presetting `value="week"` / `value='["bold"]'` gives both groups an initial selected state; writing the `value` attribute externally switches the selected state immediately.
 
+## Declarative Child-Element Channel
+
+Besides the `items` JSON, you can declare options declaratively with `<oas-toggle-item>` child elements (the `items` attribute *takes precedence when explicitly set*; otherwise child elements are parsed and converge into the same rendering path). The default slot text is the label; attributes map to the `ToggleItem` fields: `value` / `disabled`. Child additions, removals, attribute and text changes re-render automatically (MutationObserver); single/multiple (`multiple`) semantics are identical to the items channel.
+
+<DemoBlock title="Declarative child elements (single + multiple)">
+  <oas-space size="small">
+    <oas-toggle-group id="tg-decl" value="week">
+      <oas-toggle-item value="day">Day</oas-toggle-item>
+      <oas-toggle-item value="week">Week</oas-toggle-item>
+      <oas-toggle-item value="month" disabled>Month (disabled)</oas-toggle-item>
+    </oas-toggle-group>
+    <oas-toggle-group id="tg-decl-multi" multiple>
+      <oas-toggle-item value="bold">Bold</oas-toggle-item>
+      <oas-toggle-item value="italic">Italic</oas-toggle-item>
+      <oas-toggle-item value="underline">Underline</oas-toggle-item>
+    </oas-toggle-group>
+    <oas-button id="tg-decl-add" size="small">Add one dynamically</oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## Events
 
 Clicking or keyboard toggling dispatches `oas-change`; single select: `detail: { value: string }`, multiple select: `detail: { value: string[] }`.
@@ -85,12 +105,23 @@ onMounted(() => {
   document.getElementById('tg-set-multi')?.addEventListener('click', () => {
     document.getElementById('tg-controlled-multi')?.setAttribute('value', '["italic","underline"]')
   })
+
+  // Declarative child-element channel: dynamic append (MutationObserver auto-refresh)
+  const decl = document.getElementById('tg-decl')
+  document.getElementById('tg-decl-add')?.addEventListener('click', () => {
+    if (!decl) return
+    const n = decl.children.length + 1
+    const item = document.createElement('oas-toggle-item')
+    item.setAttribute('value', `dyn-${n}`)
+    item.textContent = `Dynamic ${n}`
+    decl.appendChild(item)
+  })
 })
 </script>
 
 ## API
 
-### Attributes
+### oas-toggle-group
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -98,11 +129,20 @@ onMounted(() => {
 | `multiple` | Multiple mode (checkbox semantics) | `boolean` | — |
 | `value` | Current value: string for single; JSON array string for multiple | `string` | `[]` |
 
-### Events
-
 | Event | Description |
 | --- | --- |
 | `oas-change` | Toggle, `detail: { value: string \| string[] }` |
+
+### oas-toggle-item
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disable this item (not clickable; skipped by arrow keys) | — | — |
+| `value` | Item value (data-carrier field of the declarative child-element channel) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Button label (default slot text) |
 
 `ToggleItem` fields:
 
