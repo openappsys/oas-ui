@@ -110,6 +110,26 @@ Listen to `oas-option-render` (each option row) and `oas-tag-render` (multi-sele
 
 With `virtual` set, only the visible window is rendered (reusing the `oas-virtual-list` window math; leading/trailing padding carries the scroll height) — 10k options scroll smoothly. `item-height` tunes the fixed row height (default `36`). Keyboard `↑`/`↓` scrolling follows the highlighted item and `aria-activedescendant` keeps pointing at a visible row; options with a `group` field fall back to full rendering.
 
+## Declarative Child-Element Channel
+
+Besides the `options` JSON, you can declare options declaratively with `<oas-option>` child elements (matching the native `<select><option>` mental model: the default slot text is the label; attributes map to the `options` fields — `value` / `disabled` / `group` group title). The `options` attribute *takes precedence when explicitly set*; otherwise child elements are parsed and converge into the same rendering path (virtual scrolling, grouping, search etc. are fully identical). Child additions, removals, attribute and text changes re-render automatically (MutationObserver).
+
+<DemoBlock title="Declarative child elements (native select mental model)">
+  <oas-space size="small" direction="vertical">
+    <oas-select id="select-decl" placeholder="Select a fruit" value="banana">
+      <oas-option value="apple" group="Temperate fruits">Apple</oas-option>
+      <oas-option value="banana" group="Temperate fruits">Banana</oas-option>
+      <oas-option value="orange" group="Tropical fruits">Orange</oas-option>
+      <oas-option value="mango" group="Tropical fruits">Mango</oas-option>
+      <oas-option value="other" disabled>Other (disabled)</oas-option>
+    </oas-select>
+    <oas-space size="small">
+      <oas-button id="select-decl-add" size="small">Add an option dynamically</oas-button>
+      <oas-tag id="select-decl-result" type="info">oas-change: banana</oas-tag>
+    </oas-space>
+  </oas-space>
+</DemoBlock>
+
 ## Events
 
 <DemoBlock title="Change events">
@@ -185,12 +205,27 @@ onMounted(() => {
       ),
     )
   }
+
+  // Declarative child-element channel demo: selection feedback + dynamic append (MutationObserver auto-refresh)
+  const declSelect = document.getElementById('select-decl')
+  const declResult = document.getElementById('select-decl-result')
+  declSelect?.addEventListener('oas-change', (e) => {
+    declResult.textContent = `oas-change: ${e.detail.value}`
+  })
+  document.getElementById('select-decl-add')?.addEventListener('click', () => {
+    if (!declSelect) return
+    const n = declSelect.children.length + 1
+    const opt = document.createElement('oas-option')
+    opt.setAttribute('value', `dyn-${n}`)
+    opt.textContent = `Dynamic fruit ${n}`
+    declSelect.appendChild(opt)
+  })
 })
 </script>
 
 ## API
 
-### Attributes
+### oas-select
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -208,8 +243,6 @@ onMounted(() => {
 | `value` | Current value (JSON array in multiple mode) | — | — |
 | `virtual` | Virtual scrolling for large datasets: renders only the visible window (reuses oas-virtual-list); options with a `group` field fall back to full rendering | `boolean` | — |
 
-### Events
-
 | Event | Description |
 | --- | --- |
 | `oas-change` | Selection/clear change, `detail: { value }` |
@@ -218,12 +251,22 @@ onMounted(() => {
 | `oas-option-render` | Dispatched for each rendered option row, `detail: { index, option, element }` (element is the option label container; host can rewrite it into icon/rich text) |
 | `oas-tag-render` | Dispatched when a multi-select tag renders, `detail: { value, label, element }` (element is the tag text container; host can rewrite it) |
 
-### Slots
-
 | Name | Description |
 | --- | --- |
 | `template[slot="option"]` | Static option row template, cloned into each option label container; `[data-option-label]` nodes get bound to the option label |
 | `template[slot="tag"]` | Static multi-select tag template, cloned into each chip text container; `[data-tag-label]` nodes get bound to the tag label |
+
+### oas-option
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `disabled` | Disable this option (not selectable) | — | — |
+| `group` | Group title (optional): options in the same group render a consecutive group title (not selectable), items are indented | — | — |
+| `value` | Option value (data-carrier field of the declarative child-element channel) | — | — |
+
+| Name | Description |
+| --- | --- |
+| default | Option label content (default slot text) |
 
 > Options carrying a `group` field are rendered under a group title (not selectable), items are indented; keyboard navigation continues across groups.
 

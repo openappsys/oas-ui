@@ -42,6 +42,26 @@
 
 预设 `value="week"` / `value='["bold"]'` 使两个组初始即带选中态；按钮外部写入 `value` 属性后选中态即时切换。
 
+## 子元素声明式通道
+
+除 `items` JSON 外，可用 `<oas-toggle-item>` 子元素声明式书写选项（`items` 属性*显式设置时优先*，未设置时解析子元素收敛到同一渲染路径）。默认插槽文本为 label，属性对齐 `ToggleItem` 字段：`value` / `disabled`。子元素增删、属性与文本变化会自动重渲染（MutationObserver）；单选/多选（`multiple`）语义与 items 通道完全一致。
+
+<DemoBlock title="子元素声明式（单选 + 多选）">
+  <oas-space size="small">
+    <oas-toggle-group id="tg-decl" value="week">
+      <oas-toggle-item value="day">日</oas-toggle-item>
+      <oas-toggle-item value="week">周</oas-toggle-item>
+      <oas-toggle-item value="month" disabled>月（禁用）</oas-toggle-item>
+    </oas-toggle-group>
+    <oas-toggle-group id="tg-decl-multi" multiple>
+      <oas-toggle-item value="bold">加粗</oas-toggle-item>
+      <oas-toggle-item value="italic">斜体</oas-toggle-item>
+      <oas-toggle-item value="underline">下划线</oas-toggle-item>
+    </oas-toggle-group>
+    <oas-button id="tg-decl-add" size="small">动态追加一项</oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## 事件
 
 点击或键盘切换派发 `oas-change`，单选 `detail: { value: string }`，多选 `detail: { value: string[] }`。
@@ -85,12 +105,23 @@ onMounted(() => {
   document.getElementById('tg-set-multi')?.addEventListener('click', () => {
     document.getElementById('tg-controlled-multi')?.setAttribute('value', '["italic","underline"]')
   })
+
+  // 子元素声明式通道：动态追加（MutationObserver 自动刷新）
+  const decl = document.getElementById('tg-decl')
+  document.getElementById('tg-decl-add')?.addEventListener('click', () => {
+    if (!decl) return
+    const n = decl.children.length + 1
+    const item = document.createElement('oas-toggle-item')
+    item.setAttribute('value', `dyn-${n}`)
+    item.textContent = `动态 ${n}`
+    decl.appendChild(item)
+  })
 })
 </script>
 
 ## API
 
-### 属性
+### oas-toggle-group
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -98,11 +129,20 @@ onMounted(() => {
 | `multiple` | 多选模式（checkbox 语义） | `boolean` | — |
 | `value` | 当前值：单选为字符串；多选为 JSON 数组字符串 | `string` | `[]` |
 
-### 事件
-
 | 事件 | 说明 |
 | --- | --- |
 | `oas-change` | 切换，`detail: { value: string \| string[] }` |
+
+### oas-toggle-item
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `disabled` | 禁用该项（点击不可选，方向键跳过） | — | — |
+| `value` | 选项值（子元素声明式通道的数据载体字段） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 按钮文案（默认插槽文本） |
 
 `ToggleItem` 字段：
 

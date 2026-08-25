@@ -628,6 +628,130 @@ describe('OASToolbarToggle', () => {
   })
 })
 
+// ============ oas-toolbar-toggle 子元素声明式通道（oas-toolbar-toggle-item） ============
+
+describe('OASToolbarToggle 子元素声明式通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** 以 oas-toolbar-toggle-item 子元素构建切换组，opts: [value, label, extraAttrs?] */
+  function childToggle(
+    opts: Array<[string, string, Record<string, string>?]>,
+    hostAttrs: Record<string, string> = {},
+  ): OASToolbarToggle {
+    const el = new OASToolbarToggle()
+    for (const [k, v] of Object.entries(hostAttrs)) el.setAttribute(k, v)
+    for (const [value, label, attrs] of opts) {
+      const item = document.createElement('oas-toolbar-toggle-item')
+      item.setAttribute('value', value)
+      item.textContent = label
+      for (const [k, v] of Object.entries(attrs ?? {})) item.setAttribute(k, v)
+      el.appendChild(item)
+    }
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('基础：oas-toolbar-toggle-item 解析渲染，aria-pressed 跟随 value（单选）', () => {
+    const el = childToggle(
+      [
+        ['bold', '加粗'],
+        ['italic', '斜体'],
+        ['underline', '下划线'],
+      ],
+      { value: 'bold' },
+    )
+    const btns = el.shadowRoot!.querySelectorAll<HTMLButtonElement>('button')
+    expect(btns.length).toBe(3)
+    expect(btns[0]!.getAttribute('aria-pressed')).toBe('true')
+    expect(btns[1]!.getAttribute('aria-pressed')).toBe('false')
+    let detail: unknown
+    el.addEventListener('oas-change', (e) => (detail = (e as CustomEvent).detail))
+    btns[1]!.click()
+    expect(el.getAttribute('value')).toBe('italic')
+    expect(detail).toEqual({ value: 'italic' })
+    expect(btns[1]!.getAttribute('aria-pressed')).toBe('true')
+    expect(btns[0]!.getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('items 显式优先：items 属性并存时子元素被忽略', () => {
+    const el = new OASToolbarToggle()
+    el.setAttribute('items', TOGGLE_ITEMS)
+    const item = document.createElement('oas-toolbar-toggle-item')
+    item.setAttribute('value', 'child-only')
+    item.textContent = '子元素独有'
+    el.appendChild(item)
+    document.body.appendChild(el)
+    const btns = [...el.shadowRoot!.querySelectorAll<HTMLButtonElement>('button')]
+    expect(btns.length).toBe(3)
+    expect(btns.every((b) => b.textContent !== '子元素独有')).toBe(true)
+  })
+
+  it('属性映射：disabled 拦截选择 + aria-disabled，不参与方向键导航', () => {
+    const el = childToggle([
+      ['a', 'A'],
+      ['b', 'B', { disabled: '' }],
+    ])
+    const btns = el.shadowRoot!.querySelectorAll<HTMLButtonElement>('button')
+    expect(btns[1]!.getAttribute('aria-disabled')).toBe('true')
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    btns[1]!.click()
+    expect(fired).toBe(0)
+  })
+
+  it('MutationObserver：运行时 append oas-toolbar-toggle-item 后刷新出现新按钮', async () => {
+    const el = childToggle([['a', 'A']])
+    expect(el.shadowRoot!.querySelectorAll('button').length).toBe(1)
+    const item = document.createElement('oas-toolbar-toggle-item')
+    item.setAttribute('value', 'b')
+    item.textContent = 'B'
+    el.appendChild(item)
+    await new Promise((r) => setTimeout(r, 0))
+    const btns = el.shadowRoot!.querySelectorAll<HTMLButtonElement>('button')
+    expect(btns.length).toBe(2)
+    expect(btns[1]!.textContent).toBe('B')
+  })
+
+  it('单选/多选语义不变：子元素通道下 multiple 切换 + value 数组，方向键行为一致', () => {
+    // 多选：每项独立切换，value 为 JSON 数组
+    const el = childToggle(
+      [
+        ['bold', '加粗'],
+        ['italic', '斜体'],
+      ],
+      { multiple: '' },
+    )
+    const btns = el.shadowRoot!.querySelectorAll<HTMLButtonElement>('button')
+    let detail: unknown
+    el.addEventListener('oas-change', (e) => (detail = (e as CustomEvent).detail))
+    btns[0]!.click()
+    btns[1]!.click()
+    expect(el.getAttribute('value')).toBe('["bold","italic"]')
+    expect(detail).toEqual({ value: ['bold', 'italic'] })
+    btns[0]!.click()
+    expect(el.getAttribute('value')).toBe('["italic"]')
+    // 单选：方向键移动即选中
+    const el2 = childToggle([
+      ['a', 'A'],
+      ['b', 'B'],
+    ])
+    const group2 = el2.shadowRoot!.querySelector('.group')!
+    const b2 = el2.shadowRoot!.querySelectorAll<HTMLButtonElement>('button')
+    b2[0]!.focus()
+    group2.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(el2.getAttribute('value')).toBe('b')
+    expect(b2[1]!.getAttribute('aria-pressed')).toBe('true')
+  })
+})
+
 // ============ oas-toolbar-separator 分隔符 ============
 
 describe('OASToolbarSeparator', () => {

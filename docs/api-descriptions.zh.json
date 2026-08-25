@@ -195,6 +195,17 @@
     },
     "slots": {}
   },
+  "oas-bottom-navigation-item": {
+    "attrs": {
+      "value": "选中值（子元素声明式通道的数据载体字段）",
+      "icon": "前置图标（`@oas-ui/icons` 注册表图标名）",
+      "disabled": "禁用该项（不可选中、键盘跳过）"
+    },
+    "events": {},
+    "slots": {
+      "": "底部导航项 label 内容（默认插槽文本）"
+    }
+  },
   "oas-breadcrumb": {
     "attrs": {
       "active-last": "末项保持可点击：当前页（末项）带 `href` 时渲染为链接（仍带 `aria-current=\"page\"`）",
@@ -1292,6 +1303,17 @@
     },
     "slots": {}
   },
+  "oas-option": {
+    "attrs": {
+      "disabled": "禁用该项（不可选）",
+      "group": "分组标题（可选）：同组连续渲染组标题（不可选），组内选项缩进",
+      "value": "选项值（子元素声明式通道的数据载体字段）"
+    },
+    "events": {},
+    "slots": {
+      "": "选项 label 内容（默认插槽文本）"
+    }
+  },
   "oas-page-header": {
     "attrs": {
       "back": "是否显示返回按钮",
@@ -1547,6 +1569,25 @@
       "oas-resize": "`detail: { width: number }`；触发时机：拖拽调宽松手时 / 方向键微调宽度时"
     },
     "slots": {}
+  },
+  "oas-sidebar-divider": {
+    "attrs": {},
+    "events": {},
+    "slots": {
+      "": "分隔线数据载体（无属性，宿主解析为 `{type:\"divider\"}`）"
+    }
+  },
+  "oas-sidebar-item": {
+    "attrs": {
+      "value": "选中值（子元素声明式通道的数据载体字段）",
+      "icon": "前置图标（`@oas-ui/icons` 注册表图标名；折叠图标条态显示）",
+      "group": "分组名（连续同组项在组首项前渲染组标题）",
+      "badge": "徽标计数（纯数字字符串转 number，其余保留 string；对齐 SidebarItem.badge 的 string|number）"
+    },
+    "events": {},
+    "slots": {
+      "": "侧栏菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-sidebar-item>`（及 `<oas-sidebar-divider>`）递归为嵌套 children"
+    }
   },
   "oas-skeleton": {
     "attrs": {
@@ -1939,6 +1980,16 @@
     },
     "slots": {}
   },
+  "oas-toggle-item": {
+    "attrs": {
+      "disabled": "禁用该项（点击不可选，方向键跳过）",
+      "value": "选项值（子元素声明式通道的数据载体字段）"
+    },
+    "events": {},
+    "slots": {
+      "": "按钮文案（默认插槽文本）"
+    }
+  },
   "oas-toggle-group": {
     "attrs": {
       "items": "选项 JSON（property 赋值单向反射 attribute）",
@@ -2033,6 +2084,16 @@
       "oas-change": "切换，`detail: { value: string | string[] }`"
     },
     "slots": {}
+  },
+  "oas-toolbar-toggle-item": {
+    "attrs": {
+      "disabled": "禁用该项（点击不可选，方向键跳过）",
+      "value": "选项值（子元素声明式通道的数据载体字段）"
+    },
+    "events": {},
+    "slots": {
+      "": "按钮文案（默认插槽文本）"
+    }
   },
   "oas-tour": {
     "attrs": {

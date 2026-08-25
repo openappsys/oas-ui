@@ -105,6 +105,8 @@ export class OASBottomNavigation extends OASElement {
   private lastItemsRaw = ''
   private lastValueRaw: string | null = null
   private focusIndex = 0
+  /** 子元素通道观察器：light DOM 里 oas-bottom-navigation-item 增删或属性/文本变化 → 重解析渲染 */
+  private childObserver: MutationObserver | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -135,14 +137,20 @@ export class OASBottomNavigation extends OASElement {
 
   protected override update(): void {
     this.classList.toggle('oas-bottom-navigation--fixed', this.hasAttr('fixed'))
+    // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
+    this.ensureChildObserver()
     const itemsRaw = this.getAttribute('items') ?? ''
     const itemsChanged = itemsRaw !== this.lastItemsRaw
     this.lastItemsRaw = itemsRaw
     const valueRaw = this.getAttr('value')
     const valueChanged = valueRaw !== this.lastValueRaw
     this.lastValueRaw = valueRaw
-    this.parseItems()
-    if (itemsChanged) {
+    // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染。
+    // 子元素通道下 itemsRaw 恒为 ''（itemsChanged 恒 false），须每次 update 都重渲染；
+    // items 通道仍走增量（raw 变化才重建，保持按钮引用供 roving 焦点）
+    if (this.hasAttribute('items')) this.parseItems()
+    else this.parseChildItems()
+    if (itemsChanged || !this.hasAttribute('items')) {
       this.renderItems()
     } else {
       if (valueChanged) {
@@ -168,6 +176,64 @@ export class OASBottomNavigation extends OASElement {
     } catch {
       this.itemsList = []
     }
+  }
+
+  // ===== 子元素声明式通道 =====
+
+  /**
+   * 子元素通道解析层：把 light DOM 的 `<oas-bottom-navigation-item>` 收敛为内部
+   * itemsList 模型（与 parseItems 单一渲染路径，renderItems/syncState 无感）。
+   */
+  private parseChildItems(): void {
+    this.itemsList = this.parseChildLevel(this.children)
+  }
+
+  /** 解析一层子元素为 BottomNavItem[]（仅识别数据载体元素，其余 light DOM 内容忽略） */
+  private parseChildLevel(elements: HTMLCollection | Element[]): BottomNavItem[] {
+    const items: BottomNavItem[] = []
+    for (const child of Array.from(elements)) {
+      if (child.tagName === 'OAS-BOTTOM-NAVIGATION-ITEM') {
+        items.push(this.childToItem(child))
+      }
+    }
+    return items
+  }
+
+  /** 单个 <oas-bottom-navigation-item> → BottomNavItem（默认插槽文本为 label，属性对齐 items 字段） */
+  private childToItem(el: Element): BottomNavItem {
+    const item: BottomNavItem = {
+      label: (el.textContent ?? '').trim(),
+      value: el.getAttribute('value') ?? '',
+    }
+    const icon = el.getAttribute('icon')
+    if (icon) item.icon = icon
+    if (el.hasAttribute('disabled')) item.disabled = true
+    return item
+  }
+
+  /**
+   * 子元素通道观察器：只监听 light DOM 子元素（数据载体增删/属性/文本变化 → 重解析）。
+   * 组件自身动作不写 light DOM，无需自引用守卫；items 属性显式时以数据驱动为准，跳过重渲染。
+   * 子元素通道下 update() 每次都会重渲染（见 update 内双通道分支），回调直接走 update()。
+   */
+  private ensureChildObserver(): void {
+    if (this.childObserver) return
+    const observer = new MutationObserver(() => {
+      if (this.hasAttribute('items')) return
+      this.update()
+    })
+    observer.observe(this, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+      attributeFilter: ['value', 'icon', 'disabled'],
+    })
+    this.childObserver = observer
+    this.onCleanup(() => {
+      observer.disconnect()
+      this.childObserver = null
+    })
   }
 
   private renderItems(): void {

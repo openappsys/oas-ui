@@ -2143,6 +2143,32 @@
     ],
     "unresolved": []
   },
+  "oas-option": {
+    "className": "OASOption",
+    "sourceFile": "packages/ui/src/form/select/oas-option.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      },
+      {
+        "name": "group",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
   "oas-auto-complete": {
     "className": "OASAutoComplete",
     "sourceFile": "packages/ui/src/form/auto-complete/oas-auto-complete.ts",
@@ -2949,6 +2975,28 @@
       }
     ],
     "slots": [],
+    "unresolved": []
+  },
+  "oas-toggle-item": {
+    "className": "OASToggleItem",
+    "sourceFile": "packages/ui/src/form/toggle-group/oas-toggle-item.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
     "unresolved": []
   },
   "oas-pin-input": {
@@ -5268,6 +5316,28 @@
     "slots": [],
     "unresolved": []
   },
+  "oas-toolbar-toggle-item": {
+    "className": "OASToolbarToggleItem",
+    "sourceFile": "packages/ui/src/floating/toolbar/oas-toolbar-toggle-item.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
   "oas-toolbar-separator": {
     "className": "OASToolbarSeparator",
     "sourceFile": "packages/ui/src/floating/toolbar/oas-toolbar-separator.ts",
@@ -6232,6 +6302,32 @@
     "slots": [],
     "unresolved": []
   },
+  "oas-bottom-navigation-item": {
+    "className": "OASBottomNavigationItem",
+    "sourceFile": "packages/ui/src/navigation/bottom-navigation/oas-bottom-navigation-item.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "observed": true
+      },
+      {
+        "name": "icon",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
   "oas-segmented": {
     "className": "OASSegmented",
     "sourceFile": "packages/ui/src/layout/segmented/oas-segmented.ts",
@@ -6983,6 +7079,49 @@
       },
       {
         "name": "header"
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-sidebar-item": {
+    "className": "OASSidebarItem",
+    "sourceFile": "packages/ui/src/layout/sidebar/oas-sidebar-item.ts",
+    "attrs": [
+      {
+        "name": "value",
+        "observed": true
+      },
+      {
+        "name": "icon",
+        "observed": true
+      },
+      {
+        "name": "group",
+        "observed": true
+      },
+      {
+        "name": "badge",
+        "observed": true
+      }
+    ],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
+      }
+    ],
+    "unresolved": []
+  },
+  "oas-sidebar-divider": {
+    "className": "OASSidebarDivider",
+    "sourceFile": "packages/ui/src/layout/sidebar/oas-sidebar-divider.ts",
+    "attrs": [],
+    "props": [],
+    "events": [],
+    "slots": [
+      {
+        "name": ""
       }
     ],
     "unresolved": []
