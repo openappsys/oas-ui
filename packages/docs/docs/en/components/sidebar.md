@@ -94,6 +94,120 @@ Menu `items` support an optional `group` field: consecutive items in the same gr
   </div>
 </DemoBlock>
 
+## Nested submenus
+
+Items support `children` nesting: a parent item toggles expansion on click (without firing `oas-select`); a parent containing the active child auto-expands. Subtrees are hidden in the collapsed icon strip.
+
+<DemoBlock title="Nested submenus (items.children)">
+  <div style="height: 340px; width: 100%; display: flex">
+    <oas-sidebar active="users" items='[{"label":"Dashboard","value":"dash","icon":"📊"},{"label":"Business","value":"biz","icon":"📦","children":[{"label":"Orders","value":"orders"},{"label":"Products","value":"goods"},{"label":"Users","value":"users"}]},{"label":"System","value":"sys","icon":"⚙️","children":[{"label":"Permissions","value":"perm"},{"label":"Audit Log","value":"audit"}]}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      “Business” auto-expands because it contains the active child (Users); clicking a parent only toggles expansion, clicking a child fires selection.
+    </div>
+  </div>
+</DemoBlock>
+
+## Badges and item actions
+
+Items support `badge` count badges (colors via `--oas-sidebar-badge-bg/-color` variables) and `actions` hover action buttons (clicking fires `oas-action` without selecting).
+
+<DemoBlock title="Badges and item actions">
+  <div style="height: 260px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-badge-action" items='[{"label":"Inbox","value":"inbox","icon":"📥","badge":"12"},{"label":"Notifications","value":"notice","icon":"🔔","badge":"3"},{"label":"Projects","value":"proj","icon":"📁","actions":[{"icon":"✏️","value":"edit","label":"Edit"},{"icon":"🗑️","value":"delete","label":"Delete"}]}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      <p>Hover “Projects” to reveal action buttons; clicking fires an <code>oas-action</code> event.</p>
+      <oas-tag id="sidebar-action-log" type="info">No action yet</oas-tag>
+    </div>
+  </div>
+</DemoBlock>
+
+## Dividers and skeleton
+
+A `{type:"divider"}` entry renders a divider line; the `loading` attribute shows a pulsing skeleton (the value sets the row count, default 4).
+
+<DemoBlock title="Divider + loading">
+  <oas-space style="width: 100%">
+    <oas-button size="small" onclick="document.getElementById('sidebar-loading').toggleAttribute('loading')">Toggle loading</oas-button>
+    <div style="height: 280px; width: 100%; display: flex">
+      <oas-sidebar id="sidebar-loading" items='[{"label":"Dashboard","value":"dash","icon":"📊"},{"type":"divider"},{"label":"Orders","value":"orders","icon":"📦"},{"label":"Users","value":"users","icon":"👥"}]'></oas-sidebar>
+      <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">Click the button to toggle the skeleton.</div>
+    </div>
+  </oas-space>
+</DemoBlock>
+
+## Shortcut and keyboard navigation
+
+The `shortcut` attribute enables `Ctrl/Cmd+B` collapse toggling (off by default to avoid hijacking a global key); the menu supports `↑/↓` focus movement, `Home/End` jumps, and `Enter/Space` activation.
+
+<DemoBlock title="Shortcut + keyboard navigation">
+  <div style="height: 260px; width: 100%; display: flex">
+    <oas-sidebar shortcut items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Data","value":"data","icon":"📊"},{"label":"Settings","value":"settings","icon":"⚙️"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      Press <oas-kbd>Ctrl</oas-kbd>+<oas-kbd>B</oas-kbd> to collapse/expand; focus the menu and navigate with arrow keys.
+    </div>
+  </div>
+</DemoBlock>
+
+## Hover expansion (expand-on-hover)
+
+The `expand-on-hover` attribute temporarily expands the collapsed icon strip on hover (pure visual state — does not change the controlled `collapsed` attribute).
+
+<DemoBlock title="expand-on-hover">
+  <oas-space direction="vertical" style="width: 100%">
+    <oas-button size="small" onclick="document.getElementById('sidebar-hover').toggleAttribute('collapsed')">Collapse to icon strip first</oas-button>
+    <div style="height: 260px; width: 100%; display: flex">
+      <oas-sidebar id="sidebar-hover" expand-on-hover collapsed items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Dashboard","value":"dash","icon":"📊"},{"label":"Settings","value":"settings","icon":"⚙️"}]'></oas-sidebar>
+      <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+        Hover the icon strip to temporarily expand and reveal labels; moving away collapses it again.
+      </div>
+    </div>
+  </oas-space>
+</DemoBlock>
+
+## Variants
+
+The `variant` attribute: `sidebar` (default, flush) / `floating` (margin + radius + shadow) / `inset` (margin + radius + background contrast).
+
+<DemoBlock title="variant: floating / inset">
+  <oas-space style="width: 100%">
+    <div style="height: 240px; flex: 1; display: flex; background: var(--oas-color-bg-hover); padding: var(--oas-space-2)">
+      <oas-sidebar variant="floating" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Settings","value":"s","icon":"⚙️"}]'></oas-sidebar>
+      <div style="flex: 1; padding: var(--oas-space-4)">floating</div>
+    </div>
+    <div style="height: 240px; flex: 1; display: flex; background: var(--oas-color-bg); padding: var(--oas-space-2)">
+      <oas-sidebar variant="inset" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Settings","value":"s","icon":"⚙️"}]'></oas-sidebar>
+      <div style="flex: 1; padding: var(--oas-space-4)">inset</div>
+    </div>
+  </oas-space>
+</DemoBlock>
+
+## Right side and dual sidebars
+
+`side="right"`: the mobile drawer slides in from the right with the trigger on the right; multiple sidebars can coexist (one on each side, with independent state).
+
+<DemoBlock title="side=right + dual sidebars">
+  <div style="height: 280px; width: 100%; display: flex">
+    <oas-sidebar mobile-breakpoint="2000" items='[{"label":"Main nav","value":"main","icon":"🏠"},{"label":"Data","value":"data","icon":"📊"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      “Main nav” on the left and “Auxiliary panel” (side=right) on the right — each opens/closes independently (this demo forces the mobile state for observation).
+    </div>
+    <oas-sidebar side="right" mobile-breakpoint="2000" items='[{"label":"Auxiliary panel","value":"aux","icon":"🔧"},{"label":"Logs","value":"log","icon":"📋"}]'></oas-sidebar>
+  </div>
+</DemoBlock>
+
+## Resizable width (oas-splitter)
+
+For resizable width, compose with `oas-splitter` instead of a built-in rail: place the sidebar in the left pane and drag the splitter handle to resize.
+
+<DemoBlock title="oas-splitter + sidebar">
+  <div style="height: 280px; width: 100%">
+    <oas-splitter percent="22" min="12" max="45">
+      <oas-sidebar slot="left" style="--oas-sidebar-width: 100%" items='[{"label":"Home","value":"home","icon":"🏠"},{"label":"Data","value":"data","icon":"📊"},{"label":"Settings","value":"s","icon":"⚙️"}]'></oas-sidebar>
+      <div slot="right" style="padding: var(--oas-space-4)">Drag the splitter handle to resize the sidebar (it fills the left pane with `--oas-sidebar-width: 100%`).</div>
+    </oas-splitter>
+  </div>
+</DemoBlock>
+
 ## Custom width
 
 The `width` attribute overrides the expanded width (defaults to the `--oas-sidebar-width` token); the collapsed state still narrows to an icon strip.
@@ -141,14 +255,20 @@ The `width` attribute overrides the expanded width (defaults to the `--oas-sideb
 | `active` | Value of the currently-highlighted menu item (controlled: set/clear immediately re-renders highlight) | `string` | — |
 | `collapsed` | Controlled collapse to an icon strip (present means collapsed) | `boolean` | — |
 | `drawer-open` | Mobile drawer open state (controlled: set opens, clear closes; auto-removed when breakpoint returns to desktop) | `boolean` | — |
-| `items` | Menu items JSON [{label, value, icon?, group?}] (group: renders a display-only group title before each group’s first item; hidden when collapsed) | `SidebarItem[] \| string` | `[]` |
+| `expand-on-hover` | Temporarily expand the collapsed icon strip on hover (visual only; does not change controlled collapsed) | — | — |
+| `items` | Menu items JSON `[{label, value, icon?, group?, badge?, children?, actions?}]` (supports divider entries `{type:"divider"}`; children for nested submenus) | `SidebarEntry[] \| string` | `[]` |
+| `loading` | Skeleton loading state (shows a pulsing skeleton when present; value sets row count, default 4) | `string` | `4` |
 | `mobile-breakpoint` | Mobile breakpoint (px); narrower than this becomes an overlay drawer | — | — |
+| `shortcut` | Enable Ctrl/Cmd+B collapse toggling (off by default to avoid hijacking a global key) | `boolean` | — |
+| `side` | Drawer side: left (default) / right (mobile drawer slides from the right, trigger on the right) | — | — |
+| `variant` | Variant: sidebar (default flush) / floating (radius + shadow) / inset (radius + background contrast) | — | — |
 | `width` | Expanded width; defaults to the `--oas-sidebar-width` token | — | — |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
+| `oas-action` | `detail: { value: string, action: string, label: string }`; When fired: an item hover action button is clicked (does not fire oas-select) |
 | `oas-collapse` | `detail: { collapsed: boolean }`; When fired: Desktop collapse button toggled |
 | `oas-select` | `detail: { value: string, label: string }`; When fired: A menu item was selected (also collapses the drawer on mobile) |
 

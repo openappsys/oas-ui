@@ -6502,12 +6502,35 @@
         "name": "drawer-open",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "loading",
+        "type": "string",
+        "default": "4",
+        "observed": true
+      },
+      {
+        "name": "expand-on-hover",
+        "observed": true
+      },
+      {
+        "name": "shortcut",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "side",
+        "observed": true
+      },
+      {
+        "name": "variant",
+        "observed": true
       }
     ],
     "props": [
       {
         "name": "items",
-        "type": "SidebarItem[] | string",
+        "type": "SidebarEntry[] | string",
         "default": "[]"
       }
     ],
@@ -6515,6 +6538,10 @@
       {
         "name": "oas-select",
         "detail": "{ value: item.value, label: item.label }"
+      },
+      {
+        "name": "oas-action",
+        "detail": "{ value: item.value, action: action.value, label: action.label }"
       },
       {
         "name": "oas-collapse",

@@ -1341,15 +1341,21 @@
   "oas-sidebar": {
     "attrs": {
       "collapsed": "受控折叠，收窄为图标条（存在即折叠）",
-      "items": "菜单项 JSON [{label, value, icon?, group?}]（group：连续同组项前渲染组标题，纯展示；折叠态隐藏）",
+      "items": "菜单项 JSON `[{label, value, icon?, group?, badge?, children?, actions?}]`（支持分隔线条目 `{type:\"divider\"}`；children 嵌套子菜单）",
       "mobile-breakpoint": "移动端断点（px），窄于该值变覆盖式抽屉",
       "width": "展开宽度，默认走 `--oas-sidebar-width` token",
       "active": "当前高亮菜单项 value（受控：外部设置/清除立即高亮迁移，重绘）",
-      "drawer-open": "移动端抽屉打开态（受控：设置即开、清除即收；断点回桌面自动移除）"
+      "drawer-open": "移动端抽屉打开态（受控：设置即开、清除即收；断点回桌面自动移除）",
+      "loading": "骨架屏加载态（存在即显示脉冲骨架；数值为骨架行数，默认 4）",
+      "expand-on-hover": "折叠图标条悬停临时展开（纯视觉态，不改 collapsed 受控）",
+      "shortcut": "开启 Ctrl/Cmd+B 折叠切换（默认关闭，避免劫持全局键）",
+      "side": "抽屉侧向：left（默认）/ right（移动抽屉从右侧滑入、触发按钮居右）",
+      "variant": "形态：sidebar（默认贴边）/ floating（悬浮圆角阴影）/ inset（内嵌圆角背景）"
     },
     "events": {
       "oas-collapse": "`detail: { collapsed: boolean }`；触发时机：桌面折叠按钮切换时",
-      "oas-select": "`detail: { value: string, label: string }`；触发时机：选中菜单项时（移动端同时收起抽屉）"
+      "oas-select": "`detail: { value: string, label: string }`；触发时机：选中菜单项时（移动端同时收起抽屉）",
+      "oas-action": "`detail: { value: string, action: string, label: string }`；触发时机：点击项悬停操作按钮时（不触发 oas-select）"
     },
     "slots": {}
   },

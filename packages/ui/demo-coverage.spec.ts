@@ -403,10 +403,11 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   'bottom-navigation': [
     ['oas-bottom-navigation [part="tab"]', 'click:n1', '点非激活 tab → oas-change'],
   ],
-  sidebar: [
-    ['oas-sidebar [part="toggle"]', 'domclick', '折叠开关 → oas-collapse'],
-    ['oas-sidebar [part="item"]', 'domclick', '菜单项 → oas-select'],
-  ],
+    sidebar: [
+      ['oas-sidebar [part="toggle"]', 'domclick', '折叠开关 → oas-collapse'],
+      ['oas-sidebar [part="item"]', 'domclick', '菜单项 → oas-select'],
+      ['oas-sidebar [part="action"]', 'domclick', '项操作按钮 → oas-action'],
+    ],
   image: [['oas-image[preview] [part="wrapper"]', 'click', '点图 → oas-preview']],
   code: [
     ['oas-code [part="copy"]', 'click', '无剪贴板权限 → oas-copy-error'],
