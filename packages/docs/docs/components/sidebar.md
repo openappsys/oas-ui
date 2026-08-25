@@ -94,6 +94,120 @@
   </div>
 </DemoBlock>
 
+## 嵌套子菜单
+
+菜单项支持 `children` 嵌套：父项点击展开/收起（不派发 `oas-select`），含激活子项的父项自动展开；折叠图标条态子树隐藏。
+
+<DemoBlock title="嵌套子菜单（items.children）">
+  <div style="height: 340px; width: 100%; display: flex">
+    <oas-sidebar active="users" items='[{"label":"仪表盘","value":"dash","icon":"📊"},{"label":"业务管理","value":"biz","icon":"📦","children":[{"label":"订单管理","value":"orders"},{"label":"商品管理","value":"goods"},{"label":"用户管理","value":"users"}]},{"label":"系统设置","value":"sys","icon":"⚙️","children":[{"label":"权限管理","value":"perm"},{"label":"审计日志","value":"audit"}]}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      「业务管理」因含激活子项（用户管理）自动展开；点击父项只切换展开，点击子项才派发选择。
+    </div>
+  </div>
+</DemoBlock>
+
+## 徽标与项操作
+
+菜单项支持 `badge` 计数徽标（色值走 `--oas-sidebar-badge-bg/-color` 变量开口）与 `actions` 悬停操作按钮（点击派发 `oas-action`，不触发选中）。
+
+<DemoBlock title="徽标与项操作">
+  <div style="height: 260px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-badge-action" items='[{"label":"收件箱","value":"inbox","icon":"📥","badge":"12"},{"label":"通知","value":"notice","icon":"🔔","badge":"3"},{"label":"项目","value":"proj","icon":"📁","actions":[{"icon":"✏️","value":"edit","label":"编辑"},{"icon":"🗑️","value":"delete","label":"删除"}]}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      <p>悬停「项目」项出现操作按钮；点击派发 <code>oas-action</code> 事件。</p>
+      <oas-tag id="sidebar-action-log" type="info">尚无操作</oas-tag>
+    </div>
+  </div>
+</DemoBlock>
+
+## 分隔线与骨架屏
+
+`{type:"divider"}` 条目渲染分隔线；`loading` 属性显示脉冲骨架屏（数值为骨架行数，默认 4）。
+
+<DemoBlock title="分隔线 + loading">
+  <oas-space style="width: 100%">
+    <oas-button size="small" onclick="document.getElementById('sidebar-loading').toggleAttribute('loading')">切换 loading</oas-button>
+    <div style="height: 280px; width: 100%; display: flex">
+      <oas-sidebar id="sidebar-loading" items='[{"label":"仪表盘","value":"dash","icon":"📊"},{"type":"divider"},{"label":"订单","value":"orders","icon":"📦"},{"label":"用户","value":"users","icon":"👥"}]'></oas-sidebar>
+      <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">点击按钮切换骨架屏。</div>
+    </div>
+  </oas-space>
+</DemoBlock>
+
+## 快捷键与键盘导航
+
+`shortcut` 属性开启 `Ctrl/Cmd+B` 折叠切换（默认关闭，避免劫持全局键）；菜单支持 `↑/↓` 移动焦点、`Home/End` 跳首末、`Enter/Space` 激活。
+
+<DemoBlock title="快捷键（shortcut）+ 键盘导航">
+  <div style="height: 260px; width: 100%; display: flex">
+    <oas-sidebar shortcut items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据","value":"data","icon":"📊"},{"label":"设置","value":"settings","icon":"⚙️"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      按 <oas-kbd>Ctrl</oas-kbd>+<oas-kbd>B</oas-kbd> 折叠/展开；Tab 聚焦到菜单后可用方向键导航。
+    </div>
+  </div>
+</DemoBlock>
+
+## 悬停展开（expand-on-hover）
+
+`expand-on-hover` 属性：折叠图标条悬停时临时展开（纯视觉态，不改 `collapsed` 受控属性）。
+
+<DemoBlock title="expand-on-hover">
+  <oas-space direction="vertical" style="width: 100%">
+    <oas-button size="small" onclick="document.getElementById('sidebar-hover').toggleAttribute('collapsed')">先折叠为图标条</oas-button>
+    <div style="height: 260px; width: 100%; display: flex">
+      <oas-sidebar id="sidebar-hover" expand-on-hover collapsed items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据看板","value":"dash","icon":"📊"},{"label":"设置","value":"settings","icon":"⚙️"}]'></oas-sidebar>
+      <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+        图标条态悬停侧栏即临时展开显示文字，移开收回。
+      </div>
+    </div>
+  </oas-space>
+</DemoBlock>
+
+## 形态（variant）
+
+`variant` 形态：`sidebar`（默认贴边）/ `floating`（悬浮：外边距 + 圆角 + 阴影）/ `inset`（内嵌：外边距 + 圆角 + 背景对比）。
+
+<DemoBlock title="variant: floating / inset">
+  <oas-space style="width: 100%">
+    <div style="height: 240px; flex: 1; display: flex; background: var(--oas-color-bg-hover); padding: var(--oas-space-2)">
+      <oas-sidebar variant="floating" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"设置","value":"s","icon":"⚙️"}]'></oas-sidebar>
+      <div style="flex: 1; padding: var(--oas-space-4)">floating</div>
+    </div>
+    <div style="height: 240px; flex: 1; display: flex; background: var(--oas-color-bg); padding: var(--oas-space-2)">
+      <oas-sidebar variant="inset" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"设置","value":"s","icon":"⚙️"}]'></oas-sidebar>
+      <div style="flex: 1; padding: var(--oas-space-4)">inset</div>
+    </div>
+  </oas-space>
+</DemoBlock>
+
+## 右侧与双侧栏
+
+`side="right"`：移动抽屉从右侧滑入、触发按钮居右；多个侧栏可并存（左右各一，状态相互独立）。
+
+<DemoBlock title="side=right + 双侧栏">
+  <div style="height: 280px; width: 100%; display: flex">
+    <oas-sidebar mobile-breakpoint="2000" items='[{"label":"主导航","value":"main","icon":"🏠"},{"label":"数据","value":"data","icon":"📊"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      左「主导航」、右「辅助面板」（side=right），各自独立开合（本 demo 强制移动态便于观察）。
+    </div>
+    <oas-sidebar side="right" mobile-breakpoint="2000" items='[{"label":"辅助面板","value":"aux","icon":"🔧"},{"label":"日志","value":"log","icon":"📋"}]'></oas-sidebar>
+  </div>
+</DemoBlock>
+
+## 拖拽调宽（oas-splitter 组合）
+
+侧栏宽度调整推荐用 `oas-splitter` 分割面板组合实现（无需内置 rail）：侧栏置于分割面板左侧，拖拽分割条即调宽。
+
+<DemoBlock title="oas-splitter + sidebar">
+  <div style="height: 280px; width: 100%">
+    <oas-splitter percent="22" min="12" max="45">
+      <oas-sidebar slot="left" style="--oas-sidebar-width: 100%" items='[{"label":"首页","value":"home","icon":"🏠"},{"label":"数据","value":"data","icon":"📊"},{"label":"设置","value":"s","icon":"⚙️"}]'></oas-sidebar>
+      <div slot="right" style="padding: var(--oas-space-4)">拖拽中间分割条调整侧栏宽度（侧栏以 `--oas-sidebar-width: 100%` 填满左面板）。</div>
+    </oas-splitter>
+  </div>
+</DemoBlock>
+
 ## 自定义宽度
 
 `width` 属性覆盖展开宽度（默认走 `--oas-sidebar-width` token）；折叠态仍收窄为图标条。
@@ -141,14 +255,20 @@
 | `active` | 当前高亮菜单项 value（受控：外部设置/清除立即高亮迁移，重绘） | `string` | — |
 | `collapsed` | 受控折叠，收窄为图标条（存在即折叠） | `boolean` | — |
 | `drawer-open` | 移动端抽屉打开态（受控：设置即开、清除即收；断点回桌面自动移除） | `boolean` | — |
-| `items` | 菜单项 JSON [{label, value, icon?, group?}]（group：连续同组项前渲染组标题，纯展示；折叠态隐藏） | `SidebarItem[] \| string` | `[]` |
+| `expand-on-hover` | 折叠图标条悬停临时展开（纯视觉态，不改 collapsed 受控） | — | — |
+| `items` | 菜单项 JSON `[{label, value, icon?, group?, badge?, children?, actions?}]`（支持分隔线条目 `{type:"divider"}`；children 嵌套子菜单） | `SidebarEntry[] \| string` | `[]` |
+| `loading` | 骨架屏加载态（存在即显示脉冲骨架；数值为骨架行数，默认 4） | `string` | `4` |
 | `mobile-breakpoint` | 移动端断点（px），窄于该值变覆盖式抽屉 | — | — |
+| `shortcut` | 开启 Ctrl/Cmd+B 折叠切换（默认关闭，避免劫持全局键） | `boolean` | — |
+| `side` | 抽屉侧向：left（默认）/ right（移动抽屉从右侧滑入、触发按钮居右） | — | — |
+| `variant` | 形态：sidebar（默认贴边）/ floating（悬浮圆角阴影）/ inset（内嵌圆角背景） | — | — |
 | `width` | 展开宽度，默认走 `--oas-sidebar-width` token | — | — |
 
 ### 事件
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-action` | `detail: { value: string, action: string, label: string }`；触发时机：点击项悬停操作按钮时（不触发 oas-select） |
 | `oas-collapse` | `detail: { collapsed: boolean }`；触发时机：桌面折叠按钮切换时 |
 | `oas-select` | `detail: { value: string, label: string }`；触发时机：选中菜单项时（移动端同时收起抽屉） |
 

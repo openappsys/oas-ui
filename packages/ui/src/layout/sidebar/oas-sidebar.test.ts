@@ -333,3 +333,179 @@ describe('OASSidebar 分组（items.group）', () => {
     expect(elMobile.shadowRoot!.querySelectorAll('[part="group"]').length).toBe(2)
   })
 })
+
+describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快捷键/键盘导航/tooltip/expand-on-hover/variant/side）', () => {
+  it('嵌套子菜单：children 渲染为可展开子树，父项点击切换展开（不派发 select）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items:
+        '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"},{"label":"角色","value":"roles"}]}]',
+    })
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
+    const sub = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"]')!
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+    expect(sub.hidden).toBe(true)
+    expect(sub.querySelectorAll('[part="item"]').length).toBe(2)
+    let selectCount = 0
+    el.addEventListener('oas-select', () => selectCount++)
+    parent.click()
+    expect(parent.getAttribute('aria-expanded')).toBe('true')
+    expect(sub.hidden).toBe(false)
+    expect(selectCount, '父项点击只展开不派发 select').toBe(0)
+    parent.click()
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+    expect(sub.hidden).toBe(true)
+  })
+
+  it('嵌套子项点击派发 oas-select（叶子项行为不变）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items:
+        '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
+    })
+    el.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!.click()
+    let detail: unknown
+    el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"] [part="item"]')!.click()
+    expect(detail).toEqual({ value: 'users', label: '用户' })
+  })
+
+  it('嵌套父项含激活子项时自动展开（active 指向子项）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items:
+        '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
+      active: 'users',
+    })
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
+    expect(parent.getAttribute('aria-expanded')).toBe('true')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"]')!.hidden).toBe(false)
+    const childBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"] [part="item"]')!
+    expect(childBtn.classList.contains('active')).toBe(true)
+    expect(childBtn.getAttribute('aria-current')).toBe('page')
+  })
+
+  it('徽标：item.badge 渲染 part="badge" 计数徽标', () => {
+    stubMatchMedia(false)
+    const el = mount({ items: '[{"label":"收件箱","value":"inbox","badge":"12"}]' })
+    const badge = el.shadowRoot!.querySelector('[part="badge"]')!
+    expect(badge.textContent).toBe('12')
+    expect(badge.classList.contains('item-badge')).toBe(true)
+  })
+
+  it('项操作：actions 渲染悬停操作按钮，点击派发 oas-action 且不触发 select', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items:
+        '[{"label":"项目","value":"proj","actions":[{"icon":"star","value":"edit","label":"编辑"}]}]',
+    })
+    const actionBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="action"]')!
+    expect(actionBtn.getAttribute('aria-label')).toBe('编辑')
+    let actionDetail: unknown
+    let selectCount = 0
+    el.addEventListener('oas-action', (e) => (actionDetail = (e as CustomEvent).detail))
+    el.addEventListener('oas-select', () => selectCount++)
+    actionBtn.click()
+    expect(actionDetail).toEqual({ value: 'proj', action: 'edit', label: '编辑' })
+    expect(selectCount, '操作按钮不触发 select').toBe(0)
+  })
+
+  it('分隔线：{type:"divider"} 渲染 part="divider" 且不计入菜单项', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items: '[{"label":"首页","value":"home"},{"type":"divider"},{"label":"设置","value":"s"}]',
+    })
+    const dividers = el.shadowRoot!.querySelectorAll('[part="divider"]')
+    expect(dividers.length).toBe(1)
+    expect(dividers[0]!.getAttribute('role')).toBe('separator')
+    expect(el.shadowRoot!.querySelectorAll('[part="item"]').length).toBe(2)
+  })
+
+  it('loading 骨架屏：渲染 part="skeleton" 骨架行、不渲染菜单项', () => {
+    stubMatchMedia(false)
+    const el = mount({ loading: '', items: '[{"label":"首页","value":"home"}]' })
+    expect(el.shadowRoot!.querySelectorAll('[part="skeleton"]').length).toBeGreaterThan(0)
+    expect(el.shadowRoot!.querySelectorAll('[part="item"]').length).toBe(0)
+    el.setAttribute('loading', '6')
+    expect(el.shadowRoot!.querySelectorAll('[part="skeleton"]').length).toBe(6)
+    el.removeAttribute('loading')
+    expect(el.shadowRoot!.querySelectorAll('[part="item"]').length).toBe(1)
+  })
+
+  it('shortcut：ctrl/cmd+b 折叠切换（仅 shortcut 属性开启时）', () => {
+    stubMatchMedia(false)
+    const el = mount({ shortcut: '' })
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true, bubbles: true }))
+    expect(el.hasAttribute('collapsed')).toBe(true)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true, bubbles: true }))
+    expect(el.hasAttribute('collapsed')).toBe(false)
+    // metaKey 同样生效
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', metaKey: true, bubbles: true }))
+    expect(el.hasAttribute('collapsed')).toBe(true)
+    const elNoShortcut = mount()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true, bubbles: true }))
+    expect(elNoShortcut.hasAttribute('collapsed'), '无 shortcut 属性不劫持 ctrl+b').toBe(false)
+  })
+
+  it('键盘导航：ArrowDown/ArrowUp 在可见项间移动焦点，Home/End 跳首末', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items: '[{"label":"一","value":"a"},{"label":"二","value":"b"},{"label":"三","value":"c"}]',
+    })
+    const items = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
+    items[0]!.focus()
+    el.shadowRoot!.querySelector('.nav')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+    )
+    expect(el.shadowRoot!.activeElement).toBe(items[1])
+    el.shadowRoot!.querySelector('.nav')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'End', bubbles: true }),
+    )
+    expect(el.shadowRoot!.activeElement).toBe(items[2])
+    el.shadowRoot!.querySelector('.nav')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }),
+    )
+    expect(el.shadowRoot!.activeElement).toBe(items[1])
+    el.shadowRoot!.querySelector('.nav')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Home', bubbles: true }),
+    )
+    expect(el.shadowRoot!.activeElement).toBe(items[0])
+  })
+
+  it('折叠态图标项包 oas-tooltip（label 提示、placement=right）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items: '[{"label":"首页","value":"home","icon":"star"}]',
+      collapsed: '',
+    })
+    const tip = el.shadowRoot!.querySelector('oas-tooltip')!
+    expect(tip.getAttribute('content')).toBe('首页')
+    expect(tip.getAttribute('placement')).toBe('right')
+    expect(tip.querySelector('[part="item"]')).not.toBeNull()
+  })
+
+  it('expand-on-hover：折叠图标条悬停临时展开的 CSS 规则存在', () => {
+    stubMatchMedia(false)
+    const el = mount({ 'expand-on-hover': '', collapsed: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/\[expand-on-hover\]:hover[^}]*width:\s*var\(--oas-sidebar-width/)
+    expect(css).toMatch(/\[expand-on-hover\]:hover[^}]*\.item \.label[^}]*display:\s*inline/)
+  })
+
+  it('side=right：移动抽屉从右侧滑入（CSS 规则存在）', () => {
+    stubMatchMedia(true)
+    const el = mount({ side: 'right' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/side='right'\][^{]*\.panel[^}]*inset-inline-end:\s*0/)
+    expect(css).toMatch(/side='right'\][^{]*\[part='trigger'\][^}]*inset-inline-end/)
+  })
+
+  it('variant：floating/inset 形态 CSS 规则存在（圆角外边距）', () => {
+    stubMatchMedia(false)
+    const el = mount({ variant: 'floating' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/\[variant='floating'\][^}]*border-radius/)
+    expect(css).toMatch(/\[variant='floating'\][^}]*box-shadow/)
+    expect(css).toMatch(/\[variant='inset'\][^}]*border-radius/)
+  })
+})
