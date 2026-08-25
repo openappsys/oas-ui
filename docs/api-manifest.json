@@ -6145,6 +6145,11 @@
         "type": "string",
         "default": "",
         "observed": true
+      },
+      {
+        "name": "context-menu",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [],
@@ -6155,7 +6160,7 @@
       },
       {
         "name": "oas-close",
-        "detail": "{ key: value }"
+        "detail": "{ key } | { key: value }"
       },
       {
         "name": "oas-rename",

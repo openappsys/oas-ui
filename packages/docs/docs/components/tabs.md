@@ -81,6 +81,22 @@
 
 > 关闭非激活标签：标签立即消失（可见反馈）。关闭激活标签：自动切到剩余第一个标签，并弹出消息提示。
 
+## 右键批量关闭
+
+`context-menu`：右键任意标签弹出批量关闭菜单——关闭 / 关闭其他 / 关闭左侧所有 / 关闭右侧所有 / 关闭全部。每项按目标集合逐个派发 `oas-close`（`detail: { key }`），宿主按 key 移除对应面板即可（与 `closable` 同一契约）。弹层支持外部点击 / Escape 关闭。
+
+<DemoBlock title="右键批量关闭（context-menu）">
+  <oas-tabs id="tabs-contextmenu" closable context-menu active="b">
+    <oas-tab-panel label="仪表盘" value="a"><p>仪表盘内容</p></oas-tab-panel>
+    <oas-tab-panel label="订单" value="b"><p>订单内容</p></oas-tab-panel>
+    <oas-tab-panel label="商品" value="c"><p>商品内容</p></oas-tab-panel>
+    <oas-tab-panel label="用户" value="d"><p>用户内容</p></oas-tab-panel>
+    <oas-tab-panel label="设置" value="e"><p>设置内容</p></oas-tab-panel>
+  </oas-tabs>
+</DemoBlock>
+
+> 右键「商品」试试「关闭左侧所有」/「关闭其他」——按 key 逐个派发 `oas-close`，宿主移除对应面板。
+
 ## 徽标
 
 `oas-tab-panel` 的 `badge` 属性在标签标题旁渲染徽标（数字或文本）。
@@ -511,6 +527,20 @@ onMounted(async () => {
     }
   })
 
+  // 右键批量关闭：宿主按 oas-close 的 key 逐个移除面板（与 closable 同一契约）
+  const ctxTabs = document.getElementById('tabs-contextmenu')
+  ctxTabs?.addEventListener('oas-close', (e) => {
+    const key = e.detail.key
+    message?.info(`关闭标签「${key}」`)
+    const target = ctxTabs.querySelector(`oas-tab-panel[value="${key}"]`)
+    const wasActive = ctxTabs.getAttribute('active') === key
+    target?.remove()
+    if (wasActive) {
+      const first = ctxTabs.querySelector('oas-tab-panel')
+      ctxTabs.setAttribute('active', first?.getAttribute('value') ?? '')
+    }
+  })
+
   // 切换前拦截：勾选「有未保存修改」时 veto 切换
   const guard = document.getElementById('tabs-guard')
   const beforeTabs = document.getElementById('tabs-before')
@@ -556,6 +586,7 @@ onMounted(async () => {
 | `animated` | 选中态过渡 + 面板淡入动画（只动 color/border/opacity，不碰 layout） | `boolean` | — |
 | `centered` | 标签栏整体居中（横向时） | `boolean` | — |
 | `closable` | 每个标签显示关闭 ×，点击派发 `oas-close`（组件不自动删除） | `boolean` | — |
+| `context-menu` | 标签右键批量关闭菜单（关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部；每项按目标集合逐个派发 oas-close） | `boolean` | — |
 | `hide-content` | 纯导航模式：渲染标签栏但不渲染面板区（tabs 当导航条，宿主接管内容/路由） | `boolean` | — |
 | `hide-indicator` | 隐藏激活指示线（line 模式的 ::after 下划线） | `boolean` | — |
 | `items` | 数据驱动渲染：JSON 数组 `[{ label, value, icon?, badge?, disabled?, href?, target?, rel?, closable?, editable?, iconOnly? }]`，与 `oas-tab-panel` 子元素并存时 items 优先 | `string` | — |

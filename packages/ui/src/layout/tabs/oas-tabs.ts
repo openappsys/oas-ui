@@ -2,6 +2,9 @@ import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 import type { OASTabPanel } from './oas-tab-panel.js'
 
+/** 右键菜单批量关闭操作类型 */
+type CloseOp = 'close' | 'others' | 'left' | 'right' | 'all'
+
 export type TabsSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
 const VALID_TABS_SIZES: readonly TabsSize[] = ['xs', 'small', 'medium', 'large', 'xl']
@@ -594,6 +597,48 @@ a.tab[aria-selected='true'] {
   }
 }
 
+/* ===== context-menu：标签右键批量关闭菜单（fixed 光标弹层） ===== */
+.ctx-menu {
+  position: fixed;
+  z-index: calc(var(--oas-z-dropdown, 1000) + 1);
+  min-width: 148px;
+  background: var(--oas-color-bg);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: var(--oas-space-1);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  box-sizing: border-box;
+}
+.ctx-menu[hidden] {
+  display: none;
+}
+.ctx-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--oas-space-2) var(--oas-space-3);
+  border: none;
+  background: none;
+  border-radius: var(--oas-radius-sm);
+  cursor: pointer;
+  color: var(--oas-color-text-primary);
+  font-size: var(--oas-font-size-md);
+  font-family: inherit;
+  text-align: start;
+  white-space: nowrap;
+}
+.ctx-item:hover,
+.ctx-item:focus-visible {
+  background: var(--oas-color-bg-hover);
+  outline: none;
+}
+.ctx-item.danger {
+  color: var(--oas-color-danger);
+}
+
 /* ===== editable 重命名输入框：与标签文字像素级对齐，避免编辑/非编辑态晃动 ===== */
 .tab-rename-input {
   font-family: inherit;
@@ -673,6 +718,7 @@ export class OASTabs extends OASElement {
       'reserve-selected-space',
       'hide-content',
       'items',
+      'context-menu',
     ]
   }
 
@@ -737,12 +783,130 @@ export class OASTabs extends OASElement {
     this.observer = new MutationObserver(() => this.update())
     this.observer.observe(this, { childList: true })
     this.onCleanup(() => this.observer?.disconnect())
+    // context-menu：右键标签弹批量关闭菜单
+    tablist?.addEventListener('contextmenu', (e) => this.onTabContextMenu(e as MouseEvent))
+    // context-menu 弹层外部点击/Escape 关闭（宿主 document 级，composed 跨 shadow）
+    const onCtxDocClick = (e: Event): void => {
+      const menu = this.ctxMenuEl
+      if (!menu || menu.hidden) return
+      const path = (e as MouseEvent).composedPath()
+      if (!path.includes(menu)) this.hideContextMenu()
+    }
+    const onCtxDocKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') this.hideContextMenu()
+    }
+    document.addEventListener('click', onCtxDocClick, true)
+    document.addEventListener('keydown', onCtxDocKey)
+    this.onCleanup(() => {
+      document.removeEventListener('click', onCtxDocClick, true)
+      document.removeEventListener('keydown', onCtxDocKey)
+    })
     // + 按钮（template 占位，update 按需显隐）：click → oas-add
     this.shadow.querySelector('.tab-add')?.addEventListener('click', () => {
       this.emit('add', { label: this.t('tabs.newTab') })
     })
     this.bindScroll()
     this.bindMore()
+  }
+
+  private ctxMenuEl: HTMLElement | null = null
+  private ctxMenuValue = ''
+
+  /** 右键标签：弹批量关闭菜单（关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部） */
+  private onTabContextMenu(e: MouseEvent): void {
+    if (!this.hasAttr('context-menu')) return
+    const btn = (e.target as HTMLElement).closest?.(
+      '[role="tab"][data-value]',
+    ) as HTMLElement | null
+    if (!btn) return
+    e.preventDefault()
+    e.stopPropagation()
+    const value = btn.getAttribute('data-value') ?? ''
+    if (!value) return
+    this.showContextMenu(value, e.clientX, e.clientY)
+  }
+
+  /** 构建/定位右键菜单（懒创建复用） */
+  private showContextMenu(value: string, x: number, y: number): void {
+    this.ctxMenuValue = value
+    if (!this.ctxMenuEl) {
+      const menu = document.createElement('div')
+      menu.className = 'ctx-menu'
+      menu.setAttribute('part', 'context-menu')
+      menu.setAttribute('role', 'menu')
+      const items: Array<{ op: CloseOp; key: string }> = [
+        { op: 'close', key: 'tabs.ctxClose' },
+        { op: 'others', key: 'tabs.ctxCloseOthers' },
+        { op: 'left', key: 'tabs.ctxCloseLeft' },
+        { op: 'right', key: 'tabs.ctxCloseRight' },
+        { op: 'all', key: 'tabs.ctxCloseAll' },
+      ]
+      for (const it of items) {
+        const item = document.createElement('button')
+        item.className = 'ctx-item' + (it.op === 'all' ? ' danger' : '')
+        item.type = 'button'
+        item.setAttribute('role', 'menuitem')
+        item.dataset.op = it.op
+        item.addEventListener('click', () => {
+          this.closeTabsByOp(it.op, this.ctxMenuValue)
+          this.hideContextMenu()
+        })
+        item.addEventListener('keydown', (e) => {
+          const ke = e as KeyboardEvent
+          if (ke.key === 'Escape') {
+            ke.preventDefault()
+            this.hideContextMenu()
+          }
+        })
+        menu.appendChild(item)
+      }
+      this.shadow.appendChild(menu)
+      this.ctxMenuEl = menu
+    }
+    // locale 文案每次刷新（setLocale 切换自动更新）
+    const btns = this.ctxMenuEl.querySelectorAll<HTMLElement>('.ctx-item')
+    const ops: CloseOp[] = ['close', 'others', 'left', 'right', 'all']
+    btns.forEach((b, i) => {
+      const op = ops[i]!
+      b.textContent = this.t(
+        op === 'close'
+          ? 'tabs.ctxClose'
+          : op === 'others'
+            ? 'tabs.ctxCloseOthers'
+            : op === 'left'
+              ? 'tabs.ctxCloseLeft'
+              : op === 'right'
+                ? 'tabs.ctxCloseRight'
+                : 'tabs.ctxCloseAll',
+      )
+    })
+    // 定位：光标处，视口夹取防溢出
+    const menu = this.ctxMenuEl
+    menu.hidden = false
+    const mw = menu.offsetWidth || 160
+    const mh = menu.offsetHeight || 180
+    const left = Math.max(4, Math.min(x, window.innerWidth - mw - 4))
+    const top = Math.max(4, Math.min(y, window.innerHeight - mh - 4))
+    menu.style.left = `${left}px`
+    menu.style.top = `${top}px`
+    menu.querySelector<HTMLElement>('.ctx-item')?.focus({ preventScroll: true })
+  }
+
+  private hideContextMenu(): void {
+    if (this.ctxMenuEl) this.ctxMenuEl.hidden = true
+  }
+
+  /** 按操作批量派发 oas-close{key}（宿主既有 oas-close 处理逐个移除面板，契约零变更） */
+  private closeTabsByOp(op: CloseOp, value: string): void {
+    const values = this.panels.map((p) => p.getAttribute('value') ?? '')
+    const idx = values.indexOf(value)
+    let targets: string[] = []
+    if (op === 'close') targets = [value]
+    else if (op === 'others') targets = values.filter((v) => v !== value)
+    else if (op === 'left') targets = idx >= 0 ? values.slice(0, idx) : []
+    else if (op === 'right') targets = idx >= 0 ? values.slice(idx + 1) : []
+    else targets = values
+    for (const key of targets) this.emit('close', { key })
   }
 
   protected override render(): void {
