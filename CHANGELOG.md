@@ -2,6 +2,34 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.2.4] - 2026-08-25
+
+### 新增
+
+- **tabs 右键操作菜单（`context-menu`）**：右键任意标签弹出——新建 / 关闭 / 关闭其他 / 关闭左侧所有 / 关闭右侧所有 / 关闭全部（新建与关闭族间有分隔线，关闭全部 danger 语义色）
+  - 新建派发 `oas-add`（与 `addable` 的 + 按钮同一契约，`detail.label` 为 locale 默认产物名、宿主可忽略自行命名）；关闭类按目标集合逐个派发 `oas-close`（与 `closable` 同一契约，宿主按 key 移除面板）
+  - 菜单项文案中性「新建」（`tabs.ctxNew`），宿主可 `setLocale` 展开覆盖为业务文案（如「新建文件」，docs 有示例）；光标定位 fixed 弹层 + 视口夹取 + 外部点击/Escape 关闭
+  - menu 模式键盘 roving：打开即聚焦首项，ArrowUp/Down 循环移动、Home/End 跳首末、Enter 执行
+- **tabs more 下拉键盘可达**：moreBtn 键盘打开聚焦第一项 + 列表 roving 导航（ArrowUp/Down/Home/End/Enter/Space）+ Escape 回焦触发器 + 搜索框 ArrowDown 进列表（此前仅鼠标可达，键盘用户无法到达溢出标签）
+- **sidebar 能力全量补齐**：嵌套子菜单（`items[].children`，激活子项自动展开/折叠隐藏/缩进引导线）、折叠态 tooltip、键盘导航（↑/↓/Home/End）、`shortcut`（Ctrl/Cmd+B 折叠切换，默认关）、`badge`（`--oas-sidebar-badge-bg/-color`）、divider 分隔线条目、`loading` 骨架屏（数值为骨架行数）、`expand-on-hover`（折叠悬停临时展开，不改 collapsed 受控）、`variant`（sidebar 贴边 / floating 悬浮 / inset 内嵌）、`side="right"`、actions 悬停操作按钮（`oas-action`）、多 sidebar 共存
+- **sidebar 内置拖拽调宽（`resizable`）**：宿主边缘拖拽条（part=rail）实时改宽并写回 `width` 属性，`resize-min`/`resize-max`（默认 160~480），键盘 ±8/Home/End 微调，`oas-resize` 事件；仅桌面非折叠态可用
+- **layout 视口锁定模式（`viewport`）**：admin 场景 opt-in——布局锁定视口高（`var(--oas-layout-height, 100dvh)`，100vh 级联回退，变量开口可改 100%/calc()），顶栏/底栏固定、侧栏与内容各自独立滚动（页面不出滚动条）；默认整页滚动模型不变
+- **sider 内嵌 sidebar 宽度自动对齐**：宽度契约「sider 管轨道、sidebar 填满」——sidebar 在 sider 轨道内自动 `width:100%`（折叠跟随 64），内嵌时轨道卸除 padding；独立使用仍走 `--oas-sidebar-width`（220px），改 `--oas-sider-width` 内栏自动跟随，零错位
+- **modal body 滚动边缘指示**：CSS-only scroll shadow（bg 覆盖层 local + 径向阴影 scroll 分层）——顶部无阴影/中部双阴影/底部仅顶阴影，长内容滚动边界一眼可辨
+
+### 修复
+
+- **sidebar 菜单项 hover 零对比**：hover 背景与宿主底色撞 token 无反馈——改走 `--oas-sidebar-item-hover-bg`（默认 text-primary 6% 混色）+ active hover 主色 14%→20% 加深
+- **sidebar 嵌套子菜单两个视觉缺陷**：`.sub` 类名冲突致激活背景溢出面板右缘（容器改 `.submenu` 隔离）；无图标子项 label 与父项齐平/偏左（保留图标占位 + label 缩进父项右侧）
+- **splitter + sidebar 组合**：sidebar 内联 style 被 update 周期清除致拖拽调宽失效——`width="100%"` 属性化；e2e 真拖回归固化
+- **card**：无 title 时 header part 仍渲染 33px 空占位——补 `.header[hidden]` 兜底（对齐 `.cover[hidden]` 先例）
+- **icons generate 两项加固**：并发竞态（root build 与 docs build 同时触发 generate 互踩）——临时目录按进程隔离；dev watch 持句柄时目录原子替换 EPERM——退避重试护体（发布构建与 pnpm dev 并行必现级，实测修复）
+- **docs 首页**：「性能速览 → 三行代码」两屏间渐变分隔光带缺失（该屏双伪元素被网格/光晕占用）——显式 `.home-divider` 元素承载，与其他屏同位同款
+
+### 变更
+
+- **品牌标识定稿**：新 logo `<(w)>`（矮尖括号 Web 标签宿主 + 月牙圆括号 + 连笔波浪 w，三版对比定稿紧凑版），favicon 全套重生成（svg 双主题 + 16/32/180/192/512 透明 png）
+
 ## [2.2.3] - 2026-08-25
 
 ### 新增
