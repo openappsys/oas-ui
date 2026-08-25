@@ -74,3 +74,73 @@ describe('OASLayout 侧栏槽与 Sider 折叠（模板实测缺陷回归）', ()
     expect(sider.hasAttribute('collapsed'), '展开后 sider 应移除 collapsed').toBe(false)
   })
 })
+
+describe('OASLayout 视口锁定模式（模板实测缺陷回归）', () => {
+  it('默认整页滚动模型不变：min-height 100%、无高度锁定', () => {
+    const layout = new OASLayout()
+    document.body.appendChild(layout)
+    const stl = layout.shadowRoot!.querySelector('style')!.textContent!
+    expect(stl).toMatch(/:host\s*\{[^}]*min-height:\s*100%/)
+    // 无属性时不应出现视口锁定的 :host([viewport]) 高度规则应用到宿主默认样式
+    expect(stl).toMatch(/:host\(\[viewport\]\)/)
+    expect(stl, '默认宿主样式不得有高度锁定').not.toMatch(/:host\s*\{[^}]*[^\-]height:\s*[^-]/)
+  })
+
+  it('viewport 属性：高度锁定视口（dvh 优先 vh 级联回退）+ 开口变量 --oas-layout-height', () => {
+    const layout = new OASLayout()
+    document.body.appendChild(layout)
+    const stl = layout.shadowRoot!.querySelector('style')!.textContent!
+    expect(stl).toMatch(
+      /:host\(\[viewport\]\)\s*\{[^}]*height:\s*var\(--oas-layout-height,\s*100dvh\)/,
+    )
+    expect(stl, 'dvh 不支持时需 100vh 级联回退').toMatch(/height:\s*100vh/)
+  })
+
+  it('viewport 模式下 sider/content 各自独立滚动 + main 不被内容撑高', () => {
+    const layout = new OASLayout()
+    document.body.appendChild(layout)
+    const stl = layout.shadowRoot!.querySelector('style')!.textContent!
+    // 高度链：struct 与 main 需 min-height: 0 才能约束 flex 子项各自滚
+    expect(stl, 'struct 需 viewport 态类钩子').toMatch(/\.struct\.is-viewport/)
+    expect(stl).toMatch(/\.sider-part/)
+    expect(stl).toMatch(/\.content-part/)
+    expect(stl).toMatch(/\.struct\.is-viewport\s+\.sider-part\s*\{[^}]*overflow-y:\s*auto/)
+    expect(stl).toMatch(/\.struct\.is-viewport\s+\.content-part\s*\{[^}]*overflow-y:\s*auto/)
+    expect(stl).toMatch(/\.struct\.is-viewport\s+\.main\s*\{[^}]*min-height:\s*0/)
+  })
+
+  it('viewport 进 observedAttributes（API 扫描与文档一致性）', () => {
+    expect(OASLayout.observedAttributes).toContain('viewport')
+  })
+})
+
+describe('OASSider 内嵌 sidebar 宽度对齐（模板实测缺陷回归）', () => {
+  it('内嵌 oas-sidebar 填满轨道：::slotted width 100%', () => {
+    const sider = new OASSider()
+    document.body.appendChild(sider)
+    const stl = sider.shadowRoot!.querySelector('style')!.textContent!
+    expect(stl).toMatch(/::slotted\(oas-sidebar\)\s*\{[^}]*width:\s*100%/)
+  })
+
+  it('内嵌 oas-sidebar 时轨道去 padding（sidebar 自带内边距体系，避免 200-32 与 220 双重错位）', async () => {
+    const sider = new OASSider()
+    document.body.appendChild(sider)
+    const stl = sider.shadowRoot!.querySelector('style')!.textContent!
+    expect(stl).toMatch(/:host\(\[data-embed\]\)\s*\{[^}]*padding:\s*0/)
+    // 行为：内嵌 sidebar 时 data-embed 置位、移除后清除（MutationObserver 异步同步，等 flush）
+    const sb = document.createElement('oas-sidebar')
+    sider.appendChild(sb)
+    await new Promise((r) => setTimeout(r))
+    expect(sider.hasAttribute('data-embed'), '内嵌 sidebar 应置 data-embed').toBe(true)
+    sb.remove()
+    await new Promise((r) => setTimeout(r))
+    expect(sider.hasAttribute('data-embed'), '移除 sidebar 后应清 data-embed').toBe(false)
+  })
+
+  it('内嵌折叠对齐：collapsed 态 slotted sidebar 不被 64px 轨道挤压出横向滚动', () => {
+    const sider = new OASSider()
+    document.body.appendChild(sider)
+    const stl = sider.shadowRoot!.querySelector('style')!.textContent!
+    expect(stl).toMatch(/::slotted\(oas-sidebar\)\s*\{[^}]*min-width:\s*0/)
+  })
+})

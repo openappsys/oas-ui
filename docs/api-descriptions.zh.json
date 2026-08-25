@@ -904,6 +904,13 @@
     "events": {},
     "slots": {}
   },
+  "oas-layout": {
+    "attrs": {
+      "viewport": "视口锁定模式：布局锁定视口高（默认 100dvh，不支持级联回退 100vh；`--oas-layout-height` 可改 100%/calc()），顶栏/底栏固定，侧栏与内容各自独立滚动；默认为整页滚动模型"
+    },
+    "events": {},
+    "slots": {}
+  },
   "oas-link": {
     "attrs": {
       "disabled": "禁用",

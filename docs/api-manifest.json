@@ -6346,7 +6346,13 @@
   "oas-layout": {
     "className": "OASLayout",
     "sourceFile": "packages/ui/src/layout/layout/oas-layout.ts",
-    "attrs": [],
+    "attrs": [
+      {
+        "name": "viewport",
+        "type": "boolean",
+        "observed": true
+      }
+    ],
     "props": [],
     "events": [],
     "slots": [
