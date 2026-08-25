@@ -5,7 +5,7 @@ import { computePosition, type Placement } from '../../overlay/floating/index.js
 /** 面板与触发器的默认间距（offset 主轴缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
 /** 箭头尺寸（8px 菱形）与箭头中心到面板圆角边的最短距离 */
-const ARROW_SIZE = 8
+const ARROW_SIZE = 12
 const ARROW_PAD = 8
 /** 开合动画时长（ms）：入场/退场 keyframes 与 JS 退场隐藏延时共用，改这里需同步下方 CSS 的 `animation` 时长 */
 const ANIM_MS = 150
@@ -195,28 +195,28 @@ const STYLE = `
 /* placement 基向=bottom：面板在触发元素下方 → 箭头悬面板顶边、尖朝上 → 外露边=右上(border-top)+左上(border-left) */
 .panel[data-placement^='bottom'] .arrow {
   top: -6px;
-  left: var(--arrow-x, calc(50% - 4px));
+  left: var(--arrow-x, calc(50% - 6px));
   border-top: 1px solid var(--pop-border);
   border-left: 1px solid var(--pop-border);
 }
 /* placement 基向=top：面板在触发元素上方 → 箭头悬面板底边、尖朝下 → 外露边=右下(border-right)+左下(border-bottom) */
 .panel[data-placement^='top'] .arrow {
   bottom: -6px;
-  left: var(--arrow-x, calc(50% - 4px));
+  left: var(--arrow-x, calc(50% - 6px));
   border-right: 1px solid var(--pop-border);
   border-bottom: 1px solid var(--pop-border);
 }
 /* placement 基向=left：面板在触发元素左侧 → 箭头悬面板右边、尖朝右 → 外露边=右上(border-top)+右下(border-right) */
 .panel[data-placement^='left'] .arrow {
   right: -6px;
-  top: var(--arrow-y, calc(50% - 4px));
+  top: var(--arrow-y, calc(50% - 6px));
   border-top: 1px solid var(--pop-border);
   border-right: 1px solid var(--pop-border);
 }
 /* placement 基向=right：面板在触发元素右侧 → 箭头悬面板左边、尖朝左 → 外露边=左上(border-left)+左下(border-bottom) */
 .panel[data-placement^='right'] .arrow {
   left: -6px;
-  top: var(--arrow-y, calc(50% - 4px));
+  top: var(--arrow-y, calc(50% - 6px));
   border-left: 1px solid var(--pop-border);
   border-bottom: 1px solid var(--pop-border);
 }
@@ -234,14 +234,21 @@ const STYLE = `
      逐向写死（不能用 $='-start'/'-end' 后缀匹配——它对 12 向恒取顶角/恒写水平轴，
      见 tooltip 同款教训）：bottom 系悬顶边（start→左上角、end→右上角）、top 系
      悬底边（start→左下角、end→右下角）、left 系悬右边（start→右上角、end→右下角）、
-     right 系悬左边（start→左上角、end→左下角） */
- .panel[data-placement='bottom-start'][data-arrow-merge] .arrow {
+      right 系悬左边（start→左上角、end→左下角） */
+  /* merge 固定 8px 盒（独立于标准 12px 菱形）：8px 贴角几何契约按 8px 校准。
+     贴边（靠面板的那条边）是融合边——不应有描边线，只在外露的两条边（一条直角边 + 斜边）留描边，
+     才能像 tooltip 那样干净地和面板角融合。 */
+  .panel[data-arrow-merge] .arrow {
+    width: 8px;
+    height: 8px;
+  }
+  .panel[data-placement='bottom-start'][data-arrow-merge] .arrow {
    top: -8px;
    left: -1px;
    transform: none;
    border: none;
    border-left: 1px solid var(--pop-border);
-   border-bottom: 1px solid var(--pop-border);
+
    background: linear-gradient(45deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
    clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
  }
@@ -252,7 +259,7 @@ const STYLE = `
    transform: none;
    border: none;
    border-right: 1px solid var(--pop-border);
-   border-bottom: 1px solid var(--pop-border);
+
    background: linear-gradient(135deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
    clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
  }
@@ -262,7 +269,7 @@ const STYLE = `
    transform: none;
    border: none;
    border-left: 1px solid var(--pop-border);
-   border-top: 1px solid var(--pop-border);
+
    background: linear-gradient(135deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
    clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
  }
@@ -273,7 +280,7 @@ const STYLE = `
    transform: none;
    border: none;
    border-right: 1px solid var(--pop-border);
-   border-top: 1px solid var(--pop-border);
+
    background: linear-gradient(45deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
    clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
  }
@@ -283,7 +290,7 @@ const STYLE = `
    transform: none;
    border: none;
    border-top: 1px solid var(--pop-border);
-   border-left: 1px solid var(--pop-border);
+
    background: linear-gradient(135deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
    clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
  }
@@ -294,7 +301,7 @@ const STYLE = `
    transform: none;
    border: none;
    border-bottom: 1px solid var(--pop-border);
-   border-left: 1px solid var(--pop-border);
+
    background: linear-gradient(45deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
    clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
  }
@@ -304,7 +311,7 @@ const STYLE = `
    transform: none;
    border: none;
    border-top: 1px solid var(--pop-border);
-   border-right: 1px solid var(--pop-border);
+
    background: linear-gradient(45deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
    clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
  }
@@ -315,7 +322,7 @@ const STYLE = `
    transform: none;
    border: none;
    border-bottom: 1px solid var(--pop-border);
-   border-right: 1px solid var(--pop-border);
+
    background: linear-gradient(135deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px));
    clip-path: polygon(100% 0%, 0% 100%, 100% 100%);
  }

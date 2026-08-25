@@ -2978,7 +2978,7 @@ test('tooltip 触发路径一致性：hover 与 click 打开的落点/方向逐�
   await page.waitForTimeout(250)
   const hoverState = await read()
   expect(hoverState.placement).toBe('top')
-  expect(hoverState.gapAbove, 'placement=top 间距应精确 8px').toBe(8)
+  expect(hoverState.gapAbove, 'placement=top 间距应精确 10px').toBe(10)
   expect(hoverState.centerOff, '浮层应水平居中于锚点').toBe(0)
 
   // 移开关闭 → click 重新打开（mousedown → focusin 路径）
@@ -2989,7 +2989,7 @@ test('tooltip 触发路径一致性：hover 与 click 打开的落点/方向逐�
   await page.waitForTimeout(250)
   const clickState = await read()
   expect(clickState.placement).toBe('top')
-  expect(clickState.gapAbove).toBe(8)
+  expect(clickState.gapAbove).toBe(10)
   expect(clickState.centerOff).toBe(0)
   // 同一 placement 两条触发路径落点逐像素一致
   expect(clickState.inlineTop).toBe(hoverState.inlineTop)
@@ -3596,8 +3596,8 @@ test('tooltip 箭头形态（用户场景）：top 方向底部箭头完整菱�
     }
   })
   expect(r.placement).toBe('top')
-  expect(r.arrowW, '旋转方块 bounding rect 宽 ≈ 8√2').toBeCloseTo(11.31, 1)
-  expect(r.arrowH, '旋转方块 bounding rect 高 ≈ 8√2').toBeCloseTo(11.31, 1)
+  expect(r.arrowW, '旋转方块 bounding rect 宽 ≈ 12√2').toBeCloseTo(16.97, 1)
+  expect(r.arrowH, '旋转方块 bounding rect 高 ≈ 12√2').toBeCloseTo(16.97, 1)
   expect(r.pureRot, '箭头 transform 应为纯 rotate(45deg)（无缩放/平移残留）').toBe(true)
   expect(r.centerOnEdge, '菱心应悬在气泡底边上').toBeLessThanOrEqual(0.7)
   expect(r.arrowVsTipCenter, '箭头应居气泡中线').toBeLessThanOrEqual(0.7)
@@ -3972,14 +3972,14 @@ test('popover arrow-merge 直角三角贴角共边 8 向：直角点贴面板角
       }
       const near = (v: number[], exp: [number, number]) =>
         Math.abs(v[0]! - (rv![0]! + exp[0])) <= 0.5 && Math.abs(v[1]! - (rv![1]! + exp[1])) <= 0.5
-      // 描边仅两条直角边（斜边与其余边 0）
+      // 描边：仅外露直角边 1px；贴面板的融合边无描边（斜边走渐变，非 border）
       const widths: Record<string, string> = {
         borderTopWidth: cs.borderTopWidth,
         borderRightWidth: cs.borderRightWidth,
         borderBottomWidth: cs.borderBottomWidth,
         borderLeftWidth: cs.borderLeftWidth,
       }
-      const legsOnly = widths[c.legs[0]] === '1px' && widths[c.legs[1]] === '1px'
+      const legsOnly = widths[c.legs[0]!] === '1px' && widths[c.legs[1]!] === '0px'
       const othersZero = Object.entries(widths)
         .filter(([k]) => !c.legs.includes(k))
         .every(([, w]) => w === '0px')
@@ -4029,7 +4029,7 @@ test('popover arrow-merge 直角三角贴角共边 8 向：直角点贴面板角
       1,
     )
     expect(r.legsOk, `${r.p} 直角边与面板边共边 + 尖端正交外探 8px 指向锚点侧`).toBe(true)
-    expect(r.legsOnly, `${r.p} 描边应仅在两条直角边上`).toBe(true)
+    expect(r.legsOnly, `${r.p} 外露直角边描边 1px、贴面板融合边无描边`).toBe(true)
     expect(r.othersZero, `${r.p} 斜边与其余边不得有描边`).toBe(true)
     expect(r.strokeSameAsPanel, `${r.p} 描边色应与面板描边同源（--pop-border）`).toBe(true)
     expect(r.cornerZero, `${r.p} 对应角 radius 应置零`).toBe(true)
@@ -4223,14 +4223,14 @@ test('hover-card arrow-merge 直角三角贴角共边 8 向：直角点贴面板
       }
       const near = (v: number[], exp: [number, number]) =>
         Math.abs(v[0]! - (rv![0]! + exp[0])) <= 0.5 && Math.abs(v[1]! - (rv![1]! + exp[1])) <= 0.5
-      // 描边仅两条直角边（斜边与其余边 0）
+      // 描边：仅外露直角边 1px；贴面板的融合边无描边（斜边走渐变，非 border）
       const widths: Record<string, string> = {
         borderTopWidth: cs.borderTopWidth,
         borderRightWidth: cs.borderRightWidth,
         borderBottomWidth: cs.borderBottomWidth,
         borderLeftWidth: cs.borderLeftWidth,
       }
-      const legsOnly = widths[c.legs[0]] === '1px' && widths[c.legs[1]] === '1px'
+      const legsOnly = widths[c.legs[0]!] === '1px' && widths[c.legs[1]!] === '0px'
       const othersZero = Object.entries(widths)
         .filter(([k]) => !c.legs.includes(k))
         .every(([, w]) => w === '0px')
@@ -4280,7 +4280,7 @@ test('hover-card arrow-merge 直角三角贴角共边 8 向：直角点贴面板
       1,
     )
     expect(r.legsOk, `${r.p} 直角边与面板边共边 + 尖端正交外探 8px 指向锚点侧`).toBe(true)
-    expect(r.legsOnly, `${r.p} 描边应仅在两条直角边上`).toBe(true)
+    expect(r.legsOnly, `${r.p} 外露直角边描边 1px、贴面板融合边无描边`).toBe(true)
     expect(r.othersZero, `${r.p} 斜边与其余边不得有描边`).toBe(true)
     expect(r.strokeSameAsPanel, `${r.p} 描边色应与面板描边同源（--oas-color-border）`).toBe(true)
     expect(r.cornerZero, `${r.p} 对应角 radius 应置零`).toBe(true)
@@ -4321,7 +4321,7 @@ test('tooltip 窄气泡圆角封顶：空内容 16px 气泡 radius 收到 (16−
   expect(r.width, '空内容气泡应只有 padding 宽（16px）').toBeCloseTo(16, 0)
   expect(r.crossVar, 'position() 应写入交叉轴布局尺寸').toBe('16px')
   expect(r.radius, `radius 应封顶 2.34px（实测 ${r.radius}）`).toBeCloseTo(2.34, 1)
-  expect(r.arrowW).toBeCloseTo(11.31, 1)
+  expect(r.arrowW).toBeCloseTo(16.97, 1)
   await host.evaluate((el) => el.removeAttribute('open'))
 })
 
@@ -6245,11 +6245,11 @@ test('navigation-menu 箭头几何对准触发器中心（水平+垂直）且营
           trigC: vertical ? (tr.top + tr.bottom) / 2 : (tr.left + tr.right) / 2,
           arrowC: vertical ? (arR.top + arR.bottom) / 2 : (arR.left + arR.right) / 2,
           // 箭头跨边悬置（探出面板边缘）：顶部可探出面板顶缘之上，但左右两侧不越面板、
-          // 探出量收敛（顶边探出 ≤ 8px，不悬空漂离）
+          // 探出量收敛（顶边探出 ≤ 12px 半数对角，不悬空漂离）
           arrowInVp:
             arR.left >= vr.left - 2 &&
             arR.right <= vr.right + 2 &&
-            vr.top - arR.top <= 8 &&
+            vr.top - arR.top <= 10 &&
             arR.bottom <= vr.bottom + 2,
           pfOverflow: fr ? Math.round(fr.bottom - vr.bottom) : null,
         }
@@ -6304,8 +6304,8 @@ test('navigation-menu flip-up 后箭头贴面板底边指向触发器（不悬�
         cs.transform.includes('matrix') &&
         parseFloat(cs.borderRightWidth) > 0 &&
         parseFloat(cs.borderBottomWidth) > 0,
-      // 面板在触发器上方；箭头应贴面板底边（顶部 ≥ 面板底-8，底部 ≤ 面板底+8）
-      arrowAttachedToPanel: arR.top >= vr.bottom - 8 && arR.bottom <= vr.bottom + 8,
+      // 面板在触发器上方；箭头应贴面板底边（顶部 ≥ 面板底-12，底部 ≤ 面板底+12）
+      arrowAttachedToPanel: arR.top >= vr.bottom - 12 && arR.bottom <= vr.bottom + 12,
       // 箭头在触发器与面板之间（不悬空到面板另一侧之外）
       arrowOnTriggerSide: arR.bottom <= tr.top + 2,
       arrowXCentered: Math.abs((arR.left + arR.right) / 2 - (tr.left + tr.right) / 2) <= 2,

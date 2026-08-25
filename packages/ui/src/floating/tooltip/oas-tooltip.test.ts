@@ -133,21 +133,21 @@ describe('OAStooltip', () => {
     el.setAttribute('virtual-x', '400')
     el.setAttribute('virtual-y', '260')
     await Promise.resolve()
-    // placement 默认 top：top = 260 - 36 - 8 = 216；left = 400 - 120/2 = 340
-    expect(t.style.top).toBe('216px')
+    // placement 默认 top：top = 260 - 36 - 10 = 214；left = 400 - 120/2 = 340
+    expect(t.style.top).toBe('214px')
     expect(t.style.left).toBe('340px')
     expect(t.getAttribute('data-placement')).toBe('top')
     // 再更新（移到 600,500）→ 继续跟随
     el.setAttribute('virtual-x', '600')
     el.setAttribute('virtual-y', '500')
     await Promise.resolve()
-    expect(t.style.top).toBe('456px') // 500 - 36 - 8
+    expect(t.style.top).toBe('454px') // 500 - 36 - 10
     expect(t.style.left).toBe('540px') // 600 - 60
     // 每次坐标变化都应重定位：三次坐标 → 三组不同的 top/left
     el.setAttribute('virtual-x', '200')
     el.setAttribute('virtual-y', '300')
     await Promise.resolve()
-    expect(t.style.top).toBe('256px')
+    expect(t.style.top).toBe('254px')
     expect(t.style.left).toBe('140px')
   })
 
@@ -176,7 +176,7 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     expect(t.getAttribute('data-placement')).toBe('top') // 空间足够，不翻转
     expect(parseFloat(t.style.top)).toBeLessThan(280) // 锚点上方
-    expect(t.style.top).toBe('236px') // 280 - 36 - 8
+    expect(t.style.top).toBe('234px') // 280 - 36 - 10
     expect(t.style.left).toBe('260px') // 320 - 120/2
   })
 
@@ -204,7 +204,7 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     expect(t.getAttribute('data-placement')).toBe('bottom')
     expect(parseFloat(t.style.top)).toBeGreaterThan(280) // 锚点下方
-    expect(t.style.top).toBe('288px') // 280 + 8
+    expect(t.style.top).toBe('290px') // 280 + 10
     expect(t.style.left).toBe('260px')
   })
 
@@ -480,7 +480,7 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     expect(t.getAttribute('data-placement')).toBe('bottom')
     // 不避让：按声明 placement 数学放置（可能溢出视口底缘）
-    expect(t.style.top).toBe('800px') // 792 + 8
+    expect(t.style.top).toBe('802px') // 792 + 10
   })
 
   // ================= placement 12 向 =================
@@ -496,7 +496,7 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     expect(t.getAttribute('data-placement')).toBe('top-start')
     expect(t.style.left).toBe('200px') // 锚点左缘
-    expect(t.style.top).toBe('256px') // 300 - 36 - 8
+    expect(t.style.top).toBe('254px') // 300 - 36 - 10
   })
 
   it('placement 12 向：bottom-end 面板右缘对齐锚点右缘', async () => {
@@ -510,7 +510,7 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     expect(t.getAttribute('data-placement')).toBe('bottom-end')
     expect(t.style.left).toBe('144px') // 264 - 120（锚点右缘对齐面板右缘）
-    expect(t.style.top).toBe('340px') // 332 + 8
+    expect(t.style.top).toBe('342px') // 332 + 10
   })
 
   it('placement 12 向：left-start 面板顶缘对齐锚点顶缘', async () => {
@@ -524,7 +524,7 @@ describe('OAStooltip', () => {
     await Promise.resolve()
     expect(t.getAttribute('data-placement')).toBe('left-start')
     expect(t.style.top).toBe('300px') // 锚点顶缘
-    expect(t.style.left).toBe('72px') // 200 - 120 - 8
+    expect(t.style.left).toBe('70px') // 200 - 120 - 10
   })
 
   it('placement 12 向：right-end 空间不足时翻转保留 end 对齐 → left-end', async () => {
@@ -1020,7 +1020,7 @@ describe('OAStooltip', () => {
 
   // ================= 双轴偏移 offset / skidding =================
 
-  it('offset="16"：主轴距离 16px（默认 8）', async () => {
+  it('offset="16"：主轴距离 16px（默认 10）', async () => {
     const el = mount({ open: '', content: 'x', placement: 'bottom', offset: '16' })
     const t = tip(el)
     stubRect(t, { left: 0, top: 0, width: 120, height: 36 })
@@ -1219,8 +1219,8 @@ describe('OAStooltip', () => {
     setViewport(1280, 800)
     btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await Promise.resolve()
-    // 真实布局尺寸：top = 300 - 32 - 8 = 260；left = (400+32) - 81/2 = 391.5
-    expect(t.style.top).toBe('260px')
+    // 真实布局尺寸：top = 300 - 32 - 10 = 258；left = (400+32) - 81/2 = 391.5
+    expect(t.style.top).toBe('258px')
     expect(t.style.left).toBe('391.5px')
     // 当前缺陷（按 72.9x28.8 计算）会得到 263.2px / 395.55px
   })

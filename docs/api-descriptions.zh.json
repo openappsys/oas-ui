@@ -1770,7 +1770,7 @@
       "fresh": "内容新鲜度（默认 true）：关闭期间内容变化也即时同步；`\"false\"` 时关闭期间冻结内容，再次打开才更新",
       "interactive": "浮层可悬停：鼠标移入浮层不关闭（`pointer-events: auto`），浮层内链接可达",
       "max-width": "浮层最大宽度（数字补 px 或 CSS 长度，默认走 `--oas-tooltip-max-width` token 240px）",
-      "offset": "主轴距离（px，默认 8）：浮层与锚点沿主轴的间隔",
+      "offset": "主轴距离（px，默认 10）：浮层与锚点沿主轴的间隔",
       "open": "受控显示（布尔属性，存在即显示）",
       "open-delay": "显示延迟（ms，默认 0）：mouseenter/focusin 后延迟打开；`skip-delay-duration` 命中时跳过",
       "placement": "浮层位置（12 向：top/bottom/left/right × start/center/end）",

@@ -391,11 +391,11 @@ describe('OASPopover', () => {
     expect(p.style.left).toBe('4px')
     const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')!
     // happy-dom 的 stub 矩形不随 style.left 更新：把面板矩形同步为实际落位（left=4）后
-    // 触发重定位，验证箭头投影跟随锚点中心：44 - 4 - 4 = 36
+    // 触发重定位，验证箭头投影跟随锚点中心：44 - 4 - 6 = 34
     stubRect(p, { left: 4, top: 340, width: 240, height: 60 })
     el.setAttribute('content', 'y')
-    // 默认（无 arrow-point-at-center）：clamp 后箭头也跟随锚点中心 → --arrow-x = 36px
-    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('36px')
+    // 默认（无 arrow-point-at-center）：clamp 后箭头也跟随锚点中心 → --arrow-x = 34px
+    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('34px')
   })
 
   // —— 视口自动调整（auto-adjust-overflow，默认 true）——
@@ -681,14 +681,14 @@ describe('OASPopover 12 向箭头对准锚点（-start/-end 贴向对齐端部�
     //   bottom/top-start 面板 left=400、-end 面板 left=280；
     //   left/right-start 面板 top=300、-end 面板 top=232
     const cases: Record<string, { prop: string; value: string }> = {
-      'bottom-start': { prop: '--arrow-x', value: '36px' }, // 440-400-4
-      'bottom-end': { prop: '--arrow-x', value: '156px' }, // 440-280-4
-      'top-start': { prop: '--arrow-x', value: '36px' },
-      'top-end': { prop: '--arrow-x', value: '156px' },
-      'left-start': { prop: '--arrow-y', value: '12px' }, // 316-300-4
-      'left-end': { prop: '--arrow-y', value: '80px' }, // 316-232-4
-      'right-start': { prop: '--arrow-y', value: '12px' },
-      'right-end': { prop: '--arrow-y', value: '80px' },
+      'bottom-start': { prop: '--arrow-x', value: '34px' }, // 440-400-6
+      'bottom-end': { prop: '--arrow-x', value: '154px' }, // 440-280-6
+      'top-start': { prop: '--arrow-x', value: '34px' },
+      'top-end': { prop: '--arrow-x', value: '154px' },
+      'left-start': { prop: '--arrow-y', value: '10px' }, // 316-300-6
+      'left-end': { prop: '--arrow-y', value: '78px' }, // 316-232-6
+      'right-start': { prop: '--arrow-y', value: '10px' },
+      'right-end': { prop: '--arrow-y', value: '78px' },
     }
     for (const [placement, { prop, value }] of Object.entries(cases)) {
       const el = openWithSyncedRect(placement)
@@ -702,10 +702,10 @@ describe('OASPopover 12 向箭头对准锚点（-start/-end 贴向对齐端部�
 
   it('center（无后缀）placement：箭头跟随锚点中心（未 clamp 时计算值与 CSS 中心一致）', () => {
     // 新契约：箭头永远跟随锚点，clamp 平移后不漂移；
-    // 未 clamp 时 bottom：锚点中心 440、面板 left=340（居中未避让）→ 440-340-4=96 = calc(50%-4px)
+    // 未 clamp 时 bottom：锚点中心 440、面板 left=340（居中未避让）→ 440-340-6=94 = calc(50%-6px)
     const el = openWithSyncedRect('bottom')
     const arrow = panelOf(el).querySelector<HTMLElement>('[data-popper-arrow]')!
-    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('96px')
+    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('94px')
     expect(arrow.style.getPropertyValue('--arrow-y')).toBe('')
   })
 
@@ -723,9 +723,9 @@ describe('OASPopover 12 向箭头对准锚点（-start/-end 贴向对齐端部�
       height: 100,
     })
     el.setAttribute('content', 'sync')
-    // 面板 [400,600]、锚点中心 X=600 → 裸算 196 超过 200-8-8=184 → 夹取 184
+    // 面板 [400,600]、锚点中心 X=600 → 裸算 194 超过 200-8-12=180 → 夹取 180
     const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')!
-    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('184px')
+    expect(arrow.style.getPropertyValue('--arrow-x')).toBe('180px')
   })
 
   it('virtual 坐标点：箭头指向虚拟锚点坐标（P6 定夺：箭头对准点本身）', () => {
@@ -741,9 +741,9 @@ describe('OASPopover 12 向箭头对准锚点（-start/-end 贴向对齐端部�
       height: 60,
     })
     el.setAttribute('content', 'sync')
-    // 面板 top = 90-30 = 60；箭头 y = 90 - 60 - 4 = 26px
+    // 面板 top = 90-30 = 60；箭头 y = 90 - 60 - 6 = 24px
     const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')!
-    expect(arrow.style.getPropertyValue('--arrow-y')).toBe('26px')
+    expect(arrow.style.getPropertyValue('--arrow-y')).toBe('24px')
   })
 
   it('virtual 点近视口缘翻转后：箭头仍指向虚拟点（避让偏移不失准）', () => {
@@ -762,9 +762,9 @@ describe('OASPopover 12 向箭头对准锚点（-start/-end 贴向对齐端部�
     el.setAttribute('content', 'sync')
     // 翻转 left：面板 left = 1200-200-8 = 992、箭头 x = 1200 - 992 - 4 = 204 > 184 → 夹 184？
     // 等等——翻转后箭头悬面板右边（right 系基向 left → ^='left' 悬 right 边），--arrow-y 才是交叉轴：
-    // left 基向是垂直交叉轴 → 箭头 y = 200 - 170 - 4 = 26px
+    // left 基向是垂直交叉轴 → 箭头 y = 200 - 170 - 6 = 24px
     const arrow = p.querySelector<HTMLElement>('[data-popper-arrow]')!
-    expect(arrow.style.getPropertyValue('--arrow-y')).toBe('26px')
+    expect(arrow.style.getPropertyValue('--arrow-y')).toBe('24px')
   })
 })
 
@@ -1362,20 +1362,21 @@ describe('OASPopover fresh / auto-close / arrow-merge', () => {
     const B = '1px solid var(--pop-border)'
     // 盒定位：主轴边外 -8px（压进面板描边带 1px 共带）、起止侧边 -1px（描边带对齐）；
     // 不旋转 + 描边策略（用户实测反馈）：直角边（贴面板边、与面板描边共带续接）用 border；
-    // 斜边（汇于尖端的主要外露边）用 45°/135° 渐变带补 1px 法向线——斜边精确落在渐变 50%
-    // 等值线上（盒对角线上），clip 保留三角内侧 1px。曾缺陷：斜边不描边导致箭头尖端轮廓缺失、
-    // 观感是「无轮廓的白色补丁」而非箭头
+    // 斜边（汇于尖端的主要外露边）用 45°/135° 渐变带补 2px 法向线（45° 抗锯齿下与直角边 1px 同观感）——斜边精确落在渐变 50%
+    // 等值线上（盒对角线上），clip 保留三角内侧。贴面板的那条直角边是「融合边」不留描边
+    // （只在外露的两条边留线），否则融合处多一条线、观感割裂。曾缺陷：斜边不描边→箭头尖端
+    // 轮廓缺失、白三角贴白页不可见；贴边有描边→融合处割裂
     const grad = (angle: number) =>
       `linear-gradient(${angle}deg, var(--pop-bg) 0 calc(50% - 1px), var(--pop-border) calc(50% - 1px) calc(50% + 1px), var(--pop-bg) calc(50% + 1px))`
     const rules: Record<string, string> = {
-      'bottom-start': `top: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-bottom: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
-      'bottom-end': `top: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-bottom: ${B}; background: ${grad(135)}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
-      'top-start': `bottom: -8px; left: -1px; transform: none; border: none; border-left: ${B}; border-top: ${B}; background: ${grad(135)}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
-      'top-end': `bottom: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; border-top: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
-      'left-start': `right: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-left: ${B}; background: ${grad(135)}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
-      'left-end': `right: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-left: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
-      'right-start': `left: -8px; top: -1px; transform: none; border: none; border-top: ${B}; border-right: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
-      'right-end': `left: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; border-right: ${B}; background: ${grad(135)}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
+      'bottom-start': `top: -8px; left: -1px; transform: none; border: none; border-left: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
+      'bottom-end': `top: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; background: ${grad(135)}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
+      'top-start': `bottom: -8px; left: -1px; transform: none; border: none; border-left: ${B}; background: ${grad(135)}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
+      'top-end': `bottom: -8px; right: -1px; left: auto; transform: none; border: none; border-right: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
+      'left-start': `right: -8px; top: -1px; transform: none; border: none; border-top: ${B}; background: ${grad(135)}; clip-path: polygon(0% 0%, 100% 0%, 0% 100%);`,
+      'left-end': `right: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 0% 100%, 100% 100%);`,
+      'right-start': `left: -8px; top: -1px; transform: none; border: none; border-top: ${B}; background: ${grad(45)}; clip-path: polygon(0% 0%, 100% 0%, 100% 100%);`,
+      'right-end': `left: -8px; bottom: -1px; top: auto; transform: none; border: none; border-bottom: ${B}; background: ${grad(135)}; clip-path: polygon(100% 0%, 0% 100%, 100% 100%);`,
     }
     for (const [p, decl] of Object.entries(rules)) {
       expect(css, `merge ${p} 箭头应为直角三角贴角共边（斜边渐变描边）`).toContain(

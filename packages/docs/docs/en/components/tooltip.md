@@ -474,7 +474,7 @@ onMounted(() => {
 | `fresh` | Content freshness (default true): content changes are synced immediately even while closed; `"false"` freezes the content while closed, updating on next open | `string` | `true` |
 | `interactive` | Hoverable popup: moving the mouse into the popup keeps it open (`pointer-events: auto`), links inside stay reachable | `boolean` | — |
 | `max-width` | Popup max width (number in px or CSS length; defaults to the `--oas-tooltip-max-width` token, 240px) | `string` | — |
-| `offset` | Main-axis distance (px, default 8): the gap between the popup and the anchor along the main axis | — | — |
+| `offset` | Main-axis distance (px, default 10): the gap between the popup and the anchor along the main axis | — | — |
 | `open` | Controlled display (boolean attribute; shows when present) | `boolean` | — |
 | `open-delay` | Show delay (ms, default 0): open after mouseenter/focusin; skipped when `skip-delay-duration` hits | — | — |
 | `placement` | Popup placement (12 directions: top/bottom/left/right × start/center/end) | `Placement` | `top` |
