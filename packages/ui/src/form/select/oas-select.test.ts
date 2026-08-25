@@ -54,6 +54,18 @@ describe('OASSelect', () => {
     expect(listbox!.querySelectorAll('[role="option"]').length).toBe(3)
   })
 
+  it('下拉 fixed 定位：逃出祖先 overflow 容器，不再贡献溢出逼出滚动条（与 combobox 同思路）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/\.dropdown\s*\{[^}]*position:\s*fixed/)
+    open(el)
+    // positionDropdown 锚定 trigger 写入定位（happy-dom 无布局、矩形为 0，仍应设置而不抛错）
+    const d = el.shadowRoot!.querySelector<HTMLElement>('.dropdown')!
+    expect(typeof d.style.top).toBe('string')
+    expect(typeof d.style.left).toBe('string')
+    expect(d.style.width).not.toBe('')
+  })
+
   it('选择选项后更新 value 并关闭下拉，派发 oas-change', () => {
     const el = mount()
     open(el)
