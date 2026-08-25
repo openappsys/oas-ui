@@ -4,6 +4,8 @@ import type { OASTabPanel } from './oas-tab-panel.js'
 
 /** 右键菜单批量关闭操作类型 */
 type CloseOp = 'close' | 'others' | 'left' | 'right' | 'all'
+/** 右键菜单操作：new（新建）+ 批量关闭族 */
+type CtxOp = 'new' | CloseOp
 
 export type TabsSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
@@ -638,6 +640,11 @@ a.tab[aria-selected='true'] {
 .ctx-item.danger {
   color: var(--oas-color-danger);
 }
+.ctx-divider {
+  height: 1px;
+  background: var(--oas-color-border);
+  margin: var(--oas-space-1) var(--oas-space-2);
+}
 
 /* ===== editable 重命名输入框：与标签文字像素级对齐，避免编辑/非编辑态晃动 ===== */
 .tab-rename-input {
@@ -834,7 +841,8 @@ export class OASTabs extends OASElement {
       menu.className = 'ctx-menu'
       menu.setAttribute('part', 'context-menu')
       menu.setAttribute('role', 'menu')
-      const items: Array<{ op: CloseOp; key: string }> = [
+      const items: Array<{ op: CtxOp; key: string }> = [
+        { op: 'new', key: 'tabs.newTab' },
         { op: 'close', key: 'tabs.ctxClose' },
         { op: 'others', key: 'tabs.ctxCloseOthers' },
         { op: 'left', key: 'tabs.ctxCloseLeft' },
@@ -842,13 +850,20 @@ export class OASTabs extends OASElement {
         { op: 'all', key: 'tabs.ctxCloseAll' },
       ]
       for (const it of items) {
+        // 新建与关闭族之间加分隔线（浏览器标签右键菜单惯例：新建置顶）
+        if (it.op === 'close') {
+          const divider = document.createElement('div')
+          divider.className = 'ctx-divider'
+          divider.setAttribute('role', 'separator')
+          menu.appendChild(divider)
+        }
         const item = document.createElement('button')
         item.className = 'ctx-item' + (it.op === 'all' ? ' danger' : '')
         item.type = 'button'
         item.setAttribute('role', 'menuitem')
         item.dataset.op = it.op
         item.addEventListener('click', () => {
-          this.closeTabsByOp(it.op, this.ctxMenuValue)
+          this.runCtxOp(it.op, this.ctxMenuValue)
           this.hideContextMenu()
         })
         item.addEventListener('keydown', (e) => {
@@ -856,6 +871,22 @@ export class OASTabs extends OASElement {
           if (ke.key === 'Escape') {
             ke.preventDefault()
             this.hideContextMenu()
+            return
+          }
+          // menu 模式 roving：方向键/Home/End 在菜单项间移动（与 more-dropdown 一致）
+          if (ke.key === 'ArrowDown' || ke.key === 'ArrowUp' || ke.key === 'Home' || ke.key === 'End') {
+            ke.preventDefault()
+            const btns = [...menu.querySelectorAll<HTMLElement>('.ctx-item')]
+            const i = btns.indexOf(item)
+            const n =
+              ke.key === 'Home'
+                ? 0
+                : ke.key === 'End'
+                  ? btns.length - 1
+                  : ke.key === 'ArrowDown'
+                    ? (i + 1) % btns.length
+                    : (i - 1 + btns.length) % btns.length
+            btns[n]?.focus({ preventScroll: true })
           }
         })
         menu.appendChild(item)
@@ -865,19 +896,21 @@ export class OASTabs extends OASElement {
     }
     // locale 文案每次刷新（setLocale 切换自动更新）
     const btns = this.ctxMenuEl.querySelectorAll<HTMLElement>('.ctx-item')
-    const ops: CloseOp[] = ['close', 'others', 'left', 'right', 'all']
+    const ops: CtxOp[] = ['new', 'close', 'others', 'left', 'right', 'all']
     btns.forEach((b, i) => {
       const op = ops[i]!
       b.textContent = this.t(
-        op === 'close'
-          ? 'tabs.ctxClose'
-          : op === 'others'
-            ? 'tabs.ctxCloseOthers'
-            : op === 'left'
-              ? 'tabs.ctxCloseLeft'
-              : op === 'right'
-                ? 'tabs.ctxCloseRight'
-                : 'tabs.ctxCloseAll',
+        op === 'new'
+          ? 'tabs.newTab'
+          : op === 'close'
+            ? 'tabs.ctxClose'
+            : op === 'others'
+              ? 'tabs.ctxCloseOthers'
+              : op === 'left'
+                ? 'tabs.ctxCloseLeft'
+                : op === 'right'
+                  ? 'tabs.ctxCloseRight'
+                  : 'tabs.ctxCloseAll',
       )
     })
     // 定位：光标处，视口夹取防溢出
@@ -894,6 +927,15 @@ export class OASTabs extends OASElement {
 
   private hideContextMenu(): void {
     if (this.ctxMenuEl) this.ctxMenuEl.hidden = true
+  }
+
+  /** 右键菜单操作：new 派发 oas-add（与 addable + 按钮同契约）；关闭族按目标集合逐个派发 oas-close{key}（宿主按 key 移除面板，契约零变更） */
+  private runCtxOp(op: CtxOp, value: string): void {
+    if (op === 'new') {
+      this.emit('add', { label: this.t('tabs.newTab') })
+      return
+    }
+    this.closeTabsByOp(op, value)
   }
 
   /** 按操作批量派发 oas-close{key}（宿主既有 oas-close 处理逐个移除面板，契约零变更） */
