@@ -962,3 +962,193 @@ describe('OASCommand', () => {
     expect(document.querySelector('[data-oas-command-portal]')).toBeNull()
   })
 })
+
+// ===== 子元素声明式通道（oas-command-item） =====
+// 与 menu/menubar 同范式：items 属性显式设置时数据驱动优先，否则解析子元素收敛到同一渲染路径
+
+/** 子元素通道挂载：innerHTML 填 light DOM 子元素后 append（触发 render → 解析） */
+function mountCommandChildren(html: string, attrs: Record<string, string> = {}): OASCommand {
+  const el = document.createElement('oas-command') as OASCommand
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+  el.innerHTML = html
+  document.body.appendChild(el)
+  return el
+}
+
+describe('子元素声明式通道', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    try {
+      localStorage.clear()
+    } catch {
+      /* 无 localStorage 环境跳过 */
+    }
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('基础：普通项/分组/separator/shortcut/description 混排渲染与 items 通道一致', () => {
+    const el = mountCommandChildren(
+      `
+      <oas-command-item value="new-file" group="文件" shortcut="meta+n" description="创建空白文档">新建文件</oas-command-item>
+      <oas-command-item value="open-file" group="文件" shortcut="ctrl+o">打开文件</oas-command-item>
+      <oas-command-item value="sep1" separator>分隔</oas-command-item>
+      <oas-command-item value="undo" group="编辑" shortcut="ctrl+z">撤销</oas-command-item>
+      `,
+      { open: '' },
+    )
+    const labels = options(el).map((o) => o.querySelector('.option-label')?.textContent)
+    expect(labels).toEqual(['新建文件', '打开文件', '撤销'])
+    // 分组标题（group 属性映射）
+    expect([...el.shadowRoot!.querySelectorAll('.group')].map((g) => g.textContent)).toEqual([
+      '文件',
+      '编辑',
+    ])
+    // separator 渲染分隔行且不进选项序列
+    expect(el.shadowRoot!.querySelectorAll('[part="separator"]').length).toBe(1)
+    expect(options(el).length).toBe(3)
+    // shortcut kbd（meta → ⌘ 符号映射与 items 通道一致）
+    const kbd = options(el)[0]!.querySelector('.option-shortcut kbd')!
+    expect(kbd).not.toBeNull()
+    expect(kbd.textContent).toContain('⌘')
+    // description 副标题
+    expect(options(el)[0]!.querySelector('.option-desc')!.textContent).toBe('创建空白文档')
+  })
+
+  it('items 属性显式设置时优先（子元素被忽略）', () => {
+    const el = mountCommandChildren(`<oas-command-item value="child">子元素项</oas-command-item>`, {
+      open: '',
+      items: JSON.stringify([
+        { label: '数据项', value: 'data' },
+        { label: '末项', value: 'last' },
+      ]),
+    })
+    expect(options(el).map((o) => o.querySelector('.option-label')?.textContent)).toEqual([
+      '数据项',
+      '末项',
+    ])
+    expect(el.shadowRoot!.querySelector('[data-value="child"]')).toBeNull()
+  })
+
+  it('属性映射：keywords 参与搜索、disabled 拦截、forceMount 不过滤', () => {
+    const el = mountCommandChildren(
+      `
+      <oas-command-item value="new" keywords="create, file">新建文件</oas-command-item>
+      <oas-command-item value="open">打开文件</oas-command-item>
+      <oas-command-item value="ro" disabled>只读项</oas-command-item>
+      <oas-command-item value="create-x" force-mount>创建「xyz」</oas-command-item>
+      `,
+      { open: '' },
+    )
+    // keywords：逗号拆分 trim 去空，输入关键词词能搜到 label 之外的项（forceMount 项无条件追加尾部）
+    fireInput(el, 'create')
+    expect(options(el).map((o) => o.textContent)).toEqual(['新建文件', '创建「xyz」'])
+    // disabled：方向键跳过（0 新建文件 → 1 打开文件 → 跳过只读项落到 forceMount 项）
+    fireInput(el, '')
+    arrow(el, 'ArrowDown')
+    arrow(el, 'ArrowDown')
+    expect(options(el)[3]!.classList.contains('active')).toBe(true)
+    // forceMount：无匹配搜索词时仍强制显示
+    fireInput(el, 'zzz')
+    expect(options(el).map((o) => o.textContent)).toEqual(['创建「xyz」'])
+  })
+
+  it('page 子页：带子项的载体 → 选中进入子页、面包屑回退正常', () => {
+    const el = mountCommandChildren(
+      `
+      <oas-command-item value="theme">更改主题
+        <oas-command-item value="light">浅色</oas-command-item>
+        <oas-command-item value="dark">深色</oas-command-item>
+      </oas-command-item>
+      <oas-command-item value="open">打开</oas-command-item>
+      `,
+      { open: '' },
+    )
+    // 根页 label 不含嵌套子页文本（childLabel 跳过嵌套载体）
+    expect(options(el).map((o) => o.querySelector('.option-label')?.textContent)).toEqual([
+      '更改主题',
+      '打开',
+    ])
+    let detail: unknown
+    el.addEventListener('oas-page-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    arrow(el, 'Enter')
+    expect(detail).toEqual({ title: '更改主题', depth: 1, direction: 'push' })
+    expect(options(el).map((o) => o.textContent)).toEqual(['浅色', '深色'])
+    expect(q(el, '.breadcrumb')!.hidden).toBe(false)
+    // 面包屑返回按钮回退根页
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="back"]')!.click()
+    expect(options(el).map((o) => o.querySelector('.option-label')?.textContent)).toEqual([
+      '更改主题',
+      '打开',
+    ])
+    expect(q(el, '.breadcrumb')!.hidden).toBe(true)
+  })
+
+  it('MutationObserver：运行时 append 载体后列表刷新', async () => {
+    const el = mountCommandChildren(`<oas-command-item value="a">命令 A</oas-command-item>`, {
+      open: '',
+    })
+    expect(options(el).length).toBe(1)
+    const item = document.createElement('oas-command-item')
+    item.setAttribute('value', 'b')
+    item.textContent = '命令 B'
+    el.appendChild(item)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(options(el).map((o) => o.textContent)).toEqual(['命令 A', '命令 B'])
+  })
+
+  it('MutationObserver：运行时修改载体 label 文本后列表刷新', async () => {
+    const el = mountCommandChildren(`<oas-command-item value="a">命令 A</oas-command-item>`, {
+      open: '',
+    })
+    expect(options(el).map((o) => o.textContent)).toEqual(['命令 A'])
+    const item = el.querySelector('oas-command-item')!
+    item.textContent = '命令 A′'
+    await new Promise((r) => setTimeout(r, 0))
+    expect(options(el).map((o) => o.textContent)).toEqual(['命令 A′'])
+  })
+
+  it('view 字段：选中进入面板内嵌视图插槽路径不变', () => {
+    const el = mountCommandChildren(
+      `<oas-command-item value="deploy" view="deploy">部署应用</oas-command-item>`,
+      { open: '' },
+    )
+    const form = document.createElement('div')
+    form.slot = 'view-deploy'
+    form.textContent = '表单内容'
+    el.appendChild(form)
+    let detail: unknown
+    el.addEventListener('oas-view-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    options(el)[0]!.click()
+    expect(detail).toEqual({ view: 'deploy', title: '部署应用' })
+    expect(q(el, '.view')!.hidden).toBe(false)
+    expect(el.shadowRoot!.querySelector('slot[name="view-deploy"]')).not.toBeNull()
+    expect(q(el, '.list')!.hidden).toBe(true)
+  })
+
+  it('防自身动作循环：插槽桥接（append-to）不吞子元素通道响应', async () => {
+    const target = document.createElement('div')
+    target.id = 'cmd-guard'
+    document.body.appendChild(target)
+    const el = mountCommandChildren(
+      `<oas-command-item value="a">命令 A</oas-command-item>
+       <span slot="footer">自定义底部</span>`,
+      { open: '', 'append-to': '#cmd-guard' },
+    )
+    // 首次渲染已把 footer 插槽节点桥接进 portal host（组件自身对 light DOM 的写入）——
+    // 该 childList 突变被 isChildChannelMutation 过滤，不产生无谓重渲染/循环
+    await new Promise((r) => setTimeout(r, 0))
+    const host = target.querySelector<HTMLElement>('[data-oas-command-portal]')!
+    expect(host.shadowRoot!.querySelector('slot[name="footer"]')).not.toBeNull()
+    // 随后 append 数据载体，子元素通道仍正常响应（portal 模式下列表在 portal shadow 内）
+    const item = document.createElement('oas-command-item')
+    item.setAttribute('value', 'b')
+    item.textContent = '命令 B'
+    el.appendChild(item)
+    await new Promise((r) => setTimeout(r, 0))
+    const portalOpts = [...host.shadowRoot!.querySelectorAll<HTMLElement>('[part="option"]')]
+    expect(portalOpts.map((o) => o.textContent)).toEqual(['命令 A', '命令 B'])
+  })
+})

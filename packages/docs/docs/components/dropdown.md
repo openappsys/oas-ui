@@ -269,6 +269,40 @@ items 项支持 `children` 数组级联子菜单（任意层级），hover / 点
   </oas-space>
 </DemoBlock>
 
+## 子元素声明式通道
+
+除 `items` JSON 外，可用 `<oas-dropdown-item>` / `<oas-dropdown-group>` / `<oas-dropdown-divider>` 子元素声明式书写菜单（`items` 属性**显式设置时优先**，未设置时解析子元素收敛到同一渲染路径）。默认插槽文本为 label，属性对齐 `items` 字段：`value` / `disabled` / `loading` / `icon` / `kind` / `danger` / `href` / `target` / `rel`；`<oas-dropdown-item>` 内直接嵌套子元素即递归为子菜单，`<oas-dropdown-group>` 的 `label` 属性为组标题（`value` 可作 radio 组 id），组内子元素平铺同层。子元素增删、属性与文本变化会自动重渲染（MutationObserver）。
+
+<DemoBlock title="子元素声明式（分组 / 分隔线 / 嵌套 / checkbox / danger / href）">
+  <oas-dropdown id="dd-decl" onoas-select="ddDeclLog(event)" placement="bottom-start">
+    <oas-button type="primary">操作</oas-button>
+    <oas-dropdown-group label="导航">
+      <oas-dropdown-item value="home">首页</oas-dropdown-item>
+      <oas-dropdown-item value="docs" href="/components/" target="_blank" rel="noopener">组件文档</oas-dropdown-item>
+    </oas-dropdown-group>
+    <oas-dropdown-divider></oas-dropdown-divider>
+    <oas-dropdown-item value="edit">编辑
+      <oas-dropdown-item value="copy">复制</oas-dropdown-item>
+      <oas-dropdown-item value="cut">剪切</oas-dropdown-item>
+    </oas-dropdown-item>
+    <oas-dropdown-item value="grid" kind="checkbox">显示网格线</oas-dropdown-item>
+    <oas-dropdown-divider></oas-dropdown-divider>
+    <oas-dropdown-item value="delete" danger>删除</oas-dropdown-item>
+  </oas-dropdown>
+  <oas-tag id="dd-decl-result" type="info">尚未选择</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="动态增删（MutationObserver 自动刷新）">
+  <oas-space size="small">
+    <oas-button size="small" onclick="ddDeclAdd()">追加一项</oas-button>
+  </oas-space>
+  <oas-dropdown id="dd-decl-dyn" placement="bottom-start">
+    <oas-button>动态菜单</oas-button>
+    <oas-dropdown-item value="home">首页</oas-dropdown-item>
+    <oas-dropdown-item value="settings">设置</oas-dropdown-item>
+  </oas-dropdown>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -356,12 +390,28 @@ onMounted(() => {
       window.setTimeout(() => mark(false), 1500)
     }
   }
+
+  // 子元素声明式通道：选中回显 + 运行时追加一项（MutationObserver 自动重渲染）
+  window.ddDeclLog = (e) => {
+    const tag = document.getElementById('dd-decl-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}（子元素声明式通道）`
+  }
+  const declDyn = document.getElementById('dd-decl-dyn')
+  if (declDyn) {
+    window.ddDeclAdd = () => {
+      const n = declDyn.querySelectorAll('oas-dropdown-item').length
+      const item = document.createElement('oas-dropdown-item')
+      item.setAttribute('value', `extra-${n}`)
+      item.textContent = `动态项 ${n}`
+      declDyn.appendChild(item)
+    }
+  }
 })
 </script>
 
 ## API
 
-### 属性
+### oas-dropdown
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -381,18 +431,49 @@ onMounted(() => {
 | `trigger` | 触发方式：`click`（默认）/ `hover` / `focus`，空格分隔可多选（如 `"click hover"`） | `string` | `click` |
 | `value` | 当前选中值 | `string` | — |
 
-### 事件
-
 | 事件 | 说明 |
 | --- | --- |
 | `oas-action` | 拆分模式下点击主按钮，`detail: { originalEvent }` |
 | `oas-open-change` | 浮层开合变化，`detail: { open: boolean }`（含外部 setAttribute 触发，受控闭环） |
 | `oas-select` | 选择某项，`detail: { value }` |
 
-### 插槽
-
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+
+### oas-dropdown-item
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `danger` | 破坏性项：红色语义（删除/退出等危险操作） | — | — |
+| `disabled` | 禁用该项 | — | — |
+| `href` | 链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`） | — | — |
+| `icon` | 前置图标（`@oas-ui/icons` 注册表图标名） | — | — |
+| `kind` | 叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集） | — | — |
+| `loading` | 加载中：渲染 spinner、禁点，由数据驱动恢复 | — | — |
+| `rel` | 链接 rel（配合 href） | — | — |
+| `target` | 链接 target（配合 href） | — | — |
+| `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 下拉菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-dropdown-item>` 递归为子菜单 children |
+
+### oas-dropdown-group
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `label` | 分组标题（组标题小字、次要色、不可点） | — | — |
+| `value` | radio 组 id（组内点选只更新该组选中值） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 组内菜单项：子元素 `<oas-dropdown-item>` 平铺同层 |
+
+### oas-dropdown-divider
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 分隔线数据载体（无属性，宿主解析为 `type: "divider"`） |
 
 点击触发器切换显隐，点击外部 / 按 Esc / 选择后关闭；浮层为内层 `oas-menu`（`role="menu"`，叶子项 `menuitemradio`、带子菜单项 `menuitem`），支持多级级联子菜单与键盘导航。

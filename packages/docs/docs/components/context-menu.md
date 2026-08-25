@@ -78,6 +78,40 @@
   </div>
 </DemoBlock>
 
+## 子元素声明式通道
+
+除 `items` JSON 外，可用 `<oas-context-menu-item>` / `<oas-context-menu-group>` / `<oas-context-menu-divider>` 子元素声明式书写菜单（`items` 属性**显式设置时优先**，未设置时解析子元素收敛到同一渲染路径）。默认插槽文本为 label，属性对齐 `items` 字段：`value` / `disabled` / `loading` / `icon` / `kind` / `danger` / `href` / `target` / `rel`；`<oas-context-menu-item>` 内直接嵌套子元素即递归为子菜单，`<oas-context-menu-group>` 的 `label` 属性为组标题（`value` 可作 radio 组 id），组内子元素平铺同层。子元素增删、属性与文本变化会自动重渲染（MutationObserver）。
+
+<DemoBlock title="子元素声明式（分组 / 分隔线 / 嵌套 / danger / href）">
+  <oas-context-menu id="cm-decl" onoas-select="cmDeclLog(event)">
+    <div style="width: 260px; height: 140px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">在此区域右键查看声明式菜单</div>
+    <oas-context-menu-group label="剪贴板">
+      <oas-context-menu-item value="copy">复制</oas-context-menu-item>
+      <oas-context-menu-item value="paste">粘贴</oas-context-menu-item>
+    </oas-context-menu-group>
+    <oas-context-menu-divider></oas-context-menu-divider>
+    <oas-context-menu-item value="new">新建
+      <oas-context-menu-item value="new-file">文件</oas-context-menu-item>
+      <oas-context-menu-item value="new-folder">文件夹</oas-context-menu-item>
+    </oas-context-menu-item>
+    <oas-context-menu-item value="docs" href="/components/" target="_blank" rel="noopener">组件文档</oas-context-menu-item>
+    <oas-context-menu-divider></oas-context-menu-divider>
+    <oas-context-menu-item value="delete" danger>删除</oas-context-menu-item>
+  </oas-context-menu>
+  <oas-tag id="cm-decl-result" type="info">尚未选择</oas-tag>
+</DemoBlock>
+
+<DemoBlock title="动态增删（MutationObserver 自动刷新）">
+  <oas-space size="small" style="margin-bottom: 8px">
+    <oas-button size="small" onclick="cmDeclAdd()">追加一项</oas-button>
+  </oas-space>
+  <oas-context-menu id="cm-decl-dyn">
+    <div style="width: 260px; height: 100px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); display: flex; align-items: center; justify-content: center; color: var(--oas-color-text-secondary)">右键我，点上方按钮追加一项</div>
+    <oas-context-menu-item value="copy">复制</oas-context-menu-item>
+    <oas-context-menu-item value="paste">粘贴</oas-context-menu-item>
+  </oas-context-menu>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -99,12 +133,28 @@ onMounted(() => {
     e?.stopPropagation()
     cm.close()
   }
+
+  // 子元素声明式通道：选中回显 + 运行时追加一项（MutationObserver 自动重渲染）
+  window.cmDeclLog = (e) => {
+    const tag = document.getElementById('cm-decl-result')
+    if (tag) tag.textContent = `已选择：${e.detail.value}（子元素声明式通道）`
+  }
+  const declDyn = document.getElementById('cm-decl-dyn')
+  if (declDyn) {
+    window.cmDeclAdd = () => {
+      const n = declDyn.querySelectorAll('oas-context-menu-item').length
+      const item = document.createElement('oas-context-menu-item')
+      item.setAttribute('value', `extra-${n}`)
+      item.textContent = `动态项 ${n}`
+      declDyn.appendChild(item)
+    }
+  }
 })
 </script>
 
 ## API
 
-### 属性
+### oas-context-menu
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -113,17 +163,48 @@ onMounted(() => {
 | `long-press-delay` | 移动端长按触发时长毫秒数（默认 500） | `string` | `500` |
 | `open` | 受控展开态（外部可写） | `boolean` | — |
 
-### 事件
-
 | 事件 | 说明 |
 | --- | --- |
 | `oas-open-change` | 菜单开合变化，`detail: { open: boolean }` |
 | `oas-select` | 选择某项，`detail: { value }` |
 
-### 插槽
-
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+
+### oas-context-menu-item
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `danger` | 破坏性项：红色语义（删除/退出等危险操作） | — | — |
+| `disabled` | 禁用该项 | — | — |
+| `href` | 链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`） | — | — |
+| `icon` | 前置图标（`@oas-ui/icons` 注册表图标名） | — | — |
+| `kind` | 叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集） | — | — |
+| `loading` | 加载中：渲染 spinner、禁点，由数据驱动恢复 | — | — |
+| `rel` | 链接 rel（配合 href） | — | — |
+| `target` | 链接 target（配合 href） | — | — |
+| `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 右键菜单项 label 内容（默认插槽文本）；直接子元素 `<oas-context-menu-item>` 递归为子菜单 children |
+
+### oas-context-menu-group
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `label` | 分组标题（组标题小字、次要色、不可点） | — | — |
+| `value` | radio 组 id（组内点选只更新该组选中值） | — | — |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 组内菜单项：子元素 `<oas-context-menu-item>` 平铺同层 |
+
+### oas-context-menu-divider
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 分隔线数据载体（无属性，宿主解析为 `type: "divider"`） |
 
 鼠标位置弹出，Esc / 外部点击 / 选择后自动关闭；`role="menu"` + `menuitem`。

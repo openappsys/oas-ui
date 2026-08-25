@@ -221,10 +221,20 @@ export { OASResult } from './feedback/result/oas-result.js'
 export { OAStooltip } from './floating/tooltip/oas-tooltip.js'
 export { OASPopover } from './floating/popover/oas-popover.js'
 export { OASMenu, type MenuItem } from './floating/menu/index.js'
-export { OASDropdown } from './floating/dropdown/oas-dropdown.js'
-export { OASContextMenu } from './floating/contextmenu/oas-context-menu.js'
+export {
+  OASDropdown,
+  OASDropdownItem,
+  OASDropdownGroup,
+  OASDropdownDivider,
+} from './floating/dropdown/index.js'
+export {
+  OASContextMenu,
+  OASContextMenuItem,
+  OASContextMenuGroup,
+  OASContextMenuDivider,
+} from './floating/contextmenu/index.js'
 export { OASHoverCard } from './floating/hover-card/oas-hover-card.js'
-export { OASCommand, type CommandItem } from './floating/command/index.js'
+export { OASCommand, OASCommandItem, type CommandItem } from './floating/command/index.js'
 export { OASMenubar, type MenubarItem } from './floating/menubar/index.js'
 export {
   OASNavigationMenu,

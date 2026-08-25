@@ -509,6 +509,8 @@ export class OASCommand extends OASElement {
   private keyBound = false
   /** document keydown 处理器（bind 时注入实现；幂等重挂保证 remove 用同一引用） */
   private onDocumentKey: ((e: KeyboardEvent) => void) | null = null
+  /** 子元素通道观察器：light DOM 里 oas-command-item 增删或属性/文本变化 → 重解析渲染 */
+  private childObserver: MutationObserver | null = null
 
   /** property 通道（Vue/React 把 items 识别为实例属性走赋值；setter 反射到 attribute 统一解析链路） */
   get items(): CommandItem[] {
@@ -677,6 +679,8 @@ export class OASCommand extends OASElement {
   }
 
   protected override update(): void {
+    // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
+    this.ensureChildObserver()
     if (this.pages.length === 0) this.parseItems()
     const open = this.hasAttr('open')
     // 断开重连恢复 document keydown（幂等，见 updateDocumentKey 注释）
@@ -750,21 +754,153 @@ export class OASCommand extends OASElement {
   }
 
   private parseItems(): void {
-    try {
-      const parsed = JSON.parse(this.getAttr('items', '[]'))
-      this.itemsList = Array.isArray(parsed)
-        ? parsed.filter(
-            (i): i is CommandItem =>
-              !!i &&
-              typeof i === 'object' &&
-              typeof i.label === 'string' &&
-              typeof i.value === 'string',
-          )
-        : []
-    } catch {
-      this.itemsList = []
+    // 双通道：items 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 items 模型渲染
+    if (this.hasAttribute('items')) {
+      try {
+        const parsed = JSON.parse(this.getAttr('items', '[]'))
+        this.itemsList = Array.isArray(parsed)
+          ? parsed.filter(
+              (i): i is CommandItem =>
+                !!i &&
+                typeof i === 'object' &&
+                typeof i.label === 'string' &&
+                typeof i.value === 'string',
+            )
+          : []
+      } catch {
+        this.itemsList = []
+      }
+    } else {
+      this.itemsList = this.parseChildItems()
     }
     this.activeItems = this.itemsList
+  }
+
+  // ==================== 子元素声明式通道 ====================
+
+  /**
+   * 子元素通道解析层：把 light DOM 的 `<oas-command-item>` 收敛为内部 items 模型
+   * （与 parseItems 单一渲染路径，后续 renderList/键盘/事件全部无感）。
+   */
+  private parseChildItems(): CommandItem[] {
+    return this.parseChildLevel(this.children)
+  }
+
+  /** 解析一层子元素为 CommandItem[]（仅识别数据载体元素，其余 light DOM 内容忽略） */
+  private parseChildLevel(elements: HTMLCollection | Element[]): CommandItem[] {
+    const items: CommandItem[] = []
+    for (const child of Array.from(elements)) {
+      if (child.tagName === 'OAS-COMMAND-ITEM') items.push(this.childToItem(child))
+    }
+    return items
+  }
+
+  /**
+   * 单个 <oas-command-item> → CommandItem（默认插槽文本为 label，属性对齐 items 字段；
+   * keywords 逗号拆分 trim 去空；forceMount/separator 为布尔属性；
+   * 直接子 oas-command-item 递归为 page 子页）。
+   */
+  private childToItem(el: Element): CommandItem {
+    const item: CommandItem = {
+      label: this.childLabel(el),
+      // value 为必填字段：载体未声明时给空串（与 items 通道一致不消费无 value 的选择语义）
+      value: el.getAttribute('value') ?? '',
+    }
+    const group = el.getAttribute('group')
+    if (group) item.group = group
+    if (el.hasAttribute('disabled')) item.disabled = true
+    const icon = el.getAttribute('icon')
+    if (icon) item.icon = icon
+    const shortcut = el.getAttribute('shortcut')
+    if (shortcut) item.shortcut = shortcut
+    const description = el.getAttribute('description')
+    if (description) item.description = description
+    const view = el.getAttribute('view')
+    if (view) item.view = view
+    if (el.hasAttribute('force-mount')) item.forceMount = true
+    if (el.hasAttribute('separator')) item.separator = true
+    const keywords = el.getAttribute('keywords')
+    if (keywords) {
+      const kws = keywords
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean)
+      if (kws.length > 0) item.keywords = kws
+    }
+    const children = this.parseChildLevel(el.children)
+    if (children.length > 0) item.page = children
+    return item
+  }
+
+  /** 默认插槽 label 文本：跳过嵌套 oas-command-item 数据载体（其文本属于子页而非 label） */
+  private childLabel(el: Element): string {
+    let text = ''
+    for (const node of el.childNodes) {
+      if (node instanceof Element && node.tagName === 'OAS-COMMAND-ITEM') continue
+      text += node.textContent ?? ''
+    }
+    return text.trim()
+  }
+
+  /**
+   * 子元素通道观察器：只监听 light DOM 子元素（数据载体增删/属性/文本变化 → 重解析）。
+   * 防自身动作循环：append-to 的插槽桥接（syncPortal 把 empty/footer/view-* 节点移入/
+   * 移出 portal host）也是组件自身对 light DOM 的写入，会产生 childList 记录——用
+   * isChildChannelMutation 过滤，只响应 oas-command-item 相关变化，桥接空转不重渲染。
+   */
+  private ensureChildObserver(): void {
+    if (this.childObserver) return
+    const observer = new MutationObserver((records) => {
+      if (!records.some((r) => this.isChildChannelMutation(r))) return
+      this.update()
+    })
+    observer.observe(this, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+      attributeFilter: [
+        'value',
+        'group',
+        'disabled',
+        'icon',
+        'shortcut',
+        'description',
+        'view',
+        'force-mount',
+        'separator',
+        'keywords',
+        'slot',
+      ],
+    })
+    this.childObserver = observer
+    this.onCleanup(() => {
+      observer.disconnect()
+      this.childObserver = null
+    })
+  }
+
+  /** 突变记录是否属于子元素通道（oas-command-item 增删/属性/文本）；其余（如插槽桥接的
+      empty/footer/view-* 节点搬运）与本通道无关，跳过避免自身动作触发无谓重渲染 */
+  private isChildChannelMutation(record: MutationRecord): boolean {
+    if (record.type === 'attributes') {
+      return record.target instanceof Element && record.target.tagName === 'OAS-COMMAND-ITEM'
+    }
+    if (record.type === 'characterData') {
+      // 文本节点变化：向上找最近的元素祖先，落在 oas-command-item 内才算
+      let node: Node | null = record.target
+      while (node && !(node instanceof Element)) node = node.parentNode
+      return node instanceof Element && node.tagName === 'OAS-COMMAND-ITEM'
+    }
+    // childList：变更发生在 oas-command-item 内（如 label 文本整体替换，target 即该载体、
+    // added/removed 为文本节点）；或新增/移除的节点是 oas-command-item、子树内含 oas-command-item
+    if (record.target instanceof Element && record.target.tagName === 'OAS-COMMAND-ITEM') return true
+    for (const n of [...record.addedNodes, ...record.removedNodes]) {
+      if (!(n instanceof Element)) continue
+      if (n.tagName === 'OAS-COMMAND-ITEM') return true
+      if (n.querySelector('oas-command-item')) return true
+    }
+    return false
   }
 
   // ==================== 唤起快捷键 ====================
