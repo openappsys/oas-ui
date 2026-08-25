@@ -34,7 +34,6 @@
 - **hover-card**：collision-boundary 坐标系缺陷（边界解析丢 rect 原点）
 - **command**：keydown 重连丢失
 - **navigation-menu**：面板箭头跟随触发器（CSS 引用 --arrow-x/--arrow-y 但 JS 从未写入）
-- **back-top**：无
 - **icons**：arrow-up/arrow-down 方向画反（svg 源顶点互换 + 方向类几何断言固化）；icon generate 脚本原子化（中断不毁 src/icons）；duotone 分层 fallback 劫持 + secondary 双色被抹
 - **menu**：checkbox 多选方格与标签紧贴（补 margin 间距）
 - **table**：summary 行 render 返回 Node 时文本路径守卫
