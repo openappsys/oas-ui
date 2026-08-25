@@ -116,6 +116,7 @@ export const en: LocaleMessages = {
   'tagGroup.group': 'Tag group',
   'tabs.close': 'Close',
   'tabs.ctxClose': 'Close',
+  'tabs.ctxNew': 'New',
   'tabs.ctxCloseOthers': 'Close others',
   'tabs.ctxCloseLeft': 'Close all to the left',
   'tabs.ctxCloseRight': 'Close all to the right',

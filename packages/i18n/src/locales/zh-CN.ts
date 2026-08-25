@@ -160,6 +160,7 @@ export const zhCN = {
   // tabs（标签页）
   'tabs.close': '关闭',
   'tabs.ctxClose': '关闭',
+  'tabs.ctxNew': '新建',
   'tabs.ctxCloseOthers': '关闭其他',
   'tabs.ctxCloseLeft': '关闭左侧所有',
   'tabs.ctxCloseRight': '关闭右侧所有',

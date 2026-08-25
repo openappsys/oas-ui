@@ -842,7 +842,7 @@ export class OASTabs extends OASElement {
       menu.setAttribute('part', 'context-menu')
       menu.setAttribute('role', 'menu')
       const items: Array<{ op: CtxOp; key: string }> = [
-        { op: 'new', key: 'tabs.newTab' },
+        { op: 'new', key: 'tabs.ctxNew' },
         { op: 'close', key: 'tabs.ctxClose' },
         { op: 'others', key: 'tabs.ctxCloseOthers' },
         { op: 'left', key: 'tabs.ctxCloseLeft' },
@@ -901,7 +901,7 @@ export class OASTabs extends OASElement {
       const op = ops[i]!
       b.textContent = this.t(
         op === 'new'
-          ? 'tabs.newTab'
+          ? 'tabs.ctxNew'
           : op === 'close'
             ? 'tabs.ctxClose'
             : op === 'others'
