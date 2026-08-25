@@ -30,6 +30,24 @@ function writeAtomic(target: string, content: string, tmpName: string) {
   renameSync(tmp, target)
 }
 
+/**
+ * 带重试的目录原子替换：Windows 下 dev watch（chokidar/tsc）正读 src/icons 时
+ * rmSync/renameSync 会 EPERM（句柄未放，实测发布构建与 pnpm dev 并行时必现级）；
+ * 观察到句柄是瞬态的，退避重试即可成功
+ */
+function swapDirRetry(from: string, to: string, attempts = 4): void {
+  for (let i = 0; ; i++) {
+    try {
+      rmSync(to, { recursive: true, force: true })
+      renameSync(from, to)
+      return
+    } catch (e) {
+      if (i >= attempts - 1) throw e
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100 * (i + 1))
+    }
+  }
+}
+
 rmSync(tmpDir, { recursive: true, force: true })
 
 try {
@@ -59,9 +77,8 @@ try {
     `${names.map((n) => `export { ${camel(n)}Path } from './${n}.js'`).join('\n')}\n`,
   )
 
-  // 2. 目录原子替换：rename 同卷原子，窗口只有「删旧 + 改名」一瞬间
-  rmSync(iconsDir, { recursive: true, force: true })
-  renameSync(tmpIcons, iconsDir)
+  // 2. 目录原子替换：rename 同卷原子，窗口只有「删旧 + 改名」一瞬间（EPERM 重试护体）
+  swapDirRetry(tmpIcons, iconsDir)
 
   // 3. 两个单文件原子写
   writeAtomic(
