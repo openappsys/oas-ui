@@ -1,27 +1,27 @@
 {
   "size": {
-    "generatedAt": "2026-08-24",
+    "generatedAt": "2026-08-25",
     "method": "gzip = zlib gzipSync；brotli = zlib brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 7821279,
+        "distTotalBytes": 7884587,
         "browserJs": {
           "files": 266,
-          "rawBytes": 2392948,
-          "gzipBytes": 661115,
-          "brotliBytes": 520643
+          "rawBytes": 2411030,
+          "gzipBytes": 667144,
+          "brotliBytes": 525450
         },
         "fullEntry": {
           "files": 313,
-          "rawBytes": 1324797,
-          "gzipBytes": 426258,
-          "brotliBytes": 355435
+          "rawBytes": 1334228,
+          "gzipBytes": 429601,
+          "brotliBytes": 358246
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 1098522,
-          "gzipBytes": 251376,
-          "brotliBytes": 178883
+          "rawBytes": 1107173,
+          "gzipBytes": 254062,
+          "brotliBytes": 180880
         }
       },
       "@oas-ui/theme": {
@@ -47,7 +47,7 @@
         "files": 46,
         "rawBytes": 17802,
         "gzipBytes": 9889,
-        "brotliBytes": 8494
+        "brotliBytes": 8495
       },
       "@oas-ui/ssr": {
         "files": 2,
@@ -63,7 +63,7 @@
         "files": 51,
         "rawBytes": 59025,
         "gzipBytes": 22556,
-        "brotliBytes": 18927,
+        "brotliBytes": 18928,
         "fileList": [
           "packages/ui/dist/basic/button/index.js",
           "packages/ui/dist/basic/button/oas-button.js",
@@ -122,9 +122,9 @@
         "entry": "data/table",
         "spec": "@oas-ui/ui/data/table",
         "files": 10,
-        "rawBytes": 65272,
-        "gzipBytes": 21810,
-        "brotliBytes": 18089,
+        "rawBytes": 66489,
+        "gzipBytes": 22040,
+        "brotliBytes": 18285,
         "fileList": [
           "packages/ui/dist/data/table/index.js",
           "packages/i18n/dist/index.js",
@@ -161,7 +161,7 @@
     "budgets": [
       {
         "name": "dist/cdn.js gzip",
-        "actualBytes": 251376,
+        "actualBytes": 254062,
         "limitBytes": 307200,
         "warnAtBytes": 276480,
         "pass": true,
@@ -170,7 +170,7 @@
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
-        "actualBytes": 426258,
+        "actualBytes": 429601,
         "limitBytes": 532480,
         "warnAtBytes": 479232,
         "pass": true,
@@ -188,7 +188,7 @@
       },
       {
         "name": "@oas-ui/ui/data/table 链 gzip",
-        "actualBytes": 21810,
+        "actualBytes": 22040,
         "limitBytes": 26624,
         "warnAtBytes": 23962,
         "pass": true,

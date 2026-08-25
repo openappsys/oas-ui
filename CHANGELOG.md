@@ -2,6 +2,44 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.2.3] - 2026-08-25
+
+### 新增
+
+- **导航与浮层族复核批（9 组件能力增量）**：对 tooltip/popover 之外的 9 件按组件深挖流程复核补齐
+  - tour：`gap` 双轴偏移（[水平,垂直]）、`arrow-point-at-center`、slot=indicators 自定义指示器、slot=actions 自定义动作区
+  - hover-card：滚动/resize 重定位默认开启、`sticky` 三档（off/partial/always 贴边不消失）、`collision-boundary` 自定义碰撞边界（选择器 + property 双通道）
+  - command：开合过渡动画（reduced-motion 降级）、search aria-controls 关联 listbox、`append-to` portal
+  - breadcrumb：子元素声明式通道试点（`<oas-breadcrumb-item>`/`<oas-breadcrumb-separator>`，items 属性显式时数据驱动优先、否则子元素解析，同一渲染路径收敛）、`oas-collapse-click` 折叠展开事件
+  - anchor：`oas-click` 事件分离（与滚动联动 oas-change 区分）、resize 重算、滚动 rAF 节流、`block="nearest"`
+  - menubar：子项 `href` 真链接（中键新开）、水平溢出收纳「···」（镜像弹层 + 选中反馈）、checkbox `indeterminate` 半选、start/end 插槽
+  - navigation-menu：viewport 碰撞翻转、面板内二级子导航（sub 字段 + 覆盖式二级面板 + 级联动画 + Esc/← 逐层回退）、`loop` 属性、panel-footer 营销位插槽
+  - back-top：`target` 缺省自动探测最近可滚祖先、tooltip 读屏可达、`draggable` 拖拽（位置持久化）
+  - toolbar：start/end 插槽
+- **模板实测第二批能力**：
+  - select：下拉改 `position: fixed` + computePosition 锚定（逃出祖先 overflow 容器，不再逼出滚动条，与 combobox 一致）
+  - sidebar：`items.group` 数据驱动分组标题（part=group，弱化语义色、纯展示不可点；折叠态隐藏、移动抽屉态显示，items JSON 向后兼容）
+  - tabs：`tab-badge` 颜色开口 `--oas-tabs-badge-bg/--oas-tabs-badge-color`（默认 danger 兼容）+ part="badge"，宿主可中性化徽标配色
+  - menubar shortcut 契约：「修饰键+键」直接绑定；单键仅限功能键（F1–F12）绑定，其余单键仅展示不绑定
+
+### 修复
+
+- **tour**：断开重连后 document keydown 丢失；advance-on-click 换步旧目标残留监听；append-to 后 slot 断供（portal host 桥接）；-start/-end 箭头视口夹取错指；auto-reposition 死代码实装；mask=false 时 aria-modal 降级；高亮框与遮罩孔过渡对齐；append-to portal host display:none 致浮窗 0×0 不可见；弹窗 pointer-events:none 穿透误关；typewriter 布尔属性误判；首打开目标视口外闪现错位
+- **浮层箭头统一**：标准菱形箭头全家族统一 12px/-6px（居中 calc、ARROW_SIZE 对齐盒尺寸）；merge 贴角直角三角独立固定 8px 盒；popover/hover-card merge 描边三修（方向性 drop-shadow 致左缘视觉偏移、贴面板融合边多余描边线、斜边渐变带过细）
+- **tabs more 下拉**：offview 判定从「完全滚出」改为「不完全可见」（部分滚出也算）——部分溢出区间「有按钮 + 空下拉」消除；ResizeObserver 回调补 syncMore（缩窗按钮不出现、扩窗按钮不撤回双向修复）
+- **layout/sidebar/sider/table 模板缺陷 9 项**：sidebar active 受控高亮（aria-current=page）+ drawer-open 纳入 observedAttributes + 移动触发按钮 emoji→SVG + items.icon 注册表名渲染内联 SVG；layout 的 sider slot 判据改 `slot="sider"`（任意元素可进左轨）；sider 与内部 sidebar 折叠联动 + 宽度 `--oas-sider-width` 变量开口；table 单元格 render 支持 Node/元素富内容（columns property 保留 render 函数）+ `:host([hidden])` 尊重
+- **menubar**：SSR 溢出收纳零宽误判三连修（e2e 水合漂移 38px 根治）；scale 动画污染定位测量；divider role/aria-hidden 互斥；typeaheadTimer 清理；checkbox 多选方格与标签间距
+- **breadcrumb**：ellipsis 自裁剪（overflow-x:clip + overflow-y:visible）；下拉水平翻转
+- **toolbar**：断开重连后 pointerdown/ResizeObserver 丢失；溢出收纳防收缩（slotted 项被压扁、收纳永不触发）
+- **hover-card**：collision-boundary 坐标系缺陷（边界解析丢 rect 原点）
+- **command**：keydown 重连丢失
+- **navigation-menu**：面板箭头跟随触发器（CSS 引用 --arrow-x/--arrow-y 但 JS 从未写入）
+- **back-top**：无
+- **icons**：arrow-up/arrow-down 方向画反（svg 源顶点互换 + 方向类几何断言固化）；icon generate 脚本原子化（中断不毁 src/icons）；duotone 分层 fallback 劫持 + secondary 双色被抹
+- **menu**：checkbox 多选方格与标签紧贴（补 margin 间距）
+- **table**：summary 行 render 返回 Node 时文本路径守卫
+- **docs**：端口描述漂移修正 5173→5175；qa-regression.spec 积压 typecheck 错误清理；format 既存漂移两批收敛；sidebar API 描述补录（active/drawer-open）
+
 ## [2.2.2] - 2026-08-22
 
 
