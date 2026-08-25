@@ -6,6 +6,8 @@ export interface SidebarItem {
   label: string
   value: string
   icon?: string
+  /** 分组名（可选）：连续同组项在组首项前渲染组标题节点（纯展示、不可点） */
+  group?: string
 }
 
 /** 默认移动端断点（px，窄于此视口宽度时抽屉化） */
@@ -190,6 +192,18 @@ aside {
 .item .label {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* 组标题：弱化小标题，纯展示不可点；折叠态隐藏（同 .item .label） */
+.group-title {
+  padding: var(--oas-space-2, 8px) var(--oas-space-3, 12px) var(--oas-space-1, 4px);
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-xs, 12px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:host(:not([data-mobile])[collapsed]) .group-title {
+  display: none;
 }
 /* 桌面折叠切换按钮 */
 [part='toggle'] {
@@ -394,7 +408,18 @@ export class OASSidebar extends OASElement {
     this.parseItems()
     nav.innerHTML = ''
     const active = this.getAttr('active', '')
+    let currentGroup: string | undefined
     for (const item of this._items) {
+      const group = item.group?.trim()
+      // 组首项前渲染组标题（纯展示、part=group；无 group 或换组时插入）
+      if (group && group !== currentGroup) {
+        const title = document.createElement('div')
+        title.className = 'group-title'
+        title.setAttribute('part', 'group')
+        title.textContent = group
+        nav.appendChild(title)
+      }
+      currentGroup = group || undefined
       const btn = document.createElement('button')
       btn.className = 'item'
       btn.setAttribute('part', 'item')

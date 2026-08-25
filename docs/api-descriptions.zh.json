@@ -1341,7 +1341,7 @@
   "oas-sidebar": {
     "attrs": {
       "collapsed": "受控折叠，收窄为图标条（存在即折叠）",
-      "items": "菜单项 JSON `[{label, value, icon?}]`",
+      "items": "菜单项 JSON [{label, value, icon?, group?}]（group：连续同组项前渲染组标题，纯展示；折叠态隐藏）",
       "mobile-breakpoint": "移动端断点（px），窄于该值变覆盖式抽屉",
       "width": "展开宽度，默认走 `--oas-sidebar-width` token",
       "active": "当前高亮菜单项 value（受控：外部设置/清除立即高亮迁移，重绘）",
