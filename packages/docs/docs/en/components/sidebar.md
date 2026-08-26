@@ -159,9 +159,9 @@ Item `icon` defaults to the built-in `@oas-ui/icons` registry; app-level custom 
 
 <DemoBlock title="Custom icons & coloring (registerIcon + iconColor)">
   <div style="height: 300px; width: 100%; display: flex">
-    <oas-sidebar id="sidebar-custom-icon" items='[{"label":"Workbench","value":"workbench","icon":"oas-rocket","iconColor":"var(--oas-color-warning)"},{"label":"Repositories","value":"repo","icon":"oas-folder","iconColor":"var(--oas-color-primary)"},{"label":"Team feed","value":"team","icon":"oas-heart"}]'></oas-sidebar>
+    <oas-sidebar id="sidebar-custom-icon" items='[{"label":"Workbench","value":"workbench","icon":"oas-rocket","iconColor":"var(--oas-color-warning)"},{"label":"Repositories","value":"repo","icon":"oas-folder","iconColor":"var(--oas-color-primary)"},{"label":"Team feed","value":"team","icon":"oas-heart"},{"label":"Built-in star","value":"star","icon":"star","iconColor":"var(--oas-color-danger)"},{"label":"Built-in heart","value":"heart","icon":"heart"}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
-      “Workbench” is fixed to the warning color and “Repositories” to the theme primary (<code>iconColor</code> present → does not follow the active state); “Team feed” has no <code>iconColor</code> so it follows the state, and its custom SVG keeps its own red stroke. The tooltip icon in the collapsed strip shares the same color.
+      “Workbench” is fixed to the warning color and “Repositories” to the theme primary (<code>iconColor</code> present → does not follow the active state); “Team feed” has no <code>iconColor</code> so it follows the state, and its custom SVG keeps its own red stroke. Built-in icons take <code>iconColor</code> too: <strong>“Built-in star” uses the registry name <code>star</code> + a forced red</strong> (the built-in monochrome path’s <code>currentColor</code> is also replaced); “Built-in heart” without one follows the state. The tooltip icon in the collapsed strip shares the same color.
     </div>
   </div>
 </DemoBlock>
