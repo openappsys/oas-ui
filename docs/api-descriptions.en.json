@@ -1556,6 +1556,7 @@
       "drawer-open": "Mobile drawer open state (controlled: set opens, clear closes; auto-removed when breakpoint returns to desktop)",
       "loading": "Skeleton loading state (shows a pulsing skeleton when present; value sets row count, default 4)",
       "hide-toggle": "Hide the bottom collapse button (a built-in toggle always visible on desktop; presence hides it — host opt-out for static sidebars)",
+      "accordion": "Accordion mode (when present: expanding one parent collapses the other parents at the same level; multiple parents can be open by default)",
       "expand-on-hover": "Temporarily expand the collapsed icon strip on hover (visual only; does not change controlled collapsed)",
       "shortcut": "Enable Ctrl/Cmd+B collapse toggling (off by default to avoid hijacking a global key)",
       "side": "Drawer side: left (default) / right (mobile drawer slides from the right, trigger on the right)",

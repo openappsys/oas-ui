@@ -96,7 +96,16 @@
 
 ## 嵌套子菜单
 
-菜单项支持 `children` 嵌套：父项点击展开/收起（不派发 `oas-select`），含激活子项的父项自动展开；折叠图标条态子树隐藏。
+菜单项支持 `children` 嵌套：父项点击展开/收起（不派发 `oas-select`），含激活子项的父项自动展开；折叠图标条态子树隐藏。展开/收起带平滑高度动画（`prefers-reduced-motion` 自动降级）；`accordion` 同级互斥——展开一个父项自动收起其他同级父项（适合长导航只保留一个展开区）。
+
+<DemoBlock title="手风琴（accordion 同级互斥）">
+  <div style="height: 380px; width: 100%; display: flex">
+    <oas-sidebar accordion items='[{"label":"仪表盘","value":"dash","icon":"star"},{"label":"业务管理","value":"biz","icon":"edit","children":[{"label":"订单管理","value":"orders","icon":"edit"},{"label":"商品管理","value":"goods","icon":"heart"},{"label":"用户管理","value":"users","icon":"user"}]},{"label":"营销中心","value":"mkt","icon":"mail","children":[{"label":"活动列表","value":"acts","icon":"calendar"},{"label":"优惠券","value":"coupon","icon":"star"}]},{"label":"系统设置","value":"sys","icon":"gear","children":[{"label":"权限管理","value":"perm","icon":"lock"},{"label":"审计日志","value":"audit","icon":"clock"}]}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      依次点击「业务管理」「营销中心」「系统设置」——同级始终只有一个展开区。
+    </div>
+  </div>
+</DemoBlock>
 
 <DemoBlock title="嵌套子菜单（items.children）">
   <div style="height: 340px; width: 100%; display: flex">
@@ -319,6 +328,7 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `accordion` | 手风琴同级互斥（存在即生效：展开一个父项自动收起其他同级父项；默认多父项可同时展开） | `boolean` | — |
 | `active` | 当前高亮菜单项 value（受控：外部设置/清除立即高亮迁移，重绘） | `string` | — |
 | `collapsed` | 受控折叠，收窄为图标条（存在即折叠） | `boolean` | — |
 | `drawer-open` | 移动端抽屉打开态（受控：设置即开、清除即收；断点回桌面自动移除） | `boolean` | — |

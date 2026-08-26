@@ -6864,12 +6864,12 @@ test('sider 内嵌 sidebar 宽度自动对齐：填满轨道而非自身默认�
   expect(Math.round(r2.sb), '折叠时内嵌 sidebar 应跟随 64').toBe(64)
 })
 
-test('sidebar 嵌套父项点击折叠子菜单：hidden 属性真实隐藏（.submenu[hidden] 兜底，防 display:flex 压 UA 规则）', async ({
+test('sidebar 嵌套父项点击折叠子菜单：hidden 真实隐藏（grid 0fr + visibility 动画机制，真实视觉断言）', async ({
   page,
 }) => {
-  // 曾现 bug：.submenu{display:flex} 作者级规则压过 UA [hidden]{display:none}，
-  // subWrap.hidden=true 只改属性不改渲染——chevron 翻转但子菜单永远可见（用户实测）。
-  // 本断言量 computed display（真实视觉），不是只查 hidden 属性。
+  // 历史根因：.submenu{display:flex} 作者级规则压过 UA [hidden]{display:none}（只改属性不改渲染）；
+  // 现行机制：grid-template-rows 0fr/1fr 平滑过渡 + visibility 联动（收起时出渲染树防聚焦）。
+  // 本断言量 computed visibility 与高度（真实视觉），不是只查 hidden 属性。
   await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
   await page.waitForFunction(
     () => document.querySelector('#sidebar-decl')?.shadowRoot != null,
@@ -6882,21 +6882,23 @@ test('sidebar 嵌套父项点击折叠子菜单：hidden 属性真实隐藏（.s
       (i) => i.dataset.value === 'biz',
     )!
     const sub = () => host.shadowRoot!.querySelector('[part="submenu"]') as HTMLElement
-    const display = () => getComputedStyle(sub()).display
-    const before = { aria: biz.getAttribute('aria-expanded'), display: display() }
+    const visibility = () => getComputedStyle(sub()).visibility
+    const before = { aria: biz.getAttribute('aria-expanded'), visibility: visibility() }
     biz.click()
-    await new Promise((r2) => setTimeout(r2, 400))
-    const afterClick = { aria: biz.getAttribute('aria-expanded'), display: display(), rectH: Math.round(sub().getBoundingClientRect().height) }
+    await new Promise((r2) => setTimeout(r2, 500))
+    const afterClick = { aria: biz.getAttribute('aria-expanded'), visibility: visibility(), rectH: Math.round(sub().getBoundingClientRect().height) }
     biz.click()
-    await new Promise((r2) => setTimeout(r2, 400))
-    const afterReclick = { aria: biz.getAttribute('aria-expanded'), display: display() }
+    await new Promise((r2) => setTimeout(r2, 500))
+    const afterReclick = { aria: biz.getAttribute('aria-expanded'), visibility: visibility(), rectH: Math.round(sub().getBoundingClientRect().height) }
     return { before, afterClick, afterReclick }
   })
   expect(r.before.aria).toBe('true') // 激活子项自动展开
-  expect(r.before.display).toBe('flex')
+  expect(r.before.visibility).toBe('visible')
   expect(r.afterClick.aria, '点击后 aria-expanded 应收起').toBe('false')
-  expect(r.afterClick.display, '点击后子菜单应 display:none（真实视觉隐藏）').toBe('none')
+  // grid 0fr + visibility 动画机制（平滑过渡）：收起后 visibility:hidden + 高度 0（真实视觉隐藏且防聚焦）
+  expect(r.afterClick.visibility, '点击后子菜单应 visibility:hidden（真实视觉隐藏）').toBe('hidden')
   expect(r.afterClick.rectH, '隐藏后子菜单高度应为 0').toBe(0)
   expect(r.afterReclick.aria, '再点应重新展开').toBe('true')
-  expect(r.afterReclick.display).toBe('flex')
+  expect(r.afterReclick.visibility).toBe('visible')
+  expect(r.afterReclick.rectH, '再展开后子菜单高度应恢复').toBeGreaterThan(0)
 })

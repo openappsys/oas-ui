@@ -347,10 +347,12 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(parent.getAttribute('aria-expanded')).toBe('false')
     expect(sub.hidden).toBe(true)
     expect(sub.querySelectorAll('[part="item"]').length).toBe(2)
-    // hidden 属性必须有作者级 display:none 兜底（否则被 .submenu{display:flex} 压过、视觉不隐藏）
+    // 隐藏走 grid 0fr + visibility（可动画）——display 恒 grid（[hidden] 不再 display:none），
+    // visibility:hidden 负责出渲染树/无障碍树/防聚焦（替代 UA display:none 的语义兜底）
     const stl = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(stl, '.submenu[hidden] 显式 display:none 兜底（hidden 属性才真生效）').toMatch(
-      /\.submenu\[hidden\]\s*\{\s*display:\s*none/,
+    expect(stl, 'submenu 应为 grid 布局（0fr/1fr 过渡的前提）').toMatch(/\.submenu\s*\{[^}]*display:\s*grid/)
+    expect(stl, 'collapsed 时 visibility:hidden（出渲染树防聚焦）').toMatch(
+      /\.submenu\s*\{[^}]*visibility:\s*hidden/,
     )
     let selectCount = 0
     el.addEventListener('oas-select', () => selectCount++)
@@ -361,6 +363,61 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     parent.click()
     expect(parent.getAttribute('aria-expanded')).toBe('false')
     expect(sub.hidden).toBe(true)
+  })
+
+  it('子树展开平滑动画：grid-template-rows 0fr/1fr 过渡 + visibility 联动 + reduced-motion 降级 + chevron 过渡', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items: '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
+    })
+    const stl = el.shadowRoot!.querySelector('style')!.textContent!
+    // 高度过渡：0fr（收起）↔ 1fr（展开）
+    expect(stl).toMatch(/grid-template-rows:\s*0fr/)
+    expect(stl).toMatch(/\.submenu:not\(\[hidden\]\)\s*\{[^}]*grid-template-rows:\s*1fr/)
+    // 内层 overflow 裁剪（grid 高度动画的必需结构）
+    expect(stl).toMatch(/\.submenu-inner\s*\{[^}]*overflow:\s*hidden/)
+    expect(stl).toMatch(/\.submenu-inner\s*\{[^}]*min-height:\s*0/)
+    // visibility 联动：收起时 hidden（延迟到过渡结束），展开时 visible
+    expect(stl).toMatch(/visibility:\s*hidden/)
+    expect(stl).toMatch(/\.submenu:not\(\[hidden\]\)\s*\{[^}]*visibility:\s*visible/)
+    // reduced-motion 降级：过渡停用
+    expect(stl).toMatch(/prefers-reduced-motion:\s*reduce[\s\S]{0,200}transition:\s*none/)
+    // chevron 旋转过渡
+    expect(stl).toMatch(/\.chevron\s*\{[^}]*transition:[^}]*transform/)
+  })
+
+  it('accordion：同级互斥——展开一个父项自动收起其他同级父项（与 menu 同语义）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      accordion: '',
+      items:
+        '[{"label":"业务","value":"biz","icon":"star","children":[{"label":"订单","value":"orders"}]},{"label":"系统","value":"sys","icon":"gear","children":[{"label":"权限","value":"perm"}]}]',
+    })
+    const items = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
+    const biz = items.find((i) => i.dataset.value === 'biz')!
+    const sys = items.find((i) => i.dataset.value === 'sys')!
+    biz.click()
+    expect(biz.getAttribute('aria-expanded')).toBe('true')
+    sys.click()
+    // accordion 触发 update 重渲染（同步被收起项的 DOM 态），重新查询元素
+    const itemsAfter = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
+    const bizAfter = itemsAfter.find((i) => i.dataset.value === 'biz')!
+    const sysAfter = itemsAfter.find((i) => i.dataset.value === 'sys')!
+    expect(sysAfter.getAttribute('aria-expanded'), '展开 sys 成功').toBe('true')
+    expect(bizAfter.getAttribute('aria-expanded'), 'accordion 同级互斥：biz 应被自动收起').toBe('false')
+    expect((el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="biz"]')!.closest('.item-block')!.querySelector('[part="submenu"]') as HTMLElement).hidden, 'biz 子树应隐藏').toBe(true)
+    // 无 accordion 对照：两者可同时展开
+    const el2 = mount({
+      items:
+        '[{"label":"业务","value":"biz","icon":"star","children":[{"label":"订单","value":"orders"}]},{"label":"系统","value":"sys","icon":"gear","children":[{"label":"权限","value":"perm"}]}]',
+    })
+    const items2 = [...el2.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
+    items2.find((i) => i.dataset.value === 'biz')!.click()
+    items2.find((i) => i.dataset.value === 'sys')!.click()
+    expect(items2.find((i) => i.dataset.value === 'biz')!.getAttribute('aria-expanded')).toBe('true')
+    expect(items2.find((i) => i.dataset.value === 'sys')!.getAttribute('aria-expanded')).toBe('true')
+    // observedAttributes 覆盖
+    expect(OASSidebar.observedAttributes).toContain('accordion')
   })
 
   it('嵌套子项点击派发 oas-select（叶子项行为不变）', () => {
