@@ -394,6 +394,51 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(badge.classList.contains('item-badge')).toBe(true)
   })
 
+  it('折叠态嵌套父项渲染为纯图标项：无 chevron、无 aria-expanded、点击派发 select（修复死交互）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      collapsed: '',
+      items:
+        '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
+    })
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
+    expect(parent.querySelector('.chevron'), '折叠态父项不应有展开箭头').toBeNull()
+    expect(parent.getAttribute('aria-expanded'), '折叠态父项不应有 aria-expanded').toBeNull()
+    // 点击按普通项处理（派发 oas-select），不再切换死展开
+    let detail: unknown
+    el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    parent.click()
+    expect(detail).toEqual({ value: 'admin', label: '管理' })
+    // 展开态对照不受影响：chevron 仍在、点击只展开不派发 select
+    const el2 = mount({
+      items:
+        '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
+    })
+    const p2 = el2.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
+    expect(p2.querySelector('.chevron'), '展开态父项应有展开箭头').not.toBeNull()
+  })
+
+  it('折叠态激活后代时父项带 child-selected 指示（激活态在图标条下不丢失）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      collapsed: '',
+      items:
+        '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
+      active: 'users',
+    })
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
+    expect(parent.classList.contains('child-selected'), '激活后代的父项应带 child-selected').toBe(true)
+    expect(parent.getAttribute('aria-current'), '父项不是当前页，不应有 aria-current').toBeNull()
+    // 展开态对照：child-selected 也应有（激活后代可见性一致）
+    const el2 = mount({
+      items:
+        '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
+      active: 'users',
+    })
+    const p2 = el2.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
+    expect(p2.classList.contains('child-selected'), '展开态激活后代的父项也应带 child-selected').toBe(true)
+  })
+
   it('项操作：actions 渲染悬停操作按钮，点击派发 oas-action 且不触发 select', () => {
     stubMatchMedia(false)
     const el = mount({
@@ -851,16 +896,19 @@ describe('OASSidebar 子元素声明式通道', () => {
     parent.click()
     expect(parent.getAttribute('aria-expanded')).toBe('false')
     expect(sub.hidden).toBe(true)
-    // 折叠态：嵌套父项子树初始隐藏（与 items 通道一致；collapsed 触发重渲染，重新查询节点）
+    // 折叠态：嵌套父项渲染为纯图标项（新设计——折叠态子树不渲染，展开箭头/aria-expanded 死交互移除；
+    // collapsed 触发重渲染，重新查询节点）
     el.setAttribute('collapsed', '')
     const parent2 = root.querySelector<HTMLElement>('[part="item"][data-value="biz"]')!
-    const sub2 = root.querySelector<HTMLElement>('[part="submenu"]')!
-    expect(sub2.hidden, '折叠态下嵌套父项子树初始隐藏').toBe(true)
-    // 折叠态点击父项：切换展开态（子树可见），与 items 通道同构行为一致
+    expect(root.querySelector('[part="submenu"]'), '折叠态嵌套子树不渲染').toBeNull()
+    expect(parent2.querySelector('.chevron'), '折叠态父项无展开箭头').toBeNull()
+    expect(parent2.getAttribute('aria-expanded'), '折叠态父项无 aria-expanded').toBeNull()
+    // 折叠态点击父项：按普通项派发 oas-select（与 items 通道同构行为一致）
+    let collapsedDetail: unknown
+    el.addEventListener('oas-select', (e) => (collapsedDetail = (e as CustomEvent).detail))
     parent2.click()
-    expect(parent2.getAttribute('aria-expanded')).toBe('true')
-    expect(sub2.hidden).toBe(false)
-    // 同构 items 通道对照：折叠态初始子树同样隐藏
+    expect(collapsedDetail).toEqual({ value: 'biz', label: '业务管理' })
+    // 同构 items 通道对照：折叠态同样无子树/无箭头
     const elItems = mount({
       collapsed: '',
       items: JSON.stringify([
@@ -872,7 +920,9 @@ describe('OASSidebar 子元素声明式通道', () => {
         },
       ]),
     })
-    expect(elItems.shadowRoot!.querySelector<HTMLElement>('[part="submenu"]')!.hidden).toBe(true)
+    const pItems = elItems.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="biz"]')!
+    expect(elItems.shadowRoot!.querySelector('[part="submenu"]'), 'items 通道折叠态同样不渲染子树').toBeNull()
+    expect(pItems.querySelector('.chevron'), 'items 通道折叠态同样无箭头').toBeNull()
   })
 })
 

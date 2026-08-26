@@ -216,6 +216,14 @@ aside {
 .item.active .icon {
   color: var(--oas-color-primary);
 }
+/* child-selected：激活后代的父项指示（比 active 浅一档；折叠图标条下子项隐身，
+   激活态经父项图标主色保留可见；父项非当前页，不加粗不设 aria-current） */
+.item.child-selected {
+  background: color-mix(in srgb, var(--oas-color-primary) 10%, transparent);
+}
+.item.child-selected .icon {
+  color: var(--oas-color-primary);
+}
 .item[hidden] {
   display: none;
 }
@@ -837,6 +845,9 @@ export class OASSidebar extends OASElement {
     depth: number,
   ): HTMLElement {
     const hasChildren = !!item.children?.length
+    // 折叠图标条态下嵌套父项按纯图标项处理：子树本就隐藏，展开箭头/aria-expanded/
+    // 展开点击属死交互（用户实测「点了没反应」）；点击按普通项派发 select
+    const effectiveHasChildren = hasChildren && !collapsed
     const btn = document.createElement('button')
     btn.className = 'item'
     btn.setAttribute('part', 'item')
@@ -848,6 +859,11 @@ export class OASSidebar extends OASElement {
     if (isActive) {
       btn.classList.add('active')
       btn.setAttribute('aria-current', 'page')
+    }
+    // 激活后代指示：父项（含折叠态纯图标项）带 child-selected 主色淡底——
+    // 折叠图标条下子项隐身，激活态经父项保留可见（父项非当前页，不设 aria-current）
+    if (hasChildren && active && this.findActiveChild(item.children!, active)) {
+      btn.classList.add('child-selected')
     }
     const icon = document.createElement('span')
     icon.className = 'icon'
@@ -875,9 +891,10 @@ export class OASSidebar extends OASElement {
       badge.textContent = String(item.badge)
       btn.appendChild(badge)
     }
-    // 嵌套父项：右侧展开箭头；点击切换展开（不派发 select）
+    // 嵌套父项：右侧展开箭头；点击切换展开（不派发 select）。
+    // 折叠图标条态（effectiveHasChildren=false）跳过此分支，走下方普通项点击
     let subWrap: HTMLElement | null = null
-    if (hasChildren) {
+    if (effectiveHasChildren) {
       // 含激活子项的父项自动展开（一次，不打断用户后续手动收起）
       const hasActiveChild = this.findActiveChild(item.children!, active)
       if (hasActiveChild && !this.autoExpanded.has(item.value)) {
