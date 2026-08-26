@@ -507,6 +507,7 @@ export class OASSidebar extends OASElement {
       'mobile-breakpoint',
       'active',
       'drawer-open',
+      'hide-toggle',
       'loading',
       'expand-on-hover',
       'shortcut',
@@ -745,7 +746,7 @@ export class OASSidebar extends OASElement {
     const toggle = this.shadow.querySelector<HTMLElement>('[part="toggle"]')
     const trigger = this.shadow.querySelector<HTMLElement>('[part="trigger"]')
     const close = this.shadow.querySelector<HTMLElement>('[part="close"]')
-    if (toggle) toggle.hidden = mobile
+    if (toggle) toggle.hidden = mobile || this.hasAttr('hide-toggle')
     if (trigger) trigger.hidden = !mobile
     if (close) close.hidden = !drawerOpen
 
