@@ -79,11 +79,15 @@ export class TableColumnSettingsController implements ReactiveController {
 
   /** 拖拽中的列 key（拖动源） */
   private dragKey = ''
+  /** 最近一次 dragover 计算的落点（目标列 + 插前/插后），drop 时据此重排 */
+  private lastDrop: { key: string; pos: 'before' | 'after' } | null = null
 
   private onDragStart = (e: DragEvent): void => {
     const th = (e.target as HTMLElement).closest<HTMLElement>('th[data-key]')
     if (!th) return
     this.dragKey = th.dataset.key ?? ''
+    this.lastDrop = null
+    th.classList.add('drag-source')
     e.dataTransfer?.setData('text/plain', this.dragKey)
     if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'
   }
@@ -92,27 +96,76 @@ export class TableColumnSettingsController implements ReactiveController {
     if (!this.dragKey) return
     e.preventDefault()
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+    // 按指针落在目标列左/右半区决定「插前 / 插后」，落点宽容、可预测
+    const hit = (e.target as HTMLElement).closest<HTMLElement>('th[data-key]')
+    const target = hit ? this.splitTarget(hit, e.clientX) : this.nearestTarget(e.clientX)
+    this.setDropTarget(target)
   }
 
   private onDrop = (e: DragEvent): void => {
     if (!this.dragKey) return
-    const target = (e.target as HTMLElement).closest<HTMLElement>('th[data-key]')
     e.preventDefault()
-    if (!target || target.dataset.key === this.dragKey) {
-      this.dragKey = ''
-      return
-    }
+    const drop = this.lastDrop
     const fromKey = this.dragKey
-    const toKey = target.dataset.key ?? ''
-    const keys = this.hostEl.getColumns().map((c) => c.key).filter((k) => k !== fromKey)
-    const toIndex = keys.indexOf(toKey)
-    keys.splice(toIndex < 0 ? keys.length : toIndex, 0, fromKey)
-    this.hostEl.setColumnOrder(keys)
+    this.clearDragMarks()
     this.dragKey = ''
+    if (!drop || drop.key === fromKey) return
+    const leaves = this.hostEl.getColumns()
+    const keys = leaves.map((c) => c.key).filter((k) => k !== fromKey)
+    const idx = keys.indexOf(drop.key)
+    // 插前：置于目标列之前；插后：置于目标列之后（idx<0 兜底：头/尾）
+    if (drop.pos === 'before') keys.splice(idx < 0 ? 0 : idx, 0, fromKey)
+    else keys.splice(idx < 0 ? keys.length : idx + 1, 0, fromKey)
+    this.hostEl.setColumnOrder(keys)
   }
 
   private onDragEnd = (): void => {
+    this.clearDragMarks()
     this.dragKey = ''
+    this.lastDrop = null
+  }
+
+  /** 目标列按指针在左/右半区 → 插前/插后 */
+  private splitTarget(th: HTMLElement, clientX: number): { key: string; pos: 'before' | 'after' } {
+    const rect = th.getBoundingClientRect()
+    return { key: th.dataset.key ?? '', pos: clientX < rect.left + rect.width / 2 ? 'before' : 'after' }
+  }
+
+  /** 指针不在任何列头上时，就近取目标列头并定插前/插后 */
+  private nearestTarget(clientX: number): { key: string; pos: 'before' | 'after' } | null {
+    const ths = [...(this.thead?.querySelectorAll<HTMLElement>('th[data-key]') ?? [])]
+    if (ths.length === 0) return null
+    let best: HTMLElement = ths[0]!
+    let bestDist = Infinity
+    for (const th of ths) {
+      const rect = th.getBoundingClientRect()
+      const dist = clientX < rect.left ? rect.left - clientX : clientX > rect.right ? clientX - rect.right : 0
+      if (dist < bestDist) {
+        bestDist = dist
+        best = th
+      }
+    }
+    return this.splitTarget(best, clientX)
+  }
+
+  /** 标记落点目标列（插前/插后高亮线），并清除上次标记 */
+  private setDropTarget(target: { key: string; pos: 'before' | 'after' } | null): void {
+    if (!this.thead) return
+    for (const th of this.thead.querySelectorAll<HTMLElement>('th[data-key]')) {
+      th.classList.remove('drop-before', 'drop-after')
+    }
+    this.lastDrop = target
+    if (!target) return
+    const th = this.thead.querySelector<HTMLElement>(`th[data-key="${target.key}"]`)
+    th?.classList.add(target.pos === 'before' ? 'drop-before' : 'drop-after')
+  }
+
+  /** 清空拖拽视觉标记 */
+  private clearDragMarks(): void {
+    if (!this.thead) return
+    for (const th of this.thead.querySelectorAll<HTMLElement>('th[data-key]')) {
+      th.classList.remove('drag-source', 'drop-before', 'drop-after')
+    }
   }
 
   /** 判断事件目标是否落在列头右缘 resize 热区内 */
