@@ -8,6 +8,8 @@ import {
   arrowDownPath,
   arrowLeftPath,
   arrowRightPath,
+  languagePath,
+  translatePath,
 } from './index.js'
 
 describe('@oas-ui/icons', () => {
@@ -73,5 +75,17 @@ describe('方向类图标几何语义（SVG y 轴向下）', () => {
     const [t, apex, b] = parseArrowHead(arrowRightPath)
     expect(apex.x).toBeGreaterThan(t.x)
     expect(apex.x).toBeGreaterThan(b.x)
+  })
+
+  it('language（globe）：圆 + 纬线 + 经线纺锤（国际化/地区切换）', () => {
+    expect(languagePath).toMatch(/circle[^>]*r="6\.5"/)
+    expect(languagePath).toContain('M1.5 8 H14.5')
+    expect(iconRegistry['language']).toBe(languagePath)
+  })
+
+  it('translate（文A）：「文」（点+横+撇捺）+ 拉丁 A（翻译动作）', () => {
+    expect(translatePath).toContain('M4.75 3.6 L3.1 8.4')
+    expect(translatePath).toMatch(/L11\.2 7\.5 L13\.6 14\.5/)
+    expect(iconRegistry['translate']).toBe(translatePath)
   })
 })

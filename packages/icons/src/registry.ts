@@ -1,4 +1,4 @@
-import { alertCirclePath, arrowDownPath, arrowLeftPath, arrowRightPath, arrowUpPath, calendarPath, checkCirclePath, checkPath, chevronDownPath, chevronLeftPath, chevronRightPath, chevronUpPath, clockPath, closeCirclePath, closePath, copyPath, downloadPath, editPath, errorPath, externalLinkPath, eyePath, filterPath, gearPath, heartPath, infoPath, loadingPath, lockPath, mailPath, menuPath, minusPath, moreVerticalPath, morePath, organizationPath, plusPath, refreshPath, searchPath, sortPath, starFilledPath, starPath, trashPath, treePath, uploadPath, userPath, warningPath } from './icons/index.js'
+import { alertCirclePath, arrowDownPath, arrowLeftPath, arrowRightPath, arrowUpPath, calendarPath, checkCirclePath, checkPath, chevronDownPath, chevronLeftPath, chevronRightPath, chevronUpPath, clockPath, closeCirclePath, closePath, copyPath, downloadPath, editPath, errorPath, externalLinkPath, eyePath, filterPath, gearPath, heartPath, infoPath, languagePath, loadingPath, lockPath, mailPath, menuPath, minusPath, moreVerticalPath, morePath, organizationPath, plusPath, refreshPath, searchPath, sortPath, starFilledPath, starPath, translatePath, trashPath, treePath, uploadPath, userPath, warningPath } from './icons/index.js'
 
 export const iconRegistry = {
   'alert-circle': alertCirclePath,
@@ -26,6 +26,7 @@ export const iconRegistry = {
   'gear': gearPath,
   'heart': heartPath,
   'info': infoPath,
+  'language': languagePath,
   'loading': loadingPath,
   'lock': lockPath,
   'mail': mailPath,
@@ -40,6 +41,7 @@ export const iconRegistry = {
   'sort': sortPath,
   'star-filled': starFilledPath,
   'star': starPath,
+  'translate': translatePath,
   'trash': trashPath,
   'tree': treePath,
   'upload': uploadPath,
@@ -75,6 +77,7 @@ export const iconNames: readonly IconName[] = [
   "gear",
   "heart",
   "info",
+  "language",
   "loading",
   "lock",
   "mail",
@@ -89,6 +92,7 @@ export const iconNames: readonly IconName[] = [
   "sort",
   "star-filled",
   "star",
+  "translate",
   "trash",
   "tree",
   "upload",
