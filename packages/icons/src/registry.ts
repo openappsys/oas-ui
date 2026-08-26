@@ -1,4 +1,4 @@
-import { alertCirclePath, arrowDownPath, arrowLeftPath, arrowRightPath, arrowUpPath, calendarPath, checkCirclePath, checkPath, chevronDownPath, chevronLeftPath, chevronRightPath, chevronUpPath, clockPath, closeCirclePath, closePath, copyPath, downloadPath, editPath, errorPath, externalLinkPath, eyePath, filterPath, gearPath, heartPath, infoPath, loadingPath, lockPath, mailPath, menuPath, minusPath, moreVerticalPath, morePath, plusPath, refreshPath, searchPath, sortPath, starFilledPath, starPath, trashPath, uploadPath, userPath, warningPath } from './icons/index.js'
+import { alertCirclePath, arrowDownPath, arrowLeftPath, arrowRightPath, arrowUpPath, calendarPath, checkCirclePath, checkPath, chevronDownPath, chevronLeftPath, chevronRightPath, chevronUpPath, clockPath, closeCirclePath, closePath, copyPath, downloadPath, editPath, errorPath, externalLinkPath, eyePath, filterPath, gearPath, heartPath, infoPath, loadingPath, lockPath, mailPath, menuPath, minusPath, moreVerticalPath, morePath, organizationPath, plusPath, refreshPath, searchPath, sortPath, starFilledPath, starPath, trashPath, treePath, uploadPath, userPath, warningPath } from './icons/index.js'
 
 export const iconRegistry = {
   'alert-circle': alertCirclePath,
@@ -33,6 +33,7 @@ export const iconRegistry = {
   'minus': minusPath,
   'more-vertical': moreVerticalPath,
   'more': morePath,
+  'organization': organizationPath,
   'plus': plusPath,
   'refresh': refreshPath,
   'search': searchPath,
@@ -40,6 +41,7 @@ export const iconRegistry = {
   'star-filled': starFilledPath,
   'star': starPath,
   'trash': trashPath,
+  'tree': treePath,
   'upload': uploadPath,
   'user': userPath,
   'warning': warningPath,
@@ -80,6 +82,7 @@ export const iconNames: readonly IconName[] = [
   "minus",
   "more-vertical",
   "more",
+  "organization",
   "plus",
   "refresh",
   "search",
@@ -87,6 +90,7 @@ export const iconNames: readonly IconName[] = [
   "star-filled",
   "star",
   "trash",
+  "tree",
   "upload",
   "user",
   "warning"
