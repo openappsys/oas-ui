@@ -100,7 +100,7 @@ Items support `children` nesting: a parent item toggles expansion on click (with
 
 <DemoBlock title="Nested submenus (items.children)">
   <div style="height: 340px; width: 100%; display: flex">
-    <oas-sidebar active="users" items='[{"label":"Dashboard","value":"dash","icon":"📊"},{"label":"Business","value":"biz","icon":"📦","children":[{"label":"Orders","value":"orders"},{"label":"Products","value":"goods"},{"label":"Users","value":"users"}]},{"label":"System","value":"sys","icon":"⚙️","children":[{"label":"Permissions","value":"perm"},{"label":"Audit Log","value":"audit"}]}]'></oas-sidebar>
+    <oas-sidebar active="users" items='[{"label":"Dashboard","value":"dash","icon":"📊"},{"label":"Business","value":"biz","icon":"📦","children":[{"label":"Orders","value":"orders","icon":"edit"},{"label":"Products","value":"goods","icon":"heart"},{"label":"Users","value":"users","icon":"user"}]},{"label":"System","value":"sys","icon":"⚙️","children":[{"label":"Permissions","value":"perm","icon":"lock"},{"label":"Audit Log","value":"audit"}]}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
       “Business” auto-expands because it contains the active child (Users); clicking a parent only toggles expansion, clicking a child fires selection.
     </div>

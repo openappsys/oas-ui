@@ -319,6 +319,13 @@ aside {
 .submenu[hidden] {
   display: none;
 }
+/* 父项与子树容器：btn 与 submenu 之间留呼吸——无 gap 时父项底色（active/child-selected）
+   与子项 hover 底色上下贴死「黏在一起」（用户实测观感） */
+.item-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-1, 4px);
+}
 .item.sub .icon {
   width: 18px;
 }
