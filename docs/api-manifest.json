@@ -7011,6 +7011,11 @@
         "observed": true
       },
       {
+        "name": "hide-toggle",
+        "type": "boolean",
+        "observed": true
+      },
+      {
         "name": "loading",
         "type": "string",
         "default": "4",
@@ -7099,6 +7104,10 @@
       },
       {
         "name": "icon",
+        "observed": true
+      },
+      {
+        "name": "icon-color",
         "observed": true
       },
       {

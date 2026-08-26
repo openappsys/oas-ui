@@ -974,4 +974,18 @@ describe('OASSidebar 图标通道与着色', () => {
       /:host\(\[variant='inset'\]\)\s*\{[^}]*background:\s*var\(--oas-sidebar-bg,\s*var\(--oas-color-bg-hover\)\)/,
     )
   })
+
+  it('hide-toggle：桌面折叠按钮隐藏（宿主 opt-out）；默认显示', () => {
+    stubMatchMedia(false)
+    const el = mount({ 'hide-toggle': '' })
+    const toggle = el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')
+    expect(toggle, 'toggle 按钮存在').not.toBeNull()
+    expect(toggle!.hidden, 'hide-toggle 时折叠按钮应隐藏').toBe(true)
+    // 对照：无属性时桌面显示
+    const el2 = mount({})
+    const toggle2 = el2.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')
+    expect(toggle2!.hidden, '默认桌面应显示折叠按钮').toBe(false)
+    // observedAttributes 覆盖（属性动态变化可触发 update）
+    expect(OASSidebar.observedAttributes).toContain('hide-toggle')
+  })
 })
