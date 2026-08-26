@@ -410,6 +410,15 @@ th[data-editing-col='true'] {
 .action-btn:hover {
   background: var(--oas-color-bg-hover);
 }
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--oas-space-2) var(--oas-space-1);
+  border-top: 1px solid var(--oas-color-border);
+}
+.pagination:empty {
+  display: none;
+}
 .action-btn.danger {
   color: var(--oas-color-text-secondary);
 }
@@ -447,6 +456,9 @@ export class OASTableBase extends OASElement {
       'sticky-rows',
       'size',
       'column-keys',
+      'pagination',
+      'page-size',
+      'current',
     ]
   }
 
@@ -522,6 +534,7 @@ export class OASTableBase extends OASElement {
           <tbody part="body"></tbody>
         </table>
       </div>
+      <div class="pagination" part="pagination"></div>
     `
   }
 
@@ -618,7 +631,26 @@ export class OASTableBase extends OASElement {
     const selected = this.getAttr('selected', '').split(',').filter(Boolean)
     const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
 
-    const flat = this.buildFlat(this.resolveSorts(), rowKey)
+    // 分页：顶层行先全局排序再切片为当前页，喂给 buildFlat（页内子行 children 随父行保留）
+    const paginationOn = this.hasAttr('pagination')
+    const pageSize = Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
+    let current = Math.max(1, Number(this.getAttr('current', '1')) || 1)
+    let roots = this._data
+    const total = this._data.length
+    if (paginationOn) {
+      const pageCount = Math.max(1, Math.ceil(total / pageSize))
+      if (current > pageCount) {
+        current = pageCount
+        this.setAttribute('current', String(current))
+      }
+      const sorted = [...this._data]
+      const sorts = this.resolveSorts()
+      if (sorts.length > 0) sorted.sort((a, b) => this.compareRows(a, b, sorts))
+      const start = (current - 1) * pageSize
+      roots = sorted.slice(start, start + pageSize)
+    }
+
+    const flat = this.buildFlat(this.resolveSorts(), rowKey, roots)
     const display = this.visibleFlat(flat, expanded, rowKey)
     const summaryConfigs = this.buildSummaryConfigs()
 
@@ -635,6 +667,7 @@ export class OASTableBase extends OASElement {
     const st = this.wrap ? this.wrap.scrollTop : 0
     head.innerHTML = ''
     body.innerHTML = ''
+    this.renderPagination(paginationOn, total, pageSize, current)
 
     const checkable = this.hasAttr('checkable')
     if (this.headerDepth() > 1) {
@@ -737,6 +770,33 @@ export class OASTableBase extends OASElement {
       this.ignoreNextScroll = true
       this.wrap.scrollTop = st
     }
+  }
+
+  /** 分页器挂载：开启分页时在 .pagination 容器放入 oas-pagination（复用现有分页组件），
+      翻页/改页大小 → 写回 current/page-size 并派发 page-change（宿主可接服务端分页） */
+  private renderPagination(
+    enabled: boolean,
+    total: number,
+    pageSize: number,
+    current: number,
+  ): void {
+    const holder = this.shadow.querySelector('.pagination')
+    if (!holder) return
+    holder.innerHTML = ''
+    if (!enabled) return
+    const p = document.createElement('oas-pagination')
+    p.setAttribute('total', String(total))
+    p.setAttribute('page-size', String(pageSize))
+    p.setAttribute('current', String(current))
+    p.addEventListener('oas-change', (e) => {
+      const d = (e as CustomEvent).detail
+      const page = typeof d?.page === 'number' ? d.page : current
+      const size = typeof d?.pageSize === 'number' ? d.pageSize : pageSize
+      if (size !== pageSize) this.setAttribute('page-size', String(size))
+      if (page !== current) this.setAttribute('current', String(page))
+      this.emit('page-change', { page, pageSize: size })
+    })
+    holder.appendChild(p)
   }
 
   /** 渲染一行数据（非虚拟模式逐行调用；虚拟模式仅窗口内行调用） */
@@ -1143,8 +1203,13 @@ export class OASTableBase extends OASElement {
   /**
    * 构建扁平行列表（含树形 children 递归）。排序在各层级兄弟间独立进行，不破坏父子结构；
    * 返回的 flat 是完整列表（树形含隐藏子行），visibleFlat 再做可见性过滤。
+   * roots 传入时只遍历这些顶层行（供分页切片用），否则遍历 this._data。
    */
-  private buildFlat(sorts: SortState[], rowKey: string): FlatRow[] {
+  private buildFlat(
+    sorts: SortState[],
+    rowKey: string,
+    roots: Array<Record<string, unknown>> = this._data,
+  ): FlatRow[] {
     const flat: FlatRow[] = []
     const walk = (nodes: Array<Record<string, unknown>>, depth: number, parent?: string): void => {
       const list = [...nodes]
@@ -1159,7 +1224,7 @@ export class OASTableBase extends OASElement {
         }
       }
     }
-    walk(this._data, 0)
+    walk(roots, 0)
     return flat
   }
 
