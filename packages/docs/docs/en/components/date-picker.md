@@ -74,6 +74,10 @@ The format supports `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` tokens.
   <oas-date-picker type="daterange" style="margin-left: auto; display: block; width: fit-content" value='["2026-08-05","2026-08-15"]'></oas-date-picker>
 </DemoBlock>
 
+<DemoBlock title="Explicit placement (top-end: pop above, right-aligned)">
+  <oas-date-picker placement="top-end" value="2026-08-09" placeholder="placement=top-end"></oas-date-picker>
+</DemoBlock>
+
 The panel defaults to `bottom-start` (panel left edge aligns with the trigger left edge). When the trigger sits near the viewport right edge, the panel auto right-aligns (`bottom-end`); if it still overflows it is clamped horizontally into the viewport; when there is not enough space below, it flips upward (`top-start`/`top-end`). `placement` supports 12 directions: `top / bottom / left / right` each with `-start` / `-end` cross-axis alignment.
 
 ## API

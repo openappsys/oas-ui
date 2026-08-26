@@ -21,6 +21,15 @@ Pass menu JSON via the `items` attribute (`[{label, value, icon?}]`); the defaul
 
 Clicking the bottom「«」button toggles `collapsed` (a controlled attribute; fires `oas-collapse`). In the collapsed state only icons are shown, and menu items without an `icon` are hidden automatically. `hide-toggle` hides the button (host opt-out, e.g. for static sidebars).
 
+<DemoBlock title="hide-toggle (no collapse button, static sidebar)">
+  <div style="height: 240px; width: 100%; display: flex">
+    <oas-sidebar hide-toggle items='[{"label":"Home","value":"home","icon":"star"},{"label":"Docs","value":"docs","icon":"edit"},{"label":"Settings","value":"settings","icon":"gear"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      Static sidebar: no「«」collapse button at the bottom (compare with the "Collapsing" demo).
+    </div>
+  </div>
+</DemoBlock>
+
 <DemoBlock title="collapsed icon state">
   <oas-space direction="vertical" style="width: 100%">
     <oas-button size="small" onclick="document.querySelector('#sidebar-collapsible').toggleAttribute('collapsed')">Toggle collapsed</oas-button>
