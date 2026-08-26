@@ -960,4 +960,18 @@ describe('OASSidebar 图标通道与着色', () => {
     expect(svg, '子元素 icon 应渲染').not.toBeNull()
     expect(svg!.getAttribute('stroke'), 'icon-color 应映射为 iconColor 生效').toBe('#f0a')
   })
+
+  it('背景开口 --oas-sidebar-bg：默认回落 var 链（不硬编码），三形态各自默认', () => {
+    const el = new OASSidebar()
+    document.body.appendChild(el)
+    const stl = el.shadowRoot!.querySelector('style')!.textContent!
+    // 默认/inset 回落 bg-hover、floating 回落 bg——var 链锚定基础 token（主题/暗色/品牌定制自动传导）
+    expect(stl).toMatch(/:host\s*\{[^}]*background:\s*var\(--oas-sidebar-bg,\s*var\(--oas-color-bg-hover\)\)/)
+    expect(stl).toMatch(
+      /:host\(\[variant='floating'\]\)\s*\{[^}]*background:\s*var\(--oas-sidebar-bg,\s*var\(--oas-color-bg\)\)/,
+    )
+    expect(stl).toMatch(
+      /:host\(\[variant='inset'\]\)\s*\{[^}]*background:\s*var\(--oas-sidebar-bg,\s*var\(--oas-color-bg-hover\)\)/,
+    )
+  })
 })
