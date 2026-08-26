@@ -129,8 +129,7 @@ function listClassFiles(dirAbs) {
 //   2) `export const OASX = factory(...)` 工厂创建类（如 typography 的 createTypography），
 //      返回工厂内部 `class ... extends OASElement` 的声明节点
 // 返回值：{ node, factoryCall?, factoryFn? }
-function findClassNode(sourceFile, className) {
-  let found = null
+function findClassNode(sourceFile, className) {  let found = null
   walk(sourceFile, (n) => {
     if (found) return
     if (n.kind === K.ClassDeclaration && n.name?.text === className) {
@@ -163,6 +162,27 @@ function findClassNode(sourceFile, className) {
     }
   })
   return found
+}
+
+/** 类是否直接声明 observedAttributes getter（组装类自身不声明时需回退基类） */
+function hasObservedGetter(cls) {
+  return (cls.members || []).some(
+    (m) => m.kind === K.GetAccessor && m.name?.text === 'observedAttributes',
+  )
+}
+
+/** 解析类声明中的 extends 基类（同目录类文件）；用于组装类（星骨架+index 组装）的 API 承载回退 */
+function resolveApiBase(cls, dirAbs, project) {
+  const ext = (cls.heritageClauses || []).find((h) => h.token === K.ExtendsKeyword)
+  const baseName = ext?.types?.[0]?.expression?.text
+  if (!baseName) return null
+  for (const fileAbs of listClassFiles(dirAbs)) {
+    const sf = project.program.getSourceFile(fileAbs)
+    if (!sf) continue
+    const hit = findClassNode(sf, baseName)
+    if (hit) return { node: hit.node, file: relative(ROOT, fileAbs).replace(/\\/g, '/') }
+  }
+  return null
 }
 
 // ---------- observedAttributes 提取 ----------
@@ -648,7 +668,11 @@ function scanDir(project, dir, unresolvedGlobal) {
     let factoryCall = null
     let factoryFn = null
     let classFile = null
-    for (const fileAbs of listClassFiles(dirAbs)) {
+    // 组件目录：oas-*.ts 类文件 + index.ts（组装类可能定义于此，如 OASTable extends OASTableBase）
+    const classFiles = [...listClassFiles(dirAbs)]
+    const idxAbs = join(dirAbs, 'index.ts')
+    if (existsSync(idxAbs)) classFiles.push(idxAbs)
+    for (const fileAbs of classFiles) {
       const sf = project.program.getSourceFile(fileAbs)
       if (!sf) continue
       const hit = findClassNode(sf, cls)
@@ -658,6 +682,15 @@ function scanDir(project, dir, unresolvedGlobal) {
         factoryFn = hit.factoryFn ?? null
         classFile = relative(ROOT, fileAbs).replace(/\\/g, '/')
         break
+      }
+    }
+    // 组装类（如 OASTable extends OASTableBase）自身无 observedAttributes getter 时，
+    // 解析其同目录基类作为 API 承载体（属性/事件都在基类声明）
+    if (classNode && !hasObservedGetter(classNode)) {
+      const base = resolveApiBase(classNode, dirAbs, project)
+      if (base) {
+        classNode = base.node
+        classFile = base.file
       }
     }
     const unresolved = []
