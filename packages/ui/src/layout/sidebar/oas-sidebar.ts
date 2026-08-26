@@ -1,5 +1,7 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+// 图标查表走 oas-icon 同一通道（customIcons 注册优先、内置 iconRegistry 兜底）：
+// 用户 `registerIcon()` 注册的自定义图标 sidebar 可见；oas-icon.ts 不依赖 sidebar，无循环引用
+import { lookupIcon } from '../../basic/icon/oas-icon.js'
 
 /** 菜单项操作按钮：悬停项时出现，点击派发 `oas-action` */
 export interface SidebarItemAction {
@@ -13,6 +15,8 @@ export interface SidebarItem {
   label: string
   value: string
   icon?: string
+  /** 图标颜色（可选）：显式时固定该色，优先于禁用/激活态默认色；任意 CSS 色值 */
+  iconColor?: string
   /** 分组名（可选）：连续同组项在组首项前渲染组标题节点（纯展示、不可点） */
   group?: string
   /** 徽标计数（可选）：项右侧小圆角徽标 */
@@ -637,9 +641,7 @@ export class OASSidebar extends OASElement {
   /** 当前宽度 px（width 属性优先，回落实际盒宽） */
   private currentWidthPx(): number {
     const fromAttr = parseInt(this.getAttr('width', '0'), 10)
-    return Number.isFinite(fromAttr) && fromAttr > 0
-      ? fromAttr
-      : this.getBoundingClientRect().width
+    return Number.isFinite(fromAttr) && fromAttr > 0 ? fromAttr : this.getBoundingClientRect().width
   }
 
   /** 方向键微调宽度（±8px；Home/End 跳最小/最大） */
@@ -827,7 +829,12 @@ export class OASSidebar extends OASElement {
   }
 
   /** 渲染单个菜单项（含徽标/操作/嵌套子项；collapsed=桌面图标条态） */
-  private renderItem(item: SidebarItem, collapsed: boolean, active: string, depth: number): HTMLElement {
+  private renderItem(
+    item: SidebarItem,
+    collapsed: boolean,
+    active: string,
+    depth: number,
+  ): HTMLElement {
     const hasChildren = !!item.children?.length
     const btn = document.createElement('button')
     btn.className = 'item'
@@ -843,7 +850,7 @@ export class OASSidebar extends OASElement {
     }
     const icon = document.createElement('span')
     icon.className = 'icon'
-    const iconSvg = item.icon ? this.iconSvg(item.icon) : null
+    const iconSvg = item.icon ? this.iconSvg(item.icon, item.iconColor) : null
     if (iconSvg) {
       icon.innerHTML = iconSvg
     } else if (item.icon) {
@@ -968,11 +975,13 @@ export class OASSidebar extends OASElement {
     return `<svg viewBox="0 0 16 16" width="0.9em" height="0.9em" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4.5 L10 8 L6 11.5"/></svg>`
   }
 
-  /** 图标名（注册表）→ 内联 SVG（fill/stroke=currentColor，随禁用/激活态着色） */
-  private iconSvg(name: string): string | null {
-    const path = iconRegistry[name as IconName] ?? null
+  /** 图标名（查表：registerIcon 自定义优先，其次内置注册表）→ 内联 SVG。
+   *  iconColor 显式时固定该色（优先于禁用/激活态默认色）；缺省 currentColor 随态着色。
+   *  注册的彩色 SVG（path 自带 stroke/fill 属性）天然兼容：元素级属性压继承，外层 stroke 不干扰 */
+  private iconSvg(name: string, iconColor?: string): string | null {
+    const path = lookupIcon(name)
     if (!path) return null
-    return `<svg viewBox="0 0 16 16" width="1.25em" height="1.25em" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`
+    return `<svg viewBox="0 0 16 16" width="1.25em" height="1.25em" aria-hidden="true" focusable="false" fill="none" stroke="${iconColor || 'currentColor'}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`
   }
 
   private parseItems(): void {
@@ -998,6 +1007,7 @@ export class OASSidebar extends OASElement {
       label: entry.label,
       value: entry.value,
       icon: typeof entry.icon === 'string' ? entry.icon : undefined,
+      iconColor: typeof entry.iconColor === 'string' ? entry.iconColor : undefined,
       group: typeof entry.group === 'string' ? entry.group : undefined,
       badge:
         typeof entry.badge === 'string' || typeof entry.badge === 'number'
@@ -1014,9 +1024,11 @@ export class OASSidebar extends OASElement {
             .map((a) => ({ icon: a.icon, value: a.value, label: a.label }))
         : undefined,
       children: Array.isArray(entry.children)
-        ? (entry.children as unknown[])
+        ? ((entry.children as unknown[])
             .map((c) => this.parseEntry(c))
-            .filter((c): c is SidebarItem => c !== null && (c as SidebarItem).label !== undefined) as SidebarItem[]
+            .filter(
+              (c): c is SidebarItem => c !== null && (c as SidebarItem).label !== undefined,
+            ) as SidebarItem[])
         : undefined,
     }
     return item
@@ -1054,6 +1066,8 @@ export class OASSidebar extends OASElement {
     }
     const icon = el.getAttribute('icon')
     if (icon) item.icon = icon
+    const iconColor = el.getAttribute('icon-color')
+    if (iconColor) item.iconColor = iconColor
     const group = el.getAttribute('group')
     if (group) item.group = group
     const badge = el.getAttribute('badge')
@@ -1093,7 +1107,7 @@ export class OASSidebar extends OASElement {
       subtree: true,
       attributes: true,
       characterData: true,
-      attributeFilter: ['value', 'icon', 'group', 'badge'],
+      attributeFilter: ['value', 'icon', 'icon-color', 'group', 'badge'],
     })
     this.childObserver = observer
     this.onCleanup(() => {

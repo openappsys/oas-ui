@@ -121,6 +121,21 @@
   </div>
 </DemoBlock>
 
+## 自定义图标与着色
+
+菜单项 `icon` 默认取 `@oas-ui/icons` 内置注册表图标名；应用级自定义图标走官方正路 `registerIcon(name, svg)`（`@oas-ui/ui` 导出）——**一处注册，`<oas-icon>` 与侧栏及未来其它消费方全部可见**（勿直接改 `@oas-ui/icons` 的 `iconRegistry`），同名注册覆盖内置图标。
+
+`iconColor` 给单项目标色：显式时固定该色、优先于禁用/激活态默认色；缺省 `currentColor` 随态着色（激活态走主色）。注册的彩色 SVG（path 自带 `stroke`/`fill`）自带色天然保留，外层 `stroke` 不强制覆盖。
+
+<DemoBlock title="自定义图标与着色（registerIcon + iconColor）">
+  <div style="height: 300px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-custom-icon" items='[{"label":"个人工作台","value":"workbench","icon":"oas-rocket","iconColor":"var(--oas-color-warning)"},{"label":"项目仓库","value":"repo","icon":"oas-folder","iconColor":"var(--oas-color-primary)"},{"label":"团队动态","value":"team","icon":"oas-heart"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      「个人工作台」固定警示橙、「项目仓库」固定主题主色（<code>iconColor</code> 显式 → 不随激活态变色）；「团队动态」未给 <code>iconColor</code> 走随态着色，且其自定义 SVG 自带红色描边天然保留。折叠图标条 tooltip 里的图标同色。
+    </div>
+  </div>
+</DemoBlock>
+
 ## 分隔线与骨架屏
 
 `{type:"divider"}` 条目渲染分隔线；`loading` 属性显示脉冲骨架屏（数值为骨架行数，默认 4）。
@@ -307,7 +322,7 @@
 | `collapsed` | 受控折叠，收窄为图标条（存在即折叠） | `boolean` | — |
 | `drawer-open` | 移动端抽屉打开态（受控：设置即开、清除即收；断点回桌面自动移除） | `boolean` | — |
 | `expand-on-hover` | 折叠图标条悬停临时展开（纯视觉态，不改 collapsed 受控） | — | — |
-| `items` | 菜单项 JSON `[{label, value, icon?, group?, badge?, children?, actions?}]`（支持分隔线条目 `{type:"divider"}`；children 嵌套子菜单） | `SidebarEntry[] \| string` | `[]` |
+| `items` | 菜单项 JSON `[{label, value, icon?, iconColor?, group?, badge?, children?, actions?}]`（支持分隔线条目 `{type:"divider"}`；children 嵌套子菜单） | `SidebarEntry[] \| string` | `[]` |
 | `loading` | 骨架屏加载态（存在即显示脉冲骨架；数值为骨架行数，默认 4） | `string` | `4` |
 | `mobile-breakpoint` | 移动端断点（px），窄于该值变覆盖式抽屉 | — | — |
 | `resizable` | 边缘拖拽调宽（存在即显示宿主边缘拖拽条；仅桌面非折叠态可用） | `boolean` | — |
@@ -356,7 +371,21 @@
 
 <script setup>
 import { onMounted } from 'vue'
-onMounted(() => {
+onMounted(async () => {
+  // 自定义图标走官方正路 registerIcon（一处注册，oas-icon 与 sidebar 同见）
+  const ui = await import('@oas-ui/ui')
+  ui.registerIcon(
+    'oas-rocket',
+    '<path d="M8 2.2 C9.5 3 10.6 4.6 10.6 6.9 C10.6 9 9.8 11 9 12.5 H7 C6.2 11 5.4 9 5.4 6.9 C5.4 4.6 6.5 3 8 2.2 Z"/><path d="M8 6.2 V8.6 M6.5 12.5 H9.5 M7 12.5 V14 M9 12.5 V14"/>',
+  )
+  ui.registerIcon('oas-folder', '<path d="M3 4.5 H6.1 L7.3 6 H13 V11.5 H3 Z"/><path d="M3 6.5 H13"/>')
+  ui.registerIcon(
+    'oas-heart',
+    '<path d="M8 13.5 C7.6 13.1 4.8 10.6 3 8.5 C1.5 6.8 1.2 5.3 2 4.1 C2.8 2.9 4.4 2.7 5.7 3.5 C6.5 4 7.3 5 8 6 C8.7 5 9.5 4 10.3 3.5 C11.6 2.7 13.2 2.9 14 4.1 C14.8 5.3 14.5 6.8 13 8.5 C11.2 10.6 8.4 13.1 8 13.5 Z" stroke="var(--oas-color-danger)"/>',
+  )
+  // 注册后重设 items 触发重绘：让查表命中自定义图标名（首次渲染时注册未完成会回退文本）
+  const customSidebar = document.getElementById('sidebar-custom-icon')
+  if (customSidebar) customSidebar.setAttribute('items', customSidebar.getAttribute('items') || '')
   window.sidebarActionLog = (e) => {
     const tag = document.getElementById('sidebar-action-log')
     if (tag) tag.textContent = `操作：${e.detail.label}（${e.detail.action}）`

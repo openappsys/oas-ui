@@ -15,9 +15,26 @@ import {
   moveGridDate,
   getWeekStart,
 } from '../calendar/date-grid.js'
+import { computePosition, type Placement } from '../../overlay/floating/index.js'
 
 type PickerType = 'date' | 'daterange' | 'month' | 'datetime'
 type SubPanel = 'days' | 'months'
+
+/** placement 合法取值：12 向（四基向 × start/end 交叉轴对齐） */
+const VALID_PLACEMENTS: readonly Placement[] = [
+  'top',
+  'top-start',
+  'top-end',
+  'bottom',
+  'bottom-start',
+  'bottom-end',
+  'left',
+  'left-start',
+  'left-end',
+  'right',
+  'right-start',
+  'right-end',
+]
 
 /** 快捷预设项：value 为静态值（date 为 ISO 字符串，daterange 为 [start, end]），getValue 动态计算 */
 interface ShortcutItem {
@@ -101,10 +118,10 @@ const STYLE = `
   transform: rotate(180deg);
 }
 [part='dropdown'] {
-  position: absolute;
-  z-index: 10;
-  top: calc(100% + 4px);
-  left: 0;
+  /* fixed + computePosition 锚定 trigger：逃出祖先 overflow 容器（窄工具栏/模态滚动容器），
+     不再被裁剪；空间不足自动翻转/右对齐/视口夹取（与 select/combobox 同定位契约） */
+  position: fixed;
+  z-index: var(--oas-z-dropdown, 1000);
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
@@ -358,7 +375,17 @@ interface RangeState {
 
 export class OASDatePicker extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'format', 'type', 'min', 'max', 'disabled', 'placeholder', 'multiple']
+    return [
+      'value',
+      'format',
+      'type',
+      'min',
+      'max',
+      'disabled',
+      'placeholder',
+      'multiple',
+      'placement',
+    ]
   }
 
   private triggerEl: HTMLButtonElement | null = null
@@ -374,6 +401,8 @@ export class OASDatePicker extends OASElement {
   private previewEnd: Date | null = null
   private _shortcuts: ShortcutItem[] | null = null
   private _disabledDate: ((d: Date) => boolean) | null = null
+  /** 非法 placement 仅告警一次（滚动/resize 重定位不重复刷屏） */
+  private placementWarned = false
 
   /** shortcuts 走 property（对象数组无法用 JSON 属性表达），设置后即时重渲面板 */
   get shortcuts(): ShortcutItem[] | null {
@@ -440,6 +469,14 @@ export class OASDatePicker extends OASElement {
       }
     })
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+    // 视口 resize / 祖先滚动时重定位（仅展开态有意义）；capture 捕获滚动以覆盖任何可滚动祖先
+    const reposition = (): void => {
+      if (this.openState) this.positionDropdown()
+    }
+    window.addEventListener('resize', reposition)
+    this.onCleanup(() => window.removeEventListener('resize', reposition))
+    window.addEventListener('scroll', reposition, true)
+    this.onCleanup(() => window.removeEventListener('scroll', reposition, true))
   }
 
   protected override render(): void {
@@ -508,6 +545,74 @@ export class OASDatePicker extends OASElement {
     } else {
       document.removeEventListener('click', this.handleOutsideClick)
     }
+  }
+
+  /** placement 解析：12 向（默认 bottom-start）；非法值回落 bottom-start + console.warn（仅告警一次） */
+  private resolvePlacement(): Placement {
+    const raw = this.getAttr('placement', 'bottom-start')
+    if ((VALID_PLACEMENTS as readonly string[]).includes(raw)) return raw as Placement
+    if (!this.placementWarned) {
+      this.placementWarned = true
+      console.warn(
+        `[oas-date-picker] 非法 placement "${raw}"，已回落 bottom-start（支持 12 向：top/bottom/left/right × start/end）`,
+      )
+    }
+    return 'bottom-start'
+  }
+
+  /**
+   * 交叉轴对齐自动调整：宽面板（range 双月 480px）在 start 对齐下贴视口右缘会右溢出 →
+   * 翻转 end（面板右缘对齐触发器右缘，保持视觉连接）；反之左溢出时 end → start。
+   * 调整后仍不足交给 computePosition 的视口夹取兜底。
+   */
+  private adjustCrossAlignment(
+    anchor: DOMRect,
+    popup: DOMRect,
+    viewport: { width: number; height: number },
+    padding: number,
+    placement: Placement,
+  ): Placement {
+    const main = placement.split('-')[0] as string
+    // left/right 系列交叉轴是垂直向，溢出交给引擎垂直夹取
+    if (main !== 'top' && main !== 'bottom') return placement
+    if (placement.endsWith('-start') && anchor.left + popup.width > viewport.width - padding) {
+      return `${main}-end` as Placement
+    }
+    if (placement.endsWith('-end') && anchor.right - popup.width < padding) {
+      return `${main}-start` as Placement
+    }
+    return placement
+  }
+
+  /**
+   * fixed 定位：锚定 trigger，面板尺寸落定后计算（碰撞翻转/右对齐/视口夹取），
+   * 结果写入 style.top/left 与 data-placement（真实浏览器像素级断言钩子）
+   */
+  private positionDropdown(): void {
+    if (!this.dropdown || !this.triggerEl) return
+    const anchorRect = this.triggerEl.getBoundingClientRect()
+    const popupRect = this.dropdown.getBoundingClientRect()
+    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const padding = 8 // 视口夹取边距：range 双月面板 480px 宽，避让余量更足
+    const placement = this.adjustCrossAlignment(
+      anchorRect,
+      popupRect,
+      viewport,
+      padding,
+      this.resolvePlacement(),
+    )
+    const { top, left, placement: actual } = computePosition(
+      anchorRect,
+      popupRect,
+      placement,
+      viewport,
+      4, // 保持既有「触发器下方 4px」视觉间距
+      true,
+      { collisionPadding: padding },
+    )
+    this.dropdown.style.top = `${top}px`
+    this.dropdown.style.left = `${left}px`
+    this.dropdown.setAttribute('data-placement', actual)
   }
 
   private handleOutsideClick = (e: MouseEvent): void => {
@@ -645,6 +750,8 @@ export class OASDatePicker extends OASElement {
       panel.classList.remove('range-panel')
       this.renderDatePanel(panel, focusNow)
     }
+    // 面板内容落定后重定位：首开（尺寸可测）/换月/切子面板/外部改值重渲均覆盖
+    if (this.openState) this.positionDropdown()
   }
 
   private renderDatePanel(panel: HTMLElement, focusNow: boolean): void {

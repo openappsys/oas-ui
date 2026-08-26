@@ -121,6 +121,21 @@ Items support `badge` count badges (colors via `--oas-sidebar-badge-bg/-color` v
   </div>
 </DemoBlock>
 
+## Custom icons and coloring
+
+Item `icon` defaults to the built-in `@oas-ui/icons` registry; app-level custom icons go through the official `registerIcon(name, svg)` path (exported by `@oas-ui/ui`) — **register once, and `<oas-icon>`, the sidebar and any future consumers all see it** (do not mutate `@oas-ui/icons`'s `iconRegistry` directly); a same-name registration overrides the built-in icon.
+
+`iconColor` sets a per-item target color: when present it is fixed, taking precedence over the default disabled/active-state colors; when absent it falls back to `currentColor` and follows the state (active uses the primary color). Registered colored SVGs (paths with their own `stroke`/`fill`) keep their own color naturally — the outer `stroke` never overrides them.
+
+<DemoBlock title="Custom icons & coloring (registerIcon + iconColor)">
+  <div style="height: 300px; width: 100%; display: flex">
+    <oas-sidebar id="sidebar-custom-icon" items='[{"label":"Workbench","value":"workbench","icon":"oas-rocket","iconColor":"var(--oas-color-warning)"},{"label":"Repositories","value":"repo","icon":"oas-folder","iconColor":"var(--oas-color-primary)"},{"label":"Team feed","value":"team","icon":"oas-heart"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      “Workbench” is fixed to the warning color and “Repositories” to the theme primary (<code>iconColor</code> present → does not follow the active state); “Team feed” has no <code>iconColor</code> so it follows the state, and its custom SVG keeps its own red stroke. The tooltip icon in the collapsed strip shares the same color.
+    </div>
+  </div>
+</DemoBlock>
+
 ## Dividers and skeleton
 
 A `{type:"divider"}` entry renders a divider line; the `loading` attribute shows a pulsing skeleton (the value sets the row count, default 4).
@@ -307,7 +322,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `collapsed` | Controlled collapse to an icon strip (present means collapsed) | `boolean` | — |
 | `drawer-open` | Mobile drawer open state (controlled: set opens, clear closes; auto-removed when breakpoint returns to desktop) | `boolean` | — |
 | `expand-on-hover` | Temporarily expand the collapsed icon strip on hover (visual only; does not change controlled collapsed) | — | — |
-| `items` | Menu items JSON `[{label, value, icon?, group?, badge?, children?, actions?}]` (supports divider entries `{type:"divider"}`; children for nested submenus) | `SidebarEntry[] \| string` | `[]` |
+| `items` | Menu items JSON `[{label, value, icon?, iconColor?, group?, badge?, children?, actions?}]` (supports divider entries `{type:"divider"}`; children for nested submenus) | `SidebarEntry[] \| string` | `[]` |
 | `loading` | Skeleton loading state (shows a pulsing skeleton when present; value sets row count, default 4) | `string` | `4` |
 | `mobile-breakpoint` | Mobile breakpoint (px); narrower than this becomes an overlay drawer | — | — |
 | `resizable` | Edge drag-resize (shows a drag rail on the host edge; desktop non-collapsed only) | `boolean` | — |
@@ -356,7 +371,22 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 
 <script setup>
 import { onMounted } from 'vue'
-onMounted(() => {
+onMounted(async () => {
+  // Custom icons go through the official registerIcon path (one registration, shared by oas-icon and the sidebar)
+  const ui = await import('@oas-ui/ui')
+  ui.registerIcon(
+    'oas-rocket',
+    '<path d="M8 2.2 C9.5 3 10.6 4.6 10.6 6.9 C10.6 9 9.8 11 9 12.5 H7 C6.2 11 5.4 9 5.4 6.9 C5.4 4.6 6.5 3 8 2.2 Z"/><path d="M8 6.2 V8.6 M6.5 12.5 H9.5 M7 12.5 V14 M9 12.5 V14"/>',
+  )
+  ui.registerIcon('oas-folder', '<path d="M3 4.5 H6.1 L7.3 6 H13 V11.5 H3 Z"/><path d="M3 6.5 H13"/>')
+  ui.registerIcon(
+    'oas-heart',
+    '<path d="M8 13.5 C7.6 13.1 4.8 10.6 3 8.5 C1.5 6.8 1.2 5.3 2 4.1 C2.8 2.9 4.4 2.7 5.7 3.5 C6.5 4 7.3 5 8 6 C8.7 5 9.5 4 10.3 3.5 C11.6 2.7 13.2 2.9 14 4.1 C14.8 5.3 14.5 6.8 13 8.5 C11.2 10.6 8.4 13.1 8 13.5 Z" stroke="var(--oas-color-danger)"/>',
+  )
+  // Re-set items after registration to trigger a re-render so the lookup hits the custom icons
+  // (the first render happens before registration completes and would fall back to text)
+  const customSidebar = document.getElementById('sidebar-custom-icon')
+  if (customSidebar) customSidebar.setAttribute('items', customSidebar.getAttribute('items') || '')
   window.sidebarActionLog = (e) => {
     const tag = document.getElementById('sidebar-action-log')
     if (tag) tag.textContent = `Action: ${e.detail.label} (${e.detail.action})`

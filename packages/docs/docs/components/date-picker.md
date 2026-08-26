@@ -98,6 +98,22 @@ format 支持 `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` token。
   <oas-date-picker disabled value="2026-08-09"></oas-date-picker>
 </DemoBlock>
 
+## 浮层定位（placement）
+
+<DemoBlock title="右缘触发器（默认 bottom-start，自动翻转）">
+  <oas-date-picker style="margin-left: auto; display: block; width: fit-content" value="2026-08-09" placeholder="贴右缘的单选"></oas-date-picker>
+</DemoBlock>
+
+<DemoBlock title="右缘宽面板（daterange 双月，自动翻转右对齐）">
+  <oas-date-picker type="daterange" style="margin-left: auto; display: block; width: fit-content" placeholder="贴右缘的范围"></oas-date-picker>
+</DemoBlock>
+
+<DemoBlock title="右缘宽面板（range 右对齐翻转）">
+  <oas-date-picker type="daterange" style="margin-left: auto; display: block; width: fit-content" value='["2026-08-05","2026-08-15"]'></oas-date-picker>
+</DemoBlock>
+
+面板默认 `bottom-start`（面板左缘对齐触发器左缘）。触发器贴近视口右缘时自动右对齐翻转（`bottom-end`），右缘仍不足则水平夹取到视口内；下方空间不足时上翻（`top-start`/`top-end`）。`placement` 支持 12 向：`top / bottom / left / right` 各配 `-start` / `-end` 交叉轴对齐。
+
 ## API
 
 ### 属性
@@ -110,6 +126,7 @@ format 支持 `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` token。
 | `min` | 可选范围（ISO 日期） | `string` | — |
 | `multiple` | 多选（仅 `type=date`），值存 JSON 数组 | `boolean` | — |
 | `placeholder` | 占位提示 | — | — |
+| `placement` | 浮层位置，12 向：`top`/`bottom`/`left`/`right` × `-start`/`-end`（默认 `bottom-start`）；触发器贴近视口右缘时自动右对齐翻转、下方空间不足时上翻，并夹取到视口内 | `string` | `bottom-start` |
 | `type` | 类型：`date` / `daterange` / `month` / `datetime` | `string` | `date` |
 | `value` | 当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组 | `string` | — |
 

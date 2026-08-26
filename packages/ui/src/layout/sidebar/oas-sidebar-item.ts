@@ -20,7 +20,7 @@ const ITEM_STYLE = `
  */
 export class OASSidebarItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'icon', 'group', 'badge']
+    return ['value', 'icon', 'icon-color', 'group', 'badge']
   }
 
   protected override render(): void {
