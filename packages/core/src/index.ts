@@ -1,4 +1,5 @@
 export { OASElement } from './oas-element.js'
+export type { ReactiveController } from './oas-element.js'
 export {
   setTranslator,
   getTranslator,
