@@ -20,11 +20,5 @@ if (!customElements.get('oas-toolbar-input')) {
   customElements.define('oas-toolbar-input', OASToolbarInput)
 }
 
-export {
-  OASToolbar,
-  OASToolbarToggle,
-  OASToolbarToggleItem,
-  OASToolbarSeparator,
-  OASToolbarInput,
-}
+export { OASToolbar, OASToolbarToggle, OASToolbarToggleItem, OASToolbarSeparator, OASToolbarInput }
 export type { ToolbarToggleItem } from './oas-toolbar-toggle.js'

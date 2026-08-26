@@ -16,9 +16,4 @@ if (!customElements.get('oas-context-menu-divider')) {
   customElements.define('oas-context-menu-divider', OASContextMenuDivider)
 }
 
-export {
-  OASContextMenu,
-  OASContextMenuItem,
-  OASContextMenuGroup,
-  OASContextMenuDivider,
-}
+export { OASContextMenu, OASContextMenuItem, OASContextMenuGroup, OASContextMenuDivider }

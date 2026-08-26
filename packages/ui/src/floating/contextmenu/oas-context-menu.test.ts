@@ -400,9 +400,9 @@ describe('OASContextMenu 子元素声明式通道', () => {
     grid.click()
     expect(detail).toMatchObject({ value: 'grid' })
     expect(
-      innerMenuRoot(el).querySelector<HTMLElement>('[part="item"][data-value="grid"]')!.getAttribute(
-        'aria-checked',
-      ),
+      innerMenuRoot(el)
+        .querySelector<HTMLElement>('[part="item"][data-value="grid"]')!
+        .getAttribute('aria-checked'),
     ).toBe('true')
     // contextmenu 宿主不写回 value（既有语义，仅转发事件）
     expect(el.getAttribute('value')).toBeNull()

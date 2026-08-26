@@ -266,7 +266,12 @@ export {
   type BreadcrumbItem,
 } from './navigation/breadcrumb/index.js'
 export { OASBackTop } from './navigation/back-top/oas-back-top.js'
-export { OASAnchor, OASAnchorItem, OASAnchorTarget, type AnchorItem } from './navigation/anchor/index.js'
+export {
+  OASAnchor,
+  OASAnchorItem,
+  OASAnchorTarget,
+  type AnchorItem,
+} from './navigation/anchor/index.js'
 export { OASTour, type TourStep } from './navigation/tour/index.js'
 export {
   OASBottomNavigation,

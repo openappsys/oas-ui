@@ -745,7 +745,13 @@ describe('OASSelect 子元素声明式通道（oas-option）', () => {
   })
 
   it('虚拟滚动模式与子元素通道共存：数据入口在收敛点之前，两路径均吃到子元素数据', () => {
-    const el = childSelect([['apple', '苹果'], ['banana', '香蕉']], { virtual: '' })
+    const el = childSelect(
+      [
+        ['apple', '苹果'],
+        ['banana', '香蕉'],
+      ],
+      { virtual: '' },
+    )
     open(el)
     // 虚拟路径：vlist 可见且窗口行渲染（非虚拟 listbox 隐藏）
     const vlist = vlistOf(el)

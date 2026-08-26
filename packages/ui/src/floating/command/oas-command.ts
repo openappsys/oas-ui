@@ -894,7 +894,8 @@ export class OASCommand extends OASElement {
     }
     // childList：变更发生在 oas-command-item 内（如 label 文本整体替换，target 即该载体、
     // added/removed 为文本节点）；或新增/移除的节点是 oas-command-item、子树内含 oas-command-item
-    if (record.target instanceof Element && record.target.tagName === 'OAS-COMMAND-ITEM') return true
+    if (record.target instanceof Element && record.target.tagName === 'OAS-COMMAND-ITEM')
+      return true
     for (const n of [...record.addedNodes, ...record.removedNodes]) {
       if (!(n instanceof Element)) continue
       if (n.tagName === 'OAS-COMMAND-ITEM') return true
