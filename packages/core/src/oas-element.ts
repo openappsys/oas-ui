@@ -14,6 +14,24 @@
 import { getTranslator, getLocaleTranslator, onTranslatorChange } from './translator.js'
 import { findConfigProvider, subscribeConfigProvider } from './config-context.js'
 
+/**
+ * ReactiveController —— 宿主（OASElement）能力注入协议。
+ *
+ * 能力做成独立 controller 对象：宿主调用其生命周期钩子（hostConnected/hostDisconnected），
+ * controller 可在连接时绑定事件/监听、断开时清理。宿主不必知道具体能力实现——
+ * 通过 `addController/removeController` 注入，天然支持「能力级按需」（能力模块独立可切）。
+ */
+export interface ReactiveController {
+  /** 宿主完成首渲染并连接时调用（生命周期接入 connectedCallback 末尾） */
+  hostConnected?(): void
+  /** 宿主断开连接时调用（进入 disconnectedCallback 清理后） */
+  hostDisconnected?(): void
+  /** 宿主 update 前调用（基类触发的 update 流程） */
+  hostUpdate?(): void
+  /** 宿主 update 后调用（基类触发的 update 流程） */
+  hostUpdated?(): void
+}
+
 export abstract class OASElement extends HTMLElement {
   /** 子类声明需要观察的属性（kebab-case） */
   static get observedAttributes(): string[] {
@@ -28,6 +46,8 @@ export abstract class OASElement extends HTMLElement {
   private unsubscribeConfig: (() => void) | null = null
   /** 本次连接是否为 DSD 真水合接管（tryHydrate 成功后置 true，断开连接时复位） */
   private hydrated = false
+  /** 注入的能力 controllers（ReactiveController，hostConnected/hostDisconnected 生命周期接入） */
+  private controllers: ReactiveController[] = []
 
   constructor() {
     super()
@@ -45,7 +65,7 @@ export abstract class OASElement extends HTMLElement {
       }
       this.rendered = true
     }
-    this.update()
+    this.runUpdateAndNotify()
     // locale 切换（translator 变化）时自动重刷文案，断开连接时取消订阅
     if (!this.unsubscribeLocale) {
       this.unsubscribeLocale = onTranslatorChange(() => this.update())
@@ -57,6 +77,8 @@ export abstract class OASElement extends HTMLElement {
         this.unsubscribeConfig = subscribeConfigProvider(provider, () => this.update())
       }
     }
+    // 能力控制器：宿主连接完成后依次通知（render/update 已就绪，controller 可访问 DOM）
+    for (const c of this.controllers) c.hostConnected?.()
   }
 
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
@@ -64,7 +86,14 @@ export abstract class OASElement extends HTMLElement {
     void oldValue
     void newValue
     if (!this.rendered) return
+    this.runUpdateAndNotify()
+  }
+
+  /** 触发 update 并通知能力控制器（hostUpdate → update() → hostUpdated）。基类触发的更新走此路径 */
+  protected runUpdateAndNotify(): void {
+    for (const c of this.controllers) c.hostUpdate?.()
     this.update()
+    for (const c of this.controllers) c.hostUpdated?.()
   }
 
   /** 是否已完成首次 render（供子类在 attributeChangedCallback 等钩子中判断） */
@@ -80,11 +109,27 @@ export abstract class OASElement extends HTMLElement {
     this.hydrated = false
     for (const fn of this.cleanupFns) fn()
     this.cleanupFns.length = 0
+    for (const c of this.controllers) c.hostDisconnected?.()
   }
 
   /** 注册断开连接时执行的清理函数（计时器、全局监听、浮层引用） */
   protected onCleanup(fn: () => void): void {
     this.cleanupFns.push(fn)
+  }
+
+  /** 注入一个能力控制器；宿主已连接时立即调 hostConnected，断开时自动调 hostDisconnected */
+  addController(controller: ReactiveController): void {
+    if (this.controllers.includes(controller)) return
+    this.controllers.push(controller)
+    if (this.rendered && this.isConnected) controller.hostConnected?.()
+  }
+
+  /** 移除能力控制器，并调 hostDisconnected（之后宿主生命周期不再回调它） */
+  removeController(controller: ReactiveController): void {
+    const idx = this.controllers.indexOf(controller)
+    if (idx < 0) return
+    this.controllers.splice(idx, 1)
+    controller.hostDisconnected?.()
   }
 
   /** 子类实现：首次连接时构建 shadow DOM（整个生命周期只调用一次） */

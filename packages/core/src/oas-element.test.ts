@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi, beforeEach } from 'vitest'
 import { OASElement } from './oas-element.js'
 import { setTranslator } from './translator.js'
 
@@ -413,3 +413,66 @@ describe('OASElement', () => {
     DsdHydrateFixture.dsdRoot = null
   })
 })
+
+describe('OASElement ReactiveController 支持', () => {
+  let host!: FixtureElement
+
+  beforeEach(() => {
+    host = new FixtureElement()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function makeController(): { c: { hostConnected: ReturnType<typeof vi.fn>; hostDisconnected: ReturnType<typeof vi.fn> }; add: () => void; remove: () => void } {
+    const c = {
+      hostConnected: vi.fn(),
+      hostDisconnected: vi.fn(),
+    }
+    return { c, add: () => host.addController(c), remove: () => host.removeController(c) }
+  }
+
+  it('addController 后元素已在文档：立即调 hostConnected', () => {
+    document.body.appendChild(host)
+    const { c, add } = makeController()
+    add()
+    expect(c.hostConnected).toHaveBeenCalledTimes(1)
+    expect(c.hostDisconnected).not.toHaveBeenCalled()
+  })
+
+  it('元素不在文档：addController 不调 hostConnected，连接时调', () => {
+    const { c, add } = makeController()
+    add()
+    expect(c.hostConnected).not.toHaveBeenCalled()
+    document.body.appendChild(host)
+    expect(c.hostConnected).toHaveBeenCalledTimes(1)
+  })
+
+  it('removeController：调 hostDisconnected，之后不再回调', () => {
+    document.body.appendChild(host)
+    const { c, add, remove } = makeController()
+    add()
+    expect(c.hostConnected).toHaveBeenCalledTimes(1)
+    remove()
+    expect(c.hostDisconnected).toHaveBeenCalledTimes(1)
+    host.remove()
+    // 已移除的 controller 不应再被 disconnected 回调
+    host.disconnectedCallback()
+    expect(c.hostDisconnected).toHaveBeenCalledTimes(1)
+  })
+
+  it('断开连接：所有 controller 调 hostDisconnected', () => {
+    document.body.appendChild(host)
+    const { c: c1, add: add1 } = makeController()
+    const { c: c2, add: add2 } = makeController()
+    add1()
+    add2()
+    expect(c1.hostConnected).toHaveBeenCalledTimes(1)
+    expect(c2.hostConnected).toHaveBeenCalledTimes(1)
+    host.remove()
+    expect(c1.hostDisconnected).toHaveBeenCalledTimes(1)
+    expect(c2.hostDisconnected).toHaveBeenCalledTimes(1)
+  })
+})
+
