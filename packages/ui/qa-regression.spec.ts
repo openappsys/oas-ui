@@ -5873,7 +5873,7 @@ test('toolbar-toggle 选中态主题可见——light/dark 下选中与未选中
   expect(selD.color, 'dark 选中/未选中文字色必须可区分').not.toBe(unselD.color)
 })
 
-// —— 缺陷回归：popover 用户实测六条（12 向箭头对准 / portal 样式保真 / closable X / virtual 点标记）——
+// —— 缺陷回归：popover 实测六条（12 向箭头对准 / portal 样式保真 / closable X / virtual 点标记）——
 // 曾现缺陷：① -start/-end 箭头恒 CSS 居中、脱离锚点投影区间（箭头没对准宿主）；
 // ② append-to 裸 appendChild 到 body，面板脱离 shadow 树后 scoped CSS 全失效
 //   （static 掉文档流末尾、随滚动乱飘）；③ closable 的 X 显示规则钩子（.panel.oas-closable）
@@ -6484,7 +6484,7 @@ test('tour-basic 2 步流程：点下一步高亮移到区域二 + 按钮变完�
   expect(s3.open, '点完成后才关闭').toBe(false)
 })
 
-// —— 缺陷回归：tour 弹窗 pointer-events:none 致点击穿透遮罩误关（用户实测：点弹窗任意位置消失） ——
+// —— 缺陷回归：tour 弹窗 pointer-events:none 致点击穿透遮罩误关（实测：点弹窗任意位置消失） ——
 // 曾现缺陷：.overlay 是 pointer-events:none，.popup 未补 auto 继承 none → 整个弹窗点击透明，
 // 真实鼠标点击穿透到下层遮罩（pointer-events:auto）触发 onMaskClick 关闭。
 // 元素级 .click() 跳过命中测试会造成假通过——必须用真实鼠标点击（page.mouse，带命中测试）验证。
@@ -6517,7 +6517,7 @@ test('tour 弹窗可交互：真实鼠标点击弹窗内部不关闭（pointer-e
   expect(open, '真实点击弹窗内部不应关闭（pointer-events 须为 auto）').toBe(true)
 })
 
-// —— 缺陷回归：tour append-to portal host display:none 致浮层 0×0 不可见（用户实测：点了没反应） ——
+// —— 缺陷回归：tour append-to portal host display:none 致浮层 0×0 不可见（实测：点了没反应） ——
 // 曾现缺陷：ensurePortal 镜像 data-open 属性，但共享 STYLE 的 :host([open]) 显示门控只认 open
 // 属性——portal host（普通 div，只有 data-open）不命中 → display:none，浮层全 0×0 不可见。
 // 修复：host 显示规则同时认 [open] 与 [data-open]。
@@ -6566,7 +6566,7 @@ test('tour append-to=body：portal host 显示 + 弹窗非零尺寸 + 高亮框�
   expect(r.hlOnTarget, '高亮应框住挂载目标').toBe(true)
 })
 
-// —— 缺陷回归：tour typewriter 布尔属性误判致打字机不生效（用户实测：没看到逐字效果） ——
+// —— 缺陷回归：tour typewriter 布尔属性误判致打字机不生效（实测：没看到逐字效果） ——
 // 曾现缺陷：typewriter 是 opt-in 布尔属性，getAttribute 对无值布尔返回 ''，检查
 // getAttr('typewriter')!=='true' 把布尔写法误判为关（''!=='true' → 跳过打字机全量赋值）。
 // 修复：改 hasAttr + getAttr(...)!=='false' 判定。
@@ -6647,7 +6647,7 @@ test('tour 目标在视口外首次打开：滚动期间弹窗隐藏（不闪现
   expect(settled.pending, '滚动停止后不再待定').toBe(false)
 })
 
-// —— 缺陷回归：oas-splitter + sidebar 拖拽调宽（用户实测真缺陷） ——
+// —— 缺陷回归：oas-splitter + sidebar 拖拽调宽（实测真缺陷） ——
 // 曾现缺陷：demo 用内联 style="--oas-sidebar-width: 100%" 想让 sidebar 填满 splitter 左面板，
 // 但 sidebar update() 在无 width 属性时会 removeProperty('--oas-sidebar-width')——内联变量被清、
 // sidebar 回落 220px 固定宽，被 22% 窄面板遮住（宽度不随拖拽变化）。修复：demo 改用 width="100%"
@@ -6790,7 +6790,7 @@ test('sidebar 嵌套子菜单：无图标子项 label 缩进父项 label 右侧�
   expect(r.childIconWidth, '嵌套图标占位应保留宽度').toBeGreaterThan(0)
   expect(r.indent, '子项 label 应缩进父项 label 右侧（不得齐平/更靠左）').toBeGreaterThan(0)
 })
-test('layout viewport：高度锁定 + 侧栏/内容各自独立滚动 + 顶栏不随内容动（模板实测缺陷回归）', async ({
+test('layout viewport：高度锁定 + 侧栏/内容各自独立滚动 + 顶栏不随内容动（实测缺陷回归）', async ({
   page,
 }) => {
   await page.goto('/components/layout.html', { waitUntil: 'domcontentloaded' })
@@ -6827,7 +6827,7 @@ test('layout viewport：高度锁定 + 侧栏/内容各自独立滚动 + 顶栏�
   expect(r.sbPanelScrollable, '内嵌 sidebar panel 应在侧栏内独立滚动').toBe(true)
 })
 
-test('sider 内嵌 sidebar 宽度自动对齐：填满轨道而非自身默认宽（模板实测缺陷回归）', async ({
+test('sider 内嵌 sidebar 宽度自动对齐：填满轨道而非自身默认宽（实测缺陷回归）', async ({
   page,
 }) => {
   await page.goto('/components/layout.html', { waitUntil: 'domcontentloaded' })

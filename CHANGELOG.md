@@ -11,7 +11,7 @@
   - 浮层触发族：`<oas-dropdown-item/-group/-divider>`、`<oas-context-menu-item/-group/-divider>`（extends menu 数据载体零重复）、`<oas-command-item>`（keywords 逗号拆分/嵌套递归 page/view/force-mount/separator）
   - 布局/表单族：`<oas-sidebar-item>`/`<oas-sidebar-divider>`、`<oas-bottom-navigation-item>`、`<oas-option>`（对齐 HTML 原生 option 心智，options 显式优先，虚拟滚动共存）、`<oas-toggle-item>`、`<oas-toolbar-toggle-item>`（childSig 增量比对）
   - virtual-list 豁免（unknown[] 数据型 + 模板插槽，无标量可映射）
-- **sidebar 深挖批**（模板实测驱动，能力 + 缺陷修复）：
+- **sidebar 深挖批**（实测驱动，能力 + 缺陷修复）：
   - `hide-toggle`：隐藏底部折叠按钮（宿主 opt-out，静态侧栏场景）
   - `accordion` 手风琴同级互斥（与 menu 同语义）；嵌套子树平滑展开/收起动画（grid 0fr/1fr 高度过渡 + visibility 联动防聚焦 + reduced-motion 降级）
   - 嵌套深度机制无限级（递归渲染，3 级实证逐级展开/激活级联）+ 文档边界（≤3 级，更深用 oas-tree）
@@ -25,7 +25,7 @@
 
 ### 修复
 
-- **sidebar 折叠态系列**（用户实测驱动）：
+- **sidebar 折叠态系列**（实测驱动）：
   - 嵌套父项死交互（折叠图标条态仍挂展开箭头/aria-expanded，点击零可见变化）→ 折叠态父项渲染为纯图标项（无箭头/无 aria-expanded，点击派发 select）
   - 折叠态徽标大药丸溢出 64px 图标条 → 改图标右上角紧凑角标（14×14 主色实底白字）
   - 嵌套子菜单点击不折叠根治：`.submenu{display:flex}` 作者级规则压过 UA `[hidden]{display:none}`（hidden 只改属性不改渲染）→ 显式兜底（现由 grid+visibility 机制承接）
@@ -76,7 +76,7 @@
   - navigation-menu：viewport 碰撞翻转、面板内二级子导航（sub 字段 + 覆盖式二级面板 + 级联动画 + Esc/← 逐层回退）、`loop` 属性、panel-footer 营销位插槽
   - back-top：`target` 缺省自动探测最近可滚祖先、tooltip 读屏可达、`draggable` 拖拽（位置持久化）
   - toolbar：start/end 插槽
-- **模板实测第二批能力**：
+- **实测第二批能力**：
   - select：下拉改 `position: fixed` + computePosition 锚定（逃出祖先 overflow 容器，不再逼出滚动条，与 combobox 一致）
   - sidebar：`items.group` 数据驱动分组标题（part=group，弱化语义色、纯展示不可点；折叠态隐藏、移动抽屉态显示，items JSON 向后兼容）
   - tabs：`tab-badge` 颜色开口 `--oas-tabs-badge-bg/--oas-tabs-badge-color`（默认 danger 兼容）+ part="badge"，宿主可中性化徽标配色

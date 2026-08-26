@@ -31,7 +31,7 @@ describe('OASLayout', () => {
   })
 })
 
-describe('OASLayout 侧栏槽与 Sider 折叠（模板实测缺陷回归）', () => {
+describe('OASLayout 侧栏槽与 Sider 折叠（实测缺陷回归）', () => {
   it('#5 sider slot 允许任意元素（非仅 oas-sider）：data-has-sider=true', () => {
     const layout = new OASLayout()
     layout.innerHTML = `<div slot="sider">自定义侧栏</div><oas-content>内容</oas-content>`
@@ -75,7 +75,7 @@ describe('OASLayout 侧栏槽与 Sider 折叠（模板实测缺陷回归）', ()
   })
 })
 
-describe('OASLayout 视口锁定模式（模板实测缺陷回归）', () => {
+describe('OASLayout 视口锁定模式（实测缺陷回归）', () => {
   it('默认整页滚动模型不变：min-height 100%、无高度锁定', () => {
     const layout = new OASLayout()
     document.body.appendChild(layout)
@@ -114,7 +114,7 @@ describe('OASLayout 视口锁定模式（模板实测缺陷回归）', () => {
   })
 })
 
-describe('OASSider 内嵌 sidebar 宽度对齐（模板实测缺陷回归）', () => {
+describe('OASSider 内嵌 sidebar 宽度对齐（实测缺陷回归）', () => {
   it('内嵌 oas-sidebar 填满轨道：::slotted width 100%', () => {
     const sider = new OASSider()
     document.body.appendChild(sider)
