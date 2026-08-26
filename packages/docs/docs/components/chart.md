@@ -90,7 +90,7 @@
 | --- | --- | --- | --- |
 | `aria-label` | 图表描述（缺省按类型走 locale） | — | — |
 | `data` | 数据。数组单系列 `[{label, value}]` 或对象多系列 `{labels, series}` | `unknown` | — |
-| `options` | 配置：`smooth`（平滑）、`colors`（系列配色）、`showLegend` | `unknown` | — |
+| `options` | 配置：`smooth`（平滑）、`colors`（系列配色）、`showLegend`、`gradient`（面积图垂直渐变填充，默认 false） | `unknown` | — |
 | `type` | 图表类型：`line` / `bar` / `pie` / `area` / `donut` / `stacked-bar` | `ChartType` | `line` |
 
 `data` / `options` 也支持 property 通道（JS 对象，优先级高于 attribute）。
