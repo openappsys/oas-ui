@@ -281,7 +281,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 
 <DemoBlock title="Declarative children (group / divider / nested / badge)">
   <div style="height: 340px; width: 100%; display: flex">
-    <oas-sidebar id="sidebar-decl" active="users" hide-toggle>
+    <oas-sidebar id="sidebar-decl" active="users">
       <oas-sidebar-item value="dash" icon="star" group="Overview">Dashboard</oas-sidebar-item>
       <oas-sidebar-item value="trend" icon="star" group="Overview">Live Trends</oas-sidebar-item>
       <oas-sidebar-divider></oas-sidebar-divider>

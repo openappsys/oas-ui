@@ -281,7 +281,7 @@
 
 <DemoBlock title="子元素声明式（分组 / 分隔线 / 嵌套 / 徽标）">
   <div style="height: 340px; width: 100%; display: flex">
-    <oas-sidebar id="sidebar-decl" active="users" hide-toggle>
+    <oas-sidebar id="sidebar-decl" active="users">
       <oas-sidebar-item value="dash" icon="star" group="概览">仪表盘</oas-sidebar-item>
       <oas-sidebar-item value="trend" icon="star" group="概览">实时趋势</oas-sidebar-item>
       <oas-sidebar-divider></oas-sidebar-divider>
@@ -292,7 +292,8 @@
       <oas-sidebar-item value="inbox" icon="star" badge="12">收件箱</oas-sidebar-item>
     </oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
-      「概览」为组标题；分隔线、嵌套子菜单（含激活子项自动展开）与徽标行为均与 `items` 通道一致。
+      「概览」为组标题；分隔线、嵌套子菜单（含激活子项自动展开）与徽标行为均与 `items` 通道一致。<br />
+      点击底部「«」切换折叠：嵌套子树隐藏、分组标题隐藏、图标 hover 出 tooltip、徽标保留——这套富内容正是折叠态行为的最佳演示。
     </div>
   </div>
 </DemoBlock>
