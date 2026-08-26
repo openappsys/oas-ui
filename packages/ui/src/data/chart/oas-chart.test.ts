@@ -92,6 +92,26 @@ describe('OASChart', () => {
     expect(d).toContain(ly)
   })
 
+  it('type=area 默认无渐变：无 linearGradient，填充走 swatch 半透明', () => {
+    const el = mount({ type: 'area', data: SINGLE })
+    const svg = svgOf(el)
+    expect(svg.querySelector('linearGradient')).toBeNull()
+    expect(svg.querySelector('.area-path')!.getAttribute('style')).toBeNull()
+  })
+
+  it('type=area options.gradient=true：填充用垂直渐变（顶部系列色→底部透明）', () => {
+    const el = mount({ type: 'area', options: '{"gradient":true}', data: MULTI })
+    const svg = svgOf(el)
+    const grads = svg.querySelectorAll('linearGradient')
+    expect(grads.length).toBe(2) // 每系列一个
+    const area = svg.querySelectorAll('.area-path')[0]!
+    expect(area.getAttribute('style')).toMatch(/fill:\s*url\(#oas-chart-ag-\d+\)/)
+    const stops = grads[0]!.querySelectorAll('stop')
+    expect(stops.length).toBe(2)
+    expect(stops[0]!.getAttribute('stop-opacity')).toBe('0.35') // 顶实
+    expect(stops[1]!.getAttribute('stop-opacity')).toBe('0') // 底透明
+  })
+
   it('type=donut 渲染镂空扇区（内弧半径小于外弧半径）', () => {
     const el = mount({ type: 'donut', data: SINGLE })
     const slices = svgOf(el).querySelectorAll('.slice')
