@@ -34,6 +34,7 @@ const DEFAULT_VARS: Record<string, string> = {
   '--oas-space-4': '16px',
   '--oas-space-5': '24px',
   '--oas-space-6': '32px',
+  '--oas-radius-xs': '2px',
   '--oas-radius-sm': '4px',
   '--oas-radius-md': '6px',
   '--oas-radius-lg': '10px',
