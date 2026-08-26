@@ -2673,6 +2673,12 @@
         "name": "multiple",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "placement",
+        "type": "string",
+        "default": "bottom-start",
+        "observed": true
       }
     ],
     "props": [

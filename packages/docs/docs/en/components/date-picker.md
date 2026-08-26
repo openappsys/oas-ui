@@ -64,6 +64,18 @@ The format supports `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` tokens.
   <oas-date-picker disabled value="2026-08-09"></oas-date-picker>
 </DemoBlock>
 
+## Floating Positioning (placement)
+
+<DemoBlock title="Right-edge trigger (default bottom-start, auto flip)">
+  <oas-date-picker style="margin-left: auto; display: block; width: fit-content" value="2026-08-09" placeholder="Right-edge single picker"></oas-date-picker>
+</DemoBlock>
+
+<DemoBlock title="Right-edge wide panel (range right-aligns)">
+  <oas-date-picker type="daterange" style="margin-left: auto; display: block; width: fit-content" value='["2026-08-05","2026-08-15"]'></oas-date-picker>
+</DemoBlock>
+
+The panel defaults to `bottom-start` (panel left edge aligns with the trigger left edge). When the trigger sits near the viewport right edge, the panel auto right-aligns (`bottom-end`); if it still overflows it is clamped horizontally into the viewport; when there is not enough space below, it flips upward (`top-start`/`top-end`). `placement` supports 12 directions: `top / bottom / left / right` each with `-start` / `-end` cross-axis alignment.
+
 ## API
 
 ### Attributes
@@ -76,6 +88,7 @@ The format supports `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` tokens.
 | `min` | Selectable range (ISO dates) | `string` | — |
 | `multiple` | Multiple selection (only `type=date`), value is a JSON array | `boolean` | — |
 | `placeholder` | Placeholder text | — | — |
+| `placement` | Popup placement, 12 directions: `top`/`bottom`/`left`/`right` × `-start`/`-end` (default `bottom-start`); auto right-aligns near the viewport right edge, flips upward when space below is insufficient, and clamps into the viewport | `string` | `bottom-start` |
 | `type` | Type: `date` / `daterange` / `month` / `datetime` | `string` | `date` |
 | `value` | Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON range array | `string` | — |
 

@@ -3,6 +3,7 @@ import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
 import { OASSidebar } from './index.js'
+import { registerIcon } from '../../basic/icon/index.js'
 
 /**
  * 可控 matchMedia stub：matches 可切换，并手动触发 change 监听，
@@ -550,9 +551,13 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     // hover 不再用 --oas-color-bg-hover（与宿主底色同 token → 零对比）
     expect(css).toMatch(/\.item:hover\s*\{[^}]*--oas-sidebar-item-hover-bg/)
-    expect(css).toMatch(/\.item:hover\s*\{[^}]*color-mix\(in srgb, var\(--oas-color-text-primary\) 6%/)
+    expect(css).toMatch(
+      /\.item:hover\s*\{[^}]*color-mix\(in srgb, var\(--oas-color-text-primary\) 6%/,
+    )
     // active:hover 有独立加深档（14% → 20%）
-    expect(css).toMatch(/\.item\.active:hover\s*\{[^}]*color-mix\(in srgb, var\(--oas-color-primary\) 20%/)
+    expect(css).toMatch(
+      /\.item\.active:hover\s*\{[^}]*color-mix\(in srgb, var\(--oas-color-primary\) 20%/,
+    )
   })
 
   it('resizable：边缘拖拽条显隐（resizable 显示；无属性/折叠/移动态隐藏）', () => {
@@ -575,7 +580,17 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     const el = mount({ resizable: '', width: '240px' })
     // happy-dom 无布局：stub host 宽度
     Object.defineProperty(el, 'getBoundingClientRect', {
-      value: () => ({ width: 240, x: 0, y: 0, top: 0, left: 0, right: 240, bottom: 600, height: 600, toJSON: () => ({}) }),
+      value: () => ({
+        width: 240,
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        right: 240,
+        bottom: 600,
+        height: 600,
+        toJSON: () => ({}),
+      }),
       configurable: true,
     })
     const rail = el.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
@@ -602,7 +617,17 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     stubMatchMedia(false)
     const el = mount({ resizable: '', side: 'right', width: '240px' })
     Object.defineProperty(el, 'getBoundingClientRect', {
-      value: () => ({ width: 240, x: 0, y: 0, top: 0, left: 0, right: 240, bottom: 600, height: 600, toJSON: () => ({}) }),
+      value: () => ({
+        width: 240,
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        right: 240,
+        bottom: 600,
+        height: 600,
+        toJSON: () => ({}),
+      }),
       configurable: true,
     })
     const rail = el.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
@@ -616,14 +641,25 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     stubMatchMedia(false)
     const el = mount({ resizable: '', width: '240px', 'resize-min': '200', 'resize-max': '300' })
     Object.defineProperty(el, 'getBoundingClientRect', {
-      value: () => ({ width: 240, x: 0, y: 0, top: 0, left: 0, right: 240, bottom: 600, height: 600, toJSON: () => ({}) }),
+      value: () => ({
+        width: 240,
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        right: 240,
+        bottom: 600,
+        height: 600,
+        toJSON: () => ({}),
+      }),
       configurable: true,
     })
     const rail = el.shadowRoot!.querySelector<HTMLElement>('[part="rail"]')!
     rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
     expect(el.getAttribute('width')).toBe('248px')
     // 再按 5 次 → 288；继续按 → 夹到 max 300
-    for (let i = 0; i < 5; i++) rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    for (let i = 0; i < 5; i++)
+      rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
     expect(el.getAttribute('width')).toBe('288px')
     rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
     rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
@@ -702,15 +738,12 @@ describe('OASSidebar 子元素声明式通道', () => {
 
   it('items 属性显式设置时优先（子元素被忽略）', () => {
     stubMatchMedia(false)
-    const el = mountSidebarChildren(
-      `<oas-sidebar-item value="child">子项</oas-sidebar-item>`,
-      {
-        items: JSON.stringify([
-          { label: '数据项', value: 'data' },
-          { label: '末项', value: 'last' },
-        ]),
-      },
-    )
+    const el = mountSidebarChildren(`<oas-sidebar-item value="child">子项</oas-sidebar-item>`, {
+      items: JSON.stringify([
+        { label: '数据项', value: 'data' },
+        { label: '末项', value: 'last' },
+      ]),
+    })
     const labels = [...el.shadowRoot!.querySelectorAll('[part="item"] .label')].map(
       (l) => l.textContent,
     )
@@ -840,5 +873,91 @@ describe('OASSidebar 子元素声明式通道', () => {
       ]),
     })
     expect(elItems.shadowRoot!.querySelector<HTMLElement>('[part="submenu"]')!.hidden).toBe(true)
+  })
+})
+
+// ===== 图标通道与着色 =====
+// customIcons 是模块级共享 Map（无清理 API）：本 describe 置于文件末尾，注册的自定义名
+// 只影响其后不再有测试执行的文件区段；其中「同名覆盖」用内置 check（本文件其它测试不用
+// check），避免污染其它测试高频使用的内置 star。vitest 默认按文件隔离模块，不影响其它测试文件。
+
+describe('OASSidebar 图标通道与着色', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('registerIcon 注册的自定义图标名在 sidebar items 中渲染为对应 SVG（查表打通）', () => {
+    stubMatchMedia(false)
+    registerIcon('sidebar-custom-rocket', '<path d="M1 1 L15 15"/>')
+    const el = mount({
+      items: JSON.stringify([{ label: '任务', value: 'task', icon: 'sidebar-custom-rocket' }]),
+    })
+    const svg = el.shadowRoot!.querySelector<SVGSVGElement>('.icon svg')
+    expect(svg, 'registerIcon 注册的自定义图标应渲染为 SVG').not.toBeNull()
+    expect(svg!.querySelector('path')!.getAttribute('d')).toBe('M1 1 L15 15')
+  })
+
+  it('同名覆盖：registerIcon 与内置同名时 sidebar 用自定义版（customIcons 优先）', () => {
+    stubMatchMedia(false)
+    registerIcon('check', '<path d="M2 2 L14 14"/>') // 与内置 check 同名 → 自定义版覆盖
+    const el = mount({ items: JSON.stringify([{ label: '完成', value: 'done', icon: 'check' }]) })
+    const svg = el.shadowRoot!.querySelector<SVGSVGElement>('.icon svg')
+    expect(svg).not.toBeNull()
+    expect(svg!.querySelector('path')!.getAttribute('d')).toBe('M2 2 L14 14')
+  })
+
+  it('iconColor 显式时 svg stroke 为该色值；未给时保持 currentColor（既有行为零回归）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items: JSON.stringify([
+        { label: '一', value: 'a', icon: 'star', iconColor: '#f50' },
+        { label: '二', value: 'b', icon: 'star' },
+      ]),
+    })
+    const svgs = el.shadowRoot!.querySelectorAll<SVGSVGElement>('.icon svg')
+    expect(svgs[0]!.getAttribute('stroke')).toBe('#f50')
+    expect(svgs[1]!.getAttribute('stroke')).toBe('currentColor')
+  })
+
+  it('彩色自定义 SVG（path 自带 stroke 属性）保留自带色，外层不强制覆盖', () => {
+    stubMatchMedia(false)
+    registerIcon('sidebar-color-heart', '<path d="M2 2 L14 14" stroke="#0a0" fill="none"/>')
+    const el = mount({
+      items: JSON.stringify([{ label: '徽标', value: 'logo', icon: 'sidebar-color-heart' }]),
+    })
+    const path = el.shadowRoot!.querySelector<SVGPathElement>('.icon svg path')
+    expect(path, '彩色自定义 SVG 应渲染').not.toBeNull()
+    expect(path!.getAttribute('stroke'), 'path 自带 stroke 应保留（外层 stroke 不干扰）').toBe(
+      '#0a0',
+    )
+  })
+
+  it('折叠态 tooltip 图标与展开态同色（iconColor 一致性）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      collapsed: '',
+      items: JSON.stringify([{ label: '首页', value: 'home', icon: 'star', iconColor: '#0af' }]),
+    })
+    const tip = el.shadowRoot!.querySelector('oas-tooltip')
+    expect(tip, '折叠态图标项应包 tooltip').not.toBeNull()
+    const svg = tip!.querySelector<SVGSVGElement>('svg')
+    expect(svg, 'tooltip 内应有图标 svg').not.toBeNull()
+    expect(svg!.getAttribute('stroke')).toBe('#0af')
+  })
+
+  it('子元素声明式通道：oas-sidebar-item 的 icon-color 属性映射到 iconColor（双通道一致）', () => {
+    stubMatchMedia(false)
+    const el = new OASSidebar()
+    el.innerHTML = `<oas-sidebar-item value="home" icon="star" icon-color="#f0a">首页</oas-sidebar-item>`
+    document.body.appendChild(el)
+    const svg = el.shadowRoot!.querySelector<SVGSVGElement>('.icon svg')
+    expect(svg, '子元素 icon 应渲染').not.toBeNull()
+    expect(svg!.getAttribute('stroke'), 'icon-color 应映射为 iconColor 生效').toBe('#f0a')
   })
 })
