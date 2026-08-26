@@ -369,6 +369,16 @@
 
 `root` / `panel` / `head` / `close` / `nav` / `body` / `foot` / `toggle`（桌面折叠）/ `trigger`（移动触发）/ `mask` / `item`；头尾与主体内容分别通过 `slot="header"`、默认 slot、`slot="footer"` 注入。
 
+### CSS 变量
+
+| 变量 | 默认 | 说明 |
+| --- | --- | --- |
+| `--oas-sidebar-bg` | 回落 `--oas-color-bg-hover`（floating 形态回落 `--oas-color-bg`） | 侧栏背景色；默认走基础 token（主题/暗色/品牌定制自动传导），宿主覆盖即整体换底 |
+| `--oas-sidebar-width` | `220px` | 展开宽度（`width` 属性优先） |
+| `--oas-sidebar-collapsed-width` | `64px` | 折叠图标条宽度 |
+| `--oas-sidebar-item-hover-bg` | `color-mix(text-primary 6%)` | 菜单项 hover 背景 |
+| `--oas-sidebar-badge-bg` / `--oas-sidebar-badge-color` | 主色 14% 混色 / 主色 | 徽标底色 / 徽标文字色 |
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {

@@ -45,7 +45,7 @@ const STYLE = `
   width: var(--oas-sidebar-width, 220px);
   height: 100%;
   min-width: 0;
-  background: var(--oas-color-bg-hover);
+  background: var(--oas-sidebar-bg, var(--oas-color-bg-hover));
   font-family: inherit;
   transition: width var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1));
 }
@@ -422,7 +422,7 @@ aside {
   margin: var(--oas-space-3, 12px);
   height: calc(100% - var(--oas-space-3, 12px) * 2);
   border-radius: var(--oas-radius-lg, 10px);
-  background: var(--oas-color-bg);
+  background: var(--oas-sidebar-bg, var(--oas-color-bg));
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
@@ -431,7 +431,7 @@ aside {
   margin: var(--oas-space-3, 12px);
   height: calc(100% - var(--oas-space-3, 12px) * 2);
   border-radius: var(--oas-radius-lg, 10px);
-  background: var(--oas-color-bg-hover);
+  background: var(--oas-sidebar-bg, var(--oas-color-bg-hover));
   overflow: hidden;
 }
 :host([variant='floating']) aside,
