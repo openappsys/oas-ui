@@ -377,7 +377,7 @@ describe('OASPopover', () => {
     expect(arrow.hidden).toBe(false)
   })
 
-  // —— 箭头永远跟随锚点（用户实测：窄视口 clamp 后默认箭头不指宿主）——
+  // —— 箭头永远跟随锚点（实测：窄视口 clamp 后默认箭头不指宿主）——
 
   it('箭头默认跟随锚点：面板被视口边缘 clamp 平移时，箭头仍指向锚点中心（无需 arrow-point-at-center）', () => {
     const el = mount({ open: '', placement: 'bottom' })
@@ -1361,7 +1361,7 @@ describe('OASPopover fresh / auto-close / arrow-merge', () => {
     const css = mergeCss(mount())
     const B = '1px solid var(--pop-border)'
     // 盒定位：主轴边外 -8px（压进面板描边带 1px 共带）、起止侧边 -1px（描边带对齐）；
-    // 不旋转 + 描边策略（用户实测反馈）：直角边（贴面板边、与面板描边共带续接）用 border；
+    // 不旋转 + 描边策略（实测反馈）：直角边（贴面板边、与面板描边共带续接）用 border；
     // 斜边（汇于尖端的主要外露边）用 45°/135° 渐变带补 2px 法向线（45° 抗锯齿下与直角边 1px 同观感）——斜边精确落在渐变 50%
     // 等值线上（盒对角线上），clip 保留三角内侧。贴面板的那条直角边是「融合边」不留描边
     // （只在外露的两条边留线），否则融合处多一条线、观感割裂。曾缺陷：斜边不描边→箭头尖端

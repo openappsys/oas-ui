@@ -568,7 +568,7 @@ export class OASChart extends OASElement {
   }
 
   /** 折线平滑：Catmull-Rom 转三次贝塞尔——曲线经过每个数据点（端点处重用端点；控制点由相邻点 1/6 张力算出）。
-      此前中点二次贝塞尔（midpoint smoothing）曲线在点间中点穿过、不过数据点，dot 偏离（用户实测"点不在线上"） */
+      此前中点二次贝塞尔（midpoint smoothing）曲线在点间中点穿过、不过数据点，dot 偏离（实测"点不在线上"） */
   private smoothPath(pts: Array<{ x: number; y: number }>): string {
     if (pts.length < 2) return pts.length === 1 ? `M ${pts[0]!.x} ${pts[0]!.y}` : ''
     const f = (n: number): string => n.toFixed(1)

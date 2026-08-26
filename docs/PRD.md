@@ -739,7 +739,7 @@ tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navig
 - **缺陷固化回归 6 条**：hover-card collision-boundary 坐标系、navigation-menu 箭头跟随、breadcrumb ellipsis 裁剪、toolbar 防收缩、menubar 零宽守卫（单测）、demo-coverage 探针豁免补录
 - **demo 探针**：navigation-menu loop 演示补录、oas-collapse-click 纳入事件豁免清单（需折叠交互序列）
 
-### 模板实测第二批（oas-ui-templates 集成反馈）
+### 实测第二批（oas-ui-templates 集成反馈）
 
 - **浮层箭头统一与 merge 修复**：标准菱形箭头全家族统一 12px/-6px（居中 calc -6px、ARROW_SIZE 12 对齐盒尺寸）；merge 贴角直角三角独立固定 8px 盒——popover/hover-card merge 描边三修（去方向性 drop-shadow 致左缘视觉偏移、去贴面板融合边描边线、斜边渐变带加粗同直角边观感）
 - **icons**：arrow-up/arrow-down 方向画反修复（svg 源顶点互换 + 方向类几何断言固化）；icon generate 脚本原子化（中断不毁 src/icons）；duotone 分层/双色两处修复
@@ -753,9 +753,9 @@ tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navig
 - **tabs tab-badge 颜色开口**：背景/文字从写死 danger 改 `--oas-tabs-badge-bg/--oas-tabs-badge-color`（默认 danger 兼容）+ part="badge"，宿主可中性化
 - **验证**：全量单测 3280 / e2e chromium 969 / 感知对比度门禁 exit 0 / 截图识图 light+dark 全过
 
-## v2.2.4 layout 域深挖批（tabs/sidebar/layout 能力增量与模板实测缺陷修复）→ 已发布
+## v2.2.4 layout 域深挖批（tabs/sidebar/layout 能力增量与实测缺陷修复）→ 已发布
 
-模板实测第三批（oas-ui-templates 集成反馈）聚焦 layout 域：tabs 右键菜单新能力、sidebar 全量补齐、layout 视口锁定，连同品牌标识定稿。
+实测第三批（oas-ui-templates 集成反馈）聚焦 layout 域：tabs 右键菜单新能力、sidebar 全量补齐、layout 视口锁定，连同品牌标识定稿。
 
 ### tabs 右键操作菜单（context-menu，新能力）
 
@@ -774,7 +774,7 @@ moreBtn 键盘打开聚焦第一项 + 列表 roving（ArrowUp/Down/Home/End/Ente
 - **resizable 内置拖拽调宽**：宿主边缘拖拽条（part=rail）实时改宽写回 `width` 属性、resize-min/max（默认 160~480）、键盘 ±8/Home/End、`oas-resize`；仅桌面非折叠态
 - **实测缺陷修复**：hover 零对比（`--oas-sidebar-item-hover-bg` text-primary 6% + active hover 加深）；嵌套子菜单两视觉缺陷（`.sub` 类名冲突激活背景溢出右缘 → `.submenu` 隔离；无图标子项缩进错乱 → 图标占位 + label 缩进父项右侧）；splitter 组合内联 style 被 update 清除（`width="100%"` 属性化）
 
-### layout 视口锁定 + sider/sidebar 宽度契约（模板实测两条）
+### layout 视口锁定 + sider/sidebar 宽度契约（实测两条）
 
 - **`viewport` 属性（新能力）**：admin 场景 opt-in——布局锁定视口高（`var(--oas-layout-height, 100dvh)`，100vh 级联回退，变量开口），顶栏/底栏固定、侧栏/内容各自独立滚动；默认整页滚动模型不变
 - **宽度契约「sider 管轨道、sidebar 填满」**：sidebar `:host-context(oas-sider)` width:100%（内嵌填满轨道 200、折叠跟随 64）、sider 内嵌卸轨道 padding 16、height:100% 打通内嵌滚动链；独立使用仍走 `--oas-sidebar-width`（220）——两变量职责清晰，改任一侧不错位
@@ -795,7 +795,7 @@ moreBtn 键盘打开聚焦第一项 + 列表 roving（ArrowUp/Down/Home/End/Ente
 
 ## v2.2.5 双通道推广 + sidebar 深挖批 + 浮层定位与 token/图标补齐 → 已发布
 
-三主线：①breadcrumb 双通道试点范式全库推广（12 组件子元素声明式通道）；②sidebar 深挖批（模板实测驱动的能力增量与系列缺陷修复）；③date-picker 浮层定位引擎接入 + radius scale 补全 + 图标增量 + chart 能力。
+三主线：①breadcrumb 双通道试点范式全库推广（12 组件子元素声明式通道）；②sidebar 深挖批（实测驱动的能力增量与系列缺陷修复）；③date-picker 浮层定位引擎接入 + radius scale 补全 + 图标增量 + chart 能力。
 
 ### 子元素声明式通道推广（架构决策落地）
 
@@ -804,7 +804,7 @@ moreBtn 键盘打开聚焦第一项 + 列表 roving（ArrowUp/Down/Home/End/Ente
 - 子元素命名对齐组件语义（oas-menu-item/oas-option 等；dropdown/context-menu extends menu 数据载体零重复；command keywords 逗号拆分/嵌套递归 page）
 - select 顺路补齐（options 模式，`<oas-option>` 对齐 HTML 原生 option 心智；收敛点在虚拟/非虚拟两条渲染路径之前）
 
-### sidebar 深挖批（模板实测驱动）
+### sidebar 深挖批（实测驱动）
 
 - **能力**：`hide-toggle`（折叠按钮 opt-out）、`accordion` 手风琴同级互斥（menu 同语义）、嵌套子树平滑动画（grid 0fr/1fr 过渡 + visibility 联动 + reduced-motion 降级）、嵌套机制无限级（3 级实证，文档建议 ≤3 级）、图标通道打通 registerIcon 正路（lookupIcon 单一查表点导出）+ `iconColor` 项级着色、`--oas-sidebar-bg` 背景开口（var 链回落）、child-selected 激活后代指示
 - **修复**：折叠态嵌套父项死交互（纯图标项化）、折叠态徽标溢出走紧凑角标、子菜单 hidden 失效根治（display:flex 压 UA 规则——视觉断言固化：computed visibility/高度而非仅属性）、父子项底色粘连（.item-block 呼吸 gap）、嵌套缩进收敛（61→49px）+ 引导线对比度（text-primary 12% 混色）
@@ -814,7 +814,7 @@ moreBtn 键盘打开聚焦第一项 + 列表 roving（ArrowUp/Down/Home/End/Ente
 
 - **date-picker 浮层定位**：fixed + computePosition 锚定（select/combobox 同模式，逃出祖先 overflow）+ `placement` 12 向 + 碰撞自动翻转 + range 双月同引擎（模板右缘被裁场景修复）
 - **radius scale 补全五档**：xs 2 / sm 4 / md 6 / lg 10 / xl 14（token 按对外能力完备性提供，不只按库内消费定档）
-- **icons +4**：organization/tree（层级语义缺口，tree 初版与 org 同质化识图复核后重画左根 list-tree）/ language/translate（语言切换与翻译语义；translate「文」字形与比例两轮用户实测修正）
+- **icons +4**：organization/tree（层级语义缺口，tree 初版与 org 同质化识图复核后重画左根 list-tree）/ language/translate（语言切换与翻译语义；translate「文」字形与比例两轮实测修正）
 - **chart**：面积图 `options.gradient` 垂直渐变填充；smooth 曲线与末数据点脱节修复（贝塞尔终点误用 + 缺收尾段）
 
 ### 验收

@@ -151,7 +151,7 @@ describe('OASModal', () => {
   })
 
   // 协作缺陷回归：dialog 用 transform 居中会让后代 position:fixed 浮层（select 等）以它为
-  // 包含块，computePosition 按视口算的 left/top 被错位解释（模板实测：modal 内下拉升到屏幕外）。
+  // 包含块，computePosition 按视口算的 left/top 被错位解释（实测：modal 内下拉升到屏幕外）。
   // 居中必须走 left/right 0 + margin auto（默认）/ inset 0 + margin auto（centered），不用 transform
   it('dialog 居中不用 transform（margin auto 方案），fixed 后代浮层包含块不被劫持', async () => {
     const el = mount({ visible: '' })
