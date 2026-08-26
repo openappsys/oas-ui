@@ -178,6 +178,27 @@ th[draggable='true'] {
 th[draggable='true']:active {
   cursor: grabbing;
 }
+/* 列拖拽重排视觉：源列变淡，落点目标列边缘显示插入指示线（插前/插后） */
+th.drag-source {
+  opacity: 0.45;
+}
+th.drop-before::before,
+th.drop-after::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--oas-color-primary);
+  border-radius: 2px;
+  z-index: 3;
+}
+th.drop-before::before {
+  left: -2px;
+}
+th.drop-after::after {
+  right: -2px;
+}
 th[data-key] {
   position: relative;
 }
