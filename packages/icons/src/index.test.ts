@@ -83,9 +83,9 @@ describe('方向类图标几何语义（SVG y 轴向下）', () => {
     expect(iconRegistry['language']).toBe(languagePath)
   })
 
-  it('translate（文A）：「文」（点+横+撇捺）+ 拉丁 A（翻译动作）', () => {
-    expect(translatePath).toContain('M4.75 3.6 L3.1 8.4')
-    expect(translatePath).toMatch(/L11\.2 7\.5 L13\.6 14\.5/)
+  it('translate（文A）：「文」（点+横+撇捺交叉成乂）+ 拉丁 A（翻译动作）', () => {
+    expect(translatePath).toContain('M5.5 4.3 L1.8 9.2')
+    expect(translatePath).toMatch(/L11\.4 6\.5 L14\.2 14\.5/)
     expect(iconRegistry['translate']).toBe(translatePath)
   })
 })
