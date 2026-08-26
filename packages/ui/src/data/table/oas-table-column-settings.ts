@@ -110,13 +110,8 @@ export class TableColumnSettingsController implements ReactiveController {
     this.clearDragMarks()
     this.dragKey = ''
     if (!drop || drop.key === fromKey) return
-    const leaves = this.hostEl.getColumns()
-    const keys = leaves.map((c) => c.key).filter((k) => k !== fromKey)
-    const idx = keys.indexOf(drop.key)
-    // 插前：置于目标列之前；插后：置于目标列之后（idx<0 兜底：头/尾）
-    if (drop.pos === 'before') keys.splice(idx < 0 ? 0 : idx, 0, fromKey)
-    else keys.splice(idx < 0 ? keys.length : idx + 1, 0, fromKey)
-    this.hostEl.setColumnOrder(keys)
+    const keys = this.hostEl.getColumns().map((c) => c.key)
+    this.hostEl.setColumnOrder(applyColumnReorder(keys, fromKey, drop.key, drop.pos))
   }
 
   private onDragEnd = (): void => {
@@ -218,6 +213,21 @@ export class TableColumnSettingsController implements ReactiveController {
 /** 便捷：构造列设置 controller（供组装类 addController 用） */
 export function createColumnSettingsController(host: HTMLElement & TableColumnSettingsHost): TableColumnSettingsController {
   return new TableColumnSettingsController(host)
+}
+
+/** 计算列拖拽重排后的列顺序：把 fromKey 移到 toKey 之前/之后（pos），返回新 keys 数组。
+    纯函数便于单测锁定重排逻辑；toKey 不存在时兜底插到最前/最后。 */
+export function applyColumnReorder(
+  keys: string[],
+  fromKey: string,
+  toKey: string,
+  pos: 'before' | 'after',
+): string[] {
+  const rest = keys.filter((k) => k !== fromKey)
+  const idx = rest.indexOf(toKey)
+  if (pos === 'before') rest.splice(idx < 0 ? 0 : idx, 0, fromKey)
+  else rest.splice(idx < 0 ? rest.length : idx + 1, 0, fromKey)
+  return rest
 }
 
 /** 列设置能力可读的列类型（透传导出，便于调用方类型引用） */

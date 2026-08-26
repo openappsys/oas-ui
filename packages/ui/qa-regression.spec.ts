@@ -6908,3 +6908,42 @@ test('sidebar 嵌套父项点击折叠子菜单：hidden 真实隐藏（grid 0fr
   expect(r.afterReclick.visibility).toBe('visible')
   expect(r.afterReclick.rectH, '再展开后子菜单高度应恢复').toBeGreaterThan(0)
 })
+
+test('table 列拖拽重排精确化：左半区插前、右半区插后 + 插入指示 + oas-column-order', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-col-setting')
+  const r = await page.evaluate(async () => {
+    const t = document.querySelector('#table-col-setting') as HTMLElement
+    const sr = t.shadowRoot!
+    const key = (k: string) => sr.querySelector(`th[data-key="${k}"]`) as HTMLElement
+    const drag = (fromKey: string, toKey: string, half: 'left' | 'right') => {
+      t.removeAttribute('column-keys')
+      const src = key(fromKey)
+      const tgt = key(toKey)
+      const dt = new DataTransfer()
+      const rect = tgt.getBoundingClientRect()
+      const clientX = half === 'left' ? rect.left + 2 : rect.right - 2
+      src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer: dt }))
+      const srcDim = src.classList.contains('drag-source')
+      tgt.dispatchEvent(new DragEvent('dragover', { bubbles: true, dataTransfer: dt, clientX }))
+      const mark = tgt.classList.contains('drop-before')
+        ? 'before'
+        : tgt.classList.contains('drop-after')
+          ? 'after'
+          : 'none'
+      tgt.dispatchEvent(new DragEvent('drop', { bubbles: true, dataTransfer: dt, clientX }))
+      src.dispatchEvent(new DragEvent('dragend', { bubbles: true }))
+      const raw = t.getAttribute('column-keys') || '[]'
+      const order = JSON.parse(raw) as string[]
+      return { srcDim, mark, order }
+    }
+    const left = drag('age', 'name', 'left') // 拖到 name 左半区 → 插前
+    const right = drag('age', 'city', 'right') // 拖到 city 右半区 → 插后
+    return { left, right }
+  })
+  expect(r.left.srcDim, '拖拽源列应有 drag-source 淡化').toBe(true)
+  expect(r.left.mark, '拖到 name 左半区应显 drop-before').toBe('before')
+  expect(r.left.order, 'age 应插入 name 之前').toEqual(['age', 'name', 'city', 'position'])
+  expect(r.right.mark, '拖到 city 右半区应显 drop-after').toBe('after')
+  expect(r.right.order, 'age 应插入 city 之后').toEqual(['name', 'city', 'age', 'position'])
+})

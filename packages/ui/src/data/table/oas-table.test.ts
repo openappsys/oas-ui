@@ -3,6 +3,7 @@ import { setLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
 import { OASTable } from './index.js'
+import { applyColumnReorder } from './oas-table-column-settings.js'
 
 const COLUMNS = JSON.stringify([
   { key: 'name', title: '姓名', sortable: true },
@@ -1496,5 +1497,26 @@ describe('OASTable 合并单元格（merge）', () => {
     // 不同值不合并：两行各保留 dept td
     expect(trs[0]!.querySelector('td[data-col="dept"]')).not.toBeNull()
     expect(trs[1]!.querySelector('td[data-col="dept"]')).not.toBeNull()
+  })
+})
+
+describe('列拖拽重排顺序计算（applyColumnReorder）', () => {
+  const BASE = ['id', 'name', 'age', 'city']
+
+  it('插前：fromKey 移到 toKey 之前', () => {
+    expect(applyColumnReorder(BASE, 'age', 'name', 'before')).toEqual(['id', 'age', 'name', 'city'])
+  })
+
+  it('插后：fromKey 移到 toKey 之后', () => {
+    expect(applyColumnReorder(BASE, 'age', 'city', 'after')).toEqual(['id', 'name', 'city', 'age'])
+  })
+
+  it('toKey 不存在：插前兜底到最前 / 插后兜底到最后', () => {
+    expect(applyColumnReorder(BASE, 'age', 'zzz', 'before')).toEqual(['age', 'id', 'name', 'city'])
+    expect(applyColumnReorder(BASE, 'age', 'zzz', 'after')).toEqual(['id', 'name', 'city', 'age'])
+  })
+
+  it('fromKey 已在目标位置：顺序不变', () => {
+    expect(applyColumnReorder(BASE, 'age', 'name', 'before')).toEqual(['id', 'age', 'name', 'city'])
   })
 })
