@@ -48,7 +48,7 @@ document.documentElement.dataset.theme = 'high-contrast'
 | Border / bg  | `--oas-color-border`, `--oas-color-bg(-hover/-disabled)`, `--oas-color-overlay`              |
 | Font size    | `--oas-font-size-xs/sm/md/lg/xl`                                                             |
 | Spacing      | `--oas-space-1…6` (4px base)                                                                 |
-| Radius       | `--oas-radius-xs/sm/md/lg`                                                                      |
+| Radius       | `--oas-radius-xs/sm/md/lg/xl`                                                                      |
 | Control      | `--oas-control-height-xs/sm/md/lg/xl`                                                        |
 | Motion       | `--oas-transition-fast/base`, `--oas-ease-out/in-out`                                        |
 | Z-index      | `--oas-z-dropdown/sticky/fixed/overlay/modal/message/toast/tooltip`                          |

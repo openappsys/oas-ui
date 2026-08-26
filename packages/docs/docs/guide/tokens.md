@@ -48,7 +48,7 @@ document.documentElement.dataset.theme = 'high-contrast'
 | 边框/背景 | `--oas-color-border`、`--oas-color-bg(-hover/-disabled)`、`--oas-color-overlay`             |
 | 字号      | `--oas-font-size-xs/sm/md/lg/xl`                                                            |
 | 间距      | `--oas-space-1…6`（4px 基准）                                                               |
-| 圆角      | `--oas-radius-xs/sm/md/lg`                                                                     |
+| 圆角      | `--oas-radius-xs/sm/md/lg/xl`                                                                     |
 | 控件      | `--oas-control-height-xs/sm/md/lg/xl`                                                       |
 | 动效      | `--oas-transition-fast/base`、`--oas-ease-out/in-out`                                       |
 | 层级      | `--oas-z-dropdown/sticky/fixed/overlay/modal/message/toast/tooltip`                         |
