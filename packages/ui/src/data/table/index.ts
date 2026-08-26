@@ -1,4 +1,5 @@
 import '@oas-ui/i18n'
+import '../../layout/pagination/index.js'
 import {
   OASTableBase,
   type TableColumn,
