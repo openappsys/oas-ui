@@ -100,7 +100,7 @@
 
 <DemoBlock title="嵌套子菜单（items.children）">
   <div style="height: 340px; width: 100%; display: flex">
-    <oas-sidebar active="users" items='[{"label":"仪表盘","value":"dash","icon":"📊"},{"label":"业务管理","value":"biz","icon":"📦","children":[{"label":"订单管理","value":"orders"},{"label":"商品管理","value":"goods"},{"label":"用户管理","value":"users"}]},{"label":"系统设置","value":"sys","icon":"⚙️","children":[{"label":"权限管理","value":"perm"},{"label":"审计日志","value":"audit"}]}]'></oas-sidebar>
+    <oas-sidebar active="users" items='[{"label":"仪表盘","value":"dash","icon":"📊"},{"label":"业务管理","value":"biz","icon":"📦","children":[{"label":"订单管理","value":"orders","icon":"edit"},{"label":"商品管理","value":"goods","icon":"heart"},{"label":"用户管理","value":"users","icon":"user"}]},{"label":"系统设置","value":"sys","icon":"⚙️","children":[{"label":"权限管理","value":"perm","icon":"lock"},{"label":"审计日志","value":"audit","icon":"clock"}]}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
       「业务管理」因含激活子项（用户管理）自动展开；点击父项只切换展开，点击子项才派发选择。
     </div>
