@@ -1328,3 +1328,56 @@ describe('OASTable 多级表头（children）', () => {
     expect(rows(el)[0]!.querySelector('td.check-cell')).not.toBeNull()
   })
 })
+
+describe('OASTable 分页（pagination）', () => {
+  const PAG_COLS = JSON.stringify([
+    { key: 'name', title: '姓名' },
+    { key: 'age', title: '年龄' },
+  ])
+  const PAG_DATA = JSON.stringify(
+    Array.from({ length: 12 }, (_, i) => ({ name: 'n' + i, age: i })),
+  )
+
+  it('#13 开启分页：只渲染当前页（page-size 行），并挂载 oas-pagination', () => {
+    const el = mount({ columns: PAG_COLS, data: PAG_DATA, pagination: '', 'page-size': '5' })
+    expect(rows(el).length).toBe(5)
+    const pag = el.shadowRoot!.querySelector('.pagination oas-pagination')
+    expect(pag).not.toBeNull()
+    expect(pag!.getAttribute('total')).toBe('12')
+    expect(pag!.getAttribute('page-size')).toBe('5')
+    expect(pag!.getAttribute('current')).toBe('1')
+    // 未开启分页时不挂载分页器
+    const el2 = mount({ columns: PAG_COLS, data: PAG_DATA })
+    expect(el2.shadowRoot!.querySelector('.pagination oas-pagination')).toBeNull()
+  })
+
+  it('#13 翻页：写回 current 并派发 page-change，重渲染下一页', () => {
+    const el = mount({ columns: PAG_COLS, data: PAG_DATA, pagination: '', 'page-size': '5' })
+    let detail: unknown
+    el.addEventListener('oas-page-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    const pag = el.shadowRoot!.querySelector('.pagination oas-pagination')!
+    pag.dispatchEvent(new CustomEvent('oas-change', { detail: { page: 2 }, bubbles: true }))
+    expect(el.getAttribute('current')).toBe('2')
+    expect(rows(el).length).toBe(5)
+    expect(rows(el)[0]!.textContent).toContain('n5')
+    expect(detail).toEqual({ page: 2, pageSize: 5 })
+  })
+
+  it('#13 全局排序后分页：排序作用于全量数据再切片', () => {
+    const el = mount({
+      columns: PAG_COLS,
+      data: PAG_DATA,
+      pagination: '',
+      'page-size': '5',
+      'sort-key': 'age',
+      'sort-order': 'asc',
+    })
+    // 全局 age 升序，第 1 页为 age 0-4（n0..n4）
+    expect(rows(el)[0]!.textContent).toContain('n0')
+    // 跳到第 3 页：只剩 age 10-11 两行
+    el.setAttribute('current', '3')
+    expect(rows(el).length).toBe(2)
+    expect(rows(el)[0]!.textContent).toContain('n10')
+    expect(rows(el)[1]!.textContent).toContain('n11')
+  })
+})
