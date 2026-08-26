@@ -1099,11 +1099,15 @@ export class OASSidebar extends OASElement {
 
   /** 图标名（查表：registerIcon 自定义优先，其次内置注册表）→ 内联 SVG。
    *  iconColor 显式时固定该色（优先于禁用/激活态默认色）；缺省 currentColor 随态着色。
-   *  注册的彩色 SVG（path 自带 stroke/fill 属性）天然兼容：元素级属性压继承，外层 stroke 不干扰 */
+   *  内置单色 path 自带 stroke="currentColor"——iconColor 显式时需把 path 的 currentColor 也替换，
+   *  否则 path 元素级属性压过 svg 外层 stroke，颜色永远 currentColor（内置图标配 iconColor 场景）；
+   *  自定义注册的彩色 SVG（path 自带具体色 stroke/fill）天然兼容，无需替换 */
   private iconSvg(name: string, iconColor?: string): string | null {
     const path = lookupIcon(name)
     if (!path) return null
-    return `<svg viewBox="0 0 16 16" width="1.25em" height="1.25em" aria-hidden="true" focusable="false" fill="none" stroke="${iconColor || 'currentColor'}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`
+    const stroke = iconColor || 'currentColor'
+    const coloredPath = iconColor ? path.replace(/stroke="currentColor"/g, `stroke="${stroke}"`) : path
+    return `<svg viewBox="0 0 16 16" width="1.25em" height="1.25em" aria-hidden="true" focusable="false" fill="none" stroke="${stroke}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${coloredPath}</svg>`
   }
 
   private parseItems(): void {

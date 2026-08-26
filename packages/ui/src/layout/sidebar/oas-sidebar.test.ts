@@ -1146,6 +1146,17 @@ describe('OASSidebar 图标通道与着色', () => {
     expect(svgs[1]!.getAttribute('stroke')).toBe('currentColor')
   })
 
+  it('iconColor 显式时内置单色 path 的 currentColor 也被替换为该色（否则 path 压过 svg 外层）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items: JSON.stringify([{ label: '一', value: 'a', icon: 'star', iconColor: '#f50' }]),
+    })
+    const path = el.shadowRoot!.querySelector<SVGPathElement>('.icon svg path')
+    expect(path!.getAttribute('stroke'), '内置 path 的 currentColor 应被 iconColor 替换').toBe(
+      '#f50',
+    )
+  })
+
   it('彩色自定义 SVG（path 自带 stroke 属性）保留自带色，外层不强制覆盖', () => {
     stubMatchMedia(false)
     registerIcon('sidebar-color-heart', '<path d="M2 2 L14 14" stroke="#0a0" fill="none"/>')
