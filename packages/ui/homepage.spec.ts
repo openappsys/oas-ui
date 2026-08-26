@@ -95,9 +95,7 @@ test.describe('官网首页（重设计版）', () => {
 
   // 回归：性能速览与「三行代码」屏之间曾缺渐变分隔线（home-cta 两个伪元素被
   // 网格/光晕占用，挂不了 .home-section::before，改显式 .home-divider 元素承载）
-  test('各屏分隔光带齐全：含性能速览→三行代码交界（.home-divider 回归）', async ({
-    page,
-  }) => {
+  test('各屏分隔光带齐全：含性能速览→三行代码交界（.home-divider 回归）', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const divider = page.locator('.home-cta > .home-divider')
     await expect(divider).toBeAttached()

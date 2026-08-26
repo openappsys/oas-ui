@@ -350,7 +350,9 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     // 隐藏走 grid 0fr + visibility（可动画）——display 恒 grid（[hidden] 不再 display:none），
     // visibility:hidden 负责出渲染树/无障碍树/防聚焦（替代 UA display:none 的语义兜底）
     const stl = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(stl, 'submenu 应为 grid 布局（0fr/1fr 过渡的前提）').toMatch(/\.submenu\s*\{[^}]*display:\s*grid/)
+    expect(stl, 'submenu 应为 grid 布局（0fr/1fr 过渡的前提）').toMatch(
+      /\.submenu\s*\{[^}]*display:\s*grid/,
+    )
     expect(stl, 'collapsed 时 visibility:hidden（出渲染树防聚焦）').toMatch(
       /\.submenu\s*\{[^}]*visibility:\s*hidden/,
     )
@@ -368,7 +370,8 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
   it('子树展开平滑动画：grid-template-rows 0fr/1fr 过渡 + visibility 联动 + reduced-motion 降级 + chevron 过渡', () => {
     stubMatchMedia(false)
     const el = mount({
-      items: '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
+      items:
+        '[{"label":"管理","value":"admin","icon":"star","children":[{"label":"用户","value":"users"}]}]',
     })
     const stl = el.shadowRoot!.querySelector('style')!.textContent!
     // 高度过渡：0fr（收起）↔ 1fr（展开）
@@ -404,8 +407,18 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     const bizAfter = itemsAfter.find((i) => i.dataset.value === 'biz')!
     const sysAfter = itemsAfter.find((i) => i.dataset.value === 'sys')!
     expect(sysAfter.getAttribute('aria-expanded'), '展开 sys 成功').toBe('true')
-    expect(bizAfter.getAttribute('aria-expanded'), 'accordion 同级互斥：biz 应被自动收起').toBe('false')
-    expect((el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="biz"]')!.closest('.item-block')!.querySelector('[part="submenu"]') as HTMLElement).hidden, 'biz 子树应隐藏').toBe(true)
+    expect(bizAfter.getAttribute('aria-expanded'), 'accordion 同级互斥：biz 应被自动收起').toBe(
+      'false',
+    )
+    expect(
+      (
+        el
+          .shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="biz"]')!
+          .closest('.item-block')!
+          .querySelector('[part="submenu"]') as HTMLElement
+      ).hidden,
+      'biz 子树应隐藏',
+    ).toBe(true)
     // 无 accordion 对照：两者可同时展开
     const el2 = mount({
       items:
@@ -414,8 +427,12 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     const items2 = [...el2.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
     items2.find((i) => i.dataset.value === 'biz')!.click()
     items2.find((i) => i.dataset.value === 'sys')!.click()
-    expect(items2.find((i) => i.dataset.value === 'biz')!.getAttribute('aria-expanded')).toBe('true')
-    expect(items2.find((i) => i.dataset.value === 'sys')!.getAttribute('aria-expanded')).toBe('true')
+    expect(items2.find((i) => i.dataset.value === 'biz')!.getAttribute('aria-expanded')).toBe(
+      'true',
+    )
+    expect(items2.find((i) => i.dataset.value === 'sys')!.getAttribute('aria-expanded')).toBe(
+      'true',
+    )
     // observedAttributes 覆盖
     expect(OASSidebar.observedAttributes).toContain('accordion')
   })
@@ -423,11 +440,12 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
   it('3 级嵌套实证：逐级渲染/逐级展开/激活级联自动展开与 child-selected（机制无限级，递归渲染）', () => {
     stubMatchMedia(false)
     const deep = [
-      { label: 'L1', value: 'l1', icon: 'star', children: [
-        { label: 'L2', value: 'l2', children: [
-          { label: 'L3', value: 'l3' },
-        ] },
-      ] },
+      {
+        label: 'L1',
+        value: 'l1',
+        icon: 'star',
+        children: [{ label: 'L2', value: 'l2', children: [{ label: 'L3', value: 'l3' }] }],
+      },
     ]
     const el = mount({ items: JSON.stringify(deep) })
     const sr = el.shadowRoot!
@@ -529,7 +547,9 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
       active: 'users',
     })
     const parent = el.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
-    expect(parent.classList.contains('child-selected'), '激活后代的父项应带 child-selected').toBe(true)
+    expect(parent.classList.contains('child-selected'), '激活后代的父项应带 child-selected').toBe(
+      true,
+    )
     expect(parent.getAttribute('aria-current'), '父项不是当前页，不应有 aria-current').toBeNull()
     // 展开态对照：child-selected 也应有（激活后代可见性一致）
     const el2 = mount({
@@ -538,13 +558,17 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
       active: 'users',
     })
     const p2 = el2.shadowRoot!.querySelector<HTMLElement>('[part="item"]')!
-    expect(p2.classList.contains('child-selected'), '展开态激活后代的父项也应带 child-selected').toBe(true)
+    expect(
+      p2.classList.contains('child-selected'),
+      '展开态激活后代的父项也应带 child-selected',
+    ).toBe(true)
   })
 
   it('父项与子树间有呼吸（.item-block gap：父项底色与子项 hover 底色不贴死）', () => {
     stubMatchMedia(false)
     const el = mount({
-      items: '[{"label":"管理","value":"biz","icon":"star","children":[{"label":"用户","value":"users"}]}]',
+      items:
+        '[{"label":"管理","value":"biz","icon":"star","children":[{"label":"用户","value":"users"}]}]',
     })
     const stl = el.shadowRoot!.querySelector('style')!.textContent!
     expect(stl, '.item-block 应有 flex+gap 使父项与子树留呼吸').toMatch(
@@ -566,7 +590,10 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
 
   it('折叠态徽标为图标右上角紧凑角标（绝对定位不撑出 64px 图标条；默认药丸会溢出成白条）', () => {
     stubMatchMedia(false)
-    const el = mount({ collapsed: '', items: '[{"label":"收件箱","value":"inbox","icon":"star","badge":"12"}]' })
+    const el = mount({
+      collapsed: '',
+      items: '[{"label":"收件箱","value":"inbox","icon":"star","badge":"12"}]',
+    })
     const stl = el.shadowRoot!.querySelector('style')!.textContent!
     expect(stl, '折叠态徽标应绝对定位为角标').toMatch(
       /:host\(:not\(\[data-mobile\]\)\[collapsed\]\)\s+\.item-badge\s*\{[^}]*position:\s*absolute/,
@@ -1059,8 +1086,13 @@ describe('OASSidebar 子元素声明式通道', () => {
         },
       ]),
     })
-    const pItems = elItems.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="biz"]')!
-    expect(elItems.shadowRoot!.querySelector('[part="submenu"]'), 'items 通道折叠态同样不渲染子树').toBeNull()
+    const pItems = elItems.shadowRoot!.querySelector<HTMLElement>(
+      '[part="item"][data-value="biz"]',
+    )!
+    expect(
+      elItems.shadowRoot!.querySelector('[part="submenu"]'),
+      'items 通道折叠态同样不渲染子树',
+    ).toBeNull()
     expect(pItems.querySelector('.chevron'), 'items 通道折叠态同样无箭头').toBeNull()
   })
 })
@@ -1155,7 +1187,9 @@ describe('OASSidebar 图标通道与着色', () => {
     document.body.appendChild(el)
     const stl = el.shadowRoot!.querySelector('style')!.textContent!
     // 默认/inset 回落 bg-hover、floating 回落 bg——var 链锚定基础 token（主题/暗色/品牌定制自动传导）
-    expect(stl).toMatch(/:host\s*\{[^}]*background:\s*var\(--oas-sidebar-bg,\s*var\(--oas-color-bg-hover\)\)/)
+    expect(stl).toMatch(
+      /:host\s*\{[^}]*background:\s*var\(--oas-sidebar-bg,\s*var\(--oas-color-bg-hover\)\)/,
+    )
     expect(stl).toMatch(
       /:host\(\[variant='floating'\]\)\s*\{[^}]*background:\s*var\(--oas-sidebar-bg,\s*var\(--oas-color-bg\)\)/,
     )

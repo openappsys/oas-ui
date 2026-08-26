@@ -1128,10 +1128,12 @@ describe('子元素声明式通道', () => {
   })
 
   it('items 属性显式设置时优先（子元素被忽略）', () => {
-    const el = mountMenuChildren(
-      `<oas-menu-item value="home">首页</oas-menu-item>`,
-      { items: JSON.stringify([{ label: '数据项', value: 'data' }, { label: '末项', value: 'last' }]) },
-    )
+    const el = mountMenuChildren(`<oas-menu-item value="home">首页</oas-menu-item>`, {
+      items: JSON.stringify([
+        { label: '数据项', value: 'data' },
+        { label: '末项', value: 'last' },
+      ]),
+    })
     const labels = items(el).map((i) => i.querySelector('.label')?.textContent)
     expect(labels).toEqual(['数据项', '末项'])
     expect(el.shadowRoot!.querySelector('[data-value="home"]')).toBeNull()

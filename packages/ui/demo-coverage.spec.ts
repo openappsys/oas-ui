@@ -403,13 +403,13 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   'bottom-navigation': [
     ['oas-bottom-navigation [part="tab"]', 'click:n1', '点非激活 tab → oas-change'],
   ],
-    sidebar: [
-      ['oas-sidebar [part="toggle"]', 'domclick', '折叠开关 → oas-collapse'],
-      ['oas-sidebar [part="item"]', 'domclick', '菜单项 → oas-select'],
-      ['oas-sidebar [part="action"]', 'domclick', '项操作按钮 → oas-action'],
-      ['oas-sidebar[resizable] [part="rail"]', 'click', 'rail 真实点击聚焦（自动滚动入视口）'],
-      ['oas-sidebar[resizable] [part="rail"]', 'press:ArrowRight', '方向键调宽 → oas-resize'],
-    ],
+  sidebar: [
+    ['oas-sidebar [part="toggle"]', 'domclick', '折叠开关 → oas-collapse'],
+    ['oas-sidebar [part="item"]', 'domclick', '菜单项 → oas-select'],
+    ['oas-sidebar [part="action"]', 'domclick', '项操作按钮 → oas-action'],
+    ['oas-sidebar[resizable] [part="rail"]', 'click', 'rail 真实点击聚焦（自动滚动入视口）'],
+    ['oas-sidebar[resizable] [part="rail"]', 'press:ArrowRight', '方向键调宽 → oas-resize'],
+  ],
   image: [['oas-image[preview] [part="wrapper"]', 'click', '点图 → oas-preview']],
   code: [
     ['oas-code [part="copy"]', 'click', '无剪贴板权限 → oas-copy-error'],

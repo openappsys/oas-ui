@@ -998,7 +998,9 @@ export class OASSidebar extends OASElement {
               )
               if (sibBtn) {
                 sibBtn.setAttribute('aria-expanded', 'false')
-                const sibSub = sibBtn.closest('.item-block')?.querySelector<HTMLElement>('[part="submenu"]')
+                const sibSub = sibBtn
+                  .closest('.item-block')
+                  ?.querySelector<HTMLElement>('[part="submenu"]')
                 if (sibSub) sibSub.hidden = true
               }
             }
@@ -1071,9 +1073,7 @@ export class OASSidebar extends OASElement {
   /** accordion 同级互斥：返回与 value 同级（同一父数组内）的其他可展开父项 value */
   private siblingValuesOf(value: string): string[] {
     const findSiblings = (entries: SidebarEntry[]): string[] | null => {
-      const values = entries
-        .filter((e): e is SidebarItem => !('type' in e))
-        .map((i) => i.value)
+      const values = entries.filter((e): e is SidebarItem => !('type' in e)).map((i) => i.value)
       if (values.includes(value)) {
         return entries
           .filter((e): e is SidebarItem => !('type' in e))

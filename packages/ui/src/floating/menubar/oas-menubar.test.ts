@@ -1214,10 +1214,7 @@ describe('typeaheadTimer 断开清理', () => {
 // 与 breadcrumb 试点同范式：items 属性显式设置时数据驱动优先，否则解析子元素收敛到同一渲染路径
 
 /** 子元素通道挂载：innerHTML 填 light DOM 子元素后 append（触发 render → 解析），不设 items 属性 */
-function mountMenubarChildren(
-  html: string,
-  attrs: Record<string, string> = {},
-): OASMenubar {
+function mountMenubarChildren(html: string, attrs: Record<string, string> = {}): OASMenubar {
   const el = document.createElement('oas-menubar') as OASMenubar
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
   el.innerHTML = html
@@ -1253,26 +1250,21 @@ describe('子元素声明式通道', () => {
     )!
     expect(fileSub.querySelector('.group-label')).not.toBeNull()
     expect(fileSub.querySelectorAll('[part="divider"]').length).toBe(1)
-    const newItem = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="item"][data-value="new"]',
-    )!
+    const newItem = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
     expect(newItem.getAttribute('role')).toBe('menuitemradio')
     // 嵌套子菜单：点「缩放」展开级联
     el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="zoom"]')!.click()
     expect(openSubmenus(el).length).toBe(2)
-    const zoomIn = el.shadowRoot!.querySelector<HTMLElement>(
-      '[part="item"][data-value="zoom-in"]',
-    )!
+    const zoomIn = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="zoom-in"]')!
     expect(zoomIn).not.toBeNull()
     zoomIn.click()
     expect(el.getAttribute('value')).toBe('zoom-in')
   })
 
   it('items 属性显式设置时优先（子元素被忽略）', () => {
-    const el = mountMenubarChildren(
-      `<oas-menubar-item value="home">首页</oas-menubar-item>`,
-      { items: JSON.stringify([{ label: '数据项', value: 'data' }]) },
-    )
+    const el = mountMenubarChildren(`<oas-menubar-item value="home">首页</oas-menubar-item>`, {
+      items: JSON.stringify([{ label: '数据项', value: 'data' }]),
+    })
     expect(topItems(el).length).toBe(1)
     expect(topItems(el)[0]!.dataset.value).toBe('data')
     expect(topItems(el)[0]!.textContent).toBe('数据项')
@@ -1326,9 +1318,7 @@ describe('子元素声明式通道', () => {
     el.appendChild(item)
     await new Promise((r) => setTimeout(r, 0))
     expect(topItems(el).length).toBe(2)
-    expect(
-      el.shadowRoot!.querySelector('[part="top-item"][data-value="edit"]'),
-    ).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="top-item"][data-value="edit"]')).not.toBeNull()
   })
 
   it('value 勾选语义：radio 组单选 + checkbox 数组（子元素通道下与 items 通道一致）', () => {
