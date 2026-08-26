@@ -6985,6 +6985,11 @@
         "observed": true
       },
       {
+        "name": "accordion",
+        "type": "boolean",
+        "observed": true
+      },
+      {
         "name": "items",
         "default": "[]",
         "observed": true

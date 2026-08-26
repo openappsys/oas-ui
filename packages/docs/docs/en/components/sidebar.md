@@ -96,7 +96,16 @@ Menu `items` support an optional `group` field: consecutive items in the same gr
 
 ## Nested submenus
 
-Items support `children` nesting: a parent item toggles expansion on click (without firing `oas-select`); a parent containing the active child auto-expands. Subtrees are hidden in the collapsed icon strip.
+Items support `children` nesting: a parent item toggles expansion on click (without firing `oas-select`); a parent containing the active child auto-expands. Subtrees are hidden in the collapsed icon strip. Expand/collapse runs a smooth height animation (degrades automatically under `prefers-reduced-motion`); `accordion` makes siblings mutually exclusive — expanding one parent collapses the others at the same level (great for long navs that keep only one section open).
+
+<DemoBlock title="Accordion (siblings mutually exclusive)">
+  <div style="height: 380px; width: 100%; display: flex">
+    <oas-sidebar accordion items='[{"label":"Dashboard","value":"dash","icon":"star"},{"label":"Business","value":"biz","icon":"edit","children":[{"label":"Orders","value":"orders","icon":"edit"},{"label":"Products","value":"goods","icon":"heart"},{"label":"Users","value":"users","icon":"user"}]},{"label":"Marketing","value":"mkt","icon":"mail","children":[{"label":"Campaigns","value":"acts","icon":"calendar"},{"label":"Coupons","value":"coupon","icon":"star"}]},{"label":"Settings","value":"sys","icon":"gear","children":[{"label":"Permissions","value":"perm","icon":"lock"},{"label":"Audit log","value":"audit","icon":"clock"}]}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      Click "Business", "Marketing", "Settings" in turn — only one section stays open at a time.
+    </div>
+  </div>
+</DemoBlock>
 
 <DemoBlock title="Nested submenus (items.children)">
   <div style="height: 340px; width: 100%; display: flex">
@@ -318,6 +327,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `accordion` | Accordion mode (when present: expanding one parent collapses the other parents at the same level; multiple parents can be open by default) | `boolean` | — |
 | `active` | Value of the currently-highlighted menu item (controlled: set/clear immediately re-renders highlight) | `string` | — |
 | `collapsed` | Controlled collapse to an icon strip (present means collapsed) | `boolean` | — |
 | `drawer-open` | Mobile drawer open state (controlled: set opens, clear closes; auto-removed when breakpoint returns to desktop) | `boolean` | — |

@@ -301,23 +301,42 @@ aside {
 .item-badge + .chevron {
   margin-inline-start: var(--oas-space-2, 8px);
 }
-/* 嵌套子菜单容器：缩进 + 左侧引导线（类名 .submenu 与嵌套按钮 .item.sub 区分，避免样式串扰） */
+/* 嵌套子菜单容器：缩进 + 左侧引导线（类名 .submenu 与嵌套按钮 .item.sub 区分，避免样式串扰）。
+   展开/收起平滑动画：grid-template-rows 0fr↔1fr 过渡（免 JS 测量），visibility 联动
+   （收起时出渲染树/无障碍树/防聚焦——替代 display:none 的语义兜底，但可过渡） */
 .submenu {
-  display: flex;
-  flex-direction: column;
-  gap: var(--oas-space-1, 4px);
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
   margin-inline-start: calc(var(--oas-control-height-md, 32px) / 2 + var(--oas-space-3, 12px));
   /* 缩进收敛（实测评估）：容器 padding 12→6，配合子项图标占位 24→18，
      子项 label 距引导线 61→49px——无图标子项不再显空肥，层级仍清晰 */
   padding-inline-start: var(--oas-space-1_5, 6px);
-  /* 引导线对比度：原 --oas-color-border（228,228,231）压侧栏灰底（244,244,245）
-     亮度差仅 16 几乎不可见（识图复核抓出）；改 text-primary 12% 混色，亮暗双主题自适应 */
+  /* 引导线对比度：text-primary 12% 混色（亮暗双主题自适应） */
   border-inline-start: 1px solid color-mix(in srgb, var(--oas-color-text-primary) 12%, transparent);
+  transition:
+    grid-template-rows var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1)),
+    visibility 0s linear var(--oas-transition-base, 180ms);
 }
-/* hidden 属性必须显式声明：UA 的 [hidden]{display:none} 会被上方作者级 display:flex 压过，
-   缺这条则 subWrap.hidden=true 只改属性不改渲染（子菜单永远可见——用户实测点击不折叠） */
-.submenu[hidden] {
-  display: none;
+.submenu:not([hidden]) {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1)),
+    visibility 0s;
+}
+.submenu-inner {
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-1, 4px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .submenu,
+  .submenu:not([hidden]) {
+    transition: none;
+  }
 }
 /* 父项与子树容器：btn 与 submenu 之间留呼吸——无 gap 时父项底色（active/child-selected）
    与子项 hover 底色上下贴死「黏在一起」（用户实测观感） */
@@ -545,6 +564,7 @@ export class OASSidebar extends OASElement {
   static override get observedAttributes(): string[] {
     return [
       'collapsed',
+      'accordion',
       'items',
       'width',
       'mobile-breakpoint',
@@ -947,20 +967,44 @@ export class OASSidebar extends OASElement {
       subWrap.className = 'submenu'
       subWrap.setAttribute('part', 'submenu')
       subWrap.hidden = !expanded
+      // grid 高度动画的必需结构：内层 overflow 裁剪（0fr 行高裁剪内容）
+      const subInner = document.createElement('div')
+      subInner.className = 'submenu-inner'
+      subWrap.appendChild(subInner)
       for (const child of item.children!) {
         if ('type' in child && (child as SidebarDivider).type === 'divider') {
           const d = document.createElement('div')
           d.className = 'divider'
           d.setAttribute('part', 'divider')
           d.setAttribute('role', 'separator')
-          subWrap.appendChild(d)
+          subInner.appendChild(d)
         } else {
-          subWrap.appendChild(this.renderItem(child as SidebarItem, collapsed, active, depth + 1))
+          subInner.appendChild(this.renderItem(child as SidebarItem, collapsed, active, depth + 1))
         }
       }
       btn.addEventListener('click', () => {
-        if (this.expanded.has(item.value)) this.expanded.delete(item.value)
-        else this.expanded.add(item.value)
+        if (this.expanded.has(item.value)) {
+          this.expanded.delete(item.value)
+        } else {
+          // accordion 同级互斥（与 menu 同语义）：展开前收起同级的其他展开父项。
+          // 不做全量 update（重渲染会让新 submenu 生而展开、过渡无初态可播）——
+          // 外科手术式同步被收起项的 DOM（同元素 hidden/aria 切换，双方过渡都能播）
+          if (this.hasAttr('accordion')) {
+            for (const sib of this.siblingValuesOf(item.value)) {
+              if (!this.expanded.has(sib)) continue
+              this.expanded.delete(sib)
+              const sibBtn = this.shadow.querySelector<HTMLElement>(
+                `[part="item"][data-value="${sib}"]`,
+              )
+              if (sibBtn) {
+                sibBtn.setAttribute('aria-expanded', 'false')
+                const sibSub = sibBtn.closest('.item-block')?.querySelector<HTMLElement>('[part="submenu"]')
+                if (sibSub) sibSub.hidden = true
+              }
+            }
+          }
+          this.expanded.add(item.value)
+        }
         btn.setAttribute('aria-expanded', String(this.expanded.has(item.value)))
         subWrap!.hidden = !this.expanded.has(item.value)
       })
@@ -1022,6 +1066,31 @@ export class OASSidebar extends OASElement {
       if (item.children && this.findActiveChild(item.children, active)) return true
     }
     return false
+  }
+
+  /** accordion 同级互斥：返回与 value 同级（同一父数组内）的其他可展开父项 value */
+  private siblingValuesOf(value: string): string[] {
+    const findSiblings = (entries: SidebarEntry[]): string[] | null => {
+      const values = entries
+        .filter((e): e is SidebarItem => !('type' in e))
+        .map((i) => i.value)
+      if (values.includes(value)) {
+        return entries
+          .filter((e): e is SidebarItem => !('type' in e))
+          .filter((i) => i.value !== value && !!i.children?.length)
+          .map((i) => i.value)
+      }
+      for (const e of entries) {
+        if ('type' in e) continue
+        const item = e as SidebarItem
+        if (item.children) {
+          const found = findSiblings(item.children)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    return findSiblings(this._items) ?? []
   }
 
   private chevronSvg(): string {
