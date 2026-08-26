@@ -347,6 +347,11 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(parent.getAttribute('aria-expanded')).toBe('false')
     expect(sub.hidden).toBe(true)
     expect(sub.querySelectorAll('[part="item"]').length).toBe(2)
+    // hidden 属性必须有作者级 display:none 兜底（否则被 .submenu{display:flex} 压过、视觉不隐藏）
+    const stl = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(stl, '.submenu[hidden] 显式 display:none 兜底（hidden 属性才真生效）').toMatch(
+      /\.submenu\[hidden\]\s*\{\s*display:\s*none/,
+    )
     let selectCount = 0
     el.addEventListener('oas-select', () => selectCount++)
     parent.click()
