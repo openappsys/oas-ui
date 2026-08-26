@@ -29,6 +29,12 @@ export interface TableColumn {
   ellipsis?: boolean
   /** 多级表头：子列（有 children 的列是组表头，不渲染数据单元格，按子列 colspan 合并；数据/排序/显隐/拖拽作用于叶子列） */
   children?: TableColumn[]
+  /** 可过滤：表头显示过滤触发器（配合表格级 filter-values 过滤行） */
+  filterable?: boolean
+  /** 过滤选项列表（缺省时由数据列唯一值推导） */
+  filters?: Array<{ label: string; value: string | number }>
+  /** 自定义过滤匹配器：返回该行是否命中过滤值；缺省按字符串严格相等 */
+  filterMatch?: (cell: unknown, filterValue: string | number) => boolean
 }
 
 /** 行内编辑 select 选项 */
@@ -419,6 +425,74 @@ th[data-editing-col='true'] {
 .pagination:empty {
   display: none;
 }
+.filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: var(--oas-color-text-secondary);
+  cursor: pointer;
+  vertical-align: middle;
+  padding: 0;
+  border-radius: var(--oas-radius-xs, 4px);
+}
+.filter-btn:hover {
+  color: var(--oas-color-primary);
+  background: var(--oas-color-bg-hover);
+}
+.filter-panel {
+  position: fixed;
+  z-index: 1000;
+  min-width: 140px;
+  padding: var(--oas-space-2);
+  background: var(--oas-color-bg);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  box-shadow: var(--oas-shadow-md, 0 6px 16px rgba(0, 0, 0, 0.12));
+  display: flex;
+  flex-direction: column;
+  gap: var(--oas-space-1);
+  font-size: var(--oas-font-size-sm);
+  max-height: 260px;
+  overflow: auto;
+}
+.filter-title {
+  font-weight: 600;
+  color: var(--oas-color-text-secondary);
+  margin-bottom: var(--oas-space-1);
+}
+.filter-option {
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: var(--oas-space-1) var(--oas-space-2);
+  border-radius: var(--oas-radius-sm);
+  cursor: pointer;
+  color: var(--oas-color-text-primary);
+  font: inherit;
+}
+.filter-option:hover,
+.filter-option[aria-selected='true'] {
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-primary);
+}
+.filter-clear {
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: var(--oas-space-1) var(--oas-space-2);
+  border-radius: var(--oas-radius-sm);
+  cursor: pointer;
+  color: var(--oas-color-danger);
+  font: inherit;
+}
+.filter-clear:hover {
+  background: var(--oas-color-bg-hover);
+}
 .action-btn.danger {
   color: var(--oas-color-text-secondary);
 }
@@ -433,6 +507,7 @@ th[data-editing-col='true'] {
 
 const CHECK_CELL_WIDTH = 40
 const EXPAND_CELL_WIDTH = 40
+const FILTER_ICON = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M4.5 6.5h7M6.5 10h3"/></svg>'
 
 export class OASTableBase extends OASElement {
   static override get observedAttributes(): string[] {
@@ -459,6 +534,7 @@ export class OASTableBase extends OASElement {
       'pagination',
       'page-size',
       'current',
+      'filter-values',
     ]
   }
 
@@ -476,6 +552,9 @@ export class OASTableBase extends OASElement {
   private _expandable = false
   /** 行内编辑：进行中的单元格（同一时刻至多一格在编辑） */
   private editState: EditState | null = null
+  /** 列过滤弹层：当前打开的面板元素与其列 key（同一时刻至多一个） */
+  private filterPanel: HTMLElement | null = null
+  private filterPanelKey: string | null = null
 
   /**
    * data/columns 同时支持 attribute 与 property 赋值：
@@ -494,7 +573,13 @@ export class OASTableBase extends OASElement {
     }
     if (
       Array.isArray(value) &&
-      value.some((c) => c && (typeof c.render === 'function' || typeof c.editor === 'function'))
+      value.some(
+        (c) =>
+          c &&
+          (typeof c.render === 'function' ||
+            typeof c.editor === 'function' ||
+            typeof c.filterMatch === 'function'),
+      )
     ) {
       // 列定义含函数（render/editors）：JSON 序列化会丢函数 → 直接存内存并标记，跳过 attribute 重解析
       this._columns = value.filter((c) => c && typeof c.key === 'string')
@@ -539,22 +624,42 @@ export class OASTableBase extends OASElement {
   }
 
   /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
-  /** 表头单元格填充：可排序列渲染排序箭头/序号，否则纯标题（扁平与多行叶子共用） */
+  /** 表头单元格填充：标题 + 可排队列排序箭头/序号 + 可过滤列过滤触发器（扁平与多行叶子共用） */
   private fillHeaderCell(th: HTMLElement, col: TableColumn): void {
-    if (!col.sortable) {
-      th.textContent = col.title
-      return
+    th.textContent = col.title
+    if (col.sortable) {
+      th.classList.add('sortable')
+      const sorts = this.resolveSorts()
+      const idx = sorts.findIndex((s) => s.key === col.key)
+      const state = idx >= 0 ? sorts[idx] : undefined
+      th.setAttribute('data-order', state?.order ?? '')
+      if (state && sorts.length > 1) th.setAttribute('data-sort-index', String(idx + 1))
+      else th.removeAttribute('data-sort-index')
+      const arrow = state?.order === 'asc' ? '↑' : state?.order === 'desc' ? '↓' : '↕'
+      const badge = state && sorts.length > 1 ? `<span class="sort-index">${idx + 1}</span>` : ''
+      const icon = document.createElement('span')
+      icon.className = 'sort-icon'
+      icon.innerHTML = `${arrow}`
+      if (badge) {
+        const b = document.createElement('span')
+        b.className = 'sort-index'
+        b.textContent = String(idx + 1)
+        th.appendChild(b)
+      }
+      th.appendChild(icon)
     }
-    th.className = 'sortable'
-    const sorts = this.resolveSorts()
-    const idx = sorts.findIndex((s) => s.key === col.key)
-    const state = idx >= 0 ? sorts[idx] : undefined
-    th.setAttribute('data-order', state?.order ?? '')
-    if (state && sorts.length > 1) th.setAttribute('data-sort-index', String(idx + 1))
-    else th.removeAttribute('data-sort-index')
-    const arrow = state?.order === 'asc' ? '↑' : state?.order === 'desc' ? '↓' : '↕'
-    const badge = state && sorts.length > 1 ? `<span class="sort-index">${idx + 1}</span>` : ''
-    th.innerHTML = `${col.title}${badge}<span class="sort-icon">${arrow}</span>`
+    if (col.filterable) {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'filter-btn'
+      btn.setAttribute('aria-label', this.t('table.filter'))
+      btn.innerHTML = FILTER_ICON
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.openFilterPanel(col, btn)
+      })
+      th.appendChild(btn)
+    }
   }
 
   /** 全选表头单元格（checkable）；rowSpan>1 用于多级表头首行盖到底部 */
@@ -599,6 +704,7 @@ export class OASTableBase extends OASElement {
       this.wrap?.removeEventListener('scroll', this.handleScroll)
       if (this.scrollRaf) cancelAnimationFrame(this.scrollRaf)
       this.scrollRaf = 0
+      this.closeFilterPanel()
     })
   }
 
@@ -631,19 +737,25 @@ export class OASTableBase extends OASElement {
     const selected = this.getAttr('selected', '').split(',').filter(Boolean)
     const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
 
+    // 过滤：按 filter-values 过滤顶层行（在排序/分页之前，保证分页页数反映过滤后数据）
+    const filterValues = this.parseFilterValues()
+    let roots = this._data
+    if (Object.keys(filterValues).length > 0) {
+      roots = roots.filter((row) => this.matchesFilters(row, filterValues))
+    }
+
     // 分页：顶层行先全局排序再切片为当前页，喂给 buildFlat（页内子行 children 随父行保留）
     const paginationOn = this.hasAttr('pagination')
     const pageSize = Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
     let current = Math.max(1, Number(this.getAttr('current', '1')) || 1)
-    let roots = this._data
-    const total = this._data.length
+    const total = roots.length
     if (paginationOn) {
       const pageCount = Math.max(1, Math.ceil(total / pageSize))
       if (current > pageCount) {
         current = pageCount
         this.setAttribute('current', String(current))
       }
-      const sorted = [...this._data]
+      const sorted = [...roots]
       const sorts = this.resolveSorts()
       if (sorts.length > 0) sorted.sort((a, b) => this.compareRows(a, b, sorts))
       const start = (current - 1) * pageSize
@@ -1151,10 +1263,144 @@ export class OASTableBase extends OASElement {
   }
 
   /**
+   * 过滤状态：filter-values 属性 JSON `{ [colKey]: value }`；空/缺省 = 无过滤。
+   * 智能跳过空值（'' / null），避免误过滤。
+   */
+  private parseFilterValues(): Record<string, string | number> {
+    const raw = this.getAttr('filter-values', '')
+    if (!raw) return {}
+    try {
+      const parsed = JSON.parse(raw) as Record<string, unknown>
+      if (!parsed || typeof parsed !== 'object') return {}
+      const out: Record<string, string | number> = {}
+      for (const [k, v] of Object.entries(parsed)) {
+        if (v === '' || v === null || v === undefined) continue
+        out[k] = typeof v === 'number' ? v : String(v)
+      }
+      return out
+    } catch {
+      return {}
+    }
+  }
+
+  /** 该行是否命中所有过滤条件 */
+  private matchesFilters(
+    row: Record<string, unknown>,
+    filterValues: Record<string, string | number>,
+  ): boolean {
+    const leaves = this.flattenLeaves(this._columns)
+    for (const [key, fv] of Object.entries(filterValues)) {
+      const col = leaves.find((c) => c.key === key)
+      if (!col) continue
+      const cell = row[key]
+      if (col.filterMatch) {
+        if (!col.filterMatch(cell, fv)) return false
+      } else if (String(cell ?? '') !== String(fv)) {
+        return false
+      }
+    }
+    return true
+  }
+
+  /** 该列过滤选项：列级 filters 优先，否则取该列数据唯一非空值 */
+  private filterOptions(col: TableColumn): Array<{ label: string; value: string | number }> {
+    if (col.filters && col.filters.length > 0) return col.filters
+    const seen = new Map<unknown, string>()
+    for (const row of this._data) {
+      const v = row[col.key]
+      if (v === '' || v === null || v === undefined) continue
+      if (!seen.has(v)) seen.set(v, String(v))
+    }
+    return [...seen].map(([value, label]) => ({ label, value: value as string | number }))
+  }
+
+  /** 打开某列的过滤弹层（fixed 定位到触发按钮附近）；已打开则关闭 */
+  private openFilterPanel(col: TableColumn, trigger: HTMLElement): void {
+    if (this.filterPanelKey === col.key) {
+      this.closeFilterPanel()
+      return
+    }
+    this.closeFilterPanel()
+    this.filterPanelKey = col.key
+    const values = this.parseFilterValues()
+    const current = values[col.key]
+    const panel = document.createElement('div')
+    panel.className = 'filter-panel'
+    panel.setAttribute('role', 'listbox')
+    panel.setAttribute('aria-label', `${this.t('table.filter')} ${col.title}`)
+    const title = document.createElement('div')
+    title.className = 'filter-title'
+    title.textContent = col.title
+    panel.appendChild(title)
+    if (current !== undefined) {
+      const clear = document.createElement('button')
+      clear.type = 'button'
+      clear.className = 'filter-clear'
+      clear.textContent = this.t('table.clear')
+      clear.addEventListener('click', () => this.applyFilter(col.key, ''))
+      panel.appendChild(clear)
+    }
+    for (const opt of this.filterOptions(col)) {
+      const item = document.createElement('button')
+      item.type = 'button'
+      item.className = 'filter-option'
+      item.setAttribute('role', 'option')
+      item.setAttribute('aria-selected', String(String(opt.value) === String(current)))
+      item.textContent = opt.label
+      item.addEventListener('click', () => this.applyFilter(col.key, opt.value))
+      panel.appendChild(item)
+    }
+    this.filterPanel = panel
+    this.positionFilterPanel(panel, trigger)
+    this.shadowRoot?.appendChild(panel)
+    this.bindFilterPanelClose(panel)
+  }
+
+  /** 关闭并清理过滤弹层 */
+  private closeFilterPanel(): void {
+    this.filterPanel?.remove()
+    this.filterPanel = null
+    this.filterPanelKey = null
+  }
+
+  /** 写入过滤值并重渲染（'' 表示清除该列过滤）；派发 oas-filter-change */
+  private applyFilter(key: string, value: string | number): void {
+    const values = { ...this.parseFilterValues() }
+    if (value === '' || value === null || value === undefined) delete values[key]
+    else values[key] = typeof value === 'number' ? value : String(value)
+    this.closeFilterPanel() // hide first (panel无 filter 容差依赖)，再写回触重渲染
+    this.setAttribute('filter-values', Object.keys(values).length > 0 ? JSON.stringify(values) : '')
+    this.emit('filter-change', { filters: values })
+  }
+
+  /** fixed 定位过滤面板到触发按钮下方 */
+  private positionFilterPanel(panel: HTMLElement, trigger: HTMLElement): void {
+    const rect = trigger.getBoundingClientRect()
+    panel.style.left = `${rect.left}px`
+    panel.style.top = `${rect.bottom + 6}px`
+  }
+
+  /** 点击面板外 / Escape 关闭过滤面板 */
+  private bindFilterPanelClose(panel: HTMLElement): void {
+    const onDocClick = (e: Event) => {
+      if (panel.contains(e.target as Node) || this.contains(e.target as Node)) return
+      this.closeFilterPanel()
+      document.removeEventListener('click', onDocClick, true)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        this.closeFilterPanel()
+        document.removeEventListener('keydown', onKey)
+      }
+    }
+    document.addEventListener('click', onDocClick, true)
+    document.addEventListener('keydown', onKey)
+  }
+
+  /**
    * 解析当前排序状态：无 multi-sort 时回退单列 sort-key/sort-order（向后兼容）。
    * 返回数组按优先级排序（先比较首个，相等再比较次个）。
-   */
-  private resolveSorts(): SortState[] {
+   */  private resolveSorts(): SortState[] {
     const raw = this.getAttr('multi-sort', '')
     if (raw) {
       try {
