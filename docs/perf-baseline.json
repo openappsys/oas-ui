@@ -4,24 +4,24 @@
     "method": "gzip = zlib gzipSync；brotli = zlib brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 8369648,
+        "distTotalBytes": 8375252,
         "browserJs": {
           "files": 288,
-          "rawBytes": 2538223,
-          "gzipBytes": 708739,
-          "brotliBytes": 554456
+          "rawBytes": 2539375,
+          "gzipBytes": 709256,
+          "brotliBytes": 554849
         },
         "fullEntry": {
           "files": 339,
-          "rawBytes": 1406819,
-          "gzipBytes": 456272,
-          "brotliBytes": 379967
+          "rawBytes": 1407449,
+          "gzipBytes": 456545,
+          "brotliBytes": 380151
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 1162642,
-          "gzipBytes": 269798,
-          "brotliBytes": 188837
+          "rawBytes": 1163164,
+          "gzipBytes": 270042,
+          "brotliBytes": 189046
         }
       },
       "@oas-ui/theme": {
@@ -165,7 +165,7 @@
     "budgets": [
       {
         "name": "dist/cdn.js gzip",
-        "actualBytes": 269798,
+        "actualBytes": 270042,
         "limitBytes": 307200,
         "warnAtBytes": 276480,
         "pass": true,
@@ -174,7 +174,7 @@
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
-        "actualBytes": 456272,
+        "actualBytes": 456545,
         "limitBytes": 532480,
         "warnAtBytes": 479232,
         "pass": true,

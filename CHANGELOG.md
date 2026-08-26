@@ -2,6 +2,13 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.2.6] - 2026-08-26
+
+### 修复
+
+- **sidebar 内置图标配 iconColor 生效**（实测缺陷）：`SidebarItem.iconColor` 对内置图标不生效（图标仍 currentColor 灰）。根因：`iconSvg(name, iconColor)` 只在 `<svg>` 外层写 stroke，但内置图标 path 自带 `stroke="currentColor"`——path 元素级属性压过 svg 外层 stroke，颜色永远 currentColor（模板侧用官方 iconColor 全灰，仅 active 主题色高亮）。修法：iconColor 显式时对 path 的 `stroke="currentColor"` 做替换（内置单色 path 着色生效；自定义注册的彩色 SVG 天然兼容无需替换；缺省 currentColor 随态零回归）
+- **docs**：图标着色 demo 补内置图标场景（内置 `star` 配 `iconColor` 显式着色活示例 + 内置 `heart` 无 iconColor 随态对照）
+
 ## [2.2.5] - 2026-08-26
 
 ### 新增

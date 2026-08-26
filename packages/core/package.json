@@ -1,6 +1,6 @@
 {
   "name": "@oas-ui/core",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "description": "OAS-UI 基础运行时（Web Components 基类与工具）",
   "keywords": [
     "web-components",
