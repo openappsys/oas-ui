@@ -95,7 +95,7 @@ export class OASPopconfirm extends OASElement {
     }
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutside))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
   }
 
   protected override render(): void {
@@ -131,7 +131,7 @@ export class OASPopconfirm extends OASElement {
     this.shadow.querySelector<HTMLElement>('[part="ok"]')!.textContent = this.t('popconfirm.ok')
     this.shadow.querySelector<HTMLElement>('[part="cancel"]')!.textContent =
       this.t('popconfirm.cancel')
-    if (open) document.addEventListener('click', this.handleOutside)
-    else document.removeEventListener('click', this.handleOutside)
+    if (open) document.addEventListener('click', this.handleOutside, true)
+    else document.removeEventListener('click', this.handleOutside, true)
   }
 }

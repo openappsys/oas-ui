@@ -247,7 +247,7 @@ export class OASColorPicker extends OASElement {
       .querySelector<HTMLInputElement>('.b')
       ?.addEventListener('input', (e) => this.fromRgb((e.target as HTMLInputElement).value, 'b'))
 
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
   }
 
   protected override render(): void {
@@ -325,8 +325,8 @@ export class OASColorPicker extends OASElement {
     if (!this.panel || !this.trigger) return
     this.panel.classList.toggle('open', this.openState)
     this.trigger.setAttribute('aria-expanded', String(this.openState))
-    if (this.openState) document.addEventListener('click', this.handleOutsideClick)
-    else document.removeEventListener('click', this.handleOutsideClick)
+    if (this.openState) document.addEventListener('click', this.handleOutsideClick, true)
+    else document.removeEventListener('click', this.handleOutsideClick, true)
   }
 
   private handleOutsideClick = (e: MouseEvent): void => {

@@ -199,7 +199,7 @@ export class OASCombobox extends OASElement {
       e.stopPropagation()
       this.clearValue()
     })
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
   }
 
   protected override render(): void {
@@ -278,13 +278,13 @@ export class OASCombobox extends OASElement {
     const idx = this.visibleOptions().findIndex((o) => o.value === value)
     this.activeIndex = Math.max(idx, 0)
     this.renderListbox()
-    document.addEventListener('click', this.handleOutsideClick)
+    document.addEventListener('click', this.handleOutsideClick, true)
   }
 
   private close(): void {
     this.openState = false
     this.syncDropdown()
-    document.removeEventListener('click', this.handleOutsideClick)
+    document.removeEventListener('click', this.handleOutsideClick, true)
   }
 
   /** 失焦/Esc/点击外部时回退为当前选中项 label（默认非破坏），并丢弃未提交的过滤词 */

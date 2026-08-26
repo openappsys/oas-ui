@@ -179,7 +179,7 @@ export class OASSpeedDial extends OASElement {
     this.actionsEl = this.shadow.querySelector('.actions')
     this.fab?.addEventListener('click', () => this.toggle())
     this.onCleanup(() => {
-      document.removeEventListener('click', this.handleOutsideClick)
+      document.removeEventListener('click', this.handleOutsideClick, true)
       document.removeEventListener('keydown', this.handleDocKeydown)
     })
   }
@@ -268,12 +268,12 @@ export class OASSpeedDial extends OASElement {
     this.fab?.setAttribute('aria-label', this.t('speedDial.actions'))
     if (open) {
       // 展开时挂载文档级监听（收起/断开时移除，无孤儿监听）
-      document.addEventListener('click', this.handleOutsideClick)
+      document.addEventListener('click', this.handleOutsideClick, true)
       document.addEventListener('keydown', this.handleDocKeydown)
       // 键盘可达：展开自动聚焦第一个子动作
       this.actionsEl?.querySelector<HTMLButtonElement>('.action')?.focus()
     } else {
-      document.removeEventListener('click', this.handleOutsideClick)
+      document.removeEventListener('click', this.handleOutsideClick, true)
       document.removeEventListener('keydown', this.handleDocKeydown)
     }
   }

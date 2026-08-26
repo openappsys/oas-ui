@@ -567,7 +567,7 @@ export class OASPopover extends OASElement {
     })
     // 外部点击关闭（面板移入 body 后 composedPath 仍含面板自身，见 handleOutside）
     this.onCleanup(() => unregisterLayer(this))
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutside))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
     // 关闭按钮
     this.closeBtn?.addEventListener('click', () => {
       this.removeAttribute('open')
@@ -1388,8 +1388,8 @@ export class OASPopover extends OASElement {
         this.applyInitialFocus()
       }
       // virtual 模式下生命周期由宿主控制，不注册外部点击关闭
-      if (!this.hasAttr('virtual')) document.addEventListener('click', this.handleOutside)
-      else document.removeEventListener('click', this.handleOutside)
+      if (!this.hasAttr('virtual')) document.addEventListener('click', this.handleOutside, true)
+      else document.removeEventListener('click', this.handleOutside, true)
       this.panel.classList.remove('oas-closing')
       this.panel.setAttribute('aria-hidden', 'false')
       this.syncWidth()
@@ -1409,7 +1409,7 @@ export class OASPopover extends OASElement {
       }
       if (this.wasOpen) this.closeNested()
       unregisterLayer(this)
-      document.removeEventListener('click', this.handleOutside)
+      document.removeEventListener('click', this.handleOutside, true)
       this.syncPortal(false)
       this.syncModal(false)
       this.syncScrollFollow(false)

@@ -78,6 +78,23 @@ describe('OASSelect', () => {
     expect(detail).toEqual({ value: 'banana' })
   })
 
+  // 协作缺陷回归：oas-modal 的 dialog 会 stopPropagation 拦截 click 冒泡，
+  // 浮层 outside-close 必须用 document capture 监听（capture 在 bubble 拦截前触发），
+  // 否则 modal 内 select 点击外部永不关闭（模板实测：分类下拉点面板外不收）
+  it('宿主容器拦截 click 冒泡时（modal dialog 场景），点击外部仍关闭下拉', async () => {
+    const host = document.createElement('div')
+    host.addEventListener('click', (e) => e.stopPropagation())
+    document.body.appendChild(host)
+    const el = mount()
+    host.appendChild(el)
+    await Promise.resolve()
+    open(el)
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
+    // 点击宿主内、组件外——bubble 被宿主拦截，document capture 监听应仍收到并关闭
+    host.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
+  })
+
   it('Esc 关闭下拉', () => {
     const el = mount()
     open(el)

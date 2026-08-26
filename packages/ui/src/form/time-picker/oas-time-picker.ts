@@ -177,7 +177,7 @@ export class OASTimePicker extends OASElement {
     // 面板内点击不触发「外部点击确认」：选项点击会重渲列 DOM
     this.dropdown?.addEventListener('click', (e) => e.stopPropagation())
     this.dropdown?.addEventListener('keydown', (e) => this.handleDropdownKey(e as KeyboardEvent))
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
   }
 
   protected override render(): void {
@@ -249,9 +249,9 @@ export class OASTimePicker extends OASElement {
     this.dropdown.classList.toggle('open', this.openState)
     this.triggerEl.setAttribute('aria-expanded', String(this.openState))
     if (this.openState) {
-      document.addEventListener('click', this.handleOutsideClick)
+      document.addEventListener('click', this.handleOutsideClick, true)
     } else {
-      document.removeEventListener('click', this.handleOutsideClick)
+      document.removeEventListener('click', this.handleOutsideClick, true)
     }
   }
 

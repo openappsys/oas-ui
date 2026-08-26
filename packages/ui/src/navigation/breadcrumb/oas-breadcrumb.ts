@@ -367,7 +367,7 @@ export class OASBreadcrumb extends OASElement {
   /** 缓存节点引用 + 绑定事件（render 与水合路径共用；面包屑项事件在 update 重建时绑定） */
   private bind(): void {
     // 组件断开时清理下拉的 document 点击监听（连接期间打开/关闭反复 add/remove，此处兜底移除）
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
     // 键盘方向键导航：焦点在可聚焦项上时 ArrowLeft/Right/Home/End 循环移动
     this.shadow.querySelector('nav')?.addEventListener('keydown', this.handleNavKeydown)
   }
@@ -949,9 +949,9 @@ export class OASBreadcrumb extends OASElement {
       if (open) this.placePanel(c.panel, c.btn)
     }
     if (this.openDropdowns.size > 0) {
-      document.addEventListener('click', this.handleOutsideClick)
+      document.addEventListener('click', this.handleOutsideClick, true)
     } else {
-      document.removeEventListener('click', this.handleOutsideClick)
+      document.removeEventListener('click', this.handleOutsideClick, true)
     }
   }
 

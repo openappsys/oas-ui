@@ -402,7 +402,7 @@ export class OASSelect extends OASElement {
         this.createOptionRow(detail.item, detail.index, this.currentValues(), detail.element)
       }
     }) as EventListener)
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
   }
 
   protected override render(): void {
@@ -450,7 +450,7 @@ export class OASSelect extends OASElement {
       }
     }
     if (this.openState) {
-      document.addEventListener('click', this.handleOutsideClick)
+      document.addEventListener('click', this.handleOutsideClick, true)
       this.positionDropdown()
       const current = this.currentValues()
       const idx =
@@ -459,7 +459,7 @@ export class OASSelect extends OASElement {
       this.scrollActiveIntoView()
       this.syncActive()
     } else {
-      document.removeEventListener('click', this.handleOutsideClick)
+      document.removeEventListener('click', this.handleOutsideClick, true)
       this.syncAriaActiveDescendant()
     }
   }
