@@ -92,6 +92,21 @@ describe('OASChart', () => {
     expect(d).toContain(ly)
   })
 
+  // 缺陷回归：中点二次贝塞尔（midpoint smoothing）曲线在点间中点穿过、不过数据点致 dot 偏离。
+  // smooth 改用 Catmull-Rom 转三次贝塞尔，曲线经过每个数据点（ECharts/Chart.js 同模式）
+  it('type=line smooth：曲线经过每个数据点（dot 落在线上）', () => {
+    const el = mount({ type: 'line', options: '{"smooth":true}', data: MULTI })
+    const svg = svgOf(el)
+    const d = svg.querySelectorAll('.line-path')[1]!.getAttribute('d')!
+    // Catmull-Rom 转三次贝塞尔：path 用 C 命令（中点法是 Q，曲线不过点致 dot 偏离）
+    expect(d, 'smooth 应用三次贝塞尔（C）而非中点法（Q）').toContain(' C ')
+    const dots = [...svg.querySelectorAll('.dot')].slice(3) // 系列 B 的 3 个数据点
+    for (const dot of dots) {
+      const xy = `${dot.getAttribute('cx')} ${dot.getAttribute('cy')}`
+      expect(d, `曲线应经过数据点 (${xy})`).toContain(xy)
+    }
+  })
+
   it('type=area 默认无渐变：无 linearGradient，填充走 swatch 半透明', () => {
     const el = mount({ type: 'area', data: SINGLE })
     const svg = svgOf(el)

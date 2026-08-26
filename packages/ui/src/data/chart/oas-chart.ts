@@ -567,20 +567,24 @@ export class OASChart extends OASElement {
     return { max: top, step, values: [0, 1, 2, 3, 4].map((i) => i * step) }
   }
 
-  /** 折线平滑：相邻点中点作控制点的二次贝塞尔序列 */
+  /** 折线平滑：Catmull-Rom 转三次贝塞尔——曲线经过每个数据点（端点处重用端点；控制点由相邻点 1/6 张力算出）。
+      此前中点二次贝塞尔（midpoint smoothing）曲线在点间中点穿过、不过数据点，dot 偏离（用户实测"点不在线上"） */
   private smoothPath(pts: Array<{ x: number; y: number }>): string {
     if (pts.length < 2) return pts.length === 1 ? `M ${pts[0]!.x} ${pts[0]!.y}` : ''
-    let d = `M ${pts[0]!.x.toFixed(1)} ${pts[0]!.y.toFixed(1)}`
-    for (let i = 1; i < pts.length; i++) {
-      const p = pts[i]!
-      const prev = pts[i - 1]!
-      const mx = (prev.x + p.x) / 2
-      const my = (prev.y + p.y) / 2
-      d += ` Q ${prev.x.toFixed(1)} ${prev.y.toFixed(1)} ${mx.toFixed(1)} ${my.toFixed(1)}`
+    const f = (n: number): string => n.toFixed(1)
+    const n = pts.length
+    let d = `M ${f(pts[0]!.x)} ${f(pts[0]!.y)}`
+    for (let i = 0; i < n - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)]! // 前前点（首段重用首点）
+      const p1 = pts[i]!
+      const p2 = pts[i + 1]!
+      const p3 = pts[Math.min(n - 1, i + 2)]! // 后后点（末段重用末点）
+      const c1x = p1.x + (p2.x - p0.x) / 6
+      const c1y = p1.y + (p2.y - p0.y) / 6
+      const c2x = p2.x - (p3.x - p1.x) / 6
+      const c2y = p2.y - (p3.y - p1.y) / 6
+      d += ` C ${f(c1x)} ${f(c1y)} ${f(c2x)} ${f(c2y)} ${f(p2.x)} ${f(p2.y)}`
     }
-    // 收尾：二次贝塞尔中点法终点只到末两点中点，补一段直线连接末点（不与末点脱节）
-    const last = pts[pts.length - 1]!
-    d += ` L ${last.x.toFixed(1)} ${last.y.toFixed(1)}`
     return d
   }
 
