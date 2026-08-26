@@ -58,8 +58,14 @@ The `spin` attribute spins the icon infinitely (great for loading states); `rota
 
 ## Custom icons
 
-- `src`: fetch a local or CORS-enabled SVG URL and render it inline (color follows `color` / `currentColor`)
-- slot: put an inline `<svg>` inside the tag; it takes priority over `name`
+Four channels (pick by scenario):
+
+- **slot**: put an inline `<svg>` inside the tag; it takes priority over `name` — one-off custom usage
+- **`src`**: fetch a local or CORS-enabled SVG URL and render it inline (color follows `color` / `currentColor`) — your own SVG assets
+- **`registerIcon(name, svg)`**: register once, then use via `name` (same-name overrides built-ins) — **the proper path for app-level custom icon sets**
+- **`registerIconLibrary`**: hook up a whole remote icon library (resolver → URL fetched on demand, sprite supported) — external icon libraries
+
+> ⚠️ **Do not mutate `iconRegistry` directly** (the built-in registry object exported by `@oas-ui/icons`): it is an internal data structure with no override/cleanup semantics. The proper path is `registerIcon()` (official API, pure function, SSR-safe).
 
 <DemoBlock title="src SVG">
   <oas-icon src="/demo-icon.svg" size="24" color="var(--oas-color-primary)"></oas-icon>
