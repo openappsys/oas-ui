@@ -100,6 +100,15 @@ Items support `children` nesting: a parent item toggles expansion on click (with
 
 > **Nesting depth**: mechanically unlimited (recursive rendering; level 3 verified — per-level expansion, active-cascade auto-expansion and child-selected all work). But each level adds ~28px of indentation, so keep it to **≤3 levels** in a 220px sidebar — use `oas-tree` for deeper trees (built for arbitrary depth: connecting lines / virtual scroll).
 
+<DemoBlock title="Three-level nesting (Business → Users → User groups)">
+  <div style="height: 400px; width: 100%; display: flex">
+    <oas-sidebar active="admins" items='[{"label":"Dashboard","value":"dash","icon":"star"},{"label":"Business","value":"biz","icon":"edit","children":[{"label":"Orders","value":"orders","icon":"edit"},{"label":"Users","value":"users","icon":"user","children":[{"label":"Regular users","value":"normal","icon":"user"},{"label":"Admins","value":"admins","icon":"lock"}]},{"label":"Products","value":"goods","icon":"heart"}]},{"label":"Settings","value":"sys","icon":"gear"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      The "Business → Users → User groups" three-level chain: with `active` pointing at the third level ("Admins"), both ancestors auto-expand with child-selected indication; indentation and guide lines stack per level.
+    </div>
+  </div>
+</DemoBlock>
+
 <DemoBlock title="Accordion (siblings mutually exclusive)">
   <div style="height: 380px; width: 100%; display: flex">
     <oas-sidebar accordion items='[{"label":"Dashboard","value":"dash","icon":"star"},{"label":"Business","value":"biz","icon":"edit","children":[{"label":"Orders","value":"orders","icon":"edit"},{"label":"Products","value":"goods","icon":"heart"},{"label":"Users","value":"users","icon":"user"}]},{"label":"Marketing","value":"mkt","icon":"mail","children":[{"label":"Campaigns","value":"acts","icon":"calendar"},{"label":"Coupons","value":"coupon","icon":"star"}]},{"label":"Settings","value":"sys","icon":"gear","children":[{"label":"Permissions","value":"perm","icon":"lock"},{"label":"Audit log","value":"audit","icon":"clock"}]}]'></oas-sidebar>
