@@ -24,6 +24,8 @@ export interface ChartOptions {
   colors?: string[]
   /** 是否显示图例（默认多系列时显示） */
   showLegend?: boolean
+  /** 面积图垂直渐变填充（默认 false 纯色半透明；true 时顶部系列色 0.35 → 底部全透明） */
+  gradient?: boolean
 }
 
 /** 默认系列配色（只用 token，含暗色变体） */
@@ -33,6 +35,9 @@ const PALETTE = [
   'var(--oas-color-warning)',
   'var(--oas-color-danger)',
 ]
+
+/** 面积图渐变 id 计数器（同页多组件实例防 id 冲突） */
+let areaGradSeq = 0
 
 /** 折线图配色类：color 继承 → 元素 stroke/fill 用 currentColor */
 const SWATCH_CLASSES = ['c0', 'c1', 'c2', 'c3']
@@ -323,6 +328,11 @@ export class OASChart extends OASElement {
     let out = this.renderGrid(ticks, plotH)
     out += this.renderXLabels(data.labels, plotW, 'top')
 
+    // 渐变填充（可选）：每系列一个垂直 linearGradient（顶部系列色 0.35 → 底部全透明），
+    // id 模块级递增防同页多实例冲突；area-path 用内联 style 覆盖 CSS 的 currentColor+opacity
+    const useGrad = options.gradient === true
+    let defs = ''
+
     const stepX = n > 1 ? plotW / (n - 1) : plotW / 2
     const xAt = (i: number): number => PAD.l + (n > 1 ? i * stepX : stepX)
     const yAt = (v: number): number => PAD.t + plotH - (ticks.max > 0 ? (v / ticks.max) * plotH : 0)
@@ -338,14 +348,21 @@ export class OASChart extends OASElement {
       // 填充：折线 + 末点垂线到底 + 沿基线回到首点 + 闭合
       const lastI = Math.min(n, series.data.length) - 1
       const fill = `${path} L ${xAt(lastI).toFixed(1)} ${baseY.toFixed(1)} L ${xAt(0).toFixed(1)} ${baseY.toFixed(1)} Z`
-      out += `<path class="area-path ${cls} animate" d="${fill}"${color ? ` style="color:${color}"` : ''}></path>`
+      let areaStyle = color ? ` style="color:${color}"` : ''
+      if (useGrad) {
+        const gid = `oas-chart-ag-${++areaGradSeq}`
+        const col = color ?? PALETTE[si % PALETTE.length]
+        defs += `<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity="0.35"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient>`
+        areaStyle = ` style="fill:url(#${gid});opacity:1"`
+      }
+      out += `<path class="area-path ${cls} animate" d="${fill}"${areaStyle}></path>`
       out += `<path class="line-path ${cls} animate" d="${path}"${color ? ` style="color:${color}"` : ''}></path>`
       pts.forEach((p, i) => {
         const label = this.datumLabel(data.labels[i] ?? '', series.data[i] ?? 0)
         out += `<circle class="dot ${cls} animate" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5"><title>${this.escapeAttr(label)}</title></circle>`
       })
     })
-    return out
+    return defs + out
   }
 
   /** 柱状图：网格 + 分组柱 rect + x 分类 + title */
@@ -639,6 +656,7 @@ export class OASChart extends OASElement {
     const out: ChartOptions = {}
     if (typeof obj.smooth === 'boolean') out.smooth = obj.smooth
     if (typeof obj.showLegend === 'boolean') out.showLegend = obj.showLegend
+    if (typeof obj.gradient === 'boolean') out.gradient = obj.gradient
     if (Array.isArray(obj.colors)) out.colors = obj.colors.map((c) => String(c))
     return out
   }
