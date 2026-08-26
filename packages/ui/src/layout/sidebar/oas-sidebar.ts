@@ -339,7 +339,7 @@ aside {
   }
 }
 /* 父项与子树容器：btn 与 submenu 之间留呼吸——无 gap 时父项底色（active/child-selected）
-   与子项 hover 底色上下贴死「黏在一起」（用户实测观感） */
+   与子项 hover 底色上下贴死「黏在一起」（实测观感） */
 .item-block {
   display: flex;
   flex-direction: column;
@@ -901,7 +901,7 @@ export class OASSidebar extends OASElement {
   ): HTMLElement {
     const hasChildren = !!item.children?.length
     // 折叠图标条态下嵌套父项按纯图标项处理：子树本就隐藏，展开箭头/aria-expanded/
-    // 展开点击属死交互（用户实测「点了没反应」）；点击按普通项派发 select
+    // 展开点击属死交互（实测「点了没反应」）；点击按普通项派发 select
     const effectiveHasChildren = hasChildren && !collapsed
     const btn = document.createElement('button')
     btn.className = 'item'

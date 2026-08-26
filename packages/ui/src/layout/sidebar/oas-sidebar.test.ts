@@ -235,7 +235,7 @@ describe('OASSidebar（可折叠侧栏）', () => {
   })
 })
 
-describe('OASSidebar 受控高亮与图标渲染（模板实测缺陷回归）', () => {
+describe('OASSidebar 受控高亮与图标渲染（实测缺陷回归）', () => {
   it('active 受控属性：对应 value 的菜单项渲染 active 高亮 + aria-current', () => {
     stubMatchMedia(false)
     const el = mount({

@@ -1064,7 +1064,7 @@ describe('OASTable size 密度档位', () => {
   })
 })
 
-describe('OASTable 单元格渲染与 hidden（模板实测缺陷回归）', () => {
+describe('OASTable 单元格渲染与 hidden（实测缺陷回归）', () => {
   it('#9 尊重 [hidden]：table.hidden=true 时 display:none（:host 覆盖修复）', () => {
     const el = mount()
     expect(el.shadowRoot!.querySelector('style')!.textContent).toMatch(
