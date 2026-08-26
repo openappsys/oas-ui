@@ -369,6 +369,16 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 
 `root` / `panel` / `head` / `close` / `nav` / `body` / `foot` / `toggle` (desktop collapse) / `trigger` (mobile trigger) / `mask` / `item`; the header and footer content are injected via `slot="header"`, the default slot and `slot="footer"` respectively.
 
+### CSS variables
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `--oas-sidebar-bg` | falls back to `--oas-color-bg-hover` (`--oas-color-bg` for the floating variant) | Sidebar background; defaults stay anchored to base tokens (theme/dark/brand customization flows through automatically), host override recolors the whole bar |
+| `--oas-sidebar-width` | `220px` | Expanded width (the `width` attribute takes precedence) |
+| `--oas-sidebar-collapsed-width` | `64px` | Collapsed icon-rail width |
+| `--oas-sidebar-item-hover-bg` | `color-mix(text-primary 6%)` | Item hover background |
+| `--oas-sidebar-badge-bg` / `--oas-sidebar-badge-color` | primary 14% mix / primary | Badge background / badge text color |
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
