@@ -99,6 +99,8 @@ export const en: LocaleMessages = {
   'table.save': 'Save',
   'table.cancel': 'Cancel',
   'table.editCell': 'Edit {column} (row {key})',
+  'table.filter': 'Filter',
+  'table.clear': 'Clear',
   'list.empty': 'No data',
   'tree.expand': 'Expand/Collapse',
   'tree.select': 'Select {label}',
