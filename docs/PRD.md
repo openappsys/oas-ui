@@ -793,6 +793,36 @@ moreBtn 键盘打开聚焦第一项 + 列表 roving（ArrowUp/Down/Home/End/Ente
 - 全量单测 3318 / typecheck / build / api:check / perf:size 六项 PASS（cdn 253.8KB < 300KB 天花板）/ e2e 1370（chromium 全量 + firefox 抽样 + docs-site）/ trace 门禁 0 命中 / 浏览器实测截图识图 light+dark 全过 / console 零告警
 - 新增回归：tabs context-menu 单测 5 例 + e2e；layout viewport/宽度对齐 e2e 像素断言 2 例；sidebar hover/嵌套/splitter/resize e2e；homepage 分隔线 e2e
 
+## v2.2.5 双通道推广 + sidebar 深挖批 + 浮层定位与 token/图标补齐 → 已发布
+
+三主线：①breadcrumb 双通道试点范式全库推广（12 组件子元素声明式通道）；②sidebar 深挖批（模板实测驱动的能力增量与系列缺陷修复）；③date-picker 浮层定位引擎接入 + radius scale 补全 + 图标增量 + chart 能力。
+
+### 子元素声明式通道推广（架构决策落地）
+
+- **三批 12 组件**：导航系（menu/menubar/navigation-menu/anchor）→ 浮层触发族（dropdown/context-menu/command）→ 布局/表单族（sidebar/bottom-navigation/select/toggle-group/toolbar-toggle）；virtual-list 豁免（unknown[] 数据型无标量可映射）
+- 统一契约：items/options 属性显式时数据驱动优先，否则子元素解析收敛同一渲染路径；MutationObserver 感知增删改；数据载体 `:host{display:none}` 纯数据、默认插槽文本为 label、属性对齐 items 字段、嵌套递归 children
+- 子元素命名对齐组件语义（oas-menu-item/oas-option 等；dropdown/context-menu extends menu 数据载体零重复；command keywords 逗号拆分/嵌套递归 page）
+- select 顺路补齐（options 模式，`<oas-option>` 对齐 HTML 原生 option 心智；收敛点在虚拟/非虚拟两条渲染路径之前）
+
+### sidebar 深挖批（模板实测驱动）
+
+- **能力**：`hide-toggle`（折叠按钮 opt-out）、`accordion` 手风琴同级互斥（menu 同语义）、嵌套子树平滑动画（grid 0fr/1fr 过渡 + visibility 联动 + reduced-motion 降级）、嵌套机制无限级（3 级实证，文档建议 ≤3 级）、图标通道打通 registerIcon 正路（lookupIcon 单一查表点导出）+ `iconColor` 项级着色、`--oas-sidebar-bg` 背景开口（var 链回落）、child-selected 激活后代指示
+- **修复**：折叠态嵌套父项死交互（纯图标项化）、折叠态徽标溢出走紧凑角标、子菜单 hidden 失效根治（display:flex 压 UA 规则——视觉断言固化：computed visibility/高度而非仅属性）、父子项底色粘连（.item-block 呼吸 gap）、嵌套缩进收敛（61→49px）+ 引导线对比度（text-primary 12% 混色）
+- **教训沉淀**：「机制正确 ≠ 用户看到的正确」——显隐类修复必须量真实渲染；hidden 语义与动画不可兼得（display:none 无过渡）→ visibility+0fr 两全
+
+### 其他
+
+- **date-picker 浮层定位**：fixed + computePosition 锚定（select/combobox 同模式，逃出祖先 overflow）+ `placement` 12 向 + 碰撞自动翻转 + range 双月同引擎（模板右缘被裁场景修复）
+- **radius scale 补全五档**：xs 2 / sm 4 / md 6 / lg 10 / xl 14（token 按对外能力完备性提供，不只按库内消费定档）
+- **icons +4**：organization/tree（层级语义缺口，tree 初版与 org 同质化识图复核后重画左根 list-tree）/ language/translate（语言切换与翻译语义；translate「文」字形与比例两轮用户实测修正）
+- **chart**：面积图 `options.gradient` 垂直渐变填充；smooth 曲线与末数据点脱节修复（贝塞尔终点误用 + 缺收尾段）
+
+### 验收
+
+- 全量单测 3419 / typecheck / build / api:check / perf:size 六项 PASS（cdn 263.5KB < 300KB 天花板）/ e2e 1372（chromium 全量 + firefox 抽样 + docs-site）/ trace 门禁 0 命中（全树 + 全历史）
+- 新增回归：双通道三批单测 +73 / sidebar 深挖批单测 +30 / date-picker 定位 +6 / qa-regression 视觉断言 3 例（sidebar 折叠态几何、子菜单 visibility、layout viewport）
+- demo-coverage 属性全覆盖（placement/hide-toggle 显式演示补齐）
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：

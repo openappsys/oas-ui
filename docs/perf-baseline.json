@@ -1,34 +1,34 @@
 {
   "size": {
-    "generatedAt": "2026-08-25",
+    "generatedAt": "2026-08-26",
     "method": "gzip = zlib gzipSync；brotli = zlib brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 8027117,
+        "distTotalBytes": 8369648,
         "browserJs": {
-          "files": 266,
-          "rawBytes": 2457074,
-          "gzipBytes": 679718,
-          "brotliBytes": 535096
+          "files": 288,
+          "rawBytes": 2538223,
+          "gzipBytes": 708739,
+          "brotliBytes": 554456
         },
         "fullEntry": {
-          "files": 313,
-          "rawBytes": 1358778,
-          "gzipBytes": 436372,
-          "brotliBytes": 363950
+          "files": 339,
+          "rawBytes": 1406819,
+          "gzipBytes": 456272,
+          "brotliBytes": 379967
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 1128949,
-          "gzipBytes": 259936,
-          "brotliBytes": 184879
+          "rawBytes": 1162642,
+          "gzipBytes": 269798,
+          "brotliBytes": 188837
         }
       },
       "@oas-ui/theme": {
         "indexCss": {
-          "rawBytes": 7679,
-          "gzipBytes": 2680,
-          "brotliBytes": 2124
+          "rawBytes": 7728,
+          "gzipBytes": 2689,
+          "brotliBytes": 2160
         }
       },
       "@oas-ui/core": {
@@ -44,10 +44,10 @@
         "brotliBytes": 7522
       },
       "@oas-ui/icons": {
-        "files": 46,
-        "rawBytes": 17802,
-        "gzipBytes": 9889,
-        "brotliBytes": 8495
+        "files": 50,
+        "rawBytes": 20786,
+        "gzipBytes": 10970,
+        "brotliBytes": 9414
       },
       "@oas-ui/ssr": {
         "files": 2,
@@ -60,10 +60,10 @@
       "button": {
         "entry": "basic/button",
         "spec": "@oas-ui/ui/basic/button",
-        "files": 51,
-        "rawBytes": 59025,
-        "gzipBytes": 22556,
-        "brotliBytes": 18928,
+        "files": 55,
+        "rawBytes": 62009,
+        "gzipBytes": 23637,
+        "brotliBytes": 19847,
         "fileList": [
           "packages/ui/dist/basic/button/index.js",
           "packages/ui/dist/basic/button/oas-button.js",
@@ -73,13 +73,16 @@
           "packages/icons/dist/icons/warning.js",
           "packages/icons/dist/icons/user.js",
           "packages/icons/dist/icons/upload.js",
+          "packages/icons/dist/icons/tree.js",
           "packages/icons/dist/icons/trash.js",
+          "packages/icons/dist/icons/translate.js",
           "packages/icons/dist/icons/star.js",
           "packages/icons/dist/icons/star-filled.js",
           "packages/icons/dist/icons/sort.js",
           "packages/icons/dist/icons/search.js",
           "packages/icons/dist/icons/refresh.js",
           "packages/icons/dist/icons/plus.js",
+          "packages/icons/dist/icons/organization.js",
           "packages/icons/dist/icons/more.js",
           "packages/icons/dist/icons/more-vertical.js",
           "packages/icons/dist/icons/minus.js",
@@ -87,6 +90,7 @@
           "packages/icons/dist/icons/mail.js",
           "packages/icons/dist/icons/lock.js",
           "packages/icons/dist/icons/loading.js",
+          "packages/icons/dist/icons/language.js",
           "packages/icons/dist/icons/info.js",
           "packages/icons/dist/icons/heart.js",
           "packages/icons/dist/icons/gear.js",
@@ -161,7 +165,7 @@
     "budgets": [
       {
         "name": "dist/cdn.js gzip",
-        "actualBytes": 259936,
+        "actualBytes": 269798,
         "limitBytes": 307200,
         "warnAtBytes": 276480,
         "pass": true,
@@ -170,7 +174,7 @@
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
-        "actualBytes": 436372,
+        "actualBytes": 456272,
         "limitBytes": 532480,
         "warnAtBytes": 479232,
         "pass": true,
@@ -179,7 +183,7 @@
       },
       {
         "name": "@oas-ui/ui/basic/button 链 gzip",
-        "actualBytes": 22556,
+        "actualBytes": 23637,
         "limitBytes": 26624,
         "warnAtBytes": 23962,
         "pass": true,
@@ -206,7 +210,7 @@
       },
       {
         "name": "@oas-ui/theme index.css gzip",
-        "actualBytes": 2680,
+        "actualBytes": 2689,
         "limitBytes": 3072,
         "warnAtBytes": 2765,
         "pass": true,
