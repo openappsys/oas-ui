@@ -133,6 +133,8 @@ export const zhCN = {
   'table.save': '保存',
   'table.cancel': '取消',
   'table.editCell': '编辑 {column}（行 {key}）',
+  'table.filter': '筛选',
+  'table.clear': '清除',
   // list（列表）
   'list.empty': '暂无数据',
   // tree（树形控件）

@@ -1381,3 +1381,74 @@ describe('OASTable 分页（pagination）', () => {
     expect(rows(el)[1]!.textContent).toContain('n11')
   })
 })
+
+describe('OASTable 列过滤（filter）', () => {
+  const FILTER_COLS = JSON.stringify([
+    {
+      key: 'name',
+      title: '姓名',
+      filterable: true,
+      filters: [
+        { label: '张三', value: '张三' },
+        { label: '李四', value: '李四' },
+      ],
+    },
+    { key: 'age', title: '年龄' },
+  ])
+
+  it('#14 数据层过滤：filter-values 按列值过滤行', () => {
+    const el = mount({ columns: FILTER_COLS, data: DATA, 'filter-values': '{"name":"李四"}' })
+    expect(rows(el).length).toBe(1)
+    expect(rows(el)[0]!.textContent).toContain('李四')
+  })
+
+  it('#14 filterMatch 自定义匹配器', () => {
+    // filterMatch 是函数，走 columns property 通路（JSON attribute 丢函数）
+    const el = new OASTable()
+    el.columns = [
+      { key: 'age', title: '年龄', filterable: true, filterMatch: (c: unknown, fv: string | number) => Number(c) >= Number(fv) },
+      { key: 'name', title: '姓名' },
+    ]
+    el.setAttribute('data', DATA)
+    el.setAttribute('filter-values', '{"age":30}')
+    document.body.appendChild(el)
+    // age >= 30：张三(30)/王五(35)
+    const names = rows(el).map((r) => r.querySelector('td[data-col="name"]')?.textContent)
+    expect(names).toEqual(['张三', '王五'])
+    expect(rows(el).length).toBe(2)
+  })
+
+  it('#14 过滤 + 分页：总数与页数反映过滤后数据', () => {
+    const el = mount({
+      columns: FILTER_COLS,
+      data: DATA,
+      pagination: '',
+      'page-size': '1',
+      'filter-values': '{"name":"张三"}',
+    })
+    // 过滤后只剩 1 行
+    expect(rows(el).length).toBe(1)
+    const pag = el.shadowRoot!.querySelector('.pagination oas-pagination')
+    expect(pag!.getAttribute('total')).toBe('1')
+  })
+
+  it('#14 filterable 表头渲染过滤触发器，点击弹出选项并能应用', () => {
+    const el = mount({ columns: FILTER_COLS, data: DATA })
+    const btn = el.shadowRoot!.querySelector('th[data-key="name"] .filter-btn')!
+    expect(btn).not.toBeNull()
+    ;(btn as HTMLElement).click()
+    const panel = el.shadowRoot!.querySelector('.filter-panel')!
+    expect(panel).not.toBeNull()
+    // 选项含张三/李四（列级 filters）
+    expect([...panel.querySelectorAll('.filter-option')].map((o) => o.textContent)).toEqual(['张三', '李四'])
+    let detail: unknown
+    el.addEventListener('oas-filter-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(panel.querySelectorAll('.filter-option')[1] as HTMLElement).click()
+    expect(el.getAttribute('filter-values')).toBe('{"name":"李四"}')
+    expect(detail).toEqual({ filters: { name: '李四' } })
+    expect(rows(el).length).toBe(1)
+    expect(rows(el)[0]!.textContent).toContain('李四')
+    // 应用后弹层关闭
+    expect(el.shadowRoot!.querySelector('.filter-panel')).toBeNull()
+  })
+})
