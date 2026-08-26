@@ -98,6 +98,8 @@ Menu `items` support an optional `group` field: consecutive items in the same gr
 
 Items support `children` nesting: a parent item toggles expansion on click (without firing `oas-select`); a parent containing the active child auto-expands. Subtrees are hidden in the collapsed icon strip. Expand/collapse runs a smooth height animation (degrades automatically under `prefers-reduced-motion`); `accordion` makes siblings mutually exclusive — expanding one parent collapses the others at the same level (great for long navs that keep only one section open).
 
+> **Nesting depth**: mechanically unlimited (recursive rendering; level 3 verified — per-level expansion, active-cascade auto-expansion and child-selected all work). But each level adds ~28px of indentation, so keep it to **≤3 levels** in a 220px sidebar — use `oas-tree` for deeper trees (built for arbitrary depth: connecting lines / virtual scroll).
+
 <DemoBlock title="Accordion (siblings mutually exclusive)">
   <div style="height: 380px; width: 100%; display: flex">
     <oas-sidebar accordion items='[{"label":"Dashboard","value":"dash","icon":"star"},{"label":"Business","value":"biz","icon":"edit","children":[{"label":"Orders","value":"orders","icon":"edit"},{"label":"Products","value":"goods","icon":"heart"},{"label":"Users","value":"users","icon":"user"}]},{"label":"Marketing","value":"mkt","icon":"mail","children":[{"label":"Campaigns","value":"acts","icon":"calendar"},{"label":"Coupons","value":"coupon","icon":"star"}]},{"label":"Settings","value":"sys","icon":"gear","children":[{"label":"Permissions","value":"perm","icon":"lock"},{"label":"Audit log","value":"audit","icon":"clock"}]}]'></oas-sidebar>
