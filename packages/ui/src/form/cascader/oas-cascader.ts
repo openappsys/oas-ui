@@ -179,7 +179,7 @@ export class OASCascader extends OASElement {
         this.syncDropdown()
       }
     })
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
   }
 
   protected override render(): void {
@@ -218,10 +218,10 @@ export class OASCascader extends OASElement {
     this.dropdown.classList.toggle('open', this.openState)
     this.triggerEl.setAttribute('aria-expanded', String(this.openState))
     if (this.openState) {
-      document.addEventListener('click', this.handleOutsideClick)
+      document.addEventListener('click', this.handleOutsideClick, true)
       this.dropdown.focus()
     } else {
-      document.removeEventListener('click', this.handleOutsideClick)
+      document.removeEventListener('click', this.handleOutsideClick, true)
     }
   }
 
