@@ -19,7 +19,7 @@
 
 ## 折叠
 
-点击底部「«」按钮切换 `collapsed`（受控属性，派发 `oas-collapse`）；折叠态只显示图标，无 icon 的菜单项自动隐藏。
+点击底部「«」按钮切换 `collapsed`（受控属性，派发 `oas-collapse`）；折叠态只显示图标，无 icon 的菜单项自动隐藏。`hide-toggle` 可隐藏该按钮（宿主 opt-out，如静态侧栏场景）。
 
 <DemoBlock title="collapsed 图标态">
   <oas-space direction="vertical" style="width: 100%">
@@ -281,7 +281,7 @@
 
 <DemoBlock title="子元素声明式（分组 / 分隔线 / 嵌套 / 徽标）">
   <div style="height: 340px; width: 100%; display: flex">
-    <oas-sidebar id="sidebar-decl" active="users">
+    <oas-sidebar id="sidebar-decl" active="users" hide-toggle>
       <oas-sidebar-item value="dash" icon="star" group="概览">仪表盘</oas-sidebar-item>
       <oas-sidebar-item value="trend" icon="star" group="概览">实时趋势</oas-sidebar-item>
       <oas-sidebar-divider></oas-sidebar-divider>
@@ -322,6 +322,7 @@
 | `collapsed` | 受控折叠，收窄为图标条（存在即折叠） | `boolean` | — |
 | `drawer-open` | 移动端抽屉打开态（受控：设置即开、清除即收；断点回桌面自动移除） | `boolean` | — |
 | `expand-on-hover` | 折叠图标条悬停临时展开（纯视觉态，不改 collapsed 受控） | — | — |
+| `hide-toggle` | 隐藏底部折叠按钮（桌面端恒显示的内置折叠切换；存在即隐藏，宿主 opt-out，静态侧栏场景用） | `boolean` | — |
 | `items` | 菜单项 JSON `[{label, value, icon?, iconColor?, group?, badge?, children?, actions?}]`（支持分隔线条目 `{type:"divider"}`；children 嵌套子菜单） | `SidebarEntry[] \| string` | `[]` |
 | `loading` | 骨架屏加载态（存在即显示脉冲骨架；数值为骨架行数，默认 4） | `string` | `4` |
 | `mobile-breakpoint` | 移动端断点（px），窄于该值变覆盖式抽屉 | — | — |
@@ -353,6 +354,7 @@
 | `badge` | 徽标计数（纯数字字符串转 number，其余保留 string；对齐 SidebarItem.badge 的 string\|number） | — | — |
 | `group` | 分组名（连续同组项在组首项前渲染组标题） | — | — |
 | `icon` | 前置图标（`@oas-ui/icons` 注册表图标名；折叠图标条态显示） | — | — |
+| `icon-color` | — | — | — |
 | `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
 
 | 名称 | 说明 |

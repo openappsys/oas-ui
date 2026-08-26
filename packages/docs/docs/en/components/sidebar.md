@@ -19,7 +19,7 @@ Pass menu JSON via the `items` attribute (`[{label, value, icon?}]`); the defaul
 
 ## Collapsing
 
-Clicking the bottom「«」button toggles `collapsed` (a controlled attribute; fires `oas-collapse`). In the collapsed state only icons are shown, and menu items without an `icon` are hidden automatically.
+Clicking the bottom「«」button toggles `collapsed` (a controlled attribute; fires `oas-collapse`). In the collapsed state only icons are shown, and menu items without an `icon` are hidden automatically. `hide-toggle` hides the button (host opt-out, e.g. for static sidebars).
 
 <DemoBlock title="collapsed icon state">
   <oas-space direction="vertical" style="width: 100%">
@@ -281,7 +281,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 
 <DemoBlock title="Declarative children (group / divider / nested / badge)">
   <div style="height: 340px; width: 100%; display: flex">
-    <oas-sidebar id="sidebar-decl" active="users">
+    <oas-sidebar id="sidebar-decl" active="users" hide-toggle>
       <oas-sidebar-item value="dash" icon="star" group="Overview">Dashboard</oas-sidebar-item>
       <oas-sidebar-item value="trend" icon="star" group="Overview">Live Trends</oas-sidebar-item>
       <oas-sidebar-divider></oas-sidebar-divider>
@@ -322,6 +322,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `collapsed` | Controlled collapse to an icon strip (present means collapsed) | `boolean` | — |
 | `drawer-open` | Mobile drawer open state (controlled: set opens, clear closes; auto-removed when breakpoint returns to desktop) | `boolean` | — |
 | `expand-on-hover` | Temporarily expand the collapsed icon strip on hover (visual only; does not change controlled collapsed) | — | — |
+| `hide-toggle` | Hide the bottom collapse button (a built-in toggle always visible on desktop; presence hides it — host opt-out for static sidebars) | `boolean` | — |
 | `items` | Menu items JSON `[{label, value, icon?, iconColor?, group?, badge?, children?, actions?}]` (supports divider entries `{type:"divider"}`; children for nested submenus) | `SidebarEntry[] \| string` | `[]` |
 | `loading` | Skeleton loading state (shows a pulsing skeleton when present; value sets row count, default 4) | `string` | `4` |
 | `mobile-breakpoint` | Mobile breakpoint (px); narrower than this becomes an overlay drawer | — | — |
@@ -353,6 +354,7 @@ Besides the `items` JSON, items can be declared with `<oas-sidebar-item>` / `<oa
 | `badge` | Count badge (all-digit strings convert to `number`, otherwise stay `string`; matches `SidebarItem.badge`'s `string \| number`) | — | — |
 | `group` | Group name (consecutive items in the same group get a group title before the group's first item) | — | — |
 | `icon` | Leading icon (`@oas-ui/icons` registry icon name; shown in the collapsed icon strip) | — | — |
+| `icon-color` | — | — | — |
 | `value` | Selection value (data-carrier field of the declarative child channel) | — | — |
 
 | Name | Description |
