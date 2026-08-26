@@ -16,8 +16,11 @@ const STYLE = `
 .dialog {
   position: fixed;
   top: 100px;
-  left: 50%;
-  transform: translateX(-50%);
+  /* 水平居中不用 transform：fixed + left/right 0 + margin auto（transform 会让后代
+     position:fixed 的浮层以其为包含块，modal 内 select 等下拉按视口算的坐标被错位解释） */
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: 520px;
   min-width: 360px;
   max-width: 90vw;
@@ -32,10 +35,10 @@ const STYLE = `
   font-family: inherit;
   color: var(--oas-color-text-primary);
 }
-/* 垂直居中：data-centered 由 update() 增量同步 */
+/* 垂直居中：data-centered 由 update() 增量同步；inset 0 + margin auto（不用 transform，同上） */
 .dialog[data-centered] {
-  top: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  margin: auto;
 }
 /* 可拖拽：标题栏抓取、触摸不滚动；拖拽中禁止选中文本（状态属性 dragging 与用户属性 draggable 区分） */
 :host([draggable]) .header {
@@ -287,8 +290,12 @@ export class OASModal extends OASElement {
     if (!this.dragging) return
     const dialog = this.shadow.querySelector<HTMLElement>('.dialog')
     if (!dialog) return
-    // 内联 left/top 覆盖 CSS 居中定位；transform 置空避免 translate 二次偏移
+    // 内联 left/top 覆盖 CSS 居中定位；清居中相关（margin auto/right/inset）防 margin auto
+    // 与内联 left 冲突（居中已从 transform 改 margin auto 方案）
     dialog.style.transform = 'none'
+    dialog.style.margin = '0'
+    dialog.style.right = 'auto'
+    dialog.style.inset = 'auto'
     dialog.style.left = `${this.dragOriginLeft + e.clientX - this.dragStartX}px`
     dialog.style.top = `${this.dragOriginTop + e.clientY - this.dragStartY}px`
   }

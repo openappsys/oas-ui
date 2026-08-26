@@ -150,6 +150,23 @@ describe('OASModal', () => {
     expect(el.shadowRoot!.querySelector('.dialog')!.getAttribute('data-centered')).toBeNull()
   })
 
+  // 协作缺陷回归：dialog 用 transform 居中会让后代 position:fixed 浮层（select 等）以它为
+  // 包含块，computePosition 按视口算的 left/top 被错位解释（模板实测：modal 内下拉升到屏幕外）。
+  // 居中必须走 left/right 0 + margin auto（默认）/ inset 0 + margin auto（centered），不用 transform
+  it('dialog 居中不用 transform（margin auto 方案），fixed 后代浮层包含块不被劫持', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const base = /\.dialog\s*\{[^}]*\}/.exec(css)?.[0] ?? ''
+    expect(base).toMatch(/left:\s*0/)
+    expect(base).toMatch(/right:\s*0/)
+    expect(base).toMatch(/margin:\s*0 auto/)
+    expect(base).not.toMatch(/transform\s*:/) // 无 transform 声明（注释不含此格式）
+    const centered = /\.dialog\[data-centered\]\s*\{[^}]*\}/.exec(css)?.[0] ?? ''
+    expect(centered).toMatch(/inset:\s*0/)
+    expect(centered).not.toMatch(/transform\s*:/)
+  })
+
   it('draggable 时拖动标题栏改变对话框位置（内联 left/top），松手后停止跟随', async () => {
     const el = mount({ visible: '', draggable: '' })
     await Promise.resolve()
