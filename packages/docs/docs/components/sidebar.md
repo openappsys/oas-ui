@@ -159,9 +159,9 @@
 
 <DemoBlock title="自定义图标与着色（registerIcon + iconColor）">
   <div style="height: 300px; width: 100%; display: flex">
-    <oas-sidebar id="sidebar-custom-icon" items='[{"label":"个人工作台","value":"workbench","icon":"oas-rocket","iconColor":"var(--oas-color-warning)"},{"label":"项目仓库","value":"repo","icon":"oas-folder","iconColor":"var(--oas-color-primary)"},{"label":"团队动态","value":"team","icon":"oas-heart"}]'></oas-sidebar>
+    <oas-sidebar id="sidebar-custom-icon" items='[{"label":"个人工作台","value":"workbench","icon":"oas-rocket","iconColor":"var(--oas-color-warning)"},{"label":"项目仓库","value":"repo","icon":"oas-folder","iconColor":"var(--oas-color-primary)"},{"label":"团队动态","value":"team","icon":"oas-heart"},{"label":"内置星标","value":"star","icon":"star","iconColor":"var(--oas-color-danger)"},{"label":"内置心形","value":"heart","icon":"heart"}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
-      「个人工作台」固定警示橙、「项目仓库」固定主题主色（<code>iconColor</code> 显式 → 不随激活态变色）；「团队动态」未给 <code>iconColor</code> 走随态着色，且其自定义 SVG 自带红色描边天然保留。折叠图标条 tooltip 里的图标同色。
+      「个人工作台」固定警示橙、「项目仓库」固定主题主色（<code>iconColor</code> 显式 → 不随激活态变色）；「团队动态」未给 <code>iconColor</code> 走随态着色，且其自定义 SVG 自带红色描边天然保留。内置图标同样配 <code>iconColor</code>：<strong>「内置星标」用注册表 <code>star</code> 名 + 强制红色</strong>（内置单色 path 的 <code>currentColor</code> 也被替换为该色）；「内置心形」未给同样走随态。折叠图标条 tooltip 里的图标同色。
     </div>
   </div>
 </DemoBlock>
