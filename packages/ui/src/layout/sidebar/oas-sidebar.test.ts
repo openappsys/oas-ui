@@ -444,6 +444,29 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(p2.classList.contains('child-selected'), '展开态激活后代的父项也应带 child-selected').toBe(true)
   })
 
+  it('父项与子树间有呼吸（.item-block gap：父项底色与子项 hover 底色不贴死）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items: '[{"label":"管理","value":"biz","icon":"star","children":[{"label":"用户","value":"users"}]}]',
+    })
+    const stl = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(stl, '.item-block 应有 flex+gap 使父项与子树留呼吸').toMatch(
+      /\.item-block\s*\{[^}]*display:\s*flex[^}]*gap:\s*var\(--oas-space-1/,
+    )
+  })
+
+  it('嵌套子项支持 icon（children 项 icon 字段渲染注册表 SVG，与父项同通道）', () => {
+    stubMatchMedia(false)
+    const el = mount({
+      items:
+        '[{"label":"管理","value":"biz","icon":"star","children":[{"label":"用户","value":"users","icon":"user"}]}]',
+    })
+    const childBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="submenu"] [part="item"]')!
+    const svg = childBtn.querySelector('.icon svg')
+    expect(svg, '子项 icon 字段应渲染注册表 SVG').not.toBeNull()
+    expect(childBtn.querySelector('.icon svg path'), '子项图标 path 应渲染').not.toBeNull()
+  })
+
   it('折叠态徽标为图标右上角紧凑角标（绝对定位不撑出 64px 图标条；默认药丸会溢出成白条）', () => {
     stubMatchMedia(false)
     const el = mount({ collapsed: '', items: '[{"label":"收件箱","value":"inbox","icon":"star","badge":"12"}]' })
