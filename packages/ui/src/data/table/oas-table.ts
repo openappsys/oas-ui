@@ -27,6 +27,8 @@ export interface TableColumn {
   serialNumber?: boolean
   /** 省略号：单元格内容超出列宽时单行截断并以省略号显示（配合 title 悬停查看全文） */
   ellipsis?: boolean
+  /** 多级表头：子列（有 children 的列是组表头，不渲染数据单元格，按子列 colspan 合并；数据/排序/显隐/拖拽作用于叶子列） */
+  children?: TableColumn[]
 }
 
 /** 行内编辑 select 选项 */
@@ -148,6 +150,15 @@ th {
 th.sortable {
   cursor: pointer;
   user-select: none;
+}
+th.header-group {
+  text-align: center;
+  color: var(--oas-color-text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--oas-color-border);
+}
+th.header-group + th.header-group {
+  border-left: 1px solid var(--oas-color-border);
 }
 th.sortable:hover {
   color: var(--oas-color-primary);
@@ -515,8 +526,57 @@ export class OASTableBase extends OASElement {
   }
 
   /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
-  private bind(): void {
-    this.wrap = this.shadow.querySelector('.table-scroll')
+  /** 表头单元格填充：可排序列渲染排序箭头/序号，否则纯标题（扁平与多行叶子共用） */
+  private fillHeaderCell(th: HTMLElement, col: TableColumn): void {
+    if (!col.sortable) {
+      th.textContent = col.title
+      return
+    }
+    th.className = 'sortable'
+    const sorts = this.resolveSorts()
+    const idx = sorts.findIndex((s) => s.key === col.key)
+    const state = idx >= 0 ? sorts[idx] : undefined
+    th.setAttribute('data-order', state?.order ?? '')
+    if (state && sorts.length > 1) th.setAttribute('data-sort-index', String(idx + 1))
+    else th.removeAttribute('data-sort-index')
+    const arrow = state?.order === 'asc' ? '↑' : state?.order === 'desc' ? '↓' : '↕'
+    const badge = state && sorts.length > 1 ? `<span class="sort-index">${idx + 1}</span>` : ''
+    th.innerHTML = `${col.title}${badge}<span class="sort-icon">${arrow}</span>`
+  }
+
+  /** 全选表头单元格（checkable）；rowSpan>1 用于多级表头首行盖到底部 */
+  private buildCheckAllTh(
+    layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
+    flat: FlatRow[],
+    rowKey: string,
+    selected: string[],
+    rowSpan: number,
+  ): HTMLElement {
+    const th = document.createElement('th')
+    th.className = 'check-cell'
+    th.style.width = '40px'
+    th.rowSpan = rowSpan
+    if (layout.hasFixed) {
+      th.setAttribute('data-fixed', 'left')
+      th.style.left = '0px'
+    }
+    const selectAll = document.createElement('input')
+    selectAll.type = 'checkbox'
+    selectAll.setAttribute('aria-label', this.t('table.selectAll'))
+    selectAll.checked =
+      flat.length > 0 &&
+      flat.every((f) => selected.includes(String(f.row[rowKey] ?? JSON.stringify(f.row))))
+    selectAll.addEventListener('change', () => {
+      const keys = flat.map((f) => String(f.row[rowKey] ?? JSON.stringify(f.row)))
+      this.setAttribute('selected', selectAll.checked ? keys.join(',') : '')
+      this.emit('check', { keys: selectAll.checked ? keys : [] })
+      this.update()
+    })
+    th.appendChild(selectAll)
+    return th
+  }
+
+  private bind(): void {    this.wrap = this.shadow.querySelector('.table-scroll')
     this.shadow.querySelector('thead')?.addEventListener('click', (e) => {
       const th = (e.target as HTMLElement).closest('th.sortable')
       if (th) this.sortBy((th as HTMLElement).getAttribute('data-key') ?? '', (e as MouseEvent).shiftKey)
@@ -576,58 +636,58 @@ export class OASTableBase extends OASElement {
     head.innerHTML = ''
     body.innerHTML = ''
 
-    const tr = document.createElement('tr')
-    if (this.hasAttr('checkable')) {
-      const th = document.createElement('th')
-      th.className = 'check-cell'
-      th.style.width = '40px'
-      if (layout.hasFixed) {
-        th.setAttribute('data-fixed', 'left')
-        th.style.left = '0px'
+    const checkable = this.hasAttr('checkable')
+    if (this.headerDepth() > 1) {
+      // 多级表头：按列树深渲染多行（组列 colspan 合并、叶子列 rowspan 盖到底部）
+      const depth = this.headerDepth()
+      for (let r = 0; r < depth; r++) {
+        const row = document.createElement('tr')
+        if (r === 0 && checkable) row.appendChild(this.buildCheckAllTh(layout, flat, rowKey, selected, depth))
+        for (const cell of this.buildHeaderGrid()) {
+          if (cell.level !== r) continue
+          const th = document.createElement('th')
+          th.setAttribute('part', 'header')
+          th.rowSpan = cell.rowspan
+          th.colSpan = cell.colspan
+          if (cell.isLeaf) {
+            th.setAttribute('data-key', cell.col.key)
+            this.applyColumnOffset(th, cell.col, layout)
+            this.fillHeaderCell(th, cell.col)
+            if (cell.col.width) th.style.width = cell.col.width
+          } else {
+            th.classList.add('header-group')
+            th.textContent = cell.col.title
+          }
+          row.appendChild(th)
+        }
+        if (r === 0 && this._expandable) {
+          const th = document.createElement('th')
+          th.className = 'expand-toggle-cell'
+          th.rowSpan = depth
+          row.appendChild(th)
+        }
+        head.appendChild(row)
       }
-      const selectAll = document.createElement('input')
-      selectAll.type = 'checkbox'
-      selectAll.setAttribute('aria-label', this.t('table.selectAll'))
-      selectAll.checked =
-        flat.length > 0 &&
-        flat.every((f) => selected.includes(String(f.row[rowKey] ?? JSON.stringify(f.row))))
-      selectAll.addEventListener('change', () => {
-        const keys = flat.map((f) => String(f.row[rowKey] ?? JSON.stringify(f.row)))
-        this.setAttribute('selected', selectAll.checked ? keys.join(',') : '')
-        this.emit('check', { keys: selectAll.checked ? keys : [] })
-        this.update()
-      })
-      th.appendChild(selectAll)
-      tr.appendChild(th)
-    }
-    for (const col of this.effectiveColumns()) {
-      const th = document.createElement('th')
-      th.setAttribute('part', 'header')
-      th.setAttribute('data-key', col.key)
-      this.applyColumnOffset(th, col, layout)
-      if (col.sortable) {
-        th.className = 'sortable'
-        const sorts = this.resolveSorts()
-        const idx = sorts.findIndex((s) => s.key === col.key)
-        const state = idx >= 0 ? sorts[idx] : undefined
-        th.setAttribute('data-order', state?.order ?? '')
-        if (state && sorts.length > 1) th.setAttribute('data-sort-index', String(idx + 1))
-        else th.removeAttribute('data-sort-index')
-        const arrow = state?.order === 'asc' ? '↑' : state?.order === 'desc' ? '↓' : '↕'
-        const badge = state && sorts.length > 1 ? `<span class="sort-index">${idx + 1}</span>` : ''
-        th.innerHTML = `${col.title}${badge}<span class="sort-icon">${arrow}</span>`
-      } else {
-        th.textContent = col.title
+    } else {
+      // 扁平表头（单行，向后兼容）
+      const tr = document.createElement('tr')
+      if (checkable) tr.appendChild(this.buildCheckAllTh(layout, flat, rowKey, selected, 1))
+      for (const col of this.effectiveColumns()) {
+        const th = document.createElement('th')
+        th.setAttribute('part', 'header')
+        th.setAttribute('data-key', col.key)
+        this.applyColumnOffset(th, col, layout)
+        this.fillHeaderCell(th, col)
+        if (col.width) th.style.width = col.width
+        tr.appendChild(th)
       }
-      if (col.width) th.style.width = col.width
-      tr.appendChild(th)
+      if (this._expandable) {
+        const th = document.createElement('th')
+        th.className = 'expand-toggle-cell'
+        tr.appendChild(th)
+      }
+      head.appendChild(tr)
     }
-    if (this._expandable) {
-      const th = document.createElement('th')
-      th.className = 'expand-toggle-cell'
-      tr.appendChild(th)
-    }
-    head.appendChild(tr)
 
     if (this.hasAttr('loading')) {
       const loadingTr = document.createElement('tr')
@@ -898,15 +958,27 @@ export class OASTableBase extends OASElement {
   }
 
   /** 计算各列 sticky 偏移（左侧从左累加、右侧从右累加） */
-  /** 有效列：按 column-keys（受控显示集合+顺序）过滤排序；无 column-keys 时回落全部列（向后兼容）。
-      再剔除 TableColumn.hidden 标记的列。column-keys 仅约束渲染的列，不改变数据模型。 */
+  /** 扁平化列树：深度优先收集叶子列（无 children）。组列只承载标题，不产出数据单元格 */
+  private flattenLeaves(cols: TableColumn[]): TableColumn[] {
+    const out: TableColumn[] = []
+    for (const c of cols) {
+      if (c.children && c.children.length > 0) out.push(...this.flattenLeaves(c.children))
+      else out.push(c)
+    }
+    return out
+  }
+
+  /** 有效列：按 column-keys（受控显示集合+顺序）过滤排序；无 column-keys 时回落全部叶子列（向后兼容）。
+      再剔除 TableColumn.hidden 标记的列。column-keys 仅约束渲染的列，不改变数据模型。
+      列树先扁平为叶子列，数据/排序/显隐/拖拽均作用于叶子列。 */
   private effectiveColumns(): TableColumn[] {
-    let cols = this._columns
+    let cols = this.flattenLeaves(this._columns)
     if (this._columnKeys.length > 0) {
       const order = new Map(this._columnKeys.map((k, i) => [k, i]))
       cols = cols
         .filter((c) => order.has(c.key))
-        .sort((a, b) => (order.get(a.key) ?? 0) - (order.get(b.key) ?? 0))    }
+        .sort((a, b) => (order.get(a.key) ?? 0) - (order.get(b.key) ?? 0))
+    }
     return cols.filter((c) => c.hidden !== true)
   }
 
@@ -917,7 +989,8 @@ export class OASTableBase extends OASElement {
 
   /** 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化） */
   setColumnOrder(keys: string[]): void {
-    const valid = keys.filter((k) => this._columns.some((c) => c.key === k))
+    const leaves = this.flattenLeaves(this._columns)
+    const valid = keys.filter((k) => leaves.some((c) => c.key === k))
     if (valid.length === 0) return
     this.setAttribute('column-keys', JSON.stringify(valid))
     this.emit('column-order', { keys: valid })
@@ -925,17 +998,22 @@ export class OASTableBase extends OASElement {
 
   /** 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 */
   setColumnWidth(key: string, width: number): void {
+    const update = (cols: TableColumn[]): TableColumn[] =>
+      cols.map((c) =>
+        c.children && c.children.length > 0
+          ? { ...c, children: update(c.children) }
+          : c.key === key
+            ? { ...c, width: `${width}px` }
+            : c,
+      )
     if (this._columnsFromProperty) {
-      this._columns = this._columns.map((c) => (c.key === key ? { ...c, width: `${width}px` } : c))
+      this._columns = update(this._columns)
       this.update()
       this.emit('column-resize', { key, width })
       return
     }
     this._columnsFromProperty = false
-    this.setAttribute(
-      'columns',
-      JSON.stringify(this._columns.map((c) => (c.key === key ? { ...c, width: `${width}px` } : c))),
-    )
+    this.setAttribute('columns', JSON.stringify(update(this._columns)))
     this.emit('column-resize', { key, width })
   }
 
@@ -960,6 +1038,56 @@ export class OASTableBase extends OASElement {
       }
     }
     return { offsets, hasFixed }
+  }
+
+  /** 该列（含后代）可见叶子数：隐藏叶子不计；组列 = 各子列可见叶子之和（组列自身无数据单元格） */
+  private leafCount(col: TableColumn): number {
+    if (col.children && col.children.length > 0) {
+      return col.children.reduce((sum, c) => sum + this.leafCount(c), 0)
+    }
+    return col.hidden ? 0 : 1
+  }
+
+  /** 多级表头树深：最深层叶子所在层级（无列=0），只统计存在可见叶子的组层 */
+  private headerDepth(): number {
+    const walk = (cols: TableColumn[]): number => {
+      let max = 1
+      for (const c of cols) {
+        if (c.children && c.children.length > 0 && this.leafCount(c) > 0) {
+          max = Math.max(max, 1 + walk(c.children))
+        }
+      }
+      return cols.length ? max : 0
+    }
+    return walk(this._columns)
+  }
+
+  /** 生成多级表头网格：rows[r] 为第 r 行需渲染的表头单元格（含 rowspan/colspan/是否叶子）。
+      有 children 的组列一行渲染（colspan=可见叶子数）；叶子列落位到树深、rowspan 盖到底部（表头多行时数据对齐）。 */
+  private buildHeaderGrid(): {
+    col: TableColumn
+    level: number
+    rowspan: number
+    colspan: number
+    isLeaf: boolean
+  }[] {
+    const depth = this.headerDepth()
+    const rows: { col: TableColumn; level: number; rowspan: number; colspan: number; isLeaf: boolean }[][] =
+      Array.from({ length: depth }, () => [])
+    const fill = (cols: TableColumn[], level: number): void => {
+      for (const col of cols) {
+        const count = this.leafCount(col)
+        if (count === 0) continue
+        if (col.children && col.children.length > 0) {
+          rows[level]!.push({ col, level, rowspan: 1, colspan: count, isLeaf: false })
+          fill(col.children, level + 1)
+        } else {
+          rows[level]!.push({ col, level, rowspan: depth - level, colspan: 1, isLeaf: true })
+        }
+      }
+    }
+    fill(this._columns, 0)
+    return rows.flat()
   }
 
   /**

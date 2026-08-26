@@ -1266,3 +1266,65 @@ describe('OASTable 序号列与省略号', () => {
     expect(td.getAttribute('title')).toBe('张三')
   })
 })
+
+describe('OASTable 多级表头（children）', () => {
+  const GROUP_COLS = JSON.stringify([
+    {
+      key: 'base',
+      title: '基础信息',
+      children: [
+        { key: 'name', title: '姓名', sortable: true },
+        { key: 'age', title: '年龄' },
+      ],
+    },
+    { key: 'city', title: '城市' },
+  ])
+
+  it('#12 组列渲染：组表头 colspan=子叶子数，叶子列落位底行且 rowspan 盖到底部', () => {
+    const el = mount({ columns: GROUP_COLS, data: DATA })
+    const roots = el.shadowRoot!.querySelectorAll('thead > tr')!
+    // 树深 2 → 表头两行
+    expect(roots.length).toBe(2)
+    // 组表头：基础信息 colspan=2 rowspan=1
+    const group = el.shadowRoot!.querySelector('th.header-group')!
+    expect(group.textContent).toBe('基础信息')
+    expect(group.getAttribute('colspan')).toBe('2')
+    expect(group.getAttribute('rowspan')).toBe('1')
+    // 顶层的城市是叶子，rowspan=树深(2)，从第 0 行盖到底
+    const city = el.shadowRoot!.querySelector('th[data-key="city"]')!
+    expect(city.getAttribute('rowspan')).toBe('2')
+    // 底行叶子：name/age rowspan=1
+    expect(el.shadowRoot!.querySelector('th[data-key="name"]')!.getAttribute('rowspan')).toBe('1')
+    expect(el.shadowRoot!.querySelector('th[data-key="age"]')!.getAttribute('rowspan')).toBe('1')
+    // 表头叶子总数 = 可见叶子数 3（name/age/city）
+    expect(el.shadowRoot!.querySelectorAll('th[data-key]').length).toBe(3)
+  })
+
+  it('#12 扁平渲染：数据行按叶子列渲染与底行表头对齐（每行 td=叶子数）', () => {
+    const el = mount({ columns: GROUP_COLS, data: DATA })
+    const tds = rows(el)[0]!.querySelectorAll('td').length
+    expect(tds).toBe(3)
+    // 顺序 = 深度优先叶子展开：姓名/年龄/城市
+    const cols = [...rows(el)[0]!.querySelectorAll('td')].map((td) => td.getAttribute('data-col'))
+    expect(cols).toEqual(['name', 'age', 'city'])
+  })
+
+  it('#12 排序作用于叶子列：点击叶子表头排序并派发事件', () => {
+    const el = mount({ columns: GROUP_COLS, data: DATA })
+    let detail: unknown
+    el.addEventListener('oas-sort-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    const nameTh = el.shadowRoot!.querySelector('th[data-key="name"]')!
+    nameTh.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    expect(detail).toEqual({ key: 'name', order: 'asc' })
+    // 张(0x5F20) < 李(0x674E) < 王(0x738B)，已升序，行首为张三
+    expect(rows(el)[0]!.textContent).toContain('张三')
+  })
+
+  it('#12 多级表头与 checkable：全选表头占首行并 rowspan 盖到底部', () => {
+    const el = mount({ columns: GROUP_COLS, data: DATA, checkable: '' })
+    const check = el.shadowRoot!.querySelector('thead th.check-cell')!
+    expect(check.getAttribute('rowspan')).toBe('2')
+    // 数据行首列为选择列
+    expect(rows(el)[0]!.querySelector('td.check-cell')).not.toBeNull()
+  })
+})
