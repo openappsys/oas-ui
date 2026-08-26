@@ -102,7 +102,8 @@ Items support `children` nesting: a parent item toggles expansion on click (with
   <div style="height: 380px; width: 100%; display: flex">
     <oas-sidebar accordion items='[{"label":"Dashboard","value":"dash","icon":"star"},{"label":"Business","value":"biz","icon":"edit","children":[{"label":"Orders","value":"orders","icon":"edit"},{"label":"Products","value":"goods","icon":"heart"},{"label":"Users","value":"users","icon":"user"}]},{"label":"Marketing","value":"mkt","icon":"mail","children":[{"label":"Campaigns","value":"acts","icon":"calendar"},{"label":"Coupons","value":"coupon","icon":"star"}]},{"label":"Settings","value":"sys","icon":"gear","children":[{"label":"Permissions","value":"perm","icon":"lock"},{"label":"Audit log","value":"audit","icon":"clock"}]}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
-      Click "Business", "Marketing", "Settings" in turn — only one section stays open at a time.
+      Click "Business", "Marketing", "Settings" in turn — only one section stays open at a time.<br />
+      Each click also demos the <strong>smooth expand/collapse animation</strong> (grid height transition + chevron rotation; degrades automatically under `prefers-reduced-motion`).
     </div>
   </div>
 </DemoBlock>
