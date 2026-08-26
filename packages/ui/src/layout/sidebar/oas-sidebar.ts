@@ -307,8 +307,12 @@ aside {
   flex-direction: column;
   gap: var(--oas-space-1, 4px);
   margin-inline-start: calc(var(--oas-control-height-md, 32px) / 2 + var(--oas-space-3, 12px));
-  padding-inline-start: var(--oas-space-3, 12px);
-  border-inline-start: 1px solid var(--oas-color-border);
+  /* 缩进收敛（实测评估）：容器 padding 12→6，配合子项图标占位 24→18，
+     子项 label 距引导线 61→49px——无图标子项不再显空肥，层级仍清晰 */
+  padding-inline-start: var(--oas-space-1_5, 6px);
+  /* 引导线对比度：原 --oas-color-border（228,228,231）压侧栏灰底（244,244,245）
+     亮度差仅 16 几乎不可见（识图复核抓出）；改 text-primary 12% 混色，亮暗双主题自适应 */
+  border-inline-start: 1px solid color-mix(in srgb, var(--oas-color-text-primary) 12%, transparent);
 }
 /* hidden 属性必须显式声明：UA 的 [hidden]{display:none} 会被上方作者级 display:flex 压过，
    缺这条则 subWrap.hidden=true 只改属性不改渲染（子菜单永远可见——用户实测点击不折叠） */
@@ -316,7 +320,7 @@ aside {
   display: none;
 }
 .item.sub .icon {
-  width: var(--oas-control-height-sm, 24px);
+  width: 18px;
 }
 /* 项操作按钮：默认隐藏，悬停/聚焦项时出现 */
 .item-actions {
