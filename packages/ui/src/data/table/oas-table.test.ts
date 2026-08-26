@@ -1452,3 +1452,49 @@ describe('OASTable 列过滤（filter）', () => {
     expect(el.shadowRoot!.querySelector('.filter-panel')).toBeNull()
   })
 })
+
+describe('OASTable 合并单元格（merge）', () => {
+  const MERGE_COLS = JSON.stringify([
+    { key: 'dept', title: '部门', merge: true },
+    { key: 'name', title: '姓名' },
+  ])
+  const MERGE_DATA = JSON.stringify([
+    { dept: '研发', name: '张三' },
+    { dept: '研发', name: '李四' },
+    { dept: '市场', name: '王五' },
+  ])
+
+  it('#15 merge 列连续相同值合并 rowspan，后续行去掉该列 td', () => {
+    const el = mount({ columns: MERGE_COLS, data: MERGE_DATA })
+    const trs = rows(el)
+    const dept0 = trs[0]!.querySelector('td[data-col="dept"]')!
+    expect(dept0.getAttribute('rowspan')).toBe('2')
+    expect(trs[1]!.querySelector('td[data-col="dept"]')).toBeNull()
+    // 第三行（市场）非连续，td 保留
+    expect(trs[2]!.querySelector('td[data-col="dept"]')).not.toBeNull()
+    expect(trs[1]!.querySelector('td[data-col="name"]')!.textContent).toBe('李四')
+  })
+
+  it('#15 合并与 checkable：merge 列 td 索引区分选择列', () => {
+    const el = mount({ columns: MERGE_COLS, data: MERGE_DATA, checkable: '' })
+    const trs = rows(el)
+    expect(trs[0]!.querySelector('td[data-col="dept"]')!.getAttribute('rowspan')).toBe('2')
+    expect(trs[1]!.querySelector('td[data-col="dept"]')).toBeNull()
+    // 选择列仍在每行显示
+    expect(trs[1]!.querySelector('td.check-cell')).not.toBeNull()
+  })
+
+  it('#15 不同值不合并', () => {
+    const el = mount({
+      columns: MERGE_COLS,
+      data: JSON.stringify([
+        { dept: '研发', name: '张三' },
+        { dept: '市场', name: '王五' },
+      ]),
+    })
+    const trs = rows(el)
+    // 不同值不合并：两行各保留 dept td
+    expect(trs[0]!.querySelector('td[data-col="dept"]')).not.toBeNull()
+    expect(trs[1]!.querySelector('td[data-col="dept"]')).not.toBeNull()
+  })
+})
