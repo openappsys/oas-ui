@@ -38,6 +38,7 @@ const DEFAULT_VARS: Record<string, string> = {
   '--oas-radius-sm': '4px',
   '--oas-radius-md': '6px',
   '--oas-radius-lg': '10px',
+  '--oas-radius-xl': '14px',
   '--oas-control-height-xs': '20px',
   '--oas-control-height-sm': '24px',
   '--oas-control-height-md': '32px',

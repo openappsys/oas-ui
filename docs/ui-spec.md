@@ -57,6 +57,7 @@
 | `--oas-radius-sm` | `4px`  | 控件内元素                |
 | `--oas-radius-md` | `6px`  | **控件默认**（按钮/输入） |
 | `--oas-radius-lg` | `10px` | 卡片/弹窗                 |
+| `--oas-radius-xl` | `14px` | 大面板/抽屉/超大卡片      |
 
 ### 1.6 动效
 
