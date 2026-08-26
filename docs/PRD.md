@@ -823,6 +823,20 @@ moreBtn 键盘打开聚焦第一项 + 列表 roving（ArrowUp/Down/Home/End/Ente
 - 新增回归：双通道三批单测 +73 / sidebar 深挖批单测 +30 / date-picker 定位 +6 / qa-regression 视觉断言 3 例（sidebar 折叠态几何、子菜单 visibility、layout viewport）
 - demo-coverage 属性全覆盖（placement/hide-toggle 显式演示补齐）
 
+## v2.2.6 iconColor 内置图标着色修复 → 已发布
+
+实测缺陷修复（模板 v2.2.5 使用官方 `iconColor` 全灰）。
+
+### 修复
+
+- **sidebar `iconColor` 对内置图标不生效**：`iconSvg` 只在 `<svg>` 外层写 stroke，内置图标 path 自带 `stroke="currentColor"` 压过外层，颜色永远 currentColor。修法：iconColor 显式时对 path 的 currentColor 做替换——内置单色 path 着色生效；自定义注册彩色 SVG 天然兼容；缺省 currentColor 随态零回归
+- docs 图标着色 demo 补内置图标场景（内置 star 配 iconColor 显式着色活示例 + 内置 heart 无 iconColor 随态对照）
+
+### 验收
+
+- 全量单测 3423 / typecheck / build / api:check / perf:size 六项 PASS（cdn 263.7KB < 300KB 天花板）/ e2e 1372 / trace 0
+- 单测 +1（内置 star 配 iconColor → path stroke 被替换）；浏览器实测内置 `#f50` / `var(--oas-color-danger)` 生效、缺省 currentColor 零回归；识图复核 demo 内置星标红色可辨
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
