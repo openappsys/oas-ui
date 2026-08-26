@@ -35,6 +35,8 @@ export interface TableColumn {
   filters?: Array<{ label: string; value: string | number }>
   /** 自定义过滤匹配器：返回该行是否命中过滤值；缺省按字符串严格相等 */
   filterMatch?: (cell: unknown, filterValue: string | number) => boolean
+  /** 合并单元格：连续相同显示值的行在该列合并为一个 rowspan 单元格（非虚拟模式生效，虚拟滚动时忽略） */
+  merge?: boolean
 }
 
 /** 行内编辑 select 选项 */
@@ -862,14 +864,18 @@ export class OASTableBase extends OASElement {
     if (virtual) {
       this.renderVirtualBody(body, display, rowKey, selected, expanded, layout, st)
     } else {
+      const rowInfos: { tr: HTMLTableRowElement; kind: string }[] = []
       for (let i = 0; i < display.length; i++) {
         const f = display[i]!
-        body.appendChild(
+        const tr =
           f.kind === 'expand'
             ? this.buildExpandRow(f)
-            : this.buildRow(f, i, rowKey, selected, expanded, layout),
-        )
+            : this.buildRow(f, i, rowKey, selected, expanded, layout)
+        rowInfos.push({ tr, kind: f.kind })
+        body.appendChild(tr)
       }
+      // 合并单元格：对 merge 列后处理连续相同值行（虚拟模式不合并）
+      this.applyRowMerge(rowInfos)
     }
 
     if (summaryConfigs.length > 0 && flat.length > 0) {
@@ -1044,6 +1050,42 @@ export class OASTableBase extends OASElement {
   }
 
   /** 渲染可展开行的内容行（整行 colspan 展示自定义内容） */
+  /** 合并单元格：对 merge 列后处理连续相同显示值的行，首行 rowspan 覆盖、后续行删除该列 td。
+      仅合并连续 data 行（expand 内容行插入则断开分组）。按 data-col 属性按 key 查询 td，
+      对其它列已删除的 td 免疫（不依赖列位置索引，避免跨列删除导致的索引漂移）。 */
+  private applyRowMerge(rows: { tr: HTMLTableRowElement; kind: string }[]): void {
+    for (const col of this.effectiveColumns()) {
+      if (!col.merge) continue
+      let group: { td: HTMLTableCellElement; value: string }[] = []
+      const flush = () => {
+        if (group.length > 1) {
+          group[0]!.td.rowSpan = group.length
+          for (let i = 1; i < group.length; i++) group[i]!.td.remove()
+        }
+        group = []
+      }
+      for (const { tr, kind } of rows) {
+        if (kind !== 'data') {
+          flush()
+          continue
+        }
+        const td = tr.querySelector<HTMLTableCellElement>(`td[data-col="${col.key}"]`)
+        if (!td) {
+          flush()
+          continue
+        }
+        const value = td.textContent ?? ''
+        if (group.length > 0 && group[0]!.value === value) {
+          group.push({ td, value })
+        } else {
+          flush()
+          group = [{ td, value }]
+        }
+      }
+      flush()
+    }
+  }
+
   private buildExpandRow(flat: FlatRow): HTMLTableRowElement {
     const tr = document.createElement('tr')
     tr.className = 'expand-row'
