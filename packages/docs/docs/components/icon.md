@@ -58,8 +58,14 @@
 
 ## 自定义图标
 
-- `src`：远程/本地 SVG URL，fetch 加载内联渲染（颜色跟随 `color`/`currentColor`）
-- slot：直接在标签内放内联 `<svg>`，优先级高于 `name`
+四条通道（按使用场景选）：
+
+- **slot**：直接在标签内放内联 `<svg>`，优先级高于 `name`——一次性单点自定义
+- **`src`**：远程/本地 SVG URL，fetch 加载内联渲染（颜色跟随 `color`/`currentColor`）——自有 SVG 文件资源
+- **`registerIcon(name, svg)`**：注册后直接用 `name` 引用（同名覆盖内置）——**应用级自定义图标集的正路**
+- **`registerIconLibrary`**：整套远程图标库接入（resolver → URL 按需 fetch，支持 sprite）——接入外部图标库
+
+> ⚠️ **不要直接改 `iconRegistry`**（`@oas-ui/icons` 导出的内置注册表对象）：那是内部数据结构、无覆盖/清理语义，正路是 `registerIcon()`（官方 API、纯函数、SSR 安全）。
 
 <DemoBlock title="src 加载 SVG">
   <oas-icon src="/demo-icon.svg" size="24" color="var(--oas-color-primary)"></oas-icon>
