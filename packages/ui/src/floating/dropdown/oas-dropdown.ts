@@ -301,7 +301,7 @@ export class OASDropdown extends OASElement {
     }
     document.addEventListener('keydown', onKey)
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutside))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
     // 滚动/尺寸变化重定位监听（scroll 用 capture 捕获嵌套容器滚动，同 tooltip 的 virtual 跟随）
     this.onCleanup(() => {
       window.removeEventListener('scroll', this.onScroll, { capture: true })
@@ -481,7 +481,7 @@ export class OASDropdown extends OASElement {
       this.menuEl.setAttribute('value', this.getAttr('value', ''))
       this.anchorEl.hidden = false
       this.anchorEl.classList.remove('oas-closing')
-      document.addEventListener('click', this.handleOutside)
+      document.addEventListener('click', this.handleOutside, true)
       this.position()
       this.syncScrollFollow(true)
     } else {
@@ -490,7 +490,7 @@ export class OASDropdown extends OASElement {
       } else {
         this.anchorEl.hidden = true
       }
-      document.removeEventListener('click', this.handleOutside)
+      document.removeEventListener('click', this.handleOutside, true)
       this.syncScrollFollow(false)
       // 收起内层菜单残留的级联展开态，避免重开时子菜单直接可见；
       // SSR/Node 渲染环境无 MouseEvent，跳过（SSR 快照本就是关闭态）

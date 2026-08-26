@@ -83,7 +83,7 @@ export class OASContextMenu extends OASElement {
     this.onCleanup(() => document.removeEventListener('keydown', onKey))
     this.onCleanup(() => window.clearTimeout(this.longPressTimer))
     // 打开时注册的 document/window 监听在 update() 关闭分支移除；此处兜底防断开连接泄漏
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutside))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
     this.onCleanup(() => document.removeEventListener('contextmenu', this.handleDocContext))
     this.onCleanup(() => window.removeEventListener('scroll', this.handleScroll, true))
     this.menuEl?.addEventListener('oas-select', (e: Event) => {
@@ -146,12 +146,12 @@ export class OASContextMenu extends OASElement {
       if (!this.wasOpen) {
         // 打开瞬间：用缓存的触发坐标定位（无坐标则不定位，保持快照/上次位置）
         if (this.hasPending) this.positionAt(this.pendingX, this.pendingY)
-        document.addEventListener('click', this.handleOutside)
+        document.addEventListener('click', this.handleOutside, true)
         document.addEventListener('contextmenu', this.handleDocContext)
         if (this.closeOnScroll()) window.addEventListener('scroll', this.handleScroll, true)
       }
     } else {
-      document.removeEventListener('click', this.handleOutside)
+      document.removeEventListener('click', this.handleOutside, true)
       document.removeEventListener('contextmenu', this.handleDocContext)
       window.removeEventListener('scroll', this.handleScroll, true)
     }

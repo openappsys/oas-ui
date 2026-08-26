@@ -143,7 +143,7 @@ export class OASMentions extends OASElement {
       this.scanMention()
     })
     this.ta?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e))
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
   }
 
   protected override render(): void {
@@ -213,14 +213,14 @@ export class OASMentions extends OASElement {
   private open(): void {
     this.openState = true
     this.renderPanel()
-    document.addEventListener('click', this.handleOutsideClick)
+    document.addEventListener('click', this.handleOutsideClick, true)
   }
 
   private close(): void {
     if (!this.openState) return
     this.openState = false
     this.syncOpen()
-    document.removeEventListener('click', this.handleOutsideClick)
+    document.removeEventListener('click', this.handleOutsideClick, true)
   }
 
   private handleOutsideClick = (e: MouseEvent): void => {

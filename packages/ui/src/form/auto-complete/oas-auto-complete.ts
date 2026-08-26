@@ -131,7 +131,7 @@ export class OASAutoComplete extends OASElement {
       this.renderDropdown(true)
     })
     this.input?.addEventListener('keydown', (e: KeyboardEvent) => this.handleKey(e))
-    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick))
+    this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
   }
 
   protected override render(): void {
@@ -212,8 +212,8 @@ export class OASAutoComplete extends OASElement {
 
     this.dropdown.classList.toggle('open', open)
     this.input.setAttribute('aria-expanded', String(open))
-    if (open) document.addEventListener('click', this.handleOutsideClick)
-    else document.removeEventListener('click', this.handleOutsideClick)
+    if (open) document.addEventListener('click', this.handleOutsideClick, true)
+    else document.removeEventListener('click', this.handleOutsideClick, true)
   }
 
   private handleOutsideClick = (e: MouseEvent): void => {
