@@ -1,7 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import '@oas-ui/i18n'
+import { computePosition } from '../../overlay/floating/index.js'
 import { OASDatePicker } from './index.js'
+
+// 包裹真实实现记录 computePosition 入参（行为不变），供浮层定位机制断言
+vi.mock('../../overlay/floating/index.js', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../../overlay/floating/index.js')>()
+  return { ...mod, computePosition: vi.fn(mod.computePosition) }
+})
+
+const computePositionMock = vi.mocked(computePosition)
 
 function mount(attrs: Record<string, string> = {}): OASDatePicker {
   const el = new OASDatePicker()
@@ -328,5 +337,100 @@ describe('OASDatePicker', () => {
     day(el, '2026-08-20', 0).click()
     day(el, '2026-08-25', 0).click()
     expect(el.getAttribute('value')).toBe('["2026-08-20","2026-08-25"]')
+  })
+})
+
+// ---- 浮层定位（placement / fixed 锚定） ----
+
+describe('浮层定位（placement / fixed 锚定）', () => {
+  function dropdownEl(el: OASDatePicker): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('[part="dropdown"]')!
+  }
+
+  const lastCall = (): (typeof computePositionMock.mock.calls)[number] => {
+    const calls = computePositionMock.mock.calls
+    return calls[calls.length - 1]!
+  }
+
+  beforeEach(() => {
+    computePositionMock.mockClear()
+    // 固定视口几何，保证碰撞/翻转断言确定性（happy-dom 无真实布局，矩形需手摆）
+    Object.defineProperty(window, 'innerWidth', { value: 1024, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 768, configurable: true })
+  })
+
+  it('默认 bottom-start：打开后写入 fixed 定位坐标与 data-placement', () => {
+    const el = mount({ value: '2026-08-09' })
+    open(el)
+    const dd = dropdownEl(el)
+    expect(dd.classList.contains('open')).toBe(true)
+    expect(dd.style.top).toMatch(/^\d+px$/)
+    expect(dd.style.left).toMatch(/^\d+px$/)
+    expect(dd.getAttribute('data-placement')).toBe('bottom-start')
+    expect(lastCall()[2]).toBe('bottom-start')
+  })
+
+  it('placement 显式 top-end：computePosition 收到对应参数（collisionPadding 8）', () => {
+    const el = mount({ value: '2026-08-09', placement: 'top-end' })
+    // 人为摆几何：锚点上方空间充足、右缘不出视口 → 无翻转/对齐调整，入参即声明值
+    trigger(el).getBoundingClientRect = () =>
+      ({ left: 100, top: 400, width: 200, height: 32, right: 300, bottom: 432 }) as DOMRect
+    dropdownEl(el).getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width: 200, height: 200 }) as DOMRect
+    open(el)
+    const call = lastCall()
+    expect(call[2]).toBe('top-end')
+    expect(call[6]).toEqual({ collisionPadding: 8 })
+  })
+
+  it('CSS 定位契约：dropdown 为 position: fixed（逃出祖先 overflow），不再 absolute left:0', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const m = css.match(/\[part='dropdown'\][\s\S]*?position:\s*(fixed|absolute)/)
+    expect(m?.[1]).toBe('fixed')
+    expect(css).toContain('position: fixed')
+  })
+
+  it('打开/关闭/再打开：fixed 定位路径不回归，每次展开重新锚定', () => {
+    const el = mount({ value: '2026-08-09' })
+    const dd = dropdownEl(el)
+    open(el)
+    expect(dd.classList.contains('open')).toBe(true)
+    const afterFirst = computePositionMock.mock.calls.length
+    expect(afterFirst).toBeGreaterThan(0)
+    panel(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(dd.classList.contains('open')).toBe(false)
+    const afterClose = computePositionMock.mock.calls.length
+    open(el)
+    expect(dd.classList.contains('open')).toBe(true)
+    expect(computePositionMock.mock.calls.length).toBeGreaterThan(afterClose)
+    expect(dd.getAttribute('data-placement')).toBe('bottom-start')
+  })
+
+  it('range 宽面板贴视口右缘：交叉轴翻转 bottom-end（右对齐）后再交引擎夹取', () => {
+    const el = mount({ type: 'daterange' })
+    trigger(el).getBoundingClientRect = () =>
+      ({ left: 900, top: 100, width: 200, height: 32, right: 1100, bottom: 132 }) as DOMRect
+    dropdownEl(el).getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width: 480, height: 300 }) as DOMRect
+    open(el)
+    const call = lastCall()
+    expect(call[2]).toBe('bottom-end')
+    expect(dropdownEl(el).getAttribute('data-placement')).toBe('bottom-end')
+    // end 对齐仍溢出时引擎做视口夹取：结果不越视口
+    expect(Number.parseInt(dropdownEl(el).style.left, 10)).toBeLessThan(1024)
+  })
+
+  it('非法 placement：回落 bottom-start + console.warn', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const el = mount({ value: '2026-08-09', placement: 'sideways' })
+      open(el)
+      expect(warn).toHaveBeenCalledOnce()
+      expect(String(warn.mock.calls[0]![0])).toContain('bottom-start')
+      expect(dropdownEl(el).getAttribute('data-placement')).toBe('bottom-start')
+    } finally {
+      warn.mockRestore()
+    }
   })
 })

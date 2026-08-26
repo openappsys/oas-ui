@@ -590,6 +590,7 @@
       "min": "可选范围（ISO 日期）",
       "multiple": "多选（仅 `type=date`），值存 JSON 数组",
       "placeholder": "占位提示",
+      "placement": "浮层位置，12 向：`top`/`bottom`/`left`/`right` × `-start`/`-end`（默认 `bottom-start`）；触发器贴近视口右缘时自动右对齐翻转、下方空间不足时上翻，并夹取到视口内",
       "type": "类型：`date` / `daterange` / `month` / `datetime`",
       "value": "当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组"
     },
@@ -1548,7 +1549,7 @@
   "oas-sidebar": {
     "attrs": {
       "collapsed": "受控折叠，收窄为图标条（存在即折叠）",
-      "items": "菜单项 JSON `[{label, value, icon?, group?, badge?, children?, actions?}]`（支持分隔线条目 `{type:\"divider\"}`；children 嵌套子菜单）",
+      "items": "菜单项 JSON `[{label, value, icon?, iconColor?, group?, badge?, children?, actions?}]`（支持分隔线条目 `{type:\"divider\"}`；children 嵌套子菜单）",
       "mobile-breakpoint": "移动端断点（px），窄于该值变覆盖式抽屉",
       "width": "展开宽度，默认走 `--oas-sidebar-width` token",
       "active": "当前高亮菜单项 value（受控：外部设置/清除立即高亮迁移，重绘）",

@@ -590,6 +590,7 @@
       "min": "Selectable range (ISO dates)",
       "multiple": "Multiple selection (only `type=date`), value is a JSON array",
       "placeholder": "Placeholder text",
+      "placement": "Popup placement, 12 directions: `top`/`bottom`/`left`/`right` × `-start`/`-end` (default `bottom-start`); auto right-aligns near the viewport right edge, flips upward when space below is insufficient, and clamps into the viewport",
       "type": "Type: `date` / `daterange` / `month` / `datetime`",
       "value": "Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON range array"
     },
@@ -1548,7 +1549,7 @@
   "oas-sidebar": {
     "attrs": {
       "collapsed": "Controlled collapse to an icon strip (present means collapsed)",
-      "items": "Menu items JSON `[{label, value, icon?, group?, badge?, children?, actions?}]` (supports divider entries `{type:\"divider\"}`; children for nested submenus)",
+      "items": "Menu items JSON `[{label, value, icon?, iconColor?, group?, badge?, children?, actions?}]` (supports divider entries `{type:\"divider\"}`; children for nested submenus)",
       "mobile-breakpoint": "Mobile breakpoint (px); narrower than this becomes an overlay drawer",
       "width": "Expanded width; defaults to the `--oas-sidebar-width` token",
       "active": "Value of the currently-highlighted menu item (controlled: set/clear immediately re-renders highlight)",

@@ -16,8 +16,10 @@ export function registerIcon(name: string, svg: string): void {
   customIcons.set(name, svg)
 }
 
-/** 查表：自定义注册优先，其次内置图标集 */
-function lookupIcon(name: string): string | undefined {
+/** 查表：自定义注册优先，其次内置图标集。
+ *  单一注册点原则：`registerIcon()` 一处注册后，`<oas-icon>` 与本函数
+ *  的所有消费方（如 sidebar 图标通道）全部可见。 */
+export function lookupIcon(name: string): string | undefined {
   return customIcons.get(name) ?? iconRegistry[name as IconName]
 }
 
