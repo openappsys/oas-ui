@@ -6863,3 +6863,40 @@ test('sider 内嵌 sidebar 宽度自动对齐：填满轨道而非自身默认�
   expect(Math.round(r2.sider), '折叠后轨道宽应联动为 64').toBe(64)
   expect(Math.round(r2.sb), '折叠时内嵌 sidebar 应跟随 64').toBe(64)
 })
+
+test('sidebar 嵌套父项点击折叠子菜单：hidden 属性真实隐藏（.submenu[hidden] 兜底，防 display:flex 压 UA 规则）', async ({
+  page,
+}) => {
+  // 曾现 bug：.submenu{display:flex} 作者级规则压过 UA [hidden]{display:none}，
+  // subWrap.hidden=true 只改属性不改渲染——chevron 翻转但子菜单永远可见（用户实测）。
+  // 本断言量 computed display（真实视觉），不是只查 hidden 属性。
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(
+    () => document.querySelector('#sidebar-decl')?.shadowRoot != null,
+    undefined,
+    { timeout: 15000 },
+  )
+  const r = await page.evaluate(async () => {
+    const host = document.getElementById('sidebar-decl') as HTMLElement
+    const biz = [...host.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')].find(
+      (i) => i.dataset.value === 'biz',
+    )!
+    const sub = () => host.shadowRoot!.querySelector('[part="submenu"]') as HTMLElement
+    const display = () => getComputedStyle(sub()).display
+    const before = { aria: biz.getAttribute('aria-expanded'), display: display() }
+    biz.click()
+    await new Promise((r2) => setTimeout(r2, 400))
+    const afterClick = { aria: biz.getAttribute('aria-expanded'), display: display(), rectH: Math.round(sub().getBoundingClientRect().height) }
+    biz.click()
+    await new Promise((r2) => setTimeout(r2, 400))
+    const afterReclick = { aria: biz.getAttribute('aria-expanded'), display: display() }
+    return { before, afterClick, afterReclick }
+  })
+  expect(r.before.aria).toBe('true') // 激活子项自动展开
+  expect(r.before.display).toBe('flex')
+  expect(r.afterClick.aria, '点击后 aria-expanded 应收起').toBe('false')
+  expect(r.afterClick.display, '点击后子菜单应 display:none（真实视觉隐藏）').toBe('none')
+  expect(r.afterClick.rectH, '隐藏后子菜单高度应为 0').toBe(0)
+  expect(r.afterReclick.aria, '再点应重新展开').toBe('true')
+  expect(r.afterReclick.display).toBe('flex')
+})

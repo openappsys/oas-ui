@@ -310,6 +310,11 @@ aside {
   padding-inline-start: var(--oas-space-3, 12px);
   border-inline-start: 1px solid var(--oas-color-border);
 }
+/* hidden 属性必须显式声明：UA 的 [hidden]{display:none} 会被上方作者级 display:flex 压过，
+   缺这条则 subWrap.hidden=true 只改属性不改渲染（子菜单永远可见——用户实测点击不折叠） */
+.submenu[hidden] {
+  display: none;
+}
 .item.sub .icon {
   width: var(--oas-control-height-sm, 24px);
 }
