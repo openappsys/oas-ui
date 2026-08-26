@@ -243,7 +243,7 @@ gtag('config', 'G-RXS142HBXF');`,
     ],
     footer: {
       message: '基于 MIT OR Apache-2.0 双许可发布',
-      copyright: 'Copyright © 2026-present OpenAppSys',
+      copyright: 'Copyright © 2026-present OpenAppSys, https://oas-ui.dev',
     },
     search: {
       provider: 'local',
@@ -317,7 +317,7 @@ gtag('config', 'G-RXS142HBXF');`,
         ],
         footer: {
           message: 'Released under the MIT OR Apache-2.0 License.',
-          copyright: 'Copyright © 2026-present OpenAppSys',
+          copyright: 'Copyright © 2026-present OpenAppSys, https://oas-ui.dev',
         },
         search: {
           provider: 'local',

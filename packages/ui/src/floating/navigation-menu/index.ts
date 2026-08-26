@@ -12,9 +12,4 @@ if (!customElements.get('oas-navigation-menu-group')) {
   customElements.define('oas-navigation-menu-group', OASNavigationMenuGroup)
 }
 
-export {
-  OASNavigationMenu,
-  OASNavigationMenuItem,
-  OASNavigationMenuGroup,
-  type NavItem,
-}
+export { OASNavigationMenu, OASNavigationMenuItem, OASNavigationMenuGroup, type NavItem }

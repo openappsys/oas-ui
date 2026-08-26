@@ -874,7 +874,12 @@ export class OASTabs extends OASElement {
             return
           }
           // menu 模式 roving：方向键/Home/End 在菜单项间移动（与 more-dropdown 一致）
-          if (ke.key === 'ArrowDown' || ke.key === 'ArrowUp' || ke.key === 'Home' || ke.key === 'End') {
+          if (
+            ke.key === 'ArrowDown' ||
+            ke.key === 'ArrowUp' ||
+            ke.key === 'Home' ||
+            ke.key === 'End'
+          ) {
             ke.preventDefault()
             const btns = [...menu.querySelectorAll<HTMLElement>('.ctx-item')]
             const i = btns.indexOf(item)

@@ -601,7 +601,11 @@ export class OASDatePicker extends OASElement {
       padding,
       this.resolvePlacement(),
     )
-    const { top, left, placement: actual } = computePosition(
+    const {
+      top,
+      left,
+      placement: actual,
+    } = computePosition(
       anchorRect,
       popupRect,
       placement,

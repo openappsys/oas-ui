@@ -35,9 +35,7 @@ describe('OASTabs', () => {
 
   function rightClickTab(el: OASTabs, value: string): void {
     const tab = el.shadowRoot!.querySelector(`[role="tab"][data-value="${value}"]`) as HTMLElement
-    tab.dispatchEvent(
-      new MouseEvent('contextmenu', { bubbles: true, clientX: 200, clientY: 100 }),
-    )
+    tab.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 200, clientY: 100 }))
   }
 
   it('渲染标签栏，默认激活第一项', () => {
@@ -787,8 +785,8 @@ describe('OASTabs', () => {
       const tablist = el.shadowRoot!.querySelector('.tablist') as HTMLElement
       ;(tablist as any).scrollLeft = 50
       ;(el as any).updateMoreOffview?.()
-      const offview2 = [...el.shadowRoot!.querySelectorAll('[role="tab"][data-offview]')].map(
-        (t) => t.getAttribute('data-value'),
+      const offview2 = [...el.shadowRoot!.querySelectorAll('[role="tab"][data-offview]')].map((t) =>
+        t.getAttribute('data-value'),
       )
       expect(offview2).toEqual(['t0'])
     })

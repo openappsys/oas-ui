@@ -6763,9 +6763,7 @@ test('sidebar resizable：拖拽 rail 边缘宽度实时跟随并写回 width �
 // 曾现缺陷：嵌套无图标项 icon 占位被 hidden 折叠，子项 label 与父项 label 齐平甚至偏左
 //（实测子 label 比父 label 左 3px），层级错乱。修复：嵌套无图标项保留图标占位（24px），
 // 子项 label 缩进父项 label 右侧。本断言真布局测量 label x 坐标。
-test('sidebar 嵌套子菜单：无图标子项 label 缩进父项 label 右侧（层级不错乱）', async ({
-  page,
-}) => {
+test('sidebar 嵌套子菜单：无图标子项 label 缩进父项 label 右侧（层级不错乱）', async ({ page }) => {
   await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
   await page.waitForFunction(
     () => document.querySelector('oas-sidebar[active="users"]')?.shadowRoot != null,
@@ -6886,10 +6884,18 @@ test('sidebar 嵌套父项点击折叠子菜单：hidden 真实隐藏（grid 0fr
     const before = { aria: biz.getAttribute('aria-expanded'), visibility: visibility() }
     biz.click()
     await new Promise((r2) => setTimeout(r2, 500))
-    const afterClick = { aria: biz.getAttribute('aria-expanded'), visibility: visibility(), rectH: Math.round(sub().getBoundingClientRect().height) }
+    const afterClick = {
+      aria: biz.getAttribute('aria-expanded'),
+      visibility: visibility(),
+      rectH: Math.round(sub().getBoundingClientRect().height),
+    }
     biz.click()
     await new Promise((r2) => setTimeout(r2, 500))
-    const afterReclick = { aria: biz.getAttribute('aria-expanded'), visibility: visibility(), rectH: Math.round(sub().getBoundingClientRect().height) }
+    const afterReclick = {
+      aria: biz.getAttribute('aria-expanded'),
+      visibility: visibility(),
+      rectH: Math.round(sub().getBoundingClientRect().height),
+    }
     return { before, afterClick, afterReclick }
   })
   expect(r.before.aria).toBe('true') // 激活子项自动展开
