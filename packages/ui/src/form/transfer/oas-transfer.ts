@@ -2,6 +2,8 @@
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
 import { OASElement } from '@oas-ui/core'
+// 注册 oas-icon（穿梭按钮内嵌 oas-icon 组件，复用图标集/自定义注册/currentColor 着色）
+import '../../basic/icon/index.js'
 
 export interface TransferItem {
   key: string
@@ -138,6 +140,10 @@ ${OPTION_STYLE}
 .actions button {
   appearance: none;
   box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   width: 34px;
   height: var(--oas-control-height-md);
   border: 1px solid var(--oas-color-border);
@@ -569,11 +575,13 @@ export class OASTransfer extends OASElement {
     if (toRight) {
       toRight.setAttribute('aria-label', this.t('transfer.toRight'))
       toRight.disabled = this.leftSelected.size === 0
+      toRight.innerHTML = '<oas-icon name="arrow-right"></oas-icon>'
     }
     if (toLeft) {
       toLeft.hidden = this.hasAttr('one-way')
       toLeft.setAttribute('aria-label', this.t('transfer.toLeft'))
       toLeft.disabled = this.rightSelected.size === 0
+      toLeft.innerHTML = '<oas-icon name="arrow-left"></oas-icon>'
     }
   }
 
