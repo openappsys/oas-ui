@@ -206,6 +206,94 @@
   </div>
 </DemoBlock>
 
+## 列设置：显隐 / 拖拽重排 / 列宽
+
+<DemoBlock title="列拖拽重排 + 列宽拖拽">
+  <div style="width: 100%">
+    <oas-table id="table-col-setting" checkable row-key="name" columns='[{"key":"name","title":"姓名","width":"120px"},{"key":"age","title":"年龄","width":"90px"},{"key":"city","title":"城市","width":"100px"},{"key":"position","title":"职位","width":"120px"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"}]'></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      拖拽表头可重排列顺序，拖表头右缘热区可调列宽。· 列顺序：<span id="table-col-order">原序</span> · 列宽：<span id="table-col-width">—</span>
+    </p>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="列显隐（受控 column-keys / hidden）">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: 8px">
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: var(--oas-font-size-sm)">
+      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" class="col-toggle" data-key="name" checked> 姓名</label>
+      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" class="col-toggle" data-key="age" checked> 年龄</label>
+      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" class="col-toggle" data-key="city" checked> 城市</label>
+      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" class="col-toggle" data-key="position" checked> 职位</label>
+    </div>
+    <oas-table id="table-col-hidden" row-key="name" column-keys='["name","age","city","position"]' columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"}]'></oas-table>
+  </div>
+</DemoBlock>
+
+说明：列拖拽重排 / 调宽分别派发 `oas-column-order` / `oas-column-resize`（宿主持久化可用）。列显隐两种方式：受控 `column-keys`（JSON 数组，可同时控制顺序）或在列配置写 `hidden: true` 默认隐藏。
+
+## 多列排序
+
+<DemoBlock title="Shift 点击多列排序">
+  <div style="width: 100%">
+    <oas-table id="table-multi-sort" row-key="name" columns='[{"key":"age","title":"年龄","sortable":true},{"key":"name","title":"姓名","sortable":true},{"key":"city","title":"城市","sortable":true}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"},{"name":"赵六","age":25,"city":"杭州"}]'></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      按住 Shift 点击多个可排序列累积排序（表头序号 1、2 表示优先级）；普通点击重置为单列。
+    </p>
+  </div>
+</DemoBlock>
+
+## 序号列与省略号
+
+<DemoBlock title="序号列 + 省略号">
+  <div style="width: 100%">
+    <oas-table row-key="name" columns='[{"key":"index","title":"#","serialNumber":true,"width":"60px"},{"key":"name","title":"姓名","width":"120px"},{"key":"desc","title":"简介","ellipsis":true},{"key":"city","title":"城市","width":"100px"}]' data='[{"name":"张三","city":"北京","desc":"三年前端开发经验，负责核心业务组件设计与性能优化，主导网关与监控平台重构"},{"name":"李四","city":"上海","desc":"聚焦产品规划与需求评审，推动跨团队协作"},{"name":"王五","city":"深圳","desc":"后端架构老兵，主攻高并发与微服务治理"}]'></oas-table>
+  </div>
+</DemoBlock>
+
+`serialNumber: true` 的列渲染行序号（从 1 递增，不取数据字段值）；`ellipsis: true` 的列内容超出列宽时单行截断显示省略号（悬停 `title` 查看全文）。
+
+## 多级表头
+
+<DemoBlock title="多级表头（children）">
+  <div style="width: 100%">
+    <oas-table row-key="id" columns='[{"key":"base","title":"基础信息","children":[{"key":"name","title":"姓名","sortable":true},{"key":"age","title":"年龄","sortable":true}]},{"key":"addr","title":"地址","children":[{"key":"city","title":"城市"},{"key":"street","title":"街道"}]},{"key":"score","title":"成绩","sortable":true}]' data='[{"id":1,"name":"张三","age":28,"city":"北京","street":"长安街","score":92},{"id":2,"name":"李四","age":32,"city":"上海","street":"南京路","score":85},{"id":3,"name":"王五","age":40,"city":"广州","street":"天河路","score":78}]'></oas-table>
+  </div>
+</DemoBlock>
+
+列配置 `children` 定义组表头：组列横跨其子列（colspan），叶子列按树深落位（rowspan 对齐数据行）；数据 / 排序 / 显隐 / 拖拽均作用于叶子列。
+
+## 内置分页
+
+<DemoBlock title="表格内置分页（pagination）">
+  <div style="width: 100%">
+    <oas-table id="table-builtin-pager" pagination page-size="5" row-key="id" columns='[{"key":"id","title":"ID","width":"60px"},{"key":"name","title":"姓名"},{"key":"age","title":"年龄","sortable":true},{"key":"city","title":"城市"}]'></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      设置 `pagination` 开启内置分页：顶层行先全局排序再切片，翻页/改页大小派发 `oas-page-change`。当前页：<span id="table-pager-page">1</span>
+    </p>
+  </div>
+</DemoBlock>
+
+## 列过滤
+
+<DemoBlock title="表头列过滤（filterable）">
+  <div style="width: 100%">
+    <oas-table id="table-filter" row-key="name" columns='[{"key":"name","title":"姓名","filterable":true},{"key":"city","title":"城市","filterable":true,"filters":[{"label":"北京","value":"北京"},{"label":"上海","value":"上海"},{"label":"深圳","value":"深圳"}]},{"key":"age","title":"年龄"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"},{"name":"赵六","age":28,"city":"上海"}]'></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      点击列头的过滤图标打开选项弹层，选择后过滤行并派发 `oas-filter-change`；当前过滤值：<span id="table-filter-values">无</span>
+    </p>
+  </div>
+</DemoBlock>
+
+## 合并单元格
+
+<DemoBlock title="合并单元格（merge）">
+  <div style="width: 100%">
+    <oas-table row-key="name" columns='[{"key":"dept","title":"部门","merge":true,"align":"center"},{"key":"team","title":"团队","merge":true,"align":"center"},{"key":"name","title":"姓名"},{"key":"age","title":"年龄"}]' data='[{"dept":"研发部","team":"前端组","name":"张三","age":28},{"dept":"研发部","team":"前端组","name":"李四","age":32},{"dept":"研发部","team":"后端组","name":"王五","age":40},{"dept":"市场部","team":"市场组","name":"赵六","age":26},{"dept":"市场部","team":"市场组","name":"钱七","age":30}]'></oas-table>
+  </div>
+</DemoBlock>
+
+列配置 `merge: true` 将该列连续相同显示值的行合并为一个 rowspan 单元格（虚拟滚动模式下忽略合并）。
+
 ## 事件
 
 <DemoBlock title="排序与点击事件">
@@ -310,6 +398,36 @@ onMounted(() => {
     if (row) row[column] = value
     ctlTable.setAttribute('data', JSON.stringify(rows))
   })
+
+  // 列设置：拖拽重排 / 调宽反馈
+  document.querySelector('#table-col-setting')?.addEventListener('oas-column-order', (e) => {
+    document.querySelector('#table-col-order').textContent = e.detail.keys.join(' → ')
+  })
+  document.querySelector('#table-col-setting')?.addEventListener('oas-column-resize', (e) => {
+    document.querySelector('#table-col-width').textContent = `${e.detail.key} = ${e.detail.width}px`
+  })
+
+  // 列显隐：勾选框 → 写回 column-keys
+  const hiddenTable = document.querySelector('#table-col-hidden')
+  const colToggles = [...document.querySelectorAll('.col-toggle')]
+  const renderColUi = () => {
+    const checked = colToggles.filter((el) => el.checked).map((el) => el.dataset.key)
+    hiddenTable?.setAttribute('column-keys', JSON.stringify(checked))
+  }
+  colToggles.forEach((el) => el.addEventListener('change', renderColUi))
+
+  // 内置分页：当前页反馈（初始数据 12 条，page-size 5）
+  const builtInPager = document.querySelector('#table-builtin-pager')
+  builtInPager?.setAttribute('data', JSON.stringify(TABLE_ROWS))
+  builtInPager?.addEventListener('oas-page-change', (e) => {
+    document.querySelector('#table-pager-page').textContent = e.detail.page
+  })
+
+  // 列过滤：当前过滤值反馈
+  document.querySelector('#table-filter')?.addEventListener('oas-filter-change', (e) => {
+    const vals = Object.values(e.detail.filters)
+    document.querySelector('#table-filter-values').textContent = vals.length ? vals.join('、') : '无'
+  })
 })
 </script>
 
@@ -321,14 +439,20 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `bordered` | 完整边框：单元格网格描边（外框由组件自带） | — | — |
 | `checkable` | 复选框多选开关 | `boolean` | — |
+| `column-keys` | — | `string[] \| string` | `[]` |
 | `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `TableColumn[] \| string` | `[]` |
+| `current` | — | `string` | `1` |
 | `data` | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `Array<Record<string, unknown>> \| string` | `[]` |
 | `edit-controlled` | 受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`，由宿主监听后自行更新 `data` | `boolean` | — |
 | `editable` | 行内编辑开关（需配合列配置 `editable: true`；操作列 `actions: true` 同理） | `boolean` | — |
 | `empty-text` | 空态文案 | — | — |
 | `expanded` | 已展开行 key 集合（逗号分隔；树形父行/可展开行共用） | `string` | — |
+| `filter-values` | — | `string` | — |
 | `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
 | `loading` | 加载态：数据区显示加载占位行（表头保留） | `boolean` | — |
+| `multi-sort` | — | `string` | — |
+| `page-size` | — | `string` | `10` |
+| `pagination` | — | `boolean` | — |
 | `row-height` | 虚拟滚动每行固定高度（px） | `string` | `40` |
 | `row-key` | 行唯一键字段 | `string` | `key` |
 | `selected` | 选中行 key 集合（逗号分隔） | `string` | — |
@@ -344,9 +468,13 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-check` | 复选框选中变化，`detail: { keys: string[] }` |
+| `oas-column-order` | — |
+| `oas-column-resize` | — |
 | `oas-edit` | 行内编辑提交（Enter/失焦/操作列保存），`detail: { rowIndex, key, column, value }`；受控模式组件不回写 `data` |
 | `oas-edit-cancel` | 行内编辑取消（Esc/操作列取消/空值提交还原），`detail: { rowIndex, key, column, value }`（value 为原值） |
 | `oas-expand` | 行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }` |
+| `oas-filter-change` | — |
+| `oas-page-change` | — |
 | `oas-row-click` | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
 | `oas-scroll` | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
 | `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }` |
