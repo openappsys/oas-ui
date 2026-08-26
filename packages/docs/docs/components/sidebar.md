@@ -102,7 +102,8 @@
   <div style="height: 380px; width: 100%; display: flex">
     <oas-sidebar accordion items='[{"label":"仪表盘","value":"dash","icon":"star"},{"label":"业务管理","value":"biz","icon":"edit","children":[{"label":"订单管理","value":"orders","icon":"edit"},{"label":"商品管理","value":"goods","icon":"heart"},{"label":"用户管理","value":"users","icon":"user"}]},{"label":"营销中心","value":"mkt","icon":"mail","children":[{"label":"活动列表","value":"acts","icon":"calendar"},{"label":"优惠券","value":"coupon","icon":"star"}]},{"label":"系统设置","value":"sys","icon":"gear","children":[{"label":"权限管理","value":"perm","icon":"lock"},{"label":"审计日志","value":"audit","icon":"clock"}]}]'></oas-sidebar>
     <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
-      依次点击「业务管理」「营销中心」「系统设置」——同级始终只有一个展开区。
+      依次点击「业务管理」「营销中心」「系统设置」——同级始终只有一个展开区。<br />
+      点击过程同时是<strong>平滑展开/收起动画</strong>的演示（grid 高度过渡 + chevron 旋转；`prefers-reduced-motion` 自动降级）。
     </div>
   </div>
 </DemoBlock>
