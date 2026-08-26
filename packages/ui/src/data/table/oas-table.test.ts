@@ -1064,6 +1064,64 @@ describe('OASTable size 密度档位', () => {
   })
 })
 
+describe('OASTable 列设置（column-keys / hidden）', () => {
+  it('column-keys 过滤列：不在列表的列不渲染', () => {
+    const el = mount({ 'column-keys': '["name"]' })
+    const hs = headers(el).map((h) => h.getAttribute('data-key'))
+    expect(hs).toEqual(['name'])
+  })
+
+  it('column-keys 控制顺序：按列表顺序渲染', () => {
+    const el = mount({ 'column-keys': '["age","name"]' })
+    const hs = headers(el).map((h) => h.getAttribute('data-key'))
+    expect(hs).toEqual(['age', 'name'])
+  })
+
+  it('TableColumn.hidden=true 的列不渲染', () => {
+    const cols = JSON.stringify([
+      { key: 'name', title: '姓名' },
+      { key: 'age', title: '年龄', hidden: true },
+    ])
+    const el = mount({ columns: cols })
+    const hs = headers(el).map((h) => h.getAttribute('data-key'))
+    expect(hs).toEqual(['name'])
+  })
+
+  it('无 column-keys/hidden 时渲染全部列（向后兼容）', () => {
+    const el = mount()
+    expect(headers(el).length).toBe(2)
+  })
+
+  it('setColumnOrder：写回 column-keys 且派发 oas-column-order', () => {
+    const el = mount()
+    const order = { keys: [] as string[] }
+    el.addEventListener('oas-column-order', (e) => (order.keys = (e as CustomEvent).detail.keys))
+    el.setColumnOrder(['age', 'name'])
+    expect(el.getAttribute('column-keys')).toBe('["age","name"]')
+    expect(order.keys).toEqual(['age', 'name'])
+    expect(headers(el).map((h) => h.getAttribute('data-key'))).toEqual(['age', 'name'])
+  })
+
+  it('setColumnWidth：写回 columns 宽度且派发 oas-column-resize', () => {
+    const el = mount()
+    const resize = { key: '', width: 0 }
+    el.addEventListener('oas-column-resize', (e) => {
+      ;(resize.key = (e as CustomEvent).detail.key), (resize.width = (e as CustomEvent).detail.width)
+    })
+    el.setColumnWidth('name', 160)
+    expect(resize.key).toBe('name')
+    expect(resize.width).toBe(160)
+    const cols = JSON.parse(el.getAttribute('columns')!) as Array<{ key: string; width?: string }>
+    expect(cols.find((c) => c.key === 'name')?.width).toBe('160px')
+  })
+
+  it('列设置 controller 注入：表头 th 带 draggable（能力已挂在组装类）', () => {
+    const el = mount()
+    const headTh = el.shadowRoot!.querySelectorAll('th[data-key]')[0]!
+    expect(headTh.getAttribute('draggable')).toBe('true')
+  })
+})
+
 describe('OASTable 单元格渲染与 hidden（实测缺陷回归）', () => {
   it('#9 尊重 [hidden]：table.hidden=true 时 display:none（:host 覆盖修复）', () => {
     const el = mount()
@@ -1106,5 +1164,105 @@ describe('OASTable 单元格渲染与 hidden（实测缺陷回归）', () => {
     expect(statusCell.querySelector('span')!.textContent).toBe('[启用]')
     // 单元格挂载的是 span 元素（非单个纯文本节点）：firstChild 为元素
     expect(statusCell.firstChild!.nodeType).toBe(Node.ELEMENT_NODE)
+  })
+})
+
+describe('OASTable 多列排序（multi-sort）', () => {
+  const MULTI_COLS = JSON.stringify([
+    { key: 'age', title: '年龄', sortable: true },
+    { key: 'name', title: '姓名', sortable: true },
+  ])
+  const MULTI_DATA = JSON.stringify([
+    { age: 30, name: '张三' },
+    { age: 25, name: '阿花' },
+    { age: 30, name: '李四' },
+    { age: 25, name: '赵六' },
+  ])
+
+  const click = (el: OASTable, th: HTMLElement, opts: { shift?: boolean } = {}) => {
+    th.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, shiftKey: !!opts.shift }))
+  }
+  const head = (el: OASTable, key: string): HTMLElement =>
+    el.shadowRoot!.querySelector(`th[data-key="${key}"]`)! as HTMLElement
+
+  it('shift 点击两列累积排序：multi-sort 写回且行排序正确', () => {
+    const el = mount({ columns: MULTI_COLS, data: MULTI_DATA })
+    click(el, head(el, 'age'), { shift: true })
+    click(el, head(el, 'name'), { shift: true })
+    expect(el.getAttribute('multi-sort')).toBe('[{"key":"age","order":"asc"},{"key":"name","order":"asc"}]')
+    // age asc 分组（25 组前、30 组后），组内 name asc 按码点排序：赵(0x8D75)<阿(0x963F)、张(0x5F20)<李(0x674E)
+    const cells = rows(el).map((r) => (r.querySelectorAll('td')[1]?.textContent ?? '').trim())
+    expect(cells).toEqual(['赵六', '阿花', '张三', '李四'])
+  })
+
+  it('多列表头渲染排序序号（data-sort-index）', () => {
+    const el = mount({ columns: MULTI_COLS, data: MULTI_DATA })
+    click(el, head(el, 'age'), { shift: true })
+    click(el, head(el, 'name'), { shift: true })
+    expect(head(el, 'age').getAttribute('data-sort-index')).toBe('1')
+    expect(head(el, 'name').getAttribute('data-sort-index')).toBe('2')
+    expect(head(el, 'age').textContent).toContain('1')
+    expect(head(el, 'age').querySelector('.sort-index')?.textContent).toBe('1')
+  })
+
+  it('普通点击重置为仅当前列（清除 multi-sort 回退 sort-key）', () => {
+    const el = mount({ columns: MULTI_COLS, data: MULTI_DATA })
+    click(el, head(el, 'age'), { shift: true })
+    click(el, head(el, 'name'), { shift: true })
+    click(el, head(el, 'name'))
+    expect(el.getAttribute('multi-sort')).toBeNull()
+    expect(el.getAttribute('sort-key')).toBe('name')
+    expect(el.getAttribute('sort-order')).toBe('desc')
+  })
+
+  it('shift 点击已排序列切换 asc→desc→移除', () => {
+    const el = mount({ columns: MULTI_COLS, data: MULTI_DATA })
+    click(el, head(el, 'age'), { shift: true })
+    click(el, head(el, 'name'), { shift: true })
+    click(el, head(el, 'age'), { shift: true })
+    expect(el.getAttribute('multi-sort')).toBe('[{"key":"age","order":"desc"},{"key":"name","order":"asc"}]')
+    click(el, head(el, 'age'), { shift: true })
+    // 移除 age 后只剩 name 单列 → 回退为 sort-key 单列模式（向后兼容）
+    expect(el.getAttribute('multi-sort')).toBeNull()
+    expect(el.getAttribute('sort-key')).toBe('name')
+    expect(el.getAttribute('sort-order')).toBe('asc')
+  })
+})
+
+describe('OASTable 序号列与省略号', () => {
+  it('#10 序号列：serialNumber 列显示行序号（从 1 递增）', () => {
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'index', title: '序号', serialNumber: true },
+        { key: 'name', title: '姓名' },
+      ]),
+      data: DATA,
+    })
+    const cells = rows(el).map((r) => (r.querySelectorAll('td')[0]?.textContent ?? '').trim())
+    expect(cells).toEqual(['1', '2', '3'])
+  })
+
+  it('#10 序号列不取数据字段值（row.key 无 index 字段也不报错）', () => {
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'index', title: '序号', serialNumber: true },
+        { key: 'name', title: '姓名' },
+      ]),
+    })
+    // 数据行值取 row[index] 为 undefined，serialNumber 不计入数据，仍显示序号
+    expect(rows(el)[0]!.querySelectorAll('td')[0]!.textContent).toBe('1')
+  })
+
+  it('#11 省略号：ellipsis 列加 class 且设 title 提示全文', () => {
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'name', title: '姓名', ellipsis: true },
+        { key: 'age', title: '年龄' },
+      ]),
+      data: DATA,
+    })
+    const td = rows(el)[0]!.querySelector('td[data-col="name"]')!
+    expect(td.classList.contains('cell-ellipsis')).toBe(true)
+    expect(td.getAttribute('title')).toBe('张三')
   })
 })

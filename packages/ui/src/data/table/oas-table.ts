@@ -4,6 +4,8 @@ import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
 export interface TableColumn {
   key: string
   title: string
+  /** 列默认隐藏（配合表格级 column-keys 设置复原；渲染时不显示该列） */
+  hidden?: boolean
   sortable?: boolean
   width?: string
   align?: 'left' | 'center' | 'right'
@@ -21,6 +23,10 @@ export interface TableColumn {
   editOptions?: EditOption[]
   /** 操作列：渲染 编辑/保存/取消 按钮（依赖表格级 `editable` 属性） */
   actions?: boolean
+  /** 序号列：该列单元格渲染行序号（从 1 递增），不取数据字段值 */
+  serialNumber?: boolean
+  /** 省略号：单元格内容超出列宽时单行截断并以省略号显示（配合 title 悬停查看全文） */
+  ellipsis?: boolean
 }
 
 /** 行内编辑 select 选项 */
@@ -30,6 +36,12 @@ export interface EditOption {
 }
 
 export type SortOrder = '' | 'asc' | 'desc'
+
+/** 参与排序的单个列状态（多列排序时按数组顺序决定优先级） */
+export interface SortState {
+  key: string
+  order: Exclude<SortOrder, ''> | undefined
+}
 
 /** 密度档位：与控件 size 体系同词（small/medium/large），默认 medium */
 export type TableSize = 'small' | 'medium' | 'large'
@@ -140,11 +152,37 @@ th.sortable {
 th.sortable:hover {
   color: var(--oas-color-primary);
 }
+/* 列拖拽/调宽的通用视觉支持（行为由能力 controller 提供）：可拖拽光标 + 右缘 resize 热区 */
+th[draggable='true'] {
+  cursor: grab;
+}
+th[draggable='true']:active {
+  cursor: grabbing;
+}
+th[data-key] {
+  position: relative;
+}
+:host([data-col-resizing]) th[data-key]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+}
 .sort-icon {
   display: inline-block;
   margin-left: var(--oas-space-1);
   font-size: var(--oas-font-size-xs);
   color: var(--oas-color-text-secondary);
+}
+.sort-index {
+  display: inline-block;
+  margin-left: var(--oas-space-1);
+  font-size: var(--oas-font-size-2xs);
+  color: var(--oas-color-primary);
+  font-weight: var(--oas-font-weight-medium);
 }
 th[data-order='asc'] .sort-icon { color: var(--oas-color-primary); }
 th[data-order='desc'] .sort-icon { color: var(--oas-color-primary); }
@@ -175,6 +213,16 @@ tr.row[data-selected='true'] td[data-fixed='right'] {
 td {
   padding: var(--_cell-py) var(--_cell-px);
   border-bottom: 1px solid var(--oas-color-border);
+}
+td.cell-ellipsis {
+  max-width: 0;
+}
+td.cell-ellipsis > span,
+td.cell-ellipsis > a,
+td.cell-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 tr:last-child td {
   border-bottom: none;
@@ -366,13 +414,14 @@ th[data-editing-col='true'] {
 const CHECK_CELL_WIDTH = 40
 const EXPAND_CELL_WIDTH = 40
 
-export class OASTable extends OASElement {
+export class OASTableBase extends OASElement {
   static override get observedAttributes(): string[] {
     return [
       'columns',
       'data',
       'sort-key',
       'sort-order',
+      'multi-sort',
       'row-key',
       'checkable',
       'loading',
@@ -386,12 +435,15 @@ export class OASTable extends OASElement {
       'edit-controlled',
       'sticky-rows',
       'size',
+      'column-keys',
     ]
   }
 
   private _columns: TableColumn[] = []
   /** 列定义经 property 赋值且含函数（render/editors）时置真——跳过 attribute 重解析（序列化会丢函数） */
   private _columnsFromProperty = false
+  /** column-keys：受控显示列集合（按此顺序渲染；空=全部列）。显隐与顺序由宿主控制（列设置面板/持久化宿主负责） */
+  private _columnKeys: string[] = []
   private _data: Array<Record<string, unknown>> = []
   private scrollRaf = 0
   /** 恢复 scrollTop 触发的下一次 scroll 事件需忽略，防止重入死循环 */
@@ -430,6 +482,18 @@ export class OASTable extends OASElement {
     this._columnsFromProperty = false
     this.setAttribute('columns', typeof value === 'string' ? value : JSON.stringify(value))
   }
+  /** column-keys：受控显示列集合（按此顺序渲染；空 = 全部列）。property / attribute 双通道 */
+  get columnKeys(): string[] {
+    return this._columnKeys
+  }
+  set columnKeys(value: string[] | string) {
+    if (typeof value === 'string') {
+      this.setAttribute('column-keys', value)
+      return
+    }
+    this._columnKeys = Array.isArray(value) ? value.filter((k) => typeof k === 'string') : []
+    this.update()
+  }
   get data(): Array<Record<string, unknown>> {
     return this._data
   }
@@ -455,7 +519,7 @@ export class OASTable extends OASElement {
     this.wrap = this.shadow.querySelector('.table-scroll')
     this.shadow.querySelector('thead')?.addEventListener('click', (e) => {
       const th = (e.target as HTMLElement).closest('th.sortable')
-      if (th) this.sortBy((th as HTMLElement).getAttribute('data-key') ?? '')
+      if (th) this.sortBy((th as HTMLElement).getAttribute('data-key') ?? '', (e as MouseEvent).shiftKey)
     })
     this.wrap?.addEventListener('scroll', this.handleScroll, { passive: true })
     this.onCleanup(() => {
@@ -490,13 +554,11 @@ export class OASTable extends OASElement {
     const body = this.shadow.querySelector('tbody')
     if (!head || !body) return
 
-    const sortKey = this.getAttr('sort-key', '')
-    const sortOrder = this.getAttr('sort-order', '') as SortOrder
     const rowKey = this.getAttr('row-key', 'key')
     const selected = this.getAttr('selected', '').split(',').filter(Boolean)
     const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
 
-    const flat = this.buildFlat(sortKey, sortOrder, rowKey)
+    const flat = this.buildFlat(this.resolveSorts(), rowKey)
     const display = this.visibleFlat(flat, expanded, rowKey)
     const summaryConfigs = this.buildSummaryConfigs()
 
@@ -538,15 +600,22 @@ export class OASTable extends OASElement {
       th.appendChild(selectAll)
       tr.appendChild(th)
     }
-    for (const col of this._columns) {
+    for (const col of this.effectiveColumns()) {
       const th = document.createElement('th')
       th.setAttribute('part', 'header')
       th.setAttribute('data-key', col.key)
       this.applyColumnOffset(th, col, layout)
       if (col.sortable) {
         th.className = 'sortable'
-        th.setAttribute('data-order', col.key === sortKey ? sortOrder : '')
-        th.innerHTML = `${col.title}<span class="sort-icon">${col.key === sortKey ? (sortOrder === 'asc' ? '↑' : sortOrder === 'desc' ? '↓' : '↕') : '↕'}</span>`
+        const sorts = this.resolveSorts()
+        const idx = sorts.findIndex((s) => s.key === col.key)
+        const state = idx >= 0 ? sorts[idx] : undefined
+        th.setAttribute('data-order', state?.order ?? '')
+        if (state && sorts.length > 1) th.setAttribute('data-sort-index', String(idx + 1))
+        else th.removeAttribute('data-sort-index')
+        const arrow = state?.order === 'asc' ? '↑' : state?.order === 'desc' ? '↓' : '↕'
+        const badge = state && sorts.length > 1 ? `<span class="sort-index">${idx + 1}</span>` : ''
+        th.innerHTML = `${col.title}${badge}<span class="sort-icon">${arrow}</span>`
       } else {
         th.textContent = col.title
       }
@@ -663,8 +732,9 @@ export class OASTable extends OASElement {
     })
     const children = row.children
     const hasChildren = Array.isArray(children) && children.length > 0
-    for (let i = 0; i < this._columns.length; i++) {
-      const col = this._columns[i]!
+    const effCols = this.effectiveColumns()
+    for (let i = 0; i < effCols.length; i++) {
+      const col = effCols[i]!
       const td = document.createElement('td')
       this.applyColumnOffset(td, col, layout)
       if (col.align) td.className = `align-${col.align}`
@@ -690,10 +760,17 @@ export class OASTable extends OASElement {
       }
       if (col.actions) {
         this.renderActionCell(td, tr)
+      } else if (col.serialNumber) {
+        // 序号列（从 1 递增，不受排序/隐藏列影响——按当前可见行当前位置计）
+        td.textContent = String(index + 1)
       } else {
         // cellNode 优先渲染返回的 Node/元素（tag/avatar/badge 等富内容），否则纯文本
         const node = this.cellNode(col, row)
         if (node) td.appendChild(node)
+      }
+      if (col.ellipsis) {
+        td.classList.add('cell-ellipsis')
+        td.title = this.cellText(col, row)
       }
       // 可编辑单元格：可聚焦，Enter/F2/双击进入编辑（仅响应单元格自身事件，
       // 编辑器内部按键/双击会冒泡到此，需排除避免提交后被重入编辑）
@@ -821,20 +898,62 @@ export class OASTable extends OASElement {
   }
 
   /** 计算各列 sticky 偏移（左侧从左累加、右侧从右累加） */
+  /** 有效列：按 column-keys（受控显示集合+顺序）过滤排序；无 column-keys 时回落全部列（向后兼容）。
+      再剔除 TableColumn.hidden 标记的列。column-keys 仅约束渲染的列，不改变数据模型。 */
+  private effectiveColumns(): TableColumn[] {
+    let cols = this._columns
+    if (this._columnKeys.length > 0) {
+      const order = new Map(this._columnKeys.map((k, i) => [k, i]))
+      cols = cols
+        .filter((c) => order.has(c.key))
+        .sort((a, b) => (order.get(a.key) ?? 0) - (order.get(b.key) ?? 0))    }
+    return cols.filter((c) => c.hidden !== true)
+  }
+
+  /** 当前有效列（表格基础 API，能力 controller / 宿主可读） */
+  getColumns(): TableColumn[] {
+    return this._columns
+  }
+
+  /** 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化） */
+  setColumnOrder(keys: string[]): void {
+    const valid = keys.filter((k) => this._columns.some((c) => c.key === k))
+    if (valid.length === 0) return
+    this.setAttribute('column-keys', JSON.stringify(valid))
+    this.emit('column-order', { keys: valid })
+  }
+
+  /** 更新指定列宽（写回 columns 对应列 width 并重渲染；派发 oas-column-resize）。property 列定义含函数时改内存 */
+  setColumnWidth(key: string, width: number): void {
+    if (this._columnsFromProperty) {
+      this._columns = this._columns.map((c) => (c.key === key ? { ...c, width: `${width}px` } : c))
+      this.update()
+      this.emit('column-resize', { key, width })
+      return
+    }
+    this._columnsFromProperty = false
+    this.setAttribute(
+      'columns',
+      JSON.stringify(this._columns.map((c) => (c.key === key ? { ...c, width: `${width}px` } : c))),
+    )
+    this.emit('column-resize', { key, width })
+  }
+
   private computeLayout(): { offsets: Map<string, ColumnOffset>; hasFixed: boolean } {
     const offsets = new Map<string, ColumnOffset>()
-    const hasFixed = this._columns.some((c) => c.fixed)
+    const cols = this.effectiveColumns()
+    const hasFixed = cols.some((c) => c.fixed)
     let leftAccum = 0
     if (hasFixed && this.hasAttr('checkable')) leftAccum = CHECK_CELL_WIDTH
-    for (const col of this._columns) {
+    for (const col of cols) {
       if (col.fixed === 'left') {
         offsets.set(col.key, { fixed: 'left', left: leftAccum })
         leftAccum += columnWidth(col)
       }
     }
     let rightAccum = this._expandable ? EXPAND_CELL_WIDTH : 0
-    for (let i = this._columns.length - 1; i >= 0; i--) {
-      const col = this._columns[i]!
+    for (let i = cols.length - 1; i >= 0; i--) {
+      const col = cols[i]!
       if (col.fixed === 'right') {
         offsets.set(col.key, { fixed: 'right', right: rightAccum })
         rightAccum += columnWidth(col)
@@ -844,7 +963,29 @@ export class OASTable extends OASElement {
   }
 
   /**
-   * 排序比较器：数字按数值、其余按字符串码点确定性比较。
+   * 解析当前排序状态：无 multi-sort 时回退单列 sort-key/sort-order（向后兼容）。
+   * 返回数组按优先级排序（先比较首个，相等再比较次个）。
+   */
+  private resolveSorts(): SortState[] {
+    const raw = this.getAttr('multi-sort', '')
+    if (raw) {
+      try {
+        const arr = JSON.parse(raw) as Array<{ key: string; order?: SortOrder }>
+        const out = (Array.isArray(arr) ? arr : [])
+          .filter((s): s is { key: string; order: 'asc' | 'desc' } => !!s && typeof s.key === 'string' && (s.order === 'asc' || s.order === 'desc'))
+          .map((s): SortState => ({ key: s.key, order: s.order }))
+        return out
+      } catch {
+        /* 非法 multi-sort 忽略，回退单列 */
+      }
+    }
+    const key = this.getAttr('sort-key', '')
+    const order = this.getAttr('sort-order', '') as SortOrder
+    return key && (order === 'asc' || order === 'desc') ? [{ key, order }] : []
+  }
+
+  /**
+   * 排序比较器：按 sorts 数组逐级比较，数字按数值、其余按字符串码点确定性比较。
    * 不依赖宿主 locale（localeCompare 无显式 locale 时 Windows full-ICU 中文拼音与
    * Linux small-ICU 码点排序结果不同，导致跨环境行为不一致）；语言感知排序（如中文
    * 拼音）应由宿主在数据侧预排序或提供自定义 comparator。
@@ -852,29 +993,35 @@ export class OASTable extends OASElement {
   private compareRows(
     a: Record<string, unknown>,
     b: Record<string, unknown>,
-    sortKey: string,
-    sortOrder: SortOrder,
+    sorts: SortState[],
   ): number {
-    const av = a[sortKey]
-    const bv = b[sortKey]
-    if (typeof av === 'number' && typeof bv === 'number')
-      return sortOrder === 'asc' ? av - bv : bv - av
-    const sa = String(av)
-    const sb = String(bv)
-    const cmp = sa < sb ? -1 : sa > sb ? 1 : 0
-    return sortOrder === 'asc' ? cmp : -cmp
+    for (const { key, order } of sorts) {
+      if (!order) continue
+      const av = a[key]
+      const bv = b[key]
+      let cmp = 0
+      if (typeof av === 'number' && typeof bv === 'number') {
+        cmp = av - bv
+      } else {
+        const sa = String(av)
+        const sb = String(bv)
+        cmp = sa < sb ? -1 : sa > sb ? 1 : 0
+      }
+      if (cmp !== 0) return order === 'asc' ? cmp : -cmp
+    }
+    return 0
   }
 
   /**
    * 构建扁平行列表（含树形 children 递归）。排序在各层级兄弟间独立进行，不破坏父子结构；
    * 返回的 flat 是完整列表（树形含隐藏子行），visibleFlat 再做可见性过滤。
    */
-  private buildFlat(sortKey: string, sortOrder: SortOrder, rowKey: string): FlatRow[] {
+  private buildFlat(sorts: SortState[], rowKey: string): FlatRow[] {
     const flat: FlatRow[] = []
     const walk = (nodes: Array<Record<string, unknown>>, depth: number, parent?: string): void => {
       const list = [...nodes]
-      if (sortKey && (sortOrder === 'asc' || sortOrder === 'desc')) {
-        list.sort((a, b) => this.compareRows(a, b, sortKey, sortOrder))
+      if (sorts.length > 0) {
+        list.sort((a, b) => this.compareRows(a, b, sorts))
       }
       for (const row of list) {
         flat.push({ row, depth, parent, kind: 'data' })
@@ -931,7 +1078,7 @@ export class OASTable extends OASElement {
 
   /** 总列数（勾选列 + 数据列 + 可展开行尾列） */
   private columnCount(): number {
-    return this._columns.length + (this.hasAttr('checkable') ? 1 : 0) + (this._expandable ? 1 : 0)
+    return this.effectiveColumns().length + (this.hasAttr('checkable') ? 1 : 0) + (this._expandable ? 1 : 0)
   }
 
   /** 汇总合计配置：表格级 summary 属性（JSON 数组）+ 列级 summary 字段 */
@@ -956,7 +1103,7 @@ export class OASTable extends OASElement {
         /* 非法 JSON 忽略，回退列级配置 */
       }
     }
-    for (const col of this._columns) {
+    for (const col of this.effectiveColumns()) {
       if (isSummaryType(col.summary) && !configs.some((c) => c.key === col.key)) {
         configs.push({ key: col.key, type: col.summary })
       }
@@ -1007,7 +1154,7 @@ export class OASTable extends OASElement {
       td.className = 'check-cell'
       tr.appendChild(td)
     }
-    for (const col of this._columns) {
+    for (const col of this.effectiveColumns()) {
       const td = document.createElement('td')
       this.applyColumnOffset(td, col, layout)
       if (col.align) td.className = `align-${col.align}`
@@ -1041,17 +1188,47 @@ export class OASTable extends OASElement {
     return Number(this.getAttr('row-height', '40')) || 40
   }
 
-  private sortBy(key: string): void {
-    const currentKey = this.getAttr('sort-key', '')
-    const currentOrder = this.getAttr('sort-order', '') as SortOrder
-    let nextOrder: SortOrder = 'asc'
-    if (currentKey === key) {
-      nextOrder = currentOrder === 'asc' ? 'desc' : currentOrder === 'desc' ? '' : 'asc'
+  private sortBy(key: string, multi: boolean): void {
+    // 普通点击：整表重置为仅该列排序（asc→desc→清空）；shift 点击：多列累积/切换/移除该列
+    const sorts = multi ? this.resolveSorts() : []
+    const idx = sorts.findIndex((s) => s.key === key)
+    if (!multi) {
+      const existed = this.resolveSorts().find((s) => s.key === key)
+      const nextOrder = !existed ? 'asc' : existed.order === 'asc' ? 'desc' : ''
+      this.applySorts(nextOrder ? [{ key, order: nextOrder }] : [])
+      this.emit('sort-change', { key, order: nextOrder })
+      return
     }
-    this.setAttribute('sort-key', nextOrder ? key : '')
-    this.setAttribute('sort-order', nextOrder)
-    this.emit('sort-change', { key, order: nextOrder })
-    this.update()
+    // 多列：点击已排序列 → 切换 asc↔desc 或移除；点击未排序列 → 追加到队尾（asc）
+    if (idx >= 0) {
+      const cur = sorts[idx]!
+      if (cur.order === 'asc') sorts.splice(idx, 1, { key, order: 'desc' })
+      else if (cur.order === 'desc') sorts.splice(idx, 1)
+      else sorts.splice(idx, 1, { key, order: 'asc' })
+    } else {
+      sorts.push({ key, order: 'asc' })
+    }
+    this.applySorts(sorts)
+    this.emit('sort-change', { key, order: sorts.find((s) => s.key === key)?.order ?? '' })
+  }
+
+  /** 统一写回排序状态：多列写 multi-sort，单列保留 sort-key/sort-order（向后兼容） */
+  private applySorts(sorts: SortState[]): void {
+    const active = sorts.filter((s) => s && s.order)
+    if (active.length >= 2) {
+      this.setAttribute('multi-sort', JSON.stringify(active.map((s) => ({ key: s.key, order: s.order }))))
+      this.removeAttribute('sort-key')
+      this.removeAttribute('sort-order')
+    } else if (active.length === 1) {
+      const only = active[0]!
+      this.removeAttribute('multi-sort')
+      this.setAttribute('sort-key', only.key)
+      this.setAttribute('sort-order', only.order!)
+    } else {
+      this.removeAttribute('multi-sort')
+      this.removeAttribute('sort-key')
+      this.removeAttribute('sort-order')
+    }
   }
 
   private handleScroll = (): void => {
@@ -1067,12 +1244,10 @@ export class OASTable extends OASElement {
       const head = this.shadow.querySelector('thead')
       if (!body || !head) return
       const st = this.wrap!.scrollTop
-      const sortKey = this.getAttr('sort-key', '')
-      const sortOrder = this.getAttr('sort-order', '') as SortOrder
       const rowKey = this.getAttr('row-key', 'key')
       const selected = this.getAttr('selected', '').split(',').filter(Boolean)
       const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
-      const flat = this.buildFlat(sortKey, sortOrder, rowKey)
+      const flat = this.buildFlat(this.resolveSorts(), rowKey)
       const display = this.visibleFlat(flat, expanded, rowKey)
       this.settleEdit()
       body.innerHTML = ''
@@ -1138,7 +1313,7 @@ export class OASTable extends OASElement {
     if (!td.isConnected) return
     const colKey = td.getAttribute('data-col') ?? ''
     if (!colKey) return
-    const col = this._columns.find((c) => c.key === colKey)
+    const col = this.effectiveColumns().find((c) => c.key === colKey)
     if (!col || !this.editingEnabled(col)) return
     // 另一格正在编辑：先提交旧格（非受控时可能触发重渲染，需重查 td）
     if (this.editState && this.editState.td !== td) {
@@ -1264,7 +1439,7 @@ export class OASTable extends OASElement {
 
   /** 退出编辑态：还原单元格展示、清除高亮、刷新操作列按钮 */
   private exitEdit(st: EditState): void {
-    const col = this._columns.find((c) => c.key === st.colKey)
+    const col = this.effectiveColumns().find((c) => c.key === st.colKey)
     st.td.textContent = col ? this.cellText(col, st.row) : ''
     st.td.classList.remove('editing')
     st.td.removeAttribute('data-editing')
@@ -1324,9 +1499,9 @@ export class OASTable extends OASElement {
     if (this.editState) this.submitEdit()
     const tr = this.findRow(key)
     if (!tr) return
-    const colIndex = this._columns.findIndex((c) => c.editable)
+    const colIndex = this.effectiveColumns().findIndex((c) => c.editable)
     if (colIndex < 0) return
-    const td = this.cellOf(tr, this._columns[colIndex]!.key)
+    const td = this.cellOf(tr, this.effectiveColumns()[colIndex]!.key)
     if (td) this.enterEdit(td)
   }
 
@@ -1370,7 +1545,7 @@ export class OASTable extends OASElement {
   private refreshActionCells(): void {
     const body = this.shadow.querySelector('tbody')
     if (!body) return
-    const actionIndex = this._columns.findIndex((c) => c.actions)
+    const actionIndex = this.effectiveColumns().findIndex((c) => c.actions)
     if (actionIndex < 0) return
     const offset = this.tdOffset(actionIndex)
     for (const tr of body.querySelectorAll('tr.row')) {
@@ -1398,7 +1573,7 @@ export class OASTable extends OASElement {
   }
 
   private cellOf(tr: HTMLTableRowElement, colKey: string): HTMLTableCellElement | null {
-    const colIndex = this._columns.findIndex((c) => c.key === colKey)
+    const colIndex = this.effectiveColumns().findIndex((c) => c.key === colKey)
     if (colIndex < 0) return null
     const td = tr.querySelectorAll('td')[this.tdOffset(colIndex)]
     return (td as HTMLTableCellElement | undefined) ?? null
@@ -1479,6 +1654,14 @@ export class OASTable extends OASElement {
       } catch {
         this._columns = []
       }
+    }
+    try {
+      const keys = JSON.parse(this.getAttr('column-keys', '[]'))
+      this._columnKeys = Array.isArray(keys)
+        ? keys.filter((k) => typeof k === 'string')
+        : []
+    } catch {
+      this._columnKeys = []
     }
     try {
       const rows = JSON.parse(this.getAttr('data', '[]'))
