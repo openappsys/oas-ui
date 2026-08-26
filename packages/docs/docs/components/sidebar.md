@@ -98,6 +98,8 @@
 
 菜单项支持 `children` 嵌套：父项点击展开/收起（不派发 `oas-select`），含激活子项的父项自动展开；折叠图标条态子树隐藏。展开/收起带平滑高度动画（`prefers-reduced-motion` 自动降级）；`accordion` 同级互斥——展开一个父项自动收起其他同级父项（适合长导航只保留一个展开区）。
 
+> **嵌套深度**：机制上无限级（递归渲染，3 级已实证：逐级展开、激活级联自动展开与 child-selected 均正常）；但缩进每级叠加约 28px，220px 侧栏下建议 **≤3 级**——更深的树形数据请用 `oas-tree`（为任意深度设计：连接线/虚拟滚动）。
+
 <DemoBlock title="手风琴（accordion 同级互斥）">
   <div style="height: 380px; width: 100%; display: flex">
     <oas-sidebar accordion items='[{"label":"仪表盘","value":"dash","icon":"star"},{"label":"业务管理","value":"biz","icon":"edit","children":[{"label":"订单管理","value":"orders","icon":"edit"},{"label":"商品管理","value":"goods","icon":"heart"},{"label":"用户管理","value":"users","icon":"user"}]},{"label":"营销中心","value":"mkt","icon":"mail","children":[{"label":"活动列表","value":"acts","icon":"calendar"},{"label":"优惠券","value":"coupon","icon":"star"}]},{"label":"系统设置","value":"sys","icon":"gear","children":[{"label":"权限管理","value":"perm","icon":"lock"},{"label":"审计日志","value":"audit","icon":"clock"}]}]'></oas-sidebar>

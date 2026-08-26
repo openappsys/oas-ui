@@ -399,7 +399,7 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     biz.click()
     expect(biz.getAttribute('aria-expanded')).toBe('true')
     sys.click()
-    // accordion 触发 update 重渲染（同步被收起项的 DOM 态），重新查询元素
+    // accordion 外科手术式同步被收起项 DOM（同元素切换），重新查询确认
     const itemsAfter = [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
     const bizAfter = itemsAfter.find((i) => i.dataset.value === 'biz')!
     const sysAfter = itemsAfter.find((i) => i.dataset.value === 'sys')!
@@ -418,6 +418,46 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(items2.find((i) => i.dataset.value === 'sys')!.getAttribute('aria-expanded')).toBe('true')
     // observedAttributes 覆盖
     expect(OASSidebar.observedAttributes).toContain('accordion')
+  })
+
+  it('3 级嵌套实证：逐级渲染/逐级展开/激活级联自动展开与 child-selected（机制无限级，递归渲染）', () => {
+    stubMatchMedia(false)
+    const deep = [
+      { label: 'L1', value: 'l1', icon: 'star', children: [
+        { label: 'L2', value: 'l2', children: [
+          { label: 'L3', value: 'l3' },
+        ] },
+      ] },
+    ]
+    const el = mount({ items: JSON.stringify(deep) })
+    const sr = el.shadowRoot!
+    // L1 展开 → L2 渲染可见
+    const l1 = sr.querySelector<HTMLElement>('[part="item"][data-value="l1"]')!
+    l1.click()
+    const l2 = sr.querySelector<HTMLElement>('[part="item"][data-value="l2"]')
+    expect(l2, 'L1 展开后 L2 应渲染').not.toBeNull()
+    // L2 展开 → L3 渲染可见
+    l2!.click()
+    const l3 = sr.querySelector<HTMLElement>('[part="item"][data-value="l3"]')
+    expect(l3, 'L2 展开后 L3 应渲染').not.toBeNull()
+    // L3 叶子点击派发 select
+    let detail: unknown
+    el.addEventListener('oas-select', (e) => (detail = (e as CustomEvent).detail))
+    l3!.click()
+    expect(detail).toEqual({ value: 'l3', label: 'L3' })
+    // 激活级联：active=l3 → L1/L2 自动展开 + 双 child-selected
+    const el2 = mount({ items: JSON.stringify(deep), active: 'l3' })
+    const sr2 = el2.shadowRoot!
+    const p1 = sr2.querySelector<HTMLElement>('[part="item"][data-value="l1"]')!
+    const p2 = sr2.querySelector<HTMLElement>('[part="item"][data-value="l2"]')!
+    expect(p1.getAttribute('aria-expanded'), 'L1 应自动展开').toBe('true')
+    expect(p1.classList.contains('child-selected'), 'L1 应带 child-selected').toBe(true)
+    expect(p2.getAttribute('aria-expanded'), 'L2 应自动展开').toBe('true')
+    expect(p2.classList.contains('child-selected'), 'L2 应带 child-selected').toBe(true)
+    const l3b = sr2.querySelector<HTMLElement>('[part="item"][data-value="l3"]')!
+    expect(l3b.classList.contains('active'), 'L3 应为激活态').toBe(true)
+    expect(l3b.getAttribute('aria-current')).toBe('page')
+    expect(sr2.querySelectorAll('[part="submenu"]').length, '两层 submenu 容器嵌套').toBe(2)
   })
 
   it('嵌套子项点击派发 oas-select（叶子项行为不变）', () => {
