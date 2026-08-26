@@ -52,6 +52,14 @@ The default is `type="line"`. An array `[{label, value}]` is a single series; ho
 
 `type="area"` fills a semi-transparent area between the line and the baseline (still readable with multiple series overlaid), and supports `options.smooth` for smooth curves.
 
+<DemoBlock title="Area chart (gradient fill)">
+  <div style="width: 100%">
+    <oas-chart type="area" options='{"smooth":true,"gradient":true}' data='{"labels":["Mon","Tue","Wed","Thu","Fri"],"series":[{"name":"Visits","data":[320,302,341,374,390]},{"name":"Downloads","data":[120,132,101,134,90]}]}'></oas-chart>
+  </div>
+</DemoBlock>
+
+With `options.gradient` (default false), the area fill fades vertically from the series color at the line to transparent at the baseline, keeping the visual focus on the data line.
+
 ## Stacked Bar Chart
 
 <DemoBlock title="Stacked bar chart">

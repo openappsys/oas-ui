@@ -52,6 +52,14 @@
 
 `type="area"` 在折线基础上向基线填充半透明区域（多系列叠加时仍可读），支持 `options.smooth` 平滑曲线。
 
+<DemoBlock title="面积图（渐变填充）">
+  <div style="width: 100%">
+    <oas-chart type="area" options='{"smooth":true,"gradient":true}' data='{"labels":["周一","周二","周三","周四","周五"],"series":[{"name":"访问量","data":[320,302,341,374,390]},{"name":"下载量","data":[120,132,101,134,90]}]}'></oas-chart>
+  </div>
+</DemoBlock>
+
+`options.gradient`（默认 false）开启后，面积填充从曲线处的系列色向基线垂直渐淡（顶部实色、底部透明），视觉重心聚焦数据线。
+
 ## 堆叠柱状图
 
 <DemoBlock title="堆叠柱状图">
