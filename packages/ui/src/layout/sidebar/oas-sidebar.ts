@@ -143,9 +143,28 @@ aside {
 :host(:not([data-mobile])[collapsed]) .item {
   justify-content: center;
   padding-inline: 0;
+  /* 徽标角标定位锚点 */
+  position: relative;
 }
 :host(:not([data-mobile])[collapsed]) .item .label {
   display: none;
+}
+/* 折叠态徽标：改为图标右上角紧凑角标（绝对定位不占布局、不撑出 64px 图标条；
+   默认药丸内联布局在窄条里会溢出成白条） */
+:host(:not([data-mobile])[collapsed]) .item-badge {
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-end: 2px;
+  margin-inline-start: 0;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 2px;
+  border-radius: 7px;
+  font-size: 9px;
+  line-height: 14px;
+  /* 深底浅字强对比（角标在图标上方，浅底小字会糊） */
+  background: var(--oas-sidebar-badge-bg, var(--oas-color-primary));
+  color: var(--oas-sidebar-badge-color, #fff);
 }
 /* 头 / 体 / 脚 */
 .head {

@@ -439,6 +439,19 @@ describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快
     expect(p2.classList.contains('child-selected'), '展开态激活后代的父项也应带 child-selected').toBe(true)
   })
 
+  it('折叠态徽标为图标右上角紧凑角标（绝对定位不撑出 64px 图标条；默认药丸会溢出成白条）', () => {
+    stubMatchMedia(false)
+    const el = mount({ collapsed: '', items: '[{"label":"收件箱","value":"inbox","icon":"star","badge":"12"}]' })
+    const stl = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(stl, '折叠态徽标应绝对定位为角标').toMatch(
+      /:host\(:not\(\[data-mobile\]\)\[collapsed\]\)\s+\.item-badge\s*\{[^}]*position:\s*absolute/,
+    )
+    expect(stl).toMatch(/\.item-badge\s*\{[^}]*inset-block-start:\s*2px/)
+    // 渲染出的徽标元素仍在（角标样式不影响内容）
+    const badge = el.shadowRoot!.querySelector('[part="badge"]')
+    expect(badge, '折叠态徽标元素仍在').not.toBeNull()
+  })
+
   it('项操作：actions 渲染悬停操作按钮，点击派发 oas-action 且不触发 select', () => {
     stubMatchMedia(false)
     const el = mount({
