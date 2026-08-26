@@ -206,6 +206,94 @@ With the `loading` attribute, the header stays visible and the data area shows p
   </div>
 </DemoBlock>
 
+## Column settings: show / hide / drag / resize
+
+<DemoBlock title="Column drag reorder + column width resize">
+  <div style="width: 100%">
+    <oas-table id="table-col-setting" checkable row-key="name" columns='[{"key":"name","title":"Name","width":"120px"},{"key":"age","title":"Age","width":"90px"},{"key":"city","title":"City","width":"100px"},{"key":"position","title":"Position","width":"120px"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"},{"name":"David","age":28,"city":"Hangzhou","position":"UI Designer"}]'></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      Drag a header to reorder columns; drag the right edge of a header to resize. · Column order: <span id="table-col-order">original</span> · Width: <span id="table-col-width">—</span>
+    </p>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="Column visibility (controlled column-keys / hidden)">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: 8px">
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: var(--oas-font-size-sm)">
+      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" class="col-toggle" data-key="name" checked> Name</label>
+      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" class="col-toggle" data-key="age" checked> Age</label>
+      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" class="col-toggle" data-key="city" checked> City</label>
+      <label style="display:flex;align-items:center;gap:4px"><input type="checkbox" class="col-toggle" data-key="position" checked> Position</label>
+    </div>
+    <oas-table id="table-col-hidden" row-key="name" column-keys='["name","age","city","position"]' columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"}]'></oas-table>
+  </div>
+</DemoBlock>
+
+Column drag reorder / resize fire `oas-column-order` / `oas-column-resize` (for host persistence). Two ways to hide a column: controlled `column-keys` (JSON array, also controls order) or `hidden: true` in the column config.
+
+## Multi-column sorting
+
+<DemoBlock title="Shift-click to multi-sort">
+  <div style="width: 100%">
+    <oas-table id="table-multi-sort" row-key="name" columns='[{"key":"age","title":"Age","sortable":true},{"key":"name","title":"Name","sortable":true},{"key":"city","title":"City","sortable":true}]' data='[{"name":"Alice","age":30,"city":"Beijing"},{"name":"Bob","age":25,"city":"Shanghai"},{"name":"Carol","age":35,"city":"Shenzhen"},{"name":"David","age":25,"city":"Hangzhou"}]'></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      Hold Shift and click several sortable columns to accumulate the sort (header shows priority 1, 2…); a plain click resets to single column.
+    </p>
+  </div>
+</DemoBlock>
+
+## Serial number & ellipsis
+
+<DemoBlock title="Serial number + ellipsis">
+  <div style="width: 100%">
+    <oas-table row-key="name" columns='[{"key":"index","title":"#","serialNumber":true,"width":"60px"},{"key":"name","title":"Name","width":"120px"},{"key":"desc","title":"Description","ellipsis":true},{"key":"city","title":"City","width":"100px"}]' data='[{"name":"Alice","city":"Beijing","desc":"Three years of front-end experience, owning core component design and performance optimization."},{"name":"Bob","city":"Shanghai","desc":"Focuses on product planning and requirements review."},{"name":"Carol","city":"Shenzhen","desc":"Backend veteran focused on high concurrency and microservices."}]'></oas-table>
+  </div>
+</DemoBlock>
+
+A column with `serialNumber: true` renders the row number (starting from 1, not reading a data field); a column with `ellipsis: true` truncates overflowing content to a single line with an ellipsis (hover `title` shows the full text).
+
+## Grouped header
+
+<DemoBlock title="Grouped header (children)">
+  <div style="width: 100%">
+    <oas-table row-key="id" columns='[{"key":"base","title":"Basic","children":[{"key":"name","title":"Name","sortable":true},{"key":"age","title":"Age","sortable":true}]},{"key":"addr","title":"Address","children":[{"key":"city","title":"City"},{"key":"street","title":"Street"}]},{"key":"score","title":"Score","sortable":true}]' data='[{"id":1,"name":"Alice","age":28,"city":"Beijing","street":"Changan Avenue","score":92},{"id":2,"name":"Bob","age":32,"city":"Shanghai","street":"Nanjing Road","score":85},{"id":3,"name":"Carol","age":40,"city":"Guangzhou","street":"Tianhe Road","score":78}]'></oas-table>
+  </div>
+</DemoBlock>
+
+`children` in a column config defines a group header: the group column spans its children (colspan) and leaf columns align with data rows via rowspan; data / sorting / visibility / drag all operate on leaf columns.
+
+## Built-in pagination
+
+<DemoBlock title="Table built-in pagination (pagination)">
+  <div style="width: 100%">
+    <oas-table id="table-builtin-pager" pagination page-size="5" row-key="id" columns='[{"key":"id","title":"ID","width":"60px"},{"key":"name","title":"Name"},{"key":"age","title":"Age","sortable":true},{"key":"city","title":"City"}]'></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      Setting `pagination` enables built-in pagination: top-level rows are globally sorted then sliced; page / page-size changes fire `oas-page-change`. Current page: <span id="table-pager-page">1</span>
+    </p>
+  </div>
+</DemoBlock>
+
+## Column filter
+
+<DemoBlock title="Column filter (filterable)">
+  <div style="width: 100%">
+    <oas-table id="table-filter" row-key="name" columns='[{"key":"name","title":"Name","filterable":true},{"key":"city","title":"City","filterable":true,"filters":[{"label":"Beijing","value":"Beijing"},{"label":"Shanghai","value":"Shanghai"},{"label":"Shenzhen","value":"Shenzhen"}]},{"key":"age","title":"Age"}]' data='[{"name":"Alice","age":30,"city":"Beijing"},{"name":"Bob","age":25,"city":"Shanghai"},{"name":"Carol","age":35,"city":"Shenzhen"},{"name":"David","age":28,"city":"Shanghai"}]'></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      Click the filter icon in a header to open the option popup; selecting a value filters rows and fires `oas-filter-change`. Current filter: <span id="table-filter-values">none</span>
+    </p>
+  </div>
+</DemoBlock>
+
+## Merged cells
+
+<DemoBlock title="Merged cells (merge)">
+  <div style="width: 100%">
+    <oas-table row-key="name" columns='[{"key":"dept","title":"Dept","merge":true,"align":"center"},{"key":"team","title":"Team","merge":true,"align":"center"},{"key":"name","title":"Name"},{"key":"age","title":"Age"}]' data='[{"dept":"Engineering","team":"Frontend","name":"Alice","age":28},{"dept":"Engineering","team":"Frontend","name":"Bob","age":32},{"dept":"Engineering","team":"Backend","name":"Carol","age":40},{"dept":"Marketing","team":"Marketing","name":"David","age":26},{"dept":"Marketing","team":"Marketing","name":"Eve","age":30}]'></oas-table>
+  </div>
+</DemoBlock>
+
+`merge: true` merges consecutive rows with the same displayed value in that column into a single rowspan cell (ignored in virtual-scroll mode).
+
 ## Events
 
 <DemoBlock title="Sort and click events">
@@ -310,6 +398,36 @@ onMounted(() => {
     if (row) row[column] = value
     ctlTable.setAttribute('data', JSON.stringify(rows))
   })
+
+  // Column settings: reorder / resize feedback
+  document.querySelector('#table-col-setting')?.addEventListener('oas-column-order', (e) => {
+    document.querySelector('#table-col-order').textContent = e.detail.keys.join(' → ')
+  })
+  document.querySelector('#table-col-setting')?.addEventListener('oas-column-resize', (e) => {
+    document.querySelector('#table-col-width').textContent = `${e.detail.key} = ${e.detail.width}px`
+  })
+
+  // Column visibility: checkbox → write back column-keys
+  const hiddenTable = document.querySelector('#table-col-hidden')
+  const colToggles = [...document.querySelectorAll('.col-toggle')]
+  const renderColUi = () => {
+    const checked = colToggles.filter((el) => el.checked).map((el) => el.dataset.key)
+    hiddenTable?.setAttribute('column-keys', JSON.stringify(checked))
+  }
+  colToggles.forEach((el) => el.addEventListener('change', renderColUi))
+
+  // Built-in pagination: current page feedback (12 rows, page-size 5)
+  const builtInPager = document.querySelector('#table-builtin-pager')
+  builtInPager?.setAttribute('data', JSON.stringify(TABLE_ROWS))
+  builtInPager?.addEventListener('oas-page-change', (e) => {
+    document.querySelector('#table-pager-page').textContent = e.detail.page
+  })
+
+  // Column filter: current filter feedback
+  document.querySelector('#table-filter')?.addEventListener('oas-filter-change', (e) => {
+    const vals = Object.values(e.detail.filters)
+    document.querySelector('#table-filter-values').textContent = vals.length ? vals.join(', ') : 'none'
+  })
 })
 </script>
 
@@ -321,14 +439,20 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `bordered` | Full border: draws a grid outline around cells (the outer frame is built in) | — | — |
 | `checkable` | Enables checkbox multi-select | `boolean` | — |
+| `column-keys` | — | `string[] \| string` | `[]` |
 | `columns` | Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `TableColumn[] \| string` | `[]` |
+| `current` | — | `string` | `1` |
 | `data` | Row data `[{ [key]: value, children?, expand? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `Array<Record<string, unknown>> \| string` | `[]` |
 | `edit-controlled` | Controlled editing: does not write back `data` on submit, only fires `oas-edit`; the host listens and updates `data` itself | `boolean` | — |
 | `editable` | Inline editing switch (requires `editable: true` on columns; same for the `actions: true` operation column) | `boolean` | — |
 | `empty-text` | Empty state text | — | — |
 | `expanded` | Set of expanded row keys (comma-separated; shared by tree parent rows and expandable rows) | `string` | — |
+| `filter-values` | — | `string` | — |
 | `height` | Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered | `string` | `320` |
 | `loading` | Loading state: shows placeholder rows in the data area (header retained) | `boolean` | — |
+| `multi-sort` | — | `string` | — |
+| `page-size` | — | `string` | `10` |
+| `pagination` | — | `boolean` | — |
 | `row-height` | Fixed row height for virtual scrolling (px) | `string` | `40` |
 | `row-key` | Unique key field of a row | `string` | `key` |
 | `selected` | Set of selected row keys (comma-separated) | `string` | — |
@@ -344,9 +468,13 @@ onMounted(() => {
 | Event | Description |
 | --- | --- |
 | `oas-check` | Checkbox selection change, `detail: { keys: string[] }` |
+| `oas-column-order` | — |
+| `oas-column-resize` | — |
 | `oas-edit` | Inline edit submitted (Enter / blur / operation column save), `detail: { rowIndex, key, column, value }`; in controlled mode the component does not write back `data` |
 | `oas-edit-cancel` | Inline edit cancelled (Esc / operation column cancel / empty submit restores), `detail: { rowIndex, key, column, value }` (`value` is the original value) |
 | `oas-expand` | Row expand/collapse (tree child rows or expandable content rows), `detail: { key, expanded }` |
+| `oas-filter-change` | — |
+| `oas-page-change` | — |
 | `oas-row-click` | Row click (also toggles selection when not checkable), `detail: { row, key }` |
 | `oas-scroll` | Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }` |
 | `oas-sort-change` | Sort change, `detail: { key, order: 'asc' \| 'desc' \| '' }` |
