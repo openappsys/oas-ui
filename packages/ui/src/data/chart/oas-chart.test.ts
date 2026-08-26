@@ -79,6 +79,19 @@ describe('OASChart', () => {
     expect(d.endsWith('Z')).toBe(true)
   })
 
+  it('type=area smooth：折线 path 收尾到最后数据点（不与末点脱节）', () => {
+    const el = mount({ type: 'area', options: '{"smooth":true}', data: MULTI })
+    const svg = svgOf(el)
+    const dots = [...svg.querySelectorAll('.dot')]
+    const lastDot = dots[dots.length - 1]! // 末系列末点
+    const lx = lastDot.getAttribute('cx')!
+    const ly = lastDot.getAttribute('cy')!
+    const d = svg.querySelectorAll('.line-path')[1]!.getAttribute('d')!
+    // path 末尾必须含末点坐标（收尾段连接末点），不得脱节
+    expect(d).toContain(lx)
+    expect(d).toContain(ly)
+  })
+
   it('type=donut 渲染镂空扇区（内弧半径小于外弧半径）', () => {
     const el = mount({ type: 'donut', data: SINGLE })
     const slices = svgOf(el).querySelectorAll('.slice')

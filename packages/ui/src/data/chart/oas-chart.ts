@@ -558,8 +558,12 @@ export class OASChart extends OASElement {
       const p = pts[i]!
       const prev = pts[i - 1]!
       const mx = (prev.x + p.x) / 2
-      d += ` Q ${prev.x.toFixed(1)} ${prev.y.toFixed(1)} ${mx.toFixed(1)} ${p.y.toFixed(1)}`
+      const my = (prev.y + p.y) / 2
+      d += ` Q ${prev.x.toFixed(1)} ${prev.y.toFixed(1)} ${mx.toFixed(1)} ${my.toFixed(1)}`
     }
+    // 收尾：二次贝塞尔中点法终点只到末两点中点，补一段直线连接末点（不与末点脱节）
+    const last = pts[pts.length - 1]!
+    d += ` L ${last.x.toFixed(1)} ${last.y.toFixed(1)}`
     return d
   }
 
