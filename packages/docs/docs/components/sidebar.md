@@ -21,6 +21,15 @@
 
 点击底部「«」按钮切换 `collapsed`（受控属性，派发 `oas-collapse`）；折叠态只显示图标，无 icon 的菜单项自动隐藏。`hide-toggle` 可隐藏该按钮（宿主 opt-out，如静态侧栏场景）。
 
+<DemoBlock title="hide-toggle（隐藏折叠按钮，静态侧栏）">
+  <div style="height: 240px; width: 100%; display: flex">
+    <oas-sidebar hide-toggle items='[{"label":"首页","value":"home","icon":"star"},{"label":"文档","value":"docs","icon":"edit"},{"label":"设置","value":"settings","icon":"gear"}]'></oas-sidebar>
+    <div style="flex: 1; min-width: 0; padding: var(--oas-space-4); background: var(--oas-color-bg)">
+      静态侧栏：底部无「«」折叠按钮（与「折叠」demo 对照）。
+    </div>
+  </div>
+</DemoBlock>
+
 <DemoBlock title="collapsed 图标态">
   <oas-space direction="vertical" style="width: 100%">
     <oas-button size="small" onclick="document.querySelector('#sidebar-collapsible').toggleAttribute('collapsed')">切换折叠 collapsed</oas-button>

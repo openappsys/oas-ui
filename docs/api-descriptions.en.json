@@ -368,7 +368,7 @@
     "attrs": {
       "aria-label": "Chart description (falls back to locale by type)",
       "data": "Data. Array single-series `[{label, value}]` or object multi-series `{labels, series}`",
-      "options": "Config: `smooth` (smoothing), `colors` (series palette), `showLegend`",
+      "options": "Config: `smooth` (smoothing), `colors` (series palette), `showLegend`, `gradient` (area-chart vertical gradient fill, default false)",
       "type": "Chart type: `line` / `bar` / `pie` / `area` / `donut` / `stacked-bar`"
     },
     "events": {},

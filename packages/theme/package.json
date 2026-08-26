@@ -1,6 +1,6 @@
 {
   "name": "@oas-ui/theme",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "description": "OAS-UI 主题 token（light/dark/high-contrast 语义 CSS 变量）",
   "keywords": [
     "theme",

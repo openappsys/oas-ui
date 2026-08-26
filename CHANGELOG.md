@@ -2,6 +2,38 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.2.5] - 2026-08-26
+
+### 新增
+
+- **子元素声明式通道全库推广**（breadcrumb 试点范式，items/options 属性显式时数据驱动优先、否则子元素解析收敛同一渲染路径，MutationObserver 感知变化）：三批覆盖 12 组件——
+  - 导航系：`<oas-menu-item>`/`<oas-menu-group>`/`<oas-menu-divider>`、`<oas-menubar-item/-group/-divider>`、`<oas-navigation-menu-item/-group>`、`<oas-anchor-item>`
+  - 浮层触发族：`<oas-dropdown-item/-group/-divider>`、`<oas-context-menu-item/-group/-divider>`（extends menu 数据载体零重复）、`<oas-command-item>`（keywords 逗号拆分/嵌套递归 page/view/force-mount/separator）
+  - 布局/表单族：`<oas-sidebar-item>`/`<oas-sidebar-divider>`、`<oas-bottom-navigation-item>`、`<oas-option>`（对齐 HTML 原生 option 心智，options 显式优先，虚拟滚动共存）、`<oas-toggle-item>`、`<oas-toolbar-toggle-item>`（childSig 增量比对）
+  - virtual-list 豁免（unknown[] 数据型 + 模板插槽，无标量可映射）
+- **sidebar 深挖批**（模板实测驱动，能力 + 缺陷修复）：
+  - `hide-toggle`：隐藏底部折叠按钮（宿主 opt-out，静态侧栏场景）
+  - `accordion` 手风琴同级互斥（与 menu 同语义）；嵌套子树平滑展开/收起动画（grid 0fr/1fr 高度过渡 + visibility 联动防聚焦 + reduced-motion 降级）
+  - 嵌套深度机制无限级（递归渲染，3 级实证逐级展开/激活级联）+ 文档边界（≤3 级，更深用 oas-tree）
+  - 图标通道打通：`oas-icon` 的 lookupIcon 导出为单一查表点（customIcons → iconRegistry），registerIcon 一处注册 sidebar 可见；`SidebarItem.iconColor` 项级着色；彩色自定义 svg 自带色天然兼容；子项 icon 支持实证 + demo
+  - `--oas-sidebar-bg` 背景开口（var 链回落基础 token，三形态各自默认）
+  - child-selected 激活后代指示（主色淡底 + 图标主色，折叠图标条下激活态经父项保留可见）
+- **date-picker 浮层定位引擎接入**：面板从 absolute/left:0 改 `position: fixed` + computePosition 锚定触发器（与 select/combobox 同模式，逃出祖先 overflow）；新增 `placement` 属性 12 向（默认 bottom-start）+ 碰撞自动翻转（右缘右对齐/下方不足上翻/夹取视口内）+ range 双月宽面板同引擎
+- **radius scale 补全五档**：`--oas-radius-xs 2px`（控件内微元素）/ `--oas-radius-xl 14px`（大面板/抽屉）——token 按对外能力完备性提供（宿主自定义界面与库设计语言对齐）
+- **icons 增量**：organization（组织架构）/ tree（list-tree 泛树形）/ language（globe）/ translate（文A），全部原创线框风（16×16 / 1.5 stroke / currentColor）；图标集 42→46
+- **chart 面积图垂直渐变填充**：`options.gradient`（默认 false 保持纯色半透明）——每系列 linearGradient 顶部系列色 0.35→底部全透明，demo 中英双版
+
+### 修复
+
+- **sidebar 折叠态系列**（用户实测驱动）：
+  - 嵌套父项死交互（折叠图标条态仍挂展开箭头/aria-expanded，点击零可见变化）→ 折叠态父项渲染为纯图标项（无箭头/无 aria-expanded，点击派发 select）
+  - 折叠态徽标大药丸溢出 64px 图标条 → 改图标右上角紧凑角标（14×14 主色实底白字）
+  - 嵌套子菜单点击不折叠根治：`.submenu{display:flex}` 作者级规则压过 UA `[hidden]{display:none}`（hidden 只改属性不改渲染）→ 显式兜底（现由 grid+visibility 机制承接）
+- **sidebar 视觉系列**：父子项底色粘连（.item-block 加呼吸 gap）；嵌套缩进收敛（图标占位 24→18 + 容器 padding 12→6，label 距引导线 61→49px）；引导线对比度（--oas-color-border 压灰底亮度差仅 16 几乎不可见 → text-primary 12% 混色亮暗自适应）
+- **chart smooth 折线/面积图曲线与末数据点脱节**：smoothPath 二次贝塞尔终点 y 误用 p.y（应为中点 my）且缺收尾段——曲线永远停在末两点中点；终点改中点 + 补 L 收尾到末点
+- **icons**：translate 图标「文」字形修正（横下撇捺交叉成乂，此前倒 V 误读为「六」）+ 两字比例与空隙修正（文大 A 小布局、撇捺起点下移拉开倒三角空隙）
+- **docs**：icon.md 自定义图标四通道总览 + 勿直接改 iconRegistry 正路指引；menubar .shortcut 引用不存在的 --oas-radius-xs（随 token 补档根治）
+
 ## [2.2.4] - 2026-08-25
 
 ### 新增

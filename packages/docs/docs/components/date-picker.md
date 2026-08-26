@@ -108,6 +108,10 @@ format 支持 `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` token。
   <oas-date-picker type="daterange" style="margin-left: auto; display: block; width: fit-content" placeholder="贴右缘的范围"></oas-date-picker>
 </DemoBlock>
 
+<DemoBlock title="显式 placement（top-end：上方弹出右对齐）">
+  <oas-date-picker placement="top-end" value="2026-08-09" placeholder="placement=top-end"></oas-date-picker>
+</DemoBlock>
+
 <DemoBlock title="右缘宽面板（range 右对齐翻转）">
   <oas-date-picker type="daterange" style="margin-left: auto; display: block; width: fit-content" value='["2026-08-05","2026-08-15"]'></oas-date-picker>
 </DemoBlock>
