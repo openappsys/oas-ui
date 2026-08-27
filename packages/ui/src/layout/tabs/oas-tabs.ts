@@ -283,6 +283,8 @@ a.tab[aria-selected='true'] {
 }
 :host(.oas-tabs--vertical) .nav {
   flex-shrink: 0;
+  /* 纵向无「顶底横线」：去掉默认 border-bottom，避免 left/right 叠 border-right/left 时残留底部横线 */
+  border-bottom: none;
 }
 :host(.oas-tabs--vertical) .tablist {
   flex-direction: column;

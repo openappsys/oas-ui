@@ -307,6 +307,19 @@ describe('OASTabs', () => {
     expect(rule).toContain('justify-content: flex-end')
   })
 
+  it('回归：tab-position=left/right 纵向 nav 去掉底部横线（border-bottom:none），仅保留侧边竖线', () => {
+    for (const pos of ['left', 'right']) {
+      const el = mount({ 'tab-position': pos })
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      const verticalRule = style.match(/:host\(\.oas-tabs--vertical\) \.nav\s*\{[^}]*\}/)?.[0] ?? ''
+      const sideRule = style.match(new RegExp(`:host\\(\\.oas-tabs--${pos}\\) \\.nav\\s*\\{[^}]*\\}`))?.[0] ?? ''
+      // 纵向 nav 必须去底边框（横向默认 border-bottom 在纵向会残留为最下一条横线）
+      expect(verticalRule, `vertical(${pos}) .nav 应去掉 border-bottom`).toContain('border-bottom: none')
+      // left → border-right / right → border-left
+      expect(sideRule, `${pos} .nav 应有侧边竖线`).toContain(pos === 'left' ? 'border-right' : 'border-left')
+    }
+  })
+
   it('回归：card + vertical + right 组合样式仍生效（盒式卡片不被右对齐破坏）', () => {
     const el = mount({ type: 'card', 'tab-position': 'right' })
     expect(el.classList.contains('oas-tabs--card')).toBe(true)
