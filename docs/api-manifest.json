@@ -6845,6 +6845,12 @@
         "name": "viewport",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "side",
+        "type": "string",
+        "default": "left",
+        "observed": true
       }
     ],
     "props": [],

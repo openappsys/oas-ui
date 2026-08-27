@@ -28,6 +28,24 @@
   </oas-layout>
 </DemoBlock>
 
+## 侧栏位置切换
+
+<DemoBlock title="side：left / right / top">
+  <oas-space direction="vertical" style="width: 100%">
+    <oas-space size="small">
+      <oas-button size="small" onclick="document.getElementById('layout-side').setAttribute('side','left')">左侧</oas-button>
+      <oas-button size="small" onclick="document.getElementById('layout-side').setAttribute('side','right')">右侧</oas-button>
+      <oas-button size="small" onclick="document.getElementById('layout-side').setAttribute('side','top')">顶部</oas-button>
+    </oas-space>
+    <oas-layout id="layout-side" style="height: 220px; width: 100%">
+      <div slot="sider" style="background: var(--oas-color-bg-hover); padding: 12px; min-width: 140px">菜单</div>
+      <oas-content slot="content">内容区：菜单位置可在 左 / 右 / 顶 之间切换（顶部建议复用 oas-menubar / oas-navigation-menu）。</oas-content>
+    </oas-layout>
+  </oas-space>
+</DemoBlock>
+
+`side` 属性（`left` 默认 / `right` / `top`）控制侧栏槽内容落位：默认左列、`right` 右列、`top` 顶部横向铺满——顶部菜单可复用现有水平导航（oas-menubar / oas-navigation-menu / oas-toolbar），布局只负责排出位置。
+
 ## 可折叠侧栏
 
 <DemoBlock title="折叠侧栏 collapsed">
@@ -104,6 +122,7 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `side` | — | `string` | `left` |
 | `viewport` | 视口锁定模式：布局锁定视口高（默认 100dvh，不支持级联回退 100vh；`--oas-layout-height` 可改 100%/calc()），顶栏/底栏固定，侧栏与内容各自独立滚动；默认为整页滚动模型 | `boolean` | — |
 
 | 名称 | 说明 |
