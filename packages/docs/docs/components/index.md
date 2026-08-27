@@ -17,6 +17,18 @@ OAS-UI 提供 115 个框架无关的 Web Components 组件，按用途划分为 
 - [Kbd 键盘按键](/components/kbd) —— 键盘快捷键展示组件，`keys` 按空格拆分自动渲染多块并用 `+` 连接；非交互组件。
 - [VisuallyHidden 视觉隐藏](/components/visually-hidden) —— 内容对屏幕阅读器可见、视觉上不可见的容器。常用于辅助说明文案、表单校验提示等无障碍场景。
 
+## 布局组件
+
+- [Layout 布局](/components/layout) —— 经典的顶部 + 侧栏 + 内容 + 底部页面骨架，配合语义化子组件使用。
+- [Sidebar 侧栏](/components/sidebar) —— 可折叠侧栏：桌面端 `collapsed` 收窄为图标条，移动端（窄于 `mobile-breakpoint`，默认 768px）自动切换为覆盖式抽屉 + 遮罩，点击外部 / 关闭按钮 / Esc 收起。
+- [Container 容器](/components/container) —— 定宽居中容器：按 `size` 映射 `--oas-container-*` 宽度 token，`margin-inline: auto` 居中（逻辑属性，RTL 自动合规），`max-width: min(100%, token)` 保证窄屏不溢出。
+- [Grid 栅格](/components/grid) —— 24 栅格布局系统，配合 `oas-grid-item` 划分列宽，支持间距、偏移与自定义总列数；设置 `columns` 后切换为自动等分布局（simple-grid）。
+- [Flex 弹性布局](/components/flex) —— 基于 CSS Flexbox 的布局容器，通过属性控制方向、主轴/交叉轴对齐、间距与换行。
+- [Splitter 分割面板](/components/splitter) —— 可调整左右面板宽度的分割组件，支持鼠标拖拽与键盘方向键调整。
+- [ScrollArea 滚动区域](/components/scroll-area) —— 包裹内容并接管滚动条外观的容器：细条自定义滚动条、hover 变粗，`auto-hide` 时仅在滚动/悬停时显示，滚动事件节流派发。
+- [Masonry 瀑布流](/components/masonry) —— 基于 CSS columns 的瀑布流布局容器，子项自动均分到各列且不被拆分。
+- [AspectRatio 等比容器](/components/aspect-ratio) —— 按指定宽高比锁定容器尺寸，宽度 100%、高度由比例推导，内容铺满并按比例裁切；无子内容时仍按比例占位。
+
 ## 表单组件
 
 - [Input 输入框](/components/input) —— 原生 `<input>` 增强的基础输入组件。
@@ -24,6 +36,7 @@ OAS-UI 提供 115 个框架无关的 Web Components 组件，按用途划分为 
 - [Checkbox 复选框](/components/checkbox) —— 原生 `<input type="checkbox">` 增强，支持半选与多选组。
 - [Radio 单选框](/components/radio) —— 原生 `<input type="radio">` 增强，支持单选组与受控 value。
 - [Switch 开关](/components/switch) —— `role="switch"` 的开关按钮。
+- [Segmented 分段器](/components/segmented) —— 单选的线性分段选择器，用于轻度筛选 / 切换视图，`role="radiogroup"`，可禁用单项。
 - [Slider 滑块](/components/slider) —— 原生 `<input type="range">` 增强的滑动条。
 - [InputNumber 数字输入](/components/input-number) —— 原生 `<input type="number">` 增强，带步进按钮并支持范围约束。
 - [Rate 评分](/components/rate) —— 星级评分，支持键盘方向键调节，默认点击已选中的同一颗星可清空。
@@ -48,8 +61,11 @@ OAS-UI 提供 115 个框架无关的 Web Components 组件，按用途划分为 
 - [Form 表单](/components/form) —— 原生 `<form>` 增强，支持按 `rules` 规则对内部字段做校验与提交。
 - [FormItem 表单项](/components/form#栅格表单布局) —— `oas-form-item`：label + 控件容器 + 错误提示位，在 `layout="grid"` 的表单内按 `span` 栅格占列。
 
-## 反馈组件
+## 反馈与浮层组件
 
+- [Tooltip 文字提示](/components/tooltip) —— 简单的文字提示气泡，hover 或键盘聚焦触发。
+- [Popover 气泡卡片](/components/popover) —— 点击触发，可承载标题、正文与自定义内容的浮层面板。
+- [HoverCard 悬停卡片](/components/hover-card) —— hover / 聚焦触发，可配置延迟的预览卡片。
 - [Message 消息提示](/components/message) —— 命令式全局消息提示，支持类型、自定义时长与手动关闭。
 - [Notification 通知](/components/notification) —— 右上角通知卡片，支持标题、描述、时长与类型。
 - [Toast 轻提示](/components/toast) —— 命令式全局轻提示，支持成功/错误/警告/信息/加载态、操作按钮与 promise 链，默认 3 秒自动关闭。
@@ -67,41 +83,27 @@ OAS-UI 提供 115 个框架无关的 Web Components 组件，按用途划分为 
 - [Empty 空状态](/components/empty) —— 空数据时的占位展示，支持自定义描述、自定义插画与尺寸、隐藏插画与操作区。
 - [Result 结果页](/components/result) —— 操作结果反馈页，支持成功、失败、警告、信息四种状态。
 
-## 导航与浮层组件
+## 导航组件
 
-- [Tooltip 文字提示](/components/tooltip) —— 简单的文字提示气泡，hover 或键盘聚焦触发。
-- [Popover 气泡卡片](/components/popover) —— 点击触发，可承载标题、正文与自定义内容的浮层面板。
 - [Menu 菜单](/components/menu) —— 独立的菜单列表，支持选中态与键盘导航。
 - [Dropdown 下拉菜单](/components/dropdown) —— 点击触发器展开菜单，浮层定位到触发元素旁。
 - [ContextMenu 右键菜单](/components/context-menu) —— 在包裹区域内右键弹出菜单，菜单定位在鼠标位置。
-- [HoverCard 悬停卡片](/components/hover-card) —— hover / 聚焦触发，可配置延迟的预览卡片。
-- [Breadcrumb 面包屑](/components/breadcrumb) —— 展示页面层级路径，末项为当前页（不可点击）。
-- [Anchor 锚点](/components/anchor) —— 滚动监听当前章节并自动高亮，点击锚点平滑滚动定位。
-- [BackTop 回到顶部](/components/back-top) —— 固定于视口角落的回到顶部按钮，点击平滑滚动到页面顶部。
-- [Tour 引导](/components/tour) —— 分步功能引导，带全屏遮罩与目标高亮。
 - [Command 命令面板](/components/command) —— 命令面板（⌘K / Ctrl+K）——搜索过滤、键盘选择、Enter 执行。`open` 受控：可由外部设置，也可用 ⌘K 全局快捷键或 Esc 关闭（关闭时派发 `oas-select` / 移除 `open`）。
 - [Menubar 应用菜单栏](/components/menubar) —— 桌面应用式顶部菜单条（文件 / 编辑 / 视图），点击 / 悬停展开子菜单（级联浮出），支持方向键、`Alt` 访问键与焦点陷阱。
 - [NavigationMenu 多级导航](/components/navigation-menu) —— 网站式多级导航栏：悬停 / 键盘展开子菜单（级联浮出），带 `href` 的叶子项渲染为链接。
 - [Toolbar 工具栏](/components/toolbar) —— 工具按钮组容器：`role="toolbar"` + `aria-label`，`Tab` 进入后方向键在按钮间移动（roving tabindex，只聚焦当前项）。
-
-## 导航与布局组件
-
+- [Breadcrumb 面包屑](/components/breadcrumb) —— 展示页面层级路径，末项为当前页（不可点击）。
+- [Anchor 锚点](/components/anchor) —— 滚动监听当前章节并自动高亮，点击锚点平滑滚动定位。
+- [BackTop 回到顶部](/components/back-top) —— 固定于视口角落的回到顶部按钮，点击平滑滚动到页面顶部。
+- [Tour 引导](/components/tour) —— 分步功能引导，带全屏遮罩与目标高亮。
 - [Tabs 标签页](/components/tabs) —— 标签式内容切换，支持键盘方向键导航；未激活面板通过 `hidden` 隐藏。`oas-tabs` + `oas-tab-panel` 配套使用。
 - [BottomNavigation 底部导航](/components/bottom-navigation) —— 移动端底部导航栏：`role="tablist"` + 每项 `role="tab"` + `aria-selected` 同步，键盘左右移动焦点（roving tabindex）、Enter/Space 选中，激活项主色 + 图标，顶部细分隔线。
 - [Pagination 分页](/components/pagination) —— 数据分页导航，支持页码省略、前后翻页、自定义相邻页码数、总数展示、每页条数切换与快速跳转。
 - [Steps 步骤条](/components/steps) —— 引导用户按流程完成任务的步骤指示器，支持等待 / 进行中 / 完成 / 错误四种状态、纵向排布与可点击跳转。
-- [Segmented 分段器](/components/segmented) —— 单选的线性分段选择器，用于轻度筛选 / 切换视图，`role="radiogroup"`，可禁用单项。
 - [Affix 固钉](/components/affix) —— 将内容吸附在视口顶部，页面滚动到指定偏移后自动固定，常用于固定表格操作栏、工具栏等。
-- [Splitter 分割面板](/components/splitter) —— 可调整左右面板宽度的分割组件，支持鼠标拖拽与键盘方向键调整。
-- [ScrollArea 滚动区域](/components/scroll-area) —— 包裹内容并接管滚动条外观的容器：细条自定义滚动条、hover 变粗，`auto-hide` 时仅在滚动/悬停时显示，滚动事件节流派发。
-- [Flex 弹性布局](/components/flex) —— 基于 CSS Flexbox 的布局容器，通过属性控制方向、主轴/交叉轴对齐、间距与换行。
 - [PageHeader 页头](/components/page-header) —— 页面头部信息区，支持标题、副标题、返回按钮与右侧操作区，常用于详情页、编辑页顶部。
 - [FloatButton 悬浮按钮](/components/float-button) —— 默认固定于页面右下角的圆形操作按钮，常用于「新建」「反馈」等快捷操作，支持角标与自定义图标。
 - [SpeedDial 悬浮动作](/components/speed-dial) —— 悬浮主按钮 + 展开子动作列表，常用于「新建/分享」等快捷操作；`aria-expanded` 同步，点击外部/Esc 收起，无孤儿浮层。
-- [Layout 布局](/components/layout) —— 经典的顶部 + 侧栏 + 内容 + 底部页面骨架，配合语义化子组件使用。
-- [Sidebar 侧栏](/components/sidebar) —— 可折叠侧栏：桌面端 `collapsed` 收窄为图标条，移动端（窄于 `mobile-breakpoint`，默认 768px）自动切换为覆盖式抽屉 + 遮罩，点击外部 / 关闭按钮 / Esc 收起。
-- [Container 容器](/components/container) —— 定宽居中容器：按 `size` 映射 `--oas-container-*` 宽度 token，`margin-inline: auto` 居中（逻辑属性，RTL 自动合规），`max-width: min(100%, token)` 保证窄屏不溢出。
-- [Grid 栅格](/components/grid) —— 24 栅格布局系统，配合 `oas-grid-item` 划分列宽，支持间距、偏移与自定义总列数；设置 `columns` 后切换为自动等分布局（simple-grid）。
 
 ## 数据展示组件
 
@@ -125,12 +127,10 @@ OAS-UI 提供 115 个框架无关的 Web Components 组件，按用途划分为 
 - [Code 代码块](/components/code) —— 代码块组件（自研正则 token 高亮，零第三方高亮引擎），支持常见语言基础着色、行号与复制按钮。
 - [Equation 数学公式](/components/equation) —— 数学公式组件（自研简化 LaTeX 子集，零第三方公式引擎），覆盖高中/大学常用公式：上下标、分数、根号、求和/积分（带上下限）、希腊字母与常用运算符。
 - [Log 日志流](/components/log) —— 等宽字体的日志展示容器，支持增量追加与"贴底"自动滚动，适合构建控制台/构建输出等场景。
-- [Masonry 瀑布流](/components/masonry) —— 基于 CSS columns 的瀑布流布局容器，子项自动均分到各列且不被拆分。
 - [Comment 评论](/components/comment) —— 纯展示的评论块容器，通过插槽组装作者头像、名称、时间、内容与操作区；支持嵌套子评论自动缩进。
 - [Marquee 跑马灯](/components/marquee) —— 循环水平滚动展示长内容的纯展示组件，内容经 slot 无缝循环；支持悬停暂停与 `prefers-reduced-motion` 静态降级。无事件。
 - [NumberAnimation 数字滚动](/components/number-animation) —— 数字从当前值缓动到目标值的动画组件，到目标值停止并派发 `oas-finish`；`prefers-reduced-motion` 时直接跳目标，断开连接自动取消 rAF 无泄漏。
 - [GradientText 渐变文字](/components/gradient-text) —— 以渐变色填充文字的纯展示组件，`background-clip: text` 实现；默认走主题 token 双色渐变，支持任意色标数组与方向。无事件。
-- [AspectRatio 等比容器](/components/aspect-ratio) —— 按指定宽高比锁定容器尺寸的纯展示组件，宽度 100%、高度由比例推导，内容铺满并按比例裁切；无子内容时仍按比例占位。无事件。
 
 ## 框架级容器
 
