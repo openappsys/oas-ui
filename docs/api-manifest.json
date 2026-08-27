@@ -7280,6 +7280,12 @@
         "type": "string",
         "default": "top-right",
         "observed": true
+      },
+      {
+        "name": "text",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
