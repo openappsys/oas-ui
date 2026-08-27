@@ -2,6 +2,27 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.2.8] - 2026-08-27
+
+### 特性
+
+- **icons**：新增 `form` 图标（文档框 + 表单横线语义，16×16 线框风，适配 iconColor），图标集 46→47
+- **form**：`collectFields()` 覆盖常用控件（switch/date-picker/slider/rate/pin-input/dynamic-tags/transfer/combobox）+ 导出 `registerFormControl(tag, reader?)` 扩展钩子；特殊 value 通道（transfer 读 model-value、switch 读 checked 态）
+- **layout**：`oas-layout` 新增 `side` 属性（left/right/top）控制侧栏槽落位，顶部菜单可复用水平导航
+- **core**：新增 `escapeHtml`/`escapeText`/`escapeAttr` 转义工具（OWASP 集合、先转 `&`、null 归空）
+
+### 修复
+
+- **table**：行点击忽略交互控件内点击（button/a/input/select/[role]/oas-popconfirm）——修复点单元格内嵌按钮触发行选中+全量重渲染、销毁内嵌 popconfirm 的问题（收敛为 popconfirm 原生自驱动）
+- **popconfirm**：emit ok/cancel 带 `detail.source`（宿主可稳定反查来源，`e.target` 经 shadow retarget 指向宿主表不可靠）
+- **avatar**：首字符契约收敛——保留响应式 `text` 属性、textContent 为连接时快照（去掉了非标准的宿主文本观察）
+
+### 杂项
+
+- **ui**：统一 HTML 转义——5 组件（code/equation/chart/date-picker/empty/watermark）改用 core escape 工具；ui-spec 新增 §HTML 注入安全规范 + §组件合并验收清单加注入安全检查项（与 axe 并列）
+- **单测**：新增约 12 条（form 图标/collectFields/registerFormControl/side/escape/avatar text/行点击守卫/popconfirm source）
+- **docs**：新增 form 图标 / layout side / HTML 注入安全 相关文档；engineering 发布通道适用范围澄清
+
 ## [2.2.7] - 2026-08-27
 
 ### 特性

@@ -861,6 +861,27 @@ table 组件按能力并集补齐（列设置/多列排序/多级表头/内置�
 - table 页 e2e：a11y（axe 零严重违规）/ dark / visual / console 零告警 / smoke / code 全 PASS；qa-regression 列拖拽 PASS；light+dark 识图复核通过
 - research 矩阵（component/scenario/capabilities）+ 生成物（demo-inventory/scenario-coverage/scenario-gaps）已同步；trace（变更区 + --all 全历史）0 命中
 
+## v2.2.8 图标/form 收集/布局位置/注入安全 → 已发布
+
+### 特性
+
+- icons 新增 `form` 图标（文档框 + 表单横线，后台「基础表单」菜单用）
+- oas-form `collectFields()` 覆盖常用控件（switch/date-picker/slider/rate/pin-input/dynamic-tags/transfer/combobox）+ `registerFormControl` 扩展钩子
+- oas-layout 新增 `side` 属性（left/right/top）控制侧栏槽落位，顶部菜单可复用水平导航
+- core 新增 `escapeHtml`/`escapeText`/`escapeAttr` 转义工具 + ui 统一 HTML 转义（5 组件）
+
+### 修复
+
+- oas-table 行点击忽略交互控件内点击（内嵌 popconfirm 原生自驱动，不再被重渲染销毁）
+- oas-popconfirm emit ok/cancel 带 `detail.source`
+- oas-avatar 首字符契约收敛（响应式 `text` 属性）
+
+### 验收
+
+- 全量单测 3482 / typecheck / build / api:check PASS
+- oas-avatar/oas-table/oas-popconfirm/oas-form/oas-layout 组件单测全绿 + 浏览器实测
+- ui-spec §组件合并验收清单加「HTML 注入安全」项（与 axe 并列）
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
