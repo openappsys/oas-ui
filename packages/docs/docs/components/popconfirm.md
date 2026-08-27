@@ -84,8 +84,8 @@ onMounted(async () => {
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-cancel` | 取消：取消按钮 / Esc / 外部点击 |
-| `oas-ok` | 点击「确定」，随后气泡自动收起 |
+| `oas-cancel` | 取消：取消按钮 / Esc / 外部点击，`detail: { source: this }` |
+| `oas-ok` | 点击「确定」，随后气泡自动收起，`detail: { source: this }` |
 
 ### 插槽
 

@@ -84,8 +84,8 @@ onMounted(async () => {
 
 | Event | Description |
 | --- | --- |
-| `oas-cancel` | Cancel: cancel button / Esc / outside click |
-| `oas-ok` | Clicked "OK"; the bubble then collapses automatically |
+| `oas-cancel` | Cancel: cancel button / Esc / outside click, `detail: { source: this }` |
+| `oas-ok` | Clicked "OK"; the bubble then collapses automatically, `detail: { source: this }` |
 
 ### Slots
 
