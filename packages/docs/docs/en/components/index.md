@@ -17,6 +17,18 @@ OAS-UI provides 115 framework-agnostic Web Components, organized into 7 groups b
 - [Kbd](/en/components/kbd) —— A keyboard shortcut display component. `keys` is split by spaces into multiple keycaps joined with `+`; non-interactive.
 - [VisuallyHidden](/en/components/visually-hidden) —— A container that is visible to screen readers but visually hidden. Commonly used for assistive descriptions, form validation hints, and other accessibility scenarios.
 
+## Layout
+
+- [Layout](/en/components/layout) —— A classic page skeleton of header + sider + content + footer, used with semantic child components.
+- [Sidebar](/en/components/sidebar) —— A collapsible side bar: on desktop, `collapsed` narrows it to an icon strip; on mobile (narrower than `mobile-breakpoint`, default 768px) it automatically becomes an overlay drawer with a backdrop. Clicking outside, the close button or Esc collapses it.
+- [Container](/en/components/container) —— A fixed-width, centered container: `size` maps to `--oas-container-*` width tokens, `margin-inline: auto` centers it (logical property, RTL-compliant automatically), and `max-width: min(100%, token)` prevents overflow on narrow screens.
+- [Grid](/en/components/grid) —— A 24-column grid layout system. Pair it with `oas-grid-item` to divide column widths, with support for gap, offset and a custom total column count; setting `columns` switches to an auto equal-width layout (simple-grid).
+- [Flex](/en/components/flex) —— A layout container based on CSS Flexbox; attributes control direction, main/cross-axis alignment, gap and wrapping.
+- [Splitter](/en/components/splitter) —— A split component that resizes the left/right panel widths, adjustable via mouse drag or arrow keys.
+- [ScrollArea](/en/components/scroll-area) —— A container that wraps content and takes over the scrollbar appearance: a thin custom scrollbar that thickens on hover; with `auto-hide` it is only shown while scrolling or hovering, and scroll events are throttled.
+- [Masonry](/en/components/masonry) —— A masonry layout container based on CSS columns; child items are automatically distributed across columns without being split.
+- [AspectRatio](/en/components/aspect-ratio) —— Locks a container's size to a specified aspect ratio: 100% width with height derived from the ratio, content filling the area and cropped to the ratio; with no children it still occupies space at the ratio.
+
 ## Form
 
 - [Input](/en/components/input) —— An enhanced base input built on the native `<input>` element.
@@ -24,6 +36,7 @@ OAS-UI provides 115 framework-agnostic Web Components, organized into 7 groups b
 - [Checkbox](/en/components/checkbox) —— An enhanced native `<input type="checkbox">` supporting indeterminate state and checkbox groups.
 - [Radio](/en/components/radio) —— An enhanced native `<input type="radio">` supporting radio groups and controlled values.
 - [Switch](/en/components/switch) —— A switch button with `role="switch"`.
+- [Segmented](/en/components/segmented) —— A single-select linear segmented control for light filtering / view switching, `role="radiogroup"`, with per-item disabling.
 - [Slider](/en/components/slider) —— A slider built on an enhanced native `<input type="range">`.
 - [InputNumber](/en/components/input-number) —— An enhanced native `<input type="number">` with stepper buttons and range constraints.
 - [Rate](/en/components/rate) —— A star rating supporting keyboard arrow-key adjustment; clicking the currently selected star clears the value by default.
@@ -48,8 +61,11 @@ OAS-UI provides 115 framework-agnostic Web Components, organized into 7 groups b
 - [Form](/en/components/form) —— An enhanced native `<form>` supporting validation and submission of inner fields according to `rules`.
 - [FormItem](/en/components/form#grid-form-layout) —— `oas-form-item`: label + control container + error slot; spans grid columns via `span` inside a `layout="grid"` form.
 
-## Feedback
+## Feedback & Overlays
 
+- [Tooltip](/en/components/tooltip) —— A simple text prompt bubble triggered on hover or keyboard focus.
+- [Popover](/en/components/popover) —— A click-triggered popup panel that can hold a title, body text and arbitrary custom content.
+- [HoverCard](/en/components/hover-card) —— A preview card triggered on hover/focus with configurable delay.
 - [Message](/en/components/message) —— Imperative global message notifications with support for types, custom duration, and manual dismissal.
 - [Notification](/en/components/notification) —— Notification cards in the top-right corner, supporting title, description, duration, and type.
 - [Toast](/en/components/toast) —— Imperative global toasts supporting success/error/warning/info/loading states, action buttons, and promise chains; auto-dismisses after 3 seconds by default.
@@ -67,41 +83,27 @@ OAS-UI provides 115 framework-agnostic Web Components, organized into 7 groups b
 - [Empty](/en/components/empty) —— A placeholder for empty data, supporting custom descriptions, custom illustrations with sizing, and hiding the illustration or action area.
 - [Result](/en/components/result) —— A result feedback page supporting four states: success, error, warning, and info.
 
-## Navigation & Overlays
+## Navigation
 
-- [Tooltip](/en/components/tooltip) —— A simple text prompt bubble triggered on hover or keyboard focus.
-- [Popover](/en/components/popover) —— A click-triggered popup panel that can hold a title, body text and arbitrary custom content.
 - [Menu](/en/components/menu) —— A standalone menu list with selection state and keyboard navigation.
 - [Dropdown](/en/components/dropdown) —— A click-triggered menu that opens anchored to the trigger element.
 - [ContextMenu](/en/components/context-menu) —— A right-click menu that opens at the mouse position within its wrapped region.
-- [HoverCard](/en/components/hover-card) —— A preview card triggered on hover/focus with configurable delay.
-- [Breadcrumb](/en/components/breadcrumb) —— Shows the page hierarchy path; the last item is the current page (not clickable).
-- [Anchor](/en/components/anchor) —— Tracks the current section on scroll and highlights it automatically; clicking an anchor smooth-scrolls to the target.
-- [BackTop](/en/components/back-top) —— A back-to-top button fixed to a corner of the viewport; clicking it smooth-scrolls back to the top of the page.
-- [Tour](/en/components/tour) —— Step-by-step feature onboarding with a fullscreen overlay and target highlighting.
 - [Command](/en/components/command) —— A command palette (⌘K / Ctrl+K) — search filtering, keyboard selection and Enter to execute. `open` is controlled: it can be set externally, and the global ⌘K shortcut or Esc closes it (closing fires `oas-select` / removes `open`).
 - [Menubar](/en/components/menubar) —— A desktop-app-style top menu bar (File / Edit / View). Click or hover expands submenus (cascading popups), with arrow key support, `Alt` access keys and a focus trap.
 - [NavigationMenu](/en/components/navigation-menu) —— A website-style multi-level navigation bar: hover / keyboard expands submenus (cascading popups); leaf items with `href` render as links.
 - [Toolbar](/en/components/toolbar) —— A container for groups of tool buttons: `role="toolbar"` + `aria-label`, `Tab` enters and arrow keys move between buttons (roving tabindex — only the current item is focused).
-
-## Navigation & Layout
-
+- [Breadcrumb](/en/components/breadcrumb) —— Shows the page hierarchy path; the last item is the current page (not clickable).
+- [Anchor](/en/components/anchor) —— Tracks the current section on scroll and highlights it automatically; clicking an anchor smooth-scrolls to the target.
+- [BackTop](/en/components/back-top) —— A back-to-top button fixed to a corner of the viewport; clicking it smooth-scrolls back to the top of the page.
+- [Tour](/en/components/tour) —— Step-by-step feature onboarding with a fullscreen overlay and target highlighting.
 - [Tabs](/en/components/tabs) —— Tab-based content switching with arrow-key navigation; inactive panels are hidden via the `hidden` attribute. Use `oas-tabs` together with `oas-tab-panel`.
 - [BottomNavigation](/en/components/bottom-navigation) —— A mobile bottom navigation bar: `role="tablist"` with each item `role="tab"` + synced `aria-selected`; arrow keys move focus (roving tabindex), Enter/Space selects; the active item uses the primary color plus an icon, with a thin top divider.
 - [Pagination](/en/components/pagination) —— Data pagination navigation with page-number ellipsis, prev/next flipping, configurable sibling page count, total display, page-size switching and quick jump.
 - [Steps](/en/components/steps) —— A step indicator that guides users through a task, with four states (wait / process / finish / error), vertical layout and clickable navigation.
-- [Segmented](/en/components/segmented) —— A single-select linear segmented control for light filtering / view switching, `role="radiogroup"`, with per-item disabling.
 - [Affix](/en/components/affix) —— Pins content to the top of the viewport; it becomes fixed once the page scrolls past a given offset. Commonly used for fixed table action bars, toolbars, etc.
-- [Splitter](/en/components/splitter) —— A split component that resizes the left/right panel widths, adjustable via mouse drag or arrow keys.
-- [ScrollArea](/en/components/scroll-area) —— A container that wraps content and takes over the scrollbar appearance: a thin custom scrollbar that thickens on hover; with `auto-hide` it is only shown while scrolling or hovering, and scroll events are throttled.
-- [Flex](/en/components/flex) —— A layout container based on CSS Flexbox; attributes control direction, main/cross-axis alignment, gap and wrapping.
 - [PageHeader](/en/components/page-header) —— A page header information area with title, subtitle, back button and a right-side action area. Commonly used at the top of detail and edit pages.
 - [FloatButton](/en/components/float-button) —— A circular action button fixed to the bottom-right corner of the page by default, for quick actions like "New" and "Feedback"; supports a badge and a custom icon.
 - [SpeedDial](/en/components/speed-dial) —— A floating main button that expands a list of sub-actions, commonly used for quick actions like "New/Share"; `aria-expanded` stays in sync, clicking outside / Esc collapses it, with no orphan popups.
-- [Layout](/en/components/layout) —— A classic page skeleton of header + sider + content + footer, used with semantic child components.
-- [Sidebar](/en/components/sidebar) —— A collapsible side bar: on desktop, `collapsed` narrows it to an icon strip; on mobile (narrower than `mobile-breakpoint`, default 768px) it automatically becomes an overlay drawer with a backdrop. Clicking outside, the close button or Esc collapses it.
-- [Container](/en/components/container) —— A fixed-width, centered container: `size` maps to `--oas-container-*` width tokens, `margin-inline: auto` centers it (logical property, RTL-compliant automatically), and `max-width: min(100%, token)` prevents overflow on narrow screens.
-- [Grid](/en/components/grid) —— A 24-column grid layout system. Pair it with `oas-grid-item` to divide column widths, with support for gap, offset and a custom total column count; setting `columns` switches to an auto equal-width layout (simple-grid).
 
 ## Data Display
 
@@ -125,12 +127,10 @@ OAS-UI provides 115 framework-agnostic Web Components, organized into 7 groups b
 - [Code](/en/components/code) —— A code block component (self-developed regex token highlighting, no third-party highlighting engine) supporting basic coloring for common languages, line numbers, and a copy button.
 - [Equation](/en/components/equation) —— A math formula component (self-developed simplified LaTeX subset, zero third-party formula engine) covering common high-school / university formulas: superscripts/subscripts, fractions, square roots, summation/integration (with limits), Greek letters, and common operators.
 - [Log](/en/components/log) —— A monospace log display container that supports incremental appending and "stick-to-bottom" auto-scrolling, suitable for consoles / build output scenarios.
-- [Masonry](/en/components/masonry) —— A masonry layout container based on CSS columns; child items are automatically distributed across columns without being split.
 - [Comment](/en/components/comment) —— A purely presentational comment block container that assembles the author avatar, name, time, content, and actions via slots; nested child comments are automatically indented.
 - [Marquee](/en/components/marquee) —— A purely presentational component that scrolls long content horizontally in a loop; content cycles seamlessly via a slot. Supports pause on hover and static fallback under `prefers-reduced-motion`. No events.
 - [NumberAnimation](/en/components/number-animation) —— An animation component that eases a number from its current value to the target value, stops at the target and emits `oas-finish`; under `prefers-reduced-motion` it jumps straight to the target, and disconnecting cancels the rAF without leaks.
 - [GradientText](/en/components/gradient-text) —— A purely presentational component that fills text with a gradient color, implemented with `background-clip: text`; it defaults to a two-color theme-token gradient and supports arbitrary color-stop arrays and directions. No events.
-- [AspectRatio](/en/components/aspect-ratio) —— A purely presentational component that locks a container's size to a specified aspect ratio: 100% width with height derived from the ratio, content filling the area and cropped to the ratio; with no children it still occupies space at the ratio. No events.
 
 ## Framework Containers
 
