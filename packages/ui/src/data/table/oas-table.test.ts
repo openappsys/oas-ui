@@ -1566,6 +1566,31 @@ describe('OASTable 子元素声明式通道（oas-table-column）', () => {
       }, 0),
     )
   })
+
+  it('#17 cellTemplate 模板单元格：<template> + {{row.字段}} 插值水合', () => {
+    const el = new OASTable()
+    el.setAttribute('data', DATA)
+    el.innerHTML =
+      '<oas-table-column key="name" title="姓名"><template><button class="cell-btn">{{row.name}}</button></template></oas-table-column>' +
+      '<oas-table-column key="age" title="年龄"></oas-table-column>'
+    document.body.appendChild(el)
+    // 首行 name 单元格应为被水合的 <button>（含 row.name 值）
+    const btn = rows(el)[0]!.querySelector('td[data-col="name"] button.cell-btn')!
+    expect(btn).not.toBeNull()
+    expect(btn.textContent).toBe('张三')
+  })
+
+  it('#17 cellTemplate 属性插值 + 缺省空串', () => {
+    const el = new OASTable()
+    el.setAttribute('data', JSON.stringify([{ name: '张三' }]))
+    const tpl = document.createElement('template')
+    tpl.innerHTML = '<a href="/u/{{row.name}}">{{row.name}} <b>{{row.missing}}</b></a>'
+    el.columns = [{ key: 'name', title: '姓名', cellTemplate: tpl }]
+    document.body.appendChild(el)
+    const a = rows(el)[0]!.querySelector('td[data-col="name"] a')!
+    expect(a.getAttribute('href')).toBe('/u/张三')
+    expect(a.querySelector('b')!.textContent).toBe('')
+  })
 })
 
 describe('列拖拽重排顺序计算（applyColumnReorder）', () => {  const BASE = ['id', 'name', 'age', 'city']

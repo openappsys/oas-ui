@@ -13,6 +13,9 @@ export interface TableColumn {
   fixed?: 'left' | 'right'
   /** 单元格渲染钩子：返回字符串（按 `data-*` 值或富内容标记渲染）或一个 Node/HTMLElement（tag/avatar/badge 等） */
   render?: (row: Record<string, unknown>) => string | Node
+  /** 单元格模板（声明式，替代 render 的函数：子元素 `<template>` 或 columns property 传入）。
+      克隆模板并用 `{{row.字段}}` 插值水合成每格内容；函数型 render 优先于模板 */
+  cellTemplate?: HTMLTemplateElement
   /** 合计：'sum' | 'avg' | 'count'（列级简单配置；复杂配置走表格级 summary 属性） */
   summary?: 'sum' | 'avg' | 'count'
   /** 行内编辑：该列可编辑（配合表格级 `editable` 属性开关） */
@@ -603,10 +606,11 @@ export class OASTableBase extends OASElement {
           c &&
           (typeof c.render === 'function' ||
             typeof c.editor === 'function' ||
-            typeof c.filterMatch === 'function'),
+            typeof c.filterMatch === 'function' ||
+            c.cellTemplate),
       )
     ) {
-      // 列定义含函数（render/editors）：JSON 序列化会丢函数 → 直接存内存并标记，跳过 attribute 重解析
+      // 列定义含函数/模板节点（render/filterMatch/cellTemplate）：JSON 序列化会丢 → 直接存内存并标记，跳过 attribute 重解析
       this._columns = value.filter((c) => c && typeof c.key === 'string')
       this._columnsFromProperty = true
       this.update()
@@ -1809,6 +1813,9 @@ export class OASTableBase extends OASElement {
           ? document.createTextNode(rendered)
           : rendered
     }
+    if (col.cellTemplate) {
+      return hydrateRowTemplate(col.cellTemplate, row)
+    }
     return document.createTextNode(String(raw ?? ''))
   }
 
@@ -2207,6 +2214,9 @@ export class OASTableBase extends OASElement {
       if (c.tagName === 'OAS-TABLE-COLUMN') kids.push(this.childToColumn(c))
     }
     if (kids.length > 0) col.children = kids
+    // 单元格模板（声明式，替代 render）：子元素内的 <template>，用 {{row.字段}} 插值水合
+    const template = el.querySelector<HTMLTemplateElement>('template')
+    if (template) col.cellTemplate = template
     return col
   }
 
@@ -2285,6 +2295,33 @@ function columnWidth(col: TableColumn): number {
     if (Number.isFinite(n)) return n
   }
   return 100
+}
+
+/**
+ * 克隆 `<template>` 内容并用当前行数据水合：把文本节点与元素属性里的 `{{row.字段}}`
+ * 替换为该行对应值（缺省空串）。返回值是水合后的 DocumentFragment（可 appendChild 进 td）。
+ */
+function hydrateRowTemplate(
+  template: HTMLTemplateElement,
+  row: Record<string, unknown>,
+): DocumentFragment {
+  const frag = template.content.cloneNode(true) as DocumentFragment
+  const bind = (node: Node): void => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent ?? ''
+      node.textContent = text.replace(/\{\{\s*row\.(\w+)\s*\}\}/g, (_, k: string) => String(row[k] ?? ''))
+      return
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element
+      for (const attr of [...el.attributes]) {
+        el.setAttribute(attr.name, attr.value.replace(/\{\{\s*row\.(\w+)\s*\}\}/g, (_, k: string) => String(row[k] ?? '')))
+      }
+      for (const child of [...el.childNodes]) bind(child)
+    }
+  }
+  for (const node of [...frag.childNodes]) bind(node)
+  return frag
 }
 
 /** 行（含嵌套 children）是否存在非空 expand 内容 */

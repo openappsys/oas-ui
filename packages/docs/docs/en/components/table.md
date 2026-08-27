@@ -39,9 +39,23 @@ Click a sortable column header to cycle through ascending / descending / no sort
   </div>
 </DemoBlock>
 
-Besides the `columns` attribute / property array, columns also support a declarative child-element channel: `<oas-table-column key title sortable width align fixed ...>`, with attributes aligned to the `TableColumn` fields (booleans are true/false, kebab-case like `serial-number` / `filters`); `title` falls back to the default slot text; a nested `<oas-table-column>` expresses a grouped header (children). Child changes are picked up by a MutationObserver to auto re-render. An explicit `columns` attribute / property takes precedence over the child-element channel.
+<DemoBlock title="Cell template cellTemplate (interpolate row.field)">
+  <div style="width: 100%">
+    <oas-table row-key="id" data='[{"id":1,"name":"Alice","price":128,"city":"Beijing"},{"id":2,"name":"Bob","price":256,"city":"Shanghai"}]'>
+      <oas-table-column key="name" title="Name">
+        <template v-pre><span style="background:#eef2ff;color:#4f46e5;border-radius:4px;padding:1px 6px;font-size:12px">{{row.name}}</span></template>
+      </oas-table-column>
+      <oas-table-column key="price" title="Price">
+        <template v-pre><b style="color: var(--oas-color-danger)">¥ {{row.price}}</b></template>
+      </oas-table-column>
+      <oas-table-column key="city" title="City"></oas-table-column>
+    </oas-table>
+  </div>
+</DemoBlock>
 
-> **⚠️ Function fields (“a detail”)**: function types — `render`, `filterMatch`, editor callbacks (functions in `editOptions`) — **cannot be serialized via a child-element attribute or JSON**. Neither the child-element channel nor the `columns` attribute can express them. For columns containing such function fields, assign `columns` as a **property** (build the array in JS) or use slot / templates for custom cells.
+Besides the `columns` attribute / property array, columns also support a declarative child-element channel: `<oas-table-column key title sortable width align fixed ...>`, with attributes aligned to the `TableColumn` fields (booleans are true/false, kebab-case like `serial-number` / `filters`); `title` falls back to the default slot text; a nested `<oas-table-column>` expresses a grouped header (children). Child changes are picked up by a MutationObserver to auto re-render. An explicit `columns` attribute / property takes precedence over the child-element channel. A `<template>` inside a column (used with a `row.field` placeholder for interpolation; see the example above; add `v-pre` on the docs site so Vue doesn't parse it) renders a cell template, cloned and hydrated per cell; the `render` function still takes precedence over the template.
+
+> **⚠️ Function fields (“a detail”)**: function types — `render`, `filterMatch`, editor callbacks (functions in `editOptions`) — **cannot be serialized via a child-element attribute or JSON**. Neither the child-element channel nor the `columns` attribute can express them. For columns containing such function fields, assign `columns` as a **property** (build the array in JS), or use the declarative `cellTemplate` (`<template>` + a `row.field` placeholder, a function-free alternative; see the example above) for custom cells.
 
 ## Density Sizes
 
