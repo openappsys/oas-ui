@@ -14,6 +14,35 @@
 
 点击可排列表头在升序 / 降序 / 取消之间循环。
 
+## 子元素声明式通道
+
+<DemoBlock title="用 <oas-table-column> 声明列">
+  <div style="width: 100%">
+    <oas-table row-key="name" data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"}]'>
+      <oas-table-column key="name" title="姓名" sortable></oas-table-column>
+      <oas-table-column key="age" title="年龄" sortable></oas-table-column>
+      <oas-table-column key="city" title="城市"></oas-table-column>
+    </oas-table>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="嵌套子列表达多级表头">
+  <div style="width: 100%">
+    <oas-table row-key="id" data='[{"id":1,"name":"张三","age":28,"city":"北京","score":92},{"id":2,"name":"李四","age":32,"city":"上海","score":85}]'>
+      <oas-table-column key="base" title="基础信息">
+        <oas-table-column key="name" title="姓名" sortable></oas-table-column>
+        <oas-table-column key="age" title="年龄" sortable></oas-table-column>
+      </oas-table-column>
+      <oas-table-column key="city" title="城市"></oas-table-column>
+      <oas-table-column key="score" title="成绩" sortable></oas-table-column>
+    </oas-table>
+  </div>
+</DemoBlock>
+
+`columns` 除了 attribute / property 数组，还支持子元素声明式通道：`<oas-table-column key title sortable width align fixed ...>`，属性对齐 TableColumn 字段（布尔字段为 true/false，`serial-number` / `filters` 等 kebab-case）；`title` 缺省时取默认插槽文本；嵌套 `<oas-table-column>` 表达多级表头（children）。子元素变化由 MutationObserver 感知自动重渲染。`columns` attribute / property 显式设置时优先于子元素通道。
+
+> **⚠️ 函数型字段（“一个细节”）**：`render` / `filterMatch` / 编辑器回调（`editOptions` 的函数）等**函数类型无法经子元素 attribute、也无法经 JSON 序列化**——子元素通道与 `columns` attribute 都不能表达。含这些函数字段的列，请用 `columns` **property** 赋值（JS 侧构造数组），或自定义单元格走 slot / 模板。
+
 ## 密度档位
 
 <DemoBlock title="size：small / medium（默认）/ large">

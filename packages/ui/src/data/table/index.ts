@@ -1,5 +1,6 @@
 import '@oas-ui/i18n'
 import '../../layout/pagination/index.js'
+import { OASTableColumn } from './oas-table-column.js'
 import {
   OASTableBase,
   type TableColumn,
@@ -7,7 +8,7 @@ import {
   type SummaryType,
   type SummaryConfig,
   type EditOption,
-} from './oas-table.js'
+  } from './oas-table.js'
 import { createColumnSettingsController } from './oas-table-column-settings.js'
 
 /**
@@ -24,10 +25,14 @@ class OASTable extends OASTableBase {
 if (!customElements.get('oas-table')) {
   customElements.define('oas-table', OASTable)
 }
+if (!customElements.get('oas-table-column')) {
+  customElements.define('oas-table-column', OASTableColumn)
+}
 
 export {
   OASTable,
   OASTableBase,
+  OASTableColumn,
   createColumnSettingsController,
   type TableColumn,
   type SortOrder,
