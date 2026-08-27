@@ -1,27 +1,27 @@
 {
   "size": {
-    "generatedAt": "2026-08-26",
+    "generatedAt": "2026-08-27",
     "method": "gzip = zlib gzipSync；brotli = zlib brotliCompressSync q11；单组件链 = 静态 import 图遍历 + 逐文件压缩求和（上界估计）",
     "packages": {
       "@oas-ui/ui": {
-        "distTotalBytes": 8375252,
+        "distTotalBytes": 8570281,
         "browserJs": {
-          "files": 288,
-          "rawBytes": 2539375,
-          "gzipBytes": 709256,
-          "brotliBytes": 554849
+          "files": 290,
+          "rawBytes": 2587301,
+          "gzipBytes": 722584,
+          "brotliBytes": 565276
         },
         "fullEntry": {
-          "files": 339,
-          "rawBytes": 1407449,
-          "gzipBytes": 456545,
-          "brotliBytes": 380151
+          "files": 341,
+          "rawBytes": 1435037,
+          "gzipBytes": 464235,
+          "brotliBytes": 386772
         },
         "cdn": {
           "files": 1,
-          "rawBytes": 1163164,
-          "gzipBytes": 270042,
-          "brotliBytes": 189046
+          "rawBytes": 1185031,
+          "gzipBytes": 276130,
+          "brotliBytes": 193218
         }
       },
       "@oas-ui/theme": {
@@ -33,15 +33,15 @@
       },
       "@oas-ui/core": {
         "files": 5,
-        "rawBytes": 13365,
-        "gzipBytes": 6063,
-        "brotliBytes": 4955
+        "rawBytes": 14831,
+        "gzipBytes": 6502,
+        "brotliBytes": 5300
       },
       "@oas-ui/i18n": {
         "files": 7,
-        "rawBytes": 24910,
-        "gzipBytes": 9152,
-        "brotliBytes": 7522
+        "rawBytes": 25027,
+        "gzipBytes": 9178,
+        "brotliBytes": 7549
       },
       "@oas-ui/icons": {
         "files": 50,
@@ -61,9 +61,9 @@
         "entry": "basic/button",
         "spec": "@oas-ui/ui/basic/button",
         "files": 55,
-        "rawBytes": 62009,
-        "gzipBytes": 23637,
-        "brotliBytes": 19847,
+        "rawBytes": 63475,
+        "gzipBytes": 24076,
+        "brotliBytes": 20192,
         "fileList": [
           "packages/ui/dist/basic/button/index.js",
           "packages/ui/dist/basic/button/oas-button.js",
@@ -125,10 +125,10 @@
       "table": {
         "entry": "data/table",
         "spec": "@oas-ui/ui/data/table",
-        "files": 10,
-        "rawBytes": 66771,
-        "gzipBytes": 22111,
-        "brotliBytes": 18342,
+        "files": 14,
+        "rawBytes": 101424,
+        "gzipBytes": 31913,
+        "brotliBytes": 26729,
         "fileList": [
           "packages/ui/dist/data/table/index.js",
           "packages/i18n/dist/index.js",
@@ -138,17 +138,21 @@
           "packages/core/dist/config-context.js",
           "packages/core/dist/translator.js",
           "packages/core/dist/oas-element.js",
+          "packages/ui/dist/layout/pagination/index.js",
+          "packages/ui/dist/layout/pagination/oas-pagination.js",
+          "packages/ui/dist/data/table/oas-table-column-settings.js",
           "packages/ui/dist/data/table/oas-table.js",
-          "packages/ui/dist/data/virtual-list/oas-virtual-list.js"
+          "packages/ui/dist/data/virtual-list/oas-virtual-list.js",
+          "packages/ui/dist/data/table/oas-table-column.js"
         ]
       },
       "form": {
         "entry": "form/form",
         "spec": "@oas-ui/ui/form/form",
         "files": 9,
-        "rawBytes": 32228,
-        "gzipBytes": 12911,
-        "brotliBytes": 10559,
+        "rawBytes": 33753,
+        "gzipBytes": 13364,
+        "brotliBytes": 10918,
         "fileList": [
           "packages/ui/dist/form/form/index.js",
           "packages/i18n/dist/index.js",
@@ -165,7 +169,7 @@
     "budgets": [
       {
         "name": "dist/cdn.js gzip",
-        "actualBytes": 270042,
+        "actualBytes": 276130,
         "limitBytes": 307200,
         "warnAtBytes": 276480,
         "pass": true,
@@ -174,7 +178,7 @@
       },
       {
         "name": "@oas-ui/ui 全量入口链 gzip",
-        "actualBytes": 456545,
+        "actualBytes": 464235,
         "limitBytes": 532480,
         "warnAtBytes": 479232,
         "pass": true,
@@ -183,25 +187,25 @@
       },
       {
         "name": "@oas-ui/ui/basic/button 链 gzip",
-        "actualBytes": 23637,
+        "actualBytes": 24076,
         "limitBytes": 26624,
         "warnAtBytes": 23962,
         "pass": true,
-        "warn": false,
+        "warn": true,
         "basis": "实测 gzip 22,557 B（含 core + 全量 icon 注册表，v2.1.3 能力增强后），上浮约 15%"
       },
       {
         "name": "@oas-ui/ui/data/table 链 gzip",
-        "actualBytes": 22111,
-        "limitBytes": 26624,
-        "warnAtBytes": 23962,
+        "actualBytes": 31913,
+        "limitBytes": 36864,
+        "warnAtBytes": 33178,
         "pass": true,
         "warn": false,
-        "basis": "实测 gzip 21,801 B（含 core + virtual-list + i18n，v2.0/v2.1 表格能力增强后），上浮约 19%"
+        "basis": "实测 gzip 31,913 B（v2.2.7 table 列显隐/拖拽/列宽/多列排序/序号/省略号/多级表头/合并/分页/过滤/子元素通道/cellTemplate+headerTemplate/编辑校验；链含 core+virtual-list+i18n+oas-pagination），上浮约 13%"
       },
       {
         "name": "@oas-ui/ui/form/form 链 gzip",
-        "actualBytes": 12911,
+        "actualBytes": 13364,
         "limitBytes": 14336,
         "warnAtBytes": 12902,
         "pass": true,
@@ -220,7 +224,7 @@
     ]
   },
   "render": {
-    "generatedAt": "2026-08-21",
+    "generatedAt": "2026-08-27",
     "env": {
       "runtime": "node v23.8.0",
       "happyDom": "happy-dom@20.x",
@@ -230,67 +234,67 @@
     "scenarios": {
       "button-first-render": {
         "label": "button",
-        "meanMs": 0.164,
-        "medianMs": 0.139,
-        "p95Ms": 0.242,
-        "minMs": 0.091,
-        "maxMs": 1.504
+        "meanMs": 0.409,
+        "medianMs": 0.222,
+        "p95Ms": 0.842,
+        "minMs": 0.121,
+        "maxMs": 5.973
       },
       "input-first-render": {
         "label": "input",
-        "meanMs": 0.639,
-        "medianMs": 0.355,
-        "p95Ms": 3.422,
-        "minMs": 0.256,
-        "maxMs": 10.351
+        "meanMs": 1.081,
+        "medianMs": 0.787,
+        "p95Ms": 1.851,
+        "minMs": 0.353,
+        "maxMs": 9.243
       },
       "table-100rows-first-render": {
         "label": "table(100 行)",
-        "meanMs": 10.389,
-        "medianMs": 9.415,
-        "p95Ms": 14.992,
-        "minMs": 6.485,
-        "maxMs": 24.841
+        "meanMs": 21.917,
+        "medianMs": 20.916,
+        "p95Ms": 37.87,
+        "minMs": 12.181,
+        "maxMs": 53.007
       },
       "select-100opt-first-render": {
         "label": "select(100 选项)",
-        "meanMs": 9.898,
-        "medianMs": 9.508,
-        "p95Ms": 13.103,
-        "minMs": 8.02,
-        "maxMs": 14.005
+        "meanMs": 19.469,
+        "medianMs": 18.32,
+        "p95Ms": 27.195,
+        "minMs": 14.566,
+        "maxMs": 34.201
       },
       "tabs-10panel-first-render": {
         "label": "tabs(10 面板)",
-        "meanMs": 1.911,
-        "medianMs": 1.108,
-        "p95Ms": 5.182,
-        "minMs": 0.924,
-        "maxMs": 11.383
+        "meanMs": 3.317,
+        "medianMs": 1.974,
+        "p95Ms": 11.073,
+        "minMs": 1.145,
+        "maxMs": 12.226
       },
       "form-10field-first-render": {
         "label": "form(10 字段)",
-        "meanMs": 12.839,
-        "medianMs": 10.459,
-        "p95Ms": 30.274,
-        "minMs": 4.335,
-        "maxMs": 68.009
+        "meanMs": 21.143,
+        "medianMs": 14.464,
+        "p95Ms": 38.487,
+        "minMs": 5.761,
+        "maxMs": 461.501
       },
       "table-data-update": {
         "label": "table 数据更新",
-        "meanMs": 7.95,
-        "medianMs": 8.765,
-        "p95Ms": 10.681,
-        "minMs": 3.605,
-        "maxMs": 11.531
+        "meanMs": 18.575,
+        "medianMs": 12.914,
+        "p95Ms": 16.933,
+        "minMs": 5.207,
+        "maxMs": 405.104
       },
       "select-options-update": {
         "label": "select 选项更新",
-        "meanMs": 11.635,
-        "medianMs": 7.567,
-        "p95Ms": 18.333,
-        "minMs": 2.936,
-        "maxMs": 231.907
+        "meanMs": 11.694,
+        "medianMs": 12.095,
+        "p95Ms": 21.309,
+        "minMs": 3.478,
+        "maxMs": 61.286
       }
     },
     "budgets": [
@@ -298,56 +302,56 @@
         "id": "button-first-render",
         "label": "button",
         "budgetMs": 5,
-        "p95Ms": 0.242,
+        "p95Ms": 0.842,
         "pass": true
       },
       {
         "id": "input-first-render",
         "label": "input",
         "budgetMs": 15,
-        "p95Ms": 3.422,
+        "p95Ms": 1.851,
         "pass": true
       },
       {
         "id": "table-100rows-first-render",
         "label": "table(100 行)",
         "budgetMs": 50,
-        "p95Ms": 14.992,
+        "p95Ms": 37.87,
         "pass": true
       },
       {
         "id": "select-100opt-first-render",
         "label": "select(100 选项)",
         "budgetMs": 50,
-        "p95Ms": 13.103,
+        "p95Ms": 27.195,
         "pass": true
       },
       {
         "id": "tabs-10panel-first-render",
         "label": "tabs(10 面板)",
         "budgetMs": 15,
-        "p95Ms": 5.182,
+        "p95Ms": 11.073,
         "pass": true
       },
       {
         "id": "form-10field-first-render",
         "label": "form(10 字段)",
         "budgetMs": 40,
-        "p95Ms": 30.274,
+        "p95Ms": 38.487,
         "pass": true
       },
       {
         "id": "table-data-update",
         "label": "table 数据更新",
         "budgetMs": 50,
-        "p95Ms": 10.681,
+        "p95Ms": 16.933,
         "pass": true
       },
       {
         "id": "select-options-update",
         "label": "select 选项更新",
         "budgetMs": 50,
-        "p95Ms": 18.333,
+        "p95Ms": 21.309,
         "pass": true
       }
     ]
