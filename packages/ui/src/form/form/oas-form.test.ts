@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { OASForm } from './index.js'
+import { OASForm, registerFormControl } from './index.js'
 import { OASFormItem } from '../form-item/index.js'
 function mount(): OASForm {
   const el = new OASForm()
@@ -50,6 +50,43 @@ describe('OASForm', () => {
       name: '张三',
       email: 'zhang@example.com',
     })
+  })
+
+  it('collectFields 覆盖常用控件（switch/transfer/date-picker/slider/rate）', () => {
+    const el = new OASForm()
+    el.innerHTML = `
+      <oas-switch name="enabled" checked></oas-switch>
+      <oas-transfer name="sel" model-value='["a","b"]'></oas-transfer>
+      <oas-date-picker name="birth" value="2026-08-27"></oas-date-picker>
+      <oas-slider name="age" value="25"></oas-slider>
+      <oas-rate name="score" value="4"></oas-rate>
+    `
+    document.body.appendChild(el)
+    let detail: unknown
+    el.addEventListener('oas-submit', (e: Event) => (detail = (e as CustomEvent).detail))
+    el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    expect((detail as { values: Record<string, string> }).values).toEqual({
+      enabled: 'true',
+      sel: '["a","b"]',
+      birth: '2026-08-27',
+      age: '25',
+      score: '4',
+    })
+  })
+
+  it('registerFormControl 允许收集自定义控件', () => {
+    const unreg = registerFormControl('oas-custom-field', (el) => el.getAttribute('model-value'))
+    try {
+      const el = new OASForm()
+      el.innerHTML = '<oas-custom-field name="x" model-value="hello"></oas-custom-field>'
+      document.body.appendChild(el)
+      let detail: unknown
+      el.addEventListener('oas-submit', (e: Event) => (detail = (e as CustomEvent).detail))
+      el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+      expect((detail as { values: Record<string, string> }).values).toEqual({ x: 'hello' })
+    } finally {
+      unreg()
+    }
   })
 
   it('校验失败不派发 oas-submit，错误项标记 aria-invalid', () => {

@@ -1,5 +1,62 @@
 import { OASElement } from '@oas-ui/core'
 
+/** 表单控件读取器：返回该控件的表单值（字符串形态；复杂控件返回 JSON 字符串） */
+type FormControlReader = (el: Element) => string
+
+/**
+ * 表单控件注册表：collectFields 收集这些 tag 下带 `name` 的元素，并用其读取器取值。
+ * 内置常用控件 + 特殊通道（transfer 用 model-value、switch 用 checked 态），可 registerFormControl 扩展。
+ */
+const FORM_CONTROLS = new Map<string, FormControlReader>()
+
+/** 值安全归一：`[`/`{` 前缀（数组/对象 JSON）重新 stringify，保持合法 JSON */
+function normalizeValue(raw: string): string {
+  if (raw === '') return ''
+  if (raw.startsWith('[') || raw.startsWith('{')) {
+    try {
+      return JSON.stringify(JSON.parse(raw))
+    } catch {
+      return raw
+    }
+  }
+  return raw
+}
+
+const defaultReader: FormControlReader = (el) => normalizeValue(el.getAttribute('value') ?? '')
+
+function register(tags: string[], reader?: FormControlReader): void {
+  for (const t of tags) FORM_CONTROLS.set(t, reader ?? defaultReader)
+}
+
+// 内置常用控件（默认读 value 属性）
+register([
+  'oas-input',
+  'oas-textarea',
+  'oas-select',
+  'oas-auto-complete',
+  'oas-cascader',
+  'oas-tree-select',
+  'oas-input-number',
+  'oas-checkbox',
+  'oas-radio',
+  'oas-date-picker',
+  'oas-slider',
+  'oas-rate',
+  'oas-pin-input',
+  'oas-dynamic-tags',
+  'oas-combobox',
+])
+// 特殊 value 通道
+register(['oas-transfer'], (el) => normalizeValue(el.getAttribute('model-value') ?? ''))
+register(['oas-switch'], (el) => (el.hasAttribute('checked') ? 'true' : 'false'))
+
+/** 注册额外的表单控件（供自定义/未内置控件被 collectFields 收集）；返回注销函数 */
+export function registerFormControl(tagName: string, reader?: (el: Element) => string | null): () => void {
+  const tag = tagName.toLowerCase()
+  FORM_CONTROLS.set(tag, reader ? (el) => reader(el) ?? '' : defaultReader)
+  return () => FORM_CONTROLS.delete(tag)
+}
+
 interface Rule {
   required?: boolean
   message?: string
@@ -144,17 +201,7 @@ export class OASForm extends OASElement {
 
   private collectFields(): Array<{ name: string; element: Element }> {
     const fields: Array<{ name: string; element: Element }> = []
-    const selector = [
-      'oas-input',
-      'oas-textarea',
-      'oas-select',
-      'oas-auto-complete',
-      'oas-cascader',
-      'oas-tree-select',
-      'oas-input-number',
-      'oas-checkbox',
-      'oas-radio',
-    ].join(',')
+    const selector = [...FORM_CONTROLS.keys()].join(',')
     for (const element of this.querySelectorAll(selector)) {
       const name = element.getAttribute('name')
       if (name) fields.push({ name, element })
@@ -163,16 +210,8 @@ export class OASForm extends OASElement {
   }
 
   private readValue(element: Element): string {
-    const value = element.getAttribute('value')
-    if (value === null) return ''
-    if (value.startsWith('[') || value.startsWith('{')) {
-      try {
-        return JSON.stringify(JSON.parse(value))
-      } catch {
-        return value
-      }
-    }
-    return value
+    const reader = FORM_CONTROLS.get(element.tagName.toLowerCase()) ?? defaultReader
+    return reader(element)
   }
 
   private validateAndSubmit(): void {
