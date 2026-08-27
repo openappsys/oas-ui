@@ -143,6 +143,7 @@
 - [ ] Playwright 视觉基线（light + dark 截图对比）
 - [ ] axe 扫描零严重违规
 - [ ] 键盘流回归（表格见 engineering.md）
+- [ ] HTML 注入安全：动态/用户可控字符串走 `textContent` 或统一转义（`escapeHtml`/`escapeText`/`escapeAttr`），无裸插 `innerHTML`（见 §6）
 
 ## 6. HTML 注入安全规范
 
