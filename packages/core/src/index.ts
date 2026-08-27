@@ -1,5 +1,6 @@
 export { OASElement } from './oas-element.js'
 export type { ReactiveController } from './oas-element.js'
+export { escapeText, escapeHtml, escapeAttr } from './escape.js'
 export {
   setTranslator,
   getTranslator,
