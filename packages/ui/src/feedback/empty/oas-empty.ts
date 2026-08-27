@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement, escapeAttr } from '@oas-ui/core'
 
 const STYLE = `
 :host {
@@ -71,14 +71,7 @@ const ILLUSTRATION = `
 </svg>
 `
 
-/** 转义属性值中的危险字符，避免注入闭合引号/标签 */
-function escapeAttr(v: string): string {
-  return v
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-}
+/** 转义属性值中的危险字符，避免注入闭合引号/标签（统一走 @oas-ui/core escapeAttr） */
 
 export class OASEmpty extends OASElement {
   static override get observedAttributes(): string[] {

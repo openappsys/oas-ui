@@ -143,3 +143,13 @@
 - [ ] Playwright 视觉基线（light + dark 截图对比）
 - [ ] axe 扫描零严重违规
 - [ ] 键盘流回归（表格见 engineering.md）
+
+## 6. HTML 注入安全规范
+
+向 `innerHTML` 注入动态 / 用户可控数据前的转义约定（工具统一来自 `@oas-ui/core`）：
+
+- **工具**：`escapeText`（最小集 `& < >`）/ `escapeHtml`（全量 `& < > " '`）/ `escapeAttr`（全量，属性上下文显式语义）。注入前必须转义、且先转义 `&`。
+- **优先级**：动态 / 用户可控数据**优先用 `textContent`**（不解析 HTML）；确需拼 HTML 字符串时，先经 `escapeText` / `escapeHtml` / `escapeAttr` 转义再注入。
+- **`innerHTML` 的适用场景**：仅静态模板、受控常量（图标 SVG、骨架）。**禁止把未转义的用户数据裸拼进 `innerHTML`**。
+- **正面范例**：`oas-table` —— 表头/单元格动态数据用 `textContent`，`FILTER_ICON` 等为受控常量可用 `innerHTML`。
+- **上下文选型**：code / equation 等需保留 `&lt;`/`&gt;` 字面作预转义的，用 `escapeText`；文本或双引号属性值用 `escapeHtml` / `escapeAttr`。

@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement, escapeText } from '@oas-ui/core'
 
 export type CodeLanguage = 'js' | 'ts' | 'html' | 'css' | 'json' | string
 export type CodeSize = 'xs' | 'small' | 'medium' | 'large'
@@ -151,11 +151,6 @@ const NUMBER_RE = /\b\d+(?:\.\d+)?\b/g
 /** 运算符（排除 & < >，避免二次破坏 &lt;/&gt; 转义实体） */
 const OPERATOR_RE = /[+\-*/%=!|^~?:]+/g
 
-/** HTML 转义（文本节点上下文不转义双引号，保证字符串 token 仍可匹配） */
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
 type Matcher = (src: string) => string
 
 /** 按语言构建单遍组合正则高亮器：互斥分支 + 捕获组分类，一次 replace 完成 */
@@ -212,9 +207,9 @@ function buildMatcher(def: LangDef): Matcher {
  */
 export function highlightLine(src: string, language: string): string {
   const def = LANG_DEFS[language]
-  if (!def) return escapeHtml(src)
+  if (!def) return escapeText(src)
   const matcher = buildMatcher(def)
-  return matcher(escapeHtml(src))
+  return matcher(escapeText(src))
 }
 
 function span(cls: TokenClass, text: string): string {
