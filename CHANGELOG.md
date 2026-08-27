@@ -2,6 +2,36 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.2.7] - 2026-08-27
+
+### 特性
+
+- **table 能力增强**（列设置/多列排序/多级表头/分页/列过滤/合并单元格/子元素声明式通道/单元格模板/自定义列头/编辑校验）：
+  - 列显隐（`TableColumn.hidden` + 受控 `column-keys`）、列拖拽重排、列宽拖拽（`setColumnOrder` / `setColumnWidth`）
+  - 多列排序（`multi-sort` / SortState 多级比较，表头 sort-index 徽标）
+  - 多级表头（`children` 递归组头：组列 colspan、叶子 rowspan，数据/排序/显隐/拖拽走扁平叶子层）
+  - 内置分页（`pagination`/`page-size`/`current` 数据切片 + 复用 oas-pagination，`oas-page-change`）
+  - 列过滤（`filterable`/`filters`/`filterMatch` + 表头过滤弹层，`filter-values`，`oas-filter-change`）
+  - 合并单元格（`merge` 连续相同显示值行垂直合并）
+  - 子元素声明式通道（`<oas-table-column>` 声明列，嵌套表达多级表头；MutationObserver 同步）
+  - 单元格模板 `cellTemplate`（`<template>` + `row.字段` 插值水合，声明式替代 `render` 函数）
+  - 自定义列头 `headerTemplate`（`<template data-role="header">`）
+  - 行内编辑校验 `validate`（提交前校验，失败保持编辑态 + 显示错误）
+- **core**：新增 `ReactiveController` 能力注入协议（宿主生命周期钩子接入 + `addController`/`removeController`）
+
+### 修复
+
+- **tabs**：纵向（left/right）nav 残留底部横线——去掉默认 `border-bottom`，仅保留侧边竖线
+- **table**：列拖拽重排精确化（落点按目标列左/右半区定插前/插后 + 蓝色插入指示线 + 源列淡化）
+- **table**：列过滤触发器 focus-visible 改走统一 `--oas-focus-ring` 焦点环（消除浏览器默认黑框）
+- **table**：`columns` property 函数/模板通路补 `filterMatch`/`validate`/`cellTemplate`/`headerTemplate` 序列化豁免
+
+### 杂项
+
+- **table 单测**：新增约 20 条（列设置/多列排序/多级表头/分页/过滤/合并/子元素通道/模板/校验/拖拽排序）
+- **perf**：table 按需链体积随能力增强更新（26KB → 36KB 预算基线，注明依据）；渲染基准同步
+- **docs**：table 新增列设置/多列排序/序号省略号/多级表头/内置分页/列过滤/合并/子元素声明式通道/单元格模板/自定义列头/远程排序 loading demo（中英）
+
 ## [2.2.6] - 2026-08-26
 
 ### 修复
