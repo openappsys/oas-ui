@@ -14,6 +14,35 @@ Displays structured data in a row-and-column grid with sorting, row selection, m
 
 Click a sortable column header to cycle through ascending / descending / no sort.
 
+## Declarative child-element channel
+
+<DemoBlock title="Declare columns with <oas-table-column>">
+  <div style="width: 100%">
+    <oas-table row-key="name" data='[{"name":"Alice","age":30,"city":"Beijing"},{"name":"Bob","age":25,"city":"Shanghai"},{"name":"Carol","age":35,"city":"Shenzhen"}]'>
+      <oas-table-column key="name" title="Name" sortable></oas-table-column>
+      <oas-table-column key="age" title="Age" sortable></oas-table-column>
+      <oas-table-column key="city" title="City"></oas-table-column>
+    </oas-table>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="Nested child columns for a grouped header">
+  <div style="width: 100%">
+    <oas-table row-key="id" data='[{"id":1,"name":"Alice","age":28,"city":"Beijing","score":92},{"id":2,"name":"Bob","age":32,"city":"Shanghai","score":85}]'>
+      <oas-table-column key="base" title="Basic">
+        <oas-table-column key="name" title="Name" sortable></oas-table-column>
+        <oas-table-column key="age" title="Age" sortable></oas-table-column>
+      </oas-table-column>
+      <oas-table-column key="city" title="City"></oas-table-column>
+      <oas-table-column key="score" title="Score" sortable></oas-table-column>
+    </oas-table>
+  </div>
+</DemoBlock>
+
+Besides the `columns` attribute / property array, columns also support a declarative child-element channel: `<oas-table-column key title sortable width align fixed ...>`, with attributes aligned to the `TableColumn` fields (booleans are true/false, kebab-case like `serial-number` / `filters`); `title` falls back to the default slot text; a nested `<oas-table-column>` expresses a grouped header (children). Child changes are picked up by a MutationObserver to auto re-render. An explicit `columns` attribute / property takes precedence over the child-element channel.
+
+> **⚠️ Function fields (“a detail”)**: function types — `render`, `filterMatch`, editor callbacks (functions in `editOptions`) — **cannot be serialized via a child-element attribute or JSON**. Neither the child-element channel nor the `columns` attribute can express them. For columns containing such function fields, assign `columns` as a **property** (build the array in JS) or use slot / templates for custom cells.
+
 ## Density Sizes
 
 <DemoBlock title="size: small / medium (default) / large">
