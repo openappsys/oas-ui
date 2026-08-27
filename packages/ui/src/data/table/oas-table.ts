@@ -566,6 +566,8 @@ export class OASTableBase extends OASElement {
   private _columnsFromProperty = false
   /** column-keys：受控显示列集合（按此顺序渲染；空=全部列）。显隐与顺序由宿主控制（列设置面板/持久化宿主负责） */
   private _columnKeys: string[] = []
+  /** 子元素声明式通道观察器（light DOM 的 <oas-table-column> 增删/属性变化 → 重解析列） */
+  private childColumnsObserver: MutationObserver | null = null
   private _data: Array<Record<string, unknown>> = []
   private scrollRaf = 0
   /** 恢复 scrollTop 触发的下一次 scroll 事件需忽略，防止重入死循环 */
@@ -717,7 +719,9 @@ export class OASTableBase extends OASElement {
     return th
   }
 
-  private bind(): void {    this.wrap = this.shadow.querySelector('.table-scroll')
+  private bind(): void {
+    this.wrap = this.shadow.querySelector('.table-scroll')
+    this.ensureChildColumnsObserver()
     this.shadow.querySelector('thead')?.addEventListener('click', (e) => {
       const th = (e.target as HTMLElement).closest('th.sortable')
       if (th) this.sortBy((th as HTMLElement).getAttribute('data-key') ?? '', (e as MouseEvent).shiftKey)
@@ -2145,19 +2149,117 @@ export class OASTableBase extends OASElement {
     }
   }
 
+  /** 列来源解析：columns attribute（显式声明）优先；未声明时回落 <oas-table-column> 子元素声明式通道 */
+  private resolveColumns(): TableColumn[] {
+    const raw = this.getAttr('columns', '')
+    if (raw) {
+      try {
+        const cols = JSON.parse(raw)
+        return Array.isArray(cols) ? cols.filter((c) => c && typeof c.key === 'string') : []
+      } catch {
+        return []
+      }
+    }
+    return this.parseChildColumns()
+  }
+
+  /** 解析 light DOM 的 <oas-table-column> 数据载体为 TableColumn[]（递归嵌套子列 → children/多级表头） */
+  private parseChildColumns(): TableColumn[] {
+    const cols: TableColumn[] = []
+    for (const child of Array.from(this.children)) {
+      if (child.tagName === 'OAS-TABLE-COLUMN') cols.push(this.childToColumn(child))
+    }
+    return cols
+  }
+
+  /** 单个 <oas-table-column> → TableColumn（属性对齐字段，默认插槽文本为 title 兜底，嵌套子列递归） */
+  private childToColumn(el: Element): TableColumn {
+    const col: TableColumn = { key: el.getAttribute('key') ?? '', title: this.childColumnTitle(el) }
+    if (el.hasAttribute('sortable')) col.sortable = true
+    if (el.hasAttribute('hidden')) col.hidden = true
+    if (el.hasAttribute('filterable')) col.filterable = true
+    if (el.hasAttribute('merge')) col.merge = true
+    if (el.hasAttribute('editable')) col.editable = true
+    if (el.hasAttribute('actions')) col.actions = true
+    if (el.hasAttribute('serial-number')) col.serialNumber = true
+    if (el.hasAttribute('ellipsis')) col.ellipsis = true
+    const width = el.getAttribute('width')
+    if (width) col.width = width
+    const align = el.getAttribute('align')
+    if (align) col.align = align as TableColumn['align']
+    const fixed = el.getAttribute('fixed')
+    if (fixed) col.fixed = fixed as TableColumn['fixed']
+    const editor = el.getAttribute('editor')
+    if (editor) col.editor = editor as TableColumn['editor']
+    const summary = el.getAttribute('summary')
+    if (summary) col.summary = summary as TableColumn['summary']
+    const filters = el.getAttribute('filters')
+    if (filters) {
+      try {
+        const parsed = JSON.parse(filters)
+        if (Array.isArray(parsed)) col.filters = parsed
+      } catch {
+        /* 非法 filters 忽略 */
+      }
+    }
+    const kids: TableColumn[] = []
+    for (const c of Array.from(el.children)) {
+      if (c.tagName === 'OAS-TABLE-COLUMN') kids.push(this.childToColumn(c))
+    }
+    if (kids.length > 0) col.children = kids
+    return col
+  }
+
+  /** 列标题：title 属性优先，否则默认插槽文本（trim） */
+  private childColumnTitle(el: Element): string {
+    const title = el.getAttribute('title')
+    if (title) return title
+    let text = ''
+    for (const node of el.childNodes) text += node.textContent ?? ''
+    return text.trim()
+  }
+
+  /** 子元素声明式通道观察器：light DOM <oas-table-column> 增删/属性/文本变化 → 重解析列 */
+  private ensureChildColumnsObserver(): void {
+    if (this.childColumnsObserver) return
+    const observer = new MutationObserver(() => this.update())
+    observer.observe(this, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
+      attributeFilter: [
+        'key',
+        'title',
+        'sortable',
+        'width',
+        'align',
+        'fixed',
+        'hidden',
+        'serial-number',
+        'ellipsis',
+        'merge',
+        'filterable',
+        'filters',
+        'summary',
+        'editable',
+        'editor',
+        'actions',
+        'slot',
+      ],
+    })
+    this.childColumnsObserver = observer
+    this.onCleanup(() => {
+      observer.disconnect()
+      this.childColumnsObserver = null
+    })
+  }
+
   private parse(): void {
     // 列定义经 property 赋值且含函数时，内存 `_columns` 已是权威（attribute JSON 无函数），跳过重解析
     if (!this._columnsFromProperty) {
-      try {
-        const cols = JSON.parse(this.getAttr('columns', '[]'))
-        this._columns = Array.isArray(cols)
-          ? cols.filter((c) => c && typeof c.key === 'string')
-          : []
-      } catch {
-        this._columns = []
-      }
-    }
-    try {
+      this._columns = this.resolveColumns()
+    }    try {
       const keys = JSON.parse(this.getAttr('column-keys', '[]'))
       this._columnKeys = Array.isArray(keys)
         ? keys.filter((k) => typeof k === 'string')

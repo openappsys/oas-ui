@@ -1500,8 +1500,75 @@ describe('OASTable 合并单元格（merge）', () => {
   })
 })
 
-describe('列拖拽重排顺序计算（applyColumnReorder）', () => {
-  const BASE = ['id', 'name', 'age', 'city']
+describe('OASTable 子元素声明式通道（oas-table-column）', () => {
+  const mountChild = (inner: string, attrs: Record<string, string> = {}): OASTable => {
+    const el = new OASTable()
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    el.innerHTML = inner
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('#16 子元素渲染列：oas-table-column 声明列 + 布尔字段映射（sortable）', () => {
+    const el = mountChild(
+      '<oas-table-column key="name" title="姓名" sortable></oas-table-column>' +
+        '<oas-table-column key="age" title="年龄"></oas-table-column>',
+    )
+    el.setAttribute('data', DATA)
+    expect(headers(el).length).toBe(2)
+    const nameTh = el.shadowRoot!.querySelector('th[data-key="name"]')!
+    expect(nameTh.textContent).toContain('姓名')
+    expect(nameTh.classList.contains('sortable')).toBe(true)
+    expect(rows(el).length).toBe(3)
+  })
+
+  it('#16 title 缺省时取默认插槽文本（trim）', () => {
+    const el = mountChild('<oas-table-column key="name">  姓名  </oas-table-column>')
+    expect(el.shadowRoot!.querySelector('th[data-key="name"]')!.textContent).toBe('姓名')
+  })
+
+  it('#16 嵌套子列表达多级表头（children → 组头 colspan）', () => {
+    const el = mountChild(
+      '<oas-table-column key="base" title="基础信息">' +
+        '<oas-table-column key="name" title="姓名"></oas-table-column>' +
+        '<oas-table-column key="age" title="年龄" sortable></oas-table-column>' +
+        '</oas-table-column>' +
+        '<oas-table-column key="city" title="城市"></oas-table-column>',
+    )
+    const group = el.shadowRoot!.querySelector('th.header-group')!
+    expect(group.textContent).toBe('基础信息')
+    expect(group.getAttribute('colspan')).toBe('2')
+    expect(el.shadowRoot!.querySelectorAll('th[data-key]').length).toBe(3)
+  })
+
+  it('#16 columns attribute 优先于子元素声明式通道', () => {
+    const el = mountChild(
+      '<oas-table-column key="name" title="姓名" sortable></oas-table-column>',
+      { columns: '[{"key":"name","title":"姓名"}]' },
+    )
+    // 显式 columns attr 生效：name 列无 sortable
+    const nameTh = el.shadowRoot!.querySelector('th[data-key="name"]')!
+    expect(nameTh.classList.contains('sortable')).toBe(false)
+    expect(headers(el).length).toBe(1)
+  })
+
+  it('#16 动态增删子元素（MutationObserver）自动更新列', () => {
+    const el = mountChild('<oas-table-column key="name" title="姓名"></oas-table-column>')
+    expect(headers(el).length).toBe(1)
+    const newCol = document.createElement('oas-table-column')
+    newCol.setAttribute('key', 'age')
+    newCol.setAttribute('title', '年龄')
+    el.appendChild(newCol)
+    return new Promise<void>((res) =>
+      setTimeout(() => {
+        expect(headers(el).length).toBe(2)
+        res()
+      }, 0),
+    )
+  })
+})
+
+describe('列拖拽重排顺序计算（applyColumnReorder）', () => {  const BASE = ['id', 'name', 'age', 'city']
 
   it('插前：fromKey 移到 toKey 之前', () => {
     expect(applyColumnReorder(BASE, 'age', 'name', 'before')).toEqual(['id', 'age', 'name', 'city'])
