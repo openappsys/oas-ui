@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement, escapeHtml } from '@oas-ui/core'
 import {
   resolveLocale,
   startOfDay,
@@ -52,13 +52,6 @@ const DEFAULT_FORMAT: Record<PickerType, string> = {
 
 function pad(v: number): string {
   return String(v).padStart(2, '0')
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(
-    /[&<>"']/g,
-    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
-  )
 }
 
 const STYLE = `
