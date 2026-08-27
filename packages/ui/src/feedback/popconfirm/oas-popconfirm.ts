@@ -83,11 +83,11 @@ export class OASPopconfirm extends OASElement {
       if (origin && !this.shadow.contains(origin)) this.toggle()
     })
     this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => {
-      this.emit('ok')
+      this.emit('ok', { source: this })
       this.removeAttribute('open')
     })
     this.shadow.querySelector('[part="cancel"]')?.addEventListener('click', () => {
-      this.emit('cancel')
+      this.emit('cancel', { source: this })
       this.removeAttribute('open')
     })
     const onKey = (e: KeyboardEvent): void => {

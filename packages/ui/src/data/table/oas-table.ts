@@ -1020,8 +1020,12 @@ export class OASTableBase extends OASElement {
       td.appendChild(box)
       tr.appendChild(td)
     }
-    tr.addEventListener('click', () => {
+    tr.addEventListener('click', (e) => {
       if (this.hasAttr('checkable')) return
+      // 交互控件（按钮/链接/表单控件/浮层等）内的点击不触发行选中+重渲染——
+      // 否则点单元格内嵌 popconfirm 会触发 update() 全量重建 body，把刚打开的 popconfirm 销毁成默认关闭
+      const el = e.target as HTMLElement | null
+      if (el && el.closest('button, a, input, select, textarea, [role], oas-popconfirm')) return
       const next = new Set(selected)
       if (next.has(key)) next.delete(key)
       else next.add(key)

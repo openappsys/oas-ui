@@ -75,6 +75,24 @@ describe('OASTable', () => {
     expect((detail as { row: Record<string, unknown> }).row['name']).toBe('李四')
   })
 
+  it('#20 行点击忽略交互控件内点击（内嵌按钮不触发行选中/重渲染，避免销毁内嵌浮层）', () => {
+    const el = new OASTable()
+    el.setAttribute('data', DATA)
+    el.columns = [
+      { key: 'name', title: '姓名' },
+      { key: 'op', title: '操作', render: () => { const b = document.createElement('button'); b.textContent = '删除'; return b } },
+    ]
+    document.body.appendChild(el)
+    let rowClick = 0
+    el.addEventListener('oas-row-click', () => rowClick++)
+    el.shadowRoot!.querySelector<HTMLElement>('td[data-col="op"] button')!.click()
+    expect(rowClick, '按钮点击不应触发行点击').toBe(0)
+    expect(el.getAttribute('selected')).toBeFalsy()
+    // 文本单元格点击 → 行点击正常
+    el.shadowRoot!.querySelector<HTMLElement>('td[data-col="name"]')!.click()
+    expect(rowClick).toBe(1)
+  })
+
   it('checkable：渲染行复选框，勾选派发 oas-check', () => {
     const el = mount({ checkable: '', 'row-key': 'name' })
     let detail: unknown
