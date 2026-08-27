@@ -3588,10 +3588,12 @@
     "props": [],
     "events": [
       {
-        "name": "oas-ok"
+        "name": "oas-ok",
+        "detail": "{ source: this }"
       },
       {
-        "name": "oas-cancel"
+        "name": "oas-cancel",
+        "detail": "{ source: this }"
       }
     ],
     "slots": [

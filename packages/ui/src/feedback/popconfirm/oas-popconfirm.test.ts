@@ -27,13 +27,13 @@ describe('OASPopconfirm', () => {
     expect(el.shadowRoot!.querySelector('[part="ok"]')).not.toBeNull()
   })
 
-  it('点击确定派发 oas-ok 并关闭', async () => {
+  it('点击确定派发 oas-ok 并关闭，detail.source 指向本实例（修复 shadow retarget）', async () => {
     const el = mount({ open: '', title: '确认' })
     await Promise.resolve()
-    let ok = 0
-    el.addEventListener('oas-ok', () => ok++)
+    let detail: unknown
+    el.addEventListener('oas-ok', (e: Event) => (detail = (e as CustomEvent).detail))
     ;(el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
-    expect(ok).toBe(1)
+    expect((detail as { source: unknown }).source).toBe(el)
     expect(el.shadowRoot!.querySelector('[part="popover"]')!.getAttribute('aria-hidden')).toBe(
       'true',
     )
