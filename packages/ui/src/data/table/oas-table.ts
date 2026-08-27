@@ -16,6 +16,12 @@ export interface TableColumn {
   /** 单元格模板（声明式，替代 render 的函数：子元素 `<template>` 或 columns property 传入）。
       克隆模板并用 `{{row.字段}}` 插值水合成每格内容；函数型 render 优先于模板 */
   cellTemplate?: HTMLTemplateElement
+  /** 自定义列头模板（声明式）：克隆模板内容作为 th 内容（静态，不随行插值）；子元素用
+      `<template data-role="header">` 表达，替代纯文本 title */
+  headerTemplate?: HTMLTemplateElement
+  /** 行内编辑校验：提交前校验，返回非空字符串=错误文案 / false=校验失败（用默认文案），
+      true / '' / undefined=通过。校验失败保持编辑态不提交 */
+  validate?: (value: string, row: Record<string, unknown>) => string | boolean | undefined
   /** 合计：'sum' | 'avg' | 'count'（列级简单配置；复杂配置走表格级 summary 属性） */
   summary?: 'sum' | 'avg' | 'count'
   /** 行内编辑：该列可编辑（配合表格级 `editable` 属性开关） */
@@ -406,6 +412,21 @@ td[data-editing='true'],
 tr[data-sticky='true'] td[data-editing='true'] {
   background: var(--oas-color-primary-soft, rgba(24, 144, 255, 0.08));
 }
+td[data-invalid='true'] {
+  background: var(--oas-color-danger-soft, rgba(220, 38, 38, 0.08));
+}
+td[data-invalid='true'] .cell-editor {
+  border-color: var(--oas-color-danger);
+}
+.edit-error {
+  display: block;
+  padding: 2px 6px;
+  font-size: var(--oas-font-size-xs, 12px);
+  color: var(--oas-color-danger);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 td.editing .cell-editor {
   box-sizing: border-box;
   width: 100%;
@@ -607,10 +628,12 @@ export class OASTableBase extends OASElement {
           (typeof c.render === 'function' ||
             typeof c.editor === 'function' ||
             typeof c.filterMatch === 'function' ||
-            c.cellTemplate),
+            typeof c.validate === 'function' ||
+            c.cellTemplate ||
+            c.headerTemplate),
       )
     ) {
-      // 列定义含函数/模板节点（render/filterMatch/cellTemplate）：JSON 序列化会丢 → 直接存内存并标记，跳过 attribute 重解析
+      // 列定义含函数/模板节点（render/filterMatch/validate/cellTemplate/headerTemplate）：JSON 序列化会丢 → 直接存内存并标记，跳过 attribute 重解析
       this._columns = value.filter((c) => c && typeof c.key === 'string')
       this._columnsFromProperty = true
       this.update()
@@ -655,7 +678,12 @@ export class OASTableBase extends OASElement {
   /** 缓存节点引用 + 绑定事件 + 注册清理（render 与水合路径共用） */
   /** 表头单元格填充：标题 + 可排队列排序箭头/序号 + 可过滤列过滤触发器（扁平与多行叶子共用） */
   private fillHeaderCell(th: HTMLElement, col: TableColumn): void {
-    th.textContent = col.title
+    if (col.headerTemplate) {
+      // 自定义列头：克隆模板内容作为 th 基础内容（静态，不随行插值）
+      th.appendChild(col.headerTemplate.content.cloneNode(true) as DocumentFragment)
+    } else {
+      th.textContent = col.title
+    }
     if (col.sortable) {
       th.classList.add('sortable')
       const sorts = this.resolveSorts()
@@ -1924,6 +1952,17 @@ export class OASTableBase extends OASElement {
     const st = this.editState
     if (!st) return
     const value = this.readEditorValue(st)
+    const col = this.effectiveColumns().find((c) => c.key === st.colKey)
+    const err = col?.validate ? col.validate(value, st.row) : undefined
+    const invalid = err === false || (typeof err === 'string' && err.trim() !== '')
+    this.renderEditError(st, invalid ? (typeof err === 'string' ? err : undefined) : undefined)
+    if (invalid) {
+      // 校验失败：保持编辑态、不提交（编辑器仍可编辑重试）
+      st.td.dataset.invalid = 'true'
+      st.td.querySelector<HTMLInputElement | HTMLSelectElement>('input, select')?.focus()
+      return
+    }
+    st.td.removeAttribute('data-invalid')
     this.exitEdit(st)
     if (value === '') {
       this.emit('edit-cancel', this.editDetail(st, st.oldValue))
@@ -1938,6 +1977,23 @@ export class OASTableBase extends OASElement {
       this.emit('edit', this.editDetail(st, value))
     }
     this.focusCell(st.key, st.colKey)
+  }
+
+  /** 编辑校验错误展示：写入/清除 td 的 error 消息（重渲染编辑器时保留该错误于单元格内） */
+  private renderEditError(st: EditState, message: string | undefined): void {
+    let el = st.td.querySelector<HTMLElement>('.edit-error')
+    if (message) {
+      if (!el) {
+        el = document.createElement('span')
+        el.className = 'edit-error'
+        st.td.appendChild(el)
+      }
+      el.textContent = message
+      st.td.classList.add('edit-invalid')
+    } else if (el) {
+      el.remove()
+      st.td.classList.remove('edit-invalid')
+    }
   }
 
   /** 取消当前编辑（Esc / 操作列取消）：还原旧值并派发 oas-edit-cancel */
@@ -2214,9 +2270,12 @@ export class OASTableBase extends OASElement {
       if (c.tagName === 'OAS-TABLE-COLUMN') kids.push(this.childToColumn(c))
     }
     if (kids.length > 0) col.children = kids
-    // 单元格模板（声明式，替代 render）：子元素内的 <template>，用 {{row.字段}} 插值水合
-    const template = el.querySelector<HTMLTemplateElement>('template')
-    if (template) col.cellTemplate = template
+    // 单元格模板（cellTemplate）：普通 <template>（无 data-role="header"）
+    const cellTpl = el.querySelector<HTMLTemplateElement>('template:not([data-role="header"])')
+    if (cellTpl) col.cellTemplate = cellTpl
+    // 自定义列头模板（headerTemplate）：<template data-role="header">
+    const headerTpl = el.querySelector<HTMLTemplateElement>('template[data-role="header"]')
+    if (headerTpl) col.headerTemplate = headerTpl
     return col
   }
 
@@ -2256,6 +2315,7 @@ export class OASTableBase extends OASElement {
         'editor',
         'actions',
         'slot',
+        'data-role',
       ],
     })
     this.childColumnsObserver = observer
