@@ -22,19 +22,11 @@ describe('OASAvatar', () => {
     expect(el.shadowRoot!.textContent).toContain('张')
   })
 
-  it('运行时改 textContent 刷新首字符（修复一次性快照：宿主 syncUser 后不再停在 ?）', async () => {
+  it('text 属性驱动首字符（响应式：宿主运行时改 text 亦刷新）', () => {
     const el = new OASAvatar()
     document.body.appendChild(el)
     expect(el.shadowRoot!.querySelector('[part="text"]')!.textContent).toBe('?')
-    el.textContent = '张三'
-    await new Promise((r) => setTimeout(r, 0))
-    expect(el.shadowRoot!.querySelector('[part="text"]')!.textContent).toBe('张')
-  })
-
-  it('text 属性驱动首字符（声明式替代通道）', () => {
-    const el = new OASAvatar()
-    el.setAttribute('text', '李')
-    document.body.appendChild(el)
+    el.setAttribute('text', '李') // 运行时改 → attributeChangedCallback 触发重渲染
     expect(el.shadowRoot!.querySelector('[part="text"]')!.textContent).toBe('李')
   })
 
