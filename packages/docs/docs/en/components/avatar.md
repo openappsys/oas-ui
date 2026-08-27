@@ -133,6 +133,7 @@ When the image fails to load, the avatar automatically falls back to a placehold
 | `badge-placement` | Badge placement: `top-right` (default) / `bottom-right` | `string` | `top-right` |
 | `size` | Avatar size (px) | `string` | `32` |
 | `src` | Image URL; renders an image avatar when present | `string` | — |
+| `text` | — | `string` | — |
 
 | Name | Description |
 | --- | --- |

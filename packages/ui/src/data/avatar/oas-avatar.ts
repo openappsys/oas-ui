@@ -97,12 +97,14 @@ img {
  */
 export class OASAvatar extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['src', 'size', 'alt', 'badge', 'badge-dot', 'badge-color', 'badge-placement']
+    return ['src', 'size', 'alt', 'badge', 'badge-dot', 'badge-color', 'badge-placement', 'text']
   }
 
   /** 图片加载失败态（仅 src 变化时重置） */
   private failed = false
   private lastSrc = ''
+  /** 宿主 light DOM 文本变化观察器（运行时改 textContent 也能刷新首字符） */
+  private textObserver: MutationObserver | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -124,6 +126,20 @@ export class OASAvatar extends OASElement {
     this.shadow
       .querySelector<HTMLSlotElement>('slot[name="fallback"]')
       ?.addEventListener('slotchange', () => this.update())
+    // 宿主 light DOM 文本变化（运行时 avatar.textContent = '张'）→ 重算首字符，否则首字母停在初次快照
+    this.ensureTextObserver()
+  }
+
+  /** 观察宿主 light DOM 文本/子节点变化（textContent setter 是 childList + characterData），变化即重算首字符 */
+  private ensureTextObserver(): void {
+    if (this.textObserver) return
+    const observer = new MutationObserver(() => this.update())
+    observer.observe(this, { childList: true, characterData: true, subtree: true })
+    this.textObserver = observer
+    this.onCleanup(() => {
+      observer.disconnect()
+      this.textObserver = null
+    })
   }
 
   protected override render(): void {
@@ -227,7 +243,11 @@ export class OASAvatar extends OASElement {
       img.setAttribute('alt', this.getAttr('alt', this.t('avatar.defaultAlt')))
     }
     const text = this.shadow.querySelector('[part="text"]')
-    if (text) text.textContent = (this.textContent ?? '').trim().charAt(0) || '?'
+    if (text) {
+      // 声明式 text 属性优先（cleaner，React/Vue 桥接友好），否则回落宿主 textContent 首字符
+      const source = this.getAttr('text', '') || (this.textContent ?? '')
+      text.textContent = source.trim().charAt(0) || '?'
+    }
 
     this.sync()
     this.syncBadge(size)
