@@ -63,14 +63,15 @@
 1. 全绿：test / typecheck / build / e2e
 2. PRD 版本段更新（含测试数）+ ROADMAP 状态
 3. CHANGELOG 记录（conventional commits 生成）
-4. 版本号同步各包 `package.json`，打 tag，`git push --tags`（CI tag 触发自动 build + publish）
+4. 版本号同步各包 `package.json`，打 tag，`git push --tags`（**CI 通道**：tag 触发自动 build + publish；**本地通道**：tag 仅作版本标记，发布走下方 `pnpm release`）
 
 ### 两种发布通道
 
 **CI（首选，OIDC Trusted Publishing，免 token）**：
 
 - 推 `v*` tag → `.github/workflows/release.yml` 自动 build + api:check + `pnpm -r publish`
-- 硬性要求（npm 官方）：**仓库托管在 GitHub**（GitHub-hosted runner；仓库托管在非 GitHub 的私有/内网源时此通道不适用（走下方本地通道））；Node ≥ 22.14 + npm CLI ≥ 11.5.1（workflow 已升级）；各包 `package.json` 的 `repository.url` 必须与 GitHub 仓库精确一致
+- 硬性要求（npm 官方）：**仓库托管在 GitHub**（GitHub-hosted runner）；Node ≥ 22.14 + npm CLI ≥ 11.5.1（workflow 已升级）；各包 `package.json` 的 `repository.url` 必须与 GitHub 仓库精确一致。
+- ⚠️ **适用范围**：本通道仅适用于**仓库托管在 GitHub** 的场景。若源码托管在**非 GitHub 的私有 / 内网仓库**（如自托管 Gitea），此通道不适用（无 GitHub-hosted runner、无 GitHub Actions），应走下方「**本地**」通道发布。
 - 一次性配置（npm 网页操作）：每个可发布包（core/i18n/icons/ssr/theme/ui）→ Settings → Trusted Publisher → GitHub Actions → 填 GitHub org/user + 仓库名 + `release.yml`；**全新包首版可能需先手动发布一次**才能配置
 - 无长期凭证（npm 已废 Classic Token，发布权限 token 最长 90 天），OIDC 每次交换一次性凭证
 
