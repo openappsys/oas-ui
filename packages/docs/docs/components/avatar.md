@@ -133,6 +133,7 @@
 | `badge-placement` | 徽标位置：`top-right`（默认）/`bottom-right` | `string` | `top-right` |
 | `size` | 头像尺寸（px） | `string` | `32` |
 | `src` | 图片地址，存在时渲染图片头像 | `string` | — |
+| `text` | — | `string` | — |
 
 | 名称 | 说明 |
 | --- | --- |
