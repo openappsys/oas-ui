@@ -837,6 +837,30 @@ moreBtn 键盘打开聚焦第一项 + 列表 roving（ArrowUp/Down/Home/End/Ente
 - 全量单测 3423 / typecheck / build / api:check / perf:size 六项 PASS（cdn 263.7KB < 300KB 天花板）/ e2e 1372 / trace 0
 - 单测 +1（内置 star 配 iconColor → path stroke 被替换）；浏览器实测内置 `#f50` / `var(--oas-color-danger)` 生效、缺省 currentColor 零回归；识图复核 demo 内置星标红色可辨
 
+## v2.2.7 table 组件能力补齐 → 已发布
+
+table 组件按能力并集补齐（列设置/多列排序/多级表头/内置分页/列过滤/合并单元格/子元素声明式通道/单元格模板/自定义列头/编辑校验），core 增 ReactiveController 注入协议。
+
+### 特性
+
+- 列显隐（`TableColumn.hidden` + 受控 `column-keys`）、列拖拽重排、列宽拖拽
+- 多列排序（`multi-sort` / SortState 多级比较 + 表头 sort-index 徽标）
+- 多级表头（`children` 递归组头：组列 colspan、叶子 rowspan）
+- 内置分页（`pagination`/`page-size`/`current` 数据切片 + 复用 oas-pagination）
+- 列过滤（`filterable`/`filters`/`filterMatch` + 表头过滤弹层、`filter-values`）
+- 合并单元格（`merge` 连续相同显示值行垂直合并）
+- 子元素声明式通道（`<oas-table-column>` 声明列 + 嵌套多级表头，MutationObserver 同步）
+- 单元格模板 `cellTemplate` / 自定义列头 `headerTemplate`
+- 行内编辑校验 `validate`（提交前校验，失败保持编辑态 + 错误展示）
+- core 新增 `ReactiveController` 能力注入协议
+- tabs 纵向 nav 底线修复、table 列拖拽精确化、列过滤触发器 focus-visible 修复
+
+### 验收
+
+- 全量单测 3471 / typecheck / build / api:check / perf:size（table 31.2KB < 36KB 预算）/ perf:bench PASS
+- table 页 e2e：a11y（axe 零严重违规）/ dark / visual / console 零告警 / smoke / code 全 PASS；qa-regression 列拖拽 PASS；light+dark 识图复核通过
+- research 矩阵（component/scenario/capabilities）+ 生成物（demo-inventory/scenario-coverage/scenario-gaps）已同步；trace（变更区 + --all 全历史）0 命中
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
