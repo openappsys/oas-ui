@@ -79,7 +79,7 @@ describe('OASWatermark', () => {
     expect(decoded).toContain('&lt;')
     expect(decoded).toContain('&gt;')
     expect(decoded).toContain('&quot;')
-    expect(decoded).toContain('&apos;')
+    expect(decoded).toContain('&#39;')
   })
 
   it('text 为空且无 image 时不设背景（干净降级）', () => {

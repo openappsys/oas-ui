@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement, escapeHtml } from '@oas-ui/core'
 
 const STYLE = `
 :host {
@@ -32,15 +32,7 @@ const STYLE = `
 }
 `
 
-/** XML 特殊字符转义（用于内联 SVG 文本） */
-function escapeXml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;')
-}
+/** XML 特殊字符转义（用于内联 SVG 文本；numeric ref 兼容，统一走 core escapeHtml） */
 
 /**
  * 生成文字水印平铺单元：240×120 SVG（-30° 斜纹文字）。
@@ -48,7 +40,7 @@ function escapeXml(text: string): string {
  * 导出供测试校验 data-uri 内容与特殊字符转义。
  */
 export function textTileDataUri(text: string): string {
-  const escaped = escapeXml(text)
+  const escaped = escapeHtml(text)
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="120" viewBox="0 0 240 120">' +
     '<text x="120" y="60" text-anchor="middle" dominant-baseline="central" ' +

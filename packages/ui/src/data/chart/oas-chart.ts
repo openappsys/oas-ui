@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement, escapeText, escapeAttr } from '@oas-ui/core'
 
 export type ChartType = 'line' | 'bar' | 'pie' | 'area' | 'donut' | 'stacked-bar'
 
@@ -666,10 +666,10 @@ export class OASChart extends OASElement {
   }
 
   private escapeText(text: string): string {
-    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return escapeText(text)
   }
 
   private escapeAttr(text: string): string {
-    return this.escapeText(text).replace(/"/g, '&quot;')
+    return escapeAttr(text)
   }
 }

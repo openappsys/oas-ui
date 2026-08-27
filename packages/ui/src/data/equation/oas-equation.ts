@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement, escapeText } from '@oas-ui/core'
 
 /** 希腊字母映射（LaTeX 命令 → Unicode 字符） */
 const GREEK: Record<string, string> = {
@@ -260,19 +260,11 @@ function parseCommand(toks: Tok[], pos: { i: number }, name: string): Node {
   return { type: 'text', text: `\\${name}` }
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
 function render(n: Node | Node[]): string {
   if (Array.isArray(n)) return n.map(render).join('')
   switch (n.type) {
     case 'text':
-      return escapeHtml(n.text)
+      return escapeText(n.text)
     case 'group':
       return n.children.map(render).join('')
     case 'sup':
