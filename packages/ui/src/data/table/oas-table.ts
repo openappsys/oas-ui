@@ -491,6 +491,10 @@ th[data-editing-col='true'] {
   color: var(--oas-color-primary);
   background: var(--oas-color-bg-hover);
 }
+.filter-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
 .filter-panel {
   position: fixed;
   z-index: 1000;
