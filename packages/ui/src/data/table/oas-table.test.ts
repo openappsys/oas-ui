@@ -788,6 +788,43 @@ describe('OASTable 行内编辑（inline editing）', () => {
     expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张三' })
   })
 
+  const validateMount = (): OASTable => {
+    const el = new OASTable()
+    el.setAttribute('editable', '')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('data', JSON.stringify([{ name: '张三', age: 30 }]))
+    el.columns = [
+      { key: 'name', title: '姓名', editable: true, validate: (v: string) => (v === 'bad' ? '名称不合法' : '') },
+      { key: 'age', title: '年龄', editable: true },
+    ]
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('#19 validate 校验失败：不提交、保持编辑态、显示错误文案', () => {
+    const el = validateMount()
+    const td = cells(el)[0]!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = td.querySelector<HTMLInputElement>('input.cell-editor')!
+    input.value = 'bad'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(el.getAttribute('data')).not.toContain('"bad"')
+    expect(td.querySelector('input.cell-editor')).not.toBeNull() // 仍编辑中
+    expect(td.getAttribute('data-invalid')).toBe('true')
+    expect(td.querySelector('.edit-error')!.textContent).toBe('名称不合法')
+  })
+
+  it('#19 validate 通过：正常提交并退出编辑', () => {
+    const el = validateMount()
+    const td = cells(el)[0]!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = td.querySelector<HTMLInputElement>('input.cell-editor')!
+    input.value = '张四'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(el.getAttribute('data')).toContain('"张四"')
+    expect(td.querySelector('input.cell-editor')).toBeNull() // 退出编辑
+  })
+
   it('Esc 取消：值还原、数据不变、派发 oas-edit-cancel', () => {
     const el = editMount()
     let detail: unknown
@@ -1590,6 +1627,32 @@ describe('OASTable 子元素声明式通道（oas-table-column）', () => {
     const a = rows(el)[0]!.querySelector('td[data-col="name"] a')!
     expect(a.getAttribute('href')).toBe('/u/张三')
     expect(a.querySelector('b')!.textContent).toBe('')
+  })
+
+  it('#18 headerTemplate 自定义列头：<template data-role="header"> 渲染 th 内容', () => {
+    const el = new OASTable()
+    el.setAttribute('data', DATA)
+    el.innerHTML =
+      '<oas-table-column key="name" title="姓名" sortable><template data-role="header"><span class="hd"><i>★</i> 姓名</span></template></oas-table-column>'
+    document.body.appendChild(el)
+    const th = el.shadowRoot!.querySelector('th[data-key="name"]')!
+    expect(th.querySelector('span.hd')).not.toBeNull()
+    expect(th.querySelector('span.hd')!.textContent).toBe('★ 姓名')
+    // 自定义列头下排序图标仍需追加（自动排序可用）
+    expect(th.querySelector('.sort-icon')).not.toBeNull()
+    // 单元格不应用 header 模板（仍为普通文本）
+    expect(rows(el)[0]!.querySelector('td[data-col="name"]')!.textContent).toBe('张三')
+  })
+
+  it('#18 columns property 传 headerTemplate 生效', () => {
+    const el = new OASTable()
+    el.setAttribute('data', DATA)
+    const tpl = document.createElement('template')
+    tpl.innerHTML = '<b>HT</b>'
+    el.columns = [{ key: 'name', title: 'x', headerTemplate: tpl }]
+    document.body.appendChild(el)
+    const th = el.shadowRoot!.querySelector('th[data-key="name"]')!
+    expect(th.querySelector('b')).not.toBeNull()
   })
 })
 

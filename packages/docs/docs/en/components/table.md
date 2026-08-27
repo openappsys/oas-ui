@@ -337,6 +337,17 @@ A column with `serialNumber: true` renders the row number (starting from 1, not 
 
 `merge: true` merges consecutive rows with the same displayed value in that column into a single rowspan cell (ignored in virtual-scroll mode).
 
+## Remote data & sort loading
+
+<DemoBlock title="Sort triggers a re-request (simulated remote)">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-table id="table-remote" sort-key="age" sort-order="asc" row-key="id" columns='[{"key":"id","title":"ID","width":"60px"},{"key":"name","title":"Name","sortable":true},{"key":"age","title":"Age","sortable":true},{"key":"city","title":"City"}]'></oas-table>
+    <oas-button type="primary" onclick="simulateRemoteReload()">Clear sort & re-request</oas-button>
+  </oas-space>
+</DemoBlock>
+
+Listen to `oas-sort-change`, then set `loading` and re-request remote paginated/sorted data; this demo shows the "sort → loading → re-render" handoff with a simulated delay. Server-side sorting is done by the host after it receives the event (the table only dispatches the event and shows the loading state).
+
 ## Events
 
 <DemoBlock title="Sort and click events">
@@ -471,6 +482,30 @@ onMounted(() => {
     const vals = Object.values(e.detail.filters)
     document.querySelector('#table-filter-values').textContent = vals.length ? vals.join(', ') : 'none'
   })
+
+  // Remote data + sort loading demo: sort triggers loading, simulated delay then clear sort + refill data
+  const remote = document.querySelector('#table-remote')
+  const renderRemote = () => {
+    remote?.setAttribute('data', JSON.stringify(TABLE_ROWS))
+  }
+  const simulateRemoteReload = () => {
+    remote?.removeAttribute('sort-key')
+    remote?.removeAttribute('sort-order')
+    remote?.setAttribute('loading', '')
+    setTimeout(() => {
+      remote?.removeAttribute('loading')
+      renderRemote()
+    }, 800)
+  }
+  window.simulateRemoteReload = simulateRemoteReload
+  remote?.addEventListener('oas-sort-change', () => {
+    remote?.setAttribute('loading', '')
+    setTimeout(() => {
+      remote?.removeAttribute('loading')
+      renderRemote()
+    }, 800)
+  })
+  renderRemote()
 })
 </script>
 

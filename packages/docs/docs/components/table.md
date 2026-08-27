@@ -337,6 +337,17 @@
 
 列配置 `merge: true` 将该列连续相同显示值的行合并为一个 rowspan 单元格（虚拟滚动模式下忽略合并）。
 
+## 远程数据与排序 loading
+
+<DemoBlock title="排序触发重新请求（模拟远程）">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-table id="table-remote" sort-key="age" sort-order="asc" row-key="id" columns='[{"key":"id","title":"ID","width":"60px"},{"key":"name","title":"姓名","sortable":true},{"key":"age","title":"年龄","sortable":true},{"key":"city","title":"城市"}]'></oas-table>
+    <oas-button type="primary" onclick="simulateRemoteReload()">清空排序并重新请求</oas-button>
+  </oas-space>
+</DemoBlock>
+
+监听 `oas-sort-change` 后置 `loading` 再请求远程分页/排序数据；本 demo 用模拟延时演示「排序 → loading → 重新渲染」的衔接，服务端实际排序由宿主在收到事件后发起请求（表格只负责派发事件与 loading 态）。
+
 ## 事件
 
 <DemoBlock title="排序与点击事件">
@@ -471,6 +482,30 @@ onMounted(() => {
     const vals = Object.values(e.detail.filters)
     document.querySelector('#table-filter-values').textContent = vals.length ? vals.join('、') : '无'
   })
+
+  // 远程数据 + 排序 loading demo：排序触发置 loading，模拟延时后清空排序+回填数据
+  const remote = document.querySelector('#table-remote')
+  const renderRemote = () => {
+    remote?.setAttribute('data', JSON.stringify(TABLE_ROWS))
+  }
+  const simulateRemoteReload = () => {
+    remote?.removeAttribute('sort-key')
+    remote?.removeAttribute('sort-order')
+    remote?.setAttribute('loading', '')
+    setTimeout(() => {
+      remote?.removeAttribute('loading')
+      renderRemote()
+    }, 800)
+  }
+  window.simulateRemoteReload = simulateRemoteReload
+  remote?.addEventListener('oas-sort-change', () => {
+    remote?.setAttribute('loading', '')
+    setTimeout(() => {
+      remote?.removeAttribute('loading')
+      renderRemote()
+    }, 800)
+  })
+  renderRemote()
 })
 </script>
 
