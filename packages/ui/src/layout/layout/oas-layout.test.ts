@@ -112,6 +112,30 @@ describe('OASLayout 视口锁定模式（实测缺陷回归）', () => {
   it('viewport 进 observedAttributes（API 扫描与文档一致性）', () => {
     expect(OASLayout.observedAttributes).toContain('viewport')
   })
+
+  it('side 属性：默认/right/top 控制 .main 主轴方向，非法回落 left', () => {
+    const layout = new OASLayout()
+    layout.innerHTML = '<div slot="sider"></div><div slot="content"></div>'
+    document.body.appendChild(layout)
+    const struct = layout.shadowRoot!.querySelector('[part="root"]')!
+    const stl = layout.shadowRoot!.querySelector('style')!.textContent!
+    // 默认 left
+    expect(struct.getAttribute('data-side')).toBe('left')
+    expect(struct.getAttribute('data-has-sider')).toBe('true')
+    expect(stl, '默认 row 方向').toMatch(/\.struct\.has-sider \.main\s*\{\s*flex-direction:\s*row\s*;?\s*\}/)
+    // right → 反向主轴（sider 落右侧）
+    layout.setAttribute('side', 'right')
+    expect(struct.getAttribute('data-side')).toBe('right')
+    expect(stl).toMatch(/\[data-side='right'\] \.main\s*\{\s*flex-direction:\s*row-reverse\s*;?\s*\}/)
+    // top → 纵向主轴（sider 落顶部，横向铺满）
+    layout.setAttribute('side', 'top')
+    expect(struct.getAttribute('data-side')).toBe('top')
+    expect(stl).toMatch(/\[data-side='top'\] \.main\s*\{\s*flex-direction:\s*column\s*;?\s*\}/)
+    expect(stl).toMatch(/\[data-side='top'\] \.sider-part\s*\{\s*width:\s*100%\s*;?\s*\}/)
+    // 非法值回落 left
+    layout.setAttribute('side', 'xxx')
+    expect(struct.getAttribute('data-side')).toBe('left')
+  })
 })
 
 describe('OASSider 内嵌 sidebar 宽度对齐（实测缺陷回归）', () => {

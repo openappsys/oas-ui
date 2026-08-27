@@ -28,6 +28,24 @@ A classic page skeleton of header + sider + content + footer, used with semantic
   </oas-layout>
 </DemoBlock>
 
+## Sider position
+
+<DemoBlock title="side: left / right / top">
+  <oas-space direction="vertical" style="width: 100%">
+    <oas-space size="small">
+      <oas-button size="small" onclick="document.getElementById('layout-side').setAttribute('side','left')">Left</oas-button>
+      <oas-button size="small" onclick="document.getElementById('layout-side').setAttribute('side','right')">Right</oas-button>
+      <oas-button size="small" onclick="document.getElementById('layout-side').setAttribute('side','top')">Top</oas-button>
+    </oas-space>
+    <oas-layout id="layout-side" style="height: 220px; width: 100%">
+      <div slot="sider" style="background: var(--oas-color-bg-hover); padding: 12px; min-width: 140px">Menu</div>
+      <oas-content slot="content">Content: the menu position switches between left / right / top (for top, reuse oas-menubar / oas-navigation-menu).</oas-content>
+    </oas-layout>
+  </oas-space>
+</DemoBlock>
+
+The `side` attribute (`left` default / `right` / `top`) controls where the sider-slot content lands: default left column, `right` right column, `top` full-width on top — the top menu can reuse existing horizontal nav (oas-menubar / oas-navigation-menu / oas-toolbar); the layout only arranges the position.
+
 ## Collapsible sider
 
 <DemoBlock title="Collapsible sider (collapsed)">
@@ -104,6 +122,7 @@ Child components must carry the matching `slot` attribute (`header` / `sider` / 
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `side` | — | `string` | `left` |
 | `viewport` | Viewport-locked mode: locks the layout to the viewport height (100dvh by default, cascading back to 100vh; overridable via `--oas-layout-height` to 100%/calc()), header/footer fixed while the sider and content scroll independently; default is the full-page scrolling model | `boolean` | — |
 
 | Name | Description |

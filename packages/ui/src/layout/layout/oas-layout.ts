@@ -24,6 +24,17 @@ const STYLE = `
 .struct.has-sider .main {
   flex-direction: row;
 }
+/* 侧栏位置切换：side 属性（left 默认 / right / top）控制 main 主轴方向，
+   使 sider 槽内容落位于 左/右/顶（顶部菜单可复用 oas-menubar/oas-navigation-menu 等水平导航） */
+.struct.has-sider[data-side='right'] .main {
+  flex-direction: row-reverse;
+}
+.struct.has-sider[data-side='top'] .main {
+  flex-direction: column;
+}
+.struct.has-sider[data-side='top'] .sider-part {
+  width: 100%;
+}
 .sider-part {
   flex-shrink: 0;
 }
@@ -60,7 +71,7 @@ const STYLE = `
 
 export class OASLayout extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['viewport']
+    return ['viewport', 'side']
   }
 
   private observer: MutationObserver | null = null
@@ -112,5 +123,9 @@ export class OASLayout extends OASElement {
     const viewport = this.hasAttr('viewport')
     struct.classList.toggle('is-viewport', viewport)
     struct.setAttribute('data-viewport', String(viewport))
+    // side：侧栏位置（left/right/top），非法值回落 left；写入 data-side 供 CSS/host 挂钩
+    const rawSide = this.getAttr('side', 'left')
+    const side = rawSide === 'right' || rawSide === 'top' ? rawSide : 'left'
+    struct.setAttribute('data-side', side)
   }
 }
