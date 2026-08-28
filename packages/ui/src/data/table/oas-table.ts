@@ -606,6 +606,8 @@ export class OASTableBase extends OASElement {
   private _expandable = false
   /** 行内编辑：进行中的单元格（同一时刻至多一格在编辑） */
   private editState: EditState | null = null
+  /** 合计缓存：scope=all 时全量 flat 的缓存（data/筛选/排序未变时复用，避免选中/翻页等非数据变化的重渲染重复全量 walk+sort） */
+  private summaryFlatCache: { key: string; flat: FlatRow[] } | null = null
   /** 列过滤弹层：当前打开的面板元素与其列 key（同一时刻至多一个） */
   private filterPanel: HTMLElement | null = null
   private filterPanelKey: string | null = null
@@ -828,13 +830,27 @@ export class OASTableBase extends OASElement {
       roots = sorted.slice(start, start + pageSize)
     }
 
-    const flat = this.buildFlat(this.resolveSorts(), rowKey, roots)
+    const sorts = this.resolveSorts()
+    const flat = this.buildFlat(sorts, rowKey, roots)
     const display = this.visibleFlat(flat, expanded, rowKey)
     const summaryConfigs = this.buildSummaryConfigs()
     // 合计范围：all（默认）= 分页切片前的完整筛选结果总计；page = 当前页小计（原行为）。
     // 非法值回落默认 all（与表意一致）。
     const summaryScopePage = this.getAttr('summary-scope', 'all') === 'page'
-    const summaryFlat = summaryScopePage ? flat : this.buildFlat(this.resolveSorts(), rowKey, fullRoots)
+    // scope=all 的全量 flat 缓存：data/筛选/排序未变时复用，避免选中/翻页/hover 等非数据变化的渲染
+    // 重复对全量集合做 walk+sort（虚拟滚动大数据量下这是可见开销）。
+    let summaryFlat: FlatRow[]
+    if (summaryScopePage) {
+      summaryFlat = flat
+    } else {
+      const cacheKey = `${this.getAttr('data', '')}||${JSON.stringify(filterValues)}||${JSON.stringify(sorts)}`
+      if (this.summaryFlatCache && this.summaryFlatCache.key === cacheKey) {
+        summaryFlat = this.summaryFlatCache.flat
+      } else {
+        summaryFlat = this.buildFlat(sorts, rowKey, fullRoots)
+        this.summaryFlatCache = { key: cacheKey, flat: summaryFlat }
+      }
+    }
 
     const layout = this.computeLayout()
     const virtual = this.isVirtual()

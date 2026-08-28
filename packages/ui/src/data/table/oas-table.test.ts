@@ -602,6 +602,30 @@ describe('OASTable 展示增强（stripe/bordered/summary/expand/tree）', () =>
     expect(el.shadowRoot!.querySelector('[part="summary-row"]')!.textContent).toContain('78')
   })
 
+  it('summary-scope=all 缓存：非数据变化（选中/翻页）重渲染后合计不变，数据变化后重算', () => {
+    const data = Array.from({ length: 12 }, (_, i) => ({ name: `n${i}`, price: i + 1 }))
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'price', title: '金额' },
+      ]),
+      data: JSON.stringify(data),
+      'row-key': 'name',
+      pagination: '',
+      'page-size': '5',
+      summary: '[{"key":"price","type":"sum"}]',
+    })
+    // 全量合计 78
+    expect(el.shadowRoot!.querySelector('[part="summary-row"]')!.textContent).toContain('78')
+    // 选中一行（非数据变化 → 触发 update，走缓存），合计仍 78
+    el.setAttribute('selected', 'n0')
+    expect(el.shadowRoot!.querySelector('[part="summary-row"]')!.textContent).toContain('78')
+    // 数据变化（加一行）→ 缓存失效重算，合计 78+13=91
+    data.push({ name: 'n12', price: 13 })
+    el.setAttribute('data', JSON.stringify(data))
+    expect(el.shadowRoot!.querySelector('[part="summary-row"]')!.textContent).toContain('91')
+  })
+
   it('summary-scope=page：分页时合计为当前页小计', () => {
     const data = JSON.stringify(Array.from({ length: 12 }, (_, i) => ({ name: `n${i}`, price: i + 1 })))
     const el = mount({
