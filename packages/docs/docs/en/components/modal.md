@@ -92,6 +92,54 @@ The imperative `confirm()` API is Promise-based and reuses `oas-modal` (returns 
   </oas-space>
 </DemoBlock>
 
+## Imperative modal API
+
+The imperative `modal.confirm / info / success / warning / error` API returns a `{ close() }` handle and reuses `oas-modal` under the hood. Options: `title`, `content` (plain text, no HTML injection), `okText`, `cancelText`, `onOk`, `onCancel`. When `onOk` returns a Promise, clicking OK puts the OK button into loading (spinner, no repeated triggers); it closes on resolve, and on reject the loading clears and the dialog stays open for retry or cancel. The cancel button / ✕ / mask / Esc call `onCancel` and close; the `close()` handle closes programmatically without firing `onCancel`. Multiple instances stack independently; `destroyAllModal()` closes them all at once. Mounts to the nearest `oas-app` container (falls back to `body`).
+
+<DemoBlock title="Basic confirm">
+  <oas-space>
+    <oas-button type="primary" onclick="openModalConfirm()">Basic confirm</oas-button>
+    <oas-button type="danger" onclick="openModalConfirmDelete()">Custom labels</oas-button>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="Semantic variants">
+  <oas-space>
+    <oas-button type="primary" onclick="window.modal.info({ title: 'Notice', content: 'This is an informational message.' })">Info</oas-button>
+    <oas-button type="success" onclick="window.modal.success({ title: 'Success', content: 'Operation completed.' })">Success</oas-button>
+    <oas-button type="warning" onclick="window.modal.warning({ title: 'Warning', content: 'Please be aware of the risk.' })">Warning</oas-button>
+    <oas-button type="danger" onclick="window.modal.error({ title: 'Error', content: 'Operation failed, please retry.' })">Error</oas-button>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="Async onOk loading">
+  <oas-button type="primary" onclick="openModalLoading()">Async submit</oas-button>
+</DemoBlock>
+
+<DemoBlock title="Multiple instances & destroy all">
+  <oas-space>
+    <oas-button onclick="openModalMany()">Open three</oas-button>
+    <oas-button onclick="destroyAllModal()">Destroy all</oas-button>
+  </oas-space>
+</DemoBlock>
+
+## Declarative semantic variants
+
+The attributes used internally by the imperative module — `type` / `ok-text` / `cancel-text` / `no-cancel` / `focus-ok` — are all public `oas-modal` attributes and can be used declaratively.
+
+<DemoBlock title="Declarative semantic variants">
+  <oas-space>
+    <oas-button type="success" onclick="document.querySelector('#modal-semantic').setAttribute('visible','')">Open success dialog</oas-button>
+    <oas-button onclick="document.querySelector('#modal-nocancel').setAttribute('visible','')">Open single-button dialog</oas-button>
+  </oas-space>
+  <oas-modal id="modal-semantic" type="success" title="Operation successful" ok-text="Got it" cancel-text="Close" focus-ok>
+    <p><code>type</code> renders the semantic icon; <code>ok-text</code>/<code>cancel-text</code> customize button labels; <code>focus-ok</code> focuses the "OK" button on open.</p>
+  </oas-modal>
+  <oas-modal id="modal-nocancel" title="OK only" no-cancel>
+    <p><code>no-cancel</code> hides the cancel button, leaving only "OK" in the footer.</p>
+  </oas-modal>
+</DemoBlock>
+
 ## Event feedback
 
 <DemoBlock title="Event feedback">
@@ -104,8 +152,10 @@ The imperative `confirm()` API is Promise-based and reuses `oas-modal` (returns 
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
-  const { message, confirm } = await import('@oas-ui/ui')
+  const { message, confirm, modal, destroyAllModal } = await import('@oas-ui/ui')
   window.message = message
+  window.modal = modal
+  window.destroyAllModal = destroyAllModal
   window.closeModal = (id) => document.getElementById(id).removeAttribute('visible')
   window.openConfirmModal = () =>
     confirm({ title: 'Confirm action', content: 'Simulated async flow: resolve on OK, reject on cancel.' })
@@ -119,22 +169,71 @@ onMounted(async () => {
     })
       .then(() => message.success('Submitted'))
       .catch(() => message.info('Cancelled'))
+  window.openModalConfirm = () =>
+    modal.confirm({
+      title: 'Confirm action',
+      content: 'This action cannot be undone. Continue?',
+      onOk: () => message.success('Confirmed'),
+      onCancel: () => message.info('Cancelled'),
+    })
+  window.openModalConfirmDelete = () =>
+    modal.confirm({
+      title: 'Delete file',
+      content: 'This cannot be undone',
+      okText: 'Delete',
+      cancelText: 'Keep',
+      onOk: () => message.success('Deleted'),
+    })
+  window.openModalLoading = () =>
+    modal.success({
+      title: 'Submit order',
+      content: 'Clicking OK enters loading and closes automatically after 1.5s.',
+      onOk: () =>
+        new Promise((resolve) =>
+          setTimeout(() => {
+            message.success('Submitted')
+            resolve()
+          }, 1500),
+        ),
+    })
+  window.openModalMany = () => {
+    modal.confirm({ title: 'Confirm 1', content: 'First confirm dialog' })
+    modal.confirm({ title: 'Confirm 2', content: 'Second confirm dialog' })
+    modal.success({ title: 'Confirm 3', content: 'Third confirm dialog' })
+  }
 })
 </script>
 
 ## API
 
+### Methods
+
+| Method | Description |
+| --- | --- |
+| `modal.confirm({ title?, content?, okText?, cancelText?, onOk?, onCancel? })` | Opens a confirm dialog (OK / Cancel buttons), returns `{ close }` |
+| `modal.info(options)` / `modal.success(options)` / `modal.warning(options)` / `modal.error(options)` | Semantic dialog: matching icon + single "OK" button, returns `{ close }` |
+| `destroyAllModal()` | Closes and destroys all imperative dialogs |
+
+- Options: `{ title?, content?, okText?, cancelText?, onOk?, onCancel? }`. `content` is plain text; when `onOk` returns a Promise the OK button enters loading (closes on resolve, stays open on reject for retry or cancel).
+- Returns a `{ close() }` handle: closes the current instance programmatically without firing `onOk` / `onCancel`.
+- Mounts to the nearest `oas-app` container (falls back to `body`); multiple instances stack.
+
 ### Attributes
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `cancel-text` | Cancel button label; defaults to locale `modal.cancel` | — | — |
 | `centered` | Vertically center the dialog | `boolean` | — |
 | `draggable` | Drag the dialog via its header | `boolean` | — |
+| `focus-ok` | Move focus to the "OK" button on open (default: the "Cancel" button) | `boolean` | — |
 | `fullscreen` | Display fullscreen: the dialog fills the viewport without radius or margin (takes precedence over width / centered / draggable) | `boolean` | — |
 | `loading` | Put the OK button into loading state (disabled + spinner), blocking repeated confirms | `boolean` | — |
+| `no-cancel` | Hide the cancel button (the footer keeps only "OK"; built into semantic variants) | `boolean` | — |
 | `no-footer` | Hide footer action buttons | `boolean` | — |
 | `no-mask-close` | Disable closing on mask click | `boolean` | — |
+| `ok-text` | OK button label; defaults to locale `modal.ok` | — | — |
 | `title` | Title text | `string` | — |
+| `type` | Semantic variant: `info`/`success`/`warning`/`error`, renders the matching semantic icon above the content | `ModalVariant` | — |
 | `visible` | Whether shown | `boolean` | — |
 | `width` | Dialog width (px or percentage) | — | — |
 
@@ -151,4 +250,4 @@ onMounted(async () => {
 | --- | --- |
 | default | — |
 
-`role="dialog"` + `aria-modal="true"`; focus moves to the "Cancel" button on open and is restored on close.
+`role="dialog"` + `aria-modal="true"`; focus moves to the "Cancel" button on open (to the "OK" button with `focus-ok`) and is restored on close.

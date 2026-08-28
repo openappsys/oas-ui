@@ -1236,13 +1236,18 @@
   },
   "oas-modal": {
     "attrs": {
+      "cancel-text": "取消按钮文案；缺省走 locale `modal.cancel`",
       "centered": "对话框垂直居中显示",
       "draggable": "可通过标题栏拖动对话框",
+      "focus-ok": "打开时焦点移入「确定」按钮（默认移入「取消」按钮）",
       "fullscreen": "全屏显示：对话框铺满视口、无圆角与边距（优先级高于 width / centered / draggable）",
       "loading": "确定按钮进入 loading 态（禁用 + 转圈），禁止重复触发确定",
+      "no-cancel": "隐藏取消按钮（底部仅剩「确定」；语义变体确认框内置）",
       "no-footer": "隐藏底部操作按钮",
       "no-mask-close": "禁用点击遮罩关闭",
+      "ok-text": "确定按钮文案；缺省走 locale `modal.ok`",
       "title": "标题文案",
+      "type": "语义变体：`info`/`success`/`warning`/`error`，正文顶部渲染对应语义图标",
       "visible": "是否显示",
       "width": "对话框宽度（px 或百分比）"
     },
