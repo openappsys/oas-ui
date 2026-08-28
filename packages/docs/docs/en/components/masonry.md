@@ -93,6 +93,22 @@ A masonry layout container based on CSS columns; child items are automatically d
   </p>
 </DemoBlock>
 
+## items Data-Driven
+
+<DemoBlock title="Card flow rendered from an items JSON array">
+  <oas-masonry style="width: 100%" items='[{"text":"Short card A"},{"text":"This is taller content, showing how cards of different heights are staggered in a data-driven masonry; a few more lines are added to increase the height.","height":180},{"text":"Medium-height card","height":120},{"text":"Another short card"},{"text":"A taller card with multiple lines of description.","height":200},{"text":"Normal card"},{"text":"An example in the last column."}]'></oas-masonry>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    `items` is a JSON array (also assignable via `el.items = [...]` as a property): `text` renders as plain text into a card, `height` is the item's minimum height (px). When explicitly set and non-empty, items take precedence over slotted children (ignored); absent / empty array / invalid JSON fall back to the slot channel.
+  </p>
+</DemoBlock>
+
+<DemoBlock title="Pin items to a column + responsive columns">
+  <oas-masonry style="width: 100%" columns="1 md:2 lg:4" items='[{"text":"This card has column=2 and is reordered into column 2.","column":2},{"text":"This card has column=4 and is reordered into column 4.","column":4},{"text":"Normal card A, auto-filled."},{"text":"Normal card B."},{"text":"Normal card C."},{"text":"Normal card D."},{"text":"Normal card E."}]'></oas-masonry>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    The `column` field (1-based) pins an item to a column, reusing the same reorder logic as the child `column` attribute; combined with responsive columns (`1 md:2 lg:4`) the reorder follows the currently effective column count.
+  </p>
+</DemoBlock>
+
 ## API
 
 ### Attributes
@@ -102,12 +118,13 @@ A masonry layout container based on CSS columns; child items are automatically d
 | `columns` | Number of columns (default 4); supports breakpoint shorthand: a base value plus space-separated `breakpoint:value` pairs (e.g. `1 md:2 lg:4`; breakpoints `sm`=640px / `md`=768px / `lg`=1024px / `xl`=1280px, mobile-first min-width, base below breakpoints); invalid values (non-positive integers / decimals / 0 / negatives) fall back to 1 | — | — |
 | `fresh` | Keep listening for child size changes via ResizeObserver and trigger a recompute; under the CSS columns implementation the browser already reflows automatically, so `fresh` is a semantic hook aligned with a future JS-based layout | `boolean` | — |
 | `gap` | Spacing (px, default 8). A single value sets the column gap; two values `row col` (e.g. `8 16`) set the row gap on children's margin-bottom and the column gap; plain numbers get `px` appended; invalid values fall back to the default | — | — |
+| `items` | Masonry items JSON `[{text, height?, column?}]`; also assignable as an array property. When explicitly set and non-empty it takes precedence over slotted children (ignored); absent / empty array / invalid JSON fall back to the slot channel (invalid JSON logs a deduplicated dev warning). text is rendered safely as plain text; height is the item's minimum height (px, written to the rendered item's min-height); column pins the item to a column (1-based, same reorder logic as the child `column` attribute) | `MasonryItem[] \| string` | `[]` |
 
 ### Slots
 
 | Name | Description |
 | --- | --- |
-| default | Masonry child items; children automatically get `break-inside: avoid`; children with a `column` attribute (1-based) are reordered into the target column |
+| default | Masonry child items; children automatically get `break-inside: avoid`; children with a `column` attribute (1-based) are reordered into the target column; when the `items` attribute is explicitly set and non-empty, children are ignored (items take precedence) |
 
 ### Child Attributes
 
