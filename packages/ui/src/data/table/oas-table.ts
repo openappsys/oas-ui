@@ -831,11 +831,10 @@ export class OASTableBase extends OASElement {
     const flat = this.buildFlat(this.resolveSorts(), rowKey, roots)
     const display = this.visibleFlat(flat, expanded, rowKey)
     const summaryConfigs = this.buildSummaryConfigs()
-    // 合计范围：all（默认）= 分页切片前的完整筛选结果总计；page = 当前页小计（原行为）
-    const summaryFlat =
-      this.getAttr('summary-scope', 'all') === 'all'
-        ? this.buildFlat(this.resolveSorts(), rowKey, fullRoots)
-        : flat
+    // 合计范围：all（默认）= 分页切片前的完整筛选结果总计；page = 当前页小计（原行为）。
+    // 非法值回落默认 all（与表意一致）。
+    const summaryScopePage = this.getAttr('summary-scope', 'all') === 'page'
+    const summaryFlat = summaryScopePage ? flat : this.buildFlat(this.resolveSorts(), rowKey, fullRoots)
 
     const layout = this.computeLayout()
     const virtual = this.isVirtual()
