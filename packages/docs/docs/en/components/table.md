@@ -540,6 +540,7 @@ onMounted(() => {
 | `sticky-rows` | Number of sticky rows (N): the first N rows stick below the header (coexists with the scroll container and fixed columns) | `string` | — |
 | `stripe` | Zebra striping: alternating light background for odd/even rows | `boolean` | — |
 | `summary` | Summary config `[{ key, type: 'sum'\|'avg'\|'count', label? }]`, JSON string | `string` | — |
+| `summary-scope` | — | `string` | `all` |
 
 ### Events
 

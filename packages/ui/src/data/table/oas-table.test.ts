@@ -582,6 +582,47 @@ describe('OASTable 展示增强（stripe/bordered/summary/expand/tree）', () =>
     expect(row.querySelectorAll('td').length).toBe(3)
   })
 
+  it('summary-scope=all（默认）：分页时合计为完整筛选结果总计，翻页不变', () => {
+    const data = JSON.stringify(Array.from({ length: 12 }, (_, i) => ({ name: `n${i}`, price: i + 1 })))
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'price', title: '金额' },
+      ]),
+      data,
+      'row-key': 'name',
+      pagination: '',
+      'page-size': '5',
+      summary: '[{"key":"price","type":"sum","label":"合计"}]',
+    })
+    // 默认 all：合计 = 全量总和 1+2+...+12 = 78
+    expect(el.shadowRoot!.querySelector('[part="summary-row"]')!.textContent).toContain('78')
+    // 翻到第 2 页（current=2），合计仍为全量 78
+    el.setAttribute('current', '2')
+    expect(el.shadowRoot!.querySelector('[part="summary-row"]')!.textContent).toContain('78')
+  })
+
+  it('summary-scope=page：分页时合计为当前页小计', () => {
+    const data = JSON.stringify(Array.from({ length: 12 }, (_, i) => ({ name: `n${i}`, price: i + 1 })))
+    const el = mount({
+      columns: JSON.stringify([
+        { key: 'name', title: '名称' },
+        { key: 'price', title: '金额' },
+      ]),
+      data,
+      'row-key': 'name',
+      pagination: '',
+      'page-size': '5',
+      'summary-scope': 'page',
+      summary: '[{"key":"price","type":"sum"}]',
+    })
+    // 第 1 页 price 1..5 → 15
+    expect(el.shadowRoot!.querySelector('[part="summary-row"]')!.textContent).toContain('15')
+    // 第 2 页 price 6..10 → 40
+    el.setAttribute('current', '2')
+    expect(el.shadowRoot!.querySelector('[part="summary-row"]')!.textContent).toContain('40')
+  })
+
   it('expand：行尾按钮展开内容行并派发 oas-expand', () => {
     const el = mount({
       'row-key': 'name',

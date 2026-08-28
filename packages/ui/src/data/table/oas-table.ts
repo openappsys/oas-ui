@@ -586,6 +586,7 @@ export class OASTableBase extends OASElement {
       'page-size',
       'current',
       'filter-values',
+      'summary-scope',
     ]
   }
 
@@ -806,6 +807,8 @@ export class OASTableBase extends OASElement {
     if (Object.keys(filterValues).length > 0) {
       roots = roots.filter((row) => this.matchesFilters(row, filterValues))
     }
+    // 分页切片前的完整筛选+排序集合（summary-scope=all 时合计基于此）
+    const fullRoots = roots
 
     // 分页：顶层行先全局排序再切片为当前页，喂给 buildFlat（页内子行 children 随父行保留）
     const paginationOn = this.hasAttr('pagination')
@@ -828,6 +831,11 @@ export class OASTableBase extends OASElement {
     const flat = this.buildFlat(this.resolveSorts(), rowKey, roots)
     const display = this.visibleFlat(flat, expanded, rowKey)
     const summaryConfigs = this.buildSummaryConfigs()
+    // 合计范围：all（默认）= 分页切片前的完整筛选结果总计；page = 当前页小计（原行为）
+    const summaryFlat =
+      this.getAttr('summary-scope', 'all') === 'all'
+        ? this.buildFlat(this.resolveSorts(), rowKey, fullRoots)
+        : flat
 
     const layout = this.computeLayout()
     const virtual = this.isVirtual()
@@ -939,8 +947,8 @@ export class OASTableBase extends OASElement {
       this.applyRowMerge(rowInfos)
     }
 
-    if (summaryConfigs.length > 0 && flat.length > 0) {
-      body.appendChild(this.buildSummaryRow(summaryConfigs, flat, layout))
+    if (summaryConfigs.length > 0 && summaryFlat.length > 0) {
+      body.appendChild(this.buildSummaryRow(summaryConfigs, summaryFlat, layout))
     }
     // 吸顶行：为前 N 行写入 data-sticky 与 top 偏移（依赖已铺好的表头/行测量高度）
     this.applyStickyRows()
