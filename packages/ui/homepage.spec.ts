@@ -123,6 +123,48 @@ test.describe('官网首页（重设计版）', () => {
     await expect(page.locator('.home-hero .hh-title')).toContainText('框架无关的')
   })
 
+  // 首访语言适配（head inline 脚本）：zh* → 中文（root），其余一律英文兜底（/en/）；
+  // 手动切换写 localStorage（oas-lang）持久化，优先于浏览器语言探测
+  test('首访语言适配：zh 浏览器留中文，en 浏览器跳 /en/，深链同规则', async ({ browser }) => {
+    // en 浏览器：根路径跳 /en/
+    const ctxEn = await browser.newContext({ locale: 'en-US' })
+    const pEn = await ctxEn.newPage()
+    await pEn.goto('/', { waitUntil: 'domcontentloaded' })
+    expect(pEn.url(), 'en 浏览器首访根路径应跳英文').toContain('/en/')
+    // en 浏览器：深链 zh 页面跳对应 en 页
+    await pEn.goto('/components/button', { waitUntil: 'domcontentloaded' })
+    expect(pEn.url(), 'en 浏览器访问 zh 深链应跳对应英文页').toContain('/en/components/button')
+    await ctxEn.close()
+    // zh 浏览器：根路径留中文
+    const ctxZh = await browser.newContext({ locale: 'zh-CN' })
+    const pZh = await ctxZh.newPage()
+    await pZh.goto('/', { waitUntil: 'domcontentloaded' })
+    expect(pZh.url(), 'zh 浏览器首访应留中文根路径').not.toContain('/en/')
+    await ctxZh.close()
+  })
+
+  test('首访语言适配：手动切换持久化（localStorage oas-lang 优先于浏览器语言）', async ({
+    browser,
+  }) => {
+    // en 浏览器 + 已存 zh 偏好 → 留中文（pref 覆盖浏览器探测）
+    const ctx = await browser.newContext({ locale: 'en-US' })
+    const p = await ctx.newPage()
+    await p.goto('/en/', { waitUntil: 'domcontentloaded' })
+    await p.evaluate(() => localStorage.setItem('oas-lang', 'zh'))
+    await p.goto('/', { waitUntil: 'domcontentloaded' })
+    expect(p.url(), '已存 zh 偏好的 en 浏览器访问根路径应留中文').not.toContain('/en/')
+    // 反向：zh 浏览器 + 已存 en 偏好 → 跳英文
+    const ctx2 = await browser.newContext({ locale: 'zh-CN' })
+    const p2 = await ctx2.newPage()
+    await p2.goto('/', { waitUntil: 'domcontentloaded' })
+    await p2.evaluate(() => localStorage.setItem('oas-lang', 'en'))
+    await p2.goto('/', { waitUntil: 'domcontentloaded' })
+    expect(p2.url(), '已存 en 偏好的 zh 浏览器访问根路径应跳英文').toContain('/en/')
+    await ctx.close()
+    await ctx2.close()
+  })
+
+
   test('页脚：自定义四栏页脚 + 双许可与版权', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const footer = page.locator('.home-footer')
