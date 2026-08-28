@@ -122,7 +122,7 @@ const STYLE = `
 
 export class OASCascader extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'placeholder', 'options', 'disabled', 'change-on-select', 'show-all-levels']
+    return ['value', 'placeholder', 'options', 'disabled', 'change-on-select', 'show-all-levels', 'disabled-skip']
   }
 
   private triggerEl: HTMLButtonElement | null = null
@@ -202,7 +202,7 @@ export class OASCascader extends OASElement {
   }
 
   private toggle(): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     this.openState = !this.openState
     if (this.openState) {
       this.activePath = this.currentPath()
@@ -405,7 +405,7 @@ export class OASCascader extends OASElement {
     const placeholder = this.getAttr('placeholder', this.t('cascader.placeholder'))
     const valueEl = this.triggerEl.querySelector<HTMLElement>('.value')!
     const path = this.currentPath()
-    this.triggerEl.disabled = this.hasAttr('disabled')
+    this.triggerEl.disabled = this.injectDisabled()
 
     if (path.length === 0) {
       valueEl.innerHTML = ''

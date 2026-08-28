@@ -46,7 +46,7 @@ const STYLE = `
 
 export class OASSegmented extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['options', 'value']
+    return ['options', 'value', 'disabled', 'disabled-skip']
   }
 
   private optionsList: SegmentedOption[] = []
@@ -79,20 +79,23 @@ export class OASSegmented extends OASElement {
     this.parseOptions()
     const group = this.shadow.querySelector('.group')
     if (!group) return
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    const hostDisabled = this.injectDisabled()
     group.innerHTML = ''
     let value = this.getAttr('value', '')
     if (value === '' && this.optionsList.length > 0) value = this.optionsList[0]!.value
     for (const option of this.optionsList) {
       const btn = document.createElement('button')
+      const disabled = option.disabled || hostDisabled
       btn.className = 'item'
       btn.setAttribute('part', 'item')
       btn.setAttribute('role', 'radio')
       btn.setAttribute('aria-checked', String(option.value === value))
-      btn.setAttribute('aria-disabled', String(option.disabled ?? false))
+      btn.setAttribute('aria-disabled', String(disabled))
       btn.type = 'button'
       btn.textContent = option.label
       btn.addEventListener('click', () => {
-        if (option.disabled) return
+        if (disabled) return
         this.setAttribute('value', option.value)
         this.emit('change', { value: option.value })
         this.update()

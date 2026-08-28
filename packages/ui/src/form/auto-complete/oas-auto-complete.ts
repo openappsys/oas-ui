@@ -92,7 +92,7 @@ input:disabled {
 
 export class OASAutoComplete extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'placeholder', 'options', 'disabled']
+    return ['value', 'placeholder', 'options', 'disabled', 'disabled-skip']
   }
 
   private input: HTMLInputElement | null = null
@@ -153,7 +153,8 @@ export class OASAutoComplete extends OASElement {
     if (!this.input) return
     const value = this.getAttr('value', '')
     const placeholder = this.getAttr('placeholder', '')
-    const disabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    const disabled = this.injectDisabled()
     if (this.input.value !== value && this.query === '') this.input.value = value
     this.input.placeholder = placeholder
     this.input.disabled = disabled

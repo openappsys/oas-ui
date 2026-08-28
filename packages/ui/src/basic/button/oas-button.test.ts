@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASButton } from './index.js'
+import '../../floating/config-provider/index.js'
 
 function mount(attrs: Record<string, string> = {}, slot = '按钮'): OASButton {
   const el = new OASButton()
@@ -607,5 +608,61 @@ describe('新增能力：icon-end / loading 宽度稳定 / loading-text / loadin
   it('download/rel 属性在 observedAttributes 中', () => {
     expect(OASButton.observedAttributes).toContain('download')
     expect(OASButton.observedAttributes).toContain('rel')
+  })
+})
+
+describe('OASButton 全局禁用注入（config-provider disabled）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function inProvider(attrs: Record<string, string> = {}, slot = '注入按钮'): OASButton {
+    const cp = document.createElement('oas-config-provider')
+    for (const [k, v] of Object.entries(attrs)) cp.setAttribute(k, v)
+    const btn = new OASButton()
+    btn.textContent = slot
+    cp.appendChild(btn)
+    document.body.appendChild(cp)
+    return btn
+  }
+
+  it('provider disabled：按钮无显式 disabled 时继承禁用', () => {
+    const btn = inProvider({ disabled: '' })
+    expect(shadowBtn(btn).disabled).toBe(true)
+  })
+
+  it('provider disabled + disabled-skip：单个按钮逃逸保持可用', () => {
+    const btn = inProvider({ disabled: '' })
+    btn.setAttribute('disabled-skip', '')
+    expect(shadowBtn(btn).disabled).toBe(false)
+  })
+
+  it('provider disabled 时点击不派发 oas-click', () => {
+    const btn = inProvider({ disabled: '' })
+    let fired = false
+    btn.addEventListener('oas-click', () => (fired = true))
+    shadowBtn(btn).click()
+    expect(fired).toBe(false)
+  })
+
+  it('provider 移除 disabled 后按钮恢复可点并派发 oas-click', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('disabled', '')
+    const btn = new OASButton()
+    btn.textContent = '注入按钮'
+    cp.appendChild(btn)
+    document.body.appendChild(cp)
+    expect(shadowBtn(btn).disabled).toBe(true)
+
+    cp.removeAttribute('disabled')
+    expect(shadowBtn(btn).disabled).toBe(false)
+    let fired = false
+    btn.addEventListener('oas-click', () => (fired = true))
+    shadowBtn(btn).click()
+    expect(fired).toBe(true)
   })
 })

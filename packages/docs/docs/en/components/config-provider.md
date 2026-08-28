@@ -1,6 +1,6 @@
 # ConfigProvider
 
-The injection entry point for global configuration, centrally managing `locale` / `size` / `theme` / `config` / `direction` / `z-index` for the wrapped subtree. Component resolution order: own attribute > config-provider > global default.
+The injection entry point for global configuration, centrally managing `locale` / `size` / `theme` / `config` / `direction` / `z-index` / `disabled` for the wrapped subtree. Component resolution order: own attribute > config-provider > global default.
 
 ## Locale injection
 
@@ -116,6 +116,57 @@ The config-provider's `theme` writes `data-theme` onto itself, and the wrapped s
   </oas-config-provider>
 </DemoBlock>
 
+## Global disabled
+
+When `disabled` is on, form-family controls inside the subtree that consume the injection (button / input / select / checkbox / switch, etc.) are disabled unless they set `disabled` explicitly; an explicit `disabled` always wins (no conflict). Two exemption channels:
+
+- **`disabled-skip` (component-level)**: a single control escapes the global disable (e.g. a help link / reset button that must stay clickable in a disabled form section) — exempting means "do not read the injection"
+- **`disabledExempt` (provider-level)**: declare a top-level `{"disabledExempt":["oas-button"]}` key in the `config` JSON to exempt a whole tag class
+
+Priority: explicit `disabled` > `disabled-skip` exemption > `disabledExempt` whole-class exemption > provider-injected disabled. `disabled-skip` is a global convention attribute (not part of a component's own API, so it doesn't appear in attribute tables). Navigation/link components (link / menu / breadcrumb, etc.) do not consume the injection in this release — they are naturally exempt from the global disable; hosts can declare other whole-class exemptions via `disabledExempt` as needed.
+
+<DemoBlock title="Global disabled">
+  <oas-space>
+    <oas-button type="primary" onclick="setCpDisabled(true)">Disable</oas-button>
+    <oas-button onclick="setCpDisabled(false)">Enable</oas-button>
+  </oas-space>
+  <oas-config-provider id="cp-disabled" style="margin-top: 16px; display: block; padding: 16px; border-radius: 8px; background: var(--oas-color-bg)">
+    <oas-space wrap>
+      <oas-button type="primary">Submit</oas-button>
+      <oas-input placeholder="Type something" style="width: 180px"></oas-input>
+      <oas-select placeholder="Pick one" style="width: 160px"></oas-select>
+      <oas-checkbox>I agree to the terms</oas-checkbox>
+      <oas-switch></oas-switch>
+    </oas-space>
+  </oas-config-provider>
+</DemoBlock>
+
+<DemoBlock title="disabled-skip single escape">
+  <oas-space>
+    <oas-button type="primary" onclick="setCpSkip(true)">Disable</oas-button>
+    <oas-button onclick="setCpSkip(false)">Enable</oas-button>
+  </oas-space>
+  <oas-config-provider id="cp-skip" style="margin-top: 16px; display: block; padding: 16px; border-radius: 8px; background: var(--oas-color-bg)">
+    <oas-space>
+      <oas-button disabled-skip>Still clickable (disabled-skip)</oas-button>
+      <oas-button>Follows the global disable</oas-button>
+    </oas-space>
+  </oas-config-provider>
+</DemoBlock>
+
+<DemoBlock title="disabledExempt whole-class exemption">
+  <oas-space>
+    <oas-button type="primary" onclick="setCpExempt(true)">Disable</oas-button>
+    <oas-button onclick="setCpExempt(false)">Enable</oas-button>
+  </oas-space>
+  <oas-config-provider id="cp-exempt" config='{"disabledExempt":["oas-button"]}' style="margin-top: 16px; display: block; padding: 16px; border-radius: 8px; background: var(--oas-color-bg)">
+    <oas-space>
+      <oas-button type="primary">Buttons exempted</oas-button>
+      <oas-input placeholder="Input follows disable" style="width: 180px"></oas-input>
+    </oas-space>
+  </oas-config-provider>
+</DemoBlock>
+
 ## Nearest provider wins
 
 An inner config-provider overrides an outer one: components wrapped by the inner provider use its config, while components under the outer provider (not nested further) use the outer config.
@@ -151,6 +202,21 @@ onMounted(async () => {
     if (z) cp?.setAttribute('z-index', String(z))
     else cp?.removeAttribute('z-index')
   }
+  window.setCpDisabled = (on) => {
+    const cp = document.getElementById('cp-disabled')
+    if (on) cp?.setAttribute('disabled', '')
+    else cp?.removeAttribute('disabled')
+  }
+  window.setCpSkip = (on) => {
+    const cp = document.getElementById('cp-skip')
+    if (on) cp?.setAttribute('disabled', '')
+    else cp?.removeAttribute('disabled')
+  }
+  window.setCpExempt = (on) => {
+    const cp = document.getElementById('cp-exempt')
+    if (on) cp?.setAttribute('disabled', '')
+    else cp?.removeAttribute('disabled')
+  }
   window.zMsg = () => message.success('Floating layer base applies')
 })
 </script>
@@ -161,8 +227,9 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `config` | Component-level default config JSON (e.g. `{"oas-button":{"variant":"outlined"}}`); components read `[tag][key]` from the nearest provider, own explicit attributes win; invalid JSON is ignored with a dev warning | `string` | — |
+| `config` | Component-level default config JSON (e.g. `{"oas-button":{"variant":"outlined"}}`); components read `[tag][key]` from the nearest provider, own explicit attributes win; the top-level `disabledExempt` key (tag array) exempts whole classes from the global disable; invalid JSON is ignored with a dev warning | `string` | — |
 | `direction` | Global direction injection (`ltr`/`rtl`); writes the host `dir` attribute (CSS direction inheritance pierces light/shadow subtrees); components can consume it via `injectValue('direction')`; invalid values fall back to `ltr` with a dev warning | `string` | — |
+| `disabled` | Global disable: form-family controls inside the subtree that consume the injection are disabled unless they set `disabled` explicitly; escape a single component with the `disabled-skip` attribute, or escape a whole class with the `disabledExempt` top-level config JSON key | — | — |
 | `locale` | Language for built-in copy in the wrapped subtree (must be registered); takes precedence over global `setLocale()` | — | — |
 | `size` | Default size for wrapped components, applied when a component doesn't set it explicitly | — | — |
 | `theme` | Theme for the wrapped subtree, written to `data-theme` | — | — |

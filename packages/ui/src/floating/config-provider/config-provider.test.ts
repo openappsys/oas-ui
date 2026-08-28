@@ -400,4 +400,124 @@ describe('oas-config-provider', () => {
       }
     })
   })
+
+  describe('disabled 全局禁用注入', () => {
+    it('注入生效：provider disabled 时子树 button 无显式 disabled 即禁用', () => {
+      const cp = document.createElement('oas-config-provider')
+      cp.setAttribute('disabled', '')
+      const btn = document.createElement('oas-button')
+      btn.textContent = '注入按钮'
+      cp.appendChild(btn)
+      document.body.appendChild(cp)
+
+      const btnEl = btn.shadowRoot!.querySelector('button')!
+      expect(btnEl.disabled).toBe(true)
+    })
+
+    it('显式 disabled 恒禁（自身属性优先，无注入也禁用）', () => {
+      const cp = document.createElement('oas-config-provider')
+      const btn = document.createElement('oas-button')
+      btn.setAttribute('disabled', '')
+      btn.textContent = '显式禁用'
+      cp.appendChild(btn)
+      document.body.appendChild(cp)
+
+      const btnEl = btn.shadowRoot!.querySelector('button')!
+      expect(btnEl.disabled).toBe(true)
+    })
+
+    it('disabled-skip 逃逸：provider disabled 下单个组件保持可用', () => {
+      const cp = document.createElement('oas-config-provider')
+      cp.setAttribute('disabled', '')
+      const btn = document.createElement('oas-button')
+      btn.setAttribute('disabled-skip', '')
+      btn.textContent = '逃逸按钮'
+      cp.appendChild(btn)
+      document.body.appendChild(cp)
+
+      const btnEl = btn.shadowRoot!.querySelector('button')!
+      expect(btnEl.disabled).toBe(false)
+    })
+
+    it('disabledExempt 整类豁免：config JSON 声明 tag 后该类组件不禁用', () => {
+      const cp = document.createElement('oas-config-provider')
+      cp.setAttribute('disabled', '')
+      cp.setAttribute('config', '{"disabledExempt":["oas-button"]}')
+      const btn = document.createElement('oas-button')
+      btn.textContent = '豁免按钮'
+      cp.appendChild(btn)
+      document.body.appendChild(cp)
+
+      const btnEl = btn.shadowRoot!.querySelector('button')!
+      expect(btnEl.disabled).toBe(false)
+    })
+
+    it('disabledExempt 只豁免声明的 tag：未声明 tag 仍继承禁用', () => {
+      const cp = document.createElement('oas-config-provider')
+      cp.setAttribute('disabled', '')
+      cp.setAttribute('config', '{"disabledExempt":["oas-link"]}')
+      const btn = document.createElement('oas-button')
+      btn.textContent = '未豁免按钮'
+      cp.appendChild(btn)
+      document.body.appendChild(cp)
+
+      const btnEl = btn.shadowRoot!.querySelector('button')!
+      expect(btnEl.disabled).toBe(true)
+    })
+
+    it('嵌套就近：内层无 disabled 的 provider 覆盖外层禁用', () => {
+      const outer = document.createElement('oas-config-provider')
+      outer.setAttribute('disabled', '')
+
+      const inner = document.createElement('oas-config-provider')
+      const btnInner = document.createElement('oas-button')
+      btnInner.textContent = '内层按钮'
+      inner.appendChild(btnInner)
+
+      const btnOuter = document.createElement('oas-button')
+      btnOuter.textContent = '外层按钮'
+      outer.appendChild(btnOuter)
+      outer.appendChild(inner)
+
+      document.body.appendChild(outer)
+
+      const innerEl = btnInner.shadowRoot!.querySelector('button')!
+      const outerEl = btnOuter.shadowRoot!.querySelector('button')!
+      expect(outerEl.disabled).toBe(true)
+      expect(innerEl.disabled).toBe(false)
+    })
+
+    it('provider disabled 属性移除后子树恢复可用（变化通知重刷）', () => {
+      const cp = document.createElement('oas-config-provider')
+      cp.setAttribute('disabled', '')
+      const btn = document.createElement('oas-button')
+      btn.textContent = '动态按钮'
+      cp.appendChild(btn)
+      document.body.appendChild(cp)
+
+      const btnEl = btn.shadowRoot!.querySelector('button')!
+      expect(btnEl.disabled).toBe(true)
+
+      cp.removeAttribute('disabled')
+      expect(btnEl.disabled).toBe(false)
+
+      // 再开再关：值变化与移除均即时重刷
+      cp.setAttribute('disabled', '')
+      expect(btnEl.disabled).toBe(true)
+    })
+
+    it('provider disabled 变化即时重刷子树（已渲染组件跟随）', () => {
+      const cp = document.createElement('oas-config-provider')
+      const btn = document.createElement('oas-button')
+      btn.textContent = '动态按钮'
+      cp.appendChild(btn)
+      document.body.appendChild(cp)
+
+      const btnEl = btn.shadowRoot!.querySelector('button')!
+      expect(btnEl.disabled).toBe(false)
+
+      cp.setAttribute('disabled', '')
+      expect(btnEl.disabled).toBe(true)
+    })
+  })
 })

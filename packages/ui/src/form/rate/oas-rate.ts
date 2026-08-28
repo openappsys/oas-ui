@@ -53,7 +53,8 @@ const STYLE = `
   box-shadow: var(--oas-focus-ring);
   border-radius: 2px;
 }
-:host([disabled]) .star {
+:host([disabled]) .star,
+:host([data-disabled]) .star {
   cursor: not-allowed;
   opacity: 0.7;
 }
@@ -61,7 +62,7 @@ const STYLE = `
 
 export class OASRate extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'max', 'disabled', 'allow-half', 'allow-clear', 'icon']
+    return ['value', 'max', 'disabled', 'allow-half', 'allow-clear', 'icon', 'disabled-skip']
   }
 
   private slider: HTMLElement | null = null
@@ -91,6 +92,7 @@ export class OASRate extends OASElement {
       })
     }
     this.slider?.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (this.injectDisabled()) return
       const max = this.maxValue()
       let value = this.currentValue()
       if (e.key === 'ArrowRight' || e.key === 'ArrowUp') value = Math.min(value + 1, max)
@@ -123,6 +125,10 @@ export class OASRate extends OASElement {
     if (!this.slider) return
     const max = this.maxValue()
     const value = this.currentValue()
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入），并镜像到宿主
+    const disabled = this.injectDisabled()
+    this.toggleAttribute('data-disabled', disabled)
+    this.slider.setAttribute('aria-disabled', String(disabled))
 
     this.ensureStars(max)
     this.applyIcons()
@@ -153,7 +159,7 @@ export class OASRate extends OASElement {
   }
 
   private onStarClick(idx: number): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     // allow-clear（默认 true）：点击当前已选中的同一颗星清空为 0
     if (this.allowClear() && this.isCurrentStar(idx)) {
       this.setValue(0)

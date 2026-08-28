@@ -522,9 +522,10 @@
       "locale": "Language for built-in copy in the wrapped subtree (must be registered); takes precedence over global `setLocale()`",
       "size": "Default size for wrapped components, applied when a component doesn't set it explicitly",
       "theme": "Theme for the wrapped subtree, written to `data-theme`",
-      "config": "Component-level default config JSON (e.g. `{\"oas-button\":{\"variant\":\"outlined\"}}`); components read `[tag][key]` from the nearest provider, own explicit attributes win; invalid JSON is ignored with a dev warning",
+      "config": "Component-level default config JSON (e.g. `{\"oas-button\":{\"variant\":\"outlined\"}}`); components read `[tag][key]` from the nearest provider, own explicit attributes win; the top-level `disabledExempt` key (tag array) exempts whole classes from the global disable; invalid JSON is ignored with a dev warning",
       "direction": "Global direction injection (`ltr`/`rtl`); writes the host `dir` attribute (CSS direction inheritance pierces light/shadow subtrees); components can consume it via `injectValue('direction')`; invalid values fall back to `ltr` with a dev warning",
-      "z-index": "Global starting value for floating layers (positive integer); writes `--oas-z-index-base` on the host, lifting all floating layers in the subtree; invalid values are ignored with a dev warning"
+      "z-index": "Global starting value for floating layers (positive integer); writes `--oas-z-index-base` on the host, lifting all floating layers in the subtree; invalid values are ignored with a dev warning",
+      "disabled": "Global disable: form-family controls inside the subtree that consume the injection are disabled unless they set `disabled` explicitly; escape a single component with the `disabled-skip` attribute, or escape a whole class with the `disabledExempt` top-level config JSON key"
     },
     "events": {},
     "slots": {}
@@ -1536,6 +1537,7 @@
   },
   "oas-segmented": {
     "attrs": {
+      "disabled": "Disables the whole segmented control (explicitly, or inherited from the config-provider global disabled injection)",
       "options": "`[{ label, value, disabled? }]` JSON string",
       "value": "Selected value (defaults to the first option; controlled)"
     },
@@ -2033,6 +2035,7 @@
   },
   "oas-toggle-group": {
     "attrs": {
+      "disabled": "Disables the whole toggle group (explicitly, or inherited from the config-provider global disabled injection)",
       "items": "Options JSON (property assignment reflects to attribute)",
       "multiple": "Multiple mode (checkbox semantics)",
       "value": "Current value: string for single; JSON array string for multiple"

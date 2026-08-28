@@ -47,6 +47,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `disabled` | 禁用整个分段控件（自身显式禁用，或经 config-provider 全局禁用注入继承） | `boolean` | — |
 | `options` | `[{ label, value, disabled? }]` JSON 字符串 | `string` | `[]` |
 | `value` | 选中值（缺省选第一项，受控属性） | `string` | — |
 

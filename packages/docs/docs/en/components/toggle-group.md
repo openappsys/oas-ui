@@ -125,6 +125,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `disabled` | Disables the whole toggle group (explicitly, or inherited from the config-provider global disabled injection) | `boolean` | — |
 | `items` | Options JSON (property assignment reflects to attribute) | `ToggleItem[] \| string` | `[]` |
 | `multiple` | Multiple mode (checkbox semantics) | `boolean` | — |
 | `value` | Current value: string for single; JSON array string for multiple | `string` | `[]` |
