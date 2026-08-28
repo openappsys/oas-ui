@@ -66,7 +66,8 @@ const STYLE = `
   border-radius: 2px;
   background: var(--oas-color-border);
 }
-:host([disabled]) .track-wrap::before {
+:host([disabled]) .track-wrap::before,
+:host([data-disabled]) .track-wrap::before {
   opacity: 0.6;
 }
 input[type="range"] {
@@ -150,7 +151,8 @@ input:disabled {
     right var(--oas-transition-fast) var(--oas-ease-out),
     width var(--oas-transition-fast) var(--oas-ease-out);
 }
-:host([disabled]) .fill {
+:host([disabled]) .fill,
+:host([data-disabled]) .fill {
   opacity: 0.6;
 }
 /* 自定义滑块：内容可定制（custom-thumb 插槽/模板），与值气泡共存 */
@@ -237,7 +239,8 @@ input:disabled {
 .mark[data-passed='true'] .mark-label {
   color: var(--oas-color-text-primary);
 }
-:host([disabled]) .marks {
+:host([disabled]) .marks,
+:host([data-disabled]) .marks {
   opacity: 0.6;
 }
 /* 数值输入区（show-input） */
@@ -310,6 +313,7 @@ export class OASSlider extends OASElement {
       'show-input',
       'reverse',
       'show-tooltip',
+      'disabled-skip',
     ]
   }
 
@@ -500,7 +504,10 @@ export class OASSlider extends OASElement {
     const isRange = this.hasAttr('range')
     const showInput = this.hasAttr('show-input')
     const reverse = this.hasAttr('reverse')
-    const disabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    const disabled = this.injectDisabled()
+    // 镜像最终禁用态到宿主 data-disabled（供 :host([data-disabled]) 样式消费，覆盖注入场景）
+    this.toggleAttribute('data-disabled', disabled)
     const min = this.getAttr('min', '0')
     const max = this.getAttr('max', '100')
     const step = this.getAttr('step', '1')

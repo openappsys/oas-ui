@@ -378,6 +378,7 @@ export class OASDatePicker extends OASElement {
       'placeholder',
       'multiple',
       'placement',
+      'disabled-skip',
     ]
   }
 
@@ -493,7 +494,7 @@ export class OASDatePicker extends OASElement {
   }
 
   private toggle(): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     if (this.openState) this.close()
     else this.open()
   }
@@ -620,7 +621,7 @@ export class OASDatePicker extends OASElement {
   }
 
   private handleTriggerKey(e: KeyboardEvent): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
       e.preventDefault()
       if (!this.openState) this.open()
@@ -692,7 +693,7 @@ export class OASDatePicker extends OASElement {
   private syncTrigger(): void {
     const triggerEl = this.triggerEl
     if (!triggerEl) return
-    triggerEl.disabled = this.hasAttr('disabled')
+    triggerEl.disabled = this.injectDisabled()
     const valueEl = this.shadow.querySelector<HTMLElement>('.value')
     if (!valueEl) return
     const t = this.pickerType

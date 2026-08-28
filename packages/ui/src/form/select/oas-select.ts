@@ -316,6 +316,7 @@ export class OASSelect extends OASElement {
       'allow-create',
       'virtual',
       'item-height',
+      'disabled-skip',
     ]
   }
 
@@ -433,7 +434,7 @@ export class OASSelect extends OASElement {
   }
 
   private toggle(): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     this.openState = !this.openState
     this.syncDropdown()
   }
@@ -488,7 +489,7 @@ export class OASSelect extends OASElement {
 
   /** trigger 键盘：Esc 关闭；关闭态 Enter/Space/↑/↓ 展开；展开态 ↑/↓ 移动、Enter 选中 */
   private handleTriggerKey(e: KeyboardEvent): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     // 焦点在 trigger 内嵌按钮（清空/移除 chip）时不响应，交给按钮原生行为
     if ((e.target as Element).closest('.clear-btn, .chip button')) return
     if (e.key === 'Escape') {
@@ -816,7 +817,7 @@ export class OASSelect extends OASElement {
 
   /** clearable：清空值并派发 oas-clear（detail 为被清空前的值）+ oas-change（空值） */
   private clearValue(): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     const prev = this.currentValues()
     if (this.hasAttr('multiple')) {
       this.setAttribute('value', '[]')
@@ -964,7 +965,8 @@ export class OASSelect extends OASElement {
   private syncTrigger(): void {
     if (!this.triggerEl) return
     const placeholder = this.getAttr('placeholder', this.t('select.placeholder'))
-    const disabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    const disabled = this.injectDisabled()
     const values = this.currentValues()
     const valueEl = this.triggerEl.querySelector<HTMLElement>('.value')!
 

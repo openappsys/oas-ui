@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASCheckbox, OASCheckboxGroup } from './index.js'
+import '../../floating/config-provider/index.js'
 
 function mountCheckbox(attrs: Record<string, string> = {}, slot = '选项'): OASCheckbox {
   const el = new OASCheckbox()
@@ -115,5 +116,53 @@ describe('OASCheckbox focus 委托', () => {
     document.body.appendChild(el)
     el.focus()
     expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('input'))
+  })
+})
+
+describe('OASCheckbox 全局禁用注入（config-provider disabled）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('provider disabled：checkbox 无显式 disabled 时继承禁用 + 宿主 data-disabled 镜像', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('disabled', '')
+    const el = new OASCheckbox()
+    el.textContent = '选项'
+    cp.appendChild(el)
+    document.body.appendChild(cp)
+
+    expect(native(el).disabled).toBe(true)
+    expect(el.hasAttribute('data-disabled')).toBe(true)
+  })
+
+  it('provider disabled + disabled-skip：checkbox 保持可交互（不镜像）', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('disabled', '')
+    const el = new OASCheckbox()
+    el.setAttribute('disabled-skip', '')
+    el.textContent = '选项'
+    cp.appendChild(el)
+    document.body.appendChild(cp)
+
+    expect(native(el).disabled).toBe(false)
+    expect(el.hasAttribute('data-disabled')).toBe(false)
+  })
+
+  it('provider disabled 时点击不改变勾选态', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('disabled', '')
+    const el = new OASCheckbox()
+    el.textContent = '选项'
+    cp.appendChild(el)
+    document.body.appendChild(cp)
+
+    const i = native(el)
+    i.click()
+    expect(i.checked).toBe(false)
   })
 })

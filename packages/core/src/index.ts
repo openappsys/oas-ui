@@ -15,4 +15,5 @@ export {
   subscribeConfigProvider,
   notifyConfigProviders,
   readConfigValue,
+  injectDisabled,
 } from './config-context.js'

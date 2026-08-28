@@ -216,6 +216,7 @@ export class OASTreeSelect extends OASElement {
       'virtual',
       'height',
       'item-height',
+      'disabled-skip',
     ]
   }
 
@@ -344,7 +345,7 @@ export class OASTreeSelect extends OASElement {
   }
 
   private toggle(): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     this.openState = !this.openState
     this.renderTree()
     this.syncDropdown()
@@ -382,7 +383,7 @@ export class OASTreeSelect extends OASElement {
 
   /** trigger 键盘：Esc 关闭；关闭态 Enter/Space/↑/↓ 展开；展开态 ↑/↓ 移动、Enter/Space 选中、→/← 展开/收起 */
   private handleTriggerKey(e: KeyboardEvent): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     if (e.key === 'Escape') {
       this.openState = false
       this.syncDropdown()
@@ -782,7 +783,7 @@ export class OASTreeSelect extends OASElement {
     const placeholder = this.getAttr('placeholder', this.t('treeSelect.placeholder'))
     const valueEl = this.triggerEl.querySelector<HTMLElement>('.value')!
     const values = this.currentValues()
-    this.triggerEl.disabled = this.hasAttr('disabled')
+    this.triggerEl.disabled = this.injectDisabled()
 
     if (values.length === 0) {
       valueEl.innerHTML = ''

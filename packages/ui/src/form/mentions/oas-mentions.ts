@@ -92,7 +92,7 @@ textarea:disabled:hover {
 
 export class OASMentions extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'options', 'prefix', 'placeholder', 'disabled', 'label']
+    return ['value', 'options', 'prefix', 'placeholder', 'disabled', 'label', 'disabled-skip']
   }
 
   private ta: HTMLTextAreaElement | null = null
@@ -168,7 +168,7 @@ export class OASMentions extends OASElement {
     const placeholder = this.getAttr('placeholder', '')
     if (t.value !== value) t.value = value
     t.placeholder = placeholder
-    t.disabled = this.hasAttr('disabled')
+    t.disabled = this.injectDisabled()
     // 内置文案走 locale registry（label/placeholder 属性优先，setLocale 切换自动刷新）
     t.setAttribute(
       'aria-label',

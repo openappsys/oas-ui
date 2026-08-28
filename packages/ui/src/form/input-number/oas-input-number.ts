@@ -98,7 +98,7 @@ svg {
 
 export class OASInputNumber extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'min', 'max', 'step', 'disabled', 'precision', 'label']
+    return ['value', 'min', 'max', 'step', 'disabled', 'precision', 'label', 'disabled-skip']
   }
 
   private input: HTMLInputElement | null = null
@@ -152,7 +152,8 @@ export class OASInputNumber extends OASElement {
     const min = this.getAttr('min', '')
     const max = this.getAttr('max', '')
     const step = this.getAttr('step', '1')
-    const disabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    const disabled = this.injectDisabled()
 
     if (i.value !== value) i.value = value
     i.min = min
@@ -168,7 +169,7 @@ export class OASInputNumber extends OASElement {
 
   private stepBy(dir: 1 | -1): void {
     const i = this.input
-    if (!i || this.hasAttr('disabled')) return
+    if (!i || this.injectDisabled()) return
     const step = Number(i.step) || 1
     const current = Number(i.value) || 0
     const next = current + step * dir
@@ -198,7 +199,7 @@ export class OASInputNumber extends OASElement {
 
   private syncControls(): void {
     if (!this.upBtn || !this.downBtn || !this.input) return
-    const disabled = this.hasAttr('disabled')
+    const disabled = this.injectDisabled()
     const value = Number(this.input.value) || 0
     const max = this.getAttr('max', '')
     const min = this.getAttr('min', '')

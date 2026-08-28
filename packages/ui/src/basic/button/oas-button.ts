@@ -663,6 +663,7 @@ export class OASButton extends OASElement {
       'wave',
       'auto-insert-space',
       'wrap',
+      'disabled-skip',
     ]
   }
 
@@ -717,7 +718,7 @@ export class OASButton extends OASElement {
     this.btn = this.shadow.querySelector('button[part="button"], a[part="button"]')
 
     this.btn?.addEventListener('click', (e: MouseEvent) => {
-      if (this.hasAttr('disabled') || this.hasAttr('disabled-focusable') || this.isLoading()) {
+      if (this.injectDisabled() || this.hasAttr('disabled-focusable') || this.isLoading()) {
         e.preventDefault()
         return
       }
@@ -854,7 +855,8 @@ export class OASButton extends OASElement {
     const type = this.getAttr('type', 'default') as ButtonType
     // size 就近读取 config-provider 注入值（自身属性 > config-provider > medium）
     const size = normalizeButtonSize(this.injectValue('size', 'medium') as ButtonSize)
-    const disabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入：组件显式 disabled > disabled-skip/disabledExempt 豁免 > provider 注入
+    const disabled = this.injectDisabled()
     const disabledFocusable = this.hasAttr('disabled-focusable')
     const loading = this.isLoading()
     const loadingText = this.getAttr('loading-text', '')

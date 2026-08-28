@@ -68,7 +68,7 @@ const STYLE = `
  */
 export class OASToggleGroup extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'multiple', 'items']
+    return ['value', 'multiple', 'items', 'disabled', 'disabled-skip']
   }
 
   private itemsList: ToggleItem[] = []
@@ -271,23 +271,26 @@ export class OASToggleGroup extends OASElement {
     const group = this.group
     if (!group) return
     const multiple = this.hasAttr('multiple')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    const hostDisabled = this.injectDisabled()
     group.setAttribute('role', multiple ? 'group' : 'radiogroup')
     group.setAttribute('aria-label', this.t('toggleGroup.group'))
     const selected = this.selectedValues()
     this.buttons.forEach((btn, i) => {
       const item = this.itemsList[i]
       if (!item) return
+      const disabled = item.disabled || hostDisabled
       btn.setAttribute('role', multiple ? 'checkbox' : 'radio')
       btn.setAttribute('aria-checked', String(selected.includes(item.value)))
-      btn.setAttribute('aria-disabled', String(item.disabled ?? false))
-      if (item.disabled) btn.tabIndex = -1
+      btn.setAttribute('aria-disabled', String(disabled))
+      if (disabled) btn.tabIndex = -1
       else if (multiple) btn.tabIndex = i === this.focusIndex ? 0 : -1
       else btn.tabIndex = item.value === selected[0] ? 0 : -1
     })
   }
 
   private selectItem(item: ToggleItem): void {
-    if (item.disabled) return
+    if (item.disabled || this.injectDisabled()) return
     if (this.hasAttr('multiple')) {
       const set = new Set(this.selectedValues())
       if (set.has(item.value)) set.delete(item.value)
@@ -311,6 +314,7 @@ export class OASToggleGroup extends OASElement {
   }
 
   private handleKey(e: KeyboardEvent): void {
+    if (this.injectDisabled()) return
     const items = this.itemsList
     if (items.length === 0) return
     const enabled = items.map((it, i) => (it.disabled ? -1 : i)).filter((i) => i >= 0)

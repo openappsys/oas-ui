@@ -2965,6 +2965,11 @@
         "name": "items",
         "default": "[]",
         "observed": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "observed": true
       }
     ],
     "props": [
@@ -5430,6 +5435,10 @@
         "type": "string",
         "default": "",
         "observed": true
+      },
+      {
+        "name": "disabled",
+        "observed": true
       }
     ],
     "props": [],
@@ -6406,6 +6415,11 @@
         "name": "value",
         "type": "string",
         "default": "",
+        "observed": true
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
         "observed": true
       }
     ],

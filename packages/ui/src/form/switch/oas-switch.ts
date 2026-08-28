@@ -171,7 +171,7 @@ button[aria-checked='true'] .spinner {
 
 export class OASSwitch extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['checked', 'disabled', 'loading', 'checked-text', 'unchecked-text', 'size', 'color']
+    return ['checked', 'disabled', 'loading', 'checked-text', 'unchecked-text', 'size', 'color', 'disabled-skip']
   }
 
   private btn: HTMLButtonElement | null = null
@@ -193,7 +193,7 @@ export class OASSwitch extends OASElement {
   private bind(): void {
     this.btn = this.shadow.querySelector('button')
     this.btn?.addEventListener('click', () => {
-      if (this.hasAttr('disabled') || this.hasAttr('loading')) return
+      if (this.injectDisabled() || this.hasAttr('loading')) return
       const checked = !this.hasAttr('checked')
       this.toggleAttribute('checked', checked)
       this.emit('change', { checked })
@@ -217,7 +217,8 @@ export class OASSwitch extends OASElement {
     const btn = this.btn
     if (!btn) return
     const checked = this.hasAttr('checked')
-    const disabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    const disabled = this.injectDisabled()
     const loading = this.hasAttr('loading')
 
     btn.setAttribute('aria-checked', String(checked))

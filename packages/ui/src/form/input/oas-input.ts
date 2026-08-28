@@ -74,7 +74,8 @@ input:disabled:hover {
   white-space: nowrap;
   user-select: none;
 }
-:host([disabled]) .addon {
+:host([disabled]) .addon,
+:host([data-disabled]) .addon {
   background: var(--oas-color-bg-disabled);
   color: var(--oas-color-text-disabled);
 }
@@ -113,7 +114,9 @@ input:disabled:hover {
   overflow: hidden;
 }
 :host([disabled]) .affix,
-:host([disabled]) .affix-icon {
+:host([disabled]) .affix-icon,
+:host([data-disabled]) .affix,
+:host([data-disabled]) .affix-icon {
   color: var(--oas-color-text-disabled);
 }
 .affix-icon svg {
@@ -257,7 +260,8 @@ input:disabled:hover {
   height: 14px;
   display: block;
 }
-:host([disabled]) .eye-btn {
+:host([disabled]) .eye-btn,
+:host([data-disabled]) .eye-btn {
   cursor: not-allowed;
   color: var(--oas-color-text-disabled);
 }
@@ -301,6 +305,7 @@ export class OASInput extends OASElement {
       'show-password',
       'maxlength',
       'show-count',
+      'disabled-skip',
     ]
   }
 
@@ -377,7 +382,7 @@ export class OASInput extends OASElement {
       this.syncCount()
     })
     this.eyeBtn?.addEventListener('click', () => {
-      if (!this.inputEl || this.hasAttr('disabled')) return
+      if (!this.inputEl || this.injectDisabled()) return
       this.revealed = !this.revealed
       this.syncPasswordReveal()
       this.inputEl.focus()
@@ -411,8 +416,12 @@ export class OASInput extends OASElement {
     const value = this.getAttr('value', '')
     const placeholder = this.getAttr('placeholder', '')
     const type = this.getAttr('type', 'text')
-    const disabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    const disabled = this.injectDisabled()
     const readonly = this.hasAttr('readonly')
+
+    // 镜像最终禁用态到宿主 data-disabled（供 :host([data-disabled]) 样式消费，覆盖注入场景）
+    this.toggleAttribute('data-disabled', disabled)
 
     if (i.value !== value) i.value = value
     i.placeholder = placeholder
@@ -437,7 +446,7 @@ export class OASInput extends OASElement {
   private shouldShowClear(): boolean {
     return (
       this.hasAttr('clearable') &&
-      !this.hasAttr('disabled') &&
+      !this.injectDisabled() &&
       !this.hasAttr('readonly') &&
       this.inputEl !== null &&
       this.inputEl.value !== ''
@@ -456,7 +465,7 @@ export class OASInput extends OASElement {
     const isPassword = type === 'password'
     if (!isPassword) this.revealed = false
     this.inputEl.type = isPassword && this.revealed ? 'text' : type
-    const showEye = isPassword && this.hasAttr('show-password') && !this.hasAttr('disabled')
+    const showEye = isPassword && this.hasAttr('show-password') && !this.injectDisabled()
     this.eyeBtn.hidden = !showEye
     if (showEye) {
       this.eyeBtn.setAttribute('aria-pressed', String(this.revealed))

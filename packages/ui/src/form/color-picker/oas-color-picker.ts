@@ -169,7 +169,7 @@ const DEFAULT_PRESETS = [
 
 export class OASColorPicker extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'preset', 'disabled']
+    return ['value', 'preset', 'disabled', 'disabled-skip']
   }
 
   private trigger: HTMLButtonElement | null = null
@@ -316,7 +316,7 @@ export class OASColorPicker extends OASElement {
   }
 
   private toggle(): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     this.openState = !this.openState
     this.syncPanel()
   }
@@ -338,7 +338,7 @@ export class OASColorPicker extends OASElement {
   }
 
   private handleTriggerKey(e: KeyboardEvent): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     if (e.key === 'Escape' && this.openState) {
       this.openState = false
       this.syncPanel()
@@ -368,7 +368,7 @@ export class OASColorPicker extends OASElement {
     if (swatch) swatch.style.background = hex
     const text = this.trigger.querySelector<HTMLElement>('.hex-text')
     if (text) text.textContent = hex
-    this.trigger.disabled = this.hasAttr('disabled')
+    this.trigger.disabled = this.injectDisabled()
     this.trigger.setAttribute('aria-label', this.t('colorPicker.label'))
   }
 

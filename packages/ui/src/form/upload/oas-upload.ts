@@ -363,7 +363,7 @@ function isImageFile(file: File): boolean {
 
 export class OASUpload extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['accept', 'multiple', 'max', 'disabled', 'auto-upload', 'list-type']
+    return ['accept', 'multiple', 'max', 'disabled', 'auto-upload', 'list-type', 'disabled-skip']
   }
 
   private input: HTMLInputElement | null = null
@@ -438,11 +438,11 @@ export class OASUpload extends OASElement {
     })
 
     this.zone?.addEventListener('click', () => {
-      if (this.hasAttr('disabled')) return
+      if (this.injectDisabled()) return
       this.input?.click()
     })
     this.zone?.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (this.hasAttr('disabled')) return
+      if (this.injectDisabled()) return
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
         this.input?.click()
@@ -451,12 +451,12 @@ export class OASUpload extends OASElement {
     // 拖拽高亮与文件接收：disabled 时整体走浏览器默认（dragover 不 preventDefault →
     // 禁止 drop、显示禁止光标），避免松开鼠标时浏览器直接打开文件
     this.zone?.addEventListener('dragenter', (e: DragEvent) => {
-      if (this.hasAttr('disabled')) return
+      if (this.injectDisabled()) return
       e.preventDefault()
       this.zone?.classList.add('dragging')
     })
     this.zone?.addEventListener('dragover', (e: DragEvent) => {
-      if (this.hasAttr('disabled')) return
+      if (this.injectDisabled()) return
       e.preventDefault()
     })
     this.zone?.addEventListener('dragleave', () => {
@@ -466,7 +466,7 @@ export class OASUpload extends OASElement {
       // 无条件 preventDefault：disabled 也要阻止浏览器默认行为（打开被拖入的文件）
       e.preventDefault()
       this.zone?.classList.remove('dragging')
-      if (this.hasAttr('disabled')) return
+      if (this.injectDisabled()) return
       const dropped = e.dataTransfer?.files ? [...e.dataTransfer.files] : []
       if (dropped.length > 0) this.addFiles(dropped)
     })
@@ -501,7 +501,7 @@ export class OASUpload extends OASElement {
     const input = this.input
     const zone = this.zone
     if (!input || !zone) return
-    const disabled = this.hasAttr('disabled')
+    const disabled = this.injectDisabled()
     input.accept = this.getAttr('accept', '')
     input.multiple = this.hasAttr('multiple')
     input.disabled = disabled
@@ -516,7 +516,7 @@ export class OASUpload extends OASElement {
   }
 
   private addFiles(added: File[]): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     const max = Number(this.getAttr('max', '0')) || 0
     const accept = this.getAttr('accept', '')
     const multi = this.hasAttr('multiple')
@@ -562,7 +562,7 @@ export class OASUpload extends OASElement {
 
   /** 模拟上传：逐文件推进进度并派发 oas-upload；全部完成后停止计时器 */
   startUpload(): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     if (this.timer) return
     for (const f of this._files) {
       const st = this.statusMap.get(f)
@@ -628,7 +628,7 @@ export class OASUpload extends OASElement {
   }
 
   private openPreview(file: File): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     this.previewFile = file
     this.previousFocus = document.activeElement as HTMLElement | null
     if (!this.previewBody || !this.previewMask) return
@@ -733,7 +733,7 @@ export class OASUpload extends OASElement {
 
   /** list（默认）：文本行列表 */
   private renderTextList(list: HTMLElement): void {
-    const disabled = this.hasAttr('disabled')
+    const disabled = this.injectDisabled()
     for (const file of this._files) {
       const st = this.statusMap.get(file) ?? { percent: 0, status: 'pending' }
       const item = document.createElement('div')
@@ -750,7 +750,7 @@ export class OASUpload extends OASElement {
 
   /** picture：列表行带 48px 小缩略图 */
   private renderPictureList(list: HTMLElement): void {
-    const disabled = this.hasAttr('disabled')
+    const disabled = this.injectDisabled()
     for (const file of this._files) {
       const st = this.statusMap.get(file) ?? { percent: 0, status: 'pending' }
       const item = document.createElement('div')
@@ -783,7 +783,7 @@ export class OASUpload extends OASElement {
 
   /** picture-card：卡片缩略图墙（hover 遮罩操作区 + 右上角删除） */
   private renderCards(list: HTMLElement): void {
-    const disabled = this.hasAttr('disabled')
+    const disabled = this.injectDisabled()
     for (const file of this._files) {
       const st = this.statusMap.get(file) ?? { percent: 0, status: 'pending' }
       const card = document.createElement('div')

@@ -12,7 +12,11 @@
  * - 就近读取 config-provider 注入值：injectValue(key, default) / t() 优先查最近 config-provider
  */
 import { getTranslator, getLocaleTranslator, onTranslatorChange } from './translator.js'
-import { findConfigProvider, subscribeConfigProvider } from './config-context.js'
+import {
+  findConfigProvider,
+  subscribeConfigProvider,
+  injectDisabled as resolveInjectedDisabled,
+} from './config-context.js'
 
 /**
  * ReactiveController —— 宿主（OASElement）能力注入协议。
@@ -231,6 +235,20 @@ export abstract class OASElement extends HTMLElement {
     const injected = provider?.getAttribute(key)
     if (injected != null && injected !== '') return injected
     return defaultValue
+  }
+
+  /**
+   * 就近读取「全局禁用」注入（config-provider 机制），返回组件最终生效的禁用态。
+   *
+   * 优先级：组件显式 `disabled` 属性 > `disabled-skip` 豁免 > config JSON `disabledExempt`
+   * 整类豁免 > provider 注入 disabled。组件自身的 `disabled` 属性恒禁（短路）；
+   * 无 provider 时返回 false（未接注入的组件行为不变）。
+   *
+   * 使用约定：组件在「读 disabled 判定点」用它替换 `hasAttr('disabled')`——
+   * 传给内部原生元素 / aria / 点击拦截的既有逻辑不动，只改 disabled 从何而来。
+   */
+  protected injectDisabled(): boolean {
+    return resolveInjectedDisabled(this)
   }
 
   /**

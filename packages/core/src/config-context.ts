@@ -73,6 +73,31 @@ export function readConfigValue<T = string>(
   return (entry as Record<string, unknown>)[key] as T
 }
 
+/**
+ * 就近读取「全局禁用」注入（config-provider 机制），返回元素最终生效的禁用态。
+ *
+ * 优先级（从高到低）：
+ * 1. 元素自身带 `disabled` 属性 → true（显式禁用恒禁，短路）
+ * 2. 元素自身带 `disabled-skip` 属性 → false（组件级豁免：注入开启时单个组件保持可用，短路）
+ * 3. 最近 config-provider 无 `disabled` 属性 → false（无注入不禁用）
+ * 4. 最近 config-provider 的 config JSON 顶层 `disabledExempt` 数组含元素 tag（小写）→ false（整类豁免）
+ * 5. 否则 → true（继承全局禁用）
+ *
+ * 无 provider 时一律返回 false（组件未接入注入时行为不变）。
+ * provider 的 disabled/config 变化经 notifyConfigProviders() 通知包裹组件重刷。
+ */
+export function injectDisabled(el: Element): boolean {
+  if (el.hasAttribute('disabled')) return true
+  if (el.hasAttribute('disabled-skip')) return false
+  const provider = findConfigProvider(el)
+  if (!provider) return false
+  if (!provider.hasAttribute('disabled')) return false
+  const config = parseProviderConfig(provider)
+  const exempt = config?.['disabledExempt']
+  if (Array.isArray(exempt) && exempt.includes(el.tagName.toLowerCase())) return false
+  return true
+}
+
 const configCache = new WeakMap<
   HTMLElement,
   { raw: string | null; parsed: Record<string, Record<string, unknown>> | null }

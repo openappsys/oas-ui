@@ -136,7 +136,7 @@ function pad(v: number): string {
 
 export class OASTimePicker extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'format', 'step', 'disabled']
+    return ['value', 'format', 'step', 'disabled', 'disabled-skip']
   }
 
   private triggerEl: HTMLButtonElement | null = null
@@ -208,7 +208,7 @@ export class OASTimePicker extends OASElement {
   }
 
   private toggle(): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     if (this.openState) this.cancel()
     else this.open()
   }
@@ -263,7 +263,7 @@ export class OASTimePicker extends OASElement {
   }
 
   private handleTriggerKey(e: KeyboardEvent): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
       e.preventDefault()
       if (!this.openState) this.open()
@@ -376,7 +376,7 @@ export class OASTimePicker extends OASElement {
   private syncTrigger(): void {
     const triggerEl = this.triggerEl
     if (!triggerEl) return
-    triggerEl.disabled = this.hasAttr('disabled')
+    triggerEl.disabled = this.injectDisabled()
     const valueEl = this.shadow.querySelector<HTMLElement>('.value')
     if (!valueEl) return
     const value = this.getAttr('value', '')
