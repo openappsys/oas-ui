@@ -287,4 +287,155 @@ describe('OASMasonry', () => {
     el.remove()
     vi.unstubAllGlobals()
   })
+
+  // ===== items 数据驱动通道 =====
+
+  function itemsEls(el: OASMasonry): HTMLElement[] {
+    return [...el.shadowRoot!.querySelectorAll('.masonry-item')] as HTMLElement[]
+  }
+
+  it('items 渲染进 shadow .masonry：项数与文本断言', () => {
+    const el = new OASMasonry()
+    el.setAttribute(
+      'items',
+      JSON.stringify([{ text: '卡片 A' }, { text: '卡片 B' }, { text: '卡片 C' }]),
+    )
+    document.body.appendChild(el)
+    const items = itemsEls(el)
+    expect(items.length).toBe(3)
+    expect(items[0]!.textContent).toBe('卡片 A')
+    expect(items[1]!.textContent).toBe('卡片 B')
+    expect(items[2]!.textContent).toBe('卡片 C')
+    // 渲染项位于 .masonry 容器内（CSS columns 直接生效）
+    const container = root(el)
+    expect(container.querySelectorAll('.masonry-item').length).toBe(3)
+    expect(container.classList.contains('masonry')).toBe(true)
+  })
+
+  it('items 显式优先：与 slot 子元素共存时只渲染 items', () => {
+    const el = new OASMasonry()
+    el.innerHTML = `
+      <div class="card">slot 一</div>
+      <div class="card">slot 二</div>
+    `
+    el.setAttribute(
+      'items',
+      JSON.stringify([{ text: 'data 一' }, { text: 'data 二' }, { text: 'data 三' }]),
+    )
+    document.body.appendChild(el)
+    // 只渲染 items（3 项）；slot 隐藏、light DOM 子元素保留未被移除
+    expect(itemsEls(el).length).toBe(3)
+    expect(el.shadowRoot!.querySelector('slot')!.hidden).toBe(true)
+    expect(el.children.length).toBe(2)
+  })
+
+  it('items property 数组赋值与 attribute JSON 字符串两形态等价', () => {
+    const el = new OASMasonry()
+    el.items = [{ text: 'P1' }, { text: 'P2' }]
+    document.body.appendChild(el)
+    // property 赋值反射为 attribute JSON 字符串，走同一解析链路
+    expect(el.getAttribute('items')).toBe('[{"text":"P1"},{"text":"P2"}]')
+    expect(itemsEls(el).map((i) => i.textContent)).toEqual(['P1', 'P2'])
+    // attribute 形态增量更新
+    el.setAttribute('items', JSON.stringify([{ text: 'A' }, { text: 'B' }, { text: 'C' }]))
+    expect(itemsEls(el).map((i) => i.textContent)).toEqual(['A', 'B', 'C'])
+  })
+
+  it('items 非法 JSON：回落 slot 通道 + dev 告警（同值去重）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = new OASMasonry()
+    el.innerHTML = `<div class="card">slot 卡</div>`
+    el.setAttribute('items', '{broken json')
+    document.body.appendChild(el)
+    expect(itemsEls(el).length).toBe(0)
+    expect(el.shadowRoot!.querySelector('slot')!.hidden).toBe(false)
+    expect(el.children.length).toBe(1)
+    // 非数组 JSON 同样回落 slot + 告警
+    el.setAttribute('items', '{"a":1}')
+    expect(itemsEls(el).length).toBe(0)
+    expect(warn).toHaveBeenCalledTimes(2)
+    // 同值重复设置不再重复告警
+    el.setAttribute('items', '{broken json')
+    expect(warn).toHaveBeenCalledTimes(2)
+    warn.mockRestore()
+    el.remove()
+  })
+
+  it('items height/column 字段生效：min-height + 按列重排（复用现有逻辑）', () => {
+    const el = new OASMasonry()
+    el.setAttribute('columns', '2')
+    el.items = [
+      { text: 'A', column: 2 },
+      { text: 'B' },
+      { text: 'C' },
+      { text: 'D', column: 1 },
+      { text: 'E', height: 120 },
+    ]
+    document.body.appendChild(el)
+    // 2 列、5 项 → 每列 ceil(5/2)=3 槽：column=1 → 槽 0、column=2 → 槽 3
+    expect(itemsEls(el).map((i) => i.textContent)).toEqual(['D', 'B', 'C', 'A', 'E'])
+    // height 字段 → min-height
+    const heightItem = itemsEls(el).find((i) => i.textContent === 'E')!
+    expect(heightItem.style.minHeight).toBe('120px')
+  })
+
+  it('items 与断点列数共存：渲染项在 columns 容器内 + @media 规则注入', () => {
+    const el = new OASMasonry()
+    el.setAttribute('columns', '1 md:2 lg:4')
+    el.items = [{ text: 'A' }, { text: 'B' }, { text: 'C' }, { text: 'D' }]
+    document.body.appendChild(el)
+    expect(root(el).style.columnCount).toBe('var(--oas-masonry-columns, 1)')
+    const css = breakpointCss(el)
+    expect(css).toContain('@media (min-width: 768px) { :host { --oas-masonry-columns: 2 } }')
+    expect(css).toContain('@media (min-width: 1024px) { :host { --oas-masonry-columns: 4 } }')
+    expect(root(el).querySelectorAll('.masonry-item').length).toBe(4)
+  })
+
+  it('空 items 数组回落 slot 通道（零回归）', () => {
+    const el = new OASMasonry()
+    el.innerHTML = `<div class="card">A</div><div class="card">B</div>`
+    el.setAttribute('items', '[]')
+    document.body.appendChild(el)
+    expect(itemsEls(el).length).toBe(0)
+    const slot = el.shadowRoot!.querySelector('slot')!
+    expect(slot.hidden).toBe(false)
+    expect(slot.assignedElements().length).toBe(2)
+  })
+
+  it('gap 两值行距变量同样作用于 items 渲染项（样式断言）', () => {
+    const el = new OASMasonry()
+    el.setAttribute('gap', '12 24')
+    el.items = [{ text: 'A' }]
+    document.body.appendChild(el)
+    expect(root(el).style.columnGap).toBe('24px')
+    expect(root(el).style.getPropertyValue('--oas-masonry-item-gap')).toBe('12px')
+    // 渲染项类规则含 break-inside: avoid 与 margin-bottom 行距变量（对齐 slot 子项）
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toContain('.masonry-item')
+    expect(style).toContain('break-inside: avoid')
+    expect(style).toContain('margin-bottom: var(--oas-masonry-item-gap, var(--oas-space-2))')
+  })
+
+  it('fresh：RO 同时监听 items 渲染项（而非 light DOM 子项）', () => {
+    let observed: Element[] = []
+    class FakeResizeObserver {
+      observe(el: Element) {
+        observed.push(el)
+      }
+      disconnect() {
+        observed = []
+      }
+    }
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+    const el = new OASMasonry()
+    el.setAttribute('fresh', '')
+    el.innerHTML = `<div class="card">slot</div>`
+    el.items = [{ text: 'A' }, { text: 'B' }]
+    document.body.appendChild(el)
+    // 监听的是渲染项（.masonry-item × 2），而非 light DOM 子项
+    expect(observed.length).toBe(2)
+    expect(observed.every((o) => o.classList.contains('masonry-item'))).toBe(true)
+    el.remove()
+    vi.unstubAllGlobals()
+  })
 })

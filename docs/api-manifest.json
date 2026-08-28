@@ -8649,9 +8649,20 @@
         "name": "fresh",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "items",
+        "default": "",
+        "observed": true
       }
     ],
-    "props": [],
+    "props": [
+      {
+        "name": "items",
+        "type": "MasonryItem[] | string",
+        "default": "[]"
+      }
+    ],
     "events": [],
     "slots": [
       {

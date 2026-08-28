@@ -93,6 +93,22 @@
   </p>
 </DemoBlock>
 
+## items 数据驱动
+
+<DemoBlock title="items JSON 数组渲染卡片流">
+  <oas-masonry style="width: 100%" items='[{"text":"短卡片 A"},{"text":"这是一段比较高的内容，用于演示 items 数据驱动下不同高度的卡片如何错落排布，这里再补几行文字撑高卡片。","height":180},{"text":"中等高度卡片","height":120},{"text":"又一短卡片"},{"text":"高一点的卡片，包含多行描述文字。","height":200},{"text":"普通卡片"},{"text":"最后一列示例。"}]'></oas-masonry>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    `items` 为 JSON 数组（也可 JS 里 `el.items = [...]` property 赋值）：`text` 纯文本渲染进卡片、`height` 子项最小高度（px）。items 显式非空时优先于 slot 子元素（子元素忽略）；缺省/空数组/非法 JSON 回落 slot 通道。
+  </p>
+</DemoBlock>
+
+<DemoBlock title="items 指定列 + 断点列数">
+  <oas-masonry style="width: 100%" columns="1 md:2 lg:4" items='[{"text":"这张卡片 column=2，被重排到第 2 列。","column":2},{"text":"这张卡片 column=4，被重排到第 4 列。","column":4},{"text":"普通卡片 A，自动填充。"},{"text":"普通卡片 B。"},{"text":"普通卡片 C。"},{"text":"普通卡片 D。"},{"text":"普通卡片 E。"}]'></oas-masonry>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    `column` 字段（1-based）指定所属列，与子元素 `column` 属性共用同一套重排逻辑；配合响应式列数（`1 md:2 lg:4`）按当前生效列数重算。
+  </p>
+</DemoBlock>
+
 ## API
 
 ### 属性
@@ -102,12 +118,13 @@
 | `columns` | 列数（默认 4）；支持断点简写：空格分隔的基础值 + 若干 `断点:值`（如 `1 md:2 lg:4`，断点表 `sm`=640px / `md`=768px / `lg`=1024px / `xl`=1280px，移动优先 min-width，低于断点用基础值）；非正整数/非数字回退 1 | — | — |
 | `fresh` | 持续监听子项尺寸变化（ResizeObserver），变化时触发一次重算机会；CSS columns 实现下浏览器本就自动重排，fresh 为语义对齐与未来切换 JS 实现的钩子 | `boolean` | — |
 | `gap` | 间距（px，默认 8）。单值=列距；两值「行 列」（如 `8 16`）行距作用于子项 margin-bottom、列距作用于 column-gap；纯数字自动补 px；非法值回退默认 | — | — |
+| `items` | 瀑布流项 JSON `[{text, height?, column?}]`，也可 property 赋数组；items 显式非空时优先于 slot 子元素（子元素忽略），缺省/空数组/非法 JSON 回落 slot 通道（非法 JSON dev 告警，同值去重）。text 纯文本安全渲染；height 子项最小高度（px，写入渲染项 min-height）；column 指定列（1-based，与子元素 column 属性同一套重排逻辑） | `MasonryItem[] \| string` | `[]` |
 
 ### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | 瀑布流子项，子项自动 `break-inside: avoid`；带 `column` 属性（1-based）的子项会被重排到指定列 |
+| 默认 | 瀑布流子项，子项自动 `break-inside: avoid`；带 `column` 属性（1-based）的子项会被重排到指定列；items 属性显式非空时子项被忽略（items 优先） |
 
 ### 子元素属性
 

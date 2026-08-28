@@ -3,6 +3,29 @@ import { OASElement } from '@oas-ui/core'
 const DEFAULT_COLUMNS = 4
 const DEFAULT_GAP = 8
 
+/**
+ * items 数据驱动通道的单项（最小集，跟随库内 items 惯例；无 html 字段先例故只做 text）：
+ * - `text`：纯文本内容（textContent 安全渲染）
+ * - `height`：子项最小高度提示（px），写入渲染项 min-height
+ * - `column`：指定列（1-based），与子元素 `column` 属性共用同一套重排逻辑
+ */
+export interface MasonryItem {
+  text?: string
+  /** 子项最小高度提示（px）：写入渲染项 min-height */
+  height?: number
+  /** 指定列（1-based）：与子元素 column 属性同一套重排逻辑，非法值忽略 + dev 告警 */
+  column?: number | string
+}
+
+const warnedItemsJson = new Set<string>()
+
+/** 非法 items JSON（含非数组）：dev 下 console.warn 一次（同值去重），回落 slot 子元素通道 */
+function warnItemsJson(raw: string): void {
+  if (warnedItemsJson.has(raw)) return
+  warnedItemsJson.add(raw)
+  console.warn('[oas-masonry] items 属性非法 JSON，已回落 slot 子元素通道')
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -23,6 +46,22 @@ const STYLE = `
   width: 100%;
   break-inside: avoid;
   margin-bottom: var(--oas-masonry-item-gap, var(--oas-space-2));
+}
+/* items 数据驱动渲染项：与 slot 通道子项同款不断列 + 行距行为（行距变量同样生效）；
+   卡片视觉对齐库内 card token（bg/border/radius-lg/padding） */
+.masonry-item {
+  display: inline-block;
+  width: 100%;
+  box-sizing: border-box;
+  break-inside: avoid;
+  margin-bottom: var(--oas-masonry-item-gap, var(--oas-space-2));
+  padding: var(--oas-space-4);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-lg);
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  font-size: var(--oas-font-size-md);
+  line-height: 1.5;
 }
 `
 
@@ -140,6 +179,12 @@ function resolveBaseColumns(
  *   margin-bottom、列距走 column-gap；纯数字补 px；非法值回退默认
  * - `fresh`：持续监听子项尺寸变化（ResizeObserver），变化时触发一次 update 提供重算机会。
  *   CSS columns 下尺寸变化浏览器本就自动重排，fresh 是语义对齐 + 未来切换 JS 实现的钩子
+ * - `items`：数据驱动通道，JSON 数组 `[{text, height?, column?}]`（也可 property 赋数组）。
+ *   显式非空时优先于 slot 子元素（slot 子元素忽略）；缺省/空数组/非法 JSON 回落 slot 通道
+ *   （非法 JSON dev 告警，同值去重）。`text` 纯文本安全渲染；`height` 最小高度（px）写入
+ *   渲染项 min-height；`column` 指定列与子元素 `column` 属性同一套重排逻辑。
+ *   渲染项在 shadow `.masonry` 容器内（CSS columns 直接生效），响应式列数/两值 gap/fresh
+ *   同样作用于渲染项；每项 `part="masonry-item"` 供宿主 ::part 定制
  *
  * 子元素属性：
  * - `column`：指定子项所属列（1-based，超出当前列数/非整数忽略 + dev 告警）。
@@ -150,12 +195,24 @@ function resolveBaseColumns(
  */
 export class OASMasonry extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['columns', 'gap', 'fresh']
+    return ['columns', 'gap', 'fresh', 'items']
   }
 
   private rootEl: HTMLElement | null = null
   /** fresh 开启时的 ResizeObserver（监听子项尺寸变化触发 update） */
   private freshObserver: ResizeObserver | null = null
+  /** items 通道当前解析结果（property getter 返回；Vue/React property 赋值经 setter 反射到 attribute） */
+  private _items: MasonryItem[] = []
+  /** 上次 items 原始串（渲染重建守卫：items 未变时跳过 DOM 重建，fresh RO 触发的 update 免无谓销毁） */
+  private lastItemsRaw: string | null = null
+
+  /** property 通道：setter 反射到 attribute 统一解析链路（与 menu/sidebar/command 的 items 惯例一致） */
+  get items(): MasonryItem[] {
+    return this._items
+  }
+  set items(value: MasonryItem[] | string) {
+    this.setAttribute('items', typeof value === 'string' ? value : JSON.stringify(value))
+  }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -188,7 +245,13 @@ export class OASMasonry extends OASElement {
     if (!this.rootEl) return
     this.applyColumns()
     this.applyGap()
-    this.applyPinnedColumns()
+    // items 数据驱动：显式非空优先（slot 子元素忽略）；缺省/空/非法回落 slot 通道
+    const itemEls = this.syncItems()
+    if (itemEls.length > 0) {
+      this.applyPinnedColumns(itemEls, this.rootEl)
+    } else {
+      this.applyPinnedColumns(Array.from(this.children), this)
+    }
     this.syncFresh()
   }
 
@@ -286,15 +349,98 @@ export class OASMasonry extends OASElement {
   }
 
   /**
-   * column 指定列：子元素带 `column`（1-based）时按列重排 DOM——CSS columns 按流序填列，
-   * 把指定项物理移动到目标列头部区域即落入目标列。
+   * items 解析：JSON 数组 → MasonryItem[]；无 items 属性 / 空数组 / 非法 JSON（含非数组）
+   * 返回 null（回落 slot 子元素通道，非法 JSON dev 告警同值去重）。
+   * 项校验对齐库内 items 惯例（sidebar parseEntry）：非对象项忽略、字段类型不符忽略。
+   */
+  private parseItems(): MasonryItem[] | null {
+    const raw = this.getAttr('items', '')
+    if (raw === '') return null
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      warnItemsJson(raw)
+      return null
+    }
+    if (!Array.isArray(parsed)) {
+      warnItemsJson(raw)
+      return null
+    }
+    if (parsed.length === 0) return null
+    const items: MasonryItem[] = []
+    for (const entry of parsed) {
+      if (!entry || typeof entry !== 'object') continue
+      const e = entry as Record<string, unknown>
+      const item: MasonryItem = {}
+      if (typeof e.text === 'string') item.text = e.text
+      // height：正数 / 数字字符串 → min-height px（纯数字补 px 库内惯例）
+      if (typeof e.height === 'number' && Number.isFinite(e.height) && e.height > 0) {
+        item.height = e.height
+      } else if (typeof e.height === 'string' && /^\d+(\.\d+)?$/.test(e.height.trim())) {
+        item.height = Number(e.height)
+      }
+      // column：数字 / 字符串原样透传（重排逻辑统一校验 + dev 告警）
+      if (typeof e.column === 'number' && Number.isFinite(e.column)) item.column = e.column
+      else if (typeof e.column === 'string') item.column = e.column
+      items.push(item)
+    }
+    return items
+  }
+
+  /**
+   * items 数据驱动渲染：items 显式非空时把数据项渲染进 shadow `.masonry`
+   * （CSS columns 直接生效），slot 子元素忽略（slot 隐藏、light DOM 保留不破坏宿主引用）。
+   * items 缺省/空/非法回落 slot 通道（slot 显示、清掉上次渲染项，零回归）。
+   *
+   * 渲染重建守卫：items 原始串未变时跳过重建（幂等；fresh RO 触发的 update 不无谓销毁重建）。
+   * 返回 items 模式下的渲染项元素列表（slot 模式返回空数组）。
+   */
+  private syncItems(): Element[] {
+    const raw = this.getAttr('items', '')
+    const items = this.parseItems()
+    const slot = this.shadow.querySelector('slot')
+    const rendered = [...this.rootEl!.querySelectorAll('.masonry-item')]
+    // items 未变（fresh RO 等触发的重复 update）：沿用现有渲染项，跳过重建
+    if (raw === this.lastItemsRaw) {
+      if (rendered.length > 0) return rendered
+      if (slot) slot.hidden = false
+      return []
+    }
+    this.lastItemsRaw = raw
+    for (const el of rendered) el.remove()
+    if (!items) {
+      if (slot) slot.hidden = false
+      return []
+    }
+    if (slot) slot.hidden = true
+    const els: Element[] = []
+    for (const item of items) {
+      const el = document.createElement('div')
+      el.className = 'masonry-item'
+      el.setAttribute('part', 'masonry-item')
+      if (item.text) el.textContent = item.text // textContent 安全渲染（库内 items 无 html 字段先例）
+      if (item.height != null) el.style.minHeight = `${item.height}px`
+      if (item.column != null) el.setAttribute('column', String(item.column))
+      this.rootEl!.appendChild(el)
+      els.push(el)
+    }
+    return els
+  }
+
+  /**
+   * column 指定列：带 `column`（1-based）的元素按列重排 DOM——CSS columns 按流序填列，
+   * 把指定项物理移动到目标列头部区域即落入目标列。items 通道与 slot 子元素通道共用同一套。
+   *
+   * elements：候选元素列表（同容器内）；container：重排落点容器
+   * （slot 通道为宿主 light DOM，items 通道为 shadow `.masonry`）。
    *
    * 简化实现（与断点共存）：每次 update 按「当前视口生效列数」重算，目标列区域均分流序
    * （每列 ceil(总项数/列数) 个槽位，对应 CSS columns 均衡填充）；非法值
    * （非整数/≤0/超出列数）忽略 + dev 告警（同值去重）。重排幂等：同一输入产出同一顺序。
    */
-  private applyPinnedColumns(): void {
-    const children = Array.from(this.children)
+  private applyPinnedColumns(elements: Element[], container: ParentNode): void {
+    const children = elements
     if (!children.some((c) => c.hasAttribute('column'))) return
 
     const raw = this.getAttr('columns', String(DEFAULT_COLUMNS))
@@ -354,7 +500,7 @@ export class OASMasonry extends OASElement {
     for (const el of slots) {
       if (el) fragment.appendChild(el)
     }
-    this.appendChild(fragment)
+    container.appendChild(fragment)
   }
 
   /**
@@ -362,6 +508,7 @@ export class OASMasonry extends OASElement {
    * （图片晚到高度变化等），尺寸变化时触发一次 update 提供「重算机会」。
    * CSS columns 实现下尺寸变化浏览器本就自动重排，故 update 内无额外 JS 重排逻辑——
    * fresh 是语义对齐 + 未来切换 JS 实现的钩子。断开连接时自动清理观察器。
+   * items 通道监听渲染项（.masonry-item）；slot 通道监听 light DOM 子项。
    */
   private syncFresh(): void {
     const want = this.hasAttr('fresh')
@@ -380,8 +527,12 @@ export class OASMasonry extends OASElement {
     }
     // 每次 update 重建观察目标（覆盖新增/移除子项；observe 已观察元素幂等无害）
     this.freshObserver.disconnect()
-    for (const child of Array.from(this.children)) {
-      this.freshObserver.observe(child)
+    const rendered = this.rootEl
+      ? [...this.rootEl.querySelectorAll('.masonry-item')]
+      : []
+    const targets = rendered.length > 0 ? rendered : Array.from(this.children)
+    for (const target of targets) {
+      this.freshObserver.observe(target)
     }
   }
 }

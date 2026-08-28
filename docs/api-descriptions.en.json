@@ -1071,11 +1071,12 @@
     "attrs": {
       "columns": "Number of columns (default 4); supports breakpoint shorthand: a base value plus space-separated `breakpoint:value` pairs (e.g. `1 md:2 lg:4`; breakpoints `sm`=640px / `md`=768px / `lg`=1024px / `xl`=1280px, mobile-first min-width, base below breakpoints); invalid values (non-positive integers / decimals / 0 / negatives) fall back to 1",
       "gap": "Spacing (px, default 8). A single value sets the column gap; two values `row col` (e.g. `8 16`) set the row gap on children's margin-bottom and the column gap; plain numbers get `px` appended; invalid values fall back to the default",
-      "fresh": "Keep listening for child size changes via ResizeObserver and trigger a recompute; under the CSS columns implementation the browser already reflows automatically, so `fresh` is a semantic hook aligned with a future JS-based layout"
+      "fresh": "Keep listening for child size changes via ResizeObserver and trigger a recompute; under the CSS columns implementation the browser already reflows automatically, so `fresh` is a semantic hook aligned with a future JS-based layout",
+      "items": "Masonry items JSON `[{text, height?, column?}]`; also assignable as an array property. When explicitly set and non-empty it takes precedence over slotted children (ignored); absent / empty array / invalid JSON fall back to the slot channel (invalid JSON logs a deduplicated dev warning). text is rendered safely as plain text; height is the item's minimum height (px, written to the rendered item's min-height); column pins the item to a column (1-based, same reorder logic as the child `column` attribute)"
     },
     "events": {},
     "slots": {
-      "": "Masonry child items; children automatically get `break-inside: avoid`; children with a `column` attribute (1-based) are reordered into the target column"
+      "": "Masonry child items; children automatically get `break-inside: avoid`; children with a `column` attribute (1-based) are reordered into the target column; when the `items` attribute is explicitly set and non-empty, children are ignored (items take precedence)"
     }
   },
   "oas-mentions": {
