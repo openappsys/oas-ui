@@ -519,6 +519,7 @@
   "oas-container": {
     "attrs": {
       "center": "是否居中（`center=\"false\"` 关闭）",
+      "fluid": "布尔，完全不挂 max-width（纯流体 100%）；与 `size` 正交，存在时 size 限宽失效",
       "padding": "内边距 token/值（作用于 `padding-inline`）",
       "size": "定宽档位，映射 `--oas-container-*` token"
     },
@@ -786,10 +787,12 @@
   "oas-flex": {
     "attrs": {
       "align": "交叉轴对齐",
-      "direction": "主轴方向",
-      "gap": "子项间距",
-      "justify": "主轴对齐",
-      "vertical": "纵向简写",
+      "direction": "主轴方向；支持断点简写：空格分隔的基础值 + 若干 `断点:值`（如 `column md:row`），断点表 `sm`=640px / `md`=768px / `lg`=1024px / `xl`=1280px（移动优先 min-width），低于断点用基础值；非法断点名/值回落基础值并告警",
+      "fill": "子项等分填满容器（`flex: 1` 等价物）",
+      "fill-ratio": "配合 `fill` 的分配比例（百分比，默认 100）：子项自身可设、容器级作缺省",
+      "gap": "子项间距；支持断点简写（如 `8px md:16px`，断点表同 `direction`）",
+      "justify": "主轴对齐：`start`/`center`/`end`/`between`/`around`/`evenly`（与 `flex-*`/`space-*` 旧枚举双向兼容）",
+      "vertical": "纵向简写（= direction:column，优先于 direction）",
       "wrap": "换行"
     },
     "events": {},
@@ -841,17 +844,20 @@
   },
   "oas-grid": {
     "attrs": {
+      "align": "块向轴对齐（align-items）：`start` / `center` / `end` / `stretch` / `baseline`；非法值回落 `stretch` + dev 告警（同值去重）",
       "cols": "总列数",
       "columns": "自动等分数（simple-grid，有值时忽略子项 span）",
-      "gap": "间距"
+      "gap": "间距；单值两轴同值，两值空格分隔「行 列」（如 `8 16` 行 8 列 16）；三值以上非法静默回落 `0`",
+      "justify": "行内轴对齐（justify-items）：`start` / `center` / `end` / `stretch`；非法值回落 `stretch` + dev 告警（同值去重）"
     },
     "events": {},
     "slots": {}
   },
   "oas-grid-item": {
     "attrs": {
-      "offset": "左侧偏移列数",
-      "span": "跨列数"
+      "offset": "左侧偏移列数；支持断点简写（如 `0 lg:4`：基础值 + 空格分隔 `断点:值`，断点 sm=640 / md=768 / lg=1024 / xl=1280）",
+      "order": "排序权重（数字，默认 0）；数值越大越靠后，用于列重排（偏移重排场景的等价表达）",
+      "span": "跨列数；支持 `auto`（内容自然宽）与断点简写（如 `24 md:12`：基础值 + 空格分隔 `断点:值`，断点 sm=640 / md=768 / lg=1024 / xl=1280）"
     },
     "events": {},
     "slots": {}
