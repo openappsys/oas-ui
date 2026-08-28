@@ -2,6 +2,29 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.3.0] - 2026-08-28
+
+### 特性
+
+- **config-provider**：
+  - `config` 组件级默认配置 JSON 通道（core 新增 `readConfigValue(el, tag, key)`；首个消费键 `oas-button` variant，显式属性优先）
+  - `direction` 全局方向注入（写宿主 `dir` 属性继承穿透；scroll-area 缺省回落注入值）
+  - `z-index` 浮层全局起始值（`--oas-z-index-base`；浮层 41 处接线为 `calc(base + 层默认值)`——整体抬升且层间顺序保持；overlay portal 通道起始+递增）
+  - `disabled` 全局禁用 + 双侧豁免（`disabled-skip` 单组件逃逸 / `disabledExempt` tag 整类豁免；23 个表单族组件消费；toggle-group/segmented 顺带补宿主级 disabled）
+- **oas-app**：`message`/`notification` JSON 全局默认配置（命令式 API 与调用参数合并、调用优先；注册表 DOM 包含关系判定嵌套就近）
+- **oas-theme-editor**：颜色函数值双通道编辑（自研确定性 CSS 颜色解析器 hex/rgb/hsl/hwb/oklch/oklab + 浏览器代理解析兜底；`var()`/`calc()` 色板置灰；编辑不再破坏原值）/ `importJson(json)` 导入 + `exportCss()` 导出 / `preset` 属性 + `applyPreset(name)` 三套内置预设（compact/comfortable/default，只调尺寸族）/ 数字 token 滑块（range+number 双向联动）/ 组折叠 + token 名搜索过滤
+- **modal 命令式确认框**：`modal.confirm/info/success/warning/error` + `destroyAllModal()`；异步 onOk 加载态（Promise resolve 关闭/reject 保持，复用组件既有 `loading` 属性）；`{ close() }` 句柄、挂最近 oas-app 容器；组件扩 `type`/`ok-text`/`cancel-text`/`no-cancel`/`focus-ok` 五属性 + `close()` 转 public
+
+### 修复
+
+- **app 宿主注册表**：单槽位改栈式——嵌套 app 移除内层后外层自动接管（挂载点与配置都回外层，不再回退 document.body）；并列宿主移除后注册者先注册者接管
+- **table 行内编辑退出**：exitEdit 单元格重画改走 cellNode（尊重 render/cellTemplate 富内容）+ Esc 取消时 blur 误提交修复（先置 editState=null 再清 input）
+
+### 杂项
+
+- **单测**：新增约 85 条（框架级容器组 + 全局禁用 + modal 命令式）；全量 3677
+- **e2e 基建**：qa-regression 新增 theme-editor 颜色函数值回归；contrast-gate 清单补 theme-editor/config-provider/app 三页
+
 ## [2.2.9] - 2026-08-28
 
 ### 特性

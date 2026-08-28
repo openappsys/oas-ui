@@ -905,6 +905,28 @@ table 组件按能力并集补齐（列设置/多列排序/多级表头/内置�
 - 全量 e2e 1378 PASS（chromium 全量 + firefox 抽样 + docs-site）
 - 浏览器实测：masonry 断点列数 4→1 切换/column 指定列落位/items 渲染、aspect-ratio token 比例实测（square 1.0/wide 1.78/golden 1.62）、grid demo 明暗主题色块梯度、table 合计 all 翻页恒定/page 小计
 
+## v2.3.0 框架级容器能力补齐 + modal 命令式确认框 → 已发布
+
+### 特性
+
+- **config-provider 四通道**：`config` 组件级默认配置 JSON（core `readConfigValue`，首消费键 oas-button variant）/ `direction` 全局 RTL 注入（scroll-area 消费）/ `z-index` 浮层全局起始值（`calc(base + 层默认值)` 层序保持）/ `disabled` 全局禁用 + 双侧豁免（`disabled-skip` 单组件逃逸 + `disabledExempt` tag 整类豁免，23 个表单族组件消费）
+- **oas-app**：`message`/`notification` JSON 全局默认配置（命令式 API 合并、调用优先）；宿主注册表栈式管理（嵌套 app 移除内层后外层自动接管）
+- **oas-theme-editor**（无外部对照形态）：颜色函数值双通道编辑（自研 CSS 颜色解析器，rgb/oklch/color-mix 不再回落黑色）/ `importJson`+`exportCss` 闭环 / `preset` 三套内置预设 / 数字 token 滑块 / 组折叠+搜索过滤
+- **modal 命令式确认框**：`modal.confirm/info/success/warning/error` + `destroyAllModal()`；异步 onOk 加载态（Promise resolve 关闭/reject 保持）；`{ close() }` 句柄、挂最近 oas-app 容器；组件扩 type/ok-text/cancel-text/no-cancel/focus-ok 五属性
+
+### 修复
+
+- **app 宿主注册表**：单槽位→栈式（嵌套 app 移除内层不再回退 body，外层自动接管）
+- **table 行内编辑退出**：exitEdit 重画走 cellNode（尊重 render/cellTemplate 富内容）+ Esc 取消时 blur 误提交修复
+
+### 验收
+
+- 全量单测 3677 / typecheck / build / api:check PASS
+- 全量 e2e 1380 PASS（chromium 全量 + firefox 抽样 + docs-site；含 axe/vue-prop-hijack/dark/visual）
+- 感知对比度门禁 4558 元素采样 0 不达标（theme-editor/config-provider/app 页入清单）
+- 浏览器实测 light+dark：variant 注入切换/RTL/z-index 层序 6080=5000+1080/message 全局时长/禁用双侧豁免/theme-editor 五件/modal 命令式全通；console 零告警
+- research 同步：capabilities/floating 三件（29 源全量逐家实查）+ component-matrix 三行更正 + scenario-matrix Confirm 三缺口转 ✅ + run-all 生成物
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
