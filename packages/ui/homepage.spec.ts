@@ -113,12 +113,16 @@ test.describe('官网首页（重设计版）', () => {
     expect(shadow).not.toBe('none')
   })
 
-  test('英文首页渲染 + 中英切换链路', async ({ page }) => {
-    await page.goto('/en/', { waitUntil: 'domcontentloaded' })
-    const hero = page.locator('.home-hero')
+  test('英文首页渲染 + 中英切换链路', async ({ browser, page }) => {
+    // 首访语言适配后：en 浏览器落 /en/（zh 浏览器无 pref 时访问 /en/ 会被弹回中文）
+    const ctxEn = await browser.newContext({ locale: 'en-US' })
+    const pEn = await ctxEn.newPage()
+    await pEn.goto('/', { waitUntil: 'domcontentloaded' })
+    const hero = pEn.locator('.home-hero')
     await expect(hero).toBeAttached()
     await expect(hero.locator('.hh-title')).toContainText('framework-agnostic')
-    // 中英切换：页面文案跟 locale 走
+    await ctxEn.close()
+    // zh 浏览器：中文首页
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('.home-hero .hh-title')).toContainText('框架无关的')
   })

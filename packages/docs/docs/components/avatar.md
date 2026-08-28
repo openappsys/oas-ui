@@ -120,6 +120,15 @@
   <oas-avatar size="48">多</oas-avatar>
 </DemoBlock>
 
+## text 属性驱动
+
+`text` 属性驱动首字符渲染，且是**响应式**的：运行时修改 `text` 即时生效（attribute 变化触发重渲染）。默认回退到宿主 `textContent` 首字符——那是连接时的一次性快照，之后改文本内容不会自动更新；需要动态切换文字请用 `text` 属性。
+
+<DemoBlock title="text 属性驱动首字符">
+  <oas-avatar size="48" text="张"></oas-avatar>
+  <oas-avatar size="48" text="王五"></oas-avatar>
+</DemoBlock>
+
 ## API
 
 ### oas-avatar
