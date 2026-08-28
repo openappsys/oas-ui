@@ -1506,10 +1506,14 @@
   "oas-scroll-area": {
     "attrs": {
       "auto-hide": "The scrollbar is shown only while scrolling/hovering, then auto-hides after a timeout",
+      "end-distance": "Trigger distance for `oas-end-reached` (px, default `0`): within N px of the bottom/right edge counts as reached",
       "height": "Viewport height (px); when unset, grows with the content",
+      "scroll-shadow": "Scroll edge shadow (CSS-only): the shadow fades at each edge as you scroll, hinting that more content exists",
+      "stick-to-bottom": "Stick to bottom: when new content is appended and the user is at the bottom (≤8px), auto-scroll to the new bottom; never interrupts reading history",
       "width": "Viewport width (px); when unset, fills the host width"
     },
     "events": {
+      "oas-end-reached": "Fired when scrolling reaches the container bottom (or the horizontal right edge), `detail: { direction: 'bottom' | 'right' }`; re-arms only after leaving the edge",
       "oas-scroll": "Scroll event (rAF-throttled), `detail: { scrollTop, scrollLeft }`"
     },
     "slots": {}
@@ -1685,14 +1689,25 @@
   },
   "oas-splitter": {
     "attrs": {
-      "max": "Left panel maximum ratio (%)",
-      "min": "Left panel minimum ratio (%)",
-      "percent": "Left panel ratio (%)"
+      "collapsed": "Controlled collapse: when present, collapses the panel before the first divider (written back automatically on collapse; external set/remove takes effect immediately)",
+      "collapsible": "Show a collapse button on the divider; click to collapse/expand the preceding panel",
+      "lazy": "Lazy rendering: while dragging, only the divider moves visually; sizes are written back and panels re-rendered on release (for heavy panels)",
+      "max": "Maximum ratio of the preceding panel: numbers as percentage, `200px` suffix clamps in pixels; invalid values fall back to 90",
+      "min": "Minimum ratio of the preceding panel: numbers as percentage, `200px` suffix clamps in pixels; invalid values fall back to 10",
+      "percent": "Ratio of the preceding panel (%)",
+      "sizes": "Multi-panel mode panel ratios (comma-separated percentages, e.g. `30,40,30`); falls back to equal split when count mismatches panel count",
+      "vertical": "Vertical direction: panels stack top-to-bottom, divider is horizontal, keyboard uses ArrowUp/Down"
     },
     "events": {
-      "oas-resize": "Fired after resizing, `detail: { percent }`"
+      "oas-collapse": "Fired when the collapse button toggles, `detail: { collapsed, side }` (side=left means the panel before the divider)",
+      "oas-resize": "Fired after resizing. Two-panel mode `detail: { percent }`; multi-panel mode `detail: { percent, index, sizes }`"
     },
-    "slots": {}
+    "slots": {
+      "handle": "Custom handle content inside the divider (icon/dots etc.); falls back to the default grip",
+      "left": "Left panel content (two-panel mode)",
+      "pane-${i}": "Internal slot: assigned automatically per panel index in multi-panel mode; not for host use",
+      "right": "Right panel content (two-panel mode)"
+    }
   },
   "oas-statistic": {
     "attrs": {
