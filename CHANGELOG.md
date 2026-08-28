@@ -2,6 +2,16 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.3.1] - 2026-08-28
+
+### 特性
+
+- **table**：可编辑单元格可感知线索——hover/focus-visible 淡底色（`--oas-color-bg-hover`）+ `cursor: text`（sticky 列不透明变体不透出下层滚动内容、条纹/选中行叠加有序、编辑中不适用）+ 铅笔编辑图标 hover/focus 显现（库内 editPath，`aria-hidden`、opacity 过渡、编辑退出重挂）+ `title` 双击编辑提示（zh/en 本地化）；保持双击进入（单击会废掉单元格文本选中复制）
+
+### 杂项
+
+- **单测**：+5（图标渲染/title 本地化/STYLE 规则/编辑中移除与退出恢复）；**e2e**：qa-regression 真实 hover 回归 +1；全量 3682
+
 ## [2.3.0] - 2026-08-28
 
 ### 特性
