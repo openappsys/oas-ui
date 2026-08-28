@@ -927,6 +927,18 @@ table 组件按能力并集补齐（列设置/多列排序/多级表头/内置�
 - 浏览器实测 light+dark：variant 注入切换/RTL/z-index 层序 6080=5000+1080/message 全局时长/禁用双侧豁免/theme-editor 五件/modal 命令式全通；console 零告警
 - research 同步：capabilities/floating 三件（29 源全量逐家实查）+ component-matrix 三行更正 + scenario-matrix Confirm 三缺口转 ✅ + run-all 生成物
 
+## v2.3.1 table 可编辑单元格可感知线索 → 已发布
+
+### 特性
+
+- **table 可编辑单元格可感知线索**：此前只有 tabIndex + Enter/F2/双击三个不可见交互，用户无途径得知可编辑。新增 hover/focus-visible 淡底色（`--oas-color-bg-hover`）+ `cursor: text`（sticky 列不透明变体不透底、条纹/选中叠加有序、编辑中不适用）；铅笔编辑图标 hover 显现（复用库内 editPath，平时干净，编辑退出重挂）；`title` 双击提示（zh/en 本地化）。保持双击进入（单击会废掉文本选中复制）
+
+### 验收
+
+- 全量单测 3682 / typecheck / build / api:check PASS
+- 全量 e2e 1382 PASS（含 qa-regression 真实 hover 断言：computed 底色变化 + cursor + 图标 opacity 0→1）
+- 浏览器实测明暗主题 hover 铅笔可见；console 零告警
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
