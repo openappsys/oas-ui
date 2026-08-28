@@ -60,6 +60,8 @@
   </oas-space>
 </DemoBlock>
 
+**职责边界**：sider 的折叠触发器（折叠按钮、菜单折叠操作）归 `oas-sidebar` 负责——`oas-sidebar` 自带 `collapsible` 折叠能力并派发折叠事件，`oas-sider` 监听后同步自身 `collapsed` 窄条；`oas-layout` 只负责骨架排布（槽位、主轴方向、视口锁定），**不重复实现折叠触发逻辑**。
+
 ## 视口锁定布局
 
 `viewport`：admin 后台模式——布局锁定视口高，**顶栏/底栏固定，侧栏与内容各自独立滚动**（页面整体不出滚动条）。默认不带此属性时是整页滚动模型（内容多高页面多高）。
@@ -105,6 +107,8 @@
 </DemoBlock>
 
 > 内嵌宽度契约：`oas-sider` 管轨道宽度（`--oas-sider-width`，默认 200px，折叠 64px），内嵌的 `oas-sidebar` 自动填满轨道（不再用自身默认 220px，轨道 padding 同时卸除）；`oas-sidebar` 独立使用时仍走 `--oas-sidebar-width`（默认 220px）。两个变量职责：**sider 管轨道、sidebar 管独立**，改任一侧都不会错位。
+
+**对照说明**：固定头部 / 固定侧栏（fixed 定位）是经典后台布局场景——`viewport` 视口锁定模式即为此而设：顶栏/底栏天然固定、侧栏与内容各自独立滚动，等价覆盖该类需求而无需手动套 fixed 定位，语义更现代。
 
 ## API
 

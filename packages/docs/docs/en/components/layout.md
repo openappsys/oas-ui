@@ -60,6 +60,8 @@ The `side` attribute (`left` default / `right` / `top`) controls where the sider
   </oas-space>
 </DemoBlock>
 
+**Responsibility boundary**: the sider's collapse trigger (collapse button, menu collapse actions) belongs to `oas-sidebar` — it ships its own `collapsible` folding ability and dispatches collapse events, which `oas-sider` listens to and mirrors onto its own `collapsed` narrow bar; `oas-layout` only arranges the skeleton (slots, main-axis direction, viewport lock) and does **not** re-implement any collapse-trigger logic.
+
 ## Viewport-locked layout
 
 `viewport`: the admin-console mode — the layout locks to the viewport height, **header/footer stay fixed while the sider and content scroll independently** (the page itself never scrolls). Without the attribute, the default is the full-page scrolling model (the page grows as tall as its content).
@@ -105,6 +107,8 @@ The height defaults to `100dvh` (mobile address-bar friendly, cascading back to 
 </DemoBlock>
 
 > Nested-width contract: `oas-sider` owns the track width (`--oas-sider-width`, default 200px, 64px collapsed); a nested `oas-sidebar` fills the track automatically (its own default 220px no longer applies and the track padding is removed). A standalone `oas-sidebar` still uses `--oas-sidebar-width` (default 220px). Two variables, two scopes: **sider owns the track, sidebar owns the standalone case** — change either side and they never misalign.
+
+**Mapping note**: fixed-header / fixed-sider layouts (classic admin patterns using `position: fixed`) are covered equivalently by the `viewport` viewport-locked mode — the header/footer stay fixed naturally while the sider and content scroll independently, no manual `fixed` positioning needed, with a more modern semantics.
 
 ## API
 
