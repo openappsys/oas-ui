@@ -206,6 +206,46 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
     font-size: var(--oas-font-size-xs);
     color: var(--oas-color-text-secondary);
   }
+  /* 4 级主色梯度循环：便于区分相邻块（token 派生，dark 自适应） */
+  oas-grid > *:nth-child(4n+1) .demo-grid-box,
+  oas-grid > .demo-grid-box:nth-child(4n+1) {
+    background: color-mix(in srgb, var(--oas-color-primary) 14%, var(--oas-color-bg));
+    color: var(--oas-color-primary);
+  }
+  oas-grid > *:nth-child(4n+2) .demo-grid-box,
+  oas-grid > .demo-grid-box:nth-child(4n+2) {
+    background: color-mix(in srgb, var(--oas-color-primary) 28%, var(--oas-color-bg));
+    color: var(--oas-color-primary);
+  }
+  oas-grid > *:nth-child(4n+3) .demo-grid-box,
+  oas-grid > .demo-grid-box:nth-child(4n+3) {
+    background: color-mix(in srgb, var(--oas-color-primary) 48%, var(--oas-color-bg));
+    color: #fff;
+  }
+  oas-grid > *:nth-child(4n+4) .demo-grid-box,
+  oas-grid > .demo-grid-box:nth-child(4n+4) {
+    background: color-mix(in srgb, var(--oas-color-primary) 72%, var(--oas-color-bg));
+    color: #fff;
+  }
+  /* dark 下主色变浅（#9ecdff），拉大梯度间距保持可分辨 */
+  .dark oas-grid > *:nth-child(4n+1) .demo-grid-box,
+  .dark oas-grid > .demo-grid-box:nth-child(4n+1) {
+    background: color-mix(in srgb, var(--oas-color-primary) 18%, var(--oas-color-bg));
+  }
+  .dark oas-grid > *:nth-child(4n+2) .demo-grid-box,
+  .dark oas-grid > .demo-grid-box:nth-child(4n+2) {
+    background: color-mix(in srgb, var(--oas-color-primary) 36%, var(--oas-color-bg));
+  }
+  .dark oas-grid > *:nth-child(4n+3) .demo-grid-box,
+  .dark oas-grid > .demo-grid-box:nth-child(4n+3) {
+    background: color-mix(in srgb, var(--oas-color-primary) 58%, var(--oas-color-bg));
+    color: var(--oas-color-bg);
+  }
+  .dark oas-grid > *:nth-child(4n+4) .demo-grid-box,
+  .dark oas-grid > .demo-grid-box:nth-child(4n+4) {
+    background: color-mix(in srgb, var(--oas-color-primary) 84%, var(--oas-color-bg));
+    color: var(--oas-color-bg);
+  }
   .demo-grid-box.short {
     height: 28px;
   }
