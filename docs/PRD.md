@@ -882,6 +882,29 @@ table 组件按能力并集补齐（列设置/多列排序/多级表头/内置�
 - oas-avatar/oas-table/oas-popconfirm/oas-form/oas-layout 组件单测全绿 + 浏览器实测
 - ui-spec §组件合并验收清单加「HTML 注入安全」项（与 axe 并列）
 
+## v2.2.9 布局组能力补齐 + table 合计范围 → 已发布
+
+### 特性
+
+- **布局组能力补齐三批**：
+  - 排布四原语：grid `gap` 行列分离/span·offset 断点简写/order/justify·align/span=auto 自宽列；flex space-evenly/fill·fill-ratio/direction·gap 断点；container fluid/breakout
+  - 交互容器：splitter vertical/collapsible（含 oas-collapse）/双击复位/lazy/slot=handle/像素 min-max/multiple 多面板；scroll-area 编程滚动四方法/scroll-shadow/stick-to-bottom/oas-end-reached+end-distance/RTL
+  - 展示容器：masonry 响应式列数（断点简写）/gap 行列分离/fresh 持续监听尺寸/子元素 column 指定列；aspect-ratio 预定义 ratio token 六档（square/landscape/portrait/wide/ultrawide/golden）+ number 兼容；layout 职责边界注明（sider 折叠归 sidebar、viewport 覆盖 fixed 场景）
+- **masonry items 数据驱动**：`items` JSON 数组渲染卡片流（显式优先于 slot，缺省/非法回落），字段 `{ text?, height?, column? }`
+- **table 合计范围**：`summary-scope=all|page`（all 默认：分页切片前全量合计翻页不变；page 当前页小计）+ scope=all 聚合性能（全量 flat 记忆化 + 顺序无关聚合跳过排序）
+- **docs**：组件分组侧栏与总览页按语义重构；首访语言适配（zh* 留中文、其余 /en/ 兜底 + localStorage oas-lang 持久化）；grid demo 色块 4 级主色梯度循环（相邻块可分辨）
+
+### 修复
+
+- **grid 单值 gap 真实生效**：applyGap 单值分支改「先清长hand再写简写」——原顺序在真实浏览器 CSSOM 下简写被长hand清空、computed gap 掉 0（CSR/DSD 两路径失效，happy-dom 不展开简写单测漏检；ssr-dsd 真水合布局稳定断言暴露）
+- **e2e 基建**：Playwright 默认 locale 锁 zh-CN（首访语言适配后 en-US 被重定向英文页致批量落空）+ demo-coverage 缺口补全（avatar text / table multi-sort·filter-values·summary-scope 演示 + table 分页/过滤/列重排/列宽与 scroll-area 到底事件探针）
+
+### 验收
+
+- 全量单测 3589 / typecheck / build / api:check PASS
+- 全量 e2e 1378 PASS（chromium 全量 + firefox 抽样 + docs-site）
+- 浏览器实测：masonry 断点列数 4→1 切换/column 指定列落位/items 渲染、aspect-ratio token 比例实测（square 1.0/wide 1.78/golden 1.62）、grid demo 明暗主题色块梯度、table 合计 all 翻页恒定/page 小计
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：

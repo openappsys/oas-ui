@@ -2,6 +2,32 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.2.9] - 2026-08-28
+
+### 特性
+
+- **布局组能力补齐三批**：
+  - grid：`gap` 两值行列分离 / span·offset 断点简写 / `order` / `justify`·`align` 容器对齐 / `span=auto` 自宽列
+  - flex：`space-evenly` / `fill`·`fill-ratio` / direction·gap 断点简写
+  - container：`fluid` 流体 / `breakout` 突破（含滚动条溢出裁剪兜底）
+  - splitter：`vertical` / `collapsible`（含 `oas-collapse` 事件 + collapsed 回写）/ 双击复位 / `lazy` / `slot=handle` 自定义手柄 / 像素 min-max / `multiple` 多面板（sizes 数组向后兼容）
+  - scroll-area：编程滚动四方法 / `scroll-shadow` / `stick-to-bottom` / `oas-end-reached`+`end-distance` / RTL
+  - masonry：`columns` 断点简写响应式列数 / `gap` 两值行列分离 / `fresh` 持续监听尺寸 / 子元素 `column` 指定列
+  - aspect-ratio：预定义 ratio token 六档（`square`/`landscape`/`portrait`/`wide`/`ultrawide`/`golden`）+ `ratio` 兼容 number
+- **masonry**：`items` 数据驱动通道（JSON 数组渲染卡片流，显式优先于 slot、缺省/非法 JSON 回落；字段 `{ text?, height?, column? }`；导出 `MasonryItem` 类型）
+- **table**：`summary-scope=all|page` 合计范围（all 默认：分页切片前全量合计翻页不变；page 当前页小计）+ scope=all 聚合性能（全量 flat 记忆化、顺序无关聚合跳过排序）
+- **docs**：组件分组侧栏与总览页按语义重构；首访语言适配（zh* 留中文、其余 /en/ 兜底 + 手动选择 localStorage 持久化）；grid demo 色块 4 级主色梯度循环
+
+### 修复
+
+- **grid**：单值 `gap` 真实生效——applyGap 改「先清长hand再写简写」（原顺序在真实浏览器 CSSOM 下简写被清空、computed gap 掉 0；happy-dom 不展开简写单测漏检，ssr-dsd 真水合布局稳定断言暴露）
+- **e2e 基建**：Playwright 默认 locale 锁 zh-CN（首访语言适配后 en-US 重定向英文页致批量落空）+ demo-coverage 缺口补全（avatar `text` / table `multi-sort`·`filter-values`·`summary-scope` 演示 + table 分页/过滤/列重排/列宽与 scroll-area 到底事件探针步骤）
+
+### 杂项
+
+- **单测**：新增约 45 条（布局三批 + masonry items + table summary-scope）；全量 3589
+- **docs**：layout.md 补职责边界说明（sider 折叠归 sidebar、viewport 覆盖 fixed 场景）；demo-coverage 探针新增 scrollbottom/resizecol 动作
+
 ## [2.2.8] - 2026-08-27
 
 ### 特性
