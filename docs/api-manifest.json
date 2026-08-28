@@ -8014,6 +8014,12 @@
         "observed": true
       },
       {
+        "name": "summary-scope",
+        "type": "string",
+        "default": "all",
+        "observed": true
+      },
+      {
         "name": "selected",
         "type": "string",
         "default": "",
