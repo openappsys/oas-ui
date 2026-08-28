@@ -38,6 +38,9 @@ function scrollTo(el: OASScrollArea, left: number, top: number): void {
 const flushRaf = (): Promise<void> =>
   new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
+/** 冲洗 MutationObserver 微任务回调 */
+const flushMicrotasks = (): Promise<void> => Promise.resolve()
+
 describe('OASScrollArea', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -357,6 +360,208 @@ describe('OASScrollArea', () => {
       )
       window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 45 }))
       expect(vp.scrollLeft).toBe(0)
+    })
+  })
+
+  describe('编程滚动方法', () => {
+    it('scrollTo：方法存在且按 options / (x, y) 写入视口滚动值', () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 300 })
+      expect(typeof el.scrollTo).toBe('function')
+      el.scrollTo({ top: 123 })
+      expect(vp.scrollTop).toBe(123)
+      el.scrollTo({ left: 45 })
+      expect(vp.scrollLeft).toBe(45)
+      // 原生 (x, y) 形式同样透传
+      el.scrollTo(10, 20)
+      expect(vp.scrollLeft).toBe(10)
+      expect(vp.scrollTop).toBe(20)
+    })
+
+    it('scrollToTop / scrollToBottom：即时（auto）与平滑（smooth，异步到达）滚到顶/底', async () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      expect(typeof el.scrollToTop).toBe('function')
+      expect(typeof el.scrollToBottom).toBe('function')
+      vp.scrollTop = 120
+      el.scrollToTop({ behavior: 'auto' })
+      expect(vp.scrollTop).toBe(0)
+      vp.scrollTop = 120
+      el.scrollToBottom({ behavior: 'auto' })
+      expect(vp.scrollTop).toBe(300)
+      // 默认 smooth：happy-dom 异步动画到达
+      vp.scrollTop = 0
+      el.scrollToBottom()
+      await new Promise((r) => setTimeout(r, 50))
+      expect(vp.scrollTop).toBe(300)
+      el.scrollToTop()
+      await new Promise((r) => setTimeout(r, 50))
+      expect(vp.scrollTop).toBe(0)
+    })
+
+    it('scrollIntoView：按选择器/元素定位并透传 block/inline 选项；无参委托视口', () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      expect(typeof el.scrollIntoView).toBe('function')
+      const target = document.createElement('p')
+      target.id = 'row-8'
+      el.appendChild(target)
+      const spy = vi.fn()
+      const orig = Element.prototype.scrollIntoView
+      Element.prototype.scrollIntoView = spy
+      try {
+        el.scrollIntoView('#row-8', { block: 'center', inline: 'nearest' })
+        expect(spy).toHaveBeenCalledTimes(1)
+        expect(spy.mock.calls[0]![0]).toEqual({ block: 'center', inline: 'nearest' })
+        el.scrollIntoView(target, { block: 'end' })
+        expect(spy).toHaveBeenCalledTimes(2)
+        expect(spy.mock.calls[1]![0]).toEqual({ block: 'end' })
+        // 无参 → 委托视口自身滚动（scrollIntoView 语义回退）
+        el.scrollIntoView()
+        expect(spy).toHaveBeenCalledTimes(3)
+        expect(spy.mock.instances[2]).toBe(vp)      } finally {
+        Element.prototype.scrollIntoView = orig
+      }
+    })
+  })
+
+  describe('end-reached 到底事件', () => {
+    it('滚到底派发 oas-end-reached{direction:bottom}；去抖：离开底部后才可再次触发', async () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      const dirs: string[] = []
+      el.addEventListener('oas-end-reached', (e: Event) =>
+        dirs.push((e as CustomEvent).detail.direction),
+      )
+      scrollTo(el, 0, 200) // 到底（maxScroll = 200）
+      await flushRaf()
+      expect(dirs).toEqual(['bottom'])
+      scrollTo(el, 0, 200) // 仍在底部：不重复派发
+      await flushRaf()
+      expect(dirs).toEqual(['bottom'])
+      scrollTo(el, 0, 100) // 离开底部：重置去抖
+      await flushRaf()
+      expect(dirs).toEqual(['bottom'])
+      scrollTo(el, 0, 200) // 回底：再次派发
+      await flushRaf()
+      expect(dirs).toEqual(['bottom', 'bottom'])
+    })
+
+    it('end-distance 阈值：距底 N px 内即算到底', async () => {
+      const el = mount({ 'end-distance': '20' })
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      let count = 0
+      el.addEventListener('oas-end-reached', () => count++)
+      scrollTo(el, 0, 180) // 距底 20px，阈值内 → 触发
+      await flushRaf()
+      expect(count).toBe(1)
+      scrollTo(el, 0, 170) // 距底 30px，阈值外 → 不触发（并重置去抖）
+      await flushRaf()
+      expect(count).toBe(1)
+      scrollTo(el, 0, 185) // 再次进入阈值 → 触发
+      await flushRaf()
+      expect(count).toBe(2)
+    })
+
+    it('end-distance 默认 0：仅精确到底触发', async () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      let count = 0
+      el.addEventListener('oas-end-reached', () => count++)
+      scrollTo(el, 0, 199) // 距底 1px：默认阈值 0 → 不触发
+      await flushRaf()
+      expect(count).toBe(0)
+      scrollTo(el, 0, 200)
+      await flushRaf()
+      expect(count).toBe(1)
+    })
+
+    it('横向到底派发 oas-end-reached{direction:right}', async () => {
+      const el = mount()
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
+      let dir = ''
+      el.addEventListener('oas-end-reached', (e: Event) => (dir = (e as CustomEvent).detail.direction))
+      scrollTo(el, 300, 0)
+      await flushRaf()
+      expect(dir).toBe('right')
+    })
+  })
+
+  describe('scroll-shadow 滚动边缘阴影', () => {
+    it('属性存在时视口带 CSS-only 边缘阴影样式（参照 modal 实现结构）', () => {
+      const el = mount({ 'scroll-shadow': '' })
+      const style = el.shadowRoot!.querySelector('style')!.textContent
+      expect(style).toContain(':host([scroll-shadow]) .viewport')
+      expect(style).toContain('radial-gradient')
+      expect(style).toContain('background-attachment')
+    })
+  })
+
+  describe('stick-to-bottom 贴底', () => {
+    it('已在底部（距底 8px 内）+ 追加内容 → 自动滚到底', async () => {
+      const el = mount({ 'stick-to-bottom': '' })
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      vp.scrollTop = 200
+      vp.dispatchEvent(new Event('scroll')) // 停靠底部 → stickToBottom = true
+      // 追加内容使高度增长
+      el.appendChild(document.createElement('p'))
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 400 })
+      await flushMicrotasks()
+      expect(vp.scrollTop).toBe(400)
+    })
+
+    it('不在底部（上翻阅读）+ 追加内容 → 不打断（scrollTop 不变）', async () => {
+      const el = mount({ 'stick-to-bottom': '' })
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 300 })
+      vp.scrollTop = 50
+      vp.dispatchEvent(new Event('scroll')) // 上翻 → stickToBottom = false
+      el.appendChild(document.createElement('p'))
+      mockSize(vp, { cw: 100, ch: 100, sw: 100, sh: 400 })
+      await flushMicrotasks()
+      expect(vp.scrollTop).toBe(50)
+    })
+  })
+
+  describe('RTL', () => {
+    it('dir=rtl 宿主：滚轮转译按负值 scrollLeft 语义工作，不抛错', () => {
+      const el = mount({ dir: 'rtl' })
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 }) // maxX = 300，RTL 区间 [-300, 0]
+      let ev = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 50 })
+      vp.dispatchEvent(ev)
+      expect(ev.defaultPrevented).toBe(true)
+      expect(vp.scrollLeft).toBe(-50)
+      ev = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 80 })
+      vp.dispatchEvent(ev)
+      expect(vp.scrollLeft).toBe(-130)
+      ev = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: -30 })
+      vp.dispatchEvent(ev)
+      expect(vp.scrollLeft).toBe(-100)
+      // 左缘（-300）继续前进：不拦截，链式传给页面
+      scrollTo(el, -300, 0)
+      ev = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 50 })
+      vp.dispatchEvent(ev)
+      expect(ev.defaultPrevented).toBe(false)
+      expect(vp.scrollLeft).toBe(-300)
+    })
+
+    it('RTL：横向 thumb 位置按绝对值换算（负 scrollLeft 不出界）', async () => {
+      const el = mount({ dir: 'rtl' })
+      const vp = viewport(el)
+      mockSize(vp, { cw: 100, ch: 100, sw: 400, sh: 100 })
+      scrollTo(el, -150, 0)
+      await flushRaf()
+      // maxScroll = 300，maxLeft = 75 → 75 * (150/300) = 37.5
+      expect(thumb(el, 'thumb-h').style.transform).toBe('translateX(37.5px)')
     })
   })
 })

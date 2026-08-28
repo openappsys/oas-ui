@@ -69,6 +69,8 @@ export const en: LocaleMessages = {
   'backTop.backToTop': 'Back to top',
   'pageHeader.back': 'Back',
   'splitter.adjust': 'Resize panel',
+  'splitter.collapse': 'Collapse panel',
+  'splitter.expand': 'Expand panel',
   'layout.sider': 'Sidebar',
   'sidebar.nav': 'Sidebar navigation',
   'sidebar.toggle': 'Collapse sidebar',

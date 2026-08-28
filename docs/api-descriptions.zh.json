@@ -1506,10 +1506,14 @@
   "oas-scroll-area": {
     "attrs": {
       "auto-hide": "滚动条仅在滚动/悬停时显示，超时自动隐藏",
+      "end-distance": "`oas-end-reached` 触发距离（px，默认 `0`）：距底/右边缘 N px 内即算到底",
       "height": "视口高度（px），不设置时随内容自然撑开",
+      "scroll-shadow": "滚动边缘阴影（CSS-only）：滚动到边缘时阴影渐隐提示还有内容",
+      "stick-to-bottom": "贴底：新内容追加时若当前停靠在底部（距底 ≤8px）自动滚到底，上翻阅读时不打断",
       "width": "视口宽度（px），不设置时铺满宿主宽度"
     },
     "events": {
+      "oas-end-reached": "滚动到达容器底部（横向到达右边缘）时派发，`detail: { direction: 'bottom' | 'right' }`；离开边缘后再回到边缘才可再次触发",
       "oas-scroll": "滚动事件（rAF 节流），`detail: { scrollTop, scrollLeft }`"
     },
     "slots": {}
@@ -1685,14 +1689,25 @@
   },
   "oas-splitter": {
     "attrs": {
-      "max": "左侧最大占比（%）",
-      "min": "左侧最小占比（%）",
-      "percent": "左侧面板占比（%）"
+      "collapsed": "受控折叠：存在即收起分隔条前一侧面板（组件折叠时自动写回；外部设置/移除即时生效）",
+      "collapsible": "分隔条上显示折叠按钮，点击收起/展开前一侧面板",
+      "lazy": "延迟渲染：拖拽中只动分隔条视觉位置，松手才写回比例并重渲面板（适合重内容面板）",
+      "max": "上一面板最大占比：数字按百分比，`200px` 后缀按像素夹取；非法回落默认 90",
+      "min": "上一面板最小占比：数字按百分比，`200px` 后缀按像素夹取；非法回落默认 10",
+      "percent": "上一面板占比（%）",
+      "sizes": "多面板模式各面板占比（逗号分隔百分比，如 `30,40,30`）；数量与面板数不匹配回落均分",
+      "vertical": "垂直方向：面板上下堆叠，分隔条横向，键盘用 ArrowUp/Down"
     },
     "events": {
-      "oas-resize": "调整后触发，`detail: { percent }`"
+      "oas-collapse": "折叠按钮切换，`detail: { collapsed, side }`（side=left 指分隔条前一侧）",
+      "oas-resize": "调整后触发。两面板 `detail: { percent }`；多面板 `detail: { percent, index, sizes }`"
     },
-    "slots": {}
+    "slots": {
+      "handle": "分隔条内自定义手柄内容（图标/圆点等），不设时回退默认 grip",
+      "left": "左面板内容（两面板模式）",
+      "pane-${i}": "内部插槽：多面板模式组件自动按面板索引分配，宿主无需设置",
+      "right": "右面板内容（两面板模式）"
+    }
   },
   "oas-statistic": {
     "attrs": {

@@ -96,6 +96,8 @@ export const zhCN = {
   'pageHeader.back': '返回',
   // splitter（分割面板）
   'splitter.adjust': '调整面板宽度',
+  'splitter.collapse': '收起面板',
+  'splitter.expand': '展开面板',
   // layout（布局容器）
   'layout.sider': '侧边栏',
   // sidebar（可折叠侧栏）
