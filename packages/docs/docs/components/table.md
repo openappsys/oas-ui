@@ -540,6 +540,7 @@ onMounted(() => {
 | `sticky-rows` | 吸顶行数（数字 N）：前 N 行吸顶于表头下方（配合滚动容器与固定列共存） | `string` | — |
 | `stripe` | 斑马纹：奇数/偶数行交替浅底色 | `boolean` | — |
 | `summary` | 合计配置 `[{ key, type: 'sum'\|'avg'\|'count', label? }]`，JSON 字符串 | `string` | — |
+| `summary-scope` | — | `string` | `all` |
 
 ### 事件
 
