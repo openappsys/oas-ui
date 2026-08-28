@@ -8014,6 +8014,12 @@
         "observed": true
       },
       {
+        "name": "summary-scope",
+        "type": "string",
+        "default": "all",
+        "observed": true
+      },
+      {
         "name": "selected",
         "type": "string",
         "default": "",
@@ -8447,12 +8453,16 @@
     "attrs": [
       {
         "name": "ratio",
-        "type": "string",
         "default": "",
         "observed": true
       }
     ],
-    "props": [],
+    "props": [
+      {
+        "name": "ratio",
+        "type": "string | number"
+      }
+    ],
     "events": [],
     "slots": [
       {
@@ -8633,6 +8643,11 @@
       },
       {
         "name": "gap",
+        "observed": true
+      },
+      {
+        "name": "fresh",
+        "type": "boolean",
         "observed": true
       }
     ],
