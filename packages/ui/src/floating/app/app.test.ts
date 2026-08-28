@@ -69,6 +69,47 @@ describe('oas-app', () => {
     expect(msg).not.toBeNull()
   })
 
+  it('嵌套 app 移除内层：外层宿主自动接管（栈式管理）', async () => {
+    const outer = document.createElement('oas-app')
+    outer.setAttribute('message', '{"duration": 800}')
+    const inner = document.createElement('oas-app')
+    inner.setAttribute('message', '{"duration": 1200}')
+    outer.appendChild(inner)
+    document.body.appendChild(outer)
+
+    // 内层在时：消息挂内层、用内层配置
+    message.info('内层')
+    await Promise.resolve()
+    expect(inner.querySelector('oas-message')?.getAttribute('duration')).toBe('1200')
+
+    // 移除内层：外层接管（挂载点与配置都回外层，而非回退 body）
+    destroyAllMessage()
+    inner.remove()
+    message.info('外层接管')
+    await Promise.resolve()
+    const msg = outer.querySelector('oas-message')!
+    expect(msg).not.toBeNull()
+    expect(msg.parentElement?.parentElement).toBe(outer)
+    expect(msg.getAttribute('duration')).toBe('800')
+  })
+
+  it('并列 app 移除后注册者：先注册者接管', async () => {
+    const first = document.createElement('oas-app')
+    const second = document.createElement('oas-app')
+    document.body.appendChild(first)
+    document.body.appendChild(second)
+
+    message.info('后注册优先')
+    await Promise.resolve()
+    expect(second.querySelector('oas-message')).not.toBeNull()
+
+    destroyAllMessage()
+    second.remove()
+    message.info('先注册接管')
+    await Promise.resolve()
+    expect(first.querySelector('oas-message')).not.toBeNull()
+  })
+
   it('app 与 config-provider 配套（app 嵌套在 config-provider 内）', async () => {
     const cp = document.createElement('oas-config-provider')
     cp.setAttribute('locale', 'en')
