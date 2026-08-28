@@ -196,6 +196,19 @@ Set `stripe` to alternate the background of odd/even rows, or `bordered` to draw
 
 The `summary` attribute is a JSON array `[{ key, type: 'sum' | 'avg' | 'count', label? }]` rendered as a summary row at the table footer: `label` is shown in the first non-aggregated column, and each aggregated value in its corresponding column. You can also write `summary: 'sum' | 'avg' | 'count'` directly on a column config.
 
+## Summary scope
+
+`summary-scope` controls the aggregation range of the summary row: `all` (default) totals the complete filtered result set before pagination slicing (stable across page flips), while `page` subtotals only the current page. The difference is visible when pagination is on.
+
+<DemoBlock title="Summary scope: all (default) vs page">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: 16px">
+    <oas-table pagination page-size="3" summary='[{"key":"age","type":"sum","label":"Total (all)"}]' columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"}]' data='[{"name":"Alice","age":30,"city":"Beijing"},{"name":"Bob","age":25,"city":"Shanghai"},{"name":"Carol","age":35,"city":"Shenzhen"},{"name":"David","age":28,"city":"Hangzhou"},{"name":"Emma","age":32,"city":"Guangzhou"},{"name":"Frank","age":27,"city":"Chengdu"}]' row-key="name"></oas-table>
+    <oas-table pagination page-size="3" summary-scope="page" summary='[{"key":"age","type":"sum","label":"Subtotal (page)"}]' columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"}]' data='[{"name":"Alice","age":30,"city":"Beijing"},{"name":"Bob","age":25,"city":"Shanghai"},{"name":"Carol","age":35,"city":"Shenzhen"},{"name":"David","age":28,"city":"Hangzhou"},{"name":"Emma","age":32,"city":"Guangzhou"},{"name":"Frank","age":27,"city":"Chengdu"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+In the first table above `summary-scope` is omitted (`all`): page 1 shows the total age sum of all 6 rows, 177. In the second `summary-scope="page"`: page 1 subtotal is the current page's 3 rows (30+25+35=90), and the subtotal changes as you flip pages.
+
 ## Expandable Rows
 
 <DemoBlock title="Expandable rows (expand field)">
@@ -276,11 +289,11 @@ Column drag reorder / resize fire `oas-column-order` / `oas-column-resize` (for 
 
 ## Multi-column sorting
 
-<DemoBlock title="Shift-click to multi-sort">
+<DemoBlock title="Shift-click to multi-sort (multi-sort)">
   <div style="width: 100%">
-    <oas-table id="table-multi-sort" row-key="name" columns='[{"key":"age","title":"Age","sortable":true},{"key":"name","title":"Name","sortable":true},{"key":"city","title":"City","sortable":true}]' data='[{"name":"Alice","age":30,"city":"Beijing"},{"name":"Bob","age":25,"city":"Shanghai"},{"name":"Carol","age":35,"city":"Shenzhen"},{"name":"David","age":25,"city":"Hangzhou"}]'></oas-table>
+    <oas-table id="table-multi-sort" multi-sort='[{"key":"age","order":"asc"},{"key":"name","order":"asc"}]' row-key="name" columns='[{"key":"age","title":"Age","sortable":true},{"key":"name","title":"Name","sortable":true},{"key":"city","title":"City","sortable":true}]' data='[{"name":"Alice","age":30,"city":"Beijing"},{"name":"Bob","age":25,"city":"Shanghai"},{"name":"Carol","age":35,"city":"Shenzhen"},{"name":"David","age":25,"city":"Hangzhou"}]'></oas-table>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-      Hold Shift and click several sortable columns to accumulate the sort (header shows priority 1, 2…); a plain click resets to single column.
+      The initial `multi-sort='[{"key":"age","order":"asc"},{"key":"name","order":"asc"}]'` declares the multi-column sort state as JSON (header shows priority 1, 2…). Hold Shift and click sortable columns to accumulate / toggle / remove sorts, writing back to `multi-sort`; a plain click resets to single column.
     </p>
   </div>
 </DemoBlock>
@@ -318,12 +331,13 @@ A column with `serialNumber: true` renders the row number (starting from 1, not 
 
 ## Column filter
 
-<DemoBlock title="Column filter (filterable)">
+<DemoBlock title="Column filter (filterable + filter-values controlled)">
   <div style="width: 100%">
-    <oas-table id="table-filter" row-key="name" columns='[{"key":"name","title":"Name","filterable":true},{"key":"city","title":"City","filterable":true,"filters":[{"label":"Beijing","value":"Beijing"},{"label":"Shanghai","value":"Shanghai"},{"label":"Shenzhen","value":"Shenzhen"}]},{"key":"age","title":"Age"}]' data='[{"name":"Alice","age":30,"city":"Beijing"},{"name":"Bob","age":25,"city":"Shanghai"},{"name":"Carol","age":35,"city":"Shenzhen"},{"name":"David","age":28,"city":"Shanghai"}]'></oas-table>
-    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-      Click the filter icon in a header to open the option popup; selecting a value filters rows and fires `oas-filter-change`. Current filter: <span id="table-filter-values">none</span>
-    </p>
+    <oas-table id="table-filter" filter-values='{"city":"Shanghai"}' row-key="name" columns='[{"key":"name","title":"Name","filterable":true},{"key":"city","title":"City","filterable":true,"filters":[{"label":"Beijing","value":"Beijing"},{"label":"Shanghai","value":"Shanghai"},{"label":"Shenzhen","value":"Shenzhen"}]},{"key":"age","title":"Age"}]' data='[{"name":"Alice","age":30,"city":"Beijing"},{"name":"Bob","age":25,"city":"Shanghai"},{"name":"Carol","age":35,"city":"Shenzhen"},{"name":"David","age":28,"city":"Shanghai"}]'></oas-table>
+    <div style="width: 100%; display: flex; align-items: center; gap: 12px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      Click the filter icon in a header to open the option popup; selecting a value filters rows and fires `oas-filter-change`. `filter-values` is the controlled attribute (JSON `{column: value}`; removing or emptying it clears the filter). Current filter: <span id="table-filter-values">none</span>
+      <oas-button size="small" onclick="window.clearTableFilter && window.clearTableFilter()">Clear filter</oas-button>
+    </div>
   </div>
 </DemoBlock>
 
@@ -477,11 +491,22 @@ onMounted(() => {
     document.querySelector('#table-pager-page').textContent = e.detail.page
   })
 
-  // Column filter: current filter feedback
-  document.querySelector('#table-filter')?.addEventListener('oas-filter-change', (e) => {
-    const vals = Object.values(e.detail.filters)
+  // Column filter: current filter feedback (renders the initial preset too + clear button)
+  const filterTable = document.querySelector('#table-filter')
+  const renderFilterFeedback = () => {
+    let vals = []
+    try {
+      const raw = filterTable?.getAttribute('filter-values')
+      vals = raw ? Object.values(JSON.parse(raw)) : []
+    } catch {}
     document.querySelector('#table-filter-values').textContent = vals.length ? vals.join(', ') : 'none'
-  })
+  }
+  filterTable?.addEventListener('oas-filter-change', renderFilterFeedback)
+  window.clearTableFilter = () => {
+    filterTable?.removeAttribute('filter-values')
+    renderFilterFeedback()
+  }
+  renderFilterFeedback()
 
   // Remote data + sort loading demo: sort triggers loading, simulated delay then clear sort + refill data
   const remote = document.querySelector('#table-remote')

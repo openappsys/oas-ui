@@ -173,6 +173,10 @@ const INTERACTIONS: Array<[string, string]> = [
 //   wait:<ms>     等待
 //   waitfor       sel 字段为 JS 条件表达式，等页面求值为真（demo 异步注入 onMounted 等）
 //   file:svg      设置 SVG 图片文件（走 accept 过滤但可用于触达 max 超限/预览）
+//   scrollbottom  把匹配容器 shadow 视口确定性滚到底（scrollTop=scrollHeight + 补发 scroll →
+//                 oas-end-reached；真实滚轮受鼠标位置影响不可靠）
+//   resizecol     DOM 列宽拖拽：在匹配 th 右缘热区派发 pointerdown/move/up 合成事件序列
+//                 （真实指针会被原生 draggable 拖拽启动/视口外遮挡干扰）
 const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   carousel: [['oas-carousel [part="arrow-next"]', 'click', '点下一张箭头 → oas-change']],
   tag: [
@@ -457,6 +461,15 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-table .action-btn', 'click', '再次进入编辑'],
     ['oas-table input.cell-editor', 'fill:回退', '修改值'],
     ['oas-table .action-btn.danger', 'click', '点取消 → oas-edit-cancel'],
+    [
+      '#table-builtin-pager .pagination oas-pagination [part="next"]',
+      'click',
+      '内置分页下一页 → oas-page-change',
+    ],
+    ['#table-filter .filter-btn', 'click', '点列头过滤图标打开弹层'],
+    ['#table-filter .filter-option', 'click', '点选项应用过滤 → oas-filter-change'],
+    ['#table-col-setting th[data-key]', 'dragmock', '拖列头重排 → oas-column-order'],
+    ['#table-col-setting th[data-key]', 'resizecol', '列宽热区拖拽 → oas-column-resize'],
   ],
   'page-header': [
     [
@@ -466,6 +479,13 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ],
   ],
   splitter: [['oas-splitter [part="splitter"]', 'drag', '拖拽分隔条 → oas-resize']],
+  'scroll-area': [
+    [
+      'oas-scroll-area',
+      'scrollbottom',
+      '视口确定性滚到底（shadow .viewport scrollTop=scrollHeight）→ oas-end-reached',
+    ],
+  ],
   tour: [
     ['oas-tour .beacon', 'click', '点信标 → 打开气泡'],
     ['oas-tour [part="hint-dismiss"]', 'click', '知道了 → 关闭气泡'],
@@ -596,6 +616,46 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
         }
       } else if (act.startsWith('wait:')) {
         await page.waitForTimeout(Number(act.slice(5)))
+      } else if (act === 'scrollbottom') {
+        // 把匹配容器 shadow 视口确定性滚到底：scrollTop 赋值会触发原生 scroll，
+        // 补发一次 scroll 事件保证 rAF 节流链一定启动（→ checkEndReached → oas-end-reached）
+        await page.locator(sel).evaluateAll((els) => {
+          for (const el of els) {
+            const vp = (el as HTMLElement).shadowRoot?.querySelector<HTMLElement>('.viewport')
+            if (!vp || vp.scrollHeight <= vp.clientHeight) continue
+            vp.scrollTop = vp.scrollHeight
+            vp.dispatchEvent(new Event('scroll'))
+          }
+        })
+      } else if (act === 'resizecol') {
+        // 列宽拖拽（DOM 确定性）：在首个可调宽列头右缘热区派发 pointerdown/move/up 序列。
+        // 真实指针会受原生 draggable 拖拽启动与视口外遮挡影响；pointerdown 里 setPointerCapture
+        // 对合成 pointerId 抛错（resizeState 已在抛错前写入），try 包住后 move/up 照常走 handler。
+        const el = page.locator(sel).first()
+        if (await el.count()) {
+          await el.evaluate((th) => {
+            const host = th as HTMLElement
+            const rect = host.getBoundingClientRect()
+            const x = rect.right - 3
+            const y = rect.top + rect.height / 2
+            const fire = (type: string, cx: number) => {
+              try {
+                host.dispatchEvent(
+                  new PointerEvent(type, {
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: cx,
+                    clientY: y,
+                    pointerId: 1,
+                  }),
+                )
+              } catch {}
+            }
+            fire('pointerdown', x)
+            fire('pointermove', x - 40)
+            fire('pointerup', x - 40)
+          })
+        }
       } else if (act.startsWith('renamecommit:')) {
         // tabs editable 重命名确认：dblclick 后输入框可能尚未就绪/焦点丢失，用 DOM 确定性提交
         // ——找输入框赋值 + dispatch Enter（fill/press 分步在 CI 高负载下时序不稳）
