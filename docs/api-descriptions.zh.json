@@ -1071,11 +1071,12 @@
     "attrs": {
       "columns": "列数（默认 4）；支持断点简写：空格分隔的基础值 + 若干 `断点:值`（如 `1 md:2 lg:4`，断点表 `sm`=640px / `md`=768px / `lg`=1024px / `xl`=1280px，移动优先 min-width，低于断点用基础值）；非正整数/非数字回退 1",
       "gap": "间距（px，默认 8）。单值=列距；两值「行 列」（如 `8 16`）行距作用于子项 margin-bottom、列距作用于 column-gap；纯数字自动补 px；非法值回退默认",
-      "fresh": "持续监听子项尺寸变化（ResizeObserver），变化时触发一次重算机会；CSS columns 实现下浏览器本就自动重排，fresh 为语义对齐与未来切换 JS 实现的钩子"
+      "fresh": "持续监听子项尺寸变化（ResizeObserver），变化时触发一次重算机会；CSS columns 实现下浏览器本就自动重排，fresh 为语义对齐与未来切换 JS 实现的钩子",
+      "items": "瀑布流项 JSON `[{text, height?, column?}]`，也可 property 赋数组；items 显式非空时优先于 slot 子元素（子元素忽略），缺省/空数组/非法 JSON 回落 slot 通道（非法 JSON dev 告警，同值去重）。text 纯文本安全渲染；height 子项最小高度（px，写入渲染项 min-height）；column 指定列（1-based，与子元素 column 属性同一套重排逻辑）"
     },
     "events": {},
     "slots": {
-      "": "瀑布流子项，子项自动 `break-inside: avoid`；带 `column` 属性（1-based）的子项会被重排到指定列"
+      "": "瀑布流子项，子项自动 `break-inside: avoid`；带 `column` 属性（1-based）的子项会被重排到指定列；items 属性显式非空时子项被忽略（items 优先）"
     }
   },
   "oas-mentions": {
