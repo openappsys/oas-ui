@@ -5452,6 +5452,21 @@
         "name": "auto-hide",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "scroll-shadow",
+        "observed": true
+      },
+      {
+        "name": "stick-to-bottom",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "end-distance",
+        "type": "string",
+        "default": "0",
+        "observed": true
       }
     ],
     "props": [],
@@ -5459,6 +5474,10 @@
       {
         "name": "oas-scroll",
         "detail": "{ scrollTop: vp ? vp.scrollTop : 0, scrollLeft: vp ? vp.scrollLeft : 0, }"
+      },
+      {
+        "name": "oas-end-reached",
+        "detail": "{ direction: atBottom ? 'bottom' : 'right' }"
       }
     ],
     "slots": [
@@ -6772,18 +6791,54 @@
         "type": "string",
         "default": "90",
         "observed": true
+      },
+      {
+        "name": "vertical",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "collapsible",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "collapsed",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "lazy",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "sizes",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
     "events": [
       {
         "name": "oas-resize",
-        "detail": "{ percent: clamped }"
+        "detail": "{ percent: clamped } | { percent: clamped, index, sizes: [...this.sizes] } | { percent: this.sizes[index], index, sizes: [...this.sizes] }"
+      },
+      {
+        "name": "oas-collapse",
+        "detail": "{ collapsed, side: 'left' }"
       }
     ],
     "slots": [
       {
+        "name": "handle"
+      },
+      {
         "name": "left"
+      },
+      {
+        "name": "pane-${i}"
       },
       {
         "name": "right"
