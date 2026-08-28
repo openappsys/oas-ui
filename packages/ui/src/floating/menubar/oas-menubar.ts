@@ -150,7 +150,7 @@ const STYLE = `
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  z-index: var(--oas-z-dropdown, 1000);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000));
 }
 .submenu.open {
   display: block;

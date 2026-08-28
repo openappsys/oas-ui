@@ -129,7 +129,7 @@ const STYLE = `
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
   box-shadow: 0 4px 16px color-mix(in srgb, var(--oas-color-overlay) 24%, transparent);
-  z-index: var(--oas-z-dropdown, 1000);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000));
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -278,7 +278,7 @@ const STYLE = `
   border-left: 1px solid var(--oas-color-border);
   border-top: 1px solid var(--oas-color-border);
   transform: rotate(45deg);
-  z-index: calc(var(--oas-z-dropdown, 1000) + 1);
+  z-index: calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000)) + 1);
   opacity: 0;
   transition: opacity 0.15s ease;
 }
@@ -318,7 +318,7 @@ const STYLE = `
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease;
-  z-index: calc(var(--oas-z-dropdown, 1000) - 1);
+  z-index: calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000)) - 1);
 }
 .backdrop.open {
   opacity: 1;

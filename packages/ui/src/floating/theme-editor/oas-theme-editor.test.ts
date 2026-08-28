@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import '@oas-ui/i18n'
 import { OASThemeEditor } from './index.js'
+import { parseCssColorToHex } from './oas-theme-editor.js'
 
 /**
  * 默认分组 + 默认 token 集对应的关键变量（theme/src/index.css 定义的语义 token）。
@@ -71,6 +72,28 @@ function colorInput(row: HTMLElement): HTMLInputElement {
 
 function numberInput(row: HTMLElement): HTMLInputElement {
   return row.querySelector<HTMLInputElement>('input[type="number"]')!
+}
+
+function colorTextInput(row: HTMLElement): HTMLInputElement {
+  return row.querySelector<HTMLInputElement>('input[type="text"]')!
+}
+
+function sliderInput(row: HTMLElement): HTMLInputElement {
+  return row.querySelector<HTMLInputElement>('input[type="range"]')!
+}
+
+function searchInput(el: OASThemeEditor): HTMLInputElement {
+  return el.shadowRoot!.querySelector<HTMLInputElement>('.search')!
+}
+
+function groups(el: OASThemeEditor): HTMLDetailsElement[] {
+  return [...el.shadowRoot!.querySelectorAll('details[part="group"]')] as HTMLDetailsElement[]
+}
+
+function groupFor(el: OASThemeEditor, title: string): HTMLDetailsElement | undefined {
+  return groups(el).find(
+    (g) => g.querySelector('.group-title')!.textContent === title,
+  )
 }
 
 describe('OASThemeEditor', () => {
@@ -202,5 +225,304 @@ describe('OASThemeEditor', () => {
     const el = mount({}, { '--oas-color-primary': '#0b6cff' })
     expect(rowFor(el, '--oas-color-primary')).toBeDefined()
     expect(rowFor(el, '--oas-space-2')).toBeUndefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 增强：颜色函数值编辑 / importJson / exportCss / preset / 滑块 / 折叠与搜索
+// ---------------------------------------------------------------------------
+
+describe('OASThemeEditor 颜色函数值编辑', () => {
+  const FN_VARS = {
+    '--demo-color-rgb': 'rgb(11, 108, 255)',
+    '--demo-color-oklch': 'oklch(0.55 0.13 250)',
+    '--demo-color-mix': 'color-mix(in srgb, #0b6cff 85%, black)',
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  it('parseCssColorToHex：hex/rgb/hsl/hwb/oklch 可解析，var()/color-mix/非法 返回 null', () => {
+    expect(parseCssColorToHex('#0b6cff')).toBe('#0b6cff')
+    expect(parseCssColorToHex('#0B6CFF')).toBe('#0b6cff')
+    expect(parseCssColorToHex('#0b6')).toBe('#00bb66')
+    expect(parseCssColorToHex('rgb(11, 108, 255)')).toBe('#0b6cff')
+    expect(parseCssColorToHex('rgb(11 108 255)')).toBe('#0b6cff')
+    expect(parseCssColorToHex('rgba(11, 108, 255, 0.5)')).toBe('#0b6cff')
+    expect(parseCssColorToHex('hsl(210, 50%, 50%)')).toBe('#4080bf')
+    expect(parseCssColorToHex('hwb(210 20% 30%)')).toBe('#3373b3')
+    expect(parseCssColorToHex('oklch(0.55 0.13 250)')).toBe('#2a75ba')
+    expect(parseCssColorToHex('var(--oas-color-primary)')).toBeNull()
+    expect(parseCssColorToHex('color-mix(in srgb, #0b6cff 85%, black)')).toBeNull()
+    expect(parseCssColorToHex('not-a-color')).toBeNull()
+    expect(parseCssColorToHex('')).toBeNull()
+  })
+
+  it('rgb() 值：色板解析为非黑 hex，文本框显示原值且可编辑', () => {
+    const el = mount({ token: '["--demo-color-rgb"]' }, FN_VARS)
+    const row = rowFor(el, '--demo-color-rgb')!
+    expect(colorInput(row).value).toBe('#0b6cff')
+    expect(colorInput(row).disabled).toBe(false)
+    expect(colorTextInput(row).value).toBe('rgb(11, 108, 255)')
+  })
+
+  it('oklch() 值：色板解析为非黑 hex（不回落 #000000）', () => {
+    const el = mount({ token: '["--demo-color-oklch"]' }, FN_VARS)
+    const row = rowFor(el, '--demo-color-oklch')!
+    expect(colorInput(row).value).toBe('#2a75ba')
+    expect(colorInput(row).value).not.toBe('#000000')
+    expect(colorTextInput(row).value).toBe('oklch(0.55 0.13 250)')
+  })
+
+  it('不可解析值（color-mix）：色板禁用置中性态，仅文本框可编辑；输入合法色后写回并重新启用色板', () => {
+    const el = mount({ token: '["--demo-color-mix"]' }, FN_VARS)
+    const row = rowFor(el, '--demo-color-mix')!
+    const swatch = colorInput(row)
+    expect(swatch.disabled).toBe(true)
+    expect(swatch.classList.contains('swatch-neutral')).toBe(true)
+    expect(colorTextInput(row).value).toBe('color-mix(in srgb, #0b6cff 85%, black)')
+
+    const text = colorTextInput(row)
+    text.value = 'rgb(1, 2, 3)'
+    text.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.style.getPropertyValue('--demo-color-mix')).toBe('rgb(1, 2, 3)')
+    expect(swatch.disabled).toBe(false)
+    expect(swatch.classList.contains('swatch-neutral')).toBe(false)
+    expect(swatch.value).toBe('#010203')
+  })
+
+  it('文本框非法颜色不写回 + is-invalid 提示态', () => {
+    const el = mount({ token: '["--demo-color-rgb"]' }, FN_VARS)
+    const row = rowFor(el, '--demo-color-rgb')!
+    const text = colorTextInput(row)
+    text.value = 'not-a-color'
+    text.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.style.getPropertyValue('--demo-color-rgb')).toBe('rgb(11, 108, 255)')
+    expect(text.classList.contains('is-invalid')).toBe(true)
+
+    text.value = 'var(--oas-color-primary)'
+    text.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.style.getPropertyValue('--demo-color-rgb')).toBe('rgb(11, 108, 255)')
+
+    text.value = '#abcdef'
+    text.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.style.getPropertyValue('--demo-color-rgb')).toBe('#abcdef')
+    expect(text.classList.contains('is-invalid')).toBe(false)
+  })
+})
+
+describe('OASThemeEditor importJson / exportCss', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  it('importJson 应用 token 集到 themeRoot 并同步面板（含 JSON 字符串入参）', () => {
+    const el = mount()
+    el.importJson({ '--oas-color-primary': '#ff6600', '--oas-font-size-md': '16px' })
+    expect(el.style.getPropertyValue('--oas-color-primary')).toBe('#ff6600')
+    expect(el.style.getPropertyValue('--oas-font-size-md')).toBe('16px')
+    const colorRow = rowFor(el, '--oas-color-primary')!
+    expect(colorRow.querySelector('.value')!.textContent).toBe('#ff6600')
+    expect(colorInput(colorRow).value).toBe('#ff6600')
+    expect(colorTextInput(colorRow).value).toBe('#ff6600')
+    const numRow = rowFor(el, '--oas-font-size-md')!
+    expect(numberInput(numRow).value).toBe('16')
+    expect(sliderInput(numRow).value).toBe('16')
+
+    el.importJson('{"--oas-space-2": "12px"}')
+    expect(el.style.getPropertyValue('--oas-space-2')).toBe('12px')
+  })
+
+  it('importJson 非 -- 键忽略 + dev 告警同值去重', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount()
+    el.importJson({ 'color-primary': '#ff0000', '--oas-space-2': '10px' })
+    expect(el.style.getPropertyValue('color-primary')).toBe('')
+    expect(el.style.getPropertyValue('--oas-space-2')).toBe('10px')
+    expect(warn).toHaveBeenCalledTimes(1)
+    el.importJson({ 'color-primary': '#00ff00' })
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('importJson 非法入参（非对象/坏 JSON）不写入并告警', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount()
+    el.importJson('not-json')
+    el.importJson(42 as unknown as Record<string, unknown>)
+    expect(el.exportJson()['--oas-color-primary']).toBe('#0b6cff')
+    expect(warn).toHaveBeenCalledTimes(2)
+  })
+
+  it('exportCss 输出 :root 块，每行一个变量', () => {
+    const el = mount({
+      token: JSON.stringify(['--oas-color-primary', '--oas-font-size-md']),
+    })
+    expect(el.exportCss()).toBe(
+      ':root {\n  --oas-color-primary: #0b6cff;\n  --oas-font-size-md: 14px;\n}',
+    )
+  })
+})
+
+describe('OASThemeEditor 预设主题', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  it('compact 预设：control-height 各档 -4px、space 各档按比例收缩', () => {
+    const el = mount()
+    el.applyPreset('compact')
+    expect(el.style.getPropertyValue('--oas-control-height-md')).toBe('28px')
+    expect(el.style.getPropertyValue('--oas-control-height-xs')).toBe('16px')
+    expect(el.style.getPropertyValue('--oas-space-4')).toBe('12px')
+    expect(el.style.getPropertyValue('--oas-space-6')).toBe('24px')
+    // 颜色不动
+    expect(el.style.getPropertyValue('--oas-color-primary')).toBe('#0b6cff')
+    // 面板就地刷新
+    expect(numberInput(rowFor(el, '--oas-control-height-md')!).value).toBe('28')
+    expect(sliderInput(rowFor(el, '--oas-space-4')!).value).toBe('12')
+  })
+
+  it('comfortable 预设：control-height 各档 +4px、space 各档按比例放大', () => {
+    const el = mount()
+    el.applyPreset('comfortable')
+    expect(el.style.getPropertyValue('--oas-control-height-md')).toBe('36px')
+    expect(el.style.getPropertyValue('--oas-control-height-xl')).toBe('52px')
+    expect(el.style.getPropertyValue('--oas-space-4')).toBe('20px')
+    expect(el.style.getPropertyValue('--oas-space-6')).toBe('40px')
+  })
+
+  it('default 预设等价 reset：清除 preset 写入的内联变量', () => {
+    const el = mount()
+    el.applyPreset('compact')
+    expect(el.style.getPropertyValue('--oas-control-height-md')).toBe('28px')
+    el.applyPreset('default')
+    expect(el.style.getPropertyValue('--oas-control-height-md')).toBe('')
+    expect(el.style.getPropertyValue('--oas-space-4')).toBe('')
+  })
+
+  it('非法 preset 名忽略 + dev 告警同值去重', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = mount()
+    el.applyPreset('bogus')
+    el.applyPreset('bogus')
+    // 非法名不写任何 preset token，保持 mount 种子值
+    expect(el.style.getPropertyValue('--oas-control-height-md')).toBe('32px')
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('preset 属性触发应用', () => {
+    const el = mount({ preset: 'compact' })
+    expect(el.style.getPropertyValue('--oas-control-height-md')).toBe('28px')
+    expect(el.style.getPropertyValue('--oas-space-2')).toBe('6px')
+  })
+})
+
+describe('OASThemeEditor 滑块联动', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('range 拖动同步 number 输入框并写回（含 min/max 边界）', () => {
+    const el = mount()
+    const row = rowFor(el, '--oas-font-size-md')!
+    const slider = sliderInput(row)
+    slider.value = '48'
+    slider.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.style.getPropertyValue('--oas-font-size-md')).toBe('48px')
+    expect(numberInput(row).value).toBe('48')
+
+    slider.value = '3'
+    slider.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.style.getPropertyValue('--oas-font-size-md')).toBe('8px')
+    expect(numberInput(row).value).toBe('8')
+
+    slider.value = '60'
+    slider.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.style.getPropertyValue('--oas-font-size-md')).toBe('48px')
+    expect(numberInput(row).value).toBe('48')
+  })
+
+  it('number 输入同步滑块值', () => {
+    const el = mount()
+    const row = rowFor(el, '--oas-font-size-md')!
+    const input = numberInput(row)
+    input.value = '16'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.style.getPropertyValue('--oas-font-size-md')).toBe('16px')
+    expect(sliderInput(row).value).toBe('16')
+  })
+})
+
+describe('OASThemeEditor 组折叠与搜索', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('组用 details/summary 可折叠，默认展开', () => {
+    const el = mount()
+    const colorGroup = groupFor(el, '颜色')!
+    expect(colorGroup.tagName.toLowerCase()).toBe('details')
+    expect(colorGroup.open).toBe(true)
+    expect(colorGroup.querySelector('.group-title')!.tagName.toLowerCase()).toBe('summary')
+    colorGroup.open = false
+    expect(colorGroup.open).toBe(false)
+    expect(rows(el).length).toBeGreaterThan(0)
+  })
+
+  it('搜索按 token 名子串过滤：匹配行保留、无匹配组隐藏、组自动展开', () => {
+    const el = mount()
+    const fontSizeGroup = groupFor(el, '字号')!
+    fontSizeGroup.open = false // 手动折叠，验证过滤时自动展开
+    const search = searchInput(el)
+    search.value = 'space'
+    search.dispatchEvent(new Event('input', { bubbles: true }))
+
+    expect(rowFor(el, '--oas-space-2')!.style.display).toBe('')
+    expect(rowFor(el, '--oas-color-primary')!.style.display).toBe('none')
+    expect(rowFor(el, '--oas-font-size-md')!.style.display).toBe('none')
+    expect(groupFor(el, '颜色')!.style.display).toBe('none')
+    expect(groupFor(el, '间距')!.style.display).toBe('')
+    expect(fontSizeGroup.open).toBe(true)
+  })
+
+  it('清空搜索恢复：全部行显示、组恢复过滤前的折叠状态', () => {
+    const el = mount()
+    const fontSizeGroup = groupFor(el, '字号')!
+    fontSizeGroup.open = false
+    const search = searchInput(el)
+    search.value = 'space'
+    search.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(fontSizeGroup.open).toBe(true)
+
+    search.value = ''
+    search.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(rowFor(el, '--oas-color-primary')!.style.display).toBe('')
+    expect(rowFor(el, '--oas-font-size-md')!.style.display).toBe('')
+    expect(groupFor(el, '颜色')!.style.display).toBe('')
+    expect(fontSizeGroup.open).toBe(false)
   })
 })

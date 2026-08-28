@@ -11,7 +11,7 @@ const STYLE = `
   position: fixed;
   inset: 0;
   background: var(--oas-color-overlay);
-  z-index: var(--oas-z-overlay, 1040);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040));
 }
 .panel {
   position: fixed;
@@ -21,7 +21,7 @@ const STYLE = `
   max-width: 90vw;
   background: var(--oas-color-bg);
   box-shadow: -4px 0 16px rgba(0, 0, 0, 0.12);
-  z-index: calc(var(--oas-z-overlay, 1040) + 1);
+  z-index: calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040)) + 1);
   display: flex;
   flex-direction: column;
   font-family: inherit;

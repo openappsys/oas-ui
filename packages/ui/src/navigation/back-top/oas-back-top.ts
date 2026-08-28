@@ -102,7 +102,7 @@ const STYLE = `
   display: inline-block;
   font-family: inherit;
   position: fixed;
-  z-index: var(--oas-z-fixed, 1030);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-fixed, 1030));
   --oas-back-top-size: var(--oas-control-height-lg);
 }
 :host([hidden]) {

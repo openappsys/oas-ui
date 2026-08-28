@@ -84,7 +84,7 @@ const STYLE = `
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: var(--oas-z-modal, 1050);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050));
   display: none;
   pointer-events: none;
 }
@@ -395,7 +395,7 @@ const STYLE = `
   background: var(--oas-color-primary);
   cursor: pointer;
   transform: translate(-50%, -50%);
-  z-index: var(--oas-z-modal, 1050);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050));
   box-shadow: 0 0 0 0 color-mix(in srgb, var(--oas-color-primary) 40%, transparent);
   animation: oas-tour-pulse 2s infinite;
 }
@@ -431,7 +431,7 @@ const STYLE = `
 }
 .hint-popup {
   position: fixed;
-  z-index: var(--oas-z-modal, 1050);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050));
   background: var(--oas-tour-popup-bg, var(--oas-color-bg));
   border-radius: var(--oas-radius-md);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--oas-color-overlay) 32%, transparent);
@@ -846,7 +846,7 @@ export class OASTour extends OASElement {
     const host = document.createElement('div')
     host.setAttribute('data-oas-tour-portal', '')
     host.style.cssText =
-      'position: fixed; inset: 0; pointer-events: none; z-index: var(--oas-z-modal, 1050);'
+      'position: fixed; inset: 0; pointer-events: none; z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050));'
     // portal shadow 内 :host 是 portal host，:host([open]) 不命中——镜像 open 态驱动 overlay 显示
     if (this.hasAttr('open')) host.setAttribute('data-open', '')
     target.appendChild(host)

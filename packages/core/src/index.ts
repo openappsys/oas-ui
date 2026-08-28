@@ -14,4 +14,5 @@ export {
   findConfigProvider,
   subscribeConfigProvider,
   notifyConfigProviders,
+  readConfigValue,
 } from './config-context.js'

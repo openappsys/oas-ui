@@ -5412,6 +5412,24 @@
       {
         "name": "theme",
         "observed": true
+      },
+      {
+        "name": "config",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "direction",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "z-index",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
@@ -5426,7 +5444,16 @@
   "oas-app": {
     "className": "OASApp",
     "sourceFile": "packages/ui/src/floating/app/oas-app.ts",
-    "attrs": [],
+    "attrs": [
+      {
+        "name": "message",
+        "observed": true
+      },
+      {
+        "name": "notification",
+        "observed": true
+      }
+    ],
     "props": [],
     "events": [],
     "slots": [
@@ -5467,6 +5494,12 @@
         "type": "string",
         "default": "0",
         "observed": true
+      },
+      {
+        "name": "direction",
+        "type": "string",
+        "default": "",
+        "observed": false
       }
     ],
     "props": [],
@@ -5529,6 +5562,10 @@
     "attrs": [
       {
         "name": "token",
+        "observed": true
+      },
+      {
+        "name": "preset",
         "observed": true
       }
     ],

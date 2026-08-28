@@ -7,7 +7,7 @@ const STYLE = `
   left: 0;
   right: 0;
   height: 3px;
-  z-index: var(--oas-z-message, 1060);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-message, 1060));
   pointer-events: none;
   font-family: inherit;
 }

@@ -245,7 +245,7 @@ const STYLE = `
   /* fixed + computePosition 锚定 trigger 下方：逃出祖先 overflow 容器（模态滚动 body 等），
      不再为该容器贡献溢出逼出滚动条（与 combobox 同思路，见 oas-select 定位契约） */
   position: fixed;
-  z-index: var(--oas-z-dropdown, 1000);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000));
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);

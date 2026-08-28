@@ -120,7 +120,7 @@ const STYLE = `
   position: absolute;
   top: calc(100% + var(--oas-space-1));
   right: 0;
-  z-index: 10;
+  z-index: calc(var(--oas-z-index-base, 0) + 10);
   min-width: 140px;
   max-height: 320px;
   overflow-y: auto;
@@ -173,7 +173,7 @@ const STYLE = `
 }
 /* 弹层打开时：溢出裁剪让位，弹层可见（含向左超出宿主左缘的部分） */
 :host(.overflow-open) {
-  z-index: 20;
+  z-index: calc(var(--oas-z-index-base, 0) + 20);
   overflow: visible;
 }
 `

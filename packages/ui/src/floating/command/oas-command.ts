@@ -94,7 +94,7 @@ const STYLE = `
   position: fixed;
   inset: 0;
   background: var(--oas-color-overlay);
-  z-index: var(--oas-z-modal, 1050);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050));
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -1228,7 +1228,7 @@ export class OASCommand extends OASElement {
     const host = document.createElement('div')
     host.setAttribute('data-oas-command-portal', '')
     host.style.cssText =
-      'position: fixed; inset: 0; pointer-events: none; z-index: var(--oas-z-modal, 1050);'
+      'position: fixed; inset: 0; pointer-events: none; z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050));'
     target.appendChild(host)
     const root = host.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${STYLE}</style>`

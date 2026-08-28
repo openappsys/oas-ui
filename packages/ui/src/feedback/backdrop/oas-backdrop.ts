@@ -11,7 +11,7 @@ const STYLE = `
   position: fixed;
   inset: 0;
   background: var(--oas-color-overlay);
-  z-index: var(--oas-z-overlay, 1040);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040));
 }
 :host([transparent]) .mask {
   background: transparent;

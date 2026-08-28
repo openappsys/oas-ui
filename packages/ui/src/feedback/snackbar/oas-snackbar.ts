@@ -9,7 +9,7 @@ const STYLE = `
   position: fixed;
   left: 50%;
   transform: translate(-50%, 0);
-  z-index: var(--oas-z-message, 1060);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-message, 1060));
   display: flex;
   align-items: center;
   gap: var(--oas-space-3);

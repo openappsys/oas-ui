@@ -90,7 +90,7 @@ aside {
   max-width: 80vw;
   background: var(--oas-color-bg);
   box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
-  z-index: var(--oas-z-overlay, 1040);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040));
   visibility: hidden;
   transform: translateX(-100%);
   transition:
@@ -112,7 +112,7 @@ aside {
   position: fixed;
   inset: 0;
   background: var(--oas-color-overlay);
-  z-index: calc(var(--oas-z-overlay, 1040) - 1);
+  z-index: calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040)) - 1);
   opacity: 0;
   visibility: hidden;
   transition:
@@ -531,7 +531,7 @@ aside {
   font-family: inherit;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  z-index: calc(var(--oas-z-overlay, 1040) - 1);
+  z-index: calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040)) - 1);
 }
 [part='trigger']:hover {
   background: var(--oas-color-bg-hover);
