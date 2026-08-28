@@ -497,7 +497,7 @@ th[data-editing-col='true'] {
 }
 .filter-panel {
   position: fixed;
-  z-index: 1000;
+  z-index: calc(var(--oas-z-index-base, 0) + 1000);
   min-width: 140px;
   padding: var(--oas-space-2);
   background: var(--oas-color-bg);
@@ -2041,12 +2041,20 @@ export class OASTableBase extends OASElement {
 
   /** 退出编辑态：还原单元格展示、清除高亮、刷新操作列按钮 */
   private exitEdit(st: EditState): void {
+    // 先置 null：清 td 会移除聚焦的 input 触发 blur，若 editState 未清空，blur→handleEditorBlur→submitEdit 会把值误提交
+    this.editState = null
     const col = this.effectiveColumns().find((c) => c.key === st.colKey)
-    st.td.textContent = col ? this.cellText(col, st.row) : ''
+    if (col) {
+      // 退出编辑后单元格重画走与正常渲染一致的 cellNode（尊重 render/cellTemplate 富内容），而非裸 textContent
+      st.td.textContent = ''
+      const node = this.cellNode(col, st.row)
+      if (node) st.td.appendChild(node)
+    } else {
+      st.td.textContent = ''
+    }
     st.td.classList.remove('editing')
     st.td.removeAttribute('data-editing')
     this.headerTh(st.colKey)?.removeAttribute('data-editing-col')
-    this.editState = null
     this.refreshActionCells()
   }
 

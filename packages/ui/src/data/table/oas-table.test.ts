@@ -922,6 +922,27 @@ describe('OASTable 行内编辑（inline editing）', () => {
     expect(detail).toEqual({ rowIndex: 0, key: '张三', column: 'name', value: '张三' })
   })
 
+  it('exitEdit 重画尊重 render/cellTemplate（Esc 取消后单元格保持富内容，不裸值）', () => {
+    const el = new OASTable()
+    el.setAttribute('editable', '')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute('data', JSON.stringify([{ name: '张三', price: 899 }]))
+    el.columns = [
+      { key: 'name', title: '姓名' },
+      { key: 'price', title: '价格', editable: true, render: (r) => `¥ ${r.price}` },
+    ]
+    document.body.appendChild(el)
+    const td = el.shadowRoot!.querySelector('td[data-col="price"]')!
+    // 初始渲染为 render 富内容「¥ 899」
+    expect(td.textContent).toBe('¥ 899')
+    // 双击进入编辑 + Esc 取消
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    const input = td.querySelector<HTMLInputElement>('input.cell-editor')!
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    // 退出后单元格仍应为 render 富内容「¥ 899」，而非裸值 899
+    expect(td.textContent).toBe('¥ 899')
+  })
+
   it('blur 提交：值变化后失焦提交', () => {
     const el = editMount()
     let detail: unknown
