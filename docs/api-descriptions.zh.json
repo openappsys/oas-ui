@@ -522,9 +522,10 @@
       "locale": "包裹子树的内置文案语言（需已注册），就近优先于全局 `setLocale()`",
       "size": "包裹组件的默认尺寸，组件自身未显式设置时生效",
       "theme": "包裹子树的主题，写入 `data-theme`",
-      "config": "组件级默认配置 JSON（如 `{\"oas-button\":{\"variant\":\"outlined\"}}`）；组件经就近读取 `[tag][key]`，自身显式属性优先；非法 JSON 忽略 + dev 告警",
+      "config": "组件级默认配置 JSON（如 `{\"oas-button\":{\"variant\":\"outlined\"}}`）；组件经就近读取 `[tag][key]`，自身显式属性优先；顶层键 `disabledExempt`（tag 数组）整类豁免全局禁用；非法 JSON 忽略 + dev 告警",
       "direction": "全局方向注入（`ltr`/`rtl`），设置时写入宿主 `dir` 属性（CSS direction 继承穿透 light/shadow 子树）；组件可经 `injectValue('direction')` 消费；非法值回落 `ltr` + dev 告警",
-      "z-index": "浮层全局起始值（正整数）；写入宿主 `--oas-z-index-base`，子树内浮层 z-index 统一抬升；非法值忽略 + dev 告警"
+      "z-index": "浮层全局起始值（正整数）；写入宿主 `--oas-z-index-base`，子树内浮层 z-index 统一抬升；非法值忽略 + dev 告警",
+      "disabled": "全局禁用：子树内已接入注入的表单族控件未显式设置 `disabled` 时统一禁用；组件级逃逸用 `disabled-skip` 属性、整类逃逸用 config JSON 顶层 `disabledExempt`"
     },
     "events": {},
     "slots": {}
@@ -1536,6 +1537,7 @@
   },
   "oas-segmented": {
     "attrs": {
+      "disabled": "禁用整个分段控件（自身显式禁用，或经 config-provider 全局禁用注入继承）",
       "options": "`[{ label, value, disabled? }]` JSON 字符串",
       "value": "选中值（缺省选第一项，受控属性）"
     },
@@ -2033,6 +2035,7 @@
   },
   "oas-toggle-group": {
     "attrs": {
+      "disabled": "禁用整个切换组（自身显式禁用，或经 config-provider 全局禁用注入继承）",
       "items": "选项 JSON（property 赋值单向反射 attribute）",
       "multiple": "多选模式（checkbox 语义）",
       "value": "当前值：单选为字符串；多选为 JSON 数组字符串"

@@ -134,7 +134,7 @@ input:disabled:hover {
 
 export class OASCombobox extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'placeholder', 'options', 'disabled', 'clearable', 'loading', 'filterable']
+    return ['value', 'placeholder', 'options', 'disabled', 'clearable', 'loading', 'filterable', 'disabled-skip']
   }
 
   private input: HTMLInputElement | null = null
@@ -222,7 +222,8 @@ export class OASCombobox extends OASElement {
     const i = this.input
     if (!i) return
     const placeholder = this.getAttr('placeholder', this.t('select.placeholder'))
-    const disabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    const disabled = this.injectDisabled()
     const value = this.getAttr('value', '')
 
     i.placeholder = placeholder
@@ -271,7 +272,7 @@ export class OASCombobox extends OASElement {
   }
 
   private open(): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     this.openState = true
     // 高亮当前选中项（可见列表内），否则回到首项
     const value = this.getAttr('value', '')
@@ -289,7 +290,7 @@ export class OASCombobox extends OASElement {
 
   /** 失焦/Esc/点击外部时回退为当前选中项 label（默认非破坏），并丢弃未提交的过滤词 */
   private handleBlur(): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     this.revert()
     this.close()
   }
@@ -311,7 +312,7 @@ export class OASCombobox extends OASElement {
   }
 
   private handleKey(e: KeyboardEvent): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       this.moveActive(1)
@@ -357,7 +358,7 @@ export class OASCombobox extends OASElement {
 
   /** clearable：清空 value 并派发 oas-clear（detail 为被清空前的值）+ oas-change（空值） */
   private clearValue(): void {
-    if (this.hasAttr('disabled')) return
+    if (this.injectDisabled()) return
     const prev = this.getAttr('value', '')
     this.query = ''
     this.openState = false

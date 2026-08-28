@@ -1,6 +1,6 @@
 # ConfigProvider 全局配置
 
-全局配置的注入入口，统一管理包裹子树的 `locale` / `size` / `theme` / `config` / `direction` / `z-index`。组件读取顺序：自身属性 > config-provider > 全局默认。
+全局配置的注入入口，统一管理包裹子树的 `locale` / `size` / `theme` / `config` / `direction` / `z-index` / `disabled`。组件读取顺序：自身属性 > config-provider > 全局默认。
 
 ## Locale 注入
 
@@ -116,6 +116,57 @@ config-provider 的 `theme` 会写入 `data-theme` 到自身，包裹的子树�
   </oas-config-provider>
 </DemoBlock>
 
+## 全局禁用
+
+`disabled` 开启后，子树内已接入禁用注入的表单族控件（button / input / select / checkbox / switch 等）在未显式设置 `disabled` 时统一禁用；控件自身显式 `disabled` 恒禁（不冲突）。两个豁免通道：
+
+- **`disabled-skip`（组件级）**：单个控件逃逸全局禁用（如禁用表单区里仍可点的帮助链接 / 重置按钮）——逃逸语义即「不读注入」
+- **`disabledExempt`（provider 级）**：config JSON 顶层声明 `{"disabledExempt":["oas-button"]}`，按 tag 整类豁免
+
+优先级：组件显式 `disabled` > `disabled-skip` 豁免 > `disabledExempt` 整类豁免 > provider 注入 disabled。`disabled-skip` 为全局约定属性（非组件自身 API，不进属性表）。导航/链接类组件（link / menu / breadcrumb 等）本批不接注入消费——它们天然豁免全局禁用，宿主也可按需用 `disabledExempt` 显式声明其他整类豁免。
+
+<DemoBlock title="全局禁用">
+  <oas-space>
+    <oas-button type="primary" onclick="setCpDisabled(true)">禁用</oas-button>
+    <oas-button onclick="setCpDisabled(false)">恢复</oas-button>
+  </oas-space>
+  <oas-config-provider id="cp-disabled" style="margin-top: 16px; display: block; padding: 16px; border-radius: 8px; background: var(--oas-color-bg)">
+    <oas-space wrap>
+      <oas-button type="primary">提交</oas-button>
+      <oas-input placeholder="请输入内容" style="width: 180px"></oas-input>
+      <oas-select placeholder="请选择" style="width: 160px"></oas-select>
+      <oas-checkbox>我已阅读协议</oas-checkbox>
+      <oas-switch></oas-switch>
+    </oas-space>
+  </oas-config-provider>
+</DemoBlock>
+
+<DemoBlock title="disabled-skip 单个逃逸">
+  <oas-space>
+    <oas-button type="primary" onclick="setCpSkip(true)">禁用</oas-button>
+    <oas-button onclick="setCpSkip(false)">恢复</oas-button>
+  </oas-space>
+  <oas-config-provider id="cp-skip" style="margin-top: 16px; display: block; padding: 16px; border-radius: 8px; background: var(--oas-color-bg)">
+    <oas-space>
+      <oas-button disabled-skip>仍可操作（disabled-skip）</oas-button>
+      <oas-button>跟随全局禁用</oas-button>
+    </oas-space>
+  </oas-config-provider>
+</DemoBlock>
+
+<DemoBlock title="disabledExempt 整类豁免">
+  <oas-space>
+    <oas-button type="primary" onclick="setCpExempt(true)">禁用</oas-button>
+    <oas-button onclick="setCpExempt(false)">恢复</oas-button>
+  </oas-space>
+  <oas-config-provider id="cp-exempt" config='{"disabledExempt":["oas-button"]}' style="margin-top: 16px; display: block; padding: 16px; border-radius: 8px; background: var(--oas-color-bg)">
+    <oas-space>
+      <oas-button type="primary">按钮整类豁免</oas-button>
+      <oas-input placeholder="输入框跟随禁用" style="width: 180px"></oas-input>
+    </oas-space>
+  </oas-config-provider>
+</DemoBlock>
+
 ## 就近优先
 
 内层 config-provider 覆盖外层：内层包裹的组件用内层配置，外层（未再嵌套）的组件用外层配置。
@@ -151,6 +202,21 @@ onMounted(async () => {
     if (z) cp?.setAttribute('z-index', String(z))
     else cp?.removeAttribute('z-index')
   }
+  window.setCpDisabled = (on) => {
+    const cp = document.getElementById('cp-disabled')
+    if (on) cp?.setAttribute('disabled', '')
+    else cp?.removeAttribute('disabled')
+  }
+  window.setCpSkip = (on) => {
+    const cp = document.getElementById('cp-skip')
+    if (on) cp?.setAttribute('disabled', '')
+    else cp?.removeAttribute('disabled')
+  }
+  window.setCpExempt = (on) => {
+    const cp = document.getElementById('cp-exempt')
+    if (on) cp?.setAttribute('disabled', '')
+    else cp?.removeAttribute('disabled')
+  }
   window.zMsg = () => message.success('浮层起始值生效')
 })
 </script>
@@ -161,8 +227,9 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `config` | 组件级默认配置 JSON（如 `{"oas-button":{"variant":"outlined"}}`）；组件经就近读取 `[tag][key]`，自身显式属性优先；非法 JSON 忽略 + dev 告警 | `string` | — |
+| `config` | 组件级默认配置 JSON（如 `{"oas-button":{"variant":"outlined"}}`）；组件经就近读取 `[tag][key]`，自身显式属性优先；顶层键 `disabledExempt`（tag 数组）整类豁免全局禁用；非法 JSON 忽略 + dev 告警 | `string` | — |
 | `direction` | 全局方向注入（`ltr`/`rtl`），设置时写入宿主 `dir` 属性（CSS direction 继承穿透 light/shadow 子树）；组件可经 `injectValue('direction')` 消费；非法值回落 `ltr` + dev 告警 | `string` | — |
+| `disabled` | 全局禁用：子树内已接入注入的表单族控件未显式设置 `disabled` 时统一禁用；组件级逃逸用 `disabled-skip` 属性、整类逃逸用 config JSON 顶层 `disabledExempt` | — | — |
 | `locale` | 包裹子树的内置文案语言（需已注册），就近优先于全局 `setLocale()` | — | — |
 | `size` | 包裹组件的默认尺寸，组件自身未显式设置时生效 | — | — |
 | `theme` | 包裹子树的主题，写入 `data-theme` | — | — |

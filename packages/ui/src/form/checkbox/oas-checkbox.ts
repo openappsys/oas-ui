@@ -13,7 +13,8 @@ label {
   font-size: var(--oas-font-size-md);
   color: var(--oas-color-text-primary);
 }
-:host([disabled]) label {
+:host([disabled]) label,
+:host([data-disabled]) label {
   cursor: not-allowed;
   color: var(--oas-color-text-disabled);
 }
@@ -28,7 +29,8 @@ input:focus-visible {
   outline: none;
   box-shadow: var(--oas-focus-ring);
 }
-:host([disabled]) input {
+:host([disabled]) input,
+:host([data-disabled]) input {
   cursor: not-allowed;
 }
 `
@@ -38,7 +40,7 @@ let cbIdCounter = 0
 
 export class OASCheckbox extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['checked', 'disabled', 'indeterminate', 'value']
+    return ['checked', 'disabled', 'indeterminate', 'value', 'disabled-skip']
   }
 
   private input: HTMLInputElement | null = null
@@ -83,8 +85,12 @@ export class OASCheckbox extends OASElement {
     const input = this.input
     if (!input) return
     const checked = this.hasAttr('checked')
-    const disabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    const disabled = this.injectDisabled()
     const indeterminate = this.hasAttr('indeterminate')
+
+    // 镜像最终禁用态到宿主 data-disabled（供 :host([data-disabled]) 样式消费，覆盖注入场景）
+    this.toggleAttribute('data-disabled', disabled)
 
     input.checked = checked
     input.disabled = disabled

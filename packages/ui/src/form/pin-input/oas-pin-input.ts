@@ -52,7 +52,7 @@ input:read-only {
 
 export class OASPinInput extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['length', 'value', 'mask', 'disabled', 'readonly', 'type', 'aria-invalid']
+    return ['length', 'value', 'mask', 'disabled', 'readonly', 'type', 'aria-invalid', 'disabled-skip']
   }
 
   private container: HTMLElement | null = null
@@ -92,7 +92,8 @@ export class OASPinInput extends OASElement {
     const container = this.container
     if (!container) return
     const length = Math.max(1, Number(this.getAttr('length', '6')) || 6)
-    const disabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    const disabled = this.injectDisabled()
     const readonly = this.hasAttr('readonly')
     const type = this.hasAttr('mask') ? 'password' : this.getAttr('type', 'text')
 
@@ -135,7 +136,7 @@ export class OASPinInput extends OASElement {
   }
 
   private onKeydown(e: KeyboardEvent): void {
-    if (this.hasAttr('disabled') || this.hasAttr('readonly')) return
+    if (this.injectDisabled() || this.hasAttr('readonly')) return
     const idx = this.cells.indexOf(e.target as HTMLInputElement)
     if (idx < 0) return
     if (e.key === 'ArrowLeft') {
@@ -172,7 +173,7 @@ export class OASPinInput extends OASElement {
   }
 
   private onInput(e: Event): void {
-    if (this.hasAttr('disabled') || this.hasAttr('readonly')) return
+    if (this.injectDisabled() || this.hasAttr('readonly')) return
     const idx = this.cells.indexOf(e.target as HTMLInputElement)
     if (idx < 0) return
     const cell = this.cells[idx]
@@ -183,7 +184,7 @@ export class OASPinInput extends OASElement {
   }
 
   private onPaste(e: ClipboardEvent): void {
-    if (this.hasAttr('disabled') || this.hasAttr('readonly')) return
+    if (this.injectDisabled() || this.hasAttr('readonly')) return
     const text = e.clipboardData?.getData('text') ?? ''
     if (!text) return
     e.preventDefault()

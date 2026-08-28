@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASSelect } from './index.js'
+import '../../floating/config-provider/index.js'
 
 const OPTIONS = JSON.stringify([
   { label: '苹果', value: 'apple' },
@@ -776,5 +777,51 @@ describe('OASSelect 子元素声明式通道（oas-option）', () => {
     const rows = [...vlist.shadowRoot!.querySelectorAll<HTMLElement>('[role="option"]')]
     expect(rows.length).toBe(2)
     expect(rows[0]!.textContent).toContain('苹果')
+  })
+})
+
+describe('OASSelect 全局禁用注入（config-provider disabled）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('provider disabled：select trigger 无显式 disabled 时继承禁用', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('disabled', '')
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    cp.appendChild(el)
+    document.body.appendChild(cp)
+
+    expect(trigger(el).disabled).toBe(true)
+  })
+
+  it('provider disabled + disabled-skip：trigger 保持可用', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('disabled', '')
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    el.setAttribute('disabled-skip', '')
+    cp.appendChild(el)
+    document.body.appendChild(cp)
+
+    expect(trigger(el).disabled).toBe(false)
+  })
+
+  it('provider disabled 时点击 trigger 不展开下拉', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('disabled', '')
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    cp.appendChild(el)
+    document.body.appendChild(cp)
+
+    open(el)
+    const dropdown = el.shadowRoot!.querySelector<HTMLElement>('.dropdown')!
+    expect(dropdown.classList.contains('open')).toBe(false)
   })
 })

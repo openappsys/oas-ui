@@ -105,7 +105,7 @@ const CLOSE_ICON = `
 
 export class OASDynamicTags extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['model-value', 'max', 'allow-duplicate', 'disabled', 'placeholder']
+    return ['model-value', 'max', 'allow-duplicate', 'disabled', 'placeholder', 'disabled-skip']
   }
 
   private tagsEl: HTMLElement | null = null
@@ -229,7 +229,8 @@ export class OASDynamicTags extends OASElement {
   private syncInputState(): void {
     const inputEl = this.inputEl
     if (!inputEl) return
-    const disabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    const disabled = this.injectDisabled()
     const overMax = this.tags.length >= this.maxValue()
     inputEl.disabled = disabled || overMax
     inputEl.placeholder = this.getAttr('placeholder', '')

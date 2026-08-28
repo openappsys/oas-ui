@@ -32,7 +32,11 @@ const OUT = join(ROOT, 'docs', 'api-manifest.json')
 const K = tsast.SyntaxKind
 
 const OBSERVED_GETTER = 'observedAttributes'
-const ATTR_HELPERS = new Set(['getAttr', 'hasAttr', 'injectValue'])
+
+/** 全局约定属性：跨组件通用、属库级约定而非组件自身 API，一律不进 manifest / API 表
+ *  （如全局禁用注入的组件级逃逸口 `disabled-skip`，由 config-provider 文档统一说明） */
+const GLOBAL_CONVENTION_ATTRS = new Set(['disabled-skip'])
+const ATTR_HELPERS = new Set(['getAttr', 'hasAttr', 'injectValue', 'injectDisabled'])
 
 // 跨组件属性补充：父组件通过 `getAttribute('x')` 读取子元素上的属性
 // （如 oas-tabs 读 oas-tab-panel 的 badge），子组件源码里没有 getAttr/hasAttr
@@ -285,6 +289,19 @@ function extractAttrs(cls, observed, propNames) {
       return
     const helper = callee.name?.text
     if (!ATTR_HELPERS.has(helper)) return
+
+    // `this.injectDisabled()` 读取自身 disabled 属性（config-provider 全局禁用注入判定点），
+    // 无参调用；等价于 hasAttr('disabled') → 把 disabled 标记为 boolean attr，保住类型推断
+    if (helper === 'injectDisabled') {
+      let entry = map.get('disabled')
+      if (!entry) {
+        entry = { name: 'disabled', observed: false, has: false, get: false, inferTypes: [] }
+        map.set('disabled', entry)
+      }
+      entry.has = true
+      return
+    }
+
     const nameNode = n.arguments?.[0]
     const name = litText(nameNode)
     if (!name) return // 非字面量首参（动态 attr 名），无法静态提取
@@ -342,6 +359,7 @@ function extractAttrs(cls, observed, propNames) {
   // 排序：observed 在前（按声明顺序），非 observed 在后
   const observedOrder = new Map(observed.map((name, i) => [name, i]))
   return [...map.values()]
+    .filter(({ name }) => !GLOBAL_CONVENTION_ATTRS.has(name))
     .sort((a, b) => {
       const ao = a.observed ? (observedOrder.get(a.name) ?? 0) : 1e9
       const bo = b.observed ? (observedOrder.get(b.name) ?? 0) : 1e9

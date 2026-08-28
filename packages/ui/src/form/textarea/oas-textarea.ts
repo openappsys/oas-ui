@@ -62,6 +62,7 @@ export class OASTextarea extends OASElement {
       'auto-height',
       'min-rows',
       'max-rows',
+      'disabled-skip',
     ]
   }
 
@@ -107,7 +108,8 @@ export class OASTextarea extends OASElement {
     const placeholder = this.getAttr('placeholder', '')
     const rows = Number(this.getAttr('rows', '3')) || 3
     const resize = this.getAttr('resize', '')
-    const disabled = this.hasAttr('disabled')
+    // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
+    const disabled = this.injectDisabled()
     const readonly = this.hasAttr('readonly')
 
     if (t.value !== value) t.value = value

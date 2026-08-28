@@ -47,6 +47,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `disabled` | Disables the whole segmented control (explicitly, or inherited from the config-provider global disabled injection) | `boolean` | — |
 | `options` | `[{ label, value, disabled? }]` JSON string | `string` | `[]` |
 | `value` | Selected value (defaults to the first option; controlled) | `string` | — |
 

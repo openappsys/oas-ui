@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASInput } from './index.js'
+import '../../floating/config-provider/index.js'
 
 function mount(attrs: Record<string, string> = {}): OASInput {
   const el = new OASInput()
@@ -402,5 +403,59 @@ describe('OASInput focus 委托', () => {
     document.body.appendChild(el)
     el.focus()
     expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('input'))
+  })
+})
+
+describe('OASInput 全局禁用注入（config-provider disabled）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('provider disabled：input 无显式 disabled 时继承禁用 + 宿主 data-disabled 镜像', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('disabled', '')
+    const el = new OASInput()
+    cp.appendChild(el)
+    document.body.appendChild(cp)
+
+    expect(input(el).disabled).toBe(true)
+    expect(el.hasAttribute('data-disabled')).toBe(true)
+  })
+
+  it('provider disabled + disabled-skip：输入框保持可用（不镜像禁用标记）', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('disabled', '')
+    const el = new OASInput()
+    el.setAttribute('disabled-skip', '')
+    cp.appendChild(el)
+    document.body.appendChild(cp)
+
+    expect(input(el).disabled).toBe(false)
+    expect(el.hasAttribute('data-disabled')).toBe(false)
+  })
+
+  it('显式 disabled 优先：无 provider 时自身 disabled 仍生效且镜像', () => {
+    const el = new OASInput()
+    el.setAttribute('disabled', '')
+    document.body.appendChild(el)
+    expect(input(el).disabled).toBe(true)
+    expect(el.hasAttribute('data-disabled')).toBe(true)
+  })
+
+  it('provider 移除 disabled 后恢复可用，镜像标记清除', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('disabled', '')
+    const el = new OASInput()
+    cp.appendChild(el)
+    document.body.appendChild(cp)
+    expect(input(el).disabled).toBe(true)
+
+    cp.removeAttribute('disabled')
+    expect(input(el).disabled).toBe(false)
+    expect(el.hasAttribute('data-disabled')).toBe(false)
   })
 })
