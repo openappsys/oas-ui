@@ -843,11 +843,13 @@ export class OASTableBase extends OASElement {
     if (summaryScopePage) {
       summaryFlat = flat
     } else {
-      const cacheKey = `${this.getAttr('data', '')}||${JSON.stringify(filterValues)}||${JSON.stringify(sorts)}`
+      // scope=all 合计是顺序无关聚合（sum/avg/count 不依赖排序），cacheKey 不含 sorts（排序变化不该失效重算）
+      const cacheKey = `${this.getAttr('data', '')}||${JSON.stringify(filterValues)}`
       if (this.summaryFlatCache && this.summaryFlatCache.key === cacheKey) {
         summaryFlat = this.summaryFlatCache.flat
       } else {
-        summaryFlat = this.buildFlat(sorts, rowKey, fullRoots)
+        // scope=all 合计是顺序无关的聚合（sum/avg/count 不依赖排序），传空 sorts 跳过排序——只走 O(n) 扁平化
+        summaryFlat = this.buildFlat([], rowKey, fullRoots)
         this.summaryFlatCache = { key: cacheKey, flat: summaryFlat }
       }
     }
