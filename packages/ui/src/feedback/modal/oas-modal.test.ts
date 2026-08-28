@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASModal } from './index.js'
+import { iconRegistry } from '@oas-ui/icons'
 
 function mount(attrs: Record<string, string> = {}): OASModal {
   const el = new OASModal()
@@ -380,6 +381,97 @@ describe('OASModal', () => {
     expect(csD.flexDirection).toBe('column')
     expect(csB.overflowY).toBe('auto')
     expect(csB.flex).toContain('1')
+  })
+
+  // —— type 语义变体图标 ——
+  it('type 渲染语义图标（info → info 图标），移除 type 后隐藏', async () => {
+    const el = mount({ visible: '', type: 'info' })
+    await Promise.resolve()
+    const icon = el.shadowRoot!.querySelector('[part="semantic-icon"]')!
+    expect(icon.hasAttribute('hidden')).toBe(false)
+    expect(icon.querySelector('svg')).not.toBeNull()
+    expect(icon.getAttribute('aria-hidden')).toBe('true')
+    el.removeAttribute('type')
+    await Promise.resolve()
+    expect(icon.hasAttribute('hidden')).toBe(true)
+    expect(icon.querySelector('svg')).toBeNull()
+  })
+
+  it('type 语义图标映射与颜色选择器（host 属性命中，只走 token）', async () => {
+    const el = mount({ visible: '', type: 'success' })
+    await Promise.resolve()
+    const icon = el.shadowRoot!.querySelector('[part="semantic-icon"]')!
+    // happy-dom 会把自闭合 SVG 标签序列化为显式闭合，用同源解析的参考元素比对
+    const ref = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    ref.innerHTML = iconRegistry['check-circle']
+    expect(icon.querySelector('svg')!.innerHTML).toBe(ref.innerHTML)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(":host([type='success']) .semantic-icon")
+    expect(css).toContain(":host([type='warning']) .semantic-icon")
+    expect(css).toContain(":host([type='error']) .semantic-icon")
+    expect(css).toContain('var(--oas-color-success)')
+    expect(css).toContain('var(--oas-color-warning)')
+    expect(css).toContain('var(--oas-color-danger)')
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,6}/) // 无硬编码色值
+  })
+
+  it('非法 type 值不渲染图标（回退隐藏）', async () => {
+    const el = mount({ visible: '', type: 'danger' })
+    await Promise.resolve()
+    const icon = el.shadowRoot!.querySelector('[part="semantic-icon"]')!
+    expect(icon.hasAttribute('hidden')).toBe(true)
+  })
+
+  // —— ok-text / cancel-text ——
+  it('ok-text / cancel-text 覆盖内置文案（含 aria-label），移除后回退 locale', async () => {
+    const el = mount({ visible: '', 'ok-text': '确认删除', 'cancel-text': '取消吧' })
+    await Promise.resolve()
+    const okBtn = el.shadowRoot!.querySelector('[part="ok"]')!
+    const cancelBtn = el.shadowRoot!.querySelector('[part="cancel"]')!
+    expect(okBtn.textContent).toContain('确认删除')
+    expect(cancelBtn.textContent).toContain('取消吧')
+    expect(okBtn.getAttribute('aria-label')).toBe('确认删除')
+    expect(cancelBtn.getAttribute('aria-label')).toBe('取消吧')
+    el.removeAttribute('ok-text')
+    el.removeAttribute('cancel-text')
+    await Promise.resolve()
+    expect(okBtn.textContent).toContain('确定')
+    expect(cancelBtn.textContent).toContain('取消')
+  })
+
+  // —— no-cancel ——
+  it('no-cancel 隐藏取消按钮（hidden），焦点陷阱选择器排除隐藏按钮', async () => {
+    const el = mount({ visible: '', 'no-cancel': '' })
+    await Promise.resolve()
+    const cancelBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="cancel"]')!
+    expect(cancelBtn.hidden).toBe(true)
+    // 焦点陷阱的 focusables 不含隐藏取消按钮：ok（末尾）Tab → close（首个）
+    el.shadowRoot!.querySelector<HTMLElement>('[part="ok"]')!.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('[part="close"]'))
+  })
+
+  // —— 打开聚焦目标（focus-ok / no-cancel）——
+  it('focus-ok：打开聚焦「确定」按钮（默认聚焦取消）', async () => {
+    const el = mount({ visible: '', 'focus-ok': '' })
+    await Promise.resolve()
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('[part="ok"]'))
+  })
+
+  it('no-cancel（无 focus-ok）时打开回退聚焦「确定」按钮', async () => {
+    const el = mount({ visible: '', 'no-cancel': '' })
+    await Promise.resolve()
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('[part="ok"]'))
+  })
+
+  it('close() 为公开方法：编程关闭移除 visible 并派发 oas-cancel', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    let cancel = 0
+    el.addEventListener('oas-cancel', () => cancel++)
+    el.close('cancel')
+    expect(el.hasAttribute('visible')).toBe(false)
+    expect(cancel).toBe(1)
   })
 })
 
