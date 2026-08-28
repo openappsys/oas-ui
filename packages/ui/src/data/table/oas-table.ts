@@ -1,5 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
+import { editPath } from '@oas-ui/icons'
 
 export interface TableColumn {
   key: string
@@ -448,6 +449,47 @@ th[data-editing-col='true'] {
   color: var(--oas-color-primary);
   box-shadow: inset 0 -2px 0 var(--oas-color-primary);
 }
+/* 可编辑单元格可感知线索：hover/focus-visible 淡底色 + text 光标 + 右上角铅笔图标。
+   编辑中（data-editing）由编辑器接管视觉，不显示本态；条纹/选中/吸顶叠加时本态优先级最高。
+   铅笔图标 opacity 过渡只走透明度、pointer-events:none 不拦截单元格点击/双击 */
+td.editable-cell {
+  cursor: text;
+}
+td.editable-cell:not([data-fixed]) {
+  position: relative; /* 铅笔图标绝对定位的上下文（固定列自身 sticky 已是定位上下文） */
+}
+td.editable-cell .cell-edit-icon {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  opacity: 0;
+  color: var(--oas-color-text-secondary);
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+tr.row td.editable-cell:not([data-editing='true']):hover,
+tr.row td.editable-cell:not([data-editing='true']):focus-visible,
+tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):hover,
+tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible {
+  /* bg-hover 为不透明色：吸顶/固定列下不露出底层滚动内容 */
+  background: var(--oas-color-bg-hover);
+}
+tr.row td.editable-cell[data-fixed='left']:not([data-editing='true']):hover,
+tr.row td.editable-cell[data-fixed='right']:not([data-editing='true']):hover,
+tr.row td.editable-cell[data-fixed='left']:not([data-editing='true']):focus-visible,
+tr.row td.editable-cell[data-fixed='right']:not([data-editing='true']):focus-visible,
+tr[data-sticky='true'] td.editable-cell[data-fixed]:not([data-editing='true']):hover,
+tr[data-sticky='true'] td.editable-cell[data-fixed]:not([data-editing='true']):focus-visible {
+  background: var(--oas-color-bg-hover);
+}
+tr.row td.editable-cell:not([data-editing='true']):hover .cell-edit-icon,
+tr.row td.editable-cell:not([data-editing='true']):focus-visible .cell-edit-icon,
+tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):hover .cell-edit-icon,
+tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible .cell-edit-icon {
+  opacity: 1;
+}
 /* 操作列按钮 */
 .action-btn {
   appearance: none;
@@ -559,6 +601,7 @@ th[data-editing-col='true'] {
 const CHECK_CELL_WIDTH = 40
 const EXPAND_CELL_WIDTH = 40
 const FILTER_ICON = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M4.5 6.5h7M6.5 10h3"/></svg>'
+const EDIT_ICON = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${editPath}</svg>`
 
 export class OASTableBase extends OASElement {
   static override get observedAttributes(): string[] {
@@ -1104,6 +1147,10 @@ export class OASTableBase extends OASElement {
       // 编辑器内部按键/双击会冒泡到此，需排除避免提交后被重入编辑）
       if (this.editingEnabled(col)) {
         td.tabIndex = 0
+        td.classList.add('editable-cell')
+        // 可感知线索：title 提示进入方式 + 铅笔图标（hover/focus-visible 时显现）
+        td.title = this.t('table.editHint')
+        this.appendEditAffordance(td)
         td.addEventListener('keydown', (e: KeyboardEvent) => {
           if (e.target !== td) return
           if (e.key === 'Enter' || e.key === 'F2') {
@@ -1880,6 +1927,15 @@ export class OASTableBase extends OASElement {
     return document.createTextNode(String(raw ?? ''))
   }
 
+  /** 可编辑单元格挂铅笔图标（右上角绝对定位，hover/focus-visible 时显现；aria-hidden 不给读屏噪音） */
+  private appendEditAffordance(td: HTMLTableCellElement): void {
+    const icon = document.createElement('span')
+    icon.className = 'cell-edit-icon'
+    icon.setAttribute('aria-hidden', 'true')
+    icon.innerHTML = EDIT_ICON
+    td.appendChild(icon)
+  }
+
   /** 双击 / Enter / F2 / 操作列按钮 → 进入编辑模式 */
   private enterEdit(td: HTMLTableCellElement): void {
     // 防御：两次点击之间表格重渲染导致 td 被整体重建（脱离文档）时不再进入编辑，
@@ -2049,6 +2105,8 @@ export class OASTableBase extends OASElement {
       st.td.textContent = ''
       const node = this.cellNode(col, st.row)
       if (node) st.td.appendChild(node)
+      // 可编辑单元格：铅笔图标在进入编辑时随 textContent 清空，退出后恢复
+      if (this.editingEnabled(col)) this.appendEditAffordance(st.td)
     } else {
       st.td.textContent = ''
     }

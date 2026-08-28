@@ -1572,6 +1572,35 @@ test('table 行内编辑：Enter 提交后编辑器退出且列高亮清除', as
   expect(after.cellText).toBe('演示提交')
 })
 
+test('table 可编辑单元格可感知线索：hover 淡底色 + text 光标 + 铅笔图标显现', async ({ page }) => {
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-edit')
+  // 真实 hover（Playwright 物理移动鼠标触发 :hover；dispatchEvent 无法触发 :hover 伪类）
+  const cell = page.locator('#table-edit td.editable-cell').first()
+  const before = await cell.evaluate((td) => {
+    const icon = td.querySelector<HTMLElement>('.cell-edit-icon')!
+    return {
+      bg: getComputedStyle(td).backgroundColor,
+      cursor: getComputedStyle(td).cursor,
+      iconOpacity: getComputedStyle(icon).opacity,
+    }
+  })
+  expect(before.cursor, '可编辑单元格应为 text 光标').toBe('text')
+  expect(before.iconOpacity, '常态下铅笔图标应隐藏（opacity 0）').toBe('0')
+  await cell.hover()
+  await page.waitForTimeout(300) // 图标 opacity 过渡 0.15s
+  const after = await cell.evaluate((td) => {
+    const icon = td.querySelector<HTMLElement>('.cell-edit-icon')!
+    return {
+      bg: getComputedStyle(td).backgroundColor,
+      iconOpacity: getComputedStyle(icon).opacity,
+    }
+  })
+  expect(after.bg, 'hover 应出现淡底色').not.toBe(before.bg)
+  expect(after.bg, 'hover 底色应为不透明实色（非透明叠加）').not.toBe('rgba(0, 0, 0, 0)')
+  expect(after.iconOpacity, 'hover 后铅笔图标应显现（opacity 1）').toBe('1')
+})
+
 test('table 吸顶行：sticky-rows 前 N 行带 data-sticky 且与固定列共存', async ({ page }) => {
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-table[sticky-rows]')
