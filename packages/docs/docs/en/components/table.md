@@ -137,6 +137,8 @@ In the column config, `fixed: 'left' | 'right'` makes that column's header and c
 
 Set `editable` to enable inline editing; mark editable columns with `editable: true` on the column config (`editor: 'input'` for text / `editor: 'select'` for a dropdown with `editOptions`), and `actions: true` renders an operation column (Edit / Save / Cancel buttons). Double-click a cell, or focus it and press Enter / F2, to start editing: Enter or blur submits, Esc cancels; submit emits `oas-edit` (`detail: { rowIndex, key, column, value }`), cancel emits `oas-edit-cancel`. Submitting an empty value restores the original (non-destructive by default).
 
+Editable cells come with perceptible affordances: hovering or focusing (focus-visible) a cell reveals a subtle background tint and a pencil icon at the top-right (the icon never intercepts interaction), and the cell carries a `title` hint ("Double-click to edit"). Three ways to start editing: double-click, or focus the cell and press Enter / F2.
+
 ## Controlled Editing
 
 <DemoBlock title="Controlled editing (edit-controlled)">

@@ -1077,6 +1077,67 @@ describe('OASTable 行内编辑（inline editing）', () => {
     td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
     expect(td.querySelector('input.cell-editor')).not.toBeNull()
   })
+
+  it('可编辑单元格：渲染铅笔图标（editable-cell 类 + aria-hidden + svg），不可编辑列无图标', () => {
+    const el = editMount()
+    const td = cells(el)[0]!
+    expect(td.classList.contains('editable-cell')).toBe(true)
+    const icon = td.querySelector<HTMLElement>('.cell-edit-icon')
+    expect(icon).not.toBeNull()
+    expect(icon!.getAttribute('aria-hidden')).toBe('true')
+    expect(icon!.querySelector('svg')).not.toBeNull()
+    // 不可编辑列：无图标与可编辑类
+    const plain = cells(el)[2]!
+    expect(plain.querySelector('.cell-edit-icon')).toBeNull()
+    expect(plain.classList.contains('editable-cell')).toBe(false)
+  })
+
+  it('可编辑单元格 title：随 locale 提供本地化提示（zh 双击编辑 / en Double-click to edit）', () => {
+    const el = editMount()
+    expect(cells(el)[0]!.title).toBe('双击编辑')
+    setLocale(en)
+    expect(cells(el)[0]!.title).toBe('Double-click to edit')
+    setLocale('zh-CN')
+    expect(cells(el)[0]!.title).toBe('双击编辑')
+  })
+
+  it('可编辑单元格可感知线索样式：样式表含 hover/focus-visible/sticky 变体规则', () => {
+    const el = editMount()
+    const style = el.shadowRoot!.querySelector('style')!.textContent
+    expect(style).toContain('td.editable-cell')
+    expect(style).toContain('td.editable-cell .cell-edit-icon')
+    expect(style).toContain("td.editable-cell:not([data-editing='true']):hover")
+    expect(style).toContain("td.editable-cell:not([data-editing='true']):focus-visible")
+    // sticky 变体：吸顶行上 hover 底色与整行 hover 规则并存
+    expect(style).toContain("tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):hover")
+    // 图标不拦截交互、过渡只走 opacity
+    expect(style).toContain('pointer-events: none')
+    expect(style).toContain('transition: opacity')
+  })
+
+  it('编辑中单元格（td.editing）不挂铅笔图标；退出编辑后恢复', () => {
+    const el = editMount()
+    const td = cells(el)[0]!
+    expect(td.querySelector('.cell-edit-icon')).not.toBeNull()
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    // 进入编辑：编辑器接管视觉，图标随内容清空移除
+    expect(td.querySelector('.cell-edit-icon')).toBeNull()
+    expect(td.querySelector('input.cell-editor')).not.toBeNull()
+    // Esc 退出：单元格恢复展示并重新挂图标
+    cellInput(el, 0, 0)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(td.querySelector('input.cell-editor')).toBeNull()
+    expect(td.textContent).toBe('张三')
+    expect(td.querySelector('.cell-edit-icon')).not.toBeNull()
+  })
+
+  it('受控模式退出编辑后铅笔图标恢复（exitEdit 路径重挂）', () => {
+    const el = editMount({ 'edit-controlled': '' })
+    const td = cells(el)[0]!
+    td.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(td.querySelector('.cell-edit-icon')).toBeNull()
+    cellInput(el, 0, 0)!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(td.querySelector('.cell-edit-icon')).not.toBeNull()
+  })
 })
 
 const STICKY_COLUMNS = JSON.stringify([
