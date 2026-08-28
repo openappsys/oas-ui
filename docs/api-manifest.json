@@ -6400,6 +6400,17 @@
         "name": "vertical",
         "type": "boolean",
         "observed": true
+      },
+      {
+        "name": "fill",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "fill-ratio",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
@@ -6946,6 +6957,18 @@
         "type": "string",
         "default": "",
         "observed": true
+      },
+      {
+        "name": "justify",
+        "type": "string",
+        "default": "",
+        "observed": true
+      },
+      {
+        "name": "align",
+        "type": "string",
+        "default": "",
+        "observed": true
       }
     ],
     "props": [],
@@ -6969,6 +6992,12 @@
       },
       {
         "name": "offset",
+        "type": "string",
+        "default": "0",
+        "observed": true
+      },
+      {
+        "name": "order",
         "type": "string",
         "default": "0",
         "observed": true
@@ -7172,6 +7201,11 @@
       },
       {
         "name": "padding",
+        "observed": true
+      },
+      {
+        "name": "fluid",
+        "type": "boolean",
         "observed": true
       }
     ],

@@ -84,4 +84,40 @@ describe('OASContainer（定宽容器）', () => {
     el.innerHTML = '<p>内容</p>'
     expect(el.querySelector('p')!.textContent).toBe('内容')
   })
+
+  // ===== 布局批 1：fluid / breakout =====
+
+  it('fluid：不挂 --oas-container-max，dataset.fluid=true', () => {
+    const el = mount({ fluid: '' })
+    expect(el.style.getPropertyValue('--oas-container-max')).toBe('')
+    expect(el.dataset.fluid).toBe('true')
+  })
+
+  it('fluid 与 size 正交：fluid 存在时 size 限宽失效', () => {
+    const el = mount({ fluid: '', size: 'xs' })
+    expect(el.style.getPropertyValue('--oas-container-max')).toBe('')
+  })
+
+  it('fluid 移除后恢复定宽（--oas-container-max 重新挂载）', () => {
+    const el = mount({ fluid: '' })
+    expect(el.style.getPropertyValue('--oas-container-max')).toBe('')
+    el.removeAttribute('fluid')
+    expect(el.style.getPropertyValue('--oas-container-max')).toBe('var(--oas-container-lg)')
+    expect(el.dataset.fluid).toBe('false')
+  })
+
+  it('fluid 样式规则：:host([fluid]) 关掉 max-width', () => {
+    const el = mount()
+    const styleText = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(styleText).toContain(':host([fluid])')
+    expect(styleText).toContain('max-width: none')
+  })
+
+  it('breakout：slot 内带 breakout 属性的子元素突破定宽（100vw + margin 公式）', () => {
+    const el = mount()
+    const styleText = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(styleText).toContain('::slotted([breakout])')
+    expect(styleText).toContain('width: 100vw')
+    expect(styleText).toContain('margin-inline: calc(50% - 50vw)')
+  })
 })

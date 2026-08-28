@@ -55,6 +55,10 @@ The `vertical` shorthand equals `direction="vertical"` (stacked vertically).
     <oas-flex justify="around" style="width: 100%">
       <oas-tag>1</oas-tag><oas-tag>2</oas-tag><oas-tag>3</oas-tag>
     </oas-flex>
+    <span class="demo-flex-label">justify="evenly"</span>
+    <oas-flex justify="evenly" style="width: 100%">
+      <oas-tag>1</oas-tag><oas-tag>2</oas-tag><oas-tag>3</oas-tag>
+    </oas-flex>
   </div>
 </DemoBlock>
 
@@ -100,6 +104,62 @@ The `vertical` shorthand equals `direction="vertical"` (stacked vertically).
   </oas-flex>
 </DemoBlock>
 
+## Fill
+
+`fill` makes items grow equally to fill the container (the `flex: 1` equivalent); `fill-ratio` (percent, default 100) distributes proportionally — settable per item, with the container-level `fill-ratio` as the default.
+
+<DemoBlock title="fill — equal fill">
+  <oas-flex fill gap="8px" style="width: 100%">
+    <div class="demo-flex-fill-box">One</div>
+    <div class="demo-flex-fill-box">Two</div>
+    <div class="demo-flex-fill-box">Three</div>
+  </oas-flex>
+</DemoBlock>
+
+<DemoBlock title="fill-ratio — proportional">
+  <oas-flex fill gap="8px" style="width: 100%">
+    <div class="demo-flex-fill-box">1</div>
+    <div class="demo-flex-fill-box" fill-ratio="200">2 (200%)</div>
+    <div class="demo-flex-fill-box">3</div>
+  </oas-flex>
+  <oas-flex fill fill-ratio="300" gap="8px" style="width: 100%; margin-top: 8px">
+    <div class="demo-flex-fill-box">Container default 300%</div>
+    <div class="demo-flex-fill-box">Also 300%</div>
+  </oas-flex>
+</DemoBlock>
+
+> **About per-item `order`**: `oas-flex` has no child-item component carrier (children are arbitrary host elements), so per-item `order` has no reasonable API and is intentionally not provided in this version. It will be revisited if an item component (`oas-flex-item`) scenario emerges later.
+
+## Responsive
+
+`direction` and `gap` support breakpoint shorthand: a space-separated base value plus several `breakpoint:value` tokens (e.g. `direction="column md:row"`, `gap="8px md:16px"`). Below a breakpoint width the base value applies; from the breakpoint up (mobile-first `min-width`) the breakpoint value applies.
+
+Breakpoints:
+
+| Breakpoint | Width |
+| --- | --- |
+| `sm` | 640px |
+| `md` | 768px |
+| `lg` | 1024px |
+| `xl` | 1280px |
+
+<DemoBlock title="Responsive direction: stacked on narrow, row from md">
+  <oas-flex direction="column md:row" gap="8px" style="width: 100%">
+    <oas-button>Button 1</oas-button>
+    <oas-button>Button 2</oas-button>
+    <oas-button>Button 3</oas-button>
+  </oas-flex>
+</DemoBlock>
+
+<DemoBlock title="Responsive gap: 8px base, 24px from md">
+  <oas-flex gap="8px md:24px" wrap style="width: 100%">
+    <oas-tag>1</oas-tag><oas-tag>2</oas-tag><oas-tag>3</oas-tag>
+    <oas-tag>4</oas-tag><oas-tag>5</oas-tag><oas-tag>6</oas-tag>
+  </oas-flex>
+</DemoBlock>
+
+> Narrow the browser window to watch direction switch from row back to column and the gap tighten.
+
 ## Empty container
 
 With no children the height is 0 — no error, no placeholder.
@@ -119,6 +179,16 @@ With no children the height is 0 — no error, no placeholder.
     font-size: var(--oas-font-size-xs);
     color: var(--oas-color-text-secondary);
   }
+  .demo-flex-fill-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    background: var(--oas-color-primary);
+    color: var(--oas-color-primary-text);
+    border-radius: var(--oas-radius-md);
+    font-size: var(--oas-font-size-sm);
+  }
 </style>
 
 ## API
@@ -128,10 +198,12 @@ With no children the height is 0 — no error, no placeholder.
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `align` | Cross-axis alignment | `string` | `stretch` |
-| `direction` | Main-axis direction | `string` | `row` |
-| `gap` | Gap between items | `string` | — |
-| `justify` | Main-axis alignment | `string` | `start` |
-| `vertical` | Vertical shorthand | `boolean` | — |
+| `direction` | Main-axis direction; supports breakpoint shorthand: space-separated base value + several `breakpoint:value` tokens (e.g. `column md:row`). Breakpoints `sm`=640px / `md`=768px / `lg`=1024px / `xl`=1280px (mobile-first min-width); below a breakpoint the base value applies. Illegal breakpoint names/values fall back to the base value with a dev warning | `string` | `row` |
+| `fill` | Make items grow equally to fill the container (the `flex: 1` equivalent) | `boolean` | — |
+| `fill-ratio` | Distribution ratio for `fill` (percent, default 100): settable per item, container-level as the default | `string` | — |
+| `gap` | Gap between items; supports breakpoint shorthand (e.g. `8px md:16px`, breakpoints as `direction`) | `string` | — |
+| `justify` | Main-axis alignment: `start`/`center`/`end`/`between`/`around`/`evenly` (bidirectionally compatible with legacy `flex-*`/`space-*` values) | `string` | `start` |
+| `vertical` | Vertical shorthand (= direction:column; takes precedence over direction) | `boolean` | — |
 | `wrap` | Wrapping (boolean; present means `wrap`) | `boolean` | — |
 
 ### Slots

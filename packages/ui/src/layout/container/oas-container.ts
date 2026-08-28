@@ -28,6 +28,20 @@ const STYLE = `
 :host([data-center='false']) {
   margin-inline: 0;
 }
+/* fluid：完全不挂限宽（纯流体 100%），size 的限宽失效；窄屏保护由 width:100% 天然覆盖 */
+:host([fluid]) {
+  max-width: none;
+}
+/* breakout：slot 内带 breakout 属性的子元素突破定宽撑满视口宽。
+   经典突破公式：width: 100vw + margin-inline: calc(50% - 50vw)。
+   50% 相对容器内容盒：容器居中时内容盒中心 = 视口中心，左缘 = 中心 - 50vw = 0，
+   恰贴视口左缘（RTL 下 margin-inline 对称值同样成立；容器 padding 不影响突破）。
+   注意：100vw 含纵向滚动条宽度，页面出现滚动条时 breakout 元素会横向溢出，
+   需在页面顶层包裹层配 overflow-x: clip（或 overflow-x: hidden）抑制。 */
+::slotted([breakout]) {
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+}
 :host([hidden]) {
   display: none;
 }
@@ -40,12 +54,15 @@ const STYLE = `
  * - `size`：xs/sm/md/lg/xl/full，默认 lg，映射 `--oas-container-*` 宽度 token
  * - `center`：默认 true，`center="false"` 时取消居中（margin-inline: 0）
  * - `padding`：内边距 token/值，作用于 padding-inline
+ * - `fluid`：布尔，完全不挂 max-width（纯流体 100%）；与 `size` 正交，存在时 size 限宽失效
+ * - `breakout`：非容器属性，作用于 slot 内子元素——子元素带 `breakout` 属性即突破定宽
+ *   撑满视口宽（纯 CSS `::slotted([breakout])`，见 STYLE 注释）
  *
  * 边界：无子元素不报错；max-width: min(100%, token) 保证最小 0、不溢出视口。
  */
 export class OASContainer extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['size', 'center', 'padding']
+    return ['size', 'center', 'padding', 'fluid']
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -73,10 +90,17 @@ export class OASContainer extends OASElement {
   }
 
   protected override update(): void {
-    const size = this.getAttr('size', 'lg').toLowerCase()
-    const normalized = SIZE_TOKENS[size] ? size : 'lg'
-    this.dataset.size = normalized
-    this.style.setProperty('--oas-container-max', SIZE_TOKENS[normalized] ?? SIZE_TOKENS.lg!)
+    // fluid 与 size 正交：fluid 存在时不挂限宽（STYLE :host([fluid]) 关掉 max-width）
+    const fluid = this.hasAttr('fluid')
+    this.dataset.fluid = String(fluid)
+    if (fluid) {
+      this.style.removeProperty('--oas-container-max')
+    } else {
+      const size = this.getAttr('size', 'lg').toLowerCase()
+      const normalized = SIZE_TOKENS[size] ? size : 'lg'
+      this.dataset.size = normalized
+      this.style.setProperty('--oas-container-max', SIZE_TOKENS[normalized] ?? SIZE_TOKENS.lg!)
+    }
     // center 默认 true；仅 center="false" 关闭居中
     this.dataset.center = String(this.getAttr('center', 'true') !== 'false')
     const padding = this.getAttr('padding')

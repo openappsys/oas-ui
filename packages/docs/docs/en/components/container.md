@@ -47,6 +47,33 @@ With `center="false"` centering is disabled (`margin-inline: 0`) and the contain
   </oas-container>
 </DemoBlock>
 
+## Fluid
+
+The `fluid` boolean attribute removes `max-width` entirely — the container always spans 100% of its parent (pure fluid). It is orthogonal to `size`: when present, the `size` width limit is ignored. Suitable for content that must fill the width while keeping the narrow-screen protection of `width: 100%`.
+
+<DemoBlock title="fluid vs fixed width">
+  <oas-space direction="vertical" style="width: 100%">
+    <oas-container fluid style="background: var(--oas-color-bg-hover)">fluid · spans 100%</oas-container>
+    <oas-container size="md" style="background: var(--oas-color-bg-hover)">size="md" · 768px fixed (comparison)</oas-container>
+  </oas-space>
+</DemoBlock>
+
+## Breakout
+
+Any slotted child with a `breakout` attribute breaks out of the fixed width to span the full viewport width (classic formula `width: 100vw` + `margin-inline: calc(50% - 50vw)`). Ideal for a "constrained content, full-width local banner" page structure.
+
+<DemoBlock title="breakout — full-width banner">
+  <div style="overflow-x: clip">
+    <oas-container size="md" style="background: var(--oas-color-bg-hover)">
+      First paragraph of constrained content
+      <div breakout class="demo-breakout-banner">breakout banner · breaks 768px to span the viewport</div>
+      Second paragraph of constrained content
+    </oas-container>
+  </div>
+</DemoBlock>
+
+> **Viewport scrollbar note**: `100vw` includes the vertical scrollbar width, so a breakout element can overflow horizontally when the page shows a scrollbar. Suppress it with `overflow-x: clip` (or `overflow-x: hidden`) on a top-level page wrapper — not on the container itself (that would clip the breakout).
+
 ## Empty container
 
 An empty container causes no error and takes no placeholder.
@@ -55,6 +82,19 @@ An empty container causes no error and takes no placeholder.
   <oas-container size="sm" style="background: var(--oas-color-bg-hover)"></oas-container>
 </DemoBlock>
 
+<style>
+  .demo-breakout-banner {
+    margin-block: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 56px;
+    background: var(--oas-color-primary);
+    color: var(--oas-color-primary-text);
+    font-size: var(--oas-font-size-sm);
+  }
+</style>
+
 ## API
 
 ### Attributes
@@ -62,6 +102,7 @@ An empty container causes no error and takes no placeholder.
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `center` | Whether to center (`center="false"` disables) | `string` | `true` |
+| `fluid` | Boolean; removes max-width entirely (pure fluid 100%). Orthogonal to `size` — when present, the size width limit is ignored | `boolean` | — |
 | `padding` | Padding token/value (applies to `padding-inline`) | — | — |
 | `size` | Fixed-width tier, mapped to `--oas-container-*` tokens | `string` | `lg` |
 

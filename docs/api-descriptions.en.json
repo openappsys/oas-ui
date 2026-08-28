@@ -519,6 +519,7 @@
   "oas-container": {
     "attrs": {
       "center": "Whether to center (`center=\"false\"` disables)",
+      "fluid": "Boolean; removes max-width entirely (pure fluid 100%). Orthogonal to `size` — when present, the size width limit is ignored",
       "padding": "Padding token/value (applies to `padding-inline`)",
       "size": "Fixed-width tier, mapped to `--oas-container-*` tokens"
     },
@@ -786,10 +787,12 @@
   "oas-flex": {
     "attrs": {
       "align": "Cross-axis alignment",
-      "direction": "Main-axis direction",
-      "gap": "Gap between items",
-      "justify": "Main-axis alignment",
-      "vertical": "Vertical shorthand",
+      "direction": "Main-axis direction; supports breakpoint shorthand: space-separated base value + several `breakpoint:value` tokens (e.g. `column md:row`). Breakpoints `sm`=640px / `md`=768px / `lg`=1024px / `xl`=1280px (mobile-first min-width); below a breakpoint the base value applies. Illegal breakpoint names/values fall back to the base value with a dev warning",
+      "fill": "Make items grow equally to fill the container (the `flex: 1` equivalent)",
+      "fill-ratio": "Distribution ratio for `fill` (percent, default 100): settable per item, container-level as the default",
+      "gap": "Gap between items; supports breakpoint shorthand (e.g. `8px md:16px`, breakpoints as `direction`)",
+      "justify": "Main-axis alignment: `start`/`center`/`end`/`between`/`around`/`evenly` (bidirectionally compatible with legacy `flex-*`/`space-*` values)",
+      "vertical": "Vertical shorthand (= direction:column; takes precedence over direction)",
       "wrap": "Wrapping (boolean; present means `wrap`)"
     },
     "events": {},
@@ -841,17 +844,20 @@
   },
   "oas-grid": {
     "attrs": {
+      "align": "Block-axis alignment (align-items): `start` / `center` / `end` / `stretch` / `baseline`; invalid values fall back to `stretch` with a dev warning (deduped)",
       "cols": "Total column count",
       "columns": "Auto equal-width count (simple-grid; when set, child `span` is ignored)",
-      "gap": "Gap"
+      "gap": "Gap; a single value applies to both axes, two space-separated values set `row column` (e.g. `8 16` = row 8, column 16); three or more values are invalid and silently fall back to `0`",
+      "justify": "Inline-axis alignment (justify-items): `start` / `center` / `end` / `stretch`; invalid values fall back to `stretch` with a dev warning (deduped)"
     },
     "events": {},
     "slots": {}
   },
   "oas-grid-item": {
     "attrs": {
-      "offset": "Number of columns offset on the left",
-      "span": "Number of columns spanned"
+      "offset": "Number of columns offset on the left; supports breakpoint shorthand (e.g. `0 lg:4`: base value + space-separated `breakpoint:value`, breakpoints sm=640 / md=768 / lg=1024 / xl=1280)",
+      "order": "Ordering weight (number, default 0); higher values appear later, for reordering columns (equivalent to offset-based push/pull scenarios)",
+      "span": "Number of columns spanned; supports `auto` (natural content width) and breakpoint shorthand (e.g. `24 md:12`: base value + space-separated `breakpoint:value`, breakpoints sm=640 / md=768 / lg=1024 / xl=1280)"
     },
     "events": {},
     "slots": {}
