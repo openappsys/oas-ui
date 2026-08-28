@@ -235,6 +235,7 @@ export const en: LocaleMessages = {
   'log.empty': 'No logs',
   'themeEditor.label': 'Theme editor',
   'themeEditor.export': 'Export theme JSON',
+  'themeEditor.search': 'Search tokens',
   'themeEditor.group.color': 'Colors',
   'themeEditor.group.fontSize': 'Font size',
   'themeEditor.group.space': 'Spacing',

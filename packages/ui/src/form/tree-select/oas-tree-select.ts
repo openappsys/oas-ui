@@ -153,7 +153,7 @@ const STYLE = `
 }
 .dropdown {
   position: absolute;
-  z-index: 10;
+  z-index: calc(var(--oas-z-index-base, 0) + 10);
   top: calc(100% + 4px);
   left: 0;
   right: 0;

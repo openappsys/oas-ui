@@ -277,7 +277,7 @@ const STYLE = `
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  z-index: 10;
+  z-index: calc(var(--oas-z-index-base, 0) + 10);
 }
 .item.open > .submenu {
   display: block;

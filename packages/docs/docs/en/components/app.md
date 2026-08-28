@@ -36,6 +36,23 @@ app can be nested inside a config-provider to receive both the injected locale /
   </oas-config-provider>
 </DemoBlock>
 
+## Message / Notification global defaults
+
+The `message` / `notification` attributes declare global default config for the imperative APIs (JSON; keys aligned with existing options). Imperative functions merge the nearest app's config with call options, and **call options take precedence**.
+
+<DemoBlock title="Message global defaults">
+  <oas-space style="margin-bottom: 12px">
+    <oas-button onclick="setMsgConfig()">Set global default (duration 800)</oas-button>
+    <oas-button onclick="clearMsgConfig()">Clear default</oas-button>
+  </oas-space>
+  <oas-app id="app-cfg">
+    <oas-space>
+      <oas-button type="primary" onclick="message.success('Uses the global default duration')">Default duration</oas-button>
+      <oas-button onclick="message.info('Overrides the duration', { duration: 5000 })">Overridden (5s)</oas-button>
+    </oas-space>
+  </oas-app>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -49,16 +66,26 @@ onMounted(async () => {
   window.destroyAllMessage = destroyAllMessage
   window.destroyAllNotification = destroyAllNotification
   window.destroyAllLoadingBar = destroyAllLoadingBar
+  window.setMsgConfig = () =>
+    document.getElementById('app-cfg')?.setAttribute('message', JSON.stringify({ duration: 800 }))
+  window.clearMsgConfig = () => document.getElementById('app-cfg')?.removeAttribute('message')
 })
 </script>
 
 ## API
 
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `message` | Global default config JSON for the message imperative API (keys aligned with existing options: `duration`); imperative functions merge the nearest app's config with call options, call options win; invalid JSON is ignored with a dev warning | — | — |
+| `notification` | Global default config JSON for the notification imperative API (keys aligned with existing options: `duration`/`showProgress`/`progressPosition`/`scrollable`); imperative functions merge the nearest app's config with call options, call options win; invalid JSON is ignored with a dev warning | — | — |
+
 ### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
+| default | Subtree (imperative message stacks mount inside this container instead of `document.body`) |
 
 - When an app container exists, the message stacks of imperative APIs like message / notification / loadingBar mount into the nearest app container.
 - Without an app container, behavior is unchanged and messages mount to `document.body`.

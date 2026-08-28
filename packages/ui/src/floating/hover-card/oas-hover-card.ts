@@ -60,7 +60,7 @@ const STYLE = `
 }
 .card {
   position: fixed;
-  z-index: var(--oas-z-tooltip, 1080);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-tooltip, 1080));
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);
@@ -812,7 +812,7 @@ export class OASHoverCard extends OASElement {
     const host = document.createElement('div')
     host.setAttribute('data-oas-hover-card-portal', '')
     host.style.cssText =
-      'position: fixed; inset: 0; pointer-events: none; z-index: var(--oas-z-tooltip, 1080);'
+      'position: fixed; inset: 0; pointer-events: none; z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-tooltip, 1080));'
     target.appendChild(host)
     const root = host.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${STYLE}</style>`

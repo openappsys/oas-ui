@@ -1,4 +1,4 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement, readConfigValue } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 
 export type ButtonType = 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'text'
@@ -867,10 +867,20 @@ export class OASButton extends OASElement {
     const plain = this.hasAttr('plain')
     const iconPosition = this.getAttr('icon-position', 'start')
     const link = this.isLink()
-    // variant 形态维度：显式 variant 属性优先；否则按旧属性映射（ghost→outlined、plain→filled、type=text→text），默认 solid
-    const rawVariant = this.getAttr('variant', '') as ButtonVariant | ''
-    const variant: ButtonVariant = (VALID_BUTTON_VARIANTS as readonly string[]).includes(rawVariant)
-      ? (rawVariant as ButtonVariant)
+    // variant 形态维度：显式 variant 属性优先；未显式设置时读 config-provider config JSON
+    // 的 `oas-button.variant` 注入值；否则按旧属性映射（ghost→outlined、plain→filled、type=text→text），默认 solid
+    const explicitVariant = this.getAttr('variant', '') as ButtonVariant | ''
+    const injectedVariant = readConfigValue<unknown>(this, 'oas-button', 'variant')
+    const variantCandidate =
+      explicitVariant !== ''
+        ? explicitVariant
+        : typeof injectedVariant === 'string'
+          ? injectedVariant
+          : ''
+    const variant: ButtonVariant = (VALID_BUTTON_VARIANTS as readonly string[]).includes(
+      variantCandidate,
+    )
+      ? (variantCandidate as ButtonVariant)
       : ghost
         ? 'outlined'
         : plain

@@ -163,7 +163,7 @@ nav.ellipsis .item-text {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  z-index: var(--oas-z-dropdown);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000));
   min-width: 140px;
   max-width: 260px;
   padding: var(--oas-space-1);

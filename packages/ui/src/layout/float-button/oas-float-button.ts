@@ -7,7 +7,7 @@ const STYLE = `
   position: fixed;
   bottom: var(--oas-space-6);
   right: var(--oas-space-6);
-  z-index: var(--oas-z-fixed, 1030);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-fixed, 1030));
 }
 :host([hidden]) {
   display: none;

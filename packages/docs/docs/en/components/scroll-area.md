@@ -247,6 +247,7 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `auto-hide` | The scrollbar is shown only while scrolling/hovering, then auto-hides after a timeout | `boolean` | — |
+| `direction` | One source for RTL detection: when neither the element nor its ancestors set `dir` explicitly, falls back to the `direction` (`ltr`/`rtl`) injected by config-provider | `string` | — |
 | `end-distance` | Trigger distance for `oas-end-reached` (px, default `0`): within N px of the bottom/right edge counts as reached | `string` | `0` |
 | `height` | Viewport height (px); when unset, grows with the content | — | — |
 | `scroll-shadow` | Scroll edge shadow (CSS-only): the shadow fades at each edge as you scroll, hinting that more content exists | — | — |

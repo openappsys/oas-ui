@@ -60,7 +60,7 @@ function ensureStack(position: ToastPosition): HTMLElement {
   const cached = stacks.get(position)
   if (cached && target.contains(cached)) return cached
   const stack = document.createElement('div')
-  stack.style.cssText = `position: fixed; display: flex; flex-direction: column; pointer-events: none; z-index: var(--oas-z-toast, 1070); ${positionCss(position)}`
+  stack.style.cssText = `position: fixed; display: flex; flex-direction: column; pointer-events: none; z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-toast, 1070)); ${positionCss(position)}`
   target.appendChild(stack)
   stacks.set(position, stack)
   return stack

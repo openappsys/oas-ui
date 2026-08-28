@@ -56,7 +56,7 @@ const STYLE = `
 }
 .panel {
   position: absolute;
-  z-index: var(--oas-z-dropdown, 1000);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000));
   top: calc(100% + 4px);
   left: 0;
   background: var(--oas-color-bg);

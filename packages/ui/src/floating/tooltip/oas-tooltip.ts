@@ -13,7 +13,7 @@ const STYLE = `
 }
 .tip {
   position: fixed;
-  z-index: var(--oas-z-tooltip, 1080);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-tooltip, 1080));
   padding: var(--oas-space-1) var(--oas-space-2);
   /* 圆角封顶（箭头接缝防收腰）：箭头底宽 = 8px 方形旋转 45° 的对角投影 8√2 ≈ 11.31px，
      气泡交叉轴直边段（尺寸 − 2×radius）小于它时，圆角曲线侵入箭头底边衔接区，接缝两侧
@@ -555,7 +555,7 @@ export class OAStooltip extends OASElement {
     const host = document.createElement('div')
     host.setAttribute('data-oas-tooltip-portal', '')
     host.style.cssText =
-      'position: fixed; inset: 0; pointer-events: none; z-index: var(--oas-z-tooltip, 1080);'
+      'position: fixed; inset: 0; pointer-events: none; z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-tooltip, 1080));'
     target.appendChild(host)
     const root = host.attachShadow({ mode: 'open' })
     root.innerHTML = `<style>${STYLE}</style>`
