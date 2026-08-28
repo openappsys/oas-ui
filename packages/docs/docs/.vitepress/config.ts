@@ -191,6 +191,24 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' }],
     ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/favicon-180.png' }],
+    // 首访语言适配：zh* 浏览器 → 中文（root），其余一律英文（/en/ 兜底）。
+    // 手动切换后写 localStorage（oas-lang）持久化；深链 zh 页面也按同一规则适配。
+    // location.replace 不产生历史记录；脚本内联在 head 尽早执行（减少语言闪烁）。
+    [
+      'script',
+      {},
+      `(function () {
+  try {
+    var path = location.pathname
+    var onEn = path === '/en' || path.indexOf('/en/') === 0
+    var pref = localStorage.getItem('oas-lang')
+    var isZhBrowser = (navigator.language || '').toLowerCase().indexOf('zh') === 0
+    var want = pref || (isZhBrowser ? 'zh' : 'en')
+    if (want === 'en' && !onEn) location.replace('/en' + path)
+    else if (want === 'zh' && onEn) location.replace(path.replace(/^\\/en(?=\\/|$)/, '') || '/')
+  } catch (e) {}
+})()`,
+    ] as [string, Record<string, string>, string],
     // Google Analytics 4（统计 ID G-RXS142HBXF）——仅生产构建注入；dev 环境（vitepress dev，NODE_ENV=development）不加载
     // SPA 路由切换的 page_view 由 theme 里 router.afterEach 补充（同样仅 PROD）
     ...(process.env.NODE_ENV === 'production'
