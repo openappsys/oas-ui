@@ -120,6 +120,15 @@ When the image fails to load, the avatar automatically falls back to a placehold
   <oas-avatar size="48">M</oas-avatar>
 </DemoBlock>
 
+## text Attribute
+
+The `text` attribute drives the first-character rendering and is **reactive**: changing `text` at runtime takes effect immediately (attribute change triggers a re-render). By default the avatar falls back to the first character of its light-DOM text content — a one-time snapshot taken at connect time; later text changes won't update automatically. Use the `text` attribute for dynamic text.
+
+<DemoBlock title="text attribute drives first character">
+  <oas-avatar size="48" text="A"></oas-avatar>
+  <oas-avatar size="48" text="Alice"></oas-avatar>
+</DemoBlock>
+
 ## API
 
 ### oas-avatar

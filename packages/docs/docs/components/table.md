@@ -196,6 +196,19 @@
 
 `summary` 属性为 JSON 数组 `[{ key, type: 'sum' | 'avg' | 'count', label? }]`，表尾渲染合计行：`label` 显示在首个未聚合列，各聚合值显示在对应列；也支持在列配置上直接写 `summary: 'sum' | 'avg' | 'count'`。
 
+## 合计范围
+
+`summary-scope` 控制合计行统计范围：`all`（默认）对分页切片前的完整筛选结果全量合计（翻页不变），`page` 只对当前页小计。开启分页时两者差异可见。
+
+<DemoBlock title="合计范围：all（默认）与 page 对比">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: 16px">
+    <oas-table pagination page-size="3" summary='[{"key":"age","type":"sum","label":"合计（all）"}]' columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"},{"name":"赵六","age":28,"city":"杭州"},{"name":"孙七","age":32,"city":"广州"},{"name":"周八","age":27,"city":"成都"}]' row-key="name"></oas-table>
+    <oas-table pagination page-size="3" summary-scope="page" summary='[{"key":"age","type":"sum","label":"小计（page）"}]' columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"},{"name":"赵六","age":28,"city":"杭州"},{"name":"孙七","age":32,"city":"广州"},{"name":"周八","age":27,"city":"成都"}]' row-key="name"></oas-table>
+  </div>
+</DemoBlock>
+
+上面第一张表 `summary-scope` 缺省（`all`），第 1 页合计为全部 6 行的年龄和 177；第二张表 `summary-scope="page"`，第 1 页小计为当前页 3 行（30+25+35=90），翻页后小计随页变化。
+
 ## 可展开行
 
 <DemoBlock title="可展开行（expand 字段）">
@@ -276,11 +289,11 @@
 
 ## 多列排序
 
-<DemoBlock title="Shift 点击多列排序">
+<DemoBlock title="Shift 点击多列排序（multi-sort）">
   <div style="width: 100%">
-    <oas-table id="table-multi-sort" row-key="name" columns='[{"key":"age","title":"年龄","sortable":true},{"key":"name","title":"姓名","sortable":true},{"key":"city","title":"城市","sortable":true}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"},{"name":"赵六","age":25,"city":"杭州"}]'></oas-table>
+    <oas-table id="table-multi-sort" multi-sort='[{"key":"age","order":"asc"},{"key":"name","order":"asc"}]' row-key="name" columns='[{"key":"age","title":"年龄","sortable":true},{"key":"name","title":"姓名","sortable":true},{"key":"city","title":"城市","sortable":true}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"},{"name":"赵六","age":25,"city":"杭州"}]'></oas-table>
     <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-      按住 Shift 点击多个可排序列累积排序（表头序号 1、2 表示优先级）；普通点击重置为单列。
+      初始 `multi-sort='[{"key":"age","order":"asc"},{"key":"name","order":"asc"}]'` 以 JSON 声明多列排序（表头序号 1、2 表示优先级）；按住 Shift 点击多个可排序列累积/切换/移除排序并写回 `multi-sort`，普通点击重置为单列。
     </p>
   </div>
 </DemoBlock>
@@ -318,12 +331,13 @@
 
 ## 列过滤
 
-<DemoBlock title="表头列过滤（filterable）">
+<DemoBlock title="表头列过滤（filterable + filter-values 受控）">
   <div style="width: 100%">
-    <oas-table id="table-filter" row-key="name" columns='[{"key":"name","title":"姓名","filterable":true},{"key":"city","title":"城市","filterable":true,"filters":[{"label":"北京","value":"北京"},{"label":"上海","value":"上海"},{"label":"深圳","value":"深圳"}]},{"key":"age","title":"年龄"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"},{"name":"赵六","age":28,"city":"上海"}]'></oas-table>
-    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-      点击列头的过滤图标打开选项弹层，选择后过滤行并派发 `oas-filter-change`；当前过滤值：<span id="table-filter-values">无</span>
-    </p>
+    <oas-table id="table-filter" filter-values='{"city":"上海"}' row-key="name" columns='[{"key":"name","title":"姓名","filterable":true},{"key":"city","title":"城市","filterable":true,"filters":[{"label":"北京","value":"北京"},{"label":"上海","value":"上海"},{"label":"深圳","value":"深圳"}]},{"key":"age","title":"年龄"}]' data='[{"name":"张三","age":30,"city":"北京"},{"name":"李四","age":25,"city":"上海"},{"name":"王五","age":35,"city":"深圳"},{"name":"赵六","age":28,"city":"上海"}]'></oas-table>
+    <div style="width: 100%; display: flex; align-items: center; gap: 12px; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      点击列头的过滤图标打开选项弹层，选择后过滤行并派发 `oas-filter-change`；`filter-values` 为受控属性（JSON `{列: 值}`，移除/置空即清除过滤）。当前过滤值：<span id="table-filter-values">无</span>
+      <oas-button size="small" onclick="window.clearTableFilter && window.clearTableFilter()">清空过滤</oas-button>
+    </div>
   </div>
 </DemoBlock>
 
@@ -477,11 +491,22 @@ onMounted(() => {
     document.querySelector('#table-pager-page').textContent = e.detail.page
   })
 
-  // 列过滤：当前过滤值反馈
-  document.querySelector('#table-filter')?.addEventListener('oas-filter-change', (e) => {
-    const vals = Object.values(e.detail.filters)
+  // 列过滤：当前过滤值反馈（含初始预置值渲染 + 清空按钮）
+  const filterTable = document.querySelector('#table-filter')
+  const renderFilterFeedback = () => {
+    let vals = []
+    try {
+      const raw = filterTable?.getAttribute('filter-values')
+      vals = raw ? Object.values(JSON.parse(raw)) : []
+    } catch {}
     document.querySelector('#table-filter-values').textContent = vals.length ? vals.join('、') : '无'
-  })
+  }
+  filterTable?.addEventListener('oas-filter-change', renderFilterFeedback)
+  window.clearTableFilter = () => {
+    filterTable?.removeAttribute('filter-values')
+    renderFilterFeedback()
+  }
+  renderFilterFeedback()
 
   // 远程数据 + 排序 loading demo：排序触发置 loading，模拟延时后清空排序+回填数据
   const remote = document.querySelector('#table-remote')

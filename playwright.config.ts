@@ -12,6 +12,10 @@ export default defineConfig({
   workers: 6,
   use: {
     baseURL: 'http://localhost:4173',
+    // 首访语言适配（zh* 留中文、其余跳 /en/）上线后，Playwright 默认 en-US  locale
+    // 会被重定向到英文页——绝大多数 spec 断言面向中文页，默认锁 zh-CN；
+    // 语言适配自身的用例在 homepage.spec.ts 里用 browser.newContext({ locale }) 显式覆盖
+    locale: 'zh-CN',
   },
   webServer: {
     // CI 已先跑全量 pnpm build（含 docs dist），不必再 build 一遍，直接 preview 省 ~10s/shard；
