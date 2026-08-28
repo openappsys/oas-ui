@@ -88,13 +88,16 @@ export class OASGrid extends OASElement {
       this.style.rowGap = toLen(parts[0]!)
       this.style.columnGap = toLen(parts[1]!)
     } else if (parts.length === 1) {
+      // 顺序敏感：先清长hand再写简写——反过来「gap=X → rowGap/columnGap=''」会把
+      // 刚写入的简写经长hand清空（真实浏览器 CSSOM 行为；happy-dom 不展开简写故单测漏检，
+      // 实证：CSR/DSD 两路径 computed column-gap 均掉 0）
+      this.style.rowGap = ''
+      this.style.columnGap = ''
       this.style.gap = toLen(parts[0]!)
-      this.style.rowGap = ''
-      this.style.columnGap = ''
     } else {
-      this.style.gap = '0'
       this.style.rowGap = ''
       this.style.columnGap = ''
+      this.style.gap = '0'
     }
   }
 
