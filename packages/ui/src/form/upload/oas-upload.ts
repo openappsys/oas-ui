@@ -277,7 +277,7 @@ const STYLE = `
 .preview-mask {
   position: fixed;
   inset: 0;
-  z-index: var(--oas-z-modal, 1050);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050));
   display: flex;
   align-items: center;
   justify-content: center;

@@ -13,7 +13,7 @@ const STYLE = `
 }
 .menu-anchor {
   position: fixed;
-  z-index: var(--oas-z-dropdown, 1000);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000));
 }
 .menu-anchor[hidden] {
   display: none;

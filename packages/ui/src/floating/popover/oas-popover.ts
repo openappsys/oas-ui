@@ -35,7 +35,7 @@ const STYLE = `
 }
 .panel {
   position: fixed;
-  z-index: var(--oas-z-dropdown, 1000);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000));
   /* 面板与箭头共用 --pop-bg / --pop-border（颜色变体只覆写这两个变量，箭头描边自动跟随） */
   --pop-bg: var(--oas-color-bg);
   --pop-border: var(--oas-color-border);
@@ -64,7 +64,7 @@ const STYLE = `
 }
 /* modal 形态：面板抬到遮罩之上（遮罩走 --oas-z-overlay，面板在其 +1 层） */
 .panel.oas-modal {
-  z-index: calc(var(--oas-z-overlay, 1040) + 1);
+  z-index: calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040)) + 1);
 }
 /* 颜色变体：语义色 tint 底 + 语义色描边，全部由 token 派生的 color-mix 构成，
    dark 主题自动跟随（token 已含 dark 变体）；箭头底色/描边走同一组 --pop-* 变量 */
@@ -354,7 +354,7 @@ const STYLE = `
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: var(--oas-z-overlay, 1040);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040));
   background: var(--oas-color-overlay);
   display: none;
 }
@@ -1104,7 +1104,7 @@ export class OASPopover extends OASElement {
     const host = document.createElement('div')
     host.setAttribute('data-oas-popover-portal', '')
     host.style.cssText = `position: fixed; inset: 0; pointer-events: none; z-index: ${
-      this.hasAttr('modal') ? 'calc(var(--oas-z-overlay, 1040) + 1)' : 'var(--oas-z-dropdown, 1000)'
+      this.hasAttr('modal') ? 'calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-overlay, 1040)) + 1)' : 'calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000))'
     };`
     target.appendChild(host)
     const root = host.attachShadow({ mode: 'open' })

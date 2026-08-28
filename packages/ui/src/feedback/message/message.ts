@@ -1,4 +1,4 @@
-import { resolveMessageHost } from '../../floating/app/app-host.js'
+import { resolveMessageHost, getAppMessageConfig } from '../../floating/app/app-host.js'
 import type { OASMessage, MessageType } from './oas-message.js'
 
 let stackEl: HTMLElement | null = null
@@ -8,7 +8,7 @@ function ensureStack(): HTMLElement {
   if (stackEl && target.contains(stackEl)) return stackEl
   stackEl = document.createElement('div')
   stackEl.style.cssText =
-    'position: fixed; top: 16px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; pointer-events: none; z-index: var(--oas-z-message, 1060);'
+    'position: fixed; top: 16px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; pointer-events: none; z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-message, 1060));'
   target.appendChild(stackEl)
   return stackEl
 }
@@ -111,12 +111,24 @@ function mergeByGroup(
   return handle(el)
 }
 
+/**
+ * 与最近 app 宿主注册的 message 全局默认配置合并：调用参数优先，app 默认仅补缺省键。
+ * 键集对齐 MessageOptions 已有键中可作为默认的 `duration`（group/key 是运行时标识、
+ * onClose 是函数，JSON 无法表达全局默认，不纳入）；app 配置由 <oas-app> 属性解析白名单兜底。
+ */
+function mergeAppConfig(options: MessageOptions): MessageOptions {
+  const appConfig = getAppMessageConfig()
+  if (!appConfig || typeof appConfig.duration !== 'number') return options
+  if (options.duration !== undefined) return options
+  return { ...options, duration: appConfig.duration }
+}
+
 function show(
   type: MessageType,
   content: string,
   durationOrOptions?: number | MessageOptions,
 ): MessageHandle {
-  const options = normalizeOptions(durationOrOptions)
+  const options = mergeAppConfig(normalizeOptions(durationOrOptions))
   // key 命中 → 更新现有消息（内容/类型替换，计数重置）
   if (options.key) {
     const existing = keyMap.get(options.key)

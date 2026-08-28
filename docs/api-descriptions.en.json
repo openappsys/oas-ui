@@ -71,6 +71,16 @@
     "events": {},
     "slots": {}
   },
+  "oas-app": {
+    "attrs": {
+      "message": "Global default config JSON for the message imperative API (keys aligned with existing options: `duration`); imperative functions merge the nearest app's config with call options, call options win; invalid JSON is ignored with a dev warning",
+      "notification": "Global default config JSON for the notification imperative API (keys aligned with existing options: `duration`/`showProgress`/`progressPosition`/`scrollable`); imperative functions merge the nearest app's config with call options, call options win; invalid JSON is ignored with a dev warning"
+    },
+    "events": {},
+    "slots": {
+      "": "Subtree (imperative message stacks mount inside this container instead of `document.body`)"
+    }
+  },
   "oas-auto-complete": {
     "attrs": {
       "disabled": "Disabled",
@@ -511,7 +521,10 @@
     "attrs": {
       "locale": "Language for built-in copy in the wrapped subtree (must be registered); takes precedence over global `setLocale()`",
       "size": "Default size for wrapped components, applied when a component doesn't set it explicitly",
-      "theme": "Theme for the wrapped subtree, written to `data-theme`"
+      "theme": "Theme for the wrapped subtree, written to `data-theme`",
+      "config": "Component-level default config JSON (e.g. `{\"oas-button\":{\"variant\":\"outlined\"}}`); components read `[tag][key]` from the nearest provider, own explicit attributes win; invalid JSON is ignored with a dev warning",
+      "direction": "Global direction injection (`ltr`/`rtl`); writes the host `dir` attribute (CSS direction inheritance pierces light/shadow subtrees); components can consume it via `injectValue('direction')`; invalid values fall back to `ltr` with a dev warning",
+      "z-index": "Global starting value for floating layers (positive integer); writes `--oas-z-index-base` on the host, lifting all floating layers in the subtree; invalid values are ignored with a dev warning"
     },
     "events": {},
     "slots": {}
@@ -1508,6 +1521,7 @@
   "oas-scroll-area": {
     "attrs": {
       "auto-hide": "The scrollbar is shown only while scrolling/hovering, then auto-hides after a timeout",
+      "direction": "One source for RTL detection: when neither the element nor its ancestors set `dir` explicitly, falls back to the `direction` (`ltr`/`rtl`) injected by config-provider",
       "end-distance": "Trigger distance for `oas-end-reached` (px, default `0`): within N px of the bottom/right edge counts as reached",
       "height": "Viewport height (px); when unset, grows with the content",
       "scroll-shadow": "Scroll edge shadow (CSS-only): the shadow fades at each edge as you scroll, hinting that more content exists",
@@ -1940,7 +1954,8 @@
   },
   "oas-theme-editor": {
     "attrs": {
-      "token": "Custom list of tokens to edit (CSS variable names)"
+      "token": "Custom list of tokens to edit (CSS variable names)",
+      "preset": "Built-in preset theme: `compact` (tight; control-height -4px, space scaled down proportionally) / `comfortable` (roomy; +4px, space scaled up proportionally) / `default` (equivalent to reset; clears written inline variables). Invalid values are ignored with a dev warning"
     },
     "events": {
       "oas-change": "Editing any token, `detail: { token, value }`"

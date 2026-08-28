@@ -49,3 +49,53 @@ export function notifyConfigProviders(provider: HTMLElement): void {
   if (!set) return
   for (const cb of [...set]) cb()
 }
+
+/**
+ * 读取最近 config-provider 的 `config` JSON 中 `[tag][key]` 的注入值。
+ *
+ * - 沿祖先链（含 Shadow DOM）找最近的 <oas-config-provider>
+ * - 解析其 `config` 属性（JSON：`{"oas-button":{"variant":"outlined"}}`）
+ * - 返回 `config[tag][key]`；无 provider / 无 config / 无该键 / 非法 JSON 一律 undefined
+ * - 解析结果按「provider 元素 + 属性原文」缓存：config 属性未变化时复用（同值去重）
+ * - 非法 JSON 的 dev 告警由 config-provider 组件负责，本 helper 只读不告警
+ */
+export function readConfigValue<T = string>(
+  el: Element,
+  tag: string,
+  key: string,
+): T | undefined {
+  const provider = findConfigProvider(el)
+  if (!provider) return undefined
+  const config = parseProviderConfig(provider)
+  if (!config) return undefined
+  const entry = config[tag]
+  if (entry === null || typeof entry !== 'object') return undefined
+  return (entry as Record<string, unknown>)[key] as T
+}
+
+const configCache = new WeakMap<
+  HTMLElement,
+  { raw: string | null; parsed: Record<string, Record<string, unknown>> | null }
+>()
+
+/** 解析 provider 的 config JSON（缓存：属性原文未变化时复用上次解析结果） */
+function parseProviderConfig(
+  provider: HTMLElement,
+): Record<string, Record<string, unknown>> | null {
+  const raw = provider.getAttribute('config')
+  const hit = configCache.get(provider)
+  if (hit && hit.raw === raw) return hit.parsed
+  let parsed: Record<string, Record<string, unknown>> | null = null
+  if (raw != null && raw !== '') {
+    try {
+      const v = JSON.parse(raw) as unknown
+      if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+        parsed = v as Record<string, Record<string, unknown>>
+      }
+    } catch {
+      parsed = null
+    }
+  }
+  configCache.set(provider, { raw, parsed })
+  return parsed
+}

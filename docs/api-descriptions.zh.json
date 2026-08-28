@@ -71,6 +71,16 @@
     "events": {},
     "slots": {}
   },
+  "oas-app": {
+    "attrs": {
+      "message": "message 命令式 API 全局默认配置 JSON（键集对齐现有 options 已有键：`duration`）；命令式函数读取最近 app 的配置与调用参数合并，调用参数优先；非法 JSON 忽略 + dev 告警",
+      "notification": "notification 命令式 API 全局默认配置 JSON（键集对齐现有 options 已有键：`duration`/`showProgress`/`progressPosition`/`scrollable`）；命令式函数读取最近 app 的配置与调用参数合并，调用参数优先；非法 JSON 忽略 + dev 告警"
+    },
+    "events": {},
+    "slots": {
+      "": "子树（命令式消息栈挂载到本容器内，而非 document.body）"
+    }
+  },
   "oas-auto-complete": {
     "attrs": {
       "disabled": "禁用",
@@ -511,7 +521,10 @@
     "attrs": {
       "locale": "包裹子树的内置文案语言（需已注册），就近优先于全局 `setLocale()`",
       "size": "包裹组件的默认尺寸，组件自身未显式设置时生效",
-      "theme": "包裹子树的主题，写入 `data-theme`"
+      "theme": "包裹子树的主题，写入 `data-theme`",
+      "config": "组件级默认配置 JSON（如 `{\"oas-button\":{\"variant\":\"outlined\"}}`）；组件经就近读取 `[tag][key]`，自身显式属性优先；非法 JSON 忽略 + dev 告警",
+      "direction": "全局方向注入（`ltr`/`rtl`），设置时写入宿主 `dir` 属性（CSS direction 继承穿透 light/shadow 子树）；组件可经 `injectValue('direction')` 消费；非法值回落 `ltr` + dev 告警",
+      "z-index": "浮层全局起始值（正整数）；写入宿主 `--oas-z-index-base`，子树内浮层 z-index 统一抬升；非法值忽略 + dev 告警"
     },
     "events": {},
     "slots": {}
@@ -1508,6 +1521,7 @@
   "oas-scroll-area": {
     "attrs": {
       "auto-hide": "滚动条仅在滚动/悬停时显示，超时自动隐藏",
+      "direction": "RTL 判定来源之一：自身/祖先未显式设置 `dir` 时回落 config-provider 注入的 `direction`（`ltr`/`rtl`）",
       "end-distance": "`oas-end-reached` 触发距离（px，默认 `0`）：距底/右边缘 N px 内即算到底",
       "height": "视口高度（px），不设置时随内容自然撑开",
       "scroll-shadow": "滚动边缘阴影（CSS-only）：滚动到边缘时阴影渐隐提示还有内容",
@@ -1940,7 +1954,8 @@
   },
   "oas-theme-editor": {
     "attrs": {
-      "token": "自定义要编辑的 token 列表（CSS 变量名）"
+      "token": "自定义要编辑的 token 列表（CSS 变量名）",
+      "preset": "内置预设主题：`compact`（紧凑，control-height -4px、space 按比例收缩）/ `comfortable`（宽松，+4px、space 按比例放大）/ `default`（等价 reset，清除已写入内联变量）；非法值忽略并 dev 告警"
     },
     "events": {
       "oas-change": "编辑任一 token，`detail: { token, value }`"

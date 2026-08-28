@@ -486,7 +486,8 @@ export class OASScrollArea extends OASElement {
 
   // ---------- RTL / stick-to-bottom / end-reached ----------
 
-  /** 宿主是否为 RTL（优先显式 dir 属性，逐级向祖先与 documentElement 回退；最后兜底 computed style） */
+  /** 宿主是否为 RTL（优先显式 dir 属性，逐级向祖先与 documentElement 回退；
+   *  祖先未显式设置时回落 config-provider 注入的 direction 值；最后兜底 computed style） */
   private isRtl(): boolean {
     const dir = this.getAttribute('dir')
     if (dir === 'rtl' || dir === 'ltr') return dir === 'rtl'
@@ -496,6 +497,10 @@ export class OASScrollArea extends OASElement {
       if (d === 'rtl' || d === 'ltr') return d === 'rtl'
       cur = cur.parentElement
     }
+    // config-provider direction 注入：自身/祖先均未显式设置时回落注入值
+    // （provider 会把自己的 direction 写成 dir 属性，此路径为显式兜底消费）
+    const injected = this.injectValue('direction', '')
+    if (injected === 'rtl' || injected === 'ltr') return injected === 'rtl'
     if (this.ownerDocument?.documentElement.getAttribute('dir') === 'rtl') return true
     return getComputedStyle(this).direction === 'rtl'
   }

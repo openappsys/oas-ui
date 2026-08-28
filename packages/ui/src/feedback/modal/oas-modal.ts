@@ -11,7 +11,7 @@ const STYLE = `
   position: fixed;
   inset: 0;
   background: var(--oas-color-overlay);
-  z-index: var(--oas-z-modal, 1050);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050));
 }
 .dialog {
   position: fixed;
@@ -31,7 +31,7 @@ const STYLE = `
   background: var(--oas-color-bg);
   border-radius: var(--oas-radius-lg);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  z-index: calc(var(--oas-z-modal, 1050) + 1);
+  z-index: calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050)) + 1);
   font-family: inherit;
   color: var(--oas-color-text-primary);
 }

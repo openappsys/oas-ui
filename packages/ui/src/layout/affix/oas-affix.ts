@@ -10,7 +10,7 @@ const STYLE = `
 }
 .wrap.fixed {
   position: fixed;
-  z-index: var(--oas-z-sticky, 1020);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-sticky, 1020));
 }
 `
 

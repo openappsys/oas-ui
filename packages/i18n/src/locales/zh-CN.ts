@@ -303,6 +303,7 @@ export const zhCN = {
   // theme-editor（主题编辑器）
   'themeEditor.label': '主题编辑器',
   'themeEditor.export': '导出主题 JSON',
+  'themeEditor.search': '搜索 token',
   'themeEditor.group.color': '颜色',
   'themeEditor.group.fontSize': '字号',
   'themeEditor.group.space': '间距',

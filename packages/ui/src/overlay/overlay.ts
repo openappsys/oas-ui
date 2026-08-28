@@ -26,7 +26,14 @@ function ensureContainer(): HTMLElement {
   return container
 }
 
+/** 浮层 z-index 起始值：优先 --oas-z-index-base（config-provider z-index 全局起始值，写在 documentElement 时生效），
+ *  否则 --oas-z-overlay token，最后回落硬编码 1040 */
 function baseZ(): number {
+  const baseRaw = getComputedStyle(document.documentElement)
+    .getPropertyValue('--oas-z-index-base')
+    .trim()
+  const base = Number(baseRaw)
+  if (Number.isFinite(base) && base > 0) return base
   const raw = getComputedStyle(document.documentElement).getPropertyValue('--oas-z-overlay').trim()
   const parsed = Number(raw)
   return Number.isNaN(parsed) ? 1040 : parsed

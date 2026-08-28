@@ -23,7 +23,7 @@ const STYLE = `
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: var(--oas-z-fixed);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-fixed, 1030));
 }
 .tablist {
   display: flex;

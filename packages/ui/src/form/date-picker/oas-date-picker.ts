@@ -114,7 +114,7 @@ const STYLE = `
   /* fixed + computePosition 锚定 trigger：逃出祖先 overflow 容器（窄工具栏/模态滚动容器），
      不再被裁剪；空间不足自动翻转/右对齐/视口夹取（与 select/combobox 同定位契约） */
   position: fixed;
-  z-index: var(--oas-z-dropdown, 1000);
+  z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000));
   background: var(--oas-color-bg);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-md);

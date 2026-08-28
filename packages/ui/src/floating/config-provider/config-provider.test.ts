@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { registerLocale } from '@oas-ui/i18n'
 import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
@@ -6,6 +6,8 @@ import './index.js'
 import '../../feedback/empty/index.js'
 import '../../basic/button/index.js'
 import '../../basic/tag/index.js'
+import '../../floating/scroll-area/index.js'
+import '../../feedback/modal/index.js'
 
 /**
  * config-provider 注入机制测试：
@@ -168,5 +170,234 @@ describe('oas-config-provider', () => {
     expect(desc.textContent).toBe('暂无数据')
 
     setLocale('zh-CN')
+  })
+
+  describe('config JSON 组件级默认配置', () => {
+    it('button variant 未显式设置时读注入值', () => {
+      const cp = document.createElement('oas-config-provider')
+      cp.setAttribute('config', '{"oas-button":{"variant":"outlined"}}')
+      const btn = document.createElement('oas-button')
+      btn.textContent = '注入按钮'
+      cp.appendChild(btn)
+      document.body.appendChild(cp)
+
+      const btnEl = btn.shadowRoot!.querySelector('button')!
+      expect(btnEl.classList.contains('outlined')).toBe(true)
+      expect(btnEl.classList.contains('solid')).toBe(false)
+    })
+
+    it('button 显式 variant 优先于注入值', () => {
+      const cp = document.createElement('oas-config-provider')
+      cp.setAttribute('config', '{"oas-button":{"variant":"outlined"}}')
+      const btn = document.createElement('oas-button')
+      btn.setAttribute('variant', 'dashed')
+      btn.textContent = '显式按钮'
+      cp.appendChild(btn)
+      document.body.appendChild(cp)
+
+      const btnEl = btn.shadowRoot!.querySelector('button')!
+      expect(btnEl.classList.contains('dashed')).toBe(true)
+      expect(btnEl.classList.contains('outlined')).toBe(false)
+    })
+
+    it('嵌套 config-provider 就近覆盖（config）', () => {
+      const outer = document.createElement('oas-config-provider')
+      outer.setAttribute('config', '{"oas-button":{"variant":"outlined"}}')
+
+      const inner = document.createElement('oas-config-provider')
+      inner.setAttribute('config', '{"oas-button":{"variant":"dashed"}}')
+
+      const btnInner = document.createElement('oas-button')
+      btnInner.textContent = '内层按钮'
+      inner.appendChild(btnInner)
+
+      const btnOuter = document.createElement('oas-button')
+      btnOuter.textContent = '外层按钮'
+      outer.appendChild(btnOuter)
+      outer.appendChild(inner)
+
+      document.body.appendChild(outer)
+
+      const innerEl = btnInner.shadowRoot!.querySelector('button')!
+      expect(innerEl.classList.contains('dashed')).toBe(true)
+      const outerEl = btnOuter.shadowRoot!.querySelector('button')!
+      expect(outerEl.classList.contains('outlined')).toBe(true)
+    })
+
+    it('config 属性变化时包裹 button 即时重刷 variant', () => {
+      const cp = document.createElement('oas-config-provider')
+      const btn = document.createElement('oas-button')
+      btn.textContent = '动态按钮'
+      cp.appendChild(btn)
+      document.body.appendChild(cp)
+
+      const btnEl = btn.shadowRoot!.querySelector('button')!
+      expect(btnEl.classList.contains('outlined')).toBe(false)
+
+      cp.setAttribute('config', '{"oas-button":{"variant":"outlined"}}')
+      expect(btnEl.classList.contains('outlined')).toBe(true)
+
+      cp.setAttribute('config', '{"oas-button":{"variant":"filled"}}')
+      expect(btnEl.classList.contains('filled')).toBe(true)
+      expect(btnEl.classList.contains('outlined')).toBe(false)
+
+      cp.removeAttribute('config')
+      expect(btnEl.classList.contains('filled')).toBe(false)
+    })
+
+    it('无 config 或键缺失时回落默认 solid', () => {
+      const cp = document.createElement('oas-config-provider')
+      cp.setAttribute('config', '{"oas-tag":{"size":"large"}}')
+      const btn = document.createElement('oas-button')
+      btn.textContent = '无 variant 键'
+      cp.appendChild(btn)
+      document.body.appendChild(cp)
+
+      const btnEl = btn.shadowRoot!.querySelector('button')!
+      expect(btnEl.classList.contains('solid')).toBe(false) // solid 为默认不加 class
+      expect(btnEl.classList.contains('outlined')).toBe(false)
+    })
+
+    it('非法 JSON：忽略 + dev 告警（同值去重）', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const cp = document.createElement('oas-config-provider')
+        cp.setAttribute('config', '{bad json')
+        document.body.appendChild(cp)
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('[oas-config-provider] 非法 config JSON'),
+        )
+
+        // 同值跨元素去重：不重复告警
+        const cp2 = document.createElement('oas-config-provider')
+        cp2.setAttribute('config', '{bad json')
+        document.body.appendChild(cp2)
+        expect(warn).toHaveBeenCalledTimes(1)
+
+        // 合法 JSON 但非对象（数组）同样告警
+        const cp3 = document.createElement('oas-config-provider')
+        cp3.setAttribute('config', '[1,2]')
+        document.body.appendChild(cp3)
+        expect(warn).toHaveBeenCalledTimes(2)
+
+        // 非法 config 不影响 button 默认形态
+        const btn = document.createElement('oas-button')
+        btn.textContent = '非法 config 下的按钮'
+        cp.appendChild(btn)
+        const btnEl = btn.shadowRoot!.querySelector('button')!
+        expect(btnEl.classList.contains('outlined')).toBe(false)
+      } finally {
+        warn.mockRestore()
+      }
+    })
+  })
+
+  describe('direction 全局方向注入', () => {
+    it('direction 写入宿主 dir 属性（CSS direction 穿透子树）', () => {
+      const cp = document.createElement('oas-config-provider')
+      document.body.appendChild(cp)
+
+      cp.setAttribute('direction', 'rtl')
+      expect(cp.getAttribute('dir')).toBe('rtl')
+      cp.setAttribute('direction', 'ltr')
+      expect(cp.getAttribute('dir')).toBe('ltr')
+      cp.removeAttribute('direction')
+      expect(cp.getAttribute('dir')).toBeNull()
+    })
+
+    it('scroll-area 消费注入方向（provider direction=rtl → 横向滚轮负值转译）', () => {
+      const cp = document.createElement('oas-config-provider')
+      cp.setAttribute('direction', 'rtl')
+      const sa = document.createElement('oas-scroll-area')
+      cp.appendChild(sa)
+      document.body.appendChild(cp)
+
+      const vp = sa.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      // happy-dom 无布局：模拟横向可滚（client 100 / scroll 400 → maxX = 300）
+      Object.defineProperty(vp, 'clientWidth', { value: 100, configurable: true })
+      Object.defineProperty(vp, 'clientHeight', { value: 100, configurable: true })
+      Object.defineProperty(vp, 'scrollWidth', { value: 400, configurable: true })
+      Object.defineProperty(vp, 'scrollHeight', { value: 100, configurable: true })
+
+      const ev = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 50 })
+      vp.dispatchEvent(ev)
+      expect(ev.defaultPrevented).toBe(true)
+      // RTL 语义：scrollLeft 为负值区间 [-300, 0]，前进方向与 LTR 相反
+      expect(vp.scrollLeft).toBe(-50)
+    })
+
+    it('非法 direction：回落 ltr + dev 告警（同值去重）', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const cp = document.createElement('oas-config-provider')
+        cp.setAttribute('direction', 'sideways')
+        document.body.appendChild(cp)
+        expect(cp.getAttribute('dir')).toBe('ltr')
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('[oas-config-provider] 非法 direction'),
+        )
+
+        // 同值跨元素去重：不重复告警
+        const cp2 = document.createElement('oas-config-provider')
+        cp2.setAttribute('direction', 'sideways')
+        document.body.appendChild(cp2)
+        expect(warn).toHaveBeenCalledTimes(1)
+      } finally {
+        warn.mockRestore()
+      }
+    })
+  })
+
+  describe('z-index 浮层全局起始值', () => {
+    it('合法正整数写入 --oas-z-index-base，移除属性时清掉', () => {
+      const cp = document.createElement('oas-config-provider')
+      document.body.appendChild(cp)
+
+      cp.setAttribute('z-index', '2000')
+      expect(cp.style.getPropertyValue('--oas-z-index-base')).toBe('2000')
+
+      cp.removeAttribute('z-index')
+      expect(cp.style.getPropertyValue('--oas-z-index-base')).toBe('')
+    })
+
+    it('浮层组件 z-index 带 --oas-z-index-base 回落链', () => {
+      const modal = document.createElement('oas-modal')
+      document.body.appendChild(modal)
+      const style = modal.shadowRoot!.querySelector('style')!.textContent!
+      expect(style).toContain('calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050))')
+    })
+
+    it('非法 z-index：忽略 + dev 告警（同值去重）', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      try {
+        const cp = document.createElement('oas-config-provider')
+        document.body.appendChild(cp)
+        cp.setAttribute('z-index', '2000')
+        expect(cp.style.getPropertyValue('--oas-z-index-base')).toBe('2000')
+
+        // 非正整数（负值/小数/0）→ 忽略（清掉已有写入）+ 告警
+        cp.setAttribute('z-index', '-5')
+        expect(cp.style.getPropertyValue('--oas-z-index-base')).toBe('')
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('[oas-config-provider] 非法 z-index'),
+        )
+
+        cp.setAttribute('z-index', '10.5')
+        expect(cp.style.getPropertyValue('--oas-z-index-base')).toBe('')
+        expect(warn).toHaveBeenCalledTimes(2)
+
+        cp.setAttribute('z-index', '0')
+        expect(cp.style.getPropertyValue('--oas-z-index-base')).toBe('')
+        expect(warn).toHaveBeenCalledTimes(3)
+
+        // 同值跨元素去重：不重复告警
+        const cp2 = document.createElement('oas-config-provider')
+        cp2.setAttribute('z-index', '-5')
+        document.body.appendChild(cp2)
+        expect(warn).toHaveBeenCalledTimes(3)
+      } finally {
+        warn.mockRestore()
+      }
+    })
   })
 })

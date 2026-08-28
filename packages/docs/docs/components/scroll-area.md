@@ -247,6 +247,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `auto-hide` | 滚动条仅在滚动/悬停时显示，超时自动隐藏 | `boolean` | — |
+| `direction` | RTL 判定来源之一：自身/祖先未显式设置 `dir` 时回落 config-provider 注入的 `direction`（`ltr`/`rtl`） | `string` | — |
 | `end-distance` | `oas-end-reached` 触发距离（px，默认 `0`）：距底/右边缘 N px 内即算到底 | `string` | `0` |
 | `height` | 视口高度（px），不设置时随内容自然撑开 | — | — |
 | `scroll-shadow` | 滚动边缘阴影（CSS-only）：滚动到边缘时阴影渐隐提示还有内容 | — | — |
