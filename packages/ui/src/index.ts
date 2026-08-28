@@ -203,7 +203,14 @@ export {
 } from './feedback/toast/index.js'
 export { OASSnackbar } from './feedback/snackbar/index.js'
 export { OASBackdrop } from './feedback/backdrop/index.js'
-export { OASModal } from './feedback/modal/oas-modal.js'
+export {
+  OASModal,
+  modal,
+  destroyAll as destroyAllModal,
+  type ModalVariant,
+  type ModalHandle,
+  type ModalOptions,
+} from './feedback/modal/index.js'
 export {
   confirm,
   destroyAll as destroyAllConfirm,

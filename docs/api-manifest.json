@@ -3467,6 +3467,11 @@
         "observed": true
       },
       {
+        "name": "no-cancel",
+        "type": "boolean",
+        "observed": true
+      },
+      {
         "name": "width",
         "observed": true
       },
@@ -3487,6 +3492,24 @@
       },
       {
         "name": "loading",
+        "type": "boolean",
+        "observed": true
+      },
+      {
+        "name": "type",
+        "type": "ModalVariant",
+        "observed": true
+      },
+      {
+        "name": "ok-text",
+        "observed": true
+      },
+      {
+        "name": "cancel-text",
+        "observed": true
+      },
+      {
+        "name": "focus-ok",
         "type": "boolean",
         "observed": true
       },

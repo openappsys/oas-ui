@@ -1,4 +1,15 @@
 import { OASElement } from '@oas-ui/core'
+import { iconRegistry, type IconName } from '@oas-ui/icons'
+
+export type ModalVariant = 'info' | 'success' | 'warning' | 'error'
+
+/** 语义变体 → 内置图标名（iconRegistry 键） */
+const SEMANTIC_ICONS: Record<ModalVariant, IconName> = {
+  info: 'info',
+  success: 'check-circle',
+  warning: 'warning',
+  error: 'error',
+}
 
 const STYLE = `
 :host {
@@ -113,6 +124,32 @@ const STYLE = `
   border-color: var(--oas-color-primary);
   color: var(--oas-color-text-on-primary);
 }
+/* 语义变体图标（type 属性）：正文顶部居中，颜色随语义（info 用 primary） */
+.semantic-icon {
+  display: block;
+  text-align: center;
+  font-size: 36px;
+  line-height: 1;
+  margin-bottom: var(--oas-space-3);
+  color: var(--oas-color-primary);
+}
+.semantic-icon svg {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+}
+.semantic-icon[hidden] {
+  display: none;
+}
+:host([type='success']) .semantic-icon {
+  color: var(--oas-color-success);
+}
+:host([type='warning']) .semantic-icon {
+  color: var(--oas-color-warning);
+}
+:host([type='error']) .semantic-icon {
+  color: var(--oas-color-danger);
+}
 /* 全屏：铺满视口、无圆角/边距；规则后置 + 更高特异性，优先级高于 centered/width/draggable */
 :host([fullscreen]) .dialog {
   inset: 0;
@@ -160,11 +197,16 @@ export class OASModal extends OASElement {
       'visible',
       'title',
       'no-footer',
+      'no-cancel',
       'width',
       'centered',
       'draggable',
       'fullscreen',
       'loading',
+      'type',
+      'ok-text',
+      'cancel-text',
+      'focus-ok',
     ]
   }
 
@@ -194,7 +236,10 @@ export class OASModal extends OASElement {
           <span class="title" id="oas-modal-title" part="title"></span>
           <button class="close-btn" part="close" aria-label="">✕</button>
         </div>
-        <div class="body" part="body"><slot></slot></div>
+        <div class="body" part="body">
+          <span class="semantic-icon" part="semantic-icon" aria-hidden="true" hidden></span>
+          <slot></slot>
+        </div>
         ${
           this.hasAttr('no-footer')
             ? ''
@@ -308,11 +353,11 @@ export class OASModal extends OASElement {
     document.removeEventListener('pointerup', this.endDrag)
   }
 
-  /** 对话框内可聚焦元素（按 DOM 顺序） */
+  /** 对话框内可聚焦元素（按 DOM 顺序；hidden 的取消按钮（no-cancel）排除在陷阱外） */
   private getFocusables(): HTMLElement[] {
     return Array.from(
       this.shadow.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]):not([hidden]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
       ),
     )
   }
@@ -374,8 +419,9 @@ export class OASModal extends OASElement {
     }
   }
 
-  /** 关闭/确认：属性驱动约定——组件自管状态属性，同时派发事件供宿主响应 */
-  private close(action: 'ok' | 'cancel'): void {
+  /** 关闭/确认：属性驱动约定——组件自管状态属性，同时派发事件供宿主响应。
+   *  公开：命令式 modal API 的 `{ close() }` 句柄经此编程关闭（移除 visible → 还原焦点 → 派发事件） */
+  close(action: 'ok' | 'cancel'): void {
     this.removeAttribute('visible')
     this.emit(action)
   }
@@ -402,7 +448,7 @@ export class OASModal extends OASElement {
     if (this.hasAttr('centered')) dialog.setAttribute('data-centered', '')
     else dialog.removeAttribute('data-centered')
     this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.getAttr('title', '')
-    // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
+    // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）；ok-text/cancel-text 可覆盖
     this.shadow
       .querySelector<HTMLElement>('[part="close"]')
       ?.setAttribute('aria-label', this.t('modal.close'))
@@ -410,8 +456,9 @@ export class OASModal extends OASElement {
     const cancelBtn = this.shadow.querySelector<HTMLElement>('[part="cancel"]')
     const loading = this.hasAttr('loading')
     if (okBtn) {
-      okBtn.setAttribute('aria-label', this.t('modal.ok'))
-      okBtn.querySelector<HTMLElement>('.ok-label')!.textContent = this.t('modal.ok')
+      const okText = this.getAttr('ok-text') || this.t('modal.ok')
+      okBtn.setAttribute('aria-label', okText)
+      okBtn.querySelector<HTMLElement>('.ok-label')!.textContent = okText
       // loading：禁用确定 + aria-busy + spinner，禁止重复触发
       okBtn.disabled = loading
       okBtn.setAttribute('aria-busy', String(loading))
@@ -419,20 +466,42 @@ export class OASModal extends OASElement {
       if (spinner) spinner.hidden = !loading
     }
     if (cancelBtn) {
-      cancelBtn.setAttribute('aria-label', this.t('modal.cancel'))
-      cancelBtn.textContent = this.t('modal.cancel')
+      const cancelText = this.getAttr('cancel-text') || this.t('modal.cancel')
+      // no-cancel：隐藏取消按钮（hidden 属性，焦点陷阱选择器同步排除）
+      cancelBtn.hidden = this.hasAttr('no-cancel')
+      cancelBtn.setAttribute('aria-label', cancelText)
+      cancelBtn.textContent = cancelText
+    }
+    // 语义变体图标（type 属性）：内置图标名映射；无 type / 非法值隐藏
+    const semanticIcon = this.shadow.querySelector<HTMLElement>('[part="semantic-icon"]')
+    if (semanticIcon) {
+      const iconName = SEMANTIC_ICONS[this.getAttr('type') as ModalVariant]
+      if (iconName) {
+        semanticIcon.hidden = false
+        semanticIcon.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">${iconRegistry[iconName]}</svg>`
+      } else {
+        semanticIcon.hidden = true
+        semanticIcon.innerHTML = ''
+      }
     }
     const footer = this.shadow.querySelector<HTMLElement>('.footer')
     if (footer) footer.style.display = this.hasAttr('no-footer') ? 'none' : ''
 
     // 焦点管理：仅在「隐藏 → 可见」转变时记录来源焦点并移入对话框；
+    // 默认聚焦「取消」按钮（破坏性确认的保守选择）；focus-ok 时聚焦「确定」按钮
+    // （命令式 API 的统一行为）；no-cancel（取消已隐藏）回退「确定」/「关闭」。
     // 关闭后归还焦点并清空，避免标题/文案变化时误覆盖来源记录。
     if (visible && !this.wasVisible) {
       this.wasVisible = true
       this.previousFocus = document.activeElement as HTMLElement
-      const target =
-        this.shadow.querySelector<HTMLElement>('[part="cancel"]') ??
-        this.shadow.querySelector<HTMLElement>('[part="close"]')
+      let target: HTMLElement | null = null
+      if (this.hasAttr('focus-ok')) {
+        target = okBtn
+      } else if (cancelBtn && !cancelBtn.hidden) {
+        target = cancelBtn
+      } else {
+        target = okBtn ?? this.shadow.querySelector<HTMLElement>('[part="close"]')
+      }
       target?.focus()
     } else if (!visible) {
       if (this.wasVisible) {

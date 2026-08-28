@@ -1236,13 +1236,18 @@
   },
   "oas-modal": {
     "attrs": {
+      "cancel-text": "Cancel button label; defaults to locale `modal.cancel`",
       "centered": "Vertically center the dialog",
       "draggable": "Drag the dialog via its header",
+      "focus-ok": "Move focus to the \"OK\" button on open (default: the \"Cancel\" button)",
       "fullscreen": "Display fullscreen: the dialog fills the viewport without radius or margin (takes precedence over width / centered / draggable)",
       "loading": "Put the OK button into loading state (disabled + spinner), blocking repeated confirms",
+      "no-cancel": "Hide the cancel button (the footer keeps only \"OK\"; built into semantic variants)",
       "no-footer": "Hide footer action buttons",
       "no-mask-close": "Disable closing on mask click",
+      "ok-text": "OK button label; defaults to locale `modal.ok`",
       "title": "Title text",
+      "type": "Semantic variant: `info`/`success`/`warning`/`error`, renders the matching semantic icon above the content",
       "visible": "Whether shown",
       "width": "Dialog width (px or percentage)"
     },
