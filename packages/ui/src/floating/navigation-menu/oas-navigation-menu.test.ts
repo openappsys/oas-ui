@@ -212,6 +212,36 @@ describe('OASNavigationMenu', () => {
     expect(isOpen(el)).toBe(true)
   })
 
+  it('delay-duration="0"：关闭宽限独立 ≥150ms（不再复用打开延迟致指针未到面板即关）', () => {
+    vi.useFakeTimers()
+    const el = mount({ 'delay-duration': '0' })
+    topItems(el)[0]!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    expect(isOpen(el)).toBe(true)
+    nav(el).dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    // 若复用 0 打开延迟，此刻已关；宽限期内必须保持打开
+    vi.advanceTimersByTime(100)
+    expect(isOpen(el)).toBe(true)
+    vi.advanceTimersByTime(60)
+    expect(isOpen(el)).toBe(false)
+    vi.useRealTimers()
+  })
+
+  it('delay-duration="0"：关闭宽限期内进入面板取消关闭（hover 保挂可点选）', () => {
+    vi.useFakeTimers()
+    const el = mount({ 'delay-duration': '0' })
+    topItems(el)[0]!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    nav(el).dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    const viewport = el.shadowRoot!.querySelector('[part="viewport"]')!
+    viewport.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    vi.advanceTimersByTime(300)
+    expect(isOpen(el)).toBe(true)
+    // 面板再离开 → 走宽限后正常关闭
+    viewport.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    vi.advanceTimersByTime(160)
+    expect(isOpen(el)).toBe(false)
+    vi.useRealTimers()
+  })
+
   it('鼠标离开导航栏延迟关闭（delay-duration）', () => {
     vi.useFakeTimers()
     const el = mount()
