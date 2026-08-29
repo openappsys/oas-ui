@@ -818,12 +818,22 @@
   },
   "oas-float-button": {
     "attrs": {
-      "badge": "Badge number at the top-right corner"
+      "aria-label": "Accessible name: overrides the built-in label when set explicitly (icon-only defaults to locale \"Quick actions\"; extended text lets the visible text win)",
+      "badge": "Badge number at the top-right corner",
+      "disabled": "Disabled: not clickable, `oas-click` not fired, weakened styles; in `href` mode it degrades to a non-clickable `span`",
+      "href": "Link URL: when set, renders an `<a>` element (native link semantics and keyboard reachability) instead of a button; degrades to a `span` when disabled",
+      "shape": "Shape: `circle` (default, round) / `square` (capsule rounded rectangle)",
+      "size": "Size tier: `xs` (24px) / `sm` (32px) / `md` (40px) / `lg` (default 48px) / `xl` (56px); invalid values fall back to `lg` with a warning",
+      "target": "Link open mode (effective in `href` mode, e.g. `_blank`)",
+      "type": "Visual intensity: `primary` (default, solid primary) / `default` (weakened: light background with dark text)"
     },
     "events": {
       "oas-click": "Clicked, `detail: { originalEvent }`"
     },
-    "slots": {}
+    "slots": {
+      "": "Extended text: writing text into the default slot turns the button into a horizontal capsule (icon + text in a row)",
+      "icon": "Icon (default ＋)"
+    }
   },
   "oas-form": {
     "attrs": {
