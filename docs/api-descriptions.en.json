@@ -1368,12 +1368,22 @@
       "show-jumper": "Shows a quick-jump input 「跳至 __ 页」(Enter to jump, out-of-range clamped)",
       "show-total": "Shows the total text 「共 X 条」",
       "siblings": "Number of page numbers shown on each side of the current page",
-      "total": "Total number of records"
+      "total": "Total number of records",
+      "disabled": "Disables everything: all page buttons with aria-disabled, plus the page-size dropdown and jumper input",
+      "size": "Size tier: xs / sm / md / lg / xl (default md); invalid values fall back to md with a console warning",
+      "simple": "Minimal form: only prev/next buttons and a \"current / total pages\" text; mutually exclusive with the page-number ellipsis algorithm (simple wins); show-jumper still applies",
+      "show-edges": "Shows first/last double-arrow buttons (« »), disabled at the boundaries; aria-label via i18n",
+      "hide-on-single": "Hides the whole component when there is a single page (pageCount ≤ 1)"
     },
     "events": {
-      "oas-change": "Flipping `{ page }`; page-size switch `{ page: 1, pageSize }`; quick jump `{ page, pageSize }`"
+      "oas-change": "Flipping `{ page }`; page-size switch `{ page: 1, pageSize }`; quick jump `{ page, pageSize }`",
+      "oas-before-change": "Fires before a page change/jump; preventDefault cancels the change (page-size switching is not intercepted)"
     },
-    "slots": {}
+    "slots": {
+      "prev-icon": "Icon slot for the previous button; replaces the default ‹ when present",
+      "next-icon": "Icon slot for the next button; replaces the default › when present",
+      "total": "Total text slot; replaces the built-in \"Total N\" text when present"
+    }
   },
   "oas-paragraph": {
     "attrs": {
