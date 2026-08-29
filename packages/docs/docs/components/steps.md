@@ -36,6 +36,38 @@
   <oas-steps clickable current="1" onoas-change="message.info('切换到第 ' + (event.detail.index + 1) + ' 步')" steps='[{"title":"创建订单","description":"填写订单信息"},{"title":"确认支付","description":"选择支付方式"},{"title":"完成发货","description":"等待收货"}]'></oas-steps>
 </DemoBlock>
 
+## 带图标步骤
+
+通过每步的 `icon` 字段（`iconRegistry` 键）在指示器位置渲染图标，显式 `icon` 优先于状态默认图标（序号 / ✓ / ✕）；`icon` 无匹配时不渲染，回落状态默认图标。
+
+<DemoBlock title="图标步骤">
+  <oas-steps current="1" steps='[{"title":"创建订单","description":"填写订单信息","icon":"edit"},{"title":"确认支付","description":"选择支付方式","icon":"check-circle"},{"title":"完成发货","description":"等待收货","icon":"download"}]'></oas-steps>
+</DemoBlock>
+
+## 线性模式
+
+`linear` 开启后（配合 `clickable`/`navigation`）仅允许点击 `index <= current` 的步骤：已过步骤可回跳、当前步可停留，未来步骤禁点且点击静默（不派发 `oas-change`）。
+
+<DemoBlock title="线性模式（禁跳步）">
+  <oas-steps linear clickable current="1" onoas-change="message.info('切换到第 ' + (event.detail.index + 1) + ' 步')" steps='[{"title":"创建订单","description":"填写订单信息"},{"title":"确认支付","description":"选择支付方式"},{"title":"完成发货","description":"等待收货"}]'></oas-steps>
+</DemoBlock>
+
+## 标签横排
+
+`label-placement="horizontal"` 将标题与图标同行排布（图标左、标题右），连接线对准图标中心；默认 `vertical` 保持图标在上、标题在下。
+
+<DemoBlock title="标签横排">
+  <oas-steps label-placement="horizontal" current="1" steps='[{"title":"创建订单","description":"填写订单信息"},{"title":"确认支付","description":"选择支付方式"},{"title":"完成发货","description":"等待收货"}]'></oas-steps>
+</DemoBlock>
+
+## 禁用步骤
+
+通过每步的 `disabled` 字段禁用步骤：`clickable`/`navigation` 下禁点（无按钮语义、键盘跳过）、视觉弱化（弱化色 token）；显式 `status` 仍正常显示。
+
+<DemoBlock title="禁用步骤">
+  <oas-steps clickable current="1" onoas-change="message.info('切换到第 ' + (event.detail.index + 1) + ' 步')" steps='[{"title":"创建订单","description":"填写订单信息"},{"title":"确认支付","description":"选择支付方式"},{"title":"完成发货","description":"等待收货","disabled":true}]'></oas-steps>
+</DemoBlock>
+
 ## 点状步骤
 
 `progress-dot` 将步骤指示器切换为圆点（当前步圆点放大并带柔光晕），连线为细线；配合 `clickable` 圆点可点击跳转（含键盘）。
@@ -75,9 +107,11 @@
 | `clickable` | 步骤可点击跳转（布尔，存在即开启） | `boolean` | — |
 | `current` | 当前步骤索引（0 起） | `string` | `0` |
 | `direction` | 方向（导航模式下强制横向） | `string` | `horizontal` |
+| `label-placement` | 标签排布：`vertical`（默认，图标上/标题下）/ `horizontal`（图标左/标题右同行） | `string` | — |
+| `linear` | 线性模式：仅允许点击 `index <= current` 的步骤（布尔，存在即开启；未来步禁点，点击静默） | `boolean` | — |
 | `navigation` | 导航模式：箭头导航条 + 底部上一步/下一步按钮（布尔，存在即开启） | `boolean` | — |
 | `progress-dot` | 点状步骤：指示器为圆点、连线为细线（布尔，存在即开启） | `boolean` | — |
-| `steps` | `[{ title, description?, status? }]` JSON 字符串 | `StepItem[] \| string` | `[]` |
+| `steps` | `[{ title, description?, status?, icon?, disabled? }]` JSON 字符串 | `StepItem[] \| string` | `[]` |
 
 ### 事件
 
