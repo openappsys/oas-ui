@@ -322,8 +322,8 @@ describe('OASMenubar', () => {
     const el = mount()
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).toContain('@media (pointer: coarse)')
-    expect(css).toContain('min-height: 44px')
-    expect(css).toContain('min-width: 44px')
+    expect(css).toContain('min-height: var(--oas-control-height-xl)')
+    expect(css).toContain('min-width: var(--oas-control-height-xl)')
   })
 
   // ===== #4 多 radio 组独立 value 作用域（group 项 value 字段作为组 id）=====

@@ -543,6 +543,12 @@ aside {
     transition: none;
   }
 }
+/* ===== 粗指针触控目标 xl 档 48px（移动端基线；细指针桌面保持 lg 档不变；.item.sub 子项同类名一并覆盖） ===== */
+@media (pointer: coarse) {
+  .item {
+    min-height: var(--oas-control-height-xl, 48px);
+  }
+}
 `
 
 /**
