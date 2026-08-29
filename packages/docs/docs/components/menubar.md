@@ -139,6 +139,14 @@
   <oas-menubar items='[{"label":"文件","value":"file","icon":"gear","children":[{"label":"新建","value":"new","icon":"plus"},{"label":"打开","value":"open","icon":"search"},{"label":"保存","value":"save","icon":"download"}]},{"label":"账户","value":"account","icon":"user","children":[{"label":"资料","value":"profile","icon":"user"},{"label":"登出","value":"logout","icon":"close"}]}]'></oas-menubar>
 </DemoBlock>
 
+## 图标颜色（iconColor）
+
+顶级项与子项支持 `iconColor` 字段（显式固定图标色，优先于选中/禁用态默认色；缺省 `currentColor` 随文字色）。子元素声明式通道用 `icon-color` 属性。
+
+<DemoBlock title="图标颜色（iconColor / icon-color）">
+  <oas-menubar id="menubar-iconcolor" items='[{"label":"文件","value":"file","icon":"gear","iconColor":"var(--oas-color-primary)","children":[{"label":"新建","value":"new","icon":"plus","iconColor":"var(--oas-color-success)"},{"label":"打开","value":"open","icon":"search"}]},{"label":"账户","value":"account","icon":"user","iconColor":"#8b5cf6","children":[{"label":"登出","value":"logout","icon":"trash","iconColor":"var(--oas-color-danger)"}]}]'></oas-menubar>
+</DemoBlock>
+
 ## 链接导航（href）
 
 叶子项（子菜单内与顶级叶子）带 `href` 时渲染为真链接 `<a>`：可右键新窗口、中键新开、利于 SEO；点击仍照常派发 `oas-select` 并写回 `value`（链接默认跳转不拦截）。`target="_blank"` 自动补 `rel="noopener"`。

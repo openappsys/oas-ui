@@ -139,6 +139,14 @@ Both top-level items and sub-items accept an `icon` field (icon-set name); icons
   <oas-menubar items='[{"label":"File","value":"file","icon":"gear","children":[{"label":"New","value":"new","icon":"plus"},{"label":"Open","value":"open","icon":"search"},{"label":"Save","value":"save","icon":"download"}]},{"label":"Account","value":"account","icon":"user","children":[{"label":"Profile","value":"profile","icon":"user"},{"label":"Log out","value":"logout","icon":"close"}]}]'></oas-menubar>
 </DemoBlock>
 
+## Icon color (iconColor)
+
+Both top-level items and sub-items accept an `iconColor` field (fixes the icon color, overriding the selected/disabled default); it defaults to `currentColor` following the text color. The declarative child channel uses the `icon-color` attribute.
+
+<DemoBlock title="Icon color (iconColor / icon-color)">
+  <oas-menubar id="menubar-iconcolor" items='[{"label":"File","value":"file","icon":"gear","iconColor":"var(--oas-color-primary)","children":[{"label":"New","value":"new","icon":"plus","iconColor":"var(--oas-color-success)"},{"label":"Open","value":"open","icon":"search"}]},{"label":"Account","value":"account","icon":"user","iconColor":"#8b5cf6","children":[{"label":"Log out","value":"logout","icon":"trash","iconColor":"var(--oas-color-danger)"}]}]'></oas-menubar>
+</DemoBlock>
+
 ## Link navigation (href)
 
 Leaves (both inside submenus and top-level leaves) with `href` render as real `<a>` links: right-click new window and middle-click open work natively, good for SEO; clicks still dispatch `oas-select` and write back `value` (the link's default navigation is not blocked). `target="_blank"` automatically adds `rel="noopener"`.
