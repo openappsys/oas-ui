@@ -1729,13 +1729,16 @@
     "attrs": {
       "actions": "子动作 JSON",
       "direction": "展开方向",
-      "open": "展开态（受控）"
+      "open": "展开态（受控）",
+      "trigger": "触发方式：`click`（默认）| `hover`（悬停开、移出收起，120ms 离开宽限期；触屏自动回落 click）"
     },
     "events": {
-      "oas-open": "展开/收起，`detail: { open }`",
+      "oas-open": "展开/收起，`detail: { open, reason }`；reason = `toggle` / `outside` / `escape` / `select` / `hover`（来源标记，向后兼容 open 字段）",
       "oas-select": "选择子动作，`detail: { index, label }`，随后自动收起"
     },
-    "slots": {}
+    "slots": {
+      "": "主钮自定义图标，有内容时替代默认 ＋（展开旋转 45° 保持）"
+    }
   },
   "oas-spin": {
     "attrs": {
