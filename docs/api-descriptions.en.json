@@ -1769,9 +1769,11 @@
       "clickable": "Steps are clickable to jump (boolean; enabled when present)",
       "current": "Current step index (0-based)",
       "direction": "Direction (forced to horizontal in navigation mode)",
+      "label-placement": "Label placement: `vertical` (default, icon above title) / `horizontal` (icon and title on the same row)",
+      "linear": "Linear mode: only steps with `index <= current` are clickable (boolean; enabled when present; future steps are blocked, clicks are silent)",
       "navigation": "Navigation mode: arrow bar with a bottom Previous/Next button row (boolean; enabled when present)",
       "progress-dot": "Progress-dot steps: dot indicators with a thin connector line (boolean; enabled when present)",
-      "steps": "`[{ title, description?, status? }]` JSON string"
+      "steps": "`[{ title, description?, status?, icon?, disabled? }]` JSON string"
     },
     "events": {
       "oas-change": "Fired when a clickable step or a navigation button is clicked (including keyboard triggers); `detail: { index }` (0-based)"
