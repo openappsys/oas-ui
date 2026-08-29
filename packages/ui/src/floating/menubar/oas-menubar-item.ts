@@ -12,7 +12,7 @@ const ITEM_STYLE = `
  * 菜单栏项（子元素声明式通道）。
  *
  * 纯数据载体：默认插槽文本为 label，属性对齐 MenubarItem 字段
- * （value/disabled/icon/kind/danger/href/target/rel/shortcut/access-key/indeterminate）。
+ * （value/disabled/icon/icon-color/kind/danger/href/target/rel/shortcut/access-key/indeterminate）。
  * 直接子元素 <oas-menubar-item>/<oas-menubar-group>/<oas-menubar-divider> 递归为子菜单 children。
  * 宿主 <oas-menubar> 在 items 属性未显式设置时解析子元素并收敛到同一渲染路径。
  */
@@ -22,6 +22,7 @@ export class OASMenubarItem extends OASElement {
       'value',
       'disabled',
       'icon',
+      'icon-color',
       'kind',
       'danger',
       'href',

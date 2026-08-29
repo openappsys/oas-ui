@@ -7080,3 +7080,136 @@ test('navigation-menu delay-duration=0 移入子菜单不收回（关闭宽限�
   })
   expect(still, '移入面板后面板必须保持打开（关闭宽限独立于打开延迟）').toBe(true)
 })
+
+// —— 能力回归：菜单家族 per-item 图标颜色（iconColor / icon-color，2026-08-29） ——
+// 曾缺：oas-menu / oas-menubar / oas-navigation-menu 图标固定 currentColor 随文字色，
+// 仅 oas-sidebar 有 iconColor。修复后：items JSON 的 iconColor 与子元素 icon-color 通道
+// 均固定图标色（svg 外层 stroke + 内置 path 的 currentColor 替换），缺省保持 currentColor。
+test('菜单家族 iconColor：menu/menubar/navigation-menu 图标固定颜色，缺省 currentColor 不回归', async ({
+  page,
+}) => {
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menu')
+  await page.evaluate(() => {
+    const menu = document.createElement('oas-menu')
+    menu.setAttribute(
+      'items',
+      JSON.stringify([
+        { label: '着色', value: 'a', icon: 'star', iconColor: '#f50' },
+        { label: '缺省', value: 'b', icon: 'gear' },
+      ]),
+    )
+    document.body.appendChild(menu)
+  })
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('oas-menu')].some(
+        (m) => m.getAttribute('value') === null && m.shadowRoot?.querySelector('.icon svg path'),
+      ),
+    undefined,
+    { timeout: 5000 },
+  )
+  const menuColored = await page.evaluate(() => {
+    const menus = [...document.querySelectorAll('oas-menu')]
+    const el = menus[menus.length - 1]!
+    const icons = [...el.shadowRoot!.querySelectorAll('.icon svg')]
+    const read = (svg: Element) => ({
+      outer: svg.getAttribute('stroke'),
+      path: svg.querySelector('path')?.getAttribute('stroke') ?? null,
+    })
+    return { colored: read(icons[0]!), plain: read(icons[1]!) }
+  })
+  expect(menuColored.colored).toEqual({ outer: '#f50', path: '#f50' })
+  expect(menuColored.plain).toEqual({ outer: 'currentColor', path: 'currentColor' })
+
+  await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menubar')
+  await page.evaluate(() => {
+    const bar = document.createElement('oas-menubar')
+    bar.setAttribute(
+      'items',
+      JSON.stringify([
+        {
+          label: '文件',
+          value: 'file',
+          icon: 'gear',
+          iconColor: '#f50',
+          children: [{ label: '新建', value: 'new', icon: 'plus' }],
+        },
+      ]),
+    )
+    document.body.appendChild(bar)
+  })
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('oas-menubar')].some(
+        (m) => m.shadowRoot?.querySelector('.top-item .icon svg path'),
+      ),
+    undefined,
+    { timeout: 5000 },
+  )
+  const barResult = await page.evaluate(() => {
+    const el = [...document.querySelectorAll('oas-menubar')][
+      [...document.querySelectorAll('oas-menubar')].length - 1
+    ]!
+    const root = el.shadowRoot!
+    const read = (svg: Element) => ({
+      outer: svg.getAttribute('stroke'),
+      path: svg.querySelector('path')?.getAttribute('stroke') ?? null,
+    })
+    return {
+      top: read(root.querySelector('.top-item .icon svg')!),
+      sub: read(root.querySelector('[part="item"] .icon svg')!),
+    }
+  })
+  expect(barResult.top).toEqual({ outer: '#f50', path: '#f50' })
+  expect(barResult.sub).toEqual({ outer: 'currentColor', path: 'currentColor' })
+
+  await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-navigation-menu')
+  await page.evaluate(() => {
+    const nav = document.createElement('oas-navigation-menu')
+    nav.setAttribute('delay-duration', '0')
+    nav.setAttribute('value', 'products')
+    nav.setAttribute(
+      'items',
+      JSON.stringify([
+        {
+          label: '产品',
+          value: 'products',
+          children: [
+            {
+              label: '组件',
+              value: 'components',
+              href: '/components',
+              icon: 'star',
+              iconColor: '#f50',
+            },
+            { label: '文档', value: 'docs', href: '/docs', icon: 'user' },
+          ],
+        },
+      ]),
+    )
+    document.body.appendChild(nav)
+  })
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('oas-navigation-menu')].some(
+        (m) => m.shadowRoot?.querySelector('.card .icon svg path'),
+      ),
+    undefined,
+    { timeout: 5000 },
+  )
+  const navResult = await page.evaluate(() => {
+    const all = [...document.querySelectorAll('oas-navigation-menu')]
+    const el = all[all.length - 1]!
+    const icons = [...el.shadowRoot!.querySelectorAll('.card .icon svg')]
+    const read = (svg: Element) => ({
+      outer: svg.getAttribute('stroke'),
+      path: svg.querySelector('path')?.getAttribute('stroke') ?? null,
+    })
+    return { colored: read(icons[0]!), plain: read(icons[1]!) }
+  })
+  expect(navResult.colored).toEqual({ outer: '#f50', path: '#f50' })
+  expect(navResult.plain).toEqual({ outer: 'currentColor', path: 'currentColor' })
+})

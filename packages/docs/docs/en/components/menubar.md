@@ -366,6 +366,7 @@ onMounted(() => {
 | `disabled` | Disable this item | — | — |
 | `href` | Link URL: with `href` the item renders as a native `<a>` (real navigation + still fires `oas-select`) | — | — |
 | `icon` | Leading icon (`@oas-ui/icons` registry icon name) | — | — |
+| `icon-color` | Icon color: fixes the icon to this color (overrides the selected/disabled default); defaults to `currentColor` following the text color | — | — |
 | `indeterminate` | Checkbox indeterminate state: renders `aria-checked="mixed"` + a dash inside the box (only for `kind="checkbox"` items) | — | — |
 | `kind` | Leaf semantics: `radio` (default, selectable) / `action` (no checked state, does not write back `value`) / `checkbox` (multi-select, `value` is the checked-set array) | — | — |
 | `rel` | Link rel (with `href`) | — | — |

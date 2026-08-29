@@ -12,13 +12,24 @@ const ITEM_STYLE = `
  * 菜单项（子元素声明式通道）。
  *
  * 纯数据载体：默认插槽文本为 label，属性对齐 items 字段
- * （value/disabled/loading/icon/kind/danger/href/target/rel）。
+ * （value/disabled/loading/icon/icon-color/kind/danger/href/target/rel）。
  * 直接子元素 <oas-menu-item>/<oas-menu-group>/<oas-menu-divider> 递归为子菜单 children。
  * 宿主 <oas-menu> 在 items 属性未显式设置时解析子元素并收敛到同一渲染路径。
  */
 export class OASMenuItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'disabled', 'loading', 'icon', 'kind', 'danger', 'href', 'target', 'rel']
+    return [
+      'value',
+      'disabled',
+      'loading',
+      'icon',
+      'icon-color',
+      'kind',
+      'danger',
+      'href',
+      'target',
+      'rel',
+    ]
   }
 
   protected override render(): void {

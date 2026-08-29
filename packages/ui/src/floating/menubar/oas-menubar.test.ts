@@ -699,6 +699,28 @@ describe('图标 icon', () => {
     const sub = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="new"]')!
     expect(sub.querySelector('svg')).not.toBeNull()
   })
+
+  it('iconColor：顶级项与子项图标固定颜色（svg 外层 stroke + 内置 path 的 currentColor 替换）；缺省 currentColor 不回归', () => {
+    const el = mount({
+      items: JSON.stringify([
+        {
+          label: '文件',
+          value: 'file',
+          icon: 'gear',
+          iconColor: '#f50',
+          children: [{ label: '新建', value: 'new', icon: 'plus' }],
+        },
+      ]),
+    })
+    const top = topItems(el)[0]!.querySelector('.icon svg')!
+    expect(top.getAttribute('stroke')).toBe('#f50')
+    expect(top.querySelector('path')!.getAttribute('stroke')).toBe('#f50')
+    const sub = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="item"][data-value="new"] .icon svg',
+    )!
+    expect(sub.getAttribute('stroke')).toBe('currentColor')
+    expect(sub.querySelector('path')!.getAttribute('stroke')).toBe('currentColor')
+  })
 })
 
 // ===== loop 循环开关 =====
@@ -1307,6 +1329,24 @@ describe('子元素声明式通道', () => {
     const docs = root.querySelector<HTMLAnchorElement>('[part="item"][data-value="docs"]')!
     expect(docs.tagName).toBe('A')
     expect(docs.getAttribute('href')).toBe('/guide')
+  })
+
+  it('icon-color 属性映射：子元素声明式通道顶级项与子项图标固定颜色，缺省 currentColor 不回归', () => {
+    const el = mountMenubarChildren(`
+      <oas-menubar-item value="file" icon="gear" icon-color="#f50">文件
+        <oas-menubar-item value="new" icon="plus">新建</oas-menubar-item>
+      </oas-menubar-item>
+    `)
+    const top = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="top-item"][data-value="file"] .icon svg',
+    )!
+    expect(top.getAttribute('stroke')).toBe('#f50')
+    expect(top.querySelector('path')!.getAttribute('stroke')).toBe('#f50')
+    const sub = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="item"][data-value="new"] .icon svg',
+    )!
+    expect(sub.getAttribute('stroke')).toBe('currentColor')
+    expect(sub.querySelector('path')!.getAttribute('stroke')).toBe('currentColor')
   })
 
   it('MutationObserver：运行时 append oas-menubar-item 后菜单栏刷新出现新顶级项', async () => {

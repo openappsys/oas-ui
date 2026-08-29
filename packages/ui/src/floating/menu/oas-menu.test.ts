@@ -384,6 +384,21 @@ describe('OASMenu', () => {
     expect(plain.shadowRoot!.querySelector('[part="item"] .icon')).toBeNull()
   })
 
+  it('iconColor：项级图标固定颜色（svg 外层 stroke + 内置 path 的 currentColor 替换）；缺省 currentColor 不回归', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '用户', value: 'user', icon: 'star', iconColor: '#f50' },
+        { label: '设置', value: 'settings', icon: 'gear' },
+      ]),
+    })
+    const colored = items(el)[0]!.querySelector('.icon svg')!
+    expect(colored.getAttribute('stroke')).toBe('#f50')
+    expect(colored.querySelector('path')!.getAttribute('stroke')).toBe('#f50')
+    const plain = items(el)[1]!.querySelector('.icon svg')!
+    expect(plain.getAttribute('stroke')).toBe('currentColor')
+    expect(plain.querySelector('path')!.getAttribute('stroke')).toBe('currentColor')
+  })
+
   it('暗色主题：theme="dark" 写入 data-theme 到自身（局部暗色，独立于全局），样式不硬编码色值', () => {
     const el = mount({ items: ITEMS, theme: 'dark' })
     expect(el.dataset.theme).toBe('dark')
@@ -1179,6 +1194,23 @@ describe('子元素声明式通道', () => {
     el.addEventListener('oas-select', () => (offSelected = true))
     off.click()
     expect(offSelected).toBe(false)
+  })
+
+  it('icon-color 属性映射：子元素声明式通道图标固定颜色，缺省 currentColor 不回归', () => {
+    const el = mountMenuChildren(
+      `<oas-menu-item value="home" icon="star" icon-color="#f50">首页</oas-menu-item>` +
+        `<oas-menu-item value="about" icon="gear">关于</oas-menu-item>`,
+    )
+    const colored = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="item"][data-value="home"] .icon svg',
+    )!
+    expect(colored.getAttribute('stroke')).toBe('#f50')
+    expect(colored.querySelector('path')!.getAttribute('stroke')).toBe('#f50')
+    const plain = el.shadowRoot!.querySelector<HTMLElement>(
+      '[part="item"][data-value="about"] .icon svg',
+    )!
+    expect(plain.getAttribute('stroke')).toBe('currentColor')
+    expect(plain.querySelector('path')!.getAttribute('stroke')).toBe('currentColor')
   })
 
   it('MutationObserver：运行时 append oas-menu-item 后菜单刷新出现新项', async () => {

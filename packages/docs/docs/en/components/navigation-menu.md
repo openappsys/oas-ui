@@ -195,6 +195,7 @@ onMounted(() => {
 | `disabled` | Disabled: renders aria-disabled and blocks clicks/keyboard/hover | — | — |
 | `href` | Link URL: leaf items with `href` render as `<a>` (top-level and panel link cards) | — | — |
 | `icon` | Icon name (`@oas-ui/icons` registry icon name): panel link-card icon | — | — |
+| `icon-color` | Icon color: fixes the icon to this color (overrides the selected/disabled default); defaults to `currentColor` following the text color | — | — |
 | `kind` | Leaf item semantics: `radio` (default) / `action` / `checkbox` | — | — |
 | `loading` | Loading: blocks interaction until data-driven recovery | — | — |
 | `rel` | Link rel (custom, e.g. `noopener`) | — | — |
