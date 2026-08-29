@@ -510,6 +510,21 @@ const STYLE = `
 .hamburger-panel {
   min-width: 180px;
 }
+/* ===== 粗指针触控目标 ≥44px（移动端基线；细指针桌面保持紧凑档不变） ===== */
+@media (pointer: coarse) {
+  .top-item {
+    height: auto;
+    min-height: 44px;
+  }
+  .hamburger {
+    height: auto;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .subitem {
+    min-height: 44px;
+  }
+}
 `
 
 export class OASMenubar extends OASElement {
