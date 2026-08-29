@@ -1291,7 +1291,7 @@
     },
     "events": {
       "oas-select": "An item was selected (top-level leaf link, panel link card or secondary sub-nav link), `detail: { value }`",
-      "oas-change": "The open item changed, `detail: { value }` (value is the open top-level item value; empty string = closed)"
+      "oas-change": "The open item changed (open/close semantics: dispatched when a group expands or collapses, NOT a leaf selection), `detail: { value }` (value is the open top-level item value; empty string = closed); listen to `oas-select` for leaf selection — do not use this event to navigate or close containers"
     },
     "slots": {
       "panel-footer": "Marketing slot at the bottom of the panel: `<div slot=\"panel-footer\">` (CTA cards etc.) renders a footer container inside the panel when it has content"
