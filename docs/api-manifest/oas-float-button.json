@@ -7,15 +7,58 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "shape",
+      "type": "string",
+      "default": "circle",
+      "observed": true
+    },
+    {
+      "name": "type",
+      "type": "string",
+      "default": "primary",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "lg",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "href",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
     }
   ],
   "props": [],
   "events": [
     {
-      "name": "oas-click"
+      "name": "oas-click",
+      "detail": "{ originalEvent: e }"
     }
   ],
   "slots": [
+    {
+      "name": ""
+    },
     {
       "name": "icon"
     }
