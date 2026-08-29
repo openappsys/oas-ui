@@ -518,6 +518,13 @@ describe('OASNavigationMenu', () => {
     expect(css).toContain('overflow')
   })
 
+  it('粗指针触控基线：样式表含 pointer:coarse 的 44px 目标规则（top-item/链接卡/子链接/二级触发器）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('min-height: 44px')
+  })
+
   // ============ 键盘导航 ============
 
   it('ArrowDown 打开面板并聚焦第一面板项', () => {

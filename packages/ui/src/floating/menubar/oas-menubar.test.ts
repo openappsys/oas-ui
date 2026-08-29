@@ -318,6 +318,14 @@ describe('OASMenubar', () => {
     expect(insertItem).not.toBeNull()
   })
 
+  it('粗指针触控基线：样式表含 pointer:coarse 的 44px 目标规则（top-item/hamburger/subitem）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('min-height: 44px')
+    expect(css).toContain('min-width: 44px')
+  })
+
   // ===== #4 多 radio 组独立 value 作用域（group 项 value 字段作为组 id）=====
 
   const GROUP_ITEMS = JSON.stringify([
