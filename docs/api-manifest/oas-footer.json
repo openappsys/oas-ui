@@ -1,0 +1,13 @@
+{
+  "className": "OASFooter",
+  "sourceFile": "packages/ui/src/layout/layout/oas-footer.ts",
+  "attrs": [],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

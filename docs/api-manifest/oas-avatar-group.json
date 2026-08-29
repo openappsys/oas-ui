@@ -1,0 +1,26 @@
+{
+  "className": "OASAvatarGroup",
+  "sourceFile": "packages/ui/src/data/avatar-group/oas-avatar-group.ts",
+  "attrs": [
+    {
+      "name": "max",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

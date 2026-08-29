@@ -1,0 +1,20 @@
+{
+  "className": "OASAffix",
+  "sourceFile": "packages/ui/src/layout/affix/oas-affix.ts",
+  "attrs": [
+    {
+      "name": "offset",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

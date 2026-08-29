@@ -1,0 +1,61 @@
+{
+  "className": "OASCalendar",
+  "sourceFile": "packages/ui/src/form/calendar/oas-calendar.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "mode",
+      "type": "string",
+      "default": "month",
+      "observed": true
+    },
+    {
+      "name": "min",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "show-week-number",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "disabledDate",
+      "type": "((d: Date) => boolean) | null"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-mode-change",
+      "detail": "{ mode }"
+    },
+    {
+      "name": "oas-cell-render",
+      "detail": "{ date, element: btn }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: iso } | { value }"
+    }
+  ],
+  "slots": [
+    {
+      "name": "template[slot=\"cell\"]"
+    }
+  ],
+  "unresolved": []
+}

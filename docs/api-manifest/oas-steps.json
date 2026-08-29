@@ -1,0 +1,53 @@
+{
+  "className": "OASSteps",
+  "sourceFile": "packages/ui/src/layout/steps/oas-steps.ts",
+  "attrs": [
+    {
+      "name": "steps",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "current",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "horizontal",
+      "observed": true
+    },
+    {
+      "name": "clickable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "progress-dot",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "navigation",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "steps",
+      "type": "StepItem[] | string",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ index: idx }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

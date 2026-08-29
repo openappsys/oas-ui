@@ -1,0 +1,55 @@
+{
+  "className": "OASPagination",
+  "sourceFile": "packages/ui/src/layout/pagination/oas-pagination.ts",
+  "attrs": [
+    {
+      "name": "total",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "page-size",
+      "type": "string",
+      "default": "10",
+      "observed": true
+    },
+    {
+      "name": "current",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "siblings",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "show-total",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "page-sizes",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "show-jumper",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ page } | { page: 1, pageSize } | { page: target, pageSize }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

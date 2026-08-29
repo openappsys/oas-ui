@@ -1,0 +1,9 @@
+{
+  "className": "OASContextMenuGroup",
+  "sourceFile": "packages/ui/src/floating/contextmenu/oas-context-menu-group.ts",
+  "attrs": [],
+  "props": [],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

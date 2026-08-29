@@ -1,0 +1,75 @@
+{
+  "className": "OASButtonGroup",
+  "sourceFile": "packages/ui/src/basic/button-group/oas-button-group.ts",
+  "attrs": [
+    {
+      "name": "type",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "round",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "vertical",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "multiple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
+    },
+    {
+      "name": "pill",
+      "observed": true
+    },
+    {
+      "name": "spread",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: next } | { value: val }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,71 @@
+{
+  "className": "OASTextarea",
+  "sourceFile": "packages/ui/src/form/textarea/oas-textarea.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "rows",
+      "type": "string",
+      "default": "3",
+      "observed": true
+    },
+    {
+      "name": "resize",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "autosize",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "auto-height",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "min-rows",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "max-rows",
+      "type": "string",
+      "default": "6",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-input",
+      "detail": "{ value: this.ta!.value }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

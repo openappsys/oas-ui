@@ -23,13 +23,13 @@
  *   node scripts/api-docs/gen.mjs --dry    # 只输出计划改动统计，不写文件
  *   node scripts/api-docs/gen.mjs --check  # 与现有文件比对，有漂移则非零退出并列出漂移文件
  */
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs'
+import { execSync } from 'node:child_process'
 import { join, dirname, resolve, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(SCRIPT_DIR, '..', '..')
-const MANIFEST_PATH = join(ROOT, 'docs', 'api-manifest.json')
 const DESC_ZH_PATH = join(ROOT, 'docs', 'api-descriptions.zh.json')
 const DESC_EN_PATH = join(ROOT, 'docs', 'api-descriptions.en.json')
 const ZH_DIR = join(ROOT, 'packages', 'docs', 'docs', 'components')
@@ -207,10 +207,24 @@ function collectPageTags(blocks, primaryTag, manifest) {
   return tags
 }
 
+const MANIFEST_DIR = join(ROOT, 'docs', 'api-manifest')
+
 // ---------- 单 tag 行数据（manifest ∪ descriptions） ----------
-const MANIFEST = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'))
+// manifest 按组件拆分（docs/api-manifest/<tag>.json + index.json 顺序），合并成完整 manifest
+const MANIFEST = loadManifest()
 const DESC_ZH = JSON.parse(readFileSync(DESC_ZH_PATH, 'utf8'))
 const DESC_EN = JSON.parse(readFileSync(DESC_EN_PATH, 'utf8'))
+
+function loadManifest() {
+  const out = {}
+  const orderFile = join(MANIFEST_DIR, 'index.json')
+  const order = existsSync(orderFile) ? JSON.parse(readFileSync(orderFile, 'utf8')) : []
+  for (const tag of order) {
+    const f = join(MANIFEST_DIR, `${tag}.json`)
+    if (existsSync(f)) out[tag] = JSON.parse(readFileSync(f, 'utf8'))
+  }
+  return out
+}
 
 const missingDesc = new Set() // tag:group:name —— 说明缺失清单
 const blindSpots = new Set() // tag:name —— 语料有但 manifest 无（扫描盲区，需人工核对）
@@ -476,6 +490,15 @@ function diffStats(oldLines, newLines) {
   return { add: m - dp[0][0], del: n - dp[0][0] }
 }
 
+function sourceHasWip(sourceFile) {
+  try {
+    execSync(`git diff --quiet HEAD -- "${sourceFile}"`, { stdio: 'ignore', cwd: ROOT })
+    return false
+  } catch {
+    return true
+  }
+}
+
 // ---------- 主流程 ----------
 function main() {
   const stats = { changed: 0, skip: [], diffs: [] }
@@ -487,8 +510,15 @@ function main() {
       .filter((f) => f.endsWith('.md'))
       .sort()
     for (const file of files) {
-      const res = processPage(file, lang)
       const rel = `${lang === 'zh' ? 'components' : 'en/components'}/${file}`
+      const primaryTag = `oas-${file.replace(/\.md$/, '')}`
+      // check 模式：组件源码有在途 WIP（未提交改动）→ 跳过该页 md 校验（它不属于本次发布，提交时再重生成）
+      const srcFile = MANIFEST[primaryTag]?.sourceFile
+      if (MODE === 'check' && typeof srcFile === 'string' && sourceHasWip(srcFile)) {
+        stats.skip.push(`${rel}（组件源码有在途 WIP，跳过）`)
+        continue
+      }
+      const res = processPage(file, lang)
       if (res.status === 'changed') {
         stats.changed++
         const diff = diffStats(res.oldSection, res.newSection)

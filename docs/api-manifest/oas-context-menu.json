@@ -1,0 +1,46 @@
+{
+  "className": "OASContextMenu",
+  "sourceFile": "packages/ui/src/floating/contextmenu/oas-context-menu.ts",
+  "attrs": [
+    {
+      "name": "items",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "long-press-delay",
+      "type": "string",
+      "default": "500",
+      "observed": true
+    },
+    {
+      "name": "close-on-scroll",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-select",
+      "detail": "{ value: detail.value }"
+    },
+    {
+      "name": "oas-open-change",
+      "detail": "{ open }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

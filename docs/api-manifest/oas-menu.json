@@ -1,0 +1,66 @@
+{
+  "className": "OASMenu",
+  "sourceFile": "packages/ui/src/floating/menu/oas-menu.ts",
+  "attrs": [
+    {
+      "name": "items",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "mode",
+      "observed": true
+    },
+    {
+      "name": "collapsed",
+      "observed": true
+    },
+    {
+      "name": "theme",
+      "observed": true
+    },
+    {
+      "name": "max-height",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "expanded",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "accordion",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "close-on-select",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-select",
+      "detail": "{ value: item.value, kind: 'action' } | { value: item.value, checked: checked.has(v) } | { value: item.value }"
+    },
+    {
+      "name": "oas-expand-change",
+      "detail": "{ expanded: [...this.expanded], value, isExpanded: willExpandMore, } | { expanded: [...this.expanded], value, isExpanded: willExpand }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

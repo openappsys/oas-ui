@@ -1,0 +1,53 @@
+{
+  "className": "OASSnackbar",
+  "sourceFile": "packages/ui/src/feedback/snackbar/oas-snackbar.ts",
+  "attrs": [
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "message",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "action-text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "duration",
+      "type": "string",
+      "default": "4000",
+      "observed": true
+    },
+    {
+      "name": "direction",
+      "observed": true
+    },
+    {
+      "name": "offset",
+      "type": "string",
+      "default": "24",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-action"
+    },
+    {
+      "name": "oas-close"
+    },
+    {
+      "name": "oas-open"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

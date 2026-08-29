@@ -1,0 +1,33 @@
+{
+  "className": "OASCheckboxGroup",
+  "sourceFile": "packages/ui/src/form/checkbox/oas-checkbox-group.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: [...current] }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "label"
+    }
+  ],
+  "unresolved": []
+}

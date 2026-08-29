@@ -1,0 +1,59 @@
+{
+  "className": "OASAvatar",
+  "sourceFile": "packages/ui/src/data/avatar/oas-avatar.ts",
+  "attrs": [
+    {
+      "name": "src",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "32",
+      "observed": true
+    },
+    {
+      "name": "alt",
+      "observed": true
+    },
+    {
+      "name": "badge",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "badge-dot",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "badge-color",
+      "type": "string",
+      "default": "danger",
+      "observed": true
+    },
+    {
+      "name": "badge-placement",
+      "type": "string",
+      "default": "top-right",
+      "observed": true
+    },
+    {
+      "name": "text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": "fallback"
+    }
+  ],
+  "unresolved": []
+}

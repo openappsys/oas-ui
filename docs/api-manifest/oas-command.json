@@ -1,0 +1,145 @@
+{
+  "className": "OASCommand",
+  "sourceFile": "packages/ui/src/floating/command/oas-command.ts",
+  "attrs": [
+    {
+      "name": "items",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "selected",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "hotkey",
+      "type": "string",
+      "default": "mod+k",
+      "observed": true
+    },
+    {
+      "name": "should-filter",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "limit",
+      "type": "string",
+      "default": "50",
+      "observed": true
+    },
+    {
+      "name": "recent",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "recent-storage-key",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "close-on-select",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "multiple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "virtual",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "item-height",
+      "type": "string",
+      "default": "36",
+      "observed": true
+    },
+    {
+      "name": "append-to",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "items",
+      "type": "CommandItem[] | string",
+      "default": "[]"
+    },
+    {
+      "name": "filter",
+      "type": "((query: string, items: CommandItem[]) => CommandItem[]) | null"
+    },
+    {
+      "name": "query",
+      "type": "string",
+      "default": ""
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-input",
+      "detail": "{ value: v }"
+    },
+    {
+      "name": "oas-open-change",
+      "detail": "{ open: true } | { open: false }"
+    },
+    {
+      "name": "oas-active",
+      "detail": "{ value: item.value }"
+    },
+    {
+      "name": "oas-select",
+      "detail": "{ value: item.value } | { values: [...this.multiValues] }"
+    },
+    {
+      "name": "oas-page-change",
+      "detail": "{ title: item.label, depth: this.pages.length, direction: 'push' } | { title: page.title, depth: this.pages.length, direction: 'pop' }"
+    },
+    {
+      "name": "oas-view-change",
+      "detail": "{ view, title: item.label } | { view: '', title: '' }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ values: [...this.multiValues] }"
+    }
+  ],
+  "slots": [
+    {
+      "name": "empty"
+    },
+    {
+      "name": "footer"
+    }
+  ],
+  "unresolved": []
+}

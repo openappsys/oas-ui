@@ -1,0 +1,33 @@
+{
+  "className": "OASEmpty",
+  "sourceFile": "packages/ui/src/feedback/empty/oas-empty.ts",
+  "attrs": [
+    {
+      "name": "description",
+      "observed": true
+    },
+    {
+      "name": "hide-image",
+      "observed": true
+    },
+    {
+      "name": "illustration",
+      "observed": true
+    },
+    {
+      "name": "image-size",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": "action"
+    },
+    {
+      "name": "illustration"
+    }
+  ],
+  "unresolved": []
+}

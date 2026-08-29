@@ -1,0 +1,48 @@
+{
+  "className": "OASDynamicInput",
+  "sourceFile": "packages/ui/src/form/dynamic-input/oas-dynamic-input.ts",
+  "attrs": [
+    {
+      "name": "min",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "default-value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "model-value",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "modelValue",
+      "type": "string[]",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: this.values.slice() }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

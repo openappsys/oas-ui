@@ -1,0 +1,56 @@
+{
+  "className": "OASDrawer",
+  "sourceFile": "packages/ui/src/feedback/drawer/oas-drawer.ts",
+  "attrs": [
+    {
+      "name": "visible",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "placement",
+      "type": "string",
+      "default": "right",
+      "observed": true
+    },
+    {
+      "name": "no-footer",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "width",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "observed": true
+    },
+    {
+      "name": "no-mask-close",
+      "type": "boolean",
+      "observed": false
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-ok"
+    },
+    {
+      "name": "oas-close"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

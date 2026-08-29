@@ -1,0 +1,124 @@
+{
+  "className": "OASSidebar",
+  "sourceFile": "packages/ui/src/layout/sidebar/oas-sidebar.ts",
+  "attrs": [
+    {
+      "name": "collapsed",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "accordion",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "items",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "width",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "mobile-breakpoint",
+      "observed": true
+    },
+    {
+      "name": "active",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "drawer-open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "hide-toggle",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "string",
+      "default": "4",
+      "observed": true
+    },
+    {
+      "name": "expand-on-hover",
+      "observed": true
+    },
+    {
+      "name": "shortcut",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "side",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "observed": true
+    },
+    {
+      "name": "resizable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "resize-min",
+      "type": "string",
+      "default": "160",
+      "observed": true
+    },
+    {
+      "name": "resize-max",
+      "type": "string",
+      "default": "480",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "items",
+      "type": "SidebarEntry[] | string",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-resize",
+      "detail": "{ width: this.currentWidthPx() }"
+    },
+    {
+      "name": "oas-select",
+      "detail": "{ value: item.value, label: item.label }"
+    },
+    {
+      "name": "oas-action",
+      "detail": "{ value: item.value, action: action.value, label: action.label }"
+    },
+    {
+      "name": "oas-collapse",
+      "detail": "{ collapsed: !collapsed }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "footer"
+    },
+    {
+      "name": "header"
+    }
+  ],
+  "unresolved": []
+}

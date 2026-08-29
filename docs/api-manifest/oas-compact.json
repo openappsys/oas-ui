@@ -1,0 +1,33 @@
+{
+  "className": "OASCompact",
+  "sourceFile": "packages/ui/src/basic/space/oas-compact.ts",
+  "attrs": [
+    {
+      "name": "vertical",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "block",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "type": "boolean",
+      "observed": false
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

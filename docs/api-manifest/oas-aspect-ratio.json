@@ -1,0 +1,24 @@
+{
+  "className": "OASAspectRatio",
+  "sourceFile": "packages/ui/src/data/aspect-ratio/oas-aspect-ratio.ts",
+  "attrs": [
+    {
+      "name": "ratio",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "ratio",
+      "type": "string | number"
+    }
+  ],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

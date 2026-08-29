@@ -1,0 +1,39 @@
+{
+  "className": "OASChart",
+  "sourceFile": "packages/ui/src/data/chart/oas-chart.ts",
+  "attrs": [
+    {
+      "name": "type",
+      "type": "ChartType",
+      "default": "line",
+      "observed": true
+    },
+    {
+      "name": "data",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "options",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "data",
+      "type": "unknown"
+    },
+    {
+      "name": "options",
+      "type": "unknown"
+    }
+  ],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

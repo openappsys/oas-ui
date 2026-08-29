@@ -1,0 +1,48 @@
+{
+  "className": "OASSwitch",
+  "sourceFile": "packages/ui/src/form/switch/oas-switch.ts",
+  "attrs": [
+    {
+      "name": "checked",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "checked-text",
+      "observed": true
+    },
+    {
+      "name": "unchecked-text",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ checked }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

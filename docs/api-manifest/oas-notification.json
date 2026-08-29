@@ -1,0 +1,51 @@
+{
+  "className": "OASNotification",
+  "sourceFile": "packages/ui/src/feedback/notification/oas-notification.ts",
+  "attrs": [
+    {
+      "name": "type",
+      "type": "string",
+      "default": "info",
+      "observed": true
+    },
+    {
+      "name": "show-progress",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "progress-position",
+      "type": "string",
+      "default": "bottom",
+      "observed": true
+    },
+    {
+      "name": "scrollable",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "duration",
+      "type": "string",
+      "default": "4500",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": false
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "default": "",
+      "observed": false
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

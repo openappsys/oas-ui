@@ -1,0 +1,72 @@
+{
+  "className": "OASCode",
+  "sourceFile": "packages/ui/src/data/code/oas-code.ts",
+  "attrs": [
+    {
+      "name": "code",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "language",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "show-line-number",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "copyable",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "inline",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "word-wrap",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "trim",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-copy",
+      "detail": "{ text }"
+    },
+    {
+      "name": "oas-copy-error",
+      "detail": "{ text }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

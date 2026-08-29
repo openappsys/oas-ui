@@ -1,0 +1,9 @@
+{
+  "className": "OASContextMenuDivider",
+  "sourceFile": "packages/ui/src/floating/contextmenu/oas-context-menu-divider.ts",
+  "attrs": [],
+  "props": [],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

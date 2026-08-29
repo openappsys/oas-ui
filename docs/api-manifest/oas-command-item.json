@@ -1,0 +1,54 @@
+{
+  "className": "OASCommandItem",
+  "sourceFile": "packages/ui/src/floating/command/oas-command-item.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "group",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "observed": true
+    },
+    {
+      "name": "shortcut",
+      "observed": true
+    },
+    {
+      "name": "description",
+      "observed": true
+    },
+    {
+      "name": "view",
+      "observed": true
+    },
+    {
+      "name": "force-mount",
+      "observed": true
+    },
+    {
+      "name": "separator",
+      "observed": true
+    },
+    {
+      "name": "keywords",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,94 @@
+{
+  "className": "OASBreadcrumb",
+  "sourceFile": "packages/ui/src/navigation/breadcrumb/oas-breadcrumb.ts",
+  "attrs": [
+    {
+      "name": "items",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "separator",
+      "type": "string",
+      "default": "/",
+      "observed": true
+    },
+    {
+      "name": "collapsed",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "max-items",
+      "type": "string",
+      "default": "4",
+      "observed": true
+    },
+    {
+      "name": "ellipsis",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "items-before-collapse",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "items-after-collapse",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "collapse-text",
+      "type": "string",
+      "default": "…",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "max-item-width",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "active-last",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-select",
+      "detail": "{ value: item.href }"
+    },
+    {
+      "name": "oas-collapse-click",
+      "detail": "{ collapsedItems: hiddenItems }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

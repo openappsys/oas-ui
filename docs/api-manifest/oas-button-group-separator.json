@@ -1,0 +1,9 @@
+{
+  "className": "OASButtonGroupSeparator",
+  "sourceFile": "packages/ui/src/basic/button-group/oas-button-group-separator.ts",
+  "attrs": [],
+  "props": [],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

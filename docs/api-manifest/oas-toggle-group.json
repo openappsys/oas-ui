@@ -1,0 +1,42 @@
+{
+  "className": "OASToggleGroup",
+  "sourceFile": "packages/ui/src/form/toggle-group/oas-toggle-group.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "multiple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "items",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "items",
+      "type": "ToggleItem[] | string",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: next } | { value: item.value }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

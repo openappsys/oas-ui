@@ -1,0 +1,51 @@
+{
+  "className": "OASProgress",
+  "sourceFile": "packages/ui/src/feedback/progress/oas-progress.ts",
+  "attrs": [
+    {
+      "name": "percent",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "no-text",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "show-text",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "type",
+      "type": "string",
+      "default": "line",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "48",
+      "observed": true
+    },
+    {
+      "name": "stroke-width",
+      "type": "string",
+      "default": "6",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

@@ -1,0 +1,36 @@
+{
+  "className": "OASNumberAnimation",
+  "sourceFile": "packages/ui/src/data/number-animation/oas-number-animation.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "duration",
+      "observed": true
+    },
+    {
+      "name": "to-fixed",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "duration",
+      "type": "number | string"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-finish",
+      "detail": "{ value: target } | { value: this.to }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

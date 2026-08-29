@@ -1,0 +1,32 @@
+{
+  "className": "OASGridItem",
+  "sourceFile": "packages/ui/src/layout/grid/oas-grid-item.ts",
+  "attrs": [
+    {
+      "name": "span",
+      "type": "string",
+      "default": "24",
+      "observed": true
+    },
+    {
+      "name": "offset",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "order",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

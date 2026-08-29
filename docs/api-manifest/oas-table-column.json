@@ -1,0 +1,78 @@
+{
+  "className": "OASTableColumn",
+  "sourceFile": "packages/ui/src/data/table/oas-table-column.ts",
+  "attrs": [
+    {
+      "name": "key",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "observed": true
+    },
+    {
+      "name": "sortable",
+      "observed": true
+    },
+    {
+      "name": "width",
+      "observed": true
+    },
+    {
+      "name": "align",
+      "observed": true
+    },
+    {
+      "name": "fixed",
+      "observed": true
+    },
+    {
+      "name": "hidden",
+      "observed": true
+    },
+    {
+      "name": "serial-number",
+      "observed": true
+    },
+    {
+      "name": "ellipsis",
+      "observed": true
+    },
+    {
+      "name": "merge",
+      "observed": true
+    },
+    {
+      "name": "filterable",
+      "observed": true
+    },
+    {
+      "name": "filters",
+      "observed": true
+    },
+    {
+      "name": "summary",
+      "observed": true
+    },
+    {
+      "name": "editable",
+      "observed": true
+    },
+    {
+      "name": "editor",
+      "observed": true
+    },
+    {
+      "name": "actions",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

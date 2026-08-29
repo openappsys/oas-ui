@@ -1,0 +1,16 @@
+{
+  "className": "OASEquation",
+  "sourceFile": "packages/ui/src/data/equation/oas-equation.ts",
+  "attrs": [
+    {
+      "name": "code",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

@@ -1,0 +1,214 @@
+{
+  "className": "OASTable",
+  "sourceFile": "packages/ui/src/data/table/oas-table.ts",
+  "attrs": [
+    {
+      "name": "columns",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "data",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "sort-key",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "sort-order",
+      "type": "SortOrder",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "multi-sort",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "row-key",
+      "type": "string",
+      "default": "key",
+      "observed": true
+    },
+    {
+      "name": "checkable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "320",
+      "observed": true
+    },
+    {
+      "name": "row-height",
+      "type": "string",
+      "default": "40",
+      "observed": true
+    },
+    {
+      "name": "stripe",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "bordered",
+      "observed": true
+    },
+    {
+      "name": "expanded",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "summary",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "editable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "edit-controlled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "sticky-rows",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "column-keys",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "pagination",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "page-size",
+      "type": "string",
+      "default": "10",
+      "observed": true
+    },
+    {
+      "name": "current",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "filter-values",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "summary-scope",
+      "type": "string",
+      "default": "all",
+      "observed": true
+    },
+    {
+      "name": "selected",
+      "type": "string",
+      "default": "",
+      "observed": false
+    },
+    {
+      "name": "empty-text",
+      "observed": false
+    }
+  ],
+  "props": [
+    {
+      "name": "columns",
+      "type": "TableColumn[] | string",
+      "default": "[]"
+    },
+    {
+      "name": "columnKeys",
+      "type": "string[] | string",
+      "default": "[]"
+    },
+    {
+      "name": "data",
+      "type": "Array<Record<string, unknown>> | string",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-check",
+      "detail": "{ keys: selectAll.checked ? keys : [] } | { keys: [...next] }"
+    },
+    {
+      "name": "oas-page-change",
+      "detail": "{ page, pageSize: size }"
+    },
+    {
+      "name": "oas-row-click",
+      "detail": "{ row, key }"
+    },
+    {
+      "name": "oas-column-order",
+      "detail": "{ keys: valid }"
+    },
+    {
+      "name": "oas-column-resize",
+      "detail": "{ key, width }"
+    },
+    {
+      "name": "oas-filter-change",
+      "detail": "{ filters: values }"
+    },
+    {
+      "name": "oas-expand",
+      "detail": "{ key, expanded }"
+    },
+    {
+      "name": "oas-sort-change",
+      "detail": "{ key, order: nextOrder } | { key, order: sorts.find((s) => s.key === key)?.order ?? '' }"
+    },
+    {
+      "name": "oas-scroll",
+      "detail": "{ scrollTop: st, start: win.start, end: win.end }"
+    },
+    {
+      "name": "oas-edit-cancel",
+      "detail": "this.editDetail(st, st.oldValue)"
+    },
+    {
+      "name": "oas-edit",
+      "detail": "this.editDetail(st, value)"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

@@ -1,0 +1,34 @@
+{
+  "className": "OASLayout",
+  "sourceFile": "packages/ui/src/layout/layout/oas-layout.ts",
+  "attrs": [
+    {
+      "name": "viewport",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "side",
+      "type": "string",
+      "default": "left",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": "content"
+    },
+    {
+      "name": "footer"
+    },
+    {
+      "name": "header"
+    },
+    {
+      "name": "sider"
+    }
+  ],
+  "unresolved": []
+}

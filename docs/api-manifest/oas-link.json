@@ -1,0 +1,86 @@
+{
+  "className": "OASLink",
+  "sourceFile": "packages/ui/src/basic/link/oas-link.ts",
+  "attrs": [
+    {
+      "name": "href",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "type",
+      "type": "LinkType",
+      "default": "default",
+      "observed": true
+    },
+    {
+      "name": "underline",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "icon-position",
+      "observed": true
+    },
+    {
+      "name": "external",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "download",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-click",
+      "detail": "{ originalEvent: e }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

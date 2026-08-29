@@ -1,0 +1,71 @@
+{
+  "className": "OASTransfer",
+  "sourceFile": "packages/ui/src/form/transfer/oas-transfer.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "data",
+      "observed": true
+    },
+    {
+      "name": "titles",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "source-title",
+      "observed": true
+    },
+    {
+      "name": "target-title",
+      "observed": true
+    },
+    {
+      "name": "searchable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "case-sensitive",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "one-way",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "virtual",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "item-height",
+      "type": "string",
+      "default": "36",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "data",
+      "type": "TransferItem[] | string",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: next }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

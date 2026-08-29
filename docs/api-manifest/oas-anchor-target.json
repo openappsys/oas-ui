@@ -1,0 +1,18 @@
+{
+  "className": "OASAnchorTarget",
+  "sourceFile": "packages/ui/src/navigation/anchor/oas-anchor.ts",
+  "attrs": [
+    {
+      "name": "id",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,46 @@
+{
+  "className": "OASBreadcrumbItem",
+  "sourceFile": "packages/ui/src/navigation/breadcrumb/oas-breadcrumb-item.ts",
+  "attrs": [
+    {
+      "name": "href",
+      "observed": true
+    },
+    {
+      "name": "target",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "observed": true
+    },
+    {
+      "name": "max-width",
+      "observed": true
+    },
+    {
+      "name": "separator",
+      "observed": true
+    },
+    {
+      "name": "dropdown",
+      "observed": true
+    },
+    {
+      "name": "active",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

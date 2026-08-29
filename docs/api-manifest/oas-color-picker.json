@@ -1,0 +1,32 @@
+{
+  "className": "OASColorPicker",
+  "sourceFile": "packages/ui/src/form/color-picker/oas-color-picker.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "preset",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: normalized }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

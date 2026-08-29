@@ -1,0 +1,195 @@
+{
+  "className": "OASPopover",
+  "sourceFile": "packages/ui/src/floating/popover/oas-popover.ts",
+  "attrs": [
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "placement",
+      "type": "string",
+      "default": "top",
+      "observed": true
+    },
+    {
+      "name": "virtual",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "virtual-x",
+      "observed": true
+    },
+    {
+      "name": "virtual-y",
+      "observed": true
+    },
+    {
+      "name": "virtual-anchor",
+      "observed": true
+    },
+    {
+      "name": "focus-on-open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "arrow",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "arrow-point-at-center",
+      "observed": true
+    },
+    {
+      "name": "auto-adjust-overflow",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "trigger",
+      "type": "string",
+      "default": "click",
+      "observed": true
+    },
+    {
+      "name": "hover-delay",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "hover-hide-delay",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "open-delay",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "close-delay",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "width",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "offset",
+      "observed": true
+    },
+    {
+      "name": "initial-focus",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "append-to",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "collision-padding",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "fallback-placements",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "hide-when-detached",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "closable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "modal",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "trigger-keys",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "fresh",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "auto-close",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "arrow-merge",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-open-change",
+      "detail": "{ open }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "content"
+    }
+  ],
+  "unresolved": []
+}
