@@ -1,12 +1,46 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement, escapeText } from '@oas-ui/core'
+
+export type PaginationSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+
+const VALID_PAGINATION_SIZES: readonly PaginationSize[] = ['xs', 'sm', 'md', 'lg', 'xl']
+const warnedSizes = new Set<string>()
+
+/** 非法 size 归一化：回落 md 并在 dev 下 console.warn 一次（同值去重，对齐 button 做法） */
+function normalizePaginationSize(raw: string): PaginationSize {
+  if ((VALID_PAGINATION_SIZES as readonly string[]).includes(raw)) return raw as PaginationSize
+  if (!warnedSizes.has(raw)) {
+    warnedSizes.add(raw)
+    console.warn(`[oas-pagination] 非法 size "${raw}"，已回落 md；合法值：xs/sm/md/lg/xl`)
+  }
+  return 'md'
+}
 
 const STYLE = `
 :host {
   display: inline-block;
   font-family: inherit;
+  /* size 档位：默认 md；data-size 由 update() 写入归一化结果（含非法回落与 config-provider 注入） */
+  --oas-pagination-height: var(--oas-control-height-md);
+  --oas-pagination-font: var(--oas-font-size-md);
 }
 :host([hidden]) {
   display: none;
+}
+:host([data-size='xs']) {
+  --oas-pagination-height: var(--oas-control-height-xs);
+  --oas-pagination-font: var(--oas-font-size-xs);
+}
+:host([data-size='sm']) {
+  --oas-pagination-height: var(--oas-control-height-sm);
+  --oas-pagination-font: var(--oas-font-size-sm);
+}
+:host([data-size='lg']) {
+  --oas-pagination-height: var(--oas-control-height-lg);
+  --oas-pagination-font: var(--oas-font-size-lg);
+}
+:host([data-size='xl']) {
+  --oas-pagination-height: var(--oas-control-height-xl);
+  --oas-pagination-font: var(--oas-font-size-xl);
 }
 .group {
   display: inline-flex;
@@ -14,12 +48,12 @@ const STYLE = `
   gap: var(--oas-space-1);
 }
 .btn {
-  min-width: var(--oas-control-height-sm);
-  height: var(--oas-control-height-sm);
+  min-width: var(--oas-pagination-height);
+  height: var(--oas-pagination-height);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-sm);
   background: var(--oas-color-bg);
-  font-size: var(--oas-font-size-sm);
+  font-size: var(--oas-pagination-font);
   cursor: pointer;
   color: var(--oas-color-text-primary);
   font-family: inherit;
@@ -45,20 +79,26 @@ const STYLE = `
 .ellipsis {
   color: var(--oas-color-text-secondary);
   padding: 0 var(--oas-space-1);
-  font-size: var(--oas-font-size-sm);
+  font-size: var(--oas-pagination-font);
+}
+.simple {
+  color: var(--oas-color-text-primary);
+  padding: 0 var(--oas-space-1);
+  font-size: var(--oas-pagination-font);
+  white-space: nowrap;
 }
 .total {
   color: var(--oas-color-text-secondary);
-  font-size: var(--oas-font-size-sm);
+  font-size: var(--oas-pagination-font);
   white-space: nowrap;
 }
 .size-select {
-  height: var(--oas-control-height-sm);
+  height: var(--oas-pagination-height);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-sm);
   background: var(--oas-color-bg);
   color: var(--oas-color-text-primary);
-  font-size: var(--oas-font-size-sm);
+  font-size: var(--oas-pagination-font);
   font-family: inherit;
   padding: 0 var(--oas-space-1);
   cursor: pointer;
@@ -68,22 +108,28 @@ const STYLE = `
   outline-offset: 1px;
   border-color: var(--oas-color-primary);
 }
+.size-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background: var(--oas-color-bg-disabled);
+  color: var(--oas-color-text-disabled);
+}
 .jumper {
   display: inline-flex;
   align-items: center;
   gap: var(--oas-space-1);
   color: var(--oas-color-text-primary);
-  font-size: var(--oas-font-size-sm);
+  font-size: var(--oas-pagination-font);
   white-space: nowrap;
 }
 .jumper-input {
-  width: var(--oas-control-height-sm);
-  height: var(--oas-control-height-sm);
+  width: var(--oas-pagination-height);
+  height: var(--oas-pagination-height);
   border: 1px solid var(--oas-color-border);
   border-radius: var(--oas-radius-sm);
   background: var(--oas-color-bg);
   color: var(--oas-color-text-primary);
-  font-size: var(--oas-font-size-sm);
+  font-size: var(--oas-pagination-font);
   font-family: inherit;
   text-align: center;
   padding: 0;
@@ -93,11 +139,30 @@ const STYLE = `
   outline-offset: 1px;
   border-color: var(--oas-color-primary);
 }
+.jumper-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  background: var(--oas-color-bg-disabled);
+  color: var(--oas-color-text-disabled);
+}
 `
 
 export class OASPagination extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['total', 'page-size', 'current', 'siblings', 'show-total', 'page-sizes', 'show-jumper']
+    return [
+      'total',
+      'page-size',
+      'current',
+      'siblings',
+      'show-total',
+      'page-sizes',
+      'show-jumper',
+      'disabled',
+      'size',
+      'simple',
+      'show-edges',
+      'hide-on-single',
+    ]
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -127,78 +192,140 @@ export class OASPagination extends OASElement {
   protected override update(): void {
     const group = this.shadow.querySelector('.group')
     if (!group) return
-    // 内置文案走 locale registry（setLocale 切换自动刷新）
-    group.setAttribute('aria-label', this.t('pagination.nav'))
-    group.innerHTML = ''
+    // 全局禁用（config-provider 注入：组件显式 disabled > 豁免 > provider 注入）
+    const disabled = this.injectDisabled()
+    // size 就近读取注入值（自身属性 > config-provider > md），非法回落 md 并告警；
+    // 归一化结果写入 data-size，供 CSS 尺寸规则匹配（含 provider 注入场景）
+    const size = normalizePaginationSize(this.injectValue('size', 'md'))
+    this.setAttribute('data-size', size)
     const total = Math.max(1, Number(this.getAttr('total', '0')) || 0)
     const pageSize = Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
     const pageCount = Math.max(1, Math.ceil(total / pageSize))
     const current = Math.min(Math.max(Number(this.getAttr('current', '1')) || 1, 1), pageCount)
     const siblings = Number(this.getAttr('siblings', '1')) || 1
+    const simple = this.hasAttr('simple')
 
+    // hide-on-single：单页时不渲染（host hidden，宿主无感知；恢复多页时自动取消隐藏）
+    if (this.hasAttr('hide-on-single') && pageCount <= 1) {
+      this.setAttribute('hidden', '')
+      group.setAttribute('aria-label', this.t('pagination.nav'))
+      group.innerHTML = ''
+      return
+    }
+    this.removeAttribute('hidden')
+
+    // 内置文案走 locale registry（setLocale 切换自动刷新）
+    group.setAttribute('aria-label', this.t('pagination.nav'))
+    group.innerHTML = ''
     const btn = (
       label: string,
       part: string,
       ariaLabel: string,
-      disabled: boolean,
+      boundaryDisabled: boolean,
       onClick: () => void,
+      slotMarkup?: string,
     ): HTMLButtonElement => {
       const b = document.createElement('button')
       b.className = 'btn'
       b.setAttribute('part', part)
       b.type = 'button'
-      b.textContent = label
       b.setAttribute('aria-label', ariaLabel)
-      b.disabled = disabled
+      const bDisabled = disabled || boundaryDisabled
+      b.disabled = bDisabled
+      if (bDisabled) b.setAttribute('aria-disabled', 'true')
+      if (slotMarkup !== undefined) {
+        // 命名插槽：宿主提供内容时替换默认箭头（受控常量，非用户数据）
+        b.innerHTML = slotMarkup
+      } else {
+        b.textContent = label
+      }
       b.addEventListener('click', onClick)
       return b
     }
 
-    // 总条数文案
-    if (this.hasAttr('show-total')) {
+    // 总条数文案：show-total 布尔或 total 插槽内容任一开启时渲染；
+    // 插槽有内容时替换内置「共 N 条」文案，否则显示兜底文案
+    const hasTotalSlot = this.querySelector('[slot="total"]') !== null
+    if (this.hasAttr('show-total') || hasTotalSlot) {
       const totalSpan = document.createElement('span')
       totalSpan.className = 'total'
       totalSpan.setAttribute('part', 'total')
-      totalSpan.textContent = this.t('pagination.total', { total })
+      totalSpan.innerHTML = `<slot name="total">${escapeText(this.t('pagination.total', { total }))}</slot>`
       group.appendChild(totalSpan)
     }
 
-    group.appendChild(
-      btn('‹', 'prev', this.t('pagination.prev'), current === 1, () => this.goto(current - 1)),
-    )
-
-    const pagesToShow = new Set<number>()
-    pagesToShow.add(1)
-    pagesToShow.add(pageCount)
-    for (
-      let i = Math.max(2, current - siblings);
-      i <= Math.min(pageCount - 1, current + siblings);
-      i++
-    ) {
-      pagesToShow.add(i)
-    }
-    const sorted = [...pagesToShow].sort((a, b) => a - b)
-    let last = 0
-    for (const page of sorted) {
-      if (page - last > 1) {
-        const ell = document.createElement('span')
-        ell.className = 'ellipsis'
-        ell.textContent = '…'
-        group.appendChild(ell)
-      }
-      const p = btn(String(page), 'page', this.t('pagination.page', { page }), false, () =>
-        this.goto(page),
+    // 首/末页双箭头钮（show-edges，边界禁用；simple 极简形态不叠加）
+    if (this.hasAttr('show-edges') && !simple) {
+      group.appendChild(
+        btn('«', 'first', this.t('pagination.first'), current === 1, () => this.goto(1)),
       )
-      p.setAttribute('aria-current', String(page === current))
-      group.appendChild(p)
-      last = page
     }
 
     group.appendChild(
-      btn('›', 'next', this.t('pagination.next'), current === pageCount, () =>
-        this.goto(current + 1),
+      btn(
+        '‹',
+        'prev',
+        this.t('pagination.prev'),
+        current === 1,
+        () => this.goto(current - 1),
+        '<slot name="prev-icon">‹</slot>',
       ),
     )
+
+    if (simple) {
+      // 极简形态：‹ current/pageCount ›（与 siblings/省略算法互斥）
+      const simpleEl = document.createElement('span')
+      simpleEl.className = 'simple'
+      simpleEl.setAttribute('part', 'simple')
+      simpleEl.textContent = `${current} / ${pageCount}`
+      group.appendChild(simpleEl)
+    } else {
+      const pagesToShow = new Set<number>()
+      pagesToShow.add(1)
+      pagesToShow.add(pageCount)
+      for (
+        let i = Math.max(2, current - siblings);
+        i <= Math.min(pageCount - 1, current + siblings);
+        i++
+      ) {
+        pagesToShow.add(i)
+      }
+      const sorted = [...pagesToShow].sort((a, b) => a - b)
+      let last = 0
+      for (const page of sorted) {
+        if (page - last > 1) {
+          const ell = document.createElement('span')
+          ell.className = 'ellipsis'
+          ell.textContent = '…'
+          group.appendChild(ell)
+        }
+        const p = btn(String(page), 'page', this.t('pagination.page', { page }), false, () =>
+          this.goto(page),
+        )
+        p.setAttribute('aria-current', String(page === current))
+        group.appendChild(p)
+        last = page
+      }
+    }
+
+    group.appendChild(
+      btn(
+        '›',
+        'next',
+        this.t('pagination.next'),
+        current === pageCount,
+        () => this.goto(current + 1),
+        '<slot name="next-icon">›</slot>',
+      ),
+    )
+
+    if (this.hasAttr('show-edges') && !simple) {
+      group.appendChild(
+        btn('»', 'last', this.t('pagination.last'), current === pageCount, () =>
+          this.goto(pageCount),
+        ),
+      )
+    }
 
     // 每页条数下拉
     const sizes = this.parseSizes(this.getAttr('page-sizes', ''))
@@ -209,10 +336,12 @@ export class OASPagination extends OASElement {
       select.className = 'size-select'
       select.setAttribute('part', 'size')
       select.setAttribute('aria-label', this.t('pagination.sizes'))
-      for (const size of [...options].sort((a, b) => a - b)) {
+      select.disabled = disabled
+      if (disabled) select.setAttribute('aria-disabled', 'true')
+      for (const sizeOption of [...options].sort((a, b) => a - b)) {
         const opt = document.createElement('option')
-        opt.value = String(size)
-        opt.textContent = this.t('pagination.sizePerPage', { size })
+        opt.value = String(sizeOption)
+        opt.textContent = this.t('pagination.sizePerPage', { size: sizeOption })
         select.appendChild(opt)
       }
       select.value = String(pageSize)
@@ -236,6 +365,8 @@ export class OASPagination extends OASElement {
       input.inputMode = 'numeric'
       input.autocomplete = 'off'
       input.setAttribute('aria-label', this.t('pagination.jumperInput'))
+      input.disabled = disabled
+      if (disabled) input.setAttribute('aria-disabled', 'true')
       const post = document.createElement('span')
       post.textContent = this.t('pagination.pageClassifier')
       jumper.append(pre, input, post)
@@ -244,14 +375,18 @@ export class OASPagination extends OASElement {
     }
   }
 
+  /** 翻页/跳转前的统一拦截点：oas-before-change（cancelable），宿主 preventDefault 可 veto */
   private goto(page: number): void {
+    if (this.injectDisabled()) return
+    if (!this.emit('before-change', { page }, { cancelable: true })) return
     this.setAttribute('current', String(page))
     this.emit('change', { page })
     this.update()
   }
 
-  /** 切换每页条数：回到第 1 页并派发 { page: 1, pageSize } */
+  /** 切换每页条数：回到第 1 页并派发 { page: 1, pageSize }（不派发 before-change） */
   private changePageSize(pageSize: number): void {
+    if (this.injectDisabled()) return
     this.setAttribute('page-size', String(pageSize))
     this.setAttribute('current', '1')
     this.emit('change', { page: 1, pageSize })
@@ -259,12 +394,14 @@ export class OASPagination extends OASElement {
   }
 
   /** 快速跳转：越界夹取到 [1, pageCount]，派发 { page, pageSize } */
-  private jumpTo(page: number, pageSize: number): void {
+  private jumpTo(pageInput: number, pageSize: number): void {
+    if (this.injectDisabled()) return
     const total = Math.max(1, Number(this.getAttr('total', '0')) || 0)
     const pageCount = Math.max(1, Math.ceil(total / pageSize))
-    const target = Math.min(Math.max(page, 1), pageCount)
-    this.setAttribute('current', String(target))
-    this.emit('change', { page: target, pageSize })
+    const page = Math.min(Math.max(pageInput, 1), pageCount)
+    if (!this.emit('before-change', { page }, { cancelable: true })) return
+    this.setAttribute('current', String(page))
+    this.emit('change', { page, pageSize })
     this.update()
   }
 

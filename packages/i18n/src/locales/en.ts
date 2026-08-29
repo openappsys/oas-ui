@@ -84,6 +84,8 @@ export const en: LocaleMessages = {
   'pagination.nav': 'Pagination',
   'pagination.prev': 'Previous page',
   'pagination.next': 'Next page',
+  'pagination.first': 'First page',
+  'pagination.last': 'Last page',
   'pagination.page': 'Page {page}',
   'pagination.total': 'Total {total}',
   'pagination.sizes': 'Items per page',
