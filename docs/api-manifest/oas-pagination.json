@@ -41,15 +41,55 @@
       "name": "show-jumper",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "md",
+      "observed": true
+    },
+    {
+      "name": "simple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "show-edges",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "hide-on-single",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],
   "events": [
     {
+      "name": "oas-before-change",
+      "detail": "{ page }"
+    },
+    {
       "name": "oas-change",
-      "detail": "{ page } | { page: 1, pageSize } | { page: target, pageSize }"
+      "detail": "{ page } | { page: 1, pageSize } | { page, pageSize }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "next-icon"
+    },
+    {
+      "name": "prev-icon"
+    },
+    {
+      "name": "total"
+    }
+  ],
   "unresolved": []
 }

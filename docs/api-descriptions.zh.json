@@ -1368,12 +1368,22 @@
       "show-jumper": "显示「跳至 __ 页」快速跳转输入框（回车跳转，越界夹取）",
       "show-total": "显示总条数文案「共 X 条」",
       "siblings": "当前页前后各显示的页码数",
-      "total": "总条数"
+      "total": "总条数",
+      "disabled": "全局禁用：分页钮全部禁用并带 aria-disabled，每页条数下拉与跳转输入框禁用",
+      "size": "尺寸档位：xs / sm / md / lg / xl（默认 md）；非法值回落 md 并在控制台告警",
+      "simple": "极简形态：只渲染前后钮与「当前 / 总页数」文本，与页码省略算法互斥（simple 优先）；show-jumper 可叠加",
+      "show-edges": "显示首/末页双箭头钮（« »），边界处禁用；aria-label 走 i18n",
+      "hide-on-single": "单页（pageCount ≤ 1）时整个组件不渲染"
     },
     "events": {
-      "oas-change": "翻页 `{ page }`；切换每页条数 `{ page: 1, pageSize }`；快速跳转 `{ page, pageSize }`"
+      "oas-change": "翻页 `{ page }`；切换每页条数 `{ page: 1, pageSize }`；快速跳转 `{ page, pageSize }`",
+      "oas-before-change": "翻页/跳转前派发，可 preventDefault 取消本次变更（切换每页条数不派发）"
     },
-    "slots": {}
+    "slots": {
+      "prev-icon": "上一页按钮图标插槽，有内容时替换默认 ‹",
+      "next-icon": "下一页按钮图标插槽，有内容时替换默认 ›",
+      "total": "总条数文案插槽，有内容时替换内置「共 N 条」"
+    }
   },
   "oas-paragraph": {
     "attrs": {
