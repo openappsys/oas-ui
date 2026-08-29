@@ -37,13 +37,48 @@
 
 ## 事件
 
-点击主按钮展开/收起派发 `oas-open`（`detail: { open }`）；点击子动作派发 `oas-select`（`detail: { index, label }`）并自动收起。
+点击主按钮展开/收起派发 `oas-open`（`detail: { open, reason }`）；点击子动作派发 `oas-select`（`detail: { index, label }`）并自动收起。`reason` 标记展开/收起来源：`toggle`（点击主钮）/ `outside`（点击外部）/ `escape`（Esc）/ `select`（选择动作）/ `hover`（悬停触发）。
 
 <DemoBlock title="事件反馈">
   <div style="width: 200px; height: 160px">
     <oas-speed-dial id="sd-event" style="position: static" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash"}]'></oas-speed-dial>
   </div>
   <span id="sd-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+</DemoBlock>
+
+## 悬停触发
+
+`trigger="hover"`：鼠标悬停主按钮即展开，移出后 120ms 宽限期收起（宽限期内移入面板不收起）；触屏设备自动回落 `click` 行为。
+
+<DemoBlock title="hover 触发">
+  <div style="width: 200px; height: 160px">
+    <oas-speed-dial trigger="hover" id="sd-hover" style="position: static" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash"}]'></oas-speed-dial>
+  </div>
+  <span id="sd-hover-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+</DemoBlock>
+
+## 自定义主钮图标
+
+主按钮默认显示「＋」，通过默认插槽传入自定义图标（展开时仍旋转 45°）。
+
+<DemoBlock title="自定义主钮图标">
+  <div style="width: 200px; height: 160px">
+    <oas-speed-dial style="position: static" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"}]'>
+      <svg viewBox="0 0 16 16" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M8 3v10M3 8h10"/>
+      </svg>
+    </oas-speed-dial>
+  </div>
+</DemoBlock>
+
+## 键盘导航
+
+展开后自动聚焦第一个子动作；方向键在动作间移动（纵向展开用 `ArrowUp`/`ArrowDown`，横向展开用 `ArrowLeft`/`ArrowRight`，循环），`Home`/`End` 跳首尾，`Esc` 收起并回焦主按钮。
+
+<DemoBlock title="键盘导航">
+  <div style="width: 200px; height: 160px">
+    <oas-speed-dial style="position: static" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash"}]'></oas-speed-dial>
+  </div>
 </DemoBlock>
 
 ## 受控 open
@@ -67,10 +102,16 @@ onMounted(() => {
   const el = document.getElementById('sd-event')
   const out = document.getElementById('sd-out')
   el?.addEventListener('oas-open', (e) => {
-    out.textContent = `oas-open: { open: ${e.detail.open} }`
+    out.textContent = `oas-open: { open: ${e.detail.open}, reason: "${e.detail.reason}" }`
   })
   el?.addEventListener('oas-select', (e) => {
     out.textContent = `oas-select: { index: ${e.detail.index}, label: "${e.detail.label}" }`
+  })
+
+  const hover = document.getElementById('sd-hover')
+  const hoverOut = document.getElementById('sd-hover-out')
+  hover?.addEventListener('oas-open', (e) => {
+    hoverOut.textContent = `oas-open: { open: ${e.detail.open}, reason: "${e.detail.reason}" }`
   })
 
   const ctrl = document.getElementById('sd-ctrl')
@@ -99,13 +140,20 @@ onMounted(() => {
 | `actions` | 子动作 JSON | `string` | `[]` |
 | `direction` | 展开方向 | `string` | `up` |
 | `open` | 展开态（受控） | `boolean` | — |
+| `trigger` | 触发方式：`click`（默认）\| `hover`（悬停开、移出收起，120ms 离开宽限期；触屏自动回落 click） | `string` | `click` |
 
 ### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-open` | 展开/收起，`detail: { open }` |
+| `oas-open` | 展开/收起，`detail: { open, reason }`；reason = `toggle` / `outside` / `escape` / `select` / `hover`（来源标记，向后兼容 open 字段） |
 | `oas-select` | 选择子动作，`detail: { index, label }`，随后自动收起 |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | 主钮自定义图标，有内容时替代默认 ＋（展开旋转 45° 保持） |
 
 `SpeedDialAction` 字段：
 
@@ -114,4 +162,4 @@ onMounted(() => {
 | `label` | 动作文案                                   | `string` |
 | `icon`  | 图标名（`@oas-ui/icons` 的 iconRegistry 键） | `string` |
 
-行为：点击主按钮切换展开（`aria-expanded` 同步）；点击外部或 Esc 收起（Esc 后焦点回到主按钮）；展开时自动聚焦第一个子动作。默认定位 `position: fixed; bottom/right`，可覆盖。文档级监听仅在展开时挂载、断开连接清理，无孤儿浮层。
+行为：点击主按钮切换展开（`aria-expanded` 同步）；`trigger="hover"` 可改为悬停触发（触屏回落 click）；点击外部或 Esc 收起（Esc 后焦点回到主按钮）；点击子动作收起并派发 `oas-select`；展开时自动聚焦第一个子动作，方向键/Home/End 在动作间导航。默认定位 `position: fixed; bottom/right`，可覆盖。文档级监听仅在展开时挂载、断开连接清理，无孤儿浮层。
