@@ -13,7 +13,7 @@ const ITEM_STYLE = `
  *
  * 纯数据载体：默认插槽文本为 label（直接子 oas-navigation-menu-item / oas-navigation-menu-group
  * 是嵌套数据，不计入 label），属性对齐 NavItem/MenuItem 标量字段
- * （value/href/target/rel/icon/description/active/disabled/loading/kind/danger）。
+ * （value/href/target/rel/icon/icon-color/description/active/disabled/loading/kind/danger）。
  * 嵌套：带 `sub` 属性（布尔）时直接子项解析为 `sub`（面板内覆盖式二级导航），否则递归为 `children`。
  * 宿主 `<oas-navigation-menu>` 在 items 属性未显式设置时解析子元素并收敛到同一渲染路径。
  */
@@ -25,6 +25,7 @@ export class OASNavigationMenuItem extends OASElement {
       'target',
       'rel',
       'icon',
+      'icon-color',
       'description',
       'active',
       'disabled',

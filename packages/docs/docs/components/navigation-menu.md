@@ -195,6 +195,7 @@ onMounted(() => {
 | `disabled` | 禁用：渲染 aria-disabled，禁点（点击/键盘/hover 均拦截） | — | — |
 | `href` | 链接地址：带 href 的叶子项渲染为 `<a>`（顶级与面板链接卡均生效） | — | — |
 | `icon` | 图标名（`@oas-ui/icons` 注册表图标名）：面板链接卡图标 | — | — |
+| `icon-color` | 图标颜色：显式固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随文字色 | — | — |
 | `kind` | 叶子项语义：`radio`（默认）/ `action` / `checkbox` | — | — |
 | `loading` | 加载中：禁点，由数据驱动恢复 | — | — |
 | `rel` | 链接 rel（自定义，如 `noopener`） | — | — |
@@ -225,6 +226,7 @@ onMounted(() => {
 | `href`        | 链接地址（可选）；叶子项带 href 渲染为 `<a>` 可跳转  | `string`  |
 | `target`      | 链接打开方式（可选）                                | `string`  |
 | `icon`        | 图标名（可选）；面板链接卡图标                      | `string`  |
+| `iconColor`   | 图标颜色（可选）：显式固定该色，优先于选中/禁用态默认色；缺省 currentColor 随文字色 | `string` |
 | `description` | 链接卡描述（可选）；大面板形态下渲染在标题下方      | `string`  |
 | `active`      | 当前页标记（可选）；链接渲染 `aria-current="page"`  | `boolean` |
 | `disabled`    | 禁用                                              | `boolean` |

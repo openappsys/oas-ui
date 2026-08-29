@@ -1,7 +1,9 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
 import type { MenuItem } from '../menu/index.js'
 import type { MenuItemKind } from '../menu/oas-menu.js'
+// 图标查表走 oas-icon 同一通道（customIcons 注册优先、内置 iconRegistry 兜底）：
+// 用户 `registerIcon()` 注册的自定义图标菜单家族可见；oas-icon.ts 不依赖 menu，无循环引用
+import { lookupIcon } from '../../basic/icon/oas-icon.js'
 
 export interface NavItem extends MenuItem {
   /** 链接地址（可选）；带 href 的叶子项渲染为 <a> */
@@ -725,6 +727,8 @@ export class OASNavigationMenu extends OASElement {
     if (rel) item.rel = rel
     const icon = el.getAttribute('icon')
     if (icon) item.icon = icon
+    const iconColor = el.getAttribute('icon-color')
+    if (iconColor) item.iconColor = iconColor
     const description = el.getAttribute('description')
     if (description) item.description = description
     const kind = el.getAttribute('kind')
@@ -777,6 +781,7 @@ export class OASNavigationMenu extends OASElement {
         'target',
         'rel',
         'icon',
+        'icon-color',
         'description',
         'active',
         'disabled',
@@ -988,7 +993,7 @@ export class OASNavigationMenu extends OASElement {
     if (item.active) a.setAttribute('aria-current', 'page')
     if (item.disabled) a.setAttribute('aria-disabled', 'true')
     if (item.icon) {
-      const ic = this.createIcon(item.icon)
+      const ic = this.createIcon(item.icon, 'icon', item.iconColor)
       if (ic) a.appendChild(ic)
     }
     const text = document.createElement('span')
@@ -1233,10 +1238,17 @@ export class OASNavigationMenu extends OASElement {
     if (el) el.focus()
   }
 
-  /** 用 iconRegistry 渲染图标（内联 SVG，跟随 currentColor） */
-  private createIcon(icon: string, className = 'icon'): HTMLElement | null {
-    const content = iconRegistry[icon as IconName]
+  /** 图标名（查表：registerIcon 自定义优先，其次内置注册表）→ 内联 SVG。
+   *  iconColor 显式时固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随态着色。
+   *  内置单色 path 自带 stroke="currentColor"——iconColor 显式时把 path 的 currentColor 也替换，
+   *  否则 path 元素级属性压过 svg 外层 stroke（与 sidebar iconSvg 对齐） */
+  private createIcon(icon: string, className = 'icon', iconColor?: string): HTMLElement | null {
+    const content = lookupIcon(icon)
     if (!content) return null
+    const stroke = iconColor || 'currentColor'
+    const coloredContent = iconColor
+      ? content.replace(/stroke="currentColor"/g, `stroke="${stroke}"`)
+      : content
     const span = document.createElement('span')
     span.className = className
     span.setAttribute('aria-hidden', 'true')
@@ -1246,7 +1258,12 @@ export class OASNavigationMenu extends OASElement {
     svg.setAttribute('height', '1em')
     svg.setAttribute('aria-hidden', 'true')
     svg.setAttribute('focusable', 'false')
-    svg.innerHTML = content
+    svg.setAttribute('fill', 'none')
+    svg.setAttribute('stroke', stroke)
+    svg.setAttribute('stroke-width', '1.5')
+    svg.setAttribute('stroke-linecap', 'round')
+    svg.setAttribute('stroke-linejoin', 'round')
+    svg.innerHTML = coloredContent
     span.appendChild(svg)
     return span
   }

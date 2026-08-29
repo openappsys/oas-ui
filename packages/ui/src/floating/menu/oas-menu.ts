@@ -1,5 +1,7 @@
 import { OASElement } from '@oas-ui/core'
-import { iconRegistry, type IconName } from '@oas-ui/icons'
+// 图标查表走 oas-icon 同一通道（customIcons 注册优先、内置 iconRegistry 兜底）：
+// 用户 `registerIcon()` 注册的自定义图标菜单家族可见；oas-icon.ts 不依赖 menu，无循环引用
+import { lookupIcon } from '../../basic/icon/oas-icon.js'
 
 export type MenuItemType = 'item' | 'group' | 'divider'
 
@@ -13,6 +15,8 @@ export interface MenuItem {
   /** 加载中：渲染 spinner、禁点（点击/键盘/hover 均拦截），由数据驱动恢复 */
   loading?: boolean
   icon?: string
+  /** 图标颜色：显式固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随文字色 */
+  iconColor?: string
   /** 菜单项类型：普通项（默认）/ 分组 / 分隔线 */
   type?: MenuItemType
   /** 叶子项语义：radio（默认，可勾选）/ action（动作项，无勾选态、不写回 value）/ checkbox（多选勾选，value 数组勾选集） */
@@ -525,6 +529,8 @@ export class OASMenu extends OASElement {
     if (el.hasAttribute('loading')) item.loading = true
     const icon = el.getAttribute('icon')
     if (icon) item.icon = icon
+    const iconColor = el.getAttribute('icon-color')
+    if (iconColor) item.iconColor = iconColor
     const kind = el.getAttribute('kind')
     if (kind) item.kind = kind as MenuItemKind
     if (el.hasAttribute('danger')) item.danger = true
@@ -583,6 +589,7 @@ export class OASMenu extends OASElement {
         'disabled',
         'loading',
         'icon',
+        'icon-color',
         'kind',
         'danger',
         'href',
@@ -753,7 +760,7 @@ export class OASMenu extends OASElement {
         spin.setAttribute('aria-hidden', 'true')
         li.appendChild(spin)
       } else if (item.icon) {
-        const ic = this.createIcon(item.icon)
+        const ic = this.createIcon(item.icon, 'icon', item.iconColor)
         if (ic) li.appendChild(ic)
       }
       const label = document.createElement('span')
@@ -864,10 +871,17 @@ export class OASMenu extends OASElement {
     }
   }
 
-  /** 用 iconRegistry 渲染图标（内联 SVG，跟随 currentColor） */
-  private createIcon(icon: string, className = 'icon'): HTMLElement | null {
-    const content = iconRegistry[icon as IconName]
+  /** 图标名（查表：registerIcon 自定义优先，其次内置注册表）→ 内联 SVG。
+   *  iconColor 显式时固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随态着色。
+   *  内置单色 path 自带 stroke="currentColor"——iconColor 显式时把 path 的 currentColor 也替换，
+   *  否则 path 元素级属性压过 svg 外层 stroke（与 sidebar iconSvg 对齐） */
+  private createIcon(icon: string, className = 'icon', iconColor?: string): HTMLElement | null {
+    const content = lookupIcon(icon)
     if (!content) return null
+    const stroke = iconColor || 'currentColor'
+    const coloredContent = iconColor
+      ? content.replace(/stroke="currentColor"/g, `stroke="${stroke}"`)
+      : content
     const span = document.createElement('span')
     span.className = className
     span.setAttribute('aria-hidden', 'true')
@@ -877,7 +891,12 @@ export class OASMenu extends OASElement {
     svg.setAttribute('height', '1em')
     svg.setAttribute('aria-hidden', 'true')
     svg.setAttribute('focusable', 'false')
-    svg.innerHTML = content
+    svg.setAttribute('fill', 'none')
+    svg.setAttribute('stroke', stroke)
+    svg.setAttribute('stroke-width', '1.5')
+    svg.setAttribute('stroke-linecap', 'round')
+    svg.setAttribute('stroke-linejoin', 'round')
+    svg.innerHTML = coloredContent
     span.appendChild(svg)
     return span
   }
