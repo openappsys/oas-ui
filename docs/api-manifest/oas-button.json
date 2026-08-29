@@ -1,0 +1,152 @@
+{
+  "className": "OASButton",
+  "sourceFile": "packages/ui/src/basic/button/oas-button.ts",
+  "attrs": [
+    {
+      "name": "type",
+      "type": "ButtonType",
+      "default": "default",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "ButtonSize",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled-focusable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "observed": true
+    },
+    {
+      "name": "loading-text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "icon-end",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "block",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "round",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "ghost",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "circle",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "icon-position",
+      "type": "string",
+      "default": "start",
+      "observed": true
+    },
+    {
+      "name": "href",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "download",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "rel",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "plain",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "ButtonVariant | ''",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "wave",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "auto-insert-space",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "wrap",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "autofocus",
+      "type": "boolean",
+      "observed": false
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-click",
+      "detail": "{ originalEvent: e }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

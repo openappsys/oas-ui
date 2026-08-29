@@ -1,0 +1,42 @@
+{
+  "className": "OASCarousel",
+  "sourceFile": "packages/ui/src/data/carousel/oas-carousel.ts",
+  "attrs": [
+    {
+      "name": "index",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "autoplay",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "interval",
+      "type": "string",
+      "default": "3000",
+      "observed": true
+    },
+    {
+      "name": "arrows",
+      "type": "string",
+      "default": "hover",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ index: next }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,157 @@
+{
+  "className": "OASTag",
+  "sourceFile": "packages/ui/src/basic/tag/oas-tag.ts",
+  "attrs": [
+    {
+      "name": "type",
+      "type": "TagType",
+      "default": "default",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "TagSize",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "closable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "round",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "chip",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "clickable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "checkable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "checked",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "href",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "max-width",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "dot",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "processing",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "hit",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "strong",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "multiline",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "close-icon",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "close-label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "checked-icon",
+      "type": "string",
+      "default": "check",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-close"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ checked: next }"
+    },
+    {
+      "name": "oas-click",
+      "detail": "{ originalEvent: e } | { originalEvent: k }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

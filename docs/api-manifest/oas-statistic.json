@@ -1,0 +1,56 @@
+{
+  "className": "OASStatistic",
+  "sourceFile": "packages/ui/src/data/statistic/oas-statistic.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "precision",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "prefix",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "suffix",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "group-separator",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "prefix",
+      "type": "string"
+    }
+  ],
+  "events": [],
+  "slots": [
+    {
+      "name": "prefix"
+    },
+    {
+      "name": "suffix"
+    }
+  ],
+  "unresolved": []
+}

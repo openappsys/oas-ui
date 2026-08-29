@@ -1,0 +1,13 @@
+{
+  "className": "OASHeader",
+  "sourceFile": "packages/ui/src/layout/layout/oas-header.ts",
+  "attrs": [],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

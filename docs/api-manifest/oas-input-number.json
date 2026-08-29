@@ -1,0 +1,54 @@
+{
+  "className": "OASInputNumber",
+  "sourceFile": "packages/ui/src/form/input-number/oas-input-number.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "min",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "step",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "precision",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: v }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

@@ -1,0 +1,40 @@
+{
+  "className": "OASCheckbox",
+  "sourceFile": "packages/ui/src/form/checkbox/oas-checkbox.ts",
+  "attrs": [
+    {
+      "name": "checked",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "indeterminate",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ checked, value: this.getAttr('value', '') }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,48 @@
+{
+  "className": "OASToolbar",
+  "sourceFile": "packages/ui/src/floating/toolbar/oas-toolbar.ts",
+  "attrs": [
+    {
+      "name": "orientation",
+      "type": "string",
+      "default": "horizontal",
+      "observed": true
+    },
+    {
+      "name": "loop",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "focusable-when-disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "end"
+    },
+    {
+      "name": "start"
+    }
+  ],
+  "unresolved": []
+}

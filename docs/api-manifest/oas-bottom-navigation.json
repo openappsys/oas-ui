@@ -1,0 +1,30 @@
+{
+  "className": "OASBottomNavigation",
+  "sourceFile": "packages/ui/src/navigation/bottom-navigation/oas-bottom-navigation.ts",
+  "attrs": [
+    {
+      "name": "items",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "fixed",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: item.value }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

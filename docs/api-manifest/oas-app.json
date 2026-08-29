@@ -1,0 +1,22 @@
+{
+  "className": "OASApp",
+  "sourceFile": "packages/ui/src/floating/app/oas-app.ts",
+  "attrs": [
+    {
+      "name": "message",
+      "observed": true
+    },
+    {
+      "name": "notification",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

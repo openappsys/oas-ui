@@ -1,0 +1,28 @@
+{
+  "className": "OASComment",
+  "sourceFile": "packages/ui/src/data/comment/oas-comment.ts",
+  "attrs": [],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "actions"
+    },
+    {
+      "name": "author"
+    },
+    {
+      "name": "avatar"
+    },
+    {
+      "name": "content"
+    },
+    {
+      "name": "time"
+    }
+  ],
+  "unresolved": []
+}

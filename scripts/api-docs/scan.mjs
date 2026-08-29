@@ -19,14 +19,17 @@
  * 推断不出来的（emit 变量事件名、条件 observedAttributes 等）一律标 unresolved，
  * 不编造。
  */
-import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, rmSync } from 'node:fs'
 import { join, relative, dirname } from 'node:path'
+import { execSync } from 'node:child_process'
 import { API } from 'typescript/unstable/sync'
 import * as tsast from 'typescript/unstable/ast'
 
 const ROOT = process.cwd()
 const UI_SRC = join(ROOT, 'packages', 'ui', 'src')
 const OUT = join(ROOT, 'docs', 'api-manifest.json')
+// per-component 输出目录（每组件一份 manifest 文件，原子提交 + 按组件门禁）
+const OUT_DIR = join(ROOT, 'docs', 'api-manifest')
 
 // ---------- TS7 AST 常用节点 kind ----------
 const K = tsast.SyntaxKind
@@ -799,8 +802,20 @@ function main() {
   const ordered = {}
   for (const tag of order) ordered[tag] = manifest[tag]
 
-  mkdirSync(dirname(OUT), { recursive: true })
-  writeFileSync(OUT, JSON.stringify(ordered, null, 2) + '\n', 'utf8')
+  // 按组件拆 manifest：每组件一个 <tag>.json（原子提交、按组件门禁），index.json 记顺序；清陈旧文件
+  mkdirSync(OUT_DIR, { recursive: true })
+  writeFileSync(join(OUT_DIR, 'index.json'), JSON.stringify(order, null, 2) + '\n', 'utf8')
+  const writtenTags = new Set(order)
+  for (const tag of order) {
+    writeFileSync(join(OUT_DIR, `${tag}.json`), JSON.stringify(ordered[tag], null, 2) + '\n', 'utf8')
+  }
+  for (const f of readdirSync(OUT_DIR)) {
+    if (f === 'index.json' || !f.endsWith('.json')) continue
+    const tag = f.slice(0, -5)
+    if (!writtenTags.has(tag)) rmSync(join(OUT_DIR, f))
+  }
+  // 迁移：删旧单文件 manifest（已由 per-component 目录取代）
+  if (existsSync(OUT)) rmSync(OUT)
 
   snap.dispose()
   api.close()

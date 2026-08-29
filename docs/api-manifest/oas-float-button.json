@@ -1,0 +1,24 @@
+{
+  "className": "OASFloatButton",
+  "sourceFile": "packages/ui/src/layout/float-button/oas-float-button.ts",
+  "attrs": [
+    {
+      "name": "badge",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-click"
+    }
+  ],
+  "slots": [
+    {
+      "name": "icon"
+    }
+  ],
+  "unresolved": []
+}

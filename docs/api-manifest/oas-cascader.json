@@ -1,0 +1,50 @@
+{
+  "className": "OASCascader",
+  "sourceFile": "packages/ui/src/form/cascader/oas-cascader.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "observed": true
+    },
+    {
+      "name": "options",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "change-on-select",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "show-all-levels",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "options",
+      "type": "CascaderOption[] | string",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: path }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

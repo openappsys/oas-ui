@@ -1,0 +1,57 @@
+{
+  "className": "OASScrollArea",
+  "sourceFile": "packages/ui/src/floating/scroll-area/oas-scroll-area.ts",
+  "attrs": [
+    {
+      "name": "height",
+      "observed": true
+    },
+    {
+      "name": "width",
+      "observed": true
+    },
+    {
+      "name": "auto-hide",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "scroll-shadow",
+      "observed": true
+    },
+    {
+      "name": "stick-to-bottom",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "end-distance",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "",
+      "observed": false
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-scroll",
+      "detail": "{ scrollTop: vp ? vp.scrollTop : 0, scrollLeft: vp ? vp.scrollLeft : 0, }"
+    },
+    {
+      "name": "oas-end-reached",
+      "detail": "{ direction: atBottom ? 'bottom' : 'right' }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

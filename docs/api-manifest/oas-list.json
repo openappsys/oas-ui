@@ -1,0 +1,38 @@
+{
+  "className": "OASList",
+  "sourceFile": "packages/ui/src/data/list/oas-list.ts",
+  "attrs": [
+    {
+      "name": "bordered",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "split",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "empty",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "empty-text",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,89 @@
+{
+  "className": "OASModal",
+  "sourceFile": "packages/ui/src/feedback/modal/oas-modal.ts",
+  "attrs": [
+    {
+      "name": "visible",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "no-footer",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "no-cancel",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "width",
+      "observed": true
+    },
+    {
+      "name": "centered",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "draggable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "fullscreen",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "type",
+      "type": "ModalVariant",
+      "observed": true
+    },
+    {
+      "name": "ok-text",
+      "observed": true
+    },
+    {
+      "name": "cancel-text",
+      "observed": true
+    },
+    {
+      "name": "focus-ok",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "no-mask-close",
+      "type": "boolean",
+      "observed": false
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-ok"
+    },
+    {
+      "name": "oas-cancel"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

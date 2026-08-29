@@ -1,0 +1,40 @@
+{
+  "className": "OASPopconfirm",
+  "sourceFile": "packages/ui/src/feedback/popconfirm/oas-popconfirm.ts",
+  "attrs": [
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "position",
+      "type": "string",
+      "default": "top",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-ok",
+      "detail": "{ source: this }"
+    },
+    {
+      "name": "oas-cancel",
+      "detail": "{ source: this }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

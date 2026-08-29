@@ -1,0 +1,35 @@
+{
+  "className": "OASPageHeader",
+  "sourceFile": "packages/ui/src/layout/page-header/oas-page-header.ts",
+  "attrs": [
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "back",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "subtitle",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-back"
+    }
+  ],
+  "slots": [
+    {
+      "name": "extra"
+    }
+  ],
+  "unresolved": []
+}

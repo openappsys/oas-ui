@@ -1,0 +1,57 @@
+{
+  "className": "OASVirtualList",
+  "sourceFile": "packages/ui/src/data/virtual-list/oas-virtual-list.ts",
+  "attrs": [
+    {
+      "name": "height",
+      "type": "string",
+      "default": "320",
+      "observed": true
+    },
+    {
+      "name": "item-height",
+      "type": "string",
+      "default": "36",
+      "observed": true
+    },
+    {
+      "name": "buffer",
+      "type": "string",
+      "default": "4",
+      "observed": true
+    },
+    {
+      "name": "scroll-target",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "items",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "items",
+      "type": "unknown[]",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-item",
+      "detail": "{ index: i, item, element: el }"
+    },
+    {
+      "name": "oas-scroll",
+      "detail": "{ scrollTop, start: this.start, end: this.end }"
+    }
+  ],
+  "slots": [
+    {
+      "name": "template[slot=\"item\"]"
+    }
+  ],
+  "unresolved": []
+}

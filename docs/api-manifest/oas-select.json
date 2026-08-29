@@ -1,0 +1,108 @@
+{
+  "className": "OASSelect",
+  "sourceFile": "packages/ui/src/form/select/oas-select.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "observed": true
+    },
+    {
+      "name": "options",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "multiple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "searchable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "clearable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "remote",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "max-tag-count",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "allow-create",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "virtual",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "item-height",
+      "type": "string",
+      "default": "36",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "options",
+      "type": "Option[] | string",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-input",
+      "detail": "{ value: v }"
+    },
+    {
+      "name": "oas-option-render",
+      "detail": "{ index: optionIdx, option, element: label }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: next } | { value } | { value: [] } | { value: '' }"
+    },
+    {
+      "name": "oas-clear",
+      "detail": "{ value: [...prev] } | { value: prev[0] ?? '' }"
+    },
+    {
+      "name": "oas-tag-render",
+      "detail": "{ value, label, element: labelEl }"
+    }
+  ],
+  "slots": [
+    {
+      "name": "template[slot=\"option\"]"
+    },
+    {
+      "name": "template[slot=\"tag\"]"
+    }
+  ],
+  "unresolved": []
+}

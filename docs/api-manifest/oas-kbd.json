@@ -1,0 +1,38 @@
+{
+  "className": "OASKbd",
+  "sourceFile": "packages/ui/src/basic/kbd/oas-kbd.ts",
+  "attrs": [
+    {
+      "name": "keys",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

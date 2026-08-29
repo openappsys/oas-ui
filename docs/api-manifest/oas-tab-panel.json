@@ -1,0 +1,38 @@
+{
+  "className": "OASTabPanel",
+  "sourceFile": "packages/ui/src/layout/tabs/oas-tab-panel.ts",
+  "attrs": [
+    {
+      "name": "label",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "observed": true
+    },
+    {
+      "name": "editable",
+      "observed": true
+    },
+    {
+      "name": "badge",
+      "observed": false
+    },
+    {
+      "name": "icon",
+      "observed": false
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

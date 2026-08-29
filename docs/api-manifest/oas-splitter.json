@@ -1,0 +1,76 @@
+{
+  "className": "OASSplitter",
+  "sourceFile": "packages/ui/src/layout/splitter/oas-splitter.ts",
+  "attrs": [
+    {
+      "name": "percent",
+      "type": "string",
+      "default": "50",
+      "observed": true
+    },
+    {
+      "name": "min",
+      "type": "string",
+      "default": "10",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "90",
+      "observed": true
+    },
+    {
+      "name": "vertical",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "collapsible",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "collapsed",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "lazy",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "sizes",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-resize",
+      "detail": "{ percent: clamped } | { percent: clamped, index, sizes: [...this.sizes] } | { percent: this.sizes[index], index, sizes: [...this.sizes] }"
+    },
+    {
+      "name": "oas-collapse",
+      "detail": "{ collapsed, side: 'left' }"
+    }
+  ],
+  "slots": [
+    {
+      "name": "handle"
+    },
+    {
+      "name": "left"
+    },
+    {
+      "name": "pane-${i}"
+    },
+    {
+      "name": "right"
+    }
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,26 @@
+{
+  "className": "OASBottomNavigationItem",
+  "sourceFile": "packages/ui/src/navigation/bottom-navigation/oas-bottom-navigation-item.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

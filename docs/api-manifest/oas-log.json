@@ -1,0 +1,35 @@
+{
+  "className": "OASLog",
+  "sourceFile": "packages/ui/src/data/log/oas-log.ts",
+  "attrs": [
+    {
+      "name": "lines",
+      "observed": true
+    },
+    {
+      "name": "auto-scroll",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "line-number",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "empty-text",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "lines",
+      "type": "string[]",
+      "default": "[]"
+    }
+  ],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

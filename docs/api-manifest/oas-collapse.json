@@ -1,0 +1,30 @@
+{
+  "className": "OASCollapse",
+  "sourceFile": "packages/ui/src/data/collapse/oas-collapse.ts",
+  "attrs": [
+    {
+      "name": "active",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "accordion",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ active: [...active] }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

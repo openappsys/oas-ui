@@ -1,0 +1,135 @@
+{
+  "className": "OASAnchor",
+  "sourceFile": "packages/ui/src/navigation/anchor/oas-anchor.ts",
+  "attrs": [
+    {
+      "name": "items",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "active",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "offset",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "scroll-container",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "target-offset",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "vertical",
+      "observed": true
+    },
+    {
+      "name": "affix",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "affix-offset",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "bounds",
+      "type": "string",
+      "default": "5",
+      "observed": true
+    },
+    {
+      "name": "block",
+      "type": "ScrollBlock",
+      "default": "start",
+      "observed": true
+    },
+    {
+      "name": "hash",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "replace",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "duration",
+      "type": "string",
+      "default": "300",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "default",
+      "observed": true
+    },
+    {
+      "name": "internal-scrollable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "animation",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "get-current-anchor",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "items",
+      "type": "AnchorItem[] | string",
+      "default": "[]"
+    },
+    {
+      "name": "scrollContainer",
+      "type": "HTMLElement | string | null"
+    },
+    {
+      "name": "getCurrentAnchor",
+      "type": "((activeHref: string) => string) | null"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-click",
+      "detail": "{ href: item.href, item }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ href, prevHref }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

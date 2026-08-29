@@ -1,0 +1,163 @@
+{
+  "className": "OASTabs",
+  "sourceFile": "packages/ui/src/layout/tabs/oas-tabs.ts",
+  "attrs": [
+    {
+      "name": "active",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "type",
+      "type": "string",
+      "default": "line",
+      "observed": true
+    },
+    {
+      "name": "closable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "addable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "tab-position",
+      "type": "string",
+      "default": "top",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "centered",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "justified",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "without-scroll-controls",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "more",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "panel-mode",
+      "type": "string",
+      "default": "keep",
+      "observed": true
+    },
+    {
+      "name": "activation",
+      "type": "string",
+      "default": "auto",
+      "observed": true
+    },
+    {
+      "name": "animated",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "sortable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "trigger",
+      "type": "string",
+      "default": "click",
+      "observed": true
+    },
+    {
+      "name": "allow-deactivation",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "stacked",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "hide-indicator",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "scroll-position",
+      "type": "string",
+      "default": "auto",
+      "observed": true
+    },
+    {
+      "name": "reserve-selected-space",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "hide-content",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "items",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "context-menu",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-add",
+      "detail": "{ label: this.t('tabs.newTab') }"
+    },
+    {
+      "name": "oas-close",
+      "detail": "{ key } | { key: value }"
+    },
+    {
+      "name": "oas-rename",
+      "detail": "{ value, label: newLabel }"
+    },
+    {
+      "name": "oas-reorder",
+      "detail": "{ fromIndex, toIndex }"
+    },
+    {
+      "name": "oas-before-change",
+      "detail": "{ value: '' } | { value }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: '' } | { value }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

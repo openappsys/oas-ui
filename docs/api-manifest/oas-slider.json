@@ -1,0 +1,82 @@
+{
+  "className": "OASSlider",
+  "sourceFile": "packages/ui/src/form/slider/oas-slider.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "min",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "100",
+      "observed": true
+    },
+    {
+      "name": "step",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "marks",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "range",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "show-input",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "reverse",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "show-tooltip",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "marks",
+      "type": "string | Record<string, string | number> | number[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-input",
+      "detail": "{ value: Number(this.input!.value) } | { value: this.currentRange() } | { value: Number(this.input?.value ?? 0) }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: Number(this.input!.value) } | { value: this.currentRange() } | { value: Number(this.input?.value ?? 0) }"
+    }
+  ],
+  "slots": [
+    {
+      "name": "template[slot=\"custom-thumb\"]"
+    }
+  ],
+  "unresolved": []
+}

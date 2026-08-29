@@ -1,0 +1,34 @@
+{
+  "className": "OASBackdrop",
+  "sourceFile": "packages/ui/src/feedback/backdrop/oas-backdrop.ts",
+  "attrs": [
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "transparent",
+      "observed": true
+    },
+    {
+      "name": "blur",
+      "observed": true
+    },
+    {
+      "name": "lock-scroll",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-click",
+      "detail": "{ originalEvent: e }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

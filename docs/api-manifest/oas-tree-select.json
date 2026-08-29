@@ -1,0 +1,75 @@
+{
+  "className": "OASTreeSelect",
+  "sourceFile": "packages/ui/src/form/tree-select/oas-tree-select.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "observed": true
+    },
+    {
+      "name": "options",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "multiple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "expanded",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "check-strategy",
+      "type": "string",
+      "default": "all",
+      "observed": true
+    },
+    {
+      "name": "virtual",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "288",
+      "observed": true
+    },
+    {
+      "name": "item-height",
+      "type": "string",
+      "default": "36",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "options",
+      "type": "TreeOption[] | string",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: values } | { value: values[0] ?? '' }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

@@ -1,0 +1,74 @@
+{
+  "className": "OASDatePicker",
+  "sourceFile": "packages/ui/src/form/date-picker/oas-date-picker.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "format",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "type",
+      "type": "string",
+      "default": "date",
+      "observed": true
+    },
+    {
+      "name": "min",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "observed": true
+    },
+    {
+      "name": "multiple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "placement",
+      "type": "string",
+      "default": "bottom-start",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "shortcuts",
+      "type": "ShortcutItem[] | null"
+    },
+    {
+      "name": "disabledDate",
+      "type": "((d: Date) => boolean) | null"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value } | { value: [toISODate(r.start), toISODate(r.end)] } | { value: [iso] } | { value: iso } | { value: values } | { value: [toISODate(this.range.start), toISODate(this.range.end)], }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

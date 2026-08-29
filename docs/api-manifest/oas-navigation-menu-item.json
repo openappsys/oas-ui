@@ -1,0 +1,62 @@
+{
+  "className": "OASNavigationMenuItem",
+  "sourceFile": "packages/ui/src/floating/navigation-menu/oas-navigation-menu-item.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "href",
+      "observed": true
+    },
+    {
+      "name": "target",
+      "observed": true
+    },
+    {
+      "name": "rel",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "observed": true
+    },
+    {
+      "name": "description",
+      "observed": true
+    },
+    {
+      "name": "active",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "observed": true
+    },
+    {
+      "name": "kind",
+      "observed": true
+    },
+    {
+      "name": "danger",
+      "observed": true
+    },
+    {
+      "name": "sub",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

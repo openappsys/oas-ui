@@ -1,0 +1,31 @@
+{
+  "className": "OASSkeleton",
+  "sourceFile": "packages/ui/src/feedback/skeleton/oas-skeleton.ts",
+  "attrs": [
+    {
+      "name": "rows",
+      "type": "string",
+      "default": "3",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "avatar",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "active",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

@@ -1,0 +1,25 @@
+{
+  "className": "OASSpin",
+  "sourceFile": "packages/ui/src/feedback/spin/oas-spin.ts",
+  "attrs": [
+    {
+      "name": "size",
+      "type": "string",
+      "default": "md",
+      "observed": true
+    },
+    {
+      "name": "spinning",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

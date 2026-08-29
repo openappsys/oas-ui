@@ -1,0 +1,22 @@
+{
+  "className": "OASMenubarGroup",
+  "sourceFile": "packages/ui/src/floating/menubar/oas-menubar-group.ts",
+  "attrs": [
+    {
+      "name": "label",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

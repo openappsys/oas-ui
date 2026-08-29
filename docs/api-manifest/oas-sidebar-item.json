@@ -1,0 +1,34 @@
+{
+  "className": "OASSidebarItem",
+  "sourceFile": "packages/ui/src/layout/sidebar/oas-sidebar-item.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "observed": true
+    },
+    {
+      "name": "icon-color",
+      "observed": true
+    },
+    {
+      "name": "group",
+      "observed": true
+    },
+    {
+      "name": "badge",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

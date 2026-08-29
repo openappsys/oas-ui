@@ -1,0 +1,32 @@
+{
+  "className": "OASResult",
+  "sourceFile": "packages/ui/src/feedback/result/oas-result.ts",
+  "attrs": [
+    {
+      "name": "status",
+      "type": "string",
+      "default": "success",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": "extra"
+    }
+  ],
+  "unresolved": []
+}

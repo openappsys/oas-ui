@@ -1,0 +1,23 @@
+{
+  "className": "OASThemeEditor",
+  "sourceFile": "packages/ui/src/floating/theme-editor/oas-theme-editor.ts",
+  "attrs": [
+    {
+      "name": "token",
+      "observed": true
+    },
+    {
+      "name": "preset",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ token: def.name, value }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

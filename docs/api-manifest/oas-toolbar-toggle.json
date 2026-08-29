@@ -1,0 +1,56 @@
+{
+  "className": "OASToolbarToggle",
+  "sourceFile": "packages/ui/src/floating/toolbar/oas-toolbar-toggle.ts",
+  "attrs": [
+    {
+      "name": "items",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "multiple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "items",
+      "type": "ToolbarToggleItem[] | string",
+      "default": "[]"
+    },
+    {
+      "name": "selectedValues",
+      "type": "string[]"
+    },
+    {
+      "name": "currentValue",
+      "type": "string"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: next } | { value: item.value }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

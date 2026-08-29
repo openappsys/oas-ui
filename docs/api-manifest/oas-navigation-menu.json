@@ -1,0 +1,81 @@
+{
+  "className": "OASNavigationMenu",
+  "sourceFile": "packages/ui/src/floating/navigation-menu/oas-navigation-menu.ts",
+  "attrs": [
+    {
+      "name": "items",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "delay-duration",
+      "type": "string",
+      "default": "200",
+      "observed": true
+    },
+    {
+      "name": "skip-delay-duration",
+      "type": "string",
+      "default": "300",
+      "observed": true
+    },
+    {
+      "name": "orientation",
+      "type": "string",
+      "default": "horizontal",
+      "observed": true
+    },
+    {
+      "name": "columns",
+      "type": "string",
+      "default": "2",
+      "observed": true
+    },
+    {
+      "name": "backdrop",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "keep-mounted",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "arrow",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "loop",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value }"
+    },
+    {
+      "name": "oas-select",
+      "detail": "{ value: item.value }"
+    }
+  ],
+  "slots": [
+    {
+      "name": "panel-footer"
+    }
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,103 @@
+{
+  "className": "OASTree",
+  "sourceFile": "packages/ui/src/data/tree/oas-tree.ts",
+  "attrs": [
+    {
+      "name": "data",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "selected",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "checked",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "checkable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "expanded",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "360",
+      "observed": true
+    },
+    {
+      "name": "row-height",
+      "type": "string",
+      "default": "32",
+      "observed": true
+    },
+    {
+      "name": "lazy",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "draggable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "directory",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "load",
+      "type": "(payload: { key: string }) => void"
+    },
+    {
+      "name": "data",
+      "type": "TreeNode[] | string",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-node-drop",
+      "detail": "{ dragKey: this.dragKey, dropKey: '', position: 'inner' } | { dragKey: this.dragKey, dropKey: node.key, position: this.dropPosition(row, e, node), }"
+    },
+    {
+      "name": "oas-load",
+      "detail": "{ key: node.key }"
+    },
+    {
+      "name": "oas-check",
+      "detail": "{ key: node.key, checked: box.checked }"
+    },
+    {
+      "name": "oas-select",
+      "detail": "{ key: node.key, selected: true }"
+    },
+    {
+      "name": "oas-node-render",
+      "detail": "{ node, element: label }"
+    }
+  ],
+  "slots": [
+    {
+      "name": "template[slot=\"node\"]"
+    },
+    {
+      "name": "template[slot=\"toggle\"]"
+    }
+  ],
+  "unresolved": []
+}

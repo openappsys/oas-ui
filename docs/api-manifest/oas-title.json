@@ -1,0 +1,126 @@
+{
+  "className": "OASTitle",
+  "sourceFile": "packages/ui/src/basic/typography/oas-typography.ts",
+  "attrs": [
+    {
+      "name": "level",
+      "type": "string",
+      "default": "3",
+      "observed": true
+    },
+    {
+      "name": "type",
+      "type": "TextType",
+      "default": "default",
+      "observed": true
+    },
+    {
+      "name": "ellipsis",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "copyable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "copy-text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "ellipsis-suffix",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "actions-position",
+      "type": "string",
+      "default": "end",
+      "observed": true
+    },
+    {
+      "name": "line-clamp",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "tag",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "depth",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "strong",
+      "observed": true
+    },
+    {
+      "name": "mark",
+      "observed": true
+    },
+    {
+      "name": "code",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "underline",
+      "observed": true
+    },
+    {
+      "name": "delete",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "italic",
+      "observed": true
+    },
+    {
+      "name": "align",
+      "type": "AlignType",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "weight",
+      "type": "WeightType",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "numeric",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-copy",
+      "detail": "{ text }"
+    },
+    {
+      "name": "oas-copy-error",
+      "detail": "{ text }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "actions"
+    }
+  ],
+  "unresolved": []
+}

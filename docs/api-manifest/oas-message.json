@@ -1,0 +1,41 @@
+{
+  "className": "OASMessage",
+  "sourceFile": "packages/ui/src/feedback/message/oas-message.ts",
+  "attrs": [
+    {
+      "name": "type",
+      "type": "string",
+      "default": "info",
+      "observed": true
+    },
+    {
+      "name": "group",
+      "observed": true
+    },
+    {
+      "name": "duration",
+      "type": "string",
+      "default": "3000",
+      "observed": true
+    },
+    {
+      "name": "count",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "key",
+      "observed": false
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-close",
+      "detail": "{ key: this.getAttr('key') || undefined }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

@@ -1,0 +1,24 @@
+{
+  "className": "OASMarquee",
+  "sourceFile": "packages/ui/src/data/marquee/oas-marquee.ts",
+  "attrs": [
+    {
+      "name": "speed",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "pause-on-hover",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

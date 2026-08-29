@@ -1,0 +1,56 @@
+{
+  "className": "OASCard",
+  "sourceFile": "packages/ui/src/data/card/oas-card.ts",
+  "attrs": [
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "hoverable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "cover-src",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "cover-alt",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "clickable",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-click",
+      "detail": "{ originalEvent: e } | { originalEvent: k }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "actions"
+    },
+    {
+      "name": "cover"
+    },
+    {
+      "name": "extra"
+    }
+  ],
+  "unresolved": []
+}
