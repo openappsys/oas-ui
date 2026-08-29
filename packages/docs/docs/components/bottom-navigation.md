@@ -56,7 +56,7 @@ onMounted(() => {
 
 ## 子元素声明式通道
 
-除 `items` JSON 外，可用 `<oas-bottom-navigation-item>` 子元素声明式书写（`items` 属性**显式设置时优先**，未设置时解析子元素收敛到同一渲染路径）。默认插槽文本为 label，属性对齐 `BottomNavItem` 字段：`value` / `icon` / `disabled`。子元素增删、属性与文本变化会自动重渲染（MutationObserver）。
+除 `items` JSON 外，可用 `<oas-bottom-navigation-item>` 子元素声明式书写（`items` 属性**显式设置时优先**，未设置时解析子元素收敛到同一渲染路径）。默认插槽文本为 label，属性对齐 `BottomNavItem` 字段：`value` / `icon` / `disabled` / `badge`。子元素增删、属性与文本变化会自动重渲染（MutationObserver）。
 
 <DemoBlock title="子元素声明式（icon / disabled）">
   <oas-bottom-navigation id="bn-decl" value="home" style="width: 100%; max-width: 480px">
@@ -64,6 +64,41 @@ onMounted(() => {
     <oas-bottom-navigation-item value="discover" icon="heart" disabled>发现</oas-bottom-navigation-item>
     <oas-bottom-navigation-item value="mine" icon="gear">我的</oas-bottom-navigation-item>
   </oas-bottom-navigation>
+</DemoBlock>
+
+## 角标（badge）
+
+数据项加 `badge`（数字/文本）即渲染右上角标、叠在 icon 上；未设置不渲染。角标样式走 badge 既有 token（`--oas-badge-bg` / `--oas-badge-on-color`，默认 danger），items 通道与子元素通道行为一致。
+
+<DemoBlock title="角标（items 通道）">
+  <oas-bottom-navigation id="bn-badge" value="home" style="width: 100%; max-width: 480px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"消息","icon":"mail","value":"mail","badge":"5"},{"label":"我的","icon":"gear","value":"mine","badge":"新"}]'></oas-bottom-navigation>
+</DemoBlock>
+
+<DemoBlock title="角标（子元素通道）">
+  <oas-bottom-navigation id="bn-badge-decl" value="home" style="width: 100%; max-width: 480px">
+    <oas-bottom-navigation-item value="home" icon="user">首页</oas-bottom-navigation-item>
+    <oas-bottom-navigation-item value="mail" icon="mail" badge="99+">消息</oas-bottom-navigation-item>
+    <oas-bottom-navigation-item value="mine" icon="gear">我的</oas-bottom-navigation-item>
+  </oas-bottom-navigation>
+</DemoBlock>
+
+## 安全区（safe-area）
+
+`safe-area` 布尔属性（需配合 `fixed`）：fixed 模式下底部加 `env(safe-area-inset-bottom)` 内边距，避开刘海屏底部 home 指示条；非 fixed 模式无效果。演示页保持 static，移动端真机请用 `fixed` + `safe-area`。
+
+<DemoBlock title="safe-area 示意（此处保持 static）">
+  <oas-bottom-navigation fixed safe-area style="position: static; width: 100%; max-width: 480px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"搜索","icon":"search","value":"search"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+</DemoBlock>
+
+## 变量定制
+
+不加 prop、纯 CSS 变量开口，dark 下自动走 token：
+
+- `--oas-bottom-navigation-active-color`：激活项颜色，默认主色 token
+- `--oas-bottom-navigation-height`：导航栏高度，默认 `56px`（fixed 模式下固定条高度即此值）
+
+<DemoBlock title="变量定制（激活色 + 高度）">
+  <oas-bottom-navigation id="bn-var" value="home" style="width: 100%; max-width: 480px; --oas-bottom-navigation-active-color: var(--oas-color-success); --oas-bottom-navigation-height: 64px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"搜索","icon":"search","value":"search"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
 </DemoBlock>
 
 ## API
@@ -74,6 +109,7 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `fixed` | 固定到视口底部（`position: fixed; bottom: 0`） | `boolean` | — |
 | `items` | 导航项 JSON | `string` | `[]` |
+| `safe-area` | fixed 模式下底部加安全区内边距（`env(safe-area-inset-bottom)`），避开刘海屏 home 指示条；非 fixed 无效果 | `boolean` | — |
 | `value` | 激活项 value，未指定默认激活第一个可用项 | — | — |
 
 | 事件 | 说明 |
@@ -84,6 +120,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `badge` | 右上角标（数字/文本，叠在 icon 上；未设置不渲染） | — | — |
 | `disabled` | 禁用该项（不可选中、键盘跳过） | — | — |
 | `icon` | 前置图标（`@oas-ui/icons` 注册表图标名） | — | — |
 | `value` | 选中值（子元素声明式通道的数据载体字段） | — | — |
@@ -100,5 +137,6 @@ onMounted(() => {
 | `value`  | 值（唯一标识）                                       | `string` |
 | `icon`   | 图标名（`@oas-ui/icons` 的 iconRegistry 键）        | `string` |
 | `disabled` | 禁用（不可选中、键盘跳过）                         | `boolean` |
+| `badge`  | 右上角标（数字/文本，叠在 icon 上；未设置不渲染）   | `string` |
 
-行为：`role="tablist"` + `role="tab"` + `aria-selected` / `aria-disabled` 同步；roving tabindex 仅激活项可聚焦；方向键（左右/上下）在可用项间循环移动焦点（Home/End 首尾），Enter/Space 选中当前焦点项；点击已激活项不重复派发；空 `items` 渲染空 tablist 不报错。激活项主色 + 图标（iconRegistry 内联 SVG，跟随 currentColor），顶部细分隔线。
+行为：`role="tablist"` + `role="tab"` + `aria-selected` / `aria-disabled` 同步；roving tabindex 仅激活项可聚焦；方向键（左右/上下）在可用项间循环移动焦点（Home/End 首尾），Enter/Space 选中当前焦点项；点击已激活项不重复派发；空 `items` 渲染空 tablist 不报错。激活项主色 + 图标（iconRegistry 内联 SVG，跟随 currentColor），顶部细分隔线；`badge` 右上角标（叠在 icon 上，走 badge token）；`fixed` + `safe-area` 加底部安全区内边距。
