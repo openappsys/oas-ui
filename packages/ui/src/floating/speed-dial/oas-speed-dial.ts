@@ -6,6 +6,12 @@ export interface SpeedDialAction {
   icon?: string
 }
 
+/** oas-open 收起/展开的来源标记：toggle=主钮点击 / outside=外部点击 / escape=Esc / select=选择子动作 / hover=悬停触发 */
+export type SpeedDialOpenReason = 'toggle' | 'outside' | 'escape' | 'select' | 'hover'
+
+/** hover 触发的离开宽限期（ms）：指针离开后短暂滞留防误收 */
+const HOVER_LEAVE_GRACE = 120
+
 const STYLE = `
 :host {
   display: inline-block;
@@ -48,8 +54,18 @@ const STYLE = `
   outline: none;
   box-shadow: var(--oas-focus-ring);
 }
+/* 主钮图标容器（默认 ＋ 或自定义 slot 内容共用）：展开时旋转 45°，两种内容一致 */
 .fab .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: transform var(--oas-transition-base) var(--oas-ease-out);
+}
+/* 自定义图标（默认插槽内容）：约束为 1em，避免撑破圆形主钮 */
+.fab .icon ::slotted(svg) {
+  display: block;
+  width: 1em;
+  height: 1em;
 }
 .dial.open .fab .icon {
   transform: rotate(45deg);
@@ -142,31 +158,43 @@ const STYLE = `
  * - `actions`：JSON `[{ label, icon? }]`
  * - `direction`：`up`/`down`/`left`/`right`（默认 up）
  * - `open`：展开态（受控）
+ * - `trigger`：`click`（默认）| `hover`——hover 派 mouseenter 展开、mouseleave 收起（120ms 离开宽限期），触屏自动回落 click
  *
  * 事件（bubbles + composed）：
  * - `oas-select`：`{ index, label }`，选择子动作后自动收起
- * - `oas-open`：`{ open }`
+ * - `oas-open`：`{ open, reason }`，reason = toggle/outside/escape/select/hover
+ *
+ * 插槽：
+ * - 默认插槽：主钮自定义图标，有内容时替代默认 ＋（展开旋转 45° 保持）
+ *
+ * 键盘：
+ * - Esc 收起回焦主钮；actions 容器 role="menu"（子动作 role="menuitem"），
+ *   方向键导航：纵向（up/down）ArrowUp/ArrowDown、横向（left/right）ArrowLeft/ArrowRight，循环 + Home/End
  *
  * 边界：点击外部/Esc 收起；文档级监听仅在展开时挂载，断开连接清理，无孤儿浮层。
  */
 export class OASSpeedDial extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['actions', 'direction', 'open']
+    return ['actions', 'direction', 'open', 'trigger']
   }
 
   private actionsList: SpeedDialAction[] = []
   private dial: HTMLElement | null = null
   private fab: HTMLButtonElement | null = null
   private actionsEl: HTMLElement | null = null
+  /** hover 离开宽限期计时器 */
+  private hoverHideTimer: ReturnType<typeof setTimeout> | null = null
+  /** hover 触发展开时置位：syncOpen 跳过「自动聚焦首项」，不抢焦点 */
+  private skipFocusOnOpen = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
       <style>${STYLE}</style>
       <div class="dial" data-dir="up">
-        <div class="actions" part="actions" role="group"></div>
+        <div class="actions" part="actions" role="menu"></div>
         <button class="fab" part="fab" type="button" aria-expanded="false">
-          <span class="icon" aria-hidden="true">＋</span>
+          <span class="icon" aria-hidden="true"><slot>＋</slot></span>
         </button>
       </div>
     `
@@ -178,9 +206,21 @@ export class OASSpeedDial extends OASElement {
     this.fab = this.shadow.querySelector('.fab')
     this.actionsEl = this.shadow.querySelector('.actions')
     this.fab?.addEventListener('click', () => this.toggle())
+    // hover 触发：悬停宿主（含主钮）开、移出宿主/面板关；面板入/出也监听，
+    // 使悬停区域 = 宿主 + 面板（跨 gap 移动不闪关，宽限期内回入不收起）
+    this.addEventListener('mouseenter', this.onHoverEnter)
+    this.addEventListener('mouseleave', this.onHoverLeave)
+    this.actionsEl?.addEventListener('mouseenter', this.onPanelEnter)
+    this.actionsEl?.addEventListener('mouseleave', this.onPanelLeave)
+    // 方向键导航：焦点在子动作上时 keydown 冒泡到 actions 容器
+    this.actionsEl?.addEventListener('keydown', this.handleActionsKeydown)
     this.onCleanup(() => {
       document.removeEventListener('click', this.handleOutsideClick, true)
       document.removeEventListener('keydown', this.handleDocKeydown)
+      if (this.hoverHideTimer) {
+        clearTimeout(this.hoverHideTimer)
+        this.hoverHideTimer = null
+      }
     })
   }
 
@@ -223,6 +263,7 @@ export class OASSpeedDial extends OASElement {
       const btn = document.createElement('button')
       btn.className = 'action'
       btn.setAttribute('part', 'action')
+      btn.setAttribute('role', 'menuitem')
       btn.type = 'button'
       btn.addEventListener('click', () => this.select(index, action))
       if (action.icon) {
@@ -256,9 +297,31 @@ export class OASSpeedDial extends OASElement {
   }
 
   private syncDirection(): void {
+    this.dial?.setAttribute('data-dir', this.validDirection())
+  }
+
+  /** direction 合法化：非法值回退 up */
+  private validDirection(): string {
     const dir = this.getAttr('direction', 'up')
-    const valid = ['up', 'down', 'left', 'right'].includes(dir) ? dir : 'up'
-    this.dial?.setAttribute('data-dir', valid)
+    return ['up', 'down', 'left', 'right'].includes(dir) ? dir : 'up'
+  }
+
+  /** trigger 是否启用 hover 行为：trigger="hover" 且非触屏（coarse 回落 click） */
+  private isHoverTrigger(): boolean {
+    if (this.getAttr('trigger', 'click') !== 'hover') return false
+    if (this.isCoarsePointer()) return false
+    return true
+  }
+
+  /** 触屏检测（pointer: coarse）：触屏下 hover 行为不可靠，自动回落 click */
+  private isCoarsePointer(): boolean {
+    if (typeof window.matchMedia !== 'function') return false
+    return window.matchMedia('(pointer: coarse)').matches
+  }
+
+  /** 指针/焦点移到的目标是否仍在「宿主 + 面板」区域内（跨 shadow 时 relatedTarget 已 retarget 到 shadow host） */
+  private hoverTargetInside(rel: EventTarget | null): boolean {
+    return !!rel && rel instanceof Node && (this.contains(rel) || this.shadow.contains(rel))
   }
 
   private syncOpen(): void {
@@ -270,45 +333,119 @@ export class OASSpeedDial extends OASElement {
       // 展开时挂载文档级监听（收起/断开时移除，无孤儿监听）
       document.addEventListener('click', this.handleOutsideClick, true)
       document.addEventListener('keydown', this.handleDocKeydown)
-      // 键盘可达：展开自动聚焦第一个子动作
-      this.actionsEl?.querySelector<HTMLButtonElement>('.action')?.focus()
+      // 键盘可达：展开自动聚焦第一个子动作（hover 触发展开不抢焦点）
+      if (!this.skipFocusOnOpen) {
+        this.actionsEl?.querySelector<HTMLButtonElement>('.action')?.focus()
+      }
     } else {
       document.removeEventListener('click', this.handleOutsideClick, true)
       document.removeEventListener('keydown', this.handleDocKeydown)
     }
+    this.skipFocusOnOpen = false
   }
 
   private toggle(): void {
-    if (this.hasAttr('open')) this.close()
-    else this.open()
+    if (this.hasAttr('open')) this.close('toggle')
+    else this.open('toggle')
   }
 
-  private open(): void {
+  private open(reason: SpeedDialOpenReason): void {
+    if (this.hasAttr('open')) return
+    this.skipFocusOnOpen = reason === 'hover'
     this.setAttribute('open', '')
-    this.emit('open', { open: true })
+    this.emit('open', { open: true, reason })
   }
 
-  private close(): void {
+  private close(reason: SpeedDialOpenReason): void {
     if (!this.hasAttr('open')) return
     this.removeAttribute('open')
-    this.emit('open', { open: false })
+    this.emit('open', { open: false, reason })
   }
 
   private select(index: number, action: SpeedDialAction): void {
     this.emit('select', { index, label: action.label })
-    this.close()
+    this.close('select')
+  }
+
+  // —— hover 触发 ——
+
+  private onHoverEnter = (): void => {
+    if (!this.isHoverTrigger()) return
+    this.clearHoverHide()
+    this.open('hover')
+  }
+
+  private onHoverLeave = (e: MouseEvent): void => {
+    if (!this.isHoverTrigger()) return
+    // 移到面板（shadow 内）不算离开：悬停区域 = 宿主 + 面板
+    if (this.hoverTargetInside(e.relatedTarget)) return
+    this.clearHoverHide()
+    this.hoverHideTimer = setTimeout(() => this.close('hover'), HOVER_LEAVE_GRACE)
+  }
+
+  private onPanelEnter = (): void => {
+    if (!this.isHoverTrigger()) return
+    this.clearHoverHide()
+  }
+
+  private onPanelLeave = (e: MouseEvent): void => {
+    if (!this.isHoverTrigger()) return
+    if (this.hoverTargetInside(e.relatedTarget)) return
+    this.clearHoverHide()
+    this.hoverHideTimer = setTimeout(() => this.close('hover'), HOVER_LEAVE_GRACE)
+  }
+
+  private clearHoverHide(): void {
+    if (this.hoverHideTimer) {
+      clearTimeout(this.hoverHideTimer)
+      this.hoverHideTimer = null
+    }
+  }
+
+  // —— 方向键导航 ——
+
+  private actionButtons(): HTMLButtonElement[] {
+    if (!this.actionsEl) return []
+    return [...this.actionsEl.querySelectorAll<HTMLButtonElement>('.action')]
+  }
+
+  private handleActionsKeydown = (e: KeyboardEvent): void => {
+    if (!this.hasAttr('open')) return
+    const btns = this.actionButtons()
+    if (btns.length === 0) return
+    // 方向键轴与展开方向对齐：纵向用 ArrowUp/Down，横向用 ArrowLeft/Right
+    const vertical = this.validDirection() === 'up' || this.validDirection() === 'down'
+    const nextKey = vertical ? 'ArrowDown' : 'ArrowRight'
+    const prevKey = vertical ? 'ArrowUp' : 'ArrowLeft'
+    let idx = btns.indexOf(this.shadow.activeElement as HTMLButtonElement)
+    if (e.key === nextKey) {
+      e.preventDefault()
+      idx = (idx + 1) % btns.length
+    } else if (e.key === prevKey) {
+      e.preventDefault()
+      idx = (idx - 1 + btns.length) % btns.length
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      idx = 0
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      idx = btns.length - 1
+    } else {
+      return
+    }
+    btns[idx]?.focus()
   }
 
   private handleOutsideClick = (e: MouseEvent): void => {
     if (!this.hasAttr('open')) return
     if (e.composedPath().includes(this)) return
-    this.close()
+    this.close('outside')
   }
 
   private handleDocKeydown = (e: KeyboardEvent): void => {
     if (e.key !== 'Escape') return
     if (!this.hasAttr('open')) return
-    this.close()
+    this.close('escape')
     this.fab?.focus()
   }
 }

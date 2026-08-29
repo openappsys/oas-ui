@@ -1,0 +1,1 @@
+feat(speeddial): 导航组第二批能力补齐——trigger hover/主钮图标插槽/reason 事件/menu 语义方向键，主 agent 复核
