@@ -177,9 +177,10 @@ export class OASAffix extends OASElement {
    * 吸附判定 + 布局写入 + 状态翻转派发。
    * 判定基准是 `.placeholder`（永远留在文档流中，无 fixed 自反馈）；吸附时 `.wrap`
    * 转 fixed 脱流，placeholder 同步占位高度防页面跳动。
-   * - top：占位顶缘距视口（或容器可视区）顶部 ≤ offset 时吸附，fixed top: offset px
-   * - bottom：占位底缘越过视口（或容器可视区）底部吸附线（距底 offset）时吸附，
-   *   fixed bottom: offset px——即元素随滚动上移进入底部吸附区
+   * 判定统一为视口系（fixed 定位本就相对视口）：容器（target）只决定监听哪个滚动源，
+   * 并在容器完全滚出视口后解除吸附（元素随文档流走，不「凭空钉在视口上」）。
+   * - top：占位顶缘到达视口吸附线（距顶 offset）时吸附，fixed top: offset px
+   * - bottom：占位底缘越过视口底部吸附线（距底 offset）时吸附，fixed bottom: offset px
    * - oas-change：仅状态真实翻转时派发，detail { fixed, top }（top 吸附 = offset；
    *   bottom 吸附 = 吸附后元素 top 的计算值）
    */
@@ -189,26 +190,21 @@ export class OASAffix extends OASElement {
     const position = normalizePosition(this.getAttr('position', 'top') as AffixPosition)
     const container = this.resolveContainer()
     const prect = this.placeholder.getBoundingClientRect()
+    // 容器完全滚出视口（上方已过/下方未到）→ 不吸附，元素随文档流走
+    let containerVisible = true
+    if (container) {
+      const crect = container.getBoundingClientRect()
+      containerVisible = crect.bottom > 0 && crect.top < window.innerHeight
+    }
 
     let stuck: boolean
     let fixedTop: number
-    if (container) {
-      const crect = container.getBoundingClientRect()
-      if (position === 'bottom') {
-        stuck = prect.bottom <= crect.bottom - offset && prect.top < crect.bottom - offset
-        fixedTop = Math.round(window.innerHeight - offset - prect.height)
-      } else {
-        stuck = prect.top - crect.top <= offset
-        fixedTop = offset
-      }
+    if (position === 'bottom') {
+      stuck = containerVisible && prect.bottom <= window.innerHeight - offset && prect.top < window.innerHeight - offset
+      fixedTop = Math.round(window.innerHeight - offset - prect.height)
     } else {
-      if (position === 'bottom') {
-        stuck = prect.bottom <= window.innerHeight - offset && prect.top < window.innerHeight - offset
-        fixedTop = Math.round(window.innerHeight - offset - prect.height)
-      } else {
-        stuck = prect.top <= offset
-        fixedTop = offset
-      }
+      stuck = containerVisible && prect.top <= offset
+      fixedTop = offset
     }
 
     // 先按目标态写入，再读 wrap 实际高度同步占位（wrap fixed 与否高度一致，占位始终兜住文档流）

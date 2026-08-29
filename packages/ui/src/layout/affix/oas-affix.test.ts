@@ -179,6 +179,19 @@ describe('OASAffix', () => {
     sc.scrollTop = 300
     sc.dispatchEvent(new Event('scroll')) // 触发 apply
     expect(wrap.classList.contains('fixed')).toBe(false)
+    // 容器滚出视口（下方未到/上方已过）→ 不吸附，元素随文档流走
+    sc.getBoundingClientRect = () => mockRect(2000, 2200)
+    sc.dispatchEvent(new Event('scroll'))
+    expect(wrap.classList.contains('fixed')).toBe(false)
+    sc.getBoundingClientRect = () => mockRect(-500, -300)
+    sc.dispatchEvent(new Event('scroll'))
+    expect(wrap.classList.contains('fixed')).toBe(false)
+    // 容器回到视口内且占位相对容器顶 5 <= 20 → 恢复吸附（scrollTop 变化跨过去抖阈值）
+    sc.getBoundingClientRect = () => mockRect(0, 200)
+    mockPlaceholderRect(el, 5, 25)
+    sc.scrollTop = 400
+    sc.dispatchEvent(new Event('scroll'))
+    expect(wrap.classList.contains('fixed')).toBe(true)
   })
 
   it('target 选择器无匹配：console.warn 且回落 window 监听', () => {
