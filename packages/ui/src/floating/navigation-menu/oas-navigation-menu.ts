@@ -113,6 +113,8 @@ const STYLE = `
   opacity: 1;
 }
 .bar.vertical .indicator {
+  top: 0;
+  bottom: auto;
   left: auto;
   right: -2px;
   width: 2px;
@@ -1508,12 +1510,21 @@ export class OASNavigationMenu extends OASElement {
     )
     if (!trigger) return
     if (this.isVertical()) {
-      const y = trigger.offsetTop
-      const h = trigger.offsetHeight
-      if (h > 0) {
-        ind.style.setProperty('--ind-y', `${y}px`)
-        ind.style.setProperty('--ind-h', `${h}px`)
-      }
+      // 坑：垂直形态开面板 toggle bar 的 vertical 类同帧触发横→竖重排，此时 offsetTop
+      // 还是旧布局值（与 writeArrow 同因）——rAF 等一帧重排后写入，指示条才对准触发器
+      requestAnimationFrame(() => {
+        if (!this.effectiveOpen() || !this.isConnected) return
+        const t = this.shadow.querySelector<HTMLElement>(
+          `[part="top-item"][data-value="${open}"]`,
+        )
+        if (!t) return
+        const y = t.offsetTop
+        const h = t.offsetHeight
+        if (h > 0) {
+          ind.style.setProperty('--ind-y', `${y}px`)
+          ind.style.setProperty('--ind-h', `${h}px`)
+        }
+      })
     } else {
       const x = trigger.offsetLeft
       const w = trigger.offsetWidth

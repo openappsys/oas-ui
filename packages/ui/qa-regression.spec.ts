@@ -7213,3 +7213,43 @@ test('菜单家族 iconColor：menu/menubar/navigation-menu 图标固定颜色�
   expect(navResult.colored).toEqual({ outer: '#f50', path: '#f50' })
   expect(navResult.plain).toEqual({ outer: 'currentColor', path: 'currentColor' })
 })
+
+test('navigation-menu 垂直方向指示条对准活动触发器（bottom 锚点未重置 + 同帧 offsetTop 旧值双坑）', async ({ page }) => {
+  await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-navigation-menu')
+  // 找垂直形态的 nav（bar.vertical），真实 hover 第一个带子项的触发器
+  const target = await page.evaluate(async () => {
+    const navs = [...document.querySelectorAll('oas-navigation-menu')]
+    const nav = navs.find((n) => n.shadowRoot?.querySelector('.bar.vertical'))!
+    const root = nav.shadowRoot!
+    const triggers = [...root.querySelectorAll('[part="top-item"]')]
+    const trigger = triggers.find((t) => t.querySelector('.chevron')) as HTMLElement
+    trigger.scrollIntoView({ block: 'center' })
+    await new Promise((r) => setTimeout(r, 150))
+    const tr = trigger.getBoundingClientRect()
+    return { x: tr.x + tr.width / 2, y: tr.y + tr.height / 2 }
+  })
+  await page.mouse.move(target.x, target.y)
+  await page.waitForTimeout(600)
+  const r = await page.evaluate(() => {
+    const nav = [...document.querySelectorAll('oas-navigation-menu')].find(
+      (n) => n.shadowRoot?.querySelector('.bar.vertical'),
+    )!
+    const root = nav.shadowRoot!
+    const open = nav.getAttribute('value') || root.querySelector('.indicator')?.getAttribute('data-state')
+    const trigger = [...root.querySelectorAll('[part="top-item"]')].find(
+      (t) => t.getAttribute('aria-expanded') === 'true' || t.querySelector('.chevron'),
+    ) as HTMLElement
+    const ind = root.querySelector('.indicator') as HTMLElement
+    const tr = trigger.getBoundingClientRect()
+    const ir = ind.getBoundingClientRect()
+    return {
+      indVisible: getComputedStyle(ind).opacity === '1',
+      topDiff: Math.abs(ir.top - tr.top),
+      hDiff: Math.abs(ir.height - tr.height),
+    }
+  })
+  expect(r.indVisible, '指示条应可见').toBe(true)
+  expect(r.topDiff, '指示条 top 应对准触发器 top').toBeLessThan(4)
+  expect(r.hDiff, '指示条高度应等于触发器高度').toBeLessThan(4)
+})
