@@ -65,6 +65,21 @@
   <oas-menu style="width: 200px" items='[{"label":"搜索","value":"search","icon":"search"},{"label":"用户","value":"user","icon":"user"},{"label":"设置","value":"settings","icon":"gear"},{"label":"下载","value":"download","icon":"download"}]'></oas-menu>
 </DemoBlock>
 
+## 图标颜色（iconColor）
+
+`iconColor` 字段显式固定图标颜色（优先于选中/禁用态默认色），支持任意 CSS 色值或 token；缺省 `currentColor` 随文字色。子元素声明式通道用 `icon-color` 属性。
+
+<DemoBlock title="图标颜色（iconColor / icon-color）">
+  <oas-space direction="vertical" size="small">
+    <oas-menu id="menu-iconcolor" style="width: 220px" items='[{"label":"搜索","value":"search","icon":"search","iconColor":"var(--oas-color-primary)"},{"label":"用户","value":"user","icon":"user","iconColor":"#06b6d4"},{"label":"组织","value":"org","icon":"organization","iconColor":"#8b5cf6"},{"label":"设置","value":"settings","icon":"gear","iconColor":"var(--oas-color-warning)"}]'></oas-menu>
+    <oas-menu id="menu-iconcolor-decl" style="width: 220px">
+      <oas-menu-item value="download" icon="download" icon-color="var(--oas-color-success)">下载</oas-menu-item>
+      <oas-menu-item value="delete" icon="trash" icon-color="var(--oas-color-danger)">删除</oas-menu-item>
+      <oas-menu-item value="plain" icon="star">无 icon-color</oas-menu-item>
+    </oas-menu>
+  </oas-space>
+</DemoBlock>
+
 ## 分隔线
 
 `type: "divider"` 渲染一条细分隔线，不可点、不参与键盘导航。

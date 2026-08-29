@@ -40,6 +40,14 @@ A website-style multi-level navigation bar: top-level triggers open a unified vi
   <oas-navigation-menu columns="3" items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"grid","description":"30+ components"},{"label":"Docs","value":"docs","href":"/docs","icon":"book","description":"API docs"},{"label":"Themes","value":"themes","href":"/themes","icon":"star","description":"Theming"},{"label":"Guide","value":"guide","href":"/guide","icon":"mail","description":"Getting started"},{"label":"Blog","value":"blog","href":"/blog","icon":"edit","description":"Tech blog"},{"label":"Community","value":"community","href":"/community","icon":"user","description":"User community"}]}]'></oas-navigation-menu>
 </DemoBlock>
 
+## Icon color (iconColor)
+
+Panel link-card icons accept an `iconColor` field (fixes the icon color, overriding the selected/disabled default); it defaults to `currentColor` following the text color. The declarative child channel uses the `icon-color` attribute.
+
+<DemoBlock title="Icon color (iconColor)">
+  <oas-navigation-menu id="nav-iconcolor" keep-mounted items='[{"label":"Products","value":"products","children":[{"label":"Components","value":"components","href":"/components","icon":"edit","iconColor":"var(--oas-color-primary)","description":"30+ components"},{"label":"Docs","value":"docs","href":"/docs","icon":"form","iconColor":"#8b5cf6","description":"API docs"},{"label":"Themes","value":"themes","href":"/themes","icon":"star","iconColor":"var(--oas-color-warning)","description":"Theming"},{"label":"Community","value":"community","href":"/community","icon":"user","iconColor":"var(--oas-color-success)","description":"User community"}]}]'></oas-navigation-menu>
+</DemoBlock>
+
 ## Backdrop + keep-mounted + arrow
 
 <DemoBlock title="Backdrop + keep-mounted + arrow">

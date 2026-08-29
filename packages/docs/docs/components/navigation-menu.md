@@ -40,6 +40,14 @@
   <oas-navigation-menu columns="3" items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"grid","description":"30+ 组件"},{"label":"文档","value":"docs","href":"/docs","icon":"book","description":"API 文档"},{"label":"主题","value":"themes","href":"/themes","icon":"star","description":"主题定制"},{"label":"指南","value":"guide","href":"/guide","icon":"mail","description":"上手实践"},{"label":"博客","value":"blog","href":"/blog","icon":"edit","description":"技术博客"},{"label":"社区","value":"community","href":"/community","icon":"user","description":"用户社区"}]}]'></oas-navigation-menu>
 </DemoBlock>
 
+## 图标颜色（iconColor）
+
+面板链接卡图标支持 `iconColor` 字段（显式固定图标色，优先于选中/禁用态默认色；缺省 `currentColor` 随文字色）。子元素声明式通道用 `icon-color` 属性。
+
+<DemoBlock title="图标颜色（iconColor）">
+  <oas-navigation-menu id="nav-iconcolor" keep-mounted items='[{"label":"产品","value":"products","children":[{"label":"组件","value":"components","href":"/components","icon":"edit","iconColor":"var(--oas-color-primary)","description":"30+ 组件"},{"label":"文档","value":"docs","href":"/docs","icon":"form","iconColor":"#8b5cf6","description":"API 文档"},{"label":"主题","value":"themes","href":"/themes","icon":"star","iconColor":"var(--oas-color-warning)","description":"主题定制"},{"label":"社区","value":"community","href":"/community","icon":"user","iconColor":"var(--oas-color-success)","description":"用户社区"}]}]'></oas-navigation-menu>
+</DemoBlock>
+
 ## 遮罩 + 保挂载 + 箭头
 
 <DemoBlock title="遮罩 + 保挂载 + 箭头">
