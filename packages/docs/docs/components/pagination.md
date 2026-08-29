@@ -76,6 +76,113 @@
   </oas-space>
 </DemoBlock>
 
+## 禁用状态
+
+<DemoBlock title="disabled 全局禁用">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-pagination disabled total="150" page-size="10" current="3" show-total page-sizes='[10,20,50]' show-jumper></oas-pagination>
+    <oas-tag type="info">全部分页钮、每页条数下拉与跳转输入框均禁用</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## 尺寸
+
+<DemoBlock title="size 五档（xs / sm / md / lg / xl）">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-pagination size="xs" total="100" page-size="10"></oas-pagination>
+    <oas-pagination size="sm" total="100" page-size="10"></oas-pagination>
+    <oas-pagination size="md" total="100" page-size="10"></oas-pagination>
+    <oas-pagination size="lg" total="100" page-size="10"></oas-pagination>
+    <oas-pagination size="xl" total="100" page-size="10"></oas-pagination>
+  </oas-space>
+</DemoBlock>
+
+默认 `md`；非法值回落 `md` 并在控制台告警。
+
+## 极简模式
+
+<DemoBlock title="simple 极简形态">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-pagination simple total="100" page-size="10" current="3"></oas-pagination>
+    <oas-tag type="info">simple + show-jumper 叠加</oas-tag>
+    <oas-pagination simple total="100" page-size="10" current="3" show-jumper></oas-pagination>
+  </oas-space>
+</DemoBlock>
+
+极简形态只渲染前后钮与「当前 / 总页数」文本，与页码省略算法互斥（`simple` 优先）。
+
+## 首末页
+
+<DemoBlock title="show-edges 首末页钮">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="info">首页（« 禁用）</oas-tag>
+    <oas-pagination show-edges total="100" page-size="10" current="1"></oas-pagination>
+    <oas-tag type="info">中间页</oas-tag>
+    <oas-pagination show-edges total="100" page-size="10" current="5"></oas-pagination>
+    <oas-tag type="info">末页（» 禁用）</oas-tag>
+    <oas-pagination show-edges total="100" page-size="10" current="10"></oas-pagination>
+  </oas-space>
+</DemoBlock>
+
+## 单页隐藏
+
+<DemoBlock title="hide-on-single 单页不渲染">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="info">总条数 8、每页 10 → 单页，组件不显示</oas-tag>
+    <oas-pagination hide-on-single total="8" page-size="10"></oas-pagination>
+    <oas-tag type="info">未设置时单页仍显示（按钮禁用）</oas-tag>
+    <oas-pagination total="8" page-size="10"></oas-pagination>
+  </oas-space>
+</DemoBlock>
+
+## 自定义图标
+
+<DemoBlock title="prev-icon / next-icon 插槽">
+  <oas-pagination total="100" page-size="10" current="3">
+    <span slot="prev-icon" style="font-size: 12px">«</span>
+    <span slot="next-icon" style="font-size: 12px">»</span>
+  </oas-pagination>
+</DemoBlock>
+
+提供 `slot="prev-icon"` / `slot="next-icon"` 内容时替换默认箭头 `‹` / `›`。
+
+## 自定义总数
+
+<DemoBlock title="total 插槽">
+  <oas-pagination total="150" page-size="10" show-total>
+    <span slot="total">共 <b>150</b> 条数据</span>
+  </oas-pagination>
+</DemoBlock>
+
+有 `slot="total"` 内容时替换内置「共 N 条」文案；`show-total` 布尔仍兼容（无插槽内容时显示内置文案）。
+
+## 翻页拦截
+
+<DemoBlock title="oas-before-change 拦截">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-pagination id="pagination-before" total="100" page-size="10" current="1"></oas-pagination>
+    <oas-tag type="primary" id="pagination-before-info">当前第 1 页</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+`oas-before-change` 在翻页/跳转前派发，`detail: { page }`；宿主 `preventDefault()` 可取消本次变更（本示例拦截跳转到第 4 页）。切换每页条数不拦截。
+
+## 受控模式
+
+<DemoBlock title="受控 current">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-space size="small">
+      <oas-button size="small" id="pagination-prev-page">上一页</oas-button>
+      <oas-button size="small" id="pagination-next-page">下一页</oas-button>
+      <oas-button size="small" id="pagination-reset">回到第 1 页</oas-button>
+    </oas-space>
+    <oas-pagination id="pagination-controlled" total="200" page-size="10" current="1"></oas-pagination>
+    <oas-tag type="primary" id="pagination-controlled-info">当前第 1 页</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+外部按钮直接设置 `current` 属性驱动视图跳页（越界自动夹取）；组件自身翻页同样派发 `oas-change` 并回写属性。
+
 ## 边界场景
 
 <DemoBlock title="单页 / 首尾禁用">
@@ -105,6 +212,45 @@ onMounted(() => {
   bind('pagination-sizes', (info, page, pageSize) => (info.textContent = `每页 ${pageSize} 条，当前第 ${page} 页`))
   bind('pagination-jumper', (info, page, pageSize) => (info.textContent = `当前第 ${page} 页`))
   bind('pagination-full', (info, page, pageSize) => (info.textContent = `每页 ${pageSize} 条，当前第 ${page} 页`))
+
+  // 翻页拦截：拦截跳转到第 4 页（preventDefault veto）
+  const beforeEl = document.getElementById('pagination-before')
+  const beforeInfo = document.getElementById('pagination-before-info')
+  const renderPage = (info, page) => (info.textContent = `当前第 ${page} 页`)
+  beforeEl?.addEventListener('oas-before-change', (e) => {
+    if (e.detail.page === 4) {
+      e.preventDefault()
+      beforeInfo.textContent = '已拦截跳到第 4 页'
+      beforeInfo.setAttribute('type', 'danger')
+    }
+  })
+  beforeEl?.addEventListener('oas-change', (e) => {
+    renderPage(beforeInfo, e.detail.page)
+    beforeInfo.setAttribute('type', 'primary')
+  })
+
+  // 受控模式：外部按钮直接设置 current 属性驱动视图
+  const ctrl = document.getElementById('pagination-controlled')
+  const ctrlInfo = document.getElementById('pagination-controlled-info')
+  const ctrlPageCount = Math.ceil(200 / 10) // total 200 / page-size 10
+  const clampPage = (p) => Math.min(Math.max(p, 1), ctrlPageCount)
+  const syncCtrlInfo = (page) => {
+    ctrlInfo.textContent = `当前第 ${page} 页`
+    ctrlInfo.setAttribute('type', 'primary')
+  }
+  const updatePage = (p) => {
+    const next = clampPage(p)
+    ctrl?.setAttribute('current', String(next))
+    syncCtrlInfo(next)
+  }
+  document.getElementById('pagination-prev-page')?.addEventListener('click', () => {
+    updatePage(Number(ctrl?.getAttribute('current') || 1) - 1)
+  })
+  document.getElementById('pagination-next-page')?.addEventListener('click', () => {
+    updatePage(Number(ctrl?.getAttribute('current') || 1) + 1)
+  })
+  document.getElementById('pagination-reset')?.addEventListener('click', () => updatePage(1))
+  ctrl?.addEventListener('oas-change', (e) => syncCtrlInfo(e.detail.page))
 })
 </script>
 
@@ -115,17 +261,31 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `current` | 当前页（受控，翻页会更新该属性） | `string` | `1` |
+| `disabled` | 全局禁用：分页钮全部禁用并带 aria-disabled，每页条数下拉与跳转输入框禁用 | `boolean` | — |
+| `hide-on-single` | 单页（pageCount ≤ 1）时整个组件不渲染 | `boolean` | — |
 | `page-size` | 每页条数 | `string` | `10` |
 | `page-sizes` | 每页条数下拉选项（JSON 数组），如 `[10,20,50]`；切换后回到第 1 页 | `string` | — |
+| `show-edges` | 显示首/末页双箭头钮（« »），边界处禁用；aria-label 走 i18n | `boolean` | — |
 | `show-jumper` | 显示「跳至 __ 页」快速跳转输入框（回车跳转，越界夹取） | `boolean` | — |
 | `show-total` | 显示总条数文案「共 X 条」 | `boolean` | — |
 | `siblings` | 当前页前后各显示的页码数 | `string` | `1` |
+| `simple` | 极简形态：只渲染前后钮与「当前 / 总页数」文本，与页码省略算法互斥（simple 优先）；show-jumper 可叠加 | `boolean` | — |
+| `size` | 尺寸档位：xs / sm / md / lg / xl（默认 md）；非法值回落 md 并在控制台告警 | `string` | `md` |
 | `total` | 总条数 | `string` | `0` |
 
 ### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-change` | 翻页 `{ page }`；切换每页条数 `{ page: 1, pageSize }`；快速跳转 `{ page, pageSize }`，`detail: { page } \| { page: 1, pageSize } \| { page: target, pageSize }` |
+| `oas-before-change` | 翻页/跳转前派发，可 preventDefault 取消本次变更（切换每页条数不派发），`detail: { page }` |
+| `oas-change` | 翻页 `{ page }`；切换每页条数 `{ page: 1, pageSize }`；快速跳转 `{ page, pageSize }`，`detail: { page } \| { page: 1, pageSize } \| { page, pageSize }` |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `next-icon` | 下一页按钮图标插槽，有内容时替换默认 › |
+| `prev-icon` | 上一页按钮图标插槽，有内容时替换默认 ‹ |
+| `total` | 总条数文案插槽，有内容时替换内置「共 N 条」 |
 
 页码超出范围时自动省略，首尾翻页按钮在边界自动禁用。
