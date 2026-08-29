@@ -333,6 +333,13 @@ describe('OASSidebar 分组（items.group）', () => {
     // 移动态：组标题存在且无 collapsed 选择器覆盖
     expect(elMobile.shadowRoot!.querySelectorAll('[part="group"]').length).toBe(2)
   })
+
+  it('粗指针触控基线：样式表含 pointer:coarse 的 xl 档 48px 规则（.item 含子项同类名覆盖）', () => {
+    const el = mount({ items: GROUPED_ITEMS })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('min-height: var(--oas-control-height-xl')
+  })
 })
 
 describe('OASSidebar 能力补齐批（嵌套/徽标/操作/分隔线/骨架/快捷键/键盘导航/tooltip/expand-on-hover/variant/side）', () => {

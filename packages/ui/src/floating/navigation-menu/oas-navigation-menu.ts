@@ -487,21 +487,21 @@ const STYLE = `
 .panel-footer[hidden] {
   display: none;
 }
-/* ===== 粗指针触控目标 ≥44px（移动端基线；细指针桌面保持紧凑档不变） ===== */
+/* ===== 粗指针触控目标 xl 档 48px（移动端基线；细指针桌面保持紧凑档不变） ===== */
 @media (pointer: coarse) {
   .top-item {
     height: auto;
-    min-height: 44px;
+    min-height: var(--oas-control-height-xl);
   }
   .section-links a,
   .sub-links a {
-    min-height: 44px;
+    min-height: var(--oas-control-height-xl);
     display: flex;
     align-items: center;
   }
   .card-link,
   .sub-trigger {
-    min-height: 44px;
+    min-height: var(--oas-control-height-xl);
   }
 }
 `

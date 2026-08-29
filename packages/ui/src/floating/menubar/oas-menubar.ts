@@ -510,19 +510,19 @@ const STYLE = `
 .hamburger-panel {
   min-width: 180px;
 }
-/* ===== 粗指针触控目标 ≥44px（移动端基线；细指针桌面保持紧凑档不变） ===== */
+/* ===== 粗指针触控目标 xl 档 48px（移动端基线；细指针桌面保持紧凑档不变） ===== */
 @media (pointer: coarse) {
   .top-item {
     height: auto;
-    min-height: 44px;
+    min-height: var(--oas-control-height-xl);
   }
   .hamburger {
     height: auto;
-    min-height: 44px;
-    min-width: 44px;
+    min-height: var(--oas-control-height-xl);
+    min-width: var(--oas-control-height-xl);
   }
   .subitem {
-    min-height: 44px;
+    min-height: var(--oas-control-height-xl);
   }
 }
 `

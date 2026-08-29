@@ -522,7 +522,7 @@ describe('OASNavigationMenu', () => {
     const el = mount()
     const css = el.shadowRoot!.querySelector('style')!.textContent!
     expect(css).toContain('@media (pointer: coarse)')
-    expect(css).toContain('min-height: 44px')
+    expect(css).toContain('min-height: var(--oas-control-height-xl)')
   })
 
   // ============ 键盘导航 ============
