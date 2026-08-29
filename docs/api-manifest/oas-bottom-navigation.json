@@ -16,6 +16,11 @@
       "name": "fixed",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "safe-area",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],
