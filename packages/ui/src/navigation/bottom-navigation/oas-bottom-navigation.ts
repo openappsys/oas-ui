@@ -6,6 +6,8 @@ export interface BottomNavItem {
   value: string
   icon?: string
   disabled?: boolean
+  /** 右上角标（数字/文本，叠在 icon 上）；未设置不渲染 */
+  badge?: string
 }
 
 const STYLE = `
@@ -39,7 +41,7 @@ const STYLE = `
   align-items: center;
   justify-content: center;
   gap: 2px;
-  min-height: 56px;
+  min-height: var(--oas-bottom-navigation-height, 56px);
   padding: var(--oas-space-2) 0;
   border: none;
   background: none;
@@ -53,7 +55,7 @@ const STYLE = `
   color: var(--oas-color-text-primary);
 }
 .tab[aria-selected='true'] {
-  color: var(--oas-color-primary);
+  color: var(--oas-bottom-navigation-active-color, var(--oas-color-primary));
   font-weight: 500;
 }
 .tab[aria-disabled='true'] {
@@ -72,11 +74,40 @@ const STYLE = `
 .icon svg {
   display: block;
 }
+/* 图标定位容器：作为角标的定位锚点（badge 右上角叠在 icon 上） */
+.icon-wrap {
+  position: relative;
+  display: inline-flex;
+  line-height: 0;
+}
+/* 右上角标：样式走 badge 既有 token（--oas-badge-bg / --oas-badge-on-color，默认 danger） */
+.tab-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+  min-width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  padding: 0 var(--oas-space-1);
+  border-radius: 8px;
+  background: var(--oas-badge-bg, var(--oas-color-danger));
+  color: var(--oas-badge-on-color, var(--oas-color-text-on-danger));
+  font-size: var(--oas-font-size-xs);
+  line-height: 16px;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
 .tab-label {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* safe-area：仅 fixed 模式加底部安全区内边距（刘海屏 home 指示条避让），非 fixed 无效果 */
+:host(.oas-bottom-navigation--fixed.oas-bottom-navigation--safe-area) .tablist {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 `
 
@@ -96,7 +127,7 @@ const STYLE = `
  */
 export class OASBottomNavigation extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['items', 'value', 'fixed']
+    return ['items', 'value', 'fixed', 'safe-area']
   }
 
   private itemsList: BottomNavItem[] = []
@@ -137,6 +168,7 @@ export class OASBottomNavigation extends OASElement {
 
   protected override update(): void {
     this.classList.toggle('oas-bottom-navigation--fixed', this.hasAttr('fixed'))
+    this.classList.toggle('oas-bottom-navigation--safe-area', this.hasAttr('safe-area'))
     // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
     this.ensureChildObserver()
     const itemsRaw = this.getAttribute('items') ?? ''
@@ -207,6 +239,8 @@ export class OASBottomNavigation extends OASElement {
     }
     const icon = el.getAttribute('icon')
     if (icon) item.icon = icon
+    const badge = el.getAttribute('badge')
+    if (badge) item.badge = badge
     if (el.hasAttribute('disabled')) item.disabled = true
     return item
   }
@@ -227,7 +261,7 @@ export class OASBottomNavigation extends OASElement {
       subtree: true,
       attributes: true,
       characterData: true,
-      attributeFilter: ['value', 'icon', 'disabled'],
+      attributeFilter: ['value', 'icon', 'disabled', 'badge'],
     })
     this.childObserver = observer
     this.onCleanup(() => {
@@ -248,9 +282,21 @@ export class OASBottomNavigation extends OASElement {
       btn.setAttribute('part', 'tab')
       btn.type = 'button'
       btn.addEventListener('click', () => this.select(item))
-      if (item.icon) {
-        const ic = this.createIcon(item.icon)
-        if (ic) btn.appendChild(ic)
+      if (item.icon || item.badge) {
+        const wrap = document.createElement('span')
+        wrap.className = 'icon-wrap'
+        if (item.icon) {
+          const ic = this.createIcon(item.icon)
+          if (ic) wrap.appendChild(ic)
+        }
+        if (item.badge) {
+          const badge = document.createElement('span')
+          badge.className = 'tab-badge'
+          badge.setAttribute('part', 'badge')
+          badge.textContent = item.badge
+          wrap.appendChild(badge)
+        }
+        btn.appendChild(wrap)
       }
       const label = document.createElement('span')
       label.className = 'tab-label'
