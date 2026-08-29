@@ -1,0 +1,13 @@
+{
+  "className": "OASContent",
+  "sourceFile": "packages/ui/src/layout/layout/oas-content.ts",
+  "attrs": [],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

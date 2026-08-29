@@ -1,0 +1,36 @@
+{
+  "className": "OASSpeedDial",
+  "sourceFile": "packages/ui/src/floating/speed-dial/oas-speed-dial.ts",
+  "attrs": [
+    {
+      "name": "actions",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "up",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-open",
+      "detail": "{ open: true } | { open: false }"
+    },
+    {
+      "name": "oas-select",
+      "detail": "{ index, label: action.label }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

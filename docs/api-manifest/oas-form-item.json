@@ -1,0 +1,35 @@
+{
+  "className": "OASFormItem",
+  "sourceFile": "packages/ui/src/form/form-item/oas-form-item.ts",
+  "attrs": [
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "name",
+      "observed": true
+    },
+    {
+      "name": "span",
+      "type": "string",
+      "default": "24",
+      "observed": true
+    },
+    {
+      "name": "required",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

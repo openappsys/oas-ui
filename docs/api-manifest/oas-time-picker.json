@@ -1,0 +1,38 @@
+{
+  "className": "OASTimePicker",
+  "sourceFile": "packages/ui/src/form/time-picker/oas-time-picker.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "format",
+      "type": "string",
+      "default": "HH:mm:ss",
+      "observed": true
+    },
+    {
+      "name": "step",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

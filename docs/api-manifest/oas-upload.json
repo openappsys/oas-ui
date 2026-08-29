@@ -1,0 +1,70 @@
+{
+  "className": "OASUpload",
+  "sourceFile": "packages/ui/src/form/upload/oas-upload.ts",
+  "attrs": [
+    {
+      "name": "accept",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "multiple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "auto-upload",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "list-type",
+      "type": "string",
+      "default": "list",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "files",
+      "type": "File[]",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-exceed",
+      "detail": "{ files: rejected, max, total: next.length }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ files: this.files }"
+    },
+    {
+      "name": "oas-upload",
+      "detail": "{ file: f, percent: st.percent, status: st.percent >= 100 ? 'done' : 'uploading', }"
+    },
+    {
+      "name": "oas-remove",
+      "detail": "{ file, index }"
+    },
+    {
+      "name": "oas-preview",
+      "detail": "{ file, url }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

@@ -1,0 +1,26 @@
+{
+  "className": "OASGradientText",
+  "sourceFile": "packages/ui/src/data/gradient-text/oas-gradient-text.ts",
+  "attrs": [
+    {
+      "name": "gradient",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

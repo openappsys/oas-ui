@@ -1,0 +1,48 @@
+{
+  "className": "OASEditable",
+  "sourceFile": "packages/ui/src/form/editable/oas-editable.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "submit-on-enter",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "maxlength",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-cancel",
+      "detail": "{ value: oldValue } | { value: this.getAttr('value', '') }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: next }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

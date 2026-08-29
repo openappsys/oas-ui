@@ -1,0 +1,35 @@
+{
+  "className": "OASAlert",
+  "sourceFile": "packages/ui/src/feedback/alert/oas-alert.ts",
+  "attrs": [
+    {
+      "name": "type",
+      "type": "string",
+      "default": "info",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "closeable",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-close"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

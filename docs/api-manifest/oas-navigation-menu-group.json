@@ -1,0 +1,18 @@
+{
+  "className": "OASNavigationMenuGroup",
+  "sourceFile": "packages/ui/src/floating/navigation-menu/oas-navigation-menu-group.ts",
+  "attrs": [
+    {
+      "name": "label",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

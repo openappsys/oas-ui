@@ -1,0 +1,23 @@
+{
+  "className": "OASListItem",
+  "sourceFile": "packages/ui/src/data/list/oas-list-item.ts",
+  "attrs": [
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": "description"
+    },
+    {
+      "name": "extra"
+    }
+  ],
+  "unresolved": []
+}

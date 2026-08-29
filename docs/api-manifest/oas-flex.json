@@ -1,0 +1,59 @@
+{
+  "className": "OASFlex",
+  "sourceFile": "packages/ui/src/layout/flex/oas-flex.ts",
+  "attrs": [
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "row",
+      "observed": true
+    },
+    {
+      "name": "justify",
+      "type": "string",
+      "default": "start",
+      "observed": true
+    },
+    {
+      "name": "align",
+      "type": "string",
+      "default": "stretch",
+      "observed": true
+    },
+    {
+      "name": "gap",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "wrap",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "vertical",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "fill",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "fill-ratio",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

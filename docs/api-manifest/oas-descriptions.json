@@ -1,0 +1,26 @@
+{
+  "className": "OASDescriptions",
+  "sourceFile": "packages/ui/src/data/descriptions/oas-descriptions.ts",
+  "attrs": [
+    {
+      "name": "column",
+      "type": "string",
+      "default": "3",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

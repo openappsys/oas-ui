@@ -1,0 +1,51 @@
+{
+  "className": "OASRate",
+  "sourceFile": "packages/ui/src/form/rate/oas-rate.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "5",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "allow-half",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "allow-clear",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value: v }"
+    }
+  ],
+  "slots": [
+    {
+      "name": "icon"
+    }
+  ],
+  "unresolved": []
+}

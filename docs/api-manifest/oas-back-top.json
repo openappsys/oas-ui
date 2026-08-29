@@ -1,0 +1,131 @@
+{
+  "className": "OASBackTop",
+  "sourceFile": "packages/ui/src/navigation/back-top/oas-back-top.ts",
+  "attrs": [
+    {
+      "name": "visible",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "bottom",
+      "type": "string",
+      "default": "32px",
+      "observed": true
+    },
+    {
+      "name": "right",
+      "type": "string",
+      "default": "32px",
+      "observed": true
+    },
+    {
+      "name": "visibility-height",
+      "type": "string",
+      "default": "400",
+      "observed": true
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "duration",
+      "type": "string",
+      "default": "400",
+      "observed": true
+    },
+    {
+      "name": "easing",
+      "type": "string",
+      "default": "quart-out",
+      "observed": true
+    },
+    {
+      "name": "shape",
+      "type": "string",
+      "default": "circle",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "theme",
+      "type": "string",
+      "default": "light",
+      "observed": true
+    },
+    {
+      "name": "transition",
+      "type": "string",
+      "default": "fade",
+      "observed": true
+    },
+    {
+      "name": "show-progress",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "reverse",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "expand",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "position",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "append-to",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "tooltip",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "badge",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "draggable",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-click"
+    },
+    {
+      "name": "oas-visibility-change",
+      "detail": "{ visible: shown }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

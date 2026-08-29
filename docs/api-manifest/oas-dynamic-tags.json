@@ -1,0 +1,55 @@
+{
+  "className": "OASDynamicTags",
+  "sourceFile": "packages/ui/src/form/dynamic-tags/oas-dynamic-tags.ts",
+  "attrs": [
+    {
+      "name": "model-value",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "allow-duplicate",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "modelValue",
+      "type": "string[]",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-add",
+      "detail": "{ value }"
+    },
+    {
+      "name": "oas-remove",
+      "detail": "{ value: removed }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: this.tags.slice() }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

@@ -1,0 +1,20 @@
+{
+  "className": "OASDescriptionsItem",
+  "sourceFile": "packages/ui/src/data/descriptions/oas-descriptions-item.ts",
+  "attrs": [
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

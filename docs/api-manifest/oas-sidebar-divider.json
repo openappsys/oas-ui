@@ -1,0 +1,13 @@
+{
+  "className": "OASSidebarDivider",
+  "sourceFile": "packages/ui/src/layout/sidebar/oas-sidebar-divider.ts",
+  "attrs": [],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

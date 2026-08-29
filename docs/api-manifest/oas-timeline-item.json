@@ -1,0 +1,26 @@
+{
+  "className": "OASTimelineItem",
+  "sourceFile": "packages/ui/src/data/timeline/oas-timeline-item.ts",
+  "attrs": [
+    {
+      "name": "time",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "observed": true
+    },
+    {
+      "name": "pending",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

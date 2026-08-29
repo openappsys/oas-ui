@@ -1,0 +1,9 @@
+{
+  "className": "OASTimeline",
+  "sourceFile": "packages/ui/src/data/timeline/oas-timeline.ts",
+  "attrs": [],
+  "props": [],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

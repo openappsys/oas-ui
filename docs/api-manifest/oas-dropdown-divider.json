@@ -1,0 +1,9 @@
+{
+  "className": "OASDropdownDivider",
+  "sourceFile": "packages/ui/src/floating/dropdown/oas-dropdown-divider.ts",
+  "attrs": [],
+  "props": [],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

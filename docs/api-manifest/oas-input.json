@@ -1,0 +1,123 @@
+{
+  "className": "OASInput",
+  "sourceFile": "packages/ui/src/form/input/oas-input.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "type",
+      "type": "string",
+      "default": "text",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "clearable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "observed": true
+    },
+    {
+      "name": "addon-before",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "addon-after",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "prefix",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "suffix",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "prefix-icon",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "suffix-icon",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "show-password",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "maxlength",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "show-count",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "prefix",
+      "type": "string"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-input",
+      "detail": "{ value: this.inputEl!.value }"
+    },
+    {
+      "name": "oas-enter",
+      "detail": "{ value: this.inputEl!.value }"
+    },
+    {
+      "name": "oas-clear",
+      "detail": "{ originalEvent: new MouseEvent('click') }"
+    }
+  ],
+  "slots": [
+    {
+      "name": "prefix"
+    },
+    {
+      "name": "suffix"
+    }
+  ],
+  "unresolved": []
+}

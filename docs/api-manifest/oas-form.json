@@ -1,0 +1,60 @@
+{
+  "className": "OASForm",
+  "sourceFile": "packages/ui/src/form/form/oas-form.ts",
+  "attrs": [
+    {
+      "name": "rules",
+      "default": "{}",
+      "observed": true
+    },
+    {
+      "name": "layout",
+      "type": "string",
+      "default": "vertical",
+      "observed": true
+    },
+    {
+      "name": "gap",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "label-align",
+      "type": "string",
+      "default": "top",
+      "observed": true
+    },
+    {
+      "name": "label-width",
+      "observed": true
+    },
+    {
+      "name": "inline",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "rules",
+      "type": "Rules | string"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-submit",
+      "detail": "{ values }"
+    },
+    {
+      "name": "oas-validate-fail",
+      "detail": "{ errors: this.errors, values }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

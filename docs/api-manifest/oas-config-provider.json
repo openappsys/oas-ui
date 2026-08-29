@@ -1,0 +1,48 @@
+{
+  "className": "OASConfigProvider",
+  "sourceFile": "packages/ui/src/floating/config-provider/oas-config-provider.ts",
+  "attrs": [
+    {
+      "name": "locale",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "observed": true
+    },
+    {
+      "name": "theme",
+      "observed": true
+    },
+    {
+      "name": "config",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "z-index",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

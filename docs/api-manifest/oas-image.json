@@ -1,0 +1,52 @@
+{
+  "className": "OASImage",
+  "sourceFile": "packages/ui/src/data/image/oas-image.ts",
+  "attrs": [
+    {
+      "name": "src",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "alt",
+      "observed": true
+    },
+    {
+      "name": "preview",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "fit",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "fallback",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "lazy",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-preview",
+      "detail": "{ src }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

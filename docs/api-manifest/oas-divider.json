@@ -1,0 +1,70 @@
+{
+  "className": "OASDivider",
+  "sourceFile": "packages/ui/src/basic/divider/oas-divider.ts",
+  "attrs": [
+    {
+      "name": "direction",
+      "type": "DividerDirection",
+      "default": "horizontal",
+      "observed": true
+    },
+    {
+      "name": "dashed",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "content-position",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "text-orientation",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "inset",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "middle",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "strong",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

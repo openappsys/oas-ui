@@ -1,0 +1,30 @@
+{
+  "className": "OASQRCode",
+  "sourceFile": "packages/ui/src/data/qrcode/oas-qrcode.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "128",
+      "observed": true
+    },
+    {
+      "name": "error-correction",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

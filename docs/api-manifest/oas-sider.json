@@ -1,0 +1,13 @@
+{
+  "className": "OASSider",
+  "sourceFile": "packages/ui/src/layout/layout/oas-sider.ts",
+  "attrs": [],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

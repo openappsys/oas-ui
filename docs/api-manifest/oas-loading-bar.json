@@ -1,0 +1,16 @@
+{
+  "className": "OASLoadingBar",
+  "sourceFile": "packages/ui/src/feedback/loading-bar/oas-loading-bar.ts",
+  "attrs": [
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

@@ -1,0 +1,64 @@
+{
+  "className": "OASMentions",
+  "sourceFile": "packages/ui/src/form/mentions/oas-mentions.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "options",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "prefix",
+      "default": "@",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "options",
+      "type": "Option[] | string",
+      "default": "[]"
+    },
+    {
+      "name": "prefix",
+      "type": "string"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-input",
+      "detail": "{ value: this.ta!.value }"
+    },
+    {
+      "name": "oas-select",
+      "detail": "{ value: option.value, label: option.label }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: next }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

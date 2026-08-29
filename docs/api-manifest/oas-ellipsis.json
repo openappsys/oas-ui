@@ -1,0 +1,48 @@
+{
+  "className": "OASEllipsis",
+  "sourceFile": "packages/ui/src/data/ellipsis/oas-ellipsis.ts",
+  "attrs": [
+    {
+      "name": "text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "rows",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "tooltip",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "expandable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "tail",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-expand",
+      "detail": "{ expanded: this.expanded }"
+    },
+    {
+      "name": "oas-collapse",
+      "detail": "{ expanded: this.expanded }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

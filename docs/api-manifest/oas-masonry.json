@@ -1,0 +1,38 @@
+{
+  "className": "OASMasonry",
+  "sourceFile": "packages/ui/src/data/masonry/oas-masonry.ts",
+  "attrs": [
+    {
+      "name": "columns",
+      "observed": true
+    },
+    {
+      "name": "gap",
+      "observed": true
+    },
+    {
+      "name": "fresh",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "items",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "items",
+      "type": "MasonryItem[] | string",
+      "default": "[]"
+    }
+  ],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

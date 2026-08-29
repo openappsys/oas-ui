@@ -1,0 +1,35 @@
+{
+  "className": "OASContainer",
+  "sourceFile": "packages/ui/src/layout/container/oas-container.ts",
+  "attrs": [
+    {
+      "name": "size",
+      "type": "string",
+      "default": "lg",
+      "observed": true
+    },
+    {
+      "name": "center",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "padding",
+      "observed": true
+    },
+    {
+      "name": "fluid",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

@@ -1,0 +1,65 @@
+{
+  "className": "OASCombobox",
+  "sourceFile": "packages/ui/src/form/combobox/oas-combobox.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "observed": true
+    },
+    {
+      "name": "options",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "clearable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "filterable",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "options",
+      "type": "Option[] | string",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-input",
+      "detail": "{ value: this.query }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: option.value } | { value: '' }"
+    },
+    {
+      "name": "oas-clear",
+      "detail": "{ value: prev }"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

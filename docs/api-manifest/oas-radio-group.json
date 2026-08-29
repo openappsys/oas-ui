@@ -1,0 +1,33 @@
+{
+  "className": "OASRadioGroup",
+  "sourceFile": "packages/ui/src/form/radio/oas-radio-group.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ value }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    },
+    {
+      "name": "label"
+    }
+  ],
+  "unresolved": []
+}

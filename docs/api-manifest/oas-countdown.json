@@ -1,0 +1,26 @@
+{
+  "className": "OASCountdown",
+  "sourceFile": "packages/ui/src/data/countdown/oas-countdown.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "format",
+      "type": "string",
+      "default": "HH:mm:ss",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-finish"
+    }
+  ],
+  "slots": [],
+  "unresolved": []
+}

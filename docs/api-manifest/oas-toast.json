@@ -1,0 +1,44 @@
+{
+  "className": "OASToast",
+  "sourceFile": "packages/ui/src/feedback/toast/oas-toast.ts",
+  "attrs": [
+    {
+      "name": "type",
+      "type": "string",
+      "default": "info",
+      "observed": true
+    },
+    {
+      "name": "closable",
+      "type": "boolean",
+      "observed": false
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": false
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "default": "",
+      "observed": false
+    },
+    {
+      "name": "duration",
+      "type": "string",
+      "default": "3000",
+      "observed": false
+    }
+  ],
+  "props": [
+    {
+      "name": "action",
+      "type": "ToastAction | null"
+    }
+  ],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

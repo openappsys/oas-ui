@@ -1,0 +1,32 @@
+{
+  "className": "OASCollapseItem",
+  "sourceFile": "packages/ui/src/data/collapse/oas-collapse-item.ts",
+  "attrs": [
+    {
+      "name": "name",
+      "observed": true
+    },
+    {
+      "name": "header",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-collapse-item-click"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}
