@@ -7044,3 +7044,39 @@ test('theme-editor 颜色函数值：rgb() 色板非黑 hex + 文本框编辑写
   expect(r.mixText, 'color-mix 值文本框应保留原始字符串').toContain('color-mix(')
 })
 
+
+test('navigation-menu delay-duration=0 移入子菜单不收回（关闭宽限独立于打开延迟）', async ({ page }) => {
+  // 坑：scheduleClose 曾复用 delay-duration 作关闭宽限——delay-duration="0" 的 demo
+  // 指针离开触发器后 setTimeout(0) 先于 viewport mouseenter 执行，面板在指针到达前关闭
+  await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-navigation-menu')
+  const r = await page.evaluate(async () => {
+    const nav = [...document.querySelectorAll('oas-navigation-menu')]
+      .find((n) => n.getAttribute('delay-duration') === '0')!
+    const root = nav.shadowRoot!
+    const trigger = root.querySelectorAll('[part="top-item"]')[0] as HTMLElement
+    const tr = trigger.getBoundingClientRect()
+    // 悬停触发器开面板
+    trigger.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await new Promise((r2) => setTimeout(r2, 120))
+    const vp = root.querySelector('[part="viewport"]') as HTMLElement
+    const openNow = getComputedStyle(vp).display !== 'none' && Number(getComputedStyle(vp).opacity) > 0
+    // 模拟指针移入面板：真实 hover viewport（真实浏览器 hover 状态供 :hover/事件派发）
+    const vr = vp.getBoundingClientRect()
+    const cx = vr.x + vr.width / 2
+    const cy = vr.y + Math.min(vr.height * 0.3, 80)
+    return { openNow, cx, cy }
+  })
+  if (!r?.openNow) throw new Error('面板未打开')
+  // 真实鼠标移动：跨过触发器→面板间隙进入面板（复现原 bug 的时序）
+  await page.mouse.move(r.cx, r.cy, { steps: 8 })
+  await page.waitForTimeout(500)
+  const still = await page.evaluate(() => {
+    const nav = [...document.querySelectorAll('oas-navigation-menu')]
+      .find((n) => n.getAttribute('delay-duration') === '0')!
+    const vp = nav.shadowRoot!.querySelector('[part="viewport"]') as HTMLElement
+    const cs = getComputedStyle(vp)
+    return cs.display !== 'none' && Number(cs.opacity) > 0
+  })
+  expect(still, '移入面板后面板必须保持打开（关闭宽限独立于打开延迟）').toBe(true)
+})
