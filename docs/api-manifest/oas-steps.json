@@ -33,6 +33,17 @@
       "name": "navigation",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "linear",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "label-placement",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [

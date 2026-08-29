@@ -36,6 +36,38 @@ With `clickable` enabled, step items are clickable to jump (the whole item is cl
   <oas-steps clickable current="1" onoas-change="message.info('Switched to step ' + (event.detail.index + 1))" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
 </DemoBlock>
 
+## Steps with icons
+
+Set the `icon` field per step (an `iconRegistry` key) to render an icon at the indicator position; an explicit `icon` takes priority over the status default icon (number / ✓ / ✕). When the `icon` is not found in the registry it is not rendered and falls back to the status default.
+
+<DemoBlock title="Icon steps">
+  <oas-steps current="1" steps='[{"title":"Create order","description":"Fill in order details","icon":"edit"},{"title":"Confirm payment","description":"Choose a payment method","icon":"check-circle"},{"title":"Complete shipping","description":"Wait for delivery","icon":"download"}]'></oas-steps>
+</DemoBlock>
+
+## Linear mode
+
+With `linear` enabled (combined with `clickable`/`navigation`), only steps with `index <= current` are clickable: past steps can be revisited, the current step stays put, and future steps are blocked with silent clicks (no `oas-change`).
+
+<DemoBlock title="Linear mode (no skipping)">
+  <oas-steps linear clickable current="1" onoas-change="message.info('Switched to step ' + (event.detail.index + 1))" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
+</DemoBlock>
+
+## Horizontal label placement
+
+`label-placement="horizontal"` places the title on the same row as the icon (icon left, title right) with the connector line aligned to the icon center; the default `vertical` keeps the icon above the title.
+
+<DemoBlock title="Horizontal labels">
+  <oas-steps label-placement="horizontal" current="1" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
+</DemoBlock>
+
+## Disabled steps
+
+Disable a step with the `disabled` field: under `clickable`/`navigation` it is not clickable (no button semantics, skipped by keyboard) and visually weakened (weak color tokens); an explicit `status` still displays normally.
+
+<DemoBlock title="Disabled step">
+  <oas-steps clickable current="1" onoas-change="message.info('Switched to step ' + (event.detail.index + 1))" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Complete shipping","description":"Wait for delivery","disabled":true}]'></oas-steps>
+</DemoBlock>
+
 ## Progress dot
 
 With `progress-dot`, the step indicator becomes a dot (the current step is enlarged with a soft halo) and the connector is a thin line; combined with `clickable`, dots are clickable to jump (keyboard included).
@@ -75,9 +107,11 @@ With `navigation`, steps become an arrow navigation bar: the current step is hig
 | `clickable` | Steps are clickable to jump (boolean; enabled when present) | `boolean` | — |
 | `current` | Current step index (0-based) | `string` | `0` |
 | `direction` | Direction (forced to horizontal in navigation mode) | `string` | `horizontal` |
+| `label-placement` | Label placement: `vertical` (default, icon above title) / `horizontal` (icon and title on the same row) | `string` | — |
+| `linear` | Linear mode: only steps with `index <= current` are clickable (boolean; enabled when present; future steps are blocked, clicks are silent) | `boolean` | — |
 | `navigation` | Navigation mode: arrow bar with a bottom Previous/Next button row (boolean; enabled when present) | `boolean` | — |
 | `progress-dot` | Progress-dot steps: dot indicators with a thin connector line (boolean; enabled when present) | `boolean` | — |
-| `steps` | `[{ title, description?, status? }]` JSON string | `StepItem[] \| string` | `[]` |
+| `steps` | `[{ title, description?, status?, icon?, disabled? }]` JSON string | `StepItem[] \| string` | `[]` |
 
 ### Events
 
