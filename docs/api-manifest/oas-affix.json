@@ -7,10 +7,27 @@
       "type": "string",
       "default": "0",
       "observed": true
+    },
+    {
+      "name": "position",
+      "type": "AffixPosition",
+      "default": "top",
+      "observed": true
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
-  "events": [],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ fixed: stuck, top: fixedTop }"
+    }
+  ],
   "slots": [
     {
       "name": ""
