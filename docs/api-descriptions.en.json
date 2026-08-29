@@ -1,9 +1,13 @@
 {
   "oas-affix": {
     "attrs": {
-      "offset": "Fixed distance from the viewport top (px)"
+      "offset": "Pin trigger distance (px)",
+      "position": "Pin direction: top (default, pinned when the top edge reaches) / bottom (pinned when the bottom edge reaches); invalid values fall back to top",
+      "target": "Scroll container selector (CSS selector); falls back to window scroll with a console warning when no element matches"
     },
-    "events": {},
+    "events": {
+      "oas-change": "Dispatched when the pin state flips; detail { fixed, top }: fixed indicates whether pinned; top is the reference pin position (offset for top pinning, the element's current rect.top for bottom pinning)"
+    },
     "slots": {}
   },
   "oas-alert": {
