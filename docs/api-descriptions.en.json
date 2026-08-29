@@ -202,6 +202,7 @@
     "attrs": {
       "fixed": "Pin to the viewport bottom (`position: fixed; bottom: 0`)",
       "items": "Navigation items JSON",
+      "safe-area": "Adds bottom safe-area padding (`env(safe-area-inset-bottom)`) in fixed mode to avoid the home indicator of notched screens; no effect in non-fixed mode",
       "value": "Value of the active item; defaults to the first available item"
     },
     "events": {
@@ -211,6 +212,7 @@
   },
   "oas-bottom-navigation-item": {
     "attrs": {
+      "badge": "Top-right corner badge (number/text overlaid on the icon; not rendered when unset)",
       "value": "Selection value (data-carrier field of the declarative child channel)",
       "icon": "Leading icon (`@oas-ui/icons` registry icon name)",
       "disabled": "Disable this item (not selectable, skipped by keyboard)"

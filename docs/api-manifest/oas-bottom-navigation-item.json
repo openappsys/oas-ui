@@ -13,6 +13,10 @@
     {
       "name": "disabled",
       "observed": true
+    },
+    {
+      "name": "badge",
+      "observed": true
     }
   ],
   "props": [],

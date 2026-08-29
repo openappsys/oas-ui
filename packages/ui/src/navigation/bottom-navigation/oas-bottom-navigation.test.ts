@@ -275,4 +275,107 @@ describe('OASBottomNavigation 子元素声明式通道', () => {
     expect(ts[1]!.getAttribute('aria-selected')).toBe('true')
     expect(ts[1]!.tabIndex).toBe(0)
   })
+
+  it('badge 子元素属性映射：badge attribute 渲染角标，运行时增删刷新（与 items 通道一致）', async () => {
+    const el = mountChildren(`
+      <oas-bottom-navigation-item value="mail" icon="mail" badge="3">消息</oas-bottom-navigation-item>
+      <oas-bottom-navigation-item value="home" icon="user">首页</oas-bottom-navigation-item>
+    `)
+    let badges = el.shadowRoot!.querySelectorAll('.tab-badge')
+    expect(badges.length).toBe(1)
+    expect(badges[0]!.textContent).toBe('3')
+    expect(badges[0]!.getAttribute('part')).toBe('badge')
+    // MutationObserver attributeFilter 覆盖 badge：运行时改属性 → 角标刷新
+    const item = el.querySelector('oas-bottom-navigation-item')!
+    item.setAttribute('badge', '9')
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.shadowRoot!.querySelector('.tab-badge')!.textContent).toBe('9')
+    // 移除 badge → 角标消失（无 badge 不渲染）
+    item.removeAttribute('badge')
+    await new Promise((r) => setTimeout(r, 0))
+    badges = el.shadowRoot!.querySelectorAll('.tab-badge')
+    expect(badges.length).toBe(0)
+  })
+})
+
+// ===== 能力补齐批次：badge 角标 / safe-area 安全区 / 颜色·高度变量开口 / 布局均分断言 =====
+
+function styleText(el: OASBottomNavigation): string {
+  return el.shadowRoot!.querySelector('style')!.textContent
+}
+
+describe('OASBottomNavigation 角标 / 安全区 / 变量开口', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('item.badge 渲染右上角标（part="badge" 叠在 icon 上），无 badge 的项不渲染', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '消息', value: 'mail', icon: 'mail', badge: '3' },
+        { label: '首页', value: 'home', icon: 'user' },
+      ]),
+    })
+    const badges = el.shadowRoot!.querySelectorAll('.tab-badge')
+    expect(badges.length).toBe(1)
+    const b = el.shadowRoot!.querySelector('.tab-badge')!
+    expect(b.textContent).toBe('3')
+    expect(b.getAttribute('part')).toBe('badge')
+    // 角标叠在 icon 的定位容器内（icon-wrap 为 position: relative 锚点）
+    expect(b.parentElement!.classList.contains('icon-wrap')).toBe(true)
+  })
+
+  it('badge 数值与文本均可（纯数字字符串与任意文本）', () => {
+    const el = mount({
+      items: JSON.stringify([
+        { label: '消息', value: 'mail', icon: 'mail', badge: '99+' },
+        { label: '待办', value: 'todo', icon: 'star', badge: '新' },
+      ]),
+    })
+    const badges = el.shadowRoot!.querySelectorAll('.tab-badge')
+    expect(badges.length).toBe(2)
+    expect(badges[0]!.textContent).toBe('99+')
+    expect(badges[1]!.textContent).toBe('新')
+  })
+
+  it('角标样式走 badge 既有 token（--oas-badge-bg / --oas-badge-on-color，默认 danger）', () => {
+    const el = mount()
+    const stl = styleText(el)
+    expect(stl).toContain('var(--oas-badge-bg, var(--oas-color-danger))')
+    expect(stl).toContain('var(--oas-badge-on-color, var(--oas-color-text-on-danger))')
+  })
+
+  it('safe-area 属性给 host 加安全区类名（增删同步）', () => {
+    const el = mount()
+    expect(el.classList.contains('oas-bottom-navigation--safe-area')).toBe(false)
+    el.setAttribute('safe-area', '')
+    expect(el.classList.contains('oas-bottom-navigation--safe-area')).toBe(true)
+    el.removeAttribute('safe-area')
+    expect(el.classList.contains('oas-bottom-navigation--safe-area')).toBe(false)
+  })
+
+  it('safe-area 仅在 fixed 下生效：padding 规则同时要求 fixed + safe-area 类名，走 env(safe-area-inset-bottom)', () => {
+    const el = mount()
+    const stl = styleText(el)
+    expect(stl).toMatch(
+      /:host\(\.oas-bottom-navigation--fixed\.oas-bottom-navigation--safe-area\)\s+\.tablist\s*\{[^}]*padding-bottom:\s*env\(safe-area-inset-bottom,\s*0px\)/,
+    )
+  })
+
+  it('颜色/高度变量开口：激活色默认主色 token、高度默认 56px', () => {
+    const el = mount()
+    const stl = styleText(el)
+    expect(stl).toContain('var(--oas-bottom-navigation-active-color, var(--oas-color-primary))')
+    expect(stl).toContain('var(--oas-bottom-navigation-height, 56px)')
+  })
+
+  it('布局 flex 均分：.tab 规则含 flex: 1', () => {
+    const el = mount()
+    const stl = styleText(el)
+    expect(stl).toMatch(/\.tab\s*\{[^}]*flex:\s*1\b/)
+  })
 })
