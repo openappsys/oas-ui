@@ -202,6 +202,7 @@
     "attrs": {
       "fixed": "固定到视口底部（`position: fixed; bottom: 0`）",
       "items": "导航项 JSON",
+      "safe-area": "fixed 模式下底部加安全区内边距（`env(safe-area-inset-bottom)`），避开刘海屏 home 指示条；非 fixed 无效果",
       "value": "激活项 value，未指定默认激活第一个可用项"
     },
     "events": {
@@ -211,6 +212,7 @@
   },
   "oas-bottom-navigation-item": {
     "attrs": {
+      "badge": "右上角标（数字/文本，叠在 icon 上；未设置不渲染）",
       "value": "选中值（子元素声明式通道的数据载体字段）",
       "icon": "前置图标（`@oas-ui/icons` 注册表图标名）",
       "disabled": "禁用该项（不可选中、键盘跳过）"

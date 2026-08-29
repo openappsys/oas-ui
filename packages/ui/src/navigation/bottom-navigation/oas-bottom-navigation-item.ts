@@ -12,12 +12,12 @@ const ITEM_STYLE = `
  * 底部导航项（子元素声明式通道）。
  *
  * 纯数据载体：默认插槽文本为 label，属性对齐 BottomNavItem 字段
- * （value/icon/disabled）。
+ * （value/icon/disabled/badge）。
  * 宿主 <oas-bottom-navigation> 在 items 属性未显式设置时解析子元素并收敛到同一渲染路径。
  */
 export class OASBottomNavigationItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'icon', 'disabled']
+    return ['value', 'icon', 'disabled', 'badge']
   }
 
   protected override render(): void {
