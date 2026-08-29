@@ -670,8 +670,10 @@ function layoutOf(
 /**
  * 布局稳定性比较集：DSD 批次 1 的复合组件 fixture 用空内容保证升级前后布局稳定，
  * 全部白名单 tag 均参与比较（各组件自身尺寸在升级前后不得变化）。
+ * 例外 oas-affix：吸顶组件升级后进入吸附态（fixed 脱流 + 占位），几何本就该变化；
+ * 其「水合正确性」由下方专项断言（吸顶态 + 占位高度）单独验证。
  */
-const LAYOUT_STABLE_TAGS = WHITELIST
+const LAYOUT_STABLE_TAGS = WHITELIST.filter((t) => t !== 'oas-affix')
 
 /** #0b6cff -> rgb(11, 108, 255)（比较 getComputedStyle 的色值用；不支持 8 位 hex 的 alpha） */
 function hexToRgb(hex: string): string {
@@ -843,6 +845,24 @@ test('真水合：upgrade 后 shadow 未被重建（style DOM 引用保持同一
       ).toBeLessThanOrEqual(1)
     }
   }
+
+  // oas-affix 专项（不在 LAYOUT_STABLE_TAGS：吸顶组件升级后进入吸附态，几何本就变化）：
+  // 快照为未校正态（无 .fixed），升级 + rAF 校正后进入吸顶态（fixture offset=9999 恒吸），
+  // 且「脱流与占位同帧」——placeholder 占位高度与 wrap 一致，后续元素布局稳定（上方循环已证）。
+  const affixState = await page.evaluate(() => {
+    const el = document.querySelector('oas-affix')
+    const wrap = el?.shadowRoot?.querySelector('.wrap')
+    const ph = el?.shadowRoot?.querySelector<HTMLElement>('.placeholder')
+    return {
+      fixed: wrap?.classList.contains('fixed') ?? false,
+      top: wrap instanceof HTMLElement ? wrap.style.top : '',
+      phHeight: ph ? Math.round(ph.getBoundingClientRect().height) : -1,
+      wrapHeight: wrap ? Math.round(wrap.getBoundingClientRect().height) : -1,
+    }
+  })
+  expect(affixState.fixed, 'affix 升级校正后应进入吸顶态（fixture offset=9999 恒吸）').toBe(true)
+  expect(affixState.top).toBe('9999px')
+  expect(affixState.phHeight, '占位高度应与 wrap 一致（脱流后文档流不塌陷）').toBe(affixState.wrapHeight)
   await page.screenshot({ path: SCREENSHOT.afterUpgrade, fullPage: true })
 })
 
@@ -1221,20 +1241,20 @@ test('渲染器边界：非白名单抛错、快照属性完整 HTML 转义、�
 /**
  * 测量组件闪动治理（PRD v1.9）：affix/ellipsis/scroll-area 在 DSD 快照场景 upgrade 后首帧无布局跳动。
  *
- * 快照语义（由渲染器产出，SSR 端 happy-dom 布局测量全 0 = 未校正态）：
- * - affix：快照含 .fixed + top:100px（吸顶态）；真实浏览器里 affix 位于 body padding-top 之下
- *   （rect.top≈200 > offset=100）→ 真实布局不吸顶。
+ * 快照语义（由渲染器产出，SSR 端不做吸顶预判 = 未校正态）：
+ * - affix：快照恒非吸（无 .fixed）；真实浏览器里 affix 位于 body padding-top 之下
+ *   （rect.top≈200 > offset=100）→ 真实布局同样不吸顶——快照与真实布局一致，全程无校正。
  * - ellipsis：快照无溢出态（toggle 隐藏、无 tooltip）；真实浏览器里长文本溢出 2 行 →
  *   校正后显示展开按钮并挂 tooltip。
  * - scroll-area：快照无溢出态（轨道隐藏）；真实浏览器里内容超高视口 → 校正后垂直轨道可见。
  *
  * 治理断言（三段式，确定性时序）：
  * 1. upgrade 首帧（同一微任务内、rAF 之前）保持快照态：
- *    affix 的 .wrap 仍是 .fixed（rect.top=100）、ellipsis 的 toggle 仍隐藏且无 tooltip、
+ *    affix 仍非吸、ellipsis 的 toggle 仍隐藏且无 tooltip、
  *    scroll-area 轨道仍不可见——即 hydrate 后首帧与快照一致、无跳动
  *    （未经治理的版本此时会立即写入真实布局态）；
- * 2. 下一帧（rAF 校正）：按真实布局写入——affix 移除 fixed、ellipsis 显示展开按钮 + tooltip、
- *    scroll-area 垂直轨道可见。
+ * 2. 下一帧（rAF 校正）：按真实布局写入——affix 位置不变（真实布局与快照一致，无校正）、
+ *    ellipsis 显示展开按钮 + tooltip、scroll-area 垂直轨道可见。
  * 另断言水合接管成功：shadow 未重建（style 引用保持）、指纹 meta 已移除、console 零 error。
  */
 test('测量组件闪动治理：affix/ellipsis/scroll-area upgrade 首帧与快照一致、rAF 后按真实布局校正', async ({
@@ -1284,8 +1304,8 @@ test('测量组件闪动治理：affix/ellipsis/scroll-area upgrade 首帧与快
       },
     }
   })
-  // 快照 = 未校正态断言
-  expect(snapshot.affix.fixed).toBe(true)
+  // 快照 = 未校正态断言（affix 快照恒非吸：SSR 端不做吸顶预判）
+  expect(snapshot.affix.fixed).toBe(false)
   expect(snapshot.affix.hasMeta).toBe(true)
   expect(snapshot.ellipsis.toggleHidden).toBe(true)
   expect(snapshot.ellipsis.hasTooltip).toBe(false)
@@ -1375,7 +1395,7 @@ test('测量组件闪动治理：affix/ellipsis/scroll-area upgrade 首帧与快
   expect(result.firstFrame.scrollArea.metaRemoved).toBe(true)
 
   // 首帧与快照一致、无跳动：
-  expect(result.firstFrame.affix.fixed).toBe(true)
+  expect(result.firstFrame.affix.fixed).toBe(false)
   expect(result.firstFrame.affix.top).toBe(snapshot.affix.top)
   expect(result.firstFrame.ellipsis.textClass).toBe(snapshot.ellipsis.textClass)
   expect(result.firstFrame.ellipsis.toggleHidden).toBe(true)
@@ -1384,9 +1404,9 @@ test('测量组件闪动治理：affix/ellipsis/scroll-area upgrade 首帧与快
   expect(result.firstFrame.scrollArea.vPeek).toBe(false)
 
   // rAF 后按真实布局校正：
-  // affix 不吸顶 → 移除 fixed，回到文档流（body padding-top 200px）
+  // affix 真实布局与快照一致（不吸顶、仍在文档流 body padding-top 之下）→ 无校正、位置不变
   expect(result.secondFrame.affix.fixed).toBe(false)
-  expect(result.secondFrame.affix.top).not.toBe(snapshot.affix.top)
+  expect(result.secondFrame.affix.top).toBe(snapshot.affix.top)
   expect(result.secondFrame.affix.top).toBeGreaterThanOrEqual(200)
   // ellipsis 溢出 → 展开按钮显示 + tooltip 挂载
   expect(result.secondFrame.ellipsis.toggleHidden).toBe(false)

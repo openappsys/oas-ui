@@ -5,3 +5,4 @@ if (!customElements.get('oas-affix')) {
 }
 
 export { OASAffix }
+export type { AffixPosition } from './oas-affix.js'

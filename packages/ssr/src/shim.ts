@@ -60,6 +60,9 @@ export function ensureShim(): Shim {
 function createShim(): Shim {
   const win = new Window({ url: 'http://localhost/' })
   installGlobals(win)
+  // SSR 渲染环境标记：测量型组件（affix 等）在渲染端不做吸顶预判（无法得知真实布局，
+  // 快照恒为未校正态），浏览器端水合后 rAF 按真实布局校正
+  ;(win as unknown as Record<string, unknown>).__OAS_SSR__ = true
   return {
     window: win,
     // happy-dom 自带类型与其类实现存在差异，这里按 DOM 契约收窄类型

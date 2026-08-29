@@ -196,14 +196,16 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(html).not.toContain('part="row"')
   })
 
-  it('oas-affix：测量组件快照为未校正态（happy-dom rect 全 0 → 吸顶态 .fixed + top），浏览器端 rAF 校正', async () => {
+  it('oas-affix：测量组件快照为未校正态（SSR 端不做吸顶预判，快照恒非吸），浏览器端 rAF 按真实布局校正', async () => {
     const html = await renderToString('oas-affix', { offset: '100' }, '吸顶导航')
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('<style>')
     expect(html).toContain('<oas-affix offset="100">')
-    // 快照语义：SSR 端 getBoundingClientRect 恒 0 → 0 <= offset → 吸顶（未校正态）
-    expect(html).toContain('class="wrap fixed"')
-    expect(html).toContain('style="top: 100px;"')
+    // 快照语义：SSR 端无法得知真实布局（rect 恒 0），不做吸顶预判 → 快照恒非吸（未校正态）；
+    // 浏览器端水合后 rAF 校正时「脱流与占位同帧」，后续元素布局稳定不闪动
+    expect(html).toContain('class="placeholder"')
+    expect(html).toContain('class="wrap"')
+    expect(html).not.toContain('class="wrap fixed"')
     // 骨架与 slot 内容同步完整
     expect(html).toContain('</template>吸顶导航</oas-affix>')
   })
