@@ -7307,3 +7307,29 @@ test('affix 吸附-解除-占位：top 滚过吸附线吸附、回滚解除、fi
   expect(released.wrapTop).toBe('')
   expect(released.phHeight).toBe('')
 })
+
+test('menubar/navigation-menu 粗指针触控目标 ≥44px（pointer:coarse 设备模拟）', async ({ browser }) => {
+  // 模板方反馈：窄屏 ☰ 弹出菜单顶级项 52×32px，粗指针设备不达标（目标 ≥44px）
+  // 库侧治本：两组件 STYLE 内 @media (pointer: coarse) 触控基线；模板临时 ::part 补丁可移除
+  // 移动设备模拟（isMobile+hasTouch → DevTools 设备仿真把 pointer 翻为 coarse）
+  const context = await browser.newContext({ viewport: { width: 760, height: 700 }, isMobile: true, hasTouch: true })
+  const page = await context.newPage()
+  const coarse = await page.evaluate(() => matchMedia('(pointer: coarse)').matches)
+  expect(coarse, '设备模拟应使 pointer:coarse 命中').toBe(true)
+  const r: Record<string, number> = {}
+  await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-menubar')
+  r.menubarTop = await page.evaluate(() => {
+    const t = document.querySelector('oas-menubar')!.shadowRoot!.querySelector('[part="top-item"]') as HTMLElement
+    return Math.round(t.getBoundingClientRect().height)
+  })
+  await page.goto('/components/navigation-menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-navigation-menu')
+  r.navTop = await page.evaluate(() => {
+    const t = document.querySelector('oas-navigation-menu')!.shadowRoot!.querySelector('[part="top-item"]') as HTMLElement
+    return Math.round(t.getBoundingClientRect().height)
+  })
+  await context.close()
+  expect(r.menubarTop, `menubar 顶级项粗指针高度应 ≥44（实测 ${r.menubarTop}）`).toBeGreaterThanOrEqual(44)
+  expect(r.navTop, `navigation-menu 顶级项粗指针高度应 ≥44（实测 ${r.navTop}）`).toBeGreaterThanOrEqual(44)
+})
