@@ -28,7 +28,25 @@
   ],
   "slots": [
     {
+      "name": ""
+    },
+    {
+      "name": "back-icon"
+    },
+    {
+      "name": "breadcrumb"
+    },
+    {
       "name": "extra"
+    },
+    {
+      "name": "footer"
+    },
+    {
+      "name": "subtitle"
+    },
+    {
+      "name": "title"
     }
   ],
   "unresolved": []
