@@ -1,6 +1,6 @@
 # PageHeader
 
-A page header information area with title, subtitle, back button and a right-side action area. Commonly used at the top of detail and edit pages.
+A page header information area with title, subtitle, back button, breadcrumb, a body area and a bottom action area. Commonly used at the top of detail and edit pages.
 
 ## Basic usage
 
@@ -14,6 +14,29 @@ A page header information area with title, subtitle, back button and a right-sid
   <oas-page-header title="User settings" subtitle="Update account and security info" back></oas-page-header>
 </DemoBlock>
 
+## Breadcrumb
+
+Place a breadcrumb in its own top row via `slot="breadcrumb"`, composing the `oas-breadcrumb` component.
+
+<DemoBlock title="breadcrumb slot">
+  <oas-page-header title="Order details" subtitle="Order No. 20260801001">
+    <oas-breadcrumb slot="breadcrumb" separator="›" items='[{"label":"Home","href":"/"},{"label":"Orders","href":"/orders"},{"label":"Order details"}]'></oas-breadcrumb>
+  </oas-page-header>
+</DemoBlock>
+
+## Title and subtitle slots
+
+The title / subtitle can be plain text via attributes, or rich content (icons, badges, links…) via `slot="title"` / `slot="subtitle"` — the slot takes precedence over the attribute text when present.
+
+<DemoBlock title="title / subtitle slots">
+  <oas-page-header>
+    <span slot="title" style="display: inline-flex; align-items: center; gap: var(--oas-space-2)">
+      Project overview <oas-tag color="blue">In progress</oas-tag>
+    </span>
+    <span slot="subtitle">Last updated: 2026-08-30 14:00</span>
+  </oas-page-header>
+</DemoBlock>
+
 ## Right-side action area
 
 <DemoBlock title="extra slot">
@@ -22,6 +45,62 @@ A page header information area with title, subtitle, back button and a right-sid
       <oas-button size="small">Export</oas-button>
       <oas-button size="small" type="primary">New project</oas-button>
     </oas-space>
+  </oas-page-header>
+</DemoBlock>
+
+## Body area
+
+Body content goes below the title row via the default slot; the block is not rendered when empty.
+
+<DemoBlock title="content default slot">
+  <oas-page-header title="Project overview" subtitle="Progress and key metrics">
+    <div style="line-height: 1.8; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+      The project is entering the sprint phase: frontend progress is 80%, API integration is underway, and a beta release is expected this Friday.
+    </div>
+  </oas-page-header>
+</DemoBlock>
+
+## Bottom action area
+
+<DemoBlock title="footer slot">
+  <oas-page-header title="User settings" subtitle="Update account and security info">
+    <div slot="footer" style="display: flex; justify-content: flex-end">
+      <oas-space size="small">
+        <oas-button size="small">Cancel</oas-button>
+        <oas-button size="small" type="primary">Save</oas-button>
+      </oas-space>
+    </div>
+  </oas-page-header>
+</DemoBlock>
+
+## Custom back icon
+
+<DemoBlock title="back-icon slot">
+  <oas-page-header title="Article details" subtitle="Published on 2026-08-28" back>
+    <oas-icon slot="back-icon" name="arrow-left"></oas-icon>
+  </oas-page-header>
+</DemoBlock>
+
+## Full combination
+
+A full combination of breadcrumb + title row + body + bottom actions.
+
+<DemoBlock title="All blocks combined">
+  <oas-page-header title="Order details" subtitle="Order No. 20260801001" back>
+    <oas-breadcrumb slot="breadcrumb" separator="›" items='[{"label":"Home","href":"/"},{"label":"Orders","href":"/orders"},{"label":"Order details"}]'></oas-breadcrumb>
+    <oas-space slot="extra" size="small">
+      <oas-button size="small">Print</oas-button>
+      <oas-button size="small" type="primary">Approve</oas-button>
+    </oas-space>
+    <div style="line-height: 1.8; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+      The order contains 3 items, totaling ¥1,299.00, expected delivery on 2026-09-02. Recipient: John, 138****5678.
+    </div>
+    <div slot="footer" style="display: flex; justify-content: flex-end">
+      <oas-space size="small">
+        <oas-button size="small">Reject</oas-button>
+        <oas-button size="small" type="primary">Ship</oas-button>
+      </oas-space>
+    </div>
   </oas-page-header>
 </DemoBlock>
 
@@ -59,6 +138,12 @@ onMounted(async () => {
 
 | Name | Description |
 | --- | --- |
-| `extra` | — |
+| default | Body content (default slot, below the title row; not rendered when empty) |
+| `back-icon` | Icon slot for the back button; replaces the built-in chevron when present (empty comment nodes count as no content) |
+| `breadcrumb` | Breadcrumb in its own top row; compose with the oas-breadcrumb component (not rendered when empty) |
+| `extra` | Right-side action area |
+| `footer` | Bottom action area (not rendered when empty) |
+| `subtitle` | Rich subtitle content slot; overrides the subtitle attribute text when present |
+| `title` | Rich title content slot; overrides the title attribute text when present |
 
-Slots: `extra` (right-side action area, empty by default). The back button renders as a native `<button aria-label="返回">`.
+Slots: body content goes in the default slot; the `breadcrumb` / `footer` / `content` blocks are not rendered when empty; the `title` / `subtitle` / `back-icon` slots override the attribute text / built-in icon when present. The back button renders as a native `<button aria-label="Back">`.
