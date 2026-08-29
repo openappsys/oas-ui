@@ -1729,13 +1729,16 @@
     "attrs": {
       "actions": "Sub-action JSON",
       "direction": "Expansion direction",
-      "open": "Expanded state (controlled)"
+      "open": "Expanded state (controlled)",
+      "trigger": "Trigger mode: `click` (default) | `hover` (open on hover, collapse on leave with a 120ms grace period; falls back to click on touch devices)"
     },
     "events": {
-      "oas-open": "Expanded/collapsed, `detail: { open }`",
+      "oas-open": "Expanded/collapsed, `detail: { open, reason }`; reason is `toggle` / `outside` / `escape` / `select` / `hover` (source marker, backward compatible with the open field)",
       "oas-select": "A sub-action was selected, `detail: { index, label }`, then it collapses automatically"
     },
-    "slots": {}
+    "slots": {
+      "": "Custom icon for the main button; when provided it replaces the default ＋ (45° rotation on expansion is preserved)"
+    }
   },
   "oas-spin": {
     "attrs": {
