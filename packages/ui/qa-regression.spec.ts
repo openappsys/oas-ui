@@ -7308,9 +7308,9 @@ test('affix 吸附-解除-占位：top 滚过吸附线吸附、回滚解除、fi
   expect(released.phHeight).toBe('')
 })
 
-test('menubar/navigation-menu 粗指针触控目标 ≥44px（pointer:coarse 设备模拟）', async ({ browser }) => {
+test('menubar/navigation-menu/sidebar 粗指针触控目标 ≥48px xl 档（pointer:coarse 设备模拟）', async ({ browser }) => {
   // 模板方反馈：窄屏 ☰ 弹出菜单顶级项 52×32px，粗指针设备不达标（目标 ≥44px）
-  // 库侧治本：两组件 STYLE 内 @media (pointer: coarse) 触控基线；模板临时 ::part 补丁可移除
+  // 库侧治本：三组件 STYLE 内 @media (pointer: coarse) 触控基线；模板临时 ::part 补丁可移除
   // 移动设备模拟（isMobile+hasTouch → DevTools 设备仿真把 pointer 翻为 coarse）
   const context = await browser.newContext({ viewport: { width: 760, height: 700 }, isMobile: true, hasTouch: true })
   const page = await context.newPage()
@@ -7329,7 +7329,25 @@ test('menubar/navigation-menu 粗指针触控目标 ≥44px（pointer:coarse 设
     const t = document.querySelector('oas-navigation-menu')!.shadowRoot!.querySelector('[part="top-item"]') as HTMLElement
     return Math.round(t.getBoundingClientRect().height)
   })
+  // sidebar（.item 桌面 lg 40 → coarse xl 48，.item.sub 子项同类名一并覆盖）
+  // 该页窄视口下部分 sidebar demo 处于移动抽屉态不可见——等附加 + 取有真实布局的实例量测
+  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('oas-sidebar', { timeout: 15000 })
+  await page.waitForFunction(() => {
+    const s = document.querySelector('oas-sidebar')
+    return s != null && s.shadowRoot != null
+  }, { timeout: 15000 })
+  await page.waitForTimeout(400)
+  r.sidebarItem = await page.evaluate(() => {
+    const items = [...document.querySelectorAll('oas-sidebar')]
+      .flatMap((s) => [...(s.shadowRoot?.querySelectorAll('.item') ?? [])])
+      .map((i) => Math.round(i.getBoundingClientRect().height))
+      .filter((h) => h > 0)
+    return items.length ? Math.max(...items) : 0
+  })
+  expect(r.sidebarItem, 'sidebar 菜单项粗指针高度应 ≥48（有布局实例）').toBeGreaterThanOrEqual(48)
   await context.close()
-  expect(r.menubarTop, `menubar 顶级项粗指针高度应 ≥44（实测 ${r.menubarTop}）`).toBeGreaterThanOrEqual(44)
-  expect(r.navTop, `navigation-menu 顶级项粗指针高度应 ≥44（实测 ${r.navTop}）`).toBeGreaterThanOrEqual(44)
+  expect(r.menubarTop, `menubar 顶级项粗指针高度应 ≥48（实测 ${r.menubarTop}）`).toBeGreaterThanOrEqual(48)
+  expect(r.navTop, `navigation-menu 顶级项粗指针高度应 ≥48（实测 ${r.navTop}）`).toBeGreaterThanOrEqual(48)
+  expect(r.sidebarItem, `sidebar 菜单项粗指针高度应 ≥48（实测 ${r.sidebarItem}）`).toBeGreaterThanOrEqual(48)
 })
