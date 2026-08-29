@@ -1337,7 +1337,11 @@ export class OASNavigationMenu extends OASElement {
     }, delay)
   }
 
-  /** hover 关闭：延迟 delay-duration */
+  /** hover 关闭：独立关闭宽限 ≥150ms（最低保底）
+   *  坑记录：曾复用 delay-duration 作关闭延迟——delay-duration="0" 时关闭宽限也为 0，
+   *  指针离开触发器后 setTimeout(0) 先于 viewport mouseenter 执行，面板在指针到达前
+   *  就被关掉（移入子菜单即收回、无法点选）。打开延迟与关闭宽限语义解耦：delay-duration
+   *  只管打开；关闭宽限取 max(delay-duration, 150)，默认 200 不变、0 延迟 demo 恢复可用 */
   private scheduleClose(): void {
     if (!this.effectiveOpen()) return
     if (this.openTimer) {
@@ -1351,7 +1355,7 @@ export class OASNavigationMenu extends OASElement {
     this.closeTimer = setTimeout(() => {
       this.closeTimer = null
       this.close()
-    }, this.delayDuration())
+    }, Math.max(this.delayDuration(), 150))
   }
 
   private select(item: MenuItem): void {
