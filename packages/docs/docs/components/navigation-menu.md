@@ -11,6 +11,8 @@
 
 ## 受控打开（value + oas-change）
 
+> **事件语义**：`oas-change` 是**开合**语义——点组展开/收起面板即派发（`value` 为打开的顶级项）；叶子项选择走 `oas-select`。宿主容器（popover/drawer 等）里内嵌时，勿监听 `oas-change` 做「跳转并关闭容器」——那会在面板刚展开时就把容器关掉；关闭时机应监听 `oas-select`。
+
 <DemoBlock title="受控打开">
   <oas-button-group>
     <oas-button id="nav-open-a" size="small">打开产品</oas-button>
@@ -186,7 +188,7 @@ onMounted(() => {
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-change` | 打开项变化，`detail: { value }`（value 为打开的顶级项 value，空字符串 = 关闭） |
+| `oas-change` | 打开项变化（开合语义：点组展开/收起即派发，非叶子选择），`detail: { value }`（value 为打开的顶级项 value，空字符串 = 关闭）；叶子项选择监听 `oas-select`，勿以此事件做跳转/关闭容器 |
 | `oas-select` | 选择某项（顶级叶子链接、面板链接卡或二级子导航链接），`detail: { value }` |
 
 | 名称 | 说明 |
