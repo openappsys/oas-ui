@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { lookupIcon } from '../../basic/icon/oas-icon.js'
 
 /** 步骤状态：wait 等待 / process 进行中 / finish 完成 / error 错误 */
 export type StepStatus = 'wait' | 'process' | 'finish' | 'error'
@@ -8,6 +9,10 @@ export interface StepItem {
   description?: string
   /** 显式状态，缺省时按 current 推导（前序 finish / 当前 process / 其余 wait） */
   status?: StepStatus
+  /** 图标名（iconRegistry 键）：显式 icon 优先于状态默认图标（序号/✓/✕）渲染在指示器位置；无匹配时不渲染（回落状态默认图标） */
+  icon?: string
+  /** 禁用步骤：clickable/navigation 下不可点击（无按钮语义）、视觉弱化（弱化色 token）；显式 status 仍正常显示 */
+  disabled?: boolean
 }
 
 const VALID_STATUS = new Set<StepStatus>(['wait', 'process', 'finish', 'error'])
@@ -93,6 +98,10 @@ const STYLE = `
 .item[data-status='error'] .icon {
   border-color: var(--oas-color-danger);
   color: var(--oas-color-danger);
+}
+/* 图标指示器：内联 SVG 随状态色（currentColor）着色，block 消除基线间隙 */
+.icon svg {
+  display: block;
 }
 .text {
   margin-top: var(--oas-space-1);
@@ -216,6 +225,36 @@ const STYLE = `
   display: none;
 }
 
+/* —— label-placement horizontal：图标与标题同行（图标左、标题右），连线对准图标中心 —— */
+.steps[data-label-placement='horizontal'] .item {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  text-align: left;
+}
+.steps[data-label-placement='horizontal'] .text {
+  margin-top: 0;
+}
+.steps[data-label-placement='horizontal'] .item:not(:last-child)::after {
+  left: calc(var(--oas-control-height-sm) / 2);
+  top: calc(50% - 1px);
+}
+
+/* —— disabled：文字弱化（弱化色 token）、禁点（update 已移除按钮语义）—— */
+.item[data-disabled='true'] .text,
+.item[data-disabled='true'] .desc {
+  color: var(--oas-color-text-disabled);
+}
+.item[data-disabled='true'] {
+  cursor: not-allowed;
+}
+.steps[data-clickable='true'] .item[data-disabled='true']:hover .icon {
+  box-shadow: none;
+}
+.steps[data-navigation='true'] .item[data-disabled='true']:hover {
+  filter: none;
+}
+
 /* —— 导航模式底部操作区 —— */
 .nav {
   display: flex;
@@ -264,7 +303,7 @@ const STYLE = `
 
 export class OASSteps extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['steps', 'current', 'direction', 'clickable', 'progress-dot', 'navigation']
+    return ['steps', 'current', 'direction', 'clickable', 'progress-dot', 'navigation', 'linear', 'label-placement']
   }
 
   private _steps: StepItem[] = []
@@ -338,6 +377,7 @@ export class OASSteps extends OASElement {
     const clickable = this.hasAttr('clickable')
     const navigation = this.hasAttr('navigation')
     const progressDot = this.hasAttr('progress-dot')
+    const linear = this.hasAttr('linear')
     // 导航模式固定横向
     const direction = navigation ? 'horizontal' : this.getAttr('direction', 'horizontal')
     stepsEl.setAttribute('data-direction', direction)
@@ -347,6 +387,14 @@ export class OASSteps extends OASElement {
     else stepsEl.removeAttribute('data-navigation')
     if (progressDot) stepsEl.setAttribute('data-progress-dot', 'true')
     else stepsEl.removeAttribute('data-progress-dot')
+    // label-placement：仅横向模式生效；progress-dot 退化点状、navigation 强制现状、纵向保持图标左/标题右
+    const horizontalPlacement =
+      this.getAttr('label-placement', '') === 'horizontal' &&
+      !progressDot &&
+      !navigation &&
+      direction === 'horizontal'
+    if (horizontalPlacement) stepsEl.setAttribute('data-label-placement', 'horizontal')
+    else stepsEl.removeAttribute('data-label-placement')
     stepsEl.innerHTML = ''
     const current = Number(this.getAttr('current', '0')) || 0
     this._steps.forEach((step, idx) => {
@@ -356,6 +404,14 @@ export class OASSteps extends OASElement {
       const status = this.resolveStatus(step, idx, current)
       item.setAttribute('data-status', status)
       if (status === 'process') item.setAttribute('aria-current', 'step')
+      // 导航模式步骤隐式可点；普通模式需 clickable 开启
+      const interactive = clickable || navigation
+      // 禁点：显式 disabled，或线性模式未来步（index > current，仅交互模式下生效）
+      const blocked = step.disabled === true || (linear && interactive && idx > current)
+      if (blocked) {
+        item.setAttribute('data-disabled', 'true')
+        item.setAttribute('aria-disabled', 'true')
+      }
       const textWrap = document.createElement('div')
       const title = document.createElement('div')
       title.className = 'text'
@@ -374,14 +430,15 @@ export class OASSteps extends OASElement {
           // 点状：指示器为装饰性圆点（CSS ::before 渲染），名称由标题承担
           icon.setAttribute('aria-hidden', 'true')
         } else {
-          icon.textContent = status === 'finish' ? '✓' : status === 'error' ? '✕' : String(idx + 1)
+          // 显式 icon 优先（iconRegistry 键，无匹配回落状态默认图标）
+          const svg = step.icon ? this.iconSvg(step.icon) : null
+          if (svg) icon.innerHTML = svg
+          else icon.textContent = status === 'finish' ? '✓' : status === 'error' ? '✕' : String(idx + 1)
         }
         item.appendChild(icon)
       }
       item.appendChild(textWrap)
-      // 导航模式步骤隐式可点；普通模式需 clickable 开启
-      const interactive = clickable || navigation
-      if (interactive) {
+      if (interactive && !blocked) {
         // 整项承担按钮角色，键盘 Enter/Space 可达；点击派发 oas-change{index} 并切换 current
         item.setAttribute('role', 'button')
         item.setAttribute('tabindex', '0')
@@ -417,6 +474,13 @@ export class OASSteps extends OASElement {
     if (idx < current) return 'finish'
     if (idx === current) return 'process'
     return 'wait'
+  }
+
+  /** 图标名（查表：registerIcon 自定义优先，其次内置注册表）→ 内联 SVG（currentColor 随状态色）；无匹配返回 null */
+  private iconSvg(name: string): string | null {
+    const path = lookupIcon(name)
+    if (!path) return null
+    return `<svg viewBox="0 0 16 16" width="1.25em" height="1.25em" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`
   }
 
   private parseSteps(): void {
