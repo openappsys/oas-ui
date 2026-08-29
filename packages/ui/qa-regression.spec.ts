@@ -7234,12 +7234,12 @@ test('affix 吸附-解除-占位：top 滚过吸附线吸附、回滚解除、fi
   // 滚到 500：占位 top = 300 - 500 = -200 <= 100 → 吸附
   await page.evaluate(() => window.scrollTo(0, 500))
   await page.waitForFunction(() =>
-    document.querySelector('oas-affix')!.shadowRoot!.querySelector('.wrap')!.classList.contains('fixed'),
+    document.querySelector('oas-affix')!.shadowRoot!.querySelector<HTMLElement>('.wrap')!.classList.contains('fixed'),
   )
   const stuck = await page.evaluate(() => {
     const el = document.querySelector('oas-affix')!
     const ph = el.shadowRoot!.querySelector('.placeholder')!
-    const wrap = el.shadowRoot!.querySelector('.wrap')!
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.wrap')!
     return {
       top: wrap.style.top,
       fixedTop: Math.round(wrap.getBoundingClientRect().top),
@@ -7255,13 +7255,13 @@ test('affix 吸附-解除-占位：top 滚过吸附线吸附、回滚解除、fi
   // 回滚到 0：占位 top = 300 > 100 → 解除，占位高度清空
   await page.evaluate(() => window.scrollTo(0, 0))
   await page.waitForFunction(() =>
-    !document.querySelector('oas-affix')!.shadowRoot!.querySelector('.wrap')!.classList.contains('fixed'),
+    !document.querySelector('oas-affix')!.shadowRoot!.querySelector<HTMLElement>('.wrap')!.classList.contains('fixed'),
   )
   const released = await page.evaluate(() => {
     const el = document.querySelector('oas-affix')!
     return {
-      wrapTop: el.shadowRoot!.querySelector('.wrap')!.style.top,
-      phHeight: el.shadowRoot!.querySelector('.placeholder')!.style.height,
+      wrapTop: el.shadowRoot!.querySelector<HTMLElement>('.wrap')!.style.top,
+      phHeight: el.shadowRoot!.querySelector<HTMLElement>('.placeholder')!.style.height,
     }
   })
   expect(released.wrapTop).toBe('')

@@ -5,7 +5,7 @@
 ## 基础用法
 
 <DemoBlock title="基础用法">
-  <oas-affix offset="16">
+  <oas-affix offset="88">
     <oas-button type="primary">滚动页面时固定到顶部</oas-button>
   </oas-affix>
 </DemoBlock>
@@ -23,7 +23,7 @@
 ## 组合内容
 
 <DemoBlock title="组合内容">
-  <oas-affix offset="16">
+  <oas-affix offset="88">
     <oas-space>
       <oas-tag type="primary">筛选条件</oas-tag>
       <oas-button size="small">重置</oas-button>
@@ -37,7 +37,7 @@
 `position="bottom"` 将吸附方向改为底部：元素底缘进入距视口底部 `offset` 距离内时固定于底部。
 
 <DemoBlock title="底部吸附">
-  <oas-affix position="bottom" offset="16">
+  <oas-affix position="bottom" offset="88">
     <oas-button type="primary">滚动页面时固定到底部</oas-button>
   </oas-affix>
 </DemoBlock>
@@ -50,7 +50,7 @@
 
 <DemoBlock title="指定滚动容器">
   <div id="affix-sc" style="height: 220px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
-    <oas-affix target="#affix-sc" offset="16">
+    <oas-affix target="#affix-sc" offset="88">
       <oas-button>随容器滚动吸附</oas-button>
     </oas-affix>
     <p style="margin-top: 520px; color: var(--oas-color-text-secondary)">这是局部滚动容器：向下滚动，按钮吸附到容器可视区顶部（`fixed` 定位相对视口）。容器底部——滚动回来试试。</p>
@@ -62,7 +62,7 @@
 吸附状态真实翻转时派发 `oas-change`（`detail: { fixed, top }`）——`fixed` 是否吸附；`top` 为吸附参考位置（top 吸附 = `offset`；bottom 吸附 = 元素当前 `top`）。
 
 <DemoBlock title="吸附状态事件">
-  <oas-affix id="affix-event" offset="16">
+  <oas-affix id="affix-event" offset="88">
     <oas-button>滚动页面观察状态</oas-button>
   </oas-affix>
   <p id="affix-event-out" style="color: var(--oas-color-text-secondary)">尚未吸附</p>
