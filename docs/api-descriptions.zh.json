@@ -1358,7 +1358,15 @@
     "events": {
       "oas-back": "点击返回按钮"
     },
-    "slots": {}
+    "slots": {
+      "": "正文内容（标题行下方正文区，默认插槽；无内容时区块不渲染）",
+      "back-icon": "返回按钮图标插槽，有内容时替换内置 chevron（空注释节点按无内容处理）",
+      "breadcrumb": "面包屑（头部独立行，组合 oas-breadcrumb 原组件，无内容时不渲染）",
+      "extra": "右侧操作区",
+      "footer": "底部操作区（无内容时不渲染）",
+      "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
+      "subtitle": "副标题富内容插槽，有内容时覆盖 subtitle 属性文案"
+    }
   },
   "oas-pagination": {
     "attrs": {
