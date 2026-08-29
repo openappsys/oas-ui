@@ -167,6 +167,36 @@ describe('OASNavigationMenu', () => {
     expect(cards[0]!.querySelector('a[href="/components"]')).not.toBeNull()
   })
 
+  it('iconColor：面板链接卡图标固定颜色（svg 外层 stroke + 内置 path 的 currentColor 替换）；缺省 currentColor 不回归', () => {
+    const el = mount({
+      'delay-duration': '0',
+      items: JSON.stringify([
+        {
+          label: '产品',
+          value: 'products',
+          children: [
+            {
+              label: '组件',
+              value: 'components',
+              href: '/components',
+              icon: 'star',
+              iconColor: '#f50',
+            },
+            { label: '文档', value: 'docs', href: '/docs', icon: 'user' },
+          ],
+        },
+      ]),
+    })
+    topItems(el)[0]!.click()
+    const cards = panelItems(el).filter((li) => li.querySelector('[part="card-link"]'))
+    const colored = cards[0]!.querySelector('.icon svg')!
+    expect(colored.getAttribute('stroke')).toBe('#f50')
+    expect(colored.querySelector('path')!.getAttribute('stroke')).toBe('#f50')
+    const plain = cards[1]!.querySelector('.icon svg')!
+    expect(plain.getAttribute('stroke')).toBe('currentColor')
+    expect(plain.querySelector('path')!.getAttribute('stroke')).toBe('currentColor')
+  })
+
   it('columns 属性控制面板网格列数', () => {
     const el = mount({ 'delay-duration': '0', columns: '3' })
     topItems(el)[0]!.click()
@@ -862,6 +892,24 @@ describe('子元素声明式通道', () => {
     expect(cards[0]!.textContent).toContain('30+ 组件')
     expect(cards[0]!.querySelector('.icon svg')).not.toBeNull()
     expect(cards[0]!.querySelector('a[href="/components"]')).not.toBeNull()
+  })
+
+  it('icon-color 属性映射：子元素声明式通道面板链接卡图标固定颜色，缺省 currentColor 不回归', () => {
+    const el = mountChildren(
+      `<oas-navigation-menu-item value="products">产品` +
+        `<oas-navigation-menu-item value="components" href="/components" icon="star" icon-color="#f50">组件</oas-navigation-menu-item>` +
+        `<oas-navigation-menu-item value="docs" href="/docs" icon="user">文档</oas-navigation-menu-item>` +
+        `</oas-navigation-menu-item>`,
+      { 'delay-duration': '0' },
+    )
+    topItems(el)[0]!.click()
+    const cards = panelItems(el).filter((li) => li.querySelector('[part="card-link"]'))
+    const colored = cards[0]!.querySelector('.icon svg')!
+    expect(colored.getAttribute('stroke')).toBe('#f50')
+    expect(colored.querySelector('path')!.getAttribute('stroke')).toBe('#f50')
+    const plain = cards[1]!.querySelector('.icon svg')!
+    expect(plain.getAttribute('stroke')).toBe('currentColor')
+    expect(plain.querySelector('path')!.getAttribute('stroke')).toBe('currentColor')
   })
 
   it('items 属性显式设置时优先（子元素被忽略）', () => {

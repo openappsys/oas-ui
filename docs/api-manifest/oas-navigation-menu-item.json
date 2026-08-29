@@ -23,6 +23,10 @@
       "observed": true
     },
     {
+      "name": "icon-color",
+      "observed": true
+    },
+    {
       "name": "description",
       "observed": true
     },

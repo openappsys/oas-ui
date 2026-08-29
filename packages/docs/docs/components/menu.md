@@ -354,6 +354,7 @@ onMounted(() => {
 | `disabled` | 禁用该项 | — | — |
 | `href` | 链接地址：有 href 时渲染为原生 `<a>`（真实跳转 + 照常派发 `oas-select`） | — | — |
 | `icon` | 前置图标（`@oas-ui/icons` 注册表图标名） | — | — |
+| `icon-color` | 图标颜色：显式固定该色（优先于选中/禁用态默认色）；缺省 currentColor 随文字色 | — | — |
 | `kind` | 叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、不写回 value）/ `checkbox`（多选勾选，value 数组勾选集） | — | — |
 | `loading` | 加载中：渲染 spinner、禁点，由数据驱动恢复 | — | — |
 | `rel` | 链接 rel（配合 href） | — | — |
@@ -389,7 +390,8 @@ onMounted(() => {
 | `value`    | 选中值                                                               | `string`     |
 | `type`     | 菜单项类型：`item`（默认）/ `group`（分组标题）/ `divider`（分隔线） | `string`     |
 | `kind`     | 叶子项语义：`radio`（默认，可勾选）/ `action`（动作项，无勾选态、点击不写回 value） | `string` |
-| `icon`     | 图标名（`@oas-ui/icons` 的 iconRegistry 键）                       | `string`     |
+| `icon`     | 图标名（`registerIcon()` 自定义或 `@oas-ui/icons` 内置图标名）     | `string`     |
+| `iconColor`| 图标颜色（可选）：显式固定该色，优先于选中/禁用态默认色；缺省 currentColor 随文字色 | `string` |
 | `disabled` | 禁用该项                                                             | `boolean`    |
 | `children` | 子菜单项数组，结构与父项一致（可继续嵌套）                           | `MenuItem[]` |
 

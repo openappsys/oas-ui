@@ -15,6 +15,10 @@
       "observed": true
     },
     {
+      "name": "icon-color",
+      "observed": true
+    },
+    {
       "name": "kind",
       "observed": true
     },
