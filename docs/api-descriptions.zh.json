@@ -818,12 +818,22 @@
   },
   "oas-float-button": {
     "attrs": {
-      "badge": "右上角标数字"
+      "aria-label": "无障碍可访问名称：显式设置时覆盖内置文案（纯图标默认走 locale「悬浮操作」；有扩展文字时让位给可见文本）",
+      "badge": "右上角标数字",
+      "disabled": "禁用：不可点击、不派发 `oas-click`，样式弱化；`href` 模式下降级为不可点击的 `span`",
+      "href": "链接地址：设置后渲染 `<a>` 元素（原生链接语义与键盘可达）替代按钮；禁用时降级为 `span`",
+      "shape": "形状：`circle`（默认，正圆）/ `square`（胶囊圆角矩形）",
+      "size": "尺寸档位：`xs`（24px）/ `sm`（32px）/ `md`（40px）/ `lg`（默认 48px）/ `xl`（56px）；非法值回落 `lg` 并告警",
+      "target": "链接打开方式（`href` 模式下生效，如 `_blank`）",
+      "type": "视觉强度：`primary`（默认，主色实底）/ `default`（弱化：浅底深字）"
     },
     "events": {
       "oas-click": "点击，`detail: { originalEvent }`"
     },
-    "slots": {}
+    "slots": {
+      "": "扩展文字：默认插槽写入文字后按钮自动变为横向胶囊形态（图标 + 文字横排）",
+      "icon": "图标（默认 ＋）"
+    }
   },
   "oas-form": {
     "attrs": {
