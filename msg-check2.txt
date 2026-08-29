@@ -1,0 +1,1 @@
+feat(bottomnavigation): 导航组第二批能力补齐——item badge/safe-area/颜色高度变量开口/grow 断言，主 agent 复核
