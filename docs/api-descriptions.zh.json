@@ -1291,7 +1291,7 @@
     },
     "events": {
       "oas-select": "选择某项（顶级叶子链接、面板链接卡或二级子导航链接），`detail: { value }`",
-      "oas-change": "打开项变化，`detail: { value }`（value 为打开的顶级项 value，空字符串 = 关闭）"
+      "oas-change": "打开项变化（开合语义：点组展开/收起即派发，非叶子选择），`detail: { value }`（value 为打开的顶级项 value，空字符串 = 关闭）；叶子项选择监听 `oas-select`，勿以此事件做跳转/关闭容器"
     },
     "slots": {
       "panel-footer": "面板底部营销位插槽：`<div slot=\"panel-footer\">`（CTA 卡片等）有内容时面板底部渲染插槽容器"

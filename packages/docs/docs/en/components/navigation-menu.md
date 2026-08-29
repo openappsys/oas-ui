@@ -11,6 +11,8 @@ A website-style multi-level navigation bar: top-level triggers open a unified vi
 
 ## Controlled open (value + oas-change)
 
+> **Event semantics**: `oas-change` is an **open/close** event — it fires when a group expands or collapses the panel (`value` = the open top-level item); leaf selection goes through `oas-select`. When embedding the menu inside a host container (popover/drawer etc.), do NOT listen to `oas-change` to "navigate and close the container" — that closes the container right as the panel expands. Listen to `oas-select` for close-on-navigate instead.
+
 <DemoBlock title="Controlled open">
   <oas-button-group>
     <oas-button id="nav-open-a" size="small">Open Products</oas-button>
@@ -186,7 +188,7 @@ onMounted(() => {
 
 | Event | Description |
 | --- | --- |
-| `oas-change` | The open item changed, `detail: { value }` (value is the open top-level item value; empty string = closed) |
+| `oas-change` | The open item changed (open/close semantics: dispatched when a group expands or collapses, NOT a leaf selection), `detail: { value }` (value is the open top-level item value; empty string = closed); listen to `oas-select` for leaf selection — do not use this event to navigate or close containers |
 | `oas-select` | An item was selected (top-level leaf link, panel link card or secondary sub-nav link), `detail: { value }` |
 
 | Name | Description |
