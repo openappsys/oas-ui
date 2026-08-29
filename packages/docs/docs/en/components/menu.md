@@ -65,6 +65,21 @@ Menu items with `type: "group"` render as a section with a group title (small te
   <oas-menu style="width: 200px" items='[{"label":"Search","value":"search","icon":"search"},{"label":"User","value":"user","icon":"user"},{"label":"Settings","value":"settings","icon":"gear"},{"label":"Download","value":"download","icon":"download"}]'></oas-menu>
 </DemoBlock>
 
+## Icon color (iconColor)
+
+The `iconColor` field fixes the icon color (overriding the selected/disabled default); any CSS color or token works, and it defaults to `currentColor` following the text color. The declarative child channel uses the `icon-color` attribute.
+
+<DemoBlock title="Icon color (iconColor / icon-color)">
+  <oas-space direction="vertical" size="small">
+    <oas-menu id="menu-iconcolor" style="width: 220px" items='[{"label":"Search","value":"search","icon":"search","iconColor":"var(--oas-color-primary)"},{"label":"User","value":"user","icon":"user","iconColor":"#06b6d4"},{"label":"Organization","value":"org","icon":"organization","iconColor":"#8b5cf6"},{"label":"Settings","value":"settings","icon":"gear","iconColor":"var(--oas-color-warning)"}]'></oas-menu>
+    <oas-menu id="menu-iconcolor-decl" style="width: 220px">
+      <oas-menu-item value="download" icon="download" icon-color="var(--oas-color-success)">Download</oas-menu-item>
+      <oas-menu-item value="delete" icon="trash" icon-color="var(--oas-color-danger)">Delete</oas-menu-item>
+      <oas-menu-item value="plain" icon="star">No icon-color</oas-menu-item>
+    </oas-menu>
+  </oas-space>
+</DemoBlock>
+
 ## Divider
 
 `type: "divider"` renders a thin divider line that is not clickable and not part of keyboard navigation.
