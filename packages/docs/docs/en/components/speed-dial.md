@@ -37,13 +37,48 @@ A floating main button that expands a list of sub-actions, commonly used for qui
 
 ## Events
 
-Clicking the main button to expand/collapse fires `oas-open` (`detail: { open }`); clicking a sub-action fires `oas-select` (`detail: { index, label }`) and collapses automatically.
+Clicking the main button to expand/collapse fires `oas-open` (`detail: { open, reason }`); clicking a sub-action fires `oas-select` (`detail: { index, label }`) and collapses automatically. `reason` marks the source of the open/collapse: `toggle` (main button click) / `outside` (outside click) / `escape` (Esc) / `select` (action selection) / `hover` (hover trigger).
 
 <DemoBlock title="Event feedback">
   <div style="width: 200px; height: 160px">
     <oas-speed-dial id="sd-event" style="position: static" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash"}]'></oas-speed-dial>
   </div>
   <span id="sd-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+</DemoBlock>
+
+## Hover trigger
+
+With `trigger="hover"`, hovering the main button expands and moving away collapses after a 120ms grace period (moving back into the panel during the grace period keeps it open); touch devices automatically fall back to `click` behavior.
+
+<DemoBlock title="Hover trigger">
+  <div style="width: 200px; height: 160px">
+    <oas-speed-dial trigger="hover" id="sd-hover" style="position: static" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash"}]'></oas-speed-dial>
+  </div>
+  <span id="sd-hover-out" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px"></span>
+</DemoBlock>
+
+## Custom main button icon
+
+The main button shows a default "＋"; pass a custom icon through the default slot (it still rotates 45° when expanded).
+
+<DemoBlock title="Custom main button icon">
+  <div style="width: 200px; height: 160px">
+    <oas-speed-dial style="position: static" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"}]'>
+      <svg viewBox="0 0 16 16" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M8 3v10M3 8h10"/>
+      </svg>
+    </oas-speed-dial>
+  </div>
+</DemoBlock>
+
+## Keyboard navigation
+
+When expanded, the first sub-action is focused automatically; arrow keys move between actions (vertical expansion uses `ArrowUp`/`ArrowDown`, horizontal expansion uses `ArrowLeft`/`ArrowRight`, wrapping around), `Home`/`End` jump to the first/last, and `Esc` collapses and returns focus to the main button.
+
+<DemoBlock title="Keyboard navigation">
+  <div style="width: 200px; height: 160px">
+    <oas-speed-dial style="position: static" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash"}]'></oas-speed-dial>
+  </div>
 </DemoBlock>
 
 ## Controlled open
@@ -67,10 +102,16 @@ onMounted(() => {
   const el = document.getElementById('sd-event')
   const out = document.getElementById('sd-out')
   el?.addEventListener('oas-open', (e) => {
-    out.textContent = `oas-open: { open: ${e.detail.open} }`
+    out.textContent = `oas-open: { open: ${e.detail.open}, reason: "${e.detail.reason}" }`
   })
   el?.addEventListener('oas-select', (e) => {
     out.textContent = `oas-select: { index: ${e.detail.index}, label: "${e.detail.label}" }`
+  })
+
+  const hover = document.getElementById('sd-hover')
+  const hoverOut = document.getElementById('sd-hover-out')
+  hover?.addEventListener('oas-open', (e) => {
+    hoverOut.textContent = `oas-open: { open: ${e.detail.open}, reason: "${e.detail.reason}" }`
   })
 
   const ctrl = document.getElementById('sd-ctrl')
@@ -99,13 +140,20 @@ onMounted(() => {
 | `actions` | Sub-action JSON | `string` | `[]` |
 | `direction` | Expansion direction | `string` | `up` |
 | `open` | Expanded state (controlled) | `boolean` | — |
+| `trigger` | Trigger mode: `click` (default) \| `hover` (open on hover, collapse on leave with a 120ms grace period; falls back to click on touch devices) | `string` | `click` |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-open` | Expanded/collapsed, `detail: { open }` |
+| `oas-open` | Expanded/collapsed, `detail: { open, reason }`; reason is `toggle` / `outside` / `escape` / `select` / `hover` (source marker, backward compatible with the open field) |
 | `oas-select` | A sub-action was selected, `detail: { index, label }`, then it collapses automatically |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| default | Custom icon for the main button; when provided it replaces the default ＋ (45° rotation on expansion is preserved) |
 
 `SpeedDialAction` fields:
 
@@ -114,4 +162,4 @@ onMounted(() => {
 | `label` | Action text                                          | `string` |
 | `icon`  | Icon name (a key of `@oas-ui/icons` iconRegistry)  | `string` |
 
-Behavior: clicking the main button toggles expansion (`aria-expanded` synced); clicking outside or pressing Esc collapses (after Esc, focus returns to the main button); when expanded, the first sub-action is focused automatically. The default position is `position: fixed; bottom/right`, overridable. The document-level listener is only attached while expanded and disconnected during cleanup — no orphan popups.
+Behavior: clicking the main button toggles expansion (`aria-expanded` synced); `trigger="hover"` switches to hover trigger (touch devices fall back to click); clicking outside or pressing Esc collapses (after Esc, focus returns to the main button); clicking a sub-action collapses and fires `oas-select`; when expanded, the first sub-action is focused automatically and arrow keys / Home / End navigate between actions. The default position is `position: fixed; bottom/right`, overridable. The document-level listener is only attached while expanded and disconnected during cleanup — no orphan popups.

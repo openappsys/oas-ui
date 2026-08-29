@@ -18,19 +18,29 @@
       "name": "open",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "trigger",
+      "type": "string",
+      "default": "click",
+      "observed": true
     }
   ],
   "props": [],
   "events": [
     {
       "name": "oas-open",
-      "detail": "{ open: true } | { open: false }"
+      "detail": "{ open: true, reason } | { open: false, reason }"
     },
     {
       "name": "oas-select",
       "detail": "{ index, label: action.label }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
   "unresolved": []
 }
