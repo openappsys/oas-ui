@@ -7330,9 +7330,8 @@ test('menubar/navigation-menu/sidebar 粗指针触控目标 ≥48px xl 档（poi
     return Math.round(t.getBoundingClientRect().height)
   })
   // sidebar（.item 桌面 lg 40 → coarse xl 48，.item.sub 子项同类名一并覆盖）
-  // 该页窄视口下部分 sidebar demo 处于移动抽屉态不可见——等附加 + 取有真实布局的实例量测
-  await page.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForSelector('oas-sidebar', { timeout: 15000 })
+  // 该页窄视口下部分 sidebar demo 处于移动抽屉态不可见——等附加（首个实例可能是收起抽屉，visible 会永等）+ 取有真实布局的实例量测
+  await page.waitForSelector('oas-sidebar', { state: 'attached', timeout: 15000 })
   await page.waitForFunction(() => {
     const s = document.querySelector('oas-sidebar')
     return s != null && s.shadowRoot != null
