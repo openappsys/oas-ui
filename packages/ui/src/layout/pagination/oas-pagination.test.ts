@@ -402,4 +402,13 @@ describe('OASPagination', () => {
     const active = el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')
     expect(active?.textContent).toBe('10')
   })
+
+  it('当前页高亮：aria-current 按钮命中 .btn 高亮规则（背景主色 + on-primary 文字色，回归：选择器曾误写 .page 致高亮失效）', () => {
+    const el = mount({ total: '100' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('.btn[aria-current=\'true\']')
+    expect(css).not.toContain('.page[aria-current')
+    const active = el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')!
+    expect(active.classList.contains('btn')).toBe(true)
+  })
 })

@@ -71,7 +71,7 @@ const STYLE = `
   cursor: not-allowed;
   opacity: 0.4;
 }
-.page[aria-current='true'] {
+.btn[aria-current='true'] {
   background: var(--oas-color-primary);
   border-color: var(--oas-color-primary);
   color: var(--oas-color-text-on-primary);
