@@ -133,12 +133,16 @@ describe('OASSteps', () => {
     expect(el.getAttribute('current')).toBe('0')
   })
 
-  it('连接线中心对准指示器中心（线高/宽 2px，top/left 为控件高度一半减 1px）', () => {
+  it('连接线中心对准指示器中心（普通模式 28 盒圆心 sm/2+2、dot 模式 24 盒圆心 sm/2，线高/宽 2px 各减 1px）', () => {
     const el = mount({})
     const css = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(css).toContain('top: calc(var(--oas-control-height-sm) / 2 - 1px)')
-    expect(css).toContain('left: calc(var(--oas-control-height-sm) / 2 - 1px)')
-    // 图标 top 对齐行盒顶（消除行内基线间隙，圆心恒定于 item 顶部 sm/2 处）
+    // 基础（普通模式，图标带 2px border）：线顶 = sm/2 + 1（圆心 sm/2+2）
+    expect(css).toContain('top: calc(var(--oas-control-height-sm) / 2 + 1px)')
+    // dot 模式覆盖（无边框）：线顶 = sm/2 - 1（圆心 sm/2）
+    expect(css).toContain(".steps[data-progress-dot='true'] .item:not(:last-child)::after")
+    // vertical：左缘 = sm/2 + 1（28 盒圆心 sm/2+2）
+    expect(css).toContain('left: calc(var(--oas-control-height-sm) / 2 + 1px)')
+    // 图标 top 对齐行盒顶（消除行内基线间隙）
     expect(css).toMatch(/\.icon\s*\{[^}]*vertical-align:\s*top/)
   })
 
