@@ -117,6 +117,7 @@ const componentSidebar: DefaultTheme.SidebarItem[] = [
       { text: 'BottomNavigation 底部导航', link: '/components/bottom-navigation' },
       { text: 'Pagination 分页', link: '/components/pagination' },
       { text: 'Steps 步骤条', link: '/components/steps' },
+      { text: 'Stepper 步骤面板', link: '/components/stepper' },
       { text: 'Affix 固钉', link: '/components/affix' },
       { text: 'PageHeader 页头', link: '/components/page-header' },
       { text: 'FloatButton 悬浮按钮', link: '/components/float-button' },

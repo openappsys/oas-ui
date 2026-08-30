@@ -107,6 +107,8 @@
   "oas-tour",
   "oas-bottom-navigation",
   "oas-bottom-navigation-item",
+  "oas-stepper",
+  "oas-stepper-panel",
   "oas-segmented",
   "oas-flex",
   "oas-steps",
