@@ -23,6 +23,11 @@
       "name": "ghost",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "responsive",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],

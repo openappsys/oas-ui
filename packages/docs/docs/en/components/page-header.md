@@ -149,6 +149,20 @@ onMounted(async () => {
   </div>
 </DemoBlock>
 
+## Responsive compact layout (responsive)
+
+The `responsive` boolean attribute switches to a compact layout automatically when the component width drops below 768px: the title font-size steps down (xl→lg), the subtitle steps down (sm) and the subtitle/extra wrap (`.row` gains `flex-wrap`, letting the title keep its own row without being squeezed). A ResizeObserver watches the host width (cleaned up via onCleanup); widening the container restores the normal layout automatically. It kicks in when narrowing the browser window or on mobile viewports.
+
+<DemoBlock title="responsive compact layout">
+  <oas-page-header responsive title="Order details" subtitle="Order 20260801001 · Consignee Zhang San" back>
+    <oas-space slot="extra" size="small">
+      <oas-button size="small">Print</oas-button>
+      <oas-button size="small" type="primary">Approve</oas-button>
+    </oas-space>
+  </oas-page-header>
+  <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Narrow the window below 768px: the title steps down and the subtitle/actions wrap; widening restores the layout.</p>
+</DemoBlock>
+
 ## API
 
 ### Attributes
@@ -157,6 +171,7 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `back` | Whether to show the back button | `boolean` | — |
 | `ghost` | Transparent-background variant: the header background rule is set to `none` (forced transparent so the container/page background shows through) and the footer divider is removed; title/text colors keep the theme foreground token; all other layout is unchanged | `boolean` | — |
+| `responsive` | Responsive compact layout: when the component width is below 768px the title font-size steps down (xl→lg), the subtitle steps down (sm) and the subtitle/extra wrap (.row flex-wrap); a ResizeObserver watches the host width, cleaned up via onCleanup | `boolean` | — |
 | `subtitle` | Subtitle text | `string` | — |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 
