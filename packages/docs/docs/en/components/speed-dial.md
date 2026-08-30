@@ -29,6 +29,48 @@ A floating main button that expands a list of sub-actions, commonly used for qui
 
 On expansion, the sub-actions fade in one after another (`transition-delay = index × 30ms` per item) and disappear simultaneously on collapse. The animation is built in with no configuration needed; under `prefers-reduced-motion` the cascade delay is zeroed and transitions are disabled (everything appears at once, for accessibility). The demos above already use it when expanded.
 
+## Arc geometry expansion
+
+`geometry` controls how the sub-actions are laid out: `linear` (default, chained layout) / `circle` (full circle, evenly spaced starting from the top) / `semi-circle` (a 180° half circle around the `direction` axis) / `quarter-circle` (a 90° arc whose starting quadrant follows `direction`: up=top-left, down=bottom-right, left=bottom-left, right=top-right). `radius` sets the arc radius in px (default 96, invalid values fall back to 96).
+
+Angle rule: `circle` starts at the top and spaces evenly clockwise; `semi-circle` sweeps from "main direction − 90°" to "main direction + 90°" (up=upper half, down=lower half, left=left half, right=right half); `quarter-circle` is a 90° arc starting at the main direction (the first action stays closest to the main button). In arc mode the sub-actions no longer participate in the chained layout; the `--cascade-i` cascade and `hide-label` bubbles are unaffected, and under `prefers-reduced-motion` the arc transition is skipped (actions appear in place).
+
+<DemoBlock title="circle: full circle spaced from the top">
+  <div style="display: flex; align-items: center; justify-content: center; height: 280px; width: 100%">
+    <oas-speed-dial geometry="circle" style="position: static" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash"},{"label":"Upload","icon":"upload"}]'></oas-speed-dial>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="semi-circle: half circle around the direction axis">
+  <div style="display: flex; gap: var(--oas-space-5); align-items: center; justify-content: center; height: 220px; width: 100%">
+    <div style="width: 220px; height: 200px; position: relative">
+      <oas-speed-dial style="position: absolute; bottom: 0; left: 50%; margin-left: -24px" geometry="semi-circle" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash"}]'></oas-speed-dial>
+    </div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="quarter-circle: 90° quadrant follows direction (up=top-left / right=top-right)">
+  <div style="display: flex; gap: var(--oas-space-5); align-items: flex-end; height: 220px; width: 100%">
+    <div style="width: 200px; height: 180px; position: relative">
+      <oas-speed-dial style="position: absolute; right: 0; top: 0" geometry="quarter-circle" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash"}]'></oas-speed-dial>
+    </div>
+    <div style="width: 200px; height: 180px; position: relative">
+      <oas-speed-dial style="position: absolute; left: 0; top: 0" geometry="quarter-circle" direction="right" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash"}]'></oas-speed-dial>
+    </div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="radius: adjust the arc radius (circle)">
+  <div style="display: flex; align-items: center; justify-content: center; height: 320px; width: 100%">
+    <oas-speed-dial id="sd-arc" geometry="circle" radius="96" style="position: static" actions='[{"label":"Copy","icon":"copy"},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash"},{"label":"Upload","icon":"upload"}]'></oas-speed-dial>
+  </div>
+  <oas-button-group>
+    <oas-button size="small" type="primary" onclick="event.stopPropagation(); sdArc(96)">radius 96</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation(); sdArc(128)">radius 128</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation(); sdArc(160)">radius 160</oas-button>
+  </oas-button-group>
+</DemoBlock>
+
 ## Text-only actions
 
 `icon` can be omitted to show only the label; for icon-only sub-actions use `hide-label` (see the next section).
@@ -142,6 +184,11 @@ onMounted(() => {
     // Component clicks, outside clicks and Esc all change `open`; keep the status in sync with a MutationObserver
     new MutationObserver(sync).observe(ctrl, { attributes: true, attributeFilter: ['open'] })
   }
+
+  const arc = document.getElementById('sd-arc')
+  window.sdArc = (r) => {
+    arc?.setAttribute('radius', String(r))
+  }
 })
 </script>
 
@@ -153,7 +200,9 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `actions` | Sub-action JSON (`[{ label, icon?, 'hide-label'? }]`; `hide-label: true` renders the sub-action as a circular icon-only button with the label visually hidden, shown as a text bubble on hover/keyboard focus; falls back to showing the label when no renderable icon is provided) | `string` | `[]` |
 | `direction` | Expansion direction | `string` | `up` |
+| `geometry` | Expansion geometry: `linear` (default, chained layout) / `circle` (full circle, evenly spaced from the top) / `semi-circle` (half circle around the `direction` axis) / `quarter-circle` (90° arc whose starting quadrant follows `direction`: up=top-left, down=bottom-right, left=bottom-left, right=top-right) | `string` | `linear` |
 | `open` | Expanded state (controlled) | `boolean` | — |
+| `radius` | Arc radius in px (default 96; only effective when `geometry` is not `linear`; invalid values fall back to 96) | — | — |
 | `trigger` | Trigger mode: `click` (default) \| `hover` (open on hover, collapse on leave with a 120ms grace period; falls back to click on touch devices) | `string` | `click` |
 
 ### Events

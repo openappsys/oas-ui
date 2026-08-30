@@ -495,3 +495,178 @@ describe('OASSpeedDial hide-label（icon-only 子动作）', () => {
     )
   })
 })
+
+// ===== 圆弧几何展开（geometry + radius） =====
+
+describe('OASSpeedDial 圆弧几何展开', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('observedAttributes 声明 geometry / radius', () => {
+    expect(OASSpeedDial.observedAttributes).toContain('geometry')
+    expect(OASSpeedDial.observedAttributes).toContain('radius')
+  })
+
+  it('geometry 默认 linear：data-geometry=linear、无圆弧偏移（--t-x/--t-y 为 0px）、宿主无 arc 类', () => {
+    const el = mount()
+    expect(dial(el).getAttribute('data-geometry')).toBe('linear')
+    expect(el.classList.contains('arc')).toBe(false)
+    for (const b of actionBtns(el)) {
+      expect(b.style.getPropertyValue('--t-x')).toBe('0px')
+      expect(b.style.getPropertyValue('--t-y')).toBe('0px')
+    }
+  })
+
+  it('geometry="circle"：从正上开始 360°/N 均分，坐标写入内联 --t-x/--t-y（radius=96）', () => {
+    const el = mount({ geometry: 'circle' })
+    expect(dial(el).getAttribute('data-geometry')).toBe('circle')
+    expect(el.classList.contains('arc')).toBe(true)
+    const btns = actionBtns(el)
+    expect(btns.length).toBe(3)
+    // 数学角度 [90, -30, -150]：tx=r·cos(a)，ty=-r·sin(a)，Math.round
+    expect(btns[0]!.style.getPropertyValue('--t-x')).toBe('0px')
+    expect(btns[0]!.style.getPropertyValue('--t-y')).toBe('-96px')
+    expect(btns[1]!.style.getPropertyValue('--t-x')).toBe('83px')
+    expect(btns[1]!.style.getPropertyValue('--t-y')).toBe('48px')
+    expect(btns[2]!.style.getPropertyValue('--t-x')).toBe('-83px')
+    expect(btns[2]!.style.getPropertyValue('--t-y')).toBe('48px')
+  })
+
+  it('geometry="semi-circle"（up）：180° 半圆以方向为轴，首项正右、末项正左', () => {
+    const el = mount({ geometry: 'semi-circle' })
+    const btns = actionBtns(el)
+    // up 主方向 90°，区间 [0, 180]
+    expect(btns[0]!.style.getPropertyValue('--t-x')).toBe('96px')
+    expect(btns[0]!.style.getPropertyValue('--t-y')).toBe('0px')
+    expect(btns[1]!.style.getPropertyValue('--t-x')).toBe('0px')
+    expect(btns[1]!.style.getPropertyValue('--t-y')).toBe('-96px')
+    expect(btns[2]!.style.getPropertyValue('--t-x')).toBe('-96px')
+    expect(btns[2]!.style.getPropertyValue('--t-y')).toBe('0px')
+  })
+
+  it('geometry="quarter-circle"：90° 起始象限随 direction（up=左上象限）', () => {
+    const el = mount({ geometry: 'quarter-circle' })
+    const btns = actionBtns(el)
+    // up 主方向 90°，区间 [90, 180]：首项正上、末项正左
+    expect(btns[0]!.style.getPropertyValue('--t-x')).toBe('0px')
+    expect(btns[0]!.style.getPropertyValue('--t-y')).toBe('-96px')
+    expect(btns[1]!.style.getPropertyValue('--t-x')).toBe('-68px')
+    expect(btns[1]!.style.getPropertyValue('--t-y')).toBe('-68px')
+    expect(btns[2]!.style.getPropertyValue('--t-x')).toBe('-96px')
+    expect(btns[2]!.style.getPropertyValue('--t-y')).toBe('0px')
+  })
+
+  it('quarter-circle 象限随 direction：down=右下、left=左下、right=右上', () => {
+    const cases: Array<[string, string, string, string, string]> = [
+      ['down', '0px', '96px', '96px', '0px'], // [-90, -45, 0]：正下→正右
+      ['left', '-96px', '0px', '0px', '96px'], // [180, 225, 270]：正左→正下
+      ['right', '96px', '0px', '0px', '-96px'], // [0, 45, 90]：正右→正上
+    ]
+    for (const [dir, x0, y0, x2, y2] of cases) {
+      const el = mount({ geometry: 'quarter-circle', direction: dir })
+      const btns = actionBtns(el)
+      expect(btns[0]!.style.getPropertyValue('--t-x')).toBe(x0)
+      expect(btns[0]!.style.getPropertyValue('--t-y')).toBe(y0)
+      expect(btns[2]!.style.getPropertyValue('--t-x')).toBe(x2)
+      expect(btns[2]!.style.getPropertyValue('--t-y')).toBe(y2)
+    }
+  })
+
+  it('direction 变化即时重算圆弧象限（quarter down 首项正下）', () => {
+    const el = mount({ geometry: 'quarter-circle' })
+    expect(actionBtns(el)[0]!.style.getPropertyValue('--t-y')).toBe('-96px')
+    el.setAttribute('direction', 'down')
+    expect(actionBtns(el)[0]!.style.getPropertyValue('--t-y')).toBe('96px')
+  })
+
+  it('radius 控制圆弧半径：radius=48 偏移减半', () => {
+    const el = mount({ geometry: 'semi-circle', radius: '48' })
+    const btns = actionBtns(el)
+    expect(btns[0]!.style.getPropertyValue('--t-x')).toBe('48px')
+    expect(btns[1]!.style.getPropertyValue('--t-y')).toBe('-48px')
+    expect(btns[2]!.style.getPropertyValue('--t-x')).toBe('-48px')
+  })
+
+  it('radius 非法值（非数字/负数）回落默认 96', () => {
+    for (const bad of ['abc', '-10', '']) {
+      const el = mount({ geometry: 'circle', radius: bad })
+      // 96 半径下 circle 第 2 项 tx=83
+      expect(actionBtns(el)[1]!.style.getPropertyValue('--t-x')).toBe('83px')
+    }
+  })
+
+  it('geometry 非法值回落 linear（零回归：无 arc 类、偏移 0px）', () => {
+    const el = mount({ geometry: 'bogus' })
+    expect(dial(el).getAttribute('data-geometry')).toBe('linear')
+    expect(el.classList.contains('arc')).toBe(false)
+    for (const b of actionBtns(el)) {
+      expect(b.style.getPropertyValue('--t-x')).toBe('0px')
+      expect(b.style.getPropertyValue('--t-y')).toBe('0px')
+    }
+  })
+
+  it('direction 非法回落 up：圆弧角度按 up 计算', () => {
+    const el = mount({ geometry: 'quarter-circle', direction: 'bogus' })
+    expect(dial(el).getAttribute('data-dir')).toBe('up')
+    expect(actionBtns(el)[0]!.style.getPropertyValue('--t-y')).toBe('-96px') // up 首项正上
+  })
+
+  it('圆弧模式与级联共存：--cascade-i 仍按序内联', () => {
+    const el = mount({ geometry: 'circle' })
+    actionBtns(el).forEach((b, i) => {
+      expect(b.style.getPropertyValue('--cascade-i')).toBe(String(i))
+    })
+  })
+
+  it('actions 变更重渲染后圆弧偏移按新列表重算', () => {
+    const el = mount({ geometry: 'circle' })
+    expect(actionBtns(el).length).toBe(3)
+    el.setAttribute('actions', JSON.stringify([{ label: 'a' }, { label: 'b' }]))
+    const btns = actionBtns(el)
+    expect(btns.length).toBe(2)
+    // N=2：角度 [90, -90]：正上、正下
+    expect(btns[0]!.style.getPropertyValue('--t-y')).toBe('-96px')
+    expect(btns[1]!.style.getPropertyValue('--t-y')).toBe('96px')
+  })
+
+  it('CSS：action 过渡含 transform（圆弧展开/回位动画载体）', () => {
+    const stl = styleText(mount())
+    expect(stl).toMatch(
+      /\.action\s*\{[^}]*transition:\s*opacity\s+var\(--oas-transition-base\).*transform\s+var\(--oas-transition-base\)/s,
+    )
+  })
+
+  it('CSS：圆弧模式 actions 容器铺满主按钮区域作圆心（inset 0、无线性位移），子动作堆叠圆心', () => {
+    const stl = styleText(mount({ geometry: 'circle' }))
+    expect(stl).toMatch(/:host\(\.arc\) \.dial\[data-dir\] \.actions\s*\{[^}]*inset:\s*0/)
+    expect(stl).toMatch(/:host\(\.arc\) \.dial\[data-dir\] \.actions\s*\{[^}]*transform:\s*none/)
+    expect(stl).toMatch(
+      /:host\(\.arc\) \.dial \.action\s*\{[^}]*position:\s*absolute[^}]*transform:\s*translate\(-50%,\s*-50%\)/s,
+    )
+  })
+
+  it('CSS：圆弧模式展开态用 --t-x/--t-y 偏移（calc 圆心 + 偏移），收起态回圆心', () => {
+    const stl = styleText(mount({ geometry: 'circle' }))
+    expect(stl).toMatch(
+      /:host\(\.arc\) \.dial\.open \.action\s*\{[^}]*transform:\s*translate\(\s*calc\(var\(--t-x,\s*0px\)\s*-\s*50%\),\s*calc\(var\(--t-y,\s*0px\)\s*-\s*50%\)\s*\)/s,
+    )
+    // 收起态：translate(-50%, -50%) 堆叠圆心（由 .action 基础规则承载，transform 复位 + 既有过渡）
+    expect(stl).toMatch(
+      /:host\(\.arc\) \.dial \.action\s*\{[^}]*transform:\s*translate\(-50%,\s*-50%\)/,
+    )
+  })
+
+  it('reduced-motion：圆弧 transform 过渡停用（位置直切）', () => {
+    const stl = styleText(mount())
+    const mq =
+      stl.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\}/)?.[0] ?? ''
+    expect(mq).toContain('.action')
+    expect(mq).toContain('transition: none')
+  })
+})
