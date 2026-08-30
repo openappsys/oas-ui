@@ -24,6 +24,16 @@
       "type": "string",
       "default": "click",
       "observed": true
+    },
+    {
+      "name": "geometry",
+      "type": "string",
+      "default": "linear",
+      "observed": true
+    },
+    {
+      "name": "radius",
+      "observed": true
     }
   ],
   "props": [],
