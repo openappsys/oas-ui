@@ -128,6 +128,27 @@ onMounted(async () => {
 })
 </script>
 
+## Transparent background variant (ghost)
+
+`ghost` gives the header a transparent background (the background rule is set to `none`; title/text colors keep the theme foreground token) and removes the footer divider. It is meant to sit on colored backgrounds / pages so the underlying color shows through. The comparison below uses a neutral-tinted container: the default keeps the footer divider, while ghost is pure surface with no divider.
+
+<DemoBlock title="ghost transparent background (tinted container comparison)">
+  <div style="width: 100%; max-width: 640px; background: var(--oas-color-bg-hover); border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)">
+    <oas-page-header ghost title="User settings" subtitle="ghost: surface shows through, no divider" back>
+      <div slot="footer" style="display: flex; justify-content: flex-end">
+        <oas-button size="small" type="primary">Save</oas-button>
+      </div>
+    </oas-page-header>
+  </div>
+  <div style="width: 100%; max-width: 640px; background: var(--oas-color-bg-hover); border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)">
+    <oas-page-header title="User settings (default)" subtitle="Default: keeps the divider">
+      <div slot="footer" style="display: flex; justify-content: flex-end">
+        <oas-button size="small" type="primary">Save</oas-button>
+      </div>
+    </oas-page-header>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### Attributes
@@ -135,6 +156,7 @@ onMounted(async () => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `back` | Whether to show the back button | `boolean` | — |
+| `ghost` | Transparent-background variant: the header background rule is set to `none` (forced transparent so the container/page background shows through) and the footer divider is removed; title/text colors keep the theme foreground token; all other layout is unchanged | `boolean` | — |
 | `subtitle` | Subtitle text | `string` | — |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 

@@ -580,3 +580,96 @@ describe('OASBottomNavigation hide-on-scroll', () => {
     expect(stl).toContain('prefers-reduced-motion')
   })
 })
+
+// ===== icon-only 紧凑形态（show-label：仅选中项显示文字） =====
+
+describe('OASBottomNavigation icon-only 形态（show-label）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('show-label 列入 observedAttributes', () => {
+    expect(OASBottomNavigation.observedAttributes).toContain('show-label')
+  })
+
+  it('缺省与显式 true：data-show-label=true，label 全部保留', () => {
+    expect(mount().dataset.showLabel).toBe('true')
+    expect(mount({ 'show-label': 'true' }).dataset.showLabel).toBe('true')
+  })
+
+  it('show-label="active"：宿主 data-show-label=active，CSS 隐藏未选中项 label（选中项保留）', () => {
+    const el = mount({ 'show-label': 'active' })
+    expect(el.dataset.showLabel).toBe('active')
+    const stl = styleText(el)
+    expect(stl).toMatch(
+      /:host\(\[data-show-label='active'\]\)\s+\.tab:not\(\[aria-selected='true'\]\)\s+\.tab-label\s*\{[^}]*display:\s*none/,
+    )
+  })
+
+  it('active 模式 aria-label 补位：每项写入 label 文本（读屏不受 CSS 隐藏影响）', () => {
+    const el = mount({ 'show-label': 'active', value: 'search' })
+    const ts = tabs(el)
+    expect(ts.map((t) => t.getAttribute('aria-label'))).toEqual(['首页', '搜索', '我的'])
+  })
+
+  it('默认形态不写 aria-label（label 可见，可访问名来自可见文本）', () => {
+    const el = mount()
+    expect(tabs(el).every((t) => !t.hasAttribute('aria-label'))).toBe(true)
+  })
+
+  it('active 模式点击切换：选中态切换后 aria-label 仍全部补位', () => {
+    const el = mount({ 'show-label': 'active', value: 'home' })
+    tabs(el)[2]!.click()
+    const ts = tabs(el)
+    expect(ts[2]!.getAttribute('aria-selected')).toBe('true')
+    expect(ts.map((t) => t.getAttribute('aria-label'))).toEqual(['首页', '搜索', '我的'])
+  })
+
+  it('两通道一致：子元素通道 + show-label=active 同样标记 data-show-label 并 aria-label 补位', () => {
+    const el = mountChildren(
+      `<oas-bottom-navigation-item value="home" icon="user">首页</oas-bottom-navigation-item>
+       <oas-bottom-navigation-item value="search" icon="search">搜索</oas-bottom-navigation-item>`,
+      { 'show-label': 'active' },
+    )
+    expect(el.dataset.showLabel).toBe('active')
+    expect(tabs(el).map((t) => t.getAttribute('aria-label'))).toEqual(['首页', '搜索'])
+  })
+
+  it('show-label 非法值回落 true 且 console.warn 一次（同值去重）', () => {
+    const warns: unknown[][] = []
+    const orig = console.warn
+    console.warn = (...a: unknown[]) => warns.push(a)
+    try {
+      const el = mount({ 'show-label': 'compact' })
+      expect(el.dataset.showLabel).toBe('true')
+      expect(warns.length).toBe(1)
+      expect(String(warns[0]?.[0])).toContain('[oas-bottom-navigation]')
+      mount({ 'show-label': 'compact' })
+      expect(warns.length).toBe(1)
+    } finally {
+      console.warn = orig
+    }
+  })
+
+  it('show-label 运行时切换：data-show-label 与 aria-label 补位跟随更新', () => {
+    const el = mount()
+    expect(el.dataset.showLabel).toBe('true')
+    expect(tabs(el)[1]!.hasAttribute('aria-label')).toBe(false)
+    el.setAttribute('show-label', 'active')
+    expect(el.dataset.showLabel).toBe('active')
+    expect(tabs(el)[1]!.getAttribute('aria-label')).toBe('搜索')
+    el.setAttribute('show-label', 'true')
+    expect(el.dataset.showLabel).toBe('true')
+    expect(tabs(el)[1]!.hasAttribute('aria-label')).toBe(false)
+  })
+
+  it('active 模式下 label 仍在 DOM 中（CSS 隐藏而非移除，语义不丢）', () => {
+    const el = mount({ 'show-label': 'active' })
+    expect(tabs(el)[0]!.querySelector('.tab-label')!.textContent).toBe('首页')
+    expect(tabs(el)[1]!.querySelector('.tab-label')!.textContent).toBe('搜索')
+  })
+})
