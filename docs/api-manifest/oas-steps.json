@@ -44,6 +44,33 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "status",
+      "type": "StepStatus",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "lineless",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "simple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "separator",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "responsive",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
@@ -55,8 +82,12 @@
   ],
   "events": [
     {
-      "name": "oas-change",
+      "name": "oas-before-change",
       "detail": "{ index: idx }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ index: idx, ...(step?.id ? { id: step.id } : {}) }"
     }
   ],
   "slots": [],

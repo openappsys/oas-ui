@@ -1792,15 +1792,21 @@
     "attrs": {
       "clickable": "Steps are clickable to jump (boolean; enabled when present)",
       "current": "Current step index (0-based)",
-      "direction": "Direction (forced to horizontal in navigation mode)",
+      "direction": "Direction (forced to horizontal in navigation mode; responsive switches to vertical on narrow screens)",
       "label-placement": "Label placement: `vertical` (default, icon above title) / `horizontal` (icon and title on the same row)",
       "linear": "Linear mode: only steps with `index <= current` are clickable (boolean; enabled when present; future steps are blocked, clicks are silent)",
-      "navigation": "Navigation mode: arrow bar with a bottom Previous/Next button row (boolean; enabled when present)",
-      "progress-dot": "Progress-dot steps: dot indicators with a thin connector line (boolean; enabled when present)",
-      "steps": "`[{ title, description?, status?, icon?, disabled? }]` JSON string"
+      "lineless": "Hide all connector lines (boolean; enabled when present; compact look)",
+      "navigation": "Navigation mode: arrow bar with a bottom Previous/Next button row (boolean; enabled when present; mutually exclusive with `simple`, simple wins)",
+      "progress-dot": "Progress-dot steps: dot indicators with a thin connector line (boolean; enabled when present; mutually exclusive with `simple`, simple wins)",
+      "responsive": "Responsive vertical: renders in the vertical layout when the container width is below 640px (boolean; enabled when present; ResizeObserver, cleaned up on disconnect; ignored under navigation)",
+      "separator": "Connector style: `line` (default) / `dashed` (dashed border) / `arrow` (trailing arrowhead); not applied under navigation",
+      "simple": "Compact mode: single-row small size (smaller indicators, hidden descriptions, tighter connector lines) (boolean; enabled when present; takes priority over progress-dot/navigation)",
+      "status": "Container-level status overriding the current step (`wait` / `process` / `finish` / `error`); an explicit per-step `status` still takes the highest priority",
+      "steps": "`[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent? }]` JSON string"
     },
     "events": {
-      "oas-change": "Fired when a clickable step or a navigation button is clicked (including keyboard triggers); `detail: { index }` (0-based)"
+      "oas-change": "Fired when a clickable step or a navigation button is clicked (including keyboard triggers); `detail: { index, id? }` (0-based; `id` echoes the step `id` field, keeps `{ index }` when unset)",
+      "oas-before-change": "Fired before a step change (cancelable, `detail: { index }`); the host can `preventDefault()` to veto the change (step clicks / keyboard / navigation buttons all apply)"
     },
     "slots": {}
   },
