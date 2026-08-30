@@ -173,7 +173,7 @@ export class OASToast extends OASElement {
     // 清空请用 title=""）。命令式 transition() 以 setAttribute('title') 作数据通道，
     // 设置后 syncUi 随即吸收，宿主无残留；缓存驱动渲染，吸收触发的二次 update 幂等。
     if (this.hasAttribute('title')) {
-      const raw = this.getAttribute('title') ?? ''
+      const raw = this.getAttr('title', '')
       this.titleCache = raw === '' ? null : raw
       this.removeAttribute('title')
     }
