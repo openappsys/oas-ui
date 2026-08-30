@@ -1374,6 +1374,7 @@
     },
     "slots": {
       "": "Body content (default slot, below the title row; not rendered when empty)",
+      "avatar": "Avatar (between the back button and the title block; compose with the oas-avatar component, not rendered when empty)",
       "back-icon": "Icon slot for the back button; replaces the built-in chevron when present (empty comment nodes count as no content)",
       "breadcrumb": "Breadcrumb in its own top row; compose with the oas-breadcrumb component (not rendered when empty)",
       "extra": "Right-side action area",

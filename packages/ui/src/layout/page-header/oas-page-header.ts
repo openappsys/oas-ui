@@ -74,6 +74,9 @@ const STYLE = `
 .footer[hidden] {
   display: none;
 }
+.avatar[hidden] {
+  display: none;
+}
 .title[hidden] {
   display: none;
 }
@@ -108,6 +111,9 @@ export class OASPageHeader extends OASElement {
              </button>`
             : ''
         }
+        <div class="avatar" part="avatar" hidden>
+          <slot name="avatar"></slot>
+        </div>
         <div>
           <div class="title" part="title"></div>
           <slot name="title"></slot>
@@ -131,7 +137,7 @@ export class OASPageHeader extends OASElement {
     // 插槽内容增减（slotchange 异步触发）时重刷区块显隐/双通道；
     // 监听挂在 shadow 内部节点上，随元素整体回收，无全局泄漏
     const onSlotChange = () => this.update()
-    for (const name of ['', 'title', 'subtitle', 'back-icon', 'breadcrumb', 'footer']) {
+    for (const name of ['', 'title', 'subtitle', 'back-icon', 'breadcrumb', 'footer', 'avatar']) {
       this.shadow
         .querySelector<HTMLSlotElement>(name === '' ? 'slot:not([name])' : `slot[name="${name}"]`)
         ?.addEventListener('slotchange', onSlotChange)
@@ -162,10 +168,11 @@ export class OASPageHeader extends OASElement {
     // title / subtitle 双通道：attribute 文案为默认通道，具名插槽有真实内容时覆盖
     this.syncHeading('title', 'title', this.getAttr('title', ''))
     this.syncHeading('subtitle', 'subtitle', this.getAttr('subtitle', ''))
-    // 空区块：content / footer / breadcrumb 无插槽内容时不渲染（无空占位）
+    // 空区块：content / footer / breadcrumb / avatar 无插槽内容时不渲染（无空占位）
     this.syncBlock('content', null)
     this.syncBlock('footer', 'footer')
     this.syncBlock('breadcrumb', 'breadcrumb')
+    this.syncBlock('avatar', 'avatar')
   }
 
   /** title/subtitle 双通道：attribute 文本写入 part 元素，插槽有真实内容时隐藏之（富内容占位） */

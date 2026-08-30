@@ -14,6 +14,16 @@ A page header information area with title, subtitle, back button, breadcrumb, a 
   <oas-page-header title="User settings" subtitle="Update account and security info" back></oas-page-header>
 </DemoBlock>
 
+## Avatar
+
+The `avatar` named slot renders between the back button and the title block (a "back + avatar + title" layout); compose it with the `oas-avatar` component. The block is not rendered when empty.
+
+<DemoBlock title="avatar slot">
+  <oas-page-header title="John" subtitle="Product Designer · Beijing" back>
+    <oas-avatar slot="avatar">J</oas-avatar>
+  </oas-page-header>
+</DemoBlock>
+
 ## Breadcrumb
 
 Place a breadcrumb in its own top row via `slot="breadcrumb"`, composing the `oas-breadcrumb` component.
@@ -139,6 +149,7 @@ onMounted(async () => {
 | Name | Description |
 | --- | --- |
 | default | Body content (default slot, below the title row; not rendered when empty) |
+| `avatar` | Avatar (between the back button and the title block; compose with the oas-avatar component, not rendered when empty) |
 | `back-icon` | Icon slot for the back button; replaces the built-in chevron when present (empty comment nodes count as no content) |
 | `breadcrumb` | Breadcrumb in its own top row; compose with the oas-breadcrumb component (not rendered when empty) |
 | `extra` | Right-side action area |
