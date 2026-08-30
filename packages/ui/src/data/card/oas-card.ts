@@ -145,15 +145,22 @@ export class OASCard extends OASElement {
       .some((n) => n instanceof Element && n !== this && n.matches(INTERACTIVE_SEL))
   }
 
+  /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
+  private titleCache: string | null = null
+
   protected override render(): void {
     this.shadow.innerHTML = this.template()
     this.bind()
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（card 骨架存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（card 骨架存在）后直接接管，跳过 shadow 重建。
+   *  title 吸收下宿主无 title 属性（SSR 快照同此）——从快照标题区恢复缓存，
+   *  防水合后首次 update 把标题清掉 */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('[part="card"]')) return false
+    const snapTitle = this.shadow.querySelector('[part="title"]')?.textContent ?? ''
+    if (snapTitle !== '') this.titleCache = snapTitle
     this.bind()
     return true
   }
@@ -162,10 +169,19 @@ export class OASCard extends OASElement {
     const card = this.shadow.querySelector('[part="card"]')
     if (!card) return
     card.classList.toggle('hoverable', this.hasAttr('hoverable'))
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
-      'title',
-      '',
-    )
+
+    // title 吸收：title 渲染进可见标题区后即从宿主移除——title 是原生全局属性，
+    // 残留在宿主上会让整卡悬停弹出浏览器原生提示（与可见标题重复的视觉干扰）。
+    // 状态机：属性在场（含空串）= 宿主意图（写入新值/空串清空）→ 更新缓存并移除；
+    // 属性缺席 = 内部吸收后的常态（或宿主 removeAttribute，此时保持已渲染标题，
+    // 清空请用 title=""）。缓存驱动渲染，吸收触发的二次 update 幂等。
+    if (this.hasAttribute('title')) {
+      const raw = this.getAttribute('title') ?? ''
+      this.titleCache = raw === '' ? null : raw
+      this.removeAttribute('title')
+    }
+    const title = this.titleCache ?? ''
+    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = title
 
     // clickable：整卡承担按钮角色；聚焦后可 Enter/Space 触发
     if (this.hasAttr('clickable')) {
@@ -180,7 +196,7 @@ export class OASCard extends OASElement {
     const header = this.shadow.querySelector<HTMLElement>('[part="header"]')
     const extraSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="extra"]')
     if (header && extraSlot) {
-      const hasTitle = this.getAttr('title', '') !== ''
+      const hasTitle = title !== ''
       const hasExtra = extraSlot.assignedNodes({ flatten: true }).length > 0
       header.hidden = !hasTitle && !hasExtra
     }
