@@ -18,6 +18,11 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "ghost",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],
