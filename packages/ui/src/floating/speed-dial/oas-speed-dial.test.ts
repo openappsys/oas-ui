@@ -321,3 +321,57 @@ describe('OASSpeedDial 能力补齐批次', () => {
     expect(el.shadowRoot!.activeElement).toBe(fab(el))
   })
 })
+
+// ===== 子动作级联动画（展开按序浮现，收起同步消失；reduced-motion 归零） =====
+
+function styleText(el: OASSpeedDial): string {
+  return el.shadowRoot!.querySelector('style')!.textContent
+}
+
+describe('OASSpeedDial 子动作级联动画', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('每个 .action 渲染时内联 --cascade-i 递增（级联步进 index）', () => {
+    const el = mount()
+    const btns = actionBtns(el)
+    expect(btns.length).toBe(3)
+    btns.forEach((b, i) => {
+      expect(b.style.getPropertyValue('--cascade-i')).toBe(String(i))
+    })
+  })
+
+  it('actions 变更重渲染后 --cascade-i 按新列表重算', () => {
+    const el = mount()
+    el.setAttribute('actions', JSON.stringify([{ label: 'a' }, { label: 'b' }]))
+    const btns = actionBtns(el)
+    expect(btns.length).toBe(2)
+    expect(btns[0]!.style.getPropertyValue('--cascade-i')).toBe('0')
+    expect(btns[1]!.style.getPropertyValue('--cascade-i')).toBe('1')
+  })
+
+  it('CSS：收起态 delay 0（同步消失），展开态 delay = index × 30ms（calc 走 --cascade-i）', () => {
+    const stl = styleText(mount())
+    // 展开态：.dial.open .action 递增 delay
+    expect(stl).toMatch(
+      /\.dial\.open \.action\s*\{[^}]*transition-delay:\s*calc\(var\(--cascade-i,\s*0\)\s*\*\s*30ms\)/,
+    )
+    // 收起态：.action 基础规则 delay 0
+    expect(stl).toMatch(/\.action\s*\{[^}]*transition-delay:\s*0ms/)
+    // 子动作自身具备 opacity 过渡（级联浮现的载体）
+    expect(stl).toMatch(/\.action\s*\{[^}]*transition:\s*opacity\s+var\(--oas-transition-base\)/)
+  })
+
+  it('CSS：prefers-reduced-motion 下级联 delay 归零、过渡停用', () => {
+    const stl = styleText(mount())
+    const mq = stl.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\}/)?.[0] ?? ''
+    expect(mq).toContain('.action')
+    expect(mq).toContain('transition-delay: 0ms')
+    expect(mq).toContain('transition: none')
+  })
+})

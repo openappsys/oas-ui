@@ -476,3 +476,107 @@ describe('OASBottomNavigation 横排布局（layout）', () => {
     expect(el.dataset.layout).toBe('stacked')
   })
 })
+
+// ===== hide-on-scroll 滚动隐藏（仅 fixed 模式：向下滑出、向上滑回） =====
+
+/** happy-dom 中 window.scrollY 是只读 getter（恒 0），用 defineProperty 覆写模拟滚动位置 */
+function mockScrollY(y: number): void {
+  Object.defineProperty(window, 'scrollY', { value: y, configurable: true, writable: true })
+}
+
+/** 模拟 window 滚动：改写 scrollY 并派发 scroll 事件 */
+function scrollWindow(y: number): void {
+  mockScrollY(y)
+  window.dispatchEvent(new Event('scroll'))
+}
+
+describe('OASBottomNavigation hide-on-scroll', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    mockScrollY(0)
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('hide-on-scroll 列入 observedAttributes', () => {
+    expect(OASBottomNavigation.observedAttributes).toContain('hide-on-scroll')
+  })
+
+  it('fixed + hide-on-scroll：向下滚动滑出（加 hidden 类）、向上滚动滑回（移除）', () => {
+    const el = mount({ fixed: '', 'hide-on-scroll': '' })
+    // 启用时已登记滚动基线（scrollY 0）
+    scrollWindow(60) // delta 60 > 4 → 隐藏
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(true)
+    scrollWindow(20) // delta -40 < -4 → 显示
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(false)
+  })
+
+  it('滚动差 ≤4px 不判方向（防轻微抖动误触发）', () => {
+    const el = mount({ fixed: '', 'hide-on-scroll': '' })
+    scrollWindow(100) // delta 100 > 4 → 隐藏
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(true)
+    scrollWindow(103) // delta 3 ≤ 4：不判方向，保持隐藏
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(true)
+    scrollWindow(110) // delta 7 > 4：仍向下 → 保持隐藏
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(true)
+    scrollWindow(108) // delta -2 ≤ 4：不判方向，保持隐藏
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(true)
+    scrollWindow(100) // delta -8 < -4 → 显示
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(false)
+  })
+
+  it('非 fixed 时 hide-on-scroll 无效（不加 hidden 类）', () => {
+    const el = mount({ 'hide-on-scroll': '' })
+    scrollWindow(100)
+    scrollWindow(400)
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(false)
+  })
+
+  it('移除 hide-on-scroll/fixed 后恢复显示；重新启用后继续工作', () => {
+    const el = mount({ fixed: '', 'hide-on-scroll': '' })
+    scrollWindow(100)
+    scrollWindow(400)
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(true)
+    el.removeAttribute('hide-on-scroll')
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(false)
+    // 移除 fixed 同样恢复
+    el.setAttribute('hide-on-scroll', '')
+    el.removeAttribute('fixed')
+    scrollWindow(600)
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(false)
+    // 重新启用 fixed + hide-on-scroll：新基线后继续判方向
+    el.setAttribute('fixed', '')
+    scrollWindow(700) // 登记新基线
+    scrollWindow(760) // delta 60 → 隐藏
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(true)
+  })
+
+  it('onCleanup：断开连接移除 window scroll 监听（无泄漏），重连自动重绑', () => {
+    const el = mount({ fixed: '', 'hide-on-scroll': '' })
+    scrollWindow(100)
+    scrollWindow(400)
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(true)
+    el.remove()
+    // 监听已清理：后续滚动不再切换类
+    scrollWindow(900)
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(true)
+    // 重连后监听重绑、基线重设，功能恢复
+    document.body.appendChild(el)
+    scrollWindow(950) // 新基线
+    scrollWindow(990) // delta 40 → 隐藏
+    expect(el.classList.contains('oas-bottom-navigation--hidden')).toBe(true)
+  })
+
+  it('CSS：hidden 组合规则 translateY(100%)、transition 只动 transform 走 token、reduced-motion 停用', () => {
+    const stl = styleText(mount())
+    expect(stl).toMatch(
+      /:host\(\.oas-bottom-navigation--fixed\.oas-bottom-navigation--hidden\)\s*\{[^}]*transform:\s*translateY\(100%\)/,
+    )
+    expect(stl).toMatch(
+      /:host\(\.oas-bottom-navigation--fixed\)\s*\{[^}]*transition:\s*transform\s+var\(--oas-transition-base\)/,
+    )
+    expect(stl).toContain('prefers-reduced-motion')
+  })
+})
