@@ -25,6 +25,10 @@
   </div>
 </DemoBlock>
 
+## 级联动画
+
+展开时子动作按序级联浮现（每项 `transition-delay = index × 30ms`），收起时同步消失。内建动效、无需配置；`prefers-reduced-motion` 下级联 delay 归零、过渡停用（一次性出现，对齐可访问性）。上方各 demo 展开即生效。
+
 ## 纯文字动作
 
 `icon` 可省略，只显示 label；也支持只写 icon 不写 label。

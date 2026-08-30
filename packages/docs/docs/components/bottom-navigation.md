@@ -90,6 +90,20 @@ onMounted(() => {
   <oas-bottom-navigation fixed safe-area style="position: static; width: 100%; max-width: 480px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"搜索","icon":"search","value":"search"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
 </DemoBlock>
 
+## 滚动隐藏（hide-on-scroll）
+
+`hide-on-scroll` 布尔属性（需配合 `fixed`）：页面向下滚动时导航条 `translateY(100%)` 滑出隐藏，向上滚动时滑回显示；transition 只动 transform 不碰布局。滚动差 >4px 才判方向，避免轻微抖动误触发。
+
+> 隐藏是**纯视觉收起**：不加 `aria-hidden`（tab 语义与键盘焦点保持可达），滚回即恢复——适合浏览长内容时让出屏幕空间，回看时导航仍在。
+
+<DemoBlock title="滚动隐藏（fixed + hide-on-scroll）">
+  <div style="width: 100%; max-width: 480px">
+    <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0 0 var(--oas-space-3)">滚动本页：向下滚动时底部的导航条滑出隐藏，向上滚动滑回显示。演示条固定在视口底部（居中、max-width 480px），仅作演示。</p>
+    <div style="height: 600px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); color: var(--oas-color-text-tertiary); font-size: var(--oas-font-size-sm)">长页滚动区（向下滚动页面试试）</div>
+  </div>
+  <oas-bottom-navigation fixed hide-on-scroll style="max-width: 480px; margin: 0 auto" items='[{"label":"首页","icon":"user","value":"home"},{"label":"搜索","icon":"search","value":"search"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+</DemoBlock>
+
 ## 横排布局（layout）
 
 `layout="horizontal"`：icon 左、文字右同一行（默认 `stacked` 为 icon 上文字下）；角标仍叠在 icon 右上角；键盘 roving 与 aria 语义不变。非法值回落 `stacked` 并告警。
@@ -116,6 +130,7 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `fixed` | 固定到视口底部（`position: fixed; bottom: 0`） | `boolean` | — |
+| `hide-on-scroll` | 滚动隐藏（需配合 `fixed`）：页面向下滚动时导航条 `translateY(100%)` 滑出隐藏、向上滚动滑回显示（滚动差 >4px 判方向，transition 只动 transform）；纯视觉收起，不加 `aria-hidden`（tab 语义与键盘焦点保持可达），滚回即恢复；非 fixed 无效果 | `boolean` | — |
 | `items` | 导航项 JSON | `string` | `[]` |
 | `layout` | 布局模式：`stacked`（默认，icon 上文字下）/ `horizontal`（icon 左文字右，同一行）；非法值回落 `stacked` 并告警（同值去重） | `string` | `stacked` |
 | `safe-area` | fixed 模式下底部加安全区内边距（`env(safe-area-inset-bottom)`），避开刘海屏 home 指示条；非 fixed 无效果 | `boolean` | — |

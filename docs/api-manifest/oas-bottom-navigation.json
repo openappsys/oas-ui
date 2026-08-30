@@ -18,6 +18,11 @@
       "observed": true
     },
     {
+      "name": "hide-on-scroll",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "safe-area",
       "type": "boolean",
       "observed": true

@@ -104,6 +104,10 @@ const STYLE = `
   cursor: pointer;
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  /* 级联浮现：收起态 delay 0（同步消失）；展开态由 .dial.open .action 按 --cascade-i 递增 */
+  opacity: 0;
+  transition: opacity var(--oas-transition-base) var(--oas-ease-out);
+  transition-delay: 0ms;
 }
 .action:hover {
   border-color: var(--oas-color-primary);
@@ -149,6 +153,19 @@ const STYLE = `
 .dial.open .actions {
   transform: translate(0, 0);
 }
+/* 展开态级联：每个子动作 delay = index × 30ms 按序浮现（--cascade-i 渲染时内联写入）；
+   收起时回落基础规则 delay 0（同步消失）——delay 只作用于「展开」方向的过渡 */
+.dial.open .action {
+  opacity: 1;
+  transition-delay: calc(var(--cascade-i, 0) * 30ms);
+}
+/* 减少动效偏好：级联 delay 归零、子动作过渡停用（一次性出现，对齐可访问性） */
+@media (prefers-reduced-motion: reduce) {
+  .action {
+    transition: none;
+    transition-delay: 0ms;
+  }
+}
 `
 
 /**
@@ -170,6 +187,9 @@ const STYLE = `
  * 键盘：
  * - Esc 收起回焦主钮；actions 容器 role="menu"（子动作 role="menuitem"），
  *   方向键导航：纵向（up/down）ArrowUp/ArrowDown、横向（left/right）ArrowLeft/ArrowRight，循环 + Home/End
+ *
+ * 动效（内建，无属性）：展开时子动作按序级联浮现（每项 delay = index × 30ms），收起时同步消失；
+ * `prefers-reduced-motion` 下级联 delay 归零、过渡停用。
  *
  * 边界：点击外部/Esc 收起；文档级监听仅在展开时挂载，断开连接清理，无孤儿浮层。
  */
@@ -265,6 +285,8 @@ export class OASSpeedDial extends OASElement {
       btn.setAttribute('part', 'action')
       btn.setAttribute('role', 'menuitem')
       btn.type = 'button'
+      // 级联动画步进：展开时 delay = index × 30ms（CSS 侧 calc(var(--cascade-i) * 30ms) 消费）
+      btn.style.setProperty('--cascade-i', String(index))
       btn.addEventListener('click', () => this.select(index, action))
       if (action.icon) {
         const ic = this.createIcon(action.icon)
