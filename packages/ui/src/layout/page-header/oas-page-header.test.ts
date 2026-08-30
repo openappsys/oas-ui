@@ -310,4 +310,54 @@ describe('OASPageHeader', () => {
       expect(titleEl(el).textContent).toBe('快照标题')
     })
   })
+
+  describe('ghost 透明背景变体', () => {
+    function cssOf(el: OASPageHeader): string {
+      return el.shadowRoot!.querySelector('style')!.textContent!
+    }
+
+    it('ghost 列入 observedAttributes', () => {
+      expect(OASPageHeader.observedAttributes).toContain('ghost')
+    })
+
+    it('缺省不加 ghost 类名；设置后加 oas-page-header--ghost（移除恢复）', () => {
+      const el = new OASPageHeader()
+      el.setAttribute('title', '标题')
+      document.body.appendChild(el)
+      expect(el.classList.contains('oas-page-header--ghost')).toBe(false)
+      el.setAttribute('ghost', '')
+      expect(el.classList.contains('oas-page-header--ghost')).toBe(true)
+      el.removeAttribute('ghost')
+      expect(el.classList.contains('oas-page-header--ghost')).toBe(false)
+    })
+
+    it('CSS：ghost 下 host 背景置 none、footer 分隔线去除；默认 :host 保持现状（透明，无背景规则）', () => {
+      const el = new OASPageHeader()
+      document.body.appendChild(el)
+      const css = cssOf(el)
+      expect(css).toMatch(/:host\(\.oas-page-header--ghost\)\s*\{[^}]*background:\s*none/)
+      expect(css).toMatch(
+        /:host\(\.oas-page-header--ghost\)\s+\.footer\s*\{[^}]*border-top:\s*none/,
+      )
+      // 默认态无背景声明（现状透明底，ghost 是显式覆盖通道）
+      expect(css).not.toMatch(/:host\s*\{[^}]*background/)
+    })
+
+    it('ghost 不影响布局与结构：标题/副标题/返回/正文渲染不变', () => {
+      const el = new OASPageHeader()
+      el.setAttribute('title', '页面标题')
+      el.setAttribute('subtitle', '副标题')
+      el.setAttribute('back', '')
+      el.setAttribute('ghost', '')
+      el.innerHTML = '<p>正文</p>'
+      document.body.appendChild(el)
+      const sr = el.shadowRoot!
+      expect(sr.querySelector('[part="title"]')!.textContent).toBe('页面标题')
+      expect(sr.querySelector('[part="subtitle"]')!.textContent).toBe('副标题')
+      expect(sr.querySelector('[part="back"]')).not.toBeNull()
+      expect(sr.querySelector<HTMLElement>('[part="content"]')!.hidden).toBe(false)
+      // 文字色仍走主题前景 token（ghost 不引入新颜色）
+      expect(cssOf(el)).toContain('var(--oas-color-text-primary)')
+    })
+  })
 })
