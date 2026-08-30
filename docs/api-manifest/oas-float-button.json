@@ -46,6 +46,17 @@
     {
       "name": "aria-label",
       "observed": true
+    },
+    {
+      "name": "draggable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "magnetic",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
