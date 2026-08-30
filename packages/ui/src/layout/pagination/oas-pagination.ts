@@ -150,6 +150,11 @@ const STYLE = `
   padding: 0 var(--oas-space-1);
   font-size: var(--oas-pagination-font);
 }
+/* show-more 总数未知形态的「更多」状态指示钮：盒模型对齐页码钮，文字弱化（次级色），
+   disabled 由 .btn:disabled 透明度进一步弱化；始终不可点不可聚焦 */
+.more-btn {
+  color: var(--oas-color-text-secondary);
+}
 .simple {
   color: var(--oas-color-text-primary);
   padding: 0 var(--oas-space-1);
@@ -238,6 +243,8 @@ export class OASPagination extends OASElement {
       'href-template',
       'target',
       'responsive',
+      'show-more',
+      'total-boundary',
     ]
   }
 
@@ -284,7 +291,10 @@ export class OASPagination extends OASElement {
     // 归一化结果写入 data-size，供 CSS 尺寸规则匹配（含 provider 注入场景）
     const size = normalizePaginationSize(this.injectValue('size', 'md'))
     this.setAttribute('data-size', size)
-    const total = Math.max(1, Number(this.getAttr('total', '0')) || 0)
+    // rawTotal 保留原始值（≤0 表示总数未知，供 show-more / total-boundary 判定）；
+    // total 夹取到 ≥1 维持既有分页计算语义（单页渲染不受影响）
+    const rawTotal = Number(this.getAttr('total', '0')) || 0
+    const total = Math.max(1, rawTotal)
     const pageSize = Math.max(1, Number(this.getAttr('page-size', '10')) || 10)
     const pageCount = Math.max(1, Math.ceil(total / pageSize))
     const current = Math.min(Math.max(Number(this.getAttr('current', '1')) || 1, 1), pageCount)
@@ -312,8 +322,14 @@ export class OASPagination extends OASElement {
       })
     }
 
-    // hide-on-single：单页时不渲染（host hidden，宿主无感知；恢复多页时自动取消隐藏）
-    if (this.hasAttr('hide-on-single') && pageCount <= 1) {
+    // show-more：total≤0（总数未知）时的极简三钮形态（"上一页 / 更多 / 下一页"）。
+    // 无总页数概念，故页码序列/省略号/总数/simple/首末页/跳转/条数切换全部不适用；
+    // hide-on-single 同样不适用（未知总数不算单页）。total>0 时该属性无效，走正常渲染。
+    const showMore = this.hasAttr('show-more') && rawTotal <= 0
+
+    // hide-on-single：单页时不渲染（host hidden，宿主无感知；恢复多页时自动取消隐藏）；
+    // show-more 形态下不适用（无 pageCount 语义）
+    if (this.hasAttr('hide-on-single') && !showMore && pageCount <= 1) {
       this.setAttribute('hidden', '')
       group.setAttribute('aria-label', this.t('pagination.nav'))
       group.innerHTML = ''
@@ -376,6 +392,42 @@ export class OASPagination extends OASElement {
       fill(b)
       b.addEventListener('click', () => this.goto(targetPage))
       return b
+    }
+
+    // show-more 总数未知形态：prev / 更多（不可点状态指示）/ next 三钮。
+    // current 无上界（无总页数概念），仅保证 ≥1；prev 在首页禁用避免减到 0，
+    // next 始终可点（current+1 无上限）。href-template 链接模式对 prev/next 同样生效。
+    if (showMore) {
+      const current = Math.max(1, Number(this.getAttr('current', '1')) || 1)
+      group.appendChild(
+        nav(
+          '‹',
+          'prev',
+          this.t('pagination.prev'),
+          current <= 1,
+          current - 1,
+          '<slot name="prev-icon">‹</slot>',
+        ),
+      )
+      const moreBtn = document.createElement('button')
+      moreBtn.className = 'btn more-btn'
+      moreBtn.setAttribute('part', 'more')
+      moreBtn.type = 'button'
+      moreBtn.disabled = true
+      moreBtn.setAttribute('aria-disabled', 'true')
+      moreBtn.textContent = this.t('pagination.more')
+      group.appendChild(moreBtn)
+      group.appendChild(
+        nav(
+          '›',
+          'next',
+          this.t('pagination.next'),
+          false,
+          current + 1,
+          '<slot name="next-icon">›</slot>',
+        ),
+      )
+      return
     }
 
     // 总条数文案：show-total 布尔或 total 插槽内容任一开启时渲染；
@@ -464,7 +516,12 @@ export class OASPagination extends OASElement {
 
     // 每页条数下拉
     const sizes = this.parseSizes(this.getAttr('page-sizes', ''))
-    if (sizes.length > 0) {
+    // total-boundary：设置后仅 total > 阈值才渲染条数切换器（total ≤ 阈值隐藏）；
+    // 未设置时维持现状（有 page-sizes 即显示，零回归）；非法值（非数字）忽略
+    const boundaryRaw = Number(this.getAttr('total-boundary', ''))
+    const totalBoundary =
+      this.hasAttr('total-boundary') && Number.isFinite(boundaryRaw) ? boundaryRaw : null
+    if (sizes.length > 0 && (totalBoundary === null || rawTotal > totalBoundary)) {
       const options = new Set(sizes)
       options.add(pageSize)
       const select = document.createElement('select')
