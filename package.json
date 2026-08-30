@@ -27,17 +27,17 @@
     "check": "biome check --formatter-enabled=true ."
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.12.1",
-    "@biomejs/biome": "^2.5.8",
+    "@axe-core/playwright": "^4.13.0",
+    "@biomejs/biome": "^2.5.11",
     "@oas-ui/theme": "workspace:*",
     "@oas-ui/ui": "workspace:*",
     "@playwright/test": "^1.62.1",
-    "@types/node": "^26.2.0",
-    "happy-dom": "^20.11.2",
+    "@types/node": "^26.4.0",
+    "happy-dom": "^20.11.15",
     "markdownlint-cli2": "^0.23.2",
     "typescript": "^7.0.2",
-    "vite": "^8.2.1",
+    "vite": "^8.2.2",
     "vite-plugin-dts": "^5.0.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }
