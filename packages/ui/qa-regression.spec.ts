@@ -7370,4 +7370,22 @@ test('steps 点状/普通模式连接线对准指示器中心（基线间隙 + �
     return { dotCenter: Math.round(dotCenter * 10) / 10, lineCenter: Math.round(lineCenter * 10) / 10 }
   })
   expect(Math.abs(result.dotCenter - result.lineCenter), `圆点中心 ${result.dotCenter} 应与线中心 ${result.lineCenter} 对齐（±0.5px）`).toBeLessThanOrEqual(0.5)
+  // 普通模式（大圆圈 28 盒含 border）：圆心 sm/2+2，线中心同——三模式（普通/点状/纵向）几何一致
+  const normal = await page.evaluate(async () => {
+    const el = [...document.querySelectorAll('oas-steps')].find(
+      (x) => !x.hasAttribute('progress-dot') && !x.hasAttribute('navigation') && x.getAttribute('direction') !== 'vertical',
+    )!
+    el.scrollIntoView({ block: 'center' })
+    await new Promise((r) => setTimeout(r, 200))
+    const root = el.shadowRoot!
+    const item = root.querySelector('[part="item"]')!
+    const icon = item.querySelector('.icon')!
+    const ir = icon.getBoundingClientRect()
+    const after = getComputedStyle(item, '::after')
+    return {
+      circle: Math.round((ir.top + ir.height / 2) * 10) / 10,
+      line: Math.round((item.getBoundingClientRect().top + parseFloat(after.top) + parseFloat(after.height) / 2) * 10) / 10,
+    }
+  })
+  expect(Math.abs(normal.circle - normal.line), `普通模式圆心 ${normal.circle} 应与线中心 ${normal.line} 对齐（±0.5px）`).toBeLessThanOrEqual(0.5)
 })
