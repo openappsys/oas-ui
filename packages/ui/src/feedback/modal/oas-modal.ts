@@ -459,7 +459,7 @@ export class OASModal extends OASElement {
     // 属性缺席 = 内部吸收后的常态（或宿主 removeAttribute，此时保持已渲染标题，
     // 清空请用 title=""）。缓存驱动渲染，吸收触发的二次 update 幂等。
     if (this.hasAttribute('title')) {
-      const raw = this.getAttribute('title') ?? ''
+      const raw = this.getAttr('title', '')
       this.titleCache = raw === '' ? null : raw
       this.removeAttribute('title')
     }

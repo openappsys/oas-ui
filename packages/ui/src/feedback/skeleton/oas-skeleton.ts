@@ -95,7 +95,7 @@ export class OASSkeleton extends OASElement {
     // 原始文本与原生悬浮提示。状态机：属性在场 = 宿主意图（开关在场，含空串）→
     // 更新缓存（非 null 哨兵）并移除；属性缺席 = 吸收后常态，缓存驱动重建幂等。
     if (this.hasAttribute('title')) {
-      const raw = this.getAttribute('title') ?? ''
+      const raw = this.getAttr('title', '')
       this.titleCache = raw === '' ? '1' : raw
       this.removeAttribute('title')
     }
