@@ -133,11 +133,13 @@ describe('OASSteps', () => {
     expect(el.getAttribute('current')).toBe('0')
   })
 
-  it('连接线垂直/水平居中于指示器（top/left 为控件高度一半）', () => {
+  it('连接线中心对准指示器中心（线高/宽 2px，top/left 为控件高度一半减 1px）', () => {
     const el = mount({})
     const css = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(css).toContain('top: calc(var(--oas-control-height-sm) / 2)')
-    expect(css).toContain('left: calc(var(--oas-control-height-sm) / 2)')
+    expect(css).toContain('top: calc(var(--oas-control-height-sm) / 2 - 1px)')
+    expect(css).toContain('left: calc(var(--oas-control-height-sm) / 2 - 1px)')
+    // 图标 top 对齐行盒顶（消除行内基线间隙，圆心恒定于 item 顶部 sm/2 处）
+    expect(css).toMatch(/\.icon\s*\{[^}]*vertical-align:\s*top/)
   })
 
   it('非 clickable：无按钮语义、点击不派发 oas-change', () => {
