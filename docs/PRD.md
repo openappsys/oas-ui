@@ -939,6 +939,29 @@ table 组件按能力并集补齐（列设置/多列排序/多级表头/内置�
 - 全量 e2e 1382 PASS（含 qa-regression 真实 hover 断言：computed 底色变化 + cursor + 图标 opacity 0→1）
 - 浏览器实测明暗主题 hover 铅笔可见；console 零告警
 
+## v2.4.0 步骤面板一体机 oas-stepper 🚧 进行中
+
+### 功能定义
+
+步骤驱动的分步内容面板——头部步骤条（可点击跳步）+ 联动内容面板（仅当前步显示），向导 / 表单分步 / 结账流程场景。双组件同构 `oas-tabs` / `oas-tab-panel` 的 value 关联模式：`oas-stepper` 管步骤头、`oas-stepper-panel` 管内容、value 关联显示。
+
+### 详细需求
+
+- **oas-stepper**（步骤头）：属性 `steps`（JSON 数组 `{title, description?, icon?, disabled?, status?}`，语义对齐 `oas-steps` 的 StepItem 减去面板无关项）、`current`（双向）、`linear`（布尔，禁跳未完成步）、`clickable`（默认 true）、`direction`（horizontal/vertical，默认 horizontal）、`size`（五档 xs~xl，非法值回落 medium + dev 告警）
+- **oas-stepper-panel**（内容面板）：属性 `value`（关联步骤序号字符串，如 `value="0"`）；仅 current 匹配的 panel 可见；面板内容走默认插槽
+- **事件**：`oas-change` detail `{ index }`（可点击跳步时，bubbles + composed）；prev/next 不内置（宿主用按钮设 current，demo 演示）
+- **键盘/ARIA**：头部 `role=tablist` + 每 tab `role=tab` + `aria-selected` + `aria-disabled`（disabled 步）；roving tabindex 左右方向键（横向）/ 上下（纵向）+ Home/End；Enter/Space 激活跳步（linear 时未完成步禁跳）；面板 `role=tabpanel` + `aria-labelledby` 关联
+- **SSR**：`template()`/`hydrate()` 双路径（对齐全库惯例）；DSD 白名单暂不进（后续批次）
+
+### 验收标准
+
+1. 双组件 demo 进文档站（中英双版），覆盖基础 / 线性禁跳 / 竖向 / 面板联动 / 自定义步骤内容插槽
+2. 单测全覆盖：渲染 / current 双向 / linear 禁跳 / disabled / 键盘 roving+Home/End+Enter / panel 可见性切换 value 关联 / 方向键纵向 / direction vertical / 非法值回落 / DSD 水合双路径
+3. current 双向：点击跳步写回 current、外部设 current 即时同步 `aria-selected` 与面板显隐
+4. 键盘流：横向左右 / 纵向上下 / Home/End / Enter/Space，禁步跳过、linear 禁跳
+5. 颜色只走 token（含 dark）、无硬编码色值；`pnpm test` / typecheck / build / api:check 全绿
+6. `oas-change` 事件 bubbles + composed，detail 结构 `{ index }`
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
