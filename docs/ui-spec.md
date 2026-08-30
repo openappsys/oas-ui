@@ -90,6 +90,7 @@
 - 自定义事件：`oas-*` 前缀 + 动词（`oas-click` `oas-change` `oas-clear`），`detail` 携带数据，`bubbles: true, composed: true`
 - 暴露样式点：组件根元素 `::part(host)`，交互元素 `::part(button)` / `::part(input)` 等；语义部件名全部小写连字符
 - 属性命名：kebab-case（HTML 属性 `type` `size` `disabled` `loading`），对齐主流组件库用户心智
+- **原生全局属性吸收**：`title` 等原生全局属性作组件 API 时，组件读取渲染进可见区域后**必须从宿主移除**（参照 `oas-card` 的吸收状态机：属性在场=宿主意图→更新缓存并移除；属性缺席=缓存驱动渲染幂等；SSR 白名单组件 hydrate 时从快照恢复缓存）——残留在宿主上会触发浏览器原生悬浮提示（与可见内容重复的视觉干扰，且原生 tooltip 不可控、可访问性无保证）。新组件 API 起名时优先避开原生全局属性名（`title` `label` `hidden` 等）
 
 ### 2.3 状态一致性
 
