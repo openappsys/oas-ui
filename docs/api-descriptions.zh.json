@@ -1418,7 +1418,9 @@
       "hide-on-single": "单页（pageCount ≤ 1）时整个组件不渲染",
       "href-template": "链接模式：设置后页码/前后/首末钮渲染为 `<a href>`（`{page}` 占位符替换为目标页），中键/右键/新标签原生可用；disabled 时降级为不可点击的 span",
       "target": "链接模式下透传给 `<a target>`（如 `_blank`）；仅在设置 `href-template` 时生效",
-      "responsive": "响应式：组件宽度 < 640px 时自动按 simple 极简形态渲染（ResizeObserver 监听容器宽度，恢复后还原）；与显式 `simple` 等效"
+      "responsive": "响应式：组件宽度 < 640px 时自动按 simple 极简形态渲染（ResizeObserver 监听容器宽度，恢复后还原）；与显式 `simple` 等效",
+      "show-more": "总数未知形态：total ≤ 0 时渲染「上一页 / 更多 / 下一页」三钮（更多钮为不可点状态指示，样式对齐页码钮但弱化；prev/next 点击 current±1 并派发 oas-change）；total > 0 时无效走正常页码渲染；show-jumper / page-sizes / hide-on-single 均不适用",
+      "total-boundary": "条数切换器显隐阈值：设置后仅 total 大于该值才渲染每页条数下拉（total ≤ 阈值隐藏）；未设置时维持现状（有 page-sizes 即显示）"
     },
     "events": {
       "oas-change": "翻页 `{ page }`；切换每页条数 `{ page: 1, pageSize }`；快速跳转 `{ page, pageSize }`",
