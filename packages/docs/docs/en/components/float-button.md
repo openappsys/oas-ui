@@ -87,6 +87,19 @@ Clicking dispatches `oas-click` (bubbles + composed), and `detail.originalEvent`
   <oas-float-button badge="5" style="position: static; box-shadow: none" onoas-click="message.info('Float button clicked, detail.originalEvent type: ' + event.detail.originalEvent.type)"></oas-float-button>
 </DemoBlock>
 
+## Hover hint
+
+The hover hint is composed by the host: wrap `oas-float-button` with `oas-tooltip` — the tooltip treats its first child as the trigger anchor and shows the hint on hover / keyboard focus (in real fixed bottom-right usage this works the same, as the tooltip positions against the anchor). The component ships no built-in tooltip prop, keeping the FAB single-responsibility and the hint logic in the composition layer.
+
+<DemoBlock title="Tooltip composition">
+  <oas-tooltip content="New document" placement="top">
+    <oas-float-button style="position: static; box-shadow: none"></oas-float-button>
+  </oas-tooltip>
+  <oas-tooltip content="Send feedback" placement="left">
+    <oas-float-button type="default" style="position: static; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  </oas-tooltip>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
