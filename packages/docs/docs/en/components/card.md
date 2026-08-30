@@ -130,7 +130,7 @@ onMounted(async () => {
 | `cover-alt` | Cover image alt text (accessibility) | `string` | — |
 | `cover-src` | Cover image URL placed at the top of the card (object-fit: cover) | `string` | — |
 | `hoverable` | Whether to enable the hover shadow (shadow + lift + pointer) | `boolean` | — |
-| `title` | Card title | `string` | — |
+| `title` | Card title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 
 ### Events
 

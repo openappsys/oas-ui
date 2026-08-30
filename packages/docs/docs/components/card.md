@@ -131,7 +131,7 @@ onMounted(async () => {
 | `cover-alt` | 封面图 alt 文本（无障碍） | `string` | — |
 | `cover-src` | 封面图 URL，置于卡片顶部（object-fit: cover 自适应裁切） | `string` | — |
 | `hoverable` | 是否开启悬浮阴影（阴影 + 上浮提升 + 指针） | `boolean` | — |
-| `title` | 卡片标题 | `string` | — |
+| `title` | 卡片标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串） | `string` | — |
 
 ### 事件
 
