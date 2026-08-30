@@ -10,6 +10,21 @@ export interface BottomNavItem {
   badge?: string
 }
 
+export type BottomNavLayout = 'stacked' | 'horizontal'
+
+const VALID_LAYOUTS: readonly BottomNavLayout[] = ['stacked', 'horizontal']
+const warnedLayouts = new Set<string>()
+
+/** 非法 layout 归一化：回落 stacked 并在 dev 下 console.warn 一次（同值去重，对齐库内惯例） */
+function normalizeLayout(raw: string): BottomNavLayout {
+  if ((VALID_LAYOUTS as readonly string[]).includes(raw)) return raw as BottomNavLayout
+  if (!warnedLayouts.has(raw)) {
+    warnedLayouts.add(raw)
+    console.warn(`[oas-bottom-navigation] 非法 layout "${raw}"，已回落 stacked；合法值：stacked/horizontal`)
+  }
+  return 'stacked'
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -61,6 +76,11 @@ const STYLE = `
 .tab[aria-disabled='true'] {
   color: var(--oas-color-text-disabled);
   cursor: not-allowed;
+}
+/* 横排布局：icon 左、文字右（同一行）；icon 与文字 gap 走间距 token */
+:host([data-layout='horizontal']) .tab {
+  flex-direction: row;
+  gap: var(--oas-space-2);
 }
 .tab:focus-visible {
   outline: none;
@@ -115,9 +135,11 @@ const STYLE = `
  * oas-bottom-navigation —— 移动端底部导航。
  *
  * 属性（kebab-case）：
- * - `items`：JSON `[{ label, value, icon?, disabled? }]`，icon 取 @oas-ui/icons 的 iconRegistry
+ * - `items`：JSON `[{ label, value, icon?, disabled?, badge? }]`，icon 取 @oas-ui/icons 的 iconRegistry
  * - `value`：激活项 value；未设置默认激活第一个可用项
  * - `fixed`：布尔，置顶 fixed 底部（默认静态，demo 用 static + 说明）
+ * - `layout`：`stacked`（默认，icon 上文字下）/ `horizontal`（icon 左文字右，同一行）；
+ *   非法值回落 stacked 并告警（同值去重）
  *
  * 事件：`oas-change` detail `{ value }`
  *
@@ -127,7 +149,7 @@ const STYLE = `
  */
 export class OASBottomNavigation extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['items', 'value', 'fixed', 'safe-area']
+    return ['items', 'value', 'fixed', 'safe-area', 'layout']
   }
 
   private itemsList: BottomNavItem[] = []
@@ -169,6 +191,8 @@ export class OASBottomNavigation extends OASElement {
   protected override update(): void {
     this.classList.toggle('oas-bottom-navigation--fixed', this.hasAttr('fixed'))
     this.classList.toggle('oas-bottom-navigation--safe-area', this.hasAttr('safe-area'))
+    // 横排布局标记（CSS 钩子）：非法值回落 stacked + dev 告警（同值去重）
+    this.dataset.layout = normalizeLayout(this.getAttr('layout', 'stacked'))
     // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
     this.ensureChildObserver()
     const itemsRaw = this.getAttribute('items') ?? ''

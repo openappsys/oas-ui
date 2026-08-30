@@ -21,6 +21,12 @@
       "name": "safe-area",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "layout",
+      "type": "string",
+      "default": "stacked",
+      "observed": true
     }
   ],
   "props": [],
