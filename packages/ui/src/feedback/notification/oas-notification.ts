@@ -100,6 +100,10 @@ export class OASNotification extends OASElement {
   }
 
   private timer: ReturnType<typeof setTimeout> | null = null
+  /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题）。
+   *  notification 为命令式 API 组件（title 非观察属性，命令式层挂载前一次性写入），
+   *  吸收只在 render 首帧完成——真实使用路径（命令式 API）已被完整覆盖 */
+  private titleCache: string | null = null
 
   protected override render(): void {
     const type = (this.getAttr('type', 'info') || 'info') as NotificationType
@@ -117,9 +121,19 @@ export class OASNotification extends OASElement {
         </div>
       </div>
     `
+    // title 吸收：title 渲染进可见标题区后即从宿主移除——title 是原生全局属性，
+    // 残留在宿主上会让整组件悬停弹出浏览器原生提示（与可见标题重复的视觉干扰）。
+    // 状态机：属性在场（含空串）= 宿主意图（写入新值/空串清空）→ 更新缓存并移除；
+    // 属性缺席 = 内部吸收后的常态（或宿主 removeAttribute，此时保持已渲染标题，
+    // 清空请用 title=""）。缓存驱动渲染，吸收触发的二次 update 幂等。
+    if (this.hasAttribute('title')) {
+      const raw = this.getAttribute('title') ?? ''
+      this.titleCache = raw === '' ? null : raw
+      this.removeAttribute('title')
+    }
     const title = this.shadow.querySelector('.title')!
     const desc = this.shadow.querySelector('.description')!
-    title.textContent = this.getAttr('title', '')
+    title.textContent = this.titleCache ?? ''
     desc.textContent = this.getAttr('description', '')
     this.shadow
       .querySelector<HTMLButtonElement>('.close')

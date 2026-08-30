@@ -500,7 +500,7 @@ onMounted(() => {
 | `open` | 受控显示（布尔属性，存在即显示） | `boolean` | — |
 | `open-delay` | 通用打开延迟（毫秒，默认 0；非 hover 触发路径生效，hover 路径优先 hover-delay） | `string` | — |
 | `placement` | 浮层位置（12 向：四基向 top/bottom/left/right 各配 -start/-end 交叉轴对齐） | `string` | `top` |
-| `title` | 标题文本 | `string` | — |
+| `title` | 标题文本（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串） | `string` | — |
 | `trigger` | 触发方式：`click`（默认）/ `hover` / `focus` / `contextmenu` / `manual`，空格分隔可多选（如 `"click hover"`） | `string` | `click` |
 | `trigger-keys` | 指定按键在触发元素聚焦时切换开合（空格分隔，如 `"Enter Space"`）；未设置无按键绑定 | `string` | — |
 | `virtual` | 虚拟触发模式（同 tooltip，不依赖锚点元素） | `boolean` | — |

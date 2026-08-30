@@ -66,7 +66,7 @@ The `oas-descriptions-item` font size follows the outer context (inherited) by d
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `column` | Columns per row | `string` | `3` |
-| `title` | Title | `string` | — |
+| `title` | Title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 
 | Name | Description |
 | --- | --- |

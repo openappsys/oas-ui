@@ -112,6 +112,8 @@ export class OASToast extends OASElement {
   action: ToastAction | null = null
 
   private timer: ReturnType<typeof setTimeout> | null = null
+  /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
+  private titleCache: string | null = null
 
   protected override render(): void {
     this.shadow.innerHTML = `
@@ -164,10 +166,18 @@ export class OASToast extends OASElement {
       .querySelector<HTMLElement>('[part="box"]')
       ?.setAttribute('role', type === 'error' ? 'alert' : 'status')
     this.shadow.querySelector<HTMLElement>('[part="icon"]')!.textContent = ICONS[type] ?? ''
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr(
-      'title',
-      '',
-    )
+    // title 吸收：title 渲染进可见标题区后即从宿主移除——title 是原生全局属性，
+    // 残留在宿主上会让整组件悬停弹出浏览器原生提示（与可见标题重复的视觉干扰）。
+    // 状态机：属性在场（含空串）= 宿主意图（写入新值/空串清空）→ 更新缓存并移除；
+    // 属性缺席 = 内部吸收后的常态（或宿主 removeAttribute，此时保持已渲染标题，
+    // 清空请用 title=""）。命令式 transition() 以 setAttribute('title') 作数据通道，
+    // 设置后 syncUi 随即吸收，宿主无残留；缓存驱动渲染，吸收触发的二次 update 幂等。
+    if (this.hasAttribute('title')) {
+      const raw = this.getAttribute('title') ?? ''
+      this.titleCache = raw === '' ? null : raw
+      this.removeAttribute('title')
+    }
+    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.titleCache ?? ''
     const desc = this.getAttr('description', '')
     const descEl = this.shadow.querySelector<HTMLElement>('[part="description"]')
     if (descEl) {

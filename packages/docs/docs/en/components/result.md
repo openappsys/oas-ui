@@ -36,7 +36,7 @@ A result feedback page supporting four states: success, error, warning, and info
 | --- | --- | --- | --- |
 | `description` | Description text | `string` | — |
 | `status` | Result status | `string` | `success` |
-| `title` | Title text | `string` | — |
+| `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 
 ### Slots
 

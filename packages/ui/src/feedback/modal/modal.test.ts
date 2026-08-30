@@ -56,7 +56,9 @@ describe('modal 命令式 API', () => {
     })
     await Promise.resolve()
     const el = document.body.querySelector('oas-modal')!
-    expect(el.getAttribute('title')).toBe('确认删除')
+    // title 吸收：宿主原生 title 被吸收移除，标题渲染进可见标题区（无残留原生悬浮提示）
+    expect(el.getAttribute('title')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('确认删除')
     expect(el.getAttribute('ok-text')).toBe('狠心删除')
     expect(el.getAttribute('cancel-text')).toBe('再想想')
     expect(el.textContent).toContain('删除后不可恢复')

@@ -38,4 +38,4 @@ A placeholder skeleton for loading states, supporting an avatar, title, multiple
 | `active` | Whether to enable the shimmer animation | `boolean` | — |
 | `avatar` | Whether to show the avatar placeholder | `boolean` | — |
 | `rows` | Number of paragraph rows | `string` | `3` |
-| `title` | Whether to show the title placeholder | `boolean` | — |
+| `title` | Whether to show the title placeholder (title is a presence-only switch, its value is not rendered; absorbed from the host on read so no native hover tooltip remains) | `boolean` | — |

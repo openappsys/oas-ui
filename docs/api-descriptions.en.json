@@ -13,7 +13,7 @@
   "oas-alert": {
     "attrs": {
       "closeable": "Whether to show the close button",
-      "title": "Title text",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)",
       "type": "Alert type"
     },
     "events": {
@@ -625,7 +625,7 @@
   "oas-descriptions": {
     "attrs": {
       "column": "Columns per row",
-      "title": "Title"
+      "title": "Title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)"
     },
     "events": {},
     "slots": {}
@@ -661,7 +661,7 @@
       "no-mask-close": "Disable closing on mask click",
       "placement": "Slide direction",
       "size": "Preset size or a concrete value: `small` (256px) / `medium` (378px) / `large` (736px), or write directly like `512px`, `40%`",
-      "title": "Title text",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)",
       "visible": "Whether shown",
       "width": "Drawer width (px or percentage), takes precedence over `size`"
     },
@@ -916,7 +916,7 @@
       "skidding": "Cross-axis offset in px, shifts along the axis perpendicular to the main axis",
       "sticky": "Scroll stickiness: `partial` (default) repositions with the anchor on scroll and hides per `hide-when-detached` once the anchor leaves the viewport (or clamps to the viewport edge when not enabled); `always` pins the card to the viewport edge once the anchor scrolls out (stays visible); `off` disables scroll repositioning",
       "collision-boundary": "Custom collision boundary (selector string, first match in multi-ancestor scenes; the `collisionBoundary` property accepts an element directly): flips and clamps against that element's rect instead of the viewport",
-      "title": "Title text",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)",
       "width": "Width customization: number (px) or `trigger`/`target` (same width as the trigger); falls back to CSS min-width"
     },
     "events": {
@@ -1073,7 +1073,7 @@
   },
   "oas-list-item": {
     "attrs": {
-      "title": "Item title"
+      "title": "Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)"
     },
     "events": {},
     "slots": {
@@ -1266,7 +1266,7 @@
       "no-footer": "Hide footer action buttons",
       "no-mask-close": "Disable closing on mask click",
       "ok-text": "OK button label; defaults to locale `modal.ok`",
-      "title": "Title text",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)",
       "type": "Semantic variant: `info`/`success`/`warning`/`error`, renders the matching semantic icon above the content",
       "visible": "Whether shown",
       "width": "Dialog width (px or percentage)"
@@ -1284,7 +1284,7 @@
       "progress-position": "Progress bar position: `bottom` (default) / `top`",
       "scrollable": "Scroll inside the card when the content is too long; enabled by default, pass `false` to disable",
       "show-progress": "Show the auto-close countdown progress bar (animates in sync with `duration`)",
-      "title": "Title text",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)",
       "type": "Notification type: `info`/`success`/`warning`/`error`"
     },
     "events": {},
@@ -1367,7 +1367,7 @@
     "attrs": {
       "back": "Whether to show the back button",
       "subtitle": "Subtitle text",
-      "title": "Title text"
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)"
     },
     "events": {
       "oas-back": "The back button was clicked"
@@ -1457,7 +1457,7 @@
     "attrs": {
       "open": "Whether the bubble is shown",
       "position": "Bubble position",
-      "title": "Confirmation text"
+      "title": "Confirmation text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)"
     },
     "events": {
       "oas-cancel": "Cancel: cancel button / Esc / outside click",
@@ -1491,7 +1491,7 @@
       "open": "Controlled display (boolean attribute; shows when present)",
       "open-delay": "Generic open delay in ms (default 0; used by non-hover trigger paths, hover paths prefer hover-delay)",
       "placement": "Popup placement (12 directions: four bases top/bottom/left/right each with -start/-end cross-axis alignment)",
-      "title": "Title text",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)",
       "trigger": "Trigger method: `click` (default) / `hover` / `focus` / `contextmenu` / `manual`, space separated for multiple (e.g. `\"click hover\"`)",
       "trigger-keys": "Toggle open when the listed keys are pressed while the trigger is focused (space separated, e.g. `\"Enter Space\"`); no key binding when unset",
       "virtual": "Virtual trigger mode (same as tooltip; no anchor element)",
@@ -1558,7 +1558,7 @@
     "attrs": {
       "description": "Description text",
       "status": "Result status",
-      "title": "Title text"
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)"
     },
     "events": {},
     "slots": {
@@ -1671,7 +1671,7 @@
       "active": "Whether to enable the shimmer animation",
       "avatar": "Whether to show the avatar placeholder",
       "rows": "Number of paragraph rows",
-      "title": "Whether to show the title placeholder"
+      "title": "Whether to show the title placeholder (title is a presence-only switch, its value is not rendered; absorbed from the host on read so no native hover tooltip remains)"
     },
     "events": {},
     "slots": {}

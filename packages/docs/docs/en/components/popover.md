@@ -488,7 +488,7 @@ onMounted(() => {
 | `open` | Controlled display (boolean attribute; shows when present) | `boolean` | — |
 | `open-delay` | Generic open delay in ms (default 0; used by non-hover trigger paths, hover paths prefer hover-delay) | `string` | — |
 | `placement` | Popup placement (12 directions: four bases top/bottom/left/right each with -start/-end cross-axis alignment) | `string` | `top` |
-| `title` | Title text | `string` | — |
+| `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 | `trigger` | Trigger method: `click` (default) / `hover` / `focus` / `contextmenu` / `manual`, space separated for multiple (e.g. `"click hover"`) | `string` | `click` |
 | `trigger-keys` | Toggle open when the listed keys are pressed while the trigger is focused (space separated, e.g. `"Enter Space"`); no key binding when unset | `string` | — |
 | `virtual` | Virtual trigger mode (same as tooltip; no anchor element) | `boolean` | — |
