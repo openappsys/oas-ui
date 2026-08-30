@@ -412,6 +412,8 @@ describe('OASPagination', () => {
     expect(css).not.toContain('.page[aria-current')
     const active = el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')!
     expect(active.classList.contains('btn')).toBe(true)
+    // hover 规则排除当前页：否则 hover 的 color: primary 打在主色底上 → 蓝底蓝字不可读
+    expect(css).toContain(".btn:hover:not(:disabled):not([aria-disabled='true']):not([aria-current='true'])")
   })
 
   // ===== 批次 14：pager-count 页码按钮上限 =====
