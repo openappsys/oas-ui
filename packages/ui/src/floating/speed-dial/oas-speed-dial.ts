@@ -14,6 +14,16 @@ export type SpeedDialOpenReason = 'toggle' | 'outside' | 'escape' | 'select' | '
 /** hover 触发的离开宽限期（ms）：指针离开后短暂滞留防误收 */
 const HOVER_LEAVE_GRACE = 120
 
+/** 展开几何：linear（默认，链式排布）/ circle（整圆）/ semi-circle（半圆）/ quarter-circle（四分之一圆） */
+const VALID_GEOMETRY = ['linear', 'circle', 'semi-circle', 'quarter-circle'] as const
+type Geometry = (typeof VALID_GEOMETRY)[number]
+
+/** 圆弧半径默认值（px） */
+const DEFAULT_RADIUS = 96
+
+/** direction → 主方向数学角度（°）：0=正右，90=正上，-90=正下，180=正左（y 轴向上的极坐标） */
+const DIR_ANGLE: Record<string, number> = { up: 90, right: 0, down: -90, left: 180 }
+
 const STYLE = `
 :host {
   display: inline-block;
@@ -108,7 +118,8 @@ const STYLE = `
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   /* 级联浮现：收起态 delay 0（同步消失）；展开态由 .dial.open .action 按 --cascade-i 递增 */
   opacity: 0;
-  transition: opacity var(--oas-transition-base) var(--oas-ease-out);
+  transition: opacity var(--oas-transition-base) var(--oas-ease-out),
+    transform var(--oas-transition-base) var(--oas-ease-out);
   transition-delay: 0ms;
 }
 .action:hover {
@@ -210,6 +221,24 @@ const STYLE = `
 .dial.open .actions {
   transform: translate(0, 0);
 }
+/* 圆弧几何展开（.arc 由 JS 按 geometry !== linear 挂在宿主）：
+   容器铺满主按钮区域作圆心（覆盖线性 data-dir 的偏移定位），子动作绝对定位堆叠圆心，
+   展开时沿各自圆周偏移（--t-x/--t-y 由 JS 按 geometry/radius/direction/index 计算） */
+:host(.arc) .dial[data-dir] .actions {
+  inset: 0;
+  transform: none;
+}
+:host(.arc) .dial .action {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  /* 圆弧模式下动作只沿圆周偏移，不参与 flex 链式排布 */
+  flex-shrink: 0;
+}
+:host(.arc) .dial.open .action {
+  transform: translate(calc(var(--t-x, 0px) - 50%), calc(var(--t-y, 0px) - 50%));
+}
 /* 展开态级联：每个子动作 delay = index × 30ms 按序浮现（--cascade-i 渲染时内联写入）；
    收起时回落基础规则 delay 0（同步消失）——delay 只作用于「展开」方向的过渡 */
 .dial.open .action {
@@ -236,6 +265,10 @@ const STYLE = `
  *   只渲染 icon 为圆形小钮，label 视觉隐藏并在 hover/focus-visible 时作为气泡浮现；
  *   无 icon 的 hide-label 动作回落显示 label（渲染降级，console.warn 告警一次）
  * - `direction`：`up`/`down`/`left`/`right`（默认 up）
+ * - `geometry`：展开几何 `linear`（默认，链式排布）/ `circle`（整圆，从正上均分）/
+ *   `semi-circle`（半圆，以 `direction` 为轴 180° 张开）/ `quarter-circle`
+ *   （90° 起始象限随 direction：up=左上、down=右下、left=左下、right=右上）；非法值回落 linear
+ * - `radius`：圆弧半径（px，默认 96，非法值回落 96；仅 geometry 非 linear 时生效）
  * - `open`：展开态（受控）
  * - `trigger`：`click`（默认）| `hover`——hover 派 mouseenter 展开、mouseleave 收起（120ms 离开宽限期），触屏自动回落 click
  *
@@ -257,13 +290,17 @@ const STYLE = `
  */
 export class OASSpeedDial extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['actions', 'direction', 'open', 'trigger']
+    return ['actions', 'direction', 'open', 'trigger', 'geometry', 'radius']
   }
 
   private actionsList: SpeedDialAction[] = []
   private dial: HTMLElement | null = null
   private fab: HTMLButtonElement | null = null
   private actionsEl: HTMLElement | null = null
+  /** 展开几何（合法化后的值，linear 默认） */
+  private geometry: Geometry = 'linear'
+  /** 圆弧半径（px，合法化后，非法回落 96） */
+  private radius: number = DEFAULT_RADIUS
   /** hover 离开宽限期计时器 */
   private hoverHideTimer: ReturnType<typeof setTimeout> | null = null
   /** hover 触发展开时置位：syncOpen 跳过「自动聚焦首项」，不抢焦点 */
@@ -324,6 +361,7 @@ export class OASSpeedDial extends OASElement {
   protected override update(): void {
     this.parseActions()
     this.syncDirection()
+    this.syncGeometry()
     this.syncOpen()
   }
 
@@ -409,6 +447,62 @@ export class OASSpeedDial extends OASElement {
   private validDirection(): string {
     const dir = this.getAttr('direction', 'up')
     return ['up', 'down', 'left', 'right'].includes(dir) ? dir : 'up'
+  }
+
+  // —— 圆弧几何展开 ——
+
+  /** geometry 合法化：非法值回落 linear（零回归） */
+  private validGeometry(): Geometry {
+    const g = this.getAttr('geometry', 'linear')
+    return (VALID_GEOMETRY as readonly string[]).includes(g) ? (g as Geometry) : 'linear'
+  }
+
+  /** radius 合法化：非数字/负数回落默认 96 */
+  private validRadius(): number {
+    const raw = parseFloat(this.getAttr('radius', String(DEFAULT_RADIUS)))
+    return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_RADIUS
+  }
+
+  /** 同步几何态：宿主 data-geometry / arc 类 + 每个动作的圆弧偏移（--t-x/--t-y） */
+  private syncGeometry(): void {
+    this.geometry = this.validGeometry()
+    this.radius = this.validRadius()
+    this.dial?.setAttribute('data-geometry', this.geometry)
+    // 宿主 arc 类驱动圆弧 CSS（linear 时移除，零回归）
+    this.classList.toggle('arc', this.geometry !== 'linear')
+    const btns = this.actionButtons()
+    btns.forEach((btn, i) => {
+      const [tx, ty] = this.arcOffset(i, btns.length)
+      btn.style.setProperty('--t-x', `${tx}px`)
+      btn.style.setProperty('--t-y', `${ty}px`)
+    })
+  }
+
+  /**
+   * 第 index 个动作的圆弧偏移（translate px）。linear 恒为 [0,0]。
+   *
+   * 角度规则（数学极坐标，0°=正右、90°=正上，顺时针均分；CSS 转换 y 取反）：
+   * - circle：从正上（90°）开始，360°/N 均分；
+   * - semi-circle：以 direction 主方向为轴心的 180° 半圆，从「主方向-90°」扫到「主方向+90°」
+   *   （up=上半圆 / down=下半圆 / left=左半圆 / right=右半圆）；
+   * - quarter-circle：90° 起始象限随 direction——up=左上、down=右下、left=左下、right=右上
+   *   （即半圆的后半段，首项在主方向、末项在相邻轴）。
+   */
+  private arcOffset(index: number, count: number): [number, number] {
+    if (this.geometry === 'linear' || count === 0) return [0, 0]
+    const rad = (deg: number): number => (deg * Math.PI) / 180
+    const base = DIR_ANGLE[this.validDirection()] ?? 90
+    let angle: number
+    if (this.geometry === 'circle') {
+      angle = 90 - (index * 360) / count
+    } else if (this.geometry === 'semi-circle') {
+      angle = count === 1 ? base : base - 90 + (index * 180) / (count - 1)
+    } else {
+      // quarter-circle
+      angle = count === 1 ? base : base + (index * 90) / (count - 1)
+    }
+    const a = rad(angle)
+    return [Math.round(this.radius * Math.cos(a)), Math.round(-this.radius * Math.sin(a))]
   }
 
   /** trigger 是否启用 hover 行为：trigger="hover" 且非触屏（coarse 回落 click） */

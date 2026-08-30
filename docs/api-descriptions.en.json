@@ -833,7 +833,9 @@
       "aria-label": "Accessible name: overrides the built-in label when set explicitly (icon-only defaults to locale \"Quick actions\"; extended text lets the visible text win)",
       "badge": "Badge number at the top-right corner",
       "disabled": "Disabled: not clickable, `oas-click` not fired, weakened styles; in `href` mode it degrades to a non-clickable `span`",
+      "draggable": "Draggable: press and drag to move the button (free positioning under `fixed`, clamped inside the viewport); displacement > 4px counts as a drag, in which case releasing does not fire `oas-click` (within the threshold it fires normally)",
       "href": "Link URL: when set, renders an `<a>` element (native link semantics and keyboard reachability) instead of a button; degrades to a `span` when disabled",
+      "magnetic": "Magnetic: `x` snaps to the nearest left/right edge, `y` to the nearest top/bottom edge, with a transition on release; empty means no snapping (requires `draggable`)",
       "shape": "Shape: `circle` (default, round) / `square` (capsule rounded rectangle)",
       "size": "Size tier: `xs` (24px) / `sm` (32px) / `md` (40px) / `lg` (default 48px) / `xl` (56px); invalid values fall back to `lg` with a warning",
       "target": "Link open mode (effective in `href` mode, e.g. `_blank`)",
@@ -1759,7 +1761,9 @@
     "attrs": {
       "actions": "Sub-action JSON (`[{ label, icon?, 'hide-label'? }]`; `hide-label: true` renders the sub-action as a circular icon-only button with the label visually hidden, shown as a text bubble on hover/keyboard focus; falls back to showing the label when no renderable icon is provided)",
       "direction": "Expansion direction",
+      "geometry": "Expansion geometry: `linear` (default, chained layout) / `circle` (full circle, evenly spaced from the top) / `semi-circle` (half circle around the `direction` axis) / `quarter-circle` (90° arc whose starting quadrant follows `direction`: up=top-left, down=bottom-right, left=bottom-left, right=top-right)",
       "open": "Expanded state (controlled)",
+      "radius": "Arc radius in px (default 96; only effective when `geometry` is not `linear`; invalid values fall back to 96)",
       "trigger": "Trigger mode: `click` (default) | `hover` (open on hover, collapse on leave with a 120ms grace period; falls back to click on touch devices)"
     },
     "events": {
