@@ -70,6 +70,24 @@ Writing text into the default slot turns the button into a horizontal capsule (i
   <oas-float-button disabled style="position: static; box-shadow: none">New</oas-float-button>
 </DemoBlock>
 
+## Dragging and magnetic snapping
+
+`draggable` enables drag positioning: press and drag to move the button freely (free positioning under `fixed`, clamped inside the viewport so it never slides out). A displacement over 4px counts as a drag and releasing does not fire `oas-click`; within 4px it counts as a click and fires normally. Disabled state is not draggable.
+
+`magnetic` works together with `draggable`: on release the button snaps to the nearest edge of the chosen axis — `x` snaps to the left/right edges, `y` to the top/bottom edges, with a transition (`prefers-reduced-motion` snaps instantly). The three buttons below are fixed to the bottom-right corner by default; press and drag to try it (the magnetic ones snap to the edge on release).
+
+<DemoBlock title="Draggable (press and drag the bottom-right button)">
+  <oas-float-button draggable onoas-click="message.info('This is a click (not a drag) firing oas-click')" style="--oas-float-button-bottom: 88px"></oas-float-button>
+</DemoBlock>
+
+<DemoBlock title="Draggable + magnetic x (snaps to the nearest left/right edge)">
+  <oas-float-button draggable magnetic="x" style="--oas-float-button-bottom: 152px"></oas-float-button>
+</DemoBlock>
+
+<DemoBlock title="Draggable + magnetic y (snaps to the nearest top/bottom edge)">
+  <oas-float-button draggable magnetic="y" style="--oas-float-button-right: 112px; --oas-float-button-bottom: 216px"></oas-float-button>
+</DemoBlock>
+
 ## Link
 
 `href` renders an `<a>` element (native link semantics and keyboard reachability), optionally with `target`; when disabled it degrades to a non-clickable `<span>`.
@@ -117,7 +135,9 @@ onMounted(async () => {
 | `aria-label` | Accessible name: overrides the built-in label when set explicitly (icon-only defaults to locale "Quick actions"; extended text lets the visible text win) | — | — |
 | `badge` | Badge number at the top-right corner | `string` | — |
 | `disabled` | Disabled: not clickable, `oas-click` not fired, weakened styles; in `href` mode it degrades to a non-clickable `span` | `boolean` | — |
+| `draggable` | Draggable: press and drag to move the button (free positioning under `fixed`, clamped inside the viewport); displacement > 4px counts as a drag, in which case releasing does not fire `oas-click` (within the threshold it fires normally) | `boolean` | — |
 | `href` | Link URL: when set, renders an `<a>` element (native link semantics and keyboard reachability) instead of a button; degrades to a `span` when disabled | `string` | — |
+| `magnetic` | Magnetic: `x` snaps to the nearest left/right edge, `y` to the nearest top/bottom edge, with a transition on release; empty means no snapping (requires `draggable`) | `string` | — |
 | `shape` | Shape: `circle` (default, round) / `square` (capsule rounded rectangle) | `string` | `circle` |
 | `size` | Size tier: `xs` (24px) / `sm` (32px) / `md` (40px) / `lg` (default 48px) / `xl` (56px); invalid values fall back to `lg` with a warning | `string` | `lg` |
 | `target` | Link open mode (effective in `href` mode, e.g. `_blank`) | `string` | — |

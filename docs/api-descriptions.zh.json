@@ -835,7 +835,9 @@
       "aria-label": "无障碍可访问名称：显式设置时覆盖内置文案（纯图标默认走 locale「悬浮操作」；有扩展文字时让位给可见文本）",
       "badge": "右上角标数字",
       "disabled": "禁用：不可点击、不派发 `oas-click`，样式弱化；`href` 模式下降级为不可点击的 `span`",
+      "draggable": "拖拽：指针按住拖动移动按钮（fixed 自由定位，位置夹取在视口内）；位移 >4px 视为拖拽，此时松手不派发 `oas-click`（阈值内正常派发）",
       "href": "链接地址：设置后渲染 `<a>` 元素（原生链接语义与键盘可达）替代按钮；禁用时降级为 `span`",
+      "magnetic": "磁吸：`x` 吸附到最近的左右边缘、`y` 吸附到最近的上下边缘，松手时带过渡动画；空值不吸附（需配 `draggable`）",
       "shape": "形状：`circle`（默认，正圆）/ `square`（胶囊圆角矩形）",
       "size": "尺寸档位：`xs`（24px）/ `sm`（32px）/ `md`（40px）/ `lg`（默认 48px）/ `xl`（56px）；非法值回落 `lg` 并告警",
       "target": "链接打开方式（`href` 模式下生效，如 `_blank`）",
@@ -1764,7 +1766,9 @@
     "attrs": {
       "actions": "子动作 JSON（`[{ label, icon?, 'hide-label'? }]`；`hide-label: true` 时子动作只渲染 icon 为圆形小钮，label 视觉隐藏、hover/键盘聚焦时浮出文字气泡；未提供可渲染 icon 时回落显示 label）",
       "direction": "展开方向",
+      "geometry": "展开几何：`linear`（默认，链式排布）/ `circle`（整圆，从正上均分）/ `semi-circle`（半圆，以 `direction` 为轴）/ `quarter-circle`（四分之一圆，起始象限随 `direction`：up=左上、down=右下、left=左下、right=右上）",
       "open": "展开态（受控）",
+      "radius": "圆弧半径（px，默认 96；仅 `geometry` 非 linear 时生效，非法值回落 96）",
       "trigger": "触发方式：`click`（默认）| `hover`（悬停开、移出收起，120ms 离开宽限期；触屏自动回落 click）"
     },
     "events": {

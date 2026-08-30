@@ -16,6 +16,9 @@ function normalizeSize(raw: string): FloatButtonSize {
   return 'lg'
 }
 
+/** 拖拽/点击判定阈值：位移 >4px 视为拖拽（pointerup 不派发 oas-click）；≤4px 视为点击 */
+const DRAG_THRESHOLD = 4
+
 const STYLE = `
 :host {
   display: inline-block;
@@ -96,6 +99,12 @@ const STYLE = `
 }
 .btn:not(:disabled):not([aria-disabled='true']):active {
   transform: scale(0.96);
+}
+/* 拖拽中：grabbing 光标 + 禁止选中（配合宿主 data-dragging） */
+:host(.dragging) .btn {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .btn.primary {
   background: var(--oas-color-primary);
@@ -180,10 +189,33 @@ const STYLE = `
 
 export class OASFloatButton extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['badge', 'shape', 'type', 'size', 'disabled', 'href', 'target', 'aria-label']
+    return [
+      'badge',
+      'shape',
+      'type',
+      'size',
+      'disabled',
+      'href',
+      'target',
+      'aria-label',
+      'draggable',
+      'magnetic',
+    ]
   }
 
   private btn: HTMLElement | null = null
+
+  /** 进行中的拖拽会话（draggable）：pointer 捕获 + 起点 + 位移阈值标记 */
+  private dragState: {
+    pointerId: number
+    startX: number
+    startY: number
+    startLeft: number
+    startTop: number
+    moved: boolean
+  } | null = null
+  /** 拖拽超阈值后抑制随之合成的一次 click（区分拖拽与点击） */
+  private suppressClick = false
 
   /**
    * 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致。
@@ -237,6 +269,13 @@ export class OASFloatButton extends OASElement {
   private bind(): void {
     this.btn = this.shadow.querySelector('.btn')
     this.btn?.addEventListener('click', (e: MouseEvent) => {
+      // 拖拽超阈值后浏览器会在捕获目标上合成一次 click → 消费并复位（拖拽不派发 oas-click），
+      // 同时 preventDefault 阻止 href 模式下 <a> 的链接导航被拖拽误触发
+      if (this.suppressClick) {
+        this.suppressClick = false
+        e.preventDefault()
+        return
+      }
       if (this.injectDisabled()) {
         e.preventDefault()
         return
@@ -245,6 +284,12 @@ export class OASFloatButton extends OASElement {
       // 此处 guard 覆盖 href 模式降级 span 之外的防御场景）
       this.emit('click', { originalEvent: e })
     })
+    // 拖拽会话（pointer 捕获 + 移动定位 + 松手释放/磁吸）——绑定在内层按钮上，
+    // 捕获目标 = 按钮自身，合成的 click 仍落在按钮（点击判定不被破坏）
+    this.btn?.addEventListener('pointerdown', this.handlePointerDown)
+    this.btn?.addEventListener('pointermove', this.handlePointerMove)
+    this.btn?.addEventListener('pointerup', this.handlePointerUp)
+    this.btn?.addEventListener('pointercancel', this.handlePointerCancel)
     // 默认插槽内容增减时重算扩展文字形态（icon slot 变化不影响 extended）
     this.shadow
       .querySelector<HTMLSlotElement>('slot:not([name])')
@@ -255,6 +300,123 @@ export class OASFloatButton extends OASElement {
     this.shadow.innerHTML = this.template()
     this.bind()
     this.update()
+  }
+
+  // ---------- draggable 拖拽（pointer 捕获 + 自由定位 + 磁吸） ----------
+
+  /** 是否减少动效：reduced-motion 下磁吸过渡停用（位置直切） */
+  private prefersReducedMotion(): boolean {
+    if (typeof window.matchMedia !== 'function') return false
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  }
+
+  private handlePointerDown = (e: PointerEvent): void => {
+    // 非 draggable 零行为变化；禁用态不可拖；仅主键（左键/触屏）
+    if (!this.hasAttr('draggable')) return
+    if (this.injectDisabled()) return
+    if (e.button !== 0) return
+    // 新会话先复位抑制标记（上一次拖拽若被 pointercancel 中断可能残留）
+    this.suppressClick = false
+    const rect = this.getBoundingClientRect()
+    this.dragState = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      startLeft: rect.left,
+      startTop: rect.top,
+      moved: false,
+    }
+    this.classList.add('dragging')
+    // 拖拽中禁止过渡（跟手）；磁吸过渡只作用于松手动画
+    this.style.transition = 'none'
+    try {
+      this.btn?.setPointerCapture(e.pointerId)
+    } catch {
+      // 环境不支持指针捕获：退化为移动/释放监听跟踪（无捕获也能完成拖拽）
+    }
+  }
+
+  private handlePointerMove = (e: PointerEvent): void => {
+    const d = this.dragState
+    if (!d || e.pointerId !== d.pointerId) return
+    const dx = e.clientX - d.startX
+    const dy = e.clientY - d.startY
+    // 阈值内视为点击（不移动）；超过阈值进入拖拽
+    if (!d.moved && Math.abs(dx) <= DRAG_THRESHOLD && Math.abs(dy) <= DRAG_THRESHOLD) return
+    d.moved = true
+    // 边界夹取：left/top 夹在视口内（fixed 定位相对视口，拖出视口回夹）
+    const maxX = Math.max(0, window.innerWidth - this.offsetWidth)
+    const maxY = Math.max(0, window.innerHeight - this.offsetHeight)
+    const left = Math.min(Math.max(0, d.startLeft + dx), maxX)
+    const top = Math.min(Math.max(0, d.startTop + dy), maxY)
+    // 位置写入 host 内联 left/top（fixed 定位系），清掉默认 bottom/right 避免双端拉伸
+    this.style.left = `${left}px`
+    this.style.top = `${top}px`
+    this.style.bottom = ''
+    this.style.right = ''
+  }
+
+  private handlePointerUp = (e: PointerEvent): void => {
+    const d = this.dragState
+    if (!d || e.pointerId !== d.pointerId) return
+    if (d.moved) {
+      // 超阈值是拖拽：抑制随后的合成 click（不派发 oas-click），并尝试磁吸
+      this.suppressClick = true
+      this.applyMagnetic()
+    }
+    this.endDrag(e.pointerId)
+  }
+
+  private handlePointerCancel = (e: PointerEvent): void => {
+    const d = this.dragState
+    if (!d || e.pointerId !== d.pointerId) return
+    this.endDrag(e.pointerId)
+  }
+
+  private endDrag(pointerId: number): void {
+    if (!this.dragState || this.dragState.pointerId !== pointerId) return
+    try {
+      this.btn?.releasePointerCapture(pointerId)
+    } catch {
+      // 指针已失效：忽略释放失败
+    }
+    this.dragState = null
+    this.classList.remove('dragging')
+  }
+
+  /**
+   * magnetic 磁吸：松手时吸附到最近的对应轴边缘（x=左右边缘贴齐，y=上下边缘贴齐）。
+   * 吸附动画：恢复 left/top 过渡（拖拽中已被 pointerdown 置 none）；reduced-motion 下直切。
+   */
+  private applyMagnetic(): void {
+    const axis = this.getAttr('magnetic', '')
+    if (axis !== 'x' && axis !== 'y') return
+    const left = parseFloat(this.style.left) || 0
+    const top = parseFloat(this.style.top) || 0
+    const maxX = Math.max(0, window.innerWidth - this.offsetWidth)
+    const maxY = Math.max(0, window.innerHeight - this.offsetHeight)
+    const reduced = this.prefersReducedMotion()
+    if (axis === 'x') {
+      const distLeft = left
+      const distRight = maxX - left
+      const target = distLeft <= distRight ? 0 : maxX
+      if (Math.abs(target - left) > 0.5) {
+        this.style.transition = reduced
+          ? 'none'
+          : `left var(--oas-transition-base) var(--oas-ease-out)`
+        this.style.left = `${target}px`
+      }
+    } else {
+      const distTop = top
+      const distBottom = maxY - top
+      const target = distTop <= distBottom ? 0 : maxY
+      if (Math.abs(target - top) > 0.5) {
+        this.style.transition = reduced
+          ? 'none'
+          : `top var(--oas-transition-base) var(--oas-ease-out)`
+        this.style.top = `${target}px`
+      }
+    }
   }
 
   /** 真水合：校验 SSR 快照结构（按钮存在）后直接接管，跳过 shadow 重建 */
@@ -317,5 +479,8 @@ export class OASFloatButton extends OASElement {
     if (hostLabel) btnEl.setAttribute('aria-label', hostLabel)
     else if (hasText) btnEl.removeAttribute('aria-label')
     else btnEl.setAttribute('aria-label', this.t('floatButton.action'))
+
+    // draggable：touch-action none 禁止触摸手势滚动干扰拖拽（非 draggable 恢复，零回归）
+    this.style.touchAction = this.hasAttr('draggable') ? 'none' : ''
   }
 }

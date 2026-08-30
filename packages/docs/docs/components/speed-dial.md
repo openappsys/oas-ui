@@ -29,6 +29,48 @@
 
 展开时子动作按序级联浮现（每项 `transition-delay = index × 30ms`），收起时同步消失。内建动效、无需配置；`prefers-reduced-motion` 下级联 delay 归零、过渡停用（一次性出现，对齐可访问性）。上方各 demo 展开即生效。
 
+## 圆弧几何展开
+
+`geometry` 控制子动作的分布方式：`linear`（默认，链式排布）/ `circle`（整圆，从正上开始 360°/N 均分）/ `semi-circle`（半圆，以 `direction` 为轴心 180° 张开）/ `quarter-circle`（四分之一圆 90°，起始象限随 `direction`：up=左上、down=右下、left=左下、right=右上）。`radius` 控制圆弧半径（px，默认 96，非法值回落 96）。
+
+角度规则：`circle` 从正上方开始顺时针均分；`semi-circle` 从「主方向 − 90°」扫到「主方向 + 90°」（up=上半圆、down=下半圆、left=左半圆、right=右半圆）；`quarter-circle` 为主方向起的 90° 弧（首项最靠近主按钮）。圆弧模式下子动作不再参与链式排布，`--cascade-i` 级联与 `hide-label` 气泡不受影响；`prefers-reduced-motion` 下圆弧转场直切（动作一次到位）。
+
+<DemoBlock title="circle：整圆从正上均分">
+  <div style="display: flex; align-items: center; justify-content: center; height: 280px; width: 100%">
+    <oas-speed-dial geometry="circle" style="position: static" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash"},{"label":"上传","icon":"upload"}]'></oas-speed-dial>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="semi-circle：半圆以 direction 为轴">
+  <div style="display: flex; gap: var(--oas-space-5); align-items: center; justify-content: center; height: 220px; width: 100%">
+    <div style="width: 220px; height: 200px; position: relative">
+      <oas-speed-dial style="position: absolute; bottom: 0; left: 50%; margin-left: -24px" geometry="semi-circle" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash"}]'></oas-speed-dial>
+    </div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="quarter-circle：90° 象限随 direction（up=左上 / right=右上）">
+  <div style="display: flex; gap: var(--oas-space-5); align-items: flex-end; height: 220px; width: 100%">
+    <div style="width: 200px; height: 180px; position: relative">
+      <oas-speed-dial style="position: absolute; right: 0; top: 0" geometry="quarter-circle" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash"}]'></oas-speed-dial>
+    </div>
+    <div style="width: 200px; height: 180px; position: relative">
+      <oas-speed-dial style="position: absolute; left: 0; top: 0" geometry="quarter-circle" direction="right" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash"}]'></oas-speed-dial>
+    </div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="radius：调节圆弧半径（circle）">
+  <div style="display: flex; align-items: center; justify-content: center; height: 320px; width: 100%">
+    <oas-speed-dial id="sd-arc" geometry="circle" radius="96" style="position: static" actions='[{"label":"复制","icon":"copy"},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash"},{"label":"上传","icon":"upload"}]'></oas-speed-dial>
+  </div>
+  <oas-button-group>
+    <oas-button size="small" type="primary" onclick="event.stopPropagation(); sdArc(96)">radius 96</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation(); sdArc(128)">radius 128</oas-button>
+    <oas-button size="small" onclick="event.stopPropagation(); sdArc(160)">radius 160</oas-button>
+  </oas-button-group>
+</DemoBlock>
+
 ## 纯文字动作
 
 `icon` 可省略，只显示 label；纯图标子动作请用 `hide-label`（见下节）。
@@ -142,6 +184,11 @@ onMounted(() => {
     // 组件自身点击 / 点击外部 / Esc 都会改 open，用 MutationObserver 保持状态同步
     new MutationObserver(sync).observe(ctrl, { attributes: true, attributeFilter: ['open'] })
   }
+
+  const arc = document.getElementById('sd-arc')
+  window.sdArc = (r) => {
+    arc?.setAttribute('radius', String(r))
+  }
 })
 </script>
 
@@ -153,7 +200,9 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `actions` | 子动作 JSON（`[{ label, icon?, 'hide-label'? }]`；`hide-label: true` 时子动作只渲染 icon 为圆形小钮，label 视觉隐藏、hover/键盘聚焦时浮出文字气泡；未提供可渲染 icon 时回落显示 label） | `string` | `[]` |
 | `direction` | 展开方向 | `string` | `up` |
+| `geometry` | 展开几何：`linear`（默认，链式排布）/ `circle`（整圆，从正上均分）/ `semi-circle`（半圆，以 `direction` 为轴）/ `quarter-circle`（四分之一圆，起始象限随 `direction`：up=左上、down=右下、left=左下、right=右上） | `string` | `linear` |
 | `open` | 展开态（受控） | `boolean` | — |
+| `radius` | 圆弧半径（px，默认 96；仅 `geometry` 非 linear 时生效，非法值回落 96） | — | — |
 | `trigger` | 触发方式：`click`（默认）\| `hover`（悬停开、移出收起，120ms 离开宽限期；触屏自动回落 click） | `string` | `click` |
 
 ### 事件
