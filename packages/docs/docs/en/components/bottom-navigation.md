@@ -90,6 +90,20 @@ The `safe-area` boolean attribute (to be combined with `fixed`): in fixed mode i
   <oas-bottom-navigation fixed safe-area style="position: static; width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Search","icon":"search","value":"search"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
 </DemoBlock>
 
+## Hide on scroll (hide-on-scroll)
+
+The `hide-on-scroll` boolean attribute (to be combined with `fixed`): the bar slides out with `translateY(100%)` when scrolling down and slides back when scrolling up; the transition only animates transform and never touches layout. A scroll delta >4px decides the direction, avoiding false triggers from tiny jitters.
+
+> The hide is **purely visual**: no `aria-hidden` is added (tab semantics and keyboard focus stay reachable), and it is restored on scroll-back — ideal for giving screen space back while browsing long content, with the navigation still there when you scroll back up.
+
+<DemoBlock title="Hide on scroll (fixed + hide-on-scroll)">
+  <div style="width: 100%; max-width: 480px">
+    <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0 0 var(--oas-space-3)">Scroll this page: the bottom navigation slides out while scrolling down and slides back while scrolling up. The demo bar is fixed to the viewport bottom (centered, max-width 480px) for demonstration only.</p>
+    <div style="height: 600px; display: flex; align-items: center; justify-content: center; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); color: var(--oas-color-text-tertiary); font-size: var(--oas-font-size-sm)">Long-page scroll area (try scrolling the page)</div>
+  </div>
+  <oas-bottom-navigation fixed hide-on-scroll style="max-width: 480px; margin: 0 auto" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Search","icon":"search","value":"search"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+</DemoBlock>
+
 ## Horizontal layout (layout)
 
 `layout="horizontal"` puts the icon on the left and the text on the right on the same row (default `stacked` puts the icon above the text); badges still overlay the icon's top-right corner; keyboard roving and ARIA semantics are unchanged. Invalid values fall back to `stacked` with a warning.
@@ -116,6 +130,7 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `fixed` | Pin to the viewport bottom (`position: fixed; bottom: 0`) | `boolean` | — |
+| `hide-on-scroll` | Hide on scroll (requires `fixed`): slides out with `translateY(100%)` while scrolling down and slides back while scrolling up (a scroll delta >4px decides the direction; the transition animates transform only). A purely visual collapse without `aria-hidden` (tab semantics and keyboard focus stay reachable), restored on scroll-back; no effect when not fixed | `boolean` | — |
 | `items` | Navigation items JSON | `string` | `[]` |
 | `layout` | Layout mode: `stacked` (default, icon above text) / `horizontal` (icon left, text right, same row); invalid values fall back to `stacked` with a warning (deduped) | `string` | `stacked` |
 | `safe-area` | Adds bottom safe-area padding (`env(safe-area-inset-bottom)`) in fixed mode to avoid the home indicator of notched screens; no effect in non-fixed mode | `boolean` | — |

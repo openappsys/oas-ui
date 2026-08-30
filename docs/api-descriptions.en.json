@@ -201,6 +201,7 @@
   "oas-bottom-navigation": {
     "attrs": {
       "fixed": "Pin to the viewport bottom (`position: fixed; bottom: 0`)",
+      "hide-on-scroll": "Hide on scroll (requires `fixed`): slides out with `translateY(100%)` while scrolling down and slides back while scrolling up (a scroll delta >4px decides the direction; the transition animates transform only). A purely visual collapse without `aria-hidden` (tab semantics and keyboard focus stay reachable), restored on scroll-back; no effect when not fixed",
       "items": "Navigation items JSON",
       "layout": "Layout mode: `stacked` (default, icon above text) / `horizontal` (icon left, text right, same row); invalid values fall back to `stacked` with a warning (deduped)",
       "safe-area": "Adds bottom safe-area padding (`env(safe-area-inset-bottom)`) in fixed mode to avoid the home indicator of notched screens; no effect in non-fixed mode",
