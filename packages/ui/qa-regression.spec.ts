@@ -7351,3 +7351,23 @@ test('menubar/navigation-menu/sidebar 粗指针触控目标 ≥48px xl 档（poi
   expect(r.navTop, `navigation-menu 顶级项粗指针高度应 ≥48（实测 ${r.navTop}）`).toBeGreaterThanOrEqual(48)
   expect(r.sidebarItem, `sidebar 菜单项粗指针高度应 ≥48（实测 ${r.sidebarItem}）`).toBeGreaterThanOrEqual(48)
 })
+
+test('steps 点状/普通模式连接线对准指示器中心（基线间隙 + 线 top 双坑回归）', async ({ page }) => {
+  await page.goto('/components/steps.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-steps') !== undefined)
+  const result = await page.evaluate(async () => {
+    // 点状模式：圆点中心与连接线中心的 y 差 ≤ 0.5px
+    const dotEl = [...document.querySelectorAll('oas-steps')].find((x) => x.hasAttribute('progress-dot'))!
+    dotEl.scrollIntoView({ block: 'center' })
+    await new Promise((r) => setTimeout(r, 200))
+    const root = dotEl.shadowRoot!
+    const item = root.querySelector('[part="item"]')!
+    const icon = item.querySelector('.icon')!
+    const ir = icon.getBoundingClientRect()
+    const dotCenter = ir.top + ir.height / 2
+    const after = getComputedStyle(item, '::after')
+    const lineCenter = parseFloat(after.top) + item.getBoundingClientRect().top + parseFloat(after.height) / 2
+    return { dotCenter: Math.round(dotCenter * 10) / 10, lineCenter: Math.round(lineCenter * 10) / 10 }
+  })
+  expect(Math.abs(result.dotCenter - result.lineCenter), `圆点中心 ${result.dotCenter} 应与线中心 ${result.lineCenter} 对齐（±0.5px）`).toBeLessThanOrEqual(0.5)
+})
