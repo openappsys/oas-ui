@@ -119,8 +119,14 @@ const STYLE = `
   color: var(--oas-color-text-primary);
   font-family: inherit;
   padding: 0 var(--oas-space-1);
+  /* 链接/禁用降级 span 复用按钮盒模型：内联 flex 居中 + 去下划线（a 默认有） */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-decoration: none;
 }
-.btn:hover:not(:disabled) {
+.btn:hover:not(:disabled):not([aria-disabled='true']) {
   border-color: var(--oas-color-primary);
   color: var(--oas-color-primary);
 }
@@ -128,16 +134,18 @@ const STYLE = `
   outline: 2px solid var(--oas-color-primary);
   outline-offset: 1px;
 }
-.btn:disabled {
+.btn:disabled,
+.btn[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.4;
 }
-.btn[aria-current='true'] {
+.btn[aria-current='true'],
+.btn[aria-current='page'] {
   background: var(--oas-color-primary);
   border-color: var(--oas-color-primary);
   color: var(--oas-color-text-on-primary);
 }
-.ellipsis {
+.ellipsis-btn {
   color: var(--oas-color-text-secondary);
   padding: 0 var(--oas-space-1);
   font-size: var(--oas-pagination-font);
@@ -208,6 +216,9 @@ const STYLE = `
 }
 `
 
+/** responsive 断点：组件宽度 < 640px 时自动按 simple 形态渲染 */
+const RESPONSIVE_BREAKPOINT = 640
+
 export class OASPagination extends OASElement {
   static override get observedAttributes(): string[] {
     return [
@@ -224,8 +235,16 @@ export class OASPagination extends OASElement {
       'simple',
       'show-edges',
       'hide-on-single',
+      'href-template',
+      'target',
+      'responsive',
     ]
   }
+
+  /** responsive：容器宽度监听（清理走 onCleanup，断连后 update 幂等重建） */
+  private resizeObserver: ResizeObserver | null = null
+  /** responsive：容器是否窄于断点（clientWidth>0 且 <640；0=未布局/SSR 不误判） */
+  private narrow = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -237,6 +256,11 @@ export class OASPagination extends OASElement {
 
   /** 缓存节点引用（render 与水合路径共用；按钮事件在 update 重建时绑定） */
   private bind(): void {}
+
+  /** responsive：容器宽度变化重算窄态（<640 自动切 simple）；清理走 onCleanup */
+  private syncResponsive(): void {
+    if (this.hasRendered) this.runUpdateAndNotify()
+  }
 
   protected override render(): void {
     this.shadow.innerHTML = this.template()
@@ -268,7 +292,25 @@ export class OASPagination extends OASElement {
     // pager-count：页码钮上限，低于最小值 5 回落 5 并告警（同值去重）；''/缺失取默认 9
     // （getAttr 第二实参用字面量 '9'，供 api:scan 提取 API 表默认值）
     const pagerCount = normalizePagerCount(this.getAttr('pager-count', '9'))
-    const simple = this.hasAttr('simple')
+    // responsive：窄屏（<640）自动按 simple 形态渲染，与显式 simple 等效；宽度度量收敛到
+    // update() 统一执行，RO 回调只负责触发重刷（clientWidth=0 未布局/SSR 不误判）
+    const w = this.clientWidth
+    this.narrow = w > 0 && w < RESPONSIVE_BREAKPOINT
+    const simple = this.hasAttr('simple') || (this.hasAttr('responsive') && this.narrow)
+    // 链接模式：href-template 含 {page} 占位符，页码/前后/首末钮渲染 <a>（模板替换）；
+    // target 透传 a；disabled 时降级 span（不可点）
+    const hrefTemplate = this.getAttr('href-template', '')
+    const target = this.getAttr('target', '')
+
+    // responsive：惰性建立 ResizeObserver（首次 update 时创建；断连清理后 update 幂等重建）
+    if (this.hasAttr('responsive') && !this.resizeObserver && typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => this.syncResponsive())
+      this.resizeObserver.observe(this)
+      this.onCleanup(() => {
+        this.resizeObserver?.disconnect()
+        this.resizeObserver = null
+      })
+    }
 
     // hide-on-single：单页时不渲染（host hidden，宿主无感知；恢复多页时自动取消隐藏）
     if (this.hasAttr('hide-on-single') && pageCount <= 1) {
@@ -282,29 +324,57 @@ export class OASPagination extends OASElement {
     // 内置文案走 locale registry（setLocale 切换自动刷新）
     group.setAttribute('aria-label', this.t('pagination.nav'))
     group.innerHTML = ''
-    const btn = (
+    // 导航钮工厂：链接模式（href-template）渲染 <a>；disabled/边界禁用降级 span（不可点）；
+    // 默认渲染 button。事件统一由 goto 处理（链接模式在 before-change veto 时阻止原生导航）
+    const nav = (
       label: string,
       part: string,
       ariaLabel: string,
       boundaryDisabled: boolean,
-      onClick: () => void,
+      targetPage: number,
       slotMarkup?: string,
-    ): HTMLButtonElement => {
+    ): HTMLElement => {
+      const bDisabled = disabled || boundaryDisabled
+      const fill = (el: HTMLElement): void => {
+        if (slotMarkup !== undefined) {
+          // 命名插槽：宿主提供内容时替换默认箭头（受控常量，非用户数据）
+          el.innerHTML = slotMarkup
+        } else if (part === 'page') {
+          this.renderPageContent(el, targetPage)
+        } else {
+          el.textContent = label
+        }
+      }
+      if (hrefTemplate !== '' && !bDisabled) {
+        const a = document.createElement('a')
+        a.className = 'btn'
+        a.setAttribute('part', part)
+        a.href = this.renderHref(hrefTemplate, targetPage)
+        if (target !== '') a.setAttribute('target', target)
+        a.setAttribute('aria-label', ariaLabel)
+        fill(a)
+        a.addEventListener('click', (e) => this.onLinkClick(e as MouseEvent, targetPage))
+        return a
+      }
+      if (hrefTemplate !== '' && bDisabled) {
+        // 链接模式降级 span：不可聚焦不可点，aria-disabled 同步语义（全局/边界禁用均走此路径）
+        const s = document.createElement('span')
+        s.className = 'btn'
+        s.setAttribute('part', part)
+        s.setAttribute('aria-disabled', 'true')
+        s.setAttribute('aria-label', ariaLabel)
+        fill(s)
+        return s
+      }
       const b = document.createElement('button')
       b.className = 'btn'
       b.setAttribute('part', part)
       b.type = 'button'
       b.setAttribute('aria-label', ariaLabel)
-      const bDisabled = disabled || boundaryDisabled
       b.disabled = bDisabled
       if (bDisabled) b.setAttribute('aria-disabled', 'true')
-      if (slotMarkup !== undefined) {
-        // 命名插槽：宿主提供内容时替换默认箭头（受控常量，非用户数据）
-        b.innerHTML = slotMarkup
-      } else {
-        b.textContent = label
-      }
-      b.addEventListener('click', onClick)
+      fill(b)
+      b.addEventListener('click', () => this.goto(targetPage))
       return b
     }
 
@@ -322,17 +392,17 @@ export class OASPagination extends OASElement {
     // 首/末页双箭头钮（show-edges，边界禁用；simple 极简形态不叠加）
     if (this.hasAttr('show-edges') && !simple) {
       group.appendChild(
-        btn('«', 'first', this.t('pagination.first'), current === 1, () => this.goto(1)),
+        nav('«', 'first', this.t('pagination.first'), current === 1, 1),
       )
     }
 
     group.appendChild(
-      btn(
+      nav(
         '‹',
         'prev',
         this.t('pagination.prev'),
         current === 1,
-        () => this.goto(current - 1),
+        current - 1,
         '<slot name="prev-icon">‹</slot>',
       ),
     )
@@ -349,36 +419,46 @@ export class OASPagination extends OASElement {
       let last = 0
       for (const page of pageNumbers) {
         if (page - last > 1) {
-          const ell = document.createElement('span')
-          ell.className = 'ellipsis'
-          ell.textContent = '…'
+          // 省略号可点跳页：向该侧跳 siblings+1 页（边界夹取 [1, pageCount]，受 before-change 拦截）
+          const backward = last < current
+          const jump = backward
+            ? Math.max(1, current - siblings - 1)
+            : Math.min(pageCount, current + siblings + 1)
+          const ell = nav(
+            '…',
+            'ellipsis',
+            this.t(backward ? 'pagination.jumpBackward' : 'pagination.jumpForward'),
+            false,
+            jump,
+          )
+          ell.classList.add('ellipsis-btn')
           group.appendChild(ell)
         }
-        const p = btn(String(page), 'page', this.t('pagination.page', { page }), false, () =>
-          this.goto(page),
+        const p = nav(String(page), 'page', this.t('pagination.page', { page }), false, page)
+        // 当前页标记：链接模式用 aria-current="page"，按钮模式沿用 'true'/'false'
+        p.setAttribute(
+          'aria-current',
+          page === current ? (hrefTemplate !== '' ? 'page' : 'true') : 'false',
         )
-        p.setAttribute('aria-current', String(page === current))
         group.appendChild(p)
         last = page
       }
     }
 
     group.appendChild(
-      btn(
+      nav(
         '›',
         'next',
         this.t('pagination.next'),
         current === pageCount,
-        () => this.goto(current + 1),
+        current + 1,
         '<slot name="next-icon">›</slot>',
       ),
     )
 
     if (this.hasAttr('show-edges') && !simple) {
       group.appendChild(
-        btn('»', 'last', this.t('pagination.last'), current === pageCount, () =>
-          this.goto(pageCount),
-        ),
+        nav('»', 'last', this.t('pagination.last'), current === pageCount, pageCount),
       )
     }
 
@@ -430,13 +510,61 @@ export class OASPagination extends OASElement {
     }
   }
 
-  /** 翻页/跳转前的统一拦截点：oas-before-change（cancelable），宿主 preventDefault 可 veto */
-  private goto(page: number): void {
-    if (this.injectDisabled()) return
-    if (!this.emit('before-change', { page }, { cancelable: true })) return
+  /** 翻页/跳转前的统一拦截点：oas-before-change（cancelable），宿主 preventDefault 可 veto。
+   *  返回是否放行，供链接模式在 veto 时同步 preventDefault 原生导航 */
+  private goto(page: number): boolean {
+    if (this.injectDisabled()) return false
+    if (!this.emit('before-change', { page }, { cancelable: true })) return false
     this.setAttribute('current', String(page))
     this.emit('change', { page })
     this.update()
+    return true
+  }
+
+  /** 链接模式点击：修饰键/非左键（中键/右键/新标签）交给浏览器原生处理；
+   *  oas-before-change 被 veto 时 preventDefault 阻止原生导航（oas-click 语义不变） */
+  private onLinkClick(e: MouseEvent, page: number): void {
+    if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return
+    if (!this.goto(page)) e.preventDefault()
+  }
+
+  /** href 模板替换：{page} → 目标页码（split/join，避免 replace 正则特殊字符问题） */
+  private renderHref(template: string, page: number): string {
+    return template.split('{page}').join(String(page))
+  }
+
+  /** page-item 插槽：克隆宿主模板并为每个页码钮替换 {page}（仅 textContent，防注入）；
+   *  未提供插槽时回退纯页码数字。prev/next/首尾钮不受影响 */
+  private renderPageContent(button: HTMLElement, page: number): void {
+    const source = this.querySelector('[slot="page-item"]')
+    if (!source) {
+      button.textContent = String(page)
+      return
+    }
+    const clone = source.cloneNode(true)
+    if (clone instanceof HTMLElement) {
+      // 宿主用 hidden 隐藏模板本体，克隆进按钮时必须剥离（否则页码内容不可见）
+      clone.removeAttribute('hidden')
+      clone.removeAttribute('slot')
+    }
+    this.replacePagePlaceholder(clone, page)
+    button.appendChild(clone)
+  }
+
+  /** 递归遍历文本节点替换 {page}（只写 textContent，不解析 HTML，杜绝注入） */
+  private replacePagePlaceholder(root: Node, page: number): void {
+    const replace = (node: Node): void => {
+      for (const child of [...node.childNodes]) {
+        if (child.nodeType === Node.TEXT_NODE) {
+          if (child.textContent?.includes('{page}')) {
+            child.textContent = child.textContent.split('{page}').join(String(page))
+          }
+        } else {
+          replace(child)
+        }
+      }
+    }
+    replace(root)
   }
 
   /** 切换每页条数：回到第 1 页并派发 { page: 1, pageSize }（不派发 before-change） */

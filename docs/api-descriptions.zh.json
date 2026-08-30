@@ -1410,16 +1410,20 @@
       "size": "尺寸档位：xs / sm / md / lg / xl（默认 md）；非法值回落 md 并在控制台告警",
       "simple": "极简形态：只渲染前后钮与「当前 / 总页数」文本，与页码省略算法互斥（simple 优先）；show-jumper 可叠加",
       "show-edges": "显示首/末页双箭头钮（« »），边界处禁用；aria-label 走 i18n",
-      "hide-on-single": "单页（pageCount ≤ 1）时整个组件不渲染"
+      "hide-on-single": "单页（pageCount ≤ 1）时整个组件不渲染",
+      "href-template": "链接模式：设置后页码/前后/首末钮渲染为 `<a href>`（`{page}` 占位符替换为目标页），中键/右键/新标签原生可用；disabled 时降级为不可点击的 span",
+      "target": "链接模式下透传给 `<a target>`（如 `_blank`）；仅在设置 `href-template` 时生效",
+      "responsive": "响应式：组件宽度 < 640px 时自动按 simple 极简形态渲染（ResizeObserver 监听容器宽度，恢复后还原）；与显式 `simple` 等效"
     },
     "events": {
       "oas-change": "翻页 `{ page }`；切换每页条数 `{ page: 1, pageSize }`；快速跳转 `{ page, pageSize }`",
-      "oas-before-change": "翻页/跳转前派发，可 preventDefault 取消本次变更（切换每页条数不派发）"
+      "oas-before-change": "翻页/跳转前派发，可 preventDefault 取消本次变更（切换每页条数不派发）；链接模式下同时阻止原生导航"
     },
     "slots": {
       "prev-icon": "上一页按钮图标插槽，有内容时替换默认 ‹",
       "next-icon": "下一页按钮图标插槽，有内容时替换默认 ›",
-      "total": "总条数文案插槽，有内容时替换内置「共 N 条」"
+      "total": "总条数文案插槽，有内容时替换内置「共 N 条」",
+      "page-item": "页码内容自定义插槽：宿主放入含 `{page}` 占位符的模板内容（如 `<span slot=\"page-item\" hidden>第 {page} 页</span>`），组件对每个页码钮克隆该内容并替换占位符（仅 textContent，防注入）；未提供时显示纯页码数字；prev/next/首尾钮不受影响"
     }
   },
   "oas-paragraph": {

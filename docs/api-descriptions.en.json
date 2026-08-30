@@ -1410,16 +1410,20 @@
       "size": "Size tier: xs / sm / md / lg / xl (default md); invalid values fall back to md with a console warning",
       "simple": "Minimal form: only prev/next buttons and a \"current / total pages\" text; mutually exclusive with the page-number ellipsis algorithm (simple wins); show-jumper still applies",
       "show-edges": "Shows first/last double-arrow buttons (« »), disabled at the boundaries; aria-label via i18n",
-      "hide-on-single": "Hides the whole component when there is a single page (pageCount ≤ 1)"
+      "hide-on-single": "Hides the whole component when there is a single page (pageCount ≤ 1)",
+      "href-template": "Link mode: renders page/prev/next/first/last as `<a href>` (the `{page}` placeholder is replaced with the target page); middle/right-click and opening in a new tab work natively; degrades to a non-clickable span when disabled",
+      "target": "Passthrough to `<a target>` (e.g. `_blank`) in link mode; only applies when `href-template` is set",
+      "responsive": "Responsive: renders in the simple minimal form automatically when the component is narrower than 640px (ResizeObserver on the host; restores when wide enough); equivalent to explicit `simple`"
     },
     "events": {
       "oas-change": "Flipping `{ page }`; page-size switch `{ page: 1, pageSize }`; quick jump `{ page, pageSize }`",
-      "oas-before-change": "Fires before a page change/jump; preventDefault cancels the change (page-size switching is not intercepted)"
+      "oas-before-change": "Fires before a page change/jump; preventDefault cancels the change (page-size switching is not intercepted); in link mode it also prevents native navigation"
     },
     "slots": {
       "prev-icon": "Icon slot for the previous button; replaces the default ‹ when present",
       "next-icon": "Icon slot for the next button; replaces the default › when present",
-      "total": "Total text slot; replaces the built-in \"Total N\" text when present"
+      "total": "Total text slot; replaces the built-in \"Total N\" text when present",
+      "page-item": "Custom page-number content slot: put template content containing the `{page}` placeholder (e.g. `<span slot=\"page-item\" hidden>Page {page}</span>`); the component clones it into every page-number button and replaces the placeholder (textContent only, injection-safe); falls back to plain page numbers when absent; prev/next/first/last are unaffected"
     }
   },
   "oas-paragraph": {
