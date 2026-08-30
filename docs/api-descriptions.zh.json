@@ -1,6 +1,7 @@
 {
   "oas-affix": {
     "attrs": {
+      "append-to": "传送目标容器选择器（CSS 选择器）；吸附时内容节点传送到目标容器内（fixed 仍相对视口，可绕开 overflow 祖先裁切），解除吸附移回原位；无匹配时告警一次并回落不传送",
       "offset": "吸附触发距离（px）",
       "position": "吸附方向：top（默认，顶缘触达吸附）/ bottom（底缘触达吸附）；非法值回落 top",
       "target": "滚动容器选择器（CSS 选择器）；选择器无匹配时告警并回落 window 滚动"
@@ -207,6 +208,7 @@
       "items": "导航项 JSON",
       "layout": "布局模式：`stacked`（默认，icon 上文字下）/ `horizontal`（icon 左文字右，同一行）；非法值回落 `stacked` 并告警（同值去重）",
       "safe-area": "fixed 模式下底部加安全区内边距（`env(safe-area-inset-bottom)`），避开刘海屏 home 指示条；非 fixed 无效果",
+      "shift": "选中动效：选中项 icon 上浮（translateY(-2px)）并放大（scale 1.08）、文字同步微放大，未选中项回落；纯 CSS transition（只动 transform，不碰布局），prefers-reduced-motion 下过渡停用",
       "show-label": "label 展示模式：`true`（默认，全部项显示文字）/ `active`（icon-only 紧凑形态：仅选中项显示文字，未选中项只显示 icon；label 视觉隐藏后每项 aria-label 自动写入该项 label 文本，读屏不受 CSS 隐藏影响）；非法值回落 `true` 并告警（同值去重）",
       "value": "激活项 value，未指定默认激活第一个可用项"
     },
@@ -1381,6 +1383,7 @@
     "attrs": {
       "back": "是否显示返回按钮",
       "ghost": "透明背景变体：页头背景规则置 `none`（强制透明，让所在容器/页面底色透出），footer 分隔线一并去除；标题/文字色保持主题前景 token；其余布局不变",
+      "responsive": "响应式紧凑：组件宽 <768px 时标题字号降档（xl→lg）、副标题字号降档（sm）、副标题与 extra 换行（.row flex-wrap）；ResizeObserver 观察宿主宽度，onCleanup 清理",
       "subtitle": "副标题文案",
       "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）"
     },

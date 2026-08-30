@@ -673,3 +673,58 @@ describe('OASBottomNavigation icon-only 形态（show-label）', () => {
     expect(tabs(el)[1]!.querySelector('.tab-label')!.textContent).toBe('搜索')
   })
 })
+
+// ===== shift 选中上浮动效 =====
+
+describe('OASBottomNavigation shift 选中动效', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('shift 列入 observedAttributes', () => {
+    expect(OASBottomNavigation.observedAttributes).toContain('shift')
+  })
+
+  it('shift 属性存在时宿主加 data-shift 标记（增删跟随）', () => {
+    const el = mount()
+    expect(el.hasAttribute('data-shift')).toBe(false)
+    el.setAttribute('shift', '')
+    expect(el.hasAttribute('data-shift')).toBe(true)
+    el.removeAttribute('shift')
+    expect(el.hasAttribute('data-shift')).toBe(false)
+  })
+
+  it('CSS：shift 规则——选中项 icon 上移放大（translateY(-2px) scale(1.08)）、文字微放大、transition 走 token、reduced-motion 停用', () => {
+    const stl = styleText(mount())
+    // 选中项 icon：translateY(-2px) + scale(1.08)
+    expect(stl).toMatch(
+      /:host\(\[data-shift\]\)\s+\.tab\[aria-selected='true'\]\s+\.icon-wrap\s*\{[^}]*transform:\s*translateY\(-2px\)\s+scale\(1\.08\)/,
+    )
+    // 选中项文字同步微放大
+    expect(stl).toMatch(
+      /:host\(\[data-shift\]\)\s+\.tab\[aria-selected='true'\]\s+\.tab-label\s*\{[^}]*transform:\s*scale\(1\.05\)/,
+    )
+    // transition 只动 transform 走 token（未选中回落时同样有过渡）
+    expect(stl).toMatch(
+      /:host\(\[data-shift\]\)\s+\.icon-wrap\s*\{[^}]*transition:\s*transform\s+var\(--oas-transition-base\)/,
+    )
+    expect(stl).toMatch(
+      /:host\(\[data-shift\]\)\s+\.tab-label\s*\{[^}]*transition:\s*transform\s+var\(--oas-transition-base\)/,
+    )
+    expect(stl).toContain('prefers-reduced-motion')
+  })
+
+  it('shift 下切换选中：aria-selected 跟随（CSS 钩子命中新选中项）', () => {
+    const el = mount({ shift: '', value: 'home' })
+    expect(el.hasAttribute('data-shift')).toBe(true)
+    expect(tabs(el)[0]!.getAttribute('aria-selected')).toBe('true')
+    tabs(el)[2]!.click()
+    expect(tabs(el)[2]!.getAttribute('aria-selected')).toBe('true')
+    expect(tabs(el)[0]!.getAttribute('aria-selected')).toBe('false')
+    expect(el.getAttribute('value')).toBe('mine')
+  })
+})
