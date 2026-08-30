@@ -94,6 +94,68 @@ describe('OASPageHeader', () => {
     })
   })
 
+  describe('avatar 插槽', () => {
+    it('无内容时头像区块隐藏（渲染层不空占位）', () => {
+      const el = new OASPageHeader()
+      el.setAttribute('title', '标题')
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="avatar"]')!.hidden).toBe(true)
+    })
+
+    it('有内容时头像区块显示', () => {
+      const el = new OASPageHeader()
+      el.setAttribute('title', '标题')
+      el.innerHTML = '<oas-avatar slot="avatar" text="张"></oas-avatar>'
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="avatar"]')!.hidden).toBe(false)
+    })
+
+    it('渲染位置在返回按钮之后、标题块之前', () => {
+      const el = new OASPageHeader()
+      el.setAttribute('back', '')
+      el.setAttribute('title', '标题')
+      el.innerHTML = '<oas-avatar slot="avatar" text="张"></oas-avatar>'
+      document.body.appendChild(el)
+      const sr = el.shadowRoot!
+      const back = sr.querySelector<HTMLElement>('[part="back"]')!
+      const avatar = sr.querySelector<HTMLElement>('[part="avatar"]')!
+      const title = sr.querySelector<HTMLElement>('[part="title"]')!
+      expect(back).not.toBeNull()
+      expect(avatar).not.toBeNull()
+      const isFollowing = (a: Node, b: Node) =>
+        (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+      expect(isFollowing(back, avatar)).toBe(true)
+      expect(isFollowing(avatar, title)).toBe(true)
+    })
+
+    it('动态添加 avatar 内容后区块显示', async () => {
+      const el = new OASPageHeader()
+      el.setAttribute('title', '标题')
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="avatar"]')!.hidden).toBe(true)
+      const avatar = document.createElement('oas-avatar')
+      avatar.setAttribute('slot', 'avatar')
+      avatar.setAttribute('text', '张')
+      el.appendChild(avatar)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="avatar"]')!.hidden).toBe(false)
+    })
+
+    it('动态移除 avatar 内容后区块隐藏', async () => {
+      const el = new OASPageHeader()
+      el.setAttribute('title', '标题')
+      const avatar = document.createElement('oas-avatar')
+      avatar.setAttribute('slot', 'avatar')
+      avatar.setAttribute('text', '张')
+      el.appendChild(avatar)
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="avatar"]')!.hidden).toBe(false)
+      el.removeChild(avatar)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(el.shadowRoot!.querySelector<HTMLElement>('[part="avatar"]')!.hidden).toBe(true)
+    })
+  })
+
   describe('back-icon 插槽', () => {
     it('无插槽内容时内置 chevron 显示', () => {
       const el = new OASPageHeader()
@@ -185,6 +247,7 @@ describe('OASPageHeader', () => {
       expect(css).toMatch(/\.breadcrumb\[hidden\]\s*\{[^}]*display:\s*none/)
       expect(css).toMatch(/\.content\[hidden\]\s*\{[^}]*display:\s*none/)
       expect(css).toMatch(/\.footer\[hidden\]\s*\{[^}]*display:\s*none/)
+      expect(css).toMatch(/\.avatar\[hidden\]\s*\{[^}]*display:\s*none/)
       expect(css).toMatch(/\.back-icon\[hidden\]\s*\{[^}]*display:\s*none/)
     })
   })
