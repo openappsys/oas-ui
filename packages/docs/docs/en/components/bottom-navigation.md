@@ -90,6 +90,14 @@ The `safe-area` boolean attribute (to be combined with `fixed`): in fixed mode i
   <oas-bottom-navigation fixed safe-area style="position: static; width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Search","icon":"search","value":"search"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
 </DemoBlock>
 
+## Horizontal layout (layout)
+
+`layout="horizontal"` puts the icon on the left and the text on the right on the same row (default `stacked` puts the icon above the text); badges still overlay the icon's top-right corner; keyboard roving and ARIA semantics are unchanged. Invalid values fall back to `stacked` with a warning.
+
+<DemoBlock title="Horizontal layout (icon left, text right)">
+  <oas-bottom-navigation id="bn-layout-h" layout="horizontal" value="home" style="width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Messages","icon":"mail","value":"mail","badge":"5"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+</DemoBlock>
+
 ## Variable customization
 
 Pure CSS variable openings (no attribute); dark mode picks up tokens automatically:
@@ -109,6 +117,7 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 | --- | --- | --- | --- |
 | `fixed` | Pin to the viewport bottom (`position: fixed; bottom: 0`) | `boolean` | — |
 | `items` | Navigation items JSON | `string` | `[]` |
+| `layout` | Layout mode: `stacked` (default, icon above text) / `horizontal` (icon left, text right, same row); invalid values fall back to `stacked` with a warning (deduped) | `string` | `stacked` |
 | `safe-area` | Adds bottom safe-area padding (`env(safe-area-inset-bottom)`) in fixed mode to avoid the home indicator of notched screens; no effect in non-fixed mode | `boolean` | — |
 | `value` | Value of the active item; defaults to the first available item | — | — |
 

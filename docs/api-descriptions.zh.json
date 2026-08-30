@@ -202,6 +202,7 @@
     "attrs": {
       "fixed": "固定到视口底部（`position: fixed; bottom: 0`）",
       "items": "导航项 JSON",
+      "layout": "布局模式：`stacked`（默认，icon 上文字下）/ `horizontal`（icon 左文字右，同一行）；非法值回落 `stacked` 并告警（同值去重）",
       "safe-area": "fixed 模式下底部加安全区内边距（`env(safe-area-inset-bottom)`），避开刘海屏 home 指示条；非 fixed 无效果",
       "value": "激活项 value，未指定默认激活第一个可用项"
     },

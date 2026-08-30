@@ -379,3 +379,100 @@ describe('OASBottomNavigation 角标 / 安全区 / 变量开口', () => {
     expect(stl).toMatch(/\.tab\s*\{[^}]*flex:\s*1\b/)
   })
 })
+
+// ===== 横排布局（layout） =====
+
+describe('OASBottomNavigation 横排布局（layout）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('layout="horizontal"：宿主 data-layout=horizontal，tab 结构与语义不变', () => {
+    const el = mount({ layout: 'horizontal' })
+    expect(el.dataset.layout).toBe('horizontal')
+    const ts = tabs(el)
+    expect(ts.length).toBe(3)
+    expect(list(el).getAttribute('role')).toBe('tablist')
+    expect(ts[0]!.getAttribute('role')).toBe('tab')
+    expect(ts[0]!.querySelector('.icon-wrap')).not.toBeNull()
+    expect(ts[0]!.querySelector('.tab-label')).not.toBeNull()
+  })
+
+  it('layout 缺省与显式 stacked：data-layout=stacked（默认）', () => {
+    expect(mount().dataset.layout).toBe('stacked')
+    expect(mount({ layout: 'stacked' }).dataset.layout).toBe('stacked')
+  })
+
+  it('layout 非法值回落 stacked 且 console.warn 一次（同值去重）', () => {
+    const warns: unknown[][] = []
+    const orig = console.warn
+    console.warn = (...a: unknown[]) => warns.push(a)
+    try {
+      const el = mount({ layout: 'vertical' })
+      expect(el.dataset.layout).toBe('stacked')
+      expect(warns.length).toBe(1)
+      expect(String(warns[0]?.[0])).toContain('[oas-bottom-navigation]')
+      mount({ layout: 'vertical' })
+      expect(warns.length).toBe(1)
+    } finally {
+      console.warn = orig
+    }
+  })
+
+  it('CSS：horizontal 时 .tab flex-direction: row、gap 走 token、label 不换行', () => {
+    const stl = styleText(mount())
+    expect(stl).toMatch(/:host\(\[data-layout='horizontal'\]\)\s+\.tab\s*\{[^}]*flex-direction:\s*row/)
+    expect(stl).toMatch(
+      /:host\(\[data-layout='horizontal'\]\)\s+\.tab\s*\{[^}]*gap:\s*var\(--oas-space-2\)/,
+    )
+    expect(stl).toMatch(/\.tab-label\s*\{[^}]*white-space:\s*nowrap/)
+  })
+
+  it('两通道一致：子元素通道 + layout=horizontal 同样标记 data-layout', () => {
+    const el = mountChildren(
+      `<oas-bottom-navigation-item value="home" icon="user">首页</oas-bottom-navigation-item>
+       <oas-bottom-navigation-item value="search" icon="search">搜索</oas-bottom-navigation-item>`,
+      { layout: 'horizontal' },
+    )
+    expect(el.dataset.layout).toBe('horizontal')
+    const ts = tabs(el)
+    expect(ts.length).toBe(2)
+    expect(ts[0]!.querySelector('.tab-label')!.textContent).toBe('首页')
+  })
+
+  it('horizontal 下 badge 仍叠在 icon 右上角（icon-wrap 内、part=badge）', () => {
+    const el = mount({
+      layout: 'horizontal',
+      items: JSON.stringify([
+        { label: '消息', value: 'mail', icon: 'mail', badge: '3' },
+        { label: '首页', value: 'home', icon: 'user' },
+      ]),
+    })
+    const badge = el.shadowRoot!.querySelector('.tab-badge')!
+    expect(badge.textContent).toBe('3')
+    expect(badge.getAttribute('part')).toBe('badge')
+    expect(badge.parentElement!.classList.contains('icon-wrap')).toBe(true)
+  })
+
+  it('键盘 roving 不受 layout 影响：horizontal 下方向键仍左右移动焦点', () => {
+    const el = mount({ layout: 'horizontal', value: 'home' })
+    key(el, 'ArrowRight')
+    expect(el.shadowRoot!.activeElement).toBe(tabs(el)[1])
+    key(el, 'ArrowLeft')
+    expect(el.shadowRoot!.activeElement).toBe(tabs(el)[0])
+  })
+
+  it('layout 运行时切换：data-layout 跟随更新，不重建按钮引用', () => {
+    const el = mount()
+    const first = tabs(el)[0]
+    el.setAttribute('layout', 'horizontal')
+    expect(el.dataset.layout).toBe('horizontal')
+    expect(tabs(el)[0]).toBe(first)
+    el.setAttribute('layout', 'stacked')
+    expect(el.dataset.layout).toBe('stacked')
+  })
+})
