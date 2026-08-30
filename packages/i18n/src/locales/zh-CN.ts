@@ -129,6 +129,7 @@ export const zhCN = {
   'pagination.jumperInput': '页码跳转',
   'pagination.jumpForward': '向前跳页',
   'pagination.jumpBackward': '向后跳页',
+  'pagination.more': '更多',
   // table（表格）
   'table.selectAll': '全选',
   'table.loading': '加载中…',
