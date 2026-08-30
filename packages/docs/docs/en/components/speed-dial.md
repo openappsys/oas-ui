@@ -25,6 +25,10 @@ A floating main button that expands a list of sub-actions, commonly used for qui
   </div>
 </DemoBlock>
 
+## Cascade animation
+
+On expansion, the sub-actions fade in one after another (`transition-delay = index × 30ms` per item) and disappear simultaneously on collapse. The animation is built in with no configuration needed; under `prefers-reduced-motion` the cascade delay is zeroed and transitions are disabled (everything appears at once, for accessibility). The demos above already use it when expanded.
+
 ## Text-only actions
 
 `icon` can be omitted to show only the label; icon-only actions (no label) are also supported.

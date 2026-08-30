@@ -129,6 +129,20 @@ const STYLE = `
 :host(.oas-bottom-navigation--fixed.oas-bottom-navigation--safe-area) .tablist {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+/* hide-on-scroll：滚动滑动收起只动 transform（不碰 layout），transition 走 token */
+:host(.oas-bottom-navigation--fixed) {
+  transition: transform var(--oas-transition-base) var(--oas-ease-out);
+}
+/* 滚动隐藏态：向下滚动滑出（translateY(100%) 移出视口底部），向上滚动滑回恢复 */
+:host(.oas-bottom-navigation--fixed.oas-bottom-navigation--hidden) {
+  transform: translateY(100%);
+}
+/* 减少动效偏好：滑动收起/恢复过渡停用（对齐可访问性） */
+@media (prefers-reduced-motion: reduce) {
+  :host(.oas-bottom-navigation--fixed) {
+    transition: none;
+  }
+}
 `
 
 /**
@@ -138,6 +152,9 @@ const STYLE = `
  * - `items`：JSON `[{ label, value, icon?, disabled?, badge? }]`，icon 取 @oas-ui/icons 的 iconRegistry
  * - `value`：激活项 value；未设置默认激活第一个可用项
  * - `fixed`：布尔，置顶 fixed 底部（默认静态，demo 用 static + 说明）
+ * - `hide-on-scroll`：布尔，需配合 `fixed`——向下滚动时导航条 `translateY(100%)` 滑出隐藏、
+ *   向上滚动滑回显示（滚动差 >4px 判方向，transition 只动 transform）；纯视觉收起，
+ *   不加 `aria-hidden`（tab 语义与键盘焦点保持可达），滚回即恢复；非 fixed 无效果
  * - `layout`：`stacked`（默认，icon 上文字下）/ `horizontal`（icon 左文字右，同一行）；
  *   非法值回落 stacked 并告警（同值去重）
  *
@@ -149,7 +166,7 @@ const STYLE = `
  */
 export class OASBottomNavigation extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['items', 'value', 'fixed', 'safe-area', 'layout']
+    return ['items', 'value', 'fixed', 'hide-on-scroll', 'safe-area', 'layout']
   }
 
   private itemsList: BottomNavItem[] = []
@@ -158,6 +175,10 @@ export class OASBottomNavigation extends OASElement {
   private lastItemsRaw = ''
   private lastValueRaw: string | null = null
   private focusIndex = 0
+  /** hide-on-scroll 方向判定的滚动基线（null = 未登记，启用时以当前滚动位置为新基线） */
+  private lastScrollY: number | null = null
+  /** window scroll 监听是否已绑定（连接期间只绑一次，断开清理置 false，重连自动重绑） */
+  private scrollBound = false
   /** 子元素通道观察器：light DOM 里 oas-bottom-navigation-item 增删或属性/文本变化 → 重解析渲染 */
   private childObserver: MutationObserver | null = null
 
@@ -191,6 +212,7 @@ export class OASBottomNavigation extends OASElement {
   protected override update(): void {
     this.classList.toggle('oas-bottom-navigation--fixed', this.hasAttr('fixed'))
     this.classList.toggle('oas-bottom-navigation--safe-area', this.hasAttr('safe-area'))
+    this.syncHideOnScroll()
     // 横排布局标记（CSS 钩子）：非法值回落 stacked + dev 告警（同值去重）
     this.dataset.layout = normalizeLayout(this.getAttr('layout', 'stacked'))
     // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
@@ -358,6 +380,52 @@ export class OASBottomNavigation extends OASElement {
     }
     const first = this.itemsList.findIndex((it) => !it.disabled)
     return first >= 0 ? first : 0
+  }
+
+  // ===== hide-on-scroll 滚动隐藏（仅 fixed 模式） =====
+
+  /**
+   * hide-on-scroll 状态同步：仅 fixed + hide-on-scroll 同时存在时生效。
+   * 关闭时移除 hidden 类并复位滚动基线；启用时绑定 window scroll 监听并登记新基线
+   * （重连/属性增删后基线重设，避免方向误判）。
+   *
+   * aria 语义：隐藏是**纯视觉收起**（translateY 滑出视口），不加 aria-hidden——
+   * tab 语义与键盘焦点保持可达，滚回即恢复，对齐「视觉隐藏而非语义移除」。
+   */
+  private syncHideOnScroll(): void {
+    const enabled = this.hasAttr('fixed') && this.hasAttr('hide-on-scroll')
+    if (!enabled) {
+      this.classList.remove('oas-bottom-navigation--hidden')
+      this.lastScrollY = null
+      return
+    }
+    this.ensureScrollListener()
+    if (this.lastScrollY === null) this.lastScrollY = window.scrollY
+  }
+
+  /** window scroll 监听（passive）：连接期间只绑一次，断开经 onCleanup 移除，重连自动重绑 */
+  private ensureScrollListener(): void {
+    if (this.scrollBound) return
+    window.addEventListener('scroll', this.handleScroll, { passive: true })
+    this.scrollBound = true
+    this.onCleanup(() => {
+      window.removeEventListener('scroll', this.handleScroll)
+      this.scrollBound = false
+    })
+  }
+
+  /** 滚动方向判定：滚动差 >4px 才判方向（防轻微抖动误触发）；向下滑出、向上滑回 */
+  private handleScroll = (): void => {
+    if (!this.hasAttr('fixed') || !this.hasAttr('hide-on-scroll')) return
+    const y = window.scrollY
+    if (this.lastScrollY === null) {
+      this.lastScrollY = y
+      return
+    }
+    const delta = y - this.lastScrollY
+    this.lastScrollY = y
+    if (Math.abs(delta) <= 4) return
+    this.classList.toggle('oas-bottom-navigation--hidden', delta > 0)
   }
 
   private resolveInitialFocus(selected: string): number {
