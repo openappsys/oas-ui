@@ -25,6 +25,21 @@
   </oas-space>
 </DemoBlock>
 
+## 页码上限
+
+<DemoBlock title="pager-count 页码按钮数量上限">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="info">siblings="2"（不设上限，7 个页码钮）</oas-tag>
+    <oas-pagination total="1000" page-size="10" current="45" siblings="2"></oas-pagination>
+    <oas-tag type="info">siblings="2" + pager-count="5"（截断优先，只显示 5 个）</oas-tag>
+    <oas-pagination total="1000" page-size="10" current="45" siblings="2" pager-count="5"></oas-pagination>
+    <oas-tag type="info">pager-count="5"（100 页只显示 5 个页码钮）</oas-tag>
+    <oas-pagination total="1000" page-size="10" current="45" pager-count="5"></oas-pagination>
+  </oas-space>
+</DemoBlock>
+
+超过上限时按当前页居中收缩窗口，省略号两端至少留 2 页（首尾页始终可达）；低于最小值 5 回落 5 并在控制台告警。
+
 ## 总条数
 
 <DemoBlock title="show-total 显示总条数">
@@ -265,6 +280,7 @@ onMounted(() => {
 | `hide-on-single` | 单页（pageCount ≤ 1）时整个组件不渲染 | `boolean` | — |
 | `page-size` | 每页条数 | `string` | `10` |
 | `page-sizes` | 每页条数下拉选项（JSON 数组），如 `[10,20,50]`；切换后回到第 1 页 | `string` | — |
+| `pager-count` | 页码按钮（不含前后/首末页钮）的最大可见数量，默认 9；超过上限时按当前页居中收缩窗口（省略号两端至少留 2 页，首尾页可达），低于最小值 5 回落 5 并告警 | `string` | `9` |
 | `show-edges` | 显示首/末页双箭头钮（« »），边界处禁用；aria-label 走 i18n | `boolean` | — |
 | `show-jumper` | 显示「跳至 __ 页」快速跳转输入框（回车跳转，越界夹取） | `boolean` | — |
 | `show-total` | 显示总条数文案「共 X 条」 | `boolean` | — |

@@ -27,6 +27,12 @@
       "observed": true
     },
     {
+      "name": "pager-count",
+      "type": "string",
+      "default": "9",
+      "observed": true
+    },
+    {
       "name": "show-total",
       "type": "boolean",
       "observed": true
