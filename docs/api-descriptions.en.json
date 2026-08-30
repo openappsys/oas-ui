@@ -2446,5 +2446,30 @@
     "slots": {
       "": "Command item label content (default slot text); direct child `<oas-command-item>` elements recursively become the `page` sub-page"
     }
+  },
+  "oas-stepper": {
+    "attrs": {
+      "clickable": "Steps are clickable to jump (default true; `clickable=\"false\"` disables: click/keyboard silent, arrow focus still works)",
+      "current": "Current step index (0-based, two-way: jumps write it back, external sets instantly sync aria-selected and panel visibility); invalid values fall back to 0, out-of-range clamped",
+      "direction": "Direction: `horizontal` (default) / `vertical` (indicator left / title right)",
+      "linear": "Linear mode: only steps with `index <= current` can be activated (future steps `aria-disabled` + visually weakened, silent on click/keyboard)",
+      "size": "Size tier: `xs`/`small`/`medium`/`large`/`xl` (title font density; invalid values fall back to medium + dev warning, deduped)",
+      "steps": "Steps data JSON `[{ title, description?, icon?, disabled?, status? }]` (semantics aligned with oas-steps StepItem minus panel-unrelated fields); invalid/empty fall back to `[]`"
+    },
+    "events": {
+      "oas-change": "Fired when jumping to a clickable step (step click / keyboard Enter/Space); `detail: { index }` (0-based, bubbles + composed, writes back current)"
+    },
+    "slots": {
+      "": "Content panel projection area (`<oas-stepper-panel>` direct children); panels are associated with step indexes by `value`, only the one matching `current` is visible"
+    }
+  },
+  "oas-stepper-panel": {
+    "attrs": {
+      "value": "Step index string the panel is associated with (e.g. `value=\"0\"`); only the panel matching `current` is visible (`hidden` driven by oas-stepper)"
+    },
+    "events": {},
+    "slots": {
+      "": "Panel content (default slot)"
+    }
   }
 }

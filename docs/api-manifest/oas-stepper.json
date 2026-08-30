@@ -1,0 +1,59 @@
+{
+  "className": "OASStepper",
+  "sourceFile": "packages/ui/src/navigation/stepper/oas-stepper.ts",
+  "attrs": [
+    {
+      "name": "steps",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "current",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "linear",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "clickable",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "horizontal",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    }
+  ],
+  "props": [
+    {
+      "name": "steps",
+      "type": "StepperStep[] | string",
+      "default": "[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-change",
+      "detail": "{ index: idx }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}
