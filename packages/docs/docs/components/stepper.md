@@ -25,7 +25,7 @@
 `clickable` 默认开启：点击任意可点步骤即跳转（整步可点，键盘 Enter/Space 可达），点击派发 `oas-change`（detail 为 `{ index }`）并写回 `current`。
 
 <DemoBlock title="点击步骤切换">
-  <oas-stepper id="stepper-click" current="1" steps='[{"title":"创建订单","description":"填写订单信息"},{"title":"确认支付","description":"选择支付方式"},{"title":"完成发货","description":"等待收货"}]'>
+  <oas-stepper id="stepper-click" clickable current="1" steps='[{"title":"创建订单","description":"填写订单信息"},{"title":"确认支付","description":"选择支付方式"},{"title":"完成发货","description":"等待收货"}]'>
     <oas-stepper-panel value="0"><p>订单信息填写区</p></oas-stepper-panel>
     <oas-stepper-panel value="1"><p>支付方式选择区</p></oas-stepper-panel>
     <oas-stepper-panel value="2"><p>发货进度区</p></oas-stepper-panel>
