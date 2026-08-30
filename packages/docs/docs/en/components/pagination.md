@@ -211,6 +211,55 @@ External buttons set the `current` attribute directly to drive the view (out-of-
   </oas-space>
 </DemoBlock>
 
+## Link mode
+
+<DemoBlock title="href-template renders links">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="info">href-template="#page={page}" (native browser navigation; middle/right-click and new-tab work)</oas-tag>
+    <oas-pagination id="pagination-link" href-template="#page={page}" total="100" page-size="10" current="3" show-edges></oas-pagination>
+    <oas-tag type="primary" id="pagination-link-info">Currently on page 3</oas-tag>
+    <oas-tag type="info">target="_blank" passthrough (opens in a new tab)</oas-tag>
+    <oas-pagination href-template="#page={page}" target="_blank" total="100" page-size="10" current="3"></oas-pagination>
+    <oas-tag type="info">disabled degrades to a non-clickable span</oas-tag>
+    <oas-pagination href-template="#page={page}" disabled total="100" page-size="10" current="3"></oas-pagination>
+  </oas-space>
+</DemoBlock>
+
+With `href-template` (containing the `{page}` placeholder) set, page/prev/next/first/last are rendered as `<a href>` with `{page}` replaced by the target page; `target` is passed through to `<a target>`. When disabled they degrade to non-clickable spans. Clicking still fires `oas-change`; vetoing `oas-before-change` also prevents native navigation.
+
+## Responsive
+
+<DemoBlock title="responsive switches to minimal on narrow screens">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-pagination responsive total="500" page-size="10" current="25" show-total></oas-pagination>
+    <oas-tag type="info">Renders in the simple minimal form when the component is narrower than 640px (ResizeObserver), restores when wide enough; equivalent to explicit simple</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## Clickable ellipsis
+
+<DemoBlock title="ellipsis jumps pages">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-pagination id="pagination-ellipsis" total="1000" page-size="10" current="5"></oas-pagination>
+    <oas-tag type="primary" id="pagination-ellipsis-info">Currently on page 5</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+Ellipsis is a clickable button: clicking jumps `siblings + 1` pages in that direction (subject to the `oas-before-change` veto and clamped to the valid range); aria-label via i18n (Jump forward/Jump backward).
+
+## Custom page-number content
+
+<DemoBlock title="page-item slot template">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="info">Slot content holds the {page} placeholder; the component clones it per page</oas-tag>
+    <oas-pagination total="100" page-size="10" current="5">
+      <span slot="page-item" hidden>Page <b>{page}</b></span>
+    </oas-pagination>
+  </oas-space>
+</DemoBlock>
+
+Put template content containing the `{page}` placeholder; the component clones it into every page-number button and replaces the `{page}` text with the actual page number (textContent-only replacement, injection-safe). Without the slot, buttons show plain page numbers. prev/next/first/last are unaffected.
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
@@ -227,6 +276,8 @@ onMounted(() => {
   bind('pagination-sizes', (info, page, pageSize) => (info.textContent = `${pageSize} per page, currently on page ${page}`))
   bind('pagination-jumper', (info, page, pageSize) => (info.textContent = `Currently on page ${page}`))
   bind('pagination-full', (info, page, pageSize) => (info.textContent = `${pageSize} per page, currently on page ${page}`))
+  bind('pagination-ellipsis', (info, page) => (info.textContent = `Currently on page ${page}`))
+  bind('pagination-link', (info, page) => (info.textContent = `Currently on page ${page}`))
 
   // Flip interception: veto jumping to page 4 (preventDefault)
   const beforeEl = document.getElementById('pagination-before')
@@ -278,22 +329,25 @@ onMounted(() => {
 | `current` | Current page (controlled; flipping updates this attribute) | `string` | `1` |
 | `disabled` | Disables everything: all page buttons with aria-disabled, plus the page-size dropdown and jumper input | `boolean` | — |
 | `hide-on-single` | Hides the whole component when there is a single page (pageCount ≤ 1) | `boolean` | — |
+| `href-template` | Link mode: renders page/prev/next/first/last as `<a href>` (the `{page}` placeholder is replaced with the target page); middle/right-click and opening in a new tab work natively; degrades to a non-clickable span when disabled | `string` | — |
 | `page-size` | Records per page | `string` | `10` |
 | `page-sizes` | Page-size dropdown options (JSON array), e.g. `[10,20,50]`; switching resets to page 1 | `string` | — |
 | `pager-count` | Maximum number of page-number buttons (excluding prev/next/first/last), default 9; when exceeded, the window shrinks centered on the current page (at least 2 pages on each side of an ellipsis, first/last reachable); values below the minimum 5 fall back to 5 with a warning | `string` | `9` |
+| `responsive` | Responsive: renders in the simple minimal form automatically when the component is narrower than 640px (ResizeObserver on the host; restores when wide enough); equivalent to explicit `simple` | `boolean` | — |
 | `show-edges` | Shows first/last double-arrow buttons (« »), disabled at the boundaries; aria-label via i18n | `boolean` | — |
 | `show-jumper` | Shows a quick-jump input 「跳至 __ 页」(Enter to jump, out-of-range clamped) | `boolean` | — |
 | `show-total` | Shows the total text 「共 X 条」 | `boolean` | — |
 | `siblings` | Number of page numbers shown on each side of the current page | `string` | `1` |
 | `simple` | Minimal form: only prev/next buttons and a "current / total pages" text; mutually exclusive with the page-number ellipsis algorithm (simple wins); show-jumper still applies | `boolean` | — |
 | `size` | Size tier: xs / sm / md / lg / xl (default md); invalid values fall back to md with a console warning | `string` | `md` |
+| `target` | Passthrough to `<a target>` (e.g. `_blank`) in link mode; only applies when `href-template` is set | `string` | — |
 | `total` | Total number of records | `string` | `0` |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-before-change` | Fires before a page change/jump; preventDefault cancels the change (page-size switching is not intercepted) |
+| `oas-before-change` | Fires before a page change/jump; preventDefault cancels the change (page-size switching is not intercepted); in link mode it also prevents native navigation |
 | `oas-change` | Flipping `{ page }`; page-size switch `{ page: 1, pageSize }`; quick jump `{ page, pageSize }`, `detail: { page } \| { page: 1, pageSize } \| { page, pageSize }` |
 
 ### Slots
@@ -301,6 +355,7 @@ onMounted(() => {
 | Name | Description |
 | --- | --- |
 | `next-icon` | Icon slot for the next button; replaces the default › when present |
+| `page-item` | Custom page-number content slot: put template content containing the `{page}` placeholder (e.g. `<span slot="page-item" hidden>Page {page}</span>`); the component clones it into every page-number button and replaces the placeholder (textContent only, injection-safe); falls back to plain page numbers when absent; prev/next/first/last are unaffected |
 | `prev-icon` | Icon slot for the previous button; replaces the default ‹ when present |
 | `total` | Total text slot; replaces the built-in "Total N" text when present |
 
