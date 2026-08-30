@@ -14,6 +14,16 @@
   <oas-page-header title="用户设置" subtitle="修改账号与安全信息" back></oas-page-header>
 </DemoBlock>
 
+## 头像
+
+`avatar` 具名插槽渲染在返回按钮之后、标题块之前（「返回 + 头像 + 标题」通行布局），组合 `oas-avatar` 原组件使用；无内容时区块不渲染。
+
+<DemoBlock title="avatar 插槽">
+  <oas-page-header title="张三" subtitle="产品设计师 · 北京" back>
+    <oas-avatar slot="avatar">张</oas-avatar>
+  </oas-page-header>
+</DemoBlock>
+
 ## 面包屑
 
 面包屑通过 `slot="breadcrumb"` 放入头部独立行，组合 `oas-breadcrumb` 原组件使用。
@@ -139,6 +149,7 @@ onMounted(async () => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | 正文内容（标题行下方正文区，默认插槽；无内容时区块不渲染） |
+| `avatar` | 头像（返回按钮之后、标题块之前；组合 oas-avatar 原组件，无内容时不渲染） |
 | `back-icon` | 返回按钮图标插槽，有内容时替换内置 chevron（空注释节点按无内容处理） |
 | `breadcrumb` | 面包屑（头部独立行，组合 oas-breadcrumb 原组件，无内容时不渲染） |
 | `extra` | 右侧操作区 |

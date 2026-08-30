@@ -87,6 +87,19 @@
   <oas-float-button badge="5" style="position: static; box-shadow: none" onoas-click="message.info('悬浮按钮被点击，detail.originalEvent 类型：' + event.detail.originalEvent.type)"></oas-float-button>
 </DemoBlock>
 
+## 悬浮提示
+
+悬浮提示由宿主用 `oas-tooltip` 包裹组合实现：tooltip 以第一个子元素为触发锚点，hover / 键盘聚焦 FAB 即显示提示（真实使用中 FAB 固定右下角时同样生效，tooltip 按锚点定位）。组件内置不加 tooltip prop，保持 FAB 职责单一，提示逻辑交给组合层。
+
+<DemoBlock title="tooltip 组合">
+  <oas-tooltip content="新建文档" placement="top">
+    <oas-float-button style="position: static; box-shadow: none"></oas-float-button>
+  </oas-tooltip>
+  <oas-tooltip content="反馈问题" placement="left">
+    <oas-float-button type="default" style="position: static; box-shadow: none"><span slot="icon">✎</span></oas-float-button>
+  </oas-tooltip>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
