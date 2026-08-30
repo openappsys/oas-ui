@@ -199,6 +199,51 @@
   <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-xs)">拖动容器右下角缩放到 640px 以下，步骤自动转为纵向布局。</p>
 </DemoBlock>
 
+## 自定义编号
+
+每步的 `prefix` 字段在指示器位渲染自定义编号文本（如「A」「01」）替代默认序号；优先级：显式 `icon` > `prefix` > 默认序号；`finish` / `error` 的 ✓/✕ 不受影响（`textContent` 渲染，禁 HTML 注入）。
+
+<DemoBlock title="prefix 自定义编号">
+  <oas-steps current="1" steps='[{"title":"创建订单","prefix":"01","description":"填写订单信息"},{"title":"确认支付","prefix":"02","description":"选择支付方式"},{"title":"完成发货","prefix":"03","description":"等待收货"}]'></oas-steps>
+  <oas-steps style="margin-top: 16px" current="1" steps='[{"title":"资料填写","prefix":"A"},{"title":"实名认证","prefix":"B"},{"title":"开通完成","prefix":"C"}]'></oas-steps>
+</DemoBlock>
+
+## 中段折叠
+
+`max-count`（最小 2）限制可见步骤数：超出时中段折叠为「省略步」（⋯，不可点、连接线连续），首步、末步与当前步恒可见，窗口随 `current` 平移；非法值 / 小于 2 忽略（全量显示）。
+
+<DemoBlock title="max-count 折叠（点击步骤观察窗口平移）">
+  <oas-steps clickable max-count="5" current="0" onoas-change="message.info('切换到第 ' + (event.detail.index + 1) + ' 步')" steps='[{"title":"S1"},{"title":"S2"},{"title":"S3"},{"title":"S4"},{"title":"S5"},{"title":"S6"},{"title":"S7"},{"title":"S8"},{"title":"S9"},{"title":"S10"}]'></oas-steps>
+</DemoBlock>
+
+## 倒序
+
+`reverse` 视觉倒序（横向 `row-reverse` / 纵向 `column-reverse`）：编号显示 = 总数 - index（视觉流向递增）；状态推导仍按 `steps` 数组序，`oas-change` 回传数组 `index` 不变。
+
+<DemoBlock title="reverse 倒序（横向 / 纵向）">
+  <oas-steps reverse current="1" steps='[{"title":"创建订单","description":"填写订单信息"},{"title":"确认支付","description":"选择支付方式"},{"title":"完成发货","description":"等待收货"}]'></oas-steps>
+  <div style="width: 260px; margin-top: 16px">
+    <oas-steps reverse direction="vertical" current="1" steps='[{"title":"填写资料","description":"基本信息与联系方式"},{"title":"上传证件","description":"身份证正反面"},{"title":"审核通过","description":"等待管理员审核"}]'></oas-steps>
+  </div>
+</DemoBlock>
+
+## 内容右侧
+
+`content-placement="right"`（横向模式，默认 `bottom`）将标题 / 描述 / 提示整体置于指示器右侧；纵向忽略（纵向本身即图标左 / 内容右）；与 `label-placement` 正交。
+
+<DemoBlock title="content-placement 内容右侧">
+  <oas-steps content-placement="right" current="1" steps='[{"title":"创建订单","description":"填写订单信息"},{"title":"确认支付","description":"选择支付方式","extra":"支持多种支付渠道"},{"title":"完成发货","description":"等待收货"}]'></oas-steps>
+</DemoBlock>
+
+## 箭头分格
+
+`arrow` 箭头分格形态（横向专用）：每项 `clip-path` 箭头分格（首项平头、相邻凹凸衔接），激活主色填充 / 完成浅主色 / 等待灰；连接线隐藏（分格自衔接）；与 `simple` 互斥（simple 优先）、`navigation` 下忽略。
+
+<DemoBlock title="arrow 箭头分格（含 error 态）">
+  <oas-steps arrow clickable current="1" onoas-change="message.info('切换到第 ' + (event.detail.index + 1) + ' 步')" steps='[{"title":"创建订单","description":"填写订单信息"},{"title":"确认支付","description":"选择支付方式"},{"title":"人工审核","description":"风控复核"},{"title":"完成发货","description":"等待收货"}]'></oas-steps>
+  <oas-steps style="margin-top: 16px" arrow reverse current="2" steps='[{"title":"创建订单"},{"title":"确认支付"},{"title":"完成发货"}]'></oas-steps>
+</DemoBlock>
+
 ## 形态组合
 
 组合语义：`simple` 优先于 `progress-dot` / `navigation`（simple 下点状与导航形态让位）；`navigation` 下 `responsive` 转纵向忽略（导航强制横向的现状保持）。
@@ -219,19 +264,23 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `arrow` | 箭头分格形态（横向专用）：每项 clip-path 箭头分格（首项平头、相邻凹凸衔接），激活主色填充 / 完成浅主色 / 等待灰，连接线隐藏（布尔，存在即开启；与 simple 互斥，simple 优先；navigation 下忽略） | `boolean` | — |
 | `clickable` | 步骤可点击跳转（布尔，存在即开启） | `boolean` | — |
+| `content-placement` | 内容块位置：`bottom`（默认，标题/描述在指示器下方）/ `right`（整体置于指示器右侧，横向模式）；纵向忽略；与 label-placement 正交 | `string` | — |
 | `current` | 当前步骤索引（0 起） | `string` | `0` |
 | `direction` | 方向（导航模式下强制横向；responsive 窄屏时优先转纵向） | `string` | `horizontal` |
 | `label-placement` | 标签排布：`vertical`（默认，图标上/标题下）/ `horizontal`（图标左/标题右同行） | `string` | — |
 | `linear` | 线性模式：仅允许点击 `index <= current` 的步骤（布尔，存在即开启；未来步禁点，点击静默） | `boolean` | — |
 | `lineless` | 隐藏全部连接线（布尔，存在即开启；紧凑形态） | `boolean` | — |
+| `max-count` | 可见步骤数上限（最小 2）：超出时中段折叠为省略步（⋯，不可点、连接线连续），首/末/当前步恒可见，窗口随 current 平移；非法值 / 小于 2 忽略（全量显示） | `string` | — |
 | `navigation` | 导航模式：箭头导航条 + 底部上一步/下一步按钮（布尔，存在即开启；与 simple 互斥，simple 优先） | `boolean` | — |
 | `progress-dot` | 点状步骤：指示器为圆点、连线为细线（布尔，存在即开启；与 simple 互斥，simple 优先） | `boolean` | — |
 | `responsive` | 窄屏自动纵向：容器宽度 < 640px 时按 vertical 布局渲染（布尔，存在即开启；ResizeObserver 监听，断连自动清理；navigation 下忽略） | `boolean` | — |
-| `separator` | 连接线形态：`line`（默认）/ `dashed`（虚线）/ `arrow`（末端三角）；navigation 下不生效 | `string` | — |
+| `reverse` | 视觉倒序：横向 `row-reverse` / 纵向 `column-reverse`；编号显示 = 总数 - index（视觉流向递增），状态推导仍按 steps 数组序（布尔，存在即开启） | `boolean` | — |
+| `separator` | 连接线形态：`line`（默认）/ `dashed`（虚线）/ `arrow`（末端三角）；navigation / arrow 下不生效 | `string` | — |
 | `simple` | 紧凑模式：单行小尺寸（指示器缩小、描述隐藏、连接线贴紧）（布尔，存在即开启；优先于 progress-dot/navigation） | `boolean` | — |
 | `status` | 容器级状态覆盖当前步（`wait` / `process` / `finish` / `error`）；每步显式 `status` 仍最高优先 | `StepStatus` | — |
-| `steps` | `[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent? }]` JSON 字符串 | `StepItem[] \| string` | `[]` |
+| `steps` | `[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent?, prefix? }]` JSON 字符串 | `StepItem[] \| string` | `[]` |
 
 ### 事件
 

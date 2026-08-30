@@ -1817,19 +1817,23 @@
   },
   "oas-steps": {
     "attrs": {
+      "arrow": "箭头分格形态（横向专用）：每项 clip-path 箭头分格（首项平头、相邻凹凸衔接），激活主色填充 / 完成浅主色 / 等待灰，连接线隐藏（布尔，存在即开启；与 simple 互斥，simple 优先；navigation 下忽略）",
       "clickable": "步骤可点击跳转（布尔，存在即开启）",
+      "content-placement": "内容块位置：`bottom`（默认，标题/描述在指示器下方）/ `right`（整体置于指示器右侧，横向模式）；纵向忽略；与 label-placement 正交",
       "current": "当前步骤索引（0 起）",
       "direction": "方向（导航模式下强制横向；responsive 窄屏时优先转纵向）",
       "label-placement": "标签排布：`vertical`（默认，图标上/标题下）/ `horizontal`（图标左/标题右同行）",
       "linear": "线性模式：仅允许点击 `index <= current` 的步骤（布尔，存在即开启；未来步禁点，点击静默）",
       "lineless": "隐藏全部连接线（布尔，存在即开启；紧凑形态）",
+      "max-count": "可见步骤数上限（最小 2）：超出时中段折叠为省略步（⋯，不可点、连接线连续），首/末/当前步恒可见，窗口随 current 平移；非法值 / 小于 2 忽略（全量显示）",
       "navigation": "导航模式：箭头导航条 + 底部上一步/下一步按钮（布尔，存在即开启；与 simple 互斥，simple 优先）",
       "progress-dot": "点状步骤：指示器为圆点、连线为细线（布尔，存在即开启；与 simple 互斥，simple 优先）",
       "responsive": "窄屏自动纵向：容器宽度 < 640px 时按 vertical 布局渲染（布尔，存在即开启；ResizeObserver 监听，断连自动清理；navigation 下忽略）",
-      "separator": "连接线形态：`line`（默认）/ `dashed`（虚线）/ `arrow`（末端三角）；navigation 下不生效",
+      "reverse": "视觉倒序：横向 `row-reverse` / 纵向 `column-reverse`；编号显示 = 总数 - index（视觉流向递增），状态推导仍按 steps 数组序（布尔，存在即开启）",
+      "separator": "连接线形态：`line`（默认）/ `dashed`（虚线）/ `arrow`（末端三角）；navigation / arrow 下不生效",
       "simple": "紧凑模式：单行小尺寸（指示器缩小、描述隐藏、连接线贴紧）（布尔，存在即开启；优先于 progress-dot/navigation）",
       "status": "容器级状态覆盖当前步（`wait` / `process` / `finish` / `error`）；每步显式 `status` 仍最高优先",
-      "steps": "`[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent? }]` JSON 字符串"
+      "steps": "`[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent?, prefix? }]` JSON 字符串"
     },
     "events": {
       "oas-change": "点击可点击步骤或导航按钮时触发（含键盘触发）；`detail: { index, id? }`（0 起，`id` 为步骤 `id` 字段回传，未设置时保持 `{ index }`）",

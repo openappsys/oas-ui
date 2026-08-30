@@ -71,6 +71,28 @@
       "name": "responsive",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "max-count",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "reverse",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "content-placement",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "arrow",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
