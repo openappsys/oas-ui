@@ -59,13 +59,20 @@ export class OASPopconfirm extends OASElement {
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
   private titleCache: string | null = null
 
+  /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
+  private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
+    return slot
+      .assignedNodes()
+      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
       <style>${STYLE}</style>
       <slot></slot>
       <div class="popover" part="popover" role="dialog">
-        <div class="title" part="title"></div>
+        <div class="title" part="title"><slot name="title"><span class="title-text"></span></slot></div>
         <div class="actions" part="actions">
           <button class="btn" part="cancel" type="button"></button>
           <button class="btn" part="ok" type="button"></button>
@@ -92,6 +99,10 @@ export class OASPopconfirm extends OASElement {
       this.emit('cancel', { source: this })
       this.removeAttribute('open')
     })
+    // title 插槽内容增减（slot 覆盖属性文案）时重刷双通道
+    this.shadow
+      .querySelector<HTMLSlotElement>('slot[name="title"]')
+      ?.addEventListener('slotchange', () => this.update())
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') this.removeAttribute('open')
     }
@@ -142,7 +153,13 @@ export class OASPopconfirm extends OASElement {
       this.titleCache = raw === '' ? null : raw
       this.removeAttribute('title')
     }
-    this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.titleCache ?? ''
+    // title 双通道：slot 有真实内容时隐藏兜底 span（富内容优先），无则渲染 titleCache 文本
+    const titleSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const titleFallback = this.shadow.querySelector<HTMLElement>('.title-text')
+    if (titleSlot && titleFallback) {
+      titleFallback.textContent = this.titleCache ?? ''
+      titleFallback.hidden = this.hasTitleSlotContent(titleSlot)
+    }
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
     this.shadow.querySelector<HTMLElement>('[part="ok"]')!.textContent = this.t('popconfirm.ok')
     this.shadow.querySelector<HTMLElement>('[part="cancel"]')!.textContent =

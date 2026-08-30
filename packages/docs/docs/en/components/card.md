@@ -130,7 +130,7 @@ onMounted(async () => {
 | `cover-alt` | Cover image alt text (accessibility) | `string` | — |
 | `cover-src` | Cover image URL placed at the top of the card (object-fit: cover) | `string` | — |
 | `hoverable` | Whether to enable the hover shadow (shadow + lift + pointer) | `boolean` | — |
-| `title` | Card title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
+| `title` | Card title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 
 ### Events
 
@@ -146,3 +146,4 @@ onMounted(async () => {
 | `actions` | Bottom action area (view / edit / delete button groups), with a divider above |
 | `cover` | Custom cover content (mutually exclusive with `cover-src`, which takes precedence) |
 | `extra` | Extra area on the right of the title |
+| `title` | Rich title content slot; overrides the title attribute text when present |

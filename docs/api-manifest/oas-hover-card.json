@@ -129,6 +129,9 @@
     },
     {
       "name": "content"
+    },
+    {
+      "name": "title"
     }
   ],
   "unresolved": []

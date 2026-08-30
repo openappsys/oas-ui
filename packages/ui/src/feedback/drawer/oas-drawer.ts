@@ -95,6 +95,13 @@ export class OASDrawer extends OASElement {
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
   private titleCache: string | null = null
 
+  /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
+  private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
+    return slot
+      .assignedNodes()
+      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
@@ -102,7 +109,7 @@ export class OASDrawer extends OASElement {
       <div class="mask" part="mask"></div>
       <div class="panel" part="panel" role="dialog" aria-modal="true">
         <div class="header">
-          <span class="title" part="title"></span>
+          <span class="title" part="title"><slot name="title"><span class="title-text"></span></slot></span>
           <button class="close-btn" part="close" aria-label="">✕</button>
         </div>
         <div class="body" part="body"><slot></slot></div>
@@ -134,6 +141,11 @@ export class OASDrawer extends OASElement {
       .querySelector('[part="close"]')
       ?.addEventListener('click', () => this.close('close'))
     this.shadow.querySelector('[part="ok"]')?.addEventListener('click', () => this.close('ok'))
+
+    // title 插槽内容增减（slot 覆盖属性文案）时重刷双通道
+    this.shadow
+      .querySelector<HTMLSlotElement>('slot[name="title"]')
+      ?.addEventListener('slotchange', () => this.update())
 
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') this.close('close')
@@ -199,7 +211,13 @@ export class OASDrawer extends OASElement {
       this.titleCache = raw === '' ? null : raw
       this.removeAttribute('title')
     }
-    this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.titleCache ?? ''
+    // title 双通道：slot 有真实内容时隐藏兜底 span（富内容优先），无则渲染 titleCache 文本
+    const titleSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const titleFallback = this.shadow.querySelector<HTMLElement>('.title-text')
+    if (titleSlot && titleFallback) {
+      titleFallback.textContent = this.titleCache ?? ''
+      titleFallback.hidden = this.hasTitleSlotContent(titleSlot)
+    }
     this.shadow
       .querySelector<HTMLElement>('.panel')!
       .setAttribute('data-placement', this.getAttr('placement', 'right'))

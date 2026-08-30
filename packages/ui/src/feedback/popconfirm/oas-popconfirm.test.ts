@@ -118,4 +118,46 @@ describe('OASPopconfirm', () => {
       el.remove()
     })
   })
+
+  describe('title 双通道（slot 富内容覆盖属性文本）', () => {
+    it('slot 有内容时覆盖属性文本', async () => {
+      const el = new OASPopconfirm()
+      el.setAttribute('open', '')
+      el.setAttribute('title', '属性文案')
+      el.innerHTML = '<button>删除</button><span slot="title">插槽文案</span>'
+      document.body.appendChild(el)
+      await Promise.resolve()
+      const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(fallback.hidden).toBe(true)
+      // 宿主 title 仍被吸收（吸收状态机不变）
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('仅 slot 无属性：标题区渲染 slot 内容且不隐藏', async () => {
+      const el = new OASPopconfirm()
+      el.setAttribute('open', '')
+      el.innerHTML = '<button>删除</button><span slot="title">插槽文案</span>'
+      document.body.appendChild(el)
+      await Promise.resolve()
+      const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(fallback.hidden).toBe(true)
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('双空（无 title 无 slot）：标题区不渲染文本（兜底为空、不隐藏）', async () => {
+      const el = new OASPopconfirm()
+      el.setAttribute('open', '')
+      el.innerHTML = '<button>删除</button>'
+      document.body.appendChild(el)
+      await Promise.resolve()
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(fallback.hidden).toBe(false)
+      expect(fallback.textContent).toBe('')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+  })
 })

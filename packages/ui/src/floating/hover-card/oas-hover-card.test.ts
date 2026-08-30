@@ -948,4 +948,100 @@ describe('OASHoverCard', () => {
       el.remove()
     })
   })
+
+  describe('title 双通道（slot="title" 富内容覆盖属性文本）', () => {
+    it('slot 有内容时覆盖属性文本（兜底隐藏、插槽渲染、属性仍被吸收）', async () => {
+      const el = new OASHoverCard()
+      el.setAttribute('open', '')
+      el.setAttribute('title', '属性标题')
+      el.innerHTML = `<button>悬停</button><b slot="title">富标题</b>`
+      document.body.appendChild(el)
+      await Promise.resolve()
+      const c = card(el)
+      const slot = c.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      const fallback = c.querySelector<HTMLElement>('.title-text')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(fallback.hidden).toBe(true)
+      // 属性仍被吸收缓存（兜底隐而不删），宿主无残留原生悬浮提示
+      expect(fallback.textContent).toBe('属性标题')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('仅 slot 无属性：标题区渲染插槽内容且不隐藏', async () => {
+      const el = new OASHoverCard()
+      el.setAttribute('open', '')
+      el.innerHTML = `<button>悬停</button><span slot="title">插槽标题</span>`
+      document.body.appendChild(el)
+      await Promise.resolve()
+      const c = card(el)
+      const slot = c.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      const fallback = c.querySelector<HTMLElement>('.title-text')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(fallback.hidden).toBe(true)
+      // 有标题语义：标题区容器不隐藏
+      expect(c.querySelector<HTMLElement>('[part="title"]')!.hidden).toBe(false)
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('双空（无 title 无 slot）：标题区隐藏逻辑保持（无空占位）', async () => {
+      const el = mount({ open: '' })
+      await Promise.resolve()
+      const c = card(el)
+      expect(c.querySelector<HTMLElement>('[part="title"]')!.hidden).toBe(true)
+      // 兜底 span 无文本、不隐藏（属性通道空态）
+      expect(c.querySelector<HTMLElement>('.title-text')!.hidden).toBe(false)
+      expect(c.querySelector<HTMLElement>('.title-text')!.textContent).toBe('')
+    })
+
+    it('动态移除 slot 内容后回落属性文本', async () => {
+      const el = new OASHoverCard()
+      el.setAttribute('open', '')
+      el.setAttribute('title', '属性标题')
+      el.innerHTML = `<button>悬停</button><span slot="title">插槽标题</span>`
+      document.body.appendChild(el)
+      await Promise.resolve()
+      const fallback = card(el).querySelector<HTMLElement>('.title-text')!
+      expect(fallback.hidden).toBe(true)
+      const node = el.querySelector('span[slot="title"]')!
+      el.removeChild(node)
+      // happy-dom slotchange 走宏任务；本文件用 fake timers，需手动推进
+      vi.advanceTimersByTime(0)
+      await Promise.resolve()
+      expect(fallback.hidden).toBe(false)
+      expect(fallback.textContent).toBe('属性标题')
+    })
+
+    it('append-to portal 期间 title slot 内容桥接（跨 host 分配不断供），关闭移回宿主', async () => {
+      const target = document.createElement('div')
+      target.id = 'hc-title-portal'
+      document.body.appendChild(target)
+      const el = mount({ open: '', 'append-to': '#hc-title-portal' })
+      await Promise.resolve()
+      const rich = document.createElement('b')
+      rich.setAttribute('slot', 'title')
+      rich.textContent = '富标题'
+      el.appendChild(rich)
+      el.setAttribute('content', 'y') // 触发 update 桥接后加节点
+      await Promise.resolve()
+      const host = target.querySelector<HTMLElement>('[data-oas-hover-card-portal]')!
+      expect(host.contains(rich)).toBe(true)
+      const slot = card(el).querySelector('slot[name="title"]') as HTMLSlotElement
+      expect(slot.assignedNodes()).toContain(rich)
+      el.removeAttribute('open')
+      await Promise.resolve()
+      expect(el.contains(rich)).toBe(true)
+    })
+
+    it('锚点识别跳过 title slot 元素（title 内容在前也不被当作触发器）', async () => {
+      const el = new OASHoverCard()
+      el.setAttribute('open-delay', '0')
+      el.innerHTML = `<span slot="title">富标题</span><button>悬停</button>`
+      document.body.appendChild(el)
+      await Promise.resolve()
+      const btn = el.querySelector('button')!
+      btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+      vi.advanceTimersByTime(1)
+      expect(card(el).getAttribute('aria-hidden')).toBe('false')
+    })
+  })
 })

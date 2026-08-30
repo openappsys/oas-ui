@@ -108,7 +108,7 @@ onMounted(async () => {
 | `no-mask-close` | 禁用点击遮罩关闭 | `boolean` | — |
 | `placement` | 滑出方向 | `string` | `right` |
 | `size` | 预设尺寸档位或具体值：`small`（256px）/ `medium`（378px）/ `large`（736px），或直接写如 `512px`、`40%` | — | — |
-| `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串） | `string` | — |
+| `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `visible` | 是否显示 | `boolean` | — |
 | `width` | 抽屉宽度（px 或百分比），优先级高于 `size` | — | — |
 
@@ -124,5 +124,6 @@ onMounted(async () => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+| `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
 `role="dialog"` + `aria-modal="true"`，打开时焦点移入关闭按钮，关闭后还原。

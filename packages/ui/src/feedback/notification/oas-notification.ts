@@ -102,8 +102,12 @@ export class OASNotification extends OASElement {
   private timer: ReturnType<typeof setTimeout> | null = null
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题）。
    *  notification 为命令式 API 组件（title 非观察属性，命令式层挂载前一次性写入），
-   *  吸收只在 render 首帧完成——真实使用路径（命令式 API）已被完整覆盖 */
+   *  吸收只在渲染首帧完成——真实使用路径（命令式 API）已被完整覆盖 */
   private titleCache: string | null = null
+
+  /** 命令式 Node 标题通道：options.title 传 Node 时由 notification.show() 注入，
+   *  渲染时 append 进标题区（忽略 titleCache 文本路径）；string 走属性吸收通道，置 null */
+  titleNode: Node | null = null
 
   protected override render(): void {
     const type = (this.getAttr('type', 'info') || 'info') as NotificationType
@@ -112,7 +116,7 @@ export class OASNotification extends OASElement {
       <div class="box" part="box" role="region" aria-label="">
         <div class="title-row">
           <span class="icon" part="icon" aria-hidden="true">${ICONS[type]}</span>
-          <span class="title" part="title"></span>
+          <span class="title" part="title"><slot name="title"><span class="title-text"></span></slot></span>
           <button class="close" part="close" aria-label="">✕</button>
         </div>
         <div class="description" part="description"></div>
@@ -121,20 +125,15 @@ export class OASNotification extends OASElement {
         </div>
       </div>
     `
-    // title 吸收：title 渲染进可见标题区后即从宿主移除——title 是原生全局属性，
-    // 残留在宿主上会让整组件悬停弹出浏览器原生提示（与可见标题重复的视觉干扰）。
-    // 状态机：属性在场（含空串）= 宿主意图（写入新值/空串清空）→ 更新缓存并移除；
-    // 属性缺席 = 内部吸收后的常态（或宿主 removeAttribute，此时保持已渲染标题，
-    // 清空请用 title=""）。缓存驱动渲染，吸收触发的二次 update 幂等。
-    if (this.hasAttribute('title')) {
-      const raw = this.getAttr('title', '')
-      this.titleCache = raw === '' ? null : raw
-      this.removeAttribute('title')
-    }
-    const title = this.shadow.querySelector('.title')!
-    const desc = this.shadow.querySelector('.description')!
-    title.textContent = this.titleCache ?? ''
-    desc.textContent = this.getAttr('description', '')
+    this.syncTitle()
+    this.shadow.querySelector<HTMLElement>('.description')!.textContent = this.getAttr(
+      'description',
+      '',
+    )
+    // title 插槽内容增减（slot 覆盖属性文案/Node 通道的兜底判空）时重刷双通道
+    this.shadow
+      .querySelector<HTMLSlotElement>('slot[name="title"]')
+      ?.addEventListener('slotchange', () => this.syncTitle())
     this.shadow
       .querySelector<HTMLButtonElement>('.close')
       ?.addEventListener('click', () => this.remove())
@@ -145,6 +144,30 @@ export class OASNotification extends OASElement {
         if (this.timer) clearTimeout(this.timer)
       })
     }
+  }
+
+  /** title 双通道同步：属性吸收状态机不变；slot 有真实内容时以插槽为准，
+   *  无则兜底 span 承载 titleCache 文本（string 通道）或命令式 Node（titleNode 通道，
+   *  忽略 titleCache 文本路径） */
+  private syncTitle(): void {
+    if (this.hasAttribute('title')) {
+      const raw = this.getAttr('title', '')
+      this.titleCache = raw === '' ? null : raw
+      this.removeAttribute('title')
+    }
+    const titleSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const titleFallback = this.shadow.querySelector<HTMLElement>('.title-text')
+    if (!titleSlot || !titleFallback) return
+    const hasSlot = titleSlot
+      .assignedNodes()
+      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+    if (this.titleNode) {
+      titleFallback.textContent = ''
+      titleFallback.appendChild(this.titleNode)
+    } else {
+      titleFallback.textContent = this.titleCache ?? ''
+    }
+    titleFallback.hidden = hasSlot
   }
 
   protected override update(): void {

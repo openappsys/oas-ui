@@ -215,6 +215,13 @@ export class OASModal extends OASElement {
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
   private titleCache: string | null = null
 
+  /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
+  private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
+    return slot
+      .assignedNodes()
+      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+  }
+
   /**
    * 确定按钮点击时不自动关闭、只派发 oas-ok，由宿主决定关闭时机。
    * 仅 confirm 命令式 API（异步 onOk）内部使用，避免异步流程中 modal 先关后 loading。
@@ -235,7 +242,7 @@ export class OASModal extends OASElement {
       <div class="mask" part="mask"></div>
       <div class="dialog" part="dialog" role="dialog" aria-modal="true" aria-labelledby="oas-modal-title">
         <div class="header">
-          <span class="title" id="oas-modal-title" part="title"></span>
+          <span class="title" id="oas-modal-title" part="title"><slot name="title"><span class="title-text"></span></slot></span>
           <button class="close-btn" part="close" aria-label="">✕</button>
         </div>
         <div class="body" part="body">
@@ -285,6 +292,11 @@ export class OASModal extends OASElement {
     // 可拖拽：标题栏 pointerdown 启动，move/up 监听在 document 保证指针移出仍跟随
     const header = this.shadow.querySelector<HTMLElement>('.header')
     header?.addEventListener('pointerdown', (e) => this.startDrag(e as PointerEvent))
+
+    // title 插槽内容增减（slot 覆盖属性文案）时重刷双通道
+    this.shadow
+      .querySelector<HTMLSlotElement>('slot[name="title"]')
+      ?.addEventListener('slotchange', () => this.update())
     this.onCleanup(() => {
       document.removeEventListener('pointermove', this.onDrag)
       document.removeEventListener('pointerup', this.endDrag)
@@ -463,7 +475,14 @@ export class OASModal extends OASElement {
       this.titleCache = raw === '' ? null : raw
       this.removeAttribute('title')
     }
-    this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.titleCache ?? ''
+    // title 双通道：slot 有真实内容时隐藏兜底 span（富内容优先），无则渲染 titleCache 文本；
+    // aria-labelledby 指向标题区容器（part="title"，id 保留在容器上），slot 化后可访问名不丢
+    const titleSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const titleFallback = this.shadow.querySelector<HTMLElement>('.title-text')
+    if (titleSlot && titleFallback) {
+      titleFallback.textContent = this.titleCache ?? ''
+      titleFallback.hidden = this.hasTitleSlotContent(titleSlot)
+    }
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）；ok-text/cancel-text 可覆盖
     this.shadow
       .querySelector<HTMLElement>('[part="close"]')

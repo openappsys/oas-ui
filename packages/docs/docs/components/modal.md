@@ -232,7 +232,7 @@ onMounted(async () => {
 | `no-footer` | 隐藏底部操作按钮 | `boolean` | — |
 | `no-mask-close` | 禁用点击遮罩关闭 | `boolean` | — |
 | `ok-text` | 确定按钮文案；缺省走 locale `modal.ok` | — | — |
-| `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串） | `string` | — |
+| `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `type` | 语义变体：`info`/`success`/`warning`/`error`，正文顶部渲染对应语义图标 | `ModalVariant` | — |
 | `visible` | 是否显示 | `boolean` | — |
 | `width` | 对话框宽度（px 或百分比） | — | — |
@@ -249,5 +249,6 @@ onMounted(async () => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+| `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
 `role="dialog"` + `aria-modal="true"`，打开时焦点移入「取消」按钮（`focus-ok` 时移入「确定」按钮），关闭后还原。

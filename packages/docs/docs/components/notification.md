@@ -68,8 +68,14 @@ onMounted(async () => {
 | `progress-position` | 进度条位置：`bottom`（默认）/ `top` | `string` | `bottom` |
 | `scrollable` | 描述内容超长时卡片内滚动，默认开启；传 `false` 关闭 | `string` | `true` |
 | `show-progress` | 显示自动关闭倒计时进度条（动画时长与 `duration` 同步） | `boolean` | — |
-| `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串） | `string` | — |
+| `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `type` | 通知类型：`info`/`success`/`warning`/`error` | `string` | `info` |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
 ### 方法
 

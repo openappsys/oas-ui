@@ -78,7 +78,7 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `open` | Whether the bubble is shown | `boolean` | — |
 | `position` | Bubble position | `string` | `top` |
-| `title` | Confirmation text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
+| `title` | Confirmation text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 
 ### Events
 
@@ -92,5 +92,6 @@ onMounted(async () => {
 | Name | Description |
 | --- | --- |
 | default | — |
+| `title` | Rich title content slot; overrides the title attribute text when present |
 
 Clicking the wrapped content toggles the bubble; the bubble uses `role="dialog"`.

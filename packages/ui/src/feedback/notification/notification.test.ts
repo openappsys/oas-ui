@@ -158,4 +158,55 @@ describe('notification 命令式 API', () => {
       el.remove()
     })
   })
+
+  describe('title 双通道（slot 富内容 / 命令式 Node）', () => {
+    it('命令式 options.title 传 Node：Node 移动进标题区（忽略 titleCache 文本路径）', async () => {
+      const node = document.createElement('span')
+      node.textContent = '富内容标题'
+      notification.success({ title: node })
+      await Promise.resolve()
+      const el = document.body.querySelector('oas-notification')!
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(fallback.contains(node)).toBe(true)
+      expect(fallback.hidden).toBe(false)
+      expect(fallback.textContent).toBe('富内容标题')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('title 插槽有内容时覆盖属性文本（slot 优先渲染）', () => {
+      const el = document.createElement('oas-notification')
+      el.setAttribute('title', '属性标题')
+      el.setAttribute('duration', '0')
+      el.innerHTML = '<span slot="title">插槽标题</span>'
+      document.body.appendChild(el)
+      const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(fallback.hidden).toBe(true)
+      // 宿主 title 仍被吸收（吸收状态机不变）
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('仅 slot 无属性：标题区渲染 slot 内容且不隐藏', () => {
+      const el = document.createElement('oas-notification')
+      el.setAttribute('duration', '0')
+      el.innerHTML = '<span slot="title">插槽标题</span>'
+      document.body.appendChild(el)
+      const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(fallback.hidden).toBe(true)
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('双空（无 title 无 slot）：标题区不渲染文本（兜底为空、不隐藏）', () => {
+      const el = document.createElement('oas-notification')
+      el.setAttribute('duration', '0')
+      document.body.appendChild(el)
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(fallback.hidden).toBe(false)
+      expect(fallback.textContent).toBe('')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+  })
 })
