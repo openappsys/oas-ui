@@ -1,5 +1,8 @@
 import { OASElement } from '@oas-ui/core'
 
+/** responsive：组件宽窄于该断点（px）时自动紧凑布局 */
+const RESPONSIVE_BREAKPOINT = 768
+
 const STYLE = `
 :host {
   display: block;
@@ -49,6 +52,20 @@ const STYLE = `
 .extra {
   display: flex;
   gap: var(--oas-space-2);
+}
+/* responsive 紧凑布局（组件宽 <768px）：标题字号降档（xl→lg）、副标题字号 sm、
+   副标题与 extra 换行（.row flex-wrap，标题独占一行不再被挤压） */
+:host([data-compact]) .row {
+  flex-wrap: wrap;
+}
+:host([data-compact]) .title {
+  font-size: var(--oas-font-size-lg);
+}
+:host([data-compact]) .subtitle {
+  font-size: var(--oas-font-size-sm);
+}
+:host([data-compact]) .extra {
+  font-size: var(--oas-font-size-sm);
 }
 /* 头部独立行：breadcrumb 具名插槽（组合 oas-breadcrumb 原组件，不做数据通道） */
 .breadcrumb {
@@ -104,17 +121,23 @@ const STYLE = `
  * - `back`：布尔，显示返回按钮（点击派发 `oas-back`）
  * - `ghost`：布尔，透明背景变体——背景规则置 none、footer 分隔线去除，文字色保持主题前景 token；
  *   适合叠加在有色背景容器/页面上让底色透出；缺省 false 保持默认形态
+ * - `responsive`：布尔，响应式紧凑——组件宽 <768px 时自动紧凑布局：标题字号降档（xl→lg）、
+ *   副标题字号 sm、副标题与 extra 换行（.row flex-wrap）；ResizeObserver 观察宿主宽度变化，onCleanup 清理
  *
  * 插槽：正文默认插槽；`breadcrumb` / `footer` / `avatar` 无内容时不渲染；
  * `title` / `subtitle` / `back-icon` 插槽有内容时覆盖属性/内置图标。
  */
 export class OASPageHeader extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['title', 'back', 'subtitle', 'ghost']
+    return ['title', 'back', 'subtitle', 'ghost', 'responsive']
   }
 
-  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致（back 存在性由宿主属性决定） */
-  private template(): string {
+  /** responsive：宿主宽度监听（清理走 onCleanup，断连后 update 幂等重建） */
+  private resizeObserver: ResizeObserver | null = null
+  /** responsive：宿主是否窄于断点（clientWidth>0 且 <768；0=未布局/SSR 不误判） */
+  private narrow = false
+
+  /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致（back 存在性由宿主属性决定） */  private template(): string {
     return `
       <style>${STYLE}</style>
       <div class="breadcrumb" part="breadcrumb" hidden>
@@ -154,6 +177,11 @@ export class OASPageHeader extends OASElement {
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
   private titleCache: string | null = null
 
+  /** responsive：宿主宽度变化重算紧凑态；清理走 onCleanup */
+  private syncResponsive(): void {
+    if (this.hasRendered) this.runUpdateAndNotify()
+  }
+
   /** 缓存节点引用 + 绑定返回按钮与插槽变更监听（render 与水合路径共用） */
   private bind(): void {
     this.shadow.querySelector('[part="back"]')?.addEventListener('click', () => this.emit('back'))
@@ -187,6 +215,21 @@ export class OASPageHeader extends OASElement {
   protected override update(): void {
     // ghost 透明背景变体：宿主类名作 CSS 钩子（背景置 none + footer 分隔线去除，颜色走 token）
     this.classList.toggle('oas-page-header--ghost', this.hasAttr('ghost'))
+    // responsive：惰性建立 ResizeObserver（首次 update 时创建；断连清理后 update 幂等重建）
+    if (this.hasAttr('responsive') && !this.resizeObserver && typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => this.syncResponsive())
+      this.resizeObserver.observe(this)
+      this.onCleanup(() => {
+        this.resizeObserver?.disconnect()
+        this.resizeObserver = null
+      })
+    }
+    // responsive：宿主宽 <768px 时自动紧凑布局（data-compact 作 CSS 钩子）。宽度度量收敛到
+    // update() 统一执行，RO 回调只负责触发重刷（clientWidth=0 未布局/SSR 不误判）
+    const w = this.clientWidth
+    this.narrow = w > 0 && w < RESPONSIVE_BREAKPOINT
+    if (this.hasAttr('responsive') && this.narrow) this.dataset.compact = ''
+    else this.removeAttribute('data-compact')
     // 返回按钮 aria-label locale 驱动（setLocale 切换自动重刷）
     const back = this.shadow.querySelector<HTMLElement>('[part="back"]')
     if (back) back.setAttribute('aria-label', this.t('pageHeader.back'))
