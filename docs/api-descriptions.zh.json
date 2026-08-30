@@ -201,6 +201,7 @@
   "oas-bottom-navigation": {
     "attrs": {
       "fixed": "固定到视口底部（`position: fixed; bottom: 0`）",
+      "hide-on-scroll": "滚动隐藏（需配合 `fixed`）：页面向下滚动时导航条 `translateY(100%)` 滑出隐藏、向上滚动滑回显示（滚动差 >4px 判方向，transition 只动 transform）；纯视觉收起，不加 `aria-hidden`（tab 语义与键盘焦点保持可达），滚回即恢复；非 fixed 无效果",
       "items": "导航项 JSON",
       "layout": "布局模式：`stacked`（默认，icon 上文字下）/ `horizontal`（icon 左文字右，同一行）；非法值回落 `stacked` 并告警（同值去重）",
       "safe-area": "fixed 模式下底部加安全区内边距（`env(safe-area-inset-bottom)`），避开刘海屏 home 指示条；非 fixed 无效果",
