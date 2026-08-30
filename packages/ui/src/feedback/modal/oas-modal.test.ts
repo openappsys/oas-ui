@@ -524,6 +524,64 @@ describe('OASModal', () => {
       el.remove()
     })
   })
+
+  describe('title 双通道（slot 富内容覆盖属性文本）', () => {
+    function mountWithSlot(title: string | null, slotHtml: string): OASModal {
+      const el = new OASModal()
+      el.setAttribute('visible', '')
+      if (title !== null) el.setAttribute('title', title)
+      el.innerHTML = `${slotHtml}<p>内容</p>`
+      document.body.appendChild(el)
+      return el
+    }
+
+    it('slot 有内容时覆盖属性文本，aria-labelledby 指向标题区容器（可访问名不丢）', async () => {
+      const el = mountWithSlot('属性标题', '<span slot="title">插槽标题</span>')
+      await Promise.resolve()
+      const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(fallback.hidden).toBe(true)
+      // 宿主 title 仍被吸收（吸收状态机不变）
+      expect(el.hasAttribute('title')).toBe(false)
+      // aria-labelledby 继续指向 oas-modal-title（id 保留在 part="title" 容器上，
+      // 容器含 slot，插槽内容/属性文本两路径都可访问名解析）
+      const dialog = el.shadowRoot!.querySelector('[role="dialog"]')!
+      expect(dialog.getAttribute('aria-labelledby')).toBe('oas-modal-title')
+      const titleContainer = el.shadowRoot!.querySelector('[part="title"]')!
+      expect(titleContainer.id).toBe('oas-modal-title')
+    })
+
+    it('仅 slot 无属性：标题区渲染 slot 内容且不隐藏', async () => {
+      const el = mountWithSlot(null, '<span slot="title">插槽标题</span>')
+      await Promise.resolve()
+      const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(fallback.hidden).toBe(true)
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('双空（无 title 无 slot）：标题区不渲染文本（兜底为空、不隐藏）', async () => {
+      const el = mountWithSlot(null, '')
+      await Promise.resolve()
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(fallback.hidden).toBe(false)
+      expect(fallback.textContent).toBe('')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('动态移除 slot 内容后回落属性文本', async () => {
+      const el = mountWithSlot('属性标题', '<span slot="title">插槽标题</span>')
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(fallback.hidden).toBe(true)
+      const node = el.querySelector('span[slot="title"]')!
+      el.removeChild(node)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(fallback.hidden).toBe(false)
+      expect(fallback.textContent).toBe('属性标题')
+    })
+  })
 })
 
 function pointer(type: string, clientX: number, clientY = 0): Event {

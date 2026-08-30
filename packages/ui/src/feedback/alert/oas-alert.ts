@@ -70,7 +70,7 @@ export class OASAlert extends OASElement {
       <style>${STYLE}</style>
       <div class="box" part="box">
         <div class="body" part="body">
-          <div class="title" part="title"></div>
+          <div class="title" part="title"><slot name="title"><span class="title-text"></span></slot></div>
           <slot></slot>
         </div>
         ${this.hasAttr('closeable') ? '<button class="close-btn" part="close" aria-label="">✕</button>' : ''}
@@ -81,12 +81,23 @@ export class OASAlert extends OASElement {
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
   private titleCache: string | null = null
 
+  /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
+  private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
+    return slot
+      .assignedNodes()
+      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+  }
+
   /** 绑定关闭事件（render 与水合路径共用） */
   private bind(): void {
     this.shadow.querySelector('[part="close"]')?.addEventListener('click', () => {
       this.emit('close')
       this.hidden = true
     })
+    // title 插槽内容增减（slot 覆盖属性文案）时重刷双通道
+    this.shadow
+      .querySelector<HTMLSlotElement>('slot[name="title"]')
+      ?.addEventListener('slotchange', () => this.update())
   }
 
   protected override render(): void {
@@ -121,7 +132,13 @@ export class OASAlert extends OASElement {
       this.titleCache = raw === '' ? null : raw
       this.removeAttribute('title')
     }
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.titleCache ?? ''
+    // title 双通道：slot 有真实内容时隐藏兜底 span（富内容优先），无则渲染 titleCache 文本
+    const titleSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const titleFallback = this.shadow.querySelector<HTMLElement>('.title-text')
+    if (titleSlot && titleFallback) {
+      titleFallback.textContent = this.titleCache ?? ''
+      titleFallback.hidden = this.hasTitleSlotContent(titleSlot)
+    }
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
     this.shadow
       .querySelector<HTMLElement>('[part="close"]')

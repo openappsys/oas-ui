@@ -36,9 +36,17 @@
     {
       "name": "action",
       "type": "ToastAction | null"
+    },
+    {
+      "name": "titleNode",
+      "type": "Node | null"
     }
   ],
   "events": [],
-  "slots": [],
+  "slots": [
+    {
+      "name": "title"
+    }
+  ],
   "unresolved": []
 }

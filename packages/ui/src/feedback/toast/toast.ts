@@ -15,7 +15,8 @@ export interface ToastAction {
 }
 
 export interface ToastOptions {
-  title: string
+  /** 标题：string 走属性吸收通道渲染进标题区；Node（富内容）由组件 append 进标题区 */
+  title: string | Node
   description?: string
   action?: ToastAction
   /** 默认 3000ms，0 表示不自动关闭 */
@@ -69,7 +70,12 @@ function ensureStack(position: ToastPosition): HTMLElement {
 function show(type: ToastType, options: ToastOptions): ToastHandleInternal {
   const el = document.createElement('oas-toast') as OASToast
   el.setAttribute('type', type)
-  el.setAttribute('title', options.title)
+  if (typeof options.title === 'string') {
+    el.setAttribute('title', options.title)
+  } else {
+    // Node 通道：append 前注入 titleNode，渲染时移入标题区（忽略 titleCache 文本路径）
+    el.titleNode = options.title
+  }
   if (options.description !== undefined) el.setAttribute('description', options.description)
   el.setAttribute('duration', String(options.duration ?? 3000))
   if (options.closable !== false && type !== 'loading') el.setAttribute('closable', '')

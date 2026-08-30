@@ -49,7 +49,7 @@ onMounted(async () => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `closeable` | Whether to show the close button | `boolean` | — |
-| `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
+| `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 | `type` | Alert type | `string` | `info` |
 
 ### Events
@@ -63,5 +63,6 @@ onMounted(async () => {
 | Name | Description |
 | --- | --- |
 | default | — |
+| `title` | Rich title content slot; overrides the title attribute text when present |
 
 `error` uses `role="alert"`, other types use `role="status"`.

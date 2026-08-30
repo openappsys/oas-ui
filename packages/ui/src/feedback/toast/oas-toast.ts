@@ -111,9 +111,20 @@ export class OASToast extends OASElement {
   /** action 由命令式层在 append 前注入（函数无法走属性） */
   action: ToastAction | null = null
 
+  /** 命令式 Node 标题通道：options.title 传 Node 时由 toast.show()/transition() 注入，
+   *  渲染时 append 进标题区（忽略 titleCache 文本路径）；string 走属性吸收通道，置 null */
+  titleNode: Node | null = null
+
   private timer: ReturnType<typeof setTimeout> | null = null
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
   private titleCache: string | null = null
+
+  /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案/Node 通道的判空依据 */
+  private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
+    return slot
+      .assignedNodes()
+      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+  }
 
   protected override render(): void {
     this.shadow.innerHTML = `
@@ -122,7 +133,7 @@ export class OASToast extends OASElement {
         <span class="spinner" part="spinner" aria-hidden="true"></span>
         <span class="icon" part="icon" aria-hidden="true"></span>
         <div class="content" part="content">
-          <div class="title" part="title"></div>
+          <div class="title" part="title"><slot name="title"><span class="title-text"></span></slot></div>
           <div class="description" part="description"></div>
         </div>
         ${this.action ? '<button class="action" part="action" type="button"></button>' : ''}
@@ -138,16 +149,27 @@ export class OASToast extends OASElement {
         this.action?.onClick()
         this.remove()
       })
+    // title 插槽内容增减（slot 覆盖属性文案/Node 通道的兜底判空）时重刷
+    this.shadow
+      .querySelector<HTMLSlotElement>('slot[name="title"]')
+      ?.addEventListener('slotchange', () => this.syncUi())
     this.onCleanup(() => this.clearTimer())
     this.syncUi()
     this.startTimer()
   }
 
-  /** promise 链流转：切换类型并重置自动关闭计时器 */
-  transition(type: ToastType, title: string, duration = 3000): void {
+  /** promise 链流转：切换类型并重置自动关闭计时器。title 支持 string（属性通道）或
+   *  Node（append 进标题区，忽略 titleCache 文本路径；同时以 title="" 清掉属性通道） */
+  transition(type: ToastType, title: string | Node, duration = 3000): void {
     this.setAttribute('type', type)
-    this.setAttribute('title', title)
     this.setAttribute('duration', String(duration))
+    if (typeof title === 'string') {
+      this.titleNode = null
+      this.setAttribute('title', title)
+    } else {
+      this.titleNode = title
+      this.setAttribute('title', '')
+    }
     this.syncUi()
     this.startTimer()
   }
@@ -177,7 +199,20 @@ export class OASToast extends OASElement {
       this.titleCache = raw === '' ? null : raw
       this.removeAttribute('title')
     }
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.titleCache ?? ''
+    // title 双通道：slot 有真实内容时以插槽为准；无则兜底 span 承载
+    // titleCache 文本（string 通道）或命令式 Node（titleNode 通道，忽略 titleCache 文本路径）
+    const titleSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const titleFallback = this.shadow.querySelector<HTMLElement>('.title-text')
+    if (titleSlot && titleFallback) {
+      const hasSlot = this.hasTitleSlotContent(titleSlot)
+      if (this.titleNode) {
+        titleFallback.textContent = ''
+        titleFallback.appendChild(this.titleNode)
+      } else {
+        titleFallback.textContent = this.titleCache ?? ''
+      }
+      titleFallback.hidden = hasSlot
+    }
     const desc = this.getAttr('description', '')
     const descEl = this.shadow.querySelector<HTMLElement>('[part="description"]')
     if (descEl) {

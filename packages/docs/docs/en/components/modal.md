@@ -232,7 +232,7 @@ onMounted(async () => {
 | `no-footer` | Hide footer action buttons | `boolean` | — |
 | `no-mask-close` | Disable closing on mask click | `boolean` | — |
 | `ok-text` | OK button label; defaults to locale `modal.ok` | — | — |
-| `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
+| `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 | `type` | Semantic variant: `info`/`success`/`warning`/`error`, renders the matching semantic icon above the content | `ModalVariant` | — |
 | `visible` | Whether shown | `boolean` | — |
 | `width` | Dialog width (px or percentage) | — | — |
@@ -249,5 +249,6 @@ onMounted(async () => {
 | Name | Description |
 | --- | --- |
 | default | — |
+| `title` | Rich title content slot; overrides the title attribute text when present |
 
 `role="dialog"` + `aria-modal="true"`; focus moves to the "Cancel" button on open (to the "OK" button with `focus-ok`) and is restored on close.

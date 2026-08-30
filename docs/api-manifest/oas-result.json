@@ -26,6 +26,9 @@
   "slots": [
     {
       "name": "extra"
+    },
+    {
+      "name": "title"
     }
   ],
   "unresolved": []
