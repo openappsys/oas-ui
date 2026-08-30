@@ -51,7 +51,15 @@
 </DemoBlock>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
+
+// demo 定时器句柄：SPA 路由切换时组件销毁，必须在 onUnmounted 清理
+// （勿用 window beforeunload——它只在整页卸载触发，且常驻处理器会阻断后续整页导航）
+let streamTimer = null
+
+onUnmounted(() => {
+  if (streamTimer) window.clearInterval(streamTimer)
+})
 
 onMounted(() => {
   const basic = document.querySelector('#log-basic')
@@ -86,13 +94,12 @@ onMounted(() => {
     ]
     let i = 0
     stream.lines = Array.from({ length: 3 }, (_, k) => `[${new Date().toLocaleTimeString()}] 服务启动中…（第 ${k + 1} 行）`)
-    const timer = window.setInterval(() => {
+    // demo 组件销毁时停止定时器（onUnmounted 清理，SPA 路由切换亦生效）
+    streamTimer = window.setInterval(() => {
       const line = payload[i % payload.length]
       stream.lines = [...stream.lines, `[${new Date().toLocaleTimeString()}] ${line}`]
       i += 1
     }, 1200)
-    // demo 页销毁时停止定时器
-    window.addEventListener('beforeunload', () => window.clearInterval(timer))
   }
 
   const fixed = document.querySelector('#log-fixed')

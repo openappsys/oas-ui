@@ -51,7 +51,14 @@ Provide data via the `lines` property (or the `lines` attribute as a JSON string
 </DemoBlock>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
+
+// Demo timer handle: the component is destroyed on SPA route change, must clean up in onUnmounted
+let streamTimer = null
+
+onUnmounted(() => {
+  if (streamTimer) window.clearInterval(streamTimer)
+})
 
 onMounted(() => {
   const basic = document.querySelector('#log-basic')
@@ -86,13 +93,11 @@ onMounted(() => {
     ]
     let i = 0
     stream.lines = Array.from({ length: 3 }, (_, k) => `[${new Date().toLocaleTimeString()}] Service starting… (line ${k + 1})`)
-    const timer = window.setInterval(() => {
+    streamTimer = window.setInterval(() => {
       const line = payload[i % payload.length]
       stream.lines = [...stream.lines, `[${new Date().toLocaleTimeString()}] ${line}`]
       i += 1
     }, 1200)
-    // Stop the timer when the demo page is destroyed
-    window.addEventListener('beforeunload', () => window.clearInterval(timer))
   }
 
   const fixed = document.querySelector('#log-fixed')
