@@ -178,6 +178,7 @@ const INTERACTIONS: Array<[string, string]> = [
 //   resizecol     DOM 列宽拖拽：在匹配 th 右缘热区派发 pointerdown/move/up 合成事件序列
 //                 （真实指针会被原生 draggable 拖拽启动/视口外遮挡干扰）
 const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
+  stepper: [['oas-stepper[clickable] [role="tab"]', 'click', '点步骤头 → oas-change']],
   carousel: [['oas-carousel [part="arrow-next"]', 'click', '点下一张箭头 → oas-change']],
   tag: [
     ['oas-tag[clickable]:not([disabled]) [part="tag"]', 'click', '点整签派发 oas-click'],
