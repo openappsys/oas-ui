@@ -1817,19 +1817,23 @@
   },
   "oas-steps": {
     "attrs": {
+      "arrow": "Arrow-segment shape (horizontal only): each step is clipped into an arrow segment (first segment flat-headed, neighbors interlocking), active filled with the primary color / finished light primary / waiting gray, connector lines hidden (boolean; enabled when present; mutually exclusive with `simple`, simple wins; ignored under navigation)",
       "clickable": "Steps are clickable to jump (boolean; enabled when present)",
+      "content-placement": "Content block placement: `bottom` (default, title/description below the indicator) / `right` (whole block to the right of the indicator, horizontal mode); ignored in vertical; orthogonal to label-placement",
       "current": "Current step index (0-based)",
       "direction": "Direction (forced to horizontal in navigation mode; responsive switches to vertical on narrow screens)",
       "label-placement": "Label placement: `vertical` (default, icon above title) / `horizontal` (icon and title on the same row)",
       "linear": "Linear mode: only steps with `index <= current` are clickable (boolean; enabled when present; future steps are blocked, clicks are silent)",
       "lineless": "Hide all connector lines (boolean; enabled when present; compact look)",
+      "max-count": "Maximum number of visible steps (minimum 2): when exceeded the middle collapses into ellipsis steps (⋯, not clickable, connector lines stay continuous); the first/last/current steps are always visible and the window slides with current; invalid values / below 2 are ignored (show all)",
       "navigation": "Navigation mode: arrow bar with a bottom Previous/Next button row (boolean; enabled when present; mutually exclusive with `simple`, simple wins)",
       "progress-dot": "Progress-dot steps: dot indicators with a thin connector line (boolean; enabled when present; mutually exclusive with `simple`, simple wins)",
       "responsive": "Responsive vertical: renders in the vertical layout when the container width is below 640px (boolean; enabled when present; ResizeObserver, cleaned up on disconnect; ignored under navigation)",
-      "separator": "Connector style: `line` (default) / `dashed` (dashed border) / `arrow` (trailing arrowhead); not applied under navigation",
+      "reverse": "Visual reversal: horizontal `row-reverse` / vertical `column-reverse`; displayed number = total - index (increasing along the visual flow), status derivation still follows the steps array order (boolean; enabled when present)",
+      "separator": "Connector style: `line` (default) / `dashed` (dashed border) / `arrow` (trailing arrowhead); not applied under navigation / arrow",
       "simple": "Compact mode: single-row small size (smaller indicators, hidden descriptions, tighter connector lines) (boolean; enabled when present; takes priority over progress-dot/navigation)",
       "status": "Container-level status overriding the current step (`wait` / `process` / `finish` / `error`); an explicit per-step `status` still takes the highest priority",
-      "steps": "`[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent? }]` JSON string"
+      "steps": "`[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent?, prefix? }]` JSON string"
     },
     "events": {
       "oas-change": "Fired when a clickable step or a navigation button is clicked (including keyboard triggers); `detail: { index, id? }` (0-based; `id` echoes the step `id` field, keeps `{ index }` when unset)",
