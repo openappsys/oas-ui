@@ -73,6 +73,23 @@
       "name": "hide-on-single",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "href-template",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "responsive",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],

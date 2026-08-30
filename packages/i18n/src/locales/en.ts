@@ -94,6 +94,8 @@ export const en: LocaleMessages = {
   'pagination.goto': 'Go to',
   'pagination.pageClassifier': 'Page',
   'pagination.jumperInput': 'Jump to page',
+  'pagination.jumpForward': 'Jump forward',
+  'pagination.jumpBackward': 'Jump backward',
   'table.selectAll': 'Select all',
   'table.loading': 'Loading…',
   'table.empty': 'No data',

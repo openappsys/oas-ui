@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
+import en from '@oas-ui/i18n/en'
 import { OASPagination } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASPagination {
@@ -27,12 +28,13 @@ describe('OASPagination', () => {
 
   afterEach(() => {
     document.body.innerHTML = ''
+    vi.unstubAllGlobals()
   })
 
   it('渲染页码与前后按钮，当前页标记', () => {
     const el = mount({ current: '1' })
     expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBeGreaterThanOrEqual(3)
-    expect(el.shadowRoot!.querySelector('.ellipsis')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="ellipsis"]')).not.toBeNull()
     expect(el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')!.textContent).toBe(
       '1',
     )
@@ -211,7 +213,7 @@ describe('OASPagination', () => {
   it('simple：只渲染前后钮与「当前/总页数」文本，无页码与省略号', () => {
     const el = mount({ simple: '', total: '100', current: '3' })
     expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(0)
-    expect(el.shadowRoot!.querySelector('.ellipsis')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="ellipsis"]')).toBeNull()
     expect(el.shadowRoot!.querySelector('[part="simple"]')!.textContent).toBe('3 / 10')
     expect(el.shadowRoot!.querySelector('[part="prev"]')).not.toBeNull()
     expect(el.shadowRoot!.querySelector('[part="next"]')).not.toBeNull()
@@ -220,7 +222,7 @@ describe('OASPagination', () => {
   it('simple：与 siblings/省略算法互斥（simple 优先）', () => {
     const el = mount({ simple: '', siblings: '2', total: '500', current: '25' })
     expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(0)
-    expect(el.shadowRoot!.querySelector('.ellipsis')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="ellipsis"]')).toBeNull()
   })
 
   it('simple：show-jumper 可叠加显示', () => {
@@ -417,14 +419,14 @@ describe('OASPagination', () => {
   it('pager-count：默认不设时行为不变（siblings 候选集未超上限，100 页仍 5 个页码钮）', () => {
     const el = mount({ total: '1000', current: '45' })
     expect(pages(el)).toEqual(['1', '44', '45', '46', '100'])
-    expect(el.shadowRoot!.querySelectorAll('.ellipsis').length).toBe(2)
+    expect(el.shadowRoot!.querySelectorAll('[part="ellipsis"]').length).toBe(2)
   })
 
   it('pager-count：超过上限按当前页居中收缩窗口，省略号两端至少留 2 页', () => {
     // siblings="2" 候选集 7 个 > 5，截断到 5 个
     const el = mount({ 'pager-count': '5', siblings: '2', total: '1000', current: '45' })
     expect(pages(el)).toEqual(['1', '2', '45', '99', '100'])
-    expect(el.shadowRoot!.querySelectorAll('.ellipsis').length).toBe(2)
+    expect(el.shadowRoot!.querySelectorAll('[part="ellipsis"]').length).toBe(2)
     expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(5)
   })
 
@@ -467,7 +469,7 @@ describe('OASPagination', () => {
     // 10 页 ≤ 20：候选集即全部页码，无省略
     const el = mount({ 'pager-count': '20', siblings: '4', total: '100', current: '5' })
     expect(pages(el)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'])
-    expect(el.shadowRoot!.querySelector('.ellipsis')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="ellipsis"]')).toBeNull()
     // 10 页 ≤ 20：正常省略算法不被 cap 改变
     const el2 = mount({ 'pager-count': '20', total: '100', current: '5' })
     expect(pages(el2)).toEqual(['1', '4', '5', '6', '10'])
@@ -495,12 +497,342 @@ describe('OASPagination', () => {
   it('pager-count：simple 极简模式无页码序列，不受影响', () => {
     const el = mount({ simple: '', 'pager-count': '5', total: '1000', current: '45' })
     expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(0)
-    expect(el.shadowRoot!.querySelector('.ellipsis')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="ellipsis"]')).toBeNull()
     expect(el.shadowRoot!.querySelector('[part="simple"]')!.textContent).toBe('45 / 100')
   })
 
   it('pager-count：hide-on-single 组合下单页仍隐藏', () => {
     const el = mount({ 'hide-on-single': '', 'pager-count': '5', total: '8' })
     expect(el.hasAttribute('hidden')).toBe(true)
+  })
+
+  // ===== 批次 15：href-template 链接模式 =====
+
+  it('href-template：页码/前后/首末钮渲染为 <a>，href 模板替换 {page}', () => {
+    const el = mount({
+      'href-template': '/products?page={page}',
+      'show-edges': '',
+      total: '100',
+      current: '5',
+    })
+    const href = (part: string): string | null =>
+      el.shadowRoot!.querySelector(`[part="${part}"]`)?.getAttribute('href') ?? null
+    expect(href('first')).toBe('/products?page=1')
+    expect(href('prev')).toBe('/products?page=4')
+    expect(href('next')).toBe('/products?page=6')
+    expect(href('last')).toBe('/products?page=10')
+    // 当前页（5）也在页码链中
+    expect(el.shadowRoot!.querySelector('[part="page"][aria-current="page"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('a').length).toBeGreaterThan(0)
+    expect(el.shadowRoot!.querySelector('button')).toBeNull()
+  })
+
+  it('href-template：当前页 a 带 aria-current="page"', () => {
+    const el = mount({ 'href-template': '/p?page={page}', total: '100', current: '5' })
+    const active = el.shadowRoot!.querySelector('a[aria-current="page"]')
+    expect(active).not.toBeNull()
+    expect(active!.textContent).toBe('5')
+  })
+
+  it('href-template：disabled 时降级 span（不可点、无 href、aria-disabled）', () => {
+    const el = mount({
+      'href-template': '/p?page={page}',
+      disabled: '',
+      'show-edges': '',
+      total: '100',
+      current: '5',
+    })
+    expect(el.shadowRoot!.querySelector('a')).toBeNull()
+    const spans = el.shadowRoot!.querySelectorAll('.group span.btn')
+    expect(spans.length).toBeGreaterThan(0)
+    for (const s of [...spans]) {
+      expect(s.hasAttribute('href')).toBe(false)
+      expect(s.getAttribute('aria-disabled')).toBe('true')
+    }
+    let fired = false
+    el.addEventListener('oas-change', () => (fired = true))
+    ;(el.shadowRoot!.querySelector('[part="next"]') as HTMLElement).click()
+    expect(fired).toBe(false)
+    expect(el.getAttribute('current')).toBe('5')
+  })
+
+  it('href-template：边界禁用（首页 prev）降级 span，其余仍为链接', () => {
+    const el = mount({ 'href-template': '/p?page={page}', total: '100', current: '1' })
+    const prev = el.shadowRoot!.querySelector('[part="prev"]')!
+    expect(prev.tagName).toBe('SPAN')
+    expect(prev.getAttribute('aria-disabled')).toBe('true')
+    expect(el.shadowRoot!.querySelector('[part="next"]')!.tagName).toBe('A')
+  })
+
+  it('href-template：点击链接派发 oas-change 且 current 更新（语义不变）', () => {
+    const el = mount({ 'href-template': '/p?page={page}', total: '100', current: '5' })
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(el.shadowRoot!.querySelector('[part="next"]') as HTMLElement).click()
+    expect(detail).toEqual({ page: 6 })
+    expect(el.getAttribute('current')).toBe('6')
+  })
+
+  it('href-template：修饰键点击（ctrl）不触发翻页，交给浏览器原生处理', () => {
+    const el = mount({ 'href-template': '/p?page={page}', total: '100', current: '5' })
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    const next = el.shadowRoot!.querySelector('[part="next"]') as HTMLAnchorElement
+    next.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true }))
+    expect(fired).toBe(0)
+    expect(el.getAttribute('current')).toBe('5')
+  })
+
+  it('href-template：target 属性透传 a', () => {
+    const el = mount({
+      'href-template': '/p?page={page}',
+      target: '_blank',
+      'show-edges': '',
+      total: '100',
+      current: '3',
+    })
+    const anchors = el.shadowRoot!.querySelectorAll('a')
+    expect(anchors.length).toBeGreaterThan(0)
+    for (const a of [...anchors]) expect(a.getAttribute('target')).toBe('_blank')
+  })
+
+  it('href-template：before-change 取消时阻止原生导航（preventDefault）且 current 不变', () => {
+    const el = mount({ 'href-template': '/p?page={page}', total: '100', current: '1' })
+    el.addEventListener('oas-before-change', (e: Event) => e.preventDefault())
+    let changed = 0
+    el.addEventListener('oas-change', () => changed++)
+    const next = el.shadowRoot!.querySelector('[part="next"]') as HTMLAnchorElement
+    const ev = new MouseEvent('click', { bubbles: true, cancelable: true })
+    next.dispatchEvent(ev)
+    expect(ev.defaultPrevented).toBe(true)
+    expect(changed).toBe(0)
+    expect(el.getAttribute('current')).toBe('1')
+  })
+
+  it('href-template：simple 模式同样生效（前后钮为链接）', () => {
+    const el = mount({ 'href-template': '/p?page={page}', simple: '', total: '100', current: '3' })
+    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(0)
+    expect(el.shadowRoot!.querySelector('[part="simple"]')!.textContent).toBe('3 / 10')
+    expect(
+      (el.shadowRoot!.querySelector('[part="prev"]') as HTMLAnchorElement).getAttribute('href'),
+    ).toBe('/p?page=2')
+    expect(
+      (el.shadowRoot!.querySelector('[part="next"]') as HTMLAnchorElement).getAttribute('href'),
+    ).toBe('/p?page=4')
+    expect(el.shadowRoot!.querySelector('button')).toBeNull()
+  })
+
+  // ===== 批次 16：responsive 窄屏自动切 simple =====
+
+  it('responsive：窄于 640 自动按 simple 渲染，恢复宽度后还原（RO 回调驱动）', () => {
+    let roCb: (() => void) | null = null
+    class FakeRO {
+      cb: () => void
+      constructor(cb: () => void) {
+        this.cb = cb
+        roCb = cb
+      }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
+    const el = mount({ responsive: '', total: '100', current: '5' })
+    // clientWidth=0（未布局/SSR）不误判为窄
+    expect(el.shadowRoot!.querySelector('[part="simple"]')).toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBeGreaterThan(0)
+    Object.defineProperty(el, 'clientWidth', { value: 480, configurable: true })
+    roCb!()
+    expect(el.shadowRoot!.querySelector('[part="simple"]')!.textContent).toBe('5 / 10')
+    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(0)
+    Object.defineProperty(el, 'clientWidth', { value: 900, configurable: true })
+    roCb!()
+    expect(el.shadowRoot!.querySelector('[part="simple"]')).toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBeGreaterThan(0)
+  })
+
+  it('responsive：与 hide-on-single 不冲突（单页仍隐藏）', () => {
+    let roCb: (() => void) | null = null
+    class FakeRO {
+      cb: () => void
+      constructor(cb: () => void) {
+        this.cb = cb
+        roCb = cb
+      }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
+    const el = mount({ responsive: '', 'hide-on-single': '', total: '8', 'page-size': '10' })
+    Object.defineProperty(el, 'clientWidth', { value: 300, configurable: true })
+    roCb!()
+    expect(el.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('responsive：断开连接清理 ResizeObserver', () => {
+    class FakeRO {
+      constructor(_cb: () => void) {}
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
+    const el = mount({ responsive: '', total: '100' })
+    const spy = vi.spyOn(FakeRO.prototype, 'disconnect')
+    el.remove()
+    expect(spy).toHaveBeenCalled()
+  })
+
+  // ===== 批次 17：省略号可点跳页 =====
+
+  it('省略号：渲染为 button（part=ellipsis，class btn）', () => {
+    const el = mount({ total: '1000', current: '5' })
+    const ells = el.shadowRoot!.querySelectorAll('[part="ellipsis"]')
+    expect(ells.length).toBe(2)
+    for (const e of [...ells]) {
+      expect(e.tagName).toBe('BUTTON')
+      expect(e.classList.contains('btn')).toBe(true)
+    }
+  })
+
+  it('省略号：点击向该侧跳 siblings+1 页（左侧向后、右侧向前）', () => {
+    const el = mount({ total: '1000', current: '5' }) // siblings=1：页码 [1,4,5,6,100]
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    const ells = el.shadowRoot!.querySelectorAll('[part="ellipsis"]')
+    ;(ells[0] as HTMLElement).click() // 左省略号（隐藏 2..3）→ 5-2=3
+    expect(detail).toEqual({ page: 3 })
+    expect(el.getAttribute('current')).toBe('3')
+
+    const el2 = mount({ total: '1000', current: '5' })
+    let detail2: unknown
+    el2.addEventListener('oas-change', (e: Event) => (detail2 = (e as CustomEvent).detail))
+    const ells2 = el2.shadowRoot!.querySelectorAll('[part="ellipsis"]')
+    ;(ells2[1] as HTMLElement).click() // 右省略号（隐藏 7..99）→ 5+2=7
+    expect(detail2).toEqual({ page: 7 })
+    expect(el2.getAttribute('current')).toBe('7')
+  })
+
+  it('省略号：跳页目标始终夹取在 [1, pageCount] 内', () => {
+    const el = mount({ total: '1000', current: '2' }) // 页码 [1,2,3,100]，右省略号 → 2+2=4
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    const ells = el.shadowRoot!.querySelectorAll('[part="ellipsis"]')
+    expect(ells.length).toBe(1)
+    ;(ells[0] as HTMLElement).click()
+    expect(detail).toEqual({ page: 4 })
+
+    const elLast = mount({ total: '1000', current: '100' }) // 页码 [1,98,99,100]，左省略号 → 100-2=98
+    let detailLast: unknown
+    elLast.addEventListener('oas-change', (e: Event) => (detailLast = (e as CustomEvent).detail))
+    const ellsLast = elLast.shadowRoot!.querySelectorAll('[part="ellipsis"]')
+    expect(ellsLast.length).toBe(1)
+    ;(ellsLast[0] as HTMLElement).click()
+    expect(detailLast).toEqual({ page: 98 })
+  })
+
+  it('省略号：before-change 拦截生效（current 不变、不派发 change）', () => {
+    const el = mount({ total: '1000', current: '5' })
+    el.addEventListener('oas-before-change', (e: Event) => e.preventDefault())
+    let changed = 0
+    el.addEventListener('oas-change', () => changed++)
+    const ells = el.shadowRoot!.querySelectorAll('[part="ellipsis"]')
+    ;(ells[1] as HTMLElement).click()
+    expect(el.getAttribute('current')).toBe('5')
+    expect(changed).toBe(0)
+  })
+
+  it('省略号：aria-label 走 i18n（zh 向前跳页/向后跳页）', () => {
+    const el = mount({ total: '1000', current: '5' })
+    const ells = el.shadowRoot!.querySelectorAll('[part="ellipsis"]')
+    expect((ells[0] as HTMLElement).getAttribute('aria-label')).toBe('向后跳页')
+    expect((ells[1] as HTMLElement).getAttribute('aria-label')).toBe('向前跳页')
+  })
+
+  it('省略号：aria-label 走 i18n（en Jump forward/backward，setLocale 切换生效）', () => {
+    setLocale(en)
+    const el = mount({ total: '1000', current: '5' })
+    const ells = el.shadowRoot!.querySelectorAll('[part="ellipsis"]')
+    expect((ells[0] as HTMLElement).getAttribute('aria-label')).toBe('Jump backward')
+    expect((ells[1] as HTMLElement).getAttribute('aria-label')).toBe('Jump forward')
+    setLocale('zh-CN')
+  })
+
+  // ===== 批次 18：page-item 插槽模板（占位符克隆） =====
+
+  it('page-item：克隆插槽内容并按页替换 {page} 文本', () => {
+    const el = mount({ total: '100', current: '5' })
+    const tpl = document.createElement('span')
+    tpl.setAttribute('slot', 'page-item')
+    tpl.textContent = '第 {page} 页'
+    el.append(tpl)
+    el.setAttribute('current', '5')
+    const pageBtns = [...el.shadowRoot!.querySelectorAll('[part="page"]')]
+    expect(pageBtns.length).toBeGreaterThan(0)
+    const texts = pageBtns.map((b) => b.textContent!.replace(/^第 (\d+) 页$/, '$1'))
+    expect(texts).toEqual(['1', '4', '5', '6', '10'])
+    // 内容来自克隆：与 light DOM 模板不是同一节点，模板占位符原样保留
+    expect(pageBtns[0]!.querySelector('span')).not.toBe(tpl)
+    expect(tpl.textContent).toBe('第 {page} 页')
+    for (const b of pageBtns) expect(b.textContent).not.toContain('{page}')
+  })
+
+  it('page-item：克隆剥离 hidden/slot 属性（模板本体 hidden 不带到按钮内）', () => {
+    const el = mount({ total: '100', current: '5' })
+    const tpl = document.createElement('span')
+    tpl.setAttribute('slot', 'page-item')
+    tpl.setAttribute('hidden', '')
+    tpl.textContent = '第 {page} 页'
+    el.append(tpl)
+    el.setAttribute('current', '5')
+    const pageBtns = [...el.shadowRoot!.querySelectorAll('[part="page"]')]
+    expect(pageBtns.length).toBeGreaterThan(0)
+    for (const b of pageBtns) {
+      const clone = b.querySelector('span')
+      expect(clone).not.toBeNull()
+      expect(clone!.hasAttribute('hidden')).toBe(false)
+      expect(clone!.hasAttribute('slot')).toBe(false)
+    }
+    expect(tpl.hasAttribute('hidden')).toBe(true) // 模板本体仍隐藏
+  })
+
+  it('page-item：未提供插槽时按钮显示纯页码数字（现状回退）', () => {
+    const el = mount({ total: '100', current: '5' })
+    expect(pages(el)).toEqual(['1', '4', '5', '6', '10'])
+    expect(el.querySelector('[slot="page-item"]')).toBeNull()
+  })
+
+  it('page-item：点击行为不变（翻页派发 oas-change）', () => {
+    const el = mount({ total: '100', current: '1' })
+    const tpl = document.createElement('span')
+    tpl.setAttribute('slot', 'page-item')
+    tpl.textContent = 'P{page}'
+    el.append(tpl)
+    el.setAttribute('current', '1')
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(el.shadowRoot!.querySelector('[part="next"]') as HTMLElement).click()
+    expect(detail).toEqual({ page: 2 })
+    expect(el.getAttribute('current')).toBe('2')
+  })
+
+  it('page-item：占位符替换仅走 textContent（属性中的 {page} 不被替换，防注入）', () => {
+    const el = mount({ total: '100', current: '5' })
+    const tpl = document.createElement('span')
+    tpl.setAttribute('slot', 'page-item')
+    const inner = document.createElement('b')
+    inner.textContent = '第 {page} 页'
+    inner.setAttribute('data-page', '{page}')
+    tpl.append(inner)
+    el.append(tpl)
+    el.setAttribute('current', '5')
+    const pageBtns = [...el.shadowRoot!.querySelectorAll('[part="page"]')]
+    expect(pageBtns.length).toBeGreaterThan(0)
+    for (const b of pageBtns) {
+      const cloneInner = b.querySelector('b')
+      expect(cloneInner!.textContent).toMatch(/^第 \d+ 页$/) // 文本节点被替换
+      expect(cloneInner!.getAttribute('data-page')).toBe('{page}') // 属性保持原样
+    }
   })
 })
