@@ -831,7 +831,9 @@ describe('@oas-ui/ssr renderToString', () => {
   it('oas-card：title 同步入快照 + 宿主属性保留', async () => {
     const html = await renderToString('oas-card', { title: '卡片标题', hoverable: '' }, '卡片内容')
     expect(html).toContain('<template shadowrootmode="open">')
-    expect(html).toContain('<oas-card title="卡片标题" hoverable="">')
+    // title 吸收契约：宿主原生 title 被组件移除（消除悬浮 tooltip），标题文本照常渲染进标题区
+    expect(html).toContain('<oas-card hoverable="">')
+    expect(html).not.toContain('<oas-card title=')
     expect(html).toContain('part="card"')
     expect(html).toContain('卡片标题')
     expect(html).toContain('</template>卡片内容</oas-card>')

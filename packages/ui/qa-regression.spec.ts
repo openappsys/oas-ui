@@ -7388,3 +7388,19 @@ test('steps 点状/普通模式连接线对准指示器中心（基线间隙 + �
   })
   expect(Math.abs(normal.circle - normal.line), `普通模式圆心 ${normal.circle} 应与线中心 ${normal.line} 对齐（±0.5px）`).toBeLessThanOrEqual(0.5)
 })
+
+test('card title 吸收：宿主不残留原生 title（消除整卡悬浮 tooltip），标题照常渲染', async ({ page }) => {
+  await page.goto('/components/card.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-card')
+  const r = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll('oas-card')]
+    return {
+      total: cards.length,
+      residue: cards.filter((c) => c.hasAttribute('title')).length,
+      renderedTitles: cards.filter((c) => (c.shadowRoot?.querySelector('[part="title"]')?.textContent ?? '') !== '').length,
+    }
+  })
+  expect(r.total, '页面应有 card demo').toBeGreaterThan(0)
+  expect(r.residue, '任何卡片宿主都不应残留原生 title（整卡悬停不弹原生提示）').toBe(0)
+  expect(r.renderedTitles, '带 title 的卡片应照常渲染标题区').toBeGreaterThan(0)
+})

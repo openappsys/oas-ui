@@ -41,6 +41,44 @@ describe('OASCard', () => {
     expect(css).toMatch(/\.header\[hidden\]\s*\{[^}]*display:\s*none/)
   })
 
+  describe('title 吸收（消除宿主原生 tooltip）', () => {
+    it('挂载后宿主不再残留 title 属性，标题渲染进标题区', () => {
+      const el = mount({ title: '偏好设置' })
+      expect(el.hasAttribute('title'), '宿主原生 title 应被吸收移除').toBe(false)
+      expect(part(el, 'title').textContent).toBe('偏好设置')
+      expect(part(el, 'header').hidden).toBe(false)
+    })
+
+    it('吸收触发的二次 update 幂等（标题不丢失、无死循环）', () => {
+      const el = mount({ title: '偏好设置' })
+      el.setAttribute('data-x', '1')
+      expect(part(el, 'title').textContent).toBe('偏好设置')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('运行时改 title 属性：新值吸收渲染，宿主仍无残留', () => {
+      const el = mount({ title: '旧标题' })
+      el.setAttribute('title', '新标题')
+      expect(part(el, 'title').textContent).toBe('新标题')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('title="" 清空标题（属性在场=宿主意图），头部隐藏', () => {
+      const el = mount({ title: '偏好设置' })
+      el.setAttribute('title', '')
+      expect(part(el, 'title').textContent).toBe('')
+      expect(part(el, 'header').hidden).toBe(true)
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('el.title 属性通道（原生反射到 attribute）同样被吸收', () => {
+      const el = mount()
+      el.title = '编程式标题'
+      expect(part(el, 'title').textContent).toBe('编程式标题')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+  })
+
   it('hoverable 时带悬浮阴影类', () => {
     const el = mount({ hoverable: '' })
     expect(part(el, 'card').classList.contains('hoverable')).toBe(true)
