@@ -25,7 +25,7 @@ Pass the steps array via `steps` (`{title, description?, icon?, disabled?, statu
 `clickable` is enabled by default: clicking an enabled step jumps to it (the whole step is clickable, keyboard Enter/Space works); clicking fires `oas-change` (detail is `{ index }`) and writes back to `current`.
 
 <DemoBlock title="Click a step to switch">
-  <oas-stepper id="stepper-click" current="1" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Complete shipping","description":"Wait for delivery"}]'>
+  <oas-stepper id="stepper-click" clickable current="1" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Complete shipping","description":"Wait for delivery"}]'>
     <oas-stepper-panel value="0"><p>Order form area</p></oas-stepper-panel>
     <oas-stepper-panel value="1"><p>Payment method area</p></oas-stepper-panel>
     <oas-stepper-panel value="2"><p>Shipping progress area</p></oas-stepper-panel>
