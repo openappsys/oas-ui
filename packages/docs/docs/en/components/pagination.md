@@ -62,6 +62,24 @@ When the cap is exceeded, the window shrinks centered on the current page, leavi
 
 Switching the page size resets to page 1 and fires `oas-change` with `detail: { page: 1, pageSize }`.
 
+## Page-size switch threshold
+
+<DemoBlock title="total-boundary controls the page-size switcher">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="info">total-boundary="100": the page-size dropdown is hidden when total ≤ 100 (here total=30, no dropdown)</oas-tag>
+    <oas-pagination total="30" page-size="10" total-boundary="100" page-sizes="[10,20,50]"></oas-pagination>
+    <oas-tag type="info">Click the buttons to raise total (>100) so the switcher appears; lower it to hide again</oas-tag>
+    <oas-space size="small">
+      <oas-button size="small" id="pagination-boundary-inc">total 30 → 300</oas-button>
+      <oas-button size="small" id="pagination-boundary-dec">total 300 → 30</oas-button>
+    </oas-space>
+    <oas-pagination id="pagination-boundary" total="30" page-size="10" total-boundary="100" page-sizes="[10,20,50]" current="1"></oas-pagination>
+    <oas-tag type="primary" id="pagination-boundary-info">total=30 (switcher hidden)</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+With `total-boundary` set, the page-size dropdown renders only when `total` exceeds the threshold; without it, the current behavior is kept (dropdown shows whenever `page-sizes` is set).
+
 ## Quick jump
 
 <DemoBlock title="show-jumper jump to a page">
@@ -125,6 +143,20 @@ Defaults to `md`; invalid values fall back to `md` with a console warning.
 </DemoBlock>
 
 The simple form renders only the prev/next buttons and a "current / total pages" text; it is mutually exclusive with the page-number ellipsis algorithm (`simple` wins).
+
+## Unknown-total form
+
+<DemoBlock title="show-more for unknown totals">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="info">When total is unknown (≤0), renders "Previous / More / Next"; More is a non-clickable status indicator, prev/next flip current ± 1</oas-tag>
+    <oas-pagination id="pagination-more" show-more total="0" page-size="10" current="1"></oas-pagination>
+    <oas-tag type="primary" id="pagination-more-info">Currently on page 1 (no total concept)</oas-tag>
+    <oas-tag type="info">show-more is ignored when total > 0 (normal page numbers)</oas-tag>
+    <oas-pagination show-more total="100" page-size="10" current="3"></oas-pagination>
+  </oas-space>
+</DemoBlock>
+
+`show-more` targets unknown-total scenarios: no page-number sequence or total text, just the three buttons; `show-jumper` / `page-sizes` / `hide-on-single` do not apply (no page-count concept).
 
 ## First / last pages
 
@@ -278,6 +310,21 @@ onMounted(() => {
   bind('pagination-full', (info, page, pageSize) => (info.textContent = `${pageSize} per page, currently on page ${page}`))
   bind('pagination-ellipsis', (info, page) => (info.textContent = `Currently on page ${page}`))
   bind('pagination-link', (info, page) => (info.textContent = `Currently on page ${page}`))
+  bind('pagination-more', (info, page) => (info.textContent = `Currently on page ${page}`))
+
+  // total-boundary: flip total to observe the page-size switcher appear/hide
+  const boundaryEl = document.getElementById('pagination-boundary')
+  const boundaryInfo = document.getElementById('pagination-boundary-info')
+  document.getElementById('pagination-boundary-inc')?.addEventListener('click', () => {
+    boundaryEl?.setAttribute('total', '300')
+    boundaryInfo.textContent = 'total=300 (switcher shown)'
+    boundaryInfo.setAttribute('type', 'primary')
+  })
+  document.getElementById('pagination-boundary-dec')?.addEventListener('click', () => {
+    boundaryEl?.setAttribute('total', '30')
+    boundaryInfo.textContent = 'total=30 (switcher hidden)'
+    boundaryInfo.setAttribute('type', 'primary')
+  })
 
   // Flip interception: veto jumping to page 4 (preventDefault)
   const beforeEl = document.getElementById('pagination-before')
@@ -336,12 +383,14 @@ onMounted(() => {
 | `responsive` | Responsive: renders in the simple minimal form automatically when the component is narrower than 640px (ResizeObserver on the host; restores when wide enough); equivalent to explicit `simple` | `boolean` | — |
 | `show-edges` | Shows first/last double-arrow buttons (« »), disabled at the boundaries; aria-label via i18n | `boolean` | — |
 | `show-jumper` | Shows a quick-jump input 「跳至 __ 页」(Enter to jump, out-of-range clamped) | `boolean` | — |
+| `show-more` | Unknown-total form: when total ≤ 0 renders Previous / More / Next (More is a non-clickable status indicator, styled like a page button but muted; prev/next flip current ± 1 and fire oas-change); ignored when total > 0 (normal page numbers); show-jumper / page-sizes / hide-on-single do not apply | `boolean` | — |
 | `show-total` | Shows the total text 「共 X 条」 | `boolean` | — |
 | `siblings` | Number of page numbers shown on each side of the current page | `string` | `1` |
 | `simple` | Minimal form: only prev/next buttons and a "current / total pages" text; mutually exclusive with the page-number ellipsis algorithm (simple wins); show-jumper still applies | `boolean` | — |
 | `size` | Size tier: xs / sm / md / lg / xl (default md); invalid values fall back to md with a console warning | `string` | `md` |
 | `target` | Passthrough to `<a target>` (e.g. `_blank`) in link mode; only applies when `href-template` is set | `string` | — |
 | `total` | Total number of records | `string` | `0` |
+| `total-boundary` | Page-size switcher visibility threshold: when set, the page-size dropdown renders only when total exceeds the value (hidden when total ≤ threshold); unset keeps current behavior (dropdown shows whenever page-sizes is set) | `string` | — |
 
 ### Events
 

@@ -62,6 +62,24 @@
 
 切换每页条数后回到第 1 页并派发 `oas-change`，`detail: { page: 1, pageSize }`。
 
+## 条数切换器阈值
+
+<DemoBlock title="total-boundary 控制条数切换器显隐">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="info">total-boundary="100"：total ≤ 100 时隐藏条数切换器（示例 total=30，下拉不渲染）</oas-tag>
+    <oas-pagination total="30" page-size="10" total-boundary="100" page-sizes="[10,20,50]"></oas-pagination>
+    <oas-tag type="info">点击按钮把 total 调大（>100）后切换器自动显示；调小回隐藏</oas-tag>
+    <oas-space size="small">
+      <oas-button size="small" id="pagination-boundary-inc">total 30 → 300</oas-button>
+      <oas-button size="small" id="pagination-boundary-dec">total 300 → 30</oas-button>
+    </oas-space>
+    <oas-pagination id="pagination-boundary" total="30" page-size="10" total-boundary="100" page-sizes="[10,20,50]" current="1"></oas-pagination>
+    <oas-tag type="primary" id="pagination-boundary-info">当前 total=30（切换器隐藏）</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+设置 `total-boundary` 后，仅 `total` 大于阈值才渲染每页条数下拉；未设置时维持现状（有 `page-sizes` 即显示）。
+
 ## 快速跳转
 
 <DemoBlock title="show-jumper 跳至指定页">
@@ -125,6 +143,20 @@
 </DemoBlock>
 
 极简形态只渲染前后钮与「当前 / 总页数」文本，与页码省略算法互斥（`simple` 优先）。
+
+## 总数未知形态
+
+<DemoBlock title="show-more 总数未知">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="info">total 未知（≤0）时渲染「上一页 / 更多 / 下一页」三钮；更多钮为不可点状态指示，prev/next 点击 current±1</oas-tag>
+    <oas-pagination id="pagination-more" show-more total="0" page-size="10" current="1"></oas-pagination>
+    <oas-tag type="primary" id="pagination-more-info">当前第 1 页（无总条数概念）</oas-tag>
+    <oas-tag type="info">total>0 时 show-more 无效，走正常页码渲染</oas-tag>
+    <oas-pagination show-more total="100" page-size="10" current="3"></oas-pagination>
+  </oas-space>
+</DemoBlock>
+
+`show-more` 用于总数未知的场景：不渲染页码序列与总数，仅三钮形态；`show-jumper` / `page-sizes` / `hide-on-single` 均不适用（无总页数概念）。
 
 ## 首末页
 
@@ -278,6 +310,21 @@ onMounted(() => {
   bind('pagination-full', (info, page, pageSize) => (info.textContent = `每页 ${pageSize} 条，当前第 ${page} 页`))
   bind('pagination-ellipsis', (info, page) => (info.textContent = `当前第 ${page} 页`))
   bind('pagination-link', (info, page) => (info.textContent = `当前第 ${page} 页`))
+  bind('pagination-more', (info, page) => (info.textContent = `当前第 ${page} 页`))
+
+  // total-boundary：切换 total 观察条数切换器显隐
+  const boundaryEl = document.getElementById('pagination-boundary')
+  const boundaryInfo = document.getElementById('pagination-boundary-info')
+  document.getElementById('pagination-boundary-inc')?.addEventListener('click', () => {
+    boundaryEl?.setAttribute('total', '300')
+    boundaryInfo.textContent = '当前 total=300（切换器显示）'
+    boundaryInfo.setAttribute('type', 'primary')
+  })
+  document.getElementById('pagination-boundary-dec')?.addEventListener('click', () => {
+    boundaryEl?.setAttribute('total', '30')
+    boundaryInfo.textContent = '当前 total=30（切换器隐藏）'
+    boundaryInfo.setAttribute('type', 'primary')
+  })
 
   // 翻页拦截：拦截跳转到第 4 页（preventDefault veto）
   const beforeEl = document.getElementById('pagination-before')
@@ -336,12 +383,14 @@ onMounted(() => {
 | `responsive` | 响应式：组件宽度 < 640px 时自动按 simple 极简形态渲染（ResizeObserver 监听容器宽度，恢复后还原）；与显式 `simple` 等效 | `boolean` | — |
 | `show-edges` | 显示首/末页双箭头钮（« »），边界处禁用；aria-label 走 i18n | `boolean` | — |
 | `show-jumper` | 显示「跳至 __ 页」快速跳转输入框（回车跳转，越界夹取） | `boolean` | — |
+| `show-more` | 总数未知形态：total ≤ 0 时渲染「上一页 / 更多 / 下一页」三钮（更多钮为不可点状态指示，样式对齐页码钮但弱化；prev/next 点击 current±1 并派发 oas-change）；total > 0 时无效走正常页码渲染；show-jumper / page-sizes / hide-on-single 均不适用 | `boolean` | — |
 | `show-total` | 显示总条数文案「共 X 条」 | `boolean` | — |
 | `siblings` | 当前页前后各显示的页码数 | `string` | `1` |
 | `simple` | 极简形态：只渲染前后钮与「当前 / 总页数」文本，与页码省略算法互斥（simple 优先）；show-jumper 可叠加 | `boolean` | — |
 | `size` | 尺寸档位：xs / sm / md / lg / xl（默认 md）；非法值回落 md 并在控制台告警 | `string` | `md` |
 | `target` | 链接模式下透传给 `<a target>`（如 `_blank`）；仅在设置 `href-template` 时生效 | `string` | — |
 | `total` | 总条数 | `string` | `0` |
+| `total-boundary` | 条数切换器显隐阈值：设置后仅 total 大于该值才渲染每页条数下拉（total ≤ 阈值隐藏）；未设置时维持现状（有 page-sizes 即显示） | `string` | — |
 
 ### 事件
 

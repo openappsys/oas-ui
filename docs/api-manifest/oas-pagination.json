@@ -90,6 +90,17 @@
       "name": "responsive",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "show-more",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "total-boundary",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
