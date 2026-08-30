@@ -15,6 +15,67 @@ function normalizePaginationSize(raw: string): PaginationSize {
   return 'md'
 }
 
+/** pager-count 最小值：低于 5 的窗口无法同时容纳首尾各 2 页与当前页 */
+const MIN_PAGER_COUNT = 5
+const DEFAULT_PAGER_COUNT = 9
+const warnedPagerCounts = new Set<string>()
+
+/** 非法 pager-count 归一化：低于最小值 5 回落 5 并在 dev 下 console.warn 一次（同值去重） */
+function normalizePagerCount(raw: string): number {
+  const trimmed = raw.trim()
+  const n = trimmed === '' ? DEFAULT_PAGER_COUNT : Number(trimmed)
+  const value = Math.floor(Number.isFinite(n) ? n : DEFAULT_PAGER_COUNT)
+  if (value >= MIN_PAGER_COUNT) return value
+  if (!warnedPagerCounts.has(trimmed)) {
+    warnedPagerCounts.add(trimmed)
+    console.warn(
+      `[oas-pagination] 非法 pager-count "${trimmed}"（低于最小值 ${MIN_PAGER_COUNT}），已回落 ${MIN_PAGER_COUNT}`,
+    )
+  }
+  return MIN_PAGER_COUNT
+}
+
+/**
+ * 页码序列：siblings 先算候选集，pager-count 再截断（截断优先）。
+ * - 候选集 = {1, pageCount} ∪ [current-siblings, current+siblings]，间隙 > 1 插省略号
+ * - |候选集| ≤ pager-count → 原样返回（向后兼容，不设 pager-count 时行为不变）
+ * - 超过上限 → 按当前页居中收缩窗口：固定保留 {1, 2} 与 {pageCount-1, pageCount}
+ *   （省略号两端至少留 2 页，首尾页可达），窗口大小 = pager-count - 4，
+ *   夹取到 [2, pageCount-1] 并始终含当前页，保证渲染页码数 ≤ pager-count
+ */
+function buildPages(
+  current: number,
+  pageCount: number,
+  siblings: number,
+  pagerCount: number,
+): number[] {
+  const candidate = new Set<number>()
+  candidate.add(1)
+  candidate.add(pageCount)
+  for (
+    let i = Math.max(2, current - siblings);
+    i <= Math.min(pageCount - 1, current + siblings);
+    i++
+  ) {
+    candidate.add(i)
+  }
+  if (candidate.size <= pagerCount) return [...candidate].sort((a, b) => a - b)
+  const windowSize = Math.max(1, pagerCount - 4)
+  let start = current - Math.floor(windowSize / 2)
+  let end = start + windowSize - 1
+  if (start < 2) {
+    start = 2
+    end = Math.min(pageCount - 1, start + windowSize - 1)
+  }
+  if (end > pageCount - 1) {
+    end = pageCount - 1
+    start = Math.max(2, end - windowSize + 1)
+  }
+  const shown = new Set<number>([1, 2, current, pageCount - 1, pageCount])
+  for (let i = start; i <= end; i++) shown.add(i)
+  return [...shown].sort((a, b) => a - b)
+}
+
 const STYLE = `
 :host {
   display: inline-block;
@@ -154,6 +215,7 @@ export class OASPagination extends OASElement {
       'page-size',
       'current',
       'siblings',
+      'pager-count',
       'show-total',
       'page-sizes',
       'show-jumper',
@@ -203,6 +265,9 @@ export class OASPagination extends OASElement {
     const pageCount = Math.max(1, Math.ceil(total / pageSize))
     const current = Math.min(Math.max(Number(this.getAttr('current', '1')) || 1, 1), pageCount)
     const siblings = Number(this.getAttr('siblings', '1')) || 1
+    // pager-count：页码钮上限，低于最小值 5 回落 5 并告警（同值去重）；''/缺失取默认 9
+    // （getAttr 第二实参用字面量 '9'，供 api:scan 提取 API 表默认值）
+    const pagerCount = normalizePagerCount(this.getAttr('pager-count', '9'))
     const simple = this.hasAttr('simple')
 
     // hide-on-single：单页时不渲染（host hidden，宿主无感知；恢复多页时自动取消隐藏）
@@ -280,19 +345,9 @@ export class OASPagination extends OASElement {
       simpleEl.textContent = `${current} / ${pageCount}`
       group.appendChild(simpleEl)
     } else {
-      const pagesToShow = new Set<number>()
-      pagesToShow.add(1)
-      pagesToShow.add(pageCount)
-      for (
-        let i = Math.max(2, current - siblings);
-        i <= Math.min(pageCount - 1, current + siblings);
-        i++
-      ) {
-        pagesToShow.add(i)
-      }
-      const sorted = [...pagesToShow].sort((a, b) => a - b)
+      const pageNumbers = buildPages(current, pageCount, siblings, pagerCount)
       let last = 0
-      for (const page of sorted) {
+      for (const page of pageNumbers) {
         if (page - last > 1) {
           const ell = document.createElement('span')
           ell.className = 'ellipsis'
