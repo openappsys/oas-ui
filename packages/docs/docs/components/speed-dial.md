@@ -31,11 +31,21 @@
 
 ## 纯文字动作
 
-`icon` 可省略，只显示 label；也支持只写 icon 不写 label。
+`icon` 可省略，只显示 label；纯图标子动作请用 `hide-label`（见下节）。
 
 <DemoBlock title="纯文字 / 纯图标">
   <div style="width: 120px; height: 160px">
     <oas-speed-dial style="position: static" actions='[{"label":"分享"},{"label":"收藏"},{"label":"举报"}]'></oas-speed-dial>
+  </div>
+</DemoBlock>
+
+## icon-only 子动作（悬停显示文字）
+
+`hide-label: true` 的子动作只渲染图标（圆形小钮），label 视觉隐藏；悬停 / 键盘聚焦时浮出文字气泡（纯 CSS 转场，无 JS 浮层）。气泡方向随展开方向自适应：`up` 展开在动作左侧、`down` 在右侧、`left`/`right` 在上方，定位于动作外侧、不遮挡相邻动作。`hide-label` 但未提供可渲染 icon 的动作自动回落为显示 label（dev 下 console.warn 告警一次）。方向键 roving 导航、`oas-select` 事件不受影响。
+
+<DemoBlock title="icon-only 子动作（悬停显示文字）">
+  <div style="width: 260px; height: 220px">
+    <oas-speed-dial style="position: static" actions='[{"label":"复制","icon":"copy","hide-label":true},{"label":"编辑","icon":"edit"},{"label":"删除","icon":"trash","hide-label":true},{"label":"上传","icon":"upload","hide-label":true}]'></oas-speed-dial>
   </div>
 </DemoBlock>
 
@@ -141,7 +151,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `actions` | 子动作 JSON | `string` | `[]` |
+| `actions` | 子动作 JSON（`[{ label, icon?, 'hide-label'? }]`；`hide-label: true` 时子动作只渲染 icon 为圆形小钮，label 视觉隐藏、hover/键盘聚焦时浮出文字气泡；未提供可渲染 icon 时回落显示 label） | `string` | `[]` |
 | `direction` | 展开方向 | `string` | `up` |
 | `open` | 展开态（受控） | `boolean` | — |
 | `trigger` | 触发方式：`click`（默认）\| `hover`（悬停开、移出收起，120ms 离开宽限期；触屏自动回落 click） | `string` | `click` |
@@ -165,5 +175,6 @@ onMounted(() => {
 | ------ | ------------------------------------------ | -------- |
 | `label` | 动作文案                                   | `string` |
 | `icon`  | 图标名（`@oas-ui/icons` 的 iconRegistry 键） | `string` |
+| `hide-label` | true 时只渲染 icon（圆形小钮），label 视觉隐藏、hover/键盘聚焦时浮出文字气泡；未提供可渲染 icon 时回落显示 label | `boolean` |
 
-行为：点击主按钮切换展开（`aria-expanded` 同步）；`trigger="hover"` 可改为悬停触发（触屏回落 click）；点击外部或 Esc 收起（Esc 后焦点回到主按钮）；点击子动作收起并派发 `oas-select`；展开时自动聚焦第一个子动作，方向键/Home/End 在动作间导航。默认定位 `position: fixed; bottom/right`，可覆盖。文档级监听仅在展开时挂载、断开连接清理，无孤儿浮层。
+行为：点击主按钮切换展开（`aria-expanded` 同步）；`trigger="hover"` 可改为悬停触发（触屏回落 click）；点击外部或 Esc 收起（Esc 后焦点回到主按钮）；点击子动作收起并派发 `oas-select`；展开时自动聚焦第一个子动作，方向键/Home/End 在动作间导航；`hide-label` 子动作的 menuitem 以 `aria-label` 保留可访问名。默认定位 `position: fixed; bottom/right`，可覆盖。文档级监听仅在展开时挂载、断开连接清理，无孤儿浮层。
