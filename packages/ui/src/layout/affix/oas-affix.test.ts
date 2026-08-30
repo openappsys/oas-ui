@@ -328,3 +328,134 @@ describe('OASAffix', () => {
     el.remove()
   })
 })
+
+// ===== append-to（teleport 传送） =====
+
+// ===== append-to（teleport 传送：host 整体移动 + 原位占位） =====
+
+// ===== append-to（teleport 传送：wrap 移动 + light DOM 内容实体化随行） =====
+
+describe('OASAffix append-to（teleport 传送）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    mockScrollY(0)
+  })
+
+  /** 取 wrap 节点：传送时 wrap 在目标容器内，解除后回 shadow placeholder */
+  function locateWrap(el: OASAffix, containers: HTMLElement[]): HTMLElement | null {
+    for (const c of containers) {
+      const w = c.querySelector<HTMLElement>('.wrap')
+      if (w) return w
+    }
+    return el.shadowRoot!.querySelector<HTMLElement>('.wrap')
+  }
+
+  it('append-to 列入 observedAttributes', () => {
+    expect(OASAffix.observedAttributes).toContain('append-to')
+  })
+
+  it('吸附时 wrap 传送到目标容器且 light DOM 内容实体化随行，解除时内容搬回 + wrap 归位', () => {
+    const dest = document.createElement('div')
+    dest.id = 'affix-dest'
+    document.body.appendChild(dest)
+    const el = mount({ 'append-to': '#affix-dest', offset: '80' })
+    const btn = el.querySelector('oas-button')!
+    // 首帧吸顶：wrap 在 dest 内，且 light DOM 内容实体已搬入 wrap（不再依赖 slot 投影）
+    const wrapInDest = dest.querySelector<HTMLElement>('.wrap')!
+    expect(wrapInDest).not.toBeNull()
+    expect(el.querySelector('oas-button')).toBeNull()
+    expect(wrapInDest.querySelector('oas-button')).toBe(btn)
+    // 解除吸附：内容搬回 host（light DOM），wrap 归位 placeholder
+    mockPlaceholderRect(el, 500, 540)
+    scrollWindow(100)
+    scrollWindow(200)
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.wrap')!
+    expect(wrap.classList.contains('fixed')).toBe(false)
+    expect(wrap.parentElement).toBe(el.shadowRoot!.querySelector('.placeholder'))
+    expect(el.querySelector('oas-button')).toBe(btn)
+    // 再次吸附 → 重新传送
+    mockPlaceholderRect(el, 5, 25)
+    scrollWindow(300)
+    expect(locateWrap(el, [dest])).toBe(dest.querySelector('.wrap'))
+  })
+
+  it('传送仅移动 wrap，shadow 内 placeholder 留原位（占位高度逻辑保持）', () => {
+    const dest = document.createElement('div')
+    dest.id = 'affix-dest'
+    document.body.appendChild(dest)
+    const el = mount({ 'append-to': '#affix-dest', offset: '80' })
+    const placeholder = el.shadowRoot!.querySelector<HTMLElement>('.placeholder')!
+    expect(dest.querySelector<HTMLElement>('.wrap')).not.toBeNull()
+    expect(placeholder.parentNode).toBe(el.shadowRoot!)
+    expect(placeholder.style.height).toBe('0px')
+  })
+
+  it('append-to 无匹配：告警一次并回落不传送（wrap 保持 placeholder 内原位）', () => {
+    const warns: unknown[][] = []
+    const orig = console.warn
+    console.warn = (...a: unknown[]) => warns.push(a)
+    try {
+      const el = mount({ 'append-to': '#affix-no-such', offset: '80' })
+      const wrap = el.shadowRoot!.querySelector<HTMLElement>('.wrap')!
+      const placeholder = el.shadowRoot!.querySelector<HTMLElement>('.placeholder')!
+      // 首帧吸顶但无匹配目标 → 回落不传送，wrap 留在 placeholder 内（fixed 视觉不变）
+      expect(wrap.classList.contains('fixed')).toBe(true)
+      expect(wrap.parentElement).toBe(placeholder)
+      expect(warns.length).toBe(1)
+      expect(String(warns[0]?.[0])).toContain('[oas-affix]')
+      expect(String(warns[0]?.[0])).toContain('append-to')
+      // 同值不重复告警（继续滚动触发 apply 不再告警）
+      mockPlaceholderRect(el, 0, 40)
+      scrollWindow(100)
+      scrollWindow(200)
+      expect(warns.length).toBe(1)
+    } finally {
+      console.warn = orig
+    }
+  })
+
+  it('append-to 属性动态变化：吸附态下即时归位/重传', () => {
+    const a = document.createElement('div')
+    a.id = 'affix-a'
+    document.body.appendChild(a)
+    const b = document.createElement('div')
+    b.id = 'affix-b'
+    document.body.appendChild(b)
+    const el = mount({ 'append-to': '#affix-a', offset: '80' })
+    const placeholder = el.shadowRoot!.querySelector<HTMLElement>('.placeholder')!
+    // 首帧吸顶 → 传送到 #affix-a
+    expect(locateWrap(el, [a, b])).toBe(a.querySelector('.wrap'))
+    // 仍处吸附态：append-to 改为 #affix-b → 即时重传到新容器
+    el.setAttribute('append-to', '#affix-b')
+    expect(locateWrap(el, [a, b])).toBe(b.querySelector('.wrap'))
+    expect(a.querySelector('.wrap')).toBeNull()
+    // 移除 append-to → 无传送目标，内容搬回 + wrap 归位 placeholder
+    el.removeAttribute('append-to')
+    expect(placeholder.querySelector('.wrap')).not.toBeNull()
+    expect(a.querySelector('.wrap')).toBeNull()
+    expect(b.querySelector('.wrap')).toBeNull()
+    // 内容实体搬回 host（light DOM 原位，textContent 断言不依赖具体元素）
+    expect(el.textContent).toContain('固钉内容')
+  })
+
+  it('onCleanup：断开连接时 wrap 归位到 placeholder（不遗留孤儿节点）', () => {
+    const dest = document.createElement('div')
+    dest.id = 'affix-dest'
+    document.body.appendChild(dest)
+    const el = mount({ 'append-to': '#affix-dest', offset: '80' })
+    expect(dest.querySelector<HTMLElement>('.wrap')).not.toBeNull()
+    el.remove()
+    // 断开连接清理后重新连接：render 重建 shadow（wrap 回归），滚动触发 apply 后可正常再次传送
+    document.body.appendChild(el)
+    mockPlaceholderRect(el, 5, 25)
+    scrollWindow(100)
+    scrollWindow(300)
+    expect(dest.querySelector<HTMLElement>('.wrap')).not.toBeNull()
+  })
+})
+
+

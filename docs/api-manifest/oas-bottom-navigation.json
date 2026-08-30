@@ -38,6 +38,11 @@
       "type": "string",
       "default": "true",
       "observed": true
+    },
+    {
+      "name": "shift",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],

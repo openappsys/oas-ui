@@ -149,6 +149,20 @@ onMounted(async () => {
   </div>
 </DemoBlock>
 
+## 响应式紧凑（responsive）
+
+`responsive` 布尔属性：组件宽度 <768px 时自动紧凑布局——标题字号降档（xl→lg）、副标题字号降档（sm）、副标题与 extra 换行（`.row` 允许 `flex-wrap`，标题独占一行不被挤压）；ResizeObserver 观察宿主宽度变化，恢复宽度自动还原。缩窄浏览器窗口或移动端设备上自动生效。
+
+<DemoBlock title="responsive 紧凑布局">
+  <oas-page-header responsive title="订单详情" subtitle="订单号 20260801001 · 收货人 张三" back>
+    <oas-space slot="extra" size="small">
+      <oas-button size="small">打印</oas-button>
+      <oas-button size="small" type="primary">审核通过</oas-button>
+    </oas-space>
+  </oas-page-header>
+  <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">缩窄窗口到 768px 以下：标题字号降档、副标题与操作区换行；恢复宽度自动还原。</p>
+</DemoBlock>
+
 ## API
 
 ### 属性
@@ -157,6 +171,7 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `back` | 是否显示返回按钮 | `boolean` | — |
 | `ghost` | 透明背景变体：页头背景规则置 `none`（强制透明，让所在容器/页面底色透出），footer 分隔线一并去除；标题/文字色保持主题前景 token；其余布局不变 | `boolean` | — |
+| `responsive` | 响应式紧凑：组件宽 <768px 时标题字号降档（xl→lg）、副标题字号降档（sm）、副标题与 extra 换行（.row flex-wrap）；ResizeObserver 观察宿主宽度，onCleanup 清理 | `boolean` | — |
 | `subtitle` | 副标题文案 | `string` | — |
 | `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串） | `string` | — |
 

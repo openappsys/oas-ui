@@ -19,6 +19,12 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "append-to",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
