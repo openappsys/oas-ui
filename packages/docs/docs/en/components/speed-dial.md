@@ -31,11 +31,21 @@ On expansion, the sub-actions fade in one after another (`transition-delay = ind
 
 ## Text-only actions
 
-`icon` can be omitted to show only the label; icon-only actions (no label) are also supported.
+`icon` can be omitted to show only the label; for icon-only sub-actions use `hide-label` (see the next section).
 
 <DemoBlock title="Text only / icon only">
   <div style="width: 120px; height: 160px">
     <oas-speed-dial style="position: static" actions='[{"label":"Share"},{"label":"Favorite"},{"label":"Report"}]'></oas-speed-dial>
+  </div>
+</DemoBlock>
+
+## Icon-only sub-actions (label on hover)
+
+With `hide-label: true` a sub-action renders only its icon (a circular small button) and the label is visually hidden; hovering / keyboard focus reveals a text bubble (pure CSS transition, no JS overlay). The bubble position adapts to the expansion direction: `up` places it to the left of the action, `down` to the right, `left`/`right` above — always on the outer side of the action so it never covers neighboring actions. An action with `hide-label` but no renderable icon falls back to showing the label (a one-time `console.warn` in dev). Arrow-key roving navigation and the `oas-select` event are unaffected.
+
+<DemoBlock title="Icon-only sub-actions (label on hover)">
+  <div style="width: 260px; height: 220px">
+    <oas-speed-dial style="position: static" actions='[{"label":"Copy","icon":"copy","hide-label":true},{"label":"Edit","icon":"edit"},{"label":"Delete","icon":"trash","hide-label":true},{"label":"Upload","icon":"upload","hide-label":true}]'></oas-speed-dial>
   </div>
 </DemoBlock>
 
@@ -141,7 +151,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `actions` | Sub-action JSON | `string` | `[]` |
+| `actions` | Sub-action JSON (`[{ label, icon?, 'hide-label'? }]`; `hide-label: true` renders the sub-action as a circular icon-only button with the label visually hidden, shown as a text bubble on hover/keyboard focus; falls back to showing the label when no renderable icon is provided) | `string` | `[]` |
 | `direction` | Expansion direction | `string` | `up` |
 | `open` | Expanded state (controlled) | `boolean` | — |
 | `trigger` | Trigger mode: `click` (default) \| `hover` (open on hover, collapse on leave with a 120ms grace period; falls back to click on touch devices) | `string` | `click` |
@@ -165,5 +175,6 @@ onMounted(() => {
 | ------- | ---------------------------------------------------- | -------- |
 | `label` | Action text                                          | `string` |
 | `icon`  | Icon name (a key of `@oas-ui/icons` iconRegistry)  | `string` |
+| `hide-label` | When `true`, renders only the icon (a circular small button); the label is visually hidden and appears as a text bubble on hover / keyboard focus. Falls back to showing the label when no renderable icon is provided | `boolean` |
 
-Behavior: clicking the main button toggles expansion (`aria-expanded` synced); `trigger="hover"` switches to hover trigger (touch devices fall back to click); clicking outside or pressing Esc collapses (after Esc, focus returns to the main button); clicking a sub-action collapses and fires `oas-select`; when expanded, the first sub-action is focused automatically and arrow keys / Home / End navigate between actions. The default position is `position: fixed; bottom/right`, overridable. The document-level listener is only attached while expanded and disconnected during cleanup — no orphan popups.
+Behavior: clicking the main button toggles expansion (`aria-expanded` synced); `trigger="hover"` switches to hover trigger (touch devices fall back to click); clicking outside or pressing Esc collapses (after Esc, focus returns to the main button); clicking a sub-action collapses and fires `oas-select`; when expanded, the first sub-action is focused automatically and arrow keys / Home / End navigate between actions; `hide-label` sub-actions keep an accessible name via `aria-label`. The default position is `position: fixed; bottom/right`, overridable. The document-level listener is only attached while expanded and disconnected during cleanup — no orphan popups.
