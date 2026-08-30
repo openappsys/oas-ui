@@ -7309,6 +7309,8 @@ test('affix 吸附-解除-占位：top 滚过吸附线吸附、回滚解除、fi
 })
 
 test('menubar/navigation-menu/sidebar 粗指针触控目标 ≥48px xl 档（pointer:coarse 设备模拟）', async ({ browser }) => {
+  // 三页连跳 + sidebar 大页加载，总时长易超默认 test timeout——test.slow() 三倍放宽
+  test.slow()
   // 模板方反馈：窄屏 ☰ 弹出菜单顶级项 52×32px，粗指针设备不达标（目标 ≥44px）
   // 库侧治本：三组件 STYLE 内 @media (pointer: coarse) 触控基线；模板临时 ::part 补丁可移除
   // 移动设备模拟（isMobile+hasTouch → DevTools 设备仿真把 pointer 翻为 coarse）
@@ -7330,14 +7332,17 @@ test('menubar/navigation-menu/sidebar 粗指针触控目标 ≥48px xl 档（poi
     return Math.round(t.getBoundingClientRect().height)
   })
   // sidebar（.item 桌面 lg 40 → coarse xl 48，.item.sub 子项同类名一并覆盖）
-  // 该页窄视口下部分 sidebar demo 处于移动抽屉态不可见——等附加（首个实例可能是收起抽屉，visible 会永等）+ 取有真实布局的实例量测
-  await page.waitForSelector('oas-sidebar', { state: 'attached', timeout: 15000 })
-  await page.waitForFunction(() => {
+  // 该页用独立 page 直接打开：coarse 模拟下同 page 第三次跨页 goto 偶发不换页（Chromium/vitepress
+  // 交互层问题，量测语义与到达方式无关），独立 page 稳定且加载更快
+  const sidebarPage = await context.newPage()
+  await sidebarPage.goto('/components/sidebar.html', { waitUntil: 'domcontentloaded' })
+  await sidebarPage.waitForSelector('oas-sidebar', { state: 'attached', timeout: 45000 })
+  await sidebarPage.waitForFunction(() => {
     const s = document.querySelector('oas-sidebar')
     return s != null && s.shadowRoot != null
   }, { timeout: 15000 })
-  await page.waitForTimeout(400)
-  r.sidebarItem = await page.evaluate(() => {
+  await sidebarPage.waitForTimeout(400)
+  r.sidebarItem = await sidebarPage.evaluate(() => {
     const items = [...document.querySelectorAll('oas-sidebar')]
       .flatMap((s) => [...(s.shadowRoot?.querySelectorAll('.item') ?? [])])
       .map((i) => Math.round(i.getBoundingClientRect().height))
