@@ -98,6 +98,121 @@ With `navigation`, steps become an arrow navigation bar: the current step is hig
   </div>
 </DemoBlock>
 
+## Container status
+
+The container-level `status` attribute (`wait` / `process` / `finish` / `error`) overrides the derived status of the current step (`current` index), e.g. to mark a whole flow as errored. An explicit per-step `status` still takes the highest priority.
+
+<DemoBlock title="Container status overrides the current step">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="danger">Container status="error": the current step becomes an error state</oas-tag>
+    <oas-steps status="error" current="1" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Payment gateway error"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
+    <oas-tag type="success">Container status="finish": the current step becomes a finished state</oas-tag>
+    <oas-steps status="finish" current="1" steps='[{"title":"Create order"},{"title":"Confirm payment"},{"title":"Complete shipping"}]'></oas-steps>
+  </oas-space>
+</DemoBlock>
+
+## Action hint
+
+The per-step `extra` field renders a weak small hint line below the description (`textContent` rendering, no HTML injection).
+
+<DemoBlock title="extra hint">
+  <oas-steps current="1" steps='[{"title":"Upload ID","description":"Front and back of ID card","extra":"jpg/png only, under 5MB"},{"title":"Face check","description":"Keep good lighting","extra":"Camera permission required"},{"title":"Approved","description":"Waiting for admin review","extra":"Usually within 1 business day"}]'></oas-steps>
+</DemoBlock>
+
+## Step id passthrough
+
+The per-step `id` field is echoed back in the `oas-change` event (`detail: { index, id? }`); steps without an `id` keep `detail: { index }` (backward compatible).
+
+<DemoBlock title="oas-change echoes id">
+  <oas-steps id="steps-id" clickable current="1" steps='[{"title":"Create order","id":"create","description":"Fill in order details"},{"title":"Confirm payment","id":"pay","description":"Choose a payment method"},{"title":"Complete shipping","id":"ship","description":"Wait for delivery"}]'></oas-steps>
+  <oas-tag type="info" id="steps-id-info">Click a step to see its id</oas-tag>
+</DemoBlock>
+
+## Step-change guard
+
+The `oas-before-change` event (cancelable) fires before a step change via a clickable step, keyboard Enter/Space, or the navigation Previous/Next buttons, with `detail: { index }`; the host can `preventDefault()` to veto the change. Useful for "block navigation while there are unsaved changes".
+
+<DemoBlock title="oas-before-change guard">
+  <oas-checkbox id="steps-guard">Unsaved changes (step changes are blocked while checked)</oas-checkbox>
+  <oas-steps id="steps-before" clickable current="1" style="margin-top: 12px" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
+</DemoBlock>
+
+## Loading
+
+The per-step `loading` field shows a CSS spinner at the indicator position (tokens); an explicit `icon` / number / progress ring yield to loading.
+
+<DemoBlock title="Loading step">
+  <oas-steps current="1" steps='[{"title":"Submit order","status":"finish"},{"title":"Waiting for payment","loading":true,"description":"Payment gateway processing"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
+</DemoBlock>
+
+## Optional steps
+
+The per-step `optional` field renders a weak "Optional" label next to the title (i18n: "可选" in Chinese / "Optional" in English, follows the locale).
+
+<DemoBlock title="optional marker">
+  <oas-steps current="1" steps='[{"title":"Fill in profile","optional":true,"description":"Basic info and contact details"},{"title":"Upload ID documents","description":"Front and back of ID card"},{"title":"Link a bank card","optional":true,"description":"Can be linked later"}]'></oas-steps>
+</DemoBlock>
+
+## Without connector lines
+
+`lineless` hides all connector lines (compact look, keeping indicators and status colors).
+
+<DemoBlock title="lineless">
+  <oas-steps lineless current="1" steps='[{"title":"Create order"},{"title":"Confirm payment"},{"title":"Complete shipping"}]'></oas-steps>
+</DemoBlock>
+
+## Compact mode
+
+`simple` renders a compact single-row layout (smaller indicators, hidden descriptions, tighter connector lines). It is mutually exclusive with `progress-dot` / `navigation` (simple wins).
+
+<DemoBlock title="simple compact mode">
+  <oas-steps simple clickable current="1" onoas-change="message.info('Switched to step ' + (event.detail.index + 1))" steps='[{"title":"Create order"},{"title":"Confirm payment"},{"title":"Complete shipping"}]'></oas-steps>
+</DemoBlock>
+
+## Connector style
+
+The `separator` attribute controls the connector style: `line` (default solid) / `dashed` (dashed border) / `arrow` (trailing arrowhead).
+
+<DemoBlock title="separator styles">
+  <oas-space direction="vertical" size="large" style="width: 100%">
+    <oas-steps separator="dashed" current="1" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
+    <oas-steps separator="arrow" current="1" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
+  </oas-space>
+</DemoBlock>
+
+## Progress ring
+
+The per-step `percent` (0-100) takes effect only on `process` steps: the indicator becomes a progress ring (SVG circle stroke-dasharray, tokens), yielding the number; ignored on non-process steps.
+
+<DemoBlock title="percent progress ring">
+  <oas-steps current="1" steps='[{"title":"Download assets","status":"finish"},{"title":"Process data","percent":65,"description":"Processing 65%"},{"title":"Done","description":"Waiting for the result"}]'></oas-steps>
+</DemoBlock>
+
+## Responsive vertical
+
+With `responsive`, the component automatically renders in the vertical layout when the container width is below 640px (ResizeObserver, cleaned up on disconnect); an explicit `direction` is overridden by responsive, and `navigation` stays forced horizontal.
+
+<DemoBlock title="responsive narrow-screen vertical">
+  <div style="width: 100%; min-width: 280px; max-width: 100%; overflow: auto; resize: horizontal; padding: 8px 0">
+    <oas-steps responsive current="1" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
+  </div>
+  <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-xs)">Drag the bottom-right corner below 640px to switch the steps to the vertical layout automatically.</p>
+</DemoBlock>
+
+## Combinations
+
+Combination semantics: `simple` takes priority over `progress-dot` / `navigation` (dot and navigation shapes yield to simple); under `navigation`, `responsive` does not switch to vertical (navigation stays forced horizontal).
+
+<DemoBlock title="Combination: simple + progress-dot">
+  <oas-steps simple progress-dot current="1" steps='[{"title":"Create order"},{"title":"Confirm payment"},{"title":"Complete shipping"}]'></oas-steps>
+</DemoBlock>
+
+<DemoBlock title="Combination: navigation + responsive (still horizontal when narrow)">
+  <div style="width: 380px">
+    <oas-steps navigation responsive current="1" steps='[{"title":"Fill in details"},{"title":"Review information"},{"title":"Submit"}]'></oas-steps>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### Attributes
@@ -106,17 +221,49 @@ With `navigation`, steps become an arrow navigation bar: the current step is hig
 | --- | --- | --- | --- |
 | `clickable` | Steps are clickable to jump (boolean; enabled when present) | `boolean` | — |
 | `current` | Current step index (0-based) | `string` | `0` |
-| `direction` | Direction (forced to horizontal in navigation mode) | `string` | `horizontal` |
+| `direction` | Direction (forced to horizontal in navigation mode; responsive switches to vertical on narrow screens) | `string` | `horizontal` |
 | `label-placement` | Label placement: `vertical` (default, icon above title) / `horizontal` (icon and title on the same row) | `string` | — |
 | `linear` | Linear mode: only steps with `index <= current` are clickable (boolean; enabled when present; future steps are blocked, clicks are silent) | `boolean` | — |
-| `navigation` | Navigation mode: arrow bar with a bottom Previous/Next button row (boolean; enabled when present) | `boolean` | — |
-| `progress-dot` | Progress-dot steps: dot indicators with a thin connector line (boolean; enabled when present) | `boolean` | — |
-| `steps` | `[{ title, description?, status?, icon?, disabled? }]` JSON string | `StepItem[] \| string` | `[]` |
+| `lineless` | Hide all connector lines (boolean; enabled when present; compact look) | `boolean` | — |
+| `navigation` | Navigation mode: arrow bar with a bottom Previous/Next button row (boolean; enabled when present; mutually exclusive with `simple`, simple wins) | `boolean` | — |
+| `progress-dot` | Progress-dot steps: dot indicators with a thin connector line (boolean; enabled when present; mutually exclusive with `simple`, simple wins) | `boolean` | — |
+| `responsive` | Responsive vertical: renders in the vertical layout when the container width is below 640px (boolean; enabled when present; ResizeObserver, cleaned up on disconnect; ignored under navigation) | `boolean` | — |
+| `separator` | Connector style: `line` (default) / `dashed` (dashed border) / `arrow` (trailing arrowhead); not applied under navigation | `string` | — |
+| `simple` | Compact mode: single-row small size (smaller indicators, hidden descriptions, tighter connector lines) (boolean; enabled when present; takes priority over progress-dot/navigation) | `boolean` | — |
+| `status` | Container-level status overriding the current step (`wait` / `process` / `finish` / `error`); an explicit per-step `status` still takes the highest priority | `StepStatus` | — |
+| `steps` | `[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent? }]` JSON string | `StepItem[] \| string` | `[]` |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-change` | Fired when a clickable step or a navigation button is clicked (including keyboard triggers); `detail: { index }` (0-based) |
+| `oas-before-change` | Fired before a step change (cancelable, `detail: { index }`); the host can `preventDefault()` to veto the change (step clicks / keyboard / navigation buttons all apply) |
+| `oas-change` | Fired when a clickable step or a navigation button is clicked (including keyboard triggers); `detail: { index, id? }` (0-based; `id` echoes the step `id` field, keeps `{ index }` when unset) |
 
 State rules: an explicit `status` (`wait` / `process` / `finish` / `error`) takes priority; otherwise it is derived from `current` — index `< current` is `finish` (✓), `=== current` is `process`, and the rest are `wait`.
+
+<script setup>
+import { onMounted } from 'vue'
+onMounted(() => {
+  // id passthrough: show oas-change detail.id
+  const idEl = document.getElementById('steps-id')
+  const idInfo = document.getElementById('steps-id-info')
+  idEl?.addEventListener('oas-change', (e) => {
+    idInfo.textContent = `Jumped to "${e.detail.id ?? e.detail.index + 1}"`
+    idInfo.setAttribute('type', 'primary')
+  })
+
+  // step-change guard: veto with preventDefault while the checkbox is checked
+  const guard = document.getElementById('steps-guard')
+  const beforeEl = document.getElementById('steps-before')
+  beforeEl?.addEventListener('oas-before-change', (e) => {
+    if (guard?.checked) {
+      e.preventDefault()
+      message.warning(`Blocked jump to step ${e.detail.index + 1} (unsaved changes)`)
+    }
+  })
+  beforeEl?.addEventListener('oas-change', () => {
+    message.info(`Switched to step ${beforeEl.getAttribute('current') === null ? 0 : Number(beforeEl.getAttribute('current')) + 1}`)
+  })
+})
+</script>

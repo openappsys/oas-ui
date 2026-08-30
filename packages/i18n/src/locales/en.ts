@@ -63,6 +63,7 @@ export const en: LocaleMessages = {
   'tour.progress': 'Tour progress',
   'steps.prev': 'Previous',
   'steps.next': 'Next',
+  'steps.optional': 'Optional',
   'anchor.nav': 'Anchor navigation',
   'breadcrumb.nav': 'Breadcrumb',
   'breadcrumb.expand': 'Expand collapsed breadcrumb items',

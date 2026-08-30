@@ -85,6 +85,7 @@ export const zhCN = {
   // steps（步骤条）
   'steps.prev': '上一步',
   'steps.next': '下一步',
+  'steps.optional': '可选',
   // anchor（锚点导航）
   'anchor.nav': '锚点导航',
   // breadcrumb（面包屑）
