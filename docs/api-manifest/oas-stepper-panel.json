@@ -1,0 +1,18 @@
+{
+  "className": "OASStepperPanel",
+  "sourceFile": "packages/ui/src/navigation/stepper/oas-stepper-panel.ts",
+  "attrs": [
+    {
+      "name": "value",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}

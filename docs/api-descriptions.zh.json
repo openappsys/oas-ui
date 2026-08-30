@@ -2446,5 +2446,30 @@
     "slots": {
       "": "命令项 label 内容（默认插槽文本）；直接子元素 `<oas-command-item>` 递归为 `page` 子页"
     }
+  },
+  "oas-stepper": {
+    "attrs": {
+      "clickable": "步骤可点击跳步（默认 true；`clickable=\"false\"` 关闭：点击/键盘静默，键盘仍可移动焦点）",
+      "current": "当前步骤索引（0 起，双向：点击跳步写回、外部设置即时同步 aria-selected 与面板显隐）；非法值回落 0，越界夹取",
+      "direction": "方向：`horizontal`（默认，横向排列）/ `vertical`（纵向排列，指示器左/标题右）",
+      "linear": "线性模式：仅允许跳转 `index <= current` 的步骤（未来步 `aria-disabled` + 视觉弱化，点击/键盘静默）",
+      "size": "尺寸档位：`xs`/`small`/`medium`/`large`/`xl`（标题字号密度；非法值回落 medium + dev 告警，同值去重）",
+      "steps": "步骤数据 JSON `[{ title, description?, icon?, disabled?, status? }]`（语义对齐 oas-steps 的 StepItem 减去面板无关项）；非法/空回落 `[]`"
+    },
+    "events": {
+      "oas-change": "可点击跳步时触发（点击步骤 / 键盘 Enter/Space）；`detail: { index }`（0 起，bubbles + composed，写回 current）"
+    },
+    "slots": {
+      "": "内容面板投影区（`<oas-stepper-panel>` 直接子元素）；面板按 value 关联步骤序号，仅 current 匹配者可见"
+    }
+  },
+  "oas-stepper-panel": {
+    "attrs": {
+      "value": "关联步骤序号字符串（如 `value=\"0\"`）；仅 `current` 匹配的面板可见（hidden 由 oas-stepper 驱动）"
+    },
+    "events": {},
+    "slots": {
+      "": "面板内容（默认插槽）"
+    }
   }
 }

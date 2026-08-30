@@ -100,6 +100,7 @@ OAS-UI 提供 115 个框架无关的 Web Components 组件，按用途划分为 
 - [BottomNavigation 底部导航](/components/bottom-navigation) —— 移动端底部导航栏：`role="tablist"` + 每项 `role="tab"` + `aria-selected` 同步，键盘左右移动焦点（roving tabindex）、Enter/Space 选中，激活项主色 + 图标，顶部细分隔线。
 - [Pagination 分页](/components/pagination) —— 数据分页导航，支持页码省略、前后翻页、自定义相邻页码数、总数展示、每页条数切换与快速跳转。
 - [Steps 步骤条](/components/steps) —— 引导用户按流程完成任务的步骤指示器，支持等待 / 进行中 / 完成 / 错误四种状态、纵向排布与可点击跳转。
+- [Stepper 步骤面板](/components/stepper) —— 步骤驱动的分步内容面板一体机：头部步骤条（可点击跳步）+ 联动内容面板（仅当前步显示），向导 / 表单分步 / 结账流程场景；`oas-stepper` + `oas-stepper-panel` 配套（同构 tabs 的 value 关联模式）。
 - [Affix 固钉](/components/affix) —— 将内容吸附在视口顶部，页面滚动到指定偏移后自动固定，常用于固定表格操作栏、工具栏等。
 - [PageHeader 页头](/components/page-header) —— 页面头部信息区，支持标题、副标题、返回按钮与右侧操作区，常用于详情页、编辑页顶部。
 - [FloatButton 悬浮按钮](/components/float-button) —— 默认固定于页面右下角的圆形操作按钮，常用于「新建」「反馈」等快捷操作，支持角标与自定义图标。

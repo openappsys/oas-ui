@@ -75,6 +75,7 @@ import './navigation/back-top/index.js'
 import './navigation/anchor/index.js'
 import './navigation/tour/index.js'
 import './navigation/bottom-navigation/index.js'
+import './navigation/stepper/index.js'
 import './layout/segmented/index.js'
 import './layout/flex/index.js'
 import './layout/steps/index.js'
@@ -285,6 +286,7 @@ export {
   OASBottomNavigationItem,
   type BottomNavItem,
 } from './navigation/bottom-navigation/index.js'
+export { OASStepper, OASStepperPanel, type StepperStep } from './navigation/stepper/index.js'
 export { OASSegmented, type SegmentedOption } from './layout/segmented/index.js'
 export { OASFlex } from './layout/flex/oas-flex.js'
 export { OASSteps, type StepItem } from './layout/steps/index.js'
