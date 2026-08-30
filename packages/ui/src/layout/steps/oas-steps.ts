@@ -46,8 +46,9 @@ const STYLE = `
 .item:not(:last-child)::after {
   content: '';
   position: absolute;
-  /* 连接线垂直居中于指示器：线高 2px，顶部 = 指示器中心 - 1px */
-  top: calc(var(--oas-control-height-sm) / 2 - 1px);
+  /* 连接线垂直居中于指示器：普通模式图标 24 + 上下 border 2 = 28 盒，圆心在 sm/2 + 2；
+     线高 2px，顶部 = 圆心 - 1px。dot 模式（无边框，圆心 sm/2）在下方覆盖 */
+  top: calc(var(--oas-control-height-sm) / 2 + 1px);
   left: 50%;
   width: 100%;
   height: 2px;
@@ -65,9 +66,9 @@ const STYLE = `
   background: var(--oas-color-danger);
 }
 .steps[data-direction='vertical'] .item:not(:last-child)::after {
-  top: var(--oas-control-height-sm);
-  /* 纵向连接线水平居中于指示器：线宽 2px，左缘 = 指示器中心 - 1px */
-  left: calc(var(--oas-control-height-sm) / 2 - 1px);
+  /* 纵向：线从图标盒底（sm + 上下 border 2）起，水平居中于 28 盒（圆心 sm/2 + 2，线宽 2 左缘 - 1px） */
+  top: calc(var(--oas-control-height-sm) + 2px);
+  left: calc(var(--oas-control-height-sm) / 2 + 1px);
   width: 2px;
   height: 100%;
 }
