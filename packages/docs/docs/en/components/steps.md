@@ -199,6 +199,51 @@ With `responsive`, the component automatically renders in the vertical layout wh
   <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-xs)">Drag the bottom-right corner below 640px to switch the steps to the vertical layout automatically.</p>
 </DemoBlock>
 
+## Custom numbering
+
+The per-step `prefix` field renders custom numbering text (e.g. "A", "01") at the indicator position instead of the default number; priority: explicit `icon` > `prefix` > default number; the ✓/✕ of `finish` / `error` are unaffected (`textContent` rendering, no HTML injection).
+
+<DemoBlock title="prefix custom numbering">
+  <oas-steps current="1" steps='[{"title":"Create order","prefix":"01","description":"Fill in order details"},{"title":"Confirm payment","prefix":"02","description":"Choose a payment method"},{"title":"Complete shipping","prefix":"03","description":"Wait for delivery"}]'></oas-steps>
+  <oas-steps style="margin-top: 16px" current="1" steps='[{"title":"Fill in profile","prefix":"A"},{"title":"Verification","prefix":"B"},{"title":"Activation complete","prefix":"C"}]'></oas-steps>
+</DemoBlock>
+
+## Middle collapsing
+
+`max-count` (minimum 2) limits the number of visible steps: when exceeded the middle collapses into ellipsis steps (⋯, not clickable, connector lines stay continuous); the first step, last step and current step are always visible, and the window slides with `current`; invalid values / below 2 are ignored (show all).
+
+<DemoBlock title="max-count collapsing (click steps to see the window slide)">
+  <oas-steps clickable max-count="5" current="0" onoas-change="message.info('Switched to step ' + (event.detail.index + 1))" steps='[{"title":"S1"},{"title":"S2"},{"title":"S3"},{"title":"S4"},{"title":"S5"},{"title":"S6"},{"title":"S7"},{"title":"S8"},{"title":"S9"},{"title":"S10"}]'></oas-steps>
+</DemoBlock>
+
+## Reversed
+
+`reverse` visually reverses the order (horizontal `row-reverse` / vertical `column-reverse`): the displayed number = total - index (increasing along the visual flow); status derivation still follows the `steps` array order and `oas-change` keeps echoing the array `index`.
+
+<DemoBlock title="reverse (horizontal / vertical)">
+  <oas-steps reverse current="1" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
+  <div style="width: 260px; margin-top: 16px">
+    <oas-steps reverse direction="vertical" current="1" steps='[{"title":"Fill in profile","description":"Basic info and contact details"},{"title":"Upload ID documents","description":"Front and back of ID card"},{"title":"Approved","description":"Waiting for admin review"}]'></oas-steps>
+  </div>
+</DemoBlock>
+
+## Content on the right
+
+`content-placement="right"` (horizontal mode, default `bottom`) places the title / description / hint block to the right of the indicator; ignored in vertical (vertical is already icon-left / content-right); orthogonal to `label-placement`.
+
+<DemoBlock title="content-placement right">
+  <oas-steps content-placement="right" current="1" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method","extra":"Multiple payment channels"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
+</DemoBlock>
+
+## Arrow segments
+
+`arrow` renders an arrow-segment bar (horizontal only): each step is clipped into an arrow segment (first segment flat-headed, neighbors interlocking), active filled with the primary color / finished light primary / waiting gray; connector lines are hidden (segments join themselves); mutually exclusive with `simple` (simple wins), ignored under `navigation`.
+
+<DemoBlock title="arrow segments (with error state)">
+  <oas-steps arrow clickable current="1" onoas-change="message.info('Switched to step ' + (event.detail.index + 1))" steps='[{"title":"Create order","description":"Fill in order details"},{"title":"Confirm payment","description":"Choose a payment method"},{"title":"Manual review","description":"Risk control"},{"title":"Complete shipping","description":"Wait for delivery"}]'></oas-steps>
+  <oas-steps style="margin-top: 16px" arrow reverse current="2" steps='[{"title":"Create order"},{"title":"Confirm payment"},{"title":"Complete shipping"}]'></oas-steps>
+</DemoBlock>
+
 ## Combinations
 
 Combination semantics: `simple` takes priority over `progress-dot` / `navigation` (dot and navigation shapes yield to simple); under `navigation`, `responsive` does not switch to vertical (navigation stays forced horizontal).
@@ -219,19 +264,23 @@ Combination semantics: `simple` takes priority over `progress-dot` / `navigation
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `arrow` | Arrow-segment shape (horizontal only): each step is clipped into an arrow segment (first segment flat-headed, neighbors interlocking), active filled with the primary color / finished light primary / waiting gray, connector lines hidden (boolean; enabled when present; mutually exclusive with `simple`, simple wins; ignored under navigation) | `boolean` | — |
 | `clickable` | Steps are clickable to jump (boolean; enabled when present) | `boolean` | — |
+| `content-placement` | Content block placement: `bottom` (default, title/description below the indicator) / `right` (whole block to the right of the indicator, horizontal mode); ignored in vertical; orthogonal to label-placement | `string` | — |
 | `current` | Current step index (0-based) | `string` | `0` |
 | `direction` | Direction (forced to horizontal in navigation mode; responsive switches to vertical on narrow screens) | `string` | `horizontal` |
 | `label-placement` | Label placement: `vertical` (default, icon above title) / `horizontal` (icon and title on the same row) | `string` | — |
 | `linear` | Linear mode: only steps with `index <= current` are clickable (boolean; enabled when present; future steps are blocked, clicks are silent) | `boolean` | — |
 | `lineless` | Hide all connector lines (boolean; enabled when present; compact look) | `boolean` | — |
+| `max-count` | Maximum number of visible steps (minimum 2): when exceeded the middle collapses into ellipsis steps (⋯, not clickable, connector lines stay continuous); the first/last/current steps are always visible and the window slides with current; invalid values / below 2 are ignored (show all) | `string` | — |
 | `navigation` | Navigation mode: arrow bar with a bottom Previous/Next button row (boolean; enabled when present; mutually exclusive with `simple`, simple wins) | `boolean` | — |
 | `progress-dot` | Progress-dot steps: dot indicators with a thin connector line (boolean; enabled when present; mutually exclusive with `simple`, simple wins) | `boolean` | — |
 | `responsive` | Responsive vertical: renders in the vertical layout when the container width is below 640px (boolean; enabled when present; ResizeObserver, cleaned up on disconnect; ignored under navigation) | `boolean` | — |
-| `separator` | Connector style: `line` (default) / `dashed` (dashed border) / `arrow` (trailing arrowhead); not applied under navigation | `string` | — |
+| `reverse` | Visual reversal: horizontal `row-reverse` / vertical `column-reverse`; displayed number = total - index (increasing along the visual flow), status derivation still follows the steps array order (boolean; enabled when present) | `boolean` | — |
+| `separator` | Connector style: `line` (default) / `dashed` (dashed border) / `arrow` (trailing arrowhead); not applied under navigation / arrow | `string` | — |
 | `simple` | Compact mode: single-row small size (smaller indicators, hidden descriptions, tighter connector lines) (boolean; enabled when present; takes priority over progress-dot/navigation) | `boolean` | — |
 | `status` | Container-level status overriding the current step (`wait` / `process` / `finish` / `error`); an explicit per-step `status` still takes the highest priority | `StepStatus` | — |
-| `steps` | `[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent? }]` JSON string | `StepItem[] \| string` | `[]` |
+| `steps` | `[{ title, description?, status?, icon?, disabled?, extra?, id?, loading?, optional?, percent?, prefix? }]` JSON string | `StepItem[] \| string` | `[]` |
 
 ### Events
 

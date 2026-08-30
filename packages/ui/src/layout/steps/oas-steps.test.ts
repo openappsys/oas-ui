@@ -972,6 +972,411 @@ describe('StepItem.percent（进度圆环）', () => {
   })
 })
 
+describe('StepItem.prefix（自定义编号）', () => {
+  it('prefix 在指示器位替代默认序号（wait/process 步）', () => {
+    const el = mount({
+      steps: JSON.stringify([
+        { title: 'A', prefix: '01' },
+        { title: 'B', prefix: '02' },
+      ]),
+    })
+    const list = items(el)
+    expect(list[0]!.querySelector('.icon')!.textContent).toBe('01')
+    expect(list[1]!.querySelector('.icon')!.textContent).toBe('02')
+  })
+
+  it('优先级：显式 icon > prefix（icon 匹配时 prefix 不显示）', () => {
+    const el = mount({
+      steps: JSON.stringify([{ title: 'A', prefix: '01', icon: 'user' }]),
+    })
+    const icon = items(el)[0]!.querySelector('.icon')!
+    expect(icon.querySelector('svg')).not.toBeNull()
+    expect(icon.textContent).toBe('')
+  })
+
+  it('icon 无匹配回落 prefix（不落回默认序号）', () => {
+    const el = mount({
+      steps: JSON.stringify([{ title: 'A', prefix: '01', icon: 'no-such-icon' }]),
+    })
+    expect(items(el)[0]!.querySelector('.icon')!.textContent).toBe('01')
+  })
+
+  it('finish / error 的 ✓/✕ 不受 prefix 影响', () => {
+    const el = mount({
+      steps: JSON.stringify([
+        { title: 'A', status: 'finish', prefix: '01' },
+        { title: 'B', status: 'error', prefix: '02' },
+      ]),
+    })
+    const list = items(el)
+    expect(list[0]!.querySelector('.icon')!.textContent).toBe('✓')
+    expect(list[1]!.querySelector('.icon')!.textContent).toBe('✕')
+  })
+
+  it('prefix 走 textContent：HTML 字符串不生成元素（防注入）', () => {
+    const el = mount({
+      steps: JSON.stringify([{ title: 'A', prefix: '<img src=x onerror=alert(1)>' }]),
+    })
+    const icon = items(el)[0]!.querySelector('.icon')!
+    expect(icon.querySelector('img')).toBeNull()
+    expect(icon.textContent).toBe('<img src=x onerror=alert(1)>')
+  })
+
+  it('loading / percent 优先于 prefix（让位与序号一致）', () => {
+    const loading = mount({ steps: JSON.stringify([{ title: 'A', prefix: '01', loading: true }]) })
+    expect(items(loading)[0]!.querySelector('.icon .spinner')).not.toBeNull()
+    expect(items(loading)[0]!.querySelector('.icon')!.textContent).toBe('')
+    const pct = mount({ current: '0', steps: JSON.stringify([{ title: 'A', prefix: '01', percent: 40 }]) })
+    expect(items(pct)[0]!.querySelector('.icon .progress-bar')).not.toBeNull()
+  })
+
+  it('空字符串 prefix 回落默认序号', () => {
+    const el = mount({ steps: JSON.stringify([{ title: 'A', prefix: '' }]) })
+    expect(items(el)[0]!.querySelector('.icon')!.textContent).toBe('1')
+  })
+
+  it('progress-dot / navigation 下 prefix 不渲染（跟随指示器让位规则）', () => {
+    const dot = mount({ 'progress-dot': '', steps: JSON.stringify([{ title: 'A', prefix: '01' }]) })
+    expect(items(dot)[0]!.querySelector('.icon')!.textContent).toBe('')
+    const nav = mount({ navigation: '', steps: JSON.stringify([{ title: 'A', prefix: '01' }]) })
+    expect(items(nav)[0]!.querySelector('.icon')).toBeNull()
+  })
+})
+
+describe('max-count（中段折叠省略）', () => {
+  const TEN = JSON.stringify(
+    Array.from({ length: 10 }, (_, i) => ({ title: `S${i + 1}` })),
+  )
+
+  it('步骤数 <= max-count：全部显示，无省略步', () => {
+    const el = mount({ 'max-count': '5', steps: STEPS })
+    expect(items(el).length).toBe(3)
+    expect(el.shadowRoot!.querySelector('.item-ellipsis')).toBeNull()
+  })
+
+  it('超出折叠：保留首步与末步，中段渲染省略步（current 在头部 → 首段窗口 + 尾部省略）', () => {
+    const el = mount({ 'max-count': '5', current: '0', steps: TEN })
+    const list = items(el)
+    // 槽位 = [S1,S2,S3] ⋯ [S10]
+    expect(list.length).toBe(5)
+    expect((list[0]!.querySelector('.text') as HTMLElement).textContent).toBe('S1')
+    expect((list[3]!.querySelector('.text') as HTMLElement)?.textContent ?? null).toBeNull()
+    expect(list[3]!.classList.contains('item-ellipsis')).toBe(true)
+    expect((list[4]!.querySelector('.text') as HTMLElement).textContent).toBe('S10')
+  })
+
+  it('current 永远可见：current 在中段 → 双省略 + 中间窗口含 current', () => {
+    const el = mount({ 'max-count': '5', current: '5', steps: TEN })
+    const list = items(el)
+    // 槽位 = [S1] ⋯ [S6] ⋯ [S10]（窗口以 current 为中心）
+    expect(list.length).toBe(5)
+    expect(list[0]!.querySelector('.text')!.textContent).toBe('S1')
+    expect(list[1]!.classList.contains('item-ellipsis')).toBe(true)
+    expect(list[2]!.getAttribute('aria-current')).toBe('step')
+    expect(list[2]!.querySelector('.text')!.textContent).toBe('S6')
+    expect(list[3]!.classList.contains('item-ellipsis')).toBe(true)
+    expect(list[4]!.querySelector('.text')!.textContent).toBe('S10')
+  })
+
+  it('窗口随 current 平移：current 靠尾 → 首部省略 + 尾段窗口', () => {
+    const el = mount({ 'max-count': '5', current: '8', steps: TEN })
+    const list = items(el)
+    // 槽位 = [S1] ⋯ [S8,S9,S10]（current=8 即 S9 带 aria-current）
+    expect(list.length).toBe(5)
+    expect(list[0]!.querySelector('.text')!.textContent).toBe('S1')
+    expect(list[1]!.classList.contains('item-ellipsis')).toBe(true)
+    expect(list[3]!.querySelector('.text')!.textContent).toBe('S9')
+    expect(list[3]!.getAttribute('aria-current')).toBe('step')
+    expect(list[4]!.querySelector('.text')!.textContent).toBe('S10')
+  })
+
+  it('省略步不可点：clickable 下无按钮语义、点击静默不派发事件', () => {
+    const el = mount({ clickable: '', 'max-count': '5', current: '0', steps: TEN })
+    const ell = items(el)[3]!
+    expect(ell.classList.contains('item-ellipsis')).toBe(true)
+    expect(ell.getAttribute('role')).toBeNull()
+    expect(ell.getAttribute('tabindex')).toBeNull()
+    expect(ell.getAttribute('aria-hidden')).toBe('true')
+    let fired = 0
+    el.addEventListener('oas-change', () => fired++)
+    ;(ell as HTMLElement).click()
+    expect(fired).toBe(0)
+  })
+
+  it('省略步复用 .item 连接线类（连接线连续）且有独立几何规则（dots 无边框圆心 sm/2）', () => {
+    const el = mount({ 'max-count': '5', current: '0', steps: TEN })
+    const ell = items(el)[3]!
+    expect(ell.classList.contains('item')).toBe(true)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('.item-ellipsis:not(:last-child)::after')
+    expect(css).toContain('.dots')
+  })
+
+  it('navigation / arrow 形态下省略步禁 hover 反馈与 pointer 光标（不可点语义一致）', () => {
+    const el = mount({ 'max-count': '5', current: '0', steps: TEN })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(".steps[data-navigation='true'] .item-ellipsis")
+    expect(css).toContain(".steps[data-arrow='true'] .item-ellipsis")
+    expect(css).toContain('cursor: default')
+  })
+
+  it('非法值（NaN / < 2）忽略：全部显示', () => {
+    const nan = mount({ 'max-count': 'abc', steps: TEN })
+    expect(items(nan).length).toBe(10)
+    const one = mount({ 'max-count': '1', steps: TEN })
+    expect(items(one).length).toBe(10)
+  })
+
+  it('max-count 属性变化响应：从全显改折叠后省略步出现', () => {
+    const el = mount({ steps: TEN })
+    expect(el.shadowRoot!.querySelector('.item-ellipsis')).toBeNull()
+    el.setAttribute('max-count', '4')
+    expect(el.shadowRoot!.querySelector('.item-ellipsis')).not.toBeNull()
+  })
+
+  it('current 移动窗口平移：current 0→8 省略位置从头侧换到尾侧', () => {
+    const el = mount({ 'max-count': '5', current: '0', steps: TEN })
+    const head = items(el)
+    expect(head[3]!.classList.contains('item-ellipsis')).toBe(true)
+    el.setAttribute('current', '8')
+    const tail = items(el)
+    expect(tail[1]!.classList.contains('item-ellipsis')).toBe(true)
+    expect(tail[0]!.querySelector('.text')!.textContent).toBe('S1')
+  })
+})
+
+describe('reverse（视觉倒序）', () => {
+  it('reverse 属性：容器标记 data-reverse，CSS row-reverse / column-reverse 规则存在', () => {
+    const el = mount({ reverse: '' })
+    const stepsEl = el.shadowRoot!.querySelector('[part="steps"]')!
+    expect(stepsEl.getAttribute('data-reverse')).toBe('true')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('flex-direction: row-reverse')
+    expect(css).toContain('flex-direction: column-reverse')
+  })
+
+  it('编号显示 = 总数 - index（DOM 序不变，视觉流向递增）', () => {
+    const el = mount({ reverse: '', current: '0' })
+    const list = items(el)
+    expect(list[0]!.querySelector('.icon')!.textContent).toBe('3')
+    expect(list[1]!.querySelector('.icon')!.textContent).toBe('2')
+    expect(list[2]!.querySelector('.icon')!.textContent).toBe('1')
+  })
+
+  it('状态推导不变：仍按 steps 数组序（前序 finish / 当前 process / 后续 wait）', () => {
+    const el = mount({ reverse: '', current: '1' })
+    expect(items(el).map((i) => i.getAttribute('data-status'))).toEqual([
+      'finish',
+      'process',
+      'wait',
+    ])
+  })
+
+  it('aria-current 仍在数组 current 步（DOM 位置不变）', () => {
+    const el = mount({ reverse: '', current: '1' })
+    const list = items(el)
+    expect(list[0]!.getAttribute('aria-current')).toBeNull()
+    expect(list[1]!.getAttribute('aria-current')).toBe('step')
+  })
+
+  it('vertical 下 column-reverse 标记规则存在（纵向倒序）', () => {
+    const el = mount({ reverse: '', direction: 'vertical' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(".steps[data-direction='vertical'][data-reverse='true']")
+    expect(css).toContain('flex-direction: column-reverse')
+  })
+
+  it('reverse 下点击仍派发数组 index（oas-change detail 不变）', () => {
+    const el = mount({ reverse: '', clickable: '' })
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    ;(items(el)[2] as HTMLElement).click()
+    expect(detail).toEqual({ index: 2 })
+    expect(el.getAttribute('current')).toBe('2')
+  })
+
+  it('prefix 显式文本不参与 reverse 换算（原样显示）', () => {
+    const el = mount({ reverse: '', steps: JSON.stringify([{ title: 'A', prefix: '01' }]) })
+    expect(items(el)[0]!.querySelector('.icon')!.textContent).toBe('01')
+  })
+
+  it('finish / error 的 ✓/✕ 不参与换算；percent 回落序号走换算', () => {
+    const el = mount({
+      reverse: '',
+      current: '0',
+      steps: JSON.stringify([
+        { title: 'A', percent: -5 },
+        { title: 'B', status: 'finish' },
+        { title: 'C', status: 'error' },
+      ]),
+    })
+    const list = items(el)
+    expect(list[0]!.querySelector('.icon')!.textContent).toBe('3')
+    expect(list[1]!.querySelector('.icon')!.textContent).toBe('✓')
+    expect(list[2]!.querySelector('.icon')!.textContent).toBe('✕')
+  })
+})
+
+describe('content-placement（内容块位置）', () => {
+  it('缺省 bottom：不设 data-content-placement（内容在指示器下方）', () => {
+    const el = mount({})
+    expect(
+      el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement'),
+    ).toBe(false)
+  })
+
+  it('right + 横向：容器标记 data-content-placement=right，item flex 行布局（icon 左、内容块右）', () => {
+    const el = mount({ 'content-placement': 'right', current: '1' })
+    const stepsEl = el.shadowRoot!.querySelector('[part="steps"]')!
+    expect(stepsEl.getAttribute('data-content-placement')).toBe('right')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(".steps[data-content-placement='right'] .item")
+    expect(css).toContain('display: flex')
+    expect(css).toContain(".steps[data-content-placement='right'] .text")
+  })
+
+  it('纵向忽略：direction=vertical 时不设标记（纵向本身即图标左/内容右）', () => {
+    const el = mount({ direction: 'vertical', 'content-placement': 'right' })
+    expect(
+      el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement'),
+    ).toBe(false)
+  })
+
+  it('与 label-placement 正交：同设时两个标记并存（各自独立语义）', () => {
+    const el = mount({ 'content-placement': 'right', 'label-placement': 'horizontal' })
+    const stepsEl = el.shadowRoot!.querySelector('[part="steps"]')!
+    expect(stepsEl.getAttribute('data-content-placement')).toBe('right')
+    expect(stepsEl.getAttribute('data-label-placement')).toBe('horizontal')
+  })
+
+  it('非法值忽略（不设标记）', () => {
+    const el = mount({ 'content-placement': 'top' })
+    expect(
+      el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement'),
+    ).toBe(false)
+  })
+
+  it('progress-dot / navigation / simple 下让位（与 label-placement 同规则）', () => {
+    const dot = mount({ 'progress-dot': '', 'content-placement': 'right' })
+    expect(
+      dot.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement'),
+    ).toBe(false)
+    const nav = mount({ navigation: '', 'content-placement': 'right' })
+    expect(
+      nav.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement'),
+    ).toBe(false)
+    const simple = mount({ simple: '', 'content-placement': 'right' })
+    expect(
+      simple.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-content-placement'),
+    ).toBe(false)
+  })
+
+  it('right 模式描述/extra 保留在右侧内容块（不隐藏）', () => {
+    const el = mount({
+      'content-placement': 'right',
+      steps: JSON.stringify([{ title: 'A', description: 'd', extra: 'e' }]),
+    })
+    const item = items(el)[0]!
+    expect(item.querySelector('.desc')).not.toBeNull()
+    expect(item.querySelector('.extra')).not.toBeNull()
+  })
+
+  it('right 模式连线对准指示器中心（与 label-placement=horizontal 同几何）', () => {
+    const el = mount({ 'content-placement': 'right' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(
+      ".steps[data-content-placement='right'] .item:not(:last-child)::after",
+    )
+  })
+})
+
+describe('arrow（箭头分格形态）', () => {
+  it('arrow 属性：容器标记 data-arrow，clip-path polygon 分格 CSS 存在', () => {
+    const el = mount({ arrow: '' })
+    const stepsEl = el.shadowRoot!.querySelector('[part="steps"]')!
+    expect(stepsEl.getAttribute('data-arrow')).toBe('true')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(".steps[data-arrow='true'] .item")
+    expect(css).toContain('clip-path: polygon(')
+  })
+
+  it('状态填充走 token：process 主色 / finish 浅主色 color-mix / wait 灰 bg-hover', () => {
+    const el = mount({ arrow: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(".steps[data-arrow='true'] .item[data-status='process']")
+    expect(css).toContain('var(--oas-color-primary)')
+    expect(css).toContain(".steps[data-arrow='true'] .item[data-status='finish']")
+    expect(css).toContain('color-mix(in srgb, var(--oas-color-primary) 15%, transparent)')
+    expect(css).toContain(".steps[data-arrow='true'] .item[data-status='wait']")
+    expect(css).toContain('var(--oas-color-bg-hover)')
+  })
+
+  it('首项平头 / 末项无右凸 / 中间凹凸衔接（:first-child 与 :last-child 专属 polygon）', () => {
+    const el = mount({ arrow: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(".steps[data-arrow='true'] .item:first-child")
+    expect(css).toContain(".steps[data-arrow='true'] .item:last-child")
+  })
+
+  it('与 simple 互斥（simple 优先）：不设 data-arrow 标记', () => {
+    const el = mount({ arrow: '', simple: '' })
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-arrow')).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.getAttribute('data-simple')).toBe('true')
+  })
+
+  it('navigation 下忽略：不设 data-arrow 标记（导航自身箭头形态）', () => {
+    const el = mount({ arrow: '', navigation: '' })
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-arrow')).toBe(false)
+  })
+
+  it('纵向忽略：direction=vertical 不设标记（横向专用）', () => {
+    const el = mount({ arrow: '', direction: 'vertical' })
+    expect(el.shadowRoot!.querySelector('[part="steps"]')!.hasAttribute('data-arrow')).toBe(false)
+  })
+
+  it('连接线隐藏（分格自衔接）：arrow 下 ::after/::before display none', () => {
+    const el = mount({ arrow: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(".steps[data-arrow='true'] .item:not(:last-child)::after")
+    expect(css).toContain('display: none')
+  })
+
+  it('指示器保留且透明化（无圆形边框，序号直读格子填充色）', () => {
+    const el = mount({ arrow: '', current: '0' })
+    const icon = items(el)[0]!.querySelector('.icon')!
+    expect(icon).not.toBeNull()
+    expect(icon.textContent).toBe('1')
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(".steps[data-arrow='true'] .icon")
+  })
+
+  it('reverse 组合：镜像 polygon 规则存在（凹凸随视觉流向翻转）', () => {
+    const el = mount({ arrow: '', reverse: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(".steps[data-arrow='true'][data-reverse='true'] .item")
+  })
+
+  it('clickable 组合 hover 反馈规则存在（filter brightness）', () => {
+    const el = mount({ arrow: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(".steps[data-arrow='true'] .item:hover")
+  })
+
+  it('形态互斥：arrow 下 separator / label-placement / content-placement 让位（arrow 自身即行格形态）', () => {
+    const el = mount({
+      arrow: '',
+      separator: 'dashed',
+      'label-placement': 'horizontal',
+      'content-placement': 'right',
+    })
+    const stepsEl = el.shadowRoot!.querySelector('[part="steps"]')!
+    expect(stepsEl.getAttribute('data-arrow')).toBe('true')
+    expect(stepsEl.hasAttribute('data-separator')).toBe(false)
+    expect(stepsEl.hasAttribute('data-label-placement')).toBe(false)
+    expect(stepsEl.hasAttribute('data-content-placement')).toBe(false)
+  })
+})
+
 describe('responsive（窄屏自动纵向）', () => {
   let lastRO: { cb: () => void } | null = null
   class FakeRO {

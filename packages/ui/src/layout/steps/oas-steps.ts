@@ -23,6 +23,8 @@ export interface StepItem {
   optional?: boolean
   /** 进度百分比 0-100：仅 process 步生效，指示器显示进度圆环（SVG stroke-dasharray，走 token），有 percent 时序号让位 */
   percent?: number
+  /** 自定义编号文本（如「A」「01」）：替代默认序号渲染在指示器位；优先级显式 icon > prefix > 默认序号；finish/error 的 ✓/✕ 不受影响 */
+  prefix?: string
 }
 
 const VALID_STATUS = new Set<StepStatus>(['wait', 'process', 'finish', 'error'])
@@ -256,6 +258,22 @@ const STYLE = `
   top: calc(50% - 1px);
 }
 
+/* —— content-placement right：内容块（标题/描述/提示）整体置于指示器右侧（横向模式）——
+   与 label-placement 正交：本属性管内容块位置，label-placement 管标题与图标同行关系 */
+.steps[data-content-placement='right'] .item {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  text-align: left;
+}
+.steps[data-content-placement='right'] .text {
+  margin-top: 0;
+}
+.steps[data-content-placement='right'] .item:not(:last-child)::after {
+  left: calc(var(--oas-control-height-sm) / 2);
+  top: calc(50% - 1px);
+}
+
 /* —— disabled：文字弱化（弱化色 token）、禁点（update 已移除按钮语义）—— */
 .item[data-disabled='true'] .text,
 .item[data-disabled='true'] .desc {
@@ -446,6 +464,189 @@ const STYLE = `
   top: auto;
 }
 
+/* —— reverse 视觉倒序：DOM 序不变，flex 反向排列（状态推导仍按数组序）—— */
+.steps[data-reverse='true'] {
+  flex-direction: row-reverse;
+}
+.steps[data-direction='vertical'][data-reverse='true'] {
+  flex-direction: column-reverse;
+}
+
+/* —— max-count 省略步：不可点折叠指示（⋯），窄占位、复用 .item 连接线保持连续 —— */
+.item-ellipsis {
+  flex: 0 0 auto;
+  padding-inline: var(--oas-space-3);
+  text-align: center;
+  cursor: default;
+}
+.steps[data-direction='vertical'] .item-ellipsis {
+  display: flex;
+  text-align: left;
+  gap: var(--oas-space-3);
+  padding-bottom: var(--oas-space-5);
+}
+/* dots 盒几何对齐普通 icon（content-box：sm 内容 + 4px border 当量 = 28 盒圆心 sm/2+2），连线规则零覆盖 */
+.item-ellipsis .dots {
+  width: calc(var(--oas-control-height-sm) + 4px);
+  height: calc(var(--oas-control-height-sm) + 4px);
+  display: inline-flex;
+  vertical-align: top;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--oas-font-size-xs);
+  color: var(--oas-color-text-secondary);
+  position: relative;
+  z-index: 1;
+  background: var(--oas-color-bg);
+}
+.steps[data-direction='vertical'] .item-ellipsis .dots {
+  display: flex;
+}
+/* progress-dot 模式连线圆心在 sm/2：dots 同步缩为 24 盒 */
+.steps[data-progress-dot='true'] .item-ellipsis .dots {
+  width: var(--oas-control-height-sm);
+  height: var(--oas-control-height-sm);
+}
+.steps[data-progress-dot='true'] .item-ellipsis:not(:last-child)::after {
+  top: calc(var(--oas-control-height-sm) / 2 - 1px);
+}
+.steps[data-progress-dot='true'][data-direction='vertical'] .item-ellipsis:not(:last-child)::after {
+  left: calc(var(--oas-control-height-sm) / 2 - 1px);
+}
+/* simple 紧凑模式：dots 跟随指示器缩小（22 盒） */
+.steps[data-simple='true'] .item-ellipsis .dots {
+  width: calc(var(--oas-control-height-sm) - 2px);
+  height: calc(var(--oas-control-height-sm) - 2px);
+}
+
+/* —— arrow 箭头分格形态：横向专用，每项 clip-path 切出分格（原创几何：凹凸深度走变量）——
+   形状链：首项左平右凸 → 中间项左凹右凸（凹口恰好嵌住前项凸尖）→ 末项左凹右平 */
+.steps[data-arrow='true'] {
+  --oas-steps-arrow: 10px;
+}
+.steps[data-arrow='true'] .item {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
+  padding: var(--oas-space-2) var(--oas-space-3);
+  padding-inline-start: calc(var(--oas-space-3) + var(--oas-steps-arrow));
+  text-align: start;
+  background: var(--oas-color-bg-hover);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--oas-steps-arrow)) 0,
+    100% 50%,
+    calc(100% - var(--oas-steps-arrow)) 100%,
+    0 100%,
+    var(--oas-steps-arrow) 50%
+  );
+}
+/* 首项平头：左缘无凹口（内容起点无需避让） */
+.steps[data-arrow='true'] .item:first-child {
+  padding-inline-start: var(--oas-space-4);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--oas-steps-arrow)) 0,
+    100% 50%,
+    calc(100% - var(--oas-steps-arrow)) 100%,
+    0 100%
+  );
+}
+/* 末项无右凸（无下一项承接凸尖） */
+.steps[data-arrow='true'] .item:last-child {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, var(--oas-steps-arrow) 50%);
+}
+/* 状态填充：process 主色 / finish 浅主色 / error 危险色 / wait 灰 */
+.steps[data-arrow='true'] .item[data-status='process'] {
+  background: var(--oas-color-primary);
+}
+.steps[data-arrow='true'] .item[data-status='finish'] {
+  background: color-mix(in srgb, var(--oas-color-primary) 15%, transparent);
+}
+.steps[data-arrow='true'] .item[data-status='error'] {
+  background: var(--oas-color-danger);
+}
+.steps[data-arrow='true'] .item[data-status='wait'] {
+  background: var(--oas-color-bg-hover);
+}
+/* 文字对比：process 填充格 on-primary / error 填充格 on-danger / finish 浅主色格 primary */
+.steps[data-arrow='true'] .item[data-status='process'] .icon,
+.steps[data-arrow='true'] .item[data-status='process'] .text,
+.steps[data-arrow='true'] .item[data-status='process'] .desc {
+  color: var(--oas-color-text-on-primary);
+}
+.steps[data-arrow='true'] .item[data-status='error'] .icon,
+.steps[data-arrow='true'] .item[data-status='error'] .text,
+.steps[data-arrow='true'] .item[data-status='error'] .desc {
+  color: var(--oas-color-text-on-danger);
+}
+.steps[data-arrow='true'] .item[data-status='finish'] .icon,
+.steps[data-arrow='true'] .item[data-status='finish'] .text,
+.steps[data-arrow='true'] .item[data-status='finish'] .desc {
+  color: var(--oas-color-primary);
+}
+/* 指示器透明化：无圆形边框/底色，序号直读格子填充色 */
+.steps[data-arrow='true'] .icon {
+  border: none;
+  background: transparent;
+  color: var(--oas-color-text-secondary);
+}
+/* 连接线隐藏：分格自衔接（含 separator 三角） */
+.steps[data-arrow='true'] .item:not(:last-child)::after,
+.steps[data-arrow='true'] .item:not(:last-child)::before {
+  display: none;
+}
+/* clickable hover 反馈（亮度压暗，与导航模式一致） */
+.steps[data-arrow='true'] .item:hover {
+  filter: brightness(0.94);
+}
+.steps[data-arrow='true'] .item:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--oas-color-text-primary);
+  z-index: 1;
+}
+/* 省略步融入分格：dots 底透明（格子背景即状态色） */
+.steps[data-arrow='true'] .item-ellipsis .dots {
+  background: transparent;
+}
+/* 省略步不可点：navigation / arrow 形态下压掉 .item 继承的 pointer 光标与 hover 亮化 */
+.steps[data-navigation='true'] .item-ellipsis,
+.steps[data-arrow='true'] .item-ellipsis {
+  cursor: default;
+}
+.steps[data-navigation='true'] .item-ellipsis:hover,
+.steps[data-arrow='true'] .item-ellipsis:hover {
+  filter: none;
+}
+/* reverse 镜像：视觉流向反转——视觉首项（DOM 末项）左平右凸、视觉末项（DOM 首项）左凹右平、中间左凸右凹 */
+.steps[data-arrow='true'][data-reverse='true'] .item {
+  padding-inline-start: var(--oas-space-3);
+  padding-inline-end: calc(var(--oas-space-3) + var(--oas-steps-arrow));
+  clip-path: polygon(
+    var(--oas-steps-arrow) 0,
+    100% 0,
+    100% 100%,
+    var(--oas-steps-arrow) 100%,
+    0 50%
+  );
+}
+.steps[data-arrow='true'][data-reverse='true'] .item:first-child {
+  padding-inline-start: calc(var(--oas-space-3) + var(--oas-steps-arrow));
+  padding-inline-end: var(--oas-space-4);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, var(--oas-steps-arrow) 50%);
+}
+.steps[data-arrow='true'][data-reverse='true'] .item:last-child {
+  padding-inline-start: var(--oas-space-4);
+  padding-inline-end: var(--oas-space-3);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--oas-steps-arrow)) 0,
+    100% 50%,
+    calc(100% - var(--oas-steps-arrow)) 100%,
+    0 100%
+  );
+}
+
 /* —— 导航模式底部操作区 —— */
 .nav {
   display: flex;
@@ -508,6 +709,10 @@ export class OASSteps extends OASElement {
       'simple',
       'separator',
       'responsive',
+      'max-count',
+      'reverse',
+      'content-placement',
+      'arrow',
     ]
   }
 
@@ -626,25 +831,53 @@ export class OASSteps extends OASElement {
     else stepsEl.removeAttribute('data-progress-dot')
     if (simple) stepsEl.setAttribute('data-simple', 'true')
     else stepsEl.removeAttribute('data-simple')
-    // separator：仅普通形态生效（navigation 让位）；非法值回落 line
-    const separator = nav ? '' : this.getAttr('separator', '')
+    // arrow 箭头分格形态：横向专用（clip-path 分格，首项平头、相邻凹凸衔接）；
+    // 与 simple 互斥（simple 优先）、navigation 下忽略（导航自身形态）；
+    // arrow 自身即行格形态：separator / label-placement / content-placement 让位
+    const arrow = this.hasAttr('arrow') && !simple && !nav && direction === 'horizontal'
+    if (arrow) stepsEl.setAttribute('data-arrow', 'true')
+    else stepsEl.removeAttribute('data-arrow')
+    // separator：仅普通形态生效（navigation / arrow 让位）；非法值回落 line
+    const separator = nav || arrow ? '' : this.getAttr('separator', '')
     const separatorValid = separator === 'dashed' || separator === 'arrow'
     if (separatorValid) stepsEl.setAttribute('data-separator', separator)
     else stepsEl.removeAttribute('data-separator')
     if (this.hasAttr('lineless')) stepsEl.setAttribute('data-lineless', 'true')
     else stepsEl.removeAttribute('data-lineless')
-    // label-placement：仅横向模式生效；progress-dot / navigation / simple 让位、纵向保持图标左/标题右
+    // reverse：视觉倒序（flex-direction *-reverse），状态推导仍按 steps 数组序
+    if (this.hasAttr('reverse')) stepsEl.setAttribute('data-reverse', 'true')
+    else stepsEl.removeAttribute('data-reverse')
+    // label-placement：仅横向模式生效；progress-dot / navigation / simple / arrow 让位、纵向保持图标左/标题右
     const horizontalPlacement =
       this.getAttr('label-placement', '') === 'horizontal' &&
       !dot &&
       !nav &&
       !simple &&
+      !arrow &&
       direction === 'horizontal'
     if (horizontalPlacement) stepsEl.setAttribute('data-label-placement', 'horizontal')
     else stepsEl.removeAttribute('data-label-placement')
+    // content-placement：内容块（title/description/extra）在指示器右侧（横向模式）；纵向忽略；
+    // 与 label-placement 正交（独立标记），让位规则与 label-placement 一致（dot/nav/simple/arrow）
+    const rightContent =
+      this.getAttr('content-placement', '') === 'right' &&
+      !dot &&
+      !nav &&
+      !simple &&
+      !arrow &&
+      direction === 'horizontal'
+    if (rightContent) stepsEl.setAttribute('data-content-placement', 'right')
+    else stepsEl.removeAttribute('data-content-placement')
     stepsEl.innerHTML = ''
     const current = Number(this.getAttr('current', '0')) || 0
-    this._steps.forEach((step, idx) => {
+    // max-count：中段折叠为省略步（首/末/current 恒可见，窗口随 current 平移）
+    for (const slot of this.renderSlots(current)) {
+      if (slot === 'ellipsis') {
+        stepsEl.appendChild(this.buildEllipsisItem())
+        continue
+      }
+      const idx = slot
+      const step = this._steps[idx]!
       const item = document.createElement('div')
       item.className = 'item'
       item.setAttribute('part', 'item')
@@ -710,15 +943,20 @@ export class OASSteps extends OASElement {
             pctText.className = 'percent-text'
             pctText.textContent = `${pct}%`
             icon.appendChild(pctText)
-          } else {
+          }           else {
             // percent 越界/非法：回落序号（此分支必为 process 步）
-            icon.textContent = String(idx + 1)
+            icon.textContent = String(this.stepNumber(idx))
           }
         } else {
-          // 显式 icon 优先（iconRegistry 键，无匹配回落状态默认图标）
+          // 显式 icon 优先（iconRegistry 键，无匹配回落后续链）；finish/error 状态默认图标（✓/✕）不受 prefix 影响
           const svg = step.icon ? this.iconSvg(step.icon) : null
           if (svg) icon.innerHTML = svg
-          else icon.textContent = status === 'finish' ? '✓' : status === 'error' ? '✕' : String(idx + 1)
+          else if (status === 'finish') icon.textContent = '✓'
+          else if (status === 'error') icon.textContent = '✕'
+          else if (typeof step.prefix === 'string' && step.prefix !== '')
+            // prefix：自定义编号文本替代默认序号（textContent 渲染防注入；空串视为未设置）
+            icon.textContent = step.prefix
+          else icon.textContent = String(this.stepNumber(idx))
         }
         item.appendChild(icon)
       }
@@ -737,7 +975,7 @@ export class OASSteps extends OASElement {
         })
       }
       stepsEl.appendChild(item)
-    })
+    }
     // 导航模式底部上一步/下一步（内置文案 locale 驱动，setLocale 切换自动重刷；无步骤或 simple 让位时隐藏）
     if (this.nav) {
       if (nav && this._steps.length > 0) this.nav.removeAttribute('hidden')
@@ -751,6 +989,54 @@ export class OASSteps extends OASElement {
       this.nextBtn.textContent = this.t('steps.next')
       this.nextBtn.disabled = nav && current >= this._steps.length - 1
     }
+  }
+
+  /**
+   * max-count 折叠窗口：返回渲染槽序列（步骤索引或 'ellipsis' 省略步）。
+   *
+   * 硬约束：首步、末步、当前步恒可见；窗口随 current 平移——
+   * current 靠头 → 首段窗口 + 尾部省略；靠尾 → 首部省略 + 尾段窗口；中间 → 双省略夹中间窗口。
+   * max-count 非法 / < 2 / 步骤数未超时全量显示（返回全索引，无省略步）。
+   */
+  private renderSlots(current: number): Array<number | 'ellipsis'> {
+    const n = this._steps.length
+    const raw = Number(this.getAttr('max-count', ''))
+    const maxCount = Number.isFinite(raw) && raw >= 2 ? Math.floor(raw) : 0
+    if (!maxCount || n <= maxCount) return this._steps.map((_, i) => i)
+    const c = Math.min(Math.max(current, 0), n - 1)
+    // 单侧窗口（与首/末相邻段）；中间窗口（两侧各占一个省略位）
+    const w = Math.max(1, maxCount - 2)
+    if (c <= w - 1) return [...OASSteps.range(0, w - 1), 'ellipsis' as const, n - 1]
+    if (c >= n - w) return [0, 'ellipsis' as const, ...OASSteps.range(n - w, n - 1)]
+    const cw = Math.max(1, maxCount - 4)
+    const half = Math.floor((cw - 1) / 2)
+    // 窗口以 current 为中心，clamp 到不与首/末重叠
+    const start = Math.min(Math.max(c - half, 1), n - 1 - cw)
+    return [0, 'ellipsis' as const, ...OASSteps.range(start, start + cw - 1), 'ellipsis' as const, n - 1]
+  }
+
+  /** 闭区间索引序列 [from, to] */
+  private static range(from: number, to: number): number[] {
+    return Array.from({ length: to - from + 1 }, (_, i) => from + i)
+  }
+
+  /** 省略步：不可点折叠指示（⋯），复用 .item 连接线类保持连线连续 */
+  private buildEllipsisItem(): HTMLElement {
+    const ell = document.createElement('div')
+    ell.className = 'item item-ellipsis'
+    ell.setAttribute('part', 'item')
+    ell.setAttribute('data-ellipsis', 'true')
+    ell.setAttribute('aria-hidden', 'true')
+    const dots = document.createElement('span')
+    dots.className = 'dots'
+    dots.textContent = '⋯'
+    ell.appendChild(dots)
+    return ell
+  }
+
+  /** 序号文本：reverse 视觉倒序时 = 总数 - index（视觉流向递增），否则 index + 1 */
+  private stepNumber(idx: number): number {
+    return this.hasAttr('reverse') ? this._steps.length - idx : idx + 1
   }
 
   /**
