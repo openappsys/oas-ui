@@ -369,9 +369,129 @@ describe('OASSpeedDial 子动作级联动画', () => {
 
   it('CSS：prefers-reduced-motion 下级联 delay 归零、过渡停用', () => {
     const stl = styleText(mount())
-    const mq = stl.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\}/)?.[0] ?? ''
+    const mq =
+      stl.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\}/)?.[0] ?? ''
     expect(mq).toContain('.action')
     expect(mq).toContain('transition-delay: 0ms')
     expect(mq).toContain('transition: none')
+  })
+})
+
+// ===== hide-label（icon-only 子动作 + hover/focus 悬浮气泡） =====
+
+describe('OASSpeedDial hide-label（icon-only 子动作）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('hide-label 动作：圆形 icon-only 类、aria-label=label 可访问名、label 常驻 DOM（气泡载体）', () => {
+    const el = mount({
+      actions: JSON.stringify([
+        { label: '复制', icon: 'copy', 'hide-label': true },
+        { label: '编辑', icon: 'edit' },
+      ]),
+    })
+    const btns = actionBtns(el)
+    // icon-only 形态只作用于 hide-label 动作
+    expect(btns[0]!.classList.contains('icon-only')).toBe(true)
+    expect(btns[1]!.classList.contains('icon-only')).toBe(false)
+    // 可访问名 = label 文本（视觉隐藏但读屏可达）
+    expect(btns[0]!.getAttribute('aria-label')).toBe('复制')
+    expect(btns[1]!.getAttribute('aria-label')).toBeNull()
+    // label 常驻 DOM（气泡载体）
+    const label = btns[0]!.querySelector<HTMLElement>('.label')
+    expect(label).not.toBeNull()
+    expect(label!.textContent).toBe('复制')
+  })
+
+  it('hide-label 且无可渲染 icon：回落显示 label、console.warn 仅一次', () => {
+    const warns: unknown[] = []
+    const orig = console.warn
+    console.warn = (...a: unknown[]) => warns.push(a)
+    try {
+      const el = mount({
+        actions: JSON.stringify([{ label: '仅文字', 'hide-label': true }]),
+      })
+      const btn = actionBtns(el)[0]!
+      // 渲染降级：不套 icon-only 形态，label 正常显示
+      expect(btn.classList.contains('icon-only')).toBe(false)
+      expect(btn.textContent).toBe('仅文字')
+      expect(btn.getAttribute('aria-label')).toBeNull()
+      expect(warns.length).toBe(1)
+      // 同组件重复渲染不再告警（告警一次）
+      el.setAttribute('actions', JSON.stringify([{ label: '仅文字', 'hide-label': true }]))
+      expect(warns.length).toBe(1)
+    } finally {
+      console.warn = orig
+    }
+  })
+
+  it('CSS：气泡默认视觉隐藏（absolute + opacity 0 + visibility hidden），hover/focus-visible 浮现（仅展开态）', () => {
+    const stl = styleText(mount())
+    // 默认态：绝对定位（不占布局）+ 完全不可见
+    expect(stl).toMatch(/\.action\.icon-only \.label\s*\{[^}]*position:\s*absolute/)
+    expect(stl).toMatch(/\.action\.icon-only \.label\s*\{[^}]*opacity:\s*0/)
+    expect(stl).toMatch(/\.action\.icon-only \.label\s*\{[^}]*visibility:\s*hidden/)
+    // 浮现触发：hover（指针）与 focus-visible（键盘/触屏）都走纯 CSS 切换
+    expect(stl).toMatch(/\.dial\.open \.action\.icon-only:hover \.label/)
+    expect(stl).toMatch(/\.dial\.open \.action\.icon-only:focus-visible \.label/)
+  })
+
+  it('CSS：icon-only 为圆形小钮（宽高 = control-height-md、圆角 50%）', () => {
+    const stl = styleText(mount())
+    expect(stl).toMatch(/\.action\.icon-only\s*\{[^}]*width:\s*var\(--oas-control-height-md\)/)
+    expect(stl).toMatch(/\.action\.icon-only\s*\{[^}]*border-radius:\s*50%/)
+  })
+
+  it('CSS：气泡方向随 data-dir 自适应（up 左 / down 右 / left·right 上），定位在动作外侧', () => {
+    const stl = styleText(mount())
+    expect(stl).toMatch(
+      /\.dial\[data-dir='up'\] \.action\.icon-only \.label\s*\{[^}]*right:\s*calc\(100%\s*\+\s*var\(--oas-space-2\)\)/,
+    )
+    expect(stl).toMatch(
+      /\.dial\[data-dir='down'\] \.action\.icon-only \.label\s*\{[^}]*left:\s*calc\(100%\s*\+\s*var\(--oas-space-2\)\)/,
+    )
+    expect(stl).toMatch(
+      /\.dial\[data-dir='left'\] \.action\.icon-only \.label\s*\{[^}]*bottom:\s*calc\(100%\s*\+\s*var\(--oas-space-2\)\)/,
+    )
+    expect(stl).toMatch(
+      /\.dial\[data-dir='right'\] \.action\.icon-only \.label\s*\{[^}]*bottom:\s*calc\(100%\s*\+\s*var\(--oas-space-2\)\)/,
+    )
+  })
+
+  it('级联共存：hide-label 动作同样内联 --cascade-i 步进', () => {
+    const el = mount({
+      actions: JSON.stringify([
+        { label: '复制', icon: 'copy', 'hide-label': true },
+        { label: '编辑', icon: 'edit' },
+        { label: '删除', icon: 'trash', 'hide-label': true },
+      ]),
+    })
+    const btns = actionBtns(el)
+    expect(btns[0]!.style.getPropertyValue('--cascade-i')).toBe('0')
+    expect(btns[2]!.style.getPropertyValue('--cascade-i')).toBe('2')
+  })
+
+  it('oas-select detail 不变：icon-only 动作仍派发 { index, label }', () => {
+    const el = mount({
+      open: '',
+      actions: JSON.stringify([{ label: '复制', icon: 'copy', 'hide-label': true }]),
+    })
+    let detail: unknown
+    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
+    actionBtns(el)[0]!.click()
+    expect(detail).toEqual({ index: 0, label: '复制' })
+  })
+
+  it('reduced-motion：气泡过渡一并停用（立即出现）', () => {
+    const stl = styleText(mount())
+    // 媒体查询内 `.action.icon-only .label` 规则过渡停用（不依赖外层捕获的括号配平）
+    expect(stl).toMatch(
+      /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.action\.icon-only \.label\s*\{\s*transition:\s*none/,
+    )
   })
 })
