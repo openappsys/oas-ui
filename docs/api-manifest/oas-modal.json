@@ -83,6 +83,9 @@
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "title"
     }
   ],
   "unresolved": []

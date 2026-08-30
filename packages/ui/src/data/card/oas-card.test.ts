@@ -41,6 +41,50 @@ describe('OASCard', () => {
     expect(css).toMatch(/\.header\[hidden\]\s*\{[^}]*display:\s*none/)
   })
 
+  describe('title 双通道（slot 富内容覆盖属性文本）', () => {
+    it('slot 有内容时覆盖属性文本（slot 优先渲染）', () => {
+      const el = mount({ title: '属性标题' }, '<span slot="title">插槽标题</span><p>正文</p>')
+      const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(fallback.hidden).toBe(true)
+      // 宿主 title 仍被吸收（吸收状态机不变）
+      expect(el.hasAttribute('title')).toBe(false)
+      // 标题区有标题语义：不隐藏
+      expect(part(el, 'header').hidden).toBe(false)
+    })
+
+    it('仅 slot 无属性：标题区渲染 slot 内容且不隐藏', () => {
+      const el = mount({}, '<span slot="title">插槽标题</span><p>正文</p>')
+      const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(fallback.hidden).toBe(true)
+      expect(part(el, 'header').hidden).toBe(false)
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('双空（无 title 无 slot）：标题区隐藏逻辑保持', () => {
+      const el = mount({}, '<p>正文</p>')
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(part(el, 'header').hidden).toBe(true)
+      // 兜底 span 无文本、不隐藏（属性通道空态）
+      expect(fallback.hidden).toBe(false)
+      expect(fallback.textContent).toBe('')
+    })
+
+    it('动态移除 slot 内容后回落属性文本', async () => {
+      const el = mount({ title: '属性标题' }, '<span slot="title">插槽标题</span>')
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(fallback.hidden).toBe(true)
+      const node = el.querySelector('span[slot="title"]')!
+      el.removeChild(node)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(fallback.hidden).toBe(false)
+      expect(fallback.textContent).toBe('属性标题')
+    })
+  })
+
   describe('title 吸收（消除宿主原生 tooltip）', () => {
     it('挂载后宿主不再残留 title 属性，标题渲染进标题区', () => {
       const el = mount({ title: '偏好设置' })

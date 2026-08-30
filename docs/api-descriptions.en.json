@@ -13,13 +13,15 @@
   "oas-alert": {
     "attrs": {
       "closeable": "Whether to show the close button",
-      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
       "type": "Alert type"
     },
     "events": {
       "oas-close": "Dispatched after the close button is clicked; the component then hides"
     },
-    "slots": {}
+    "slots": {
+      "title": "Rich title content slot; overrides the title attribute text when present"
+    }
   },
   "oas-anchor": {
     "attrs": {
@@ -344,7 +346,7 @@
       "cover-alt": "Cover image alt text (accessibility)",
       "cover-src": "Cover image URL placed at the top of the card (object-fit: cover)",
       "hoverable": "Whether to enable the hover shadow (shadow + lift + pointer)",
-      "title": "Card title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)"
+      "title": "Card title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content"
     },
     "events": {
       "oas-click": "Whole-card click (when `clickable`), detail contains originalEvent"
@@ -353,7 +355,8 @@
       "": "Card content",
       "actions": "Bottom action area (view / edit / delete button groups), with a divider above",
       "cover": "Custom cover content (mutually exclusive with `cover-src`, which takes precedence)",
-      "extra": "Extra area on the right of the title"
+      "extra": "Extra area on the right of the title",
+      "title": "Rich title content slot; overrides the title attribute text when present"
     }
   },
   "oas-carousel": {
@@ -625,10 +628,12 @@
   "oas-descriptions": {
     "attrs": {
       "column": "Columns per row",
-      "title": "Title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)"
+      "title": "Title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot=\"title\" for rich content"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "title": "Rich title content slot, overrides the title attribute text when present"
+    }
   },
   "oas-descriptions-item": {
     "attrs": {
@@ -661,7 +666,7 @@
       "no-mask-close": "Disable closing on mask click",
       "placement": "Slide direction",
       "size": "Preset size or a concrete value: `small` (256px) / `medium` (378px) / `large` (736px), or write directly like `512px`, `40%`",
-      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
       "visible": "Whether shown",
       "width": "Drawer width (px or percentage), takes precedence over `size`"
     },
@@ -669,7 +674,9 @@
       "oas-close": "Close: cancel button / ✕ / mask click / Esc",
       "oas-ok": "Clicked \"OK\""
     },
-    "slots": {}
+    "slots": {
+      "title": "Rich title content slot; overrides the title attribute text when present"
+    }
   },
   "oas-dropdown": {
     "attrs": {
@@ -916,7 +923,7 @@
       "skidding": "Cross-axis offset in px, shifts along the axis perpendicular to the main axis",
       "sticky": "Scroll stickiness: `partial` (default) repositions with the anchor on scroll and hides per `hide-when-detached` once the anchor leaves the viewport (or clamps to the viewport edge when not enabled); `always` pins the card to the viewport edge once the anchor scrolls out (stays visible); `off` disables scroll repositioning",
       "collision-boundary": "Custom collision boundary (selector string, first match in multi-ancestor scenes; the `collisionBoundary` property accepts an element directly): flips and clamps against that element's rect instead of the viewport",
-      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot=\"title\" for rich content",
       "width": "Width customization: number (px) or `trigger`/`target` (same width as the trigger); falls back to CSS min-width"
     },
     "events": {
@@ -924,7 +931,8 @@
     },
     "slots": {
       "": "Trigger (first non-`slot=\"content\"` child), triggered on hover/focus",
-      "content": "Rich content slot: free-form HTML preview inside the card (links/buttons etc., interactive)"
+      "content": "Rich content slot: free-form HTML preview inside the card (links/buttons etc., interactive)",
+      "title": "Rich title content slot, overrides the title attribute text when present"
     }
   },
   "oas-icon": {
@@ -1073,12 +1081,13 @@
   },
   "oas-list-item": {
     "attrs": {
-      "title": "Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)"
+      "title": "Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot=\"title\" for rich content"
     },
     "events": {},
     "slots": {
       "description": "Description area (falls back to the default slot when not provided)",
-      "extra": "Extra area on the right of the item"
+      "extra": "Extra area on the right of the item",
+      "title": "Rich title content slot, overrides the title attribute text when present"
     }
   },
   "oas-log": {
@@ -1266,7 +1275,7 @@
       "no-footer": "Hide footer action buttons",
       "no-mask-close": "Disable closing on mask click",
       "ok-text": "OK button label; defaults to locale `modal.ok`",
-      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
       "type": "Semantic variant: `info`/`success`/`warning`/`error`, renders the matching semantic icon above the content",
       "visible": "Whether shown",
       "width": "Dialog width (px or percentage)"
@@ -1275,7 +1284,9 @@
       "oas-cancel": "Cancel: cancel button / ✕ / mask click / Esc",
       "oas-ok": "Clicked \"OK\""
     },
-    "slots": {}
+    "slots": {
+      "title": "Rich title content slot; overrides the title attribute text when present"
+    }
   },
   "oas-notification": {
     "attrs": {
@@ -1284,11 +1295,13 @@
       "progress-position": "Progress bar position: `bottom` (default) / `top`",
       "scrollable": "Scroll inside the card when the content is too long; enabled by default, pass `false` to disable",
       "show-progress": "Show the auto-close countdown progress bar (animates in sync with `duration`)",
-      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
       "type": "Notification type: `info`/`success`/`warning`/`error`"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "title": "Rich title content slot; overrides the title attribute text when present"
+    }
   },
   "oas-navigation-menu": {
     "attrs": {
@@ -1457,13 +1470,15 @@
     "attrs": {
       "open": "Whether the bubble is shown",
       "position": "Bubble position",
-      "title": "Confirmation text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)"
+      "title": "Confirmation text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content"
     },
     "events": {
       "oas-cancel": "Cancel: cancel button / Esc / outside click",
       "oas-ok": "Clicked \"OK\"; the bubble then collapses automatically"
     },
-    "slots": {}
+    "slots": {
+      "title": "Rich title content slot; overrides the title attribute text when present"
+    }
   },
   "oas-popover": {
     "attrs": {
@@ -1491,7 +1506,7 @@
       "open": "Controlled display (boolean attribute; shows when present)",
       "open-delay": "Generic open delay in ms (default 0; used by non-hover trigger paths, hover paths prefer hover-delay)",
       "placement": "Popup placement (12 directions: four bases top/bottom/left/right each with -start/-end cross-axis alignment)",
-      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot=\"title\" for rich content",
       "trigger": "Trigger method: `click` (default) / `hover` / `focus` / `contextmenu` / `manual`, space separated for multiple (e.g. `\"click hover\"`)",
       "trigger-keys": "Toggle open when the listed keys are pressed while the trigger is focused (space separated, e.g. `\"Enter Space\"`); no key binding when unset",
       "virtual": "Virtual trigger mode (same as tooltip; no anchor element)",
@@ -1503,7 +1518,9 @@
     "events": {
       "oas-open-change": "open state changed, `detail: { open }`"
     },
-    "slots": {}
+    "slots": {
+      "title": "Rich title content slot, overrides the title attribute text when present"
+    }
   },
   "oas-progress": {
     "attrs": {
@@ -1558,11 +1575,12 @@
     "attrs": {
       "description": "Description text",
       "status": "Result status",
-      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)"
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content"
     },
     "events": {},
     "slots": {
-      "extra": "Action area, placed below the description"
+      "extra": "Action area, placed below the description",
+      "title": "Rich title content slot; overrides the title attribute text when present"
     }
   },
   "oas-scroll-area": {
@@ -2067,6 +2085,19 @@
     },
     "slots": {
       "actions": "Action slot (copy/edit buttons etc.); position determined by `actions-position`"
+    }
+  },
+  "oas-toast": {
+    "attrs": {
+      "closable": "Whether to show the close button (always disabled while loading)",
+      "description": "Description text",
+      "duration": "Auto-close duration in ms; pass `0` to keep it open",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
+      "type": "Toast type: `info`/`success`/`warning`/`error`/`loading`"
+    },
+    "events": {},
+    "slots": {
+      "title": "Rich title content slot; overrides the title attribute text when present"
     }
   },
   "oas-toggle-button": {

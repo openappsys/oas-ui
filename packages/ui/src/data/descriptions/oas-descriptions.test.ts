@@ -77,4 +77,76 @@ describe('OASDescriptions', () => {
       expect(titleEl(el).textContent).toBe('快照标题')
     })
   })
+
+  describe('title 双通道（slot="title" 富内容覆盖属性文本）', () => {
+    it('slot 有内容时覆盖属性文本（兜底隐藏、插槽渲染、属性仍被吸收）', () => {
+      const el = new OASDescriptions()
+      el.setAttribute('title', '属性标题')
+      el.innerHTML =
+        '<oas-descriptions-item label="a">1</oas-descriptions-item><b slot="title">富标题</b>'
+      document.body.appendChild(el)
+      const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(fallback.hidden).toBe(true)
+      // 属性仍被吸收缓存（兜底隐而不删），宿主无残留原生悬浮提示
+      expect(fallback.textContent).toBe('属性标题')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('仅 slot 无属性：标题区渲染插槽内容', () => {
+      const el = new OASDescriptions()
+      el.innerHTML =
+        '<oas-descriptions-item label="a">1</oas-descriptions-item><span slot="title">插槽标题</span>'
+      document.body.appendChild(el)
+      const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(fallback.hidden).toBe(true)
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('双空（无 title 无 slot）：标题区保持既有行为（兜底为空、不隐藏）', () => {
+      const el = mount()
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(fallback.textContent).toBe('')
+      expect(fallback.hidden).toBe(false)
+    })
+
+    it('动态移除 slot 内容后回落属性文本', async () => {
+      const el = new OASDescriptions()
+      el.setAttribute('title', '属性标题')
+      el.innerHTML =
+        '<oas-descriptions-item label="a">1</oas-descriptions-item><span slot="title">插槽标题</span>'
+      document.body.appendChild(el)
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(fallback.hidden).toBe(true)
+      const node = el.querySelector('span[slot="title"]')!
+      el.removeChild(node)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(fallback.hidden).toBe(false)
+      expect(fallback.textContent).toBe('属性标题')
+    })
+
+    it('水合后 slot 内容显示正常（快照含 slot 结构，titleCache 恢复不影响显示）', () => {
+      const el = new OASDescriptions()
+      el.shadowRoot!.innerHTML =
+        '<meta data-oas-ssr="oas-descriptions" data-oas-ssr-v="1"><style></style>' +
+        '<div class="title" part="title"><slot name="title"><span class="title-text">快照标题</span></slot></div>' +
+        '<div class="items" part="items"><slot></slot></div>'
+      const rich = document.createElement('b')
+      rich.setAttribute('slot', 'title')
+      rich.textContent = '富标题'
+      el.appendChild(rich)
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+      // 水合恢复 titleCache（快照兜底文本），但 slot 有内容 → 以插槽为准
+      const fallback = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      expect(fallback.hidden).toBe(true)
+      expect(fallback.textContent).toBe('快照标题')
+      const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      expect(slot.assignedNodes()).toContain(rich)
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+  })
 })

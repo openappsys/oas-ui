@@ -131,7 +131,7 @@ onMounted(async () => {
 | `cover-alt` | 封面图 alt 文本（无障碍） | `string` | — |
 | `cover-src` | 封面图 URL，置于卡片顶部（object-fit: cover 自适应裁切） | `string` | — |
 | `hoverable` | 是否开启悬浮阴影（阴影 + 上浮提升 + 指针） | `boolean` | — |
-| `title` | 卡片标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串） | `string` | — |
+| `title` | 卡片标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 
 ### 事件
 
@@ -147,3 +147,4 @@ onMounted(async () => {
 | `actions` | 底部操作区（查看/编辑/删除等按钮组），上方带分隔线 |
 | `cover` | 自定义封面内容（与 `cover-src` 二选一，`cover-src` 优先） |
 | `extra` | 标题右侧扩展区 |
+| `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |

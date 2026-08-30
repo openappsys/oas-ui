@@ -163,9 +163,10 @@ The default slot of an item can hold a thumbnail, combining it with the title an
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `title` | Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
+| `title` | Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot="title" for rich content | `string` | — |
 
 | Name | Description |
 | --- | --- |
 | `description` | Description area (falls back to the default slot when not provided) |
 | `extra` | Extra area on the right of the item |
+| `title` | Rich title content slot, overrides the title attribute text when present |

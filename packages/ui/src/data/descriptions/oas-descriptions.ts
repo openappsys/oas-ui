@@ -30,7 +30,7 @@ export class OASDescriptions extends OASElement {
   private template(): string {
     return `
       <style>${STYLE}</style>
-      <div class="title" part="title"></div>
+      <div class="title" part="title"><slot name="title"><span class="title-text"></span></slot></div>
       <div class="items" part="items"><slot></slot></div>
     `
   }
@@ -38,8 +38,19 @@ export class OASDescriptions extends OASElement {
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
   private titleCache: string | null = null
 
-  /** 缓存节点引用（render 与水合路径共用；descriptions 无事件绑定） */
-  private bind(): void {}
+  /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
+  private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
+    return slot
+      .assignedNodes()
+      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+  }
+
+  /** 缓存节点引用（render 与水合路径共用；title 插槽内容增减时重刷标题区显隐） */
+  private bind(): void {
+    this.shadow
+      .querySelector<HTMLSlotElement>('slot[name="title"]')
+      ?.addEventListener('slotchange', () => this.update())
+  }
 
   protected override render(): void {
     this.shadow.innerHTML = this.template()
@@ -69,8 +80,18 @@ export class OASDescriptions extends OASElement {
       this.titleCache = raw === '' ? null : raw
       this.removeAttribute('title')
     }
+    // title 双通道：属性文本写入兜底 span；slot="title" 有真实内容时以插槽为准（兜底隐藏）
+    const titleEl = this.shadow.querySelector<HTMLElement>('[part="title"]')
+    const titleSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const titleFallback = this.shadow.querySelector<HTMLElement>('.title-text')
     const title = this.titleCache ?? ''
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = title
+    if (titleEl && titleSlot && titleFallback) {
+      titleFallback.textContent = title
+      titleFallback.hidden = this.hasTitleSlotContent(titleSlot)
+    } else if (titleEl) {
+      // 降级：无 slot 结构（旧版 SSR 快照）直接写标题区文本
+      titleEl.textContent = title
+    }
     const itemsEl = this.shadow.querySelector<HTMLElement>('[part="items"]')
     if (!itemsEl) return
     const column = this.getAttr('column', '3')

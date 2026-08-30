@@ -54,17 +54,29 @@ export class OASResult extends OASElement {
     return `
       <style>${STYLE}</style>
       <div class="icon" part="icon" role="status"></div>
-      <div class="title" part="title"></div>
+      <div class="title" part="title"><slot name="title"><span class="title-text"></span></slot></div>
       <div class="description" part="description"></div>
       <slot name="extra"></slot>
     `
   }
 
   /** 无事件绑定（render 与水合路径共用，结构校验由 hydrate 完成） */
-  private bind(): void {}
+  private bind(): void {
+    // title 插槽内容增减（slot 覆盖属性文案）时重刷双通道
+    this.shadow
+      .querySelector<HTMLSlotElement>('slot[name="title"]')
+      ?.addEventListener('slotchange', () => this.update())
+  }
 
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
   private titleCache: string | null = null
+
+  /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
+  private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
+    return slot
+      .assignedNodes()
+      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+  }
 
   protected override render(): void {
     this.shadow.innerHTML = this.template()
@@ -100,7 +112,13 @@ export class OASResult extends OASElement {
       this.titleCache = raw === '' ? null : raw
       this.removeAttribute('title')
     }
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = this.titleCache ?? ''
+    // title 双通道：slot 有真实内容时隐藏兜底 span（富内容优先），无则渲染 titleCache 文本
+    const titleSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const titleFallback = this.shadow.querySelector<HTMLElement>('.title-text')
+    if (titleSlot && titleFallback) {
+      titleFallback.textContent = this.titleCache ?? ''
+      titleFallback.hidden = this.hasTitleSlotContent(titleSlot)
+    }
     this.shadow.querySelector<HTMLElement>('[part="description"]')!.textContent = this.getAttr(
       'description',
       '',

@@ -1560,24 +1560,137 @@ describe('OASPopover title 吸收（消除宿主原生 tooltip）', () => {
     expect(el.hasAttribute('title')).toBe(false)
   })
 
-  it('水合恢复：快照标题区有文本时恢复缓存，水合后标题不丢失', () => {
-    const ref = new OASPopover()
-    ref.setAttribute('title', '水合标题')
-    ref.innerHTML = '<button>触发</button>'
-    document.body.appendChild(ref)
-    const snap = ref.shadowRoot!.innerHTML
-    ref.remove()
+    it('水合恢复：快照标题区有文本时恢复缓存，水合后标题不丢失', () => {
+      const ref = new OASPopover()
+      ref.setAttribute('title', '水合标题')
+      ref.innerHTML = '<button>触发</button>'
+      document.body.appendChild(ref)
+      const snap = ref.shadowRoot!.innerHTML
+      ref.remove()
 
-    const el = new OASPopover()
-    el.innerHTML = '<button>触发</button>'
-    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-popover" data-oas-ssr-v="1">${snap}`
-    document.body.appendChild(el)
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.querySelector(
-        '[part="title"]',
-      )!.textContent,
-    ).toBe('水合标题')
-    expect(el.hasAttribute('title')).toBe(false)
-    el.remove()
+      const el = new OASPopover()
+      el.innerHTML = '<button>触发</button>'
+      el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-popover" data-oas-ssr-v="1">${snap}`
+      document.body.appendChild(el)
+      expect(
+        el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.querySelector(
+          '[part="title"]',
+        )!.textContent,
+      ).toBe('水合标题')
+      expect(el.hasAttribute('title')).toBe(false)
+      el.remove()
+    })
   })
-})
+
+  describe('OASPopover title 双通道（slot="title" 富内容覆盖属性文本）', () => {
+    it('slot 有内容时覆盖属性文本（兜底隐藏、插槽渲染、aria 保持可访问名）', () => {
+      const el = new OASPopover()
+      el.setAttribute('open', '')
+      el.setAttribute('title', '属性标题')
+      el.innerHTML = `<button>触发</button><b slot="title">富标题</b>`
+      document.body.appendChild(el)
+      mounted.push(el)
+      const p = panelOf(el)
+      const slot = p.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      const fallback = p.querySelector<HTMLElement>('.title-text')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(fallback.hidden).toBe(true)
+      // 属性仍被吸收缓存（兜底隐而不删），宿主无残留原生悬浮提示
+      expect(fallback.textContent).toBe('属性标题')
+      expect(el.hasAttribute('title')).toBe(false)
+      // aria-labelledby 关联标题区容器（含插槽内容）→ 富内容同样构成面板可访问名
+      expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
+    })
+
+    it('仅 slot 无属性：标题区渲染插槽内容，head 不折叠', () => {
+      const el = new OASPopover()
+      el.setAttribute('open', '')
+      el.innerHTML = `<button>触发</button><span slot="title">插槽标题</span>`
+      document.body.appendChild(el)
+      mounted.push(el)
+      const p = panelOf(el)
+      const slot = p.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      expect(slot.assignedNodes().length).toBeGreaterThan(0)
+      expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(true)
+      expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(false)
+      expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
+    })
+
+    it('双空（无 title 无 slot）：头部折叠保持（oas-empty）', () => {
+      const el = mount({ open: '' })
+      const p = panelOf(el)
+      expect(p.querySelector<HTMLElement>('.title-text')!.textContent).toBe('')
+      expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(false)
+      expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(true)
+      expect(p.hasAttribute('aria-labelledby')).toBe(false)
+    })
+
+    it('fresh 冻结：关闭态 slot 变更不重写面板（冻结语义回归），打开后以插槽为准', async () => {
+      const el = mount() // 关闭、非 fresh
+      const p = panelOf(el)
+      // 初始写入已完成（contentWritten=true），关闭态非 fresh → 冻结
+      expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(true)
+      // 关闭态加 slot 标题：slotchange 被冻结 gate 拦截 → 面板不被重写（头部仍折叠、aria 不新增）
+      const rich = document.createElement('b')
+      rich.setAttribute('slot', 'title')
+      rich.textContent = '富标题'
+      el.appendChild(rich)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(true)
+      expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(false)
+      expect(p.hasAttribute('aria-labelledby')).toBe(false)
+      // 打开：解除冻结 → slot 生效（兜底隐藏、head 展开、aria 就位）
+      el.setAttribute('open', '')
+      expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(true)
+      expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(false)
+      expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
+    })
+
+    it('fresh 开启：关闭态 slot 变更即生效（不被冻结）', async () => {
+      const el = mount({ fresh: '' })
+      const p = panelOf(el)
+      const rich = document.createElement('b')
+      rich.setAttribute('slot', 'title')
+      rich.textContent = '富标题'
+      el.appendChild(rich)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(p.querySelector<HTMLElement>('.title-text')!.hidden).toBe(true)
+      expect(p.querySelector('.head')!.classList.contains('oas-empty')).toBe(false)
+      expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
+    })
+
+    it('动态移除 slot 内容后回落属性文本（头部状态同步）', async () => {
+      const el = new OASPopover()
+      el.setAttribute('open', '')
+      el.setAttribute('title', '属性标题')
+      el.innerHTML = `<button>触发</button><span slot="title">插槽标题</span>`
+      document.body.appendChild(el)
+      mounted.push(el)
+      const p = panelOf(el)
+      const fallback = p.querySelector<HTMLElement>('.title-text')!
+      expect(fallback.hidden).toBe(true)
+      const node = el.querySelector('span[slot="title"]')!
+      el.removeChild(node)
+      await new Promise((r) => setTimeout(r, 0))
+      expect(fallback.hidden).toBe(false)
+      expect(fallback.textContent).toBe('属性标题')
+      expect(p.getAttribute('aria-labelledby')).toBe('pop-title')
+    })
+
+    it('append-to portal 期间 title slot 桥接（跨 host 分配不断供），关闭移回宿主', () => {
+      const el = mount({ open: '', 'append-to': 'body' })
+      const rich = document.createElement('b')
+      rich.setAttribute('slot', 'title')
+      rich.textContent = '富标题'
+      el.appendChild(rich)
+      el.setAttribute('content', 'x') // 触发 update 桥接
+      const host = document.querySelector<HTMLElement>('[data-oas-popover-portal]')!
+      expect(host.contains(rich)).toBe(true)
+      const p = el.shadowRoot!.querySelector('[part="panel"]') ??
+        document.querySelector<HTMLElement>('[data-oas-popover-portal]')?.shadowRoot?.querySelector('[part="panel"]')
+      const slot = p!.querySelector<HTMLSlotElement>('slot[name="title"]')!
+      expect(slot.assignedNodes()).toContain(rich)
+      el.removeAttribute('open')
+      expect(el.contains(rich)).toBe(true)
+    })
+  })

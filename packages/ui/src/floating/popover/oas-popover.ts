@@ -492,6 +492,13 @@ export class OASPopover extends OASElement {
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题）。
    *  fresh 冻结下 titleCache 随冻结 gate 一起冻结（缓存不更新、DOM 不重写），语义不变 */
   private titleCache: string | null = null
+
+  /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
+  private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
+    return slot
+      .assignedNodes()
+      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+  }
   /** hover 开/合防抖计时器 + 通用开/合延迟计时器 */
   private openTimer: ReturnType<typeof setTimeout> | null = null
   private closeTimer: ReturnType<typeof setTimeout> | null = null
@@ -518,7 +525,7 @@ export class OASPopover extends OASElement {
       <div class="panel" part="panel" role="dialog" aria-hidden="true">
         <div class="panel-inner" part="inner">
           <div class="head" part="head">
-            <div class="title" part="title" id="pop-title"></div>
+            <div class="title" id="pop-title" part="title"><slot name="title"><span class="title-text"></span></slot></div>
             <button class="close-btn" part="close" type="button" aria-label="关闭" hidden>
               <svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false">${closeIcon}</svg>
             </button>
@@ -556,6 +563,14 @@ export class OASPopover extends OASElement {
     this.addEventListener('mouseleave', this.onHoverLeave)
     this.panel?.addEventListener('mouseenter', this.onPanelEnter)
     this.panel?.addEventListener('mouseleave', this.onPanelLeave)
+    // title 双通道：slot 内容增减时重刷标题区（遵守 fresh 冻结语义——关闭态非 fresh 且
+    // 已写入过内容时，slot 变更不重写面板，与 syncText 冻结 gate 一致；打开/首次写入正常同步）
+    this.panel
+      ?.querySelector<HTMLSlotElement>('slot[name="title"]')
+      ?.addEventListener('slotchange', () => {
+        if (!this.hasAttr('open') && !this.hasAttr('fresh') && this.contentWritten) return
+        this.update()
+      })
     // focus 触发：聚焦开、失焦（焦点移出宿主/面板）关
     this.addEventListener('focusin', this.onFocusIn)
     this.addEventListener('focusout', this.onFocusOut)
@@ -1121,9 +1136,9 @@ export class OASPopover extends OASElement {
     this.bridgeSlotContent(host)
   }
 
-  /** slot 桥接：宿主 light DOM 的 [slot=content] 节点移入 portal host light DOM（幂等，已在内为 no-op） */
+  /** slot 桥接：宿主 light DOM 的 [slot=content] / [slot=title] 节点移入 portal host light DOM（幂等，已在内为 no-op） */
   private bridgeSlotContent(host: HTMLElement): void {
-    for (const n of this.querySelectorAll<HTMLElement>('[slot="content"]')) {
+    for (const n of this.querySelectorAll<HTMLElement>('[slot="content"], [slot="title"]')) {
       host.appendChild(n)
     }
   }
@@ -1136,7 +1151,7 @@ export class OASPopover extends OASElement {
     if (this.panel && host.shadowRoot?.contains(this.panel)) {
       this.shadow.appendChild(this.panel)
     }
-    for (const n of host.querySelectorAll<HTMLElement>('[slot="content"]')) {
+    for (const n of host.querySelectorAll<HTMLElement>('[slot="content"], [slot="title"]')) {
       this.appendChild(n)
     }
     host.remove()
@@ -1265,10 +1280,22 @@ export class OASPopover extends OASElement {
     }
     // 从 this.panel 查（而非 this.shadow）：portal（append-to）期间面板在 portal host 的
     // shadow 内，原 shadow 查询会落空
-    const titleEl = this.panel.querySelector<HTMLElement>('[part="title"]')!
+    // title 双通道：属性文本写入兜底 span；slot="title" 有真实内容时以插槽为准（兜底隐藏）。
+    // aria-labelledby 关联标题区容器（含插槽内容，富内容同样构成面板可访问名）
+    const titleEl = this.panel.querySelector<HTMLElement>('[part="title"]')
+    const titleSlot = this.panel.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const titleFallback = this.panel.querySelector<HTMLElement>('.title-text')
     const title = this.titleCache ?? ''
-    titleEl.textContent = title
-    if (title) this.panel.setAttribute('aria-labelledby', 'pop-title')
+    let hasSlotTitle = false
+    if (titleEl && titleSlot && titleFallback) {
+      hasSlotTitle = this.hasTitleSlotContent(titleSlot)
+      titleFallback.textContent = title
+      titleFallback.hidden = hasSlotTitle
+    } else if (titleEl) {
+      // 降级：无 slot 结构（旧版 SSR 快照）直接写标题区文本
+      titleEl.textContent = title
+    }
+    if (title !== '' || hasSlotTitle) this.panel.setAttribute('aria-labelledby', 'pop-title')
     else this.panel.removeAttribute('aria-labelledby')
     this.panel.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr(
       'content',
@@ -1279,15 +1306,16 @@ export class OASPopover extends OASElement {
   /** 头部显隐：无标题且非 closable 时整行折叠（关闭按钮仍保留在 DOM）；
    *  closable 时面板挂 oas-closable 类——close-btn 默认 display:none，
    *  可见性由 `.panel.oas-closable .close-btn` 规则驱动（hidden 只管冗余语义）。
-   *  标题判空走 titleCache（syncText 先于本方法执行，吸收已更新缓存；冻结期间
-   *  缓存与 DOM 同步冻结，判空与所见一致） */
+   *  标题判空走双通道：titleCache（属性通道）或 title 插槽有真实内容都算有标题；
+   *  syncText 先于本方法执行（吸收已更新缓存；冻结期间缓存与 DOM 同步冻结，
+   *  判空与所见一致） */
   private syncHead(): void {
     const head = this.panel?.querySelector<HTMLElement>('.head')
     if (!head) return
-    head.classList.toggle(
-      'oas-empty',
-      (this.titleCache ?? '') === '' && !this.hasAttr('closable'),
-    )
+    const titleSlot = this.panel?.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const hasSlotTitle = titleSlot ? this.hasTitleSlotContent(titleSlot) : false
+    const hasTitle = (this.titleCache ?? '') !== '' || hasSlotTitle
+    head.classList.toggle('oas-empty', !hasTitle && !this.hasAttr('closable'))
     this.panel?.classList.toggle('oas-closable', this.hasAttr('closable'))
     this.closeBtn?.toggleAttribute('hidden', !this.hasAttr('closable'))
     this.closeBtn?.setAttribute('aria-label', this.t('popover.close'))

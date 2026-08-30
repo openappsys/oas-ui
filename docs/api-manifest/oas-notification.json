@@ -32,20 +32,29 @@
       "observed": true
     },
     {
-      "name": "title",
+      "name": "description",
       "type": "string",
       "default": "",
       "observed": false
     },
     {
-      "name": "description",
+      "name": "title",
       "type": "string",
       "default": "",
       "observed": false
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "titleNode",
+      "type": "Node | null"
+    }
+  ],
   "events": [],
-  "slots": [],
+  "slots": [
+    {
+      "name": "title"
+    }
+  ],
   "unresolved": []
 }

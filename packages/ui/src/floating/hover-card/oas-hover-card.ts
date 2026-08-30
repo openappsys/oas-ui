@@ -324,6 +324,14 @@ export class OASHoverCard extends OASElement {
   private anchor: Element | null = null
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
   private titleCache: string | null = null
+
+  /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
+  private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
+    return slot
+      .assignedNodes()
+      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
+  }
+
   private showTimer: ReturnType<typeof setTimeout> | null = null
   private hideTimer: ReturnType<typeof setTimeout> | null = null
   /** 上次 open 状态（null = 未初始化，首帧不派发 oas-open-change） */
@@ -355,7 +363,7 @@ export class OASHoverCard extends OASElement {
       <style>${STYLE}</style>
       <slot></slot>
       <div class="card" part="card" aria-hidden="true">
-        <div class="title" part="title"></div>
+        <div class="title" part="title"><slot name="title"><span class="title-text"></span></slot></div>
         <div class="content" part="content"></div>
         <div class="rich"><slot name="content"></slot></div>
         <span class="arrow" part="arrow" data-popper-arrow aria-hidden="true"></span>
@@ -373,14 +381,18 @@ export class OASHoverCard extends OASElement {
    */
   private bind(): void {
     this.card = this.shadow.querySelector('.card')
-    // 锚点 = 首个非插槽子元素（slot="content" 的富内容不应被当作触发器）
-    this.anchor = this.querySelector(':scope > :not([slot="content"])') ?? this
+    // 锚点 = 首个非插槽子元素（slot="content" / slot="title" 的富内容都不应被当作触发器）
+    this.anchor = this.querySelector(':scope > :not([slot])') ?? this
     this.anchor?.addEventListener('mouseenter', () => this.onAnchorEnter())
     this.anchor?.addEventListener('mouseleave', () => this.onAnchorLeave())
     this.anchor?.addEventListener('focusin', () => this.onFocusEnter())
     this.anchor?.addEventListener('focusout', (e) => this.onFocusLeave(e as FocusEvent))
     this.card?.addEventListener('mouseenter', () => this.onCardEnter())
     this.card?.addEventListener('mouseleave', () => this.onCardLeave())
+    // title 插槽内容增减时重刷标题区显隐（双通道 slot 覆盖判空）
+    this.card
+      ?.querySelector<HTMLSlotElement>('slot[name="title"]')
+      ?.addEventListener('slotchange', () => this.update())
     this.syncGroup()
     this.onCleanup(() => {
       if (this.showTimer) clearTimeout(this.showTimer)
@@ -584,7 +596,22 @@ export class OASHoverCard extends OASElement {
       this.titleCache = raw === '' ? null : raw
       this.removeAttribute('title')
     }
-    this.card.querySelector<HTMLElement>('[part="title"]')!.textContent = this.titleCache ?? ''
+    // title 双通道：属性文本写入兜底 span；slot="title" 有真实内容时以插槽为准（兜底隐藏）。
+    // 判空：titleCache 与插槽双空时隐藏标题区（原 `.title:empty` 隐藏逻辑的等价实现）
+    const titleEl = this.card.querySelector<HTMLElement>('[part="title"]')
+    const titleSlot = this.card.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const titleFallback = this.card.querySelector<HTMLElement>('.title-text')
+    const title = this.titleCache ?? ''
+    if (titleEl && titleSlot && titleFallback) {
+      const hasSlotTitle = this.hasTitleSlotContent(titleSlot)
+      titleFallback.textContent = title
+      titleFallback.hidden = hasSlotTitle
+      titleEl.hidden = title === '' && !hasSlotTitle
+    } else if (titleEl) {
+      // 降级：无 slot 结构（旧版 SSR 快照）直接写标题区文本
+      titleEl.textContent = title
+      titleEl.hidden = title === ''
+    }
     this.card.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr(
       'content',
       '',
@@ -837,9 +864,9 @@ export class OASHoverCard extends OASElement {
     this.bridgeSlotContent(host)
   }
 
-  /** slot 桥接：宿主 light DOM 的 [slot=content] 节点移入 portal host light DOM（跨 host 分配不断供） */
+  /** slot 桥接：宿主 light DOM 的 [slot=content] / [slot=title] 节点移入 portal host light DOM（跨 host 分配不断供） */
   private bridgeSlotContent(host: HTMLElement): void {
-    for (const n of this.querySelectorAll<HTMLElement>('[slot="content"]')) {
+    for (const n of this.querySelectorAll<HTMLElement>('[slot="content"], [slot="title"]')) {
       host.appendChild(n)
     }
   }
@@ -852,7 +879,7 @@ export class OASHoverCard extends OASElement {
     if (this.card && host.shadowRoot?.contains(this.card)) {
       this.shadow.appendChild(this.card)
     }
-    for (const n of host.querySelectorAll<HTMLElement>('[slot="content"]')) {
+    for (const n of host.querySelectorAll<HTMLElement>('[slot="content"], [slot="title"]')) {
       this.appendChild(n)
     }
     host.remove()

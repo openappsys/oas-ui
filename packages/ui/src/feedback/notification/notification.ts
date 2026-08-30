@@ -1,8 +1,9 @@
 import { resolveMessageHost, getAppNotificationConfig } from '../../floating/app/app-host.js'
-import type { NotificationType } from './index.js'
+import type { OASNotification, NotificationType } from './oas-notification.js'
 
 export interface NotificationOptions {
-  title: string
+  /** 标题：string 走属性吸收通道渲染进标题区；Node（富内容）由组件 append 进标题区 */
+  title: string | Node
   description?: string
   duration?: number
   /** 显示自动关闭倒计时进度条 */
@@ -54,9 +55,14 @@ function mergeAppConfig(options: NotificationOptions): NotificationOptions {
 
 function show(type: NotificationType, options: NotificationOptions): void {
   const merged = mergeAppConfig(options)
-  const el = document.createElement('oas-notification')
+  const el = document.createElement('oas-notification') as OASNotification
   el.setAttribute('type', type)
-  el.setAttribute('title', merged.title)
+  if (typeof merged.title === 'string') {
+    el.setAttribute('title', merged.title)
+  } else {
+    // Node 通道：append 前注入 titleNode，渲染时移入标题区（忽略 titleCache 文本路径）
+    el.titleNode = merged.title
+  }
   if (merged.description !== undefined) el.setAttribute('description', merged.description)
   el.setAttribute('duration', String(merged.duration ?? 4500))
   if (merged.showProgress) el.setAttribute('show-progress', '')

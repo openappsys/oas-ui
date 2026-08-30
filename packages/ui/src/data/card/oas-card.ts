@@ -103,7 +103,7 @@ export class OASCard extends OASElement {
           <img class="cover-img" part="cover-img" alt="" hidden>
         </div>
         <div class="header" part="header">
-          <span class="title" part="title"></span>
+          <span class="title" part="title"><slot name="title"><span class="title-text"></span></slot></span>
           <div class="extra"><slot name="extra"></slot></div>
         </div>
         <div class="body" part="body"><slot></slot></div>
@@ -116,8 +116,8 @@ export class OASCard extends OASElement {
 
   /** 缓存节点引用 + 绑定事件（render 与水合路径共用；事件绑定幂等性由 rendered 标志保证只走一次） */
   private bind(): void {
-    // 插槽内容增减时重新同步封面/操作区/标题区显隐
-    for (const slot of ['cover', 'extra', 'actions']) {
+    // 插槽内容增减时重新同步封面/操作区/标题区显隐（title 插槽纳入：双通道 slot 覆盖判空）
+    for (const slot of ['cover', 'extra', 'actions', 'title']) {
       this.shadow
         .querySelector<HTMLSlotElement>(`slot[name="${slot}"]`)
         ?.addEventListener('slotchange', () => this.update())
@@ -143,6 +143,13 @@ export class OASCard extends OASElement {
     return e
       .composedPath()
       .some((n) => n instanceof Element && n !== this && n.matches(INTERACTIVE_SEL))
+  }
+
+  /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
+  private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
+    return slot
+      .assignedNodes()
+      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
@@ -181,7 +188,15 @@ export class OASCard extends OASElement {
       this.removeAttribute('title')
     }
     const title = this.titleCache ?? ''
-    this.shadow.querySelector<HTMLElement>('[part="title"]')!.textContent = title
+    // title 双通道：slot 有真实内容时隐藏兜底 span（富内容优先），无则渲染 titleCache 文本
+    const titleSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const titleFallback = this.shadow.querySelector<HTMLElement>('.title-text')
+    let hasSlotTitle = false
+    if (titleSlot && titleFallback) {
+      hasSlotTitle = this.hasTitleSlotContent(titleSlot)
+      titleFallback.textContent = title
+      titleFallback.hidden = hasSlotTitle
+    }
 
     // clickable：整卡承担按钮角色；聚焦后可 Enter/Space 触发
     if (this.hasAttr('clickable')) {
@@ -192,11 +207,11 @@ export class OASCard extends OASElement {
       this.removeAttribute('tabindex')
     }
 
-    // 标题区：title 为空且 extra 插槽无内容时隐藏（避免空条占位）
+    // 标题区：title（属性或插槽）为空且 extra 插槽无内容时隐藏（避免空条占位）
     const header = this.shadow.querySelector<HTMLElement>('[part="header"]')
     const extraSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="extra"]')
     if (header && extraSlot) {
-      const hasTitle = title !== ''
+      const hasTitle = title !== '' || hasSlotTitle
       const hasExtra = extraSlot.assignedNodes({ flatten: true }).length > 0
       header.hidden = !hasTitle && !hasExtra
     }
