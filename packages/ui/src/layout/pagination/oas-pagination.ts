@@ -126,7 +126,7 @@ const STYLE = `
   box-sizing: border-box;
   text-decoration: none;
 }
-.btn:hover:not(:disabled):not([aria-disabled='true']) {
+.btn:hover:not(:disabled):not([aria-disabled='true']):not([aria-current='true']) {
   border-color: var(--oas-color-primary);
   color: var(--oas-color-primary);
 }
