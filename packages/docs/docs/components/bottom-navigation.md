@@ -112,6 +112,14 @@ onMounted(() => {
   <oas-bottom-navigation id="bn-layout-h" layout="horizontal" value="home" style="width: 100%; max-width: 480px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"消息","icon":"mail","value":"mail","badge":"5"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
 </DemoBlock>
 
+## icon-only 紧凑形态（show-label）
+
+`show-label="active"`：仅选中项显示文字，未选中项只显示 icon（紧凑形态）。未选中项的 label 视觉隐藏（CSS `display: none`），选中项文字保留；可访问名由每项自动写入的 `aria-label`（取该项 label 文本）兜底，读屏不受 CSS 隐藏影响。缺省 `true` 为全部项显示文字；非法值回落 `true` 并告警（同值去重）。
+
+<DemoBlock title="icon-only 紧凑形态（仅选中项显示文字）">
+  <oas-bottom-navigation id="bn-label-active" show-label="active" value="home" style="width: 100%; max-width: 480px" items='[{"label":"首页","icon":"user","value":"home"},{"label":"消息","icon":"mail","value":"mail","badge":"5"},{"label":"我的","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+</DemoBlock>
+
 ## 变量定制
 
 不加 prop、纯 CSS 变量开口，dark 下自动走 token：
@@ -134,6 +142,7 @@ onMounted(() => {
 | `items` | 导航项 JSON | `string` | `[]` |
 | `layout` | 布局模式：`stacked`（默认，icon 上文字下）/ `horizontal`（icon 左文字右，同一行）；非法值回落 `stacked` 并告警（同值去重） | `string` | `stacked` |
 | `safe-area` | fixed 模式下底部加安全区内边距（`env(safe-area-inset-bottom)`），避开刘海屏 home 指示条；非 fixed 无效果 | `boolean` | — |
+| `show-label` | label 展示模式：`true`（默认，全部项显示文字）/ `active`（icon-only 紧凑形态：仅选中项显示文字，未选中项只显示 icon；label 视觉隐藏后每项 aria-label 自动写入该项 label 文本，读屏不受 CSS 隐藏影响）；非法值回落 `true` 并告警（同值去重） | `string` | `true` |
 | `value` | 激活项 value，未指定默认激活第一个可用项 | — | — |
 
 | 事件 | 说明 |

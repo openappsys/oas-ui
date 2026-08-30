@@ -207,6 +207,7 @@
       "items": "Navigation items JSON",
       "layout": "Layout mode: `stacked` (default, icon above text) / `horizontal` (icon left, text right, same row); invalid values fall back to `stacked` with a warning (deduped)",
       "safe-area": "Adds bottom safe-area padding (`env(safe-area-inset-bottom)`) in fixed mode to avoid the home indicator of notched screens; no effect in non-fixed mode",
+      "show-label": "Label display mode: `true` (default, all items show text) / `active` (icon-only compact mode: only the selected item shows text, unselected items show only the icon — each tab's accessible name is backed by an auto-written `aria-label` from the item label, unaffected by the CSS hide); invalid values fall back to `true` with a warning (deduped)",
       "value": "Value of the active item; defaults to the first available item"
     },
     "events": {
@@ -1379,6 +1380,7 @@
   "oas-page-header": {
     "attrs": {
       "back": "Whether to show the back button",
+      "ghost": "Transparent-background variant: the header background rule is set to `none` (forced transparent so the container/page background shows through) and the footer divider is removed; title/text colors keep the theme foreground token; all other layout is unchanged",
       "subtitle": "Subtitle text",
       "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear)"
     },
