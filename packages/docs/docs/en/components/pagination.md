@@ -25,6 +25,21 @@ Data pagination navigation with page-number ellipsis, prev/next flipping, config
   </oas-space>
 </DemoBlock>
 
+## Page-number cap
+
+<DemoBlock title="pager-count page-number cap">
+  <oas-space direction="vertical" size="small" style="width: 100%">
+    <oas-tag type="info">siblings="2" (no cap, 7 page buttons)</oas-tag>
+    <oas-pagination total="1000" page-size="10" current="45" siblings="2"></oas-pagination>
+    <oas-tag type="info">siblings="2" + pager-count="5" (truncation wins, only 5)</oas-tag>
+    <oas-pagination total="1000" page-size="10" current="45" siblings="2" pager-count="5"></oas-pagination>
+    <oas-tag type="info">pager-count="5" (100 pages, only 5 page buttons)</oas-tag>
+    <oas-pagination total="1000" page-size="10" current="45" pager-count="5"></oas-pagination>
+  </oas-space>
+</DemoBlock>
+
+When the cap is exceeded, the window shrinks centered on the current page, leaving at least 2 pages on each side of an ellipsis (first/last pages always reachable); values below the minimum 5 fall back to 5 with a console warning.
+
 ## Total count
 
 <DemoBlock title="show-total displays the total">
@@ -265,6 +280,7 @@ onMounted(() => {
 | `hide-on-single` | Hides the whole component when there is a single page (pageCount ≤ 1) | `boolean` | — |
 | `page-size` | Records per page | `string` | `10` |
 | `page-sizes` | Page-size dropdown options (JSON array), e.g. `[10,20,50]`; switching resets to page 1 | `string` | — |
+| `pager-count` | Maximum number of page-number buttons (excluding prev/next/first/last), default 9; when exceeded, the window shrinks centered on the current page (at least 2 pages on each side of an ellipsis, first/last reachable); values below the minimum 5 fall back to 5 with a warning | `string` | `9` |
 | `show-edges` | Shows first/last double-arrow buttons (« »), disabled at the boundaries; aria-label via i18n | `boolean` | — |
 | `show-jumper` | Shows a quick-jump input 「跳至 __ 页」(Enter to jump, out-of-range clamped) | `boolean` | — |
 | `show-total` | Shows the total text 「共 X 条」 | `boolean` | — |
