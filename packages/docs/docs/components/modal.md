@@ -232,7 +232,7 @@ onMounted(async () => {
 | `no-footer` | 隐藏底部操作按钮 | `boolean` | — |
 | `no-mask-close` | 禁用点击遮罩关闭 | `boolean` | — |
 | `ok-text` | 确定按钮文案；缺省走 locale `modal.ok` | — | — |
-| `title` | 标题文案 | `string` | — |
+| `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串） | `string` | — |
 | `type` | 语义变体：`info`/`success`/`warning`/`error`，正文顶部渲染对应语义图标 | `ModalVariant` | — |
 | `visible` | 是否显示 | `boolean` | — |
 | `width` | 对话框宽度（px 或百分比） | — | — |

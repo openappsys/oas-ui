@@ -36,7 +36,7 @@
 | --- | --- | --- | --- |
 | `description` | 描述文案 | `string` | — |
 | `status` | 结果状态 | `string` | `success` |
-| `title` | 标题文案 | `string` | — |
+| `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串） | `string` | — |
 
 ### 插槽
 

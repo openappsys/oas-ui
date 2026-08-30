@@ -1500,3 +1500,84 @@ describe('OASPopover fresh / auto-close / arrow-merge', () => {
     expect(arrow.style.getPropertyValue('--arrow-y')).toBe('')
   })
 })
+
+describe('OASPopover title 吸收（消除宿主原生 tooltip）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => unmountAll())
+
+  it('挂载后宿主不再残留 title 属性，标题照常渲染进面板标题区', () => {
+    const el = mount({ open: '', title: '面板标题' })
+    expect(el.hasAttribute('title'), '宿主原生 title 应被吸收移除').toBe(false)
+    expect(panelOf(el).querySelector('[part="title"]')!.textContent).toBe('面板标题')
+    // aria-labelledby 仍指向标题区（无障碍语义不受吸收影响）
+    expect(panelOf(el).getAttribute('aria-labelledby')).toBe('pop-title')
+  })
+
+  it('吸收触发的二次 update 幂等（标题不丢失）', () => {
+    const el = mount({ open: '', title: '面板标题' })
+    el.setAttribute('content', '新内容') // 触发二次 update
+    expect(panelOf(el).querySelector('[part="title"]')!.textContent).toBe('面板标题')
+    expect(el.hasAttribute('title')).toBe(false)
+  })
+
+  it('打开态运行时改 title 属性：新值吸收渲染，宿主仍无残留', () => {
+    const el = mount({ open: '', title: '旧标题' })
+    el.setAttribute('title', '新标题')
+    expect(panelOf(el).querySelector('[part="title"]')!.textContent).toBe('新标题')
+    expect(el.hasAttribute('title')).toBe(false)
+  })
+
+  it('title="" 清空标题（属性在场=宿主意图），头部折叠', () => {
+    const el = mount({ open: '', title: '面板标题' })
+    el.setAttribute('title', '')
+    expect(panelOf(el).querySelector('[part="title"]')!.textContent).toBe('')
+    expect(panelOf(el).querySelector('.head')!.classList.contains('oas-empty')).toBe(true)
+    expect(el.hasAttribute('title')).toBe(false)
+  })
+
+  it('无 fresh：关闭态冻结对缓存生效——title 不重写不吸收，打开时写入最新', () => {
+    const el = mount({ title: '旧' })
+    expect(panelOf(el).querySelector('[part="title"]')!.textContent).toBe('旧')
+    expect(el.hasAttribute('title')).toBe(false)
+    // 关闭态（非 fresh）改 title：冻结 gate 拦住缓存更新与吸收（宿主暂留属性，语义不变）
+    el.setAttribute('title', '新')
+    expect(panelOf(el).querySelector('[part="title"]')!.textContent).toBe('旧')
+    // 打开：不冻结 → 吸收新值渲染
+    el.setAttribute('open', '')
+    expect(panelOf(el).querySelector('[part="title"]')!.textContent).toBe('新')
+    expect(el.hasAttribute('title')).toBe(false)
+  })
+
+  it('fresh：关闭态也持续吸收更新', () => {
+    const el = mount({ title: 'x', fresh: '' })
+    expect(panelOf(el).querySelector('[part="title"]')!.textContent).toBe('x')
+    expect(el.hasAttribute('title')).toBe(false)
+    el.setAttribute('title', '新')
+    expect(panelOf(el).querySelector('[part="title"]')!.textContent).toBe('新')
+    expect(el.hasAttribute('title')).toBe(false)
+  })
+
+  it('水合恢复：快照标题区有文本时恢复缓存，水合后标题不丢失', () => {
+    const ref = new OASPopover()
+    ref.setAttribute('title', '水合标题')
+    ref.innerHTML = '<button>触发</button>'
+    document.body.appendChild(ref)
+    const snap = ref.shadowRoot!.innerHTML
+    ref.remove()
+
+    const el = new OASPopover()
+    el.innerHTML = '<button>触发</button>'
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-popover" data-oas-ssr-v="1">${snap}`
+    document.body.appendChild(el)
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.querySelector(
+        '[part="title"]',
+      )!.textContent,
+    ).toBe('水合标题')
+    expect(el.hasAttribute('title')).toBe(false)
+    el.remove()
+  })
+})

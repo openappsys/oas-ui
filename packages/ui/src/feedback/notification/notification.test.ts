@@ -118,4 +118,44 @@ describe('notification 命令式 API', () => {
     expect(el.hasAttribute('show-progress')).toBe(true)
     expect(el.getAttribute('scrollable')).toBe('true')
   })
+
+  describe('title 吸收（消除宿主原生 tooltip）', () => {
+    it('挂载后宿主不再残留 title 属性，标题照常渲染进标题区', async () => {
+      notification.success({ title: '成功' })
+      await Promise.resolve()
+      const el = document.body.querySelector('oas-notification')!
+      expect(el.hasAttribute('title'), '宿主原生 title 应被吸收移除').toBe(false)
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('成功')
+    })
+
+    it('吸收后二次 update 幂等（type 等观察属性变化不丢标题、不复活宿主 title）', async () => {
+      notification.success({ title: '成功' })
+      await Promise.resolve()
+      const el = document.body.querySelector('oas-notification')!
+      el.setAttribute('type', 'error') // 触发二次 update
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('成功')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('初始 title=""（空串=宿主意图清空）：标题区为空 + 宿主无残留', async () => {
+      const el = document.createElement('oas-notification')
+      el.setAttribute('title', '')
+      el.setAttribute('duration', '0')
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('')
+      expect(el.hasAttribute('title')).toBe(false)
+      el.remove()
+    })
+
+    it('宿主 removeAttribute("title") 保持已渲染标题（清空请用 title=""）', async () => {
+      const el = document.createElement('oas-notification')
+      el.setAttribute('title', '常驻标题')
+      el.setAttribute('duration', '0')
+      document.body.appendChild(el)
+      el.removeAttribute('title')
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('常驻标题')
+      expect(el.hasAttribute('title')).toBe(false)
+      el.remove()
+    })
+  })
 })

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { toast, destroyAll } from './index.js'
+import { toast, destroyAll, type OASToast } from './index.js'
 
 describe('toast 命令式 API', () => {
   beforeEach(() => {
@@ -156,5 +156,42 @@ describe('toast 命令式 API', () => {
     expect(
       el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.getAttribute('aria-label'),
     ).toBe('关闭')
+  })
+
+  describe('title 吸收（消除宿主原生 tooltip）', () => {
+    it('挂载后宿主不再残留 title 属性，标题照常渲染进标题区', async () => {
+      toast.success({ title: '操作成功' })
+      await Promise.resolve()
+      const el = document.body.querySelector('oas-toast')!
+      expect(el.hasAttribute('title'), '宿主原生 title 应被吸收移除').toBe(false)
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('操作成功')
+    })
+
+    it('吸收后二次 update 幂等（type 变化不丢标题、宿主 title 不复活）', () => {
+      toast.info({ title: '通知' })
+      const el = document.body.querySelector('oas-toast')!
+      el.setAttribute('type', 'success') // 触发二次 update
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('通知')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('transition() 数据通道：设置即吸收，宿主无残留、标题更新', () => {
+      const handle = toast.loading({ title: '提交中' })
+      const el = document.body.querySelector('oas-toast')!
+      expect(el.hasAttribute('title')).toBe(false)
+      // element 为内部句柄字段（公开 ToastHandle 仅暴露 close）
+      ;(handle as unknown as { element: OASToast }).element.transition('success', '成功：数据')
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('成功：数据')
+      expect(el.hasAttribute('title')).toBe(false)
+      expect(el.getAttribute('type')).toBe('success')
+    })
+
+    it('title="" 清空标题（属性在场=宿主意图，经 transition 数据通道）', () => {
+      const handle = toast.info({ title: '标题' })
+      const el = document.body.querySelector('oas-toast')!
+      ;(handle as unknown as { element: OASToast }).element.transition('info', '')
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
   })
 })

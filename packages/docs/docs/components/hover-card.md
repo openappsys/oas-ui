@@ -270,7 +270,7 @@ onMounted(() => {
 | `placement` | 浮层位置，12 向：top/bottom/left/right × start/中心/end（如 `bottom-start`） | `string` | `top` |
 | `skidding` | 交叉轴偏移（px），沿垂直于主轴的轴平移 | — | — |
 | `sticky` | 滚动吸附策略：`partial`（默认）滚动时重定位跟随锚点，锚点滚出视口后按 `hide-when-detached` 隐藏（未开启则夹取贴视口边）；`always` 锚点滚出视口后卡片吸附视口边缘（贴边不消失）；`off` 显式关闭滚动重定位 | `string` | `partial` |
-| `title` | 标题文本 | `string` | — |
+| `title` | 标题文本（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串） | `string` | — |
 | `width` | 宽度定制：数值（px）或 `trigger`/`target`（与触发器同宽）；未设置走 CSS min-width | — | — |
 
 ### 事件

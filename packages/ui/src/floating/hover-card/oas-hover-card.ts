@@ -322,6 +322,8 @@ export class OASHoverCard extends OASElement {
 
   private card: HTMLElement | null = null
   private anchor: Element | null = null
+  /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
+  private titleCache: string | null = null
   private showTimer: ReturnType<typeof setTimeout> | null = null
   private hideTimer: ReturnType<typeof setTimeout> | null = null
   /** 上次 open 状态（null = 未初始化，首帧不派发 oas-open-change） */
@@ -394,9 +396,13 @@ export class OASHoverCard extends OASElement {
     this.bind()
   }
 
-  /** 真水合：校验 SSR 快照结构（card 存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（card 存在）后直接接管，跳过 shadow 重建。
+   *  title 吸收下宿主无 title 属性（SSR 快照同此）——从快照标题区恢复缓存，
+   *  防水合后首次 update 把标题清掉 */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('.card')) return false
+    const snapTitle = this.shadow.querySelector('[part="title"]')?.textContent ?? ''
+    if (snapTitle !== '') this.titleCache = snapTitle
     this.bind()
     return true
   }
@@ -568,7 +574,17 @@ export class OASHoverCard extends OASElement {
     this.card.setAttribute('aria-hidden', String(!open))
     // 从 this.card 查（而非 this.shadow）：portal（append-to）期间卡片在 portal host 的
     // shadow 内，原 shadow 查询会落空
-    this.card.querySelector<HTMLElement>('[part="title"]')!.textContent = this.getAttr('title', '')
+    // title 吸收：title 渲染进可见标题区后即从宿主移除——title 是原生全局属性，
+    // 残留在宿主上会让整组件悬停弹出浏览器原生提示（与可见标题重复的视觉干扰）。
+    // 状态机：属性在场（含空串）= 宿主意图（写入新值/空串清空）→ 更新缓存并移除；
+    // 属性缺席 = 内部吸收后的常态（或宿主 removeAttribute，此时保持已渲染标题，
+    // 清空请用 title=""）。缓存驱动渲染，吸收触发的二次 update 幂等。
+    if (this.hasAttribute('title')) {
+      const raw = this.getAttribute('title') ?? ''
+      this.titleCache = raw === '' ? null : raw
+      this.removeAttribute('title')
+    }
+    this.card.querySelector<HTMLElement>('[part="title"]')!.textContent = this.titleCache ?? ''
     this.card.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr(
       'content',
       '',

@@ -49,7 +49,7 @@ onMounted(async () => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `closeable` | Whether to show the close button | `boolean` | — |
-| `title` | Title text | `string` | — |
+| `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 | `type` | Alert type | `string` | `info` |
 
 ### Events
