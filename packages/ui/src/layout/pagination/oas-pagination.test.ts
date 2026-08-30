@@ -411,4 +411,96 @@ describe('OASPagination', () => {
     const active = el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')!
     expect(active.classList.contains('btn')).toBe(true)
   })
+
+  // ===== 批次 14：pager-count 页码按钮上限 =====
+
+  it('pager-count：默认不设时行为不变（siblings 候选集未超上限，100 页仍 5 个页码钮）', () => {
+    const el = mount({ total: '1000', current: '45' })
+    expect(pages(el)).toEqual(['1', '44', '45', '46', '100'])
+    expect(el.shadowRoot!.querySelectorAll('.ellipsis').length).toBe(2)
+  })
+
+  it('pager-count：超过上限按当前页居中收缩窗口，省略号两端至少留 2 页', () => {
+    // siblings="2" 候选集 7 个 > 5，截断到 5 个
+    const el = mount({ 'pager-count': '5', siblings: '2', total: '1000', current: '45' })
+    expect(pages(el)).toEqual(['1', '2', '45', '99', '100'])
+    expect(el.shadowRoot!.querySelectorAll('.ellipsis').length).toBe(2)
+    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(5)
+  })
+
+  it('pager-count：截断优先于 siblings（siblings="2" + pager-count="5" 仍只显示 5 个）', () => {
+    const el = mount({ 'pager-count': '5', siblings: '2', total: '1000', current: '45' })
+    expect(pages(el)).toEqual(['1', '2', '45', '99', '100'])
+    // 对照：不设 pager-count 时 siblings="2" 显示 7 个
+    const el2 = mount({ siblings: '2', total: '1000', current: '45' })
+    expect(pages(el2)).toEqual(['1', '43', '44', '45', '46', '47', '100'])
+  })
+
+  it('pager-count：渲染页码数不超过上限（siblings="4" 候选 11 个，pager-count="9" 截断到 9 个）', () => {
+    const el = mount({ 'pager-count': '9', siblings: '4', total: '1000', current: '45' })
+    expect(pages(el)).toEqual(['1', '2', '43', '44', '45', '46', '47', '99', '100'])
+    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(9)
+  })
+
+  it('pager-count：低于最小值 5 回落 5 并 console 告警一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    // siblings="2" 候选集 7 个，回落后的 5 仍触发截断
+    const el = mount({ 'pager-count': '3', siblings: '2', total: '1000', current: '45' })
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('[oas-pagination] 非法 pager-count "3"'),
+    )
+    expect(pages(el)).toEqual(['1', '2', '45', '99', '100'])
+    warn.mockRestore()
+  })
+
+  it('pager-count：非法值告警同值去重、不同值各告警一次', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mount({ 'pager-count': '4', total: '1000', current: '45' })
+    mount({ 'pager-count': '4', total: '1000', current: '45' })
+    mount({ 'pager-count': '1', total: '1000', current: '45' })
+    expect(warn).toHaveBeenCalledTimes(2)
+    warn.mockRestore()
+  })
+
+  it('pager-count：pageCount ≤ pager-count 时不触发截断（siblings 算法原样渲染，可全量铺开）', () => {
+    // 10 页 ≤ 20：候选集即全部页码，无省略
+    const el = mount({ 'pager-count': '20', siblings: '4', total: '100', current: '5' })
+    expect(pages(el)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'])
+    expect(el.shadowRoot!.querySelector('.ellipsis')).toBeNull()
+    // 10 页 ≤ 20：正常省略算法不被 cap 改变
+    const el2 = mount({ 'pager-count': '20', total: '100', current: '5' })
+    expect(pages(el2)).toEqual(['1', '4', '5', '6', '10'])
+  })
+
+  it('pager-count：截断时当前页贴近左/右边缘仍保持首尾可达', () => {
+    const elLeft = mount({ 'pager-count': '5', siblings: '20', total: '1000', current: '3' })
+    expect(pages(elLeft)).toEqual(['1', '2', '3', '99', '100'])
+    const elRight = mount({ 'pager-count': '5', siblings: '20', total: '1000', current: '98' })
+    expect(pages(elRight)).toEqual(['1', '2', '98', '99', '100'])
+    const elFirst = mount({ 'pager-count': '5', siblings: '20', total: '1000', current: '1' })
+    expect(pages(elFirst)).toEqual(['1', '2', '99', '100'])
+    expect(elFirst.shadowRoot!.querySelectorAll('[part="page"]').length).toBeLessThanOrEqual(5)
+  })
+
+  it('pager-count：show-edges 组合下仅限制页码钮，首/末/前/后钮不受影响', () => {
+    const el = mount({ 'show-edges': '', 'pager-count': '5', siblings: '2', total: '1000', current: '45' })
+    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(5)
+    expect(el.shadowRoot!.querySelector('[part="first"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="last"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="prev"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="next"]')).not.toBeNull()
+  })
+
+  it('pager-count：simple 极简模式无页码序列，不受影响', () => {
+    const el = mount({ simple: '', 'pager-count': '5', total: '1000', current: '45' })
+    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(0)
+    expect(el.shadowRoot!.querySelector('.ellipsis')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="simple"]')!.textContent).toBe('45 / 100')
+  })
+
+  it('pager-count：hide-on-single 组合下单页仍隐藏', () => {
+    const el = mount({ 'hide-on-single': '', 'pager-count': '5', total: '8' })
+    expect(el.hasAttribute('hidden')).toBe(true)
+  })
 })
