@@ -54,6 +54,10 @@ export class OASSkeleton extends OASElement {
   }
 
   private block: HTMLElement | null = null
+  /** title 吸收缓存：宿主原生 title 被移除后的「标题形骨架块开关」真值。
+   *  skeleton 的 title 是存在性开关（值本身不渲染），空串属性同样表示开关在场，
+   *  故缓存以「非 null 哨兵」保留存在语义；null=开关缺席 */
+  private titleCache: string | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -73,9 +77,12 @@ export class OASSkeleton extends OASElement {
     this.bind()
   }
 
-  /** 真水合：校验 SSR 快照结构（block 容器存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（block 容器存在）后直接接管，跳过 shadow 重建。
+   *  title 吸收下宿主无 title 属性（SSR 快照同此）——快照含标题形骨架块即恢复
+   *  非 null 哨兵（值不渲染，仅存在性），防水合后首次 update 丢掉标题块 */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('[part="block"]')) return false
+    if (this.shadow.querySelector('[part="title"]')) this.titleCache = '1'
     this.bind()
     return true
   }
@@ -84,6 +91,14 @@ export class OASSkeleton extends OASElement {
     // 行/头像/标题由 update 全量重建（先清空再追加）：SSR 快照已有子节点在水合时
     // 会被同构重建为完全一致的行序列，不会重复叠加（与 rate 等追加式组件不同）。
     if (!this.block) return
+    // title 吸收：title 只决定是否渲染标题形骨架块（值不渲染），吸收后宿主不再残留
+    // 原始文本与原生悬浮提示。状态机：属性在场 = 宿主意图（开关在场，含空串）→
+    // 更新缓存（非 null 哨兵）并移除；属性缺席 = 吸收后常态，缓存驱动重建幂等。
+    if (this.hasAttribute('title')) {
+      const raw = this.getAttribute('title') ?? ''
+      this.titleCache = raw === '' ? '1' : raw
+      this.removeAttribute('title')
+    }
     this.block.classList.toggle('active', this.hasAttr('active'))
     const rows = Math.max(1, Number(this.getAttr('rows', '3')) || 3)
     this.block.innerHTML = ''
@@ -92,7 +107,7 @@ export class OASSkeleton extends OASElement {
       a.setAttribute('part', 'avatar')
       this.block.appendChild(a)
     }
-    if (this.hasAttr('title')) {
+    if (this.titleCache !== null) {
       const t = document.createElement('span')
       t.setAttribute('part', 'title')
       this.block.appendChild(t)

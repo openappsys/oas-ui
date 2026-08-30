@@ -270,7 +270,7 @@ onMounted(() => {
 | `placement` | Popup placement, 12 directions: top/bottom/left/right × start/center/end (e.g. `bottom-start`) | `string` | `top` |
 | `skidding` | Cross-axis offset in px, shifts along the axis perpendicular to the main axis | — | — |
 | `sticky` | Scroll stickiness: `partial` (default) repositions with the anchor on scroll and hides per `hide-when-detached` once the anchor leaves the viewport (or clamps to the viewport edge when not enabled); `always` pins the card to the viewport edge once the anchor scrolls out (stays visible); `off` disables scroll repositioning | `string` | `partial` |
-| `title` | Title text | `string` | — |
+| `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 | `width` | Width customization: number (px) or `trigger`/`target` (same width as the trigger); falls back to CSS min-width | — | — |
 
 ### Events

@@ -133,4 +133,48 @@ describe('OASDrawer', () => {
     const el = mount({ visible: '' })
     expect(el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!.style.width).toBe('')
   })
+
+  describe('title 吸收（消除宿主原生 tooltip）', () => {
+    it('挂载后宿主不再残留 title 属性，标题照常渲染进标题区', () => {
+      const el = mount({ visible: '', title: '筛选' })
+      expect(el.hasAttribute('title'), '宿主原生 title 应被吸收移除').toBe(false)
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('筛选')
+    })
+
+    it('吸收触发的二次 update 幂等（标题不丢失）', () => {
+      const el = mount({ visible: '', title: '筛选' })
+      el.setAttribute('placement', 'left') // 触发二次 update
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('筛选')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('运行时改 title 属性：新值吸收渲染，宿主仍无残留', () => {
+      const el = mount({ visible: '', title: '旧标题' })
+      el.setAttribute('title', '新筛选')
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('新筛选')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('title="" 清空标题（属性在场=宿主意图）', () => {
+      const el = mount({ visible: '', title: '筛选' })
+      el.setAttribute('title', '')
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('水合恢复：快照标题区有文本时恢复缓存，水合后标题不丢失', () => {
+      const ref = new OASDrawer()
+      ref.setAttribute('title', '水合标题')
+      document.body.appendChild(ref)
+      const snap = ref.shadowRoot!.innerHTML
+      ref.remove()
+
+      const el = new OASDrawer()
+      el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-drawer" data-oas-ssr-v="1">${snap}`
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('水合标题')
+      expect(el.hasAttribute('title')).toBe(false)
+      el.remove()
+    })
+  })
 })

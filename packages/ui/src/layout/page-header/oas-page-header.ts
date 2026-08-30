@@ -131,6 +131,9 @@ export class OASPageHeader extends OASElement {
     `
   }
 
+  /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
+  private titleCache: string | null = null
+
   /** 缓存节点引用 + 绑定返回按钮与插槽变更监听（render 与水合路径共用） */
   private bind(): void {
     this.shadow.querySelector('[part="back"]')?.addEventListener('click', () => this.emit('back'))
@@ -150,9 +153,13 @@ export class OASPageHeader extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（row 存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（row 存在）后直接接管，跳过 shadow 重建。
+   *  title 吸收下宿主无 title 属性（SSR 快照同此）——从快照标题区恢复缓存，
+   *  防水合后首次 update 把标题清掉（subtitle 非原生全局属性、无吸收，不走恢复） */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('.row')) return false
+    const snapTitle = this.shadow.querySelector('[part="title"]')?.textContent ?? ''
+    if (snapTitle !== '') this.titleCache = snapTitle
     this.bind()
     return true
   }
@@ -165,8 +172,19 @@ export class OASPageHeader extends OASElement {
     const backIcon = this.shadow.querySelector<HTMLElement>('[part="back-icon"]')
     const backIconSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="back-icon"]')
     if (backIcon && backIconSlot) backIcon.hidden = this.hasSlotContent(backIconSlot)
+    // title 吸收：title 渲染进可见标题区后即从宿主移除——title 是原生全局属性，
+    // 残留在宿主上会让组件悬停弹出浏览器原生提示（与可见标题重复的视觉干扰）。
+    // 状态机：属性在场（含空串）= 宿主意图（写入新值/空串清空）→ 更新缓存并移除；
+    // 属性缺席 = 内部吸收后的常态（或宿主 removeAttribute，此时保持已渲染标题，
+    // 清空请用 title=""）。缓存驱动渲染，吸收触发的二次 update 幂等。
+    if (this.hasAttribute('title')) {
+      const raw = this.getAttribute('title') ?? ''
+      this.titleCache = raw === '' ? null : raw
+      this.removeAttribute('title')
+    }
+    const title = this.titleCache ?? ''
     // title / subtitle 双通道：attribute 文案为默认通道，具名插槽有真实内容时覆盖
-    this.syncHeading('title', 'title', this.getAttr('title', ''))
+    this.syncHeading('title', 'title', title)
     this.syncHeading('subtitle', 'subtitle', this.getAttr('subtitle', ''))
     // 空区块：content / footer / breadcrumb / avatar 无插槽内容时不渲染（无空占位）
     this.syncBlock('content', null)

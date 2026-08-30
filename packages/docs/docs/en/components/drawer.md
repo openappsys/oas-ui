@@ -108,7 +108,7 @@ onMounted(async () => {
 | `no-mask-close` | Disable closing on mask click | `boolean` | — |
 | `placement` | Slide direction | `string` | `right` |
 | `size` | Preset size or a concrete value: `small` (256px) / `medium` (378px) / `large` (736px), or write directly like `512px`, `40%` | — | — |
-| `title` | Title text | `string` | — |
+| `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 | `visible` | Whether shown | `boolean` | — |
 | `width` | Drawer width (px or percentage), takes precedence over `size` | — | — |
 

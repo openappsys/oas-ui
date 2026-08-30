@@ -489,6 +489,9 @@ export class OASPopover extends OASElement {
   private prevOpen: boolean | null = null
   /** 内容是否已写入过（fresh 冻结语义：关闭状态非 fresh 时不重写内容，首次连接需写以覆盖 SSR 初始值） */
   private contentWritten = false
+  /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题）。
+   *  fresh 冻结下 titleCache 随冻结 gate 一起冻结（缓存不更新、DOM 不重写），语义不变 */
+  private titleCache: string | null = null
   /** hover 开/合防抖计时器 + 通用开/合延迟计时器 */
   private openTimer: ReturnType<typeof setTimeout> | null = null
   private closeTimer: ReturnType<typeof setTimeout> | null = null
@@ -627,9 +630,13 @@ export class OASPopover extends OASElement {
     this.bind()
   }
 
-  /** 真水合：校验 SSR 快照结构（面板骨架存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（面板骨架存在）后直接接管，跳过 shadow 重建。
+   *  title 吸收下宿主无 title 属性（SSR 快照同此）——从快照标题区恢复缓存，
+   *  防水合后首次 update 把标题清掉（fresh 冻结 gate 对缓存同样生效） */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('.panel')) return false
+    const snapTitle = this.shadow.querySelector('[part="title"]')?.textContent ?? ''
+    if (snapTitle !== '') this.titleCache = snapTitle
     this.bind()
     return true
   }
@@ -1239,16 +1246,27 @@ export class OASPopover extends OASElement {
   /**
    * fresh 语义：默认（无 fresh）关闭状态下不重写 content/title（冻结，打开时写入最新值）；
    * fresh 开启时关闭状态也持续更新。首次写入始终放行（覆盖 SSR 初始内容）。
+   * title 吸收：title 渲染进可见标题区后即从宿主移除（card 同款状态机）——吸收块位于
+   * 冻结 gate 之后，fresh 冻结期间缓存与 DOM 一并冻结（冻结对缓存生效，语义不变）；
+   * 打开/首次写入时吸收并缓存驱动渲染，宿主无残留原生悬浮提示。
    */
   private syncText(): void {
     if (!this.panel) return
     const open = this.hasAttr('open')
     if (!open && !this.hasAttr('fresh') && this.contentWritten) return
     this.contentWritten = true
+    // 状态机：属性在场（含空串）= 宿主意图（写入新值/空串清空）→ 更新缓存并移除；
+    // 属性缺席 = 内部吸收后的常态（或宿主 removeAttribute，此时保持已渲染标题，
+    // 清空请用 title=""）。缓存驱动渲染，吸收触发的二次 update 幂等。
+    if (this.hasAttribute('title')) {
+      const raw = this.getAttribute('title') ?? ''
+      this.titleCache = raw === '' ? null : raw
+      this.removeAttribute('title')
+    }
     // 从 this.panel 查（而非 this.shadow）：portal（append-to）期间面板在 portal host 的
     // shadow 内，原 shadow 查询会落空
     const titleEl = this.panel.querySelector<HTMLElement>('[part="title"]')!
-    const title = this.getAttr('title', '')
+    const title = this.titleCache ?? ''
     titleEl.textContent = title
     if (title) this.panel.setAttribute('aria-labelledby', 'pop-title')
     else this.panel.removeAttribute('aria-labelledby')
@@ -1260,13 +1278,15 @@ export class OASPopover extends OASElement {
 
   /** 头部显隐：无标题且非 closable 时整行折叠（关闭按钮仍保留在 DOM）；
    *  closable 时面板挂 oas-closable 类——close-btn 默认 display:none，
-   *  可见性由 `.panel.oas-closable .close-btn` 规则驱动（hidden 只管冗余语义） */
+   *  可见性由 `.panel.oas-closable .close-btn` 规则驱动（hidden 只管冗余语义）。
+   *  标题判空走 titleCache（syncText 先于本方法执行，吸收已更新缓存；冻结期间
+   *  缓存与 DOM 同步冻结，判空与所见一致） */
   private syncHead(): void {
     const head = this.panel?.querySelector<HTMLElement>('.head')
     if (!head) return
     head.classList.toggle(
       'oas-empty',
-      this.getAttr('title', '') === '' && !this.hasAttr('closable'),
+      (this.titleCache ?? '') === '' && !this.hasAttr('closable'),
     )
     this.panel?.classList.toggle('oas-closable', this.hasAttr('closable'))
     this.closeBtn?.toggleAttribute('hidden', !this.hasAttr('closable'))

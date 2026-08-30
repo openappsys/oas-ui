@@ -136,7 +136,7 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `back` | Whether to show the back button | `boolean` | — |
 | `subtitle` | Subtitle text | `string` | — |
-| `title` | Title text | `string` | — |
+| `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 
 ### Events
 

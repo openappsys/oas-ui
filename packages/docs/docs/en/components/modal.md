@@ -232,7 +232,7 @@ onMounted(async () => {
 | `no-footer` | Hide footer action buttons | `boolean` | — |
 | `no-mask-close` | Disable closing on mask click | `boolean` | — |
 | `ok-text` | OK button label; defaults to locale `modal.ok` | — | — |
-| `title` | Title text | `string` | — |
+| `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 | `type` | Semantic variant: `info`/`success`/`warning`/`error`, renders the matching semantic icon above the content | `ModalVariant` | — |
 | `visible` | Whether shown | `boolean` | — |
 | `width` | Dialog width (px or percentage) | — | — |

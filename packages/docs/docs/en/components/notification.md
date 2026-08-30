@@ -68,7 +68,7 @@ onMounted(async () => {
 | `progress-position` | Progress bar position: `bottom` (default) / `top` | `string` | `bottom` |
 | `scrollable` | Scroll inside the card when the content is too long; enabled by default, pass `false` to disable | `string` | `true` |
 | `show-progress` | Show the auto-close countdown progress bar (animates in sync with `duration`) | `boolean` | — |
-| `title` | Title text | `string` | — |
+| `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 | `type` | Notification type: `info`/`success`/`warning`/`error` | `string` | `info` |
 
 ### Methods

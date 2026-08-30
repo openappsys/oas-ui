@@ -212,6 +212,8 @@ export class OASModal extends OASElement {
 
   private previousFocus: HTMLElement | null = null
   private wasVisible = false
+  /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
+  private titleCache: string | null = null
 
   /**
    * 确定按钮点击时不自动关闭、只派发 oas-ok，由宿主决定关闭时机。
@@ -302,10 +304,14 @@ export class OASModal extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（mask 与 dialog 存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（mask 与 dialog 存在）后直接接管，跳过 shadow 重建。
+   *  title 吸收下宿主无 title 属性（SSR 快照同此）——从快照标题区恢复缓存，
+   *  防水合后首次 update 把标题清掉（aria-labelledby 指向的标题区不受影响） */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('.mask')) return false
     if (!this.shadow.querySelector('.dialog')) return false
+    const snapTitle = this.shadow.querySelector('[part="title"]')?.textContent ?? ''
+    if (snapTitle !== '') this.titleCache = snapTitle
     this.bind()
     return true
   }
@@ -447,7 +453,17 @@ export class OASModal extends OASElement {
     // 垂直居中：data-centered 驱动 CSS 布局，增删同步
     if (this.hasAttr('centered')) dialog.setAttribute('data-centered', '')
     else dialog.removeAttribute('data-centered')
-    this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.getAttr('title', '')
+    // title 吸收：title 渲染进可见标题区后即从宿主移除——title 是原生全局属性，
+    // 残留在宿主上会让整组件悬停弹出浏览器原生提示（与可见标题重复的视觉干扰）。
+    // 状态机：属性在场（含空串）= 宿主意图（写入新值/空串清空）→ 更新缓存并移除；
+    // 属性缺席 = 内部吸收后的常态（或宿主 removeAttribute，此时保持已渲染标题，
+    // 清空请用 title=""）。缓存驱动渲染，吸收触发的二次 update 幂等。
+    if (this.hasAttribute('title')) {
+      const raw = this.getAttribute('title') ?? ''
+      this.titleCache = raw === '' ? null : raw
+      this.removeAttribute('title')
+    }
+    this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.titleCache ?? ''
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）；ok-text/cancel-text 可覆盖
     this.shadow
       .querySelector<HTMLElement>('[part="close"]')

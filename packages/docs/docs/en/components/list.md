@@ -163,7 +163,7 @@ The default slot of an item can hold a thumbnail, combining it with the title an
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `title` | Item title | `string` | — |
+| `title` | Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear) | `string` | — |
 
 | Name | Description |
 | --- | --- |

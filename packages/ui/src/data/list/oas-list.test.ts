@@ -105,4 +105,57 @@ describe('OASList', () => {
     setLocale(en)
     expect(el.shadowRoot!.textContent).toContain('没有更多数据了')
   })
+
+  describe('OASListItem title 吸收（消除宿主原生 tooltip）', () => {
+    function mountItem(attrs: Record<string, string> = {}): OASListItem {
+      const item = new OASListItem()
+      for (const [k, v] of Object.entries(attrs)) item.setAttribute(k, v)
+      document.body.appendChild(item)
+      return item
+    }
+
+    function titleEl(el: OASListItem): HTMLElement {
+      return el.shadowRoot!.querySelector<HTMLElement>('[part="title"]')!
+    }
+
+    it('挂载后宿主不再残留 title 属性，标题渲染进标题区', () => {
+      const el = mountItem({ title: '条目一' })
+      expect(el.hasAttribute('title'), '宿主原生 title 应被吸收移除').toBe(false)
+      expect(titleEl(el).textContent).toBe('条目一')
+    })
+
+    it('吸收触发的二次 update 幂等（标题不丢失、无死循环）', () => {
+      const el = mountItem({ title: '条目一' })
+      el.setAttribute('data-x', '1')
+      expect(titleEl(el).textContent).toBe('条目一')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('运行时改 title 属性：新值吸收渲染，宿主仍无残留', () => {
+      const el = mountItem({ title: '旧标题' })
+      el.setAttribute('title', '新标题')
+      expect(titleEl(el).textContent).toBe('新标题')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('title="" 清空标题（属性在场=宿主意图）', () => {
+      const el = mountItem({ title: '条目一' })
+      el.setAttribute('title', '')
+      expect(titleEl(el).textContent).toBe('')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
+
+    it('水合从快照标题区恢复 title 缓存（宿主无 title，标题不丢）', () => {
+      const el = new OASListItem()
+      el.shadowRoot!.innerHTML =
+        '<meta data-oas-ssr="oas-list-item" data-oas-ssr-v="1"><style></style>' +
+        '<div class="main" part="main"><div class="title" part="title">快照标题</div>' +
+        '<div class="desc" part="desc"><slot name="description"><slot></slot></slot></div></div>' +
+        '<div class="extra"><slot name="extra"></slot></div>'
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
+      expect(el.hasAttribute('title')).toBe(false)
+      expect(titleEl(el).textContent).toBe('快照标题')
+    })
+  })
 })

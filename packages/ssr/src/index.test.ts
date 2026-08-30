@@ -674,9 +674,11 @@ describe('@oas-ui/ssr renderToString', () => {
       { locale: 'zh-CN' },
     )
     expect(html).toContain('<template shadowrootmode="open">')
-    expect(html).toContain('<oas-alert type="warning" title="提示标题" closeable="">')
+    expect(html).toContain('<oas-alert type="warning" closeable="">')
     expect(html).toContain('part="box"')
     expect(html).toContain('part="close"')
+    // title 吸收：宿主不残留原生 title 属性（title 渲染进快照标题区，无原生悬浮提示）
+    expect(html).not.toContain('title="提示标题"')
     // update 增量同步：data-type + title 文本 + 关闭按钮 aria-label（locale）
     expect(html).toContain('data-type="warning"')
     expect(html).toContain('提示标题')
@@ -720,11 +722,13 @@ describe('@oas-ui/ssr renderToString', () => {
       '',
     )
     expect(html).toContain('<template shadowrootmode="open">')
-    expect(html).toContain('<oas-skeleton rows="4" title="title" avatar="avatar">')
+    expect(html).toContain('<oas-skeleton rows="4" avatar="avatar">')
     expect(html).toContain('part="block"')
     expect(html).toContain('part="avatar"')
     expect(html).toContain('part="title"')
     expect(html.match(/part="line"/g)?.length).toBe(4)
+    // title 吸收：宿主不残留原生 title 属性（title 只决定骨架块存在性）
+    expect(html).not.toContain('title="title"')
   })
 
   it('oas-result：icon 字形 + title/description 文本同步入快照', async () => {
@@ -734,13 +738,13 @@ describe('@oas-ui/ssr renderToString', () => {
       '',
     )
     expect(html).toContain('<template shadowrootmode="open">')
-    expect(html).toContain(
-      '<oas-result status="success" title="操作成功" description="你的请求已处理完成">',
-    )
+    expect(html).toContain('<oas-result status="success" description="你的请求已处理完成">')
     expect(html).toContain('part="icon"')
     expect(html).toContain('data-status="success"')
     expect(html).toContain('操作成功')
     expect(html).toContain('你的请求已处理完成')
+    // title 吸收：宿主不残留原生 title 属性（title 渲染进快照标题区）
+    expect(html).not.toContain('title="操作成功"')
   })
 
   it('oas-backdrop：open 直出可见遮罩（mask 部件），透明/模糊属性透传到宿主', async () => {
@@ -755,12 +759,14 @@ describe('@oas-ui/ssr renderToString', () => {
   it('oas-modal：默认关闭态为宿主骨架（dialog/header/body/footer 完整，aria-hidden=true）；visible 直出可见弹窗', async () => {
     const closed = await renderToString('oas-modal', { title: '弹窗标题' }, '', { locale: 'zh-CN' })
     expect(closed).toContain('<template shadowrootmode="open">')
-    expect(closed).toContain('<oas-modal title="弹窗标题">')
+    expect(closed).toContain('<oas-modal>')
     expect(closed).toContain('part="dialog"')
     expect(closed).toContain('part="title"')
     expect(closed).toContain('part="cancel"')
     expect(closed).toContain('part="ok"')
     expect(closed).toContain('aria-hidden="true"')
+    // title 吸收：宿主不残留原生 title 属性（title 渲染进快照标题区）
+    expect(closed).not.toContain('title="弹窗标题"')
     // 按钮文案走 locale（zh-CN）
     expect(closed).toContain('确定')
     expect(closed).toContain('取消')
@@ -768,9 +774,10 @@ describe('@oas-ui/ssr renderToString', () => {
     const visible = await renderToString('oas-modal', { visible: '', title: '可见弹窗' }, '', {
       locale: 'zh-CN',
     })
-    expect(visible).toContain('<oas-modal visible="" title="可见弹窗">')
+    expect(visible).toContain('<oas-modal visible="">')
     expect(visible).toContain('aria-hidden="false"')
     expect(visible).toContain('可见弹窗')
+    expect(visible).not.toContain('title="可见弹窗"')
   })
 
   it('oas-drawer：panel 骨架 + title/placement 同步', async () => {
@@ -783,11 +790,13 @@ describe('@oas-ui/ssr renderToString', () => {
       },
     )
     expect(html).toContain('<template shadowrootmode="open">')
-    expect(html).toContain('<oas-drawer visible="" title="筛选" placement="left">')
+    expect(html).toContain('<oas-drawer visible="" placement="left">')
     expect(html).toContain('part="panel"')
     expect(html).toContain('data-placement="left"')
     expect(html).toContain('筛选')
     expect(html).toContain('aria-hidden="false"')
+    // title 吸收：宿主不残留原生 title 属性（title 渲染进快照标题区）
+    expect(html).not.toContain('title="筛选"')
   })
 
   it('oas-popconfirm：触发 slot 原样保留 + 气泡骨架（默认关闭态 aria-hidden=true）', async () => {
@@ -800,11 +809,13 @@ describe('@oas-ui/ssr renderToString', () => {
       },
     )
     expect(html).toContain('<template shadowrootmode="open">')
-    expect(html).toContain('<oas-popconfirm title="确认删除？">')
+    expect(html).toContain('<oas-popconfirm>')
     expect(html).toContain('part="popover"')
     expect(html).toContain('aria-hidden="true"')
     expect(html).toContain('part="ok"')
     expect(html).toContain('确认删除？')
+    // title 吸收：宿主不残留原生 title 属性（title 渲染进快照气泡标题区）
+    expect(html).not.toContain('title="确认删除？"')
     // 操作按钮文案走 locale（zh-CN）
     expect(html).toContain('确定')
     expect(html).toContain('取消')
@@ -894,6 +905,8 @@ describe('@oas-ui/ssr renderToString', () => {
   it('oas-descriptions / oas-descriptions-item：title/label 文本同步入快照', async () => {
     const desc = await renderToString('oas-descriptions', { title: '基本信息' }, '')
     expect(desc).toContain('<template shadowrootmode="open">')
+    // title 吸收契约：宿主原生 title 被组件移除（消除悬浮 tooltip），标题文本照常渲染进标题区
+    expect(desc).not.toContain('<oas-descriptions title=')
     expect(desc).toContain('part="items"')
     expect(desc).toContain('基本信息')
 
@@ -1339,10 +1352,12 @@ describe('@oas-ui/ssr renderToString', () => {
     )
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('<style>')
-    expect(html).toContain('<oas-popover title="标题" content="内容">')
+    expect(html).toContain('<oas-popover content="内容">')
     expect(html).toContain('class="panel" part="panel" role="dialog" aria-hidden="true"')
     expect(html).toContain('>标题<')
     expect(html).toContain('>内容<')
+    // title 吸收：宿主不残留原生 title 属性（title 渲染进快照面板标题区）
+    expect(html).not.toContain('title="标题"')
     // 箭头骨架随 SSR 快照序列化
     expect(html).toContain('data-popper-arrow')
     expect(html).toContain('</template><button>点击</button></oas-popover>')

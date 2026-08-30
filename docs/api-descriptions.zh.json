@@ -13,7 +13,7 @@
   "oas-alert": {
     "attrs": {
       "closeable": "是否显示关闭按钮",
-      "title": "标题文案",
+      "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）",
       "type": "提示类型"
     },
     "events": {
@@ -625,7 +625,7 @@
   "oas-descriptions": {
     "attrs": {
       "column": "每行列数",
-      "title": "标题"
+      "title": "标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）"
     },
     "events": {},
     "slots": {}
@@ -661,7 +661,7 @@
       "no-mask-close": "禁用点击遮罩关闭",
       "placement": "滑出方向",
       "size": "预设尺寸档位或具体值：`small`（256px）/ `medium`（378px）/ `large`（736px），或直接写如 `512px`、`40%`",
-      "title": "标题文案",
+      "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）",
       "visible": "是否显示",
       "width": "抽屉宽度（px 或百分比），优先级高于 `size`"
     },
@@ -916,7 +916,7 @@
       "skidding": "交叉轴偏移（px），沿垂直于主轴的轴平移",
       "sticky": "滚动吸附策略：`partial`（默认）滚动时重定位跟随锚点，锚点滚出视口后按 `hide-when-detached` 隐藏（未开启则夹取贴视口边）；`always` 锚点滚出视口后卡片吸附视口边缘（贴边不消失）；`off` 显式关闭滚动重定位",
       "collision-boundary": "自定义碰撞边界（选择器字符串，多祖先取第一个命中；property 通道 `collisionBoundary` 可直接传元素）：设置后翻转判定与夹取边界换成该元素 rect，默认视口",
-      "title": "标题文本",
+      "title": "标题文本（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）",
       "width": "宽度定制：数值（px）或 `trigger`/`target`（与触发器同宽）；未设置走 CSS min-width"
     },
     "events": {
@@ -1073,7 +1073,7 @@
   },
   "oas-list-item": {
     "attrs": {
-      "title": "条目标题"
+      "title": "条目标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）"
     },
     "events": {},
     "slots": {
@@ -1266,7 +1266,7 @@
       "no-footer": "隐藏底部操作按钮",
       "no-mask-close": "禁用点击遮罩关闭",
       "ok-text": "确定按钮文案；缺省走 locale `modal.ok`",
-      "title": "标题文案",
+      "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）",
       "type": "语义变体：`info`/`success`/`warning`/`error`，正文顶部渲染对应语义图标",
       "visible": "是否显示",
       "width": "对话框宽度（px 或百分比）"
@@ -1284,7 +1284,7 @@
       "progress-position": "进度条位置：`bottom`（默认）/ `top`",
       "scrollable": "描述内容超长时卡片内滚动，默认开启；传 `false` 关闭",
       "show-progress": "显示自动关闭倒计时进度条（动画时长与 `duration` 同步）",
-      "title": "标题文案",
+      "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）",
       "type": "通知类型：`info`/`success`/`warning`/`error`"
     },
     "events": {},
@@ -1367,7 +1367,7 @@
     "attrs": {
       "back": "是否显示返回按钮",
       "subtitle": "副标题文案",
-      "title": "标题文案"
+      "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）"
     },
     "events": {
       "oas-back": "点击返回按钮"
@@ -1457,7 +1457,7 @@
     "attrs": {
       "open": "是否显示气泡",
       "position": "气泡位置",
-      "title": "确认文案"
+      "title": "确认文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）"
     },
     "events": {
       "oas-cancel": "取消：取消按钮 / Esc / 外部点击",
@@ -1491,7 +1491,7 @@
       "open": "受控显示（布尔属性，存在即显示）",
       "open-delay": "通用打开延迟（毫秒，默认 0；非 hover 触发路径生效，hover 路径优先 hover-delay）",
       "placement": "浮层位置（12 向：四基向 top/bottom/left/right 各配 -start/-end 交叉轴对齐）",
-      "title": "标题文本",
+      "title": "标题文本（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）",
       "trigger": "触发方式：`click`（默认）/ `hover` / `focus` / `contextmenu` / `manual`，空格分隔可多选（如 `\"click hover\"`）",
       "trigger-keys": "指定按键在触发元素聚焦时切换开合（空格分隔，如 `\"Enter Space\"`）；未设置无按键绑定",
       "virtual": "虚拟触发模式（同 tooltip，不依赖锚点元素）",
@@ -1558,7 +1558,7 @@
     "attrs": {
       "description": "描述文案",
       "status": "结果状态",
-      "title": "标题文案"
+      "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）"
     },
     "events": {},
     "slots": {
@@ -1671,7 +1671,7 @@
       "active": "是否启用流光动画",
       "avatar": "是否显示头像占位",
       "rows": "段落行数",
-      "title": "是否显示标题占位"
+      "title": "是否显示标题占位（title 为存在性开关，值本身不渲染；读取后即从宿主移除，不残留原生悬浮提示）"
     },
     "events": {},
     "slots": {}

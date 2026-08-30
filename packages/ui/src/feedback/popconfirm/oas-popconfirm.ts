@@ -56,6 +56,8 @@ export class OASPopconfirm extends OASElement {
   }
 
   private popoverEl: HTMLElement | null = null
+  /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
+  private titleCache: string | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -103,9 +105,13 @@ export class OASPopconfirm extends OASElement {
     this.bind()
   }
 
-  /** 真水合：校验 SSR 快照结构（popover 容器存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（popover 容器存在）后直接接管，跳过 shadow 重建。
+   *  title 吸收下宿主无 title 属性（SSR 快照同此）——从快照标题区恢复缓存，
+   *  防水合后首次 update 把标题清掉 */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('.popover')) return false
+    const snapTitle = this.shadow.querySelector('[part="title"]')?.textContent ?? ''
+    if (snapTitle !== '') this.titleCache = snapTitle
     this.bind()
     return true
   }
@@ -126,7 +132,17 @@ export class OASPopconfirm extends OASElement {
     const open = this.hasAttr('open')
     this.popoverEl.setAttribute('aria-hidden', String(!open))
     this.popoverEl.setAttribute('data-position', this.getAttr('position', 'top'))
-    this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.getAttr('title', '')
+    // title 吸收：title 渲染进可见标题区后即从宿主移除——title 是原生全局属性，
+    // 残留在宿主上会让整组件悬停弹出浏览器原生提示（与可见标题重复的视觉干扰）。
+    // 状态机：属性在场（含空串）= 宿主意图（写入新值/空串清空）→ 更新缓存并移除；
+    // 属性缺席 = 内部吸收后的常态（或宿主 removeAttribute，此时保持已渲染标题，
+    // 清空请用 title=""）。缓存驱动渲染，吸收触发的二次 update 幂等。
+    if (this.hasAttribute('title')) {
+      const raw = this.getAttribute('title') ?? ''
+      this.titleCache = raw === '' ? null : raw
+      this.removeAttribute('title')
+    }
+    this.shadow.querySelector<HTMLElement>('.title')!.textContent = this.titleCache ?? ''
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
     this.shadow.querySelector<HTMLElement>('[part="ok"]')!.textContent = this.t('popconfirm.ok')
     this.shadow.querySelector<HTMLElement>('[part="cancel"]')!.textContent =
