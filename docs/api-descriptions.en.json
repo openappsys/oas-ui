@@ -202,6 +202,7 @@
     "attrs": {
       "fixed": "Pin to the viewport bottom (`position: fixed; bottom: 0`)",
       "items": "Navigation items JSON",
+      "layout": "Layout mode: `stacked` (default, icon above text) / `horizontal` (icon left, text right, same row); invalid values fall back to `stacked` with a warning (deduped)",
       "safe-area": "Adds bottom safe-area padding (`env(safe-area-inset-bottom)`) in fixed mode to avoid the home indicator of notched screens; no effect in non-fixed mode",
       "value": "Value of the active item; defaults to the first available item"
     },
