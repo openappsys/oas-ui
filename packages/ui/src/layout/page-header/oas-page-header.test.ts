@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASPageHeader } from './index.js'
 
 describe('OASPageHeader', () => {
@@ -359,5 +359,120 @@ describe('OASPageHeader', () => {
       // 文字色仍走主题前景 token（ghost 不引入新颜色）
       expect(cssOf(el)).toContain('var(--oas-color-text-primary)')
     })
+  })
+})
+
+// ===== responsive 响应式紧凑 =====
+
+describe('OASPageHeader responsive 响应式紧凑', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+  })
+
+  it('responsive 列入 observedAttributes', () => {
+    expect(OASPageHeader.observedAttributes).toContain('responsive')
+  })
+
+  it('缺省不紧凑；responsive + 未布局（clientWidth=0）不误判紧凑', () => {
+    const el = new OASPageHeader()
+    el.setAttribute('title', '标题')
+    document.body.appendChild(el)
+    expect(el.hasAttribute('data-compact')).toBe(false)
+    el.setAttribute('responsive', '')
+    expect(el.hasAttribute('data-compact')).toBe(false)
+  })
+
+  it('RO 驱动：窄于 768 加 data-compact（紧凑布局），恢复宽度移除', () => {
+    let roCb: (() => void) | null = null
+    class FakeRO {
+      cb: () => void
+      constructor(cb: () => void) {
+        this.cb = cb
+        roCb = cb
+      }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
+    const el = new OASPageHeader()
+    el.setAttribute('title', '标题')
+    el.setAttribute('responsive', '')
+    document.body.appendChild(el)
+    expect(roCb).not.toBeNull()
+    // 初始未布局：不紧凑
+    expect(el.hasAttribute('data-compact')).toBe(false)
+    // 窄于 768 → 紧凑
+    Object.defineProperty(el, 'clientWidth', { value: 400, configurable: true })
+    roCb!()
+    expect(el.hasAttribute('data-compact')).toBe(true)
+    // 恢复宽度（>= 768）→ 移除紧凑标记
+    Object.defineProperty(el, 'clientWidth', { value: 900, configurable: true })
+    roCb!()
+    expect(el.hasAttribute('data-compact')).toBe(false)
+  })
+
+  it('非 responsive 时不建立 ResizeObserver（默认行为不变）', () => {
+    let constructed = 0
+    class FakeRO {
+      constructor(_cb: () => void) {
+        constructed++
+      }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
+    const el = new OASPageHeader()
+    el.setAttribute('title', '标题')
+    document.body.appendChild(el)
+    expect(constructed).toBe(0)
+  })
+
+  it('CSS：紧凑态标题字号降档（xl→lg）、副标题字号 sm、.row 允许换行（flex-wrap）', () => {
+    const el = new OASPageHeader()
+    document.body.appendChild(el)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/:host\(\[data-compact\]\)\s+\.row\s*\{[^}]*flex-wrap:\s*wrap/)
+    expect(css).toMatch(
+      /:host\(\[data-compact\]\)\s+\.title\s*\{[^}]*font-size:\s*var\(--oas-font-size-lg\)/,
+    )
+    expect(css).toMatch(
+      /:host\(\[data-compact\]\)\s+\.subtitle\s*\{[^}]*font-size:\s*var\(--oas-font-size-sm\)/,
+    )
+  })
+
+  it('onCleanup：断开连接清理 ResizeObserver（重连幂等重建）', () => {
+    class FakeRO {
+      constructor(_cb: () => void) {}
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeRO as unknown as typeof ResizeObserver)
+    const el = new OASPageHeader()
+    el.setAttribute('responsive', '')
+    document.body.appendChild(el)
+    const spy = vi.spyOn(FakeRO.prototype, 'disconnect')
+    el.remove()
+    expect(spy).toHaveBeenCalled()
+    // 重连后 update 幂等重建观察器
+    let constructed = 0
+    class FakeRO2 {
+      constructor(_cb: () => void) {
+        constructed++
+      }
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+    vi.stubGlobal('ResizeObserver', FakeRO2 as unknown as typeof ResizeObserver)
+    document.body.appendChild(el)
+    expect(constructed).toBe(1)
   })
 })

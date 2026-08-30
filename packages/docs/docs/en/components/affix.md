@@ -57,6 +57,20 @@ Scroll this page down and observe the button being pinned as it approaches the b
   </div>
 </DemoBlock>
 
+## Teleport to a target container (append-to)
+
+`append-to` specifies a target container by CSS selector: while pinned, the content node is **appended into the target container** — `fixed` positioning stays viewport-relative, but the node is actually mounted under the target container, escaping clipping by ancestors with `overflow: hidden` (a typical use case: teleporting into a drawer/dialog body, combined with `target` scrolling the same container); it moves back to its original placeholder position on unpin. A selector without matches logs a console warning once and falls back to no teleport. Event bubbling is unaffected (`oas-change` is a composed event crossing Shadow boundaries).
+
+<DemoBlock title="Teleport into a target container">
+  <div id="affix-scroll" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
+    <oas-affix target="#affix-scroll" append-to="#affix-pin-zone" offset="88">
+      <oas-button>Appended into the target zone while pinned</oas-button>
+    </oas-affix>
+    <p style="margin-top: 300px; color: var(--oas-color-text-secondary)">Scroll this container down: while pinned, the button node is appended into the dashed target zone below (`fixed` stays viewport-relative); it moves back when unpinned.</p>
+    <div id="affix-pin-zone" style="margin-top: var(--oas-space-4); border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-3); color: var(--oas-color-text-tertiary); font-size: var(--oas-font-size-sm)">Target zone #affix-pin-zone: the content is teleported here while pinned</div>
+  </div>
+</DemoBlock>
+
 ## Pin state event
 
 `oas-change` fires whenever the pin state actually flips (`detail: { fixed, top }`) — `fixed` indicates whether it is pinned; `top` is the reference pin position (`offset` for top pinning; the element's current `top` for bottom pinning).
@@ -86,6 +100,7 @@ onMounted(() => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `append-to` | Teleport target container selector (CSS selector); the content node is appended into the target container while pinned (fixed positioning stays viewport-relative, escaping overflow clipping by ancestors) and moved back on unpin; a non-matching selector warns once and falls back to no teleport | `string` | — |
 | `offset` | Pin trigger distance (px) | `string` | `0` |
 | `position` | Pin direction: top (default, pinned when the top edge reaches) / bottom (pinned when the bottom edge reaches); invalid values fall back to top | `AffixPosition` | `top` |
 | `target` | Scroll container selector (CSS selector); falls back to window scroll with a console warning when no element matches | `string` | — |

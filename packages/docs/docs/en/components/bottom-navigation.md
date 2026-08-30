@@ -120,6 +120,16 @@ The `hide-on-scroll` boolean attribute (to be combined with `fixed`): the bar sl
   <oas-bottom-navigation id="bn-label-active" show-label="active" value="home" style="width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Messages","icon":"mail","value":"mail","badge":"5"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
 </DemoBlock>
 
+## Selected-item lift animation (shift)
+
+The `shift` boolean attribute lifts the selected item: its icon moves up slightly (`translateY(-2px)`) and scales up (`scale 1.08`) with the label scaling up too, while unselected items settle back; a pure CSS transition (transform only, no layout impact), disabled under `prefers-reduced-motion`.
+
+<DemoBlock title="shift selected-item animation">
+  <oas-bottom-navigation id="bn-shift" shift value="home" style="width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Search","icon":"search","value":"search"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+</DemoBlock>
+
+Click to switch the selected item and observe the icon lifting/scaling up and unselected items settling back smoothly.
+
 ## Variable customization
 
 Pure CSS variable openings (no attribute); dark mode picks up tokens automatically:
@@ -142,6 +152,7 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 | `items` | Navigation items JSON | `string` | `[]` |
 | `layout` | Layout mode: `stacked` (default, icon above text) / `horizontal` (icon left, text right, same row); invalid values fall back to `stacked` with a warning (deduped) | `string` | `stacked` |
 | `safe-area` | Adds bottom safe-area padding (`env(safe-area-inset-bottom)`) in fixed mode to avoid the home indicator of notched screens; no effect in non-fixed mode | `boolean` | — |
+| `shift` | Selected-item lift animation: the selected tab's icon lifts slightly (translateY(-2px)) and scales up (scale 1.08) with the label scaling up too, unselected items settle back; pure CSS transition (transform only, no layout impact), disabled under prefers-reduced-motion | `boolean` | — |
 | `show-label` | Label display mode: `true` (default, all items show text) / `active` (icon-only compact mode: only the selected item shows text, unselected items show only the icon — each tab's accessible name is backed by an auto-written `aria-label` from the item label, unaffected by the CSS hide); invalid values fall back to `true` with a warning (deduped) | `string` | `true` |
 | `value` | Value of the active item; defaults to the first available item | — | — |
 

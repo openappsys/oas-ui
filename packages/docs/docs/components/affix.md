@@ -57,6 +57,20 @@
   </div>
 </DemoBlock>
 
+## 传送到指定容器（append-to）
+
+`append-to` 指定目标容器（CSS 选择器）：吸附时把内容节点**传送到目标容器内**——`fixed` 定位仍相对视口，但节点实际挂载到目标容器下，可绕开 `overflow: hidden` 等祖先裁切（典型场景：传送到抽屉/弹层内部，配合 `target` 同一容器滚动）；解除吸附时移回占位处原位。目标容器无匹配时 console 告警一次并回落不传送。事件冒泡不受影响（`oas-change` 为 composed 事件，跨 Shadow 边界）。
+
+<DemoBlock title="传送到目标容器">
+  <div id="affix-scroll" style="height: 200px; overflow: auto; border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-4); background: var(--oas-color-bg-hover)">
+    <oas-affix target="#affix-scroll" append-to="#affix-pin-zone" offset="88">
+      <oas-button>吸附时传送到下方目标区</oas-button>
+    </oas-affix>
+    <p style="margin-top: 300px; color: var(--oas-color-text-secondary)">向下滚动本容器：吸附时按钮节点会被传送到下方虚线目标区内（`fixed` 相对视口不变）；滚回解除吸附时移回原位。</p>
+    <div id="affix-pin-zone" style="margin-top: var(--oas-space-4); border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); padding: var(--oas-space-3); color: var(--oas-color-text-tertiary); font-size: var(--oas-font-size-sm)">目标区 #affix-pin-zone：吸附时内容传送到这里</div>
+  </div>
+</DemoBlock>
+
 ## 吸附状态事件
 
 吸附状态真实翻转时派发 `oas-change`（`detail: { fixed, top }`）——`fixed` 是否吸附；`top` 为吸附参考位置（top 吸附 = `offset`；bottom 吸附 = 元素当前 `top`）。
@@ -86,6 +100,7 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `append-to` | 传送目标容器选择器（CSS 选择器）；吸附时内容节点传送到目标容器内（fixed 仍相对视口，可绕开 overflow 祖先裁切），解除吸附移回原位；无匹配时告警一次并回落不传送 | `string` | — |
 | `offset` | 吸附触发距离（px） | `string` | `0` |
 | `position` | 吸附方向：top（默认，顶缘触达吸附）/ bottom（底缘触达吸附）；非法值回落 top | `AffixPosition` | `top` |
 | `target` | 滚动容器选择器（CSS 选择器）；选择器无匹配时告警并回落 window 滚动 | `string` | — |
