@@ -23,6 +23,7 @@ const STYLE = `
 
 const warnedPositions = new Set<string>()
 const warnedTargets = new Set<string>()
+const warnedAppendTargets = new Set<string>()
 
 /** 非法 position 归一化：回落 top 并在 dev 下 console.warn 一次（同值去重） */
 function normalizePosition(raw: string): AffixPosition {
@@ -36,7 +37,7 @@ function normalizePosition(raw: string): AffixPosition {
 
 export class OASAffix extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['offset', 'position', 'target']
+    return ['offset', 'position', 'target', 'append-to']
   }
 
   private wrap: HTMLElement | null = null
@@ -64,6 +65,7 @@ export class OASAffix extends OASElement {
     window.addEventListener('resize', this.handleResize)
     this.onCleanup(() => window.removeEventListener('resize', this.handleResize))
     this.onCleanup(() => this.unbindScroll())
+    // 断开连接时把已传送的 wrap 归位回 placeholder（shadow 随组件整体回收，不遗留孤儿节点）
     this.bindScroll()
   }
 
@@ -108,6 +110,50 @@ export class OASAffix extends OASElement {
       return null
     }
     return el
+  }
+
+  /** 解析 append-to 选择器；无匹配时告警一次并回落 null（不传送，wrap 保持原位） */
+  private resolveAppendTarget(sel: string): HTMLElement | null {
+    if (!sel) return null
+    const el = document.querySelector<HTMLElement>(sel)
+    if (!el) {
+      if (!warnedAppendTargets.has(sel)) {
+        warnedAppendTargets.add(sel)
+        console.warn(`[oas-affix] append-to "${sel}" 未匹配到元素，已回落不传送（wrap 保持原位）`)
+      }
+      return null
+    }
+    return el
+  }
+
+  /**
+   * teleport 传送：吸附且存在有效 append-to 目标容器时，把 `.wrap` 节点（连同搬运进来的
+   * light DOM 实体内容）append 到目标容器——**移动前先把 host 的 light DOM 子节点搬入
+   * wrap**（slot 投影随 wrap 移出 shadow 而断开，实体内容必须实体化随行）；解除吸附时
+   * 内容搬回 host（light DOM 原位）、wrap 归位 placeholder（slot 投影恢复）。
+   * 不移动 host 本身——host 移动会触发 disconnect/connect 循环（基类 onCleanup 全清 +
+   * shadow 重建）。局限：传送期间事件冒泡沿新祖先树（不经过 host），文档需注明。
+   */
+  private syncTeleport(stuck: boolean): void {
+    if (!this.wrap || !this.placeholder) return
+    const destSel = this.getAttr('append-to', '')
+    const dest = destSel ? this.resolveAppendTarget(destSel) : null
+    if (stuck && dest) {
+      if (this.wrap.parentNode !== dest) {
+        // light DOM 实体内容搬入 wrap（slot 投影断开，内容实体随行）
+        for (const kid of [...this.childNodes]) this.wrap.appendChild(kid)
+        dest.appendChild(this.wrap)
+      }
+      return
+    }
+    // 解除/目标失效：内容搬回 host（light DOM 原位）、wrap 归位 placeholder
+    if (this.wrap.parentNode !== this.placeholder) {
+      for (const kid of [...this.wrap.childNodes]) {
+        if ((kid as Element).localName === 'slot') continue
+        this.appendChild(kid)
+      }
+      this.placeholder.appendChild(this.wrap)
+    }
   }
 
   /** 当前滚动监听源的滚动位置（window scrollY / 容器 scrollTop） */
@@ -228,5 +274,7 @@ export class OASAffix extends OASElement {
       this.stuckState = stuck
       this.emit('change', { fixed: stuck, top: fixedTop })
     }
+    // teleport 传送与归位（吸附判定之后、状态同步之后执行；属性变化重入 apply 时即时归位/重传）
+    this.syncTeleport(stuck)
   }
 }
