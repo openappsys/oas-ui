@@ -4,6 +4,8 @@ import { iconRegistry, type IconName } from '@oas-ui/icons'
 export interface SpeedDialAction {
   label: string
   icon?: string
+  /** 只渲染 icon 的圆形小钮形态；label 视觉隐藏，hover/focus 时作为气泡浮现（需配合 icon 使用） */
+  'hide-label'?: boolean
 }
 
 /** oas-open 收起/展开的来源标记：toggle=主钮点击 / outside=外部点击 / escape=Esc / select=选择子动作 / hover=悬停触发 */
@@ -129,6 +131,61 @@ const STYLE = `
   width: 1em;
   height: 1em;
 }
+/* hide-label（icon-only）：圆形小钮，仅显示图标；label 常驻 DOM 但视觉隐藏，
+   hover/focus-visible 时切换为绝对定位气泡浮现（纯 CSS 转场，无 JS 浮层） */
+.action.icon-only {
+  position: relative;
+  width: var(--oas-control-height-md);
+  height: var(--oas-control-height-md);
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+  font-size: var(--oas-font-size-md);
+}
+.action.icon-only .label {
+  position: absolute;
+  padding: var(--oas-space-1) var(--oas-space-2);
+  border-radius: var(--oas-radius-sm);
+  background: var(--oas-tooltip-bg, var(--oas-color-text-primary));
+  color: var(--oas-tooltip-color, var(--oas-color-bg));
+  font-size: var(--oas-font-size-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--oas-transition-base) var(--oas-ease-out),
+    visibility var(--oas-transition-base);
+  z-index: 5;
+}
+/* 气泡浮现：hover（指针）与 focus-visible（键盘/触屏聚焦）都可见；仅展开态作用 */
+.dial.open .action.icon-only:hover .label,
+.dial.open .action.icon-only:focus-visible .label {
+  opacity: 1;
+  visibility: visible;
+}
+/* 气泡定位随展开方向自适应（定位于动作外侧，不遮挡相邻动作）：
+   up 展开 → 动作左侧；down 展开 → 动作右侧；left/right 展开 → 动作上方 */
+.dial[data-dir='up'] .action.icon-only .label {
+  right: calc(100% + var(--oas-space-2));
+  top: 50%;
+  transform: translateY(-50%);
+}
+.dial[data-dir='down'] .action.icon-only .label {
+  left: calc(100% + var(--oas-space-2));
+  top: 50%;
+  transform: translateY(-50%);
+}
+.dial[data-dir='left'] .action.icon-only .label {
+  bottom: calc(100% + var(--oas-space-2));
+  left: 50%;
+  transform: translateX(-50%);
+}
+.dial[data-dir='right'] .action.icon-only .label {
+  bottom: calc(100% + var(--oas-space-2));
+  left: 50%;
+  transform: translateX(-50%);
+}
 /* 方向布局：首个子动作始终最靠近主按钮 */
 .dial[data-dir='up'] .actions {
   bottom: calc(100% + var(--oas-space-2));
@@ -159,11 +216,14 @@ const STYLE = `
   opacity: 1;
   transition-delay: calc(var(--cascade-i, 0) * 30ms);
 }
-/* 减少动效偏好：级联 delay 归零、子动作过渡停用（一次性出现，对齐可访问性） */
+/* 减少动效偏好：级联 delay 归零、子动作与气泡过渡停用（一次性出现，对齐可访问性） */
 @media (prefers-reduced-motion: reduce) {
   .action {
     transition: none;
     transition-delay: 0ms;
+  }
+  .action.icon-only .label {
+    transition: none;
   }
 }
 `
@@ -172,7 +232,9 @@ const STYLE = `
  * oas-speed-dial —— 悬浮主按钮 + 展开子动作。
  *
  * 属性（kebab-case）：
- * - `actions`：JSON `[{ label, icon? }]`
+ * - `actions`：JSON `[{ label, icon?, 'hide-label'? }]`——`hide-label: true` 时子动作
+ *   只渲染 icon 为圆形小钮，label 视觉隐藏并在 hover/focus-visible 时作为气泡浮现；
+ *   无 icon 的 hide-label 动作回落显示 label（渲染降级，console.warn 告警一次）
  * - `direction`：`up`/`down`/`left`/`right`（默认 up）
  * - `open`：展开态（受控）
  * - `trigger`：`click`（默认）| `hover`——hover 派 mouseenter 展开、mouseleave 收起（120ms 离开宽限期），触屏自动回落 click
@@ -206,6 +268,8 @@ export class OASSpeedDial extends OASElement {
   private hoverHideTimer: ReturnType<typeof setTimeout> | null = null
   /** hover 触发展开时置位：syncOpen 跳过「自动聚焦首项」，不抢焦点 */
   private skipFocusOnOpen = false
+  /** hide-label 但无可渲染 icon 的降级告警：只告警一次 */
+  private hideLabelFallbackWarned = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -288,6 +352,16 @@ export class OASSpeedDial extends OASElement {
       // 级联动画步进：展开时 delay = index × 30ms（CSS 侧 calc(var(--cascade-i) * 30ms) 消费）
       btn.style.setProperty('--cascade-i', String(index))
       btn.addEventListener('click', () => this.select(index, action))
+      // hide-label（icon-only）：仅当 icon 真实可渲染才有意义；否则回落显示 label（降级告警一次）
+      const iconOnly = action['hide-label'] === true
+      const hasRenderableIcon = !!action.icon && !!iconRegistry[action.icon as IconName]
+      if (iconOnly && hasRenderableIcon) {
+        btn.classList.add('icon-only')
+        // 可访问名 = label 文本（label 视觉隐藏但读屏可达）
+        btn.setAttribute('aria-label', action.label)
+      } else if (iconOnly) {
+        this.warnHideLabelFallback()
+      }
       if (action.icon) {
         const ic = this.createIcon(action.icon)
         if (ic) btn.appendChild(ic)
@@ -298,6 +372,15 @@ export class OASSpeedDial extends OASElement {
       btn.appendChild(label)
       actionsEl.appendChild(btn)
     })
+  }
+
+  /** hide-label 但无可渲染 icon 的渲染降级：回落显示 label，console.warn 告警一次 */
+  private warnHideLabelFallback(): void {
+    if (this.hideLabelFallbackWarned) return
+    this.hideLabelFallbackWarned = true
+    console.warn(
+      '[oas-speed-dial] 子动作设置了 hide-label 但缺少可渲染的 icon，已回落为显示 label（icon-only 形态需要 icon）',
+    )
   }
 
   /** 用 iconRegistry 渲染图标（内联 SVG，跟随 currentColor） */
