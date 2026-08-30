@@ -1757,7 +1757,7 @@
   },
   "oas-speed-dial": {
     "attrs": {
-      "actions": "Sub-action JSON",
+      "actions": "Sub-action JSON (`[{ label, icon?, 'hide-label'? }]`; `hide-label: true` renders the sub-action as a circular icon-only button with the label visually hidden, shown as a text bubble on hover/keyboard focus; falls back to showing the label when no renderable icon is provided)",
       "direction": "Expansion direction",
       "open": "Expanded state (controlled)",
       "trigger": "Trigger mode: `click` (default) | `hover` (open on hover, collapse on leave with a 120ms grace period; falls back to click on touch devices)"

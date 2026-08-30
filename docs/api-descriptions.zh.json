@@ -1757,7 +1757,7 @@
   },
   "oas-speed-dial": {
     "attrs": {
-      "actions": "子动作 JSON",
+      "actions": "子动作 JSON（`[{ label, icon?, 'hide-label'? }]`；`hide-label: true` 时子动作只渲染 icon 为圆形小钮，label 视觉隐藏、hover/键盘聚焦时浮出文字气泡；未提供可渲染 icon 时回落显示 label）",
       "direction": "展开方向",
       "open": "展开态（受控）",
       "trigger": "触发方式：`click`（默认）| `hover`（悬停开、移出收起，120ms 离开宽限期；触屏自动回落 click）"
