@@ -835,4 +835,146 @@ describe('OASPagination', () => {
       expect(cloneInner!.getAttribute('data-page')).toBe('{page}') // 属性保持原样
     }
   })
+
+  // ===== 批次 19：show-more 总数未知形态 =====
+
+  it('show-more：total 未知（≤0）时渲染「上一页 / 更多 / 下一页」三钮，无页码序列与总数', () => {
+    const el = mount({ 'show-more': '', total: '0' })
+    expect(el.shadowRoot!.querySelector('[part="prev"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="more"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="next"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBe(0)
+    expect(el.shadowRoot!.querySelector('[part="ellipsis"]')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="total"]')).toBeNull()
+  })
+
+  it('show-more：更多钮为不可点状态指示（disabled + aria-disabled，part=more，文案走 i18n「更多」）', () => {
+    const el = mount({ 'show-more': '', total: '0' })
+    const more = el.shadowRoot!.querySelector('[part="more"]') as HTMLButtonElement
+    expect(more).not.toBeNull()
+    expect(more.disabled).toBe(true)
+    expect(more.getAttribute('aria-disabled')).toBe('true')
+    expect(more.textContent).toBe('更多')
+    expect(more.classList.contains('btn')).toBe(true)
+  })
+
+  it('show-more：prev/next 点击派发 oas-change{page} 并累加 current', () => {
+    const el = mount({ 'show-more': '', total: '0', current: '3' })
+    let details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    ;(el.shadowRoot!.querySelector('[part="next"]') as HTMLElement).click()
+    expect(details[0]).toEqual({ page: 4 })
+    expect(el.getAttribute('current')).toBe('4')
+    ;(el.shadowRoot!.querySelector('[part="prev"]') as HTMLElement).click()
+    expect(details[1]).toEqual({ page: 3 })
+    expect(el.getAttribute('current')).toBe('3')
+  })
+
+  it('show-more：current=1 时 prev 禁用，current>1 可点；next 始终可点', () => {
+    const elFirst = mount({ 'show-more': '', total: '0', current: '1' })
+    expect((elFirst.shadowRoot!.querySelector('[part="prev"]') as HTMLButtonElement).disabled).toBe(
+      true,
+    )
+    expect((elFirst.shadowRoot!.querySelector('[part="next"]') as HTMLButtonElement).disabled).toBe(
+      false,
+    )
+    const elMid = mount({ 'show-more': '', total: '0', current: '2' })
+    expect((elMid.shadowRoot!.querySelector('[part="prev"]') as HTMLButtonElement).disabled).toBe(
+      false,
+    )
+  })
+
+  it('show-more：current 无上界夹取（外部设大值保持为事实状态，不受总页数约束）', () => {
+    const el = mount({ 'show-more': '', total: '0', current: '99' })
+    expect(el.getAttribute('current')).toBe('99')
+    expect(el.shadowRoot!.querySelector('[part="next"]')).not.toBeNull()
+  })
+
+  it('show-more：total>0 时无效（正常页码渲染，无更多钮）', () => {
+    const el = mount({ 'show-more': '', total: '100', current: '5' })
+    expect(el.shadowRoot!.querySelector('[part="more"]')).toBeNull()
+    expect(el.shadowRoot!.querySelectorAll('[part="page"]').length).toBeGreaterThan(0)
+    const active = el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')
+    expect(active?.textContent).toBe('5')
+  })
+
+  it('show-more：show-jumper 与 page-sizes 隐藏（无总页数不可跳、不可切条数）', () => {
+    const el = mount({
+      'show-more': '',
+      total: '0',
+      'show-jumper': '',
+      'page-sizes': '[10,20,50]',
+    })
+    expect(el.shadowRoot!.querySelector('[part="jumper"]')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="size"]')).toBeNull()
+  })
+
+  it('show-more：hide-on-single 不适用（total 未知不算单页，组件不隐藏）', () => {
+    const el = mount({ 'show-more': '', 'hide-on-single': '', total: '0' })
+    expect(el.hasAttribute('hidden')).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="more"]')).not.toBeNull()
+  })
+
+  it('show-more：total 未设置（视为未知）时同样生效', () => {
+    const el = new OASPagination()
+    el.setAttribute('show-more', '')
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector('[part="more"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="next"]')).not.toBeNull()
+  })
+
+  it('show-more：更多钮文案走 i18n（en More）', () => {
+    setLocale(en)
+    const el = mount({ 'show-more': '', total: '0' })
+    expect((el.shadowRoot!.querySelector('[part="more"]') as HTMLButtonElement).textContent).toBe(
+      'More',
+    )
+    setLocale('zh-CN')
+  })
+
+  // ===== 批次 20：total-boundary 条数切换器自动显隐阈值 =====
+
+  it('total-boundary：total ≤ 阈值时隐藏条数切换器（有 page-sizes 也不渲染）', () => {
+    const el = mount({ 'page-sizes': '[10,20,50]', 'total-boundary': '50', total: '30' })
+    expect(el.shadowRoot!.querySelector('[part="size"]')).toBeNull()
+  })
+
+  it('total-boundary：total > 阈值时渲染条数切换器', () => {
+    const el = mount({ 'page-sizes': '[10,20,50]', 'total-boundary': '50', total: '100' })
+    const select = el.shadowRoot!.querySelector('[part="size"]') as HTMLSelectElement
+    expect(select).not.toBeNull()
+    expect(select.options.length).toBe(3)
+  })
+
+  it('total-boundary：未设置时维持现状（有 page-sizes 即显示，零回归）', () => {
+    const el = mount({ 'page-sizes': '[10,20,50]', total: '30' })
+    expect(el.shadowRoot!.querySelector('[part="size"]')).not.toBeNull()
+  })
+
+  it('total-boundary：切换器显隐切换时 current 保持夹取正确', () => {
+    const el = mount({ 'page-sizes': '[10,20]', 'total-boundary': '50', total: '30', current: '9' })
+    // total=30 ≤ 50：切换器隐藏；pageCount=3，current 夹取到 3
+    expect(el.shadowRoot!.querySelector('[part="size"]')).toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')!.textContent).toBe(
+      '3',
+    )
+    // total 增大到 100 > 50：切换器显示，current 属性 9 在 10 页内合法 → 视图第 9 页
+    el.setAttribute('total', '100')
+    expect(el.shadowRoot!.querySelector('[part="size"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[part="page"][aria-current="true"]')!.textContent).toBe(
+      '9',
+    )
+  })
+
+  it('total-boundary：非法值（非数字）忽略，有 page-sizes 即显示', () => {
+    const el = mount({ 'page-sizes': '[10,20]', 'total-boundary': 'abc', total: '10' })
+    expect(el.shadowRoot!.querySelector('[part="size"]')).not.toBeNull()
+  })
+
+  it('total-boundary：空字符串属性（total-boundary=""）按 0 处理（total>0 才显示）', () => {
+    const el = mount({ 'page-sizes': '[10,20]', 'total-boundary': '', total: '0' })
+    expect(el.shadowRoot!.querySelector('[part="size"]')).toBeNull()
+    const el2 = mount({ 'page-sizes': '[10,20]', 'total-boundary': '', total: '10' })
+    expect(el2.shadowRoot!.querySelector('[part="size"]')).not.toBeNull()
+  })
 })

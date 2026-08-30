@@ -1415,7 +1415,9 @@
       "hide-on-single": "Hides the whole component when there is a single page (pageCount ≤ 1)",
       "href-template": "Link mode: renders page/prev/next/first/last as `<a href>` (the `{page}` placeholder is replaced with the target page); middle/right-click and opening in a new tab work natively; degrades to a non-clickable span when disabled",
       "target": "Passthrough to `<a target>` (e.g. `_blank`) in link mode; only applies when `href-template` is set",
-      "responsive": "Responsive: renders in the simple minimal form automatically when the component is narrower than 640px (ResizeObserver on the host; restores when wide enough); equivalent to explicit `simple`"
+      "responsive": "Responsive: renders in the simple minimal form automatically when the component is narrower than 640px (ResizeObserver on the host; restores when wide enough); equivalent to explicit `simple`",
+      "show-more": "Unknown-total form: when total ≤ 0 renders Previous / More / Next (More is a non-clickable status indicator, styled like a page button but muted; prev/next flip current ± 1 and fire oas-change); ignored when total > 0 (normal page numbers); show-jumper / page-sizes / hide-on-single do not apply",
+      "total-boundary": "Page-size switcher visibility threshold: when set, the page-size dropdown renders only when total exceeds the value (hidden when total ≤ threshold); unset keeps current behavior (dropdown shows whenever page-sizes is set)"
     },
     "events": {
       "oas-change": "Flipping `{ page }`; page-size switch `{ page: 1, pageSize }`; quick jump `{ page, pageSize }`",
