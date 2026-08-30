@@ -128,6 +128,27 @@ onMounted(async () => {
 })
 </script>
 
+## 透明背景变体（ghost）
+
+`ghost`：页头透明背景（背景规则置 `none`，标题/文字色保持主题前景 token），footer 分隔线一并去除。适合叠加在有色背景容器/页面上，让底色透出。下面对比容器给了中性底色示意：默认形态保留 footer 分隔线，ghost 无分隔线、纯底色。
+
+<DemoBlock title="ghost 透明背景（有色底容器对比）">
+  <div style="width: 100%; max-width: 640px; background: var(--oas-color-bg-hover); border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)">
+    <oas-page-header ghost title="用户设置" subtitle="ghost：底色透出、无分隔线" back>
+      <div slot="footer" style="display: flex; justify-content: flex-end">
+        <oas-button size="small" type="primary">保存</oas-button>
+      </div>
+    </oas-page-header>
+  </div>
+  <div style="width: 100%; max-width: 640px; background: var(--oas-color-bg-hover); border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)">
+    <oas-page-header title="用户设置（默认）" subtitle="默认形态：保留分隔线">
+      <div slot="footer" style="display: flex; justify-content: flex-end">
+        <oas-button size="small" type="primary">保存</oas-button>
+      </div>
+    </oas-page-header>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### 属性
@@ -135,6 +156,7 @@ onMounted(async () => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `back` | 是否显示返回按钮 | `boolean` | — |
+| `ghost` | 透明背景变体：页头背景规则置 `none`（强制透明，让所在容器/页面底色透出），footer 分隔线一并去除；标题/文字色保持主题前景 token；其余布局不变 | `boolean` | — |
 | `subtitle` | 副标题文案 | `string` | — |
 | `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串） | `string` | — |
 

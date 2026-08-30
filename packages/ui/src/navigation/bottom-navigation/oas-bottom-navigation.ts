@@ -25,6 +25,24 @@ function normalizeLayout(raw: string): BottomNavLayout {
   return 'stacked'
 }
 
+/** label 展示模式：'true'（默认，全部项显示文字）| 'active'（仅选中项显示文字，未选中项只显示 icon） */
+export type BottomNavLabelMode = 'true' | 'active'
+
+const VALID_LABEL_MODES: readonly BottomNavLabelMode[] = ['true', 'active']
+const warnedLabelModes = new Set<string>()
+
+/** 非法 show-label 归一化：回落 true 并在 dev 下 console.warn 一次（同值去重，对齐库内惯例） */
+function normalizeLabelMode(raw: string): BottomNavLabelMode {
+  if ((VALID_LABEL_MODES as readonly string[]).includes(raw)) return raw as BottomNavLabelMode
+  if (!warnedLabelModes.has(raw)) {
+    warnedLabelModes.add(raw)
+    console.warn(
+      `[oas-bottom-navigation] 非法 show-label "${raw}"，已回落 true；合法值：true/active`,
+    )
+  }
+  return 'true'
+}
+
 const STYLE = `
 :host {
   display: block;
@@ -125,6 +143,11 @@ const STYLE = `
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* icon-only 紧凑形态：show-label=active 时未选中项只显示 icon（label 视觉隐藏、不进无障碍树），
+   选中项保留文字；可访问名由 syncState 的 aria-label 补位（取该项 label 文本，读屏不受影响） */
+:host([data-show-label='active']) .tab:not([aria-selected='true']) .tab-label {
+  display: none;
+}
 /* safe-area：仅 fixed 模式加底部安全区内边距（刘海屏 home 指示条避让），非 fixed 无效果 */
 :host(.oas-bottom-navigation--fixed.oas-bottom-navigation--safe-area) .tablist {
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -157,6 +180,9 @@ const STYLE = `
  *   不加 `aria-hidden`（tab 语义与键盘焦点保持可达），滚回即恢复；非 fixed 无效果
  * - `layout`：`stacked`（默认，icon 上文字下）/ `horizontal`（icon 左文字右，同一行）；
  *   非法值回落 stacked 并告警（同值去重）
+ * - `show-label`：label 展示模式——`true`（默认，全部项显示文字）/ `active`（icon-only 紧凑形态：
+ *   仅选中项显示文字，未选中项只显示 icon；label 视觉隐藏后每项 aria-label 自动写入该项 label 文本，
+ *   读屏不受 CSS 隐藏影响）；非法值回落 true 并告警（同值去重）
  *
  * 事件：`oas-change` detail `{ value }`
  *
@@ -166,7 +192,7 @@ const STYLE = `
  */
 export class OASBottomNavigation extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['items', 'value', 'fixed', 'hide-on-scroll', 'safe-area', 'layout']
+    return ['items', 'value', 'fixed', 'hide-on-scroll', 'safe-area', 'layout', 'show-label']
   }
 
   private itemsList: BottomNavItem[] = []
@@ -175,6 +201,8 @@ export class OASBottomNavigation extends OASElement {
   private lastItemsRaw = ''
   private lastValueRaw: string | null = null
   private focusIndex = 0
+  /** label 展示模式（CSS 钩子 data-show-label + aria-label 补位判定；update 时随属性归一化） */
+  private labelMode: BottomNavLabelMode = 'true'
   /** hide-on-scroll 方向判定的滚动基线（null = 未登记，启用时以当前滚动位置为新基线） */
   private lastScrollY: number | null = null
   /** window scroll 监听是否已绑定（连接期间只绑一次，断开清理置 false，重连自动重绑） */
@@ -215,6 +243,10 @@ export class OASBottomNavigation extends OASElement {
     this.syncHideOnScroll()
     // 横排布局标记（CSS 钩子）：非法值回落 stacked + dev 告警（同值去重）
     this.dataset.layout = normalizeLayout(this.getAttr('layout', 'stacked'))
+    // label 展示模式标记（CSS 钩子）：非法值回落 true + dev 告警（同值去重）；
+    // labelMode 供 syncState 做 aria-label 补位判定
+    this.labelMode = normalizeLabelMode(this.getAttr('show-label', 'true'))
+    this.dataset.showLabel = this.labelMode
     // 子元素通道观察器（重连后重建；items 属性显式时子元素被忽略，观察器空转无副作用）
     this.ensureChildObserver()
     const itemsRaw = this.getAttribute('items') ?? ''
@@ -367,6 +399,13 @@ export class OASBottomNavigation extends OASElement {
       btn.setAttribute('role', 'tab')
       btn.setAttribute('aria-selected', String(isSelected))
       btn.setAttribute('aria-disabled', String(item.disabled ?? false))
+      // icon-only 形态 a11y 补位：active 模式未选中项 label 被 CSS display:none 隐藏
+      // （不进无障碍树），每项可访问名改由 aria-label 承载（取该项 label 文本）
+      if (this.labelMode === 'active' && item.label) {
+        btn.setAttribute('aria-label', item.label)
+      } else {
+        btn.removeAttribute('aria-label')
+      }
       if (item.disabled) btn.tabIndex = -1
       else btn.tabIndex = i === this.focusIndex ? 0 : -1
     })

@@ -64,6 +64,14 @@ const STYLE = `
   border-top: 1px solid var(--oas-color-border);
   padding-top: var(--oas-space-3);
 }
+/* ghost 透明背景变体：页头背景规则置 none（强制透明，让所在容器/页面底色透出），
+   footer 分隔线一并去除；标题/文字色保持 :host 既有主题前景 token，其余布局不变 */
+:host(.oas-page-header--ghost) {
+  background: none;
+}
+:host(.oas-page-header--ghost) .footer {
+  border-top: none;
+}
 /* hidden 属性会被作者级 display 覆盖，需显式补回（空区块渲染层不空占位） */
 .breadcrumb[hidden] {
   display: none;
@@ -88,9 +96,21 @@ const STYLE = `
 }
 `
 
+/**
+ * oas-page-header —— 页面头部信息区。
+ *
+ * 属性（kebab-case）：
+ * - `title` / `subtitle`：标题/副标题文案（渲染进可见标题区后 title 即从宿主移除，不残留悬浮提示）
+ * - `back`：布尔，显示返回按钮（点击派发 `oas-back`）
+ * - `ghost`：布尔，透明背景变体——背景规则置 none、footer 分隔线去除，文字色保持主题前景 token；
+ *   适合叠加在有色背景容器/页面上让底色透出；缺省 false 保持默认形态
+ *
+ * 插槽：正文默认插槽；`breadcrumb` / `footer` / `avatar` 无内容时不渲染；
+ * `title` / `subtitle` / `back-icon` 插槽有内容时覆盖属性/内置图标。
+ */
 export class OASPageHeader extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['title', 'back', 'subtitle']
+    return ['title', 'back', 'subtitle', 'ghost']
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致（back 存在性由宿主属性决定） */
@@ -165,6 +185,8 @@ export class OASPageHeader extends OASElement {
   }
 
   protected override update(): void {
+    // ghost 透明背景变体：宿主类名作 CSS 钩子（背景置 none + footer 分隔线去除，颜色走 token）
+    this.classList.toggle('oas-page-header--ghost', this.hasAttr('ghost'))
     // 返回按钮 aria-label locale 驱动（setLocale 切换自动重刷）
     const back = this.shadow.querySelector<HTMLElement>('[part="back"]')
     if (back) back.setAttribute('aria-label', this.t('pageHeader.back'))

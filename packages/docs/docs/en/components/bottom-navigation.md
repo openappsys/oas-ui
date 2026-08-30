@@ -112,6 +112,14 @@ The `hide-on-scroll` boolean attribute (to be combined with `fixed`): the bar sl
   <oas-bottom-navigation id="bn-layout-h" layout="horizontal" value="home" style="width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Messages","icon":"mail","value":"mail","badge":"5"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
 </DemoBlock>
 
+## Icon-only compact mode (show-label)
+
+`show-label="active"` shows text only on the selected item; unselected items show just the icon (compact mode). Unselected labels are visually hidden (CSS `display: none`) while the selected item keeps its text; every tab's accessible name is backed by an auto-written `aria-label` (the item's label text), so screen readers are unaffected by the CSS hide. Default `true` shows text on all items; invalid values fall back to `true` with a warning (deduped).
+
+<DemoBlock title="Icon-only compact mode (text only on the selected item)">
+  <oas-bottom-navigation id="bn-label-active" show-label="active" value="home" style="width: 100%; max-width: 480px" items='[{"label":"Home","icon":"user","value":"home"},{"label":"Messages","icon":"mail","value":"mail","badge":"5"},{"label":"Mine","icon":"gear","value":"mine"}]'></oas-bottom-navigation>
+</DemoBlock>
+
 ## Variable customization
 
 Pure CSS variable openings (no attribute); dark mode picks up tokens automatically:
@@ -134,6 +142,7 @@ Pure CSS variable openings (no attribute); dark mode picks up tokens automatical
 | `items` | Navigation items JSON | `string` | `[]` |
 | `layout` | Layout mode: `stacked` (default, icon above text) / `horizontal` (icon left, text right, same row); invalid values fall back to `stacked` with a warning (deduped) | `string` | `stacked` |
 | `safe-area` | Adds bottom safe-area padding (`env(safe-area-inset-bottom)`) in fixed mode to avoid the home indicator of notched screens; no effect in non-fixed mode | `boolean` | — |
+| `show-label` | Label display mode: `true` (default, all items show text) / `active` (icon-only compact mode: only the selected item shows text, unselected items show only the icon — each tab's accessible name is backed by an auto-written `aria-label` from the item label, unaffected by the CSS hide); invalid values fall back to `true` with a warning (deduped) | `string` | `true` |
 | `value` | Value of the active item; defaults to the first available item | — | — |
 
 | Event | Description |
