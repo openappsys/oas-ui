@@ -538,11 +538,14 @@ const STYLE = `
    形状链：首项左平右凸 → 中间项左凹右凸（凹口恰好嵌住前项凸尖）→ 末项左凹右平 */
 .steps[data-arrow='true'] {
   --oas-steps-arrow: 10px;
+  /* 分格互嵌：块间无间距（gap 0），相邻块负 margin 让凸尖插入凹槽、无缝衔接 */
+  gap: 0;
 }
 .steps[data-arrow='true'] .item {
   display: flex;
   align-items: center;
   gap: var(--oas-space-2);
+  margin-inline-start: calc(-1 * var(--oas-steps-arrow));
   padding: var(--oas-space-2) var(--oas-space-3);
   padding-inline-start: calc(var(--oas-space-3) + var(--oas-steps-arrow));
   text-align: start;
@@ -558,6 +561,7 @@ const STYLE = `
 }
 /* 首项平头：左缘无凹口（内容起点无需避让） */
 .steps[data-arrow='true'] .item:first-child {
+  margin-inline-start: 0;
   padding-inline-start: var(--oas-space-4);
   clip-path: polygon(
     0 0,
@@ -633,24 +637,33 @@ const STYLE = `
 .steps[data-arrow='true'] .item-ellipsis:hover {
   filter: none;
 }
-/* reverse 镜像：视觉流向反转——视觉首项（DOM 末项）左平右凸、视觉末项（DOM 首项）左凹右平、中间左凸右凹 */
+/* reverse 镜像：视觉流向反转——视觉首项（DOM 末项）左平右凸、视觉末项（DOM 首项）左凹右平、
+   中间（DOM 中段）左凹右凸（与非 reverse 同形——clip 是元素自身形状，与容器 flex 方向无关，
+   row-reverse 只翻转元素顺序，中间块仍需"左凹（嵌前块右凸）右凸（供后块左凹）"互嵌形） */
 .steps[data-arrow='true'][data-reverse='true'] .item {
-  padding-inline-start: var(--oas-space-3);
-  padding-inline-end: calc(var(--oas-space-3) + var(--oas-steps-arrow));
+  margin-inline-start: calc(-1 * var(--oas-steps-arrow));
+  margin-inline-end: calc(-1 * var(--oas-steps-arrow));
+  padding-inline-start: calc(var(--oas-space-3) + var(--oas-steps-arrow));
+  padding-inline-end: var(--oas-space-3);
   clip-path: polygon(
-    var(--oas-steps-arrow) 0,
-    100% 0,
-    100% 100%,
-    var(--oas-steps-arrow) 100%,
-    0 50%
+    0 0,
+    calc(100% - var(--oas-steps-arrow)) 0,
+    100% 50%,
+    calc(100% - var(--oas-steps-arrow)) 100%,
+    0 100%,
+    var(--oas-steps-arrow) 50%
   );
 }
 .steps[data-arrow='true'][data-reverse='true'] .item:first-child {
+  margin-inline-start: 0;
+  margin-inline-end: calc(-1 * var(--oas-steps-arrow));
   padding-inline-start: calc(var(--oas-space-3) + var(--oas-steps-arrow));
   padding-inline-end: var(--oas-space-4);
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, var(--oas-steps-arrow) 50%);
 }
 .steps[data-arrow='true'][data-reverse='true'] .item:last-child {
+  margin-inline-start: 0;
+  margin-inline-end: 0;
   padding-inline-start: var(--oas-space-4);
   padding-inline-end: var(--oas-space-3);
   clip-path: polygon(
