@@ -244,6 +244,21 @@ The per-step `prefix` field renders custom numbering text (e.g. "A", "01") at th
   <oas-steps style="margin-top: 16px" arrow reverse current="2" steps='[{"title":"Create order"},{"title":"Confirm payment"},{"title":"Complete shipping"}]'></oas-steps>
 </DemoBlock>
 
+## Arrow segment customization
+
+`arrow` segment geometry and colors are exposed as CSS variables: `--oas-steps-arrow-gap` controls the gap between segments (set to `0` for interlocking flush edges, with neighbors distinguished by per-segment colors), `--oas-steps-arrow` controls the convex tip depth (deeper = blunter tip / smaller angle), and `--oas-steps-arrow-item-bg-N` (N=1..8) overrides the background color per segment (applies by DOM position; falls back to the status color when unset; beyond 8 segments it falls back to the status color).
+
+<DemoBlock title="Custom gap and per-segment colors (gap 0 interlock)">
+  <oas-steps arrow style="--oas-steps-arrow-gap: 0; --oas-steps-arrow-item-bg-1: color-mix(in srgb, var(--oas-color-primary) 20%, transparent); --oas-steps-arrow-item-bg-2: color-mix(in srgb, var(--oas-color-success) 20%, transparent); --oas-steps-arrow-item-bg-3: color-mix(in srgb, var(--oas-color-warning) 20%, transparent); --oas-steps-arrow-item-bg-4: color-mix(in srgb, var(--oas-color-danger) 20%, transparent)" steps='[{"title":"Primary block","status":"wait"},{"title":"Success block","status":"wait"},{"title":"Warning block","status":"wait"},{"title":"Danger block","status":"wait"}]'></oas-steps>
+</DemoBlock>
+
+<DemoBlock title="Arrow depth / angle comparison">
+  <oas-space direction="vertical" size="large" style="width: 100%">
+    <oas-steps arrow current="1" steps='[{"title":"Default 10px"},{"title":"Confirm payment"},{"title":"Complete shipping"}]'></oas-steps>
+    <oas-steps arrow style="--oas-steps-arrow: 16px" current="1" steps='[{"title":"Deeper 16px (blunter tip)"},{"title":"Confirm payment"},{"title":"Complete shipping"}]'></oas-steps>
+  </oas-space>
+</DemoBlock>
+
 ## Combinations
 
 Combination semantics: `simple` takes priority over `progress-dot` / `navigation` (dot and navigation shapes yield to simple); under `navigation`, `responsive` does not switch to vertical (navigation stays forced horizontal).
@@ -290,6 +305,14 @@ Combination semantics: `simple` takes priority over `progress-dot` / `navigation
 | `oas-change` | Fired when a clickable step or a navigation button is clicked (including keyboard triggers); `detail: { index, id? }` (0-based; `id` echoes the step `id` field, keeps `{ index }` when unset) |
 
 State rules: an explicit `status` (`wait` / `process` / `finish` / `error`) takes priority; otherwise it is derived from `current` — index `< current` is `finish` (✓), `=== current` is `process`, and the rest are `wait`.
+
+### CSS variables
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `--oas-steps-arrow` | `10px` | Convex tip horizontal depth of arrow segments (deeper = blunter tip / smaller angle), tied to the clip-path polygon |
+| `--oas-steps-arrow-gap` | `var(--oas-space-3)` | Gap between segments; `0` makes the arrows interlock flush (neighbors are distinguished by per-segment colors) |
+| `--oas-steps-arrow-item-bg-N` (N=1..8) | falls back to the status color (`--oas-steps-item-bg` → `--oas-color-bg-hover`) | Per-segment background override (applies by DOM position, not data index); beyond 8 segments it falls back to the status color |
 
 <script setup>
 import { onMounted } from 'vue'

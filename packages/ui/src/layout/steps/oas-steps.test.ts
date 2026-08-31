@@ -1375,6 +1375,53 @@ describe('arrow（箭头分格形态）', () => {
     expect(stepsEl.hasAttribute('data-label-placement')).toBe(false)
     expect(stepsEl.hasAttribute('data-content-placement')).toBe(false)
   })
+
+  it('间距走 --oas-steps-arrow-gap 变量：缺省回落 --oas-space-3，宿主设 0 即无间距互嵌', () => {
+    const el = mount({ arrow: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('gap: var(--oas-steps-arrow-gap, var(--oas-space-3))')
+  })
+
+  it('状态填充重构为中间变量：data-status 只设 --oas-steps-item-bg，.item 基础 background 走 var 链', () => {
+    const el = mount({ arrow: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('background: var(--oas-steps-item-bg, var(--oas-color-bg-hover))')
+    expect(css).toContain(".steps[data-arrow='true'] .item[data-status='process']")
+    expect(css).toContain('--oas-steps-item-bg: var(--oas-color-primary)')
+    expect(css).toContain(".steps[data-arrow='true'] .item[data-status='finish']")
+    expect(css).toContain(
+      '--oas-steps-item-bg: color-mix(in srgb, var(--oas-color-primary) 15%, transparent)',
+    )
+    expect(css).toContain(".steps[data-arrow='true'] .item[data-status='error']")
+    expect(css).toContain('--oas-steps-item-bg: var(--oas-color-danger)')
+    expect(css).toContain(".steps[data-arrow='true'] .item[data-status='wait']")
+    expect(css).toContain('--oas-steps-item-bg: var(--oas-color-bg-hover)')
+  })
+
+  it('per-index 颜色开口：arrow 下 .item:nth-child(1..8) 各一条 var(--oas-steps-arrow-item-bg-N) 链', () => {
+    const el = mount({ arrow: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    for (let i = 1; i <= 8; i++) {
+      expect(css).toContain(`.steps[data-arrow='true'] .item:nth-child(${i})`)
+      expect(css).toContain(
+        `--oas-steps-arrow-item-bg-${i}, var(--oas-steps-item-bg, var(--oas-color-bg-hover))`,
+      )
+    }
+  })
+
+  it('per-index 链优先级形状：宿主变量 > 状态中间变量 > bg-hover（nth-child 规则后置覆盖 .item 基础 background）', () => {
+    const el = mount({ arrow: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    // 链整体形状（nth-child 规则的 background 值）——宿主设 --oas-steps-arrow-item-bg-1 即第 1 格变色
+    expect(css).toContain(
+      'background: var(--oas-steps-arrow-item-bg-1, var(--oas-steps-item-bg, var(--oas-color-bg-hover)))',
+    )
+    // nth-child 规则必须出现在 .item 基础规则之后（同特异性后写胜出）
+    const itemBase = css.indexOf(".steps[data-arrow='true'] .item {")
+    const nth1 = css.indexOf(".steps[data-arrow='true'] .item:nth-child(1)")
+    expect(itemBase).toBeGreaterThanOrEqual(0)
+    expect(nth1).toBeGreaterThan(itemBase)
+  })
 })
 
 describe('responsive（窄屏自动纵向）', () => {
