@@ -2,6 +2,20 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.3.2] - 2026-08-30
+
+### 特性
+
+- 导航组七组件深挖：oas-steps（prefix/max-count/reverse/content-placement/arrow 分格/lineless/separator/simple/percent/responsive/status/id/extra/disabled/oas-before-change）、oas-pagination（disabled/size/simple/show-edges/hide-on-single/pager-count/省略号跳页/href-template/responsive/page-item/show-more/total-boundary/oas-before-change/当前页 hover 修复）、oas-affix（position bottom/append-to/oas-change）、oas-float-button（shape/type/size/extended/disabled/href/draggable+magnetic/tooltip 组合）、oas-speed-dial（trigger hover/主钮插槽/oas-open reason/hide-label 气泡/geometry 圆弧）、oas-bottom-navigation（badge/safe-area/show-label/layout 横排/hide-on-scroll/shift）、oas-page-header（content/footer/breadcrumb/back-icon/title/subtitle/avatar 插槽/ghost/responsive）
+- 新组件 oas-stepper / oas-stepper-panel：步骤面板一体机（linear 禁跳/键盘全矩阵/面板联动/DSD 双路径）
+- arrow 分格自定义变量：--oas-steps-arrow-gap / --oas-steps-arrow / --oas-steps-arrow-item-bg-1..8
+
+### 修复
+
+- oas-pagination 当前页 hover 蓝底蓝字不可读
+- oas-steps reverse 倒序连接线穿出容器/断档
+- oas-steps arrow 分格块间白缝（gap 0 互嵌贴边）
+- oas-log demo beforeunload 泄漏阻断整页导航
 ## [2.3.1] - 2026-08-28
 
 ### 特性
