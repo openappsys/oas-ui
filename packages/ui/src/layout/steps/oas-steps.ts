@@ -554,7 +554,7 @@ const STYLE = `
   gap: var(--oas-space-2);
   /* 互嵌与间距一体：margin = gap - arrow 深度。gap 0（默认）→ 重叠 arrow 深度（凸尖嵌凹槽无缝）；
      gap 正值 → 凹凸衔接再留出该值空隙（净空隙 = gap） */
-  margin-inline-start: var(--oas-steps-arrow-gap, calc(-1 * var(--oas-steps-arrow)));
+  margin-inline-start: calc(var(--oas-steps-arrow-gap, 0px) - var(--oas-steps-arrow));
   padding: var(--oas-space-2) var(--oas-space-3);
   padding-inline-start: calc(var(--oas-space-3) + var(--oas-steps-arrow));
   text-align: start;
