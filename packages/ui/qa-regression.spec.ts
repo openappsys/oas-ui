@@ -1816,7 +1816,11 @@ test('avatar 加载失败回退：404 图触发 img error 后回退首字符、�
 test('image 懒加载：视口外图片不加载（img 无 src、占位显示），滚动进入视口后逐图加载', async ({
   page,
 }) => {
-  // 回归：lazy 必须真正延迟加载——视口外 img 没有 src，进入视口后才发起加载
+  // 回归：lazy 必须真正延迟加载——视口外 img 没有 src，进入视口后才发起加载。
+  // 外部图床（picsum）不可靠：断网可能一直挂起而不返回错误，导致 error 事件不触发、
+  // fallback 不接管、aria-busy 永远不复位。这里统一拦截 picsum 让其立即失败，
+  // 走「外链失败 → fallback」的确定性路径，校验用户实际看到的状态。
+  await page.route('**/picsum.photos/**', (route) => route.abort())
   await page.goto('/components/image.html', { waitUntil: 'domcontentloaded' })
   await up(page, 'oas-image[lazy]')
   // 动态创建的懒加载列表由 demo onMounted 填充，静态首图存在不代表列表已建完
@@ -1841,13 +1845,27 @@ test('image 懒加载：视口外图片不加载（img 无 src、占位显示）
   expect(state.total).toBeGreaterThan(5)
   expect(state.noSrc, '列表底部应有未加载的图片').toBeGreaterThan(0)
   // 逐步滚动内层列表到底部（模拟真实浏览：每屏都经过视口，IO 逐屏触发加载；
-  // 一次滚到底会跳过中间项，这些项从未进入视口 → 永远不加载，属于正确懒加载行为）
+  // 一次滚到底会跳过中间项，这些项从未进入视口 → 永远不加载，属于正确懒加载行为）。
+  // 注意：懒加载图片读入后从占位高度（160）长到真实尺寸（约 287），列表 scrollHeight
+  // 随加载持续变大，故每轮必须重读 max，直到 scrollTop 停在稳定底部（内容不再增长）。
   await page.evaluate(async () => {
     const list = document.querySelector('#image-lazy-list') as HTMLElement
-    const max = list.scrollHeight - list.clientHeight
-    while (list.scrollTop < max) {
-      list.scrollTop = Math.min(list.scrollTop + 150, max)
-      await new Promise((r) => setTimeout(r, 50))
+    let lastMax = -1
+    let stable = 0
+    let guard = 0
+    while (guard < 400) {
+      const max = list.scrollHeight - list.clientHeight
+      if (list.scrollTop < max) {
+        list.scrollTop = Math.min(list.scrollTop + 150, max)
+      } else if (max === lastMax) {
+        stable++
+        if (stable >= 3) break
+      } else {
+        stable = 0
+      }
+      lastMax = max
+      await new Promise((r) => setTimeout(r, 80))
+      guard++
     }
   })
   await page.waitForFunction(

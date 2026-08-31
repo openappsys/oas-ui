@@ -5,7 +5,7 @@ Displays image resources, with an optional built-in preview feature.
 ## Basic Usage
 
 <DemoBlock title="Basic image">
-  <oas-image src="https://picsum.photos/seed/isui/600/300" alt="Example image"></oas-image>
+  <oas-image src="https://picsum.photos/seed/isui/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjN2Y5Y2Y1Jy8+PC9zdmc+" alt="Example image"></oas-image>
 </DemoBlock>
 
 ## Fit Mode
@@ -14,11 +14,11 @@ Displays image resources, with an optional built-in preview feature.
   <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap">
     <div>
       <p class="image-cap">cover (crop to fill)</p>
-      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-cover/600/300" fit="cover" alt="cover"></oas-image>
+      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-cover/600/300" fit="cover" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjVhOTdmJy8+PC9zdmc+" alt="cover"></oas-image>
     </div>
     <div>
       <p class="image-cap">contain (fit fully)</p>
-      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-contain/600/300" fit="contain" alt="contain"></oas-image>
+      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-contain/600/300" fit="contain" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjN2ZkMGE5Jy8+PC9zdmc+" alt="contain"></oas-image>
     </div>
   </div>
 </DemoBlock>
@@ -53,7 +53,7 @@ Set `object-fit` via `fit`, then fix the image container size with `::part(image
 ## Placeholder and Fallback
 
 <DemoBlock title="Loading placeholder">
-  <oas-image src="https://picsum.photos/seed/isui-placeholder/600/300" placeholder alt="Loading placeholder"></oas-image>
+  <oas-image src="https://picsum.photos/seed/isui-placeholder/600/300" placeholder fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZTU5YWQxJy8+PC9zdmc+" alt="Loading placeholder"></oas-image>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     With <code>placeholder</code>, a light-gray placeholder is shown until the image finishes loading, then it switches to the image.
   </p>
@@ -67,7 +67,7 @@ Set `object-fit` via `fit`, then fix the image container size with `::part(image
     </div>
     <div>
       <p class="image-cap">Custom fallback image</p>
-      <oas-image class="fit-demo" src="https://invalid.example.com/missing.png" fallback="https://picsum.photos/seed/isui-fallback/600/300" alt="Custom fallback"></oas-image>
+      <oas-image class="fit-demo" src="https://invalid.example.com/missing.png" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjOGFiOGU2Jy8+PC9zdmc+" alt="Custom fallback"></oas-image>
     </div>
   </div>
 </DemoBlock>
@@ -79,14 +79,14 @@ When the image fails to load, a "图片加载失败" placeholder is shown by def
 <DemoBlock title="Lazy-loading long list (loads image by image while scrolling)">
   <p class="image-cap">With <code>lazy</code>, an image only starts loading when it enters the viewport; pair it with <code>placeholder</code> to show a "Loading" placeholder. Scroll down the list and watch the placeholder → loaded transition (images already in the viewport load immediately).</p>
   <div class="lazy-list" id="image-lazy-list">
-    <oas-image lazy placeholder src="https://picsum.photos/seed/isui-lazy-static/600/300" alt="Lazy loading example"></oas-image>
+    <oas-image lazy placeholder src="https://picsum.photos/seed/isui-lazy-static/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjVjOTdmJy8+PC9zdmc+" alt="Lazy loading example"></oas-image>
   </div>
 </DemoBlock>
 
 ## Preview
 
 <DemoBlock title="Click to preview (built-in overlay)">
-  <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview alt="Preview image"></oas-image>
+  <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTlhZWY1Jy8+PC9zdmc+" alt="Preview image"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
     Click the image to open a full-screen preview overlay: the toolbar supports zoom in / out, rotate, and download; press Esc or click the mask to close. The close button is focused when opened, and focus is restored on close. Emits <code>oas-preview</code> (detail contains src).
   </p>
@@ -103,6 +103,7 @@ onMounted(async () => {
       el.setAttribute('lazy', '')
       el.setAttribute('placeholder', '')
       el.setAttribute('src', `https://picsum.photos/seed/isui-lazy-${i}/600/300`)
+      el.setAttribute('fallback', "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjNzJjN2QwJy8+PC9zdmc+")
       el.setAttribute('alt', `Lazy image ${i}`)
       list.appendChild(el)
     }
