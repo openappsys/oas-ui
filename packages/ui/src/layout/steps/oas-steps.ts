@@ -542,7 +542,7 @@ const STYLE = `
   /* 块间留间距：每块独立箭头形（左凹右凸），分隔清晰可辨；
      分格不压缩（flex-shrink 0），容器窄时横向滚动而非挤掉间距；
      宿主设 --oas-steps-arrow-gap: 0 时凹凸互嵌贴边（相邻块靠 per-index 颜色区分） */
-  gap: var(--oas-steps-arrow-gap, var(--oas-space-3));
+  gap: var(--oas-steps-arrow-gap, 0px);
   overflow-x: auto;
 }
 .steps[data-arrow='true'] .item {
@@ -550,6 +550,8 @@ const STYLE = `
   flex-shrink: 0;
   align-items: center;
   gap: var(--oas-space-2);
+  /* 互嵌重叠：左移 arrow 深度，使本块左凹口恰与前块右凸尖拼合（首块在下方归零） */
+  margin-inline-start: calc(-1 * var(--oas-steps-arrow));
   padding: var(--oas-space-2) var(--oas-space-3);
   padding-inline-start: calc(var(--oas-space-3) + var(--oas-steps-arrow));
   text-align: start;
@@ -688,7 +690,6 @@ const STYLE = `
 }
 .steps[data-arrow='true'][data-reverse='true'] .item:first-child {
   margin-inline-start: 0;
-  margin-inline-end: calc(-1 * var(--oas-steps-arrow));
   padding-inline-start: calc(var(--oas-space-3) + var(--oas-steps-arrow));
   padding-inline-end: var(--oas-space-4);
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, var(--oas-steps-arrow) 50%);
