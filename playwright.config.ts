@@ -39,7 +39,7 @@ export default defineConfig({
     {
       name: 'firefox',
       use: {},
-      testMatch: [/visual\.spec\.ts/, /smoke\.spec\.ts/, /qa-regression\.spec\.ts/],
+      testMatch: [/visual\.spec\.ts/, /smoke\.spec\.ts/, /qa-regression\/.*\.spec\.ts/],
     },
   ],
 })
