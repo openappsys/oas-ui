@@ -244,6 +244,21 @@
   <oas-steps style="margin-top: 16px" arrow reverse current="2" steps='[{"title":"创建订单"},{"title":"确认支付"},{"title":"完成发货"}]'></oas-steps>
 </DemoBlock>
 
+## 箭头分格自定义
+
+`arrow` 分格的几何与配色均走 CSS 变量开口：`--oas-steps-arrow-gap` 控制分格块间距（设 `0` 时凹凸互嵌贴边，相邻块靠颜色区分）、`--oas-steps-arrow` 控制凸尖水平深度（深度越大凸尖越钝、夹角越小）、`--oas-steps-arrow-item-bg-N`（N=1..8）逐格覆盖背景色（按 DOM 位置生效，未设回落状态色；超过 8 步回落状态色）。
+
+<DemoBlock title="自定义间距与每块颜色（gap 0 互嵌贴边）">
+  <oas-steps arrow style="--oas-steps-arrow-gap: 0; --oas-steps-arrow-item-bg-1: color-mix(in srgb, var(--oas-color-primary) 20%, transparent); --oas-steps-arrow-item-bg-2: color-mix(in srgb, var(--oas-color-success) 20%, transparent); --oas-steps-arrow-item-bg-3: color-mix(in srgb, var(--oas-color-warning) 20%, transparent); --oas-steps-arrow-item-bg-4: color-mix(in srgb, var(--oas-color-danger) 20%, transparent)" steps='[{"title":"主色格","status":"wait"},{"title":"成功格","status":"wait"},{"title":"警告格","status":"wait"},{"title":"危险格","status":"wait"}]'></oas-steps>
+</DemoBlock>
+
+<DemoBlock title="箭头深度 / 角度对比">
+  <oas-space direction="vertical" size="large" style="width: 100%">
+    <oas-steps arrow current="1" steps='[{"title":"默认深度 10px"},{"title":"确认支付"},{"title":"完成发货"}]'></oas-steps>
+    <oas-steps arrow style="--oas-steps-arrow: 16px" current="1" steps='[{"title":"加深 16px（凸尖更钝）"},{"title":"确认支付"},{"title":"完成发货"}]'></oas-steps>
+  </oas-space>
+</DemoBlock>
+
 ## 形态组合
 
 组合语义：`simple` 优先于 `progress-dot` / `navigation`（simple 下点状与导航形态让位）；`navigation` 下 `responsive` 转纵向忽略（导航强制横向的现状保持）。
@@ -290,6 +305,14 @@
 | `oas-change` | 点击可点击步骤或导航按钮时触发（含键盘触发）；`detail: { index, id? }`（0 起，`id` 为步骤 `id` 字段回传，未设置时保持 `{ index }`） |
 
 状态规则：显式 `status`（`wait` / `process` / `finish` / `error`）优先；未指定时按 `current` 推导——索引 `< current` 为 `finish`（✓），`=== current` 为 `process`，其余为 `wait`。
+
+### CSS 变量
+
+| 变量 | 默认 | 说明 |
+| --- | --- | --- |
+| `--oas-steps-arrow` | `10px` | 箭头分格凸尖水平深度（深度越大凸尖越钝、夹角越小），随 clip-path polygon 联动 |
+| `--oas-steps-arrow-gap` | `var(--oas-space-3)` | 分格块间距；设 `0` 时凹凸互嵌贴边（相邻块靠 per-index 颜色区分） |
+| `--oas-steps-arrow-item-bg-N`（N=1..8） | 回落状态色（`--oas-steps-item-bg` → `--oas-color-bg-hover`） | 逐格背景色覆盖（按 DOM 位置，非数据索引）；超过 8 步回落状态色 |
 
 <script setup>
 import { onMounted } from 'vue'

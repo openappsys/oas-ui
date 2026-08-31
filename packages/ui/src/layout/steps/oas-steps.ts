@@ -537,10 +537,12 @@ const STYLE = `
 /* —— arrow 箭头分格形态：横向专用，每项 clip-path 切出分格（原创几何：凹凸深度走变量）——
    形状链：首项左平右凸 → 中间项左凹右凸（凹口恰好嵌住前项凸尖）→ 末项左凹右平 */
 .steps[data-arrow='true'] {
+  /* 凸尖水平深度（箭头深度/角度）：深度越大凸尖越钝、夹角越小，随 clip-path polygon 联动 */
   --oas-steps-arrow: 10px;
   /* 块间留间距：每块独立箭头形（左凹右凸），分隔清晰可辨；
-     分格不压缩（flex-shrink 0），容器窄时横向滚动而非挤掉间距 */
-  gap: var(--oas-space-3);
+     分格不压缩（flex-shrink 0），容器窄时横向滚动而非挤掉间距；
+     宿主设 --oas-steps-arrow-gap: 0 时凹凸互嵌贴边（相邻块靠 per-index 颜色区分） */
+  gap: var(--oas-steps-arrow-gap, var(--oas-space-3));
   overflow-x: auto;
 }
 .steps[data-arrow='true'] .item {
@@ -551,7 +553,9 @@ const STYLE = `
   padding: var(--oas-space-2) var(--oas-space-3);
   padding-inline-start: calc(var(--oas-space-3) + var(--oas-steps-arrow));
   text-align: start;
-  background: var(--oas-color-bg-hover);
+  /* 背景走中间变量链：--oas-steps-item-bg 由 data-status 规则写入（process/finish/error/wait），
+     缺省回落 bg-hover（wait 同值）；per-index 开口（nth-child）以此链为 fallback */
+  background: var(--oas-steps-item-bg, var(--oas-color-bg-hover));
   clip-path: polygon(
     0 0,
     calc(100% - var(--oas-steps-arrow)) 0,
@@ -577,18 +581,46 @@ const STYLE = `
 .steps[data-arrow='true'] .item:last-child {
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, var(--oas-steps-arrow) 50%);
 }
-/* 状态填充：process 主色 / finish 浅主色 / error 危险色 / wait 灰 */
+/* 状态填充走中间变量：data-status 只写 --oas-steps-item-bg（.item 基础 background 与
+   per-index nth-child 开口均以它作 fallback），process 主色 / finish 浅主色 / error 危险色 / wait 灰 */
 .steps[data-arrow='true'] .item[data-status='process'] {
-  background: var(--oas-color-primary);
+  --oas-steps-item-bg: var(--oas-color-primary);
 }
 .steps[data-arrow='true'] .item[data-status='finish'] {
-  background: color-mix(in srgb, var(--oas-color-primary) 15%, transparent);
+  --oas-steps-item-bg: color-mix(in srgb, var(--oas-color-primary) 15%, transparent);
 }
 .steps[data-arrow='true'] .item[data-status='error'] {
-  background: var(--oas-color-danger);
+  --oas-steps-item-bg: var(--oas-color-danger);
 }
 .steps[data-arrow='true'] .item[data-status='wait'] {
-  background: var(--oas-color-bg-hover);
+  --oas-steps-item-bg: var(--oas-color-bg-hover);
+}
+/* per-index 颜色开口：宿主设 --oas-steps-arrow-item-bg-N 即第 N 格变色（按 DOM 位置 nth-child，非数据索引）；
+   var 链回落顺序：宿主变量 → 状态中间变量（--oas-steps-item-bg）→ bg-hover；
+   超过 8 步的格子无对应变量，回落状态色（文档注明） */
+.steps[data-arrow='true'] .item:nth-child(1) {
+  background: var(--oas-steps-arrow-item-bg-1, var(--oas-steps-item-bg, var(--oas-color-bg-hover)));
+}
+.steps[data-arrow='true'] .item:nth-child(2) {
+  background: var(--oas-steps-arrow-item-bg-2, var(--oas-steps-item-bg, var(--oas-color-bg-hover)));
+}
+.steps[data-arrow='true'] .item:nth-child(3) {
+  background: var(--oas-steps-arrow-item-bg-3, var(--oas-steps-item-bg, var(--oas-color-bg-hover)));
+}
+.steps[data-arrow='true'] .item:nth-child(4) {
+  background: var(--oas-steps-arrow-item-bg-4, var(--oas-steps-item-bg, var(--oas-color-bg-hover)));
+}
+.steps[data-arrow='true'] .item:nth-child(5) {
+  background: var(--oas-steps-arrow-item-bg-5, var(--oas-steps-item-bg, var(--oas-color-bg-hover)));
+}
+.steps[data-arrow='true'] .item:nth-child(6) {
+  background: var(--oas-steps-arrow-item-bg-6, var(--oas-steps-item-bg, var(--oas-color-bg-hover)));
+}
+.steps[data-arrow='true'] .item:nth-child(7) {
+  background: var(--oas-steps-arrow-item-bg-7, var(--oas-steps-item-bg, var(--oas-color-bg-hover)));
+}
+.steps[data-arrow='true'] .item:nth-child(8) {
+  background: var(--oas-steps-arrow-item-bg-8, var(--oas-steps-item-bg, var(--oas-color-bg-hover)));
 }
 /* 文字对比：process 填充格 on-primary / error 填充格 on-danger / finish 浅主色格 primary */
 .steps[data-arrow='true'] .item[data-status='process'] .icon,
