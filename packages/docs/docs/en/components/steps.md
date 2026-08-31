@@ -249,7 +249,11 @@ The per-step `prefix` field renders custom numbering text (e.g. "A", "01") at th
 `arrow` segment geometry and colors are exposed as CSS variables: `--oas-steps-arrow-gap` controls the gap between segments (set to `0` for interlocking flush edges, with neighbors distinguished by per-segment colors), `--oas-steps-arrow` controls the convex tip depth (deeper = blunter tip / smaller angle), and `--oas-steps-arrow-item-bg-N` (N=1..8) overrides the background color per segment (applies by DOM position; falls back to the status color when unset; beyond 8 segments it falls back to the status color).
 
 <DemoBlock title="Custom gap and per-segment colors (gap 0 interlock)">
-  <oas-steps arrow style="--oas-steps-arrow-gap: 0; --oas-steps-arrow-item-bg-1: color-mix(in srgb, var(--oas-color-primary) 20%, transparent); --oas-steps-arrow-item-bg-2: color-mix(in srgb, var(--oas-color-success) 20%, transparent); --oas-steps-arrow-item-bg-3: color-mix(in srgb, var(--oas-color-warning) 20%, transparent); --oas-steps-arrow-item-bg-4: color-mix(in srgb, var(--oas-color-danger) 20%, transparent)" steps='[{"title":"Primary block","status":"wait"},{"title":"Success block","status":"wait"},{"title":"Warning block","status":"wait"},{"title":"Danger block","status":"wait"}]'></oas-steps>
+  <oas-steps arrow style="--oas-steps-arrow-item-bg-1: color-mix(in srgb, var(--oas-color-primary) 20%, transparent); --oas-steps-arrow-item-bg-2: color-mix(in srgb, var(--oas-color-success) 20%, transparent); --oas-steps-arrow-item-bg-3: color-mix(in srgb, var(--oas-color-warning) 20%, transparent); --oas-steps-arrow-item-bg-4: color-mix(in srgb, var(--oas-color-danger) 20%, transparent)" steps='[{"title":"Primary block","status":"wait"},{"title":"Success block","status":"wait"},{"title":"Warning block","status":"wait"},{"title":"Danger block","status":"wait"}]'></oas-steps>
+</DemoBlock>
+
+<DemoBlock title="Custom gap (greater than 0, spacing between blocks)">
+  <oas-steps arrow clickable current="1" style="--oas-steps-arrow-gap: 16px" steps='[{"title":"Create order","description":"Fill in order info"},{"title":"Confirm payment","description":"Choose payment method"},{"title":"Complete delivery","description":"Awaiting receipt"}]'></oas-steps>
 </DemoBlock>
 
 <DemoBlock title="Arrow depth / angle comparison">
