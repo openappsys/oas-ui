@@ -249,7 +249,7 @@
 `arrow` 分格的几何与配色均走 CSS 变量开口：`--oas-steps-arrow-gap` 控制分格块间距（设 `0` 时凹凸互嵌贴边，相邻块靠颜色区分）、`--oas-steps-arrow` 控制凸尖水平深度（深度越大凸尖越钝、夹角越小）、`--oas-steps-arrow-item-bg-N`（N=1..8）逐格覆盖背景色（按 DOM 位置生效，未设回落状态色；超过 8 步回落状态色）。
 
 <DemoBlock title="自定义间距与每块颜色（gap 0 互嵌贴边）">
-  <oas-steps arrow style="--oas-steps-arrow-item-bg-1: color-mix(in srgb, var(--oas-color-primary) 20%, transparent); --oas-steps-arrow-item-bg-2: color-mix(in srgb, var(--oas-color-success) 20%, transparent); --oas-steps-arrow-item-bg-3: color-mix(in srgb, var(--oas-color-warning) 20%, transparent); --oas-steps-arrow-item-bg-4: color-mix(in srgb, var(--oas-color-danger) 20%, transparent)" steps='[{"title":"主色格","status":"wait"},{"title":"成功格","status":"wait"},{"title":"警告格","status":"wait"},{"title":"危险格","status":"wait"}]'></oas-steps>
+  <oas-steps arrow style="--oas-steps-arrow-gap: 0px; --oas-steps-arrow-item-bg-1: color-mix(in srgb, var(--oas-color-primary) 20%, transparent); --oas-steps-arrow-item-bg-2: color-mix(in srgb, var(--oas-color-success) 20%, transparent); --oas-steps-arrow-item-bg-3: color-mix(in srgb, var(--oas-color-warning) 20%, transparent); --oas-steps-arrow-item-bg-4: color-mix(in srgb, var(--oas-color-danger) 20%, transparent)" steps='[{"title":"主色格","status":"wait"},{"title":"成功格","status":"wait"},{"title":"警告格","status":"wait"},{"title":"危险格","status":"wait"}]'></oas-steps>
 </DemoBlock>
 
 <DemoBlock title="自定义间距（gap 大于 0，块间留空隙）">
