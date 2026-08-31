@@ -471,6 +471,21 @@ const STYLE = `
 .steps[data-direction='vertical'][data-reverse='true'] {
   flex-direction: column-reverse;
 }
+/* —— reverse 视觉倒序：连接线随 flex 反向延伸（默认形态；arrow 已单独适配）。
+   纯形态变体（dot/simple/navigation 等）× reverse 为边缘组合、连接线不保证反向，
+   文档建议 reverse 与默认/arrow 形态配合使用 —— */
+.steps[data-reverse='true']:not([data-arrow='true']) .item:not(:last-child)::after {
+  left: auto;
+  right: 50%;
+}
+.steps[data-direction='vertical'][data-reverse='true']:not([data-arrow='true']) .item:not(:last-child)::after {
+  /* 线高 = item 高 - icon 高（相邻 icon 间距），从 icon 顶向上延伸到上方 icon 底 */
+  top: calc(-1 * (100% - var(--oas-control-height-sm) - 4px));
+  bottom: auto;
+  height: calc(100% - var(--oas-control-height-sm) - 4px);
+  left: calc(var(--oas-control-height-sm) / 2 + 1px);
+  width: 2px;
+}
 
 /* —— max-count 省略步：不可点折叠指示（⋯），窄占位、复用 .item 连接线保持连续 —— */
 .item-ellipsis {
