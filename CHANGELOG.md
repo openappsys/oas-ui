@@ -2,7 +2,7 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-## [2.3.2] - 2026-08-30
+## [2.3.2] - 2026-08-31
 
 ### 特性
 
@@ -16,6 +16,8 @@
 - oas-steps reverse 倒序连接线穿出容器/断档
 - oas-steps arrow 分格块间白缝（gap 0 互嵌贴边）
 - oas-log demo beforeunload 泄漏阻断整页导航
+- image demo 外链占位图统一加内联 SVG fallback（外链图床不可达时显示异色色块而非裂图/空占位）
+
 ## [2.3.1] - 2026-08-28
 
 ### 特性
