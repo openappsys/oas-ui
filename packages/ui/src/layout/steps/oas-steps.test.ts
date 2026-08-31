@@ -1376,10 +1376,11 @@ describe('arrow（箭头分格形态）', () => {
     expect(stepsEl.hasAttribute('data-content-placement')).toBe(false)
   })
 
-  it('间距走 --oas-steps-arrow-gap 变量：缺省回落 --oas-space-3，宿主设 0 即无间距互嵌', () => {
+  it('间距走 --oas-steps-arrow-gap 变量：缺省 0（凹凸互嵌贴边，靠负 margin 重叠），宿主可设正值留间距', () => {
     const el = mount({ arrow: '' })
     const css = el.shadowRoot!.querySelector('style')!.textContent!
-    expect(css).toContain('gap: var(--oas-steps-arrow-gap, var(--oas-space-3))')
+    expect(css).toContain('gap: var(--oas-steps-arrow-gap, 0px)')
+    expect(css).toContain('margin-inline-start: calc(-1 * var(--oas-steps-arrow))')
   })
 
   it('状态填充重构为中间变量：data-status 只设 --oas-steps-item-bg，.item 基础 background 走 var 链', () => {
