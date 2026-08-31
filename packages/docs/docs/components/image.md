@@ -5,7 +5,7 @@
 ## 基础用法
 
 <DemoBlock title="基础图片">
-  <oas-image src="https://picsum.photos/seed/isui/600/300" alt="示例图"></oas-image>
+  <oas-image src="https://picsum.photos/seed/isui/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjN2Y5Y2Y1Jy8+PC9zdmc+" alt="示例图"></oas-image>
 </DemoBlock>
 
 ## 适应方式
@@ -14,11 +14,11 @@
   <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap">
     <div>
       <p class="image-cap">cover（裁切填充）</p>
-      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-cover/600/300" fit="cover" alt="cover"></oas-image>
+      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-cover/600/300" fit="cover" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjVhOTdmJy8+PC9zdmc+" alt="cover"></oas-image>
     </div>
     <div>
       <p class="image-cap">contain（完整显示）</p>
-      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-contain/600/300" fit="contain" alt="contain"></oas-image>
+      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-fit-contain/600/300" fit="contain" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjN2ZkMGE5Jy8+PC9zdmc+" alt="contain"></oas-image>
     </div>
   </div>
 </DemoBlock>
@@ -53,7 +53,7 @@
 ## 占位与兜底
 
 <DemoBlock title="加载占位">
-  <oas-image src="https://picsum.photos/seed/isui-placeholder/600/300" placeholder alt="加载占位"></oas-image>
+  <oas-image src="https://picsum.photos/seed/isui-placeholder/600/300" placeholder fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZTU5YWQxJy8+PC9zdmc+" alt="加载占位"></oas-image>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     设置 <code>placeholder</code> 后，图片加载完成前显示浅灰占位；加载完成后自动切换为图片。
   </p>
@@ -67,7 +67,7 @@
     </div>
     <div>
       <p class="image-cap">自定义兜底图</p>
-      <oas-image class="fit-demo" src="https://invalid.example.com/missing.png" fallback="https://picsum.photos/seed/isui-fallback/600/300" alt="自定义兜底"></oas-image>
+      <oas-image class="fit-demo" src="https://invalid.example.com/missing.png" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjOGFiOGU2Jy8+PC9zdmc+" alt="自定义兜底"></oas-image>
     </div>
   </div>
 </DemoBlock>
@@ -79,14 +79,14 @@
 <DemoBlock title="懒加载长列表（滚动逐图加载）">
   <p class="image-cap">设置 <code>lazy</code> 后图片进入视口才发起加载；配合 <code>placeholder</code> 展示「加载中」占位。向下滚动列表，观察占位 → 加载的过渡（视口内图片立即加载）。</p>
   <div class="lazy-list" id="image-lazy-list">
-    <oas-image lazy placeholder src="https://picsum.photos/seed/isui-lazy-static/600/300" alt="懒加载示例图"></oas-image>
+    <oas-image lazy placeholder src="https://picsum.photos/seed/isui-lazy-static/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjVjOTdmJy8+PC9zdmc+" alt="懒加载示例图"></oas-image>
   </div>
 </DemoBlock>
 
 ## 预览
 
 <DemoBlock title="点击预览（内置浮层）">
-  <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview alt="可预览图片"></oas-image>
+  <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTlhZWY1Jy8+PC9zdmc+" alt="可预览图片"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
     点击图片打开全屏预览浮层：工具栏支持放大/缩小/旋转/下载，Esc 或点击遮罩关闭；打开时聚焦关闭按钮，关闭后还原焦点。派发 <code>oas-preview</code> 事件（detail 含 src）。
   </p>
@@ -103,6 +103,7 @@ onMounted(async () => {
       el.setAttribute('lazy', '')
       el.setAttribute('placeholder', '')
       el.setAttribute('src', `https://picsum.photos/seed/isui-lazy-${i}/600/300`)
+      el.setAttribute('fallback', "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjNzJjN2QwJy8+PC9zdmc+")
       el.setAttribute('alt', `懒加载图片 ${i}`)
       list.appendChild(el)
     }
