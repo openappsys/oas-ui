@@ -18,9 +18,9 @@
 | 无障碍   | Playwright + axe-core                 | 键盘流 + ARIA + 无违规断言                                                    | `pnpm test:e2e`                     |
 | 互操作   | playground                            | React / Vue 宿主事件/属性桥接                                                 | `packages/playground` 手动 dev 验证 |
 
-**命名约定**：组件单测 `packages/ui/src/<组>/<组件>/oas-xxx.test.ts`（Vitest + happy-dom）；e2e spec 集中在 `packages/ui/*.spec.ts`，按职责命名：`a11y.spec.ts`（axe 审计）、`smoke.spec.ts`（全页渲染无 JS 错误/告警）、`console-sweep.spec.ts`（每页 console 零告警零报错门禁）、`qa-regression.spec.ts`（历次复核缺陷固化回归：选中态可见性/纵向布局/圆角合并/hover 可读性/addon 属性存活/点击不滚动/demo 事件反馈）、`dark.spec.ts`（暗色冒烟）、`demo.spec.ts`/`code.spec.ts`（demo 渲染与示例代码）、`interaction.spec.ts`/`onoas*.spec.ts`（交互/事件绑定）、`visual.spec.ts`（全页截图）。
+**命名约定**：组件单测 `packages/ui/src/<组>/<组件>/oas-xxx.test.ts`（Vitest + happy-dom）；e2e spec 集中在 `packages/ui/*.spec.ts`，按职责命名：`a11y.spec.ts`（axe 审计）、`smoke.spec.ts`（全页渲染无 JS 错误/告警）、`console-sweep.spec.ts`（每页 console 零告警零报错门禁）、`qa-regression/`（历次复核缺陷固化回归，按组件一文件：`qa-regression/<组件>.spec.ts`，跨组件/全局场景进 `misc.spec.ts`，共享工具在 `helpers.ts`；覆盖选中态可见性/纵向布局/圆角合并/hover 可读性/addon 属性存活/点击不滚动/demo 事件反馈）、`dark.spec.ts`（暗色冒烟）、`demo.spec.ts`/`code.spec.ts`（demo 渲染与示例代码）、`interaction.spec.ts`/`onoas*.spec.ts`（交互/事件绑定）、`visual.spec.ts`（全页截图）。qa-regression 按组件拆文件是 Playwright 文件级并行的要求：单巨石文件只能独占一个 worker 串行执行，拆开后多 worker 真并行。
 
-**跨浏览器抽样**：全量 e2e 只在 chromium 跑；firefox 按抽样子集跑 `visual` / `smoke` / `qa-regression` 三个 spec，圈定逻辑在 `playwright.config.ts` 的 firefox project `testMatch`。抽样目的：暴露浏览器专有渲染/兼容问题（如 slider `::-webkit-slider-runnable-track` 在 Firefox 失效导致轨道不可见的历史缺陷），全量在 Firefox 上跑会翻倍耗时、不值得；交互密集或时序敏感的 spec（interaction/a11y/demo/onoas 等）不纳入——Firefox headless 时序差异可能引入 flaky，宁少勿滥。新增浏览器相关回归断言优先放进 `qa-regression.spec.ts`，会自动纳入 firefox 抽样。
+**跨浏览器抽样**：全量 e2e 只在 chromium 跑；firefox 按抽样子集跑 `visual` / `smoke` / `qa-regression` 三个 spec，圈定逻辑在 `playwright.config.ts` 的 firefox project `testMatch`（`/qa-regression\//` 匹配整个 `qa-regression/` 目录）。抽样目的：暴露浏览器专有渲染/兼容问题（如 slider `::-webkit-slider-runnable-track` 在 Firefox 失效导致轨道不可见的历史缺陷），全量在 Firefox 上跑会翻倍耗时、不值得；交互密集或时序敏感的 spec（interaction/a11y/demo/onoas 等）不纳入——Firefox headless 时序差异可能引入 flaky，宁少勿滥。新增浏览器相关回归断言优先放进 `qa-regression/` 对应组件文件，会自动纳入 firefox 抽样。
 
 ## 3. 组件开发清单（每个新组件必经）
 
@@ -33,7 +33,7 @@
 - [ ] demo 进文档站
 - [ ] 跑 `pnpm typecheck` `pnpm build` 全绿
 - [ ] **用户视角验证门禁**（见 AGENTS.md）：涉及交互的 demo 块真点/真输入看可见反馈；该组件支持的 hover / focus-visible / selected / disabled / loading 逐一过；console 零告警；截图识图核对颜色/圆角/间距；dark 主题同样过一遍
-- [ ] 发现的缺陷先在 `packages/ui/qa-regression.spec.ts` 固化回归再提交
+- [ ] 发现的缺陷先在 `packages/ui/qa-regression/<组件>.spec.ts` 固化回归再提交
 
 ## 4. 质量命令（根目录）
 
