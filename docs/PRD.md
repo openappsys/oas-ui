@@ -939,7 +939,7 @@ table 组件按能力并集补齐（列设置/多列排序/多级表头/内置�
 - 全量 e2e 1382 PASS（含 qa-regression 真实 hover 断言：computed 底色变化 + cursor + 图标 opacity 0→1）
 - 浏览器实测明暗主题 hover 铅笔可见；console 零告警
 
-## v2.4.0 步骤面板一体机 oas-stepper 🚧 进行中
+## v2.3.2 导航组七组件深挖收口 + oas-stepper 新组件 ✅
 
 ### 功能定义
 
@@ -961,6 +961,18 @@ table 组件按能力并集补齐（列设置/多列排序/多级表头/内置�
 4. 键盘流：横向左右 / 纵向上下 / Home/End / Enter/Space，禁步跳过、linear 禁跳
 5. 颜色只走 token（含 dark）、无硬编码色值；`pnpm test` / typecheck / build / api:check 全绿
 6. `oas-change` 事件 bubbles + composed，detail 结构 `{ index }`
+
+### 导航组七组件深挖（同版本收口）
+
+- **oas-steps**：prefix 自定义编号、max-count 中段折叠、reverse 倒序（连接线随 flex 反向延伸）、content-placement 右置、arrow 箭头分格形态（间距/角度/逐块颜色 CSS 变量开口与互嵌重叠修复）、lineless、separator 三形态、simple 紧凑、percent 圆环、responsive 窄屏转竖向、容器 status 覆盖、StepItem id/extra/disabled、oas-before-change 拦截
+- **oas-pagination**：disabled、size 五档、simple、show-edges 首尾钮、hide-on-single、prev/next-icon 插槽、total 插槽、pager-count 上限、省略号可点跳页、href-template 链接模式、responsive 窄屏切 simple、page-item 占位符插槽、show-more 总数未知形态、total-boundary 切换器阈值、oas-before-change；当前页 hover 修复
+- **oas-affix**：position bottom、append-to 传送、oas-change 事件（placeholder 占位重构）
+- **oas-float-button**：shape/type/size 五档/extended 文字胶囊/disabled/href 链接、draggable+magnetic 拖拽磁吸、定位变量开口、tooltip 组合 demo
+- **oas-speed-dial**：trigger hover、主钮图标插槽、oas-open reason、hide-label icon-only+悬浮气泡、geometry 圆弧几何（circle/semi/quarter+radius）
+- **oas-bottom-navigation**：item badge、safe-area、show-label icon-only、layout 横排、hide-on-scroll 滚动收起、shift 动效、颜色/高度变量开口
+- **oas-page-header**：content/footer/breadcrumb/back-icon/title/subtitle/avatar 插槽、ghost 变体、responsive 紧凑
+- 全部能力点走六项收口（实现/单测/demo/API/e2e/浏览器实测+识图）
+
 
 ## 后续 backlog：独立组件条目（按需立项）
 
