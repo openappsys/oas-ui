@@ -25,6 +25,11 @@
       "observed": true
     },
     {
+      "name": "no-mask-close",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "width",
       "observed": true
     },
@@ -33,23 +38,138 @@
       "observed": true
     },
     {
-      "name": "no-mask-close",
+      "name": "no-scroll-lock",
       "type": "boolean",
-      "observed": false
+      "observed": true
+    },
+    {
+      "name": "no-focus-trap",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "ok-text",
+      "observed": true
+    },
+    {
+      "name": "cancel-text",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "ok-loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "destroy-on-close",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "append-to",
+      "observed": true
+    },
+    {
+      "name": "z-index",
+      "observed": true
+    },
+    {
+      "name": "resizable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "resize-min",
+      "type": "string",
+      "default": "160",
+      "observed": true
+    },
+    {
+      "name": "resize-max",
+      "type": "string",
+      "default": "1000",
+      "observed": true
+    },
+    {
+      "name": "no-esc-close",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "no-close-btn",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "no-header",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "swipeable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "snap-points",
+      "observed": true
+    },
+    {
+      "name": "initial-focus",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "opened",
+      "type": "boolean",
+      "default": "false"
+    },
+    {
+      "name": "closing",
+      "type": "boolean"
+    }
+  ],
   "events": [
     {
       "name": "oas-ok"
     },
     {
-      "name": "oas-close"
+      "name": "oas-before-close",
+      "detail": "{ source: 'ok' } | { source }"
+    },
+    {
+      "name": "oas-open"
+    },
+    {
+      "name": "oas-opened"
+    },
+    {
+      "name": "oas-close",
+      "detail": "{ source }"
+    },
+    {
+      "name": "oas-closed"
+    },
+    {
+      "name": "oas-resize",
+      "detail": "{ size: this.currentDimensionPx() } | { size: nearest }"
     }
   ],
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "footer"
+    },
+    {
+      "name": "header-actions"
     },
     {
       "name": "title"
