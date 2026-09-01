@@ -12,6 +12,72 @@
       "name": "spinning",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "delay",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "tip",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "tip-position",
+      "type": "string",
+      "default": "below",
+      "observed": true
+    },
+    {
+      "name": "hide-icon",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "rotate",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "show-overlay",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
+    },
+    {
+      "name": "fullscreen",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "ring",
+      "observed": true
+    },
+    {
+      "name": "percent",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "paused",
+      "observed": true
+    },
+    {
+      "name": "inherit-color",
+      "observed": true
+    },
+    {
+      "name": "block",
+      "observed": true
     }
   ],
   "props": [],
@@ -19,6 +85,12 @@
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "icon"
+    },
+    {
+      "name": "tip"
     }
   ],
   "unresolved": []
