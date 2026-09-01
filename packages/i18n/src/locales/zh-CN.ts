@@ -22,6 +22,7 @@ export const zhCN = {
   'drawer.close': '关闭',
   'drawer.ok': '确定',
   'drawer.cancel': '取消',
+  'drawer.resize': '调整抽屉尺寸',
   // message（全局消息）
   'message.close': '关闭',
   // notification（通知提醒）
