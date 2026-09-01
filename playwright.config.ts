@@ -1,5 +1,9 @@
 import { defineConfig } from '@playwright/test'
 
+// e2e 端口可用环境变量 E2E_PORT 覆盖（默认 4173）——多 git worktree 并行开发时
+// 各工作树用独立端口跑 e2e，避免互抢 4173 或误连别的树留下的旧 preview server
+const E2E_PORT = process.env.E2E_PORT || '4173'
+
 export default defineConfig({
   testDir: './packages/ui',
   testMatch: '**/*.spec.ts',
@@ -11,7 +15,7 @@ export default defineConfig({
   // 收敛为 6（稳定与耗时的平衡点），如再遇崩溃可降 4。
   workers: 6,
   use: {
-    baseURL: 'http://localhost:4173',
+    baseURL: `http://localhost:${E2E_PORT}`,
     // 首访语言适配（zh* 留中文、其余跳 /en/）上线后，Playwright 默认 en-US  locale
     // 会被重定向到英文页——绝大多数 spec 断言面向中文页，默认锁 zh-CN；
     // 语言适配自身的用例在 homepage.spec.ts 里用 browser.newContext({ locale }) 显式覆盖
@@ -23,7 +27,7 @@ export default defineConfig({
     command: process.env.CI
       ? 'pnpm --filter @oas-ui/docs run preview'
       : 'pnpm --filter @oas-ui/docs run build && pnpm --filter @oas-ui/docs run preview',
-    url: 'http://localhost:4173',
+    url: `http://localhost:${E2E_PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
