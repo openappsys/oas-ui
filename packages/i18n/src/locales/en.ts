@@ -22,6 +22,7 @@ export const en: LocaleMessages = {
   'notification.close': 'Close',
   'notification.region': 'Notification',
   'toast.close': 'Close',
+  'snackbar.close': 'Close',
   'popconfirm.ok': 'OK',
   'popconfirm.cancel': 'Cancel',
   'select.search': 'Search options',
