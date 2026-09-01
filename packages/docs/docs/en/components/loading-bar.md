@@ -203,18 +203,18 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `local` | — | — | — |
-| `position` | — | — | — |
-| `reverse` | — | — | — |
-| `speed` | — | `string` | `200` |
-| `status` | — | `string` | — |
+| `local` | Mount target container selector (CSS selector/HTMLElement); defaults to a global bar at the top of body | — | — |
+| `position` | Position: top (default) / bottom | — | — |
+| `reverse` | Reverse direction (RTL progress flows right to left) | — | — |
+| `speed` | Base advance speed (ms, default 200); start(speed) overrides | `string` | `200` |
+| `status` | Current status: loading/finish/error (activity query) | `string` | — |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-error` | — |
-| `oas-finish` | — |
-| `oas-start` | — |
+| `oas-error` | Dispatched when error() finalizes in the error state, `detail: { count: this.sessionCount }` |
+| `oas-finish` | Dispatched when finish() finalizes, `detail: { count: this.sessionCount }` |
+| `oas-start` | Dispatched when start() begins, `detail: { count: this.sessionCount }` |
 
 The bar uses `role="progressbar"` with progress synced via `aria-valuenow` and the active state via `aria-busy`.

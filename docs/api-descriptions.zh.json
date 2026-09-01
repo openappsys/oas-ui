@@ -1821,10 +1821,27 @@
   "oas-spin": {
     "attrs": {
       "size": "指示器尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；旧缩写 `sm`/`md`/`lg` 保留兼容",
-      "spinning": "是否加载中；设置后包裹内容并叠加遮罩"
+      "spinning": "是否加载中；设置后包裹内容并叠加遮罩",
+      "delay": "防闪烁延迟（ms）：spinning 置位后延迟渲染，delay 内结束则完全不出现",
+      "tip": "加载文案（独立态显示于指示器下方，包裹态显示于遮罩中央）；富内容用 slot=\"tip\"",
+      "tip-position": "文案位置",
+      "hide-icon": "隐藏默认指示器（配合 slot=\"icon\" 或纯文案）",
+      "rotate": "自定义指示器是否自动旋转（默认 true；gif/静态 SVG 关闭）",
+      "show-overlay": "包裹内容时是否显示遮罩",
+      "aria-label": "读屏文案（aria-busy 同步）",
+      "fullscreen": "全屏加载（遮罩铺满视口）",
+      "variant": "形态变体",
+      "percent": "进度模式：number 显式百分比或 auto（未知进度模拟推进）",
+      "paused": "暂停旋转（进度模式冻结推进）",
+      "inherit-color": "指示器继承宿主文字色",
+      "block": "块级铺满容器宽度"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "被包裹的内容（包裹态叠加遮罩）",
+      "icon": "自定义指示器插槽，替换默认圆环",
+      "tip": "加载文案富内容插槽，覆盖 tip 属性"
+    }
   },
   "oas-splitter": {
     "attrs": {
@@ -2510,5 +2527,20 @@
     "slots": {
       "": "面板内容（默认插槽）"
     }
+  },
+  "oas-loading-bar": {
+    "attrs": {
+      "local": "挂载目标容器选择器（CSS 选择器/HTMLElement）；缺省挂 body 顶部全局条",
+      "position": "显示位置：top（默认）/bottom",
+      "reverse": "方向反转（RTL 场景进度从右往左）",
+      "speed": "推进速度基准（ms，默认 200），start(speed) 可覆盖",
+      "status": "当前状态：loading/finish/error（活动态查询）"
+    },
+    "events": {
+      "oas-error": "error() 错误收尾时派发",
+      "oas-finish": "finish() 完成收尾时派发",
+      "oas-start": "start() 开始时派发"
+    },
+    "slots": {}
   }
 }

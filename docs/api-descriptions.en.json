@@ -1821,10 +1821,27 @@
   "oas-spin": {
     "attrs": {
       "size": "Indicator size: `xs` / `small` / `medium` (default) / `large` / `xl`; legacy abbreviations `sm`/`md`/`lg` remain supported",
-      "spinning": "Whether loading; when set, wraps content with an overlaid mask"
+      "spinning": "Whether loading; when set, wraps content with an overlaid mask",
+      "delay": "Anti-flicker delay (ms): renders late after spinning is set; ends within delay = never shows",
+      "tip": "Loading text (below the indicator standalone; centered on the mask when wrapping); rich content via slot=\"tip\"",
+      "tip-position": "Text position",
+      "hide-icon": "Hide the default indicator (with slot=\"icon\" or text-only)",
+      "rotate": "Whether the custom indicator auto-rotates (default true; disable for gif/static SVG)",
+      "show-overlay": "Whether to show the mask when wrapping content",
+      "aria-label": "Screen-reader text (synced with aria-busy)",
+      "fullscreen": "Fullscreen loading (mask covers the viewport)",
+      "variant": "Visual variant",
+      "percent": "Progress mode: number for explicit percent, or auto (simulated unknown-progress advance)",
+      "paused": "Pause rotation (freezes progress advance)",
+      "inherit-color": "Indicator inherits the host text color",
+      "block": "Block level filling the container width"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Wrapped content (mask overlays in wrapping mode)",
+      "icon": "Custom indicator slot, replaces the default ring",
+      "tip": "Rich loading text slot; overrides the tip attribute"
+    }
   },
   "oas-splitter": {
     "attrs": {
@@ -2510,5 +2527,20 @@
     "slots": {
       "": "Panel content (default slot)"
     }
+  },
+  "oas-loading-bar": {
+    "attrs": {
+      "local": "Mount target container selector (CSS selector/HTMLElement); defaults to a global bar at the top of body",
+      "position": "Position: top (default) / bottom",
+      "reverse": "Reverse direction (RTL progress flows right to left)",
+      "speed": "Base advance speed (ms, default 200); start(speed) overrides",
+      "status": "Current status: loading/finish/error (activity query)"
+    },
+    "events": {
+      "oas-error": "Dispatched when error() finalizes in the error state",
+      "oas-finish": "Dispatched when finish() finalizes",
+      "oas-start": "Dispatched when start() begins"
+    },
+    "slots": {}
   }
 }
