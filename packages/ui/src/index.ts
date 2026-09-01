@@ -217,7 +217,13 @@ export {
   destroyAll as destroyAllConfirm,
   type ConfirmOptions,
 } from './feedback/confirm/index.js'
-export { OASDrawer } from './feedback/drawer/oas-drawer.js'
+export {
+  OASDrawer,
+  drawer,
+  destroyAll as destroyAllDrawer,
+  type DrawerHandle,
+  type DrawerOptions,
+} from './feedback/drawer/index.js'
 export { OASPopconfirm } from './feedback/popconfirm/oas-popconfirm.js'
 export { OASAlert } from './feedback/alert/oas-alert.js'
 export { OASProgress } from './feedback/progress/oas-progress.js'
