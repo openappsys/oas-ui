@@ -17,6 +17,7 @@ export const en: LocaleMessages = {
   'drawer.close': 'Close',
   'drawer.ok': 'OK',
   'drawer.cancel': 'Cancel',
+  'drawer.resize': 'Resize drawer',
   'message.close': 'Close',
   'notification.close': 'Close',
   'notification.region': 'Notification',
