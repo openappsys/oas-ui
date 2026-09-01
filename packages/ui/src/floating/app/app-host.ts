@@ -1,7 +1,7 @@
 /**
  * app 宿主注册表 —— 命令式 API（message/notification/loadingBar 等）的挂载目标与全局默认配置。
  *
- * - <oas-app> 连接时注册入栈，断开时出栈；注册时同时登记其 `message`/`notification`
+ * - <oas-app> 连接时注册入栈，断开时出栈；注册时同时登记其 `message`/`notification`/`toast`
  *   属性解析出的全局默认配置（命令式 API 合并：调用参数优先，默认仅补缺省键）
  * - 当前宿主解析：仍在文档中的宿主里「嵌套最深优先」（内层 app 恒胜出，不受连接
  *   顺序影响）；互不嵌套的并列宿主「后注册优先」
@@ -11,12 +11,14 @@
 export interface AppHostConfig {
   message?: Record<string, unknown> | null
   notification?: Record<string, unknown> | null
+  toast?: Record<string, unknown> | null
 }
 
 interface HostEntry {
   el: HTMLElement
   message: Record<string, unknown> | null
   notification: Record<string, unknown> | null
+  toast: Record<string, unknown> | null
 }
 
 let hosts: HostEntry[] = []
@@ -27,12 +29,14 @@ export function registerAppHost(el: HTMLElement, config?: AppHostConfig): void {
   if (existing) {
     existing.message = config?.message ?? null
     existing.notification = config?.notification ?? null
+    existing.toast = config?.toast ?? null
     return
   }
   hosts.push({
     el,
     message: config?.message ?? null,
     notification: config?.notification ?? null,
+    toast: config?.toast ?? null,
   })
 }
 
@@ -63,6 +67,11 @@ export function getAppMessageConfig(): Record<string, unknown> | null {
 /** 最近 app 宿主的 notification 全局默认配置（无 app 容器或已全部脱离文档时返回 null） */
 export function getAppNotificationConfig(): Record<string, unknown> | null {
   return current()?.notification ?? null
+}
+
+/** 最近 app 宿主的 toast 全局默认配置（无 app 容器或已全部脱离文档时返回 null） */
+export function getAppToastConfig(): Record<string, unknown> | null {
+  return current()?.toast ?? null
 }
 
 /** 计算消息栈挂载目标：优先 app 宿主，否则 document.body */
