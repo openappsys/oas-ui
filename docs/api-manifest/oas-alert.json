@@ -18,17 +18,97 @@
       "name": "closeable",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "icon",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "tint",
+      "observed": true
+    },
+    {
+      "name": "banner",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "center",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "close-text",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "max-line",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "prominent",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "border",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
     }
   ],
   "props": [],
   "events": [
     {
       "name": "oas-close"
+    },
+    {
+      "name": "oas-open-change",
+      "detail": "{ open: false } | { open: true }"
+    },
+    {
+      "name": "oas-after-close"
     }
   ],
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "action"
+    },
+    {
+      "name": "close"
+    },
+    {
+      "name": "description"
+    },
+    {
+      "name": "icon"
     },
     {
       "name": "title"
