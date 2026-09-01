@@ -9,26 +9,86 @@
       "observed": true
     },
     {
-      "name": "closable",
-      "type": "boolean",
-      "observed": false
-    },
-    {
-      "name": "title",
+      "name": "duration",
       "type": "string",
-      "default": "",
-      "observed": false
+      "default": "3000",
+      "observed": true
     },
     {
       "name": "description",
       "type": "string",
       "default": "",
-      "observed": false
+      "observed": true
     },
     {
-      "name": "duration",
+      "name": "closable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "open",
       "type": "string",
-      "default": "3000",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "id",
+      "observed": true
+    },
+    {
+      "name": "politeness",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "observed": true
+    },
+    {
+      "name": "show-progress",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "progress-position",
+      "type": "string",
+      "default": "bottom",
+      "observed": true
+    },
+    {
+      "name": "progress-ring",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "count",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "swipe-direction",
+      "type": "string",
+      "default": "both",
+      "observed": true
+    },
+    {
+      "name": "pause-on-hover",
+      "observed": true
+    },
+    {
+      "name": "pause-on-focus",
+      "observed": true
+    },
+    {
+      "name": "pause-on-window-blur",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
       "observed": false
     }
   ],
@@ -38,11 +98,29 @@
       "type": "ToastAction | null"
     },
     {
+      "name": "actions",
+      "type": "ToastAction[]",
+      "default": "[]"
+    },
+    {
       "name": "titleNode",
       "type": "Node | null"
     }
   ],
-  "events": [],
+  "events": [
+    {
+      "name": "oas-open",
+      "detail": "{ trigger: 'show' }"
+    },
+    {
+      "name": "oas-close",
+      "detail": "{ trigger }"
+    },
+    {
+      "name": "oas-destroy",
+      "detail": "{ trigger }"
+    }
+  ],
   "slots": [
     {
       "name": "title"

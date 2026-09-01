@@ -80,6 +80,7 @@ onMounted(async () => {
 | --- | --- | --- | --- |
 | `message` | message 命令式 API 全局默认配置 JSON（键集对齐现有 options 已有键：`duration`）；命令式函数读取最近 app 的配置与调用参数合并，调用参数优先；非法 JSON 忽略 + dev 告警 | — | — |
 | `notification` | notification 命令式 API 全局默认配置 JSON（键集对齐现有 options 已有键：`duration`/`showProgress`/`progressPosition`/`scrollable`）；命令式函数读取最近 app 的配置与调用参数合并，调用参数优先；非法 JSON 忽略 + dev 告警 | — | — |
+| `toast` | — | — | — |
 
 ### 插槽
 
