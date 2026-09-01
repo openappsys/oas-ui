@@ -25,17 +25,94 @@
       "observed": true
     },
     {
+      "name": "icon",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "closable",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "show-icon",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "pause-on-hover",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "placement",
+      "observed": true
+    },
+    {
+      "name": "show-progress",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "repeat-num",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "mask",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "key",
       "observed": false
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "contentNode",
+      "type": "Node | null"
+    },
+    {
+      "name": "avatarNode",
+      "type": "Node | null"
+    },
+    {
+      "name": "spinnerIcon",
+      "type": "string | null"
+    },
+    {
+      "name": "spinnerNode",
+      "type": "Node | null"
+    },
+    {
+      "name": "onClick",
+      "type": "(() => void) | null"
+    },
+    {
+      "name": "closed",
+      "type": "boolean",
+      "default": "false"
+    }
+  ],
   "events": [
     {
       "name": "oas-close",
-      "detail": "{ key: this.getAttr('key') || undefined }"
+      "detail": "{ key: this.getAttr('key') || undefined, source }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "avatar"
+    },
+    {
+      "name": "content"
+    }
+  ],
   "unresolved": []
 }

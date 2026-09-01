@@ -8,8 +8,22 @@ const STYLE = `
 }
 `
 
-/** message 命令式 API 现有 options 中可作为全局默认的键（duration；group/key 是运行时标识、onClose 是函数，JSON 无法表达默认，不纳入） */
-const MESSAGE_CONFIG_KEYS = new Set(['duration'])
+/**
+ * message 命令式 API 可作为全局默认的键（group/key 是运行时标识、onClose/onClick 是函数、
+ * avatar/spinner/content 是内容，JSON 无法表达，不纳入）
+ */
+const MESSAGE_CONFIG_KEYS = new Set([
+  'duration',
+  'closable',
+  'pauseOnHover',
+  'placement',
+  'offset',
+  'max',
+  'showProgress',
+  'showIcon',
+  'mask',
+  'repeatNum',
+])
 /** notification 命令式 API 现有 options 中可作为全局默认的键（title/description 是内容，不纳入） */
 const NOTIFICATION_CONFIG_KEYS = new Set(['duration', 'showProgress', 'progressPosition', 'scrollable'])
 
