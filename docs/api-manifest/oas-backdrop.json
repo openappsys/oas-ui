@@ -20,15 +20,48 @@
       "type": "string",
       "default": "true",
       "observed": true
+    },
+    {
+      "name": "color",
+      "observed": true
+    },
+    {
+      "name": "opacity",
+      "observed": true
+    },
+    {
+      "name": "persistent",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "stop-propagation",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "close-label",
+      "observed": true
     }
   ],
   "props": [],
   "events": [
     {
       "name": "oas-click",
-      "detail": "{ originalEvent: e }"
+      "detail": "{ originalEvent }"
+    },
+    {
+      "name": "oas-after-show"
+    },
+    {
+      "name": "oas-after-close"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
   "unresolved": []
 }
