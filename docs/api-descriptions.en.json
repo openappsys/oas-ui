@@ -15,13 +15,31 @@
     "attrs": {
       "closeable": "Whether to show the close button",
       "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
-      "type": "Alert type"
+      "type": "Alert type",
+      "icon": "Show the default icon for the type (info/success/warning/error); override via slot=\"icon\"",
+      "description": "Secondary text below the title; rich content via slot=\"description\"",
+      "variant": "Visual variant: tint (default, light bg + matching border) / filled (solid type color + on-color text) / outlined (transparent bg + type color border)",
+      "banner": "Banner mode: no border/radius, full-width; shows icon by default",
+      "center": "Center the text area horizontally (title/description/body); often combined with banner",
+      "open": "Controlled visibility (default true): set to false on close with oas-open-change dispatched; set true again to reopen",
+      "close-text": "Close button text (replaces the default ✕); rich custom content via slot=\"close\"",
+      "max-line": "Max body lines: clamp with CSS line-clamp and show an expand/collapse toggle; not set = no clamping",
+      "prominent": "Large icon: enlarge the icon one step (works with icon)",
+      "border": "Accent bars: space-separated top/end/bottom/start (logical sides, RTL-aware) rendering a type-color bar",
+      "size": "Size: small/medium/large (default medium) scaling font size and padding"
     },
     "events": {
-      "oas-close": "Dispatched after the close button is clicked; the component then hides"
+      "oas-close": "Dispatched after the close button is clicked; the component then hides",
+      "oas-open-change": "Dispatched when visibility changes, detail { open }",
+      "oas-after-close": "Dispatched after the closing transition ends (also dispatched when prefers-reduced-motion skips the transition)"
     },
     "slots": {
-      "title": "Rich title content slot; overrides the title attribute text when present"
+      "title": "Rich title content slot; overrides the title attribute text when present",
+      "": "Body content slot",
+      "action": "Right-side action slot (e.g. \"View details\"/\"Undo\" buttons); placed left of the close button when both present",
+      "close": "Rich custom close element, overrides ✕ and close-text; aria-label still falls back to close-text/locale",
+      "description": "Rich description slot; overrides the description attribute when present",
+      "icon": "Icon slot; overrides the default type icon"
     }
   },
   "oas-anchor": {
@@ -1261,12 +1279,23 @@
       "duration": "Auto-close duration (ms), `0` to keep open",
       "group": "Group id: messages in the same group merge into one",
       "key": "Unique id: used by `message.update` / `message.destroy`",
-      "type": "Message type: `info`/`success`/`warning`/`error`"
+      "type": "Message type: `info`/`success`/`warning`/`error`",
+      "icon": "Custom icon (declarative element usage); overrides the default type icon",
+      "closable": "Whether to show the close button (default true; hidden while loading)",
+      "show-icon": "Whether to show the type icon (default true; false for text only)",
+      "pause-on-hover": "Pause the timer on hover (default on), resume with the remaining time on leave",
+      "placement": "Declarative element usage position: top (default) / bottom",
+      "show-progress": "Show a countdown progress bar synced with the duration",
+      "repeat-num": "Repeat badge: merge repeated identical messages with a counter",
+      "mask": "Show a page mask; clicking it closes the message with oas-close detail.source = mask"
     },
     "events": {
       "oas-close": "Emitted when the message closes (auto-close / close button / `destroy`), `detail: { key? }`"
     },
-    "slots": {}
+    "slots": {
+      "avatar": "Avatar slot (before the message text)",
+      "content": "Rich body content slot"
+    }
   },
   "oas-modal": {
     "attrs": {
@@ -1301,11 +1330,21 @@
       "scrollable": "Scroll inside the card when the content is too long; enabled by default, pass `false` to disable",
       "show-progress": "Show the auto-close countdown progress bar (animates in sync with `duration`)",
       "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
-      "type": "Notification type: `info`/`success`/`warning`/`error`"
+      "type": "Notification type: `info`/`success`/`warning`/`error`",
+      "closable": "Whether to show the close button (default true; false hides it)",
+      "size": "Size preset (pairs with the --oas-notification-width variable)",
+      "pause-on-hover": "Pause timer and progress bar on hover/focus (default on); remaining time resumes on leave"
     },
-    "events": {},
+    "events": {
+      "oas-click": "Dispatched when the notification body is clicked (\"click for details\" scenario)",
+      "oas-close": "Dispatched on close, detail { source }: auto (duration elapsed) / close (close button) / destroy (programmatic)"
+    },
     "slots": {
-      "title": "Rich title content slot; overrides the title attribute text when present"
+      "title": "Rich title content slot; overrides the title attribute text when present",
+      "close-icon": "Custom close icon, overrides the default ✕",
+      "content": "Rich body content slot",
+      "footer": "Footer action slot (action buttons / meta row)",
+      "icon": "Icon slot; overrides the default type icon"
     }
   },
   "oas-navigation-menu": {

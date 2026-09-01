@@ -332,14 +332,14 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `closable` | — | `string` | `true` |
+| `closable` | 是否显示关闭按钮（默认 true；false 隐藏关闭钮） | `string` | `true` |
 | `description` | 描述内容 | `string` | — |
 | `duration` | 自动关闭时长（ms），`0` 表示不自动关闭 | `string` | `4500` |
-| `pause-on-hover` | — | `string` | `true` |
+| `pause-on-hover` | 悬停/聚焦暂停计时与进度条（默认开）；移出恢复剩余时长 | `string` | `true` |
 | `progress-position` | 进度条位置：`bottom`（默认）/ `top` | `string` | `bottom` |
 | `scrollable` | 描述内容超长时卡片内滚动，默认开启；传 `false` 关闭 | `string` | `true` |
 | `show-progress` | 显示自动关闭倒计时进度条（动画时长与 `duration` 同步） | `boolean` | — |
-| `size` | — | — | — |
+| `size` | 尺寸档（配套 --oas-notification-width 变量） | — | — |
 | `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `type` | 通知类型：`info`/`success`/`warning`/`error` | `string` | `info` |
 
@@ -347,17 +347,17 @@ onMounted(async () => {
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-click` | — |
-| `oas-close` | — |
+| `oas-click` | 通知体点击时派发（「点击查看详情」场景） |
+| `oas-close` | 通知关闭时派发，detail { source }：auto（时长到期）/ close（点击关闭钮）/ destroy（编程式销毁） |
 
 ### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| `close-icon` | — |
-| `content` | — |
-| `footer` | — |
-| `icon` | — |
+| `close-icon` | 自定义关闭图标，覆盖默认 ✕ |
+| `content` | 正文富内容插槽 |
+| `footer` | 底部操作区插槽（操作按钮/辅助行） |
+| `icon` | 图标插槽，覆盖 type 默认图标 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
 ### CSS 变量
