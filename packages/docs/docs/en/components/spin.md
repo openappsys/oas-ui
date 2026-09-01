@@ -304,29 +304,29 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `aria-label` | — | — | — |
-| `block` | — | — | — |
-| `delay` | — | `string` | — |
-| `fullscreen` | — | — | — |
-| `hide-icon` | — | `boolean` | — |
-| `inherit-color` | — | — | — |
-| `paused` | — | — | — |
-| `percent` | — | `string` | — |
-| `rotate` | — | `boolean` | — |
-| `show-overlay` | — | `string` | `true` |
+| `aria-label` | Screen-reader text (synced with aria-busy) | — | — |
+| `block` | Block level filling the container width | — | — |
+| `delay` | Anti-flicker delay (ms): renders late after spinning is set; ends within delay = never shows | `string` | — |
+| `fullscreen` | Fullscreen loading (mask covers the viewport) | — | — |
+| `hide-icon` | Hide the default indicator (with slot="icon" or text-only) | `boolean` | — |
+| `inherit-color` | Indicator inherits the host text color | — | — |
+| `paused` | Pause rotation (freezes progress advance) | — | — |
+| `percent` | Progress mode: number for explicit percent, or auto (simulated unknown-progress advance) | `string` | — |
+| `rotate` | Whether the custom indicator auto-rotates (default true; disable for gif/static SVG) | `boolean` | — |
+| `show-overlay` | Whether to show the mask when wrapping content | `string` | `true` |
 | `size` | Indicator size: `xs` / `small` / `medium` (default) / `large` / `xl`; legacy abbreviations `sm`/`md`/`lg` remain supported | `string` | `md` |
 | `spinning` | Whether loading; when set, wraps content with an overlaid mask | `boolean` | — |
-| `tip` | — | `string` | — |
-| `tip-position` | — | `string` | `below` |
-| `variant` | — | `string` | `ring` |
+| `tip` | Loading text (below the indicator standalone; centered on the mask when wrapping); rich content via slot="tip" | `string` | — |
+| `tip-position` | Text position | `string` | `below` |
+| `variant` | Visual variant | `string` | `ring` |
 
 ### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
-| `icon` | — |
-| `tip` | — |
+| default | Wrapped content (mask overlays in wrapping mode) |
+| `icon` | Custom indicator slot, replaces the default ring |
+| `tip` | Rich loading text slot; overrides the tip attribute |
 
 ### CSS variables
 

@@ -304,29 +304,29 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `aria-label` | — | — | — |
-| `block` | — | — | — |
-| `delay` | — | `string` | — |
-| `fullscreen` | — | — | — |
-| `hide-icon` | — | `boolean` | — |
-| `inherit-color` | — | — | — |
-| `paused` | — | — | — |
-| `percent` | — | `string` | — |
-| `rotate` | — | `boolean` | — |
-| `show-overlay` | — | `string` | `true` |
+| `aria-label` | 读屏文案（aria-busy 同步） | — | — |
+| `block` | 块级铺满容器宽度 | — | — |
+| `delay` | 防闪烁延迟（ms）：spinning 置位后延迟渲染，delay 内结束则完全不出现 | `string` | — |
+| `fullscreen` | 全屏加载（遮罩铺满视口） | — | — |
+| `hide-icon` | 隐藏默认指示器（配合 slot="icon" 或纯文案） | `boolean` | — |
+| `inherit-color` | 指示器继承宿主文字色 | — | — |
+| `paused` | 暂停旋转（进度模式冻结推进） | — | — |
+| `percent` | 进度模式：number 显式百分比或 auto（未知进度模拟推进） | `string` | — |
+| `rotate` | 自定义指示器是否自动旋转（默认 true；gif/静态 SVG 关闭） | `boolean` | — |
+| `show-overlay` | 包裹内容时是否显示遮罩 | `string` | `true` |
 | `size` | 指示器尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；旧缩写 `sm`/`md`/`lg` 保留兼容 | `string` | `md` |
 | `spinning` | 是否加载中；设置后包裹内容并叠加遮罩 | `boolean` | — |
-| `tip` | — | `string` | — |
-| `tip-position` | — | `string` | `below` |
-| `variant` | — | `string` | `ring` |
+| `tip` | 加载文案（独立态显示于指示器下方，包裹态显示于遮罩中央）；富内容用 slot="tip" | `string` | — |
+| `tip-position` | 文案位置 | `string` | `below` |
+| `variant` | 形态变体 | `string` | `ring` |
 
 ### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
-| `icon` | — |
-| `tip` | — |
+| 默认 | 被包裹的内容（包裹态叠加遮罩） |
+| `icon` | 自定义指示器插槽，替换默认圆环 |
+| `tip` | 加载文案富内容插槽，覆盖 tip 属性 |
 
 ### CSS 变量
 
