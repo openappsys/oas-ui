@@ -34,6 +34,37 @@
       "type": "string",
       "default": "24",
       "observed": true
+    },
+    {
+      "name": "closable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "group",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "queue",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "progress",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "swipe",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "no-pause",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],
@@ -42,12 +73,17 @@
       "name": "oas-action"
     },
     {
-      "name": "oas-close"
+      "name": "oas-close",
+      "detail": "{ reason }"
     },
     {
       "name": "oas-open"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
   "unresolved": []
 }

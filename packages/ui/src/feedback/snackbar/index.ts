@@ -6,3 +6,4 @@ if (!customElements.get('oas-snackbar')) {
 }
 
 export { OASSnackbar }
+export type { SnackbarCloseReason, SnackbarCloseDetail } from './oas-snackbar.js'
