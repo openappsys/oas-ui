@@ -15,13 +15,31 @@
     "attrs": {
       "closeable": "是否显示关闭按钮",
       "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\"",
-      "type": "提示类型"
+      "type": "提示类型",
+      "icon": "显示 type 默认图标（信息/成功/警告/错误对应）；slot=\"icon\" 可覆盖",
+      "description": "描述文案（标题下二级文字）；富内容用 slot=\"description\"",
+      "variant": "视觉形态：tint（默认，浅底+同色描边）/ filled（type 色实心+对底文字）/ outlined（透明底+type 色描边）",
+      "banner": "横幅模式：去边框圆角、通栏展示；联动默认显示图标",
+      "center": "文本区水平居中（标题/描述/正文）；常与 banner 组合用于页面顶部公告",
+      "open": "受控显隐（默认 true）：关闭后组件回写 false 并派发 oas-open-change；宿主重设 true 可重新打开",
+      "close-text": "关闭按钮文案（替换默认 ✕，如「知道了」）；富自定义用 slot=\"close\"",
+      "max-line": "正文最大行数：超出用 CSS line-clamp 截断并显示展开/收起按钮；缺省不折叠",
+      "prominent": "大图标：图标尺寸放大一档（与 icon 联动）",
+      "border": "侧边色条：空格分隔多值 top/end/bottom/start（逻辑方向，RTL 自适应），对应侧渲染 type 色强调条",
+      "size": "尺寸档：small/medium/large（默认 medium），字号与内边距随之缩放"
     },
     "events": {
-      "oas-close": "点击关闭按钮后触发，随后组件隐藏"
+      "oas-close": "点击关闭按钮后触发，随后组件隐藏",
+      "oas-open-change": "显隐状态变化时派发，detail { open }",
+      "oas-after-close": "关闭退场过渡结束后派发（prefers-reduced-motion 下跳过过渡直接隐藏，仍派发）"
     },
     "slots": {
-      "title": "标题富内容插槽，有内容时覆盖 title 属性文案"
+      "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
+      "": "正文内容插槽",
+      "action": "右侧操作区插槽（如「查看详情」「撤销」按钮），与关闭按钮并存时位于其左侧",
+      "close": "关闭元素富自定义，覆盖 ✕ 与 close-text；aria-label 仍取 close-text/locale",
+      "description": "描述富内容插槽，有内容时覆盖 description 属性文案",
+      "icon": "图标插槽，覆盖 type 默认图标"
     }
   },
   "oas-anchor": {
@@ -1261,12 +1279,23 @@
       "duration": "自动关闭时长（ms），`0` 表示不自动关闭",
       "group": "分组标识：同组消息合并为一条",
       "key": "唯一标识：供 `message.update` / `message.destroy` 定位",
-      "type": "消息类型：`info`/`success`/`warning`/`error`"
+      "type": "消息类型：`info`/`success`/`warning`/`error`",
+      "icon": "自定义图标（声明式元素用法）；覆盖 type 默认图标",
+      "closable": "是否显示关闭按钮（默认 true；loading 态下隐藏）",
+      "show-icon": "是否显示类型图标（默认 true；false 纯文字）",
+      "pause-on-hover": "悬停暂停计时（默认开），移出恢复剩余时长",
+      "placement": "声明式元素用法显示位置：top（默认）/ bottom",
+      "show-progress": "显示倒计时进度条（时长同步）",
+      "repeat-num": "重复计数徽标：同内容连发时合并显示次数",
+      "mask": "显示页面遮罩；点击遮罩关闭，oas-close detail.source 为 mask"
     },
     "events": {
       "oas-close": "消息关闭时派发（自动关闭/关闭按钮/`destroy`），`detail: { key? }`"
     },
-    "slots": {}
+    "slots": {
+      "avatar": "头像插槽（消息前置）",
+      "content": "正文富内容插槽"
+    }
   },
   "oas-modal": {
     "attrs": {
@@ -1301,11 +1330,21 @@
       "scrollable": "描述内容超长时卡片内滚动，默认开启；传 `false` 关闭",
       "show-progress": "显示自动关闭倒计时进度条（动画时长与 `duration` 同步）",
       "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\"",
-      "type": "通知类型：`info`/`success`/`warning`/`error`"
+      "type": "通知类型：`info`/`success`/`warning`/`error`",
+      "closable": "是否显示关闭按钮（默认 true；false 隐藏关闭钮）",
+      "size": "尺寸档（配套 --oas-notification-width 变量）",
+      "pause-on-hover": "悬停/聚焦暂停计时与进度条（默认开）；移出恢复剩余时长"
     },
-    "events": {},
+    "events": {
+      "oas-click": "通知体点击时派发（「点击查看详情」场景）",
+      "oas-close": "通知关闭时派发，detail { source }：auto（时长到期）/ close（点击关闭钮）/ destroy（编程式销毁）"
+    },
     "slots": {
-      "title": "标题富内容插槽，有内容时覆盖 title 属性文案"
+      "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
+      "close-icon": "自定义关闭图标，覆盖默认 ✕",
+      "content": "正文富内容插槽",
+      "footer": "底部操作区插槽（操作按钮/辅助行）",
+      "icon": "图标插槽，覆盖 type 默认图标"
     }
   },
   "oas-navigation-menu": {

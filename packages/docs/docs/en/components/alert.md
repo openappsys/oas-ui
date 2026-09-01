@@ -207,36 +207,36 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `banner` | — | `boolean` | — |
-| `border` | — | `string` | — |
-| `center` | — | `boolean` | — |
-| `close-text` | — | `string` | — |
+| `banner` | Banner mode: no border/radius, full-width; shows icon by default | `boolean` | — |
+| `border` | Accent bars: space-separated top/end/bottom/start (logical sides, RTL-aware) rendering a type-color bar | `string` | — |
+| `center` | Center the text area horizontally (title/description/body); often combined with banner | `boolean` | — |
+| `close-text` | Close button text (replaces the default ✕); rich custom content via slot="close" | `string` | — |
 | `closeable` | Whether to show the close button | `boolean` | — |
-| `description` | — | `string` | — |
-| `icon` | — | `boolean` | — |
-| `max-line` | — | `string` | `0` |
-| `open` | — | `boolean` | — |
-| `prominent` | — | `boolean` | — |
-| `size` | — | `string` | `medium` |
+| `description` | Secondary text below the title; rich content via slot="description" | `string` | — |
+| `icon` | Show the default icon for the type (info/success/warning/error); override via slot="icon" | `boolean` | — |
+| `max-line` | Max body lines: clamp with CSS line-clamp and show an expand/collapse toggle; not set = no clamping | `string` | `0` |
+| `open` | Controlled visibility (default true): set to false on close with oas-open-change dispatched; set true again to reopen | `boolean` | — |
+| `prominent` | Large icon: enlarge the icon one step (works with icon) | `boolean` | — |
+| `size` | Size: small/medium/large (default medium) scaling font size and padding | `string` | `medium` |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 | `type` | Alert type | `string` | `info` |
-| `variant` | — | `string` | `tint` |
+| `variant` | Visual variant: tint (default, light bg + matching border) / filled (solid type color + on-color text) / outlined (transparent bg + type color border) | `string` | `tint` |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-after-close` | — |
+| `oas-after-close` | Dispatched after the closing transition ends (also dispatched when prefers-reduced-motion skips the transition) |
 | `oas-close` | Dispatched after the close button is clicked; the component then hides |
-| `oas-open-change` | — |
+| `oas-open-change` | Dispatched when visibility changes, detail { open } |
 
 ### Slots
 
 | Name | Description |
 | --- | --- |
-| default | — |
-| `action` | — |
-| `close` | — |
-| `description` | — |
-| `icon` | — |
+| default | Body content slot |
+| `action` | Right-side action slot (e.g. "View details"/"Undo" buttons); placed left of the close button when both present |
+| `close` | Rich custom close element, overrides ✕ and close-text; aria-label still falls back to close-text/locale |
+| `description` | Rich description slot; overrides the description attribute when present |
+| `icon` | Icon slot; overrides the default type icon |
 | `title` | Rich title content slot; overrides the title attribute text when present |
