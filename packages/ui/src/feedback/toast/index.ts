@@ -1,13 +1,14 @@
 import '@oas-ui/i18n'
-import { OASToast, type ToastType } from './oas-toast.js'
+import { OASToast, type ToastType, type ToastAction } from './oas-toast.js'
 import {
   toast,
   destroyAll,
   type ToastHandle,
   type ToastOptions,
+  type ToastConfigOptions,
   type ToastPosition,
   type ToastPromiseOptions,
-  type ToastAction,
+  type ToastUpdateOptions,
 } from './toast.js'
 
 if (!customElements.get('oas-toast')) {
@@ -17,11 +18,13 @@ if (!customElements.get('oas-toast')) {
 export {
   OASToast,
   type ToastType,
+  type ToastAction,
   toast,
   destroyAll,
   type ToastHandle,
   type ToastOptions,
+  type ToastConfigOptions,
   type ToastPosition,
   type ToastPromiseOptions,
-  type ToastAction,
+  type ToastUpdateOptions,
 }
