@@ -203,18 +203,18 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `local` | — | — | — |
-| `position` | — | — | — |
-| `reverse` | — | — | — |
-| `speed` | — | `string` | `200` |
-| `status` | — | `string` | — |
+| `local` | 挂载目标容器选择器（CSS 选择器/HTMLElement）；缺省挂 body 顶部全局条 | — | — |
+| `position` | 显示位置：top（默认）/bottom | — | — |
+| `reverse` | 方向反转（RTL 场景进度从右往左） | — | — |
+| `speed` | 推进速度基准（ms，默认 200），start(speed) 可覆盖 | `string` | `200` |
+| `status` | 当前状态：loading/finish/error（活动态查询） | `string` | — |
 
 ### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-error` | — |
-| `oas-finish` | — |
-| `oas-start` | — |
+| `oas-error` | error() 错误收尾时派发，`detail: { count: this.sessionCount }` |
+| `oas-finish` | finish() 完成收尾时派发，`detail: { count: this.sessionCount }` |
+| `oas-start` | start() 开始时派发，`detail: { count: this.sessionCount }` |
 
 进度条 `role="progressbar"`，进度通过 `aria-valuenow` 同步，活动态同步 `aria-busy`。
