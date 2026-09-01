@@ -9,6 +9,10 @@
     {
       "name": "notification",
       "observed": true
+    },
+    {
+      "name": "toast",
+      "observed": true
     }
   ],
   "props": [],
