@@ -29,6 +29,8 @@ export const zhCN = {
   'notification.region': '通知',
   // toast（轻提示）
   'toast.close': '关闭',
+  // snackbar（消息条）
+  'snackbar.close': '关闭',
   // popconfirm（气泡确认）
   'popconfirm.ok': '确定',
   'popconfirm.cancel': '取消',
