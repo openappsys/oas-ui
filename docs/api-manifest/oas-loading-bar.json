@@ -3,14 +3,55 @@
   "sourceFile": "packages/ui/src/feedback/loading-bar/oas-loading-bar.ts",
   "attrs": [
     {
+      "name": "position",
+      "observed": true
+    },
+    {
+      "name": "reverse",
+      "observed": true
+    },
+    {
+      "name": "speed",
+      "type": "string",
+      "default": "200",
+      "observed": true
+    },
+    {
       "name": "status",
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "local",
+      "observed": true
     }
   ],
-  "props": [],
-  "events": [],
+  "props": [
+    {
+      "name": "active",
+      "type": "boolean"
+    },
+    {
+      "name": "sessions",
+      "type": "number",
+      "default": "0"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-start",
+      "detail": "{ count: this.sessionCount }"
+    },
+    {
+      "name": "oas-error",
+      "detail": "{ count: this.sessionCount }"
+    },
+    {
+      "name": "oas-finish",
+      "detail": "{ count: this.sessionCount }"
+    }
+  ],
   "slots": [],
   "unresolved": []
 }
