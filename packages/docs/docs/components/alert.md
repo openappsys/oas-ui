@@ -42,7 +42,7 @@
 <DemoBlock title="大图标（prominent）">
   <oas-alert type="warning" title="磁盘空间不足" icon prominent>
     <span slot="icon">⚠️</span>
-    <oas-button size="small" variant="outlined" onclick="message.info('已前往清理')">立即清理</oas-button>
+    <oas-button size="small" variant="outlined" slot="action" onclick="message.info('已前往清理')">立即清理</oas-button>
     当前可用空间仅剩 1.2GB，请及时清理缓存。
   </oas-alert>
 </DemoBlock>
@@ -207,36 +207,36 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `banner` | — | `boolean` | — |
-| `border` | — | `string` | — |
-| `center` | — | `boolean` | — |
-| `close-text` | — | `string` | — |
+| `banner` | 横幅模式：去边框圆角、通栏展示；联动默认显示图标 | `boolean` | — |
+| `border` | 侧边色条：空格分隔多值 top/end/bottom/start（逻辑方向，RTL 自适应），对应侧渲染 type 色强调条 | `string` | — |
+| `center` | 文本区水平居中（标题/描述/正文）；常与 banner 组合用于页面顶部公告 | `boolean` | — |
+| `close-text` | 关闭按钮文案（替换默认 ✕，如「知道了」）；富自定义用 slot="close" | `string` | — |
 | `closeable` | 是否显示关闭按钮 | `boolean` | — |
-| `description` | — | `string` | — |
-| `icon` | — | `boolean` | — |
-| `max-line` | — | `string` | `0` |
-| `open` | — | `boolean` | — |
-| `prominent` | — | `boolean` | — |
-| `size` | — | `string` | `medium` |
+| `description` | 描述文案（标题下二级文字）；富内容用 slot="description" | `string` | — |
+| `icon` | 显示 type 默认图标（信息/成功/警告/错误对应）；slot="icon" 可覆盖 | `boolean` | — |
+| `max-line` | 正文最大行数：超出用 CSS line-clamp 截断并显示展开/收起按钮；缺省不折叠 | `string` | `0` |
+| `open` | 受控显隐（默认 true）：关闭后组件回写 false 并派发 oas-open-change；宿主重设 true 可重新打开 | `boolean` | — |
+| `prominent` | 大图标：图标尺寸放大一档（与 icon 联动） | `boolean` | — |
+| `size` | 尺寸档：small/medium/large（默认 medium），字号与内边距随之缩放 | `string` | `medium` |
 | `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `type` | 提示类型 | `string` | `info` |
-| `variant` | — | `string` | `tint` |
+| `variant` | 视觉形态：tint（默认，浅底+同色描边）/ filled（type 色实心+对底文字）/ outlined（透明底+type 色描边） | `string` | `tint` |
 
 ### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-after-close` | — |
+| `oas-after-close` | 关闭退场过渡结束后派发（prefers-reduced-motion 下跳过过渡直接隐藏，仍派发） |
 | `oas-close` | 点击关闭按钮后触发，随后组件隐藏 |
-| `oas-open-change` | — |
+| `oas-open-change` | 显隐状态变化时派发，detail { open } |
 
 ### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
-| 默认 | — |
-| `action` | — |
-| `close` | — |
-| `description` | — |
-| `icon` | — |
+| 默认 | 正文内容插槽 |
+| `action` | 右侧操作区插槽（如「查看详情」「撤销」按钮），与关闭按钮并存时位于其左侧 |
+| `close` | 关闭元素富自定义，覆盖 ✕ 与 close-text；aria-label 仍取 close-text/locale |
+| `description` | 描述富内容插槽，有内容时覆盖 description 属性文案 |
+| `icon` | 图标插槽，覆盖 type 默认图标 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |

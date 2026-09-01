@@ -264,18 +264,18 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `closable` | — | `string` | `true` |
+| `closable` | Whether to show the close button (default true; hidden while loading) | `string` | `true` |
 | `count` | Merge count (shows `×n` after content when > 1) | `string` | `0` |
 | `duration` | Auto-close duration (ms), `0` to keep open | `string` | `3000` |
 | `group` | Group id: messages in the same group merge into one | — | — |
-| `icon` | — | `string` | — |
+| `icon` | Custom icon (declarative element usage); overrides the default type icon | `string` | — |
 | `key` | Unique id: used by `message.update` / `message.destroy` | — | — |
-| `mask` | — | `boolean` | — |
-| `pause-on-hover` | — | `string` | `true` |
-| `placement` | — | — | — |
-| `repeat-num` | — | `string` | — |
-| `show-icon` | — | `string` | `true` |
-| `show-progress` | — | `boolean` | — |
+| `mask` | Show a page mask; clicking it closes the message with oas-close detail.source = mask | `boolean` | — |
+| `pause-on-hover` | Pause the timer on hover (default on), resume with the remaining time on leave | `string` | `true` |
+| `placement` | Declarative element usage position: top (default) / bottom | — | — |
+| `repeat-num` | Repeat badge: merge repeated identical messages with a counter | `string` | — |
+| `show-icon` | Whether to show the type icon (default true; false for text only) | `string` | `true` |
+| `show-progress` | Show a countdown progress bar synced with the duration | `boolean` | — |
 | `type` | Message type: `info`/`success`/`warning`/`error` | `string` | `info` |
 
 ### Events
@@ -288,8 +288,8 @@ onMounted(async () => {
 
 | Name | Description |
 | --- | --- |
-| `avatar` | — |
-| `content` | — |
+| `avatar` | Avatar slot (before the message text) |
+| `content` | Rich body content slot |
 
 ### options
 

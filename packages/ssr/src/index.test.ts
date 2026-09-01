@@ -819,7 +819,9 @@ describe('@oas-ui/ssr renderToString', () => {
     // 操作按钮文案走 locale（zh-CN）
     expect(html).toContain('确定')
     expect(html).toContain('取消')
-    expect(html).toContain('</template><button>删除</button></oas-popconfirm>')
+    // 焦点管理：trigger 带 aria-expanded/aria-controls 关联（uid 全局计数，只断前缀与结尾）
+    expect(html).toContain('</template><button aria-expanded="false" aria-controls="oas-popconfirm-pop-')
+    expect(html).toContain('>删除</button></oas-popconfirm>')
   })
 
   it('命令式反馈组件无初始 DOM 不 SSR：message/toast/notification/snackbar/loading-bar/confirm 均不在白名单', async () => {

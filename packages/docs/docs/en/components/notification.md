@@ -332,14 +332,14 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `closable` | — | `string` | `true` |
+| `closable` | Whether to show the close button (default true; false hides it) | `string` | `true` |
 | `description` | Description content | `string` | — |
 | `duration` | Auto-close duration in ms; pass `0` to keep it open | `string` | `4500` |
-| `pause-on-hover` | — | `string` | `true` |
+| `pause-on-hover` | Pause timer and progress bar on hover/focus (default on); remaining time resumes on leave | `string` | `true` |
 | `progress-position` | Progress bar position: `bottom` (default) / `top` | `string` | `bottom` |
 | `scrollable` | Scroll inside the card when the content is too long; enabled by default, pass `false` to disable | `string` | `true` |
 | `show-progress` | Show the auto-close countdown progress bar (animates in sync with `duration`) | `boolean` | — |
-| `size` | — | — | — |
+| `size` | Size preset (pairs with the --oas-notification-width variable) | — | — |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 | `type` | Notification type: `info`/`success`/`warning`/`error` | `string` | `info` |
 
@@ -347,17 +347,17 @@ onMounted(async () => {
 
 | Event | Description |
 | --- | --- |
-| `oas-click` | — |
-| `oas-close` | — |
+| `oas-click` | Dispatched when the notification body is clicked ("click for details" scenario) |
+| `oas-close` | Dispatched on close, detail { source }: auto (duration elapsed) / close (close button) / destroy (programmatic) |
 
 ### Slots
 
 | Name | Description |
 | --- | --- |
-| `close-icon` | — |
-| `content` | — |
-| `footer` | — |
-| `icon` | — |
+| `close-icon` | Custom close icon, overrides the default ✕ |
+| `content` | Rich body content slot |
+| `footer` | Footer action slot (action buttons / meta row) |
+| `icon` | Icon slot; overrides the default type icon |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
 ### CSS Variables

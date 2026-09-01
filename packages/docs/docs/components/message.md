@@ -264,18 +264,18 @@ onMounted(async () => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
-| `closable` | — | `string` | `true` |
+| `closable` | 是否显示关闭按钮（默认 true；loading 态下隐藏） | `string` | `true` |
 | `count` | 合并计数（>1 时内容后显示 `×n`） | `string` | `0` |
 | `duration` | 自动关闭时长（ms），`0` 表示不自动关闭 | `string` | `3000` |
 | `group` | 分组标识：同组消息合并为一条 | — | — |
-| `icon` | — | `string` | — |
+| `icon` | 自定义图标（声明式元素用法）；覆盖 type 默认图标 | `string` | — |
 | `key` | 唯一标识：供 `message.update` / `message.destroy` 定位 | — | — |
-| `mask` | — | `boolean` | — |
-| `pause-on-hover` | — | `string` | `true` |
-| `placement` | — | — | — |
-| `repeat-num` | — | `string` | — |
-| `show-icon` | — | `string` | `true` |
-| `show-progress` | — | `boolean` | — |
+| `mask` | 显示页面遮罩；点击遮罩关闭，oas-close detail.source 为 mask | `boolean` | — |
+| `pause-on-hover` | 悬停暂停计时（默认开），移出恢复剩余时长 | `string` | `true` |
+| `placement` | 声明式元素用法显示位置：top（默认）/ bottom | — | — |
+| `repeat-num` | 重复计数徽标：同内容连发时合并显示次数 | `string` | — |
+| `show-icon` | 是否显示类型图标（默认 true；false 纯文字） | `string` | `true` |
+| `show-progress` | 显示倒计时进度条（时长同步） | `boolean` | — |
 | `type` | 消息类型：`info`/`success`/`warning`/`error` | `string` | `info` |
 
 ### 事件
@@ -288,8 +288,8 @@ onMounted(async () => {
 
 | 名称 | 说明 |
 | --- | --- |
-| `avatar` | — |
-| `content` | — |
+| `avatar` | 头像插槽（消息前置） |
+| `content` | 正文富内容插槽 |
 
 ### options
 
