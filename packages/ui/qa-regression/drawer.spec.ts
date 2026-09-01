@@ -257,3 +257,43 @@ test('drawer destroy-on-close：关闭动画结束后内容清空', async ({ pag
     { timeout: 5000 },
   )
 })
+
+test('drawer 面板打开后可视位置在视口内（CSS 顺序回归：placement 关闭位 transform 不得覆盖 data-open 打开位）', async ({ page }) => {
+  // 曾漏检：placement 规则后置覆盖 .panel[data-open] { transform: none }，面板 data-open 在、
+  // 机制断言全绿，但视觉上永远停在屏幕外（left:-360 / right:1280）。本断言锚定可视位置。
+  await page.goto('/components/drawer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-drawer')
+  const open = (label: string) => ({
+    label,
+    act: async () => {
+      await page.evaluate((l) => {
+        const btn = [...document.querySelectorAll('oas-button')].find(
+          (x): x is HTMLElement => (x.textContent || '').includes(l),
+        )
+        btn?.click()
+      }, label)
+      await page.waitForTimeout(900)
+    },
+  })
+  for (const { label, act } of [open('左侧抽屉'), open('右侧抽屉'), open('顶部抽屉'), open('底部抽屉')]) {
+    await act()
+    const r = await page.evaluate(() => {
+      const panel = [...document.querySelectorAll('oas-drawer')]
+        .map((d) => d.shadowRoot!.querySelector<HTMLElement>('[part="panel"]'))
+        .find((p) => p?.hasAttribute('data-open'))
+      if (!panel) return null
+      const b = panel.getBoundingClientRect()
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      return { x: b.x, y: b.y, w: b.width, h: b.height, vw, vh }
+    })
+    expect(r, label + '：应有一个 data-open 面板').not.toBeNull()
+    expect(
+      r!.x >= 0 && r!.x + r!.w <= r!.vw + 1 && r!.y >= 0 && r!.y + r!.h <= r!.vh + 1,
+      label + '：面板应完整落在视口内（实测 ' + JSON.stringify(r) + '）',
+    ).toBe(true)
+    // 关闭当前，避免影响下一个 placement 的查找
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(600)
+  }
+})

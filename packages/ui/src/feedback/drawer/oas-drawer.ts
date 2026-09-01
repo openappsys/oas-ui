@@ -105,9 +105,6 @@ const STYLE = `
     height var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1)),
     visibility 0s;
 }
-.panel[data-open] {
-  transform: none;
-}
 /* 四向定位：物理方向（placement 即物理语义，RTL 不翻转）；初始位移在关闭方向的相反侧 */
 .panel[data-placement='left'] {
   inset-block: 0;
@@ -140,6 +137,10 @@ const STYLE = `
   max-height: 90vh;
   transform: translateY(100%);
   box-shadow: 0 -4px 16px color-mix(in srgb, var(--oas-color-overlay) 25%, transparent);
+}
+/* 打开位必须在四向关闭位规则之后（同特异性后置覆盖）：data-open 时 transform 归零滑入视口 */
+.panel[data-open] {
+  transform: none;
 }
 .header {
   display: flex;
