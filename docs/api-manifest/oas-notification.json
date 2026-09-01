@@ -32,13 +32,29 @@
       "observed": true
     },
     {
-      "name": "description",
+      "name": "closable",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "observed": true
+    },
+    {
+      "name": "pause-on-hover",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "title",
       "type": "string",
       "default": "",
       "observed": false
     },
     {
-      "name": "title",
+      "name": "description",
       "type": "string",
       "default": "",
       "observed": false
@@ -48,10 +64,46 @@
     {
       "name": "titleNode",
       "type": "Node | null"
+    },
+    {
+      "name": "contentNode",
+      "type": "Node | null"
+    },
+    {
+      "name": "footerNode",
+      "type": "Node | null"
+    },
+    {
+      "name": "iconNode",
+      "type": "Node | null"
+    },
+    {
+      "name": "closeIconNode",
+      "type": "Node | null"
     }
   ],
-  "events": [],
+  "events": [
+    {
+      "name": "oas-click"
+    },
+    {
+      "name": "oas-close",
+      "detail": "{ source }"
+    }
+  ],
   "slots": [
+    {
+      "name": "close-icon"
+    },
+    {
+      "name": "content"
+    },
+    {
+      "name": "footer"
+    },
+    {
+      "name": "icon"
+    },
     {
       "name": "title"
     }
