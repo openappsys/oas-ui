@@ -256,15 +256,19 @@ describe('OAStooltip', () => {
   it('open 变化派发 oas-open-change（受控 setAttribute 双向）', async () => {
     const el = mount({ content: 'x' })
     await Promise.resolve()
-    const fired: Array<{ open: boolean }> = []
+    const fired: Array<Record<string, unknown>> = []
     el.addEventListener('oas-open-change', (e) =>
-      fired.push((e as CustomEvent<{ open: boolean }>).detail),
+      fired.push((e as CustomEvent).detail as Record<string, unknown>),
     )
     el.setAttribute('open', '')
     await Promise.resolve()
     el.removeAttribute('open')
     await Promise.resolve()
-    expect(fired).toEqual([{ open: true }, { open: false }])
+    // P9：受控（外部 setAttribute）路径 source/reason = attribute
+    expect(fired).toEqual([
+      { open: true, source: 'attribute', reason: 'attribute' },
+      { open: false, source: 'attribute', reason: 'attribute' },
+    ])
   })
 
   it('hover 触发也会派发 oas-open-change', async () => {
@@ -342,9 +346,10 @@ describe('OAStooltip', () => {
 
   it('各 placement：箭头定位 CSS 落在面板正确边（悬顶/底/左/右），中心对齐', async () => {
     // happy-dom 无布局引擎（boundingBox 全 0），退化为断言箭头定位 CSS：
-    // computePosition 语义下 placement=bottom → 面板在锚点下方 → 箭头悬顶边(top:-4px、尖朝上)；
-    // top → 底边(bottom:-4px)；left → 右边(right:-4px)；right → 左边(left:-4px)。
-    // 中心对齐：left/right 用 calc(50% - 4px)（虚拟 0 尺寸锚点 → 面板中心即锚点中心）。
+    // computePosition 语义下 placement=bottom → 面板在锚点下方 → 箭头悬顶边(top:-size/2、尖朝上)；
+    // top → 底边(bottom:-size/2)；left → 右边(right:-size/2)；right → 左边(left:-size/2)。
+    // 悬边量走 CSS 变量 token：--oas-tooltip-arrow-size（默认 12px）→ calc(12px / -2)；
+    // happy-dom 不解析 calc（返回原始文本），断言 CSSOM 原值。
     const cases = {
       bottom: { edge: 'top' },
       top: { edge: 'bottom' },
@@ -365,11 +370,11 @@ describe('OAStooltip', () => {
       expect(t.getAttribute('data-placement')).toBe(p)
       const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
       const cs = window.getComputedStyle(arrow)
-      // 该 placement 对应的悬空边为 -4px（8px 方块半宽外探）
+      // 该 placement 对应的悬空边 = 箭头尺寸/2 的负值（默认 12px → -6px 语义，走变量 calc）
       expect(
         cs.getPropertyValue(cases[p].edge),
         `placement=${p} 箭头应悬面板${cases[p].edge}边`,
-      ).toBe('-6px')
+      ).toBe('calc(12px / -2)')
     }
   })
 
@@ -1504,5 +1509,743 @@ describe('OAStooltip', () => {
     btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
     await Promise.resolve()
     expect(t.style.getPropertyValue('--oas-tip-cross')).toBe('')
+  })
+})
+
+// =====================================================================
+// 增强能力批次（2026-09 拍板清单）
+// P1a 滚动跟随 / P1b close-on-scroll / P2 外点关闭 / P9 事件 detail /
+// P12 touch 并入默认 / P3 label 语义与 a11y 还原 / P4 side+arrow-offset /
+// P5 动画变量开口 / P6 定位高级项 / P7 follow-cursor / P8 width /
+// P17 默认值校准 / P18 键盘焦点跳过 open-delay
+// =====================================================================
+
+describe('OAStooltip 增强能力（2026-09）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** 等待 rAF 帧（happy-dom 的 rAF 由真实时间驱动） */
+  async function waitFrame(): Promise<void> {
+    await new Promise((r) => setTimeout(r, 30))
+  }
+
+  /** shadow 内 STYLE 文本（空白折叠后做规则断言） */
+  function styleCss(el: OAStooltip): string {
+    return (el.shadowRoot!.querySelector('style')!.textContent ?? '').replace(/\s+/g, ' ')
+  }
+
+  // ---------- P1a 滚动跟随：普通锚点打开期间随滚动 rAF 重定位 ----------
+
+  it('P1a 滚动跟随：普通锚点打开期间滚动 → 锚点矩形变化后重定位（rAF）', async () => {
+    setViewport(1280, 800)
+    const el = mount({ content: 'x', placement: 'bottom', 'close-delay': '0' })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 200, top: 300, width: 64, height: 32 })
+    stubRect(t, { left: 0, top: 0, width: 120, height: 36 })
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    expect(t.style.top).toBe('342px') // 332 + 10（offset 默认 10）
+    // 滚动后锚点（相对视口）移动 → 滚动监听 rAF 重定位到新矩形
+    stubRect(btn, { left: 200, top: 400, width: 64, height: 32 })
+    window.dispatchEvent(new Event('scroll'))
+    await waitFrame()
+    expect(t.style.top).toBe('442px') // 432 + 10
+  })
+
+  it('P1a 虚拟坐标模式：滚动不触发重定位（视口坐标锚点，无跟随）', async () => {
+    setViewport(1280, 800)
+    const el = mountVirtual({
+      virtual: '',
+      'virtual-x': '300',
+      'virtual-y': '200',
+      content: 'x',
+      open: '',
+    })
+    await Promise.resolve()
+    const t = tip(el)
+    stubRect(t, { left: 0, top: 0, width: 120, height: 36 })
+    const before = t.style.top
+    stubRect(t, { left: 0, top: 0, width: 120, height: 36 })
+    window.dispatchEvent(new Event('scroll'))
+    await waitFrame()
+    expect(t.style.top).toBe(before)
+  })
+
+  // ---------- P1b close-on-scroll：滚动关闭（与 P1a 共享 scroll 捕获） ----------
+
+  it('P1b close-on-scroll：打开期间滚动 → 关闭（scroll 即关，非重定位）', async () => {
+    const el = mount({ content: 'x', 'close-on-scroll': '' })
+    await Promise.resolve()
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+    window.dispatchEvent(new Event('scroll'))
+    expect(el.hasAttribute('open'), '滚动应同步关闭').toBe(false)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('P1b close-on-scroll：关闭后再次滚动不再关闭已关实例（监听随关闭卸载）', async () => {
+    const el = mount({ content: 'x', 'close-on-scroll': '' })
+    await Promise.resolve()
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    window.dispatchEvent(new Event('scroll'))
+    // 二次滚动：已关闭，无副作用（不抛错、open 保持缺省）
+    window.dispatchEvent(new Event('scroll'))
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('P1b close-on-scroll：resize 不关闭（仅重定位语义；happy-dom 无布局 → 不抛错）', async () => {
+    const el = mount({ content: 'x', 'close-on-scroll': '' })
+    await Promise.resolve()
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    window.dispatchEvent(new Event('resize'))
+    expect(el.hasAttribute('open'), 'resize 不应触发 close-on-scroll 关闭').toBe(true)
+  })
+
+  it('P1a/P1b 滚动关闭后 open-change source="scroll"', async () => {
+    const el = mount({ content: 'x', 'close-on-scroll': '' })
+    await Promise.resolve()
+    const detail: Array<{ open: boolean; source: string }> = []
+    el.addEventListener('oas-open-change', (e) =>
+      detail.push((e as CustomEvent).detail as { open: boolean; source: string }),
+    )
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    detail.length = 0
+    window.dispatchEvent(new Event('scroll'))
+    expect(detail).toEqual([{ open: false, source: 'scroll', reason: 'scroll' }])
+  })
+
+  // ---------- P2 click/contextmenu 打开时 pointerdown 外点关闭 ----------
+
+  it('P2 trigger 含 click：打开后外部 pointerdown → 关闭', async () => {
+    const el = mount({ trigger: 'click', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+    expect(el.hasAttribute('open')).toBe(true)
+    // 外点（document 命中，非浮层非锚点）
+    document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    expect(el.hasAttribute('open'), '外部 pointerdown 应关闭 click 打开的 tooltip').toBe(false)
+  })
+
+  it('P2 点击浮层内部不关闭（composedPath 命中 tip）', async () => {
+    const el = mount({ trigger: 'click', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+    tip(el).dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, composed: true }))
+    expect(el.hasAttribute('open'), '浮层内 pointerdown 不应关闭').toBe(true)
+  })
+
+  it('P2 点击锚点不关闭（path 含 host）', async () => {
+    const el = mount({ trigger: 'click', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+    btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    expect(el.hasAttribute('open'), '锚点自身 pointerdown 不应关闭').toBe(true)
+  })
+
+  it('P2 trigger 含 contextmenu：打开后外点关闭', async () => {
+    const el = mount({ trigger: 'contextmenu', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
+    await Promise.resolve()
+    expect(el.hasAttribute('open')).toBe(true)
+    document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  it('P2 仅 hover trigger（无 click/contextmenu）：打开后外点不关闭（保持 hover 语义）', async () => {
+    const el = mount({ trigger: 'hover', content: 'x' })
+    await Promise.resolve()
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    expect(el.hasAttribute('open'), '无 click/contextmenu 通道不挂外点关闭').toBe(true)
+  })
+
+  it('P2 外点关闭 open-change source="outside"', async () => {
+    const el = mount({ trigger: 'click', content: 'x' })
+    await Promise.resolve()
+    const detail: Array<{ open: boolean; source: string; reason: string }> = []
+    el.addEventListener('oas-open-change', (e) =>
+      detail.push((e as CustomEvent).detail as { open: boolean; source: string; reason: string }),
+    )
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+    detail.length = 0
+    document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    expect(detail).toEqual([{ open: false, source: 'outside', reason: 'outside-pointer' }])
+  })
+
+  // ---------- P9 事件粒度：open-change detail 携带触发来源/原因 ----------
+
+  it('P9 click 触发：source="click"；Esc 关闭 source="escape" reason="escape-key"', async () => {
+    const el = mount({ trigger: 'click', content: 'x' })
+    await Promise.resolve()
+    const detail: Array<{ open: boolean; source: string; reason: string }> = []
+    el.addEventListener('oas-open-change', (e) =>
+      detail.push((e as CustomEvent).detail as { open: boolean; source: string; reason: string }),
+    )
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await Promise.resolve()
+    expect(detail).toEqual([
+      { open: true, source: 'click', reason: '' },
+      { open: false, source: 'escape', reason: 'escape-key' },
+    ])
+  })
+
+  it('P9 hover 触发：source="hover"；contextmenu source="contextmenu"', async () => {
+    const hoverEl = mount({ content: 'x', 'close-delay': '0' })
+    await Promise.resolve()
+    const hoverSrc: string[] = []
+    hoverEl.addEventListener('oas-open-change', (e) =>
+      hoverSrc.push((e as CustomEvent).detail.source),
+    )
+    const btn = hoverEl.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    btn.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    await Promise.resolve()
+    expect(hoverSrc).toEqual(['hover', 'hover'])
+
+    const ctxEl = mount({ trigger: 'contextmenu', content: 'x' })
+    await Promise.resolve()
+    const ctxSrc: string[] = []
+    ctxEl.addEventListener('oas-open-change', (e) =>
+      ctxSrc.push((e as CustomEvent).detail.source),
+    )
+    const ctxBtn = ctxEl.querySelector('button')!
+    ctxBtn.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }))
+    await Promise.resolve()
+    expect(ctxSrc).toEqual(['contextmenu'])
+  })
+
+  it('P9 auto-close 自动关闭 reason="timeout"', async () => {
+    vi.useFakeTimers()
+    const el = mount({ trigger: 'click', 'auto-close': '200', content: 'x' })
+    await Promise.resolve()
+    const detail: Array<{ source: string; reason: string }> = []
+    el.addEventListener('oas-open-change', (e) => {
+      const d = (e as CustomEvent).detail as { source: string; reason: string }
+      if (!d.source) return
+      detail.push(d)
+    })
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    vi.advanceTimersByTime(0)
+    detail.length = 0
+    vi.advanceTimersByTime(200)
+    expect(detail).toEqual([{ open: false, source: 'auto-close', reason: 'timeout' }])
+    vi.useRealTimers()
+  })
+
+  // ---------- P12 touch 并入默认 trigger（触屏长按开箱即用，桌面 mouse 过滤） ----------
+
+  it('P12 默认 trigger 含 touch：pointerdown(touch) 长按 500ms 打开（无需显式 trigger=touch）', async () => {
+    vi.useFakeTimers()
+    const el = mount({ content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(
+      new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }),
+    )
+    vi.advanceTimersByTime(499)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+    vi.advanceTimersByTime(2)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('false')
+    vi.useRealTimers()
+  })
+
+  it('P12 桌面鼠标 pointerdown 不触发长按（pointerType=mouse 过滤）', async () => {
+    vi.useFakeTimers()
+    const el = mount({ content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse' }))
+    vi.advanceTimersByTime(600)
+    expect(tip(el).getAttribute('aria-hidden')).toBe('true')
+    vi.useRealTimers()
+  })
+
+  it('P12 默认 touch 长按打开 source="touch" reason="long-press"', async () => {
+    vi.useFakeTimers()
+    const el = mount({ content: 'x' })
+    await Promise.resolve()
+    const detail: Array<{ source: string; reason: string }> = []
+    el.addEventListener('oas-open-change', (e) =>
+      detail.push((e as CustomEvent).detail as { source: string; reason: string }),
+    )
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }))
+    vi.advanceTimersByTime(500)
+    expect(detail).toEqual([{ open: true, source: 'touch', reason: 'long-press' }])
+    vi.useRealTimers()
+  })
+
+
+  // ---------- P3 label 语义切换 + aria 关联还原（保存原值、关闭还原） ----------
+
+  it('P3 a11y="label"：锚点挂 aria-labelledby 指向浮层 id（非 describedby）', async () => {
+    const el = mount({ a11y: 'label', open: '', content: '可访问名' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    expect(btn.getAttribute('aria-labelledby')).toBeTruthy()
+    const tid = btn.getAttribute('aria-labelledby')!
+    expect(el.shadowRoot!.getElementById(tid)!.getAttribute('role')).toBe('tooltip')
+    expect(btn.hasAttribute('aria-describedby')).toBe(false)
+  })
+
+  it('P3 a11y 默认 description：锚点挂 aria-describedby（向后兼容）', async () => {
+    const el = mount({ open: '', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    expect(btn.hasAttribute('aria-labelledby')).toBe(false)
+    expect(btn.getAttribute('aria-describedby')).toBeTruthy()
+  })
+
+  it('P3 修复覆盖：用户自设 aria-describedby 原值在关闭后还原', async () => {
+    const el = mount({ content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.setAttribute('aria-describedby', 'user-desc-id')
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    expect(btn.getAttribute('aria-describedby')).not.toBe('user-desc-id') // 打开时被 tooltip 关联
+    expect(btn.getAttribute('aria-describedby')).toBeTruthy()
+    el.removeAttribute('open')
+    await Promise.resolve()
+    expect(btn.getAttribute('aria-describedby'), '关闭应还原用户原值').toBe('user-desc-id')
+  })
+
+  it('P3 打开期间 description ↔ label 切换：另一属性临时值被还原，无双挂残留', async () => {
+    const el = mount({ content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.setAttribute('aria-describedby', 'user-desc')
+    el.setAttribute('open', '')
+    await Promise.resolve()
+    expect(btn.getAttribute('aria-describedby')).toBeTruthy()
+    // 运行时切到 label 语义：describedby 应还原 user-desc，labelledby 挂 tip
+    el.setAttribute('a11y', 'label')
+    await Promise.resolve()
+    expect(btn.getAttribute('aria-describedby'), '切 label 时 describedby 还原原值').toBe('user-desc')
+    expect(btn.getAttribute('aria-labelledby')).toBeTruthy()
+    // 关闭还原 labelledby
+    const labelledBy = btn.getAttribute('aria-labelledby')!
+    el.removeAttribute('open')
+    await Promise.resolve()
+    expect(btn.getAttribute('aria-labelledby')).toBeNull()
+    expect(labelledBy).toBeTruthy()
+  })
+
+  // ---------- P4 arrow-position side 态 + arrow-offset ----------
+
+  it('P4 arrow-position="side"：锚点投影偏面板终点端 → 箭头贴终点端（盒缘 offset 4）', async () => {
+    const el = mount({
+      open: '',
+      content: 'x',
+      placement: 'bottom',
+      'arrow-position': 'side',
+    })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    // 锚点很宽且偏右：面板 center 对齐会被 clamp 偏移 → 锚点中心投影超过面板半宽 → 靠终点端
+    stubRect(t, { left: 0, top: 0, width: 240, height: 36 })
+    Object.defineProperty(t, 'offsetWidth', { value: 240, configurable: true })
+    Object.defineProperty(t, 'offsetHeight', { value: 36, configurable: true })
+    stubRect(btn, { left: 300, top: 200, width: 300, height: 32 }) // 锚点右伸
+    setViewport(500, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.getAttribute('data-arrow-position')).toBe('side')
+    const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
+    // 面板被 clamp 到 4..(500-240-4)=256；锚点中心 450 → 投影在终点端 → 盒缘 = 240-12-4=224
+    expect(arrow.style.left).toBe('224px')
+  })
+
+  it('P4 arrow-position="side" + arrow-offset="20"：贴边内缩量可调', async () => {
+    const el = mount({
+      open: '',
+      content: 'x',
+      placement: 'bottom',
+      'arrow-position': 'side',
+      'arrow-offset': '20',
+    })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(t, { left: 0, top: 0, width: 240, height: 36 })
+    Object.defineProperty(t, 'offsetWidth', { value: 240, configurable: true })
+    Object.defineProperty(t, 'offsetHeight', { value: 36, configurable: true })
+    stubRect(btn, { left: 300, top: 200, width: 300, height: 32 })
+    setViewport(500, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow.style.left).toBe('208px') // 240 - 12 - 20
+  })
+
+  it('P4 arrow-position="side" + 锚点中心偏起点端 → 箭头贴起点端', async () => {
+    const el = mount({
+      open: '',
+      content: 'x',
+      placement: 'bottom',
+      'arrow-position': 'side',
+    })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(t, { left: 0, top: 0, width: 240, height: 36 })
+    Object.defineProperty(t, 'offsetWidth', { value: 240, configurable: true })
+    Object.defineProperty(t, 'offsetHeight', { value: 36, configurable: true })
+    // 锚点从视口左缘外伸入：面板 clamp 到 4px、锚点中心靠左 → 箭头贴起点端 offset 4
+    stubRect(btn, { left: -150, top: 200, width: 300, height: 32 })
+    setViewport(500, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow.style.left).toBe('4px')
+  })
+
+  it('P4 center 模式 arrow-offset 忽略（无内联偏移，走 CSS 居中/point-at-center 既有逻辑）', async () => {
+    const el = mount({
+      open: '',
+      content: 'x',
+      placement: 'bottom',
+      'arrow-offset': '20',
+      'auto-adjust-overflow': 'false',
+    })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(t, { left: 0, top: 0, width: 240, height: 36 })
+    Object.defineProperty(t, 'offsetWidth', { value: 240, configurable: true })
+    stubRect(btn, { left: 400, top: 200, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    const arrow = t.querySelector<HTMLElement>('[data-popper-arrow]')!
+    expect(arrow.style.left).toBe('')
+    expect(arrow.style.top).toBe('')
+  })
+
+  // ---------- P5 动画变量开口（token） ----------
+
+  it('P5 STYLE 动画时长/缓动/开关走 CSS 变量（默认值内联兜底）', () => {
+    const css = styleCss(mount())
+    expect(css).toContain('animation: var(--oas-tooltip-animation, oas-tooltip-in)')
+    expect(css).toContain('var(--oas-tooltip-duration, 0.15s)')
+    expect(css).toContain('var(--oas-tooltip-easing, ease)')
+    // reduced-motion 兜底保留（能关动画）
+    expect(css).toContain('@media (prefers-reduced-motion: reduce)')
+    expect(css).toContain('.tip.tip-enter { animation: none; }')
+  })
+
+  it('P5 箭头尺寸走 CSS 变量 token --oas-tooltip-arrow-size', () => {
+    const css = styleCss(mount())
+    expect(css).toContain('width: var(--oas-tooltip-arrow-size, 12px);')
+    expect(css).toContain('top: calc(var(--oas-tooltip-arrow-size, 12px) / -2);')
+  })
+
+  // ---------- P6 定位引擎高级项透传 ----------
+
+  it('P6 fallback-placements：主向放不下按回退序列取首个 fit 项', async () => {
+    const el = mount({
+      open: '',
+      content: 'x',
+      placement: 'bottom',
+      'fallback-placements': 'top,left',
+    })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(t, { left: 0, top: 0, width: 200, height: 100 })
+    Object.defineProperty(t, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(t, 'offsetHeight', { value: 100, configurable: true })
+    stubRect(btn, { left: 200, top: 280, width: 64, height: 32 }) // 底部空间不足
+    setViewport(500, 300)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.getAttribute('data-placement')).toBe('top') // top fit（fallback 首项）
+  })
+
+  it('P6 placement="auto"：自动择优到空间充足的主轴', async () => {
+    const el = mount({
+      open: '',
+      content: 'x',
+      placement: 'auto',
+      'auto-adjust-overflow': 'false',
+    })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(t, { left: 0, top: 0, width: 200, height: 100 })
+    Object.defineProperty(t, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(t, 'offsetHeight', { value: 100, configurable: true })
+    // 锚点贴近视口底（bottom 空间 60 < popup 100）→ 上方空间充足 → top
+    stubRect(btn, { left: 200, top: 600, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.getAttribute('data-placement')).toBe('top')
+  })
+
+  it('P6 placement="auto"：上下均充足时选空间较大侧', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'auto', 'auto-adjust-overflow': 'false' })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(t, { left: 0, top: 0, width: 200, height: 100 })
+    Object.defineProperty(t, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(t, 'offsetHeight', { value: 100, configurable: true })
+    // 锚点在视口下 1/3：下方空间 (800-632) = 168 > 上方 100? top 侧(600-10)=590 vs bottom(800-632-10)=158
+    stubRect(btn, { left: 200, top: 600, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    // 上方可用空间 590 最大 → top
+    expect(t.getAttribute('data-placement')).toBe('top')
+  })
+
+  it('P6 collision-boundary：碰撞边界换成指定元素 rect（翻转判定随之变化）', async () => {
+    const box = document.createElement('div')
+    box.id = 'tt-boundary'
+    document.body.appendChild(box)
+    stubRect(box, { left: 100, top: 100, width: 300, height: 300 })
+    const el = mount({
+      open: '',
+      content: 'x',
+      placement: 'bottom',
+      'collision-boundary': '#tt-boundary',
+    })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(t, { left: 0, top: 0, width: 200, height: 100 })
+    Object.defineProperty(t, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(t, 'offsetHeight', { value: 100, configurable: true })
+    // 锚点放边界中部偏下（boundary 局部 top=200）：bottom(232+110>296) 放不下 → 翻 top(200-110>=4)
+    stubRect(btn, { left: 150, top: 300, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.getAttribute('data-placement'), 'boundary 内 bottom 不足应翻 top').toBe('top')
+    // 对照：同一几何不设 collision-boundary → 视口（高 800）判定 bottom 放得下 → bottom
+    const el2 = mount({ open: '', content: 'x', placement: 'bottom' })
+    await Promise.resolve()
+    const t2 = tip(el2)
+    const btn2 = el2.querySelector('button')!
+    stubRect(t2, { left: 0, top: 0, width: 200, height: 100 })
+    Object.defineProperty(t2, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(t2, 'offsetHeight', { value: 100, configurable: true })
+    stubRect(btn2, { left: 150, top: 300, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el2.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t2.getAttribute('data-placement')).toBe('bottom')
+  })
+
+  it('P6 collision-boundary property 通道优先于属性选择器', async () => {
+    const a = document.createElement('div')
+    a.id = 'tt-b-a'
+    const b = document.createElement('div')
+    b.id = 'tt-b-b'
+    document.body.appendChild(a)
+    document.body.appendChild(b)
+    stubRect(a, { left: 100, top: 100, width: 300, height: 200 })
+    stubRect(b, { left: 0, top: 0, width: 1280, height: 800 })
+    const el = mount({
+      open: '',
+      content: 'x',
+      placement: 'bottom',
+      'collision-boundary': '#tt-b-a',
+    })
+    await Promise.resolve()
+    el.collisionBoundary = b // property 通道：视口整大，bottom fit → 不翻转
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(t, { left: 0, top: 0, width: 200, height: 100 })
+    Object.defineProperty(t, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(t, 'offsetHeight', { value: 100, configurable: true })
+    stubRect(btn, { left: 150, top: 150, width: 64, height: 32 })
+    setViewport(1280, 800)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.getAttribute('data-placement')).toBe('bottom')
+    el.collisionBoundary = null
+  })
+
+  it('P6 fallback-axis-side="start"：主轴两侧都不足时跨轴回退到交叉轴起点侧', async () => {
+    const el = mount({
+      open: '',
+      content: 'x',
+      placement: 'bottom',
+      'fallback-axis-side': 'start',
+    })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(t, { left: 0, top: 0, width: 200, height: 100 })
+    Object.defineProperty(t, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(t, 'offsetHeight', { value: 100, configurable: true })
+    // 锚点贴右缘（x=230）且上下都不足：top 侧空间不够 → bottom/top 失败；跨轴 start→left 有空间
+    stubRect(btn, { left: 230, top: 100, width: 20, height: 8 })
+    setViewport(250, 200)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.getAttribute('data-placement')).toBe('left')
+  })
+
+  it('P6 无 fallback-axis-side：主轴两侧都不足维持对侧翻转 + 视口夹取（不跨轴）', async () => {
+    const el = mount({ open: '', content: 'x', placement: 'bottom' })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(t, { left: 0, top: 0, width: 200, height: 100 })
+    Object.defineProperty(t, 'offsetWidth', { value: 200, configurable: true })
+    Object.defineProperty(t, 'offsetHeight', { value: 100, configurable: true })
+    stubRect(btn, { left: 230, top: 100, width: 20, height: 8 })
+    setViewport(250, 200)
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    // 无跨轴回退：bottom/top 两侧都放不下 → 引擎保持 bottom 主向 + 视口夹取（不跨轴）
+    expect(t.getAttribute('data-placement')).toBe('bottom')
+  })
+
+  // ---------- P7 follow-cursor ----------
+
+  it('P7 follow-cursor：打开后光标移动 → tooltip 跟随光标坐标定位', async () => {
+    const el = mount({ content: 'x', placement: 'top', 'follow-cursor': '' })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 100, top: 100, width: 64, height: 32 })
+    stubRect(t, { left: 0, top: 0, width: 120, height: 36 })
+    setViewport(1280, 800)
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    await Promise.resolve()
+    // 光标移入锚点区域 → 位置切到光标（top 上方 10px）
+    btn.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 300,
+        clientY: 200,
+        pointerType: 'mouse',
+      }),
+    )
+    await waitFrame()
+    expect(t.style.top).toBe('154px') // 200 - 36 - 10
+  })
+
+  it('P7 follow-cursor：未打开时光标移动不定位（无副作用）', async () => {
+    const el = mount({ content: 'x', 'follow-cursor': '' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        clientX: 300,
+        clientY: 200,
+        pointerType: 'mouse',
+      }),
+    )
+    await waitFrame()
+    expect(el.hasAttribute('open')).toBe(false)
+  })
+
+  // ---------- P8 width 宽随触发器 ----------
+
+  it('P8 width="trigger"：浮层宽度 = 触发元素宽度', async () => {
+    const el = mount({ open: '', content: 'x', width: 'trigger', placement: 'top' })
+    await Promise.resolve()
+    const t = tip(el)
+    const btn = el.querySelector('button')!
+    stubRect(btn, { left: 200, top: 300, width: 88, height: 32 })
+    el.setAttribute('content', 'x')
+    await Promise.resolve()
+    expect(t.style.width).toBe('88px')
+  })
+
+  it('P8 width="240"：数字补 px；移除 width 清空内联', async () => {
+    const el = mount({ open: '', content: 'x', width: '240' })
+    await Promise.resolve()
+    expect(tip(el).style.width).toBe('240px')
+    el.removeAttribute('width')
+    await Promise.resolve()
+    expect(tip(el).style.width).toBe('')
+  })
+
+  // ---------- P17 默认值校准（档案结论 c：默认值不动 + 文档引导） + P18 键盘焦点跳过 open-delay ----------
+
+  it('P17 校准：close-delay 默认 0 保持（移出即关，pointer-events 穿透友好）；显式 close-delay 才延迟', async () => {
+    vi.useFakeTimers()
+    // 默认 0：mouseleave 立即关闭
+    const el = mount({ trigger: 'hover', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    vi.advanceTimersByTime(0)
+    btn.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    vi.advanceTimersByTime(0)
+    expect(tip(el).getAttribute('aria-hidden'), 'close-delay 默认 0 → mouseleave 立即关闭').toBe('true')
+    // 显式 close-delay：延迟关闭（富内容场景引导组合：open-delay + close-delay + interactive）
+    const rich = mount({ trigger: 'hover', 'close-delay': '120', interactive: '', content: 'x' })
+    await Promise.resolve()
+    const richBtn = rich.querySelector('button')!
+    richBtn.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+    vi.advanceTimersByTime(0)
+    expect(tip(rich).getAttribute('aria-hidden')).toBe('false')
+    richBtn.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }))
+    vi.advanceTimersByTime(119)
+    expect(tip(rich).getAttribute('aria-hidden'), '显式 close-delay 生效（120ms 前保持打开）').toBe('false')
+    vi.advanceTimersByTime(2)
+    expect(tip(rich).getAttribute('aria-hidden')).toBe('true')
+    vi.useRealTimers()
+  })
+
+  it('P18 键盘焦点跳过 open-delay：focusin 立即打开（即使 open-delay=300）', async () => {
+    vi.useFakeTimers()
+    const el = mount({ trigger: 'focus', 'open-delay': '300', content: 'x' })
+    await Promise.resolve()
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    vi.advanceTimersByTime(0)
+    expect(tip(el).getAttribute('aria-hidden'), '键盘焦点应即时显示（不等 open-delay）').toBe('false')
+    vi.useRealTimers()
+  })
+
+  it('P18 focus 即时打开仍派发 open-change source="focus"', async () => {
+    const el = mount({ trigger: 'focus', 'open-delay': '300', content: 'x' })
+    await Promise.resolve()
+    const detail: Array<{ source: string }> = []
+    el.addEventListener('oas-open-change', (e) =>
+      detail.push((e as CustomEvent).detail as { source: string }),
+    )
+    const btn = el.querySelector('button')!
+    btn.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    await Promise.resolve()
+    expect(detail).toEqual([{ open: true, source: 'focus', reason: '' }])
   })
 })

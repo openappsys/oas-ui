@@ -685,3 +685,181 @@ test('tooltip 窄气泡圆角封顶：空内容 16px 气泡 radius 收到 (16−
 
 // —— dropdown 箭头——
 // 面板带指向触发元素的箭头（默认显示）；arrow="false" 隐藏（骨架保留）。
+
+// —— 增强批（2026-09 拍板清单）浏览器回归：滚动关闭 / 外点关闭 / label / follow-cursor / width / 事件来源 ——
+
+test('tooltip 增强-close-on-scroll：容器滚动 → 打开中的 tooltip 关闭（demo 可见反馈）', async ({
+  page,
+}) => {
+  await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tooltip[close-on-scroll]')
+  const host = page.locator('oas-tooltip[close-on-scroll]')
+  await host.evaluate((el) => {
+    const tip = el.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
+    const box = el.closest('.tt-scrollbox')
+    ;(el as HTMLElement).setAttribute('open', '')
+    if (box) box.scrollTop = 160
+    void tip
+  })
+  await page.waitForFunction(
+    () =>
+      !document
+        .querySelector('oas-tooltip[close-on-scroll]')
+        ?.hasAttribute('open'),
+  )
+  // 再滚动一次不抛错、保持关闭（监听已随关闭卸载）
+  await host.evaluate((el) => {
+    const box = el.closest('.tt-scrollbox')
+    if (box) box.scrollTop = 10
+  })
+  await page.waitForTimeout(120)
+  const closed = await host.evaluate((el) => !el.hasAttribute('open'))
+  expect(closed, '滚动关闭后 tooltip 应保持关闭').toBe(true)
+})
+
+test('tooltip 增强-click 外点关闭：document pointerdown（浮层/锚点外）→ 关闭', async ({ page }) => {
+  await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tt-outside')
+  const host = page.locator('#tt-outside')
+  // 点击触发打开
+  await host.locator(':scope > oas-button').click()
+  await page.waitForFunction(() => {
+    const t = document.querySelector('#tt-outside')
+    return t?.shadowRoot?.querySelector('[part="tip"]')?.getAttribute('aria-hidden') === 'false'
+  })
+  const statusOpen = await page.evaluate(
+    () => document.querySelector('#tt-outside-status')?.textContent ?? '',
+  )
+  expect(statusOpen, 'demo 状态 tag 应反馈 open').toContain('open')
+  // 外点（document 上 pointerdown，命中浮层与锚点之外）
+  await page.evaluate(() => {
+    document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+  })
+  await page.waitForFunction(
+    () => !document.querySelector('#tt-outside')?.hasAttribute('open'),
+  )
+  const statusClosed = await page.evaluate(
+    () => document.querySelector('#tt-outside-status')?.textContent ?? '',
+  )
+  expect(statusClosed).toContain('closed')
+})
+
+test('tooltip 增强-a11y="label"：打开挂 aria-labelledby、关闭还原（宿主 aria-label 不被覆盖）', async ({
+  page,
+}) => {
+  await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tt-label')
+  const host = page.locator('#tt-label')
+  // 打开（labelOpen 按钮走受控）
+  await page.evaluate(() => {
+    const t = document.querySelector('#tt-label')
+    t?.setAttribute('open', '')
+  })
+  await page.waitForFunction(() => {
+    const h = document.querySelector('#tt-label') as HTMLElement | null
+    const anchor = h?.querySelector(':scope > *') as HTMLElement | null
+    return !!anchor?.getAttribute('aria-labelledby')
+  })
+  const r = await page.evaluate(() => {
+    const h = document.querySelector('#tt-label') as HTMLElement
+    const anchor = h.querySelector(':scope > *') as HTMLElement
+    return {
+      labelledby: anchor.getAttribute('aria-labelledby'),
+      describedby: anchor.getAttribute('aria-describedby'),
+      ariaLabel: anchor.getAttribute('aria-label'), // 宿主自设，不得被覆盖
+      status: document.querySelector('#tt-label-status')?.textContent ?? '',
+    }
+  })
+  expect(r.labelledby, 'label 模式应挂 aria-labelledby').toBeTruthy()
+  expect(r.describedby).toBeNull()
+  expect(r.ariaLabel, '宿主 aria-label 不被覆盖').toBe('收藏按钮')
+  expect(r.status).toContain('aria: oas-tooltip-tip')
+  // 关闭 → aria-labelledby 还原移除
+  await page.evaluate(() => {
+    const t = document.querySelector('#tt-label')
+    t?.removeAttribute('open')
+  })
+  await page.waitForFunction(() => {
+    const h = document.querySelector('#tt-label') as HTMLElement | null
+    const anchor = h?.querySelector(':scope > *') as HTMLElement | null
+    return !anchor?.hasAttribute('aria-labelledby')
+  })
+  const ariaLabelAfter = await page.evaluate(() => {
+    const h = document.querySelector('#tt-label') as HTMLElement
+    const anchor = h.querySelector(':scope > *') as HTMLElement
+    return anchor.getAttribute('aria-label')
+  })
+  expect(ariaLabelAfter).toBe('收藏按钮')
+})
+
+test('tooltip 增强-follow-cursor：区域内移动 → 浮层跟随光标（几何随光标变化）', async ({
+  page,
+}) => {
+  await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tt-fc')
+  const area = page.locator('#tt-fc .tt-area')
+  await area.scrollIntoViewIfNeeded()
+  await page.waitForTimeout(300)
+  const box = (await area.boundingBox())!
+  // 悬停进入区域中部 → 打开；随后左右移动 → 浮层 left 跟随变化
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.waitForFunction(() => {
+    const t = document.querySelector('#tt-fc')
+    const tip = t?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
+    return tip?.getAttribute('aria-hidden') === 'false' && tip.style.left !== ''
+  })
+  const left1 = await page.evaluate(() => {
+    const t = document.querySelector('#tt-fc')!
+    return t.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!.style.left
+  })
+  // 向左移动 120px（直接派发 pointermove 驱动 follow-cursor 通道，避免鼠标经过边缘的时序抖动）
+  await page.evaluate(
+    ({ x, y }) => {
+      const area = document.querySelector('#tt-fc .tt-area')!
+      area.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          clientX: x,
+          clientY: y,
+          pointerType: 'mouse',
+        }),
+      )
+    },
+    { x: box.x + box.width / 2 - 120, y: box.y + box.height / 2 },
+  )
+  await page.waitForTimeout(120)
+  const left2 = await page.evaluate(() => {
+    const t = document.querySelector('#tt-fc')!
+    return t.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!.style.left
+  })
+  expect(parseFloat(left2), '浮层应随光标移动而改变位置').toBeLessThan(parseFloat(left1))
+})
+
+test('tooltip 增强-width="trigger"：浮层宽度与触发按钮同宽', async ({ page }) => {
+  await page.goto('/components/tooltip.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tooltip[width="trigger"]')
+  const host = page.locator('oas-tooltip[width="trigger"]')
+  await host.locator(':scope > oas-button').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(200)
+  await host.evaluate((el) => el.setAttribute('open', ''))
+  await page.waitForFunction(() => {
+    const h = document.querySelector('oas-tooltip[width="trigger"]')
+    const tip = h?.shadowRoot?.querySelector<HTMLElement>('[part="tip"]')
+    return tip?.getAttribute('aria-hidden') === 'false'
+  })
+  const r = await host.evaluate((el) => {
+    const tip = el.shadowRoot!.querySelector<HTMLElement>('[part="tip"]')!
+    const anchor = el.querySelector(':scope > *')!
+    return {
+      tipW: tip.offsetWidth,
+      anchorW: (anchor as HTMLElement).offsetWidth,
+      inlineW: tip.style.width,
+    }
+  })
+  // .tip 为 border-box：内联宽（锚点 gBCR 宽，可能小数）与视觉宽一致
+  expect(
+    Math.abs(parseFloat(r.inlineW) - r.anchorW),
+    '内联宽度应对齐锚点宽度',
+  ).toBeLessThanOrEqual(1)
+  expect(Math.abs(r.tipW - r.anchorW), '浮层实际宽度 ≈ 触发元素宽度').toBeLessThanOrEqual(1)
+})
