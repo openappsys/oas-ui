@@ -179,7 +179,7 @@
 
 ## 触发方式
 
-`trigger` 属性支持空格分隔的多选组合：`hover`（悬停）/ `focus`（聚焦）/ `click`（点击）/ `contextmenu`（右键）/ `touch`（长按）/ `manual`（完全受控）。默认 `hover focus`。
+`trigger` 属性支持空格分隔的多选组合：`hover`（悬停）/ `focus`（聚焦）/ `click`（点击）/ `contextmenu`（右键）/ `touch`（长按）/ `manual`（完全受控）。默认 `hover focus touch`——触屏长按开箱即用（桌面鼠标自动过滤，长按时长 `touch-delay` 可调）。
 
 <DemoBlock title="点击触发">
   <oas-tooltip trigger="click" content="点击我试试">
@@ -205,7 +205,7 @@
 
 ## 显示延迟
 
-`open-delay` / `close-delay` 控制悬停显示/隐藏的延迟（ms），避免快速滑过时误触发。
+`open-delay` / `close-delay` 控制悬停显示/隐藏的延迟（ms），避免快速滑过时误触发。键盘焦点触发不等待 `open-delay`（键盘用户已主动定位，即时显示）。
 
 <DemoBlock title="显示延迟与隐藏延迟">
   <oas-tooltip trigger="hover" open-delay="300" close-delay="200" content="悬停 300ms 后才显示，移出 200ms 后才隐藏">
@@ -226,7 +226,7 @@
   </oas-space>
 </DemoBlock>
 
-触屏设备上 `trigger="touch"` 长按显示（`touch-delay` 控制长按时长，默认 500ms）。
+触屏设备长按显示（默认 trigger 已含 `touch`，`touch-delay` 控制长按时长，默认 500ms；桌面鼠标长按被自动过滤）。
 
 <DemoBlock title="触屏长按触发">
   <oas-tooltip trigger="touch" touch-delay="600" content="长按 600ms 后显示（触屏）">
@@ -238,6 +238,8 @@
 
 `content` 属性显示纯文本；需要富内容（链接、图标、多行）时用 `slot="content"` 插槽，插槽存在时优先于属性文本。
 
+富内容若含可交互元素（链接等），建议组合 `interactive`（浮层可悬停，指针移入不关）+ `close-delay`（给指针从锚点移向浮层留时间）——这也是 WCAG 1.4.13「hoverable」的推荐形态。
+
 <DemoBlock title="富内容插槽">
   <oas-tooltip placement="top">
     <oas-button>悬停查看富内容</oas-button>
@@ -246,6 +248,18 @@
         <span><strong>关键提示</strong></span>
         <span>可以包含 <a href="#" onclick="return false">链接</a> 或图标等富内容</span>
         <oas-icon name="info" size="16" color="var(--oas-color-primary)"></oas-icon>
+      </oas-space>
+    </span>
+  </oas-tooltip>
+</DemoBlock>
+
+<DemoBlock title="interactive + close-delay 组合">
+  <oas-tooltip interactive close-delay="120" open-delay="200" placement="bottom">
+    <oas-button>悬停后移入浮层点链接</oas-button>
+    <span slot="content">
+      <oas-space size="small" direction="vertical">
+        <span>移动指针进入本浮层不会关闭</span>
+        <a href="#" onclick="return false">可以点到的链接</a>
       </oas-space>
     </span>
   </oas-tooltip>
@@ -372,6 +386,199 @@
   <oas-button size="small" onclick="freshChange()">改内容</oas-button>
 </DemoBlock>
 
+## 滚动跟随与滚动关闭
+
+打开期间普通锚点也会随滚动 / 窗口尺寸变化实时重定位（`scroll` capture + rAF 节流），浮层不再与锚点脱节；`close-on-scroll` 则让滚动即关闭（浮层不跟跑，适合紧凑提示）。
+
+<DemoBlock title="滚动跟随">
+  <div class="tt-scrollbox">
+    <p class="tt-boxhint">滚动右侧滚动条：tooltip 打开时跟着按钮一起移动</p>
+    <div class="tt-spacer"></div>
+    <oas-tooltip content="我跟随滚动条移动" placement="top">
+      <oas-button type="primary">滚动中保持跟随</oas-button>
+    </oas-tooltip>
+    <div class="tt-spacer"></div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="close-on-scroll 滚动即关">
+  <div class="tt-scrollbox">
+    <p class="tt-boxhint">先悬停打开提示，再滚动容器——提示立即关闭</p>
+    <div class="tt-spacer"></div>
+    <oas-tooltip close-on-scroll content="滚动一下我就消失" placement="top">
+      <oas-button>滚动关闭</oas-button>
+    </oas-tooltip>
+    <div class="tt-spacer"></div>
+  </div>
+</DemoBlock>
+
+## 点击触发与外部关闭
+
+`trigger` 含 `click` / `contextmenu` 打开后，按下浮层与触发元素之外的任意位置即关闭（light dismiss），无需回头再点触发元素。仅 `hover`/`focus`/`touch` 触发或受控 `open` 不挂外部关闭。
+
+<DemoBlock title="click + 外点关闭">
+  <oas-space size="small">
+    <oas-tooltip id="tt-outside" trigger="click" content="点开我后，点击页面其它位置关闭我" placement="bottom">
+      <oas-button>点击触发</oas-button>
+    </oas-tooltip>
+    <oas-tag id="tt-outside-status" type="info" size="small">closed</oas-tag>
+  </oas-space>
+  <p class="vp-hint">点击打开后，点击浮层 / 按钮之外任意处即关闭（观察状态 tag）。</p>
+</DemoBlock>
+
+## 可访问名语义（label）
+
+`a11y` 切换 tooltip 的语义角色：默认 `description`（触发元素挂 `aria-describedby` 指向浮层，作补充描述）；`label` 时改挂 `aria-labelledby`——适合纯图标等没有自身文本的触发元素，用提示文字作可访问名。关闭后自动还原触发元素原有的 aria 关联值，不覆盖宿主自设属性。
+
+<DemoBlock title="label 可访问名">
+  <oas-tooltip id="tt-label" a11y="label" content="添加到收藏" placement="bottom">
+    <oas-button aria-label="收藏按钮">☆ 收藏</oas-button>
+  </oas-tooltip>
+  <oas-button size="small" onclick="labelOpen()">打开 / 关闭</oas-button>
+  <oas-tag id="tt-label-status" type="info" size="small">aria: -</oas-tag>
+  <p class="vp-hint">打开后按钮被挂 aria-labelledby 指向浮层（可访问名 = 提示文字）；关闭后还原宿主原值。</p>
+</DemoBlock>
+
+## 箭头 side 贴边与 arrow-offset
+
+`arrow-position="side"` 让箭头吸附到锚点中心投影所在的半区（面板被视口避让偏移时箭头靠向对应侧边，而非钉在中心）；`arrow-offset`（px，仅 `side` 态生效）控制箭头距面板端的内缩量，默认 4px（防探出圆角的夹取安全量）。
+
+<DemoBlock title="箭头 side 与偏移">
+  <oas-space size="large" wrap>
+    <oas-tooltip content="side：箭头吸附锚点所在半区" placement="bottom" arrow-position="side">
+      <oas-button>side 箭头</oas-button>
+    </oas-tooltip>
+    <oas-tooltip content="side + arrow-offset=16（向内 16px）" placement="bottom" arrow-position="side" arrow-offset="16">
+      <oas-button>arrow-offset=16</oas-button>
+    </oas-tooltip>
+  </oas-space>
+  <p class="vp-hint">把触发元素滚到视口边缘再打开，能看到 side 箭头贴向锚点侧的差异。</p>
+</DemoBlock>
+
+## 动画定制（CSS 变量开口）
+
+进场动画时长 / 缓动 / 动画名走 CSS 变量（在 `<oas-tooltip>` 元素上设置即可，变量沿 shadow 继承）：`--oas-tooltip-duration`（默认 0.15s）、`--oas-tooltip-easing`（默认 ease）、`--oas-tooltip-animation`（默认 `oas-tooltip-in`，设 `none` 关闭进场动画）。`prefers-reduced-motion: reduce` 下动画始终关闭。
+
+<DemoBlock title="时长 / 缓动 / 动画开关">
+  <oas-space size="large" wrap>
+    <oas-tooltip
+      style="--oas-tooltip-duration: 0.32s; --oas-tooltip-easing: cubic-bezier(0.34, 1.56, 0.64, 1)"
+      content="320ms 回弹式进场"
+    >
+      <oas-button>自定义时长缓动</oas-button>
+    </oas-tooltip>
+    <oas-tooltip style="--oas-tooltip-animation: none" content="动画已关闭（--oas-tooltip-animation: none）">
+      <oas-button>关闭进场动画</oas-button>
+    </oas-tooltip>
+  </oas-space>
+</DemoBlock>
+
+## 智能放置与碰撞边界
+
+- `placement="auto"`（含 `auto-start` / `auto-end`）：打开时四向择优，落到空间充足的一侧；
+- `fallback-placements`：指定回退序列（空格或逗号分隔的 12 向 placement），主向放不下时逐项取首个放得下的；
+- `collision-boundary`：把翻转 / 避让边界从视口换成指定元素矩形（如滚动容器可视区，可配 `append-to` 防裁剪）；
+- `fallback-axis-side`：主向两侧都不足时的跨轴回退（`start` / `end` / 默认 `none`）。
+
+<DemoBlock title="auto 自适应与回退序列">
+  <oas-space size="large" wrap>
+    <oas-tooltip content="placement=auto：自动选空间充足的方向" placement="auto">
+      <oas-button>auto 方向</oas-button>
+    </oas-tooltip>
+    <oas-tooltip content="fallback-placements=left,top：下方放不下先试左、再试上" placement="bottom" fallback-placements="left,top">
+      <oas-button>回退序列</oas-button>
+    </oas-tooltip>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="碰撞边界 = 滚动容器可视区">
+  <div class="tt-scrollbox" id="tt-boundary-box">
+    <p class="tt-boxhint">collision-boundary 指向本容器：提示按容器可视区翻转避让</p>
+    <div class="tt-spacer"></div>
+    <oas-tooltip
+      id="tt-boundary-tip"
+      content="我按容器边界放置，不跑出可视区"
+      placement="bottom"
+      append-to="body"
+      collision-boundary="#tt-boundary-box"
+    >
+      <oas-button>容器边界内定位</oas-button>
+    </oas-tooltip>
+    <div class="tt-spacer"></div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="跨轴回退 fallback-axis-side">
+  <oas-tooltip content="上下都不足时回退到左侧（fallback-axis-side=start）" placement="bottom" fallback-axis-side="start">
+    <oas-button>跨轴回退 start</oas-button>
+  </oas-tooltip>
+</DemoBlock>
+
+## 跟随光标
+
+`follow-cursor`：打开后光标在触发元素区域内移动，浮层实时跟随光标（视口坐标通道复用，rAF 节流）。适合大范围悬浮提示。
+
+<DemoBlock title="follow-cursor 跟随光标">
+  <oas-tooltip id="tt-fc" follow-cursor content="跟着光标走" placement="top">
+    <div class="tt-area">把鼠标移入本区域并移动，提示跟随光标</div>
+  </oas-tooltip>
+</DemoBlock>
+
+## 宽度随触发器
+
+`width="trigger"` 让浮层与触发元素同宽（数字或 CSS 长度直接设宽度）；浮层宽仍受 `--oas-tooltip-max-width`（默认 240px）封顶，可调。
+
+<DemoBlock title="width 定制">
+  <oas-space size="large" wrap>
+    <oas-tooltip content="与按钮同宽" width="trigger" placement="top">
+      <oas-button>width=trigger 同宽提示</oas-button>
+    </oas-tooltip>
+    <oas-tooltip content="固定 320px 宽" width="320" placement="bottom">
+      <oas-button>width=320</oas-button>
+    </oas-tooltip>
+  </oas-space>
+</DemoBlock>
+
+## 事件来源（oas-open-change）
+
+`oas-open-change` 的 `detail` 携带 `{ open, source, reason }`：`source` 为触发通道（`hover` / `focus` / `click` / `contextmenu` / `touch` / `key` / `escape` / `outside` / `scroll` / `auto-close` / `attribute`），`reason` 为原因细化（如 `escape-key` / `outside-pointer` / `timeout` / `long-press`）。外部受控 `setAttribute` 路径 source 为 `attribute`。
+
+<DemoBlock title="事件来源反馈">
+  <oas-tooltip id="tt-evt" trigger="click" content="悬停 / 点击 / Esc 关闭试试来源" placement="bottom">
+    <oas-button>事件来源</oas-button>
+  </oas-tooltip>
+  <p class="vp-hint" id="tt-evt-status">尚未触发</p>
+</DemoBlock>
+
+<style>
+.tt-scrollbox {
+  max-height: 190px;
+  overflow: auto;
+  border: 1px dashed var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  padding: var(--oas-space-3);
+  background: var(--oas-color-bg);
+}
+.tt-boxhint {
+  margin: 0 0 var(--oas-space-2);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+}
+.tt-spacer {
+  height: 260px;
+}
+.tt-area {
+  padding: var(--oas-space-8) var(--oas-space-4);
+  border: 1px dashed var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  background: var(--oas-color-bg-hover);
+  text-align: center;
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-secondary);
+  cursor: crosshair;
+}
+</style>
+
 ## 边界
 
 <DemoBlock title="空内容">
@@ -451,6 +658,56 @@ onMounted(() => {
       freshTip.setAttribute('content', `内容已更新：${new Date().toLocaleTimeString()}`)
     }
   }
+
+  // 增强 demo：click 外点关闭状态反馈
+  const outsideTip = document.getElementById('tt-outside')
+  const outsideStatus = document.getElementById('tt-outside-status')
+  if (outsideTip && outsideStatus) {
+    const syncOutside = () => {
+      outsideStatus.textContent = outsideTip.hasAttribute('open') ? 'open' : 'closed'
+    }
+    syncOutside()
+    outsideTip.addEventListener('oas-open-change', syncOutside)
+  }
+
+  // label 语义：展示按钮 aria 关联 + 开合按钮（含运行时切换观察）
+  const labelTip = document.getElementById('tt-label')
+  const labelStatus = document.getElementById('tt-label-status')
+  if (labelTip && labelStatus) {
+    const labelAnchor = labelTip.querySelector(':scope > *')
+    const syncLabel = () => {
+      const a =
+        (labelAnchor && labelAnchor.getAttribute('aria-labelledby')) ||
+        (labelAnchor && labelAnchor.getAttribute('aria-describedby')) ||
+        ''
+      labelStatus.textContent =
+        labelTip.hasAttribute('open') && a ? `aria: ${a}` : 'aria: -'
+    }
+    window.labelOpen = () => {
+      if (labelTip.hasAttribute('open')) labelTip.removeAttribute('open')
+      else labelTip.setAttribute('open', '')
+    }
+    syncLabel()
+    labelTip.addEventListener('oas-open-change', syncLabel)
+    if (labelAnchor) {
+      new MutationObserver(syncLabel).observe(labelAnchor, {
+        attributes: true,
+        attributeFilter: ['aria-labelledby', 'aria-describedby'],
+      })
+    }
+  }
+
+  // 事件来源 demo：oas-open-change detail { open, source, reason }
+  const evtTip = document.getElementById('tt-evt')
+  const evtStatus = document.getElementById('tt-evt-status')
+  if (evtTip && evtStatus) {
+    evtTip.addEventListener('oas-open-change', (e) => {
+      const d = e.detail || {}
+      evtStatus.textContent = `open=${d.open} · source=${d.source}${
+        d.reason ? ` · reason=${d.reason}` : ''
+      }`
+    })
+  }
 })
 </script>
 
@@ -460,33 +717,41 @@ onMounted(() => {
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `a11y` | — | `string` | `description` |
 | `append-to` | 浮层挂载点：`body` 或 CSS 选择器。把浮层移入目标容器的独立 shadow（样式作用域保真），脱离 `overflow: hidden` / transform 等裁剪上下文；挂载期间 `::part(tip)` 无法从宿主穿透，定制走 CSS 变量或类选择器 | `string` | — |
 | `arrow` | 是否显示箭头（默认 true；`arrow="false"` 隐藏，箭头元素与 `::part(arrow)` 保留） | `string` | `true` |
+| `arrow-offset` | — | — | — |
 | `arrow-point-at-center` | 箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心） | `boolean` | — |
 | `arrow-position` | 箭头形态：`center`（默认，箭头在面板边缘居中）/ `merge`（仅 `*-start`/`*-end` placement 生效，直角三角与面板角共边融合：直角贴角点、直角边与面板两边共线，尖端正交指向锚点，通用形态） | `string` | `center` |
 | `auto-adjust-overflow` | 视口边缘自动翻转与避让（默认 true；`"false"` 关闭，保持声明 placement，可能溢出视口） | `string` | `true` |
 | `auto-close` | 打开后自动关闭时长（ms），`0` 或缺省不自动关闭 | — | — |
 | `close-delay` | 隐藏延迟（ms，默认 0）：mouseleave/focusout 后延迟关闭 | — | — |
+| `close-on-scroll` | — | `boolean` | — |
+| `collision-boundary` | — | `Element \| null` | — |
 | `collision-padding` | 视口边缘避让边距（px，默认 4）：浮层被视口夹取时与边缘保留的距离 | — | — |
 | `color` | 颜色变体：语义色 `primary`/`success`/`warning`/`danger`、11 预设名（如 `magenta`、`blue`）或任意 CSS 色值；全部走 token（含 dark 变体），箭头底色同步 | `string` | — |
 | `content` | 提示内容文本（`slot="content"` 富内容存在时优先于属性文本） | `string` | — |
 | `disabled` | 禁用：tooltip 不显示（hover / 受控 open 均不生效） | `boolean` | — |
+| `fallback-axis-side` | — | `string` | `none` |
+| `fallback-placements` | — | `string` | — |
+| `follow-cursor` | — | `boolean` | — |
 | `fresh` | 内容新鲜度（默认 true）：关闭期间内容变化也即时同步；`"false"` 时关闭期间冻结内容，再次打开才更新 | `string` | `true` |
 | `interactive` | 浮层可悬停：鼠标移入浮层不关闭（`pointer-events: auto`），浮层内链接可达 | `boolean` | — |
 | `max-width` | 浮层最大宽度（数字补 px 或 CSS 长度，默认走 `--oas-tooltip-max-width` token 240px） | `string` | — |
 | `offset` | 主轴距离（px，默认 10）：浮层与锚点沿主轴的间隔 | — | — |
 | `open` | 受控显示（布尔属性，存在即显示） | `boolean` | — |
 | `open-delay` | 显示延迟（ms，默认 0）：mouseenter/focusin 后延迟打开；`skip-delay-duration` 命中时跳过 | — | — |
-| `placement` | 浮层位置（12 向：top/bottom/left/right × start/center/end） | `Placement` | `top` |
+| `placement` | 浮层位置（12 向：top/bottom/left/right × start/center/end） | `string` | `top` |
 | `skidding` | 交叉轴偏移（px，默认 0）：top/bottom 系列沿水平轴（正右负左）、left/right 系列沿垂直轴（正下负上） | — | — |
 | `skip-delay-duration` | 全局延迟组阈值（ms，默认 300）：某 tooltip 关闭后这段时间内打开下一个 tooltip 时跳过 open-delay 立即显示（连续悬停响应连贯）；`"0"` 关闭该行为 | — | — |
 | `touch-delay` | touch 长按触发时长（ms，默认 500）：`trigger` 含 `touch` 时 pointerdown 长按到点打开，提前抬手/移出取消 | — | — |
-| `trigger` | 触发方式（空格分隔多选）：`hover` / `focus` / `click` / `contextmenu` / `touch` / `manual`，默认 `hover focus`；`manual` 完全受控 | `string` | `hover focus` |
+| `trigger` | 触发方式（空格分隔多选）：`hover` / `focus` / `click` / `contextmenu` / `touch` / `manual`，默认 `hover focus`；`manual` 完全受控 | `string` | `hover focus touch` |
 | `trigger-keys` | 指定按键（空格分隔，如 `F1`）：焦点在触发元素上时按该键打开 | `string` | — |
 | `virtual` | 虚拟触发模式：不绑定宿主触发元素，`open` 完全受外部控制，位置由 `virtual-anchor` 或 `virtual-x`/`virtual-y` 指定（适合图表点位、拖拽中的浮层提示） | `boolean` | — |
 | `virtual-anchor` | 虚拟锚点元素选择器（如 `#chart-point-1`），tooltip 按该元素矩形定位；与 `virtual-x`/`virtual-y` 二选一，坐标优先 | — | — |
 | `virtual-x` | 虚拟锚点视口 X 坐标（px，如鼠标 `clientX`），与 `virtual-y` 同时设置时按坐标定位 | — | — |
 | `virtual-y` | 虚拟锚点视口 Y 坐标（px，如鼠标 `clientY`），与 `virtual-x` 同时设置时按坐标定位 | — | — |
+| `width` | — | `string` | — |
 
 ### 事件
 

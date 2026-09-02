@@ -15,7 +15,7 @@
     },
     {
       "name": "placement",
-      "type": "Placement",
+      "type": "string",
       "default": "top",
       "observed": true
     },
@@ -56,7 +56,7 @@
     {
       "name": "trigger",
       "type": "string",
-      "default": "hover focus",
+      "default": "hover focus touch",
       "observed": true
     },
     {
@@ -136,13 +136,61 @@
       "type": "string",
       "default": "center",
       "observed": true
+    },
+    {
+      "name": "close-on-scroll",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "a11y",
+      "type": "string",
+      "default": "description",
+      "observed": true
+    },
+    {
+      "name": "arrow-offset",
+      "observed": true
+    },
+    {
+      "name": "width",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "fallback-placements",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "collision-boundary",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "fallback-axis-side",
+      "type": "string",
+      "default": "none",
+      "observed": true
+    },
+    {
+      "name": "follow-cursor",
+      "type": "boolean",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "collisionBoundary",
+      "type": "Element | null"
+    }
+  ],
   "events": [
     {
       "name": "oas-open-change",
-      "detail": "{ open }"
+      "detail": "{ open, source, reason }"
     }
   ],
   "slots": [
