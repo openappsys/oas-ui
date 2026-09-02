@@ -69,6 +69,9 @@ const STYLE = `
   display: inline-flex;
   line-height: 1.4;
   font-size: var(--oas-font-size-lg);
+  /* 图标与首行文本中心对齐：icon 高 1em(lg)，text 首行高 1.6em(md)，中心差 0.2em 下移补偿；
+     flex-start 下多行文本时图标固定在第一行顶部（符合直觉），本 margin 仅对齐首行中心 */
+  margin-top: 0.2em;
 }
 .icon svg {
   width: 1em;
