@@ -219,7 +219,277 @@ describe('modal 命令式 API', () => {
     expect(() => modal.confirm('xxx' as unknown as ModalOptions)).not.toThrow()
     expect(() => modal.confirm()).not.toThrow()
     await Promise.resolve()
-    // 全部渲染为确认框（空 title/content 容错）
+    // 全部渲染为确认框（空 title+content 容错）
     expect(document.body.querySelectorAll('oas-modal').length).toBe(4)
+  })
+
+  // —— 一期增强：alertdialog 语义 / onMaskClick / update() ——
+
+  it('P24 命令式确认框 dialog 语义为 alertdialog（声明式保持 dialog）', async () => {
+    modal.confirm({ title: '测试' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    expect(el.shadowRoot!.querySelector('[role="alertdialog"]')).not.toBeNull()
+    // 声明式（无 role 属性）保持 dialog：由 oas-modal.test.ts 的缺省断言覆盖
+  })
+
+  it('P15 遮罩点击触发 onMaskClick（先于 onCancel 调用）', async () => {
+    const order: string[] = []
+    modal.confirm({
+      title: '测试',
+      onMaskClick: () => order.push('mask'),
+      onCancel: () => order.push('cancel'),
+    })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    el.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await Promise.resolve()
+    expect(order).toEqual(['mask', 'cancel'])
+    expect(document.body.querySelector('oas-modal')).toBeNull()
+  })
+
+  it('P15 非遮罩关闭不触发 onMaskClick', async () => {
+    const onMaskClick = vi.fn()
+    const onCancel = vi.fn()
+    modal.confirm({ title: '测试', onMaskClick, onCancel })
+    await Promise.resolve()
+    cancelButton(document.body.querySelector('oas-modal')!).click()
+    await Promise.resolve()
+    expect(onMaskClick).not.toHaveBeenCalled()
+    expect(onCancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('P6 update() 运行时更新标题/内容/按钮文案', async () => {
+    const handle = modal.confirm({ title: '旧标题', content: '旧内容', okText: '旧确定' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    handle.update({ title: '新标题', content: '新内容', okText: '新确定' })
+    await Promise.resolve()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('新标题')
+    expect(el.textContent).toContain('新内容')
+    expect(okButton(el).textContent).toContain('新确定')
+    expect(el.getAttribute('ok-text')).toBe('新确定')
+  })
+
+  it('P6 update() 幂等安全：关闭后调用不抛错', async () => {
+    const handle = modal.confirm({ title: '测试' })
+    await Promise.resolve()
+    handle.close()
+    await Promise.resolve()
+    expect(() => handle.update({ title: '再改' })).not.toThrow()
+  })
+
+  // —— prompt 全套（PG1-PG6 / PB1-PB5）——
+
+  it('PG1/PG2 prompt 渲染输入框：inputValue 初始值 + placeholder', async () => {
+    const p = modal.prompt({ title: '输入', inputValue: '初始', placeholder: '占位' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    const input = el.querySelector('input')!
+    expect(input).not.toBeNull()
+    expect(input.value).toBe('初始')
+    expect(input.getAttribute('placeholder')).toBe('占位')
+    p.close()
+  })
+
+  it('PG3 inputType 映射：password / number / textarea', async () => {
+    modal.prompt({ title: 'a', inputType: 'password' })
+    modal.prompt({ title: 'b', inputType: 'number' })
+    modal.prompt({ title: 'c', inputType: 'textarea' })
+    await Promise.resolve()
+    const [pa, pb, pc] = document.body.querySelectorAll('oas-modal')
+    expect(pa!.querySelector('input')!.type).toBe('password')
+    expect(pb!.querySelector('input')!.type).toBe('number')
+    expect(pc!.querySelector('textarea')).not.toBeNull()
+  })
+
+  it('PB3 打开自动聚焦输入框（initial-focus），非聚焦确定按钮', async () => {
+    const p = modal.prompt({ title: '输入' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    expect(document.activeElement).toBe(el.querySelector('input'))
+    p.close()
+  })
+
+  it('PG4/PG5/PB1 validator 返回 false：校验失败保持打开 + 默认错误文案 + 输入框 danger 态', async () => {
+    const onOk = vi.fn()
+    // validator 基于值：'bad' 失败（false→默认文案），'good' 通过（true）
+    const p = modal.prompt({ title: '测试', validator: (v) => v === 'good', onOk })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    const input = el.querySelector('input')!
+    input.value = 'bad'
+    okButton(el).click()
+    await Promise.resolve()
+    // 保持打开、不触发 onOk
+    expect(el.hasAttribute('visible')).toBe(true)
+    expect(onOk).not.toHaveBeenCalled()
+    // 错误文案显示在输入框下方（role=alert），输入框 aria-invalid
+    const err = el.querySelector<HTMLElement>('.oas-modal-prompt-error')!
+    expect(err.hidden).toBe(false)
+    expect(err.textContent).toBe('校验未通过') // 默认文案走 locale form.validationFailed
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(err.getAttribute('role')).toBe('alert')
+    // PB1 输入修正后错误清除，可再提交
+    input.value = 'good'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(err.hidden).toBe(true)
+    expect(input.getAttribute('aria-invalid')).toBe('false')
+    okButton(el).click()
+    await Promise.resolve()
+    expect(onOk).toHaveBeenCalledTimes(1)
+    p.close()
+  })
+
+  it('PG4 validator 返回 string：该 string 作为错误文案（自定义）', async () => {
+    modal.prompt({ title: '测试', validator: () => '至少 6 位' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    el.querySelector('input')!.value = 'x'
+    okButton(el).click()
+    await Promise.resolve()
+    const err = el.querySelector<HTMLElement>('.oas-modal-prompt-error')!
+    expect(err.hidden).toBe(false)
+    expect(err.textContent).toBe('至少 6 位')
+  })
+
+  it('PG5 inputErrorMessage 配置默认错误文案（validator false 时使用）', async () => {
+    modal.prompt({ title: '测试', validator: () => false, inputErrorMessage: '格式不对' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    okButton(el).click()
+    await Promise.resolve()
+    expect(el.querySelector<HTMLElement>('.oas-modal-prompt-error')!.textContent).toBe('格式不对')
+  })
+
+  it('PG6 inputPattern 正则校验（字符串属性，先 pattern 后 validator）', async () => {
+    const validator = vi.fn()
+    const p = modal.prompt({ title: '测试', inputPattern: '^\\d+$', validator })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    el.querySelector('input')!.value = 'abc'
+    okButton(el).click()
+    await Promise.resolve()
+    // pattern 不匹配：拦截且不进入 validator
+    expect(validator).not.toHaveBeenCalled()
+    expect(el.hasAttribute('visible')).toBe(true)
+    expect(el.querySelector<HTMLElement>('.oas-modal-prompt-error')!.hidden).toBe(false)
+    // 修正后 pattern 通过才进入 validator
+    el.querySelector('input')!.value = '123'
+    el.querySelector('input')!.dispatchEvent(new Event('input', { bubbles: true }))
+    okButton(el).click()
+    await Promise.resolve()
+    expect(validator).toHaveBeenCalledWith('123')
+    p.close()
+  })
+
+  it('PG6 非法正则 pattern 不抛错（跳过 pattern 校验）', async () => {
+    const p = modal.prompt({ title: '测试', inputPattern: '([unclosed' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    el.querySelector('input')!.value = 'any'
+    expect(() => okButton(el).click()).not.toThrow()
+    p.close()
+  })
+
+  it('PB2 提交成功 resolve { value, action: "confirm" }', async () => {
+    const result = modal.prompt({ title: '测试' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    el.querySelector('input')!.value = '提交值'
+    okButton(el).click()
+    await expect(result).resolves.toEqual({ value: '提交值', action: 'confirm' })
+  })
+
+  it('PB2 取消按钮 resolve { value, action: "cancel" }', async () => {
+    const result = modal.prompt({ title: '测试' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    el.querySelector('input')!.value = '遗留值'
+    cancelButton(el).click()
+    await expect(result).resolves.toEqual({ value: '遗留值', action: 'cancel' })
+  })
+
+  it('A32 prompt 的 ✕/遮罩/Esc 归一 resolve { value, action: "cancel" }（不挂起）', async () => {
+    const viaClose = modal.prompt({ title: 'a' })
+    await Promise.resolve()
+    ;(document.body.querySelectorAll('oas-modal')[0]!.shadowRoot!.querySelector(
+      '[part="close"]',
+    ) as HTMLElement).click()
+    await expect(viaClose).resolves.toEqual({ value: '', action: 'cancel' })
+
+    const viaMask = modal.prompt({ title: 'b' })
+    await Promise.resolve()
+    document.body
+      .querySelectorAll('oas-modal')[0]!
+      .shadowRoot!.querySelector('.mask')!
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await expect(viaMask).resolves.toEqual({ value: '', action: 'cancel' })
+
+    const viaEsc = modal.prompt({ title: 'c' })
+    await Promise.resolve()
+    esc()
+    await expect(viaEsc).resolves.toEqual({ value: '', action: 'cancel' })
+  })
+
+  it('PB4 异步 onOk：loading 期间禁止重复提交，resolve 后关闭并 resolve 结果', async () => {
+    let release!: () => void
+    const p = modal.prompt({
+      title: '测试',
+      onOk: () => new Promise<void>((r) => (release = r)),
+    })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    okButton(el).click()
+    await Promise.resolve()
+    expect(el.hasAttribute('visible')).toBe(true)
+    expect(el.hasAttribute('loading')).toBe(true)
+    expect(okButton(el).disabled).toBe(true)
+    // loading 中重复点击不触发（按钮 disabled + 模块双保险）
+    okButton(el).click()
+    expect(okButton(el).disabled).toBe(true)
+    release()
+    await expect(p).resolves.toEqual({ value: '', action: 'confirm' })
+  })
+
+  it('PB4 异步 onOk reject：清除 loading 保持打开可重试', async () => {
+    const p = modal.prompt({ title: '测试', onOk: () => Promise.reject(new Error('boom')) })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    okButton(el).click()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(el.hasAttribute('loading')).toBe(false)
+    expect(okButton(el).disabled).toBe(false)
+    expect(el.hasAttribute('visible')).toBe(true)
+    p.close()
+  })
+
+  it('PG4 校验失败时 onCancel 走 oas-close 不触发确定流程（cancel 回调正常）', async () => {
+    const onCancel = vi.fn()
+    const p = modal.prompt({ title: '测试', validator: () => '错误', onCancel })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    el.querySelector('input')!.value = 'bad'
+    okButton(el).click()
+    await Promise.resolve()
+    expect(el.hasAttribute('visible')).toBe(true)
+    cancelButton(el).click()
+    await Promise.resolve()
+    expect(onCancel).toHaveBeenCalledTimes(1)
+    await expect(p).resolves.toEqual({ value: 'bad', action: 'cancel' })
+  })
+
+  it('P6 prompt update() 更新标题/占位/初始值/错误文案', async () => {
+    const p = modal.prompt({ title: '旧', placeholder: '旧占位', inputValue: 'v1' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    p.update({ title: '新', placeholder: '新占位', inputValue: 'v2' })
+    await Promise.resolve()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('新')
+    const input = el.querySelector('input')!
+    expect(input.getAttribute('placeholder')).toBe('新占位')
+    expect(input.value).toBe('v2')
+    p.close()
   })
 })

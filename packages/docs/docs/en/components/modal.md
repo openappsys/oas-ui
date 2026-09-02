@@ -149,6 +149,139 @@ The attributes used internally by the imperative module — `type` / `ok-text` /
   </oas-modal>
 </DemoBlock>
 
+## Prompt input
+
+The imperative `modal.prompt(options)` shows a dialog with an input control, auto-focusing the input on open, and resolves `{ value, action }` (`confirm` on OK; `cancel` for cancel / ✕ / mask / Esc). Supports `inputValue` / `placeholder` / `inputType` (text / password / number / textarea) / `inputPattern` (string regex validation, pattern runs before validator) / `validator` (`true` passes, `false` uses the default message, a `string` is the error message). **Failed validation keeps the dialog open** with the error shown; correcting the input clears the error so it can be submitted again. An async `onOk` puts the OK button into loading.
+
+<DemoBlock title="Basic prompt">
+  <oas-space>
+    <oas-button type="primary" onclick="openPrompt()">Basic input</oas-button>
+    <oas-button onclick="openPromptValidated()">Validation keeps open</oas-button>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="Prompt advanced (textarea / password + pattern)">
+  <oas-space>
+    <oas-button onclick="openPromptTextarea()">Feedback (textarea)</oas-button>
+    <oas-button onclick="openPromptPassword()">Set password (pattern)</oas-button>
+  </oas-space>
+</DemoBlock>
+
+## Body scroll lock
+
+Opening locks body scrolling (overflow hidden + scrollbar-width compensation to prevent layout shift); closing restores it. Multiple instances share a depth counter — the lock releases only when the last one closes. `no-scroll-lock` opts out.
+
+<DemoBlock title="Body scroll lock">
+  <oas-button type="primary" onclick="document.querySelector('#modal-scroll').setAttribute('visible','')">Open and lock scrolling</oas-button>
+  <oas-modal id="modal-scroll" title="Scroll lock">
+    <p>While open, page scrolling is locked and restored on close. Try scrolling the page with the dialog open — the content stays put.</p>
+  </oas-modal>
+</DemoBlock>
+
+## Close interception (before-close)
+
+Listen to the cancelable `oas-before-close` (`event.detail.source` identifies the source: ok / cancel / close-btn / mask / esc); calling `preventDefault()` blocks the close — useful for protecting unsaved data. For imperative dialogs, the OK path is governed by the `onOk` Promise (closes on resolve); cancel-type paths can still be intercepted.
+
+<DemoBlock title="Close interception">
+  <oas-button type="primary" onclick="document.querySelector('#modal-guard').setAttribute('visible','')">Open form dialog</oas-button>
+  <oas-modal id="modal-guard" title="Edit profile" ok-text="Save">
+    <p>Cancel / ✕ / mask / Esc are all intercepted with a warning; "Save" closes normally.</p>
+    <oas-space direction="vertical" size="small" style="width: 100%">
+      <oas-input placeholder="Nickname" value="John"></oas-input>
+    </oas-space>
+  </oas-modal>
+</DemoBlock>
+
+## Three close-entry switches
+
+`no-esc-close` (disable Esc), `no-mask-close` (disable mask click), `no-close-btn` (hide ✕) — each close entry is independently configurable, handing control to the host.
+
+<DemoBlock title="Close-entry switches">
+  <oas-button onclick="document.querySelector('#modal-switch').setAttribute('visible','')">Open minimal dialog</oas-button>
+  <oas-modal id="modal-switch" title="Button-only close" no-esc-close no-close-btn>
+    <p>Esc and ✕ are disabled (mask click still works); the only close entry is the footer button.</p>
+  </oas-modal>
+</DemoBlock>
+
+## Custom footer (footer slot)
+
+When `slot="footer"` has content, the built-in OK/Cancel buttons are hidden automatically and the footer is fully owned by the slot.
+
+<DemoBlock title="Footer slot">
+  <oas-button type="primary" onclick="document.querySelector('#modal-footer').setAttribute('visible','')">Open custom footer</oas-button>
+  <oas-modal id="modal-footer" title="Task details">
+    <p>The footer is fully owned by the slot (built-in buttons auto-hide).</p>
+    <span slot="footer">
+      <oas-button onclick="closeModal('modal-footer'); message.info('Cancelled')">Cancel</oas-button>
+      <oas-button type="primary" onclick="closeModal('modal-footer'); message.success('Submitted')">Submit task</oas-button>
+    </span>
+  </oas-modal>
+</DemoBlock>
+
+## Runtime update (handle.update)
+
+`handle.update(partialOptions)` incrementally updates title / content / button labels at runtime without touching bound callbacks.
+
+<DemoBlock title="handle.update()">
+  <oas-button type="primary" onclick="openUpdate()">Open, update after 3s</oas-button>
+</DemoBlock>
+
+## Imperative alertdialog semantics
+
+Imperative confirm / prompt dialogs use `role="alertdialog"` (screen readers announce immediately); declarative `<oas-modal>` stays `dialog` by default and can be overridden with the `role` attribute.
+
+<DemoBlock title="alertdialog semantics">
+  <oas-button onclick="document.querySelector('#modal-alert').setAttribute('visible','')">Open alertdialog</oas-button>
+  <oas-modal id="modal-alert" title="Important action" role="alertdialog" type="warning">
+    <p><code>role="alertdialog"</code>: screen readers interrupt current announcements; declarative defaults to dialog.</p>
+  </oas-modal>
+</DemoBlock>
+
+## Mask styling & top positioning
+
+The mask background uses the `--oas-modal-mask-bg` variable (falls back to the overlay token); `--oas-modal-mask-blur` enables optional backdrop blur. `position="top"` snaps the dialog to the top edge of the viewport (default is 100px from the top; `centered` centers it).
+
+<DemoBlock title="Mask styling / position top">
+  <oas-space>
+    <oas-button onclick="document.querySelector('#modal-mask').setAttribute('visible','')">Custom mask</oas-button>
+    <oas-button onclick="document.querySelector('#modal-top').setAttribute('visible','')">Top position</oas-button>
+  </oas-space>
+  <oas-modal id="modal-mask" title="Custom mask" style="--oas-modal-mask-bg: rgb(255 77 79 / 0.18); --oas-modal-mask-blur: 2px">
+    <p>Mask background comes from <code>--oas-modal-mask-bg</code> (here: red 18% + 2px blur).</p>
+  </oas-modal>
+  <oas-modal id="modal-top" title="Top position" position="top">
+    <p><code>position="top"</code> snaps the dialog to the top edge; the default is 100px from the top (`centered` centers it).</p>
+  </oas-modal>
+</DemoBlock>
+
+## Close-source event
+
+`oas-close` carries `detail.source` (ok / cancel / close-btn / mask / esc / programmatic) and `detail.action` (confirm / cancel / close); non-OK paths keep emitting `oas-cancel` for backwards compatibility.
+
+<DemoBlock title="Close source">
+  <oas-button onclick="document.querySelector('#modal-source').setAttribute('visible','')">Open and watch sources</oas-button>
+  <oas-modal id="modal-source" title="Close source">
+    <p>Close via OK / Cancel / ✕ / mask / Esc and watch the source message at the top-right.</p>
+  </oas-modal>
+</DemoBlock>
+
+## Rendering strategy
+
+`destroy-on-close` clears the content nodes on close (refill before the next open); `append-to` mounts the dialog into a target container (escaping host overflow clipping).
+
+<DemoBlock title="destroy-on-close / append-to">
+  <oas-space>
+    <oas-button onclick="fillModalDestroy(); document.querySelector('#modal-destroy').setAttribute('visible','')">destroy-on-close</oas-button>
+    <oas-button onclick="document.querySelector('#modal-portal').setAttribute('visible','')">append-to</oas-button>
+  </oas-space>
+  <oas-modal id="modal-destroy" title="Re-render" destroy-on-close>
+    <p>Content is cleared on close; the button refills it before the next open.</p>
+  </oas-modal>
+  <oas-modal id="modal-portal" title="Mounted to body" append-to="body">
+    <p>The dialog is mounted into a body-level portal, so a host with overflow:hidden cannot clip it.</p>
+  </oas-modal>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -201,6 +334,92 @@ onMounted(async () => {
     modal.confirm({ title: 'Confirm 2', content: 'Second confirm dialog' })
     modal.success({ title: 'Confirm 3', content: 'Third confirm dialog' })
   }
+
+  // —— Phase-1 demos: prompt / update / event feedback ——
+  window.openPrompt = () => {
+    modal
+      .prompt({
+        title: 'Project name',
+        inputValue: 'oas-ui',
+        placeholder: 'Project name',
+        validator: (v) => v.trim() !== '' || 'Must not be empty',
+      })
+      .then((r) => {
+        if (r.action === 'confirm') message.success(`Input: ${r.value}`)
+        else message.info('Cancelled')
+      })
+  }
+  window.openPromptValidated = () => {
+    modal
+      .prompt({
+        title: 'Set nickname',
+        placeholder: 'At least 4 characters',
+        validator: (v) => v.length >= 4 || 'Nickname must be at least 4 characters',
+      })
+      .then((r) => {
+        if (r.action === 'confirm') message.success(`Nickname: ${r.value}`)
+      })
+  }
+  window.openPromptTextarea = () => {
+    modal
+      .prompt({
+        title: 'Feedback',
+        inputType: 'textarea',
+        placeholder: 'Describe your suggestion…',
+        validator: (v) => v.trim().length >= 10 || 'At least 10 characters',
+      })
+      .then((r) => {
+        if (r.action === 'confirm') message.success('Feedback submitted')
+      })
+  }
+  window.openPromptPassword = () => {
+    modal
+      .prompt({
+        title: 'Set password',
+        inputType: 'password',
+        placeholder: '8-16 chars, letters and digits',
+        inputPattern: '^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,16}$',
+        inputErrorMessage: '8-16 chars including both letters and digits',
+      })
+      .then((r) => {
+        if (r.action === 'confirm') message.success('Password set')
+      })
+  }
+  window.openUpdate = () => {
+    const handle = modal.confirm({
+      title: 'Processing…',
+      content: 'Title and copy update automatically after 3 seconds.',
+      onOk: () => message.success('Done'),
+    })
+    setTimeout(() => {
+      handle.update({
+        title: 'Processing complete',
+        content: 'State updated — click "Done" to finish.',
+        okText: 'Done',
+      })
+    }, 3000)
+  }
+  window.fillModalDestroy = () => {
+    const el = document.getElementById('modal-destroy')
+    if (el.children.length === 0) {
+      el.innerHTML = '<p>Refilled content (from fillModalDestroy).</p>'
+    }
+  }
+
+  // Close interception: OK passes through, other sources are blocked with a warning
+  const guard = document.getElementById('modal-guard')
+  guard.addEventListener('oas-before-close', (e) => {
+    if (e.detail.source === 'ok') return
+    e.preventDefault()
+    message.warning('You have unsaved changes — save before closing')
+  })
+
+  // Close source: report source + action at the top-right
+  const sourceModal = document.getElementById('modal-source')
+  sourceModal.addEventListener('oas-close', (e) => {
+    const { source, action } = e.detail
+    message.info(`Close source: ${source} (action=${action})`)
+  })
 })
 </script>
 
@@ -222,16 +441,25 @@ onMounted(async () => {
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
+| `append-to` | — | — | — |
 | `cancel-text` | Cancel button label; defaults to locale `modal.cancel` | — | — |
 | `centered` | Vertically center the dialog | `boolean` | — |
+| `destroy-on-close` | — | `boolean` | — |
 | `draggable` | Drag the dialog via its header | `boolean` | — |
 | `focus-ok` | Move focus to the "OK" button on open (default: the "Cancel" button) | `boolean` | — |
 | `fullscreen` | Display fullscreen: the dialog fills the viewport without radius or margin (takes precedence over width / centered / draggable) | `boolean` | — |
+| `initial-focus` | — | — | — |
 | `loading` | Put the OK button into loading state (disabled + spinner), blocking repeated confirms | `boolean` | — |
 | `no-cancel` | Hide the cancel button (the footer keeps only "OK"; built into semantic variants) | `boolean` | — |
+| `no-close-btn` | — | `boolean` | — |
+| `no-esc-close` | — | `boolean` | — |
+| `no-focus-trap` | — | `boolean` | — |
 | `no-footer` | Hide footer action buttons | `boolean` | — |
 | `no-mask-close` | Disable closing on mask click | `boolean` | — |
+| `no-scroll-lock` | — | `boolean` | — |
 | `ok-text` | OK button label; defaults to locale `modal.ok` | — | — |
+| `position` | — | — | — |
+| `role` | — | `string` | `dialog` |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
 | `type` | Semantic variant: `info`/`success`/`warning`/`error`, renders the matching semantic icon above the content | `ModalVariant` | — |
 | `visible` | Whether shown | `boolean` | — |
@@ -241,7 +469,9 @@ onMounted(async () => {
 
 | Event | Description |
 | --- | --- |
+| `oas-before-close` | — |
 | `oas-cancel` | Cancel: cancel button / ✕ / mask click / Esc |
+| `oas-close` | — |
 | `oas-ok` | Clicked "OK" |
 
 ### Slots
@@ -249,6 +479,8 @@ onMounted(async () => {
 | Name | Description |
 | --- | --- |
 | default | — |
+| `description` | — |
+| `footer` | — |
 | `title` | Rich title content slot; overrides the title attribute text when present |
 
 `role="dialog"` + `aria-modal="true"`; focus moves to the "Cancel" button on open (to the "OK" button with `focus-ok`) and is restored on close.
