@@ -584,6 +584,392 @@ describe('OASModal', () => {
   })
 })
 
+describe('OASModal 一期能力增强', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  // —— P1 body 滚动锁（多实例嵌套计数 + 滚动条宽度补偿 + 断开兜底解锁）——
+
+  it('P1 打开锁 body 滚动（overflow hidden + padding 补偿），关闭还原', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    expect(document.body.style.overflow).toBe('hidden')
+    // 滚动条宽度补偿：happy-dom 的 innerWidth/clientWidth 不可靠，仅断言设置了补偿（非空）；
+    // 真实浏览器为 calc(原 padding + 滚动条宽度)，关闭时还原
+    expect(document.body.style.paddingRight).not.toBe('')
+    el.removeAttribute('visible')
+    await Promise.resolve()
+    expect(document.body.style.overflow).toBe('')
+    expect(document.body.style.paddingRight).toBe('')
+  })
+
+  it('P1 多实例嵌套计数：全部关闭才解锁（最后一个解锁才恢复原值）', async () => {
+    const a = mount({ visible: '' })
+    const b = mount({ visible: '' })
+    await Promise.resolve()
+    expect(document.body.style.overflow).toBe('hidden')
+    a.removeAttribute('visible')
+    await Promise.resolve()
+    expect(document.body.style.overflow, '仍有一个实例打开，锁不释放').toBe('hidden')
+    b.removeAttribute('visible')
+    await Promise.resolve()
+    expect(document.body.style.overflow).toBe('')
+  })
+
+  it('P1 断开连接兜底解锁（未 closed 就被移除时不留残留锁）', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    expect(document.body.style.overflow).toBe('hidden')
+    el.remove()
+    expect(document.body.style.overflow).toBe('')
+  })
+
+  it('P1 no-scroll-lock 跳过滚动锁', async () => {
+    const el = mount({ visible: '', 'no-scroll-lock': '' })
+    await Promise.resolve()
+    expect(document.body.style.overflow).toBe('')
+  })
+
+  // —— P2 before-close 拦截（cancelable，detail.source 标明来源）——
+
+  it('P2 oas-before-close preventDefault 拦截关闭：不移除 visible、不派发 oas-close/oas-cancel', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    let close = 0
+    let cancel = 0
+    el.addEventListener('oas-close', () => close++)
+    el.addEventListener('oas-cancel', () => cancel++)
+    el.addEventListener('oas-before-close', (e) => {
+      expect((e as CustomEvent).detail.source).toBe('cancel')
+      e.preventDefault()
+    })
+    el.shadowRoot!.querySelector<HTMLElement>('[part="cancel"]')!.click()
+    expect(el.hasAttribute('visible')).toBe(true)
+    expect(close).toBe(0)
+    expect(cancel).toBe(0)
+  })
+
+  it('P2 before-close 放行（不拦截）时正常关闭；detail.source 携带来源', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    const sources: string[] = []
+    el.addEventListener('oas-before-close', (e) => {
+      sources.push((e as CustomEvent).detail.source)
+    })
+    el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.click()
+    expect(el.hasAttribute('visible')).toBe(false)
+    expect(sources).toEqual(['close-btn'])
+  })
+
+  // —— P12/A32 关闭来源与取消/关闭区分（oas-close.detail）——
+
+  it('P12 oas-close 携带来源与动作：ok→confirm、取消按钮→cancel、✕/遮罩/Esc→close', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    const records: string[] = []
+    el.addEventListener('oas-close', (e) => {
+      records.push(`${(e as CustomEvent).detail.source}:${(e as CustomEvent).detail.action}`)
+    })
+    // ok
+    el.shadowRoot!.querySelector<HTMLElement>('[part="ok"]')!.click()
+    expect(records).toEqual(['ok:confirm'])
+    expect(el.hasAttribute('visible')).toBe(false)
+    // 取消按钮
+    el.setAttribute('visible', '')
+    el.shadowRoot!.querySelector<HTMLElement>('[part="cancel"]')!.click()
+    expect(records).toEqual(['ok:confirm', 'cancel:cancel'])
+    // ✕
+    el.setAttribute('visible', '')
+    el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.click()
+    expect(records).toEqual(['ok:confirm', 'cancel:cancel', 'close-btn:close'])
+    // 遮罩
+    el.setAttribute('visible', '')
+    el.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(records).toEqual([
+      'ok:confirm',
+      'cancel:cancel',
+      'close-btn:close',
+      'mask:close',
+    ])
+    // Esc
+    el.setAttribute('visible', '')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(records).toEqual([
+      'ok:confirm',
+      'cancel:cancel',
+      'close-btn:close',
+      'mask:close',
+      'esc:close',
+    ])
+  })
+
+  it('A32 取消/关闭兼容：✕/遮罩/Esc 同时派发 oas-cancel（旧语义保留）；取消按钮也派发', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    let cancel = 0
+    el.addEventListener('oas-cancel', () => cancel++)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.click()
+    expect(cancel).toBe(1)
+    el.setAttribute('visible', '')
+    el.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(cancel).toBe(2)
+    el.setAttribute('visible', '')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(cancel).toBe(3)
+  })
+
+  it('P12 编程 close("programmatic") 派发 oas-close(source=programmatic, action=close)', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    const detail = { source: '', action: '' }
+    el.addEventListener('oas-close', (e) => {
+      detail.source = (e as CustomEvent).detail.source
+      detail.action = (e as CustomEvent).detail.action
+    })
+    el.close('programmatic')
+    expect(el.hasAttribute('visible')).toBe(false)
+    expect(detail.source).toBe('programmatic')
+    expect(detail.action).toBe('close')
+  })
+
+  it('P2 编程关闭绕过 before-close 拦截（handle.close 必须可靠）', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    let beforeClose = 0
+    el.addEventListener('oas-before-close', (e) => {
+      beforeClose++
+      e.preventDefault()
+    })
+    el.close('programmatic')
+    expect(el.hasAttribute('visible')).toBe(false)
+    expect(beforeClose).toBe(0)
+  })
+
+  // —— P4 三开关：close-on-esc / close-on-mask（no-mask-close 已有）/ ✕ 显隐 ——
+
+  it('P4 no-esc-close 禁用 Esc 关闭（✕/遮罩不受影响）', async () => {
+    const el = mount({ visible: '', 'no-esc-close': '' })
+    await Promise.resolve()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(el.hasAttribute('visible')).toBe(true)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.click()
+    expect(el.hasAttribute('visible')).toBe(false)
+  })
+
+  it('P4 no-close-btn 隐藏关闭按钮（hidden，且不进入焦点陷阱）', async () => {
+    const el = mount({ visible: '', 'no-close-btn': '' })
+    await Promise.resolve()
+    const close = el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!
+    expect(close.hidden).toBe(true)
+    // 打开默认聚焦取消（close 隐藏不参与回退聚焦）
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('[part="cancel"]'))
+  })
+
+  it('P4 Esc 仅最上层 modal 响应（多实例嵌套逐层关闭）', async () => {
+    const first = mount({ visible: '' })
+    const second = mount({ visible: '' })
+    await Promise.resolve()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(second.hasAttribute('visible')).toBe(false)
+    expect(first.hasAttribute('visible')).toBe(true)
+  })
+
+  // —— P5 footer 插槽 ——
+
+  it('P5 slot="footer" 有内容时隐藏内置确定/取消按钮，插槽内容渲染', async () => {
+    const el = new OASModal()
+    el.setAttribute('visible', '')
+    el.innerHTML = '<span slot="footer"><button class="custom">自定义</button></span>'
+    document.body.appendChild(el)
+    await Promise.resolve()
+    const actions = el.shadowRoot!.querySelector<HTMLElement>('[part="footer-actions"]')!
+    expect(actions.hidden).toBe(true)
+    expect(el.shadowRoot!.querySelector('slot[name="footer"]')).not.toBeNull()
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="footer"]')!
+    expect(slot.assignedNodes().length).toBeGreaterThan(0)
+    // 插槽内容实际显示（未被内置按钮遮挡逻辑破坏）
+    expect(el.textContent).toContain('自定义')
+  })
+
+  it('P5 无 footer 插槽内容时内置按钮照常显示', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="footer-actions"]')!.hidden).toBe(
+      false,
+    )
+  })
+
+  // —— P10 destroy-on-close ——
+
+  it('P10 destroy-on-close：关闭后清空 light DOM 内容（下次打开重新填充）', async () => {
+    const el = mount({ visible: '', 'destroy-on-close': '' })
+    await Promise.resolve()
+    expect(el.children.length).toBeGreaterThan(0)
+    el.removeAttribute('visible')
+    await Promise.resolve()
+    expect(el.children.length).toBe(0)
+  })
+
+  it('P10 未开启 destroy-on-close：关闭后内容保留（默认不销毁 DOM）', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    expect(el.children.length).toBeGreaterThan(0)
+    el.removeAttribute('visible')
+    await Promise.resolve()
+    expect(el.children.length).toBeGreaterThan(0)
+  })
+
+  // —— P7 append-to ——
+
+  it('P7 append-to 把 mask/dialog 挂到指定容器 shadow（portal host），移除属性后回挂组件 shadow', async () => {
+    const el = mount({ visible: '', 'append-to': 'body' })
+    await Promise.resolve()
+    const portal = document.querySelector('[data-oas-modal-portal]')!
+    expect(portal).not.toBeNull()
+    expect(portal.shadowRoot!.querySelector('.mask')).not.toBeNull()
+    expect(portal.shadowRoot!.querySelector('.dialog')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('.dialog')).toBeNull()
+    el.removeAttribute('append-to')
+    await Promise.resolve()
+    expect(portal.shadowRoot!.querySelector('.dialog')).toBeNull()
+    expect(el.shadowRoot!.querySelector('.dialog')).not.toBeNull()
+  })
+
+  it('P7 append-to 选择器命中自定义容器；无效选择器回退组件 shadow', async () => {
+    const host = document.createElement('div')
+    host.id = 'modal-host'
+    document.body.appendChild(host)
+    const el = mount({ visible: '', 'append-to': '#modal-host' })
+    await Promise.resolve()
+    const portal = host.querySelector('[data-oas-modal-portal]')!
+    expect(portal).not.toBeNull()
+    expect(portal.shadowRoot!.querySelector('.dialog')).not.toBeNull()
+    el.removeAttribute('append-to')
+    await Promise.resolve()
+    el.setAttribute('append-to', '#no-such-node')
+    await Promise.resolve()
+    expect(el.shadowRoot!.querySelector('.dialog')).not.toBeNull()
+  })
+
+  // —— P9 position top ——
+
+  it('P9 position="top" 顶部贴边（CSS top: 0，默认 top: 100px 不受影响）', () => {
+    const el = mount({ visible: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const topRule = /:host\(\[position='top'\]\) \.dialog\s*\{[^}]*\}/.exec(css)?.[0] ?? ''
+    expect(topRule).toContain('top: 0')
+    // 默认定位规则仍存在
+    expect(css).toMatch(/\.dialog\s*\{[^}]*top:\s*100px/)
+  })
+
+  // —— P11 遮罩样式变量开口 + blur 可选 ——
+
+  it('P11 遮罩背景走 --oas-modal-mask-bg 变量（回退 overlay token），blur 走变量开口，无硬编码色值', () => {
+    const el = mount({ visible: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const maskRule = /\.mask\s*\{[^}]*\}/.exec(css)?.[0] ?? ''
+    expect(maskRule).toContain('var(--oas-modal-mask-bg')
+    expect(maskRule).toContain('var(--oas-color-overlay)')
+    expect(maskRule).toContain('var(--oas-modal-mask-blur')
+    expect(maskRule).not.toMatch(/#[0-9a-fA-F]{3,6}/)
+  })
+
+  // —— P13 焦点管理开关 + 焦点陷阱含 light DOM ——
+
+  it('P13 no-focus-trap 关闭焦点陷阱：焦点逃逸不拉回', async () => {
+    const el = mount({ visible: '', 'no-focus-trap': '' })
+    await Promise.resolve()
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    outside.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    expect(document.activeElement).toBe(outside)
+  })
+
+  it('P13 initial-focus 打开聚焦指定元素（light DOM 命中优先于 shadow 回退）', async () => {
+    const el = new OASModal()
+    el.setAttribute('visible', '')
+    el.setAttribute('initial-focus', '#focus-me')
+    el.innerHTML = '<input id="focus-me">'
+    document.body.appendChild(el)
+    await Promise.resolve()
+    expect(document.activeElement).toBe(el.querySelector('#focus-me'))
+  })
+
+  it('P13 initial-focus 未命中时回退默认聚焦（取消按钮）', async () => {
+    const el = mount({ visible: '', 'initial-focus': '#none' })
+    await Promise.resolve()
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('[part="cancel"]'))
+  })
+
+  it('PB5 焦点陷阱含 slot 分配的 light DOM 输入框：Tab 序包含输入框（末元素循环回首个）', async () => {
+    const el = new OASModal()
+    el.setAttribute('visible', '')
+    el.innerHTML = '<input id="i1">'
+    document.body.appendChild(el)
+    await Promise.resolve()
+    const root = el.shadowRoot!
+    const ok = root.querySelector<HTMLElement>('[part="ok"]')!
+    const close = root.querySelector<HTMLElement>('[part="close"]')!
+    // ok 是陷阱末元素（输入框在中间）：Tab 循环回 close
+    ok.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    expect(root.activeElement).toBe(close)
+    // 输入框是中间元素：Tab 不拦截（不打断输入框导航）
+    const input = el.querySelector<HTMLElement>('#i1')!
+    input.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    expect(document.activeElement).toBe(input)
+  })
+
+  // —— P14 aria-describedby ——
+
+  it('P14 description 插槽有内容时 dialog aria-describedby 关联描述容器；清空后移除', async () => {
+    const el = new OASModal()
+    el.setAttribute('visible', '')
+    el.innerHTML = '<p slot="description">辅助说明</p>'
+    document.body.appendChild(el)
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector('[role="dialog"]')!
+    expect(dialog.getAttribute('aria-describedby')).toBe('oas-modal-desc')
+    const desc = el.shadowRoot!.querySelector<HTMLElement>('#oas-modal-desc')!
+    expect(desc.hidden).toBe(false)
+    // 清空插槽 → 移除关联 + 隐藏容器
+    el.innerHTML = ''
+    await new Promise((r) => setTimeout(r, 0))
+    expect(dialog.getAttribute('aria-describedby')).toBeNull()
+    expect(desc.hidden).toBe(true)
+  })
+
+  it('P14 宿主 aria-describedby 属性透传（优先于插槽）', async () => {
+    const el = mount({ visible: '', 'aria-describedby': 'ext-desc' })
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector('[role="dialog"]')!
+    expect(dialog.getAttribute('aria-describedby')).toBe('ext-desc')
+  })
+
+  it('P14 无描述内容时不残留 aria-describedby', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    const dialog = el.shadowRoot!.querySelector('[role="dialog"]')!
+    expect(dialog.getAttribute('aria-describedby')).toBeNull()
+  })
+
+  // —— P24 role 属性（命令式确认/语义变体用 alertdialog）——
+
+  it('P24 role 属性切换 dialog 语义（alertdialog），缺省保持 dialog', async () => {
+    const el = mount({ visible: '', role: 'alertdialog' })
+    await Promise.resolve()
+    expect(el.shadowRoot!.querySelector('[role="alertdialog"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('[role="dialog"]')).toBeNull()
+  })
+})
+
 function pointer(type: string, clientX: number, clientY = 0): Event {
   const Ctor = (globalThis as Record<string, unknown>).PointerEvent as
     | typeof PointerEvent

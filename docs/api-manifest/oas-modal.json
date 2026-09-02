@@ -24,6 +24,54 @@
       "observed": true
     },
     {
+      "name": "no-mask-close",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "no-esc-close",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "no-close-btn",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "no-scroll-lock",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "no-focus-trap",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "destroy-on-close",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "append-to",
+      "observed": true
+    },
+    {
+      "name": "position",
+      "observed": true
+    },
+    {
+      "name": "initial-focus",
+      "observed": true
+    },
+    {
+      "name": "role",
+      "type": "string",
+      "default": "dialog",
+      "observed": true
+    },
+    {
       "name": "width",
       "observed": true
     },
@@ -64,11 +112,6 @@
       "name": "focus-ok",
       "type": "boolean",
       "observed": true
-    },
-    {
-      "name": "no-mask-close",
-      "type": "boolean",
-      "observed": false
     }
   ],
   "props": [],
@@ -77,12 +120,26 @@
       "name": "oas-ok"
     },
     {
+      "name": "oas-before-close",
+      "detail": "{ source }"
+    },
+    {
+      "name": "oas-close",
+      "detail": "{ source, action: CLOSE_ACTION[source] }"
+    },
+    {
       "name": "oas-cancel"
     }
   ],
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "description"
+    },
+    {
+      "name": "footer"
     },
     {
       "name": "title"
