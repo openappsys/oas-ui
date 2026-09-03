@@ -122,6 +122,10 @@ const STYLE = `
   flex-direction: column;
   background: var(--oas-color-bg);
   border-radius: var(--oas-radius-lg);
+  /* 圆角裁切：no-footer 时 body 直角背景会盖掉下圆角（父圆角不裁子背景），
+     overflow hidden 裁切修复；fixed 后代浮层（select 下拉）不受祖先 overflow 裁切
+     （dialog 静息态 transform:none 不构成包含块），P17 无回归 */
+  overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   z-index: calc(calc(var(--oas-z-index-base, 0) + var(--oas-z-modal, 1050)) + 1);
   font-family: inherit;
