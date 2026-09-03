@@ -1565,13 +1565,26 @@
       "virtual-anchor": "Virtual anchor element selector (used when virtual-x/virtual-y are unset)",
       "virtual-x": "Virtual anchor x (viewport coordinate, px)",
       "virtual-y": "Virtual anchor y (viewport coordinate, px)",
-      "width": "Panel width: a number (px) / `\"trigger\"` (same width as the trigger) / any CSS value (e.g. `50%`, `240px`); unset keeps the default"
+      "width": "Panel width: a number (px) / `\"trigger\"` (same width as the trigger) / any CSS value (e.g. `50%`, `240px`); unset keeps the default",
+      "trap-focus": "Standalone focus-trap toggle (decoupled from modal mask; Tab stays inside form popovers)",
+      "close-on-outside": "Close on outside click (default true)",
+      "close-on-escape": "Close on Escape (default true)",
+      "size": "Size preset",
+      "available-height": "Max content height constrained by remaining viewport space",
+      "scrollable": "Scrollable panel when content overflows",
+      "close-on-scroll": "Close on scroll",
+      "final-focus": "Focus restore target after close (selector)",
+      "hide-empty": "Hide the panel when it has no content",
+      "sticky": "Sticky against viewport edge (partial/always)"
     },
     "events": {
       "oas-open-change": "open state changed, `detail: { open }`"
     },
     "slots": {
-      "title": "Rich title content slot, overrides the title attribute text when present"
+      "title": "Rich title content slot, overrides the title attribute text when present",
+      "description": "Rich description slot (wired via aria-describedby)",
+      "footer": "Structured footer slot",
+      "header": "Structured header slot"
     }
   },
   "oas-progress": {
