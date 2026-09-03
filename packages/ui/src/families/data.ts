@@ -1,0 +1,37 @@
+/**
+ * data 族注册入口（CDN 按需打包产物 dist/cdn/data.js）。
+ * 基座内联：@oas-ui/i18n + config-provider/app/theme-editor 框架级三件（每族都 import，幂等守卫防重）。
+ * 族内容 = data 目录全部组件 index.js（import 即注册，与 src/index.ts 的 data 段完全一致）。
+ * 纯 import 组装，无执行逻辑。
+ */
+import '@oas-ui/i18n'
+import '../floating/config-provider/index.js'
+import '../floating/app/index.js'
+import '../floating/theme-editor/index.js'
+import '../data/card/index.js'
+import '../data/avatar/index.js'
+import '../data/avatar-group/index.js'
+import '../data/image/index.js'
+import '../data/qrcode/index.js'
+import '../data/watermark/index.js'
+import '../data/collapse/index.js'
+import '../data/descriptions/index.js'
+import '../data/timeline/index.js'
+import '../data/list/index.js'
+import '../data/carousel/index.js'
+import '../data/tree/index.js'
+import '../data/table/index.js'
+import '../data/virtual-list/index.js'
+import '../data/countdown/index.js'
+import '../data/statistic/index.js'
+import '../data/ellipsis/index.js'
+import '../data/marquee/index.js'
+import '../data/number-animation/index.js'
+import '../data/gradient-text/index.js'
+import '../data/aspect-ratio/index.js'
+import '../data/chart/index.js'
+import '../data/code/index.js'
+import '../data/equation/index.js'
+import '../data/log/index.js'
+import '../data/masonry/index.js'
+import '../data/comment/index.js'
