@@ -235,15 +235,6 @@ describe('OASColorPicker 一期增强', () => {
     expect(textEl(el).textContent).toBe('#ff0000')
   })
 
-  it('色相滑杆改变颜色（HS 通道）', () => {
-    const el = mount({ value: '#ff0000' })
-    open(el)
-    const hue = el.shadowRoot!.querySelector<HTMLInputElement>('.hue')!
-    hue.value = '120'
-    hue.dispatchEvent(new Event('input', { bubbles: true }))
-    expect(el.getAttribute('value')).toBe('#00ff00')
-  })
-
   it('面板 hex 文本输入：聚焦全选、合法回车提交、非法红框不生效', () => {
     const el = mount({ value: '#0b6cff' })
     open(el)
@@ -539,3 +530,211 @@ describe('OASColorPicker 一期增强', () => {
     expect(panelEl(el).getAttribute('data-placement')).toBe('bottom-end')
   })
 })
+
+describe('OASColorPicker 二期 2D 色域 / 渐变 / inline', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function gradStopsOf(el: OASColorPicker): HTMLElement[] {
+    return [...el.shadowRoot!.querySelectorAll<HTMLElement>('.grad-stop')]
+  }
+
+  // ---------- P-C 2D 面板重构 ----------
+
+  it('渲染 2D 色域 + hue 竖条（不再渲染 H/S/V 三滑轨）', () => {
+    const el = mount({ value: '#ff0000' })
+    expect(el.shadowRoot!.querySelector('.sv2d')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('.hue')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('input.hue')).toBeNull()
+    expect(el.shadowRoot!.querySelector('input.sat')).toBeNull()
+    expect(el.shadowRoot!.querySelector('input.val')).toBeNull()
+    el.remove()
+  })
+
+  it('hue 竖条 pointerdown 定位：y 归一 → 色相（#ff0000 h=0）', () => {
+    const el = mount({ value: '#ff0000' })
+    open(el)
+    const hue = el.shadowRoot!.querySelector<HTMLElement>('.hue')!
+    setRect(hue, { left: 0, top: 0, width: 16, height: 360 })
+    // 中点 y=180 → (1-0.5)*360=180 → cyan
+    hue.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 8, clientY: 180 }))
+    expect(el.getAttribute('value')).toBe('#00ffff')
+  })
+
+  it('2D 色域 pointerdown：x→saturation，y 反转→value（#ff0000 拖动到左上白）', () => {
+    const el = mount({ value: '#ff0000' }) // h0 s1 v1
+    open(el)
+    const sv = el.shadowRoot!.querySelector<HTMLElement>('.sv2d')!
+    setRect(sv, { left: 0, top: 0, width: 100, height: 100 })
+    // x=0,y=0 → s0 v1 → 白
+    sv.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 0, clientY: 0 }))
+    expect(el.getAttribute('value')).toBe('#ffffff')
+    // 右下 → s1 v0 → 黑
+    sv.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 100 }))
+    expect(el.getAttribute('value')).toBe('#000000')
+  })
+
+  it('2D 色域方向键：ArrowRight +s / ArrowUp +v / Home 归零 s', () => {
+    const el = mount({ value: '#804040' }) // h0 s0.5 v0.5
+    open(el)
+    const sv = el.shadowRoot!.querySelector<HTMLElement>('.sv2d')!
+    const key = (k: string) => sv.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }))
+    const before = el.getAttribute('value')!
+    key('ArrowRight')
+    const afterRight = el.getAttribute('value')!
+    expect(afterRight).not.toBe(before)
+    key('ArrowUp')
+    // v 升一档
+    expect(el.getAttribute('value')).not.toBe(afterRight)
+    key('Home')
+    // Home → s=0，v 不变 → r=g=b
+    const home = el.getAttribute('value')!
+    expect(home).toMatch(/^#([0-9a-f]{2})\1\1$/i)
+  })
+
+  // ---------- P-E 渐变模式 ----------
+
+  it('mode=gradient：面板出现渐变编辑条，value 解析为 stops', () => {
+    const el = mount({ mode: 'gradient', value: 'linear-gradient(90deg, #ff0000 0%, #0000ff 100%)' })
+    open(el)
+    const grad = el.shadowRoot!.querySelector<HTMLElement>('.grad')!
+    expect(grad.hasAttribute('hidden')).toBe(false)
+    const stops = gradStopsOf(el)
+    expect(stops.length).toBe(2)
+    // 手柄 aria-valuenow = 位置百分比
+    expect(stops[0]!.getAttribute('aria-valuenow')).toBe('0')
+    expect(stops[1]!.getAttribute('aria-valuenow')).toBe('100')
+    el.remove()
+  })
+
+  it('渐变模式：单色 value（尚未编辑器改写）→ 双 stop 同色铺平，触发文本仍显示原色', () => {
+    const el = mount({ mode: 'gradient', value: '#0b6cff' })
+    expect(textEl(el).textContent).toBe('#0b6cff')
+    expect(gradStopsOf(el).length).toBe(2)
+    // 渐变 swatch 为平铺背景
+    const sw = el.shadowRoot!.querySelector<HTMLElement>('.swatch')!
+    expect(sw.style.backgroundImage).toContain('linear-gradient')
+  })
+
+  it('渐变 + 空值：seed 双默认 stop，编辑后写回线性渐变 value', () => {
+    const el = mount({ mode: 'gradient' })
+    open(el)
+    expect(gradStopsOf(el).length).toBe(2)
+    expect(el.getAttribute('value')).toBeNull()
+    // 点击第一个手柄并改 G → 触发渐变提交
+    const stops = gradStopsOf(el)
+    stops[0]!.dispatchEvent(new MouseEvent('focusin', { bubbles: true }))
+    const g = el.shadowRoot!.querySelector<HTMLInputElement>('.g')!
+    g.value = '0'
+    g.dispatchEvent(new Event('input', { bubbles: true }))
+    // 默认 #0066ff 的 g=102 被置 0 → #0000ff
+    expect(el.getAttribute('value')).toMatch(/^linear-gradient\(90deg, #0000ff 0%,/)
+    el.remove()
+  })
+
+  it('渐变 stop 增删：+ 按钮插入最大空隙中点，- 删除活动 stop（最小 2 个）', () => {
+    const el = mount({ mode: 'gradient', value: 'linear-gradient(90deg, #000 0%, #fff 100%)' })
+    open(el)
+    const add = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="grad-add"]')!
+    add.click()
+    let stops = gradStopsOf(el)
+    expect(stops.length).toBe(3)
+    // 新 stop 落在 0.5
+    expect(stops.map((s) => s.getAttribute('aria-valuenow'))).toContain('50')
+    // 删除活动 stop（新插入的自动激活）
+    const remove = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="grad-remove"]')!
+    expect(remove.disabled).toBe(false)
+    remove.click()
+    stops = gradStopsOf(el)
+    expect(stops.length).toBe(2)
+    expect(remove.disabled).toBe(true) // 只剩 2 个，删除禁用
+    el.remove()
+  })
+
+  it('渐变 stop 键盘方向键移动位置（夹取在邻居之间）', () => {
+    const el = mount({ mode: 'gradient', value: 'linear-gradient(90deg, #000 0%, #888 50%, #fff 100%)' })
+    open(el)
+    const stops = gradStopsOf(el)
+    expect(stops.length).toBe(3)
+    const mid = stops[1]!
+    mid.focus()
+    expect(el.getAttribute('value')).toContain('#888')
+    // ArrowRight → pos 0.51
+    mid.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    const value = el.getAttribute('value')!
+    expect(value).toContain('#888')
+    expect(value).not.toContain('#888 50%')
+    expect(parseGradientStr(value)![1]!.pos).toBeCloseTo(0.51, 2)
+    el.remove()
+  })
+
+  it('渐变 + 预设：点击预设改写活动 stop 颜色并序列化', () => {
+    const el = mount({
+      mode: 'gradient',
+      value: 'linear-gradient(90deg, #000000 0%, #0000ff 100%)',
+      preset: '["#ff0000"]',
+    })
+    open(el)
+    // 激活第 0 个 stop
+    gradStopsOf(el)[0]!.dispatchEvent(new MouseEvent('focusin', { bubbles: true }))
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.preset')!.click()
+    expect(el.getAttribute('value')).toBe('linear-gradient(90deg, #ff0000 0%, #0000ff 100%)')
+    el.remove()
+  })
+
+  it('渐变模式 clearable 清除：清空 value 回到占位', () => {
+    const el = mount({
+      mode: 'gradient',
+      value: 'linear-gradient(90deg, #ff0000 0%, #0000ff 100%)',
+      clearable: '',
+    })
+    open(el)
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!.click()
+    expect(el.hasAttribute('value')).toBe(false)
+    el.remove()
+  })
+
+  // ---------- P-D inline 纯面板 ----------
+
+  it('inline：无 trigger，面板就地常显（不依赖 open 属性）', () => {
+    const el = mount({ inline: '', value: '#0b6cff' })
+    // 面板可见（open class 常驻）
+    expect(panelEl(el).classList.contains('open')).toBe(true)
+    // trigger 虽存在（SSR 结构一致）但视觉隐藏，点击不开/关 open
+    trigger(el).click()
+    expect(el.hasAttribute('open')).toBe(false)
+    // 不派发 open-change
+    let fired = 0
+    el.addEventListener('oas-open-change', () => fired++)
+    trigger(el).click()
+    expect(fired).toBe(0)
+    el.remove()
+  })
+
+  it('inline：编辑仍然生效（RGB 输入提交）', () => {
+    const el = mount({ inline: '', value: '#000000' })
+    const r = el.shadowRoot!.querySelector<HTMLInputElement>('.r')!
+    r.value = '255'
+    r.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.getAttribute('value')).toBe('#ff0000')
+    el.remove()
+  })
+})
+
+/** 解析渐变串（供方向键断言回读 pos） */
+function parseGradientStr(v: string): Array<{ pos: number }> | null {
+  if (!/^linear-gradient\(/.test(v)) return null
+  const body = v.slice('linear-gradient('.length, -1)
+  const segs = body.split(',').map((s) => s.trim())
+  // 去掉 90deg 方向 token
+  if (segs.length && /deg$/.test(segs[0]!)) segs.shift()
+  return segs.map((s) => {
+    const m = s.match(/([\d.]+)%$/)
+    return { pos: m ? Number(m[1]) / 100 : 0 }
+  })
+}

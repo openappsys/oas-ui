@@ -471,3 +471,199 @@ function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: n
     b: (rgb[2]! + m) * 255,
   }
 }
+
+// ---------- 2D 色域指针换算（二期 2D 面板：x→饱和度、y 反转→亮度） ----------
+
+function clamp01(v: number): number {
+  return Math.min(1, Math.max(0, v))
+}
+
+/**
+ * 2D 色域指针归一坐标（0..1）→ [s, v]。
+ * x 左→右 = 饱和度升；y 上→下 = 亮度降（v = 1 - y）。越界钳到边界。
+ */
+export function xyToSv(x: number, y: number): [number, number] {
+  return [clamp01(x), 1 - clamp01(y)]
+}
+
+/** hue 竖条 y 归一化（0..1，底端 0 = 红）→ 0..360 色相 */
+export function hueFromY(y: number): number {
+  return (1 - clamp01(y)) * 360
+}
+
+// ---------- 渐变（linear-gradient）解析 / 输出（二期渐变模式） ----------
+
+/** 渐变 stop：pos 0..1（轴上相对位置），color 独立 RGBA */
+export interface GradientStop {
+  pos: number
+  color: RGBA
+}
+
+/** 顶层逗号分隔（忽略括号内逗号，如 rgba()/hsl() 内部） */
+function splitTopLevel(input: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let cur = ''
+  for (const ch of input) {
+    if (ch === '(') depth++
+    else if (ch === ')') depth = Math.max(0, depth - 1)
+    if (ch === ',' && depth === 0) {
+      parts.push(cur)
+      cur = ''
+      continue
+    }
+    cur += ch
+  }
+  parts.push(cur)
+  return parts
+}
+
+/** 取色 stop 尾部顶层百分比位置（1-2 个，如 'red 0%' / 'red 0% 50%'） */
+function peelStopPositions(raw: string): { body: string; pos: number | null } {
+  const s = raw.trim()
+  const lastParen = s.lastIndexOf(')')
+  const start = lastParen >= 0 ? lastParen + 1 : 0
+  const tail = s.slice(start)
+  const tokens = tail === '' ? [] : tail.trim().split(/\s+/)
+  // 从尾部收拢百分比 token（非百分比即 stop 结束）
+  const posPcts: string[] = []
+  for (let k = tokens.length - 1; k >= 0; k--) {
+    if (!/^-?\d*\.?\d+%$/.test(tokens[k]!)) break
+    posPcts.unshift(tokens[k]!)
+  }
+  const keep = tokens.slice(0, tokens.length - posPcts.length)
+  const body = (s.slice(0, start) + (keep.length ? ' ' + keep.join(' ') : '')).trim()
+  return {
+    body,
+    pos: posPcts[0] ? clamp01(parseFloat(posPcts[0]!) / 100) : null,
+  }
+}
+
+/** 首个 token 是否为方向声明（90deg / to right / 0.25turn 等） */
+function isDirectionToken(token: string): boolean {
+  const t = token.trim()
+  if (/^to\s+/i.test(t)) return true
+  return /^-?\d*\.?\d+(deg|grad|rad|turn)$/i.test(t)
+}
+
+/** 缺省 stop 位置按 CSS 规则补齐：首/尾缺失 → 0/1，中间 run 在邻接位置间均分 */
+function fillDefaultPositions(stops: Array<{ pos: number | null }>): void {
+  const n = stops.length
+  if (n === 0) return
+  if (stops[0]!.pos === null) stops[0]!.pos = 0
+  if (stops[n - 1]!.pos === null) stops[n - 1]!.pos = 1
+  let i = 0
+  while (i < n) {
+    if (stops[i]!.pos !== null) {
+      i++
+      continue
+    }
+    let j = i
+    while (j < n && stops[j]!.pos === null) j++
+    const left = i > 0 ? stops[i - 1]!.pos! : 0
+    const right = j < n ? stops[j]!.pos! : 1
+    const count = j - i
+    for (let k = 0; k < count; k++) {
+      stops[i + k]!.pos = left + ((right - left) * (k + 1)) / (count + 1)
+    }
+    i = j
+  }
+}
+
+/**
+ * 解析 CSS linear-gradient 串 → 有序 GradientStop[]。
+ * 兼容 90deg / 方向词 / 缺省位置 / 单双位置 stop；颜色宽容（parseColor 同款）。
+ * 仅支持线性渐变（radial/conic/repeating 返回 null），解析失败返回 null（调用方保持原值）。
+ */
+export function parseGradient(input: string): GradientStop[] | null {
+  const t = input.trim()
+  if (!/^linear-gradient\(/i.test(t) || !t.endsWith(')')) return null
+  const body = t.slice('linear-gradient('.length, -1).trim()
+  if (!body) return null
+  let segments = splitTopLevel(body)
+  if (segments.length === 0) return null
+  // 方向 token（首个，非 stop）跳过
+  if (segments.length > 1 && isDirectionToken(segments[0]!.trim())) segments = segments.slice(1)
+  if (segments.length === 0) return null
+  const raw: Array<{ color: RGBA; pos: number | null }> = []
+  for (const seg of segments) {
+    const { body: colorBody, pos } = peelStopPositions(seg)
+    if (!colorBody) return null
+    const color = parseColor(colorBody)
+    if (!color) return null
+    raw.push({ color, pos })
+  }
+  fillDefaultPositions(raw)
+  return raw
+    .map((r) => ({ pos: r.pos!, color: r.color }))
+    .sort((a, b) => a.pos - b.pos)
+}
+
+/** 0..1 → 百分比展示（两位内去尾零） */
+export function formatPosPct(pos: number): string {
+  const pct = clamp01(pos) * 100
+  const s = Number(pct.toFixed(2)).toString()
+  return `${s}%`
+}
+
+/** stops → 规范 `linear-gradient(90deg, ...)` 串（颜色按 opts 透传 color-format/uppercase/alpha） */
+export function formatGradient(stops: GradientStop[], opts: FormatOptions = {}): string {
+  const parts = stops.map((s) => `${formatColor(s.color, opts)} ${formatPosPct(s.pos)}`)
+  return `linear-gradient(90deg, ${parts.join(', ')})`
+}
+
+/** 在 pos 处取渐变插值色（线性夹取端部；相邻 stop 间按位置线性插值） */
+export function gradientAt(stops: GradientStop[], pos: number): RGBA {
+  if (stops.length === 0) return { r: 0, g: 0, b: 0, a: 1 }
+  if (stops.length === 1) return { ...stops[0]!.color }
+  const p = clamp01(pos)
+  if (p <= stops[0]!.pos) return { ...stops[0]!.color }
+  const last = stops[stops.length - 1]!
+  if (p >= last.pos) return { ...last.color }
+  for (let i = 0; i < stops.length - 1; i++) {
+    const a = stops[i]!
+    const b = stops[i + 1]!
+    if (p >= a.pos && p <= b.pos) {
+      const span = b.pos - a.pos
+      const k = span <= 0 ? 0 : (p - a.pos) / span
+      const lerp = (x: number, y: number): number => x + (y - x) * k
+      return {
+        r: lerp(a.color.r, b.color.r),
+        g: lerp(a.color.g, b.color.g),
+        b: lerp(a.color.b, b.color.b),
+        a: lerp(a.color.a, b.color.a),
+      }
+    }
+  }
+  return { ...last.color }
+}
+
+/** 新增 stop（按 pos 有序插入；越界钳 0..1） */
+export function insertStop(stops: GradientStop[], pos: number, color: RGBA): GradientStop[] {
+  const next = [
+    ...stops.map((s) => ({ ...s, color: { ...s.color } })),
+    { pos: clamp01(pos), color: { ...color } },
+  ]
+  next.sort((a, b) => a.pos - b.pos)
+  return next
+}
+
+/** 移除指定索引 stop（越界/空列表返回副本） */
+export function removeStopAt(stops: GradientStop[], index: number): GradientStop[] {
+  if (index < 0 || index >= stops.length) return [...stops]
+  return stops
+    .filter((_, i) => i !== index)
+    .map((s) => ({ ...s, color: { ...s.color } }))
+}
+
+/** 移动 stop：夹到相邻 stop 之间（保序不越邻居），pos 钳 0..1 */
+export function moveStop(stops: GradientStop[], index: number, pos: number): GradientStop[] {
+  if (index < 0 || index >= stops.length) return [...stops]
+  const lower = index > 0 ? stops[index - 1]!.pos : 0
+  const upper = index < stops.length - 1 ? stops[index + 1]!.pos : 1
+  const clamped = Math.min(Math.max(clamp01(pos), lower), upper)
+  return stops.map((s, i) => ({
+    pos: i === index ? clamped : s.pos,
+    color: { ...s.color },
+  }))
+}
