@@ -519,6 +519,7 @@ export class OASPopover extends OASElement {
       'hover-hide-delay',
       'open-delay',
       'close-delay',
+      'long-press-delay',
       'disabled',
       // —— 宽度 / 双轴偏移 ——
       'width',
@@ -1106,7 +1107,13 @@ export class OASPopover extends OASElement {
         height: 0,
       } as DOMRect
       this.requestOpen()
-    }, LONG_PRESS_MS)
+    }, this.longPressDelayMs())
+  }
+
+  /** 长按触发时长：`long-press-delay` 属性（ms），缺省回落内置默认 500 */
+  private longPressDelayMs(): number {
+    const v = Number.parseInt(this.getAttr('long-press-delay', ''), 10)
+    return Number.isFinite(v) && v > 0 ? v : LONG_PRESS_MS
   }
 
   private onTouchMove(e: Event): void {
