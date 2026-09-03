@@ -296,3 +296,163 @@ test('color-picker Vue demo 属性存活：size / show-alpha / uppercase / prese
   )
   expect(upperText).toBe('#0B6CFF')
 })
+
+// ---------- 二期：2D 色域 / 渐变 / inline ----------
+
+test('color-picker 二期 2D 色域：打开面板出现 .sv2d/.hue，方向键改色 + demo 反馈', async ({ page }) => {
+  await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-2d')
+
+  await page.evaluate(() => {
+    const el = document.querySelector('#cp-2d')!
+    ;(el.shadowRoot!.querySelector('[part="trigger"]') as HTMLElement).click()
+  })
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#cp-2d')
+        ?.shadowRoot?.querySelector('[part="panel"]')
+        ?.classList.contains('open') === true,
+    null,
+    { timeout: 5000 },
+  )
+
+  const dom = await page.evaluate(() => {
+    const root = document.querySelector('#cp-2d')!.shadowRoot!
+    const sv = root.querySelector('.sv2d')!
+    const hue = root.querySelector('.hue')!
+    return {
+      hasSv: !!sv,
+      hasHue: !!hue,
+      role: sv.getAttribute('role'),
+      valuetext: sv.getAttribute('aria-valuetext'),
+      noOldTrack: !root.querySelector('input.hue, input.sat, input.val'),
+    }
+  })
+  expect(dom.hasSv, '2D 色域区应存在').toBe(true)
+  expect(dom.hasHue, 'hue 竖条应存在').toBe(true)
+  expect(dom.role).toBe('slider')
+  expect(dom.valuetext).toContain('%')
+  expect(dom.noOldTrack, 'H/S/V 三滑轨应被移除').toBe(true)
+
+  // 2D 色域方向键 → oas-change + demo 可见反馈
+  await page.evaluate(() => {
+    const root = document.querySelector('#cp-2d')!.shadowRoot!
+    root.querySelector<HTMLElement>('.sv2d')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+    )
+  })
+  await page.waitForFunction(
+    () => (document.querySelector('#cp-2d-output')?.textContent ?? '').startsWith('oas-change:'),
+    null,
+    { timeout: 5000 },
+  )
+  const feedback = await page.evaluate(() => document.querySelector('#cp-2d-output')?.textContent)
+  expect(feedback).toContain('#')
+})
+
+test('color-picker 二期渐变：mode=gradient 面板出现渐变轴，多 stop 操作写回 linear-gradient', async ({
+  page,
+}) => {
+  await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-grad')
+
+  // 渐变编辑轴 + 2D/hue 同时存在（共用面板）
+  const hasAxis = await page.evaluate(
+    () => !!document.querySelector('#cp-grad')?.shadowRoot?.querySelector('.grad-track'),
+  )
+  expect(hasAxis).toBe(true)
+
+  await page.evaluate(() => {
+    const el = document.querySelector('#cp-grad')!
+    ;(el.shadowRoot!.querySelector('[part="trigger"]') as HTMLElement).click()
+  })
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#cp-grad')
+        ?.shadowRoot?.querySelector('[part="panel"]')
+        ?.classList.contains('open') === true,
+    null,
+    { timeout: 5000 },
+  )
+
+  const before = await page.evaluate(() => {
+    const root = document.querySelector('#cp-grad')!.shadowRoot!
+    const stops = root.querySelectorAll('.grad-stop')
+    return { count: stops.length, value: document.querySelector('#cp-grad')!.getAttribute('value') }
+  })
+  expect(before.count).toBe(2)
+  expect(before.value).toContain('linear-gradient(90deg, #0b6cff 0%, #16a34a 100%)')
+
+  // 点「+」新增 stop → 序列化更新 + demo 反馈
+  await page.evaluate(() => {
+    const root = document.querySelector('#cp-grad')!.shadowRoot!
+    ;(root.querySelector('[part="grad-add"]') as HTMLElement).click()
+  })
+  await page.waitForFunction(
+    () => document.querySelector('#cp-grad-output')?.textContent?.includes('linear-gradient'),
+    null,
+    { timeout: 5000 },
+  )
+  const after = await page.evaluate(() => {
+    const root = document.querySelector('#cp-grad')!.shadowRoot!
+    return {
+      count: root.querySelectorAll('.grad-stop').length,
+      output: document.querySelector('#cp-grad-output')?.textContent ?? '',
+    }
+  })
+  expect(after.count, '新增 stop 后手柄数应为 3').toBe(3)
+  expect(after.output).toContain('linear-gradient(90deg, #0b6cff 0%')
+})
+
+test('color-picker 二期 inline：面板就地渲染，无 trigger 弹层，RGB 编辑生效', async ({ page }) => {
+  await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-inline')
+
+  const state = await page.evaluate(() => {
+    const el = document.querySelector('#cp-inline')!
+    const root = el.shadowRoot!
+    return {
+      inline: el.hasAttribute('inline'),
+      panelOpen: root.querySelector('[part="panel"]')?.classList.contains('open') === true,
+      trigger: root.querySelector('[part="trigger"]'),
+      sv: !!root.querySelector('.sv2d'),
+    }
+  })
+  expect(state.inline).toBe(true)
+  expect(state.panelOpen, 'inline 面板应常显（open class 常驻）').toBe(true)
+  expect(state.sv, 'inline 也应含 2D 色域').toBe(true)
+
+  // inline RGB 编辑即时生效并派发（#9333ea 的 g=51 → 0 → #9300ea）
+  await page.evaluate(() => {
+    const root = document.querySelector('#cp-inline')!.shadowRoot!
+    const g = root.querySelector<HTMLInputElement>('.g')!
+    g.value = '0'
+    g.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  await page.waitForFunction(
+    () => document.querySelector('#cp-inline')?.getAttribute('value') === '#9300ea',
+    null,
+    { timeout: 5000 },
+  )
+  const out = await page.evaluate(() => document.querySelector('#cp-inline-output')?.textContent)
+  expect(out).toContain('#9300ea')
+})
+
+test('color-picker 二期属性存活：mode / inline 未被 Vue 剥离', async ({ page }) => {
+  await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-grad')
+  await up(page, '#cp-inline')
+  const attrs = await page.evaluate(() => {
+    const names = (id: string) =>
+      [...(document.querySelector(id)?.attributes ?? [])].map((a) => a.name)
+    return {
+      grad: names('#cp-grad'),
+      inline: names('#cp-inline'),
+    }
+  })
+  expect(attrs.grad).toContain('mode')
+  expect(attrs.grad).toContain('value')
+  expect(attrs.inline).toContain('inline')
+})

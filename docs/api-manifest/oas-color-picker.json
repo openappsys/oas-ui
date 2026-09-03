@@ -88,6 +88,17 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "mode",
+      "type": "string",
+      "default": "single",
+      "observed": true
+    },
+    {
+      "name": "inline",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],
