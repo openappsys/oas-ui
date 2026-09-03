@@ -10,6 +10,37 @@
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
 
+**按族引入（体积与覆盖的折中）**：组件按功能分为 7 个族，每族一个独立 IIFE 文件（内置基座：运行时与 config-provider/app/theme-editor，无需额外引入）：
+
+| 族包 | 覆盖组件 |
+| --- | --- |
+| `cdn/basic.js` | 基础：button、icon、tag、badge、space、divider、link、typography、button-group、label、kbd、visually-hidden |
+| `cdn/layout.js` | 布局：layout、grid、flex、container、sidebar、splitter、pagination、tabs、steps、affix、page-header、float-button、segmented |
+| `cdn/navigation.js` | 导航：breadcrumb、anchor、back-top、tour、bottom-navigation、stepper |
+| `cdn/form.js` | 表单：input、textarea、checkbox、radio、switch、slider、input-number、rate、select、cascader、date-picker、time-picker、upload、transfer、form、form-item 等 |
+| `cdn/data.js` | 数据展示：table、tree、card、avatar、avatar-group、image、qrcode、watermark、collapse、descriptions、timeline、list、carousel、chart、code、statistic、masonry 等 |
+| `cdn/feedback.js` | 反馈：message、notification、toast、snackbar、backdrop、modal、confirm、drawer、popconfirm、alert、progress、loading-bar、spin、skeleton、empty、result |
+| `cdn/floating.js` | 浮层：tooltip、popover、dropdown、contextmenu、hover-card、menu、menubar、navigation-menu、toolbar、scroll-area、speed-dial、command 等 |
+
+只用基础族：
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn/basic.js"></script>
+<oas-button type="primary">Hello OAS-UI</oas-button>
+```
+
+再加一个反馈族（表单 + 消息提示的组合页）：
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn/basic.js"></script>
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn/form.js"></script>
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn/feedback.js"></script>
+```
+
+> **选型规则**：用到的组件 ≤ 2 个族时按族引族包（比全量小）；用到 ≥ 3 个族时直接引整包 `cdn.js` 更省——族包各自内联基座，多族叠加后基座重复成本超过全量单文件的优势。
+
 **按需引入单个组件**：用 esm.sh 的短路径（自动解析依赖），只注册你用到的那一个：
 
 ```html

@@ -10,6 +10,37 @@
 <oas-button type="primary">Hello OAS-UI</oas-button>
 ```
 
+**Per-family bundles (a middle ground between size and coverage)**: components are grouped into 7 feature families. Each family ships as its own IIFE file and inlines the base (runtime plus config-provider/app/theme-editor), so no extra script is required:
+
+| Bundle | Components covered |
+| --- | --- |
+| `cdn/basic.js` | Basic: button, icon, tag, badge, space, divider, link, typography, button-group, label, kbd, visually-hidden |
+| `cdn/layout.js` | Layout: layout, grid, flex, container, sidebar, splitter, pagination, tabs, steps, affix, page-header, float-button, segmented |
+| `cdn/navigation.js` | Navigation: breadcrumb, anchor, back-top, tour, bottom-navigation, stepper |
+| `cdn/form.js` | Form: input, textarea, checkbox, radio, switch, slider, input-number, rate, select, cascader, date-picker, time-picker, upload, transfer, form, form-item, etc. |
+| `cdn/data.js` | Data display: table, tree, card, avatar, avatar-group, image, qrcode, watermark, collapse, descriptions, timeline, list, carousel, chart, code, statistic, masonry, etc. |
+| `cdn/feedback.js` | Feedback: message, notification, toast, snackbar, backdrop, modal, confirm, drawer, popconfirm, alert, progress, loading-bar, spin, skeleton, empty, result |
+| `cdn/floating.js` | Overlays: tooltip, popover, dropdown, contextmenu, hover-card, menu, menubar, navigation-menu, toolbar, scroll-area, speed-dial, command, etc. |
+
+Basic family only:
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn/basic.js"></script>
+<oas-button type="primary">Hello OAS-UI</oas-button>
+```
+
+Add a feedback family (a page that combines forms and message toasts):
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/@oas-ui/theme@2/index.css" />
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn/basic.js"></script>
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn/form.js"></script>
+<script src="https://unpkg.com/@oas-ui/ui@2/dist/cdn/feedback.js"></script>
+```
+
+> **Choosing a rule**: load per-family bundles when the components you need span ≤ 2 families (smaller than the full bundle); when they span ≥ 3 families, load the single full `cdn.js` instead — every family inlines the base, so stacking multiple families costs more duplicated base code than the all-in-one file.
+
 **Import a single component on demand**: use the esm.sh short path (resolves dependencies automatically), which registers only that one component:
 
 ```html
