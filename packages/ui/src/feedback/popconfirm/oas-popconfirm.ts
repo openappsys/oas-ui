@@ -928,6 +928,9 @@ export class OASPopconfirm extends OASElement {
     const arrowEl = this.popoverEl.querySelector<HTMLElement>('[data-popper-arrow]')
     if (arrowEl) arrowEl.hidden = !this.showArrow()
     if (open) {
+      // 先解除隐藏再移焦：aria-hidden=true 时面板 display:none，其中的 ok 按钮
+      // 不可聚焦，applyInitialFocus 会静默失败（焦点仍停在 trigger）——顺序必须先显示后聚焦
+      this.popoverEl.setAttribute('aria-hidden', 'false')
       if (!this.wasOpen) {
         registerLayer(this)
         // 打开瞬间：焦点移入气泡（ok 按钮 > actions 首个可聚焦 > 面板 tabindex=-1）
@@ -936,7 +939,6 @@ export class OASPopconfirm extends OASElement {
       // virtual 模式下生命周期由宿主控制，不注册外部点击关闭
       if (!this.isVirtual()) document.addEventListener('click', this.handleOutside, true)
       else document.removeEventListener('click', this.handleOutside, true)
-      this.popoverEl.setAttribute('aria-hidden', 'false')
       this.syncWidth()
       this.position()
       this.syncScrollFollow(true)

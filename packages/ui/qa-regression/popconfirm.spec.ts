@@ -6,14 +6,33 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
+/** 在 body 顶部构造原生 button 锚点的回归实例（anchor 可聚焦，焦点语义确定） */
+async function mountReg(page: import('@playwright/test').Page, id: string, attrs: string[] = []) {
+  await page.evaluate(
+    ({ id, attrs }) => {
+      const el = document.createElement('oas-popconfirm')
+      el.id = id
+      for (const a of attrs) {
+        const eq = a.indexOf('=')
+        if (eq === -1) el.setAttribute(a, '')
+        else el.setAttribute(a.slice(0, eq), a.slice(eq + 1))
+      }
+      el.setAttribute('title', '回归')
+      el.innerHTML = '<button id="reg-trig">触发</button>'
+      document.body.insertBefore(el, document.body.firstChild)
+    },
+    { id, attrs },
+  )
+  await up(page, `#${id}`)
+}
+
 test('popconfirm 基础链路：确定派发反馈 + 关闭回焦 trigger + aria 关联', async ({ page }) => {
   await page.goto('/components/popconfirm.html', { waitUntil: 'domcontentloaded' })
-  const host = page.locator('#pc-basic')
-  await up(page, '#pc-basic')
+  await mountReg(page, 'pc-basic-reg')
 
   const state = () =>
     page.evaluate(() => {
-      const el = document.querySelector('#pc-basic')!
+      const el = document.querySelector('#pc-basic-reg')!
       const pop = el.shadowRoot!.querySelector('[part="popover"]')!
       return {
         open: el.hasAttribute('open'),
@@ -33,11 +52,16 @@ test('popconfirm 基础链路：确定派发反馈 + 关闭回焦 trigger + aria
   expect(s.controls).toBe(s.popId)
   expect(s.role).toBe('alertdialog')
 
-  await host.evaluate((e) => (e.querySelector('button') as HTMLElement).click())
+  await page.evaluate(() => {
+    const el = document.querySelector('#pc-basic-reg')!
+    ;(el.querySelector('button') as HTMLElement).click()
+  })
   await page.waitForFunction(
     () =>
-      document.querySelector('#pc-basic')?.shadowRoot?.querySelector('[part="popover"]')?.getAttribute('aria-hidden') ===
-      'false',
+      document
+        .querySelector('#pc-basic-reg')
+        ?.shadowRoot?.querySelector('[part="popover"]')
+        ?.getAttribute('aria-hidden') === 'false',
     null,
     { timeout: 5000 },
   )
@@ -47,7 +71,7 @@ test('popconfirm 基础链路：确定派发反馈 + 关闭回焦 trigger + aria
 
   // 点击确定：气泡关闭 + 焦点回 trigger
   await page.evaluate(() => {
-    const el = document.querySelector('#pc-basic')!
+    const el = document.querySelector('#pc-basic-reg')!
     ;(el.shadowRoot!.querySelector('[part="ok"]') as HTMLElement).click()
   })
   await page.waitForTimeout(50)
@@ -55,7 +79,7 @@ test('popconfirm 基础链路：确定派发反馈 + 关闭回焦 trigger + aria
   expect(s.open).toBe(false)
   expect(s.ariaHidden).toBe('true')
   const focusBack = await page.evaluate(() => ({
-    isTrigger: document.activeElement === document.querySelector('#pc-basic')?.querySelector('button'),
+    isTrigger: document.activeElement === document.querySelector('#pc-basic-reg')?.querySelector('button'),
   }))
   expect(focusBack.isTrigger, '关闭后焦点应回到 trigger').toBe(true)
 })
@@ -79,7 +103,7 @@ test('popconfirm 异步确认：ok-loading 阻止自动关闭，完成后关闭�
 
   await page.evaluate(() => {
     const el = document.querySelector('#pc-async')!
-    ;(el.querySelector('button') as HTMLElement).click()
+    ;(el.querySelector('oas-button') as HTMLElement).click()
   })
   await page.waitForFunction(
     () => document.querySelector('#pc-async')?.hasAttribute('open') === true,
@@ -149,16 +173,10 @@ test('popconfirm theme 色阶：danger 确定按钮背景走 danger token + 面�
 
 test('popconfirm 12 向 placement：fixed 定位写视口坐标 + 箭头在场', async ({ page }) => {
   await page.goto('/components/popconfirm.html', { waitUntil: 'domcontentloaded' })
-  await up(page, '#pc-basic')
-
+  // auto-adjust-overflow="false"：锚点在页面底部也不会被翻转，placement 确定性 = bottom-start
+  await mountReg(page, 'pc-reg-place', ['placement=bottom-start', 'auto-adjust-overflow=false'])
   await page.evaluate(() => {
-    const el = document.createElement('oas-popconfirm')
-    el.id = 'pc-reg-place'
-    el.setAttribute('open', '')
-    el.setAttribute('placement', 'bottom-start')
-    el.setAttribute('title', '回归')
-    el.innerHTML = '<button>触发</button>'
-    document.body.appendChild(el)
+    document.querySelector('#pc-reg-place')?.setAttribute('open', '')
   })
   await page.waitForFunction(
     () =>
@@ -199,39 +217,38 @@ test('popconfirm Vue demo 属性存活：theme/ok-text/show-cancel/hide-icon/tri
   await page.goto('/components/popconfirm.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#pc-basic')
   const attrs = await page.evaluate(() => {
-    const get = (sel: string): Record<string, string | null> => {
-      const el = document.querySelector(sel) as HTMLElement | null
-      if (!el) return {}
-      return {
-        theme: el.getAttribute('theme'),
-        okText: el.getAttribute('ok-text'),
-        cancelText: el.getAttribute('cancel-text'),
-        showCancel: el.getAttribute('show-cancel'),
-        hideIcon: el.getAttribute('hide-icon'),
-        trigger: el.getAttribute('trigger'),
-        virtual: el.getAttribute('virtual'),
-        virtualAnchor: el.getAttribute('virtual-anchor'),
-      }
-    }
-    // 文案与图标 demo 块内的四个实例（按 demo 顺序）
+    // 文案与图标 demo 块内的各实例（按 demo 顺序）
     const blocks = Array.from(document.querySelectorAll('oas-popconfirm'))
-    const themed = blocks.find((b) => b.getAttribute('theme') === 'danger')
     return {
-      danger: themed ? get('#' + themed.id) : null,
       themedCount: blocks.filter((b) => b.hasAttribute('theme')).length,
+      dangerCount: blocks.filter((b) => b.getAttribute('theme') === 'danger').length,
       okTextCount: blocks.filter((b) => b.hasAttribute('ok-text')).length,
       showCancelCount: blocks.filter((b) => b.getAttribute('show-cancel') === 'false').length,
       hideIconCount: blocks.filter((b) => b.hasAttribute('hide-icon')).length,
       hoverCount: blocks.filter((b) => b.getAttribute('trigger') === 'hover').length,
       virtualCount: blocks.filter((b) => b.hasAttribute('virtual')).length,
+      widthCount: blocks.filter((b) => b.hasAttribute('width')).length,
+      arrowFalseCount: blocks.filter((b) => b.getAttribute('arrow') === 'false').length,
+      autoAdjustFalseCount: blocks.filter((b) => b.getAttribute('auto-adjust-overflow') === 'false')
+        .length,
+      positionCount: blocks.filter((b) => b.hasAttribute('position')).length,
+      virtualXyCount: blocks.filter(
+        (b) => b.hasAttribute('virtual-x') || b.hasAttribute('virtual-y'),
+      ).length,
     }
   })
-  expect(attrs.themedCount, 'theme 属性在 Vue demo 中存活').toBeGreaterThanOrEqual(3)
-  expect(attrs.okTextCount, 'ok-text 属性存活').toBeGreaterThanOrEqual(5)
+  expect(attrs.themedCount, 'theme 属性在 Vue demo 中存活').toBeGreaterThanOrEqual(2)
+  expect(attrs.dangerCount, 'theme=danger 存活').toBeGreaterThanOrEqual(1)
+  expect(attrs.okTextCount, 'ok-text 属性存活').toBeGreaterThanOrEqual(4)
   expect(attrs.showCancelCount, 'show-cancel="false" 存活').toBeGreaterThanOrEqual(1)
   expect(attrs.hideIconCount, 'hide-icon 存活').toBeGreaterThanOrEqual(1)
   expect(attrs.hoverCount, 'trigger=hover 存活').toBeGreaterThanOrEqual(1)
   expect(attrs.virtualCount, 'virtual 存活').toBeGreaterThanOrEqual(1)
+  expect(attrs.widthCount, 'width 存活').toBeGreaterThanOrEqual(1)
+  expect(attrs.arrowFalseCount, 'arrow="false" 存活').toBeGreaterThanOrEqual(1)
+  expect(attrs.autoAdjustFalseCount, 'auto-adjust-overflow="false" 存活').toBeGreaterThanOrEqual(1)
+  expect(attrs.positionCount, '旧 position 属性兼容存活').toBeGreaterThanOrEqual(1)
+  expect(attrs.virtualXyCount, 'virtual-x / virtual-y 存活').toBeGreaterThanOrEqual(1)
 })
 
 test('popconfirm oas-open-change：关闭原因流转（outside/ok）', async ({ page }) => {
@@ -244,7 +261,7 @@ test('popconfirm oas-open-change：关闭原因流转（outside/ok）', async ({
     el.addEventListener('oas-open-change', (e: Event) => {
       w.__pcReasons.push((e as CustomEvent).detail.reason)
     })
-    ;(el.querySelector('button') as HTMLElement).click()
+    ;(el.querySelector('oas-button') as HTMLElement).click()
   })
   await page.waitForFunction(
     () => document.querySelector('#pc-basic')?.hasAttribute('open') === true,

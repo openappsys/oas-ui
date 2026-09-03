@@ -228,6 +228,28 @@
   </oas-drawer>
 </DemoBlock>
 
+## 焦点陷阱 / 滚动锁 / 层级开关
+
+`no-focus-trap` 关闭 Tab 焦点圈禁（适合抽屉内嵌于宿主弹窗、焦点交给外层管理的场景）；`no-scroll-lock` 关闭 body 滚动锁（页面可继续滚动）；`z-index` 显式指定面板层级档位（缺省走 overlay 档 + 栈深偏移）。
+
+<DemoBlock title="no-focus-trap / no-scroll-lock / z-index">
+  <oas-button type="primary" onclick="document.querySelector('#drawer-switch').setAttribute('visible','')">打开开关演示抽屉</oas-button>
+  <oas-drawer id="drawer-switch" title="开关组合" width="380px" no-focus-trap no-scroll-lock z-index="10">
+    <p>此抽屉不圈禁 Tab 焦点、不锁页面滚动，层级显式指定为 <code>z-index="10"</code>；✕ / Esc / 遮罩关闭照常。</p>
+  </oas-drawer>
+</DemoBlock>
+
+## 事件绑定（onoas-*）
+
+抽屉事件可在模板上直接经 `onoas-*` 属性绑定（`onoas-ok` / `onoas-close` / `onoas-open` …），等价于宿主框架里的 `@oas-ok` 监听。
+
+<DemoBlock title="事件反馈">
+  <oas-button type="primary" onclick="document.querySelector('#drawer-onoas').setAttribute('visible','')">打开抽屉</oas-button>
+  <oas-drawer id="drawer-onoas" title="删除确认" onoas-ok="message.success('已删除')" onoas-close="message.info('抽屉已关闭')">
+    <p>点「确定」或「取消」/ ✕，观察右上角消息提示。</p>
+  </oas-drawer>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {

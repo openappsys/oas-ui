@@ -178,6 +178,9 @@ test('drawer resizable：拖拽调宽生效并弹出 oas-resize 提示', async (
       ?.shadowRoot?.querySelector<HTMLElement>('[part="rail"]')
     return rail != null && !rail.hasAttribute('hidden')
   })
+  // 等打开动画结束（data-open 后仍滑入 ~180ms）再拖——动画期间 rail 位移中，
+  // 按动画起点量出的坐标按下会落在面板上而非 rail，拖拽不生效
+  await page.waitForTimeout(450)
   const railBox = await page.evaluate(() => {
     const rail = document
       .querySelector('#drawer-resize')!
@@ -190,6 +193,11 @@ test('drawer resizable：拖拽调宽生效并弹出 oas-resize 提示', async (
   await page.mouse.down()
   await page.mouse.move(railBox.x - 120, railBox.y, { steps: 5 })
   await page.mouse.up()
+  await page.waitForFunction(
+    () => /^6\d\dpx$/.test(document.querySelector('#drawer-resize')?.getAttribute('width') ?? ''),
+    null,
+    { timeout: 5000 },
+  )
   const width = await page.evaluate(
     () => document.querySelector('#drawer-resize')?.getAttribute('width'),
   )
@@ -210,13 +218,13 @@ test('drawer 命令式 API：drawer() 打开、handle.close 播放动画后销�
   await page.evaluate(() => {
     ;(window as any).openImperative()
   })
-  await page.waitForFunction(() => document.querySelector('oas-drawer[visible]') != null, null, {
-    timeout: 5000,
-  })
-  // 命令式抽屉自动 5s 后 handle.close（close 事件携带 api 来源、动画后销毁）
-  await page.waitForFunction(() => document.querySelectorAll('oas-drawer').length === 0, null, {
-    timeout: 10000,
-  })
+  // 命令式抽屉以正文文案标识（title 属性会被组件吸收移除；demo 页还常驻多只静态
+  // oas-drawer，不能按总数断言）——找到含该正文的实例
+  const hasImperative = (include: boolean) => `[...document.querySelectorAll('oas-drawer')].some((d) =>
+    (d.textContent ?? '').includes('返回 { close() } 句柄')) === ${include}`
+  await page.waitForFunction(hasImperative(true), null, { timeout: 5000 })
+  // 命令式抽屉自动 5s 后 handle.close（close 事件携带 api 来源、动画后销毁宿主）
+  await page.waitForFunction(hasImperative(false), null, { timeout: 10000 })
 })
 
 test('drawer 初始焦点：initial-focus 打开即聚焦指定输入框', async ({ page }) => {

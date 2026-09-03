@@ -420,6 +420,18 @@
   </oas-modal>
 </DemoBlock>
 
+## 焦点陷阱与滚动锁开关
+
+`initial-focus` 指定打开时聚焦的元素（CSS 选择器，面板内优先、其次 light DOM，无匹配回退默认焦点）；`no-focus-trap` 关闭 Tab 焦点圈禁（焦点交给宿主自管的场景）；`no-scroll-lock` 关闭 body 滚动锁（页面可继续滚动）。
+
+<DemoBlock title="initial-focus / no-focus-trap / no-scroll-lock">
+  <oas-button type="primary" onclick="document.querySelector('#modal-focus').setAttribute('visible','')">打开即聚焦输入框</oas-button>
+  <oas-modal id="modal-focus" title="新建任务" initial-focus="#modal-task-name" no-focus-trap no-scroll-lock>
+    <oas-input id="modal-task-name" placeholder="任务名称"></oas-input>
+    <p>打开后焦点直接落在输入框（<code>initial-focus</code>）；不圈禁 Tab、不锁页面滚动。</p>
+  </oas-modal>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {

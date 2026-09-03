@@ -53,7 +53,7 @@ test.describe('反馈/布局组件交互验真（最新构建）', () => {
   test('drawer：基础 demo 点 ✕ / Esc / 遮罩均移除 visible', async ({ page }) => {
     await openReady(page, '/components/drawer.html', 'oas-button')
     const drawer = page.locator('oas-drawer[id="drawer-right"]')
-    const openBtn = page.locator('oas-button', { hasText: '打开右侧抽屉' }).first()
+    const openBtn = page.locator('oas-button', { hasText: '右侧抽屉' }).first()
 
     // ✕
     await openBtn.click()
