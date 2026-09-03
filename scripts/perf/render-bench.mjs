@@ -83,7 +83,7 @@ await import('@oas-ui/ui/basic/button')
 await import('@oas-ui/ui/form/input')
 await import('@oas-ui/ui/data/table')
 await import('@oas-ui/ui/form/select')
-await import('@oas-ui/ui/layout/tabs') // 目录 index 同时 define oas-tabs + oas-tab-panel
+await import('@oas-ui/ui/navigation/tabs') // 目录 index 同时 define oas-tabs + oas-tab-panel
 await import('@oas-ui/ui/form/form')
 await import('@oas-ui/ui/form/form-item')
 
