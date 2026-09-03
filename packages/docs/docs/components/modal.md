@@ -265,6 +265,144 @@
   </oas-modal>
 </DemoBlock>
 
+## 开合动画
+
+打开 / 关闭默认播放 **fade + scale** 动画（只走 `transform`/`opacity`，`prefers-reduced-motion` 下自动停用）。`oas-open` 在打开开始派发，`oas-opened` / `oas-closed` 在动画结束后派发——命令式对话框据此「等动画结束再卸载」。`transition` 可选预设：`zoom`（默认，淡入 + 缩放）/ `fade`（仅淡入淡出）/ `none`（无过渡、即时显隐）。
+
+<DemoBlock title="开合动画 + 生命周期事件">
+  <oas-button type="primary" onclick="document.querySelector('#modal-anim').setAttribute('visible','')">打开（观察动画与事件）</oas-button>
+  <oas-modal id="modal-anim" title="开合动画">
+    <p>默认 fade + scale 动画；右上角消息展示 <code>oas-opened</code> / <code>oas-closed</code>（动画结束才派发）。</p>
+  </oas-modal>
+</DemoBlock>
+
+<DemoBlock title="transition 预设（fade / none）">
+  <oas-space>
+    <oas-button onclick="document.querySelector('#modal-fade').setAttribute('visible','')">fade（仅透明度）</oas-button>
+    <oas-button onclick="document.querySelector('#modal-none').setAttribute('visible','')">none（即时显隐）</oas-button>
+  </oas-space>
+  <oas-modal id="modal-fade" title="fade 动画" transition="fade">
+    <p><code>transition="fade"</code>：只做透明度过渡，不做缩放。</p>
+  </oas-modal>
+  <oas-modal id="modal-none" title="无动画" transition="none">
+    <p><code>transition="none"</code>：打开 / 关闭即时显隐（适合高性能或降级场景）。</p>
+  </oas-modal>
+</DemoBlock>
+
+## 点击位置动画原点
+
+打开瞬间会记录触发指针的位置，对话框从该点向外展开（`transform-origin` 指向点击处）；键盘 / 编程打开时回退居中展开。
+
+<DemoBlock title="点击位置动画原点">
+  <oas-button type="primary" onclick="document.querySelector('#modal-origin').setAttribute('visible','')">点这里打开（动画从按钮处展开）</oas-button>
+  <oas-modal id="modal-origin" title="从点击处展开">
+    <p>缩放动画的原点跟随最近一次点击位置：从你点击的按钮处向外展开，而不是固定在中心。</p>
+  </oas-modal>
+</DemoBlock>
+
+## 非模态（no-mask）
+
+`no-mask`：**遮罩不渲染 + 焦点陷阱关闭 + 打开不抢焦点**（语义对齐原生 `<dialog>.show()`，适合通知 / 画布辅助等非中断场景）。关闭通道照常（✕ / 底部按钮 / Esc；Esc 可另行用 `no-esc-close` 关闭）。
+
+<DemoBlock title="no-mask 非模态">
+  <oas-button onclick="document.querySelector('#modal-nonmask').setAttribute('visible','')">打开非模态对话框</oas-button>
+  <oas-modal id="modal-nonmask" title="非模态通知" no-mask position="top">
+    <p>无遮罩、焦点不被圈禁——页面其余部分仍可交互（试试打开后点页面上的按钮）。</p>
+  </oas-modal>
+</DemoBlock>
+
+## 拖拽钳制（keep in viewport）
+
+对话框可拖拽时，坐标被**钳制在视口内**（默认开启）：即使大幅拖动也不会整框拖出视口找不回。
+
+<DemoBlock title="拖拽钳制">
+  <oas-button type="primary" onclick="document.querySelector('#modal-clamp').setAttribute('visible','')">打开并拖拽</oas-button>
+  <oas-modal id="modal-clamp" title="拖拽钳制" draggable>
+    <p>按住标题栏随便拖：对话框始终留在视口内（右 / 下边缘被钳住），不会拖出找不回。</p>
+  </oas-modal>
+</DemoBlock>
+
+## 声明式 trigger
+
+`trigger="元素id"` 把任意页面元素绑定为打开触发器：点击该元素即 `setAttribute('visible')`（纯语法糖，不改变受控模型——关闭仍需宿主移除 `visible`）。
+
+<DemoBlock title="声明式 trigger">
+  <oas-button id="modal-trigger-btn" type="success">点我打开（trigger 绑定）</oas-button>
+  <oas-modal id="modal-triggered" title="trigger 打开" trigger="modal-trigger-btn">
+    <p>这个按钮没有写任何 onclick——由 <code>oas-modal</code> 的 <code>trigger</code> 属性自动绑定点击打开。</p>
+  </oas-modal>
+</DemoBlock>
+
+## 尺寸预设与全屏断点
+
+`size` 预设档位：`sm`（400px）/ `lg`（720px），显式 `width` 优先。`fullscreen-breakpoint="800"`：**视口宽度低于阈值自动进入全屏**（拖宽视口自动还原），移动端窄屏适配无需 JS 监听。
+
+<DemoBlock title="尺寸预设 sm / lg">
+  <oas-space>
+    <oas-button onclick="document.querySelector('#modal-size-sm').setAttribute('visible','')">size=sm</oas-button>
+    <oas-button onclick="document.querySelector('#modal-size-lg').setAttribute('visible','')">size=lg</oas-button>
+  </oas-space>
+  <oas-modal id="modal-size-sm" title="小尺寸" size="sm">
+    <p><code>size="sm"</code>：宽度 400px。</p>
+  </oas-modal>
+  <oas-modal id="modal-size-lg" title="大尺寸" size="lg">
+    <p><code>size="lg"</code>：宽度 720px。</p>
+  </oas-modal>
+</DemoBlock>
+
+<DemoBlock title="fullscreen-breakpoint">
+  <oas-button onclick="document.querySelector('#modal-bp').setAttribute('visible','')">打开（把窗口缩窄到 800px 以下试试）</oas-button>
+  <oas-modal id="modal-bp" title="窄屏自动全屏" fullscreen-breakpoint="800" width="640px">
+    <p><code>fullscreen-breakpoint="800"</code>：视口宽度低于 800px 自动铺满全屏（无圆角、忽略宽度）；拉宽后自动还原为常规对话框。</p>
+  </oas-modal>
+</DemoBlock>
+
+## 回车确认（confirm-on-enter）
+
+`confirm-on-enter`（显式开启，默认关）：弹窗内**没有文本输入控件**时按 Enter 触发「确定」（loading 中忽略；焦点在按钮上时交还按钮原生激活，避免重复触发）。适合快速确认类对话框。
+
+<DemoBlock title="confirm-on-enter">
+  <oas-button type="primary" onclick="document.querySelector('#modal-enter').setAttribute('visible','')">打开（先点内容区再回车）</oas-button>
+  <oas-modal id="modal-enter" title="回车即确认" confirm-on-enter onoas-ok="closeModal('modal-enter'); message.success('回车确认成功')">
+    <p>点击正文空白处让焦点离开按钮，再按 <code>Enter</code> —— 等同点击「确定」。弹窗内若放了输入框，Enter 不会被劫持。</p>
+  </oas-modal>
+</DemoBlock>
+
+## 拦截抖动反馈（shake）
+
+`oas-before-close` 被 `preventDefault()` 拦截（数据保护等场景）时，对话框播放一次**水平抖动**提示「这条关闭路径不可用」；动画结束后自动移除，可重复触发。
+
+<DemoBlock title="shake 防误关反馈">
+  <oas-button onclick="document.querySelector('#modal-shake').setAttribute('visible','')">打开并尝试关闭</oas-button>
+  <oas-modal id="modal-shake" title="受保护表单">
+    <p>此对话框拦截取消类关闭：点「取消」/ ✕ / Esc 会看到对话框抖动提示，不会真的关闭。</p>
+  </oas-modal>
+</DemoBlock>
+
+## 自定义关闭图标（close-icon 插槽）
+
+`slot="close-icon"` 覆盖默认 ✕，富内容自定义关闭图标（`aria-label` 语义保持）。
+
+<DemoBlock title="close-icon 插槽">
+  <oas-button onclick="document.querySelector('#modal-closeicon').setAttribute('visible','')">打开自定义关闭图标</oas-button>
+  <oas-modal id="modal-closeicon" title="自定义关闭图标">
+    <p>右上角关闭图标由插槽接管（此处为自定义样式）。</p>
+    <span slot="close-icon" style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--oas-color-danger); color: var(--oas-color-text-on-primary); font-size: 12px; line-height: 1;">✕</span>
+  </oas-modal>
+</DemoBlock>
+
+## options 选项模式
+
+`modal.options({ items, type })` 命令式选择框：确认框内嵌选项组，结果 resolve `{ value, action }`。`type`：`radio`（单选，`value` 为字符串）/ `checkbox`（多选，数组）/ `toggle`（开关组，数组）；支持 `disabled` 项、异步 `onOk` loading、`close()` / `update()` 句柄（与 prompt 同形态）。
+
+<DemoBlock title="options 单选 / 多选 / 开关">
+  <oas-space>
+    <oas-button type="primary" onclick="openOptionsRadio()">单选（radio）</oas-button>
+    <oas-button onclick="openOptionsCheckbox()">多选（checkbox）</oas-button>
+    <oas-button type="success" onclick="openOptionsToggle()">开关组（toggle）</oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## 渲染策略
 
 `destroy-on-close` 关闭后清空内容节点（下次打开前重新填充）；`append-to` 把对话框挂载到指定容器（突破宿主 overflow 裁切）。
@@ -420,6 +558,68 @@ onMounted(async () => {
     const { source, action } = e.detail
     message.info(`关闭来源：${source}（action=${action}）`)
   })
+
+  // —— 二期能力演示：动画事件 / shake 拦截 / options ——
+  const animModal = document.getElementById('modal-anim')
+  animModal.addEventListener('oas-opened', () => message.success('已打开（oas-opened：动画结束）'))
+  animModal.addEventListener('oas-closed', () => message.info('已关闭（oas-closed：动画结束）'))
+
+  // shake：拦截取消类关闭（可见抖动反馈由组件自动播放）
+  const shakeModal = document.getElementById('modal-shake')
+  shakeModal.addEventListener('oas-before-close', (e) => {
+    if (e.detail.source === 'ok') return
+    e.preventDefault()
+    message.warning('有未保存的修改：此路径不可关闭')
+  })
+
+  window.openOptionsRadio = () => {
+    modal
+      .options({
+        title: '选择处理优先级',
+        type: 'radio',
+        items: [
+          { label: '低（随手处理）', value: 'low' },
+          { label: '中（24h 内）', value: 'medium', checked: true },
+          { label: '高（立即处理）', value: 'high' },
+          { label: '紧急（已禁用）', value: 'urgent', disabled: true },
+        ],
+        onOk: (v) => message.success(`优先级：${v}`),
+      })
+      .then((r) => {
+        if (r.action === 'cancel') message.info('已取消')
+      })
+  }
+  window.openOptionsCheckbox = () => {
+    modal
+      .options({
+        title: '选择通知渠道',
+        type: 'checkbox',
+        items: [
+          { label: '站内信', value: 'inbox', checked: true },
+          { label: '邮件', value: 'mail' },
+          { label: '短信', value: 'sms' },
+        ],
+        onOk: (v) => message.success(`已选择：${(Array.isArray(v) ? v.join('、') : v) || '无'}`),
+      })
+      .then((r) => {
+        if (r.action === 'cancel') message.info('已取消')
+      })
+  }
+  window.openOptionsToggle = () => {
+    modal
+      .options({
+        title: '免打扰时段',
+        type: 'toggle',
+        items: [
+          { label: '夜间免打扰（22:00-08:00）', value: 'night' },
+          { label: '周末免打扰', value: 'weekend', checked: true },
+        ],
+        onOk: (v) => message.success(`开启：${(Array.isArray(v) ? v.join('、') : v) || '无'}`),
+      })
+      .then((r) => {
+        if (r.action === 'cancel') message.info('已取消')
+      })
+  }
 })
 </script>
 
@@ -431,11 +631,13 @@ onMounted(async () => {
 | --- | --- |
 | `modal.confirm({ title?, content?, okText?, cancelText?, onOk?, onCancel? })` | 打开确认框（确定/取消双按钮），返回 `{ close }` |
 | `modal.info(options)` / `modal.success(options)` / `modal.warning(options)` / `modal.error(options)` | 语义确认框：对应图标 + 单「确定」按钮，返回 `{ close }` |
-| `destroyAllModal()` | 关闭并销毁全部命令式确认框 |
+| `modal.prompt({ title?, inputValue?, placeholder?, inputType?, validator?, onOk? })` | 输入框确认：结果 resolve `{ value, action }`，返回 Promise & `{ close, update }` |
+| `modal.options({ title?, content?, items?, type?, okText?, cancelText?, onOk? })` | 选项选择框（`type`：radio / checkbox / toggle）：结果 resolve `{ value, action }`（radio 单个字符串；checkbox/toggle 数组），返回 Promise & `{ close, update }` |
+| `destroyAllModal()` | 关闭并销毁全部命令式确认框（等各自关闭动画结束） |
 
 - 选项：`{ title?, content?, okText?, cancelText?, onOk?, onCancel? }`。`content` 为纯文本；`onOk` 返回 Promise 时确定按钮进入 loading（resolve 关闭、reject 保持打开可重试或取消）。
 - 返回 `{ close() }` 句柄：编程关闭当前实例，不触发 `onOk` / `onCancel`。
-- 挂载到最近 `oas-app` 容器（无则 `body`）；多实例可叠放。
+- 挂载到最近 `oas-app` 容器（无则 `body`）；多实例可叠放；命令式实例在关闭动画结束（`oas-closed`）后才卸载。
 
 ### 属性
 
@@ -444,10 +646,12 @@ onMounted(async () => {
 | `append-to` | — | — | — |
 | `cancel-text` | 取消按钮文案；缺省走 locale `modal.cancel` | — | — |
 | `centered` | 对话框垂直居中显示 | `boolean` | — |
+| `confirm-on-enter` | — | `boolean` | — |
 | `destroy-on-close` | — | `boolean` | — |
 | `draggable` | 可通过标题栏拖动对话框 | `boolean` | — |
 | `focus-ok` | 打开时焦点移入「确定」按钮（默认移入「取消」按钮） | `boolean` | — |
 | `fullscreen` | 全屏显示：对话框铺满视口、无圆角与边距（优先级高于 width / centered / draggable） | `boolean` | — |
+| `fullscreen-breakpoint` | — | — | — |
 | `initial-focus` | — | — | — |
 | `loading` | 确定按钮进入 loading 态（禁用 + 转圈），禁止重复触发确定 | `boolean` | — |
 | `no-cancel` | 隐藏取消按钮（底部仅剩「确定」；语义变体确认框内置） | `boolean` | — |
@@ -455,12 +659,16 @@ onMounted(async () => {
 | `no-esc-close` | — | `boolean` | — |
 | `no-focus-trap` | — | `boolean` | — |
 | `no-footer` | 隐藏底部操作按钮 | `boolean` | — |
+| `no-mask` | — | `boolean` | — |
 | `no-mask-close` | 禁用点击遮罩关闭 | `boolean` | — |
 | `no-scroll-lock` | — | `boolean` | — |
 | `ok-text` | 确定按钮文案；缺省走 locale `modal.ok` | — | — |
 | `position` | — | — | — |
 | `role` | — | `string` | `dialog` |
+| `size` | — | `ModalSizePreset` | — |
 | `title` | 标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
+| `transition` | — | — | — |
+| `trigger` | — | — | — |
 | `type` | 语义变体：`info`/`success`/`warning`/`error`，正文顶部渲染对应语义图标 | `ModalVariant` | — |
 | `visible` | 是否显示 | `boolean` | — |
 | `width` | 对话框宽度（px 或百分比） | — | — |
@@ -472,13 +680,17 @@ onMounted(async () => {
 | `oas-before-close` | — |
 | `oas-cancel` | 取消：取消按钮 / ✕ / 遮罩点击 / Esc |
 | `oas-close` | — |
+| `oas-closed` | — |
 | `oas-ok` | 点击「确定」 |
+| `oas-open` | — |
+| `oas-opened` | — |
 
 ### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+| `close-icon` | — |
 | `description` | — |
 | `footer` | — |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |

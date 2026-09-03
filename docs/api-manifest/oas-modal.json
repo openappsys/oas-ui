@@ -112,9 +112,46 @@
       "name": "focus-ok",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "transition",
+      "observed": true
+    },
+    {
+      "name": "no-mask",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "trigger",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "ModalSizePreset",
+      "observed": true
+    },
+    {
+      "name": "fullscreen-breakpoint",
+      "observed": true
+    },
+    {
+      "name": "confirm-on-enter",
+      "type": "boolean",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "opened",
+      "type": "boolean",
+      "default": "false"
+    },
+    {
+      "name": "closing",
+      "type": "boolean"
+    }
+  ],
   "events": [
     {
       "name": "oas-ok"
@@ -124,16 +161,28 @@
       "detail": "{ source }"
     },
     {
+      "name": "oas-open"
+    },
+    {
+      "name": "oas-opened"
+    },
+    {
       "name": "oas-close",
       "detail": "{ source, action: CLOSE_ACTION[source] }"
     },
     {
       "name": "oas-cancel"
+    },
+    {
+      "name": "oas-closed"
     }
   ],
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "close-icon"
     },
     {
       "name": "description"

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASModal } from './index.js'
 import { iconRegistry } from '@oas-ui/icons'
 
@@ -806,20 +806,23 @@ describe('OASModal 一期能力增强', () => {
 
   // —— P10 destroy-on-close ——
 
-  it('P10 destroy-on-close：关闭后清空 light DOM 内容（下次打开重新填充）', async () => {
+  it('P10 destroy-on-close：关闭动画结束（oas-closed）后清空 light DOM 内容', async () => {
     const el = mount({ visible: '', 'destroy-on-close': '' })
     await Promise.resolve()
     expect(el.children.length).toBeGreaterThan(0)
     el.removeAttribute('visible')
+    expect(el.children.length, '动画未结束前不销毁').toBeGreaterThan(0)
+    el.shadowRoot!.querySelector('.dialog')!.dispatchEvent(new Event('transitionend'))
     await Promise.resolve()
     expect(el.children.length).toBe(0)
   })
 
-  it('P10 未开启 destroy-on-close：关闭后内容保留（默认不销毁 DOM）', async () => {
+  it('P10 未开启 destroy-on-close：关闭动画结束后内容保留（默认不销毁 DOM）', async () => {
     const el = mount({ visible: '' })
     await Promise.resolve()
     expect(el.children.length).toBeGreaterThan(0)
     el.removeAttribute('visible')
+    el.shadowRoot!.querySelector('.dialog')!.dispatchEvent(new Event('transitionend'))
     await Promise.resolve()
     expect(el.children.length).toBeGreaterThan(0)
   })
@@ -967,6 +970,382 @@ describe('OASModal 一期能力增强', () => {
     await Promise.resolve()
     expect(el.shadowRoot!.querySelector('[role="alertdialog"]')).not.toBeNull()
     expect(el.shadowRoot!.querySelector('[role="dialog"]')).toBeNull()
+  })
+})
+
+describe('OASModal 二期能力增强', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function dialogOf(el: OASModal): HTMLElement {
+    return el.shadowRoot!.querySelector('.dialog') as HTMLElement
+  }
+
+  /** 触发关闭动画结束（happy-dom 无真实过渡，手动派发 transitionend） */
+  function endClose(el: OASModal): void {
+    dialogOf(el).dispatchEvent(new Event('transitionend'))
+  }
+
+  /** 覆写视口尺寸并触发 resize（P19 断点测试） */
+  function setViewport(width: number, height: number): void {
+    Object.defineProperty(window, 'innerWidth', { value: width, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: height, configurable: true })
+    window.dispatchEvent(new Event('resize'))
+  }
+
+  // ===== P3 开关动画 + opened/closed =====
+
+  it('P3 打开：mask/dialog 写入 data-open、移除 data-closed（驱动 CSS 过渡），并派发 oas-open', async () => {
+    const el = mount()
+    let open = 0
+    el.addEventListener('oas-open', () => open++)
+    el.setAttribute('visible', '')
+    await Promise.resolve()
+    expect(open).toBe(1)
+    expect(el.shadowRoot!.querySelector('.mask')!.getAttribute('data-open')).not.toBeNull()
+    expect(dialogOf(el).getAttribute('data-open')).not.toBeNull()
+    expect(dialogOf(el).getAttribute('data-closed')).toBeNull()
+  })
+
+  it('P3 打开动画走 transform/opacity（CSS 含过渡），prefers-reduced-motion 关闭过渡', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('transform')
+    expect(css).toContain('opacity')
+    expect(css).toContain('prefers-reduced-motion')
+  })
+
+  it('P3 动画结束（transitionend）后派发 oas-opened', () => {
+    const el = mount({ visible: '' })
+    let opened = 0
+    el.addEventListener('oas-opened', () => opened++)
+    expect(opened).toBe(0)
+    endClose(el)
+    expect(opened).toBe(1)
+  })
+
+  it('P3 visibility 的 0s 离散 transitionend 不提前触发 opened（等 transform/opacity 结束）', () => {
+    const el = mount({ visible: '' })
+    let opened = 0
+    el.addEventListener('oas-opened', () => opened++)
+    const vis = new Event('transitionend')
+    Object.defineProperty(vis, 'propertyName', { value: 'visibility' })
+    dialogOf(el).dispatchEvent(vis)
+    expect(opened).toBe(0)
+    endClose(el)
+    expect(opened).toBe(1)
+  })
+
+  it('P3 关闭：移除 data-open + 加 data-closed，动画结束派发 oas-closed（事件在关闭开始时派发）', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    const closeDetail: { source: string } = { source: '' }
+    let closed = 0
+    el.addEventListener('oas-close', (e) => {
+      closeDetail.source = (e as CustomEvent<{ source: string }>).detail.source
+    })
+    el.addEventListener('oas-closed', () => closed++)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="cancel"]')!.click()
+    expect(closeDetail.source).toBe('cancel')
+    expect(el.hasAttribute('visible')).toBe(false)
+    expect(dialogOf(el).getAttribute('data-open')).toBeNull()
+    expect(dialogOf(el).getAttribute('data-closed')).not.toBeNull()
+    expect(closed).toBe(0)
+    endClose(el)
+    expect(closed).toBe(1)
+  })
+
+  it('P3 关闭动画结束前 opened/closing 语义：closing 期间再移除不重复走关闭边沿', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    expect(el.opened).toBe(true)
+    expect(el.closing).toBe(false)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="cancel"]')!.click()
+    expect(el.opened).toBe(false)
+    expect(el.closing).toBe(true)
+    // closing 期间 removeAttribute 幂等（不重复解锁/派发）
+    let close = 0
+    el.addEventListener('oas-close', () => close++)
+    el.removeAttribute('visible')
+    expect(close).toBe(0)
+    endClose(el)
+    expect(el.closing).toBe(false)
+  })
+
+  it('P3 transition="none"：无过渡声明，动画结束事件同步完成（无 timer 依赖）', () => {
+    const el = mount()
+    let opened = 0
+    let closed = 0
+    el.addEventListener('oas-opened', () => opened++)
+    el.addEventListener('oas-closed', () => closed++)
+    el.setAttribute('transition', 'none')
+    el.setAttribute('visible', '')
+    // 打开瞬间 opened 已同步派发（无过渡可播）
+    expect(opened).toBe(1)
+    el.removeAttribute('visible')
+    expect(closed).toBe(1)
+    expect(dialogOf(el).getAttribute('data-open')).toBeNull()
+  })
+
+  it('P3 transition="fade"：data-closed 不写 transform（仅透明度淡入淡出）', () => {
+    const el = mount({ visible: '', transition: 'fade' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/:host\(\[transition='fade'\]\)[^{]*data-closed[^{]*\{[^}]*transform:\s*none/)
+  })
+
+  it('P3 命令式销毁时序：关闭后等 oas-closed 才卸载（本层由命令式 API 驱动）', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    el.addEventListener('oas-closed', () => el.remove())
+    el.removeAttribute('visible')
+    expect(el.isConnected).toBe(true)
+    endClose(el)
+    expect(el.isConnected).toBe(false)
+  })
+
+  // ===== P22 点击位置动画原点 =====
+
+  it('P22 打开瞬间记录指针位置：transform-origin 走 CSS 变量指向点击点', () => {
+    const el = mount()
+    document.dispatchEvent(pointer('pointerdown', 700, 400))
+    el.setAttribute('visible', '')
+    const dialog = dialogOf(el)
+    expect(dialog.style.getPropertyValue('--oas-modal-origin-x')).toBe('700px')
+    expect(dialog.style.getPropertyValue('--oas-modal-origin-y')).toBe('400px')
+  })
+
+  it('P22 无近期指针记录（如键盘打开）时回退居中（CSS 变量清空）', () => {
+    const el = mount()
+    // 无 pointerdown（时间戳久远）：变量未写入，CSS 回退 center
+    el.setAttribute('visible', '')
+    const dialog = dialogOf(el)
+    expect(dialog.style.getPropertyValue('--oas-modal-origin-x')).toBe('')
+  })
+
+  // ===== P8 no-mask 非模态 =====
+
+  it('P8 no-mask：遮罩隐藏 + 焦点陷阱关闭（打开不聚焦、Tab 不拉回）', async () => {
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    outside.focus()
+    const el = mount({ visible: '', 'no-mask': '' })
+    await Promise.resolve()
+    const mask = el.shadowRoot!.querySelector<HTMLElement>('.mask')!
+    expect(mask.hidden).toBe(true)
+    // 打开不抢焦点（非模态）
+    expect(document.activeElement).toBe(outside)
+    // Tab 逃逸不拉回
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    expect(document.activeElement).toBe(outside)
+  })
+
+  it('P8 无 no-mask 时遮罩照常显示、打开聚焦（回归对照）', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.mask')!.hidden).toBe(false)
+    expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('[part="cancel"]'))
+  })
+
+  it('P8 no-mask 下关闭 / Esc 关闭语义保持（由 no-esc-close 另行关闭 Esc）', async () => {
+    const el = mount({ visible: '', 'no-mask': '' })
+    await Promise.resolve()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(el.hasAttribute('visible')).toBe(false)
+  })
+
+  // ===== P16 拖拽钳制在视口内 =====
+
+  it('P16 拖拽钳制：超出视口右边/下边时坐标被夹回视口内（默认开启）', () => {
+    const el = mount({ visible: '', draggable: '' })
+    const dialog = dialogOf(el)
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    const spy = vi.spyOn(dialog, 'getBoundingClientRect').mockReturnValue({
+      left: 252,
+      top: 100,
+      width: 520,
+      height: 260,
+      right: 772,
+      bottom: 360,
+      x: 252,
+      y: 100,
+      toJSON: () => ({}),
+    } as DOMRect)
+    // 起手于 (0,0)，拖到视口外右下
+    el.shadowRoot!.querySelector('.header')!.dispatchEvent(pointer('pointerdown', 0, 0))
+    document.dispatchEvent(pointer('pointermove', vw + 5000, vh + 5000))
+    expect(dialog.style.left).toBe(`${vw - 520}px`)
+    expect(dialog.style.top).toBe(`${vh - 260}px`)
+    // 拖到视口外左上：夹回 0
+    document.dispatchEvent(pointer('pointermove', -5000, -5000))
+    expect(dialog.style.left).toBe('0px')
+    expect(dialog.style.top).toBe('0px')
+    document.dispatchEvent(pointer('pointerup', -5000, -5000))
+    spy.mockRestore()
+  })
+
+  // ===== P18 声明式 trigger =====
+
+  it('P18 trigger 绑定元素点击打开（只 setAttribute visible，不触碰受控模型）', async () => {
+    const btn = document.createElement('button')
+    btn.id = 'modal-trigger-a'
+    document.body.appendChild(btn)
+    const el = mount({ trigger: 'modal-trigger-a' })
+    await Promise.resolve()
+    expect(el.hasAttribute('visible')).toBe(false)
+    btn.click()
+    expect(el.hasAttribute('visible')).toBe(true)
+    // 已打开时再次点击不重复副作用（保持打开）
+    btn.click()
+    expect(el.hasAttribute('visible')).toBe(true)
+  })
+
+  it('P18 trigger 目标不存在时不抛错、不绑定', () => {
+    const el = mount({ trigger: 'no-such-id' })
+    expect(() => el.setAttribute('visible', '')).not.toThrow()
+  })
+
+  // ===== P19 fullscreen-breakpoint + size 预设 =====
+
+  it('P19 size 预设：sm/lg 映射宽度（width 显式优先，非法值回退主题默认）', async () => {
+    const a = mount({ visible: '', size: 'sm' })
+    const b = mount({ visible: '', size: 'lg' })
+    const c = mount({ visible: '', size: 'xl', width: '640px' })
+    const d = mount({ visible: '', size: 'bogus' })
+    await Promise.resolve()
+    expect(dialogOf(a).style.width).toBe('400px')
+    expect(dialogOf(b).style.width).toBe('720px')
+    expect(dialogOf(c).style.width).toBe('640px') // width 优先
+    expect(dialogOf(d).style.width).toBe('') // 非法 size 回退主题默认
+  })
+
+  it('P19 fullscreen-breakpoint：视口窄于阈值自动全屏，宽于阈值恢复', async () => {
+    const origW = window.innerWidth
+    const origH = window.innerHeight
+    try {
+      setViewport(1280, 800)
+      const el = mount({ visible: '', 'fullscreen-breakpoint': '900', width: '640px' })
+      await Promise.resolve()
+      expect(dialogOf(el).getAttribute('data-fullscreen')).toBeNull()
+      // 收窄视口 → 自动全屏（标记 data-fullscreen + 清除内联宽度）
+      setViewport(800, 600)
+      expect(dialogOf(el).getAttribute('data-fullscreen')).not.toBeNull()
+      expect(dialogOf(el).style.width).toBe('')
+      // 拉宽视口 → 恢复常规（宽度回到显式 width）
+      setViewport(1280, 800)
+      expect(dialogOf(el).getAttribute('data-fullscreen')).toBeNull()
+      expect(dialogOf(el).style.width).toBe('640px')
+    } finally {
+      setViewport(origW, origH)
+    }
+  })
+
+  // ===== P21 confirm-on-enter =====
+
+  it('P21 confirm-on-enter：弹窗内无文本输入控件时 Enter 触发确定', async () => {
+    const el = mount({ visible: '', 'confirm-on-enter': '', 'no-cancel': '' })
+    await Promise.resolve()
+    let ok = 0
+    el.addEventListener('oas-ok', () => ok++)
+    // 焦点落在非交互区域（tabindex=-1 的 div）
+    const spot = document.createElement('div')
+    spot.tabIndex = -1
+    el.appendChild(spot)
+    spot.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(ok).toBe(1)
+    expect(el.hasAttribute('visible')).toBe(false)
+  })
+
+  it('P21 缺省（无 confirm-on-enter）时 Enter 不触发确定', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    let ok = 0
+    el.addEventListener('oas-ok', () => ok++)
+    const spot = document.createElement('div')
+    spot.tabIndex = -1
+    el.appendChild(spot)
+    spot.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(ok).toBe(0)
+    expect(el.hasAttribute('visible')).toBe(true)
+  })
+
+  it('P21 弹窗内有文本输入控件（input）时 Enter 不触发确定（不打断输入流程）', async () => {
+    const el = mount({ visible: '', 'confirm-on-enter': '', 'no-cancel': '' })
+    await Promise.resolve()
+    const input = document.createElement('input')
+    el.appendChild(input)
+    input.focus()
+    let ok = 0
+    el.addEventListener('oas-ok', () => ok++)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(ok).toBe(0)
+    expect(el.hasAttribute('visible')).toBe(true)
+  })
+
+  it('P21 焦点在原生按钮上时 Enter 不重复触发（交还按钮原生激活）', async () => {
+    const el = mount({ visible: '', 'confirm-on-enter': '', 'no-cancel': '' })
+    await Promise.resolve()
+    const okBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="ok"]')!
+    okBtn.focus()
+    let ok = 0
+    el.addEventListener('oas-ok', () => ok++)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(ok).toBe(0)
+  })
+
+  // ===== P23 shake 防误关反馈 =====
+
+  it('P23 before-close 被拦截时对话框 shake 反馈（class 加后移除，可重播）', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    el.addEventListener('oas-before-close', (e) => e.preventDefault())
+    const dialog = dialogOf(el)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.click()
+    expect(el.hasAttribute('visible')).toBe(true)
+    expect(dialog.classList.contains('oas-shake')).toBe(true)
+    await new Promise((r) => setTimeout(r, 400))
+    expect(dialog.classList.contains('oas-shake')).toBe(false)
+  })
+
+  it('P23 shake keyframes 只走 transform（性能纪律），无硬编码色值', () => {
+    const el = mount({ visible: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const kf = /@keyframes\s+oas-modal-shake[\s\S]*?\}/.exec(css)?.[0] ?? ''
+    expect(kf).toMatch(/transform:\s*translateX/)
+    expect(css).toContain('.dialog.oas-shake')
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,6}/)
+  })
+
+  // ===== P27 close-icon 插槽 =====
+
+  it('P27 slot="close-icon" 覆盖默认 ✕（插槽内容渲染进关闭按钮）', async () => {
+    const el = mount({ visible: '' })
+    const icon = document.createElement('span')
+    icon.setAttribute('slot', 'close-icon')
+    icon.textContent = '关闭'
+    el.appendChild(icon)
+    await Promise.resolve()
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="close-icon"]')!
+    const assigned = slot.assignedNodes()
+    expect(assigned.length).toBeGreaterThan(0)
+    // 插槽分配内容即自定义关闭图标（shadow textContent 不扁平化，断言分配到 light DOM 节点）
+    expect(assigned[0]!.textContent).toContain('关闭')
+    // 关闭按钮本体仍可点
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.hidden).toBe(false)
+  })
+
+  it('P27 无 close-icon 插槽内容时回退默认 ✕ 字符', async () => {
+    const el = mount({ visible: '' })
+    await Promise.resolve()
+    const closeBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!
+    expect(closeBtn.textContent).toContain('✕')
   })
 })
 
