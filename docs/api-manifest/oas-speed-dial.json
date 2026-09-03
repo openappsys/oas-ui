@@ -1,6 +1,6 @@
 {
   "className": "OASSpeedDial",
-  "sourceFile": "packages/ui/src/floating/speed-dial/oas-speed-dial.ts",
+  "sourceFile": "packages/ui/src/navigation/speed-dial/oas-speed-dial.ts",
   "attrs": [
     {
       "name": "actions",

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASButton } from './index.js'
-import '../../floating/config-provider/index.js'
+import '../../framework/config-provider/index.js'
 
 function mount(attrs: Record<string, string> = {}, slot = '按钮'): OASButton {
   const el = new OASButton()

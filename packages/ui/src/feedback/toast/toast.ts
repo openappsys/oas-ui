@@ -1,4 +1,4 @@
-import { resolveMessageHost, getAppToastConfig } from '../../floating/app/app-host.js'
+import { resolveMessageHost, getAppToastConfig } from '../../framework/app/app-host.js'
 import type {
   OASToast,
   ToastType,

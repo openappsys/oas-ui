@@ -15,12 +15,12 @@
 | 族包 | 覆盖组件 |
 | --- | --- |
 | `cdn/basic.js` | 基础：button、icon、tag、badge、space、divider、link、typography、button-group、label、kbd、visually-hidden |
-| `cdn/layout.js` | 布局：layout、grid、flex、container、sidebar、splitter、pagination、tabs、steps、affix、page-header、float-button、segmented |
-| `cdn/navigation.js` | 导航：breadcrumb、anchor、back-top、tour、bottom-navigation、stepper |
-| `cdn/form.js` | 表单：input、textarea、checkbox、radio、switch、slider、input-number、rate、select、cascader、date-picker、time-picker、upload、transfer、form、form-item 等 |
-| `cdn/data.js` | 数据展示：table、tree、card、avatar、avatar-group、image、qrcode、watermark、collapse、descriptions、timeline、list、carousel、chart、code、statistic、masonry 等 |
-| `cdn/feedback.js` | 反馈：message、notification、toast、snackbar、backdrop、modal、confirm、drawer、popconfirm、alert、progress、loading-bar、spin、skeleton、empty、result |
-| `cdn/floating.js` | 浮层：tooltip、popover、dropdown、contextmenu、hover-card、menu、menubar、navigation-menu、toolbar、scroll-area、speed-dial、command 等 |
+| `cdn/layout.js` | 布局：layout、sidebar、container、grid、flex、splitter、scroll-area、masonry、aspect-ratio |
+| `cdn/form.js` | 表单：input、textarea、checkbox、radio、switch、segmented、slider、input-number、rate、select、auto-complete、combobox、cascader、tree-select、mentions、date-picker、time-picker、calendar、upload、transfer、color-picker、toggle-button、toggle-group、pin-input、dynamic-input、dynamic-tags、editable、form 等 |
+| `cdn/feedback.js` | 反馈与浮层：tooltip、popover、hover-card、message、notification、toast、snackbar、backdrop、modal、confirm、drawer、popconfirm、alert、progress、loading-bar、spin、skeleton、empty、result |
+| `cdn/navigation.js` | 导航：menu、dropdown、contextmenu、command、menubar、navigation-menu、toolbar、breadcrumb、anchor、back-top、tour、tabs、bottom-navigation、pagination、steps、stepper、affix、page-header、float-button、speed-dial |
+| `cdn/data.js` | 数据展示：table、tree、virtual-list、card、avatar、avatar-group、image、qrcode、watermark、collapse、descriptions、timeline、list、carousel、statistic、countdown、ellipsis、chart、code、equation、log、marquee、number-animation、gradient-text、comment 等 |
+| `cdn/framework.js` | 框架级：config-provider、app、theme-editor |
 
 只用基础族：
 

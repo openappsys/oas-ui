@@ -1,6 +1,6 @@
 {
   "className": "OASContextMenu",
-  "sourceFile": "packages/ui/src/floating/contextmenu/oas-context-menu.ts",
+  "sourceFile": "packages/ui/src/navigation/contextmenu/oas-context-menu.ts",
   "attrs": [
     {
       "name": "items",

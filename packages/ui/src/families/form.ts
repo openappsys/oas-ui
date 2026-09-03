@@ -1,13 +1,13 @@
 /**
- * form 族注册入口（CDN 按需打包产物 dist/cdn/form.js）。
+ * 表单 族注册入口（CDN 按需打包产物 dist/cdn/form.js）。
  * 基座内联：@oas-ui/i18n + config-provider/app/theme-editor 框架级三件（每族都 import，幂等守卫防重）。
- * 族内容 = form 目录全部组件 index.js（import 即注册，与 src/index.ts 的 form 段完全一致）。
+ * 族内容 = 源码顶层目录「表单」全部组件 index.js（import 即注册，与 src/index.ts 的 表单 段一致）。
  * 纯 import 组装，无执行逻辑。
  */
 import '@oas-ui/i18n'
-import '../floating/config-provider/index.js'
-import '../floating/app/index.js'
-import '../floating/theme-editor/index.js'
+import '../framework/config-provider/index.js'
+import '../framework/app/index.js'
+import '../framework/theme-editor/index.js'
 import '../form/input/index.js'
 import '../form/textarea/index.js'
 import '../form/checkbox/index.js'
@@ -36,3 +36,4 @@ import '../form/pin-input/index.js'
 import '../form/dynamic-input/index.js'
 import '../form/dynamic-tags/index.js'
 import '../form/editable/index.js'
+import '../form/segmented/index.js'

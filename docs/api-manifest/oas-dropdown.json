@@ -1,6 +1,6 @@
 {
   "className": "OASDropdown",
-  "sourceFile": "packages/ui/src/floating/dropdown/oas-dropdown.ts",
+  "sourceFile": "packages/ui/src/navigation/dropdown/oas-dropdown.ts",
   "attrs": [
     {
       "name": "open",

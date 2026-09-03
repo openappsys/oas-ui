@@ -8,10 +8,10 @@ import { OASLabel } from './label/index.js'
 import { OASLink } from './link/index.js'
 import { OASSpace } from './space/index.js'
 import { OASVisuallyHidden } from './visually-hidden/index.js'
-import { OAStooltip } from '../floating/tooltip/index.js'
-import { OASPopover } from '../floating/popover/index.js'
-import { OASConfigProvider } from '../floating/config-provider/index.js'
-import { OASApp } from '../floating/app/index.js'
+import { OAStooltip } from '../feedback/tooltip/index.js'
+import { OASPopover } from '../feedback/popover/index.js'
+import { OASConfigProvider } from '../framework/config-provider/index.js'
+import { OASApp } from '../framework/app/index.js'
 
 /**
  * 基础纯展示 + 浮层触发 + 框架级容器 DSD 真水合批次 5 单测（对应 SSR 白名单收尾）。

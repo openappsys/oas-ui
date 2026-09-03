@@ -1,6 +1,6 @@
 {
   "className": "OASPagination",
-  "sourceFile": "packages/ui/src/layout/pagination/oas-pagination.ts",
+  "sourceFile": "packages/ui/src/navigation/pagination/oas-pagination.ts",
   "attrs": [
     {
       "name": "total",

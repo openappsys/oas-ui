@@ -1,6 +1,6 @@
 {
   "className": "OASConfigProvider",
-  "sourceFile": "packages/ui/src/floating/config-provider/oas-config-provider.ts",
+  "sourceFile": "packages/ui/src/framework/config-provider/oas-config-provider.ts",
   "attrs": [
     {
       "name": "locale",

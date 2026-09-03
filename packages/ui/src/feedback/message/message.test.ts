@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { message, destroyAll, type OASMessage } from './index.js'
-import '../../floating/app/index.js'
+import '../../framework/app/index.js'
 
 /** 出场动画只在不减动效环境运行；测试默认视为减动效（立即移除），动画行为单独开用例 */
 function mockReducedMotion(reduced: boolean): void {

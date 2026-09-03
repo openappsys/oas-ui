@@ -1,6 +1,6 @@
 {
   "className": "OASTabs",
-  "sourceFile": "packages/ui/src/layout/tabs/oas-tabs.ts",
+  "sourceFile": "packages/ui/src/navigation/tabs/oas-tabs.ts",
   "attrs": [
     {
       "name": "active",

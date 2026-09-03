@@ -1,6 +1,6 @@
 {
   "className": "OASSteps",
-  "sourceFile": "packages/ui/src/layout/steps/oas-steps.ts",
+  "sourceFile": "packages/ui/src/navigation/steps/oas-steps.ts",
   "attrs": [
     {
       "name": "steps",

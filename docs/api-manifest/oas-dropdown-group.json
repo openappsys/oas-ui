@@ -1,6 +1,6 @@
 {
   "className": "OASDropdownGroup",
-  "sourceFile": "packages/ui/src/floating/dropdown/oas-dropdown-group.ts",
+  "sourceFile": "packages/ui/src/navigation/dropdown/oas-dropdown-group.ts",
   "attrs": [],
   "props": [],
   "events": [],

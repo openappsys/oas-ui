@@ -1,4 +1,4 @@
-import { resolveMessageHost } from '../../floating/app/app-host.js'
+import { resolveMessageHost } from '../../framework/app/app-host.js'
 import { OASDrawer, type DrawerPlacement } from './oas-drawer.js'
 
 export interface DrawerOptions {

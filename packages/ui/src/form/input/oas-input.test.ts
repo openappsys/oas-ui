@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASInput } from './index.js'
-import '../../floating/config-provider/index.js'
+import '../../framework/config-provider/index.js'
 
 function mount(attrs: Record<string, string> = {}): OASInput {
   const el = new OASInput()

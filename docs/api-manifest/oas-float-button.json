@@ -1,6 +1,6 @@
 {
   "className": "OASFloatButton",
-  "sourceFile": "packages/ui/src/layout/float-button/oas-float-button.ts",
+  "sourceFile": "packages/ui/src/navigation/float-button/oas-float-button.ts",
   "attrs": [
     {
       "name": "badge",

@@ -6,7 +6,7 @@ import './index.js'
 import '../../feedback/empty/index.js'
 import '../../basic/button/index.js'
 import '../../basic/tag/index.js'
-import '../../floating/scroll-area/index.js'
+import '../../layout/scroll-area/index.js'
 import '../../feedback/modal/index.js'
 
 /**

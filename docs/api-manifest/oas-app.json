@@ -1,6 +1,6 @@
 {
   "className": "OASApp",
-  "sourceFile": "packages/ui/src/floating/app/oas-app.ts",
+  "sourceFile": "packages/ui/src/framework/app/oas-app.ts",
   "attrs": [
     {
       "name": "message",

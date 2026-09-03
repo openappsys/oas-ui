@@ -1,6 +1,6 @@
 {
   "className": "OASToolbarInput",
-  "sourceFile": "packages/ui/src/floating/toolbar/oas-toolbar-input.ts",
+  "sourceFile": "packages/ui/src/navigation/toolbar/oas-toolbar-input.ts",
   "attrs": [
     {
       "name": "value",

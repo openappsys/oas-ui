@@ -1,6 +1,6 @@
 {
   "className": "OASPopover",
-  "sourceFile": "packages/ui/src/floating/popover/oas-popover.ts",
+  "sourceFile": "packages/ui/src/feedback/popover/oas-popover.ts",
   "attrs": [
     {
       "name": "open",

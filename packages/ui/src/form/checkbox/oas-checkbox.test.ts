@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASCheckbox, OASCheckboxGroup } from './index.js'
-import '../../floating/config-provider/index.js'
+import '../../framework/config-provider/index.js'
 
 function mountCheckbox(attrs: Record<string, string> = {}, slot = '选项'): OASCheckbox {
   const el = new OASCheckbox()

@@ -15,12 +15,12 @@
 | Bundle | Components covered |
 | --- | --- |
 | `cdn/basic.js` | Basic: button, icon, tag, badge, space, divider, link, typography, button-group, label, kbd, visually-hidden |
-| `cdn/layout.js` | Layout: layout, grid, flex, container, sidebar, splitter, pagination, tabs, steps, affix, page-header, float-button, segmented |
-| `cdn/navigation.js` | Navigation: breadcrumb, anchor, back-top, tour, bottom-navigation, stepper |
-| `cdn/form.js` | Form: input, textarea, checkbox, radio, switch, slider, input-number, rate, select, cascader, date-picker, time-picker, upload, transfer, form, form-item, etc. |
-| `cdn/data.js` | Data display: table, tree, card, avatar, avatar-group, image, qrcode, watermark, collapse, descriptions, timeline, list, carousel, chart, code, statistic, masonry, etc. |
-| `cdn/feedback.js` | Feedback: message, notification, toast, snackbar, backdrop, modal, confirm, drawer, popconfirm, alert, progress, loading-bar, spin, skeleton, empty, result |
-| `cdn/floating.js` | Overlays: tooltip, popover, dropdown, contextmenu, hover-card, menu, menubar, navigation-menu, toolbar, scroll-area, speed-dial, command, etc. |
+| `cdn/layout.js` | Layout: layout, sidebar, container, grid, flex, splitter, scroll-area, masonry, aspect-ratio |
+| `cdn/form.js` | Form: input, textarea, checkbox, radio, switch, segmented, slider, input-number, rate, select, auto-complete, combobox, cascader, tree-select, mentions, date-picker, time-picker, calendar, upload, transfer, color-picker, toggle-button, toggle-group, pin-input, dynamic-input, dynamic-tags, editable, form, etc. |
+| `cdn/feedback.js` | Feedback & Overlays: tooltip, popover, hover-card, message, notification, toast, snackbar, backdrop, modal, confirm, drawer, popconfirm, alert, progress, loading-bar, spin, skeleton, empty, result |
+| `cdn/navigation.js` | Navigation: menu, dropdown, contextmenu, command, menubar, navigation-menu, toolbar, breadcrumb, anchor, back-top, tour, tabs, bottom-navigation, pagination, steps, stepper, affix, page-header, float-button, speed-dial |
+| `cdn/data.js` | Data display: table, tree, virtual-list, card, avatar, avatar-group, image, qrcode, watermark, collapse, descriptions, timeline, list, carousel, statistic, countdown, ellipsis, chart, code, equation, log, marquee, number-animation, gradient-text, comment, etc. |
+| `cdn/framework.js` | Framework containers: config-provider, app, theme-editor |
 
 Basic family only:
 
