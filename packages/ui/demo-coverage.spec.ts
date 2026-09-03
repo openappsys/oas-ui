@@ -164,6 +164,7 @@ const INTERACTIONS: Array<[string, string]> = [
 //   rightclick    右键（contextmenu）
 //   fill:<v>      填充第一个匹配
 //   fillall:<v>   填充所有匹配（如 pin-input 逐格）
+//   rmattr:<attr> 移除所有匹配元素的指定属性（受控显隐复位：重复探针时强制重新走开/合动画）
 //   press:<Key>   键盘按键
 //   open          给所有匹配元素设置 open 属性（受控组件的打开入口）
 //   grant         授予 clipboard-write 权限（复制成功路径）
@@ -306,6 +307,20 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       '连发 4 条 → 堆叠溢出 → 最老实例同步 oas-close（比等 4s 定时器稳定）',
     ],
   ],
+  toast: [
+    [
+      'oas-button:has-text("不自动关闭") button',
+      'domclick',
+      '创建 duration=0 常驻 toast（句柄存 window.toastHandle）',
+    ],
+    ['wait:200', 'wait', '等入场动画'],
+    [
+      'oas-button:has-text("手动关闭") button',
+      'domclick',
+      'close() → oas-close；离场移除 → oas-destroy（不依赖自动关闭定时器，杜绝高负载 flaky）',
+    ],
+    ['wait:350', 'wait', '等离场移除'],
+  ],
   backdrop: [
     [
       'typeof window.openBackdrop === "function"',
@@ -313,11 +328,28 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       '等 demo onMounted 注入 openBackdrop（SKIP_WAIT 跳过 tag 等待，并行负载下注入可能较慢）',
     ],
     [
-      'oas-button:has-text("打开遮罩") button',
-      'domclick',
-      'DOM click 打开遮罩：真实点击会被 sticky 导航栏/探针滚动后遮挡',
+      `(() => {
+        const id = 'bd-coverage'
+        let el = document.getElementById(id)
+        if (el) el.remove()
+        el = document.createElement('oas-backdrop')
+        el.id = id
+        // 不自带 demo oas-click 监听（点遮罩只派发事件不关闭），after-show/click/close 链路全由本步骤驱动
+        el.setAttribute('open', '')
+        document.body.appendChild(el)
+        return !!document.getElementById(id)
+      })()`,
+      'waitfor',
+      '创建自管 backdrop 实例：demo 残留实例可能还开着、open 幂等不产生新淡入周期',
     ],
-    ['oas-backdrop [part="mask"]', 'click', '点遮罩 → oas-click'],
+    ['wait:300', 'wait', '等淡入动画结束（20ms + 180ms）→ oas-after-show'],
+    ['#bd-coverage [part="mask"]', 'click', '点遮罩本体 → oas-click（组件只派发、不自关）'],
+    [
+      `(() => { const el = document.getElementById('bd-coverage'); if (el) el.removeAttribute('open'); return true })()`,
+      'waitfor',
+      '移除 open → 播放退场 → oas-after-close + 卸载',
+    ],
+    ['wait:300', 'wait', '等退场动画结束'],
   ],
   slider: [
     [
@@ -328,17 +360,68 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   modal: [
     [
+      '#modal-basic',
+      'rmattr:visible',
+      '复位基础对话框：通用探针可能已留开（open 幂等 → 再开不产生新开合周期，opened 永不触发）',
+    ],
+    ['wait:350', 'wait', '等可能的关闭动画播完'],
+    [
       'oas-button:has-text("打开对话框") button',
       'domclick',
-      'DOM click 重开基础对话框：真实点击会被 sticky 导航栏/浮层拦截（force 点不滚动到安全区）',
+      'DOM click 打开基础对话框：真实点击会被 sticky 导航栏/浮层拦截（force 点不滚动到安全区）',
     ],
-    ['oas-modal[visible] [part="ok"]', 'click', '点确定 → oas-ok'],
+    ['wait:420', 'wait', '等开合动画结束 → oas-opened（fade+scale ~200ms）'],
+    ['#modal-basic[visible] [part="ok"]', 'click', '点确定 → oas-ok'],
+    ['wait:300', 'wait', '等关闭动画 → oas-closed'],
+  ],
+  drawer: [
+    [
+      '#drawer-right',
+      'rmattr:visible',
+      '复位右抽屉（通用探针可能留开，open 幂等不重放动画）',
+    ],
+    ['wait:350', 'wait', '等可能的关闭动画播完'],
+    [
+      'oas-button:has-text("右侧抽屉") button',
+      'domclick',
+      'DOM click 打开右侧抽屉 → oas-open',
+    ],
+    ['wait:420', 'wait', '等打开动画结束 → oas-opened'],
+    ['#drawer-right[visible] [part="ok"]', 'click', '点确定 → oas-before-close + oas-ok'],
+    ['wait:450', 'wait', '等关闭动画 → oas-close + oas-closed'],
+    [
+      '#drawer-resize',
+      'rmattr:visible',
+      '复位 resizable 抽屉（重复探针时先收掉上一轮残留）',
+    ],
+    ['wait:350', 'wait', '等可能的关闭动画播完'],
+    [
+      'oas-button:has-text("打开可调宽抽屉") button',
+      'domclick',
+      'DOM click 打开 resizable 抽屉（rail 拖拽调宽演示）',
+    ],
+    ['wait:450', 'wait', '等打开动画结束'],
+    ['#drawer-resize [part="rail"]', 'drag', '真实指针拖拽 rail → oas-resize'],
+    ['wait:300', 'wait'],
   ],
   message: [
     [
       'oas-message [part="close"]',
       'click',
       '点消息右上角关闭 ×（通用探针已点按钮创建消息）→ oas-close',
+    ],
+  ],
+  notification: [
+    [
+      'oas-button:has-text("信息") button',
+      'domclick',
+      'DOM click 点“信息”创建一条通知（默认 4.5s 自动关）',
+    ],
+    ['oas-notification', 'click', '点通知体（避开 ✕ 中心区域）→ oas-click'],
+    [
+      'oas-notification [part="close"]',
+      'click',
+      '点 ✕ → oas-close（detail.source=close）',
     ],
   ],
   popconfirm: [
@@ -537,6 +620,12 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
       } else if (act.startsWith('fill:')) {
         const el = page.locator(sel).first()
         if (await el.count()) await el.fill(act.slice(5), { timeout: 400 })
+      } else if (act.startsWith('rmattr:')) {
+        // 移除匹配元素的指定属性（受控显隐复位：探针重复时让组件重新走开/合动画）
+        const attr = act.slice(7)
+        await page
+          .locator(sel)
+          .evaluateAll((els, name) => els.forEach((e) => e.removeAttribute(name)), attr)
       } else if (act.startsWith('fillall:')) {
         const v = act.slice(8)
         const els = page.locator(sel)
@@ -625,6 +714,10 @@ async function runSteps(page: Page, steps: Array<[string, string, string?]>): Pr
         }
       } else if (act.startsWith('wait:')) {
         await page.waitForTimeout(Number(act.slice(5)))
+      } else if (act === 'wait') {
+        // 等待步历史约定：参数编码在 sel 位（['wait:400', 'wait', ...]），act 恒为 'wait'
+        const ms = Number(sel.startsWith('wait:') ? sel.slice(5) : 0)
+        if (Number.isFinite(ms) && ms > 0) await page.waitForTimeout(ms)
       } else if (act === 'scrollbottom') {
         // 把匹配容器 shadow 视口确定性滚到底：scrollTop 赋值会触发原生 scroll，
         // 补发一次 scroll 事件保证 rAF 节流链一定启动（→ checkEndReached → oas-end-reached）

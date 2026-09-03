@@ -531,14 +531,16 @@ test('modal 拖拽钳制：大幅拖出视口后对话框仍完整留在视口�
 test('modal no-footer 底角圆角（overflow hidden 裁切回归：body 直角背景不得盖掉 dialog 下圆角）', async ({ page }) => {
   // 曾漏检：.dialog 有 border-radius 无 overflow hidden，no-footer 时 body 直角背景盖住下圆角（用户截图报缺陷）
   await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
-  await page.waitForSelector('#modal-no-footer', { state: 'attached', timeout: 15000 })
-  await page.evaluate(() => document.querySelector('#modal-no-footer')?.setAttribute('visible', ''))
+  await page.waitForSelector('#modal-nofooter', { state: 'attached', timeout: 15000 })
+  await up(page, '#modal-nofooter')
+  await page.evaluate(() => document.querySelector('#modal-nofooter')?.setAttribute('visible', ''))
   await page.waitForFunction(() => {
-    const m = document.querySelector('#modal-no-footer')
-    return m && getComputedStyle(m).display !== 'none'
+    const m = document.querySelector('#modal-nofooter')
+    const d = m?.shadowRoot?.querySelector<HTMLElement>('.dialog')
+    return d?.hasAttribute('data-open') === true
   }, null, { timeout: 5000 })
   const r = await page.evaluate(() => {
-    const m = document.querySelector('#modal-no-footer')!
+    const m = document.querySelector('#modal-nofooter')!
     const dialog = m.shadowRoot!.querySelector('.dialog')!
     const cs = getComputedStyle(dialog)
     const dr = dialog.getBoundingClientRect()
