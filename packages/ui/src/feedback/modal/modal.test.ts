@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { modal, destroyAll, type ModalOptions } from './index.js'
+import {
+  modal,
+  destroyAll,
+  type ModalOptions,
+  type OptionsOptions,
+} from './index.js'
 import { registerAppHost, unregisterAppHost } from '../../floating/app/app-host.js'
 import { iconRegistry } from '@oas-ui/icons'
 
@@ -15,6 +20,17 @@ function esc(): void {
   document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
 }
 
+/** 触发指定对话框的关闭动画结束（happy-dom 无真实过渡；P3 销毁时序依赖 oas-closed） */
+function endAnim(el: Element): void {
+  const dialog = el.shadowRoot?.querySelector('.dialog')
+  if (dialog) dialog.dispatchEvent(new Event('transitionend'))
+}
+
+/** 完成当前全部命令式对话框的关闭动画（驱动销毁收尾） */
+function flushAnims(): void {
+  for (const el of document.body.querySelectorAll('oas-modal')) endAnim(el)
+}
+
 describe('modal 命令式 API', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -22,6 +38,8 @@ describe('modal 命令式 API', () => {
 
   afterEach(() => {
     destroyAll()
+    // 关闭动画在 happy-dom 无真实过渡，手动触发 oas-closed 完成销毁收尾
+    flushAnims()
     document.body.innerHTML = ''
   })
 
@@ -74,6 +92,10 @@ describe('modal 命令式 API', () => {
     okButton(el).click()
     await Promise.resolve()
     expect(onOk).toHaveBeenCalledTimes(1)
+    // P3 destroy 时序：关闭动画结束（oas-closed）后卸载
+    expect(el.isConnected, '动画未结束前不卸载').toBe(true)
+    endAnim(el)
+    await Promise.resolve()
     expect(document.body.querySelector('oas-modal')).toBeNull()
   })
 
@@ -82,6 +104,8 @@ describe('modal 命令式 API', () => {
     await Promise.resolve()
     const el = document.body.querySelector('oas-modal')!
     okButton(el).click()
+    await Promise.resolve()
+    endAnim(el)
     await Promise.resolve()
     expect(document.body.querySelector('oas-modal')).toBeNull()
   })
@@ -100,6 +124,8 @@ describe('modal 命令式 API', () => {
     okButton(el).click()
     release()
     await Promise.resolve()
+    await Promise.resolve()
+    endAnim(el)
     await Promise.resolve()
     expect(document.body.querySelector('oas-modal')).toBeNull()
   })
@@ -120,16 +146,22 @@ describe('modal 命令式 API', () => {
     const onCancel = vi.fn()
     modal.confirm({ title: '测试', onCancel })
     await Promise.resolve()
-    cancelButton(document.body.querySelector('oas-modal')!).click()
+    const el1 = document.body.querySelector('oas-modal')!
+    cancelButton(el1).click()
     await Promise.resolve()
     expect(onCancel).toHaveBeenCalledTimes(1)
+    endAnim(el1)
+    await Promise.resolve()
     expect(document.body.querySelector('oas-modal')).toBeNull()
     // Esc 关闭
     modal.confirm({ title: '测试2', onCancel })
     await Promise.resolve()
+    const el2 = document.body.querySelector('oas-modal')!
     esc()
     await Promise.resolve()
     expect(onCancel).toHaveBeenCalledTimes(2)
+    endAnim(el2)
+    await Promise.resolve()
     expect(document.body.querySelector('oas-modal')).toBeNull()
   })
 
@@ -145,6 +177,8 @@ describe('modal 命令式 API', () => {
     cancelButton(el).click()
     await Promise.resolve()
     expect(onCancel).toHaveBeenCalledTimes(1)
+    endAnim(el)
+    await Promise.resolve()
     expect(document.body.querySelector('oas-modal')).toBeNull()
     release()
     await Promise.resolve()
@@ -183,6 +217,9 @@ describe('modal 命令式 API', () => {
     await Promise.resolve()
     expect(document.body.querySelectorAll('oas-modal').length).toBe(3)
     destroyAll()
+    // 关闭动画结束（oas-closed）后逐个卸载
+    flushAnims()
+    await Promise.resolve()
     expect(document.body.querySelectorAll('oas-modal').length).toBe(0)
     expect(document.body.innerHTML).toBe('')
   })
@@ -194,8 +231,12 @@ describe('modal 命令式 API', () => {
     const el = document.body.querySelector('oas-modal')!
     handle.close()
     await Promise.resolve()
-    expect(document.body.querySelector('oas-modal')).toBeNull()
     expect(onCancel).not.toHaveBeenCalled()
+    // P3：关闭动画结束后才卸载（isConnected 由 oas-closed 驱动）
+    expect(el.isConnected).toBe(true)
+    endAnim(el)
+    await Promise.resolve()
+    expect(document.body.querySelector('oas-modal')).toBeNull()
     expect(el.isConnected).toBe(false)
   })
 
@@ -245,6 +286,8 @@ describe('modal 命令式 API', () => {
     el.shadowRoot!.querySelector('.mask')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await Promise.resolve()
     expect(order).toEqual(['mask', 'cancel'])
+    endAnim(el)
+    await Promise.resolve()
     expect(document.body.querySelector('oas-modal')).toBeNull()
   })
 
@@ -413,18 +456,19 @@ describe('modal 命令式 API', () => {
   it('A32 prompt 的 ✕/遮罩/Esc 归一 resolve { value, action: "cancel" }（不挂起）', async () => {
     const viaClose = modal.prompt({ title: 'a' })
     await Promise.resolve()
-    ;(document.body.querySelectorAll('oas-modal')[0]!.shadowRoot!.querySelector(
-      '[part="close"]',
-    ) as HTMLElement).click()
+    const el1 = document.body.querySelectorAll('oas-modal')[0]!
+    ;(el1.shadowRoot!.querySelector('[part="close"]') as HTMLElement).click()
     await expect(viaClose).resolves.toEqual({ value: '', action: 'cancel' })
+    endAnim(el1)
 
     const viaMask = modal.prompt({ title: 'b' })
     await Promise.resolve()
-    document.body
-      .querySelectorAll('oas-modal')[0]!
-      .shadowRoot!.querySelector('.mask')!
-      .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    const el2 = document.body.querySelector('oas-modal')!
+    el2.shadowRoot!.querySelector('.mask')!.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    )
     await expect(viaMask).resolves.toEqual({ value: '', action: 'cancel' })
+    endAnim(el2)
 
     const viaEsc = modal.prompt({ title: 'c' })
     await Promise.resolve()
@@ -491,5 +535,156 @@ describe('modal 命令式 API', () => {
     expect(input.getAttribute('placeholder')).toBe('新占位')
     expect(input.value).toBe('v2')
     p.close()
+  })
+
+  // —— 二期：P3 命令式销毁时序 / P34 options 选项模式 ——
+
+  it('P3 命令式销毁：确定后对话框保留到关闭动画结束（oas-closed）才卸载', async () => {
+    const handle = modal.confirm({ title: '测试' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    handle.close()
+    // 关闭动画进行中：DOM 仍挂载（宿主可见淡出）
+    expect(el.hasAttribute('visible')).toBe(false)
+    expect(el.isConnected).toBe(true)
+    endAnim(el)
+    expect(el.isConnected).toBe(false)
+  })
+
+  it('P3 destroyAll 对全部实例逐一等动画结束卸载', async () => {
+    modal.confirm({ title: '1' })
+    modal.confirm({ title: '2' })
+    await Promise.resolve()
+    destroyAll()
+    expect(document.body.querySelectorAll('oas-modal').length, '动画中仍挂载').toBe(2)
+    flushAnims()
+    await Promise.resolve()
+    expect(document.body.querySelectorAll('oas-modal').length).toBe(0)
+  })
+
+  it('P34 options radio：默认选中首个可选项，确定 resolve 单个值；方向键/点击切换后结果跟随', async () => {
+    const result = modal.options({
+      title: '选择优先级',
+      type: 'radio',
+      items: [
+        { label: '低', value: 'low' },
+        { label: '中', value: 'medium', checked: true },
+        { label: '高', value: 'high' },
+      ],
+    })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    const inputs = [...el.querySelectorAll<HTMLInputElement>('.oas-modal-opt-input')]
+    expect(inputs.length).toBe(3)
+    // radio 原生分组：同 name
+    expect(inputs[0]!.type).toBe('radio')
+    expect(inputs[0]!.name).toBe(inputs[1]!.name)
+    // 显式 checked 优先（中）
+    expect(inputs[1]!.checked).toBe(true)
+    expect(inputs[0]!.checked).toBe(false)
+    // 切到「高」再确定
+    inputs[2]!.click()
+    okButton(el).click()
+    await expect(result).resolves.toEqual({ value: 'high', action: 'confirm' })
+    endAnim(el)
+  })
+
+  it('P34 options radio 无显式 checked：缺省选中首个可选项', async () => {
+    const result = modal.options({
+      title: '选择',
+      items: [
+        { label: 'A', value: 'a' },
+        { label: 'B', value: 'b' },
+      ],
+    })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    const inputs = [...el.querySelectorAll<HTMLInputElement>('.oas-modal-opt-input')]
+    expect(inputs[0]!.checked).toBe(true)
+    okButton(el).click()
+    await expect(result).resolves.toEqual({ value: 'a', action: 'confirm' })
+    endAnim(el)
+  })
+
+  it('P34 options checkbox：多选数组结果；取消 resolve 当前选中值 + action cancel', async () => {
+    const p = modal.options({
+      title: '选择标签',
+      type: 'checkbox',
+      items: [
+        { label: '文档', value: 'doc', checked: true },
+        { label: '设计', value: 'design' },
+        { label: '测试', value: 'qa', checked: true },
+      ],
+    })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    const inputs = [...el.querySelectorAll<HTMLInputElement>('.oas-modal-opt-input')]
+    expect(inputs.every((i) => i.type === 'checkbox')).toBe(true)
+    expect(inputs.filter((i) => i.checked).length).toBe(2)
+    // 取消：返回当前选中集合 + action cancel
+    cancelButton(el).click()
+    await expect(p).resolves.toEqual({ value: ['doc', 'qa'], action: 'cancel' })
+    endAnim(el)
+  })
+
+  it('P34 options toggle：开关组渲染（原生 checkbox 隐藏 + 轨道滑块），结果数组 = 开启项', async () => {
+    const result = modal.options({
+      title: '通知设置',
+      type: 'toggle',
+      items: [
+        { label: '邮件', value: 'mail', checked: true },
+        { label: '短信', value: 'sms' },
+      ],
+    })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    const inputs = [...el.querySelectorAll<HTMLInputElement>('.oas-modal-opt-input')]
+    expect(inputs.length).toBe(2)
+    // toggle 行含轨道元素（视觉开关）
+    const rows = [...el.querySelectorAll('.oas-modal-opt-toggle')]
+    expect(rows.length).toBe(2)
+    expect(rows[0]!.querySelector('.oas-modal-opt-track')).not.toBeNull()
+    // 开启第二项 → 确定结果数组
+    inputs[1]!.click()
+    okButton(el).click()
+    await expect(result).resolves.toEqual({ value: ['mail', 'sms'], action: 'confirm' })
+    endAnim(el)
+  })
+
+  it('P34 disabled 项不可选（input disabled）；onOk 异步 loading 后可重试', async () => {
+    const onOk = vi.fn((_v: string | string[]) => Promise.reject(new Error('x')))
+    const p = modal.options({
+      title: '选择',
+      items: [
+        { label: 'A', value: 'a' },
+        { label: '禁用', value: 'no', disabled: true },
+      ],
+      onOk,
+    })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    const inputs = [...el.querySelectorAll<HTMLInputElement>('.oas-modal-opt-input')]
+    expect(inputs[1]!.disabled).toBe(true)
+    inputs[1]!.click()
+    expect(inputs[1]!.checked).toBe(false)
+    okButton(el).click()
+    await Promise.resolve()
+    await Promise.resolve()
+    // reject：清除 loading 保持打开（可重试/取消）
+    expect(el.hasAttribute('loading')).toBe(false)
+    expect(el.hasAttribute('visible')).toBe(true)
+    expect(onOk).toHaveBeenCalledWith('a')
+    p.close()
+    endAnim(el)
+  })
+
+  it('P34 非法入参容错：null / 无 items 渲染空选项组不抛错；非法 type 回退 radio', async () => {
+    expect(() => modal.options(null as unknown as OptionsOptions)).not.toThrow()
+    expect(() => modal.options({ type: 'bogus' as OptionsOptions['type'] })).not.toThrow()
+    await Promise.resolve()
+    const els = document.body.querySelectorAll('oas-modal')
+    expect(els.length).toBe(2)
+    const rows = els[0]!.querySelectorAll('.oas-modal-opt')
+    expect(rows.length).toBe(0)
   })
 })

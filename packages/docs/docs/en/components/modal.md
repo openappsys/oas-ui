@@ -265,6 +265,144 @@ The mask background uses the `--oas-modal-mask-bg` variable (falls back to the o
   </oas-modal>
 </DemoBlock>
 
+## Open/close animation
+
+Opening / closing plays a **fade + scale** animation by default (transform/opacity only; disabled automatically under `prefers-reduced-motion`). `oas-open` fires when opening starts; `oas-opened` / `oas-closed` fire **after the animation ends** — imperative dialogs rely on that to unmount only after the animation. The `transition` attribute picks a preset: `zoom` (default, fade + scale) / `fade` (opacity only) / `none` (no transition, instant show/hide).
+
+<DemoBlock title="Open/close animation + lifecycle events">
+  <oas-button type="primary" onclick="document.querySelector('#modal-anim').setAttribute('visible','')">Open (watch animation & events)</oas-button>
+  <oas-modal id="modal-anim" title="Open/close animation">
+    <p>Default fade + scale animation; the messages show <code>oas-opened</code> / <code>oas-closed</code> (fired only after the animation ends).</p>
+  </oas-modal>
+</DemoBlock>
+
+<DemoBlock title="transition presets (fade / none)">
+  <oas-space>
+    <oas-button onclick="document.querySelector('#modal-fade').setAttribute('visible','')">fade (opacity only)</oas-button>
+    <oas-button onclick="document.querySelector('#modal-none').setAttribute('visible','')">none (instant)</oas-button>
+  </oas-space>
+  <oas-modal id="modal-fade" title="fade animation" transition="fade">
+    <p><code>transition="fade"</code>: opacity-only transition without scaling.</p>
+  </oas-modal>
+  <oas-modal id="modal-none" title="No animation" transition="none">
+    <p><code>transition="none"</code>: instant show / hide (for performance or fallback scenarios).</p>
+  </oas-modal>
+</DemoBlock>
+
+## Click-position animation origin
+
+At the instant of opening the pointer position is recorded and the dialog scales out from that point (`transform-origin` points at the click); keyboard / programmatic opens fall back to the center.
+
+<DemoBlock title="Click-position animation origin">
+  <oas-button type="primary" onclick="document.querySelector('#modal-origin').setAttribute('visible','')">Click here to open (animates from the button)</oas-button>
+  <oas-modal id="modal-origin" title="Scales from the click">
+    <p>The scale animation origin follows the most recent click: it expands from the button you clicked instead of the center.</p>
+  </oas-modal>
+</DemoBlock>
+
+## Non-modal (no-mask)
+
+`no-mask`: **no backdrop is rendered + the focus trap is disabled + focus is not stolen on open** (semantics aligned with the native `<dialog>.show()`, for notifications / canvas helpers and other non-blocking scenarios). Close channels stay (✕ / footer buttons / Esc; pair with `no-esc-close` to disable Esc).
+
+<DemoBlock title="no-mask non-modal">
+  <oas-button onclick="document.querySelector('#modal-nonmask').setAttribute('visible','')">Open non-modal dialog</oas-button>
+  <oas-modal id="modal-nonmask" title="Non-modal notice" no-mask position="top">
+    <p>No backdrop and no focus trap — the rest of the page stays interactive (try clicking page buttons while it is open).</p>
+  </oas-modal>
+</DemoBlock>
+
+## Drag clamping (keep in viewport)
+
+Draggable dialogs have their coordinates **clamped inside the viewport** (on by default): even large drags cannot push the dialog fully off-screen where it can't be recovered.
+
+<DemoBlock title="Drag clamping">
+  <oas-button type="primary" onclick="document.querySelector('#modal-clamp').setAttribute('visible','')">Open and drag</oas-button>
+  <oas-modal id="modal-clamp" title="Drag clamping" draggable>
+    <p>Drag by the title bar as far as you like: the dialog stays inside the viewport (right / bottom edges are clamped) and can always be found again.</p>
+  </oas-modal>
+</DemoBlock>
+
+## Declarative trigger
+
+`trigger="element-id"` binds any page element as the open trigger: clicking it calls `setAttribute('visible')` (pure sugar — it does not change the controlled model; closing still means the host removes `visible`).
+
+<DemoBlock title="Declarative trigger">
+  <oas-button id="modal-trigger-btn" type="success">Click me to open (trigger bound)</oas-button>
+  <oas-modal id="modal-triggered" title="Opened by trigger" trigger="modal-trigger-btn">
+    <p>This button has no onclick of its own — the <code>trigger</code> attribute of <code>oas-modal</code> binds the click-to-open automatically.</p>
+  </oas-modal>
+</DemoBlock>
+
+## Size presets & fullscreen breakpoint
+
+`size` presets: `sm` (400px) / `lg` (720px); an explicit `width` wins. `fullscreen-breakpoint="800"`: **the dialog goes fullscreen automatically when the viewport width drops below the threshold** (and restores when widened) — narrow-screen adaptation without JS.
+
+<DemoBlock title="Size presets sm / lg">
+  <oas-space>
+    <oas-button onclick="document.querySelector('#modal-size-sm').setAttribute('visible','')">size=sm</oas-button>
+    <oas-button onclick="document.querySelector('#modal-size-lg').setAttribute('visible','')">size=lg</oas-button>
+  </oas-space>
+  <oas-modal id="modal-size-sm" title="Small" size="sm">
+    <p><code>size="sm"</code>: 400px wide.</p>
+  </oas-modal>
+  <oas-modal id="modal-size-lg" title="Large" size="lg">
+    <p><code>size="lg"</code>: 720px wide.</p>
+  </oas-modal>
+</DemoBlock>
+
+<DemoBlock title="fullscreen-breakpoint">
+  <oas-button onclick="document.querySelector('#modal-bp').setAttribute('visible','')">Open (try narrowing the window below 800px)</oas-button>
+  <oas-modal id="modal-bp" title="Auto fullscreen on narrow screens" fullscreen-breakpoint="800" width="640px">
+    <p><code>fullscreen-breakpoint="800"</code>: below 800px viewport width the dialog fills the screen (no radius, width ignored); widening the viewport restores the regular dialog.</p>
+  </oas-modal>
+</DemoBlock>
+
+## Enter-to-confirm (confirm-on-enter)
+
+`confirm-on-enter` (explicit opt-in, off by default): pressing Enter triggers "OK" when the dialog contains **no text input controls** (ignored while loading; when focus is on a button, native activation wins to avoid double-triggering). Great for quick confirmation dialogs.
+
+<DemoBlock title="confirm-on-enter">
+  <oas-button type="primary" onclick="document.querySelector('#modal-enter').setAttribute('visible','')">Open (click the body first, then press Enter)</oas-button>
+  <oas-modal id="modal-enter" title="Enter confirms" confirm-on-enter onoas-ok="closeModal('modal-enter'); message.success('Confirmed with Enter')">
+    <p>Click the blank content area so focus leaves the buttons, then press <code>Enter</code> — same as clicking "OK". If the dialog contains an input, Enter is never hijacked.</p>
+  </oas-modal>
+</DemoBlock>
+
+## Shake feedback when close is blocked
+
+When `oas-before-close` is blocked with `preventDefault()` (unsaved-data protection, etc.), the dialog plays a short **horizontal shake** hinting "this path cannot close"; the class is removed after the animation so it can replay.
+
+<DemoBlock title="Shake when close is blocked">
+  <oas-button onclick="document.querySelector('#modal-shake').setAttribute('visible','')">Open and try to close</oas-button>
+  <oas-modal id="modal-shake" title="Protected form">
+    <p>This dialog blocks cancel-type closes: clicking Cancel / ✕ / Esc shakes the dialog to signal the block — it does not close.</p>
+  </oas-modal>
+</DemoBlock>
+
+## Custom close icon (close-icon slot)
+
+`slot="close-icon"` replaces the default ✕ with rich content (the `aria-label` semantics are kept).
+
+<DemoBlock title="close-icon slot">
+  <oas-button onclick="document.querySelector('#modal-closeicon').setAttribute('visible','')">Open with a custom close icon</oas-button>
+  <oas-modal id="modal-closeicon" title="Custom close icon">
+    <p>The close icon at the top-right is owned by the slot (a custom-styled glyph here).</p>
+    <span slot="close-icon" style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--oas-color-danger); color: var(--oas-color-text-on-primary); font-size: 12px; line-height: 1;">✕</span>
+  </oas-modal>
+</DemoBlock>
+
+## Options selection mode
+
+`modal.options({ items, type })` shows an imperative dialog with an embedded option group and resolves `{ value, action }`. `type`: `radio` (single-select, `value` is a string) / `checkbox` (multi-select, array) / `toggle` (switch group, array); supports `disabled` items, async `onOk` loading, and `close()` / `update()` handles (same shape as prompt).
+
+<DemoBlock title="options radio / checkbox / toggle">
+  <oas-space>
+    <oas-button type="primary" onclick="openOptionsRadio()">Radio</oas-button>
+    <oas-button onclick="openOptionsCheckbox()">Checkbox</oas-button>
+    <oas-button type="success" onclick="openOptionsToggle()">Toggle</oas-button>
+  </oas-space>
+</DemoBlock>
+
 ## Rendering strategy
 
 `destroy-on-close` clears the content nodes on close (refill before the next open); `append-to` mounts the dialog into a target container (escaping host overflow clipping).
@@ -420,6 +558,68 @@ onMounted(async () => {
     const { source, action } = e.detail
     message.info(`Close source: ${source} (action=${action})`)
   })
+
+  // —— Phase-2 demos: animation events / shake blocking / options ——
+  const animModal = document.getElementById('modal-anim')
+  animModal.addEventListener('oas-opened', () => message.success('Opened (oas-opened: animation done)'))
+  animModal.addEventListener('oas-closed', () => message.info('Closed (oas-closed: animation done)'))
+
+  // Shake: block cancel-type closes (the shake feedback plays automatically)
+  const shakeModal = document.getElementById('modal-shake')
+  shakeModal.addEventListener('oas-before-close', (e) => {
+    if (e.detail.source === 'ok') return
+    e.preventDefault()
+    message.warning('Unsaved changes: this path cannot close')
+  })
+
+  window.openOptionsRadio = () => {
+    modal
+      .options({
+        title: 'Pick a priority',
+        type: 'radio',
+        items: [
+          { label: 'Low (whenever)', value: 'low' },
+          { label: 'Medium (within 24h)', value: 'medium', checked: true },
+          { label: 'High (immediately)', value: 'high' },
+          { label: 'Urgent (disabled)', value: 'urgent', disabled: true },
+        ],
+        onOk: (v) => message.success(`Priority: ${v}`),
+      })
+      .then((r) => {
+        if (r.action === 'cancel') message.info('Cancelled')
+      })
+  }
+  window.openOptionsCheckbox = () => {
+    modal
+      .options({
+        title: 'Notification channels',
+        type: 'checkbox',
+        items: [
+          { label: 'In-app', value: 'inbox', checked: true },
+          { label: 'Email', value: 'mail' },
+          { label: 'SMS', value: 'sms' },
+        ],
+        onOk: (v) => message.success(`Chosen: ${(Array.isArray(v) ? v.join(', ') : v) || 'none'}`),
+      })
+      .then((r) => {
+        if (r.action === 'cancel') message.info('Cancelled')
+      })
+  }
+  window.openOptionsToggle = () => {
+    modal
+      .options({
+        title: 'Do-not-disturb windows',
+        type: 'toggle',
+        items: [
+          { label: 'Nightly (22:00-08:00)', value: 'night' },
+          { label: 'Weekends', value: 'weekend', checked: true },
+        ],
+        onOk: (v) => message.success(`On: ${(Array.isArray(v) ? v.join(', ') : v) || 'none'}`),
+      })
+      .then((r) => {
+        if (r.action === 'cancel') message.info('Cancelled')
+      })
+  }
 })
 </script>
 
@@ -431,11 +631,13 @@ onMounted(async () => {
 | --- | --- |
 | `modal.confirm({ title?, content?, okText?, cancelText?, onOk?, onCancel? })` | Opens a confirm dialog (OK / Cancel buttons), returns `{ close }` |
 | `modal.info(options)` / `modal.success(options)` / `modal.warning(options)` / `modal.error(options)` | Semantic dialog: matching icon + single "OK" button, returns `{ close }` |
-| `destroyAllModal()` | Closes and destroys all imperative dialogs |
+| `modal.prompt({ title?, inputValue?, placeholder?, inputType?, validator?, onOk? })` | Input dialog: resolves `{ value, action }`, returns a Promise & `{ close, update }` |
+| `modal.options({ title?, content?, items?, type?, okText?, cancelText?, onOk? })` | Options dialog (`type`: radio / checkbox / toggle): resolves `{ value, action }` (radio → a single string; checkbox/toggle → an array), returns a Promise & `{ close, update }` |
+| `destroyAllModal()` | Closes and destroys all imperative dialogs (after each close animation ends) |
 
 - Options: `{ title?, content?, okText?, cancelText?, onOk?, onCancel? }`. `content` is plain text; when `onOk` returns a Promise the OK button enters loading (closes on resolve, stays open on reject for retry or cancel).
 - Returns a `{ close() }` handle: closes the current instance programmatically without firing `onOk` / `onCancel`.
-- Mounts to the nearest `oas-app` container (falls back to `body`); multiple instances stack.
+- Mounts to the nearest `oas-app` container (falls back to `body`); multiple instances stack; imperative instances unmount only after the close animation ends (`oas-closed`).
 
 ### Attributes
 
@@ -444,10 +646,12 @@ onMounted(async () => {
 | `append-to` | — | — | — |
 | `cancel-text` | Cancel button label; defaults to locale `modal.cancel` | — | — |
 | `centered` | Vertically center the dialog | `boolean` | — |
+| `confirm-on-enter` | — | `boolean` | — |
 | `destroy-on-close` | — | `boolean` | — |
 | `draggable` | Drag the dialog via its header | `boolean` | — |
 | `focus-ok` | Move focus to the "OK" button on open (default: the "Cancel" button) | `boolean` | — |
 | `fullscreen` | Display fullscreen: the dialog fills the viewport without radius or margin (takes precedence over width / centered / draggable) | `boolean` | — |
+| `fullscreen-breakpoint` | — | — | — |
 | `initial-focus` | — | — | — |
 | `loading` | Put the OK button into loading state (disabled + spinner), blocking repeated confirms | `boolean` | — |
 | `no-cancel` | Hide the cancel button (the footer keeps only "OK"; built into semantic variants) | `boolean` | — |
@@ -455,12 +659,16 @@ onMounted(async () => {
 | `no-esc-close` | — | `boolean` | — |
 | `no-focus-trap` | — | `boolean` | — |
 | `no-footer` | Hide footer action buttons | `boolean` | — |
+| `no-mask` | — | `boolean` | — |
 | `no-mask-close` | Disable closing on mask click | `boolean` | — |
 | `no-scroll-lock` | — | `boolean` | — |
 | `ok-text` | OK button label; defaults to locale `modal.ok` | — | — |
 | `position` | — | — | — |
 | `role` | — | `string` | `dialog` |
+| `size` | — | `ModalSizePreset` | — |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
+| `transition` | — | — | — |
+| `trigger` | — | — | — |
 | `type` | Semantic variant: `info`/`success`/`warning`/`error`, renders the matching semantic icon above the content | `ModalVariant` | — |
 | `visible` | Whether shown | `boolean` | — |
 | `width` | Dialog width (px or percentage) | — | — |
@@ -472,13 +680,17 @@ onMounted(async () => {
 | `oas-before-close` | — |
 | `oas-cancel` | Cancel: cancel button / ✕ / mask click / Esc |
 | `oas-close` | — |
+| `oas-closed` | — |
 | `oas-ok` | Clicked "OK" |
+| `oas-open` | — |
+| `oas-opened` | — |
 
 ### Slots
 
 | Name | Description |
 | --- | --- |
 | default | — |
+| `close-icon` | — |
 | `description` | — |
 | `footer` | — |
 | `title` | Rich title content slot; overrides the title attribute text when present |

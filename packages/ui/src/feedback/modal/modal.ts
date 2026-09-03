@@ -67,6 +67,60 @@ export interface PromptResult {
   action: 'confirm' | 'cancel'
 }
 
+/** options 选项模式（P34）：radio 单选 / checkbox 多选 / toggle 开关组 */
+export type OptionsType = 'radio' | 'checkbox' | 'toggle'
+
+/** options 单个选项 */
+export interface OptionsItem {
+  /** 展示文案（纯文本） */
+  label: string
+  /** 选中值（随结果回传） */
+  value: string
+  /** 初始选中（radio：显式指定/缺省选中首个可选项；checkbox/toggle：缺省全不选） */
+  checked?: boolean
+  /** 禁用该项（不可选，含键盘/点击） */
+  disabled?: boolean
+}
+
+/** modal.options 配置（对齐 confirm/prompt 的选项子集） */
+export interface OptionsOptions {
+  /** 标题文案 */
+  title?: string
+  /** 正文内容（纯文本，渲染在选项组上方） */
+  content?: string
+  /** 确定按钮文案；缺省走 locale `modal.ok` */
+  okText?: string
+  /** 取消按钮文案；缺省走 locale `modal.cancel` */
+  cancelText?: string
+  /** 选项数据（缺失/空数组渲染空列表，确定仍可点——结果校验交给宿主） */
+  items?: OptionsItem[]
+  /** 选项模式；非法值回退 radio */
+  type?: OptionsType
+  /**
+   * 确定回调：传入当前选中值（radio 为字符串，checkbox/toggle 为数组）；
+   * 返回 Promise 时确定按钮 loading，resolve 后关闭。
+   */
+  onOk?: (value: string | string[]) => void | Promise<unknown>
+  /** 取消回调：取消按钮 / ✕ / 遮罩 / Esc 触发；编程关闭不触发 */
+  onCancel?: () => void
+  /** 遮罩点击回调：先于 onCancel */
+  onMaskClick?: () => void
+}
+
+/** options 结果：radio → value 为单个选中值（未选为空串）；checkbox/toggle → 选中值数组 */
+export interface OptionsResult {
+  value: string | string[]
+  action: 'confirm' | 'cancel'
+}
+
+/** options 句柄：Promise 结果 + 编程操控（同 prompt 双形态） */
+export type OptionsHandle = Promise<OptionsResult> & {
+  /** 编程关闭当前对话框（结果 resolve 为当前选中值 + action:'cancel'，不挂起） */
+  close: () => void
+  /** 运行时更新标题 / 内容 / 按钮文案（增量） */
+  update: (partial: Partial<OptionsOptions>) => void
+}
+
 export interface ModalHandle {
   /** 编程关闭当前对话框（不触发 onOk / onCancel / onMaskClick） */
   close: () => void
@@ -148,14 +202,24 @@ function open(
   const contentP = applyCommonAttrs(el, options)
 
   let disposed = false
+  /**
+   * 销毁（P3 destroy 时序）：先移除 visible 播关闭动画（还原来源焦点、淡出），
+   * 动画结束（oas-closed）后再移除 DOM 与登记；从未打开/已完全关闭则直接移除。
+   */
   const dispose = (): void => {
     if (disposed) return
     disposed = true
-    // 仍可见时先移除 visible：触发组件 update() 还原来源焦点，再销毁 DOM
+    const doRemove = (): void => {
+      el.remove()
+      const idx = active.findIndex((e) => e.el === el)
+      if (idx >= 0) active.splice(idx, 1)
+    }
+    if (!el.hasAttribute('visible') && !el.opened && !el.closing) {
+      doRemove()
+      return
+    }
     if (el.hasAttribute('visible')) el.removeAttribute('visible')
-    el.remove()
-    const idx = active.findIndex((e) => e.el === el)
-    if (idx >= 0) active.splice(idx, 1)
+    el.addEventListener('oas-closed', doRemove, { once: true })
   }
 
   const onOk = (): void => {
@@ -219,6 +283,87 @@ function open(
 
 /** prompt 默认错误文案：走 locale（form.validationFailed，中英均有翻译） */
 const PROMPT_DEFAULT_ERROR = 'form.validationFailed'
+
+// ===== P34 options 选项组样式（命令式 light DOM，注入一次全局共享；类名前缀隔离） =====
+let optionsStyleInjected = false
+
+const OPTIONS_STYLE = `
+.oas-modal-opt {
+  display: flex;
+  align-items: center;
+  gap: var(--oas-space-2, 8px);
+  padding: var(--oas-space-2, 8px) var(--oas-space-3, 12px);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md, 6px);
+  cursor: pointer;
+  font-size: var(--oas-font-size-md, 14px);
+  color: var(--oas-color-text-primary);
+  user-select: none;
+}
+.oas-modal-opt + .oas-modal-opt {
+  margin-top: var(--oas-space-2, 8px);
+}
+.oas-modal-opt.is-disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.oas-modal-opt .oas-modal-opt-input {
+  accent-color: var(--oas-color-primary);
+}
+.oas-modal-opt .oas-modal-opt-label {
+  flex: 1;
+  min-width: 0;
+}
+/* toggle 行：原生 checkbox 视觉隐藏，右侧渲染开关轨道 + 滑块 */
+.oas-modal-opt.oas-modal-opt-toggle .oas-modal-opt-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.oas-modal-opt-track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--oas-color-border-strong);
+  transition: background var(--oas-transition-fast, 120ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1));
+}
+.oas-modal-opt-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--oas-color-bg);
+  transition: transform var(--oas-transition-fast, 120ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1));
+}
+.oas-modal-opt.oas-modal-opt-toggle .oas-modal-opt-input:checked + .oas-modal-opt-track {
+  background: var(--oas-color-primary);
+}
+.oas-modal-opt.oas-modal-opt-toggle .oas-modal-opt-input:checked + .oas-modal-opt-track::after {
+  transform: translateX(16px);
+}
+.oas-modal-opt.oas-modal-opt-toggle .oas-modal-opt-input:focus-visible + .oas-modal-opt-track {
+  box-shadow: var(--oas-focus-ring);
+}
+`
+
+function ensureOptionsStyle(): void {
+  if (optionsStyleInjected || typeof document === 'undefined') return
+  optionsStyleInjected = true
+  const style = document.createElement('style')
+  style.setAttribute('data-oas-modal-options', '')
+  style.textContent = OPTIONS_STYLE
+  ;(document.head ?? document.documentElement).appendChild(style)
+}
+
+/** options 实例序号（radio 分组 name 唯一性） */
+let optionsSeq = 0
 
 export const modal = {
   /** 确认框：标题 + 内容 + 确定/取消双按钮 */
@@ -331,10 +476,18 @@ export const modal = {
     const dispose = (): void => {
       if (disposed) return
       disposed = true
+      // P3 destroy 时序：先移除 visible 播关闭动画，动画结束（oas-closed）再移除 DOM
+      const doRemove = (): void => {
+        el.remove()
+        const idx = active.findIndex((e) => e.el === el)
+        if (idx >= 0) active.splice(idx, 1)
+      }
+      if (!el.hasAttribute('visible') && !el.opened && !el.closing) {
+        doRemove()
+        return
+      }
       if (el.hasAttribute('visible')) el.removeAttribute('visible')
-      el.remove()
-      const idx = active.findIndex((e) => e.el === el)
-      if (idx >= 0) active.splice(idx, 1)
+      el.addEventListener('oas-closed', doRemove, { once: true })
     }
     const settle = (result: PromptResult): void => {
       if (resolved) return
@@ -413,6 +566,170 @@ export const modal = {
         if (partial.inputErrorMessage !== undefined && !err.hidden) {
           // 错误文案更新：已显示错误时刷新为默认（新配置）文案
           err.textContent = partial.inputErrorMessage
+        }
+      },
+    })
+  },
+
+  /**
+   * 选项选择框（P34）：radio / checkbox / toggle 三种选项组内嵌于确认框，
+   * 确定后结果 resolve `{ value, action }`（radio → 字符串；checkbox/toggle → 数组）。
+   * 与 prompt 同形态：Promise 结果 & 句柄（close/update）双通道。
+   */
+  options: (rawOptions?: OptionsOptions): OptionsHandle => {
+    const opts = normalizeOptions<OptionsOptions>(rawOptions)
+    const items = Array.isArray(opts.items) ? opts.items : []
+    const mode: OptionsType =
+      opts.type === 'checkbox' || opts.type === 'toggle' ? opts.type : 'radio'
+    ensureOptionsStyle()
+    const el = createModal()
+    if (opts.title !== undefined) el.setAttribute('title', opts.title)
+    if (opts.okText !== undefined) el.setAttribute('ok-text', opts.okText)
+    if (opts.cancelText !== undefined) el.setAttribute('cancel-text', opts.cancelText)
+    if (opts.content !== undefined) {
+      const p = document.createElement('p')
+      p.textContent = opts.content
+      el.appendChild(p)
+    }
+
+    // 选项组（light DOM；原生 input 语义 + CSS 类走 token 含 dark 变体）
+    const group = document.createElement('div')
+    group.className = 'oas-modal-options'
+    group.setAttribute('role', mode === 'radio' ? 'radiogroup' : 'group')
+    if (opts.title !== undefined) group.setAttribute('aria-label', opts.title)
+    const groupName = `oas-modal-options-${++optionsSeq}`
+    const inputs: HTMLInputElement[] = []
+    // 初始选中：显式 checked 优先（禁用项忽略）；radio 无任何显式 checked 时缺省首个可选项
+    const explicitChecked = items.some((i) => !i.disabled && i.checked)
+    let radioDefaultSet = false
+    const wantChecked = (item: OptionsItem): boolean => {
+      if (explicitChecked) return !item.disabled && Boolean(item.checked)
+      if (mode === 'radio' && !item.disabled && !radioDefaultSet) {
+        radioDefaultSet = true
+        return true
+      }
+      return false
+    }
+    for (const item of items) {
+      const label = document.createElement('label')
+      label.className =
+        'oas-modal-opt' + (mode === 'toggle' ? ' oas-modal-opt-toggle' : '')
+      if (item.disabled) label.classList.add('is-disabled')
+      const input = document.createElement('input')
+      input.className = 'oas-modal-opt-input'
+      if (mode === 'radio') {
+        input.type = 'radio'
+        input.name = groupName
+      } else {
+        input.type = 'checkbox'
+      }
+      input.value = item.value
+      input.checked = wantChecked(item)
+      input.disabled = Boolean(item.disabled)
+      input.setAttribute('aria-label', item.label)
+      inputs.push(input)
+      label.appendChild(input)
+      if (mode === 'toggle') {
+        const track = document.createElement('span')
+        track.className = 'oas-modal-opt-track'
+        track.setAttribute('aria-hidden', 'true')
+        label.appendChild(track)
+      }
+      const text = document.createElement('span')
+      text.className = 'oas-modal-opt-label'
+      text.textContent = item.label
+      label.appendChild(text)
+      group.appendChild(label)
+    }
+    el.appendChild(group)
+
+    let disposed = false
+    let resolved = false
+    let resolveResult!: (result: OptionsResult) => void
+    const promise = new Promise<OptionsResult>((res) => {
+      resolveResult = res
+    })
+    const dispose = (): void => {
+      if (disposed) return
+      disposed = true
+      const doRemove = (): void => {
+        el.remove()
+        const idx = active.findIndex((e) => e.el === el)
+        if (idx >= 0) active.splice(idx, 1)
+      }
+      if (!el.hasAttribute('visible') && !el.opened && !el.closing) {
+        doRemove()
+        return
+      }
+      if (el.hasAttribute('visible')) el.removeAttribute('visible')
+      el.addEventListener('oas-closed', doRemove, { once: true })
+    }
+    const settle = (result: OptionsResult): void => {
+      if (resolved) return
+      resolved = true
+      resolveResult(result)
+    }
+    const readValue = (): string | string[] => {
+      const checked = inputs.filter((i) => i.checked)
+      if (mode === 'radio') return checked[0]?.value ?? ''
+      return checked.map((i) => i.value)
+    }
+
+    const onSubmit = (): void => {
+      if (disposed) return
+      if (el.hasAttribute('loading')) return
+      const value = readValue()
+      const handler = opts.onOk
+      if (!handler) {
+        settle({ value, action: 'confirm' })
+        dispose()
+        return
+      }
+      el.setAttribute('loading', '')
+      const result = handler(value)
+      if (!isPromiseLike(result)) {
+        settle({ value, action: 'confirm' })
+        dispose()
+        return
+      }
+      result.then(
+        () => {
+          settle({ value, action: 'confirm' })
+          dispose()
+        },
+        () => {
+          // 失败：清除 loading 保持打开，可重试或取消（结果不 settle）
+          if (!disposed) el.removeAttribute('loading')
+        },
+      )
+    }
+    const onClose = (e: Event): void => {
+      if (disposed) return
+      const source = (e as CustomEvent<{ source: ModalCloseSource }>).detail.source
+      if (source === 'mask') opts.onMaskClick?.()
+      if (source !== 'programmatic') opts.onCancel?.()
+      // 取消路径：返回当前选中值（用户已做出的选择不丢弃），action 归 cancel
+      settle({ value: readValue(), action: 'cancel' })
+      dispose()
+    }
+    el.addEventListener('oas-ok', onSubmit)
+    el.addEventListener('oas-close', onClose)
+    active.push({ el, dispose })
+
+    return Object.assign(promise, {
+      close: (): void => {
+        if (disposed) return
+        el.close('programmatic')
+      },
+      update: (partial: Partial<OptionsOptions>): void => {
+        if (disposed) return
+        Object.assign(opts, partial)
+        if (partial.title !== undefined) el.setAttribute('title', partial.title)
+        if (partial.okText !== undefined) el.setAttribute('ok-text', partial.okText)
+        if (partial.cancelText !== undefined) el.setAttribute('cancel-text', partial.cancelText)
+        if (partial.content !== undefined) {
+          const firstP = el.querySelector('p')
+          if (firstP) firstP.textContent = partial.content
         }
       },
     })
