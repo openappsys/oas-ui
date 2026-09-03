@@ -527,3 +527,28 @@ test('modal 拖拽钳制：大幅拖出视口后对话框仍完整留在视口�
   expect(rect.right).toBeLessThanOrEqual(rect.vw + 1)
   expect(rect.bottom).toBeLessThanOrEqual(rect.vh + 1)
 })
+
+test('modal no-footer 底角圆角（overflow hidden 裁切回归：body 直角背景不得盖掉 dialog 下圆角）', async ({ page }) => {
+  // 曾漏检：.dialog 有 border-radius 无 overflow hidden，no-footer 时 body 直角背景盖住下圆角（用户截图报缺陷）
+  await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('#modal-no-footer', { state: 'attached', timeout: 15000 })
+  await page.evaluate(() => document.querySelector('#modal-no-footer')?.setAttribute('visible', ''))
+  await page.waitForFunction(() => {
+    const m = document.querySelector('#modal-no-footer')
+    return m && getComputedStyle(m).display !== 'none'
+  }, null, { timeout: 5000 })
+  const r = await page.evaluate(() => {
+    const m = document.querySelector('#modal-no-footer')!
+    const dialog = m.shadowRoot!.querySelector('.dialog')!
+    const cs = getComputedStyle(dialog)
+    const dr = dialog.getBoundingClientRect()
+    return {
+      overflow: cs.overflow,
+      radius: cs.borderTopLeftRadius + '/' + cs.borderBottomLeftRadius,
+      noHScroll: document.documentElement.scrollWidth <= window.innerWidth,
+    }
+  })
+  expect(r.overflow, 'dialog 必须 overflow hidden 裁切子背景（否则 body 直角盖掉下圆角）').toBe('hidden')
+  expect(r.radius, '四角应为圆角（radius-lg）').not.toMatch(/^0px/)
+  expect(r.noHScroll, '不得撑出横向滚动条').toBe(true)
+})
