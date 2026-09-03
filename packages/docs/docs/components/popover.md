@@ -780,12 +780,12 @@ onMounted(() => {
 | `arrow-point-at-center` | 箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心） | — | — |
 | `auto-adjust-overflow` | 视口边缘自动翻转与避让（默认 true；`"false"` 关闭，保持声明 placement，可能溢出视口） | `string` | `true` |
 | `auto-close` | 打开后超时自动关闭（毫秒），如 `auto-close="3000"`；未设置不自动关闭 | `string` | — |
-| `available-height` | — | `boolean` | — |
+| `available-height` | 内容最大可用高度约束（视口剩余空间） | `boolean` | — |
 | `closable` | 面板右上角显示关闭按钮（`part="close"`），点击关闭并还原焦点到触发元素 | `boolean` | — |
 | `close-delay` | 通用关闭延迟（毫秒，默认 0；非 hover 触发路径生效，hover 路径优先 hover-hide-delay） | `string` | — |
-| `close-on-escape` | — | — | — |
-| `close-on-outside` | — | `string` | `true` |
-| `close-on-scroll` | — | `boolean` | — |
+| `close-on-escape` | Esc 关闭（默认 true） | — | — |
+| `close-on-outside` | 点击外部关闭（默认 true） | `string` | `true` |
+| `close-on-scroll` | 滚动时关闭 | `boolean` | — |
 | `collision-padding` | 视口边缘夹取边距（px，默认 4），面板贴边避让时保留的间距 | `string` | — |
 | `color` | 颜色变体：`primary` / `success` / `warning` / `danger`（面板 tint 底 + 语义色描边，走 token 派生变量含 dark 变体）；未设置或非法值保持默认中性面板 | `string` | — |
 | `content` | 正文文本 | `string` | — |
@@ -793,10 +793,10 @@ onMounted(() => {
 | `disabled` | 整体禁用：click / hover / focus / contextmenu / trigger-keys 触发均不响应，宿主降饱和并同步 aria-disabled | `boolean` | — |
 | `dismiss-on-select` | — | `boolean` | — |
 | `fallback-placements` | 自定义回退序列（逗号或空格分隔，如 `"left, right"`）：请求 placement 放不下时按序列逐一尝试 fit，首个 fit 者胜出，全不 fit 取序列末位并夹取；未设置走默认主轴翻转 | `string` | — |
-| `final-focus` | — | `string` | — |
+| `final-focus` | 关闭后焦点归还目标（选择器） | `string` | — |
 | `focus-on-open` | 打开时焦点移入面板内首个可聚焦元素 | `boolean` | — |
 | `fresh` | 关闭时也持续更新内容（默认关闭态冻结内容，打开时写入最新值；fresh 开启后关闭态同步写入） | `boolean` | — |
-| `hide-empty` | — | `boolean` | — |
+| `hide-empty` | 无内容时隐藏面板 | `boolean` | — |
 | `hide-when-detached` | 锚点完全脱离视口时隐藏面板（打开语义保留，避免孤悬屏外） | `boolean` | — |
 | `hover-delay` | hover 触发时打开防抖延时（毫秒，默认 150；未设置回落 open-delay） | `string` | — |
 | `hover-hide-delay` | hover 触发时关闭防抖延时（毫秒，默认 100；未设置回落 close-delay） | `string` | — |
@@ -807,11 +807,11 @@ onMounted(() => {
 | `open-delay` | 通用打开延迟（毫秒，默认 0；非 hover 触发路径生效，hover 路径优先 hover-delay） | `string` | — |
 | `placement` | 浮层位置（12 向：四基向 top/bottom/left/right 各配 -start/-end 交叉轴对齐） | `string` | `top` |
 | `render-panel` | — | `boolean` | — |
-| `scrollable` | — | `boolean` | — |
-| `size` | — | `string` | `medium` |
-| `sticky` | — | `string` | `partial` |
+| `scrollable` | 面板内容超限滚动 | `boolean` | — |
+| `size` | 尺寸档 | `string` | `medium` |
+| `sticky` | 关闭位粘滞（partial/always） | `string` | `partial` |
 | `title` | 标题文本（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
-| `trap-focus` | — | `boolean` | — |
+| `trap-focus` | 焦点陷阱独立开关（与 modal 遮罩解耦，表单浮层 Tab 不逃逸） | `boolean` | — |
 | `trigger` | 触发方式：`click`（默认）/ `hover` / `focus` / `contextmenu` / `manual`，空格分隔可多选（如 `"click hover"`） | `string` | `click` |
 | `trigger-keys` | 指定按键在触发元素聚焦时切换开合（空格分隔，如 `"Enter Space"`）；未设置无按键绑定 | `string` | `Enter Space` |
 | `virtual` | 虚拟触发模式（同 tooltip，不依赖锚点元素） | `boolean` | — |
@@ -833,9 +833,9 @@ onMounted(() => {
 | --- | --- |
 | 默认 | — |
 | `content` | — |
-| `description` | — |
-| `footer` | — |
-| `header` | — |
+| `description` | 描述富内容插槽（aria-describedby 关联） |
+| `footer` | 底部结构化插槽 |
+| `header` | 头部结构化插槽 |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
 点击触发元素切换显隐，点击外部或按 Esc 关闭；`role="dialog"`。嵌套浮层：父关闭时级联关闭子层，`Esc` 逐层关闭并还原焦点到触发元素。

@@ -1565,13 +1565,26 @@
       "virtual-anchor": "虚拟锚点元素选择器（virtual-x/virtual-y 未设置时生效）",
       "virtual-x": "虚拟锚点 x（视口坐标，px）",
       "virtual-y": "虚拟锚点 y（视口坐标，px）",
-      "width": "面板宽度：数字（px）/ `\"trigger\"`（与触发元素同宽）/ 任意 CSS 值（如 `50%`、`240px`）；未设置保持默认"
+      "width": "面板宽度：数字（px）/ `\"trigger\"`（与触发元素同宽）/ 任意 CSS 值（如 `50%`、`240px`）；未设置保持默认",
+      "trap-focus": "焦点陷阱独立开关（与 modal 遮罩解耦，表单浮层 Tab 不逃逸）",
+      "close-on-outside": "点击外部关闭（默认 true）",
+      "close-on-escape": "Esc 关闭（默认 true）",
+      "size": "尺寸档",
+      "available-height": "内容最大可用高度约束（视口剩余空间）",
+      "scrollable": "面板内容超限滚动",
+      "close-on-scroll": "滚动时关闭",
+      "final-focus": "关闭后焦点归还目标（选择器）",
+      "hide-empty": "无内容时隐藏面板",
+      "sticky": "关闭位粘滞（partial/always）"
     },
     "events": {
       "oas-open-change": "open 状态变化，`detail: { open }`"
     },
     "slots": {
-      "title": "标题富内容插槽，有内容时覆盖 title 属性文案"
+      "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
+      "description": "描述富内容插槽（aria-describedby 关联）",
+      "footer": "底部结构化插槽",
+      "header": "头部结构化插槽"
     }
   },
   "oas-progress": {

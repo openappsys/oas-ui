@@ -768,12 +768,12 @@ onMounted(() => {
 | `arrow-point-at-center` | Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance) | — | — |
 | `auto-adjust-overflow` | Viewport-edge auto flip and avoidance (default true; `"false"` disables it, keeping the declared placement, which may overflow the viewport) | `string` | `true` |
 | `auto-close` | Auto close after opening for the given duration in ms, e.g. `auto-close="3000"`; not set means no auto close | `string` | — |
-| `available-height` | — | `boolean` | — |
+| `available-height` | Max content height constrained by remaining viewport space | `boolean` | — |
 | `closable` | Show a close button at the panel's top-right (`part="close"`); clicking it closes and restores focus to the trigger | `boolean` | — |
 | `close-delay` | Generic close delay in ms (default 0; used by non-hover trigger paths, hover paths prefer hover-hide-delay) | `string` | — |
-| `close-on-escape` | — | — | — |
-| `close-on-outside` | — | `string` | `true` |
-| `close-on-scroll` | — | `boolean` | — |
+| `close-on-escape` | Close on Escape (default true) | — | — |
+| `close-on-outside` | Close on outside click (default true) | `string` | `true` |
+| `close-on-scroll` | Close on scroll | `boolean` | — |
 | `collision-padding` | Viewport-edge clamping padding in px (default 4), the gap kept when the panel avoids viewport edges | `string` | — |
 | `color` | Color variant: `primary` / `success` / `warning` / `danger` (tinted panel background + semantic border, derived from tokens including dark variants); unset or invalid keeps the neutral panel | `string` | — |
 | `content` | Body text | `string` | — |
@@ -781,10 +781,10 @@ onMounted(() => {
 | `disabled` | Disable the whole popover: click / hover / focus / contextmenu / trigger-keys triggers are all ignored; the host is desaturated and aria-disabled is synced | `boolean` | — |
 | `dismiss-on-select` | — | `boolean` | — |
 | `fallback-placements` | Custom fallback sequence (comma or space separated, e.g. `"left, right"`): when the requested placement does not fit, each candidate in the sequence is tried for fit; the first fit wins, if none fit the last one is clamped; unset uses the default main-axis flip | `string` | — |
-| `final-focus` | — | `string` | — |
+| `final-focus` | Focus restore target after close (selector) | `string` | — |
 | `focus-on-open` | Moves focus into the first focusable element of the panel when opened | `boolean` | — |
 | `fresh` | Keep updating the content while closed (by default the content is frozen while closed and the latest value is written when opened; with fresh the closed state keeps writing) | `boolean` | — |
-| `hide-empty` | — | `boolean` | — |
+| `hide-empty` | Hide the panel when it has no content | `boolean` | — |
 | `hide-when-detached` | Hide the panel when the anchor is fully detached from the viewport (the open state is kept, avoiding a panel floating off-screen) | `boolean` | — |
 | `hover-delay` | Hover-trigger open debounce in ms (default 150; falls back to open-delay when unset) | `string` | — |
 | `hover-hide-delay` | Hover-trigger close debounce in ms (default 100; falls back to close-delay when unset) | `string` | — |
@@ -795,11 +795,11 @@ onMounted(() => {
 | `open-delay` | Generic open delay in ms (default 0; used by non-hover trigger paths, hover paths prefer hover-delay) | `string` | — |
 | `placement` | Popup placement (12 directions: four bases top/bottom/left/right each with -start/-end cross-axis alignment) | `string` | `top` |
 | `render-panel` | — | `boolean` | — |
-| `scrollable` | — | `boolean` | — |
-| `size` | — | `string` | `medium` |
-| `sticky` | — | `string` | `partial` |
+| `scrollable` | Scrollable panel when content overflows | `boolean` | — |
+| `size` | Size preset | `string` | `medium` |
+| `sticky` | Sticky against viewport edge (partial/always) | `string` | `partial` |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot="title" for rich content | `string` | — |
-| `trap-focus` | — | `boolean` | — |
+| `trap-focus` | Standalone focus-trap toggle (decoupled from modal mask; Tab stays inside form popovers) | `boolean` | — |
 | `trigger` | Trigger method: `click` (default) / `hover` / `focus` / `contextmenu` / `manual`, space separated for multiple (e.g. `"click hover"`) | `string` | `click` |
 | `trigger-keys` | Toggle open when the listed keys are pressed while the trigger is focused (space separated, e.g. `"Enter Space"`); no key binding when unset | `string` | `Enter Space` |
 | `virtual` | Virtual trigger mode (same as tooltip; no anchor element) | `boolean` | — |
@@ -821,9 +821,9 @@ onMounted(() => {
 | --- | --- |
 | default | — |
 | `content` | — |
-| `description` | — |
-| `footer` | — |
-| `header` | — |
+| `description` | Rich description slot (wired via aria-describedby) |
+| `footer` | Structured footer slot |
+| `header` | Structured header slot |
 | `title` | Rich title content slot, overrides the title attribute text when present |
 
 Clicking the trigger toggles visibility; clicking outside or pressing Esc closes it; `role="dialog"`. Nested popovers: closing the parent cascades to children; `Esc` closes one layer at a time and restores focus to the trigger.
