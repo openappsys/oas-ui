@@ -1,6 +1,6 @@
 {
   "className": "OASSegmented",
-  "sourceFile": "packages/ui/src/layout/segmented/oas-segmented.ts",
+  "sourceFile": "packages/ui/src/form/segmented/oas-segmented.ts",
   "attrs": [
     {
       "name": "options",

@@ -1,6 +1,6 @@
 {
   "className": "OASNavigationMenuGroup",
-  "sourceFile": "packages/ui/src/floating/navigation-menu/oas-navigation-menu-group.ts",
+  "sourceFile": "packages/ui/src/navigation/navigation-menu/oas-navigation-menu-group.ts",
   "attrs": [
     {
       "name": "label",

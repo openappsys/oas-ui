@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASSelect } from './index.js'
-import '../../floating/config-provider/index.js'
+import '../../framework/config-provider/index.js'
 
 const OPTIONS = JSON.stringify([
   { label: '苹果', value: 'apple' },

@@ -38,6 +38,102 @@
       "types": "./dist/types/families/*.d.ts",
       "default": "./dist/cdn/*.js"
     },
+    "./floating/app": {
+      "types": "./dist/types/framework/app/index.d.ts",
+      "default": "./dist/framework/app/index.js"
+    },
+    "./floating/config-provider": {
+      "types": "./dist/types/framework/config-provider/index.d.ts",
+      "default": "./dist/framework/config-provider/index.js"
+    },
+    "./floating/theme-editor": {
+      "types": "./dist/types/framework/theme-editor/index.d.ts",
+      "default": "./dist/framework/theme-editor/index.js"
+    },
+    "./floating/command": {
+      "types": "./dist/types/navigation/command/index.d.ts",
+      "default": "./dist/navigation/command/index.js"
+    },
+    "./floating/contextmenu": {
+      "types": "./dist/types/navigation/contextmenu/index.d.ts",
+      "default": "./dist/navigation/contextmenu/index.js"
+    },
+    "./floating/dropdown": {
+      "types": "./dist/types/navigation/dropdown/index.d.ts",
+      "default": "./dist/navigation/dropdown/index.js"
+    },
+    "./floating/menu": {
+      "types": "./dist/types/navigation/menu/index.d.ts",
+      "default": "./dist/navigation/menu/index.js"
+    },
+    "./floating/menubar": {
+      "types": "./dist/types/navigation/menubar/index.d.ts",
+      "default": "./dist/navigation/menubar/index.js"
+    },
+    "./floating/navigation-menu": {
+      "types": "./dist/types/navigation/navigation-menu/index.d.ts",
+      "default": "./dist/navigation/navigation-menu/index.js"
+    },
+    "./floating/speed-dial": {
+      "types": "./dist/types/navigation/speed-dial/index.d.ts",
+      "default": "./dist/navigation/speed-dial/index.js"
+    },
+    "./floating/toolbar": {
+      "types": "./dist/types/navigation/toolbar/index.d.ts",
+      "default": "./dist/navigation/toolbar/index.js"
+    },
+    "./floating/hover-card": {
+      "types": "./dist/types/feedback/hover-card/index.d.ts",
+      "default": "./dist/feedback/hover-card/index.js"
+    },
+    "./floating/popover": {
+      "types": "./dist/types/feedback/popover/index.d.ts",
+      "default": "./dist/feedback/popover/index.js"
+    },
+    "./floating/tooltip": {
+      "types": "./dist/types/feedback/tooltip/index.d.ts",
+      "default": "./dist/feedback/tooltip/index.js"
+    },
+    "./floating/scroll-area": {
+      "types": "./dist/types/layout/scroll-area/index.d.ts",
+      "default": "./dist/layout/scroll-area/index.js"
+    },
+    "./layout/affix": {
+      "types": "./dist/types/navigation/affix/index.d.ts",
+      "default": "./dist/navigation/affix/index.js"
+    },
+    "./layout/float-button": {
+      "types": "./dist/types/navigation/float-button/index.d.ts",
+      "default": "./dist/navigation/float-button/index.js"
+    },
+    "./layout/page-header": {
+      "types": "./dist/types/navigation/page-header/index.d.ts",
+      "default": "./dist/navigation/page-header/index.js"
+    },
+    "./layout/pagination": {
+      "types": "./dist/types/navigation/pagination/index.d.ts",
+      "default": "./dist/navigation/pagination/index.js"
+    },
+    "./layout/steps": {
+      "types": "./dist/types/navigation/steps/index.d.ts",
+      "default": "./dist/navigation/steps/index.js"
+    },
+    "./layout/tabs": {
+      "types": "./dist/types/navigation/tabs/index.d.ts",
+      "default": "./dist/navigation/tabs/index.js"
+    },
+    "./layout/segmented": {
+      "types": "./dist/types/form/segmented/index.d.ts",
+      "default": "./dist/form/segmented/index.js"
+    },
+    "./data/aspect-ratio": {
+      "types": "./dist/types/layout/aspect-ratio/index.d.ts",
+      "default": "./dist/layout/aspect-ratio/index.js"
+    },
+    "./data/masonry": {
+      "types": "./dist/types/layout/masonry/index.d.ts",
+      "default": "./dist/layout/masonry/index.js"
+    },
     "./*": {
       "types": "./dist/types/*/index.d.ts",
       "default": "./dist/*/index.js"

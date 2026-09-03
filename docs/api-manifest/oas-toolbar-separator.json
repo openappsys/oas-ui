@@ -1,6 +1,6 @@
 {
   "className": "OASToolbarSeparator",
-  "sourceFile": "packages/ui/src/floating/toolbar/oas-toolbar-separator.ts",
+  "sourceFile": "packages/ui/src/navigation/toolbar/oas-toolbar-separator.ts",
   "attrs": [],
   "props": [],
   "events": [],

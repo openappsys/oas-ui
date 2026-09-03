@@ -1,5 +1,5 @@
 import { OASLoadingBar } from './oas-loading-bar.js'
-import { resolveMessageHost } from '../../floating/app/app-host.js'
+import { resolveMessageHost } from '../../framework/app/app-host.js'
 
 /**
  * loadingBar 命令式 API —— 全局/局部加载进度条服务。

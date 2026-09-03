@@ -1,6 +1,6 @@
 {
   "className": "OASNavigationMenuItem",
-  "sourceFile": "packages/ui/src/floating/navigation-menu/oas-navigation-menu-item.ts",
+  "sourceFile": "packages/ui/src/navigation/navigation-menu/oas-navigation-menu-item.ts",
   "attrs": [
     {
       "name": "value",

@@ -1,6 +1,6 @@
 {
   "className": "OASPageHeader",
-  "sourceFile": "packages/ui/src/layout/page-header/oas-page-header.ts",
+  "sourceFile": "packages/ui/src/navigation/page-header/oas-page-header.ts",
   "attrs": [
     {
       "name": "title",

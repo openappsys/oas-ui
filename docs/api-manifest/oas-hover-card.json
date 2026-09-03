@@ -1,6 +1,6 @@
 {
   "className": "OASHoverCard",
-  "sourceFile": "packages/ui/src/floating/hover-card/oas-hover-card.ts",
+  "sourceFile": "packages/ui/src/feedback/hover-card/oas-hover-card.ts",
   "attrs": [
     {
       "name": "open",

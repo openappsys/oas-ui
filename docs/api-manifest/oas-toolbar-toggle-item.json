@@ -1,6 +1,6 @@
 {
   "className": "OASToolbarToggleItem",
-  "sourceFile": "packages/ui/src/floating/toolbar/oas-toolbar-toggle-item.ts",
+  "sourceFile": "packages/ui/src/navigation/toolbar/oas-toolbar-toggle-item.ts",
   "attrs": [
     {
       "name": "value",

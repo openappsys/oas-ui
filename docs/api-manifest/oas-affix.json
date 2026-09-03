@@ -1,6 +1,6 @@
 {
   "className": "OASAffix",
-  "sourceFile": "packages/ui/src/layout/affix/oas-affix.ts",
+  "sourceFile": "packages/ui/src/navigation/affix/oas-affix.ts",
   "attrs": [
     {
       "name": "offset",
