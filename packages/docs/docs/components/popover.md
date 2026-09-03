@@ -364,6 +364,248 @@
   </oas-popover>
 </DemoBlock>
 
+## 无障碍关联与键盘
+
+触发元素自动同步 ARIA 关联：`aria-haspopup="dialog"` + `aria-expanded`（随开合）+ `aria-controls`（面板 id），屏幕阅读器可感知浮层状态。`trigger-keys` 默认 `Enter Space`——聚焦触发元素按 Enter / 空格即可开合（原生 button 上与合成 click 幂等，不会闪开闪关），可用属性覆盖为其他按键。
+
+<DemoBlock title="键盘开合（默认 Enter / Space）">
+  <oas-popover title="键盘开合" content="聚焦按钮后按 Enter 或空格切换开合；再按一次关闭。" placement="bottom">
+    <oas-button>聚焦后按 Enter / 空格</oas-button>
+  </oas-popover>
+</DemoBlock>
+
+## trap-focus 焦点陷阱
+
+`trap-focus` 把焦点陷阱从 modal 中独立出来：不显示遮罩、不锁滚动，但 Tab / Shift+Tab 在面板内循环不逃逸——适合表单浮层（背景仍可交互，焦点不出走）。`modal` 与 `trap-focus` 叠加幂等（陷阱只挂一份）。
+
+<DemoBlock title="trap-focus（表单浮层焦点不逃逸）">
+  <oas-popover title="填写信息" placement="bottom" trap-focus focus-on-open closable>
+    <oas-button type="primary">打开表单浮层</oas-button>
+    <div slot="content" style="display: grid; gap: 8px; min-width: 220px">
+      <oas-input placeholder="姓名" aria-label="姓名"></oas-input>
+      <oas-input placeholder="邮箱" aria-label="邮箱"></oas-input>
+      <oas-button size="small" type="primary" data-popover="close">提交</oas-button>
+    </div>
+  </oas-popover>
+</DemoBlock>
+
+## 关闭行为开关
+
+`close-on-outside` / `close-on-escape`（默认均为 `true` 保持现行为）分别控制「点击外部关闭」与「Esc 关闭」；`oas-before-close` 是可取消关闭事件（`preventDefault()` 阻止关闭），所有关闭入口（触发切换 / 外点 / Esc / 关闭按钮 / 声明式关层 / 遮罩 / auto-close / 面板内选择）都会先过它——`detail.source` 标注来源。
+
+<DemoBlock title="关闭开关 + 可取消关闭（oas-before-close）">
+  <oas-space size="small" wrap>
+    <oas-popover title="外点不关" content="close-on-outside=false：点击面板外部不会关闭，只能用 ✕ 或 Esc。" placement="bottom" closable close-on-outside="false">
+      <oas-button>外点不关</oas-button>
+    </oas-popover>
+    <oas-popover title="Esc 不关" content="close-on-escape=false：按 Esc 不关闭，点击外部关闭。" placement="bottom" closable close-on-escape="false">
+      <oas-button>Esc 不关</oas-button>
+    </oas-popover>
+    <oas-popover id="pop-guard" title="拦截关闭" content="勾选「拦截关闭」后，任何途径都关不掉；取消勾选即可关闭。" placement="bottom" closable>
+      <oas-button>拦截关闭演示</oas-button>
+      <div slot="content" style="min-width: 200px">
+        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer">
+          <oas-checkbox id="pop-guard-check"></oas-checkbox>拦截关闭
+        </label>
+      </div>
+    </oas-popover>
+  </oas-space>
+</DemoBlock>
+
+## 尺寸与样式变量
+
+`size` 尺寸档位：`small` / `medium`（默认）/ `large`——内边距、最小宽度与字号随之缩放（走 token）。面板样式可通过组件级 CSS 变量定制：`--oas-popover-bg` / `--oas-popover-border` / `--oas-popover-shadow` / `--oas-popover-radius` / `--oas-popover-padding` / `--oas-popover-min-width`（默认值回落全局 token，dark 主题自动跟随）。
+
+<DemoBlock title="尺寸档位（size）">
+  <oas-space size="small">
+    <oas-popover title="小档" content="size=small：紧凑内边距 + 小字号。" placement="bottom" size="small">
+      <oas-button>small</oas-button>
+    </oas-popover>
+    <oas-popover title="默认" content="size=medium（默认）。" placement="bottom">
+      <oas-button>medium</oas-button>
+    </oas-popover>
+    <oas-popover title="大档" content="size=large：宽松内边距 + 大字号。" placement="bottom" size="large">
+      <oas-button>large</oas-button>
+    </oas-popover>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="面板 CSS 变量定制（--oas-popover-*）">
+  <oas-popover title="变量定制" content="通过 --oas-popover-bg / --oas-popover-border / --oas-popover-radius 定制面板观感（箭头跟随同色）。" placement="bottom" style="--oas-popover-bg: var(--oas-color-bg-hover); --oas-popover-border: var(--oas-color-primary); --oas-popover-radius: var(--oas-radius-lg);">
+    <oas-button>变量定制的面板</oas-button>
+  </oas-popover>
+</DemoBlock>
+
+## 结构化插槽与说明
+
+`slot="header"` 接管整个头部（标题区让位）；`slot="footer"` 渲染底部操作区（与正文以分隔线区隔）；`slot="description"` 渲染补充说明并自动关联 `aria-describedby`（屏幕阅读器可朗读面板描述）。
+
+<DemoBlock title="header / footer / description 插槽">
+  <oas-popover placement="bottom">
+    <oas-button type="primary">打开结构化面板</oas-button>
+    <div slot="header" style="display: flex; align-items: center; gap: 6px; font-weight: 600">成员设置 <oas-tag size="small">Pro</oas-tag></div>
+    <div slot="content" style="line-height: 1.8">正文内容区：与 header / footer / description 各自独立。</div>
+    <p slot="description" style="margin: 0">关闭后更改立即生效，无需保存。</p>
+    <div slot="footer" style="display: flex; justify-content: flex-end; gap: 8px">
+      <oas-button size="small" data-popover="close">取消</oas-button>
+      <oas-button size="small" type="primary" data-popover="close">确定</oas-button>
+    </div>
+  </oas-popover>
+</DemoBlock>
+
+## 高度约束与面板内滚动
+
+`available-height` 把面板最大高度约束为主轴方向视口剩余空间；`scrollable` 开启面板内滚动（头部 / 底部固定、正文区滚动），长内容不再撑出视口。长列表场景两者常组合使用。
+
+<DemoBlock title="scrollable + available-height（长列表滚动）">
+  <oas-popover title="通知列表" placement="bottom" scrollable available-height>
+    <oas-button type="primary">打开通知（可滚动）</oas-button>
+    <div slot="content" style="display: grid; gap: 10px; min-width: 260px">
+      <p style="margin: 0">面板高度不超出视口剩余空间，正文区内部滚动：</p>
+      <div style="display: grid; gap: 8px">
+        <oas-tag>通知 1</oas-tag><oas-tag>通知 2</oas-tag><oas-tag>通知 3</oas-tag><oas-tag>通知 4</oas-tag>
+        <oas-tag>通知 5</oas-tag><oas-tag>通知 6</oas-tag><oas-tag>通知 7</oas-tag><oas-tag>通知 8</oas-tag>
+        <oas-tag>通知 9</oas-tag><oas-tag>通知 10</oas-tag>
+      </div>
+    </div>
+  </oas-popover>
+</DemoBlock>
+
+## 焦点归还与空态
+
+`final-focus` 指定关闭后焦点归还的目标元素（选择器；也可用 `finalFocusEl` property 传入元素，优先级更高）；缺省归还触发元素。`hide-empty` 在面板无任何内容（无 title / content / 插槽内容）时保持隐藏——防止空白面板闪现。
+
+<DemoBlock title="final-focus（关闭后焦点到指定元素）">
+  <oas-space size="small">
+    <oas-input id="pop-final-input" placeholder="关闭后焦点回到这里" style="width: 200px"></oas-input>
+    <oas-popover title="焦点归还" content="关闭后焦点会移到旁边的输入框，而不是触发按钮。" placement="bottom" final-focus="#pop-final-input" closable>
+      <oas-button>打开（✕ 关闭看焦点）</oas-button>
+    </oas-popover>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="hide-empty（无内容不弹空白面板）">
+  <oas-space size="small">
+    <oas-button size="small" onclick="popEmptySet('')">清空内容</oas-button>
+    <oas-button size="small" onclick="popEmptySet('现在有内容了')">填入内容</oas-button>
+    <oas-tag id="pop-empty-status" type="info">content: （空）</oas-tag>
+  </oas-space>
+  <oas-popover id="pop-empty" title="空态防御" content="" placement="bottom" hide-empty>
+    <oas-button>无内容时点不开</oas-button>
+  </oas-popover>
+</DemoBlock>
+
+## 滚动行为（sticky / close-on-scroll）
+
+`sticky` 三档：`partial`（默认，滚动跟随重定位）/ `always`（锚点滚出视口后面板贴视口边缘保持可见）/ `off`（不跟随滚动）。`close-on-scroll` 则改为「滚动即关闭」——下拉选择类浮层在滚动时直接收起更符合直觉。
+
+<DemoBlock title="sticky=always（锚点滚出后面板贴边保持）">
+  <div id="pop-sticky-scroll" style="height: 120px; overflow-y: auto; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); padding: 12px">
+    <div style="height: 320px; display: grid; place-items: center start">
+      <oas-popover title="贴边保持" content="sticky=always：滚动本容器，触发元素滚出后面板贴在视口边缘不消失。" placement="right" sticky="always" open>
+        <oas-button>滚动下方区域看效果</oas-button>
+      </oas-popover>
+    </div>
+    <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 8px 0">↓ 滚动这里 ↓</p>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="close-on-scroll（滚动即关闭）">
+  <div id="pop-closeonscroll-box" style="height: 120px; overflow-y: auto; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); padding: 12px">
+    <div style="height: 320px">
+      <oas-popover title="滚动关闭" content="close-on-scroll：面板打开时滚动容器，面板立即关闭。" placement="right" close-on-scroll>
+        <oas-button>打开后滚动这里</oas-button>
+      </oas-popover>
+    </div>
+  </div>
+</DemoBlock>
+
+## 右键光标定位与触屏长按
+
+`trigger="contextmenu"` 右键在**光标处**打开面板（不再锚定触发元素中心）；触屏设备上按住 500ms 长按同样在触点处打开（移动端没有右键）。打开后滚动页面，面板回到触发元素侧跟随（光标点没有滚动语义）。
+
+<DemoBlock title="contextmenu 光标定位（右键 / 触屏长按）">
+  <oas-popover trigger="contextmenu" title="光标菜单" placement="right" arrow="false">
+    <oas-button>在这一带的任意位置右键</oas-button>
+    <div slot="content">
+      <p style="margin: 0 0 8px">面板出现在右键光标处：</p>
+      <oas-space size="small" direction="vertical">
+        <oas-button size="small" data-popover="close">操作一</oas-button>
+        <oas-button size="small" data-popover="close">操作二</oas-button>
+      </oas-space>
+    </div>
+  </oas-popover>
+</DemoBlock>
+
+## 面板内选择后自动关闭
+
+`dismiss-on-select` 开启后面板内任意点击（含插槽内容）视为完成选择并自动关闭——选项面板免写 `data-popover="close"`。关闭同样会经过 `oas-before-close`（可拦截）。
+
+<DemoBlock title="dismiss-on-select（选择即关）">
+  <oas-space size="small">
+    <oas-popover title="选择语言" placement="bottom" dismiss-on-select>
+      <oas-button type="primary">选择一项试试</oas-button>
+      <div slot="content" style="display: grid; gap: 6px; min-width: 160px">
+        <oas-button size="small">简体中文</oas-button>
+        <oas-button size="small">English</oas-button>
+        <oas-button size="small">日本語</oas-button>
+      </div>
+    </oas-popover>
+    <oas-tag id="pop-dismiss-status" type="info">open: false</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## 内容销毁与懒挂载
+
+`destroy-on-hide` 关闭时卸载面板内容呈现（插槽节点脱离分配、属性文本清空），重新打开时再挂载——重内容（图表 / 大列表）浮层在关闭期间零渲染开销，等价懒挂载。宿主 light DOM 节点不会删除。
+
+<DemoBlock title="destroy-on-hide（关闭销毁、重开重建）">
+  <oas-space size="small">
+    <oas-popover id="pop-destroy" title="重内容面板" placement="bottom" destroy-on-hide>
+      <oas-button type="primary">打开重内容面板</oas-button>
+      <div slot="content" style="min-width: 240px">
+        <p style="margin: 0 0 8px">关闭后此内容被卸载（重开时重新挂载）：</p>
+        <oas-progress value="72"></oas-progress>
+      </div>
+    </oas-popover>
+    <oas-tag id="pop-destroy-status" type="info">关闭后内容已卸载</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## 断点响应与触发细调
+
+`placement` / `size` 支持断点简写（协议同 space/grid）：`"bottom md:right"` = 基础值 + 空格分隔的 `断点:值`（sm=640 / md=768 / lg=1024 / xl=1280，移动优先 min-width）——窄屏在下方、≥768px 在右侧。`trigger="mousedown"` 按下即开（无需抬起，比 click 快一拍）。
+
+<DemoBlock title="placement 断点简写（拖动窗口宽度看切换）">
+  <oas-popover title="断点放置" content="窗口 < 768px 面板在下方；≥ 768px 面板在右侧。" placement="bottom md:right">
+    <oas-button>bottom md:right</oas-button>
+  </oas-popover>
+</DemoBlock>
+
+<DemoBlock title="trigger=mousedown（按下即开）">
+  <oas-space size="small">
+    <oas-popover title="按下即开" content="trigger=mousedown：鼠标按下立刻打开，无需抬起。" placement="bottom" trigger="mousedown">
+      <oas-button>mousedown</oas-button>
+    </oas-popover>
+    <oas-popover title="对照" content="默认 click：完整点击（按下 + 抬起）才打开。" placement="bottom">
+      <oas-button>click（对照）</oas-button>
+    </oas-popover>
+  </oas-space>
+</DemoBlock>
+
+## render-panel 纯面板渲染
+
+`render-panel` 面向宿主自组场景：popover 不绑定任何触发（一律按 `manual` 处理、不写触发元素 ARIA），配合 `virtual-x` / `virtual-y` 坐标或 `append-to` 由宿主完全接管摆放与显隐——比如自定义触发器、画布内嵌面板。
+
+<DemoBlock title="render-panel（宿主自组触发器）">
+  <oas-space size="small">
+    <oas-button size="small" type="primary" onclick="popPanelShow(event)">宿主自己的按钮：打开纯面板</oas-button>
+    <oas-button size="small" onclick="popPanelHide()">关闭</oas-button>
+    <oas-tag id="pop-render-status" type="info">open: false</oas-tag>
+  </oas-space>
+  <oas-popover id="pop-render-panel" render-panel virtual virtual-x="0" virtual-y="0" placement="bottom" title="纯面板" content="由 render-panel 渲染：popover 无触发绑定，显隐与位置完全由宿主控制。"></oas-popover>
+</DemoBlock>
+
 ## 受控显示
 
 `open` 属性受控：外部按钮设置 / 移除 `open` 控制显隐（点击外部 / Esc 仍会关闭）。
@@ -467,6 +709,62 @@ onMounted(() => {
       freshTag.textContent = `open: ${e.detail.open}，content: ${fresh.getAttribute('content')}`
     })
   }
+
+  // P5 拦截关闭：勾选后 oas-before-close preventDefault，任何途径都关不掉
+  const guard = document.getElementById('pop-guard')
+  const guardCheck = document.getElementById('pop-guard-check')
+  if (guard && guardCheck) {
+    guard.addEventListener('oas-before-close', (e) => {
+      if (guardCheck.hasAttribute('checked')) e.preventDefault()
+    })
+  }
+
+  // P15 hide-empty：空内容不弹空白面板
+  const emptyPop = document.getElementById('pop-empty')
+  const emptyStatus = document.getElementById('pop-empty-status')
+  if (emptyPop && emptyStatus) {
+    window.popEmptySet = (v) => {
+      emptyPop.setAttribute('content', v)
+      emptyStatus.textContent = `content: ${v === '' ? '（空）' : v}`
+    }
+  }
+
+  // P21 dismiss-on-select：状态回显
+  const dismiss = document.querySelector('#pop-dismiss-status')
+  const dismissPop = document.querySelector('oas-popover[dismiss-on-select]')
+  if (dismiss && dismissPop) {
+    const syncDismiss = () => {
+      dismiss.textContent = `open: ${dismissPop.hasAttribute('open')}`
+    }
+    dismissPop.addEventListener('oas-open-change', (e) => {
+      dismiss.textContent = `open: ${e.detail.open}`
+    })
+    syncDismiss()
+  }
+
+  // P22 destroy-on-hide：开关状态回显
+  const destroyPop = document.getElementById('pop-destroy')
+  const destroyStatus = document.getElementById('pop-destroy-status')
+  if (destroyPop && destroyStatus) {
+    destroyPop.addEventListener('oas-open-change', (e) => {
+      destroyStatus.textContent = e.detail.open ? '面板打开（内容已挂载）' : '关闭后内容已卸载'
+    })
+  }
+
+  // P25 render-panel：宿主自组触发（自己的按钮控制纯面板显隐与坐标）
+  const panel = document.getElementById('pop-render-panel')
+  const panelStatus = document.getElementById('pop-render-status')
+  if (panel && panelStatus) {
+    window.popPanelShow = (e) => {
+      panel.setAttribute('virtual-x', String(e.clientX))
+      panel.setAttribute('virtual-y', String(e.clientY + 12))
+      panel.setAttribute('open', '')
+    }
+    window.popPanelHide = () => panel.removeAttribute('open')
+    panel.addEventListener('oas-open-change', (e) => {
+      panelStatus.textContent = `open: ${e.detail.open}`
+    })
+  }
 })
 </script>
 
@@ -482,15 +780,23 @@ onMounted(() => {
 | `arrow-point-at-center` | 箭头指向触发元素中心（默认指向触发元素边缘；视口边缘避让导致面板偏移时箭头仍指向锚点中心） | — | — |
 | `auto-adjust-overflow` | 视口边缘自动翻转与避让（默认 true；`"false"` 关闭，保持声明 placement，可能溢出视口） | `string` | `true` |
 | `auto-close` | 打开后超时自动关闭（毫秒），如 `auto-close="3000"`；未设置不自动关闭 | `string` | — |
+| `available-height` | — | `boolean` | — |
 | `closable` | 面板右上角显示关闭按钮（`part="close"`），点击关闭并还原焦点到触发元素 | `boolean` | — |
 | `close-delay` | 通用关闭延迟（毫秒，默认 0；非 hover 触发路径生效，hover 路径优先 hover-hide-delay） | `string` | — |
+| `close-on-escape` | — | — | — |
+| `close-on-outside` | — | `string` | `true` |
+| `close-on-scroll` | — | `boolean` | — |
 | `collision-padding` | 视口边缘夹取边距（px，默认 4），面板贴边避让时保留的间距 | `string` | — |
 | `color` | 颜色变体：`primary` / `success` / `warning` / `danger`（面板 tint 底 + 语义色描边，走 token 派生变量含 dark 变体）；未设置或非法值保持默认中性面板 | `string` | — |
 | `content` | 正文文本 | `string` | — |
+| `destroy-on-hide` | — | `boolean` | — |
 | `disabled` | 整体禁用：click / hover / focus / contextmenu / trigger-keys 触发均不响应，宿主降饱和并同步 aria-disabled | `boolean` | — |
+| `dismiss-on-select` | — | `boolean` | — |
 | `fallback-placements` | 自定义回退序列（逗号或空格分隔，如 `"left, right"`）：请求 placement 放不下时按序列逐一尝试 fit，首个 fit 者胜出，全不 fit 取序列末位并夹取；未设置走默认主轴翻转 | `string` | — |
+| `final-focus` | — | `string` | — |
 | `focus-on-open` | 打开时焦点移入面板内首个可聚焦元素 | `boolean` | — |
 | `fresh` | 关闭时也持续更新内容（默认关闭态冻结内容，打开时写入最新值；fresh 开启后关闭态同步写入） | `boolean` | — |
+| `hide-empty` | — | `boolean` | — |
 | `hide-when-detached` | 锚点完全脱离视口时隐藏面板（打开语义保留，避免孤悬屏外） | `boolean` | — |
 | `hover-delay` | hover 触发时打开防抖延时（毫秒，默认 150；未设置回落 open-delay） | `string` | — |
 | `hover-hide-delay` | hover 触发时关闭防抖延时（毫秒，默认 100；未设置回落 close-delay） | `string` | — |
@@ -500,9 +806,14 @@ onMounted(() => {
 | `open` | 受控显示（布尔属性，存在即显示） | `boolean` | — |
 | `open-delay` | 通用打开延迟（毫秒，默认 0；非 hover 触发路径生效，hover 路径优先 hover-delay） | `string` | — |
 | `placement` | 浮层位置（12 向：四基向 top/bottom/left/right 各配 -start/-end 交叉轴对齐） | `string` | `top` |
+| `render-panel` | — | `boolean` | — |
+| `scrollable` | — | `boolean` | — |
+| `size` | — | `string` | `medium` |
+| `sticky` | — | `string` | `partial` |
 | `title` | 标题文本（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
+| `trap-focus` | — | `boolean` | — |
 | `trigger` | 触发方式：`click`（默认）/ `hover` / `focus` / `contextmenu` / `manual`，空格分隔可多选（如 `"click hover"`） | `string` | `click` |
-| `trigger-keys` | 指定按键在触发元素聚焦时切换开合（空格分隔，如 `"Enter Space"`）；未设置无按键绑定 | `string` | — |
+| `trigger-keys` | 指定按键在触发元素聚焦时切换开合（空格分隔，如 `"Enter Space"`）；未设置无按键绑定 | `string` | `Enter Space` |
 | `virtual` | 虚拟触发模式（同 tooltip，不依赖锚点元素） | `boolean` | — |
 | `virtual-anchor` | 虚拟锚点元素选择器（virtual-x/virtual-y 未设置时生效） | — | — |
 | `virtual-x` | 虚拟锚点 x（视口坐标，px） | — | — |
@@ -513,6 +824,7 @@ onMounted(() => {
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-before-close` | — |
 | `oas-open-change` | open 状态变化，`detail: { open }` |
 
 ### 插槽
@@ -521,6 +833,9 @@ onMounted(() => {
 | --- | --- |
 | 默认 | — |
 | `content` | — |
+| `description` | — |
+| `footer` | — |
+| `header` | — |
 | `title` | 标题富内容插槽，有内容时覆盖 title 属性文案 |
 
 点击触发元素切换显隐，点击外部或按 Esc 关闭；`role="dialog"`。嵌套浮层：父关闭时级联关闭子层，`Esc` 逐层关闭并还原焦点到触发元素。

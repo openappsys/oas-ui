@@ -14,6 +14,23 @@ const HOVER_DELAY = 150
 const HOVER_HIDE_DELAY = 100
 /** 视口边缘夹取默认边距（px），collision-padding 属性可配 */
 const COLLISION_PAD = 4
+/** 触屏长按触发时长（ms，trigger 含 contextmenu 时生效，移动端无右键的替代） */
+const LONG_PRESS_MS = 500
+/** 长按期间手指滑动超过该阈值视为滚动手势，取消长按（px） */
+const LONG_PRESS_SLIP = 10
+/** mousedown 触发后同一次按压内合成 click 的吞没时间窗（ms，防双路径叠加切换） */
+const MOUSE_SUPPRESS_MS = 350
+/** 面板 id 文档唯一计数器（aria-controls 跨树引用需要文档级唯一） */
+let panelUid = 0
+
+/** 响应式断点表（移动优先 min-width，px；协议同 space/grid） */
+const BREAKPOINT_PX: Record<string, number> = { sm: 640, md: 768, lg: 1024, xl: 1280 }
+
+/** 面板全部命名 slot（portal 桥接 / destroy-on-hide 暂存 / hide-empty 判空共用） */
+const SLOT_NAMES = ['content', 'title', 'header', 'footer', 'description'] as const
+
+/** SLOT_NAMES 的联合选择器（querySelector 用） */
+const SLOT_SELECTOR = SLOT_NAMES.map((n) => `[slot="${n}"]`).join(', ')
 
 /** 12 向 placement 的主轴基向（跨轴对齐后缀 -start/-end 由定位引擎另行应用） */
 type PlacementBase = 'top' | 'bottom' | 'left' | 'right'
@@ -36,20 +53,32 @@ const STYLE = `
 .panel {
   position: fixed;
   z-index: calc(var(--oas-z-index-base, 0) + var(--oas-z-dropdown, 1000));
-  /* 面板与箭头共用 --pop-bg / --pop-border（颜色变体只覆写这两个变量，箭头描边自动跟随） */
-  --pop-bg: var(--oas-color-bg);
-  --pop-border: var(--oas-color-border);
+  /* 面板组件级变量（宿主可覆写，fallback 走全局 token——dark 主题由 token 变体自动跟随）：
+     --pop-bg/--pop-border 为面板与箭头共用的内部派生变量，颜色变体只覆写这两个变量 */
+  --pop-bg: var(--oas-popover-bg, var(--oas-color-bg));
+  --pop-border: var(--oas-popover-border, var(--oas-color-border));
   background: var(--pop-bg);
   border: 1px solid var(--pop-border);
-  border-radius: var(--oas-radius-md);
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--oas-color-overlay) 24%, transparent);
-  padding: var(--oas-space-4);
-  min-width: 200px;
+  border-radius: var(--oas-popover-radius, var(--oas-radius-md));
+  box-shadow: var(--oas-popover-shadow, 0 4px 16px color-mix(in srgb, var(--oas-color-overlay) 24%, transparent));
+  padding: var(--oas-popover-padding, var(--oas-space-4));
+  min-width: var(--oas-popover-min-width, 200px);
   color: var(--oas-color-text-primary);
   outline: none;
   /* portal（append-to）时 host 为 pointer-events:none（不吞页面指针），
      面板显式 auto 保持可交互；非 portal 下与默认值等价 */
   pointer-events: auto;
+}
+/* 尺寸档（size，默认 medium）：只覆写 --oas-popover-* 档位变量，非法值回落 medium */
+.panel[data-size='small'] {
+  --oas-popover-padding: var(--oas-space-2);
+  --oas-popover-min-width: 160px;
+  --oas-popover-font-size: var(--oas-font-size-sm);
+}
+.panel[data-size='large'] {
+  --oas-popover-padding: var(--oas-space-6);
+  --oas-popover-min-width: 280px;
+  --oas-popover-font-size: var(--oas-font-size-lg);
 }
 .panel[aria-hidden='true'] {
   display: none;
@@ -97,7 +126,7 @@ const STYLE = `
 }
 .title {
   font-weight: 600;
-  font-size: var(--oas-font-size-md);
+  font-size: var(--oas-popover-font-size, var(--oas-font-size-md));
 }
 .title:empty {
   display: none;
@@ -136,8 +165,38 @@ const STYLE = `
   height: 1em;
 }
 .body {
-  font-size: var(--oas-font-size-md);
+  font-size: var(--oas-popover-font-size, var(--oas-font-size-md));
   line-height: 1.6;
+}
+/* 补充说明区（slot="description"）：次要文本，aria-describedby 关联 */
+.description {
+  margin-top: var(--oas-space-2);
+  font-size: var(--oas-font-size-sm);
+  line-height: 1.6;
+  color: var(--oas-color-text-secondary);
+}
+.description.oas-empty {
+  display: none;
+}
+/* 底部操作区（slot="footer"）：与正文以分隔线区隔 */
+.foot {
+  margin-top: var(--oas-space-2);
+  padding-top: var(--oas-space-3);
+  border-top: 1px solid var(--pop-border);
+}
+.foot.oas-empty {
+  display: none;
+}
+/* scrollable：面板内滚动——头/尾固定、正文区滚动（flex 列布局 + min-height:0 让
+   overflow 生效；max-height 由 JS 按 available-height / 视口约束写入） */
+.panel[data-scrollable] .panel-inner {
+  display: flex;
+  flex-direction: column;
+}
+.panel[data-scrollable] .body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 /* 开合动画：入场/退场 fade+scale，动画放在内层 .panel-inner 上、且 .panel 自身不参与 transform，
    保证定位计算读到的面板矩形不受缩放动画影响；transform-origin 由 JS 按 placement 写入
@@ -428,10 +487,15 @@ function unregisterLayer(p: OASPopover): void {
 
 function onDocumentKey(e: KeyboardEvent): void {
   if (e.key !== 'Escape') return
-  const top = openLayers[openLayers.length - 1]
-  if (!top) return
-  top.removeAttribute('open')
-  top.restoreFocus()
+  // P4：从栈顶向下找最近一个可 Esc 关闭的层（close-on-escape=false 的层跳过不挡下层）；
+  // P5：closeWith 内派发 oas-before-close，preventDefault 即拦截（顶层拦截优先，不继续关下层）
+  for (let i = openLayers.length - 1; i >= 0; i--) {
+    const top = openLayers[i]
+    if (!top) continue
+    if (top.getAttribute('close-on-escape') === 'false') continue
+    if (top.closeWith('escape')) top.restoreFocus()
+    return
+  }
 }
 
 export class OASPopover extends OASElement {
@@ -476,6 +540,21 @@ export class OASPopover extends OASElement {
       'fresh',
       'auto-close',
       'arrow-merge',
+      // —— 能力增强批次：焦点陷阱 / 关闭开关 / 尺寸 / 高度约束 / 滚动 ——
+      'trap-focus',
+      'close-on-outside',
+      'close-on-escape',
+      'size',
+      'available-height',
+      'scrollable',
+      'close-on-scroll',
+      // —— 能力增强批次：焦点归还 / 空态 / 粘滞 / 选择关闭 / 内容销毁 / 断点 / 纯面板 ——
+      'final-focus',
+      'hide-empty',
+      'sticky',
+      'dismiss-on-select',
+      'destroy-on-hide',
+      'render-panel',
     ]
   }
 
@@ -499,6 +578,57 @@ export class OASPopover extends OASElement {
       .assignedNodes()
       .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
+
+  /** 任意命名 slot 是否有真实内容（元素节点或非空白文本）——header/footer/description 判空通用 */
+  private slotHasContent(slot: HTMLSlotElement): boolean {
+    return this.hasTitleSlotContent(slot)
+  }
+
+  /** P15 hide-empty 判空：无标题/正文/任一命名 slot 内容即空面板（closable 关闭按钮不算内容） */
+  private isEmptyPopup(): boolean {
+    if ((this.titleCache ?? '') !== '') return false
+    if (this.getAttr('content', '') !== '') return false
+    for (const n of this.querySelectorAll<HTMLElement>(SLOT_SELECTOR)) {
+      if ((n.textContent ?? '').trim() !== '' || n.childElementCount > 0) return false
+    }
+    return true
+  }
+
+  // —— P22 destroy-on-hide：关闭后销毁内容（slot 节点 slot 名改写脱离分配 + hidden，属性文本清空）——
+
+  /** 销毁面板内容：宿主 light DOM 节点不删（宿主资产），改写 slot 名脱离面板分配并 hidden */
+  private stashSlots(): void {
+    for (const n of this.querySelectorAll<HTMLElement>(SLOT_SELECTOR)) {
+      n.dataset.oasPopoverStash = n.getAttribute('slot') ?? 'content'
+      n.setAttribute('slot', 'oas-popover-stash')
+      n.hidden = true
+    }
+  }
+
+  /** 打开瞬间恢复挂载：slot 名还原、hidden 摘除（分配恢复） */
+  private unstashSlots(): void {
+    for (const n of this.querySelectorAll<HTMLElement>('[slot="oas-popover-stash"]')) {
+      const orig = n.dataset.oasPopoverStash ?? 'content'
+      delete n.dataset.oasPopoverStash
+      n.setAttribute('slot', orig)
+      n.hidden = false
+    }
+  }
+
+  /** 关闭时销毁面板内容呈现（重开由 update 恢复挂载并按属性重写） */
+  private destroyContent(): void {
+    if (!this.panel) return
+    this.destroyed = true
+    this.stashSlots()
+    const contentEl = this.panel.querySelector<HTMLElement>('[part="content"]')
+    if (contentEl) contentEl.textContent = ''
+    const fallback = this.panel.querySelector<HTMLElement>('.title-text')
+    if (fallback) fallback.textContent = ''
+    this.contentWritten = false
+    this.syncHead()
+    this.syncFoot()
+    this.syncDescription()
+  }
   /** hover 开/合防抖计时器 + 通用开/合延迟计时器 */
   private openTimer: ReturnType<typeof setTimeout> | null = null
   private closeTimer: ReturnType<typeof setTimeout> | null = null
@@ -515,6 +645,26 @@ export class OASPopover extends OASElement {
   private modalLocked = false
   /** append-to：portal host 容器（目标容器内的 div + 独立 shadow，样式作用域保真） */
   private portalHost: HTMLElement | null = null
+  /** contextmenu / 触屏长按的光标触点矩形（打开期间按光标定位，关闭清除；滚动重定位回到锚点）。
+   *  保持到关闭而非一次性消费：title 吸收（removeAttribute('title') → attributeChangedCallback）
+   *  会触发嵌套 update（外层 wasOpen 尚未置 true），一次性消费会让嵌套轮回落锚点定位覆盖光标 */
+  private cursorRect: DOMRect | null = null
+  /** 触屏长按计时器与 armed 状态（长按生效后 touchmove 阻止页面滚动） */
+  private longPressTimer: ReturnType<typeof setTimeout> | null = null
+  private longPressArmed = false
+  private longPressX = 0
+  private longPressY = 0
+  /** mousedown 触发的时间戳：同一次按压的合成 click 在时间窗内吞没（防双路径叠加切换） */
+  private lastMousedownToggle = 0
+  /** trigger-keys 切换的时间戳：同一次按键的合成 click 在时间窗内吞没（P2 幂等守卫） */
+  private lastKeydownToggle = 0
+  /** 打开瞬间的页面 scrollY：滞留 scroll 事件（滚动发生在打开前、事件 task 异步派发晚于
+   *  打开执行，scrollY 与打开时相同）不构成有效滚动，不重定位/不触发 close-on-scroll */
+  private openScrollY = Number.NaN
+  /** destroy-on-hide：内容已销毁（打开瞬间恢复挂载） */
+  private destroyed = false
+  /** P13 关闭后焦点归还目标（property 通道，优先于 final-focus 选择器属性） */
+  finalFocusEl: HTMLElement | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -524,13 +674,16 @@ export class OASPopover extends OASElement {
       <slot></slot>
       <div class="panel" part="panel" role="dialog" aria-hidden="true">
         <div class="panel-inner" part="inner">
-          <div class="head" part="head">
+          <div class="head" part="head" id="pop-head">
             <div class="title" id="pop-title" part="title"><slot name="title"><span class="title-text"></span></slot></div>
+            <slot name="header"></slot>
             <button class="close-btn" part="close" type="button" aria-label="关闭" hidden>
               <svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true" focusable="false">${closeIcon}</svg>
             </button>
           </div>
           <div class="body" part="body"><div class="content" part="content"></div><slot name="content"></slot></div>
+          <div class="description" id="pop-desc" part="description"><slot name="description"></slot></div>
+          <div class="foot" part="foot"><slot name="footer"></slot></div>
         </div>
         <span class="arrow" part="arrow" data-popper-arrow aria-hidden="true"></span>
       </div>
@@ -545,51 +698,97 @@ export class OASPopover extends OASElement {
     this.closeBtn = this.shadow.querySelector<HTMLButtonElement>('.close-btn')
     this.anchor = this.querySelector(':scope > *') ?? this
 
+    // 面板 id 文档唯一（aria-controls 跨 shadow 树引用需要文档级唯一）；SSR 水合快照复用已有 id。
+    // 已占用时递增重试：防御 SSR 快照 id（panel-1…）与客户端动态挂载实例计数器撞号
+    if (this.panel && !this.panel.id) {
+      let id = `oas-popover-panel-${++panelUid}`
+      while (typeof document !== 'undefined' && document.getElementById(id)) {
+        id = `oas-popover-panel-${++panelUid}`
+      }
+      this.panel.id = id
+    }
+    // P1 绑定时机：触发元素挂 aria-haspopup（开/关态的 expanded/controls 在 update 同步）
+    this.syncAnchorAria(false)
+
     // —— 触发方式（trigger，空格分隔多选；运行时改 trigger 走同一监听，处理内按当前属性 gate）——
     this.anchor?.addEventListener('click', () => {
+      // mousedown / trigger-keys 切换后同一次按压的合成 click 吞没（时间窗守卫，防双路径叠加切换）
+      const now = performance.now()
+      if (now - this.lastMousedownToggle < MOUSE_SUPPRESS_MS) return
+      if (now - this.lastKeydownToggle < MOUSE_SUPPRESS_MS) return
       if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
       if (!this.hasTrigger('click')) return
+      this.toggle()
+    })
+    // P24 mousedown 触发：按下即切换（无需抬起，比 click 快一拍）
+    this.anchor?.addEventListener('mousedown', (e) => {
+      if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
+      if (!this.hasTrigger('mousedown')) return
+      e.preventDefault()
+      this.lastMousedownToggle = performance.now()
       this.toggle()
     })
     this.anchor?.addEventListener('contextmenu', (e) => {
       if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
       if (!this.hasTrigger('contextmenu')) return
       e.preventDefault()
-      this.setOpen(true)
+      // P20 光标定位：右键触点缓存，打开期间按光标定位（关闭清除；滚动重定位回到锚点）
+      const me = e as MouseEvent
+      this.cursorRect = {
+        left: me.clientX,
+        top: me.clientY,
+        right: me.clientX,
+        bottom: me.clientY,
+        width: 0,
+        height: 0,
+      } as DOMRect
+      this.requestOpen()
     })
+    // P20 触屏长按（trigger 含 contextmenu 时，移动端无右键的替代）
+    this.anchor?.addEventListener('touchstart', (e) => this.onTouchStart(e), { passive: false })
+    this.anchor?.addEventListener('touchmove', (e) => this.onTouchMove(e), { passive: false })
+    this.anchor?.addEventListener('touchend', () => this.clearLongPress())
+    this.anchor?.addEventListener('touchcancel', () => this.clearLongPress())
     // hover 触发：悬停宿主（含触发元素）开、移出宿主/浮层面板关；面板入/出也监听，
     // 使悬停区域 = 宿主 + 面板（跨 8px 间隙移动不闪关）
     this.addEventListener('mouseenter', this.onHoverEnter)
     this.addEventListener('mouseleave', this.onHoverLeave)
     this.panel?.addEventListener('mouseenter', this.onPanelEnter)
     this.panel?.addEventListener('mouseleave', this.onPanelLeave)
-    // title 双通道：slot 内容增减时重刷标题区（遵守 fresh 冻结语义——关闭态非 fresh 且
+    // 命名 slot 内容增减时重刷面板（遵守 fresh 冻结语义——关闭态非 fresh 且
     // 已写入过内容时，slot 变更不重写面板，与 syncText 冻结 gate 一致；打开/首次写入正常同步）
-    this.panel
-      ?.querySelector<HTMLSlotElement>('slot[name="title"]')
-      ?.addEventListener('slotchange', () => {
+    this.panel?.querySelectorAll('slot').forEach((s) =>
+      s.addEventListener('slotchange', () => {
         if (!this.hasAttr('open') && !this.hasAttr('fresh') && this.contentWritten) return
         this.update()
-      })
+      }),
+    )
     // focus 触发：聚焦开、失焦（焦点移出宿主/面板）关
     this.addEventListener('focusin', this.onFocusIn)
     this.addEventListener('focusout', this.onFocusOut)
-    // trigger-keys：指定按键在触发元素聚焦时切换开合
+    // trigger-keys：指定按键在触发元素聚焦时切换开合（P2 默认 Enter/Space，可覆盖）
     this.anchor?.addEventListener('keydown', (e) => {
       const ke = e as KeyboardEvent
-      const keys = this.getAttr('trigger-keys', '').split(/\s+/).filter(Boolean)
+      if (this.hasAttr('render-panel')) return
+      const keys = this.getAttr('trigger-keys', 'Enter Space')
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((k) => (k === 'Space' ? ' ' : k)) // 空格键的 key 值是字面空格
       if (!keys.includes(ke.key)) return
       if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
+      if (ke.repeat) return
+      // P2 幂等守卫：preventDefault 阻止原生 button 的 Enter/Space 合成 click（单路径）；
+      // 时间窗再吞没残余合成 click（个别浏览器 keyup 期派发 click 的边缘行为），open 态不重复触发
       e.preventDefault()
+      this.lastKeydownToggle = performance.now()
       this.toggle()
     })
     // 外部点击关闭（面板移入 body 后 composedPath 仍含面板自身，见 handleOutside）
     this.onCleanup(() => unregisterLayer(this))
     this.onCleanup(() => document.removeEventListener('click', this.handleOutside, true))
-    // 关闭按钮
+    // 关闭按钮（P5：统一走可取消关闭入口）
     this.closeBtn?.addEventListener('click', () => {
-      this.removeAttribute('open')
-      this.restoreFocus()
+      if (this.closeWith('close-btn')) this.restoreFocus()
     })
     // 声明式关层：内容内 data-popover="close" 元素点击即关。
     // 双绑宿主 + 面板：宿主监听覆盖常规场景（happy-dom 亦不实现 slotted 事件穿 shadow），
@@ -605,23 +804,47 @@ export class OASPopover extends OASElement {
             n.getAttribute('data-popover') === 'close',
         )
       if (!closer) return
-      this.removeAttribute('open')
-      this.restoreFocus()
+      if (this.closeWith('declarative')) this.restoreFocus()
     }
     this.addEventListener('click', onDeclarativeClose)
     this.panel?.addEventListener('click', onDeclarativeClose)
-    // modal backdrop 点击关闭（点击遮罩即点击外部）
+    // P21 dismiss-on-select：面板内容点击（命名 slot 内容 / 面板内部）视为完成选择即关闭
+    // （可被 before-close 拦截）。触发元素（默认 slot）不触发——点开即关是反直觉的荒谬行为
+    const onDismissSelect = (e: MouseEvent): void => {
+      if (!this.hasAttr('open') || !this.hasAttr('dismiss-on-select')) return
+      const path = e.composedPath()
+      const inPanel = path.includes(this.panel as unknown as EventTarget)
+      const inNamedSlot = path.some(
+        (n) =>
+          n instanceof HTMLElement &&
+          (SLOT_NAMES as readonly string[]).includes(n.getAttribute('slot') ?? ''),
+      )
+      if (!inPanel && !inNamedSlot) return
+      this.closeWith('dismiss')
+    }
+    this.addEventListener('click', onDismissSelect)
+    // modal backdrop 点击关闭（点击遮罩即点击外部；P5 可取消）
     this.backdrop?.addEventListener('click', () => {
       if (!this.hasAttr('modal')) return
-      this.removeAttribute('open')
-      this.restoreFocus()
+      this.closeWith('backdrop')
     })
-    // 计时器统一清理（hover 防抖 + 通用延迟 + 退场隐藏 + auto-close），断开连接无孤儿
+    // P23 断点响应：断点简写属性（placement/size）依赖 matchMedia 变化触发重算
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const mqls = Object.values(BREAKPOINT_PX).map((px) =>
+        window.matchMedia(`(min-width: ${px}px)`),
+      )
+      for (const m of mqls) m.addEventListener('change', this.onBreakpointChange)
+      this.onCleanup(() => {
+        for (const m of mqls) m.removeEventListener('change', this.onBreakpointChange)
+      })
+    }
+    // 计时器统一清理（hover 防抖 + 通用延迟 + 退场隐藏 + auto-close + 触屏长按），断开连接无孤儿
     this.onCleanup(() => {
       if (this.openTimer) clearTimeout(this.openTimer)
       if (this.closeTimer) clearTimeout(this.closeTimer)
       if (this.closeAnimTimer) clearTimeout(this.closeAnimTimer)
       if (this.autoCloseTimer) clearTimeout(this.autoCloseTimer)
+      if (this.longPressTimer) clearTimeout(this.longPressTimer)
     })
     // modal 滚动锁与焦点陷阱随打开挂接，断开连接兜底解除（open 期间直接拔 DOM 不留孤儿）
     this.onCleanup(() => {
@@ -665,17 +888,19 @@ export class OASPopover extends OASElement {
 
   // —— 触发方式（trigger）——
 
-  /** trigger 触发方式列表：'click'/'hover'/'focus'/'contextmenu'/'manual' 空格分隔多选，默认 click */
+  /** trigger 触发方式列表：'click'/'hover'/'focus'/'contextmenu'/'mousedown'/'manual' 空格分隔多选，默认 click；
+   *  P25 render-panel：纯面板渲染无触发语义，一律按 manual 处理 */
   private triggerList(): string[] {
+    if (this.hasAttr('render-panel')) return ['manual']
     return this.getAttr('trigger', 'click').split(/\s+/).filter(Boolean)
   }
 
-  private hasTrigger(t: 'click' | 'hover' | 'focus' | 'contextmenu'): boolean {
+  private hasTrigger(t: 'click' | 'hover' | 'focus' | 'contextmenu' | 'mousedown'): boolean {
     return this.triggerList().includes(t)
   }
 
   private toggle(): void {
-    if (this.hasAttr('open')) this.requestClose()
+    if (this.hasAttr('open')) this.requestClose(false, 'trigger')
     else this.requestOpen()
   }
 
@@ -685,9 +910,30 @@ export class OASPopover extends OASElement {
     else this.removeAttribute('open')
   }
 
-  /** 通用开请求：open-delay 延迟（hover 路径回落 hover-delay，见 openDelay） */
+  /**
+   * P5 统一关闭入口（可取消）：派发 cancelable 的 oas-before-close（detail.source 标注来源），
+   * preventDefault 即阻止关闭。各关闭入口（trigger / outside / escape / close-btn /
+   * declarative / backdrop / auto / dismiss / scroll）全部汇聚到这里。
+   * 公开：模块级 Esc 处理器（openLayers 栈）调用。
+   */
+  closeWith(source: string): boolean {
+    if (!this.hasAttr('open')) return false
+    if (!this.emit('before-close', { source }, { cancelable: true })) return false
+    this.removeAttribute('open')
+    return true
+  }
+
+  /** 可取消检查（不实际关闭）：requestClose 延迟路径在计时前拦截 */
+  private canClose(source: string): boolean {
+    if (!this.hasAttr('open')) return false
+    return this.emit('before-close', { source }, { cancelable: true })
+  }
+
+  /** 通用开请求：open-delay 延迟（hover 路径回落 hover-delay，见 openDelay）；
+   *  P15 hide-empty：无内容面板不打开（受控 setAttribute 不拦——面板视觉 gate 见 update） */
   private requestOpen(hover = false): void {
     if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
+    if (this.hasAttr('hide-empty') && this.isEmptyPopup()) return
     this.clearCloseTimer()
     const delay = this.openDelay(hover)
     if (delay > 0) {
@@ -698,14 +944,17 @@ export class OASPopover extends OASElement {
     }
   }
 
-  /** 通用关请求：close-delay 延迟（hover 路径回落 hover-hide-delay） */
-  private requestClose(hover = false): void {
+  /** 通用关请求：close-delay 延迟（hover 路径回落 hover-hide-delay）；P5 计时前拦截 */
+  private requestClose(hover = false, source = 'trigger'): void {
     if (this.hasAttr('virtual')) return
+    if (!this.canClose(source)) return
     this.clearOpenTimer()
     const delay = this.closeDelay(hover)
     if (delay > 0) {
       this.clearCloseTimer()
-      this.closeTimer = setTimeout(() => this.setOpen(false), delay)
+      this.closeTimer = setTimeout(() => {
+        if (this.hasAttr('open')) this.setOpen(false)
+      }, delay)
     } else {
       this.setOpen(false)
     }
@@ -792,20 +1041,95 @@ export class OASPopover extends OASElement {
 
   private handleOutside = (e: MouseEvent): void => {
     if (!this.hasAttr('open')) return
+    // P4 close-on-outside 开关（默认 true 保持现行为）
+    if (this.getAttr('close-on-outside', 'true') === 'false') return
     const path = e.composedPath()
     // 面板（含 portal 到 body 后）与宿主都在路径内视为内部点击
     if (path.includes(this) || path.includes(this.panel as unknown as EventTarget)) return
     if (path.some((n) => n instanceof Node && this.shadow.contains(n))) return
-    this.removeAttribute('open')
+    this.closeWith('outside')
   }
 
   /**
    * Esc 关闭后焦点还原到触发元素（公开：模块级 Esc 处理器与宿主均可调用）。
-   * virtual 模式无真实锚点，跳过（宿主自行管理焦点）。
+   * P13 final-focus：归还目标可配——finalFocusEl property > final-focus 选择器 > 触发元素。
+   * virtual 模式无真实锚点，跳过（宿主自行管理焦点；配置了 final-focus/finalFocusEl 仍生效）。
    */
   restoreFocus(): void {
+    const sel = this.getAttr('final-focus', '').trim()
+    const target = this.finalFocusEl ?? (sel ? document.querySelector<HTMLElement>(sel) : null)
+    if (target) {
+      target.focus()
+      return
+    }
     if (this.hasAttr('virtual')) return
     ;(this.anchor as HTMLElement | null)?.focus()
+  }
+
+  /** P1 触发元素 ARIA 关联三时机（绑定/开/关）：haspopup + expanded（随面板实际可见态）+ controls（面板 id）。
+   *  virtual（宿主自管触发器）与 render-panel（无触发语义）跳过；
+   *  SSR 渲染端跳过（快照为关闭态骨架，浏览器水合后 bind/update 补齐——同测量组件未校正态惯例） */
+  private syncAnchorAria(showPanel: boolean): void {
+    if (
+      typeof window !== 'undefined' &&
+      (window as unknown as Record<string, unknown>).__OAS_SSR__ === true
+    )
+      return
+    const anchor = this.anchor
+    if (!anchor || !(anchor instanceof HTMLElement)) return
+    if (this.hasAttr('virtual') || this.hasAttr('render-panel') || anchor === this) return
+    anchor.setAttribute('aria-haspopup', 'dialog')
+    anchor.setAttribute('aria-expanded', String(showPanel))
+    if (this.panel?.id) anchor.setAttribute('aria-controls', this.panel.id)
+  }
+
+  // —— P20 触屏长按（trigger 含 contextmenu 时；移动端无右键的替代） ——
+
+  private onTouchStart(e: Event): void {
+    if (!this.hasTrigger('contextmenu')) return
+    if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
+    const touch = (e as TouchEvent).touches ? Array.from((e as TouchEvent).touches)[0] : undefined
+    if (!touch) return
+    this.longPressX = touch.clientX
+    this.longPressY = touch.clientY
+    this.clearLongPress()
+    this.longPressTimer = setTimeout(() => {
+      this.longPressTimer = null
+      this.longPressArmed = true
+      // 长按生效：以触点为光标点打开（同右键光标定位）
+      this.cursorRect = {
+        left: this.longPressX,
+        top: this.longPressY,
+        right: this.longPressX,
+        bottom: this.longPressY,
+        width: 0,
+        height: 0,
+      } as DOMRect
+      this.requestOpen()
+    }, LONG_PRESS_MS)
+  }
+
+  private onTouchMove(e: Event): void {
+    // 长按已生效：阻止默认（防止手指移动带动页面滚动，fixed 面板与滚动脱节）
+    if (this.longPressArmed) {
+      e.preventDefault()
+      return
+    }
+    if (!this.longPressTimer) return
+    const touch = (e as TouchEvent).touches ? Array.from((e as TouchEvent).touches)[0] : undefined
+    if (!touch) return
+    // 滑动超阈值视为滚动手势，取消长按
+    const dx = touch.clientX - this.longPressX
+    const dy = touch.clientY - this.longPressY
+    if (Math.hypot(dx, dy) > LONG_PRESS_SLIP) this.clearLongPress()
+  }
+
+  private clearLongPress(): void {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer)
+      this.longPressTimer = null
+    }
+    this.longPressArmed = false
   }
 
   // —— 定位（12 向 / 双轴偏移 / 碰撞细调 / 宽度）——
@@ -825,9 +1149,10 @@ export class OASPopover extends OASElement {
     return null
   }
 
-  /** 计算当前锚点矩形：虚拟坐标 > 虚拟锚点元素 > 默认宿主锚点 */
+  /** 计算当前锚点矩形：虚拟坐标 > 虚拟锚点元素 > 默认宿主锚点。
+   *  P25 render-panel：无触发语义，定位回落 virtual 坐标/锚点（无则不定位，宿主用 append-to 自行摆放） */
   private anchorRect(): DOMRect | null {
-    if (this.hasAttr('virtual')) return this.virtualRect()
+    if (this.hasAttr('virtual') || this.hasAttr('render-panel')) return this.virtualRect()
     return this.anchor?.getBoundingClientRect() ?? null
   }
 
@@ -893,28 +1218,37 @@ export class OASPopover extends OASElement {
    * 交叉轴 skidding + collisionPadding 视口夹取），双轴偏移 offset 拆为 gap 与 skidding 传入。
    * fallback-placements 非空时（自定义回退序列）：请求 + 回退逐项 fit，首个 fit 者胜出，
    * 全不 fit 取序列末位（引擎夹取兜底）；未设置回退序列走引擎默认主轴翻转。
-   * hide-when-detached：锚点完全脱离视口时面板隐藏。
+   * hide-when-detached：锚点完全脱离视口时面板隐藏（P18 sticky=always 优先——贴边不隐藏）。
+   * anchorOverride：P20 光标触点矩形（contextmenu/长按打开瞬间一次性消费）。
    */
-  private position(): void {
+  private position(anchorOverride?: DOMRect): void {
     if (!this.panel) return
-    const anchorRect = this.anchorRect()
+    let anchorRect = anchorOverride ?? this.anchorRect()
     if (!anchorRect) return
     const viewport = { width: window.innerWidth, height: window.innerHeight }
-    // hide-when-detached：锚点完全脱离视口 → 面板隐藏（打开语义保留，避免孤悬屏外）
-    if (this.hasAttr('hide-when-detached')) {
-      this.panel.hidden = this.detached(anchorRect, viewport)
-      if (this.panel.hidden) return
+    const sticky = this.getAttr('sticky', 'partial')
+    const detachedNow = this.detached(anchorRect, viewport)
+    // hide-when-detached：锚点完全脱离视口 → 面板隐藏（打开语义保留，避免孤悬屏外）；
+    // sticky=always 优先（锚点滚出后贴视口边缘不消失）
+    if (this.hasAttr('hide-when-detached') && sticky !== 'always') {
+      this.panel.hidden = detachedNow
+      if (detachedNow) return
     }
+    // P18 sticky=always 且锚点脱离：锚点矩形夹到视口内（面板贴边保位），
+    // 跳过主动翻转（按声明 placement 保位，避免滚动时对向翻转跳动；引擎夹取仍生效）
+    const stickToEdge = sticky === 'always' && detachedNow
+    if (stickToEdge) anchorRect = this.clampRectToViewport(anchorRect, viewport)
     const panelRect = this.panel.getBoundingClientRect()
     const autoAdjust = this.getAttr('auto-adjust-overflow', 'true') !== 'false'
     const padding = this.collisionPadding()
     const { distance, skid } = this.parseOffset()
-    const requested = this.getAttr('placement', 'top')
+    // P23 断点简写解析（"bottom md:right" 按当前视口宽度取生效值）
+    const requested = this.resolveResponsive(this.getAttr('placement', 'top'))
     const fallbacks = this.fallbackList()
 
     let actual = requested
     if (fallbacks.length > 0) {
-      if (autoAdjust) {
+      if (autoAdjust && !stickToEdge) {
         const candidates = [requested, ...fallbacks]
         actual =
           candidates.find((p) =>
@@ -942,6 +1276,71 @@ export class OASPopover extends OASElement {
     this.panel.setAttribute('data-placement', r.placement)
     this.setAnimOrigin(r.placement)
     this.positionArrow(anchorRect, r.placement)
+    this.syncMaxHeight(r.placement, anchorRect)
+  }
+
+  /** 锚点矩形夹取到视口内（sticky=always 贴边保位的锚点侧等价矩形） */
+  private clampRectToViewport(
+    r: DOMRect,
+    viewport: { width: number; height: number },
+  ): DOMRect {
+    const pad = this.collisionPadding()
+    const w = Math.min(r.width, viewport.width - pad * 2)
+    const h = Math.min(r.height, viewport.height - pad * 2)
+    const left = Math.max(pad, Math.min(r.left, viewport.width - pad - w))
+    const top = Math.max(pad, Math.min(r.top, viewport.height - pad - h))
+    return { left, top, right: left + w, bottom: top + h, width: w, height: h } as DOMRect
+  }
+
+  /**
+   * P9 available-height / P10 scrollable：面板最大高度约束。
+   * available-height → 主轴方向视口剩余空间；scrollable 单独开启时兜底同值（滚动有界）；
+   * 两者都未开启不约束（现行为）。水平放置（left/right）按视口高约束。
+   */
+  private syncMaxHeight(placement: string, anchorRect: DOMRect): void {
+    if (!this.panel) return
+    const constrain = this.hasAttr('available-height') || this.hasAttr('scrollable')
+    if (!constrain) {
+      this.panel.style.maxHeight = ''
+      return
+    }
+    const pad = this.collisionPadding()
+    const { distance } = this.parseOffset()
+    const vh = window.innerHeight
+    let avail: number
+    if (placement.startsWith('top')) avail = anchorRect.top - distance - pad
+    else if (placement.startsWith('bottom')) avail = vh - anchorRect.bottom - distance - pad
+    else avail = vh - pad * 2
+    this.panel.style.maxHeight = `${Math.max(avail, 0)}px`
+  }
+
+  // —— P23 断点响应（协议同 space/grid：基础值 + 空格分隔 `断点:值`，mobile-first min-width） ——
+
+  /** 断点简写解析：按当前视口宽度取生效值（多断点最宽命中胜出；非法断点名忽略回落基础值） */
+  private resolveResponsive(raw: string): string {
+    if (!raw.includes(' ')) return raw
+    const tokens = raw.trim().split(/\s+/)
+    let base = ''
+    if (tokens[0] && !tokens[0].includes(':')) base = tokens.shift()!
+    const w = window.innerWidth
+    let value = base
+    let best = -1
+    for (const t of tokens) {
+      const idx = t.indexOf(':')
+      const name = t.slice(0, idx)
+      const bp = BREAKPOINT_PX[name]
+      if (bp == null) continue
+      if (w >= bp && bp >= best) {
+        best = bp
+        value = t.slice(idx + 1)
+      }
+    }
+    return value
+  }
+
+  /** 断点跨越（matchMedia change）→ 重算生效值（placement/size 断点简写） */
+  private onBreakpointChange = (): void => {
+    this.update()
   }
 
   /**
@@ -1136,9 +1535,9 @@ export class OASPopover extends OASElement {
     this.bridgeSlotContent(host)
   }
 
-  /** slot 桥接：宿主 light DOM 的 [slot=content] / [slot=title] 节点移入 portal host light DOM（幂等，已在内为 no-op） */
+  /** slot 桥接：宿主 light DOM 的全部命名 slot 节点移入 portal host light DOM（幂等，已在内为 no-op） */
   private bridgeSlotContent(host: HTMLElement): void {
-    for (const n of this.querySelectorAll<HTMLElement>('[slot="content"], [slot="title"]')) {
+    for (const n of this.querySelectorAll<HTMLElement>(SLOT_SELECTOR)) {
       host.appendChild(n)
     }
   }
@@ -1151,7 +1550,7 @@ export class OASPopover extends OASElement {
     if (this.panel && host.shadowRoot?.contains(this.panel)) {
       this.shadow.appendChild(this.panel)
     }
-    for (const n of host.querySelectorAll<HTMLElement>('[slot="content"], [slot="title"]')) {
+    for (const n of host.querySelectorAll<HTMLElement>(SLOT_SELECTOR)) {
       this.appendChild(n)
     }
     host.remove()
@@ -1161,19 +1560,22 @@ export class OASPopover extends OASElement {
 
   /**
    * modal 化同步：backdrop 显隐 + aria-modal + 滚动锁 + 焦点陷阱。
+   * P3 trap-focus：焦点陷阱与遮罩解耦——modal 或 trap-focus 任一开启都挂陷阱
+   * （表单浮层 Tab 不逃逸，无需遮罩）；遮罩/aria-modal/滚动锁仍为 modal 专属。
    * 滚动锁带幂等守卫（open 期间多次 update 不重复加锁，关闭/断开恰好解一次）；
-   * 陷阱仅最上层 modal 接管（openLayers 栈序，嵌套时内层优先）。
+   * 陷阱仅最上层接管（openLayers 栈序，嵌套时内层优先）。
    */
-  private syncModal(open: boolean): void {
-    const isModal = this.hasAttr('modal') && open
+  private syncModal(show: boolean): void {
+    const isModal = this.hasAttr('modal') && show
+    const trap = show && (isModal || this.hasAttr('trap-focus'))
     this.panel?.classList.toggle('oas-modal', isModal)
     if (isModal) this.panel?.setAttribute('aria-modal', 'true')
     else this.panel?.removeAttribute('aria-modal')
     this.backdrop?.classList.toggle('oas-show', isModal)
-    if (isModal && !this.trapBound) {
+    if (trap && !this.trapBound) {
       this.trapBound = true
       document.addEventListener('keydown', this.onTrapKey)
-    } else if (!isModal && this.trapBound) {
+    } else if (!trap && this.trapBound) {
       this.trapBound = false
       document.removeEventListener('keydown', this.onTrapKey)
     }
@@ -1186,10 +1588,13 @@ export class OASPopover extends OASElement {
     }
   }
 
-  /** 当前是否为最上层打开的 modal（嵌套时仅最内层 modal 接管焦点陷阱） */
+  /** 当前是否为最上层需要接管焦点陷阱的层（modal 或 trap-focus；嵌套时仅最内层接管） */
   private isTopModal(): boolean {
-    const modals = openLayers.filter((l) => l.hasAttr('modal') && l.hasAttr('open'))
-    return modals[modals.length - 1] === this
+    const trappable = openLayers.filter(
+      (l) =>
+        l.hasAttribute('open') && (l.hasAttribute('modal') || l.hasAttribute('trap-focus')),
+    )
+    return trappable[trappable.length - 1] === this
   }
 
   /** 面板可聚焦区域：shadow 内可聚焦元素 + slot 内容（host light DOM）中可聚焦元素 */
@@ -1201,7 +1606,7 @@ export class OASPopover extends OASElement {
         if (!el.hidden) out.push(el)
       }
     }
-    for (const n of this.querySelectorAll<HTMLElement>('[slot="content"]')) {
+    for (const n of this.querySelectorAll<HTMLElement>(SLOT_SELECTOR)) {
       // slot 内容自身即可聚焦元素（如 <button slot="content">）也要计入
       if (!n.hidden && n.matches(sel)) out.push(n)
       for (const el of n.querySelectorAll<HTMLElement>(sel)) {
@@ -1216,7 +1621,11 @@ export class OASPopover extends OASElement {
     while (node) {
       if (node === this.panel) return true
       if (node instanceof ShadowRoot) node = node.host
-      else if (node instanceof HTMLElement && node.getAttribute('slot') === 'content') return true
+      else if (
+        node instanceof HTMLElement &&
+        (SLOT_NAMES as readonly string[]).includes(node.getAttribute('slot') ?? '')
+      )
+        return true
       else node = node.parentNode
     }
     return false
@@ -1267,6 +1676,8 @@ export class OASPopover extends OASElement {
    */
   private syncText(): void {
     if (!this.panel) return
+    // P22 destroy-on-hide：销毁后关闭态不重写（打开瞬间 update 开头恢复挂载并复位标志）
+    if (this.destroyed && !this.hasAttr('open')) return
     const open = this.hasAttr('open')
     if (!open && !this.hasAttr('fresh') && this.contentWritten) return
     this.contentWritten = true
@@ -1281,22 +1692,22 @@ export class OASPopover extends OASElement {
     // 从 this.panel 查（而非 this.shadow）：portal（append-to）期间面板在 portal host 的
     // shadow 内，原 shadow 查询会落空
     // title 双通道：属性文本写入兜底 span；slot="title" 有真实内容时以插槽为准（兜底隐藏）。
-    // aria-labelledby 关联标题区容器（含插槽内容，富内容同样构成面板可访问名）
+    // P11 header 接管：slot="header" 有内容时整个标题区让位（兜底一并隐藏）
     const titleEl = this.panel.querySelector<HTMLElement>('[part="title"]')
     const titleSlot = this.panel.querySelector<HTMLSlotElement>('slot[name="title"]')
     const titleFallback = this.panel.querySelector<HTMLElement>('.title-text')
+    const headerSlot = this.panel.querySelector<HTMLSlotElement>('slot[name="header"]')
+    const hasHeader = headerSlot ? this.slotHasContent(headerSlot) : false
     const title = this.titleCache ?? ''
     let hasSlotTitle = false
     if (titleEl && titleSlot && titleFallback) {
       hasSlotTitle = this.hasTitleSlotContent(titleSlot)
       titleFallback.textContent = title
-      titleFallback.hidden = hasSlotTitle
+      titleFallback.hidden = hasSlotTitle || hasHeader
     } else if (titleEl) {
       // 降级：无 slot 结构（旧版 SSR 快照）直接写标题区文本
       titleEl.textContent = title
     }
-    if (title !== '' || hasSlotTitle) this.panel.setAttribute('aria-labelledby', 'pop-title')
-    else this.panel.removeAttribute('aria-labelledby')
     this.panel.querySelector<HTMLElement>('[part="content"]')!.textContent = this.getAttr(
       'content',
       '',
@@ -1307,18 +1718,60 @@ export class OASPopover extends OASElement {
    *  closable 时面板挂 oas-closable 类——close-btn 默认 display:none，
    *  可见性由 `.panel.oas-closable .close-btn` 规则驱动（hidden 只管冗余语义）。
    *  标题判空走双通道：titleCache（属性通道）或 title 插槽有真实内容都算有标题；
+   *  P11 header 插槽有内容时接管头部（标题区让位、head 不折叠、aria-labelledby 指向 head 容器）；
    *  syncText 先于本方法执行（吸收已更新缓存；冻结期间缓存与 DOM 同步冻结，
    *  判空与所见一致） */
   private syncHead(): void {
     const head = this.panel?.querySelector<HTMLElement>('.head')
     if (!head) return
     const titleSlot = this.panel?.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const headerSlot = this.panel?.querySelector<HTMLSlotElement>('slot[name="header"]')
     const hasSlotTitle = titleSlot ? this.hasTitleSlotContent(titleSlot) : false
+    const hasHeader = headerSlot ? this.slotHasContent(headerSlot) : false
     const hasTitle = (this.titleCache ?? '') !== '' || hasSlotTitle
-    head.classList.toggle('oas-empty', !hasTitle && !this.hasAttr('closable'))
+    const titleEl = this.panel?.querySelector<HTMLElement>('[part="title"]')
+    if (titleEl) titleEl.hidden = hasHeader && !hasSlotTitle ? true : false
+    head.classList.toggle('oas-empty', !hasTitle && !hasHeader && !this.hasAttr('closable'))
+    // aria-labelledby：header 接管时指向 head 容器（header 内容构成可访问名），否则指向标题区
+    if (hasHeader) this.panel?.setAttribute('aria-labelledby', 'pop-head')
+    else if (hasTitle) this.panel?.setAttribute('aria-labelledby', 'pop-title')
+    else this.panel?.removeAttribute('aria-labelledby')
     this.panel?.classList.toggle('oas-closable', this.hasAttr('closable'))
     this.closeBtn?.toggleAttribute('hidden', !this.hasAttr('closable'))
     this.closeBtn?.setAttribute('aria-label', this.t('popover.close'))
+  }
+
+  /** P11 footer：底部操作区显隐（slot="footer" 有真实内容才显示） */
+  private syncFoot(): void {
+    const foot = this.panel?.querySelector<HTMLElement>('[part="foot"]')
+    if (!foot) return
+    const slot = foot.querySelector<HTMLSlotElement>('slot[name="footer"]')
+    const has = slot ? this.slotHasContent(slot) : false
+    foot.classList.toggle('oas-empty', !has)
+  }
+
+  /** P7 description：补充说明区显隐 + 面板 aria-describedby 关联（有内容才关联） */
+  private syncDescription(): void {
+    const box = this.panel?.querySelector<HTMLElement>('[part="description"]')
+    if (!box || !this.panel) return
+    const slot = box.querySelector<HTMLSlotElement>('slot[name="description"]')
+    const has = slot ? this.slotHasContent(slot) : false
+    box.classList.toggle('oas-empty', !has)
+    if (has) this.panel.setAttribute('aria-describedby', box.id)
+    else this.panel.removeAttribute('aria-describedby')
+  }
+
+  /** P6 size 尺寸档（small/medium/large）：面板写 data-size（CSS 档位变量覆写）；非法值回落 medium。
+   *  P23 断点简写（"small md:large"）按当前视口宽度取生效值 */
+  private syncSize(): void {
+    const raw = this.resolveResponsive(this.getAttr('size', 'medium')).trim()
+    const s = raw === 'small' || raw === 'large' ? raw : 'medium'
+    this.panel?.setAttribute('data-size', s)
+  }
+
+  /** P10 scrollable：面板内滚动开关（data-scrollable → CSS flex 列布局 + body 区 overflow） */
+  private syncScrollable(): void {
+    this.panel?.toggleAttribute('data-scrollable', this.hasAttr('scrollable'))
   }
 
   /** 颜色变体：合法语义色写 data-color（CSS 走 token 派生变量），未知值保持中性 */
@@ -1334,7 +1787,7 @@ export class OASPopover extends OASElement {
     this.panel?.toggleAttribute('data-arrow-merge', this.hasAttr('arrow-merge'))
   }
 
-  /** auto-close：打开后计时自动关闭（open 期间重设；关闭/重开时清理） */
+  /** auto-close：打开后计时自动关闭（open 期间重设；关闭/重开时清理）；P5 可被 before-close 拦截 */
   private syncAutoClose(open: boolean): void {
     if (this.autoCloseTimer) {
       clearTimeout(this.autoCloseTimer)
@@ -1343,7 +1796,7 @@ export class OASPopover extends OASElement {
     if (!open) return
     const ms = Number.parseInt(this.getAttr('auto-close', ''), 10)
     if (Number.isFinite(ms) && ms > 0) {
-      this.autoCloseTimer = setTimeout(() => this.removeAttribute('open'), ms)
+      this.autoCloseTimer = setTimeout(() => this.closeWith('auto'), ms)
     }
   }
 
@@ -1352,10 +1805,13 @@ export class OASPopover extends OASElement {
   /**
    * 滚动/窗口尺寸变化时重定位：打开期间监听 scroll（capture 捕获嵌套容器滚动）与 resize，
    * rAF 节流。虚拟坐标点（视口坐标不随滚动变化）不跟随；真实锚点 / virtual-anchor 元素跟随。
+   * P14 close-on-scroll：滚动即关闭（可取消）优先于重定位。
+   * P18 sticky=off：不挂监听（syncScrollFollow gate）。
    */
   private syncScrollFollow(open: boolean): void {
     if (typeof window === 'undefined') return
-    const track = open && !this.hasVirtualPoint()
+    const track =
+      open && !this.hasVirtualPoint() && this.getAttr('sticky', 'partial') !== 'off'
     if (track && !this.scrollFollow) {
       this.scrollFollow = true
       window.addEventListener('scroll', this.onScroll, { capture: true, passive: true })
@@ -1377,6 +1833,15 @@ export class OASPopover extends OASElement {
     cancelAnimationFrame(this.scrollRaf)
     this.scrollRaf = requestAnimationFrame(() => {
       if (!this.panel || !this.hasAttr('open')) return
+      // 滞留 scroll 事件防御：滚动发生在打开之前（scroll 事件 task 异步派发、晚于打开执行，
+      // 如 scrollIntoViewIfNeeded 后立即触发打开），scrollY 与打开瞬间相同 → 无有效滚动，
+      // 不重定位（会把 contextmenu/长按的光标定位覆盖回锚点）也不触发 close-on-scroll
+      if (Number.isFinite(this.openScrollY) && window.scrollY === this.openScrollY) return
+      // P14 close-on-scroll：滚动即关闭（可取消），优先于跟随重定位
+      if (this.hasAttr('close-on-scroll')) {
+        this.closeWith('scroll')
+        return
+      }
       this.position()
     })
   }
@@ -1412,6 +1877,14 @@ export class OASPopover extends OASElement {
   protected override update(): void {
     if (!this.panel) return
     const open = this.hasAttr('open')
+    // P22 destroy-on-hide：打开瞬间恢复内容挂载（unstash 后 syncText 按首次写入路径重写）
+    if (open && this.destroyed) {
+      this.destroyed = false
+      this.unstashSlots()
+      this.contentWritten = false
+    }
+    // P15 hide-empty：无内容面板不显示（触发路径 requestOpen 已拦；受控 setAttribute 在此视觉 gate）
+    const showPanel = open && !(this.hasAttr('hide-empty') && this.isEmptyPopup())
     // 整体禁用：aria-disabled 同步（仅 disabled 时设置，避免 SSR 快照宿主带 aria-disabled="false"；
     // 视觉降饱和走 CSS :host([disabled])）
     if (this.hasAttr('disabled')) this.setAttribute('aria-disabled', 'true')
@@ -1419,8 +1892,14 @@ export class OASPopover extends OASElement {
     // 内容与头部（fresh 冻结语义见 syncText）
     this.syncText()
     this.syncHead()
+    this.syncFoot()
+    this.syncDescription()
+    this.syncSize()
+    this.syncScrollable()
     this.syncColor()
     this.syncArrowMerge()
+    // P1 触发元素 ARIA 关联（expanded 随面板实际可见态）
+    this.syncAnchorAria(showPanel)
     // 箭头显隐：arrow 布尔属性默认 true（显示），arrow="false" 隐藏；元素与 ::part(arrow) 保留
     const arrowEl = this.panel.querySelector<HTMLElement>('[data-popper-arrow]')
     if (arrowEl) arrowEl.hidden = !this.showArrow()
@@ -1432,26 +1911,44 @@ export class OASPopover extends OASElement {
     if (open) {
       if (!this.wasOpen) {
         registerLayer(this)
-        // 打开瞬间：焦点策略（modal 必聚焦 > initial-focus > focus-on-open）
-        this.applyInitialFocus()
+        // 打开瞬间记录页面 scrollY（滞留 scroll 事件防御，见 onScroll）
+        this.openScrollY = typeof window !== 'undefined' ? window.scrollY : Number.NaN
       }
       // virtual 模式下生命周期由宿主控制，不注册外部点击关闭
       if (!this.hasAttr('virtual')) document.addEventListener('click', this.handleOutside, true)
       else document.removeEventListener('click', this.handleOutside, true)
       this.panel.classList.remove('oas-closing')
-      this.panel.setAttribute('aria-hidden', 'false')
+      this.panel.setAttribute('aria-hidden', String(!showPanel))
       this.syncWidth()
-      this.syncPortal(true)
-      this.syncModal(true)
-      this.position()
-      this.syncScrollFollow(true)
-      this.syncAutoClose(true)
+      this.syncPortal(showPanel)
+      this.syncModal(showPanel)
+      // 打开瞬间的焦点策略（modal 必聚焦 > initial-focus > focus-on-open）——在面板
+      // aria-hidden=false（display 解除）之后执行：真实浏览器对 display:none 元素的
+      // focus() 静默失败（面板 fallback 聚焦路径曾收不进焦点，e2e 实测）
+      if (!this.wasOpen) {
+        this.applyInitialFocus()
+      }
+      // P20 光标触点：contextmenu/触屏长按打开期间一律按光标定位（cursorRect 生命周期 =
+      // 写入 → 打开期间持续生效 → 关闭清除。不能只看「打开瞬间」：title 吸收的
+      // removeAttribute 会触发嵌套 update（完整跑完并置 wasOpen=true），外层余下
+      // 分支会以锚点定位覆盖光标）；滚动/尺寸重定位走 onScroll 的锚点路径（光标无滚动语义）
+      if (this.cursorRect) {
+        this.position(this.cursorRect)
+      } else {
+        this.position()
+      }
+      this.syncScrollFollow(showPanel)
+      this.syncAutoClose(showPanel)
     } else {
       this.clearOpenTimer()
       this.clearCloseTimer()
       this.syncAutoClose(false)
+      // P20 光标触点随关闭清除（下次 contextmenu/长按重新写入）
+      this.cursorRect = null
       if (this.wasOpen) {
         this.playClose()
+        // P22 destroy-on-hide：关闭即销毁内容呈现（DOM 卸载，重开恢复挂载）
+        if (this.hasAttr('destroy-on-hide')) this.destroyContent()
       } else {
         this.panel.setAttribute('aria-hidden', 'true')
       }
