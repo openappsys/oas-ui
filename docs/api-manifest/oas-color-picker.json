@@ -18,15 +18,97 @@
       "name": "disabled",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "placement",
+      "type": "string",
+      "default": "bottom",
+      "observed": true
+    },
+    {
+      "name": "show-alpha",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled-alpha",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "color-format",
+      "type": "string",
+      "default": "hex",
+      "observed": true
+    },
+    {
+      "name": "clearable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "value-on-clear",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "observed": true
+    },
+    {
+      "name": "show-text",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "uppercase",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "preset-columns",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "preset-rows",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
   "events": [
     {
+      "name": "oas-open-change",
+      "detail": "{ open }"
+    },
+    {
       "name": "oas-change",
-      "detail": "{ value: normalized }"
+      "detail": "{ value: out } | { value: fallback }"
+    },
+    {
+      "name": "oas-clear",
+      "detail": "{ value: prev }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "trigger"
+    }
+  ],
   "unresolved": []
 }

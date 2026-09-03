@@ -180,6 +180,14 @@ const INTERACTIONS: Array<[string, string]> = [
 const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   stepper: [['oas-stepper[clickable] [role="tab"]', 'click', '点步骤头 → oas-change']],
   carousel: [['oas-carousel [part="arrow-next"]', 'click', '点下一张箭头 → oas-change']],
+  'color-picker': [
+    ['oas-color-picker[clearable] [part="clear"]', 'domclick', '清空钮（demo 带 value）→ oas-clear'],
+    [
+      '#cp-presets [part="preset"]',
+      'domclick',
+      '点自定义预设首格（该实例无初始 value）→ oas-change',
+    ],
+  ],
   tag: [
     ['oas-tag[clickable]:not([disabled]) [part="tag"]', 'click', '点整签派发 oas-click'],
     ['oas-tag[checkable]:not([disabled]) [part="tag"]', 'click', '点可选中签切换 → oas-change'],
