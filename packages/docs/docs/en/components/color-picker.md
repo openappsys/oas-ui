@@ -1,6 +1,6 @@
 # ColorPicker
 
-Click the trigger swatch to open a color panel with preset colors, HSV and RGB inputs, an alpha channel, tolerant value parsing, clearing and a controlled open state. The panel is positioned with a fixed viewport anchor and auto-flips / clamps at viewport edges.
+Click the trigger swatch to open a color panel with a 2D saturation-brightness field + vertical hue rail, preset colors, RGB and hex input, an alpha channel, a gradient mode (multi-stop editing), tolerant value parsing, clearing and a controlled open state; it can also render inline without a popup. The popup panel is positioned with a fixed viewport anchor and auto-flips / clamps at viewport edges.
 
 ## Basic Usage
 
@@ -8,7 +8,7 @@ Click the trigger swatch to open a color panel with preset colors, HSV and RGB i
   <oas-color-picker id="cp-basic" value="#0b6cff"></oas-color-picker>
 </DemoBlock>
 
-Click the trigger to toggle the panel; drag the hue / saturation / brightness sliders, edit the RGB numbers or pick a preset color for an instant update. With the trigger focused, press `Esc` or click outside to close.
+Click the trigger to toggle the panel; pick saturation and brightness on the 2D color field, pick hue on the vertical hue rail, or edit the RGB numbers / pick a preset color for an instant update. With the trigger focused, press `Esc` or click outside to close.
 
 ## Custom Preset Colors
 
@@ -110,6 +110,40 @@ The `open` attribute is the single source of truth (controlled both ways): exter
   <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin-top: var(--oas-space-2)">Appearance-tab style right-aligned scenario: a narrow right-aligned container with `overflow: hidden`. The panel uses fixed viewport anchoring (12-way `placement`, default `bottom`), so it always stays inside the viewport instead of widening the page or being clipped by ancestors — it clamps or flips when space runs out.</p>
 </DemoBlock>
 
+## 2D Color Field
+
+The three H/S/V tracks were refactored into a more standard two-dimensional picker: an SV field (saturation horizontally, brightness vertically) plus a vertical hue rail. Both support pointer dragging and arrow-key stepping, with `role="slider"` + `aria-valuetext` semantics exposing both dimensions.
+
+<DemoBlock title="2D color field + hue rail">
+  <oas-color-picker id="cp-2d" value="#0b6cff"></oas-color-picker>
+  <span id="cp-2d-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 130px"></span>
+</DemoBlock>
+
+## Gradient Mode
+
+Set `mode="gradient"` to enter gradient editing: every stop on the gradient axis is colored independently — add / remove / drag / nudge stops, and `value` serializes to a `linear-gradient(...)` string.
+
+<DemoBlock title="Gradient (mode=gradient)">
+  <oas-color-picker id="cp-grad" mode="gradient"
+    value="linear-gradient(90deg, #0b6cff 0%, #16a34a 100%)"></oas-color-picker>
+  <span id="cp-grad-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px; word-break: break-all"></span>
+</DemoBlock>
+
+<DemoBlock title="Gradient + alpha (show-alpha)">
+  <oas-color-picker mode="gradient" show-alpha
+    value="linear-gradient(90deg, #0b6cff 0%, #16a34a 100%)"></oas-color-picker>
+</DemoBlock>
+
+## Inline Standalone Panel
+
+`inline` renders the panel in place (no trigger / popup), so hosts composing their own overlay reuse the same color controls directly.
+
+<DemoBlock title="inline (panel only)">
+  <oas-color-picker inline id="cp-inline" value="#9333ea"></oas-color-picker>
+  <oas-color-picker inline mode="gradient" value="linear-gradient(90deg, #d97706 0%, #dc2626 100%)"></oas-color-picker>
+  <span id="cp-inline-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 160px"></span>
+</DemoBlock>
+
 ## Events
 
 <DemoBlock title="Change events">
@@ -136,6 +170,9 @@ onMounted(() => {
   on('cp-edge', 'oas-open-change', (e) =>
     out('cp-edge-output', `Open: panel placement ${e.target.shadowRoot?.querySelector('[part="panel"]')?.getAttribute('data-placement') ?? ''}, stays inside the viewport`),
   )
+  on('cp-2d', 'oas-change', (e) => out('cp-2d-output', `oas-change: ${e.detail.value}`))
+  on('cp-grad', 'oas-change', (e) => out('cp-grad-output', `oas-change: ${e.detail.value}`))
+  on('cp-inline', 'oas-change', (e) => out('cp-inline-output', `oas-change: ${e.detail.value}`))
 })
 </script>
 
@@ -149,6 +186,8 @@ onMounted(() => {
 | `color-format` | — | `string` | `hex` |
 | `disabled` | Disabled | `boolean` | — |
 | `disabled-alpha` | — | `boolean` | — |
+| `inline` | — | `boolean` | — |
+| `mode` | — | `string` | `single` |
 | `open` | — | `boolean` | — |
 | `placement` | — | `string` | `bottom` |
 | `preset` | Preset color array (JSON) | `string` | — |

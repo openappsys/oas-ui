@@ -1,6 +1,6 @@
 # ColorPicker 颜色选择器
 
-触发色块弹出调色面板，支持预设色、HSV 与 RGB 输入、透明度通道、宽容格式解析、清空与受控开关；面板采用 fixed 视口定位，自动避让边缘翻转。
+触发色块弹出调色面板，支持 2D 饱和度-亮度色域 + hue 竖条选色、预设色、RGB 与 hex 输入、透明度通道、渐变模式（多 stop 编辑）、宽容格式解析、清空与受控开关；面板采用 fixed 视口定位，自动避让边缘翻转，也可 `inline` 就地渲染。
 
 ## 基础用法
 
@@ -8,7 +8,7 @@
   <oas-color-picker id="cp-basic" value="#0b6cff"></oas-color-picker>
 </DemoBlock>
 
-点击触发器开关面板；面板内拖动色相/饱和度/亮度滑杆、修改 RGB 数字或点击预设色即时生效。聚焦触发按钮后 `Esc` 或点击外部关闭。
+点击触发器开关面板；在 2D 色域拖动选饱和度与亮度、右侧 hue 竖条选色相，或修改 RGB 数字 / 点击预设色即时生效。聚焦触发按钮后 `Esc` 或点击外部关闭。
 
 ## 自定义预设色
 
@@ -110,6 +110,40 @@
   <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin-top: var(--oas-space-2)">外观 tab 式右对齐场景：窄容器 `overflow: hidden` 且靠右。面板为 fixed 视口定位（12 向 `placement`，默认 `bottom`），打开后面板始终在视口内，不再撑出横向滚动条或被祖先裁切；空间不足自动夹取/换方向。</p>
 </DemoBlock>
 
+## 2D 色域面板
+
+二期把 HSV 三滑轨重构为更标准的二维取色：SV 色域（横饱和度、纵亮度）+ hue 竖条。色域与竖条支持鼠标拖拽和方向键微调，ARIA 语义为 `role="slider"` + `aria-valuetext`（饱和度/亮度双维度）。
+
+<DemoBlock title="2D 色域 + hue 竖条">
+  <oas-color-picker id="cp-2d" value="#0b6cff"></oas-color-picker>
+  <span id="cp-2d-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 130px"></span>
+</DemoBlock>
+
+## 渐变模式
+
+`mode="gradient"` 进入渐变编辑：渐变轴上的每个 stop 独立选色，可添加/删除/拖动/键盘移动位置；value 输出 `linear-gradient(...)`。
+
+<DemoBlock title="渐变（mode=gradient）">
+  <oas-color-picker id="cp-grad" mode="gradient"
+    value="linear-gradient(90deg, #0b6cff 0%, #16a34a 100%)"></oas-color-picker>
+  <span id="cp-grad-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 200px; word-break: break-all"></span>
+</DemoBlock>
+
+<DemoBlock title="渐变 + 透明度（show-alpha）">
+  <oas-color-picker mode="gradient" show-alpha
+    value="linear-gradient(90deg, #0b6cff 0%, #16a34a 100%)"></oas-color-picker>
+</DemoBlock>
+
+## inline 独立面板
+
+`inline` 让面板就地渲染（无 trigger/popup），宿主自组弹层场景下直接复用同一套取色控件。
+
+<DemoBlock title="inline（纯面板）">
+  <oas-color-picker inline id="cp-inline" value="#9333ea"></oas-color-picker>
+  <oas-color-picker inline mode="gradient" value="linear-gradient(90deg, #d97706 0%, #dc2626 100%)"></oas-color-picker>
+  <span id="cp-inline-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 160px"></span>
+</DemoBlock>
+
 ## 事件
 
 <DemoBlock title="变化事件">
@@ -136,6 +170,9 @@ onMounted(() => {
   on('cp-edge', 'oas-open-change', (e) =>
     out('cp-edge-output', `打开：面板定位 ${e.target.shadowRoot?.querySelector('[part="panel"]')?.getAttribute('data-placement') ?? ''}，保持在视口内`),
   )
+  on('cp-2d', 'oas-change', (e) => out('cp-2d-output', `oas-change: ${e.detail.value}`))
+  on('cp-grad', 'oas-change', (e) => out('cp-grad-output', `oas-change: ${e.detail.value}`))
+  on('cp-inline', 'oas-change', (e) => out('cp-inline-output', `oas-change: ${e.detail.value}`))
 })
 </script>
 
@@ -149,6 +186,8 @@ onMounted(() => {
 | `color-format` | — | `string` | `hex` |
 | `disabled` | 禁用 | `boolean` | — |
 | `disabled-alpha` | — | `boolean` | — |
+| `inline` | — | `boolean` | — |
+| `mode` | — | `string` | `single` |
 | `open` | — | `boolean` | — |
 | `placement` | — | `string` | `bottom` |
 | `preset` | 预设色数组（JSON） | `string` | — |
