@@ -158,12 +158,14 @@ describe('OASModal', () => {
     const el = mount({ visible: '' })
     await Promise.resolve()
     const css = el.shadowRoot!.querySelector('style')!.textContent!
-    const base = /\.dialog\s*\{[^}]*\}/.exec(css)?.[0] ?? ''
+    // 断言针对真实声明：先剔除注释（注释里解释性文本可能含 "transform:" 字样，非声明）
+    const clean = css.replace(/\/\*[\s\S]*?\*\//g, '')
+    const base = /\.dialog\s*\{[^}]*\}/.exec(clean)?.[0] ?? ''
     expect(base).toMatch(/left:\s*0/)
     expect(base).toMatch(/right:\s*0/)
     expect(base).toMatch(/margin:\s*0 auto/)
-    expect(base).not.toMatch(/transform\s*:/) // 无 transform 声明（注释不含此格式）
-    const centered = /\.dialog\[data-centered\]\s*\{[^}]*\}/.exec(css)?.[0] ?? ''
+    expect(base).not.toMatch(/transform\s*:/) // 无 transform 声明
+    const centered = /\.dialog\[data-centered\]\s*\{[^}]*\}/.exec(clean)?.[0] ?? ''
     expect(centered).toMatch(/inset:\s*0/)
     expect(centered).not.toMatch(/transform\s*:/)
   })

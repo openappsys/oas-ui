@@ -156,6 +156,47 @@
   </oas-popconfirm>
 </DemoBlock>
 
+<DemoBlock title="虚拟坐标（virtual-x / virtual-y）">
+  <oas-space size="small" align="center">
+    <oas-button size="small" onclick="pcVirtPointToggle(event)">在 (220, 140) 处弹出</oas-button>
+    <oas-tag id="pc-virt-xy-status" type="info">closed</oas-tag>
+  </oas-space>
+  <oas-popconfirm id="pc-virt-xy" virtual virtual-x="220" virtual-y="140" title="由坐标定位的气泡" trigger="manual">
+  </oas-popconfirm>
+</DemoBlock>
+
+## 定位细节（arrow / auto-adjust-overflow / position / width）
+
+`arrow="false"` 隐藏箭头；`auto-adjust-overflow="false"` 关闭空间不足时的自动翻转/避让；旧 `position` 属性（四基向）仍然兼容；`width` 固定面板宽度。
+
+<DemoBlock title="定位细节">
+  <oas-space size="small" wrap>
+    <oas-popconfirm title="删除文件？" description="arrow=false 隐藏箭头。" placement="bottom" arrow="false">
+      <oas-button size="small">无箭头</oas-button>
+    </oas-popconfirm>
+    <oas-popconfirm title="宽度定制" description="width=280：面板固定 280px 宽。" placement="bottom" width="280">
+      <oas-button size="small">width=280</oas-button>
+    </oas-popconfirm>
+    <oas-popconfirm title="保持方向" description="auto-adjust-overflow=false：空间不足不翻转。" placement="bottom" auto-adjust-overflow="false">
+      <oas-button size="small">不自动调整</oas-button>
+    </oas-popconfirm>
+    <oas-popconfirm title="旧 position" description="position=top 与 placement=top 等价。" position="top">
+      <oas-button size="small">position=top</oas-button>
+    </oas-popconfirm>
+  </oas-space>
+</DemoBlock>
+
+## 事件绑定（onoas-*）
+
+气泡事件可在模板上直接经 `onoas-*` 属性绑定（`onoas-ok` / `onoas-cancel`），等价于宿主框架里的 `@oas-ok` 监听。
+
+<DemoBlock title="事件反馈">
+  <oas-popconfirm id="pc-onoas" title="确定删除这条数据吗？" description="删除后将无法恢复。"
+    onoas-ok="message.success('已删除')" onoas-cancel="message.info('已取消')">
+    <oas-button type="danger">删除</oas-button>
+  </oas-popconfirm>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -210,6 +251,18 @@ onMounted(async () => {
     if (virtual?.hasAttribute('open')) virtual.removeAttribute('open')
     else virtual?.setAttribute('open', '')
   }
+
+  // 虚拟坐标：受控开关 + 状态回显
+  const virtXy = document.getElementById('pc-virt-xy')
+  const virtXyStatus = document.getElementById('pc-virt-xy-status')
+  window.pcVirtPointToggle = (e) => {
+    e.stopPropagation()
+    if (virtXy?.hasAttribute('open')) virtXy.removeAttribute('open')
+    else virtXy?.setAttribute('open', '')
+  }
+  virtXy?.addEventListener('oas-open-change', (e) => {
+    if (virtXyStatus) virtXyStatus.textContent = e.detail.open ? 'opened（virtual-x/y）' : 'closed'
+  })
 })
 </script>
 

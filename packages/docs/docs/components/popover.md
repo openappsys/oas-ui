@@ -525,10 +525,10 @@
 `trigger="contextmenu"` 右键在**光标处**打开面板（不再锚定触发元素中心）；触屏设备上按住长按同样在触点处打开（移动端没有右键），长按时长可用 `long-press-delay` 调整（ms，默认 500）。打开后滚动页面，面板回到触发元素侧跟随（光标点没有滚动语义）。
 
 <DemoBlock title="contextmenu 光标定位（右键 / 触屏长按）">
-  <oas-popover trigger="contextmenu" title="光标菜单" placement="right" arrow="false">
+  <oas-popover trigger="contextmenu" title="光标菜单" placement="right" arrow="false" long-press-delay="800">
     <oas-button>在这一带的任意位置右键</oas-button>
     <div slot="content">
-      <p style="margin: 0 0 8px">面板出现在右键光标处：</p>
+      <p style="margin: 0 0 8px">面板出现在右键光标处（触屏长按同样触发，长按时长由 <code>long-press-delay</code> 调整）：</p>
       <oas-space size="small" direction="vertical">
         <oas-button size="small" data-popover="close">操作一</oas-button>
         <oas-button size="small" data-popover="close">操作二</oas-button>

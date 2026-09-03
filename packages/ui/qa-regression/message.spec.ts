@@ -168,12 +168,13 @@ test('message 能力回归：分组徽标/更新流/max/promise/暂停/可关性
     [...document.querySelectorAll('oas-message')].every((el) => !(el.textContent ?? '').includes('带遮罩')),
   )
 
-  // —— P7 富内容（Node 注入文本区）——
+  // —— P7 富内容（Node 注入文本区；Node 内容在 shadow [part=text]，宿主 textContent 为空）——
   const richBlock = page.locator('.demo-block', { hasText: '富内容' })
   await richBlock.locator('oas-button').nth(1).click()
   await page.waitForFunction(() =>
-    [...document.querySelectorAll('oas-message')].some((el) =>
-      (el.textContent ?? '').includes('加粗内容'),
+    [...document.querySelectorAll('oas-message')].some(
+      (el) =>
+        (el.shadowRoot?.querySelector('[part="text"]')?.textContent ?? '').includes('加粗内容'),
     ),
   )
 
