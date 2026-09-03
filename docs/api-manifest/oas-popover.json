@@ -94,6 +94,12 @@
       "observed": true
     },
     {
+      "name": "long-press-delay",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "disabled",
       "type": "boolean",
       "observed": true

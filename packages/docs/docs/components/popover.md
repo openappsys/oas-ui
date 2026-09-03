@@ -522,7 +522,7 @@
 
 ## 右键光标定位与触屏长按
 
-`trigger="contextmenu"` 右键在**光标处**打开面板（不再锚定触发元素中心）；触屏设备上按住 500ms 长按同样在触点处打开（移动端没有右键）。打开后滚动页面，面板回到触发元素侧跟随（光标点没有滚动语义）。
+`trigger="contextmenu"` 右键在**光标处**打开面板（不再锚定触发元素中心）；触屏设备上按住长按同样在触点处打开（移动端没有右键），长按时长可用 `long-press-delay` 调整（ms，默认 500）。打开后滚动页面，面板回到触发元素侧跟随（光标点没有滚动语义）。
 
 <DemoBlock title="contextmenu 光标定位（右键 / 触屏长按）">
   <oas-popover trigger="contextmenu" title="光标菜单" placement="right" arrow="false">
@@ -801,6 +801,7 @@ onMounted(() => {
 | `hover-delay` | hover 触发时打开防抖延时（毫秒，默认 150；未设置回落 open-delay） | `string` | — |
 | `hover-hide-delay` | hover 触发时关闭防抖延时（毫秒，默认 100；未设置回落 close-delay） | `string` | — |
 | `initial-focus` | 打开时聚焦指定选择器元素（宿主 light DOM 优先，含 slot 内容；解析不到回落 focus-on-open），优先级高于 focus-on-open | `string` | — |
+| `long-press-delay` | — | `string` | — |
 | `modal` | modal 化：全屏遮罩 + 焦点陷阱（Tab 面板内循环）+ 滚动锁 + aria-modal；点击遮罩关闭 | `boolean` | — |
 | `offset` | 双轴偏移：`"主轴距离"` 或 `"主轴距离, 交叉轴偏移"`（px，默认 8, 0），如 `offset="12, 20"` | — | — |
 | `open` | 受控显示（布尔属性，存在即显示） | `boolean` | — |
