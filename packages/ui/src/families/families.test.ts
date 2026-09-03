@@ -18,18 +18,18 @@ function parseComponentImports(text: string): string[] {
   return out
 }
 
-/** 基座：框架级三件（每族都 import，幂等守卫防重复注册） */
-const BASE_MODULES = ['floating/config-provider', 'floating/app', 'floating/theme-editor']
+/** 基座：框架级三件（config-provider/app/theme-editor，每族都 import，幂等守卫防重复注册） */
+const BASE_MODULES = ['framework/config-provider', 'framework/app', 'framework/theme-editor']
 
-/** 族文件 → 源码顶层目录 */
+/** 族文件 → 源码顶层目录（源码目录 = 文档站语义组，单一权威） */
 const FAMILY_DIR: Record<string, string> = {
   basic: 'basic',
   layout: 'layout',
-  navigation: 'navigation',
   form: 'form',
-  data: 'data',
   feedback: 'feedback',
-  floating: 'floating',
+  navigation: 'navigation',
+  data: 'data',
+  framework: 'framework',
 }
 
 const FAMILY_FILES = Object.keys(FAMILY_DIR)
@@ -47,8 +47,8 @@ describe('CDN 按需打包：七族注册文件覆盖全量注册表', () => {
     for (const dir of Object.values(FAMILY_DIR)) {
       const dirComps = all.filter((p) => p.startsWith(`${dir}/`))
       expect(dirComps.length).toBeGreaterThan(0)
-      // 无空目录；floating 含三件基座，其余目录不含
-      if (dir === 'floating') {
+      // 无空目录；framework 目录即基座三件，其余目录不含基座
+      if (dir === 'framework') {
         expect(BASE_MODULES.every((b) => dirComps.includes(b))).toBe(true)
       } else {
         expect(BASE_MODULES.some((b) => b.startsWith(`${dir}/`))).toBe(false)
@@ -56,19 +56,19 @@ describe('CDN 按需打包：七族注册文件覆盖全量注册表', () => {
     }
   })
 
-  it('每个族文件 import 的组件与其源码顶层目录一一对应（floating 族含基座三件）', () => {
+  it('每个族文件 import 的组件与其源码顶层目录一一对应（framework 族即基座三件）', () => {
     for (const fam of FAMILY_FILES) {
       const dir = FAMILY_DIR[fam]!
       const text = readFileSync(resolve(here, `${fam}.ts`), 'utf8')
       const comps = parseComponentImports(text)
 
-      // 族文件只 import 自己目录的组件 + 基座三件（floating 目录的 config-provider/app/theme-editor）
+      // 族文件只 import 自己目录的组件 + 基座三件（framework 目录的 config-provider/app/theme-editor）
       for (const p of comps) {
         const inOwnDir = p.startsWith(`${dir}/`)
         const isBase = BASE_MODULES.includes(p)
         expect(inOwnDir || isBase, `${fam}.ts 误 import ${p}`).toBe(true)
       }
-      // 该目录全量组件都在族文件里（floating 目录的三件在各自基座 import 中，仍属 comps）
+      // 该目录全量组件都在族文件里（framework 目录的三件是自身族内容，亦属基座）
       const allComps = parseComponentImports(readFileSync(resolve(srcRoot, 'index.ts'), 'utf8'))
       const dirComps = allComps.filter((p) => p.startsWith(`${dir}/`))
       for (const c of dirComps) {

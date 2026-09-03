@@ -1,4 +1,4 @@
-import { resolveMessageHost, getAppNotificationConfig } from '../../floating/app/app-host.js'
+import { resolveMessageHost, getAppNotificationConfig } from '../../framework/app/app-host.js'
 import type { OASNotification, NotificationType } from './oas-notification.js'
 
 export type NotificationSize = 'small' | 'medium' | 'large'

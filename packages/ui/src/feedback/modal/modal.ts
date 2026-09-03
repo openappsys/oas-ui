@@ -1,5 +1,5 @@
 import { t } from '@oas-ui/i18n'
-import { resolveMessageHost } from '../../floating/app/app-host.js'
+import { resolveMessageHost } from '../../framework/app/app-host.js'
 import { OASModal, type ModalVariant, type ModalCloseSource } from './oas-modal.js'
 
 export interface ModalOptions {

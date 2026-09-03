@@ -1,6 +1,6 @@
 {
   "className": "OASMasonry",
-  "sourceFile": "packages/ui/src/data/masonry/oas-masonry.ts",
+  "sourceFile": "packages/ui/src/layout/masonry/oas-masonry.ts",
   "attrs": [
     {
       "name": "columns",

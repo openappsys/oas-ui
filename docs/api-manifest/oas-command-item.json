@@ -1,6 +1,6 @@
 {
   "className": "OASCommandItem",
-  "sourceFile": "packages/ui/src/floating/command/oas-command-item.ts",
+  "sourceFile": "packages/ui/src/navigation/command/oas-command-item.ts",
   "attrs": [
     {
       "name": "value",

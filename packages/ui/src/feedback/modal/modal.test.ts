@@ -5,7 +5,7 @@ import {
   type ModalOptions,
   type OptionsOptions,
 } from './index.js'
-import { registerAppHost, unregisterAppHost } from '../../floating/app/app-host.js'
+import { registerAppHost, unregisterAppHost } from '../../framework/app/app-host.js'
 import { iconRegistry } from '@oas-ui/icons'
 
 function okButton(el: Element): HTMLButtonElement {

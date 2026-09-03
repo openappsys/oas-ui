@@ -5,7 +5,7 @@
  * - onOutside：点击浮层外部（composedPath 检测）时回调
  * - destroyOverlay：一次性销毁全部浮层与监听
  */
-import { resolveMessageHost } from '../floating/app/app-host.js'
+import { resolveMessageHost } from '../framework/app/app-host.js'
 
 const CONTAINER_TAG = 'oas-overlay-container'
 

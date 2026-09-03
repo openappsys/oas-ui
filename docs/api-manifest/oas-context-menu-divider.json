@@ -1,6 +1,6 @@
 {
   "className": "OASContextMenuDivider",
-  "sourceFile": "packages/ui/src/floating/contextmenu/oas-context-menu-divider.ts",
+  "sourceFile": "packages/ui/src/navigation/contextmenu/oas-context-menu-divider.ts",
   "attrs": [],
   "props": [],
   "events": [],

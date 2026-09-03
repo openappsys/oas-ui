@@ -1,6 +1,6 @@
 {
   "className": "OASContextMenuGroup",
-  "sourceFile": "packages/ui/src/floating/contextmenu/oas-context-menu-group.ts",
+  "sourceFile": "packages/ui/src/navigation/contextmenu/oas-context-menu-group.ts",
   "attrs": [],
   "props": [],
   "events": [],

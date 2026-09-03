@@ -1,6 +1,6 @@
 {
   "className": "OASMenubarGroup",
-  "sourceFile": "packages/ui/src/floating/menubar/oas-menubar-group.ts",
+  "sourceFile": "packages/ui/src/navigation/menubar/oas-menubar-group.ts",
   "attrs": [
     {
       "name": "label",

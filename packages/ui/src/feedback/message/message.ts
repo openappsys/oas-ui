@@ -1,4 +1,4 @@
-import { resolveMessageHost, getAppMessageConfig } from '../../floating/app/app-host.js'
+import { resolveMessageHost, getAppMessageConfig } from '../../framework/app/app-host.js'
 import type {
   OASMessage,
   MessageType,

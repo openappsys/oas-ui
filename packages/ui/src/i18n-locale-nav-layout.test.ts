@@ -6,10 +6,10 @@ import './navigation/tour/index.js'
 import './navigation/anchor/index.js'
 import './navigation/breadcrumb/index.js'
 import './navigation/back-top/index.js'
-import './layout/page-header/index.js'
+import './navigation/page-header/index.js'
 import './layout/splitter/index.js'
 import './layout/layout/index.js'
-import './layout/float-button/index.js'
+import './navigation/float-button/index.js'
 
 /**
  * navigation + layout 组组件文案国际化集成测试：

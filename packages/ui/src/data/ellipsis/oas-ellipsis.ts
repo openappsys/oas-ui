@@ -1,6 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 // 复用 oas-tooltip 作为溢出时的全文提示浮层（确保其已注册）
-import '../../floating/tooltip/index.js'
+import '../../feedback/tooltip/index.js'
 
 const STYLE = `
 :host {

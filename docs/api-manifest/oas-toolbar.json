@@ -1,6 +1,6 @@
 {
   "className": "OASToolbar",
-  "sourceFile": "packages/ui/src/floating/toolbar/oas-toolbar.ts",
+  "sourceFile": "packages/ui/src/navigation/toolbar/oas-toolbar.ts",
   "attrs": [
     {
       "name": "orientation",

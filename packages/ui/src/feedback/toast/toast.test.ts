@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { toast, destroyAll, type OASToast, type ToastHandle } from './index.js'
 // 注册 oas-app（P5 全局默认配置白名单测试需要）
-import '../../floating/app/index.js'
+import '../../framework/app/index.js'
 
 /** 离场动画默认时长（--oas-toast-leave-duration 回落常量，与组件一致） */
 const LEAVE = 200

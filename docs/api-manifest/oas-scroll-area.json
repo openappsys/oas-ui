@@ -1,6 +1,6 @@
 {
   "className": "OASScrollArea",
-  "sourceFile": "packages/ui/src/floating/scroll-area/oas-scroll-area.ts",
+  "sourceFile": "packages/ui/src/layout/scroll-area/oas-scroll-area.ts",
   "attrs": [
     {
       "name": "height",

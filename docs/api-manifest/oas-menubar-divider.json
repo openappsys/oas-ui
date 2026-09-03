@@ -1,6 +1,6 @@
 {
   "className": "OASMenubarDivider",
-  "sourceFile": "packages/ui/src/floating/menubar/oas-menubar-divider.ts",
+  "sourceFile": "packages/ui/src/navigation/menubar/oas-menubar-divider.ts",
   "attrs": [],
   "props": [],
   "events": [],

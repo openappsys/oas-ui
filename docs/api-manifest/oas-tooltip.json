@@ -1,6 +1,6 @@
 {
   "className": "OAStooltip",
-  "sourceFile": "packages/ui/src/floating/tooltip/oas-tooltip.ts",
+  "sourceFile": "packages/ui/src/feedback/tooltip/oas-tooltip.ts",
   "attrs": [
     {
       "name": "open",
