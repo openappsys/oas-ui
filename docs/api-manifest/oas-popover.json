@@ -156,7 +156,7 @@
     {
       "name": "trigger-keys",
       "type": "string",
-      "default": "",
+      "default": "Enter Space",
       "observed": true
     },
     {
@@ -174,10 +174,87 @@
       "name": "arrow-merge",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "trap-focus",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "close-on-outside",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "close-on-escape",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "available-height",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "scrollable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "close-on-scroll",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "final-focus",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "hide-empty",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "sticky",
+      "type": "string",
+      "default": "partial",
+      "observed": true
+    },
+    {
+      "name": "dismiss-on-select",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "destroy-on-hide",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "render-panel",
+      "type": "boolean",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "finalFocusEl",
+      "type": "HTMLElement | null"
+    }
+  ],
   "events": [
+    {
+      "name": "oas-before-close",
+      "detail": "{ source }"
+    },
     {
       "name": "oas-open-change",
       "detail": "{ open }"
@@ -189,6 +266,15 @@
     },
     {
       "name": "content"
+    },
+    {
+      "name": "description"
+    },
+    {
+      "name": "footer"
+    },
+    {
+      "name": "header"
     },
     {
       "name": "title"

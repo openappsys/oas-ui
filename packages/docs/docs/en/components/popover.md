@@ -362,6 +362,248 @@ In `virtual` mode there is no real anchor (same as tooltip): the host positions 
   </oas-popover>
 </DemoBlock>
 
+## Accessibility wiring & keyboard
+
+The trigger element gets ARIA wiring automatically: `aria-haspopup="dialog"` + `aria-expanded` (follows open state) + `aria-controls` (panel id), so screen readers can perceive the floating layer. `trigger-keys` defaults to `Enter Space` — focus the trigger and press Enter / Space to toggle (idempotent with the synthesized click on native buttons, no flicker); override with other keys via the attribute.
+
+<DemoBlock title="Keyboard toggle (default Enter / Space)">
+  <oas-popover title="Keyboard toggle" content="Focus the button and press Enter or Space to toggle; press again to close." placement="bottom">
+    <oas-button>Focus, then Enter / Space</oas-button>
+  </oas-popover>
+</DemoBlock>
+
+## trap-focus focus trap
+
+`trap-focus` decouples the focus trap from modal: no backdrop, no scroll lock, but Tab / Shift+Tab cycle inside the panel without escaping — ideal for form popovers (the background stays interactive while focus stays put). `modal` + `trap-focus` stack idempotently (the trap is mounted once).
+
+<DemoBlock title="trap-focus (form popover, focus stays inside)">
+  <oas-popover title="Fill in info" placement="bottom" trap-focus focus-on-open closable>
+    <oas-button type="primary">Open form popover</oas-button>
+    <div slot="content" style="display: grid; gap: 8px; min-width: 220px">
+      <oas-input placeholder="Name" aria-label="Name"></oas-input>
+      <oas-input placeholder="Email" aria-label="Email"></oas-input>
+      <oas-button size="small" type="primary" data-popover="close">Submit</oas-button>
+    </div>
+  </oas-popover>
+</DemoBlock>
+
+## Close behavior switches
+
+`close-on-outside` / `close-on-escape` (both default `true`, preserving current behavior) control "close on outside click" and "close on Esc" respectively; `oas-before-close` is a cancelable close event (`preventDefault()` blocks the close). Every close entry point (trigger toggle / outside click / Esc / close button / declarative close / backdrop / auto-close / in-panel select) passes through it first — `detail.source` labels the origin.
+
+<DemoBlock title="Close switches + cancelable close (oas-before-close)">
+  <oas-space size="small" wrap>
+    <oas-popover title="Outside click stays open" content="close-on-outside=false: clicking outside does not close; use ✕ or Esc." placement="bottom" closable close-on-outside="false">
+      <oas-button>No outside close</oas-button>
+    </oas-popover>
+    <oas-popover title="Esc stays open" content="close-on-escape=false: pressing Esc does not close; clicking outside does." placement="bottom" closable close-on-escape="false">
+      <oas-button>No Esc close</oas-button>
+    </oas-popover>
+    <oas-popover id="pop-guard" title="Intercept close" content="While “Intercept close” is checked, nothing can close this panel; uncheck to close." placement="bottom" closable>
+      <oas-button>Intercept-close demo</oas-button>
+      <div slot="content" style="min-width: 200px">
+        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer">
+          <oas-checkbox id="pop-guard-check"></oas-checkbox>Intercept close
+        </label>
+      </div>
+    </oas-popover>
+  </oas-space>
+</DemoBlock>
+
+## Size & style variables
+
+`size` tiers: `small` / `medium` (default) / `large` — padding, min-width and font-size scale with the tier (token based). The panel look is customizable via component-level CSS variables: `--oas-popover-bg` / `--oas-popover-border` / `--oas-popover-shadow` / `--oas-popover-radius` / `--oas-popover-padding` / `--oas-popover-min-width` (defaults fall back to global tokens; dark theme follows automatically).
+
+<DemoBlock title="Size tiers (size)">
+  <oas-space size="small">
+    <oas-popover title="Small" content="size=small: compact padding + smaller font." placement="bottom" size="small">
+      <oas-button>small</oas-button>
+    </oas-popover>
+    <oas-popover title="Default" content="size=medium (default)." placement="bottom">
+      <oas-button>medium</oas-button>
+    </oas-popover>
+    <oas-popover title="Large" content="size=large: roomy padding + larger font." placement="bottom" size="large">
+      <oas-button>large</oas-button>
+    </oas-popover>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="Panel CSS variables (--oas-popover-*)">
+  <oas-popover title="Variable styled" content="Panel look customized via --oas-popover-bg / --oas-popover-border / --oas-popover-radius (the arrow follows the same colors)." placement="bottom" style="--oas-popover-bg: var(--oas-color-bg-hover); --oas-popover-border: var(--oas-color-primary); --oas-popover-radius: var(--oas-radius-lg);">
+    <oas-button>Variable-styled panel</oas-button>
+  </oas-popover>
+</DemoBlock>
+
+## Structured slots & description
+
+`slot="header"` takes over the whole head region (the title area steps aside); `slot="footer"` renders a footer action area (separated from the body by a divider); `slot="description"` renders a supplementary note and wires `aria-describedby` automatically (screen readers can announce the panel description).
+
+<DemoBlock title="header / footer / description slots">
+  <oas-popover placement="bottom">
+    <oas-button type="primary">Open structured panel</oas-button>
+    <div slot="header" style="display: flex; align-items: center; gap: 6px; font-weight: 600">Member settings <oas-tag size="small">Pro</oas-tag></div>
+    <div slot="content" style="line-height: 1.8">Body content: independent from header / footer / description.</div>
+    <p slot="description" style="margin: 0">Changes apply immediately on close — no save needed.</p>
+    <div slot="footer" style="display: flex; justify-content: flex-end; gap: 8px">
+      <oas-button size="small" data-popover="close">Cancel</oas-button>
+      <oas-button size="small" type="primary" data-popover="close">OK</oas-button>
+    </div>
+  </oas-popover>
+</DemoBlock>
+
+## Height constraint & in-panel scrolling
+
+`available-height` constrains the panel max-height to the remaining viewport space along the main axis; `scrollable` enables in-panel scrolling (head / footer fixed, body area scrolls) so long content no longer overflows the viewport. The two are often combined for long lists.
+
+<DemoBlock title="scrollable + available-height (long list scrolls)">
+  <oas-popover title="Notifications" placement="bottom" scrollable available-height>
+    <oas-button type="primary">Open notifications (scrollable)</oas-button>
+    <div slot="content" style="display: grid; gap: 10px; min-width: 260px">
+      <p style="margin: 0">Panel height stays within the remaining viewport; the body scrolls internally:</p>
+      <div style="display: grid; gap: 8px">
+        <oas-tag>Notice 1</oas-tag><oas-tag>Notice 2</oas-tag><oas-tag>Notice 3</oas-tag><oas-tag>Notice 4</oas-tag>
+        <oas-tag>Notice 5</oas-tag><oas-tag>Notice 6</oas-tag><oas-tag>Notice 7</oas-tag><oas-tag>Notice 8</oas-tag>
+        <oas-tag>Notice 9</oas-tag><oas-tag>Notice 10</oas-tag>
+      </div>
+    </div>
+  </oas-popover>
+</DemoBlock>
+
+## Focus return & empty state
+
+`final-focus` sets where focus goes after closing (selector; or pass an element via the `finalFocusEl` property, which takes precedence); the default returns to the trigger. `hide-empty` keeps the panel hidden when it has no content at all (no title / content / slot content) — no blank panels popping up.
+
+<DemoBlock title="final-focus (focus moves to a chosen element after close)">
+  <oas-space size="small">
+    <oas-input id="pop-final-input" placeholder="Focus returns here on close" style="width: 220px"></oas-input>
+    <oas-popover title="Focus return" content="After closing, focus moves to the input next to it instead of the trigger." placement="bottom" final-focus="#pop-final-input" closable>
+      <oas-button>Open (close via ✕ to see focus)</oas-button>
+    </oas-popover>
+  </oas-space>
+</DemoBlock>
+
+<DemoBlock title="hide-empty (no blank panel)">
+  <oas-space size="small">
+    <oas-button size="small" onclick="popEmptySet('')">Clear content</oas-button>
+    <oas-button size="small" onclick="popEmptySet('Now it has content')">Fill content</oas-button>
+    <oas-tag id="pop-empty-status" type="info">content: (empty)</oas-tag>
+  </oas-space>
+  <oas-popover id="pop-empty" title="Empty-state guard" content="" placement="bottom" hide-empty>
+    <oas-button>Won't open while empty</oas-button>
+  </oas-popover>
+</DemoBlock>
+
+## Scroll behavior (sticky / close-on-scroll)
+
+`sticky` tiers: `partial` (default, repositions with the anchor on scroll) / `always` (once the anchor scrolls out, the panel pins to the viewport edge and stays visible) / `off` (does not follow scroll). `close-on-scroll` instead closes on scroll — dropdown-style popovers collapsing on scroll often feels right.
+
+<DemoBlock title="sticky=always (panel pins to the edge after the anchor leaves)">
+  <div id="pop-sticky-scroll" style="height: 120px; overflow-y: auto; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); padding: 12px">
+    <div style="height: 320px; display: grid; place-items: center start">
+      <oas-popover title="Pinned" content="sticky=always: scroll this container — after the trigger leaves the viewport, the panel pins to the edge and stays." placement="right" sticky="always" open>
+        <oas-button>Scroll the area below</oas-button>
+      </oas-popover>
+    </div>
+    <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 8px 0">↓ Scroll here ↓</p>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="close-on-scroll (closes on scroll)">
+  <div id="pop-closeonscroll-box" style="height: 120px; overflow-y: auto; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md); padding: 12px">
+    <div style="height: 320px">
+      <oas-popover title="Close on scroll" content="close-on-scroll: scrolling the container while open closes the panel immediately." placement="right" close-on-scroll>
+        <oas-button>Open, then scroll here</oas-button>
+      </oas-popover>
+    </div>
+  </div>
+</DemoBlock>
+
+## Cursor-anchored context menu & touch long-press
+
+With `trigger="contextmenu"`, right-clicking opens the panel **at the cursor position** (no longer anchored to the trigger center); on touch devices, holding for 500ms opens at the touch point (no right-click on mobile). After opening, scrolling snaps the panel back to the trigger side (a cursor point has no scroll semantics).
+
+<DemoBlock title="contextmenu cursor anchoring (right-click / touch long-press)">
+  <oas-popover trigger="contextmenu" title="Cursor menu" placement="right" arrow="false">
+    <oas-button>Right-click anywhere around here</oas-button>
+    <div slot="content">
+      <p style="margin: 0 0 8px">The panel appears at the cursor:</p>
+      <oas-space size="small" direction="vertical">
+        <oas-button size="small" data-popover="close">Action one</oas-button>
+        <oas-button size="small" data-popover="close">Action two</oas-button>
+      </oas-space>
+    </div>
+  </oas-popover>
+</DemoBlock>
+
+## Auto-close after in-panel select
+
+With `dismiss-on-select`, any click inside the panel (including slot content) counts as a completed selection and closes the panel — no need for `data-popover="close"` on option panels. The close still passes through `oas-before-close` (interceptable).
+
+<DemoBlock title="dismiss-on-select (select to close)">
+  <oas-space size="small">
+    <oas-popover title="Choose a language" placement="bottom" dismiss-on-select>
+      <oas-button type="primary">Pick one</oas-button>
+      <div slot="content" style="display: grid; gap: 6px; min-width: 160px">
+        <oas-button size="small">简体中文</oas-button>
+        <oas-button size="small">English</oas-button>
+        <oas-button size="small">日本語</oas-button>
+      </div>
+    </oas-popover>
+    <oas-tag id="pop-dismiss-status" type="info">open: false</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## Content destroy & lazy mount
+
+`destroy-on-hide` unmounts the panel content presentation on close (slot nodes detached from assignment, attribute text cleared) and re-mounts on reopen — heavy-content popovers (charts / big lists) cost zero rendering while closed, equivalent to lazy mounting. Host light DOM nodes are never removed.
+
+<DemoBlock title="destroy-on-hide (destroy on close, rebuild on reopen)">
+  <oas-space size="small">
+    <oas-popover id="pop-destroy" title="Heavy panel" placement="bottom" destroy-on-hide>
+      <oas-button type="primary">Open heavy panel</oas-button>
+      <div slot="content" style="min-width: 240px">
+        <p style="margin: 0 0 8px">This content is unmounted on close (remounted on reopen):</p>
+        <oas-progress value="72"></oas-progress>
+      </div>
+    </oas-popover>
+    <oas-tag id="pop-destroy-status" type="info">Content unmounted while closed</oas-tag>
+  </oas-space>
+</DemoBlock>
+
+## Breakpoints & trigger fine-tuning
+
+`placement` / `size` support breakpoint shorthand (same protocol as space/grid): `"bottom md:right"` = base value + space-separated `breakpoint:value` pairs (sm=640 / md=768 / lg=1024 / xl=1280, mobile-first min-width) — below the panel on the bottom, at ≥768px on the right. `trigger="mousedown"` opens on press (no release needed, one beat faster than click).
+
+<DemoBlock title="placement breakpoint shorthand (resize the window to see it switch)">
+  <oas-popover title="Breakpoint placement" content="Below 768px the panel sits at the bottom; at ≥ 768px it moves to the right." placement="bottom md:right">
+    <oas-button>bottom md:right</oas-button>
+  </oas-popover>
+</DemoBlock>
+
+<DemoBlock title="trigger=mousedown (opens on press)">
+  <oas-space size="small">
+    <oas-popover title="Opens on press" content="trigger=mousedown: opens the moment the mouse is pressed, no release needed." placement="bottom" trigger="mousedown">
+      <oas-button>mousedown</oas-button>
+    </oas-popover>
+    <oas-popover title="Compare" content="Default click: a full click (press + release) is needed." placement="bottom">
+      <oas-button>click (compare)</oas-button>
+    </oas-popover>
+  </oas-space>
+</DemoBlock>
+
+## render-panel pure panel rendering
+
+`render-panel` targets host-assembled scenarios: the popover binds no trigger at all (treated as `manual`, no trigger ARIA wiring); combined with `virtual-x` / `virtual-y` coordinates or `append-to`, the host fully owns placement and visibility — e.g. custom triggers or canvas-embedded panels.
+
+<DemoBlock title="render-panel (host-assembled trigger)">
+  <oas-space size="small">
+    <oas-button size="small" type="primary" onclick="popPanelShow(event)">Host's own button: open pure panel</oas-button>
+    <oas-button size="small" onclick="popPanelHide()">Close</oas-button>
+    <oas-tag id="pop-render-status" type="info">open: false</oas-tag>
+  </oas-space>
+  <oas-popover id="pop-render-panel" render-panel virtual virtual-x="0" virtual-y="0" placement="bottom" title="Pure panel" content="Rendered via render-panel: no trigger binding; visibility and position are fully host-controlled."></oas-popover>
+</DemoBlock>
+
 ## Controlled display
 
 The `open` attribute is controlled: an external button can set/remove `open` to control visibility (clicking outside / pressing Esc still closes it).
@@ -455,6 +697,62 @@ onMounted(() => {
       freshTag.textContent = `open: ${e.detail.open}, content: ${fresh.getAttribute('content')}`
     })
   }
+
+  // P5 intercept close: while checked, oas-before-close preventDefault blocks every close path
+  const guard = document.getElementById('pop-guard')
+  const guardCheck = document.getElementById('pop-guard-check')
+  if (guard && guardCheck) {
+    guard.addEventListener('oas-before-close', (e) => {
+      if (guardCheck.hasAttribute('checked')) e.preventDefault()
+    })
+  }
+
+  // P15 hide-empty: no blank panel
+  const emptyPop = document.getElementById('pop-empty')
+  const emptyStatus = document.getElementById('pop-empty-status')
+  if (emptyPop && emptyStatus) {
+    window.popEmptySet = (v) => {
+      emptyPop.setAttribute('content', v)
+      emptyStatus.textContent = `content: ${v === '' ? '(empty)' : v}`
+    }
+  }
+
+  // P21 dismiss-on-select: status echo
+  const dismiss = document.querySelector('#pop-dismiss-status')
+  const dismissPop = document.querySelector('oas-popover[dismiss-on-select]')
+  if (dismiss && dismissPop) {
+    const syncDismiss = () => {
+      dismiss.textContent = `open: ${dismissPop.hasAttribute('open')}`
+    }
+    dismissPop.addEventListener('oas-open-change', (e) => {
+      dismiss.textContent = `open: ${e.detail.open}`
+    })
+    syncDismiss()
+  }
+
+  // P22 destroy-on-hide: state echo
+  const destroyPop = document.getElementById('pop-destroy')
+  const destroyStatus = document.getElementById('pop-destroy-status')
+  if (destroyPop && destroyStatus) {
+    destroyPop.addEventListener('oas-open-change', (e) => {
+      destroyStatus.textContent = e.detail.open ? 'Panel open (content mounted)' : 'Content unmounted while closed'
+    })
+  }
+
+  // P25 render-panel: host-assembled trigger (host's own button controls the pure panel)
+  const panel = document.getElementById('pop-render-panel')
+  const panelStatus = document.getElementById('pop-render-status')
+  if (panel && panelStatus) {
+    window.popPanelShow = (e) => {
+      panel.setAttribute('virtual-x', String(e.clientX))
+      panel.setAttribute('virtual-y', String(e.clientY + 12))
+      panel.setAttribute('open', '')
+    }
+    window.popPanelHide = () => panel.removeAttribute('open')
+    panel.addEventListener('oas-open-change', (e) => {
+      panelStatus.textContent = `open: ${e.detail.open}`
+    })
+  }
 })
 </script>
 
@@ -470,15 +768,23 @@ onMounted(() => {
 | `arrow-point-at-center` | Make the arrow point at the trigger element's center (default points at the trigger's edge; the arrow still points at the anchor center when the panel is shifted by viewport-edge avoidance) | — | — |
 | `auto-adjust-overflow` | Viewport-edge auto flip and avoidance (default true; `"false"` disables it, keeping the declared placement, which may overflow the viewport) | `string` | `true` |
 | `auto-close` | Auto close after opening for the given duration in ms, e.g. `auto-close="3000"`; not set means no auto close | `string` | — |
+| `available-height` | — | `boolean` | — |
 | `closable` | Show a close button at the panel's top-right (`part="close"`); clicking it closes and restores focus to the trigger | `boolean` | — |
 | `close-delay` | Generic close delay in ms (default 0; used by non-hover trigger paths, hover paths prefer hover-hide-delay) | `string` | — |
+| `close-on-escape` | — | — | — |
+| `close-on-outside` | — | `string` | `true` |
+| `close-on-scroll` | — | `boolean` | — |
 | `collision-padding` | Viewport-edge clamping padding in px (default 4), the gap kept when the panel avoids viewport edges | `string` | — |
 | `color` | Color variant: `primary` / `success` / `warning` / `danger` (tinted panel background + semantic border, derived from tokens including dark variants); unset or invalid keeps the neutral panel | `string` | — |
 | `content` | Body text | `string` | — |
+| `destroy-on-hide` | — | `boolean` | — |
 | `disabled` | Disable the whole popover: click / hover / focus / contextmenu / trigger-keys triggers are all ignored; the host is desaturated and aria-disabled is synced | `boolean` | — |
+| `dismiss-on-select` | — | `boolean` | — |
 | `fallback-placements` | Custom fallback sequence (comma or space separated, e.g. `"left, right"`): when the requested placement does not fit, each candidate in the sequence is tried for fit; the first fit wins, if none fit the last one is clamped; unset uses the default main-axis flip | `string` | — |
+| `final-focus` | — | `string` | — |
 | `focus-on-open` | Moves focus into the first focusable element of the panel when opened | `boolean` | — |
 | `fresh` | Keep updating the content while closed (by default the content is frozen while closed and the latest value is written when opened; with fresh the closed state keeps writing) | `boolean` | — |
+| `hide-empty` | — | `boolean` | — |
 | `hide-when-detached` | Hide the panel when the anchor is fully detached from the viewport (the open state is kept, avoiding a panel floating off-screen) | `boolean` | — |
 | `hover-delay` | Hover-trigger open debounce in ms (default 150; falls back to open-delay when unset) | `string` | — |
 | `hover-hide-delay` | Hover-trigger close debounce in ms (default 100; falls back to close-delay when unset) | `string` | — |
@@ -488,9 +794,14 @@ onMounted(() => {
 | `open` | Controlled display (boolean attribute; shows when present) | `boolean` | — |
 | `open-delay` | Generic open delay in ms (default 0; used by non-hover trigger paths, hover paths prefer hover-delay) | `string` | — |
 | `placement` | Popup placement (12 directions: four bases top/bottom/left/right each with -start/-end cross-axis alignment) | `string` | `top` |
+| `render-panel` | — | `boolean` | — |
+| `scrollable` | — | `boolean` | — |
+| `size` | — | `string` | `medium` |
+| `sticky` | — | `string` | `partial` |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot="title" for rich content | `string` | — |
+| `trap-focus` | — | `boolean` | — |
 | `trigger` | Trigger method: `click` (default) / `hover` / `focus` / `contextmenu` / `manual`, space separated for multiple (e.g. `"click hover"`) | `string` | `click` |
-| `trigger-keys` | Toggle open when the listed keys are pressed while the trigger is focused (space separated, e.g. `"Enter Space"`); no key binding when unset | `string` | — |
+| `trigger-keys` | Toggle open when the listed keys are pressed while the trigger is focused (space separated, e.g. `"Enter Space"`); no key binding when unset | `string` | `Enter Space` |
 | `virtual` | Virtual trigger mode (same as tooltip; no anchor element) | `boolean` | — |
 | `virtual-anchor` | Virtual anchor element selector (used when virtual-x/virtual-y are unset) | — | — |
 | `virtual-x` | Virtual anchor x (viewport coordinate, px) | — | — |
@@ -501,6 +812,7 @@ onMounted(() => {
 
 | Event | Description |
 | --- | --- |
+| `oas-before-close` | — |
 | `oas-open-change` | open state changed, `detail: { open }` |
 
 ### Slots
@@ -509,6 +821,9 @@ onMounted(() => {
 | --- | --- |
 | default | — |
 | `content` | — |
+| `description` | — |
+| `footer` | — |
+| `header` | — |
 | `title` | Rich title content slot, overrides the title attribute text when present |
 
 Clicking the trigger toggles visibility; clicking outside or pressing Esc closes it; `role="dialog"`. Nested popovers: closing the parent cascades to children; `Esc` closes one layer at a time and restores focus to the trigger.
