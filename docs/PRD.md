@@ -973,6 +973,29 @@ table 组件按能力并集补齐（列设置/多列排序/多级表头/内置�
 - **oas-page-header**：content/footer/breadcrumb/back-icon/title/subtitle/avatar 插槽、ghost 变体、responsive 紧凑
 - 全部能力点走六项收口（实现/单测/demo/API/e2e/浏览器实测+识图）
 
+## v2.4.0 源码目录统一 + 族包 + title 双轨 + 15 组件能力增强 ✅
+
+### Breaking（含迁移说明）
+
+- **源码目录统一到文档站语义七组**（目录=语义组单一权威）：floating 拆空（8 件→navigation、3 件→feedback、scroll-area→layout、框架三件→framework）；layout 6 件→navigation、segmented→form；data 2 件→layout。**ESM 旧路径直接 breaking 不保留别名**（`@oas-ui/ui/floating/menu` → `@oas-ui/ui/navigation/menu` 等 24 组件，import 路径机械替换；unpkg 深链 `dist/floating/*` 同步失效）。exports 收敛至四键（`.`/`./ssr`/`./cdn/*`/`./*`）
+
+### 特性
+
+- **15 组件能力增强**：alert/notification/message/toast/drawer/snackbar/popconfirm/backdrop/spin/loading-bar/popover(25 项）/tooltip/modal（三期：prompt 全套+dialog 核心+开关动画等二期）/color-picker（两期：碰撞翻转+alpha/宽容解析 与 2D 色域+gradient）
+- **CDN 族包多入口**：七族 IIFE 产物 `dist/cdn/<族>.js`（族包自包含：基座内联运行时+框架级三件）+ cdn.js 全量保留；≤2 族引族包、≥3 族引全量
+- **title 双轨**：title 吸收（14 组件，读取渲染后从宿主移除原生 title 消除悬浮 tooltip）+ `slot="title"` 富内容通道（属性简单通道 + slot 富通道）；ui-spec 沉淀原生全局属性吸收约定
+- **qa-regression 拆 55 spec + E2E_PORT 覆盖**：巨石串行 8.6m→文件级并行；多 worktree 并行开发端口互抢根治
+
+### 修复
+
+- **demo-coverage/qa-regression 欠账清零（33→0）**：popconfirm 打开焦点从未生效（update 顺序 bug）+ demo-coverage wait 步从未执行（历史约定不一致）
+- color-picker placement API 描述补录 + 12 向单测 + 底部上弹回归
+- drawer 四向 placement 面板停屏外、message 图标首行对齐、modal no-footer 底角直角
+
+### 验收
+
+- 全量单测 4970 / typecheck 0 / build / api:check / trace 0 命中
+- 全量 e2e 1612 全过（chromium 全量 + firefox 抽样 + docs-site）
 
 ## 后续 backlog：独立组件条目（按需立项）
 

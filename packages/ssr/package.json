@@ -1,6 +1,6 @@
 {
   "name": "@oas-ui/ssr",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "description": "OAS-UI 服务端渲染（SSR）——renderToString 产出 Declarative Shadow DOM（DSD）静态快照",
   "homepage": "https://oas-ui.dev/",
   "keywords": [

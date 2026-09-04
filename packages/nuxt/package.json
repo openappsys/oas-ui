@@ -1,6 +1,6 @@
 {
   "name": "@oas-ui/nuxt",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "description": "OAS-UI Nuxt 3 module——SSR（DSD 快照）开箱即用：Vue isCustomElement 配置 + theme CSS 注入 + renderOasToString SSR helper",
   "keywords": [
     "nuxt",
