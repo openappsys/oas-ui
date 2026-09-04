@@ -177,6 +177,12 @@
       "detail": "{ row, key }"
     },
     {
+      "name": "oas-edit"
+    },
+    {
+      "name": "oas-edit-cancel"
+    },
+    {
       "name": "oas-column-order",
       "detail": "{ keys: valid }"
     },
@@ -199,14 +205,6 @@
     {
       "name": "oas-scroll",
       "detail": "{ scrollTop: st, start: win.start, end: win.end }"
-    },
-    {
-      "name": "oas-edit-cancel",
-      "detail": "this.editDetail(st, st.oldValue)"
-    },
-    {
-      "name": "oas-edit",
-      "detail": "this.editDetail(st, value)"
     }
   ],
   "slots": [],

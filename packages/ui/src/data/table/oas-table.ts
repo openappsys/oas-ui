@@ -1,6 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
-import { editPath } from '@oas-ui/icons'
+import { registeredTableCapabilities } from './oas-table-capability.js'
 
 export interface TableColumn {
   key: string
@@ -55,6 +55,31 @@ export interface EditOption {
   value: string | number
 }
 
+/** oas-edit / oas-edit-cancel 事件 detail 契约 */
+export interface TableEditDetail {
+  rowIndex: number
+  key: string
+  column: string
+  value: string
+}
+
+/**
+ * 行内编辑能力（edit 能力包 controller）在宿主渲染/更新管线上的挂接点。
+ *
+ * 核心（OASTableBase）不实现任何编辑逻辑，仅保留渲染挂接：能力包经能力注册表
+ * （oas-table-capability.js）注入后，buildRow 的 editable/actions 分支委托给
+ * 本接口方法；未注入能力时编辑相关 UI 静默缺失并在 dev 下告警一次。
+ */
+export interface TableEditCapability {
+  /** 可编辑列单元格装饰：焦点可达 + 铅笔图标 + 进入编辑交互（Enter/F2/双击）；
+      仅当表格级 editable 与列级 editable 都开启时生效 */
+  decorateCell(td: HTMLTableCellElement, col: TableColumn): void
+  /** 操作列（col.actions）单元格渲染：编辑/保存/取消按钮 */
+  renderActionCell(td: HTMLTableCellElement, tr: HTMLTableRowElement): void
+  /** 外部重渲染（data/排序/滚动等整体重建）前静默取消进行中的编辑 */
+  settleEdit(): void
+}
+
 export type SortOrder = '' | 'asc' | 'desc'
 
 /** 参与排序的单个列状态（多列排序时按数组顺序决定优先级） */
@@ -80,6 +105,19 @@ function normalizeTableSize(raw: string): TableSize {
   return 'medium'
 }
 
+/** 编辑能力未 import 的告警文案（按需 ESM 消费者用；全量入口/数据族包已含编辑能力，不会触发） */
+const EDIT_CAPABILITY_HINT = '[oas-table] 行内编辑能力未启用：检测到 editable/editor/actions 配置，但未 import 编辑能力包，相关配置已静默失效。请按需 import "@oas-ui/ui/data/table/edit"（全量入口 @oas-ui/ui 与 CDN 数据族包已内含，无需额外引用）'
+
+/** 编辑能力告警去重（同值去重，同控件惯例） */
+const warnedEditCapability = new Set<string>()
+
+/** dev 告警：editable/actions 配置但编辑能力未注入（页面级仅告警一次） */
+function warnEditNotImported(): void {
+  if (warnedEditCapability.has(EDIT_CAPABILITY_HINT)) return
+  warnedEditCapability.add(EDIT_CAPABILITY_HINT)
+  console.warn(EDIT_CAPABILITY_HINT)
+}
+
 /** 合计类型：求和 / 平均 / 计数 */
 export type SummaryType = 'sum' | 'avg' | 'count'
 
@@ -88,24 +126,6 @@ export interface SummaryConfig {
   type: SummaryType
   /** 合计行首列展示的标签（不配置时用默认文案） */
   label?: string
-}
-
-/** 行内编辑进行中的单元格状态 */
-interface EditState {
-  /** 可见行索引（事件 rowIndex，排序/过滤后的展示顺序） */
-  displayIndex: number
-  /** 行唯一键 */
-  key: string
-  /** 列 key */
-  colKey: string
-  /** 行数据引用（非受控提交时回写） */
-  row: Record<string, unknown>
-  /** 编辑单元格 */
-  td: HTMLTableCellElement
-  /** 编辑前原值（字符串形态） */
-  oldValue: string
-  /** 编辑器类型 */
-  editor: 'input' | 'select'
 }
 
 interface ColumnOffset {
@@ -601,7 +621,6 @@ tr[data-sticky='true'] td.editable-cell:not([data-editing='true']):focus-visible
 const CHECK_CELL_WIDTH = 40
 const EXPAND_CELL_WIDTH = 40
 const FILTER_ICON = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M4.5 6.5h7M6.5 10h3"/></svg>'
-const EDIT_ICON = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${editPath}</svg>`
 
 export class OASTableBase extends OASElement {
   static override get observedAttributes(): string[] {
@@ -647,13 +666,27 @@ export class OASTableBase extends OASElement {
   private wrap: HTMLElement | null = null
   /** 是否可展开行（任一数据行存在非空 expand 字段） */
   private _expandable = false
-  /** 行内编辑：进行中的单元格（同一时刻至多一格在编辑） */
-  private editState: EditState | null = null
+  /** 行内编辑能力 controller（经能力注册表注入；无则编辑相关渲染挂接跳过 + dev 告警） */
+  private editCap: TableEditCapability | null = null
   /** 合计缓存：scope=all 时全量 flat 的缓存（data/筛选/排序未变时复用，避免选中/翻页等非数据变化的重渲染重复全量 walk+sort） */
   private summaryFlatCache: { key: string; flat: FlatRow[] } | null = null
   /** 列过滤弹层：当前打开的面板元素与其列 key（同一时刻至多一个） */
   private filterPanel: HTMLElement | null = null
   private filterPanelKey: string | null = null
+
+  /**
+   * 能力注入：构造时遍历能力注册表，把已注册能力 factory 的 controller 逐个 addController。
+   * 能力包（如 data/table/edit）在模块求值期自注册，早于任何表格实例构造——
+   * 未 import 的能力不注入（其渲染挂接点由 editCap 判空跳过）。
+   */
+  constructor() {
+    super()
+    for (const { name, factory } of registeredTableCapabilities()) {
+      const controller = factory(this)
+      this.addController(controller)
+      if (name === 'edit') this.editCap = controller as unknown as TableEditCapability
+    }
+  }
 
   /**
    * data/columns 同时支持 attribute 与 property 赋值：
@@ -832,12 +865,15 @@ export class OASTableBase extends OASElement {
   }
 
   protected override update(): void {
-    // 外部重渲染（data/sort/selected 等变化）时先静默取消进行中的编辑，防止编辑 DOM 被整体重建静默销毁
-    this.settleEdit()
+    // 外部重渲染（data/sort/selected 等变化）时先静默取消进行中的编辑（委托 edit 能力），
+    // 防止编辑 DOM 被整体重建静默销毁
+    this.editCap?.settleEdit()
     this.parse()
     // 密度档位归一化：仅触发非法值告警副作用；档位视觉纯 CSS（:host([size]) 选择器），
     // 非法值不匹配任何档位选择器 → 自然回落 medium 默认
     normalizeTableSize(this.getAttr('size', 'medium'))
+    // 编辑能力未 import 但检测到 editable/actions 配置 → dev 告警（同值去重）
+    this.warnEditCapability()
     const head = this.shadow.querySelector('thead')
     const body = this.shadow.querySelector('tbody')
     if (!head || !body) return
@@ -1130,7 +1166,8 @@ export class OASTableBase extends OASElement {
         }
       }
       if (col.actions) {
-        this.renderActionCell(td, tr)
+        // 操作列渲染委托 edit 能力（无 controller 时单元格留空：未 import 编辑能力，actions 静默失效）
+        this.editCap?.renderActionCell(td, tr)
       } else if (col.serialNumber) {
         // 序号列（从 1 递增，不受排序/隐藏列影响——按当前可见行当前位置计）
         td.textContent = String(index + 1)
@@ -1143,26 +1180,10 @@ export class OASTableBase extends OASElement {
         td.classList.add('cell-ellipsis')
         td.title = this.cellText(col, row)
       }
-      // 可编辑单元格：可聚焦，Enter/F2/双击进入编辑（仅响应单元格自身事件，
-      // 编辑器内部按键/双击会冒泡到此，需排除避免提交后被重入编辑）
-      if (this.editingEnabled(col)) {
-        td.tabIndex = 0
-        td.classList.add('editable-cell')
-        // 可感知线索：title 提示进入方式 + 铅笔图标（hover/focus-visible 时显现）
-        td.title = this.t('table.editHint')
-        this.appendEditAffordance(td)
-        td.addEventListener('keydown', (e: KeyboardEvent) => {
-          if (e.target !== td) return
-          if (e.key === 'Enter' || e.key === 'F2') {
-            e.preventDefault()
-            this.enterEdit(td)
-          }
-        })
-        td.addEventListener('dblclick', (e: MouseEvent) => {
-          if (e.target !== td) return
-          this.enterEdit(td)
-        })
-      }
+      // 可编辑单元格装饰（焦点可达 + 铅笔图标 + Enter/F2/双击进入编辑）委托 edit 能力：
+      // 未 import 编辑能力（无 controller）时静默跳过，表格级 editable 与列级 editable
+      // 双重要求在能力内部判定
+      if (col.editable) this.editCap?.decorateCell(td, col)
       tr.appendChild(td)
     }
     if (this._expandable) {
@@ -1321,8 +1342,9 @@ export class OASTableBase extends OASElement {
 
   /** 有效列：按 column-keys（受控显示集合+顺序）过滤排序；无 column-keys 时回落全部叶子列（向后兼容）。
       再剔除 TableColumn.hidden 标记的列。column-keys 仅约束渲染的列，不改变数据模型。
-      列树先扁平为叶子列，数据/排序/显隐/拖拽均作用于叶子列。 */
-  private effectiveColumns(): TableColumn[] {
+      列树先扁平为叶子列，数据/排序/显隐/拖拽均作用于叶子列。
+      （公开：能力 controller（编辑）与渲染共用同一份有效列视图） */
+  effectiveColumns(): TableColumn[] {
     let cols = this.flattenLeaves(this._columns)
     if (this._columnKeys.length > 0) {
       const order = new Map(this._columnKeys.map((k, i) => [k, i]))
@@ -1333,9 +1355,32 @@ export class OASTableBase extends OASElement {
     return cols.filter((c) => c.hidden !== true)
   }
 
-  /** 当前有效列（表格基础 API，能力 controller / 宿主可读） */
+  /** 当前全部列定义（含组列；表格基础 API，能力 controller / 宿主可读） */
   getColumns(): TableColumn[] {
     return this._columns
+  }
+
+  /** 翻译内置文案（就近 config-provider / locale；能力 controller 与外部自定义模板经此取词）。
+      命名避开 DOM 保留属性 translate（HTMLElement.translate 为布尔） */
+  translateText(key: string, params?: Record<string, string | number>): string {
+    return this.t(key, params)
+  }
+
+  /** 重绘单元格为常规展示内容：清空后按 cellNode 挂载（尊重 render/cellTemplate 富内容）。
+      编辑退出/取消后还原单元格用；与 buildRow 的常规渲染路径一致。 */
+  paintCell(td: HTMLTableCellElement, col: TableColumn, row: Record<string, unknown>): void {
+    td.textContent = ''
+    const node = this.cellNode(col, row)
+    if (node) td.appendChild(node)
+  }
+
+  /** 派发编辑结果事件（提交/取消；detail 由 edit 能力组好）。事件名以字面量书写在此，
+      供 api 扫描静态识别事件清单；未 import 编辑能力时不会有任何调用 */
+  notifyEdit(
+    kind: 'edit' | 'edit-cancel',
+    detail: TableEditDetail,
+  ): void {
+    this.emit(kind === 'edit' ? 'edit' : 'edit-cancel', detail)
   }
 
   /** 更新列显示顺序（写回 column-keys 并重渲染；派发 oas-column-order，宿主可做持久化） */
@@ -1867,7 +1912,8 @@ export class OASTableBase extends OASElement {
       const expanded = new Set(this.getAttr('expanded', '').split(',').filter(Boolean))
       const flat = this.buildFlat(this.resolveSorts(), rowKey)
       const display = this.visibleFlat(flat, expanded, rowKey)
-      this.settleEdit()
+      // 滚动窗口重渲染前静默取消进行中的编辑（委托 edit 能力）
+      this.editCap?.settleEdit()
       body.innerHTML = ''
       this.renderVirtualBody(body, display, rowKey, selected, expanded, this.computeLayout(), st)
       this.applyStickyRows()
@@ -1881,12 +1927,7 @@ export class OASTableBase extends OASElement {
     })
   }
 
-  // ==================== 行内编辑 ====================
-
-  /** 表格级 editable 开关 + 列级 editable 双重要求 */
-  private editingEnabled(col: TableColumn): boolean {
-    return this.hasAttr('editable') && Boolean(col.editable)
-  }
+  // ==================== 单元格展示辅助（core 渲染；编辑能力退出时也经 paintCell 复用 cellNode） ====================
 
   /** 单元格展示文本（select 列按选项 label 展示；render 函数优先） */
   private cellText(col: TableColumn, row: Record<string, unknown>): string {
@@ -1927,357 +1968,14 @@ export class OASTableBase extends OASElement {
     return document.createTextNode(String(raw ?? ''))
   }
 
-  /** 可编辑单元格挂铅笔图标（右上角绝对定位，hover/focus-visible 时显现；aria-hidden 不给读屏噪音） */
-  private appendEditAffordance(td: HTMLTableCellElement): void {
-    const icon = document.createElement('span')
-    icon.className = 'cell-edit-icon'
-    icon.setAttribute('aria-hidden', 'true')
-    icon.innerHTML = EDIT_ICON
-    td.appendChild(icon)
-  }
-
-  /** 双击 / Enter / F2 / 操作列按钮 → 进入编辑模式 */
-  private enterEdit(td: HTMLTableCellElement): void {
-    // 防御：两次点击之间表格重渲染导致 td 被整体重建（脱离文档）时不再进入编辑，
-    // 否则编辑器会创建在游离节点上（不可见但状态被占用）
-    if (!td.isConnected) return
-    const colKey = td.getAttribute('data-col') ?? ''
-    if (!colKey) return
-    const col = this.effectiveColumns().find((c) => c.key === colKey)
-    if (!col || !this.editingEnabled(col)) return
-    // 另一格正在编辑：先提交旧格（非受控时可能触发重渲染，需重查 td）
-    if (this.editState && this.editState.td !== td) {
-      this.submitEdit()
-      const key = this.rowKeyOf(td)
-      const freshTr = this.findRow(key)
-      const freshTd = freshTr ? this.cellOf(freshTr, colKey) : null
-      if (!freshTd) return
-      td = freshTd
-    }
-    const tr = td.closest('tr') as HTMLTableRowElement | null
-    if (!tr) return
-    const key = tr.getAttribute('data-key') ?? ''
-    const row = this.findDataRow(key) ?? {}
-    const oldValue = String(row[colKey] ?? '')
-    const displayIndex = this.displayIndexOf(tr)
-    const editor =
-      col.editor === 'select'
-        ? this.buildSelectEditor(col, key, oldValue)
-        : this.buildInputEditor(col, key, oldValue)
-    td.textContent = ''
-    td.appendChild(editor)
-    td.classList.add('editing')
-    td.setAttribute('data-editing', 'true')
-    this.headerTh(colKey)?.setAttribute('data-editing-col', 'true')
-    this.editState = {
-      displayIndex,
-      key,
-      colKey,
-      row,
-      td,
-      oldValue,
-      editor: col.editor === 'select' ? 'select' : 'input',
-    }
-    editor.focus()
-    if (editor instanceof HTMLInputElement) editor.select()
-    this.refreshActionCells()
-  }
-
-  private buildInputEditor(col: TableColumn, key: string, value: string): HTMLInputElement {
-    const input = document.createElement('input')
-    input.type = 'text'
-    input.className = 'cell-editor'
-    input.setAttribute('part', 'cell-editor')
-    input.value = value
-    input.setAttribute('aria-label', this.t('table.editCell', { column: col.title, key }))
-    input.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        this.submitEdit()
-      } else if (e.key === 'Escape') {
-        e.preventDefault()
-        this.cancelEdit()
-      }
-    })
-    input.addEventListener('click', (e) => e.stopPropagation())
-    input.addEventListener('blur', (e: FocusEvent) => this.handleEditorBlur(e))
-    return input
-  }
-
-  private buildSelectEditor(col: TableColumn, key: string, value: string): HTMLSelectElement {
-    const select = document.createElement('select')
-    select.className = 'cell-editor'
-    select.setAttribute('part', 'cell-editor')
-    select.setAttribute('aria-label', this.t('table.editCell', { column: col.title, key }))
-    for (const opt of col.editOptions ?? []) {
-      const o = document.createElement('option')
-      o.value = String(opt.value)
-      o.textContent = opt.label
-      select.appendChild(o)
-    }
-    select.value = value
-    select.addEventListener('change', (e) => {
-      e.stopPropagation()
-      this.submitEdit()
-    })
-    select.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        this.cancelEdit()
-      }
-    })
-    select.addEventListener('click', (e) => e.stopPropagation())
-    select.addEventListener('blur', (e: FocusEvent) => this.handleEditorBlur(e))
-    return select
-  }
-
-  /**
-   * 提交当前编辑（Enter / blur / 操作列保存）：
-   * - 空值 → 还原旧值（默认非破坏）并派发 oas-edit-cancel
-   * - 值变化且非空 → 非受控模式回写 data 并派发 oas-edit；受控模式仅派发 oas-edit
-   * - 值未变 → 静默退出
-   */
-  private submitEdit(): void {
-    const st = this.editState
-    if (!st) return
-    const value = this.readEditorValue(st)
-    const col = this.effectiveColumns().find((c) => c.key === st.colKey)
-    const err = col?.validate ? col.validate(value, st.row) : undefined
-    const invalid = err === false || (typeof err === 'string' && err.trim() !== '')
-    this.renderEditError(st, invalid ? (typeof err === 'string' ? err : undefined) : undefined)
-    if (invalid) {
-      // 校验失败：保持编辑态、不提交（编辑器仍可编辑重试）
-      st.td.dataset.invalid = 'true'
-      st.td.querySelector<HTMLInputElement | HTMLSelectElement>('input, select')?.focus()
-      return
-    }
-    st.td.removeAttribute('data-invalid')
-    this.exitEdit(st)
-    if (value === '') {
-      this.emit('edit-cancel', this.editDetail(st, st.oldValue))
-      this.focusCell(st.key, st.colKey)
-      return
-    }
-    if (value !== st.oldValue) {
-      if (!this.hasAttr('edit-controlled')) {
-        st.row[st.colKey] = this.coerceEditValue(st, value)
-        this.setAttribute('data', JSON.stringify(this._data))
-      }
-      this.emit('edit', this.editDetail(st, value))
-    }
-    this.focusCell(st.key, st.colKey)
-  }
-
-  /** 编辑校验错误展示：写入/清除 td 的 error 消息（重渲染编辑器时保留该错误于单元格内） */
-  private renderEditError(st: EditState, message: string | undefined): void {
-    let el = st.td.querySelector<HTMLElement>('.edit-error')
-    if (message) {
-      if (!el) {
-        el = document.createElement('span')
-        el.className = 'edit-error'
-        st.td.appendChild(el)
-      }
-      el.textContent = message
-      st.td.classList.add('edit-invalid')
-    } else if (el) {
-      el.remove()
-      st.td.classList.remove('edit-invalid')
-    }
-  }
-
-  /** 取消当前编辑（Esc / 操作列取消）：还原旧值并派发 oas-edit-cancel */
-  private cancelEdit(): void {
-    const st = this.editState
-    if (!st) return
-    const detail = this.editDetail(st, st.oldValue)
-    this.exitEdit(st)
-    this.emit('edit-cancel', detail)
-    this.focusCell(st.key, st.colKey)
-  }
-
-  /** 退出编辑态：还原单元格展示、清除高亮、刷新操作列按钮 */
-  private exitEdit(st: EditState): void {
-    // 先置 null：清 td 会移除聚焦的 input 触发 blur，若 editState 未清空，blur→handleEditorBlur→submitEdit 会把值误提交
-    this.editState = null
-    const col = this.effectiveColumns().find((c) => c.key === st.colKey)
-    if (col) {
-      // 退出编辑后单元格重画走与正常渲染一致的 cellNode（尊重 render/cellTemplate 富内容），而非裸 textContent
-      st.td.textContent = ''
-      const node = this.cellNode(col, st.row)
-      if (node) st.td.appendChild(node)
-      // 可编辑单元格：铅笔图标在进入编辑时随 textContent 清空，退出后恢复
-      if (this.editingEnabled(col)) this.appendEditAffordance(st.td)
-    } else {
-      st.td.textContent = ''
-    }
-    st.td.classList.remove('editing')
-    st.td.removeAttribute('data-editing')
-    this.headerTh(st.colKey)?.removeAttribute('data-editing-col')
-    this.refreshActionCells()
-  }
-
-  /** 外部重渲染（数据/排序/滚动等触发整体重建）前静默取消进行中的编辑 */
-  private settleEdit(): void {
-    this.editState = null
-  }
-
-  private handleEditorBlur(e: FocusEvent): void {
-    if (!this.editState) return
-    const related = e.relatedTarget as Node | null
-    // 焦点移至组件内部（操作列保存/取消按钮）时交给按钮 click，避免双重提交
-    if (related && this.shadow.contains(related)) return
-    this.submitEdit()
-  }
-
-  private readEditorValue(st: EditState): string {
-    if (st.editor === 'select') {
-      const sel = st.td.querySelector<HTMLSelectElement>('select.cell-editor')
-      return sel ? sel.value : st.oldValue
-    }
-    const input = st.td.querySelector<HTMLInputElement>('input.cell-editor')
-    return input ? input.value : st.oldValue
-  }
-
-  /** 数字列编辑回写保持数值类型（非字符串化） */
-  private coerceEditValue(st: EditState, value: string): string | number {
-    const old = st.row[st.colKey]
-    if (typeof old === 'number' && value !== '' && Number.isFinite(Number(value))) {
-      return Number(value)
-    }
-    return value
-  }
-
-  private editDetail(
-    st: EditState,
-    value: string,
-  ): { rowIndex: number; key: string; column: string; value: string } {
-    return { rowIndex: st.displayIndex, key: st.key, column: st.colKey, value }
-  }
-
-  /** 编辑结束后焦点还给单元格（非受控提交已重建，需重查） */
-  private focusCell(key: string, colKey: string): void {
-    const tr = this.findRow(key)
-    const td = tr ? this.cellOf(tr, colKey) : null
-    td?.focus()
-  }
-
-  /** 操作列按钮：编辑 → 进入该行首个可编辑列编辑模式 */
-  private editRow(key: string): void {
-    // 另一行正在编辑时先提交（非受控可能触发重渲染，随后重查 tr）
-    if (this.editState) this.submitEdit()
-    const tr = this.findRow(key)
-    if (!tr) return
-    const colIndex = this.effectiveColumns().findIndex((c) => c.editable)
-    if (colIndex < 0) return
-    const td = this.cellOf(tr, this.effectiveColumns()[colIndex]!.key)
-    if (td) this.enterEdit(td)
-  }
-
-  /** 渲染操作列单元格：非编辑态显示 编辑，编辑态显示 保存/取消 */
-  private renderActionCell(td: HTMLTableCellElement, tr: HTMLTableRowElement): void {
-    const key = tr.getAttribute('data-key') ?? ''
-    const isEditing = this.editState?.key === key
-    td.textContent = ''
-    if (isEditing) {
-      const save = document.createElement('button')
-      save.className = 'action-btn save'
-      save.setAttribute('part', 'action-save')
-      save.textContent = this.t('table.save')
-      save.addEventListener('click', (e) => {
-        e.stopPropagation()
-        this.submitEdit()
-      })
-      const cancel = document.createElement('button')
-      cancel.className = 'action-btn danger'
-      cancel.setAttribute('part', 'action-cancel')
-      cancel.textContent = this.t('table.cancel')
-      cancel.addEventListener('click', (e) => {
-        e.stopPropagation()
-        this.cancelEdit()
-      })
-      td.append(save, cancel)
-    } else {
-      const edit = document.createElement('button')
-      edit.className = 'action-btn'
-      edit.setAttribute('part', 'action-edit')
-      edit.textContent = this.t('table.edit')
-      edit.addEventListener('click', (e) => {
-        e.stopPropagation()
-        this.editRow(key)
-      })
-      td.appendChild(edit)
-    }
-  }
-
-  /** 编辑状态变化后重渲染可见行的操作列（避免整表重建） */
-  private refreshActionCells(): void {
-    const body = this.shadow.querySelector('tbody')
-    if (!body) return
-    const actionIndex = this.effectiveColumns().findIndex((c) => c.actions)
-    if (actionIndex < 0) return
-    const offset = this.tdOffset(actionIndex)
-    for (const tr of body.querySelectorAll('tr.row')) {
-      const td = tr.querySelectorAll('td')[offset]
-      if (td) this.renderActionCell(td as HTMLTableCellElement, tr as HTMLTableRowElement)
-    }
-  }
-
-  private headerTh(colKey: string): HTMLElement | null {
-    const thead = this.shadow.querySelector('thead')
-    if (!thead) return null
-    for (const th of thead.querySelectorAll('th[data-key]')) {
-      if (th.getAttribute('data-key') === colKey) return th as HTMLElement
-    }
-    return null
-  }
-
-  private findRow(key: string): HTMLTableRowElement | null {
-    const body = this.shadow.querySelector('tbody')
-    if (!body) return null
-    for (const tr of body.querySelectorAll('tr.row')) {
-      if (tr.getAttribute('data-key') === key) return tr as HTMLTableRowElement
-    }
-    return null
-  }
-
-  private cellOf(tr: HTMLTableRowElement, colKey: string): HTMLTableCellElement | null {
-    const colIndex = this.effectiveColumns().findIndex((c) => c.key === colKey)
-    if (colIndex < 0) return null
-    const td = tr.querySelectorAll('td')[this.tdOffset(colIndex)]
-    return (td as HTMLTableCellElement | undefined) ?? null
-  }
-
-  private rowKeyOf(td: HTMLTableCellElement): string {
-    const tr = td.closest('tr')
-    return tr?.getAttribute('data-key') ?? ''
-  }
-
-  private displayIndexOf(tr: HTMLTableRowElement): number {
-    const body = this.shadow.querySelector('tbody')
-    if (!body) return -1
-    return [...body.querySelectorAll('tr.row')].indexOf(tr)
-  }
-
-  /** 数据列 td 在 tr 内的索引（勾选列占一列时偏移） */
-  private tdOffset(colIndex: number): number {
-    return colIndex + (this.hasAttr('checkable') ? 1 : 0)
-  }
-
-  /** 按行键在数据树中找行对象（提交时回写用） */
-  private findDataRow(
-    key: string,
-    nodes: Array<Record<string, unknown>> = this._data,
-  ): Record<string, unknown> | null {
-    const rowKey = this.getAttr('row-key', 'key')
-    for (const row of nodes) {
-      if (String(row[rowKey] ?? JSON.stringify(row)) === key) return row
-      const children = row.children
-      if (Array.isArray(children)) {
-        const hit = this.findDataRow(key, children as Array<Record<string, unknown>>)
-        if (hit) return hit
-      }
-    }
-    return null
+  /** 编辑能力未注入但检测到编辑相关配置时 dev 告警（同值去重，提示按需 import 编辑能力包） */
+  private warnEditCapability(): void {
+    if (this.editCap) return
+    const needsEdit =
+      this.hasAttr('editable') ||
+      this.hasAttr('edit-controlled') ||
+      this.flattenLeaves(this._columns).some((c) => c.editable || c.actions)
+    if (needsEdit) warnEditNotImported()
   }
 
   // ==================== 吸顶行 ====================
