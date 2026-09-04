@@ -4,6 +4,9 @@ import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
 import { OASTable } from './index.js'
 import { applyColumnReorder } from './oas-table-column-settings.js'
+// 既有行内编辑用例语义零变化：组装后的 OASTable 默认（核心入口）不含编辑能力，
+// 测试文件显式 import 编辑能力包（静态 import 即注册）后，以下编辑用例全部跑「能力已注入」路径
+import './edit/index.js'
 
 const COLUMNS = JSON.stringify([
   { key: 'name', title: '姓名', sortable: true },
