@@ -1,5 +1,6 @@
 // 复核回归：color-picker——一期增强缺陷固化断言。
 // 覆盖：右缘窄容器触发面板不再撑横向滚动/被祖先裁切（FD3 复现场景）、
+// 触发器贴近视口底部时面板向上翻转完整落位（下缘不足上弹）、
 // 真实浏览器 slot 触发器点击穿透、alpha 滑杆 8 位 hex 回写、
 // clearable 清除链路（oas-clear + 空态占位 + demo 可见反馈）、
 // hex 输入非法红框不生效、readonly 拒开、受控 open 双向 oas-open-change、
@@ -53,6 +54,60 @@ test('color-picker 右缘触发：面板 fixed 视口内、不撑横向滚动条
   expect(geom.width).toBeGreaterThan(200)
   expect(geom.right).toBeLessThanOrEqual(geom.vw)
   expect(await noHScroll(), '面板打开后页面仍不应有横向滚动（FD3 回归）').toBe(true)
+})
+
+test('color-picker 触发器贴近视口底部：面板向上翻转完整落位（下缘不足上弹）', async ({ page }) => {
+  await page.goto('/components/color-picker.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cp-2d')
+
+  // 滚动使触发器贴近视口底边：下方剩余空间不足以容纳面板 → 应沿主轴向上翻转
+  await page.evaluate(() => {
+    const el = document.querySelector('#cp-2d')!
+    const trig = el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
+    trig.scrollIntoView({ block: 'end' })
+    const r = trig.getBoundingClientRect()
+    const delta = r.bottom - (window.innerHeight - 40)
+    if (Math.abs(delta) > 1) window.scrollBy(0, delta)
+  })
+  const before = await page.evaluate(() => {
+    const el = document.querySelector('#cp-2d')!
+    const trig = el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
+    const r = trig.getBoundingClientRect()
+    return { bottom: r.bottom, vh: window.innerHeight }
+  })
+  expect(before.vh - before.bottom, '触发器应贴近视口底部（下方剩余 < 80px）').toBeLessThan(80)
+
+  await page.evaluate(() => {
+    const el = document.querySelector('#cp-2d')!
+    ;(el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!).click()
+  })
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#cp-2d')
+        ?.shadowRoot?.querySelector('[part="panel"]')
+        ?.classList.contains('open') === true,
+    null,
+    { timeout: 5000 },
+  )
+  const geom = await page.evaluate(() => {
+    const el = document.querySelector('#cp-2d')!
+    const panel = el.shadowRoot!.querySelector<HTMLElement>('[part="panel"]')!
+    const trig = el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
+    const pr = panel.getBoundingClientRect()
+    const tr = trig.getBoundingClientRect()
+    return {
+      placement: panel.getAttribute('data-placement'),
+      panelTop: pr.top,
+      panelBottom: pr.bottom,
+      triggerTop: tr.top,
+      vh: window.innerHeight,
+    }
+  })
+  expect(geom.placement, '下缘不足应翻转上弹（data-placement=top）').toBe('top')
+  expect(geom.panelTop, '面板顶不应越出视口').toBeGreaterThanOrEqual(0)
+  expect(geom.panelBottom, '面板应完整在视口内').toBeLessThanOrEqual(geom.vh)
+  expect(geom.panelBottom, '上弹后面板应位于触发器上方').toBeLessThanOrEqual(geom.triggerTop)
 })
 
 test('color-picker 真实浏览器：slot 自定义触发器点击沿 slot 冒泡打开面板', async ({ page }) => {
