@@ -2,6 +2,32 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.4.0] - 2026-09-01
+
+### ⚠️ Breaking（含迁移说明）
+
+- **源码目录统一到文档站语义七组**（`59b45c6`）：源码目录 = 文档站语义组 = 用户心智单一权威。`floating/` 拆空（menu/dropdown/contextmenu/menubar/navigation-menu/toolbar/command/speed-dial → `navigation/`；tooltip/popover/hover-card/backdrop → `feedback/`；scroll-area → `layout/`；config-provider/app/theme-editor → `framework/`）；`layout/` 的 tabs/pagination/steps/affix/page-header/float-button → `navigation/`、segmented → `form/`；`data/` 的 masonry/aspect-ratio → `layout/`。**ESM 旧路径直接 breaking 不保留别名**（`22e8749`）——如 `@oas-ui/ui/floating/menu` → `@oas-ui/ui/navigation/menu`，import 路径机械替换即可；`unpkg` 深链 `dist/floating/*` 同步失效
+- **exports 收敛**：仅剩 `.` / `./ssr` / `./cdn/*` / `./*` 四键
+
+### 特性
+
+- **11 组件能力增强**：alert（icon/description/action 插槽/variant/banner/center/max-line/prominent/size）、notification（四角定位/max/hover 暂停/key 更新/进度/footer/priority/折叠层叠/content 富通道/size）、message（类型图标/loading 链/closable/placement/max/Node 富通道/动画/编程暂停/avatar spinner/声明式）、toast（生命周期/onClose/按 id 更新/max priority/全局默认/读屏/进度/去重/滑动/折叠堆叠/受控声明式/plain translucent）、drawer（四向 placement/生命周期/滚动锁/焦点陷阱/before-close/loading/resizable/移动端手势/函数式/嵌套层级/destroy-on-close/初始焦点）、snackbar（堆叠不重叠/hover 暂停/Esc/FIFO 排队/滑动关闭/计时进度/合并徽标/inert Tab 序）、popconfirm（ok-loading 异步/焦点恒定/alertdialog 语义/theme 三态/hide-icon/description 双通道/oas-open-change reason/actions 插槽/show hide 方法/placement 12 向）、backdrop（内容插槽全屏 loading/color 任意值+11 预设/opacity/blur/淡入淡出 afterShow afterClose/persistent/读屏关闭）、spin（delay/tip/自定义指示器/size 任意值/percent/paused/全局默认/SSR 水合）、loading-bar（会话计数/to 局部容器/增量曲线/生命周期/reverse RTL）、popover（25 项：ARIA 关联/trigger-keys/trap-focus/外点 Esc/size 档/available-height/header-footer/finalFocusEl/sticky/contextmenu 光标定位/dismiss-on-select/breakpoints/render-panel）、tooltip（滚动跟随/close-on-scroll 外点/label 语义切换/箭头 side/follow-cursor/宽随触发器/touch 长按）
+- **color-picker 两期增强**：一期（placement 12 向碰撞翻转/alpha 通道/color-format 解析宽容 148 命名色表/clearable/size 三档/hex 输入/trigger slot/show-text/open 受控/disabledAlpha readonly uppercase/任意格式预设/EyeDropper 降级）；二期（2D 饱和度-亮度色域+hue 竖条 role=slider 拖拽与方向键/gradient 渐变模式多 stop/inline 纯面板形态）
+- **modal 三期增强**：prompt 全套（input-value/validator 三态校验/inputPattern/错误态/初始聚焦/异步 loading）+ dialog 核心（滚动锁嵌套计数/before-close 含来源/Esc 遮罩关闭钮开关/footer 插槽/destroy-on-close/命令式 update/append-to/position top/焦点开关/aria-describedby/alertdialog 语义）+ 二期（开关动画/oas-opened oas-closed/非模态 no-mask/拖拽钳制/声明式 trigger/fullscreen 断点/confirmOnEnter/shake 防误关/close-icon 插槽/options 选择模式）+ no-footer 底角圆角修复
+- **title 双轨**（属性简单通道 + slot 富内容通道）：title 吸收（读取渲染后从宿主移除，消除原生 tooltip）+ `slot="title"` 富内容（14 组件）；ui-spec 沉淀原生全局属性吸收约定
+- **CDN 族包多入口构建**：七族 IIFE 产物 `dist/cdn/{basic,layout,navigation,form,data,feedback,framework}.js`（族包自包含：基座内联 core+i18n+icons 运行时 + 框架级三件注册）+ `cdn.js` 全量保留；规则「≤2 族引族包、≥3 族引全量」；getting-started 双版新增按族引入段
+
+### 修复
+
+- **demo-coverage/qa-regression 欠账清零（33→0）**：popconfirm 打开焦点从未生效（update 顺序 bug——面板 display:none 时对 ok 调 focus 静默失败，改为先设 aria-hidden 再聚焦）；demo-coverage wait 步从未执行（历史约定参数放 sel 但分发器只读 act）
+- **qa-regression 拆 55 个 per-component spec**（巨石串行 8.6m → 文件级并行）+ playwright 端口 `E2E_PORT` 环境变量覆盖（多 worktree 并行开发互抢端口根治）
+- drawer 四向 placement 面板停在屏幕外（CSS 顺序依赖）、message 图标首行对齐补偿、modal no-footer 底角直角
+
+### 杂项
+
+- 六发布包 package.json 补 homepage 字段（npm 包页链接指向文档站）
+- color-picker placement API 描述补录 + 12 向单测 + 底部上弹 e2e 回归
+
 ## [2.3.2] - 2026-08-31
 
 ### 特性
