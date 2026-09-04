@@ -529,6 +529,36 @@ describe('OASColorPicker 一期增强', () => {
     open(el)
     expect(panelEl(el).getAttribute('data-placement')).toBe('bottom-end')
   })
+
+  it('FD1b 12 向合法 placement 全接受：视口充足时 data-placement 原样保留、不告警', () => {
+    window.innerWidth = 2000
+    window.innerHeight = 2000
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const placements: Array<[string, string]> = [
+      ['top', 'top'],
+      ['top-start', 'top-start'],
+      ['top-end', 'top-end'],
+      ['bottom', 'bottom'],
+      ['bottom-start', 'bottom-start'],
+      ['bottom-end', 'bottom-end'],
+      ['left', 'left'],
+      ['left-start', 'left-start'],
+      ['left-end', 'left-end'],
+      ['right', 'right'],
+      ['right-start', 'right-start'],
+      ['right-end', 'right-end'],
+    ]
+    for (const [declared, expected] of placements) {
+      const el = mount({ placement: declared })
+      setRect(trigger(el), { top: 500, left: 500, right: 600, bottom: 532, width: 100, height: 32 })
+      setRect(panelEl(el), { width: 220, height: 320 })
+      open(el)
+      expect(panelEl(el).getAttribute('data-placement'), `placement=${declared}`).toBe(expected)
+      el.remove()
+    }
+    expect(warn, '12 向合法值不应触发回落告警').not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
 })
 
 describe('OASColorPicker 二期 2D 色域 / 渐变 / inline', () => {

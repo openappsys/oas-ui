@@ -189,7 +189,7 @@ onMounted(() => {
 | `inline` | — | `boolean` | — |
 | `mode` | — | `string` | `single` |
 | `open` | — | `boolean` | — |
-| `placement` | — | `string` | `bottom` |
+| `placement` | 面板位置，12 向 `top`/`bottom`/`left`/`right` × `-start`/`-end`（默认 `bottom`）；触发器贴近视口右缘时自动右对齐翻转，下方空间不足时向上弹，溢出部分夹取回视口内 | `string` | `bottom` |
 | `preset` | 预设色数组（JSON） | `string` | — |
 | `preset-columns` | — | `string` | — |
 | `preset-rows` | — | `string` | — |

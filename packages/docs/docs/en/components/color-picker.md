@@ -189,7 +189,7 @@ onMounted(() => {
 | `inline` | — | `boolean` | — |
 | `mode` | — | `string` | `single` |
 | `open` | — | `boolean` | — |
-| `placement` | — | `string` | `bottom` |
+| `placement` | Panel placement, 12 directions: `top`/`bottom`/`left`/`right` with `-start`/`-end` (default `bottom`); auto right-aligns when the trigger nears the viewport right edge, flips upward when space below is insufficient, and clamps back inside the viewport | `string` | `bottom` |
 | `preset` | Preset color array (JSON) | `string` | — |
 | `preset-columns` | — | `string` | — |
 | `preset-rows` | — | `string` | — |

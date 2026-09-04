@@ -469,6 +469,7 @@
   "oas-color-picker": {
     "attrs": {
       "disabled": "Disabled",
+      "placement": "Panel placement, 12 directions: `top`/`bottom`/`left`/`right` with `-start`/`-end` (default `bottom`); auto right-aligns when the trigger nears the viewport right edge, flips upward when space below is insufficient, and clamps back inside the viewport",
       "preset": "Preset color array (JSON)",
       "value": "Current color (hex)"
     },
