@@ -431,6 +431,26 @@ tr[data-sticky='true']:hover td {
 /* 行内编辑：编辑态单元格与列高亮 */
 td.editing {
   padding: 0;
+  /* 编辑器绝对定位覆于占位文本上（占位保列宽/行高的布局贡献，编辑器零贡献 → 进编辑不撑列） */
+  position: relative;
+}
+/* 编辑态占位：与原单元格文本同尺寸不可见（沿用原 padding 档位），auto 布局下列宽/行高贡献与常态逐像素一致 */
+.cell-editor-sizer {
+  display: block;
+  visibility: hidden;
+  box-sizing: border-box;
+  padding: var(--_cell-py) var(--_cell-px);
+}
+/* 操作列两态同槽叠放：格子宽度恒为「编辑」与「保存/取消」两组的最大值，进/出编辑不挤压邻列 */
+.action-stack {
+  display: inline-grid;
+}
+.action-stack > .action-group {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+.action-stack > .action-group.group-hidden {
+  visibility: hidden;
 }
 td[data-editing='true'],
 tr[data-sticky='true'] td[data-editing='true'] {
@@ -453,7 +473,10 @@ td[data-invalid='true'] .cell-editor {
 }
 td.editing .cell-editor {
   box-sizing: border-box;
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
   /* 编辑态与常规单元格同密度：padding/字号跟随档位变量 */
   padding: var(--_cell-py) var(--_cell-px);
   border: none;
