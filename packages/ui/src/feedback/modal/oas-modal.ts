@@ -1,6 +1,9 @@
 import { OASElement, type ReactiveController } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
-import { registeredModalCapabilities } from './oas-modal-capability.js'
+import {
+  registeredModalCapabilities,
+  onModalCapabilityRegistered,
+} from './oas-modal-capability.js'
 
 export type ModalVariant = 'info' | 'success' | 'warning' | 'error'
 
@@ -416,16 +419,42 @@ export class OASModal extends OASElement {
 
   /** 已注入的能力 controller（能力模块 import 时经注册表按名注入；核心不感知具体能力） */
   private modalCapabilities = new Map<string, ReactiveController>()
+  /** 已注入能力名（attachCapabilities 幂等去重） */
+  private attachedCaps = new Set<string>()
+  /** 能力晚加入订阅的退订函数（connected 期订阅、disconnected 退订防泄漏） */
+  private unsubCaps: (() => void) | undefined = undefined
 
   /**
-   * 能力注入：构造时遍历能力注册表，把已注册能力 factory 的 controller 逐个 addController。
-   * 能力包（如 feedback/modal/prompt）在模块求值期自注册，早于任何实例构造——
+   * 能力注入：构造时快照已注册能力 + connected 期订阅晚加入（注册可能晚于元素构造——
+   * 入口求值顺序、打包器重排、按需「先组件后能力」、动态 import 等场景）。
    * 未 import 的能力不注入（命令式层按名取不到时静默失效 + dev 告警）。
    * prompt 输入/校验 machinery 不在核心实现：核心只保留「宿主 + 委托点」。
    */
   constructor() {
     super()
+    this.attachCapabilities()
+  }
+
+  override connectedCallback(): void {
+    // 订阅晚加入 + catch-up 置于 super 之前：命令式 prompt 会话总是对「已连接宿主」执行，
+    // 宿主先 attach 再走基类渲染/控制器 hostConnected，晚注册的会话委托点即时就绪
+    this.unsubCaps = onModalCapabilityRegistered(() => this.attachCapabilities())
+    this.attachCapabilities()
+    super.connectedCallback()
+  }
+
+  override disconnectedCallback(): void {
+    if (this.wasOpen && !this.hasAttr('no-scroll-lock')) unlockBodyScroll()
+    this.unsubCaps?.()
+    this.unsubCaps = undefined
+    super.disconnectedCallback()
+  }
+
+  /** 幂等注入：按 name 去重，已注入的能力不重复 addController */
+  private attachCapabilities(): void {
     for (const { name, factory } of registeredModalCapabilities()) {
+      if (this.attachedCaps.has(name)) continue
+      this.attachedCaps.add(name)
       const controller = factory(this)
       this.addController(controller)
       this.modalCapabilities.set(name, controller)
@@ -673,12 +702,6 @@ export class OASModal extends OASElement {
     this.shadow.innerHTML = this.template()
     this.bind()
     this.update()
-  }
-
-  /** 断开连接：解锁滚动（防 modal 未 closed 就被移除时残留锁） */
-  override disconnectedCallback(): void {
-    if (this.wasOpen && !this.hasAttr('no-scroll-lock')) unlockBodyScroll()
-    super.disconnectedCallback()
   }
 
   /** 真水合：校验 SSR 快照结构（mask 与 dialog 存在）后直接接管，跳过 shadow 重建。

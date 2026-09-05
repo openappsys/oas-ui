@@ -1,7 +1,10 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry } from '@oas-ui/icons'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
-import { registeredPopoverCapabilities } from './oas-popover-capability.js'
+import {
+  registeredPopoverCapabilities,
+  onPopoverCapabilityRegistered,
+} from './oas-popover-capability.js'
 
 /** 面板与触发器的默认间距（offset 主轴缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
@@ -672,6 +675,10 @@ export class OASPopover extends OASElement {
   private cursorRect: DOMRect | null = null
   /** contextmenu 能力 controller（经能力注册表注入；无则右键族增强静默失效 + dev 告警） */
   private ctxCap: PopoverContextmenuCapability | null = null
+  /** 已注入能力名（attachCapabilities 幂等去重） */
+  private attachedCaps = new Set<string>()
+  /** 能力晚加入订阅的退订函数（connected 期订阅、disconnected 退订防泄漏） */
+  private unsubCaps: (() => void) | undefined = undefined
   /** mousedown 触发的时间戳：同一次按压的合成 click 在时间窗内吞没（防双路径叠加切换） */
   private lastMousedownToggle = 0
   /** trigger-keys 切换的时间戳：同一次按键的合成 click 在时间窗内吞没（P2 幂等守卫） */
@@ -685,13 +692,37 @@ export class OASPopover extends OASElement {
   finalFocusEl: HTMLElement | null = null
 
   /**
-   * 能力注入：构造时遍历能力注册表，把已注册能力 factory 的 controller 逐个 addController。
-   * 能力包（如 feedback/popover/contextmenu）在模块求值期自注册，早于任何实例构造——
+   * 能力注入：构造时快照已注册能力 + connected 期订阅晚加入（注册可能晚于元素构造——
+   * 入口求值顺序、打包器重排、按需「先组件后能力」、动态 import 等场景）。
    * 未 import 的能力不注入（其右键族分支由 ctxCap 判空回落 core 行为 + dev 告警）。
    */
   constructor() {
     super()
+    this.attachCapabilities()
+  }
+
+  override connectedCallback(): void {
+    // 订阅晚加入 + catch-up 置于 super 之前：contextmenu 能力 hostConnected 会向触发元素
+    // 绑 touch 监听/挂断点——先 attach 再走基类渲染 + 控制器 hostConnected，锚点就绪即绑定
+    this.unsubCaps = onPopoverCapabilityRegistered(() => this.attachCapabilities())
+    this.attachCapabilities()
+    super.connectedCallback()
+  }
+
+  /** 断开连接时拆除 portal + 能力晚加入退订（面板与 slot 节点移回、host 移除，不留孤儿于 body） */
+  override disconnectedCallback(): void {
+    this.destroyPortal()
+    this.scrollFollow = false
+    this.unsubCaps?.()
+    this.unsubCaps = undefined
+    super.disconnectedCallback()
+  }
+
+  /** 幂等注入：按 name 去重，已注入的能力不重复 addController */
+  private attachCapabilities(): void {
     for (const { name, factory } of registeredPopoverCapabilities()) {
+      if (this.attachedCaps.has(name)) continue
+      this.attachedCaps.add(name)
       const controller = factory(this)
       this.addController(controller)
       if (name === 'contextmenu') this.ctxCap = controller as PopoverContextmenuCapability
@@ -890,13 +921,6 @@ export class OASPopover extends OASElement {
     if (snapTitle !== '') this.titleCache = snapTitle
     this.bind()
     return true
-  }
-
-  /** 断开连接时拆除 portal（面板与 slot 节点移回、host 移除，不留孤儿于 body） */
-  override disconnectedCallback(): void {
-    this.destroyPortal()
-    this.scrollFollow = false
-    super.disconnectedCallback()
   }
 
   // —— 触发方式（trigger）——

@@ -6,7 +6,10 @@ import {
   formatSwatch,
   type RGBA,
 } from './color.js'
-import { registeredColorPickerCapabilities } from './oas-color-picker-capability.js'
+import {
+  registeredColorPickerCapabilities,
+  onColorPickerCapabilityRegistered,
+} from './oas-color-picker-capability.js'
 
 /** placement 合法取值：12 向（四基向 × start/end 交叉轴对齐），默认 bottom（与 date-picker 同一枚举） */
 const VALID_PLACEMENTS: readonly Placement[] = [
@@ -518,12 +521,38 @@ export class OASColorPicker extends OASElement {
   private placementWarned = false
   /** designer 能力 controller（经能力注册表注入；无则模板不渲染 2D/渐变区、mode=gradient 静默失效） */
   private designerCap: ColorPickerDesignerCapability | null = null
+  /** 已注入能力名（attachCapabilities 幂等去重） */
+  private attachedCaps = new Set<string>()
+  /** 能力晚加入订阅的退订函数（connected 期订阅、disconnected 退订防泄漏） */
+  private unsubCaps: (() => void) | undefined = undefined
 
-  // ---------- 构造：遍历能力注册表注入能力控制器 ----------
+  // ---------- 构造：快照注入 + 生命周期订阅晚加入 ----------
 
   constructor() {
     super()
+    this.attachCapabilities()
+  }
+
+  override connectedCallback(): void {
+    // 订阅晚加入 + catch-up 必须置于 super 之前：2D 色域/渐变编辑区由 template() 在
+    // 首渲染一次性输出——宿主在能力注册后才连接时，先 attach 再走基类 render 即首帧带 designer
+    // 结构；已连接后再注册则 attach 后能力对象就绪（后续渲染管线委托其方法）
+    this.unsubCaps = onColorPickerCapabilityRegistered(() => this.attachCapabilities())
+    this.attachCapabilities()
+    super.connectedCallback()
+  }
+
+  override disconnectedCallback(): void {
+    this.unsubCaps?.()
+    this.unsubCaps = undefined
+    super.disconnectedCallback()
+  }
+
+  /** 幂等注入：按 name 去重，已注入的能力不重复 addController */
+  private attachCapabilities(): void {
     for (const { name, factory } of registeredColorPickerCapabilities()) {
+      if (this.attachedCaps.has(name)) continue
+      this.attachedCaps.add(name)
       const controller = factory(this)
       this.addController(controller)
       if (name === 'designer') {
