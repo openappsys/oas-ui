@@ -693,7 +693,7 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(line).toContain('part="bar"')
     expect(line).toContain('style="width: 60%;"')
     expect(line).toContain('aria-valuenow="60"')
-    expect(line).toContain('>60%</div>')
+    expect(line).toContain('<span class="text-value">60%</span>')
 
     const circle = await renderToString(
       'oas-progress',

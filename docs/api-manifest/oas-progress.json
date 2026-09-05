@@ -42,10 +42,74 @@
       "type": "string",
       "default": "6",
       "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "100",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "track-color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "striped",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "striped-flow",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "steps",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "buffer",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "text-inside",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "indeterminate",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "stroke-linecap",
+      "type": "string",
+      "default": "round",
+      "observed": true
     }
   ],
   "props": [],
   "events": [],
-  "slots": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
   "unresolved": []
 }

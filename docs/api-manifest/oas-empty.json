@@ -17,16 +17,50 @@
     {
       "name": "image-size",
       "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "align",
+      "type": "string",
+      "default": "center",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
   "events": [],
   "slots": [
     {
+      "name": ""
+    },
+    {
       "name": "action"
     },
     {
       "name": "illustration"
+    },
+    {
+      "name": "title"
     }
   ],
   "unresolved": []

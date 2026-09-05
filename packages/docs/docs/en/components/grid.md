@@ -67,6 +67,40 @@ Setting `columns` divides the width equally with `repeat(n, 1fr)`; child `span` 
   </oas-grid>
 </DemoBlock>
 
+## Responsive column counts
+
+`columns` accepts breakpoint shorthand: a base value plus space-separated `breakpoint:value` pairs (same protocol as `span`: `sm`=640 / `md`=768 / `lg`=1024 / `xl`=1280, mobile-first). Children stay auto equal-width and ignore `span`. Resize the window to see the count adapt.
+
+<DemoBlock title="columns breakpoints: 1 → sm:2 → md:3">
+  <oas-grid columns="1 sm:2 md:3" gap="12px" style="width: 100%">
+    <div class="demo-grid-box">1</div>
+    <div class="demo-grid-box">2</div>
+    <div class="demo-grid-box">3</div>
+    <div class="demo-grid-box">4</div>
+    <div class="demo-grid-box">5</div>
+    <div class="demo-grid-box">6</div>
+  </oas-grid>
+  <p class="demo-grid-note">&lt;640px 1 column per row; ≥640px 2; ≥768px 3.</p>
+</DemoBlock>
+
+## Min child width (auto-fit grid)
+
+`min-child-width` sets the minimum width of each child (e.g. `180px`; bare numbers are treated as px). The grid derives its column count automatically from the available width via `auto-fit + minmax` — children reflow without any breakpoints. When combined with `columns`, `columns` wins (`min-child-width` is ignored); in this mode child `span` / `offset` are also disabled (auto placement).
+
+<DemoBlock title="min-child-width auto-fit grid">
+  <oas-grid min-child-width="180px" gap="12px" style="width: 100%">
+    <div class="demo-grid-box">1</div>
+    <div class="demo-grid-box">2</div>
+    <div class="demo-grid-box">3</div>
+    <div class="demo-grid-box">4</div>
+    <div class="demo-grid-box">5</div>
+    <div class="demo-grid-box">6</div>
+    <div class="demo-grid-box">7</div>
+    <div class="demo-grid-box">8</div>
+  </oas-grid>
+  <p class="demo-grid-note">Narrow or widen the container to see the column count change automatically — no breakpoints needed.</p>
+</DemoBlock>
+
 ## Large gap
 
 <DemoBlock title="Gap">
@@ -277,9 +311,10 @@ Push/pull (offset-based left/right movement) is intentionally not provided — u
 | --- | --- | --- | --- |
 | `align` | Block-axis alignment (align-items): `start` / `center` / `end` / `stretch` / `baseline`; invalid values fall back to `stretch` with a dev warning (deduped) | `string` | — |
 | `cols` | Total column count | `string` | `24` |
-| `columns` | Auto equal-width count (simple-grid; when set, child `span` is ignored) | `string` | — |
+| `columns` | Auto equal column count (simple-grid; child span ignored when set): supports breakpoint shorthand (e.g. 3 md:2 sm:1; breakpoints sm=640/md=768/lg=1024/xl=1280); takes precedence over min-child-width | `string` | — |
 | `gap` | Gap; a single value applies to both axes, two space-separated values set `row column` (e.g. `8 16` = row 8, column 16); three or more values are invalid and silently fall back to `0` | `string` | `0` |
 | `justify` | Inline-axis alignment (justify-items): `start` / `center` / `end` / `stretch`; invalid values fall back to `stretch` with a dev warning (deduped) | `string` | — |
+| `min-child-width` | Minimum child width (e.g. 180px; bare numbers read as px): auto-fit + minmax derives the column count from container width (breakpoint-free fluid reflow); `columns` wins when both are set, and child span/offset are inert in this mode | `string` | — |
 
 | Name | Description |
 | --- | --- |

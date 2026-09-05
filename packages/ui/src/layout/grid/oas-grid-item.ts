@@ -164,16 +164,19 @@ export class OASGridItem extends OASElement {
   }
 
   protected override update(): void {
-    // simple-grid（父级 oas-grid 有 columns 且 >0）时自动布局，忽略 span/offset/断点
+    // auto-layout（父级 oas-grid 为 simple-grid / 自适应宫格）时自动排布，忽略 span/offset/断点：
+    // - columns（含断点简写如 `3 md:2`）：按列数等分；
+    // - min-child-width：auto-fit 流式自算列数。
     const grid = this.closest('oas-grid')
-    const columns = grid?.getAttribute('columns') ?? ''
-    const simpleGrid = columns !== '' && (Number(columns) || 0) > 0
+    const autoLayout =
+      (grid?.getAttribute('columns') ?? '') !== '' ||
+      (grid?.getAttribute('min-child-width') ?? '') !== ''
 
     // order 排序：数字直写，非法/缺省回落 0
     const order = Number(this.getAttr('order', '0'))
     this.style.order = Number.isFinite(order) ? String(order) : '0'
 
-    if (simpleGrid) {
+    if (autoLayout) {
       this.style.gridColumn = ''
       this.syncBreakpointStyle('')
       return

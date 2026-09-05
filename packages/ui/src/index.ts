@@ -210,6 +210,7 @@ export {
 } from './feedback/loading-bar/index.js'
 export { OASSpin } from './feedback/spin/oas-spin.js'
 export { OASSkeleton } from './feedback/skeleton/oas-skeleton.js'
+export { OASSkeletonItem } from './feedback/skeleton/oas-skeleton-item.js'
 export { OASEmpty } from './feedback/empty/oas-empty.js'
 export { OASResult } from './feedback/result/oas-result.js'
 export { OAStooltip } from './feedback/tooltip/oas-tooltip.js'

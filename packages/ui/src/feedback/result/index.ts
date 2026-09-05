@@ -5,3 +5,4 @@ if (!customElements.get('oas-result')) {
 }
 
 export { OASResult }
+export type { ResultStatus, ResultSize } from './oas-result.js'

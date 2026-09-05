@@ -820,12 +820,19 @@
       "description": "Description text",
       "hide-image": "Hide the illustration",
       "illustration": "Custom illustration: SVG/HTML markup or image URL",
-      "image-size": "Illustration size (px)"
+      "image-size": "Illustration size (px)",
+      "title": "Title shown above the description (absorbed from the host once rendered — native title absorption; use the title slot for rich content)",
+      "icon": "Icon-set name (oas-icon registry): icon media with a tinted circular backdrop, mutually exclusive with illustration",
+      "size": "Size preset `small` / `medium` (default) / `large`: scales media and font sizes; orthogonal to `image-size`",
+      "align": "Layout alignment: `center` (default, vertical) / `start` / `end` (horizontal, media leading or trailing)",
+      "variant": "Container variant: `outlined` (border) / `filled` (tinted background); none by default"
     },
     "events": {},
     "slots": {
       "action": "Action area, placed below the description",
-      "illustration": "Custom illustration content, takes precedence over the `illustration` attribute"
+      "illustration": "Custom illustration content, takes precedence over the `illustration` attribute",
+      "title": "Rich title slot; overrides the title attribute when present",
+      "": "Rich description slot; overrides the description attribute and built-in text when present"
     }
   },
   "oas-equation": {
@@ -909,9 +916,10 @@
     "attrs": {
       "align": "Block-axis alignment (align-items): `start` / `center` / `end` / `stretch` / `baseline`; invalid values fall back to `stretch` with a dev warning (deduped)",
       "cols": "Total column count",
-      "columns": "Auto equal-width count (simple-grid; when set, child `span` is ignored)",
+      "columns": "Auto equal column count (simple-grid; child span ignored when set): supports breakpoint shorthand (e.g. 3 md:2 sm:1; breakpoints sm=640/md=768/lg=1024/xl=1280); takes precedence over min-child-width",
       "gap": "Gap; a single value applies to both axes, two space-separated values set `row column` (e.g. `8 16` = row 8, column 16); three or more values are invalid and silently fall back to `0`",
-      "justify": "Inline-axis alignment (justify-items): `start` / `center` / `end` / `stretch`; invalid values fall back to `stretch` with a dev warning (deduped)"
+      "justify": "Inline-axis alignment (justify-items): `start` / `center` / `end` / `stretch`; invalid values fall back to `stretch` with a dev warning (deduped)",
+      "min-child-width": "Minimum child width (e.g. 180px; bare numbers read as px): auto-fit + minmax derives the column count from container width (breakpoint-free fluid reflow); `columns` wins when both are set, and child span/offset are inert in this mode"
     },
     "events": {},
     "slots": {}
@@ -1594,13 +1602,26 @@
       "no-text": "Hide the side/center percentage text",
       "percent": "Progress percentage (0–100, clamped automatically)",
       "show-text": "Whether to show the percentage text",
-      "size": "Circle diameter (px)",
+      "size": "Size: line = height preset `small`(4px) / `medium`(8px, default) / `large`(12px); circle/dashboard = diameter in px (default 48)",
       "status": "Status color; `error` red, `success` green; when unset and progress reaches 100, success green is shown",
-      "stroke-width": "Circle stroke width (px)",
-      "type": "Form: `line` / `circle`"
+      "stroke-width": "Stroke width in px: circle/dashboard ring thickness (default 6); line track height (wins over the size preset)",
+      "type": "Shape: `line` (default) / `circle` / `dashboard` (gauge: 270° arc open at the bottom)",
+      "indeterminate": "Indeterminate loading: ignores percent/steps/buffer/striped and drops aria-valuenow (APG); sweeping bar (line) or rotating segmented arc (circle/dashboard)",
+      "color": "Progress color: preset name (via --oas-preset-* tokens) or any CSS color/gradient string (gradients recommended for line); wins over status colors and the full-value green",
+      "track-color": "Track color: same protocol as color",
+      "striped": "Striped texture (line only)",
+      "striped-flow": "Animated flowing stripes (line only; implies striped when used alone)",
+      "steps": "Stepped segments (line only): integer ≥2 equal segments; lit count = round(percent × steps)",
+      "buffer": "Buffer value (line only, clamped to 0–max): static buffered segment behind the main bar for streaming/loading scenarios",
+      "text-inside": "Text inside the bar (line only; the track auto-grows to fit text when no explicit thickness is set)",
+      "max": "Value range upper bound (default 100): percent/buffer read as current values; width and text are computed as value/max and aria reflects real values",
+      "label": "Accessible name (written to the progress bar aria-label)",
+      "stroke-linecap": "Arc line cap `round` (default) / `butt` (circle/dashboard)"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Custom text: right of the line / inside the bar (text-inside) / circle center; wins over status icons and the built-in percentage"
+    }
   },
   "oas-qrcode": {
     "attrs": {
@@ -1641,13 +1662,17 @@
   "oas-result": {
     "attrs": {
       "description": "Description text",
-      "status": "Result status",
-      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content"
+      "status": "Status: `success` / `error` / `warning` / `info` / `403` / `404` / `500` (HTTP error pages with dedicated icons); invalid values fall back to info with a warning",
+      "title": "Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
+      "size": "Size preset `small` / `medium` (default) / `large`: scales icon diameter and font sizes"
     },
     "events": {},
     "slots": {
       "extra": "Action area, placed below the description",
-      "title": "Rich title content slot; overrides the title attribute text when present"
+      "title": "Rich title content slot; overrides the title attribute text when present",
+      "icon": "Custom icon (overrides the built-in status icon; switches to neutral styling without the tinted backdrop)",
+      "description": "Rich description slot; overrides the description attribute when present",
+      "": "Content area (error detail lists, etc.), placed between the description and the extra actions"
     }
   },
   "oas-scroll-area": {
@@ -1756,10 +1781,17 @@
       "active": "Whether to enable the shimmer animation",
       "avatar": "Whether to show the avatar placeholder",
       "rows": "Number of paragraph rows",
-      "title": "Whether to show the title placeholder (title is a presence-only switch, its value is not rendered; absorbed from the host on read so no native hover tooltip remains)"
+      "title": "Whether to show the title placeholder (title is a presence-only switch, its value is not rendered; absorbed from the host on read so no native hover tooltip remains)",
+      "loading": "Controlled toggle: `true` (default) renders the skeleton, `\"false\"` renders the default slot content",
+      "effect": "Animation: `sheen` / `pulse` / `none` (default); wins over active (active remains as a sheen shortcut)",
+      "count": "Repeat count of the whole skeleton group (list scenarios), default 1",
+      "widths": "Comma-separated per-row widths (e.g. `100%,80%,45%`), overriding the default text row widths inline",
+      "delay": "Anti-flicker delay (ms): the skeleton shows only after this window once loading turns true; if loading finishes within the window the skeleton never appears; neither skeleton nor content renders inside the window"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "Real content outlet: rendered when loading=\"false\" (skeleton and content both live in shadow DOM, toggled via hidden)"
+    }
   },
   "oas-slider": {
     "attrs": {
@@ -2046,7 +2078,8 @@
       "close-icon": "Custom close-button icon (iconRegistry name), replaces the default ×",
       "close-label": "aria-label of the close button (a11y context, e.g. \"Remove tag xx\"); defaults to the locale \"Close\"",
       "loading": "Loading state: spinner replaces the close icon and blocks clicks (`oas-close` detail has a `done()` callback the host calls after async work)",
-      "checked-icon": "Checkmark icon before a checked checkable tag (iconRegistry name, default check)"
+      "checked-icon": "Checkmark icon before a checked checkable tag (iconRegistry name, default check)",
+      "icon-end": "Icon-set name (oas-icon registry) rendered at the tail of the text (before the close button), sized to the font; can coexist with icon"
     },
     "events": {
       "oas-change": "Selection toggled when `checkable`, `detail: { checked }`",
@@ -2556,6 +2589,16 @@
       "oas-finish": "Dispatched when finish() finalizes",
       "oas-start": "Dispatched when start() begins"
     },
+    "slots": {}
+  },
+  "oas-skeleton-item": {
+    "attrs": {
+      "type": "Shape: `text` (default) / `title` / `avatar` / `button` / `input` / `image` / `rect`; invalid values fall back to text",
+      "width": "Width (CSS value), overriding the per-type default",
+      "height": "Height (CSS value), overriding the per-type default",
+      "effect": "Animation: `sheen` / `pulse` / `none` (default), same semantics as oas-skeleton"
+    },
+    "events": {},
     "slots": {}
   }
 }

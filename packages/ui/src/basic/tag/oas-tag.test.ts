@@ -814,4 +814,58 @@ describe('OASTag', () => {
       expect(OASTag.observedAttributes).toContain('checked-icon')
     })
   })
+
+  describe('icon-end 尾部图标', () => {
+    it('默认隐藏；icon-end 属性渲染文字尾部 oas-icon；非法名隐藏', () => {
+      const plain = mount({}, '标签')
+      const plainEl = root(plain).querySelector<HTMLElement>('.icon-end')
+      expect(plainEl).not.toBeNull()
+      expect(plainEl!.hidden).toBe(true)
+      plain.remove()
+
+      const ok = mount({ 'icon-end': 'star' }, '标签')
+      const wrap = root(ok).querySelector<HTMLElement>('.icon-end')!
+      expect(wrap.hidden).toBe(false)
+      const oasIcon = wrap.querySelector('oas-icon')
+      expect(oasIcon).not.toBeNull()
+      expect(oasIcon!.getAttribute('name')).toBe('star')
+      ok.remove()
+
+      const bad = mount({ 'icon-end': 'no-such-icon' }, 'x')
+      expect(root(bad).querySelector<HTMLElement>('.icon-end')!.hidden).toBe(true)
+      expect(root(bad).querySelector('.icon-end oas-icon')).toBeNull()
+      bad.remove()
+    })
+
+    it('icon-end 位于内容与关闭按钮之间（DOM 顺序：content → icon-end → button）', () => {
+      const el = mount({ 'icon-end': 'star', closable: '' }, '标签')
+      const content = root(el).querySelector<HTMLElement>('.content')!
+      const tail = content.nextElementSibling!
+      expect(tail.classList.contains('icon-end')).toBe(true)
+      expect(tail.nextElementSibling!.tagName).toBe('BUTTON')
+    })
+
+    it('图标名变化更新 oas-icon name；移除属性后还原隐藏', () => {
+      const el = mount({ 'icon-end': 'star' }, 'x')
+      const wrap = root(el).querySelector<HTMLElement>('.icon-end')!
+      el.setAttribute('icon-end', 'mail')
+      expect(wrap.querySelector('oas-icon')!.getAttribute('name')).toBe('mail')
+      el.removeAttribute('icon-end')
+      expect(wrap.hidden).toBe(true)
+      expect(wrap.querySelector('oas-icon')).toBeNull()
+    })
+
+    it('icon 与 icon-end 可并存：头部与尾部图标各自渲染', () => {
+      const el = mount({ icon: 'star', 'icon-end': 'arrow-right' }, '标签')
+      const head = root(el).querySelector<HTMLElement>('.icon oas-icon')
+      const tail = root(el).querySelector<HTMLElement>('.icon-end oas-icon')
+      expect(head).not.toBeNull()
+      expect(head!.getAttribute('name')).toBe('star')
+      expect(tail!.getAttribute('name')).toBe('arrow-right')
+    })
+
+    it('icon-end 进入 observedAttributes', () => {
+      expect(OASTag.observedAttributes).toContain('icon-end')
+    })
+  })
 })

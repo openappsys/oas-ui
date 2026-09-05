@@ -68,6 +68,12 @@
       "observed": true
     },
     {
+      "name": "icon-end",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "href",
       "type": "string",
       "default": "",

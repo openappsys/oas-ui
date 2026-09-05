@@ -19,13 +19,28 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
     }
   ],
   "props": [],
   "events": [],
   "slots": [
     {
+      "name": ""
+    },
+    {
+      "name": "description"
+    },
+    {
       "name": "extra"
+    },
+    {
+      "name": "icon"
     },
     {
       "name": "title"

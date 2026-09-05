@@ -67,6 +67,40 @@
   </oas-grid>
 </DemoBlock>
 
+## 响应式等分列数
+
+`columns` 支持断点简写：基础值 + 空格分隔的若干 `断点:值`（断点协议与 `span` 一致，`sm`=640 / `md`=768 / `lg`=1024 / `xl`=1280，移动优先）。子项仍为等分自动布局、忽略 span。拖窄窗口可观察列数变化。
+
+<DemoBlock title="columns 断点：1 → sm:2 → md:3">
+  <oas-grid columns="1 sm:2 md:3" gap="12px" style="width: 100%">
+    <div class="demo-grid-box">1</div>
+    <div class="demo-grid-box">2</div>
+    <div class="demo-grid-box">3</div>
+    <div class="demo-grid-box">4</div>
+    <div class="demo-grid-box">5</div>
+    <div class="demo-grid-box">6</div>
+  </oas-grid>
+  <p class="demo-grid-note">&lt;640px 每行 1 列；≥640px 每行 2 列；≥768px 每行 3 列。</p>
+</DemoBlock>
+
+## 最小子项宽度（自适应宫格）
+
+`min-child-width` 指定每个子项的最小宽度（如 `180px`，纯数字按 px），网格以 `auto-fit + minmax` 依据容器可用宽度自动计算列数——子项免写断点即可流式重排。与 `columns` 并存时 `columns` 优先（`min-child-width` 被忽略）；该模式下子项 `span` / `offset` 同样不生效（自动排布）。
+
+<DemoBlock title="min-child-width 自适应宫格">
+  <oas-grid min-child-width="180px" gap="12px" style="width: 100%">
+    <div class="demo-grid-box">1</div>
+    <div class="demo-grid-box">2</div>
+    <div class="demo-grid-box">3</div>
+    <div class="demo-grid-box">4</div>
+    <div class="demo-grid-box">5</div>
+    <div class="demo-grid-box">6</div>
+    <div class="demo-grid-box">7</div>
+    <div class="demo-grid-box">8</div>
+  </oas-grid>
+  <p class="demo-grid-note">拖窄/加宽容器观察列数自动增减，无需任何断点。</p>
+</DemoBlock>
+
 ## 大间距
 
 <DemoBlock title="间距 gap">
@@ -277,9 +311,10 @@
 | --- | --- | --- | --- |
 | `align` | 块向轴对齐（align-items）：`start` / `center` / `end` / `stretch` / `baseline`；非法值回落 `stretch` + dev 告警（同值去重） | `string` | — |
 | `cols` | 总列数 | `string` | `24` |
-| `columns` | 自动等分数（simple-grid，有值时忽略子项 span） | `string` | — |
+| `columns` | 自动等分列数（simple-grid，有值时忽略子项 span）：支持断点简写（如 3 md:2 sm:1，断点 sm=640/md=768/lg=1024/xl=1280）；与 min-child-width 并存时优先 | `string` | — |
 | `gap` | 间距；单值两轴同值，两值空格分隔「行 列」（如 `8 16` 行 8 列 16）；三值以上非法静默回落 `0` | `string` | `0` |
 | `justify` | 行内轴对齐（justify-items）：`start` / `center` / `end` / `stretch`；非法值回落 `stretch` + dev 告警（同值去重） | `string` | — |
+| `min-child-width` | 子项最小宽度（如 180px，纯数字按 px）：auto-fit + minmax 依容器宽度自动计算列数（子项免断点流式重排）；与 columns 并存时 columns 优先，该模式下子项 span/offset 不生效 | `string` | — |
 
 | 名称 | 说明 |
 | --- | --- |

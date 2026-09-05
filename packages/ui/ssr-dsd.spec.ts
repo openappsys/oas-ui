@@ -278,6 +278,12 @@ test.beforeAll(async () => {
     renderToString('oas-progress', { percent: '60' }, '', { locale: 'zh-CN' }),
     renderToString('oas-spin', { size: 'large' }, '<div>加载中内容</div>'),
     renderToString('oas-skeleton', { rows: '4', title: 'title', avatar: 'avatar' }, ''),
+    // skeleton-item 子组件：嵌套递归序列化（白名单已含）；空内容 item 块升级前后布局稳定
+    renderToString(
+      'oas-skeleton',
+      {},
+      '<oas-skeleton-item type="avatar"></oas-skeleton-item><oas-skeleton-item type="title"></oas-skeleton-item><oas-skeleton-item type="text"></oas-skeleton-item>',
+    ),
     renderToString(
       'oas-result',
       { status: 'success', title: '操作成功', description: '你的请求已处理完成' },

@@ -21,6 +21,12 @@
       "observed": true
     },
     {
+      "name": "min-child-width",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "justify",
       "type": "string",
       "default": "",
