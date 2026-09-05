@@ -1,6 +1,6 @@
-import { t } from '@oas-ui/i18n'
 import { resolveMessageHost } from '../../framework/app/app-host.js'
 import { OASModal, type ModalVariant, type ModalCloseSource } from './oas-modal.js'
+import { hasModalCapability } from './oas-modal-capability.js'
 
 export interface ModalOptions {
   /** 标题文案（缺省则不显示标题） */
@@ -135,6 +135,19 @@ export interface PromptHandle {
   update: (partial: Partial<PromptOptions>) => void
 }
 
+/**
+ * prompt 能力包（feedback/modal/prompt）controller 对命令式层的服务面。
+ *
+ * OASModal 构造时经能力注册表（oas-modal-capability.js）注入 controller，核心仅保留
+ * 本接口作为委托点：`modal.prompt` 检查能力已注册后，从宿主元素取回本接口并调用
+ * openPrompt 执行完整输入确认流程。核心不实现任何 prompt 逻辑——未 import 能力包时
+ * prompt 调用静默失效（返回 null）并在 dev 下告警一次（同值去重）。
+ */
+export interface ModalPromptCapability {
+  /** 在当前宿主（命令式 prompt 专属的 oas-modal 实例）上执行完整输入确认流程 */
+  openPrompt(options?: PromptOptions): PromptHandle
+}
+
 interface ActiveEntry {
   el: OASModal
   dispose: () => void
@@ -144,14 +157,14 @@ interface ActiveEntry {
 const active: ActiveEntry[] = []
 
 /** 非法参数容错：非对象（null / undefined / 原始值 / 数组）一律视为空 options，不抛错 */
-function normalizeOptions<T>(options: T | null | undefined | unknown): T {
+export function normalizeOptions<T>(options: T | null | undefined | unknown): T {
   if (options != null && typeof options === 'object' && !Array.isArray(options)) {
     return options as T
   }
   return {} as T
 }
 
-function isPromiseLike(value: unknown): value is Promise<unknown> {
+export function isPromiseLike(value: unknown): value is Promise<unknown> {
   return value != null && typeof (value as { then?: unknown }).then === 'function'
 }
 
@@ -160,8 +173,10 @@ function isPromiseLike(value: unknown): value is Promise<unknown> {
  * - role="alertdialog"（P24：命令式确认/语义变体语义升级，声明式保持 dialog）
  * - focus-ok（打开聚焦「确定」按钮，语义变体的唯一按钮）
  * - deferOkClose（确定点击不自动关，由本模块在 onOk resolve/reject 后决定关闭/保持）
+ *
+ * 导出供 prompt 能力包（feedback/modal/prompt）复用——共享生命周期不重复实现。
  */
-function createModal(extraAttr?: Record<string, string>): OASModal {
+export function createCommandModal(extraAttr?: Record<string, string>): OASModal {
   const el = document.createElement('oas-modal') as OASModal
   el.setAttribute('visible', '')
   el.setAttribute('role', 'alertdialog')
@@ -173,6 +188,41 @@ function createModal(extraAttr?: Record<string, string>): OASModal {
   // 挂最近 oas-app 容器（与消息族同通道），无则回退 document.body
   resolveMessageHost().appendChild(el)
   return el
+}
+
+/**
+ * 命令式对话框统一销毁器（P3 destroy 时序）：
+ * 先移除 visible 播关闭动画（还原来源焦点、淡出），动画结束（oas-closed）后再移除 DOM
+ * 并解除存活登记；从未打开/已完全关闭则直接移除。创建即登记进 `active`（destroyAll 统一收口）。
+ *
+ * 导出供 prompt 能力包复用——避免能力包重复实现命令式层共享的关闭/销毁生命周期。
+ */
+export interface CommandModalScope {
+  /** 是否已销毁（事件回调/句柄方法据此短路） */
+  readonly disposed: boolean
+  /** 销毁当前对话框（幂等） */
+  dispose: () => void
+}
+
+export function trackCommandModal(el: OASModal): CommandModalScope {
+  let disposed = false
+  const dispose = (): void => {
+    if (disposed) return
+    disposed = true
+    const doRemove = (): void => {
+      el.remove()
+      const idx = active.findIndex((e) => e.el === el)
+      if (idx >= 0) active.splice(idx, 1)
+    }
+    if (!el.hasAttribute('visible') && !el.opened && !el.closing) {
+      doRemove()
+      return
+    }
+    if (el.hasAttribute('visible')) el.removeAttribute('visible')
+    el.addEventListener('oas-closed', doRemove, { once: true })
+  }
+  active.push({ el, dispose })
+  return { get disposed(): boolean { return disposed }, dispose }
 }
 
 function applyCommonAttrs(el: OASModal, options: ModalOptions): HTMLParagraphElement | null {
@@ -193,7 +243,7 @@ function open(
   rawOptions?: ModalOptions,
 ): ModalHandle {
   const options = normalizeOptions<ModalOptions>(rawOptions)
-  const el = createModal()
+  const el = createCommandModal()
   // 语义变体：对应图标 + 单「确定」按钮（取消按钮隐藏）
   if (variant) {
     el.setAttribute('type', variant)
@@ -281,8 +331,8 @@ function open(
   }
 }
 
-/** prompt 默认错误文案：走 locale（form.validationFailed，中英均有翻译） */
-const PROMPT_DEFAULT_ERROR = 'form.validationFailed'
+/** prompt 默认错误文案：走 locale（form.validationFailed，中英均有翻译）——定义随 prompt
+ *  能力包外置（oas-modal-prompt.ts），核心入口不含 prompt 文案依赖 */
 
 // ===== P34 options 选项组样式（命令式 light DOM，注入一次全局共享；类名前缀隔离） =====
 let optionsStyleInjected = false
@@ -365,6 +415,19 @@ function ensureOptionsStyle(): void {
 /** options 实例序号（radio 分组 name 唯一性） */
 let optionsSeq = 0
 
+/** prompt 能力未 import 的告警文案（按需 ESM 消费者用；全量入口与 CDN 反馈族包已含能力，不会触发） */
+const PROMPT_CAPABILITY_HINT = '[oas-modal] prompt 能力未启用：modal.prompt 需 import prompt 能力包后可用，当前调用已返回 null。请按需 import "@oas-ui/ui/feedback/modal/prompt"（全量入口 @oas-ui/ui 与 CDN 反馈族包已内含，无需额外引用）'
+
+/** prompt 能力告警去重（同值去重，同控件惯例：页面级仅告警一次） */
+const warnedPromptCapability = new Set<string>()
+
+/** dev 告警：modal.prompt 被调用但 prompt 能力包未注入 */
+function warnPromptNotImported(): void {
+  if (warnedPromptCapability.has(PROMPT_CAPABILITY_HINT)) return
+  warnedPromptCapability.add(PROMPT_CAPABILITY_HINT)
+  console.warn(PROMPT_CAPABILITY_HINT)
+}
+
 export const modal = {
   /** 确认框：标题 + 内容 + 确定/取消双按钮 */
   confirm: (options?: ModalOptions): ModalHandle => open('', options),
@@ -377,198 +440,30 @@ export const modal = {
   /** 错误确认框：error 图标 + 单「确定」按钮 */
   error: (options?: ModalOptions): ModalHandle => open('error', options),
   /**
-   * 输入框确认（prompt）：带输入控件的对话框，结果 resolve `{ value, action }`。
-   * 校验失败（pattern / validator）时保持打开并显示错误；输入修正后自动清除可再提交。
+   * 输入框确认（prompt）：依赖 prompt 能力包（`@oas-ui/ui/feedback/modal/prompt`，import 即注册）。
+   *
+   * 已注册时委托宿主元素注入的 prompt controller 执行完整输入流程（输入控件 + pattern/validator
+   * 校验 + 错误态 + `{ value, action }` 返回）；未 import 能力包时返回 `null` 并在 dev 下告警
+   * 一次（同值去重，提示按需引入）——确认/提示类消费者不引入能力包则零 prompt machinery。
    */
   prompt: (options?: PromptOptions): PromptHandle => {
-    const opts = normalizeOptions<PromptOptions>(options)
-    const el = createModal({
+    if (!hasModalCapability('prompt')) {
+      warnPromptNotImported()
+      // 能力未启用：返回 null（类型面保持 PromptHandle；误用会在 dev 告警下即时暴露）
+      return null as unknown as PromptHandle
+    }
+    const el = createCommandModal({
       // PB3：打开自动聚焦输入框（覆盖默认聚焦确定钮）
       'initial-focus': 'input, textarea',
     })
-    if (opts.title !== undefined) el.setAttribute('title', opts.title)
-    if (opts.okText !== undefined) el.setAttribute('ok-text', opts.okText)
-    if (opts.cancelText !== undefined) el.setAttribute('cancel-text', opts.cancelText)
-    if (opts.content !== undefined) {
-      const p = document.createElement('p')
-      p.textContent = opts.content
-      el.appendChild(p)
+    const cap = el.getModalCapability<ModalPromptCapability>('prompt')
+    if (!cap) {
+      // 防御：注册表有名但宿主未注入（正常不会发生——能力模块 import 时元素构造即注入）
+      warnPromptNotImported()
+      trackCommandModal(el).dispose()
+      return null as unknown as PromptHandle
     }
-
-    // 输入控件 + 错误提示（light DOM；错误文案颜色/边框走 CSS 变量 token，含 dark 变体）
-    const isTextarea = opts.inputType === 'textarea'
-    const input = document.createElement(isTextarea ? 'textarea' : 'input') as HTMLInputElement &
-      HTMLTextAreaElement
-    if (!isTextarea) input.type = (opts.inputType ?? 'text') as HTMLInputElement['type']
-    input.value = opts.inputValue ?? ''
-    input.setAttribute('aria-invalid', 'false')
-    if (opts.placeholder !== undefined) input.placeholder = opts.placeholder
-    // 屏幕阅读器可读名：优先标题，其次占位文案
-    const ariaLabel = opts.title ?? opts.placeholder ?? ''
-    if (ariaLabel !== '') input.setAttribute('aria-label', ariaLabel)
-    input.style.cssText =
-      'width: 100%; box-sizing: border-box; padding: 6px 10px; font: inherit; ' +
-      'border: 1px solid var(--oas-color-border-strong); border-radius: var(--oas-radius-md); ' +
-      'background: var(--oas-color-bg); color: var(--oas-color-text-primary);'
-    const err = document.createElement('div')
-    err.className = 'oas-modal-prompt-error'
-    err.id = 'oas-modal-prompt-error'
-    err.hidden = true
-    err.setAttribute('role', 'alert')
-    err.style.cssText =
-      'color: var(--oas-color-danger); font-size: var(--oas-font-size-sm); ' +
-      'line-height: 1.5; min-height: 1.2em;'
-    const wrap = document.createElement('div')
-    wrap.className = 'oas-modal-prompt'
-    wrap.style.cssText = 'margin-top: 12px; display: flex; flex-direction: column; gap: 4px;'
-    wrap.append(input, err)
-    el.appendChild(wrap)
-
-    const showError = (message: string): void => {
-      err.textContent = message
-      err.hidden = false
-      input.setAttribute('aria-invalid', 'true')
-      input.setAttribute('aria-describedby', 'oas-modal-prompt-error')
-      // danger 边框（错误态视觉）；走 token 含 dark 变体
-      input.style.borderColor = 'var(--oas-color-danger)'
-    }
-    const hideError = (): void => {
-      err.hidden = true
-      input.setAttribute('aria-invalid', 'false')
-      input.removeAttribute('aria-describedby')
-      input.style.borderColor = ''
-    }
-    // PB1：输入修正后错误自动清除，可再提交
-    input.addEventListener('input', hideError)
-
-    // PB3：light DOM 输入控件在组件首 update 之后才挂载（组件聚焦判定时未见输入框），
-    // 手动接管焦点覆盖默认聚焦确定钮
-    input.focus()
-
-    /** 校验：先 pattern（PG6）后 validator（PG4）；返回错误文案或 null（通过） */
-    const validate = (value: string): string | null => {
-      const pattern = opts.inputPattern
-      if (pattern) {
-        try {
-          if (!new RegExp(pattern).test(value)) {
-            return opts.inputErrorMessage ?? t(PROMPT_DEFAULT_ERROR)
-          }
-        } catch {
-          // 非法正则跳过（容错，不阻断提交）
-        }
-      }
-      const check = opts.validator
-      if (!check) return null
-      const result = check(value)
-      if (result === true) return null
-      if (result === false) return opts.inputErrorMessage ?? t(PROMPT_DEFAULT_ERROR)
-      if (typeof result === 'string' && result !== '') return result
-      return null
-    }
-
-    let disposed = false
-    let resolved = false
-    let resolveResult!: (result: PromptResult) => void
-    // prompt 返回形态：Promise<PromptResult> & PromptHandle（既可 await 结果，也可句柄操控）
-    const promise = new Promise<PromptResult>((res) => {
-      resolveResult = res
-    })
-    const dispose = (): void => {
-      if (disposed) return
-      disposed = true
-      // P3 destroy 时序：先移除 visible 播关闭动画，动画结束（oas-closed）再移除 DOM
-      const doRemove = (): void => {
-        el.remove()
-        const idx = active.findIndex((e) => e.el === el)
-        if (idx >= 0) active.splice(idx, 1)
-      }
-      if (!el.hasAttribute('visible') && !el.opened && !el.closing) {
-        doRemove()
-        return
-      }
-      if (el.hasAttribute('visible')) el.removeAttribute('visible')
-      el.addEventListener('oas-closed', doRemove, { once: true })
-    }
-    const settle = (result: PromptResult): void => {
-      if (resolved) return
-      resolved = true
-      resolveResult(result)
-    }
-
-    const onSubmit = (): void => {
-      if (disposed) return
-      if (el.hasAttribute('loading')) return
-      const invalid = validate(input.value)
-      if (invalid !== null) {
-        showError(invalid)
-        return
-      }
-      hideError()
-      const value = input.value
-      const handler = opts.onOk
-      if (!handler) {
-        settle({ value, action: 'confirm' })
-        dispose()
-        return
-      }
-      // PB4：异步提交时确定按钮 loading（复用 deferOkClose 机制，loading 由模块设置）
-      el.setAttribute('loading', '')
-      const result = handler(value)
-      if (!isPromiseLike(result)) {
-        settle({ value, action: 'confirm' })
-        dispose()
-        return
-      }
-      result.then(
-        () => {
-          settle({ value, action: 'confirm' })
-          dispose()
-        },
-        () => {
-          // 失败：清除 loading 保持打开，可重试或取消（结果不 settle）
-          if (!disposed) el.removeAttribute('loading')
-        },
-      )
-    }
-
-    const onClose = (e: Event): void => {
-      if (disposed) return
-      const source = (e as CustomEvent<{ source: ModalCloseSource }>).detail.source
-      if (source === 'mask') opts.onMaskClick?.()
-      if (source !== 'programmatic') opts.onCancel?.()
-      // PB2/A32：取消/✕/遮罩/Esc/编程关闭统一 resolve { value, action: 'cancel' }（不挂起）
-      settle({ value: input.value, action: 'cancel' })
-      dispose()
-    }
-
-    el.addEventListener('oas-ok', onSubmit)
-    el.addEventListener('oas-close', onClose)
-    active.push({ el, dispose })
-
-    return Object.assign(promise, {
-      close: (): void => {
-        if (disposed) return
-        el.close('programmatic')
-      },
-      update: (partial: Partial<PromptOptions>): void => {
-        if (disposed) return
-        Object.assign(opts, partial)
-        if (partial.title !== undefined) el.setAttribute('title', partial.title)
-        if (partial.okText !== undefined) el.setAttribute('ok-text', partial.okText)
-        if (partial.cancelText !== undefined) el.setAttribute('cancel-text', partial.cancelText)
-        if (partial.content !== undefined) {
-          // content 更新：替换首个 p 的文本或重建
-          const firstP = el.querySelector('p')
-          if (firstP) firstP.textContent = partial.content
-        }
-        if (partial.inputValue !== undefined) input.value = partial.inputValue
-        if (partial.placeholder !== undefined) input.placeholder = partial.placeholder
-        if (partial.inputErrorMessage !== undefined && !err.hidden) {
-          // 错误文案更新：已显示错误时刷新为默认（新配置）文案
-          err.textContent = partial.inputErrorMessage
-        }
-      },
-    })
+    return cap.openPrompt(options)
   },
 
   /**
@@ -582,7 +477,7 @@ export const modal = {
     const mode: OptionsType =
       opts.type === 'checkbox' || opts.type === 'toggle' ? opts.type : 'radio'
     ensureOptionsStyle()
-    const el = createModal()
+    const el = createCommandModal()
     if (opts.title !== undefined) el.setAttribute('title', opts.title)
     if (opts.okText !== undefined) el.setAttribute('ok-text', opts.okText)
     if (opts.cancelText !== undefined) el.setAttribute('cancel-text', opts.cancelText)
