@@ -91,6 +91,26 @@ test('table 行内编辑：Enter 提交后编辑器退出且列高亮清除', as
   expect(after.cellText).toBe('演示提交')
 })
 
+test('table 行内编辑：真实双击进入编辑（真实 dblclick，非 dispatchEvent——首击行选中重建不得阻断）', async ({
+  page,
+}) => {
+  // 缺陷固化：真实双击的首击触发行选中切换 → update() 同步重建 tbody → 被击 td 脱离文档 →
+  // 浏览器判定两次点击目标不同，dblclick 事件根本不派发（事件流实证：两击后零 dblclick），
+  // 编辑永不进入（dispatchEvent 直派无法暴露，上方 Enter 提交用例的注释曾把它当测试稳定性
+  // 问题绕过——实质是用户可感缺陷）。修复=click 委托到稳定的 <table> 容器 + 同行同列 500ms
+  // 手工双击判定 + findRow/cellOf 重查活节点（tr 选中处理器先行，命中时目标 td 已被重建）。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-edit')
+  await page.locator('#table-edit').first().scrollIntoViewIfNeeded()
+  const cell = page.locator('#table-edit td.editable-cell').first()
+  await cell.dblclick()
+  await page.waitForTimeout(300)
+  const hasEditor = await page.evaluate(
+    () => !!document.querySelector('#table-edit')!.shadowRoot!.querySelector('input.cell-editor'),
+  )
+  expect(hasEditor, '真实双击应进入行内编辑').toBe(true)
+})
+
 test('table 可编辑单元格可感知线索：hover 淡底色 + text 光标 + 铅笔图标显现', async ({ page }) => {
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-edit')
