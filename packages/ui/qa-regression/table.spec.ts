@@ -111,6 +111,51 @@ test('table 行内编辑：真实双击进入编辑（真实 dblclick，非 disp
   expect(hasEditor, '真实双击应进入行内编辑').toBe(true)
 })
 
+test('table 行内编辑几何稳定：进/出编辑列宽与行高零跳变（input 与 select 编辑器）', async ({
+  page,
+}) => {
+  // 缺陷固化：进编辑时整列被撑宽（89→187）、邻列挤窄文字换行、行高联动 49→73——三个来源：
+  // ①input 默认 size=20 的内在宽度成为 auto 布局 min-content 贡献；②select 内在宽度=最长选项
+  // +下拉钮；③操作列「编辑」→「保存/取消」变宽挤压邻列。修复=不可见占位保原文本布局贡献
+  // +编辑器绝对定位零贡献 + 操作列两态同槽叠放（inline-grid 同格，格宽恒为两态最大值）。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#table-edit')
+  await page.locator('#table-edit').first().scrollIntoViewIfNeeded()
+  const measure = () =>
+    page.evaluate(() => {
+      const sr = document.querySelector('#table-edit')!.shadowRoot!
+      return {
+        cols: [...sr.querySelectorAll('thead th')].map((th) =>
+          Math.round(th.getBoundingClientRect().width),
+        ),
+        rowH: Math.round(sr.querySelector('tbody tr.row')!.getBoundingClientRect().height),
+      }
+    })
+  const base = await measure()
+
+  // input 编辑器（首个可编辑单元格）
+  const inputCell = page.locator('#table-edit tbody tr.row').first().locator('td.editable-cell').first()
+  await inputCell.dblclick()
+  await page.waitForTimeout(300)
+  const inEdit = await measure()
+  expect(inEdit.cols, 'input 编辑中列宽应零跳变').toEqual(base.cols)
+  expect(inEdit.rowH, 'input 编辑中行高应零跳变').toBe(base.rowH)
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(300)
+  expect((await measure()).cols, '退出编辑列宽应还原').toEqual(base.cols)
+
+  // select 编辑器（职位列）
+  const selectCell = page
+    .locator('#table-edit tbody tr.row')
+    .first()
+    .locator('td.editable-cell[data-col="position"]')
+  await selectCell.dblclick()
+  await page.waitForTimeout(300)
+  const inSelect = await measure()
+  expect(inSelect.cols, 'select 编辑中列宽应零跳变').toEqual(base.cols)
+  expect(inSelect.rowH, 'select 编辑中行高应零跳变').toBe(base.rowH)
+})
+
 test('table 可编辑单元格可感知线索：hover 淡底色 + text 光标 + 铅笔图标显现', async ({ page }) => {
   await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
   await up(page, '#table-edit')
