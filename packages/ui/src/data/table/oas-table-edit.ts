@@ -159,35 +159,41 @@ export class TableEditController implements ReactiveController, TableEditCapabil
     const key = tr.getAttribute('data-key') ?? ''
     const isEditing = this.editState?.key === key
     td.textContent = ''
-    if (isEditing) {
-      const save = document.createElement('button')
-      save.className = 'action-btn save'
-      save.setAttribute('part', 'action-save')
-      save.textContent = this.hostEl.translateText('table.save')
-      save.addEventListener('click', (e) => {
-        e.stopPropagation()
-        this.submitEdit()
-      })
-      const cancel = document.createElement('button')
-      cancel.className = 'action-btn danger'
-      cancel.setAttribute('part', 'action-cancel')
-      cancel.textContent = this.hostEl.translateText('table.cancel')
-      cancel.addEventListener('click', (e) => {
-        e.stopPropagation()
-        this.cancelEdit()
-      })
-      td.append(save, cancel)
-    } else {
-      const edit = document.createElement('button')
-      edit.className = 'action-btn'
-      edit.setAttribute('part', 'action-edit')
-      edit.textContent = this.hostEl.translateText('table.edit')
-      edit.addEventListener('click', (e) => {
-        e.stopPropagation()
-        this.editRow(key)
-      })
-      td.appendChild(edit)
-    }
+    const save = document.createElement('button')
+    save.className = 'action-btn save'
+    save.setAttribute('part', 'action-save')
+    save.textContent = this.hostEl.translateText('table.save')
+    save.addEventListener('click', (e) => {
+      e.stopPropagation()
+      this.submitEdit()
+    })
+    const cancel = document.createElement('button')
+    cancel.className = 'action-btn danger'
+    cancel.setAttribute('part', 'action-cancel')
+    cancel.textContent = this.hostEl.translateText('table.cancel')
+    cancel.addEventListener('click', (e) => {
+      e.stopPropagation()
+      this.cancelEdit()
+    })
+    const edit = document.createElement('button')
+    edit.className = 'action-btn'
+    edit.setAttribute('part', 'action-edit')
+    edit.textContent = this.hostEl.translateText('table.edit')
+    edit.addEventListener('click', (e) => {
+      e.stopPropagation()
+      this.editRow(key)
+    })
+    // 两态按钮组同槽叠放（inline-grid 同格）：格子宽恒为两组最大值，进/出编辑操作列不宽窄跳变
+    const editGroup = document.createElement('span')
+    editGroup.className = `action-group${isEditing ? ' group-hidden' : ''}`
+    editGroup.appendChild(edit)
+    const editingGroup = document.createElement('span')
+    editingGroup.className = `action-group${isEditing ? '' : ' group-hidden'}`
+    editingGroup.append(save, cancel)
+    const stack = document.createElement('span')
+    stack.className = 'action-stack'
+    stack.append(editGroup, editingGroup)
+    td.appendChild(stack)
   }
 
   /** 外部重渲染（数据/排序/滚动等触发整体重建）前静默取消进行中的编辑 */
@@ -242,8 +248,14 @@ export class TableEditController implements ReactiveController, TableEditCapabil
       col.editor === 'select'
         ? this.buildSelectEditor(col, key, oldValue)
         : this.buildInputEditor(col, key, oldValue)
+    // 不可见占位：保留原单元格文本的布局贡献（auto 表格布局下列宽/行高与常态逐像素一致），
+    // 编辑器绝对定位覆于其上零贡献——进/出编辑不撑列、不挤邻列、不跳行高
+    const sizer = document.createElement('span')
+    sizer.className = 'cell-editor-sizer'
+    sizer.setAttribute('aria-hidden', 'true')
+    sizer.textContent = td.textContent ?? ''
     td.textContent = ''
-    td.appendChild(editor)
+    td.append(sizer, editor)
     td.classList.add('editing')
     td.setAttribute('data-editing', 'true')
     this.headerTh(colKey)?.setAttribute('data-editing-col', 'true')
@@ -264,6 +276,10 @@ export class TableEditController implements ReactiveController, TableEditCapabil
   private buildInputEditor(col: TableColumn, key: string, value: string): HTMLInputElement {
     const input = document.createElement('input')
     input.type = 'text'
+    // size=1：input 默认 size=20 的内在宽度（≈170px+）会成为 auto 表格布局下本列的
+    // min-content 贡献，进编辑时把整列撑宽、邻列挤窄文字换行、行高联动跳变；
+    // size=1 压掉内在贡献，实际宽度由 CSS width:100% 决定（贴合原单元格）
+    input.size = 1
     input.className = 'cell-editor'
     input.setAttribute('part', 'cell-editor')
     input.value = value
