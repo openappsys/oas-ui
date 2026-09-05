@@ -112,6 +112,8 @@ The `open` attribute is the single source of truth (controlled both ways): exter
 
 ## 2D Color Field
 
+> **Designer capability is imported on demand**: the 2D color field / vertical hue rail / gradient editor (`mode="gradient"`, including the gradient demos below and the inline gradient form) ship in the designer capability package and only activate after `import '@oas-ui/ui/form/color-picker/designer'` (import registers it). Consumers that only need the default entry (swatch presets + hex/RGB input + alpha) can skip it — without the import, `mode="gradient"` config silently degrades and a dev warning points to the capability path. The full `@oas-ui/ui` entry and the CDN form-family bundles already include it, so those consumers need no explicit import.
+
 The three H/S/V tracks were refactored into a more standard two-dimensional picker: an SV field (saturation horizontally, brightness vertically) plus a vertical hue rail. Both support pointer dragging and arrow-key stepping, with `role="slider"` + `aria-valuetext` semantics exposing both dimensions.
 
 <DemoBlock title="2D color field + hue rail">

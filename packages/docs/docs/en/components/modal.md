@@ -153,6 +153,14 @@ The attributes used internally by the imperative module — `type` / `ok-text` /
 
 The imperative `modal.prompt(options)` shows a dialog with an input control, auto-focusing the input on open, and resolves `{ value, action }` (`confirm` on OK; `cancel` for cancel / ✕ / mask / Esc). Supports `inputValue` / `placeholder` / `inputType` (text / password / number / textarea) / `inputPattern` (string regex validation, pattern runs before validator) / `validator` (`true` passes, `false` uses the default message, a `string` is the error message). **Failed validation keeps the dialog open** with the error shown; correcting the input clears the error so it can be submitted again. An async `onOk` puts the OK button into loading.
 
+> **On-demand prompt capability**: prompt ships as a separate capability package — the core entry `@oas-ui/ui/feedback/modal` does not include its validation machinery (zero cost for confirm/alert-only consumers). Import it before use (import registers it):
+>
+> ```ts
+> import '@oas-ui/ui/feedback/modal/prompt'
+> ```
+>
+> The full entry `@oas-ui/ui` and the CDN feedback family bundle already include it, so no explicit import is needed there. Without the import, `modal.prompt` returns `null` and warns once in the dev console.
+
 <DemoBlock title="Basic prompt">
   <oas-space>
     <oas-button type="primary" onclick="openPrompt()">Basic input</oas-button>
