@@ -1,6 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry } from '@oas-ui/icons'
 import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { registeredPopoverCapabilities } from './oas-popover-capability.js'
 
 /** 面板与触发器的默认间距（offset 主轴缺省值，与 computePosition 的 GAP 一致） */
 const GAP = 8
@@ -14,17 +15,10 @@ const HOVER_DELAY = 150
 const HOVER_HIDE_DELAY = 100
 /** 视口边缘夹取默认边距（px），collision-padding 属性可配 */
 const COLLISION_PAD = 4
-/** 触屏长按触发时长（ms，trigger 含 contextmenu 时生效，移动端无右键的替代） */
-const LONG_PRESS_MS = 500
-/** 长按期间手指滑动超过该阈值视为滚动手势，取消长按（px） */
-const LONG_PRESS_SLIP = 10
 /** mousedown 触发后同一次按压内合成 click 的吞没时间窗（ms，防双路径叠加切换） */
 const MOUSE_SUPPRESS_MS = 350
 /** 面板 id 文档唯一计数器（aria-controls 跨树引用需要文档级唯一） */
 let panelUid = 0
-
-/** 响应式断点表（移动优先 min-width，px；协议同 space/grid） */
-const BREAKPOINT_PX: Record<string, number> = { sm: 640, md: 768, lg: 1024, xl: 1280 }
 
 /** 面板全部命名 slot（portal 桥接 / destroy-on-hide 暂存 / hide-empty 判空共用） */
 const SLOT_NAMES = ['content', 'title', 'header', 'footer', 'description'] as const
@@ -498,6 +492,31 @@ function onDocumentKey(e: KeyboardEvent): void {
   }
 }
 
+/** contextmenu 能力包（feedback/popover/contextmenu）在宿主上的挂接点。
+ *  OASPopover 在右键族分支（contextmenu 触发、placement/size 断点简写解析）检测到该能力
+ *  即委托调用；能力缺失（core-only）时回落基础行为（右键基础开面板、断点简写取基础值）
+ *  并 dev 告警（见 warnContextmenuCapability）。 */
+export interface PopoverContextmenuCapability {
+  /** 右键触发：以指针坐标为锚点打开面板（光标定位；门控与 preventDefault 由宿主 bind 完成） */
+  openAtCursor(e: MouseEvent): void
+  /** 断点简写生效值解析：按当前视口宽度取生效值（"bottom md:right" 协议同 space/grid） */
+  resolveResponsive(raw: string): string
+}
+
+/** contextmenu 能力未 import 的告警文案（按需 ESM 消费者用；全量入口/反馈族包已含能力，不会触发） */
+const CONTEXTMENU_CAPABILITY_HINT =
+  '[oas-popover] contextmenu 能力未启用：检测到 trigger=contextmenu / long-press-delay / placement·size 断点简写配置，右键光标定位、触屏长按与断点响应已静默失效（trigger=contextmenu 的基础右键触发仍可用）。请按需 import "@oas-ui/ui/feedback/popover/contextmenu"（全量入口 @oas-ui/ui 与 CDN 反馈族包已内含，无需额外引用）'
+
+/** contextmenu 能力告警去重（同值去重，同控件惯例） */
+const warnedContextmenuCapability = new Set<string>()
+
+/** dev 告警：右键族配置但 contextmenu 能力未注入（页面级仅告警一次） */
+function warnContextmenuNotImported(): void {
+  if (warnedContextmenuCapability.has(CONTEXTMENU_CAPABILITY_HINT)) return
+  warnedContextmenuCapability.add(CONTEXTMENU_CAPABILITY_HINT)
+  console.warn(CONTEXTMENU_CAPABILITY_HINT)
+}
+
 export class OASPopover extends OASElement {
   static override get observedAttributes(): string[] {
     return [
@@ -646,15 +665,13 @@ export class OASPopover extends OASElement {
   private modalLocked = false
   /** append-to：portal host 容器（目标容器内的 div + 独立 shadow，样式作用域保真） */
   private portalHost: HTMLElement | null = null
-  /** contextmenu / 触屏长按的光标触点矩形（打开期间按光标定位，关闭清除；滚动重定位回到锚点）。
+  /** 指针坐标（右键光标 / 触屏长按触点）锚点矩形——contextmenu 能力包注入后由 openAtPoint
+   *  写入（打开期间按指针定位，关闭清除；滚动重定位回到锚点）。
    *  保持到关闭而非一次性消费：title 吸收（removeAttribute('title') → attributeChangedCallback）
-   *  会触发嵌套 update（外层 wasOpen 尚未置 true），一次性消费会让嵌套轮回落锚点定位覆盖光标 */
+   *  会触发嵌套 update（外层 wasOpen 尚未置 true），一次性消费会让嵌套轮回落锚点定位覆盖指针 */
   private cursorRect: DOMRect | null = null
-  /** 触屏长按计时器与 armed 状态（长按生效后 touchmove 阻止页面滚动） */
-  private longPressTimer: ReturnType<typeof setTimeout> | null = null
-  private longPressArmed = false
-  private longPressX = 0
-  private longPressY = 0
+  /** contextmenu 能力 controller（经能力注册表注入；无则右键族增强静默失效 + dev 告警） */
+  private ctxCap: PopoverContextmenuCapability | null = null
   /** mousedown 触发的时间戳：同一次按压的合成 click 在时间窗内吞没（防双路径叠加切换） */
   private lastMousedownToggle = 0
   /** trigger-keys 切换的时间戳：同一次按键的合成 click 在时间窗内吞没（P2 幂等守卫） */
@@ -666,6 +683,20 @@ export class OASPopover extends OASElement {
   private destroyed = false
   /** P13 关闭后焦点归还目标（property 通道，优先于 final-focus 选择器属性） */
   finalFocusEl: HTMLElement | null = null
+
+  /**
+   * 能力注入：构造时遍历能力注册表，把已注册能力 factory 的 controller 逐个 addController。
+   * 能力包（如 feedback/popover/contextmenu）在模块求值期自注册，早于任何实例构造——
+   * 未 import 的能力不注入（其右键族分支由 ctxCap 判空回落 core 行为 + dev 告警）。
+   */
+  constructor() {
+    super()
+    for (const { name, factory } of registeredPopoverCapabilities()) {
+      const controller = factory(this)
+      this.addController(controller)
+      if (name === 'contextmenu') this.ctxCap = controller as PopoverContextmenuCapability
+    }
+  }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -733,23 +764,14 @@ export class OASPopover extends OASElement {
       if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
       if (!this.hasTrigger('contextmenu')) return
       e.preventDefault()
-      // P20 光标定位：右键触点缓存，打开期间按光标定位（关闭清除；滚动重定位回到锚点）
-      const me = e as MouseEvent
-      this.cursorRect = {
-        left: me.clientX,
-        top: me.clientY,
-        right: me.clientX,
-        bottom: me.clientY,
-        width: 0,
-        height: 0,
-      } as DOMRect
-      this.requestOpen()
+      // trigger=contextmenu 的「右键触发开面板」是 core 行为（锚定触发元素打开）；
+      // 光标定位（以右键触点为锚点）委托 contextmenu 能力包——能力缺失时回落基础
+      // 右键打开（不定位光标），右键族增强静默失效并 dev 告警（见 warnContextmenuCapability）
+      if (this.ctxCap) this.ctxCap.openAtCursor(e as MouseEvent)
+      else this.requestOpen()
     })
-    // P20 触屏长按（trigger 含 contextmenu 时，移动端无右键的替代）
-    this.anchor?.addEventListener('touchstart', (e) => this.onTouchStart(e), { passive: false })
-    this.anchor?.addEventListener('touchmove', (e) => this.onTouchMove(e), { passive: false })
-    this.anchor?.addEventListener('touchend', () => this.clearLongPress())
-    this.anchor?.addEventListener('touchcancel', () => this.clearLongPress())
+    // 触屏长按 / 断点 matchMedia 监听已随「右键族 machinery」外置到 contextmenu 能力包
+    // （feedback/popover/contextmenu）：能力注入后由 controller 的 hostConnected 绑定。
     // hover 触发：悬停宿主（含触发元素）开、移出宿主/浮层面板关；面板入/出也监听，
     // 使悬停区域 = 宿主 + 面板（跨 8px 间隙移动不闪关）
     this.addEventListener('mouseenter', this.onHoverEnter)
@@ -829,23 +851,13 @@ export class OASPopover extends OASElement {
       if (!this.hasAttr('modal')) return
       this.closeWith('backdrop')
     })
-    // P23 断点响应：断点简写属性（placement/size）依赖 matchMedia 变化触发重算
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      const mqls = Object.values(BREAKPOINT_PX).map((px) =>
-        window.matchMedia(`(min-width: ${px}px)`),
-      )
-      for (const m of mqls) m.addEventListener('change', this.onBreakpointChange)
-      this.onCleanup(() => {
-        for (const m of mqls) m.removeEventListener('change', this.onBreakpointChange)
-      })
-    }
-    // 计时器统一清理（hover 防抖 + 通用延迟 + 退场隐藏 + auto-close + 触屏长按），断开连接无孤儿
+    // 计时器统一清理（hover 防抖 + 通用延迟 + 退场隐藏 + auto-close），断开连接无孤儿。
+    // （contextmenu 能力的触屏长按计时器由该 controller 自管：hostDisconnected 清理）
     this.onCleanup(() => {
       if (this.openTimer) clearTimeout(this.openTimer)
       if (this.closeTimer) clearTimeout(this.closeTimer)
       if (this.closeAnimTimer) clearTimeout(this.closeAnimTimer)
       if (this.autoCloseTimer) clearTimeout(this.autoCloseTimer)
-      if (this.longPressTimer) clearTimeout(this.longPressTimer)
     })
     // modal 滚动锁与焦点陷阱随打开挂接，断开连接兜底解除（open 期间直接拔 DOM 不留孤儿）
     this.onCleanup(() => {
@@ -898,6 +910,35 @@ export class OASPopover extends OASElement {
 
   private hasTrigger(t: 'click' | 'hover' | 'focus' | 'contextmenu' | 'mousedown'): boolean {
     return this.triggerList().includes(t)
+  }
+
+  // —— contextmenu 能力宿主面（contextmenu 能力包 controller 经 PopoverContextmenuHost 接口访问宿主）——
+
+  /** 触发元素（能力 controller 绑定 touch 手势的目标；bind 解析后固定，同 anchor）。
+   *  用方法而非 getter 暴露：能力宿主面不进入 API 扫描产物（public getter 会被记为组件属性） */
+  public getTriggerAnchor(): Element | null {
+    return this.anchor
+  }
+
+  /** 右键/触屏长按手势门控：非 virtual / 非 disabled / trigger 含 contextmenu
+   *  （render-panel 回落 manual，hasTrigger 已处理） */
+  public hasContextmenuTrigger(): boolean {
+    return !this.hasAttr('virtual') && !this.hasAttr('disabled') && this.hasTrigger('contextmenu')
+  }
+
+  /**
+   * 以指针坐标（右键光标 / 触屏长按触点）为锚点打开面板：写入光标触点矩形（打开期间
+   *  update 按该矩形定位，关闭清除、滚动重定位回到锚点，见 cursorRect）后走常规开请求。
+   * contextmenu 能力包调用；无能力包时 contextmenu 右键回落锚点定位打开。
+   */
+  public openAtPoint(x: number, y: number): void {
+    this.cursorRect = { left: x, top: y, right: x, bottom: y, width: 0, height: 0 } as DOMRect
+    this.requestOpen()
+  }
+
+  /** 请求宿主重算（contextmenu 能力包断点跨越 matchMedia change → 重解析 placement/size 生效值） */
+  public requestRefresh(): void {
+    this.update()
   }
 
   private toggle(): void {
@@ -1084,62 +1125,8 @@ export class OASPopover extends OASElement {
     if (this.panel?.id) anchor.setAttribute('aria-controls', this.panel.id)
   }
 
-  // —— P20 触屏长按（trigger 含 contextmenu 时；移动端无右键的替代） ——
-
-  private onTouchStart(e: Event): void {
-    if (!this.hasTrigger('contextmenu')) return
-    if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
-    const touch = (e as TouchEvent).touches ? Array.from((e as TouchEvent).touches)[0] : undefined
-    if (!touch) return
-    this.longPressX = touch.clientX
-    this.longPressY = touch.clientY
-    this.clearLongPress()
-    this.longPressTimer = setTimeout(() => {
-      this.longPressTimer = null
-      this.longPressArmed = true
-      // 长按生效：以触点为光标点打开（同右键光标定位）
-      this.cursorRect = {
-        left: this.longPressX,
-        top: this.longPressY,
-        right: this.longPressX,
-        bottom: this.longPressY,
-        width: 0,
-        height: 0,
-      } as DOMRect
-      this.requestOpen()
-    }, this.longPressDelayMs())
-  }
-
-  /** 长按触发时长：`long-press-delay` 属性（ms），缺省回落内置默认 500 */
-  private longPressDelayMs(): number {
-    const v = Number.parseInt(this.getAttr('long-press-delay', ''), 10)
-    return Number.isFinite(v) && v > 0 ? v : LONG_PRESS_MS
-  }
-
-  private onTouchMove(e: Event): void {
-    // 长按已生效：阻止默认（防止手指移动带动页面滚动，fixed 面板与滚动脱节）
-    if (this.longPressArmed) {
-      e.preventDefault()
-      return
-    }
-    if (!this.longPressTimer) return
-    const touch = (e as TouchEvent).touches ? Array.from((e as TouchEvent).touches)[0] : undefined
-    if (!touch) return
-    // 滑动超阈值视为滚动手势，取消长按
-    const dx = touch.clientX - this.longPressX
-    const dy = touch.clientY - this.longPressY
-    if (Math.hypot(dx, dy) > LONG_PRESS_SLIP) this.clearLongPress()
-  }
-
-  private clearLongPress(): void {
-    if (this.longPressTimer) {
-      clearTimeout(this.longPressTimer)
-      this.longPressTimer = null
-    }
-    this.longPressArmed = false
-  }
-
   // —— 定位（12 向 / 双轴偏移 / 碰撞细调 / 宽度）——
+  // （触屏长按 machinery 已外置到 contextmenu 能力包，见 oas-popover-contextmenu.ts）
 
   /** 虚拟锚点矩形（同 tooltip 的 virtual 语义）：virtual-x/y 视口坐标 > virtual-anchor 元素选择器 > 无锚点 */
   private virtualRect(): DOMRect | null {
@@ -1226,7 +1213,7 @@ export class OASPopover extends OASElement {
    * fallback-placements 非空时（自定义回退序列）：请求 + 回退逐项 fit，首个 fit 者胜出，
    * 全不 fit 取序列末位（引擎夹取兜底）；未设置回退序列走引擎默认主轴翻转。
    * hide-when-detached：锚点完全脱离视口时面板隐藏（P18 sticky=always 优先——贴边不隐藏）。
-   * anchorOverride：P20 光标触点矩形（contextmenu/长按打开瞬间一次性消费）。
+   * anchorOverride：指针坐标锚点矩形（右键光标/触屏长按，contextmenu 能力写入；打开期间持续生效）。
    */
   private position(anchorOverride?: DOMRect): void {
     if (!this.panel) return
@@ -1321,33 +1308,17 @@ export class OASPopover extends OASElement {
     this.panel.style.maxHeight = `${Math.max(avail, 0)}px`
   }
 
-  // —— P23 断点响应（协议同 space/grid：基础值 + 空格分隔 `断点:值`，mobile-first min-width） ——
+  // —— 断点简写生效值（协议同 space/grid：基础值 + 空格分隔 `断点:值`，mobile-first min-width） ——
+  // 断点响应 machinery 属于 contextmenu 能力包（见 oas-popover-contextmenu.ts）：
+  // 生效值解析委托该能力；core-only 回落基础值（断点适配静默失效，配置会 dev 告警）
 
-  /** 断点简写解析：按当前视口宽度取生效值（多断点最宽命中胜出；非法断点名忽略回落基础值） */
+  /** 断点简写生效值：能力注入时委托 contextmenu controller 按视口宽度解析；
+   *  能力缺失（core-only）时回落基础值（忽略 `断点:值` 分段） */
   private resolveResponsive(raw: string): string {
-    if (!raw.includes(' ')) return raw
+    if (this.ctxCap) return this.ctxCap.resolveResponsive(raw)
     const tokens = raw.trim().split(/\s+/)
-    let base = ''
-    if (tokens[0] && !tokens[0].includes(':')) base = tokens.shift()!
-    const w = window.innerWidth
-    let value = base
-    let best = -1
-    for (const t of tokens) {
-      const idx = t.indexOf(':')
-      const name = t.slice(0, idx)
-      const bp = BREAKPOINT_PX[name]
-      if (bp == null) continue
-      if (w >= bp && bp >= best) {
-        best = bp
-        value = t.slice(idx + 1)
-      }
-    }
-    return value
-  }
-
-  /** 断点跨越（matchMedia change）→ 重算生效值（placement/size 断点简写） */
-  private onBreakpointChange = (): void => {
-    this.update()
+    const base = tokens[0] ?? ''
+    return base.includes(':') ? '' : base
   }
 
   /**
@@ -1807,6 +1778,25 @@ export class OASPopover extends OASElement {
     }
   }
 
+  /** 断点简写是否被使用（placement/size 含 `断点:值` 分段）——core-only 告警判定之一 */
+  private usesBreakpointShorthand(v: string): boolean {
+    return /(^|\s)[A-Za-z]+:/.test(v)
+  }
+
+  /** contextmenu 能力未注入但检测到右键族配置时 dev 告警（同值去重，提示按需 import 能力包）。
+   *  placement/size 判空走原生 getAttribute（不落 getAttr 默认值——API 扫描器按 getAttr
+   *  推断文档默认，空串回退会覆盖 position/syncSize 的 'top'/'medium' 语义默认）。 */
+  private warnContextmenuCapability(): void {
+    if (this.ctxCap) return
+    const trigger = this.getAttr('trigger', 'click').split(/\s+/).filter(Boolean)
+    const usesRightClickFamily =
+      trigger.includes('contextmenu') ||
+      this.hasAttribute('long-press-delay') ||
+      this.usesBreakpointShorthand(this.getAttribute('placement') ?? '') ||
+      this.usesBreakpointShorthand(this.getAttribute('size') ?? '')
+    if (usesRightClickFamily) warnContextmenuNotImported()
+  }
+
   // —— 滚动/尺寸变化重定位 ——
 
   /**
@@ -1842,7 +1832,7 @@ export class OASPopover extends OASElement {
       if (!this.panel || !this.hasAttr('open')) return
       // 滞留 scroll 事件防御：滚动发生在打开之前（scroll 事件 task 异步派发、晚于打开执行，
       // 如 scrollIntoViewIfNeeded 后立即触发打开），scrollY 与打开瞬间相同 → 无有效滚动，
-      // 不重定位（会把 contextmenu/长按的光标定位覆盖回锚点）也不触发 close-on-scroll
+      // 不重定位（会把右键光标/长按触点的指针定位覆盖回锚点）也不触发 close-on-scroll
       if (Number.isFinite(this.openScrollY) && window.scrollY === this.openScrollY) return
       // P14 close-on-scroll：滚动即关闭（可取消），优先于跟随重定位
       if (this.hasAttr('close-on-scroll')) {
@@ -1883,6 +1873,9 @@ export class OASPopover extends OASElement {
 
   protected override update(): void {
     if (!this.panel) return
+    // contextmenu 能力未注入但检测到右键族配置（trigger=contextmenu / long-press-delay /
+    // placement·size 断点简写）→ dev 告警（同值去重；能力注入后此处短路）
+    this.warnContextmenuCapability()
     const open = this.hasAttr('open')
     // P22 destroy-on-hide：打开瞬间恢复内容挂载（unstash 后 syncText 按首次写入路径重写）
     if (open && this.destroyed) {
@@ -1935,10 +1928,11 @@ export class OASPopover extends OASElement {
       if (!this.wasOpen) {
         this.applyInitialFocus()
       }
-      // P20 光标触点：contextmenu/触屏长按打开期间一律按光标定位（cursorRect 生命周期 =
-      // 写入 → 打开期间持续生效 → 关闭清除。不能只看「打开瞬间」：title 吸收的
-      // removeAttribute 会触发嵌套 update（完整跑完并置 wasOpen=true），外层余下
-      // 分支会以锚点定位覆盖光标）；滚动/尺寸重定位走 onScroll 的锚点路径（光标无滚动语义）
+      // 指针坐标锚点（右键光标 / 触屏长按触点，由 contextmenu 能力经 openAtPoint 写入）：
+      // 打开期间一律按该矩形定位（cursorRect 生命周期 = 写入 → 打开期间持续生效 → 关闭清除。
+      // 不能只看「打开瞬间」：title 吸收的 removeAttribute 会触发嵌套 update（完整跑完并置
+      // wasOpen=true），外层余下分支会以锚点定位覆盖指针点）；滚动/尺寸重定位走 onScroll
+      // 的锚点路径（指针点无滚动语义）
       if (this.cursorRect) {
         this.position(this.cursorRect)
       } else {
@@ -1950,7 +1944,7 @@ export class OASPopover extends OASElement {
       this.clearOpenTimer()
       this.clearCloseTimer()
       this.syncAutoClose(false)
-      // P20 光标触点随关闭清除（下次 contextmenu/长按重新写入）
+      // 指针坐标锚点随关闭清除（下次右键/长按由能力重新写入）
       this.cursorRect = null
       if (this.wasOpen) {
         this.playClose()

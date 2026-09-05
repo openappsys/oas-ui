@@ -112,6 +112,8 @@
 
 ## 2D 色域面板
 
+> **按需引入 designer 能力**：2D 色域 / hue 竖条 / 渐变（`mode="gradient"`）编辑器属 designer 能力包（含本页下方渐变 demo 与 inline 的渐变形态），需 `import '@oas-ui/ui/form/color-picker/designer'` 后生效（import 即注册）。仅使用默认入口（swatch 预设 + hex/RGB 输入 + alpha）的消费者无需引入；未引入时 `mode="gradient"` 等配置静默失效并在 dev 告警提示。全量入口 `@oas-ui/ui` 与 CDN 表单族包已内含该能力，无需显式引用。
+
 二期把 HSV 三滑轨重构为更标准的二维取色：SV 色域（横饱和度、纵亮度）+ hue 竖条。色域与竖条支持鼠标拖拽和方向键微调，ARIA 语义为 `role="slider"` + `aria-valuetext`（饱和度/亮度双维度）。
 
 <DemoBlock title="2D 色域 + hue 竖条">

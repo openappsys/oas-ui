@@ -153,6 +153,14 @@
 
 `modal.prompt(options)` 命令式输入框：打开自动聚焦输入框，结果 resolve `{ value, action }`（action：确定为 `confirm`，取消 / ✕ / 遮罩 / Esc 统一为 `cancel`）。支持 `inputValue` / `placeholder` / `inputType`（text / password / number / textarea）/ `inputPattern`（字符串正则校验，先 pattern 后 validator）/ `validator`（返回 `true` 通过、`false` 用默认文案、`string` 即错误文案）。**校验失败保持打开**并显示错误，输入修正后自动清除可再提交；异步 `onOk` 时确定按钮进入 loading。
 
+> **按需引入 prompt 能力**：prompt 是独立能力包，核心入口 `@oas-ui/ui/feedback/modal` 不含其校验 machinery（只做确认/提示的消费者零开销）。使用前先引入（import 即注册）：
+>
+> ```ts
+> import '@oas-ui/ui/feedback/modal/prompt'
+> ```
+>
+> 全量入口 `@oas-ui/ui` 与 CDN 反馈族包已内含，无需显式引用。未引入时调用 `modal.prompt` 返回 `null` 并在 dev 控制台告警一次。
+
 <DemoBlock title="prompt 基础输入">
   <oas-space>
     <oas-button type="primary" onclick="openPrompt()">基础输入</oas-button>

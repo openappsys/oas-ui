@@ -135,15 +135,13 @@
     },
     {
       "name": "oas-close",
-      "detail": "{ key } | { key: value }"
+      "detail": "{ key: value }"
     },
     {
-      "name": "oas-rename",
-      "detail": "{ value, label: newLabel }"
+      "name": "oas-rename"
     },
     {
-      "name": "oas-reorder",
-      "detail": "{ fromIndex, toIndex }"
+      "name": "oas-reorder"
     },
     {
       "name": "oas-before-change",

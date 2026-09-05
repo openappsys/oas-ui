@@ -29,6 +29,8 @@ import '../form/date-picker/index.js'
 import '../form/time-picker/index.js'
 import '../form/upload/index.js'
 import '../form/transfer/index.js'
+// 能力包必须先于组件注册：define 会同步升级 DOM 中已有元素，元素构造时读能力注册表
+import '../form/color-picker/designer/index.js'
 import '../form/color-picker/index.js'
 import '../form/toggle-button/index.js'
 import '../form/toggle-group/index.js'

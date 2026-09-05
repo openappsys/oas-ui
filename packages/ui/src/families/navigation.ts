@@ -24,6 +24,8 @@ import '../navigation/bottom-navigation/index.js'
 import '../navigation/stepper/index.js'
 import '../navigation/steps/index.js'
 import '../navigation/pagination/index.js'
+// 能力包必须先于组件注册（同上）
+import '../navigation/tabs/manager/index.js'
 import '../navigation/tabs/index.js'
 import '../navigation/affix/index.js'
 import '../navigation/page-header/index.js'

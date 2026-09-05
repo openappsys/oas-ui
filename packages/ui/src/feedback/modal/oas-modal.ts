@@ -1,5 +1,6 @@
-import { OASElement } from '@oas-ui/core'
+import { OASElement, type ReactiveController } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
+import { registeredModalCapabilities } from './oas-modal-capability.js'
 
 export type ModalVariant = 'info' | 'success' | 'warning' | 'error'
 
@@ -411,6 +412,29 @@ export class OASModal extends OASElement {
   private static readonly SIZE_PRESETS: Record<ModalSizePreset, string> = {
     sm: '400px',
     lg: '720px',
+  }
+
+  /** 已注入的能力 controller（能力模块 import 时经注册表按名注入；核心不感知具体能力） */
+  private modalCapabilities = new Map<string, ReactiveController>()
+
+  /**
+   * 能力注入：构造时遍历能力注册表，把已注册能力 factory 的 controller 逐个 addController。
+   * 能力包（如 feedback/modal/prompt）在模块求值期自注册，早于任何实例构造——
+   * 未 import 的能力不注入（命令式层按名取不到时静默失效 + dev 告警）。
+   * prompt 输入/校验 machinery 不在核心实现：核心只保留「宿主 + 委托点」。
+   */
+  constructor() {
+    super()
+    for (const { name, factory } of registeredModalCapabilities()) {
+      const controller = factory(this)
+      this.addController(controller)
+      this.modalCapabilities.set(name, controller)
+    }
+  }
+
+  /** 按名取已注入能力 controller（命令式层委托点；未 import 对应能力返回 null） */
+  getModalCapability<T>(name: string): T | null {
+    return (this.modalCapabilities.get(name) as T | undefined) ?? null
   }
 
   private previousFocus: HTMLElement | null = null

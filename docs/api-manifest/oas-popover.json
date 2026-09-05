@@ -95,8 +95,6 @@
     },
     {
       "name": "long-press-delay",
-      "type": "string",
-      "default": "",
       "observed": true
     },
     {
