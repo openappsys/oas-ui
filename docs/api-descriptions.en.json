@@ -1552,6 +1552,7 @@
       "fresh": "Keep updating the content while closed (by default the content is frozen while closed and the latest value is written when opened; with fresh the closed state keeps writing)",
       "hover-delay": "Hover-trigger open debounce in ms (default 150; falls back to open-delay when unset)",
       "hover-hide-delay": "Hover-trigger close debounce in ms (default 100; falls back to close-delay when unset)",
+      "long-press-delay": "Touch long-press delay in ms (default 500; contextmenu trigger only, part of the optional contextmenu capability package)",
       "hide-when-detached": "Hide the panel when the anchor is fully detached from the viewport (the open state is kept, avoiding a panel floating off-screen)",
       "initial-focus": "Focus the element matched by the selector when opened (host light DOM first, including slot content; falls back to focus-on-open when unresolvable), higher priority than focus-on-open",
       "modal": "Modal mode: full-screen backdrop + focus trap (Tab cycles inside the panel) + scroll lock + aria-modal; clicking the backdrop closes",

@@ -1552,6 +1552,7 @@
       "fresh": "关闭时也持续更新内容（默认关闭态冻结内容，打开时写入最新值；fresh 开启后关闭态同步写入）",
       "hover-delay": "hover 触发时打开防抖延时（毫秒，默认 150；未设置回落 open-delay）",
       "hover-hide-delay": "hover 触发时关闭防抖延时（毫秒，默认 100；未设置回落 close-delay）",
+      "long-press-delay": "触屏长按触发延迟毫秒数（默认 500；仅 contextmenu 触发生效，属独立能力包，按需引入见上文）",
       "hide-when-detached": "锚点完全脱离视口时隐藏面板（打开语义保留，避免孤悬屏外）",
       "initial-focus": "打开时聚焦指定选择器元素（宿主 light DOM 优先，含 slot 内容；解析不到回落 focus-on-open），优先级高于 focus-on-open",
       "modal": "modal 化：全屏遮罩 + 焦点陷阱（Tab 面板内循环）+ 滚动锁 + aria-modal；点击遮罩关闭",
