@@ -1,0 +1,34 @@
+{
+  "className": "OASSkeletonItem",
+  "sourceFile": "packages/ui/src/feedback/skeleton/oas-skeleton-item.ts",
+  "attrs": [
+    {
+      "name": "type",
+      "type": "string",
+      "default": "text",
+      "observed": true
+    },
+    {
+      "name": "width",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "effect",
+      "type": "string",
+      "default": "",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [],
+  "slots": [],
+  "unresolved": []
+}

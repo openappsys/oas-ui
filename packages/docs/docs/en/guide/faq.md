@@ -2,6 +2,18 @@
 
 Common questions and pitfalls from real-world integrations.
 
+## Composition patterns (React migration view)
+
+### Where are asChild / Slot / Portal equivalents here?
+
+The asChild / Slot / Portal concepts from the React ecosystem solve component-composition problems that grew out of the React model (eliminating library-imposed wrapper elements, mounting content elsewhere). Under Web Components those premises either do not exist or already have equivalents:
+
+- **Swapping the root element (the wrapper-elimination job of asChild / Slot)** — a Web Component itself (its host) *is* a real element in the DOM, so external layouts and selectors act on it directly; there is no library-imposed wrapper to strip. When a component must render as a different semantic element (e.g. a button that behaves as a link), use **attribute-driven root switching**: when `href` is present, buttons/tags render a native `<a>` internally and keep keyboard & disabled semantics (see the oas-button / oas-tag docs).
+- **Using an arbitrary element as a trigger** (e.g. the common `Trigger asChild` composition) — the equivalent is a **named slot**: overlay components expose `trigger` / `anchor` slots; whatever element the host places there becomes the trigger, with events and ARIA wired up internally by the component. This is strictly more capable than asChild (multiple triggers, arbitrary content).
+- **Mounting content into `body` or another container (Portal / Teleport)** — the equivalent is the **`append-to` system**: overlay/pinned components such as tooltip / popover / modal / drawer accept `append-to="body"` to move the overlay into a target container while preserving style scoping and stacking contexts; removing it returns the node and leaves no orphaned elements.
+
+In short: the composition trio under Web Components is "**attribute-driven root element + named slots + append-to**", which covers the scenarios asChild / Slot / Portal solve — no same-named API is needed when migrating.
+
 ## Events
 
 ### Why do all events carry the `oas-` prefix?

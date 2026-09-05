@@ -337,6 +337,15 @@ const STYLE = `
 .tag .icon[hidden] {
   display: none;
 }
+/* 尾部图标容器：icon-end 渲染于文字后、关闭按钮前（与头部 icon 对称） */
+.tag .icon-end {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.tag .icon-end[hidden] {
+  display: none;
+}
 .tag button {
   appearance: none;
   border: none;
@@ -416,6 +425,7 @@ export class OASTag extends OASElement {
       'variant',
       'color',
       'icon',
+      'icon-end',
       'href',
       'target',
       'max-width',
@@ -451,6 +461,7 @@ export class OASTag extends OASElement {
         <span class="icon" part="icon" aria-hidden="true" hidden></span>
         <span class="checked-icon" aria-hidden="true" hidden></span>
         <span class="content"><slot></slot></span>
+        <span class="icon-end" aria-hidden="true" hidden></span>
         <button part="close" aria-label="" hidden>
           <span class="close-icon" aria-hidden="true">${DEFAULT_CLOSE_SVG}</span>
           <span class="spinner" aria-hidden="true" hidden></span>
@@ -710,6 +721,23 @@ export class OASTag extends OASElement {
       } else {
         iconEl.innerHTML = ''
         delete iconEl.dataset.icon
+      }
+    }
+
+    // icon-end 属性：文字尾部渲染 <oas-icon>（与头部 icon 对称，位于关闭按钮前）；非法名隐藏
+    const iconEndEl = this.tagRoot.querySelector<HTMLElement>('.icon-end')
+    const iconEnd = this.getAttr('icon-end', '')
+    if (iconEndEl) {
+      const valid = iconEnd !== '' && iconRegistry[iconEnd as IconName] !== undefined
+      iconEndEl.hidden = !valid
+      if (valid) {
+        if (iconEndEl.dataset.icon !== iconEnd) {
+          iconEndEl.innerHTML = `<oas-icon name="${iconEnd}"></oas-icon>`
+          iconEndEl.dataset.icon = iconEnd
+        }
+      } else {
+        iconEndEl.innerHTML = ''
+        delete iconEndEl.dataset.icon
       }
     }
 

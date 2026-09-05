@@ -820,12 +820,19 @@
       "description": "描述文案",
       "hide-image": "隐藏插画",
       "illustration": "自定义插画：SVG/HTML 标记或图片 URL",
-      "image-size": "插画尺寸（px）"
+      "image-size": "插画尺寸（px）",
+      "title": "标题（显示于描述上方；渲染进可见标题区后从宿主移除——原生 title 吸收约定；富内容用 title 插槽）",
+      "icon": "图标名（复用 oas-icon 图标集）：图标型媒体（图标 + 圆形浅底指示器），与插画形态互斥",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`：联动媒体尺寸与字号，与 `image-size` 正交",
+      "align": "布局对齐：`center`（默认，纵向居中）/ `start` / `end`（横向图左文右 / 图右文左）",
+      "variant": "容器变体：`outlined`（描边）/ `filled`（底色），缺省无容器"
     },
     "events": {},
     "slots": {
       "action": "操作区，置于描述下方",
-      "illustration": "自定义插画内容，优先级高于 `illustration` 属性"
+      "illustration": "自定义插画内容，优先级高于 `illustration` 属性",
+      "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
+      "": "描述富内容插槽，有内容时覆盖 description 属性与内置文案"
     }
   },
   "oas-equation": {
@@ -909,9 +916,10 @@
     "attrs": {
       "align": "块向轴对齐（align-items）：`start` / `center` / `end` / `stretch` / `baseline`；非法值回落 `stretch` + dev 告警（同值去重）",
       "cols": "总列数",
-      "columns": "自动等分数（simple-grid，有值时忽略子项 span）",
+      "columns": "自动等分列数（simple-grid，有值时忽略子项 span）：支持断点简写（如 3 md:2 sm:1，断点 sm=640/md=768/lg=1024/xl=1280）；与 min-child-width 并存时优先",
       "gap": "间距；单值两轴同值，两值空格分隔「行 列」（如 `8 16` 行 8 列 16）；三值以上非法静默回落 `0`",
-      "justify": "行内轴对齐（justify-items）：`start` / `center` / `end` / `stretch`；非法值回落 `stretch` + dev 告警（同值去重）"
+      "justify": "行内轴对齐（justify-items）：`start` / `center` / `end` / `stretch`；非法值回落 `stretch` + dev 告警（同值去重）",
+      "min-child-width": "子项最小宽度（如 180px，纯数字按 px）：auto-fit + minmax 依容器宽度自动计算列数（子项免断点流式重排）；与 columns 并存时 columns 优先，该模式下子项 span/offset 不生效"
     },
     "events": {},
     "slots": {}
@@ -1594,13 +1602,26 @@
       "no-text": "隐藏右侧/圆心百分比文本",
       "percent": "进度百分比（0–100，自动夹取）",
       "show-text": "是否显示百分比文本",
-      "size": "circle 直径（px）",
+      "size": "尺寸：line=高度档 `small`(4px) / `medium`(8px，默认) / `large`(12px)；circle/dashboard=直径 px（默认 48）",
       "status": "状态色；`error` 红色、`success` 绿色，未设置且进度满 100 时显示成功绿",
-      "stroke-width": "circle 线宽（px）",
-      "type": "形态：`line`（线形）/ `circle`（圆环）"
+      "stroke-width": "线宽 px：circle/dashboard 圆环粗细（默认 6）；line 轨道高度（优先于 size 档位）",
+      "type": "形态：`line`（默认）/ `circle` / `dashboard`（仪表盘：底部开口 270° 弧）",
+      "indeterminate": "不确定态（无确定值加载）：忽略 percent/steps/buffer/striped，摘除 aria-valuenow（APG）；line 滑块扫过 / circle·dashboard 分段弧旋转",
+      "color": "进度色：预设名（走 --oas-preset-* token）或任意 CSS 色串/渐变串（渐变建议 line）；优先于 status 语义色与满值绿",
+      "track-color": "轨道色：协议同 color",
+      "striped": "条纹纹理（line 限定）",
+      "striped-flow": "流动条纹（line 限定；单用自动含条纹）",
+      "steps": "步进分段（line 限定）：整数 ≥2 等分，亮段数 = round(百分比 × 段数)",
+      "buffer": "缓冲值（line 限定，0–max 夹取）：主进度之后的静态缓冲段，用于流式加载/视频缓冲场景",
+      "text-inside": "文本内嵌进度条内（line 限定；未显式指定粗细时轨道自动提升到可容纳文本）",
+      "max": "值域上限（默认 100）：percent/buffer 语义为当前值，宽度与文本按 value/max 换算，aria 同步真实值",
+      "label": "无障碍名（写入进度条的 aria-label）",
+      "stroke-linecap": "圆环端帽 `round`（默认）/ `butt`（circle/dashboard）"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "自定义文本：line 右侧 / text-inside 条内 / 圆心；优先于状态图标与内置百分比"
+    }
   },
   "oas-qrcode": {
     "attrs": {
@@ -1641,13 +1662,17 @@
   "oas-result": {
     "attrs": {
       "description": "描述文案",
-      "status": "结果状态",
-      "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\""
+      "status": "状态：`success` / `error` / `warning` / `info` / `403` / `404` / `500`（HTTP 错误页三态含专属图标）；非法值回落 info 并告警",
+      "title": "标题文案（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\"",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`：联动图标直径与字号"
     },
     "events": {},
     "slots": {
       "extra": "操作区，置于描述下方",
-      "title": "标题富内容插槽，有内容时覆盖 title 属性文案"
+      "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
+      "icon": "自定义图标（覆盖内置状态图标；有内容时进中性态：去语义底色）",
+      "description": "描述富内容插槽，有内容时覆盖 description 属性文案",
+      "": "内容区（错误详情清单等），置于描述与 extra 操作区之间"
     }
   },
   "oas-scroll-area": {
@@ -1756,10 +1781,17 @@
       "active": "是否启用流光动画",
       "avatar": "是否显示头像占位",
       "rows": "段落行数",
-      "title": "是否显示标题占位（title 为存在性开关，值本身不渲染；读取后即从宿主移除，不残留原生悬浮提示）"
+      "title": "是否显示标题占位（title 为存在性开关，值本身不渲染；读取后即从宿主移除，不残留原生悬浮提示）",
+      "loading": "受控开关：`true`（缺省）渲染骨架，`\"false\"` 渲染默认插槽的真实内容",
+      "effect": "动效：`sheen`（流光）/ `pulse`（呼吸）/ `none`（静态，缺省）；优先级高于 active（active 保留为 sheen 快捷开关）",
+      "count": "整组骨架重复份数（列表场景），缺省 1",
+      "widths": "逗号分隔的逐行宽度（如 `100%,80%,45%`），内联覆盖 text 行默认宽",
+      "delay": "防闪烁延迟（毫秒）：loading 变 true 后延迟展示骨架；窗口内加载完成则骨架不出现；窗口内骨架与内容都不渲染"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "": "真实内容出口：loading=\"false\" 时渲染（骨架与内容常驻 shadow DOM，按 loading 切换 hidden）"
+    }
   },
   "oas-slider": {
     "attrs": {
@@ -2046,7 +2078,8 @@
       "close-icon": "自定义关闭按钮图标（iconRegistry 图标名），替换默认 ×",
       "close-label": "关闭按钮的 aria-label（a11y 上下文朗读，如「移除标签 xx」），默认走 locale「关闭」",
       "loading": "加载态：关闭流程中转 spinner 并禁点（`oas-close` detail 含 `done()` 回调，宿主异步完成后调用退出 loading）",
-      "checked-icon": "checkable 选中时标签前的勾选图标（iconRegistry 图标名，默认 check）"
+      "checked-icon": "checkable 选中时标签前的勾选图标（iconRegistry 图标名，默认 check）",
+      "icon-end": "图标名（复用 oas-icon 图标集），置于文字尾部（关闭按钮前），尺寸跟随字号；可与 icon 并存"
     },
     "events": {
       "oas-change": "`checkable` 时选中态切换，`detail: { checked }`",
@@ -2556,6 +2589,16 @@
       "oas-finish": "finish() 完成收尾时派发",
       "oas-start": "start() 开始时派发"
     },
+    "slots": {}
+  },
+  "oas-skeleton-item": {
+    "attrs": {
+      "type": "形态：`text`（默认）/ `title` / `avatar` / `button` / `input` / `image` / `rect`；非法值回落 text",
+      "width": "宽度（CSS 值），覆盖各 type 默认宽",
+      "height": "高度（CSS 值），覆盖各 type 默认高",
+      "effect": "动效：`sheen` / `pulse` / `none`（缺省），语义同 oas-skeleton"
+    },
+    "events": {},
     "slots": {}
   }
 }

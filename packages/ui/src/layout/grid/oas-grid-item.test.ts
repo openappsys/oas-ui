@@ -198,6 +198,25 @@ describe('OASGridItem', () => {
     expect(breakpointCss(item)).toBe('')
   })
 
+  it('columns 断点简写模式下同样忽略 span（按断点简写判定 auto 布局）', () => {
+    const grid = mount('<oas-grid-item span="8">a</oas-grid-item>', {
+      columns: '3 md:2 sm:1',
+    })
+    const item = firstItem(grid)
+    expect(item.style.gridColumn).toBe('')
+    expect(breakpointCss(item)).toBe('')
+  })
+
+  it('min-child-width 模式下忽略 span/offset（auto-fit 流式重排）', () => {
+    const grid = mount(
+      '<oas-grid-item span="12" offset="2">a</oas-grid-item><oas-grid-item>b</oas-grid-item>',
+      { 'min-child-width': '200px' },
+    )
+    const items = grid.querySelectorAll<HTMLElement>('oas-grid-item')
+    expect(items[0]!.style.gridColumn).toBe('')
+    expect(items[1]!.style.gridColumn).toBe('')
+  })
+
   it('SSR 快照含 @media 规则：shadow 样式与宿主 var() 兜底一并序列化', () => {
     const grid = mount('<oas-grid-item span="24 md:12">a</oas-grid-item>')
     const item = firstItem(grid)
