@@ -1,11 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 import type { OASTabPanel } from './oas-tab-panel.js'
-
-/** 右键菜单批量关闭操作类型 */
-type CloseOp = 'close' | 'others' | 'left' | 'right' | 'all'
-/** 右键菜单操作：new（新建）+ 批量关闭族 */
-type CtxOp = 'new' | CloseOp
+import { registeredTabsCapabilities } from './oas-tabs-capability.js'
 
 export type TabsSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
@@ -39,6 +35,33 @@ function normalizePanelMode(raw: string): TabsPanelMode {
 }
 
 const warnedModes = new Set<string>()
+
+/**
+ * manager 能力（manager 能力包 controller）在宿主渲染/更新管线上的挂接点。
+ *
+ * 核心（OASTabs）不实现任何管理交互，仅保留逐标签渲染挂接：能力包经能力注册表
+ * （oas-tabs-capability.js）注入后，update 构建标签时委托给本接口方法；未注入能力时
+ * manager 专属交互（editable 双击重命名 / context-menu 右键菜单 / sortable 拖拽排序）
+ * 静默失效并在 dev 下告警一次。
+ */
+export interface TabsManagerCapability {
+  /** 单个标签构建完成后的渲染装饰（目前 = sortable 拖拽：draggable + 拖拽事件 → oas-reorder）。
+      核心每次重建标签时调用；未开启 sortable 或 disabled 标签由能力自行跳过。 */
+  decorateTab(tab: HTMLElement, tablist: HTMLElement, value: string, disabled: boolean): void
+}
+
+/** manager 能力未 import 的告警文案（按需 ESM 消费者用；全量入口/导航族包已含 manager 能力，不会触发） */
+const TABS_MANAGER_CAPABILITY_HINT = '[oas-tabs] manager 能力未启用：检测到 context-menu / sortable / editable 配置，但未 import manager 能力包，相关配置已静默失效。请按需 import "@oas-ui/ui/navigation/tabs/manager"（全量入口 @oas-ui/ui 与 CDN 导航族包已内含，无需额外引用）'
+
+/** manager 能力告警去重（同值去重，同控件惯例） */
+const warnedManagerCapability = new Set<string>()
+
+/** dev 告警：manager 配置但能力未注入（页面级仅告警一次） */
+function warnManagerNotImported(): void {
+  if (warnedManagerCapability.has(TABS_MANAGER_CAPABILITY_HINT)) return
+  warnedManagerCapability.add(TABS_MANAGER_CAPABILITY_HINT)
+  console.warn(TABS_MANAGER_CAPABILITY_HINT)
+}
 
 const STYLE = `
 :host {
@@ -601,83 +624,6 @@ a.tab[aria-selected='true'] {
   }
 }
 
-/* ===== context-menu：标签右键批量关闭菜单（fixed 光标弹层） ===== */
-.ctx-menu {
-  position: fixed;
-  z-index: calc(var(--oas-z-dropdown, 1000) + 1);
-  min-width: 148px;
-  background: var(--oas-color-bg);
-  border: 1px solid var(--oas-color-border);
-  border-radius: var(--oas-radius-md);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  padding: var(--oas-space-1);
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  box-sizing: border-box;
-}
-.ctx-menu[hidden] {
-  display: none;
-}
-.ctx-item {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: var(--oas-space-2) var(--oas-space-3);
-  border: none;
-  background: none;
-  border-radius: var(--oas-radius-sm);
-  cursor: pointer;
-  color: var(--oas-color-text-primary);
-  font-size: var(--oas-font-size-md);
-  font-family: inherit;
-  text-align: start;
-  white-space: nowrap;
-}
-.ctx-item:hover,
-.ctx-item:focus-visible {
-  background: var(--oas-color-bg-hover);
-  outline: none;
-}
-.ctx-item.danger {
-  color: var(--oas-color-danger);
-}
-.ctx-divider {
-  height: 1px;
-  background: var(--oas-color-border);
-  margin: var(--oas-space-1) var(--oas-space-2);
-}
-
-/* ===== editable 重命名输入框：与标签文字像素级对齐，避免编辑/非编辑态晃动 ===== */
-.tab-rename-input {
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  color: var(--oas-color-text-primary);
-  background: var(--oas-color-bg);
-  /* 用 outline 而非 border 做选中框：outline 不占布局空间，编辑框与原标签同高同位；
-     纵向 padding 取 0，box-sizing border-box + 固定行高与 label 一致 */
-  border: none;
-  outline: 1px solid var(--oas-color-primary);
-  outline-offset: 1px;
-  border-radius: var(--oas-radius-sm);
-  padding: 0;
-  margin: 0;
-  min-width: 60px;
-  box-sizing: border-box;
-}
-
-/* ===== sortable 拖拽：拖过目标的高亮指示 ===== */
-.tab[draggable='true'] {
-  cursor: grab;
-}
-.tab--drag-over {
-  box-shadow: inset 2px 0 0 var(--oas-color-primary);
-}
-:host(.oas-tabs--vertical) .tab--drag-over {
-  box-shadow: inset 0 2px 0 var(--oas-color-primary);
-}
-
 /* ===== stacked：图标在上、文字在下（纵向堆叠） ===== */
 :host(.oas-tabs--stacked) .tab {
   flex-direction: column;
@@ -745,12 +691,26 @@ export class OASTabs extends OASElement {
   private stash = new WeakMap<HTMLElement, DocumentFragment>()
   /** lazy 模式已访问过的面板 value（访问过即常驻，不再暂存） */
   private visited = new Set<string>()
-  /** sortable 拖拽源标签 value */
-  private dragSource: string | null = null
+  /** manager 能力 controller（经能力注册表注入；无则 manager 交互静默失效 + dev 告警） */
+  private managerCap: TabsManagerCapability | null = null
   /** 上次渲染的激活值（active 变化时滚动到可见；初始化为 undefined 以跳过首渲染滚动） */
   private prevActiveValue: string | undefined = undefined
   /** items 数据驱动同步中标志（防止生成 panel 触发 MutationObserver 导致 update 无限循环） */
   private itemsSyncing = false
+
+  /**
+   * 能力注入：构造时遍历能力注册表，把已注册能力 factory 的 controller 逐个 addController。
+   * 能力包（如 navigation/tabs/manager）在模块求值期自注册，早于任何 tabs 实例构造——
+   * 未 import 的能力不注入（其渲染挂接点由 managerCap 判空跳过）。
+   */
+  constructor() {
+    super()
+    for (const { name, factory } of registeredTabsCapabilities()) {
+      const controller = factory(this)
+      this.addController(controller)
+      if (name === 'manager') this.managerCap = controller as unknown as TabsManagerCapability
+    }
+  }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(hideContent = false): string {
@@ -775,187 +735,16 @@ export class OASTabs extends OASElement {
   private bind(): void {
     const tablist = this.shadow.querySelector('.tablist')
     tablist?.addEventListener('keydown', (e) => this.handleKey(e as KeyboardEvent))
-    // editable 重命名：dblclick 委托到稳定的 tablist 容器（innerHTML 重建会销毁逐个绑定的
-    // 按钮监听；且真实双击前两次 click 触发 activate→重建，直接绑 btn 会被销毁导致 dblclick 丢失）
-    tablist?.addEventListener('dblclick', (e: Event) => {
-      const btn = (e.target as HTMLElement).closest?.(
-        '[role="tab"][data-value]',
-      ) as HTMLElement | null
-      if (!btn) return
-      const value = btn.getAttribute('data-value') ?? ''
-      const panel = this.panels.find((p) => (p.getAttribute('value') ?? '') === value)
-      if (!panel?.hasAttribute('editable')) return
-      e.stopPropagation()
-      this.startRename(btn, panel, value)
-    })
     // 宿主增删 oas-tab-panel（如 closable 场景外部移除面板）时增量刷新标签栏
     this.observer = new MutationObserver(() => this.update())
     this.observer.observe(this, { childList: true })
     this.onCleanup(() => this.observer?.disconnect())
-    // context-menu：右键标签弹批量关闭菜单
-    tablist?.addEventListener('contextmenu', (e) => this.onTabContextMenu(e as MouseEvent))
-    // context-menu 弹层外部点击/Escape 关闭（宿主 document 级，composed 跨 shadow）
-    const onCtxDocClick = (e: Event): void => {
-      const menu = this.ctxMenuEl
-      if (!menu || menu.hidden) return
-      const path = (e as MouseEvent).composedPath()
-      if (!path.includes(menu)) this.hideContextMenu()
-    }
-    const onCtxDocKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') this.hideContextMenu()
-    }
-    document.addEventListener('click', onCtxDocClick, true)
-    document.addEventListener('keydown', onCtxDocKey)
-    this.onCleanup(() => {
-      document.removeEventListener('click', onCtxDocClick, true)
-      document.removeEventListener('keydown', onCtxDocKey)
-    })
     // + 按钮（template 占位，update 按需显隐）：click → oas-add
     this.shadow.querySelector('.tab-add')?.addEventListener('click', () => {
       this.emit('add', { label: this.t('tabs.newTab') })
     })
     this.bindScroll()
     this.bindMore()
-  }
-
-  private ctxMenuEl: HTMLElement | null = null
-  private ctxMenuValue = ''
-
-  /** 右键标签：弹批量关闭菜单（关闭/关闭其他/关闭左侧所有/关闭右侧所有/关闭全部） */
-  private onTabContextMenu(e: MouseEvent): void {
-    if (!this.hasAttr('context-menu')) return
-    const btn = (e.target as HTMLElement).closest?.(
-      '[role="tab"][data-value]',
-    ) as HTMLElement | null
-    if (!btn) return
-    e.preventDefault()
-    e.stopPropagation()
-    const value = btn.getAttribute('data-value') ?? ''
-    if (!value) return
-    this.showContextMenu(value, e.clientX, e.clientY)
-  }
-
-  /** 构建/定位右键菜单（懒创建复用） */
-  private showContextMenu(value: string, x: number, y: number): void {
-    this.ctxMenuValue = value
-    if (!this.ctxMenuEl) {
-      const menu = document.createElement('div')
-      menu.className = 'ctx-menu'
-      menu.setAttribute('part', 'context-menu')
-      menu.setAttribute('role', 'menu')
-      const items: Array<{ op: CtxOp; key: string }> = [
-        { op: 'new', key: 'tabs.ctxNew' },
-        { op: 'close', key: 'tabs.ctxClose' },
-        { op: 'others', key: 'tabs.ctxCloseOthers' },
-        { op: 'left', key: 'tabs.ctxCloseLeft' },
-        { op: 'right', key: 'tabs.ctxCloseRight' },
-        { op: 'all', key: 'tabs.ctxCloseAll' },
-      ]
-      for (const it of items) {
-        // 新建与关闭族之间加分隔线（浏览器标签右键菜单惯例：新建置顶）
-        if (it.op === 'close') {
-          const divider = document.createElement('div')
-          divider.className = 'ctx-divider'
-          divider.setAttribute('role', 'separator')
-          menu.appendChild(divider)
-        }
-        const item = document.createElement('button')
-        item.className = 'ctx-item' + (it.op === 'all' ? ' danger' : '')
-        item.type = 'button'
-        item.setAttribute('role', 'menuitem')
-        item.dataset.op = it.op
-        item.addEventListener('click', () => {
-          this.runCtxOp(it.op, this.ctxMenuValue)
-          this.hideContextMenu()
-        })
-        item.addEventListener('keydown', (e) => {
-          const ke = e as KeyboardEvent
-          if (ke.key === 'Escape') {
-            ke.preventDefault()
-            this.hideContextMenu()
-            return
-          }
-          // menu 模式 roving：方向键/Home/End 在菜单项间移动（与 more-dropdown 一致）
-          if (
-            ke.key === 'ArrowDown' ||
-            ke.key === 'ArrowUp' ||
-            ke.key === 'Home' ||
-            ke.key === 'End'
-          ) {
-            ke.preventDefault()
-            const btns = [...menu.querySelectorAll<HTMLElement>('.ctx-item')]
-            const i = btns.indexOf(item)
-            const n =
-              ke.key === 'Home'
-                ? 0
-                : ke.key === 'End'
-                  ? btns.length - 1
-                  : ke.key === 'ArrowDown'
-                    ? (i + 1) % btns.length
-                    : (i - 1 + btns.length) % btns.length
-            btns[n]?.focus({ preventScroll: true })
-          }
-        })
-        menu.appendChild(item)
-      }
-      this.shadow.appendChild(menu)
-      this.ctxMenuEl = menu
-    }
-    // locale 文案每次刷新（setLocale 切换自动更新）
-    const btns = this.ctxMenuEl.querySelectorAll<HTMLElement>('.ctx-item')
-    const ops: CtxOp[] = ['new', 'close', 'others', 'left', 'right', 'all']
-    btns.forEach((b, i) => {
-      const op = ops[i]!
-      b.textContent = this.t(
-        op === 'new'
-          ? 'tabs.ctxNew'
-          : op === 'close'
-            ? 'tabs.ctxClose'
-            : op === 'others'
-              ? 'tabs.ctxCloseOthers'
-              : op === 'left'
-                ? 'tabs.ctxCloseLeft'
-                : op === 'right'
-                  ? 'tabs.ctxCloseRight'
-                  : 'tabs.ctxCloseAll',
-      )
-    })
-    // 定位：光标处，视口夹取防溢出
-    const menu = this.ctxMenuEl
-    menu.hidden = false
-    const mw = menu.offsetWidth || 160
-    const mh = menu.offsetHeight || 180
-    const left = Math.max(4, Math.min(x, window.innerWidth - mw - 4))
-    const top = Math.max(4, Math.min(y, window.innerHeight - mh - 4))
-    menu.style.left = `${left}px`
-    menu.style.top = `${top}px`
-    menu.querySelector<HTMLElement>('.ctx-item')?.focus({ preventScroll: true })
-  }
-
-  private hideContextMenu(): void {
-    if (this.ctxMenuEl) this.ctxMenuEl.hidden = true
-  }
-
-  /** 右键菜单操作：new 派发 oas-add（与 addable + 按钮同契约）；关闭族按目标集合逐个派发 oas-close{key}（宿主按 key 移除面板，契约零变更） */
-  private runCtxOp(op: CtxOp, value: string): void {
-    if (op === 'new') {
-      this.emit('add', { label: this.t('tabs.newTab') })
-      return
-    }
-    this.closeTabsByOp(op, value)
-  }
-
-  /** 按操作批量派发 oas-close{key}（宿主既有 oas-close 处理逐个移除面板，契约零变更） */
-  private closeTabsByOp(op: CloseOp, value: string): void {
-    const values = this.panels.map((p) => p.getAttribute('value') ?? '')
-    const idx = values.indexOf(value)
-    let targets: string[] = []
-    if (op === 'close') targets = [value]
-    else if (op === 'others') targets = values.filter((v) => v !== value)
-    else if (op === 'left') targets = idx >= 0 ? values.slice(0, idx) : []
-    else if (op === 'right') targets = idx >= 0 ? values.slice(idx + 1) : []
-    else targets = values
-    for (const key of targets) this.emit('close', { key })
   }
 
   protected override render(): void {
@@ -1026,7 +815,9 @@ export class OASTabs extends OASElement {
     this.syncItemsToPanels()
     // 只取直接子面板：嵌套 tabs（panel 内再放 oas-tabs）的面板归内层管理，不误抓
     this.panels = [...this.querySelectorAll(':scope > oas-tab-panel')] as OASTabPanel[]
-    const tablist = this.shadow.querySelector('.tablist')
+    // manager 能力未 import 但检测到 context-menu / sortable / editable 配置 → dev 告警（同值去重）
+    this.warnManagerCapability()
+    const tablist = this.shadow.querySelector('.tablist') as HTMLElement | null
     if (!tablist) return
     // 样式变体：line（下划线，默认）/ card（卡片式）
     const type = this.getAttr('type', 'line')
@@ -1049,7 +840,6 @@ export class OASTabs extends OASElement {
     this.classList.toggle('oas-tabs--reserve-space', this.hasAttr('reserve-selected-space'))
     const closable = this.hasAttr('closable')
     const addable = this.hasAttr('addable')
-    const sortable = this.hasAttr('sortable')
     const triggerHover = this.getAttr('trigger', 'click') === 'hover'
     const reserveSpace = this.hasAttr('reserve-selected-space')
 
@@ -1202,39 +992,9 @@ export class OASTabs extends OASElement {
         btn.addEventListener('mouseenter', () => this.activate(value))
       }
 
-      // sortable：原生 HTML5 拖拽换位，drop 后 emit oas-reorder（宿主据此重排面板数据）
-      if (sortable && !disabled) {
-        btn.setAttribute('draggable', 'true')
-        btn.addEventListener('dragstart', (e: Event) => {
-          this.dragSource = value
-          const de = e as DragEvent
-          if (de.dataTransfer) {
-            de.dataTransfer.effectAllowed = 'move'
-            de.dataTransfer.setData('text/plain', value)
-          }
-        })
-        btn.addEventListener('dragover', (e: Event) => {
-          const de = e as DragEvent
-          de.preventDefault() // 必须 preventDefault 才允许 drop
-          if (de.dataTransfer) de.dataTransfer.dropEffect = 'move'
-          btn.classList.add('tab--drag-over')
-        })
-        btn.addEventListener('dragleave', () => btn.classList.remove('tab--drag-over'))
-        btn.addEventListener('drop', (e: Event) => {
-          const de = e as DragEvent
-          de.preventDefault()
-          btn.classList.remove('tab--drag-over')
-          const fromValue = this.dragSource ?? de.dataTransfer?.getData('text/plain') ?? ''
-          if (fromValue && fromValue !== value) this.reorder(fromValue, value)
-          this.dragSource = null
-        })
-        btn.addEventListener('dragend', () => {
-          this.dragSource = null
-          tablist
-            .querySelectorAll('.tab--drag-over')
-            .forEach((t) => t.classList.remove('tab--drag-over'))
-        })
-      }
+      // manager 能力：sortable 拖拽装饰（draggable + 原生 HTML5 拖拽 → oas-reorder）。
+      // 委托能力包在每次重建时对每个标签施加（节点全新故不会重复监听）；未注入能力时静默跳过
+      this.managerCap?.decorateTab(btn, tablist, value, disabled)
       tablist.appendChild(btn)
     })
 
@@ -1713,69 +1473,35 @@ export class OASTabs extends OASElement {
   }
 
   /**
-   * editable 重命名：标签 label 替换为 input 进入编辑态。Enter 确认（emit oas-rename
-   * 并把新 label 写回面板属性后重渲染）；Esc 或失焦取消（恢复原 label，不发事件）。
-   * 输入期间拦截冒泡，避免触发标签点击/键盘导航。
+   * manager 能力宿主面（TabsManagerHost）：
+   * - translateText：翻译内置文案（命名避开 DOM 保留属性 translate，HTMLElement.translate 为布尔）
+   * - refreshTabs：面板属性已变更后触发标签栏重建（重命名提交/取消路径）
+   * - notifyManager：派发 manager 结果事件（事件名以字面量集中于此，供 api 扫描静态识别；
+   *   未 import manager 能力时不会有任何调用）
    */
-  private startRename(btn: HTMLElement, panel: HTMLElement, value: string): void {
-    const labelEl = btn.querySelector('.tab-label') as HTMLElement | null
-    if (!labelEl || btn.querySelector('.tab-rename-input')) return
-    const original = panel.getAttribute('label') ?? ''
-    // 宽度贴合原标签（不用 input 默认宽度，防布局跳动）+ 随内容自适应增长
-    const baseWidth = labelEl.offsetWidth
-    const baseHeight = labelEl.offsetHeight
-    const input = document.createElement('input')
-    input.className = 'tab-rename-input'
-    input.value = original
-    input.setAttribute('aria-label', this.t('tabs.newTab'))
-    if (baseWidth > 0) input.style.width = `${baseWidth}px`
-    // 高度贴合原标签（input 固有高度 ≠ span 行高，差 1px 会致 tab 轻微晃动）
-    if (baseHeight > 0) input.style.height = `${baseHeight}px`
-    // 自适应：输入内容变长时宽度跟随（不小于原标签宽），缩短时回到原宽
-    const syncWidth = (): void => {
-      const contentW = input.scrollWidth
-      const w = Math.max(baseWidth, contentW)
-      if (w > 0) input.style.width = `${w}px`
-    }
-    input.addEventListener('input', syncWidth)
-    labelEl.replaceWith(input)
-    input.focus()
-    input.select()
-    const finish = (commit: boolean): void => {
-      const newLabel = input.value.trim()
-      if (commit && newLabel && newLabel !== original) {
-        panel.setAttribute('label', newLabel)
-        this.emit('rename', { value, label: newLabel })
-      }
-      // 恢复标签渲染（重渲染整个 tablist 恢复结构）
-      this.update()
-    }
-    input.addEventListener('keydown', (e: Event) => {
-      const k = e as KeyboardEvent
-      k.stopPropagation()
-      if (k.key === 'Enter') {
-        k.preventDefault()
-        finish(true)
-      } else if (k.key === 'Escape') {
-        k.preventDefault()
-        finish(false)
-      }
-    })
-    // 失焦保存（通用 commit on blur：Enter 保存、Esc 取消、blur 保存）；内容未变则静默退出
-    input.addEventListener('blur', () => finish(true))
-    input.addEventListener('click', (e) => e.stopPropagation())
+  /** 翻译内置文案（就近 config-provider / locale；能力 controller 与外部模板经此取词） */
+  translateText(key: string, params?: Record<string, string | number>): string {
+    return this.t(key, params)
   }
 
-  /**
-   * sortable 拖拽换位：计算 from/to 索引并 emit oas-reorder（宿主据此重排面板顺序，
-   * 组件不自动移动 DOM——数据源是宿主的 oas-tab-panel 列表）。
-   */
-  private reorder(fromValue: string, toValue: string): void {
-    const values = this.panels.map((p) => p.getAttribute('value') ?? '')
-    const fromIndex = values.indexOf(fromValue)
-    const toIndex = values.indexOf(toValue)
-    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return
-    this.emit('reorder', { fromIndex, toIndex })
+  /** 刷新标签栏（重命名写回 label 后重建 tablist 恢复结构；能力 controller 专用） */
+  refreshTabs(): void {
+    this.update()
+  }
+
+  /** 派发 manager 能力结果事件（add/close/rename/reorder；detail 由能力 controller 组好） */
+  notifyManager(kind: 'add' | 'close' | 'rename' | 'reorder', detail: unknown): void {
+    this.emit(kind, detail)
+  }
+
+  /** manager 能力未注入但检测到其配置时 dev 告警（同值去重，提示按需 import manager 能力包） */
+  private warnManagerCapability(): void {
+    if (this.managerCap) return
+    const needsManager =
+      this.hasAttr('context-menu') ||
+      this.hasAttr('sortable') ||
+      this.panels.some((p) => p.hasAttribute('editable'))
+    if (needsManager) warnManagerNotImported()
   }
 
   private activate(value: string): void {
