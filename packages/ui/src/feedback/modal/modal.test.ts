@@ -7,6 +7,10 @@ import {
 } from './index.js'
 import { registerAppHost, unregisterAppHost } from '../../framework/app/app-host.js'
 import { iconRegistry } from '@oas-ui/icons'
+// prompt 用例语义零变化：核心入口（feedback/modal）默认不含 prompt 能力包，
+// 测试文件显式 import 能力包（静态 import 即注册）后，以下 prompt 用例全部跑「能力已注入」路径
+// （core-only 边界行为由 oas-modal-prompt-capability.test.ts 单独覆盖）
+import './prompt/index.js'
 
 function okButton(el: Element): HTMLButtonElement {
   return el.shadowRoot!.querySelector('[part="ok"]') as HTMLButtonElement

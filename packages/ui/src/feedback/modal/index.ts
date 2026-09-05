@@ -9,12 +9,18 @@ import {
   type PromptOptions,
   type PromptResult,
   type PromptInputType,
+  type ModalPromptCapability,
   type OptionsItem,
   type OptionsOptions,
   type OptionsResult,
   type OptionsHandle,
   type OptionsType,
 } from './modal.js'
+import {
+  registerModalCapability,
+  registeredModalCapabilities,
+  hasModalCapability,
+} from './oas-modal-capability.js'
 
 if (!customElements.get('oas-modal')) {
   customElements.define('oas-modal', OASModal)
@@ -28,12 +34,16 @@ export {
   type ModalSizePreset,
   modal,
   destroyAll,
+  registerModalCapability,
+  registeredModalCapabilities,
+  hasModalCapability,
   type ModalHandle,
   type ModalOptions,
   type PromptHandle,
   type PromptOptions,
   type PromptResult,
   type PromptInputType,
+  type ModalPromptCapability,
   type OptionsItem,
   type OptionsOptions,
   type OptionsResult,

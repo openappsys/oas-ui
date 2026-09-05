@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import { OASTabs } from './index.js'
+// manager 能力包 import 即注册：本文件含 editable 双击重命名 / context-menu 右键菜单 /
+// sortable 拖拽排序用例，需能力模块注入（core-only 的静默失效边界见 oas-tabs-manager-capability.test.ts）
+import './manager/index.js'
 
 function mount(attrs: Record<string, string> = {}): OASTabs {
   const el = new OASTabs()
