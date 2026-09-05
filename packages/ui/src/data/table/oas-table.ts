@@ -1,6 +1,9 @@
 import { OASElement } from '@oas-ui/core'
 import { computeVirtualWindow } from '../virtual-list/oas-virtual-list.js'
-import { registeredTableCapabilities } from './oas-table-capability.js'
+import {
+  registeredTableCapabilities,
+  onTableCapabilityRegistered,
+} from './oas-table-capability.js'
 
 export interface TableColumn {
   key: string
@@ -668,6 +671,10 @@ export class OASTableBase extends OASElement {
   private _expandable = false
   /** 行内编辑能力 controller（经能力注册表注入；无则编辑相关渲染挂接跳过 + dev 告警） */
   private editCap: TableEditCapability | null = null
+  /** 已注入能力名（attachCapabilities 幂等去重） */
+  private attachedCaps = new Set<string>()
+  /** 能力晚加入订阅的退订函数（connected 期订阅、disconnected 退订防泄漏） */
+  private unsubCaps: (() => void) | undefined = undefined
   /** 合计缓存：scope=all 时全量 flat 的缓存（data/筛选/排序未变时复用，避免选中/翻页等非数据变化的重渲染重复全量 walk+sort） */
   private summaryFlatCache: { key: string; flat: FlatRow[] } | null = null
   /** 列过滤弹层：当前打开的面板元素与其列 key（同一时刻至多一个） */
@@ -675,13 +682,35 @@ export class OASTableBase extends OASElement {
   private filterPanelKey: string | null = null
 
   /**
-   * 能力注入：构造时遍历能力注册表，把已注册能力 factory 的 controller 逐个 addController。
-   * 能力包（如 data/table/edit）在模块求值期自注册，早于任何表格实例构造——
+   * 能力注入：构造时快照已注册能力 + connected 期订阅晚加入（注册可能晚于元素构造——
+   * 入口求值顺序、打包器重排、按需「先组件后能力」、动态 import 等场景）。
    * 未 import 的能力不注入（其渲染挂接点由 editCap 判空跳过）。
    */
   constructor() {
     super()
+    this.attachCapabilities()
+  }
+
+  override connectedCallback(): void {
+    // 订阅晚加入 + catch-up 需在 super 首渲染前完成：表格行内的编辑装饰（editable-cell）
+    // 在 update 重建行时应用——宿主在能力注册后才连接时，先 attach 再渲染即首帧就带装饰；
+    // 已连接后再注册则走订阅通知即时 attach（之后任一次重建行即补齐）
+    this.unsubCaps = onTableCapabilityRegistered(() => this.attachCapabilities())
+    this.attachCapabilities()
+    super.connectedCallback()
+  }
+
+  override disconnectedCallback(): void {
+    this.unsubCaps?.()
+    this.unsubCaps = undefined
+    super.disconnectedCallback()
+  }
+
+  /** 幂等注入：按 name 去重，已注入的能力不重复 addController */
+  private attachCapabilities(): void {
     for (const { name, factory } of registeredTableCapabilities()) {
+      if (this.attachedCaps.has(name)) continue
+      this.attachedCaps.add(name)
       const controller = factory(this)
       this.addController(controller)
       if (name === 'edit') this.editCap = controller as unknown as TableEditCapability
