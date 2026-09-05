@@ -17,6 +17,112 @@ const JUSTIFY_ITEMS = new Set(['start', 'center', 'end', 'stretch'])
 // align（align-items）合法值：start / center / end / stretch / baseline
 const ALIGN_ITEMS = new Set(['start', 'center', 'end', 'stretch', 'baseline'])
 
+/**
+ * 响应式断点常量（移动优先 min-width）。
+ * @media 不支持 CSS 变量，故断点宽度为字面量 px。
+ * 与 space / oas-grid-item 的断点协议严格一致。
+ */
+const BREAKPOINTS: Record<string, string> = {
+  sm: '640px',
+  md: '768px',
+  lg: '1024px',
+  xl: '1280px',
+}
+
+const BREAKPOINT_ORDER = ['sm', 'md', 'lg', 'xl']
+
+const warnedBreakpoints = new Set<string>()
+
+/** 非法断点名：dev 下 console.warn 一次（同值去重） */
+function warnBreakpoint(name: string): void {
+  if (warnedBreakpoints.has(name)) return
+  warnedBreakpoints.add(name)
+  console.warn(
+    `[oas-grid] 非法断点名 "${name}"，已忽略；合法断点：sm=640px / md=768px / lg=1024px / xl=1280px`,
+  )
+}
+
+const warnedColumnValues = new Set<string>()
+
+/** 非法断点 columns 值：dev 下 console.warn 一次（同值去重），丢弃该断点规则 */
+function warnColumnValue(value: string): void {
+  if (warnedColumnValues.has(value)) return
+  warnedColumnValues.add(value)
+  console.warn(
+    `[oas-grid] 断点 columns 值 "${value}" 非法，已丢弃该断点规则；合法值：正整数`,
+  )
+}
+
+const warnedColumnBases = new Set<string>()
+
+/** 非法 columns 基础值：dev 下 console.warn 一次（同值去重），回落 1 列 */
+function warnColumnBase(value: string): void {
+  if (warnedColumnBases.has(value)) return
+  warnedColumnBases.add(value)
+  console.warn(`[oas-grid] columns 基础值 "${value}" 非法，已回落 1 列；合法值：正整数`)
+}
+
+const warnedMinChildWidths = new Set<string>()
+
+/** 非法 min-child-width：dev 下 console.warn 一次（同值去重），回落默认列数 */
+function warnMinChildWidth(value: string): void {
+  if (warnedMinChildWidths.has(value)) return
+  warnedMinChildWidths.add(value)
+  console.warn(
+    `[oas-grid] min-child-width 应为单个长度值（如 200px 或 180），非法值 "${value}" 已忽略（回落默认列数）`,
+  )
+}
+
+/**
+ * 断点简写解析：`"3 md:2 sm:1"`（空格分隔：基础值 + 若干 `断点:值`）。
+ * 与 space / oas-grid-item 的断点协议严格一致：
+ * - 无空格或无冒号视为纯基础值，返回 null（调用方走原内联直写路径，行为不变）；
+ * - 首个 token 不含冒号视为基础值，缺省时回落 1 列；
+ * - 非法断点名丢弃该规则 + dev 告警（同值去重），合法断点值由调用方归一化。
+ */
+function parseBreakpointShorthand(
+  raw: string,
+): { base: string; rules: Array<{ name: string; value: string }> } | null {
+  if (!raw.includes(' ')) return null
+  const tokens = raw.trim().split(/\s+/)
+  if (!tokens.some((t) => t.includes(':'))) return null
+  let base = ''
+  if (!tokens[0]!.includes(':')) {
+    base = tokens.shift()!
+  }
+  const rules: Array<{ name: string; value: string }> = []
+  for (const token of tokens) {
+    const idx = token.indexOf(':')
+    const name = token.slice(0, idx)
+    const value = token.slice(idx + 1)
+    if (!BREAKPOINTS[name]) {
+      warnBreakpoint(name)
+      continue
+    }
+    rules.push({ name, value })
+  }
+  return { base, rules }
+}
+
+/** columns token 归一化：正整数 → 原样字符串；空串/NaN/≤0/小数返回 null */
+function resolveColumnCount(value: string): string | null {
+  const v = value.trim()
+  if (v === '') return null
+  if (!/^\d+$/.test(v)) return null
+  const n = Number(v)
+  return n >= 1 ? String(n) : null
+}
+
+/** min-child-width 归一化：纯数字补 px；含空格/冒号（误用断点协议）判非法返回 null */
+function resolveMinChildWidth(raw: string): string | null {
+  const v = raw.trim()
+  if (v === '') return null
+  if (/^\d+(\.\d+)?$/.test(v)) return `${v}px`
+  // 断点协议（空格/冒号）或明显非单长度 → 判非法（不硬猜）
+  if (/\s/.test(v) || v.includes(':')) return null
+  return v
+}
+
 const warnedJustify = new Set<string>()
 
 /** 非法 justify：dev 下 console.warn 一次（同值去重），回落默认 stretch */
@@ -41,13 +147,14 @@ function warnAlignValue(value: string): void {
 
 export class OASGrid extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['gap', 'cols', 'columns', 'justify', 'align']
+    return ['gap', 'cols', 'columns', 'min-child-width', 'justify', 'align']
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
       <style>${STYLE}</style>
+      <style data-oas-grid-breakpoints></style>
       <slot></slot>
     `
   }
@@ -131,18 +238,84 @@ export class OASGrid extends OASElement {
     }
   }
 
+  /**
+   * columns 断点 @media 规则写入 shadow 专用 <style>（SSR 快照经 renderToString 触发 update 后
+   * 序列化 shadowRoot.innerHTML 同步产出，两段路径一致）。无断点时清空。
+   */
+  private syncBreakpointStyle(css: string): void {
+    const styleEl = this.shadow.querySelector<HTMLStyleElement>(
+      'style[data-oas-grid-breakpoints]',
+    )
+    if (!styleEl) return
+    styleEl.textContent = css
+  }
+
+  /**
+   * columns 列数解析（simple-grid）：
+   * - 纯单值：原内联直写 `repeat(n, 1fr)`（零回归）；
+   * - 断点简写（如 `"3 md:2 sm:1"`）：宿主 var() 兜底基础列数 + shadow @media 规则覆盖。
+   * 返回 @media CSS（无断点时为空串）。
+   */
+  private applyColumns(columns: string): string {
+    const shorthand = parseBreakpointShorthand(columns)
+    if (!shorthand) {
+      const n = Math.max(1, Number(columns) || 1)
+      this.style.gridTemplateColumns = `repeat(${n}, 1fr)`
+      return ''
+    }
+
+    // 基础列数：缺省/非法回落 1 列
+    const rawBase = shorthand.base
+    const base = resolveColumnCount(rawBase)
+    if (base === null && rawBase !== '') warnColumnBase(rawBase)
+
+    // 断点规则：值非法丢弃 + dev 告警；按 min-width 升序输出（覆盖顺序与断点宽一致，
+    // 避免乱序使宽断点被窄断点同匹配覆盖）
+    const rules = shorthand.rules
+      .filter((r) => {
+        if (resolveColumnCount(r.value) !== null) return true
+        warnColumnValue(r.value)
+        return false
+      })
+      .sort((a, b) => BREAKPOINT_ORDER.indexOf(a.name) - BREAKPOINT_ORDER.indexOf(b.name))
+      .map(
+        (r) =>
+          `@media (min-width: ${BREAKPOINTS[r.name]}) { :host { --oas-grid-columns: repeat(${r.value}, 1fr) } }`,
+      )
+
+    if (rules.length > 0) {
+      this.style.gridTemplateColumns = `var(--oas-grid-columns, repeat(${base ?? 1}, 1fr))`
+    } else {
+      // 全部断点规则被丢弃（非法）→ 退化为纯基础列数直写，不留空 var() 壳
+      this.style.gridTemplateColumns = `repeat(${base ?? 1}, 1fr)`
+    }
+    return rules.join('\n')
+  }
+
   protected override update(): void {
     const columns = this.getAttr('columns', '')
+    const minChildWidth = this.getAttr('min-child-width', '')
     const cols = Number(this.getAttr('cols', '24')) || 24
     this.style.display = 'grid'
     this.applyGap()
     this.applyAlignment()
+
+    let breakpointCss = ''
     if (columns !== '') {
-      // simple-grid：按 columns 自动等分，子项忽略 span（由 GridItem 侧配合）
-      const n = Math.max(1, Number(columns) || 1)
-      this.style.gridTemplateColumns = `repeat(${n}, 1fr)`
+      // simple-grid：columns 优先（与 min-child-width 并存时 columns 胜出）
+      breakpointCss = this.applyColumns(columns)
+    } else if (minChildWidth !== '') {
+      // min-child-width 自适应宫格：auto-fit + minmax，列数随可用宽度流式自算
+      const len = resolveMinChildWidth(minChildWidth)
+      if (len !== null) {
+        this.style.gridTemplateColumns = `repeat(auto-fit, minmax(${len}, 1fr))`
+      } else {
+        warnMinChildWidth(minChildWidth)
+        this.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
+      }
     } else {
       this.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
     }
+    this.syncBreakpointStyle(breakpointCss)
   }
 }

@@ -23,10 +23,44 @@
       "name": "active",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "effect",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "count",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "widths",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "delay",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
   "events": [],
-  "slots": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
   "unresolved": []
 }

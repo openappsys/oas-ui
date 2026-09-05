@@ -171,4 +171,123 @@ describe('OASGrid', () => {
     warn.mockRestore()
     grid.remove()
   })
+
+  // ===== 布局批 2：columns 断点简写 / min-child-width 自适应宫格 =====
+
+  function breakpointCss(grid: OASGrid): string {
+    return grid.shadowRoot!.querySelector<HTMLStyleElement>(
+      'style[data-oas-grid-breakpoints]',
+    )!.textContent
+  }
+
+  it('columns 断点简写：宿主 var() 兜底基础值 + shadow @media 规则注入（sm/md 升序）', () => {
+    const grid = new OASGrid()
+    grid.setAttribute('columns', '3 md:2 sm:1')
+    document.body.appendChild(grid)
+    expect(grid.style.gridTemplateColumns).toBe(
+      'var(--oas-grid-columns, repeat(3, 1fr))',
+    )
+    const css = breakpointCss(grid)
+    expect(css).toContain(
+      '@media (min-width: 640px) { :host { --oas-grid-columns: repeat(1, 1fr) } }',
+    )
+    expect(css).toContain(
+      '@media (min-width: 768px) { :host { --oas-grid-columns: repeat(2, 1fr) } }',
+    )
+  })
+
+  it('columns 纯单值零回归：不包 var()、不生成 @media 规则', () => {
+    const grid = new OASGrid()
+    grid.setAttribute('columns', '4')
+    document.body.appendChild(grid)
+    expect(grid.style.gridTemplateColumns).toBe('repeat(4, 1fr)')
+    expect(breakpointCss(grid)).toBe('')
+  })
+
+  it('columns 断点简写移除后：@media 规则清空、回内联直写', () => {
+    const grid = new OASGrid()
+    grid.setAttribute('columns', '3 md:2')
+    document.body.appendChild(grid)
+    expect(breakpointCss(grid)).not.toBe('')
+    grid.setAttribute('columns', '5')
+    expect(grid.style.gridTemplateColumns).toBe('repeat(5, 1fr)')
+    expect(breakpointCss(grid)).toBe('')
+  })
+
+  it('columns 断点值非法：dev 告警并丢弃该断点规则（退化为基础列数直写，不留空 var 壳）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const grid = new OASGrid()
+    grid.setAttribute('columns', '3 md:abc')
+    document.body.appendChild(grid)
+    expect(grid.style.gridTemplateColumns).toBe('repeat(3, 1fr)')
+    expect(breakpointCss(grid)).toBe('')
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+    grid.remove()
+  })
+
+  it('columns 非法断点名：dev 告警并丢弃该断点规则（保留其余合法断点）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const grid = new OASGrid()
+    grid.setAttribute('columns', '3 foo:1 md:2')
+    document.body.appendChild(grid)
+    const css = breakpointCss(grid)
+    expect(css).not.toContain('foo')
+    expect(css).toContain(
+      '@media (min-width: 768px) { :host { --oas-grid-columns: repeat(2, 1fr) } }',
+    )
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+    grid.remove()
+  })
+
+  it('min-child-width：auto-fit + minmax 模板（子项免断点流式重排）', () => {
+    const grid = new OASGrid()
+    grid.setAttribute('min-child-width', '200px')
+    document.body.appendChild(grid)
+    expect(grid.style.gridTemplateColumns).toBe(
+      'repeat(auto-fit, minmax(200px, 1fr))',
+    )
+  })
+
+  it('min-child-width 纯数字补 px', () => {
+    const grid = new OASGrid()
+    grid.setAttribute('min-child-width', '180')
+    document.body.appendChild(grid)
+    expect(grid.style.gridTemplateColumns).toBe(
+      'repeat(auto-fit, minmax(180px, 1fr))',
+    )
+  })
+
+  it('columns 与 min-child-width 并存：columns 优先（忽略 min-child-width）', () => {
+    const grid = new OASGrid()
+    grid.setAttribute('columns', '3')
+    grid.setAttribute('min-child-width', '200px')
+    document.body.appendChild(grid)
+    expect(grid.style.gridTemplateColumns).toBe('repeat(3, 1fr)')
+  })
+
+  it('移除 min-child-width 回落默认 24 列', () => {
+    const grid = new OASGrid()
+    grid.setAttribute('min-child-width', '200px')
+    document.body.appendChild(grid)
+    grid.removeAttribute('min-child-width')
+    expect(grid.style.gridTemplateColumns).toBe('repeat(24, 1fr)')
+  })
+
+  it('min-child-width 误用断点协议（含空格/冒号）：dev 告警并忽略（回落默认列数）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const grid = new OASGrid()
+    grid.setAttribute('min-child-width', '200px md:300px')
+    document.body.appendChild(grid)
+    expect(grid.style.gridTemplateColumns).toBe('repeat(24, 1fr)')
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
+    grid.remove()
+  })
+
+  it('min-child-width / columns 进入 observedAttributes', () => {
+    expect(OASGrid.observedAttributes).toContain('min-child-width')
+    expect(OASGrid.observedAttributes).toContain('columns')
+  })
 })

@@ -6,3 +6,4 @@ if (!customElements.get('oas-empty')) {
 }
 
 export { OASEmpty }
+export type { EmptySize, EmptyAlign, EmptyVariant } from './oas-empty.js'

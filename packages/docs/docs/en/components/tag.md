@@ -256,6 +256,17 @@ The `icon` attribute reuses the oas-icon icon set; the icon renders before the t
   <oas-tag icon="mail" chip closable type="info">Mail</oas-tag>
 </DemoBlock>
 
+## Trailing icon
+
+`icon-end` is the mirror of `icon`: it renders at the tail of the text (before the close button), reuses the oas-icon icon set, is sized to the font, and can coexist with a leading `icon` on the same tag.
+
+<DemoBlock title="icon-end trailing icon">
+  <oas-tag icon-end="arrow-right" type="primary">Go to details</oas-tag>
+  <oas-tag icon="clock" icon-end="chevron-right" chip type="success">Limited-time deal</oas-tag>
+  <oas-tag icon-end="external-link" variant="outlined" href="https://example.com" target="_blank">External link</oas-tag>
+  <oas-tag icon-end="mail" chip closable type="info">Mail (closable)</oas-tag>
+</DemoBlock>
+
 ## Link
 
 When `href` is set, the tag renders a native `<a>` internally; `target` is passed through.
@@ -438,6 +449,7 @@ A set of `closable` tags supports native HTML5 drag & drop reordering (`dragstar
 | `hit` | Heavy border: opaque semantic-color outline (follows the custom color when set) | `boolean` | — |
 | `href` | Link URL: renders a native `<a>` when set | `string` | — |
 | `icon` | Icon name (reusing the oas-icon icon set), placed before the text, sized to the font | `string` | — |
+| `icon-end` | Icon-set name (oas-icon registry) rendered at the tail of the text (before the close button), sized to the font; can coexist with icon | `string` | — |
 | `loading` | Loading state: spinner replaces the close icon and blocks clicks (`oas-close` detail has a `done()` callback the host calls after async work) | `boolean` | — |
 | `max-width` | Max width of the tag content (e.g. `120px`); overflow is truncated with an ellipsis; with `multiline` it only constrains the width so content wraps | `string` | — |
 | `multiline` | Multiline: content wraps (auto height + vertical padding compensation); with `max-width` content wraps instead of being truncated | `boolean` | — |

@@ -256,6 +256,17 @@ onMounted(async () => {
   <oas-tag icon="mail" chip closable type="info">邮件</oas-tag>
 </DemoBlock>
 
+## 尾部图标
+
+`icon-end` 与 `icon` 对称：图标渲染在文字尾部（关闭按钮之前），复用 oas-icon 图标集、尺寸跟随字号；可与头部 `icon` 同签并存。
+
+<DemoBlock title="icon-end 尾部图标">
+  <oas-tag icon-end="arrow-right" type="primary">前往详情</oas-tag>
+  <oas-tag icon="clock" icon-end="chevron-right" chip type="success">限时活动</oas-tag>
+  <oas-tag icon-end="external-link" variant="outlined" href="https://example.com" target="_blank">外链跳转</oas-tag>
+  <oas-tag icon-end="mail" chip closable type="info">邮件（可关闭）</oas-tag>
+</DemoBlock>
+
 ## 链接
 
 `href` 设置后内部渲染为原生链接 `<a>`，`target` 透传打开方式。
@@ -438,6 +449,7 @@ onMounted(async () => {
 | `hit` | 加重描边：语义色全不透明边框（有 `color` 时跟随自定义色） | `boolean` | — |
 | `href` | 链接地址：设置后内部渲染为原生链接 `<a>` | `string` | — |
 | `icon` | 图标名（复用 oas-icon 图标集），置于文字前，尺寸跟随字号 | `string` | — |
+| `icon-end` | 图标名（复用 oas-icon 图标集），置于文字尾部（关闭按钮前），尺寸跟随字号；可与 icon 并存 | `string` | — |
 | `loading` | 加载态：关闭流程中转 spinner 并禁点（`oas-close` detail 含 `done()` 回调，宿主异步完成后调用退出 loading） | `boolean` | — |
 | `max-width` | 标签内容最大宽度（如 `120px`），超出省略显示；与 `multiline` 同设时不省略，仅约束宽度让内容换行 | `string` | — |
 | `multiline` | 多行：内容允许换行（高度自适应 + 上下 padding 补偿）；与 `max-width` 同设时换行而非省略 | `boolean` | — |
