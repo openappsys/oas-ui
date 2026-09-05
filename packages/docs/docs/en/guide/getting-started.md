@@ -100,6 +100,28 @@ Use directly in React / Vue:
 No wrappers are needed in any of the three environments (React/Vue/vanilla);
 events are bridged through `oas-*` CustomEvents.
 
+**Capability sub-packages (opt-in advanced features)**: a few components split heavy optional
+capabilities into standalone sub-packages. When importing a component on demand, these capabilities
+are **not included by default** (the related options silently no-op with a dev-mode warning) — import
+only what you use; importing a sub-package registers it automatically:
+
+| Component | Capability | Subpath |
+| --------- | ---------- | ------- |
+| `oas-table` | Inline editing (`editable` / `editor` / `actions`) | `@oas-ui/ui/data/table/edit` |
+| `oas-tabs` | Double-click rename / context menu / drag-sort (`editable` / `context-menu` / `sortable`) | `@oas-ui/ui/navigation/tabs/manager` |
+| `oas-modal` | Prompt dialog (`modal.prompt()`) | `@oas-ui/ui/feedback/modal/prompt` |
+| `oas-popover` | Cursor-anchored context menu / touch long-press / `placement`·`size` breakpoint shorthands | `@oas-ui/ui/feedback/popover/contextmenu` |
+| `oas-color-picker` | 2D color field / gradient designer (`mode="gradient"`) | `@oas-ui/ui/form/color-picker/designer` |
+
+```ts
+import '@oas-ui/ui/data/table'
+import '@oas-ui/ui/data/table/edit' // adds inline editing
+```
+
+Import order does not matter: capabilities registered later are retroactively applied to
+**already-mounted** elements. The full entry `@oas-ui/ui` and the CDN family bundles already
+include every capability — no extra imports needed there.
+
 > Want to see it live? The repo ships a [Playground](https://github.com/openappsys/oas-ui/tree/main/packages/playground) for React / Vue — run `pnpm dev:react` / `pnpm dev:vue` locally.
 
 ## Browser support

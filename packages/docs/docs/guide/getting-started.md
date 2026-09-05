@@ -99,6 +99,23 @@ React / Vue 中直接使用：
 
 原生三端（React/Vue/原生）均无需封装即可使用，事件通过 `oas-*` CustomEvent 桥接。
 
+**能力子包（可选能力按需引入）**：少数组件的重型可选能力拆成了独立子包——按需引入组件时默认**不含**这些能力（对应配置静默失效并在 dev 下给出告警提示），用到哪个引哪个，import 即注册：
+
+| 组件 | 能力 | 子路径 |
+| ---- | ---- | ------ |
+| `oas-table` | 行内编辑（`editable` / `editor` / `actions`） | `@oas-ui/ui/data/table/edit` |
+| `oas-tabs` | 双击重命名 / 右键菜单 / 拖拽排序（`editable` / `context-menu` / `sortable`） | `@oas-ui/ui/navigation/tabs/manager` |
+| `oas-modal` | 输入确认（`modal.prompt()`） | `@oas-ui/ui/feedback/modal/prompt` |
+| `oas-popover` | 右键光标定位 / 触屏长按 / `placement`·`size` 断点简写 | `@oas-ui/ui/feedback/popover/contextmenu` |
+| `oas-color-picker` | 2D 色域 / 渐变设计器（`mode="gradient"`） | `@oas-ui/ui/form/color-picker/designer` |
+
+```ts
+import '@oas-ui/ui/data/table'
+import '@oas-ui/ui/data/table/edit' // 追加行内编辑能力
+```
+
+引入顺序随意：能力注册对**已挂载**的组件元素也会自动补齐。全量入口 `@oas-ui/ui` 与 CDN 族包已内含全部能力，无需额外引用。
+
 > 想看实际效果？仓库里有搭配使用 React / Vue 的 [Playground](https://github.com/openappsys/oas-ui/tree/main/packages/playground)，`pnpm dev:react` / `pnpm dev:vue` 即可本地运行。
 
 ## 浏览器基线
