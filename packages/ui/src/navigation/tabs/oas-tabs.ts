@@ -1,7 +1,7 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry, type IconName } from '@oas-ui/icons'
 import type { OASTabPanel } from './oas-tab-panel.js'
-import { registeredTabsCapabilities } from './oas-tabs-capability.js'
+import { registeredTabsCapabilities, onTabsCapabilityRegistered } from './oas-tabs-capability.js'
 
 export type TabsSize = 'xs' | 'small' | 'medium' | 'large' | 'xl'
 
@@ -693,19 +693,45 @@ export class OASTabs extends OASElement {
   private visited = new Set<string>()
   /** manager 能力 controller（经能力注册表注入；无则 manager 交互静默失效 + dev 告警） */
   private managerCap: TabsManagerCapability | null = null
+  /** 已注入能力名（attachCapabilities 幂等去重） */
+  private attachedCaps = new Set<string>()
+  /** 能力晚加入订阅的退订函数（connected 期订阅、disconnected 退订防泄漏） */
+  private unsubCaps: (() => void) | undefined = undefined
   /** 上次渲染的激活值（active 变化时滚动到可见；初始化为 undefined 以跳过首渲染滚动） */
   private prevActiveValue: string | undefined = undefined
   /** items 数据驱动同步中标志（防止生成 panel 触发 MutationObserver 导致 update 无限循环） */
   private itemsSyncing = false
 
   /**
-   * 能力注入：构造时遍历能力注册表，把已注册能力 factory 的 controller 逐个 addController。
-   * 能力包（如 navigation/tabs/manager）在模块求值期自注册，早于任何 tabs 实例构造——
+   * 能力注入：构造时快照已注册能力 + connected 期订阅晚加入（注册可能晚于元素构造——
+   * 入口求值顺序、打包器重排、按需「先组件后能力」、动态 import 等场景）。
    * 未 import 的能力不注入（其渲染挂接点由 managerCap 判空跳过）。
    */
   constructor() {
     super()
+    this.attachCapabilities()
+  }
+
+  override connectedCallback(): void {
+    // 订阅晚加入 + catch-up 置于 super 之前：首渲染前能力就位（宿主未 rendered 时
+    // addController 把 hostConnected 延后到基类渲染后的控制器循环，语义不变），
+    // 首帧即带能力装饰；断开期间若有注册，重连时经 attachCapabilities 幂等补齐
+    this.unsubCaps = onTabsCapabilityRegistered(() => this.attachCapabilities())
+    this.attachCapabilities()
+    super.connectedCallback()
+  }
+
+  override disconnectedCallback(): void {
+    this.unsubCaps?.()
+    this.unsubCaps = undefined
+    super.disconnectedCallback()
+  }
+
+  /** 幂等注入：按 name 去重，已注入的能力不重复 addController */
+  private attachCapabilities(): void {
     for (const { name, factory } of registeredTabsCapabilities()) {
+      if (this.attachedCaps.has(name)) continue
+      this.attachedCaps.add(name)
       const controller = factory(this)
       this.addController(controller)
       if (name === 'manager') this.managerCap = controller as unknown as TabsManagerCapability
