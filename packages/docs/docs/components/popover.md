@@ -803,7 +803,7 @@ onMounted(() => {
 | `hover-delay` | hover 触发时打开防抖延时（毫秒，默认 150；未设置回落 open-delay） | `string` | — |
 | `hover-hide-delay` | hover 触发时关闭防抖延时（毫秒，默认 100；未设置回落 close-delay） | `string` | — |
 | `initial-focus` | 打开时聚焦指定选择器元素（宿主 light DOM 优先，含 slot 内容；解析不到回落 focus-on-open），优先级高于 focus-on-open | `string` | — |
-| `long-press-delay` | — | — | — |
+| `long-press-delay` | 触屏长按触发延迟毫秒数（默认 500；仅 contextmenu 触发生效，属独立能力包，按需引入见上文） | — | — |
 | `modal` | modal 化：全屏遮罩 + 焦点陷阱（Tab 面板内循环）+ 滚动锁 + aria-modal；点击遮罩关闭 | `boolean` | — |
 | `offset` | 双轴偏移：`"主轴距离"` 或 `"主轴距离, 交叉轴偏移"`（px，默认 8, 0），如 `offset="12, 20"` | — | — |
 | `open` | 受控显示（布尔属性，存在即显示） | `boolean` | — |

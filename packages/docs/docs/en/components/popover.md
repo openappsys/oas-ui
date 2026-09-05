@@ -791,7 +791,7 @@ onMounted(() => {
 | `hover-delay` | Hover-trigger open debounce in ms (default 150; falls back to open-delay when unset) | `string` | — |
 | `hover-hide-delay` | Hover-trigger close debounce in ms (default 100; falls back to close-delay when unset) | `string` | — |
 | `initial-focus` | Focus the element matched by the selector when opened (host light DOM first, including slot content; falls back to focus-on-open when unresolvable), higher priority than focus-on-open | `string` | — |
-| `long-press-delay` | — | — | — |
+| `long-press-delay` | Touch long-press delay in ms (default 500; contextmenu trigger only, part of the optional contextmenu capability package) | — | — |
 | `modal` | Modal mode: full-screen backdrop + focus trap (Tab cycles inside the panel) + scroll lock + aria-modal; clicking the backdrop closes | `boolean` | — |
 | `offset` | Dual-axis offset: `"main distance"` or `"main distance, cross offset"` in px (default 8, 0), e.g. `offset="12, 20"` | — | — |
 | `open` | Controlled display (boolean attribute; shows when present) | `boolean` | — |
