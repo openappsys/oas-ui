@@ -97,6 +97,8 @@ Switch to the card style with `type="card"`: every tab has its own border, the a
 
 > Right-click “Products” and try “New” and “Close all to the left” / “Close others” — "New" fires `oas-add` and the host appends a panel; each close fires `oas-close` once per key, and the host removes the matching panels.
 
+> This interaction is part of the optional manager capability package: the core entry `@oas-ui/ui/navigation/tabs` does not include it — import `@oas-ui/ui/navigation/tabs/manager` on demand (import registers it, no extra config). The full entry `@oas-ui/ui` and the CDN navigation bundle already include it. Pages that only use the pure switch/close/overflow baseline do not need it.
+
 > Hosts can reword the menu per business domain (e.g. "New file"): override individual locale keys — `setLocale({ name: 'en', messages: { ...en, 'tabs.ctxNew': 'New file' } })` (import `setLocale`/`en` from `@oas-ui/i18n`; same-name registration overwrites, touch only the keys you need).
 
 ## Badges
@@ -316,6 +318,8 @@ The `oas-before-change` event (cancelable) fires before switching with `detail: 
 
 Add `editable` to an `oas-tab-panel`: double-click the tab to enter an input editing state; Enter confirms (emits `oas-rename` with `detail: { value, label }`, and the component writes the new label back); Esc or blur cancels.
 
+> This interaction is part of the optional manager capability package: the core entry `@oas-ui/ui/navigation/tabs` does not include it — import `@oas-ui/ui/navigation/tabs/manager` on demand (import registers it). The full entry `@oas-ui/ui` and the CDN navigation bundle already include it.
+
 <DemoBlock title="Editable rename">
   <oas-tabs id="tabs-rename" active="a">
     <oas-tab-panel label="Doc One" value="a" editable><p>Content 1: double-click my tab to rename.</p></oas-tab-panel>
@@ -327,6 +331,8 @@ Add `editable` to an `oas-tab-panel`: double-click the tab to enter an input edi
 ## Drag sorting
 
 `sortable`: tabs can be drag-sorted (native HTML5 drag &amp; drop). After drop it emits `oas-reorder` with `detail: { fromIndex, toIndex }`; the component does not move DOM itself — the host reorders the `oas-tab-panel` list accordingly.
+
+> This interaction is part of the optional manager capability package: the core entry `@oas-ui/ui/navigation/tabs` does not include it — import `@oas-ui/ui/navigation/tabs/manager` on demand (import registers it). The full entry `@oas-ui/ui` and the CDN navigation bundle already include it.
 
 <DemoBlock title="Drag sorting">
   <oas-tabs id="tabs-sortable" sortable active="a">

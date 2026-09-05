@@ -522,6 +522,8 @@ The trigger element gets ARIA wiring automatically: `aria-haspopup="dialog"` + `
 
 With `trigger="contextmenu"`, right-clicking opens the panel **at the cursor position** (no longer anchored to the trigger center); on touch devices, holding for 500ms opens at the touch point (no right-click on mobile). After opening, scrolling snaps the panel back to the trigger side (a cursor point has no scroll semantics).
 
+> **Opt-in contextmenu capability**: cursor anchoring, touch long-press and the placement/size breakpoint shorthand below live in a separate capability package (subpath `@oas-ui/ui/feedback/popover/contextmenu`, registered on import with zero runtime overhead). The core entry (core-only) does not ship these enhancements — `trigger="contextmenu"` still opens the panel on right-click (anchored to the trigger element, core behavior), but without cursor anchoring, long-press or breakpoint response (a console hint points to the opt-in import). The full entry `@oas-ui/ui` and the CDN feedback family bundle already include the capability, so no extra import is needed (demos below use the full entry).
+
 <DemoBlock title="contextmenu cursor anchoring (right-click / touch long-press)">
   <oas-popover trigger="contextmenu" title="Cursor menu" placement="right" arrow="false">
     <oas-button>Right-click anywhere around here</oas-button>
@@ -572,7 +574,7 @@ With `dismiss-on-select`, any click inside the panel (including slot content) co
 
 ## Breakpoints & trigger fine-tuning
 
-`placement` / `size` support breakpoint shorthand (same protocol as space/grid): `"bottom md:right"` = base value + space-separated `breakpoint:value` pairs (sm=640 / md=768 / lg=1024 / xl=1280, mobile-first min-width) — below the panel on the bottom, at ≥768px on the right. `trigger="mousedown"` opens on press (no release needed, one beat faster than click).
+`placement` / `size` support breakpoint shorthand (same protocol as space/grid): `"bottom md:right"` = base value + space-separated `breakpoint:value` pairs (sm=640 / md=768 / lg=1024 / xl=1280, mobile-first min-width) — below the panel on the bottom, at ≥768px on the right. Breakpoint response is part of the contextmenu capability package (see the opt-in note above; core-only falls back to the base value). `trigger="mousedown"` opens on press (no release needed, one beat faster than click).
 
 <DemoBlock title="placement breakpoint shorthand (resize the window to see it switch)">
   <oas-popover title="Breakpoint placement" content="Below 768px the panel sits at the bottom; at ≥ 768px it moves to the right." placement="bottom md:right">
@@ -789,7 +791,7 @@ onMounted(() => {
 | `hover-delay` | Hover-trigger open debounce in ms (default 150; falls back to open-delay when unset) | `string` | — |
 | `hover-hide-delay` | Hover-trigger close debounce in ms (default 100; falls back to close-delay when unset) | `string` | — |
 | `initial-focus` | Focus the element matched by the selector when opened (host light DOM first, including slot content; falls back to focus-on-open when unresolvable), higher priority than focus-on-open | `string` | — |
-| `long-press-delay` | — | `string` | — |
+| `long-press-delay` | — | — | — |
 | `modal` | Modal mode: full-screen backdrop + focus trap (Tab cycles inside the panel) + scroll lock + aria-modal; clicking the backdrop closes | `boolean` | — |
 | `offset` | Dual-axis offset: `"main distance"` or `"main distance, cross offset"` in px (default 8, 0), e.g. `offset="12, 20"` | — | — |
 | `open` | Controlled display (boolean attribute; shows when present) | `boolean` | — |
