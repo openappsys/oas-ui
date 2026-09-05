@@ -57,20 +57,87 @@ const EDIT_ICON = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" s
 export class TableEditController implements ReactiveController, TableEditCapability {
   private hostEl: HTMLElement & TableEditHost
   private editState: EditState | null = null
+  /** click 委托绑定的稳定 <table> 节点（重连幂等） */
+  private delegatedTable: HTMLTableElement | null = null
+  /** 手工双击判定的上一击签名（行 key + 列 key + 时间戳） */
+  private lastCellClick: { key: string; col: string; time: number } | null = null
 
   constructor(host: HTMLElement & TableEditHost) {
     this.hostEl = host
   }
 
-  /** 宿主断开连接：清掉进行中编辑对已脱离 DOM 节点的引用（重连后 update 整体重建） */
+  /** 宿主连接：把 click 委托到稳定的 <table> 容器（手工双击判定） */
+  hostConnected(): void {
+    this.bindDelegatedClick()
+  }
+
+  /** 宿主断开连接：解绑委托 + 清掉进行中编辑对已脱离 DOM 节点的引用（重连后 update 整体重建） */
   hostDisconnected(): void {
+    this.delegatedTable?.removeEventListener('click', this.onTableClick)
+    this.delegatedTable?.removeEventListener('dblclick', this.onTableDblClick)
+    this.delegatedTable = null
+    this.lastCellClick = null
     this.editState = null
+  }
+
+  /**
+   * 双击进编辑必须手工判定且委托到稳定容器（原生 dblclick 在此架构下不可靠）：
+   * 真实双击的首击触发行选中切换 → update() 同步重建 tbody → 被击 td 脱离文档 →
+   * 浏览器判定两次点击目标不同，**dblclick 事件根本不派发**（逐 td 绑定/容器委托都收不到）。
+   * 但两次 click 都会冒泡到 update 中存活的 <table> 节点——按「同行同列 + 时间窗」
+   * 手工判定双击；命中时目标 td 已被重建（tr 选中处理器先于本委托执行），经 findRow/cellOf
+   * 重查活节点再进编辑。判定窗口取 Windows 默认双击间隔 500ms。
+   */
+  private bindDelegatedClick(): void {
+    if (this.delegatedTable) return
+    const table = this.hostEl.shadowRoot?.querySelector('table') as HTMLTableElement | null
+    if (!table) return
+    this.delegatedTable = table
+    table.addEventListener('click', this.onTableClick)
+    table.addEventListener('dblclick', this.onTableDblClick)
+  }
+
+  /**
+   * 原生 dblclick 兜底：无重建场景（如 checkable 表首击不触发行选中重建）浏览器正常派发；
+   * 与手工判定相继命中同一格时经 enterEdit 同格重入守卫去重，不会重置进行中的编辑器。
+   */
+  private onTableDblClick = (e: MouseEvent): void => {
+    const target = e.target as HTMLElement | null
+    if (!target) return
+    if (target.closest('input, select, textarea, button, a')) return
+    const td = target.closest('td.editable-cell') as HTMLTableCellElement | null
+    if (!td) return
+    this.enterEdit(td)
+  }
+
+  /** 委托的 click 处理：排除编辑器/交互控件内部；同行同列 500ms 内两击 = 双击进编辑 */
+  private onTableClick = (e: MouseEvent): void => {
+    const target = e.target as HTMLElement | null
+    if (!target) return
+    if (target.closest('input, select, textarea, button, a')) return
+    const td = target.closest('td.editable-cell') as HTMLTableCellElement | null
+    if (!td) return
+    const sig = {
+      key: td.closest('tr')?.getAttribute('data-key') ?? '',
+      col: td.getAttribute('data-col') ?? '',
+      time: Date.now(),
+    }
+    const prev = this.lastCellClick
+    this.lastCellClick = sig
+    if (!prev || prev.key !== sig.key || prev.col !== sig.col || sig.time - prev.time >= 500) {
+      return
+    }
+    // 命中双击：本击已触发选中重建（tr 处理器先行），e.target 的 td 已脱离文档，重查活节点
+    this.lastCellClick = null
+    const freshTr = this.findRow(sig.key)
+    const freshTd = freshTr ? this.cellOf(freshTr, sig.col) : null
+    if (freshTd) this.enterEdit(freshTd)
   }
 
   // ==================== 渲染挂接点（宿主 buildRow / update 调用） ====================
 
-  /** 可编辑单元格：可聚焦，Enter/F2/双击进入编辑（仅响应单元格自身事件，
-      编辑器内部按键/双击会冒泡到此，需排除避免提交后被重入编辑） */
+  /** 可编辑单元格：可聚焦，Enter/F2 进编辑（双击走 <table> 稳定容器的手工判定委托，见
+      bindDelegatedClick；编辑器内部按键会冒泡到此，需排除避免提交后被重入编辑） */
   decorateCell(td: HTMLTableCellElement, col: TableColumn): void {
     if (!this.editingEnabled(col)) return
     td.tabIndex = 0
@@ -84,10 +151,6 @@ export class TableEditController implements ReactiveController, TableEditCapabil
         e.preventDefault()
         this.enterEdit(td)
       }
-    })
-    td.addEventListener('dblclick', (e: MouseEvent) => {
-      if (e.target !== td) return
-      this.enterEdit(td)
     })
   }
 
@@ -150,6 +213,9 @@ export class TableEditController implements ReactiveController, TableEditCapabil
 
   /** 双击 / Enter / F2 / 操作列按钮 → 进入编辑模式 */
   private enterEdit(td: HTMLTableCellElement): void {
+    // 同格重入守卫：本格已在编辑时静默跳过（手工双击判定与原生 dblclick 可能相继命中同一格，
+    // 重复进入会销毁进行中的编辑器并重置用户已输入内容）
+    if (this.editState?.td === td) return
     // 防御：两次点击之间表格重渲染导致 td 被整体重建（脱离文档）时不再进入编辑，
     // 否则编辑器会创建在游离节点上（不可见但状态被占用）
     if (!td.isConnected) return
