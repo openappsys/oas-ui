@@ -539,10 +539,10 @@ describe('OASSlider', () => {
       expect(range(normal).hasAttribute('aria-orientation')).toBe(false)
     })
 
-    it('填充区换轴：top/height 定位（而非 left/width）', () => {
+    it('填充区换轴：top/height 定位（而非 left/width，垂直 min 在下）', () => {
       const el = mount({ vertical: '', value: '30', min: '0', max: '100' })
       const fill = fillEl(el)
-      expect(fill.style.top).toBe('0%')
+      expect(fill.style.top).toBe('70%')
       expect(fill.style.height).toBe('30%')
       // 切回水平时垂直轴残留被清理
       el.removeAttribute('vertical')
@@ -552,37 +552,161 @@ describe('OASSlider', () => {
       expect(fill.style.width).toBe('30%')
     })
 
-    it('marks 刻度换轴：top 定位', () => {
+    it('marks 刻度换轴：top 定位（垂直 min 在下 → 值越大越靠上）', () => {
       const el = mount({
         vertical: '',
         min: '0',
         max: '100',
         marks: JSON.stringify([0, 26, 60]),
       })
-      expect(markItems(el).map((n) => n.style.top)).toEqual(['0%', '26%', '60%'])
+      expect(markItems(el).map((n) => n.style.top)).toEqual(['100%', '74%', '40%'])
       expect(markItems(el).map((n) => n.style.left)).toEqual(['', '', ''])
     })
 
-    it('custom-thumb 换轴定位（top 百分比）', () => {
+    it('custom-thumb 换轴定位（top 百分比，min 在下）', () => {
       const el = mount({ vertical: '', 'show-tooltip': '', value: '40' })
-      expect(thumbEl(el, 'value').style.top).toBe('40%')
+      // happy-dom 无轨道尺寸 → 回落百分比：垂直值 40 = 距顶 60%
+      expect(thumbEl(el, 'value').style.top).toBe('60%')
     })
 
-    it('range 模式 pointerdown 按 Y 轴抢拖动权', () => {
+    it('range 模式 pointerdown 由 pointer 接管：不再提升原生 z-index，值不被污染', () => {
+      // 垂直拖动已由 pointer 事件接管（原生竖直拖拽 hit-test 失效），z-index 抢夺仅保留给水平 range；
+      // happy-dom 无布局尺寸，定位路径早退——断言不崩溃、值不污染、原生 z-index 不变
       const el = mount({ vertical: '', range: '', value: '[20, 80]' })
       const min = byRole(el, 'range-min')
       const max = byRole(el, 'range-max')
       const track = el.shadowRoot!.querySelector<HTMLElement>('.track-wrap')!
-      // rect 无尺寸（happy-dom）：pct 回退 50 → 值 50 ≤ mid(50) → 抢 min
-      track.dispatchEvent(new Event('pointerdown'))
-      expect(min.style.zIndex).toBe('2')
-      expect(max.style.zIndex).toBe('1')
+      const e = new Event('pointerdown', { cancelable: true }) as PointerEvent
+      Object.assign(e, { pointerId: 1, clientY: 40 })
+      track.dispatchEvent(e)
+      expect(min.style.zIndex).toBe('')
+      expect(max.style.zIndex).toBe('')
+      expect(el.getAttribute('value')).toBe('[20, 80]')
     })
 
     it('vertical + reverse：dir=ltr（min 在上），aria-orientation 保留', () => {
       const el = mount({ vertical: '', reverse: '', value: '30' })
       expect(range(el).dir).toBe('ltr')
       expect(range(el).getAttribute('aria-orientation')).toBe('vertical')
+    })
+  })
+
+  describe('垂直拖动（pointer 接管）', () => {
+    function stubTrack(el: OASSlider, rect: { top: number; bottom: number; height: number }): HTMLElement {
+      const wrap = el.shadowRoot!.querySelector<HTMLElement>('.track-wrap')!
+      wrap.getBoundingClientRect = () =>
+        ({
+          top: rect.top,
+          bottom: rect.bottom,
+          height: rect.height,
+          left: 0,
+          right: 0,
+          width: 0,
+          x: 0,
+          y: rect.top,
+          toJSON: () => ({}),
+        }) as DOMRect
+      return wrap
+    }
+
+    function pointer(wrap: HTMLElement, type: string, pointerId: number, clientY: number): PointerEvent {
+      const e = new Event(type, { cancelable: true, bubbles: true }) as PointerEvent
+      Object.assign(e, { pointerId, clientY })
+      wrap.dispatchEvent(e)
+      return e
+    }
+
+    function recordEvents(el: OASSlider): Array<{ type: string; value: unknown }> {
+      const events: Array<{ type: string; value: unknown }> = []
+      el.addEventListener('oas-input', (e) => events.push({ type: 'input', value: (e as CustomEvent).detail.value }))
+      el.addEventListener('oas-change', (e) => events.push({ type: 'change', value: (e as CustomEvent).detail.value }))
+      return events
+    }
+
+    it('pointerdown 点击轨道定位到指针处（min 在下：越靠 bottom 值越大）并派发 oas-input', () => {
+      const el = mount({ vertical: '', value: '0' })
+      const wrap = stubTrack(el, { top: 100, bottom: 300, height: 200 })
+      const events = recordEvents(el)
+      pointer(wrap, 'pointerdown', 7, 150)
+      // p = (300-150)/200 = 0.75 → 值 75
+      expect(range(el).value).toBe('75')
+      expect(events).toEqual([{ type: 'input', value: 75 }])
+    })
+
+    it('step 吸附：定位值按 step 取整', () => {
+      const el = mount({ vertical: '', step: '10', value: '0' })
+      const wrap = stubTrack(el, { top: 100, bottom: 300, height: 200 })
+      pointer(wrap, 'pointerdown', 7, 146)
+      // p = 0.77 → raw 77 → step 10 吸附 → 80
+      expect(range(el).value).toBe('80')
+    })
+
+    it('reverse 镜像：同一指针位置映射为 1-p（min 在上）', () => {
+      const el = mount({ vertical: '', reverse: '', value: '0' })
+      const wrap = stubTrack(el, { top: 100, bottom: 300, height: 200 })
+      pointer(wrap, 'pointerdown', 7, 150)
+      expect(range(el).value).toBe('25')
+    })
+
+    it('拖动跟随：pointermove 更新值；松手按最终值派发 oas-change', () => {
+      const el = mount({ vertical: '', value: '0' })
+      const wrap = stubTrack(el, { top: 100, bottom: 300, height: 200 })
+      const events = recordEvents(el)
+      pointer(wrap, 'pointerdown', 7, 150)
+      pointer(wrap, 'pointermove', 7, 250)
+      expect(range(el).value).toBe('25')
+      pointer(wrap, 'pointerup', 7, 250)
+      expect(events).toEqual([
+        { type: 'input', value: 75 },
+        { type: 'input', value: 25 },
+        { type: 'change', value: 25 },
+      ])
+    })
+
+    it('点击位置即当前值（定位无变化）时松手不派发 oas-change', () => {
+      const el = mount({ vertical: '', value: '75' })
+      const wrap = stubTrack(el, { top: 100, bottom: 300, height: 200 })
+      const events = recordEvents(el)
+      pointer(wrap, 'pointerdown', 7, 150)
+      pointer(wrap, 'pointerup', 7, 150)
+      expect(events).toEqual([])
+    })
+
+    it('readonly 拦截：preventDefault 且值不变', () => {
+      const el = mount({ vertical: '', readonly: '', value: '10' })
+      const wrap = stubTrack(el, { top: 100, bottom: 300, height: 200 })
+      const e = pointer(wrap, 'pointerdown', 7, 150)
+      expect(e.defaultPrevented).toBe(true)
+      expect(range(el).value).toBe('10')
+    })
+
+    it('disabled 守卫：不进入拖动、值不变', () => {
+      const el = mount({ vertical: '', disabled: '', value: '10' })
+      const wrap = stubTrack(el, { top: 100, bottom: 300, height: 200 })
+      pointer(wrap, 'pointerdown', 7, 150)
+      expect(range(el).value).toBe('10')
+    })
+
+    it('早退守卫：非有限 clientY / 零高矩形不崩溃、值不变', () => {
+      const el = mount({ vertical: '', value: '10' })
+      const wrap = stubTrack(el, { top: 100, bottom: 300, height: 200 })
+      pointer(wrap, 'pointerdown', 7, Number.NaN)
+      expect(range(el).value).toBe('10')
+      const zero = stubTrack(el, { top: 100, bottom: 100, height: 0 })
+      pointer(zero, 'pointerdown', 9, 150)
+      expect(range(el).value).toBe('10')
+    })
+
+    it('range 垂直拖动：值更接近哪个 thumb 推哪个', () => {
+      const el = mount({ vertical: '', range: '', value: '[20, 80]' })
+      const wrap = stubTrack(el, { top: 100, bottom: 300, height: 200 })
+      pointer(wrap, 'pointerdown', 7, 150)
+      // raw 75 更接近 hi=80 → 推 max
+      expect(byRole(el, 'range-max').value).toBe('75')
+      expect(byRole(el, 'range-min').value).toBe('20')
+      pointer(wrap, 'pointermove', 7, 240)
+      // raw 30 更接近 lo=20 → 改推 min
+      expect(byRole(el, 'range-min').value).toBe('30')
     })
   })
 
@@ -787,9 +911,9 @@ describe('OASSlider', () => {
       expect(markItems(el).map((n) => n.getAttribute('data-value'))).toEqual(['0', '0.1', '0.2', '0.3'])
     })
 
-    it('vertical 模式 stops 换 top 轴', () => {
+    it('vertical 模式 stops 换 top 轴（min 在下 → 0 刻度在底部）', () => {
       const el = mount({ vertical: '', 'show-stops': '', min: '0', max: '100', step: '50' })
-      expect(markItems(el).map((n) => n.style.top)).toEqual(['0%', '50%', '100%'])
+      expect(markItems(el).map((n) => n.style.top)).toEqual(['100%', '50%', '0%'])
     })
   })
 

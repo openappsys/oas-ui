@@ -60,6 +60,13 @@ Press and hold a stepper button for 800ms to enter auto-repeat: it steps every 1
 
 `prefix` / `suffix` are inline decorative texts (not part of value parsing); same-named slots also accept arbitrary content: `<span slot="prefix">…</span>`.
 
+<DemoBlock title="clearable + controls + suffix stacked">
+  <oas-input-number value="1280" clearable suffix="USD" style="width: 200px"></oas-input-number>
+  <oas-input-number value="42" clearable prefix="$" controls-position="both" style="width: 240px"></oas-input-number>
+</DemoBlock>
+
+`clearable` / stepper controls / affixes compose freely: right-side elements lay out left-to-right as steppers → clear button → suffix, all embedded inside the input box, and the entered text yields by the combined width (`controls-position="both"` keeps the clear button / suffix inside the box, clear of the right `+` button).
+
 ## Grouping & Declarative Formatting
 
 <DemoBlock title="grouping (thousands separator)">
