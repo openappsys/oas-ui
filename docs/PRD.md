@@ -997,6 +997,24 @@ table 组件按能力并集补齐（列设置/多列排序/多级表头/内置�
 - 全量单测 4970 / typecheck 0 / build / api:check / trace 0 命中
 - 全量 e2e 1612 全过（chromium 全量 + firefox 抽样 + docs-site）
 
+## v2.4.1 能力子包（L3）+ 反馈/基础/布局组能力收尾 ✅
+
+### 特性
+
+- **组件内能力子包（按需打包第三层）**：table/edit、tabs/manager、modal/prompt、popover/contextmenu、color-picker/designer 五个能力子包（import 即注册、顺序随意）；全量入口与 CDN 族包内含无感知；getting-started 补对照表（中英）
+- **能力注册表晚加入订阅**：connected 期订阅 + 断开退订 + 幂等注入，时序竞态（入口求值顺序/打包器重排/反向引入/动态 import）全部自愈
+- **能力收尾批**：progress 14 项能力并集；skeleton 重构（loading 受控+真实内容出口/三档动效/count/widths/delay）+ 新子组件 oas-skeleton-item；empty 七项；result（403/404/500 + 状态图标真 SVG 化等六项）；tag icon-end；grid columns 断点简写 + min-child-width；FAQ 组合模式章节
+
+### 修复
+
+- table 行内编辑真实双击不生效（行选中重建致 dblclick 不派发，改 click 委托 + 手工双击判定）+ 进/出编辑列宽行高跳变（占位保布局贡献 + 编辑器绝对定位 + 操作列同槽叠放）
+- progress SSR 空属性噪声；dev 全新环境 predev 拓扑序
+
+### 验收
+
+- 全量单测 5142 / typecheck 0 / build / api:check / trace 0 命中
+- 全量 e2e 1616 全过（chromium 全量 + firefox 抽样 + docs-site）
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
