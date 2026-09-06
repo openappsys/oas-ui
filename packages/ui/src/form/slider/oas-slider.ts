@@ -156,6 +156,13 @@ input[type="range"] {
 :host([data-vertical]) .track-wrap {
   touch-action: none;
 }
+/* range 双滑块：min/max 两个原生 input 必须叠层定位（absolute inset 0 共享 track-wrap 同盒）——
+   否则相对定位正常流上下堆叠，max 的拇指掉到轨道线下方（用户实测右侧圆点偏离线条） */
+:host([data-range]) input[data-role='range-min'],
+:host([data-range]) input[data-role='range-max'] {
+  position: absolute;
+  inset: 0;
+}
 :host([data-readonly]) input[type="range"] {
   cursor: default;
 }
@@ -262,22 +269,27 @@ input:disabled {
   justify-content: center;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: var(--oas-color-bg);
-  border: 2px solid var(--oas-slider-color);
   pointer-events: none;
   transition: transform var(--oas-transition-fast) var(--oas-ease-out);
+  /* 默认实心圆点 + 底环，与原生拇指像素级一致（曾默认空心环导致「圆点 vs 圆圈」不一致；
+     仅真正有自定义内容（data-thumb-content）时才回到空心环容器样式） */
+  background: var(--oas-slider-color);
+  box-shadow: 0 0 0 2px var(--oas-color-bg);
+  border: none;
+}
+/* 自定义内容时的空心环容器（ring：白底彩环，可放内容） */
+:host([data-thumb-content]) .custom-thumb {
+  background: var(--oas-color-bg);
+  border: 2px solid var(--oas-slider-color);
+  box-shadow: none;
 }
 /* 垂直模式：定位原点换到轨道中线 x（top 由 JS 按值写入） */
 :host([data-vertical]) .custom-thumb {
   top: 0;
   left: 10px;
 }
-/* 垂直模式原生 thumb 恒隐藏，.custom-thumb 承担默认拇指视觉：实心圆与水平默认一致；
-   有自定义内容（data-thumb-content）时回到 ring 样式（白底彩环，与水平 custom-thumb 一致） */
-:host([data-vertical]):not([data-thumb-content]) .custom-thumb {
-  background: var(--oas-slider-color);
-  border: none;
-}
+/* 垂直模式原生 thumb 恒隐藏，.custom-thumb 承担默认拇指视觉（样式已并入上方全局默认，
+   此选择器保留仅作语义锚点，无覆盖内容） */
 /* author display:flex 会压过 UA [hidden] 规则，显式恢复隐藏（否则 hidden 滑块恒可见：
     默认堆在轨道起点呈白圈、拖动后残留在值位置呈双滑块假象） */
 .custom-thumb[hidden] {
@@ -727,6 +739,7 @@ export class OASSlider extends OASElement {
     // 宿主状态镜像（data-* 非 observed 属性，写入不触发 attributeChangedCallback 循环）
     this.toggleAttribute('data-vertical', vertical)
     this.toggleAttribute('data-readonly', readonly)
+    this.toggleAttribute('data-range', isRange)
     this.setAttribute('data-size', this.normalizeSize())
     this.setAttribute('data-tooltip-pos', this.tooltipPosition(vertical))
     this.applyHostVar('color', '--oas-slider-color')
@@ -1307,12 +1320,18 @@ export class OASSlider extends OASElement {
         const visual = vertical ? (reverse ? norm : 1 - norm) : reverse ? 1 - norm : norm
         return visual * Math.max(trackLen - size, 0) + size / 2
       }
-      const a = posPx(lo)
+      // 单值且无显式 start-point：填充从轨道视觉起点边（水平左/垂直底）开始贴边——
+      // 用 posPx(min) 会在起点留出拇指半径（size/2）的灰缝（用户实测）；range/显式起点仍从 lo thumb 中心起
+      const hasStartPoint = this.hasAttr('start-point')
+      const edgeStart = vertical ? (reverse ? 0 : trackLen) : reverse ? trackLen : 0
+      const a = isRange || hasStartPoint ? posPx(lo) : edgeStart
       const b = posPx(hi)
       fill.style.setProperty(axis, `${Math.min(a, b)}px`)
       fill.style.setProperty(sizeProp, `${Math.abs(b - a)}px`)
     } else {
-      const a = vis(pctOf(lo))
+      const hasStartPoint = this.hasAttr('start-point')
+      const edgeStart = vertical ? (reverse ? 0 : 100) : reverse ? 100 : 0
+      const a = isRange || hasStartPoint ? vis(pctOf(lo)) : edgeStart
       const b = vis(pctOf(hi))
       fill.style.setProperty(axis, `${Math.min(a, b)}%`)
       fill.style.setProperty(sizeProp, `${Math.abs(b - a)}%`)
