@@ -311,3 +311,63 @@ test('table 列拖拽重排精确化：左半区插前、右半区插后 + 插�
   expect(r.right.mark, '拖到 city 右半区应显 drop-after').toBe('after')
   expect(r.right.order, 'age 应插入 city 之后').toEqual(['name', 'city', 'age', 'position'])
 })
+
+test('table 表头吸顶：非固定列表头纵向 sticky 不被覆盖失效（列宽拖拽手柄定位上下文不得写 relative）', async ({
+  page,
+}) => {
+  // 缺陷固化：`th[data-key] { position: relative }`（列宽拖拽 ::after 手柄的定位上下文）与
+  // `th { position: sticky; top: 0 }` 同权重但居后——非固定列表头（年龄/城市/邮箱）被覆盖成
+  // relative 随表体滚走，仅固定列（data-fixed）表头吸顶（用户实测「3 个表头会随滚动而滚动」）。
+  // 修复：删除 relative 覆盖（sticky 同为定位上下文，天然供给 ::after 手柄）。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-table')
+  const result = await page.evaluate(() => {
+    const block = [...document.querySelectorAll('.demo-block')].find((b) =>
+      b.textContent.includes('sticky-rows'),
+    )!
+    const table = block.querySelector('oas-table')!
+    const sr = table.shadowRoot!
+    const scroll = sr.querySelector('.table-scroll') as HTMLElement
+    scroll.scrollTop = 300
+    const ths = [...sr.querySelectorAll('thead th')].map((th) => ({
+      text: th.textContent!.trim().slice(0, 4),
+      position: getComputedStyle(th).position,
+      top: Math.round(th.getBoundingClientRect().top),
+    }))
+    return { scrollTop: scroll.scrollTop, scrollTop0: Math.round(scroll.getBoundingClientRect().top), ths }
+  })
+  expect(result.scrollTop, '容器应已滚动').toBe(300)
+  for (const th of result.ths) {
+    expect(th.position, `${th.text} 表头应为 sticky（不被 relative 覆盖）`).toBe('sticky')
+    // 吸顶生效：表头应停在容器顶缘（top:0 → th.top ≈ 容器 top，容差 2px）
+    expect(Math.abs(th.top - result.scrollTop0), `${th.text} 表头应吸在容器顶缘`).toBeLessThanOrEqual(2)
+  }
+})
+
+test('table 子元素声明式通道：Vue 宿主下 key 被剥离也能经 data-key 正常渲染单元格', async ({
+  page,
+}) => {
+  // 缺陷固化：`key` 是 Vue 模板保留字（vnode key），在 Vue 宿主（含文档站）被剥离不到 DOM——
+  // 声明式列 key 全空 → 表头有、内容行全空（用户实测）。修复：key 双通道（key ?? data-key），
+  // demo 全部改写 data-key。本断言在真实 Vue 宿主（vitepress 页面）验证端到端。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-table')
+  const result = await page.evaluate(() => {
+    const block = [...document.querySelectorAll('.demo-block')].find((b) =>
+      b.querySelector('oas-table-column'),
+    )!
+    const table = block.querySelector('oas-table')!
+    const sr = table.shadowRoot!
+    return {
+      headers: [...sr.querySelectorAll('thead th')].map((th) => th.textContent!.trim()),
+      firstRow: [...sr.querySelectorAll('tbody tr.row')[0]!.querySelectorAll('td')].map((td) =>
+        td.textContent!.trim(),
+      ),
+    }
+  })
+  expect(result.headers.length).toBeGreaterThanOrEqual(3)
+  expect(result.firstRow[0], '首行首列应有值（张三）').toBe('张三')
+  expect(result.firstRow[1], '首行次列应有值（30）').toBe('30')
+  expect(result.firstRow.some((c) => c === ''), '首行不应有空单元格').toBe(false)
+})
+
