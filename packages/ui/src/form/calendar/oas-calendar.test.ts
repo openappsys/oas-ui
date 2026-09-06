@@ -44,15 +44,16 @@ describe('OASCalendar', () => {
   })
 
   it('选中值与今天分别带 selected / today 样式', () => {
-    const el = mount({ value: '2026-08-09' })
-    expect(day(el, '2026-08-09').classList.contains('selected')).toBe(true)
+    // 选中值必须落在「今天」所在月份（跨月时 today 单元格不渲染）——取本月内异于今天的
+    // 一日（今天 1 号就取 15 号，否则取 1 号），保证 selected/today 两格同月可见。
     const today = new Date()
-    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
-      today.getDate(),
-    ).padStart(2, '0')}`
-    if (iso !== '2026-08-09') {
-      expect(day(el, iso).classList.contains('today')).toBe(true)
-    }
+    const ym = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+    const iso = `${ym}-${String(today.getDate()).padStart(2, '0')}`
+    const otherDay = today.getDate() === 1 ? 15 : 1
+    const selIso = `${ym}-${String(otherDay).padStart(2, '0')}`
+    const el = mount({ value: selIso })
+    expect(day(el, selIso).classList.contains('selected')).toBe(true)
+    expect(day(el, iso).classList.contains('today')).toBe(true)
   })
 
   it('上一月/下一月导航更新标题', () => {
