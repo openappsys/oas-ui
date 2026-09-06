@@ -55,7 +55,69 @@
     {
       "name": "max-rows",
       "type": "string",
-      "default": "6",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "maxlength",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "show-count",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "outlined",
+      "observed": true
+    },
+    {
+      "name": "clearable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "label",
+      "observed": true
+    },
+    {
+      "name": "name",
+      "observed": true
+    },
+    {
+      "name": "autofocus",
+      "observed": true
+    },
+    {
+      "name": "minlength",
+      "observed": true
+    },
+    {
+      "name": "required",
+      "observed": true
+    },
+    {
+      "name": "spellcheck",
+      "observed": true
+    },
+    {
+      "name": "wrap",
       "observed": true
     }
   ],
@@ -63,7 +125,23 @@
   "events": [
     {
       "name": "oas-input",
+      "detail": "{ value: this.ta!.value } | { value: this.ta.value }"
+    },
+    {
+      "name": "oas-focus",
       "detail": "{ value: this.ta!.value }"
+    },
+    {
+      "name": "oas-blur",
+      "detail": "{ value: this.ta!.value }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: this.ta!.value }"
+    },
+    {
+      "name": "oas-clear",
+      "detail": "{ originalEvent: new MouseEvent('click') }"
     }
   ],
   "slots": [],

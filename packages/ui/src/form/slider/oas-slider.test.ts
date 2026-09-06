@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASSlider } from './index.js'
+import '../form/index.js'
 
 function mount(attrs: Record<string, string> = {}): OASSlider {
   const el = new OASSlider()
@@ -376,8 +377,8 @@ describe('OASSlider', () => {
       expect(fillEl(normal).style.left).toBe('0%')
       expect(fillEl(normal).style.width).toBe('30%')
       const el = mount({ reverse: '', value: '30', min: '0', max: '100' })
-      expect(fillEl(el).style.left).toBe('auto')
-      expect(fillEl(el).style.right).toBe('0%')
+      // 视觉等价于「右端起」：值 30 的镜像位置是 70%，向右填充到 100%
+      expect(fillEl(el).style.left).toBe('70%')
       expect(fillEl(el).style.width).toBe('30%')
     })
 
@@ -492,7 +493,7 @@ describe('OASSlider', () => {
       expect(el.getAttribute('value')).toBe('70')
     })
 
-    it('range 双滑块拖动后 value 属性写回为 lo,hi 逗号分隔', () => {
+    it('range 双滑块拖动后 value 属性写回为 JSON 数组字符串（表单序列化友好）', () => {
       const el = mount({ range: '', value: '10,80' })
       const lo = byRole(el, 'range-min')
       const hi = byRole(el, 'range-max')
@@ -500,7 +501,8 @@ describe('OASSlider', () => {
       lo.dispatchEvent(new Event('input'))
       hi.value = '75'
       hi.dispatchEvent(new Event('change'))
-      expect(el.getAttribute('value')).toBe('25,75')
+      expect(el.getAttribute('value')).toBe('[25,75]')
+      expect(() => JSON.parse(el.getAttribute('value')!)).not.toThrow()
     })
 
     it('数值输入框提交后 value 属性同步写回', () => {
@@ -522,6 +524,515 @@ describe('OASSlider', () => {
       input.dispatchEvent(new Event('change'))
       expect(inputEvents).toBe(0)
       expect(changeEvents).toBe(1)
+    })
+  })
+
+  describe('vertical 垂直模式', () => {
+    it('vertical 属性镜像 data-vertical，input 获 orient 属性与 aria-orientation', () => {
+      const el = mount({ vertical: '', value: '30' })
+      expect(el.hasAttribute('data-vertical')).toBe(true)
+      const input = range(el)
+      expect(input.getAttribute('orient')).toBe('vertical')
+      expect(input.getAttribute('aria-orientation')).toBe('vertical')
+      const normal = mount({ value: '30' })
+      expect(normal.hasAttribute('data-vertical')).toBe(false)
+      expect(range(normal).hasAttribute('aria-orientation')).toBe(false)
+    })
+
+    it('填充区换轴：top/height 定位（而非 left/width）', () => {
+      const el = mount({ vertical: '', value: '30', min: '0', max: '100' })
+      const fill = fillEl(el)
+      expect(fill.style.top).toBe('0%')
+      expect(fill.style.height).toBe('30%')
+      // 切回水平时垂直轴残留被清理
+      el.removeAttribute('vertical')
+      expect(fill.style.top).toBe('')
+      expect(fill.style.height).toBe('')
+      expect(fill.style.left).toBe('0%')
+      expect(fill.style.width).toBe('30%')
+    })
+
+    it('marks 刻度换轴：top 定位', () => {
+      const el = mount({
+        vertical: '',
+        min: '0',
+        max: '100',
+        marks: JSON.stringify([0, 26, 60]),
+      })
+      expect(markItems(el).map((n) => n.style.top)).toEqual(['0%', '26%', '60%'])
+      expect(markItems(el).map((n) => n.style.left)).toEqual(['', '', ''])
+    })
+
+    it('custom-thumb 换轴定位（top 百分比）', () => {
+      const el = mount({ vertical: '', 'show-tooltip': '', value: '40' })
+      expect(thumbEl(el, 'value').style.top).toBe('40%')
+    })
+
+    it('range 模式 pointerdown 按 Y 轴抢拖动权', () => {
+      const el = mount({ vertical: '', range: '', value: '[20, 80]' })
+      const min = byRole(el, 'range-min')
+      const max = byRole(el, 'range-max')
+      const track = el.shadowRoot!.querySelector<HTMLElement>('.track-wrap')!
+      // rect 无尺寸（happy-dom）：pct 回退 50 → 值 50 ≤ mid(50) → 抢 min
+      track.dispatchEvent(new Event('pointerdown'))
+      expect(min.style.zIndex).toBe('2')
+      expect(max.style.zIndex).toBe('1')
+    })
+
+    it('vertical + reverse：dir=ltr（min 在上），aria-orientation 保留', () => {
+      const el = mount({ vertical: '', reverse: '', value: '30' })
+      expect(range(el).dir).toBe('ltr')
+      expect(range(el).getAttribute('aria-orientation')).toBe('vertical')
+    })
+  })
+
+  describe('tooltip 格式化（双通道）', () => {
+    function tipOf(el: OASSlider, which: 'value' | 'min' | 'max'): HTMLElement {
+      return thumbEl(el, which).querySelector<HTMLElement>('.thumb-tip')!
+    }
+
+    it('format 模板串：${value} 占位替换进气泡与 aria-valuetext', () => {
+      const el = mount({ 'show-tooltip': '', format: '${value}%', value: '40' })
+      expect(tipOf(el, 'value').textContent).toBe('40%')
+      expect(range(el).getAttribute('aria-valuetext')).toBe('40%')
+    })
+
+    it('format 无占位符时原样显示', () => {
+      const el = mount({ 'show-tooltip': '', format: 'USD', value: '40' })
+      expect(tipOf(el, 'value').textContent).toBe('USD')
+    })
+
+    it('el.formatTooltip 函数 property：气泡与 aria-valuetext 同步', () => {
+      const el = mount({ 'show-tooltip': '', value: '40' })
+      el.formatTooltip = (v) => `$${v}`
+      expect(tipOf(el, 'value').textContent).toBe('$40')
+      expect(range(el).getAttribute('aria-valuetext')).toBe('$40')
+    })
+
+    it('formatTooltip 优先于 format 模板串；置 null 清除回落裸数字', () => {
+      const el = mount({ 'show-tooltip': '', format: '${value}%', value: '40' })
+      el.formatTooltip = (v) => `${v} 元`
+      expect(tipOf(el, 'value').textContent).toBe('40 元')
+      el.formatTooltip = null
+      expect(tipOf(el, 'value').textContent).toBe('40%')
+    })
+
+    it('拖动中气泡与 aria-valuetext 随值实时更新', () => {
+      const el = mount({ value: '10', format: '${value}px' })
+      const input = range(el)
+      input.value = '55'
+      input.dispatchEvent(new Event('input'))
+      expect(tipOf(el, 'value').textContent).toBe('55px')
+      expect(input.getAttribute('aria-valuetext')).toBe('55px')
+    })
+
+    it('range 模式双滑块各自的 aria-valuetext', () => {
+      const el = mount({ range: '', value: '[20, 80]', format: '${value}km' })
+      expect(byRole(el, 'range-min').getAttribute('aria-valuetext')).toBe('20km')
+      expect(byRole(el, 'range-max').getAttribute('aria-valuetext')).toBe('80km')
+    })
+
+    it('无格式化时不设 aria-valuetext（回落原生 valuenow）', () => {
+      const el = mount({ value: '40' })
+      expect(range(el).hasAttribute('aria-valuetext')).toBe(false)
+    })
+  })
+
+  describe('tooltip 常显与方向', () => {
+    it('tooltip-always：无需拖动/聚焦气泡常显', () => {
+      const el = mount({ 'tooltip-always': '', value: '40' })
+      const tip = thumbEl(el, 'value').querySelector<HTMLElement>('.thumb-tip')!
+      expect(tip.hidden).toBe(false)
+      expect(tip.textContent).toBe('40')
+    })
+
+    it('聚焦滑块时气泡显示（focus 语义，不依赖 show-tooltip）', () => {
+      const el = mount({ value: '40' })
+      const tip = thumbEl(el, 'value').querySelector<HTMLElement>('.thumb-tip')!
+      expect(tip.hidden).toBe(true)
+      range(el).dispatchEvent(new Event('focusin', { bubbles: true }))
+      expect(tip.hidden).toBe(false)
+      range(el).dispatchEvent(new Event('focusout', { bubbles: true }))
+      expect(tip.hidden).toBe(true)
+    })
+
+    it('tooltip-position 四向镜像 data-tooltip-pos；非法值回退', () => {
+      const el = mount({ 'tooltip-position': 'bottom', value: '40' })
+      expect(el.getAttribute('data-tooltip-pos')).toBe('bottom')
+      el.setAttribute('tooltip-position', 'left')
+      expect(el.getAttribute('data-tooltip-pos')).toBe('left')
+      el.setAttribute('tooltip-position', 'diagonal')
+      expect(el.getAttribute('data-tooltip-pos')).toBe('top')
+    })
+
+    it('vertical 默认气泡方向 right', () => {
+      const el = mount({ vertical: '', value: '40' })
+      expect(el.getAttribute('data-tooltip-pos')).toBe('right')
+      // 显式属性优先于 vertical 默认
+      el.setAttribute('tooltip-position', 'top')
+      expect(el.getAttribute('data-tooltip-pos')).toBe('top')
+    })
+  })
+
+  describe('step="mark" 仅刻度值约束', () => {
+    it('原生 input step 设为 any（吸附由组件接管）', () => {
+      const el = mount({ step: 'mark', marks: JSON.stringify([0, 26, 60]), value: '26' })
+      expect(range(el).step).toBe('any')
+    })
+
+    it('拖动到非刻度值吸附最近刻度（含 value 写回）', () => {
+      const el = mount({ step: 'mark', marks: JSON.stringify([0, 26, 60]), min: '0', max: '100', value: '26' })
+      const input = range(el)
+      input.value = '30'
+      input.dispatchEvent(new Event('input'))
+      expect(Number(input.value)).toBe(26)
+      expect(el.getAttribute('value')).toBe('26')
+      input.value = '45'
+      input.dispatchEvent(new Event('input'))
+      expect(Number(input.value)).toBe(60)
+    })
+
+    it('受控 value 为非刻度值时显示层吸附', () => {
+      const el = mount({ step: 'mark', marks: JSON.stringify([0, 26, 60]), min: '0', max: '100', value: '40' })
+      expect(Number(range(el).value)).toBe(26)
+    })
+
+    it('range 双滑块各自吸附且保持 lo ≤ hi', () => {
+      const el = mount({
+        range: '',
+        step: 'mark',
+        marks: JSON.stringify([0, 26, 60, 100]),
+        min: '0',
+        max: '100',
+        value: '[26, 60]',
+      })
+      const lo = byRole(el, 'range-min')
+      lo.value = '40'
+      lo.dispatchEvent(new Event('input'))
+      expect(Number(lo.value)).toBe(26)
+      const hi = byRole(el, 'range-max')
+      hi.value = '90'
+      hi.dispatchEvent(new Event('input'))
+      expect(Number(hi.value)).toBe(100)
+    })
+
+    it('无 marks 时 step=mark 回退普通步进（step=1）', () => {
+      const el = mount({ step: 'mark', value: '20' })
+      expect(range(el).step).toBe('1')
+    })
+
+    it('键盘 Arrow 在刻度间跳档（非连续步进）', () => {
+      const el = mount({ step: 'mark', marks: JSON.stringify([0, 26, 60, 100]), min: '0', max: '100', value: '26' })
+      const input = range(el)
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      )
+      expect(Number(input.value)).toBe(60)
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }),
+      )
+      expect(Number(input.value)).toBe(26)
+    })
+
+    it('键盘 Home/End 跳到首末刻度', () => {
+      const el = mount({ step: 'mark', marks: JSON.stringify([0, 26, 60, 100]), min: '0', max: '100', value: '26' })
+      const input = range(el)
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }))
+      expect(Number(input.value)).toBe(100)
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }))
+      expect(Number(input.value)).toBe(0)
+    })
+  })
+
+  describe('show-stops 刻度点', () => {
+    it('按 step 渲染刻度点（无标签节点）', () => {
+      const el = mount({ 'show-stops': '', min: '0', max: '100', step: '20', value: '50' })
+      expect(marksEl(el).hidden).toBe(false)
+      const items = markItems(el)
+      expect(items).toHaveLength(6)
+      expect(items.map((n) => n.getAttribute('data-value'))).toEqual(['0', '20', '40', '60', '80', '100'])
+      expect(marksEl(el).querySelectorAll('.mark-label')).toHaveLength(0)
+    })
+
+    it('stops 点经过高亮跟随当前值', () => {
+      const el = mount({ 'show-stops': '', min: '0', max: '100', step: '25', value: '30' })
+      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual([
+        'true',
+        'true',
+        'false',
+        'false',
+        'false',
+      ])
+    })
+
+    it('marks 存在时刻度以 marks 为准（不叠加 stops）', () => {
+      const el = mount({
+        'show-stops': '',
+        marks: JSON.stringify([0, 50, 100]),
+        min: '0',
+        max: '100',
+        step: '10',
+      })
+      expect(markItems(el)).toHaveLength(3)
+    })
+
+    it('stops 超上限（100 个）不渲染', () => {
+      const el = mount({ 'show-stops': '', min: '0', max: '100', step: '0.5' })
+      expect(marksEl(el).hidden).toBe(true)
+      expect(markItems(el)).toHaveLength(0)
+    })
+
+    it('小数步长浮点误差修正（0.1 步长的刻度值）', () => {
+      const el = mount({ 'show-stops': '', min: '0', max: '0.3', step: '0.1' })
+      expect(markItems(el).map((n) => n.getAttribute('data-value'))).toEqual(['0', '0.1', '0.2', '0.3'])
+    })
+
+    it('vertical 模式 stops 换 top 轴', () => {
+      const el = mount({ vertical: '', 'show-stops': '', min: '0', max: '100', step: '50' })
+      expect(markItems(el).map((n) => n.style.top)).toEqual(['0%', '50%', '100%'])
+    })
+  })
+
+  describe('start-point 填充起点', () => {
+    it('单值填充从起点向当前值延伸（温度计中点起）', () => {
+      const el = mount({ 'start-point': '0', min: '-100', max: '100', value: '40' })
+      const fill = fillEl(el)
+      expect(fill.style.left).toBe('50%')
+      expect(fill.style.width).toBe('20%')
+    })
+
+    it('值小于起点时向左延伸', () => {
+      const el = mount({ 'start-point': '0', min: '-100', max: '100', value: '-40' })
+      const fill = fillEl(el)
+      expect(fill.style.left).toBe('30%')
+      expect(fill.style.width).toBe('20%')
+    })
+
+    it('start-point 越界夹取到 [min, max]', () => {
+      const el = mount({ 'start-point': '500', min: '0', max: '100', value: '40' })
+      expect(fillEl(el).style.left).toBe('40%')
+      expect(fillEl(el).style.width).toBe('60%')
+    })
+
+    it('marks passed 区间改为 [start, value]', () => {
+      const el = mount({
+        'start-point': '0',
+        min: '-100',
+        max: '100',
+        value: '-40',
+        marks: JSON.stringify([-100, -20, 0, 60]),
+      })
+      expect(markItems(el).map((n) => n.getAttribute('data-passed'))).toEqual([
+        'false',
+        'true',
+        'true',
+        'false',
+      ])
+    })
+
+    it('range 模式忽略 start-point（区间填充不变）', () => {
+      const el = mount({ range: '', 'start-point': '0', min: '-100', max: '100', value: '[20, 60]' })
+      const fill = fillEl(el)
+      expect(fill.style.left).toBe('60%')
+      expect(fill.style.width).toBe('20%')
+    })
+
+    it('非法 start-point 视为未设置（从 min 填充）', () => {
+      const el = mount({ 'start-point': 'abc', min: '0', max: '100', value: '40' })
+      expect(fillEl(el).style.left).toBe('0%')
+      expect(fillEl(el).style.width).toBe('40%')
+    })
+  })
+
+  describe('size 尺寸档', () => {
+    it('size 三档镜像 data-size（medium/large 词表归一）', () => {
+      const el = mount({ size: 'sm' })
+      expect(el.getAttribute('data-size')).toBe('sm')
+      el.setAttribute('size', 'medium')
+      expect(el.getAttribute('data-size')).toBe('md')
+      el.setAttribute('size', 'large')
+      expect(el.getAttribute('data-size')).toBe('lg')
+      el.removeAttribute('size')
+      expect(el.getAttribute('data-size')).toBe('md')
+    })
+
+    it('非法值回落 md', () => {
+      const el = mount({ size: 'giant' })
+      expect(el.getAttribute('data-size')).toBe('md')
+    })
+
+    it('CSS 尺寸变量按档切换（轨道/thumb 与 JS 换算常量成对）', () => {
+      const el = mount()
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toContain("[data-size='sm']")
+      expect(css).toContain("[data-size='lg']")
+      expect(css).toContain('--oas-slider-thumb-size')
+      expect(css).toContain('--oas-slider-track-size')
+    })
+  })
+
+  describe('color / track-color 自定义色', () => {
+    it('预设语义色映射到 token 变量', () => {
+      const el = mount({ color: 'success' })
+      expect(el.style.getPropertyValue('--oas-slider-color')).toBe('var(--oas-color-success)')
+      el.setAttribute('color', 'danger')
+      expect(el.style.getPropertyValue('--oas-slider-color')).toBe('var(--oas-color-danger)')
+    })
+
+    it('非预设值原样透传（任意 CSS 色）', () => {
+      const el = mount({ color: '#ff5500', 'track-color': 'rgb(10 20 30)' })
+      expect(el.style.getPropertyValue('--oas-slider-color')).toBe('#ff5500')
+      expect(el.style.getPropertyValue('--oas-slider-track')).toBe('rgb(10 20 30)')
+    })
+
+    it('移除属性时清理变量（回落默认 token）', () => {
+      const el = mount({ color: 'success', 'track-color': 'warning' })
+      el.removeAttribute('color')
+      el.removeAttribute('track-color')
+      expect(el.style.getPropertyValue('--oas-slider-color')).toBe('')
+      expect(el.style.getPropertyValue('--oas-slider-track')).toBe('')
+    })
+  })
+
+  describe('readonly 只读', () => {
+    it('可聚焦不灰显：input 不 disabled，aria-readonly 同步', () => {
+      const el = mount({ readonly: '', value: '40' })
+      const input = range(el)
+      expect(input.disabled).toBe(false)
+      expect(input.getAttribute('aria-readonly')).toBe('true')
+      expect(el.hasAttribute('data-readonly')).toBe(true)
+    })
+
+    it('pointerdown 被拦截（不可拖动）', () => {
+      const el = mount({ readonly: '', value: '40' })
+      const e = new Event('pointerdown', { cancelable: true })
+      el.shadowRoot!.querySelector('.track-wrap')!.dispatchEvent(e)
+      expect(e.defaultPrevented).toBe(true)
+    })
+
+    it('键盘值键被拦截且值不变、不派发事件', () => {
+      const el = mount({ readonly: '', value: '40' })
+      const input = range(el)
+      let events = 0
+      el.addEventListener('oas-input', () => events++)
+      el.addEventListener('oas-change', () => events++)
+      const e = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true })
+      input.dispatchEvent(e)
+      expect(e.defaultPrevented).toBe(true)
+      expect(Number(input.value)).toBe(40)
+      expect(events).toBe(0)
+    })
+
+    it('show-input 联动输入框同步只读', () => {
+      const el = mount({ readonly: '', 'show-input': '', value: '40' })
+      expect(byRole(el, 'num').readOnly).toBe(true)
+      expect(byRole(el, 'num').disabled).toBe(false)
+    })
+
+    it('disabled 优先于 readonly（同时设置时按禁用处理）', () => {
+      const el = mount({ readonly: '', disabled: '', value: '40' })
+      expect(range(el).disabled).toBe(true)
+    })
+  })
+
+  describe('键盘大步进', () => {
+    function pressKey(el: OASSlider, role: string, init: KeyboardEventInit): KeyboardEvent {
+      const e = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init })
+      byRole(el, role).dispatchEvent(e)
+      return e
+    }
+
+    it('PageUp 默认大步 = 10 × step，派发 oas-input + oas-change', () => {
+      const el = mount({ value: '20', min: '0', max: '100', step: '1' })
+      let inputDetail: unknown
+      let changeDetail: unknown
+      el.addEventListener('oas-input', (e: Event) => (inputDetail = (e as CustomEvent).detail))
+      el.addEventListener('oas-change', (e: Event) => (changeDetail = (e as CustomEvent).detail))
+      const e = pressKey(el, 'range', { key: 'PageUp' })
+      expect(e.defaultPrevented).toBe(true)
+      expect(Number(range(el).value)).toBe(30)
+      expect(inputDetail).toEqual({ value: 30 })
+      expect(changeDetail).toEqual({ value: 30 })
+      expect(el.getAttribute('value')).toBe('30')
+    })
+
+    it('PageDown 反向；Shift+ArrowRight 同为大步', () => {
+      const el = mount({ value: '50', min: '0', max: '100' })
+      pressKey(el, 'range', { key: 'PageDown' })
+      expect(Number(range(el).value)).toBe(40)
+      pressKey(el, 'range', { key: 'ArrowRight', shiftKey: true })
+      expect(Number(range(el).value)).toBe(50)
+    })
+
+    it('large-step 显式覆盖大步量', () => {
+      const el = mount({ value: '20', 'large-step': '25', min: '0', max: '100' })
+      pressKey(el, 'range', { key: 'PageUp' })
+      expect(Number(range(el).value)).toBe(45)
+    })
+
+    it('大步夹取边界不越界', () => {
+      const el = mount({ value: '95', min: '0', max: '100' })
+      pressKey(el, 'range', { key: 'PageUp' })
+      expect(Number(range(el).value)).toBe(100)
+      pressKey(el, 'range', { key: 'PageUp' })
+      expect(Number(range(el).value)).toBe(100)
+    })
+
+    it('普通箭头/Home/End 不拦截（保留原生行为）', () => {
+      const el = mount({ value: '50', min: '0', max: '100' })
+      expect(pressKey(el, 'range', { key: 'ArrowRight' }).defaultPrevented).toBe(false)
+      expect(pressKey(el, 'range', { key: 'Home' }).defaultPrevented).toBe(false)
+    })
+
+    it('reverse（rtl）下 ArrowRight 大步为减值', () => {
+      const el = mount({ reverse: '', value: '50', min: '0', max: '100' })
+      pressKey(el, 'range', { key: 'ArrowRight', shiftKey: true })
+      expect(Number(range(el).value)).toBe(40)
+    })
+
+    it('vertical 下 ArrowUp 大步为增值', () => {
+      const el = mount({ vertical: '', value: '50', min: '0', max: '100' })
+      pressKey(el, 'range', { key: 'ArrowUp', shiftKey: true })
+      expect(Number(range(el).value)).toBe(60)
+    })
+
+    it('range 模式大步作用于聚焦的滑块并写回数组', () => {
+      const el = mount({ range: '', value: '[20, 80]', min: '0', max: '100' })
+      pressKey(el, 'range-max', { key: 'PageUp' })
+      expect(Number(byRole(el, 'range-max').value)).toBe(90)
+      expect(Number(byRole(el, 'range-min').value)).toBe(20)
+      expect(el.getAttribute('value')).toBe('[20,90]')
+    })
+
+    it('step=mark 时大步跳 3 档刻度', () => {
+      const el = mount({
+        step: 'mark',
+        marks: JSON.stringify([0, 10, 20, 30, 40, 50]),
+        min: '0',
+        max: '100',
+        value: '10',
+      })
+      pressKey(el, 'range', { key: 'PageUp' })
+      expect(Number(range(el).value)).toBe(40)
+    })
+  })
+
+  describe('表单序列化（range 双值）', () => {
+    it('oas-form 内拖动提交后，字段值为合法 JSON 数组字符串', () => {
+      const form = document.createElement('oas-form') as Element & { shadowRoot: ShadowRoot }
+      form.innerHTML = '<oas-slider name="price" range min="0" max="100" value="[20, 80]"></oas-slider>'
+      document.body.appendChild(form)
+      const slider = form.querySelector('oas-slider')!
+      const lo = slider.shadowRoot!.querySelector<HTMLInputElement>('[data-role="range-min"]')!
+      lo.value = '35'
+      lo.dispatchEvent(new Event('input'))
+      lo.dispatchEvent(new Event('change'))
+      let detail: unknown
+      form.addEventListener('oas-submit', (e: Event) => (detail = (e as CustomEvent).detail))
+      form.shadowRoot.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+      const values = (detail as { values: Record<string, string> }).values
+      expect(values.price).toBe('[35,80]')
+      expect(JSON.parse(values.price!)).toEqual([35, 80])
     })
   })
 })

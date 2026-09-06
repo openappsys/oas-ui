@@ -121,7 +121,8 @@ export class OASForm extends OASElement {
       const target = e.composedPath()[0]
       if (target instanceof Element && this.contains(target)) {
         const v = e.detail.value
-        target.setAttribute('value', typeof v === 'string' ? v : JSON.stringify(v))
+        // null（空值语义，如 input-number 未填）写空串而非 'null' 字符串
+        target.setAttribute('value', v === null || v === undefined ? '' : typeof v === 'string' ? v : JSON.stringify(v))
       }
     }) as EventListener)
   }
