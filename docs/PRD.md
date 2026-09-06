@@ -1008,6 +1008,7 @@ table 组件按能力并集补齐（列设置/多列排序/多级表头/内置�
 ### 修复
 
 - table 行内编辑真实双击不生效（行选中重建致 dblclick 不派发，改 click 委托 + 手工双击判定）+ 进/出编辑列宽行高跳变（占位保布局贡献 + 编辑器绝对定位 + 操作列同槽叠放）
+- table 表头吸顶失效（th[data-key] relative 覆盖 sticky 致非固定列表头滚走）+ 声明式通道 Vue 宿主全空（key 保留字劫持，改 key ?? data-key 双通道）+ cellTemplate demo 模板被编译管线吃空（改 property 通道）+ 多级表头竖线语言归一（非 bordered 零竖线）
 - progress SSR 空属性噪声；dev 全新环境 predev 拓扑序
 
 ### 验收
