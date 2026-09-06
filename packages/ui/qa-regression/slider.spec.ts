@@ -275,7 +275,8 @@ test('slider vertical：data-vertical 镜像、orient/aria-orientation 同步、
       fillTop: fill.style.top,
       // 垂直 min 在下：值 40 → 填充从底部（min 端）向上延伸到值 40 的 thumb 中心
       fillTopExpected: (1 - 40 / 100) * (trackH - THUMB) + THUMB / 2,
-      fillHeightExpected: (40 / 100) * (trackH - THUMB),
+      // 新几何：填充从轨道底边贴边到值 thumb 中心（修掉起点灰缝后），高 = 轨长 - thumb 中心
+      fillHeightExpected: trackH - ((1 - 40 / 100) * (trackH - THUMB) + THUMB / 2),
       fillHeight: fill.style.height,
       fillLeft: fill.style.left,
       trackH,
@@ -512,4 +513,68 @@ test('slider 水平拇指在填充末端保持完整圆（底色描边，不再�
     runs,
     'thumb 中心行应出现 ≥2 段蓝色（描边把填充与圆盘断开），无描边时融合为 1 段',
   ).toBeGreaterThanOrEqual(2)
+})
+
+
+test('slider 范围模式双拇指叠层对齐轨道中线 + 单值填充起点贴边（无拇指半径灰缝）', async ({ page }) => {
+  // 缺陷固化（用户实测）：①range 模式 min/max 两个原生 input 是相对定位正常流上下堆叠，
+  // max 拇指掉到轨道线下方；改 absolute inset:0 叠层（共享 track-wrap 同盒）。②单值无
+  // start-point 时填充起点用 posPx(min)=拇指半径，起点留 size/2 灰缝；改贴轨道视觉起点边。
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider')
+  const r = await page.evaluate(() => {
+    // range 双拇指（水平 range demo）
+    const rs = [...document.querySelectorAll('oas-slider')].find((s) => s.hasAttribute('range') && !s.hasAttribute('vertical'))!
+    const wrap = rs.shadowRoot!.querySelector('.track-wrap')!.getBoundingClientRect()
+    const wrapCY = wrap.top + wrap.height / 2
+    const inputs = [...rs.shadowRoot!.querySelectorAll('input[type="range"]:not([hidden])')]
+    const offsets = inputs.map((i) => {
+      const r = i.getBoundingClientRect()
+      return Math.round((r.top + r.height / 2 - wrapCY) * 10) / 10
+    })
+    // 单值填充贴边（颜色 demo value=40 无 start-point）
+    const single = [...document.querySelectorAll('oas-slider')].find(
+      (s) => !s.hasAttribute('range') && !s.hasAttribute('vertical') && !s.hasAttribute('start-point') && s.getAttribute('value') === '40',
+    )!
+    const fill = single.shadowRoot!.querySelector('.fill')!.getBoundingClientRect()
+    const wrap2 = single.shadowRoot!.querySelector('.track-wrap')!.getBoundingClientRect()
+    const fillGap = Math.round((fill.left - wrap2.left) * 10) / 10
+    return { offsets, fillGap }
+  })
+  for (const off of r.offsets) {
+    expect(Math.abs(off), 'range 双拇指中线应与轨道中线对齐').toBeLessThanOrEqual(1)
+  }
+  expect(r.fillGap, '单值填充起点应贴轨道边缘（无灰缝）').toBeLessThanOrEqual(1)
+})
+
+test('slider 拇指视觉统一：无自定义内容时 custom-thumb 与原生同为实心圆点（空心环只属自定义内容）', async ({
+  page,
+}) => {
+  // 设计固化：空心环（bg 底 + 彩边）是「自定义内容容器」样式（git 史 3540d7c 原始设计）；
+  // range/tooltip/拖动等无自定义内容场景复用了该元素导致「圆点 vs 圆圈」不一致（用户实测）。
+  // 修复：默认实心圆点+底色环（与原生像素级一致），仅 data-thumb-content 时回空心环。
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider')
+  const r = await page.evaluate(() => {
+    // 垂直 demo 的 custom-thumb（无自定义内容，应实心）
+    const v = [...document.querySelectorAll('oas-slider')].find((s) => s.hasAttribute('vertical') && !s.hasAttribute('show-input'))!
+    const vth = v.shadowRoot!.querySelector('.custom-thumb:not([hidden])')!
+    const vcs = getComputedStyle(vth)
+    // 自定义内容 demo（🎯 slot）应空心环
+    const c = [...document.querySelectorAll('oas-slider')].find((s) => s.querySelector('[slot="custom-thumb"]'))
+    const cth = c?.shadowRoot!.querySelector('.custom-thumb:not([hidden])')
+    const ccs = cth ? getComputedStyle(cth) : null
+    return {
+      verticalBg: vcs.backgroundColor,
+      verticalBorder: vcs.borderLeftWidth,
+      verticalShadow: vcs.boxShadow,
+      customBg: ccs?.backgroundColor ?? null,
+      customBorder: ccs?.borderLeftWidth ?? null,
+    }
+  })
+  expect(r.verticalBorder, '无自定义内容的拇指应无彩边（实心点）').toBe('0px')
+  expect(r.verticalShadow, '无自定义内容的拇指应带底色环').not.toBe('none')
+  if (r.customBg !== null) {
+    expect(r.customBorder, '有自定义内容的拇指应空心环（彩边）').toBe('2px')
+  }
 })
