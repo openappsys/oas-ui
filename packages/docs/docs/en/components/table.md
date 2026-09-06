@@ -41,19 +41,11 @@ Click a sortable column header to cycle through ascending / descending / no sort
 
 <DemoBlock title="Cell template cellTemplate (interpolate row.field)">
   <div style="width: 100%">
-    <oas-table row-key="id" data='[{"id":1,"name":"Alice","price":128,"city":"Beijing"},{"id":2,"name":"Bob","price":256,"city":"Shanghai"}]'>
-      <oas-table-column data-key="name" title="Name">
-        <template v-pre><span style="background:#eef2ff;color:#4f46e5;border-radius:4px;padding:1px 6px;font-size:12px">{{row.name}}</span></template>
-      </oas-table-column>
-      <oas-table-column data-key="price" title="Price">
-        <template v-pre><b style="color: var(--oas-color-danger)">¥ {{row.price}}</b></template>
-      </oas-table-column>
-      <oas-table-column data-key="city" title="City"></oas-table-column>
-    </oas-table>
+    <oas-table id="cell-tpl-table" row-key="id" data='[{"id":1,"name":"Alice","price":128,"city":"Beijing"},{"id":2,"name":"Bob","price":256,"city":"Shanghai"}]'></oas-table>
   </div>
 </DemoBlock>
 
-Besides the `columns` attribute / property array, columns also support a declarative child-element channel: `<oas-table-column data-key title sortable width align fixed ...>`, with attributes aligned to the `TableColumn` fields (booleans are true/false, kebab-case like `serial-number` / `filters`; the column identifier field is `key`, but `key` is a reserved word in Vue templates and gets stripped before reaching the DOM — **write `data-key` in declarative markup** (plain HTML may use `key` directly; the component reads both)); `title` falls back to the default slot text; a nested `<oas-table-column>` expresses a grouped header (children). Child changes are picked up by a MutationObserver to auto re-render. An explicit `columns` attribute / property takes precedence over the child-element channel. A `<template>` inside a column (used with a `row.field` placeholder for interpolation; see the example above; add `v-pre` on the docs site so Vue doesn't parse it) renders a cell template, cloned and hydrated per cell; the `render` function still takes precedence over the template.
+Besides the `columns` attribute / property array, columns also support a declarative child-element channel: `<oas-table-column data-key title sortable width align fixed ...>`, with attributes aligned to the `TableColumn` fields (booleans are true/false, kebab-case like `serial-number` / `filters`; the column identifier field is `key`, but `key` is a reserved word in Vue templates and gets stripped before reaching the DOM — **write `data-key` in declarative markup** (plain HTML may use `key` directly; the component reads both)); `title` falls back to the default slot text; a nested `<oas-table-column>` expresses a grouped header (children). Child changes are picked up by a MutationObserver to auto re-render. An explicit `columns` attribute / property takes precedence over the child-element channel. The `cellTemplate` (with a `row.field` placeholder for interpolation) renders a custom cell template, cloned and hydrated per cell: plain HTML may declare it with a `<template>` inside the column; in Vue hosts / the docs site prefer the `columns` **property** channel (build an `HTMLTemplateElement` in JS, as shown in the example above — md/Vue compile pipelines handle `<template>` children inconsistently and empty them in dev); the `render` function still takes precedence over the template.
 
 > **⚠️ Function fields (“a detail”)**: function types — `render`, `filterMatch`, editor callbacks (functions in `editOptions`) — **cannot be serialized via a child-element attribute or JSON**. Neither the child-element channel nor the `columns` attribute can express them. For columns containing such function fields, assign `columns` as a **property** (build the array in JS), or use the declarative `cellTemplate` (`<template>` + a `row.field` placeholder, a function-free alternative; see the example above) for custom cells.
 
@@ -405,6 +397,26 @@ const TABLE_ROWS = MOCK.map(([name, age, city, email, position], i) => ({
 }))
 
 onMounted(() => {
+  // Cell template demo: inject templates via the property channel (JS-built HTMLTemplateElement) —
+  // keeps template content out of the md/Vue compile pipeline (its handling of <template> children
+  // differs between dev and production builds and can empty the template).
+  // Wait for the element to be defined before assigning: the page's onMounted runs before the theme
+  // registers components (child-before-parent order); assigning a property pre-upgrade creates an
+  // expando that shadows the class accessor
+  const nameTpl = document.createElement('template')
+  nameTpl.innerHTML = `<span style="background:#eef2ff;color:#4f46e5;border-radius:4px;padding:1px 6px;font-size:12px">{{row.name}}</span>`
+  const priceTpl = document.createElement('template')
+  priceTpl.innerHTML = `<b style="color: var(--oas-color-danger)">¥ {{row.price}}</b>`
+  customElements.whenDefined('oas-table').then(() => {
+    const tplTable = document.getElementById('cell-tpl-table')
+    if (tplTable) {
+      tplTable.columns = [
+        { key: 'name', title: 'Name', cellTemplate: nameTpl },
+        { key: 'price', title: 'Price', cellTemplate: priceTpl },
+        { key: 'city', title: 'City' },
+      ]
+    }
+  })
   // Sort and click event demo
   const table = document.querySelector('#table-event')
   table?.addEventListener('oas-sort-change', (e) => {
