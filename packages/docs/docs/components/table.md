@@ -41,19 +41,11 @@
 
 <DemoBlock title="单元格模板 cellTemplate（插值 row.字段）">
   <div style="width: 100%">
-    <oas-table row-key="id" data='[{"id":1,"name":"张三","price":128,"city":"北京"},{"id":2,"name":"李四","price":256,"city":"上海"}]'>
-      <oas-table-column data-key="name" title="姓名">
-        <template v-pre><span style="background:#eef2ff;color:#4f46e5;border-radius:4px;padding:1px 6px;font-size:12px">{{row.name}}</span></template>
-      </oas-table-column>
-      <oas-table-column data-key="price" title="价格">
-        <template v-pre><b style="color: var(--oas-color-danger)">¥ {{row.price}}</b></template>
-      </oas-table-column>
-      <oas-table-column data-key="city" title="城市"></oas-table-column>
-    </oas-table>
+    <oas-table id="cell-tpl-table" row-key="id" data='[{"id":1,"name":"张三","price":128,"city":"北京"},{"id":2,"name":"李四","price":256,"city":"上海"}]'></oas-table>
   </div>
 </DemoBlock>
 
-`columns` 除了 attribute / property 数组，还支持子元素声明式通道：`<oas-table-column data-key title sortable width align fixed ...>`，属性对齐 TableColumn 字段（布尔字段为 true/false，`serial-number` / `filters` 等 kebab-case；列标识字段叫 `key`，但 `key` 是 Vue 模板保留字会被剥离不到 DOM——**声明式请写 `data-key`**（原生 HTML 下 `key` 直写亦可，组件双通道读取））；`title` 缺省时取默认插槽文本；嵌套 `<oas-table-column>` 表达多级表头（children）。子元素变化由 MutationObserver 感知自动重渲染。`columns` attribute / property 显式设置时优先于子元素通道。列内嵌 `<template>`（配合 `row.字段` 占位插值，写法见上例；文档站需在 template 上加 `v-pre` 防 Vue 解析）表达单元格模板，克隆+水合成每格内容；`render` 函数仍优先于模板。
+`columns` 除了 attribute / property 数组，还支持子元素声明式通道：`<oas-table-column data-key title sortable width align fixed ...>`，属性对齐 TableColumn 字段（布尔字段为 true/false，`serial-number` / `filters` 等 kebab-case；列标识字段叫 `key`，但 `key` 是 Vue 模板保留字会被剥离不到 DOM——**声明式请写 `data-key`**（原生 HTML 下 `key` 直写亦可，组件双通道读取））；`title` 缺省时取默认插槽文本；嵌套 `<oas-table-column>` 表达多级表头（children）。子元素变化由 MutationObserver 感知自动重渲染。`columns` attribute / property 显式设置时优先于子元素通道。单元格模板 `cellTemplate`（配合 `row.字段` 占位插值）表达自定义单元格，克隆+水合成每格内容：原生 HTML 可在列内嵌 `<template>` 声明；Vue 宿主/文档站建议经 columns **property** 通道注入（JS 构造 `HTMLTemplateElement`，写法见上例——md/Vue 编译管线对 `<template>` 子内容处理不一致，dev 下会吃空）；`render` 函数仍优先于模板。
 
 > **⚠️ 函数型字段（“一个细节”）**：`render` / `filterMatch` / 编辑器回调（`editOptions` 的函数）等**函数类型无法经子元素 attribute、也无法经 JSON 序列化**——子元素通道与 `columns` attribute 都不能表达。含函数字段的列，请用 `columns` **property** 赋值（JS 构造数组），或用声明式的 `cellTemplate`（`<template>` + `row.字段` 占位插值，函数替代品，写法见上例）表达自定义单元格。
 
@@ -405,6 +397,24 @@ const TABLE_ROWS = MOCK.map(([name, age, city, email, position], i) => ({
 }))
 
 onMounted(() => {
+  // 单元格模板 demo：模板内容经 property 通道注入（JS 构造 HTMLTemplateElement）——
+  // 不经过 md/Vue 编译管线（管线对 <template> 子内容的处理在 dev 与生产构建间不一致，会吃空模板）。
+  // 注意等组件注册完成再赋值：页面 onMounted 早于主题注册组件（父子 onMounted 顺序），
+  // 升级前赋 property 会变成 expando 遮蔽类访问器
+  const nameTpl = document.createElement('template')
+  nameTpl.innerHTML = `<span style="background:#eef2ff;color:#4f46e5;border-radius:4px;padding:1px 6px;font-size:12px">{{row.name}}</span>`
+  const priceTpl = document.createElement('template')
+  priceTpl.innerHTML = `<b style="color: var(--oas-color-danger)">¥ {{row.price}}</b>`
+  customElements.whenDefined('oas-table').then(() => {
+    const tplTable = document.getElementById('cell-tpl-table')
+    if (tplTable) {
+      tplTable.columns = [
+        { key: 'name', title: '姓名', cellTemplate: nameTpl },
+        { key: 'price', title: '价格', cellTemplate: priceTpl },
+        { key: 'city', title: '城市' },
+      ]
+    }
+  })
   // 排序与点击事件 demo
   const table = document.querySelector('#table-event')
   table?.addEventListener('oas-sort-change', (e) => {
