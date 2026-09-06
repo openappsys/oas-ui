@@ -2,6 +2,36 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [2.4.1] - 2026-09-06
+
+### 特性
+
+- **组件内能力子包（按需打包第三层 L3）**：五个组件的重型可选能力拆为独立子包——`table/edit`（行内编辑）、`tabs/manager`（双击重命名/右键菜单/拖拽排序）、`modal/prompt`（输入确认）、`popover/contextmenu`（右键光标定位/触屏长按/断点简写）、`color-picker/designer`（2D 色域/渐变设计器）。import 即注册、顺序随意（晚加入对已挂载元素自动补齐）；按需引入组件时默认不含（配置静默失效 + dev 告警指引）；全量入口与 CDN 族包内含无感知。getting-started 中英双版补能力子包对照表
+- **能力注册表晚加入（late-join）订阅**：宿主构造快照之外，connected 期订阅注册通知 + 断开退订防泄漏 + 按名幂等注入——入口求值顺序、打包器重排、按需「先组件后能力」、运行中动态 import 场景全部自愈
+- **反馈/基础/布局组能力收尾**：
+  - progress：indeterminate 不确定态 / warning 状态 / color+track-color 自定义色 / striped(-flow) 条纹 / steps 步进分段 / buffer 缓冲段 / dashboard 仪表盘 / 尺寸档 / stroke-linecap / aria label / 状态图标真 SVG / text-inside 内嵌文本 / max 值域；默认 slot 自定义文本
+  - skeleton：loading 受控切换 + 默认 slot 真实内容出口 / effect 三档（sheen/pulse/none）/ count 份数 / widths 逐行宽度 / delay 防闪烁；**新子组件 oas-skeleton-item**（text/title/avatar/button/input/image/rect 七形态 + width/height/effect）
+  - empty：title 双通道 / description 富内容 slot / size 档位 / 图标型媒体 / 内置简约插画 / 横向布局 / 容器变体
+  - result：status 扩 403/404/500（专属自研图标）/ icon slot / 默认 slot 内容区 / 状态图标真 SVG 化（替文字字形）/ description slot / size 档位
+  - tag：icon-end 尾部图标；grid：columns 断点简写（对齐 space 协议）+ min-child-width 自适应宫格（auto-fit+minmax）
+- **FAQ 新增「组合模式（React 迁移视角）」**：asChild 的包装元素消除问题在 Web Components 下不存在（host 即元素本身）、换根语义走属性驱动、触发器组合走 named slot、Portal 对应 append-to 体系
+
+### 修复
+
+- **table 行内编辑真实双击不生效**：真实双击首击触发行选中重建 tbody → 被击 td 脱离文档 → 浏览器不派发 dblclick（事件流实证），编辑永不进入；修复为 click/dblclick 双委托到 update 中存活的 `<table>` 节点 + 同行同列 500ms 手工双击判定 + 重查活节点 + 同格重入守卫
+- **table 进/出编辑列宽行高跳变**：编辑器内在宽度（input size=20 默认 / select 最长选项）成为 auto 布局 min-content 贡献撑宽整列、操作列两态按钮变宽挤压邻列；修复为不可见占位保原文本布局贡献 + 编辑器绝对定位零贡献 + 操作列两态同槽叠放（inline-grid 同格），实测列宽行高三态零跳变
+- progress SSR 空属性噪声（空 status 不再序列化出空 data-status/class）
+- dev 全新环境 predev 拓扑序构建（core/i18n/icons dist 缺失时 `pnpm dev` 一把过）
+
+### 测试
+
+- tour 滚动隐藏回归用例改不变量断言（rAF 逐帧采样 + 环境分形：有动画帧则途中每帧必须隐藏，瞬跳则断言终态正确；headless Chromium 把 smooth 滚动瞬跳导致旧用例恒红）
+
+### 验收
+
+- 全量单测 5142 / typecheck 0 / build / api:check / trace 0 命中
+- 全量 e2e 1616 全过（chromium 全量 + firefox 抽样 + docs-site）
+
 ## [2.4.0] - 2026-09-01
 
 ### ⚠️ Breaking（含迁移说明）
