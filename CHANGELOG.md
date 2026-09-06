@@ -20,6 +20,10 @@
 
 - **table 行内编辑真实双击不生效**：真实双击首击触发行选中重建 tbody → 被击 td 脱离文档 → 浏览器不派发 dblclick（事件流实证），编辑永不进入；修复为 click/dblclick 双委托到 update 中存活的 `<table>` 节点 + 同行同列 500ms 手工双击判定 + 重查活节点 + 同格重入守卫
 - **table 进/出编辑列宽行高跳变**：编辑器内在宽度（input size=20 默认 / select 最长选项）成为 auto 布局 min-content 贡献撑宽整列、操作列两态按钮变宽挤压邻列；修复为不可见占位保原文本布局贡献 + 编辑器绝对定位零贡献 + 操作列两态同槽叠放（inline-grid 同格），实测列宽行高三态零跳变
+- **table 表头吸顶失效（非固定列）**：`th[data-key] { position: relative }`（列宽拖拽手柄定位上下文）同权重居后覆盖表头吸顶 sticky，年龄/城市/邮箱等表头随表体滚走；删除覆盖（sticky 同为定位上下文，天然供给拖拽手柄）
+- **table 子元素声明式通道在 Vue 宿主内容行全空**：列标识 `key` 是 Vue 模板保留字被剥离不到 DOM；改 key 双通道读取（`key ?? data-key`），demo 中英全部改写 `data-key` 并补保留字注记
+- **table cellTemplate demo 模板被 md/Vue 编译管线吃空**（dev 与生产构建对 `<template>` 子内容处理不一致）：demo 改 property 通道（JS 构造 HTMLTemplateElement + `whenDefined` 后赋值防升级前 expando 遮蔽）
+- **table 多级表头竖线语言归一**：非 bordered 表全表无竖线，删除 `header-group` 左线孤例（曾致「地址有线、成绩没线」不一致）；竖线只属 bordered 全网格模式
 - progress SSR 空属性噪声（空 status 不再序列化出空 data-status/class）
 - dev 全新环境 predev 拓扑序构建（core/i18n/icons dist 缺失时 `pnpm dev` 一把过）
 
