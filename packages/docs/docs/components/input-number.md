@@ -60,6 +60,13 @@
 
 `prefix` / `suffix` 为输入框内嵌装饰文案（不参与数值解析）；也支持同名插槽分发任意内容：`<span slot="prefix">…</span>`。
 
+<DemoBlock title="clearable + 步进钮 + 后缀叠加">
+  <oas-input-number value="1280" clearable suffix="元" style="width: 200px"></oas-input-number>
+  <oas-input-number value="42" clearable prefix="¥" controls-position="both" style="width: 240px"></oas-input-number>
+</DemoBlock>
+
+`clearable` / 步进钮 / 前后缀可任意叠加：右侧元素按「步进钮区 → 清除钮 → 后缀」自左向右排布，全部内嵌在输入框内，输入文字按叠加总宽自动让位（`controls-position="both"` 时清除钮/后缀在框内让开右侧 `+` 钮）。
+
 ## 千分位与格式化（声明式）
 
 <DemoBlock title="grouping 千分位">

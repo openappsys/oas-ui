@@ -38,13 +38,17 @@ const STYLE = `
   align-items: stretch;
   width: 100%;
 }
+/* inner 只承载 input（block 流，宽度 == input 边框盒）：suffix/clear/controls 全部
+   absolute 锚定 inner 右缘（即 input 右缘）右侧叠加，占位由 input 的
+   padding-inline-end 按「叠加元素集合」让位——与 oas-input 内嵌前后缀同构。
+   曾现 bug：inner 为 inline-flex 且 suffix/clear 在流内，input width:100% 被挤压后
+   inner 比 input 宽（suffix/clear 顶出 input 右缘），absolute controls 锚 inner 右缘
+   随之外溢 16px；suffix/clear 本身也渲染在 input 边框外 */
 .inner {
   position: relative;
-  display: inline-flex;
-  align-items: center;
   flex: 1;
   min-width: 0;
-  gap: var(--oas-space-1);
+  display: block;
 }
 input {
   appearance: none;
@@ -53,7 +57,7 @@ input {
   min-width: 0;
   height: var(--oas-input-number-height);
   padding-inline-start: var(--oas-space-3);
-  /* 右侧为步进钮覆盖区留位（right 形态）；both 形态 / controls=false 时回落常规内边距 */
+  /* 右侧叠加区让位：步进钮区（right 形态，20 宽 + 4 间隙 = 24，历史变量可覆盖） */
   padding-inline-end: var(--oas-input-number-controls-pad, 28px);
   border: 1px solid var(--oas-color-border);
   /* compact/button-group 圆角合并协议：--oas-button-group-radius 优先，独立使用回落自身圆角 */
@@ -118,13 +122,28 @@ input[readonly] {
 
 /* ---- 内嵌前后缀（prefix / suffix 文案 + 同名插槽） ---- */
 .affix {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   flex: none;
+  max-width: 50%;
+  overflow: hidden;
   color: var(--oas-color-text-secondary);
   font-size: var(--oas-input-number-font);
   white-space: nowrap;
   user-select: none;
+  pointer-events: none;
+}
+/* prefix 内嵌叠加（left 锚 input 左缘内）：与 suffix 同构；input 左侧按让位协议预留 */
+[part='prefix'] {
+  inset-inline-start: var(--oas-space-3);
+}
+:host([prefix]) input,
+:host([data-slot-prefix]) input {
+  padding-inline-start: var(--oas-space-8, 40px);
 }
 :host([disabled]) .affix,
 :host([data-disabled]) .affix {
@@ -133,8 +152,30 @@ input[readonly] {
 .affix[hidden] {
   display: none;
 }
+/* 后缀叠加锚点（right 形态）：清除钮恒占位（clearable 即预留，值清空不跳动），
+   后缀贴清除钮左侧；无清除钮时后缀贴步进钮左侧 */
+[part='suffix'] {
+  inset-inline-end: calc(4px + 20px + var(--oas-space-1) + 16px + var(--oas-space-1));
+}
+:host(:not([clearable])) [part='suffix'] {
+  inset-inline-end: calc(4px + 20px + var(--oas-space-1));
+}
+/* input 右侧按叠加元素集合让位（与 oas-input 的 [clearable]/[suffix] 让位协议同构） */
+:host([clearable]) input {
+  padding-inline-end: calc(var(--oas-input-number-controls-pad, 28px) + 16px + var(--oas-space-1));
+}
+:host([suffix]) input,
+:host([data-slot-suffix]) input {
+  padding-inline-end: calc(var(--oas-input-number-controls-pad, 28px) + 24px + var(--oas-space-1));
+}
+:host([clearable][suffix]) input,
+:host([clearable][data-slot-suffix]) input {
+  padding-inline-end: calc(
+    var(--oas-input-number-controls-pad, 28px) + 16px + var(--oas-space-1) + 24px + var(--oas-space-1)
+  );
+}
 
-/* ---- 清除按钮（clearable，空值语义入口） ---- */
+/* ---- 清除按钮（clearable，空值语义入口）：右侧叠加区，锚 input 右缘、步进钮左侧 ---- */
 .clear-btn {
   appearance: none;
   border: none;
@@ -146,6 +187,10 @@ input[readonly] {
   display: inline-flex;
   border-radius: 50%;
   z-index: 1;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  inset-inline-end: calc(4px + 20px + var(--oas-space-1));
 }
 .clear-btn:hover {
   color: var(--oas-color-text-primary);
@@ -221,10 +266,6 @@ input[readonly] {
   background: var(--oas-color-bg);
   border-radius: 0;
 }
-:host([controls-position='both']) [part='prefix'] {
-  order: -2;
-  margin-inline-end: var(--oas-space-2);
-}
 :host([controls-position='both']) [part='down'] {
   order: -1;
   border-radius: var(--oas-button-group-radius, var(--oas-radius-md)) 0 0
@@ -232,6 +273,14 @@ input[readonly] {
 }
 :host([controls-position='both']) [part='down']:hover {
   border-color: var(--oas-color-primary);
+}
+/* both 形态 [-] 钮贴在 input 左缘外（32px），内嵌 prefix 右移一个钮位 + 让位同步 */
+:host([controls-position='both']) [part='prefix'] {
+  inset-inline-start: calc(32px + var(--oas-space-2));
+}
+:host([controls-position='both'][prefix]) input,
+:host([controls-position='both'][data-slot-prefix]) input {
+  padding-inline-start: calc(32px + var(--oas-space-2) + var(--oas-space-8, 40px));
 }
 :host([controls-position='both']) [part='up'] {
   order: 1;
@@ -245,6 +294,23 @@ input[readonly] {
   padding-inline-end: var(--oas-space-3);
   border-start-end-radius: 0;
   border-end-end-radius: 0;
+}
+/* both 形态 [+] 钮贴在 input 右缘外（32px），右侧叠加锚点与让位同步右移一个钮位 */
+:host([controls-position='both']:not([controls='false'])) .clear-btn {
+  inset-inline-end: calc(32px + var(--oas-space-1));
+}
+:host([controls-position='both']) [part='suffix'] {
+  inset-inline-end: calc(32px + var(--oas-space-1) + 16px + var(--oas-space-1));
+}
+:host([controls-position='both']:not([clearable])) [part='suffix'] {
+  inset-inline-end: calc(32px + var(--oas-space-1));
+}
+:host([controls-position='both'][clearable]) input {
+  padding-inline-end: calc(var(--oas-space-3) + 16px + var(--oas-space-1));
+}
+:host([controls-position='both'][clearable][suffix]) input,
+:host([controls-position='both'][clearable][data-slot-suffix]) input {
+  padding-inline-end: calc(var(--oas-space-3) + 16px + var(--oas-space-1) + 24px + var(--oas-space-1));
 }
 :host([controls-position='both']) .controls .icon-chevron {
   display: none;
@@ -264,6 +330,32 @@ input[readonly] {
   padding-inline-end: var(--oas-space-3);
   border-start-end-radius: var(--oas-button-group-radius, var(--oas-radius-md));
   border-end-end-radius: var(--oas-button-group-radius, var(--oas-radius-md));
+}
+/* controls=false 时无步进钮区，叠加锚点与让位回落常规内边距基准 */
+:host([controls='false']) .clear-btn {
+  inset-inline-end: var(--oas-space-3);
+}
+:host([controls='false']:not([clearable])) [part='suffix'] {
+  inset-inline-end: var(--oas-space-3);
+}
+:host([controls='false'][clearable]) [part='suffix'] {
+  inset-inline-end: calc(var(--oas-space-3) + 16px + var(--oas-space-1));
+}
+:host([controls='false'][clearable]) input,
+:host([controls='false'][controls-position='both'][clearable]) input {
+  padding-inline-end: calc(var(--oas-space-3) + 16px + var(--oas-space-1));
+}
+:host([controls='false'][clearable][suffix]) input,
+:host([controls='false'][controls-position='both'][clearable][suffix]) input,
+:host([controls='false'][clearable][data-slot-suffix]) input,
+:host([controls='false'][controls-position='both'][clearable][data-slot-suffix]) input {
+  padding-inline-end: calc(var(--oas-space-3) + 16px + var(--oas-space-1) + 24px + var(--oas-space-1));
+}
+:host([controls='false']:not([clearable])[suffix]) input,
+:host([controls='false']:not([clearable])[data-slot-suffix]) input,
+:host([controls='false'][controls-position='both']:not([clearable])[suffix]) input,
+:host([controls='false'][controls-position='both']:not([clearable])[data-slot-suffix]) input {
+  padding-inline-end: calc(var(--oas-space-3) + 24px + var(--oas-space-1));
 }
 `
 
@@ -751,7 +843,8 @@ export class OASInputNumber extends OASElement {
     )
   }
 
-  /** 内嵌前后缀：prefix/suffix 文案（attribute 写 slot fallback）+ slot 分发内容驱动显隐 */
+  /** 内嵌前后缀：prefix/suffix 文案（attribute 写 slot fallback）+ slot 分发内容驱动显隐。
+   *  slot 分发时给 host 打 data-slot-prefix/suffix（驱动 input 两侧让位选择器，与 oas-input 同构） */
   private syncAffixes(): void {
     const renderAffix = (part: string, text: string): void => {
       const el = this.shadow.querySelector<HTMLElement>(`[part="${part}"]`)
@@ -764,6 +857,11 @@ export class OASInputNumber extends OASElement {
         slotEl !== null &&
         slotEl.assignedNodes().some((n) => n.nodeType === 1 || (n.textContent ?? '').trim() !== '')
       el.hidden = text === '' && !slotHasContent
+      if (part === 'suffix' || part === 'prefix') {
+        const mark = `data-slot-${part}`
+        if (slotHasContent) this.setAttribute(mark, '')
+        else this.removeAttribute(mark)
+      }
     }
     renderAffix('prefix', this.getAttr('prefix', ''))
     renderAffix('suffix', this.getAttr('suffix', ''))

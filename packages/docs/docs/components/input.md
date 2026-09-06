@@ -245,9 +245,9 @@ onMounted(() => {
 
 ## addon 复杂内容（slot 分发）
 
-<DemoBlock title="slot=prepend / slot=append（可嵌选择器、按钮）">
+<DemoBlock title="slot=prepend / slot=append（文本 / 图标 / 按钮）">
   <oas-input placeholder="输入网站名称" style="width: 360px">
-    <oas-select slot="prepend" placeholder="类型" options='[{"label":"http://","value":"http"},{"label":"https://","value":"https"}]' style="width: 110px"></oas-select>
+    <span slot="prepend">http://</span>
     <span slot="append">.com</span>
   </oas-input>
   <oas-input placeholder="搜索关键词" style="width: 300px">
@@ -257,7 +257,15 @@ onMounted(() => {
   <span id="input-search-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 100px"></span>
 </DemoBlock>
 
-`addon-before` / `addon-after` 属性只接文案；复杂内容用 `slot="prepend"` / `slot="append"` 分发（可嵌选择器、按钮，构成 mixed input），与属性文本双通道并存——slot 有分发时原生替换属性 fallback，圆角合并/边框去重与 addon 属性一致。多个独立控件平铺拼接（select+input+button）建议配合 `oas-compact` 紧凑容器。
+`addon-before` / `addon-after` 属性只接文案；复杂内容用 `slot="prepend"` / `slot="append"` 分发。addon 槽适合**纯文本、图标、按钮**这类与灰底 addon 视觉同层的元素（圆角合并/边框去重与 addon 属性一致，文本双通道并存——slot 有内容时原生替换属性 fallback）。**选择器等自带边框/底色的复合控件不建议放进 addon 槽**：跨 Shadow 边界无法安全去除其内部样式（其下拉层与触发器共享颜色 token，透明化会连带下拉菜单），与输入框拼接复合控件请用 `oas-compact` 紧凑容器：
+
+<DemoBlock title="select + input 组合（oas-compact 紧凑拼接）">
+  <oas-compact style="width: 420px">
+    <oas-select placeholder="协议" options='[{"label":"http://","value":"http"},{"label":"https://","value":"https"}]' style="width: 120px"></oas-select>
+    <oas-input placeholder="输入网站名称"></oas-input>
+    <oas-button type="primary">访问</oas-button>
+  </oas-compact>
+</DemoBlock>
 
 ## 字数统计位置与字素计数
 

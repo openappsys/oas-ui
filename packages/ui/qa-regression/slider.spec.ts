@@ -56,12 +56,18 @@ test('slider range：双滑块区间 + 双输入框联动且方向反向（rever
     const numMin = root.querySelector<HTMLInputElement>('[data-role="num-min"]')!
     const numMax = root.querySelector<HTMLInputElement>('[data-role="num-max"]')!
     const fill = root.querySelector<HTMLElement>('.fill')!
+    const trackW = max.getBoundingClientRect().width
+    const THUMB = 14
+    // 填充边与原生 thumb 中心同公式对齐：pct×(长-直径)（px，见组件内注释）
+    const expectedFillW = ((80 - 20) / 100) * (trackW - THUMB)
     return {
       min: Number(min.value),
       max: Number(max.value),
       numMin: numMin.value,
       numMax: numMax.value,
-      fillWidth: fill.style.width,
+      fillWidthPx: parseFloat(fill.style.width),
+      expectedFillW,
+      fillUnit: fill.style.width.endsWith('px'),
       minAria: min.getAttribute('aria-label'),
       maxAria: max.getAttribute('aria-label'),
     }
@@ -70,20 +76,24 @@ test('slider range：双滑块区间 + 双输入框联动且方向反向（rever
   expect(r.max).toBe(80)
   expect(r.numMin).toBe('20')
   expect(r.numMax).toBe('80')
-  expect(r.fillWidth).toBe('60%')
+  expect(r.fillUnit, '有布局尺寸时 fill 应按像素定位（与 thumb 中心同公式）').toBe(true)
+  expect(Math.abs(r.fillWidthPx - r.expectedFillW), 'fill 宽应等于双 thumb 中心距').toBeLessThanOrEqual(1.5)
   expect(r.minAria).toBeTruthy()
   expect(r.maxAria).toBeTruthy()
 
-  // reverse demo：方向反转 + 填充区从右端起（值 60 → 镜像位置 40%，向右填充到 100%）
+  // reverse demo：方向反转 + 填充区从右端起（值 60 → 镜像 40%，thumb 中心 = 0.4×(长-直径)+半径）
   await up(page, 'oas-slider[reverse]')
   const rev = await page.evaluate(() => {
     const el = document.querySelector('oas-slider[reverse]')!
     const root = el.shadowRoot!
     const input = root.querySelector<HTMLInputElement>('[data-role="range"]')!
     const fill = root.querySelector<HTMLElement>('.fill')!
+    const trackW = input.getBoundingClientRect().width
+    const THUMB = 14
     return {
       dir: input.getAttribute('dir'),
       fillLeft: fill.style.left,
+      fillLeftExpected: 0.4 * (trackW - THUMB) + THUMB / 2,
       fillRight: fill.style.right,
       fillWidth: fill.style.width,
       ariaLabel: input.getAttribute('aria-label'),
@@ -91,7 +101,10 @@ test('slider range：双滑块区间 + 双输入框联动且方向反向（rever
     }
   })
   expect(rev.dir).toBe('rtl')
-  expect(rev.fillLeft).toBe('40%')
+  expect(parseFloat(rev.fillLeft), 'reverse 填充左边应与 thumb 中心同公式（px）').toBeCloseTo(
+    rev.fillLeftExpected,
+    0,
+  )
   expect(rev.fillRight).toBe('')
   expect(parseFloat(rev.fillWidth)).toBeGreaterThan(0)
   expect(rev.ariaLabel).toBeTruthy()
@@ -253,20 +266,30 @@ test('slider vertical：data-vertical 镜像、orient/aria-orientation 同步、
     const root = el.shadowRoot!
     const input = root.querySelector<HTMLInputElement>('[data-role="range"]')!
     const fill = root.querySelector<HTMLElement>('.fill')!
+    const trackH = input.getBoundingClientRect().height
+    const THUMB = 14
     return {
       hostVertical: el.hasAttribute('data-vertical'),
       orient: input.getAttribute('orient'),
       ariaOrientation: input.getAttribute('aria-orientation'),
       fillTop: fill.style.top,
+      // 垂直 min 在下：值 40 → 填充从底部（min 端）向上延伸到值 40 的 thumb 中心
+      fillTopExpected: (1 - 40 / 100) * (trackH - THUMB) + THUMB / 2,
+      fillHeightExpected: (40 / 100) * (trackH - THUMB),
       fillHeight: fill.style.height,
       fillLeft: fill.style.left,
+      trackH,
     }
   })
   expect(r.hostVertical).toBe(true)
   expect(r.orient).toBe('vertical')
   expect(r.ariaOrientation).toBe('vertical')
-  expect(r.fillTop).toBe('0%')
-  expect(parseFloat(r.fillHeight)).toBeGreaterThan(0)
+  // fill 上缘 = 值 40 的 thumb 中心（0.6×(轨长-直径)+半径），高 = 40% 行程
+  expect(parseFloat(r.fillTop), '垂直 fill 上缘应等于值 thumb 中心（px，min 在下）').toBeCloseTo(
+    r.fillTopExpected,
+    0,
+  )
+  expect(Math.abs(parseFloat(r.fillHeight) - r.fillHeightExpected), '垂直 fill 高应为值占比行程').toBeLessThanOrEqual(1.5)
   expect(r.fillLeft).toBe('')
 })
 
@@ -339,11 +362,20 @@ test('slider start-point：填充从中点起向值延伸（温度计）', async
   await up(page, 'oas-slider[start-point]')
   const r = await page.evaluate(() => {
     const el = document.querySelector('oas-slider[start-point]')!
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('[data-role="range"]')!
     const fill = el.shadowRoot!.querySelector<HTMLElement>('.fill')!
-    return { left: fill.style.left, width: fill.style.width }
+    const trackW = input.getBoundingClientRect().width
+    const THUMB = 14
+    // min -50 / max 50 / start-point 0 / value 12：填充 [50%, 62%]（thumb 中心同公式，px）
+    return {
+      left: parseFloat(fill.style.left),
+      leftExpected: 0.5 * (trackW - THUMB) + THUMB / 2,
+      width: parseFloat(fill.style.width),
+      widthExpected: 0.12 * (trackW - THUMB),
+    }
   })
-  expect(r.left).toBe('50%')
-  expect(r.width).toBe('12%')
+  expect(Math.abs(r.left - r.leftExpected), 'start-point 填充左边应在 50% thumb 中心').toBeLessThanOrEqual(1.5)
+  expect(Math.abs(r.width - r.widthExpected), 'start-point 填充宽应覆盖 50%→62% 行程').toBeLessThanOrEqual(1.5)
 })
 
 test('slider readonly：pointerdown 被拦截且 input 不禁用、aria-readonly 同步', async ({ page }) => {
@@ -393,4 +425,91 @@ test('slider 键盘大步进：PageUp 按默认 10×step 跳进并派发事件',
   expect(r.prevented).toBe(true)
   expect(r.inputEvents).toBe(1)
   expect(r.changeEvents).toBe(1)
+})
+
+test('slider vertical：真实鼠标拖动可改值（pointer 接管）+ 输入框拉满轨道高度', async ({
+  page,
+}) => {
+  // 曾现 bug：垂直用 writing-mode 实现，Chromium 原生竖直拖拽 hit-test 失效拖不动
+  // （value 40→40），且 input 未显式高度（默认 20px）导致原生轨道缩在顶部、
+  // 填充/thumb/tooltip 全面错位。修复：input 拉满轨道高度 + 原生 thumb 隐藏 +
+  // .custom-thumb 视觉 + pointer 事件接管拖动。
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[vertical]')
+  const layout = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider[vertical]')!
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('[data-role="range"]')!
+    const thumb = el.shadowRoot!.querySelector<HTMLElement>('.custom-thumb[data-thumb="value"]')!
+    const trackWrap = el.shadowRoot!.querySelector<HTMLElement>('.track-wrap')!
+    return {
+      inputH: input.getBoundingClientRect().height,
+      wrapH: trackWrap.getBoundingClientRect().height,
+      thumbVisible: getComputedStyle(thumb).display !== 'none',
+    }
+  })
+  expect(layout.inputH, '垂直 input 应拉满轨道高度（不再是默认 20px）').toBe(layout.wrapH)
+  expect(layout.thumbVisible, '垂直模式 custom-thumb 恒可见（承担默认拇指视觉）').toBe(true)
+
+  // 真实鼠标拖动：min 在下，向上拖值变大
+  const el = page.locator('oas-slider[vertical]').first()
+  await el.scrollIntoViewIfNeeded()
+  const box = await el.boundingBox()
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height * 0.7)
+  await page.mouse.down()
+  for (let i = 1; i <= 8; i++) {
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height * 0.7 - i * 10)
+    await page.waitForTimeout(20)
+  }
+  await page.mouse.up()
+  const after = await page.evaluate(() => document.querySelector('oas-slider[vertical]')!.getAttribute('value'))
+  expect(Number(after), '垂直拖动应使值变化（向上拖 → 值变大）').toBeGreaterThan(40)
+})
+
+test('slider 水平拇指在填充末端保持完整圆（底色描边，不再「半圆融入」破相）', async ({
+  page,
+}) => {
+  // 曾现 bug：纯色 thumb 跨在蓝色填充末端时，与填充同色的半圆融入填充，
+  // 视觉上像「错位半圆」。修复：thumb 加底色描边。Chromium getComputedStyle
+  // 不支持 range 伪元素（回退返回元素自身样式），断言走像素：扫描 thumb 中心行，
+  // 描边会把「填充+thumb」的连续蓝色断成两段。
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider')
+  const clip = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider')!
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('input[data-role="range"]')!
+    const ir = input.getBoundingClientRect()
+    const min = Number(input.min || 0)
+    const max = Number(input.max || 100)
+    const v = Number(input.value || (min + max) / 2)
+    const THUMB = 14
+    const cx = ir.left + ((v - min) / (max - min)) * (ir.width - THUMB) + THUMB / 2
+    const cy = ir.top + ir.height / 2
+    return { x: cx - 60, y: cy - 12, width: 120, height: 24 }
+  })
+  const buf = await page.screenshot({ clip })
+  const runs = await page.evaluate(async (b64) => {
+    const img = new Image()
+    img.src = 'data:image/png;base64,' + b64
+    await img.decode()
+    const c = document.createElement('canvas')
+    c.width = img.width
+    c.height = img.height
+    const g = c.getContext('2d')!
+    g.drawImage(img, 0, 0)
+    const row = Math.floor(img.height / 2)
+    const d = g.getImageData(0, row, img.width, 1).data
+    const isBlue = (i: number) => (d[i + 2] ?? 0) > 150 && (d[i + 2] ?? 0) - (d[i] ?? 0) > 60 && (d[i + 1] ?? 0) < 190
+    let runs = 0
+    let inBlue = false
+    for (let x = 0; x < img.width; x++) {
+      const blue = isBlue(x * 4)
+      if (blue && !inBlue) runs++
+      inBlue = blue
+    }
+    return runs
+  }, buf.toString('base64'))
+  expect(
+    runs,
+    'thumb 中心行应出现 ≥2 段蓝色（描边把填充与圆盘断开），无描边时融合为 1 段',
+  ).toBeGreaterThanOrEqual(2)
 })

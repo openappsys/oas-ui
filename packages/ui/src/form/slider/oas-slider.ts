@@ -105,9 +105,9 @@ const STYLE = `
   width: 20px;
   height: var(--oas-slider-height, 200px);
 }
-/* 灰色轨道底层：由 track-wrap 伪元素承担（DOM 序最前 = 最底层）。
-   原生 input 的 track 背景必须透明——range 模式 pointerdown 提升 input z-index 抢拖动权时，
-   若灰轨道画在原生 track 上会随之上浮盖住 .fill（蓝色区间填充消失） */
+/* 灰色轨道底层：由 track-wrap 伪元素承担。原生 input 的 track 背景必须透明——
+   range 模式 pointerdown 提升 input z-index 抢拖动权时，若灰轨道画在原生 track 上
+   会随之上浮盖住 .fill（蓝色区间填充消失） */
 .track-wrap::before {
   content: '';
   position: absolute;
@@ -137,10 +137,24 @@ input[type="range"] {
   margin: 0;
   background: transparent;
   cursor: pointer;
+  /* 必须定位 + z-index：.fill 与灰轨道（::before）是定位元素，会盖住 static 的
+     input——原生 thumb 中部横带被轨道/填充覆盖，圆点右半截「融入」消失（半圆破相）。
+     提升 input 后原生 thumb（含底色环）完整压在填充之上；range 模式的
+     pointerdown z-index 提升（1/2）也依赖这里的定位基准 */
+  position: relative;
+  z-index: 1;
 }
-/* 垂直模式：现代 CSS 方案（writing-mode 竖直），配合 JS 设置的 orient 属性兼容 Firefox */
+/* 垂直模式：writing-mode 竖直 + 明确尺寸（input 默认 20px 高，不显式拉满会让
+   原生轨道缩在顶部 20px 里，与 200px 轨道区/JS 定位全面错位）。
+   原生 thumb 隐藏（opacity 保留命中盒），视觉与拖动由 .custom-thumb + pointer 接管：
+   writing-mode 下 Chromium 原生竖直拖拽 hit-test 失效（公认 bug），不可用 */
 :host([data-vertical]) input[type="range"] {
   writing-mode: vertical-lr;
+  width: 20px;
+  height: var(--oas-slider-height, 200px);
+}
+:host([data-vertical]) .track-wrap {
+  touch-action: none;
 }
 :host([data-readonly]) input[type="range"] {
   cursor: default;
@@ -155,7 +169,12 @@ input::-webkit-slider-thumb {
   width: var(--oas-slider-thumb-size);
   height: var(--oas-slider-thumb-size);
   border-radius: 50%;
+  /* 垂直居中：Chromium 默认按 margin-box 外缘对齐值点，负 margin 仅影响垂直方向 */
   margin-top: calc((var(--oas-slider-track-size) - var(--oas-slider-thumb-size)) / 2);
+  /* 底色「描边」用 box-shadow 实现（不影响盒模型/行程公式）：纯色圆点跨在蓝色填充
+     末端时，与填充同色的半圆会融入填充，视觉上像「错位半圆」；外扩底色环让圆点
+     在任意值处都完整可读（focus 时由 --oas-focus-ring 整体接管） */
+  box-shadow: 0 0 0 2px var(--oas-color-bg);
   background: var(--oas-slider-color);
   border: none;
   transition: transform var(--oas-transition-fast) var(--oas-ease-out);
@@ -173,9 +192,10 @@ input::-moz-range-track {
 input::-moz-range-thumb {
   width: var(--oas-slider-thumb-size);
   height: var(--oas-slider-thumb-size);
+  box-sizing: border-box;
   border-radius: 50%;
   background: var(--oas-slider-color);
-  border: none;
+  border: 2px solid var(--oas-color-bg);
   transition: transform var(--oas-transition-fast) var(--oas-ease-out);
 }
 input::-moz-range-thumb:hover {
@@ -186,6 +206,13 @@ input::-moz-range-thumb:hover {
   opacity: 0;
 }
 :host([data-custom-thumb]) input::-moz-range-thumb {
+  opacity: 0;
+}
+/* 垂直模式恒隐藏原生 thumb（命中盒保留）：视觉与拖动由 .custom-thumb + pointer 事件接管 */
+:host([data-vertical]) input::-webkit-slider-thumb {
+  opacity: 0;
+}
+:host([data-vertical]) input::-moz-range-thumb {
   opacity: 0;
 }
 input:focus-visible {
@@ -244,6 +271,12 @@ input:disabled {
 :host([data-vertical]) .custom-thumb {
   top: 0;
   left: 10px;
+}
+/* 垂直模式原生 thumb 恒隐藏，.custom-thumb 承担默认拇指视觉：实心圆与水平默认一致；
+   有自定义内容（data-thumb-content）时回到 ring 样式（白底彩环，与水平 custom-thumb 一致） */
+:host([data-vertical]):not([data-thumb-content]) .custom-thumb {
+  background: var(--oas-slider-color);
+  border: none;
 }
 /* author display:flex 会压过 UA [hidden] 规则，显式恢复隐藏（否则 hidden 滑块恒可见：
     默认堆在轨道起点呈白圈、拖动后残留在值位置呈双滑块假象） */
@@ -304,10 +337,13 @@ input:disabled {
   width: 100%;
   margin-top: -6px;
 }
-/* 垂直模式：刻度区移到轨道右侧，刻度点沿竖直轴向排布 */
+/* 垂直模式：刻度区移到轨道右侧，刻度点沿竖直轴向排布。
+   用 align-self: stretch 拉满轨道高度（height:100% 对弹性项会对着不定高容器解析成 0，
+   导致刻度容器塌缩、所有刻度点堆在顶部） */
 :host([data-vertical]) .marks {
   width: auto;
-  height: 100%;
+  height: auto;
+  align-self: stretch;
   margin-top: 0;
   margin-left: var(--oas-space-2);
 }
@@ -452,6 +488,8 @@ export class OASSlider extends OASElement {
   private thumbObserver: MutationObserver | null = null
   /** 拖动中（用于拖动时显示值气泡，不依赖 show-tooltip） */
   private dragging = false
+  /** 垂直拖动中的 pointerId（pointer 接管拖动的存活标记；null = 未在拖） */
+  private verticalDragId: number | null = null
   /** tooltip 格式化函数（JS property 通道，优先于 format 模板串） */
   private _formatTooltip: ((value: number) => string | number | null | undefined) | null = null
 
@@ -589,6 +627,12 @@ export class OASSlider extends OASElement {
     wrap?.addEventListener('pointerdown', (e) => {
       if (this.hasAttr('readonly')) {
         e.preventDefault()
+        return
+      }
+      // 垂直模式：原生竖直拖拽 hit-test 失效，改由 pointer 事件接管（点击轨道即定位、拖动跟随）
+      if (this.hasAttr('vertical') && wrap) {
+        if (this.injectDisabled()) return
+        this.beginVerticalDrag(e as PointerEvent, wrap)
         return
       }
       if (!this.hasAttr('range') || !this.minInput || !this.maxInput) return
@@ -933,6 +977,95 @@ export class OASSlider extends OASElement {
     }
   }
 
+  // ---------- 垂直拖动（pointer 接管） ----------
+
+  /**
+   * 垂直拖动接管：原生 range 在 writing-mode 竖直下 Chromium 拖拽 hit-test 失效，
+   * 且方向（min 在下）与原生渲染（min 在上）相反，无法用原生拖动。
+   * 点击轨道定位到指针处，拖动跟随；值经 step 吸附后走统一 input 事件链路（marks 吸附/事件/联动全复用）。
+   */
+  private beginVerticalDrag(e: PointerEvent, wrap: HTMLElement): void {
+    if (this.verticalDragId !== null) return
+    e.preventDefault()
+    this.verticalDragId = e.pointerId
+    this.dragging = true
+    const startValue = this.hasAttr('range') ? JSON.stringify(this.currentRange()) : String(this.input?.value ?? '')
+    try {
+      wrap.setPointerCapture(e.pointerId)
+    } catch {
+      /* 捕获失败（如指针已释放）不阻断本次定位 */
+    }
+    this.applyVerticalPointer(e, wrap)
+
+    const move = (ev: Event): void => {
+      if ((ev as PointerEvent).pointerId !== this.verticalDragId) return
+      this.applyVerticalPointer(ev as PointerEvent, wrap)
+    }
+    const finish = (ev: Event): void => {
+      if ((ev as PointerEvent).pointerId !== this.verticalDragId) return
+      this.verticalDragId = null
+      this.dragging = false
+      wrap.removeEventListener('pointermove', move)
+      wrap.removeEventListener('pointerup', finish)
+      wrap.removeEventListener('pointercancel', finish)
+      try {
+        wrap.releasePointerCapture((ev as PointerEvent).pointerId)
+      } catch {
+        /* 已释放 */
+      }
+      // 松手提交：与原生 change 同语义（写回受控 value + 派发 oas-change，值未变不派发）
+      const endValue = this.hasAttr('range') ? JSON.stringify(this.currentRange()) : String(this.input?.value ?? '')
+      this.syncValueAttr()
+      this.syncOverlay()
+      this.syncNumInputs()
+      this.syncMarkPassed()
+      if (endValue !== startValue) {
+        if (this.hasAttr('range')) this.emit('change', { value: this.currentRange() })
+        else this.emit('change', { value: Number(this.input?.value ?? 0) })
+      }
+    }
+    wrap.addEventListener('pointermove', move)
+    wrap.addEventListener('pointerup', finish)
+    wrap.addEventListener('pointercancel', finish)
+  }
+
+  /** 指针位置 → 值（垂直：默认 min 在下、reverse 镜像；范围模式取更近的 thumb 推） */
+  private applyVerticalPointer(e: PointerEvent, wrap: HTMLElement): void {
+    if (!Number.isFinite(e.clientY)) return
+    const min = Number(this.getAttr('min', '0'))
+    const max = Number(this.getAttr('max', '100'))
+    const rect = wrap.getBoundingClientRect()
+    if (!rect.height) return
+    let p = (rect.bottom - e.clientY) / rect.height
+    if (this.hasAttr('reverse')) p = 1 - p
+    p = clampNum(p, 0, 1)
+    const span = max - min || 1
+    let raw = min + p * span
+    // step 吸附（mark/any 不取整，交给 maybeSnapInput 的刻度吸附）
+    const stepRaw = this.getAttr('step', '1')
+    const step = Number(stepRaw)
+    if (stepRaw !== 'mark' && Number.isFinite(step) && step > 0) {
+      raw = min + Math.round((raw - min) / step) * step
+    }
+    raw = clampNum(raw, min, max)
+    const target = this.verticalDragTarget(raw)
+    if (!target) return
+    if (target.value !== String(raw)) {
+      target.value = String(raw)
+      target.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+  }
+
+  /** 范围垂直拖动目标 thumb：值更接近 lo 推 min、更接近 hi 推 max */
+  private verticalDragTarget(raw: number): HTMLInputElement | null {
+    if (this.hasAttr('range')) {
+      if (!this.minInput || !this.maxInput) return null
+      const [lo, hi] = this.currentRange()
+      return Math.abs(raw - lo) <= Math.abs(raw - hi) ? this.minInput : this.maxInput
+    }
+    return this.input
+  }
+
   // ---------- range 模式 ----------
 
   /** 解析 range value 属性（JSON 数组或逗号分隔），夹取到 [min, max] 并保证 lo ≤ hi */
@@ -1134,8 +1267,10 @@ export class OASSlider extends OASElement {
     const tipsVisible =
       this.hasAttr('show-tooltip') || this.hasAttr('tooltip-always') || this.dragging || focused
 
-    // 拖动/聚焦/常显中也启用自定义滑块（拖动时临时显示值气泡，无需 show-tooltip）
+    // 拖动/聚焦/常显中启用自定义滑块（拖动时临时显示值气泡，无需 show-tooltip）；
+    // 垂直模式恒启用：原生 thumb 隐藏，.custom-thumb 承担默认拇指视觉与拖动反馈
     const useOverlay =
+      vertical ||
       this.hasCustomThumb() ||
       this.hasAttr('show-tooltip') ||
       this.hasAttr('tooltip-always') ||
@@ -1146,9 +1281,10 @@ export class OASSlider extends OASElement {
     const sp = this.startPointValue(min, max)
     const [lo, hi] = isRange ? this.currentRange() : [sp, Number(this.input?.value ?? 0)]
     const pctOf = (v: number): number => ((v - min) / span) * 100
-    const vis = (pct: number): number => (reverse ? 100 - pct : pct)
-    const a = vis(pctOf(lo))
-    const b = vis(pctOf(hi))
+    // 视觉轴归一（水平从左起算 / 垂直从上起算）：水平默认 min 在左、垂直默认 min 在下，reverse 各自镜像
+    const vis = (pct: number): number =>
+      vertical ? (reverse ? pct : 100 - pct) : reverse ? 100 - pct : pct
+    fill.dataset.pct = String(reverse ? 100 - pctOf(hi) : pctOf(hi))
     // 定位轴切换（vertical 用 top/height），切轴时清理另一轴的位置与尺寸残留
     const axis = vertical ? 'top' : 'left'
     const sizeProp = vertical ? 'height' : 'width'
@@ -1156,9 +1292,31 @@ export class OASSlider extends OASElement {
     const offSize = vertical ? 'width' : 'height'
     fill.style.removeProperty(offAxis)
     fill.style.removeProperty(offSize)
-    fill.style.setProperty(axis, `${Math.min(a, b)}%`)
-    fill.style.setProperty(sizeProp, `${Math.abs(b - a)}%`)
-    fill.dataset.pct = String(reverse ? 100 - pctOf(hi) : pctOf(hi))
+    // 填充边与 thumb 中心精确对齐：Chromium 原生 thumb 行程为 [0, 长-直径]
+    // （中心 = pct×(长-直径)+半径，实测测定，见 qa-regression 拇指对齐断言），
+    // 填充继续用 % 会在两端偏差最多半个直径（7px）。有布局尺寸时按像素对齐
+    // （thumb 同公式）；无尺寸（SSR/hidden/测试环境）回落 % 保持旧行为。
+    const trackInput = isRange ? (this.maxInput ?? this.input) : this.input
+    const trackLen = vertical
+      ? (trackInput?.clientHeight ?? 0)
+      : (trackInput?.clientWidth ?? 0)
+    if (trackLen) {
+      const size = this.thumbSize()
+      const posPx = (v: number): number => {
+        const norm = clampNum((v - min) / span, 0, 1)
+        const visual = vertical ? (reverse ? norm : 1 - norm) : reverse ? 1 - norm : norm
+        return visual * Math.max(trackLen - size, 0) + size / 2
+      }
+      const a = posPx(lo)
+      const b = posPx(hi)
+      fill.style.setProperty(axis, `${Math.min(a, b)}px`)
+      fill.style.setProperty(sizeProp, `${Math.abs(b - a)}px`)
+    } else {
+      const a = vis(pctOf(lo))
+      const b = vis(pctOf(hi))
+      fill.style.setProperty(axis, `${Math.min(a, b)}%`)
+      fill.style.setProperty(sizeProp, `${Math.abs(b - a)}%`)
+    }
 
     for (const th of this.shadow.querySelectorAll<HTMLElement>('.custom-thumb')) {
       const which = th.dataset.thumb
@@ -1190,6 +1348,7 @@ export class OASSlider extends OASElement {
 
     if (useOverlay) this.setAttribute('data-custom-thumb', '')
     else this.removeAttribute('data-custom-thumb')
+    this.toggleAttribute('data-thumb-content', this.hasCustomThumb())
   }
 
   /** aria-valuetext 同步：有格式化通道时写格式化文本（读屏与气泡同源），否则移除回落 valuenow */
@@ -1320,7 +1479,8 @@ export class OASSlider extends OASElement {
       item.setAttribute('data-value', String(mark.value))
       item.setAttribute('data-passed', 'false')
       const pct = ((mark.value - min) / span) * 100
-      const norm = reverse ? 100 - pct : pct
+      // 视觉轴归一：水平 min 在左、垂直 min 在下（reverse 镜像），与 fill/thumb 同约定
+      const norm = vertical ? (reverse ? pct : 100 - pct) : reverse ? 100 - pct : pct
       // 定位轴切换（vertical 沿 Y 轴），切轴时清理另一轴残留
       if (vertical) {
         item.style.top = `${norm}%`
