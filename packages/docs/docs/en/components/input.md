@@ -245,9 +245,9 @@ The following native attributes are mirrored onto the inner native input (and re
 
 ## Complex Addons (slot distribution)
 
-<DemoBlock title="slot=prepend / slot=append (selectors & buttons)">
+<DemoBlock title="slot=prepend / slot=append (text / icons / buttons)">
   <oas-input placeholder="Enter site name" style="width: 360px">
-    <oas-select slot="prepend" placeholder="Type" options='[{"label":"http://","value":"http"},{"label":"https://","value":"https"}]' style="width: 110px"></oas-select>
+    <span slot="prepend">http://</span>
     <span slot="append">.com</span>
   </oas-input>
   <oas-input placeholder="Search keyword" style="width: 300px">
@@ -257,7 +257,15 @@ The following native attributes are mirrored onto the inner native input (and re
   <span id="input-search-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 100px"></span>
 </DemoBlock>
 
-The `addon-before` / `addon-after` attributes accept text only; for complex content (selectors, buttons — mixed inputs) distribute via `slot="prepend"` / `slot="append"`. The two channels coexist — distributed content natively replaces the attribute fallback, and radius merging / border dedup work the same as with the addon attributes. For flattening multiple independent controls side by side (select+input+button), wrap them in an `oas-compact` container.
+The `addon-before` / `addon-after` attributes accept text only; for complex content distribute via `slot="prepend"` / `slot="append"`. Addon slots suit **plain text, icons and buttons** — elements visually at home on the gray addon surface (radius merging / border dedup work the same as with the addon attributes, and distributed content natively replaces the attribute fallback across the two coexisting channels). **Avoid dropping bordered compound controls like selectors into addon slots**: the host cannot safely strip their internal styles across the Shadow boundary (their dropdown shares color tokens with the trigger — making them transparent would also transparentize the dropdown). To compose a selector with an input, use the `oas-compact` container:
+
+<DemoBlock title="select + input composition (oas-compact)">
+  <oas-compact style="width: 420px">
+    <oas-select placeholder="Protocol" options='[{"label":"http://","value":"http"},{"label":"https://","value":"https"}]' style="width: 120px"></oas-select>
+    <oas-input placeholder="Enter site name"></oas-input>
+    <oas-button type="primary">Go</oas-button>
+  </oas-compact>
+</DemoBlock>
 
 ## Count Position & Grapheme Counting
 
