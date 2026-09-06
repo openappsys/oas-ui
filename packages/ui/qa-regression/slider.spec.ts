@@ -74,7 +74,7 @@ test('slider range：双滑块区间 + 双输入框联动且方向反向（rever
   expect(r.minAria).toBeTruthy()
   expect(r.maxAria).toBeTruthy()
 
-  // reverse demo：方向反转 + 填充区从右端
+  // reverse demo：方向反转 + 填充区从右端起（值 60 → 镜像位置 40%，向右填充到 100%）
   await up(page, 'oas-slider[reverse]')
   const rev = await page.evaluate(() => {
     const el = document.querySelector('oas-slider[reverse]')!
@@ -83,6 +83,7 @@ test('slider range：双滑块区间 + 双输入框联动且方向反向（rever
     const fill = root.querySelector<HTMLElement>('.fill')!
     return {
       dir: input.getAttribute('dir'),
+      fillLeft: fill.style.left,
       fillRight: fill.style.right,
       fillWidth: fill.style.width,
       ariaLabel: input.getAttribute('aria-label'),
@@ -90,7 +91,8 @@ test('slider range：双滑块区间 + 双输入框联动且方向反向（rever
     }
   })
   expect(rev.dir).toBe('rtl')
-  expect(rev.fillRight).toBe('0%')
+  expect(rev.fillLeft).toBe('40%')
+  expect(rev.fillRight).toBe('')
   expect(parseFloat(rev.fillWidth)).toBeGreaterThan(0)
   expect(rev.ariaLabel).toBeTruthy()
   expect(rev.ariaNow).toBe('60')
@@ -239,4 +241,156 @@ test('slider range：pointerdown 提升 input z-index 后蓝色填充仍可见�
   expect(r.trackBg, '原生轨道背景应透明（灰轨道由底层伪元素承担）').toMatch(
     /transparent|rgba\(0, 0, 0, 0\)/,
   )
+})
+
+test('slider vertical：data-vertical 镜像、orient/aria-orientation 同步、填充换 top 轴', async ({
+  page,
+}) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[vertical]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider[vertical]')!
+    const root = el.shadowRoot!
+    const input = root.querySelector<HTMLInputElement>('[data-role="range"]')!
+    const fill = root.querySelector<HTMLElement>('.fill')!
+    return {
+      hostVertical: el.hasAttribute('data-vertical'),
+      orient: input.getAttribute('orient'),
+      ariaOrientation: input.getAttribute('aria-orientation'),
+      fillTop: fill.style.top,
+      fillHeight: fill.style.height,
+      fillLeft: fill.style.left,
+    }
+  })
+  expect(r.hostVertical).toBe(true)
+  expect(r.orient).toBe('vertical')
+  expect(r.ariaOrientation).toBe('vertical')
+  expect(r.fillTop).toBe('0%')
+  expect(parseFloat(r.fillHeight)).toBeGreaterThan(0)
+  expect(r.fillLeft).toBe('')
+})
+
+test('slider tooltip 格式化双通道：format 模板串与 formatTooltip 函数同源进 aria-valuetext', async ({
+  page,
+}) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[format]')
+  const tpl = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider[format]')!
+    const root = el.shadowRoot!
+    const thumb = root.querySelector<HTMLElement>('.custom-thumb[data-thumb="value"]')!
+    return {
+      tip: thumb.querySelector('.thumb-tip')?.textContent ?? '',
+      valueText: root.querySelector<HTMLInputElement>('[data-role="range"]')!.getAttribute('aria-valuetext'),
+    }
+  })
+  expect(tpl.tip).toBe('40%')
+  expect(tpl.valueText).toBe('40%')
+  // formatTooltip 函数通道（onMounted 赋值 Intl 货币格式化，tooltip-always 常显）
+  const fn = await page.evaluate(() => {
+    const el = document.getElementById('slider-fn-format') as (Element & { formatTooltip?: unknown }) | null
+    if (!el || typeof el.formatTooltip !== 'function') return null
+    const root = el.shadowRoot!
+    const thumb = root.querySelector<HTMLElement>('.custom-thumb[data-thumb="value"]')!
+    return {
+      tip: thumb.querySelector('.thumb-tip')?.textContent ?? '',
+      tipVisible: !thumb.querySelector('.thumb-tip')?.hasAttribute('hidden'),
+    }
+  })
+  expect(fn, 'formatTooltip 函数 property 应已赋值').not.toBeNull()
+  expect(fn!.tip).toContain('120')
+  expect(fn!.tipVisible).toBe(true)
+})
+
+test('slider step="mark"：拖动值吸附最近刻度（marks 外连续值不可选）', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[step="mark"]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider[step="mark"]')!
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('[data-role="range"]')!
+    input.value = '45'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    return { value: Number(input.value), attr: el.getAttribute('value'), step: input.step }
+  })
+  expect(r.value).toBe(30)
+  expect(r.attr).toBe('30')
+  expect(r.step).toBe('any')
+})
+
+test('slider show-stops：按 step 渲染刻度点且无标签节点', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[show-stops]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider[show-stops]')!
+    const marks = el.shadowRoot!.querySelector<HTMLElement>('.marks')!
+    return {
+      hidden: marks.hidden,
+      count: marks.querySelectorAll('.mark').length,
+      labels: marks.querySelectorAll('.mark-label').length,
+    }
+  })
+  expect(r.hidden).toBe(false)
+  expect(r.count).toBe(11)
+  expect(r.labels).toBe(0)
+})
+
+test('slider start-point：填充从中点起向值延伸（温度计）', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[start-point]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider[start-point]')!
+    const fill = el.shadowRoot!.querySelector<HTMLElement>('.fill')!
+    return { left: fill.style.left, width: fill.style.width }
+  })
+  expect(r.left).toBe('50%')
+  expect(r.width).toBe('12%')
+})
+
+test('slider readonly：pointerdown 被拦截且 input 不禁用、aria-readonly 同步', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[readonly]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider[readonly]')!
+    const root = el.shadowRoot!
+    const input = root.querySelector<HTMLInputElement>('[data-role="range"]')!
+    const e = new Event('pointerdown', { cancelable: true })
+    root.querySelector('.track-wrap')!.dispatchEvent(e)
+    return {
+      disabled: input.disabled,
+      ariaReadonly: input.getAttribute('aria-readonly'),
+      hostReadonly: el.hasAttribute('data-readonly'),
+      prevented: e.defaultPrevented,
+    }
+  })
+  expect(r.disabled).toBe(false)
+  expect(r.ariaReadonly).toBe('true')
+  expect(r.hostReadonly).toBe(true)
+  expect(r.prevented).toBe(true)
+})
+
+test('slider 键盘大步进：PageUp 按默认 10×step 跳进并派发事件', async ({ page }) => {
+  await page.goto('/components/slider.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-slider[large-step]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-slider[large-step]')!
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('[data-role="range"]')!
+    let inputEvents = 0
+    let changeEvents = 0
+    el.addEventListener('oas-input', () => inputEvents++)
+    el.addEventListener('oas-change', () => changeEvents++)
+    const e = new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true, cancelable: true })
+    input.dispatchEvent(e)
+    return {
+      value: Number(input.value),
+      attr: el.getAttribute('value'),
+      prevented: e.defaultPrevented,
+      inputEvents,
+      changeEvents,
+    }
+  })
+  expect(r.value).toBe(75)
+  expect(r.attr).toBe('75')
+  expect(r.prevented).toBe(true)
+  expect(r.inputEvents).toBe(1)
+  expect(r.changeEvents).toBe(1)
 })

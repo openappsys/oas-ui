@@ -58,6 +58,7 @@ export const zhCN = {
   // input（输入框）
   'input.clear': '清除',
   'input.defaultLabel': '输入框',
+  'textarea.defaultLabel': '多行文本框',
   'input.showPassword': '显示密码',
   'input.hidePassword': '隐藏密码',
   // mentions（提及）

@@ -46,6 +46,8 @@ const ATTR_HELPERS = new Set(['getAttr', 'hasAttr', 'injectValue', 'injectDisabl
 // 调用点，AST 无法推导，故显式登记（observed:false，不参与 attributeChanged 联动）。
 const SUPPLEMENT_ATTRS = {
   'oas-tab-panel': ['badge', 'icon'],
+  // success 为纯 CSS 消费属性（无 getAttr/hasAttr），扫描正则探不到，人工补录
+  'oas-pin-input': ['success'],
 }
 
 // ---------- 组件目录清单：ui/src/index.ts 的副作用导入行 ----------
@@ -631,6 +633,8 @@ function scanSlotsInHtml(html, names) {
     const selfClose = m[2] === '/'
     const nm = /name\s*=\s*["']([^"']+)["']/.exec(attrs)
     if (stack.length === 0) {
+      // 模板表达式插值的动态插槽名（如 slot="${src.slotName}"）不是真实槽位名，跳过
+      if (nm && nm[1].includes('${')) continue
       // 栈空 = 顶层 slot，才是组件真实槽位
       names.add(nm ? nm[1] : '')
     }

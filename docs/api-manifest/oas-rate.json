@@ -33,10 +33,83 @@
     {
       "name": "icon",
       "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "observed": true
+    },
+    {
+      "name": "void-color",
+      "observed": true
+    },
+    {
+      "name": "colors",
+      "observed": true
+    },
+    {
+      "name": "texts",
+      "observed": true
+    },
+    {
+      "name": "show-text",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "show-score",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "score-template",
+      "type": "string",
+      "default": "{value}",
+      "observed": true
+    },
+    {
+      "name": "void-icon",
+      "observed": true
+    },
+    {
+      "name": "icons",
+      "observed": true
+    },
+    {
+      "name": "highlight-selected-only",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "tooltips",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "icons",
+      "type": "string[] | null"
+    },
+    {
+      "name": "colors",
+      "type": "string[] | null"
+    }
+  ],
   "events": [
+    {
+      "name": "oas-hover",
+      "detail": "{ value: v } | { value: null }"
+    },
     {
       "name": "oas-change",
       "detail": "{ value: v }"
@@ -45,6 +118,9 @@
   "slots": [
     {
       "name": "icon"
+    },
+    {
+      "name": "void-icon"
     }
   ],
   "unresolved": []

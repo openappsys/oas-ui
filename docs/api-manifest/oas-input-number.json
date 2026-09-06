@@ -39,16 +39,106 @@
     },
     {
       "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "controls",
+      "observed": true
+    },
+    {
+      "name": "controls-position",
+      "observed": true
+    },
+    {
+      "name": "prefix",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "suffix",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "format",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "grouping",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "wheel",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "step-strictly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "clearable",
+      "type": "boolean",
       "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "prefix",
+      "type": "string"
+    },
+    {
+      "name": "formatter",
+      "type": "((value: number) => string) | null"
+    },
+    {
+      "name": "parser",
+      "type": "((text: string) => number) | null"
+    }
+  ],
   "events": [
+    {
+      "name": "oas-clear",
+      "detail": "{}"
+    },
     {
       "name": "oas-change",
       "detail": "{ value: v }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "prefix"
+    },
+    {
+      "name": "suffix"
+    }
+  ],
   "unresolved": []
 }

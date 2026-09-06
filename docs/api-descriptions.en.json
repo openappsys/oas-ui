@@ -1021,16 +1021,31 @@
       "suffix": "Inline text after the input value",
       "suffix-icon": "Icon name for the trailing icon",
       "type": "Native input type",
-      "value": "Value (controlled)"
+      "value": "Value (controlled)",
+      "size": "Size preset `small` / `medium` (default) / `large`: height and font scale",
+      "variant": "Variant: `outlined` (default) / `filled` / `borderless`",
+      "status": "Validation status: `error` / `warning` / `success`; error mirrors aria-invalid on the inner input",
+      "count-position": "Character count position: `outside` (default) / `inside` (right side within the field)",
+      "allow-over-max": "Over-limit without truncation: maxlength is no longer passed native (typing continues), count turns red and oas-validate fires",
+      "show-clear-on": "Clear button visibility: `always` (default) / `hover` / `focus`",
+      "auto-width": "Auto width following content (mirror measurement; empty value falls back to placeholder width), usually with auto-width-min/max",
+      "auto-width-min": "Minimum width in px for auto-width (default 72)",
+      "auto-width-max": "Maximum width for auto-width, px or percentage (default 100%)"
     },
     "events": {
       "oas-clear": "Cleared by click, `detail: { originalEvent }`",
       "oas-enter": "Enter pressed (not IME composition), `detail: { value }`",
-      "oas-input": "While typing, `detail: { value }`"
+      "oas-input": "While typing, `detail: { value }`",
+      "oas-focus": "Fires on focus, `detail: { value }`",
+      "oas-blur": "Fires on blur, `detail: { value }`",
+      "oas-change": "Commit semantics: fires on blur/Enter when the value differs from the last commit, `detail: { value }`",
+      "oas-validate": "Fires when the over-limit state flips (allow-over-max), `detail: { error: \"exceed-maximum\" | null }`"
     },
     "slots": {
       "prefix": "Inline leading content (icons/buttons etc.; distributed content takes precedence over the `prefix` attribute text). For simple text use the `prefix` attribute",
-      "suffix": "Inline trailing content (icons/buttons etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute"
+      "suffix": "Inline trailing content (icons/buttons etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute",
+      "prepend": "Prepend addon area (may contain select/button or any content)",
+      "append": "Append addon area (may contain select/button or any content)"
     }
   },
   "oas-input-number": {
@@ -1041,12 +1056,29 @@
       "min": "Range, out-of-range values are clamped automatically",
       "precision": "Number of decimal places",
       "step": "Step",
-      "value": "Current value (controlled)"
+      "value": "Current value (controlled)",
+      "controls": "Stepper buttons visibility (shown by default; `controls=\"false\"` hides them, keyboard ↑↓ still steps)",
+      "controls-position": "Button layout: `right` (default, stacked up/down on the right) / `both` (−/+ on both sides, stepper-counter form)",
+      "prefix": "Inline prefix text (slot=\"prefix\" accepts any content; not part of value parsing)",
+      "suffix": "Inline suffix text (slot=\"suffix\" likewise)",
+      "format": "Intl-style declarative format: `percent` (0.15→15%) / `currency:USD` / `unit:GB`, following the host locale",
+      "grouping": "Thousands grouping display (group separators stripped on parse)",
+      "size": "Size preset `sm` / `md` (default) / `lg`: control height and font scale",
+      "readonly": "Read-only: focusable, copyable, submittable; buttons disabled + aria-readonly, keyboard/wheel cannot change the value",
+      "status": "Validation status: `error` / `warning` / `success` semantic border colors",
+      "placeholder": "Placeholder (participates in the aria-label fallback chain)",
+      "wheel": "Wheel stepping while focused (up increments, down decrements; off by default to prevent accidental changes)",
+      "step-strictly": "Strict stepping: committed value snaps to the nearest step multiple",
+      "clearable": "Clear button when a value is present (returns to the empty-value state)"
     },
     "events": {
-      "oas-change": "Change on step or blur, `detail: { value }` (number)"
+      "oas-change": "Change on step or blur, `detail: { value }` (number)",
+      "oas-clear": "Fires when the clear button is clicked (value returns to the empty state)"
     },
-    "slots": {}
+    "slots": {
+      "prefix": "Prefix content slot (not part of value parsing)",
+      "suffix": "Suffix content slot (not part of value parsing)"
+    }
   },
   "oas-kbd": {
     "attrs": {
@@ -1518,12 +1550,26 @@
       "mask": "Asterisk masking",
       "readonly": "Readonly",
       "type": "Cell input type",
-      "value": "Current value (controlled)"
+      "value": "Current value (controlled)",
+      "otp": "OTP semantics: inner cells get autocomplete=\"one-time-code\" (triggers system SMS code autofill)",
+      "separator": "Separator content (positioned via separator-after)",
+      "separator-after": "Insert a separator after cell N (1-based indexes, comma-separated, e.g. `3,7`; defaults to between every adjacent pair)",
+      "size": "Size preset `small` / `medium` (default) / `large`",
+      "placeholder": "Placeholder for empty cells",
+      "variant": "Variant: `outlined` (default) / `filled` / `underlined`",
+      "attached": "Attached form: no gaps between cells, shared borders, end-point radii only",
+      "loading": "Submitting: cells disabled + aria-busy + spinner overlay, keyboard input fully locked",
+      "pattern": "Per-character regex constraint (overrides type filter; invalid regex warns and falls back)",
+      "autofocus": "Focus the first empty cell on first connection",
+      "auto-submit": "Auto-submit when full (calls requestSubmit on the closest form; no-op without one)",
+      "success": "Success green border (error wins when both set)"
     },
     "events": {
       "oas-change": "Dispatched when filled, `detail: { value }`",
       "oas-complete": "Dispatched when filled, `detail: { value }`",
-      "oas-input": "Per-cell input, `detail: { value, index }`"
+      "oas-input": "Per-cell input, `detail: { value, index }`",
+      "oas-focus": "Fires when focus enters the component (not on cell-to-cell moves), `detail: { index }`",
+      "oas-blur": "Fires when focus leaves the component, `detail: { index }`"
     },
     "slots": {}
   },
@@ -1652,10 +1698,24 @@
       "disabled": "Disabled",
       "icon": "Custom star icon (character or SVG markup)",
       "max": "Number of stars",
-      "value": "Current score (controlled)"
+      "value": "Current score (controlled)",
+      "readonly": "Read-only (independent of disabled: non-interactive, normally displayed, still submitted with the form)",
+      "size": "Size preset `small` / `medium` (default 20px) / `large` (28px)",
+      "color": "Selected color (preset name or any CSS color)",
+      "void-color": "Unselected color",
+      "colors": "Threshold colors as a JSON array (segments split evenly across max, e.g. `[\"#f5222d\",\"#faad14\",\"#52c41a\"]` for three bands)",
+      "texts": "Per-value helper texts (comma-separated, pair with show-text)",
+      "show-text": "Show the text for the current value (texts)",
+      "show-score": "Show the numeric score in read-only scenarios (pair with score-template)",
+      "score-template": "Score template string with a `{value}` placeholder (e.g. `\"{value} points\"`); takes precedence over show-text",
+      "void-icon": "Unselected icon name (e.g. heart for a ♥/♡ dual state)",
+      "icons": "Per-value icons as a JSON array (a different icon per value, e.g. grading 😞😞😐😄😄; arrays may also be assigned via property)",
+      "highlight-selected-only": "Highlight only the selected star (others stay unselected-colored)",
+      "tooltips": "Per-star tooltip texts (comma-separated, shown on star hover; light oas-tooltip integration)"
     },
     "events": {
-      "oas-change": "Score change, `detail: { value }`"
+      "oas-change": "Score change, `detail: { value }`",
+      "oas-hover": "Fires on star hover, `detail: { value }`; `{ value: null }` on leave"
     },
     "slots": {}
   },
@@ -1800,11 +1860,22 @@
       "max": "Range",
       "min": "Range",
       "range": "Range mode: dual-thumb interval selection, `value` as JSON array `[lo, hi]` or comma-separated string `\"lo,hi\"`; thumbs constrain each other (lo ≤ hi), event `detail.value` is an array",
-      "reverse": "Reversed direction: minimum on the right (track `dir=\"rtl\"`), fill/ticks/custom thumb positions mirror",
+      "reverse": "Reversed direction: minimum on the right horizontally (track `dir=\"rtl\"`), at the top vertically; fill/ticks/custom thumb positions mirror accordingly",
       "show-input": "Show a numeric input on the right, synced bidirectionally with the slider: dragging updates the input live; typing commits after a 300ms debounce and is clamped to `min`/`max`, Enter/blur commits immediately; range mode shows min/max inputs (min beyond max pushes max along)",
       "show-tooltip": "Show a value bubble above the thumb (temporarily shown while dragging; coexists with `custom-thumb`)",
-      "step": "Step",
-      "value": "Current value (controlled): numeric string for single mode; JSON array or comma-separated string for `range` mode"
+      "step": "Step; the special value `\"mark\"` restricts selectable values to the `marks` set (dragging/keyboard/controlled values snap to the nearest mark; requires `marks`, falls back to 1)",
+      "value": "Current value (controlled): numeric string for single mode; JSON array `[lo, hi]` or comma-separated string `\"lo,hi\"` in `range` mode, written back as a JSON array string after interaction (form collection can `JSON.parse` directly)",
+      "vertical": "Vertical mode: the track runs vertically (minimum at the bottom, mirrored to the top by `reverse`); mark labels move to the right of the track, the value bubble faces right by default, show-input inputs move below the track; height defaults to 200px, adjustable via the `--oas-slider-height` CSS variable",
+      "format": "Value bubble template string: `${value}` is replaced with the current value (e.g. `\"${value}%\"`); shown as-is without a placeholder; the output feeds both the bubble and `aria-valuetext`; lower priority than the `formatTooltip` function",
+      "tooltip-always": "Keep the value bubble always visible (by default shown while dragging or keyboard-focused)",
+      "tooltip-position": "Value bubble direction: top / bottom / left / right; top by default horizontally, right by default vertically; invalid values fall back to the default",
+      "show-stops": "Render tick dots along the track by `step` (no labels), highlighted where passed; marks take precedence when both exist; dots are not rendered beyond 100",
+      "start-point": "Fill origin for single-value mode (default `min`): the fill extends right above the start and left below it; clamped to `[min, max]`; ignored in `range` mode",
+      "size": "Three sizes: sm / md / lg (also accepts small / medium / large, supports config-provider injection); track height and thumb diameter scale together; invalid values fall back to md",
+      "color": "Fill/thumb/passed-tick color: preset semantic names (primary / success / warning / danger, following dark theme) map to theme tokens; any other value is passed through as a CSS color",
+      "track-color": "Track base color: preset semantic names map to theme tokens; any other value is passed through as a CSS color",
+      "readonly": "Readonly (independent of `disabled`): stays focusable and the value still participates in form collection; dragging and keyboard edits are intercepted; not visually dimmed",
+      "large-step": "Keyboard large step amount (Shift+arrows / PageUp / PageDown); defaults to 10 × step; each key press emits `oas-input` + `oas-change`"
     },
     "events": {
       "oas-change": "Committed on release, `detail: { value }` (single number; `[lo, hi]` array in `range` mode)",
@@ -2145,10 +2216,27 @@
       "readonly": "Readonly",
       "resize": "Resize behavior",
       "rows": "Number of rows",
-      "value": "Value (controlled)"
+      "value": "Value (controlled)",
+      "maxlength": "Maximum length (native passthrough; pair with show-count)",
+      "show-count": "Show character count (bottom-right n/max; turns red over limit; aria-live announced)",
+      "status": "Validation status: `error` / `warning` / `success`; error mirrors aria-invalid on the inner textarea",
+      "size": "Size preset `small` / `medium` (default) / `large`",
+      "variant": "Variant: `outlined` (default) / `filled` / `borderless`",
+      "clearable": "Show a clear button (one-click clear; fires oas-clear + oas-input)",
+      "label": "Accessible name (aria-label channel; falls back to placeholder → locale)",
+      "name": "Form field name (native passthrough)",
+      "autofocus": "Autofocus (native passthrough)",
+      "minlength": "Minimum length (native passthrough)",
+      "required": "Required marker (native passthrough)",
+      "spellcheck": "Spellcheck (native passthrough)",
+      "wrap": "Wrap strategy (native passthrough: soft/hard)"
     },
     "events": {
-      "oas-input": "While typing, `detail: { value }`"
+      "oas-input": "While typing, `detail: { value }`",
+      "oas-focus": "Fires on focus, `detail: { value }`",
+      "oas-blur": "Fires on blur, `detail: { value }`",
+      "oas-change": "Native change semantics: fires on blur when the value changed, `detail: { value }`",
+      "oas-clear": "Fires when the clear button is clicked (oas-input also fires)"
     },
     "slots": {}
   },

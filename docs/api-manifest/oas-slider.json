@@ -55,12 +55,74 @@
       "name": "show-tooltip",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "vertical",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "format",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "tooltip-always",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "tooltip-position",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "show-stops",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "start-point",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "observed": true
+    },
+    {
+      "name": "track-color",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "large-step",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
     {
       "name": "marks",
       "type": "string | Record<string, string | number> | number[]"
+    },
+    {
+      "name": "formatTooltip",
+      "type": "((value: number) => string | number | null | undefined) | null"
     }
   ],
   "events": [

@@ -335,14 +335,15 @@ describe('@oas-ui/ssr renderToString', () => {
   it('oas-input：骨架 + value/placeholder 宿主属性同步', async () => {
     const html = await renderToString('oas-input', { value: 'hello', placeholder: '请输入' }, '')
     expect(html).toContain('<template shadowrootmode="open">')
-    expect(html).toContain('<oas-input value="hello" placeholder="请输入">')
+    // size/variant 恒反射 data-* 属性（能力收尾批起），宿主开标签含 data-size/data-variant
+    expect(html).toContain('<oas-input value="hello" placeholder="请输入" data-size="medium" data-variant="outlined">')
     expect(html).toContain('<input part="input"')
   })
 
   it('oas-textarea：骨架 + value 同步', async () => {
     const html = await renderToString('oas-textarea', { value: '多行文本', rows: '4' }, '')
     expect(html).toContain('<template shadowrootmode="open">')
-    expect(html).toContain('<oas-textarea value="多行文本" rows="4">')
+    expect(html).toContain('<oas-textarea value="多行文本" rows="4" data-size="medium" data-variant="outlined">')
     expect(html).toContain('<textarea part="textarea"')
   })
 
@@ -397,14 +398,16 @@ describe('@oas-ui/ssr renderToString', () => {
 
   it('oas-slider：range 骨架 + value/min/max 同步', async () => {
     const html = await renderToString('oas-slider', { value: '60', min: '0', max: '100' }, '')
-    expect(html).toContain('<oas-slider value="60" min="0" max="100">')
+    // size/tooltip-position 恒反射 data-*（能力收尾批起）
+    expect(html).toContain('<oas-slider value="60" min="0" max="100" data-size="md" data-tooltip-pos="top">')
     expect(html).toContain('<input part="track" type="range"')
   })
 
   it('oas-input-number：数字输入骨架 + value 同步', async () => {
     const html = await renderToString('oas-input-number', { value: '12', min: '0', max: '100' }, '')
     expect(html).toContain('<oas-input-number value="12" min="0" max="100">')
-    expect(html).toContain('<input part="input" type="number"')
+    // 能力收尾批起内层换 input[type=text] + inputmode=decimal（formatter/解析语义），手动补 spinbutton aria
+    expect(html).toContain('<input part="input" type="text"')
     expect(html).toContain('part="up"')
     expect(html).toContain('part="down"')
   })
@@ -646,7 +649,10 @@ describe('@oas-ui/ssr renderToString', () => {
     // 必填星号可见（required 属性时 hidden 移除）
     expect(html).toContain('part="required"')
     expect(html).toContain('>')
-    expect(html).toContain('</template><oas-input><template shadowrootmode="open">')
+    // 嵌套 input 现恒反射 data-size/data-variant（能力收尾批起）
+    expect(html).toContain(
+      '</template><oas-input data-size="medium" data-variant="outlined"><template shadowrootmode="open">',
+    )
     expect(html).toContain('<meta data-oas-ssr="oas-input" data-oas-ssr-v="1">')
     expect(html).toContain('</oas-input></oas-form-item>')
   })
