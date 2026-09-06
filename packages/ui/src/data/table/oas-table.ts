@@ -232,9 +232,8 @@ th.drop-before::before {
 th.drop-after::after {
   right: -2px;
 }
-th[data-key] {
-  position: relative;
-}
+/* 列宽拖拽手柄（::after）的定位上下文由表头吸顶的 sticky 天然提供（sticky 同为定位上下文），
+   此处不得再写 position: relative——曾因它把非固定列表头的纵向吸顶覆盖失效 */
 :host([data-col-resizing]) th[data-key]::after {
   content: '';
   position: absolute;
@@ -2086,7 +2085,12 @@ export class OASTableBase extends OASElement {
 
   /** 单个 <oas-table-column> → TableColumn（属性对齐字段，默认插槽文本为 title 兜底，嵌套子列递归） */
   private childToColumn(el: Element): TableColumn {
-    const col: TableColumn = { key: el.getAttribute('key') ?? '', title: this.childColumnTitle(el) }
+    // key 双通道：`key` 直读 + `data-key` 兜底——`key` 是 Vue 模板保留字（vnode key），
+    // 在 Vue 宿主（含文档站）里会被剥离不到 DOM，声明式通道在 Vue 下必须用 data-key
+    const col: TableColumn = {
+      key: el.getAttribute('key') ?? el.getAttribute('data-key') ?? '',
+      title: this.childColumnTitle(el),
+    }
     if (el.hasAttribute('sortable')) col.sortable = true
     if (el.hasAttribute('hidden')) col.hidden = true
     if (el.hasAttribute('filterable')) col.filterable = true
@@ -2148,6 +2152,7 @@ export class OASTableBase extends OASElement {
       characterData: true,
       attributeFilter: [
         'key',
+        'data-key',
         'title',
         'sortable',
         'width',

@@ -19,9 +19,9 @@ Click a sortable column header to cycle through ascending / descending / no sort
 <DemoBlock title="Declare columns with <oas-table-column>">
   <div style="width: 100%">
     <oas-table row-key="name" data='[{"name":"Alice","age":30,"city":"Beijing"},{"name":"Bob","age":25,"city":"Shanghai"},{"name":"Carol","age":35,"city":"Shenzhen"}]'>
-      <oas-table-column key="name" title="Name" sortable></oas-table-column>
-      <oas-table-column key="age" title="Age" sortable></oas-table-column>
-      <oas-table-column key="city" title="City"></oas-table-column>
+      <oas-table-column data-key="name" title="Name" sortable></oas-table-column>
+      <oas-table-column data-key="age" title="Age" sortable></oas-table-column>
+      <oas-table-column data-key="city" title="City"></oas-table-column>
     </oas-table>
   </div>
 </DemoBlock>
@@ -29,12 +29,12 @@ Click a sortable column header to cycle through ascending / descending / no sort
 <DemoBlock title="Nested child columns for a grouped header">
   <div style="width: 100%">
     <oas-table row-key="id" data='[{"id":1,"name":"Alice","age":28,"city":"Beijing","score":92},{"id":2,"name":"Bob","age":32,"city":"Shanghai","score":85}]'>
-      <oas-table-column key="base" title="Basic">
-        <oas-table-column key="name" title="Name" sortable></oas-table-column>
-        <oas-table-column key="age" title="Age" sortable></oas-table-column>
+      <oas-table-column data-key="base" title="Basic">
+        <oas-table-column data-key="name" title="Name" sortable></oas-table-column>
+        <oas-table-column data-key="age" title="Age" sortable></oas-table-column>
       </oas-table-column>
-      <oas-table-column key="city" title="City"></oas-table-column>
-      <oas-table-column key="score" title="Score" sortable></oas-table-column>
+      <oas-table-column data-key="city" title="City"></oas-table-column>
+      <oas-table-column data-key="score" title="Score" sortable></oas-table-column>
     </oas-table>
   </div>
 </DemoBlock>
@@ -42,18 +42,18 @@ Click a sortable column header to cycle through ascending / descending / no sort
 <DemoBlock title="Cell template cellTemplate (interpolate row.field)">
   <div style="width: 100%">
     <oas-table row-key="id" data='[{"id":1,"name":"Alice","price":128,"city":"Beijing"},{"id":2,"name":"Bob","price":256,"city":"Shanghai"}]'>
-      <oas-table-column key="name" title="Name">
+      <oas-table-column data-key="name" title="Name">
         <template v-pre><span style="background:#eef2ff;color:#4f46e5;border-radius:4px;padding:1px 6px;font-size:12px">{{row.name}}</span></template>
       </oas-table-column>
-      <oas-table-column key="price" title="Price">
+      <oas-table-column data-key="price" title="Price">
         <template v-pre><b style="color: var(--oas-color-danger)">¥ {{row.price}}</b></template>
       </oas-table-column>
-      <oas-table-column key="city" title="City"></oas-table-column>
+      <oas-table-column data-key="city" title="City"></oas-table-column>
     </oas-table>
   </div>
 </DemoBlock>
 
-Besides the `columns` attribute / property array, columns also support a declarative child-element channel: `<oas-table-column key title sortable width align fixed ...>`, with attributes aligned to the `TableColumn` fields (booleans are true/false, kebab-case like `serial-number` / `filters`); `title` falls back to the default slot text; a nested `<oas-table-column>` expresses a grouped header (children). Child changes are picked up by a MutationObserver to auto re-render. An explicit `columns` attribute / property takes precedence over the child-element channel. A `<template>` inside a column (used with a `row.field` placeholder for interpolation; see the example above; add `v-pre` on the docs site so Vue doesn't parse it) renders a cell template, cloned and hydrated per cell; the `render` function still takes precedence over the template.
+Besides the `columns` attribute / property array, columns also support a declarative child-element channel: `<oas-table-column data-key title sortable width align fixed ...>`, with attributes aligned to the `TableColumn` fields (booleans are true/false, kebab-case like `serial-number` / `filters`; the column identifier field is `key`, but `key` is a reserved word in Vue templates and gets stripped before reaching the DOM — **write `data-key` in declarative markup** (plain HTML may use `key` directly; the component reads both)); `title` falls back to the default slot text; a nested `<oas-table-column>` expresses a grouped header (children). Child changes are picked up by a MutationObserver to auto re-render. An explicit `columns` attribute / property takes precedence over the child-element channel. A `<template>` inside a column (used with a `row.field` placeholder for interpolation; see the example above; add `v-pre` on the docs site so Vue doesn't parse it) renders a cell template, cloned and hydrated per cell; the `render` function still takes precedence over the template.
 
 > **⚠️ Function fields (“a detail”)**: function types — `render`, `filterMatch`, editor callbacks (functions in `editOptions`) — **cannot be serialized via a child-element attribute or JSON**. Neither the child-element channel nor the `columns` attribute can express them. For columns containing such function fields, assign `columns` as a **property** (build the array in JS), or use the declarative `cellTemplate` (`<template>` + a `row.field` placeholder, a function-free alternative; see the example above) for custom cells.
 

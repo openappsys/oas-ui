@@ -1732,6 +1732,19 @@ describe('OASTable 子元素声明式通道（oas-table-column）', () => {
     expect(el.shadowRoot!.querySelector('th[data-key="name"]')!.textContent).toBe('姓名')
   })
 
+  it('#16 key 双通道：data-key 兜底读取（key 是 Vue 模板保留字会被剥离，Vue 宿主用 data-key）', () => {
+    const el = mountChild(
+      '<oas-table-column data-key="name" title="姓名"></oas-table-column>' +
+        '<oas-table-column data-key="age" title="年龄"></oas-table-column>',
+    )
+    el.setAttribute('data', DATA)
+    // data-key 应等价生效：表头按 key 关联 + 单元格按 row[key] 取值（此前 key 单通道在 Vue 下全空）
+    expect(el.shadowRoot!.querySelector('th[data-key="name"]')!.textContent).toContain('姓名')
+    const firstRowCells = el.shadowRoot!.querySelectorAll('tbody tr.row:first-child td')
+    expect(firstRowCells[0]!.textContent).toBe('张三')
+    expect(firstRowCells[1]!.textContent).toBe('30')
+  })
+
   it('#16 嵌套子列表达多级表头（children → 组头 colspan）', () => {
     const el = mountChild(
       '<oas-table-column key="base" title="基础信息">' +
