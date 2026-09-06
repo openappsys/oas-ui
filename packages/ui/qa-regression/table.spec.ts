@@ -344,9 +344,64 @@ test('table 表头吸顶：非固定列表头纵向 sticky 不被覆盖失效（
   }
 })
 
+test('table 单元格模板 cellTemplate：property 通道注入的模板渲染自定义单元格（docs demo 同路径）', async ({
+  page,
+}) => {
+  // 缺陷固化：cellTemplate demo 的 <template> 子内容被 md/Vue 编译管线吃空（dev 与生产构建
+  // 处理不一致），姓名/价格列全空（用户实测）。demo 改 property 通道（JS 构造 HTMLTemplateElement，
+  // whenDefined 后赋值防升级前 expando 遮蔽）。本断言锁定模板列真实渲染（含插值与样式标记）。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#cell-tpl-table')
+  await page.waitForTimeout(300)
+  const cells = await page.evaluate(() => {
+    const table = document.querySelector('#cell-tpl-table')!
+    const row = table.shadowRoot!.querySelector('tbody tr.row')!
+    return [...row.querySelectorAll('td')].map((td) => ({
+      text: td.textContent!.trim(),
+      hasMark: !!td.querySelector('span, b'),
+    }))
+  })
+  expect(cells[0]!.text, '姓名列模板插值').toBe('张三')
+  expect(cells[0]!.hasMark, '姓名列模板标记（span 徽章）').toBe(true)
+  expect(cells[1]!.text, '价格列模板插值').toContain('128')
+  expect(cells[1]!.hasMark, '价格列模板标记（b 加粗）').toBe(true)
+  expect(cells[2]!.text, '城市列常规渲染').toBe('北京')
+})
+
+test('table 多级表头：非 bordered 模式顶层头行零竖线（竖线只属 bordered 全网格模式）', async ({
+  page,
+}) => {
+  // 设计固化：非 bordered 表全表无纵向分隔线（单层表头/正文一致），分组层级靠「居中大标题跨列 +
+  // 子表头行」表达；竖线只属 :host([bordered])。曾有 th.header-group+th.header-group 左线是
+  // 语言孤例（且只覆盖组/组相邻——用户实测「地址有线、成绩没线」的不一致），已删。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-table')
+  const result = await page.evaluate(() => {
+    const table = [...document.querySelectorAll('oas-table')].find((t) =>
+      [...t.shadowRoot!.querySelectorAll('th')].some((th) => th.textContent!.includes('地址')),
+    )!
+    const sr = table.shadowRoot!
+    const topRowThs = [...sr.querySelectorAll('thead tr')][0]!.querySelectorAll('th')
+    return {
+      bordered: table.hasAttribute('bordered'),
+      borders: [...topRowThs].map((th) => ({
+        text: th.textContent!.trim().slice(0, 4),
+        borderLeft: getComputedStyle(th).borderLeftWidth,
+        borderRight: getComputedStyle(th).borderRightWidth,
+      })),
+    }
+  })
+  expect(result.bordered, '该 demo 应非 bordered').toBe(false)
+  for (const th of result.borders) {
+    expect(th.borderLeft, `${th.text} 左缘应无竖线`).toBe('0px')
+    expect(th.borderRight, `${th.text} 右缘应无竖线`).toBe('0px')
+  }
+})
+
 test('table 子元素声明式通道：Vue 宿主下 key 被剥离也能经 data-key 正常渲染单元格', async ({
   page,
 }) => {
+
   // 缺陷固化：`key` 是 Vue 模板保留字（vnode key），在 Vue 宿主（含文档站）被剥离不到 DOM——
   // 声明式列 key 全空 → 表头有、内容行全空（用户实测）。修复：key 双通道（key ?? data-key），
   // demo 全部改写 data-key。本断言在真实 Vue 宿主（vitepress 页面）验证端到端。

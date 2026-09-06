@@ -198,9 +198,9 @@ th.header-group {
   font-weight: 600;
   border-bottom: 1px solid var(--oas-color-border);
 }
-th.header-group + th.header-group {
-  border-left: 1px solid var(--oas-color-border);
-}
+/* 多级表头不加纵向分隔线：非 bordered 表全表无竖线（单层表头/正文一致），分组层级靠
+   「居中大标题跨列 + 子表头行」表达；竖线只属 bordered 全网格模式（见 :host([bordered]) 规则）。
+   曾有的 th.header-group + th.header-group 左线是同语言孤例（且只覆盖组/组相邻，组/叶头间断开），已删 */
 th.sortable:hover {
   color: var(--oas-color-primary);
 }
