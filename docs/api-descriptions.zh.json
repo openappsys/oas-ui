@@ -1021,16 +1021,31 @@
       "suffix": "内嵌后置文案",
       "suffix-icon": "后置图标名",
       "type": "原生 input 类型",
-      "value": "值（受控）"
+      "value": "值（受控）",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`：高度与字号联动",
+      "variant": "形态：`outlined`（默认描边）/ `filled`（填充底色）/ `borderless`（无框）",
+      "status": "校验态：`error` / `warning` / `success`；error 同步内层 aria-invalid",
+      "count-position": "字数计数位置：`outside`（默认，框外）/ `inside`（输入区内右侧）",
+      "allow-over-max": "超限不截断：maxlength 不再透传原生（可继续输入），计数标红并派发 oas-validate",
+      "show-clear-on": "清除按钮显隐：`always`（默认常显）/ `hover` / `focus`",
+      "auto-width": "宽度随内容自适应（mirror 测宽；空值回落 placeholder 宽），常配 auto-width-min/max 钳制",
+      "auto-width-min": "auto-width 最小宽度 px（默认 72）",
+      "auto-width-max": "auto-width 最大宽度 px 或百分比（默认 100%）"
     },
     "events": {
       "oas-clear": "点击清除，`detail: { originalEvent }`",
       "oas-enter": "按 Enter（非输入法组合），`detail: { value }`",
-      "oas-input": "输入中，`detail: { value }`"
+      "oas-input": "输入中，`detail: { value }`",
+      "oas-focus": "聚焦时派发，`detail: { value }`",
+      "oas-blur": "失焦时派发，`detail: { value }`",
+      "oas-change": "提交语义：失焦/Enter 且值相对上次提交变化时派发，`detail: { value }`",
+      "oas-validate": "allow-over-max 越界状态翻转时派发，`detail: { error: \"exceed-maximum\" | null }`"
     },
     "slots": {
       "prefix": "内嵌前置内容（图标/按钮等复杂内容，分发时优先于 `prefix` 属性文本）；简单文本用 `prefix` 属性即可",
-      "suffix": "内嵌后置内容（图标/按钮等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可"
+      "suffix": "内嵌后置内容（图标/按钮等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可",
+      "prepend": "前置 addon 区（可嵌 select/按钮等任意内容）",
+      "append": "后置 addon 区（可嵌 select/按钮等任意内容）"
     }
   },
   "oas-input-number": {
@@ -1041,12 +1056,29 @@
       "min": "范围，越界自动钳制",
       "precision": "小数位数",
       "step": "步长",
-      "value": "当前值（受控）"
+      "value": "当前值（受控）",
+      "controls": "步进按钮显隐（缺省显示；`controls=\"false\"` 隐藏，键盘 ↑↓ 仍可步进）",
+      "controls-position": "按钮位置：`right`（默认，右侧上下箭头）/ `both`（两侧 −/+，触屏计数器形态）",
+      "prefix": "内嵌前缀文案（slot=\"prefix\" 可分发任意内容，不参与数值解析）",
+      "suffix": "内嵌后缀文案（slot=\"suffix\" 同上）",
+      "format": "Intl 风格声明式格式：`percent`（0.15→15%）/ `currency:USD` / `unit:GB`，跟随宿主 locale",
+      "grouping": "千分位分组显示（解析时自动剥离分组符）",
+      "size": "尺寸档位 `sm` / `md`（默认）/ `lg`：控高与字号联动",
+      "readonly": "只读：可聚焦可复制可提交，按钮禁用 + aria-readonly，键盘/滚轮不改值",
+      "status": "校验态：`error` / `warning` / `success` 边框语义色",
+      "placeholder": "占位文本（参与 aria-label 回退链）",
+      "wheel": "聚焦时滚轮步进（上增下减；默认关防误触）",
+      "step-strictly": "严格步进：提交值吸附最近 step 倍数",
+      "clearable": "有值时显示清除按钮（一键回空值态）"
     },
     "events": {
-      "oas-change": "步进或失焦变化，`detail: { value }`（数字）"
+      "oas-change": "步进或失焦变化，`detail: { value }`（数字）",
+      "oas-clear": "点击清除按钮时派发（值回空值态）"
     },
-    "slots": {}
+    "slots": {
+      "prefix": "前缀内容插槽（不参与数值解析）",
+      "suffix": "后缀内容插槽（不参与数值解析）"
+    }
   },
   "oas-kbd": {
     "attrs": {
@@ -1518,12 +1550,26 @@
       "mask": "星号遮罩",
       "readonly": "只读",
       "type": "格子输入类型",
-      "value": "当前值（受控）"
+      "value": "当前值（受控）",
+      "otp": "OTP 语义：内层格 autocomplete=\"one-time-code\"（拉起系统短信验证码自动填充）",
+      "separator": "分隔符内容（配合 separator-after）",
+      "separator-after": "在第 N 格后插入分隔符（1 起始索引，逗号分隔多个，如 `3,7`；缺省每相邻格之间）",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
+      "placeholder": "空格占位符",
+      "variant": "形态：`outlined`（默认）/ `filled` / `underlined`",
+      "attached": "连体形态：格间无间距共享边框，仅端点圆角",
+      "loading": "提交中：格禁用 + aria-busy + spinner 遮罩，键盘输入全锁",
+      "pattern": "逐字符正则约束（覆盖 type 过滤；非法正则告警回落）",
+      "autofocus": "首次连接聚焦首个空格",
+      "auto-submit": "填满自动提交（找最近 form 调 requestSubmit；无 form 时 no-op）",
+      "success": "成功态绿边框（error 优先）"
     },
     "events": {
       "oas-change": "填满时派发，`detail: { value }`",
       "oas-complete": "填满时派发，`detail: { value }`",
-      "oas-input": "每格输入，`detail: { value, index }`"
+      "oas-input": "每格输入，`detail: { value, index }`",
+      "oas-focus": "焦点进入组件时派发（格间移动不派发），`detail: { index }`",
+      "oas-blur": "焦点离开组件时派发，`detail: { index }`"
     },
     "slots": {}
   },
@@ -1652,10 +1698,24 @@
       "disabled": "禁用",
       "icon": "自定义星星图标（字符或 SVG 标记）",
       "max": "星星数量",
-      "value": "当前分值（受控）"
+      "value": "当前分值（受控）",
+      "readonly": "只读（独立于 disabled：不可交互、正常显示、仍随表单提交）",
+      "size": "尺寸档位 `small` / `medium`（默认 20px）/ `large`（28px）",
+      "color": "选中色（预设名或任意 CSS 色值）",
+      "void-color": "未选中色",
+      "colors": "分段阈值色 JSON 数组（按 max 均分分段，如 `[\"#f5222d\",\"#faad14\",\"#52c41a\"]` 三段）",
+      "texts": "各分值辅助文案（逗号分隔，配 show-text）",
+      "show-text": "显示当前分值对应文案（texts）",
+      "show-score": "只读场景显示分值（配 score-template）",
+      "score-template": "分值模板串，`{value}` 占位（如 `\"{value} 分\"`），优先于 show-text",
+      "void-icon": "未选中图标名（如 heart 配 ♥/♡ 双态）",
+      "icons": "逐值图标 JSON 数组（每值可配不同图标，如笑脸分级 😞😞😐😄😄；property 通道亦可赋数组）",
+      "highlight-selected-only": "仅高亮选中星（其余保持未选中色）",
+      "tooltips": "逐星 tooltip 文案（逗号分隔，hover 星时显示；oas-tooltip 浅集成）"
     },
     "events": {
-      "oas-change": "分值变化，`detail: { value }`"
+      "oas-change": "分值变化，`detail: { value }`",
+      "oas-hover": "hover 星时派发，`detail: { value }`；移出为 `{ value: null }`"
     },
     "slots": {}
   },
@@ -1800,11 +1860,22 @@
       "max": "范围",
       "min": "范围",
       "range": "范围模式：双滑块区间选择，`value` 为 JSON 数组 `[lo, hi]` 或逗号分隔字符串 `\"lo,hi\"`；拖动态互相钳制（lo ≤ hi），事件 `detail.value` 为数组",
-      "reverse": "方向反转：最小值在右端（轨道 `dir=\"rtl\"`），填充区/刻度/自定义滑块位置镜像",
+      "reverse": "方向反转：水平模式最小值在右端（轨道 `dir=\"rtl\"`），垂直模式最小值在上端；填充区/刻度/自定义滑块位置随之镜像",
       "show-input": "右侧显示数值输入框，与滑块双向同步：拖动实时更新输入框；输入数字防抖 300ms 后生效并夹取到 `min`/`max`，Enter/失焦立即提交；范围模式显示 min/max 两个输入框（min 超过 max 时推着 max 移动）",
       "show-tooltip": "滑块上方显示当前值气泡（拖动中临时显示，与 `custom-thumb` 共存）",
-      "step": "步长",
-      "value": "当前值（受控）：单值为数值字符串；`range` 模式为 JSON 数组或逗号分隔字符串"
+      "step": "步长；特殊值 `\"mark\"` 把可选值约束到 `marks` 刻度值集合（拖动/键盘/受控值吸附最近刻度，需搭配 `marks`，缺省回落 1）",
+      "value": "当前值（受控）：单值为数值字符串；`range` 模式为 JSON 数组 `[lo, hi]` 或逗号分隔字符串 `\"lo,hi\"`，交互后写回 JSON 数组字符串（表单收集可直接 `JSON.parse`）",
+      "vertical": "垂直模式：轨道竖直（最小值在下，`reverse` 镜像到上）；刻度标签移到轨道右侧、值气泡默认朝右、show-input 输入框移到轨道下方；高度默认 200px，用 CSS 变量 `--oas-slider-height` 调整",
+      "format": "值气泡模板串：`${value}` 占位符替换为当前值（如 `\"${value}%\"`），不含占位符时原样显示；输出同时进气泡与 `aria-valuetext`；优先级低于 `formatTooltip` 函数",
+      "tooltip-always": "值气泡常显（默认拖动/键盘聚焦时显示）",
+      "tooltip-position": "值气泡方向：top / bottom / left / right；水平默认 top、垂直默认 right，非法值回落默认",
+      "show-stops": "按 `step` 在轨道上渲染刻度点（无标签），经过处高亮；与 `marks` 同时存在时刻度以 marks 为准；刻度点超过 100 个时不渲染",
+      "start-point": "单值模式填充起点（缺省从 `min` 端填充）：值大于起点向右延伸、小于向左延伸；自动夹取到 `[min, max]`；`range` 模式忽略",
+      "size": "尺寸三档：sm / md / lg（也接受 small / medium / large 词表，支持 config-provider 注入），轨道高度与滑块直径联动；非法值回落 md",
+      "color": "填充区/滑块/经过刻度颜色：预设语义色名（primary / success / warning / danger，随暗色主题）映射主题 token；其他值原样透传为 CSS 色值",
+      "track-color": "轨道底色：预设语义色名映射主题 token；其他值原样透传为 CSS 色值",
+      "readonly": "只读（与 `disabled` 分立）：仍可聚焦、值仍参与表单收集，拖动与键盘改值被拦截，视觉不降饱和",
+      "large-step": "键盘大步步进量（Shift+方向键 / PageUp / PageDown 生效）；缺省为 10 × step；每次按键即派发 `oas-input` + `oas-change`"
     },
     "events": {
       "oas-change": "松手确定，`detail: { value }`（单值数字；`range` 模式为 `[lo, hi]` 数组）",
@@ -2145,10 +2216,27 @@
       "readonly": "只读",
       "resize": "尺寸调整",
       "rows": "行数",
-      "value": "值（受控）"
+      "value": "值（受控）",
+      "maxlength": "最大长度（透传原生；配 show-count 显示计数）",
+      "show-count": "显示字数计数（框外右下 n/max；超限变红；aria-live 播报）",
+      "status": "校验态：`error` / `warning` / `success`；error 同步内层 aria-invalid",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
+      "variant": "形态：`outlined`（默认）/ `filled` / `borderless`",
+      "clearable": "显示清除按钮（一键清空，派发 oas-clear + oas-input）",
+      "label": "无障碍名（aria-label 通道，缺省回落 placeholder → locale）",
+      "name": "表单字段名（透传原生）",
+      "autofocus": "自动聚焦（透传原生）",
+      "minlength": "最小长度（透传原生）",
+      "required": "必填标记（透传原生）",
+      "spellcheck": "拼写检查（透传原生）",
+      "wrap": "换行策略（透传原生：soft/hard）"
     },
     "events": {
-      "oas-input": "输入中，`detail: { value }`"
+      "oas-input": "输入中，`detail: { value }`",
+      "oas-focus": "聚焦时派发，`detail: { value }`",
+      "oas-blur": "失焦时派发，`detail: { value }`",
+      "oas-change": "原生 change 语义：失焦且值已变时派发，`detail: { value }`",
+      "oas-clear": "点击清除按钮时派发（同时派发 oas-input）"
     },
     "slots": {}
   },

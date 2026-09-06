@@ -42,6 +42,7 @@ export const en: LocaleMessages = {
   'combobox.loading': 'Loading…',
   'input.clear': 'Clear',
   'input.defaultLabel': 'Input',
+  'textarea.defaultLabel': 'Text area',
   'input.showPassword': 'Show password',
   'input.hidePassword': 'Hide password',
   'mentions.defaultLabel': 'Mentions input',

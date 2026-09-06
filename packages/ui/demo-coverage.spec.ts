@@ -206,6 +206,18 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   input: [
     ['oas-input[clearable] [part="clear"]', 'click', 'demo 带 value，清除钮可见 → oas-clear'],
+    [
+      'oas-input[allow-over-max] input',
+      'fill:这段文本远超最大长度限制用于触发越界校验事件',
+      '超限 + 后续交互致失焦 → oas-validate',
+    ],
+  ],
+  textarea: [
+    ['oas-textarea[clearable] [part="clear"]', 'click', 'demo 带初始内容，清除钮可见 → oas-clear'],
+  ],
+  'input-number': [
+    ['oas-input-number[clearable] [part="clear"]', 'click', 'demo 带 value，清除钮可见 → oas-clear'],
+    ['oas-input-number [part="up"]', 'click', '步进提交 → oas-change'],
   ],
   select: [
     ['oas-select[clearable] [part="clear"]', 'click', '有选中值时清空钮可见 → oas-clear'],
@@ -353,9 +365,9 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   slider: [
     [
-      'oas-slider input[type="range"]:not([hidden]):not([disabled])',
+      '#slider-range input[type="range"]:not([hidden])',
       'click:n1',
-      '点第 2 个可见滑块（demo2 value=30，点击中心 50% → oas-input + oas-change；通用探针点的 demo1 值恰在中心不产生变化）',
+      '点第 2 个可见轨道（range 双滑块 demo value=[20,80]，中心点击 ≈50 → 值变化 → oas-input + oas-change；fill 不支持原生 range，首轨道 hidden 为双滑块实现）',
     ],
   ],
   modal: [

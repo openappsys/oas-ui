@@ -41,14 +41,10 @@
     },
     {
       "name": "addon-before",
-      "type": "string",
-      "default": "",
       "observed": true
     },
     {
       "name": "addon-after",
-      "type": "string",
-      "default": "",
       "observed": true
     },
     {
@@ -89,31 +85,109 @@
       "name": "show-count",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "count-position",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "allow-over-max",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "show-clear-on",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "auto-width",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "auto-width-min",
+      "observed": true
+    },
+    {
+      "name": "auto-width-max",
+      "observed": true
     }
   ],
   "props": [
     {
       "name": "prefix",
       "type": "string"
+    },
+    {
+      "name": "formatter",
+      "type": "((value: string) => string) | null"
+    },
+    {
+      "name": "parser",
+      "type": "((value: string) => string) | null"
     }
   ],
   "events": [
     {
       "name": "oas-input",
-      "detail": "{ value: this.inputEl!.value }"
+      "detail": "{ value: this.rawValue() }"
     },
     {
       "name": "oas-enter",
-      "detail": "{ value: this.inputEl!.value }"
+      "detail": "{ value: this.rawValue() }"
+    },
+    {
+      "name": "oas-focus",
+      "detail": "{ value: this.rawValue() }"
+    },
+    {
+      "name": "oas-blur",
+      "detail": "{ value: this.rawValue() }"
     },
     {
       "name": "oas-clear",
       "detail": "{ originalEvent: new MouseEvent('click') }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: raw }"
+    },
+    {
+      "name": "oas-validate",
+      "detail": "{ error: over ? 'exceed-maximum' : null }"
     }
   ],
   "slots": [
     {
+      "name": "append"
+    },
+    {
       "name": "prefix"
+    },
+    {
+      "name": "prepend"
     },
     {
       "name": "suffix"

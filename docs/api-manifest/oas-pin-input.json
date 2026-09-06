@@ -32,7 +32,7 @@
     {
       "name": "type",
       "type": "string",
-      "default": "text",
+      "default": "number",
       "observed": true
     },
     {
@@ -40,17 +40,90 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "otp",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "separator",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "separator-after",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "outlined",
+      "observed": true
+    },
+    {
+      "name": "attached",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "pattern",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "autofocus",
+      "type": "boolean",
+      "observed": false
+    },
+    {
+      "name": "auto-submit",
+      "type": "boolean",
+      "observed": false
+    },
+    {
+      "name": "success",
+      "observed": false
     }
   ],
   "props": [],
   "events": [
     {
-      "name": "oas-input",
-      "detail": "{ value: code, index: idx }"
+      "name": "oas-focus",
+      "detail": "{ index: idx }"
     },
     {
       "name": "oas-change",
-      "detail": "{ value: code }"
+      "detail": "{ value: current }"
+    },
+    {
+      "name": "oas-blur",
+      "detail": "{ index: idx }"
+    },
+    {
+      "name": "oas-input",
+      "detail": "{ value: code, index: idx }"
     },
     {
       "name": "oas-complete",
