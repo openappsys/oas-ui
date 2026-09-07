@@ -18,15 +18,46 @@
       "name": "disabled",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "block",
+      "observed": true
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "horizontal",
+      "observed": true
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],
   "events": [
     {
       "name": "oas-change",
-      "detail": "{ value: option.value }"
+      "detail": "{ value } | { value: target.value }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "template[slot=\"option\"]"
+    }
+  ],
   "unresolved": []
 }

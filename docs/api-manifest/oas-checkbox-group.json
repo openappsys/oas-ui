@@ -12,13 +12,64 @@
       "name": "disabled",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "options",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "vertical",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "observed": true
+    },
+    {
+      "name": "min",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "options",
+      "type": "CheckboxOption[] | string"
+    }
+  ],
   "events": [
     {
+      "name": "oas-focus"
+    },
+    {
+      "name": "oas-blur"
+    },
+    {
+      "name": "oas-exceed-limit",
+      "detail": "{ value, max }"
+    },
+    {
       "name": "oas-change",
-      "detail": "{ value: [...current] }"
+      "detail": "{ value: next } | { value }"
     }
   ],
   "slots": [

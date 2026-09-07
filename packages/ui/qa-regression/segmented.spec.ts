@@ -19,13 +19,13 @@ test('segmented 未选中项文字对比度达标（text-primary，axe 色彩对
       groupBg: getComputedStyle(group).backgroundColor, // 轨道色，item 与之构成对比对
       selectedChecked:
         items
-          .find((b) => b.getAttribute('aria-checked') === 'true')
-          ?.getAttribute('aria-checked') ?? null,
+          .find((b) => b.querySelector('input')!.checked)
+          ?.querySelector('input')?.checked ?? null,
     }
   })
   // 未选中项应为 text-primary（#18181b），而非 text-secondary（#71717a）——
   // 与 bg-hover 轨道（#f4f4f5）的对比从 4.39:1 提升到 >15:1
   expect(r.unselectedColor).toBe('rgb(24, 24, 27)')
   expect(r.groupBg).toBe('rgb(244, 244, 245)')
-  expect(r.selectedChecked).toBe('true')
+  expect(r.selectedChecked).toBe(true)
 })

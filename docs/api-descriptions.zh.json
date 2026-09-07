@@ -448,13 +448,28 @@
     "attrs": {
       "checked": "是否选中",
       "disabled": "禁用",
-      "indeterminate": "半选状态",
-      "value": "选项标识"
+      "indeterminate": "半选状态（仅视觉，点击仍按两态切换；aria-checked 同步 mixed）",
+      "value": "选项标识",
+      "size": "尺寸档：`small`（14px）/ `medium`（默认 16px）/ `large`（18px），勾选框与字号联动；组级设置统一下发子项，单项显式优先",
+      "status": "校验态：`error` / `warning` / `success`（勾选框着色；error 联动宿主 aria-invalid）",
+      "readonly": "只读：可聚焦可进 Tab 序、值照常提交，但点击（含 Space）不切换（与 disabled 表单语义分立）",
+      "variant": "形态：`default`（默认）/ `card`（卡片：整块可点、选中描边着色、hover 反馈）",
+      "description": "辅助文本：渲染为标签下方次要说明；`slot=\"description\"` 分发富文本时优先",
+      "label-position": "标签位置：`end`（默认，框左文右）/ `start`（文左框右；RTL 下自动镜像）",
+      "check-all": "组内全选标记：勾选 ↔ 子项全选/清空联动，子项变化实时回写勾选/半选态；该项不参与组 value（跨组件属性，由 oas-checkbox-group 读取）"
     },
     "events": {
-      "oas-change": "变化，`detail: { checked, value }`；组为 `detail: { value }`（数组）"
+      "oas-change": "勾选变化，`detail: { checked, value }`",
+      "oas-focus": "勾选框获得焦点",
+      "oas-blur": "勾选框失去焦点",
+      "oas-limit-blocked": "组数量限制拦截信号（组转发为 oas-exceed-limit；单项独立使用时无此拦截）"
     },
-    "slots": {}
+    "slots": {
+      "": "标签内容（可放富文本/链接）",
+      "checked-icon": "自定义选中指示器（template[slot] 或直接元素；未选态回落默认空心轮廓）",
+      "indeterminate-icon": "自定义半选指示器（与 check-all 联动搭配）",
+      "description": "辅助文本分发通道（优先于 description 属性）"
+    }
   },
   "oas-code": {
     "attrs": {
@@ -1720,13 +1735,25 @@
     "attrs": {
       "checked": "是否选中",
       "disabled": "禁用",
-      "name": "原生分组名（组内自动管理）",
-      "value": "选项标识"
+      "name": "原生分组名（跨 Shadow DOM 同名互斥；组内自动分配唯一 name）",
+      "value": "选项标识",
+      "size": "尺寸档：`small`（14px）/ `medium`（默认 16px）/ `large`（18px），圆点与字号联动；组级设置统向下发子项，单项显式优先",
+      "status": "校验态：`error` / `warning` / `success`（圆点着色；error 联动宿主 aria-invalid）",
+      "readonly": "只读：可聚焦可进 Tab 序、值照常提交，但点击（含 Space）与方向键均不切换",
+      "variant": "形态：`default`（默认）/ `card`（卡片：整块可点、选中描边着色、hover 反馈）",
+      "description": "辅助文本：渲染为标签下方次要说明；`slot=\"description\"` 分发富文本时优先",
+      "label-position": "标签位置：`end`（默认，框左文右）/ `start`（文左框右；RTL 下自动镜像）"
     },
     "events": {
-      "oas-change": "变化，`detail: { checked, value }`；组为 `detail: { value }`"
+      "oas-change": "选中变化，`detail: { checked, value }`",
+      "oas-focus": "单选框获得焦点",
+      "oas-blur": "单选框失去焦点"
     },
-    "slots": {}
+    "slots": {
+      "": "标签内容（可放富文本/链接）",
+      "checked-icon": "自定义选中指示器（template[slot] 或直接元素；未选态回落默认空心圆轮廓）",
+      "description": "辅助文本分发通道（优先于 description 属性）"
+    }
   },
   "oas-rate": {
     "attrs": {
@@ -1792,7 +1819,12 @@
     "attrs": {
       "disabled": "禁用整个分段控件（自身显式禁用，或经 config-provider 全局禁用注入继承）",
       "options": "`[{ label, value, disabled? }]` JSON 字符串",
-      "value": "选中值（缺省选第一项，受控属性）"
+      "value": "选中值（缺省选第一项，受控属性）",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
+      "block": "铺满父容器（各项等宽均分）",
+      "direction": "排列方向：`horizontal`（默认）/ `vertical`（联动 aria-orientation 与轴向键）",
+      "name": "原生 radio 组名（原生表单关联；未设自动生成唯一名）",
+      "readonly": "只读：可聚焦不可改选（radiogroup aria-readonly）"
     },
     "events": {
       "oas-change": "切换，`detail: { value }`"
@@ -2081,10 +2113,20 @@
       "disabled": "禁用",
       "loading": "加载态，阻止切换",
       "size": "尺寸：`xs` / `small` / `medium`（默认）/ `large` / `xl`；非法值回落 `medium` 并告警",
-      "unchecked-text": "关闭时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧"
+      "unchecked-text": "关闭时显示的文案；medium/large/xl 在轨道内，xs/small 在轨道外侧",
+      "label": "标签文本（label 通道，点击标签切换；slot 同名插槽可传富内容）",
+      "label-position": "标签位置：`end`（默认，右侧）/ `start`（左侧）",
+      "checked-icon": "选中态滑块图标（oas-icon 图标名）",
+      "unchecked-icon": "未选中态滑块图标",
+      "true-value": "选中时的映射值（读 value getter 取映射值）",
+      "false-value": "未选中时的映射值",
+      "status": "校验态：`error` / `warning` / `success`；error 联动 aria-invalid",
+      "aria-label": "可访问名（宿主覆盖通道，显式设置优先于 label 推导）"
     },
     "events": {
-      "oas-change": "切换，`detail: { checked }`"
+      "oas-change": "切换，`detail: { checked }`",
+      "oas-focus": "聚焦时派发",
+      "oas-blur": "失焦时派发"
     },
     "slots": {}
   },
@@ -2364,7 +2406,12 @@
     "attrs": {
       "disabled": "禁用",
       "pressed": "是否按下（受控）",
-      "value": "值（随事件回传）"
+      "value": "值（随事件回传）",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
+      "icon": "图标（oas-icon 图标名）；无文本时纯图标等宽正方形",
+      "color": "选中色：预设名（--oas-preset-* token）或任意 CSS 色值（自动算文字色）",
+      "status": "校验态：`error` / `warning` / `success`；error 联动 aria-invalid",
+      "aria-label": "可访问名（宿主覆盖通道，写入内部 button）"
     },
     "events": {
       "oas-change": "切换，`detail: { value, pressed }`"
@@ -2374,7 +2421,9 @@
   "oas-toggle-item": {
     "attrs": {
       "disabled": "禁用该项（点击不可选，方向键跳过）",
-      "value": "选项值（子元素声明式通道的数据载体字段）"
+      "value": "选项值（子元素声明式通道的数据载体字段）",
+      "icon": "图标（oas-icon 图标名）；label 可省（纯图标项）",
+      "aria-label": "该项可访问名（纯图标项必填语义；缺省由图标名派生）"
     },
     "events": {},
     "slots": {
@@ -2386,10 +2435,20 @@
       "disabled": "禁用整个切换组（自身显式禁用，或经 config-provider 全局禁用注入继承）",
       "items": "选项 JSON（property 赋值单向反射 attribute）",
       "multiple": "多选模式（checkbox 语义）",
-      "value": "当前值：单选为字符串；多选为 JSON 数组字符串"
+      "value": "当前值：单选为字符串；多选为 JSON 数组字符串",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
+      "color": "选中色：预设名或任意 CSS 色值（自动算文字色）",
+      "status": "校验态：`error` / `warning` / `success`（未选项边框色 + 选中项整块着色）",
+      "vertical": "纵向排列（联动 aria-orientation 与轴向键）",
+      "attached": "贴合形态：邻接项共享边线、首尾圆角（默认分离）",
+      "mandatory": "强制选中：布尔=唯一选中项不可取消；`force`=空态自动选首个非禁用项（向导流零代码）",
+      "max-count": "多选上限：达上限未选项置灰并派 oas-exceed-limit，已选项仍可取消",
+      "spread": "满宽等分（对齐 button-group 的 spread）",
+      "aria-label": "组可访问名（宿主覆盖；缺省走 locale 兜底）"
     },
     "events": {
-      "oas-change": "切换，`detail: { value: string | string[] }`"
+      "oas-change": "切换，`detail: { value: string | string[] }`",
+      "oas-exceed-limit": "达 max-count 上限后的越界选择尝试，`detail: { value, max }`"
     },
     "slots": {}
   },
@@ -2766,5 +2825,48 @@
     },
     "events": {},
     "slots": {}
+  },
+  "oas-checkbox-group": {
+    "attrs": {
+      "value": "组值（JSON 字符串数组，选中项的 value 集合）",
+      "disabled": "禁用整组（下发子项，不覆盖子项自身显式 disabled）",
+      "options": "数据通道：JSON `[{ label, value, disabled?, description?, checkAll? }]`，显式设置时数据驱动优先于子元素声明式",
+      "direction": "布局方向：`vertical`（默认纵向）/ `horizontal`（横向排布自动换行）",
+      "max": "选中数量上限：达上限后未选项置灰拦截并派发 oas-exceed-limit，已选项仍可取消",
+      "min": "选中数量下限：达下限后已选项拦截取消，未选项不受影响",
+      "size": "尺寸档（下发子项）：`small` / `medium`（默认）/ `large`",
+      "status": "校验态（下发子项）：`error` / `warning` / `success`",
+      "readonly": "只读（下发子项）：可聚焦不切换"
+    },
+    "events": {
+      "oas-change": "组值变化，`detail: { value: string[] }`（含全选联动与数量限制内的变化）",
+      "oas-exceed-limit": "达 max 上限后的越界勾选尝试，`detail: { value, max }`",
+      "oas-focus": "组内任一子项获得焦点（子项间转移不误报）",
+      "oas-blur": "焦点离开组时派发"
+    },
+    "slots": {
+      "": "声明式子项通道（`<oas-checkbox>` 子元素；options 显式时让位）",
+      "label": "组标题（渲染进 legend）"
+    }
+  },
+  "oas-radio-group": {
+    "attrs": {
+      "value": "组值（选中项的 value）",
+      "disabled": "禁用整组（下发子项，不覆盖子项自身显式 disabled）",
+      "options": "数据通道：JSON `[{ label, value, disabled?, description? }]`，显式设置时数据驱动优先于子元素声明式",
+      "direction": "布局方向：`vertical`（默认纵向）/ `horizontal`（横向排布自动换行）",
+      "size": "尺寸档（下发子项）：`small` / `medium`（默认）/ `large`",
+      "status": "校验态（下发子项）：`error` / `warning` / `success`；单项显式 status 优先",
+      "readonly": "只读（下发子项）：可聚焦、方向键不切换"
+    },
+    "events": {
+      "oas-change": "组值变化，`detail: { value }`（点击与方向键选中都触发）",
+      "oas-focus": "组内任一子项获得焦点（子项间转移不误报）",
+      "oas-blur": "焦点离开组时派发"
+    },
+    "slots": {
+      "": "声明式子项通道（`<oas-radio>` 子元素；options 显式时让位）",
+      "label": "组标题（渲染进 legend）"
+    }
   }
 }
