@@ -125,6 +125,65 @@ describe('OASTable', () => {
     expect(rowClick).toBe(1)
   })
 
+  it('行内 oas-select 点击不连带 oas-row-click/选中（扩展排除：交互型库组件统一清单）', () => {
+    // 行点击排除清单与 oas-button 同源（ROW_INTERACTIVE_EXCLUSION 单一事实来源），
+    // oas-select 等交互型宿主点击只消费给自身，不触发行选中/重渲染。
+    const el = new OASTable()
+    el.setAttribute('data', DATA)
+    el.columns = [
+      { key: 'name', title: '姓名' },
+      {
+        key: 'op',
+        title: '操作',
+        render: () => {
+          const s = document.createElement('oas-select')
+          s.textContent = '状态'
+          return s
+        },
+      },
+    ]
+    document.body.appendChild(el)
+    let rowClick = 0
+    el.addEventListener('oas-row-click', () => rowClick++)
+    el.shadowRoot!.querySelector<HTMLElement>('td[data-col="op"] oas-select')!.click()
+    expect(rowClick, 'oas-select 点击不应触发行点击').toBe(0)
+    expect(el.getAttribute('selected')).toBeFalsy()
+    // 对照：文本单元格点击 → 行点击正常（扩展排除未误伤普通点击）
+    el.shadowRoot!.querySelector<HTMLElement>('td[data-col="name"]')!.click()
+    expect(rowClick).toBe(1)
+  })
+
+  it('逃生口 data-oas-row-click-ignore：标注容器内的点击不连带 oas-row-click（业务自定义交互内容豁免，无需发版）', () => {
+    // 业务侧行内自定义交互内容（图表/迷你挂件等）标 data-oas-row-click-ignore 即整块豁免
+    // 行点击/行编辑——closest 命中的是容器（原生 span 自身不在排除清单内，逃生口兜底）。
+    const el = new OASTable()
+    el.setAttribute('data', DATA)
+    el.columns = [
+      { key: 'name', title: '姓名' },
+      {
+        key: 'op',
+        title: '操作',
+        render: () => {
+          const wrap = document.createElement('div')
+          wrap.setAttribute('data-oas-row-click-ignore', '')
+          const inner = document.createElement('span')
+          inner.textContent = '迷你图表'
+          wrap.appendChild(inner)
+          return wrap
+        },
+      },
+    ]
+    document.body.appendChild(el)
+    let rowClick = 0
+    el.addEventListener('oas-row-click', () => rowClick++)
+    el.shadowRoot!.querySelector<HTMLElement>('td[data-col="op"] span')!.click()
+    expect(rowClick, '逃生口容器内的点击不应触发行点击').toBe(0)
+    expect(el.getAttribute('selected')).toBeFalsy()
+    // 对照：文本单元格点击 → 行点击正常（逃生口未拦截普通行点击）
+    el.shadowRoot!.querySelector<HTMLElement>('td[data-col="name"]')!.click()
+    expect(rowClick).toBe(1)
+  })
+
   it('checkable：渲染行复选框，勾选派发 oas-check', () => {
     const el = mount({ checkable: '', 'row-key': 'name' })
     let detail: unknown
@@ -843,6 +902,46 @@ describe('OASTable 行内编辑（inline editing）', () => {
     // aria：编辑器有可读名称
     expect(input!.getAttribute('aria-label')).toContain('姓名')
     expect(input!.getAttribute('aria-label')).toContain('张三')
+  })
+
+  it('可编辑格内交互组件（oas-button）双击不进入编辑（排除清单与行点击同源，修复前误入）', () => {
+    // 缺陷固化：双击进编辑前的排除清单（input,select,textarea,button,a）命中不了 <oas-button>
+    // 宿主——可编辑列行内嵌 oas-button（如自定义操作内容）时，双击会误判为「双击编辑」进入编辑态。
+    // 修复=编辑路径与行点击共用同一份交互排除清单（ROW_INTERACTIVE_EXCLUSION）。
+    const el = new OASTable()
+    el.setAttribute('editable', '')
+    el.setAttribute('row-key', 'name')
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '张三', age: 30 },
+        { name: '李四', age: 25 },
+      ]),
+    )
+    el.columns = [
+      {
+        key: 'name',
+        title: '姓名',
+        editable: true,
+        render: () => {
+          const b = document.createElement('oas-button')
+          b.textContent = '改名'
+          return b
+        },
+      },
+      { key: 'age', title: '年龄', editable: true },
+    ]
+    document.body.appendChild(el)
+    const btnTd = cells(el).find((td) => td.getAttribute('data-col') === 'name')!
+    btnTd.querySelector<HTMLElement>('oas-button')!.dispatchEvent(
+      new MouseEvent('dblclick', { bubbles: true }),
+    )
+    expect(btnTd.querySelector('input.cell-editor'), '双击 oas-button 不应进入编辑').toBeNull()
+    expect(el.shadowRoot!.querySelector('[data-editing="true"]')).toBeNull()
+    // 对照：双击同表纯文本可编辑格照常进入编辑（扩展排除未误伤普通双击）
+    const plainTd = cells(el).find((td) => td.getAttribute('data-col') === 'age')!
+    plainTd.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(plainTd.querySelector('input.cell-editor'), '纯文本格双击应照常进入编辑').not.toBeNull()
   })
 
   it('非 editable 列双击不进入编辑', () => {
