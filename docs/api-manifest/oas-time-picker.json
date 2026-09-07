@@ -17,20 +17,93 @@
     {
       "name": "step",
       "type": "string",
-      "default": "1",
+      "default": "",
       "observed": true
     },
     {
       "name": "disabled",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "clearable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "observed": true
+    },
+    {
+      "name": "use12-hours",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "is-range",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "placement",
+      "type": "string",
+      "default": "bottom-start",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "disabledTime",
+      "type": "| ((parts: TimeParts) => { hours?: number[]; minutes?: number[]; seconds?: number[] } | null) | null"
+    },
+    {
+      "name": "presets",
+      "type": "PresetItem[] | null"
+    }
+  ],
   "events": [
     {
+      "name": "oas-open-change",
+      "detail": "{ open: true } | { open: false } | { open: next }"
+    },
+    {
+      "name": "oas-confirm",
+      "detail": "{ value: detail }"
+    },
+    {
+      "name": "oas-focus"
+    },
+    {
+      "name": "oas-blur"
+    },
+    {
       "name": "oas-change",
-      "detail": "{ value }"
+      "detail": "{ value: detail } | { value } | { value: partsToString(p) } | { value: '' }"
+    },
+    {
+      "name": "oas-clear",
+      "detail": "{ value: prevDetail }"
     }
   ],
   "slots": [],

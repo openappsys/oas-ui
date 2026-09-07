@@ -286,6 +286,11 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   'date-picker': [
     ['oas-date-picker:not([disabled]) [part="trigger"]', 'click', '展开日历面板'],
     ['oas-date-picker [part="grid"] .day', 'click', '选日 → oas-change'],
+    ['oas-date-picker[type="daterange"]:not([disabled]) [part="trigger"]', 'click', '展开范围面板'],
+    ['oas-date-picker[type="daterange"] [part="grid"] .day', 'click', '范围起点落选 → oas-calendar-change'],
+    ['oas-date-picker[clearable] [part="clear"]', 'click', '清空钮（校验态 demo 带 value）→ oas-clear'],
+    ['oas-date-picker[type="datetime"]:not([disabled]) [part="trigger"]', 'click', '展开 datetime 面板'],
+    ['oas-date-picker[type="datetime"] [part="confirm"]', 'click', '点「确定」→ oas-confirm'],
   ],
   'time-picker': [
     ['oas-time-picker:not([disabled]) [part="trigger"]', 'click', '展开时间列'],
@@ -295,6 +300,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       '点第 2 个时值（首个即当前选中值，点它不会产生 diff）',
     ],
     ['keyboard', 'press:Enter', '面板聚焦时 Enter → confirm → oas-change'],
+    ['oas-time-picker[clearable] [part="clear"]', 'click', '清空钮（校验态 demo 带 value）→ oas-clear'],
   ],
   upload: [
     ['oas-upload .file-input', 'file', '首个实例加文件 → oas-change'],
@@ -308,6 +314,33 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ],
     ['#upload-full [part="item"] .thumb', 'click', '点缩略图 → oas-preview'],
     ['#upload-full .file-input', 'file:svg', '第 4 张 SVG → 超 max=3 → oas-exceed'],
+    ['#upload-action .file-input', 'file', '真实通道 /api/upload 404 → oas-error'],
+    ['wait:900', 'wait', '等 XHR 失败落定 + 重试按钮渲染'],
+    [
+      '#upload-action .retry',
+      'domclick',
+      '点重试 → oas-retry（DOM click：demo 的 oas-error 监听弹 message 浮层会拦截真实点击）',
+    ],
+    ['#upload-request .file-input', 'file', 'custom-request 慢速通道加文件 → 自动上传'],
+    ['wait:150', 'wait', '等 uploading 态渲染取消钮'],
+    [
+      '#upload-request .act-inline.cancel',
+      'domclick',
+      '上传中取消 → oas-cancel（DOM click 避开页面残留 message 浮层）',
+    ],
+    ['#upload-request .file-input', 'file', '再次加文件 → 自动上传'],
+    ['wait:900', 'wait', '等模拟通道推进到 100% → oas-success'],
+  ],
+  transfer: [
+    ['oas-transfer[searchable] .search-input', 'fill:杭', '面板搜索输入 → oas-search'],
+    ['oas-transfer[searchable] .search-input', 'fill:', '清空搜索恢复行（防过滤空面板堵死后续探针）'],
+    ['oas-transfer:not([disabled]) .option', 'click', '切换左面板首行选中态'],
+    [
+      'oas-transfer:not([disabled]) .option',
+      'click:n1',
+      '再点第 2 行（通用探针可能已翻转首行选中态，双行点击保证选中集非空）',
+    ],
+    ['oas-transfer .actions .to-right', 'click', '点「右移」穿梭 → oas-change'],
   ],
   'toggle-group': [
     ['oas-toggle-group [part="item"]', 'click:n1', '点非默认选中项 → oas-change'],
@@ -320,10 +353,18 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   ],
   'checkbox-group': [],
   'pin-input': [['oas-pin-input [part="cell"]', 'fillall:1', '填满全部格 → oas-change']],
+  'dynamic-input': [
+    ['oas-dynamic-input [part="add"]', 'click', '末尾「添加」→ oas-add'],
+    ['oas-dynamic-input .icon-btn.remove', 'click', '行删除钮 → oas-remove'],
+  ],
   'dynamic-tags': [
     ['oas-dynamic-tags:not([disabled]) [part="input"]', 'fill:tag-x'],
     ['oas-dynamic-tags [part="input"]', 'press:Enter', '回车新增 → oas-add + oas-change'],
     ['oas-dynamic-tags [part="tag-remove"]', 'click', '删标签 → oas-remove'],
+    ['oas-dynamic-tags[clearable] [part="clear"]', 'click', '清空全部 → oas-clear'],
+    ['oas-dynamic-tags [part="tag"]', 'dblclick', '双击标签进原位编辑'],
+    ['oas-dynamic-tags .tag-edit', 'fill:tag-renamed', '编辑输入新值（首实例 tag，非重复值）'],
+    ['oas-dynamic-tags .tag-edit', 'press:Enter', '提交编辑 → oas-edit'],
   ],
   editable: [
     ['oas-editable:not([disabled]) [part="display"]', 'click', '进入编辑'],

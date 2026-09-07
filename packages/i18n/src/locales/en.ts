@@ -253,4 +253,12 @@ export const en: LocaleMessages = {
   'themeEditor.group.controlHeight': 'Control height',
   'themeEditor.group.custom': 'Other',
   'bottomNavigation.nav': 'Bottom navigation',
+  'upload.retry': 'Retry {name}',
+  'upload.cancelUpload': 'Cancel upload {name}',
+  'transfer.count': '{selected}/{total}',
+  'dynamicTags.patternMismatch': 'Invalid format',
+  'dynamicInput.moveUp': 'Move up',
+  'dynamicInput.moveDown': 'Move down',
+  'timePicker.now': 'Now',
+  'datePicker.shortcutThisQuarter': 'This quarter',
 }
