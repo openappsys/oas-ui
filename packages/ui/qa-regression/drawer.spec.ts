@@ -305,3 +305,109 @@ test('drawer 面板打开后可视位置在视口内（CSS 顺序回归：placem
     await page.waitForTimeout(600)
   }
 })
+
+test('drawer 面板内点击不透传遮罩：document 根委托可达、面板内点击不误关、遮罩本体可关、visible 回写', async ({
+  page,
+}) => {
+  // 曾现风险：panel 上 stopPropagation 阻断 document 级根事件委托（React 等宿主收不到
+  // 面板内原生 click）；关闭后宿主 visible attribute 是否同步移除
+  await page.goto('/components/drawer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-drawer')
+  await page.evaluate(() => {
+    document.querySelector('#drawer-ctrl')?.setAttribute('visible', '')
+  })
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('#drawer-ctrl')
+        ?.shadowRoot?.querySelector('[part="panel"]')
+        ?.getAttribute('data-open') === '',
+    null,
+    { timeout: 5000 },
+  )
+  // 挂 document 级原生 click 委托（根事件委托宿主等价物）
+  await page.evaluate(() => {
+    ;(window as any).__docClicks = 0
+    ;(window as any).__onDocClick = () => (window as any).__docClicks++
+    document.addEventListener('click', (window as any).__onDocClick)
+  })
+  try {
+    // 点面板 body 空白：document 委托收到且不误关
+    await page.evaluate(() => {
+      const p = document.querySelector('#drawer-ctrl')!.shadowRoot!.querySelector<HTMLElement>(
+        '[part="body"]',
+      )!
+      p.click()
+    })
+    await page.waitForFunction(() => (window as any).__docClicks >= 1, null, { timeout: 5000 })
+    const stillOpen = await page.evaluate(() =>
+      document.querySelector('#drawer-ctrl')?.hasAttribute('visible'),
+    )
+    expect(stillOpen, '点面板空白不得触发遮罩关闭').toBe(true)
+    // 点 ✕：委托同样收到，关闭路径照常
+    await page.evaluate(() => {
+      const p = document.querySelector('#drawer-ctrl')!.shadowRoot!.querySelector<HTMLElement>(
+        '[part="close"]',
+      )!
+      p.click()
+    })
+    await page.waitForFunction(() => (window as any).__docClicks >= 2, null, { timeout: 5000 })
+    await page.waitForFunction(
+      () => !document.querySelector('#drawer-ctrl')?.hasAttribute('visible'),
+      null,
+      { timeout: 5000 },
+    )
+    // 遮罩本体点击仍能关闭（重开后点 mask）
+    await page.evaluate(() => {
+      document.querySelector('#drawer-ctrl')?.setAttribute('visible', '')
+    })
+    await page.waitForFunction(
+      () => document.querySelector('#drawer-ctrl')?.hasAttribute('visible') === true,
+      null,
+      { timeout: 5000 },
+    )
+    await page.evaluate(() => {
+      const el = document.querySelector('#drawer-ctrl')!
+      ;(el.shadowRoot!.querySelector('.mask') as HTMLElement).click()
+    })
+    await page.waitForFunction(
+      () => !document.querySelector('#drawer-ctrl')?.hasAttribute('visible'),
+      null,
+      { timeout: 5000 },
+    )
+    const clicks = await page.evaluate(() => (window as any).__docClicks)
+    expect(clicks, 'panel 内每次点击都应冒泡到 document 委托').toBeGreaterThanOrEqual(2)
+  } finally {
+    await page.evaluate(() => {
+      document.removeEventListener('click', (window as any).__onDocClick)
+    })
+  }
+})
+
+test('drawer title 动态更新：打开态 setAttribute title → 标题区文本即时更新（消费式，非仅首连一次）', async ({
+  page,
+}) => {
+  await page.goto('/components/drawer.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-drawer')
+  await page.evaluate(() => {
+    const el = document.querySelector('#drawer-ctrl')!
+    el.setAttribute('visible', '')
+    el.setAttribute('title', '动态更新标题')
+  })
+  await page.waitForFunction(() => {
+    const el = document.querySelector('#drawer-ctrl')
+    const text = el?.shadowRoot?.querySelector('[part="title"]')?.textContent ?? ''
+    return text.includes('动态更新标题')
+  }, null, { timeout: 5000 })
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#drawer-ctrl')!
+    return {
+      text: el.shadowRoot!.querySelector('[part="title"]')!.textContent,
+      residue: el.hasAttribute('title'),
+      visible: el.hasAttribute('visible'),
+    }
+  })
+  expect(r.text).toBe('动态更新标题')
+  expect(r.residue, '新 title 吸收后宿主不得残留原生 title').toBe(false)
+  expect(r.visible, '动态改标题不影响打开态').toBe(true)
+})

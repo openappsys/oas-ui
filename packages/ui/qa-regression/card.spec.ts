@@ -63,3 +63,19 @@ test('card title 吸收：宿主不残留原生 title（消除整卡悬浮 toolt
   expect(r.residue, '任何卡片宿主都不应残留原生 title（整卡悬停不弹原生提示）').toBe(0)
   expect(r.renderedTitles, '带 title 的卡片应照常渲染标题区').toBeGreaterThan(0)
 })
+
+test('card title 动态更新：连接后 setAttribute title → 标题区文本即时更新（消费式，非仅首连一次）', async ({
+  page,
+}) => {
+  // 反馈称 title 只读一次不再同步——实证消费式属性：任意时刻 set 都吸收渲染
+  await page.goto('/components/card.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-card')
+  const ok = await page.evaluate(() => {
+    const card = document.querySelector('oas-card')
+    if (!card) return false
+    card.setAttribute('title', '动态更新标题')
+    const text = card.shadowRoot?.querySelector('[part="title"]')?.textContent ?? ''
+    return text === '动态更新标题' && !card.hasAttribute('title')
+  })
+  expect(ok, 'setAttribute title 后标题区应即时更新、宿主不残留原生 title').toBe(true)
+})
