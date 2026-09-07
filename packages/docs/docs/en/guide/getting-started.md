@@ -99,7 +99,7 @@ Rendering and attribute passing need no wrappers in any of the three environment
 
 ### React event bridging (`@oas-ui/react`)
 
-**React 19 does not map `onXxx` props to kebab-case custom events**: in `<oas-button onOasSubmit={...}>` the `onOasSubmit` is never treated as an event listener (event props on custom elements are ignored), so it cannot catch the `oas-submit` the component dispatches. On the React side you must `addEventListener` manually; the recommended generic bridge is `@oas-ui/react` (client-only hooks, zero runtime dependencies):
+**React 19's custom-element event bridging has a spelling trap**: only the "on + lowercase literal" form works — `<oas-button onoas-submit={...}>` does catch `oas-submit`, but the idiomatic camelCase form `<oas-button onOasSubmit={...}>` silently fails (the prop is never mapped to an `oas-submit` listener on custom elements), and lowercase dashed prop names are hostile to TS/JSX typing. On the React side the recommended path is the generic bridge package `@oas-ui/react` (client-only hooks, zero runtime dependencies, works on React 17/18 too):
 
 ```bash
 pnpm add @oas-ui/react
