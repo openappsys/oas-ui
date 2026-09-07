@@ -125,13 +125,10 @@ function Demo() {
 
 For a single event use `useOasEvent<Detail>(ref, 'oas-submit', handler)`. Both hooks always run the latest closure after re-renders and unbind automatically on unmount; event names must carry the `oas-` prefix. Full details live in `packages/react/README.md` or [@oas-ui/react on npm](https://www.npmjs.com/package/@oas-ui/react).
 
-**Capability sub-packages (opt-in advanced features)**: a few components split heavy optional
-capabilities into standalone sub-packages. When importing a component on demand, these capabilities
-are **not included by default** (the related options silently no-op with a dev-mode warning) — import
-only what you use; importing a sub-package registers it automatically:
+**Capability sub-packages (heavy capabilities ship with the main entry)**: a few components split heavy optional capabilities into standalone sub-packages that are bundled into the component's **main entry** — importing `@oas-ui/ui/<group>/<component>` from any main path includes every capability by default (import registers it; no extra import needed):
 
-| Component | Capability | Subpath |
-| --------- | ---------- | ------- |
+| Component | Capability (shipped with the main entry) | Capability subpath (for `/core`) |
+| --------- | ---------------------------------------- | -------------------------------- |
 | `oas-table` | Inline editing (`editable` / `editor` / `actions`) | `@oas-ui/ui/data/table/edit` |
 | `oas-tabs` | Double-click rename / context menu / drag-sort (`editable` / `context-menu` / `sortable`) | `@oas-ui/ui/navigation/tabs/manager` |
 | `oas-modal` | Prompt dialog (`modal.prompt()`) | `@oas-ui/ui/feedback/modal/prompt` |
@@ -139,13 +136,17 @@ only what you use; importing a sub-package registers it automatically:
 | `oas-color-picker` | 2D color field / gradient designer (`mode="gradient"`) | `@oas-ui/ui/form/color-picker/designer` |
 
 ```ts
-import '@oas-ui/ui/data/table'
-import '@oas-ui/ui/data/table/edit' // adds inline editing
+import '@oas-ui/ui/data/table' // the main entry already includes inline editing
 ```
 
-Import order does not matter: capabilities registered later are retroactively applied to
-**already-mounted** elements. The full entry `@oas-ui/ui` and the CDN family bundles already
-include every capability — no extra imports needed there.
+If you prefer a lean core, import the new `/core` path of these components instead (e.g. `@oas-ui/ui/data/table/core`) — it omits the capabilities above, so the related options silently no-op with a dev-mode warning once; add the capability sub-path explicitly (import registers it) or switch back to the main entry when you need them:
+
+```ts
+import '@oas-ui/ui/data/table/core' // pure core: no inline editing
+import '@oas-ui/ui/data/table/edit' // explicit capability import (core path only)
+```
+
+Import order does not matter: capabilities registered later are retroactively applied to **already-mounted** elements. The full entry `@oas-ui/ui` and the CDN family bundles already include every capability — no extra imports needed there.
 
 > Want to see it live? The repo ships a [Playground](https://github.com/openappsys/oas-ui/tree/main/packages/playground) for React / Vue — run `pnpm dev:react` / `pnpm dev:vue` locally.
 

@@ -7,9 +7,9 @@ import {
 } from './index.js'
 import { registerAppHost, unregisterAppHost } from '../../framework/app/app-host.js'
 import { iconRegistry } from '@oas-ui/icons'
-// prompt 用例语义零变化：核心入口（feedback/modal）默认不含 prompt 能力包，
-// 测试文件显式 import 能力包（静态 import 即注册）后，以下 prompt 用例全部跑「能力已注入」路径
-// （core-only 边界行为由 oas-modal-prompt-capability.test.ts 单独覆盖）
+// prompt 用例经主路径 index 已默认含 prompt 能力（v2.5.0 语义：主路径内置能力包），
+// 本文件仍显式 import 能力包（幂等冗余，与族包/全量入口同注册路径），prompt 用例全部
+// 跑「能力已注入」路径（纯核 core 入口边界由 oas-modal-prompt-capability.test.ts 单独覆盖）
 import './prompt/index.js'
 
 function okButton(el: Element): HTMLButtonElement {

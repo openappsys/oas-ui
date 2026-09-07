@@ -506,9 +506,9 @@ export interface PopoverContextmenuCapability {
   resolveResponsive(raw: string): string
 }
 
-/** contextmenu 能力未 import 的告警文案（按需 ESM 消费者用；全量入口/反馈族包已含能力，不会触发） */
+/** contextmenu 能力未注入的告警文案（仅纯核入口 feedback/popover/core 消费者会触发；主路径已默认内含能力） */
 const CONTEXTMENU_CAPABILITY_HINT =
-  '[oas-popover] contextmenu 能力未启用：检测到 trigger=contextmenu / long-press-delay / placement·size 断点简写配置，右键光标定位、触屏长按与断点响应已静默失效（trigger=contextmenu 的基础右键触发仍可用）。请按需 import "@oas-ui/ui/feedback/popover/contextmenu"（全量入口 @oas-ui/ui 与 CDN 反馈族包已内含，无需额外引用）'
+  '[oas-popover] contextmenu 能力未注入：检测到 trigger=contextmenu / long-press-delay / placement·size 断点简写配置，右键光标定位、触屏长按与断点响应已静默失效（trigger=contextmenu 的基础右键触发仍可用）。主路径 @oas-ui/ui/feedback/popover 已默认内含该能力；仅纯核路径 feedback/popover/core 需要显式 import "@oas-ui/ui/feedback/popover/contextmenu"（import 即注册）或改从主路径引入。'
 
 /** contextmenu 能力告警去重（同值去重，同控件惯例） */
 const warnedContextmenuCapability = new Set<string>()
@@ -1807,7 +1807,7 @@ export class OASPopover extends OASElement {
     return /(^|\s)[A-Za-z]+:/.test(v)
   }
 
-  /** contextmenu 能力未注入但检测到右键族配置时 dev 告警（同值去重，提示按需 import 能力包）。
+  /** contextmenu 能力未注入但检测到右键族配置时 dev 告警（同值去重，提示纯核消费者显式 import 能力包或换回主路径）。
    *  placement/size 判空走原生 getAttribute（不落 getAttr 默认值——API 扫描器按 getAttr
    *  推断文档默认，空串回退会覆盖 position/syncSize 的 'top'/'medium' 语义默认）。 */
   private warnContextmenuCapability(): void {

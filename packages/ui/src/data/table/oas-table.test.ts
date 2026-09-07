@@ -4,8 +4,9 @@ import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
 import { OASTable } from './index.js'
 import { applyColumnReorder } from './oas-table-column-settings.js'
-// 既有行内编辑用例语义零变化：组装后的 OASTable 默认（核心入口）不含编辑能力，
-// 测试文件显式 import 编辑能力包（静态 import 即注册）后，以下编辑用例全部跑「能力已注入」路径
+// 行内编辑用例经主路径 index 已默认含编辑能力（v2.5.0 语义：主路径内置能力包）；
+// 本文件仍显式 import 编辑能力包（幂等冗余，与族包/全量入口同注册路径）。
+// 纯核 core 入口（不含编辑能力）的静默失效边界见 oas-table-edit-capability.test.ts。
 import './edit/index.js'
 
 const COLUMNS = JSON.stringify([

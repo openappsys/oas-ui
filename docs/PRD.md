@@ -1016,11 +1016,26 @@ table 组件按能力并集补齐（列设置/多列排序/多级表头/内置�
 - 全量单测 5142 / typecheck 0 / build / api:check / trace 0 命中
 - 全量 e2e 1616 全过（chromium 全量 + firefox 抽样 + docs-site）
 
-## v2.5.0 React 宿主桥接包 @oas-ui/react（🚧 进行中）
+## React 宿主桥接包 @oas-ui/react + L3 子路径语义修正（未发布）
 
 ### 功能定义
 
 通用 React 自定义事件桥接包。背景：React 19 不会把 `onXxx` prop 桥接到 kebab-case 自定义事件（`onOasSubmit` 收不到组件派发的 `oas-submit`），而 `@oas-ui/nuxt` / `@oas-ui/next` 是 SSR 专用封装——缺一个纯客户端的通用 React 桥接层，把 `oas-*` CustomEvent 桥接为 hooks。
+
+### L3 子路径语义修正（回归根治）
+
+**背景**：v2.4.1 把 tabs/table/modal/color-picker/popover 的重型能力拆成 L3 能力包后，组件子路径入口变成 core-only（如 `@oas-ui/ui/navigation/tabs` 不再含 manager 能力）。既有子路径消费者在 2.4.1 升级后能力静默失效（dev 告警一次、生产无声）——真实回归。
+
+**方案（语义翻转）**：
+
+- **子路径入口默认带能力**：五个组件的主路径 `index.ts` 顶部内置能力 import，恢复 2.4.0 的「同一组件任何主路径引入行为一致」语义——`@oas-ui/ui/data/table` 即含行内编辑、`@oas-ui/ui/navigation/tabs` 即含 manager、`@oas-ui/ui/feedback/modal` 即含 prompt、`@oas-ui/ui/form/color-picker` 即含 designer、`@oas-ui/ui/feedback/popover` 即含 contextmenu
+- **新增 `/core` 纯核路径**：五个组件各新建 `core/index.ts`（= 原 core-only 入口），显式 opt-in 才走纯核瘦身；exports 通配 `"./*": "./dist/*/index.js"` + preserveModules，`@oas-ui/ui/<组>/<组件>/core` 自动可解析，无需改 package.json
+- **dev 告警文案更新**：五处 hint 由「请按需 import 能力包」改为「主路径已内含该能力；仅 /core 纯核路径需显式 import 能力包或换回主路径」
+- **全量入口 / CDN 族包 / 能力晚加入订阅**均不变（注册表同名幂等）
+
+**迁移说明**：2.4.1 期间显式 `import '@oas-ui/ui/<...>/<能力包>'` 的消费者无需改动（幂等冗余）；只 import 子路径入口的消费者升级后自动恢复能力。要用纯核瘦身的消费者从主路径改到 `<组件>/core` 并自行按需补引能力包。
+
+**验收**：五组件各新增入口语义测试对（主路径 `entry.test.ts` 断言能力已激活 / `core-entry.test.ts` 断言纯核静默失效 + 告警一次）；既有 capability/latejoin 测试改引 `core` 后不回归；五组件目录 vitest 全绿 + typecheck 通过。
 
 ### 详细需求
 

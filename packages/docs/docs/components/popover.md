@@ -524,7 +524,7 @@
 
 `trigger="contextmenu"` 右键在**光标处**打开面板（不再锚定触发元素中心）；触屏设备上按住长按同样在触点处打开（移动端没有右键），长按时长可用 `long-press-delay` 调整（ms，默认 500）。打开后滚动页面，面板回到触发元素侧跟随（光标点没有滚动语义）。
 
-> **按需引入 contextmenu 能力**：右键光标定位、触屏长按与下方 placement/size 断点简写属于独立能力包（子路径 `@oas-ui/ui/feedback/popover/contextmenu`，import 即注册、零运行时开销）。核心入口（core-only）不含这些增强——此时 `trigger="contextmenu"` 仍支持基础右键触发打开面板（锚定触发元素，core 行为），但不定位光标、无长按与断点响应（控制台会提示按需引入）。全量入口 `@oas-ui/ui` 与 CDN 反馈族包已内含该能力，无需额外引用（下方 demo 走全量入口）。
+> **contextmenu 能力（主路径已默认内含）**：右键光标定位、触屏长按与 placement/size 断点简写属于独立能力包（子路径 `@oas-ui/ui/feedback/popover/contextmenu`，import 即注册）；主路径 `@oas-ui/ui/feedback/popover` 已默认内含，无需显式引用（下方 demo 走全量入口同样已内含）。若改用纯核入口 `@oas-ui/ui/feedback/popover/core` 引入，则不含这些增强——此时 `trigger="contextmenu"` 仍支持基础右键触发打开面板（锚定触发元素，core 行为），但不定位光标、无长按与断点响应（控制台 dev 告警提示显式 import 能力包或换回主路径）。
 
 <DemoBlock title="contextmenu 光标定位（右键 / 触屏长按）">
   <oas-popover trigger="contextmenu" title="光标菜单" placement="right" arrow="false" long-press-delay="800">
@@ -576,7 +576,7 @@
 
 ## 断点响应与触发细调
 
-`placement` / `size` 支持断点简写（协议同 space/grid）：`"bottom md:right"` = 基础值 + 空格分隔的 `断点:值`（sm=640 / md=768 / lg=1024 / xl=1280，移动优先 min-width）——窄屏在下方、≥768px 在右侧。断点响应属于 contextmenu 能力包（见上文「按需引入 contextmenu 能力」，core-only 回落基础值）。`trigger="mousedown"` 按下即开（无需抬起，比 click 快一拍）。
+`placement` / `size` 支持断点简写（协议同 space/grid）：`"bottom md:right"` = 基础值 + 空格分隔的 `断点:值`（sm=640 / md=768 / lg=1024 / xl=1280，移动优先 min-width）——窄屏在下方、≥768px 在右侧。断点响应属于 contextmenu 能力包（主路径默认内含，见上文「contextmenu 能力」；纯核 core 入口回落基础值）。`trigger="mousedown"` 按下即开（无需抬起，比 click 快一拍）。
 
 <DemoBlock title="placement 断点简写（拖动窗口宽度看切换）">
   <oas-popover title="断点放置" content="窗口 < 768px 面板在下方；≥ 768px 面板在右侧。" placement="bottom md:right">
@@ -803,7 +803,7 @@ onMounted(() => {
 | `hover-delay` | hover 触发时打开防抖延时（毫秒，默认 150；未设置回落 open-delay） | `string` | — |
 | `hover-hide-delay` | hover 触发时关闭防抖延时（毫秒，默认 100；未设置回落 close-delay） | `string` | — |
 | `initial-focus` | 打开时聚焦指定选择器元素（宿主 light DOM 优先，含 slot 内容；解析不到回落 focus-on-open），优先级高于 focus-on-open | `string` | — |
-| `long-press-delay` | 触屏长按触发延迟毫秒数（默认 500；仅 contextmenu 触发生效，属独立能力包，按需引入见上文） | — | — |
+| `long-press-delay` | 触屏长按触发延迟毫秒数（默认 500；仅 contextmenu 触发生效，属 contextmenu 能力包，能力语义见上文） | — | — |
 | `modal` | modal 化：全屏遮罩 + 焦点陷阱（Tab 面板内循环）+ 滚动锁 + aria-modal；点击遮罩关闭 | `boolean` | — |
 | `offset` | 双轴偏移：`"主轴距离"` 或 `"主轴距离, 交叉轴偏移"`（px，默认 8, 0），如 `offset="12, 20"` | — | — |
 | `open` | 受控显示（布尔属性，存在即显示） | `boolean` | — |

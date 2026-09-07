@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { OASPopover } from './index.js'
+import { OASPopover } from './core/index.js'
 
 // 本文件验证「contextmenu 能力晚加入（late-join）」：宿主构造/连接时能力注册表为空，
 // 之后能力包才注册（入口求值顺序、打包器重排、按需反向引入、动态 import 等场景），
 // 宿主应经订阅通知幂等补齐 contextmenu 能力 controller（触屏长按随 hostConnected 绑定触发元素），
 // 而不是永久静默失效。
+// 基准入口走纯核 ./core/index.js（主路径 index 已默认含能力，无「晚加入」观察窗口）；
 // vitest 按文件隔离模块图，本文件独享一份空注册表起点（首个动态 import 前 contextmenu 未注册）。
 // 长按为唯一纯能力 DOM 行为（core 不绑 touch 监听）：未注入时长按不打开、注入后长按打开。
 

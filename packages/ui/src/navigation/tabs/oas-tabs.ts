@@ -50,8 +50,9 @@ export interface TabsManagerCapability {
   decorateTab(tab: HTMLElement, tablist: HTMLElement, value: string, disabled: boolean): void
 }
 
-/** manager 能力未 import 的告警文案（按需 ESM 消费者用；全量入口/导航族包已含 manager 能力，不会触发） */
-const TABS_MANAGER_CAPABILITY_HINT = '[oas-tabs] manager 能力未启用：检测到 context-menu / sortable / editable 配置，但未 import manager 能力包，相关配置已静默失效。请按需 import "@oas-ui/ui/navigation/tabs/manager"（全量入口 @oas-ui/ui 与 CDN 导航族包已内含，无需额外引用）'
+/** manager 能力未注入的告警文案（仅纯核入口 navigation/tabs/core 消费者会触发；主路径已默认内含能力） */
+const TABS_MANAGER_CAPABILITY_HINT =
+  '[oas-tabs] manager 能力未注入：检测到 context-menu / sortable / editable 配置但能力缺失，相关配置已静默失效。主路径 @oas-ui/ui/navigation/tabs 已默认内含该能力；仅纯核路径 navigation/tabs/core 需要显式 import "@oas-ui/ui/navigation/tabs/manager"（import 即注册）或改从主路径引入。'
 
 /** manager 能力告警去重（同值去重，同控件惯例） */
 const warnedManagerCapability = new Set<string>()
@@ -1520,7 +1521,7 @@ export class OASTabs extends OASElement {
     this.emit(kind, detail)
   }
 
-  /** manager 能力未注入但检测到其配置时 dev 告警（同值去重，提示按需 import manager 能力包） */
+  /** manager 能力未注入但检测到其配置时 dev 告警（同值去重，提示纯核消费者显式 import manager 能力包或换回主路径） */
   private warnManagerCapability(): void {
     if (this.managerCap) return
     const needsManager =

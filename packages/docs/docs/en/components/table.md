@@ -131,7 +131,7 @@ In the column config, `fixed: 'left' | 'right'` makes that column's header and c
 
 Set `editable` to enable inline editing; mark editable columns with `editable: true` on the column config (`editor: 'input'` for text / `editor: 'select'` for a dropdown with `editOptions`), and `actions: true` renders an operation column (Edit / Save / Cancel buttons). Double-click a cell, or focus it and press Enter / F2, to start editing: Enter or blur submits, Esc cancels; submit emits `oas-edit` (`detail: { rowIndex, key, column, value }`), cancel emits `oas-edit-cancel`. Submitting an empty value restores the original (non-destructive by default).
 
-> **Opt-in the editing capability**: the core entry `@oas-ui/ui/data/table` (core-only) ships without the editing machinery — inline editing is a separate capability package. ESM on-demand consumers must explicitly `import '@oas-ui/ui/data/table/edit'` (static import registers it, zero runtime overhead; without it `<oas-table editable>` silently no-ops and logs a hint). The full entry `@oas-ui/ui` and the CDN data family already include the editing capability, so no extra import is needed (the demos below use the full entry).
+> **Inline editing ships with the main entry**: the main entry `@oas-ui/ui/data/table` already bundles the editing capability (import registers it) — no explicit import needed (the demos below use the full entry, which also includes it). If you want a lean core without the editing machinery, import the pure-core entry `@oas-ui/ui/data/table/core` instead — it omits the capability, so `<oas-table editable>` silently no-ops with a dev hint; explicitly `import '@oas-ui/ui/data/table/edit'` (import registers it) or switch back to the main entry.
 
 Editable cells come with perceptible affordances: hovering or focusing (focus-visible) a cell reveals a subtle background tint and a pencil icon at the top-right (the icon never intercepts interaction), and the cell carries a `title` hint ("Double-click to edit"). Three ways to start editing: double-click, or focus the cell and press Enter / F2.
 
@@ -466,9 +466,9 @@ onMounted(() => {
   }
 
   // Inline editing demo: feedback
-  // (docs load the full entry @oas-ui/ui, which bundles the editing capability; on-demand
-  //  ESM users must explicitly `import '@oas-ui/ui/data/table/edit'` to enable editing —
-  //  otherwise the table stays silently non-editable)
+  // (docs load the full entry @oas-ui/ui, which bundles the editing capability; consumers of the
+  //  pure-core entry data/table/core must explicitly `import '@oas-ui/ui/data/table/edit'` to
+  //  enable editing — otherwise the table stays silently non-editable)
   const editTable = document.querySelector('#table-edit')
   editTable?.addEventListener('oas-edit', (e) => {
     const { key, column, value } = e.detail

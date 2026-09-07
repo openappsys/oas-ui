@@ -6,14 +6,15 @@ import {
 } from '../oas-table-edit.js'
 
 /**
- * table 编辑能力包入口（按需 ESM 子路径 `@oas-ui/ui/data/table/edit`）。
+ * table 编辑能力包入口（ESM 子路径 `@oas-ui/ui/data/table/edit`）。
  *
  * import 即注册：本模块求值即把编辑能力 controller 工厂写入 table 能力注册表，
  * 后续构造的 <oas-table>（OASTableBase 遍历注册表注入）自动获得行内编辑能力。
- * 未 import 本模块时，核心入口（data/table）只含骨架 + 列设置，`editable`/`actions`
- * 配置静默失效并触发 dev 告警（见 oas-table.ts 的 warnEditCapability）。
  *
- * 全量入口（@oas-ui/ui）与 CDN 数据族包（cdn/data）已内含本模块，其消费者无需显式引用。
+ * 主路径入口（data/table/index）已默认 import 本模块，其消费者无需显式引用；
+ * 仅纯核入口（data/table/core）不含本能力——用到 `editable`/`actions` 配置时需显式
+ * import 本模块（否则配置静默失效并 dev 告警一次，见 oas-table.ts 的 warnEditNotImported）。
+ * 全量入口（@oas-ui/ui）与 CDN 数据族包同样已内含。
  */
 registerTableCapability('edit', (host) => createEditController(host as HTMLElement & TableEditHost))
 

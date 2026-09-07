@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { OASColorPicker } from './index.js'
+import { OASColorPicker } from './core/index.js'
 
 // 本文件验证「designer 能力晚加入（late-join）」：宿主构造时能力注册表为空，
 // 之后能力包才注册（入口求值顺序、打包器重排、按需反向引入、动态 import 等场景）。
 // 2D 色域/渐变编辑区由 template() 在首渲染一次性输出，因此补齐注入须发生在宿主连接渲染前
 // （construct → import → connect 顺序）；已连接后再 import 的能力 attach 就绪但模板已定，
 // designer 结构不会追补（组件按能力注册前结构渲染，属设计边界，本文件只覆盖可补齐路径）。
+// 基准入口走纯核 ./core/index.js（主路径 index 已默认含能力，无「晚加入」观察窗口）；
 // vitest 按文件隔离模块图，本文件独享一份空注册表起点（首个动态 import 前 designer 未注册）。
 // DOM 可观察标记：`.sv2d`/`.hue`（designer 专属结构，core-only 模板不含）。
 

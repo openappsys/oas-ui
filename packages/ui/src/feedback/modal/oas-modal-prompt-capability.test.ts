@@ -1,13 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll, vi } from 'vitest'
-import { modal, destroyAll } from './index.js'
+import { modal, destroyAll } from './core/index.js'
 import { OASModal } from './oas-modal.js'
 
-// 本文件验证 modal「prompt 能力包未 import（core-only）」的边界行为：
+// 本文件验证 modal「prompt 能力包未 import（纯核 core 入口）」的边界行为：
 // modal.prompt 返回 null + dev 告警（同值去重）；import 能力包后 prompt 全链路可用。
 //
 // 注意：
-// 1) 不得在文件顶部静态 import './prompt/index.js'——否则能力注册表被填充，core-only 语义失效。
-//    全链路 describe 用动态 import 在「core-only describe」之后才注册（vitest 按文件隔离模块图，
+// 1) 不得在文件顶部静态 import './prompt/index.js' 或 './index.js'——否则能力注册表被填充，
+//    core-only 语义失效（主路径 index 已默认含能力；纯核走 ./core/index.js）。
+//    全链路 describe 用动态 import 在「纯核 describe」之后才注册（vitest 按文件隔离模块图，
 //    本文件与 modal.test.ts 的注册表互不影响）。
 // 2) 告警去重是模块级（同控件惯例：同值告警整页只一次），因此首个 prompt 调用
 //    必须发生在「dev 告警」用例内；后续用例再调 prompt 不会再触发 console.warn。
@@ -38,7 +39,7 @@ function flushAnims(): void {
 const PROMPT_HINT = '@oas-ui/ui/feedback/modal/prompt'
 const isPromptHint = (call: unknown[]) => String(call[0]).includes(PROMPT_HINT)
 
-describe('modal prompt 能力边界（core-only：未 import prompt 能力包）', () => {
+describe('modal prompt 能力边界（纯核 core 入口：未 import prompt 能力包）', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
@@ -53,7 +54,7 @@ describe('modal prompt 能力边界（core-only：未 import prompt 能力包）
     warnSpy.mockRestore()
   })
 
-  it('dev 告警：modal.prompt 未 import 能力包 → 返回 null + 提示按需 import（同值去重：多调只告警一次）', () => {
+  it('dev 告警：modal.prompt 未注入能力 → 返回 null + 提示补引能力包或换回主路径（同值去重：多调只告警一次）', () => {
     const r1 = modal.prompt({ title: '输入' })
     expect(r1).toBeNull()
     expect(modal.prompt({ title: '再调' })).toBeNull()
@@ -87,7 +88,7 @@ describe('modal prompt 能力边界（core-only：未 import prompt 能力包）
 describe('modal prompt 能力（import 能力包后全链路）', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>
 
-  // 核心（core-only describe 已断言缺省语义）后动态 import 能力包：注册表填充发生在
+  // 纯核 describe 已断言缺省语义后动态 import 能力包：注册表填充发生在
   // 后续用例的元素构造之前（OASModal 构造时遍历注册表注入 controller）
   beforeAll(async () => {
     await import('./prompt/index.js')

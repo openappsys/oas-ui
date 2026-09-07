@@ -181,16 +181,22 @@ test('tabs editable 编辑态与非编辑态几何一致（编辑框贴合标签
   const tabA = page.locator('#tabs-rename [role="tab"][data-value="a"]')
   const before = await tabA.evaluate((el) => {
     const label = el.querySelector('.tab-label')!.getBoundingClientRect()
-    return { tabH: el.getBoundingClientRect().height, labelTop: label.top, labelH: label.height }
+    const tab = el.getBoundingClientRect()
+    return { tabTop: tab.top, tabH: tab.height, labelTop: label.top, labelH: label.height }
   })
   await tabA.dblclick({ force: true })
   await page.waitForTimeout(200)
   const after = await tabA.evaluate((el) => {
     const input = el.querySelector('.tab-rename-input')!.getBoundingClientRect()
-    return { tabH: el.getBoundingClientRect().height, inputTop: input.top, inputH: input.height }
+    const tab = el.getBoundingClientRect()
+    return { tabTop: tab.top, tabH: tab.height, inputTop: input.top, inputH: input.height }
   })
   expect(after.tabH, '编辑态不应撑高 tab').toBe(before.tabH)
-  expect(Math.abs(after.inputTop - before.labelTop), '编辑框与原标签纵向对齐').toBeLessThanOrEqual(
+  // 用 tab 内相对偏移比较（禁用视口绝对坐标）：进入编辑 input 聚焦时若 tab 处于视口下缘，
+  // 浏览器会自动滚动把它带进视口（tab 整体位移几十像素），视口坐标跨滚动比较必然假失败
+  const beforeOffset = before.labelTop - before.tabTop
+  const afterOffset = after.inputTop - after.tabTop
+  expect(Math.abs(afterOffset - beforeOffset), '编辑框与原标签在 tab 内纵向对齐').toBeLessThanOrEqual(
     0.5,
   )
   expect(Math.abs(after.inputH - before.labelH), '编辑框与原标签同高').toBeLessThanOrEqual(0.5)
