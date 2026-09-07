@@ -2,6 +2,8 @@
 
 原生 `<form>` 增强，支持按 `rules` 规则对内部字段做校验与提交。
 
+> **跨 shadow 提交入口**：`oas-form` 在 shadow 内包原生 `<form>`，因此 light DOM 的按钮（含 `oas-button`）不具备原生 submit 语义。请在按钮点击等时机调用组件公开的 `submit()` 方法（如 `this.closest('oas-form').submit()`），它会委托内部 form 的 `requestSubmit()`，保留 submit 事件语义并触发相同的校验与 `oas-submit` / `oas-validate-fail` 派发——**不要**再穿透 `shadowRoot.querySelector('form')` 去调内部 form。
+
 > 数据源是各字段的 `value` 属性（受控模式）。表单校验的字段范围为带 `name` 的 `oas-input` / `oas-textarea` / `oas-select` / `oas-auto-complete` / `oas-cascader` / `oas-tree-select` / `oas-input-number` / `oas-checkbox` / `oas-radio`（组容器不参与）。`oas-input` / `oas-textarea` / `oas-input-number` 输入时**不会自动写回 `value` 属性**，需在脚本中监听 `oas-input` / `oas-change` 事件同步；`oas-select` / `oas-cascader` / `oas-tree-select` 选中时自带回写。
 
 ## 功能展示
@@ -15,7 +17,7 @@
     <oas-space direction="vertical" style="width: 100%">
       <oas-input name="name" placeholder="姓名"></oas-input>
       <oas-input name="email" placeholder="邮箱"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">提交</oas-button>
     </oas-space>
   </oas-form>
   <span id="form-basic-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
@@ -32,7 +34,7 @@
       <oas-select name="role" placeholder="选择角色" options='[{"label":"管理员","value":"admin"},{"label":"编辑","value":"editor"},{"label":"访客","value":"guest"}]'></oas-select>
       <oas-input-number name="age"></oas-input-number>
       <oas-textarea name="bio" rows="3" placeholder="个人简介（选填）"></oas-textarea>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">提交</oas-button>
     </oas-space>
   </oas-form>
 </DemoBlock>
@@ -50,7 +52,7 @@
     <oas-space direction="vertical" style="width: 100%">
       <oas-input name="name" placeholder="姓名"></oas-input>
       <oas-input name="email" placeholder="邮箱"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">提交</oas-button>
     </oas-space>
   </oas-form>
 </DemoBlock>
@@ -61,7 +63,7 @@
   <oas-form id="form-length" rules='{"username":[{"required":true,"message":"请输入用户名"},{"minLength":3,"message":"至少 3 个字符"}]}' style="width: 340px">
     <oas-space direction="vertical" style="width: 100%">
       <oas-input name="username" placeholder="用户名（至少 3 个字符）"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">提交</oas-button>
     </oas-space>
   </oas-form>
 </DemoBlock>
@@ -73,7 +75,7 @@
     <oas-space direction="vertical" style="width: 100%">
       <oas-input name="title" placeholder="标题"></oas-input>
       <oas-input name="locked" disabled value="禁止修改"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">提交</oas-button>
     </oas-space>
   </oas-form>
 </DemoBlock>
@@ -84,7 +86,7 @@
   <oas-form id="form-event" rules='{"nick":[{"required":true,"message":"请输入昵称"}]}' style="width: 340px">
     <oas-space direction="vertical" style="width: 100%">
       <oas-input name="nick" placeholder="昵称"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">提交</oas-button>
     </oas-space>
   </oas-form>
   <span id="form-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
@@ -108,7 +110,7 @@
       <oas-textarea name="bio" rows="3" placeholder="个人简介（选填）"></oas-textarea>
     </oas-form-item>
     <oas-form-item span="24">
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">提交</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">提交</oas-button>
       <span id="form-grid-output" style="margin-left: var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
     </oas-form-item>
   </oas-form>
@@ -146,7 +148,7 @@
       <oas-input name="password" type="password" placeholder="密码" style="width: 180px"></oas-input>
     </oas-form-item>
     <oas-form-item>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">登录</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">登录</oas-button>
       <span id="form-inline-login-output" style="margin-left: var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
     </oas-form-item>
   </oas-form>
@@ -163,7 +165,7 @@
       <oas-select name="category" placeholder="全部分类" options='[{"label":"全部","value":"all"},{"label":"文档","value":"doc"},{"label":"组件","value":"component"}]' style="width: 140px"></oas-select>
     </oas-form-item>
     <oas-form-item>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">搜索</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">搜索</oas-button>
       <span id="form-inline-search-output" style="margin-left: var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
     </oas-form-item>
   </oas-form>
@@ -233,6 +235,12 @@ onMounted(() => {
 </script>
 
 ## API
+
+### 方法
+
+| 方法 | 说明 |
+| --- | --- |
+| `submit()` | 公开提交入口：委托内部 form 的 `requestSubmit()`（保留 submit 事件与 submitter 语义），经校验后派发 `oas-submit` / `oas-validate-fail`。跨 shadow 边界时 light DOM 按钮无原生提交语义，统一用此方法（如 `this.closest('oas-form').submit()`） |
 
 ### oas-form
 

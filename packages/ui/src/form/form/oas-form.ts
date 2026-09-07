@@ -294,4 +294,16 @@ export class OASForm extends OASElement {
   getErrors(): Record<string, string> {
     return { ...this.errors }
   }
+
+  /**
+   * 公开提交入口：委托内部 form 的 requestSubmit()。
+   *
+   * shadow 边界内包 `<form part="form">` 后，light DOM 的按钮（含 oas-button）不再具备原生
+   * submit 语义；宿主请在按钮点击等时机调用本方法。走 requestSubmit 而非直接调
+   * validateAndSubmit，以保留原生 submit 事件与 submitter 语义（内部 listener 统一在
+   * `submit` 事件上做校验与派发 oas-submit / oas-validate-fail）。
+   */
+  submit(): void {
+    this.form?.requestSubmit()
+  }
 }
