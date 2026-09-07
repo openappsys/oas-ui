@@ -6,7 +6,7 @@ OAS-UI 的 React 桥接包 —— 把 `oas-*` 自定义事件（CustomEvent）�
 
 ### 为什么要这个包？
 
-React 19 不会把 `onXxx` prop 桥接到 kebab-case 自定义事件：`<oas-button onOasSubmit={...}>` 里的 `onOasSubmit` 不会被当作事件监听器（自定义元素的事件 prop 不生效），所以组件派发的 `oas-submit` 永远收不到。Vue 的 `@oas-click` 语法没问题，React 侧需要手动 `addEventListener`——本包的两个 hook 封装了这一过程（handler 最新化 + 卸载自动解绑）。
+React 19 对自定义元素事件只桥接「`on` + 全小写字面量」写法（`onoas-submit` 能收到 `oas-submit`），而符合 React 惯例的 camelCase 写法 `<oas-button onOasSubmit={...}>` 静默失效——`onOasSubmit` 不会映射为 `oas-submit` 监听，组件派发的事件永远收不到。Vue 的 `@oas-click` 语法没问题，React 侧需要手动 `addEventListener`——本包的两个 hook 封装了这一过程（handler 最新化 + 卸载自动解绑）。
 
 ### 安装
 
@@ -98,6 +98,7 @@ declare module 'react' {
 ### 注意
 
 - **事件名必须带 `oas-` 前缀**：组件派发的是 `oas-submit` / `oas-change` / `oas-close`，写 `submit` 收不到。
+- **React 19 有原生替代写法**：`<oas-form onoas-submit={...}>`（`on` + 全小写字面量）可直接监听 kebab 事件——但不符合 React 惯例（camelCase 的 `onOasSubmit` 静默失效）、对 TS/JSX 类型不友好、且不兼容 React 17/18，故仍推荐本包。
 - **绑定时机**：hook 在挂载 effect 中读取 `ref.current` 绑定监听——目标元素需与 hook 同一提交周期内挂载。若元素是条件渲染（晚于首帧出现），应把 hook 调用放到该元素确认挂载后的组件分支里。
 - **卸载自动解绑**：组件卸载即移除监听，无泄漏。
 - **属性与插槽不受影响**：组件属性、布尔属性、插槽内容在 React 下照常工作，只有事件监听需要本包。
@@ -115,7 +116,7 @@ declare module 'react' {
 
 ### Why this package?
 
-React 19 does not bridge `onXxx` props to kebab-case custom events: in `<oas-button onOasSubmit={...}>` the `onOasSubmit` is not treated as an event listener (event props on custom elements don't take effect), so the `oas-submit` event dispatched by the component is never received. Vue's `@oas-click` syntax works fine, but on the React side you must call `addEventListener` manually — these two hooks wrap that process (latest-handler ref + automatic unbinding on unmount).
+React 19 bridges custom-element events only for the "on + lowercase literal" spelling (`onoas-submit` receives `oas-submit`), while the idiomatic camelCase form `<oas-button onOasSubmit={...}>` silently fails — `onOasSubmit` is never mapped to an `oas-submit` listener, so the event dispatched by the component is never received. Vue's `@oas-click` syntax works fine, but on the React side you must call `addEventListener` manually — these two hooks wrap that process (latest-handler ref + automatic unbinding on unmount).
 
 ### Install
 
@@ -205,6 +206,7 @@ declare module 'react' {
 ### Notes
 
 - **Event names must keep the `oas-` prefix**: components dispatch `oas-submit` / `oas-change` / `oas-close`; `submit` will never be received.
+- **React 19 has a native alternative**: `<oas-form onoas-submit={...}>` ("on" + lowercase literal event name) does listen to kebab events — but it breaks React conventions (the camelCase `onOasSubmit` silently fails), is hostile to TS/JSX typing, and doesn't work on React 17/18, so this package remains the recommended path.
 - **Binding timing**: the hook reads `ref.current` in its mount effect — the target element must be mounted in the same commit as the hook. For conditionally rendered elements (mounted after the first frame), call the hook in the branch where the element is known to be mounted.
 - **Auto cleanup on unmount**: listeners are removed when the component unmounts — no leaks.
 - **Attributes & slots are unaffected**: attributes, boolean props and slotted content work as usual in React; only event listening needs this package.

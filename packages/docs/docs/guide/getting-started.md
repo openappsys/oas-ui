@@ -99,7 +99,7 @@ React / Vue 中直接使用（渲染、属性、插槽内容两端均可；**事
 
 ### React 事件桥接（`@oas-ui/react`）
 
-**React 19 不会把 `onXxx` prop 桥接到 kebab-case 自定义事件**：`<oas-button onOasSubmit={...}>` 里的 `onOasSubmit` 不会被当作事件监听器（自定义元素的事件 prop 不生效），监听不到组件派发的 `oas-submit`。React 侧需要手动 `addEventListener`，推荐用通用桥接包 `@oas-ui/react`（纯客户端 hooks，运行时零依赖）：
+**React 19 对自定义元素事件的桥接有写法陷阱**：只有「`on` + 全小写字面量」的写法才生效——`<oas-button onoas-submit={...}>` 能监听到 `oas-submit`，但符合 React 惯例的 camelCase 写法 `<oas-button onOasSubmit={...}>` 静默失效（自定义元素上该 prop 不会映射为 `oas-submit` 监听），且小写横线属性名对 TS/JSX 类型不友好。因此 React 侧推荐统一走通用桥接包 `@oas-ui/react`（纯客户端 hooks，运行时零依赖，兼容 React 17/18）：
 
 ```bash
 pnpm add @oas-ui/react
