@@ -83,22 +83,47 @@ import '@oas-ui/theme'
 import '@oas-ui/ui/basic/button'
 ```
 
-Use directly in React / Vue:
+Use directly in React / Vue (rendering, attributes and slot content work in both; **event listening — see the section below**):
 
 ```tsx
-// React
-<oas-button type="primary" onOasClick={() => console.log('clicked')}>
-  Button
-</oas-button>
+// React: events need bridging, see "React event bridging (@oas-ui/react)" below
+<oas-button type="primary" ref={btnRef}>Button</oas-button>
 ```
 
 ```vue
-<!-- Vue -->
+<!-- Vue: @oas-click listens to the custom event directly -->
 <oas-button type="primary" @oas-click="onClick">Button</oas-button>
 ```
 
-No wrappers are needed in any of the three environments (React/Vue/vanilla);
-events are bridged through `oas-*` CustomEvents.
+Rendering and attribute passing need no wrappers in any of the three environments (React / Vue / vanilla). Events are dispatched as `oas-*` CustomEvents — **Vue can listen via `@oas-click` directly; React needs extra bridging** (below).
+
+### React event bridging (`@oas-ui/react`)
+
+**React 19 does not map `onXxx` props to kebab-case custom events**: in `<oas-button onOasSubmit={...}>` the `onOasSubmit` is never treated as an event listener (event props on custom elements are ignored), so it cannot catch the `oas-submit` the component dispatches. On the React side you must `addEventListener` manually; the recommended generic bridge is `@oas-ui/react` (client-only hooks, zero runtime dependencies):
+
+```bash
+pnpm add @oas-ui/react
+```
+
+```tsx
+import { useRef } from 'react'
+import { useOasEvents } from '@oas-ui/react'
+
+function Demo() {
+  const btnRef = useRef<HTMLElement | null>(null)
+  useOasEvents(btnRef, {
+    'oas-submit': (detail) => console.log('submit', detail.value),
+    'oas-cancel': () => console.log('cancel'),
+  })
+  return (
+    <oas-button type="primary" ref={btnRef}>
+      Submit
+    </oas-button>
+  )
+}
+```
+
+For a single event use `useOasEvent<Detail>(ref, 'oas-submit', handler)`. Both hooks always run the latest closure after re-renders and unbind automatically on unmount; event names must carry the `oas-` prefix. Full details live in `packages/react/README.md` or [@oas-ui/react on npm](https://www.npmjs.com/package/@oas-ui/react).
 
 **Capability sub-packages (opt-in advanced features)**: a few components split heavy optional
 capabilities into standalone sub-packages. When importing a component on demand, these capabilities

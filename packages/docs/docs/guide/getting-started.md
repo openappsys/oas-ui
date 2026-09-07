@@ -83,21 +83,47 @@ import '@oas-ui/theme'
 import '@oas-ui/ui/basic/button'
 ```
 
-React / Vue 中直接使用：
+React / Vue 中直接使用（渲染、属性、插槽内容两端均可；**事件监听见下方小节**）：
 
 ```tsx
-// React
-<oas-button type="primary" onOasClick={() => console.log('clicked')}>
-  按钮
-</oas-button>
+// React：事件要桥接，见下「React 事件桥接（@oas-ui/react）」
+<oas-button type="primary" ref={btnRef}>按钮</oas-button>
 ```
 
 ```vue
-<!-- Vue -->
+<!-- Vue：@oas-click 直接监听自定义事件 -->
 <oas-button type="primary" @oas-click="onClick">按钮</oas-button>
 ```
 
-原生三端（React/Vue/原生）均无需封装即可使用，事件通过 `oas-*` CustomEvent 桥接。
+组件渲染与属性透传在 React / Vue / 原生三端均无需封装；事件统一由 `oas-*` CustomEvent 派发，**Vue 的 `@oas-click` 可直接监听，React 需额外桥接**（见下）。
+
+### React 事件桥接（`@oas-ui/react`）
+
+**React 19 不会把 `onXxx` prop 桥接到 kebab-case 自定义事件**：`<oas-button onOasSubmit={...}>` 里的 `onOasSubmit` 不会被当作事件监听器（自定义元素的事件 prop 不生效），监听不到组件派发的 `oas-submit`。React 侧需要手动 `addEventListener`，推荐用通用桥接包 `@oas-ui/react`（纯客户端 hooks，运行时零依赖）：
+
+```bash
+pnpm add @oas-ui/react
+```
+
+```tsx
+import { useRef } from 'react'
+import { useOasEvents } from '@oas-ui/react'
+
+function Demo() {
+  const btnRef = useRef<HTMLElement | null>(null)
+  useOasEvents(btnRef, {
+    'oas-submit': (detail) => console.log('提交', detail.value),
+    'oas-cancel': () => console.log('取消'),
+  })
+  return (
+    <oas-button type="primary" ref={btnRef}>
+      提交
+    </oas-button>
+  )
+}
+```
+
+单事件场景用 `useOasEvent<Detail>(ref, 'oas-submit', handler)`。两个 hook 都会在重渲染后自动走最新闭包、在卸载时自动解绑；事件名必须带 `oas-` 前缀。完整说明见 `packages/react/README.md` 或 [npm 上的 @oas-ui/react](https://www.npmjs.com/package/@oas-ui/react)。
 
 **能力子包（可选能力按需引入）**：少数组件的重型可选能力拆成了独立子包——按需引入组件时默认**不含**这些能力（对应配置静默失效并在 dev 下给出告警提示），用到哪个引哪个，import 即注册：
 
