@@ -691,4 +691,23 @@ describe('modal 命令式 API', () => {
     const rows = els[0]!.querySelectorAll('.oas-modal-opt')
     expect(rows.length).toBe(0)
   })
+
+  it('命令式 confirm：对话框内确定按钮点击冒泡可达 document 委托（复用声明式路径）', async () => {
+    modal.confirm({ title: '确认删除' })
+    await Promise.resolve()
+    const el = document.body.querySelector('oas-modal')!
+    expect(el).not.toBeNull()
+    let docClicks = 0
+    const onDoc = (): void => {
+      docClicks++
+    }
+    document.addEventListener('click', onDoc)
+    try {
+      okButton(el).dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    } finally {
+      document.removeEventListener('click', onDoc)
+    }
+    expect(docClicks, '命令式对话框内按钮点击同样可达 document（根事件委托）').toBe(1)
+    expect(el.hasAttribute('visible'), '确定关闭路径照常移除 visible').toBe(false)
+  })
 })

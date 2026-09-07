@@ -200,6 +200,8 @@ Stacked drawers get automatic stack management: later openers sit on top (increm
   </oas-drawer>
 </DemoBlock>
 
+**Controlled / uncontrolled contract**: the component is uncontrolled + event-notification. On every user close path (mask / ✕ / Esc / cancel) it removes its own `visible` attribute and emits `oas-close` (the source is in `detail`), so the host `visible` attribute always reflects the real state and never goes stale. For declarative binding (host state drives `visible`), sync the state to closed inside an `oas-close` handler so it is not written back after closing; intercepting `oas-before-close` with `preventDefault()` keeps the drawer open with `visible` untouched.
+
 ## No footer / no mask close
 
 <DemoBlock title="no-footer / no-mask-close">

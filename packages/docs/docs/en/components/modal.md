@@ -25,6 +25,8 @@ A modal dialog for interrupting flows that require user confirmation or input.
   </oas-modal>
 </DemoBlock>
 
+**Controlled / uncontrolled contract**: the component is uncontrolled + event-notification. On every user close path (mask / ✕ / Esc / cancel) it removes its own `visible` attribute and emits `oas-close` (source / action in `detail`), so the host `visible` attribute always reflects the real state and never goes stale. For declarative binding (host state drives `visible`), sync the state to closed inside an `oas-close` handler so it is not written back after closing; intercepting `oas-before-close` with `preventDefault()` keeps the dialog open with `visible` untouched.
+
 ## No footer buttons
 
 <DemoBlock title="No footer buttons">

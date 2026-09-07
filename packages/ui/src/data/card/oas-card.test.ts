@@ -121,6 +121,15 @@ describe('OASCard', () => {
       expect(part(el, 'title').textContent).toBe('编程式标题')
       expect(el.hasAttribute('title')).toBe(false)
     })
+
+    it('title 从无到有动态设置：标题区由隐藏转为渲染（消费式同步，非仅首连读取一次）', () => {
+      const el = mount({}, '<p>正文</p>')
+      expect(part(el, 'header').hidden).toBe(true)
+      el.setAttribute('title', '动态标题')
+      expect(part(el, 'header').hidden).toBe(false)
+      expect(part(el, 'title').textContent).toBe('动态标题')
+      expect(el.hasAttribute('title')).toBe(false)
+    })
   })
 
   it('hoverable 时带悬浮阴影类', () => {

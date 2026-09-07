@@ -200,6 +200,8 @@
   </oas-drawer>
 </DemoBlock>
 
+**受控 / 非受控契约**：组件自身是非受控 + 事件通知模型——用户关闭路径（遮罩 / ✕ / Esc / 取消）由组件自行移除 `visible` 并派发 `oas-close`（`detail.source` 标明来源），宿主上的 `visible` attribute 始终与真实状态同步、不会残留。声明式绑定场景（`visible` 由宿主 state 驱动）应在 `oas-close` 中把 state 置为关闭，避免关闭后 state 又把 `visible` 写回；若监听 `oas-before-close` 并 `preventDefault()`，则组件保持打开、`visible` 不动。
+
 ## 无底部按钮 / 禁止遮罩关闭
 
 <DemoBlock title="no-footer / no-mask-close">
