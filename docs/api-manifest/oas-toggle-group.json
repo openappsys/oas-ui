@@ -22,6 +22,51 @@
       "name": "disabled",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "vertical",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "attached",
+      "observed": true
+    },
+    {
+      "name": "mandatory",
+      "observed": true
+    },
+    {
+      "name": "max-count",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "spread",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
     }
   ],
   "props": [
@@ -32,6 +77,10 @@
     }
   ],
   "events": [
+    {
+      "name": "oas-exceed-limit",
+      "detail": "{ value: item.value, max: this.maxLimit() }"
+    },
     {
       "name": "oas-change",
       "detail": "{ value: next } | { value: item.value }"

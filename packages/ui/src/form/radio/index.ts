@@ -9,3 +9,4 @@ if (!customElements.get('oas-radio-group')) {
 }
 
 export { OASRadio, OASRadioGroup }
+export type { RadioOption } from './oas-radio-group.js'

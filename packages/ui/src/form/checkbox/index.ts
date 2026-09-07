@@ -9,3 +9,4 @@ if (!customElements.get('oas-checkbox-group')) {
 }
 
 export { OASCheckbox, OASCheckboxGroup }
+export type { CheckboxOption } from './oas-checkbox-group.js'

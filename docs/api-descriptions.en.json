@@ -448,13 +448,28 @@
     "attrs": {
       "checked": "Whether checked",
       "disabled": "Disabled",
-      "indeterminate": "Indeterminate state",
-      "value": "Option identifier"
+      "indeterminate": "Indeterminate state (visual only; clicking still toggles the two-state value; aria-checked syncs to mixed)",
+      "value": "Option identifier",
+      "size": "Size: `small` (14px) / `medium` (default 16px) / `large` (18px), box and font scale together; a group-level value cascades to items while an explicit item value wins",
+      "status": "Validation status: `error` / `warning` / `success` (tints the box; error also sets host aria-invalid)",
+      "readonly": "Readonly: focusable and Tab-reachable, value still submits, but clicks (and Space) never toggle (distinct form semantics from disabled)",
+      "variant": "Variant: `default` / `card` (whole block clickable, selected border tint, hover feedback)",
+      "description": "Secondary text rendered below the label; a `slot=\"description\"` distribution takes priority",
+      "label-position": "Label position: `end` (default, box left / text right) / `start` (text left; mirrors automatically in RTL)",
+      "check-all": "In-group select-all marker: clicking toggles all items, item changes write back its checked/indeterminate state; the item never joins the group value (cross-component attribute read by oas-checkbox-group)"
     },
     "events": {
-      "oas-change": "Change, `detail: { checked, value }`; group: `detail: { value }` (array)"
+      "oas-change": "Checked change, `detail: { checked, value }`",
+      "oas-focus": "The checkbox gained focus",
+      "oas-blur": "The checkbox lost focus",
+      "oas-limit-blocked": "Group count-limit block signal (the group re-dispatches it as oas-exceed-limit; no such block when used standalone)"
     },
-    "slots": {}
+    "slots": {
+      "": "Label content (rich text/links allowed)",
+      "checked-icon": "Custom checked indicator (template[slot] or a direct element; unchecked falls back to the default hollow outline)",
+      "indeterminate-icon": "Custom indeterminate indicator (pairs with check-all linkage)",
+      "description": "Description distribution channel (takes priority over the description attribute)"
+    }
   },
   "oas-code": {
     "attrs": {
@@ -1720,13 +1735,25 @@
     "attrs": {
       "checked": "Whether checked",
       "disabled": "Disabled",
-      "name": "Native group name (managed inside the group)",
-      "value": "Option identifier"
+      "name": "Native grouping name (same-name exclusivity across Shadow DOM; a group assigns a unique name automatically)",
+      "value": "Option identifier",
+      "size": "Size: `small` (14px) / `medium` (default 16px) / `large` (18px), dot and font scale together; a group-level value cascades to items while an explicit item value wins",
+      "status": "Validation status: `error` / `warning` / `success` (tints the dot; error also sets host aria-invalid)",
+      "readonly": "Readonly: focusable and Tab-reachable, value still submits, but clicks (and Space) plus arrow keys never switch",
+      "variant": "Variant: `default` / `card` (whole block clickable, selected border tint, hover feedback)",
+      "description": "Secondary text rendered below the label; a `slot=\"description\"` distribution takes priority",
+      "label-position": "Label position: `end` (default, dot left / text right) / `start` (text left; mirrors automatically in RTL)"
     },
     "events": {
-      "oas-change": "Change, `detail: { checked, value }`; group: `detail: { value }`"
+      "oas-change": "Selection change, `detail: { checked, value }`",
+      "oas-focus": "The radio gained focus",
+      "oas-blur": "The radio lost focus"
     },
-    "slots": {}
+    "slots": {
+      "": "Label content (rich text/links allowed)",
+      "checked-icon": "Custom checked indicator (template[slot] or a direct element; unchecked falls back to the default hollow circle)",
+      "description": "Description distribution channel (takes priority over the description attribute)"
+    }
   },
   "oas-rate": {
     "attrs": {
@@ -1792,7 +1819,12 @@
     "attrs": {
       "disabled": "Disables the whole segmented control (explicitly, or inherited from the config-provider global disabled injection)",
       "options": "`[{ label, value, disabled? }]` JSON string",
-      "value": "Selected value (defaults to the first option; controlled)"
+      "value": "Selected value (defaults to the first option; controlled)",
+      "size": "Size preset `small` / `medium` (default) / `large`",
+      "block": "Fill the parent width (options share equally)",
+      "direction": "Orientation: `horizontal` (default) / `vertical` (mirrors aria-orientation and axis keys)",
+      "name": "Native radio group name (native form association; auto-generated unique name when unset)",
+      "readonly": "Read-only: focusable but selection immutable (radiogroup aria-readonly)"
     },
     "events": {
       "oas-change": "Switched, `detail: { value }`"
@@ -2081,10 +2113,20 @@
       "disabled": "Disabled",
       "loading": "Loading state, prevents toggling",
       "size": "Size: `xs` / `small` / `medium` (default) / `large` / `xl`; invalid values fall back to `medium` with a warning",
-      "unchecked-text": "Label shown when off; inside the track at medium/large/xl, outside at xs/small"
+      "unchecked-text": "Label shown when off; inside the track at medium/large/xl, outside at xs/small",
+      "label": "Label text (label channel; clicking the label toggles; same-named slot for rich content)",
+      "label-position": "Label position: `end` (default, right) / `start` (left)",
+      "checked-icon": "Checked-state thumb icon (oas-icon name)",
+      "unchecked-icon": "Unchecked-state thumb icon",
+      "true-value": "Mapped value when checked (read via the value getter)",
+      "false-value": "Mapped value when unchecked",
+      "status": "Validation status: `error` / `warning` / `success`; error mirrors aria-invalid",
+      "aria-label": "Accessible name (host override channel; explicit value wins over label derivation)"
     },
     "events": {
-      "oas-change": "Toggle, `detail: { checked }`"
+      "oas-change": "Toggle, `detail: { checked }`",
+      "oas-focus": "Fires on focus",
+      "oas-blur": "Fires on blur"
     },
     "slots": {}
   },
@@ -2364,7 +2406,12 @@
     "attrs": {
       "disabled": "Disabled",
       "pressed": "Whether pressed (controlled)",
-      "value": "Value (returned with events)"
+      "value": "Value (returned with events)",
+      "size": "Size preset `small` / `medium` (default) / `large`",
+      "icon": "Icon (oas-icon name); icon-only renders an equal square",
+      "color": "Selected color: preset name (--oas-preset-* token) or any CSS color (auto text color)",
+      "status": "Validation status: `error` / `warning` / `success`; error mirrors aria-invalid",
+      "aria-label": "Accessible name (host override channel, written to the inner button)"
     },
     "events": {
       "oas-change": "Toggle, `detail: { value, pressed }`"
@@ -2374,7 +2421,9 @@
   "oas-toggle-item": {
     "attrs": {
       "disabled": "Disable this item (not clickable; skipped by arrow keys)",
-      "value": "Item value (data-carrier field of the declarative child-element channel)"
+      "value": "Item value (data-carrier field of the declarative child-element channel)",
+      "icon": "Icon (oas-icon name); label optional (icon-only items)",
+      "aria-label": "Item accessible name (required semantics for icon-only items; derived from the icon name by default)"
     },
     "events": {},
     "slots": {
@@ -2386,10 +2435,20 @@
       "disabled": "Disables the whole toggle group (explicitly, or inherited from the config-provider global disabled injection)",
       "items": "Options JSON (property assignment reflects to attribute)",
       "multiple": "Multiple mode (checkbox semantics)",
-      "value": "Current value: string for single; JSON array string for multiple"
+      "value": "Current value: string for single; JSON array string for multiple",
+      "size": "Size preset `small` / `medium` (default) / `large`",
+      "color": "Selected color: preset name or any CSS color (auto text color)",
+      "status": "Validation status: `error` / `warning` / `success` (unselected border + selected block tint)",
+      "vertical": "Vertical arrangement (mirrors aria-orientation and axis keys)",
+      "attached": "Attached form: adjacent items share borders, end radii only (default detached)",
+      "mandatory": "Mandatory selection: boolean = the sole selected item cannot be deselected; `force` = auto-select the first enabled item when empty (wizard flow, zero host code)",
+      "max-count": "Multi-select limit: at the limit unselected items grey out and oas-exceed-limit fires; selected items stay removable",
+      "spread": "Full-width equal split (aligned with button-group spread)",
+      "aria-label": "Group accessible name (host override; falls back to locale default)"
     },
     "events": {
-      "oas-change": "Toggle, `detail: { value: string | string[] }`"
+      "oas-change": "Toggle, `detail: { value: string | string[] }`",
+      "oas-exceed-limit": "Selection attempt past max-count, `detail: { value, max }`"
     },
     "slots": {}
   },
@@ -2766,5 +2825,48 @@
     },
     "events": {},
     "slots": {}
+  },
+  "oas-checkbox-group": {
+    "attrs": {
+      "value": "Group value (JSON string array of checked item values)",
+      "disabled": "Disable the whole group (cascades to items without overriding their own explicit disabled)",
+      "options": "Data channel: JSON `[{ label, value, disabled?, description?, checkAll? }]`; when explicit, data-driven rendering wins over declarative children",
+      "direction": "Layout direction: `vertical` (default) / `horizontal` (row layout with wrapping)",
+      "max": "Selection cap: at the cap unchecked items gray out and block with oas-exceed-limit; checked items can still be unchecked",
+      "min": "Selection floor: at the floor checked items block unchecking; unchecked items are unaffected",
+      "size": "Size (cascades to items): `small` / `medium` (default) / `large`",
+      "status": "Validation status (cascades to items): `error` / `warning` / `success`",
+      "readonly": "Readonly (cascades to items): focusable, no toggling"
+    },
+    "events": {
+      "oas-change": "Group value change, `detail: { value: string[] }` (includes select-all linkage and in-limit changes)",
+      "oas-exceed-limit": "Out-of-cap check attempt after max is reached, `detail: { value, max }`",
+      "oas-focus": "Any item inside the group gained focus (moves between items do not misfire)",
+      "oas-blur": "Fired when focus leaves the group"
+    },
+    "slots": {
+      "": "Declarative item channel (`<oas-checkbox>` children; steps aside when options is explicit)",
+      "label": "Group title (rendered into the legend)"
+    }
+  },
+  "oas-radio-group": {
+    "attrs": {
+      "value": "Group value (the selected item value)",
+      "disabled": "Disable the whole group (cascades to items without overriding their own explicit disabled)",
+      "options": "Data channel: JSON `[{ label, value, disabled?, description? }]`; when explicit, data-driven rendering wins over declarative children",
+      "direction": "Layout direction: `vertical` (default) / `horizontal` (row layout with wrapping)",
+      "size": "Size (cascades to items): `small` / `medium` (default) / `large`",
+      "status": "Validation status (cascades to items): `error` / `warning` / `success`; an explicit item status wins",
+      "readonly": "Readonly (cascades to items): focusable, arrow keys do not switch"
+    },
+    "events": {
+      "oas-change": "Group value change, `detail: { value }` (fired by both clicks and arrow-key selection)",
+      "oas-focus": "Any item inside the group gained focus (moves between items do not misfire)",
+      "oas-blur": "Fired when focus leaves the group"
+    },
+    "slots": {
+      "": "Declarative item channel (`<oas-radio>` children; steps aside when options is explicit)",
+      "label": "Group title (rendered into the legend)"
+    }
   }
 }

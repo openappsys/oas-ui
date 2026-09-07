@@ -9,6 +9,14 @@
     {
       "name": "disabled",
       "observed": true
+    },
+    {
+      "name": "icon",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
     }
   ],
   "props": [],
