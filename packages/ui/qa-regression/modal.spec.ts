@@ -554,3 +554,72 @@ test('modal no-footer 底角圆角（overflow hidden 裁切回归：body 直角�
   expect(r.radius, '四角应为圆角（radius-lg）').not.toMatch(/^0px/)
   expect(r.noHScroll, '不得撑出横向滚动条').toBe(true)
 })
+
+test('modal 对话框内点击不透传遮罩：document 根委托可达、dialog 内点击不误关、遮罩本体可关、visible 回写', async ({
+  page,
+}) => {
+  // 曾现风险：dialog 上 stopPropagation 阻断 document 级根事件委托（React 等宿主收不到
+  // 对话框内原生 click）；关闭后宿主 visible attribute 是否同步移除
+  await page.goto('/components/modal.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-modal')
+  await page.evaluate(() => {
+    document.querySelector('#modal-ctrl')?.setAttribute('visible', '')
+  })
+  await page.waitForFunction(() => document.querySelector('#modal-ctrl[visible]') != null, null, {
+    timeout: 5000,
+  })
+  // 挂 document 级原生 click 委托（根事件委托宿主等价物）
+  await page.evaluate(() => {
+    ;(window as any).__docClicks = 0
+    ;(window as any).__onDocClick = () => (window as any).__docClicks++
+    document.addEventListener('click', (window as any).__onDocClick)
+  })
+  try {
+    // 点 dialog body 空白：document 委托收到且不误关
+    await page.evaluate(() => {
+      const d = document.querySelector('#modal-ctrl')!.shadowRoot!.querySelector<HTMLElement>(
+        '[part="body"]',
+      )!
+      d.click()
+    })
+    await page.waitForFunction(() => (window as any).__docClicks >= 1, null, { timeout: 5000 })
+    const stillOpen = await page.evaluate(() =>
+      document.querySelector('#modal-ctrl')?.hasAttribute('visible'),
+    )
+    expect(stillOpen, '点对话框空白不得触发遮罩关闭').toBe(true)
+    // 点 ✕：委托同样收到，关闭路径照常 + visible 回写
+    await page.evaluate(() => {
+      const x = document.querySelector('#modal-ctrl')!.shadowRoot!.querySelector<HTMLElement>(
+        '[part="close"]',
+      )!
+      x.click()
+    })
+    await page.waitForFunction(
+      () => !document.querySelector('#modal-ctrl')?.hasAttribute('visible'),
+      null,
+      { timeout: 5000 },
+    )
+    // 遮罩本体点击仍能关闭（重开后点 mask）
+    await page.evaluate(() => {
+      document.querySelector('#modal-ctrl')?.setAttribute('visible', '')
+    })
+    await page.waitForFunction(() => document.querySelector('#modal-ctrl[visible]') != null, null, {
+      timeout: 5000,
+    })
+    await page.evaluate(() => {
+      const m = document.querySelector('#modal-ctrl')!
+      ;(m.shadowRoot!.querySelector('.mask') as HTMLElement).click()
+    })
+    await page.waitForFunction(
+      () => !document.querySelector('#modal-ctrl')?.hasAttribute('visible'),
+      null,
+      { timeout: 5000 },
+    )
+    const clicks = await page.evaluate(() => (window as any).__docClicks)
+    expect(clicks, 'dialog 内每次点击都应冒泡到 document 委托').toBeGreaterThanOrEqual(2)
+  } finally {
+    await page.evaluate(() => {
+      document.removeEventListener('click', (window as any).__onDocClick)
+    })
+  }
+})

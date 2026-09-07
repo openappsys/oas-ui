@@ -766,4 +766,77 @@ describe('OASDrawer', () => {
       expect(fallback.textContent).toBe('属性标题')
     })
   })
+
+  // ===== 根事件委托可达（React 等 document 级委托宿主；曾因 panel stopPropagation 收不到） =====
+
+  describe('面板点击事件冒泡（panel 不拦截原生 click）', () => {
+    it('点击面板 shadow 内区域：document 委托收到原生 click 且不触发遮罩关闭', () => {
+      const el = mount({ visible: '' })
+      let docClicks = 0
+      const onDoc = (): void => {
+        docClicks++
+      }
+      document.addEventListener('click', onDoc)
+      try {
+        // 命中面板空白（.body，非任何关闭入口）——模拟 React 根委托收 panel 内点击
+        panel(el)
+          .querySelector('.body')!
+          .dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+      } finally {
+        document.removeEventListener('click', onDoc)
+      }
+      expect(docClicks, 'panel 内点击必须冒泡到 document（根事件委托可达）').toBe(1)
+      expect(el.hasAttribute('visible'), '面板内点击不得误触发遮罩关闭').toBe(true)
+    })
+
+    it('点击面板内 ✕：document 委托收到，✕ 关闭路径照常（visible 移除 + source=close）', () => {
+      const el = mount({ visible: '' })
+      let docClicks = 0
+      let source = ''
+      const onDoc = (): void => {
+        docClicks++
+      }
+      el.addEventListener('oas-close', (e) => {
+        source = (e as CustomEvent).detail.source
+      })
+      document.addEventListener('click', onDoc)
+      try {
+        ;(el.shadowRoot!.querySelector('[part="close"]') as HTMLElement).dispatchEvent(
+          new MouseEvent('click', { bubbles: true, composed: true }),
+        )
+      } finally {
+        document.removeEventListener('click', onDoc)
+      }
+      expect(docClicks).toBe(1)
+      expect(source).toBe('close')
+      expect(el.hasAttribute('visible')).toBe(false)
+    })
+  })
+
+  // ===== 关闭路径回写 visible（受控宿主可监听 oas-close 同步自身 state） =====
+
+  describe('关闭路径回写 visible attribute（四入口逐路径契约锁）', () => {
+    const paths: Array<[string, (el: OASDrawer) => void]> = [
+      [
+        '遮罩点击',
+        (el) =>
+          el.shadowRoot!.querySelector('.mask')!.dispatchEvent(
+            new MouseEvent('click', { bubbles: true }),
+          ),
+      ],
+      ['✕ 按钮', (el) => (el.shadowRoot!.querySelector('[part="close"]') as HTMLElement).click()],
+      ['Esc', () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))],
+      ['编程 close()', (el) => el.close()],
+    ]
+    for (const [name, act] of paths) {
+      it(`${name} 关闭后：宿主 visible attribute 已移除 + oas-close 派发`, () => {
+        const el = mount({ visible: '' })
+        let closeCount = 0
+        el.addEventListener('oas-close', () => closeCount++)
+        act(el)
+        expect(el.hasAttribute('visible'), `${name} 后 visible 应被组件回写移除`).toBe(false)
+        expect(closeCount).toBe(1)
+      })
+    }
+  })
 })

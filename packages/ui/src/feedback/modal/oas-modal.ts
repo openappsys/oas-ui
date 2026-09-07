@@ -580,7 +580,9 @@ export class OASModal extends OASElement {
     this.descriptionEl = this.shadow.querySelector('#oas-modal-desc')
     this.descriptionSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="description"]')
 
-    this.dialog?.addEventListener('click', (e) => e.stopPropagation())
+    // 遮罩关闭只响应 mask 本体：mask 与 dialog 是兄弟节点（模板同层并排），dialog 内点击
+    // 冒泡路径本就不经过 mask，无需在 dialog 上 stopPropagation（那样会阻断 document 级
+    // 根事件委托——React 等宿主收不到 dialog 内原生 click；点遮罩本体仍由下方处理器关闭）。
     this.mask?.addEventListener('click', () => {
       if (this.hasAttr('no-mask-close')) return
       this.close('mask')
@@ -742,8 +744,10 @@ export class OASModal extends OASElement {
     const dialog = this.dialog
     const vw = typeof window !== 'undefined' ? window.innerWidth : 0
     const vh = typeof window !== 'undefined' ? window.innerHeight : 0
-    const w = dialog?.getBoundingClientRect().width ?? 0
-    const h = dialog?.getBoundingClientRect().height ?? 0
+    // 用布局宽高（offsetWidth/offsetHeight）而非 getBoundingClientRect：后者含 transform，
+    // 开场缩放动画进行中会被低估几个像素，钳出的右/下缘随动画回稳越出视口
+    const w = dialog?.offsetWidth ?? 0
+    const h = dialog?.offsetHeight ?? 0
     const maxX = Math.max(0, vw - w)
     const maxY = Math.max(0, vh - h)
     return { x: Math.min(maxX, Math.max(0, x)), y: Math.min(maxY, Math.max(0, y)) }
@@ -772,6 +776,18 @@ export class OASModal extends OASElement {
     this.removeAttribute('dragging')
     document.removeEventListener('pointermove', this.onDrag)
     document.removeEventListener('pointerup', this.endDrag)
+    // 末态补钳：拖拽中的钳制用 pointermove 时刻的实时宽高，松手后内容/样式后 settle
+    // 宽度可能微增几个像素，右/下边缘随之越出视口——按最终实际rect补钳一次兜底
+    // （无布局环境 rect 全 0，补钳无意义且会误归零，跳过）
+    const dialog = this.dialog
+    if (dialog && dialog.style.left) {
+      const rect = dialog.getBoundingClientRect()
+      if (rect.width > 0 && rect.height > 0) {
+        const { x, y } = this.clampToViewport(rect.left, rect.top)
+        dialog.style.left = `${x}px`
+        dialog.style.top = `${y}px`
+      }
+    }
   }
 
   /** 当前是否最上层可见 modal（Esc/焦点陷阱只由最上层接管） */

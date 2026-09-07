@@ -556,8 +556,9 @@ export class OASDrawer extends OASElement {
     this.rail = this.shadow.querySelector('.rail')
     this.handle = this.shadow.querySelector('.handle')
 
-    // 面板内部点击不透传到遮罩
-    this.panel?.addEventListener('click', (e) => e.stopPropagation())
+    // 遮罩关闭只响应 mask 本体：mask 与 panel 是兄弟节点（模板同层并排），panel 内点击
+    // 冒泡路径本就不经过 mask，无需在 panel 上 stopPropagation（那样会阻断 document 级
+    // 根事件委托——React 等宿主收不到 panel 内原生 click；点遮罩本体仍由下方处理器关闭）。
     this.mask?.addEventListener('click', () => {
       if (this.hasAttr('no-mask-close')) return
       this.requestClose('mask')

@@ -1178,6 +1178,10 @@ describe('OASModal 二期能力增强', () => {
       y: 100,
       toJSON: () => ({}),
     } as DOMRect)
+    // 钳制读布局宽高（offsetWidth/offsetHeight，不含 transform，防开场动画中低估）：
+    // happy-dom 无布局返回 0，这里按 mock 的 520×260 补齐
+    Object.defineProperty(dialog, 'offsetWidth', { configurable: true, value: 520 })
+    Object.defineProperty(dialog, 'offsetHeight', { configurable: true, value: 260 })
     // 起手于 (0,0)，拖到视口外右下
     el.shadowRoot!.querySelector('.header')!.dispatchEvent(pointer('pointerdown', 0, 0))
     document.dispatchEvent(pointer('pointermove', vw + 5000, vh + 5000))
@@ -1348,6 +1352,76 @@ describe('OASModal 二期能力增强', () => {
     await Promise.resolve()
     const closeBtn = el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!
     expect(closeBtn.textContent).toContain('✕')
+  })
+})
+
+// ===== 根事件委托可达（React 等 document 级委托宿主；曾因 dialog stopPropagation 收不到） =====
+
+describe('OASModal 对话框点击冒泡与关闭回写契约', () => {
+  it('点击对话框 shadow 内区域：document 委托收到原生 click 且不误关', () => {
+    const el = mount({ visible: '' })
+    let docClicks = 0
+    const onDoc = (): void => {
+      docClicks++
+    }
+    document.addEventListener('click', onDoc)
+    try {
+      // 命中对话框 body 空白（非任何关闭入口）——模拟 React 根委托收 dialog 内点击
+      el.shadowRoot!.querySelector<HTMLElement>('.body')!.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, composed: true }),
+      )
+    } finally {
+      document.removeEventListener('click', onDoc)
+    }
+    expect(docClicks, 'dialog 内点击必须冒泡到 document（根事件委托可达）').toBe(1)
+    expect(el.hasAttribute('visible'), '对话框内点击不得误触发遮罩关闭').toBe(true)
+  })
+
+  it('点击对话框内 ✕：document 委托收到，关闭路径照常（source=close-btn）', () => {
+    const el = mount({ visible: '' })
+    let docClicks = 0
+    let source = ''
+    const onDoc = (): void => {
+      docClicks++
+    }
+    el.addEventListener('oas-close', (e) => {
+      source = (e as CustomEvent).detail.source
+    })
+    document.addEventListener('click', onDoc)
+    try {
+      el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, composed: true }),
+      )
+    } finally {
+      document.removeEventListener('click', onDoc)
+    }
+    expect(docClicks).toBe(1)
+    expect(source).toBe('close-btn')
+    expect(el.hasAttribute('visible')).toBe(false)
+  })
+
+  it('关闭路径回写 visible attribute（四入口逐路径契约锁）', () => {
+    const paths: Array<[string, (el: OASModal) => void]> = [
+      [
+        '遮罩点击',
+        (el) =>
+          el.shadowRoot!.querySelector('.mask')!.dispatchEvent(
+            new MouseEvent('click', { bubbles: true }),
+          ),
+      ],
+      ['✕ 按钮', (el) => (el.shadowRoot!.querySelector<HTMLElement>('[part="close"]')!).click()],
+      ['Esc', () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))],
+      ['编程 close()', (el) => el.close('programmatic')],
+    ]
+    for (const [name, act] of paths) {
+      const el = mount({ visible: '' })
+      let closeCount = 0
+      el.addEventListener('oas-close', () => closeCount++)
+      act(el)
+      expect(el.hasAttribute('visible'), `${name} 后 visible 应被组件回写移除`).toBe(false)
+      expect(closeCount).toBe(1)
+      el.remove()
+    }
   })
 })
 
