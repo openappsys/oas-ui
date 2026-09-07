@@ -125,10 +125,10 @@ function Demo() {
 
 单事件场景用 `useOasEvent<Detail>(ref, 'oas-submit', handler)`。两个 hook 都会在重渲染后自动走最新闭包、在卸载时自动解绑；事件名必须带 `oas-` 前缀。完整说明见 `packages/react/README.md` 或 [npm 上的 @oas-ui/react](https://www.npmjs.com/package/@oas-ui/react)。
 
-**能力子包（可选能力按需引入）**：少数组件的重型可选能力拆成了独立子包——按需引入组件时默认**不含**这些能力（对应配置静默失效并在 dev 下给出告警提示），用到哪个引哪个，import 即注册：
+**能力子包（重型能力主路径默认内含）**：部分组件的重型可选能力拆成了独立子包，并已并入组件**主路径入口**——经 `@oas-ui/ui/<组>/<组件>` 任意主路径引入即默认含全部能力（import 即注册，无需额外 import）：
 
-| 组件 | 能力 | 子路径 |
-| ---- | ---- | ------ |
+| 组件 | 主路径已内含能力 | 能力子包（core 补引用） |
+| ---- | ---------------- | ----------------------- |
 | `oas-table` | 行内编辑（`editable` / `editor` / `actions`） | `@oas-ui/ui/data/table/edit` |
 | `oas-tabs` | 双击重命名 / 右键菜单 / 拖拽排序（`editable` / `context-menu` / `sortable`） | `@oas-ui/ui/navigation/tabs/manager` |
 | `oas-modal` | 输入确认（`modal.prompt()`） | `@oas-ui/ui/feedback/modal/prompt` |
@@ -136,11 +136,17 @@ function Demo() {
 | `oas-color-picker` | 2D 色域 / 渐变设计器（`mode="gradient"`） | `@oas-ui/ui/form/color-picker/designer` |
 
 ```ts
-import '@oas-ui/ui/data/table'
-import '@oas-ui/ui/data/table/edit' // 追加行内编辑能力
+import '@oas-ui/ui/data/table' // 主路径已内含行内编辑能力
 ```
 
-引入顺序随意：能力注册对**已挂载**的组件元素也会自动补齐。全量入口 `@oas-ui/ui` 与 CDN 族包已内含全部能力，无需额外引用。
+偏好纯核瘦身的消费者可改用各组件新增的 `/core` 纯核路径（如 `@oas-ui/ui/data/table/core`）——它不含上述能力，对应配置静默失效并在 dev 下告警一次；需要时显式补引能力子包（import 即注册）或换回主路径：
+
+```ts
+import '@oas-ui/ui/data/table/core' // 纯核：不含行内编辑
+import '@oas-ui/ui/data/table/edit' // 显式补引能力（仅 core 路径需要）
+```
+
+引入顺序随意：能力注册对**已挂载**的组件元素也会自动补齐（晚加入自愈）。全量入口 `@oas-ui/ui` 与 CDN 族包已内含全部能力，无需额外引用。
 
 > 想看实际效果？仓库里有搭配使用 React / Vue 的 [Playground](https://github.com/openappsys/oas-ui/tree/main/packages/playground)，`pnpm dev:react` / `pnpm dev:vue` 即可本地运行。
 
