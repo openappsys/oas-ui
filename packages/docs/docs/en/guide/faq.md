@@ -84,6 +84,30 @@ Reference theme variables: `background: var(--oas-color-bg)`,
 variables swap automatically and anything referencing them follows. See
 [Design Tokens](./tokens) for the full list.
 
+## Internationalization (i18n)
+
+### What is the placeholder syntax for translation interpolation?
+
+The translation-interpolation placeholder in `@oas-ui/i18n` is **`{name}`** — a
+single pair of braces with **no `#` prefix**. Write `{count}` in the language-pack
+template and pass `t(key, { count })` to substitute, e.g.
+`'pagination.total': '{total} items'` + `t('pagination.total', { total: 42 })` →
+`42 items`.
+
+> **`#{name}` is not a valid placeholder**: the `#` is never consumed by the
+> interpolation logic and stays verbatim in the output (after substitution it is
+> still `#{42}`). Do not carry over `#{var}`-style templating habits when writing
+> language packs.
+
+### How do I register a custom language pack / texts?
+
+`@oas-ui/i18n` provides a global locale registry: `registerLocale(locale)`
+registers a custom language pack and `setLocale(name)` switches globally; the pack
+shape follows the built-in `zh-CN` (the key set is fully typed, missing keys are
+compile-time errors). `oas-config-provider` supports local injection (the `locale`
+attribute): components inside it prefer the injected locale for built-in texts
+without any global setup.
+
 ## Theming
 
 ### The page body stays white after switching to dark?

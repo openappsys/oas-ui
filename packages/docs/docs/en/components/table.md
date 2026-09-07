@@ -4,6 +4,8 @@ Displays structured data in a row-and-column grid with sorting, row selection, m
 
 `columns` / `data` support a declarative attribute channel: pass a JSON string directly to render the header and data rows (invalid JSON falls back to the empty state), while the property channel (assigning arrays/objects, property takes precedence) remains available and can be serialized into an SSR snapshot.
 
+> **Data channel contract (read alongside oas-chart)**: pass a JSON string via the attribute, or an object/array via the property (no serialization needed; parsed in the setter and takes precedence over the attribute). `oas-table`'s `columns` / `data` setters **reflect back to the attribute** — after a property assignment, `getAttribute('columns')` / `getAttribute('data')` read back the corresponding JSON string (attribute and property stay in sync as a single source of truth). This differs from `oas-chart` (its `data` writes internal state only without reflecting; read it via `el.data`). Exception: when `columns` contain function fields (such as `render`), the setter takes a pure in-memory path without reflecting — read such columns via the `el.columns` property.
+
 ## Basic Usage (with Sorting)
 
 <DemoBlock title="Sortable columns">

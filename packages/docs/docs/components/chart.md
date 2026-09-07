@@ -90,6 +90,20 @@
 
 无数据 / 非法 JSON 显示空态占位，不报错。
 
+## 数据通道契约
+
+`data` / `options` 双通道传值：
+
+- **attribute 通道**：HTML 上写 JSON 字符串（如 `data='[{...}]'`），组件内部 `JSON.parse` 解析。
+- **property 通道**：JS 直接赋对象/数组（`el.data = [{...}]`），免序列化；属性通道的解析在 setter 内完成，优先级高于 attribute。
+
+**反射行为差异（读取数据的方式两组件不统一，请按下面约定）**：
+
+- `oas-table` 的 `columns` / `data` setter 会把值**反射回 attribute**——property 赋值后 `getAttribute('columns')` / `getAttribute('data')` 可读回对应的 JSON 字符串（attribute 与 property 保持单一数据源同步）。
+- `oas-chart` 的 `data`（及 `options`）setter **只写内部状态、不反射**——property 赋值后 attribute 仍是旧值/空值，**读取走 `el.data` property**（getter 返回最近一次赋值的解析结果），不要用 `getAttribute('data')` 回读。
+
+> 例外：`oas-table` 的 `columns` 若含函数字段（`render` 等，JSON 序列化会丢），setter 走纯内存路径不反射——此类列的读取请走 `el.columns` property。
+
 ## API
 
 ### 属性
