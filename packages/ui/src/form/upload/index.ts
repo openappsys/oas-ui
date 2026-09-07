@@ -8,3 +8,10 @@ if (!customElements.get('oas-upload')) {
 }
 
 export { OASUpload }
+export type {
+  UploadEchoFile,
+  UploadEntry,
+  UploadRequestOptions,
+  UploadCustomRequest,
+  UploadBeforeUpload,
+} from './oas-upload.js'

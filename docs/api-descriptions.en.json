@@ -683,20 +683,43 @@
   },
   "oas-date-picker": {
     "attrs": {
+      "clearable": "Clearable: shows a clear button when a value exists; emits `oas-clear` + `oas-change` (empty value)",
+      "default-value": "Panel anchor month when the value is empty (the value takes precedence when present)",
       "disabled": "Disabled",
-      "format": "Display format tokens (`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`)",
-      "max": "Selectable range (ISO dates)",
-      "min": "Selectable range (ISO dates)",
-      "multiple": "Multiple selection (only `type=date`), value is a JSON array",
+      "first-day-of-week": "Week-start override (0=Sunday … 6=Saturday); defaults to the locale",
+      "format": "Display format tokens (`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`; week/quarter use their fixed value format)",
+      "max": "Selectable range (ISO date); navigation buttons gray out at the boundary",
+      "min": "Selectable range (ISO date); navigation buttons gray out at the boundary",
+      "multiple": "Multiple selection (only `type=date`), value is a JSON array; the typing channel is read-only in this mode",
+      "open": "Controlled open: present = open, removed = closed; gestures only emit `oas-open-change` for the host to write back",
       "placeholder": "Placeholder text",
       "placement": "Popup placement, 12 directions: `top`/`bottom`/`left`/`right` × `-start`/`-end` (default `bottom-start`); auto right-aligns near the viewport right edge, flips upward when space below is insufficient, and clamps into the viewport",
-      "type": "Type: `date` / `daterange` / `month` / `datetime`",
-      "value": "Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON range array"
+      "readonly": "Readonly: the panel can be opened and browsed (cells keyboard-navigable), but no interaction commits",
+      "shortcuts-position": "Shortcut placement: `bottom` (default, horizontal on top) / `left` (vertical sidebar)",
+      "show-week-number": "Show an ISO week-number column (built-in for `type=week`)",
+      "size": "Size: `small` / `medium` / `large` (reads the nearest config-provider injection)",
+      "status": "Validation status: `success` / `warning` / `error` (`error` also sets `aria-invalid`)",
+      "type": "Type: `date` / `daterange` / `month` / `monthrange` / `year` / `yearrange` / `datetime` / `datetimerange` / `week` / `quarter`",
+      "unlink-panels": "Range months flip independently (linked by default)",
+      "value": "Current value: `yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON range array"
     },
     "events": {
-      "oas-change": "Value change, `detail: { value }` (string array for daterange and multiple)"
+      "oas-calendar-change": "Emitted on every range endpoint pick, `detail: { value: [start, end|null] }`",
+      "oas-cell-render": "Emitted per day cell on rebuild, `detail: { date, element }` (listeners must be idempotent)",
+      "oas-change": "Value change, `detail: { value }` (string array for ranges and multiple)",
+      "oas-clear": "Clear, `detail: { value }` is the previous value",
+      "oas-confirm": "Emitted when datetime/datetimerange submits via the confirm button (alongside `oas-change`)",
+      "oas-blur": "The component as a whole loses focus (internal moves do not fire)",
+      "oas-focus": "The component as a whole gains focus",
+      "oas-open-change": "Open state change, `detail: { open }` (both controlled and uncontrolled)"
     },
-    "slots": {}
+    "slots": {
+      "cell": "`template[slot=\"cell\"]` is cloned into each day cell; `[data-cell-date]` binds the day number (dual channel with `oas-cell-render`)"
+    },
+    "props": {
+      "shortcuts": "Shortcuts (object array, `{ label, value }` or `{ label, getValue() }`); built-in defaults per type when unset (labels via locale)",
+      "disabledDate": "Disabled-date callback; dates returning `true` are unselectable (clicks and keyboard skip them; stacks with min/max)"
+    }
   },
   "oas-descriptions": {
     "attrs": {
@@ -816,12 +839,27 @@
       "disabled": "Disabled (row inputs + buttons)",
       "max": "Maximum rows; truncates when over",
       "min": "Minimum rows; auto-fills when below",
-      "model-value": "String array (property or JSON)"
+      "model-value": "String array (property or JSON)",
+      "preset": "Row form: `input` (default, single input) / `pair` (key-value double input)",
+      "placeholder": "Row input placeholder",
+      "key-placeholder": "Key placeholder in pair form",
+      "value-placeholder": "Value placeholder in pair form",
+      "sortable": "Row sorting (move up/down buttons, value swap with focus kept; keyboard accessible)",
+      "size": "Size preset `small` / `medium` (default) / `large`",
+      "status": "Validation status: `error` / `warning` / `success` (passed to the row inputs)",
+      "readonly": "Read-only (rows not editable, add/remove/sort buttons hidden)"
     },
     "events": {
-      "oas-change": "Dispatched after add/remove/edit, `detail: { value }`"
+      "oas-change": "Dispatched after add/remove/edit, `detail: { value }`",
+      "oas-row-render": "Fires on row render (custom row channel), `detail: { index, value, element }`",
+      "oas-focus": "Row focused, `detail: { index }`",
+      "oas-blur": "Row blurred, `detail: { index }`",
+      "oas-add": "Row added, `detail: { index }`",
+      "oas-remove": "Row removed, `detail: { index, value }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"row\"]": "Custom row content (`[data-row-value]`/`[data-row-key]` bindings; remove/sort buttons stay component-side)"
+    }
   },
   "oas-dynamic-tags": {
     "attrs": {
@@ -829,14 +867,34 @@
       "disabled": "Disabled",
       "max": "Maximum number of tags",
       "model-value": "Tag array (property or JSON)",
-      "placeholder": "Input placeholder"
+      "placeholder": "Input placeholder",
+      "separator": "Separator (creates a tag on type; default `,`; empty string = Enter only)",
+      "add-on-paste": "Split pasted text into tags by separator (default true)",
+      "save-on-blur": "Commit leftover input as a tag on blur (**default true, behavior change**: previously silently discarded; set `\"false\"` for the old behavior)",
+      "sortable": "Tag sorting: drag + keyboard Alt+←/→ adjacent swap",
+      "max-tag-count": "Collapse overflow into a `+N` chip (title lists hidden tags)",
+      "size": "Size preset `small` / `medium` (default) / `large`",
+      "status": "Validation status: `error` / `warning` / `success`",
+      "readonly": "Read-only (input/remove buttons hidden, tags display-only)",
+      "clearable": "Clear button (one-click clears all tags)",
+      "maxlength": "Maximum length per tag",
+      "pattern": "Regex for new tags (mismatch warns and rejects)"
     },
     "events": {
       "oas-add": "Tag added, `detail: { value }`",
       "oas-change": "Dispatched after add/remove, `detail: { value }`",
-      "oas-remove": "Tag removed, `detail: { value }`"
+      "oas-remove": "Tag removed, `detail: { value }`",
+      "oas-focus": "Fires when the input gains focus",
+      "oas-blur": "Fires when the input loses focus",
+      "oas-before-add": "Fires before creating a tag (cancellable via preventDefault; limit/format/duplicate checks run first)",
+      "oas-clear": "Fires on clear",
+      "oas-edit": "Tag edit committed, `detail: { index, value, oldValue }` (double-click or focused Enter to edit)"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"tag\"]": "Custom tag (`[data-tag-label]` binding; remove button stays component-side)",
+      "template[slot=\"prefix\"]": "Prefix content slot",
+      "template[slot=\"suffix\"]": "Suffix content slot"
+    }
   },
   "oas-editable": {
     "attrs": {
@@ -844,13 +902,25 @@
       "maxlength": "Maximum input length",
       "placeholder": "Empty value placeholder",
       "submit-on-enter": "Whether Enter submits",
-      "value": "Current value (controlled)"
+      "value": "Current value (controlled)",
+      "submit-on-blur": "Commit on blur (default true; with submit-on-enter forms both/enter/blur/none)",
+      "editing": "Controlled editing state (internal enter/exit auto-reflects; host removal takes the cancel path)",
+      "default-editing": "Start in editing on mount (consumed once)",
+      "readonly": "Read-only (focusable, readable, not editable, aria-readonly)",
+      "status": "Validation status: `error` / `warning` / `success`",
+      "size": "Size preset `small` / `medium` (default) / `large`",
+      "multiline": "Multi-line editing (textarea; Enter for newline, Ctrl/⌘+Enter to commit, auto-grow)",
+      "trigger": "Trigger: `text` (default, click text) / `icon` (pencil button, prevents misclicks)",
+      "allow-empty": "Allow committing an empty value (default unchanged/non-breaking; empty restores the old value)"
     },
     "events": {
       "oas-cancel": "Cancel/empty-value submit (reverts to old value), non-destructive by default",
-      "oas-change": "New value submitted, `detail: { value }`"
+      "oas-change": "New value submitted, `detail: { value }`",
+      "oas-editing": "Fires on entering/exiting editing, `detail: { editing }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"display\"]": "Custom display state (`[data-display-value]`/`[data-display-placeholder]` bindings)"
+    }
   },
   "oas-ellipsis": {
     "attrs": {
@@ -2343,15 +2413,33 @@
   },
   "oas-time-picker": {
     "attrs": {
+      "clearable": "Clearable: shows a clear button when a value exists; emits `oas-clear` + `oas-change` (empty value)",
       "disabled": "Disabled",
-      "format": "Display format tokens",
-      "step": "Minute stepping interval",
-      "value": "Current value (`HH:mm:ss`)"
+      "format": "Display format tokens; a column appears only when the corresponding token exists",
+      "is-range": "Time range: value is a JSON array `[\"HH:mm:ss\",\"HH:mm:ss\"]`, auto-ordered on confirm; the typing channel is read-only in this mode",
+      "open": "Controlled open: present = open, removed = closed; gestures only emit `oas-open-change` for the host to write back",
+      "placeholder": "Placeholder text",
+      "placement": "Popup placement, 12 directions (default `bottom-start`), `fixed` + collision flipping + viewport clamping (same contract as date-picker)",
+      "readonly": "Readonly: the panel can be opened and browsed, but no interaction commits",
+      "size": "Size: `small` / `medium` / `large` (reads the nearest config-provider injection)",
+      "status": "Validation status: `success` / `warning` / `error` (`error` also sets `aria-invalid`)",
+      "step": "Stepping: a JSON triple `{\"h\":2,\"m\":5,\"s\":1}` per unit; a single number remains the minute step",
+      "use12-hours": "12-hour mode: display and columns switch to 12-hour (with an AM/PM column following the locale); the value stays 24-hour",
+      "value": "Current value (`HH:mm:ss`; a JSON array when `is-range`)"
     },
     "events": {
-      "oas-change": "Confirmed value change, `detail: { value }`"
+      "oas-change": "Confirmed value change, `detail: { value }` (string array for `is-range`)",
+      "oas-clear": "Clear, `detail: { value }` is the previous value",
+      "oas-confirm": "Emitted on confirm actions (Enter / outside click / Now, alongside `oas-change`)",
+      "oas-blur": "The component as a whole loses focus (internal moves do not fire)",
+      "oas-focus": "The component as a whole gains focus",
+      "oas-open-change": "Open state change, `detail: { open }` (both controlled and uncontrolled)"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "disabledTime": "Disabled-time callback: `(parts) => { hours?, minutes?, seconds? }`, evaluated against the current time context; disabled options are grayed, not hidden",
+      "presets": "Quick times: an array of `{ label, value: \"HH:mm:ss\" }` rendered as a button row atop the panel"
+    }
   },
   "oas-timeline-item": {
     "attrs": {
@@ -2619,12 +2707,23 @@
       "virtual": "Windowed rendering for large data (virtual scroll, default row height 36px)",
       "item-height": "Fixed row height for virtual scrolling (px), default 36",
       "titles": "Panel titles (JSON array) or `source-title`/`target-title`",
-      "value": "Selected key array (JSON attribute)"
+      "value": "Selected key array (JSON attribute)",
+      "source-title": "Left panel title",
+      "target-title": "Right panel title",
+      "disabled": "Disabled (row clicks/buttons/search all inert; host mirrors data-disabled)",
+      "target-sort": "Target-side ordering: `original` (default, data-source order) / `push` (append) / `unshift` (prepend). Note the value-array ordering semantics: with original, a pre-set out-of-order value is normalized to data order",
+      "simple": "Move on selection (skip the shuttle buttons, off by default)",
+      "target-draggable": "Target-side drag sorting (pair with target-sort=push/unshift; original ordering is data-driven and not draggable)"
     },
     "events": {
-      "oas-change": "Value change after shuttling, `detail: { value }`"
+      "oas-change": "Value change after shuttling, `detail: { value }`",
+      "oas-search": "Panel search input, `detail: { side, query }`",
+      "oas-select-change": "Selection set changed (row click/select-all/keyboard), `detail: { side, selected }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"empty\"]": "Custom content shared by empty and no-match states",
+      "template[slot=\"item\"]": "Custom row (`[data-item-label]` binding, identical for static and virtual rows)"
+    }
   },
   "oas-tree": {
     "attrs": {
@@ -2707,16 +2806,36 @@
       "files": "File list (property, `File[]`)",
       "list-type": "List style: `list` (default) / `picture` (rows with thumbnails) / `picture-card` (card thumbnail wall)",
       "max": "Maximum number of files",
-      "multiple": "Multiple selection"
+      "multiple": "Multiple selection",
+      "action": "Upload endpoint URL (real XHR channel; without it and customRequest, progress is simulated)",
+      "name": "Form field name for the file (default `file`)",
+      "method": "HTTP method (default POST)",
+      "headers": "Extra request headers (JSON string)",
+      "data": "Extra form fields (JSON string, submitted with the file)",
+      "with-credentials": "Cross-origin credentials",
+      "max-size": "Per-file size limit (bytes or `2KB`/`1MB`/`1GB`; over limit fires oas-exceed size form)",
+      "directory": "Directory upload (recursive folder intake)",
+      "paste": "Paste upload (off by default; clipboard files enter the list when on)",
+      "show-file-list": "File list visibility (`\"false\"` hides it, keeping only the drop zone)",
+      "replace": "Replace semantics at max-count=1 (new file replaces the old instead of being rejected)",
+      "tip": "Drop-zone tip text (same as `template[slot=\"tip\"]` for rich content)"
     },
     "events": {
       "oas-change": "File list change, `detail: { files }`",
       "oas-exceed": "Files rejected by the max limit, `detail: { files, max, total }`",
       "oas-preview": "Preview overlay opened, `detail: { file, url }`",
       "oas-remove": "File removed, `detail: { file, index }`",
-      "oas-upload": "Upload progress, `detail: { file, percent, status }`"
+      "oas-upload": "Upload progress, `detail: { file, percent, status }`",
+      "oas-success": "Upload succeeded, `detail: { file, response }`",
+      "oas-error": "Upload failed, `detail: { file, response?, status? }` (retry button appears)",
+      "oas-cancel": "Upload cancelled, `detail: { file }` (cancel button on the item)",
+      "oas-retry": "Retry clicked, `detail: { file }` (re-upload after failure)"
     },
-    "slots": {}
+    "slots": {
+      "trigger": "Replace the drop-zone content (zone semantics kept)",
+      "template[slot=\"item\"]": "Custom file row/card (`[data-item-name]`/`[data-item-size]` bindings)",
+      "template[slot=\"tip\"]": "Drop-zone tip rich content (tip attribute wins)"
+    }
   },
   "oas-virtual-list": {
     "attrs": {

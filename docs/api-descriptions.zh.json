@@ -683,20 +683,43 @@
   },
   "oas-date-picker": {
     "attrs": {
+      "clearable": "可清除：有值时显示清除钮，点击清空并派发 `oas-clear` + `oas-change`（空值）",
+      "default-value": "空值时面板初始锚点（如回显生日月份；有值时以值为锚）",
       "disabled": "禁用",
-      "format": "展示格式 token（`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`）",
-      "max": "可选范围（ISO 日期）",
-      "min": "可选范围（ISO 日期）",
-      "multiple": "多选（仅 `type=date`），值存 JSON 数组",
+      "first-day-of-week": "周起始覆写（0=周日 … 6=周六），默认跟随 locale",
+      "format": "展示格式 token（`yyyy`/`MM`/`dd`/`HH`/`mm`/`ss`；week/quarter 为固定值格式）",
+      "max": "可选范围（ISO 日期）；翻页到界时导航按钮置灰",
+      "min": "可选范围（ISO 日期）；翻页到界时导航按钮置灰",
+      "multiple": "多选（仅 `type=date`），值存 JSON 数组；该形态手输通道只读",
+      "open": "受控开合：在场=展开、移除=收起；手势只派发 `oas-open-change` 由宿主回写",
       "placeholder": "占位提示",
       "placement": "浮层位置，12 向：`top`/`bottom`/`left`/`right` × `-start`/`-end`（默认 `bottom-start`）；触发器贴近视口右缘时自动右对齐翻转、下方空间不足时上翻，并夹取到视口内",
-      "type": "类型：`date` / `daterange` / `month` / `datetime`",
-      "value": "当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组"
+      "readonly": "只读：面板可展开浏览（单元格可键盘导航），点选/快捷/清除/手输均不提交",
+      "shortcuts-position": "快捷预设位置：`bottom`（默认，顶部横排）/ `left`（左侧纵栏）",
+      "show-week-number": "显示 ISO 周号列（`type=week` 自带）",
+      "size": "尺寸档：`small` / `medium` / `large`（就近读取 config-provider 注入）",
+      "status": "校验态：`success` / `warning` / `error`（`error` 联动 `aria-invalid`）",
+      "type": "类型：`date` / `daterange` / `month` / `monthrange` / `year` / `yearrange` / `datetime` / `datetimerange` / `week` / `quarter`",
+      "unlink-panels": "范围双月各自独立翻页（默认联动）",
+      "value": "当前值：`yyyy-MM-dd` / `yyyy-MM` / `yyyy` / `yyyy-Wnn` / `yyyy-Qn` / `yyyy-MM-ddTHH:mm:ss` / JSON 范围数组"
     },
     "events": {
-      "oas-change": "值变化，`detail: { value }`（daterange 为字符串数组；multiple 为字符串数组）"
+      "oas-calendar-change": "范围类型起止落选即派发，`detail: { value: [start, end|null] }`（宿主可做已选起点提示）",
+      "oas-cell-render": "日格重建时逐格派发，`detail: { date, element }`（标记点/徽标场景，监听须幂等）",
+      "oas-change": "值变化，`detail: { value }`（范围/multiple 为字符串数组）",
+      "oas-clear": "清除，`detail: { value }` 为清空前的值",
+      "oas-confirm": "datetime / datetimerange 点确定提交时派发（与 `oas-change` 并行）",
+      "oas-blur": "组件整体失焦（组件内转移不误报）",
+      "oas-focus": "组件整体获焦",
+      "oas-open-change": "开合变化，`detail: { open }`（受控/非受控均派发）"
     },
-    "slots": {}
+    "slots": {
+      "cell": "`template[slot=\"cell\"]` 克隆进每个日格，`[data-cell-date]` 自动绑定日期数字（与 `oas-cell-render` 双通道）"
+    },
+    "props": {
+      "shortcuts": "快捷预设（对象数组，`{ label, value }` 或 `{ label, getValue() }`）；未设置时各类型内置默认预设（标签走 locale）",
+      "disabledDate": "禁用日期回调，返回 `true` 的日期不可选（点击与键盘导航均跳过；与 min/max 叠加禁用）"
+    }
   },
   "oas-descriptions": {
     "attrs": {
@@ -816,12 +839,27 @@
       "disabled": "禁用（行内输入 + 按钮）",
       "max": "最多行数，超长截断",
       "min": "最少行数，不足自动补足",
-      "model-value": "字符串数组（property 或 JSON）"
+      "model-value": "字符串数组（property 或 JSON）",
+      "preset": "行形态：`input`（默认单输入）/ `pair`（键值对双输入）",
+      "placeholder": "行输入占位文本",
+      "key-placeholder": "pair 形态键占位文本",
+      "value-placeholder": "pair 形态值占位文本",
+      "sortable": "行排序（上移/下移按钮，值交换+焦点不丢；键盘可达）",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
+      "status": "校验态：`error` / `warning` / `success`（透传给行内输入框）",
+      "readonly": "只读（行不可编辑、增删/排序按钮隐藏）"
     },
     "events": {
-      "oas-change": "增/删/编辑后派发，`detail: { value }`"
+      "oas-change": "增/删/编辑后派发，`detail: { value }`",
+      "oas-row-render": "行渲染时派发（自定义行通道），`detail: { index, value, element }`",
+      "oas-focus": "行聚焦，`detail: { index }`",
+      "oas-blur": "行失焦，`detail: { index }`",
+      "oas-add": "新增行，`detail: { index }`",
+      "oas-remove": "移除行，`detail: { index, value }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"row\"]": "自定义行内容（`[data-row-value]`/`[data-row-key]` 绑定；删除/排序按钮保留组件侧）"
+    }
   },
   "oas-dynamic-tags": {
     "attrs": {
@@ -829,14 +867,34 @@
       "disabled": "禁用",
       "max": "标签数量上限",
       "model-value": "标签数组（property 或 JSON）",
-      "placeholder": "输入框占位符"
+      "placeholder": "输入框占位符",
+      "separator": "分隔符（输入即建标签；默认 `,`；空串=仅 Enter 建）",
+      "add-on-paste": "粘贴时按分隔符拆分批量建标签（默认 true）",
+      "save-on-blur": "失焦保存残留文本为标签（**默认 true，行为变更**：旧版失焦静默丢弃；要旧行为显式 `\"false\"`）",
+      "sortable": "标签排序：拖拽 + 键盘 Alt+←/→ 相邻交换",
+      "max-tag-count": "超量折叠：超出收进 `+N`（title 悬浮列隐藏标签）",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
+      "status": "校验态：`error` / `warning` / `success`",
+      "readonly": "只读（输入框/移除按钮隐藏，标签仅展示）",
+      "clearable": "清空按钮（一键清全部标签）",
+      "maxlength": "单标签最大长度",
+      "pattern": "新标签格式正则（不匹配提示并拒建）"
     },
     "events": {
       "oas-add": "新增标签，`detail: { value }`",
       "oas-change": "增删后派发，`detail: { value }`",
-      "oas-remove": "删除标签，`detail: { value }`"
+      "oas-remove": "删除标签，`detail: { value }`",
+      "oas-focus": "输入框聚焦时派发",
+      "oas-blur": "输入框失焦时派发",
+      "oas-before-add": "建标签前派发（可取消，preventDefault 拦截；上限/格式/重复校验先于它）",
+      "oas-clear": "清空时派发",
+      "oas-edit": "编辑标签提交，`detail: { index, value, oldValue }`（双击或聚焦 Enter 进编辑）"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"tag\"]": "自定义标签（`[data-tag-label]` 绑定；删除按钮组件侧）",
+      "template[slot=\"prefix\"]": "前缀内容插槽",
+      "template[slot=\"suffix\"]": "后缀内容插槽"
+    }
   },
   "oas-editable": {
     "attrs": {
@@ -844,13 +902,25 @@
       "maxlength": "输入最大长度",
       "placeholder": "空值占位",
       "submit-on-enter": "是否允许 Enter 提交",
-      "value": "当前值（受控）"
+      "value": "当前值（受控）",
+      "submit-on-blur": "失焦提交（默认 true；与 submit-on-enter 拼出 both/enter/blur/none 四态）",
+      "editing": "受控编辑态（内部进出自动反射；宿主移除走取消路径）",
+      "default-editing": "挂载即编辑（仅首次消费）",
+      "readonly": "只读（可聚焦可读不可编辑，aria-readonly）",
+      "status": "校验态：`error` / `warning` / `success`",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
+      "multiline": "多行编辑（textarea；Enter 换行、Ctrl/⌘+Enter 提交、自适应高）",
+      "trigger": "触发方式：`text`（默认点文本）/ `icon`（铅笔按钮触发，防误触）",
+      "allow-empty": "允许提交空值（默认非破坏不变；空值还原旧值）"
     },
     "events": {
       "oas-cancel": "取消/空值提交（还原旧值），默认非破坏",
-      "oas-change": "提交新值，`detail: { value }`"
+      "oas-change": "提交新值，`detail: { value }`",
+      "oas-editing": "进入/退出编辑态各派一次，`detail: { editing }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"display\"]": "展示态自定义（`[data-display-value]`/`[data-display-placeholder]` 绑定）"
+    }
   },
   "oas-ellipsis": {
     "attrs": {
@@ -2343,15 +2413,33 @@
   },
   "oas-time-picker": {
     "attrs": {
+      "clearable": "可清除：有值时显示清除钮，点击清空并派发 `oas-clear` + `oas-change`（空值）",
       "disabled": "禁用",
-      "format": "展示格式 token",
-      "step": "分钟步进间隔",
-      "value": "当前值（`HH:mm:ss`）"
+      "format": "展示格式 token；含 `HH`/`mm`/`ss` 时对应列出现",
+      "is-range": "时间范围：值为 JSON 数组 `[\"HH:mm:ss\",\"HH:mm:ss\"]`，确认时起止自动排序；该形态手输通道只读",
+      "open": "受控开合：在场=展开、移除=收起；手势只派发 `oas-open-change` 由宿主回写",
+      "placeholder": "占位提示",
+      "placement": "浮层位置，12 向（默认 `bottom-start`），`fixed` + 碰撞翻转 + 视口夹取（与 date-picker 同契约）",
+      "readonly": "只读：面板可展开浏览，点选/此刻/预设/清除/手输均不提交",
+      "size": "尺寸档：`small` / `medium` / `large`（就近读取 config-provider 注入）",
+      "status": "校验态：`success` / `warning` / `error`（`error` 联动 `aria-invalid`）",
+      "step": "步进：JSON 三元组 `{\"h\":2,\"m\":5,\"s\":1}` 分别控制时/分/秒列；单数字等价于分钟步进",
+      "use12-hours": "12 小时制：显示与列走 12 小时制（附上午/下午列，文案随 locale）；value 恒为 24 小时制",
+      "value": "当前值（`HH:mm:ss`；`is-range` 为 JSON 数组）"
     },
     "events": {
-      "oas-change": "确认值变化，`detail: { value }`"
+      "oas-change": "确认值变化，`detail: { value }`（`is-range` 为字符串数组）",
+      "oas-clear": "清除，`detail: { value }` 为清空前的值",
+      "oas-confirm": "确认提交时派发（Enter/外部点击/此刻，与 `oas-change` 并行）",
+      "oas-blur": "组件整体失焦（组件内转移不误报）",
+      "oas-focus": "组件整体获焦",
+      "oas-open-change": "开合变化，`detail: { open }`（受控/非受控均派发）"
     },
-    "slots": {}
+    "slots": {},
+    "props": {
+      "disabledTime": "禁用时刻回调：`(parts) => { hours?, minutes?, seconds? }`，按当前时刻上下文求值，禁用项置灰不隐藏",
+      "presets": "快捷时刻：`{ label, value: \"HH:mm:ss\" }` 数组，面板顶部按钮列，点击即应用并关闭"
+    }
   },
   "oas-timeline-item": {
     "attrs": {
@@ -2619,12 +2707,23 @@
       "virtual": "大数据量窗口化渲染（虚拟滚动，行高默认 36px）",
       "item-height": "虚拟滚动每行固定高度（px），默认 36",
       "titles": "双面板标题（JSON 数组）或 `source-title`/`target-title`",
-      "value": "已选 key 数组（JSON 属性）"
+      "value": "已选 key 数组（JSON 属性）",
+      "source-title": "左面板标题",
+      "target-title": "右面板标题",
+      "disabled": "禁用（行点击/按钮/搜索全部失效；宿主镜像 data-disabled）",
+      "target-sort": "目标侧排序：`original`（默认，按数据源序）/ `push`（依次入尾）/ `unshift`（依次插头）。⚠️ 注意 value 数组顺序语义：original 下乱序预置 value 会被归一到数据源序",
+      "simple": "选中即移动（免点穿梭按钮，默认关）",
+      "target-draggable": "目标侧拖拽排序（需配 target-sort=push/unshift；original 模式顺序由数据源决定不启用）"
     },
     "events": {
-      "oas-change": "穿梭后值变化，`detail: { value }`"
+      "oas-change": "穿梭后值变化，`detail: { value }`",
+      "oas-search": "面板搜索输入，`detail: { side, query }`",
+      "oas-select-change": "选中集合变化（点行/全选/键盘），`detail: { side, selected }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"empty\"]": "空态与无匹配共用自定义内容",
+      "template[slot=\"item\"]": "自定义行（`[data-item-label]` 绑定，静态+虚拟行一致）"
+    }
   },
   "oas-tree": {
     "attrs": {
@@ -2707,16 +2806,36 @@
       "files": "文件列表（property，`File[]`）",
       "list-type": "列表样式：`list`（默认）/ `picture`（列表带小缩略图）/ `picture-card`（卡片缩略图墙）",
       "max": "最大文件数",
-      "multiple": "多选"
+      "multiple": "多选",
+      "action": "上传接口 URL（真实 XHR 通道；不配且无 customRequest 时为模拟进度）",
+      "name": "上传文件的表单字段名（默认 `file`）",
+      "method": "HTTP 方法（默认 POST）",
+      "headers": "附加请求头（JSON 字符串）",
+      "data": "附加表单字段（JSON 字符串，随文件一起提交）",
+      "with-credentials": "跨域携带凭证",
+      "max-size": "单文件大小上限（字节或 `2KB`/`1MB`/`1GB`；超限派 oas-exceed size 形态）",
+      "directory": "目录上传（整目录递归入列）",
+      "paste": "粘贴上传（默认关；开启后粘贴剪贴板文件入列）",
+      "show-file-list": "文件列表显隐（`\"false\"` 隐藏，仅保留拖拽区）",
+      "replace": "max-count=1 时替换语义（新文件替换旧文件而非拒绝）",
+      "tip": "拖拽区提示文案（同 `template[slot=\"tip\"]` 富内容）"
     },
     "events": {
       "oas-change": "文件列表变化，`detail: { files }`",
       "oas-exceed": "添加文件超限被拒绝，`detail: { files, max, total }`",
       "oas-preview": "打开预览浮层，`detail: { file, url }`",
       "oas-remove": "移除文件，`detail: { file, index }`",
-      "oas-upload": "上传进度，`detail: { file, percent, status }`"
+      "oas-upload": "上传进度，`detail: { file, percent, status }`",
+      "oas-success": "上传成功，`detail: { file, response }`",
+      "oas-error": "上传失败，`detail: { file, response?, status? }`（行/卡片出重试按钮）",
+      "oas-cancel": "取消上传，`detail: { file }`（行/卡片 cancel 按钮）",
+      "oas-retry": "点击重试，`detail: { file }`（失败后重发）"
     },
-    "slots": {}
+    "slots": {
+      "trigger": "替换拖拽区内容（zone 语义保留）",
+      "template[slot=\"item\"]": "自定义文件行/卡片（`[data-item-name]`/`[data-item-size]` 绑定）",
+      "template[slot=\"tip\"]": "拖拽区提示富内容（tip 属性优先）"
+    }
   },
   "oas-virtual-list": {
     "attrs": {

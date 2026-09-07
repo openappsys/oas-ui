@@ -492,7 +492,8 @@ describe('@oas-ui/ssr renderToString', () => {
     const html = await renderToString('oas-date-picker', { value: '2024-01-15' }, '', {
       locale: 'zh-CN',
     })
-    expect(html).toContain('<oas-date-picker value="2024-01-15">')
+    // data-size 为 size 镜像属性（与 oas-input 同契约）
+    expect(html).toContain('<oas-date-picker value="2024-01-15" data-size="medium">')
     expect(html).toContain('part="trigger"')
     expect(html).toContain('2024-01-15')
     // 面板关闭态：不含日历网格
@@ -503,7 +504,8 @@ describe('@oas-ui/ssr renderToString', () => {
     const html = await renderToString('oas-time-picker', { value: '12:30:00' }, '', {
       locale: 'zh-CN',
     })
-    expect(html).toContain('<oas-time-picker value="12:30:00">')
+    // data-size 为 size 镜像属性（与 oas-input 同契约）
+    expect(html).toContain('<oas-time-picker value="12:30:00" data-size="medium">')
     expect(html).toContain('part="trigger"')
     expect(html).toContain('12:30:00')
     // 面板关闭态：不含选项行（列容器骨架在模板中，属预期）
@@ -595,7 +597,7 @@ describe('@oas-ui/ssr renderToString', () => {
 
   it('oas-dynamic-input：model-value JSON 通道产出行骨架（内嵌 oas-input）', async () => {
     const html = await renderToString('oas-dynamic-input', { 'model-value': '["a","b"]' }, '')
-    expect(html).toContain('<oas-dynamic-input model-value="[&quot;a&quot;,&quot;b&quot;]">')
+    expect(html).toContain('<oas-dynamic-input model-value="[&quot;a&quot;,&quot;b&quot;]" data-size="medium">')
     expect(html).toContain('part="rows"')
     expect(html).toContain('part="row-input"')
     expect(html).toContain('<oas-input')
@@ -604,7 +606,7 @@ describe('@oas-ui/ssr renderToString', () => {
 
   it('oas-dynamic-tags：model-value JSON 通道产出标签行', async () => {
     const html = await renderToString('oas-dynamic-tags', { 'model-value': '["标签1"]' }, '')
-    expect(html).toContain('<oas-dynamic-tags model-value="[&quot;标签1&quot;]">')
+    expect(html).toContain('<oas-dynamic-tags model-value="[&quot;标签1&quot;]" data-size="medium">')
     expect(html).toContain('part="tags"')
     expect(html).toContain('part="tag"')
     expect(html).toContain('标签1')
@@ -613,7 +615,7 @@ describe('@oas-ui/ssr renderToString', () => {
 
   it('oas-editable：展示态快照（value 文本同步，编辑态默认隐藏）', async () => {
     const html = await renderToString('oas-editable', { value: '可编辑文本' }, '')
-    expect(html).toContain('<oas-editable value="可编辑文本">')
+    expect(html).toContain('<oas-editable value="可编辑文本" data-size="medium" data-trigger="text">')
     expect(html).toContain('part="display"')
     expect(html).toContain('可编辑文本')
     // 编辑态容器默认隐藏
