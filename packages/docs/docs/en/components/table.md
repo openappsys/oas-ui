@@ -135,6 +135,8 @@ Set `editable` to enable inline editing; mark editable columns with `editable: t
 
 Editable cells come with perceptible affordances: hovering or focusing (focus-visible) a cell reveals a subtle background tint and a pencil icon at the top-right (the icon never intercepts interaction), and the cell carries a `title` hint ("Double-click to edit"). Three ways to start editing: double-click, or focus the cell and press Enter / F2.
 
+Clicks / double-clicks landing inside an inline “interactive host” never cascade into row-level gestures: pointer events inside native controls (`button` / `a` / `input` / `select` / `textarea`), elements carrying a `role` attribute, or library interactive components (e.g. `oas-button`, `oas-link`, `oas-select`) only trigger the control itself — they neither toggle row selection nor get misread as a double-click-to-edit. Row clicks and double-click editing share the same exclusion list, kept in sync as new interactive components are added to the library. Business-specific interactive content inside a row (charts, mini widgets, etc.) needs no library release: add `data-oas-row-click-ignore` to its container to exempt that whole block from row clicks and row editing.
+
 ## Controlled Editing
 
 <DemoBlock title="Controlled editing (edit-controlled)">

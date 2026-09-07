@@ -1,6 +1,9 @@
 import type { ReactiveController } from '@oas-ui/core'
 import { editPath } from '@oas-ui/icons'
 import type { TableColumn, TableEditCapability } from './oas-table.js'
+// 行内交互宿主排除清单：双击进编辑判定与行点击共用同一份（单一事实来源，
+// 见 oas-table-interactive.js 的维护纪律注释——库内新增交互型组件须同步该清单）
+import { ROW_INTERACTIVE_EXCLUSION } from './oas-table-interactive.js'
 
 /**
  * 行内编辑能力（edit 能力包）：把「编辑 + 校验 machinery」从 OASTableBase 外置为
@@ -104,17 +107,21 @@ export class TableEditController implements ReactiveController, TableEditCapabil
   private onTableDblClick = (e: MouseEvent): void => {
     const target = e.target as HTMLElement | null
     if (!target) return
-    if (target.closest('input, select, textarea, button, a')) return
+    // 双击落在行内交互宿主（原生控件/库内交互组件/逃生口容器）上不进入编辑：
+    // 内嵌 oas-button 等控件会被误判为「双击编辑」（与行点击排除同一清单）
+    if (target.closest(ROW_INTERACTIVE_EXCLUSION)) return
     const td = target.closest('td.editable-cell') as HTMLTableCellElement | null
     if (!td) return
     this.enterEdit(td)
   }
 
-  /** 委托的 click 处理：排除编辑器/交互控件内部；同行同列 500ms 内两击 = 双击进编辑 */
+  /** 委托的 click 处理：排除交互宿主内部；同行同列 500ms 内两击 = 双击进编辑 */
   private onTableClick = (e: MouseEvent): void => {
     const target = e.target as HTMLElement | null
     if (!target) return
-    if (target.closest('input, select, textarea, button, a')) return
+    // 与 dblclick 兜底同源：行内交互宿主（含 data-oas-row-click-ignore 逃生口）上的
+    // 连点不参与双击判定（否则控件上的快速两击会误判为「双击编辑」进入编辑态）
+    if (target.closest(ROW_INTERACTIVE_EXCLUSION)) return
     const td = target.closest('td.editable-cell') as HTMLTableCellElement | null
     if (!td) return
     const sig = {

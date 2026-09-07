@@ -496,3 +496,119 @@ test('table 行内 oas-button 点击不连带 oas-row-click（宿主无 role，�
   expect(r2, '普通单元格点击仍应派发 oas-row-click').toBe(1)
 })
 
+test('table 逃生口：data-oas-row-click-ignore 容器内点击不连带 oas-row-click（业务自定义交互内容豁免，无需发版）', async ({
+  page,
+}) => {
+  // 设计固化：行内排除清单只点名库内交互组件，业务自定义交互内容（图表/迷你挂件等）等不了
+  // 库发版逐个点名——容器标注 data-oas-row-click-ignore 即整块豁免行点击（行编辑同源）。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, {
+    timeout: 15000,
+  })
+  await page.evaluate(() => {
+    const t = document.createElement('oas-table')
+    t.id = 'qa-row-ignore-escape'
+    t.setAttribute('row-key', 'name')
+    t.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '姓名' },
+        { key: 'op', title: '操作' },
+      ]),
+    )
+    t.setAttribute('data', JSON.stringify([{ name: '张三' }]))
+    t.dataset.rowClick = '0'
+    t.addEventListener('oas-row-click', () => {
+      t.dataset.rowClick = String(Number(t.dataset.rowClick!) + 1)
+    })
+    ;(document.querySelector('.vp-doc') ?? document.body).append(t)
+    // 行内自定义交互容器：逃生口标注包住原生 span（span 自身不在点名清单内，靠容器豁免）
+    const wrap = document.createElement('div')
+    wrap.setAttribute('data-oas-row-click-ignore', '')
+    const inner = document.createElement('span')
+    inner.textContent = '迷你挂件'
+    wrap.appendChild(inner)
+    t.shadowRoot!.querySelector('td[data-col="op"]')!.appendChild(wrap)
+  })
+  // 点逃生口容器内的 span：不连带 oas-row-click / 不触发选中重建
+  await page.locator('#qa-row-ignore-escape td[data-col="op"] span').click()
+  await page.waitForTimeout(200)
+  const r1 = await page.evaluate(() => {
+    const t = document.querySelector<HTMLElement>('#qa-row-ignore-escape')!
+    return {
+      rowClick: Number(t.dataset.rowClick ?? '0'),
+      hasSpan: !!t.shadowRoot!.querySelector('td[data-col="op"] span'),
+    }
+  })
+  expect(r1.rowClick, '逃生口容器内点击不应连带 oas-row-click').toBe(0)
+  expect(r1.hasSpan, '逃生口点击不应触发行选中重建（内容应仍在原格）').toBe(true)
+  // 对照：逃生口外的普通文本单元格点击仍派发 oas-row-click（逃生口未误伤正常行点击）
+  await page.locator('#qa-row-ignore-escape td[data-col="name"]').click()
+  await page.waitForTimeout(200)
+  const r2 = await page.evaluate(() => {
+    const t = document.querySelector<HTMLElement>('#qa-row-ignore-escape')!
+    const v = Number(t.dataset.rowClick ?? '0')
+    t.remove()
+    return v
+  })
+  expect(r2, '逃生口外的普通单元格点击仍应派发 oas-row-click').toBe(1)
+})
+
+test('table 可编辑格内 oas-button 双击不进入编辑（编辑路径排除清单与行点击同源）', async ({ page }) => {
+  // 缺陷固化：双击进编辑前排除清单 input,select,textarea,button,a 命中不了 <oas-button> 宿主，
+  // 可编辑列行内嵌 oas-button（自定义内容）双击会误入编辑态——行点击清单已补 oas-button，
+  // 编辑路径同款遗漏未修。修复=两条路径共用同一份排除清单（ROW_INTERACTIVE_EXCLUSION）。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(
+    () => customElements.get('oas-table') != null && customElements.get('oas-button') != null,
+    null,
+    { timeout: 15000 },
+  )
+  await page.evaluate(() => {
+    const t = document.createElement('oas-table')
+    t.id = 'qa-edit-inline-oas-button'
+    t.setAttribute('editable', '')
+    t.setAttribute('row-key', 'name')
+    t.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '姓名', editable: true },
+        { key: 'age', title: '年龄', editable: true },
+      ]),
+    )
+    t.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '张三', age: 30 },
+        { name: '李四', age: 25 },
+      ]),
+    )
+    ;(document.querySelector('.vp-doc') ?? document.body).append(t)
+    const btn = document.createElement('oas-button')
+    btn.textContent = '改名'
+    t.shadowRoot!.querySelector('td[data-col="name"]')!.appendChild(btn)
+  })
+  // 真实双击可编辑格内 oas-button：按钮连点不得判为「双击编辑」
+  await page.locator('#qa-edit-inline-oas-button td[data-col="name"] oas-button').dblclick()
+  await page.waitForTimeout(300)
+  const afterBtn = await page.evaluate(() => {
+    const t = document.querySelector<HTMLElement>('#qa-edit-inline-oas-button')!
+    return {
+      hasEditor: !!t.shadowRoot!.querySelector('input.cell-editor'),
+      editingCol: !!t.shadowRoot!.querySelector('th[data-editing-col="true"]'),
+    }
+  })
+  expect(afterBtn.hasEditor, '双击 oas-button 不应进入编辑').toBe(false)
+  expect(afterBtn.editingCol, '双击 oas-button 不应置列编辑高亮').toBe(false)
+  // 对照：双击同表纯文本可编辑格照常进入编辑（扩展排除未误伤普通双击）
+  await page.locator('#qa-edit-inline-oas-button td[data-col="age"]').first().dblclick()
+  await page.waitForTimeout(300)
+  const afterPlain = await page.evaluate(() => {
+    const t = document.querySelector<HTMLElement>('#qa-edit-inline-oas-button')!
+    const hasEditor = !!t.shadowRoot!.querySelector('input.cell-editor')
+    t.remove()
+    return hasEditor
+  })
+  expect(afterPlain, '纯文本可编辑格双击应照常进入编辑').toBe(true)
+})
+
