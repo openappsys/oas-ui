@@ -225,6 +225,7 @@ For the line form, `size` is a height tier (`small` 4px / `medium` 8px / `large`
     <oas-progress percent="120" max="200"><span>120MB / 200MB</span></oas-progress>
     <oas-progress percent="160" max="200" buffer="190"></oas-progress>
     <oas-progress type="dashboard" percent="128" max="256" label="Disk usage"></oas-progress>
+    <oas-progress value="45" max="60"><span>45 / 60 min (value alias)</span></oas-progress>
   </oas-space>
 </DemoBlock>
 

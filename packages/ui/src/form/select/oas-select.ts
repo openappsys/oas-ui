@@ -12,6 +12,17 @@ export interface Option {
   group?: string
 }
 
+/** size 尺寸档（对齐 oas-input：small/medium/large，控高走 --oas-control-height-* token） */
+const VALID_SIZES = ['small', 'medium', 'large'] as const
+/** status 校验态：success / warning / error（error 联动 aria-invalid） */
+const VALID_STATUSES = ['error', 'warning', 'success'] as const
+
+/** 枚举归一化：合法值原样返回，空/非法值静默回落默认（非法值不告警，保持输出干净） */
+function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
+  if (raw === '') return fallback
+  return (valid as readonly string[]).includes(raw) ? raw : fallback
+}
+
 /** 选项行样式（非虚拟模式渲染在 select 自身 shadow；虚拟模式需注入到 vlist shadow，两处共用） */
 const OPTION_STYLE = `
 .option {
@@ -73,17 +84,27 @@ ${OPTION_STYLE}
 `
 
 const STYLE = `
-:host {
+ :host {
   display: inline-block;
   position: relative;
   font-family: inherit;
   width: 220px;
+  /* 尺寸档内部控高变量（data-size 镜像切换；不占公开 API，外部请用 size 属性） */
+  --_ch: var(--oas-control-height-md);
+  /* 下拉高度 CSS 变量开口：宿主覆盖即可调高（默认 240px），不占属性 API */
+  --oas-select-dropdown-height: 240px;
+}
+:host([data-size='small']) {
+  --_ch: var(--oas-control-height-sm);
+}
+:host([data-size='large']) {
+  --_ch: var(--oas-control-height-lg);
 }
 .trigger {
   appearance: none;
   box-sizing: border-box;
   width: 100%;
-  min-height: var(--oas-control-height-md);
+  min-height: var(--_ch);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -100,6 +121,27 @@ const STYLE = `
   transition: border-color var(--oas-transition-fast) var(--oas-ease-out),
     box-shadow var(--oas-transition-fast) var(--oas-ease-out);
 }
+/* ---- size 尺寸档：字号/padding/chip 控高联动（默认 medium 走基础样式） ---- */
+:host([data-size='small']) .trigger {
+  font-size: var(--oas-font-size-sm);
+  padding: 0 var(--oas-space-2);
+}
+:host([data-size='large']) .trigger {
+  font-size: var(--oas-font-size-lg);
+  padding: 0 var(--oas-space-4);
+}
+:host([data-size='small']) :is(.chip, .chip-plus) {
+  height: 16px;
+}
+:host([data-size='large']) :is(.chip, .chip-plus) {
+  height: 26px;
+}
+:host([data-size='small']) .search-input {
+  font-size: var(--oas-font-size-sm);
+}
+:host([data-size='large']) .search-input {
+  font-size: var(--oas-font-size-lg);
+}
 .trigger:hover {
   border-color: var(--oas-color-primary);
 }
@@ -110,11 +152,35 @@ const STYLE = `
 .trigger[aria-expanded='true'] {
   border-color: var(--oas-color-primary);
 }
+.trigger[aria-readonly='true'] {
+  /* readonly：可聚焦可复制但不弹层——光标不指示可点开 */
+  cursor: default;
+}
+/* ---- status 校验态：success / warning / error（宿主自设 aria-invalid 等效 error 视觉，置于此处统一胜出） ---- */
+:host([data-status='success']) .trigger {
+  border-color: var(--oas-color-success);
+}
+:host([data-status='success']) .trigger:focus-visible,
+:host([data-status='success']) .trigger[aria-expanded='true'] {
+  border-color: var(--oas-color-success);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--oas-color-success) 30%, transparent);
+}
+:host([data-status='warning']) .trigger {
+  border-color: var(--oas-color-warning);
+}
+:host([data-status='warning']) .trigger:focus-visible,
+:host([data-status='warning']) .trigger[aria-expanded='true'] {
+  border-color: var(--oas-color-warning);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--oas-color-warning) 30%, transparent);
+}
+:host([data-status='error']) .trigger,
 :host([aria-invalid='true']) .trigger {
   border-color: var(--oas-color-danger);
 }
-:host([aria-invalid='true']) .trigger[aria-expanded='true'],
-:host([aria-invalid='true']) .trigger:focus-visible {
+:host([data-status='error']) .trigger:focus-visible,
+:host([data-status='error']) .trigger[aria-expanded='true'],
+:host([aria-invalid='true']) .trigger:focus-visible,
+:host([aria-invalid='true']) .trigger[aria-expanded='true'] {
   border-color: var(--oas-color-danger);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--oas-color-danger) 30%, transparent);
 }
@@ -200,9 +266,9 @@ const STYLE = `
 }
 .chevron {
   transition: transform var(--oas-transition-fast) var(--oas-ease-out);
-  /* 多行标签时箭头固定首行对齐，不随触发器长高漂浮 */
+  /* 多行标签时箭头固定首行对齐，不随触发器长高漂浮（随尺寸档控高联动） */
   align-self: flex-start;
-  margin-top: calc((var(--oas-control-height-md) - 12px) / 2);
+  margin-top: calc((var(--_ch) - 12px) / 2);
   flex-shrink: 0;
 }
 .trigger[aria-expanded='true'] .chevron {
@@ -222,9 +288,9 @@ const STYLE = `
   align-items: center;
   border-radius: var(--oas-radius-sm);
   flex-shrink: 0;
-  /* 多行标签时清除按钮固定首行对齐，不随触发器长高漂浮（与 .chevron 一致） */
+  /* 多行标签时清除按钮固定首行对齐，不随触发器长高漂浮（与 .chevron 一致，随尺寸档联动） */
   align-self: flex-start;
-  margin-top: calc((var(--oas-control-height-md) - 12px) / 2);
+  margin-top: calc((var(--_ch) - 12px) / 2);
 }
 .clear-btn:hover {
   color: var(--oas-color-text-primary);
@@ -259,7 +325,7 @@ const STYLE = `
 .search-input {
   box-sizing: border-box;
   width: 100%;
-  height: var(--oas-control-height-md);
+  height: var(--_ch);
   margin-bottom: var(--oas-space-1);
   padding: 0 var(--oas-space-2);
   border: 1px solid var(--oas-color-border);
@@ -274,8 +340,23 @@ const STYLE = `
   border-color: var(--oas-color-primary);
   box-shadow: var(--oas-focus-ring);
 }
+/* ---- 下拉头尾插槽容器（template[slot="header"/"footer"] 克隆目标；键盘焦点不进入） ---- */
+.dropdown-header,
+.dropdown-footer {
+  padding: var(--oas-space-2) var(--oas-space-3);
+  font-size: var(--oas-font-size-sm);
+  color: var(--oas-color-text-primary);
+}
+.dropdown-header {
+  border-bottom: 1px solid var(--oas-color-border);
+  margin-bottom: var(--oas-space-1);
+}
+.dropdown-footer {
+  border-top: 1px solid var(--oas-color-border);
+  margin-top: var(--oas-space-1);
+}
 .listbox {
-  max-height: 240px;
+  max-height: var(--oas-select-dropdown-height, 240px);
   overflow-y: auto;
 }
 .option-group {
@@ -317,6 +398,13 @@ export class OASSelect extends OASElement {
       'virtual',
       'item-height',
       'disabled-skip',
+      'size',
+      'status',
+      'open',
+      'max-count',
+      'placement',
+      'readonly',
+      'debounce',
     ]
   }
 
@@ -335,11 +423,59 @@ export class OASSelect extends OASElement {
   set options(value: Option[] | string) {
     this.setAttribute('options', typeof value === 'string' ? value : JSON.stringify(value))
   }
+
+  /**
+   * 自定义本地过滤函数（JS property 通道，attribute 传不了函数）：
+   * `(query, option) => boolean`，query 为原始输入（trim 后未转小写），option 为完整选项对象。
+   * 仅本地过滤模式生效（remote 模式数据面过滤由宿主负责）；置 null 回落默认 label includes。
+   */
+  filterMethod: ((query: string, option: Option) => boolean) | null = null
+
+  /** 受控展开（property 通道反射 attribute，宿主框架 :open 绑定可达）；getter 返回当前生效展开态 */
+  get open(): boolean {
+    return this.openState
+  }
+  set open(value: boolean) {
+    if (value) {
+      this.setAttribute('open', '')
+    } else {
+      this.removeAttribute('open')
+      // 属性不在场时 removeAttribute 不触发 attributeChangedCallback，非受控展开态需直接收起
+      if (this.openState) {
+        this.openState = false
+        this.syncDropdown()
+      }
+    }
+  }
+
   private activeIndex = 0
   private openState = false
   /** allow-create 时无匹配展示的「创建 xxx」行状态 */
   private createVisible = false
   private createLabel = ''
+  /** allow-create 已创建选项持久层（源数据每轮重解析，创建项不随源刷新丢失） */
+  private createdOptions: Option[] = []
+  /** 焦点在组件内（trigger/搜索框/chip 按钮任一）：内部转移不派发 oas-focus/oas-blur */
+  private focusWithin = false
+  /** remote 防抖派发计时器 */
+  private inputTimer: number | null = null
+  /** aria-invalid 由 status=error 设置的所有权标志（清理时只移除自己设置的，不动宿主自设值） */
+  private invalidByStatus = false
+
+  /**
+   * 受控 open：属性即真相——在场=展开、移除=收起（宿主手势只派发
+   * oas-open-change 通知宿主，由宿主决定是否增删属性，组件不强制写回）。
+   */
+  override attributeChangedCallback(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null,
+  ): void {
+    if (name === 'open' && oldValue !== newValue) {
+      this.openState = newValue !== null
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
+  }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -360,8 +496,10 @@ export class OASSelect extends OASElement {
         </button>
         <div class="dropdown" part="dropdown">
           <input class="search-input" part="search-input" type="text" hidden />
+          <div class="dropdown-header" part="header" hidden></div>
           <div class="listbox" part="listbox" role="listbox"></div>
           <oas-virtual-list class="vlist" part="virtual-list" hidden></oas-virtual-list>
+          <div class="dropdown-footer" part="footer" hidden></div>
         </div>
       </div>
     `
@@ -378,8 +516,20 @@ export class OASSelect extends OASElement {
       const v = (e.target as HTMLInputElement).value
       const searchInput = this.shadow.querySelector<HTMLInputElement>('.search-input')
       if (searchInput) searchInput.setAttribute('data-query', v)
-      // remote 模式下过滤交给宿主：组件不本地过滤，只派发 oas-input 供宿主请求
-      if (this.hasAttr('remote')) this.emit('input', { value: v })
+      // remote 模式下过滤交给宿主：组件不本地过滤，只派发 oas-input 供宿主请求；
+      // debounce > 0 时按窗口合并派发（默认 0 立即，不干扰现状；本地过滤不受影响）
+      if (this.hasAttr('remote')) {
+        if (this.inputTimer !== null) window.clearTimeout(this.inputTimer)
+        const delay = this.inputDebounce()
+        if (delay > 0) {
+          this.inputTimer = window.setTimeout(() => {
+            this.inputTimer = null
+            this.emit('input', { value: v })
+          }, delay)
+        } else {
+          this.emit('input', { value: v })
+        }
+      }
       this.renderListbox()
     })
     this.shadow
@@ -394,6 +544,21 @@ export class OASSelect extends OASElement {
 
     this.triggerEl?.addEventListener('click', () => this.toggle())
     this.triggerEl?.addEventListener('keydown', (e: KeyboardEvent) => this.handleTriggerKey(e))
+    // 焦点事件：组件整体获得/失去焦点派发 oas-focus / oas-blur
+    //（trigger↔搜索框↔chip 按钮的组件内转移不误报，离开组件才 blur）
+    const wrapper = this.shadow.querySelector<HTMLElement>('.wrapper')
+    wrapper?.addEventListener('focusin', () => {
+      if (this.focusWithin) return
+      this.focusWithin = true
+      this.emit('focus')
+    })
+    wrapper?.addEventListener('focusout', (e: FocusEvent) => {
+      if (!this.focusWithin) return
+      const related = e.relatedTarget
+      if (related instanceof Node && wrapper.contains(related)) return
+      this.focusWithin = false
+      this.emit('blur')
+    })
     // 虚拟滚动：复用 oas-virtual-list 的窗口计算，把每个可见项渲染为选项行
     this.vlist?.addEventListener('oas-item', ((
       e: CustomEvent<{ index: number; item: Option; element: HTMLElement }>,
@@ -404,6 +569,9 @@ export class OASSelect extends OASElement {
       }
     }) as EventListener)
     this.onCleanup(() => document.removeEventListener('click', this.handleOutsideClick, true))
+    this.onCleanup(() => {
+      if (this.inputTimer !== null) window.clearTimeout(this.inputTimer)
+    })
   }
 
   protected override render(): void {
@@ -425,40 +593,66 @@ export class OASSelect extends OASElement {
     // 子元素通道观察器（重连后重建；options 属性显式时子元素被忽略，观察器空转无副作用）
     this.ensureChildObserver()
     this.parseOptions()
+    // size/status 镜像（size 就近读取 config-provider 注入，与全局密度联动）
+    this.syncSizeStatus()
+    // 下拉头尾插槽（header/footer template 克隆）
+    this.syncDropdownChrome()
     // 内置文案走 locale registry（zh-CN 默认，setLocale 切换自动刷新）
     this.shadow
       .querySelector<HTMLInputElement>('.search-input')
       ?.setAttribute('aria-label', this.t('select.search'))
     this.renderListbox()
     this.syncTrigger()
+    // 展开态同步（初始 open 属性、展开中的属性变化重定位等）
+    this.syncDropdown()
   }
 
   private toggle(): void {
-    if (this.injectDisabled()) return
-    this.openState = !this.openState
+    if (this.injectDisabled() || this.hasAttr('readonly')) return
+    this.requestOpen(!this.openState)
+  }
+
+  /**
+   * 展开/收起请求（trigger 点击/键盘/外部点击/选中收起的统一入口）。
+   * 非受控：直接应用并派发 oas-open-change；受控（open 属性在场）：只派发事件不强制写回——
+   * 视觉由 open 属性决定，宿主监听事件决定是否增删属性。
+   */
+  private requestOpen(next: boolean): void {
+    if (this.hasAttribute('open')) {
+      this.emit('open-change', { open: next })
+      return
+    }
+    this.openState = next
     this.syncDropdown()
+    this.emit('open-change', { open: next })
   }
 
   private syncDropdown(): void {
     if (!this.dropdown || !this.triggerEl) return
+    const wasOpen = this.dropdown.classList.contains('open')
     this.dropdown.classList.toggle('open', this.openState)
     this.triggerEl.setAttribute('aria-expanded', String(this.openState))
     const searchInput = this.shadow.querySelector<HTMLInputElement>('.search-input')
     if (searchInput) {
       searchInput.hidden = !this.hasAttr('searchable')
-      if (this.openState && this.hasAttr('searchable')) {
+      // 仅「收起→展开」瞬间聚焦搜索框；展开中的属性变化重同步不抢焦点
+      if (this.openState && !wasOpen && this.hasAttr('searchable')) {
         searchInput.focus()
       }
     }
     if (this.openState) {
       document.addEventListener('click', this.handleOutsideClick, true)
       this.positionDropdown()
-      const current = this.currentValues()
-      const idx =
-        current.length > 0 ? this.visibleOptions().findIndex((o) => o.value === current[0]) : 0
-      this.activeIndex = Math.max(idx, 0)
-      this.scrollActiveIntoView()
-      this.syncActive()
+      // 展开时重读下拉高度变量（宿主改 --oas-select-dropdown-height 后无需触发属性变化，重开即生效）
+      this.vlist?.setAttribute('height', String(this.dropdownHeight()))
+      if (!wasOpen) {
+        const current = this.currentValues()
+        const idx =
+          current.length > 0 ? this.visibleOptions().findIndex((o) => o.value === current[0]) : 0
+        this.activeIndex = Math.max(idx, 0)
+        this.scrollActiveIntoView()
+        this.syncActive()
+      }
     } else {
       document.removeEventListener('click', this.handleOutsideClick, true)
       this.syncAriaActiveDescendant()
@@ -468,38 +662,46 @@ export class OASSelect extends OASElement {
   private handleOutsideClick = (e: MouseEvent): void => {
     const path = e.composedPath()
     if (!path.includes(this) && !path.some((n) => n instanceof Node && this.shadow.contains(n))) {
-      this.openState = false
+      this.requestOpen(false)
     }
-    this.syncDropdown()
   }
 
-  /** fixed 定位：锚定 trigger 下方，空间不足自动翻转避让，宽度对齐 trigger（同 combobox） */
+  /**
+   * fixed 定位：宽度对齐 trigger（同 combobox）。
+   * placement：auto（默认）= 下方优先 + 空间不足自动翻转（现状行为）；
+   * top / bottom = 强制方向不翻转不避让（宿主显式指定时尊重声明，可能溢出视口）。
+   */
   private positionDropdown(): void {
     if (!this.dropdown || !this.triggerEl) return
     const anchorRect = this.triggerEl.getBoundingClientRect()
     const panelRect = this.dropdown.getBoundingClientRect()
-    const { top, left } = computePosition(anchorRect, panelRect, 'bottom' as Placement, {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    })
+    const raw = this.getAttr('placement', 'auto')
+    const forced = raw === 'top' || raw === 'bottom'
+    const { top, left } = computePosition(
+      anchorRect,
+      panelRect,
+      (forced ? raw : 'bottom') as Placement,
+      { width: window.innerWidth, height: window.innerHeight },
+      8,
+      !forced,
+    )
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
     this.dropdown.style.width = `${anchorRect.width}px`
   }
 
-  /** trigger 键盘：Esc 关闭；关闭态 Enter/Space/↑/↓ 展开；展开态 ↑/↓ 移动、Enter 选中 */
+  /** trigger 键盘：Esc 关闭；关闭态 Enter/Space/↑/↓ 展开（readonly 拦截）；展开态 ↑/↓ 移动、Enter 选中 */
   private handleTriggerKey(e: KeyboardEvent): void {
     if (this.injectDisabled()) return
     // 焦点在 trigger 内嵌按钮（清空/移除 chip）时不响应，交给按钮原生行为
     if ((e.target as Element).closest('.clear-btn, .chip button')) return
     if (e.key === 'Escape') {
-      this.openState = false
-      this.syncDropdown()
+      this.requestOpen(false)
     } else if (!this.openState) {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault()
-        this.openState = true
-        this.syncDropdown()
+        if (this.hasAttr('readonly')) return
+        this.requestOpen(true)
       }
     } else {
       if (e.key === 'ArrowDown') {
@@ -519,8 +721,7 @@ export class OASSelect extends OASElement {
   private handleSearchKey(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
       e.preventDefault()
-      this.openState = false
-      this.syncDropdown()
+      this.requestOpen(false)
       this.triggerEl?.focus()
     } else if (e.key === 'ArrowDown') {
       e.preventDefault()
@@ -554,24 +755,31 @@ export class OASSelect extends OASElement {
   private selectActive(): void {
     const visible = this.visibleOptions()
     if (this.createVisible && this.activeIndex >= visible.length) {
+      if (this.blockedByLimit(this.createLabel)) return
       this.createOption()
       return
     }
     const option = visible[this.activeIndex]
     if (!option || option.disabled) return
+    if (this.blockedByLimit(option.value)) return
     this.selectValue(option.value)
   }
 
   /**
    * 当前下拉可见选项：
    * - remote 模式：不做本地过滤（过滤交给宿主，直接渲染 options）
-   * - 本地模式：有查询词时按 label 过滤
+   * - 本地模式：有查询词时按 label 过滤（filterMethod 设置时走自定义函数）
    */
   private visibleOptions(): Option[] {
     if (this.hasAttr('remote')) return this._options
-    const q = this.currentQuery().toLowerCase()
+    const q = this.currentQuery()
     if (q === '') return this._options
-    return this._options.filter((o) => o.label.toLowerCase().includes(q))
+    // 自定义过滤函数（JS property 通道）：收到原始查询词与完整 option 对象
+    if (typeof this.filterMethod === 'function') {
+      return this._options.filter((o) => this.filterMethod?.(q, o) === true)
+    }
+    const lower = q.toLowerCase()
+    return this._options.filter((o) => o.label.toLowerCase().includes(lower))
   }
 
   /** 搜索框原始查询词（trim 后，保留原始大小写供「创建」用） */
@@ -632,7 +840,7 @@ export class OASSelect extends OASElement {
       } else {
         const empty = document.createElement('div')
         empty.className = 'empty'
-        empty.textContent = query ? this.t('select.noMatch') : this.t('select.empty')
+        this.fillEmpty(empty, query ? this.t('select.noMatch') : this.t('select.empty'))
         listbox.appendChild(empty)
       }
       this.syncActive()
@@ -680,7 +888,9 @@ export class OASSelect extends OASElement {
     row.setAttribute('part', 'option')
     row.setAttribute('role', 'option')
     row.setAttribute('aria-selected', String(values.includes(option.value)))
-    row.setAttribute('aria-disabled', String(option.disabled ?? false))
+    // max-count 达上限：未选项禁用置灰（已选项仍可取消），与选项自身 disabled 同视觉
+    const disabledByLimit = !values.includes(option.value) && this.limitReached()
+    row.setAttribute('aria-disabled', String(option.disabled === true || disabledByLimit))
     row.id = `opt-${optionIdx}` // aria-activedescendant 锚点（shadow 内 id 作用域隔离，无宿主冲突）
     row.setAttribute('data-index', String(optionIdx))
     if (optionIdx === this.activeIndex) row.classList.add('active')
@@ -693,6 +903,7 @@ export class OASSelect extends OASElement {
     row.append(label, check)
     row.addEventListener('click', () => {
       if (option.disabled) return
+      if (this.blockedByLimit(option.value)) return
       this.selectValue(option.value)
     })
     row.addEventListener('mousemove', () => {
@@ -703,6 +914,60 @@ export class OASSelect extends OASElement {
     container.appendChild(row)
     // 自定义选项渲染：宿主可监听改写 element（图标/富文本），机制与 virtual-list 的 oas-item 一致
     this.emit('option-render', { index: optionIdx, option, element: label })
+  }
+
+  /** 空态渲染：template[slot="empty"] 克隆覆盖默认空态/无匹配文案（两态共用） */
+  private fillEmpty(emptyEl: HTMLElement, fallbackText: string): void {
+    const tpl = this.querySelector('template[slot="empty"]')
+    if (tpl instanceof HTMLTemplateElement) {
+      emptyEl.appendChild(tpl.content.cloneNode(true))
+    } else {
+      emptyEl.textContent = fallbackText
+    }
+  }
+
+  /**
+   * size/status 镜像到宿主 data-*（供 :host([data-*]) 样式消费）。
+   * size 就近读取 config-provider 注入（与全局密度联动）；status=error 联动 aria-invalid——
+   * 所有权标志保证清理时只移除 status 设置的，不动宿主自设的 aria-invalid。
+   */
+  private syncSizeStatus(): void {
+    const size = normalizeChoice(this.injectValue('size', 'medium'), 'medium', VALID_SIZES)
+    this.setAttribute('data-size', size)
+    const status = normalizeChoice(this.getAttr('status', ''), '', VALID_STATUSES)
+    if (status) this.setAttribute('data-status', status)
+    else this.removeAttribute('data-status')
+    if (status === 'error') {
+      if (!this.hasAttribute('aria-invalid')) this.invalidByStatus = true
+      this.setAttribute('aria-invalid', 'true')
+    } else if (this.invalidByStatus) {
+      this.invalidByStatus = false
+      this.removeAttribute('aria-invalid')
+    }
+  }
+
+  /**
+   * 下拉头尾插槽：template[slot="header"] / template[slot="footer"] 克隆进下拉头尾
+   * （header 在搜索框之下、选项之上；footer 在选项之下）。
+   * 注意：键盘 ↑/↓ 导航不进入头尾区——交互内容建议建模为选项（如「全选」选项）或由宿主自管焦点。
+   */
+  private syncDropdownChrome(): void {
+    this.syncSlotChrome('header', '.dropdown-header')
+    this.syncSlotChrome('footer', '.dropdown-footer')
+  }
+
+  private syncSlotChrome(slot: string, selector: string): void {
+    const container = this.shadow.querySelector<HTMLElement>(selector)
+    if (!container) return
+    const tpl = this.querySelector(`template[slot="${slot}"]`)
+    if (tpl instanceof HTMLTemplateElement) {
+      container.innerHTML = ''
+      container.appendChild(tpl.content.cloneNode(true))
+      container.hidden = false
+    } else {
+      container.innerHTML = ''
+      container.hidden = true
+    }
   }
 
   /** 选项 label 渲染：template[slot="option"] 克隆 + [data-option-label] 绑定，缺省回落纯文本 */
@@ -734,9 +999,19 @@ export class OASSelect extends OASElement {
     vlistRoot?.querySelector<HTMLElement>('.viewport')?.removeAttribute('tabindex')
     vlist.setAttribute('items-role', 'listbox')
     vlist.setAttribute('item-role', 'presentation')
-    vlist.setAttribute('height', '240')
+    vlist.setAttribute('height', String(this.dropdownHeight()))
     vlist.setAttribute('item-height', String(this.virtualItemHeight()))
     vlist.items = visible
+  }
+
+  /** 下拉高度：--oas-select-dropdown-height CSS 变量开口（默认 240px，宿主可覆盖；支持 "300px"/"300" 写法）。
+   *  computed 优先（覆盖继承/类样式等场景），inline style 兜底（宿主直设 host 内联的主通道） */
+  private dropdownHeight(): number {
+    const raw =
+      getComputedStyle(this).getPropertyValue('--oas-select-dropdown-height').trim() ||
+      this.style.getPropertyValue('--oas-select-dropdown-height').trim()
+    const n = Number.parseInt(raw, 10)
+    return Number.isNaN(n) || n <= 0 ? 240 : n
   }
 
   private setVirtualVisible(visible: boolean): void {
@@ -797,6 +1072,37 @@ export class OASSelect extends OASElement {
     }
   }
 
+  /** max-count 多选上限（仅 multiple 生效；未设置/非法值视为无上限；单选行为不变） */
+  private maxCountLimit(): number | null {
+    if (!this.hasAttr('multiple')) return null
+    const n = this.intAttr('max-count')
+    return n !== null && n > 0 ? n : null
+  }
+
+  /** 多选已达上限（当前选中数 >= max-count；已选项仍可取消，未选项禁止新增） */
+  private limitReached(): boolean {
+    const max = this.maxCountLimit()
+    return max !== null && this.currentValues().length >= max
+  }
+
+  /** 上限拦截：超限时未选项的点击/键盘/创建一律拒绝并派发 oas-exceed-limit（detail: { value, max }） */
+  private blockedByLimit(value: string): boolean {
+    if (!this.limitReached() || this.currentValues().includes(value)) return false
+    this.emit('exceed-limit', { value, max: this.maxCountLimit() })
+    return true
+  }
+
+  /** remote 模式 oas-input 派发防抖窗口（ms；默认 0 立即派发不干扰现状） */
+  private inputDebounce(): number {
+    const n = this.intAttr('debounce')
+    return n !== null && n > 0 ? n : 0
+  }
+
+  /** 值数组反查完整 option 对象（label/value/group/disabled 全量；未匹配为 null，宿主无需再反查） */
+  private optionsOf(values: string[]): Array<Option | null> {
+    return values.map((v) => this._options.find((o) => o.value === v) ?? null)
+  }
+
   private selectValue(value: string): void {
     if (this.hasAttr('multiple')) {
       const current = this.currentValues()
@@ -804,40 +1110,43 @@ export class OASSelect extends OASElement {
         ? current.filter((v) => v !== value)
         : [...current, value]
       this.setAttribute('value', JSON.stringify(next))
-      this.emit('change', { value: next })
+      this.emit('change', { value: next, options: this.optionsOf(next) })
     } else {
       this.setAttribute('value', value)
-      this.emit('change', { value })
-      this.openState = false
-      this.syncDropdown()
+      this.emit('change', { value, option: this.optionsOf([value])[0] })
+      this.requestOpen(false)
     }
     this.syncTrigger()
     this.renderListbox()
   }
 
-  /** clearable：清空值并派发 oas-clear（detail 为被清空前的值）+ oas-change（空值） */
+  /** clearable：清空值并派发 oas-clear（detail 为被清空前的值）+ oas-change（空值）；readonly 拦截（值只读不可改） */
   private clearValue(): void {
-    if (this.injectDisabled()) return
+    if (this.injectDisabled() || this.hasAttr('readonly')) return
     const prev = this.currentValues()
     if (this.hasAttr('multiple')) {
       this.setAttribute('value', '[]')
       this.emit('clear', { value: [...prev] })
-      this.emit('change', { value: [] })
+      this.emit('change', { value: [], options: [] })
     } else {
       this.removeAttribute('value')
       this.emit('clear', { value: prev[0] ?? '' })
-      this.emit('change', { value: '' })
+      this.emit('change', { value: '', option: null })
     }
     this.syncTrigger()
     this.renderListbox()
     this.triggerEl?.focus()
   }
 
-  /** allow-create：以输入值创建选项并纳入选中 */
+  /** allow-create：以输入值创建选项并纳入选中（max-count 达上限时拦截并派发 oas-exceed-limit） */
   private createOption(): void {
     const label = this.createLabel.trim()
     if (label === '') return
-    this._options.push({ label, value: label })
+    if (this.blockedByLimit(label)) return
+    // 创建项进持久层（parseOptions 每轮重解析源数据，直接 push 会被下一轮抹掉）
+    if (!this.createdOptions.some((c) => c.value === label)) {
+      this.createdOptions.push({ label, value: label })
+    }
     this.createVisible = false
     this.selectValue(label)
   }
@@ -858,18 +1167,25 @@ export class OASSelect extends OASElement {
   private parseOptions(): void {
     // 双通道：options 属性显式设置时数据驱动优先；否则解析子元素收敛到同一 options 模型渲染。
     // 收敛点在虚拟/非虚拟两条渲染路径之前的唯一数据入口，两路径都吃到子元素通道数据
+    let base: Option[]
     if (this.hasAttribute('options')) {
       try {
         const parsed = JSON.parse(this.getAttr('options', '[]'))
-        this._options = Array.isArray(parsed)
+        base = Array.isArray(parsed)
           ? parsed.filter((o): o is Option => o && typeof o.value === 'string')
           : []
       } catch {
-        this._options = []
+        base = []
       }
     } else {
-      this._options = this.parseChildOptions()
+      base = this.parseChildOptions()
     }
+    // allow-create 创建的选项持久（源数据刷新/重渲染不丢失，已选 label 与 detail.option 可反查）；
+    // 源数据后来补上同值选项时以源为准（去重）
+    const created = this.createdOptions.filter(
+      (c) => !base.some((b) => b.value === c.value),
+    )
+    this._options = [...base, ...created]
   }
 
   // ===== 子元素声明式通道 =====
@@ -967,16 +1283,25 @@ export class OASSelect extends OASElement {
     const placeholder = this.getAttr('placeholder', this.t('select.placeholder'))
     // disabled 就近读取全局禁用注入（组件显式 disabled > 豁免 > provider 注入）
     const disabled = this.injectDisabled()
+    // readonly 与 disabled 表单语义分立：可聚焦可复制、不弹层、值不可改
+    const readonly = this.hasAttr('readonly')
     const values = this.currentValues()
     const valueEl = this.triggerEl.querySelector<HTMLElement>('.value')!
 
     this.triggerEl.disabled = disabled
     this.triggerEl.setAttribute('aria-label', placeholder)
+    if (readonly) this.triggerEl.setAttribute('aria-readonly', 'true')
+    else this.triggerEl.removeAttribute('aria-readonly')
 
-    // 清空按钮：clearable && 有值 && 未禁用 时显示
+    // 清空按钮：clearable && 有值 && 未禁用 && 非只读 时显示
     const clearBtn = this.shadow.querySelector<HTMLButtonElement>('.clear-btn')
     if (clearBtn) {
-      clearBtn.hidden = !(this.hasAttr('clearable') && !disabled && values.length > 0)
+      clearBtn.hidden = !(
+        this.hasAttr('clearable') &&
+        !disabled &&
+        !readonly &&
+        values.length > 0
+      )
       clearBtn.setAttribute('aria-label', this.t('input.clear'))
     }
 
@@ -1004,14 +1329,18 @@ export class OASSelect extends OASElement {
         chip.className = 'chip'
         const labelEl = document.createElement('span')
         this.fillTagLabel(labelEl, v, label)
-        const rm = document.createElement('button')
-        rm.setAttribute('aria-label', this.t('select.remove', { label }))
-        rm.textContent = '×'
-        rm.addEventListener('click', (e: MouseEvent) => {
-          e.stopPropagation()
-          this.selectValue(v)
-        })
-        chip.append(labelEl, rm)
+        chip.append(labelEl)
+        // readonly：值只读——chip 不带移除按钮（与清空按钮一致的分立语义）
+        if (!readonly) {
+          const rm = document.createElement('button')
+          rm.setAttribute('aria-label', this.t('select.remove', { label }))
+          rm.textContent = '×'
+          rm.addEventListener('click', (e: MouseEvent) => {
+            e.stopPropagation()
+            this.selectValue(v)
+          })
+          chip.append(rm)
+        }
         valueEl.appendChild(chip)
       }
       // 折叠计数 chip：仅在显式设置 max-tag-count 时插入（数量折叠 + 超宽折叠合并计数）

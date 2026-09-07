@@ -225,6 +225,7 @@ line 形态下 `size` 为高度档位（`small` 4px / `medium` 8px / `large` 12p
     <oas-progress percent="120" max="200"><span>120MB / 200MB</span></oas-progress>
     <oas-progress percent="160" max="200" buffer="190"></oas-progress>
     <oas-progress type="dashboard" percent="128" max="256" label="磁盘用量"></oas-progress>
+    <oas-progress value="45" max="60"><span>45 / 60 分钟（value 别名写法）</span></oas-progress>
   </oas-space>
 </DemoBlock>
 
