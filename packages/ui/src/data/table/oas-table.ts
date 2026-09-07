@@ -4,6 +4,8 @@ import {
   registeredTableCapabilities,
   onTableCapabilityRegistered,
 } from './oas-table-capability.js'
+// 行内交互宿主排除清单（行点击/双击编辑共用的单一事实来源，含维护纪律注释）
+import { ROW_INTERACTIVE_EXCLUSION } from './oas-table-interactive.js'
 
 export interface TableColumn {
   key: string
@@ -1177,11 +1179,12 @@ export class OASTableBase extends OASElement {
     }
     tr.addEventListener('click', (e) => {
       if (this.hasAttr('checkable')) return
-      // 交互控件（按钮/链接/表单控件/浮层等）内的点击不触发行选中+重渲染——
-      // 否则点单元格内嵌 popconfirm 会触发 update() 全量重建 body，把刚打开的 popconfirm 销毁成默认关闭
-      // （oas-button 等组件宿主自身无 role 属性，须点名排除，否则行内按钮点击连带行点击）
+      // 交互宿主（原生控件 / [role] / 库内交互组件 / data-oas-row-click-ignore 逃生口）内的
+      // 点击不触发行选中+重渲染——否则点单元格内嵌 popconfirm 会触发 update() 全量重建 body，
+      // 把刚打开的 popconfirm 销毁成默认关闭；自定义组件宿主自身无 role 属性须点名排除
+      // （同一清单也约束双击进编辑路径，见 oas-table-interactive.js 的单一事实来源注释）
       const el = e.target as HTMLElement | null
-      if (el && el.closest('button, a, input, select, textarea, [role], oas-button, oas-popconfirm')) return
+      if (el && el.closest(ROW_INTERACTIVE_EXCLUSION)) return
       const next = new Set(selected)
       if (next.has(key)) next.delete(key)
       else next.add(key)
