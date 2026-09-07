@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { OASModal, destroyAll, type ModalPromptCapability } from './index.js'
+import { OASModal, destroyAll, type ModalPromptCapability } from './core/index.js'
 
 // 本文件验证「prompt 能力晚加入（late-join）」：宿主构造/连接时能力注册表为空，
 // 之后能力包才注册（入口求值顺序、打包器重排、按需反向引入、动态 import 等场景），
 // 宿主应经订阅通知幂等补齐 prompt 能力 controller（命令式层按名取回委托），而不是永久静默失效。
+// 基准入口走纯核 ./core/index.js（主路径 index 已默认含能力，无「晚加入」观察窗口）；
 // vitest 按文件隔离模块图，本文件独享一份空注册表起点（首个动态 import 前 prompt 未注册）。
 
 describe('OASModal prompt 能力晚加入（late-join）', () => {

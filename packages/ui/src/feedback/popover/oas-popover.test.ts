@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASPopover } from './index.js'
 import '../tooltip/index.js' // 副作用：确保 oas-tooltip 已注册（嵌套关闭断言用）
-// 右键族（右键光标定位 / 触屏长按 / 断点响应）已外置为 contextmenu 能力包；本文件含 P20/P23
-// 全链路用例，故静态 import 能力包（import 即注册，等价生产消费者按需引入能力）。
-// core-only（未 import 能力包）的右键族边界行为由 oas-popover-contextmenu-capability.test.ts 覆盖。
+// 右键族（右键光标定位 / 触屏长按 / 断点响应）为 contextmenu 能力包；本文件含 P20/P23
+// 全链路用例。主路径 index 已默认含该能力（v2.5.0 语义：主路径内置能力包），此处显式
+// import 为幂等冗余（与族包/全量入口同注册路径）。
+// 纯核 core 入口（不含能力）的右键族边界行为由 oas-popover-contextmenu-capability.test.ts 覆盖。
 import './contextmenu/index.js'
 
 /** 本测试文件内所有 mount 的元素（happy-dom 的 innerHTML 清空不触发 disconnectedCallback，

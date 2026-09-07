@@ -97,7 +97,7 @@
 
 > 右键「商品」试试「新建」与「关闭左侧所有」/「关闭其他」——新建派发 `oas-add` 宿主追加面板；关闭按 key 逐个派发 `oas-close`，宿主移除对应面板。
 
-> 该交互属于可选能力（manager 能力包）：核心入口 `@oas-ui/ui/navigation/tabs` 默认不含，需按需引入 `import '@oas-ui/ui/navigation/tabs/manager'`（import 即注册，零额外配置）。全量入口 `@oas-ui/ui` 与 CDN 导航族包已内含，无需额外引用；仅用纯切换/关闭/溢出等展示基线的页面不必引入。
+> 该交互属于 manager 能力包：主路径 `@oas-ui/ui/navigation/tabs` 已默认内含该能力（全量入口与 CDN 导航族包同样内含），无需显式 import。若只想保留纯切换/关闭/溢出的轻量基线，可改从纯核入口 `@oas-ui/ui/navigation/tabs/core` 引入——它不含 manager 能力，此时用到该交互配置会 dev 告警提示显式 import `@oas-ui/ui/navigation/tabs/manager` 或换回主路径。
 
 > 宿主可按业务改文案（如「新建文件」）：覆盖 locale 个别键即可——`setLocale({ name: 'zh-CN', messages: { ...zhCN, 'tabs.ctxNew': '新建文件' } })`（从 `@oas-ui/i18n` 导入 `setLocale`/`zhCN`；同名注册即覆盖，只动需要的键）。
 
@@ -318,7 +318,7 @@
 
 `oas-tab-panel` 加 `editable`：双击标签进入输入框编辑态，Enter 确认（派发 `oas-rename`，`detail: { value, label }`，组件自动写回新 label）/ Esc 或失焦取消。
 
-> 该交互属于可选能力（manager 能力包）：核心入口 `@oas-ui/ui/navigation/tabs` 默认不含，需按需引入 `import '@oas-ui/ui/navigation/tabs/manager'`（import 即注册）。全量入口 `@oas-ui/ui` 与 CDN 导航族包已内含，无需额外引用。
+> 该交互属于 manager 能力包：主路径 `@oas-ui/ui/navigation/tabs` 已默认内含该能力（全量入口与 CDN 导航族包同样内含），无需显式 import。若只想保留纯切换/关闭/溢出的轻量基线，可改从纯核入口 `@oas-ui/ui/navigation/tabs/core` 引入——它不含 manager 能力，此时用到该交互配置会 dev 告警提示显式 import `@oas-ui/ui/navigation/tabs/manager` 或换回主路径。
 
 <DemoBlock title="可编辑重命名">
   <oas-tabs id="tabs-rename" active="a">
@@ -332,7 +332,7 @@
 
 `sortable`：标签可拖拽换位（原生 HTML5 拖拽）。落点后派发 `oas-reorder`，`detail: { fromIndex, toIndex }`；组件不自动移动 DOM，宿主据此重排 `oas-tab-panel` 顺序。
 
-> 该交互属于可选能力（manager 能力包）：核心入口 `@oas-ui/ui/navigation/tabs` 默认不含，需按需引入 `import '@oas-ui/ui/navigation/tabs/manager'`（import 即注册）。全量入口 `@oas-ui/ui` 与 CDN 导航族包已内含，无需额外引用。
+> 该交互属于 manager 能力包：主路径 `@oas-ui/ui/navigation/tabs` 已默认内含该能力（全量入口与 CDN 导航族包同样内含），无需显式 import。若只想保留纯切换/关闭/溢出的轻量基线，可改从纯核入口 `@oas-ui/ui/navigation/tabs/core` 引入——它不含 manager 能力，此时用到该交互配置会 dev 告警提示显式 import `@oas-ui/ui/navigation/tabs/manager` 或换回主路径。
 
 <DemoBlock title="拖拽排序">
   <oas-tabs id="tabs-sortable" sortable active="a">

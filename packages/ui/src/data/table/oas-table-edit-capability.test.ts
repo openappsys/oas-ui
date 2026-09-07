@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import '@oas-ui/i18n'
-import { OASTable } from './index.js'
+import { OASTable } from './core/index.js'
 
-// 本文件验证「编辑能力包未 import（core-only）」的边界行为：
+// 本文件验证「编辑能力包未 import（纯核 core 入口）」的边界行为：
 // editable/actions 配置静默失效 + dev 告警（同值去重）。
-// 注意：不得在此文件 import './edit/index.js'——否则能力注册表被填充，core-only 语义失效。
+// 注意：不得在此文件 import './edit/index.js' 或 './index.js'——否则能力注册表被填充，
+// core-only 语义失效（主路径 index 已默认含能力；纯核走 ./core/index.js）。
 // （vitest 按文件隔离模块图，本文件与 oas-table.test.ts 的注册表互不影响。）
 //
 // 告警去重是模块级（同控件惯例：同值告警整页只一次），因此首个带 editable 配置的 mount
@@ -41,7 +42,7 @@ function cells(el: OASTable): HTMLElement[] {
   return [...el.shadowRoot!.querySelectorAll('tr.row td')] as HTMLElement[]
 }
 
-describe('OASTable 编辑能力边界（core-only：未 import edit 能力包）', () => {
+describe('OASTable 编辑能力边界（纯核 core 入口：未 import edit 能力包）', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {

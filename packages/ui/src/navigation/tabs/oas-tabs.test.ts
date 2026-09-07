@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { setLocale } from '@oas-ui/i18n'
 import { OASTabs } from './index.js'
-// manager 能力包 import 即注册：本文件含 editable 双击重命名 / context-menu 右键菜单 /
-// sortable 拖拽排序用例，需能力模块注入（core-only 的静默失效边界见 oas-tabs-manager-capability.test.ts）
+// 本文件含 editable 双击重命名 / context-menu 右键菜单 / sortable 拖拽排序用例。
+// 主路径 index 已默认含 manager 能力（v2.5.0 语义：主路径内置能力包），此处显式 import
+// 能力包为幂等冗余（与族包/全量入口同注册路径）。纯核 core 入口（不含能力）的
+// 静默失效边界见 oas-tabs-manager-capability.test.ts。
 import './manager/index.js'
 
 function mount(attrs: Record<string, string> = {}): OASTabs {

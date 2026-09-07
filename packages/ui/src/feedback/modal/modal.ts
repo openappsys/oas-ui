@@ -140,8 +140,9 @@ export interface PromptHandle {
  *
  * OASModal 构造时经能力注册表（oas-modal-capability.js）注入 controller，核心仅保留
  * 本接口作为委托点：`modal.prompt` 检查能力已注册后，从宿主元素取回本接口并调用
- * openPrompt 执行完整输入确认流程。核心不实现任何 prompt 逻辑——未 import 能力包时
- * prompt 调用静默失效（返回 null）并在 dev 下告警一次（同值去重）。
+ * openPrompt 执行完整输入确认流程。核心不实现任何 prompt 逻辑——能力未注入时
+ * （主路径已默认含 prompt；仅纯核 feedback/modal/core 入口会处于此态）
+ * prompt 调用返回 null 并在 dev 下告警一次（同值去重）。
  */
 export interface ModalPromptCapability {
   /** 在当前宿主（命令式 prompt 专属的 oas-modal 实例）上执行完整输入确认流程 */
@@ -332,7 +333,7 @@ function open(
 }
 
 /** prompt 默认错误文案：走 locale（form.validationFailed，中英均有翻译）——定义随 prompt
- *  能力包外置（oas-modal-prompt.ts），核心入口不含 prompt 文案依赖 */
+ *  能力包外置（oas-modal-prompt.ts），纯核 core 入口不含 prompt 文案依赖（主路径已内含） */
 
 // ===== P34 options 选项组样式（命令式 light DOM，注入一次全局共享；类名前缀隔离） =====
 let optionsStyleInjected = false
@@ -415,8 +416,9 @@ function ensureOptionsStyle(): void {
 /** options 实例序号（radio 分组 name 唯一性） */
 let optionsSeq = 0
 
-/** prompt 能力未 import 的告警文案（按需 ESM 消费者用；全量入口与 CDN 反馈族包已含能力，不会触发） */
-const PROMPT_CAPABILITY_HINT = '[oas-modal] prompt 能力未启用：modal.prompt 需 import prompt 能力包后可用，当前调用已返回 null。请按需 import "@oas-ui/ui/feedback/modal/prompt"（全量入口 @oas-ui/ui 与 CDN 反馈族包已内含，无需额外引用）'
+/** prompt 能力未注入的告警文案（仅纯核入口 feedback/modal/core 消费者会触发；主路径已默认内含能力） */
+const PROMPT_CAPABILITY_HINT =
+  '[oas-modal] prompt 能力未注入：modal.prompt 需 prompt 能力可用，当前调用已返回 null。主路径 @oas-ui/ui/feedback/modal 已默认内含该能力；仅纯核路径 feedback/modal/core 需要显式 import "@oas-ui/ui/feedback/modal/prompt"（import 即注册）或改从主路径引入。'
 
 /** prompt 能力告警去重（同值去重，同控件惯例：页面级仅告警一次） */
 const warnedPromptCapability = new Set<string>()
@@ -440,11 +442,12 @@ export const modal = {
   /** 错误确认框：error 图标 + 单「确定」按钮 */
   error: (options?: ModalOptions): ModalHandle => open('error', options),
   /**
-   * 输入框确认（prompt）：依赖 prompt 能力包（`@oas-ui/ui/feedback/modal/prompt`，import 即注册）。
+   * 输入框确认（prompt）：依赖 prompt 能力（主路径 feedback/modal 已内含，import 即注册；
+   * 仅纯核入口 feedback/modal/core 消费者需自行 `import '@oas-ui/ui/feedback/modal/prompt'`）。
    *
    * 已注册时委托宿主元素注入的 prompt controller 执行完整输入流程（输入控件 + pattern/validator
-   * 校验 + 错误态 + `{ value, action }` 返回）；未 import 能力包时返回 `null` 并在 dev 下告警
-   * 一次（同值去重，提示按需引入）——确认/提示类消费者不引入能力包则零 prompt machinery。
+   * 校验 + 错误态 + `{ value, action }` 返回）；能力未注入时返回 `null` 并在 dev 下告警
+   * 一次（同值去重，提示补引能力包或换回主路径）。
    */
   prompt: (options?: PromptOptions): PromptHandle => {
     if (!hasModalCapability('prompt')) {

@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { OASColorPicker } from './index.js'
+import { OASColorPicker } from './core/index.js'
 
-// 本文件验证「designer 能力未 import（core-only）」的边界行为：
+// 本文件验证「designer 能力未 import（纯核 core 入口）」的边界行为：
 // mode=gradient 配置静默失效 + 2D 色域/渐变编辑区不渲染 + dev 告警（同值去重）。
-// 注意：不得在此文件 import './designer/index.js'——否则能力注册表被填充，core-only 语义失效。
+// 注意：不得在此文件 import './designer/index.js' 或 './index.js'——否则能力注册表被填充，
+// core-only 语义失效（主路径 index 已默认含能力；纯核走 ./core/index.js）。
 // （vitest 按文件隔离模块图，本文件与 oas-color-picker-designer.test.ts 的注册表互不影响。）
 //
 // 告警去重是模块级（同控件惯例：同值告警整页只一次），因此首个带 mode=gradient 配置的 mount
@@ -26,7 +27,7 @@ function open(el: OASColorPicker): void {
   trigger(el).click()
 }
 
-describe('OASColorPicker designer 能力边界（core-only：未 import designer 能力包）', () => {
+describe('OASColorPicker designer 能力边界（纯核 core 入口：未 import designer 能力包）', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {

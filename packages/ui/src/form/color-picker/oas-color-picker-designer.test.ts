@@ -1,14 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { OASColorPicker } from './index.js'
-// import 即注册：本文件具备 designer 能力（2D 色域/hue 竖条/gradient 多 stop 编辑器）
+// 主路径 index 已默认含 designer 能力（v2.5.0 语义：主路径内置能力包）；
+// 本文件仍显式 import 能力包（幂等冗余，与族包/全量入口同注册路径）
 import './designer/index.js'
 
 /**
- * color-picker designer 能力包测试（对应 @oas-ui/ui/form/color-picker/designer 子路径）。
+ * color-picker designer 能力测试（能力子路径 @oas-ui/ui/form/color-picker/designer）。
  *
- * 与 core 文件隔离模块图（vitest 按文件隔离）：本文件 import 能力入口后，
+ * 与 core 文件隔离模块图（vitest 按文件隔离）：本文件 import 主路径 index（内含能力）后，
  * 能力注册表填充 → OASColorPicker 构造时注入 designer controller，模板含
- * 2D 色域 / 渐变编辑区。core-only 时这些节点不存在，相关边界见
+ * 2D 色域 / 渐变编辑区。纯核 core 入口时这些节点不存在，相关边界见
  * oas-color-picker-designer-capability.test.ts。
  */
 

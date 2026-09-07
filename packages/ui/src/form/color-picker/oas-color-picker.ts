@@ -78,7 +78,8 @@ export interface ColorPickerDesignerCapability {
 }
 
 /** 渐变模式是否请求（mode 属性意图；与能力是否已注入无关） */
-const DESIGNER_CAPABILITY_HINT = '[oas-color-picker] 2D 色域/gradient 设计器能力未启用：检测到 mode=gradient 配置，但未 import 设计器能力包，相关配置已静默失效。请按需 import "@oas-ui/ui/form/color-picker/designer"（全量入口 @oas-ui/ui 与 CDN 表单族包已内含，无需额外引用）'
+const DESIGNER_CAPABILITY_HINT =
+  '[oas-color-picker] 2D 色域/gradient 设计器能力未注入：检测到 mode=gradient 配置但能力缺失，相关配置已静默失效。主路径 @oas-ui/ui/form/color-picker 已默认内含该能力；仅纯核路径 form/color-picker/core 需要显式 import "@oas-ui/ui/form/color-picker/designer"（import 即注册）或改从主路径引入。'
 
 /** 设计器能力告警去重（同值去重，同控件惯例） */
 const warnedDesignerCapability = new Set<string>()

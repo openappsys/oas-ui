@@ -110,8 +110,9 @@ function normalizeTableSize(raw: string): TableSize {
   return 'medium'
 }
 
-/** 编辑能力未 import 的告警文案（按需 ESM 消费者用；全量入口/数据族包已含编辑能力，不会触发） */
-const EDIT_CAPABILITY_HINT = '[oas-table] 行内编辑能力未启用：检测到 editable/editor/actions 配置，但未 import 编辑能力包，相关配置已静默失效。请按需 import "@oas-ui/ui/data/table/edit"（全量入口 @oas-ui/ui 与 CDN 数据族包已内含，无需额外引用）'
+/** 编辑能力未注入的告警文案（仅纯核入口 data/table/core 消费者会触发；主路径已默认内含能力） */
+const EDIT_CAPABILITY_HINT =
+  '[oas-table] 行内编辑能力未注入：检测到 editable/editor/actions 配置但能力缺失，相关配置已静默失效。主路径 @oas-ui/ui/data/table 已默认内含该能力；仅纯核路径 data/table/core 需要显式 import "@oas-ui/ui/data/table/edit"（import 即注册）或改从主路径引入。'
 
 /** 编辑能力告警去重（同值去重，同控件惯例） */
 const warnedEditCapability = new Set<string>()
@@ -2023,7 +2024,7 @@ export class OASTableBase extends OASElement {
     return document.createTextNode(String(raw ?? ''))
   }
 
-  /** 编辑能力未注入但检测到编辑相关配置时 dev 告警（同值去重，提示按需 import 编辑能力包） */
+  /** 编辑能力未注入但检测到编辑相关配置时 dev 告警（同值去重，提示纯核消费者显式 import 编辑能力包或换回主路径） */
   private warnEditCapability(): void {
     if (this.editCap) return
     const needsEdit =

@@ -36,8 +36,9 @@ export interface PopoverContextmenuHost {
  * - 断点响应：matchMedia 跨越断点 → host.requestRefresh() 重算 placement/size 断点简写
  *   （生效值解析：宿主 resolveResponsive → 本 controller.resolveResponsive）。
  *
- * 未 import 能力包（core-only）时以上增强全部静默失效（右键仍可基础打开、无长按/断点），
- * 宿主对相应配置 dev 告警提示按需引入（见 oas-popover.ts 的 warnContextmenuCapability）。
+ * 主路径已默认含本能力；未 import 能力包（仅纯核 core 入口）时以上增强全部静默失效
+ * （右键仍可基础打开、无长按/断点），宿主对相应配置 dev 告警提示显式引能力包或换回
+ * 主路径（见 oas-popover.ts 的 warnContextmenuCapability）。
  */
 export class PopoverContextmenuController
   implements ReactiveController, PopoverContextmenuCapability
