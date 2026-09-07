@@ -2,6 +2,8 @@
 
 An enhanced native `<form>` supporting validation and submission of inner fields according to `rules`.
 
+> **Cross-shadow submit entry**: `oas-form` wraps a native `<form>` inside its shadow root, so buttons in the light DOM (including `oas-button`) do not have native submit semantics. Call the component's public `submit()` method at submit time (e.g. `this.closest('oas-form').submit()`); it delegates to the inner form's `requestSubmit()`, preserving submit-event semantics and triggering the same validation flow that dispatches `oas-submit` / `oas-validate-fail` — do **not** reach into `shadowRoot.querySelector('form')` to drive the inner form.
+
 > The data source is each field's `value` attribute (controlled mode). Fields validated by the form are `oas-input` / `oas-textarea` / `oas-select` / `oas-auto-complete` / `oas-cascader` / `oas-tree-select` / `oas-input-number` / `oas-checkbox` / `oas-radio` with a `name` (group containers are not involved). `oas-input` / `oas-textarea` / `oas-input-number` do **not** automatically write back to the `value` attribute while typing — listen to `oas-input` / `oas-change` events in script to sync; `oas-select` / `oas-cascader` / `oas-tree-select` write back by themselves on selection.
 
 ## Feature Demo
@@ -15,7 +17,7 @@ The feature demo area only demonstrates field collection and submission, without
     <oas-space direction="vertical" style="width: 100%">
       <oas-input name="name" placeholder="Name"></oas-input>
       <oas-input name="email" placeholder="Email"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Submit</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">Submit</oas-button>
     </oas-space>
   </oas-form>
   <span id="form-basic-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
@@ -32,7 +34,7 @@ Without `rules`, submission performs no validation and dispatches `oas-submit` d
       <oas-select name="role" placeholder="Select a role" options='[{"label":"Admin","value":"admin"},{"label":"Editor","value":"editor"},{"label":"Guest","value":"guest"}]'></oas-select>
       <oas-input-number name="age"></oas-input-number>
       <oas-textarea name="bio" rows="3" placeholder="Bio (optional)"></oas-textarea>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Submit</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">Submit</oas-button>
     </oas-space>
   </oas-form>
 </DemoBlock>
@@ -50,7 +52,7 @@ The validation area demonstrates `rules`-declared validation rules and failure f
     <oas-space direction="vertical" style="width: 100%">
       <oas-input name="name" placeholder="Name"></oas-input>
       <oas-input name="email" placeholder="Email"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Submit</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">Submit</oas-button>
     </oas-space>
   </oas-form>
 </DemoBlock>
@@ -61,7 +63,7 @@ The validation area demonstrates `rules`-declared validation rules and failure f
   <oas-form id="form-length" rules='{"username":[{"required":true,"message":"Please enter a username"},{"minLength":3,"message":"At least 3 characters"}]}' style="width: 340px">
     <oas-space direction="vertical" style="width: 100%">
       <oas-input name="username" placeholder="Username (at least 3 characters)"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Submit</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">Submit</oas-button>
     </oas-space>
   </oas-form>
 </DemoBlock>
@@ -73,7 +75,7 @@ The validation area demonstrates `rules`-declared validation rules and failure f
     <oas-space direction="vertical" style="width: 100%">
       <oas-input name="title" placeholder="Title"></oas-input>
       <oas-input name="locked" disabled value="Cannot be modified"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Submit</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">Submit</oas-button>
     </oas-space>
   </oas-form>
 </DemoBlock>
@@ -84,7 +86,7 @@ The validation area demonstrates `rules`-declared validation rules and failure f
   <oas-form id="form-event" rules='{"nick":[{"required":true,"message":"Please enter a nickname"}]}' style="width: 340px">
     <oas-space direction="vertical" style="width: 100%">
       <oas-input name="nick" placeholder="Nickname"></oas-input>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Submit</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">Submit</oas-button>
     </oas-space>
   </oas-form>
   <span id="form-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 220px"></span>
@@ -108,7 +110,7 @@ The validation area demonstrates `rules`-declared validation rules and failure f
       <oas-textarea name="bio" rows="3" placeholder="Bio (optional)"></oas-textarea>
     </oas-form-item>
     <oas-form-item span="24">
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Submit</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">Submit</oas-button>
       <span id="form-grid-output" style="margin-left: var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
     </oas-form-item>
   </oas-form>
@@ -146,7 +148,7 @@ The validation area demonstrates `rules`-declared validation rules and failure f
       <oas-input name="password" type="password" placeholder="Password" style="width: 180px"></oas-input>
     </oas-form-item>
     <oas-form-item>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Log in</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">Log in</oas-button>
       <span id="form-inline-login-output" style="margin-left: var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
     </oas-form-item>
   </oas-form>
@@ -163,7 +165,7 @@ The validation area demonstrates `rules`-declared validation rules and failure f
       <oas-select name="category" placeholder="All categories" options='[{"label":"All","value":"all"},{"label":"Docs","value":"doc"},{"label":"Components","value":"component"}]' style="width: 140px"></oas-select>
     </oas-form-item>
     <oas-form-item>
-      <oas-button type="primary" onclick="this.closest('oas-form').shadowRoot.querySelector('form').requestSubmit()">Search</oas-button>
+      <oas-button type="primary" onclick="this.closest('oas-form').submit()">Search</oas-button>
       <span id="form-inline-search-output" style="margin-left: var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
     </oas-form-item>
   </oas-form>
@@ -233,6 +235,12 @@ onMounted(() => {
 </script>
 
 ## API
+
+### Methods
+
+| Method | Description |
+| --- | --- |
+| `submit()` | Public submit entry: delegates to the inner form's `requestSubmit()` (preserves the submit event and submitter semantics); after validation dispatches `oas-submit` / `oas-validate-fail`. Across the shadow boundary light-DOM buttons have no native submit semantics, so use this method uniformly (e.g. `this.closest('oas-form').submit()`) |
 
 ### oas-form
 

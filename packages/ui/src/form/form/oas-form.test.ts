@@ -52,6 +52,34 @@ describe('OASForm', () => {
     })
   })
 
+  it('submit() 走 requestSubmit：校验通过时与点击提交派发同样的 oas-submit 与 values', () => {
+    const el = mount()
+    const name = el.querySelector('oas-input[name="name"]')!
+    const email = el.querySelector('oas-input[name="email"]')!
+    name.setAttribute('value', '张三')
+    email.setAttribute('value', 'zhang@example.com')
+    let detail: unknown
+    el.addEventListener('oas-submit', (e: Event) => (detail = (e as CustomEvent).detail))
+    el.submit()
+    expect((detail as { values: Record<string, string> }).values).toEqual({
+      name: '张三',
+      email: 'zhang@example.com',
+    })
+  })
+
+  it('submit() 校验失败路径派发 oas-validate-fail，不派发 oas-submit', () => {
+    const el = mount()
+    let submitFired = 0
+    let failDetail: unknown
+    el.addEventListener('oas-submit', () => submitFired++)
+    el.addEventListener('oas-validate-fail', (e: Event) => (failDetail = (e as CustomEvent).detail))
+    el.submit()
+    expect(submitFired).toBe(0)
+    const name = el.querySelector('oas-input[name="name"]')!
+    expect(name.hasAttribute('aria-invalid')).toBe(true)
+    expect((failDetail as { errors: Record<string, string> }).errors.name).toBe('请输入姓名')
+  })
+
   it('collectFields 覆盖常用控件（switch/transfer/date-picker/slider/rate）', () => {
     const el = new OASForm()
     el.innerHTML = `
