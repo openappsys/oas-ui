@@ -30,13 +30,18 @@
     {
       "name": "expanded",
       "type": "string",
-      "default": "[]",
+      "default": "",
       "observed": true
     },
     {
       "name": "check-strategy",
       "type": "string",
       "default": "all",
+      "observed": true
+    },
+    {
+      "name": "check-strictly",
+      "type": "boolean",
       "observed": true
     },
     {
@@ -55,9 +60,129 @@
       "type": "string",
       "default": "36",
       "observed": true
+    },
+    {
+      "name": "filterable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "reserve-keyword",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "lazy",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "clearable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "field-names",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "max-tag-count",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "max",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "default-expand-all",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "tree-lines",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "empty",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "cache-data",
+      "type": "string",
+      "default": "[]",
+      "observed": true
+    },
+    {
+      "name": "show-path",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "separator",
+      "type": "string",
+      "default": " / ",
+      "observed": true
+    },
+    {
+      "name": "expand-trigger",
+      "type": "string",
+      "default": "toggle",
+      "observed": true
+    },
+    {
+      "name": "prefix",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "suffix",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
+    {
+      "name": "load",
+      "type": "(payload: { value: string }) => void"
+    },
+    {
+      "name": "filter",
+      "type": "(label: string, option: TreeOption) => boolean"
+    },
     {
       "name": "options",
       "type": "TreeOption[] | string",
@@ -66,10 +191,37 @@
   ],
   "events": [
     {
+      "name": "oas-search",
+      "detail": "{ value: this.searchQuery }"
+    },
+    {
+      "name": "oas-open-change",
+      "detail": "{ open: next }"
+    },
+    {
+      "name": "oas-load",
+      "detail": "{ value }"
+    },
+    {
       "name": "oas-change",
-      "detail": "{ value: values } | { value: values[0] ?? '' }"
+      "detail": "{ value: values, labels } | { value: values[0] ?? '', labels } | { value: [], labels: [] } | { value: '', labels: [] }"
+    },
+    {
+      "name": "oas-clear",
+      "detail": "{ value: [...prev] } | { value: prev[0] ?? '' }"
+    },
+    {
+      "name": "oas-node-render",
+      "detail": "{ node: option, element: label, level: depth + 1, expanded: expanded.has(value), selected: multiple ? isChecked : this.currentValues().includes(value), checked: multiple ? isChecked : false, }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "template[slot=\"empty\"]"
+    },
+    {
+      "name": "template[slot=\"node\"]"
+    }
+  ],
   "unresolved": []
 }

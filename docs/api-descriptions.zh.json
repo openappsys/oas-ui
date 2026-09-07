@@ -108,16 +108,30 @@
   },
   "oas-auto-complete": {
     "attrs": {
+      "clearable": "可清空（输入有内容时显示清空按钮，清空派发 `oas-clear` 与空值 `oas-change`）",
+      "debounce": "输入防抖（毫秒，默认 0 不防抖）：只防抖 `oas-input` 派发与过滤触发，不防抖输入回显",
       "disabled": "禁用",
-      "options": "选项，JSON 数组 `[{ label, value, disabled }]`",
+      "loading": "加载占位（下拉显示「加载中…」，远程建议请求态）",
+      "options": "选项，JSON 数组 `[{ label, value, disabled?, group? }]`（group 为分组标题）",
       "placeholder": "占位提示",
+      "readonly": "只读（可聚焦可复制不可输入，聚焦与键盘不展开建议）",
+      "size": "尺寸档位：small / medium / large（默认 medium，就近跟随 config-provider 注入）",
+      "status": "校验态：success / warning / error（error 同步 aria-invalid，可被 oas-form-item 校验驱动）",
+      "trigger-on-focus": "聚焦即展示建议（datalist 心智；默认关闭，维持「输入优先」现状）",
       "value": "预设值"
     },
     "events": {
-      "oas-change": "选中，`detail: { value, label }`",
-      "oas-input": "输入中，`detail: { value }`"
+      "oas-change": "选中或清空，`detail: { value, label }`",
+      "oas-clear": "点击清空按钮，`detail: { value }`（清空前的值）",
+      "oas-input": "输入中（防抖后），`detail: { value }`",
+      "oas-option-render": "每个选项行渲染后派发，`detail: { index, option, element }`，宿主可改写 `element`（图标/富文本）"
     },
-    "slots": {}
+    "slots": {
+      "empty": "自定义无匹配空态（替换默认文案）",
+      "footer": "建议面板底部内容（如「查看全部」链接）",
+      "header": "建议面板头部内容（如「输入试试 xx」提示条）",
+      "template[slot=\"option\"]": "自定义选项模板骨架，`[data-option-label]` 节点自动绑定选项文本"
+    }
   },
   "oas-avatar": {
     "attrs": {
@@ -398,11 +412,25 @@
       "disabled": "禁用",
       "options": "级联选项，JSON 数组，支持 `children` / `disabled`",
       "placeholder": "占位提示",
-      "show-all-levels": "是否显示完整路径（当前版本预留，展示始终为完整路径）",
-      "value": "路径数组（JSON），如 `[\"zj\",\"hz\"]`"
+      "show-all-levels": "回显完整路径（默认 true）；`false` 仅末级",
+      "value": "路径数组（JSON），如 `[\"zj\",\"hz\"]`",
+      "multiple": "多选（复选框级联勾选；子级全选父级自动进值）",
+      "check-strictly": "多选父子勾选解绑（勾选父级不联动子级）",
+      "value-mode": "多选值策略：`all`（默认，全路径）/ `parentFirst` / `onlyLeaf`",
+      "filterable": "可搜索（扁平路径结果）",
+      "clearable": "可清空（派发 oas-clear）",
+      "separator": "路径分隔符（默认 ` / `）",
+      "expand-trigger": "子级展开触发方式：`click`（默认）/ `hover`（120ms 延时防误触）",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
+      "status": "校验态：`error` / `warning` / `success`；error 联动 aria-invalid",
+      "open": "受控展开状态（唯一状态源）",
+      "max-tag-count": "多选标签按数量折叠 +N（带 title 列隐藏项）"
     },
     "events": {
-      "oas-change": "选择变化，`detail: { value }`（路径数组）"
+      "oas-change": "选择变化，`detail: { value }`（路径数组）",
+      "oas-open-change": "展开状态翻转，`detail: { open }`",
+      "oas-search": "filterable 输入，`detail: { value }`",
+      "oas-clear": "点击清空按钮，`detail` 为清空前的值"
     },
     "slots": {}
   },
@@ -482,16 +510,24 @@
     "attrs": {
       "clearable": "可清空（有值时显示清空按钮，清空派发 `oas-clear`）",
       "disabled": "禁用（不可输入、不展开）",
+      "filter": "自定义过滤函数（JS property 通道 `el.filter = fn`）：接管本地过滤（如拼音首字母/远程匹配），置 null 恢复默认 label 子串过滤；`filterable=\"false\"` 时不参与",
       "filterable": "输入实时过滤 label（`filterable=\"false\"` 关闭本地过滤）",
+      "item-height": "虚拟滚动定高（px，配合 `virtual`，默认 36）",
       "loading": "加载占位（下拉显示「加载中…」）",
-      "options": "选项，JSON 数组 `[{ label, value, disabled? }]`",
+      "open": "受控展开状态（组件内部开合同步写回属性，任何迁移派发 `oas-open-change`；readonly/disabled 下强制收起）",
+      "options": "选项，JSON 数组 `[{ label, value, disabled?, group? }]`（group 为分组标题，与 oas-select 同一契约）",
       "placeholder": "占位提示",
-      "value": "当前值（受控，选中项 `option.value`）"
+      "readonly": "只读（可聚焦可复制不可改值，聚焦与键盘不展开下拉）",
+      "size": "尺寸档位：small / medium / large（默认 medium，就近跟随 config-provider 注入）",
+      "status": "校验态：success / warning / error（error 同步 aria-invalid，可被 oas-form-item 校验驱动）",
+      "value": "当前值（受控，选中项 `option.value`）",
+      "virtual": "虚拟滚动（复用 oas-virtual-list 仅渲染可视窗口；带 group 的选项自动回退全量渲染）"
     },
     "events": {
       "oas-change": "选中/清空变化，`detail: { value }`",
       "oas-clear": "点击清空按钮，`detail: { value }`（清空前的值）",
-      "oas-input": "输入过滤词，`detail: { value }`"
+      "oas-input": "输入过滤词，`detail: { value }`",
+      "oas-open-change": "展开状态迁移（受控 setAttribute 与内部开合都派发），`detail: { open }`"
     },
     "slots": {}
   },
@@ -1777,18 +1813,30 @@
       "remote": "远程搜索：不做本地过滤，输入派发 `oas-input` 供宿主请求",
       "searchable": "可搜索（打开下拉后输入过滤）",
       "value": "当前值（多选为 JSON 数组）",
-      "virtual": "大数据量虚拟滚动：只渲染可视窗口，滚动流畅（复用 oas-virtual-list）；带 `group` 的选项自动回退全量渲染"
+      "virtual": "大数据量虚拟滚动：只渲染可视窗口，滚动流畅（复用 oas-virtual-list）；带 `group` 的选项自动回退全量渲染",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`：控高/字号/标签高联动",
+      "status": "校验态：`error` / `warning` / `success`；error 联动宿主 aria-invalid",
+      "open": "受控展开：属性在场=展开、移除=收起；宿主手势只派 oas-open-change 通知（组件不强制写回）",
+      "max-count": "多选上限：达上限未选项禁用置灰并派 oas-exceed-limit，已选项仍可取消；单选行为不变",
+      "placement": "下拉方向：`auto`（默认，下方优先自动翻转）/ `top` / `bottom`（强制不翻转）",
+      "readonly": "只读：可聚焦可复制、不弹层、值不可改（隐藏清空与移除按钮）",
+      "debounce": "远程搜索输入防抖毫秒（默认 0 立即；仅 remote 模式 oas-input 防抖，本地过滤始终即时）"
     },
     "events": {
       "oas-change": "选择/清空变化，`detail: { value }`",
       "oas-clear": "点击清空按钮，`detail: { value }`（清空前的值）",
       "oas-input": "`remote` 模式输入，`detail: { value }`（供宿主请求）",
       "oas-option-render": "每个渲染的选项行派发，`detail: { index, option, element }`（element 为选项 label 容器，宿主可改写为图标/富文本）",
-      "oas-tag-render": "多选标签渲染时派发，`detail: { value, label, element }`（element 为标签文本容器，宿主可改写）"
+      "oas-tag-render": "多选标签渲染时派发，`detail: { value, label, element }`（element 为标签文本容器，宿主可改写）",
+      "oas-focus": "组件获得焦点时派发（trigger↔搜索框内部转移不误报）",
+      "oas-blur": "组件失去焦点时派发",
+      "oas-open-change": "展开状态翻转，`detail: { open }`",
+      "oas-exceed-limit": "达 max-count 上限后的越界选择尝试（点击/键盘/创建三路），`detail: { value, max }`"
     },
     "slots": {
       "template[slot=\"option\"]": "选项行静态模板，克隆到每个选项 label 容器；`[data-option-label]` 节点自动绑定选项 label",
-      "template[slot=\"tag\"]": "多选标签静态模板，克隆到每个 chip 的文本容器；`[data-tag-label]` 节点自动绑定标签 label"
+      "template[slot=\"tag\"]": "多选标签静态模板，克隆到每个 chip 的文本容器；`[data-tag-label]` 节点自动绑定标签 label",
+      "template[slot=\"empty\"]": "自定义空态（覆盖「暂无数据」与「无匹配选项」默认文案）"
     }
   },
   "oas-sidebar": {
@@ -2556,12 +2604,41 @@
       "options": "树形选项，JSON 数组，支持 `children` / `disabled`",
       "placeholder": "占位提示",
       "value": "选中值（多选为 JSON 数组）",
-      "virtual": "开启虚拟滚动：大数据量下拉仅渲染可见窗口（复用 oas-virtual-list），键盘/ARIA 保持"
+      "virtual": "开启虚拟滚动：大数据量下拉仅渲染可见窗口（复用 oas-virtual-list），键盘/ARIA 保持",
+      "filterable": "可搜索（面板顶部独立搜索框）",
+      "check-strictly": "多选父子勾选解联（勾选父级不联动子级）",
+      "reserve-keyword": "选中节点后保留搜索关键词（默认清空）",
+      "lazy": "懒加载（配 `el.load` 函数 property，节点含 isLeaf 标记）",
+      "clearable": "可清空（派发 oas-clear）",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
+      "status": "校验态：`error` / `warning` / `success`",
+      "field-names": "字段别名 JSON（如 `{\"label\":\"name\",\"value\":\"id\",\"children\":\"subs\"}`；原始 option 不拷贝映射，node-render 拿到宿主原对象）",
+      "max-tag-count": "多选标签按数量折叠 +N（带 title 列隐藏项）",
+      "max": "多选上限（按勾选集合计）",
+      "open": "受控开合（存在即受控；`\"false\"`=受控关），翻转派 oas-open-change",
+      "default-expand-all": "默认展开全部节点（expanded 属性缺席时生效，首次内部切换后冻结）",
+      "tree-lines": "树线缩进引导线",
+      "loading": "面板加载态（懒加载/远程搜索时）",
+      "empty": "空态文案/内容自定义",
+      "cache-data": "未知值回显兜底缓存（JSON），value 无匹配时按缓存出 label",
+      "show-path": "回显完整路径（初始回显与多选 labels 走路径）",
+      "separator": "路径分隔符（默认 ` / `，配 show-path）",
+      "expand-trigger": "节点展开触发：`toggle`（默认，仅箭头）/ `node`（点节点行展开）",
+      "prefix": "触发器前缀内容（slot=\"prefix\" 可分发任意内容）",
+      "suffix": "触发器后缀内容（slot=\"suffix\" 同上）"
     },
     "events": {
-      "oas-change": "选择变化，`detail: { value }`"
+      "oas-change": "选择变化，`detail: { value }`",
+      "oas-search": "搜索输入，`detail: { value }`",
+      "oas-open-change": "开合状态翻转，`detail: { open }`",
+      "oas-load": "懒加载节点展开加载时派发，`detail: { value }`",
+      "oas-clear": "清空时派发，`detail` 为清空前的值",
+      "oas-node-render": "节点渲染时派发（自定义节点渲染通道），`detail: { node, element, level, expanded, selected, checked }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"empty\"]": "自定义空态内容",
+      "template[slot=\"node\"]": "自定义节点模板（`[data-node-label]` 绑定标签）"
+    }
   },
   "oas-upload": {
     "attrs": {

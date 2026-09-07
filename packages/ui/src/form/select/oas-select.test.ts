@@ -76,7 +76,7 @@ describe('OASSelect', () => {
     ;(options[1] as HTMLElement).click()
     expect(el.getAttribute('value')).toBe('banana')
     expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
-    expect(detail).toEqual({ value: 'banana' })
+    expect(detail).toEqual({ value: 'banana', option: { label: '香蕉', value: 'banana' } })
   })
 
   // 协作缺陷回归：oas-modal 的 dialog 会 stopPropagation 拦截 click 冒泡，
@@ -205,7 +205,7 @@ describe('OASSelect', () => {
     clearBtn.click()
     expect(el.getAttribute('value')).toBeNull()
     expect(clearDetail).toEqual({ value: 'apple' })
-    expect(changeDetail).toEqual({ value: '' })
+    expect(changeDetail).toEqual({ value: '', option: null })
     expect(clearBtn.hidden).toBe(true)
   })
 
@@ -286,7 +286,8 @@ describe('OASSelect', () => {
     createRow.click()
     expect(el.getAttribute('value')).toBe('火龙果')
     expect(trigger(el).textContent).toContain('火龙果')
-    expect(changeDetail).toEqual({ value: '火龙果' })
+    // allow-create 的 option 已在创建时纳入 _options，detail 携带完整对象
+    expect(changeDetail).toEqual({ value: '火龙果', option: { label: '火龙果', value: '火龙果' } })
   })
 
   it('allow-create：键盘 Enter 创建新选项', () => {
@@ -297,6 +298,22 @@ describe('OASSelect', () => {
     searchInput.dispatchEvent(new Event('input', { bubbles: true }))
     searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     expect(el.getAttribute('value')).toBe('奇异果')
+  })
+
+  it('回归：allow-create 创建项持久（源数据每轮重解析不丢失，重开下拉仍可见）', () => {
+    const el = mount({ 'allow-create': '', searchable: '' })
+    open(el)
+    const searchInput = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    searchInput.value = '火龙果'
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+    el.shadowRoot!.querySelector<HTMLElement>('.create-option')!.click()
+    expect(el.getAttribute('value')).toBe('火龙果')
+    // 触发一轮源重解析（属性变化 → update → parseOptions），创建项不应被源数据抹掉
+    el.setAttribute('placeholder', '再触发一轮更新')
+    open(el)
+    const rows = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    expect(rows.some((r) => r.textContent!.includes('火龙果'))).toBe(true)
+    expect(trigger(el).textContent).toContain('火龙果')
   })
 
   it('键盘：展开态按 Enter 选中高亮项（回归：此前 Enter 分支为死代码）', () => {
@@ -396,7 +413,7 @@ describe('OASSelect 声明式数据通道与真水合', () => {
     const rows = snap.shadowRoot!.querySelectorAll('[role="option"]')
     ;(rows[1] as HTMLElement).click()
     expect(snap.getAttribute('value')).toBe('banana')
-    expect(changeDetail).toEqual({ value: 'banana' })
+    expect(changeDetail).toEqual({ value: 'banana', option: { label: '香蕉', value: 'banana' } })
   })
 
   it('真水合回退：快照缺关键结构时回退 render 全量重建，功能仍正常', () => {
@@ -595,7 +612,7 @@ describe('OASSelect 虚拟滚动（virtual）', () => {
     const row8 = virtualRows(el).find((r) => r.getAttribute('data-index') === '8')
     ;(row8 as HTMLElement).click()
     expect(el.getAttribute('value')).toBe('v8')
-    expect(detail).toEqual({ value: 'v8' })
+    expect(detail).toEqual({ value: 'v8', option: { label: '选项 8', value: 'v8' } })
   })
 
   it('virtual：searchable 过滤后虚拟列表跟随过滤子集', () => {
@@ -744,8 +761,8 @@ describe('OASSelect 子元素声明式通道（oas-option）', () => {
     ;(rows[1] as HTMLElement).click()
     expect(el.getAttribute('value')).toBe('banana')
     expect(trigger(el).textContent).toContain('香蕉')
-    expect(detail).toEqual({ value: 'banana' })
-    // 多选：detail 为数组，与 options 通道一致
+    expect(detail).toEqual({ value: 'banana', option: { label: '香蕉', value: 'banana' } })
+    // 多选：detail 为数组 + options 携带完整对象，与 options 通道一致
     const el2 = childSelect(
       [
         ['apple', '苹果'],
@@ -759,7 +776,13 @@ describe('OASSelect 子元素声明式通道（oas-option）', () => {
     const rows2 = [...el2.shadowRoot!.querySelectorAll('[role="option"]')]
     ;(rows2[0] as HTMLElement).click()
     ;(rows2[1] as HTMLElement).click()
-    expect(multiDetail).toEqual({ value: ['apple', 'banana'] })
+    expect(multiDetail).toEqual({
+      value: ['apple', 'banana'],
+      options: [
+        { label: '苹果', value: 'apple' },
+        { label: '香蕉', value: 'banana' },
+      ],
+    })
   })
 
   it('虚拟滚动模式与子元素通道共存：数据入口在收敛点之前，两路径均吃到子元素数据', () => {
@@ -823,5 +846,729 @@ describe('OASSelect 全局禁用注入（config-provider disabled）', () => {
     open(el)
     const dropdown = el.shadowRoot!.querySelector<HTMLElement>('.dropdown')!
     expect(dropdown.classList.contains('open')).toBe(false)
+  })
+})
+
+describe('OASSelect 尺寸与校验态（size / status）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('新属性进入 observedAttributes', () => {
+    expect(OASSelect.observedAttributes).toEqual(
+      expect.arrayContaining([
+        'size',
+        'status',
+        'open',
+        'max-count',
+        'placement',
+        'readonly',
+        'debounce',
+      ]),
+    )
+  })
+
+  it('size 默认 medium（data-size 镜像）', () => {
+    const el = mount()
+    expect(el.getAttribute('data-size')).toBe('medium')
+  })
+
+  it('size=small/large 镜像 data-size，非法值回落 medium', () => {
+    const el = mount({ size: 'small' })
+    expect(el.getAttribute('data-size')).toBe('small')
+    el.setAttribute('size', 'large')
+    expect(el.getAttribute('data-size')).toBe('large')
+    el.setAttribute('size', 'huge')
+    expect(el.getAttribute('data-size')).toBe('medium')
+  })
+
+  it('size 就近读取 config-provider 注入（与全局密度联动）', () => {
+    const cp = document.createElement('oas-config-provider')
+    cp.setAttribute('size', 'small')
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    cp.appendChild(el)
+    document.body.appendChild(cp)
+    expect(el.getAttribute('data-size')).toBe('small')
+  })
+
+  it('size 样式规则存在（small/large 控高 token + chip 联动）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain("[data-size='small']")
+    expect(css).toContain("[data-size='large']")
+    expect(css).toContain('var(--oas-control-height-sm)')
+    expect(css).toContain('var(--oas-control-height-lg)')
+  })
+
+  it('status=error：data-status 镜像 + 宿主标 aria-invalid', () => {
+    const el = mount({ status: 'error' })
+    expect(el.getAttribute('data-status')).toBe('error')
+    expect(el.getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('status=warning/success：镜像 data-status，不标 aria-invalid', () => {
+    const warn = mount({ status: 'warning' })
+    expect(warn.getAttribute('data-status')).toBe('warning')
+    expect(warn.hasAttribute('aria-invalid')).toBe(false)
+    const ok = mount({ status: 'success' })
+    expect(ok.getAttribute('data-status')).toBe('success')
+    expect(ok.hasAttribute('aria-invalid')).toBe(false)
+  })
+
+  it('移除 status 后镜像与 aria-invalid 清理', () => {
+    const el = mount({ status: 'error' })
+    el.removeAttribute('status')
+    expect(el.hasAttribute('data-status')).toBe(false)
+    expect(el.hasAttribute('aria-invalid')).toBe(false)
+  })
+
+  it('宿主自带 aria-invalid 时移除 status 不误删宿主的 aria-invalid（所有权分离）', () => {
+    const el = mount({ 'aria-invalid': 'true' })
+    expect(el.hasAttribute('aria-invalid')).toBe(true)
+    el.setAttribute('status', 'error')
+    el.removeAttribute('status')
+    // aria-invalid 由宿主设置，status 不拥有所有权，清理不动它
+    expect(el.getAttribute('aria-invalid')).toBe('true')
+  })
+
+  it('status 样式规则存在（error/warning/success）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain("[data-status='error']")
+    expect(css).toContain("[data-status='warning']")
+    expect(css).toContain("[data-status='success']")
+  })
+})
+
+describe('OASSelect 下拉头尾与空态插槽（header / footer / empty）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('template[slot="header"] 克隆进下拉头部（搜索框之下、选项之上），无模板时容器隐藏', () => {
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'header')
+    tpl.innerHTML = '<label class="hdr"><input type="checkbox" />全选</label>'
+    el.appendChild(tpl)
+    document.body.appendChild(el)
+    open(el)
+    const header = el.shadowRoot!.querySelector<HTMLElement>('[part="header"]')!
+    expect(header.hidden).toBe(false)
+    expect(header.querySelector('.hdr')).not.toBeNull()
+    // 位置：搜索框（searchable 时）与选项列表之间
+    el.setAttribute('searchable', '')
+    const dropdown = el.shadowRoot!.querySelector('.dropdown')!
+    const children = [...dropdown.children].map((c) => c.className || c.tagName)
+    expect(children.indexOf('search-input')).toBeLessThan(children.indexOf('dropdown-header'))
+    expect(children.indexOf('dropdown-header')).toBeLessThan(children.indexOf('listbox'))
+  })
+
+  it('template[slot="footer"] 克隆进下拉尾部', () => {
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'footer')
+    tpl.innerHTML = '<button class="ftr-add" type="button">创建团队</button>'
+    el.appendChild(tpl)
+    document.body.appendChild(el)
+    open(el)
+    const footer = el.shadowRoot!.querySelector<HTMLElement>('[part="footer"]')!
+    expect(footer.hidden).toBe(false)
+    expect(footer.querySelector('.ftr-add')).not.toBeNull()
+    const dropdown = el.shadowRoot!.querySelector('.dropdown')!
+    const children = [...dropdown.children].map((c) => c.className || c.tagName)
+    expect(children.indexOf('vlist')).toBeLessThan(children.indexOf('dropdown-footer'))
+  })
+
+  it('无模板时 header/footer 容器隐藏（不占位）', () => {
+    const el = mount()
+    open(el)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="header"]')!.hidden).toBe(true)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="footer"]')!.hidden).toBe(true)
+  })
+
+  it('动态移除模板 → 头尾容器回到隐藏（MutationObserver 通道）', async () => {
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'header')
+    tpl.innerHTML = '<span class="hdr">头部</span>'
+    el.appendChild(tpl)
+    document.body.appendChild(el)
+    open(el)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="header"]')!.hidden).toBe(false)
+    tpl.remove()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="header"]')!.hidden).toBe(true)
+  })
+
+  it('template[slot="empty"] 覆盖默认空态与无匹配文案', () => {
+    const el = new OASSelect()
+    el.setAttribute('options', OPTIONS)
+    el.setAttribute('searchable', '')
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'empty')
+    tpl.innerHTML = '<span class="custom-empty">没有找到任何水果</span>'
+    el.appendChild(tpl)
+    document.body.appendChild(el)
+    open(el)
+    // 空选项：自定义空态替代「暂无数据」
+    el.setAttribute('options', '[]')
+    expect(el.shadowRoot!.querySelector('.custom-empty')).not.toBeNull()
+    // 搜索无匹配：自定义空态替代「无匹配选项」
+    el.setAttribute('options', OPTIONS)
+    const si = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    si.value = '不存在的'
+    si.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.shadowRoot!.querySelectorAll('.custom-empty').length).toBe(1)
+  })
+})
+
+describe('OASSelect 受控展开（open + oas-open-change）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('非受控展开/收起均派发 oas-open-change（detail.open）', () => {
+    const el = mount()
+    const events: boolean[] = []
+    el.addEventListener('oas-open-change', (e: Event) =>
+      events.push((e as CustomEvent).detail.open),
+    )
+    open(el)
+    expect(events).toEqual([true])
+    trigger(el).click()
+    expect(events).toEqual([true, false])
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('设置 open 属性直接展开（受控声明式）', () => {
+    const el = mount({ open: '' })
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.dropdown')!.classList.contains('open')).toBe(
+      true,
+    )
+  })
+
+  it('open property 通道反射 attribute（宿主框架 :open 绑定）', () => {
+    const el = mount()
+    el.open = true
+    expect(el.hasAttribute('open')).toBe(true)
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
+    el.open = false
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('open property 关闭：非受控展开态下 el.open = false 直接收起（removeAttribute 无回调路径）', () => {
+    const el = mount()
+    open(el)
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
+    el.open = false
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('受控 open：点击 trigger 只派发事件不强制写回（属性在场仍展开），宿主移除属性后收起', () => {
+    const el = mount({ open: '' })
+    const events: boolean[] = []
+    el.addEventListener('oas-open-change', (e: Event) =>
+      events.push((e as CustomEvent).detail.open),
+    )
+    trigger(el).click()
+    expect(events).toEqual([false])
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
+    el.removeAttribute('open')
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('受控 open：点击外部只派发事件，属性移除后收起', () => {
+    const el = mount({ open: '' })
+    const events: boolean[] = []
+    el.addEventListener('oas-open-change', (e: Event) =>
+      events.push((e as CustomEvent).detail.open),
+    )
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(events).toEqual([false])
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
+    el.removeAttribute('open')
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('Esc 关闭派发 oas-open-change(false)（非受控）', () => {
+    const el = mount()
+    open(el)
+    const events: boolean[] = []
+    el.addEventListener('oas-open-change', (e: Event) =>
+      events.push((e as CustomEvent).detail.open),
+    )
+    trigger(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(events).toEqual([false])
+  })
+
+  it('单选选中后收起并派发 oas-open-change(false)', () => {
+    const el = mount()
+    open(el)
+    const events: boolean[] = []
+    el.addEventListener('oas-open-change', (e: Event) =>
+      events.push((e as CustomEvent).detail.open),
+    )
+    const rows = el.shadowRoot!.querySelectorAll('[role="option"]')
+    ;(rows[0] as HTMLElement).click()
+    expect(events).toEqual([false])
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('false')
+  })
+})
+
+describe('OASSelect 多选上限（max-count + oas-exceed-limit）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('多选达上限后未选项禁用置灰（aria-disabled），已选项不受影响', () => {
+    const el = mount({
+      multiple: '',
+      'max-count': '2',
+      value: JSON.stringify(['apple', 'banana']),
+    })
+    open(el)
+    const rows = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    expect(rows[0]!.getAttribute('aria-disabled')).toBe('false')
+    expect(rows[1]!.getAttribute('aria-disabled')).toBe('false')
+    expect(rows[2]!.getAttribute('aria-disabled')).toBe('true')
+  })
+
+  it('点击超限项不改变 value，派发 oas-exceed-limit（detail 带值与上限）', () => {
+    const el = mount({
+      multiple: '',
+      'max-count': '2',
+      value: JSON.stringify(['apple', 'banana']),
+    })
+    open(el)
+    let detail: unknown
+    el.addEventListener('oas-exceed-limit', (e: Event) => (detail = (e as CustomEvent).detail))
+    const rows = el.shadowRoot!.querySelectorAll('[role="option"]')
+    ;(rows[2] as HTMLElement).click()
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['apple', 'banana'])
+    expect(detail).toEqual({ value: 'orange', max: 2 })
+  })
+
+  it('上限内正常选择；取消一项后恢复可选（动态联动）', () => {
+    const el = mount({ multiple: '', 'max-count': '1' })
+    open(el)
+    const rows = () => [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    ;(rows()[0] as HTMLElement).click()
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['apple'])
+    // 达上限：其余禁用
+    expect(rows()[1]!.getAttribute('aria-disabled')).toBe('true')
+    // 取消已选项（点击已选行）：允许
+    ;(rows()[0] as HTMLElement).click()
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual([])
+    expect(rows()[1]!.getAttribute('aria-disabled')).toBe('false')
+  })
+
+  it('键盘 Enter 在超限项上同样拦截并派发事件', () => {
+    const el = mount({
+      multiple: '',
+      'max-count': '1',
+      value: JSON.stringify(['apple']),
+    })
+    open(el)
+    let fired = 0
+    el.addEventListener('oas-exceed-limit', () => fired++)
+    // activeIndex 初始指向已选 apple(0)，下移到 banana
+    trigger(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    trigger(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(fired).toBe(1)
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['apple'])
+  })
+
+  it('chip 移除不受上限影响', () => {
+    const el = mount({
+      multiple: '',
+      'max-count': '1',
+      value: JSON.stringify(['apple']),
+    })
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.chip button')!.click()
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual([])
+  })
+
+  it('单选模式 max-count 不生效（行为不变）', () => {
+    const el = mount({ 'max-count': '1' })
+    open(el)
+    const rows = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    expect(rows.every((r) => r.getAttribute('aria-disabled') === 'false')).toBe(true)
+    ;(rows[2] as HTMLElement).click()
+    expect(el.getAttribute('value')).toBe('orange')
+  })
+
+  it('allow-create 达上限时不创建并派发 oas-exceed-limit', () => {
+    const el = mount({
+      multiple: '',
+      'max-count': '1',
+      'allow-create': '',
+      searchable: '',
+      value: JSON.stringify(['apple']),
+    })
+    open(el)
+    let fired = 0
+    el.addEventListener('oas-exceed-limit', () => fired++)
+    const si = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    si.value = '火龙果'
+    si.dispatchEvent(new Event('input', { bubbles: true }))
+    el.shadowRoot!.querySelector<HTMLElement>('.create-option')!.click()
+    expect(fired).toBe(1)
+    expect(JSON.parse(el.getAttribute('value')!)).toEqual(['apple'])
+  })
+})
+
+describe('OASSelect 自定义过滤（filterMethod property 通道）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('el.filterMethod 自定义本地过滤（按 value 匹配演示）', () => {
+    const el = mount({ searchable: '' })
+    el.filterMethod = (query: string, option: { label: string; value: string }) =>
+      option.value.includes(query.toLowerCase())
+    open(el)
+    const si = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    si.value = 'APP'
+    si.dispatchEvent(new Event('input', { bubbles: true }))
+    const rows = [...el.shadowRoot!.querySelectorAll('[role="option"]')]
+    expect(rows.length).toBe(1)
+    expect(rows[0]!.textContent).toContain('苹果')
+  })
+
+  it('filterMethod 收到原始查询词（未转小写）与完整 option 对象', () => {
+    const el = mount({ searchable: '' })
+    const seen: Array<{ q: string; label: string; value: string }> = []
+    el.filterMethod = (q: string, o: { label: string; value: string }) => {
+      seen.push({ q, label: o.label, value: o.value })
+      return true
+    }
+    open(el)
+    const si = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    si.value = 'APP'
+    si.dispatchEvent(new Event('input', { bubbles: true }))
+    // 每轮渲染会多次调用（renderListbox/syncActive 各一次）；契约是每个选项都被咨询且收到原始词
+    const forQuery = seen.filter((s) => s.q === 'APP')
+    expect(forQuery.length).toBeGreaterThanOrEqual(3)
+    expect([...new Set(forQuery.map((s) => s.value))].sort()).toEqual([
+      'apple',
+      'banana',
+      'orange',
+    ])
+  })
+
+  it('filterMethod 全 false → 空态', () => {
+    const el = mount({ searchable: '' })
+    el.filterMethod = () => false
+    open(el)
+    const si = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    si.value = '任意'
+    si.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(0)
+    expect(el.shadowRoot!.textContent).toContain('无匹配选项')
+  })
+
+  it('置 null 回落默认 label includes 过滤', () => {
+    const el = mount({ searchable: '' })
+    el.filterMethod = () => false
+    el.filterMethod = null
+    open(el)
+    const si = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    si.value = '香'
+    si.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(1)
+  })
+
+  it('remote 模式 filterMethod 不生效（数据面过滤交给宿主）', () => {
+    const el = mount({ remote: '', searchable: '' })
+    el.filterMethod = () => false
+    open(el)
+    const si = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    si.value = '任意'
+    si.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(3)
+  })
+})
+
+describe('OASSelect 展开方向（placement）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  /** happy-dom 无布局（矩形全 0）：top=锚点上缘-面板高-间距=-8px，bottom=锚点下缘+间距=8px */
+  function dropdownTop(el: OASSelect): string {
+    return el.shadowRoot!.querySelector<HTMLElement>('.dropdown')!.style.top
+  }
+
+  it('placement=top 强制上方（不自动翻转）', () => {
+    const el = mount({ placement: 'top' })
+    open(el)
+    expect(dropdownTop(el)).toBe('-8px')
+  })
+
+  it('placement=bottom 强制下方；auto（默认）下方优先', () => {
+    const el = mount({ placement: 'bottom' })
+    open(el)
+    expect(dropdownTop(el)).toBe('8px')
+    const auto = mount()
+    open(auto)
+    expect(dropdownTop(auto)).toBe('8px')
+  })
+
+  it('非法 placement 回落 auto', () => {
+    const el = mount({ placement: 'left' })
+    open(el)
+    expect(dropdownTop(el)).toBe('8px')
+  })
+
+  it('placement 变化增量生效（top → bottom 重定位）', () => {
+    const el = mount({ placement: 'top' })
+    open(el)
+    expect(dropdownTop(el)).toBe('-8px')
+    el.setAttribute('placement', 'bottom')
+    expect(dropdownTop(el)).toBe('8px')
+  })
+})
+
+describe('OASSelect 只读（readonly）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('readonly：trigger 可聚焦未禁用，点击/键盘不展开，标 aria-readonly', () => {
+    const el = mount({ readonly: '', value: 'apple' })
+    const btn = trigger(el)
+    expect(btn.disabled).toBe(false)
+    expect(btn.getAttribute('aria-readonly')).toBe('true')
+    btn.click()
+    expect(btn.getAttribute('aria-expanded')).toBe('false')
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(btn.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('readonly + clearable：不显示清空按钮（值只读不可改）', () => {
+    const el = mount({ readonly: '', clearable: '', value: 'apple' })
+    expect(el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!.hidden).toBe(true)
+  })
+
+  it('非 readonly 时无 aria-readonly 残留', () => {
+    const el = mount()
+    expect(trigger(el).hasAttribute('aria-readonly')).toBe(false)
+  })
+
+  it('移除 readonly 后恢复可展开', () => {
+    const el = mount({ readonly: '' })
+    el.removeAttribute('readonly')
+    expect(trigger(el).getAttribute('aria-readonly')).toBe(null)
+    open(el)
+    expect(trigger(el).getAttribute('aria-expanded')).toBe('true')
+  })
+})
+
+describe('OASSelect change detail 携带完整 option', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('多选 detail.options 携带完整 option 对象数组（含 group/disabled 字段）', () => {
+    const grouped = JSON.stringify([
+      { group: '温带', label: '苹果', value: 'apple' },
+      { group: '热带', label: '香蕉', value: 'banana' },
+    ])
+    const el = mount({ multiple: '', options: grouped })
+    open(el)
+    let detail: any
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    const rows = el.shadowRoot!.querySelectorAll('[role="option"]')
+    ;(rows[0] as HTMLElement).click()
+    ;(rows[1] as HTMLElement).click()
+    expect(detail.options).toEqual([
+      { group: '温带', label: '苹果', value: 'apple' },
+      { group: '热带', label: '香蕉', value: 'banana' },
+    ])
+  })
+
+  it('值不在 options 时 option 为 null（清空外部预设值场景）', () => {
+    const el = mount({ clearable: '', value: 'ghost' })
+    let detail: any
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!.click()
+    expect(detail).toEqual({ value: '', option: null })
+  })
+
+  it('多选清空 detail.options 为空数组', () => {
+    const el = mount({ multiple: '', clearable: '', value: JSON.stringify(['apple']) })
+    let detail: any
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[part="clear"]')!.click()
+    expect(detail).toEqual({ value: [], options: [] })
+  })
+})
+
+describe('OASSelect 焦点事件（oas-focus / oas-blur）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('trigger 聚焦派发 oas-focus，失焦派发 oas-blur', () => {
+    const el = mount()
+    const events: string[] = []
+    el.addEventListener('oas-focus', () => events.push('focus'))
+    el.addEventListener('oas-blur', () => events.push('blur'))
+    const btn = trigger(el)
+    btn.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    expect(events).toEqual(['focus'])
+    btn.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }))
+    expect(events).toEqual(['focus', 'blur'])
+  })
+
+  it('组件内部焦点转移（trigger↔搜索框）不派发 blur，离开组件才派发一次 blur', () => {
+    const el = mount({ searchable: '' })
+    open(el)
+    const events: string[] = []
+    el.addEventListener('oas-focus', () => events.push('focus'))
+    el.addEventListener('oas-blur', () => events.push('blur'))
+    const btn = trigger(el)
+    const si = el.shadowRoot!.querySelector<HTMLElement>('[part="search-input"]')!
+    // 组件内互转：trigger → 搜索框 → trigger（relatedTarget 始终在组件内）
+    btn.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    btn.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: si }))
+    si.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+    si.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: btn }))
+    // 内部转移期间绝不派发 blur；focus 至多一次（是否已聚焦取决于 open 时的真实焦点，不作假设）
+    expect(events.filter((e) => e === 'blur')).toEqual([])
+    expect(events.filter((e) => e === 'focus').length).toBeLessThanOrEqual(1)
+    // 离开组件：派发一次 blur
+    si.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: document.body }))
+    expect(events.filter((e) => e === 'blur')).toEqual(['blur'])
+  })
+})
+
+describe('OASSelect 远程防抖（debounce）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('remote + debounce：窗口内多次输入只派发一次 oas-input（末次值）', async () => {
+    const el = mount({ remote: '', searchable: '', debounce: '50' })
+    open(el)
+    const inputs: string[] = []
+    el.addEventListener('oas-input', (e: Event) => inputs.push((e as CustomEvent).detail.value))
+    const si = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    si.value = 'a'
+    si.dispatchEvent(new Event('input', { bubbles: true }))
+    si.value = 'ap'
+    si.dispatchEvent(new Event('input', { bubbles: true }))
+    si.value = 'app'
+    si.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(inputs).toEqual([])
+    await new Promise((r) => setTimeout(r, 90))
+    expect(inputs).toEqual(['app'])
+  })
+
+  it('debounce 默认 0：立即派发（现状不干扰）', () => {
+    const el = mount({ remote: '', searchable: '' })
+    open(el)
+    const inputs: string[] = []
+    el.addEventListener('oas-input', (e: Event) => inputs.push((e as CustomEvent).detail.value))
+    const si = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    si.value = 'a'
+    si.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(inputs).toEqual(['a'])
+  })
+
+  it('本地搜索不受 debounce 影响（过滤即时）', () => {
+    const el = mount({ searchable: '', debounce: '100' })
+    open(el)
+    const si = el.shadowRoot!.querySelector<HTMLInputElement>('[part="search-input"]')!
+    si.value = '香'
+    si.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(el.shadowRoot!.querySelectorAll('[role="option"]').length).toBe(1)
+  })
+})
+
+describe('OASSelect 下拉高度 CSS 变量', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('CSS 变量开口：.listbox max-height 走 --oas-select-dropdown-height（默认 240px）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    const rule = css.match(/\.listbox\s*\{[^}]*\}/)?.[0] ?? ''
+    expect(rule).toContain('max-height: var(--oas-select-dropdown-height, 240px)')
+    expect(css).toContain('--oas-select-dropdown-height: 240px')
+  })
+
+  it('虚拟模式 vlist 高度跟随 CSS 变量（宿主覆盖生效）', () => {
+    const many = JSON.stringify(
+      Array.from({ length: 100 }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` })),
+    )
+    const el = mount({ virtual: '', options: many })
+    el.style.setProperty('--oas-select-dropdown-height', '300px')
+    open(el)
+    const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
+    expect(vlist.getAttribute('height')).toBe('300')
+  })
+
+  it('虚拟模式默认高度 240', () => {
+    const many = JSON.stringify(
+      Array.from({ length: 100 }, (_, i) => ({ label: `选项 ${i}`, value: `v${i}` })),
+    )
+    const el = mount({ virtual: '', options: many })
+    open(el)
+    const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
+    expect(vlist.getAttribute('height')).toBe('240')
   })
 })

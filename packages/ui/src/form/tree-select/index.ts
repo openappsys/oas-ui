@@ -6,3 +6,4 @@ if (!customElements.get('oas-tree-select')) {
 }
 
 export { OASTreeSelect }
+export type { TreeOption } from './oas-tree-select.js'

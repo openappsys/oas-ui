@@ -65,6 +65,41 @@
       "type": "string",
       "default": "36",
       "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "observed": true
+    },
+    {
+      "name": "max-count",
+      "observed": true
+    },
+    {
+      "name": "placement",
+      "type": "string",
+      "default": "auto",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "debounce",
+      "observed": true
     }
   ],
   "props": [
@@ -72,6 +107,15 @@
       "name": "options",
       "type": "Option[] | string",
       "default": "[]"
+    },
+    {
+      "name": "filterMethod",
+      "type": "((query: string, option: Option) => boolean) | null"
+    },
+    {
+      "name": "open",
+      "type": "boolean",
+      "default": "false"
     }
   ],
   "events": [
@@ -80,12 +124,26 @@
       "detail": "{ value: v }"
     },
     {
+      "name": "oas-focus"
+    },
+    {
+      "name": "oas-blur"
+    },
+    {
+      "name": "oas-open-change",
+      "detail": "{ open: next }"
+    },
+    {
       "name": "oas-option-render",
       "detail": "{ index: optionIdx, option, element: label }"
     },
     {
+      "name": "oas-exceed-limit",
+      "detail": "{ value, max: this.maxCountLimit() }"
+    },
+    {
       "name": "oas-change",
-      "detail": "{ value: next } | { value } | { value: [] } | { value: '' }"
+      "detail": "{ value: next, options: this.optionsOf(next) } | { value, option: this.optionsOf([value])[0] } | { value: [], options: [] } | { value: '', option: null }"
     },
     {
       "name": "oas-clear",
@@ -97,6 +155,9 @@
     }
   ],
   "slots": [
+    {
+      "name": "template[slot=\"empty\"]"
+    },
     {
       "name": "template[slot=\"option\"]"
     },

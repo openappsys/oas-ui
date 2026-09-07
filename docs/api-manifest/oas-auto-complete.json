@@ -23,6 +23,44 @@
       "name": "disabled",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "clearable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "debounce",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "trigger-on-focus",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
@@ -38,10 +76,28 @@
       "detail": "{ value: this.query }"
     },
     {
+      "name": "oas-option-render",
+      "detail": "{ index: idx, option, element: label }"
+    },
+    {
       "name": "oas-change",
-      "detail": "{ value: option.value, label: option.label }"
+      "detail": "{ value: option.value, label: option.label } | { value: '', label: '' }"
+    },
+    {
+      "name": "oas-clear",
+      "detail": "{ value: prev }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "footer"
+    },
+    {
+      "name": "header"
+    },
+    {
+      "name": "template[slot=\"option\"]"
+    }
+  ],
   "unresolved": []
 }

@@ -37,6 +37,39 @@
       "type": "string",
       "default": "true",
       "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "virtual",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "item-height",
+      "type": "string",
+      "default": "36",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
@@ -44,9 +77,17 @@
       "name": "options",
       "type": "Option[] | string",
       "default": "[]"
+    },
+    {
+      "name": "filter",
+      "type": "((option: Option, query: string) => boolean) | null"
     }
   ],
   "events": [
+    {
+      "name": "oas-open-change",
+      "detail": "{ open }"
+    },
     {
       "name": "oas-input",
       "detail": "{ value: this.query }"

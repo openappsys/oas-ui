@@ -651,7 +651,8 @@ function scanTemplateSlotRefs(text, names) {
   let m
   while ((m = re.exec(text))) {
     const name = m[1] ?? m[2]
-    if (name) names.add(`template[slot="${name}"]`)
+    // 模板表达式插值的动态名（如 slot="${src.slotName}" 被部分截获为 ${slot}）不是真实槽位，跳过
+    if (name && !name.includes('${')) names.add(`template[slot="${name}"]`)
   }
 }
 

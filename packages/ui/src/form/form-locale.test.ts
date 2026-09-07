@@ -110,14 +110,13 @@ describe('form 组件文案 locale 切换（i18n 集成）', () => {
     setLocale(en)
     expect(trigger.textContent).toContain('Please select')
 
-    // 多选超 3 项：join 分隔符 + andMore 兜底文案（当前 locale 为 en，先验 en 再回切 zh）
+    // 多选回显：chip 形态（破坏性视觉变更后）——默认全 chip；max-tag-count 折叠出 +N（title 用 locale 分隔符）
     el.setAttribute('multiple', '')
     el.setAttribute('value', '["react","vue","css","node"]')
-    expect(trigger.textContent).toContain('and 4 more')
-    setLocale('zh-CN')
-    expect(trigger.textContent).toContain('等 4 项')
-    setLocale(en)
-    expect(trigger.textContent).toContain('and 4 more')
+    expect(trigger.querySelectorAll('.chip').length).toBe(4)
+    el.setAttribute('max-tag-count', '2')
+    expect(trigger.querySelectorAll('.chip').length).toBe(3)
+    expect(trigger.querySelector('.chip-plus')!.textContent).toBe('+2')
 
     // 空态
     setLocale('zh-CN')
