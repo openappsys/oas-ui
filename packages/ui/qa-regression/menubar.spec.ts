@@ -124,3 +124,42 @@ test('menubar show-arrow side-top align-end 箭头右对齐触发器（右缘 12
 // rAF 等重排后写入。缺陷②：营销位高度手工拼「+4」与 .panel-footer 的 margin+padding+border
 // 实际结构差 13px，且打开瞬间测量比终态少 5px——底缘被裁 3px。修复：真实布局计法
 // （offsetHeight+marginTop+1）+ rAF 终态重算。
+
+// ===== close-on-select 布尔语义（对齐 menu 的 hasAttr+缺省模式，行为零变化）=====
+// 布尔属性约定「存在即真（含空值），仅显式 "false" 关闭」；缺省收（桌面菜单栏共识）。
+// docs 无空值 demo（menubar-checkbox 是显式 "false"），空串存在即真由单测覆盖，此处不硬造。
+
+test('menubar 缺省（未设置 close-on-select）：基础 demo 点叶子后子菜单收起', async ({ page }) => {
+  await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#menubar-basic')
+  // 限定 .bar 作用域：汉堡面板渲染同一份 items 镜像，不限定会 strict 重复命中
+  await page.locator('#menubar-basic .bar [part="top-item"][data-value="file"]').click()
+  const leaf = page.locator('#menubar-basic .bar [part="item"][data-value="new"]')
+  await leaf.waitFor({ state: 'visible' })
+  await leaf.click()
+  await page.waitForTimeout(200)
+  const r = await page.evaluate(() => {
+    const mb = document.querySelector('#menubar-basic')!
+    const sub = mb.shadowRoot!.querySelector('.bar [part="submenu"][data-parent="file"]')
+    return { open: sub?.classList.contains('open') ?? false }
+  })
+  expect(r.open, '未设置 close-on-select（缺省收）点叶子后子菜单应收起').toBe(false)
+})
+
+test('menubar close-on-select="false"（menubar-checkbox demo）：radio 叶子选中后子菜单保持展开', async ({
+  page,
+}) => {
+  await page.goto('/components/menubar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#menubar-checkbox')
+  await page.locator('#menubar-checkbox .bar [part="top-item"][data-value="view"]').click()
+  const leaf = page.locator('#menubar-checkbox .bar [part="item"][data-value="fullscreen"]')
+  await leaf.waitFor({ state: 'visible' })
+  await leaf.click()
+  await page.waitForTimeout(200)
+  const r = await page.evaluate(() => {
+    const mb = document.querySelector('#menubar-checkbox')!
+    const sub = mb.shadowRoot!.querySelector('.bar [part="submenu"][data-parent="view"]')
+    return { open: sub?.classList.contains('open') ?? false }
+  })
+  expect(r.open, 'close-on-select="false" radio 叶子选中后子菜单应保持展开').toBe(true)
+})

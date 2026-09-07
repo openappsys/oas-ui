@@ -1901,8 +1901,12 @@ export class OASMenubar extends OASElement {
     }
   }
 
-  /** close-on-select：缺省 true（桌面菜单栏选中即收），显式 "false" 保持展开 */
+  /** close-on-select：缺省 true（桌面菜单栏选中即收，共识默认）；
+      显式 close-on-select="true"/"false" 覆盖缺省 */
   private closeOnSelect(): boolean {
+    // 布尔属性语义：存在即 true（含 close-on-select="" 空值），仅显式 "false" 关闭；
+    // 未设置（hasAttr 为 false）时按缺省收（与 menu 的 hasAttr+缺省模式一致）
+    if (!this.hasAttr('close-on-select')) return true
     return this.getAttr('close-on-select', '') !== 'false'
   }
 

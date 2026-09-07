@@ -96,6 +96,35 @@ describe('OASTable', () => {
     expect(rowClick).toBe(1)
   })
 
+  it('行内 oas-button 点击不触发行选中/不派发 oas-row-click（宿主无 role 属性，排除清单须含 oas-button）', () => {
+    // 缺陷固化：排除清单 button,a,input,... 命中不了 <oas-button> 宿主——自定义组件宿主自身
+    // 无 role 属性，行内放 oas-button（如行编辑按钮）点击会连带派发 oas-row-click，
+    // 造成「行点击 + 按钮点击」双重响应（真实场景双弹窗）。
+    const el = new OASTable()
+    el.setAttribute('data', DATA)
+    el.columns = [
+      { key: 'name', title: '姓名' },
+      {
+        key: 'op',
+        title: '操作',
+        render: () => {
+          const b = document.createElement('oas-button')
+          b.textContent = '编辑'
+          return b
+        },
+      },
+    ]
+    document.body.appendChild(el)
+    let rowClick = 0
+    el.addEventListener('oas-row-click', () => rowClick++)
+    el.shadowRoot!.querySelector<HTMLElement>('td[data-col="op"] oas-button')!.click()
+    expect(rowClick, 'oas-button 点击不应触发行点击').toBe(0)
+    expect(el.getAttribute('selected')).toBeFalsy()
+    // 文本单元格点击 → 行点击正常（排除未误伤普通点击）
+    el.shadowRoot!.querySelector<HTMLElement>('td[data-col="name"]')!.click()
+    expect(rowClick).toBe(1)
+  })
+
   it('checkable：渲染行复选框，勾选派发 oas-check', () => {
     const el = mount({ checkable: '', 'row-key': 'name' })
     let detail: unknown

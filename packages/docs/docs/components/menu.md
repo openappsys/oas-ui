@@ -220,7 +220,7 @@
 
 ## 选中不收起
 
-浮出形态（vertical / horizontal）默认选中叶子项即收起展开的子菜单（展开态是临时的）；`close-on-select="false"` 可保持展开，适合在浮层里连续选多项。`mode="inline"` 侧边导航默认不收（用户需看到所在分区），`close-on-select="true"` 可改为收起。`kind="checkbox"` 项的勾选切换永不收起。
+浮出形态（vertical / horizontal）默认选中叶子项即收起展开的子菜单（展开态是临时的）；`close-on-select="false"` 可保持展开，适合在浮层里连续选多项。`mode="inline"` 侧边导航默认不收（用户需看到所在分区），`close-on-select="true"` 可改为收起。`kind="checkbox"` 项的勾选切换永不收起。`close-on-select` 为布尔属性：存在即真（含 `close-on-select=""` 空值），仅显式 `"false"` 关闭——未设置时才按上述形态缺省（inline 不收 / 浮出收）。
 
 <DemoBlock title="选中不收起（close-on-select）">
   <oas-space direction="vertical" size="large">
