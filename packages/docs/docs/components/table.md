@@ -4,6 +4,8 @@
 
 `columns` / `data` 支持 attribute 声明式通道：直接写 JSON 字符串即可渲染表头与数据行（非法 JSON 回退空态），同时保留 property 通道（赋值数组对象，property 优先），可被 SSR 快照序列化。
 
+> **数据通道契约（与 oas-chart 对齐阅读）**：attribute 传 JSON 字符串，property 传对象/数组（免序列化，setter 内解析，优先级高于 attribute）。`oas-table` 的 `columns` / `data` setter 会把值**反射回 attribute**——property 赋值后 `getAttribute('columns')` / `getAttribute('data')` 可读回对应 JSON 字符串（attribute 与 property 保持单一数据源同步）；这与 `oas-chart`（data 只写内部状态不反射、读取走 `el.data`）不同。例外：`columns` 含函数字段（`render` 等）时 setter 走纯内存路径不反射，此类列读取请走 `el.columns` property。
+
 ## 基础用法（含排序）
 
 <DemoBlock title="可排序列">

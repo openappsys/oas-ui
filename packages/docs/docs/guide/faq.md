@@ -59,6 +59,18 @@ CSS 规范限制：`::part()` 伪元素后**只能接伪类**（`:hover` / `:foc
 
 引用主题变量即可：`background: var(--oas-color-bg)`、`color: var(--oas-color-text-primary)`。切换 `data-theme` 时组件库变量自动换值，你的样式引用了变量就自动跟随。变量清单见[设计 Token](./tokens)。
 
+## 国际化（i18n）
+
+### 翻译插值占位符怎么写？
+
+`@oas-ui/i18n` 的翻译插值占位符是 **`{name}`**——单层花括号、**无前缀 `#`**。语言包模板里写 `{count}`，翻译时传 `t(key, { count })` 即完成替换，例如 `'pagination.total': '共 {total} 条'` + `t('pagination.total', { total: 42 })` → `共 42 条`。
+
+> **`#{name}` 不是合法占位符**：`#` 不会被插值逻辑消费，`#{count}` 中的 `#` 会原样保留在输出文案里（替换后仍是 `#{42}`）。写语言包时不要沿用 `#{var}` 这类带 `#` 前缀的模板习惯。
+
+### 自定义语言包/文案怎么注册？
+
+`@oas-ui/i18n` 提供全局 locale registry：`registerLocale(locale)` 注册自定义语言包、`setLocale(name)` 全局切换；语言包结构对齐内置 `zh-CN`（key 全集类型化，缺 key 编译期报错）。`oas-config-provider` 支持就近注入（`locale` 属性），包裹内组件优先用注入的 locale 翻译内置文案，无需全局设置。
+
 ## 主题
 
 ### 切暗色后页面 body 还是白的？
