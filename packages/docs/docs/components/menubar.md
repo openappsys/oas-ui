@@ -61,7 +61,7 @@
 
 ## 复选与不收起（checkbox + close-on-select）
 
-`kind: "checkbox"` 叶子按多选勾选（`value` 为 JSON 数组），点击切换勾选**不收起**子菜单（连续勾选场景）；`close-on-select="false"` 让 radio/动作项选中后也保持展开。
+`kind: "checkbox"` 叶子按多选勾选（`value` 为 JSON 数组），点击切换勾选**不收起**子菜单（连续勾选场景）；`close-on-select="false"` 让 radio/动作项选中后也保持展开。`close-on-select` 为布尔属性：存在即真（含空值），仅显式 `"false"` 关闭——未设置时缺省收起。
 
 <DemoBlock title="复选与不收起（checkbox + close-on-select）">
   <oas-menubar id="menubar-checkbox" onoas-select="menubarCheckboxLog(event)" close-on-select="false" value='["grid"]' items='[{"label":"视图","value":"view","accessKey":"v","children":[{"type":"group","label":"显示","children":[{"label":"网格线","value":"grid","kind":"checkbox"},{"label":"标尺","value":"ruler","kind":"checkbox"}]},{"type":"divider"},{"label":"全屏","value":"fullscreen"}]}]'></oas-menubar>

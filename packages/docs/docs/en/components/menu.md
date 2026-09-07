@@ -220,7 +220,7 @@ With `mode="inline"` submenus expand in place (no flyout) — the mainstream sid
 
 ## Keep open on select
 
-Flyout modes (vertical / horizontal) collapse expanded submenus after a leaf is selected by default (expansion is temporary); `close-on-select="false"` keeps them open — handy for picking several items in a row. `mode="inline"` side navigation keeps submenus open by default (users need to see their section); `close-on-select="true"` changes that to collapse. `kind="checkbox"` items never collapse on toggle.
+Flyout modes (vertical / horizontal) collapse expanded submenus after a leaf is selected by default (expansion is temporary); `close-on-select="false"` keeps them open — handy for picking several items in a row. `mode="inline"` side navigation keeps submenus open by default (users need to see their section); `close-on-select="true"` changes that to collapse. `kind="checkbox"` items never collapse on toggle. `close-on-select` is a boolean attribute: presence means `true` (including an empty value such as `close-on-select=""`); only an explicit `"false"` disables it — the mode-based defaults above apply only when the attribute is absent.
 
 <DemoBlock title="Keep open on select (close-on-select)">
   <oas-space direction="vertical" size="large">

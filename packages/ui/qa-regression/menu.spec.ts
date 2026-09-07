@@ -134,3 +134,51 @@ test('menu 水平溢出收纳「···」可见且末项不截断（曾收纳项
   expect(sel.moreAriaCurrent, '「···」应有 aria-current').toBe('true')
   expect(sel.mirrorChecked, '镜像项应有选中态').toBe('true')
 })
+
+// ===== close-on-select 布尔语义（demo 实结构核对）=====
+// 布尔属性约定「存在即真（含空值），仅显式 "false" 关闭」：
+// 缺省按形态（inline 不收 / 浮出收）。docs 无空值 demo（menu-keep-open/inline-close 分别是
+// 显式 "false"/"true"），空串存在即真由单测覆盖，此处不硬造。
+
+test('menu close-on-select="false"（menu-keep-open demo）：点叶子后子菜单保持展开（连选场景）', async ({
+  page,
+}) => {
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#menu-keep-open')
+  // 浮出形态子菜单靠 hover 展开（对齐本文件既有三级链用例的交互惯例）
+  await page.locator('#menu-keep-open [part="item"][data-value="edit"]').hover()
+  const leaf = page.locator('#menu-keep-open [part="item"][data-value="copy"]')
+  await leaf.waitFor({ state: 'visible' })
+  await leaf.click()
+  await page.waitForTimeout(200)
+  const r = await page.evaluate(() => {
+    const menu = document.querySelector('#menu-keep-open')!
+    const parent = menu.shadowRoot!.querySelector('[part="item"][data-value="edit"]')
+    return {
+      open: parent?.classList.contains('open') ?? false,
+      expanded: parent?.getAttribute('aria-expanded'),
+      value: menu.getAttribute('value'),
+    }
+  })
+  expect(r.open, 'close-on-select="false" 点叶子后子菜单应保持展开').toBe(true)
+  expect(r.expanded, '父级 aria-expanded 应保持 true').toBe('true')
+  expect(r.value, '选中值应写回 copy').toBe('copy')
+})
+
+test('menu inline + close-on-select="true"（menu-inline-close demo）：点叶子后收起父级子菜单', async ({
+  page,
+}) => {
+  await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#menu-inline-close')
+  await page.locator('#menu-inline-close [data-value="dash"]').click()
+  await page.waitForTimeout(200)
+  await page.locator('#menu-inline-close [data-value="dash-overview"]').click()
+  await page.waitForTimeout(200)
+  const r = await page.evaluate(() => {
+    const menu = document.querySelector('#menu-inline-close')!
+    const sub = menu.shadowRoot!.querySelector('.inline-sub[data-parent="dash"]')
+    return { open: sub?.classList.contains('open') ?? false, value: menu.getAttribute('value') }
+  })
+  expect(r.open, 'inline + close-on-select="true" 点叶子后应收起父级子菜单').toBe(false)
+  expect(r.value, '选中值应写回 dash-overview').toBe('dash-overview')
+})

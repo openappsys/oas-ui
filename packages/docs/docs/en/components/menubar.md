@@ -61,7 +61,7 @@ The `value` attribute is controlled (it is in `observedAttributes`): an external
 
 ## Checkbox items and keep-open (checkbox + close-on-select)
 
-Leaves with `kind: "checkbox"` toggle a multi-select checked set (`value` is a JSON array); toggling a checkbox does **not** close the submenu (continuous toggling). `close-on-select="false"` keeps the submenu open even after radio/action selections.
+Leaves with `kind: "checkbox"` toggle a multi-select checked set (`value` is a JSON array); toggling a checkbox does **not** close the submenu (continuous toggling). `close-on-select="false"` keeps the submenu open even after radio/action selections. `close-on-select` is a boolean attribute: presence means `true` (including an empty value); only an explicit `"false"` disables it — when the attribute is absent the default is to close.
 
 <DemoBlock title="Checkbox + close-on-select">
   <oas-menubar id="menubar-checkbox" onoas-select="menubarCheckboxLog(event)" close-on-select="false" value='["grid"]' items='[{"label":"View","value":"view","accessKey":"v","children":[{"type":"group","label":"Show","children":[{"label":"Gridlines","value":"grid","kind":"checkbox"},{"label":"Ruler","value":"ruler","kind":"checkbox"}]},{"type":"divider"},{"label":"Fullscreen","value":"fullscreen"}]}]'></oas-menubar>
