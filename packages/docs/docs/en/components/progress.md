@@ -13,7 +13,7 @@ Shows task progress, supporting line / circle / dashboard forms, status colors, 
   </oas-space>
 </DemoBlock>
 
-`percent` is the current progress value (default range 0–100, clamped automatically); when it reaches 100 with no `status` set, success green is shown.
+`percent` is the current progress value (default range 0–100, clamped automatically); when it reaches 100 with no `status` set, success green is shown. `value` is an alias of `percent` (`percent` wins when both are set), so writing `value` works the same.
 
 ## Status
 
@@ -307,6 +307,7 @@ onMounted(async () => {
 | `text-inside` | Text inside the bar (line only; the track auto-grows to fit text when no explicit thickness is set) | `boolean` | — |
 | `track-color` | Track color: same protocol as color | `string` | — |
 | `type` | Shape: `line` (default) / `circle` / `dashboard` (gauge: 270° arc open at the bottom) | `string` | `line` |
+| `value` | Alias of percent (current value, clamped to 0–max): when both are set percent wins; read only when percent is absent | `string` | `0` |
 
 ### Slots
 

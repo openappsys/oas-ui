@@ -61,3 +61,28 @@ test('virtual-list 滚轮增量滚动不失控（overflow-anchor 回归）', asy
   expect(d2).toBeLessThanOrEqual(240)
   expect(d3).toBeLessThanOrEqual(240)
 })
+
+test('virtual-list buffer 宿主 property 遮蔽原型方法后渲染不崩（命名冲突回归）', async ({
+  page,
+}) => {
+  // 曾现 bug：私有方法 buffer() 与公开 attribute buffer 同名，React/Vue 对自定义元素同名
+  // 绑定走 property 通道（el.buffer = 8 在实例挂自有属性遮蔽原型方法），连接即渲染时
+  // this.buffer() 抛 TypeError 崩溃。修复=私有方法改名 bufferSize()，attribute 语义不变。
+  await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-virtual-list')
+  const r = await page.evaluate(() => {
+    const el = document.createElement('oas-virtual-list')
+    el.setAttribute('height', '100')
+    el.setAttribute('item-height', '20')
+    el.setAttribute('buffer', '8')
+    el.setAttribute('items', JSON.stringify(Array.from({ length: 100 }, (_, i) => i)))
+    ;(el as unknown as { buffer: number }).buffer = 8 // 模拟宿主 property 通道
+    document.body.appendChild(el)
+    const count = el.shadowRoot!.querySelectorAll('[part="item"]').length
+    const first = el.shadowRoot!.querySelector('[part="item"]')?.getAttribute('data-index')
+    el.remove()
+    return { count, first }
+  })
+  expect(r.count, '连接即渲染不抛错且按 buffer=8 生效（13 = 5 可见 + 上下 8）').toBe(13)
+  expect(r.first, '首项索引 0').toBe('0')
+})

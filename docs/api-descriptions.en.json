@@ -1662,7 +1662,8 @@
       "text-inside": "Text inside the bar (line only; the track auto-grows to fit text when no explicit thickness is set)",
       "max": "Value range upper bound (default 100): percent/buffer read as current values; width and text are computed as value/max and aria reflects real values",
       "label": "Accessible name (written to the progress bar aria-label)",
-      "stroke-linecap": "Arc line cap `round` (default) / `butt` (circle/dashboard)"
+      "stroke-linecap": "Arc line cap `round` (default) / `butt` (circle/dashboard)",
+      "value": "Alias of percent (current value, clamped to 0–max): when both are set percent wins; read only when percent is absent"
     },
     "events": {},
     "slots": {

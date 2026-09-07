@@ -185,4 +185,27 @@ describe('OASVirtualList', () => {
     expect(block('\\.viewport')).toContain('overflow-anchor: none')
     expect(block('\\.inner')).toContain('overflow-anchor: none')
   })
+
+  it('buffer 宿主 property 遮蔽原型方法后渲染不崩且按属性生效（回归）', async () => {
+    // 曾现 bug：私有方法 buffer() 与 observedAttributes 的 buffer 同名，React/Vue 对自定义
+    // 元素同名绑定走 property 通道（el.buffer = 8 在实例挂自有属性遮蔽原型方法），此后
+    // this.buffer() 直接 TypeError。修复=私有方法改名 bufferSize()，公开 attribute 语义不变。
+    const el = new OASVirtualList()
+    el.setAttribute('height', '100')
+    el.setAttribute('item-height', '20')
+    el.setAttribute('buffer', '8')
+    el.setAttribute('items', JSON.stringify(range(100)))
+    // 模拟宿主 property 通道在实例上挂同名自有属性
+    ;(el as unknown as { buffer: number }).buffer = 8
+    document.body.appendChild(el) // 连接即渲染，此前会在此抛 TypeError
+    const first = items(el)
+    expect(first.length).toBe(13) // 顶部：5 可见 + 上下 buffer 8
+    expect(first[0]!.getAttribute('data-index')).toBe('0')
+    scrollTo(el, 200)
+    await flushRaf()
+    const rendered = items(el)
+    expect(rendered.length).toBe(21) // floor(200/20)-8=2 → 窗口 2..22
+    expect(rendered[0]!.getAttribute('data-index')).toBe('2')
+    expect(pad(el, 'padding-top').style.height).toBe('40px')
+  })
 })

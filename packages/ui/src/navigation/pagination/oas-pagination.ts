@@ -252,6 +252,12 @@ export class OASPagination extends OASElement {
   private resizeObserver: ResizeObserver | null = null
   /** responsive：容器是否窄于断点（clientWidth>0 且 <640；0=未布局/SSR 不误判） */
   private narrow = false
+  /**
+   * hidden 所有权标志：仅当组件自己因 hide-on-single 写入 hidden 时为 true。
+   * update() 的非单页分支只摘除自己写的 hidden；宿主（React/Vue 声明式）设置的 hidden
+   * 一律不触碰（曾在 update 末尾无条件 removeAttribute('hidden') 把宿主的隐藏撕掉）
+   */
+  private hidSelf = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -328,14 +334,25 @@ export class OASPagination extends OASElement {
     const showMore = this.hasAttr('show-more') && rawTotal <= 0
 
     // hide-on-single：单页时不渲染（host hidden，宿主无感知；恢复多页时自动取消隐藏）；
-    // show-more 形态下不适用（无 pageCount 语义）
+    // show-more 形态下不适用（无 pageCount 语义）。
+    // hidden 所有权纪律：宿主（React/Vue 声明式）设置的 hidden 组件永不得摘除。
+    // 进入自隐态时仅在「宿主未隐藏」的前提下补写 hidden 并记录 hidSelf 所有权；
+    // 已处于自隐态（hidSelf）时不重复评估（connectedCallback 会连续 update，
+    // 第二次看到的 hidden 是组件自己写的，不能据此放弃所有权）
     if (this.hasAttr('hide-on-single') && !showMore && pageCount <= 1) {
-      this.setAttribute('hidden', '')
+      if (!this.hidSelf) {
+        this.hidSelf = !this.hasAttribute('hidden')
+        if (this.hidSelf) this.setAttribute('hidden', '')
+      }
       group.setAttribute('aria-label', this.t('pagination.nav'))
       group.innerHTML = ''
       return
     }
-    this.removeAttribute('hidden')
+    // 非单页：只摘除组件自己因 hide-on-single 写入的 hidden；宿主 hidden 保持原样
+    if (this.hidSelf) {
+      this.hidSelf = false
+      this.removeAttribute('hidden')
+    }
 
     // 内置文案走 locale registry（setLocale 切换自动刷新）
     group.setAttribute('aria-label', this.t('pagination.nav'))

@@ -478,4 +478,57 @@ describe('OASProgress', () => {
     )
     expect(el.shadowRoot!.querySelector('.circle-icon svg')).toBeNull()
   })
+
+  // ---- value 别名（percent 的别名；两者同设 percent 优先）----
+
+  it('value：percent 缺失时作为别名生效（宽度/文本/ARIA）', () => {
+    // 曾现 bug：宿主写 value 静默无效（组件只读 percent）
+    const el = mount({ value: '60' })
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    expect(bar.style.width).toBe('60%')
+    const pb = el.shadowRoot!.querySelector('[role="progressbar"]')!
+    expect(pb.getAttribute('aria-valuenow')).toBe('60')
+    expect(el.shadowRoot!.querySelector('[part="text"]')!.textContent).toContain('60%')
+  })
+
+  it('value：circle 形态同样走别名', () => {
+    const el = mount({ type: 'circle', value: '60' })
+    const bar = el.shadowRoot!.querySelector('.circle .bar-circle')!
+    const c = 2 * Math.PI * 21
+    expect(bar.getAttribute('stroke-dashoffset')).toBe(String(c * 0.4))
+    expect(el.shadowRoot!.querySelector('[part="circle"]')!.getAttribute('aria-valuenow')).toBe(
+      '60',
+    )
+  })
+
+  it('value：与 percent 同设时 percent 优先', () => {
+    const el = mount({ value: '60', percent: '30' })
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    expect(bar.style.width).toBe('30%')
+    expect(bar.getAttribute('aria-valuenow')).toBe('30')
+  })
+
+  it('value：max 值域下按 value/max 换算', () => {
+    const el = mount({ value: '50', max: '200' })
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    expect(bar.style.width).toBe('25%')
+    expect(bar.getAttribute('aria-valuenow')).toBe('50')
+    expect(bar.getAttribute('aria-valuemax')).toBe('200')
+  })
+
+  it('value：动态 setAttribute 触发重渲染', () => {
+    const el = mount({ value: '10' })
+    const bar = el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!
+    expect(bar.style.width).toBe('10%')
+    el.setAttribute('value', '70')
+    expect(bar.style.width).toBe('70%')
+    expect(bar.getAttribute('aria-valuenow')).toBe('70')
+  })
+
+  it('value：移除 percent 后回退到 value', () => {
+    const el = mount({ value: '60', percent: '30' })
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!.style.width).toBe('30%')
+    el.removeAttribute('percent')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="bar"]')!.style.width).toBe('60%')
+  })
 })

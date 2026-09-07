@@ -1662,7 +1662,8 @@
       "text-inside": "文本内嵌进度条内（line 限定；未显式指定粗细时轨道自动提升到可容纳文本）",
       "max": "值域上限（默认 100）：percent/buffer 语义为当前值，宽度与文本按 value/max 换算，aria 同步真实值",
       "label": "无障碍名（写入进度条的 aria-label）",
-      "stroke-linecap": "圆环端帽 `round`（默认）/ `butt`（circle/dashboard）"
+      "stroke-linecap": "圆环端帽 `round`（默认）/ `butt`（circle/dashboard）",
+      "value": "percent 的别名（当前进度值，与 percent 同值域 0–max 夹取）：两者同设时 percent 优先，仅 percent 缺失时读此值"
     },
     "events": {},
     "slots": {

@@ -237,6 +237,7 @@ export class OASProgress extends OASElement {
   static override get observedAttributes(): string[] {
     return [
       'percent',
+      'value',
       'status',
       'no-text',
       'show-text',
@@ -325,7 +326,7 @@ export class OASProgress extends OASElement {
 
   protected override update(): void {
     const max = this.parseMax()
-    const value = this.clampValue(Number(this.getAttr('percent', '0')) || 0, max)
+    const value = this.clampValue(this.readValue(), max)
     const percent = (value / max) * 100
     const status = this.getAttr('status', '')
     const type = this.parseType()
@@ -384,6 +385,17 @@ export class OASProgress extends OASElement {
   /** value 夹取 0–max */
   private clampValue(value: number, max: number): number {
     return Math.min(max, Math.max(0, value))
+  }
+
+  /**
+   * 当前进度值：percent 属性存在时优先；否则读 value（percent 的别名）。
+   * deterministic：只读不反射、不同步。宿主直觉写 value 不会静默无效
+   */
+  private readValue(): number {
+    const raw = this.hasAttr('percent')
+      ? this.getAttr('percent', '0')
+      : this.getAttr('value', '0')
+    return Number(raw) || 0
   }
 
   /** label 属性 → 无障碍名（写入当前 progressbar 容器） */

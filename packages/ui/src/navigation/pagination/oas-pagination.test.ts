@@ -979,4 +979,46 @@ describe('OASPagination', () => {
     const el2 = mount({ 'page-sizes': '[10,20]', 'total-boundary': '', total: '10' })
     expect(el2.shadowRoot!.querySelector('[part="size"]')).not.toBeNull()
   })
+
+  // ===== 批次 21：宿主 hidden 所有权（update 不得撕宿主声明的 hidden）=====
+
+  it('宿主声明式 hidden：total/current 变化触发 update 后仍保留', () => {
+    // 曾现 bug：update() 在非 hide-on-single 分支末尾无条件 removeAttribute('hidden')，
+    // React/Vue 声明式宿主设置的 hidden 在 total/current 变化时被组件撕掉
+    const el = new OASPagination()
+    el.setAttribute('total', '100')
+    el.setAttribute('page-size', '10')
+    el.setAttribute('current', '1')
+    el.setAttribute('hidden', '')
+    document.body.appendChild(el)
+    expect(el.hasAttribute('hidden')).toBe(true)
+    el.setAttribute('total', '50')
+    expect(el.hasAttribute('hidden')).toBe(true)
+    el.setAttribute('current', '3')
+    expect(el.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('宿主 hidden + hide-on-single 叠加：单页自隐、多页恢复均不得误摘宿主 hidden', () => {
+    // 组件自隐与宿主隐藏叠加：即使 hide-on-single 已随多页解除，宿主的 hidden 仍须保留
+    const el = new OASPagination()
+    el.setAttribute('hide-on-single', '')
+    el.setAttribute('total', '8')
+    el.setAttribute('page-size', '10')
+    el.setAttribute('hidden', '')
+    document.body.appendChild(el)
+    expect(el.hasAttribute('hidden')).toBe(true)
+    el.setAttribute('total', '50')
+    expect(el.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('hide-on-single：单页自隐 → 多页恢复 → 再单页再自隐（所有权标志复位后仍自管 hidden）', () => {
+    const el = mount({ 'hide-on-single': '', total: '8', 'page-size': '10' })
+    expect(el.hasAttribute('hidden')).toBe(true)
+    el.setAttribute('total', '50')
+    expect(el.hasAttribute('hidden')).toBe(false)
+    el.setAttribute('total', '8')
+    expect(el.hasAttribute('hidden')).toBe(true)
+    el.setAttribute('total', '50')
+    expect(el.hasAttribute('hidden')).toBe(false)
+  })
 })

@@ -13,7 +13,7 @@
   </oas-space>
 </DemoBlock>
 
-`percent` 为当前进度值（默认值域 0–100，自动夹取）；进度满 100 且未设置 `status` 时自动显示成功绿。
+`percent` 为当前进度值（默认值域 0–100，自动夹取）；进度满 100 且未设置 `status` 时自动显示成功绿。`value` 是 `percent` 的别名（两者同设时 `percent` 优先），宿主按直觉写 `value` 同样生效。
 
 ## 状态
 
@@ -307,6 +307,7 @@ onMounted(async () => {
 | `text-inside` | 文本内嵌进度条内（line 限定；未显式指定粗细时轨道自动提升到可容纳文本） | `boolean` | — |
 | `track-color` | 轨道色：协议同 color | `string` | — |
 | `type` | 形态：`line`（默认）/ `circle` / `dashboard`（仪表盘：底部开口 270° 弧） | `string` | `line` |
+| `value` | percent 的别名（当前进度值，与 percent 同值域 0–max 夹取）：两者同设时 percent 优先，仅 percent 缺失时读此值 | `string` | `0` |
 
 ### 插槽
 
