@@ -1044,6 +1044,19 @@ describe('close-on-select 选中收起策略', () => {
     expect(el.getAttribute('value')).toBe('copy')
   })
 
+  it('浮出 + close-on-select 空串（存在即真）：点叶子后收起（空串非 "false"，按显式开启处理）', () => {
+    const el = mount({ items: NESTED2, 'close-on-select': '' })
+    el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.click()
+    expect(
+      el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!.classList.contains('open'),
+    ).toBe(true)
+    el.shadowRoot!.querySelector<HTMLElement>('[data-value="copy"]')!.click()
+    const parent = el.shadowRoot!.querySelector<HTMLElement>('[data-value="edit"]')!
+    expect(parent.classList.contains('open')).toBe(false)
+    expect(parent.getAttribute('aria-expanded')).toBe('false')
+    expect(el.getAttribute('value')).toBe('copy')
+  })
+
   // inline 默认不收起：既有「mode="inline" 就地展开」describe 的
   // 「inline 模式：选中叶子项后父级 inline-sub 保持展开」已覆盖，不重复
 

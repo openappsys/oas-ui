@@ -837,6 +837,14 @@ describe('close-on-select', () => {
     newItem.click()
     expect(openSubmenus(el).length).toBe(1)
   })
+
+  it('close-on-select 空串（存在即真）：按开启收起处理，缺省收语义不因空值破坏', () => {
+    const el = mount({ 'close-on-select': '' })
+    topItems(el)[0]!.click()
+    const open = el.shadowRoot!.querySelector<HTMLElement>('[part="item"][data-value="open"]')!
+    open.click()
+    expect(openSubmenus(el).length).toBe(0)
+  })
 })
 
 // ===== 竖排 orientation =====

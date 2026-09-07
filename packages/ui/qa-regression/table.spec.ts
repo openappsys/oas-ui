@@ -426,3 +426,73 @@ test('table 子元素声明式通道：Vue 宿主下 key 被剥离也能经 data
   expect(result.firstRow.some((c) => c === ''), '首行不应有空单元格').toBe(false)
 })
 
+test('table 行内 oas-button 点击不连带 oas-row-click（宿主无 role，排除清单须点名组件）', async ({
+  page,
+}) => {
+  // 缺陷固化：行点击排除清单 button,a,input,select,textarea,[role],oas-popconfirm 命中不了
+  // <oas-button> 宿主——自定义组件宿主自身无 role 属性，行内放 oas-button（如行编辑按钮）点击
+  // 会连带派发 oas-row-click → 「行点击 + 按钮点击」双重响应（真实场景双弹窗）。修复=排除清单
+  // 补 oas-button。docs 各 table demo 的行内交互按钮均为内置 .action-btn（原生 button，已被
+  // 排除清单覆盖），无「行内嵌 oas-button」的 demo——本断言按 size 密度用例先例在 demo 页动态
+  // 构造探针表（oas-button 同页已注册），真实浏览器点击验证事件链。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(
+    () => customElements.get('oas-table') != null && customElements.get('oas-button') != null,
+    null,
+    { timeout: 15000 },
+  )
+  await page.evaluate(() => {
+    const t = document.createElement('oas-table')
+    t.id = 'qa-inline-oas-button'
+    t.setAttribute('row-key', 'name')
+    t.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '姓名' },
+        { key: 'op', title: '操作' },
+      ]),
+    )
+    t.setAttribute('data', JSON.stringify([{ name: '张三' }]))
+    // 计数器挂在表宿主 dataset：若误触发行点击会 update() 重建 tbody、行内按钮被移除，
+    // 计数器挂按钮上会读不到——挂宿主上两者都稳
+    t.dataset.rowClick = '0'
+    t.dataset.btnClick = '0'
+    t.addEventListener('oas-row-click', () => {
+      t.dataset.rowClick = String(Number(t.dataset.rowClick!) + 1)
+    })
+    // 挂进正文容器而非 body 末尾：body 末尾首列会被固定侧边栏遮挡（hit-test 拦截点击）
+    ;(document.querySelector('.vp-doc') ?? document.body).append(t)
+    const btn = document.createElement('oas-button')
+    btn.textContent = '编辑'
+    btn.addEventListener('oas-click', () => {
+      t.dataset.btnClick = String(Number(t.dataset.btnClick!) + 1)
+    })
+    const td = t.shadowRoot!.querySelector('td[data-col="op"]') as HTMLTableCellElement
+    td.appendChild(btn)
+  })
+  // 点行内 oas-button：自身 oas-click 应触发，但不得连带 oas-row-click / 行选中重建
+  await page.locator('#qa-inline-oas-button td[data-col="op"] oas-button').click()
+  await page.waitForTimeout(200)
+  const r1 = await page.evaluate(() => {
+    const t = document.querySelector<HTMLElement>('#qa-inline-oas-button')!
+    return {
+      rowClick: Number(t.dataset.rowClick ?? '0'),
+      btnClick: Number(t.dataset.btnClick ?? '0'),
+      hasBtn: !!t.shadowRoot!.querySelector('td[data-col="op"] oas-button'),
+    }
+  })
+  expect(r1.btnClick, 'oas-button 自身应被真实点击（派发 oas-click）').toBeGreaterThan(0)
+  expect(r1.rowClick, 'oas-button 点击不应连带 oas-row-click').toBe(0)
+  expect(r1.hasBtn, 'oas-button 点击不应触发行选中重建（按钮应仍在原格）').toBe(true)
+  // 对照：普通文本单元格点击仍派发 oas-row-click（排除未误伤正常行点击）
+  await page.locator('#qa-inline-oas-button td[data-col="name"]').click()
+  await page.waitForTimeout(200)
+  const r2 = await page.evaluate(() => {
+    const t = document.querySelector<HTMLElement>('#qa-inline-oas-button')!
+    const v = Number(t.dataset.rowClick ?? '0')
+    t.remove()
+    return v
+  })
+  expect(r2, '普通单元格点击仍应派发 oas-row-click').toBe(1)
+})
+
