@@ -9,6 +9,12 @@
       "observed": true
     },
     {
+      "name": "value",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
       "name": "status",
       "type": "string",
       "default": "",

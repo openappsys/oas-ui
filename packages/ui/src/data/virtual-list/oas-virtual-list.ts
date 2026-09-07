@@ -193,7 +193,9 @@ export class OASVirtualList extends OASElement {
     return Number(this.getAttr('item-height', '36')) || 36
   }
 
-  private buffer(): number {
+  // 命名注意：不得叫 buffer——公开 attribute buffer 会被 React/Vue 走 property 通道同名赋值
+  // （el.buffer = 4）在实例上挂自有属性遮蔽原型方法，此后 this.buffer() 直接 TypeError
+  private bufferSize(): number {
     return Number(this.getAttr('buffer', '4')) || 4
   }
 
@@ -240,7 +242,7 @@ export class OASVirtualList extends OASElement {
       Math.max(0, target ? target.scrollTop : 0),
       Math.max(0, count * ih - vh),
     )
-    const win = computeVirtualWindow(scrollTop, vh, ih, count, this.buffer())
+    const win = computeVirtualWindow(scrollTop, vh, ih, count, this.bufferSize())
     this.start = win.start
     this.end = win.end
     if (this.inner) this.inner.style.height = `${count * ih}px`
