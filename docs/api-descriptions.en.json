@@ -108,16 +108,30 @@
   },
   "oas-auto-complete": {
     "attrs": {
+      "clearable": "Clearable (shows a clear button when the input has content; clearing dispatches `oas-clear` and an empty `oas-change`)",
+      "debounce": "Input debounce (ms, default 0 = off): only debounces `oas-input` dispatch and filtering, never the input display",
       "disabled": "Disabled",
-      "options": "Options, JSON array `[{ label, value, disabled }]`",
+      "loading": "Loading placeholder (dropdown shows a loading state; remote-suggestion request state)",
+      "options": "Options, JSON array `[{ label, value, disabled?, group? }]` (group is the group title)",
       "placeholder": "Placeholder text",
+      "readonly": "Readonly (focusable & copyable, not editable; focus and keyboard never open suggestions)",
+      "size": "Size tier: small / medium / large (default medium, follows the nearest config-provider injection)",
+      "status": "Validation status: success / warning / error (error syncs aria-invalid, drivable by oas-form-item validation)",
+      "trigger-on-focus": "Show suggestions on focus (datalist mental model; off by default — input-first)",
       "value": "Preset value"
     },
     "events": {
-      "oas-change": "Selected, `detail: { value, label }`",
-      "oas-input": "While typing, `detail: { value }`"
+      "oas-change": "Selected or cleared, `detail: { value, label }`",
+      "oas-clear": "Clear button clicked, `detail: { value }` (value before clearing)",
+      "oas-input": "While typing (after debounce), `detail: { value }`",
+      "oas-option-render": "Dispatched after each option row renders, `detail: { index, option, element }`; the host can rewrite `element` (icons/rich text)"
     },
-    "slots": {}
+    "slots": {
+      "empty": "Custom no-match empty state (replaces the default text)",
+      "footer": "Suggestion panel footer content (e.g. a view-all link)",
+      "header": "Suggestion panel header content (e.g. a hint bar)",
+      "template[slot=\"option\"]": "Custom option template skeleton; the `[data-option-label]` node auto-binds the option text"
+    }
   },
   "oas-avatar": {
     "attrs": {
@@ -398,11 +412,25 @@
       "disabled": "Disabled",
       "options": "Cascade options, JSON array, supports `children` / `disabled`",
       "placeholder": "Placeholder text",
-      "show-all-levels": "Whether to show the full path (reserved in the current version; display is always the full path)",
-      "value": "Path array (JSON), e.g. `[\"zj\",\"hz\"]`"
+      "show-all-levels": "Show the full path (default true); `false` shows only the leaf",
+      "value": "Path array (JSON), e.g. `[\"zj\",\"hz\"]`",
+      "multiple": "Multi-select (cascading checkboxes; fully-checked children roll the parent into the value)",
+      "check-strictly": "Decouple parent/child checking in multi-select (checking a parent does not cascade)",
+      "value-mode": "Multi-select value strategy: `all` (default, full paths) / `parentFirst` / `onlyLeaf`",
+      "filterable": "Searchable (flat path results)",
+      "clearable": "Clearable (fires oas-clear)",
+      "separator": "Path separator (default ` / `)",
+      "expand-trigger": "Sub-level expansion trigger: `click` (default) / `hover` (120ms delay to prevent misfires)",
+      "size": "Size preset `small` / `medium` (default) / `large`",
+      "status": "Validation status: `error` / `warning` / `success`; error mirrors aria-invalid",
+      "open": "Controlled open state (single source of truth)",
+      "max-tag-count": "Collapse multi-select tags beyond the count into +N (with title listing hidden items)"
     },
     "events": {
-      "oas-change": "Selection change, `detail: { value }` (path array)"
+      "oas-change": "Selection change, `detail: { value }` (path array)",
+      "oas-open-change": "Open state flips, `detail: { open }`",
+      "oas-search": "Fires on filterable input, `detail: { value }`",
+      "oas-clear": "Fires on clear-button click; `detail` is the pre-clear value"
     },
     "slots": {}
   },
@@ -482,16 +510,24 @@
     "attrs": {
       "clearable": "Clearable (shows a clear button when a value exists; clearing dispatches `oas-clear`)",
       "disabled": "Disabled (no input, no dropdown)",
+      "filter": "Custom filter function (JS property channel `el.filter = fn`): takes over local filtering (pinyin initials/remote matching); set null to restore the default label-substring filter; not involved when `filterable=\"false\"`",
       "filterable": "Filter labels in real time while typing (`filterable=\"false\"` disables local filtering)",
+      "item-height": "Virtual-scroll fixed row height (px, with `virtual`, default 36)",
       "loading": "Loading placeholder (dropdown shows \"加载中…\")",
-      "options": "Options, JSON array `[{ label, value, disabled? }]`",
+      "open": "Controlled open state (internal open/close writes back to the attribute; every transition dispatches `oas-open-change`; forced closed under readonly/disabled)",
+      "options": "Options, JSON array `[{ label, value, disabled?, group? }]` (group is the group title, same contract as oas-select)",
       "placeholder": "Placeholder text",
-      "value": "Current value (controlled, the selected option's `option.value`)"
+      "readonly": "Readonly (focusable & copyable, no value change; focus and keyboard never open the dropdown)",
+      "size": "Size tier: small / medium / large (default medium, follows the nearest config-provider injection)",
+      "status": "Validation status: success / warning / error (error syncs aria-invalid, drivable by oas-form-item validation)",
+      "value": "Current value (controlled, the selected option's `option.value`)",
+      "virtual": "Virtual scroll (reuses oas-virtual-list to render only the visible window; options with group fall back to full rendering)"
     },
     "events": {
       "oas-change": "Selection/clear change, `detail: { value }`",
       "oas-clear": "Clear button clicked, `detail: { value }` (value before clearing)",
-      "oas-input": "Filter keyword typed, `detail: { value }`"
+      "oas-input": "Filter keyword typed, `detail: { value }`",
+      "oas-open-change": "Open state transition (both controlled setAttribute and internal toggles dispatch), `detail: { open }`"
     },
     "slots": {}
   },
@@ -1777,18 +1813,30 @@
       "remote": "Remote search: no local filtering, typing dispatches `oas-input` for the host to request",
       "searchable": "Searchable (type to filter after opening the dropdown)",
       "value": "Current value (JSON array in multiple mode)",
-      "virtual": "Virtual scrolling for large datasets: renders only the visible window (reuses oas-virtual-list); options with a `group` field fall back to full rendering"
+      "virtual": "Virtual scrolling for large datasets: renders only the visible window (reuses oas-virtual-list); options with a `group` field fall back to full rendering",
+      "size": "Size preset `small` / `medium` (default) / `large`: control height/font/chip height scale",
+      "status": "Validation status: `error` / `warning` / `success`; error mirrors aria-invalid on the host",
+      "open": "Controlled open: attribute present = open, removed = closed; host gestures only fire oas-open-change (no forced write-back)",
+      "max-count": "Multi-select limit: at the limit unselected options are disabled-greyed and oas-exceed-limit fires; selected items stay removable; single-select unchanged",
+      "placement": "Dropdown direction: `auto` (default, bottom-first with flip) / `top` / `bottom` (forced, no flip)",
+      "readonly": "Read-only: focusable and copyable, no dropdown, value immutable (clear/remove buttons hidden)",
+      "debounce": "Remote search input debounce in ms (default 0 = immediate; only debounces oas-input in remote mode, local filtering stays instant)"
     },
     "events": {
       "oas-change": "Selection/clear change, `detail: { value }`",
       "oas-clear": "Clear button clicked, `detail: { value }` (value before clearing)",
       "oas-input": "Input in `remote` mode, `detail: { value }` (for host requests)",
       "oas-option-render": "Dispatched for each rendered option row, `detail: { index, option, element }` (element is the option label container; host can rewrite it into icon/rich text)",
-      "oas-tag-render": "Dispatched when a multi-select tag renders, `detail: { value, label, element }` (element is the tag text container; host can rewrite it)"
+      "oas-tag-render": "Dispatched when a multi-select tag renders, `detail: { value, label, element }` (element is the tag text container; host can rewrite it)",
+      "oas-focus": "Fires when the component gains focus (trigger↔search inner moves are not reported)",
+      "oas-blur": "Fires when the component loses focus",
+      "oas-open-change": "Open state flips, `detail: { open }`",
+      "oas-exceed-limit": "Selection attempt past max-count (click/keyboard/create), `detail: { value, max }`"
     },
     "slots": {
       "template[slot=\"option\"]": "Static option row template, cloned into each option label container; `[data-option-label]` nodes get bound to the option label",
-      "template[slot=\"tag\"]": "Static multi-select tag template, cloned into each chip text container; `[data-tag-label]` nodes get bound to the tag label"
+      "template[slot=\"tag\"]": "Static multi-select tag template, cloned into each chip text container; `[data-tag-label]` nodes get bound to the tag label",
+      "template[slot=\"empty\"]": "Custom empty state (overrides both \"no data\" and \"no match\" defaults)"
     }
   },
   "oas-sidebar": {
@@ -2556,12 +2604,41 @@
       "options": "Tree options, JSON array, supports `children` / `disabled`",
       "placeholder": "Placeholder text",
       "value": "Selected value (JSON array in multiple mode)",
-      "virtual": "Enable virtual scroll: the dropdown renders only the visible window for large data (reuses oas-virtual-list), keeping keyboard/ARIA intact"
+      "virtual": "Enable virtual scroll: the dropdown renders only the visible window for large data (reuses oas-virtual-list), keeping keyboard/ARIA intact",
+      "filterable": "Searchable (dedicated search box at the top of the panel)",
+      "check-strictly": "Decouple parent/child checking in multi-select",
+      "reserve-keyword": "Keep the search keyword after selecting a node (cleared by default)",
+      "lazy": "Lazy loading (pair with the `el.load` function property; nodes carry isLeaf)",
+      "clearable": "Clearable (fires oas-clear)",
+      "size": "Size preset `small` / `medium` (default) / `large`",
+      "status": "Validation status: `error` / `warning` / `success`",
+      "field-names": "Field-alias JSON (e.g. `{\"label\":\"name\",\"value\":\"id\",\"children\":\"subs\"}`; options are not copy-mapped — node-render receives your original objects)",
+      "max-tag-count": "Collapse multi-select tags beyond the count into +N (title lists hidden items)",
+      "max": "Multi-select limit (by checked-set size)",
+      "open": "Controlled open (presence = controlled; `\"false\"` = controlled-closed); flips fire oas-open-change",
+      "default-expand-all": "Expand all nodes by default (applies when the expanded attribute is absent; frozen after the first internal toggle)",
+      "tree-lines": "Tree indentation guide lines",
+      "loading": "Panel loading state (during lazy load / remote search)",
+      "empty": "Custom empty-state text/content",
+      "cache-data": "Fallback cache (JSON) for echoing values with no matching option label",
+      "show-path": "Echo the full path (initial echo and multi-select labels use paths)",
+      "separator": "Path separator (default ` / `, pair with show-path)",
+      "expand-trigger": "Node expansion trigger: `toggle` (default, arrow only) / `node` (clicking the node row expands)",
+      "prefix": "Trigger prefix content (slot=\"prefix\" accepts any content)",
+      "suffix": "Trigger suffix content (slot=\"suffix\" likewise)"
     },
     "events": {
-      "oas-change": "Selection change, `detail: { value }`"
+      "oas-change": "Selection change, `detail: { value }`",
+      "oas-search": "Fires on search input, `detail: { value }`",
+      "oas-open-change": "Open state flips, `detail: { open }`",
+      "oas-load": "Fires when a lazy node expands to load, `detail: { value }`",
+      "oas-clear": "Fires on clear; `detail` is the pre-clear value",
+      "oas-node-render": "Fires on node render (custom node rendering channel), `detail: { node, element, level, expanded, selected, checked }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"empty\"]": "Custom empty-state content",
+      "template[slot=\"node\"]": "Custom node template (`[data-node-label]` binds the label)"
+    }
   },
   "oas-upload": {
     "attrs": {

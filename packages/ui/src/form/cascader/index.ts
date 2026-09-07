@@ -6,3 +6,4 @@ if (!customElements.get('oas-cascader')) {
 }
 
 export { OASCascader }
+export type { CascaderOption, CascaderLoadFn, CascaderFilterFn } from './oas-cascader.js'

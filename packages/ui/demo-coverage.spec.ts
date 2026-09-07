@@ -231,6 +231,10 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
       'fill:x',
       'remote 模式输入 → oas-input（过滤交给宿主）',
     ],
+    ['oas-select[max-count] [part="trigger"]', 'click', '展开多选上限 demo'],
+    ['oas-select[max-count] [role="option"]', 'click', '选第 1 项'],
+    ['oas-select[max-count] [role="option"]', 'click:n1', '选第 2 项（达上限）'],
+    ['oas-select[max-count] [role="option"]', 'click:n2', '点置灰第 3 项 → oas-exceed-limit'],
   ],
   combobox: [
     ['oas-combobox[clearable] [part="clear"]', 'click', 'demo 带 value，清空钮可见 → oas-clear'],
@@ -248,17 +252,26 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   'auto-complete': [
     ['oas-auto-complete:not([disabled]) input', 'fill:苹', '匹配「苹果」保证有选项'],
     ['oas-auto-complete [role="option"]', 'click', '选中 → oas-change'],
+    ['oas-auto-complete[clearable] [part="clear"]', 'click', '有值时清除钮 → oas-clear'],
   ],
   cascader: [
     ['oas-cascader:not([disabled]) [part="trigger"]', 'click', '展开面板'],
     ['oas-cascader [role="option"]', 'click', '点父级下钻'],
     ['oas-cascader [role="option"]', 'click:n1', '点第二层面板叶子 → oas-change'],
+    ['oas-cascader[clearable] [part="clear"]', 'domclick', '清空钮（demo 带 value）→ oas-clear'],
+    ['oas-cascader[filterable] [part="trigger"]', 'click', '展开可搜索 demo'],
+    ['oas-cascader[filterable] [part="search-input"]', 'fill:杭', '搜索输入 → oas-search'],
   ],
   'tree-select': [
     ['oas-tree-select:not([disabled]) [part="trigger"]', 'click', '展开下拉'],
     ['oas-tree-select [role="treeitem"]', 'click', '点根节点提交 → oas-change'],
     ['#ts-virtual [part="trigger"]', 'click', '展开万级虚拟下拉（窗口化渲染）'],
     ['#ts-virtual [role="treeitem"]', 'click:n1', '虚拟行勾选 → oas-change'],
+    ['oas-tree-select[clearable] [part="clear"]', 'click', '清空 → oas-clear'],
+    ['oas-tree-select[filterable] [part="trigger"]', 'click', '展开可搜索 demo'],
+    ['oas-tree-select[filterable] [part="search-input"]', 'fill:x', '搜索输入 → oas-search'],
+    ['oas-tree-select[lazy] [part="trigger"]', 'click', '展开懒加载 demo'],
+    ['oas-tree-select[lazy] .toggle', 'click', '展开懒加载节点 → oas-load'],
   ],
   mentions: [
     ['oas-mentions:not([disabled]) [part="textarea"]', 'fill:@', '触发 @ 建议面板'],

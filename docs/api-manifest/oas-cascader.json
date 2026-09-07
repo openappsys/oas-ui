@@ -29,6 +29,68 @@
     },
     {
       "name": "show-all-levels",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "multiple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "check-strictly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "value-mode",
+      "type": "string",
+      "default": "all",
+      "observed": true
+    },
+    {
+      "name": "filterable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "clearable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "separator",
+      "type": "string",
+      "default": " / ",
+      "observed": true
+    },
+    {
+      "name": "expand-trigger",
+      "type": "string",
+      "default": "click",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "max-tag-count",
+      "type": "boolean",
       "observed": true
     }
   ],
@@ -37,12 +99,32 @@
       "name": "options",
       "type": "CascaderOption[] | string",
       "default": "[]"
+    },
+    {
+      "name": "load",
+      "type": "CascaderLoadFn | null"
+    },
+    {
+      "name": "filter",
+      "type": "CascaderFilterFn | null"
     }
   ],
   "events": [
     {
       "name": "oas-change",
-      "detail": "{ value: path }"
+      "detail": "{ value: paths } | { value: path } | { value: [] }"
+    },
+    {
+      "name": "oas-open-change",
+      "detail": "{ open }"
+    },
+    {
+      "name": "oas-search",
+      "detail": "{ value: this.query }"
+    },
+    {
+      "name": "oas-clear",
+      "detail": "{ value: prev }"
     }
   ],
   "slots": [],
