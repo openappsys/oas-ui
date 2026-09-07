@@ -90,6 +90,20 @@ The object format `{labels, series:[{name, data}]}` supports multiple series; th
 
 No data / invalid JSON shows an empty state placeholder without errors.
 
+## Data channel contract
+
+`data` / `options` accept both channels:
+
+- **Attribute channel**: write a JSON string in HTML (e.g. `data='[{...}]'`); the component parses it with `JSON.parse`.
+- **Property channel**: assign an object/array from JS (`el.data = [{...}]`), avoiding serialization; the property is parsed in the setter and takes precedence over the attribute.
+
+**Reflection behavior differs (the two components read data differently — follow these rules)**:
+
+- `oas-table`'s `columns` / `data` setters **reflect back to the attribute** — after a property assignment, `getAttribute('columns')` / `getAttribute('data')` read back the corresponding JSON string (attribute and property stay in sync as one source of truth).
+- `oas-chart`'s `data` (and `options`) setter **only writes internal state and does not reflect** — after a property assignment the attribute still holds the old/empty value, so **read through the `el.data` property** (the getter returns the last assigned parsed result); do not read back with `getAttribute('data')`.
+
+> Exception: if `oas-table`'s `columns` contain function fields (such as `render`, which JSON serialization would drop), the setter takes a pure in-memory path without reflecting — read those columns via the `el.columns` property.
+
 ## API
 
 ### Attributes
