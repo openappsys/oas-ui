@@ -323,4 +323,12 @@ export const zhCN = {
   'themeEditor.group.custom': '其他',
   // bottom-navigation（底部导航）
   'bottomNavigation.nav': '底部导航',
+  'upload.retry': '重试 {name}',
+  'upload.cancelUpload': '取消上传 {name}',
+  'transfer.count': '{selected}/{total}',
+  'dynamicTags.patternMismatch': '格式不正确',
+  'dynamicInput.moveUp': '上移',
+  'dynamicInput.moveDown': '下移',
+  'timePicker.now': '此刻',
+  'datePicker.shortcutThisQuarter': '本季度',
 } as const

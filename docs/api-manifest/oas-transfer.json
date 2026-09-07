@@ -51,6 +51,27 @@
       "type": "string",
       "default": "36",
       "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "target-sort",
+      "type": "string",
+      "default": "original",
+      "observed": true
+    },
+    {
+      "name": "simple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "target-draggable",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
@@ -62,10 +83,25 @@
   ],
   "events": [
     {
+      "name": "oas-search",
+      "detail": "{ side: 'left', query: (e.target as HTMLInputElement).value } | { side: 'right', query: (e.target as HTMLInputElement).value }"
+    },
+    {
+      "name": "oas-select-change",
+      "detail": "{ side, selected: [...selected] }"
+    },
+    {
       "name": "oas-change",
       "detail": "{ value: next }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "template[slot=\"empty\"]"
+    },
+    {
+      "name": "template[slot=\"item\"]"
+    }
+  ],
   "unresolved": []
 }

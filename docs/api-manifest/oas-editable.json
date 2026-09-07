@@ -30,10 +30,63 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "submit-on-blur",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "editing",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "default-editing",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "multiline",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "trigger",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "allow-empty",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],
   "events": [
+    {
+      "name": "oas-editing",
+      "detail": "{ editing: true } | { editing: false }"
+    },
     {
       "name": "oas-cancel",
       "detail": "{ value: oldValue } | { value: this.getAttr('value', '') }"
@@ -43,6 +96,10 @@
       "detail": "{ value: next }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "template[slot=\"display\"]"
+    }
+  ],
   "unresolved": []
 }

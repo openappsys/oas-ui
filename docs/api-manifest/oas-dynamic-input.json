@@ -28,21 +28,89 @@
     {
       "name": "model-value",
       "observed": true
+    },
+    {
+      "name": "preset",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "placeholder",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "key-placeholder",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "value-placeholder",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "sortable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
     {
       "name": "modelValue",
-      "type": "string[]",
+      "type": "DynamicInputRowValue[]",
       "default": "[]"
     }
   ],
   "events": [
     {
+      "name": "oas-row-render",
+      "detail": "{ index: idx, value: this.values[idx], element: content, }"
+    },
+    {
+      "name": "oas-focus"
+    },
+    {
+      "name": "oas-blur"
+    },
+    {
+      "name": "oas-add",
+      "detail": "{ index: this.values.length - 1 }"
+    },
+    {
+      "name": "oas-remove",
+      "detail": "{ index: idx, value: removed }"
+    },
+    {
       "name": "oas-change",
       "detail": "{ value: this.values.slice() }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "template[slot=\"row\"]"
+    }
+  ],
   "unresolved": []
 }

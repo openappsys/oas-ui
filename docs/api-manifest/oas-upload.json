@@ -34,19 +34,100 @@
       "type": "string",
       "default": "list",
       "observed": true
+    },
+    {
+      "name": "action",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "default": "file",
+      "observed": true
+    },
+    {
+      "name": "method",
+      "type": "string",
+      "default": "POST",
+      "observed": true
+    },
+    {
+      "name": "headers",
+      "observed": true
+    },
+    {
+      "name": "data",
+      "observed": true
+    },
+    {
+      "name": "with-credentials",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "max-size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "directory",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "paste",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "show-file-list",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "replace",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "tip",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
     {
       "name": "files",
-      "type": "File[]",
+      "type": "Array<File | UploadEchoFile>",
       "default": "[]"
+    },
+    {
+      "name": "defaultFiles",
+      "type": "Array<File | UploadEchoFile>",
+      "default": "[]"
+    },
+    {
+      "name": "customRequest",
+      "type": "UploadCustomRequest | null"
+    },
+    {
+      "name": "beforeUpload",
+      "type": "UploadBeforeUpload | null"
     }
   ],
   "events": [
     {
+      "name": "oas-remove",
+      "detail": "{ file: out, index: 0, replaced: true } | { file: entry, index }"
+    },
+    {
       "name": "oas-exceed",
-      "detail": "{ files: rejected, max, total: next.length }"
+      "detail": "{ files: rejected, max, total: next.length } | { files: sizeRejected, type: 'size', maxSize, total: next.length }"
     },
     {
       "name": "oas-change",
@@ -54,17 +135,39 @@
     },
     {
       "name": "oas-upload",
-      "detail": "{ file: f, percent: st.percent, status: st.percent >= 100 ? 'done' : 'uploading', }"
+      "detail": "{ file, percent: cur.percent, status: 'uploading' } | { file, percent: 100, status: 'done' } | { file: f, percent: st.percent, status: st.percent >= 100 ? 'done' : 'uploading', }"
     },
     {
-      "name": "oas-remove",
-      "detail": "{ file, index }"
+      "name": "oas-success",
+      "detail": "{ file, response }"
+    },
+    {
+      "name": "oas-error",
+      "detail": "{ file, response: err?.response, status: err?.status }"
+    },
+    {
+      "name": "oas-cancel",
+      "detail": "{ file: opts.file } | { file }"
+    },
+    {
+      "name": "oas-retry",
+      "detail": "{ file }"
     },
     {
       "name": "oas-preview",
-      "detail": "{ file, url }"
+      "detail": "{ file: entry, url }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "template[slot=\"item\"]"
+    },
+    {
+      "name": "template[slot=\"tip\"]"
+    },
+    {
+      "name": "trigger"
+    }
+  ],
   "unresolved": []
 }

@@ -27,6 +27,69 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "separator",
+      "type": "string",
+      "default": ",",
+      "observed": true
+    },
+    {
+      "name": "add-on-paste",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "save-on-blur",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "sortable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "max-tag-count",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "clearable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "maxlength",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "pattern",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -38,7 +101,17 @@
   ],
   "events": [
     {
+      "name": "oas-focus"
+    },
+    {
+      "name": "oas-blur"
+    },
+    {
       "name": "oas-add",
+      "detail": "{ value: piece } | { value }"
+    },
+    {
+      "name": "oas-before-add",
       "detail": "{ value }"
     },
     {
@@ -46,10 +119,28 @@
       "detail": "{ value: removed }"
     },
     {
+      "name": "oas-clear",
+      "detail": "{}"
+    },
+    {
+      "name": "oas-edit",
+      "detail": "{ index: idx, value, oldValue }"
+    },
+    {
       "name": "oas-change",
-      "detail": "{ value: this.tags.slice() }"
+      "detail": "{ value: this.tags.slice(), trigger }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "template[slot=\"prefix\"]"
+    },
+    {
+      "name": "template[slot=\"suffix\"]"
+    },
+    {
+      "name": "template[slot=\"tag\"]"
+    }
+  ],
   "unresolved": []
 }

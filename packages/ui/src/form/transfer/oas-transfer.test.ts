@@ -355,3 +355,375 @@ describe('OASTransfer', () => {
     expect(empty.textContent).toBe('未找到匹配项')
   })
 })
+
+// ---- disabled 禁用 ----
+describe('OASTransfer disabled', () => {
+  it('disabled：行点击无选中、穿梭按钮禁用、全选禁用、键盘无效、宿主镜像 data-disabled', () => {
+    const el = mount({ disabled: '' })
+    expect(el.hasAttribute('data-disabled')).toBe(true)
+    ;(leftOptions(el)[0] as HTMLElement).click()
+    expect(leftOptions(el)[0]!.getAttribute('aria-selected')).toBe('false')
+    expect(toRightBtn(el).disabled).toBe(true)
+    expect(el.shadowRoot!.querySelector<HTMLInputElement>('.check-left')!.disabled).toBe(true)
+    const lb = el.shadowRoot!.querySelector<HTMLElement>('.listbox.left')!
+    lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(
+      el.shadowRoot!.querySelector('.listbox.left .option[aria-selected="true"]'),
+    ).toBeNull()
+  })
+
+  it('disabled：searchable 搜索框禁用', () => {
+    const el = mount({ disabled: '', searchable: '' })
+    expect(el.shadowRoot!.querySelector<HTMLInputElement>('.search-left')!.disabled).toBe(true)
+  })
+
+  it('移除 disabled 后恢复交互', () => {
+    const el = mount({ disabled: '' })
+    el.removeAttribute('disabled')
+    ;(leftOptions(el)[0] as HTMLElement).click()
+    expect(leftOptions(el)[0]!.getAttribute('aria-selected')).toBe('true')
+    expect(el.hasAttribute('data-disabled')).toBe(false)
+  })
+})
+
+// ---- target-sort 目标顺序策略 ----
+describe('OASTransfer target-sort', () => {
+  it('默认 original：穿梭后 value 与右侧显示都按数据源顺序', () => {
+    const el = mount({ value: '["c"]' })
+    // 左侧可选 a、b（c 已在右侧）
+    ;(leftOptions(el)[0] as HTMLElement).click() // a
+    toRightBtn(el).click()
+    expect(el.getAttribute('value')).toBe('["a","c"]')
+    const right = [...rightOptions(el)]
+    expect(right.map((r) => r.textContent)).toEqual(['苹果', '橙子'])
+  })
+
+  it('push：新穿梭项追加 value 尾部（旧行为兼容锁定）', () => {
+    const el = mount({ 'target-sort': 'push', value: '["c"]' })
+    ;(leftOptions(el)[0] as HTMLElement).click() // a
+    toRightBtn(el).click()
+    expect(el.getAttribute('value')).toBe('["c","a"]')
+    expect([...rightOptions(el)].map((r) => r.textContent)).toEqual(['橙子', '苹果'])
+  })
+
+  it('unshift：新穿梭项依次插入 value 头部', () => {
+    const el = mount({ 'target-sort': 'unshift' })
+    ;(leftOptions(el)[0] as HTMLElement).click() // a
+    toRightBtn(el).click()
+    ;(leftOptions(el)[0] as HTMLElement).click() // b（a 已右移，左侧首项是 b）
+    toRightBtn(el).click()
+    expect(el.getAttribute('value')).toBe('["b","a"]')
+    expect([...rightOptions(el)].map((r) => r.textContent)).toEqual(['香蕉', '苹果'])
+  })
+
+  it('original：预置乱序 value 时显示按数据源顺序重排', () => {
+    const el = mount({ value: '["c","a"]' })
+    expect([...rightOptions(el)].map((r) => r.textContent)).toEqual(['苹果', '橙子'])
+  })
+
+  it('push：预置乱序 value 保持 value 顺序显示', () => {
+    const el = mount({ 'target-sort': 'push', value: '["c","a"]' })
+    expect([...rightOptions(el)].map((r) => r.textContent)).toEqual(['橙子', '苹果'])
+  })
+})
+
+// ---- item 插槽（template 克隆） ----
+describe('OASTransfer item 插槽', () => {
+  it('template[slot="item"] 克隆进静态行，[data-item-label] 绑定选项文本', () => {
+    const el = mount()
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'item')
+    tpl.innerHTML = '<oas-icon name="user"></oas-icon><span data-item-label></span>'
+    el.appendChild(tpl)
+    el.setAttribute('titles', '["可选","已选"]') // 触发 update 重渲
+    const first = leftOptions(el)[0]!
+    expect(first.querySelector('oas-icon')).not.toBeNull()
+    expect(first.querySelector('[data-item-label]')!.textContent).toBe('苹果')
+  })
+
+  it('虚拟模式：template 克隆进 vlist shadow 内的行（跨 shadow 克隆可行）', () => {
+    const el = new OASTransfer()
+    el.setAttribute('virtual', '')
+    document.body.appendChild(el)
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'item')
+    tpl.innerHTML = '<em class="tick">✓</em><span data-item-label></span>'
+    el.appendChild(tpl)
+    el.data = Array.from({ length: 100 }, (_, i) => ({ key: `k${i}`, label: `Item ${i}` }))
+    const row = el.shadowRoot!.querySelector('.vlist-left')!.shadowRoot!.querySelectorAll(
+      '[part="item"] .option',
+    )[0]!
+    expect(row.querySelector('.tick')).not.toBeNull()
+    expect(row.querySelector('[data-item-label]')!.textContent).toBe('Item 0')
+  })
+})
+
+// ---- oas-select-change / oas-search 事件 ----
+describe('OASTransfer 事件（select-change / search）', () => {
+  it('点行派发 oas-select-change（side + selected）', () => {
+    const el = mount()
+    const details: unknown[] = []
+    el.addEventListener('oas-select-change', (e: Event) => details.push((e as CustomEvent).detail))
+    ;(leftOptions(el)[0] as HTMLElement).click()
+    expect(details.at(-1)).toEqual({ side: 'left', selected: ['a'] })
+    ;(leftOptions(el)[0] as HTMLElement).click()
+    expect(details.at(-1)).toEqual({ side: 'left', selected: [] })
+  })
+
+  it('全选派发 oas-select-change（可见可选项全集）', () => {
+    const el = mount()
+    const details: unknown[] = []
+    el.addEventListener('oas-select-change', (e: Event) => details.push((e as CustomEvent).detail))
+    el.shadowRoot!.querySelector<HTMLInputElement>('.check-left')!.click()
+    expect(details.at(-1)).toEqual({ side: 'left', selected: ['a', 'b'] })
+  })
+
+  it('键盘选中同样派发 oas-select-change', () => {
+    const el = mount()
+    const details: unknown[] = []
+    el.addEventListener('oas-select-change', (e: Event) => details.push((e as CustomEvent).detail))
+    const lb = el.shadowRoot!.querySelector<HTMLElement>('.listbox.left')!
+    lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(details.at(-1)).toEqual({ side: 'left', selected: ['a'] })
+  })
+
+  it('搜索输入派发 oas-search（side + 原始 query）', () => {
+    const el = mount({ searchable: '' })
+    const details: unknown[] = []
+    el.addEventListener('oas-search', (e: Event) => details.push((e as CustomEvent).detail))
+    const search = el.shadowRoot!.querySelector<HTMLInputElement>('.search-left')!
+    search.value = '香'
+    search.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(details).toEqual([{ side: 'left', query: '香' }])
+  })
+})
+
+// ---- 面板头计数 ----
+describe('OASTransfer 面板头计数', () => {
+  it('面板头显示 已选/可见 N/M 计数并随选中变化', () => {
+    const el = mount()
+    const countOf = () => el.shadowRoot!.querySelector<HTMLElement>('.panel-head .count')!
+    expect(countOf().textContent).toMatch(/^0\/3$/)
+    ;(leftOptions(el)[0] as HTMLElement).click()
+    expect(countOf().textContent).toMatch(/^1\/3$/)
+    // 右侧面板同样计数
+    const rightCount = el.shadowRoot!.querySelectorAll<HTMLElement>('.panel-head .count')[1]!
+    expect(rightCount.textContent).toMatch(/^0\/0$/)
+  })
+
+  it('过滤态计数跟随可见项', () => {
+    const el = mount({ searchable: '' })
+    const search = el.shadowRoot!.querySelector<HTMLInputElement>('.search-left')!
+    search.value = '香'
+    search.dispatchEvent(new Event('input', { bubbles: true }))
+    const countOf = () => el.shadowRoot!.querySelector<HTMLElement>('.panel-head .count')!
+    expect(countOf().textContent).toMatch(/^0\/1$/)
+  })
+
+  it('one-way 右侧只读面板隐藏计数（与全选一致）', () => {
+    const el = mount({ 'one-way': '', value: '["a"]' })
+    const rightCount = el.shadowRoot!.querySelectorAll<HTMLElement>('.panel-head .count')[1]!
+    expect(rightCount.hidden).toBe(true)
+  })
+})
+
+// ---- empty 空态插槽 ----
+describe('OASTransfer empty 插槽', () => {
+  it('template[slot="empty"] 自定义空态与无匹配态', () => {
+    const el = new OASTransfer()
+    el.setAttribute('searchable', '')
+    document.body.appendChild(el)
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'empty')
+    tpl.innerHTML = '<div class="custom-empty">暂无数据，请从左侧选择</div>'
+    el.appendChild(tpl)
+    el.data = [] // data setter → update → 空态重渲（template 已在场）
+    const empty = el.shadowRoot!.querySelector('.listbox.left .empty')!
+    expect(empty.querySelector('.custom-empty')).not.toBeNull()
+    // 无匹配态同样走插槽
+    el.data = [{ key: 'a', label: '苹果' }]
+    const search = el.shadowRoot!.querySelector<HTMLInputElement>('.search-left')!
+    search.value = 'zzz'
+    search.dispatchEvent(new Event('input', { bubbles: true }))
+    const noMatch = el.shadowRoot!.querySelector('.listbox.left .empty')!
+    expect(noMatch.querySelector('.custom-empty')).not.toBeNull()
+  })
+})
+
+// ---- simple 选中即移动 ----
+describe('OASTransfer simple', () => {
+  it('点左侧行即右移（免按钮），中央穿梭按钮隐藏', () => {
+    const el = mount({ simple: '' })
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.actions')!.hidden).toBe(true)
+    ;(leftOptions(el)[0] as HTMLElement).click()
+    expect(detail).toEqual({ value: ['a'] })
+    expect(rightOptions(el).length).toBe(1)
+    expect(leftOptions(el).length).toBe(2)
+  })
+
+  it('点右侧行即左移', () => {
+    const el = mount({ simple: '' })
+    ;(leftOptions(el)[0] as HTMLElement).click()
+    ;(rightOptions(el)[0] as HTMLElement).click()
+    expect(el.getAttribute('value')).toBe('[]')
+    expect(leftOptions(el).length).toBe(3)
+  })
+
+  it('simple + one-way：右侧点击无效（只读）', () => {
+    const el = mount({ simple: '', 'one-way': '', value: '["a"]' })
+    ;(rightOptions(el)[0] as HTMLElement).click()
+    expect(el.getAttribute('value')).toBe('["a"]')
+  })
+
+  it('simple 遵循 target-sort（unshift 插头部）', () => {
+    const el = mount({ simple: '', 'target-sort': 'unshift' })
+    ;(leftOptions(el)[0] as HTMLElement).click() // a
+    ;(leftOptions(el)[0] as HTMLElement).click() // b
+    expect(el.getAttribute('value')).toBe('["b","a"]')
+  })
+})
+
+// ---- target-draggable 目标侧拖拽排序 + 键盘替代 ----
+describe('OASTransfer target-draggable', () => {
+  function fireDrag(row: Element, type: string, dataTransfer?: unknown, clientY = 10): Event {
+    const e = new Event(type, { bubbles: true, cancelable: true })
+    Object.defineProperty(e, 'clientY', { value: clientY })
+    if (dataTransfer !== undefined) {
+      Object.defineProperty(e, 'dataTransfer', { value: dataTransfer })
+    }
+    row.dispatchEvent(e)
+    return e
+  }
+
+  const dt = (key = 'a') => ({
+    setData: () => {},
+    getData: () => key,
+    effectAllowed: '',
+    dropEffect: '',
+  })
+
+  it('右侧行落 draggable；original 模式（顺序由数据源决定）不启用拖拽', () => {
+    const el = mount({ value: '["a","b"]', 'target-sort': 'push', 'target-draggable': '' })
+    expect(rightOptions(el)[0]!.getAttribute('draggable')).toBe('true')
+    const el2 = mount({ value: '["a","b"]', 'target-draggable': '' }) // 默认 original
+    expect(rightOptions(el2)[0]!.getAttribute('draggable')).toBe(null)
+  })
+
+  it('拖拽 a 到 c 之后：value 重排并派发 oas-change', () => {
+    const el = mount({ value: '["a","b","c"]', 'target-sort': 'push', 'target-draggable': '' })
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    const rows = () => [...rightOptions(el)]
+    fireDrag(rows()[0]!, 'dragstart', dt())
+    const over = fireDrag(rows()[2]!, 'dragover', dt(), 10)
+    expect(over.defaultPrevented).toBe(true)
+    expect(rows()[2]!.classList.contains('drop-after')).toBe(true)
+    fireDrag(rows()[2]!, 'drop', dt(), 10)
+    expect(detail).toEqual({ value: ['b', 'c', 'a'] })
+    expect([...rightOptions(el)].map((r) => r.textContent)).toEqual(['香蕉', '橙子', '苹果'])
+  })
+
+  it('拖拽指示类在 dragleave/drop 后清除', () => {
+    const el = mount({ value: '["a","b","c"]', 'target-sort': 'push', 'target-draggable': '' })
+    const rows = () => [...rightOptions(el)]
+    fireDrag(rows()[0]!, 'dragstart', dt())
+    fireDrag(rows()[2]!, 'dragover', dt(), 10)
+    expect(rows()[2]!.classList.contains('drop-after')).toBe(true)
+    fireDrag(rows()[2]!, 'dragleave')
+    expect(rows()[2]!.classList.contains('drop-after')).toBe(false)
+  })
+
+  it('disabled 时不可拖（无 draggable）', () => {
+    const el = mount({
+      value: '["a"]',
+      'target-sort': 'push',
+      'target-draggable': '',
+      disabled: '',
+    })
+    expect(rightOptions(el)[0]!.getAttribute('draggable')).toBe(null)
+  })
+
+  it('键盘替代：Alt+↓/↑ 移动选中项（右侧）', () => {
+    const el = mount({ value: '["a","b","c"]', 'target-sort': 'push', 'target-draggable': '' })
+    let detail: unknown
+    el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+    const rb = el.shadowRoot!.querySelector<HTMLElement>('.listbox.right')!
+    // 选中 a 作为 active 项
+    ;(rightOptions(el)[0] as HTMLElement).click()
+    rb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', altKey: true, bubbles: true }))
+    expect(detail).toEqual({ value: ['b', 'a', 'c'] })
+    rb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true }))
+    expect(el.getAttribute('value')).toBe('["a","b","c"]')
+  })
+
+  it('虚拟模式拖拽：data-key 定位不受窗口影响', () => {
+    const el = new OASTransfer()
+    el.setAttribute('virtual', '')
+    el.setAttribute('target-sort', 'push')
+    el.setAttribute('target-draggable', '')
+    document.body.appendChild(el)
+    el.data = Array.from({ length: 100 }, (_, i) => ({ key: `k${i}`, label: `Item ${i}` }))
+    const leftRows = () =>
+      [...el.shadowRoot!.querySelector('.vlist-left')!.shadowRoot!.querySelectorAll('[part="item"] .option')]
+    // 先用键盘穿梭 k0：ArrowDown 选中首项 + Enter
+    const vp = el.shadowRoot!.querySelector('.vlist-left')!.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+    vp.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    vp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(el.getAttribute('value')).toBe('["k0"]')
+    // 再选 k1（k0 已移走，左首行是 k1）
+    vp.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    vp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(el.getAttribute('value')).toBe('["k0","k1"]')
+    const vrootR = el.shadowRoot!.querySelector('.vlist-right')!.shadowRoot!
+    const rightRows = () => [...vrootR.querySelectorAll('[part="item"] .option')]
+    expect(rightRows().length).toBe(2)
+    fireDrag(rightRows()[0]!, 'dragstart', dt('k0'))
+    fireDrag(rightRows()[1]!, 'dragover', dt('k0'), 10)
+    fireDrag(rightRows()[1]!, 'drop', dt('k0'), 10)
+    expect(el.getAttribute('value')).toBe('["k1","k0"]')
+  })
+})
+
+// ---- 键盘补强：ctrl+A 全选 / Space 切换 ----
+describe('OASTransfer 键盘（ctrl+A / Space）', () => {
+  it('ctrl+A 全选可见可选项，再按全清', () => {
+    const el = mount()
+    const details: unknown[] = []
+    el.addEventListener('oas-select-change', (e: Event) => details.push((e as CustomEvent).detail))
+    const lb = el.shadowRoot!.querySelector<HTMLElement>('.listbox.left')!
+    lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ctrlKey: true, bubbles: true }))
+    expect(details.at(-1)).toEqual({ side: 'left', selected: ['a', 'b'] })
+    expect(leftOptions(el)[0]!.getAttribute('aria-selected')).toBe('true')
+    lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ctrlKey: true, bubbles: true }))
+    expect(details.at(-1)).toEqual({ side: 'left', selected: [] })
+  })
+
+  it('Space 切换当前选中项', () => {
+    const el = mount()
+    const lb = el.shadowRoot!.querySelector<HTMLElement>('.listbox.left')!
+    lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+    expect(leftOptions(el)[0]!.getAttribute('aria-selected')).toBe('true')
+    lb.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    expect(leftOptions(el)[0]!.getAttribute('aria-selected')).toBe('false')
+    lb.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    expect(leftOptions(el)[0]!.getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('one-way 右侧 ctrl+A / Space 无效', () => {
+    const el = mount({ 'one-way': '', value: '["a"]' })
+    const rb = el.shadowRoot!.querySelector<HTMLElement>('.listbox.right')!
+    rb.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ctrlKey: true, bubbles: true }))
+    rb.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    expect(el.getAttribute('value')).toBe('["a"]')
+    expect(el.shadowRoot!.querySelector('.listbox.right .option[aria-selected="true"]')).toBeNull()
+  })
+
+  it('disabled 时 ctrl+A / Space 无效', () => {
+    const el = mount({ disabled: '' })
+    const lb = el.shadowRoot!.querySelector<HTMLElement>('.listbox.left')!
+    lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ctrlKey: true, bubbles: true }))
+    expect(leftOptions(el)[0]!.getAttribute('aria-selected')).toBe('false')
+  })
+})
