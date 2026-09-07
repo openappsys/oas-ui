@@ -51,8 +51,10 @@ function walk(dir: string): string[] {
 function extractCaps(files: string[]): { attrs: string[]; events: string[] } {
   const body = files.map((f) => readFileSync(f, 'utf8')).join('\n')
   const attrs = new Set<string>()
-  for (const a of body.matchAll(/(?:getAttr|hasAttr|getBool|getNum)\(\s*['"`]([a-z0-9-]+)['"`]/g))
-    attrs.add(a[1]!)
+  for (const a of body.matchAll(/(?:getAttr|hasAttr|getBool|getNum)\(\s*['"`]([a-z0-9-]+)['"`]/g)) {
+    // data-* 是组件内部数据通道（组下发/状态镜像等），HTML 规范保留，不算公开 API，不要求 demo
+    if (!a[1]!.startsWith('data-')) attrs.add(a[1]!)
+  }
   const events = new Set<string>()
   for (const a of body.matchAll(/emit\(\s*['"`]([a-z-]+)['"`]/g)) events.add('oas-' + a[1]!)
   return { attrs: [...attrs].sort(), events: [...events].sort() }
@@ -109,6 +111,8 @@ const EXEMPT_EVENTS = new Set([
   'oas-step',
   'oas-complete',
   'oas-collapse-click',
+  // 组件间协议信号（checkbox 子项→组的内部转发，组对外统一派 oas-exceed-limit），非宿主 API
+  'oas-limit-blocked',
 ])
 
 // manifest 的 tag 与真实注册 tag 不一致的组件（demo 页用真实 tag 渲染）
@@ -125,7 +129,8 @@ const INTERACTIONS: Array<[string, string]> = [
   ['oas-radio input', 'click'],
   ['oas-rate button', 'click'],
   ['oas-tabs [role="tab"]', 'click'],
-  ['oas-segmented button', 'click'],
+  // segmented 底座改原生 radio（label>input），无 button 元素——点击 label 项
+  ['oas-segmented [part="item"]', 'click'],
   ['oas-toggle-button button', 'click'],
   ['oas-collapse summary', 'click'],
   ['oas-collapse-item button', 'click'],
@@ -304,7 +309,16 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['#upload-full [part="item"] .thumb', 'click', '点缩略图 → oas-preview'],
     ['#upload-full .file-input', 'file:svg', '第 4 张 SVG → 超 max=3 → oas-exceed'],
   ],
-  'toggle-group': [['oas-toggle-group [part="item"]', 'click:n1', '点非默认选中项 → oas-change']],
+  'toggle-group': [
+    ['oas-toggle-group [part="item"]', 'click:n1', '点非默认选中项 → oas-change'],
+    ['oas-toggle-group[max-count] [part="item"]', 'click:n1', '达上限前选第 2 项'],
+    ['oas-toggle-group[max-count] [part="item"]', 'click:n2', '点置灰第 3 项 → oas-exceed-limit'],
+  ],
+  checkbox: [
+    ['oas-checkbox-group[max] oas-checkbox input', 'click:n1', '选第 2 项（达上限）'],
+    ['oas-checkbox-group[max] oas-checkbox input', 'click:n2', '点置灰第 3 项 → oas-exceed-limit'],
+  ],
+  'checkbox-group': [],
   'pin-input': [['oas-pin-input [part="cell"]', 'fillall:1', '填满全部格 → oas-change']],
   'dynamic-tags': [
     ['oas-dynamic-tags:not([disabled]) [part="input"]', 'fill:tag-x'],

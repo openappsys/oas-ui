@@ -12,10 +12,49 @@
       "name": "disabled",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "options",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "vertical",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "options",
+      "type": "RadioOption[] | string"
+    }
+  ],
   "events": [
+    {
+      "name": "oas-focus"
+    },
+    {
+      "name": "oas-blur"
+    },
     {
       "name": "oas-change",
       "detail": "{ value }"

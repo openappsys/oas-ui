@@ -1109,7 +1109,7 @@ test('表单组件事件可触发：upgrade 后 oas-input 输入 / oas-switch �
             .switch,
       ),
     )
-    .toEqual([{ checked: false }])
+    .toEqual([{ checked: false, value: false }])
   await expect(page.locator('oas-switch').first().locator('button')).toHaveAttribute(
     'aria-checked',
     'false',

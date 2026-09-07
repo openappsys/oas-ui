@@ -365,6 +365,9 @@ function extractAttrs(cls, observed, propNames) {
   const observedOrder = new Map(observed.map((name, i) => [name, i]))
   return [...map.values()]
     .filter(({ name }) => !GLOBAL_CONVENTION_ATTRS.has(name))
+    // data-* 前缀是 HTML 规范保留的内部数据通道（组件间下发/状态镜像），
+    // 不是公开 API，一律不进 API 表（全库现状零依赖，纯防御性过滤）
+    .filter(({ name }) => !name.startsWith('data-'))
     .sort((a, b) => {
       const ao = a.observed ? (observedOrder.get(a.name) ?? 0) : 1e9
       const bo = b.observed ? (observedOrder.get(b.name) ?? 0) : 1e9
@@ -525,8 +528,11 @@ function extractEvents(cls, unresolved) {
   const events = []
   const seen = new Set()
   // 同一事件多处 emit 且 detail 不同的：合并为联合类型（A | B），避免漏报分支（如 menubar action/radio）
+  // 组件间内部协议信号（非宿主 API，如 checkbox 子项→组的 limit-blocked 转发）不进公共 API 表
+  const INTERNAL_EVENTS = new Set(['oas-limit-blocked'])
   const variants = new Map() // name -> Set<detailText>
   const add = (name, detail) => {
+    if (INTERNAL_EVENTS.has(name)) return
     if (!variants.has(name)) variants.set(name, new Set())
     if (detail) variants.get(name).add(detail)
   }

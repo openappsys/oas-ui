@@ -349,13 +349,13 @@ describe('@oas-ui/ssr renderToString', () => {
 
   it('oas-checkbox / oas-radio：选中态同步', async () => {
     const cb = await renderToString('oas-checkbox', { checked: '' }, '记住我')
-    expect(cb).toContain('<oas-checkbox checked="">')
+    expect(cb).toContain('<oas-checkbox checked="" data-size="medium" data-variant="default">')
     expect(cb).toContain('<input part="checkbox"')
     expect(cb).toContain('aria-checked="true"')
     expect(cb).toContain('</template>记住我</oas-checkbox>')
 
     const rd = await renderToString('oas-radio', { checked: '', value: 'a' }, 'A')
-    expect(rd).toContain('<oas-radio checked="" value="a">')
+    expect(rd).toContain('<oas-radio checked="" value="a" data-size="medium" data-variant="default">')
     expect(rd).toContain('<input part="radio"')
     expect(rd).toContain('aria-checked="true"')
   })
@@ -368,10 +368,11 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(cg).toContain('<fieldset part="group">')
     expect(cg).toContain('</template>')
     // 子项原样保留 + 每个已 upgrade 的子组件被包成嵌套 DSD（含子组件指纹）；
-    // checked 由 checkbox-group 对 light DOM 同步写入（处理后的 el.innerHTML）
-    expect(cg).toContain('<oas-checkbox value="a" checked=""><template shadowrootmode="open">')
+    // checked 由 checkbox-group 对 light DOM 同步写入（处理后的 el.innerHTML）；
+    // 序列化属性序：value → data-size → data-variant → checked（能力收尾批起镜像 data-*）
+    expect(cg).toContain('<oas-checkbox value="a" data-size="medium" data-variant="default" checked=""><template shadowrootmode="open">')
     expect(cg).toContain('<meta data-oas-ssr="oas-checkbox" data-oas-ssr-v="1">')
-    expect(cg).toContain('<oas-checkbox value="b"><template shadowrootmode="open">')
+    expect(cg).toContain('<oas-checkbox value="b" data-size="medium" data-variant="default"><template shadowrootmode="open">')
     expect(cg).toContain('A</oas-checkbox>')
     expect(cg).toContain('B</oas-checkbox>')
 
@@ -380,10 +381,11 @@ describe('@oas-ui/ssr renderToString', () => {
       { value: 'a' },
       '<oas-radio value="a">A</oas-radio>',
     )
-    expect(rg).toContain('<oas-radio-group value="a">')
-    expect(rg).toContain('<fieldset part="group">')
-    expect(rg).toContain('<oas-radio value="a"')
-    expect(rg).toContain('checked=""><template shadowrootmode="open">')
+    expect(rg).toContain('<oas-radio-group value="a" data-direction="vertical">')
+    // radio-group 的 fieldset 带 role="radiogroup"（键盘组模式改造加的正确语义）
+    expect(rg).toContain('<fieldset part="group" role="radiogroup">')
+    expect(rg).toContain('<oas-radio value="a" data-size="medium" data-variant="default" name="oas-radio-group-1" checked="">')
+    expect(rg).toContain('<template shadowrootmode="open">')
     expect(rg).toContain('<meta data-oas-ssr="oas-radio" data-oas-ssr-v="1">')
   })
 
@@ -562,7 +564,7 @@ describe('@oas-ui/ssr renderToString', () => {
 
   it('oas-toggle-button：pressed 同步 aria-pressed', async () => {
     const html = await renderToString('oas-toggle-button', { pressed: '', value: 'a' }, '白天')
-    expect(html).toContain('<oas-toggle-button pressed="" value="a">')
+    expect(html).toContain('<oas-toggle-button pressed="" value="a" data-size="medium">')
     expect(html).toContain('aria-pressed="true"')
     expect(html).toContain('</template>白天</oas-toggle-button>')
   })

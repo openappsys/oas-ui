@@ -97,7 +97,7 @@ describe('@oas-ui/next 服务端集成', () => {
         children: '记住我',
       })
       const markup = renderToStaticMarkup(el)
-      expect(markup).toContain('<oas-checkbox checked="true"><template shadowrootmode="open">')
+      expect(markup).toContain('<oas-checkbox checked="true" data-size="medium" data-variant="default"><template shadowrootmode="open">')
     })
 
     it('slotHTML 原始 HTML 优先于 children', async () => {

@@ -34,15 +34,80 @@
     {
       "name": "color",
       "observed": true
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "label-position",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "checked-icon",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "unchecked-icon",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "true-value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "false-value",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "aria-label",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "beforeChange",
+      "type": "((next: boolean) => boolean | Promise<boolean>) | null"
+    },
+    {
+      "name": "value",
+      "type": "string | boolean"
+    }
+  ],
   "events": [
     {
+      "name": "oas-focus"
+    },
+    {
+      "name": "oas-blur"
+    },
+    {
       "name": "oas-change",
-      "detail": "{ checked }"
+      "detail": "{ checked: next, value: this.mappedValue(next) }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
   "unresolved": []
 }

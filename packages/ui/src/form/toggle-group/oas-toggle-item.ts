@@ -12,12 +12,12 @@ const ITEM_STYLE = `
  * 切换组项（子元素声明式通道）。
  *
  * 纯数据载体：默认插槽文本为 label，属性对齐 ToggleItem 字段
- * （value/disabled）。
+ * （value / disabled / icon / aria-label）。
  * 宿主 <oas-toggle-group> 在 items 属性未显式设置时解析子元素并收敛到同一渲染路径。
  */
 export class OASToggleItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'disabled']
+    return ['value', 'disabled', 'icon', 'aria-label']
   }
 
   protected override render(): void {
