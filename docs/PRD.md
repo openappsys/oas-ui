@@ -1016,6 +1016,30 @@ table 组件按能力并集补齐（列设置/多列排序/多级表头/内置�
 - 全量单测 5142 / typecheck 0 / build / api:check / trace 0 命中
 - 全量 e2e 1616 全过（chromium 全量 + firefox 抽样 + docs-site）
 
+## v2.5.0 React 宿主桥接包 @oas-ui/react（🚧 进行中）
+
+### 功能定义
+
+通用 React 自定义事件桥接包。背景：React 19 不会把 `onXxx` prop 桥接到 kebab-case 自定义事件（`onOasSubmit` 收不到组件派发的 `oas-submit`），而 `@oas-ui/nuxt` / `@oas-ui/next` 是 SSR 专用封装——缺一个纯客户端的通用 React 桥接层，把 `oas-*` CustomEvent 桥接为 hooks。
+
+### 详细需求
+
+- **包结构**照 `packages/next` 约定：`exports` map / `types` 指向 / `sideEffects: false` / `files` / `publishConfig` / `tsc -p tsconfig.build.json` 产物含 d.ts；LICENSE 双许可文件随包
+- **`useOasEvent<T>(ref, type, handler)`**：单事件绑定。handler 每次渲染写入 ref（最新化，事件触发走最新闭包、旧闭包不泄漏）；绑定 effect 仅依赖 `[ref, type]`，换 handler 不重复解绑/重绑；卸载自动清理监听
+- **`useOasEvents(ref, handlers)`**：多事件批量绑定。单个 useEffect 统一绑定/解绑；handlers 引用每渲染变化不重绑（ref 最新化）；事件名集合变化（增删 key）才重绑
+- **类型**：`OasEventHandler<T> = (detail: T, ev: Event) => void`（detail 泛型，默认 `unknown`）、`OasEventHandlers = Record<string, OasEventHandler>`
+- **依赖边界**：peerDependencies `react >= 18`；运行时零第三方依赖；devDependencies react/react-dom/@types 仅测试与类型用
+- **测试**：vitest + happy-dom，用 react-dom/client 渲染宿主组件断言行为
+- **文档**：README 中英双语（照 next/nuxt 结构）；getting-started 补 React 事件小节（React 事件需桥接说明 + hook 用法）
+
+### 验收标准
+
+- 8 单测全绿：detail 送达与泛型、重渲染后走最新 handler 且零重绑、事件名集合增删触发重绑/解绑、卸载后不再触发
+- `pnpm --filter @oas-ui/react build` 产物含 `.d.ts`；`pnpm typecheck`（根）全绿
+- React / Vue 对照在文档中写清（Vue `@oas-click` 语法可用 / React 需 hook 或手动 addEventListener）
+
+---
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：
