@@ -641,7 +641,9 @@
     }
   },
   "oas-comment": {
-    "attrs": {},
+    "attrs": {
+      "align": "时间与操作区对齐：`left`（默认）/ `right`（逻辑属性实现，RTL 自动翻转）"
+    },
     "events": {},
     "slots": {
       "": "嵌套的 `oas-comment` 子评论，自动缩进缩进",
@@ -649,7 +651,9 @@
       "author": "作者名",
       "avatar": "作者头像（可放 `oas-avatar`）",
       "content": "评论内容",
-      "time": "时间"
+      "time": "时间",
+      "quote": "引文区（正文前，次级文本色 + 左侧色边）",
+      "reply": "回复目标区（作者行下，「回复 @某人」场景）"
     }
   },
   "oas-config-provider": {
@@ -1030,7 +1034,8 @@
   },
   "oas-equation": {
     "attrs": {
-      "code": "LaTeX 子集源文本"
+      "code": "LaTeX 子集源文本",
+      "display": "显示模式：`inline`（默认，随文）/ `block`（独立居中块，margin-block 间距）"
     },
     "events": {},
     "slots": {}
@@ -1100,7 +1105,9 @@
   "oas-gradient-text": {
     "attrs": {
       "direction": "渐变方向（linear-gradient 第一参数，如 `to right`、`135deg`）",
-      "gradient": "JSON 色标数组，如 `[\"#f00\",\"#00f\"]`；单个色标渲染纯色；缺失/非法回退默认 token 渐变"
+      "gradient": "JSON 色标数组，如 `[\"#f00\",\"#00f\"]`；单个色标渲染纯色；缺失/非法回退默认 token 渐变",
+      "animated": "流动动画（回文色标无缝循环，周期走 `--oas-gradient-text-duration`；prefers-reduced-motion 静止）",
+      "type": "语义色渐变：`primary` / `success` / `warning` / `danger` / `info`（token 派生双 stop；显式 `gradient` 优先）"
     },
     "events": {},
     "slots": {}
@@ -1388,9 +1395,16 @@
       "auto-scroll": "追加后自动滚动到底（仅贴底时滚动）",
       "empty-text": "空态文案（覆盖 locale 默认值）",
       "line-number": "显示左侧行号栏",
-      "lines": "日志行 JSON 字符串（属性通道）"
+      "lines": "日志行 JSON 字符串（属性通道）",
+      "highlight": "行高亮规则（JSON 数组）：字符串=字面关键词；`{ text }` / `{ pattern, flags }` = 正则；命中片段包 mark 底色（warning token）",
+      "levels": "行级别（JSON 数组，与 lines 索引对齐）：info/success/warning/error（warn/fatal 等别名归一），映射语义色 token",
+      "loading": "加载态（视口浮层 + spinner + aria-busy）",
+      "offset-bottom": "距底部多远视为触底（px，触发 `oas-require-more` 的 from=bottom，默认 0）",
+      "offset-top": "距顶部多远视为触顶（px，触发 `oas-require-more` 的 from=top，默认 0）"
     },
-    "events": {},
+    "events": {
+      "oas-require-more": "滚动进入顶部/底部阈值区边缘派发一次（停留不连发、离开复位），`detail: { from: \"top\" | \"bottom\" }`；宿主上翻拉历史/下拉拉新"
+    },
     "slots": {}
   },
   "oas-marquee": {
@@ -3055,9 +3069,24 @@
       "image": "图片水印 URL（存在时优先于 text）",
       "opacity": "水印层透明度（0–1，自动夹取）",
       "repeat": "布尔，存在时平铺；缺省单枚居中",
-      "text": "文字水印内容（与 image 二选一）"
+      "text": "文字水印内容（与 image 二选一）",
+      "color": "水印文字色：11 预设名（`--oas-preset-*`）或任意 CSS 色值；缺省走文本主色 token",
+      "font-family": "字体族（默认 sans-serif）",
+      "font-size": "字号（px，默认 16）",
+      "font-weight": "字重（默认 400）",
+      "gap": "平铺间隙（px 或 JSON `[x,y]`，单值双等）",
+      "height": "单枚画布高度（px，默认 120）",
+      "movable": "可拖拽移动水印（位移写回 `offset` 属性，受控保留）",
+      "offset": "平铺起始偏移（px 或 JSON `[x,y]`；默认 gap/2，与旧居中视觉等价）",
+      "rotate": "旋转角度（度，默认 -30）",
+      "staggered": "错位排布（双层背景，第二层偏移 offset + gap/2；仅平铺模式）",
+      "tamper-proof": "防篡改（默认 true）：MutationObserver 监测图层被删/被改自动重挂并派发 `oas-remove`；`\"false\"` 关闭",
+      "width": "单枚画布宽度（px，默认 240）",
+      "z-index": "水印层叠层级（默认 2）"
     },
-    "events": {},
+    "events": {
+      "oas-remove": "防篡改监测到图层被移除/篡改时派发，`detail: { type: \"removed\" | \"modified\" }`"
+    },
     "slots": {}
   },
   "oas-button-group-separator": {

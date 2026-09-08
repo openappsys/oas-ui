@@ -80,4 +80,44 @@ describe('OASComment', () => {
     await new Promise((r) => setTimeout(r, 0))
     expect(el.shadowRoot!.querySelector('[part="content"]')!.hasAttribute('hidden')).toBe(true)
   })
+
+  it('align 属性进 observedAttributes；left/right/非法值均不报错', () => {
+    expect(OASComment.observedAttributes).toContain('align')
+    const el = mount()
+    el.setAttribute('align', 'right')
+    el.setAttribute('align', 'center') // 非 left/right 取值：CSS 选择器不命中即回落默认
+    expect(el.shadowRoot!.querySelector('[part="comment"]')).not.toBeNull()
+  })
+
+  it('align=right 提供 time 右挤与 actions 右对齐规则（CSS 级，逻辑属性 RTL 安全）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(':host([align="right"])')
+    expect(css).toContain('margin-inline-start: auto')
+    expect(css).toContain('justify-content: flex-end')
+  })
+
+  it('quote/reply 插槽：结构存在、空隐藏、有内容显示', async () => {
+    const el = mount()
+    expect(el.shadowRoot!.querySelector('slot[name="quote"]')).not.toBeNull()
+    expect(el.shadowRoot!.querySelector('slot[name="reply"]')).not.toBeNull()
+    for (const part of ['quote', 'reply']) {
+      expect(el.shadowRoot!.querySelector(`[part="${part}"]`)!.hasAttribute('hidden')).toBe(true)
+    }
+    el.innerHTML = `
+      <span slot="author">张三</span>
+      <span slot="reply">回复 @李四</span>
+      <blockquote slot="quote" style="margin: 0">被引用的原文</blockquote>
+      <p slot="content">赞同 +1</p>
+    `
+    await new Promise((r) => setTimeout(r, 0))
+    expect(el.shadowRoot!.querySelector('[part="reply"]')!.hasAttribute('hidden')).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="quote"]')!.hasAttribute('hidden')).toBe(false)
+    // 区块顺序：reply 目标在 head 之后，quote 在 content 之前
+    const order = ['head', 'reply', 'quote', 'content', 'actions'].map((p) => {
+      const node = el.shadowRoot!.querySelector(`[part="${p}"]`)!
+      return Array.from(node.parentElement!.children).indexOf(node)
+    })
+    expect(order).toEqual([...order].sort((a, b) => a - b))
+  })
 })

@@ -312,6 +312,19 @@ const STYLE = `
 :host([hidden]) {
   display: none;
 }
+/* 块级模式（行间公式）：独立居中行 + 上下间距；字号不放大（display 公式排版惯例） */
+:host([display='block']) {
+  display: block;
+  text-align: center;
+  margin-block: var(--oas-equation-block-margin, var(--oas-space-4));
+}
+:host([display='block']) .equation {
+  display: inline-block;
+}
+/* 外部引擎渲染产物容器：引擎自带样式（如引擎字体/类名）在其自身体内生效 */
+.equation[data-engine='injected'] {
+  font-style: normal;
+}
 .equation {
   font-family: 'Times New Roman', 'STIX Two Math', 'Cambria Math', serif;
   font-style: italic;
@@ -388,17 +401,57 @@ const STYLE = `
 `
 
 /**
+ * 可注入的公式渲染引擎协议（薄壳模式的宿主注入对象）：
+ * 兼容「renderToString(code, options) → HTML 字符串」形态的 TeX 渲染引擎
+ * （如 KaTeX），由宿主自行安装并经 `engine` property 注入。
+ *
+ * 信任边界：引擎输出作为 innerHTML 直出组件 shadow——注入的引擎是宿主自己的代码，
+ * 宿主对其产物负责；SSR 场景引擎需在服务端同样可用（组件 SSR 快照只走属性通道，
+ * 引擎属性需宿主在服务端同步注入）。
+ */
+export interface EquationEngine {
+  renderToString(code: string, options?: Record<string, unknown>): string
+}
+
+/** 形态校验：注入对象必须携带可调用的 renderToString */
+function isEngine(v: unknown): v is EquationEngine {
+  return (
+    typeof v === 'object' &&
+    v !== null &&
+    typeof (v as EquationEngine).renderToString === 'function'
+  )
+}
+
+/**
  * oas-equation —— 数学公式组件（自研简化 LaTeX 子集，零第三方引擎）。
  *
  * 属性（kebab-case）：
  * - `code`：LaTeX 子集源文本
+ * - `display`：`'block'` 块级模式（独立居中行间公式），缺省行内
+ *
+ * Property：
+ * - `engine`：注入兼容 TeX 渲染引擎对象（renderToString 协议），注入后委托渲染；
+ *   移除（置 null）回到自研子集渲染。非法对象忽略
  *
  * 渲染为 HTML（span 堆叠 + CSS 排版分数/上下标/根号/求和积分上下限）。
  * 未知命令按字面显示不报错；ARIA：容器 aria-label = 原始 LaTeX。
+ * 双轨：自研子集默认（零依赖），引擎注入后薄壳委托（错误静默回退自研）。
  */
 export class OASEquation extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['code']
+    return ['code', 'display']
+  }
+
+  private injected: EquationEngine | null = null
+
+  /** 注入/移除渲染引擎（property 通道；非法值忽略） */
+  get engine(): EquationEngine | null {
+    return this.injected
+  }
+
+  set engine(value: EquationEngine | null) {
+    this.injected = isEngine(value) ? value : null
+    if (this.isConnected) this.update()
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
@@ -430,6 +483,20 @@ export class OASEquation extends OASElement {
     if (!eq) return
     const code = this.getAttr('code', '')
     eq.setAttribute('aria-label', code)
+    // 双轨：引擎注入则薄壳委托（错误静默回退自研子集，不空白不抛出）
+    if (this.injected) {
+      try {
+        eq.innerHTML = this.injected.renderToString(code, {
+          throwOnError: false,
+          displayMode: this.getAttr('display', '') === 'block',
+        })
+        eq.setAttribute('data-engine', 'injected')
+        return
+      } catch {
+        /* 引擎渲染失败：落到下方自研渲染 */
+      }
+    }
+    eq.removeAttribute('data-engine')
     eq.innerHTML = renderLatex(code)
   }
 }
