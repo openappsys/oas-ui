@@ -5,6 +5,8 @@ import {
   isSameDay,
   isSameMonth,
   addMonths,
+  addMonthsClamped,
+  addYearsClamped,
   buildMonthCells,
   isoWeek,
   weekdayLabels,
@@ -14,6 +16,7 @@ import {
   moveGridDate,
   clampDate,
   getWeekStart,
+  normalizeWeekStart,
 } from './date-grid.js'
 
 describe('date-grid 共享模块（纯函数）', () => {
@@ -99,6 +102,60 @@ describe('date-grid 共享模块（纯函数）', () => {
     expect(toISODate(moveGridDate(d, 'ArrowUp')!)).toBe('2026-08-02')
     expect(toISODate(moveGridDate(d, 'ArrowDown')!)).toBe('2026-08-16')
     expect(moveGridDate(d, 'Enter')).toBeNull()
+  })
+
+  it('moveGridDate 扩展：Home/End 按生效周起始跳周首尾', () => {
+    // 2026-08-11 为周二
+    const d = new Date(2026, 7, 11)
+    expect(moveGridDate(d, 'Home', 1)!.getDay()).toBe(1) // 周一起始 → 周一
+    expect(toISODate(moveGridDate(d, 'Home', 1)!)).toBe('2026-08-10')
+    expect(toISODate(moveGridDate(d, 'End', 1)!)).toBe('2026-08-16')
+    // 周日起始（first-day-of-week=0）
+    expect(toISODate(moveGridDate(d, 'Home', 0)!)).toBe('2026-08-09')
+    expect(toISODate(moveGridDate(d, 'End', 0)!)).toBe('2026-08-15')
+    // 周三起始（first-day-of-week=3）：含 08-11 的周为 08-05（周三）～ 08-11（周二）
+    expect(toISODate(moveGridDate(d, 'Home', 3)!)).toBe('2026-08-05')
+    expect(toISODate(moveGridDate(d, 'End', 3)!)).toBe('2026-08-11')
+  })
+
+  it('moveGridDate 扩展：PageUp/PageDown 换月，Shift 换年（月末日期钳制）', () => {
+    const d = new Date(2026, 7, 9)
+    expect(toISODate(moveGridDate(d, 'PageUp')!)).toBe('2026-07-09')
+    expect(toISODate(moveGridDate(d, 'PageDown')!)).toBe('2026-09-09')
+    expect(toISODate(moveGridDate(d, 'PageUp', 0, true)!)).toBe('2025-08-09')
+    expect(toISODate(moveGridDate(d, 'PageDown', 0, true)!)).toBe('2027-08-09')
+    // 3-31 跨月钳制到 2-28；2024-02-29 跨年钳制到 2025-02-28
+    expect(toISODate(moveGridDate(new Date(2026, 2, 31), 'PageUp')!)).toBe('2026-02-28')
+    expect(toISODate(moveGridDate(new Date(2024, 1, 29), 'PageDown', 0, true)!)).toBe('2025-02-28')
+  })
+
+  it('addMonthsClamped / addYearsClamped：保留日序、月末溢出钳制', () => {
+    expect(toISODate(addMonthsClamped(new Date(2026, 7, 31), 1))).toBe('2026-09-30')
+    expect(toISODate(addMonthsClamped(new Date(2026, 0, 31), 1))).toBe('2026-02-28')
+    expect(toISODate(addYearsClamped(new Date(2024, 1, 29), 1))).toBe('2025-02-28')
+  })
+
+  it('normalizeWeekStart：任意 0-6 数字归一化，非法回退 0', () => {
+    expect(normalizeWeekStart(0)).toBe(0)
+    expect(normalizeWeekStart(3)).toBe(3)
+    expect(normalizeWeekStart(6)).toBe(6)
+    expect(normalizeWeekStart(-1)).toBe(6)
+    expect(normalizeWeekStart(7)).toBe(0)
+    expect(normalizeWeekStart(Number.NaN)).toBe(0)
+  })
+
+  it('buildMonthCells 支持任意周起始覆写：2026-08 周日起始首格 07-26', () => {
+    const cells = buildMonthCells(new Date(2026, 7, 1), 'zh-CN', 0)
+    expect(toISODate(cells[0]!.date)).toBe('2026-07-26')
+    expect(cells.length).toBe(42)
+    const zh3 = buildMonthCells(new Date(2026, 7, 1), 'zh-CN', 3)
+    // 8-1 周六，周三起始 offset=(6+7-3)%7=3 → 首格 07-29
+    expect(toISODate(zh3[0]!.date)).toBe('2026-07-29')
+  })
+
+  it('weekdayLabels 支持任意周起始：中文 ws=3 周三起始', () => {
+    expect(weekdayLabels('zh-CN', 3)).toEqual(['三', '四', '五', '六', '日', '一', '二'])
+    expect(weekdayLabels('zh-CN', 0)).toEqual(['日', '一', '二', '三', '四', '五', '六'])
   })
 
   it('clampDate：钳制到 [min, max]', () => {

@@ -277,6 +277,195 @@ describe('OASCalendar', () => {
     el.setAttribute('mode', 'month')
     expect(details).toEqual([{ mode: 'year' }, { mode: 'month' }])
   })
+
+  it('first-day-of-week 覆写周起始（0-6，默认随 locale）', () => {
+    const el = mount({ value: '2026-08-09', 'first-day-of-week': '0' })
+    const labels = [...el.shadowRoot!.querySelectorAll('.weekday')].map((n) => n.textContent)
+    expect(labels).toEqual(['日', '一', '二', '三', '四', '五', '六'])
+    // 周日起始：首格为 2026-07-26（周日）
+    expect(day(el, '2026-07-26')).toBeTruthy()
+    expect(day(el, '2026-07-26').classList.contains('outside')).toBe(true)
+    // 切周三起始：周头轮转 + 首格 07-29
+    el.setAttribute('first-day-of-week', '3')
+    const labels3 = [...el.shadowRoot!.querySelectorAll('.weekday')].map((n) => n.textContent)
+    expect(labels3).toEqual(['三', '四', '五', '六', '日', '一', '二'])
+    expect(day(el, '2026-07-29')).toBeTruthy()
+  })
+
+  it('键盘 Home/End 跳周首尾，PageUp/PageDown 翻月、Shift 翻年（含面板翻页事件）', () => {
+    const el = mount({ value: '2026-08-11' }) // 周二，中文周一起始
+    expect(rovingFocus(el).getAttribute('data-date')).toBe('2026-08-11')
+    grid(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }))
+    expect(rovingFocus(el).getAttribute('data-date')).toBe('2026-08-10')
+    grid(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }))
+    expect(rovingFocus(el).getAttribute('data-date')).toBe('2026-08-16')
+
+    const pages: string[] = []
+    el.addEventListener('oas-panel-change', (e: Event) => {
+      pages.push(toISO(((e as CustomEvent).detail as { date: Date }).date))
+    })
+    grid(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true }))
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年7月')
+    expect(rovingFocus(el).getAttribute('data-date')).toBe('2026-07-16')
+    grid(el).dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'PageDown', shiftKey: true, bubbles: true }),
+    )
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2027年7月')
+    expect(rovingFocus(el).getAttribute('data-date')).toBe('2027-07-16')
+    expect(pages).toEqual(['2026-07-01', '2027-07-01'])
+  })
+
+  it('min/max 翻页边界：整月无可选日时上一月/下一月置灰', () => {
+    const el = mount({ value: '2026-08-09', min: '2026-08-01', max: '2026-08-31' })
+    const prev = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="prev"]')!
+    const next = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!
+    expect(prev.disabled).toBe(true)
+    expect(next.disabled).toBe(true)
+  })
+
+  it('min/max 翻页边界：范围内可翻，翻到边界按钮自动置灰', () => {
+    const el = mount({ value: '2026-08-09', min: '2026-07-01', max: '2026-12-31' })
+    const prev = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="prev"]')!
+    const next = el.shadowRoot!.querySelector<HTMLButtonElement>('[part="next"]')!
+    expect(prev.disabled).toBe(false)
+    expect(next.disabled).toBe(false)
+    prev.click()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年7月')
+    // 到达 min 边界：6 月整月越界 → 置灰
+    expect(prev.disabled).toBe(true)
+    expect(next.disabled).toBe(false)
+  })
+
+  it('min/max 限定下月面板仅可选月份可点，越界月份置灰不可跳', () => {
+    const el = mount({ value: '2026-08-09', min: '2026-08-01', max: '2026-08-31' })
+    el.shadowRoot!.querySelector<HTMLElement>('[part="title"]')!.click()
+    const cells = el.shadowRoot!.querySelectorAll('.month-cell')
+    expect(cells.length).toBe(12)
+    // 8 月可点（越界：索引 7）
+    expect((cells[7] as HTMLElement).classList.contains('disabled')).toBe(false)
+    // 7 月/9 月（索引 6/8）越界置灰
+    expect((cells[6] as HTMLElement).classList.contains('disabled')).toBe(true)
+    expect((cells[8] as HTMLElement).classList.contains('disabled')).toBe(true)
+    ;(cells[8] as HTMLElement).dispatchEvent(new MouseEvent('click'))
+    // 点置灰月不生效：仍停留在月选择面板
+    expect(el.shadowRoot!.querySelectorAll('.month-cell').length).toBe(12)
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年')
+  })
+
+  it('page-show-date 锚定初始面板月、受控跟随属性变化、移除后回 value 月', () => {
+    const el = mount({ value: '2026-08-09', 'page-show-date': '2026-03' })
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年3月')
+    // 受控：宿主改 page-show-date → 面板跟随
+    el.setAttribute('page-show-date', '2026-11')
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年11月')
+    // 移除锚点 → 回到 value 所在月
+    el.removeAttribute('page-show-date')
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年8月')
+  })
+
+  it('value 与 page-show-date 并存时面板展示锚点月（不跳 value 月）', () => {
+    const el = mount({ value: '1980-05-03', 'page-show-date': '2026-08' })
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年8月')
+    // 选 8-15 后仍停留锚点月，不随 value 跳 1980
+    day(el, '2026-08-15').click()
+    expect(el.getAttribute('value')).toBe('2026-08-15')
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年8月')
+  })
+
+  it('翻页 / 点邻月补位日派发 oas-panel-change { date }', () => {
+    const el = mount({ value: '2026-08-15' })
+    const pages: string[] = []
+    el.addEventListener('oas-panel-change', (e: Event) => {
+      pages.push(toISO(((e as CustomEvent).detail as { date: Date }).date))
+    })
+    el.shadowRoot!.querySelector<HTMLElement>('[part="prev"]')!.click()
+    expect(pages).toEqual(['2026-07-01'])
+
+    // 邻月补位日（周一起始首格 07-27）点选：选中并随值跳月 → 面板变化
+    const el2 = mount({ value: '2026-08-15' })
+    const pages2: string[] = []
+    el2.addEventListener('oas-panel-change', (e: Event) => {
+      pages2.push(toISO(((e as CustomEvent).detail as { date: Date }).date))
+    })
+    day(el2, '2026-07-27').click()
+    expect(el2.getAttribute('value')).toBe('2026-07-27')
+    expect(pages2).toEqual(['2026-07-01'])
+  })
+
+  it('已处于当月时点“今天”不派发 oas-panel-change', () => {
+    const now = new Date()
+    const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const el = mount({ value: `${ym}-15` })
+    const pages: string[] = []
+    el.addEventListener('oas-panel-change', (e: Event) => {
+      pages.push(toISO(((e as CustomEvent).detail as { date: Date }).date))
+    })
+    el.shadowRoot!.querySelector<HTMLElement>('[part="today"]')!.click()
+    expect(pages).toEqual([])
+  })
+
+  it('readonly：可浏览翻页、点选与键盘 Enter 均不提交', () => {
+    const el = mount({ value: '2026-08-09', readonly: '' })
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    day(el, '2026-08-15').click()
+    expect(details).toEqual([])
+    expect(el.getAttribute('value')).toBe('2026-08-09')
+    grid(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(details).toEqual([])
+    // 翻页浏览仍可用
+    el.shadowRoot!.querySelector<HTMLElement>('[part="prev"]')!.click()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年7月')
+  })
+
+  it('disabled：整体不可交互（数据态 + 点选/翻页/键盘全停）', () => {
+    const el = mount({ value: '2026-08-09', disabled: '' })
+    expect(el.hasAttribute('data-disabled')).toBe(true)
+    day(el, '2026-08-15').click()
+    expect(el.getAttribute('value')).toBe('2026-08-09')
+    el.shadowRoot!.querySelector<HTMLElement>('[part="prev"]')!.click()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年8月')
+    grid(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    expect(rovingFocus(el).getAttribute('data-date')).toBe('2026-08-09')
+  })
+
+  it('decade 快速跳远年：日视图标题 → 月网格 → 年网格钻取，选年回月、选月回日', () => {
+    const el = mount({ value: '2026-08-09' })
+    el.shadowRoot!.querySelector<HTMLElement>('[part="title"]')!.click()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2026年')
+    expect(el.shadowRoot!.querySelectorAll('.month-cell').length).toBe(12)
+    // 月面板标题再点开十年网格
+    el.shadowRoot!.querySelector<HTMLElement>('[part="title"]')!.click()
+    expect(el.shadowRoot!.querySelectorAll('.year-cell').length).toBe(12)
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2020-2031')
+    // 年网格 ±12 翻十年页
+    el.shadowRoot!.querySelector<HTMLElement>('[part="next"]')!.click()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2032-2043')
+    el.shadowRoot!.querySelector<HTMLElement>('[part="prev"]')!.click()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2020-2031')
+    // 选 2024 年 → 回 2024 月网格
+    el.shadowRoot!.querySelector<HTMLElement>('.year-cell[data-year="2024"]')!.click()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2024年')
+    expect(el.shadowRoot!.querySelectorAll('.month-cell').length).toBe(12)
+    // 选 6 月 → 回日视图
+    el.shadowRoot!.querySelectorAll('.month-cell')[5]!.dispatchEvent(new MouseEvent('click'))
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2024年6月')
+    expect(el.shadowRoot!.querySelectorAll('.day').length).toBeGreaterThan(0)
+  })
+
+  it('year 模式标题钻取 decade 跳远年，选年后保持模式、选月提交', () => {
+    const el = mount({ value: '2026-07', mode: 'year' })
+    el.shadowRoot!.querySelector<HTMLElement>('[part="title"]')!.click()
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2020-2031')
+    el.shadowRoot!.querySelector<HTMLElement>('.year-cell[data-year="2020"]')!.click()
+    expect(el.getAttribute('mode')).toBe('year')
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2020年')
+    const details: unknown[] = []
+    el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+    el.shadowRoot!.querySelectorAll('.month-cell')[0]!.dispatchEvent(new MouseEvent('click'))
+    expect(details).toEqual([{ value: '2020-01' }])
+    expect(el.shadowRoot!.querySelector('[part="title"]')!.textContent).toBe('2020年1月')
+  })
 })
 
 function toISO(d: Date): string {
