@@ -30,6 +30,28 @@
       "name": "show-week-number",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "first-day-of-week",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "page-show-date",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
@@ -46,6 +68,10 @@
     {
       "name": "oas-cell-render",
       "detail": "{ date, element: btn }"
+    },
+    {
+      "name": "oas-panel-change",
+      "detail": "{ date: this.pageAnchor() }"
     },
     {
       "name": "oas-change",

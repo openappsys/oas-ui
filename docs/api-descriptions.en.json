@@ -360,16 +360,21 @@
   "oas-calendar": {
     "attrs": {
       "disabledDate": "Disabled callback (property)",
-      "max": "Selectable range (ISO dates)",
-      "min": "Selectable range (ISO dates)",
+      "disabled": "Globally disabled: greys out the calendar and stops all interaction (picking / paging / keyboard)",
+      "first-day-of-week": "Week start override: `0` (Sunday) to `6` (Saturday); defaults to the locale (Monday for Chinese, Sunday otherwise)",
+      "max": "Selectable range (ISO dates); navigation buttons grey out when the whole target page falls outside the range",
+      "min": "Selectable range (ISO dates); navigation buttons grey out when the whole target page falls outside the range",
       "mode": "`month` / `year` (in year mode, picking a month auto-switches back to month view)",
+      "page-show-date": "Panel month anchor (ISO `yyyy-MM` or `yyyy-MM-dd`): anchors the displayed month initially/on change, taking precedence over value; removing it falls back to the value month",
+      "readonly": "Read-only: page navigation and panel drill-down stay available, but picking dates / Enter does not commit",
       "show-week-number": "Show the ISO week number column",
       "value": "Selected value (ISO)"
     },
     "events": {
       "oas-cell-render": "Dispatched when each day cell renders, `detail: { date, element }` (element is the day button; host can append markers/badges/rich content)",
       "oas-change": "Selection change, `detail: { value }`",
-      "oas-mode-change": "Dispatched when year mode auto-switches back to month view after picking a month, `detail: { mode }`"
+      "oas-mode-change": "Dispatched when year mode auto-switches back to month view after picking a month, `detail: { mode }`",
+      "oas-panel-change": "Dispatched when the displayed panel month changes due to user paging/month picking/jumps, `detail: { date }` (date is the first day of the new page)"
     },
     "slots": {
       "template[slot=\"cell\"]": "Static template for day cells, cloned into each day button; the `[data-cell-date]` node is bound to the day number"
@@ -1312,13 +1317,34 @@
       "options": "Options, JSON array `[{ label, value }]`",
       "placeholder": "Placeholder text",
       "prefix": "Trigger prefix",
-      "value": "Value (controlled, full text)"
+      "value": "Value (controlled, full text)",
+      "readonly": "Read-only (focusable and readable, no suggestion panel)",
+      "clearable": "Clear button (clears all content, fires oas-clear)",
+      "loading": "Suggestion panel loading state (during remote search; pair with oas-search)",
+      "split": "Separator between a mention and following text (default space; not doubled when already separated)",
+      "autosize": "Auto-grow (pair with min-rows/max-rows)",
+      "min-rows": "Minimum rows (with autosize)",
+      "max-rows": "Maximum rows (with autosize; `\"0\"` uncaps)",
+      "placement": "Panel direction: `auto` (default) / `top` / `bottom`",
+      "size": "Size preset `small` / `medium` (default) / `large`",
+      "status": "Validation status: `error` / `warning` / `success`",
+      "variant": "Variant: `outlined` (default) / `filled` / `borderless`"
     },
     "events": {
       "oas-change": "Text changed after insertion, `detail: { value }` (full text)",
-      "oas-select": "Suggestion selected, `detail: { value, label }`"
+      "oas-select": "Suggestion selected, `detail: { value, label }`",
+      "oas-input": "Fires on input (not during IME composition), `detail: { value }`",
+      "oas-search": "Fires when the trigger scan finds pending text (remote search hook), `detail: { query, prefix }`",
+      "oas-focus": "Fires on focus",
+      "oas-blur": "Fires on blur",
+      "oas-option-render": "Fires on option render (rich option channel), `detail: { index, option, element }`",
+      "oas-clear": "Fires on clear, `detail: { value }` (pre-clear value)"
     },
-    "slots": {}
+    "slots": {
+      "header": "Panel header content",
+      "footer": "Panel footer content",
+      "template[slot=\"option\"]": "Custom option template (`[data-option-label]` binding)"
+    }
   },
   "oas-menu": {
     "attrs": {

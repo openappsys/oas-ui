@@ -32,6 +32,68 @@
     {
       "name": "label",
       "observed": true
+    },
+    {
+      "name": "readonly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "clearable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "split",
+      "type": "string",
+      "default": " ",
+      "observed": true
+    },
+    {
+      "name": "autosize",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "min-rows",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "max-rows",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "placement",
+      "type": "string",
+      "default": "auto",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "medium",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "outlined",
+      "observed": true
     }
   ],
   "props": [
@@ -42,23 +104,57 @@
     },
     {
       "name": "prefix",
-      "type": "string"
+      "type": "string | string[]"
+    },
+    {
+      "name": "filterOption",
+      "type": "((query: string, option: Option) => boolean) | null"
     }
   ],
   "events": [
     {
       "name": "oas-input",
-      "detail": "{ value: this.ta!.value }"
+      "detail": "{ value: this.ta.value } | { value: t.value }"
+    },
+    {
+      "name": "oas-search",
+      "detail": "{ query: this.queryText, prefix: this.activeTrigger }"
+    },
+    {
+      "name": "oas-focus",
+      "detail": "{ value: t.value }"
+    },
+    {
+      "name": "oas-blur",
+      "detail": "{ value: this.ta.value }"
+    },
+    {
+      "name": "oas-option-render",
+      "detail": "{ index: idx, option, element: label }"
     },
     {
       "name": "oas-select",
-      "detail": "{ value: option.value, label: option.label }"
+      "detail": "{ value: option.value, label: option.label, option: { ...option }, prefix, }"
     },
     {
       "name": "oas-change",
-      "detail": "{ value: next }"
+      "detail": "{ value: next } | { value: '' }"
+    },
+    {
+      "name": "oas-clear",
+      "detail": "{ value: prev }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "footer"
+    },
+    {
+      "name": "header"
+    },
+    {
+      "name": "template[slot=\"option\"]"
+    }
+  ],
   "unresolved": []
 }
