@@ -247,7 +247,7 @@ describe('@oas-ui/ssr renderToString', () => {
           { key: 'a', label: '节点 A', children: [{ key: 'a-1', label: '子节点 1' }] },
           { key: 'b', label: '节点 B' },
         ]),
-        expanded: 'a',
+        expanded: '["a"]',
       },
       '',
       { locale: 'zh-CN' },
@@ -295,7 +295,7 @@ describe('@oas-ui/ssr renderToString', () => {
   })
 
   it('oas-tree/oas-select：data/options JSON 非法时容错为空态快照，不抛错', async () => {
-    const tree = await renderToString('oas-tree', { data: '[{bad', expanded: 'a' }, '', {
+    const tree = await renderToString('oas-tree', { data: '[{bad', expanded: '["a"]' }, '', {
       locale: 'zh-CN',
     })
     expect(tree).toContain('<template shadowrootmode="open">')
@@ -936,7 +936,9 @@ describe('@oas-ui/ssr renderToString', () => {
     )
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('part="timeline"')
-    expect(html).toContain('part="item"')
+    // 新自包含行架构：item 是独立 oas-timeline-item 元素（宿主 data-direction/data-mode 下发 + 嵌套 DSD），不再有克隆的 part="item" 行
+    expect(html).toContain('<oas-timeline-item time="2024-01-01" data-direction="vertical" data-mode="left">')
+    expect(html).toContain('<meta data-oas-ssr="oas-timeline-item" data-oas-ssr-v="1">')
     expect(html).toContain('2024-01-01')
     expect(html).toContain('事件一')
   })

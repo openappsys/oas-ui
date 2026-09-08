@@ -1261,20 +1261,46 @@
   "oas-list": {
     "attrs": {
       "bordered": "是否显示整体边框",
+      "bottom-offset": "触底阈值（px）：距底部剩余距离 ≤ 该值即视为触底，默认 0",
+      "data": "数据通道（JSON 字符串；property `data` / `dataItems` 优先），有 data 走数据通道、无 data 回落声明式子项",
       "empty": "强制空态；无子项时自动空态",
       "empty-text": "空态文案",
+      "height": "虚拟滚动视口高度（px，设置即启用虚拟模式，要求 data 通道）",
       "loading": "加载态，显示骨架占位",
-      "split": "是否显示条目分隔线"
+      "max-height": "列表体最大高度（px 或 CSS 长度），设置后列表体成为滚动容器（配合 oas-reach-bottom 滚动加载）",
+      "row-height": "虚拟滚动行高（px，默认 64，要求数据行定高）",
+      "size": "行密度：sm / md（默认）/ lg",
+      "split": "是否显示条目分隔线",
+      "stripe": "斑马纹：视觉偶数行铺浅色底"
     },
-    "events": {},
-    "slots": {}
+    "events": {
+      "oas-click": "条目点击（数据/虚拟行），detail 带 { index, item }",
+      "oas-item-render": "数据通道每行渲染后派发，detail 带 { index, item, element }",
+      "oas-reach-bottom": "滚动触底（进入触底区派发一次，滚离后重新武装），detail 带 { scrollTop }"
+    },
+    "slots": {
+      "": "默认（oas-list-item 声明式子项）",
+      "empty": "自定义空态，完全替换内置图标+文案",
+      "footer": "列表尾区域（统计信息、操作位）",
+      "header": "列表头区域（分组标题、操作位）",
+      "load-more": "列表尾「加载更多」区（按钮/加载中占位）",
+      "template[slot=\"item\"]": "数据通道每项克隆的静态骨架，配合 oas-item-render 绑定数据"
+    }
   },
   "oas-list-item": {
     "attrs": {
+      "avatar": "头像 URL 快捷通道（渲染首部圆形头像；slot=\"avatar\" 优先）",
+      "clickable": "整行可点：hover 反馈、可聚焦（Enter/Space 触发）、点击派发 oas-click",
+      "description": "描述文本快捷通道（slot=\"description\" 优先，可放富内容）",
+      "selected": "选中行高亮（aria-selected 同步），选中态由宿主维护",
+      "size": "行密度：sm / md（默认）/ lg（oas-list 下发的 data-size 优先于本属性之外的默认）",
       "title": "条目标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\""
     },
-    "events": {},
+    "events": {
+      "oas-click": "行点击，detail 带 { index, item }（数据行由 oas-list 注入上下文）"
+    },
     "slots": {
+      "avatar": "头像富内容（oas-avatar 或任意内容），优先于 avatar 属性",
       "description": "描述区（不提供时回退默认插槽）",
       "extra": "条目右侧扩展区",
       "title": "标题富内容插槽，有内容时覆盖 title 属性文案"
@@ -2467,14 +2493,34 @@
       "presets": "快捷时刻：`{ label, value: \"HH:mm:ss\" }` 数组，面板顶部按钮列，点击即应用并关闭"
     }
   },
-  "oas-timeline-item": {
+  "oas-timeline": {
     "attrs": {
-      "color": "节点标记色：`green` / `red` / `gray`，缺省为主题色",
-      "pending": "进行中节点：空心圆点 + 虚线连接，无内容时显示「敬请期待」",
-      "time": "节点时间文本"
+      "direction": "轴方向：vertical（默认）/ horizontal（横向排布）",
+      "mode": "内容相对轴的位置：left（默认，轴在左）/ right（轴在右）/ alternate（轴居中、内容左右交替，首项在左）；横向时映射为轴下/轴上/上下交替",
+      "reverse": "视觉倒序（DOM 顺序不变），常与 pending 组合表达「最新在上」"
     },
     "events": {},
     "slots": {}
+  },
+  "oas-timeline-item": {
+    "attrs": {
+      "color": "【迁移兼容】旧节点色：green→success、red→danger、gray→neutral，将移除；新代码用 type，任意色走 --oas-timeline-dot-color",
+      "icon": "节点图标（库内 oas-icon 图标名），颜色跟随 type，slot=\"dot\" 优先",
+      "loading": "单节点加载中：圆点变旋转环，内容区 aria-busy 同步",
+      "pending": "进行中节点：空心圆点 + 虚线连接 + 脉冲，无内容时显示「敬请期待」",
+      "time": "节点时间文本",
+      "type": "节点语义色：primary（缺省）/ success / warning / danger / info / neutral",
+      "variant": "节点变体：filled（默认实心）/ outlined（空心描边）"
+    },
+    "events": {
+      "oas-click": "条目点击（内容区），detail 带 { index }"
+    },
+    "slots": {
+      "": "节点正文",
+      "dot": "自定义节点（任意内容替换圆点）",
+      "opposite": "对侧内容（仅在 mode=alternate 时显示于轴对侧）",
+      "title": "标题强调行（与正文分区）"
+    }
   },
   "oas-title": {
     "attrs": {
@@ -2763,18 +2809,34 @@
       "lazy": "懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载",
       "load": "懒加载回调 `(payload: { key }) => void`，与 `oas-load` 事件并存；宿主回填子节点后重设 `data` 属性",
       "row-height": "虚拟化时每行固定高度（px）",
-      "selected": "选中节点 key"
+      "selected": "选中节点 key",
+      "multiple": "点选多选（Ctrl/⌘ 点击多选；勾选集 selected 为 JSON 数组）",
+      "check-strategy": "勾选导出策略：`all`（默认）/ `parent` / `child`（checkable 级联时生效）",
+      "check-strictly": "勾选父子解联（勾选父级不联动子级）",
+      "default-expand-all": "默认展开全部节点（expanded 属性缺席时生效）",
+      "accordion": "手风琴（同级同时只展开一支）",
+      "auto-expand-parent": "勾选子节点时自动展开其父级",
+      "expand-trigger": "节点展开触发：`toggle`（默认，仅箭头）/ `node`（点节点行展开）",
+      "filter": "树内搜索过滤（输入关键词；配 filter-highlight 高亮与 el.filterNode 自定义）",
+      "filter-highlight": "搜索命中片段高亮（mark 标记）",
+      "field-names": "字段别名 JSON（如 `{\"label\":\"name\",\"value\":\"id\",\"children\":\"subs\"}`；原始数据不拷贝映射，node-render 拿到宿主原对象）",
+      "tree-lines": "树线缩进引导线",
+      "disabled": "整树禁用（点选/勾选/展开/拖拽全停，浏览保留）",
+      "empty": "空态文案（无数据时；无匹配时走 locale 无匹配文案）"
     },
     "events": {
       "oas-check": "勾选变化，`detail: { key, checked }`",
       "oas-load": "懒加载触发，`detail: { key }`；宿主回填 `children` 后重设 `data` 属性",
       "oas-node-drop": "节点拖放，`detail: { dragKey, dropKey, position }`，`position` 为 `before` / `after` / `inner`；`dropKey` 为空字符串表示移入根",
       "oas-node-render": "每个渲染的节点行派发，`detail: { node, element }`（element 为节点 label 容器，宿主可改写为图标 / 富文本）",
-      "oas-select": "选中节点，`detail: { key, selected }`"
+      "oas-select": "选中节点，`detail: { key, selected }`",
+      "oas-load-error": "懒加载失败时派发，`detail: { key, error }`，`error` 为错误消息字符串（loading 消失可再点重试）"
     },
     "slots": {
       "template[slot=\"node\"]": "节点行静态模板，克隆到每个节点 label 容器；`[data-node-label]` 节点自动绑定节点 label",
-      "template[slot=\"toggle\"]": "展开按钮静态模板，克隆到每个可展开节点的展开按钮内（替换默认 › 图标）"
+      "template[slot=\"toggle\"]": "展开按钮静态模板，克隆到每个可展开节点的展开按钮内（替换默认 › 图标）",
+      "template[slot=\"empty\"]": "自定义空态内容",
+      "template[slot=\"toggle-loading\"]": "懒加载展开中的指示器（替换 spinner）"
     }
   },
   "oas-tree-select": {
