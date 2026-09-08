@@ -281,6 +281,8 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
   mentions: [
     ['oas-mentions:not([disabled]) [part="textarea"]', 'fill:@', '触发 @ 建议面板'],
     ['oas-mentions [role="option"]', 'click', '选中 → oas-select + oas-change'],
+    ['#mention-clear [part="clear"]', 'click', '清空 → oas-clear'],
+    ['#noop', 'press:Tab', '焦点移出 → oas-blur'],
   ],
   form: [['oas-form[rules] oas-button button', 'click', '必填为空提交 → oas-validate-fail']],
   'date-picker': [
