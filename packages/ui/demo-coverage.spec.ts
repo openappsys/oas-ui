@@ -626,6 +626,9 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-tree[checkable] input[type="checkbox"]', 'click', '勾选 → oas-check'],
     ['oas-tree[lazy] [part="toggle"]', 'click', '展开未加载节点（dir-a）→ oas-load'],
     ['oas-tree[draggable] [part="row"]', 'dragto', '拖第 1 行到第 2 行 → oas-node-drop'],
+    ['#tree-lazy-fail [part="row"][data-key="fail"] [part="toggle"]', 'click', '懒加载失败节点（fail）→ oas-load-error'],
+    ['oas-list [part="item"]', 'click', 'list 行点击 → oas-click'],
+    ['oas-timeline-item', 'click', 'timeline 节点点击 → oas-click'],
   ],
   table: [
     ['oas-table .expand-toggle-cell .toggle', 'click', '点行尾展开钮 → oas-expand'],

@@ -25,13 +25,90 @@
     {
       "name": "empty-text",
       "observed": true
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "stripe",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "max-height",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "bottom-offset",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "320",
+      "observed": true
+    },
+    {
+      "name": "row-height",
+      "type": "string",
+      "default": "64",
+      "observed": true
+    },
+    {
+      "name": "data",
+      "observed": true
     }
   ],
-  "props": [],
-  "events": [],
+  "props": [
+    {
+      "name": "dataItems",
+      "type": "unknown[]",
+      "default": "[]"
+    },
+    {
+      "name": "data",
+      "type": "unknown[]"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-item-render",
+      "detail": "{ index: i, item, element: row }"
+    },
+    {
+      "name": "oas-reach-bottom",
+      "detail": "{ scrollTop: body.scrollTop }"
+    },
+    {
+      "name": "oas-click",
+      "detail": "{ index, item: this.rows[index] }"
+    }
+  ],
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "empty"
+    },
+    {
+      "name": "footer"
+    },
+    {
+      "name": "header"
+    },
+    {
+      "name": "load-more"
+    },
+    {
+      "name": "template[slot=\"item\"]"
     }
   ],
   "unresolved": []

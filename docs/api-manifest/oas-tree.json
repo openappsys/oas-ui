@@ -14,6 +14,11 @@
       "observed": true
     },
     {
+      "name": "multiple",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "checked",
       "type": "string",
       "default": "",
@@ -25,21 +30,75 @@
       "observed": true
     },
     {
+      "name": "check-strategy",
+      "type": "string",
+      "default": "all",
+      "observed": true
+    },
+    {
+      "name": "check-strictly",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "expanded",
       "type": "string",
       "default": "",
       "observed": true
     },
     {
+      "name": "default-expand-all",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "accordion",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "auto-expand-parent",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "expand-trigger",
+      "type": "string",
+      "default": "toggle",
+      "observed": true
+    },
+    {
+      "name": "filter",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "filter-highlight",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "field-names",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "tree-lines",
+      "type": "boolean",
+      "observed": true
+    },
+    {
       "name": "height",
       "type": "string",
-      "default": "360",
+      "default": "",
       "observed": true
     },
     {
       "name": "row-height",
       "type": "string",
-      "default": "32",
+      "default": "",
       "observed": true
     },
     {
@@ -56,12 +115,35 @@
       "name": "directory",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "empty",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
     {
       "name": "load",
-      "type": "(payload: { key: string }) => void"
+      "type": "(payload: { key: string }) => void | Promise<unknown>"
+    },
+    {
+      "name": "filterNode",
+      "type": "(label: string, node: TreeNode) => boolean"
+    },
+    {
+      "name": "allowDrop",
+      "type": "(payload: { dragKey: string dropKey: string position: 'before' | 'after' | 'inner' }) => boolean"
+    },
+    {
+      "name": "allowDrag",
+      "type": "(node: TreeNode) => boolean"
     },
     {
       "name": "data",
@@ -72,31 +154,41 @@
   "events": [
     {
       "name": "oas-node-drop",
-      "detail": "{ dragKey: this.dragKey, dropKey: '', position: 'inner' } | { dragKey: this.dragKey, dropKey: node.key, position: this.dropPosition(row, e, node), }"
-    },
-    {
-      "name": "oas-load",
-      "detail": "{ key: node.key }"
-    },
-    {
-      "name": "oas-check",
-      "detail": "{ key: node.key, checked: box.checked }"
-    },
-    {
-      "name": "oas-select",
-      "detail": "{ key: node.key, selected: true }"
+      "detail": "{ dragKey: this.dragKey, dropKey: '', position: 'inner', } | { dragKey, dropKey: id, position }"
     },
     {
       "name": "oas-node-render",
-      "detail": "{ node, element: label }"
+      "detail": "{ node, element: label, level: depth + 1, expanded: expanded.has(id), selected: isSelected, checked: checkable ? isChecked : false, }"
+    },
+    {
+      "name": "oas-select",
+      "detail": "{ key: id, selected: false } | { key: id, selected: true }"
+    },
+    {
+      "name": "oas-check",
+      "detail": "{ key: id, checked: checked.has(id) }"
+    },
+    {
+      "name": "oas-load",
+      "detail": "{ key: id }"
+    },
+    {
+      "name": "oas-load-error",
+      "detail": "{ key: id, error: error instanceof Error ? error.message : String(error), }"
     }
   ],
   "slots": [
+    {
+      "name": "template[slot=\"empty\"]"
+    },
     {
       "name": "template[slot=\"node\"]"
     },
     {
       "name": "template[slot=\"toggle\"]"
+    },
+    {
+      "name": "template[slot=\"toggle-loading\"]"
     }
   ],
   "unresolved": []
