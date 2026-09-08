@@ -529,7 +529,7 @@ function extractEvents(cls, unresolved) {
   const seen = new Set()
   // 同一事件多处 emit 且 detail 不同的：合并为联合类型（A | B），避免漏报分支（如 menubar action/radio）
   // 组件间内部协议信号（非宿主 API，如 checkbox 子项→组的 limit-blocked 转发）不进公共 API 表
-  const INTERNAL_EVENTS = new Set(['oas-limit-blocked'])
+  const INTERNAL_EVENTS = new Set(['oas-limit-blocked', 'oas-collapse-item-click'])
   const variants = new Map() // name -> Set<detailText>
   const add = (name, detail) => {
     if (INTERNAL_EVENTS.has(name)) return

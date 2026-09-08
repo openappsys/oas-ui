@@ -13,6 +13,12 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "spacing",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],

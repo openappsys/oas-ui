@@ -38,15 +38,56 @@
       "name": "lazy",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "preview-src",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "preview-src-list",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "preview-open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "infinite",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],
   "events": [
     {
+      "name": "oas-load",
+      "detail": "{ src: this.currentSrc() }"
+    },
+    {
+      "name": "oas-error",
+      "detail": "{ src: attempted }"
+    },
+    {
       "name": "oas-preview",
       "detail": "{ src }"
+    },
+    {
+      "name": "oas-preview-change",
+      "detail": "{ open }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "template[slot=\"error\"]"
+    },
+    {
+      "name": "template[slot=\"placeholder\"]"
+    }
+  ],
   "unresolved": []
 }

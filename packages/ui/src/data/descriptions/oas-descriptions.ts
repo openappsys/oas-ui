@@ -9,28 +9,51 @@ const STYLE = `
 :host([hidden]) {
   display: none;
 }
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--oas-space-3);
+  margin-bottom: var(--oas-space-4);
+}
+.title {
+  font-weight: 600;
+}
 .items {
   display: grid;
   grid-template-columns: repeat(var(--oas-desc-columns, 3), 1fr);
   row-gap: var(--oas-space-4);
   column-gap: var(--oas-space-4);
 }
-.title {
-  font-weight: 600;
-  margin-bottom: var(--oas-space-4);
+/* bordered：网格线成表——items 外框补顶/左，单元格右/下描边由 item 经
+   --oas-desc-cell-border 线宽变量补齐（默认 0px 无边框） */
+:host([bordered]) .items {
+  gap: 0;
+  border-top: 1px solid var(--oas-color-border);
+  border-inline-start: 1px solid var(--oas-color-border);
 }
 `
 
+/** size 三档映射：字号开口（medium 缺省跟随外层字号）+ bordered 单元格内边距（token） */
+const SIZE_MAP: Record<string, { font: string; py: string; px: string }> = {
+  small: { font: 'var(--oas-font-size-sm)', py: 'var(--oas-space-1_5)', px: 'var(--oas-space-2)' },
+  medium: { font: '', py: 'var(--oas-space-2)', px: 'var(--oas-space-3)' },
+  large: { font: 'var(--oas-font-size-lg)', py: 'var(--oas-space-3)', px: 'var(--oas-space-4)' },
+}
+
 export class OASDescriptions extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['column', 'title']
+    return ['column', 'title', 'layout', 'bordered', 'colon', 'size']
   }
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
       <style>${STYLE}</style>
-      <div class="title" part="title"><slot name="title"><span class="title-text"></span></slot></div>
+      <div class="head" part="head">
+        <div class="title" part="title"><slot name="title"><span class="title-text"></span></slot></div>
+        <span class="extra" part="extra"><slot name="extra"></slot></span>
+      </div>
       <div class="items" part="items"><slot></slot></div>
     `
   }
@@ -94,8 +117,45 @@ export class OASDescriptions extends OASElement {
     }
     const itemsEl = this.shadow.querySelector<HTMLElement>('[part="items"]')
     if (!itemsEl) return
+
+    // column：未设置属性时不写内联变量——grid 回退默认 3 列且宿主可经
+    // CSS 变量（含媒体查询）覆写；设置属性（含空串视为 3）则固定列数
     const column = this.getAttr('column', '3')
     itemsEl.setAttribute('data-column', column)
-    itemsEl.style.setProperty('--oas-desc-columns', column)
+    if (this.hasAttribute('column')) itemsEl.style.setProperty('--oas-desc-columns', column)
+    else itemsEl.style.removeProperty('--oas-desc-columns')
+
+    // layout（默认 horizontal，破坏性变更）：item 内部按继承变量切换横/纵排布
+    const layout = this.getAttr('layout', 'horizontal') === 'vertical' ? 'vertical' : 'horizontal'
+    this.style.setProperty('--oas-desc-layout-dir', layout === 'vertical' ? 'column' : 'row')
+    this.style.setProperty(
+      '--oas-desc-item-gap',
+      layout === 'vertical' ? 'var(--oas-space-1)' : 'var(--oas-space-2)',
+    )
+    this.setAttribute('data-layout', layout)
+
+    // bordered：网格线成表。线宽/label 底色/单元格内边距经继承变量下发给 item
+    // （跨 shadow 唯一通道）；label 底色走 bg-elevated token，dark 自动适配
+    const bordered = this.hasAttr('bordered')
+    this.style.setProperty('--oas-desc-cell-border', bordered ? '1px' : '0px')
+    if (bordered) this.style.setProperty('--oas-desc-label-bg', 'var(--oas-color-bg-elevated)')
+    else this.style.removeProperty('--oas-desc-label-bg')
+
+    // colon：label 后冒号（item 侧 ::after 消费，默认无）
+    if (this.hasAttr('colon')) this.style.setProperty('--oas-desc-colon', `':'`)
+    else this.style.removeProperty('--oas-desc-colon')
+
+    // size 三档：small/large 下发字号变量，medium（缺省）不限制字号跟随外层；
+    // bordered 时同步下发单元格内边距，非边框模式移除（保持零内边距，间距归网格 gap）
+    const size = SIZE_MAP[this.getAttr('size', 'medium')] ?? SIZE_MAP.medium!
+    if (size.font !== '') this.style.setProperty('--oas-desc-font-size', size.font)
+    else this.style.removeProperty('--oas-desc-font-size')
+    if (bordered) {
+      this.style.setProperty('--oas-desc-cell-py', size.py)
+      this.style.setProperty('--oas-desc-cell-px', size.px)
+    } else {
+      this.style.removeProperty('--oas-desc-cell-py')
+      this.style.removeProperty('--oas-desc-cell-px')
+    }
   }
 }

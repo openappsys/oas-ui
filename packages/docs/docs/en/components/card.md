@@ -106,6 +106,229 @@ The bottom `actions` slot holds a button group, with a divider automatically add
   </div>
 </DemoBlock>
 
+## Loading State
+
+With `loading`, the content area switches to a skeleton placeholder (sheen animation) and the body is hidden; the host syncs `aria-busy`.
+
+<DemoBlock title="Loading skeleton">
+  <div style="width: 320px">
+    <oas-card id="card-loading" title="Loading data" loading>
+      <p style="margin: 0;">The body appears once data is loaded.</p>
+    </oas-card>
+    <oas-button id="card-loading-toggle" size="small" style="margin-top: var(--oas-space-3)">Toggle loading</oas-button>
+  </div>
+</DemoBlock>
+
+## Compact Size
+
+`size="small"` tightens paddings and the title font size — useful for dense lists. The default is `medium`.
+
+<DemoBlock title="size=small compact card">
+  <div style="width: 320px">
+    <oas-card size="small" title="Compact card">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Smaller paddings and title font size.</p>
+      <div slot="actions">
+        <oas-button size="small">View</oas-button>
+      </div>
+    </oas-card>
+  </div>
+</DemoBlock>
+
+## Borderless Variant
+
+`variant="borderless"` removes the container border, which suits nested setting groups inside another card. The default is `outlined`.
+
+<DemoBlock title="Borderless nesting (settings panel)">
+  <div style="width: 100%">
+    <oas-card title="Notification Settings">
+      <div style="display: grid; gap: var(--oas-space-2);">
+        <oas-card variant="borderless" size="small" title="In-app notifications">
+          <p style="color: var(--oas-color-text-secondary); margin: 0;">Receive mentions, assignments and comment replies.</p>
+        </oas-card>
+        <oas-divider></oas-divider>
+        <oas-card variant="borderless" size="small" title="Email digest">
+          <p style="color: var(--oas-color-text-secondary); margin: 0;">A weekly summary of project activity every Monday.</p>
+        </oas-card>
+      </div>
+    </oas-card>
+  </div>
+</DemoBlock>
+
+## Footer Bar
+
+The `footer` slot is an arbitrary bottom bar independent from the actions area: use it for supplementary notes or metadata, while `actions` remains the button area.
+
+<DemoBlock title="Footer bar + actions area">
+  <div style="width: 320px">
+    <oas-card title="Terms Update">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">We updated our data processing terms. Please review to continue.</p>
+      <div slot="actions">
+        <oas-button size="small" type="primary">Accept &amp; Continue</oas-button>
+      </div>
+      <p slot="footer" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0;">Updated 2026-09-01 · Applies to all workspaces</p>
+    </oas-card>
+  </div>
+</DemoBlock>
+
+## Header Divider (header-bordered)
+
+The divider below the header shows by default; set `header-bordered="false"` to remove it.
+
+<DemoBlock title="header-bordered=false">
+  <div style="display: grid; gap: var(--oas-space-3); width: 100%;">
+    <oas-card title="Default: with divider">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">A divider separates the title from the content.</p>
+    </oas-card>
+    <oas-card title="Divider off" header-bordered="false">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">The title sits right above the content for lighter grouping.</p>
+    </oas-card>
+  </div>
+</DemoBlock>
+
+## Shadow States
+
+`shadow="none | hover | always"`: hover shadow, always-on shadow, or no shadow. The `hoverable` boolean is equivalent to `shadow="hover"` (kept for compatibility); an explicit `shadow` value takes precedence over `hoverable`.
+
+<DemoBlock title="shadow=always">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--oas-space-4); width: 100%;">
+    <oas-card shadow="always" title="Always shadow">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Shadow always on to emphasize elevation.</p>
+    </oas-card>
+    <oas-card shadow="hover" title="Hover shadow">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Shadow + lift on hover (same as hoverable).</p>
+    </oas-card>
+  </div>
+</DemoBlock>
+
+## User Card (Meta)
+
+Use `slot="avatar"` for an avatar on the left of the title, and the `description` attribute (or `slot="description"`) for a line of secondary text below the title. When either is present, the header automatically becomes an "avatar + title + description" layout.
+
+<DemoBlock title="Meta user card">
+  <div style="width: 360px">
+    <oas-card description="Frontend Engineer · Shanghai">
+      <oas-avatar slot="avatar" src="https://picsum.photos/seed/isui-card-meta/160" size="48" alt="Member avatar"></oas-avatar>
+      <span slot="title">Lin Xiao</span>
+      <oas-button slot="extra" size="small">Follow</oas-button>
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Owns component architecture and rendering performance; recently exploring SSR hydration.</p>
+      <div slot="footer">
+        <oas-tag size="small">Components</oas-tag>
+        <oas-tag size="small">Performance</oas-tag>
+      </div>
+    </oas-card>
+  </div>
+</DemoBlock>
+
+## Link Card (href)
+
+With `clickable` + `href`, the whole card is semantically a link: an inner anchor carries the address, and focus plus keyboard Enter are natively handled by the anchor; `target` is passed through. Clicking an embedded button/link still triggers only its own action, not the whole-card navigation.
+
+<DemoBlock title="href link card">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--oas-space-4); width: 100%;">
+    <oas-card href="#card-link-anchor" title="Design Guidelines" shadow="hover">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Click anywhere on the card to jump (Enter works too).</p>
+    </oas-card>
+    <oas-card href="https://example.com" target="_blank" title="External link" shadow="hover">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Opens in a new tab with target passed through.</p>
+    </oas-card>
+  </div>
+  <span id="card-link-anchor"></span>
+</DemoBlock>
+
+## Composition: Tabs
+
+A card can compose other components — e.g. `oas-tabs` for a settings-center layout.
+
+<DemoBlock title="Card with nested tabs">
+  <div style="width: 100%">
+    <oas-card title="Project Settings">
+      <oas-tabs active="general">
+        <oas-tab-panel label="General" value="general">
+          <p style="margin: 0;">Project name, visibility and default language.</p>
+        </oas-tab-panel>
+        <oas-tab-panel label="Members" value="members">
+          <p style="margin: 0;">Invite members and assign roles.</p>
+        </oas-tab-panel>
+        <oas-tab-panel label="Advanced" value="advanced">
+          <p style="margin: 0;">Archiving policy, webhooks and API tokens.</p>
+        </oas-tab-panel>
+      </oas-tabs>
+    </oas-card>
+  </div>
+</DemoBlock>
+
+## Grid Card
+
+Let the host grid distribute the blocks inside a card: the card is only a container; layout is plain CSS grid in the light DOM.
+
+<DemoBlock title="Evenly divided grid">
+  <div style="width: 100%">
+    <oas-card title="Quarterly Overview">
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--oas-space-4); text-align: center;">
+        <div>
+          <p style="font-size: var(--oas-font-size-xl); font-weight: 600; margin: 0;">32</p>
+          <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0;">Ongoing projects</p>
+        </div>
+        <div>
+          <p style="font-size: var(--oas-font-size-xl); font-weight: 600; margin: 0;">18</p>
+          <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0;">Delivered</p>
+        </div>
+        <div>
+          <p style="font-size: var(--oas-font-size-xl); font-weight: 600; margin: 0;">96%</p>
+          <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-1) 0 0;">On-time rate</p>
+        </div>
+      </div>
+    </oas-card>
+  </div>
+</DemoBlock>
+
+## Dashboard Card
+
+Compose with `oas-statistic` to build a data dashboard.
+
+<DemoBlock title="Statistics dashboard">
+  <div style="width: 100%">
+    <oas-card title="Live Dashboard">
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--oas-space-4);">
+        <div>
+          <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0 0 var(--oas-space-1);">Visits today</p>
+          <oas-statistic value="12893"></oas-statistic>
+        </div>
+        <div>
+          <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0 0 var(--oas-space-1);">Error rate</p>
+          <oas-statistic value="0.42" precision="2" suffix="%"></oas-statistic>
+        </div>
+        <div>
+          <p style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0 0 var(--oas-space-1);">Live sessions</p>
+          <oas-statistic value="864"></oas-statistic>
+        </div>
+      </div>
+    </oas-card>
+  </div>
+</DemoBlock>
+
+## E-commerce Card
+
+A typical product card: cover image + price area + actions + footer.
+
+<DemoBlock title="Product card">
+  <div style="width: 320px">
+    <oas-card hoverable cover-src="https://picsum.photos/seed/isui-card-keyboard/640/360" cover-alt="Portable mechanical keyboard product photo">
+      <span slot="title">Portable Mechanical Keyboard</span>
+      <p style="margin: 0;">
+        <span style="color: var(--oas-color-primary); font-weight: 600; font-size: var(--oas-font-size-lg);">¥ 429</span>
+        <s style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin-left: var(--oas-space-2);">¥ 599</s>
+      </p>
+      <p style="color: var(--oas-color-text-secondary); margin: var(--oas-space-1) 0 0;">Tri-mode · Hot-swap · Gasket mount</p>
+      <div slot="actions">
+        <oas-button size="small" type="primary">Add to Cart</oas-button>
+        <oas-button size="small">Save</oas-button>
+      </div>
+      <p slot="footer" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0;">Free shipping over ¥299 · 7-day returns</p>
+    </oas-card>
+  </div>
+</DemoBlock>
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -116,6 +339,17 @@ onMounted(async () => {
     if (e.target.tagName !== 'OAS-CARD') return
     const title = e.target.getAttribute('title') || 'Card'
     window.message?.info(`Card clicked: ${title}`)
+  })
+  // whenDefined guard: before upgrade, an expando shadows the setter (a real bug caught
+  // under the preview build) — wait for oas-card/oas-button to upgrade before touching props
+  await Promise.all([
+    customElements.whenDefined('oas-card'),
+    customElements.whenDefined('oas-button'),
+  ])
+  const loadingCard = document.querySelector('#card-loading')
+  const loadingToggle = document.querySelector('#card-loading-toggle')
+  loadingToggle?.addEventListener('oas-click', () => {
+    loadingCard?.toggleAttribute('loading')
   })
 })
 </script>
@@ -129,8 +363,16 @@ onMounted(async () => {
 | `clickable` | Whole card clickable (focusable; click / Enter / Space dispatch `oas-click`) | `boolean` | — |
 | `cover-alt` | Cover image alt text (accessibility) | `string` | — |
 | `cover-src` | Cover image URL placed at the top of the card (object-fit: cover) | `string` | — |
+| `description` | Meta secondary text (muted line under the title; dual channel with the description slot, slot wins) | `string` | — |
+| `header-bordered` | Header divider line (default true; `"false"` hides it) | — | — |
 | `hoverable` | Whether to enable the hover shadow (shadow + lift + pointer) | `boolean` | — |
+| `href` | Link card: whole card acts as a link (wrapped in an internal anchor; keyboard/middle-click native) | `string` | — |
+| `loading` | Loading state: content area swaps to skeleton rows (aria-busy synced) | `boolean` | — |
+| `shadow` | Shadow: `none` / `hover` (lift on hover) / `always`; `hoverable` maps to `hover`, explicit shadow wins | `string` | — |
+| `size` | Size: `small` (compact padding, smaller title) / `medium` (default) | — | — |
+| `target` | Link target (with href, e.g. `_blank`) | `string` | — |
 | `title` | Card title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the "title" slot for rich content | `string` | — |
+| `variant` | Variant: `outlined` (default, bordered) / `borderless` (embedded, no border) | — | — |
 
 ### Events
 
@@ -144,6 +386,9 @@ onMounted(async () => {
 | --- | --- |
 | default | Card content |
 | `actions` | Bottom action area (view / edit / delete button groups), with a divider above |
+| `avatar` | Meta avatar slot (left side of the header; with description forms the avatar+title+subtitle header) |
 | `cover` | Custom cover content (mutually exclusive with `cover-src`, which takes precedence) |
+| `description` | Rich Meta secondary content (mutually exclusive with the description attribute, slot wins) |
 | `extra` | Extra area on the right of the title |
+| `footer` | Independent footer strip (separate from the actions area) |
 | `title` | Rich title content slot; overrides the title attribute text when present |

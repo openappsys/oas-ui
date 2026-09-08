@@ -140,18 +140,29 @@
       "badge-color": "Badge color: `primary`/`success`/`warning`/`danger`",
       "badge-dot": "Small dot badge variant (no text)",
       "badge-placement": "Badge placement: `top-right` (default) / `bottom-right`",
-      "size": "Avatar size (px)",
-      "src": "Image URL; renders an image avatar when present"
+      "size": "Size: number in px or enum alias `small`(24) / `medium`(32) / `large`(40)",
+      "src": "Image URL; renders an image avatar when present",
+      "shape": "Shape: `circle` (default) / `square` / `round` (rounded corners)",
+      "color": "Text avatar background: semantic color / preset name / any color value (contrast text color auto-picked)",
+      "fallback": "Fallback image URL: used when the main image fails (text/slot chain after that)",
+      "fit": "Image object-fit (default `cover`)",
+      "text": "Text content: single char renders the first character; multiple chars render in full with auto-shrinking font"
     },
-    "events": {},
+    "events": {
+      "oas-error": "Fired when an image fails (once for the main src, once for the fallback), `detail: { src }`",
+      "oas-trigger": "Change-avatar entry (trigger overlay) clicked; upload interaction is up to the host"
+    },
     "slots": {
-      "fallback": "Custom placeholder content when the image fails to load (or the avatar has no content)"
+      "fallback": "Custom placeholder content when the image fails to load (or the avatar has no content)",
+      "icon": "Icon avatar (explicit icon content; no first-character truncation)",
+      "trigger": "Custom content for the change-avatar overlay (shown on hover/focus; built-in camera icon by default)"
     }
   },
   "oas-avatar-group": {
     "attrs": {
       "max": "Max number of avatars shown; overflow shows a `+N` count badge",
-      "size": "Unified avatar size (px); the count badge adapts"
+      "size": "Unified avatar size (px); the count badge adapts",
+      "spacing": "Member spacing in px (negative = overlapping; overrides the `--oas-avatar-group-overlap` variable)"
     },
     "events": {},
     "slots": {}
@@ -386,7 +397,15 @@
       "cover-alt": "Cover image alt text (accessibility)",
       "cover-src": "Cover image URL placed at the top of the card (object-fit: cover)",
       "hoverable": "Whether to enable the hover shadow (shadow + lift + pointer)",
-      "title": "Card title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content"
+      "title": "Card title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use the \"title\" slot for rich content",
+      "loading": "Loading state: content area swaps to skeleton rows (aria-busy synced)",
+      "size": "Size: `small` (compact padding, smaller title) / `medium` (default)",
+      "variant": "Variant: `outlined` (default, bordered) / `borderless` (embedded, no border)",
+      "header-bordered": "Header divider line (default true; `\"false\"` hides it)",
+      "shadow": "Shadow: `none` / `hover` (lift on hover) / `always`; `hoverable` maps to `hover`, explicit shadow wins",
+      "description": "Meta secondary text (muted line under the title; dual channel with the description slot, slot wins)",
+      "href": "Link card: whole card acts as a link (wrapped in an internal anchor; keyboard/middle-click native)",
+      "target": "Link target (with href, e.g. `_blank`)"
     },
     "events": {
       "oas-click": "Whole-card click (when `clickable`), detail contains originalEvent"
@@ -396,7 +415,10 @@
       "actions": "Bottom action area (view / edit / delete button groups), with a divider above",
       "cover": "Custom cover content (mutually exclusive with `cover-src`, which takes precedence)",
       "extra": "Extra area on the right of the title",
-      "title": "Rich title content slot; overrides the title attribute text when present"
+      "title": "Rich title content slot; overrides the title attribute text when present",
+      "avatar": "Meta avatar slot (left side of the header; with description forms the avatar+title+subtitle header)",
+      "description": "Rich Meta secondary content (mutually exclusive with the description attribute, slot wins)",
+      "footer": "Independent footer strip (separate from the actions area)"
     }
   },
   "oas-carousel": {
@@ -498,10 +520,15 @@
   "oas-collapse": {
     "attrs": {
       "accordion": "Accordion mode; only one panel open at a time",
-      "active": "Set of expanded panel `name` values (comma-separated)"
+      "active": "Set of expanded panel `name` values (comma-separated)",
+      "variant": "Variant: `outlined` (default, bordered rounded container) / `borderless` (ghost, no border)",
+      "icon-placement": "Expand icon placement: `start` (left of title) / `end` (default, right); overridable per item",
+      "default-active": "Uncontrolled initial expanded set (comma-separated `name`s): first-frame seed, then self-managed; controlled when `active` is present",
+      "heading-level": "Panel heading semantic level `1`-`6` / `none` (default): 1-6 attaches heading role + aria-level (a11y)"
     },
     "events": {
-      "oas-change": "Expansion state change, `detail: { active: string[] }`"
+      "oas-change": "Expansion state change, `detail: { active: string[] }`",
+      "oas-before-collapse": "Fired before expand/collapse (cancelable), `detail: { name, next }`; `preventDefault()` blocks the toggle (not fired by expandAll/collapseAll)"
     },
     "slots": {}
   },
@@ -509,10 +536,20 @@
     "attrs": {
       "header": "Panel title",
       "name": "Unique identifier of the panel",
-      "open": "Whether it is expanded (managed by the container)"
+      "open": "Whether it is expanded (managed by the container)",
+      "disabled": "Disable the panel: not focusable, not clickable (expandAll skips it)",
+      "no-collapse": "Lock the expanded state: clicking itself does not collapse (other panels unaffected)",
+      "destroy-on-collapse": "Destroy panel content on collapse (re-mounted on next expand; collapse animation skipped)",
+      "force-render": "Render panel content up front (collapsed content is not rendered by default)",
+      "icon-placement": "Per-item override of the container icon placement (`start` / `end`)",
+      "heading-level": "Per-item override of the heading semantic level (`1`-`6` / `none`)"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "header": "Rich panel header (mutually exclusive with the header attribute, slot wins; interactive children should stopPropagation)",
+      "extra": "Panel header right-side action area (clicks inside do not toggle)",
+      "template[slot=\"toggle\"]": "Custom expand icon template (built-in arrow by default)"
+    }
   },
   "oas-color-picker": {
     "attrs": {
@@ -729,20 +766,27 @@
   "oas-descriptions": {
     "attrs": {
       "column": "Columns per row",
-      "title": "Title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot=\"title\" for rich content"
+      "title": "Title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot=\"title\" for rich content",
+      "layout": "Layout: `horizontal` (default, label and content on one row) / `vertical` (label above content)",
+      "bordered": "Bordered table form: full grid lines + tinted label cells",
+      "colon": "Show a colon after the label (default false)",
+      "size": "Size: `small` / `medium` (default) / `large` (padding and font size linked)"
     },
     "events": {},
     "slots": {
-      "title": "Rich title content slot, overrides the title attribute text when present"
+      "title": "Rich title content slot, overrides the title attribute text when present",
+      "extra": "Action area on the same row as the title (right side)"
     }
   },
   "oas-descriptions-item": {
     "attrs": {
-      "label": "Field label"
+      "label": "Field label",
+      "span": "Column span (positive integer, default 1; grid wraps when exceeding remaining columns)"
     },
     "events": {},
     "slots": {
-      "": "Field content"
+      "": "Field content",
+      "label": "Rich label content (icon + text etc.; mutually exclusive with the label attribute, slot wins)"
     }
   },
   "oas-divider": {
@@ -1123,12 +1167,22 @@
       "lazy": "Lazy load: the image starts loading only when it enters the viewport (IntersectionObserver); loads immediately when already in the viewport; falls back to eager loading when unsupported",
       "placeholder": "Show a light gray placeholder before the image finishes loading",
       "preview": "Enable built-in preview: click to zoom + zoom/rotate/download + Esc to close + focus trap",
-      "src": "Image URL"
+      "src": "Image URL",
+      "preview-src-list": "Gallery preview: JSON array of URLs; prev/next paging + counter + keyboard ←→ after opening",
+      "preview-src": "Original image URL for preview (thumbnail/original separation; falls back to `src`)",
+      "preview-open": "Controlled preview open state (controlled when present, two-way with `oas-preview-change`; see also `openPreview()`)",
+      "infinite": "Loop around the first/last gallery image"
     },
     "events": {
-      "oas-preview": "Preview overlay opened, `detail: { src }`; closing the overlay does not emit an event"
+      "oas-preview": "Preview overlay opened, `detail: { src }`; closing the overlay does not emit an event",
+      "oas-load": "Image loaded successfully, `detail: { src }`",
+      "oas-error": "Image failed finally (fallback chain exhausted), `detail: { src }`",
+      "oas-preview-change": "Preview open state changed, `detail: { open }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"placeholder\"]": "Custom loading placeholder content (gray block + text by default)",
+      "template[slot=\"error\"]": "Custom error placeholder content (shared by the main image and gallery preview failures)"
+    }
   },
   "oas-input": {
     "attrs": {

@@ -284,3 +284,373 @@ describe('OASAvatar fallback（加载失败回退）', () => {
     expect(el.shadowRoot!.querySelector('[part="fallback"]')).not.toBeNull()
   })
 })
+
+describe('OASAvatar shape（形态）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('shape 走 :host 属性选择器：square 直角 / round 小圆角 token / 缺省圆形', () => {
+    const el = new OASAvatar()
+    document.body.appendChild(el)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain(':host([shape="square"])')
+    expect(css).toContain(':host([shape="round"])')
+    expect(css).toMatch(/:host\s*\{[^}]*border-radius:\s*50%/s)
+    expect(css).toMatch(/:host\(\[shape="square"\]\)\s*\{[^}]*border-radius:\s*0/s)
+    expect(css).toMatch(/:host\(\[shape="round"\]\)\s*\{[^}]*var\(--oas-radius-md\)/s)
+  })
+
+  it('img / fallback / trigger 圆角继承宿主（border-radius: inherit）', () => {
+    const el = new OASAvatar()
+    document.body.appendChild(el)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/img,\s*\.fallback[^{]*\{[^}]*border-radius:\s*inherit/s)
+  })
+})
+
+describe('OASAvatar size 枚举别名', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('small/medium/large 映射 24/32/40（对齐 ui-spec 尺寸梯度）', () => {
+    const el = new OASAvatar()
+    document.body.appendChild(el)
+    el.setAttribute('size', 'small')
+    expect(el.style.width).toBe('24px')
+    el.setAttribute('size', 'medium')
+    expect(el.style.width).toBe('32px')
+    el.setAttribute('size', 'large')
+    expect(el.style.width).toBe('40px')
+  })
+
+  it('数字用法保留，非法值回落 32', () => {
+    const el = new OASAvatar()
+    el.setAttribute('size', '56')
+    document.body.appendChild(el)
+    expect(el.style.width).toBe('56px')
+    el.setAttribute('size', 'huge')
+    expect(el.style.width).toBe('32px')
+  })
+})
+
+describe('OASAvatar color（背景色统一协议）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('语义色：映射 token 背景 + on-token 文字色（含 dark 变体）', () => {
+    const el = new OASAvatar()
+    el.setAttribute('color', 'danger')
+    document.body.appendChild(el)
+    expect(el.style.getPropertyValue('--oas-avatar-bg')).toBe('var(--oas-color-danger)')
+    expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe(
+      'var(--oas-color-text-on-danger)',
+    )
+    el.setAttribute('color', 'success')
+    expect(el.style.getPropertyValue('--oas-avatar-bg')).toBe('var(--oas-color-success)')
+  })
+
+  it('预设色板名：解析 --oas-preset-* token', () => {
+    const el = new OASAvatar()
+    el.setAttribute('color', 'blue')
+    document.body.appendChild(el)
+    expect(el.style.getPropertyValue('--oas-avatar-bg')).toBe('var(--oas-preset-blue)')
+    expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe(
+      'var(--oas-color-text-on-primary)',
+    )
+  })
+
+  it('任意色值：原值注入，文字色按亮度自动取黑/白（pickOnColor 协议）', () => {
+    const el = new OASAvatar()
+    el.setAttribute('color', '#ff6b00')
+    document.body.appendChild(el)
+    expect(el.style.getPropertyValue('--oas-avatar-bg')).toBe('#ff6b00')
+    expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe('#ffffff')
+    el.setAttribute('color', '#eeeeee')
+    expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe('#18181b')
+  })
+
+  it('无 color 属性时清除变量（回落默认 primary token）', () => {
+    const el = new OASAvatar()
+    el.setAttribute('color', 'danger')
+    document.body.appendChild(el)
+    el.removeAttribute('color')
+    expect(el.style.getPropertyValue('--oas-avatar-bg')).toBe('')
+    expect(el.style.getPropertyValue('--oas-avatar-on-color')).toBe('')
+  })
+})
+
+describe('OASAvatar fit（图片填充）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('fit 映射 img object-fit，默认 cover 兼容现状', () => {
+    const el = new OASAvatar()
+    el.setAttribute('src', '/a.png')
+    document.body.appendChild(el)
+    const img = el.shadowRoot!.querySelector<HTMLImageElement>('img')!
+    expect(img.style.objectFit).toBe('cover')
+    el.setAttribute('fit', 'contain')
+    expect(img.style.objectFit).toBe('contain')
+    el.setAttribute('fit', 'fill')
+    expect(img.style.objectFit).toBe('fill')
+  })
+})
+
+describe('OASAvatar fallback 回退图链 + oas-error', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function img(el: OASAvatar): HTMLImageElement {
+    return el.shadowRoot!.querySelector<HTMLImageElement>('img')!
+  }
+
+  it('主图失败且给了 fallback 属性：切换到回退图 URL 并保持可见', () => {
+    const el = new OASAvatar()
+    el.setAttribute('src', '/missing.png')
+    el.setAttribute('fallback', '/fallback.png')
+    document.body.appendChild(el)
+    img(el).dispatchEvent(new Event('error'))
+    expect(img(el).getAttribute('src')).toBe('/fallback.png')
+    expect(img(el).hidden).toBe(false)
+  })
+
+  it('回退图也失败：进入文字回退链、img 隐藏', () => {
+    const el = new OASAvatar()
+    el.textContent = '张'
+    el.setAttribute('src', '/missing.png')
+    el.setAttribute('fallback', '/fallback.png')
+    document.body.appendChild(el)
+    img(el).dispatchEvent(new Event('error'))
+    img(el).dispatchEvent(new Event('error'))
+    expect(img(el).hidden).toBe(true)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="fallback"]')!.hidden).toBe(false)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="text"]')!.textContent).toBe('张')
+  })
+
+  it('更换 src 重置回退链：再次 error 会重试 fallback URL', () => {
+    const el = new OASAvatar()
+    el.setAttribute('src', '/missing.png')
+    el.setAttribute('fallback', '/fallback.png')
+    document.body.appendChild(el)
+    img(el).dispatchEvent(new Event('error'))
+    img(el).dispatchEvent(new Event('error'))
+    el.setAttribute('src', '/another.png')
+    expect(img(el).hidden).toBe(false)
+    img(el).dispatchEvent(new Event('error'))
+    expect(img(el).getAttribute('src')).toBe('/fallback.png')
+  })
+
+  it('每次加载失败派发 oas-error（detail.src 为失败的 URL，主图与回退图各派一次）', () => {
+    const el = new OASAvatar()
+    el.setAttribute('src', '/missing.png')
+    el.setAttribute('fallback', '/fallback.png')
+    document.body.appendChild(el)
+    const fired: Array<unknown> = []
+    el.addEventListener('oas-error', (e) => fired.push((e as CustomEvent).detail))
+    img(el).dispatchEvent(new Event('error'))
+    img(el).dispatchEvent(new Event('error'))
+    expect(fired).toEqual([{ src: '/missing.png' }, { src: '/fallback.png' }])
+  })
+})
+
+describe('OASAvatar icon 插槽', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('slot="icon" 有内容时显示 icon 层、首字符隐藏（不截首字）', () => {
+    const el = new OASAvatar()
+    el.textContent = ''
+    el.innerHTML = '<svg slot="icon"></svg>'
+    document.body.appendChild(el)
+    const icon = el.shadowRoot!.querySelector<HTMLElement>('[part="icon"]')!
+    const text = el.shadowRoot!.querySelector<HTMLElement>('[part="text"]')!
+    expect(icon.hidden).toBe(false)
+    expect(text.hidden).toBe(true)
+  })
+
+  it('无 icon 插槽时 icon 层隐藏、首字符照常', () => {
+    const el = new OASAvatar()
+    el.textContent = '张'
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="icon"]')!.hidden).toBe(true)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="text"]')!.hidden).toBe(false)
+  })
+
+  it('运行时补插 icon 内容（slotchange）刷新显隐', () => {
+    const el = new OASAvatar()
+    el.textContent = '张'
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="icon"]')!.hidden).toBe(true)
+    const svg = document.createElement('span')
+    svg.setAttribute('slot', 'icon')
+    el.appendChild(svg)
+    // slotchange 异步触发
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        expect(el.shadowRoot!.querySelector<HTMLElement>('[part="icon"]')!.hidden).toBe(false)
+        expect(el.shadowRoot!.querySelector<HTMLElement>('[part="text"]')!.hidden).toBe(true)
+        resolve()
+      }, 0)
+    })
+  })
+})
+
+describe('OASAvatar text 多字自适应', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function text(el: OASAvatar): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('[part="text"]')!
+  }
+
+  it('text 多字渲染全量文本（不再截首字）', () => {
+    const el = new OASAvatar()
+    el.setAttribute('text', '开源实验室')
+    document.body.appendChild(el)
+    expect(text(el).textContent).toBe('开源实验室')
+  })
+
+  it('单字 fontSize 为基准值 max(12, size*0.4)', () => {
+    const el = new OASAvatar()
+    el.setAttribute('size', '40')
+    el.setAttribute('text', '张')
+    document.body.appendChild(el)
+    expect(text(el).style.fontSize).toBe('16px')
+  })
+
+  it('多字超宽时收缩字号（scrollWidth 测量），从基准值递减', () => {
+    const el = new OASAvatar()
+    el.setAttribute('size', '40')
+    el.setAttribute('text', '某某组织')
+    document.body.appendChild(el)
+    let reads = 0
+    Object.defineProperty(text(el), 'scrollWidth', {
+      configurable: true,
+      get: () => (reads++ < 3 ? 100 : 0),
+    })
+    el.setAttribute('text', '某某组织!')
+    expect(parseFloat(text(el).style.fontSize)).toBeCloseTo(13)
+  })
+
+  it('收缩有下限：再宽也不低于 10px', () => {
+    const el = new OASAvatar()
+    el.setAttribute('size', '64')
+    el.setAttribute('text', '极长组织全名超过容器宽度许多')
+    document.body.appendChild(el)
+    Object.defineProperty(text(el), 'scrollWidth', {
+      configurable: true,
+      get: () => 9999,
+    })
+    el.setAttribute('text', '极长组织全名超过容器宽度许多!')
+    expect(text(el).style.fontSize).toBe('10px')
+  })
+
+  it('text 从多字改回单字：fontSize 恢复基准值', () => {
+    const el = new OASAvatar()
+    el.setAttribute('size', '40')
+    el.setAttribute('text', '某某组织')
+    document.body.appendChild(el)
+    Object.defineProperty(text(el), 'scrollWidth', {
+      configurable: true,
+      get: () => 9999,
+    })
+    el.setAttribute('text', '某某组织!')
+    expect(text(el).style.fontSize).toBe('10px')
+    el.setAttribute('text', '张')
+    expect(text(el).style.fontSize).toBe('16px')
+  })
+
+  it('无 text 属性时 textContent 快照仍只取首字符（现状保留）', () => {
+    const el = new OASAvatar()
+    el.textContent = '开源实验室'
+    document.body.appendChild(el)
+    expect(text(el).textContent).toBe('开')
+  })
+})
+
+describe('OASAvatar trigger（换头像入口）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('slot="trigger" 有节点时遮罩按钮显示（空节点启用默认相机图标）', () => {
+    const el = new OASAvatar()
+    el.setAttribute('text', '张')
+    const holder = document.createElement('span')
+    holder.setAttribute('slot', 'trigger')
+    el.appendChild(holder)
+    document.body.appendChild(el)
+    const trigger = el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
+    expect(trigger.hidden).toBe(false)
+    expect(trigger.tagName).toBe('BUTTON')
+    expect(trigger.getAttribute('aria-label')).toBe('更换头像')
+    // 空占位节点：显示默认相机图标（has-content 不置位，.trigger-default 由 CSS 展示）
+    expect(trigger.classList.contains('has-content')).toBe(false)
+    expect(el.shadowRoot!.querySelector('[part="trigger-default"]')).not.toBeNull()
+  })
+
+  it('trigger 遮罩有实质内容时隐藏默认相机图标', () => {
+    const el = new OASAvatar()
+    el.setAttribute('text', '张')
+    const holder = document.createElement('span')
+    holder.setAttribute('slot', 'trigger')
+    holder.textContent = '更换'
+    el.appendChild(holder)
+    document.body.appendChild(el)
+    const trigger = el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!
+    expect(trigger.classList.contains('has-content')).toBe(true)
+  })
+
+  it('无 trigger 插槽时遮罩隐藏', () => {
+    const el = new OASAvatar()
+    el.setAttribute('text', '张')
+    document.body.appendChild(el)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!.hidden).toBe(true)
+  })
+
+  it('点击遮罩派发 oas-trigger（上传宿主自理）', () => {
+    const el = new OASAvatar()
+    el.setAttribute('text', '张')
+    const holder = document.createElement('span')
+    holder.setAttribute('slot', 'trigger')
+    el.appendChild(holder)
+    document.body.appendChild(el)
+    let fired = 0
+    el.addEventListener('oas-trigger', () => fired++)
+    el.shadowRoot!.querySelector<HTMLElement>('[part="trigger"]')!.click()
+    expect(fired).toBe(1)
+  })
+})
