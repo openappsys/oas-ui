@@ -255,7 +255,7 @@ describe('OASCombobox', () => {
   })
 })
 
-describe('OASCombobox 能力并集：group / size / status / filter / open / virtual / readonly', () => {
+describe('OASCombobox 能力补齐：group / size / status / filter / open / virtual / readonly', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
   })
