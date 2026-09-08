@@ -448,7 +448,7 @@ onMounted(() => {
 | `lazy` | 懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载 | `boolean` | — |
 | `load` | 懒加载回调 `(payload: { key }) => void`，与 `oas-load` 事件并存；宿主回填子节点后重设 `data` 属性 | `(payload: { key: string }) => void \| Promise<unknown>` | — |
 | `multiple` | 点选多选（Ctrl/⌘ 点击多选；勾选集 selected 为 JSON 数组） | `boolean` | — |
-| `row-height` | 虚拟化时每行固定高度（px） | `string` | — |
+| `row-height` | 虚拟化时每行固定高度（px） | `string` | `32` |
 | `selected` | 选中节点 key | `string` | — |
 | `tree-lines` | 树线缩进引导线 | `boolean` | — |
 

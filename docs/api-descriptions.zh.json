@@ -426,7 +426,16 @@
       "arrows": "箭头显示形态：`always`（始终显示）/ `hover`（悬停显示）/ `never`（不显示）",
       "autoplay": "是否自动播放",
       "index": "当前屏索引（从 0 起）",
-      "interval": "自动播放间隔（ms）"
+      "interval": "自动播放间隔（ms）",
+      "direction": "轮播方向：`horizontal`（默认）/ `vertical`（垂直模式视口定高，走 `--oas-carousel-height`）",
+      "effect": "切换效果：`slide`（默认滑动）/ `fade`（叠层淡入淡出，reduced-motion 退化为直切）",
+      "gap": "多图一屏时屏间间距（px，配合 `slides-per-view`）",
+      "indicators": "指示器开关（默认 true；`\"false\"` 隐藏）",
+      "indicator-position": "指示器位置：`inside`（默认，叠在内容上）/ `outside`（流内占位撑高容器）",
+      "indicator-type": "指示器形态：`dot`（默认圆点）/ `line`（线条，激活加宽）",
+      "loop": "循环切换（默认开；`\"false\"` 时到边界停驻并禁用对应箭头）",
+      "pause-on-hover": "自动播放时悬停/聚焦暂停（默认 true；`\"false\"` 关闭；页面切后台恒停播）",
+      "slides-per-view": "每屏展示屏数（默认 1；索引语义为页，末页对齐轨道末尾不露空白）"
     },
     "events": {
       "oas-change": "当前屏切换，`detail: { index }`"
@@ -715,13 +724,22 @@
   },
   "oas-countdown": {
     "attrs": {
-      "format": "模板：`DD`/`D` 天、`HH`/`H` 时、`mm`/`m` 分、`ss`/`s` 秒",
+      "active": "受控暂停：`\"false\"` 停帧且不计时已走过时长，恢复后续走（缺省走表）",
+      "format": "模板：`DD`/`D` 天、`HH`/`H` 时、`mm`/`m` 分、`ss`/`s` 秒、`SSS` 毫秒（含 SSS 时内部 50ms 刷新）",
+      "prefix": "显示值前置文案",
+      "suffix": "显示值后置文案",
+      "title": "显示值上方标题（原生全局属性，渲染后吸收移除）",
       "value": "倒计时总时长（毫秒）"
     },
     "events": {
+      "oas-change": "剩余显示值变化时节流派发，detail `{ value: 剩余毫秒 }`",
       "oas-finish": "倒计时归零时派发一次"
     },
-    "slots": {}
+    "slots": {
+      "prefix": "前置内容（分发时优先于 `prefix` 属性文本）",
+      "suffix": "后置内容（分发时优先于 `suffix` 属性文本）",
+      "title": "数值上方标题（分发时优先于 `title` 属性文本）"
+    }
   },
   "oas-date-picker": {
     "attrs": {
@@ -977,11 +995,16 @@
       "rows": "显示行数（1 为单行省略，≥2 多行 `-webkit-line-clamp`）",
       "text": "文本内容",
       "tooltip": "溢出时悬停展示全文 tooltip",
-      "direction": "省略方向：`end`（默认尾部）/ `start`（头部）/ `middle`（中部保留首尾，长路径/哈希场景）"
+      "direction": "省略方向：`end`（默认尾部）/ `start`（头部）/ `middle`（中部保留首尾，长路径/哈希场景）",
+      "collapse-text": "收起链接文案（行内形态，配合 expandable）",
+      "expand-text": "展开链接文案（行内形态，配合 expandable）",
+      "expanded": "受控展开态（属性在场受控；内部切换会反射回该属性）",
+      "tooltip-placement": "省略提示浮层位置（透传定位引擎，默认 `top`）"
     },
     "events": {
       "oas-collapse": "收起，`detail: { expanded: false }`",
-      "oas-expand": "展开，`detail: { expanded: true }`"
+      "oas-expand": "展开，`detail: { expanded: true }`",
+      "oas-overflow": "省略状态变化时派发，`detail: { overflow }`（同值不重复派发）"
     },
     "slots": {}
   },
@@ -1372,8 +1395,11 @@
   },
   "oas-marquee": {
     "attrs": {
+      "fade-edges": "布尔，存在时容器两端 mask-image 渐隐（默认关）；渐隐宽度走 `--oas-marquee-fade-size`",
+      "orientation": "滚动方向：`horizontal`（默认）/ `vertical`（垂直滚动，容器需固定高）",
       "pause-on-hover": "布尔，存在时悬停/聚焦暂停动画（animation-play-state: paused）",
-      "speed": "单次动画时长（秒），写入 CSS animation-duration；非正数回退默认"
+      "reverse": "布尔，存在时反向滚动",
+      "speed": "滚动速度（像素/秒，默认 48）；经测量内容宽推导动画时长（时长=距离/速度），非法/非正数回退默认"
     },
     "events": {},
     "slots": {}
@@ -1668,7 +1694,11 @@
   },
   "oas-number-animation": {
     "attrs": {
+      "active": "受控播放：缺省即播；`\"false\"` 停帧，改回 `\"true\"` 从当前值续动到目标",
       "duration": "动画时长（毫秒）；0 直接跳目标",
+      "easing": "缓动档：`ease-out`（默认）/ `linear` / `ease-in` / `ease-in-out` / `spring`（轻度过冲）；非法值回落 `ease-out`",
+      "from": "起始值（默认 0）；仅新一轮起播生效，续动不受影响",
+      "group-separator": "千分位分组（`\"true\"` 开启，Intl locale 感知；默认关闭）",
       "to-fixed": "小数位（Number.prototype.toFixed）；缺省整数显示",
       "value": "目标数值；非法按 0"
     },
@@ -1902,10 +1932,20 @@
       "aria-label": "容器可访问名称，缺省走 i18n",
       "error-correction": "纠错级别 l/m/q/h（当前仅 L 级，其余归一为 l）",
       "size": "渲染宽高（px）",
-      "value": "二维码内容文本"
+      "value": "二维码内容文本",
+      "bg-color": "背景色（默认白色——扫码器要求浅色静区，dark 主题下保持白底保证可扫；`--oas-qrcode-bg` 变量可覆盖）",
+      "color": "前景色（码点颜色，默认固定深色 `#18181b`——与固定白静区配套保证 dark 可扫；`--oas-qrcode-color` 变量或预设名/任意色值覆盖）",
+      "icon": "中心 logo 图片 URL（建议配合 `error-correction=\"h\"` 保可扫性）",
+      "icon-size": "中心 logo 尺寸（px，默认 size/5， clamp 在 [16, size/2]）",
+      "margin": "静区边距（模块单位，默认 4）",
+      "status": "状态机：`active`（默认）/ `expired`（过期遮罩，点击刷新派 `oas-refresh`）/ `loading` / `scanned`"
     },
-    "events": {},
-    "slots": {}
+    "events": {
+      "oas-refresh": "过期态点击刷新按钮时派发，宿主重新赋值内容后切回 `active`"
+    },
+    "slots": {
+      "template[slot=\"status\"]": "自定义状态覆盖层内容（缺省为各状态内建遮罩）"
+    }
   },
   "oas-radio": {
     "attrs": {
@@ -2242,17 +2282,23 @@
   },
   "oas-statistic": {
     "attrs": {
+      "extra": "数值行下方额外内容（趋势脚注等）",
       "group-separator": "千分位分组（`\"false\"` 关闭）",
       "loading": "加载态（骨架占位）",
       "precision": "小数位（四舍五入）",
       "prefix": "前后缀文案",
       "suffix": "前后缀文案",
+      "title": "数值上方标题（原生全局属性，渲染后吸收移除）",
+      "trend": "趋势指示：`up`（涨，success 语义色）/ `down`（跌，danger 语义色）+ 箭头",
       "value": "数值（数字字符串）"
     },
     "events": {},
     "slots": {
+      "extra": "数值行下方额外内容（趋势脚注等，分发时优先于 `extra` 属性文本）",
       "prefix": "前置内容（图标/标签等复杂内容，分发时优先于 `prefix` 属性文本）；简单文本用 `prefix` 属性即可",
-      "suffix": "后置内容（图标/标签等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可"
+      "suffix": "后置内容（图标/标签等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可",
+      "title": "数值上方标题（分发时优先于 `title` 属性文本）",
+      "value": "自定义数值呈现（如组合 `oas-number-animation` 动画值；分发时不渲染 Intl 格式化文本）"
     }
   },
   "oas-steps": {

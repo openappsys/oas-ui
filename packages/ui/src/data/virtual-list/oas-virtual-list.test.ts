@@ -208,4 +208,111 @@ describe('OASVirtualList', () => {
     expect(rendered[0]!.getAttribute('data-index')).toBe('2')
     expect(pad(el, 'padding-top').style.height).toBe('40px')
   })
+
+  it('默认视口可聚焦（tabindex=0）；viewportFocusable=false 移除 tabindex（tree 契约）', () => {
+    const el = mount({ height: '100', 'item-height': '20', items: JSON.stringify(range(10)) })
+    expect(viewport(el).getAttribute('tabindex')).toBe('0')
+    el.viewportFocusable = false
+    expect(viewport(el).getAttribute('tabindex')).toBeNull()
+    el.viewportFocusable = true
+    expect(viewport(el).getAttribute('tabindex')).toBe('0')
+  })
+})
+
+describe('scrollToIndex（公共滚动定位方法）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function mountList(): OASVirtualList {
+    return mount({ height: '100', 'item-height': '20', items: JSON.stringify(range(100)) })
+  }
+
+  it('align: start 目标项顶部对齐视口顶部并同步重渲染窗口', () => {
+    const el = mountList()
+    el.scrollToIndex(50, { align: 'start' })
+    expect(viewport(el).scrollTop).toBe(1000)
+    // 窗口随滚动同步重建：floor(1000/20)-4 = 46
+    expect(items(el)[0]!.getAttribute('data-index')).toBe('46')
+    expect(pad(el, 'padding-top').style.height).toBe('920px')
+  })
+
+  it('align: center 目标项在视口垂直居中', () => {
+    const el = mountList()
+    el.scrollToIndex(50, { align: 'center' })
+    // 50*20 - (100-20)/2 = 960
+    expect(viewport(el).scrollTop).toBe(960)
+  })
+
+  it('align: end 目标项底部对齐视口底部', () => {
+    const el = mountList()
+    el.scrollToIndex(50, { align: 'end' })
+    // 50*20 + 20 - 100 = 920
+    expect(viewport(el).scrollTop).toBe(920)
+  })
+
+  it('align: auto（默认）：已可见时不滚动，下方越界时最小滚动', () => {
+    const el = mountList()
+    el.scrollToIndex(50)
+    // 视口顶部 0，第 50 项（1000-1020）远在下方 → 滚到 项底-视口高
+    expect(viewport(el).scrollTop).toBe(920)
+    // 现在视口 920-1020，第 48 项（960-980）已可见 → auto 不滚动
+    el.scrollToIndex(48)
+    expect(viewport(el).scrollTop).toBe(920)
+    // 上方越界：第 10 项（200-220）在视口上方 → 滚到项顶
+    el.scrollToIndex(10)
+    expect(viewport(el).scrollTop).toBe(200)
+  })
+
+  it('索引越界夹取到有效范围，非有限数值忽略', () => {
+    const el = mountList()
+    el.scrollToIndex(9999, { align: 'start' })
+    // 最大滚动 = 100*20-100 = 1900
+    expect(viewport(el).scrollTop).toBe(1900)
+    el.scrollToIndex(-5, { align: 'start' })
+    expect(viewport(el).scrollTop).toBe(0)
+    el.scrollToIndex(Number.NaN, { align: 'start' })
+    expect(viewport(el).scrollTop).toBe(0)
+  })
+
+  it('小数索引截断取整', () => {
+    const el = mountList()
+    el.scrollToIndex(50.9, { align: 'start' })
+    expect(viewport(el).scrollTop).toBe(1000)
+  })
+
+  it('空数据调用不抛错、不滚动', () => {
+    const el = mount({ height: '100', 'item-height': '20', items: '[]' })
+    expect(() => el.scrollToIndex(5, { align: 'start' })).not.toThrow()
+    expect(viewport(el).scrollTop).toBe(0)
+  })
+
+  it('smooth: true 委托 scrollTo({ top, behavior: "smooth" })', () => {
+    const el = mountList()
+    const vp = viewport(el)
+    const calls: unknown[] = []
+    vp.scrollTo = ((opts: unknown) => calls.push(opts)) as typeof vp.scrollTo
+    el.scrollToIndex(50, { align: 'start', smooth: true })
+    expect(calls).toEqual([{ top: 1000, behavior: 'smooth' }])
+    // 平滑滚动由浏览器 scroll 事件驱动重渲染，不同步改 scrollTop
+    expect(vp.scrollTop).toBe(0)
+  })
+
+  it('scroll-target 模式：写外部容器 scrollTop', async () => {
+    const scroller = document.createElement('div')
+    scroller.id = 'scroller'
+    document.body.appendChild(scroller)
+    const el = mount({
+      'scroll-target': '#scroller',
+      height: '100',
+      'item-height': '20',
+      items: JSON.stringify(range(100)),
+    })
+    el.scrollToIndex(30, { align: 'start' })
+    expect(scroller.scrollTop).toBe(600)
+  })
 })

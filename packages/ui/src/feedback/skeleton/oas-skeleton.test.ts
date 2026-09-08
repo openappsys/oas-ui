@@ -275,4 +275,12 @@ describe('OASSkeleton', () => {
       el.remove()
     })
   })
+
+  it('宿主 hidden 属性有 :host([hidden]) 兜底（:host display:block 不得压过 UA [hidden]）', () => {
+    // 回归：曾现 <oas-skeleton hidden> 仍显示（statistic 内嵌骨架在 loading=false 时恒可见）
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/:host\(\[hidden\]\)\s*\{\s*display:\s*none/)
+    el.remove()
+  })
 })

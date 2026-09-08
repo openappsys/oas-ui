@@ -5,6 +5,22 @@ export interface VirtualWindow {
   end: number
 }
 
+/** scrollToIndex 的对齐方式 */
+export type ScrollToIndexAlign = 'start' | 'center' | 'end' | 'auto'
+
+export interface ScrollToIndexOptions {
+  /**
+   * 对齐方式（默认 'auto'）：
+   * - start：目标项顶部对齐视口顶部
+   * - center：目标项在视口垂直居中
+   * - end：目标项底部对齐视口底部
+   * - auto：目标项已完整可见则不滚动，否则按最小距离滚入视口
+   */
+  align?: ScrollToIndexAlign
+  /** 平滑滚动（委托原生 scrollTo behavior: 'smooth'），默认 false 即时跳转 */
+  smooth?: boolean
+}
+
 /**
  * 虚拟滚动窗口计算 —— 单一事实源，供 oas-virtual-list / table / tree 复用。
  *
@@ -80,6 +96,15 @@ const STYLE = `
  *
  * slot：
  * - `template[slot="item"]`：可选模板，克隆到每个可见项容器；未提供时默认渲染 String(item)
+ *
+ * 公共方法：
+ * - `scrollToIndex(index, options?)`：滚动到指定项（消费方契约，list/tree 内嵌定位用）。
+ *   `options.align` 支持 start/center/end/auto（默认 auto：最小滚动使目标可见）；
+ *   `options.smooth` 走原生平滑滚动。scroll-target 模式下写外部容器的 scrollTop。
+ *
+ * 公共 property：
+ * - `viewportFocusable: boolean`：视口是否可 Tab 聚焦（默认 true）。内嵌消费方
+ *   （如 tree，行自带 roving tabindex）置 false 关闭视口聚焦，不再直查内部 DOM。
  */
 export class OASVirtualList extends OASElement {
   static override get observedAttributes(): string[] {
@@ -98,6 +123,20 @@ export class OASVirtualList extends OASElement {
   private itemsEl: HTMLElement | null = null
   private itemRole = ''
   private boundTarget: HTMLElement | null = null
+  private viewportFocusableValue = true
+
+  /**
+   * 视口是否可 Tab 聚焦（默认 true）。内嵌消费方（如 tree，行自带 roving tabindex）
+   * 置 false 关闭视口聚焦——取代直查 shadow 内部 .viewport 移除 tabindex 的耦合写法。
+   */
+  get viewportFocusable(): boolean {
+    return this.viewportFocusableValue
+  }
+
+  set viewportFocusable(value: boolean) {
+    this.viewportFocusableValue = value !== false
+    this.syncViewportFocusable()
+  }
 
   get items(): unknown[] {
     return this.data.slice()
@@ -168,6 +207,7 @@ export class OASVirtualList extends OASElement {
     this.parseItems()
     this.syncTarget()
     this.syncRoles()
+    this.syncViewportFocusable()
     // height 属性必须落成视口的实际 CSS 高度（此前只用于窗口计算，视口 height:100%
     // 会被撑高容器拉到全内容高度，页面跟着变 16 万 px）
     if (this.viewport) this.viewport.style.height = `${this.listHeight()}px`
@@ -183,6 +223,60 @@ export class OASVirtualList extends OASElement {
       else itemsEl.removeAttribute('role')
     }
     this.itemRole = this.getAttribute('item-role') ?? ''
+  }
+
+  /** 按 viewportFocusable 同步视口 tabindex（update 每次幂等执行，消费方任意时序设置均收敛） */
+  private syncViewportFocusable(): void {
+    if (!this.viewport) return
+    if (this.viewportFocusableValue) this.viewport.setAttribute('tabindex', '0')
+    else this.viewport.removeAttribute('tabindex')
+  }
+
+  /**
+   * 滚动到指定索引项（公共契约，供 list/tree 等内嵌消费方定位，无需直查内部 DOM）。
+   *
+   * - 索引夹取到 [0, count-1]，非有限数值忽略；空数据为空操作
+   * - `align` 默认 'auto'：目标项已完整可见则不滚动，否则最小距离滚入视口
+   * - `smooth` 委托原生 scrollTo(behavior: 'smooth')，由 scroll 事件驱动重渲染；
+   *   即时模式同步设置 scrollTop 并立即重建窗口（调用后目标项 DOM 已存在）
+   * - scroll-target 模式写外部容器的 scrollTop（沿用「外部容器内容顶即第 0 项」的既有假设）
+   */
+  scrollToIndex(index: number, options?: ScrollToIndexOptions): void {
+    const count = this.data.length
+    if (!count || !Number.isFinite(index)) return
+    const idx = Math.min(Math.max(0, Math.trunc(index)), count - 1)
+    const ih = this.itemHeight()
+    const vh = this.listHeight()
+    const maxTop = Math.max(0, count * ih - vh)
+    const itemTop = idx * ih
+    const target = this.boundTarget ?? this.viewport
+    if (!target) return
+    let top: number
+    switch (options?.align ?? 'auto') {
+      case 'start':
+        top = itemTop
+        break
+      case 'center':
+        top = itemTop - (vh - ih) / 2
+        break
+      case 'end':
+        top = itemTop + ih - vh
+        break
+      default: {
+        // auto：已完整可见则不滚动，上方越界滚到项顶、下方越界滚到项底
+        const cur = target.scrollTop
+        if (itemTop < cur) top = itemTop
+        else if (itemTop + ih > cur + vh) top = itemTop + ih - vh
+        else top = cur
+      }
+    }
+    top = Math.min(Math.max(0, top), maxTop)
+    if (options?.smooth && typeof target.scrollTo === 'function') {
+      target.scrollTo({ top, behavior: 'smooth' })
+      return
+    }
+    target.scrollTop = top
+    this.renderWindow()
   }
 
   private listHeight(): number {

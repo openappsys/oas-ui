@@ -33,6 +33,11 @@
   ],
   "props": [
     {
+      "name": "viewportFocusable",
+      "type": "boolean",
+      "default": "true"
+    },
+    {
       "name": "items",
       "type": "unknown[]",
       "default": "[]"

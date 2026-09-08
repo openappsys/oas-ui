@@ -350,6 +350,8 @@ export {
   OASVirtualList,
   computeVirtualWindow,
   type VirtualWindow,
+  type ScrollToIndexAlign,
+  type ScrollToIndexOptions,
 } from './data/virtual-list/index.js'
 export { OASCountdown, formatDuration } from './data/countdown/oas-countdown.js'
 export { OASStatistic } from './data/statistic/oas-statistic.js'

@@ -369,6 +369,9 @@ export class OASTree extends OASElement {
 
   private bind(): void {
     this.vlist = this.shadow.querySelector<OASVirtualList>('oas-virtual-list')
+    // 行自带 roving tabindex：经公共契约关闭 vlist 视口聚焦（tree 不做 Tab 停靠点），
+    // 取代直查 vlist shadow 内部 .viewport 移除 tabindex 的耦合写法
+    if (this.vlist) this.vlist.viewportFocusable = false
     // 行样式注入 vlist 的 shadow（其 render 已在 innerHTML 插入时同步完成，后追加不会被覆盖）
     const vlistRoot = this.vlist?.shadowRoot
     if (vlistRoot && !vlistRoot.querySelector('style[data-oas-tree-rows]')) {
@@ -669,8 +672,6 @@ export class OASTree extends OASElement {
       this.vlist.hidden = false
       this.vlist.classList.toggle('tree-lines', this.hasAttr('tree-lines'))
       this.vlist.classList.toggle('disabled', this.isTreeDisabled())
-      const vroot = this.vlist.shadowRoot
-      vroot?.querySelector<HTMLElement>('.viewport')?.removeAttribute('tabindex')
       this.vlist.setAttribute('items-role', 'tree')
       this.vlist.setAttribute('item-role', 'presentation')
       this.vlist.setAttribute('aria-label', this.t('tree.select'))
@@ -1024,28 +1025,13 @@ export class OASTree extends OASElement {
       if (idx < 0) return
       const virtual = this.getAttr('height', '') !== ''
       if (virtual && this.vlist) {
-        const vp = this.vlist.shadowRoot?.querySelector<HTMLElement>('.viewport')
-        if (!vp) return
-        const ih = this.rowHeight()
-        const vh = this.virtualHeight()
-        const top = idx * ih
-        if (top < vp.scrollTop) vp.scrollTop = Math.max(0, top)
-        else if (top + ih > vp.scrollTop + vh) vp.scrollTop = Math.max(0, top + ih - vh)
+        // 最小滚动定位（align auto：已可见不动），不直查 vlist 内部 DOM
+        this.vlist.scrollToIndex(idx, { align: 'auto' })
         return
       }
       const row = this.rowElByKey(key)
       row?.scrollIntoView({ block: 'nearest' })
     })
-  }
-
-  private rowHeight(): number {
-    const n = Number.parseInt(this.getAttr('row-height', ''), 10)
-    return Number.isNaN(n) || n <= 0 ? 32 : n
-  }
-
-  private virtualHeight(): number {
-    const n = Number.parseInt(this.getAttr('height', ''), 10)
-    return Number.isNaN(n) || n <= 0 ? 360 : n
   }
 
   override focus(options?: FocusOptions): void {
@@ -1214,18 +1200,11 @@ export class OASTree extends OASElement {
       row.focus(options)
       return
     }
-    // 虚拟模式目标行未渲染（越出窗口）→ 滚动进视口后下一帧聚焦
+    // 虚拟模式目标行未渲染（越出窗口）→ 最小滚动进视口后下一帧聚焦
     const keys = this.visibleKeys()
     const idx = keys.indexOf(key)
     if (idx < 0 || !this.vlist || this.vlist.hidden) return
-    const vp = this.vlist.shadowRoot?.querySelector<HTMLElement>('.viewport')
-    if (!vp) return
-    const ih = this.rowHeight()
-    const top = idx * ih
-    if (top < vp.scrollTop) vp.scrollTop = Math.max(0, top)
-    else if (top + ih > vp.scrollTop + this.virtualHeight()) {
-      vp.scrollTop = Math.max(0, top + ih - this.virtualHeight())
-    }
+    this.vlist.scrollToIndex(idx, { align: 'auto' })
     requestAnimationFrame(() => {
       this.rowElByKey(key)?.focus(options)
     })

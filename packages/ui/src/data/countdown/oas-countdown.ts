@@ -1,13 +1,15 @@
 import { OASElement } from '@oas-ui/core'
 
 /**
- * 时长 token 格式化：DD/D（天）、HH/H（小时）、mm/m（分）、ss/s（秒）。
+ * 时长 token 格式化：DD/D（天）、HH/H（小时）、mm/m（分）、ss/s（秒）、SSS（毫秒，3 位补零）。
  * - 模板含 D/DD 时 HH 为当天内小时（0-23），天单列
  * - 模板不含 D/DD 时天滚入小时（如 25:01:01）
  * 非负；负数按 0。
  */
 export function formatDuration(ms: number, format: string): string {
-  const totalSec = Math.max(0, Math.floor(ms / 1000))
+  const clamped = Math.max(0, ms)
+  const totalSec = Math.floor(clamped / 1000)
+  const millis = Math.floor(clamped - totalSec * 1000)
   const days = Math.floor(totalSec / 86400)
   const withinDayHours = Math.floor((totalSec % 86400) / 3600)
   const minutes = Math.floor((totalSec % 3600) / 60)
@@ -22,8 +24,9 @@ export function formatDuration(ms: number, format: string): string {
     m: String(minutes),
     ss: String(seconds).padStart(2, '0'),
     s: String(seconds),
+    SSS: String(millis).padStart(3, '0'),
   }
-  return format.replace(/DD|D|HH|H|mm|m|ss|s/g, (token) => map[token] ?? token)
+  return format.replace(/DD|D|HH|H|mm|m|ss|s|SSS/g, (token) => map[token] ?? token)
 }
 
 const STYLE = `
@@ -39,6 +42,26 @@ const STYLE = `
 :host([hidden]) {
   display: none;
 }
+[part='countdown'] {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--oas-space-1);
+}
+[part='title'] {
+  font-size: var(--oas-font-size-md);
+  font-weight: 400;
+  color: var(--oas-color-text-secondary);
+}
+[part='body'] {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--oas-space-1);
+}
+[part='prefix'],
+[part='suffix'] {
+  color: var(--oas-color-text-secondary);
+  font-size: var(--oas-font-size-md);
+}
 [part='display'] {
   line-height: 1;
 }
@@ -46,7 +69,7 @@ const STYLE = `
 
 export class OASCountdown extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'format']
+    return ['value', 'format', 'active', 'title', 'prefix', 'suffix']
   }
 
   private timer: ReturnType<typeof setInterval> | null = null
@@ -55,13 +78,37 @@ export class OASCountdown extends OASElement {
   private lastValue: number | null = null
   /** 刚重置后的完整值：首次 tick 前保持整值显示，避免 endAt-Date.now() 毫秒漂移少 1 秒 */
   private pendingStart: number | null = null
+  /** 暂停态：active 移除/置 "false" 时固化剩余时长，恢复时按固化值续走（真暂停语义） */
+  private paused = false
+  /** 暂停期间（与刚重置时）的剩余时长真值 */
+  private remaining = 0
+
+  /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题）。
+   *  title 是原生全局属性——残留会让悬停弹出浏览器原生提示（与可见标题重复的视觉干扰），
+   *  按库内既有约定（list-item/statistic 同构）渲染进标题区后即从宿主移除。 */
+  private titleCache: string | null = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
       <style>${STYLE}</style>
-      <span class="display" part="display" aria-live="off"></span>
+      <div class="countdown" part="countdown">
+        <div class="title" part="title" hidden><slot name="title"><span class="title-text" data-fallback></span></slot></div>
+        <div class="body" part="body">
+          <span class="prefix" part="prefix" hidden><slot name="prefix"><span data-fallback></span></slot></span>
+          <span class="display" part="display" aria-live="off"></span>
+          <span class="suffix" part="suffix" hidden><slot name="suffix"><span data-fallback></span></slot></span>
+        </div>
+      </div>
     `
+  }
+
+  /** 插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
+  private slotHasContent(slot: HTMLSlotElement | null): boolean {
+    if (!slot) return false
+    return slot
+      .assignedNodes()
+      .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
   /** 缓存节点引用 + 注册清理（render 与水合路径共用；countdown 无交互事件，仅定时器） */
@@ -70,6 +117,9 @@ export class OASCountdown extends OASElement {
       if (this.timer) clearInterval(this.timer)
       this.timer = null
     })
+    for (const sel of ['slot[name="title"]', 'slot[name="prefix"]', 'slot[name="suffix"]']) {
+      this.shadow.querySelector<HTMLSlotElement>(sel)?.addEventListener('slotchange', () => this.update())
+    }
   }
 
   protected override render(): void {
@@ -78,50 +128,141 @@ export class OASCountdown extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（display 存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（display 存在）后直接接管，跳过 shadow 重建。
+   *  title 吸收下宿主无 title 属性（SSR 快照同此）——从快照标题区恢复缓存，
+   *  防水合后首次 update 把标题清掉 */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('[part="display"]')) return false
+    const snapTitle = this.shadow.querySelector('[part="title"] [data-fallback]')?.textContent ?? ''
+    if (snapTitle !== '') this.titleCache = snapTitle
     this.bind()
     return true
+  }
+
+  /** active 受控：缺席（默认）或任意非 "false" 值为走表；"false" 为暂停 */
+  private isActive(): boolean {
+    return !this.hasAttribute('active') || this.getAttr('active', '') !== 'false'
+  }
+
+  /** tick 粒度：模板含 SSS 毫秒 token 时按 50ms 刷新，否则 250ms（秒边界对齐） */
+  private tickMs(): number {
+    return this.getAttr('format', 'HH:mm:ss').includes('SSS') ? 50 : 250
   }
 
   protected override update(): void {
     const value = Math.max(0, Number(this.getAttr('value', '0')) || 0)
     if (value !== this.lastValue) {
+      const wasPaused = this.paused
       this.lastValue = value
       this.endAt = Date.now() + value
       this.finished = value <= 0
       this.pendingStart = value
-    } else if (!this.finished && this.endAt - Date.now() <= 0) {
+      // 暂停期间宿主改 value：重置剩余时长，保持暂停态
+      this.paused = wasPaused
+      this.remaining = value
+    } else if (!this.finished && !this.paused && this.endAt - Date.now() <= 0) {
       // 断开期间已过截止点：重连即时收尾
       this.finished = true
+      this.remaining = 0
       this.emit('finish')
+    }
+
+    // active 受控暂停/恢复（时长派语义：暂停期间不计时已走过）
+    if (!this.isActive() && !this.paused && !this.finished) {
+      this.paused = true
+      this.remaining = this.pendingStart ?? Math.max(0, this.endAt - Date.now())
+      this.pendingStart = null
+      if (this.timer) {
+        clearInterval(this.timer)
+        this.timer = null
+      }
+    } else if (this.isActive() && this.paused) {
+      this.paused = false
+      this.endAt = Date.now() + this.remaining
+    }
+
+    this.renderDisplay()
+    this.schedule()
+  }
+
+  /** 命令式重置：回到 value 初值重新计时；active=false（暂停）时只归位不启动 */
+  reset(): void {
+    const value = Math.max(0, Number(this.getAttr('value', '0')) || 0)
+    this.lastValue = value
+    this.remaining = value
+    this.endAt = Date.now() + value
+    this.finished = value <= 0
+    this.pendingStart = value
+    if (this.timer) {
+      clearInterval(this.timer)
+      this.timer = null
     }
     this.renderDisplay()
     this.schedule()
   }
 
-  private renderDisplay(): void {
+  /** 渲染显示值；返回显示文本是否发生变化（oas-change 节流派发依据） */
+  private renderDisplay(): boolean {
     const el = this.shadow.querySelector<HTMLElement>('[part="display"]')
-    if (!el) return
+    if (!el) return false
     const remaining = this.finished
       ? 0
-      : (this.pendingStart ?? Math.max(0, this.endAt - Date.now()))
-    el.textContent = formatDuration(remaining, this.getAttr('format', 'HH:mm:ss'))
+      : this.paused
+        ? this.remaining
+        : (this.pendingStart ?? Math.max(0, this.endAt - Date.now()))
+    const next = formatDuration(remaining, this.getAttr('format', 'HH:mm:ss'))
+    const changed = el.textContent !== next
+    el.textContent = next
+    this.syncHeader()
+    return changed
+  }
+
+  /** title/prefix/suffix 双通道：属性文本兜底；同名 slot 分发优先（title 走原生吸收） */
+  private syncHeader(): void {
+    if (this.hasAttribute('title')) {
+      const raw = this.getAttr('title', '')
+      this.titleCache = raw === '' ? null : raw
+      this.removeAttribute('title')
+    }
+    const titleEl = this.shadow.querySelector<HTMLElement>('[part="title"]')
+    const titleSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
+    const titleFallback = this.shadow.querySelector<HTMLElement>('[part="title"] [data-fallback]')
+    if (titleEl && titleSlot && titleFallback) {
+      titleFallback.textContent = this.titleCache ?? ''
+      const hasTitle = this.slotHasContent(titleSlot) || this.titleCache !== null
+      titleFallback.hidden = this.slotHasContent(titleSlot)
+      titleEl.hidden = !hasTitle
+    }
+    for (const name of ['prefix', 'suffix'] as const) {
+      const affixEl = this.shadow.querySelector<HTMLElement>(`[part="${name}"]`)
+      const affixSlot = this.shadow.querySelector<HTMLSlotElement>(`slot[name="${name}"]`)
+      const affixFallback = this.shadow.querySelector<HTMLElement>(`[part="${name}"] [data-fallback]`)
+      if (!affixEl || !affixSlot || !affixFallback) continue
+      const attr = this.getAttr(name, '')
+      affixFallback.textContent = attr
+      const hasAffix = this.slotHasContent(affixSlot) || attr !== ''
+      affixFallback.hidden = this.slotHasContent(affixSlot)
+      affixEl.hidden = !hasAffix
+    }
   }
 
   private schedule(): void {
     if (this.timer) clearInterval(this.timer)
-    if (this.finished) return
+    this.timer = null
+    if (this.finished || this.paused || !this.isActive()) return
     this.timer = setInterval(() => {
       this.pendingStart = null
       const remaining = Math.max(0, this.endAt - Date.now())
-      this.renderDisplay()
+      const changed = this.renderDisplay()
+      // 计时变化节流派发：仅显示文本变化才派 oas-change（detail 为剩余 ms）
+      if (changed && remaining > 0) this.emit('change', { value: remaining })
       if (remaining <= 0) {
         this.finished = true
+        this.remaining = 0
         if (this.timer) clearInterval(this.timer)
+        this.timer = null
         this.emit('finish')
       }
-    }, 250)
+    }, this.tickMs())
   }
 }

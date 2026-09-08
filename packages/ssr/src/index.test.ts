@@ -873,13 +873,15 @@ describe('@oas-ui/ssr renderToString', () => {
     expect(text).toContain('part="text"')
   })
 
-  it('oas-qrcode：纯计算 SVG path 直出（viewBox 与 width/height 同步）', async () => {
+  it('oas-qrcode：纯计算 SVG path 直出（viewBox 含默认静区 margin=4，width/height 同步）', async () => {
     const html = await renderToString('oas-qrcode', { value: 'HELLO', size: '128' }, '')
     expect(html).toContain('<template shadowrootmode="open">')
     expect(html).toContain('<svg')
-    expect(html).toContain('viewBox="0 0 21 21"')
+    // v1 矩阵 21 + 静区 2×4 = 29；白底矩形铺底（dark 可扫性）
+    expect(html).toContain('viewBox="0 0 29 29"')
     expect(html).toContain('width="128"')
     expect(html).toContain('<path d="M')
+    expect(html).toContain('<rect width="29" height="29"')
   })
 
   it('oas-watermark：文字水印 data-uri SVG 直出（textTileDataUri 确定性）', async () => {

@@ -16,15 +16,59 @@
     },
     {
       "name": "error-correction",
+      "type": "string",
+      "default": "l",
       "observed": true
     },
     {
       "name": "aria-label",
       "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "bg-color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "margin",
+      "type": "string",
+      "default": "4",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "icon-size",
+      "observed": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "active",
+      "observed": true
     }
   ],
   "props": [],
-  "events": [],
-  "slots": [],
+  "events": [
+    {
+      "name": "oas-refresh"
+    }
+  ],
+  "slots": [
+    {
+      "name": "template[slot=\"status\"]"
+    }
+  ],
   "unresolved": []
 }

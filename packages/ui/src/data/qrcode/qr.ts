@@ -1,25 +1,26 @@
 /**
- * 二维码编码器 —— 纯 TypeScript、零依赖实现（QR ISO/IEC 18004 子集）。
+ * 二维码编码器 —— 纯 TypeScript、零依赖实现（QR ISO/IEC 18004）。
  *
  * 架构决策（选型取舍，见 PRD v1.4 qrcode）：
  * - 目标：零依赖原则约束下，不引入第三方 qrcode 库；
- * - 范围：字节/字母数字/数字三种模式自动选择；纠错级别仅实现 **L 级**（组件层
- *   把 m/q/h 归一为 l，demo 中注明）；版本 1–10（L 级字节容量 ≤ 307 字节）；
- * - 完整性保障：RS 纠错码与格式/版本信息 BCH 均对照公开标准教程（thonky.com）的
- *   已知向量做了单测交叉验证，另加矩阵回读自检，保证产物可被标准扫码器识别；
- * - 已知限制：版本 >10 的内容（超过 L 级容量）抛 QR_TOO_LONG_ERROR，由组件层
- *   渲染「内容过长」占位。m/q/h 的更高纠错能力暂未实现（低纠错 L 级已可满足
- *   大多数展示/下载场景，长按/扫码在弱光场景误码率略高，demo 注明）。
+ * - 范围：**纠错级别 L/M/Q/H 全实现**，版本 1–40（v40-L 字节容量 2953）；
+ *   数字/字母数字/字节三种模式自动选择；
+ * - 数据表（每版本 RS 块规格 / 块数 / 余数位 / 对齐坐标）全部取自公开标准
+ *   （ISO/IEC 18004 附录）；
+ * - 完整性保障：全部级别对照独立标准参考实现产出的**已知答案矩阵**做了逐位单测
+ *   交叉验证（格式信息 32 条全表 + 多级别多版本矩阵向量），另保留矩阵回读自检，
+ *   保证产物可被标准扫码器识别；
+ * - 已知限制：内容超出所选级别容量抛 QR_TOO_LONG_ERROR（组件层渲染「内容过长」占位）。
  */
 
-/** 错误：内容超出 L 级纠错、版本 1–10 的容量 */
+/** 错误：内容超出所选纠错级别、版本 1–40 的容量 */
 export const QR_TOO_LONG_ERROR = 'QR_TOO_LONG'
 
 /** 编码模式 */
 export type QrMode = 'numeric' | 'alphanumeric' | 'byte'
 
-/** 纠错级别（当前仅 'l' 真正实现；组件层将 m/q/h 归一为 l） */
-export type QrErrorCorrection = 'l'
+/** 纠错级别（四级别全实现） */
+export type QrErrorCorrection = 'l' | 'm' | 'q' | 'h'
 
 /** 编码结果 */
 export interface QRResult {
@@ -37,63 +38,34 @@ export interface QRResult {
 }
 
 /* ------------------------------------------------------------------ *
- * 常量表（版本 1–10，L 级）
+ * 常量表（版本 1–40，L/M/Q/H 四级别；数据取自 ISO/IEC 18004 附录）
  * ------------------------------------------------------------------ */
 
-/** 每个版本的 RS 块规格：{ 每块 ECC 码字数, 块数 }（L 级） */
-const RS_BLOCKS_L: Record<number, { ecc: number; blocks: number }> = {
-  1: { ecc: 7, blocks: 1 },
-  2: { ecc: 10, blocks: 1 },
-  3: { ecc: 15, blocks: 1 },
-  4: { ecc: 20, blocks: 1 },
-  5: { ecc: 26, blocks: 1 },
-  6: { ecc: 18, blocks: 2 },
-  7: { ecc: 20, blocks: 2 },
-  8: { ecc: 24, blocks: 2 },
-  9: { ecc: 30, blocks: 2 },
-  10: { ecc: 18, blocks: 2 },
+/**
+ * 每个版本、每个纠错级别的 RS 块规格：每块 ECC 码字数。
+ * 数组下标 = 版本号（下标 0 占位）。
+ */
+const ECC_CODEWORDS_PER_BLOCK: Record<QrErrorCorrection, number[]> = {
+  l: [0, 7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28, 28, 28, 30, 30, 26, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+  m: [0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28],
+  q: [0, 13, 22, 18, 26, 18, 24, 18, 22, 20, 24, 28, 26, 24, 20, 30, 24, 28, 28, 26, 30, 28, 30, 30, 30, 30, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+  h: [0, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24, 30, 28, 28, 26, 28, 30, 24, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
 }
 
-/** 每个版本的总码字数（数据 + ECC） */
-const TOTAL_CODEWORDS: Record<number, number> = {
-  1: 26,
-  2: 44,
-  3: 70,
-  4: 100,
-  5: 134,
-  6: 172,
-  7: 196,
-  8: 242,
-  9: 292,
-  10: 346,
+/** 每个版本、每个纠错级别的 RS 块数（数组下标 = 版本号，下标 0 占位） */
+const NUM_ERROR_CORRECTION_BLOCKS: Record<QrErrorCorrection, number[]> = {
+  l: [0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 4, 4, 6, 6, 6, 6, 7, 8, 8, 9, 9, 10, 12, 12, 12, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 24, 25],
+  m: [0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49],
+  q: [0, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10, 12, 16, 12, 17, 16, 18, 21, 20, 23, 23, 25, 27, 29, 34, 34, 35, 38, 40, 43, 45, 48, 51, 53, 56, 59, 62, 65, 68],
+  h: [0, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35, 37, 40, 42, 45, 48, 51, 54, 57, 60, 63, 66, 70, 74, 77, 81],
 }
 
-/** 对齐图形中心坐标 */
-const ALIGNMENT_POS: Record<number, number[]> = {
-  1: [],
-  2: [6, 18],
-  3: [6, 22],
-  4: [6, 26],
-  5: [6, 30],
-  6: [6, 34],
-  7: [6, 22, 38],
-  8: [6, 24, 42],
-  9: [6, 26, 46],
-  10: [6, 28, 50],
-}
-
-/** 余数位数量（版本 1–10） */
-const REMAINDER_BITS: Record<number, number> = {
-  1: 0,
-  2: 7,
-  3: 7,
-  4: 7,
-  5: 7,
-  6: 7,
-  7: 0,
-  8: 0,
-  9: 0,
-  10: 0,
+/** 纠错级别 → 格式信息 2 位指示 */
+const FORMAT_ECBITS: Record<QrErrorCorrection, number> = {
+  m: 0b00,
+  l: 0b01,
+  h: 0b10,
+  q: 0b11,
 }
 
 /** 模式指示（4 bit） */
@@ -105,6 +77,53 @@ const MODE_INDICATOR: Record<QrMode, number> = {
 
 /** 字母数字字符表（45 个） */
 const ALPHANUMERIC_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:'
+
+/* ------------------------------------------------------------------ *
+ * 版本推导量（公式取自公开标准）
+ * ------------------------------------------------------------------ */
+
+/** 对齐图形中心坐标（版本 1 无；其余按标准步长公式推导） */
+function alignmentPositions(version: number): number[] {
+  if (version === 1) return []
+  const size = 17 + 4 * version
+  const numAlign = Math.floor(version / 7) + 2
+  const step = Math.floor((version * 8 + numAlign * 3 + 5) / (numAlign * 4 - 4)) * 2
+  const result = [6]
+  for (let i = numAlign - 2; i >= 0; i--) {
+    result.push(size - 7 - i * step)
+  }
+  return result.sort((a, b) => a - b)
+}
+
+/** 原始数据模块位数（含余数位；标准附录公式） */
+function rawDataModules(version: number): number {
+  let result = (16 * version + 128) * version + 64
+  if (version >= 2) {
+    const numAlign = Math.floor(version / 7) + 2
+    result -= (25 * numAlign - 10) * numAlign - 55
+    if (version >= 7) result -= 36
+  }
+  return result
+}
+
+/** 每个版本的总码字数（数据 + ECC） */
+function totalCodewords(version: number): number {
+  return Math.floor(rawDataModules(version) / 8)
+}
+
+/** 每个版本的数据码字数（按纠错级别） */
+function dataCodewords(version: number, ec: QrErrorCorrection): number {
+  return totalCodewords(version) - ECC_CODEWORDS_PER_BLOCK[ec][version]! * NUM_ERROR_CORRECTION_BLOCKS[ec][version]!
+}
+
+/** 余数位数量（标准附录：v2–6 为 7，v14–20 为 3，v21–27 为 4，v28–34 为 3，其余 0） */
+function remainderBits(version: number): number {
+  if (version >= 2 && version <= 6) return 7
+  if (version >= 14 && version <= 20) return 3
+  if (version >= 21 && version <= 27) return 4
+  if (version >= 28 && version <= 34) return 3
+  return 0
+}
 
 /* ------------------------------------------------------------------ *
  * GF(256) 对数/反对数表（本原多项式 0x11D）
@@ -173,10 +192,10 @@ export function rsEncode(data: number[], eccCount: number): number[] {
 
 /**
  * 格式信息 15 位：(EC 2bit + 掩码 3bit) << 10 | BCH 余数，再异或 0x5412。
- * L 级 formatBits = 1（EC 级别指示 L=01）。
+ * EC 级别指示：L=01 / M=00 / Q=11 / H=10（标准表）。
  */
-export function formatBits(mask: number): number {
-  const data = (1 << 3) | mask
+export function formatBits(mask: number, ec: QrErrorCorrection = 'l'): number {
+  const data = (FORMAT_ECBITS[ec] << 3) | mask
   let rem = data << 10
   const gen = 0x537
   for (let bit = 14; bit >= 10; bit--) {
@@ -205,15 +224,12 @@ function detectMode(value: string): QrMode {
   return 'byte'
 }
 
+/** 字符计数指示位长度（按版本分组 1–9 / 10–26 / 27–40） */
 function countIndicatorBits(mode: QrMode, version: number): number {
-  if (version <= 9) {
-    if (mode === 'numeric') return 10
-    if (mode === 'alphanumeric') return 9
-    return 8
-  }
-  if (mode === 'numeric') return 12
-  if (mode === 'alphanumeric') return 11
-  return 16
+  const group = version <= 9 ? 0 : version <= 26 ? 1 : 2
+  if (mode === 'numeric') return [10, 12, 14][group]!
+  if (mode === 'alphanumeric') return [9, 11, 13][group]!
+  return [8, 16, 16][group]!
 }
 
 /** 内容数据位长度（不含模式/计数指示） */
@@ -227,17 +243,11 @@ function dataBitLength(mode: QrMode, n: number): number {
   return n * 8
 }
 
-function dataCodewords(version: number): number {
-  const { ecc, blocks } = RS_BLOCKS_L[version]!
-  return TOTAL_CODEWORDS[version]! - ecc * blocks
-}
-
-/** 选择能容纳内容的版本（1–10），放不下抛 QR_TOO_LONG */
-function pickVersion(mode: QrMode, value: string): number {
-  const n = value.length
-  for (let v = 1; v <= 10; v++) {
-    const capacity = dataCodewords(v) * 8
-    const required = 4 + countIndicatorBits(mode, v) + dataBitLength(mode, n) + 4
+/** 选择能容纳内容的最小版本（1–40），放不下抛 QR_TOO_LONG */
+function pickVersion(mode: QrMode, dataChars: number, ec: QrErrorCorrection): number {
+  for (let v = 1; v <= 40; v++) {
+    const capacity = dataCodewords(v, ec) * 8
+    const required = 4 + countIndicatorBits(mode, v) + dataBitLength(mode, dataChars)
     if (required <= capacity) return v
   }
   throw new Error(QR_TOO_LONG_ERROR)
@@ -253,11 +263,13 @@ function pushBits(bits: number[], value: number, count: number): void {
  */
 export function encodeDataCodewords(
   value: string,
-  _ecLevel: QrErrorCorrection = 'l',
+  ecLevel: QrErrorCorrection = 'l',
 ): { codewords: number[]; mode: QrMode; version: number; dataCodewords: number } {
   const mode = detectMode(value)
-  const version = pickVersion(mode, value)
-  const n = value.length
+  // 字节模式按 UTF-8 字节数计（计数指示与容量均为字节口径，ISO 标准定义）
+  const bytes = mode === 'byte' ? new TextEncoder().encode(value) : null
+  const n = bytes ? bytes.length : value.length
+  const version = pickVersion(mode, n, ecLevel)
   const bits: number[] = []
 
   pushBits(bits, MODE_INDICATOR[mode], 4)
@@ -284,7 +296,7 @@ export function encodeDataCodewords(
     for (const b of bytes) pushBits(bits, b, 8)
   }
 
-  const capacity = dataCodewords(version) * 8
+  const capacity = dataCodewords(version, ecLevel) * 8
   // 结束符（最多 4 位，不超出容量）
   const terminator = Math.min(4, capacity - bits.length)
   for (let i = 0; i < terminator; i++) bits.push(0)
@@ -298,18 +310,18 @@ export function encodeDataCodewords(
     codewords.push(byte)
   }
   // 交替填充码字
-  while (codewords.length < dataCodewords(version)) {
+  while (codewords.length < dataCodewords(version, ecLevel)) {
     codewords.push(0xec)
-    if (codewords.length < dataCodewords(version)) codewords.push(0x11)
+    if (codewords.length < dataCodewords(version, ecLevel)) codewords.push(0x11)
   }
-  return { codewords, mode, version, dataCodewords: dataCodewords(version) }
+  return { codewords, mode, version, dataCodewords: dataCodewords(version, ecLevel) }
 }
 
 /* ------------------------------------------------------------------ *
  * 模块放置
  * ------------------------------------------------------------------ */
 
-/** 判断 (x, y) 是否为函数模块（定位/时序/对齐/格式/版本/暗模块区域） */
+/** 判断 (x, y) 是否为功能模块（定位/时序/对齐/格式/版本/暗模块区域） */
 export function isFunctionModule(version: number, x: number, y: number): boolean {
   const size = 17 + 4 * version
   // 定位图形 + 分隔符（四角 8×8：7×7 定位 + 右/下 1 分隔条）
@@ -319,7 +331,7 @@ export function isFunctionModule(version: number, x: number, y: number): boolean
   // 时序图形（行/列 6）
   if (x === 6 || y === 6) return true
   // 对齐图形（5×5 区域；跳过三个与定位图形重叠的角）
-  const centers = ALIGNMENT_POS[version] ?? []
+  const centers = alignmentPositions(version)
   if (centers.length > 0) {
     const last = centers.length - 1
     for (let i = 0; i < centers.length; i++) {
@@ -344,7 +356,7 @@ export function isFunctionModule(version: number, x: number, y: number): boolean
   return false
 }
 
-/** 绘制定位图形（含 1 模块白色分隔符），center 为 7×7 左上角 */
+/** 绘制定位图形（含 1 模块白色分隔符），left/top 为 7×7 左上角 */
 function drawFinder(modules: Uint8Array, size: number, left: number, top: number): void {
   for (let dy = -1; dy <= 7; dy++) {
     for (let dx = -1; dx <= 7; dx++) {
@@ -364,7 +376,7 @@ function drawFinder(modules: Uint8Array, size: number, left: number, top: number
 }
 
 function drawAlignment(modules: Uint8Array, size: number, version: number): void {
-  const centers = ALIGNMENT_POS[version] ?? []
+  const centers = alignmentPositions(version)
   if (centers.length === 0) return
   const last = centers.length - 1
   for (let i = 0; i < centers.length; i++) {
@@ -391,8 +403,14 @@ function drawTiming(modules: Uint8Array, size: number): void {
   }
 }
 
-function drawFormatBits(modules: Uint8Array, size: number, version: number, mask: number): void {
-  const bits = formatBits(mask)
+function drawFormatBits(
+  modules: Uint8Array,
+  size: number,
+  version: number,
+  mask: number,
+  ec: QrErrorCorrection,
+): void {
+  const bits = formatBits(mask, ec)
   const getBit = (v: number, i: number): number => (v >>> i) & 1
   // 第一拷贝（左上附近）
   for (let i = 0; i <= 5; i++) modules[i * size + 8] = getBit(bits, i)
@@ -445,7 +463,8 @@ function drawCodewords(
 }
 
 /* ------------------------------------------------------------------ *
- * 掩码与罚分
+ * 掩码与罚分（罚分规则按标准附录：N1 连续同色 / N2 2×2 同色块 /
+ * N3 1:1:3:1:1 探测图形 / N4 深色占比；N3 用游程历史计数）
  * ------------------------------------------------------------------ */
 
 function maskFunction(mask: number, x: number, y: number): boolean {
@@ -469,84 +488,88 @@ function maskFunction(mask: number, x: number, y: number): boolean {
   }
 }
 
-function penaltyScore(modules: Uint8Array, func: Uint8Array, size: number): number {
+const PENALTY_N1 = 3
+const PENALTY_N2 = 3
+const PENALTY_N3 = 40
+const PENALTY_N4 = 10
+
+/** 单行/单列的游程历史（长度 7，头部为最近一次游程） */
+class RunHistory {
+  private readonly runs: number[] = [0, 0, 0, 0, 0, 0, 0]
+
+  /** 压入一个游程长度；首个游程（历史全 0）按边界留白处理，长度加矩阵边长 */
+  push(len: number, size: number): void {
+    let v = len
+    if (this.runs[0] === 0) v += size
+    this.runs.pop()
+    this.runs.unshift(v)
+  }
+
+  /**
+   * 计数 1:1:3:1:1 探测图形（核心：runs[2]=runs[4]=runs[5]=n、runs[3]=3n），
+   * 两侧留白分别满足 ≥4n 与 ≥n 各计一次。
+   */
+  countPatterns(): number {
+    const n = this.runs[1]!
+    if (n <= 0) return 0
+    const core =
+      this.runs[2] === n && this.runs[4] === n && this.runs[5] === n && this.runs[3] === n * 3
+    if (!core) return 0
+    let count = 0
+    if (this.runs[0]! >= n * 4 && this.runs[6]! >= n) count++
+    if (this.runs[6]! >= n * 4 && this.runs[0]! >= n) count++
+    return count
+  }
+}
+
+function penaltyScore(modules: Uint8Array, size: number): number {
   const get = (x: number, y: number): number => modules[y * size + x] ?? 0
   let result = 0
 
-  // N1：同色连续 ≥5
-  for (let y = 0; y < size; y++) {
-    let runColor = -1
+  // N1 + N3：逐行、逐列扫描游程
+  const scanLine = (getCell: (i: number) => number): void => {
+    let runColor = 0
     let run = 0
-    for (let x = 0; x <= size; x++) {
-      const c = x < size ? get(x, y) : -1
-      if (c === runColor) run++
-      else {
-        if (run >= 5) result += run - 2
-        runColor = c
+    const history = new RunHistory()
+    for (let i = 0; i < size; i++) {
+      const cell = getCell(i)
+      if (cell === runColor) {
+        run++
+        if (run === 5) result += PENALTY_N1
+        else if (run > 5) result += 1
+      } else {
+        history.push(run, size)
+        if (runColor === 0) result += history.countPatterns() * PENALTY_N3
+        runColor = cell
         run = 1
       }
     }
-  }
-  for (let x = 0; x < size; x++) {
-    let runColor = -1
-    let run = 0
-    for (let y = 0; y <= size; y++) {
-      const c = y < size ? get(x, y) : -1
-      if (c === runColor) run++
-      else {
-        if (run >= 5) result += run - 2
-        runColor = c
-        run = 1
-      }
+    // 行尾：结束当前游程（暗游程先入历史），边界按整行留白计
+    if (runColor === 1) {
+      history.push(run, size)
+      run = 0
     }
+    run += size
+    history.push(run, size)
+    result += history.countPatterns() * PENALTY_N3
   }
+  for (let y = 0; y < size; y++) scanLine((i) => get(i, y))
+  for (let x = 0; x < size; x++) scanLine((i) => get(x, i))
 
   // N2：2×2 同色块
   for (let y = 0; y < size - 1; y++) {
     for (let x = 0; x < size - 1; x++) {
       const c = get(x, y)
-      if (c === get(x + 1, y) && c === get(x, y + 1) && c === get(x + 1, y + 1)) result += 3
+      if (c === get(x + 1, y) && c === get(x, y + 1) && c === get(x + 1, y + 1)) result += PENALTY_N2
     }
   }
 
-  // N3：1:1:3:1:1 比例 + 两侧 4 白
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size - 6; x++) {
-      const pattern =
-        get(x, y) === 1 &&
-        get(x + 1, y) === 0 &&
-        get(x + 2, y) === 1 &&
-        get(x + 3, y) === 1 &&
-        get(x + 4, y) === 1 &&
-        get(x + 5, y) === 0 &&
-        get(x + 6, y) === 1
-      if (pattern && (x === 0 || get(x - 1, y) === 0) && (x + 7 >= size || get(x + 7, y) === 0)) {
-        result += 40
-      }
-    }
-  }
-  for (let x = 0; x < size; x++) {
-    for (let y = 0; y < size - 6; y++) {
-      const pattern =
-        get(x, y) === 1 &&
-        get(x, y + 1) === 0 &&
-        get(x, y + 2) === 1 &&
-        get(x, y + 3) === 1 &&
-        get(x, y + 4) === 1 &&
-        get(x, y + 5) === 0 &&
-        get(x, y + 6) === 1
-      if (pattern && (y === 0 || get(x, y - 1) === 0) && (y + 7 >= size || get(x, y + 7) === 0)) {
-        result += 40
-      }
-    }
-  }
-
-  // N4：深色占比
+  // N4：深色占比（45%–55% 为基准，每偏离 5% 计 10 分）
   let dark = 0
   for (let i = 0; i < modules.length; i++) dark += modules[i] ?? 0
   const total = size * size
   const k = Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1
-  result += Math.max(0, k) * 10
+  result += Math.max(0, k) * PENALTY_N4
   return result
 }
 
@@ -555,32 +578,63 @@ function penaltyScore(modules: Uint8Array, func: Uint8Array, size: number): numb
  * ------------------------------------------------------------------ */
 
 /**
- * 编码 value 为 QR 矩阵（L 级纠错，版本 1–10）。
+ * 数据码字 + ECC 分块交错（短块/长块拆分，标准交错顺序）。
+ * data 长度必须等于该版本/级别的数据码字数。
+ */
+function addEccAndInterleave(
+  data: number[],
+  version: number,
+  ec: QrErrorCorrection,
+): number[] {
+  const numBlocks = NUM_ERROR_CORRECTION_BLOCKS[ec][version]!
+  const eccPerBlock = ECC_CODEWORDS_PER_BLOCK[ec][version]!
+  const rawCodewords = totalCodewords(version)
+  const numShortBlocks = numBlocks - (rawCodewords % numBlocks)
+  const shortBlockLen = Math.floor(rawCodewords / numBlocks)
+
+  interface Block {
+    data: number[]
+    ecc: number[]
+    short: boolean
+  }
+  const blocks: Block[] = []
+  let offset = 0
+  for (let i = 0; i < numBlocks; i++) {
+    const isShort = i < numShortBlocks
+    const dataLen = shortBlockLen - eccPerBlock + (isShort ? 0 : 1)
+    const blockData = data.slice(offset, offset + dataLen)
+    offset += dataLen
+    blocks.push({ data: blockData, ecc: rsEncode(blockData, eccPerBlock), short: isShort })
+  }
+
+  // 交错：先按数据位字节序交错（短块最后一字节为占位，跳过），再交错 ECC
+  const result: number[] = []
+  const maxDataLen = shortBlockLen - eccPerBlock + 1
+  for (let i = 0; i < maxDataLen; i++) {
+    for (let j = 0; j < numBlocks; j++) {
+      const block = blocks[j]!
+      // 跳过短块的占位字节位（短块数据比长块少 1 字节）
+      if (i === maxDataLen - 1 && block.short) continue
+      if (i < block.data.length) result.push(block.data[i]!)
+    }
+  }
+  for (let i = 0; i < eccPerBlock; i++) {
+    for (let j = 0; j < numBlocks; j++) {
+      result.push(blocks[j]!.ecc[i]!)
+    }
+  }
+  return result
+}
+
+/**
+ * 编码 value 为 QR 矩阵（纠错级别 l/m/q/h，版本 1–40）。
  * - 空串会选版本 1（仅模式/计数/终止位），调用方应自行拦截空态；
  * - 内容超出容量抛 QR_TOO_LONG_ERROR。
  */
 export function encodeQR(value: string, ecLevel: QrErrorCorrection = 'l'): QRResult {
-  const { codewords: dataWords, version } = encodeDataCodewords(value, ecLevel)
-  const { ecc: eccPerBlock, blocks } = RS_BLOCKS_L[version]!
-
-  // 数据分块
-  const blockSize = Math.ceil(dataWords.length / blocks)
-  const dataBlocks: number[][] = []
-  for (let b = 0; b < blocks; b++) {
-    dataBlocks.push(dataWords.slice(b * blockSize, b * blockSize + blockSize))
-  }
-  // 各块 ECC
-  const eccBlocks = dataBlocks.map((b) => rsEncode(b, eccPerBlock))
-  // 交错
-  const finalCodewords: number[] = []
-  const maxData = Math.max(...dataBlocks.map((b) => b.length))
-  for (let i = 0; i < maxData; i++) {
-    for (const b of dataBlocks) if (i < b.length) finalCodewords.push(b[i]!)
-  }
-  for (let i = 0; i < eccPerBlock; i++) {
-    for (const b of eccBlocks) finalCodewords.push(b[i]!)
-  }
-  const remainderBits = REMAINDER_BITS[version]!
+  const ec = normalizeEc(ecLevel)
+  const { codewords: dataWords, version } = encodeDataCodewords(value, ec)
+  const finalCodewords = addEccAndInterleave(dataWords, version, ec)
 
   const size = 17 + 4 * version
   // 函数模块标记 + 初步矩阵
@@ -596,9 +650,12 @@ export function encodeQR(value: string, ecLevel: QrErrorCorrection = 'l'): QRRes
   drawFinder(base, size, 0, size - 7)
   drawAlignment(base, size, version)
   drawTiming(base, size)
+  // 暗模块（恒深色，函数模块）随基础矩阵就位——掩码罚分计入它
+  base[(4 * version + 9) * size + 8] = 1
   drawCodewords(base, func, size, finalCodewords)
 
-  // 8 种掩码选罚分最低
+  // 8 种掩码选罚分最低（标准流程：候选掩码应用后先绘该掩码的格式信息再计罚分，
+  // 格式信息两位拷贝参与 N1/N2/N3/N4 全部罚分规则）
   let bestMask = 0
   let bestScore = Infinity
   let bestModules = new Uint8Array(size * size)
@@ -611,7 +668,8 @@ export function encodeQR(value: string, ecLevel: QrErrorCorrection = 'l'): QRRes
         }
       }
     }
-    const score = penaltyScore(candidate, func, size)
+    drawFormatBits(candidate, size, version, mask, ec)
+    const score = penaltyScore(candidate, size)
     if (score < bestScore) {
       bestScore = score
       bestMask = mask
@@ -620,7 +678,7 @@ export function encodeQR(value: string, ecLevel: QrErrorCorrection = 'l'): QRRes
   }
 
   // 格式/版本信息（覆盖数据区）
-  drawFormatBits(bestModules, size, version, bestMask)
+  drawFormatBits(bestModules, size, version, bestMask, ec)
   drawVersion(bestModules, size, version)
 
   return {
@@ -629,15 +687,20 @@ export function encodeQR(value: string, ecLevel: QrErrorCorrection = 'l'): QRRes
     modules: bestModules,
     mask: bestMask,
     codewords: finalCodewords,
-    remainderBits,
+    remainderBits: remainderBits(version),
   }
+}
+
+/** 纠错级别归一：非法值回落 l（组件属性宽松解析） */
+function normalizeEc(ec: QrErrorCorrection): QrErrorCorrection {
+  return ec === 'm' || ec === 'q' || ec === 'h' ? ec : 'l'
 }
 
 /**
  * 将模块矩阵转为 SVG path 字符串（按行合并水平深色段，体积最小）。
- * 配合 viewBox="0 0 N N" 渲染即得二维码。
+ * 配合 viewBox="0 0 N N" 渲染即得二维码；offset 用于静区内边距平移。
  */
-export function matrixToPath(modules: Uint8Array, size: number): string {
+export function matrixToPath(modules: Uint8Array, size: number, offset = 0): string {
   let d = ''
   for (let y = 0; y < size; y++) {
     let start = -1
@@ -646,7 +709,7 @@ export function matrixToPath(modules: Uint8Array, size: number): string {
       if (dark && start < 0) start = x
       if (!dark && start >= 0) {
         const len = x - start
-        d += `M${start} ${y}h${len}v1h-${len}z`
+        d += `M${start + offset} ${y + offset}h${len}v1h-${len}z`
         start = -1
       }
     }

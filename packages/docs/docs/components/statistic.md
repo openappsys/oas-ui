@@ -34,6 +34,37 @@
   <oas-statistic value="8846" loading></oas-statistic>
 </DemoBlock>
 
+## 标题与额外区
+
+`title` 属性（或 `slot="title"`）在数值上方渲染标题；`extra` 属性（或 `slot="extra"`）在数值行下方渲染额外内容（如趋势脚注）。`title` 是原生全局属性，组件渲染后即从宿主吸收，避免悬停弹出浏览器原生提示。
+
+<DemoBlock title="title + extra（数据看板卡）">
+  <oas-statistic title="总收入" value="8846132" precision="2" extra="较昨日 +24%"></oas-statistic>
+  <oas-statistic value="99.9" precision="1" suffix="%">
+    <span slot="title">完成率</span>
+    <span slot="extra">环比 -1.2%</span>
+  </oas-statistic>
+</DemoBlock>
+
+## 趋势指示
+
+`trend="up" | "down"` 在数值前渲染涨跌箭头，颜色走语义 token（涨 `--oas-color-success-text` / 跌 `--oas-color-danger-text`，暗色自动切换），可用 `--oas-statistic-trend-up-color` / `--oas-statistic-trend-down-color` 覆盖。
+
+<DemoBlock title="trend 涨跌">
+  <oas-statistic title="今日订单" value="1284" trend="up" extra="较昨日 +12.5%"></oas-statistic>
+  <oas-statistic title="退款率" value="2.4" precision="1" suffix="%" trend="down" extra="环比 -0.8%"></oas-statistic>
+</DemoBlock>
+
+## 数值动画（组合 number-animation）
+
+组件不内建 value 动画，通过 `slot="value"` 组合 `oas-number-animation` 实现滚动进入效果：
+
+<DemoBlock title="slot=value + oas-number-animation">
+  <oas-statistic title="累计用户数">
+    <oas-number-animation slot="value" value="128653" duration="2000" group-separator="true"></oas-number-animation>
+  </oas-statistic>
+</DemoBlock>
+
 ## 字号定制
 
 字号默认固定为 `--oas-font-size-lg`（16px，不随外层变化），可用 CSS 变量 `--oas-statistic-font` 显式定制（如 `32px`）。
@@ -57,18 +88,24 @@
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
+| `extra` | 数值行下方额外内容（趋势脚注等） | `string` | — |
 | `group-separator` | 千分位分组（`"false"` 关闭） | `string` | `true` |
 | `loading` | 加载态（骨架占位） | `boolean` | — |
 | `precision` | 小数位（四舍五入） | `string` | `0` |
 | `prefix` | 前后缀文案 | `string` | — |
-| `suffix` | 前后缀文案 | `string` | — |
+| `suffix` | 前后缀文案 | — | — |
+| `title` | 数值上方标题（原生全局属性，渲染后吸收移除） | `string` | — |
+| `trend` | 趋势指示：`up`（涨，success 语义色）/ `down`（跌，danger 语义色）+ 箭头 | `string` | — |
 | `value` | 数值（数字字符串） | `string` | `0` |
 
 ### 插槽
 
 | 名称 | 说明 |
 | --- | --- |
+| `extra` | 数值行下方额外内容（趋势脚注等，分发时优先于 `extra` 属性文本） |
 | `prefix` | 前置内容（图标/标签等复杂内容，分发时优先于 `prefix` 属性文本）；简单文本用 `prefix` 属性即可 |
 | `suffix` | 后置内容（图标/标签等复杂内容，分发时优先于 `suffix` 属性文本）；简单文本用 `suffix` 属性即可 |
+| `title` | 数值上方标题（分发时优先于 `title` 属性文本） |
+| `value` | 自定义数值呈现（如组合 `oas-number-animation` 动画值；分发时不渲染 Intl 格式化文本） |
 
 无事件（纯展示）。

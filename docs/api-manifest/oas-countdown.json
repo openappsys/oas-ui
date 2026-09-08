@@ -13,14 +13,48 @@
       "type": "string",
       "default": "HH:mm:ss",
       "observed": true
+    },
+    {
+      "name": "active",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "prefix",
+      "observed": true
+    },
+    {
+      "name": "suffix",
+      "observed": true
     }
   ],
   "props": [],
   "events": [
     {
       "name": "oas-finish"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ value: remaining }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "prefix"
+    },
+    {
+      "name": "suffix"
+    },
+    {
+      "name": "title"
+    }
+  ],
   "unresolved": []
 }

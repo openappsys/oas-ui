@@ -21,8 +21,6 @@
     },
     {
       "name": "suffix",
-      "type": "string",
-      "default": "",
       "observed": true
     },
     {
@@ -35,6 +33,24 @@
       "name": "loading",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "extra",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "trend",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -46,10 +62,19 @@
   "events": [],
   "slots": [
     {
+      "name": "extra"
+    },
+    {
       "name": "prefix"
     },
     {
       "name": "suffix"
+    },
+    {
+      "name": "title"
+    },
+    {
+      "name": "value"
     }
   ],
   "unresolved": []

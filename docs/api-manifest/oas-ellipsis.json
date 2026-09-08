@@ -30,10 +30,33 @@
       "type": "string",
       "default": "tail",
       "observed": true
+    },
+    {
+      "name": "expanded",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "expand-text",
+      "observed": true
+    },
+    {
+      "name": "collapse-text",
+      "observed": true
+    },
+    {
+      "name": "tooltip-placement",
+      "type": "string",
+      "default": "top",
+      "observed": true
     }
   ],
   "props": [],
   "events": [
+    {
+      "name": "oas-overflow",
+      "detail": "{ overflow }"
+    },
     {
       "name": "oas-expand",
       "detail": "{ expanded: this.expanded }"

@@ -35,6 +35,27 @@ Each visible item emits `oas-item` after rendering with `detail` containing `{ i
 
 Scroll events are emitted as `oas-scroll`, throttled by rAF, with `detail` being `{ scrollTop, start, end }`.
 
+## Scroll to a Specific Item
+
+The `scrollToIndex(index, options?)` method scrolls to the item at the given index: `options.align` supports `start` (item top aligned to the viewport top) / `center` (vertically centered) / `end` (item bottom aligned to the viewport bottom) / `auto` (default: no scroll if the item is already fully visible, otherwise the minimal scroll to bring it into view); `options.smooth` enables smooth scrolling. Row positioning of embedded consumers (list / tree) also goes through this public contract without reaching into internal DOM.
+
+<DemoBlock title="scrollToIndex scroll positioning">
+  <div style="width: 100%">
+    <div style="display: flex; gap: var(--oas-space-2); margin-bottom: var(--oas-space-3); align-items: center; flex-wrap: wrap">
+      <oas-input id="vl-jump-index" type="number" value="500" style="width: 120px"></oas-input>
+      <select id="vl-jump-align" style="padding: 5px var(--oas-space-2); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg); color: var(--oas-color-text-primary); font-size: var(--oas-font-size-md)">
+        <option value="auto">auto (minimal scroll)</option>
+        <option value="start">start (top aligned)</option>
+        <option value="center">center</option>
+        <option value="end">end (bottom aligned)</option>
+      </select>
+      <oas-button id="vl-jump-btn" size="small" type="primary">Jump</oas-button>
+      <span style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Current scrollTop: <span id="vl-jump-top">0</span></span>
+    </div>
+    <oas-virtual-list id="vl-jump" height="240" item-height="32"></oas-virtual-list>
+  </div>
+</DemoBlock>
+
 ## Render Buffer
 
 `buffer` controls how many extra items are pre-rendered above and below the visible area (default `4`): a larger buffer means fewer blank areas (white screens) while scrolling, at the cost of more rendered DOM nodes.
@@ -107,6 +128,26 @@ onMounted(() => {
   // Custom scroll container
   const target = document.querySelector('#vl-target')
   if (target) target.items = Array.from({ length: 500 }, (_, i) => `Record ${i + 1}`)
+
+  // Scroll to a specific item: index input + alignment
+  const jump = document.querySelector('#vl-jump')
+  if (jump) {
+    jump.items = Array.from({ length: 1000 }, (_, i) => `Item ${i + 1}`)
+    jump.addEventListener('oas-scroll', (e) => {
+      const top = document.querySelector('#vl-jump-top')
+      if (top) top.textContent = String(e.detail.scrollTop)
+    })
+    const jumpBtn = document.querySelector('#vl-jump-btn')
+    jumpBtn?.addEventListener('click', () => {
+      // whenDefined guard: method calls must happen after the custom element upgrades
+      customElements.whenDefined('oas-virtual-list').then(() => {
+        const raw = Number(document.querySelector('#vl-jump-index')?.value)
+        const index = Math.min(Math.max(1, Math.trunc(raw) || 1), 1000) - 1
+        const align = document.querySelector('#vl-jump-align')?.value ?? 'auto'
+        jump.scrollToIndex(index, { align })
+      })
+    })
+  }
 
   // Render buffer comparison: count items actually rendered to the DOM
   const buf0 = document.querySelector('#vl-buffer-0')

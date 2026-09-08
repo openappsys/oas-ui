@@ -98,7 +98,7 @@
     {
       "name": "row-height",
       "type": "string",
-      "default": "",
+      "default": "32",
       "observed": true
     },
     {
