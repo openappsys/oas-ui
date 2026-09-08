@@ -102,6 +102,20 @@ describe('OASForm', () => {
     })
   })
 
+  it('collectFields 覆盖 dynamic-input（model-value 通道，复合系遗留补注册）', () => {
+    const el = new OASForm()
+    el.innerHTML = `
+      <oas-dynamic-input name="env" model-value='[{"key":"A","value":"1"}]'></oas-dynamic-input>
+    `
+    document.body.appendChild(el)
+    let detail: unknown
+    el.addEventListener('oas-submit', (e: Event) => (detail = (e as CustomEvent).detail))
+    el.shadowRoot!.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }))
+    expect((detail as { values: Record<string, string> }).values).toEqual({
+      env: '[{"key":"A","value":"1"}]',
+    })
+  })
+
   it('registerFormControl 允许收集自定义控件', () => {
     const unreg = registerFormControl('oas-custom-field', (el) => el.getAttribute('model-value'))
     try {
