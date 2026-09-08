@@ -38,7 +38,18 @@
     },
     {
       "name": "checkable",
-      "type": "boolean",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "selected",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "empty-text",
       "observed": true
     },
     {
@@ -134,16 +145,6 @@
       "type": "string",
       "default": "all",
       "observed": true
-    },
-    {
-      "name": "selected",
-      "type": "string",
-      "default": "",
-      "observed": false
-    },
-    {
-      "name": "empty-text",
-      "observed": false
     }
   ],
   "props": [
@@ -161,12 +162,20 @@
       "name": "data",
       "type": "Array<Record<string, unknown>> | string",
       "default": "[]"
+    },
+    {
+      "name": "rowClass",
+      "type": "TableRowClass | null"
+    },
+    {
+      "name": "spanMethod",
+      "type": "TableSpanMethod | null"
     }
   ],
   "events": [
     {
       "name": "oas-check",
-      "detail": "{ keys: selectAll.checked ? keys : [] } | { keys: [...next] }"
+      "detail": "{ keys: selectAll.checked ? keys : [] } | { keys: next } | { keys: [...next] }"
     },
     {
       "name": "oas-page-change",
@@ -207,6 +216,10 @@
       "detail": "{ scrollTop: st, start: win.start, end: win.end }"
     }
   ],
-  "slots": [],
+  "slots": [
+    {
+      "name": "template[slot=\"empty\"]"
+    }
+  ],
   "unresolved": []
 }

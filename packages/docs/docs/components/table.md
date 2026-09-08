@@ -91,6 +91,44 @@
 
 表头复选框一键全选/取消，行复选框单独勾选；选中变化派发 `oas-check`。
 
+## 行单选（checkable="radio"）
+
+<DemoBlock title="行单选（radio 互斥）">
+  <div style="width: 100%">
+    <oas-table id="table-radio" checkable="radio" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"city","title":"城市"},{"key":"position","title":"职位"}]' data='[{"name":"张三","age":30,"city":"北京","position":"前端工程师"},{"name":"李四","age":25,"city":"上海","position":"产品经理"},{"name":"王五","age":35,"city":"深圳","position":"后端工程师"},{"name":"赵六","age":28,"city":"杭州","position":"UI 设计师"},{"name":"孙七","age":32,"city":"广州","position":"测试工程师"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      当前选中：<span id="table-radio-selected">无</span>
+    </p>
+  </div>
+</DemoBlock>
+
+`checkable="radio"` 进入单选档（裸 `checkable` 多选行为不变）：勾选列渲染 radio、表头不再渲染全选框（保留空白列头维持列对齐），点选互斥——`selected` 为单值语义（至多一个行 key），再点已选行取消选中；`oas-check` detail 同为 `{ keys: string[] }`（单选档至多一个元素）。
+
+## 行级状态样式（row-class）
+
+<DemoBlock title="row-class：按行数据返回 class">
+  <div style="width: 100%">
+    <oas-table id="table-row-class" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"},{"key":"status","title":"状态"}]' data='[{"name":"张三","age":30,"status":"在职"},{"name":"李四","age":25,"status":"在职"},{"name":"王五","age":41,"status":"超标"},{"name":"赵六","age":28,"status":"停用"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      停用行灰化、超标行警色：由 row-class 返回的 class 驱动。
+    </p>
+  </div>
+</DemoBlock>
+
+<style>
+#table-row-class::part(row-disabled) {
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-secondary);
+  text-decoration: line-through;
+}
+#table-row-class::part(row-warn) {
+  color: var(--oas-color-danger);
+  font-weight: 600;
+}
+</style>
+
+`row-class` 为 property 函数通道：`(row, index) => string`（多值空格分隔），返回的 class 挂到数据行 tr，并同步暴露为该行 tr 与各单元格的 `::part()` token——页面 CSS 用 `::part()` 即可穿透 Shadow DOM 命中（上例的停用/超标行样式即此机制）。函数不可序列化：**不参与 attribute / SSR 快照**（契约同 `columns.render`），SSR 场景请在客户端水合后赋值。
+
 ## 与分页联动
 
 <DemoBlock title="表格 + 分页">
@@ -262,6 +300,20 @@
   </div>
 </DemoBlock>
 
+<DemoBlock title="空态富内容插槽（slot=&quot;empty&quot;）">
+  <div style="width: 100%">
+    <oas-table id="table-empty-slot" columns='[{"key":"name","title":"姓名"},{"key":"age","title":"年龄"}]' data="[]">
+      <div slot="empty" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0">
+        <oas-icon name="search" style="font-size: 28px; color: var(--oas-color-text-secondary)"></oas-icon>
+        <span>暂无记录，点击按钮新增一条数据</span>
+        <oas-button size="small" type="primary" onclick="window.tableEmptySlotAdd && window.tableEmptySlotAdd()">新增数据</oas-button>
+      </div>
+    </oas-table>
+  </div>
+</DemoBlock>
+
+空态文案优先级：`slot="empty"` 插槽（`<template slot="empty">` 或普通元素均可，普通元素克隆自身、模板克隆其内容）> `empty-text` 属性 > 内置 i18n 文案；插槽内容增删会自动重渲染。
+
 ## 列设置：显隐 / 拖拽重排 / 列宽
 
 <DemoBlock title="列拖拽重排 + 列宽拖拽">
@@ -351,6 +403,19 @@
 
 列配置 `merge: true` 将该列连续相同显示值的行合并为一个 rowspan 单元格（虚拟滚动模式下忽略合并）。
 
+## 受控合并（span-method）
+
+<DemoBlock title="span-method：逐格显式声明 rowspan/colspan">
+  <div style="width: 100%">
+    <oas-table id="table-span" columns='[{"key":"quarter","title":"季度"},{"key":"product","title":"产品"},{"key":"sales","title":"销量","merge":true},{"key":"note","title":"备注"}]' data='[{"id":1,"quarter":"Q1","product":"甲","sales":120,"note":"开门红"},{"id":2,"quarter":"Q1","product":"乙","sales":120,"note":"与上行同值"},{"id":3,"quarter":"Q2","product":"甲","sales":98,"note":""},{"id":4,"quarter":"Q2","product":"乙","sales":98,"note":"与上行同值"}]' row-key="id"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      季度列由 spanMethod 显式声明（Q1 / Q2 各跨 2 行）；销量列走列级 merge 自动同值合并——两机制按列独立并存。
+    </p>
+  </div>
+</DemoBlock>
+
+`span-method` 为 property 函数通道：`(row, column, rowIndex, columnIndex) => [rowspan, colspan] | {rowspan, colspan}`，逐格显式声明合并；返回 `0` 表示本格被覆盖不渲染（覆盖关系由函数声明）。与列级 `merge` 自动合并**按列独立并存**（被显式 span 覆盖而缺格的行会断开该列 merge 的连续分组）；虚拟滚动模式下忽略（与 `merge` 同级的定高限制）。`rowIndex` 按数据行序（0 起，不含 expand 内容行），`columnIndex` 按有效列顺序；函数不可序列化，不参与 attribute / SSR 快照（契约同 `columns.render`）。
+
 ## 远程数据与排序 loading
 
 <DemoBlock title="排序触发重新请求（模拟远程）">
@@ -427,6 +492,36 @@ onMounted(() => {
   })
   table?.addEventListener('oas-row-click', (e) => {
     document.querySelector('#table-row').textContent = e.detail.row.name ?? e.detail.key
+  })
+
+  // 行单选 demo：oas-check 反馈（单选档 detail.keys 至多一个值）
+  const radioTable = document.querySelector('#table-radio')
+  radioTable?.addEventListener('oas-check', (e) => {
+    const keys = e.detail.keys
+    const el = document.querySelector('#table-radio-selected')
+    if (el) el.textContent = keys.length ? keys.join('、') : '无'
+  })
+
+  // 空态插槽 demo：点击新增一条数据（空态被数据行替换，可见反馈）
+  window.tableEmptySlotAdd = () => {
+    document.querySelector('#table-empty-slot')?.setAttribute('data', JSON.stringify([{ name: '新成员', age: 28 }]))
+  }
+
+  // property 函数通道（row-class / span-method）：等组件注册完成再赋值——
+  // 升级前赋 property 会变成 expando 遮蔽类访问器（与上方 cellTemplate demo 同因）
+  customElements.whenDefined('oas-table').then(() => {
+    const rowClassTable = document.querySelector('#table-row-class')
+    if (rowClassTable) {
+      rowClassTable.rowClass = (row) =>
+        row.status === '停用' ? 'row-disabled' : row.status === '超标' ? 'row-warn' : ''
+    }
+    const spanTable = document.querySelector('#table-span')
+    if (spanTable) {
+      spanTable.spanMethod = (_row, _column, rowIndex, columnIndex) => {
+        if (columnIndex !== 0) return undefined
+        return rowIndex === 0 || rowIndex === 2 ? [2, 1] : [0, 0]
+      }
+    }
   })
 
   // 大数据量虚拟滚动 demo：1 万行
@@ -561,21 +656,21 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `bordered` | 完整边框：单元格网格描边（外框由组件自带） | — | — |
-| `checkable` | 复选框多选开关 | `boolean` | — |
-| `column-keys` | — | `string[] \| string` | `[]` |
+| `checkable` | 行选择开关：存在即多选（复选框 + 全选头）；`="radio"` 单选（点选互斥、再点取消、无全选头），oas-check detail.keys ≤1 | `string` | — |
+| `column-keys` | 受控列显隐与顺序（key 数组或逗号串）：在场时按有效叶序重组表头与数据列（多级表头同祖先链叶子并组） | `string[] \| string` | `[]` |
 | `columns` | 列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `TableColumn[] \| string` | `[]` |
-| `current` | — | `string` | `1` |
+| `current` | 当前页码（内置分页，受控） | `string` | `1` |
 | `data` | 行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先） | `Array<Record<string, unknown>> \| string` | `[]` |
 | `edit-controlled` | 受控编辑：提交时不自动回写 `data`，仅派发 `oas-edit`，由宿主监听后自行更新 `data` | `boolean` | — |
 | `editable` | 行内编辑开关（需配合列配置 `editable: true`；操作列 `actions: true` 同理） | `boolean` | — |
 | `empty-text` | 空态文案 | — | — |
 | `expanded` | 已展开行 key 集合（逗号分隔；树形父行/可展开行共用） | `string` | — |
-| `filter-values` | — | `string` | — |
+| `filter-values` | 受控列过滤值（JSON 对象：列 key → 选中值数组） | `string` | — |
 | `height` | 虚拟滚动视口高度（px）；设置后仅渲染可见窗口行 + 首尾占位行 | `string` | `320` |
 | `loading` | 加载态：数据区显示加载占位行（表头保留） | `boolean` | — |
-| `multi-sort` | — | `string` | — |
-| `page-size` | — | `string` | `10` |
-| `pagination` | — | `boolean` | — |
+| `multi-sort` | 多列排序（JSON 数组：[{ key, order }]，按数组序依次排序） | `string` | — |
+| `page-size` | 每页条数（内置分页，默认 10） | `string` | `10` |
+| `pagination` | 内置分页开关（页脚分页条；宿主自管分页时不设） | `boolean` | — |
 | `row-height` | 虚拟滚动每行固定高度（px） | `string` | `40` |
 | `row-key` | 行唯一键字段 | `string` | `key` |
 | `selected` | 选中行 key 集合（逗号分隔） | `string` | — |
@@ -585,23 +680,29 @@ onMounted(() => {
 | `sticky-rows` | 吸顶行数（数字 N）：前 N 行吸顶于表头下方（配合滚动容器与固定列共存） | `string` | — |
 | `stripe` | 斑马纹：奇数/偶数行交替浅底色 | `boolean` | — |
 | `summary` | 合计配置 `[{ key, type: 'sum'\|'avg'\|'count', label? }]`，JSON 字符串 | `string` | — |
-| `summary-scope` | — | `string` | `all` |
+| `summary-scope` | 合计行聚合范围：`all`（默认，全量数据）/ `page`（当前页） | `string` | `all` |
 
 ### 事件
 
 | 事件 | 说明 |
 | --- | --- |
 | `oas-check` | 复选框选中变化，`detail: { keys: string[] }` |
-| `oas-column-order` | — |
-| `oas-column-resize` | — |
+| `oas-column-order` | 列拖拽重排后派发，`detail: { keys }`（新列序） |
+| `oas-column-resize` | 列宽拖拽调整后派发，`detail: { key, width }` |
 | `oas-edit` | 行内编辑提交（Enter/失焦/操作列保存），`detail: { rowIndex, key, column, value }`；受控模式组件不回写 `data` |
 | `oas-edit-cancel` | 行内编辑取消（Esc/操作列取消/空值提交还原），`detail: { rowIndex, key, column, value }`（value 为原值） |
 | `oas-expand` | 行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }` |
-| `oas-filter-change` | — |
-| `oas-page-change` | — |
+| `oas-filter-change` | 列过滤值变化时派发，`detail: { key, values }` |
+| `oas-page-change` | 内置分页翻页时派发，`detail: { current, pageSize }` |
 | `oas-row-click` | 点击行（非 checkable 时同时切换选中），`detail: { row, key }` |
 | `oas-scroll` | 虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }` |
 | `oas-sort-change` | 排序变化，`detail: { key, order: 'asc' \| 'desc' \| '' }` |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `template[slot="empty"]` | 空态富内容（优先于 empty-text 与默认空态文案） |
 
 > 说明：`columns.render` 为函数类型，仅支持在 JS 侧构造后通过属性整体赋值，无法用 JSON 字符串表达；`fixed` 列建议显式声明 `width`（未声明时按 100px 兜底计算 sticky 偏移）。合计也可在列上直接写 `summary: 'sum' | 'avg' | 'count'`；`children`（树形子行）与 `expand`（可展开行内容）均为行数据字段。
 
