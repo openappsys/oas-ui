@@ -65,6 +65,15 @@ Options with `disabled: true` stay visible but are not selectable: `↑`/`↓`, 
   <oas-mentions id="mention-clear" clearable value="Today @Alice finished QA" style="width: 320px" options='[{"label":"Alice","value":"alice"},{"label":"Bob","value":"bob"}]'></oas-mentions>
 </DemoBlock>
 
+## Panel direction & separator (placement / split)
+
+<DemoBlock title="placement + split">
+  <oas-space size="small" direction="vertical" style="display: inline-flex">
+    <oas-mentions placement="top" placeholder="Panel opens upward" style="width: 320px" options='[{"label":"Alice","value":"alice"},{"label":"Bob","value":"bob"}]'></oas-mentions>
+    <oas-mentions split="," value="@alice, @bob notified" style="width: 320px" options='[{"label":"Alice","value":"alice"},{"label":"Bob","value":"bob"}]'></oas-mentions>
+  </oas-space>
+</DemoBlock>
+
 When the text is non-empty and the field is neither disabled nor readonly, a clear button shows in the top-right corner; clicking it clears the text and fires `oas-clear` (detail carries the previous value) plus an empty `oas-change`.
 
 ## Auto-grow (autosize)
@@ -250,3 +259,46 @@ onMounted(() => {
 </script>
 
 ## API
+
+### Attributes
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `autosize` | Auto-grow (pair with min-rows/max-rows) | `boolean` | — |
+| `clearable` | Clear button (clears all content, fires oas-clear) | `boolean` | — |
+| `disabled` | Disabled | `boolean` | — |
+| `label` | Accessible name (built-in text by default) | — | — |
+| `loading` | Suggestion panel loading state (during remote search; pair with oas-search) | `boolean` | — |
+| `max-rows` | Maximum rows (with autosize; `"0"` uncaps) | `string` | — |
+| `min-rows` | Minimum rows (with autosize) | `string` | `1` |
+| `options` | Options, JSON array `[{ label, value }]` | `Option[] \| string` | `[]` |
+| `placeholder` | Placeholder text | `string` | — |
+| `placement` | Panel direction: `auto` (default) / `top` / `bottom` | `string` | `auto` |
+| `prefix` | Trigger prefix | `string \| string[]` | `@` |
+| `readonly` | Read-only (focusable and readable, no suggestion panel) | `boolean` | — |
+| `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
+| `split` | Separator between a mention and following text (default space; not doubled when already separated) | `string` | ` ` |
+| `status` | Validation status: `error` / `warning` / `success` | `string` | — |
+| `value` | Value (controlled, full text) | `string` | — |
+| `variant` | Variant: `outlined` (default) / `filled` / `borderless` | `string` | `outlined` |
+
+### Events
+
+| Event | Description |
+| --- | --- |
+| `oas-blur` | Fires on blur, `detail: { value: this.ta.value }` |
+| `oas-change` | Text changed after insertion, `detail: { value }` (full text) |
+| `oas-clear` | Fires on clear, `detail: { value }` (pre-clear value) |
+| `oas-focus` | Fires on focus, `detail: { value: t.value }` |
+| `oas-input` | Fires on input (not during IME composition), `detail: { value }` |
+| `oas-option-render` | Fires on option render (rich option channel), `detail: { index, option, element }` |
+| `oas-search` | Fires when the trigger scan finds pending text (remote search hook), `detail: { query, prefix }` |
+| `oas-select` | Suggestion selected, `detail: { value, label }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `footer` | Panel footer content |
+| `header` | Panel header content |
+| `template[slot="option"]` | Custom option template (`[data-option-label]` binding) |
