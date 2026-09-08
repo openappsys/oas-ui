@@ -65,6 +65,15 @@ options 项带 `disabled: true` 时仍展示但置灰不可选：`↑↓`/Home/E
   <oas-mentions id="mention-clear" clearable value="今天 @张三 完成提测" style="width: 320px" options='[{"label":"张三","value":"zhangsan"},{"label":"李四","value":"lisi"}]'></oas-mentions>
 </DemoBlock>
 
+## 面板方向与分隔符（placement / split）
+
+<DemoBlock title="placement + split">
+  <oas-space size="small" direction="vertical" style="display: inline-flex">
+    <oas-mentions placement="top" placeholder="面板向上展开" style="width: 320px" options='[{"label":"张三","value":"zhangsan"},{"label":"李四","value":"lisi"}]'></oas-mentions>
+    <oas-mentions split="、" value="@张三、@李四 都已通知" style="width: 320px" options='[{"label":"张三","value":"zhangsan"},{"label":"李四","value":"lisi"}]'></oas-mentions>
+  </oas-space>
+</DemoBlock>
+
 文本非空且未禁用/只读时右上角显示清空按钮，点击清空文本并派发 `oas-clear`（detail 为清空前的值）与空值 `oas-change`。
 
 ## 自动增高（autosize）
@@ -250,3 +259,46 @@ onMounted(() => {
 </script>
 
 ## API
+
+### 属性
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `autosize` | 自适应高度（配 min-rows/max-rows） | `boolean` | — |
+| `clearable` | 清空按钮（清空全部内容并派 oas-clear） | `boolean` | — |
+| `disabled` | 禁用 | `boolean` | — |
+| `label` | 可访问名称（默认走内置文案） | — | — |
+| `loading` | 建议面板加载态（远程搜索时；配 oas-search 使用） | `boolean` | — |
+| `max-rows` | 最大行数（autosize 下生效；`"0"` 不封顶） | `string` | — |
+| `min-rows` | 最小行数（autosize 下生效） | `string` | `1` |
+| `options` | 选项，JSON 数组 `[{ label, value }]` | `Option[] \| string` | `[]` |
+| `placeholder` | 占位提示 | `string` | — |
+| `placement` | 建议面板方向：`auto`（默认）/ `top` / `bottom` | `string` | `auto` |
+| `prefix` | 触发前缀 | `string \| string[]` | `@` |
+| `readonly` | 只读（可聚焦可读，不弹建议面板） | `boolean` | — |
+| `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
+| `split` | 提及项与后文的分隔符（默认空格；后文已分隔则不重复补） | `string` | ` ` |
+| `status` | 校验态：`error` / `warning` / `success` | `string` | — |
+| `value` | 值（受控，完整文本） | `string` | — |
+| `variant` | 形态：`outlined`（默认）/ `filled` / `borderless` | `string` | `outlined` |
+
+### 事件
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-blur` | 失焦时派发，`detail: { value: this.ta.value }` |
+| `oas-change` | 插入后文本变化，`detail: { value }`（完整文本） |
+| `oas-clear` | 清空时派发，`detail: { value }`（清空前值） |
+| `oas-focus` | 聚焦时派发，`detail: { value: t.value }` |
+| `oas-input` | 输入时派发（IME 组合期不派发），`detail: { value }` |
+| `oas-option-render` | 选项渲染时派发（富选项通道），`detail: { index, option, element }` |
+| `oas-search` | 触发符扫描到待选时派发（远程搜索钩子），`detail: { query, prefix }` |
+| `oas-select` | 选中建议项，`detail: { value, label }` |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `footer` | 建议面板底部内容 |
+| `header` | 建议面板顶部内容 |
+| `template[slot="option"]` | 自定义选项模板（`[data-option-label]` 绑定） |
