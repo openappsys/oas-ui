@@ -91,6 +91,44 @@ Each size only changes the default cell padding and font size, all via CSS varia
 
 The header checkbox selects / clears all rows at once; row checkboxes toggle individually. Selection changes emit `oas-check`.
 
+## Row Single-Select (checkable="radio")
+
+<DemoBlock title="Row single-select (mutually exclusive radio)">
+  <div style="width: 100%">
+    <oas-table id="table-radio" checkable="radio" columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"city","title":"City"},{"key":"position","title":"Position"}]' data='[{"name":"Alice","age":30,"city":"Beijing","position":"Frontend Engineer"},{"name":"Bob","age":25,"city":"Shanghai","position":"Product Manager"},{"name":"Carol","age":35,"city":"Shenzhen","position":"Backend Engineer"},{"name":"David","age":28,"city":"Hangzhou","position":"UI Designer"},{"name":"Emma","age":32,"city":"Guangzhou","position":"QA Engineer"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      Selected: <span id="table-radio-selected">none</span>
+    </p>
+  </div>
+</DemoBlock>
+
+`checkable="radio"` switches to single-select (a bare `checkable` keeps the multi-select behavior): the selection column renders radios with no header select-all checkbox (a blank header cell keeps the columns aligned), and clicking is mutually exclusive — `selected` holds single-value semantics (at most one row key). Clicking the already-selected row deselects it; `oas-check` carries the same `{ keys: string[] }` detail (at most one element in single-select mode).
+
+## Row State Styling (row-class)
+
+<DemoBlock title="row-class: return a class per row">
+  <div style="width: 100%">
+    <oas-table id="table-row-class" columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"},{"key":"status","title":"Status"}]' data='[{"name":"Alice","age":30,"status":"active"},{"name":"Bob","age":25,"status":"active"},{"name":"Carol","age":41,"status":"over"},{"name":"David","age":28,"status":"disabled"}]' row-key="name"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      The disabled row is greyed out and the over-quota row is tinted warning — driven by the class returned from row-class.
+    </p>
+  </div>
+</DemoBlock>
+
+<style>
+#table-row-class::part(row-disabled) {
+  background: var(--oas-color-bg-hover);
+  color: var(--oas-color-text-secondary);
+  text-decoration: line-through;
+}
+#table-row-class::part(row-warn) {
+  color: var(--oas-color-danger);
+  font-weight: 600;
+}
+</style>
+
+`row-class` is a property function channel: `(row, index) => string` (multiple values separated by spaces). The returned classes land on the data row's `tr` and are also exposed as `::part()` tokens on that row's `tr` and each of its cells — page CSS can then target them through the Shadow DOM with `::part()` (the disabled/over-quota styling above uses exactly this mechanism). Functions cannot be serialized: it does **not** participate in the attribute / SSR snapshot (same contract as `columns.render`); in SSR scenarios assign it after client hydration.
+
 ## Integration with Pagination
 
 <DemoBlock title="Table + pagination">
@@ -262,6 +300,20 @@ With the `loading` attribute, the header stays visible and the data area shows p
   </div>
 </DemoBlock>
 
+<DemoBlock title="Rich empty content slot (slot=&quot;empty&quot;)">
+  <div style="width: 100%">
+    <oas-table id="table-empty-slot" columns='[{"key":"name","title":"Name"},{"key":"age","title":"Age"}]' data="[]">
+      <div slot="empty" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0">
+        <oas-icon name="search" style="font-size: 28px; color: var(--oas-color-text-secondary)"></oas-icon>
+        <span>No records yet — click the button to add one</span>
+        <oas-button size="small" type="primary" onclick="window.tableEmptySlotAdd && window.tableEmptySlotAdd()">Add data</oas-button>
+      </div>
+    </oas-table>
+  </div>
+</DemoBlock>
+
+Empty state priority: the `slot="empty"` slot (either `<template slot="empty">` or a plain element — a plain element is cloned as-is, a template clones its content) > the `empty-text` attribute > the built-in i18n text; adding or removing the slotted content re-renders automatically.
+
 ## Column settings: show / hide / drag / resize
 
 <DemoBlock title="Column drag reorder + column width resize">
@@ -351,6 +403,19 @@ A column with `serialNumber: true` renders the row number (starting from 1, not 
 
 `merge: true` merges consecutive rows with the same displayed value in that column into a single rowspan cell (ignored in virtual-scroll mode).
 
+## Controlled Span (span-method)
+
+<DemoBlock title="span-method: explicit rowspan/colspan per cell">
+  <div style="width: 100%">
+    <oas-table id="table-span" columns='[{"key":"quarter","title":"Quarter"},{"key":"product","title":"Product"},{"key":"sales","title":"Sales","merge":true},{"key":"note","title":"Note"}]' data='[{"id":1,"quarter":"Q1","product":"A","sales":120,"note":"Good start"},{"id":2,"quarter":"Q1","product":"B","sales":120,"note":"Same as above"},{"id":3,"quarter":"Q2","product":"A","sales":98,"note":""},{"id":4,"quarter":"Q2","product":"B","sales":98,"note":"Same as above"}]' row-key="id"></oas-table>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      The quarter column is declared explicitly via spanMethod (Q1 / Q2 each span 2 rows); the sales column uses the column-level merge for same-value merging — the two mechanisms coexist independently per column.
+    </p>
+  </div>
+</DemoBlock>
+
+`span-method` is a property function channel: `(row, column, rowIndex, columnIndex) => [rowspan, colspan] | {rowspan, colspan}`, declaring the merge explicitly per cell; returning `0` means the cell is covered and not rendered (the function declares the coverage). It coexists with the column-level `merge` **independently per column** (rows missing a cell due to an explicit span naturally break that column's merge grouping); it is ignored in virtual-scroll mode (the same fixed-height limitation as `merge`). `rowIndex` counts data rows (0-based, excluding expand content rows) and `columnIndex` follows the effective column order; functions cannot be serialized and do not participate in the attribute / SSR snapshot (same contract as `columns.render`).
+
 ## Remote data & sort loading
 
 <DemoBlock title="Sort triggers a re-request (simulated remote)">
@@ -429,6 +494,37 @@ onMounted(() => {
   })
   table?.addEventListener('oas-row-click', (e) => {
     document.querySelector('#table-row').textContent = e.detail.row.name ?? e.detail.key
+  })
+
+  // Row single-select demo: oas-check feedback (single-select detail.keys holds at most one value)
+  const radioTable = document.querySelector('#table-radio')
+  radioTable?.addEventListener('oas-check', (e) => {
+    const keys = e.detail.keys
+    const el = document.querySelector('#table-radio-selected')
+    if (el) el.textContent = keys.length ? keys.join(', ') : 'none'
+  })
+
+  // Empty slot demo: click to add a row (the empty state is visibly replaced by the row)
+  window.tableEmptySlotAdd = () => {
+    document.querySelector('#table-empty-slot')?.setAttribute('data', JSON.stringify([{ name: 'Newcomer', age: 28 }]))
+  }
+
+  // Property function channels (row-class / span-method): assign only after the element is
+  // registered — assigning before the upgrade turns the property into an expando shadowing
+  // the class accessor (same reason as the cellTemplate demo above)
+  customElements.whenDefined('oas-table').then(() => {
+    const rowClassTable = document.querySelector('#table-row-class')
+    if (rowClassTable) {
+      rowClassTable.rowClass = (row) =>
+        row.status === 'disabled' ? 'row-disabled' : row.status === 'over' ? 'row-warn' : ''
+    }
+    const spanTable = document.querySelector('#table-span')
+    if (spanTable) {
+      spanTable.spanMethod = (_row, _column, rowIndex, columnIndex) => {
+        if (columnIndex !== 0) return undefined
+        return rowIndex === 0 || rowIndex === 2 ? [2, 1] : [0, 0]
+      }
+    }
   })
 
   // Virtual scroll demo: 10k rows
@@ -564,21 +660,21 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `bordered` | Full border: draws a grid outline around cells (the outer frame is built in) | — | — |
-| `checkable` | Enables checkbox multi-select | `boolean` | — |
-| `column-keys` | — | `string[] \| string` | `[]` |
+| `checkable` | Row selection: present = multi-select (checkboxes + select-all header); `="radio"` = single-select (mutually exclusive, click again to deselect, no select-all), oas-check detail.keys ≤1 | `string` | — |
+| `column-keys` | Controlled column visibility and order (key array or comma list): header tree and data columns re-order to the effective leaf order (same-ancestor leaves grouped) | `string[] \| string` | `[]` |
 | `columns` | Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `TableColumn[] \| string` | `[]` |
-| `current` | — | `string` | `1` |
+| `current` | Current page (built-in pagination, controlled) | `string` | `1` |
 | `data` | Row data `[{ [key]: value, children?, expand? }]`, JSON string (declarative attribute channel; property assignment takes precedence) | `Array<Record<string, unknown>> \| string` | `[]` |
 | `edit-controlled` | Controlled editing: does not write back `data` on submit, only fires `oas-edit`; the host listens and updates `data` itself | `boolean` | — |
 | `editable` | Inline editing switch (requires `editable: true` on columns; same for the `actions: true` operation column) | `boolean` | — |
 | `empty-text` | Empty state text | — | — |
 | `expanded` | Set of expanded row keys (comma-separated; shared by tree parent rows and expandable rows) | `string` | — |
-| `filter-values` | — | `string` | — |
+| `filter-values` | Controlled column filter values (JSON object: column key → selected values) | `string` | — |
 | `height` | Virtual scroll viewport height (px); when set, only visible-window rows plus head/tail placeholders are rendered | `string` | `320` |
 | `loading` | Loading state: shows placeholder rows in the data area (header retained) | `boolean` | — |
-| `multi-sort` | — | `string` | — |
-| `page-size` | — | `string` | `10` |
-| `pagination` | — | `boolean` | — |
+| `multi-sort` | Multi-column sort (JSON array: [{ key, order }], applied in array order) | `string` | — |
+| `page-size` | Rows per page (built-in pagination, default 10) | `string` | `10` |
+| `pagination` | Built-in pagination switch (footer pager; leave unset when the host paginates) | `boolean` | — |
 | `row-height` | Fixed row height for virtual scrolling (px) | `string` | `40` |
 | `row-key` | Unique key field of a row | `string` | `key` |
 | `selected` | Set of selected row keys (comma-separated) | `string` | — |
@@ -588,23 +684,29 @@ onMounted(() => {
 | `sticky-rows` | Number of sticky rows (N): the first N rows stick below the header (coexists with the scroll container and fixed columns) | `string` | — |
 | `stripe` | Zebra striping: alternating light background for odd/even rows | `boolean` | — |
 | `summary` | Summary config `[{ key, type: 'sum'\|'avg'\|'count', label? }]`, JSON string | `string` | — |
-| `summary-scope` | — | `string` | `all` |
+| `summary-scope` | Summary aggregation scope: `all` (default, full dataset) / `page` (current page) | `string` | `all` |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
 | `oas-check` | Checkbox selection change, `detail: { keys: string[] }` |
-| `oas-column-order` | — |
-| `oas-column-resize` | — |
+| `oas-column-order` | Fired after column drag reorder, `detail: { keys }` (new column order) |
+| `oas-column-resize` | Fired after a column width drag, `detail: { key, width }` |
 | `oas-edit` | Inline edit submitted (Enter / blur / operation column save), `detail: { rowIndex, key, column, value }`; in controlled mode the component does not write back `data` |
 | `oas-edit-cancel` | Inline edit cancelled (Esc / operation column cancel / empty submit restores), `detail: { rowIndex, key, column, value }` (`value` is the original value) |
 | `oas-expand` | Row expand/collapse (tree child rows or expandable content rows), `detail: { key, expanded }` |
-| `oas-filter-change` | — |
-| `oas-page-change` | — |
+| `oas-filter-change` | Fired when a column filter value changes, `detail: { key, values }` |
+| `oas-page-change` | Fired when the built-in page changes, `detail: { current, pageSize }` |
 | `oas-row-click` | Row click (also toggles selection when not checkable), `detail: { row, key }` |
 | `oas-scroll` | Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }` |
 | `oas-sort-change` | Sort change, `detail: { key, order: 'asc' \| 'desc' \| '' }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `template[slot="empty"]` | Rich empty-state content (takes precedence over empty-text and the default empty text) |
 
 > Note: `columns.render` is a function type and can only be assigned via the property from JS — it cannot be expressed as a JSON string. For `fixed` columns it is recommended to declare `width` explicitly (sticky offsets fall back to 100px when omitted). Summary can also be written directly on a column as `summary: 'sum' | 'avg' | 'count'`; `children` (tree child rows) and `expand` (expandable row content) are both row data fields.
 

@@ -2385,7 +2385,7 @@
   "oas-table": {
     "attrs": {
       "bordered": "完整边框：单元格网格描边（外框由组件自带）",
-      "checkable": "复选框多选开关",
+      "checkable": "行选择开关：存在即多选（复选框 + 全选头）；`=\"radio\"` 单选（点选互斥、再点取消、无全选头），oas-check detail.keys ≤1",
       "columns": "列配置 `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）",
       "data": "行数据 `[{ [key]: value, children?, expand? }]`，JSON 字符串（attribute 声明式通道；property 赋值优先）",
       "editable": "行内编辑开关（需配合列配置 `editable: true`；操作列 `actions: true` 同理）",
@@ -2402,7 +2402,14 @@
       "sticky-rows": "吸顶行数（数字 N）：前 N 行吸顶于表头下方（配合滚动容器与固定列共存）",
       "stripe": "斑马纹：奇数/偶数行交替浅底色",
       "summary": "合计配置 `[{ key, type: 'sum'|'avg'|'count', label? }]`，JSON 字符串",
-      "size": "密度档位：`small` / `medium`（默认）/ `large`——只改单元格 padding 与字号默认值（全走 CSS 变量，可用 `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size` 覆盖，优先级高于档位）；非法值回落 `medium` 并告警；与 `row-height` 正交"
+      "size": "密度档位：`small` / `medium`（默认）/ `large`——只改单元格 padding 与字号默认值（全走 CSS 变量，可用 `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size` 覆盖，优先级高于档位）；非法值回落 `medium` 并告警；与 `row-height` 正交",
+      "column-keys": "受控列显隐与顺序（key 数组或逗号串）：在场时按有效叶序重组表头与数据列（多级表头同祖先链叶子并组）",
+      "current": "当前页码（内置分页，受控）",
+      "filter-values": "受控列过滤值（JSON 对象：列 key → 选中值数组）",
+      "multi-sort": "多列排序（JSON 数组：[{ key, order }]，按数组序依次排序）",
+      "page-size": "每页条数（内置分页，默认 10）",
+      "pagination": "内置分页开关（页脚分页条；宿主自管分页时不设）",
+      "summary-scope": "合计行聚合范围：`all`（默认，全量数据）/ `page`（当前页）"
     },
     "events": {
       "oas-check": "复选框选中变化，`detail: { keys: string[] }`",
@@ -2411,9 +2418,15 @@
       "oas-expand": "行展开/收起（树形子行或可展开内容行），`detail: { key, expanded }`",
       "oas-row-click": "点击行（非 checkable 时同时切换选中），`detail: { row, key }`",
       "oas-scroll": "虚拟滚动滚动事件（rAF 节流），`detail: { scrollTop, start, end }`",
-      "oas-sort-change": "排序变化，`detail: { key, order: 'asc' | 'desc' | '' }`"
+      "oas-sort-change": "排序变化，`detail: { key, order: 'asc' | 'desc' | '' }`",
+      "oas-column-order": "列拖拽重排后派发，`detail: { keys }`（新列序）",
+      "oas-column-resize": "列宽拖拽调整后派发，`detail: { key, width }`",
+      "oas-filter-change": "列过滤值变化时派发，`detail: { key, values }`",
+      "oas-page-change": "内置分页翻页时派发，`detail: { current, pageSize }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"empty\"]": "空态富内容（优先于 empty-text 与默认空态文案）"
+    }
   },
   "oas-tabs": {
     "attrs": {
