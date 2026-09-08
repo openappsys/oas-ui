@@ -29,6 +29,47 @@
       "name": "clickable",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "observed": true
+    },
+    {
+      "name": "header-bordered",
+      "observed": true
+    },
+    {
+      "name": "shadow",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "href",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "target",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
@@ -46,10 +87,19 @@
       "name": "actions"
     },
     {
+      "name": "avatar"
+    },
+    {
       "name": "cover"
     },
     {
+      "name": "description"
+    },
+    {
       "name": "extra"
+    },
+    {
+      "name": "footer"
     },
     {
       "name": "title"

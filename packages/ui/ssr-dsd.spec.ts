@@ -1211,13 +1211,16 @@ test('数据展示组件事件可触发：upgrade 后 oas-carousel 切换 / oas-
     document.querySelector('oas-image')?.addEventListener('oas-preview', () => w.__imgPreview++)
   })
   await page.locator('oas-image .previewable').click()
-  await expect(page.locator('oas-image [part="preview-mask"]')).toBeVisible()
+  // 预览打开后遮罩 teleport 到 body 门户（data-oas-image-preview-portal），不在宿主 shadow 内
+  await expect(
+    page.locator('[data-oas-image-preview-portal] [part="preview-mask"]'),
+  ).toBeVisible()
   await expect
     .poll(() =>
       page.evaluate(() => (window as unknown as Window & { __imgPreview: number }).__imgPreview),
     )
     .toBe(1)
-  // Esc 关闭还原
+  // Esc 关闭还原（门户移除、遮罩回到宿主 shadow 并恢复 hidden）
   await page.keyboard.press('Escape')
   await expect(page.locator('oas-image [part="preview-mask"]')).toBeHidden()
 
