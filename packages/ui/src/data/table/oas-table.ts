@@ -50,7 +50,8 @@ export interface TableColumn {
   filters?: Array<{ label: string; value: string | number }>
   /** 自定义过滤匹配器：返回该行是否命中过滤值；缺省按字符串严格相等 */
   filterMatch?: (cell: unknown, filterValue: string | number) => boolean
-  /** 合并单元格：连续相同显示值的行在该列合并为一个 rowspan 单元格（非虚拟模式生效，虚拟滚动时忽略） */
+  /** 合并单元格：连续相同显示值的行在该列合并为一个 rowspan 单元格（非虚拟模式生效，虚拟滚动时忽略；
+      与表格级 spanMethod property 按列独立并存——被显式 span 覆盖而缺格的行会断开本列的连续分组） */
   merge?: boolean
 }
 
@@ -95,6 +96,27 @@ export interface SortState {
 
 /** 密度档位：与控件 size 体系同词（small/medium/large），默认 medium */
 export type TableSize = 'small' | 'medium' | 'large'
+
+/** 行 class 钩子（rowClass property）：(row, index) => string，多值空格分隔。
+    class 挂到数据行 tr 并暴露为 ::part token（tr 与该行各单元格同步），宿主页面 CSS 可穿透
+    Shadow DOM 定制行级样式（行禁用灰化 / 超标警色等状态行场景）。仅 property 函数通道 */
+export type TableRowClass = (row: Record<string, unknown>, index: number) => string
+
+/**
+ * 受控合并函数（spanMethod property）：逐格返回 [rowspan, colspan] 或 {rowspan, colspan}。
+ * - rowIndex 按当前渲染数据行序（0 起，不含 expand 内容行），columnIndex 按有效列顺序；
+ * - rowspan/colspan 任一为 0：本格视为「被覆盖」不渲染（由函数声明覆盖关系）；
+ * - 缺省 / 非对象返回值：本格常规渲染（等价 [1,1]）；
+ * - 与列级 merge 自动合并并存（按列独立生效：被显式 span 覆盖而缺格的行会断开该列 merge
+ *   的连续分组，天然不冲突）；虚拟滚动模式下忽略（与 merge 同级的定高限制）。
+ * 仅 property 函数通道
+ */
+export type TableSpanMethod = (
+  row: Record<string, unknown>,
+  column: TableColumn,
+  rowIndex: number,
+  columnIndex: number,
+) => [number, number] | { rowspan: number; colspan: number } | void
 
 const VALID_TABLE_SIZES: readonly TableSize[] = ['small', 'medium', 'large']
 
@@ -394,6 +416,11 @@ tr.expand-row td {
   font-size: var(--oas-font-size-sm);
   color: var(--oas-color-text-secondary);
 }
+/* 虚拟滚动定高模型：展开内容行同样被定高（row-height），超高内容截断防溢出重叠；
+   展开富内容请用非虚拟模式（与 merge 同级的虚拟模式限制） */
+.table-scroll[data-virtual='true'] tr.expand-row td {
+  overflow: hidden;
+}
 /* 合计行（表尾） */
 tr.summary td {
   background: var(--oas-color-bg-hover);
@@ -660,6 +687,8 @@ export class OASTableBase extends OASElement {
       'multi-sort',
       'row-key',
       'checkable',
+      'selected',
+      'empty-text',
       'loading',
       'height',
       'row-height',
@@ -705,6 +734,12 @@ export class OASTableBase extends OASElement {
   /** 列过滤弹层：当前打开的面板元素与其列 key（同一时刻至多一个） */
   private filterPanel: HTMLElement | null = null
   private filterPanelKey: string | null = null
+  /** 行 class 钩子（property 函数通道；不进 observedAttributes——函数不可序列化，SSR 快照安全，文档注明） */
+  private _rowClass: TableRowClass | null = null
+  /** 受控合并函数（property 函数通道；虚拟滚动下忽略） */
+  private _spanMethod: TableSpanMethod | null = null
+  /** span-method 本轮渲染的占用表：「数据行序:列序」→ 被更早的显式 span 覆盖（本格不渲染 td） */
+  private _spanCovered = new Set<string>()
 
   /**
    * 能力注入：构造时快照已注册能力 + connected 期订阅晚加入（注册可能晚于元素构造——
@@ -798,6 +833,31 @@ export class OASTableBase extends OASElement {
     this.setAttribute('data', typeof value === 'string' ? value : JSON.stringify(value))
   }
 
+  /** 行 class 钩子（property 函数通道）：(row, index) => string，多值空格分隔。
+      函数不可序列化：不进 observedAttributes / SSR 快照（文档注明）；非函数赋值静默忽略 */
+  get rowClass(): TableRowClass | null {
+    return this._rowClass
+  }
+  set rowClass(fn: TableRowClass | null) {
+    this._rowClass = typeof fn === 'function' ? fn : null
+    this.update()
+  }
+
+  /** 受控合并函数（property 函数通道）：(row, column, rowIndex, columnIndex) =>
+      [rowspan, colspan] | {rowspan, colspan} | void；语义见 TableSpanMethod 注释 */
+  get spanMethod(): TableSpanMethod | null {
+    return this._spanMethod
+  }
+  set spanMethod(fn: TableSpanMethod | null) {
+    this._spanMethod = typeof fn === 'function' ? fn : null
+    this.update()
+  }
+
+  /** 行选择模式：单选档 = checkable="radio"（裸 checkable 为多选，向后兼容） */
+  private selectionSingle(): boolean {
+    return this.getAttr('checkable', '') === 'radio'
+  }
+
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
@@ -856,13 +916,15 @@ export class OASTableBase extends OASElement {
     }
   }
 
-  /** 全选表头单元格（checkable）；rowSpan>1 用于多级表头首行盖到底部 */
+  /** 全选表头单元格（checkable 多选档）；rowSpan>1 用于多级表头首行盖到底部。
+      单选档（single=true）无全选语义：渲染空白列头维持与数据行选择列的对齐 */
   private buildCheckAllTh(
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
     flat: FlatRow[],
     rowKey: string,
     selected: string[],
     rowSpan: number,
+    single = false,
   ): HTMLElement {
     const th = document.createElement('th')
     th.className = 'check-cell'
@@ -872,6 +934,7 @@ export class OASTableBase extends OASElement {
       th.setAttribute('data-fixed', 'left')
       th.style.left = '0px'
     }
+    if (single) return th
     const selectAll = document.createElement('input')
     selectAll.type = 'checkbox'
     selectAll.setAttribute('aria-label', this.t('table.selectAll'))
@@ -1003,12 +1066,13 @@ export class OASTableBase extends OASElement {
     this.renderPagination(paginationOn, total, pageSize, current)
 
     const checkable = this.hasAttr('checkable')
+    const single = this.selectionSingle()
     if (this.headerDepth() > 1) {
       // 多级表头：按列树深渲染多行（组列 colspan 合并、叶子列 rowspan 盖到底部）
       const depth = this.headerDepth()
       for (let r = 0; r < depth; r++) {
         const row = document.createElement('tr')
-        if (r === 0 && checkable) row.appendChild(this.buildCheckAllTh(layout, flat, rowKey, selected, depth))
+        if (r === 0 && checkable) row.appendChild(this.buildCheckAllTh(layout, flat, rowKey, selected, depth, single))
         for (const cell of this.buildHeaderGrid()) {
           if (cell.level !== r) continue
           const th = document.createElement('th')
@@ -1037,7 +1101,7 @@ export class OASTableBase extends OASElement {
     } else {
       // 扁平表头（单行，向后兼容）
       const tr = document.createElement('tr')
-      if (checkable) tr.appendChild(this.buildCheckAllTh(layout, flat, rowKey, selected, 1))
+      if (checkable) tr.appendChild(this.buildCheckAllTh(layout, flat, rowKey, selected, 1, single))
       for (const col of this.effectiveColumns()) {
         const th = document.createElement('th')
         th.setAttribute('part', 'header')
@@ -1074,7 +1138,10 @@ export class OASTableBase extends OASElement {
       const emptyTd = document.createElement('td')
       emptyTd.colSpan = this.columnCount()
       emptyTd.className = 'empty'
-      emptyTd.textContent = this.getAttr('empty-text', this.t('table.empty'))
+      // 空态富内容插槽（slot="empty"）优先于 empty-text / 内置文案
+      const slotContent = this.emptySlotContent()
+      if (slotContent) emptyTd.appendChild(slotContent)
+      else emptyTd.textContent = this.getAttr('empty-text', this.t('table.empty'))
       emptyTr.appendChild(emptyTd)
       body.appendChild(emptyTr)
       return
@@ -1083,13 +1150,17 @@ export class OASTableBase extends OASElement {
     if (virtual) {
       this.renderVirtualBody(body, display, rowKey, selected, expanded, layout, st)
     } else {
+      // span-method 占用表按渲染轮重置（显式 span 的跨行/跨列覆盖关系仅本轮有效）
+      this._spanCovered.clear()
       const rowInfos: { tr: HTMLTableRowElement; kind: string }[] = []
+      let dataIndex = 0
       for (let i = 0; i < display.length; i++) {
         const f = display[i]!
         const tr =
           f.kind === 'expand'
             ? this.buildExpandRow(f)
-            : this.buildRow(f, i, rowKey, selected, expanded, layout)
+            : this.buildRow(f, i, rowKey, selected, expanded, layout, dataIndex)
+        if (f.kind === 'data') dataIndex++
         rowInfos.push({ tr, kind: f.kind })
         body.appendChild(tr)
       }
@@ -1136,7 +1207,8 @@ export class OASTableBase extends OASElement {
     holder.appendChild(p)
   }
 
-  /** 渲染一行数据（非虚拟模式逐行调用；虚拟模式仅窗口内行调用） */
+  /** 渲染一行数据（非虚拟模式逐行调用；虚拟模式仅窗口内行调用）。
+      dataIndex 为数据行序（span-method 的 rowIndex，不含 expand 内容行） */
   private buildRow(
     flat: FlatRow,
     index: number,
@@ -1144,6 +1216,7 @@ export class OASTableBase extends OASElement {
     selected: string[],
     expanded: Set<string>,
     layout: { offsets: Map<string, ColumnOffset>; hasFixed: boolean },
+    dataIndex = 0,
   ): HTMLTableRowElement {
     const row = flat.row
     const tr = document.createElement('tr')
@@ -1155,7 +1228,21 @@ export class OASTableBase extends OASElement {
     if (this.hasAttr('stripe')) {
       tr.setAttribute('data-stripe', index % 2 === 1 ? 'odd' : 'even')
     }
+    // 行 class 钩子：class 挂 tr，并暴露为 ::part token（tr 与该行单元格同步），
+    // 宿主页面 CSS 可穿透 Shadow DOM 定制行级样式
+    let rowTokens: string[] = []
+    if (this._rowClass) {
+      const cls = this._rowClass(row, index)
+      if (cls) {
+        rowTokens = cls.split(/\s+/).filter((t) => /^[A-Za-z_][\w-]*$/.test(t))
+        if (rowTokens.length > 0) {
+          tr.classList.add(...rowTokens)
+          tr.setAttribute('part', `row ${rowTokens.join(' ')}`)
+        }
+      }
+    }
     if (this.hasAttr('checkable')) {
+      const single = this.selectionSingle()
       const td = document.createElement('td')
       td.className = 'check-cell'
       if (layout.hasFixed) {
@@ -1163,18 +1250,30 @@ export class OASTableBase extends OASElement {
         td.style.left = '0px'
       }
       const box = document.createElement('input')
-      box.type = 'checkbox'
+      box.type = single ? 'radio' : 'checkbox'
       box.setAttribute('aria-label', this.t('table.selectRow', { key }))
       box.checked = selected.includes(key)
-      box.addEventListener('change', (e) => {
-        e.stopPropagation()
-        const next = new Set(selected)
-        if (box.checked) next.add(key)
-        else next.delete(key)
-        this.setAttribute('selected', [...next].join(','))
-        this.emit('check', { keys: [...next] })
-        this.update()
-      })
+      if (single) {
+        // 单选档：全部走受控写回（click 拦截默认激活行为）——点未选行选中、再点已选行取消；
+        // 原生 radio 点击已选项不会自动取消，且各环境激活行为不一致（happy-dom 不改 checked 态）
+        box.addEventListener('click', (e) => {
+          e.preventDefault()
+          const next = selected.includes(key) ? [] : [key]
+          this.setAttribute('selected', next.join(','))
+          this.emit('check', { keys: next })
+          this.update()
+        })
+      } else {
+        box.addEventListener('change', (e) => {
+          e.stopPropagation()
+          const next = new Set(selected)
+          if (box.checked) next.add(key)
+          else next.delete(key)
+          this.setAttribute('selected', [...next].join(','))
+          this.emit('check', { keys: [...next] })
+          this.update()
+        })
+      }
       td.appendChild(box)
       tr.appendChild(td)
     }
@@ -1196,9 +1295,28 @@ export class OASTableBase extends OASElement {
     const children = row.children
     const hasChildren = Array.isArray(children) && children.length > 0
     const effCols = this.effectiveColumns()
+    // 受控合并（span-method）仅在非虚拟模式生效（与 merge 同级的定高限制）
+    const useSpan = !this.isVirtual() && this._spanMethod !== null
     for (let i = 0; i < effCols.length; i++) {
       const col = effCols[i]!
+      if (useSpan && this._spanCovered.has(`${dataIndex}:${i}`)) continue
+      let span: { rowspan: number; colspan: number } | null = null
+      if (useSpan) {
+        const n = normalizeSpan(this._spanMethod!(row, col, dataIndex, i))
+        if (n.rowspan < 1 || n.colspan < 1) continue // 函数声明本格被覆盖 → 不渲染
+        if (n.rowspan > 1 || n.colspan > 1) span = n
+      }
       const td = document.createElement('td')
+      if (rowTokens.length > 0) td.setAttribute('part', `cell ${rowTokens.join(' ')}`)
+      if (span) {
+        td.rowSpan = span.rowspan
+        td.colSpan = Math.min(span.colspan, effCols.length - i)
+        // 登记被本格覆盖的格：rowspan 向下延伸 + colspan 向右延伸（本行右邻先行跳过）
+        for (let r = dataIndex + 1; r < dataIndex + span.rowspan; r++) {
+          for (let c = i; c < i + td.colSpan; c++) this._spanCovered.add(`${r}:${c}`)
+        }
+        for (let c = i + 1; c < i + td.colSpan; c++) this._spanCovered.add(`${dataIndex}:${c}`)
+      }
       this.applyColumnOffset(td, col, layout)
       if (col.align) td.className = `align-${col.align}`
       td.setAttribute('data-col', col.key)
@@ -1307,8 +1425,26 @@ export class OASTableBase extends OASElement {
     const td = document.createElement('td')
     td.colSpan = this.columnCount()
     td.innerHTML = flat.expandContent ?? ''
+    // 虚拟滚动定高模型：展开行同样强制 row-height——td 高度是内容驱动的，
+    // 仅 overflow:hidden 截不住（行仍被撑高），须 display:block + 显式高度才真正截断。
+    // 展开富内容请用非虚拟模式（与 merge 同级的虚拟模式限制，文档已写明）。
+    if (this.wrap?.getAttribute('data-virtual') === 'true') {
+      td.style.display = 'block'
+      td.style.height = `${this.rowHeight()}px`
+      td.style.overflow = 'hidden'
+    }
     tr.appendChild(td)
     return tr
+  }
+
+  /** 空态富内容插槽：light DOM 中 slot="empty" 的子元素（<template> 克隆 content，其余克隆元素本身）。
+      优先于 empty-text / 内置文案；插槽子元素增删由 MutationObserver 感知触发重渲染 */
+  private emptySlotContent(): Node | null {
+    const tpl = this.querySelector('template[slot="empty"]')
+    if (tpl) return (tpl as HTMLTemplateElement).content.cloneNode(true)
+    const el = this.querySelector('[slot="empty"]')
+    if (el) return el.cloneNode(true)
+    return null
   }
 
   /** 虚拟滚动：占位行 + 可见窗口行 */
@@ -1515,7 +1651,8 @@ export class OASTableBase extends OASElement {
   }
 
   /** 生成多级表头网格：rows[r] 为第 r 行需渲染的表头单元格（含 rowspan/colspan/是否叶子）。
-      有 children 的组列一行渲染（colspan=可见叶子数）；叶子列落位到树深、rowspan 盖到底部（表头多行时数据对齐）。 */
+      有 children 的组列一行渲染（colspan=可见叶子数）；叶子列落位到树深、rowspan 盖到底部（表头多行时数据对齐）。
+      列树经 orderedHeaderTree 重排：column-keys 受控时叶头顺序与数据列（effectiveColumns）一致。 */
   private buildHeaderGrid(): {
     col: TableColumn
     level: number
@@ -1538,8 +1675,47 @@ export class OASTableBase extends OASElement {
         }
       }
     }
-    fill(this._columns, 0)
+    fill(this.orderedHeaderTree(), 0)
     return rows.flat()
+  }
+
+  /**
+   * 多级表头渲染用的列树：column-keys 受控时按有效叶子顺序重组（连续同祖先链的叶子并入原组），
+   * 保证组头/叶头的落位顺序与数据列（effectiveColumns，column-keys 过滤+排序）严格一致——
+   * 否则列拖拽重排（写回 column-keys）后表头叶列与数据列顺序脱节。
+   * 组头取原组列定义（标题/样式不变）；跨组交错的 key 按数据列顺序切分为多段（各段并入其原组）。
+   * 无 column-keys 时返回原列树（行为不变）。
+   */
+  private orderedHeaderTree(): TableColumn[] {
+    if (this._columnKeys.length === 0) return this._columns
+    const leaves = this.effectiveColumns()
+    // 每个叶子在原列树中的祖先链（顶层组 → 直接父）
+    const chainOf = new Map<string, TableColumn[]>()
+    const walk = (cols: TableColumn[], chain: TableColumn[]): void => {
+      for (const c of cols) {
+        if (c.children && c.children.length > 0) walk(c.children, [...chain, c])
+        else chainOf.set(c.key, chain)
+      }
+    }
+    walk(this._columns, [])
+    type Node = { col: TableColumn } | { group: TableColumn; children: Node[] }
+    const root: Node[] = []
+    const mergeInto = (siblings: Node[], chain: TableColumn[], leaf: TableColumn): void => {
+      const [head, ...rest] = chain
+      if (!head) {
+        siblings.push({ col: leaf })
+        return
+      }
+      const last = siblings[siblings.length - 1]
+      if (!last || !('group' in last) || last.group !== head) {
+        siblings.push({ group: head, children: [] })
+      }
+      mergeInto((siblings[siblings.length - 1] as { group: TableColumn; children: Node[] }).children, rest, leaf)
+    }
+    for (const leaf of leaves) mergeInto(root, chainOf.get(leaf.key) ?? [], leaf)
+    const materialize = (nodes: Node[]): TableColumn[] =>
+      nodes.map((n) => ('group' in n ? { ...n.group, children: materialize(n.children) } : n.col))
+    return materialize(root)
   }
 
   /**
@@ -2214,6 +2390,21 @@ function columnWidth(col: TableColumn): number {
     if (Number.isFinite(n)) return n
   }
   return 100
+}
+
+/** 归一化 span-method 返回值：[r, c] 元组或 {rowspan, colspan} 对象。
+    非法分量（NaN/缺省）按 1 处理；rowspan/colspan 为 0 保留给「本格被覆盖不渲染」语义 */
+function normalizeSpan(
+  v: [number, number] | { rowspan: number; colspan: number } | void,
+): { rowspan: number; colspan: number } {
+  const num = (x: unknown): number => {
+    const n = Number(x)
+    return Number.isFinite(n) ? n : 1
+  }
+  if (Array.isArray(v)) return { rowspan: num(v[0]), colspan: num(v[1]) }
+  if (v && typeof v === 'object')
+    return { rowspan: num(v.rowspan), colspan: num(v.colspan) }
+  return { rowspan: 1, colspan: 1 }
 }
 
 /**

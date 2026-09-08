@@ -2385,7 +2385,7 @@
   "oas-table": {
     "attrs": {
       "bordered": "Full border: draws a grid outline around cells (the outer frame is built in)",
-      "checkable": "Enables checkbox multi-select",
+      "checkable": "Row selection: present = multi-select (checkboxes + select-all header); `=\"radio\"` = single-select (mutually exclusive, click again to deselect, no select-all), oas-check detail.keys ≤1",
       "columns": "Column config `[{ key, title, sortable?, width?, align?, fixed?, render?, summary?, editable?, editor?, editOptions?, actions? }]`, JSON string (declarative attribute channel; property assignment takes precedence)",
       "data": "Row data `[{ [key]: value, children?, expand? }]`, JSON string (declarative attribute channel; property assignment takes precedence)",
       "editable": "Inline editing switch (requires `editable: true` on columns; same for the `actions: true` operation column)",
@@ -2402,7 +2402,14 @@
       "sticky-rows": "Number of sticky rows (N): the first N rows stick below the header (coexists with the scroll container and fixed columns)",
       "stripe": "Zebra striping: alternating light background for odd/even rows",
       "summary": "Summary config `[{ key, type: 'sum'|'avg'|'count', label? }]`, JSON string",
-      "size": "Density preset: `small` / `medium` (default) / `large` — only changes default cell padding and font size (all via CSS variables; override with `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size`, which take precedence); invalid values fall back to `medium` with a warning; orthogonal to `row-height`"
+      "size": "Density preset: `small` / `medium` (default) / `large` — only changes default cell padding and font size (all via CSS variables; override with `--oas-table-cell-padding-block` / `--oas-table-cell-padding-inline` / `--oas-table-font-size`, which take precedence); invalid values fall back to `medium` with a warning; orthogonal to `row-height`",
+      "column-keys": "Controlled column visibility and order (key array or comma list): header tree and data columns re-order to the effective leaf order (same-ancestor leaves grouped)",
+      "current": "Current page (built-in pagination, controlled)",
+      "filter-values": "Controlled column filter values (JSON object: column key → selected values)",
+      "multi-sort": "Multi-column sort (JSON array: [{ key, order }], applied in array order)",
+      "page-size": "Rows per page (built-in pagination, default 10)",
+      "pagination": "Built-in pagination switch (footer pager; leave unset when the host paginates)",
+      "summary-scope": "Summary aggregation scope: `all` (default, full dataset) / `page` (current page)"
     },
     "events": {
       "oas-check": "Checkbox selection change, `detail: { keys: string[] }`",
@@ -2411,9 +2418,15 @@
       "oas-expand": "Row expand/collapse (tree child rows or expandable content rows), `detail: { key, expanded }`",
       "oas-row-click": "Row click (also toggles selection when not checkable), `detail: { row, key }`",
       "oas-scroll": "Virtual scroll event (rAF throttled), `detail: { scrollTop, start, end }`",
-      "oas-sort-change": "Sort change, `detail: { key, order: 'asc' | 'desc' | '' }`"
+      "oas-sort-change": "Sort change, `detail: { key, order: 'asc' | 'desc' | '' }`",
+      "oas-column-order": "Fired after column drag reorder, `detail: { keys }` (new column order)",
+      "oas-column-resize": "Fired after a column width drag, `detail: { key, width }`",
+      "oas-filter-change": "Fired when a column filter value changes, `detail: { key, values }`",
+      "oas-page-change": "Fired when the built-in page changes, `detail: { current, pageSize }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"empty\"]": "Rich empty-state content (takes precedence over empty-text and the default empty text)"
+    }
   },
   "oas-tabs": {
     "attrs": {

@@ -612,3 +612,219 @@ test('table 可编辑格内 oas-button 双击不进入编辑（编辑路径排�
   expect(afterPlain, '纯文本可编辑格双击应照常进入编辑').toBe(true)
 })
 
+test('table selected / empty-text 进 observedAttributes：纯受控 setAttribute 立即重渲染（API 表受控承诺对齐）', async ({
+  page,
+}) => {
+  // 缺陷固化：selected / empty-text 不在 observedAttributes，外部宿主 setAttribute 不触发
+  // attributeChangedCallback → 视图不刷新（直到下一次任意 observed 属性变化）——与 API 表把
+  // selected 列为受控属性的承诺不一致。修复：补进 observedAttributes。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, {
+    timeout: 15000,
+  })
+  const r = await page.evaluate(() => {
+    const t = document.createElement('oas-table') as HTMLElement
+    t.setAttribute('row-key', 'name')
+    t.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '姓名' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    t.setAttribute('data', JSON.stringify([{ name: '张三', age: 30 }]))
+    ;(document.querySelector('.vp-doc') ?? document.body).append(t)
+    // selected 受控驱动：高亮应立即出现
+    t.setAttribute('selected', '张三')
+    const highlighted = t.shadowRoot!.querySelector('tr.row')!.getAttribute('data-selected')
+    // empty-text 受控驱动：空态文案应立即更新
+    t.setAttribute('data', '[]')
+    t.setAttribute('empty-text', '受控空态文案')
+    const emptyText = t.shadowRoot!.querySelector('td.empty')!.textContent
+    t.remove()
+    return { highlighted, emptyText }
+  })
+  expect(r.highlighted, 'setAttribute selected 应立即高亮行').toBe('true')
+  expect(r.emptyText, 'setAttribute empty-text 应立即更新空态文案').toBe('受控空态文案')
+})
+
+test('table 多级表头 + column-keys 重排：表头叶列与数据列顺序一致（组头按数据列顺序重组）', async ({
+  page,
+}) => {
+  // 缺陷固化：buildHeaderGrid 按原始列树渲染组头/叶头，数据列走 effectiveColumns
+  // （column-keys 过滤+排序）——列拖拽重排（写回 column-keys）后表头叶列与数据列顺序脱节。
+  // 修复：column-keys 受控时按有效叶序重组表头树（连续同组叶子并入原组）。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, {
+    timeout: 15000,
+  })
+  const r = await page.evaluate(() => {
+    const t = document.createElement('oas-table') as HTMLElement
+    t.setAttribute('row-key', 'name')
+    t.setAttribute(
+      'columns',
+      JSON.stringify([
+        {
+          key: 'base',
+          title: '基础信息',
+          children: [
+            { key: 'name', title: '姓名' },
+            { key: 'age', title: '年龄' },
+          ],
+        },
+        { key: 'city', title: '城市' },
+      ]),
+    )
+    t.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '张三', age: 30, city: '北京' },
+        { name: '李四', age: 25, city: '上海' },
+      ]),
+    )
+    // 模拟列拖拽重排：city 提到最前，组内 age 在 name 前
+    t.setAttribute('column-keys', JSON.stringify(['city', 'age', 'name']))
+    ;(document.querySelector('.vp-doc') ?? document.body).append(t)
+    const thKey = (th: Element) => th.getAttribute('data-key')
+    const topRow = [...t.shadowRoot!.querySelectorAll('thead > tr')][0]!
+    const bottomRow = [...t.shadowRoot!.querySelectorAll('thead > tr')][1]!
+    const dataCols = [...t.shadowRoot!.querySelectorAll('tbody tr.row td')].map((td) =>
+      td.getAttribute('data-col'),
+    )
+    const out = {
+      top: [...topRow.querySelectorAll('th')].map((th) => ({
+        text: th.textContent!.trim(),
+        colspan: th.getAttribute('colspan'),
+        rowspan: th.getAttribute('rowspan'),
+      })),
+      bottom: [...bottomRow.querySelectorAll('th')].map(thKey),
+      dataCols,
+    }
+    t.remove()
+    return out
+  })
+  // 顶层：城市（rowspan=2）在前，基础信息组（colspan=2）在后
+  expect(r.top[0]!.text).toBe('城市')
+  expect(r.top[0]!.rowspan).toBe('2')
+  expect(r.top[1]!.text).toBe('基础信息')
+  expect(r.top[1]!.colspan).toBe('2')
+  // 底行叶序与数据列严格一致（city rowspan=2 占两行不在底行，组内叶序 age→name 与数据列一致）
+  expect(r.bottom).toEqual(['age', 'name'])
+  expect(r.dataCols.slice(0, 3)).toEqual(['city', 'age', 'name'])
+})
+
+test('table 虚拟滚动 + 展开行超高：内容截断防溢出重叠（overflow:hidden + 定高行）', async ({ page }) => {
+  // 缺陷固化：虚拟模式所有 tr 强制定高（row-height），expand 内容行同样被定高——
+  // 展开内容超过 row-height 时溢出并与后续行重叠。修复：虚拟模式下展开行单元格
+  // overflow:hidden 截断（定高虚拟模型的明确限制，富展开内容用非虚拟模式）。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, {
+    timeout: 15000,
+  })
+  const r = await page.evaluate(() => {
+    const t = document.createElement('oas-table') as HTMLElement
+    t.setAttribute('row-key', 'name')
+    t.setAttribute('height', '200')
+    t.setAttribute('row-height', '40')
+    t.setAttribute('columns', JSON.stringify([{ key: 'name', title: '姓名' }]))
+    t.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '张三', expand: '<div style="height:300px">超高展开内容</div>' },
+        { name: '李四' },
+        { name: '王五' },
+      ]),
+    )
+    t.setAttribute('expanded', '张三')
+    ;(document.querySelector('.vp-doc') ?? document.body).append(t)
+    const expandTd = t.shadowRoot!.querySelector('tr.expand-row td') as HTMLElement
+    const out = {
+      hasExpand: expandTd != null,
+      overflow: expandTd ? getComputedStyle(expandTd).overflow : '',
+      rowH: Math.round(t.shadowRoot!.querySelector('tr.expand-row')!.getBoundingClientRect().height),
+    }
+    t.remove()
+    return out
+  })
+  expect(r.hasExpand, '展开行应渲染').toBe(true)
+  expect(r.overflow, '虚拟模式展开行单元格应截断溢出内容').toBe('hidden')
+  // 定高 40 + 1px 行边框（表格边框计入 getBoundingClientRect）
+  expect(r.rowH, '展开行应被定高（row-height + 边框）').toBeLessThanOrEqual(41)
+})
+
+test('table 行单选（checkable="radio"）：真实点击互斥 + 再点已选行取消', async ({ page }) => {
+  // 交互固化：单选档点选互斥、再点已选行取消（原生 radio 点击已选项不会自动取消，组件补该语义）；
+  // 全部走受控写回（click 拦截默认激活行为），happy-dom 单测已覆盖机制，此处锁定真实浏览器事件链。
+  await page.goto('/components/table.html', { waitUntil: 'domcontentloaded' })
+  await page.waitForFunction(() => customElements.get('oas-table') != null, null, {
+    timeout: 15000,
+  })
+  await page.evaluate(() => {
+    const t = document.createElement('oas-table') as HTMLElement
+    t.id = 'qa-radio-select'
+    t.setAttribute('checkable', 'radio')
+    t.setAttribute('row-key', 'name')
+    t.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '姓名' },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    t.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '张三', age: 30 },
+        { name: '李四', age: 25 },
+      ]),
+    )
+    ;(document.querySelector('.vp-doc') ?? document.body).append(t)
+  })
+  const radios = page.locator('#qa-radio-select .check-cell input[type="radio"]')
+  await radios.nth(0).click()
+  await page.waitForTimeout(150)
+  const afterFirst = await page.evaluate(() => {
+    const t = document.querySelector('#qa-radio-select')!
+    return {
+      selected: t.getAttribute('selected'),
+      checked: [...t.shadowRoot!.querySelectorAll<HTMLInputElement>('.check-cell input[type="radio"]')].map(
+        (r) => r.checked,
+      ),
+      headerInput: !!t.shadowRoot!.querySelector('thead th.check-cell input'),
+    }
+  })
+  expect(afterFirst.selected).toBe('张三')
+  expect(afterFirst.checked).toEqual([true, false])
+  expect(afterFirst.headerInput, '单选档表头不应有全选框').toBe(false)
+  // 点第二行：互斥切换
+  await radios.nth(1).click()
+  await page.waitForTimeout(150)
+  const afterSecond = await page.evaluate(() => {
+    const t = document.querySelector('#qa-radio-select')!
+    return {
+      selected: t.getAttribute('selected'),
+      checked: [...t.shadowRoot!.querySelectorAll<HTMLInputElement>('.check-cell input[type="radio"]')].map(
+        (r) => r.checked,
+      ),
+    }
+  })
+  expect(afterSecond.selected).toBe('李四')
+  expect(afterSecond.checked).toEqual([false, true])
+  // 再点已选行：取消选中
+  await radios.nth(1).click()
+  await page.waitForTimeout(150)
+  const afterDeselect = await page.evaluate(() => {
+    const t = document.querySelector('#qa-radio-select')!
+    const v = {
+      selected: t.getAttribute('selected'),
+      checked: [...t.shadowRoot!.querySelectorAll<HTMLInputElement>('.check-cell input[type="radio"]')].map(
+        (r) => r.checked,
+      ),
+    }
+    t.remove()
+    return v
+  })
+  expect(afterDeselect.selected ?? '', '再点已选行应取消选中').toBe('')
+  expect(afterDeselect.checked).toEqual([false, false])
+})
+

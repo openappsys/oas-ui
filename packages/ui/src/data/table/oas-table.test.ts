@@ -1985,3 +1985,413 @@ describe('列拖拽重排顺序计算（applyColumnReorder）', () => {  const B
     expect(applyColumnReorder(BASE, 'age', 'name', 'before')).toEqual(['id', 'age', 'name', 'city'])
   })
 })
+
+describe('OASTable 行选择单选（checkable="radio"）', () => {
+  const mountRadio = () => mount({ checkable: 'radio', 'row-key': 'name' })
+  const radios = (el: OASTable) =>
+    [...el.shadowRoot!.querySelectorAll<HTMLInputElement>('.check-cell input[type="radio"]')]
+
+  it('radio 档：行渲染 radio、表头无全选框但保留空白选择列头（列对齐）', () => {
+    const el = mountRadio()
+    const headerCheck = el.shadowRoot!.querySelector('thead th.check-cell')!
+    expect(headerCheck).not.toBeNull()
+    expect(headerCheck.querySelector('input')).toBeNull()
+    const rs = radios(el)
+    expect(rs.length).toBe(3)
+    expect(rs[0]!.getAttribute('aria-label')).toBe('选择行 张三')
+    // 无全选复选框
+    expect(el.shadowRoot!.querySelector('thead input[type="checkbox"]')).toBeNull()
+  })
+
+  it('radio 档：点选互斥，oas-check detail.keys 至多单值', () => {
+    const el = mountRadio()
+    let detail: unknown
+    el.addEventListener('oas-check', (e: Event) => (detail = (e as CustomEvent).detail))
+    radios(el)[0]!.click()
+    expect((detail as { keys: string[] }).keys).toEqual(['张三'])
+    expect(el.getAttribute('selected')).toBe('张三')
+    radios(el)[1]!.click()
+    expect((detail as { keys: string[] }).keys).toEqual(['李四'])
+    expect(el.getAttribute('selected')).toBe('李四')
+    // 互斥：重渲染后仅李四选中
+    expect(radios(el)[0]!.checked).toBe(false)
+    expect(radios(el)[1]!.checked).toBe(true)
+  })
+
+  it('radio 档：再点已选行取消选中（原生 radio 不会自动取消，组件补该语义）', () => {
+    const el = mountRadio()
+    let detail: unknown
+    el.addEventListener('oas-check', (e: Event) => (detail = (e as CustomEvent).detail))
+    radios(el)[0]!.click()
+    expect(el.getAttribute('selected')).toBe('张三')
+    radios(el)[0]!.click()
+    expect(el.getAttribute('selected')).toBe('')
+    expect((detail as { keys: string[] }).keys).toEqual([])
+    expect(radios(el)[0]!.checked).toBe(false)
+  })
+
+  it('radio 档：多级表头下空白选择列头 rowspan 盖到底部（无全选框）', () => {
+    const el = mount({
+      checkable: 'radio',
+      columns: JSON.stringify([
+        {
+          key: 'base',
+          title: '基础信息',
+          children: [
+            { key: 'name', title: '姓名' },
+            { key: 'age', title: '年龄' },
+          ],
+        },
+        { key: 'city', title: '城市' },
+      ]),
+      'row-key': 'name',
+    })
+    const check = el.shadowRoot!.querySelector('thead th.check-cell')!
+    expect(check.getAttribute('rowspan')).toBe('2')
+    expect(check.querySelector('input')).toBeNull()
+    expect(radios(el).length).toBe(3)
+  })
+})
+
+describe('OASTable 空态富内容插槽（slot="empty"）', () => {
+  const mountEmpty = (inner = '', attrs: Record<string, string> = {}) => {
+    const el = new OASTable()
+    el.setAttribute('columns', COLUMNS)
+    el.setAttribute('data', '[]')
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+    if (inner) el.innerHTML = inner
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('template[slot="empty"]：克隆模板内容进空态单元格（优先于 empty-text）', () => {
+    const el = mountEmpty('<template slot="empty"><p class="custom-empty">没有匹配记录</p></template>', {
+      'empty-text': 'empty-text 不生效',
+    })
+    const td = el.shadowRoot!.querySelector('td.empty')!
+    expect(td.querySelector('p.custom-empty')!.textContent).toBe('没有匹配记录')
+    expect(td.textContent).not.toContain('empty-text 不生效')
+  })
+
+  it('普通元素 slot="empty"：克隆元素本身', () => {
+    const el = mountEmpty('<div slot="empty"><span>空态</span></div>')
+    const td = el.shadowRoot!.querySelector('td.empty')!
+    expect(td.querySelector('div span')!.textContent).toBe('空态')
+  })
+
+  it('无插槽时回落 empty-text / 内置文案（行为不变）', () => {
+    const el = mountEmpty(undefined, { 'empty-text': '没有更多' })
+    expect(el.shadowRoot!.querySelector('td.empty')!.textContent).toBe('没有更多')
+  })
+
+  it('动态增删插槽内容（MutationObserver）在插槽与 empty-text 间回落', () => {
+    const el = mountEmpty(undefined, { 'empty-text': '没有更多' })
+    expect(el.shadowRoot!.textContent).toContain('没有更多')
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'empty')
+    tpl.innerHTML = '<b>slot 空态</b>'
+    el.appendChild(tpl)
+    return new Promise<void>((resolve) =>
+      setTimeout(() => {
+        expect(el.shadowRoot!.querySelector('td.empty b')!.textContent).toBe('slot 空态')
+        tpl.remove()
+        setTimeout(() => {
+          expect(el.shadowRoot!.textContent).toContain('没有更多')
+          resolve()
+        }, 0)
+      }, 0),
+    )
+  })
+})
+
+describe('OASTable 行 class 钩子（rowClass property）', () => {
+  const mountRowClass = (fn: (row: Record<string, unknown>, index: number) => string) => {
+    const el = new OASTable()
+    el.setAttribute('data', DATA)
+    el.columns = [
+      { key: 'name', title: '姓名' },
+      { key: 'age', title: '年龄' },
+    ]
+    el.rowClass = fn
+    document.body.appendChild(el)
+    return el
+  }
+  const rowEls = (el: OASTable) => [...el.shadowRoot!.querySelectorAll<HTMLElement>('tbody tr.row')]
+
+  it('按行数据返回 class：挂到 tr.classList 并暴露为 tr part token', () => {
+    const el = mountRowClass((row) => (Number(row['age']) > 30 ? 'row-senior' : ''))
+    const trs = rowEls(el)
+    expect(trs[0]!.classList.contains('row-senior')).toBe(false) // 30 不 > 30
+    expect(trs[2]!.classList.contains('row-senior')).toBe(true) // 35
+    expect(trs[2]!.getAttribute('part')).toBe('row row-senior')
+    expect(trs[0]!.getAttribute('part')).toBe('row')
+  })
+
+  it('多值空格分隔：tr 与单元格 part 同步暴露（::part 样式可达）', () => {
+    const el = mountRowClass((_row, index) => (index === 1 ? 'row-b row-c' : ''))
+    const trs = rowEls(el)
+    expect(trs[1]!.classList.contains('row-b')).toBe(true)
+    expect(trs[1]!.classList.contains('row-c')).toBe(true)
+    expect(trs[1]!.getAttribute('part')).toBe('row row-b row-c')
+    expect(trs[1]!.querySelector('td')!.getAttribute('part')).toBe('cell row-b row-c')
+    // 未命中行的单元格无 part（渲染结构不变）
+    expect(trs[0]!.querySelector('td')!.getAttribute('part')).toBeNull()
+  })
+
+  it('index 参数为当前渲染行序', () => {
+    const seen: number[] = []
+    const el = mountRowClass((_row, index) => {
+      seen.push(index)
+      return ''
+    })
+    // connect 期 render+runUpdateAndNotify 各触发一次 update（全量重建幂等），取首轮序列断言
+    expect(seen.slice(0, 3)).toEqual([0, 1, 2])
+    expect(rowEls(el).length).toBe(3)
+  })
+
+  it('row-class 不进 observedAttributes（property 函数通道，SSR 快照安全）', () => {
+    const observed = (OASTable as unknown as { observedAttributes: string[] }).observedAttributes
+    expect(observed).not.toContain('row-class')
+    expect(observed).not.toContain('span-method')
+    // 非函数赋值静默忽略
+    const el = mountRowClass(() => 'x')
+    ;(el as unknown as { rowClass: unknown }).rowClass = 'not-a-function'
+    expect(el.rowClass).toBeNull()
+  })
+})
+
+describe('OASTable 受控合并（spanMethod property）', () => {
+  const SPAN_COLS = JSON.stringify([
+    { key: 'name', title: '姓名' },
+    { key: 'age', title: '年龄' },
+    { key: 'city', title: '城市' },
+  ])
+  const mountSpan = (
+    method: (
+      row: Record<string, unknown>,
+      column: unknown,
+      rowIndex: number,
+      columnIndex: number,
+    ) => [number, number] | { rowspan: number; colspan: number } | void,
+  ) => {
+    const el = new OASTable()
+    el.setAttribute('columns', SPAN_COLS)
+    el.setAttribute('data', DATA)
+    el.spanMethod = method
+    document.body.appendChild(el)
+    return el
+  }
+
+  it('返回 [rowspan, colspan]：首格 rowspan 覆盖、被覆盖格不渲染', () => {
+    const el = mountSpan((_row, _col, rowIndex, columnIndex) =>
+      rowIndex === 0 && columnIndex === 0 ? [2, 1] : undefined,
+    )
+    const trs = rows(el)
+    expect(trs[0]!.querySelector('td[data-col="name"]')!.getAttribute('rowspan')).toBe('2')
+    expect(trs[1]!.querySelector('td[data-col="name"]')).toBeNull()
+    expect(trs[1]!.querySelector('td[data-col="age"]')!.textContent).toBe('25')
+    // 覆盖范围之外不受影响
+    expect(trs[2]!.querySelectorAll('td').length).toBe(3)
+  })
+
+  it('返回 {rowspan, colspan} 对象：横向合并后续列格跳过', () => {
+    const el = mountSpan((_row, _col, rowIndex, columnIndex) =>
+      rowIndex === 1 && columnIndex === 1 ? { rowspan: 1, colspan: 2 } : undefined,
+    )
+    const trs = rows(el)
+    expect(trs[1]!.querySelector('td[data-col="age"]')!.getAttribute('colspan')).toBe('2')
+    expect(trs[1]!.querySelector('td[data-col="city"]')).toBeNull()
+    expect(trs[1]!.querySelectorAll('td').length).toBe(2)
+    expect(trs[0]!.querySelectorAll('td').length).toBe(3)
+  })
+
+  it('返回 [0,0]：本格声明为被覆盖，不渲染', () => {
+    const el = mountSpan((_row, _col, rowIndex, columnIndex) =>
+      columnIndex === 0 ? (rowIndex === 0 ? [3, 1] : [0, 0]) : undefined,
+    )
+    const trs = rows(el)
+    expect(trs[0]!.querySelector('td[data-col="name"]')!.getAttribute('rowspan')).toBe('3')
+    expect(trs[1]!.querySelector('td[data-col="name"]')).toBeNull()
+    expect(trs[2]!.querySelector('td[data-col="name"]')).toBeNull()
+  })
+
+  it('columnIndex 按有效列顺序、rowIndex 按数据行序传入', () => {
+    const seen: Array<{ r: number; c: number; key: unknown }> = []
+    const el = mountSpan((_row, col, rowIndex, columnIndex) => {
+      seen.push({ r: rowIndex, c: columnIndex, key: (col as { key: string }).key })
+      return undefined
+    })
+    // connect 期 render+runUpdateAndNotify 各触发一次 update（全量重建幂等），取首轮 9 格断言
+    expect(seen.length % 9).toBe(0)
+    expect(seen[0]).toEqual({ r: 0, c: 0, key: 'name' })
+    expect(seen[8]).toEqual({ r: 2, c: 2, key: 'city' })
+    expect(rows(el).length).toBe(3)
+  })
+
+  it('与列级 merge 并存：不同列各按其机制生效，互不改写', () => {
+    const el = new OASTable()
+    el.setAttribute(
+      'columns',
+      JSON.stringify([
+        { key: 'name', title: '姓名', merge: true },
+        { key: 'age', title: '年龄' },
+      ]),
+    )
+    el.setAttribute(
+      'data',
+      JSON.stringify([
+        { name: '同值', age: 30 },
+        { name: '同值', age: 25 },
+        { name: '同值', age: 35 },
+      ]),
+    )
+    el.spanMethod = (_row, _col, rowIndex, columnIndex) =>
+      columnIndex === 1 && rowIndex === 0 ? [2, 1] : columnIndex === 1 && rowIndex === 1 ? [0, 0] : undefined
+    document.body.appendChild(el)
+    const trs = rows(el)
+    // name 列 merge 照常：rowspan=3 覆盖全部行
+    expect(trs[0]!.querySelector('td[data-col="name"]')!.getAttribute('rowspan')).toBe('3')
+    // age 列显式 span：row0 rowspan=2，row1 缺格
+    expect(trs[0]!.querySelector('td[data-col="age"]')!.getAttribute('rowspan')).toBe('2')
+    expect(trs[1]!.querySelector('td[data-col="age"]')).toBeNull()
+    expect(trs[2]!.querySelector('td[data-col="age"]')!.textContent).toBe('35')
+  })
+
+  it('虚拟滚动下忽略 span-method（与 merge 同级的定高限制）', () => {
+    const el = mountSpan((_row, _col, rowIndex, columnIndex) =>
+      rowIndex === 0 && columnIndex === 0 ? [2, 1] : undefined,
+    )
+    el.setAttribute('height', '200')
+    el.setAttribute('row-height', '40')
+    el.setAttribute('data', BIG_DATA)
+    for (const tr of rows(el)) {
+      expect(tr.querySelector('td[data-col="name"]')).not.toBeNull()
+    }
+  })
+})
+
+describe('OASTable 受控属性补全（selected / empty-text 进 observedAttributes）', () => {
+  it('selected：外部 setAttribute 立即重渲染行高亮（纯受控宿主驱动）', () => {
+    const el = mount({ 'row-key': 'name' })
+    expect(
+      (OASTable as unknown as { observedAttributes: string[] }).observedAttributes,
+    ).toContain('selected')
+    expect(rows(el)[0]!.getAttribute('data-selected')).toBe('false')
+    el.setAttribute('selected', '张三')
+    expect(rows(el)[0]!.getAttribute('data-selected')).toBe('true')
+    expect(rows(el)[1]!.getAttribute('data-selected')).toBe('false')
+    el.setAttribute('selected', '')
+    expect(rows(el)[0]!.getAttribute('data-selected')).toBe('false')
+  })
+
+  it('empty-text：外部 setAttribute 立即更新空态文案（纯受控宿主驱动）', () => {
+    const el = mount({ data: '[]' })
+    expect(
+      (OASTable as unknown as { observedAttributes: string[] }).observedAttributes,
+    ).toContain('empty-text')
+    expect(el.shadowRoot!.textContent).toContain('暂无数据')
+    el.setAttribute('empty-text', '自定义空态')
+    expect(el.shadowRoot!.textContent).toContain('自定义空态')
+  })
+})
+
+describe('OASTable 多级表头 + column-keys 重排一致性', () => {
+  const GROUP3_COLS = JSON.stringify([
+    {
+      key: 'base',
+      title: '基础信息',
+      children: [
+        { key: 'name', title: '姓名' },
+        { key: 'age', title: '年龄' },
+      ],
+    },
+    { key: 'city', title: '城市' },
+  ])
+
+  it('组内重排：叶头顺序与数据列顺序一致', () => {
+    const el = mount({ columns: GROUP3_COLS, data: DATA, 'column-keys': '["city","age","name"]' })
+    const leafThs = [...el.shadowRoot!.querySelectorAll('th[data-key]')].map((t) =>
+      t.getAttribute('data-key'),
+    )
+    expect(leafThs).toEqual(['city', 'age', 'name'])
+    const tds = [...rows(el)[0]!.querySelectorAll('td')].map((td) => td.getAttribute('data-col'))
+    expect(tds).toEqual(['city', 'age', 'name'])
+  })
+
+  it('跨组重排：表头按数据列顺序重组组段（连续同组叶子并入原组，组头保留）', () => {
+    const el = mount({ columns: GROUP3_COLS, data: DATA, 'column-keys': '["city","name","age"]' })
+    const topThs = [...el.shadowRoot!.querySelectorAll('thead > tr')[0]!.querySelectorAll('th')]
+    expect(topThs[0]!.textContent).toBe('城市')
+    expect(topThs[0]!.getAttribute('rowspan')).toBe('2')
+    expect(topThs[1]!.textContent).toBe('基础信息')
+    expect(topThs[1]!.getAttribute('colspan')).toBe('2')
+    const leafThs = [...el.shadowRoot!.querySelectorAll('th[data-key]')].map((t) =>
+      t.getAttribute('data-key'),
+    )
+    expect(leafThs).toEqual(['city', 'name', 'age'])
+  })
+
+  it('组内部分列 hidden：组 colspan 只计可见叶子，叶序仍与数据列一致', () => {
+    const cols = JSON.stringify([
+      {
+        key: 'base',
+        title: '基础信息',
+        children: [
+          { key: 'name', title: '姓名' },
+          { key: 'age', title: '年龄', hidden: true },
+        ],
+      },
+      { key: 'city', title: '城市' },
+    ])
+    const el = mount({ columns: cols, data: DATA, 'column-keys': '["name","city"]' })
+    const group = el.shadowRoot!.querySelector('th.header-group')!
+    expect(group.getAttribute('colspan')).toBe('1')
+    // 视觉顺序：base 组（底行 name 叶）在前，city rowspan 盖顶
+    const topThs = [...el.shadowRoot!.querySelectorAll('thead > tr')[0]!.querySelectorAll('th')]
+    expect(topThs[0]!.textContent).toBe('基础信息')
+    expect(topThs[1]!.textContent).toBe('城市')
+    expect(topThs[1]!.getAttribute('rowspan')).toBe('2')
+    const bottomKeys = [...el.shadowRoot!.querySelectorAll('thead > tr')[1]!.querySelectorAll('th')].map(
+      (t) => t.getAttribute('data-key'),
+    )
+    expect(bottomKeys).toEqual(['name'])
+    const tds = [...rows(el)[0]!.querySelectorAll('td')].map((td) => td.getAttribute('data-col'))
+    expect(tds).toEqual(['name', 'city'])
+  })
+
+  it('无 column-keys 时多级表头保持原树结构（向后兼容）', () => {
+    const el = mount({ columns: GROUP3_COLS, data: DATA })
+    // 视觉顺序：顶层「基础信息」组（底行 name/age 叶）在前，city rowspan 盖顶在后
+    const topThs = [...el.shadowRoot!.querySelectorAll('thead > tr')[0]!.querySelectorAll('th')]
+    expect(topThs[0]!.textContent).toBe('基础信息')
+    expect(topThs[0]!.getAttribute('colspan')).toBe('2')
+    expect(topThs[1]!.textContent).toBe('城市')
+    expect(topThs[1]!.getAttribute('rowspan')).toBe('2')
+    const bottomKeys = [...el.shadowRoot!.querySelectorAll('thead > tr')[1]!.querySelectorAll('th')].map(
+      (t) => t.getAttribute('data-key'),
+    )
+    expect(bottomKeys).toEqual(['name', 'age'])
+    const tds = [...rows(el)[0]!.querySelectorAll('td')].map((td) => td.getAttribute('data-col'))
+    expect(tds).toEqual(['name', 'age', 'city'])
+  })
+})
+
+describe('OASTable 虚拟滚动 + 展开行超高防重叠', () => {
+  it('虚拟模式展开行内容截断（overflow:hidden 规则在场，溢出不再与后续行重叠）', () => {
+    const el = mount({
+      height: '200',
+      'row-height': '40',
+      columns: JSON.stringify([{ key: 'name', title: '姓名' }]),
+      data: JSON.stringify([
+        { name: '张三', expand: '<div style="height:300px">超高展开内容</div>' },
+        { name: '李四' },
+        { name: '王五' },
+      ]),
+      expanded: '张三',
+      'row-key': 'name',
+    })
+    expect(el.shadowRoot!.querySelector('[part="expand-row"]')).not.toBeNull()
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toMatch(/\[data-virtual='true'\]\s+tr\.expand-row td\s*\{[^}]*overflow:\s*hidden/)
+  })
+})
