@@ -840,6 +840,14 @@ describe('OASTree 虚拟化', () => {
     expect(virtualRows(el)[0]!.textContent).toContain('节点 0')
   })
 
+  it('虚拟化：vlist 视口不携带 tabindex（tree 行自有 roving tabindex，经公共契约关闭视口聚焦）', () => {
+    const el = mount({ height: '200', 'row-height': '32', data: BIG_DATA })
+    const vp = el
+      .shadowRoot!.querySelector('oas-virtual-list')!
+      .shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+    expect(vp.getAttribute('tabindex')).toBeNull()
+  })
+
   it('虚拟化下点击展开按钮写入 JSON 数组 expanded', () => {
     const el = mount({ height: '200', 'row-height': '32', data: BIG_DATA })
     const toggle = virtualRows(el)[0]!.querySelector<HTMLButtonElement>('.toggle')!

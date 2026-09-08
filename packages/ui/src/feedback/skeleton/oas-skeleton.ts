@@ -6,6 +6,10 @@ const STYLE = `
   font-family: inherit;
   width: 100%;
 }
+/* hidden 属性必须压过 :host display（作者层规则优先于 UA [hidden]，否则 <oas-skeleton hidden> 仍显示） */
+:host([hidden]) {
+  display: none;
+}
 .block {
   width: 100%;
 }

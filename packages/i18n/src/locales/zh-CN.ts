@@ -290,6 +290,10 @@ export const zhCN = {
   'qrcode.image': '二维码',
   'qrcode.empty': '暂无内容',
   'qrcode.tooLong': '内容过长，请缩短后重试',
+  'qrcode.expired': '二维码已过期',
+  'qrcode.refresh': '刷新',
+  'qrcode.loading': '加载中…',
+  'qrcode.scanned': '已扫描',
   // command（命令面板）
   'command.placeholder': '搜索命令…',
   'command.empty': '无匹配命令',

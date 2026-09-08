@@ -13,10 +13,11 @@ import {
  * QR 编码器参考向量（均取自公开标准教程/规范，用于交叉验证纯 TS 实现）：
  * - thonky.com QR 教程：「HELLO WORLD」字母数字模式 1-M 的数据码字与 10 个 ECC 码字；
  * - thonky.com 格式/版本信息页：(L, mask=4) 格式串 110011000101111 = 0x662F；
- *   v7 版本信息串 000111110010010100。
+ *   v7 版本信息串 000111110010010100；
+ * - 完整矩阵级已知答案向量见 qr-vectors.test.ts（四级别 × 多版本，独立参考实现产出）。
  */
 
-describe('QR 编码器（纯 TS 零依赖，L 级纠错，版本 1–10）', () => {
+describe('QR 编码器（纯 TS 零依赖，L/M/Q/H 全级别，版本 1–40）', () => {
   it('「HELLO WORLD」字母数字模式：数据码字与标准参考一致（含 0xEC/0x11 填充）', () => {
     const { codewords, mode, version, dataCodewords } = encodeDataCodewords('HELLO WORLD', 'l')
     expect(mode).toBe('alphanumeric')
@@ -35,6 +36,26 @@ describe('QR 编码器（纯 TS 零依赖，L 级纠错，版本 1–10）', () 
 
   it('格式信息 BCH：(L, mask=4) 与教程最终串 0x662F 一致', () => {
     expect(formatBits(4)).toBe(0x662f)
+  })
+
+  it('格式信息 BCH 全表：4 级别 × 8 掩码与标准 15 位串一致（EC 指示 L=01/M=00/Q=11/H=10）', () => {
+    // 标准格式信息表（每级别掩码 0–7 的 15 位串，按格式信息第一拷贝位序读回的值）
+    const TABLE: Record<string, number[]> = {
+      l: [0x77c4, 0x72f3, 0x7daa, 0x789d, 0x662f, 0x6318, 0x6c41, 0x6976],
+      m: [0x5412, 0x5125, 0x5e7c, 0x5b4b, 0x45f9, 0x40ce, 0x4f97, 0x4aa0],
+      q: [0x355f, 0x3068, 0x3f31, 0x3a06, 0x24b4, 0x2183, 0x2eda, 0x2bed],
+      h: [0x1689, 0x13be, 0x1ce7, 0x19d0, 0x0762, 0x0255, 0x0d0c, 0x083b],
+    }
+    for (const [ec, values] of Object.entries(TABLE)) {
+      for (let mask = 0; mask < 8; mask++) {
+        expect(formatBits(mask, ec as 'l' | 'm' | 'q' | 'h')).toBe(values[mask])
+      }
+    }
+  })
+
+  it('格式信息随纠错级别变化：同掩码下四级别两两不同（无静默归一）', () => {
+    const values = (['l', 'm', 'q', 'h'] as const).map((ec) => formatBits(0, ec))
+    expect(new Set(values).size).toBe(4)
   })
 
   it('版本信息 BCH：v7 与教程最终串 0b000111110010010100 一致', () => {
@@ -100,39 +121,7 @@ describe('QR 编码器（纯 TS 零依赖，L 级纠错，版本 1–10）', () 
   })
 
   it('矩阵回读码字与写入码字流一致（放置/掩码/交错正确性）', () => {
-    const qr = encodeQR('https://example.com/oas-ui', 'l')
-    const size = qr.size
-
-    // 按放置顺序读回所有数据区模块（仅非函数模块），先存（x, y, 值）
-    const placed: Array<{ x: number; y: number }> = []
-    for (let right = size - 1; right >= 1; right -= 2) {
-      if (right === 6) right = 5
-      for (let vert = 0; vert < size; vert++) {
-        for (let j = 0; j < 2; j++) {
-          const x = right - j
-          const upward = ((right + 1) & 2) === 0
-          const y = upward ? size - 1 - vert : vert
-          if (!isFunctionModule(qr.version, x, y)) placed.push({ x, y })
-        }
-      }
-    }
-
-    // 应用掩码还原
-    const bits: number[] = []
-    for (const { x, y } of placed) {
-      const masked = qr.modules[y * size + x] ?? 0
-      const flip = maskFunction(qr.mask, x, y)
-      bits.push(masked ^ (flip ? 1 : 0))
-    }
-
-    // 组装码字
-    const readBack: number[] = []
-    for (let i = 0; i < bits.length && i + 7 < bits.length; i += 8) {
-      let byte = 0
-      for (let k = 0; k < 8; k++) byte = (byte << 1) | (bits[i + k] ?? 0)
-      readBack.push(byte)
-    }
-    expect(readBack).toEqual(qr.codewords)
+    assertReadback(encodeQR('https://example.com/oas-ui', 'l'))
   })
 
   it('内容变长自动升级版本', () => {
@@ -143,8 +132,33 @@ describe('QR 编码器（纯 TS 零依赖，L 级纠错，版本 1–10）', () 
     expect(long.size).toBe(17 + 4 * long.version)
   })
 
-  it('超过 L 级 v10 字节容量抛出 QR_TOO_LONG', () => {
-    expect(() => encodeQR('x'.repeat(400), 'l')).toThrow(QR_TOO_LONG_ERROR)
+  it('超过 L 级 v40 字节容量抛出 QR_TOO_LONG（版本 1–40 全表容量上限）', () => {
+    // v40-L 字节容量 2953；更高版本不存在 → 超出即抛
+    expect(() => encodeQR('x'.repeat(2954), 'l')).toThrow(QR_TOO_LONG_ERROR)
+  })
+
+  it('纠错级别影响容量：同内容 M/Q/H 选版本更高（或同级），数据码字数更少', () => {
+    // 「HELLO WORLD」74 数据位：L/M/Q 装入 v1，H（v1 仅 72 位容量）升入 v2
+    expect(encodeQR('HELLO WORLD', 'l').version).toBe(1)
+    expect(encodeQR('HELLO WORLD', 'm').version).toBe(1)
+    expect(encodeQR('HELLO WORLD', 'q').version).toBe(1)
+    expect(encodeQR('HELLO WORLD', 'h').version).toBe(2)
+    expect(encodeDataCodewords('HELLO WORLD', 'h').dataCodewords).toBeLessThan(
+      encodeDataCodewords('HELLO WORLD', 'l').dataCodewords,
+    )
+  })
+
+  it('矩阵回读校验（放置/掩码/交错正确性）对四级别全通过', () => {
+    for (const ec of ['l', 'm', 'q', 'h'] as const) {
+      const qr = encodeQR('https://example.com/oas-ui', ec)
+      assertReadback(qr)
+    }
+  })
+
+  it('短块/长块不等分版本交错正确（v7-Q：6 块 2 短 4 长）', () => {
+    const qr = encodeQR('x'.repeat(80), 'q')
+    expect(qr.version).toBe(7)
+    assertReadback(qr)
   })
 
   it('多块版本（v6+）交错后总码字数正确', () => {
@@ -192,4 +206,40 @@ function maskFunction(mask: number, x: number, y: number): boolean {
     default:
       return (((x + y) % 2) + ((x * y) % 3)) % 2 === 0
   }
+}
+
+/** 矩阵回读自检：按 zigzag 顺序读出数据区模块、逆掩码还原，应与码字流逐字节一致 */
+function assertReadback(qr: ReturnType<typeof encodeQR>): void {
+  const size = qr.size
+
+  // 按放置顺序读回所有数据区模块（仅非函数模块），先存（x, y）
+  const placed: Array<{ x: number; y: number }> = []
+  for (let right = size - 1; right >= 1; right -= 2) {
+    if (right === 6) right = 5
+    for (let vert = 0; vert < size; vert++) {
+      for (let j = 0; j < 2; j++) {
+        const x = right - j
+        const upward = ((right + 1) & 2) === 0
+        const y = upward ? size - 1 - vert : vert
+        if (!isFunctionModule(qr.version, x, y)) placed.push({ x, y })
+      }
+    }
+  }
+
+  // 应用掩码还原
+  const bits: number[] = []
+  for (const { x, y } of placed) {
+    const masked = qr.modules[y * size + x] ?? 0
+    const flip = maskFunction(qr.mask, x, y)
+    bits.push(masked ^ (flip ? 1 : 0))
+  }
+
+  // 组装码字
+  const readBack: number[] = []
+  for (let i = 0; i < bits.length && i + 7 < bits.length; i += 8) {
+    let byte = 0
+    for (let k = 0; k < 8; k++) byte = (byte << 1) | (bits[i + k] ?? 0)
+    readBack.push(byte)
+  }
+  expect(readBack).toEqual(qr.codewords)
 }

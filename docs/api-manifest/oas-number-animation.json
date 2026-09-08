@@ -9,11 +9,35 @@
       "observed": true
     },
     {
+      "name": "from",
+      "type": "string",
+      "default": "0",
+      "observed": true
+    },
+    {
       "name": "duration",
       "observed": true
     },
     {
       "name": "to-fixed",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "easing",
+      "type": "string",
+      "default": "ease-out",
+      "observed": true
+    },
+    {
+      "name": "active",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "group-separator",
       "type": "string",
       "default": "",
       "observed": true

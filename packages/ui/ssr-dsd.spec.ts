@@ -1202,7 +1202,7 @@ test('数据展示组件事件可触发：upgrade 后 oas-carousel 切换 / oas-
         () => (window as unknown as Window & { __carouselChange: unknown[] }).__carouselChange,
       ),
     )
-    .toEqual([{ index: 1 }])
+    .toEqual([{ index: 1, prevIndex: 0 }])
 
   // oas-image：点击主图 → 预览浮层可见（part=preview-mask 移除 hidden）+ oas-preview
   await page.evaluate(() => {

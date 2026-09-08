@@ -11,6 +11,18 @@
     {
       "name": "pause-on-hover",
       "observed": true
+    },
+    {
+      "name": "fade-edges",
+      "observed": true
+    },
+    {
+      "name": "orientation",
+      "observed": true
+    },
+    {
+      "name": "reverse",
+      "observed": true
     }
   ],
   "props": [],

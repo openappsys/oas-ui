@@ -332,7 +332,7 @@ describe('data 展示组件 DSD 真水合批次 3', () => {
     let crDetail: unknown = null
     cr.addEventListener('oas-change', (e: Event) => (crDetail = (e as CustomEvent).detail))
     cr.shadowRoot!.querySelector<HTMLElement>('[part="arrow-next"]')!.click()
-    expect(crDetail).toEqual({ index: 1 })
+    expect(crDetail).toEqual({ index: 1, prevIndex: 0 })
     expect(cr.getAttribute('index')).toBe('1')
 
     // oas-image：点击主图（preview 属性）→ oas-preview 派发 + 遮罩展开

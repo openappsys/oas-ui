@@ -20,9 +20,41 @@ A countdown component that refreshes in real time, supports day/hour/minute/seco
   <oas-countdown value="90061000" format="D天H时m分s秒"></oas-countdown>
 </DemoBlock>
 
+## Millisecond Precision
+
+Add the `SSS` token to output milliseconds (zero-padded to 3 digits); internal refresh automatically accelerates to a 50ms granularity. `aria-live` stays off so high-frequency text changes don't disturb screen readers.
+
+<DemoBlock title="SSS millisecond template">
+  <oas-countdown value="10000" format="ss.SSS"></oas-countdown>
+  <oas-countdown value="10000" format="mm分ss秒SSS"></oas-countdown>
+</DemoBlock>
+
+## Pause / Resume / Reset
+
+`active` controls pausing (`"false"` freezes the frame and stops counting elapsed time; resuming continues from where it stopped); the `reset()` method restarts from the initial value. Ideal for verification-code resend timers, pomodoro clocks, etc.
+
+<DemoBlock title="active pause/resume + reset()">
+  <oas-countdown id="countdown-active" value="60000" title="Time left to pay"></oas-countdown>
+  <oas-countdown value="90000" active="false" title="Paused (active=false, frozen at the start value)"></oas-countdown>
+  <oas-button id="countdown-toggle" size="sm">Pause</oas-button>
+  <oas-button id="countdown-reset" size="sm">Reset</oas-button>
+</DemoBlock>
+
+## Prefix / Suffix / Title
+
+The `title` attribute (or `slot="title"`) renders a heading above; `prefix` / `suffix` flank the display value (attribute text or same-named slots, dual channel).
+
+<DemoBlock title="title + prefix / suffix">
+  <oas-countdown value="90000" title="Until the event" prefix="in " suffix=" left"></oas-countdown>
+  <oas-countdown value="300000">
+    <span slot="title">Verification code valid for</span>
+    <span slot="suffix"> before expiry</span>
+  </oas-countdown>
+</DemoBlock>
+
 ## Finish Callback
 
-<DemoBlock title="oas-finish event">
+<DemoBlock title="oas-finish finished state">
   <oas-countdown id="countdown-event" value="3000"></oas-countdown>
   <span id="countdown-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
 </DemoBlock>
@@ -37,24 +69,52 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
-| `format` | Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds | `string` | `HH:mm:ss` |
+| `active` | Controlled pause: `"false"` freezes the frame and stops counting elapsed time, resuming continues (absent = running) | `string` | — |
+| `format` | Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds, `SSS` milliseconds (50ms internal refresh when SSS present) | `string` | `HH:mm:ss` |
+| `prefix` | Leading text of the display value | — | — |
+| `suffix` | Trailing text of the display value | — | — |
+| `title` | Heading above the display value (native global attribute, absorbed after rendering) | `string` | — |
 | `value` | Total countdown duration (milliseconds) | `string` | `0` |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
+| `oas-change` | Emitted on a throttled basis when the remaining displayed value changes, detail `{ value: remaining milliseconds }` |
 | `oas-finish` | Emitted once when the countdown reaches zero |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `prefix` | Leading content (distributed content takes precedence over the `prefix` attribute text) |
+| `suffix` | Trailing content (distributed content takes precedence over the `suffix` attribute text) |
+| `title` | Heading above the value (distributed content takes precedence over the `title` attribute text) |
 
 When the template contains `D`/`DD`, hours are counted within the day (0-23); without days, hours roll up into them (e.g. `25:01:01`).
 
 <script setup>
 import { onMounted } from 'vue'
 onMounted(() => {
-  const el = document.getElementById('countdown-event')
-  const out = document.getElementById('countdown-output')
-  el?.addEventListener('oas-finish', () => {
-    out.textContent = 'oas-finish: countdown finished'
+  // whenDefined guards against pre-upgrade expando shadowing (property assignment / method calls must wait for the custom element definition)
+  customElements.whenDefined('oas-countdown').then(() => {
+    const el = document.getElementById('countdown-active')
+    const toggle = document.getElementById('countdown-toggle')
+    const reset = document.getElementById('countdown-reset')
+    const eventEl = document.getElementById('countdown-event')
+    const out = document.getElementById('countdown-output')
+    eventEl?.addEventListener('oas-finish', () => {
+      out.textContent = 'oas-finish: countdown finished'
+    })
+    toggle?.addEventListener('click', () => {
+      if (!el) return
+      const paused = el.getAttribute('active') === 'false'
+      el.setAttribute('active', paused ? 'true' : 'false')
+      toggle.textContent = paused ? 'Pause' : 'Resume'
+    })
+    reset?.addEventListener('click', () => {
+      el?.reset()
+    })
   })
 })
 </script>

@@ -32,6 +32,12 @@ describe('formatDuration（纯函数）', () => {
   it('负数按 0 处理', () => {
     expect(formatDuration(-100, 'HH:mm:ss')).toBe('00:00:00')
   })
+
+  it('SSS token 输出毫秒（3 位补零）', () => {
+    expect(formatDuration(1234, 'ss.SSS')).toBe('01.234')
+    expect(formatDuration(1234, 'HH:mm:ss.SSS')).toBe('00:00:01.234')
+    expect(formatDuration(0, 'ss.SSS')).toBe('00.000')
+  })
 })
 
 describe('OASCountdown', () => {
@@ -110,5 +116,162 @@ describe('OASCountdown', () => {
     // 重连：期间真实时间已流逝，按原截止点继续（已归零）
     document.body.appendChild(el)
     expect(display(el)).toBe('00:00:00')
+  })
+
+  // ---- SSS 毫秒精度（interval 自适应加速） ----
+
+  it('SSS 模板毫秒级刷新（50ms tick）', () => {
+    vi.useFakeTimers()
+    const el = mount({ value: '1000', format: 'ss.SSS' })
+    expect(display(el)).toBe('01.000')
+    vi.advanceTimersByTime(300)
+    expect(display(el)).toBe('00.700')
+    vi.advanceTimersByTime(300)
+    expect(display(el)).toBe('00.400')
+  })
+
+  // ---- active 受控暂停 / 恢复 ----
+
+  it('active=false 停帧不计时；恢复后续走', () => {
+    vi.useFakeTimers()
+    const el = mount({ value: '5000' })
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:03')
+    el.setAttribute('active', 'false')
+    vi.advanceTimersByTime(3000)
+    // 暂停期间时间不走
+    expect(display(el)).toBe('00:00:03')
+    el.setAttribute('active', 'true')
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:02')
+  })
+
+  it('active 缺席（默认 true）与移除 active 恢复走表', () => {
+    vi.useFakeTimers()
+    const el = mount({ value: '5000' })
+    vi.advanceTimersByTime(1300)
+    el.setAttribute('active', 'false')
+    vi.advanceTimersByTime(1000)
+    el.removeAttribute('active')
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:02')
+  })
+
+  it('暂停期间改 value 重置剩余时长', () => {
+    vi.useFakeTimers()
+    const el = mount({ value: '5000' })
+    vi.advanceTimersByTime(1300)
+    el.setAttribute('active', 'false')
+    el.setAttribute('value', '10000')
+    expect(display(el)).toBe('00:00:10')
+    vi.advanceTimersByTime(2600)
+    expect(display(el)).toBe('00:00:10')
+    el.setAttribute('active', 'true')
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:08')
+  })
+
+  // ---- reset() 方法 ----
+
+  it('reset() 回到初值重新计时（active=false 时不重启）', () => {
+    vi.useFakeTimers()
+    const el = mount({ value: '5000' })
+    vi.advanceTimersByTime(2000)
+    expect(display(el)).toBe('00:00:03')
+    el.reset()
+    expect(display(el)).toBe('00:00:05')
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:03')
+
+    // active=false 时 reset 只归位不启动
+    el.setAttribute('active', 'false')
+    vi.advanceTimersByTime(2000)
+    el.reset()
+    expect(display(el)).toBe('00:00:05')
+    vi.advanceTimersByTime(2000)
+    expect(display(el)).toBe('00:00:05')
+  })
+
+  it('reset() 已完成后可重新开始并再次派发 finish', () => {
+    vi.useFakeTimers()
+    const el = mount({ value: '2000' })
+    let finished = 0
+    el.addEventListener('oas-finish', () => finished++)
+    vi.advanceTimersByTime(2100)
+    expect(finished).toBe(1)
+    el.reset()
+    expect(display(el)).toBe('00:00:02')
+    vi.advanceTimersByTime(2100)
+    expect(finished).toBe(2)
+    expect(display(el)).toBe('00:00:00')
+  })
+
+  // ---- oas-change 事件（显示值变化才派发，节流派） ----
+
+  it('oas-change 在剩余显示值变化时派发（detail.value 为剩余 ms）', () => {
+    vi.useFakeTimers()
+    const el = mount({ value: '3000' })
+    const changes: number[] = []
+    el.addEventListener('oas-change', (e) => changes.push((e as CustomEvent).detail.value))
+    vi.advanceTimersByTime(2600) // 跨过 2 个秒边界（250ms tick 内文本变化 2 次）
+    expect(changes.length).toBeGreaterThanOrEqual(2)
+    // 首次变化在首个 tick（剩余 < 初值 3000）；末次变化已跨入下一秒（剩余 ≤ 1000）
+    expect(changes[0]).toBeLessThan(3000)
+    expect(changes[changes.length - 1]).toBeLessThanOrEqual(1000)
+  })
+
+  it('oas-change 不初始派发、不归零重复派发', () => {
+    vi.useFakeTimers()
+    const el = mount({ value: '2000' })
+    let changes = 0
+    el.addEventListener('oas-change', () => changes++)
+    expect(changes).toBe(0)
+    vi.advanceTimersByTime(2100)
+    expect(changes).toBe(2) // 00:00:01 → 00:00:00 两次文本变化
+    vi.advanceTimersByTime(3000)
+    expect(changes).toBe(2)
+  })
+
+  // ---- prefix / suffix / title 双通道 ----
+
+  function partEl(el: OASCountdown, part: string): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>(`[part="${part}"]`)!
+  }
+
+  it('title 属性渲染标题区并从宿主吸收；prefix/suffix 夹显示值', () => {
+    const el = mount({ value: '5000', title: '剩余时间', prefix: '还剩 ', suffix: ' 结束' })
+    expect(partEl(el, 'title').textContent).toContain('剩余时间')
+    expect(el.hasAttribute('title')).toBe(false)
+    expect(partEl(el, 'prefix').textContent).toContain('还剩')
+    expect(partEl(el, 'suffix').textContent).toContain('结束')
+    const body = el.shadowRoot!.querySelector('[part="countdown"]')!
+    expect(body.textContent).toContain('还剩')
+    expect(body.textContent).toContain('00:00:05')
+  })
+
+  it('slot="title" / slot="prefix" / slot="suffix" 分发优先', async () => {
+    const el = mount({ value: '5000', prefix: '属性前缀' })
+    const p = document.createElement('span')
+    p.textContent = '插槽前缀'
+    p.setAttribute('slot', 'prefix')
+    el.appendChild(p)
+    await new Promise((r) => setTimeout(r, 0))
+    const slot = el.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="prefix"]')!
+    expect(slot.assignedNodes()).toContain(p)
+    expect(el.shadowRoot!.querySelector<HTMLElement>('[part="prefix"] [data-fallback]')!.hidden).toBe(
+      true,
+    )
+  })
+
+  it('水合：SSR 快照含标题文本时恢复 title 缓存', () => {
+    const ref = mount({ value: '5000', title: '快照标题' })
+    const snap = ref.shadowRoot!.innerHTML
+    ref.remove()
+    const el = new OASCountdown()
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-countdown" data-oas-ssr-v="1">${snap}`
+    el.setAttribute('value', '5000')
+    document.body.appendChild(el)
+    expect(partEl(el, 'title').textContent).toContain('快照标题')
+    expect(el.hasAttribute('title')).toBe(false)
   })
 })

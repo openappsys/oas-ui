@@ -128,6 +128,154 @@ onMounted(() => {
 })
 </script>
 
+## 指示器
+
+指示器支持隐藏、外挂与线性形态三种定制，通过 `indicators` / `indicator-position` / `indicator-type` 控制。圆点颜色走组件级 CSS 变量 `--oas-carousel-dot-bg` / `--oas-carousel-dot-active-bg`（默认白色系，适配深色轮播项；浅色轮播项可在宿主覆盖）。
+
+<DemoBlock title="隐藏指示器（indicators=false）">
+  <div style="width: 100%">
+    <oas-carousel indicators="false" arrows="always">
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">第一屏</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">第二屏</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">第三屏</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="外挂指示器（indicator-position=outside）">
+  <div style="width: 100%">
+    <oas-carousel indicator-position="outside" arrows="always">
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">第一屏</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">第二屏</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">第三屏</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="线性指示器（indicator-type=line）">
+  <div style="width: 100%">
+    <oas-carousel indicator-type="line" arrows="always">
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">第一屏</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">第二屏</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">第三屏</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+## 淡出淡入
+
+设置 `effect="fade"` 切换为全屏叠层淡入淡出（默认 `slide` 位移切换）。`prefers-reduced-motion` 下自动退化为即时切换。
+
+<DemoBlock title="淡出淡入（effect=fade）">
+  <div style="width: 100%">
+    <oas-carousel effect="fade" arrows="always">
+      <div style="background: linear-gradient(135deg, var(--oas-color-primary), var(--oas-color-success)); color: var(--oas-color-text-on-primary); height: 200px">淡入淡出 1</div>
+      <div style="background: linear-gradient(135deg, var(--oas-color-warning), var(--oas-color-danger)); color: var(--oas-color-text-on-warning); height: 200px">淡入淡出 2</div>
+      <div style="background: linear-gradient(135deg, var(--oas-color-danger), var(--oas-color-primary)); color: var(--oas-color-text-on-danger); height: 200px">淡入淡出 3</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+## 切换方法
+
+组件暴露 `next()` / `prev()` / `goTo(index)` 命令式方法，配合 `oas-change` 事件（`detail` 含 `index` 与 `prevIndex`）可实现缩略图控制主轮播等自定义交互。
+
+<DemoBlock title="命令式切换（next / prev / goTo）">
+  <div style="width: 100%">
+    <oas-carousel id="carousel-methods" arrows="never">
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">第一屏</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">第二屏</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">第三屏</div>
+    </oas-carousel>
+    <oas-button size="small" style="margin-top: var(--oas-space-3)" onclick="document.getElementById('carousel-methods').prev()">上一屏</oas-button>
+    <oas-button size="small" type="primary" style="margin-top: var(--oas-space-3)" onclick="document.getElementById('carousel-methods').next()">下一屏</oas-button>
+    <oas-button size="small" style="margin-top: var(--oas-space-3)" onclick="document.getElementById('carousel-methods').goTo(2)">跳到第 3 屏</oas-button>
+  </div>
+</DemoBlock>
+
+## 循环开关
+
+默认首尾循环；设置 `loop="false"` 后到头即停（首屏禁用上一箭头、末屏禁用下一箭头），适用于分步引导、末尾带操作区的场景。
+
+<DemoBlock title="不循环（loop=false）">
+  <div style="width: 100%">
+    <oas-carousel loop="false" arrows="always">
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">第一步</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">第二步</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">第三步（最后）</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+## 自动播放暂停
+
+自动播放时，悬停或键盘聚焦轮播区域即暂停，移开恢复；页面切到后台自动停播，回到前台继续（满足 WCAG 2.2.2 暂停要求）。可用 `pause-on-hover="false"` 关闭悬停暂停。
+
+<DemoBlock title="悬停暂停（默认开启）">
+  <div style="width: 100%">
+    <oas-carousel autoplay interval="2000" arrows="always">
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">悬停我试试 1</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">悬停我试试 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">悬停我试试 3</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+鼠标悬停（或 Tab 聚焦）上方轮播区域，自动播放会暂停在当前屏；移开后从下一拍继续。
+
+<DemoBlock title="关闭悬停暂停（pause-on-hover=false）">
+  <div style="width: 100%">
+    <oas-carousel autoplay interval="2000" pause-on-hover="false" arrows="always">
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">悬停也不停 1</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">悬停也不停 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">悬停也不停 3</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+## 垂直轮播
+
+设置 `direction="vertical"` 沿纵向切换。垂直模式视口默认高度 200px，可用 CSS 变量 `--oas-carousel-height` 覆盖；指示器自动移到右侧，箭头旋转 90°。
+
+<DemoBlock title="垂直轮播（direction=vertical）">
+  <div style="width: 100%">
+    <oas-carousel direction="vertical" arrows="always" style="--oas-carousel-height: 160px">
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 100%">第一屏</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 100%">第二屏</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 100%">第三屏</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+## 一屏多项
+
+`slides-per-view` 设置每屏展示的轮播项数，`gap` 设置项间距（px）；指示器与步进按「页」语义（一组一项）。最后一页不足一组时对齐轨道末尾，不露出空白。
+
+<DemoBlock title="一屏两项（slides-per-view=2 + gap）">
+  <div style="width: 100%">
+    <oas-carousel slides-per-view="2" gap="16" arrows="always">
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">图 1</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">图 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">图 3</div>
+      <div style="background: var(--oas-color-danger); color: var(--oas-color-text-on-danger); height: 160px">图 4</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+## 拖拽切换
+
+在轮播区域按下并左右（垂直模式下上下）拖动超过阈值即切换，未达阈值回弹。触摸与鼠标统一走 Pointer Events；水平拖拽放行页面纵向滚动（`touch-action: pan-y`），不与页面滚动手势冲突。拖拽结束后自动播放计时会重置。
+
+<DemoBlock title="拖拽切换（按住拖动）">
+  <div style="width: 100%">
+    <oas-carousel id="carousel-drag" arrows="never">
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">拖我到左边 1</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">拖我到左边 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">拖我到左边 3</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### 属性
@@ -136,8 +284,17 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `arrows` | 箭头显示形态：`always`（始终显示）/ `hover`（悬停显示）/ `never`（不显示） | `string` | `hover` |
 | `autoplay` | 是否自动播放 | `boolean` | — |
+| `direction` | 轮播方向：`horizontal`（默认）/ `vertical`（垂直模式视口定高，走 `--oas-carousel-height`） | `string` | `horizontal` |
+| `effect` | 切换效果：`slide`（默认滑动）/ `fade`（叠层淡入淡出，reduced-motion 退化为直切） | `string` | `slide` |
+| `gap` | 多图一屏时屏间间距（px，配合 `slides-per-view`） | `string` | `0` |
 | `index` | 当前屏索引（从 0 起） | `string` | `0` |
+| `indicator-position` | 指示器位置：`inside`（默认，叠在内容上）/ `outside`（流内占位撑高容器） | `string` | `inside` |
+| `indicator-type` | 指示器形态：`dot`（默认圆点）/ `line`（线条，激活加宽） | `string` | `dot` |
+| `indicators` | 指示器开关（默认 true；`"false"` 隐藏） | `string` | `true` |
 | `interval` | 自动播放间隔（ms） | `string` | `3000` |
+| `loop` | 循环切换（默认开；`"false"` 时到边界停驻并禁用对应箭头） | `string` | — |
+| `pause-on-hover` | 自动播放时悬停/聚焦暂停（默认 true；`"false"` 关闭；页面切后台恒停播） | `string` | `true` |
+| `slides-per-view` | 每屏展示屏数（默认 1；索引语义为页，末页对齐轨道末尾不露空白） | `string` | `1` |
 
 ### 事件
 
