@@ -24,10 +24,91 @@
       "name": "repeat",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "rotate",
+      "type": "string",
+      "default": "-30",
+      "observed": true
+    },
+    {
+      "name": "gap",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "offset",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "width",
+      "type": "string",
+      "default": "240",
+      "observed": true
+    },
+    {
+      "name": "height",
+      "type": "string",
+      "default": "120",
+      "observed": true
+    },
+    {
+      "name": "font-size",
+      "type": "string",
+      "default": "16",
+      "observed": true
+    },
+    {
+      "name": "font-weight",
+      "type": "string",
+      "default": "400",
+      "observed": true
+    },
+    {
+      "name": "font-family",
+      "type": "string",
+      "default": "sans-serif",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "z-index",
+      "type": "string",
+      "default": "2",
+      "observed": true
+    },
+    {
+      "name": "staggered",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "movable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "tamper-proof",
+      "type": "string",
+      "default": "true",
+      "observed": true
     }
   ],
   "props": [],
-  "events": [],
+  "events": [
+    {
+      "name": "oas-remove",
+      "detail": "{ type }"
+    }
+  ],
   "slots": [
     {
       "name": ""

@@ -13,6 +13,10 @@ function textEl(el: OASGradientText): HTMLElement {
   return el.shadowRoot!.querySelector<HTMLElement>('[part="text"]')!
 }
 
+function styleText(el: OASGradientText): string {
+  return el.shadowRoot!.querySelector('style')!.textContent!
+}
+
 describe('OASGradientText', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
@@ -22,13 +26,15 @@ describe('OASGradientText', () => {
     document.body.innerHTML = ''
   })
 
-  it('默认：token 双色渐变 + to right + 透明文字', () => {
+  it('默认：token 双色渐变 + to right + clipped 类', () => {
     const el = mount()
     const node = textEl(el)
     expect(node.style.backgroundImage).toContain('linear-gradient')
     expect(node.style.backgroundImage).toContain('to right')
     expect(node.style.backgroundImage).toContain('var(--oas-color-primary)')
-    expect(node.style.color).toBe('transparent')
+    expect(node.classList.contains('clipped')).toBe(true)
+    // 方向经内联自定义变量穿透 scoped CSS
+    expect(node.style.getPropertyValue('--oas-gradient-text-dir')).toBe('to right')
   })
 
   it('gradient JSON 色标驱动渐变', () => {
@@ -43,6 +49,7 @@ describe('OASGradientText', () => {
   it('direction 控制渐变方向', () => {
     const el = mount({ gradient: '["#f00", "#00f"]', direction: 'to bottom' })
     expect(textEl(el).style.backgroundImage).toContain('to bottom')
+    expect(textEl(el).style.getPropertyValue('--oas-gradient-text-dir')).toBe('to bottom')
   })
 
   it('direction 为空回退 to right', () => {
@@ -70,11 +77,81 @@ describe('OASGradientText', () => {
     expect(textEl(el2).style.backgroundImage).toContain('var(--oas-color-primary)')
   })
 
-  it('应用 background-clip:text 且保留槽内文字', () => {
+  it('type 语义色渐变：data-type 驱动 scoped CSS（token 派生双色，含 info 复用 info-text）', () => {
+    const el = mount({ type: 'success' })
+    const node = textEl(el)
+    expect(node.getAttribute('data-type')).toBe('success')
+    // 静态 type 渐变完全走 scoped CSS，内联不重复声明
+    expect(node.style.backgroundImage).toBe('')
+    const css = styleText(el)
+    expect(css).toContain("[data-type='success']")
+    expect(css).toContain('var(--oas-color-success)')
+    expect(css).toContain('color-mix')
+    const elInfo = mount({ type: 'info' })
+    expect(textEl(elInfo).getAttribute('data-type')).toBe('info')
+    expect(styleText(elInfo)).toContain('var(--oas-color-info-text)')
+  })
+
+  it('gradient 显式给定优先于 type；非法 type 回退默认 token 渐变', () => {
+    const el = mount({ type: 'success', gradient: '["#f00", "#00f"]' })
+    const node = textEl(el)
+    const bg = node.style.backgroundImage
+    expect(bg).toContain('#f00')
+    expect(bg).not.toContain('--oas-color-success')
+    expect(node.hasAttribute('data-type')).toBe(false)
+    const elBad = mount({ type: 'nope' })
+    expect(textEl(elBad).style.backgroundImage).toContain('var(--oas-color-primary)')
+    expect(textEl(elBad).hasAttribute('data-type')).toBe(false)
+  })
+
+  it('animated 应用流动动画类 + 回文渐变（双色也回文，首尾同色无缝循环）', () => {
+    const el = mount({ gradient: '["#f00", "#00f"]', animated: '' })
+    const node = textEl(el)
+    expect(node.classList.contains('animated')).toBe(true)
+    expect(node.style.backgroundImage).toBe('linear-gradient(to right, #f00, #00f, #f00)')
+  })
+
+  it('animated + 默认渐变：回文 token 双色', () => {
+    const el = mount({ animated: '' })
+    const bg = textEl(el).style.backgroundImage
+    expect(textEl(el).classList.contains('animated')).toBe(true)
+    expect(bg).toContain('var(--oas-color-primary-hover)')
+    expect(bg.startsWith('linear-gradient')).toBe(true)
+  })
+
+  it('animated + type：动画类与 data-type 并存（内联回文覆盖在浏览器生效，happy-dom 丢弃 color-mix 内联属已知限制）', () => {
+    const el = mount({ type: 'danger', animated: '' })
+    const node = textEl(el)
+    expect(node.classList.contains('animated')).toBe(true)
+    expect(node.getAttribute('data-type')).toBe('danger')
+  })
+
+  it('animated 样式含 keyframes 与 prefers-reduced-motion 降级', () => {
+    const el = mount({ animated: '' })
+    const style = styleText(el)
+    expect(style).toContain('@keyframes oas-gradient-text-flow')
+    expect(style).toContain('prefers-reduced-motion')
+  })
+
+  it('@supports 回退：clip/透明色只写在 supports 块内，inline 不设透明色（老浏览器文字可见）', () => {
     const el = mount()
     const node = textEl(el)
-    expect(node.getAttribute('style')).toContain('-webkit-background-clip: text')
-    expect(node.style.backgroundClip).toBe('text')
+    expect(node.style.color).not.toBe('transparent')
+    expect(node.getAttribute('style')).not.toContain('background-clip')
+    const style = styleText(el)
+    expect(style).toContain('@supports')
+    expect(style).toContain('background-clip: text')
+  })
+
+  it('单枚色标 + animated：保留纯色通道（动画无流动意义，类名不打）', () => {
+    const el = mount({ gradient: '["#f00"]', animated: '' })
+    const node = textEl(el)
+    expect(node.classList.contains('animated')).toBe(false)
+    expect(node.style.backgroundColor).toBe('#f00')
+  })
+
+  it('保留槽内文字', () => {
+    const el = mount()
     expect(el.textContent).toContain('渐变文字')
   })
 })

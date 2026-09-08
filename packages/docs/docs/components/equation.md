@@ -64,6 +64,49 @@
 
 未知命令按字面显示，不报错。
 
+## 块级公式
+
+<DemoBlock title="display=block（独立居中行）">
+  <div style="width: 100%">
+    <oas-equation code="\sum_{i=1}^{n} i^2 = \frac{n(n+1)(2n+1)}{6}" display="block"></oas-equation>
+  </div>
+</DemoBlock>
+
+行间公式（独立居中、上下留白）用 <code>display="block"</code>；字号不放大，跟随外层。
+
+## 注入渲染引擎
+
+<DemoBlock title="engine 注入（薄壳委托）">
+  <div style="width: 100%">
+    <oas-equation id="eq-engine" code="\oint_C x\,dx + y\,dy"></oas-equation>
+    <p style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+      注入兼容 TeX 渲染引擎对象（<code>engine</code> property，<code>renderToString</code> 协议）后组件转为薄壳委托渲染——本 demo 用 mock 引擎演示协议（虚线框即引擎产物）。零依赖场景不注入即走自研子集。
+    </p>
+  </div>
+</DemoBlock>
+
+<script setup>
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  customElements.whenDefined('oas-equation').then(() => {
+    const eq = document.querySelector('#eq-engine')
+    if (!eq) return
+    // mock 引擎：演示 renderToString(code, options) 注入协议（真实场景可换完整 TeX 引擎）
+    eq.engine = {
+      renderToString: (code) =>
+        `<span style="border: 1px dashed var(--oas-color-primary); border-radius: var(--oas-radius-sm); padding: 2px 8px; font-family: serif">⟦ ${code.replace(/</g, '&lt;')} ⟧</span>`,
+    }
+  })
+})
+</script>
+
+引擎路径与自研路径的边界：
+
+- **DOM**：引擎产物以 innerHTML 直出（引擎自带类名/字体在其内部生效）；自研路径为 span 堆叠 + CSS 排版。两条路径 aria-label 均为原始 LaTeX。
+- **错误态**：均为静默降级——自研未知命令按字面显示；引擎渲染抛错自动回退自研子集渲染，不空白。
+- **SSR**：快照只走属性通道（attribute），`engine` 是 property——SSR 输出恒为自研子集渲染；需要引擎 SSR 时宿主在服务端注入同一引擎对象。
+
 ## 字号定制
 
 字号默认跟随外层 `font-size`（继承），可用 CSS 变量 `--oas-equation-font` 显式定制（如 `18px`）。
@@ -75,6 +118,7 @@
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `code` | LaTeX 子集源文本 | `string` | — |
+| `display` | 显示模式：`inline`（默认，随文）/ `block`（独立居中块，margin-block 间距） | `string` | — |
 
 ### ARIA
 

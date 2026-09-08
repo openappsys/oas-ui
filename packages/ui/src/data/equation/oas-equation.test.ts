@@ -111,4 +111,70 @@ describe('OASEquation', () => {
     expect(eq).toBe(eqOf(el))
     expect(eq.textContent).toContain('α')
   })
+
+  it('display="block" 块级模式：host 属性驱动 scoped CSS（居中独立行）', () => {
+    const el = mount({ code: 'x^2', display: 'block' })
+    expect(eqOf(el).querySelector('.sup')).not.toBeNull()
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toContain("[display='block']")
+  })
+
+  it('非法 display 值按行内处理（scoped CSS 仅匹配 block）', () => {
+    const el = mount({ code: 'x^2', display: 'inline' })
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toContain("[display='block']")
+    expect(eqOf(el).querySelector('.sup')).not.toBeNull()
+  })
+
+  it('engine 注入时委托渲染（薄壳模式），code 透传引擎', () => {
+    const el = mount({ code: '\\foo{bar}' })
+    let received = ''
+    el.engine = {
+      renderToString: (code: string) => {
+        received = code
+        return '<span class="engine-mark">ENGINE</span>'
+      },
+    }
+    expect(received).toBe('\\foo{bar}')
+    expect(eqOf(el).querySelector('.engine-mark')).not.toBeNull()
+    expect(eqOf(el).textContent).toBe('ENGINE')
+  })
+
+  it('块级模式把 displayMode 透传给引擎', () => {
+    const el = mount({ code: 'x', display: 'block' })
+    let opts: Record<string, unknown> | undefined
+    el.engine = {
+      renderToString: (_code: string, options?: Record<string, unknown>) => {
+        opts = options
+        return 'x'
+      },
+    }
+    expect(opts?.displayMode).toBe(true)
+  })
+
+  it('引擎渲染抛错时回退自研子集渲染，不静默空白', () => {
+    const el = mount({ code: 'x^2' })
+    el.engine = {
+      renderToString: () => {
+        throw new Error('engine boom')
+      },
+    }
+    expect(eqOf(el).querySelector('.sup')).not.toBeNull()
+  })
+
+  it('移除/替换 engine 后渲染跟随切换', () => {
+    const el = mount({ code: 'x^2' })
+    el.engine = { renderToString: () => '<i class="engine-mark">e</i>' }
+    expect(eqOf(el).querySelector('.engine-mark')).not.toBeNull()
+    el.engine = null
+    expect(eqOf(el).querySelector('.engine-mark')).toBeNull()
+    expect(eqOf(el).querySelector('.sup')).not.toBeNull()
+  })
+
+  it('非法 engine 对象被忽略（保持自研渲染）', () => {
+    const el = mount({ code: 'x^2' })
+    // @ts-expect-error 故意注入非法形态
+    el.engine = { render: 1 }
+    expect(eqOf(el).querySelector('.sup')).not.toBeNull()
+  })
 })

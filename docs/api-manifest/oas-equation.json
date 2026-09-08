@@ -7,9 +7,20 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "display",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "name": "engine",
+      "type": "EquationEngine | null"
+    }
+  ],
   "events": [],
   "slots": [],
   "unresolved": []

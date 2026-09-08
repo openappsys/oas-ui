@@ -39,6 +39,24 @@ const STYLE = `
   font-size: 0.857em;
   color: var(--oas-color-text-secondary);
 }
+/* align=right：时间右挤、操作区右对齐（逻辑属性，RTL 下自动翻转） */
+:host([align="right"]) .time {
+  margin-inline-start: auto;
+}
+:host([align="right"]) .actions {
+  justify-content: flex-end;
+}
+/* 回复目标 / 引用区：次级文本 + 左侧 2px token 色边（逻辑属性，RTL 安全） */
+.reply,
+.quote {
+  margin-block-start: var(--oas-space-1);
+  padding-inline-start: var(--oas-space-2);
+  border-inline-start: 2px solid var(--oas-color-border-strong);
+  color: var(--oas-color-text-secondary);
+  font-size: 0.857em;
+  line-height: 1.6;
+  word-break: break-word;
+}
 .content {
   margin-block-start: var(--oas-space-1);
   line-height: 1.6;
@@ -74,13 +92,18 @@ const STYLE = `
  * - `time`：时间
  * - `content`：评论内容
  * - `actions`：操作区（回复/点赞等，由宿主提供）
+ * - `quote`：引用区（被引用的原文，视觉为次级文本 + 左侧色边）
+ * - `reply`：回复目标区（如「回复 @某人」，显示在作者行下方）
  * - 默认插槽：嵌套的 `<oas-comment>` 子评论（自动缩进 + 引导线）
+ *
+ * 属性：
+ * - `align`：`'left' | 'right'`，时间与操作区的对齐（默认 left，CSS 级，RTL 安全）
  *
  * 空插槽自动隐藏对应区块；无内容渲染不报错。
  */
 export class OASComment extends OASElement {
   static override get observedAttributes(): string[] {
-    return []
+    return ['align']
   }
 
   /** 命名插槽 → 包裹容器 part 名 */
@@ -88,6 +111,8 @@ export class OASComment extends OASElement {
     avatar: 'avatar',
     author: 'author',
     time: 'time',
+    reply: 'reply',
+    quote: 'quote',
     content: 'content',
     actions: 'actions',
   }
@@ -104,6 +129,8 @@ export class OASComment extends OASElement {
               <span class="author" part="author" hidden><slot name="author"></slot></span>
               <span class="time" part="time" hidden><slot name="time"></slot></span>
             </div>
+            <div class="reply" part="reply" hidden><slot name="reply"></slot></div>
+            <div class="quote" part="quote" hidden><slot name="quote"></slot></div>
             <div class="content" part="content" hidden><slot name="content"></slot></div>
             <div class="actions" part="actions" hidden><slot name="actions"></slot></div>
           </div>

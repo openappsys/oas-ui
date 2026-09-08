@@ -64,6 +64,50 @@ Greek letters like `\alpha` and common operators such as `\times` `\div` `\pm` `
 
 Unknown commands are displayed literally without errors.
 
+## Block Formula
+
+<DemoBlock title="display=block (centered display line)">
+  <div style="width: 100%">
+    <oas-equation code="\sum_{i=1}^{n} i^2 = \frac{n(n+1)(2n+1)}{6}" display="block"></oas-equation>
+  </div>
+</DemoBlock>
+
+Use <code>display="block"</code> for display math (centered standalone line with vertical margin); font size is not enlarged and follows the outer context.
+
+## Injecting a Rendering Engine
+
+<DemoBlock title="engine injection (thin-shell delegation)">
+  <div style="width: 100%">
+    <oas-equation id="eq-engine" code="\oint_C x\,dx + y\,dy"></oas-equation>
+    <p style="margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+      Once a TeX-compatible engine object (the <code>engine</code> property, <code>renderToString</code> protocol) is injected, the component becomes a thin shell delegating rendering — this demo uses a mock engine to demonstrate the protocol (the dashed box is the engine output). Without an injection, the self-developed subset renderer is used with zero dependencies.
+    </p>
+  </div>
+</DemoBlock>
+
+<script setup>
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  customElements.whenDefined('oas-equation').then(() => {
+    const eq = document.querySelector('#eq-engine')
+    if (!eq) return
+    // Mock engine demonstrating the renderToString(code, options) injection protocol
+    // (in a real app, swap in a full TeX-compatible engine such as KaTeX).
+    eq.engine = {
+      renderToString: (code) =>
+        `<span style="border: 1px dashed var(--oas-color-primary); border-radius: var(--oas-radius-sm); padding: 2px 8px; font-family: serif">⟦ ${code.replace(/</g, '&lt;')} ⟧</span>`,
+    }
+  })
+})
+</script>
+
+Boundaries between the engine path and the self-developed path:
+
+- **DOM**: engine output is written as innerHTML (the engine's own classes/fonts apply inside it); the self-developed path uses stacked spans + CSS layout. Both paths set aria-label to the raw LaTeX.
+- **Error state**: both degrade silently — unknown commands render literally in the self-developed path; if the engine throws, rendering falls back to the self-developed subset (no blank output).
+- **SSR**: the snapshot only carries attribute channels — `engine` is a property, so SSR output is always the self-developed subset; for engine SSR, inject the same engine object on the server.
+
 ## Font Size
 
 Font size follows the outer context (inherited) by default; override with the CSS variable `--oas-equation-font` (e.g. `18px`).
@@ -75,6 +119,7 @@ Font size follows the outer context (inherited) by default; override with the CS
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `code` | LaTeX subset source text | `string` | — |
+| `display` | Display mode: `inline` (default, in-flow) / `block` (standalone centered block with margin-block) | `string` | — |
 
 ### ARIA
 

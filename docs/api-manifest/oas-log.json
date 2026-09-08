@@ -20,6 +20,31 @@
     {
       "name": "empty-text",
       "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "offset-top",
+      "observed": true
+    },
+    {
+      "name": "offset-bottom",
+      "observed": true
+    },
+    {
+      "name": "levels",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "highlight",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -29,7 +54,12 @@
       "default": "[]"
     }
   ],
-  "events": [],
+  "events": [
+    {
+      "name": "oas-require-more",
+      "detail": "{ from: 'top' } | { from: 'bottom' }"
+    }
+  ],
   "slots": [],
   "unresolved": []
 }
