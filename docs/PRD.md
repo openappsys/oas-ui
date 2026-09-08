@@ -651,7 +651,7 @@ v2.1.0 之后、组件 API 零变更的纯文档补丁，随 npm 分发自动生
 
 ## v2.1.3 Tabs 能力补齐发布（已完成）
 
-Tabs 组件按能力补齐全量补齐 + 首页页脚打磨：
+Tabs 组件按能力清单全量补齐 + 首页页脚打磨：
 
 - **Tabs 能力全量补齐**（能力补齐）：disabled 禁用、size 五档、centered/justified 布局、溢出滚动+箭头（`without-scroll-controls` 可关）、more 溢出（滚动+视口外镜像下拉，含搜索过滤+点选平滑滚动到可见）、panel-mode（keep/lazy/destroy 面板显隐策略）、activation（auto/manual 手动激活）、animated 动画、oas-before-change 切换前拦截（cancelable veto）、editable 双击重命名（失焦保存）、sortable 拖拽换位、嵌套 tabs（:scope 直接子面板）、slot=label 自定义标签
 - **Tabs 二次补缺**：滚轮横向滑动、新增/激活标签自动滚到可见、+ 按钮固定标签栏末尾、more 下拉搜索+选中定位；editable 打磨（真实双击、失焦保存、宽高贴合、几何对齐）；more 重构为通用机制（滚动+视口外镜像）
@@ -662,7 +662,7 @@ Tabs 组件按能力补齐全量补齐 + 首页页脚打磨：
 
 ## v2.1.4 basic 组件复核补齐发布（已完成）
 
-basic 族 12 组件按能力并集复核后的增量能力补齐 + divider 垂直方向能力完善：
+basic 族 12 组件按能力补齐复核后的增量能力补齐 + divider 垂直方向能力完善：
 
 - **button**：`icon-end` 双侧内容（左图标+右下拉箭头）、loading 保持宽度（spinner 居中不撑宽）、`loading-text` 加载文本、`loading="auto"` 异步自动 loading（Promise 期间自动进出）、`disabled-focusable` 禁用可聚焦（挂 tooltip 解释原因）、`download`/`rel` 链接透传
 - **button-group**：`spread` 均分铺满、组级 `variant`/`round` 透传
@@ -679,7 +679,7 @@ basic 族 12 组件按能力并集复核后的增量能力补齐 + divider 垂�
 
 ## v2.1.5 menu/dropdown/contextmenu 能力补齐发布（已完成）
 
-floating 导航族三组件按能力并集补齐 + 水平收纳/inline 形态多轮实测修复：
+floating 导航族三组件按能力补齐补齐 + 水平收纳/inline 形态多轮实测修复：
 
 - **menu**：`kind="checkbox"` 多选项、`danger` 危险项、`href/target/rel` 链接项、`max-height` 长菜单滚动、typeahead 字符定位、`mode="inline"` 就地展开（高度过渡+箭头旋转）、`expanded` 受控 + `oas-expand-change`、`accordion` 手风琴同级互斥、horizontal 溢出收纳「···」（ResizeObserver + 镜像弹层 + i18n）、`close-on-select` 选中收起策略（缺省分形态/显式覆盖/checkbox 豁免）、「···」弹层选中反馈（镜像 ✓ + child-selected 高亮）
 - **dropdown**：`trigger` click/hover/focus 多选、`hover-delay`/`hover-hide-delay` 防抖、`placement` 12 向、`oas-open-change`、整体 `disabled`、`hide-on-click`、开合动画（transform-origin 感知方向）、`close-on-scroll`、`offset`
@@ -689,7 +689,7 @@ floating 导航族三组件按能力并集补齐 + 水平收纳/inline 形态多
 
 ## v2.2.2 导航与浮层族 11 组件能力补齐（已随 v2.2.2 发布）
 
-tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navigation-menu/toolbar 按能力并集全量补齐（唯一豁免：command 内置模糊搜索并入未来打包勾选特性）：
+tooltip/popover/hover-card/breadcrumb/anchor/back-top/tour/command/menubar/navigation-menu/toolbar 按能力清单全量补齐（唯一豁免：command 内置模糊搜索并入未来打包勾选特性）：
 
 - **tooltip**：placement 12 向、trigger 多选（hover/click/focus/contextmenu/touch/manual）、open/close-delay、富内容插槽、Esc + aria-describedby（WCAG 1.4.13）、max-width token、disabled、方向感知动画、interactive 可悬停、skip-delay 延迟组、append-to portal、双轴偏移、color 变体、禁用触发兼容、collision-padding、箭头 merge/fresh/auto-close/trigger-keys
 - **popover**：trigger 多选 + hover 防抖、placement 12 向、宽度定制 + width='trigger'、初始焦点指定、关闭按钮 + 声明式关层、append-to、颜色变体、碰撞细调（fallback-placements/hide-when-detached）、modal 化（backdrop+焦点锁+滚动锁）、arrow-merge/fresh/auto-close/trigger-keys；嵌套级联 + Esc 栈保持领先
@@ -839,7 +839,7 @@ moreBtn 键盘打开聚焦第一项 + 列表 roving（ArrowUp/Down/Home/End/Ente
 
 ## v2.2.7 table 组件能力补齐 → 已发布
 
-table 组件按能力并集补齐（列设置/多列排序/多级表头/内置分页/列过滤/合并单元格/子元素声明式通道/单元格模板/自定义列头/编辑校验），core 增 ReactiveController 注入协议。
+table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置分页/列过滤/合并单元格/子元素声明式通道/单元格模板/自定义列头/编辑校验），core 增 ReactiveController 注入协议。
 
 ### 特性
 
@@ -1003,7 +1003,7 @@ table 组件按能力并集补齐（列设置/多列排序/多级表头/内置�
 
 - **组件内能力子包（按需打包第三层）**：table/edit、tabs/manager、modal/prompt、popover/contextmenu、color-picker/designer 五个能力子包（import 即注册、顺序随意）；全量入口与 CDN 族包内含无感知；getting-started 补对照表（中英）
 - **能力注册表晚加入订阅**：connected 期订阅 + 断开退订 + 幂等注入，时序竞态（入口求值顺序/打包器重排/反向引入/动态 import）全部自愈
-- **能力收尾批**：progress 14 项能力并集；skeleton 重构（loading 受控+真实内容出口/三档动效/count/widths/delay）+ 新子组件 oas-skeleton-item；empty 七项；result（403/404/500 + 状态图标真 SVG 化等六项）；tag icon-end；grid columns 断点简写 + min-child-width；FAQ 组合模式章节
+- **能力收尾批**：progress 14 项能力补齐；skeleton 重构（loading 受控+真实内容出口/三档动效/count/widths/delay）+ 新子组件 oas-skeleton-item；empty 七项；result（403/404/500 + 状态图标真 SVG 化等六项）；tag icon-end；grid columns 断点简写 + min-child-width；FAQ 组合模式章节
 
 ### 修复
 

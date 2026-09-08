@@ -144,7 +144,7 @@ describe('OASTextarea focus 委托', () => {
   })
 })
 
-// ---- 能力并集：maxlength + show-count ----
+// ---- 能力补齐：maxlength + show-count ----
 
 describe('OASTextarea maxlength + show-count', () => {
   beforeEach(() => {
@@ -190,7 +190,7 @@ describe('OASTextarea maxlength + show-count', () => {
   })
 })
 
-// ---- 能力并集：status / size / variant ----
+// ---- 能力补齐：status / size / variant ----
 
 describe('OASTextarea status / size / variant', () => {
   beforeEach(() => {
@@ -240,7 +240,7 @@ describe('OASTextarea status / size / variant', () => {
   })
 })
 
-// ---- 能力并集：clearable ----
+// ---- 能力补齐：clearable ----
 
 describe('OASTextarea clearable', () => {
   beforeEach(() => {
@@ -292,7 +292,7 @@ describe('OASTextarea clearable', () => {
   })
 })
 
-// ---- 能力并集：focus / blur / change 事件与方法 ----
+// ---- 能力补齐：focus / blur / change 事件与方法 ----
 
 describe('OASTextarea focus / blur / change 事件与方法', () => {
   beforeEach(() => {
@@ -339,7 +339,7 @@ describe('OASTextarea focus / blur / change 事件与方法', () => {
   })
 })
 
-// ---- 能力并集：label 通道与原生属性透传包 ----
+// ---- 能力补齐：label 通道与原生属性透传包 ----
 
 describe('OASTextarea label 通道与原生透传', () => {
   beforeEach(() => {
@@ -379,7 +379,7 @@ describe('OASTextarea label 通道与原生透传', () => {
   })
 })
 
-// ---- 能力并集：autosize 无上限出口 ----
+// ---- 能力补齐：autosize 无上限出口 ----
 
 describe('OASTextarea autosize 无上限出口', () => {
   beforeEach(() => {
