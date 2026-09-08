@@ -426,7 +426,16 @@
       "arrows": "Arrow display mode: `always` (always shown) / `hover` (shown on hover) / `never` (hidden)",
       "autoplay": "Whether to autoplay",
       "index": "Current screen index (starting from 0)",
-      "interval": "Autoplay interval (ms)"
+      "interval": "Autoplay interval (ms)",
+      "direction": "Direction: `horizontal` (default) / `vertical` (fixed-height viewport via `--oas-carousel-height`)",
+      "effect": "Transition effect: `slide` (default) / `fade` (stacked cross-fade, degrades to instant under reduced-motion)",
+      "gap": "Gap between slides in px (with `slides-per-view`)",
+      "indicators": "Indicator switch (default true; `\"false\"` hides them)",
+      "indicator-position": "Indicator position: `inside` (default, overlaid) / `outside` (in-flow, grows the container)",
+      "indicator-type": "Indicator type: `dot` (default) / `line` (widens when active)",
+      "loop": "Loop around (default on; `\"false\"` stops at the edges and disables the corresponding arrow)",
+      "pause-on-hover": "Pause autoplay on hover/focus (default true; `\"false\"` disables; always pauses when the page is hidden)",
+      "slides-per-view": "Slides per page (default 1; index is page-based, last page aligns to the track end)"
     },
     "events": {
       "oas-change": "Current screen changed, `detail: { index }`"
@@ -715,13 +724,22 @@
   },
   "oas-countdown": {
     "attrs": {
-      "format": "Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds",
+      "active": "Controlled pause: `\"false\"` freezes the frame and stops counting elapsed time, resuming continues (absent = running)",
+      "format": "Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds, `SSS` milliseconds (50ms internal refresh when SSS present)",
+      "prefix": "Leading text of the display value",
+      "suffix": "Trailing text of the display value",
+      "title": "Heading above the display value (native global attribute, absorbed after rendering)",
       "value": "Total countdown duration (milliseconds)"
     },
     "events": {
+      "oas-change": "Emitted on a throttled basis when the remaining displayed value changes, detail `{ value: remaining milliseconds }`",
       "oas-finish": "Emitted once when the countdown reaches zero"
     },
-    "slots": {}
+    "slots": {
+      "prefix": "Leading content (distributed content takes precedence over the `prefix` attribute text)",
+      "suffix": "Trailing content (distributed content takes precedence over the `suffix` attribute text)",
+      "title": "Heading above the value (distributed content takes precedence over the `title` attribute text)"
+    }
   },
   "oas-date-picker": {
     "attrs": {
@@ -977,11 +995,16 @@
       "rows": "Number of lines to show (1 is single-line ellipsis, ≥2 multi-line `-webkit-line-clamp`)",
       "text": "Text content",
       "tooltip": "Show a full-text tooltip on hover when overflowing",
-      "direction": "Ellipsis direction: `end` (default, tail) / `start` (head) / `middle` (keep both ends, for long paths/hashes)"
+      "direction": "Ellipsis direction: `end` (default, tail) / `start` (head) / `middle` (keep both ends, for long paths/hashes)",
+      "collapse-text": "Collapse link text (inline form, with expandable)",
+      "expand-text": "Expand link text (inline form, with expandable)",
+      "expanded": "Controlled expanded state (controlled when present; internal toggles reflect back)",
+      "tooltip-placement": "Overflow tooltip placement (default `top`)"
     },
     "events": {
       "oas-collapse": "Collapsed, `detail: { expanded: false }`",
-      "oas-expand": "Expanded, `detail: { expanded: true }`"
+      "oas-expand": "Expanded, `detail: { expanded: true }`",
+      "oas-overflow": "Fired when the overflow state changes, `detail: { overflow }` (not re-fired for the same value)"
     },
     "slots": {}
   },
@@ -1372,8 +1395,11 @@
   },
   "oas-marquee": {
     "attrs": {
+      "fade-edges": "Boolean; when present, fades out both container edges with a mask-image (off by default); fade width via `--oas-marquee-fade-size`",
+      "orientation": "Scroll direction: `horizontal` (default) / `vertical` (vertical scrolling; the container needs a fixed height)",
       "pause-on-hover": "Boolean; when present, pauses the animation on hover/focus (`animation-play-state: paused`)",
-      "speed": "Duration of a single animation cycle (seconds), written to CSS `animation-duration`; non-positive values fall back to the default"
+      "reverse": "Boolean; when present, scrolls in the opposite direction",
+      "speed": "Scroll speed in pixels per second (default 48); the animation duration is derived from the measured content width (duration = distance / speed); invalid or non-positive values fall back to the default"
     },
     "events": {},
     "slots": {}
@@ -1668,7 +1694,11 @@
   },
   "oas-number-animation": {
     "attrs": {
+      "active": "Controlled playback: plays by default; `\"false\"` freezes the frame, changing back to `\"true\"` continues from the current value to the target",
       "duration": "Animation duration (ms); 0 jumps straight to the target",
+      "easing": "Easing: `ease-out` (default) / `linear` / `ease-in` / `ease-in-out` / `spring` (mild overshoot); invalid values fall back to `ease-out`",
+      "from": "Start value (default 0); applies at each new round start, continuation unaffected",
+      "group-separator": "Thousands grouping (`\"true\"` enables, Intl locale-aware; disabled by default)",
       "to-fixed": "Decimal places (`Number.prototype.toFixed`); when omitted, integer display",
       "value": "Target value; invalid values treated as 0"
     },
@@ -1902,10 +1932,20 @@
       "aria-label": "Accessible name of the container; defaults to i18n",
       "error-correction": "Error correction level l/m/q/h (currently L only; the rest are normalized to l)",
       "size": "Rendered width/height (px)",
-      "value": "QR code content text"
+      "value": "QR code content text",
+      "bg-color": "Background color (default white — scanners need a light quiet zone; stays white in dark theme for scannability; override via `--oas-qrcode-bg`)",
+      "color": "Foreground (module) color, default fixed dark `#18181b` (paired with the white quiet zone for dark-theme scannability; override via `--oas-qrcode-color`, preset name, or any color value)",
+      "icon": "Center logo image URL (use with `error-correction=\"h\"` to keep scannability)",
+      "icon-size": "Center logo size in px (default size/5, clamped to [16, size/2])",
+      "margin": "Quiet-zone margin in modules (default 4)",
+      "status": "State machine: `active` (default) / `expired` (overlay, refresh button fires `oas-refresh`) / `loading` / `scanned`"
     },
-    "events": {},
-    "slots": {}
+    "events": {
+      "oas-refresh": "Fired when the refresh button is clicked in expired state; the host reassigns content and switches back to `active`"
+    },
+    "slots": {
+      "template[slot=\"status\"]": "Custom status overlay content (built-in overlays per state by default)"
+    }
   },
   "oas-radio": {
     "attrs": {
@@ -2242,17 +2282,23 @@
   },
   "oas-statistic": {
     "attrs": {
+      "extra": "Supplementary content below the value row (trend footnote etc.)",
       "group-separator": "Thousands grouping (`\"false\"` disables)",
       "loading": "Loading state (skeleton placeholder)",
       "precision": "Decimal places (rounded)",
       "prefix": "Prefix / suffix text",
       "suffix": "Prefix / suffix text",
+      "title": "Heading above the value (native global attribute, absorbed after rendering)",
+      "trend": "Trend indicator: `up` (rise, success semantic color) / `down` (drop, danger semantic color) with arrow",
       "value": "Numeric value (number string)"
     },
     "events": {},
     "slots": {
+      "extra": "Supplementary content below the value row (distributed content takes precedence over the `extra` attribute text)",
       "prefix": "Leading content (icons/tags etc.; distributed content takes precedence over the `prefix` attribute text). For simple text use the `prefix` attribute",
-      "suffix": "Trailing content (icons/tags etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute"
+      "suffix": "Trailing content (icons/tags etc.; distributed content takes precedence over the `suffix` attribute text). For simple text use the `suffix` attribute",
+      "title": "Heading above the value (distributed content takes precedence over the `title` attribute text)",
+      "value": "Custom value rendering (e.g. compose `oas-number-animation` for an animated value); when distributed, the Intl-formatted text is not rendered"
     }
   },
   "oas-steps": {

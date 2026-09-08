@@ -1055,6 +1055,43 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ---
 
+## 数据组能力扩展三批（tree/list/timeline + collapse/descriptions/card/avatar/image + carousel/marquee/statistic/countdown/number-animation/qrcode/ellipsis/virtual-list，未发布）
+
+### 破坏性变更（发布说明须逐项列出迁移指引）
+
+1. **tree `expanded` / `checked`**：逗号分隔字符串 → **JSON 字符串数组**（key 含逗号时串解析错误的根治；与 tree-select 的 expanded/value 形态统一）
+2. **timeline 节点色**：`color="green|red|gray"` → **`type` 语义色枚举**（green→success、red→danger、gray→neutral；旧三值当版本兼容映射、按计划移除）
+3. **descriptions 默认布局**：恒 vertical → **`layout` 默认 horizontal**（详情页主流默认；`layout="vertical"` 显式保留）
+4. **marquee `speed`**：单次循环时长（秒）→ **真实速度（像素/秒）**（默认 48；时长=内容宽÷速度由组件测量推导，速度跨内容/容器恒定）
+5. **qrcode 前景色**：默认 `currentColor` → **固定深色 `#18181b`**（与固定白静区配套，dark 主题可扫；`--oas-qrcode-color` / 属性覆盖）
+
+### 能力摘要（按组件）
+
+- **tree**：勾选级联（half/check-strictly/check-strategy 三策略）/搜索过滤（filter+filterNode+filter-highlight）/键盘 roving 全操作/拖拽（allowDrag/allowDrop 守卫）/tree-lines/accordion/expand-trigger/auto-expand-parent/default-expand-all/懒加载失败重试（oas-load-error）/目录模式/多选/虚拟滚动/空态；**共享树内核**（`data/tree/shared/`：fields/model/check/lazy/template 纯函数）与 tree-select 共同消费（净减 357 行）
+- **list**：data 双通道 + template[slot=item] 克隆 + oas-item-render 绑定/clickable/selected/内嵌虚拟滚动/max-height + 触底加载（oas-reach-bottom + bottom-offset + load-more 尾区）/loading/empty/split/stripe/size/Meta 结构化；分页/网格走组合 demo
+- **timeline**：item 自包含行（克隆机制债根治）/type 语义色 + variant/任意色变量/mode+opposite 对侧/title 插槽/dot 自定义/pending/loading/reverse/横向/oas-click
+- **collapse**：disabled/borderless/icon-placement/自定义 toggle 图标/header·extra 富标题（extra 点击解耦）/default-active/heading-level（APG）/键盘 roving/destroy-on-collapse/force-render/no-collapse 强锁 + oas-before-collapse 可取消/expandAll·collapseAll/grid-rows 纯 CSS 展开动画（reduced-motion 停用）
+- **descriptions**：layout/bordered 网格表/span 跨列/colon/size 三档/slot=extra/slot=label；column 未设时不写内联变量（宿主媒体查询可响应降列）
+- **card**：loading 骨架/size=small/variant=borderless/slot=footer/header-bordered/shadow 三态（hoverable 映射 hover）/Meta（slot=avatar + description 双通道）/href 链接卡
+- **avatar**：shape 三态/多字测量收缩字号（下限 + ellipsis 收口）/fallback 回退图/slot=icon/fit/color（对比色协议）/oas-error/size 枚举别名；avatar-group：spacing/overlap 变量 + ring 描边、+N hover 弹层（共享定位引擎）、slot=trigger 换头像入口
+- **image**：preview-src-list 图集（翻页+键盘+页码+infinite）/preview-src/preview-open 受控 + oas-preview-change + openPreview()/oas-load·oas-error/slot=placeholder·error/flipX·flipY/拖拽平移+滚轮缩放/缩放 CSS 变量/预览浮层 portal teleport（修 transform 祖先内 fixed 失效）
+- **carousel**：indicators/indicator-position/indicator-type/effect=fade/next·prev·goTo 方法 + prevIndex/autoplay 悬停聚焦暂停 + 页面 hidden 停播（WCAG 2.2.2）/direction=vertical/slides-per-view+gap/拖拽切换（pointer 跟手+阈值+回弹）/loop/指示器 dot token 化 + slotchange 监听（机制债修复）
+- **marquee**：ResizeObserver 测量 + auto-fill 不足一屏克隆填充（份数封顶）/fade-edges 边缘渐隐（mask-image）/orientation=vertical/reverse/内容更新相位保持（getAnimations 记相位 + 负 delay 恢复）
+- **statistic**：title/extra 双通道/trend 涨跌（箭头 + token 涨跌色）/slot=value 组合动画
+- **countdown**：SSS 毫秒 token/active 受控暂停/reset()/oas-change 节流/prefix·suffix·title 双通道
+- **number-animation**：from 起始值/active 受控 + play()/easing 五档/group-separator（Intl 缓存）
+- **qrcode**：纠错 L/M/Q/H 全实现（v1-40，修静默降级）/icon 中心 logo/color·bg-color·margin/status 状态机（expired/loading/scanned + oas-refresh + slot=status）/download() 离屏栅格化（SVG-only 渲染不变）
+- **ellipsis**：expand-text/collapse-text/受控 expanded（内部 toggle 反射 + oas-expand/oas-collapse）/oas-overflow/tooltip-placement/行内展开形态（shadow 镜像二分截断）
+- **virtual-list**：scrollToIndex(index, {align, smooth}) 公共方法（start/center/end/auto）+ viewportFocusable property；tree 三处 shadow 内部耦合迁移到公共契约
+
+### 验收标准（已达成）
+
+- 单测 6490+ 全绿 / typecheck 0 / build 0 / api:check 通过（新属性全部进表 + 说明双版）
+- demo-coverage 全组件静态属性演示 + 事件探针全绿；全量 e2e 绿
+- 浏览器验证：各组件页 light/dark 截图 + 关键交互实点（级联勾选/懒加载重试/触底加载/折叠拦截/图集翻页/受控反射/组弹层/拖拽切换/二维码 dark 可扫）+ console 零告警
+
+---
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：

@@ -35,6 +35,27 @@
 
 滚动事件按 rAF 节流派发 `oas-scroll`，`detail` 为 `{ scrollTop, start, end }`。
 
+## 滚动到指定项
+
+`scrollToIndex(index, options?)` 方法滚动到指定索引：`options.align` 支持 `start`（项顶对齐视口顶）/ `center`（垂直居中）/ `end`（项底对齐视口底）/ `auto`（默认，已完整可见则不滚动，否则最小距离滚入视口）；`options.smooth` 开启平滑滚动。list / tree 等内嵌消费方的行定位也走这一公共契约（不直查内部 DOM）。
+
+<DemoBlock title="scrollToIndex 滚动定位">
+  <div style="width: 100%">
+    <div style="display: flex; gap: var(--oas-space-2); margin-bottom: var(--oas-space-3); align-items: center; flex-wrap: wrap">
+      <oas-input id="vl-jump-index" type="number" value="500" style="width: 120px"></oas-input>
+      <select id="vl-jump-align" style="padding: 5px var(--oas-space-2); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md); background: var(--oas-color-bg); color: var(--oas-color-text-primary); font-size: var(--oas-font-size-md)">
+        <option value="auto">auto（最小滚动）</option>
+        <option value="start">start（顶对齐）</option>
+        <option value="center">center（居中）</option>
+        <option value="end">end（底对齐）</option>
+      </select>
+      <oas-button id="vl-jump-btn" size="small" type="primary">跳转</oas-button>
+      <span style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">当前 scrollTop：<span id="vl-jump-top">0</span></span>
+    </div>
+    <oas-virtual-list id="vl-jump" height="240" item-height="32"></oas-virtual-list>
+  </div>
+</DemoBlock>
+
 ## 渲染缓冲
 
 `buffer` 控制上下超出可视区的预渲染项数（默认 `4`）：buffer 越大，滚动时越少出现空白（白屏），代价是渲染的 DOM 节点更多。
@@ -107,6 +128,26 @@ onMounted(() => {
   // 自定义滚动容器
   const target = document.querySelector('#vl-target')
   if (target) target.items = Array.from({ length: 500 }, (_, i) => `记录 ${i + 1}`)
+
+  // 滚动到指定项：索引输入 + 对齐方式
+  const jump = document.querySelector('#vl-jump')
+  if (jump) {
+    jump.items = Array.from({ length: 1000 }, (_, i) => `条目 ${i + 1}`)
+    jump.addEventListener('oas-scroll', (e) => {
+      const top = document.querySelector('#vl-jump-top')
+      if (top) top.textContent = String(e.detail.scrollTop)
+    })
+    const jumpBtn = document.querySelector('#vl-jump-btn')
+    jumpBtn?.addEventListener('click', () => {
+      // whenDefined 守卫：方法调用必须晚于自定义元素升级
+      customElements.whenDefined('oas-virtual-list').then(() => {
+        const raw = Number(document.querySelector('#vl-jump-index')?.value)
+        const index = Math.min(Math.max(1, Math.trunc(raw) || 1), 1000) - 1
+        const align = document.querySelector('#vl-jump-align')?.value ?? 'auto'
+        jump.scrollToIndex(index, { align })
+      })
+    })
+  }
 
   // 渲染缓冲对比：统计实际渲染到 DOM 的项数
   const buf0 = document.querySelector('#vl-buffer-0')

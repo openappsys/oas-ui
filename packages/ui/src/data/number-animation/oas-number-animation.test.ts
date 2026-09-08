@@ -126,4 +126,165 @@ describe('OASNumberAnimation', () => {
     const el = mount({ value: 'abc', duration: '0' })
     expect(text(el)).toBe('0')
   })
+
+  // ---- from 起始值（新一轮起播生效） ----
+
+  it('from 指定起始值：首帧从 from 起播', () => {
+    const el = mount({ value: '1000', from: '400', duration: '500' })
+    advanceFrame(0)
+    expect(text(el)).toBe('400')
+    runToEnd(500)
+    expect(text(el)).toBe('1000')
+  })
+
+  it('from 缺省仍从 0 起播（兼容现状）', () => {
+    const el = mount({ value: '1000', duration: '500' })
+    advanceFrame(0)
+    expect(text(el)).toBe('0')
+  })
+
+  it('from 等于目标值：定值不启动动画', () => {
+    const el = mount({ value: '100', from: '100', duration: '500' })
+    expect(text(el)).toBe('100')
+    expect(rafCb).toBeNull()
+  })
+
+  // ---- active 受控（false 停帧；false→true 触发） ----
+
+  it('active=false 挂载：静态显示起始值，不播放', () => {
+    const el = mount({ value: '1000', from: '200', active: 'false', duration: '500' })
+    expect(text(el)).toBe('200')
+    expect(rafCb).toBeNull()
+    // 未激活期间改目标值：静候，不起播
+    el.setAttribute('value', '800')
+    expect(text(el)).toBe('200')
+    expect(rafCb).toBeNull()
+  })
+
+  it('active=false→true 触发播放至目标并派发 finish', () => {
+    const el = mount({ value: '1000', from: '200', active: 'false', duration: '500' })
+    const listener = vi.fn()
+    el.addEventListener('oas-finish', listener)
+    el.setAttribute('active', 'true')
+    expect(rafCb).not.toBeNull()
+    runToEnd(500)
+    expect(text(el)).toBe('1000')
+    expect(listener).toHaveBeenCalledTimes(1)
+  })
+
+  it('播放中置 active=false 停帧；恢复后续动到目标', () => {
+    const el = mount({ value: '1000', duration: '1000' })
+    advanceFrame(0)
+    advanceFrame(500) // p=0.5，easeOut 后 ~875
+    const mid = Number(text(el))
+    expect(mid).toBeGreaterThan(800)
+    el.setAttribute('active', 'false')
+    expect(rafCb).toBeNull()
+    // 停帧：文本保持当前值
+    expect(text(el)).toBe(String(mid))
+    el.setAttribute('active', 'true')
+    expect(rafCb).not.toBeNull()
+    runToEnd(1000)
+    expect(text(el)).toBe('1000')
+  })
+
+  // ---- play() 方法 ----
+
+  it('play() 同值重播：从 from 重新起播并再次派发 finish', () => {
+    const el = mount({ value: '500', from: '0', duration: '300' })
+    const listener = vi.fn()
+    el.addEventListener('oas-finish', listener)
+    runToEnd(300)
+    expect(text(el)).toBe('500')
+    expect(listener).toHaveBeenCalledTimes(1)
+    el.play()
+    expect(rafCb).not.toBeNull() // 重播已启动
+    runToEnd(300)
+    expect(text(el)).toBe('500')
+    expect(listener).toHaveBeenCalledTimes(2)
+  })
+
+  it('play() 播放中防重入', () => {
+    const el = mount({ value: '500', duration: '300' })
+    advanceFrame(0)
+    el.play() // 播放中调用被忽略
+    advanceFrame(300)
+    expect(text(el)).toBe('500')
+  })
+
+  // ---- easing 四档枚举 ----
+
+  it('easing=linear：中点值线性（p=0.5 恰为半程）', () => {
+    const el = mount({ value: '1000', duration: '1000', easing: 'linear' })
+    advanceFrame(0)
+    advanceFrame(500)
+    expect(Number(text(el))).toBe(500)
+    runToEnd(1000)
+    expect(text(el)).toBe('1000')
+  })
+
+  it('easing 非法值回落 ease-out（默认档）', () => {
+    const el = mount({ value: '1000', duration: '1000', easing: 'bogus' })
+    advanceFrame(0)
+    advanceFrame(500)
+    // easeOutCubic(0.5)=0.875
+    expect(Number(text(el))).toBe(875)
+  })
+
+  it('easing=ease-in-out / spring 可用且抵达目标', () => {
+    const el = mount({ value: '1000', duration: '1000', easing: 'ease-in-out' })
+    advanceFrame(0)
+    advanceFrame(500)
+    expect(Number(text(el))).toBe(500) // cubic in-out 中点同为 0.5
+    runToEnd(1000)
+    expect(text(el)).toBe('1000')
+
+    const spring = mount({ value: '1000', duration: '1000', easing: 'spring' })
+    runToEnd(1000)
+    expect(text(spring)).toBe('1000')
+  })
+
+  // ---- group-separator 千分位（Intl locale 感知） ----
+
+  it('group-separator 开启：动画值按 locale 千分位格式化', () => {
+    const el = mount({ value: '1234567', duration: '500', 'group-separator': 'true' })
+    advanceFrame(0)
+    runToEnd(500)
+    expect(text(el)).toBe('1,234,567')
+  })
+
+  it('group-separator=false 关闭千分位', () => {
+    const el = mount({
+      value: '1234567',
+      duration: '500',
+      'group-separator': 'false',
+    })
+    runToEnd(500)
+    expect(text(el)).toBe('1234567')
+  })
+
+  it('group-separator + to-fixed：小数位与分组同时生效', () => {
+    const el = mount({
+      value: '12345.678',
+      duration: '500',
+      'to-fixed': '2',
+      'group-separator': 'true',
+    })
+    runToEnd(500)
+    expect(text(el)).toBe('12,345.68')
+  })
+
+  // ---- DSD 水合 ----
+
+  it('水合：SSR 快照（duration=0 目标值）直接接管不重建', () => {
+    const ref = mount({ value: '9527', duration: '0' })
+    const snap = ref.shadowRoot!.innerHTML
+    ref.remove()
+    const el = new OASNumberAnimation()
+    el.shadowRoot!.innerHTML = `<meta data-oas-ssr="oas-number-animation" data-oas-ssr-v="1">${snap}`
+    el.setAttribute('value', '9527')
+    el.setAttribute('duration', '0')
+    document.body.appendChild(el)
+    expect(text(el)).toBe('9527')
+  })
 })

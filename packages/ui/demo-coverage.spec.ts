@@ -608,6 +608,7 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-code [part="copy"]', 'click', '授权后 → oas-copy'],
   ],
   collapse: [['oas-collapse-item [part="head"]', 'click', '点头部切换 → oas-change']],
+  qrcode: [['#qrcode-status [part="refresh"]', 'click', '过期态点刷新按钮 → oas-refresh']],
   steps: [['oas-steps[clickable] [part="item"]', 'click', '点步骤项（整项可点）→ oas-change']],
   tabs: [
     [

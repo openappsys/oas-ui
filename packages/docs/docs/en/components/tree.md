@@ -447,7 +447,7 @@ onMounted(() => {
 | `lazy` | Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand | `boolean` | — |
 | `load` | Lazy loading callback `(payload: { key }) => void`, coexists with the `oas-load` event; the host refills child nodes and resets the `data` attribute | `(payload: { key: string }) => void \| Promise<unknown>` | — |
 | `multiple` | Click multi-select (Ctrl/⌘-click; selected set is a JSON array) | `boolean` | — |
-| `row-height` | Fixed row height when virtualized (px) | `string` | — |
+| `row-height` | Fixed row height when virtualized (px) | `string` | `32` |
 | `selected` | Key of the selected node | `string` | — |
 | `tree-lines` | Tree indentation guide lines | `boolean` | — |
 

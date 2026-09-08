@@ -24,13 +24,67 @@
       "type": "string",
       "default": "hover",
       "observed": true
+    },
+    {
+      "name": "indicators",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "indicator-position",
+      "type": "string",
+      "default": "inside",
+      "observed": true
+    },
+    {
+      "name": "indicator-type",
+      "type": "string",
+      "default": "dot",
+      "observed": true
+    },
+    {
+      "name": "effect",
+      "type": "string",
+      "default": "slide",
+      "observed": true
+    },
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "horizontal",
+      "observed": true
+    },
+    {
+      "name": "loop",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "pause-on-hover",
+      "type": "string",
+      "default": "true",
+      "observed": true
+    },
+    {
+      "name": "slides-per-view",
+      "type": "string",
+      "default": "1",
+      "observed": true
+    },
+    {
+      "name": "gap",
+      "type": "string",
+      "default": "0",
+      "observed": true
     }
   ],
   "props": [],
   "events": [
     {
       "name": "oas-change",
-      "detail": "{ index: next }"
+      "detail": "{ index: next, prevIndex: current }"
     }
   ],
   "slots": [

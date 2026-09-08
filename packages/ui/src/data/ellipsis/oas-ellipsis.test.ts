@@ -274,4 +274,159 @@ describe('OASEllipsis', () => {
     expect(t.style.getPropertyValue('-webkit-line-clamp')).toBe('3')
     el.remove()
   })
+
+  describe('自定义展开/收起文案（expand-text / collapse-text）', () => {
+    it('属性文案优先于 i18n 缺省', () => {
+      const el = mount({ text: '长文本', expandable: '', 'expand-text': '更多', 'collapse-text': '收起吧' })
+      forceOverflow(el, true)
+      expect(toggleEl(el).textContent).toBe('更多')
+      toggleEl(el).click()
+      expect(toggleEl(el).textContent).toBe('收起吧')
+    })
+
+    it('新属性进入 observedAttributes', () => {
+      expect(OASEllipsis.observedAttributes).toContain('expand-text')
+      expect(OASEllipsis.observedAttributes).toContain('collapse-text')
+    })
+  })
+
+  describe('受控 expanded（属性驱动 + 内部切换反射回属性）', () => {
+    it('expanded 属性在场即展开（无需点击），移除即收起', () => {
+      const el = mount({ text: '长文本内容用于受控展开演示', expandable: '', expanded: '' })
+      expect(textEl(el).textContent).toBe('长文本内容用于受控展开演示')
+      expect(toggleEl(el).hidden).toBe(false)
+      el.removeAttribute('expanded')
+      // 宿主移除属性 → 组件回收到起态（overflow 未桩时按钮隐藏）
+      expect(toggleEl(el).hidden).toBe(true)
+    })
+
+    it('内部点击反射 expanded 属性（受控宿主可回读）', () => {
+      const el = mount({ text: '长文本', expandable: '' })
+      forceOverflow(el, true)
+      toggleEl(el).click()
+      expect(el.hasAttribute('expanded')).toBe(true)
+      toggleEl(el).click()
+      expect(el.hasAttribute('expanded')).toBe(false)
+    })
+
+    it('宿主置 expanded 后内部状态跟随（不派发重复展开事件）', () => {
+      const el = mount({ text: '长文本', expandable: '' })
+      forceOverflow(el, true)
+      let expands = 0
+      el.addEventListener('oas-expand', () => expands++)
+      el.setAttribute('expanded', '')
+      expect(expands).toBe(0)
+      expect(toggleEl(el).textContent).toContain('ellipsis.collapse')
+    })
+  })
+
+  describe('oas-overflow 事件（溢出状态变化派发）', () => {
+    it('溢出翻转时派发 detail { overflow }，同值不重复派发', () => {
+      const el = mount({ text: 'x' })
+      const events: unknown[] = []
+      el.addEventListener('oas-overflow', (e: Event) => events.push((e as CustomEvent).detail))
+      forceOverflow(el, true)
+      expect(events).toEqual([{ overflow: true }])
+      forceOverflow(el, true)
+      expect(events).toEqual([{ overflow: true }])
+      forceOverflow(el, false)
+      expect(events).toEqual([{ overflow: true }, { overflow: false }])
+    })
+
+    it('进入 observedAttributes 且初始无溢出不派发', () => {
+      expect(OASEllipsis.observedAttributes).toContain('tooltip-placement')
+      const el = mount({ text: '短文本' })
+      let fired = 0
+      el.addEventListener('oas-overflow', () => fired++)
+      expect(fired).toBe(0)
+    })
+  })
+
+  describe('tooltip-placement 透传', () => {
+    it('溢出挂 tooltip 时 placement 属性直传，变化同步', () => {
+      const el = mount({ text: '长文本', 'tooltip-placement': 'bottom' })
+      forceOverflow(el, true)
+      const tip = el.shadowRoot!.querySelector('oas-tooltip')!
+      expect(tip.getAttribute('placement')).toBe('bottom')
+      el.setAttribute('tooltip-placement', 'left')
+      expect(el.shadowRoot!.querySelector('oas-tooltip')!.getAttribute('placement')).toBe('left')
+    })
+
+    it('缺省 placement 为 top', () => {
+      const el = mount({ text: '长文本' })
+      forceOverflow(el, true)
+      expect(el.shadowRoot!.querySelector('oas-tooltip')!.getAttribute('placement')).toBe('top')
+    })
+  })
+
+  describe('行内展开链接形态（expandable + tail 手动截断）', () => {
+    const FULL = '这是一段很长很长的文本，用于行内展开链接形态的截断演示，需要足够长'
+
+    function stubFit(el: OASEllipsis, keep: number): void {
+      vi.spyOn(el as unknown as { fitPrefixLength: () => number }, 'fitPrefixLength').mockReturnValue(
+        keep,
+      )
+    }
+
+    it('溢出时：文本截断带省略号，展开链接行内（inline 类、root 直接子级不嵌套文本）', () => {
+      const el = mount({ text: FULL, expandable: '' })
+      stubFit(el, 8)
+      forceOverflow(el, true)
+      const t = textEl(el)
+      expect(t.classList.contains('manual')).toBe(true)
+      expect(t.textContent).toContain('…')
+      expect(t.textContent!.length).toBeLessThan(FULL.length)
+      const btn = toggleEl(el)
+      expect(btn.classList.contains('inline')).toBe(true)
+      expect(btn.hidden).toBe(false)
+      // 关键结构约束：按钮留在 .root 下（不被包进 .text，防 textContent 写入清掉）
+      expect(btn.parentElement!.classList.contains('root')).toBe(true)
+    })
+
+    it('手动截断溢出态挂全文 tooltip（inline-block 包裹随行内流）', () => {
+      const el = mount({ text: FULL, expandable: '' })
+      stubFit(el, 8)
+      forceOverflow(el, true)
+      const tip = el.shadowRoot!.querySelector<HTMLElement>('oas-tooltip')
+      expect(tip).not.toBeNull()
+      expect(tip!.style.display).toBe('inline-block')
+      expect(tip!.getAttribute('content')).toBe(FULL)
+    })
+
+    it('点击展开：全文 + 行内收起链接，无省略号、无 tooltip', () => {
+      const el = mount({ text: FULL, expandable: '' })
+      stubFit(el, 8)
+      forceOverflow(el, true)
+      toggleEl(el).click()
+      const t = textEl(el)
+      expect(t.textContent).toContain(FULL.slice(0, 10))
+      expect(t.textContent).not.toContain('…')
+      expect(toggleEl(el).textContent).toContain('ellipsis.collapse')
+      expect(el.shadowRoot!.querySelector('oas-tooltip')).toBeNull()
+    })
+
+    it('收起后恢复省略态与 tooltip（回归不丢态）', () => {
+      const el = mount({ text: FULL, expandable: '' })
+      stubFit(el, 8)
+      forceOverflow(el, true)
+      toggleEl(el).click()
+      toggleEl(el).click()
+      expect(textEl(el).textContent).toContain('…')
+      expect(el.shadowRoot!.querySelector('oas-tooltip')).not.toBeNull()
+    })
+
+    it('测量恒 0（无布局环境）安全兜底：返回全文 + 链接，不截断不抛错', () => {
+      const el = mount({ text: FULL, expandable: '' })
+      forceOverflow(el, true)
+      expect(textEl(el).textContent).toBe(FULL)
+      expect(toggleEl(el).hidden).toBe(false)
+    })
+
+    it('direction=start/middle 保持块级按钮形态（manual 类不生效）', () => {
+      const el = mount({ text: FULL, expandable: '', direction: 'middle' })
+      forceOverflow(el, true)
+      expect(textEl(el).classList.contains('manual')).toBe(false)
+      expect(toggleEl(el).classList.contains('inline')).toBe(false)
+    })
+  })
 })
