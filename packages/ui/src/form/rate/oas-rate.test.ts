@@ -193,7 +193,7 @@ describe('OASRate', () => {
   })
 })
 
-describe('OASRate 能力并集', () => {
+describe('OASRate 能力补齐', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
   })

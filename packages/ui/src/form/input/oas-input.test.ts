@@ -464,9 +464,9 @@ describe('OASInput 全局禁用注入（config-provider disabled）', () => {
   })
 })
 
-// ---- 能力并集：尺寸 / 形态 / 校验态 / 原生透传 / 事件方法 / addon slot / 计数增强 / 超限 / 格式化 / 清除显隐 / 自适应宽 ----
+// ---- 能力补齐：尺寸 / 形态 / 校验态 / 原生透传 / 事件方法 / addon slot / 计数增强 / 超限 / 格式化 / 清除显隐 / 自适应宽 ----
 
-describe('OASInput 能力并集', () => {
+describe('OASInput 能力补齐', () => {
   function part(el: OASInput, name: string): HTMLElement {
     return el.shadowRoot!.querySelector<HTMLElement>(`[part="${name}"]`)!
   }
