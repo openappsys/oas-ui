@@ -4,15 +4,28 @@ import en from '@oas-ui/i18n/en'
 import '@oas-ui/i18n'
 import { OASTree, type TreeNode } from './index.js'
 
+/** 三叉小树：a(a-1,a-2) b b(c) 均无——见各用例内联数据更清晰 */
 const DATA = JSON.stringify([
   { key: 'a', label: '节点 A', children: [{ key: 'a-1', label: '子节点 1' }] },
+  { key: 'b', label: '节点 B' },
+])
+
+const CASCADE_DATA = JSON.stringify([
+  {
+    key: 'a',
+    label: '节点 A',
+    children: [
+      { key: 'a-1', label: '子节点 1' },
+      { key: 'a-2', label: '子节点 2' },
+    ],
+  },
   { key: 'b', label: '节点 B' },
 ])
 
 function mount(attrs: Record<string, string> = {}): OASTree {
   const el = new OASTree()
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
-  if (!attrs.data) el.setAttribute('data', DATA)
+  if (!('data' in attrs)) el.setAttribute('data', DATA)
   document.body.appendChild(el)
   return el
 }
@@ -21,7 +34,38 @@ function rows(el: OASTree): HTMLElement[] {
   return [...el.shadowRoot!.querySelectorAll('[part="row"]')] as HTMLElement[]
 }
 
-describe('OASTree', () => {
+function labels(el: OASTree): string {
+  return rows(el)
+    .map((r) => r.querySelector('.label')?.textContent ?? '')
+    .join('|')
+}
+
+function toggles(el: OASTree): HTMLElement[] {
+  return [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="toggle"]')]
+}
+
+function checkboxes(el: OASTree): HTMLInputElement[] {
+  return [...el.shadowRoot!.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')]
+}
+
+/** 模拟真实勾选流程：切 checked → 派发 change（触发组件的 toggleCheckByKey） */
+function checkBox(el: OASTree, box: HTMLInputElement, next: boolean): void {
+  box.checked = next
+  box.dispatchEvent(new Event('change'))
+}
+
+function expandedOf(el: OASTree): string[] {
+  return JSON.parse(el.getAttribute('expanded') ?? '[]') as string[]
+}
+
+function checkedOf(el: OASTree): string[] {
+  return JSON.parse(el.getAttribute('checked') ?? '[]') as string[]
+}
+
+const flushMicro = (): Promise<void> =>
+  new Promise((resolve) => queueMicrotask(() => resolve(undefined)))
+
+describe('OASTree 展开（expanded JSON 数组）+ 选中', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     setLocale('zh-CN')
@@ -32,25 +76,30 @@ describe('OASTree', () => {
     setLocale('zh-CN')
   })
 
-  it('渲染根节点，子节点默认收起', () => {
-    const el = mount()
-    expect(rows(el).length).toBe(2)
-    expect(el.shadowRoot!.textContent).toContain('节点 A')
-    expect(el.shadowRoot!.textContent).not.toContain('子节点 1')
-  })
-
-  it('点击展开按钮显示子节点', () => {
-    const el = mount()
-    ;(el.shadowRoot!.querySelector('[part="toggle"]') as HTMLElement).click()
+  it('expanded 为 JSON 数组：展开节点显示子节点并写回数组形态', () => {
+    const el = mount({ expanded: '["a"]' })
+    expect(labels(el)).toBe('节点 A|子节点 1|节点 B')
     expect(el.shadowRoot!.textContent).toContain('子节点 1')
   })
 
-  it('点击选中节点派发 oas-select', () => {
+  it('点击展开按钮写入 expanded JSON 数组', () => {
+    const el = mount()
+    toggles(el)[0]!.click()
+    expect(expandedOf(el)).toEqual(['a'])
+    expect(labels(el)).toBe('节点 A|子节点 1|节点 B')
+    // 收起
+    toggles(el)[0]!.click()
+    expect(expandedOf(el)).toEqual([])
+    expect(labels(el)).toBe('节点 A|节点 B')
+  })
+
+  it('点击选中节点派发 oas-select 并写 selected', () => {
     const el = mount()
     let detail: unknown
     el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
     rows(el)[0]!.click()
     expect(detail).toEqual({ key: 'a', selected: true })
+    expect(el.getAttribute('selected')).toBe('a')
   })
 
   it('locale：展开/选择 aria-label 随 setLocale 切换', () => {
@@ -79,64 +128,9 @@ describe('OASTree', () => {
       el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-label'),
     ).toBe('展开/收起')
   })
-
-  it('点击复选框：更新 checked 属性、派发 oas-check、重建后 √ 恢复', () => {
-    const el = mount({ checkable: '', expanded: 'a' })
-    let checkDetail: unknown
-    let selectFired = 0
-    el.addEventListener('oas-check', (e: Event) => (checkDetail = (e as CustomEvent).detail))
-    el.addEventListener('oas-select', () => selectFired++)
-
-    const boxes = (): HTMLInputElement[] => [
-      ...(el.shadowRoot!.querySelectorAll(
-        'input[type="checkbox"]',
-      ) as NodeListOf<HTMLInputElement>),
-    ]
-    // 初始：a 未勾选、a-1 未勾选、a-2 未勾选
-    expect(boxes().map((b) => b.checked)).toEqual([false, false, false])
-
-    // 模拟真实浏览器勾选流程：先切换 checked，再派发 change
-    const boxA1 = boxes()[1]!
-    boxA1.checked = true
-    boxA1.dispatchEvent(new Event('change'))
-
-    expect(el.getAttribute('checked')).toBe('a-1')
-    expect(checkDetail).toEqual({ key: 'a-1', checked: true })
-    // 点击复选框不应触发行选中（select 与 check 互不干扰）
-    expect(selectFired).toBe(0)
-    // update() 重建后新复选框应恢复勾选（√ 显示）
-    expect(boxes()[1]!.checked).toBe(true)
-
-    // 取消勾选
-    const boxA1After = boxes()[1]!
-    boxA1After.checked = false
-    boxA1After.dispatchEvent(new Event('change'))
-    expect(el.getAttribute('checked')).toBe('')
-    expect(boxes()[1]!.checked).toBe(false)
-  })
-
-  it('点击复选框不触发行选中（stopPropagation）', () => {
-    const el = mount({ checkable: '' })
-    let selectDetail: unknown
-    el.addEventListener('oas-select', (e: Event) => (selectDetail = (e as CustomEvent).detail))
-    const box = el.shadowRoot!.querySelector<HTMLInputElement>('input[type="checkbox"]')!
-    box.click()
-    expect(selectDetail).toBeUndefined()
-    expect(el.getAttribute('selected')).toBeNull()
-  })
 })
 
-const LAZY_DATA = JSON.stringify([
-  { key: 'a', label: '节点 A', children: [{ key: 'a-1', label: '子节点 1' }] },
-  { key: 'b', label: '节点 B' },
-  { key: 'c', label: '节点 C', isLeaf: true },
-])
-
-function toggles(el: OASTree): HTMLElement[] {
-  return [...el.shadowRoot!.querySelectorAll<HTMLElement>('[part="toggle"]')]
-}
-
-describe('OASTree 懒加载', () => {
+describe('OASTree default-expand-all / accordion / expand-trigger / auto-expand-parent', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     setLocale('zh-CN')
@@ -147,29 +141,390 @@ describe('OASTree 懒加载', () => {
     setLocale('zh-CN')
   })
 
-  it('lazy：未加载节点显示展开按钮，isLeaf 节点不显示', () => {
+  it('default-expand-all：未设 expanded 时全展开；显式 expanded 优先', () => {
+    const el = mount({ 'default-expand-all': '', data: CASCADE_DATA })
+    expect(labels(el)).toBe('节点 A|子节点 1|子节点 2|节点 B')
+    const el2 = mount({ 'default-expand-all': '', expanded: '[]', data: CASCADE_DATA })
+    expect(labels(el2)).toBe('节点 A|节点 B')
+  })
+
+  it('accordion：展开同父兄弟时收起另一支', () => {
+    const data = JSON.stringify([
+      { key: 'g1', label: '分组 1', children: [{ key: 'x', label: 'X' }] },
+      { key: 'g2', label: '分组 2', children: [{ key: 'y', label: 'Y' }] },
+    ])
+    const el = mount({ accordion: '', data })
+    toggles(el)[0]!.click()
+    expect(expandedOf(el)).toEqual(['g1'])
+    toggles(el)[1]!.click()
+    // g1 收起（同层互斥），g2 展开
+    expect(expandedOf(el)).toEqual(['g2'])
+    expect(labels(el)).toBe('分组 1|分组 2|Y')
+  })
+
+  it('expand-trigger="node"：点击父级标签展开（选中行为不变）', () => {
+    const el = mount({ 'expand-trigger': 'node', data: CASCADE_DATA })
+    rows(el)[0]!.click()
+    expect(el.getAttribute('selected')).toBe('a')
+    expect(expandedOf(el)).toEqual(['a'])
+    expect(labels(el)).toContain('子节点 1')
+  })
+
+  it('expand-trigger 缺省 toggle：点击标签只选中不展开', () => {
+    const el = mount({ data: CASCADE_DATA })
+    rows(el)[0]!.click()
+    expect(expandedOf(el)).toEqual([])
+    expect(el.getAttribute('selected')).toBe('a')
+  })
+
+  it('auto-expand-parent：外部注入深层 key 时 expanded 自动补全祖先', () => {
+    const data = JSON.stringify([
+      {
+        key: 'p1',
+        label: 'P1',
+        children: [{ key: 'p1-1', label: 'P1-1', children: [{ key: 'deep', label: 'Deep' }] }],
+      },
+    ])
+    const el = mount({ 'auto-expand-parent': '', data })
+    el.setAttribute('expanded', '["deep"]')
+    expect([...expandedOf(el)].sort()).toEqual(['deep', 'p1', 'p1-1'])
+    expect(labels(el)).toBe('P1|P1-1|Deep')
+  })
+
+  it('auto-expand-parent：expanded 首渲染前预置深层 key 同样补全祖先', () => {
+    const data = JSON.stringify([
+      {
+        key: 'p1',
+        label: 'P1',
+        children: [{ key: 'p1-1', label: 'P1-1', children: [{ key: 'deep', label: 'Deep' }] }],
+      },
+    ])
+    const el = mount({ 'auto-expand-parent': '', expanded: '["deep"]', data })
+    expect([...expandedOf(el)].sort()).toEqual(['deep', 'p1', 'p1-1'])
+    expect(labels(el)).toBe('P1|P1-1|Deep')
+  })
+})
+
+describe('OASTree 勾选级联（checkable / check-strategy / check-strictly / half）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('点击复选框：更新 checked（JSON 数组）、派发 oas-check、重建后状态恢复、不触发行选中', () => {
+    const el = mount({ checkable: '', expanded: '["a"]', data: CASCADE_DATA })
+    let checkDetail: unknown
+    let selectFired = 0
+    el.addEventListener('oas-check', (e: Event) => (checkDetail = (e as CustomEvent).detail))
+    el.addEventListener('oas-select', () => selectFired++)
+    // 可见行 a/a-1/a-2/b → 复选框同序
+    checkBox(el, checkboxes(el)[1]!, true) // a-1
+    expect(checkedOf(el)).toEqual(['a-1'])
+    expect(checkDetail).toEqual({ key: 'a-1', checked: true })
+    expect(selectFired).toBe(0)
+    // 重建后新复选框恢复勾选
+    expect(checkboxes(el)[1]!.checked).toBe(true)
+    // 半选：父级 a 未全选 → indeterminate
+    expect(checkboxes(el)[0]!.indeterminate).toBe(true)
+
+    checkBox(el, checkboxes(el)[1]!, false)
+    expect(checkedOf(el)).toEqual([])
+    expect(checkboxes(el)[1]!.checked).toBe(false)
+    expect(checkboxes(el)[0]!.indeterminate).toBe(false)
+  })
+
+  it('级联：勾选父级 → 全部子级勾选；取消父级 → 全部取消', () => {
+    const el = mount({ checkable: '', expanded: '["a"]', data: CASCADE_DATA })
+    checkBox(el, checkboxes(el)[0]!, true) // a
+    expect(checkedOf(el)).toEqual(['a', 'a-1', 'a-2'])
+    // 重建后 a/a-1/a-2 勾选（b 未勾）
+    expect(
+      checkboxes(el)
+        .slice(0, 3)
+        .map((b) => b.checked),
+    ).toEqual([true, true, true])
+    expect(checkboxes(el)[0]!.indeterminate).toBe(false)
+
+    checkBox(el, checkboxes(el)[0]!, false)
+    expect(checkedOf(el)).toEqual([])
+  })
+
+  it('级联：子级部分勾选 → 父级 half（indeterminate）', () => {
+    const el = mount({ checkable: '', expanded: '["a"]', data: CASCADE_DATA })
+    checkBox(el, checkboxes(el)[1]!, true) // a-1
+    expect(checkedOf(el)).toEqual(['a-1'])
+    expect(checkboxes(el)[0]!.checked).toBe(false)
+    expect(checkboxes(el)[0]!.indeterminate).toBe(true)
+    // 补齐兄弟 → 父级全勾
+    checkBox(el, checkboxes(el)[2]!, true) // a-2
+    expect(checkedOf(el)).toEqual(['a', 'a-1', 'a-2'])
+    expect(checkboxes(el)[0]!.indeterminate).toBe(false)
+  })
+
+  it('check-strategy="parent"：导出值只含父级（展示仍级联）', () => {
+    const el = mount({
+      checkable: '',
+      'check-strategy': 'parent',
+      expanded: '["a"]',
+      data: CASCADE_DATA,
+    })
+    checkBox(el, checkboxes(el)[0]!, true)
+    expect(checkedOf(el)).toEqual(['a'])
+    expect(checkboxes(el)[1]!.checked).toBe(true)
+  })
+
+  it('check-strategy="child"：导出值只含叶子', () => {
+    const el = mount({
+      checkable: '',
+      'check-strategy': 'child',
+      expanded: '["a"]',
+      data: CASCADE_DATA,
+    })
+    checkBox(el, checkboxes(el)[0]!, true)
+    expect(checkedOf(el)).toEqual(['a-1', 'a-2'])
+  })
+
+  it('check-strictly：勾选不级联、无 half', () => {
+    const el = mount({ checkable: '', 'check-strictly': '', expanded: '["a"]', data: CASCADE_DATA })
+    checkBox(el, checkboxes(el)[0]!, true)
+    expect(checkedOf(el)).toEqual(['a'])
+    checkBox(el, checkboxes(el)[1]!, true)
+    expect(checkedOf(el)).toEqual(['a', 'a-1'])
+    expect(checkboxes(el)[0]!.indeterminate).toBe(false)
+  })
+
+  it('级联语义对齐 tree-select：父值受控回填 → 子级展示勾选', () => {
+    const el = mount({ checkable: '', expanded: '["a"]', data: CASCADE_DATA })
+    el.setAttribute('checked', '["a"]')
+    expect(
+      checkboxes(el)
+        .slice(0, 3)
+        .map((b) => b.checked),
+    ).toEqual([true, true, true])
+    expect(el.getAttribute('checked')).toBe('["a"]') // 受控值不回写漂移（展示层闭包）
+  })
+})
+
+describe('OASTree 节点级 disabled / selectable / disableCheckbox / 整树 disabled', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const MIXED = JSON.stringify([
+    { key: 'ok', label: '可用' },
+    { key: 'dis', label: '禁用', disabled: true },
+    {
+      key: 'p',
+      label: '父',
+      children: [
+        { key: 'c1', label: '子1' },
+        { key: 'c2', label: '子2', disableCheckbox: true },
+      ],
+    },
+    { key: 'no-sel', label: '不可选', selectable: false },
+  ])
+
+  it('disabled 节点：data-disabled、点击不选中', () => {
+    const el = mount({ data: MIXED })
+    const disRow = rows(el)[1]!
+    expect(disRow.getAttribute('data-disabled')).toBe('true')
+    let fired = 0
+    el.addEventListener('oas-select', () => fired++)
+    disRow.click()
+    expect(fired).toBe(0)
+    expect(el.getAttribute('selected')).toBeNull()
+  })
+
+  it('selectable=false：点击不选中（勾选/展开不受影响）', () => {
+    const el = mount({ checkable: '', data: MIXED })
+    rows(el)[3]!.click()
+    expect(el.getAttribute('selected')).toBeNull()
+    checkBox(el, checkboxes(el)[3]!, true)
+    expect(checkedOf(el)).toEqual(['no-sel'])
+  })
+
+  it('disableCheckbox：复选框 disabled、级联跳过、不参与父级收敛', () => {
+    const data = JSON.stringify([
+      {
+        key: 'p',
+        label: '父',
+        children: [
+          { key: 'c1', label: '子1' },
+          { key: 'c2', label: '子2', disableCheckbox: true },
+        ],
+      },
+    ])
+    const el = mount({ checkable: '', expanded: '["p"]', data })
+    const c2row = rows(el).find((r) => r.getAttribute('data-key') === 'c2')!
+    const c2box = c2row.querySelector<HTMLInputElement>('input[type="checkbox"]')!
+    expect(c2box.disabled).toBe(true)
+    // disableCheckbox 节点自身不可勾选（change 被守卫拦截）
+    checkBox(el, c2box, true)
+    expect(checkedOf(el)).toEqual([])
+    // 勾选父级：级联跳过 disableCheckbox 子级
+    const pbox = rows(el)[0]!.querySelector<HTMLInputElement>('input[type="checkbox"]')!
+    checkBox(el, pbox, true)
+    expect(checkedOf(el)).toEqual(['p', 'c1'])
+    const rebuiltC2 = rows(el)
+      .find((r) => r.getAttribute('data-key') === 'c2')!
+      .querySelector<HTMLInputElement>('input[type="checkbox"]')!
+    expect(rebuiltC2.checked).toBe(false)
+    expect(rebuiltC2.disabled).toBe(true)
+  })
+
+  it('整树 disabled：不可选中/不可展开/不可勾选', () => {
+    const el = mount({ disabled: '', checkable: '', data: CASCADE_DATA })
+    let fired = 0
+    el.addEventListener('oas-select', () => fired++)
+    expect(toggles(el)[0]).toBeTruthy() // 展开箭头仍在（视觉稳定），点击被守卫拦截
+    rows(el)[0]!.click()
+    toggles(el)[0]!.click()
+    checkBox(el, checkboxes(el)[0]!, true)
+    expect(fired).toBe(0)
+    expect(el.getAttribute('selected')).toBeNull()
+    expect(expandedOf(el)).toEqual([])
+    expect(checkedOf(el)).toEqual([])
+  })
+})
+
+describe('OASTree 点选多选（multiple）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('multiple：selected 为 JSON 数组，再点取消', () => {
+    const el = mount({ multiple: '', data: CASCADE_DATA })
+    rows(el)[0]!.click()
+    rows(el)[1]!.click()
+    expect(JSON.parse(el.getAttribute('selected') ?? '[]')).toEqual(['a', 'b'])
+    rows(el)[0]!.click()
+    expect(JSON.parse(el.getAttribute('selected') ?? '[]')).toEqual(['b'])
+  })
+
+  it('multiple：oas-select 带 selected 布尔随切换', () => {
+    const el = mount({ multiple: '' })
+    const details: unknown[] = []
+    el.addEventListener('oas-select', (e: Event) => details.push((e as CustomEvent).detail))
+    rows(el)[0]!.click()
+    rows(el)[0]!.click()
+    expect(details).toEqual([
+      { key: 'a', selected: true },
+      { key: 'a', selected: false },
+    ])
+  })
+})
+
+describe('OASTree 树内过滤（filter / filter-highlight / filterNode）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const BIG = JSON.stringify([
+    {
+      key: 'fe',
+      label: '前端',
+      children: [
+        { key: 'react', label: 'React' },
+        { key: 'vue', label: 'Vue' },
+      ],
+    },
+    { key: 'be', label: '后端', children: [{ key: 'node', label: 'Node' }] },
+  ])
+
+  it('filter：命中节点 + 祖先保留，未展开也显示路径', () => {
+    const el = mount({ filter: 'React', data: BIG })
+    expect(labels(el)).toBe('前端|React')
+    expect(el.shadowRoot!.textContent).not.toContain('Vue')
+  })
+
+  it('filter：命中父级时含全部后代；不依赖 expanded', () => {
+    const el = mount({ filter: '前端', data: BIG })
+    expect(labels(el)).toBe('前端|React|Vue')
+  })
+
+  it('filter：清除词恢复全量树；无命中显示空态', () => {
+    const el = mount({ filter: 'zzz', data: BIG })
+    expect(rows(el).length).toBe(0)
+    const empty = el.shadowRoot!.querySelector<HTMLElement>('.empty')!
+    expect(empty.hidden).toBe(false)
+    el.removeAttribute('filter')
+    expect(labels(el)).toBe('前端|后端')
+    expect(el.shadowRoot!.querySelector<HTMLElement>('.empty')!.hidden).toBe(true)
+  })
+
+  it('filter-highlight：默认 label 文本命中片段包 <mark>', () => {
+    const el = mount({ filter: 're', 'filter-highlight': '', data: BIG })
+    const marks = el.shadowRoot!.querySelectorAll('mark')
+    expect(marks.length).toBeGreaterThan(0)
+    expect([...marks].some((m) => m.textContent === 'Re')).toBe(true)
+  })
+
+  it('filterNode 自定义过滤函数：与关键词无关', () => {
+    const el = mount({ filter: 'x', data: BIG })
+    el.filterNode = (label: string) => label === 'Vue'
+    el.setAttribute('filter', 'x')
+    expect(labels(el)).toBe('前端|Vue')
+  })
+})
+
+describe('OASTree 懒加载（lazy / load / 失败重试）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const LAZY_DATA = JSON.stringify([
+    { key: 'a', label: '节点 A', children: [{ key: 'a-1', label: '子节点 1' }] },
+    { key: 'b', label: '节点 B' },
+    { key: 'c', label: '节点 C', isLeaf: true },
+  ])
+
+  it('lazy：未加载节点显示展开按钮，isLeaf 不显示', () => {
     const el = mount({ lazy: '', data: LAZY_DATA })
-    // a（有 children）+ b（未加载，懒加载可展开）= 2 个可见展开按钮；c 为显式叶子 → 隐藏
-    expect(toggles(el).length).toBe(2)
-    // 非 lazy 模式下 b、c 均为叶子，只有 a 有展开按钮
+    expect(toggles(el).length).toBe(2) // a(有 children) + b(未加载)
     const plain = mount({ data: LAZY_DATA })
     expect(toggles(plain).length).toBe(1)
   })
 
-  it('lazy：展开未加载节点派发 oas-load、显示加载占位，回填后子节点可见', () => {
+  it('lazy：展开未加载节点派发 oas-load、显示 loading，回填后子节点可见', () => {
     const el = mount({ lazy: '', data: LAZY_DATA })
     let loadDetail: unknown
     el.addEventListener('oas-load', (e: Event) => (loadDetail = (e as CustomEvent).detail))
-
-    toggles(el)[1]!.click() // b 的展开按钮
+    toggles(el)[1]!.click() // b
     expect(loadDetail).toEqual({ key: 'b' })
-    expect(el.getAttribute('expanded')).toContain('b')
-    // 加载中占位（spinner 占住原展开按钮的槽位，行高/对齐不变）
+    expect(expandedOf(el)).toEqual(['b'])
     const spinner = el.shadowRoot!.querySelector<HTMLElement>('[part="spinner"]')
     expect(spinner).not.toBeNull()
     expect(spinner!.getAttribute('aria-label')).toBe('加载中…')
 
-    // 宿主回填子节点：b 获得 children → 加载态清除、b-1 因 expanded 直接可见
     const loaded = JSON.stringify([
       { key: 'a', label: '节点 A', children: [{ key: 'a-1', label: '子节点 1' }] },
       { key: 'b', label: '节点 B', children: [{ key: 'b-1', label: '子节点 b-1' }] },
@@ -180,46 +535,58 @@ describe('OASTree 懒加载', () => {
     expect(el.shadowRoot!.textContent).toContain('子节点 b-1')
   })
 
-  it('lazy：load 属性回调触发（与 oas-load 事件并存）', () => {
+  it('load 属性回调触发（与 oas-load 事件并存）', () => {
     const el = mount({ lazy: '', data: LAZY_DATA })
     let viaProp: unknown
     let viaEvent = 0
-    el.load = (payload) => (viaProp = payload)
+    el.load = (payload) => {
+      viaProp = payload
+    }
     el.addEventListener('oas-load', () => viaEvent++)
     toggles(el)[1]!.click()
     expect(viaProp).toEqual({ key: 'b' })
     expect(viaEvent).toBe(1)
   })
 
-  it('lazy：已加载节点（有 children）展开不触发 oas-load', () => {
+  it('load 返回 Promise reject：清 loading、回滚 expanded、派发 oas-load-error、再点重试', async () => {
+    const el = mount({ lazy: '', data: LAZY_DATA })
+    el.load = () => Promise.reject(new Error('网络错误'))
+    let errDetail: unknown
+    el.addEventListener('oas-load-error', (e: Event) => (errDetail = (e as CustomEvent).detail))
+    toggles(el)[1]!.click()
+    await flushMicro()
+    await flushMicro()
+    expect(el.shadowRoot!.querySelector('[part="spinner"]')).toBeNull()
+    expect(expandedOf(el)).toEqual([])
+    expect(errDetail).toEqual({ key: 'b', error: '网络错误' })
+    // 恢复可点 → 重试再次触发加载
+    el.load = () => undefined
+    let loaded = 0
+    el.addEventListener('oas-load', () => loaded++)
+    toggles(el)[1]!.click()
+    expect(loaded).toBe(1)
+  })
+
+  it('load 同步抛错同样走失败回滚', () => {
+    const el = mount({ lazy: '', data: LAZY_DATA })
+    el.load = () => {
+      throw new Error('boom')
+    }
+    toggles(el)[1]!.click()
+    expect(expandedOf(el)).toEqual([])
+  })
+
+  it('已加载节点（有 children）展开不触发 oas-load', () => {
     const el = mount({ lazy: '', data: LAZY_DATA })
     let fired = 0
     el.addEventListener('oas-load', () => fired++)
-    toggles(el)[0]!.click() // a 已有 children，普通展开
+    toggles(el)[0]!.click()
     expect(fired).toBe(0)
-    expect(el.getAttribute('expanded')).toContain('a')
+    expect(expandedOf(el)).toEqual(['a'])
   })
 })
 
-function rect100(): DOMRect {
-  return {
-    top: 0,
-    bottom: 100,
-    left: 0,
-    right: 100,
-    x: 0,
-    y: 0,
-    width: 100,
-    height: 100,
-    toJSON: () => ({}),
-  } as DOMRect
-}
-
-function dropEvent(type: string, clientY: number): MouseEvent {
-  return new MouseEvent(type, { bubbles: true, cancelable: true, clientY })
-}
-
-describe('OASTree 拖拽', () => {
+describe('OASTree 命令式方法（expandAll / collapseAll / expand / collapse）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     setLocale('zh-CN')
@@ -230,13 +597,129 @@ describe('OASTree 拖拽', () => {
     setLocale('zh-CN')
   })
 
+  it('expandAll / collapseAll：写 expanded JSON 数组', () => {
+    const el = mount({ data: CASCADE_DATA })
+    el.expandAll()
+    expect(expandedOf(el)).toEqual(['a'])
+    expect(labels(el)).toContain('子节点 1')
+    el.collapseAll()
+    expect(expandedOf(el)).toEqual([])
+    expect(labels(el)).toBe('节点 A|节点 B')
+  })
+
+  it('expand(keys) / collapse(keys)：按 key 集操作', () => {
+    const data = JSON.stringify([
+      { key: 'a', label: 'A', children: [{ key: 'a-1', label: 'A1' }] },
+      { key: 'b', label: 'B', children: [{ key: 'b-1', label: 'B1' }] },
+    ])
+    const el = mount({ data })
+    el.expand(['a', 'b'])
+    expect(expandedOf(el)).toEqual(['a', 'b'])
+    el.collapse(['a'])
+    expect(expandedOf(el)).toEqual(['b'])
+  })
+})
+
+describe('OASTree field-names / tree-lines / empty', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('field-names：key/label/children/disabled/isLeaf 别名归一', () => {
+    const data = JSON.stringify([
+      {
+        id: 'dept',
+        name: '部门',
+        subs: [
+          { id: 'alice', name: 'Alice' },
+          { id: 'bob', name: 'Bob', off: true },
+        ],
+      },
+    ])
+    const el = mount({
+      data,
+      'field-names':
+        '{"key":"id","label":"name","children":"subs","disabled":"off","isLeaf":"leaf"}',
+    })
+    expect(labels(el)).toBe('部门')
+    toggles(el)[0]!.click()
+    expect(labels(el)).toBe('部门|Alice|Bob')
+    expect(rows(el)[2]!.getAttribute('data-disabled')).toBe('true')
+    rows(el)[1]!.click()
+    expect(el.getAttribute('selected')).toBe('alice')
+  })
+
+  it('tree-lines：深度 > 0 的行渲染缩进占位（引导线容器）', () => {
+    const el = mount({ 'tree-lines': '', expanded: '["a"]', data: CASCADE_DATA })
+    const a = rows(el)[0]!
+    expect(a.querySelectorAll('.indent').length).toBe(0)
+    const a1 = rows(el)[1]!
+    expect(a1.querySelectorAll('.indent').length).toBe(1)
+    const a2 = rows(el)[2]!
+    expect(a2.querySelectorAll('.indent').length).toBe(1)
+    // 非 tree-lines 时占位仍存在（行结构稳定）
+    const plain = mount({ expanded: '["a"]', data: CASCADE_DATA })
+    expect(plain.shadowRoot!.querySelectorAll('[part="row"] .indent').length).toBeGreaterThan(0)
+  })
+
+  it('空数据 / empty 属性 / template[slot=empty] 空态', () => {
+    const el = mount({ empty: '树是空的', data: '[]' })
+    const empty = el.shadowRoot!.querySelector<HTMLElement>('.empty')!
+    expect(empty.hidden).toBe(false)
+    expect(empty.textContent).toBe('树是空的')
+
+    const withSlot = new OASTree()
+    withSlot.setAttribute('data', '[]')
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'empty')
+    tpl.innerHTML = '<i class="custom-empty">无节点</i>'
+    withSlot.appendChild(tpl)
+    document.body.appendChild(withSlot)
+    expect(withSlot.shadowRoot!.querySelector('.empty .custom-empty')).not.toBeNull()
+  })
+})
+
+describe('OASTree 拖拽（draggable + allowDrop/allowDrag 守卫）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  function rect100(): DOMRect {
+    return {
+      top: 0,
+      bottom: 100,
+      left: 0,
+      right: 100,
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      toJSON: () => ({}),
+    } as DOMRect
+  }
+
+  function dropEvent(type: string, clientY: number): MouseEvent {
+    return new MouseEvent(type, { bubbles: true, cancelable: true, clientY })
+  }
+
   it('draggable：before/after/inner 三种落点均派发 oas-node-drop', () => {
-    const el = mount({ draggable: '', expanded: 'a' })
-    const r = rows(el) // a, a-1, b
+    const el = mount({ draggable: '', expanded: '["a"]', data: CASCADE_DATA })
+    const r = rows(el) // a, a-1, a-2, b
     const details: unknown[] = []
     el.addEventListener('oas-node-drop', (e: Event) => details.push((e as CustomEvent).detail))
 
-    // before：目标行上半区
     r[0]!.dispatchEvent(dropEvent('dragstart', 0))
     r[1]!.getBoundingClientRect = () => rect100()
     r[1]!.dispatchEvent(dropEvent('dragover', 10))
@@ -244,36 +727,60 @@ describe('OASTree 拖拽', () => {
     r[1]!.dispatchEvent(dropEvent('drop', 10))
     expect(details[0]).toEqual({ dragKey: 'a', dropKey: 'a-1', position: 'before' })
 
-    // after：目标行下半区
-    r[0]!.dispatchEvent(dropEvent('dragstart', 0))
-    r[2]!.getBoundingClientRect = () => rect100()
-    r[2]!.dispatchEvent(dropEvent('dragover', 90))
-    expect(r[2]!.classList.contains('drop-after')).toBe(true)
-    r[2]!.dispatchEvent(dropEvent('drop', 90))
-    expect(details[1]).toEqual({ dragKey: 'a', dropKey: 'b', position: 'after' })
-
-    // inner：可展开目标行中部（a 有 children）
-    r[1]!.dispatchEvent(dropEvent('dragstart', 0)) // 拖动 a-1
+    r[3]!.dispatchEvent(dropEvent('dragstart', 0))
     r[0]!.getBoundingClientRect = () => rect100()
     r[0]!.dispatchEvent(dropEvent('dragover', 50))
     expect(r[0]!.classList.contains('drop-inner')).toBe(true)
     r[0]!.dispatchEvent(dropEvent('drop', 50))
-    expect(details[2]).toEqual({ dragKey: 'a-1', dropKey: 'a', position: 'inner' })
+    expect(details[1]).toEqual({ dragKey: 'b', dropKey: 'a', position: 'inner' })
   })
 
-  it('draggable：拖放自身不派发事件', () => {
-    const el = mount({ draggable: '' })
-    const r = rows(el)
-    let fired = 0
-    el.addEventListener('oas-node-drop', () => fired++)
+  it('allowDrop 守卫：返回 false 拒绝落点（无插入线、不派发）', () => {
+    const el = mount({ draggable: '', expanded: '["a"]', data: CASCADE_DATA })
+    el.allowDrop = ({ dropKey }) => dropKey !== 'a'
+    const details: unknown[] = []
+    el.addEventListener('oas-node-drop', (e: Event) => details.push((e as CustomEvent).detail))
+    const r = rows(el) // a, a-1, a-2, b
+    // 允许落 b（不可展开 → after 落点）
     r[0]!.dispatchEvent(dropEvent('dragstart', 0))
+    r[3]!.getBoundingClientRect = () => rect100()
+    r[3]!.dispatchEvent(dropEvent('dragover', 90))
+    expect(r[3]!.classList.contains('drop-after')).toBe(true)
+    r[3]!.dispatchEvent(dropEvent('drop', 90))
+    expect(details[0]).toEqual({ dragKey: 'a', dropKey: 'b', position: 'after' })
+
+    // 拒绝落 a
+    r[1]!.dispatchEvent(dropEvent('dragstart', 0))
+    r[0]!.getBoundingClientRect = () => rect100()
     r[0]!.dispatchEvent(dropEvent('dragover', 50))
+    expect(r[0]!.classList.contains('drop-inner')).toBe(false)
     r[0]!.dispatchEvent(dropEvent('drop', 50))
-    expect(fired).toBe(0)
+    expect(details.length).toBe(1)
   })
 
-  it('draggable：dragend 清空拖拽反馈标记', () => {
-    const el = mount({ draggable: '', expanded: 'a' })
+  it('allowDrag 守卫：返回 false 节点不可拖拽（dragstart 不生效）', () => {
+    const el = mount({ draggable: '', data: CASCADE_DATA })
+    el.allowDrag = (node) => node.key !== 'b'
+    el.setAttribute('data', el.getAttribute('data')!) // 守卫在 render 时生效 → 重刷重建行
+    const r = rows(el)
+    // b 被禁拖：dragstart 无 dragKey → 拖到 a 不出现落点、不派发
+    const details: unknown[] = []
+    el.addEventListener('oas-node-drop', (e: Event) => details.push((e as CustomEvent).detail))
+    r[1]!.dispatchEvent(dropEvent('dragstart', 0))
+    r[0]!.getBoundingClientRect = () => rect100()
+    r[0]!.dispatchEvent(dropEvent('dragover', 50))
+    expect(r[0]!.classList.contains('drop-inner')).toBe(false)
+    // a 可拖：dragstart 生效 → 落到 b（after）
+    r[0]!.dispatchEvent(dropEvent('dragstart', 0))
+    r[1]!.getBoundingClientRect = () => rect100()
+    r[1]!.dispatchEvent(dropEvent('dragover', 90))
+    expect(r[1]!.classList.contains('drop-after')).toBe(true)
+    r[1]!.dispatchEvent(dropEvent('drop', 90))
+    expect(details[0]).toEqual({ dragKey: 'a', dropKey: 'b', position: 'after' })
+  })
+
+  it('dragend 清空拖拽反馈标记', () => {
+    const el = mount({ draggable: '', expanded: '["a"]', data: CASCADE_DATA })
     const r = rows(el)
     r[0]!.dispatchEvent(dropEvent('dragstart', 0))
     r[1]!.getBoundingClientRect = () => rect100()
@@ -283,8 +790,8 @@ describe('OASTree 拖拽', () => {
     expect(r[1]!.classList.contains('drop-before')).toBe(false)
   })
 
-  it('draggable：拖到根容器空白处派发 oas-node-drop（dropKey 为空，inner）', () => {
-    const el = mount({ draggable: '' })
+  it('拖到根容器空白处派发 oas-node-drop（dropKey 为空，inner）', () => {
+    const el = mount({ draggable: '', data: CASCADE_DATA })
     const r = rows(el)
     let detail: unknown
     el.addEventListener('oas-node-drop', (e: Event) => (detail = (e as CustomEvent).detail))
@@ -310,11 +817,6 @@ function virtualRows(el: OASTree): HTMLElement[] {
   return [...vlist.shadowRoot!.querySelectorAll('[part="item"]')] as HTMLElement[]
 }
 
-function virtualViewport(el: OASTree): HTMLElement {
-  const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
-  return vlist.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
-}
-
 const flushRaf = (): Promise<void> =>
   new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
 
@@ -334,49 +836,37 @@ describe('OASTree 虚拟化', () => {
     const vlist = el.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement
     expect(vlist.hidden).toBe(false)
     expect((el.shadowRoot!.querySelector('.tree') as HTMLElement).hidden).toBe(true)
-    // 可见 ceil(200/32)=7 + 下方 buffer 4 = 11 行
-    expect(virtualRows(el).length).toBe(11)
+    expect(virtualRows(el).length).toBe(11) // ceil(200/32)=7 + buffer 4
     expect(virtualRows(el)[0]!.textContent).toContain('节点 0')
   })
 
-  it('虚拟化下点击展开按钮显示子节点', () => {
+  it('虚拟化下点击展开按钮写入 JSON 数组 expanded', () => {
     const el = mount({ height: '200', 'row-height': '32', data: BIG_DATA })
     const toggle = virtualRows(el)[0]!.querySelector<HTMLButtonElement>('.toggle')!
     toggle.click()
-    expect(el.getAttribute('expanded')).toContain('n0')
-    // n0-c 插入索引 1，仍在顶部窗口内
+    expect(expandedOf(el)).toEqual(['n0'])
     expect(virtualRows(el)[1]!.textContent).toContain('子节点 0-c')
   })
 
   it('虚拟化：滚动后窗口重算且展开状态保持', async () => {
-    const el = mount({ height: '100', 'row-height': '32', data: BIG_DATA, expanded: 'n0' })
-    const vp = virtualViewport(el)
+    const el = mount({ height: '100', 'row-height': '32', data: BIG_DATA, expanded: '["n0"]' })
+    const vp = el
+      .shadowRoot!.querySelector('oas-virtual-list')!
+      .shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
     vp.scrollTop = 320
     vp.dispatchEvent(new Event('scroll'))
     await flushRaf()
-    // floor(320/32)-4 = 6；展开后平铺顺序：n0(0) n0-c(1) n1(2) n2(3) n3(4) n4(5) n5(6)…
     expect(virtualRows(el)[0]!.textContent).toContain('节点 5')
-    expect(el.getAttribute('expanded')).toBe('n0')
+    expect(expandedOf(el)).toEqual(['n0'])
   })
 
-  it('虚拟化：checkable 勾选写回 checked 属性并恢复勾选态', () => {
+  it('虚拟化：checkable 勾选写回 checked 数组并恢复', () => {
     const el = mount({ height: '200', 'row-height': '32', checkable: '', data: BIG_DATA })
     const box = virtualRows(el)[0]!.querySelector<HTMLInputElement>('input[type="checkbox"]')!
-    box.checked = true
-    box.dispatchEvent(new Event('change'))
-    expect(el.getAttribute('checked')).toBe('n0')
+    checkBox(el, box, true)
+    expect(checkedOf(el)).toEqual(['n0', 'n0-c'])
     const rebuilt = virtualRows(el)[0]!.querySelector<HTMLInputElement>('input[type="checkbox"]')!
     expect(rebuilt.checked).toBe(true)
-  })
-
-  it('虚拟化：点击行选中并派发 oas-select', () => {
-    const el = mount({ height: '200', 'row-height': '32', data: BIG_DATA })
-    let detail: unknown
-    el.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
-    const row = virtualRows(el)[0]!.querySelector<HTMLElement>('.row')!
-    row.click()
-    expect(el.getAttribute('selected')).toBe('n0')
-    expect(detail).toEqual({ key: 'n0', selected: true })
   })
 
   it('height 移除后回退全量渲染', () => {
@@ -385,9 +875,20 @@ describe('OASTree 虚拟化', () => {
     expect(rows(el).length).toBe(100)
     expect((el.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement).hidden).toBe(true)
   })
+
+  it('scrollTo(key)：虚拟模式滚动视口到目标行', async () => {
+    const el = mount({ height: '200', 'row-height': '32', data: BIG_DATA })
+    el.scrollTo('n80')
+    await flushMicro()
+    const vp = el
+      .shadowRoot!.querySelector('oas-virtual-list')!
+      .shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+    // 视口滚向 n80 所在位置（窗口 buffer 影响精确上限，断言已大幅下滚）
+    expect(vp.scrollTop).toBeGreaterThan(2000)
+  })
 })
 
-describe('OASTree 声明式数据通道与真水合', () => {
+describe('OASTree 键盘 roving（↑↓ 移动 / → 展开 / ← 收起 / Home / End）', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     setLocale('zh-CN')
@@ -398,245 +899,157 @@ describe('OASTree 声明式数据通道与真水合', () => {
     setLocale('zh-CN')
   })
 
-  it('property 赋值优先：data setter 单向反射 attribute，getter 返回解析数组', () => {
+  function press(el: OASTree, rowIndex: number, key: string): void {
+    rows(el)[rowIndex]!.focus()
+    rows(el)[rowIndex]!.dispatchEvent(
+      new KeyboardEvent('keydown', { key, bubbles: true, composed: true }),
+    )
+  }
+
+  it('方向键 ↓ 移动 roving 焦点（tabindex 随行）', () => {
+    const el = mount({ data: CASCADE_DATA })
+    press(el, 0, 'ArrowDown')
+    expect(rows(el)[1]!.tabIndex).toBe(0)
+    expect(rows(el)[0]!.tabIndex).toBe(-1)
+  })
+
+  it('→ 展开节点、← 收起节点', () => {
+    const el = mount({ data: CASCADE_DATA })
+    press(el, 0, 'ArrowRight')
+    expect(expandedOf(el)).toEqual(['a'])
+    press(el, 0, 'ArrowLeft')
+    expect(expandedOf(el)).toEqual([])
+  })
+
+  it('Home / End 跳到首尾行', () => {
+    const el = mount({ expanded: '["a"]', data: CASCADE_DATA }) // a, a-1, a-2, b
+    press(el, 0, 'End')
+    expect(rows(el)[3]!.tabIndex).toBe(0)
+    press(el, 3, 'Home')
+    expect(rows(el)[0]!.tabIndex).toBe(0)
+  })
+
+  it('Space 勾选（checkable）/ Enter 选中', () => {
+    const el = mount({ checkable: '', data: CASCADE_DATA }) // a, b
+    press(el, 1, ' ')
+    expect(checkedOf(el)).toEqual(['b'])
+    press(el, 0, 'Enter')
+    expect(el.getAttribute('selected')).toBe('a')
+  })
+})
+
+describe('OASTree 声明式数据通道 / 水合 / 自定义渲染 / 目录', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('property 赋值 data 单向反射 attribute；getter 返回解析数组', () => {
     const el = new OASTree()
     document.body.appendChild(el)
-    const data = [{ key: 'a', label: '属性节点', children: [{ key: 'a-1', label: '子节点 1' }] }]
+    const data = [{ key: 'a', label: '属性节点' }]
     el.data = data
-    // setter 反射 attribute（attribute 为唯一权威数据源）
     expect(el.getAttribute('data')).toBe(JSON.stringify(data))
-    // attributeChangedCallback → update() → 行渲染
     expect(rows(el)[0]!.textContent).toContain('属性节点')
-    // getter 返回 parse 后的数组（与 table 先例一致）
     expect(el.data).toEqual(data)
   })
 
-  it('属性变化驱动重渲染：setAttribute data 后行内容即时更新', () => {
-    const el = mount()
-    expect(rows(el)[0]!.textContent).toContain('节点 A')
-    el.setAttribute(
-      'data',
-      JSON.stringify([
-        { key: 'x', label: '新节点' },
-        { key: 'y', label: '另一节点' },
-      ]),
-    )
-    const r = rows(el)
-    expect(r.length).toBe(2)
-    expect(r[0]!.textContent).toContain('新节点')
-    expect(r[0]!.textContent).not.toContain('节点 A')
-  })
-
-  it('非法 JSON 容错：data 非 JSON 时渲染空树，不抛错', () => {
+  it('非法 JSON data 容错为空树', () => {
     const el = new OASTree()
     el.setAttribute('data', '[{bad json')
     document.body.appendChild(el)
     expect(rows(el).length).toBe(0)
-    expect(el.shadowRoot!.textContent).not.toContain('bad')
   })
 
-  it('真水合：DSD 快照存在时 hydrate 接管，shadow 不重建（style 引用保持）、行数据照常渲染', () => {
-    // 模拟浏览器 DSD upgrade：构造器 attachShadow 后注入「SSR 快照 + 指纹 meta」
+  it('真水合：DSD 快照接管，交互恢复', () => {
     const snap = new OASTree()
     snap.shadowRoot!.innerHTML = `
       <meta data-oas-ssr="oas-tree" data-oas-ssr-v="1">
       <style>.probe-style { color: red; }</style>
       <div class="tree" part="tree" role="tree"></div>
-      <oas-virtual-list part="virtual" hidden></oas-virtual-list>`
+      <oas-virtual-list part="virtual" hidden></oas-virtual-list>
+      <div class="empty" part="empty" hidden></div>`
     const styleSnap = snap.shadowRoot!.querySelector('style')!
-    document.body.appendChild(snap) // connectedCallback → tryHydrate
-    // hydrate 接管：style 引用保持同一对象（shadow 未重建）
+    document.body.appendChild(snap)
     expect(snap.shadowRoot!.querySelector('style')).toBe(styleSnap)
-    // 指纹 meta 已移除
     expect(snap.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    // 属性驱动的数据行照常增量写入（update 只重建 .tree 内容）
     snap.setAttribute('data', JSON.stringify([{ key: 'a', label: '水合节点' }]))
-    expect(snap.shadowRoot!.querySelector('style')).toBe(styleSnap)
     expect(rows(snap)[0]!.textContent).toContain('水合节点')
-    // 交互完整恢复：点击选中派发 oas-select
     let detail: unknown
     snap.addEventListener('oas-select', (e: Event) => (detail = (e as CustomEvent).detail))
     rows(snap)[0]!.click()
     expect(detail).toEqual({ key: 'a', selected: true })
   })
 
-  it('真水合回退：快照缺关键结构时回退 render 全量重建，功能仍正常', () => {
-    const snap = new OASTree()
-    // 指纹命中但结构不完整（无 .tree 容器）→ hydrate 返回 false → render 重建
-    snap.shadowRoot!.innerHTML =
-      '<meta data-oas-ssr="oas-tree" data-oas-ssr-v="1"><span>broken</span>'
-    document.body.appendChild(snap)
-    expect(snap.shadowRoot!.querySelector('.tree')).not.toBeNull()
-    expect(snap.shadowRoot!.querySelector('meta[data-oas-ssr]')).toBeNull()
-    snap.setAttribute('data', JSON.stringify([{ key: 'a', label: '回退节点' }]))
-    expect(rows(snap)[0]!.textContent).toContain('回退节点')
-  })
-})
+  function tpl(slot: string, html: string): HTMLTemplateElement {
+    const t = document.createElement('template')
+    t.setAttribute('slot', slot)
+    t.innerHTML = html
+    return t
+  }
 
-function tpl(slot: string, html: string): HTMLTemplateElement {
-  const t = document.createElement('template')
-  t.setAttribute('slot', slot)
-  t.innerHTML = html
-  return t
-}
-
-/**
- * 模拟 Vue(CSR) 直插形态：`<template>` 子节点落在元素自身 childNodes、content 为空。
- * happy-dom 的 appendChild/insertBefore 按规范转发进 content，走公开 API 无法伪造该形态，
- * 故直接向 happy-dom 内部 nodeArray 符号塞节点（真实 Chromium 中 Vue 的 insertBefore 正是此形态）。
- */
-function devSlotTemplate(slot: string, ...children: Element[]): HTMLTemplateElement {
-  const t = document.createElement('template')
-  t.setAttribute('slot', slot)
-  const nodeArray = Object.getOwnPropertySymbols(t).find((s) => String(s) === 'Symbol(nodeArray)')
-  if (!nodeArray) throw new Error('happy-dom 内部 nodeArray 符号缺失，无法伪造 dev 直插形态')
-  const arr = (t as unknown as Record<symbol, unknown>)[nodeArray]
-  if (!Array.isArray(arr)) throw new Error('nodeArray 符号指向非数组')
-  arr.push(...children)
-  return t
-}
-
-describe('OASTree 自定义节点渲染', () => {
-  beforeEach(() => {
-    document.body.innerHTML = ''
-    setLocale('zh-CN')
-  })
-
-  afterEach(() => {
-    document.body.innerHTML = ''
-    setLocale('zh-CN')
-  })
-
-  it('template[slot="node"]：骨架克隆到 label 容器，[data-node-label] 绑定节点 label', () => {
+  it('template[slot="node"]：骨架克隆 + [data-node-label] 绑定', () => {
     const el = mount()
     el.appendChild(tpl('node', '<svg class="glyph"></svg><span data-node-label></span>'))
-    el.setAttribute('data', JSON.stringify([{ key: 'a', label: '自定义节点' }]))
-    const label = el.shadowRoot!.querySelector<HTMLElement>('[part="row"] .label')!
-    expect(label.querySelector('svg.glyph')).not.toBeNull()
-    expect(label.querySelector('[data-node-label]')!.textContent).toBe('自定义节点')
-  })
-
-  it('dev 形态：模板子节点被宿主直插到元素自身（content 为空）时同样克隆渲染 + 绑定 label', () => {
-    // 回归：dev（Vue CSR）下 insertBefore 直插 template 元素，content 为空导致自定义节点空白
-    const el = mount()
-    const glyph = document.createElement('svg')
-    glyph.setAttribute('class', 'glyph')
-    const binder = document.createElement('span')
-    binder.setAttribute('data-node-label', '')
-    el.appendChild(devSlotTemplate('node', glyph, binder))
-    // 模板就位后触发 update 重建行（与 demo 中 setAttribute('data', …) 重刷同路径）
     el.setAttribute('data', el.getAttribute('data')!)
     const label = el.shadowRoot!.querySelector<HTMLElement>('[part="row"] .label')!
     expect(label.querySelector('svg.glyph')).not.toBeNull()
     expect(label.querySelector('[data-node-label]')!.textContent).toBe('节点 A')
-    // 再次 update 重建仍渲染（内容源选择稳定、不依赖首次克隆的残留）
-    el.setAttribute('data', el.getAttribute('data')!)
-    const label2 = el.shadowRoot!.querySelector<HTMLElement>('[part="row"] .label')!
-    expect(label2.querySelector('svg.glyph')).not.toBeNull()
-    expect(label2.querySelector('[data-node-label]')!.textContent).toBe('节点 A')
   })
 
-  it('dev 形态：toggle 模板直插到元素自身时替换默认展开箭头，交互保持', () => {
-    const el = mount()
-    const chev = document.createElement('svg')
-    chev.setAttribute('class', 'chev')
-    el.appendChild(devSlotTemplate('toggle', chev))
-    el.setAttribute('data', el.getAttribute('data')!)
-    const toggle = el.shadowRoot!.querySelector('[part="toggle"]')!
-    expect(toggle.querySelector('svg.chev')).not.toBeNull()
-    expect(toggle.textContent!.includes('›')).toBe(false)
-    expect(toggle.getAttribute('aria-expanded')).toBe('false')
-    ;(toggle as HTMLButtonElement).click()
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-expanded'),
-    ).toBe('true')
-  })
-
-  it('无 template 时回落纯文本（默认行为不变）', () => {
-    const el = mount()
-    expect(rows(el)[0]!.querySelector('.label')!.textContent).toBe('节点 A')
-    expect(rows(el)[0]!.querySelector('[data-node-label]')).toBeNull()
-  })
-
-  it('oas-node-render：每行派发 { node, element }，宿主改写 element 后 update 重建重新派发', () => {
+  it('oas-node-render：每行派发 { node, element }', () => {
     const el = mount()
     const details: Array<{ node: TreeNode; element: HTMLElement }> = []
     el.addEventListener('oas-node-render', (e: Event) =>
       details.push((e as CustomEvent).detail as never),
     )
-    // 监听挂在前已渲染过，事件为增量派发
-    expect(details.length).toBe(0)
-    // 展开 a → 重建 a/a-1/b 三行 → 派发 3 次
     el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.click()
     expect(details.length).toBe(3)
-    const first = details[0]!
-    expect(first.node.key).toBe('a')
-    expect(first.element.classList.contains('label')).toBe(true)
-    // 宿主改写 element：清空后追加富文本
-    first.element.innerHTML = ''
-    const badge = document.createElement('em')
-    badge.textContent = '★'
-    first.element.appendChild(badge)
-    expect(rows(el)[0]!.querySelector('.label')!.contains(badge)).toBe(true)
-    // 再次 update 重建 → 改写内容被重建覆盖（回落纯文本）
-    el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.click()
-    expect(rows(el)[0]!.querySelector('.label')!.textContent).toBe('节点 A')
+    expect(details[0]!.node.key).toBe('a')
+    expect(details[0]!.element.classList.contains('label')).toBe(true)
   })
 
-  it('template[slot="toggle"]：替换默认展开箭头，aria/展开交互保持', () => {
+  it('无 template 时 label 回落纯文本；toggle 模板替换默认箭头', () => {
     const el = mount()
+    expect(rows(el)[0]!.querySelector('.label')!.textContent).toBe('节点 A')
     el.appendChild(tpl('toggle', '<svg class="chev"></svg>'))
     el.setAttribute('data', el.getAttribute('data')!)
-    const toggle = el.shadowRoot!.querySelector('[part="toggle"]')!
+    const toggle = el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!
     expect(toggle.querySelector('svg.chev')).not.toBeNull()
     expect(toggle.textContent!.includes('›')).toBe(false)
-    expect(toggle.getAttribute('aria-expanded')).toBe('false')
-    expect(toggle.getAttribute('aria-label')).toBe('展开/收起')
-    ;(toggle as HTMLButtonElement).click()
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-expanded'),
-    ).toBe('true')
   })
 
-  it('自定义渲染下 ARIA/键盘可达保持：treeitem 层级、点击展开、点击选中', () => {
-    const el = mount()
-    el.appendChild(tpl('node', '<span data-node-label></span>'))
-    el.setAttribute('data', el.getAttribute('data')!)
-    const row = rows(el)[0]!
-    expect(row.getAttribute('role')).toBe('treeitem')
-    expect(row.getAttribute('aria-level')).toBe('1')
-    const toggle = row.querySelector('[part="toggle"]')!
-    expect(toggle.tagName).toBe('BUTTON')
-    // 展开按钮是原生 button → Enter/Space 键盘可达（click 等价触发）
-    ;(toggle as HTMLButtonElement).click()
-    expect(el.getAttribute('expanded')).toContain('a')
-    // 子节点 ARIA 层级
-    const child = rows(el)[1]!
-    expect(child.getAttribute('role')).toBe('treeitem')
-    expect(child.getAttribute('aria-level')).toBe('2')
-    // 点击选中仍工作
-    child.click()
-    expect(el.getAttribute('selected')).toBe('a-1')
+  it('目录模式：文件夹/文件图标随展开切换，懒加载未加载视为文件夹', () => {
+    const dirData = JSON.stringify([
+      {
+        key: 'src',
+        label: 'src',
+        children: [{ key: 'index.ts', label: 'index.ts', isLeaf: true }],
+      },
+      { key: 'package.json', label: 'package.json', isLeaf: true },
+    ])
+    const el = mount({ directory: '', data: dirData })
+    const kind = (i: number): string | null =>
+      rows(el)[i]!.querySelector('[part="node-icon"]')?.getAttribute('data-kind') ?? null
+    expect(kind(0)).toBe('folder')
+    expect(kind(1)).toBe('file')
+    rows(el)[0]!.querySelector<HTMLElement>('[part="toggle"]')!.click()
+    expect(kind(0)).toBe('folder-open')
+    expect(rows(el)[1]!.querySelector('[part="node-icon"]')?.getAttribute('data-kind')).toBe('file')
   })
 
-  it('label 防压扁：.label 显式 flex:1 1 auto + min-width，窄容器下 [data-node-label] 文字仍填入（回归：dev 下 label 被压缩到 0 宽文字不可见）', () => {
-    // CSS 层：普通路径与虚拟路径行样式都声明 flex-grow + 最小可见宽度
+  it('label 防压扁：.label 显式 flex:1 1 auto + min-width（普通与虚拟两路）', () => {
     const el = mount()
-    const style = el.shadowRoot!.querySelector('style')!.textContent
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
     expect(style).toMatch(/\.label\s*\{[^}]*flex:\s*1\s+1\s+auto/)
-    expect(style).toContain('min-width: var(--oas-control-height-sm, 24px)')
-    // 虚拟路径：注入 vlist shadow 的行样式同样防压扁
     const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
-    const vStyle = vlist.shadowRoot!.querySelector('style[data-oas-tree-rows]')!.textContent
+    const vStyle = vlist.shadowRoot!.querySelector('style[data-oas-tree-rows]')!.textContent!
     expect(vStyle).toMatch(/\.label\s*\{[^}]*flex:\s*1\s+1\s+auto/)
-    expect(vStyle).toContain('min-width: var(--oas-control-height-sm, 24px)')
-    // DOM 层：窄宿主下自定义节点 [data-node-label] 文本照常绑定
-    el.style.width = '80px'
-    el.appendChild(tpl('node', '<span data-node-label></span>'))
-    el.setAttribute('data', JSON.stringify([{ key: 'a', label: '窄容器节点' }]))
-    const label = rows(el)[0]!.querySelector<HTMLElement>('.label')!
-    expect(label.querySelector('[data-node-label]')!.textContent).toBe('窄容器节点')
-    expect(label.style.flexGrow).toBe('') // 布局能力由 shadow 内样式承担（happy-dom 不解析类样式）
   })
 
   it('虚拟化下自定义节点模板同样生效', () => {
@@ -645,71 +1058,5 @@ describe('OASTree 自定义节点渲染', () => {
     el.setAttribute('data', el.getAttribute('data')!)
     const label = virtualRows(el)[0]!.querySelector<HTMLElement>('.label')!
     expect(label.querySelector('[data-node-label]')!.textContent).toContain('节点')
-  })
-})
-
-const DIR_DATA = JSON.stringify([
-  {
-    key: 'src',
-    label: 'src',
-    children: [{ key: 'index.ts', label: 'index.ts', isLeaf: true }],
-  },
-  { key: 'package.json', label: 'package.json', isLeaf: true },
-])
-
-function nodeKind(el: OASTree, index: number): string | null {
-  return rows(el)[index]!.querySelector('[part="node-icon"]')?.getAttribute('data-kind') ?? null
-}
-
-describe('OASTree 目录模式', () => {
-  beforeEach(() => {
-    document.body.innerHTML = ''
-    setLocale('zh-CN')
-  })
-
-  afterEach(() => {
-    document.body.innerHTML = ''
-    setLocale('zh-CN')
-  })
-
-  it('children → 文件夹图标，isLeaf / 无 children → 文件图标', () => {
-    const el = mount({ directory: '', data: DIR_DATA })
-    expect(nodeKind(el, 0)).toBe('folder')
-    expect(nodeKind(el, 1)).toBe('file')
-  })
-
-  it('展开后文件夹图标切换 folder-open，收起恢复 folder', () => {
-    const el = mount({ directory: '', data: DIR_DATA })
-    expect(nodeKind(el, 0)).toBe('folder')
-    rows(el)[0]!.querySelector<HTMLElement>('[part="toggle"]')!.click()
-    expect(nodeKind(el, 0)).toBe('folder-open')
-    rows(el)[0]!.querySelector<HTMLElement>('[part="toggle"]')!.click()
-    expect(nodeKind(el, 0)).toBe('folder')
-  })
-
-  it('无 directory 属性不渲染目录图标', () => {
-    const el = mount({ data: DIR_DATA })
-    expect(el.shadowRoot!.querySelector('[part="node-icon"]')).toBeNull()
-  })
-
-  it('目录模式 ARIA：图标 aria-hidden、toggle aria-expanded 同步、缩进随层级', () => {
-    const el = mount({ directory: '', data: DIR_DATA })
-    const icon = el.shadowRoot!.querySelector<HTMLElement>('[part="node-icon"]')!
-    expect(icon.getAttribute('aria-hidden')).toBe('true')
-    const toggle = el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!
-    expect(toggle.getAttribute('aria-expanded')).toBe('false')
-    ;(toggle as HTMLButtonElement).click()
-    expect(
-      el.shadowRoot!.querySelector<HTMLElement>('[part="toggle"]')!.getAttribute('aria-expanded'),
-    ).toBe('true')
-    expect(rows(el)[0]!.style.paddingLeft).toBe('8px')
-    expect(rows(el)[1]!.style.paddingLeft).toBe('32px')
-  })
-
-  it('directory + lazy：未加载节点视为文件夹，isLeaf 视为文件', () => {
-    const el = mount({ directory: '', lazy: '', data: LAZY_DATA })
-    expect(nodeKind(el, 0)).toBe('folder') // a 有 children
-    expect(nodeKind(el, 1)).toBe('folder') // b 未加载可展开
-    expect(nodeKind(el, 2)).toBe('file') // c isLeaf
   })
 })

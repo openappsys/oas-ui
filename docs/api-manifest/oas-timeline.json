@@ -1,9 +1,31 @@
 {
   "className": "OASTimeline",
   "sourceFile": "packages/ui/src/data/timeline/oas-timeline.ts",
-  "attrs": [],
+  "attrs": [
+    {
+      "name": "direction",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "mode",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "reverse",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
   "props": [],
   "events": [],
-  "slots": [],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
   "unresolved": []
 }

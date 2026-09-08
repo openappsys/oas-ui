@@ -4,22 +4,64 @@
   "attrs": [
     {
       "name": "time",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "type",
+      "type": "string",
+      "default": "",
       "observed": true
     },
     {
       "name": "color",
+      "type": "string",
+      "default": "",
       "observed": true
     },
     {
       "name": "pending",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "icon",
+      "type": "string",
+      "default": "",
       "observed": true
     }
   ],
   "props": [],
-  "events": [],
+  "events": [
+    {
+      "name": "oas-click",
+      "detail": "{ index: this.rowIndex() }"
+    }
+  ],
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "dot"
+    },
+    {
+      "name": "opposite"
+    },
+    {
+      "name": "title"
     }
   ],
   "unresolved": []

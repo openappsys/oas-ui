@@ -7,13 +7,79 @@ const STYLE = `
   gap: var(--oas-space-3);
   padding: var(--oas-space-3) var(--oas-space-4);
   font-family: inherit;
+  box-sizing: border-box;
 }
 :host([hidden]) {
   display: none;
 }
+/* 尺寸档：自身 size 属性 或 oas-list 下发的 data-size（与 tree 内嵌先例一致） */
+:host([size='sm']),
+:host([data-size='sm']) {
+  padding: var(--oas-space-2) var(--oas-space-3);
+  gap: var(--oas-space-2);
+}
+:host([size='lg']),
+:host([data-size='lg']) {
+  padding: var(--oas-space-4) var(--oas-space-5);
+  gap: var(--oas-space-4);
+}
+/* 斑马纹：oas-list 按视觉偶数行打 data-stripe */
+:host([data-stripe]) {
+  background: var(--oas-color-bg-hover);
+}
+/* 行交互：clickable 整行可点 + hover 反馈 */
+:host([data-clickable]) {
+  cursor: pointer;
+}
+:host([data-clickable]:hover) {
+  background: var(--oas-color-bg-hover);
+}
+:host([data-clickable]:focus-visible) {
+  box-shadow: inset var(--oas-focus-ring);
+  outline: none;
+}
+/* 选中行高亮（aria-selected 同步，见 update） */
+:host([selected]) {
+  background: var(--oas-color-primary);
+  color: var(--oas-color-text-on-primary);
+}
+:host([selected]) .desc {
+  color: color-mix(in srgb, var(--oas-color-text-on-primary) 72%, transparent);
+}
+.avatar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  background: var(--oas-color-bg-hover);
+}
+:host([size='sm']) .avatar-img,
+:host([data-size='sm']) .avatar-img {
+  width: 24px;
+  height: 24px;
+}
+:host([size='lg']) .avatar-img,
+:host([data-size='lg']) .avatar-img {
+  width: 40px;
+  height: 40px;
+}
 .title {
   font-weight: 500;
   font-size: var(--oas-font-size-md);
+}
+:host([size='sm']) .title,
+:host([data-size='sm']) .title {
+  font-size: var(--oas-font-size-sm);
+}
+:host([size='lg']) .title,
+:host([data-size='lg']) .title {
+  font-size: var(--oas-font-size-lg);
 }
 .main {
   flex: 1;
@@ -30,16 +96,22 @@ const STYLE = `
 
 export class OASListItem extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['title']
+    return ['title', 'description', 'avatar', 'clickable', 'selected', 'size']
   }
+
+  /** 数据通道上下文：所属 oas-list 注入的原始数据项（oas-click detail 回传） */
+  itemData: unknown = null
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
     return `
       <style>${STYLE}</style>
+      <div class="avatar" part="avatar" hidden>
+        <slot name="avatar"><img class="avatar-img" alt="" /></slot>
+      </div>
       <div class="main" part="main">
         <div class="title" part="title"><slot name="title"><span class="title-text"></span></slot></div>
-        <div class="desc" part="desc"><slot name="description"><slot></slot></slot></div>
+        <div class="desc" part="description"><slot name="description"><span class="desc-text"></span><slot></slot></slot></div>
       </div>
       <div class="extra"><slot name="extra"></slot></div>
     `
@@ -48,18 +120,27 @@ export class OASListItem extends OASElement {
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题） */
   private titleCache: string | null = null
 
-  /** 标题插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
-  private hasTitleSlotContent(slot: HTMLSlotElement): boolean {
+  /** 插槽是否有真实内容（元素节点或非空白文本）——slot 覆盖属性文案的判空依据 */
+  private slotHasContent(slot: HTMLSlotElement | null): boolean {
+    if (!slot) return false
     return slot
       .assignedNodes()
       .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
-  /** 缓存节点引用（render 与水合路径共用；title 插槽内容增减时重刷标题区显隐） */
+  /** 缓存节点引用（render 与水合路径共用；title/description/avatar 插槽内容增减时重刷） */
   private bind(): void {
-    this.shadow
-      .querySelector<HTMLSlotElement>('slot[name="title"]')
-      ?.addEventListener('slotchange', () => this.update())
+    for (const sel of ['slot[name="title"]', 'slot[name="description"]', 'slot:not([name])', 'slot[name="avatar"]']) {
+      this.shadow.querySelector<HTMLSlotElement>(sel)?.addEventListener('slotchange', () => {
+        // 属性吸收（title）触发的 slotchange 自激防护：下次微任务再刷，幂等
+        queueMicrotask(() => this.update())
+      })
+    }
+    this.addEventListener('keydown', (e) => this.handleKeydown(e as KeyboardEvent))
+    this.addEventListener('click', () => {
+      if (!this.hasAttribute('clickable')) return
+      this.emit('click', { index: this.rowIndex(), item: this.itemData })
+    })
   }
 
   protected override render(): void {
@@ -97,10 +178,64 @@ export class OASListItem extends OASElement {
     const title = this.titleCache ?? ''
     if (titleEl && titleSlot && titleFallback) {
       titleFallback.textContent = title
-      titleFallback.hidden = this.hasTitleSlotContent(titleSlot)
+      titleFallback.hidden = this.slotHasContent(titleSlot)
     } else if (titleEl) {
       // 降级：无 slot 结构（旧版 SSR 快照）直接写标题区文本
       titleEl.textContent = title
     }
+
+    // description 双通道：属性文本兜底；slot="description" 优先；全无则隐藏描述行
+    const descEl = this.shadow.querySelector<HTMLElement>('.desc')
+    const descSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="description"]')
+    const descFallback = this.shadow.querySelector<HTMLElement>('.desc-text')
+    const defaultSlot = this.shadow.querySelector<HTMLSlotElement>('slot:not([name])')
+    if (descEl && descSlot && descFallback) {
+      const attr = this.getAttr('description', '')
+      descFallback.textContent = attr
+      // 插槽（description 或默认插槽）有内容时隐藏属性兜底，防双显
+      const hasDesc = this.slotHasContent(descSlot) || this.slotHasContent(defaultSlot)
+      descFallback.hidden = hasDesc
+      descEl.hidden = !hasDesc && attr === ''
+    }
+
+    // avatar 双通道：slot="avatar" 优先；avatar 属性（URL）渲染兜底头像图
+    const avatarEl = this.shadow.querySelector<HTMLElement>('[part="avatar"]')
+    const avatarSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="avatar"]')
+    const avatarImg = this.shadow.querySelector<HTMLImageElement>('.avatar-img')
+    const avatarUrl = this.getAttr('avatar', '')
+    if (avatarEl && avatarSlot && avatarImg) {
+      const hasSlot = this.slotHasContent(avatarSlot)
+      avatarImg.hidden = hasSlot || avatarUrl === ''
+      if (avatarUrl !== '') avatarImg.src = avatarUrl
+      avatarEl.hidden = !hasSlot && avatarUrl === ''
+    }
+
+    // 行交互：clickable → 可聚焦 + role + 高亮态钩子；selected → aria-selected
+    const clickable = this.hasAttribute('clickable')
+    this.toggleAttribute('data-clickable', clickable)
+    if (clickable) {
+      this.setAttribute('tabindex', '0')
+      this.setAttribute('role', 'button')
+    } else {
+      this.removeAttribute('tabindex')
+      this.removeAttribute('role')
+    }
+    this.setAttribute('aria-selected', String(this.hasAttribute('selected')))
+  }
+
+  /** 键盘可达：Enter / Space 触发行点击（Space 阻止页面滚动） */
+  private handleKeydown(e: KeyboardEvent): void {
+    if (!this.hasAttribute('clickable')) return
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    e.preventDefault()
+    this.emit('click', { index: this.rowIndex(), item: this.itemData })
+  }
+
+  /** 在所属 oas-list 中的序号（数据通道行由 list 打 data-index；声明式行返回 null） */
+  private rowIndex(): number | null {
+    const raw = this.getAttribute('data-index')
+    if (raw == null) return null
+    const n = Number(raw)
+    return Number.isFinite(n) ? n : null
   }
 }

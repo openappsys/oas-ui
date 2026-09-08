@@ -185,7 +185,7 @@ test.beforeAll(async () => {
           { key: 'a', label: '节点 A', children: [{ key: 'a-1', label: '子节点 1' }] },
           { key: 'b', label: '节点 B' },
         ]),
-        expanded: 'a',
+        expanded: '["a"]',
       },
       '',
       { locale: 'zh-CN' },

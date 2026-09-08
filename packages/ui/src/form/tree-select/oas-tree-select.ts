@@ -3,6 +3,27 @@ import { OASElement } from '@oas-ui/core'
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
 import { computePosition } from '../../overlay/floating/index.js'
+// 共享树内核：flatten/字段归一 + 勾选级联 + 懒加载状态机 + 模板克隆（与 oas-tree 同一实现）
+import {
+  resolveFieldNames,
+  defaultFields,
+  flattenModel,
+  releaseLoading,
+  expandableNode,
+  loadPendingNode,
+  closureFromValues,
+  applyCheckStrategy,
+  flipChecked,
+  halfByDescendant,
+  labelPath,
+  cloneSlotContent,
+} from '../../data/tree/shared/index.js'
+import type {
+  ResolvedFields,
+  TreeAccessors,
+  TreeModel,
+  CheckContext,
+} from '../../data/tree/shared/index.js'
 
 export interface TreeOption {
   label: string
@@ -13,14 +34,6 @@ export interface TreeOption {
   isLeaf?: boolean
   /** 懒加载：已加载完成标记（children 已就绪或确认无子节点） */
   loaded?: boolean
-}
-
-/** 字段别名：宿主数据字段名 → 组件语义字段（attribute 传 JSON 对象） */
-interface FieldNames {
-  label: string
-  value: string
-  children: string
-  disabled: string
 }
 
 /** 勾选策略：all=父级+子级全进值；parent=只保留父级（子级全选时以父级为代表）；child=只保留叶子 */
@@ -438,6 +451,29 @@ interface FlatNode {
   parent?: TreeOption
 }
 
+/** 按字段别名构造共享访问器（TreeOption 经 record 索引读取原始数据） */
+function defaultAccessors(fields: ResolvedFields): TreeAccessors<TreeOption> {
+  const read = (o: TreeOption): Record<string, unknown> => o as unknown as Record<string, unknown>
+  return {
+    idOf: (o) => {
+      const v = read(o)[fields.idField]
+      return typeof v === 'string' ? v : ''
+    },
+    labelOf: (o) => {
+      const v = read(o)[fields.labelField]
+      return typeof v === 'string' ? v : ''
+    },
+    childrenOf: (o) => {
+      const v = read(o)[fields.childrenField]
+      return Array.isArray(v) ? (v as TreeOption[]) : undefined
+    },
+    disabledOf: (o) => read(o)[fields.disabledField] === true,
+    isLeafOf: (o) => read(o)[fields.isLeafField] === true,
+    loadedOf: (o) => read(o)[fields.loadedField] === true,
+    inertOf: (o) => read(o)[fields.disabledField] === true,
+  }
+}
+
 export class OASTreeSelect extends OASElement {
   static override get observedAttributes(): string[] {
     return [
@@ -496,7 +532,12 @@ export class OASTreeSelect extends OASElement {
   private loadingSet = new Set<string>()
   /** cache-data 解析结果：value → label（树外/未加载值的回显兜底） */
   private cacheLabels = new Map<string, string>()
-  private fields: FieldNames = { label: 'label', value: 'value', children: 'children', disabled: 'disabled' }
+  /** 字段别名归一（共享内核 resolveFieldNames，'value' 语义标识、不覆盖 isLeaf/loaded） */
+  private fields: ResolvedFields = defaultFields('value')
+  /** 按字段别名构造的节点访问器（每次字段变化重建） */
+  private acc: TreeAccessors<TreeOption> = defaultAccessors(defaultFields('value'))
+  /** 共享内核扁平模型（rows/byId/parentById），update 时重建 */
+  private model: TreeModel<TreeOption> = flattenModel([], defaultAccessors(defaultFields('value')))
 
   /** Vue/React 会把 options 识别为实例属性走 property 赋值；setter 反射到 attribute 统一解析链路 */
   get options(): TreeOption[] {
@@ -519,10 +560,8 @@ export class OASTreeSelect extends OASElement {
 
   private openState = false
   private flat: FlatNode[] = []
-  /** value → 原始 option 映射（buildFlat 时重建），勾选闭包/未知值判定用 O(1) 查找 */
+  /** value → 原始 option 映射（共享模型 byId 别名），勾选闭包/未知值判定用 O(1) 查找 */
   private valueMap = new Map<string, TreeOption>()
-  /** value → 父节点映射（show-path 路径回显用） */
-  private parentMap = new Map<string, TreeOption>()
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -615,10 +654,16 @@ export class OASTreeSelect extends OASElement {
     this.parseFieldNames()
     this.parseOptions()
     this.parseCache()
-    this.flat = []
-    this.valueMap.clear()
-    this.parentMap.clear()
-    this.buildFlat(this._options, undefined, 0)
+    this.model = flattenModel(this._options, this.acc)
+    releaseLoading(this.model, this.acc, this.loadingSet)
+    this.flat = this.model.rows.map(
+      (r): FlatNode => ({
+        option: r.node,
+        depth: r.depth,
+        parent: r.parent !== undefined ? this.model.byId.get(r.parent) : undefined,
+      }),
+    )
+    this.valueMap = this.model.byId
     this.syncHostState()
     this.syncOpenControl()
     this.syncPanelChrome()
@@ -630,70 +675,18 @@ export class OASTreeSelect extends OASElement {
   // ---------- 字段别名 / 数据解析 ----------
 
   private parseFieldNames(): void {
-    const def: FieldNames = {
-      label: 'label',
-      value: 'value',
-      children: 'children',
-      disabled: 'disabled',
-    }
     const raw = this.getAttr('field-names', '')
-    if (!raw) {
-      if (this.fields.label !== def.label || this.fields.value !== def.value) {
-        this.optionsAttr = '' // 字段映射变化 → 强制重解析 options
-      }
-      this.fields = def
-      return
+    const next = resolveFieldNames(raw, 'value', 'value', false)
+    if (
+      next.idField !== this.fields.idField ||
+      next.labelField !== this.fields.labelField ||
+      next.childrenField !== this.fields.childrenField ||
+      next.disabledField !== this.fields.disabledField
+    ) {
+      this.optionsAttr = '' // 字段映射变化 → 强制重解析 options（沿用既有行为）
     }
-    try {
-      const parsed = JSON.parse(raw) as Record<string, unknown>
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        const pick = (v: unknown, fb: string): string =>
-          typeof v === 'string' && v !== '' ? v : fb
-        const next: FieldNames = {
-          label: pick(parsed.label, def.label),
-          value: pick(parsed.value, def.value),
-          children: pick(parsed.children, def.children),
-          disabled: pick(parsed.disabled, def.disabled),
-        }
-        if (
-          next.label !== this.fields.label ||
-          next.value !== this.fields.value ||
-          next.children !== this.fields.children ||
-          next.disabled !== this.fields.disabled
-        ) {
-          this.optionsAttr = '' // 字段映射变化 → 强制重解析 options
-        }
-        this.fields = next
-        return
-      }
-    } catch {
-      // 非法 JSON 回落默认字段名
-    }
-    if (this.fields.label !== def.label || this.fields.value !== def.value) {
-      this.optionsAttr = ''
-    }
-    this.fields = def
-  }
-
-  /** 原始 option 上的语义字段读取（经 field-names 别名映射） */
-  private labelOf(option: TreeOption): string {
-    const v = (option as unknown as Record<string, unknown>)[this.fields.label]
-    return typeof v === 'string' ? v : ''
-  }
-
-  private valueKeyOf(option: TreeOption): string {
-    const v = (option as unknown as Record<string, unknown>)[this.fields.value]
-    return typeof v === 'string' ? v : ''
-  }
-
-  private childrenOf(option: TreeOption): TreeOption[] | undefined {
-    const v = (option as unknown as Record<string, unknown>)[this.fields.children]
-    return Array.isArray(v) ? (v as TreeOption[]) : undefined
-  }
-
-  private disabledOf(option: TreeOption): boolean {
-    const v = (option as unknown as Record<string, unknown>)[this.fields.disabled]
-    return v === true
+    this.fields = next
+    this.acc = defaultAccessors(next)
   }
 
   private parseOptions(): void {
@@ -702,12 +695,10 @@ export class OASTreeSelect extends OASElement {
     this.optionsAttr = raw
     try {
       const parsed = JSON.parse(raw)
-      const valueField = this.fields.value
+      const valueField = this.fields.idField
       this._options = Array.isArray(parsed)
         ? parsed.filter(
-            (o) =>
-              o &&
-              typeof (o as unknown as Record<string, unknown>)[valueField] === 'string',
+            (o) => o && typeof (o as unknown as Record<string, unknown>)[valueField] === 'string',
           )
         : []
     } catch {
@@ -731,25 +722,27 @@ export class OASTreeSelect extends OASElement {
     }
   }
 
-  private buildFlat(list: TreeOption[], parent: TreeOption | undefined, depth: number): void {
-    for (const option of list) {
-      this.flat.push({ option, depth, parent })
-      const value = this.valueKeyOf(option)
-      this.valueMap.set(value, option)
-      if (parent) this.parentMap.set(value, parent)
-      // 宿主回填子节点（children 就绪 / isLeaf / loaded）后结束该节点的懒加载态
-      const raw = option as unknown as Record<string, unknown>
-      if (
-        this.loadingSet.has(value) &&
-        (this.childrenOf(option) !== undefined || raw.isLeaf === true || raw.loaded === true)
-      ) {
-        this.loadingSet.delete(value)
-      }
-      const kids = this.childrenOf(option)
-      if (kids?.length) {
-        this.buildFlat(kids, option, depth + 1)
-      }
-    }
+  /** 共享内核上下文（扁平模型 + 访问器） */
+  private checkCtx(): CheckContext<TreeOption> {
+    return { model: this.model, acc: this.acc }
+  }
+
+  // ---------- 语义字段读取（经 field-names 别名，委托共享访问器） ----------
+
+  private labelOf(option: TreeOption): string {
+    return this.acc.labelOf(option)
+  }
+
+  private valueKeyOf(option: TreeOption): string {
+    return this.acc.idOf(option)
+  }
+
+  private childrenOf(option: TreeOption): TreeOption[] | undefined {
+    return this.acc.childrenOf(option)
+  }
+
+  private disabledOf(option: TreeOption): boolean {
+    return this.acc.disabledOf(option)
   }
 
   // ---------- 宿主状态映射（size / status） ----------
@@ -1049,24 +1042,15 @@ export class OASTreeSelect extends OASElement {
 
   /**
    * 是否可展开。常规模式仅 children 非空；懒加载模式下未加载节点
-   * （无 children、非 isLeaf、未标记 loaded）也可展开，展开触发加载（对齐 oas-tree）。
+   * （无 children、非 isLeaf、未标记 loaded）也可展开，展开触发加载（共享内核判定）。
    */
   private isExpandable(option: TreeOption): boolean {
-    if (this.childrenOf(option)?.length) return true
-    if (!this.hasAttr('lazy')) return false
-    const raw = option as unknown as Record<string, unknown>
-    if (raw.isLeaf === true || raw.loaded === true) return false
-    if (this.childrenOf(option) !== undefined) return false // children: [] → 已加载为空
-    return true
+    return expandableNode(option, this.acc, this.hasAttr('lazy'))
   }
 
   /** 懒加载：展开未加载节点时派发 oas-load 并调用 el.load，宿主回填 options 后 spinner 消失 */
   private tryLazyLoad(option: TreeOption): void {
-    if (!this.hasAttr('lazy')) return
-    if (this.childrenOf(option)?.length) return
-    const raw = option as unknown as Record<string, unknown>
-    if (raw.isLeaf === true || raw.loaded === true) return
-    if (this.childrenOf(option) !== undefined) return
+    if (!loadPendingNode(option, this.acc, this.hasAttr('lazy'))) return
     const value = this.valueKeyOf(option)
     if (this.loadingSet.has(value)) return
     this.loadingSet.add(value)
@@ -1110,118 +1094,36 @@ export class OASTreeSelect extends OASElement {
     return max > 0 && this.internalChecked().size >= max
   }
 
-  // ---------- 勾选模型（级联 / check-strictly 解联） ----------
-
-  /** 某个节点的全部后代（含 disabled，供勾选态判断） */
-  private descendants(option: TreeOption): TreeOption[] {
-    const out: TreeOption[] = []
-    const walk = (list?: TreeOption[]): void => {
-      for (const o of list ?? []) {
-        out.push(o)
-        walk(this.childrenOf(o))
-      }
-    }
-    walk(this.childrenOf(option))
-    return out
-  }
-
-  /** 某个节点的可勾选后代（排除 disabled） */
-  private selectableDescendants(option: TreeOption): TreeOption[] {
-    const out: TreeOption[] = []
-    const walk = (list?: TreeOption[]): void => {
-      for (const o of list ?? []) {
-        if (!this.disabledOf(o)) out.push(o)
-        walk(this.childrenOf(o))
-      }
-    }
-    walk(this.childrenOf(option))
-    return out
-  }
-
-  private findNode(value: string): TreeOption | undefined {
-    return this.valueMap.get(value)
-  }
+  // ---------- 勾选模型（级联 / check-strictly 解联，共享内核实现） ----------
 
   /**
    * 内部完整勾选集合（策略无关，驱动复选框展示）：
    * - check-strictly：勾选不级联，集合即受控 value 本身；
-   * - 级联模式：从受控 value 出发做级联闭包——value 含父节点 → 其全部可勾选后代视为勾选；
-   *   自底向上：非 disabled 子节点全部勾选时父节点自动勾选，否则（半选/未选）移出集合。
+   * - 级联模式：closureFromValues 从受控 value 做级联闭包（含自底向上收敛），见共享内核。
    */
   private internalChecked(): Set<string> {
     if (this.checkStrictly()) return new Set(this.currentValues())
-    const checked = new Set<string>()
-    for (const v of this.currentValues()) {
-      const node = this.findNode(v)
-      if (!node) {
-        checked.add(v)
-        continue
-      }
-      checked.add(v)
-      for (const d of this.selectableDescendants(node)) checked.add(this.valueKeyOf(d))
-    }
-    this.normalizeChecked(checked)
-    return checked
+    return closureFromValues(this.checkCtx(), this.currentValues())
   }
 
-  /** 自底向上归一化：全选父级加入集合，非全选（半选/未选）移出集合 */
-  private normalizeChecked(checked: Set<string>): void {
-    for (let i = this.flat.length - 1; i >= 0; i--) {
-      const option = this.flat[i]!.option
-      if (this.disabledOf(option)) continue
-      const kids = (this.childrenOf(option) ?? []).filter((c) => !this.disabledOf(c))
-      if (!kids.length) continue
-      if (kids.every((k) => checked.has(this.valueKeyOf(k)))) checked.add(this.valueKeyOf(option))
-      else checked.delete(this.valueKeyOf(option))
-    }
-  }
-
-  /** 勾选集合 → 按策略派生对外值（strictly 下恒为全量勾选集合，按树序） */
-  private applyStrategy(checked: Set<string>): string[] {
-    const strategy = this.checkStrictly() ? 'all' : this.checkStrategy()
-    const out: string[] = []
-    for (const item of this.flat) {
-      const v = this.valueKeyOf(item.option)
-      if (!checked.has(v)) continue
-      if (strategy === 'child') {
-        if (this.childrenOf(item.option)?.length) continue
-        out.push(v)
-      } else if (strategy === 'parent') {
-        // 父级已勾选时其子节点（含中间父级）被父级代表，不再单独入值
-        if (item.parent && checked.has(this.valueKeyOf(item.parent))) continue
-        out.push(v)
-      } else {
-        out.push(v)
-      }
-    }
-    // 树外未知 value 原样保留（宿主传了但当前树无此节点）
-    const outSet = new Set(out)
-    for (const v of this.currentValues()) {
-      if (!outSet.has(v) && !this.valueMap.has(v)) out.push(v)
-    }
-    return out
-  }
-
-  /** 切换某节点勾选：级联模式节点 + 全部后代翻转随后归一化；strictly 仅翻转自身。超上限时拦截。 */
+  /**
+   * 切换某节点勾选：级联模式节点 + 全部后代翻转随后归一化；strictly 仅翻转自身。超上限时拦截。
+   * 翻转与策略导出均委托共享内核（flipChecked / applyCheckStrategy）。
+   */
   private toggleCheck(option: TreeOption): boolean {
     if (this.disabledOf(option)) return false
+    const ctx = this.checkCtx()
     const checked = this.internalChecked()
     const value = this.valueKeyOf(option)
     const willCheck = !checked.has(value)
     if (willCheck && this.maxReached()) return false
-    if (this.checkStrictly()) {
-      if (willCheck) checked.add(value)
-      else checked.delete(value)
-    } else if (willCheck) {
-      checked.add(value)
-      for (const d of this.selectableDescendants(option)) checked.add(this.valueKeyOf(d))
-      this.normalizeChecked(checked)
-    } else {
-      checked.delete(value)
-      for (const d of this.selectableDescendants(option)) checked.delete(this.valueKeyOf(d))
-      this.normalizeChecked(checked)
-    }
-    const values = this.applyStrategy(checked)
+    flipChecked(ctx, checked, value, this.checkStrictly())
+    const values = applyCheckStrategy(
+      ctx,
+      checked,
+      this.checkStrictly() ? 'all' : this.checkStrategy(),
+      this.currentValues(),
+    )
     const max = this.maxLimit()
     if (max > 0 && checked.size > max) return false
     this.commitValues(values)
@@ -1348,17 +1250,10 @@ export class OASTreeSelect extends OASElement {
   }
 
   /**
-   * 克隆 slot 骨架模板内容。浏览器对 `<template>` 子节点存在两种挂载形态：
-   * 静态 HTML / SSR 快照在 `template.content`；Vue 等框架 CSR 挂载直插 template 元素。
-   * 按内容优先取源再逐节点深克隆，dev 与生产双形态都能正确渲染（对齐 oas-tree）。
+   * 克隆 slot 骨架模板内容（静态 content 与 Vue CSR 直插双形态，共享内核实现）。
    */
   private slotTemplateFragment(tpl: HTMLTemplateElement): DocumentFragment {
-    const source = tpl.content.childNodes.length > 0 ? tpl.content : tpl
-    const frag = document.createDocumentFragment()
-    for (const node of Array.from(source.childNodes)) {
-      frag.appendChild(node.cloneNode(true))
-    }
-    return frag
+    return cloneSlotContent(tpl)
   }
 
   private renderTree(): void {
@@ -1531,7 +1426,7 @@ export class OASTreeSelect extends OASElement {
       const check = document.createElement('span')
       check.className = 'check'
       const isHalf =
-        !isChecked && !this.checkStrictly() && this.hasCheckedDescendant(option, checked)
+        !isChecked && !this.checkStrictly() && halfByDescendant(this.checkCtx(), checked, value)
       check.classList.toggle('checked', isChecked)
       check.classList.toggle('half', isHalf)
       check.textContent = isChecked ? '✓' : isHalf ? '—' : ''
@@ -1587,11 +1482,8 @@ export class OASTreeSelect extends OASElement {
     }
   }
 
-  private hasCheckedDescendant(option: TreeOption, checked: Set<string>): boolean {
-    for (const d of this.descendants(option)) {
-      if (checked.has(this.valueKeyOf(d))) return true
-    }
-    return false
+  private findNode(value: string): TreeOption | undefined {
+    return this.valueMap.get(value)
   }
 
   // ---------- 回显（label / 路径 / cache-data / chip） ----------
@@ -1604,15 +1496,9 @@ export class OASTreeSelect extends OASElement {
     return this.labelOf(node)
   }
 
-  /** 节点完整路径（根到自身 label 链，separator 拼接） */
+  /** 节点完整路径（根到自身 label 链，separator 拼接；共享内核 labelPath） */
   private pathOf(node: TreeOption): string {
-    const parts: string[] = []
-    let cur: TreeOption | undefined = node
-    while (cur) {
-      parts.unshift(this.labelOf(cur))
-      cur = this.parentMap.get(this.valueKeyOf(cur))
-    }
-    return parts.join(this.getAttr('separator', ' / '))
+    return labelPath(this.checkCtx(), this.valueKeyOf(node)).join(this.getAttr('separator', ' / '))
   }
 
   private syncTrigger(): void {
@@ -1671,10 +1557,7 @@ export class OASTreeSelect extends OASElement {
         const plus = document.createElement('span')
         plus.className = 'chip chip-plus'
         plus.textContent = `+${values.length - shown.length}`
-        plus.setAttribute(
-          'title',
-          labels.slice(shown.length).join(this.t('treeSelect.join')),
-        )
+        plus.setAttribute('title', labels.slice(shown.length).join(this.t('treeSelect.join')))
         valueEl.appendChild(plus)
       }
       this.triggerEl.setAttribute('aria-label', labels.join(this.t('treeSelect.join')))

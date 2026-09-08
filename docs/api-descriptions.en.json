@@ -1261,20 +1261,46 @@
   "oas-list": {
     "attrs": {
       "bordered": "Whether to show the outer border",
+      "bottom-offset": "Reach-bottom threshold (px): remaining distance to the bottom ≤ this counts as bottom, default 0",
+      "data": "Data channel (JSON string; the `data` / `dataItems` property takes precedence). With data the channel renders; without it falls back to declarative children",
       "empty": "Force empty state; auto empty when there are no children",
       "empty-text": "Empty state text",
+      "height": "Virtual scroll viewport height (px; setting it enables virtual mode, requires the data channel)",
       "loading": "Loading state, shows skeleton placeholders",
-      "split": "Whether to show item dividers"
+      "max-height": "Max height of the list body (px or CSS length); turns the body into a scroll container (pairs with oas-reach-bottom for scroll loading)",
+      "row-height": "Virtual scroll row height (px, default 64; data rows must be fixed-height)",
+      "size": "Row density: sm / md (default) / lg",
+      "split": "Whether to show item dividers",
+      "stripe": "Zebra stripes: fills visually even rows with a subtle background"
     },
-    "events": {},
-    "slots": {}
+    "events": {
+      "oas-click": "Item click (data/virtual rows); detail carries { index, item }",
+      "oas-item-render": "Dispatched after each data-channel row renders; detail carries { index, item, element }",
+      "oas-reach-bottom": "Scroll reached the bottom (fired once per bottom entry, re-armed after scrolling away); detail carries { scrollTop }"
+    },
+    "slots": {
+      "": "Default (declarative oas-list-item children)",
+      "empty": "Custom empty state, fully replacing the built-in icon + text",
+      "footer": "Footer area (statistics, actions)",
+      "header": "Header area (group titles, actions)",
+      "load-more": "Tail \"load more\" area (button / loading placeholder)",
+      "template[slot=\"item\"]": "Static skeleton cloned per data item, bound to data via oas-item-render"
+    }
   },
   "oas-list-item": {
     "attrs": {
+      "avatar": "Avatar URL quick channel (renders a circular avatar at the row start; slot=\"avatar\" wins)",
+      "clickable": "Whole row clickable: hover feedback, focusable (Enter/Space triggers), click dispatches oas-click",
+      "description": "Description text quick channel (slot=\"description\" wins, rich content allowed)",
+      "selected": "Selected row highlight (aria-selected synced); selection is host-controlled",
+      "size": "Row density: sm / md (default) / lg",
       "title": "Item title (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot=\"title\" for rich content"
     },
-    "events": {},
+    "events": {
+      "oas-click": "Row click; detail carries { index, item } (data-row context injected by oas-list)"
+    },
     "slots": {
+      "avatar": "Rich avatar content (oas-avatar or anything), takes precedence over the avatar attribute",
       "description": "Description area (falls back to the default slot when not provided)",
       "extra": "Extra area on the right of the item",
       "title": "Rich title content slot, overrides the title attribute text when present"
@@ -2467,14 +2493,34 @@
       "presets": "Quick times: an array of `{ label, value: \"HH:mm:ss\" }` rendered as a button row atop the panel"
     }
   },
-  "oas-timeline-item": {
+  "oas-timeline": {
     "attrs": {
-      "color": "Node marker color: `green` / `red` / `gray`; defaults to the theme color",
-      "pending": "In-progress node: hollow dot + dashed connector; shows \"敬请期待\" when empty",
-      "time": "Time text of the node"
+      "direction": "Axis direction: vertical (default) / horizontal (items laid out in a row)",
+      "mode": "Content position relative to the axis: left (default, axis on the left) / right (axis on the right) / alternate (axis centered, content alternates sides, first item on the left); in horizontal mode maps to below/above/alternating",
+      "reverse": "Visual reverse order (DOM order unchanged); pairs with pending for \"newest first\""
     },
     "events": {},
     "slots": {}
+  },
+  "oas-timeline-item": {
+    "attrs": {
+      "color": "[Migration compat] Legacy node color: green→success, red→danger, gray→neutral; will be removed. Use type for new code; arbitrary colors via --oas-timeline-dot-color",
+      "icon": "Node icon (library oas-icon name), colored by type; slot=\"dot\" wins",
+      "loading": "Per-node loading: the dot becomes a spinner, content area syncs aria-busy",
+      "pending": "In-progress node: hollow dot + dashed connector + pulse; shows \"敬请期待\" when empty",
+      "time": "Time text of the node",
+      "type": "Semantic node color: primary (default) / success / warning / danger / info / neutral",
+      "variant": "Node variant: filled (default solid) / outlined (hollow stroke)"
+    },
+    "events": {
+      "oas-click": "Item click (content area); detail carries { index }"
+    },
+    "slots": {
+      "": "Node body content",
+      "dot": "Custom node (any content replaces the dot)",
+      "opposite": "Opposite-side content (only shown in mode=alternate)",
+      "title": "Title emphasis line (separated from the body)"
+    }
   },
   "oas-title": {
     "attrs": {
@@ -2763,18 +2809,34 @@
       "lazy": "Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand",
       "load": "Lazy loading callback `(payload: { key }) => void`, coexists with the `oas-load` event; the host refills child nodes and resets the `data` attribute",
       "row-height": "Fixed row height when virtualized (px)",
-      "selected": "Key of the selected node"
+      "selected": "Key of the selected node",
+      "multiple": "Click multi-select (Ctrl/⌘-click; selected set is a JSON array)",
+      "check-strategy": "Check export strategy: `all` (default) / `parent` / `child` (with checkable cascading)",
+      "check-strictly": "Decouple parent/child checking",
+      "default-expand-all": "Expand all nodes by default (applies when the expanded attribute is absent)",
+      "accordion": "Accordion (only one sibling branch open at a time)",
+      "auto-expand-parent": "Auto-expand parents when a child is checked",
+      "expand-trigger": "Node expansion trigger: `toggle` (default, arrow only) / `node` (clicking the node row)",
+      "filter": "In-tree search filter (keyword input; pair with filter-highlight and el.filterNode)",
+      "filter-highlight": "Highlight matched fragments (mark tag)",
+      "field-names": "Field-alias JSON (e.g. `{\"label\":\"name\",\"value\":\"id\",\"children\":\"subs\"}`; data is not copy-mapped — node-render receives your original objects)",
+      "tree-lines": "Tree indentation guide lines",
+      "disabled": "Whole-tree disabled (select/check/expand/drag all inert, browsing kept)",
+      "empty": "Empty-state text (when no data; no-match uses the locale no-match text)"
     },
     "events": {
       "oas-check": "Check state change, `detail: { key, checked }`",
       "oas-load": "Lazy loading triggered, `detail: { key }`; the host refills `children` and resets the `data` attribute",
       "oas-node-drop": "Node dropped, `detail: { dragKey, dropKey, position }`; `position` is `before` / `after` / `inner`; an empty-string `dropKey` means moved to the root",
       "oas-node-render": "Dispatched for each rendered node row, `detail: { node, element }` (element is the node label container; the host can rewrite it into icon / rich text)",
-      "oas-select": "Node selected, `detail: { key, selected }`"
+      "oas-select": "Node selected, `detail: { key, selected }`",
+      "oas-load-error": "Lazy load failed, `detail: { key, error }` where `error` is the error message string (loading clears, clickable to retry)"
     },
     "slots": {
       "template[slot=\"node\"]": "Static row template cloned into each node label container; the `[data-node-label]` node is bound to the node label automatically",
-      "template[slot=\"toggle\"]": "Static expand button template cloned into each expandable node's toggle button (replaces the default › icon)"
+      "template[slot=\"toggle\"]": "Static expand button template cloned into each expandable node's toggle button (replaces the default › icon)",
+      "template[slot=\"empty\"]": "Custom empty-state content",
+      "template[slot=\"toggle-loading\"]": "Lazy-expanding indicator (replaces the spinner)"
     }
   },
   "oas-tree-select": {

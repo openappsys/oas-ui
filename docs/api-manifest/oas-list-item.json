@@ -7,11 +7,48 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "avatar",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "clickable",
+      "observed": true
+    },
+    {
+      "name": "selected",
+      "observed": true
+    },
+    {
+      "name": "size",
+      "observed": true
     }
   ],
-  "props": [],
-  "events": [],
+  "props": [
+    {
+      "name": "itemData",
+      "type": "unknown"
+    }
+  ],
+  "events": [
+    {
+      "name": "oas-click",
+      "detail": "{ index: this.rowIndex(), item: this.itemData }"
+    }
+  ],
   "slots": [
+    {
+      "name": "avatar"
+    },
     {
       "name": "description"
     },
