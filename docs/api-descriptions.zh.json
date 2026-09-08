@@ -140,18 +140,29 @@
       "badge-color": "徽标颜色：`primary`/`success`/`warning`/`danger`",
       "badge-dot": "小圆点徽标变体（不显示文本）",
       "badge-placement": "徽标位置：`top-right`（默认）/`bottom-right`",
-      "size": "头像尺寸（px）",
-      "src": "图片地址，存在时渲染图片头像"
+      "size": "尺寸：数字 px 或枚举别名 `small`(24) / `medium`(32) / `large`(40)",
+      "src": "图片地址，存在时渲染图片头像",
+      "shape": "形状：`circle`（默认圆形）/ `square`（直角）/ `round`（圆角）",
+      "color": "文字头像背景色：语义色 / 预设名 / 任意色值（文字对比色自动选取）",
+      "fallback": "回退图 URL：主图加载失败时切换（再失败走文字/插槽回退链）",
+      "fit": "图片 object-fit（默认 `cover`）",
+      "text": "文字内容：单字渲染首字符；多字渲染全量并自动收缩字号适配容器"
     },
-    "events": {},
+    "events": {
+      "oas-error": "图片加载失败派发（主图与回退图各一次），`detail: { src }`",
+      "oas-trigger": "换头像入口（trigger 遮罩）点击；上传交互宿主自理"
+    },
     "slots": {
-      "fallback": "图片加载失败（或头像无内容）时的自定义占位内容"
+      "fallback": "图片加载失败（或头像无内容）时的自定义占位内容",
+      "icon": "图标头像（显式图标内容，不做首字符截取）",
+      "trigger": "换头像入口遮罩自定义内容（hover/聚焦显形；缺省为内建相机图标）"
     }
   },
   "oas-avatar-group": {
     "attrs": {
       "max": "最大展示头像数，超出显示 `+N` 计数圆点",
-      "size": "统一头像尺寸（px），计数圆点同步适配"
+      "size": "统一头像尺寸（px），计数圆点同步适配",
+      "spacing": "成员间距（px，可为负 = 叠放；覆盖 `--oas-avatar-group-overlap` 变量）"
     },
     "events": {},
     "slots": {}
@@ -386,7 +397,15 @@
       "cover-alt": "封面图 alt 文本（无障碍）",
       "cover-src": "封面图 URL，置于卡片顶部（object-fit: cover 自适应裁切）",
       "hoverable": "是否开启悬浮阴影（阴影 + 上浮提升 + 指针）",
-      "title": "卡片标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\""
+      "title": "卡片标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\"",
+      "loading": "加载态：内容区切骨架占位（aria-busy 同步）",
+      "size": "尺寸档位：`small`（紧凑 padding、标题降档）/ `medium`（默认）",
+      "variant": "形态：`outlined`（默认，带描边）/ `borderless`（无边框嵌入形态）",
+      "header-bordered": "头部分割线（默认 true；`\"false\"` 关闭）",
+      "shadow": "阴影三态：`none` / `hover`（悬停浮起）/ `always`（常显）；`hoverable` 映射 `hover`，显式 shadow 优先",
+      "description": "Meta 副文（title 下方弱化小字；与 description 插槽双通道，slot 优先）",
+      "href": "链接卡：整卡语义为链接（内部锚点包装，键盘/中键原生可达）",
+      "target": "链接卡打开目标（配合 href，如 `_blank`）"
     },
     "events": {
       "oas-click": "整卡点击（`clickable` 时），detail 含 originalEvent"
@@ -396,7 +415,10 @@
       "actions": "底部操作区（查看/编辑/删除等按钮组），上方带分隔线",
       "cover": "自定义封面内容（与 `cover-src` 二选一，`cover-src` 优先）",
       "extra": "标题右侧扩展区",
-      "title": "标题富内容插槽，有内容时覆盖 title 属性文案"
+      "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
+      "avatar": "Meta 头像位（header 左置，配合 description 成「头像+标题+副文」形态）",
+      "description": "Meta 副文富内容（与 description 属性互斥，slot 优先）",
+      "footer": "独立底条（与 actions 操作区分离）"
     }
   },
   "oas-carousel": {
@@ -498,10 +520,15 @@
   "oas-collapse": {
     "attrs": {
       "accordion": "手风琴模式，同时仅展开一项",
-      "active": "展开项 `name` 集合（逗号分隔）"
+      "active": "展开项 `name` 集合（逗号分隔）",
+      "variant": "形态：`outlined`（默认，带边框圆角容器）/ `borderless`（无边框幽灵形态）",
+      "icon-placement": "展开图标位置：`start`（标题左侧）/ `end`（默认，右侧）；item 可单独覆盖",
+      "default-active": "非受控初始展开集合（`name` 逗号分隔）：首帧初值，之后组件自管；`active` 属性在场时为受控",
+      "heading-level": "面板标题语义层级 `1`-`6` / `none`（默认）：1-6 时标题区挂 heading 角色与 aria-level（无障碍）"
     },
     "events": {
-      "oas-change": "展开状态变化，`detail: { active: string[] }`"
+      "oas-change": "展开状态变化，`detail: { active: string[] }`",
+      "oas-before-collapse": "展开/收起前派发（cancelable），`detail: { name, next }`；`preventDefault()` 阻止本次切换（expandAll/collapseAll 不触发）"
     },
     "slots": {}
   },
@@ -509,10 +536,20 @@
     "attrs": {
       "header": "面板标题",
       "name": "面板唯一标识",
-      "open": "是否展开（由容器托管）"
+      "open": "是否展开（由容器托管）",
+      "disabled": "禁用面板：不可聚焦、不可点击（方法 expandAll 跳过）",
+      "no-collapse": "强锁展开态：展开后点击自身不收起（不影响其他面板开合）",
+      "destroy-on-collapse": "收起时销毁面板内容（再次展开重新挂载；收起动画随之跳过）",
+      "force-render": "初始即渲染面板内容（默认收起态不渲染）",
+      "icon-placement": "覆盖容器设置的展开图标位置（`start` / `end`）",
+      "heading-level": "覆盖容器设置的标题语义层级（`1`-`6` / `none`）"
     },
     "events": {},
-    "slots": {}
+    "slots": {
+      "header": "面板头富内容（与 header 属性互斥，slot 优先；标题内交互元素请自行 stopPropagation）",
+      "extra": "面板头右侧操作区（内部点击不触发展开收起）",
+      "template[slot=\"toggle\"]": "自定义展开图标模板（缺省为内建箭头）"
+    }
   },
   "oas-color-picker": {
     "attrs": {
@@ -729,20 +766,27 @@
   "oas-descriptions": {
     "attrs": {
       "column": "每行列数",
-      "title": "标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\""
+      "title": "标题（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot=\"title\"",
+      "layout": "布局方向：`horizontal`（默认，label 与内容同行）/ `vertical`（label 在上内容在下）",
+      "bordered": "边框表格形态：网格线成表 + label 格淡底色",
+      "colon": "label 后显示冒号（默认 false）",
+      "size": "尺寸档位：`small` / `medium`（默认）/ `large`（padding 与字号联动）"
     },
     "events": {},
     "slots": {
-      "title": "标题富内容插槽，有内容时覆盖 title 属性文案"
+      "title": "标题富内容插槽，有内容时覆盖 title 属性文案",
+      "extra": "标题同排右侧操作区"
     }
   },
   "oas-descriptions-item": {
     "attrs": {
-      "label": "字段标签"
+      "label": "字段标签",
+      "span": "跨列数（正整数，默认 1；超出剩余列数时网格自动换行起占）"
     },
     "events": {},
     "slots": {
-      "": "字段内容"
+      "": "字段内容",
+      "label": "label 富内容（图标+文字等；与 label 属性互斥，slot 优先）"
     }
   },
   "oas-divider": {
@@ -1123,12 +1167,22 @@
       "lazy": "懒加载：图片进入视口才发起加载（IntersectionObserver）；已位于视口内立即加载；环境不支持时退化为立即加载",
       "placeholder": "加载完成前显示浅灰占位",
       "preview": "开启内置预览：点击放大 + 缩放/旋转/下载 + Esc 关闭 + 焦点陷阱",
-      "src": "图片地址"
+      "src": "图片地址",
+      "preview-src-list": "图集预览：URL JSON 数组，点开后 prev/next 翻页 + 页码 + 键盘 ←→",
+      "preview-src": "预览原图 URL（缩略图与原图分离；缺省用 `src`）",
+      "preview-open": "受控预览开合（属性在场受控，配合 `oas-preview-change` 双向；另见 `openPreview()` 方法）",
+      "infinite": "图集首尾循环切换"
     },
     "events": {
-      "oas-preview": "打开预览浮层，`detail: { src }`；浮层关闭不派发事件"
+      "oas-preview": "打开预览浮层，`detail: { src }`；浮层关闭不派发事件",
+      "oas-load": "图片加载成功，`detail: { src }`",
+      "oas-error": "图片最终失败（回退链耗尽），`detail: { src }`",
+      "oas-preview-change": "预览开合变化，`detail: { open }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"placeholder\"]": "自定义加载占位内容（缺省为浅灰占位 + 文案）",
+      "template[slot=\"error\"]": "自定义失败占位内容（主图与图集预览失败位复用）"
+    }
   },
   "oas-input": {
     "attrs": {

@@ -7,6 +7,12 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "span",
+      "type": "string",
+      "default": "1",
+      "observed": true
     }
   ],
   "props": [],
@@ -14,6 +20,9 @@
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "label"
     }
   ],
   "unresolved": []

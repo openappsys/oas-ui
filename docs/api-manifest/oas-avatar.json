@@ -46,13 +46,50 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "shape",
+      "observed": true
+    },
+    {
+      "name": "fallback",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "fit",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "color",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
-  "events": [],
+  "events": [
+    {
+      "name": "oas-trigger",
+      "detail": "{ source: this }"
+    },
+    {
+      "name": "oas-error",
+      "detail": "{ src: failedSrc }"
+    }
+  ],
   "slots": [
     {
       "name": "fallback"
+    },
+    {
+      "name": "icon"
+    },
+    {
+      "name": "trigger"
     }
   ],
   "unresolved": []

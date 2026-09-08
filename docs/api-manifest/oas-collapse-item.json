@@ -14,18 +14,49 @@
     },
     {
       "name": "open",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "disabled",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "icon-placement",
+      "observed": true
+    },
+    {
+      "name": "heading-level",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "destroy-on-collapse",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "force-render",
+      "type": "boolean",
       "observed": true
     }
   ],
   "props": [],
-  "events": [
-    {
-      "name": "oas-collapse-item-click"
-    }
-  ],
+  "events": [],
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "extra"
+    },
+    {
+      "name": "header"
+    },
+    {
+      "name": "template[slot=\"toggle\"]"
     }
   ],
   "unresolved": []

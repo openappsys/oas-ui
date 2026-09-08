@@ -4,13 +4,31 @@
   "attrs": [
     {
       "name": "active",
-      "type": "string",
-      "default": "",
       "observed": true
     },
     {
       "name": "accordion",
       "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "variant",
+      "observed": true
+    },
+    {
+      "name": "icon-placement",
+      "type": "string",
+      "default": "end",
+      "observed": true
+    },
+    {
+      "name": "heading-level",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "default-active",
       "observed": true
     }
   ],
@@ -18,7 +36,11 @@
   "events": [
     {
       "name": "oas-change",
-      "detail": "{ active: [...active] }"
+      "detail": "{ active: next }"
+    },
+    {
+      "name": "oas-before-collapse",
+      "detail": "{ name, next }"
     }
   ],
   "slots": [

@@ -48,6 +48,20 @@
   flex-direction: column;
   gap: var(--oas-space-4);
 }
+.album-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--oas-space-3);
+}
+.album-grid oas-image {
+  display: block;
+}
+.album-grid oas-image::part(image) {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+}
 </style>
 
 ## 占位与兜底
@@ -88,9 +102,126 @@
 <DemoBlock title="点击预览（内置浮层）">
   <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTlhZWY1Jy8+PC9zdmc+" alt="可预览图片"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-    点击图片打开全屏预览浮层：工具栏支持放大/缩小/旋转/下载，Esc 或点击遮罩关闭；打开时聚焦关闭按钮，关闭后还原焦点。派发 <code>oas-preview</code> 事件（detail 含 src）。
+    点击图片打开全屏预览浮层：工具栏支持放大/缩小/旋转/水平翻转/垂直翻转/下载，放大后可拖拽平移、滚动滚轮缩放；Esc 或点击遮罩关闭；打开时聚焦关闭按钮，关闭后还原焦点。派发 <code>oas-preview</code> 事件（detail 含 src）。
   </p>
 </DemoBlock>
+
+预览浮层打开时挂载到 <code>document.body</code>（portal），规避组件位于 <code>transform</code>/<code>filter</code> 祖先内时 <code>position: fixed</code> 失效的问题；portal 期间 <code>::part(preview-*)</code> 无法从宿主穿透，定制请走 CSS 变量。
+
+## 图集预览
+
+<DemoBlock title="图集预览（多图翻页）">
+  <oas-image id="image-gallery" preview src="https://picsum.photos/seed/isui-gallery-1/600/300" preview-src-list='["https://picsum.photos/seed/isui-gallery-1/1200/600","https://picsum.photos/seed/isui-gallery-2/1200/600","https://picsum.photos/seed/isui-gallery-3/1200/600","https://picsum.photos/seed/isui-gallery-4/1200/600"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYzRiNWU1Jy8+PC9zdmc+" alt="图集"></oas-image>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+    设置 <code>preview-src-list</code>（JSON URL 数组）进入图集模式：点击后可用两侧箭头、工具栏翻页按钮或键盘 ←→ 翻页，页码指示「n/total」；某张加载失败显示失败占位（复用 <code>error</code> 插槽内容）而非空白。
+  </p>
+</DemoBlock>
+
+<DemoBlock title="无限循环（infinite）">
+  <oas-image id="image-gallery-infinite" preview infinite src="https://picsum.photos/seed/isui-loop-1/600/300" preview-src-list='["https://picsum.photos/seed/isui-loop-1/1200/600","https://picsum.photos/seed/isui-loop-2/1200/600","https://picsum.photos/seed/isui-loop-3/1200/600"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjOTVjN2NlJy8+PC9zdmc+" alt="循环图集"></oas-image>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+    加 <code>infinite</code> 后翻页首尾循环：最后一张再「下一张」回到第一张，第一张再「上一张」跳到最后一张。
+  </p>
+</DemoBlock>
+
+## 缩略图与原图分离
+
+<DemoBlock title="preview-src（缩略图与原图分离）">
+  <oas-image preview src="https://picsum.photos/seed/isui-thumb/240/150" preview-src="https://picsum.photos/seed/isui-thumb/1600/1000" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="缩略图与原图分离"></oas-image>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+    列表内显示 <code>src</code> 缩略图，点开预览时加载 <code>preview-src</code> 指定的高清原图（下载地址同步指向原图）。
+  </p>
+</DemoBlock>
+
+## 受控预览
+
+<DemoBlock title="受控预览（preview-open + openPreview()）">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-3); align-items: center; flex-wrap: wrap">
+    <oas-button id="image-controlled-open">打开预览</oas-button>
+    <oas-image id="image-controlled" preview src="https://picsum.photos/seed/isui-controlled/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZDRhNWU4Jy8+PC9zdmc+" alt="受控预览"></oas-image>
+    <span id="image-controlled-state" class="image-cap" style="margin: 0">当前状态：预览未打开</span>
+  </div>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    外部按钮调 <code>openPreview()</code> 方法打开；<code>preview-open</code> 属性在场时受控当前开合态——内部开合（点击/Esc/关闭按钮）会反射回该属性并派发 <code>oas-preview-change</code>（detail <code>{ open }</code>），外部增删该属性同样驱动开合（双向同步）。
+  </p>
+</DemoBlock>
+
+## 加载事件
+
+<DemoBlock title="加载事件（oas-load / oas-error）">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap; align-items: flex-start">
+    <div>
+      <p class="image-cap">加载成功 → oas-load</p>
+      <oas-image id="image-events-ok" class="fit-demo" src="https://picsum.photos/seed/isui-events-ok/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZWViNmZmJy8+PC9zdmc+" alt="事件示例（成功）"></oas-image>
+    </div>
+    <div>
+      <p class="image-cap">加载失败 → oas-error</p>
+      <oas-image id="image-events-bad" class="fit-demo" src="https://invalid.example.com/events-missing.png" alt="事件示例（失败）"></oas-image>
+    </div>
+  </div>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    主图加载成功派发 <code>oas-load</code>、最终失败派发 <code>oas-error</code>（detail 均含 <code>src</code>）；<code>fallback</code> 重试期间不派发 <code>oas-error</code>，兜底图也失败时才派发（detail.src 为兜底图地址）。
+  </p>
+</DemoBlock>
+
+## 自定义占位与失败插槽
+
+<DemoBlock title="自定义 placeholder / error 插槽">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap; align-items: flex-start">
+    <div>
+      <p class="image-cap">slot="placeholder"</p>
+      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-slot-ph/600/300" placeholder>
+        <template slot="placeholder"><span style="color: var(--oas-color-primary)">自定义加载占位…</span></template>
+      </oas-image>
+    </div>
+    <div>
+      <p class="image-cap">slot="error"</p>
+      <oas-image class="fit-demo" src="https://invalid.example.com/slot-missing.png" alt="自定义失败插槽">
+        <template slot="error"><span style="color: var(--oas-color-danger)">自定义失败内容（可放图标/按钮）</span></template>
+      </oas-image>
+    </div>
+  </div>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    <code>template[slot="placeholder"]</code> / <code>template[slot="error"]</code>（或任意带同名 slot 属性的元素）会被克隆进对应占位区，优先于内置文案；图集预览中某张加载失败也复用 <code>error</code> 插槽内容。
+  </p>
+</DemoBlock>
+
+## 翻转
+
+<DemoBlock title="翻转（flipX / flipY）">
+  <oas-image preview src="https://picsum.photos/seed/isui-flip/900/500" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc5MDAnIGhlaWdodD0nNTAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjBjNWE4Jy8+PC9zdmc+" alt="可翻转图片"></oas-image>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    工具栏提供「水平翻转」「垂直翻转」，与缩放、旋转、拖拽平移串接为同一份 transform 状态机，互不打断。
+  </p>
+</DemoBlock>
+
+## 拖拽与滚轮缩放
+
+<DemoBlock title="拖拽平移 + 滚轮缩放（大图/长图）">
+  <oas-image preview src="https://picsum.photos/seed/isui-pan/1800/1100" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAwJyBoZWlnaHQ9JzExMDAnPjxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbGw9JyM5ZGMzZTYnLz48L3N2Zz4=" alt="大图拖拽缩放"></oas-image>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    放大后在预览图上按住拖拽平移（超出可视范围的部分按边界自动收敛），在预览区滚动滚轮缩放（已阻断页面滚动）。缩放步进与上下限可经 CSS 变量覆盖（见下表）。
+  </p>
+</DemoBlock>
+
+## 相册墙组合
+
+<DemoBlock title="相册墙（多图各自进图集）">
+  <p class="image-cap">网格排布多张缩略图，点击任意一张从该张开始进入同一图集翻页（主图 src 命中列表时按该张起开）。</p>
+  <div class="album-grid" id="image-album">
+    <oas-image preview src="https://picsum.photos/seed/isui-album-1/800/500" preview-src-list='["https://picsum.photos/seed/isui-album-1/800/500","https://picsum.photos/seed/isui-album-2/800/500","https://picsum.photos/seed/isui-album-3/800/500","https://picsum.photos/seed/isui-album-4/800/500","https://picsum.photos/seed/isui-album-5/800/500","https://picsum.photos/seed/isui-album-6/800/500"]' alt="相册图片"></oas-image>
+  </div>
+</DemoBlock>
+
+### 预览缩放 CSS 变量
+
+| CSS 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `--oas-image-zoom-step` | `0.5` | 每次放大/缩小的步进（工具栏按钮与滚轮共用） |
+| `--oas-image-zoom-min` | `0.5` | 缩放下限 |
+| `--oas-image-zoom-max` | `3` | 缩放上限 |
+
+在宿主元素或主题层覆盖即生效，例如 `style="--oas-image-zoom-max: 5"`。
 
 <script setup>
 import { onMounted } from 'vue'
@@ -115,6 +246,55 @@ onMounted(async () => {
     message.success(`打开预览：${e.detail.src}`)
     console.log('oas-preview', e.detail.src)
   })
+
+  // 以下涉及 oas-image 的 property/方法调用，等升级完成再执行
+  //（preview 构建下升级前赋值 expando 会遮蔽后来的 setter，必须守卫）
+  await customElements.whenDefined('oas-image')
+
+  // 受控预览：外部按钮 openPreview() 打开；Esc/关闭按钮收起后反射回 preview-open 属性
+  // （hasAttribute 回读验证反射通道）+ oas-preview-change 回显
+  const controlled = document.querySelector('#image-controlled')
+  const controlledState = document.querySelector('#image-controlled-state')
+  document.querySelector('#image-controlled-open')?.addEventListener('click', () => {
+    controlled?.openPreview()
+  })
+  controlled?.addEventListener('oas-preview-change', (e) => {
+    const open = controlled.hasAttribute('preview-open')
+    if (controlledState) {
+      controlledState.textContent = `当前状态：${open ? '预览已打开' : '预览已关闭'}`
+    }
+    message.success(`oas-preview-change: ${e.detail.open}`)
+  })
+
+  // 加载事件演示
+  document.querySelector('#image-events-ok')?.addEventListener('oas-load', (e) => {
+    message.success(`oas-load：${e.detail.src}`)
+  })
+  document.querySelector('#image-events-bad')?.addEventListener('oas-error', (e) => {
+    message.error(`oas-error：${e.detail.src}`)
+  })
+
+  // 相册墙：网格多图共享同一图集，点击任意一张从该张开始
+  const ALBUM = [
+    'https://picsum.photos/seed/isui-album-1/800/500',
+    'https://picsum.photos/seed/isui-album-2/800/500',
+    'https://picsum.photos/seed/isui-album-3/800/500',
+    'https://picsum.photos/seed/isui-album-4/800/500',
+    'https://picsum.photos/seed/isui-album-5/800/500',
+    'https://picsum.photos/seed/isui-album-6/800/500',
+  ]
+  const album = document.querySelector('#image-album')
+  if (album) {
+    // 首张为静态声明（DemoBlock 代码可见性），其余 5 张数据驱动补齐
+    for (const url of ALBUM.slice(1)) {
+      const el = document.createElement('oas-image')
+      el.setAttribute('preview', '')
+      el.setAttribute('src', url)
+      el.setAttribute('preview-src-list', JSON.stringify(ALBUM))
+      el.setAttribute('alt', '相册图片')
+      album.appendChild(el)
+    }
+  }
 })
 </script>
 
@@ -127,13 +307,27 @@ onMounted(async () => {
 | `alt` | 替代文本 | — | — |
 | `fallback` | 加载失败时切换的兜底图地址；未设置则显示「图片加载失败」占位 | `string` | — |
 | `fit` | `object-fit` 值 | `string` | — |
+| `infinite` | 图集首尾循环切换 | `boolean` | — |
 | `lazy` | 懒加载：图片进入视口才发起加载（IntersectionObserver）；已位于视口内立即加载；环境不支持时退化为立即加载 | `boolean` | — |
 | `placeholder` | 加载完成前显示浅灰占位 | `boolean` | — |
 | `preview` | 开启内置预览：点击放大 + 缩放/旋转/下载 + Esc 关闭 + 焦点陷阱 | `boolean` | — |
+| `preview-open` | 受控预览开合（属性在场受控，配合 `oas-preview-change` 双向；另见 `openPreview()` 方法） | `boolean` | — |
+| `preview-src` | 预览原图 URL（缩略图与原图分离；缺省用 `src`） | `string` | — |
+| `preview-src-list` | 图集预览：URL JSON 数组，点开后 prev/next 翻页 + 页码 + 键盘 ←→ | `string` | — |
 | `src` | 图片地址 | `string` | — |
 
 ### 事件
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-error` | 图片最终失败（回退链耗尽），`detail: { src }` |
+| `oas-load` | 图片加载成功，`detail: { src }` |
 | `oas-preview` | 打开预览浮层，`detail: { src }`；浮层关闭不派发事件 |
+| `oas-preview-change` | 预览开合变化，`detail: { open }` |
+
+### 插槽
+
+| 名称 | 说明 |
+| --- | --- |
+| `template[slot="error"]` | 自定义失败占位内容（主图与图集预览失败位复用） |
+| `template[slot="placeholder"]` | 自定义加载占位内容（缺省为浅灰占位 + 文案） |

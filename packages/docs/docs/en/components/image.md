@@ -48,6 +48,20 @@ Set `object-fit` via `fit`, then fix the image container size with `::part(image
   flex-direction: column;
   gap: var(--oas-space-4);
 }
+.album-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--oas-space-3);
+}
+.album-grid oas-image {
+  display: block;
+}
+.album-grid oas-image::part(image) {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+}
 </style>
 
 ## Placeholder and Fallback
@@ -88,9 +102,126 @@ When the image fails to load, a "图片加载失败" placeholder is shown by def
 <DemoBlock title="Click to preview (built-in overlay)">
   <oas-image id="image-preview" src="https://picsum.photos/seed/isui-preview/600/300" preview fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTlhZWY1Jy8+PC9zdmc+" alt="Preview image"></oas-image>
   <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
-    Click the image to open a full-screen preview overlay: the toolbar supports zoom in / out, rotate, and download; press Esc or click the mask to close. The close button is focused when opened, and focus is restored on close. Emits <code>oas-preview</code> (detail contains src).
+    Click the image to open a full-screen preview overlay: the toolbar supports zoom in / out, rotate, flip horizontal / vertical, and download; after zooming in you can drag to pan and use the wheel to zoom. Press Esc or click the mask to close. The close button is focused when opened, and focus is restored on close. Emits <code>oas-preview</code> (detail contains src).
   </p>
 </DemoBlock>
+
+When opened, the preview overlay is mounted to <code>document.body</code> (portal) so <code>position: fixed</code> keeps working even when the component sits inside a <code>transform</code>/<code>filter</code> ancestor. While portaled, <code>::part(preview-*)</code> cannot pierce from the host — customize via CSS variables instead.
+
+## Gallery Preview
+
+<DemoBlock title="Gallery preview (multi-image paging)">
+  <oas-image id="image-gallery" preview src="https://picsum.photos/seed/isui-gallery-1/600/300" preview-src-list='["https://picsum.photos/seed/isui-gallery-1/1200/600","https://picsum.photos/seed/isui-gallery-2/1200/600","https://picsum.photos/seed/isui-gallery-3/1200/600","https://picsum.photos/seed/isui-gallery-4/1200/600"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYzRiNWU1Jy8+PC9zdmc+" alt="Gallery"></oas-image>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+    Set <code>preview-src-list</code> (a JSON array of URLs) to enter gallery mode: use the side arrows, the toolbar paging buttons, or ←→ keys to page through, with an "n/total" counter. If an image fails to load, a failure placeholder (reusing the <code>error</code> slot content) is shown instead of a blank stage.
+  </p>
+</DemoBlock>
+
+<DemoBlock title="Infinite loop (infinite)">
+  <oas-image id="image-gallery-infinite" preview infinite src="https://picsum.photos/seed/isui-loop-1/600/300" preview-src-list='["https://picsum.photos/seed/isui-loop-1/1200/600","https://picsum.photos/seed/isui-loop-2/1200/600","https://picsum.photos/seed/isui-loop-3/1200/600"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjOTVjN2NlJy8+PC9zdmc+" alt="Looping gallery"></oas-image>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+    With <code>infinite</code>, paging wraps around: "next" on the last image returns to the first, and "prev" on the first image jumps to the last.
+  </p>
+</DemoBlock>
+
+## Thumbnail vs. Original
+
+<DemoBlock title="preview-src (separate thumbnail and original)">
+  <oas-image preview src="https://picsum.photos/seed/isui-thumb/240/150" preview-src="https://picsum.photos/seed/isui-thumb/1600/1000" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Thumbnail and original"></oas-image>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+    The list shows the <code>src</code> thumbnail, while the preview loads the high-resolution original from <code>preview-src</code> (the download link points to the original as well).
+  </p>
+</DemoBlock>
+
+## Controlled Preview
+
+<DemoBlock title="Controlled preview (preview-open + openPreview())">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-3); align-items: center; flex-wrap: wrap">
+    <oas-button id="image-controlled-open">Open preview</oas-button>
+    <oas-image id="image-controlled" preview src="https://picsum.photos/seed/isui-controlled/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZDRhNWU4Jy8+PC9zdmc+" alt="Controlled preview"></oas-image>
+    <span id="image-controlled-state" class="image-cap" style="margin: 0">State: preview closed</span>
+  </div>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    The external button calls <code>openPreview()</code> to open; when <code>preview-open</code> is present it controls the open state — internal open/close (click / Esc / close button) reflects back to the attribute and emits <code>oas-preview-change</code> (detail <code>{ open }</code>), and adding/removing the attribute drives the overlay as well (two-way sync).
+  </p>
+</DemoBlock>
+
+## Load Events
+
+<DemoBlock title="Load events (oas-load / oas-error)">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap; align-items: flex-start">
+    <div>
+      <p class="image-cap">Load success → oas-load</p>
+      <oas-image id="image-events-ok" class="fit-demo" src="https://picsum.photos/seed/isui-events-ok/600/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZWViNmZmJy8+PC9zdmc+" alt="Event demo (success)"></oas-image>
+    </div>
+    <div>
+      <p class="image-cap">Load failure → oas-error</p>
+      <oas-image id="image-events-bad" class="fit-demo" src="https://invalid.example.com/events-missing.png" alt="Event demo (failure)"></oas-image>
+    </div>
+  </div>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    The main image emits <code>oas-load</code> on success and <code>oas-error</code> on final failure (both details contain <code>src</code>); during a <code>fallback</code> retry no <code>oas-error</code> is emitted — it fires only when the fallback also fails (detail.src is the fallback URL).
+  </p>
+</DemoBlock>
+
+## Custom Placeholder and Error Slots
+
+<DemoBlock title="Custom placeholder / error slots">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-4); flex-wrap: wrap; align-items: flex-start">
+    <div>
+      <p class="image-cap">slot="placeholder"</p>
+      <oas-image class="fit-demo" src="https://picsum.photos/seed/isui-slot-ph/600/300" placeholder>
+        <template slot="placeholder"><span style="color: var(--oas-color-primary)">Custom loading placeholder…</span></template>
+      </oas-image>
+    </div>
+    <div>
+      <p class="image-cap">slot="error"</p>
+      <oas-image class="fit-demo" src="https://invalid.example.com/slot-missing.png" alt="Custom error slot">
+        <template slot="error"><span style="color: var(--oas-color-danger)">Custom error content (icons/buttons allowed)</span></template>
+      </oas-image>
+    </div>
+  </div>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    <code>template[slot="placeholder"]</code> / <code>template[slot="error"]</code> (or any element carrying the same <code>slot</code> attribute) is cloned into the corresponding placeholder area, taking precedence over the built-in text; a failed image inside a gallery preview reuses the <code>error</code> slot content as well.
+  </p>
+</DemoBlock>
+
+## Flip
+
+<DemoBlock title="Flip (flipX / flipY)">
+  <oas-image preview src="https://picsum.photos/seed/isui-flip/900/500" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc5MDAnIGhlaWdodD0nNTAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjZjBjNWE4Jy8+PC9zdmc+" alt="Flippable image"></oas-image>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    The toolbar provides "Flip horizontal" and "Flip vertical", composed into the same transform state machine as zoom, rotate, and pan — they compose without interfering with each other.
+  </p>
+</DemoBlock>
+
+## Drag to Pan and Wheel to Zoom
+
+<DemoBlock title="Drag to pan + wheel to zoom (large images)">
+  <oas-image preview src="https://picsum.photos/seed/isui-pan/1800/1100" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxODAwJyBoZWlnaHQ9JzExMDAnPjxyZWN0IHdpZHRoPScxMDAlJyBoZWlnaHQ9JzEwMCUnIGZpbGw9JyM5ZGMzZTYnLz48L3N2Zz4=" alt="Large image pan and zoom"></oas-image>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    After zooming in, press and drag on the preview image to pan (clamped to the visible bounds). Scroll the wheel inside the preview area to zoom (page scrolling is blocked). Zoom step and limits can be overridden with CSS variables (see the table below).
+  </p>
+</DemoBlock>
+
+## Photo Wall Composition
+
+<DemoBlock title="Photo wall (each image enters the same gallery)">
+  <p class="image-cap">A grid of thumbnails: clicking any one opens the shared gallery starting from that image (opening index matches the thumbnail src against the list).</p>
+  <div class="album-grid" id="image-album">
+    <oas-image preview src="https://picsum.photos/seed/isui-album-1/800/500" preview-src-list='["https://picsum.photos/seed/isui-album-1/800/500","https://picsum.photos/seed/isui-album-2/800/500","https://picsum.photos/seed/isui-album-3/800/500","https://picsum.photos/seed/isui-album-4/800/500","https://picsum.photos/seed/isui-album-5/800/500","https://picsum.photos/seed/isui-album-6/800/500"]' alt="Album image"></oas-image>
+  </div>
+</DemoBlock>
+
+### Preview Zoom CSS Variables
+
+| CSS Variable | Default | Description |
+| --- | --- | --- |
+| `--oas-image-zoom-step` | `0.5` | Zoom in/out step (shared by toolbar buttons and the wheel) |
+| `--oas-image-zoom-min` | `0.5` | Zoom lower bound |
+| `--oas-image-zoom-max` | `3` | Zoom upper bound |
+
+Override them on the host element or at the theme level, e.g. `style="--oas-image-zoom-max: 5"`.
 
 <script setup>
 import { onMounted } from 'vue'
@@ -115,6 +246,56 @@ onMounted(async () => {
     message.success(`Preview opened: ${e.detail.src}`)
     console.log('oas-preview', e.detail.src)
   })
+
+  // Everything below touches oas-image properties/methods — wait until the
+  // element is upgraded (pre-upgrade expando assignment would shadow setters)
+  await customElements.whenDefined('oas-image')
+
+  // Controlled preview: external button opens via openPreview(); closing (Esc/close button) reflects back
+  // to the preview-open attribute (hasAttribute read-back proves the reflection) + oas-preview-change echoes state
+  const controlled = document.querySelector('#image-controlled')
+  const controlledState = document.querySelector('#image-controlled-state')
+  document.querySelector('#image-controlled-open')?.addEventListener('click', () => {
+    controlled?.openPreview()
+  })
+  controlled?.addEventListener('oas-preview-change', (e) => {
+    const open = controlled.hasAttribute('preview-open')
+    if (controlledState) {
+      controlledState.textContent = `State: preview ${open ? 'open' : 'closed'}`
+    }
+    message.success(`oas-preview-change: ${e.detail.open}`)
+  })
+
+  // Load event demos
+  document.querySelector('#image-events-ok')?.addEventListener('oas-load', (e) => {
+    message.success(`oas-load: ${e.detail.src}`)
+  })
+  document.querySelector('#image-events-bad')?.addEventListener('oas-error', (e) => {
+    message.error(`oas-error: ${e.detail.src}`)
+  })
+
+  // Photo wall: grid of thumbnails sharing one gallery; clicking any image
+  // opens the gallery starting from that image
+  const ALBUM = [
+    'https://picsum.photos/seed/isui-album-1/800/500',
+    'https://picsum.photos/seed/isui-album-2/800/500',
+    'https://picsum.photos/seed/isui-album-3/800/500',
+    'https://picsum.photos/seed/isui-album-4/800/500',
+    'https://picsum.photos/seed/isui-album-5/800/500',
+    'https://picsum.photos/seed/isui-album-6/800/500',
+  ]
+  const album = document.querySelector('#image-album')
+  if (album) {
+    // First image is declared statically (DemoBlock code visibility); the rest are data-driven
+    for (const url of ALBUM.slice(1)) {
+      const el = document.createElement('oas-image')
+      el.setAttribute('preview', '')
+      el.setAttribute('src', url)
+      el.setAttribute('preview-src-list', JSON.stringify(ALBUM))
+      el.setAttribute('alt', 'Album image')
+      album.appendChild(el)
+    }
+  }
 })
 </script>
 
@@ -127,13 +308,27 @@ onMounted(async () => {
 | `alt` | Alternative text | — | — |
 | `fallback` | Fallback image URL to switch to on load failure; when not set, shows the "图片加载失败" placeholder | `string` | — |
 | `fit` | `object-fit` value | `string` | — |
+| `infinite` | Loop around the first/last gallery image | `boolean` | — |
 | `lazy` | Lazy load: the image starts loading only when it enters the viewport (IntersectionObserver); loads immediately when already in the viewport; falls back to eager loading when unsupported | `boolean` | — |
 | `placeholder` | Show a light gray placeholder before the image finishes loading | `boolean` | — |
 | `preview` | Enable built-in preview: click to zoom + zoom/rotate/download + Esc to close + focus trap | `boolean` | — |
+| `preview-open` | Controlled preview open state (controlled when present, two-way with `oas-preview-change`; see also `openPreview()`) | `boolean` | — |
+| `preview-src` | Original image URL for preview (thumbnail/original separation; falls back to `src`) | `string` | — |
+| `preview-src-list` | Gallery preview: JSON array of URLs; prev/next paging + counter + keyboard ←→ after opening | `string` | — |
 | `src` | Image URL | `string` | — |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
+| `oas-error` | Image failed finally (fallback chain exhausted), `detail: { src }` |
+| `oas-load` | Image loaded successfully, `detail: { src }` |
 | `oas-preview` | Preview overlay opened, `detail: { src }`; closing the overlay does not emit an event |
+| `oas-preview-change` | Preview open state changed, `detail: { open }` |
+
+### Slots
+
+| Name | Description |
+| --- | --- |
+| `template[slot="error"]` | Custom error placeholder content (shared by the main image and gallery preview failures) |
+| `template[slot="placeholder"]` | Custom loading placeholder content (gray block + text by default) |

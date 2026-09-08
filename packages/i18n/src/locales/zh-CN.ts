@@ -166,6 +166,8 @@ export const zhCN = {
   'image.defaultAlt': '图片',
   // avatar（头像）
   'avatar.defaultAlt': '头像',
+  'avatar.changeAvatar': '更换头像',
+  'avatar.foldedMembers': '全部成员',
   // typography（排版）
   'typography.copy': '复制',
   // tag（标签）
@@ -279,6 +281,11 @@ export const zhCN = {
   'image.preview.rotate': '旋转',
   'image.preview.download': '下载',
   'image.preview.alt': '图片预览',
+  'image.preview.flipX': '水平翻转',
+  'image.preview.flipY': '垂直翻转',
+  'image.preview.prev': '上一张',
+  'image.preview.next': '下一张',
+  'image.preview.progress': '第 {index} 张，共 {total} 张',
   // qrcode（二维码）
   'qrcode.image': '二维码',
   'qrcode.empty': '暂无内容',

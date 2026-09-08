@@ -115,6 +115,12 @@ const EXEMPT_EVENTS = new Set([
   'oas-limit-blocked',
 ])
 
+// 容器托管的反射属性（由父组件按 active/受控集合写回，非宿主直驱 API）：豁免静态演示要求
+// key = demo 页组件名，value = 豁免的属性名
+const EXEMPT_ATTRS: Record<string, string[]> = {
+  collapse: ['open'], // oas-collapse-item 的 open 由容器按展开集合写回（API 表已注明「由容器托管」）
+}
+
 // manifest 的 tag 与真实注册 tag 不一致的组件（demo 页用真实 tag 渲染）
 const WAIT_TAGS: Record<string, string[]> = {
   typography: ['oas-text', 'oas-title', 'oas-paragraph'],
@@ -578,6 +584,13 @@ const COMPONENT_STEPS: Record<string, Array<[string, string, string?]>> = {
     ['oas-theme-editor input[type="number"]', 'fill:13', '改数字 token → oas-change'],
   ],
   anchor: [['oas-anchor [part="link"]', 'click', '点锚点 → oas-change（组件已 preventDefault）']],
+  avatar: [
+    [
+      'oas-avatar [part="trigger"]',
+      'domclick',
+      '点换头像遮罩（hover/focus 才显形，DOM click 直达）→ oas-trigger',
+    ],
+  ],
   'bottom-navigation': [
     ['oas-bottom-navigation [part="tab"]', 'click:n1', '点非激活 tab → oas-change'],
   ],
@@ -937,7 +950,8 @@ for (const [name, m] of Object.entries(manifest)) {
         'utf8',
       )
       const demoRegion = md.split(/^##\s*API/m)[0] ?? md
-      const missing = m.attrs.filter((a) => !attrDemoedInMd(demoRegion, a))
+      const exempt = new Set(EXEMPT_ATTRS[name] ?? [])
+      const missing = m.attrs.filter((a) => !exempt.has(a) && !attrDemoedInMd(demoRegion, a))
       expect(missing, `未演示属性: ${missing.join(', ')}`).toEqual([])
     })
 

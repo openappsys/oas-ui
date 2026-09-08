@@ -348,7 +348,11 @@ describe('data 展示组件 DSD 真水合批次 3', () => {
     img.addEventListener('oas-preview', (e: Event) => (imgDetail = (e as CustomEvent).detail))
     img.shadowRoot!.querySelector<HTMLElement>('.previewable')!.click()
     expect(imgDetail).toEqual({ src: '/a.png' })
-    expect(img.shadowRoot!.querySelector('.preview-mask')!.hasAttribute('hidden')).toBe(false)
+    // 预览打开后遮罩 teleport 到 body 下 portal host（规避 transform 祖先致 fixed 失效）
+    const pvPortal = document.querySelector('[data-oas-image-preview-portal]')
+    const pvMask = (pvPortal?.shadowRoot?.querySelector('.preview-mask') ??
+      img.shadowRoot!.querySelector('.preview-mask'))!
+    expect(pvMask.hasAttribute('hidden')).toBe(false)
   })
 
   it('数据通道：chart.data / virtual-list.items property 单向反射 attribute，非法 JSON 容错空态', () => {
