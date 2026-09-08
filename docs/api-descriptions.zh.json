@@ -360,16 +360,21 @@
   "oas-calendar": {
     "attrs": {
       "disabledDate": "禁用回调（property）",
-      "max": "可选范围（ISO 日期）",
-      "min": "可选范围（ISO 日期）",
+      "disabled": "整体禁用：置灰并停止全部交互（点选/翻页/键盘）",
+      "first-day-of-week": "周起始覆写：`0`（周日）～`6`（周六）；缺省随 locale（中文周一、其余周日）",
+      "max": "可选范围（ISO 日期）；翻页到整月越界时导航钮自动置灰",
+      "min": "可选范围（ISO 日期）；翻页到整月越界时导航钮自动置灰",
       "mode": "`month` / `year`（年模式选中月份后自动切回月视图）",
+      "page-show-date": "面板月锚点（ISO `yyyy-MM` 或 `yyyy-MM-dd`）：初始/受控锚定显示的月份，优先级高于 value；移除后回到 value 所在月",
+      "readonly": "只读：可翻页浏览/钻取面板，点选与键盘 Enter 不提交",
       "show-week-number": "显示 ISO 周号列",
       "value": "选中值（ISO）"
     },
     "events": {
       "oas-cell-render": "每个日单元格渲染时派发，`detail: { date, element }`（element 为日按钮，宿主可追加标记/徽标/富文本）",
       "oas-change": "选中变化，`detail: { value }`",
-      "oas-mode-change": "年模式选中月份自动切回月视图时派发，`detail: { mode }`"
+      "oas-mode-change": "年模式选中月份自动切回月视图时派发，`detail: { mode }`",
+      "oas-panel-change": "用户翻页/选月/跳月使面板所在月份变化时派发，`detail: { date }`（date 为变化后面板首日）"
     },
     "slots": {
       "template[slot=\"cell\"]": "日单元格静态模板，克隆到每个日按钮；`[data-cell-date]` 节点自动绑定日期数字"
@@ -1312,13 +1317,34 @@
       "options": "选项，JSON 数组 `[{ label, value }]`",
       "placeholder": "占位提示",
       "prefix": "触发前缀",
-      "value": "值（受控，完整文本）"
+      "value": "值（受控，完整文本）",
+      "readonly": "只读（可聚焦可读，不弹建议面板）",
+      "clearable": "清空按钮（清空全部内容并派 oas-clear）",
+      "loading": "建议面板加载态（远程搜索时；配 oas-search 使用）",
+      "split": "提及项与后文的分隔符（默认空格；后文已分隔则不重复补）",
+      "autosize": "自适应高度（配 min-rows/max-rows）",
+      "min-rows": "最小行数（autosize 下生效）",
+      "max-rows": "最大行数（autosize 下生效；`\"0\"` 不封顶）",
+      "placement": "建议面板方向：`auto`（默认）/ `top` / `bottom`",
+      "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
+      "status": "校验态：`error` / `warning` / `success`",
+      "variant": "形态：`outlined`（默认）/ `filled` / `borderless`"
     },
     "events": {
       "oas-change": "插入后文本变化，`detail: { value }`（完整文本）",
-      "oas-select": "选中建议项，`detail: { value, label }`"
+      "oas-select": "选中建议项，`detail: { value, label }`",
+      "oas-input": "输入时派发（IME 组合期不派发），`detail: { value }`",
+      "oas-search": "触发符扫描到待选时派发（远程搜索钩子），`detail: { query, prefix }`",
+      "oas-focus": "聚焦时派发",
+      "oas-blur": "失焦时派发",
+      "oas-option-render": "选项渲染时派发（富选项通道），`detail: { index, option, element }`",
+      "oas-clear": "清空时派发，`detail: { value }`（清空前值）"
     },
-    "slots": {}
+    "slots": {
+      "header": "建议面板顶部内容",
+      "footer": "建议面板底部内容",
+      "template[slot=\"option\"]": "自定义选项模板（`[data-option-label]` 绑定）"
+    }
   },
   "oas-menu": {
     "attrs": {

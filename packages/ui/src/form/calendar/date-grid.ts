@@ -20,6 +20,8 @@ export interface GridCell {
 export interface MonthGridRenderOptions {
   viewDate: Date
   locale: string
+  /** 周起始覆写（0-6，first-day-of-week）；缺省随 locale 推导 */
+  weekStart?: number
   /** 选中日期（multiple 多选场景为数组，所有选中日同样高亮） */
   selected?: Date | Date[] | null
   today?: Date
@@ -43,6 +45,13 @@ export function resolveLocale(el: Element): string {
 /** 周起始：中文语言系周一起始，其余默认周日 */
 export function getWeekStart(locale: string): 0 | 1 {
   return /^zh/i.test(locale) ? 1 : 0
+}
+
+/** 任意周起始归一化（0=周日 … 6=周六）；非有限值回退 0，负数/溢出回绕 */
+export function normalizeWeekStart(ws: number): number {
+  const n = Math.trunc(ws)
+  if (Number.isNaN(n)) return 0
+  return ((n % 7) + 7) % 7
 }
 
 export function startOfDay(d: Date): Date {
@@ -76,6 +85,22 @@ export function addYears(d: Date, n: number): Date {
   return new Date(d.getFullYear() + n, d.getMonth(), 1)
 }
 
+/** 月份平移（保留日序，目标月日数不足时钳制到月末，如 3-31 → 2-28） */
+export function addMonthsClamped(d: Date, n: number): Date {
+  const day = d.getDate()
+  const target = new Date(d.getFullYear(), d.getMonth() + n, 1)
+  const dim = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate()
+  return new Date(target.getFullYear(), target.getMonth(), Math.min(day, dim))
+}
+
+/** 年份平移（保留月/日，2-29 跨平年时钳制到 2-28） */
+export function addYearsClamped(d: Date, n: number): Date {
+  const day = d.getDate()
+  const target = new Date(d.getFullYear() + n, d.getMonth(), 1)
+  const dim = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate()
+  return new Date(target.getFullYear(), target.getMonth(), Math.min(day, dim))
+}
+
 /** 本地时区 ISO 日期（yyyy-MM-dd），与 Date.toISOString() 的 UTC 语义区分 */
 export function toISODate(d: Date): string {
   const y = d.getFullYear()
@@ -104,9 +129,10 @@ export function parseISODate(s: string): Date | null {
 }
 
 /** 当月完整网格：按周起始展开为 4~6 行 x 7 列（含前后月补位），与周头一一对应 */
-export function buildMonthCells(viewDate: Date, locale: string): GridCell[] {
+export function buildMonthCells(viewDate: Date, locale: string, weekStart?: number): GridCell[] {
+  const ws = weekStart != null ? normalizeWeekStart(weekStart) : getWeekStart(locale)
   const first = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1)
-  const offset = (first.getDay() + 7 - getWeekStart(locale)) % 7
+  const offset = (first.getDay() + 7 - ws) % 7
   const start = new Date(first)
   start.setDate(first.getDate() - offset)
   const weeks = Math.ceil((offset + daysInMonth(first)) / 7)
@@ -128,8 +154,8 @@ export function isoWeek(d: Date): number {
   return Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
 }
 
-/** 周头标签（narrow，locale 感知），按周起始重排 */
-export function weekdayLabels(locale: string, weekStart: 0 | 1): string[] {
+/** 周头标签（narrow，locale 感知），按任意周起始（0-6）重排 */
+export function weekdayLabels(locale: string, weekStart: number): string[] {
   const names: string[] = []
   for (let i = 0; i < 7; i++) {
     // 2026-01-04 为周日，作为基准行
@@ -137,7 +163,8 @@ export function weekdayLabels(locale: string, weekStart: 0 | 1): string[] {
       new Intl.DateTimeFormat(locale, { weekday: 'narrow' }).format(new Date(2026, 0, 4 + i)),
     )
   }
-  return weekStart === 1 ? [...names.slice(1), names[0]!] : names
+  const ws = normalizeWeekStart(weekStart)
+  return [...names.slice(ws), ...names.slice(0, ws)]
 }
 
 /** 把时间钳制到 [min, max]（日精度） */
@@ -199,26 +226,47 @@ export function formatYear(d: Date, locale: string): string {
   return new Intl.DateTimeFormat(locale, { year: 'numeric' }).format(d)
 }
 
-/** 键盘网格移动：返回同网格内下一日期；方向键之外返回 null */
-export function moveGridDate(d: Date, key: string): Date | null {
-  const r = new Date(d)
+/**
+ * 键盘网格移动（方向键 + WAI-ARIA date grid 扩展键）：
+ * - ↑↓←→：±1 天 / ±7 天（跨月自动回绕）
+ * - Home/End：按生效周起始（weekStart，0-6）跳所在周首/末日
+ * - PageUp/PageDown：跳上一/下一月同日；Shift 时跳上一/下一年同日（月末钳制）
+ * 未识别的键返回 null。
+ */
+export function moveGridDate(
+  d: Date,
+  key: string,
+  weekStart = 0,
+  shift = false,
+): Date | null {
+  const ws = normalizeWeekStart(weekStart)
+  const y = d.getFullYear()
+  const m = d.getMonth()
+  const day = d.getDate()
   switch (key) {
     case 'ArrowLeft':
-      r.setDate(r.getDate() - 1)
-      break
+      return new Date(y, m, day - 1)
     case 'ArrowRight':
-      r.setDate(r.getDate() + 1)
-      break
+      return new Date(y, m, day + 1)
     case 'ArrowUp':
-      r.setDate(r.getDate() - 7)
-      break
+      return new Date(y, m, day - 7)
     case 'ArrowDown':
-      r.setDate(r.getDate() + 7)
-      break
+      return new Date(y, m, day + 7)
+    case 'Home': {
+      const offset = (d.getDay() + 7 - ws) % 7
+      return new Date(y, m, day - offset)
+    }
+    case 'End': {
+      const offset = (d.getDay() + 7 - ws) % 7
+      return new Date(y, m, day + (6 - offset))
+    }
+    case 'PageUp':
+      return shift ? addYearsClamped(d, -1) : addMonthsClamped(d, -1)
+    case 'PageDown':
+      return shift ? addYearsClamped(d, 1) : addMonthsClamped(d, 1)
     default:
       return null
   }
-  return r
 }
 
 /** 在容器中按 ISO 日期找日单元格按钮 */
@@ -240,8 +288,8 @@ export function setRovingTab(container: HTMLElement, date: Date): void {
  */
 export function renderMonthGrid(container: HTMLElement, opts: MonthGridRenderOptions): void {
   const { viewDate, locale, onSelect } = opts
-  const ws = getWeekStart(locale)
-  const cells = buildMonthCells(viewDate, locale)
+  const ws = opts.weekStart != null ? normalizeWeekStart(opts.weekStart) : getWeekStart(locale)
+  const cells = buildMonthCells(viewDate, locale, ws)
   const today = opts.today ? startOfDay(opts.today) : null
   const selectedList = (
     opts.selected ? (Array.isArray(opts.selected) ? opts.selected : [opts.selected]) : []
