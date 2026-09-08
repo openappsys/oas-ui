@@ -1,7 +1,12 @@
 {
   "className": "OASComment",
   "sourceFile": "packages/ui/src/data/comment/oas-comment.ts",
-  "attrs": [],
+  "attrs": [
+    {
+      "name": "align",
+      "observed": true
+    }
+  ],
   "props": [],
   "events": [],
   "slots": [
@@ -19,6 +24,12 @@
     },
     {
       "name": "content"
+    },
+    {
+      "name": "quote"
+    },
+    {
+      "name": "reply"
     },
     {
       "name": "time"

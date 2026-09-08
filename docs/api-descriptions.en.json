@@ -641,7 +641,9 @@
     }
   },
   "oas-comment": {
-    "attrs": {},
+    "attrs": {
+      "align": "Time/actions alignment: `left` (default) / `right` (logical properties, flips in RTL)"
+    },
     "events": {},
     "slots": {
       "": "Nested `oas-comment` child comments, automatically indented",
@@ -649,7 +651,9 @@
       "author": "Author name",
       "avatar": "Author avatar (can hold an `oas-avatar`)",
       "content": "Comment content",
-      "time": "Time"
+      "time": "Time",
+      "quote": "Quote area (before content, secondary text + left accent border)",
+      "reply": "Reply target area (under the author line, for \"reply to @someone\")"
     }
   },
   "oas-config-provider": {
@@ -1030,7 +1034,8 @@
   },
   "oas-equation": {
     "attrs": {
-      "code": "LaTeX subset source text"
+      "code": "LaTeX subset source text",
+      "display": "Display mode: `inline` (default, in-flow) / `block` (standalone centered block with margin-block)"
     },
     "events": {},
     "slots": {}
@@ -1100,7 +1105,9 @@
   "oas-gradient-text": {
     "attrs": {
       "direction": "Gradient direction (first argument of `linear-gradient`, e.g. `to right`, `135deg`)",
-      "gradient": "JSON color-stop array, e.g. `[\"#f00\",\"#00f\"]`; a single stop renders a solid color; missing / invalid values fall back to the default token gradient"
+      "gradient": "JSON color-stop array, e.g. `[\"#f00\",\"#00f\"]`; a single stop renders a solid color; missing / invalid values fall back to the default token gradient",
+      "animated": "Flowing animation (palindrome stops, seamless loop, period via `--oas-gradient-text-duration`; static under prefers-reduced-motion)",
+      "type": "Semantic color gradient: `primary` / `success` / `warning` / `danger` / `info` (token-derived two stops; explicit `gradient` wins)"
     },
     "events": {},
     "slots": {}
@@ -1388,9 +1395,16 @@
       "auto-scroll": "Auto-scroll to bottom on append (only when stuck to the bottom)",
       "empty-text": "Empty state text (overrides the locale default)",
       "line-number": "Show the left line number column",
-      "lines": "Log lines JSON string (attribute channel)"
+      "lines": "Log lines JSON string (attribute channel)",
+      "highlight": "Line highlight rules (JSON array): string = literal keyword; `{ text }` / `{ pattern, flags }` = regex; matches are wrapped with a mark background (warning token)",
+      "levels": "Line levels (JSON array, index-aligned with lines): info/success/warning/error (aliases like warn/fatal normalized), mapped to semantic color tokens",
+      "loading": "Loading state (viewport overlay + spinner + aria-busy)",
+      "offset-bottom": "Distance from the bottom that counts as reaching it (px, fires `oas-require-more` with from=bottom, default 0)",
+      "offset-top": "Distance from the top that counts as reaching it (px, fires `oas-require-more` with from=top, default 0)"
     },
-    "events": {},
+    "events": {
+      "oas-require-more": "Fired once when scrolling enters the top/bottom threshold edge (not repeatedly while staying, re-arms after leaving), `detail: { from: \"top\" | \"bottom\" }`; for loading history/new entries"
+    },
     "slots": {}
   },
   "oas-marquee": {
@@ -3055,9 +3069,24 @@
       "image": "Image watermark URL (takes precedence over `text` when present)",
       "opacity": "Watermark layer transparency (0–1, auto-clamped)",
       "repeat": "Boolean; when present the unit is tiled, otherwise a single unit is centered",
-      "text": "Text watermark content (either `text` or `image`)"
+      "text": "Text watermark content (either `text` or `image`)",
+      "color": "Watermark text color: 11 preset names (`--oas-preset-*`) or any CSS color; defaults to the primary text token",
+      "font-family": "Font family (default sans-serif)",
+      "font-size": "Font size in px (default 16)",
+      "font-weight": "Font weight (default 400)",
+      "gap": "Tile gap in px or JSON `[x,y]` (single value applies to both)",
+      "height": "Tile height in px (default 120)",
+      "movable": "Draggable watermark (drag delta writes back to the `offset` attribute)",
+      "offset": "Tiling start offset in px or JSON `[x,y]` (default gap/2, visually identical to the old centered mode)",
+      "rotate": "Rotation in degrees (default -30)",
+      "staggered": "Staggered layout (two-layer background, second layer offset by offset + gap/2; tiling mode only)",
+      "tamper-proof": "Tamper protection (default true): a MutationObserver re-mounts the layer when it is removed/modified and fires `oas-remove`; `\"false\"` disables it",
+      "width": "Tile width in px (default 240)",
+      "z-index": "Watermark layer z-index (default 2)"
     },
-    "events": {},
+    "events": {
+      "oas-remove": "Fired when tamper protection detects the layer being removed/modified, `detail: { type: \"removed\" | \"modified\" }`"
+    },
     "slots": {}
   },
   "oas-button-group-separator": {

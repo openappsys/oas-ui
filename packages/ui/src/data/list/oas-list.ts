@@ -300,7 +300,7 @@ export class OASList extends OASElement {
       if (dataActive) this.renderDataRows(dataItems, size, stripe)
     }
 
-    // 触底检测（arco 语义：挂载即查一次是否已触底）
+    // 触底检测（挂载即查一次是否已触底）
     if (maxHeight !== '') this.checkReachBottom()
   }
 
