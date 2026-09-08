@@ -48,6 +48,7 @@ register([
 ])
 // 特殊 value 通道
 register(['oas-transfer'], (el) => normalizeValue(el.getAttribute('model-value') ?? ''))
+register(['oas-dynamic-input'], (el) => normalizeValue(el.getAttribute('model-value') ?? ''))
 register(['oas-switch'], (el) => (el.hasAttribute('checked') ? 'true' : 'false'))
 
 /** 注册额外的表单控件（供自定义/未内置控件被 collectFields 收集）；返回注销函数 */
