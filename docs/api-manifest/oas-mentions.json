@@ -14,7 +14,7 @@
       "observed": true
     },
     {
-      "name": "prefix",
+      "name": "trigger",
       "default": "@",
       "observed": true
     },
@@ -94,6 +94,17 @@
       "type": "string",
       "default": "outlined",
       "observed": true
+    },
+    {
+      "name": "type",
+      "type": "string",
+      "default": "textarea",
+      "observed": true
+    },
+    {
+      "name": "whole",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
@@ -103,7 +114,7 @@
       "default": "[]"
     },
     {
-      "name": "prefix",
+      "name": "trigger",
       "type": "string | string[]"
     },
     {
@@ -133,12 +144,16 @@
       "detail": "{ index: idx, option, element: label }"
     },
     {
-      "name": "oas-select",
-      "detail": "{ value: option.value, label: option.label, option: { ...option }, prefix, }"
+      "name": "oas-whole-remove",
+      "detail": "{ value: next, option: { ...best.option }, prefix: best.prefix, }"
     },
     {
       "name": "oas-change",
       "detail": "{ value: next } | { value: '' }"
+    },
+    {
+      "name": "oas-select",
+      "detail": "{ value: option.value, label: option.label, option: { ...option }, prefix, }"
     },
     {
       "name": "oas-clear",

@@ -507,8 +507,8 @@ export class OASTreeSelect extends OASElement {
       'show-path',
       'separator',
       'expand-trigger',
-      'prefix',
-      'suffix',
+      'prefix-text',
+      'suffix-text',
     ]
   }
 
@@ -651,6 +651,8 @@ export class OASTreeSelect extends OASElement {
   }
 
   protected override update(): void {
+    this.normalizeLegacyAlias('prefix-text', 'prefix')
+    this.normalizeLegacyAlias('suffix-text', 'suffix')
     this.parseFieldNames()
     this.parseOptions()
     this.parseCache()
@@ -1212,9 +1214,9 @@ export class OASTreeSelect extends OASElement {
       const spinner = loading.querySelector('.loading-spinner')
       spinner?.setAttribute('aria-label', this.t('tree.loading'))
     }
-    // 前后缀：模板插槽优先，缺省回落属性文本；两者皆无则隐藏
-    this.fillAffix('.prefix', 'prefix', this.getAttr('prefix', ''))
-    this.fillAffix('.suffix', 'suffix', this.getAttr('suffix', ''))
+    // 前后缀：模板插槽优先，缺省回落属性文本（prefix-text/suffix-text）；两者皆无则隐藏
+    this.fillAffix('.prefix', 'prefix', this.getAttr('prefix-text', ''))
+    this.fillAffix('.suffix', 'suffix', this.getAttr('suffix-text', ''))
   }
 
   /** 面板头/尾插槽容器：有 template[slot] 则克隆填充并显示，否则隐藏 */

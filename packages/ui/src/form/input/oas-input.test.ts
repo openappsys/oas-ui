@@ -344,13 +344,13 @@ describe('OASInput', () => {
   })
 
   it('slot 有内容时 attribute 文本变更只更新 fallback，分发内容不受影响', async () => {
-    const el = mount({ prefix: '$' })
+    const el = mount({ 'prefix-text': '$' })
     const icon = document.createElement('span')
     icon.textContent = 'ICON'
     icon.setAttribute('slot', 'prefix')
     el.appendChild(icon)
     await new Promise((r) => setTimeout(r, 0))
-    el.setAttribute('prefix', '¥')
+    el.setAttribute('prefix-text', '¥')
     expect(slotOf(el, 'prefix').assignedNodes()).toContain(icon)
     expect(part(el, 'prefix').hidden).toBe(false)
     expect(el.hasAttribute('data-slot-prefix')).toBe(true)

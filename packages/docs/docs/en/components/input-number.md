@@ -53,16 +53,16 @@ Press and hold a stepper button for 800ms to enter auto-repeat: it steps every 1
 ## Prefix & Suffix
 
 <DemoBlock title="prefix / suffix">
-  <oas-input-number value="1280" prefix="¥" style="width: 160px"></oas-input-number>
-  <oas-input-number value="30" suffix="%" style="width: 160px"></oas-input-number>
-  <oas-input-number value="500" prefix="Qty" suffix="pcs" style="width: 180px"></oas-input-number>
+  <oas-input-number value="1280" prefix-text="¥" style="width: 160px"></oas-input-number>
+  <oas-input-number value="30" suffix-text="%" style="width: 160px"></oas-input-number>
+  <oas-input-number value="500" prefix-text="Qty" suffix-text="pcs" style="width: 180px"></oas-input-number>
 </DemoBlock>
 
-`prefix` / `suffix` are inline decorative texts (not part of value parsing); same-named slots also accept arbitrary content: `<span slot="prefix">…</span>`.
+`prefix-text` / `suffix-text` are inline decorative texts (not part of value parsing); same-named slots also accept arbitrary content: `<span slot="prefix">…</span>`. In plain HTML, the legacy `prefix` / `suffix` still work as aliases.
 
 <DemoBlock title="clearable + controls + suffix stacked">
-  <oas-input-number value="1280" clearable suffix="USD" style="width: 200px"></oas-input-number>
-  <oas-input-number value="42" clearable prefix="$" controls-position="both" style="width: 240px"></oas-input-number>
+  <oas-input-number value="1280" clearable suffix-text="USD" style="width: 200px"></oas-input-number>
+  <oas-input-number value="42" clearable prefix-text="$" controls-position="both" style="width: 240px"></oas-input-number>
 </DemoBlock>
 
 `clearable` / stepper controls / affixes compose freely: right-side elements lay out left-to-right as steppers → clear button → suffix, all embedded inside the input box, and the entered text yields by the combined width (`controls-position="both"` keeps the clear button / suffix inside the box, clear of the right `+` button).
@@ -227,13 +227,13 @@ onMounted(() => {
 | `min` | Range, out-of-range values are clamped automatically | `string` | — |
 | `placeholder` | Placeholder (participates in the aria-label fallback chain) | `string` | — |
 | `precision` | Number of decimal places | `string` | — |
-| `prefix` | Inline prefix text (slot="prefix" accepts any content; not part of value parsing) | `string` | — |
+| `prefix-text` | Inline prefix text (slot="prefix" accepts any content; not part of value parsing) | `string` | — |
 | `readonly` | Read-only: focusable, copyable, submittable; buttons disabled + aria-readonly, keyboard/wheel cannot change the value | `boolean` | — |
 | `size` | Size preset `sm` / `md` (default) / `lg`: control height and font scale | — | — |
 | `status` | Validation status: `error` / `warning` / `success` semantic border colors | — | — |
 | `step` | Step | `string` | `1` |
 | `step-strictly` | Strict stepping: committed value snaps to the nearest step multiple | `boolean` | — |
-| `suffix` | Inline suffix text (slot="suffix" likewise) | `string` | — |
+| `suffix-text` | Inline suffix text (slot="suffix" likewise) | `string` | — |
 | `value` | Current value (controlled) | `string` | — |
 | `wheel` | Wheel stepping while focused (up increments, down decrements; off by default to prevent accidental changes) | `boolean` | — |
 

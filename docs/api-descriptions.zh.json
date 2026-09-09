@@ -730,10 +730,10 @@
     "attrs": {
       "active": "受控暂停：`\"false\"` 停帧且不计时已走过时长，恢复后续走（缺省走表）",
       "format": "模板：`DD`/`D` 天、`HH`/`H` 时、`mm`/`m` 分、`ss`/`s` 秒、`SSS` 毫秒（含 SSS 时内部 50ms 刷新）",
-      "prefix": "显示值前置文案",
-      "suffix": "显示值后置文案",
       "title": "显示值上方标题（原生全局属性，渲染后吸收移除）",
-      "value": "倒计时总时长（毫秒）"
+      "value": "倒计时总时长（毫秒）",
+      "prefix-text": "显示值前置文案",
+      "suffix-text": "显示值后置文案"
     },
     "events": {
       "oas-change": "剩余显示值变化时节流派发，detail `{ value: 剩余毫秒 }`",
@@ -1223,12 +1223,10 @@
       "label": "可访问名称（`aria-label` 来源，未设时回退 `placeholder` → 内置文案「输入框」）",
       "maxlength": "最大输入长度（透传原生 maxlength）",
       "placeholder": "占位提示",
-      "prefix": "内嵌前置文案",
       "prefix-icon": "前置图标名",
       "readonly": "只读",
       "show-count": "显示字数统计（右下角，超限标 danger）",
       "show-password": "密码可见切换（`type=\"password\"` 时渲染眼睛按钮）",
-      "suffix": "内嵌后置文案",
       "suffix-icon": "后置图标名",
       "type": "原生 input 类型",
       "value": "值（受控）",
@@ -1240,7 +1238,9 @@
       "show-clear-on": "清除按钮显隐：`always`（默认常显）/ `hover` / `focus`",
       "auto-width": "宽度随内容自适应（mirror 测宽；空值回落 placeholder 宽），常配 auto-width-min/max 钳制",
       "auto-width-min": "auto-width 最小宽度 px（默认 72）",
-      "auto-width-max": "auto-width 最大宽度 px 或百分比（默认 100%）"
+      "auto-width-max": "auto-width 最大宽度 px 或百分比（默认 100%）",
+      "prefix-text": "内嵌前置文案（纯 HTML 可沿用遗留别名 prefix）",
+      "suffix-text": "内嵌后置文案（纯 HTML 可沿用遗留别名 suffix）"
     },
     "events": {
       "oas-clear": "点击清除，`detail: { originalEvent }`",
@@ -1269,8 +1269,6 @@
       "value": "当前值（受控）",
       "controls": "步进按钮显隐（缺省显示；`controls=\"false\"` 隐藏，键盘 ↑↓ 仍可步进）",
       "controls-position": "按钮位置：`right`（默认，右侧上下箭头）/ `both`（两侧 −/+，触屏计数器形态）",
-      "prefix": "内嵌前缀文案（slot=\"prefix\" 可分发任意内容，不参与数值解析）",
-      "suffix": "内嵌后缀文案（slot=\"suffix\" 同上）",
       "format": "Intl 风格声明式格式：`percent`（0.15→15%）/ `currency:USD` / `unit:GB`，跟随宿主 locale",
       "grouping": "千分位分组显示（解析时自动剥离分组符）",
       "size": "尺寸档位 `sm` / `md`（默认）/ `lg`：控高与字号联动",
@@ -1279,7 +1277,9 @@
       "placeholder": "占位文本（参与 aria-label 回退链）",
       "wheel": "聚焦时滚轮步进（上增下减；默认关防误触）",
       "step-strictly": "严格步进：提交值吸附最近 step 倍数",
-      "clearable": "有值时显示清除按钮（一键回空值态）"
+      "clearable": "有值时显示清除按钮（一键回空值态）",
+      "prefix-text": "内嵌前缀文案（slot=\"prefix\" 可分发任意内容，不参与数值解析）",
+      "suffix-text": "内嵌后缀文案（slot=\"suffix\" 同上）"
     },
     "events": {
       "oas-change": "步进或失焦变化，`detail: { value }`（数字）",
@@ -1436,7 +1436,6 @@
       "label": "可访问名称（默认走内置文案）",
       "options": "选项，JSON 数组 `[{ label, value }]`",
       "placeholder": "占位提示",
-      "prefix": "触发前缀",
       "value": "值（受控，完整文本）",
       "readonly": "只读（可聚焦可读，不弹建议面板）",
       "clearable": "清空按钮（清空全部内容并派 oas-clear）",
@@ -1448,17 +1447,21 @@
       "placement": "建议面板方向：`auto`（默认）/ `top` / `bottom`",
       "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
       "status": "校验态：`error` / `warning` / `success`",
-      "variant": "形态：`outlined`（默认）/ `filled` / `borderless`"
+      "variant": "形态：`outlined`（默认）/ `filled` / `borderless`",
+      "type": "形态：\textarea（默认）/ input（单行锁高，Enter 不换行）",
+      "whole": "整段删除：光标紧跟提及段按 Backspace 一次删除「prefix + 成员名」并派发 oas-whole-remove",
+      "trigger": "触发符：默认 @，支持单字符串或 JSON 数组 [\"@\",\"#\"] 多触发符并存"
     },
     "events": {
       "oas-change": "插入后文本变化，`detail: { value }`（完整文本）",
-      "oas-select": "选中建议项，`detail: { value, label }`",
+      "oas-select": "选中建议项，detail: { value, label, option, prefix }（option 为完整选项原对象）",
       "oas-input": "输入时派发（IME 组合期不派发），`detail: { value }`",
       "oas-search": "触发符扫描到待选时派发（远程搜索钩子），`detail: { query, prefix }`",
       "oas-focus": "聚焦时派发",
       "oas-blur": "失焦时派发",
       "oas-option-render": "选项渲染时派发（富选项通道），`detail: { index, option, element }`",
-      "oas-clear": "清空时派发，`detail: { value }`（清空前值）"
+      "oas-clear": "清空时派发，`detail: { value }`（清空前值）",
+      "oas-whole-remove": "整段删除提及项时派发，detail: { value, option, prefix }（option 为完整选项原对象）"
     },
     "slots": {
       "header": "建议面板顶部内容",
@@ -2300,11 +2303,11 @@
       "group-separator": "千分位分组（`\"false\"` 关闭）",
       "loading": "加载态（骨架占位）",
       "precision": "小数位（四舍五入）",
-      "prefix": "前后缀文案",
-      "suffix": "前后缀文案",
       "title": "数值上方标题（原生全局属性，渲染后吸收移除）",
       "trend": "趋势指示：`up`（涨，success 语义色）/ `down`（跌，danger 语义色）+ 箭头",
-      "value": "数值（数字字符串）"
+      "value": "数值（数字字符串）",
+      "prefix-text": "前后缀文案",
+      "suffix-text": "前后缀文案"
     },
     "events": {},
     "slots": {
@@ -2997,8 +3000,8 @@
       "show-path": "回显完整路径（初始回显与多选 labels 走路径）",
       "separator": "路径分隔符（默认 ` / `，配 show-path）",
       "expand-trigger": "节点展开触发：`toggle`（默认，仅箭头）/ `node`（点节点行展开）",
-      "prefix": "触发器前缀内容（slot=\"prefix\" 可分发任意内容）",
-      "suffix": "触发器后缀内容（slot=\"suffix\" 同上）"
+      "prefix-text": "触发器前缀内容（slot=\"prefix\" 可分发任意内容）",
+      "suffix-text": "触发器后缀内容（slot=\"suffix\" 同上）"
     },
     "events": {
       "oas-change": "选择变化，`detail: { value }`",

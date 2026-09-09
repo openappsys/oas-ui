@@ -76,15 +76,7 @@ const TREND_ICONS = {
 
 export class OASStatistic extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'precision', 'prefix', 'suffix', 'group-separator', 'loading', 'title', 'extra', 'trend']
-  }
-
-  /** Element 内建只读 getter prefix 会让 Vue 走 property 赋值；访问器遮蔽并反射到 attribute */
-  override get prefix(): string {
-    return this.getAttr('prefix', '')
-  }
-  override set prefix(value: string) {
-    this.setAttribute('prefix', value)
+    return ['value', 'precision', 'prefix-text', 'suffix-text', 'group-separator', 'loading', 'title', 'extra', 'trend']
   }
 
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题）。
@@ -144,6 +136,8 @@ export class OASStatistic extends OASElement {
   protected override update(): void {
     const stat = this.shadow.querySelector<HTMLElement>('[part="statistic"]')
     if (!stat) return
+    this.normalizeLegacyAlias('prefix-text', 'prefix')
+    this.normalizeLegacyAlias('suffix-text', 'suffix')
 
     // ---- title 吸收（状态机同 list-item）：属性在场（含空串）= 宿主意图 → 更新缓存并移除；
     // 属性缺席 = 吸收后的常态 → 保持已渲染标题（清空请用 title=""） ----
@@ -174,13 +168,16 @@ export class OASStatistic extends OASElement {
       extraEl.hidden = !hasExtra
     }
 
-    // ---- 前后缀双通道：属性文本兜底；slot 分发优先 ----
-    for (const name of ['prefix', 'suffix'] as const) {
-      const affixEl = this.shadow.querySelector<HTMLElement>(`[part="${name}"]`)
-      const affixSlot = this.shadow.querySelector<HTMLSlotElement>(`slot[name="${name}"]`)
-      const affixFallback = this.shadow.querySelector<HTMLElement>(`[part="${name}"] [data-fallback]`)
+    // ---- 前后缀双通道：属性文本兜底（prefix-text/suffix-text）；slot 分发优先（slot 名保持 prefix/suffix） ----
+    for (const [part, attrName] of [
+      ['prefix', 'prefix-text'],
+      ['suffix', 'suffix-text'],
+    ] as const) {
+      const affixEl = this.shadow.querySelector<HTMLElement>(`[part="${part}"]`)
+      const affixSlot = this.shadow.querySelector<HTMLSlotElement>(`slot[name="${part}"]`)
+      const affixFallback = this.shadow.querySelector<HTMLElement>(`[part="${part}"] [data-fallback]`)
       if (!affixEl || !affixSlot || !affixFallback) continue
-      const attr = this.getAttr(name, '')
+      const attr = this.getAttr(attrName, '')
       affixFallback.textContent = attr
       const hasAffix = this.slotHasContent(affixSlot) || attr !== ''
       affixFallback.hidden = this.slotHasContent(affixSlot)

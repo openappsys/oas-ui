@@ -96,8 +96,8 @@ describe('OASMentions', () => {
     expect(openState(el)).toBe(false)
   })
 
-  it('自定义 prefix 属性生效', () => {
-    const el = mount({ options: OPTIONS, prefix: '#' })
+  it('自定义 trigger 属性生效', () => {
+    const el = mount({ options: OPTIONS, trigger: '#' })
     type(el, '任务 #ba')
     expect(rows(el).length).toBe(1)
     expect(rows(el)[0]!.textContent).toBe('Banana')
@@ -197,10 +197,10 @@ describe('OASMentions', () => {
     expect(rows(el).map((r) => r.textContent)).toEqual(['张三'])
   })
 
-  it('prefix property 通道：宿主传数组时 JSON 编码入 attribute', () => {
+  it('trigger property 通道：宿主传数组时 JSON 编码入 attribute', () => {
     const el = mount({ options: OPTIONS })
-    el.prefix = ['@', '#']
-    expect(el.getAttribute('prefix')).toBe('["@","#"]')
+    el.trigger = ['@', '#']
+    expect(el.getAttribute('trigger')).toBe('["@","#"]')
     type(el, '#ba')
     expect(rows(el)[0]!.textContent).toBe('Banana')
   })
@@ -225,7 +225,7 @@ describe('OASMentions', () => {
   })
 
   it('oas-search 携带命中 prefix：@/# 各配独立数据源分流', () => {
-    const el = mount({ prefix: '["@","#"]', options: OPTIONS })
+    const el = mount({ trigger: '["@","#"]', options: OPTIONS })
     const prefixes: string[] = []
     const queries: string[] = []
     el.addEventListener('oas-search', (e: Event) => {
@@ -633,5 +633,93 @@ describe('OASMentions', () => {
       { query: 'a', prefix: '@' },
       { query: 'a', prefix: '@' },
     ])
+  })
+
+  it('type=input 单行：rows 置 1，data-type 镜像', () => {
+    const el = mount({ type: 'input', options: OPTIONS })
+    const t = ta(el)
+    expect(t.getAttribute('rows')).toBe('1')
+    expect(el.getAttribute('data-type')).toBe('input')
+  })
+
+  it('type=input 单行：浮层关闭时 Enter 拦截换行', () => {
+    const el = mount({ type: 'input', options: OPTIONS })
+    const t = ta(el)
+    type(el, 'hi')
+    const before = t.value
+    key(t, 'Enter') // 浮层未开（无 @ 触发）→ 拦截
+    expect(t.value).toBe(before)
+    expect(t.value).not.toContain('\n')
+  })
+
+  it('type 默认 textarea：data-type=textarea', () => {
+    const el = mount({ options: OPTIONS })
+    expect(el.getAttribute('data-type')).toBe('textarea')
+  })
+
+  it('⑥ whole 整段删除：光标在长成员名（含空格）段末尾一次 Backspace 删除 prefix+label', () => {
+    const el = mount({ whole: '', options: JSON.stringify([{ label: '张 三', value: 'zhangsan' }]) })
+    const t = ta(el)
+    // 光标紧跟提及段（`@张 三`）之后（无尾随内容），一次删除整段
+    t.value = '你好 @张 三'
+    t.selectionStart = t.selectionEnd = t.value.length
+    t.dispatchEvent(new Event('input'))
+    key(t, 'Backspace')
+    expect(t.value).toBe('你好 ')
+  })
+
+  it('⑥ whole 整段删除：中文正文紧贴 @ 也可整段删', () => {
+    const el = mount({ whole: '', options: JSON.stringify([{ label: '张三', value: 'zhangsan' }]) })
+    const t = ta(el)
+    t.value = '大家好@张三，后面'
+    t.selectionStart = t.selectionEnd = t.value.indexOf('，')
+    t.dispatchEvent(new Event('input'))
+    key(t, 'Backspace')
+    expect(t.value).toBe('大家好，后面')
+  })
+
+  it('⑥ whole 整段删除：派发 oas-whole-remove（detail 带 option 原对象与 prefix）', () => {
+    const el = mount({
+      whole: '',
+      options: JSON.stringify([{ label: '张三', value: 'zhangsan', dept: '前端组' }]),
+    })
+    let detail: unknown
+    el.addEventListener('oas-whole-remove', (e: Event) => (detail = (e as CustomEvent).detail))
+    const t = ta(el)
+    t.value = '@张三'
+    t.selectionStart = t.selectionEnd = t.value.length
+    t.dispatchEvent(new Event('input'))
+    key(t, 'Backspace')
+    expect(detail).toEqual({
+      value: '',
+      option: { label: '张三', value: 'zhangsan', dept: '前端组' },
+      prefix: '@',
+    })
+  })
+
+  it('⑥ whole：无 whole 属性时不拦截（交还原生，测试环境原生不删字符故 value 不变）', () => {
+    const el = mount({ options: JSON.stringify([{ label: '张三', value: 'zhangsan' }]) })
+    const t = ta(el)
+    t.value = '@张三'
+    t.selectionStart = t.selectionEnd = t.value.length
+    t.dispatchEvent(new Event('input'))
+    key(t, 'Backspace')
+    expect(t.value).toBe('@张三') // 未命中 whole，组件不 PreventDefault
+  })
+
+  it('⑥ whole：label 与光标前文本部分重叠时取最长匹配（不误删短名）', () => {
+    const el = mount({
+      whole: '',
+      options: JSON.stringify([
+        { label: 'a', value: 'a' },
+        { label: 'ab', value: 'ab' },
+      ]),
+    })
+    const t = ta(el)
+    t.value = '@ab'
+    t.selectionStart = t.selectionEnd = t.value.length
+    t.dispatchEvent(new Event('input'))
+    key(t, 'Backspace')
+    expect(t.value).toBe('') // 最长 label "ab" 命中，整段删
   })
 })

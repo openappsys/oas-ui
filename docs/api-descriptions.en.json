@@ -730,10 +730,10 @@
     "attrs": {
       "active": "Controlled pause: `\"false\"` freezes the frame and stops counting elapsed time, resuming continues (absent = running)",
       "format": "Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds, `SSS` milliseconds (50ms internal refresh when SSS present)",
-      "prefix": "Leading text of the display value",
-      "suffix": "Trailing text of the display value",
       "title": "Heading above the display value (native global attribute, absorbed after rendering)",
-      "value": "Total countdown duration (milliseconds)"
+      "value": "Total countdown duration (milliseconds)",
+      "prefix-text": "Leading text of the display value",
+      "suffix-text": "Trailing text of the display value"
     },
     "events": {
       "oas-change": "Emitted on a throttled basis when the remaining displayed value changes, detail `{ value: remaining milliseconds }`",
@@ -1223,12 +1223,10 @@
       "label": "Accessible name (`aria-label` source; falls back to `placeholder` → built-in \"输入框\" when unset)",
       "maxlength": "Maximum input length (passed through to native maxlength)",
       "placeholder": "Placeholder text",
-      "prefix": "Inline text before the input value",
       "prefix-icon": "Icon name for the leading icon",
       "readonly": "Readonly",
       "show-count": "Show character count (bottom-right; danger when over limit)",
       "show-password": "Password visibility toggle (renders an eye button when `type=\"password\"`)",
-      "suffix": "Inline text after the input value",
       "suffix-icon": "Icon name for the trailing icon",
       "type": "Native input type",
       "value": "Value (controlled)",
@@ -1240,7 +1238,9 @@
       "show-clear-on": "Clear button visibility: `always` (default) / `hover` / `focus`",
       "auto-width": "Auto width following content (mirror measurement; empty value falls back to placeholder width), usually with auto-width-min/max",
       "auto-width-min": "Minimum width in px for auto-width (default 72)",
-      "auto-width-max": "Maximum width for auto-width, px or percentage (default 100%)"
+      "auto-width-max": "Maximum width for auto-width, px or percentage (default 100%)",
+      "prefix-text": "Inline text before the input value (plain HTML may use the legacy alias prefix)",
+      "suffix-text": "Inline text after the input value (plain HTML may use the legacy alias suffix)"
     },
     "events": {
       "oas-clear": "Cleared by click, `detail: { originalEvent }`",
@@ -1269,8 +1269,6 @@
       "value": "Current value (controlled)",
       "controls": "Stepper buttons visibility (shown by default; `controls=\"false\"` hides them, keyboard ↑↓ still steps)",
       "controls-position": "Button layout: `right` (default, stacked up/down on the right) / `both` (−/+ on both sides, stepper-counter form)",
-      "prefix": "Inline prefix text (slot=\"prefix\" accepts any content; not part of value parsing)",
-      "suffix": "Inline suffix text (slot=\"suffix\" likewise)",
       "format": "Intl-style declarative format: `percent` (0.15→15%) / `currency:USD` / `unit:GB`, following the host locale",
       "grouping": "Thousands grouping display (group separators stripped on parse)",
       "size": "Size preset `sm` / `md` (default) / `lg`: control height and font scale",
@@ -1279,7 +1277,9 @@
       "placeholder": "Placeholder (participates in the aria-label fallback chain)",
       "wheel": "Wheel stepping while focused (up increments, down decrements; off by default to prevent accidental changes)",
       "step-strictly": "Strict stepping: committed value snaps to the nearest step multiple",
-      "clearable": "Clear button when a value is present (returns to the empty-value state)"
+      "clearable": "Clear button when a value is present (returns to the empty-value state)",
+      "prefix-text": "Inline prefix text (slot=\"prefix\" accepts any content; not part of value parsing)",
+      "suffix-text": "Inline suffix text (slot=\"suffix\" likewise)"
     },
     "events": {
       "oas-change": "Change on step or blur, `detail: { value }` (number)",
@@ -1436,7 +1436,6 @@
       "label": "Accessible name (built-in text by default)",
       "options": "Options, JSON array `[{ label, value }]`",
       "placeholder": "Placeholder text",
-      "prefix": "Trigger prefix",
       "value": "Value (controlled, full text)",
       "readonly": "Read-only (focusable and readable, no suggestion panel)",
       "clearable": "Clear button (clears all content, fires oas-clear)",
@@ -1448,17 +1447,21 @@
       "placement": "Panel direction: `auto` (default) / `top` / `bottom`",
       "size": "Size preset `small` / `medium` (default) / `large`",
       "status": "Validation status: `error` / `warning` / `success`",
-      "variant": "Variant: `outlined` (default) / `filled` / `borderless`"
+      "variant": "Variant: `outlined` (default) / `filled` / `borderless`",
+      "type": "Variant: \textarea (default) / input (single-line lock, Enter does not break line)",
+      "whole": "Whole delete: when cursor is right after a mention, Backspace removes the whole prefix + label and fires oas-whole-remove",
+      "trigger": "Trigger: default @, accepts a single string or a JSON array like [\"@\",\"#\"] for multiple triggers"
     },
     "events": {
       "oas-change": "Text changed after insertion, `detail: { value }` (full text)",
-      "oas-select": "Suggestion selected, `detail: { value, label }`",
+      "oas-select": "Suggestion selected, detail: { value, label, option, prefix } (option is the full original option object)",
       "oas-input": "Fires on input (not during IME composition), `detail: { value }`",
       "oas-search": "Fires when the trigger scan finds pending text (remote search hook), `detail: { query, prefix }`",
       "oas-focus": "Fires on focus",
       "oas-blur": "Fires on blur",
       "oas-option-render": "Fires on option render (rich option channel), `detail: { index, option, element }`",
-      "oas-clear": "Fires on clear, `detail: { value }` (pre-clear value)"
+      "oas-clear": "Fires on clear, `detail: { value }` (pre-clear value)",
+      "oas-whole-remove": "Fires when a mention is whole-deleted, detail: { value, option, prefix } (option is the full original option object)"
     },
     "slots": {
       "header": "Panel header content",
@@ -2300,11 +2303,11 @@
       "group-separator": "Thousands grouping (`\"false\"` disables)",
       "loading": "Loading state (skeleton placeholder)",
       "precision": "Decimal places (rounded)",
-      "prefix": "Prefix / suffix text",
-      "suffix": "Prefix / suffix text",
       "title": "Heading above the value (native global attribute, absorbed after rendering)",
       "trend": "Trend indicator: `up` (rise, success semantic color) / `down` (drop, danger semantic color) with arrow",
-      "value": "Numeric value (number string)"
+      "value": "Numeric value (number string)",
+      "prefix-text": "Prefix / suffix text",
+      "suffix-text": "Prefix / suffix text"
     },
     "events": {},
     "slots": {
@@ -2997,8 +3000,8 @@
       "show-path": "Echo the full path (initial echo and multi-select labels use paths)",
       "separator": "Path separator (default ` / `, pair with show-path)",
       "expand-trigger": "Node expansion trigger: `toggle` (default, arrow only) / `node` (clicking the node row expands)",
-      "prefix": "Trigger prefix content (slot=\"prefix\" accepts any content)",
-      "suffix": "Trigger suffix content (slot=\"suffix\" likewise)"
+      "prefix-text": "Trigger prefix content (slot=\"prefix\" accepts any content)",
+      "suffix-text": "Trigger suffix content (slot=\"suffix\" likewise)"
     },
     "events": {
       "oas-change": "Selection change, `detail: { value }`",

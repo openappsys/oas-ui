@@ -42,10 +42,10 @@ Add the `SSS` token to output milliseconds (zero-padded to 3 digits); internal r
 
 ## Prefix / Suffix / Title
 
-The `title` attribute (or `slot="title"`) renders a heading above; `prefix` / `suffix` flank the display value (attribute text or same-named slots, dual channel).
+The `title` attribute (or `slot="title"`) renders a heading above; `prefix-text` / `suffix-text` flank the display value (attribute text or same-named slots, dual channel; in plain HTML the legacy `prefix` / `suffix` attributes still work as aliases).
 
 <DemoBlock title="title + prefix / suffix">
-  <oas-countdown value="90000" title="Until the event" prefix="in " suffix=" left"></oas-countdown>
+  <oas-countdown value="90000" title="Until the event" prefix-text="in " suffix-text=" left"></oas-countdown>
   <oas-countdown value="300000">
     <span slot="title">Verification code valid for</span>
     <span slot="suffix"> before expiry</span>
@@ -71,8 +71,8 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 | --- | --- | --- | --- |
 | `active` | Controlled pause: `"false"` freezes the frame and stops counting elapsed time, resuming continues (absent = running) | `string` | — |
 | `format` | Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds, `SSS` milliseconds (50ms internal refresh when SSS present) | `string` | `HH:mm:ss` |
-| `prefix` | Leading text of the display value | — | — |
-| `suffix` | Trailing text of the display value | — | — |
+| `prefix-text` | Leading text of the display value | — | — |
+| `suffix-text` | Trailing text of the display value | — | — |
 | `title` | Heading above the display value (native global attribute, absorbed after rendering) | `string` | — |
 | `value` | Total countdown duration (milliseconds) | `string` | `0` |
 

@@ -73,11 +73,11 @@
 ## 内嵌前后缀与清空并存
 
 <DemoBlock title="prefix / suffix + clearable">
-  <oas-input prefix="$" suffix=".00" clearable value="1280" style="width: 240px"></oas-input>
+  <oas-input prefix-text="$" suffix-text=".00" clearable value="1280" style="width: 240px"></oas-input>
   <oas-input suffix-icon="chevron-down" clearable value="可清空带图标" style="width: 240px"></oas-input>
 </DemoBlock>
 
-`prefix` / `suffix` 为输入框内部文案，与 `clearable`、图标、addon 可并存不冲突。
+`prefix-text` / `suffix-text` 为输入框内部文案，与 `clearable`、图标、addon 可并存不冲突。
 
 ## 字数统计
 
@@ -186,10 +186,10 @@ onMounted(() => {
   <oas-input placeholder="手机号" style="width: 240px">
     <span slot="suffix">📱</span>
   </oas-input>
-  <oas-input placeholder="金额" value="1280" prefix="¥" suffix=".00" style="width: 240px"></oas-input>
+  <oas-input placeholder="金额" value="1280" prefix-text="¥" suffix-text=".00" style="width: 240px"></oas-input>
 </DemoBlock>
 
-简单文本用 `prefix` / `suffix` 属性；复杂内容（图标/按钮/徽标等）用同名 `slot="prefix"` / `slot="suffix"` 分发，slot 有内容时原生替换属性文本。
+简单文本用 `prefix-text` / `suffix-text` 属性；复杂内容（图标/按钮/徽标等）用同名 `slot="prefix"` / `slot="suffix"` 分发，slot 有内容时原生替换属性文本。纯 HTML 场景下旧的 `prefix` / `suffix` 属性仍可作为遗留别名使用。
 
 ## 尺寸
 
@@ -342,16 +342,16 @@ onMounted(() => {
 | `label` | 可访问名称（`aria-label` 来源，未设时回退 `placeholder` → 内置文案「输入框」） | — | — |
 | `maxlength` | 最大输入长度（透传原生 maxlength） | `string` | — |
 | `placeholder` | 占位提示 | `string` | — |
-| `prefix` | 内嵌前置文案 | `string` | — |
 | `prefix-icon` | 前置图标名 | `string` | — |
+| `prefix-text` | 内嵌前置文案（纯 HTML 可沿用遗留别名 prefix） | `string` | — |
 | `readonly` | 只读 | `boolean` | — |
 | `show-clear-on` | 清除按钮显隐：`always`（默认常显）/ `hover` / `focus` | `string` | — |
 | `show-count` | 显示字数统计（右下角，超限标 danger） | `boolean` | — |
 | `show-password` | 密码可见切换（`type="password"` 时渲染眼睛按钮） | `boolean` | — |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large`：高度与字号联动 | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success`；error 同步内层 aria-invalid | `string` | — |
-| `suffix` | 内嵌后置文案 | `string` | — |
 | `suffix-icon` | 后置图标名 | `string` | — |
+| `suffix-text` | 内嵌后置文案（纯 HTML 可沿用遗留别名 suffix） | `string` | — |
 | `type` | 原生 input 类型 | `string` | `text` |
 | `value` | 值（受控） | `string` | — |
 | `variant` | 形态：`outlined`（默认描边）/ `filled`（填充底色）/ `borderless`（无框） | `string` | — |

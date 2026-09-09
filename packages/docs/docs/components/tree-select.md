@@ -106,11 +106,11 @@
 
 <DemoBlock title="clearable + prefix / suffix">
   <div style="display: flex; gap: var(--oas-space-3); flex-wrap: wrap">
-    <oas-tree-select clearable value="vue" prefix="部门" suffix="必填" placeholder="可清空" options='[{"label":"前端","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'></oas-tree-select>
+    <oas-tree-select clearable value="vue" prefix-text="部门" suffix-text="必填" placeholder="可清空" options='[{"label":"前端","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'></oas-tree-select>
   </div>
 </DemoBlock>
 
-`clearable` 有值时触发器显示清空按钮（点击清空并派发 `oas-clear`）；`prefix` / `suffix` 为触发器内前后缀文本，也可用 `template[slot="prefix"]` / `[slot="suffix"]` 插槽自定义内容。
+`clearable` 有值时触发器显示清空按钮（点击清空并派发 `oas-clear`）；`prefix-text` / `suffix-text` 为触发器内前后缀文本，也可用 `template[slot="prefix"]` / `[slot="suffix"]` 插槽自定义内容。纯 HTML 场景旧的 `prefix` / `suffix` 仍可作为遗留别名使用。
 
 ## 尺寸与校验态（size / status）
 
@@ -437,13 +437,13 @@ onMounted(() => {
 | `open` | 受控开合（存在即受控；`"false"`=受控关），翻转派 oas-open-change | `string` | — |
 | `options` | 树形选项，JSON 数组，支持 `children` / `disabled` | `TreeOption[] \| string` | `[]` |
 | `placeholder` | 占位提示 | — | — |
-| `prefix` | 触发器前缀内容（slot="prefix" 可分发任意内容） | `string` | — |
+| `prefix-text` | 触发器前缀内容（slot="prefix" 可分发任意内容） | `string` | — |
 | `reserve-keyword` | 选中节点后保留搜索关键词（默认清空） | `boolean` | — |
 | `separator` | 路径分隔符（默认 ` / `，配 show-path） | `string` | ` / ` |
 | `show-path` | 回显完整路径（初始回显与多选 labels 走路径） | `boolean` | — |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
 | `status` | 校验态：`error` / `warning` / `success` | `string` | — |
-| `suffix` | 触发器后缀内容（slot="suffix" 同上） | `string` | — |
+| `suffix-text` | 触发器后缀内容（slot="suffix" 同上） | `string` | — |
 | `tree-lines` | 树线缩进引导线 | `boolean` | — |
 | `value` | 选中值（多选为 JSON 数组） | `string` | `[]` |
 | `virtual` | 开启虚拟滚动：大数据量下拉仅渲染可见窗口（复用 oas-virtual-list），键盘/ARIA 保持 | `boolean` | — |

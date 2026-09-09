@@ -27,11 +27,11 @@
       "observed": true
     },
     {
-      "name": "prefix",
+      "name": "prefix-text",
       "observed": true
     },
     {
-      "name": "suffix",
+      "name": "suffix-text",
       "observed": true
     }
   ],

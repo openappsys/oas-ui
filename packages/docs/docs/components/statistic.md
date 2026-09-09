@@ -17,9 +17,9 @@
 ## 前缀 / 后缀
 
 <DemoBlock title="prefix / suffix">
-  <oas-statistic value="8846" prefix="¥"></oas-statistic>
-  <oas-statistic value="99.9" precision="1" suffix="%"></oas-statistic>
-  <oas-statistic value="12" prefix="本周新增 " suffix=" 单"></oas-statistic>
+  <oas-statistic value="8846" prefix-text="¥"></oas-statistic>
+  <oas-statistic value="99.9" precision="1" suffix-text="%"></oas-statistic>
+  <oas-statistic value="12" prefix-text="本周新增 " suffix-text=" 单"></oas-statistic>
 </DemoBlock>
 
 ## 关闭千分位
@@ -40,7 +40,7 @@
 
 <DemoBlock title="title + extra（数据看板卡）">
   <oas-statistic title="总收入" value="8846132" precision="2" extra="较昨日 +24%"></oas-statistic>
-  <oas-statistic value="99.9" precision="1" suffix="%">
+  <oas-statistic value="99.9" precision="1" suffix-text="%">
     <span slot="title">完成率</span>
     <span slot="extra">环比 -1.2%</span>
   </oas-statistic>
@@ -52,7 +52,7 @@
 
 <DemoBlock title="trend 涨跌">
   <oas-statistic title="今日订单" value="1284" trend="up" extra="较昨日 +12.5%"></oas-statistic>
-  <oas-statistic title="退款率" value="2.4" precision="1" suffix="%" trend="down" extra="环比 -0.8%"></oas-statistic>
+  <oas-statistic title="退款率" value="2.4" precision="1" suffix-text="%" trend="down" extra="环比 -0.8%"></oas-statistic>
 </DemoBlock>
 
 ## 数值动画（组合 number-animation）
@@ -80,7 +80,7 @@
   </oas-statistic>
 </DemoBlock>
 
-简单文本用 `prefix` / `suffix` 属性；复杂内容（图标/标签/徽标等）用同名 `slot="prefix"` / `slot="suffix"` 分发，slot 有内容时原生替换属性文本。
+简单文本用 `prefix-text` / `suffix-text` 属性；复杂内容（图标/标签/徽标等）用同名 `slot="prefix"` / `slot="suffix"` 分发，slot 有内容时原生替换属性文本。纯 HTML 场景旧的 `prefix` / `suffix` 仍可作为遗留别名使用。
 
 ## API
 
@@ -92,8 +92,8 @@
 | `group-separator` | 千分位分组（`"false"` 关闭） | `string` | `true` |
 | `loading` | 加载态（骨架占位） | `boolean` | — |
 | `precision` | 小数位（四舍五入） | `string` | `0` |
-| `prefix` | 前后缀文案 | `string` | — |
-| `suffix` | 前后缀文案 | — | — |
+| `prefix-text` | 前后缀文案 | — | — |
+| `suffix-text` | 前后缀文案 | — | — |
 | `title` | 数值上方标题（原生全局属性，渲染后吸收移除） | `string` | — |
 | `trend` | 趋势指示：`up`（涨，success 语义色）/ `down`（跌，danger 语义色）+ 箭头 | `string` | — |
 | `value` | 数值（数字字符串） | `string` | `0` |

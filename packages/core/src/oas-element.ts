@@ -222,6 +222,24 @@ export abstract class OASElement extends HTMLElement {
   }
 
   /**
+   * 规范「遗留别名」为规范属性名（解决与 DOM 内建只读属性冲突的迁移通道）。
+   *
+   * 背景：`prefix` 是 DOM Element 内建只读属性（XML 命名空间前缀），Vue 在组件 upgrade 前
+   * 对该 attribute 走 property 赋值会撞只读 getter 报错并吞值。为兼容纯 HTML 老用法（`prefix` 仍可用）
+   * 与 Vue/新用法（`prefix-text` 等规范名），组件在各自的 update() 首帧把旧名值迁移到规范名：
+   * 规范名存在 → 不动；否则旧名有值 → 复制到规范名并移除旧名（旧名不再参与后续读取）。
+   *
+   * 幂等（规范名已存在即跳过），无需外部 guard；迁移仅改宿主 attribute，不影响 shadow/SSR 检查。
+   */
+  protected normalizeLegacyAlias(primary: string, legacy: string): void {
+    if (this.getAttribute(primary) != null) return
+    const legacyVal = this.getAttribute(legacy)
+    if (legacyVal == null) return
+    this.setAttribute(primary, legacyVal)
+    this.removeAttribute(legacy)
+  }
+
+  /**
    * 就近读取注入值（config-provider 机制）。
    *
    * 读取顺序：自身属性 > 最近 config-provider 属性 > 全局默认值。
