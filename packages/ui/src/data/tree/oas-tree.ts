@@ -37,6 +37,8 @@ export interface TreeNode {
   selectable?: boolean
   /** 节点级禁勾选：勾选框禁用，级联跳过（整树 disabled 见组件级 disabled 属性） */
   disableCheckbox?: boolean
+  /** 节点级禁重命名：can-rename 总开关下细粒度排除（缺省可重命名） */
+  renamable?: boolean
 }
 
 const FOLDER_ICON_SVG =
@@ -182,6 +184,48 @@ const ROW_STYLE = `
   color: inherit;
   border-radius: 2px;
 }
+/* 内联重命名：编辑态输入框占满 label 区，替换文本显示 */
+.label.renaming {
+  overflow: visible;
+  cursor: text;
+}
+.rename-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font: inherit;
+  color: inherit;
+  background: var(--oas-color-bg);
+  border: 1px solid var(--oas-color-primary);
+  border-radius: var(--oas-radius-sm);
+  padding: 0 var(--oas-space-1);
+  margin: 0;
+  outline: none;
+  user-select: text;
+}
+/* motion 行过渡钩子：入场/离场类 + 虚拟行淡入降级（reduced-motion 停用） */
+.oas-row-enter,
+.oas-row-leave {
+  overflow: hidden;
+}
+.oas-row-fade {
+  animation: oas-tree-row-fade var(--oas-transition-base, 180ms) var(--oas-ease-out, cubic-bezier(0.2, 0, 0.2, 1));
+}
+@keyframes oas-tree-row-fade {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oas-row-fade {
+    animation: none;
+  }
+}
 `
 
 const STYLE = `
@@ -307,6 +351,8 @@ export class OASTree extends OASElement {
       'directory',
       'disabled',
       'empty',
+      'can-rename',
+      'motion',
     ]
   }
 
@@ -348,6 +394,24 @@ export class OASTree extends OASElement {
   private syncingExpanded = false
   /** id → 父 id（auto-expand-parent / 键盘回父级用，update 时重建） */
   private parentIndex = new Map<string, string>()
+
+  // ---------- 内联重命名状态 ----------
+
+  /** 进行中的重命名（key + 进入编辑前的旧 label + 编辑草稿值；组件不写数据，由宿主受控） */
+  private rename: { key: string; oldLabel: string; value: string } | null = null
+  /** update 重建后需要把焦点送回编辑输入框（开始编辑/外部重建保住输入焦点） */
+  private renameFocusPending = false
+  /** 手工双击判定的上一击签名（双击进编辑在行重建架构下原生 dblclick 不可靠，对齐 table 同源做法） */
+  private lastLabelClick: { key: string; time: number } | null = null
+  /** 双击第二击进入编辑后抑制随后的行点击选中（防 multiple 下再点取消选中） */
+  private suppressRowSelect = false
+
+  // ---------- motion 展开/收起过渡状态 ----------
+
+  /** motion 离场动画进行中（防 200ms 窗口内重复收起/连点抖动） */
+  private motionCollapsing = false
+  /** motion 收起落库延迟定时器（onCleanup 清理） */
+  private motionCollapseTimer = 0
 
   get data(): TreeNode[] {
     return this._data
@@ -420,6 +484,14 @@ export class OASTree extends OASElement {
     }
     this.addEventListener('focusin', this.onTreeFocusIn)
     this.addEventListener('focusout', this.onTreeFocusOut)
+    // 双击进重命名：capture 相位先于行点击处理器判定（首击选中重建行 → 原生 dblclick 不可靠）
+    this.addEventListener('click', this.onRenameClickCapture, true)
+    this.onCleanup(() => {
+      if (this.motionCollapseTimer) {
+        clearTimeout(this.motionCollapseTimer)
+        this.motionCollapseTimer = 0
+      }
+    })
   }
 
   protected override render(): void {
@@ -648,6 +720,14 @@ export class OASTree extends OASElement {
       }
     }
     this.visible = this.visibleRows()
+    // 编辑行从可见集消失（数据/过滤变化）→ 静默退出编辑，防悬挂草稿态
+    if (
+      this.rename &&
+      !this.visible.some((r) => this.acc.idOf(r.node) === this.rename!.key)
+    ) {
+      this.rename = null
+      this.renameFocusPending = false
+    }
     const virtual = this.getAttr('height', '') !== ''
     const wrap = this.shadow.querySelector<HTMLElement>('.tree')
     const emptyEl = this.shadow.querySelector<HTMLElement>('.empty')
@@ -656,6 +736,7 @@ export class OASTree extends OASElement {
     wrap.hidden = virtual
     wrap.classList.toggle('tree-lines', this.hasAttr('tree-lines'))
     wrap.classList.toggle('disabled', this.isTreeDisabled())
+    wrap.classList.toggle('motion', this.hasAttr('motion'))
 
     if (this.visible.length === 0) {
       if (this.vlist) this.vlist.hidden = true
@@ -663,6 +744,7 @@ export class OASTree extends OASElement {
       emptyEl.hidden = false
       this.fillEmpty(emptyEl)
       this.vlist?.classList.toggle('disabled', this.isTreeDisabled())
+      this.vlist?.classList.toggle('motion', this.hasAttr('motion'))
       return
     }
     emptyEl.hidden = true
@@ -672,6 +754,7 @@ export class OASTree extends OASElement {
       this.vlist.hidden = false
       this.vlist.classList.toggle('tree-lines', this.hasAttr('tree-lines'))
       this.vlist.classList.toggle('disabled', this.isTreeDisabled())
+      this.vlist.classList.toggle('motion', this.hasAttr('motion'))
       this.vlist.setAttribute('items-role', 'tree')
       this.vlist.setAttribute('item-role', 'presentation')
       this.vlist.setAttribute('aria-label', this.t('tree.select'))
@@ -679,6 +762,7 @@ export class OASTree extends OASElement {
       this.vlist.setAttribute('item-height', this.getAttr('row-height', '32'))
       this.vlist.items = this.visible
       this.syncRoving()
+      this.syncRenameFocus()
       return
     }
     if (this.vlist) {
@@ -699,6 +783,7 @@ export class OASTree extends OASElement {
       this.renderRow(flat, wrap, { checked, expanded })
     }
     this.syncRoving()
+    this.syncRenameFocus()
   }
 
   // ---------- 行渲染（虚拟/非虚拟共用） ----------
@@ -793,9 +878,14 @@ export class OASTree extends OASElement {
       row.appendChild(box)
     }
 
+    const renaming = this.rename?.key === id
     const label = document.createElement('span')
-    label.className = 'label'
-    this.fillNodeLabel(label, node)
+    label.className = renaming ? 'label renaming' : 'label'
+    if (renaming) {
+      label.appendChild(this.buildRenameInput(node))
+    } else {
+      this.fillNodeLabel(label, node)
+    }
     row.appendChild(label)
 
     row.addEventListener('click', () => {
@@ -818,6 +908,11 @@ export class OASTree extends OASElement {
   // ---------- 交互（点选 / 勾选 / 展开） ----------
 
   private handleRowClick(node: TreeNode): void {
+    // 双击进重命名的第二击：capture 相位已进入编辑，抑制本次行点击选中（防 multiple 反选）
+    if (this.suppressRowSelect) {
+      this.suppressRowSelect = false
+      return
+    }
     if (this.isTreeDisabled() || this.nodeDisabled(node)) return
     const id = this.acc.idOf(node)
     // 点选（selectable 排除；勾选树同样可点选，与 oas-tree-select 语义一致）
@@ -871,7 +966,8 @@ export class OASTree extends OASElement {
     if (!this.isExpandableNode(node)) return
     const exp = this.expandedSet()
     if (exp.has(id)) {
-      this.collapseNode(exp, id)
+      // motion 开：先离场动画再落库（收起延迟 ~过渡时长，动画期间防重复触发）
+      this.collapseWithMotion(exp, node)
     } else {
       this.expandNode(exp, node)
     }
@@ -892,6 +988,11 @@ export class OASTree extends OASElement {
     // 先写 expanded（loading 态依赖展开集合展示），再触发懒加载；
     // 失败重试路径会再次改写 expanded 回滚
     this.commitExpanded(exp)
+    // motion 开：对刚落库新增的子树行播放入场过渡（懒加载等子节点尚未就绪时无行可播）
+    if (this.hasAttr('motion')) {
+      const keys = this.subtreeVisibleKeys(id)
+      if (keys.length) this.animateRowsIn(keys)
+    }
     if (loadPendingNode(node, this.acc, this.hasAttr('lazy'))) this.triggerLoad(node)
   }
 
@@ -947,6 +1048,307 @@ export class OASTree extends OASElement {
     this.emit('load-error', {
       key: id,
       error: error instanceof Error ? error.message : String(error),
+    })
+  }
+
+  // ---------- 节点重命名（can-rename：双击 label / F2 进入内联编辑） ----------
+
+  /** can-rename 总开关 + 节点可重命名判定（节点级 disabled / renamable:false 排除） */
+  private nodeRenamable(node: TreeNode): boolean {
+    if (!this.hasAttr('can-rename') || this.isTreeDisabled()) return false
+    if (this.acc.disabledOf(node)) return false
+    const raw = node as unknown as Record<string, unknown>
+    return raw.renamable !== false
+  }
+
+  /**
+   * 进入内联编辑。数据由宿主受控：组件只把用户输入记在草稿态，
+   * 提交仅派发 oas-node-rename，不改数据模型（宿主不更新则保持旧值）。
+   */
+  private startRename(key: string): void {
+    if (!this.hasAttr('can-rename') || this.isTreeDisabled()) return
+    const node = this.model.byId.get(key)
+    if (!node || !this.nodeRenamable(node)) return
+    if (this.rename) {
+      if (this.rename.key === key) return
+      this.commitRename(false) // 换行编辑前先提交旧行（与 blur 语义一致）
+    }
+    const label = this.acc.labelOf(node)
+    this.rename = { key, oldLabel: label, value: label }
+    this.renameFocusPending = true
+    this.update()
+  }
+
+  /** 提交：空值/未变静默退出；变化后派发 oas-node-rename { key, label, oldLabel } */
+  private commitRename(restoreFocus: boolean): void {
+    const state = this.rename
+    if (!state) return
+    this.rename = null
+    this.renameFocusPending = false
+    const { key, oldLabel } = state
+    const label = state.value
+    // 非破坏默认：清空输入按未提交还原（不派发）
+    const changed = label.trim() !== '' && label !== oldLabel
+    if (changed) this.emit('node-rename', { key, label, oldLabel })
+    if (restoreFocus) {
+      // Enter 提交：整树重建恢复模板/自定义节点视觉（node-render 随行重发），焦点回行
+      this.update()
+      this.focusRowByKey(key)
+    } else {
+      // blur 提交：就地换回数据 label（不重建以免吞掉本次点击对目标行的选中）
+      this.restoreRowDisplay(key)
+    }
+  }
+
+  /** Esc 取消：还原显示、不派发事件；整树重建恢复模板视觉后焦点回行 */
+  private cancelRename(): void {
+    const state = this.rename
+    if (!state) return
+    this.rename = null
+    this.renameFocusPending = false
+    this.update()
+    this.focusRowByKey(state.key)
+  }
+
+  /** 退出编辑：把该行 label 换回数据展示文本（就地替换，不做整树重建以免吞掉后续点击） */
+  private restoreRowDisplay(key: string): void {
+    const row = this.rowElByKey(key)
+    if (!row) return
+    const label = row.querySelector<HTMLElement>('.label')
+    if (!label || !label.querySelector('.rename-input')) return
+    const node = this.model.byId.get(key)
+    if (!node) return
+    label.classList.remove('renaming')
+    label.textContent = ''
+    this.fillNodeLabel(label, node)
+  }
+
+  /** 构造编辑输入框（Enter 提交 / Esc 取消 / blur 提交；键盘归 input，不干扰 roving） */
+  private buildRenameInput(node: TreeNode): HTMLInputElement {
+    const input = document.createElement('input')
+    input.type = 'text'
+    input.className = 'rename-input'
+    input.setAttribute('part', 'rename-input')
+    input.value = this.rename?.value ?? this.acc.labelOf(node)
+    input.setAttribute('aria-label', this.acc.labelOf(node))
+    input.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        e.stopPropagation()
+        if (this.rename) this.rename.value = input.value
+        this.commitRename(true)
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        this.cancelRename()
+      }
+    })
+    input.addEventListener('input', () => {
+      if (this.rename) this.rename.value = input.value
+    })
+    // 输入框内点击不触发整行选中/双击判定
+    input.addEventListener('click', (e: MouseEvent) => e.stopPropagation())
+    input.addEventListener('blur', () => {
+      // 重建导致输入框脱离文档的 blur 不算用户失焦：编辑态跨重建保持（草稿在 rename 态）
+      if (input.isConnected) {
+        if (this.rename) this.rename.value = input.value
+        this.commitRename(false)
+      }
+    })
+    return input
+  }
+
+  /** update 重建后把焦点送回编辑输入框（一次性；行不可见时放弃避免后续偷焦点） */
+  private syncRenameFocus(): void {
+    if (!this.rename || !this.renameFocusPending) return
+    this.renameFocusPending = false
+    for (const row of this.allRows()) {
+      if (row.getAttribute('data-key') !== this.rename.key) continue
+      const input = row.querySelector<HTMLInputElement>('.rename-input')
+      if (input) {
+        input.focus()
+        input.select()
+      }
+      return
+    }
+  }
+
+  /** 双击进编辑判定（capture 相位）：label 区同 key 500ms 内两击 = 双击 */
+  private onRenameClickCapture = (e: Event): void => {
+    if (!this.hasAttr('can-rename') || this.isTreeDisabled() || this.rename) return
+    // 宿主级监听下 e.target 会被 shadow 边界重定向成宿主自身；行内元素走 composedPath 定位
+    let label: Element | null = null
+    let row: Element | null = null
+    for (const node of e.composedPath()) {
+      if (!(node instanceof Element)) continue
+      if (!row && node.getAttribute('part') === 'row') row = node
+      if (!label && node.classList.contains('label')) label = node
+      if (row && label) break
+    }
+    if (!label || label.querySelector('.rename-input')) return
+    const key = row?.getAttribute('data-key')
+    if (!key) return
+    const node = this.model.byId.get(key)
+    if (!node || !this.nodeRenamable(node)) {
+      this.lastLabelClick = null
+      return
+    }
+    const now = Date.now()
+    const prev = this.lastLabelClick
+    this.lastLabelClick = { key, time: now }
+    if (!prev || prev.key !== key || now - prev.time >= 500) return
+    // 双击命中：进入编辑并抑制本击的行选中
+    this.lastLabelClick = null
+    this.suppressRowSelect = true
+    this.startRename(key)
+  }
+
+  // ---------- motion 展开/收起过渡（高度过渡动画；虚拟模式入场降级 fade、收起即时） ----------
+
+  /** motion 生效判定：属性开启且用户未声明减少动效 */
+  private motionEnabled(): boolean {
+    if (!this.hasAttr('motion')) return false
+    try {
+      if (
+        typeof globalThis.matchMedia === 'function' &&
+        globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ) {
+        return false
+      }
+    } catch {
+      /* 无 matchMedia 环境视为不减少动效 */
+    }
+    return true
+  }
+
+  /** 读取过渡时长（--oas-transition-base，可被主题覆盖；解析 '180ms' / '0.18s'，兜底 180ms） */
+  private motionMs(): number {
+    try {
+      const raw = getComputedStyle(this).getPropertyValue('--oas-transition-base').trim()
+      const m = /^([\d.]+)\s*(ms|s)$/i.exec(raw)
+      if (m) return m[2]!.toLowerCase() === 's' ? Number(m[1]) * 1000 : Number(m[1])
+    } catch {
+      /* happy-dom 等环境不解析 var */
+    }
+    return 180
+  }
+
+  /** 该节点当前可见的后代 key（DFS 行内按 parentIndex 上溯判定） */
+  private subtreeVisibleKeys(id: string): string[] {
+    const out: string[] = []
+    for (const row of this.visible) {
+      const rid = this.acc.idOf(row.node)
+      if (rid === id) continue
+      let cur = this.parentIndex.get(rid)
+      while (cur !== undefined) {
+        if (cur === id) {
+          out.push(rid)
+          break
+        }
+        cur = this.parentIndex.get(cur)
+      }
+    }
+    return out
+  }
+
+  /** 展开落库后播放入场过渡：常规模式行高 0→自然（max-height 过渡），虚拟模式 fade 降级 */
+  private animateRowsIn(keys: string[]): void {
+    if (!this.motionEnabled()) return
+    const virtual = this.getAttr('height', '') !== ''
+    for (const key of keys) {
+      const row = this.rowElByKey(key)
+      if (!row) continue
+      if (virtual) {
+        row.classList.add('oas-row-fade')
+        continue
+      }
+      const height = row.getBoundingClientRect().height
+      if (!(height > 0)) {
+        // 0 高（未布局/测试环境）降级 fade 钩子
+        row.classList.add('oas-row-enter')
+        continue
+      }
+      row.classList.add('oas-row-enter')
+      row.style.overflow = 'hidden'
+      row.style.maxHeight = '0px'
+      row.style.opacity = '0'
+      void row.offsetHeight // 强制 reflow 固化起点
+      const ms = this.motionMs()
+      row.style.transition =
+        `max-height ${ms}ms var(--oas-ease-out), opacity ${ms}ms var(--oas-ease-out)`
+      row.style.maxHeight = `${height}px`
+      row.style.opacity = '1'
+      // 过渡结束后清掉行内样式与钩子类（重建会自然清掉，这里兜底防残留）
+      const clean = (): void => {
+        row.classList.remove('oas-row-enter')
+        row.style.maxHeight = ''
+        row.style.opacity = ''
+        row.style.transition = ''
+        row.style.overflow = ''
+      }
+      row.addEventListener('transitionend', clean, { once: true })
+      window.setTimeout(clean, ms + 80)
+    }
+  }
+
+  /** 收起离场：子行高度 → 0（max-height 过渡），结束后真正落库收起 */
+  private animateRowsOut(rows: HTMLElement[], done: () => void): void {
+    const virtual = this.getAttr('height', '') !== ''
+    if (virtual || rows.length === 0) {
+      done()
+      return
+    }
+    let hasMotion = false
+    for (const row of rows) {
+      row.classList.add('oas-row-leave')
+      const height = row.getBoundingClientRect().height
+      if (!(height > 0)) continue
+      hasMotion = true
+      row.style.overflow = 'hidden'
+      row.style.maxHeight = `${height}px`
+      row.style.opacity = '1'
+    }
+    const ms = this.motionMs()
+    if (hasMotion) {
+      void rows[0]!.offsetHeight // 固化起始 max-height（auto → 定值需先落一次）
+      for (const row of rows) {
+        if (!row.style.maxHeight) continue
+        row.style.transition =
+          `max-height ${ms}ms var(--oas-ease-in-out), opacity ${ms}ms var(--oas-ease-out)`
+        row.style.maxHeight = '0px'
+        row.style.opacity = '0'
+      }
+    }
+    // 0 高（未布局/测试环境）也走异步落库，保证「先离场再收起」的两阶段时序一致
+    this.motionCollapseTimer = window.setTimeout(() => {
+      this.motionCollapseTimer = 0
+      // 动画期间组件被移除：放弃落库、复位动画态（重连后仍按 expanded 原状渲染）
+      if (!this.isConnected) {
+        this.motionCollapsing = false
+        return
+      }
+      done()
+    }, ms + 40)
+  }
+
+  /** 行收起入口：motion 下先播离场再落库，非 motion 直接收起 */
+  private collapseWithMotion(exp: Set<string>, node: TreeNode): void {
+    const id = this.acc.idOf(node)
+    if (!this.motionEnabled() || this.motionCollapsing) {
+      this.collapseNode(exp, id)
+      return
+    }
+    const rows = this.subtreeVisibleKeys(id)
+      .map((key) => this.rowElByKey(key))
+      .filter((r): r is HTMLElement => r !== null)
+    if (rows.length === 0) {
+      this.collapseNode(exp, id)
+      return
+    }
+    this.motionCollapsing = true
+    this.animateRowsOut(rows, () => {
+      this.motionCollapsing = false
+      this.collapseNode(this.expandedSet(), id)
     })
   }
 
@@ -1146,6 +1548,11 @@ export class OASTree extends OASElement {
       const id = keys[cur]!
       const node = this.model.byId.get(id)
       if (node) this.handleRowClick(node)
+    } else if (key === 'F2') {
+      // 行内重命名（与双击 label 同入口；can-rename 关闭/节点不可重命名时 no-op）
+      e.preventDefault()
+      const id = keys[cur]!
+      if (id) this.startRename(id)
     }
   }
 
