@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { OASVirtualList, computeVirtualWindow } from './index.js'
+import { OASVirtualList, computeVirtualWindow, HeightCache, computeDynamicWindow } from './index.js'
 
 function mount(attrs: Record<string, string> = {}): OASVirtualList {
   const el = new OASVirtualList()
@@ -314,5 +314,154 @@ describe('scrollToIndex（公共滚动定位方法）', () => {
     })
     el.scrollToIndex(30, { align: 'start' })
     expect(scroller.scrollTop).toBe(600)
+  })
+})
+
+describe('HeightCache（动态行高纯逻辑）', () => {
+  it('预估值驱动偏移与总高；实测回写后偏移随行修正', () => {
+    const c = new HeightCache()
+    c.configure(5, 20)
+    expect(c.total()).toBe(100)
+    expect(c.offsetOf(3)).toBe(60)
+    // 实测第 1 行 50px → 其后偏移整体 +30
+    expect(c.measure(1, 50)).toBe(true)
+    expect(c.heightAt(1)).toBe(50)
+    expect(c.offsetOf(2)).toBe(70)
+    expect(c.offsetOf(3)).toBe(90) // 20+50+20
+    expect(c.total()).toBe(130)
+  })
+
+  it('measure 差异 <0.5px 视为未变；行数变化重置高度表', () => {
+    const c = new HeightCache()
+    c.configure(3, 20)
+    expect(c.measure(0, 20.2)).toBe(false)
+    expect(c.measure(0, 60)).toBe(true)
+    expect(c.total()).toBe(100)
+    c.configure(2, 20)
+    expect(c.heightAt(0)).toBe(20)
+    expect(c.total()).toBe(40)
+  })
+
+  it('预估值变化整体失效重算（未测行跟随新预估）', () => {
+    const c = new HeightCache()
+    c.configure(4, 20)
+    c.measure(0, 60)
+    c.configure(4, 30)
+    expect(c.heightAt(0)).toBe(60) // 实测保留
+    expect(c.heightAt(1)).toBe(30)
+    expect(c.total()).toBe(60 + 30 * 3)
+  })
+})
+
+describe('computeDynamicWindow（动态窗口数学）', () => {
+  const prefix = [0, 50, 70, 90, 150, 170, 220, 240, 260, 280, 300] // 10 行混合高度
+
+  it('顶部：首可见行起 + 视口覆盖 + buffer', () => {
+    // scrollTop=0, vh=100 → 首可见 0（底 50>0），末行顶 <100 → 到 index 4（顶 150 >= 100 的前一行）
+    const w = computeDynamicWindow(prefix, 10, 0, 100, 2)
+    expect(w.start).toBe(0)
+    expect(w.end).toBe(6)
+  })
+
+  it('滚动后按真实偏移定位窗口', () => {
+    // scrollTop=100 → 首可见行是底越过 100 的行（index 3，底 150）
+    const w = computeDynamicWindow(prefix, 10, 100, 100, 0)
+    expect(w.start).toBe(3)
+    // 末行顶 < 200：index 4（顶 150）、index 5（顶 170）可见；index 6 顶 220 >= 200
+    expect(w.end).toBe(6)
+  })
+
+  it('夹取边界：超长 scrollTop 收到底部、空数据', () => {
+    const w = computeDynamicWindow(prefix, 10, 100000, 100, 2)
+    // maxTop=300-100=200 → 首可见 index 5（底 220>200），start=5-buffer(2)=3
+    expect(w.start).toBe(3)
+    expect(w.end).toBe(10)
+    expect(computeDynamicWindow(prefix, 0, 0, 100, 2)).toEqual({ start: 0, end: 0 })
+  })
+})
+
+describe('OASVirtualList 动态行高（dynamic-height）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('开启后行不锁高（无内联 height），总高/padding 按预估值撑开', () => {
+    const el = mount({
+      'dynamic-height': '',
+      height: '100',
+      'estimated-item-height': '20',
+      items: JSON.stringify(range(100)),
+    })
+    const rows = items(el)
+    expect(rows.length).toBeGreaterThan(0)
+    for (const r of rows) expect(r.style.height).toBe('')
+    const inner = el.shadowRoot!.querySelector<HTMLElement>('[part="inner"]')!
+    expect(inner.style.height).toBe('2000px')
+    expect(pad(el, 'padding-top').style.height).toBe('0px')
+  })
+
+  it('不开 dynamic-height 行为零变化（定高锁定）', () => {
+    const el = mount({ height: '100', 'item-height': '20', items: JSON.stringify(range(100)) })
+    const rows = items(el)
+    for (const r of rows) expect(r.style.height).toBe('20px')
+    const inner = el.shadowRoot!.querySelector<HTMLElement>('[part="inner"]')!
+    expect(inner.style.height).toBe('2000px')
+  })
+
+  it('实测回写后总高与窗口偏移修正（模拟高度表变化）', () => {
+    const el = mount({
+      'dynamic-height': '',
+      height: '100',
+      'estimated-item-height': '20',
+      items: JSON.stringify(range(100)),
+    })
+    // 直接驱动组件内高度表（等同 ResizeObserver 回写路径）
+    const cache = (el as unknown as { heightCache: HeightCache }).heightCache
+    expect(cache.measure(0, 80)).toBe(true) // +60
+    expect(cache.measure(1, 60)).toBe(true) // +40
+    // 触发重渲（update 内 renderWindow 按新高度计算）
+    el.setAttribute('buffer', '4')
+    const inner = el.shadowRoot!.querySelector<HTMLElement>('[part="inner"]')!
+    expect(inner.style.height).toBe('2100px') // 2000+60+40
+    expect(cache.offsetOf(2)).toBe(80 + 60)
+  })
+
+  it('scrollToIndex 动态模式按高度表定位（实测行高参与计算）', () => {
+    const el = mount({
+      'dynamic-height': '',
+      height: '100',
+      'estimated-item-height': '20',
+      items: JSON.stringify(range(100)),
+    })
+    const cache = (el as unknown as { heightCache: HeightCache }).heightCache
+    cache.measure(0, 80)
+    cache.measure(1, 60)
+    // 第 2 行顶部 = 80+60=140（非定高的 40）
+    el.scrollToIndex(2, { align: 'start' })
+    expect(viewport(el).scrollTop).toBe(140)
+  })
+
+  it('预估值缺省沿用 item-height；estimated-item-height 非法值回退', () => {
+    const el = mount({
+      'dynamic-height': '',
+      'item-height': '30',
+      height: '120',
+      items: JSON.stringify(range(10)),
+    })
+    const inner = el.shadowRoot!.querySelector<HTMLElement>('[part="inner"]')!
+    expect(inner.style.height).toBe('300px') // 10 × 30
+    const el2 = mount({
+      'dynamic-height': '',
+      'estimated-item-height': 'abc',
+      'item-height': '25',
+      height: '100',
+      items: JSON.stringify(range(10)),
+    })
+    const inner2 = el2.shadowRoot!.querySelector<HTMLElement>('[part="inner"]')!
+    expect(inner2.style.height).toBe('250px') // 10 × 25
   })
 })

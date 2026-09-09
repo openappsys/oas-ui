@@ -86,3 +86,54 @@ test('virtual-list buffer 宿主 property 遮蔽原型方法后渲染不崩（�
   expect(r.count, '连接即渲染不抛错且按 buffer=8 生效（13 = 5 可见 + 上下 8）').toBe(13)
   expect(r.first, '首项索引 0').toBe('0')
 })
+
+test('virtual-list 动态行高：不等高行实测渲染 + 总高修正 + scrollToIndex 定位', async ({
+  page,
+}) => {
+  await page.goto('/components/virtual-list.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#vl-dyn')
+  await page.waitForTimeout(800)
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('#vl-dyn')!
+    const items = [...el.shadowRoot!.querySelectorAll('[part="item"]')] as HTMLElement[]
+    const heights = items.map((it) => it.getBoundingClientRect().height)
+    const inner = el.shadowRoot!.querySelector('[part="inner"]') as HTMLElement
+    const viewport = el.shadowRoot!.querySelector('[part="viewport"]') as HTMLElement
+    return {
+      count: items.length,
+      heights,
+      allDistinct: new Set(heights.map((h) => Math.round(h))).size > 1,
+      innerH: inner.getBoundingClientRect().height,
+      inlineLock: items.every((it) => it.style.height === ''),
+      scrollable: viewport.scrollHeight > viewport.clientHeight,
+    }
+  })
+  // 行不锁高（无内联 height）且实测行高有差异（1/2/3 行描述文本混排）
+  expect(r.count).toBeGreaterThan(0)
+  expect(r.inlineLock).toBe(true)
+  expect(r.allDistinct).toBe(true)
+  expect(r.scrollable).toBe(true)
+
+  // scrollToIndex 动态模式：跳转后目标行出现在视口内
+  await page.evaluate(() => {
+    const el = document.querySelector('#vl-dyn') as unknown as {
+      scrollToIndex: (i: number, o?: { align?: string }) => void
+    }
+    el.scrollToIndex(40, { align: 'start' })
+  })
+  await page.waitForTimeout(400)
+  const pos = await page.evaluate(() => {
+    const el = document.querySelector('#vl-dyn')!
+    const viewport = el.shadowRoot!.querySelector('[part="viewport"]') as HTMLElement
+    const target = el.shadowRoot!.querySelector('[part="item"][data-index="40"]') as HTMLElement
+    return {
+      scrollTop: viewport.scrollTop,
+      hasTarget: !!target,
+      targetTop: target ? target.getBoundingClientRect().top - viewport.getBoundingClientRect().top : -1,
+    }
+  })
+  expect(pos.hasTarget).toBe(true)
+  expect(pos.scrollTop).toBeGreaterThan(0)
+  expect(pos.targetTop).toBeGreaterThanOrEqual(-1)
+  expect(pos.targetTop).toBeLessThan(80)
+})
