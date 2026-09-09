@@ -2931,7 +2931,7 @@
     "attrs": {
       "checkable": "Whether to show checkboxes",
       "checked": "Set of checked node keys (comma-separated)",
-      "data": "Node data `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`, JSON string",
+      "data": "Node data `[{ key, label, children?, disabled?, isLeaf?, loaded?, renamable? }]`, JSON string",
       "directory": "Directory mode: nodes with `children` (or not yet loaded under lazy) show a folder icon, nodes with `isLeaf` / no `children` show a file icon; the folder icon switches on expand / collapse",
       "draggable": "Nodes can be dragged to reorder / reparent; drop shows insertion line / highlight; release emits `oas-node-drop`",
       "expanded": "Set of expanded node keys (comma-separated)",
@@ -2952,13 +2952,16 @@
       "field-names": "Field-alias JSON (e.g. `{\"label\":\"name\",\"value\":\"id\",\"children\":\"subs\"}`; data is not copy-mapped — node-render receives your original objects)",
       "tree-lines": "Tree indentation guide lines",
       "disabled": "Whole-tree disabled (select/check/expand/drag all inert, browsing kept)",
-      "empty": "Empty-state text (when no data; no-match uses the locale no-match text)"
+      "empty": "Empty-state text (when no data; no-match uses the locale no-match text)",
+      "can-rename": "Master switch for node renaming: when on, double-click a node label or press F2 to enter inline editing; Enter commits / Esc cancels / blur commits; committing emits `oas-node-rename` (mark a node `renamable: false` in the data to exclude it individually)",
+      "motion": "Expand/collapse height transition animation (off by default): non-virtual mode transitions row-container max-height on expand/collapse, virtual-scroll mode degrades to a fade-in on expand with instant collapse; duration/easing follow `--oas-transition-*`, disabled under `prefers-reduced-motion`"
     },
     "events": {
       "oas-check": "Check state change, `detail: { key, checked }`",
       "oas-load": "Lazy loading triggered, `detail: { key }`; the host refills `children` and resets the `data` attribute",
       "oas-node-drop": "Node dropped, `detail: { dragKey, dropKey, position }`; `position` is `before` / `after` / `inner`; an empty-string `dropKey` means moved to the root",
       "oas-node-render": "Dispatched for each rendered node row, `detail: { node, element }` (element is the node label container; the host can rewrite it into icon / rich text)",
+      "oas-node-rename": "Inline rename committed (Enter / blur), `detail: { key, label, oldLabel }`; data stays host-controlled — the component does not mutate the model, so the new label only shows once the host updates `data` (keeps the old value otherwise; Esc cancel does not emit)",
       "oas-select": "Node selected, `detail: { key, selected }`",
       "oas-load-error": "Lazy load failed, `detail: { key, error }` where `error` is the error message string (loading clears, clickable to retry)"
     },

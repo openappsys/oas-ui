@@ -1068,3 +1068,305 @@ describe('OASTree 声明式数据通道 / 水合 / 自定义渲染 / 目录', ()
     expect(label.querySelector('[data-node-label]')!.textContent).toContain('节点')
   })
 })
+
+describe('OASTree 节点重命名（can-rename / 双击 or F2 内联编辑）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  /** 模拟双击 label：同 key 500ms 窗口内的两次 click（改造为组件手工判定双击） */
+  function dblClickLabel(el: OASTree, rowIndex: number): void {
+    const fire = (): void => {
+      const label = rows(el)[rowIndex]!.querySelector<HTMLElement>('.label')!
+      label.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    }
+    fire()
+    fire() // 第二次仍取重建后同 key 行
+  }
+
+  function renameInputOf(el: OASTree): HTMLInputElement | null {
+    return el.shadowRoot!.querySelector<HTMLInputElement>('input.rename-input')
+  }
+
+  it('can-rename 缺省关：双击 label 不进编辑态（无输入框、仍普通选中）', () => {
+    const el = mount({ data: CASCADE_DATA })
+    dblClickLabel(el, 0)
+    expect(renameInputOf(el)).toBeNull()
+    expect(el.getAttribute('selected')).toBe('a')
+  })
+
+  it('can-rename 开启：双击 label 进入内联编辑（输入框回显旧 label，可聚焦）', () => {
+    const el = mount({ 'can-rename': '', data: CASCADE_DATA })
+    let selectCount = 0
+    el.addEventListener('oas-select', () => selectCount++)
+    dblClickLabel(el, 0)
+    const input = renameInputOf(el)
+    expect(input).not.toBeNull()
+    expect(input!.value).toBe('节点 A')
+    // 第二次点击的选中被抑制：选中不取消、oas-select 只随首击触发一次
+    expect(el.getAttribute('selected')).toBe('a')
+    expect(selectCount).toBe(1)
+    input!.focus()
+    expect(el.shadowRoot!.activeElement).toBe(input)
+    expect(input!.getAttribute('aria-label')).toBe('节点 A')
+  })
+
+  it('节点 renamable:false 细粒度禁重命名（双击不进入编辑）', () => {
+    const data = JSON.stringify([
+      { key: 'ok', label: '可重命名' },
+      { key: 'lock', label: '锁定的节点', renamable: false },
+    ])
+    const el = mount({ 'can-rename': '', data })
+    dblClickLabel(el, 1)
+    expect(renameInputOf(el)).toBeNull()
+    dblClickLabel(el, 0)
+    expect(renameInputOf(el)).not.toBeNull()
+  })
+
+  it('整树 disabled / 节点 disabled：不可重命名', () => {
+    const data = JSON.stringify([
+      { key: 'a', label: 'A' },
+      { key: 'dis', label: '禁用节点', disabled: true },
+    ])
+    const dis = mount({ 'can-rename': '', data })
+    dblClickLabel(dis, 1)
+    expect(renameInputOf(dis)).toBeNull()
+
+    const whole = mount({ 'can-rename': '', disabled: '', data: CASCADE_DATA })
+    dblClickLabel(whole, 0)
+    expect(renameInputOf(whole)).toBeNull()
+  })
+
+  it('Enter 提交（监听先挂）派发事件并退出编辑', () => {
+    const el = mount({ 'can-rename': '', data: CASCADE_DATA })
+    const details: unknown[] = []
+    el.addEventListener('oas-node-rename', (e: Event) =>
+      details.push((e as CustomEvent).detail),
+    )
+    dblClickLabel(el, 0)
+    const input = renameInputOf(el)!
+    input.value = '新名字'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(details).toEqual([{ key: 'a', label: '新名字', oldLabel: '节点 A' }])
+    expect(renameInputOf(el)).toBeNull()
+    // 组件不擅自改数据：label 仍显示宿主 data 里的旧值
+    const label = rows(el)[0]!.querySelector<HTMLElement>('.label')!
+    expect(label.textContent).toBe('节点 A')
+  })
+
+  it('宿主受控：监听 oas-node-rename 更新 data 后行内显示新 label', () => {
+    const el = mount({ 'can-rename': '', data: CASCADE_DATA })
+    el.addEventListener('oas-node-rename', (e: Event) => {
+      const { key, label } = (e as CustomEvent).detail
+      const data = JSON.parse(el.getAttribute('data')!) as TreeNode[]
+      const walk = (list: TreeNode[]): boolean => {
+        for (const n of list) {
+          if (n.key === key) {
+            n.label = label
+            return true
+          }
+          if (n.children && walk(n.children)) return true
+        }
+        return false
+      }
+      walk(data)
+      el.setAttribute('data', JSON.stringify(data))
+    })
+    dblClickLabel(el, 0)
+    const input = renameInputOf(el)!
+    input.value = '宿主更新名'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    const label = rows(el)[0]!.querySelector<HTMLElement>('.label')!
+    expect(label.textContent).toBe('宿主更新名')
+  })
+
+  it('Escape 取消：不派发事件、还原旧 label、退出编辑', () => {
+    const el = mount({ 'can-rename': '', data: CASCADE_DATA })
+    const details: unknown[] = []
+    el.addEventListener('oas-node-rename', (e: Event) =>
+      details.push((e as CustomEvent).detail),
+    )
+    dblClickLabel(el, 0)
+    const input = renameInputOf(el)!
+    input.value = '改名失败'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(details.length).toBe(0)
+    expect(renameInputOf(el)).toBeNull()
+    expect(rows(el)[0]!.querySelector<HTMLElement>('.label')!.textContent).toBe('节点 A')
+  })
+
+  it('blur 提交：失焦即派发 oas-node-rename', () => {
+    const el = mount({ 'can-rename': '', data: CASCADE_DATA })
+    const details: unknown[] = []
+    el.addEventListener('oas-node-rename', (e: Event) =>
+      details.push((e as CustomEvent).detail),
+    )
+    dblClickLabel(el, 0)
+    const input = renameInputOf(el)!
+    input.value = '失焦提交'
+    input.dispatchEvent(new FocusEvent('blur'))
+    expect(details).toEqual([{ key: 'a', label: '失焦提交', oldLabel: '节点 A' }])
+    expect(renameInputOf(el)).toBeNull()
+  })
+
+  it('内容未变 / 空内容：静默退出（不派发事件）', () => {
+    const el = mount({ 'can-rename': '', data: CASCADE_DATA })
+    const details: unknown[] = []
+    el.addEventListener('oas-node-rename', (e: Event) =>
+      details.push((e as CustomEvent).detail),
+    )
+    // 未改
+    dblClickLabel(el, 0)
+    renameInputOf(el)!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+    )
+    // 清空后 Enter → 还原（非破坏默认）
+    dblClickLabel(el, 0)
+    const input = renameInputOf(el)!
+    input.value = ''
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(details.length).toBe(0)
+    expect(renameInputOf(el)).toBeNull()
+    expect(rows(el)[0]!.querySelector<HTMLElement>('.label')!.textContent).toBe('节点 A')
+  })
+
+  it('F2 进入编辑：roving 行上按 F2 内联编辑，Enter 提交后焦点回行', () => {
+    const el = mount({ 'can-rename': '', data: CASCADE_DATA })
+    rows(el)[0]!.focus()
+    rows(el)[0]!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'F2', bubbles: true, composed: true }),
+    )
+    const input = renameInputOf(el)
+    expect(input).not.toBeNull()
+    expect(input!.value).toBe('节点 A')
+    input!.value = 'F2 改名'
+    input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(renameInputOf(el)).toBeNull()
+    expect(rows(el)[0]!.tabIndex).toBe(0)
+    // 焦点回到行
+    expect(el.shadowRoot!.activeElement).toBe(rows(el)[0])
+  })
+
+  it('编辑态期间外部 update 重建行：编辑态与输入内容保持', () => {
+    const el = mount({ 'can-rename': '', data: CASCADE_DATA })
+    dblClickLabel(el, 0)
+    const input = renameInputOf(el)!
+    input.value = '重命名中'
+    input.dispatchEvent(new Event('input'))
+    // 重建触发（同 data 重设属性 → update 全量重建行）
+    el.setAttribute('data', el.getAttribute('data')!)
+    const rebuilt = renameInputOf(el)
+    expect(rebuilt).not.toBeNull()
+    expect(rebuilt!.value).toBe('重命名中')
+  })
+
+  it('编辑态在虚拟行内也能工作：双击 + Enter 提交 + 宿主更新', () => {
+    const data = JSON.stringify([
+      { key: 'n0', label: '节点 0', children: [{ key: 'n0-c', label: '子节点 0-c' }] },
+      { key: 'n1', label: '节点 1' },
+    ])
+    const el = mount({ 'can-rename': '', height: '200', 'row-height': '32', data })
+    el.addEventListener('oas-node-rename', (e: Event) => {
+      const { key, label } = (e as CustomEvent).detail
+      const list = JSON.parse(data) as TreeNode[]
+      list[0]!.label = key === 'n0' ? label : list[0]!.label
+      el.setAttribute('data', JSON.stringify(list))
+    })
+    const fire = (): void => {
+      const label = virtualRows(el)[0]!.querySelector<HTMLElement>('.label') as HTMLElement
+      label.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    }
+    fire()
+    fire()
+    const input = virtualRows(el)[0]!.querySelector<HTMLInputElement>('input.rename-input')
+    expect(input).not.toBeNull()
+    input!.value = '虚拟行改名'
+    input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    expect(virtualRows(el)[0]!.textContent).toContain('虚拟行改名')
+  })
+})
+
+describe('OASTree 展开/收起过渡（motion 高度动画）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  const wait = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
+
+  it('motion 缺省关：展开/收起即时生效、不挂 motion 类与入场钩子', () => {
+    const el = mount({ data: CASCADE_DATA })
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.tree')!
+    expect(wrap.classList.contains('motion')).toBe(false)
+    toggles(el)[0]!.click()
+    expect(expandedOf(el)).toEqual(['a'])
+    expect(labels(el)).toBe('节点 A|子节点 1|子节点 2|节点 B')
+    expect(rows(el).filter((r) => r.classList.contains('oas-row-enter')).length).toBe(0)
+    toggles(el)[0]!.click()
+    expect(expandedOf(el)).toEqual([])
+  })
+
+  it('motion 开启：容器挂 motion 类、样式含过渡钩子（fade keyframes 与 leave 类）', () => {
+    const el = mount({ motion: '', data: CASCADE_DATA })
+    const wrap = el.shadowRoot!.querySelector<HTMLElement>('.tree')!
+    expect(wrap.classList.contains('motion')).toBe(true)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toMatch(/@keyframes oas-tree-row-fade/)
+    expect(style).toMatch(/\.oas-row-leave/)
+    // 虚拟行样式同样注入钩子
+    const vlist = el.shadowRoot!.querySelector('oas-virtual-list')!
+    const vStyle = vlist.shadowRoot!.querySelector('style[data-oas-tree-rows]')!.textContent!
+    expect(vStyle).toMatch(/@keyframes oas-tree-row-fade/)
+  })
+
+  it('motion 展开：展开后新增子行带入场钩子类', () => {
+    const el = mount({ motion: '', data: CASCADE_DATA })
+    toggles(el)[0]!.click()
+    expect(expandedOf(el)).toEqual(['a'])
+    expect(labels(el)).toBe('节点 A|子节点 1|子节点 2|节点 B')
+    const enterRows = rows(el).filter((r) => r.classList.contains('oas-row-enter'))
+    expect(enterRows.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('motion 收起：先离场动画（子行保留 + 带 oas-row-leave），动画后收起', async () => {
+    const el = mount({ motion: '', expanded: '["a"]', data: CASCADE_DATA })
+    expect(labels(el)).toBe('节点 A|子节点 1|子节点 2|节点 B')
+    toggles(el)[0]!.click()
+    // 离场阶段：expanded 未落库、子行仍在 DOM 并带离场钩子
+    expect(expandedOf(el)).toEqual(['a'])
+    const leaving = rows(el).filter((r) => r.classList.contains('oas-row-leave'))
+    expect(leaving.length).toBeGreaterThanOrEqual(2)
+    // 动画时长（--oas-transition-base 兜底 180ms）+ 余量后真正收起
+    await wait(320)
+    expect(expandedOf(el)).toEqual([])
+    expect(labels(el)).toBe('节点 A|节点 B')
+  })
+
+  it('motion + 虚拟滚动：motion 类与入场降级 fade 钩子，收起即时', async () => {
+    const el = mount({ motion: '', height: '200', 'row-height': '32', data: BIG_DATA })
+    const vlist = el.shadowRoot!.querySelector('oas-virtual-list') as HTMLElement
+    expect(vlist.classList.contains('motion')).toBe(true)
+    const toggle = virtualRows(el)[0]!.querySelector<HTMLButtonElement>('.toggle')!
+    toggle.click()
+    expect(expandedOf(el)).toEqual(['n0'])
+    const childRow = [...virtualRows(el)].find((r) =>
+      r.querySelector<HTMLElement>('.label')!.textContent.includes('子节点 0-c'),
+    )
+    expect(childRow).toBeTruthy()
+    expect(childRow!.querySelector('.row')!.classList.contains('oas-row-fade')).toBe(true)
+    // 虚拟模式收起降级即时（不做强行动画）
+    virtualRows(el)[0]!.querySelector<HTMLButtonElement>('.toggle')!.click()
+    expect(expandedOf(el)).toEqual([])
+  })
+})

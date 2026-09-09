@@ -231,6 +231,35 @@ Node content can be provided as a static skeleton via `template[slot="node"]` (t
 
 With `directory`, the tree renders in a file-browser style: nodes with `children` (or not yet loaded under lazy) show a folder icon, nodes with `isLeaf` / no `children` show a file icon; the folder icon switches between collapsed / expanded, and the depth-based indent and hover row highlight follow the row styles. Combine with `tree-lines` to show ancestor guide lines.
 
+## Node Renaming
+
+<DemoBlock title="Inline renaming (double-click or F2, Enter commits / Esc cancels)">
+  <div style="width: 100%">
+    <oas-tree id="tree-rename" can-rename data='[{"key":"fe","label":"R&D team","children":[{"key":"a-1","label":"Member A"},{"key":"a-2","label":"Protected member","renamable":false}]},{"key":"ops","label":"Ops team"}]'></oas-tree>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      <span id="tree-rename-status">Double-click "R&D team" or one of its children, or press F2 after selecting a node</span>
+    </p>
+  </div>
+</DemoBlock>
+
+With `can-rename`, node renaming is enabled: **double-click a node label** (or press **F2** with the node focused) enters the inline editing state; **Enter / blur commits**, **Esc cancels** (restores the old value without emitting). While editing, arrow keys stay inside the input so tree roving keyboard navigation is unaffected; mark a node `renamable: false` in the data to disable renaming for that node individually.
+
+Data stays host-controlled: on commit the component only **emits `oas-node-rename`** (`detail: { key, label, oldLabel }`) and never mutates the data model — the host listens, writes the new label back into the data, and resets the `data` attribute; only then does the row show the new name. If the host does nothing, the old value is kept (no desync from one-sided component mutation).
+
+## Expand / Collapse Transition
+
+<DemoBlock title="Expand/collapse motion (toggle to compare)">
+  <div style="width: 100%">
+    <div style="display: flex; gap: var(--oas-space-2); align-items: center; margin-bottom: var(--oas-space-2)">
+      <oas-button id="tree-motion-toggle" size="small">Enable motion</oas-button>
+      <span id="tree-motion-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Motion off (expand arrow toggles instantly)</span>
+    </div>
+    <oas-tree id="tree-motion" data='[{"key":"g1","label":"Group 1","children":[{"key":"g1-1","label":"Item 1-1","children":[{"key":"g1-1-a","label":"Leaf A"},{"key":"g1-1-b","label":"Leaf B"}]},{"key":"g1-2","label":"Item 1-2"}]},{"key":"g2","label":"Group 2","children":[{"key":"g2-1","label":"Item 2-1"},{"key":"g2-2","label":"Item 2-2"}]}]'></oas-tree>
+  </div>
+</DemoBlock>
+
+With `motion`, expand/collapse animates with a **height transition** (off by default): expanding grows the newly added child rows smoothly from zero height to their natural height; collapsing first shrinks the child rows away before removing them. Duration and easing follow the `--oas-transition-*` tokens. In virtual-scroll mode (a `height` is set) the expand entrance degrades to a fade and collapse switches instantly — virtual rows use a fixed height where height animation would cause jank and misalignment. The animation respects `prefers-reduced-motion` (auto-disabled when the user asks for reduced motion).
+
 ## Events
 
 <DemoBlock title="Selection and check events">
@@ -390,6 +419,40 @@ onMounted(() => {
     })
   }
 
+  // Inline-rename demo: listen to oas-node-rename and write the label back into the data
+  // (the component keeps data host-controlled, so the row only updates after the host resets data)
+  const renameTree = document.querySelector('#tree-rename')
+  if (renameTree) {
+    renameTree.addEventListener('oas-node-rename', (e) => {
+      const { key, label, oldLabel } = e.detail
+      const nodes = JSON.parse(renameTree.getAttribute('data'))
+      const walk = (list) => {
+        for (const n of list) {
+          if (n.key === key) {
+            n.label = label
+            return true
+          }
+          if (n.children && walk(n.children)) return true
+        }
+        return false
+      }
+      walk(nodes)
+      renameTree.setAttribute('data', JSON.stringify(nodes))
+      document.querySelector('#tree-rename-status').textContent = `Renamed: ${oldLabel} → ${label}`
+    })
+  }
+
+  // Motion demo: toggle the motion attribute to compare expand/collapse transitions
+  const motionTree = document.querySelector('#tree-motion')
+  document.querySelector('#tree-motion-toggle')?.addEventListener('click', () => {
+    const on = !motionTree?.hasAttribute('motion')
+    if (on) motionTree?.setAttribute('motion', '')
+    else motionTree?.removeAttribute('motion')
+    document.querySelector('#tree-motion-status').textContent = on
+      ? 'Motion on: children grow from zero height on expand and shrink away before collapse'
+      : 'Motion off (expand arrow toggles instantly)'
+  })
+
   // Filter demo: drive the filter attribute from the search input
   const filterInput = document.querySelector('#tree-filter-input')
   const filterTree = document.querySelector('#tree-filter')
@@ -428,11 +491,12 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `accordion` | Accordion (only one sibling branch open at a time) | `boolean` | — |
 | `auto-expand-parent` | Auto-expand parents when a child is checked | `boolean` | — |
+| `can-rename` | Master switch for node renaming: when on, double-click a node label or press F2 to enter inline editing; Enter commits / Esc cancels / blur commits; committing emits `oas-node-rename` (mark a node `renamable: false` in the data to exclude it individually) | `boolean` | — |
 | `check-strategy` | Check export strategy: `all` (default) / `parent` / `child` (with checkable cascading) | `string` | `all` |
 | `check-strictly` | Decouple parent/child checking | `boolean` | — |
 | `checkable` | Whether to show checkboxes | `boolean` | — |
 | `checked` | Set of checked node keys (comma-separated) | `string` | — |
-| `data` | Node data `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`, JSON string | `TreeNode[] \| string` | `[]` |
+| `data` | Node data `[{ key, label, children?, disabled?, isLeaf?, loaded?, renamable? }]`, JSON string | `TreeNode[] \| string` | `[]` |
 | `default-expand-all` | Expand all nodes by default (applies when the expanded attribute is absent) | `boolean` | — |
 | `directory` | Directory mode: nodes with `children` (or not yet loaded under lazy) show a folder icon, nodes with `isLeaf` / no `children` show a file icon; the folder icon switches on expand / collapse | `boolean` | — |
 | `disabled` | Whole-tree disabled (select/check/expand/drag all inert, browsing kept) | `boolean` | — |
@@ -446,6 +510,7 @@ onMounted(() => {
 | `height` | Virtual scroll viewport height (px); setting it enables virtualized rendering for large data | `string` | — |
 | `lazy` | Lazy loading: nodes without `children` and not marked `isLeaf` / `loaded` trigger loading on expand | `boolean` | — |
 | `load` | Lazy loading callback `(payload: { key }) => void`, coexists with the `oas-load` event; the host refills child nodes and resets the `data` attribute | `(payload: { key: string }) => void \| Promise<unknown>` | — |
+| `motion` | Expand/collapse height transition animation (off by default): non-virtual mode transitions row-container max-height on expand/collapse, virtual-scroll mode degrades to a fade-in on expand with instant collapse; duration/easing follow `--oas-transition-*`, disabled under `prefers-reduced-motion` | `boolean` | — |
 | `multiple` | Click multi-select (Ctrl/⌘-click; selected set is a JSON array) | `boolean` | — |
 | `row-height` | Fixed row height when virtualized (px) | `string` | `32` |
 | `selected` | Key of the selected node | `string` | — |
@@ -459,6 +524,7 @@ onMounted(() => {
 | `oas-load` | Lazy loading triggered, `detail: { key }`; the host refills `children` and resets the `data` attribute |
 | `oas-load-error` | Lazy load failed, `detail: { key, error }` where `error` is the error message string (loading clears, clickable to retry) |
 | `oas-node-drop` | Node dropped, `detail: { dragKey, dropKey, position }`; `position` is `before` / `after` / `inner`; an empty-string `dropKey` means moved to the root |
+| `oas-node-rename` | Inline rename committed (Enter / blur), `detail: { key, label, oldLabel }`; data stays host-controlled — the component does not mutate the model, so the new label only shows once the host updates `data` (keeps the old value otherwise; Esc cancel does not emit) |
 | `oas-node-render` | Dispatched for each rendered node row, `detail: { node, element }` (element is the node label container; the host can rewrite it into icon / rich text) |
 | `oas-select` | Node selected, `detail: { key, selected }` |
 
@@ -471,4 +537,4 @@ onMounted(() => {
 | `template[slot="toggle"]` | Static expand button template cloned into each expandable node's toggle button (replaces the default › icon) |
 | `template[slot="toggle-loading"]` | Lazy-expanding indicator (replaces the spinner) |
 
-> Node field notes: `isLeaf: true` marks an explicit leaf (no expand arrow under lazy loading); `loaded: true` marks a node as fully loaded (used with `children` to avoid triggering loading repeatedly).
+> Node field notes: `isLeaf: true` marks an explicit leaf (no expand arrow under lazy loading); `loaded: true` marks a node as fully loaded (used with `children` to avoid triggering loading repeatedly); `renamable: false` disables renaming for that node (used with `can-rename`; nodes are renameable by default).
