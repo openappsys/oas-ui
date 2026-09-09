@@ -6,6 +6,7 @@ import {
   type ScrollToIndexAlign,
   type ScrollToIndexOptions,
 } from './oas-virtual-list.js'
+import { HeightCache, computeDynamicWindow } from './dynamic-height.js'
 
 if (!customElements.get('oas-virtual-list')) {
   customElements.define('oas-virtual-list', OASVirtualList)
@@ -14,6 +15,8 @@ if (!customElements.get('oas-virtual-list')) {
 export {
   OASVirtualList,
   computeVirtualWindow,
+  HeightCache,
+  computeDynamicWindow,
   type VirtualWindow,
   type ScrollToIndexAlign,
   type ScrollToIndexOptions,
