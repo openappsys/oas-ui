@@ -257,10 +257,12 @@ The default slot of an item can hold a thumbnail, combining it with the title an
 
 ## Data Channel (data + template dual channel)
 
-Beyond declarative `oas-list-item` children, `oas-list` supports data-driven rendering: pass an array via the `data` property (recommended) or the `data` attribute (JSON string). There are two channels for customizing rendering (aligned with the `oas-tree` convention):
+Beyond declarative `oas-list-item` children, `oas-list` supports data-driven rendering: pass an array via the `data` property (recommended) or the `data` attribute (JSON string). **Object rows work out of the box**: without a template, the `{ title, description, avatar }` fields are rendered as the Meta structure automatically (primitive values render as plain text) — rows never degrade to `"[object Object]"`. There are two channels for customizing rendering (aligned with the `oas-tree` convention):
 
 1. `template[slot="item"]`: a static skeleton cloned per item, bound to data via the `oas-item-render` event (`detail` carries `{ index, item, element }`);
 2. Listen to `oas-item-render` only, without a template, and fill each row imperatively.
+
+> Attach listeners before assigning data: assignment renders synchronously and fires `oas-item-render`, so listeners attached afterwards miss the first render.
 
 When `data` is present the data channel wins; without it the list falls back to declarative children. Data rows are carried by `oas-list-item` (same structure, avatar, selection, and clicks as declarative rows) with a `data-index` context on each row.
 
@@ -308,8 +310,10 @@ Setting `height` enables virtual scrolling (embedding `oas-virtual-list`); `row-
   <div style="width: 100%">
     <oas-list bordered height="320" row-height="57" id="list-virtual">
       <template slot="item">
-        <span slot="title" data-field="title"></span>
-        <span slot="description" data-field="description"></span>
+        <div style="display: flex; flex-direction: column; justify-content: center; height: 100%; overflow: hidden">
+          <strong data-field="title" style="font-size: var(--oas-font-size-md)"></strong>
+          <span data-field="description" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"></span>
+        </div>
       </template>
     </oas-list>
   </div>
@@ -381,27 +385,21 @@ onMounted(() => {
   // Stripe data
   const stripe = document.querySelector('#list-stripe')
   if (stripe) {
-    stripe.data = Array.from({ length: 6 }, (_, i) => ({
-      title: `Audit event #${1000 + i}`,
-      description: `By system · ${['created', 'updated', 'deleted'][i % 3]} a config item`,
-    }))
+    // Attach listeners BEFORE assigning data: assignment renders synchronously and fires oas-item-render
     stripe.addEventListener('oas-item-render', (e) => {
       const { item, element } = e.detail
       element.setAttribute('title', item.title)
       element.setAttribute('description', item.description)
     })
+    stripe.data = Array.from({ length: 6 }, (_, i) => ({
+      title: `Audit event #${1000 + i}`,
+      description: `By system · ${['created', 'updated', 'deleted'][i % 3]} a config item`,
+    }))
   }
 
   // Data channel: imperative binding via oas-item-render
   const dataList = document.querySelector('#list-data')
   if (dataList) {
-    dataList.data = [
-      { title: 'Fix tag contrast in dark mode', description: 'Status color token audit', status: 'In progress' },
-      { title: 'Add timeline migration notes', description: 'color → type breaking change', status: 'In progress' },
-      { title: 'List virtual scrolling integration', description: 'Embedding oas-virtual-list', status: 'Todo' },
-      { title: 'Regression tests coverage', description: 'qa-regression hardening', status: 'Todo' },
-      { title: 'Release v2.4.0', description: 'Deep-dive batch wrap-up', status: 'Planned' },
-    ]
     dataList.addEventListener('oas-item-render', (e) => {
       const { item, element } = e.detail
       element.setAttribute('title', item.title)
@@ -416,6 +414,13 @@ onMounted(() => {
       element.appendChild(tag)
       element.setAttribute('clickable', '')
     })
+    dataList.data = [
+      { title: 'Fix tag contrast in dark mode', description: 'Status color token audit', status: 'In progress' },
+      { title: 'Add timeline migration notes', description: 'color → type breaking change', status: 'In progress' },
+      { title: 'List virtual scrolling integration', description: 'Embedding oas-virtual-list', status: 'Todo' },
+      { title: 'Regression tests coverage', description: 'qa-regression hardening', status: 'Todo' },
+      { title: 'Release v2.4.0', description: 'Deep-dive batch wrap-up', status: 'Planned' },
+    ]
     dataList.addEventListener('oas-click', (e) => {
       if (e.detail && typeof e.detail.index === 'number') {
         message.info(`Clicked row ${e.detail.index + 1}: ${e.detail.item.title}`)
@@ -426,11 +431,6 @@ onMounted(() => {
   // Data channel: template skeleton clone + oas-item-render data binding
   const tplList = document.querySelector('#list-data-tpl')
   if (tplList) {
-    tplList.data = [
-      { title: 'Lin Xiaoyu', description: 'Updated three PRDs', status: 'Online', tagType: 'success' },
-      { title: 'Chen Yining', description: 'Merged 2 PRs', status: 'Busy', tagType: 'warning' },
-      { title: 'Zhao Qiming', description: 'Submitted test report', status: 'Offline', tagType: 'default' },
-    ]
     tplList.addEventListener('oas-item-render', (e) => {
       const { item, element } = e.detail
       for (const node of element.querySelectorAll('[data-field]')) {
@@ -441,6 +441,11 @@ onMounted(() => {
         }
       }
     })
+    tplList.data = [
+      { title: 'Lin Xiaoyu', description: 'Updated three PRDs', status: 'Online', tagType: 'success' },
+      { title: 'Chen Yining', description: 'Merged 2 PRs', status: 'Busy', tagType: 'warning' },
+      { title: 'Zhao Qiming', description: 'Submitted test report', status: 'Offline', tagType: 'default' },
+    ]
   }
 
   // Scroll loading: append on reach-bottom + load-more tail status
@@ -449,6 +454,11 @@ onMounted(() => {
     const tail = document.querySelector('#list-infinite-tail')
     let batch = 0
     const totalBatches = 3
+    infinite.addEventListener('oas-item-render', (e) => {
+      const { item, element } = e.detail
+      element.setAttribute('title', item.title)
+      element.setAttribute('description', item.description)
+    })
     const append = (count) => {
       const current = infinite.dataItems
       infinite.data = current.concat(
@@ -476,26 +486,21 @@ onMounted(() => {
         setTail(batch >= totalBatches ? '— No more —' : 'Scroll down to load more')
       }, 400)
     })
-    infinite.addEventListener('oas-item-render', (e) => {
-      const { item, element } = e.detail
-      element.setAttribute('title', item.title)
-      element.setAttribute('description', item.description)
-    })
   }
 
   // Virtual scrolling: 10k logs
   const virtual = document.querySelector('#list-virtual')
   if (virtual) {
-    virtual.data = Array.from({ length: 10000 }, (_, i) => ({
-      title: `Access log #${i + 1}`,
-      description: `GET /api/records/${i + 1} · 200 · ${(Math.random() * 80 + 10).toFixed(0)}ms`,
-    }))
     virtual.addEventListener('oas-item-render', (e) => {
       const { item, element } = e.detail
       for (const node of element.querySelectorAll('[data-field]')) {
         node.textContent = item[node.getAttribute('data-field')] ?? ''
       }
     })
+    virtual.data = Array.from({ length: 10000 }, (_, i) => ({
+      title: `Access log #${i + 1}`,
+      description: `GET /api/records/${i + 1} · 200 · ${(Math.random() * 80 + 10).toFixed(0)}ms`,
+    }))
   }
 
   // Pagination composition: host slicing + updating data
@@ -507,15 +512,15 @@ onMounted(() => {
       description: `Customer ${['A', 'B', 'C', 'D'][i % 4]} · ${['Inquiry', 'Incident', 'Suggestion'][i % 3]}`,
     }))
     const pageSize = 4
-    const render = (page) => {
-      paged.data = all.slice((page - 1) * pageSize, page * pageSize)
-    }
-    render(1)
     paged.addEventListener('oas-item-render', (e) => {
       const { item, element } = e.detail
       element.setAttribute('title', item.title)
       element.setAttribute('description', item.description)
     })
+    const render = (page) => {
+      paged.data = all.slice((page - 1) * pageSize, page * pageSize)
+    }
+    render(1)
     pagedNav.addEventListener('oas-change', (e) => render(e.detail.page ?? e.detail.current ?? 1))
   }
 

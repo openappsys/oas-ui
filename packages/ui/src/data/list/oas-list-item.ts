@@ -176,6 +176,13 @@ export class OASListItem extends OASElement {
       this.titleCache = raw === '' ? null : raw
       this.removeAttribute('title')
     }
+    // itemData 元数据兜底（数据通道行）：title/description/avatar 属性缺席时从
+    // itemData 同名字段取——对象行不写模板也能开箱渲染，不再退化成 "[object Object]"
+    const meta =
+      this.itemData && typeof this.itemData === 'object'
+        ? (this.itemData as { title?: unknown; description?: unknown; avatar?: unknown })
+        : null
+    if (this.titleCache == null && meta?.title != null) this.titleCache = String(meta.title)
     // title 双通道：属性文本写入兜底 span；slot="title" 有真实内容时以插槽为准（兜底隐藏）
     const titleEl = this.shadow.querySelector<HTMLElement>('[part="title"]')
     const titleSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="title"]')
@@ -195,7 +202,9 @@ export class OASListItem extends OASElement {
     const descFallback = this.shadow.querySelector<HTMLElement>('.desc-text')
     const defaultSlot = this.shadow.querySelector<HTMLSlotElement>('slot:not([name])')
     if (descEl && descSlot && descFallback) {
-      const attr = this.getAttr('description', '')
+      const attr =
+        this.getAttr('description', '') ||
+        (meta?.description != null ? String(meta.description) : '')
       descFallback.textContent = attr
       // 插槽（description 或默认插槽）有内容时隐藏属性兜底，防双显
       const hasDesc = this.slotHasContent(descSlot) || this.slotHasContent(defaultSlot)
@@ -207,7 +216,8 @@ export class OASListItem extends OASElement {
     const avatarEl = this.shadow.querySelector<HTMLElement>('[part="avatar"]')
     const avatarSlot = this.shadow.querySelector<HTMLSlotElement>('slot[name="avatar"]')
     const avatarImg = this.shadow.querySelector<HTMLImageElement>('.avatar-img')
-    const avatarUrl = this.getAttr('avatar', '')
+    const avatarUrl =
+      this.getAttr('avatar', '') || (meta?.avatar != null ? String(meta.avatar) : '')
     if (avatarEl && avatarSlot && avatarImg) {
       const hasSlot = this.slotHasContent(avatarSlot)
       avatarImg.hidden = hasSlot || avatarUrl === ''

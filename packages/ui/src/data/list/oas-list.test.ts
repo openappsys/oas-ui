@@ -366,6 +366,35 @@ describe('OASList', () => {
       expect(css).toMatch(/\[hidden\]\s*\{\s*display:\s*none\s*!important/)
       el.remove()
     })
+
+    it('itemData 元数据兜底：属性缺席时 title/description/avatar 从 itemData 同名字段渲染', () => {
+      // 用户实测：数据通道对象行不写模板曾整体渲染成 "[object Object]"
+      const el = new OASListItem()
+      ;(el as { itemData?: unknown }).itemData = {
+        title: '审计事件 #1000',
+        description: '操作人 system',
+        avatar: 'https://example.com/a.png',
+      }
+      document.body.appendChild(el)
+      const titleText = el.shadowRoot!.querySelector<HTMLElement>('.title-text')!
+      const descText = el.shadowRoot!.querySelector<HTMLElement>('.desc-text')!
+      const img = el.shadowRoot!.querySelector<HTMLImageElement>('.avatar-img')!
+      expect(titleText.textContent).toBe('审计事件 #1000')
+      expect(descText.textContent).toBe('操作人 system')
+      expect(img.getAttribute('src')).toBe('https://example.com/a.png')
+      el.remove()
+    })
+
+    it('itemData 不覆盖显式 title/description 属性（属性优先）', () => {
+      const el = new OASListItem()
+      el.setAttribute('title', '显式标题')
+      el.setAttribute('description', '显式描述')
+      ;(el as { itemData?: unknown }).itemData = { title: '数据标题', description: '数据描述' }
+      document.body.appendChild(el)
+      expect(el.shadowRoot!.querySelector<HTMLElement>('.title-text')!.textContent).toBe('显式标题')
+      expect(el.shadowRoot!.querySelector<HTMLElement>('.desc-text')!.textContent).toBe('显式描述')
+      el.remove()
+    })
   })
 
   describe('OASListItem 行交互（clickable / selected）', () => {
@@ -454,6 +483,19 @@ describe('OASList', () => {
       const rows = el.shadowRoot!.querySelector('[part="data-items"]')!.children
       expect(rows[0]!.textContent).toContain('甲')
       expect(rows[1]!.textContent).toContain('42')
+    })
+
+    it('无模板时对象行不做 String 兜底（itemData 元数据渲染，不出现 [object Object]）', () => {
+      // 用户实测回归：数据通道对象行曾整体渲染成 "[object Object]"
+      const el = new OASList()
+      el.data = [{ title: '任务 A', description: '描述 A' }]
+      document.body.appendChild(el)
+      const rows = el.shadowRoot!.querySelector('[part="data-items"]')!.children
+      expect(rows[0]!.textContent).not.toContain('[object Object]')
+      // itemData 元数据渲染在行的 shadow 内（.title-text/.desc-text）
+      const item = rows[0] as HTMLElement
+      expect(item.shadowRoot!.querySelector('.title-text')!.textContent).toBe('任务 A')
+      expect(item.shadowRoot!.querySelector('.desc-text')!.textContent).toBe('描述 A')
     })
 
     it('data 为空数组 → 空态', () => {

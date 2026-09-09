@@ -364,9 +364,10 @@ export class OASVirtualList extends OASElement {
         this.emit('item', { index: i, item, element: el })
       } else {
         // 先派发 oas-item 让宿主（如 oas-tree）填充内容；宿主没填才回退 String(item)，
-        // 否则对象项会残留 "[object Object]" 文本（此前 tree 虚拟滚动的 bug）
+        // 且仅用于原始值行——对象行 String() 只会得到 "[object Object]"
         this.emit('item', { index: i, item, element: el })
-        if (!el.hasChildNodes()) el.textContent = String(item ?? '')
+        if (!el.hasChildNodes() && (item == null || typeof item !== 'object'))
+          el.textContent = String(item ?? '')
       }
       itemsEl.appendChild(el)
     }
