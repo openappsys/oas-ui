@@ -334,7 +334,18 @@
 
 ## 组合：分组列表
 
-分组标题用 `slot="header"` 分段或多个 `oas-list` 组合（吸顶分组头为记备选能力，需要时在宿主滚动容器内用 `position: sticky` 子块达成）：
+`data` 通道的条目可带 `group` 字段（同组连续项归一段），列表自动为每组插入组头；`group` 值即组头文案，也支持用 `groupLabel` 字段自定义（缺省回落 `group`）。普通渲染模式下组头在列表滚动容器内**吸顶**（配 `max-height` 让列表体自身滚动）：滚动时当前组组头钉在容器顶部，下一组组头到达顶部时顶走上一个组头。虚拟滚动（`height`）下组头**不吸顶**——分组数据自动回退全量渲染，组头以普通块随内容滚动，超大分组数据不建议配 `height` 使用：
+
+<DemoBlock title="分组列表（data 通道 · 组头吸顶）">
+  <div style="width: 100%">
+    <oas-list bordered max-height="320" id="list-grouped"></oas-list>
+  </div>
+  <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    多组连续条目、容器限高滚动——向下滚动观察：组头吸顶、新组头到顶顶走上一组头。
+  </p>
+</DemoBlock>
+
+分组标题也可以用 `slot="header"` 分段或多个 `oas-list` 组合（声明式场景，与数据通道分组正交）：
 
 <DemoBlock title="分组列表（header 分段）">
   <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-3)">
@@ -512,6 +523,27 @@ onMounted(() => {
     }))
   }
 
+  // 分组列表：group 连续分段 + 组头吸顶（普通渲染模式，配 max-height 滚动容器）
+  const grouped = document.querySelector('#list-grouped')
+  if (grouped) {
+    grouped.addEventListener('oas-item-render', (e) => {
+      const { item, element } = e.detail
+      element.setAttribute('title', item.title)
+      element.setAttribute('description', item.description)
+    })
+    grouped.data = [
+      { title: '组件迭代', description: 'list / timeline 重构', group: '进行中' },
+      { title: '暗色走查', description: '数据类组件复核', group: '进行中' },
+      { title: '吸顶组头回归', description: '滚动容器内钉顶与顶走验证', group: '进行中' },
+      { title: '分组 demo 补录', description: '长列表多组吸顶演示', group: '进行中' },
+      { title: '按钮重构', description: 'variant 语义统一', group: '已完成', groupLabel: '已完结 · v2.4' },
+      { title: '卡片墙改造', description: 'oas-grid 组合上架', group: '已完成' },
+      { title: '发布 v2.4.0', description: '能力批收尾', group: '已完成' },
+      { title: '迁移说明', description: '破坏性变更清单', group: '待开始' },
+      { title: '回归固化', description: 'qa-regression 补充断言', group: '待开始' },
+    ]
+  }
+
   // 分页组合：宿主切片 + 更新 data
   const paged = document.querySelector('#list-paged')
   const pagedNav = document.querySelector('#list-paged-nav')
@@ -563,12 +595,12 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `bordered` | 是否显示整体边框 | `boolean` | — |
 | `bottom-offset` | 触底阈值（px）：距底部剩余距离 ≤ 该值即视为触底，默认 0 | `string` | `0` |
-| `data` | 数据通道（JSON 字符串；property `data` / `dataItems` 优先），有 data 走数据通道、无 data 回落声明式子项 | `unknown[]` | — |
+| `data` | 数据通道（JSON 字符串；property `data` / `dataItems` 优先），有 data 走数据通道、无 data 回落声明式子项。条目对象可带 `group`（分组名，同组连续项归一段并自动插组头）与可选 `groupLabel`（组头文案自定义，缺省回落 `group`）；普通渲染模式组头吸顶（配 `max-height` 滚动容器），虚拟滚动下不吸顶 | `unknown[]` | — |
 | `empty` | 强制空态；无子项时自动空态 | `boolean` | — |
 | `empty-text` | 空态文案 | — | — |
-| `height` | 虚拟滚动视口高度（px，设置即启用虚拟模式，要求 data 通道） | `string` | `320` |
+| `height` | 虚拟滚动视口高度（px，设置即启用虚拟模式，要求 data 通道；数据带 `group` 时自动回退全量渲染、组头不吸顶） | `string` | `320` |
 | `loading` | 加载态，显示骨架占位 | `boolean` | — |
-| `max-height` | 列表体最大高度（px 或 CSS 长度），设置后列表体成为滚动容器（配合 oas-reach-bottom 滚动加载） | `string` | — |
+| `max-height` | 列表体最大高度（px 或 CSS 长度），设置后列表体成为滚动容器（配合 oas-reach-bottom 滚动加载；分组组头在此容器内吸顶） | `string` | — |
 | `row-height` | 虚拟滚动行高（px，默认 64，要求数据行定高） | `string` | `64` |
 | `size` | 行密度：sm / md（默认）/ lg | `string` | — |
 | `split` | 是否显示条目分隔线 | `boolean` | — |
