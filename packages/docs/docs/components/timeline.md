@@ -91,6 +91,17 @@
   </div>
 </DemoBlock>
 
+<DemoBlock title="圆点尺寸与颜色定制">
+  <div style="width: 100%">
+    <oas-timeline>
+      <oas-timeline-item time="2024-09-01" style="--oas-timeline-dot-size: 6px"><p>小圆点（--oas-timeline-dot-size: 6px）</p></oas-timeline-item>
+      <oas-timeline-item time="2024-09-02" style="--oas-timeline-dot-size: 10px"><p>默认尺寸（10px）</p></oas-timeline-item>
+      <oas-timeline-item time="2024-09-03" style="--oas-timeline-dot-size: 16px"><p>大圆点（16px）</p></oas-timeline-item>
+      <oas-timeline-item time="2024-09-04" style="--oas-timeline-dot-size: 12px; --oas-timeline-dot-color: #7c3aed"><p>自定义色（--oas-timeline-dot-color: #7c3aed）</p></oas-timeline-item>
+    </oas-timeline>
+  </div>
+</DemoBlock>
+
 ## 标题结构（title 插槽）
 
 `slot="title"` 渲染强调标题行，与正文（默认插槽）分区，适合发布记录、版本日志。
