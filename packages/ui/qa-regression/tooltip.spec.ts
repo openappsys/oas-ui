@@ -863,3 +863,31 @@ test('tooltip 增强-width="trigger"：浮层宽度与触发按钮同宽', async
   ).toBeLessThanOrEqual(1)
   expect(Math.abs(r.tipW - r.anchorW), '浮层实际宽度 ≈ 触发元素宽度').toBeLessThanOrEqual(1)
 })
+
+test('tooltip 无空格长串在 max-width 内断行不溢出（overflow-wrap: anywhere）', async ({ page }) => {
+  // 用户实测：ellipsis middle 示例的长路径在 tooltip 内溢出浮层边界——缺 overflow-wrap。
+  await page.goto('/components/ellipsis.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-ellipsis')
+  const r = await page.evaluate(async () => {
+    const el = [...document.querySelectorAll('oas-ellipsis')].find((e) =>
+      (e.getAttribute('text') ?? '').includes('/'),
+    )
+    if (!el) return null
+    const tip = el.shadowRoot!.querySelector('oas-tooltip')
+    if (!tip) return null
+    // 强制打开浮层（hover 等价路径）
+    tip.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, composed: true }))
+    await new Promise((r2) => setTimeout(r2, 400))
+    const box = tip.shadowRoot!.querySelector('.tip')
+    if (!box) return null
+    const rect = box.getBoundingClientRect()
+    return {
+      width: rect.width,
+      overflowWrap: getComputedStyle(box).overflowWrap,
+      scrollW: (box as HTMLElement).scrollWidth,
+    }
+  })
+  expect(r, '应找到带长路径的 ellipsis 示例与 tooltip').not.toBeNull()
+  expect(r!.overflowWrap).toBe('anywhere')
+  expect(r!.scrollW - r!.width, '内容不超出浮层盒').toBeLessThanOrEqual(2)
+})

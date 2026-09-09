@@ -51,6 +51,11 @@ const STYLE = `
   display: flex;
   align-items: center;
 }
+/* 作者层 display（.avatar flex / .avatar-img block）会压过 UA 的 [hidden] 隐藏，
+   无头像内容时必须显式兜底，否则空 img 渲染成灰圈 + 破图残影（用户实测缺陷） */
+[hidden] {
+  display: none !important;
+}
 .avatar-img {
   width: 32px;
   height: 32px;

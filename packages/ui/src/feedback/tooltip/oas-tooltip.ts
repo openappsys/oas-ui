@@ -27,6 +27,8 @@ const STYLE = `
   color: var(--oas-tooltip-color, var(--oas-color-bg));
   font-size: var(--oas-font-size-sm);
   max-width: var(--oas-tooltip-max-width, 240px);
+  /* 无空格长串（路径/URL/哈希）在 max-width 内断行，防溢出浮层边界 */
+  overflow-wrap: anywhere;
   pointer-events: none;
   /* 方向感知开合动画：进场 scale(0.9→1) + fade，transform-origin 随 data-placement
      （top 系从底边展开、bottom 系从顶边展开，left/right 同理）。

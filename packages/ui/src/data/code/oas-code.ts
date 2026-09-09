@@ -488,12 +488,14 @@ export class OASCode extends OASElement {
     const lines = trimmed.split('\n')
     // 末行空串（源码常以 \n 结尾）不产生多余空行
     if (lines.length > 1 && lines[lines.length - 1] === '') lines.pop()
+    // .line 是块级（行号对齐），行间不再 join('\n')——pre 的 white-space:pre 会把
+    // 行间换行文本节点渲染成真换行，每行后多一条空行（实测 4 行代码块高度翻倍）
     inner.innerHTML = lines
       .map(
         (line, i) =>
           `<span class="line" part="line">${showLineNumber ? `<span class="line-number" part="line-number" aria-hidden="true">${i + 1}</span>` : ''}<code class="line-code">${highlightLine(line, language)}</code></span>`,
       )
-      .join('\n')
+      .join('')
   }
 
   /** 归一化枚举属性：非法值回落 + 告警 */

@@ -357,6 +357,15 @@ describe('OASList', () => {
       document.body.appendChild(el)
       expect(el.shadowRoot!.querySelector<HTMLElement>('[part="avatar"]')!.hidden).toBe(true)
     })
+
+    it('hidden 显隐有 CSS 兜底（.avatar flex / .avatar-img block 不得压过 UA [hidden]）', () => {
+      // 回归：曾现无头像时灰圈 + 破图残影（用户实测）——作者层 display 压过 UA [hidden]
+      const el = new OASListItem()
+      document.body.appendChild(el)
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\[hidden\]\s*\{\s*display:\s*none\s*!important/)
+      el.remove()
+    })
   })
 
   describe('OASListItem 行交互（clickable / selected）', () => {

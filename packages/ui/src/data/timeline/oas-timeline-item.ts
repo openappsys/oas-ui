@@ -57,7 +57,8 @@ const STYLE = `
   border-radius: 50%;
   /* 任意色开口：--oas-timeline-dot-color 优先于 type 语义色 */
   background: var(--oas-timeline-dot-color, var(--dot-color, var(--oas-color-primary)));
-  border: 2px solid var(--oas-color-bg);
+  /* 实心圆点不带底色描边：连接线从圆点底缘（4+10=14px）起笔无缝衔接；
+     原 2px 底色描边让彩色圆心止于 12px，与 14px 起笔的线留出 2px 视觉断口（用户实测） */
   z-index: 1;
 }
 .dot[data-type='success'] { --dot-color: var(--oas-color-success); }
@@ -65,23 +66,32 @@ const STYLE = `
 .dot[data-type='danger'] { --dot-color: var(--oas-color-danger); }
 .dot[data-type='info'] { --dot-color: var(--oas-color-info-text); }
 .dot[data-type='neutral'] { --dot-color: var(--oas-color-text-secondary); }
-/* outlined 空心变体：透明底 + type 色描边 */
+/* outlined 空心变体：透明底 + type 色描边（描边即圆点视觉，连接线触描边底缘） */
 .dot[data-variant='outlined'] {
   background: transparent;
-  border-color: var(--oas-timeline-dot-color, var(--dot-color, var(--oas-color-primary)));
+  border: 2px solid var(--oas-timeline-dot-color, var(--dot-color, var(--oas-color-primary)));
 }
-/* icon 属性节点：图标替换圆点，颜色跟随 type */
+/* icon 属性节点：图标替换圆点，颜色跟随 type；图标尺寸大于圆点盒，
+   中心锚定到圆点心（左 50% 线心 / 上 圆心 4px+半尺寸）——与连接线同轴对齐 */
 .dot[data-icon] {
   background: transparent;
   border-color: transparent;
   color: var(--oas-timeline-dot-color, var(--dot-color, var(--oas-color-primary)));
+  width: auto;
+  height: auto;
+  left: calc(var(--oas-timeline-dot-size, 10px) / 2);
+  top: calc(4px + var(--oas-timeline-dot-size, 10px) / 2);
+  transform: translate(-50%, -50%);
 }
-/* dot 插槽自定义节点：完全交给宿主内容 */
+/* dot 插槽自定义节点：完全交给宿主内容，同样中心锚定到圆点心 */
 .dot[data-custom] {
   background: transparent;
   border-color: transparent;
   width: auto;
   height: auto;
+  left: calc(var(--oas-timeline-dot-size, 10px) / 2);
+  top: calc(4px + var(--oas-timeline-dot-size, 10px) / 2);
+  transform: translate(-50%, -50%);
 }
 .dot oas-icon {
   display: block;
@@ -112,7 +122,7 @@ const STYLE = `
 /* ===== 进行中（pending）节点：空心圆点 + 脉冲 + 虚线连接 ===== */
 :host([pending]) .dot {
   background: var(--oas-color-bg);
-  border-color: var(--oas-timeline-dot-color, var(--dot-color, var(--oas-color-primary)));
+  border: 2px solid var(--oas-timeline-dot-color, var(--dot-color, var(--oas-color-primary)));
   animation: oas-timeline-pulse 1.6s ease-in-out infinite;
 }
 :host([pending]) .axis::after {
@@ -197,6 +207,13 @@ const STYLE = `
 :host([data-direction='horizontal']) .dot {
   top: 0;
   left: 0;
+}
+/* 横向 icon/自定义节点：中心锚定到轴心（左 半尺寸 / 上 轴高一半） */
+:host([data-direction='horizontal']) .dot[data-icon],
+:host([data-direction='horizontal']) .dot[data-custom] {
+  left: calc(var(--oas-timeline-dot-size, 10px) / 2);
+  top: calc(var(--oas-timeline-dot-size, 10px) / 2);
+  transform: translate(-50%, -50%);
 }
 :host([data-direction='horizontal']) .axis::after {
   top: 4px;

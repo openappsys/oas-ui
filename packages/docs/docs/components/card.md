@@ -74,10 +74,8 @@
     <oas-card title="无线降噪耳机" hoverable cover-src="https://picsum.photos/seed/isui-card-product/640/360" cover-alt="耳机产品图">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">主动降噪 · 30 小时续航 · 蓝牙 5.3</p>
       <p style="color: var(--oas-color-primary); font-weight: 600; margin: var(--oas-space-2) 0 0;">¥ 899</p>
-      <div slot="actions">
-        <oas-button size="small">查看详情</oas-button>
-        <oas-button size="small" type="primary">加入购物车</oas-button>
-      </div>
+      <oas-button slot="actions" size="small">查看详情</oas-button>
+      <oas-button slot="actions" size="small" type="primary">加入购物车</oas-button>
     </oas-card>
   </div>
 </DemoBlock>
@@ -98,10 +96,8 @@
   <div style="width: 320px">
     <oas-card clickable title="协作项目" cover-src="https://picsum.photos/seed/isui-card-team/640/360" cover-alt="团队协作插画">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">点卡片主体触发整卡点击；点右下按钮走各自操作。</p>
-      <div slot="actions">
-        <oas-button size="small">邀请成员</oas-button>
-        <oas-button size="small" type="danger">归档</oas-button>
-      </div>
+      <oas-button slot="actions" size="small">邀请成员</oas-button>
+      <oas-button slot="actions" size="small" type="danger">归档</oas-button>
     </oas-card>
   </div>
 </DemoBlock>
@@ -127,9 +123,7 @@
   <div style="width: 320px">
     <oas-card size="small" title="紧凑卡片">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">更小的内边距与标题字号。</p>
-      <div slot="actions">
-        <oas-button size="small">查看</oas-button>
-      </div>
+      <oas-button slot="actions" size="small">查看</oas-button>
     </oas-card>
   </div>
 </DemoBlock>
@@ -162,9 +156,7 @@
   <div style="width: 320px">
     <oas-card title="服务协议更新">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">我们更新了数据处理条款，请确认后继续。</p>
-      <div slot="actions">
-        <oas-button size="small" type="primary">同意并继续</oas-button>
-      </div>
+      <oas-button slot="actions" size="small" type="primary">同意并继续</oas-button>
       <p slot="footer" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0;">更新于 2026-09-01 · 适用于全部工作区</p>
     </oas-card>
   </div>
@@ -320,10 +312,8 @@
         <s style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin-left: var(--oas-space-2);">¥ 599</s>
       </p>
       <p style="color: var(--oas-color-text-secondary); margin: var(--oas-space-1) 0 0;">三模连接 · 热插拔 · Gasket 结构</p>
-      <div slot="actions">
-        <oas-button size="small" type="primary">加入购物车</oas-button>
-        <oas-button size="small">收藏</oas-button>
-      </div>
+      <oas-button slot="actions" size="small" type="primary">加入购物车</oas-button>
+      <oas-button slot="actions" size="small">收藏</oas-button>
       <p slot="footer" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0;">满 299 包邮 · 7 天无理由退换</p>
     </oas-card>
   </div>

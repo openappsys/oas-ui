@@ -60,6 +60,18 @@ describe('OASCode', () => {
     expect(ln.getAttribute('aria-hidden')).toBe('true')
   })
 
+  it('行间无换行文本节点（块级 .line 之间 join 不带 \n，防 pre 白空间双倍行距）', () => {
+    // 回归：行间 join('\n') 在 pre 的 white-space:pre 下每个换行都渲染成真空行（实测行高翻倍）
+    const el = mount({ code: 'a\nb\nc' })
+    const inner = el.shadowRoot!.querySelector('[part="code-inner"]')!
+    const stray = [...inner.childNodes].some(
+      (n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? '').trim() !== '',
+    )
+    const wsText = [...inner.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE)
+    expect(stray).toBe(false)
+    expect(wsText.length).toBe(0)
+  })
+
   it('默认不显示行号', () => {
     const el = mount({ code: 'a\nb' })
     expect(el.shadowRoot!.querySelector('[part="line-number"]')).toBeNull()
@@ -173,7 +185,10 @@ describe('OASCode', () => {
     it('trim="false" 保留首尾空白', () => {
       const el = mount({ code: '\n  const a = 1\n  ', trim: 'false' })
       const code = codeEl(el)
-      expect(code.textContent).toContain('\n')
+      // 首尾空行以空 .line 块呈现（行间无 \n 文本节点——那会双倍行距）
+      const lines = [...code.querySelectorAll('[part="line"]')]
+      expect(lines.length).toBeGreaterThanOrEqual(3)
+      expect(lines[0]!.textContent).toBe('')
     })
   })
 
