@@ -16,7 +16,7 @@
   <oas-date-picker type="daterange" value='["2026-08-05","2026-08-15"]'></oas-date-picker>
 </DemoBlock>
 
-双月网格，先选起点再选终点，提交 JSON 数组 `["start","end"]`；悬停可预览区间。每次起止落选都会派发 `oas-calendar-change`（见[事件](#事件)）。
+双月网格，先选起点再选终点，提交 JSON 数组 `["start","end"]`；悬停可预览区间。每次起止落选都会派发 `oas-calendar-change`（见[事件](#事件)）。范围选择默认**双月网格**（左月 + 右月联动）；空间不足（窄屏/容器受限）时由 CSS 响应式自然收缩为单面板宽度，无需 `single-panel` 之类的属性开关。
 
 ## 月份与月份区间
 
