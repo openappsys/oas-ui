@@ -36,11 +36,12 @@ const STYLE = `
    grid item 的 align stretch 只到 content-box（不含 .row 的 padding-bottom），
    故 bottom 用负值穿过 padding 区域（space-5），线才真正接到下一 item 顶部的圆点。
    再下延 4px 覆盖下一 item 圆点的 top 偏移（dot 顶距 item 顶 4px），点线无缝隙相接。
-   此前 bottom:0 只画到内容底，点与点之间留下 padding 空隙无线（用户实测点线不连） */
+   线起点 top = dot 顶(4px) + dot 尺寸 —— 随 --oas-timeline-dot-size 联动，
+   线从当前点底缘起笔（不同尺寸点底线不错位、线不穿点）。 */
 .axis::after {
   content: '';
   position: absolute;
-  top: 14px;
+  top: calc(4px + var(--oas-timeline-dot-size, 10px));
   bottom: calc(-1 * var(--oas-space-5) - 4px);
   left: 4px;
   width: 2px;
@@ -53,16 +54,17 @@ const STYLE = `
 .dot {
   position: absolute;
   top: 4px;
-  left: 0;
+  /* 水平中心锚定连接线中心（5px）：left:0 时圆心随尺寸移动（6px→3、16px→8），
+     只有 10px 默认对齐；改 left:5px + translateX(-50%) 使任意尺寸圆心恒在 x=5 上，
+     与连接线中心（left:4px + 2px 宽 → 5px）恒对齐，点大小不再导致中心线偏移 */
+  left: 5px;
+  transform: translateX(-50%);
   width: var(--oas-timeline-dot-size, 10px);
   height: var(--oas-timeline-dot-size, 10px);
-  /* border-box：总宽 10px、圆心 5px，与连接线（left:4px + 2px 宽 → 中心 5px）对齐 */
   box-sizing: border-box;
   border-radius: 50%;
   /* 任意色开口：--oas-timeline-dot-color 优先于 type 语义色 */
   background: var(--oas-timeline-dot-color, var(--dot-color, var(--oas-color-primary)));
-  /* 实心圆点不带底色描边：连接线从圆点底缘（4+10=14px）起笔无缝衔接；
-     原 2px 底色描边让彩色圆心止于 12px，与 14px 起笔的线留出 2px 视觉断口（用户实测） */
   z-index: 1;
 }
 .dot[data-type='success'] { --dot-color: var(--oas-color-success); }
@@ -210,7 +212,10 @@ const STYLE = `
 }
 :host([data-direction='horizontal']) .dot {
   top: 0;
-  left: 0;
+  /* 横向普通 dot 中心锚定横线起点（size/2）：left:0 时圆心随尺寸移（仅 10px 对齐），
+     改 left=size/2 + translateX(-50%) 使任意尺寸圆心恒在横线左端（横线从 size/2 起） */
+  left: calc(var(--oas-timeline-dot-size, 10px) / 2);
+  transform: translateX(-50%);
 }
 /* 横向 icon/自定义节点：中心锚定到轴心（左 半尺寸 / 上 轴高一半） */
 :host([data-direction='horizontal']) .dot[data-icon],
