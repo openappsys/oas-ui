@@ -3061,7 +3061,9 @@
       "height": "视口高度（px）",
       "item-height": "每项固定高度（px）",
       "items": "数据数组（property 通道，优先于 items 属性）；数据 JSON 字符串（属性通道）",
-      "scroll-target": "外部滚动容器 CSS 选择器；设置后组件不自带滚动条，监听外部滚动"
+      "scroll-target": "外部滚动容器 CSS 选择器；设置后组件不自带滚动条，监听外部滚动",
+      "dynamic-height": "动态行高：各行高度可不同（未测行按预估排布，窗口行实测回写逐步修正；视口上方行高变化自动补偿 scrollTop 防跳动）",
+      "estimated-item-height": "动态行高的预估行高（px，缺省沿用 item-height；取接近真实平均行高修正幅度最小）"
     },
     "events": {
       "oas-item": "每个可见项渲染后派发，`detail: { index, item, element }`",
