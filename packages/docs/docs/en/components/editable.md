@@ -64,7 +64,11 @@ With `multiline` the edit mode renders a textarea: `Enter` inserts a newline, `C
   <oas-editable trigger="icon" value="Clicking the text does nothing; use the pencil"></oas-editable>
 </DemoBlock>
 
-`trigger="text"` (default) edits on text click; with `trigger="icon"` the text is plain display and the trailing pencil button carries the interaction (focusable; Enter/Space/click enters edit). Useful when text clicks may conflict with page behavior.
+`trigger="text"` (default) edits on text click; with `trigger="icon"` the text is plain display and the trailing pencil button carries the interaction (focusable; Enter/Space/click enters edit); with `trigger="dblclick"` double-click enters edit (single click doesn't trigger, so text stays selectable; Enter/Space while focused enters edit as a keyboard fallback). Useful when text clicks may conflict with page behavior.
+
+<DemoBlock title="trigger=dblclick (double-click to edit)">
+  <oas-editable trigger="dblclick" value="Double-click me to edit (single click only selects, doesn't trigger)"></oas-editable>
+</DemoBlock>
 
 ## Custom Display
 
@@ -201,7 +205,7 @@ onMounted(() => {
 - `submit-on-blur`: default `true` (blur submits, the existing behavior); `false` completes the four-way submit matrix
 - `editing` / `default-editing`: controlled / initial editing state (exits always go through the submit/cancel paths)
 - `multiline`: multiline editing — Ctrl/⌘+Enter submits, Enter inserts a newline, auto-growing height
-- `trigger`: `text | icon` (icon triggering prevents accidental clicks; no double-click mode)
+- `trigger`: `text | icon | dblclick` (click text / pencil button / double-click to edit, all configurable)
 - `allow-empty`: allow submitting an empty string (non-destructive revert by default)
 - `size` / `status` / `readonly`: three sizes, validation status, readonly
 - Slots: `template[slot="display"]` (`data-display-value` / `data-display-placeholder` bindings), `ok-icon` / `cancel-icon`
@@ -225,7 +229,7 @@ onMounted(() => {
 | `status` | Validation status: `error` / `warning` / `success` | `string` | — |
 | `submit-on-blur` | Commit on blur (default true; with submit-on-enter forms both/enter/blur/none) | `string` | `true` |
 | `submit-on-enter` | Whether Enter submits | `string` | `true` |
-| `trigger` | Trigger: `text` (default, click text) / `icon` (pencil button, prevents misclicks) | `string` | — |
+| `trigger` | Trigger: `text` (default, click text) / `icon` (pencil button, prevents misclicks) / `dblclick` (double-click to edit; single click doesn't trigger; Enter/Space while focused enters edit as keyboard fallback) | `string` | — |
 | `value` | Current value (controlled) | `string` | — |
 
 ### Events

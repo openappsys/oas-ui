@@ -4,8 +4,8 @@ import { OASElement } from '@oas-ui/core'
 const VALID_SIZES = ['small', 'medium', 'large'] as const
 /** status 校验态：success / warning / error */
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
-/** 触发方式：text 点文本进编辑 / icon 尾部铅笔按钮进编辑（防误触） */
-const VALID_TRIGGERS = ['text', 'icon'] as const
+/** 触发方式：text 点文本进编辑 / icon 尾部铅笔按钮进编辑（防误触）/ dblclick 双击进编辑（单击选中文本不误触，Enter/Space 聚焦时进编辑为键盘逃生） */
+const VALID_TRIGGERS = ['text', 'icon', 'dblclick'] as const
 
 /** 判定编辑字段是否多行（tagName 判定——SSR DOM 环境无 HTMLTextAreaElement 全局，instanceof 会 ReferenceError） */
 function isTextarea(el: HTMLInputElement | HTMLTextAreaElement): el is HTMLTextAreaElement {
@@ -293,11 +293,12 @@ export class OASEditable extends OASElement {
     this.editEl = this.shadow.querySelector('.edit')
     this.pencilEl = this.shadow.querySelector('.trigger-icon')
 
-    this.displayEl?.addEventListener('click', () => this.handleDisplayActivate())
+    this.displayEl?.addEventListener('click', () => this.handleDisplayActivate('click'))
+    this.displayEl?.addEventListener('dblclick', () => this.handleDisplayActivate('dblclick'))
     this.displayEl?.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
-        this.handleDisplayActivate()
+        this.handleDisplayActivate('key')
       }
     })
     this.pencilEl?.addEventListener('click', () => this.enterEdit())
@@ -508,10 +509,17 @@ export class OASEditable extends OASElement {
     return this.getAttr('submit-on-blur', 'true') !== 'false'
   }
 
-  /** 展示态激活：text 触发进编辑；icon 触发下文本区纯展示（交互在铅笔按钮） */
-  private handleDisplayActivate(): void {
+  /** 展示态激活：按 trigger 与事件类型分流——
+      text：click / Enter / Space 进编辑
+      icon：文本区纯展示（交互在铅笔按钮），此处不触发
+      dblclick：dblclick 进编辑（click 不触发，防与选中文本冲突）；Enter / Space（聚焦时）进编辑为键盘逃生 */
+  private handleDisplayActivate(evt: 'click' | 'dblclick' | 'key'): void {
     const trigger = normalizeChoice(this.getAttr('trigger', ''), 'text', VALID_TRIGGERS)
-    if (trigger !== 'text') return
+    if (trigger === 'icon') return
+    const activatorMatch =
+      (trigger === 'text' && (evt === 'click' || evt === 'key')) ||
+      (trigger === 'dblclick' && (evt === 'dblclick' || evt === 'key'))
+    if (!activatorMatch) return
     this.enterEdit()
   }
 
