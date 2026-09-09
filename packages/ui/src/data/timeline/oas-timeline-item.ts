@@ -220,8 +220,9 @@ const STYLE = `
   transform: translate(-50%, -50%);
 }
 :host([data-direction='horizontal']) .axis::after {
-  top: 4px;
-  left: 14px;
+  /* 线中心对齐 dot 中心：dot 高 dot-size(10px) 中心在 5px；线高 2px 需 top=5-1=4px 才使线中心=5=dot中心 */
+  top: calc(var(--oas-timeline-dot-size, 10px) / 2 - 1px);
+  left: calc(var(--oas-timeline-dot-size, 10px) / 2); /* 从 dot 中心横穿（此前 left:14px 在 dot 右缘外留 4px 左缝） */
   right: calc(-1 * var(--oas-space-5) - 4px); /* 穿过 padding-right + 下一列圆点 left 偏移，横线接下一列圆点无缝 */
   bottom: auto;
   width: auto;
