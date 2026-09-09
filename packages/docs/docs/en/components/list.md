@@ -334,7 +334,18 @@ A grid card wall is composed from `oas-grid` + `oas-card` (the industry is also 
 
 ## Composition: Grouped List
 
-Group titles use the `slot="header"` sections or multiple `oas-list` blocks (sticky group headers are a recorded fallback — when needed, use a `position: sticky` block inside the host scroll container):
+Data-channel items may carry a `group` field (consecutive items sharing a group form one section); the list automatically inserts a group header per section. The header text is the `group` value, or a custom label via the optional `groupLabel` field (falls back to `group`). In regular rendering the group header **sticks** to the top of the list's scroll container (pair with `max-height` so the body scrolls): the current group's header pins at the top while scrolling, and the next group header pushes it away when it reaches the top. Under virtual scrolling (`height`) group headers do **not** stick — grouped data falls back to full rendering and headers scroll as ordinary blocks; do not pair huge grouped data with `height`:
+
+<DemoBlock title="Grouped list (data channel · sticky headers)">
+  <div style="width: 100%">
+    <oas-list bordered max-height="320" id="list-grouped"></oas-list>
+  </div>
+  <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    Multiple contiguous groups in a height-limited scroll container — scroll down to watch headers stick and get pushed away by the next group header.
+  </p>
+</DemoBlock>
+
+Group titles can also be composed with `slot="header"` sections or multiple `oas-list` blocks (declarative scenario, orthogonal to data-channel grouping):
 
 <DemoBlock title="Grouped list (header sections)">
   <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-3)">
@@ -512,6 +523,27 @@ onMounted(() => {
     }))
   }
 
+  // Grouped list: contiguous group sections + sticky headers (regular mode, max-height scroll container)
+  const grouped = document.querySelector('#list-grouped')
+  if (grouped) {
+    grouped.addEventListener('oas-item-render', (e) => {
+      const { item, element } = e.detail
+      element.setAttribute('title', item.title)
+      element.setAttribute('description', item.description)
+    })
+    grouped.data = [
+      { title: 'Component deep-dive', description: 'list / timeline batch', group: 'In progress' },
+      { title: 'Dark theme review', description: 'Data components audit', group: 'In progress' },
+      { title: 'Sticky header regression', description: 'Pin & push-away checks in the scroll container', group: 'In progress' },
+      { title: 'Group demo recording', description: 'Long grouped list with sticky headers', group: 'In progress' },
+      { title: 'Button refactor', description: 'Variant semantics unification', group: 'Done', groupLabel: 'Finished · v2.4' },
+      { title: 'Card wall rework', description: 'oas-grid composition shipped', group: 'Done' },
+      { title: 'Release v2.4.0', description: 'Capability batch wrap-up', group: 'Done' },
+      { title: 'Migration guide', description: 'Breaking-change checklist', group: 'Todo' },
+      { title: 'Regression hardening', description: 'qa-regression assertions', group: 'Todo' },
+    ]
+  }
+
   // Pagination composition: host slicing + updating data
   const paged = document.querySelector('#list-paged')
   const pagedNav = document.querySelector('#list-paged-nav')
@@ -563,12 +595,12 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `bordered` | Whether to show the outer border | `boolean` | — |
 | `bottom-offset` | Reach-bottom threshold (px): remaining distance to the bottom ≤ this counts as bottom, default 0 | `string` | `0` |
-| `data` | Data channel (JSON string; the `data` / `dataItems` property takes precedence). With data the channel renders; without it falls back to declarative children | `unknown[]` | — |
+| `data` | Data channel (JSON string; the `data` / `dataItems` property takes precedence). With data the channel renders; without it falls back to declarative children. Item objects may carry `group` (group name — consecutive items sharing a group form one section with an auto-inserted header) and optional `groupLabel` (custom header text, falls back to `group`); headers stick in regular rendering (pair with a `max-height` scroll container) and do not stick under virtual scrolling | `unknown[]` | — |
 | `empty` | Force empty state; auto empty when there are no children | `boolean` | — |
 | `empty-text` | Empty state text | — | — |
-| `height` | Virtual scroll viewport height (px; setting it enables virtual mode, requires the data channel) | `string` | `320` |
+| `height` | Virtual scroll viewport height (px; setting it enables virtual mode, requires the data channel; data with `group` falls back to full rendering without sticky headers) | `string` | `320` |
 | `loading` | Loading state, shows skeleton placeholders | `boolean` | — |
-| `max-height` | Max height of the list body (px or CSS length); turns the body into a scroll container (pairs with oas-reach-bottom for scroll loading) | `string` | — |
+| `max-height` | Max height of the list body (px or CSS length); turns the body into a scroll container (pairs with oas-reach-bottom for scroll loading; group headers stick inside this container) | `string` | — |
 | `row-height` | Virtual scroll row height (px, default 64; data rows must be fixed-height) | `string` | `64` |
 | `size` | Row density: sm / md (default) / lg | `string` | — |
 | `split` | Whether to show item dividers | `boolean` | — |
