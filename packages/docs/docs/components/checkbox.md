@@ -103,6 +103,18 @@
 
 组通过 `value`（JSON 数组）受控，子项 `value` 作为选项标识。组上可设置 `size` / `status` / `readonly` 统一下发子项。
 
+## 按钮式多选（组合 oas-toggle-group）
+
+checkbox 的「按钮形态」（如若干库的 `checkbox-button`）在本库由 **`oas-toggle-group` 多选模式**承载（按钮式多选组：`multiple` 每项独立切换、roving tabindex 键盘、满宽均分等），checkbox 本体保持标准框形态。二者分工同主流库：标准多选用 checkbox-group、按钮式多选用 toggle-group。
+
+<DemoBlock title="按钮式多选（toggle-group 组合）">
+  <oas-toggle-group multiple value='["a"]'>
+    <oas-toggle-item value="a">苹果</oas-toggle-item>
+    <oas-toggle-item value="b">香蕉</oas-toggle-item>
+    <oas-toggle-item value="c">橙子</oas-toggle-item>
+  </oas-toggle-group>
+</DemoBlock>
+
 ## 组横排
 
 <DemoBlock title="组横排（direction）">

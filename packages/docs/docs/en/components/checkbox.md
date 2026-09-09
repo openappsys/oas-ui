@@ -103,6 +103,18 @@ Slot content takes over the checked-state icon (`template[slot]` or a direct ele
 
 The group is controlled via `value` (a JSON array); each item's `value` acts as the option identifier. `size` / `status` / `readonly` set on the group cascade to items.
 
+## Button-style Multi-select (oas-toggle-group)
+
+A "button-style" checkbox (like some libraries' `checkbox-button`) is served here by **`oas-toggle-group` in multiple mode** (button-style multi-select group: each item toggles independently via `multiple`, roving-tabindex keyboard, even-width fills, etc.), while the checkbox itself keeps the standard box form. The split mirrors the ecosystem: use checkbox-group for standard multi-select, toggle-group for button-style multi-select.
+
+<DemoBlock title="Button-style multi-select (toggle-group)">
+  <oas-toggle-group multiple value='["a"]'>
+    <oas-toggle-item value="a">Apple</oas-toggle-item>
+    <oas-toggle-item value="b">Banana</oas-toggle-item>
+    <oas-toggle-item value="c">Orange</oas-toggle-item>
+  </oas-toggle-group>
+</DemoBlock>
+
 ## Horizontal Group
 
 <DemoBlock title="Horizontal direction (direction)">
