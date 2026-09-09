@@ -91,6 +91,32 @@
 
 翻页会跨出 `[min, max]` 的整月/整年（月面板为整年、十年面板为整十年页）时，「上一月/下一月」按钮自动置灰。
 
+## 范围 / 多选与选周：请用 date-picker
+
+本组件（常驻选择面板）只做**单选日期**。范围选择（start/end）、多选日期、按周选择由 [date-picker](./date-picker) 覆盖——二者共享同一日期网格，语义一致，避免在面板里重复实现一套：
+
+- **日期范围**：`<oas-date-picker type="daterange">`
+- **多选日期**：`<oas-date-picker multiple>`
+- **按周选择**：`<oas-date-picker type="week">`（值 `yyyy-Wnn`）
+
+若需要常驻页面里做范围/多选，宿主可把 `oas-date-picker` 的内层面板相关能力与 `oas-calendar` 组合，或用 `oas-calendar` 单选 + 宿主自己维护起止值。
+
+## 自定义头部：用卡片组合（等价示例）
+
+`oas-calendar` 的头部是内部导航区，不开放替换（这是选择面板语义——头部承载导航而非居中所选态）。要在日历上方放品牌/操作条（如「周切换」「今日快捷」），把 `oas-calendar` 包进宿主自己的卡片，操作条放在顶部即可：
+
+<DemoBlock title="header 组合：自定义头部操作条">
+  <div style="display: inline-flex; flex-direction: column; gap: var(--oas-space-2); padding: var(--oas-space-3); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-lg);">
+    <div style="display: inline-flex; justify-content: space-between; align-items: center; width: 100%; gap: var(--oas-space-2);">
+      <span style="font-weight: 600;">项目排期</span>
+      <span style="font-size: var(--oas-font-size-xs); color: var(--oas-color-text-secondary)">点标题可钻取年/月，内置「今天」钮回当月</span>
+    </div>
+    <oas-calendar id="calendar-header-composite" value="2026-08-09"></oas-calendar>
+  </div>
+</DemoBlock>
+
+> 说明：`oas-calendar` 自身头部仍提供 `prev/next/title/today` 导航（`[part="header"]` 可定位、`::part` 改样式），宿主无需替换即可用；上述操作条属**额外内容**，通过外层卡片排版实现，不侵入组件内部。这就是「B 派日程月历（如带富内容头部的月历容器）」与「我们选择面板」的形态分界。
+
 ## 只读日历
 
 <DemoBlock title="readonly：详情页只读 + 事件点">

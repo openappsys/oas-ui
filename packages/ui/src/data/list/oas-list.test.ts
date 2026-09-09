@@ -449,6 +449,20 @@ describe('OASList', () => {
       const style = el.shadowRoot!.querySelector('style')!.textContent!
       expect(style).toMatch(/:host\(\[data-clickable\]:hover\)\s*\{[^}]*background/)
     })
+
+    it('选中行 hover 保持 primary 底（压盖 clickable hover 浅灰，防白字白底不可读回归）', () => {
+      const el = new OASListItem()
+      el.setAttribute('clickable', '')
+      el.setAttribute('selected', '')
+      document.body.appendChild(el)
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      // 选中态 hover 规则存在且带 primary 背景
+      expect(style).toMatch(/:host\(\[selected\]:hover\)\s*\{[^}]*primary/)
+      // 且该规则位于 clickable hover 规则之后（同优先级后者胜）
+      const hoverIdx = style.indexOf(':host([data-clickable]:hover)')
+      const selHoverIdx = style.indexOf(':host([selected]:hover)')
+      expect(selHoverIdx).toBeGreaterThan(hoverIdx)
+    })
   })
 
   describe('数据通道（data + template / oas-item-render 双通道）', () => {

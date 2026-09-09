@@ -64,3 +64,24 @@ test('calendar 模式切换：year 选中月份后自动切回月视图（value 
 // —— slider P1 补缺：show-input 联动 + 自定义滑块 + reverse ——
 // 曾现缺口：滑块无数值输入联动（精确取值只能靠猜）、滑块外观不可定制、方向不可反转。
 // 本次补 show-input（双向同步 + 防抖 + 夹取）、range（双滑块区间）、custom-thumb（模板/插槽）、reverse。
+
+test('calendar header 组合：外部操作条 + 组件卡片，内置导航仍可用（part=header 定位）', async ({ page }) => {
+  await page.goto('/components/calendar.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-calendar#calendar-header-composite')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-calendar#calendar-header-composite')!
+    return {
+      headerPart: !!el.shadowRoot!.querySelector('[part="header"]'),
+      prevBtn: !!el.shadowRoot!.querySelector('[part="prev"]'),
+      nextBtn: !!el.shadowRoot!.querySelector('[part="next"]'),
+      todayBtn: !!el.shadowRoot!.querySelector('[part="today"]'),
+      titleText: el.shadowRoot!.querySelector('[part="title"]')?.textContent ?? '',
+    }
+  })
+  expect(r.headerPart).toBe(true)
+  expect(r.prevBtn).toBe(true)
+  expect(r.nextBtn).toBe(true)
+  expect(r.titleText).toContain('2026')
+})
+
+
