@@ -342,7 +342,10 @@ export class OASList extends OASElement {
       ;(row as { itemData?: unknown }).itemData = item
       if (tpl) row.appendChild(cloneSlotContent(tpl))
       this.emit('item-render', { index: i, item, element: row })
-      if (!tpl && !row.hasChildNodes()) row.textContent = String(item ?? '')
+      // 文本兜底仅用于原始值行：对象行的 title/description 由 item 的 itemData
+      // 元数据兜底渲染（String(对象) 只会得到 "[object Object]"，用户实测缺陷）
+      if (!tpl && !row.hasChildNodes() && (item == null || typeof item !== 'object'))
+        row.textContent = String(item ?? '')
       box.appendChild(row)
     })
   }

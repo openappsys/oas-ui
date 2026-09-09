@@ -257,10 +257,12 @@
 
 ## 数据通道（data + 模板双通道）
 
-除声明式 `oas-list-item` 子项外，`oas-list` 支持数据驱动：通过 `data` property（推荐）或 `data` 属性（JSON 字符串）传入数组。渲染自定义有两条通道（与 `oas-tree` 的惯例对齐）：
+除声明式 `oas-list-item` 子项外，`oas-list` 支持数据驱动：通过 `data` property（推荐）或 `data` 属性（JSON 字符串）传入数组。**对象行开箱即用**：未提供模板时，`{ title, description, avatar }` 同名字段自动渲染为 Meta 结构（原始值行则直接渲染文本），不会退化成 `"[object Object]"`。渲染自定义有两条通道（与 `oas-tree` 的惯例对齐）：
 
 1. `template[slot="item"]`：每项克隆的静态骨架，配合 `oas-item-render` 事件（`detail` 带 `{ index, item, element }`）按数据绑定；
 2. 只监听 `oas-item-render`，不写模板，完全命令式填充每行。
+
+> 监听器请先挂后赋值：`data` 赋值同步触发渲染与 `oas-item-render`，后挂的监听会错过首轮渲染。
 
 有 `data` 走数据通道、无 `data` 回落声明式子项。数据行为 `oas-list-item` 承载（结构、头像、选中、点击与声明式一致），行上有 `data-index` 上下文。
 
@@ -308,8 +310,10 @@
   <div style="width: 100%">
     <oas-list bordered height="320" row-height="57" id="list-virtual">
       <template slot="item">
-        <span slot="title" data-field="title"></span>
-        <span slot="description" data-field="description"></span>
+        <div style="display: flex; flex-direction: column; justify-content: center; height: 100%; overflow: hidden">
+          <strong data-field="title" style="font-size: var(--oas-font-size-md)"></strong>
+          <span data-field="description" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"></span>
+        </div>
       </template>
     </oas-list>
   </div>
@@ -381,27 +385,21 @@ onMounted(() => {
   // 斑马纹数据
   const stripe = document.querySelector('#list-stripe')
   if (stripe) {
-    stripe.data = Array.from({ length: 6 }, (_, i) => ({
-      title: `审计事件 #${1000 + i}`,
-      description: `操作人 system · ${['创建', '更新', '删除'][i % 3]}了配置项`,
-    }))
+    // 监听器先挂：data 赋值同步触发渲染与 oas-item-render，后挂监听会错过首渲
     stripe.addEventListener('oas-item-render', (e) => {
       const { item, element } = e.detail
       element.setAttribute('title', item.title)
       element.setAttribute('description', item.description)
     })
+    stripe.data = Array.from({ length: 6 }, (_, i) => ({
+      title: `审计事件 #${1000 + i}`,
+      description: `操作人 system · ${['创建', '更新', '删除'][i % 3]}了配置项`,
+    }))
   }
 
   // 数据通道：oas-item-render 命令式绑定
   const dataList = document.querySelector('#list-data')
   if (dataList) {
-    dataList.data = [
-      { title: '修复暗色下 tag 对比度', description: '状态色 token 复核', status: '进行中' },
-      { title: '补充 timeline 迁移说明', description: 'color → type 破坏性变更', status: '进行中' },
-      { title: 'list 虚拟滚动联调', description: '内嵌 oas-virtual-list', status: '待开始' },
-      { title: '回归测试补齐', description: 'qa-regression 固化', status: '待开始' },
-      { title: '发布 v2.4.0', description: '能力批收尾', status: '已计划' },
-    ]
     dataList.addEventListener('oas-item-render', (e) => {
       const { item, element } = e.detail
       element.setAttribute('title', item.title)
@@ -416,6 +414,13 @@ onMounted(() => {
       element.appendChild(tag)
       element.setAttribute('clickable', '')
     })
+    dataList.data = [
+      { title: '修复暗色下 tag 对比度', description: '状态色 token 复核', status: '进行中' },
+      { title: '补充 timeline 迁移说明', description: 'color → type 破坏性变更', status: '进行中' },
+      { title: 'list 虚拟滚动联调', description: '内嵌 oas-virtual-list', status: '待开始' },
+      { title: '回归测试补齐', description: 'qa-regression 固化', status: '待开始' },
+      { title: '发布 v2.4.0', description: '能力批收尾', status: '已计划' },
+    ]
     dataList.addEventListener('oas-click', (e) => {
       if (e.detail && typeof e.detail.index === 'number') {
         message.info(`点击了第 ${e.detail.index + 1} 行：${e.detail.item.title}`)
@@ -428,11 +433,6 @@ onMounted(() => {
   customElements.whenDefined('oas-list').then(() => {
     const tplList = document.querySelector('#list-data-tpl')
     if (tplList) {
-      tplList.data = [
-        { title: '林晓雨', description: '更新了三份需求文档', status: '在线', tagType: 'success' },
-        { title: '陈以宁', description: '合并了 2 个 PR', status: '忙碌', tagType: 'warning' },
-        { title: '赵启铭', description: '提交了测试报告', status: '离线', tagType: 'default' },
-      ]
       tplList.addEventListener('oas-item-render', (e) => {
         const { item, element } = e.detail
         for (const node of element.querySelectorAll('[data-field]')) {
@@ -443,6 +443,11 @@ onMounted(() => {
           }
         }
       })
+      tplList.data = [
+        { title: '林晓雨', description: '更新了三份需求文档', status: '在线', tagType: 'success' },
+        { title: '陈以宁', description: '合并了 2 个 PR', status: '忙碌', tagType: 'warning' },
+        { title: '赵启铭', description: '提交了测试报告', status: '离线', tagType: 'default' },
+      ]
     }
   })
 
@@ -452,6 +457,11 @@ onMounted(() => {
     const tail = document.querySelector('#list-infinite-tail')
     let batch = 0
     const totalBatches = 3
+    infinite.addEventListener('oas-item-render', (e) => {
+      const { item, element } = e.detail
+      element.setAttribute('title', item.title)
+      element.setAttribute('description', item.description)
+    })
     const append = (count) => {
       const current = infinite.dataItems
       infinite.data = current.concat(
@@ -479,26 +489,21 @@ onMounted(() => {
         setTail(batch >= totalBatches ? '— 没有更多了 —' : '向下滚动加载更多')
       }, 400)
     })
-    infinite.addEventListener('oas-item-render', (e) => {
-      const { item, element } = e.detail
-      element.setAttribute('title', item.title)
-      element.setAttribute('description', item.description)
-    })
   }
 
   // 虚拟滚动：万级日志
   const virtual = document.querySelector('#list-virtual')
   if (virtual) {
-    virtual.data = Array.from({ length: 10000 }, (_, i) => ({
-      title: `访问日志 #${i + 1}`,
-      description: `GET /api/records/${i + 1} · 200 · ${(Math.random() * 80 + 10).toFixed(0)}ms`,
-    }))
     virtual.addEventListener('oas-item-render', (e) => {
       const { item, element } = e.detail
       for (const node of element.querySelectorAll('[data-field]')) {
         node.textContent = item[node.getAttribute('data-field')] ?? ''
       }
     })
+    virtual.data = Array.from({ length: 10000 }, (_, i) => ({
+      title: `访问日志 #${i + 1}`,
+      description: `GET /api/records/${i + 1} · 200 · ${(Math.random() * 80 + 10).toFixed(0)}ms`,
+    }))
   }
 
   // 分页组合：宿主切片 + 更新 data
@@ -510,15 +515,15 @@ onMounted(() => {
       description: `客户 ${['甲', '乙', '丙', '丁'][i % 4]} · ${['咨询', '报障', '建议'][i % 3]}`,
     }))
     const pageSize = 4
-    const render = (page) => {
-      paged.data = all.slice((page - 1) * pageSize, page * pageSize)
-    }
-    render(1)
     paged.addEventListener('oas-item-render', (e) => {
       const { item, element } = e.detail
       element.setAttribute('title', item.title)
       element.setAttribute('description', item.description)
     })
+    const render = (page) => {
+      paged.data = all.slice((page - 1) * pageSize, page * pageSize)
+    }
+    render(1)
     pagedNav.addEventListener('oas-change', (e) => render(e.detail.page ?? e.detail.current ?? 1))
   }
 
