@@ -56,6 +56,20 @@ The `scrollToIndex(index, options?)` method scrolls to the item at the given ind
   </div>
 </DemoBlock>
 
+## Dynamic Row Height
+
+With `dynamic-height`, rows may have different heights: unmeasured rows are laid out using `estimated-item-height` (defaults to `item-height`), and rendered rows are measured by `ResizeObserver`, which progressively corrects total height and offsets. When rows above the viewport change height, scrollTop is compensated automatically to keep the visual anchor stable (no jump when scrolling up). `scrollToIndex` also works in dynamic mode (positioned by the height table). Picking an estimate close to the real average row height minimizes corrections.
+
+<DemoBlock title="Dynamic height (mixed row heights)">
+  <div style="width: 100%">
+    <div style="display: flex; gap: var(--oas-space-2); margin-bottom: var(--oas-space-3); align-items: center">
+      <oas-button id="vl-dyn-jump" size="small">scrollToIndex(40)</oas-button>
+      <span style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">Total height corrects progressively with measurement; scrolling stays smooth</span>
+    </div>
+    <oas-virtual-list id="vl-dyn" height="280" dynamic-height estimated-item-height="56"></oas-virtual-list>
+  </div>
+</DemoBlock>
+
 ## Render Buffer
 
 `buffer` controls how many extra items are pre-rendered above and below the visible area (default `4`): a larger buffer means fewer blank areas (white screens) while scrolling, at the cost of more rendered DOM nodes.
@@ -169,6 +183,37 @@ onMounted(() => {
     buf8.addEventListener('oas-scroll', refreshBufferCounts)
   }
   refreshBufferCounts()
+
+  // Dynamic height: mixed card rows (title + variable description lines)
+  const dyn = document.querySelector('#vl-dyn')
+  if (dyn) {
+    const rows = Array.from({ length: 80 }, (_, i) => ({
+      title: `Item ${i + 1}`,
+      lines: (i % 3) + 1,
+      tag: ['Normal', 'Priority', 'Urgent'][i % 3],
+    }))
+    dyn.items = rows
+    dyn.addEventListener('oas-item', (e) => {
+      const { item, element } = e.detail
+      element.style.padding = 'var(--oas-space-2) var(--oas-space-3)'
+      element.style.borderBottom = '1px solid var(--oas-color-border)'
+      element.style.boxSizing = 'border-box'
+      const head = document.createElement('div')
+      head.style.cssText = 'display:flex;justify-content:space-between;font-weight:500'
+      head.innerHTML = `<span></span><span style="color:var(--oas-color-primary);font-size:var(--oas-font-size-xs)"></span>`
+      head.children[0].textContent = item.title
+      head.children[1].textContent = item.tag
+      element.appendChild(head)
+      for (let k = 0; k < item.lines; k++) {
+        const p = document.createElement('div')
+        p.style.cssText = 'color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);line-height:1.5'
+        p.textContent = `Description line ${k + 1}: height varies with content`
+        element.appendChild(p)
+      }
+    })
+    const jumpBtn = document.querySelector('#vl-dyn-jump')
+    jumpBtn?.addEventListener('click', () => dyn.scrollToIndex(40, { align: 'start' }))
+  }
 })
 </script>
 
@@ -179,6 +224,8 @@ onMounted(() => {
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `buffer` | Number of items pre-rendered above/below (rendered early beyond the visible area to reduce scrolling blanks) | `string` | `4` |
+| `dynamic-height` | Dynamic row height: rows may vary in height (unmeasured rows use the estimate; rendered rows are measured and progressively corrected; scrollTop is auto-compensated when rows above the viewport change) | `boolean` | — |
+| `estimated-item-height` | Estimated row height for dynamic mode (px; defaults to item-height; closest to the real average minimizes corrections) | `string` | — |
 | `height` | Viewport height (px) | `string` | `320` |
 | `item-height` | Fixed height of each item (px) | `string` | `36` |
 | `items` | Data array (property channel, takes precedence over the `items` attribute); data JSON string (attribute channel) | `unknown[]` | `[]` |

@@ -3061,7 +3061,9 @@
       "height": "Viewport height (px)",
       "item-height": "Fixed height of each item (px)",
       "items": "Data array (property channel, takes precedence over the `items` attribute); data JSON string (attribute channel)",
-      "scroll-target": "CSS selector of the external scroll container; when set, the component has no scrollbar of its own and listens to the external scroll"
+      "scroll-target": "CSS selector of the external scroll container; when set, the component has no scrollbar of its own and listens to the external scroll",
+      "dynamic-height": "Dynamic row height: rows may vary in height (unmeasured rows use the estimate; rendered rows are measured and progressively corrected; scrollTop is auto-compensated when rows above the viewport change)",
+      "estimated-item-height": "Estimated row height for dynamic mode (px; defaults to item-height; closest to the real average minimizes corrections)"
     },
     "events": {
       "oas-item": "Emitted after each visible item renders, `detail: { index, item, element }`",

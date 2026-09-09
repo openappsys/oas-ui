@@ -29,6 +29,17 @@
     {
       "name": "items",
       "observed": true
+    },
+    {
+      "name": "dynamic-height",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "estimated-item-height",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
