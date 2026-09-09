@@ -91,6 +91,17 @@ Nodes can be fully customized with `slot="dot"` (any content), or rendered quick
   </div>
 </DemoBlock>
 
+<DemoBlock title="Dot size and color customization">
+  <div style="width: 100%">
+    <oas-timeline>
+      <oas-timeline-item time="2024-09-01" style="--oas-timeline-dot-size: 6px"><p>Small dot (--oas-timeline-dot-size: 6px)</p></oas-timeline-item>
+      <oas-timeline-item time="2024-09-02" style="--oas-timeline-dot-size: 10px"><p>Default size (10px)</p></oas-timeline-item>
+      <oas-timeline-item time="2024-09-03" style="--oas-timeline-dot-size: 16px"><p>Large dot (16px)</p></oas-timeline-item>
+      <oas-timeline-item time="2024-09-04" style="--oas-timeline-dot-size: 12px; --oas-timeline-dot-color: #7c3aed"><p>Custom color (--oas-timeline-dot-color: #7c3aed)</p></oas-timeline-item>
+    </oas-timeline>
+  </div>
+</DemoBlock>
+
 ## Title Structure (title slot)
 
 `slot="title"` renders an emphasized title line, separated from the body (default slot) — great for release records and changelogs.
