@@ -48,12 +48,13 @@
       "observed": true
     },
     {
-      "name": "prefix",
+      "name": "prefix-text",
+      "type": "string",
       "default": "",
       "observed": true
     },
     {
-      "name": "suffix",
+      "name": "suffix-text",
       "type": "string",
       "default": "",
       "observed": true
@@ -136,10 +137,6 @@
     }
   ],
   "props": [
-    {
-      "name": "prefix",
-      "type": "string"
-    },
     {
       "name": "formatter",
       "type": "((value: string) => string) | null"

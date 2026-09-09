@@ -15,12 +15,11 @@
       "observed": true
     },
     {
-      "name": "prefix",
-      "default": "",
+      "name": "prefix-text",
       "observed": true
     },
     {
-      "name": "suffix",
+      "name": "suffix-text",
       "observed": true
     },
     {
@@ -53,12 +52,7 @@
       "observed": true
     }
   ],
-  "props": [
-    {
-      "name": "prefix",
-      "type": "string"
-    }
-  ],
+  "props": [],
   "events": [],
   "slots": [
     {

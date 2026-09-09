@@ -296,7 +296,7 @@ input:disabled:hover {
 /* 有前缀/图标时 input 左侧留位，有后缀/图标/可清空时右侧留位。
    slot 分发（data-slot-*）与 attribute（prefix/suffix）两条通道等价驱动布局；
    测宽 mirror 同享留位（保证 auto-width 测量含让位内边距） */
-:host([prefix]) :is(input, .measure)  {
+:host([prefix-text]) :is(input, .measure)  {
   padding-left: var(--oas-space-8, 40px);
 }
 :host([data-slot-prefix]) :is(input, .measure)  {
@@ -305,13 +305,13 @@ input:disabled:hover {
 :host([prefix-icon]) :is(input, .measure)  {
   padding-left: var(--oas-space-8, 40px);
 }
-:host([prefix][prefix-icon]) :is(input, .measure)  {
+:host([prefix-text][prefix-icon]) :is(input, .measure)  {
   padding-left: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([data-slot-prefix][prefix-icon]) :is(input, .measure)  {
   padding-left: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
-:host([suffix]) :is(input, .measure)  {
+:host([suffix-text]) :is(input, .measure)  {
   padding-right: var(--oas-space-8, 40px);
 }
 :host([data-slot-suffix]) :is(input, .measure)  {
@@ -323,7 +323,7 @@ input:disabled:hover {
 :host([clearable]) :is(input, .measure)  {
   padding-right: var(--oas-space-8, 40px);
 }
-:host([clearable][suffix]) :is(input, .measure)  {
+:host([clearable][suffix-text]) :is(input, .measure)  {
   padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([clearable][data-slot-suffix]) :is(input, .measure)  {
@@ -340,7 +340,7 @@ input:disabled:hover {
 :host([show-password][clearable]) :is(input, .measure)  {
   padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
-:host([show-password][suffix]) :is(input, .measure)  {
+:host([show-password][suffix-text]) :is(input, .measure)  {
   padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
 :host([show-password][data-slot-suffix]) :is(input, .measure)  {
@@ -349,7 +349,7 @@ input:disabled:hover {
 :host([show-password][suffix-icon]) :is(input, .measure)  {
   padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px));
 }
-:host([show-password][clearable][suffix]) :is(input, .measure)  {
+:host([show-password][clearable][suffix-text]) :is(input, .measure)  {
   padding-right: calc(var(--oas-space-8, 40px) + var(--oas-space-5, 24px) + var(--oas-space-5, 24px));
 }
 :host([show-password][clearable][data-slot-suffix]) :is(input, .measure)  {
@@ -472,7 +472,7 @@ input:disabled:hover {
 :host([clearable]) .count[data-position='inside']  {
   margin-inline-end: var(--oas-space-5, 24px);
 }
-:host([suffix]) .count[data-position='inside']  {
+:host([suffix-text]) .count[data-position='inside']  {
   margin-inline-end: var(--oas-space-5, 24px);
 }
 :host([data-slot-suffix]) .count[data-position='inside']  {
@@ -487,7 +487,7 @@ input:disabled:hover {
 :host([show-password][clearable]) .count[data-position='inside']  {
   margin-inline-end: calc(var(--oas-space-5, 24px) + var(--oas-space-5, 24px));
 }
-:host([show-password][suffix]) .count[data-position='inside']  {
+:host([show-password][suffix-text]) .count[data-position='inside']  {
   margin-inline-end: calc(var(--oas-space-5, 24px) + var(--oas-space-5, 24px));
 }
 :host([show-password][data-slot-suffix]) .count[data-position='inside']  {
@@ -528,8 +528,8 @@ export class OASInput extends OASElement {
       'label',
       'addon-before',
       'addon-after',
-      'prefix',
-      'suffix',
+      'prefix-text',
+      'suffix-text',
       'prefix-icon',
       'suffix-icon',
       'show-password',
@@ -547,14 +547,6 @@ export class OASInput extends OASElement {
       'auto-width-max',
       ...PASSTHROUGH_ATTRS,
     ]
-  }
-
-  /** Element 内建只读 getter prefix 会让 Vue 走 property 赋值；访问器遮蔽并反射到 attribute */
-  override get prefix(): string {
-    return this.getAttr('prefix', '')
-  }
-  override set prefix(value: string) {
-    this.setAttribute('prefix', value)
   }
 
   /** 显示格式化（仅 property 通道：`el.formatter = fn`，WC attribute 无法传函数）。
@@ -726,6 +718,10 @@ export class OASInput extends OASElement {
   protected override update(): void {
     const i = this.inputEl
     if (!i) return
+    // 遗留属性名规范：旧 prefix/suffix（与 DOM 内建只读冲突，Vue 走 property 会吞值）
+    // 迁移到 prefix-text/suffix-text（纯 HTML 老用法自动升级，CSS 只认新名）
+    this.normalizeLegacyAlias('prefix-text', 'prefix')
+    this.normalizeLegacyAlias('suffix-text', 'suffix')
     const value = this.getAttr('value', '')
     const placeholder = this.getAttr('placeholder', '')
     const type = this.getAttr('type', 'text')
@@ -943,9 +939,9 @@ export class OASInput extends OASElement {
       else this.removeAttribute(slotMark)
     }
     renderIcon('prefix-icon', this.getAttr('prefix-icon', ''))
-    renderAffix('prefix', this.getAttr('prefix', ''), 'data-slot-prefix')
+    renderAffix('prefix', this.getAttr('prefix-text', ''), 'data-slot-prefix')
     renderIcon('suffix-icon', this.getAttr('suffix-icon', ''))
-    renderAffix('suffix', this.getAttr('suffix', ''), 'data-slot-suffix')
+    renderAffix('suffix', this.getAttr('suffix-text', ''), 'data-slot-suffix')
   }
 
   /** auto-width 钳制变量：min/max 属性写入 CSS 变量（JS 不做钳制，交给 min-width/max-width） */

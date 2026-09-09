@@ -419,11 +419,15 @@ describe('OASInputNumber prefix / suffix', () => {
     expect(slot.assignedNodes().length).toBe(1)
   })
 
-  it('prefix property setter 反射 attribute（Vue 劫持防护）', () => {
-    const el = mount()
-    el.prefix = '¥'
-    expect(el.getAttribute('prefix')).toBe('¥')
-    expect(el.prefix).toBe('¥')
+  it('prefix-text 渲染且遗留 prefix 迁移（不再被 Vue 劫持）', () => {
+    const el = mount({ 'prefix-text': '¥' })
+    expect(el.shadowRoot!.querySelector('[part="prefix"]')!.textContent).toContain('¥')
+    expect(el.getAttribute('prefix-text')).toBe('¥')
+    // 遗留 prefix 在首帧 update 迁移到 prefix-text
+    const legacy = mount({ prefix: '$' })
+    expect(legacy.getAttribute('prefix-text')).toBe('$')
+    expect(legacy.getAttribute('prefix')).toBeNull()
+    expect(legacy.shadowRoot!.querySelector('[part="prefix"]')!.textContent).toContain('$')
   })
 })
 

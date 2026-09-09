@@ -106,11 +106,11 @@ With `lazy`, nodes without `children` and not marked `isLeaf` / `loaded` are tre
 
 <DemoBlock title="clearable + prefix / suffix">
   <div style="display: flex; gap: var(--oas-space-3); flex-wrap: wrap">
-    <oas-tree-select clearable value="vue" prefix="Dept" suffix="Required" placeholder="Clearable" options='[{"label":"Frontend","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'></oas-tree-select>
+    <oas-tree-select clearable value="vue" prefix-text="Dept" suffix-text="Required" placeholder="Clearable" options='[{"label":"Frontend","value":"fe","children":[{"label":"Vue","value":"vue"},{"label":"React","value":"react"}]}]'></oas-tree-select>
   </div>
 </DemoBlock>
 
-With `clearable`, a clear button shows when there is a value (clicking clears and emits `oas-clear`). `prefix` / `suffix` render affix texts inside the trigger; `template[slot="prefix"]` / `[slot="suffix"]` provide custom content.
+With `clearable`, a clear button shows when there is a value (clicking clears and emits `oas-clear`). `prefix-text` / `suffix-text` render affix texts inside the trigger; `template[slot="prefix"]` / `[slot="suffix"]` provide custom content. In plain HTML, the legacy `prefix` / `suffix` still work as aliases.
 
 ## Size & Status (size / status)
 
@@ -437,13 +437,13 @@ onMounted(() => {
 | `open` | Controlled open (presence = controlled; `"false"` = controlled-closed); flips fire oas-open-change | `string` | — |
 | `options` | Tree options, JSON array, supports `children` / `disabled` | `TreeOption[] \| string` | `[]` |
 | `placeholder` | Placeholder text | — | — |
-| `prefix` | Trigger prefix content (slot="prefix" accepts any content) | `string` | — |
+| `prefix-text` | Trigger prefix content (slot="prefix" accepts any content) | `string` | — |
 | `reserve-keyword` | Keep the search keyword after selecting a node (cleared by default) | `boolean` | — |
 | `separator` | Path separator (default ` / `, pair with show-path) | `string` | ` / ` |
 | `show-path` | Echo the full path (initial echo and multi-select labels use paths) | `boolean` | — |
 | `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success` | `string` | — |
-| `suffix` | Trigger suffix content (slot="suffix" likewise) | `string` | — |
+| `suffix-text` | Trigger suffix content (slot="suffix" likewise) | `string` | — |
 | `tree-lines` | Tree indentation guide lines | `boolean` | — |
 | `value` | Selected value (JSON array in multiple mode) | `string` | `[]` |
 | `virtual` | Enable virtual scroll: the dropdown renders only the visible window for large data (reuses oas-virtual-list), keeping keyboard/ARIA intact | `boolean` | — |

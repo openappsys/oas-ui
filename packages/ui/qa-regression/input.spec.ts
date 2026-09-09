@@ -67,3 +67,19 @@ test('input 内嵌前后缀 slot：空 slot 无 data-slot-*、动态增删同步
   expect(r.afterRemove.suffixHidden).toBe(true)
   expect(r.afterRemove.paddingRight).toBe(r.basePadding)
 })
+
+test('input prefix-text 属性在 Vue demo 中存活并渲染（覆盖 DOM 内建 prefix 冲突回归）', async ({ page }) => {
+  await page.goto('/components/input.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-input[prefix-text]')
+  const r = await page.evaluate(() => {
+    const el = document.querySelector('oas-input[prefix-text]')!
+    return {
+      prefixTextAttr: el.getAttribute('prefix-text'),
+      affixText: el.shadowRoot?.querySelector('[part="prefix"]')?.textContent?.trim() ?? '',
+      affixHidden: el.shadowRoot?.querySelector('[part="prefix"]')?.hasAttribute('hidden') ?? null,
+    }
+  })
+  expect(r.prefixTextAttr).toBe('$')
+  expect(r.affixText).toBe('$')
+  expect(r.affixHidden).toBe(false)
+})

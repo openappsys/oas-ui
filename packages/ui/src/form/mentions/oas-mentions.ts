@@ -13,6 +13,7 @@ export interface Option {
 const VALID_SIZES = ['small', 'medium', 'large'] as const
 const VALID_STATUSES = ['error', 'warning', 'success'] as const
 const VALID_VARIANTS = ['outlined', 'filled', 'borderless'] as const
+const VALID_TYPES = ['textarea', 'input'] as const
 
 /** 枚举归一化：合法值原样返回，空/非法值静默回落默认 */
 function normalizeChoice(raw: string, fallback: string, valid: readonly string[]): string {
@@ -164,6 +165,26 @@ textarea:disabled:hover {
   height: 12px;
   display: block;
 }
+/* ---- type=input 单行形态：textarea 视觉压单行（保留 textarea 语义，复用全部扫描/IME/autosize 逻辑） ---- */
+:host([type='input']) textarea {
+  line-height: var(--oas-control-height-md);
+  height: var(--oas-control-height-md);
+  min-height: var(--oas-control-height-md);
+  white-space: pre;
+  overflow-x: auto;
+  overflow-y: hidden;
+  resize: none;
+}
+:host([type='input'][data-size='small']) textarea {
+  height: var(--oas-control-height-sm);
+  min-height: var(--oas-control-height-sm);
+  line-height: var(--oas-control-height-sm);
+}
+:host([type='input'][data-size='large']) textarea {
+  height: var(--oas-control-height-lg);
+  min-height: var(--oas-control-height-lg);
+  line-height: var(--oas-control-height-lg);
+}
 /* ---- 建议面板（fixed + computePosition：锚定 textarea，空间不足自动翻转/避让） ---- */
 .panel {
   position: fixed;
@@ -235,7 +256,7 @@ export class OASMentions extends OASElement {
     return [
       'value',
       'options',
-      'prefix',
+      'trigger',
       'placeholder',
       'disabled',
       'disabled-skip',
@@ -251,6 +272,8 @@ export class OASMentions extends OASElement {
       'size',
       'status',
       'variant',
+      'type',
+      'whole',
     ]
   }
 
@@ -268,16 +291,17 @@ export class OASMentions extends OASElement {
     this.setAttribute('options', typeof value === 'string' ? value : JSON.stringify(value))
   }
 
-  /** Element 内建只读 getter prefix 会让 Vue 走 property 赋值；访问器遮蔽并反射到 attribute（数组 JSON 编码） */
-  override get prefix(): string {
-    return this.getAttr('prefix', '@')
+  /** 触发符 property 通道（JS 传数组如 `el.trigger = ['@','#']`，JSON 反射到 attribute；trigger 与 DOM 无冲突）。
+   *  Vue/React 传数组会走 property 通道；统一反射到 attribute 供 prefixes() 解析。 */
+  get trigger(): string {
+    return this.getAttr('trigger', '@')
   }
-  override set prefix(value: string | string[]) {
-    this.setAttribute('prefix', typeof value === 'string' ? value : JSON.stringify(value))
+  set trigger(value: string | string[]) {
+    this.setAttribute('trigger', typeof value === 'string' ? value : JSON.stringify(value))
   }
 
   /** 自定义本地过滤函数（JS property 通道，attribute 传不了函数）：
-   *  `(query, option) => boolean`，query 为 prefix 后光标前的原始文本；置 null 回落默认 label‖value 小写 includes */
+   *  `(query, option) => boolean`，query 为触发符后光标前的原始文本；置 null 回落默认 label‖value 小写 includes */
   filterOption: ((query: string, option: Option) => boolean) | null = null
 
   private activeIndex = -1
@@ -371,6 +395,8 @@ export class OASMentions extends OASElement {
   }
 
   protected override update(): void {
+    // 遗留属性名规范：旧 prefix（与 DOM 内建只读冲突，Vue 走 property 会吞数组值）迁移到 trigger
+    this.normalizeLegacyAlias('trigger', 'prefix')
     this.parseOptions()
     const t = this.ta
     if (!t) return
@@ -383,6 +409,8 @@ export class OASMentions extends OASElement {
       VALID_VARIANTS,
     )
     this.setAttribute('data-variant', variant)
+    const type = normalizeChoice(this.getAttr('type', 'textarea'), 'textarea', VALID_TYPES)
+    this.setAttribute('data-type', type)
     const status = normalizeChoice(this.getAttr('status', ''), '', VALID_STATUSES)
     if (status) this.setAttribute('data-status', status)
     else this.removeAttribute('data-status')
@@ -421,13 +449,20 @@ export class OASMentions extends OASElement {
       this.getAttr('label', placeholder) || this.t('mentions.defaultLabel'),
     )
 
-    // autosize：高度由 min-rows/max-rows 约束；关闭时清内联高度还交 CSS
-    if (this.autosizeEnabled()) {
-      t.rows = this.minRows()
-      t.style.resize = 'none'
-      this.maybeAutoResize()
-    } else {
+    // autosize：高度由 min-rows/max-rows 约束；关闭时清内联高度还交 CSS。
+    // 单行形态（type=input）恒锁高，autosize 对单行无意义——单行时 rows 固定 1，
+    // 关闭 autosize 的动态增高（高度已由 :host([type='input']) CSS 锁单行）。
+    if (type === 'input') {
+      t.rows = 1
       this.resetHeight()
+    } else {
+      if (this.autosizeEnabled()) {
+        t.rows = this.minRows()
+        t.style.resize = 'none'
+        this.maybeAutoResize()
+      } else {
+        this.resetHeight()
+      }
     }
     this.syncClear()
     // 浮层开着时，options/loading/locale/插槽变化即时刷新列表
@@ -436,9 +471,9 @@ export class OASMentions extends OASElement {
 
   // ---- 前缀/分隔符/尺寸解析 ----
 
-  /** 触发符解析：prefix 支持单字符串或 JSON 数组（@/# 多触发符并存） */
+  /** 触发符解析：trigger 支持单字符串或 JSON 数组（@/# 多触发符并存）；旧 prefix（与 DOM 内建冲突）经 update 迁移 */
   private prefixes(): string[] {
-    const raw = this.getAttr('prefix', '@')
+    const raw = this.getAttr('trigger', '@')
     if (raw === '') return []
     if (raw.startsWith('[')) {
       try {
@@ -458,6 +493,11 @@ export class OASMentions extends OASElement {
   private splitStr(): string {
     const s = this.getAttr('split', ' ')
     return s === '' ? ' ' : s
+  }
+
+  /** 单行形态（type=input）；textarea 视觉压单行，复用全部扫描/IME 逻辑 */
+  private isSingleLine(): boolean {
+    return this.getAttr('type', 'textarea') === 'input'
   }
 
   // ---- 触发扫描（naive/EP 模型：从光标倒走至分隔符/\n/\r 即停，命中 prefix 数组即开，不要求 prefix 前空白） ----
@@ -587,6 +627,17 @@ export class OASMentions extends OASElement {
     if (this.injectDisabled() || this.hasAttr('readonly')) return
     // IME 组合期：Enter/方向键交给输入法（确认候选/移动候选光标），不触发选中与导航
     if (this.composing || e.isComposing) return
+    // whole 整段删除：浮层开启与否均需生效（删除一个已插入的提及项通常浮层已关闭），
+    // 命中才拦截防止默认逐字符删；未命中交还原生行为。
+    if (this.hasAttr('whole') && e.key === 'Backspace' && this.wholeBackspace()) {
+      e.preventDefault()
+      return
+    }
+    // 单行形态（type=input）：浮层关闭时 Enter 不换行（拦截；浮层开启时 Enter 已在下面选中逻辑处理）
+    if (this.isSingleLine() && !this.openState && e.key === 'Enter') {
+      e.preventDefault()
+      return
+    }
     if (!this.openState) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()
@@ -828,6 +879,50 @@ export class OASMentions extends OASElement {
     const idx = Number(row.getAttribute('data-index'))
     const option = this.filtered()[idx]
     if (option && !option.disabled) this.select(option)
+  }
+
+  /**
+   * whole 整段删除（Backspace）：光标无选区时，检测光标前文本末尾是否命中「prefix+label」
+   * 的完整提及段（label 与 options 项 label 判等，最长匹配——长成员名含空格也能一次删）。
+   * 命中移除该提及段并派发 oas-whole-remove（detail { value, option, prefix }）。
+   * 未命中返回 false 交还原生逐字符删除。分隔符（split）不动，交用户二次删除（避免误删正文）。
+   */
+  private wholeBackspace(): boolean {
+    const t = this.ta
+    if (!t || t.selectionStart !== t.selectionEnd) return false
+    const pos = t.selectionStart ?? 0
+    if (pos <= 0) return false
+    const head = t.value.slice(0, pos)
+    const prefixes = this.prefixes()
+    let best: { start: number; label: string; option: Option; prefix: string } | null = null
+    for (const prefix of prefixes) {
+      for (const option of this._options) {
+        const label = String(option.label ?? '')
+        if (!label) continue
+        const text = prefix + label
+        if (head.length < text.length) continue
+        if (head.slice(pos - text.length, pos) !== text) continue
+        const start = pos - text.length
+        // 最长匹配优先：优先删更长的提及段（防止「@aab」被 label="a" 误删成「@ab」）
+        if (!best || start < best.start) best = { start, label, option, prefix }
+      }
+    }
+    if (!best) return false
+    const next = t.value.slice(0, best.start) + t.value.slice(pos)
+    t.value = next
+    this.draft = false
+    this.setAttribute('value', next)
+    const caret = best.start
+    t.setSelectionRange(caret, caret)
+    this.emit('whole-remove', {
+      value: next,
+      option: { ...best.option },
+      prefix: best.prefix,
+    })
+    this.emit('change', { value: next })
+    this.scanMention()
+    t.focus()
+    return true
   }
 
   /** 选中项并入文本：替换 prefix+关键词片段为 prefix+label，后文已以 split 开头则不再补分隔符 */
