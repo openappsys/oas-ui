@@ -579,6 +579,137 @@ describe('OASList', () => {
     })
   })
 
+  describe('数据分组（group / groupLabel 组头）', () => {
+    function groupedRows(el: OASList): HTMLElement[] {
+      return Array.from(el.shadowRoot!.querySelectorAll('[part="data-items"] .group-header'))
+    }
+
+    it('连续同 group 项自动归入分组容器（组头为组容器首元素，行按组收容）', () => {
+      const el = new OASList()
+      el.data = [
+        { title: '甲', group: '进行中' },
+        { title: '乙', group: '进行中' },
+        { title: '丙', group: '已完成' },
+        { title: '丁' },
+      ]
+      document.body.appendChild(el)
+      const box = el.shadowRoot!.querySelector('[part="data-items"]')!
+      const headers = groupedRows(el)
+      expect(headers.length).toBe(2)
+      expect(headers[0]!.textContent).toBe('进行中')
+      expect(headers[1]!.textContent).toBe('已完成')
+      // 结构：data-items 直挂两个 .group + 一个非组行；组头在组容器内首位
+      const groups = Array.from(box.querySelectorAll(':scope > .group'))
+      expect(groups.length).toBe(2)
+      expect(groups[0]!.firstElementChild!.textContent).toBe('进行中')
+      expect(groups[0]!.querySelectorAll('oas-list-item').length).toBe(2)
+      expect(groups[1]!.firstElementChild!.textContent).toBe('已完成')
+      expect(groups[1]!.querySelectorAll('oas-list-item').length).toBe(1)
+      // 非组行直挂 data-items 末尾，行 data-index 与数据序一一对应
+      const last = box.lastElementChild!
+      expect(last.classList.contains('group')).toBe(false)
+      expect(last.getAttribute('data-index')).toBe('3')
+    })
+
+    it('groupLabel 字段自定义组头文案（缺省回落 group）', () => {
+      const el = new OASList()
+      el.data = [
+        { title: '甲', group: 'A', groupLabel: '自定义组名' },
+        { title: '乙', group: 'A' },
+        { title: '丙', group: 'B' },
+      ]
+      document.body.appendChild(el)
+      const headers = groupedRows(el)
+      expect(headers.length).toBe(2)
+      expect(headers[0]!.textContent).toBe('自定义组名')
+      expect(headers[1]!.textContent).toBe('B')
+    })
+
+    it('同一组字符串被非组行隔开视为两段（各自插组头）', () => {
+      const el = new OASList()
+      el.data = [
+        { title: '甲', group: 'A' },
+        { title: '乙' },
+        { title: '丙', group: 'A' },
+      ]
+      document.body.appendChild(el)
+      expect(groupedRows(el).length).toBe(2)
+    })
+
+    it('组头不占用 data-index：行索引仍为原始数据序号，oas-item-render index 不变', () => {
+      const el = new OASList()
+      el.data = [
+        { title: '甲', group: 'A' },
+        { title: '乙', group: 'A' },
+        { title: '丙', group: 'B' },
+      ]
+      document.body.appendChild(el)
+      const rows = el.shadowRoot!.querySelectorAll('[part="data-items"] oas-list-item')
+      expect(rows.length).toBe(3)
+      expect(Array.from(rows).map((r) => r.getAttribute('data-index'))).toEqual(['0', '1', '2'])
+      const seen: number[] = []
+      el.addEventListener('oas-item-render', (e) => seen.push((e as CustomEvent).detail.index))
+      el.data = [
+        { title: '甲', group: 'A' },
+        { title: '乙', group: 'A' },
+      ]
+      expect(seen).toEqual([0, 1])
+    })
+
+    it('普通模式组头吸顶：data-sticky 标记 + position: sticky top:0 规则', () => {
+      const el = new OASList()
+      el.data = [
+        { title: '甲', group: 'A' },
+        { title: '乙', group: 'B' },
+      ]
+      document.body.appendChild(el)
+      const headers = groupedRows(el)
+      expect(headers[0]!.hasAttribute('data-sticky')).toBe(true)
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(/\.group-header\[data-sticky\]\s*\{[^}]*position:\s*sticky/)
+      expect(css).toMatch(/\.group-header\[data-sticky\]\s*\{[^}]*top:\s*0/)
+      // 组头背景不透明（盖住滚经行），只走 CSS 变量 token（含暗色变体）
+      expect(css).toMatch(/\.group-header\s*\{[^}]*background:\s*var\(--oas-color-bg\)/)
+    })
+
+    it('height 虚拟模式 + 分组：回退全量渲染，组头普通渲染不吸顶（无 data-sticky）', () => {
+      const el = new OASList()
+      el.setAttribute('height', '240')
+      el.data = [
+        { title: '甲', group: 'A' },
+        { title: '乙', group: 'A' },
+        { title: '丙', group: 'B' },
+      ]
+      document.body.appendChild(el)
+      const vlist = el.shadowRoot!.querySelector<HTMLElement>('oas-virtual-list')!
+      expect(vlist.hidden).toBe(true)
+      const box = el.shadowRoot!.querySelector('[part="data-items"]')!
+      expect(box.hasAttribute('hidden')).toBe(false)
+      const headers = groupedRows(el)
+      expect(headers.length).toBe(2)
+      for (const h of headers) expect(h.hasAttribute('data-sticky')).toBe(false)
+    })
+
+    it('height 虚拟模式 + 无分组：仍走内嵌虚拟列表（分组检测不误伤普通虚拟数据）', () => {
+      const el = new OASList()
+      el.setAttribute('height', '240')
+      el.data = Array.from({ length: 60 }, (_, i) => ({ title: `第 ${i + 1} 条` }))
+      document.body.appendChild(el)
+      const vlist = el.shadowRoot!.querySelector<HTMLElement>('oas-virtual-list')!
+      expect(vlist.hidden).toBe(false)
+      expect(groupedRows(el).length).toBe(0)
+    })
+
+    it('组头 role="separator"（非行、不参与行交互）', () => {
+      const el = new OASList()
+      el.data = [{ title: '甲', group: 'A' }]
+      document.body.appendChild(el)
+      const h = groupedRows(el)[0]!
+      expect(h.getAttribute('role')).toBe('separator')
+      expect(h.hasAttribute('tabindex')).toBe(false)
+    })
+  })
+
   describe('虚拟滚动（内嵌 oas-virtual-list）', () => {
     it('height 属性启用虚拟模式：内嵌虚拟列表接管渲染', () => {
       const el = new OASList()
