@@ -105,7 +105,7 @@ The group is controlled via `value` (a JSON array); each item's `value` acts as 
 
 ## Button-style Multi-select (oas-toggle-group)
 
-A "button-style" checkbox (like some libraries' `checkbox-button`) is served here by **`oas-toggle-group` in multiple mode** (button-style multi-select group: each item toggles independently via `multiple`, roving-tabindex keyboard, even-width fills, etc.), while the checkbox itself keeps the standard box form. The split mirrors the ecosystem: use checkbox-group for standard multi-select, toggle-group for button-style multi-select.
+A "button-style" checkbox (a multi-select control with a button look where each click marks an item selected) is served here by **`oas-toggle-group` in multiple mode** (button-style multi-select group: each item toggles independently via `multiple`, roving-tabindex keyboard, even-width fills, etc.), while the checkbox itself keeps the standard box form. The split: use checkbox-group for standard multi-select, toggle-group for button-style multi-select.
 
 <DemoBlock title="Button-style multi-select (toggle-group)">
   <oas-toggle-group multiple value='["a"]'>

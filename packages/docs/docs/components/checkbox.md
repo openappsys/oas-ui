@@ -105,7 +105,7 @@
 
 ## 按钮式多选（组合 oas-toggle-group）
 
-checkbox 的「按钮形态」（如若干库的 `checkbox-button`）在本库由 **`oas-toggle-group` 多选模式**承载（按钮式多选组：`multiple` 每项独立切换、roving tabindex 键盘、满宽均分等），checkbox 本体保持标准框形态。二者分工同主流库：标准多选用 checkbox-group、按钮式多选用 toggle-group。
+checkbox 的「按钮形态」（按钮外观、点击即为选中态的多选控件）在本库由 **`oas-toggle-group` 多选模式**承载（按钮式多选组：`multiple` 每项独立切换、roving tabindex 键盘、满宽均分等），checkbox 本体保持标准框形态。二者分工：标准多选用 checkbox-group、按钮式多选用 toggle-group。
 
 <DemoBlock title="按钮式多选（toggle-group 组合）">
   <oas-toggle-group multiple value='["a"]'>
