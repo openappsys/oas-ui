@@ -126,6 +126,16 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "can-rename",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "motion",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [
@@ -175,6 +185,10 @@
     {
       "name": "oas-load-error",
       "detail": "{ key: id, error: error instanceof Error ? error.message : String(error), }"
+    },
+    {
+      "name": "oas-node-rename",
+      "detail": "{ key, label, oldLabel }"
     }
   ],
   "slots": [
