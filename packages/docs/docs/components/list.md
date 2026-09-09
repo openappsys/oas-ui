@@ -277,13 +277,7 @@
 
 <DemoBlock title="template[slot=&quot;item&quot;] 骨架克隆">
   <div style="width: 100%">
-    <oas-list bordered id="list-data-tpl">
-      <template slot="item">
-        <span slot="title" data-field="title"></span>
-        <span slot="description" data-field="description"></span>
-        <oas-tag slot="extra" data-field="status"></oas-tag>
-      </template>
-    </oas-list>
+    <oas-list bordered id="list-data-tpl"></oas-list>
   </div>
 </DemoBlock>
 
@@ -308,14 +302,7 @@
 
 <DemoBlock title="万级数据虚拟列表">
   <div style="width: 100%">
-    <oas-list bordered height="320" row-height="57" id="list-virtual">
-      <template slot="item">
-        <div style="display: flex; flex-direction: column; justify-content: center; height: 100%; overflow: hidden">
-          <strong data-field="title" style="font-size: var(--oas-font-size-md)"></strong>
-          <span data-field="description" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"></span>
-        </div>
-      </template>
-    </oas-list>
+    <oas-list bordered height="320" row-height="57" id="list-virtual"></oas-list>
   </div>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     10000 条日志记录，视口内仅渲染窗口项 + 缓冲。
@@ -433,6 +420,16 @@ onMounted(() => {
   customElements.whenDefined('oas-list').then(() => {
     const tplList = document.querySelector('#list-data-tpl')
     if (tplList) {
+      // 模板走 property 通道：md 内联 <template slot="item"> 的子内容在 vitepress dev
+      // 模式下会被 Vue 编译管线吃空（生产正常、dev 空白——v2.4.1 cellTemplate 同款坑）
+      const tpl = document.createElement('template')
+      tpl.setAttribute('slot', 'item')
+      tpl.innerHTML = `
+        <span slot="title" data-field="title"></span>
+        <span slot="description" data-field="description"></span>
+        <oas-tag slot="extra" data-field="status"></oas-tag>
+      `
+      tplList.appendChild(tpl)
       tplList.addEventListener('oas-item-render', (e) => {
         const { item, element } = e.detail
         for (const node of element.querySelectorAll('[data-field]')) {
@@ -491,9 +488,18 @@ onMounted(() => {
     })
   }
 
-  // 虚拟滚动：万级日志
+  // 虚拟滚动：万级日志（模板同样走 property 通道，防 dev 管线吃空）
   const virtual = document.querySelector('#list-virtual')
   if (virtual) {
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'item')
+    tpl.innerHTML = `
+      <div style="display: flex; flex-direction: column; justify-content: center; height: 100%; overflow: hidden">
+        <strong data-field="title" style="font-size: var(--oas-font-size-md)"></strong>
+        <span data-field="description" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"></span>
+      </div>
+    `
+    virtual.appendChild(tpl)
     virtual.addEventListener('oas-item-render', (e) => {
       const { item, element } = e.detail
       for (const node of element.querySelectorAll('[data-field]')) {

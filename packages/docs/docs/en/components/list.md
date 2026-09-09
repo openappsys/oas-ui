@@ -277,13 +277,7 @@ When `data` is present the data channel wins; without it the list falls back to 
 
 <DemoBlock title="template[slot=&quot;item&quot;] skeleton clone">
   <div style="width: 100%">
-    <oas-list bordered id="list-data-tpl">
-      <template slot="item">
-        <span slot="title" data-field="title"></span>
-        <span slot="description" data-field="description"></span>
-        <oas-tag slot="extra" data-field="status"></oas-tag>
-      </template>
-    </oas-list>
+    <oas-list bordered id="list-data-tpl"></oas-list>
   </div>
 </DemoBlock>
 
@@ -308,14 +302,7 @@ Setting `height` enables virtual scrolling (embedding `oas-virtual-list`); `row-
 
 <DemoBlock title="Virtual list with 10k rows">
   <div style="width: 100%">
-    <oas-list bordered height="320" row-height="57" id="list-virtual">
-      <template slot="item">
-        <div style="display: flex; flex-direction: column; justify-content: center; height: 100%; overflow: hidden">
-          <strong data-field="title" style="font-size: var(--oas-font-size-md)"></strong>
-          <span data-field="description" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"></span>
-        </div>
-      </template>
-    </oas-list>
+    <oas-list bordered height="320" row-height="57" id="list-virtual"></oas-list>
   </div>
   <p style="width: 100%; margin: var(--oas-space-3) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
     10,000 log records; only window rows + buffer are rendered.
@@ -429,24 +416,37 @@ onMounted(() => {
   }
 
   // Data channel: template skeleton clone + oas-item-render data binding
-  const tplList = document.querySelector('#list-data-tpl')
-  if (tplList) {
-    tplList.addEventListener('oas-item-render', (e) => {
-      const { item, element } = e.detail
-      for (const node of element.querySelectorAll('[data-field]')) {
-        const field = node.getAttribute('data-field')
-        node.textContent = item[field] ?? ''
-        if (node.tagName.toLowerCase() === 'oas-tag' && item.tagType) {
-          node.setAttribute('type', item.tagType)
+  // (whenDefined guards against pre-upgrade expando shadowing the setter)
+  customElements.whenDefined('oas-list').then(() => {
+    const tplList = document.querySelector('#list-data-tpl')
+    if (tplList) {
+      // Template via the property channel: inline <template slot="item"> children get
+      // eaten by the Vue compiler in vitepress dev mode (works in prod, blank in dev)
+      const tpl = document.createElement('template')
+      tpl.setAttribute('slot', 'item')
+      tpl.innerHTML = `
+        <span slot="title" data-field="title"></span>
+        <span slot="description" data-field="description"></span>
+        <oas-tag slot="extra" data-field="status"></oas-tag>
+      `
+      tplList.appendChild(tpl)
+      tplList.addEventListener('oas-item-render', (e) => {
+        const { item, element } = e.detail
+        for (const node of element.querySelectorAll('[data-field]')) {
+          const field = node.getAttribute('data-field')
+          node.textContent = item[field] ?? ''
+          if (node.tagName.toLowerCase() === 'oas-tag' && item.tagType) {
+            node.setAttribute('type', item.tagType)
+          }
         }
-      }
-    })
-    tplList.data = [
-      { title: 'Lin Xiaoyu', description: 'Updated three PRDs', status: 'Online', tagType: 'success' },
-      { title: 'Chen Yining', description: 'Merged 2 PRs', status: 'Busy', tagType: 'warning' },
-      { title: 'Zhao Qiming', description: 'Submitted test report', status: 'Offline', tagType: 'default' },
-    ]
-  }
+      })
+      tplList.data = [
+        { title: 'Lin Xiaoyu', description: 'Updated three PRDs', status: 'Online', tagType: 'success' },
+        { title: 'Chen Yining', description: 'Merged 2 PRs', status: 'Busy', tagType: 'warning' },
+        { title: 'Zhao Qiming', description: 'Submitted test report', status: 'Offline', tagType: 'default' },
+      ]
+    }
+  })
 
   // Scroll loading: append on reach-bottom + load-more tail status
   const infinite = document.querySelector('#list-infinite')
@@ -488,9 +488,18 @@ onMounted(() => {
     })
   }
 
-  // Virtual scrolling: 10k logs
+  // Virtual scrolling: 10k logs (template via property channel too, against dev-pipeline eating)
   const virtual = document.querySelector('#list-virtual')
   if (virtual) {
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'item')
+    tpl.innerHTML = `
+      <div style="display: flex; flex-direction: column; justify-content: center; height: 100%; overflow: hidden">
+        <strong data-field="title" style="font-size: var(--oas-font-size-md)"></strong>
+        <span data-field="description" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis"></span>
+      </div>
+    `
+    virtual.appendChild(tpl)
     virtual.addEventListener('oas-item-render', (e) => {
       const { item, element } = e.detail
       for (const node of element.querySelectorAll('[data-field]')) {
