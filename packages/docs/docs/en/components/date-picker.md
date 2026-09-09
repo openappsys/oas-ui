@@ -16,7 +16,7 @@ Click the input to open the panel and click a date to select; or type `2026-08-1
   <oas-date-picker type="daterange" value='["2026-08-05","2026-08-15"]'></oas-date-picker>
 </DemoBlock>
 
-A double-month grid: pick the start first, then the end; submits a JSON array `["start","end"]`. Hovering previews the range. Every endpoint pick emits `oas-calendar-change` (see [Events](#controlled-open--events)).
+A double-month grid: pick the start first, then the end; submits a JSON array `["start","end"]`. Hovering previews the range. Every endpoint pick emits `oas-calendar-change` (see [Events](#controlled-open--events)). Range selection defaults to a **double-month grid** (left + right month linked); when space is tight (narrow screens / constrained containers) it naturally collapses to single-panel width via CSS responsive rules — no `single-panel`-style property switch needed.
 
 ## Month & Month Range
 
