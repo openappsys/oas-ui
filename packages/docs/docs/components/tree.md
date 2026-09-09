@@ -231,6 +231,35 @@ tree.allowDrag = (node) => node.key !== 'item-1' // 该节点不可被拖动
 
 设置 `directory` 后按文件浏览器风格渲染：有 `children`（或懒加载下未加载）的节点显示文件夹图标，`isLeaf` / 无 `children` 的节点显示文件图标；文件夹按展开 / 收起切换图标，层级缩进与 hover 高亮行沿用行样式。可叠加 `tree-lines` 显示祖辈引导线。
 
+## 节点重命名
+
+<DemoBlock title="内联重命名（双击或 F2，Enter 提交 / Esc 取消）">
+  <div style="width: 100%">
+    <oas-tree id="tree-rename" can-rename data='[{"key":"fe","label":"研发团队","children":[{"key":"a-1","label":"成员 A"},{"key":"a-2","label":"受保护成员","renamable":false}]},{"key":"ops","label":"运维组"}]'></oas-tree>
+    <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0">
+      <span id="tree-rename-status">双击「研发团队」或其子节点 label，或选中后按 F2 重命名</span>
+    </p>
+  </div>
+</DemoBlock>
+
+设置 `can-rename` 开启节点重命名：**双击节点 label**（或选中后按 **F2**）进入内联编辑态；**Enter / 失焦提交**、**Esc 取消**（还原旧值、不派发事件）。编辑态输入框内方向键归输入框，不影响树 roving 键盘导航；节点数据可加 `renamable: false` 细粒度禁止单个节点重命名。
+
+数据由宿主受控：提交时组件**只派发 `oas-node-rename`**（`detail: { key, label, oldLabel }`）不改数据——宿主监听该事件把新 label 写回数据并重设 `data` 属性后，行内才显示新名字；宿主不更新则保持旧值（避免组件单方面改数据导致不同步）。
+
+## 展开/收起过渡动画
+
+<DemoBlock title="展开收起过渡（motion 开关对比）">
+  <div style="width: 100%">
+    <div style="display: flex; gap: var(--oas-space-2); align-items: center; margin-bottom: var(--oas-space-2)">
+      <oas-button id="tree-motion-toggle" size="small">开启动画</oas-button>
+      <span id="tree-motion-status" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">动画关闭（点击展开箭头为即时切换）</span>
+    </div>
+    <oas-tree id="tree-motion" data='[{"key":"g1","label":"分组 1","children":[{"key":"g1-1","label":"条目 1-1","children":[{"key":"g1-1-a","label":"子项 A"},{"key":"g1-1-b","label":"子项 B"}]},{"key":"g1-2","label":"条目 1-2"}]},{"key":"g2","label":"分组 2","children":[{"key":"g2-1","label":"条目 2-1"},{"key":"g2-2","label":"条目 2-2"}]}]'></oas-tree>
+  </div>
+</DemoBlock>
+
+设置 `motion` 开启展开/收起的**高度过渡动画**（默认关）：展开时新增子行从 0 高平滑生长到自然行高，收起时子行先收缩离场再移除，时长/缓动走 `--oas-transition-*` token。虚拟滚动模式（设置 `height`）下展开入场降级为淡入、收起即时切换——虚拟列表行高定值不适合高度动画，避免错位与性能损耗；动画尊重 `prefers-reduced-motion`（系统减少动效时自动停用）。
+
 ## 事件
 
 <DemoBlock title="选中与勾选事件">
@@ -391,6 +420,39 @@ onMounted(() => {
     })
   }
 
+  // 内联重命名 demo：监听 oas-node-rename 更新 data（组件不擅自改数据，宿主回写新 label）
+  const renameTree = document.querySelector('#tree-rename')
+  if (renameTree) {
+    renameTree.addEventListener('oas-node-rename', (e) => {
+      const { key, label, oldLabel } = e.detail
+      const nodes = JSON.parse(renameTree.getAttribute('data'))
+      const walk = (list) => {
+        for (const n of list) {
+          if (n.key === key) {
+            n.label = label
+            return true
+          }
+          if (n.children && walk(n.children)) return true
+        }
+        return false
+      }
+      walk(nodes)
+      renameTree.setAttribute('data', JSON.stringify(nodes))
+      document.querySelector('#tree-rename-status').textContent = `已重命名：${oldLabel} → ${label}`
+    })
+  }
+
+  // motion 开关 demo：按钮切换 motion 属性对比展开/收起动画
+  const motionTree = document.querySelector('#tree-motion')
+  document.querySelector('#tree-motion-toggle')?.addEventListener('click', () => {
+    const on = !motionTree?.hasAttribute('motion')
+    if (on) motionTree?.setAttribute('motion', '')
+    else motionTree?.removeAttribute('motion')
+    document.querySelector('#tree-motion-status').textContent = on
+      ? '动画已开启：展开子行 0 高平滑生长、收起先收缩离场'
+      : '动画关闭（点击展开箭头为即时切换）'
+  })
+
   // 树内过滤 demo：搜索框 input 驱动 filter 属性
   const filterInput = document.querySelector('#tree-filter-input')
   const filterTree = document.querySelector('#tree-filter')
@@ -429,11 +491,12 @@ onMounted(() => {
 | --- | --- | --- | --- |
 | `accordion` | 手风琴（同级同时只展开一支） | `boolean` | — |
 | `auto-expand-parent` | 勾选子节点时自动展开其父级 | `boolean` | — |
+| `can-rename` | 节点重命名总开关：开启后双击节点 label 或按 F2 进入内联编辑，Enter 提交 / Esc 取消 / 失焦提交；提交派发 `oas-node-rename`（节点数据可加 `renamable: false` 细粒度禁单个节点） | `boolean` | — |
 | `check-strategy` | 勾选导出策略：`all`（默认）/ `parent` / `child`（checkable 级联时生效） | `string` | `all` |
 | `check-strictly` | 勾选父子解联（勾选父级不联动子级） | `boolean` | — |
 | `checkable` | 是否显示复选框 | `boolean` | — |
 | `checked` | 勾选节点 key 集合（逗号分隔） | `string` | — |
-| `data` | 节点数据 `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`，JSON 字符串 | `TreeNode[] \| string` | `[]` |
+| `data` | 节点数据 `[{ key, label, children?, disabled?, isLeaf?, loaded?, renamable? }]`，JSON 字符串 | `TreeNode[] \| string` | `[]` |
 | `default-expand-all` | 默认展开全部节点（expanded 属性缺席时生效） | `boolean` | — |
 | `directory` | 目录模式：有 `children`（或懒加载下未加载）的节点显示文件夹图标，`isLeaf` / 无 `children` 的节点显示文件图标，文件夹按展开 / 收起切换图标 | `boolean` | — |
 | `disabled` | 整树禁用（点选/勾选/展开/拖拽全停，浏览保留） | `boolean` | — |
@@ -447,6 +510,7 @@ onMounted(() => {
 | `height` | 虚拟滚动视口高度（px）；设置后开启大数据量虚拟化渲染 | `string` | — |
 | `lazy` | 懒加载：无 `children` 且未标记 `isLeaf` / `loaded` 的节点，展开时触发加载 | `boolean` | — |
 | `load` | 懒加载回调 `(payload: { key }) => void`，与 `oas-load` 事件并存；宿主回填子节点后重设 `data` 属性 | `(payload: { key: string }) => void \| Promise<unknown>` | — |
+| `motion` | 展开/收起高度过渡动画（默认关）：非虚拟模式行容器 max-height 过渡展开/收起，虚拟滚动模式入场降级为淡入、收起即时；时长/缓动走 `--oas-transition-*`，`prefers-reduced-motion` 下停用 | `boolean` | — |
 | `multiple` | 点选多选（Ctrl/⌘ 点击多选；勾选集 selected 为 JSON 数组） | `boolean` | — |
 | `row-height` | 虚拟化时每行固定高度（px） | `string` | `32` |
 | `selected` | 选中节点 key | `string` | — |
@@ -460,6 +524,7 @@ onMounted(() => {
 | `oas-load` | 懒加载触发，`detail: { key }`；宿主回填 `children` 后重设 `data` 属性 |
 | `oas-load-error` | 懒加载失败时派发，`detail: { key, error }`，`error` 为错误消息字符串（loading 消失可再点重试） |
 | `oas-node-drop` | 节点拖放，`detail: { dragKey, dropKey, position }`，`position` 为 `before` / `after` / `inner`；`dropKey` 为空字符串表示移入根 |
+| `oas-node-rename` | 内联重命名提交（Enter / 失焦），`detail: { key, label, oldLabel }`；数据由宿主受控——组件不改数据模型，宿主监听后更新 `data` 才生效（不更新则保持旧值；Esc 取消不派发） |
 | `oas-node-render` | 每个渲染的节点行派发，`detail: { node, element }`（element 为节点 label 容器，宿主可改写为图标 / 富文本） |
 | `oas-select` | 选中节点，`detail: { key, selected }` |
 
@@ -472,4 +537,4 @@ onMounted(() => {
 | `template[slot="toggle"]` | 展开按钮静态模板，克隆到每个可展开节点的展开按钮内（替换默认 › 图标） |
 | `template[slot="toggle-loading"]` | 懒加载展开中的指示器（替换 spinner） |
 
-> 节点字段说明：`isLeaf: true` 表示显式叶子（懒加载下不显示展开箭头）；`loaded: true` 表示已加载完成（配合 `children` 使用，避免重复触发加载）。
+> 节点字段说明：`isLeaf: true` 表示显式叶子（懒加载下不显示展开箭头）；`loaded: true` 表示已加载完成（配合 `children` 使用，避免重复触发加载）；`renamable: false` 表示该节点不可重命名（配合 `can-rename`，缺省可重命名）。
