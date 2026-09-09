@@ -74,10 +74,8 @@ The bottom `actions` slot holds a button group, with a divider automatically add
     <oas-card title="Wireless Noise-Canceling Headphones" hoverable cover-src="https://picsum.photos/seed/isui-card-product/640/360" cover-alt="Headphones product photo">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">Active noise canceling · 30h battery · Bluetooth 5.3</p>
       <p style="color: var(--oas-color-primary); font-weight: 600; margin: var(--oas-space-2) 0 0;">¥ 899</p>
-      <div slot="actions">
-        <oas-button size="small">View details</oas-button>
-        <oas-button size="small" type="primary">Add to cart</oas-button>
-      </div>
+      <oas-button slot="actions" size="small">View details</oas-button>
+      <oas-button slot="actions" size="small" type="primary">Add to cart</oas-button>
     </oas-card>
   </div>
 </DemoBlock>
@@ -98,10 +96,8 @@ The bottom `actions` slot holds a button group, with a divider automatically add
   <div style="width: 320px">
     <oas-card clickable title="Collab Project" cover-src="https://picsum.photos/seed/isui-card-team/640/360" cover-alt="Team collaboration illustration">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">Click the card body to fire the whole-card click; click the buttons for their own actions.</p>
-      <div slot="actions">
-        <oas-button size="small">Invite members</oas-button>
-        <oas-button size="small" type="danger">Archive</oas-button>
-      </div>
+      <oas-button slot="actions" size="small">Invite members</oas-button>
+      <oas-button slot="actions" size="small" type="danger">Archive</oas-button>
     </oas-card>
   </div>
 </DemoBlock>
@@ -127,9 +123,7 @@ With `loading`, the content area switches to a skeleton placeholder (sheen anima
   <div style="width: 320px">
     <oas-card size="small" title="Compact card">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">Smaller paddings and title font size.</p>
-      <div slot="actions">
-        <oas-button size="small">View</oas-button>
-      </div>
+      <oas-button slot="actions" size="small">View</oas-button>
     </oas-card>
   </div>
 </DemoBlock>
@@ -162,9 +156,7 @@ The `footer` slot is an arbitrary bottom bar independent from the actions area: 
   <div style="width: 320px">
     <oas-card title="Terms Update">
       <p style="color: var(--oas-color-text-secondary); margin: 0;">We updated our data processing terms. Please review to continue.</p>
-      <div slot="actions">
-        <oas-button size="small" type="primary">Accept &amp; Continue</oas-button>
-      </div>
+      <oas-button slot="actions" size="small" type="primary">Accept &amp; Continue</oas-button>
       <p slot="footer" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0;">Updated 2026-09-01 · Applies to all workspaces</p>
     </oas-card>
   </div>
@@ -320,10 +312,8 @@ A typical product card: cover image + price area + actions + footer.
         <s style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin-left: var(--oas-space-2);">¥ 599</s>
       </p>
       <p style="color: var(--oas-color-text-secondary); margin: var(--oas-space-1) 0 0;">Tri-mode · Hot-swap · Gasket mount</p>
-      <div slot="actions">
-        <oas-button size="small" type="primary">Add to Cart</oas-button>
-        <oas-button size="small">Save</oas-button>
-      </div>
+      <oas-button slot="actions" size="small" type="primary">Add to Cart</oas-button>
+      <oas-button slot="actions" size="small">Save</oas-button>
       <p slot="footer" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: 0;">Free shipping over ¥299 · 7-day returns</p>
     </oas-card>
   </div>

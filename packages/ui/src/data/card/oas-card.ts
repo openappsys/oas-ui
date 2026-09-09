@@ -130,6 +130,8 @@ const STYLE = `
 }
 .extra {
   display: flex;
+  align-items: center;
+  gap: var(--oas-space-2);
 }
 .description {
   margin-top: var(--oas-space-1);

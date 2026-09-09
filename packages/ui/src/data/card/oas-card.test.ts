@@ -601,4 +601,12 @@ describe('OASCard', () => {
       el.remove()
     })
   })
+
+  it('extra 操作区 flex 带 gap（用户实测：header 内多按钮曾紧贴无空隙）', () => {
+    const el = document.createElement('oas-card')
+    document.body.appendChild(el)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toMatch(/\.extra\s*\{[^}]*gap:\s*var\(--oas-space-2\)/)
+    el.remove()
+  })
 })
