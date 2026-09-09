@@ -1,4 +1,5 @@
 import { OASElement } from '@oas-ui/core'
+import { HeightCache, computeDynamicWindow } from './dynamic-height.js'
 
 export interface VirtualWindow {
   start: number
@@ -83,6 +84,11 @@ const STYLE = `
  * - `height`：视口高度（px），默认 320
  * - `item-height`：定高项高度（px），默认 36
  * - `buffer`：上下预渲染项数，默认 4
+ * - `dynamic-height`：动态行高开关（默认关）。开启后各行高度可不同：
+ *   未测行按预估高排布，窗口行由 ResizeObserver 实测回写并逐步修正总高与偏移；
+ *   视口上方行高变化自动补偿 scrollTop 保持视觉锚定（向上滚动不跳动）。
+ * - `estimated-item-height`：动态行高的预估行高（px，缺省沿用 item-height）。
+ *   取接近真实平均行高的值可减小实测修正幅度
  * - `scroll-target`：外部滚动容器 CSS 选择器（可选）。设置后组件不自带滚动条，
  *   改为监听外部容器的 scroll 并按其 scrollTop 计算窗口（组件本身占满全部内容高度）。
  * - `items`：JSON 字符串形式的数据（可选，property `items` 优先）
@@ -101,6 +107,7 @@ const STYLE = `
  * - `scrollToIndex(index, options?)`：滚动到指定项（消费方契约，list/tree 内嵌定位用）。
  *   `options.align` 支持 start/center/end/auto（默认 auto：最小滚动使目标可见）；
  *   `options.smooth` 走原生平滑滚动。scroll-target 模式下写外部容器的 scrollTop。
+ *   动态行高模式按高度表定位（未测段按预估高）。
  *
  * 公共 property：
  * - `viewportFocusable: boolean`：视口是否可 Tab 聚焦（默认 true）。内嵌消费方
@@ -108,7 +115,7 @@ const STYLE = `
  */
 export class OASVirtualList extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['height', 'item-height', 'buffer', 'scroll-target', 'items']
+    return ['height', 'item-height', 'buffer', 'scroll-target', 'items', 'dynamic-height', 'estimated-item-height']
   }
 
   private data: unknown[] = []
@@ -124,6 +131,12 @@ export class OASVirtualList extends OASElement {
   private itemRole = ''
   private boundTarget: HTMLElement | null = null
   private viewportFocusableValue = true
+  /** 动态行高：高度表 + 前缀和缓存（dynamic-height 开启时生效） */
+  private heightCache = new HeightCache()
+  /** 动态行高：实测行高的观察器（仅观察窗口行，断开旧行） */
+  private resizeObserver: ResizeObserver | null = null
+  /** items 属性（attribute JSON 通道）上次解析原文：内容不变则不重置高度缓存 */
+  private lastItemsRaw: string | null = null
 
   /**
    * 视口是否可 Tab 聚焦（默认 true）。内嵌消费方（如 tree，行自带 roving tabindex）
@@ -156,6 +169,7 @@ export class OASVirtualList extends OASElement {
   set items(value: unknown[]) {
     this.data = Array.isArray(value) ? value.slice() : []
     this.itemsFromProperty = true
+    this.heightCache.configure(this.data.length, this.estimatedHeight())
     if (this.isConnected) this.update()
   }
 
@@ -182,11 +196,17 @@ export class OASVirtualList extends OASElement {
     this.paddingTop = this.shadow.querySelector('.padding-top')
     this.paddingBottom = this.shadow.querySelector('.padding-bottom')
     this.itemsEl = this.shadow.querySelector('.items')
+    // 动态行高：行高实测观察器（SSR/无 ResizeObserver 环境安全跳过，退回预估值）
+    if (typeof ResizeObserver !== 'undefined' && !this.resizeObserver) {
+      this.resizeObserver = new ResizeObserver((entries) => this.handleItemResize(entries))
+    }
     this.onCleanup(() => {
       if (this.boundTarget) this.boundTarget.removeEventListener('scroll', this.handleScrollEvt)
       this.boundTarget = null
       if (this.raf) cancelAnimationFrame(this.raf)
       this.raf = 0
+      this.resizeObserver?.disconnect()
+      this.resizeObserver = null
     })
   }
 
@@ -245,10 +265,13 @@ export class OASVirtualList extends OASElement {
     const count = this.data.length
     if (!count || !Number.isFinite(index)) return
     const idx = Math.min(Math.max(0, Math.trunc(index)), count - 1)
-    const ih = this.itemHeight()
+    const dynamic = this.isDynamic()
+    if (dynamic) this.heightCache.configure(count, this.estimatedHeight())
+    const ih = dynamic ? this.heightCache.heightAt(idx) : this.itemHeight()
     const vh = this.listHeight()
-    const maxTop = Math.max(0, count * ih - vh)
-    const itemTop = idx * ih
+    const total = dynamic ? this.heightCache.total() : count * ih
+    const maxTop = Math.max(0, total - vh)
+    const itemTop = dynamic ? this.heightCache.offsetOf(idx) : idx * ih
     const target = this.boundTarget ?? this.viewport
     if (!target) return
     let top: number
@@ -300,13 +323,29 @@ export class OASVirtualList extends OASElement {
   private parseItems(): void {
     if (this.itemsFromProperty) return
     const raw = this.getAttribute('items')
-    if (raw == null) return
+    if (raw == null || raw === this.lastItemsRaw) return
+    this.lastItemsRaw = raw
     try {
       const parsed: unknown = JSON.parse(raw)
-      if (Array.isArray(parsed)) this.data = parsed
+      if (Array.isArray(parsed)) {
+        this.data = parsed
+        this.heightCache.configure(this.data.length, this.estimatedHeight())
+      }
     } catch {
       /* 非法 JSON 忽略，保持内部值 */
     }
+  }
+
+  /** 动态行高开关（默认关，保持向后兼容） */
+  private isDynamic(): boolean {
+    return this.hasAttr('dynamic-height')
+  }
+
+  /** 动态行高预估行高：estimated-item-height 缺省沿用 item-height */
+  private estimatedHeight(): number {
+    const raw = this.getAttr('estimated-item-height', '')
+    if (raw !== '' && Number(raw) > 0) return Number(raw)
+    return this.itemHeight()
   }
 
   /** 解析滚动目标并绑定 scroll 监听（可切换：外部容器 → 自身视口） */
@@ -328,10 +367,32 @@ export class OASVirtualList extends OASElement {
     const itemsEl = this.itemsEl
     if (!itemsEl) return
     const count = this.data.length
-    const ih = this.itemHeight()
     const vh = this.listHeight()
-    // 数据收缩时夹取 scrollTop，避免窗口越界
     const target = this.boundTarget ?? this.viewport
+    if (this.isDynamic()) {
+      // 动态行高：高度表驱动窗口/总高/padding；scrollTop 夹取到有效区间
+      this.heightCache.configure(count, this.estimatedHeight())
+      const total = this.heightCache.total()
+      const scrollTop = Math.min(Math.max(0, target ? target.scrollTop : 0), Math.max(0, total - vh))
+      const win = computeDynamicWindow(
+        this.prefixArray(count),
+        count,
+        scrollTop,
+        vh,
+        this.bufferSize(),
+      )
+      this.start = win.start
+      this.end = win.end
+      if (this.inner) this.inner.style.height = `${total}px`
+      if (this.paddingTop) this.paddingTop.style.height = `${this.heightCache.offsetOf(win.start)}px`
+      if (this.paddingBottom) {
+        this.paddingBottom.style.height = `${total - this.heightCache.offsetOf(win.end)}px`
+      }
+      this.renderItems()
+      return
+    }
+    const ih = this.itemHeight()
+    // 数据收缩时夹取 scrollTop，避免窗口越界
     const scrollTop = Math.min(
       Math.max(0, target ? target.scrollTop : 0),
       Math.max(0, count * ih - vh),
@@ -345,11 +406,19 @@ export class OASVirtualList extends OASElement {
     this.renderItems()
   }
 
+  /** 动态窗口计算用的行偏移数组（长度 count+1，经 HeightCache 维护的 prefix 视图） */
+  private prefixArray(count: number): number[] {
+    const arr: number[] = new Array(count + 1)
+    for (let i = 0; i <= count; i++) arr[i] = this.heightCache.offsetOf(i)
+    return arr
+  }
+
   private renderItems(): void {
     const itemsEl = this.itemsEl
     if (!itemsEl) return
     itemsEl.innerHTML = ''
     const tpl = this.itemTemplate()
+    const dynamic = this.isDynamic()
     const ih = this.itemHeight()
     for (let i = this.start; i < this.end; i++) {
       const item = this.data[i]
@@ -358,7 +427,12 @@ export class OASVirtualList extends OASElement {
       el.setAttribute('part', 'item')
       el.setAttribute('data-index', String(i))
       if (this.itemRole) el.setAttribute('role', this.itemRole)
-      el.style.height = `${ih}px`
+      // 动态行高不锁高：内容由 ResizeObserver 实测回写；定高模式沿用固定行高
+      if (dynamic) {
+        this.resizeObserver?.observe(el)
+      } else {
+        el.style.height = `${ih}px`
+      }
       if (tpl) {
         el.appendChild(tpl.content.cloneNode(true))
         this.emit('item', { index: i, item, element: el })
@@ -371,6 +445,32 @@ export class OASVirtualList extends OASElement {
       }
       itemsEl.appendChild(el)
     }
+  }
+
+  /**
+   * 动态行高实测回写：行高与缓存差异 ≥0.5px 才更新；视口上方行变高/变矮会平移
+   * 可视内容，按总位移补偿 scrollTop 保持视觉锚定（向上滚动不跳动）；随后重建窗口。
+   */
+  private handleItemResize(entries: ResizeObserverEntry[]): void {
+    if (!this.isDynamic()) return
+    const target = this.boundTarget ?? this.viewport
+    const scrollTop = target ? target.scrollTop : 0
+    let deltaAbove = 0
+    let changed = false
+    for (const entry of entries) {
+      const el = entry.target as HTMLElement
+      const idx = Number(el.getAttribute('data-index'))
+      if (!Number.isFinite(idx)) continue
+      const newH = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height
+      const oldH = this.heightCache.heightAt(idx)
+      if (!this.heightCache.measure(idx, newH)) continue
+      changed = true
+      // 行顶在当前滚动位置上方 → 其高度差会平移可视区，累计补偿量
+      if (this.heightCache.offsetOf(idx) < scrollTop) deltaAbove += newH - oldH
+    }
+    if (!changed) return
+    if (deltaAbove !== 0 && target) target.scrollTop = scrollTop + deltaAbove
+    this.renderWindow()
   }
 
   private itemTemplate(): HTMLTemplateElement | null {

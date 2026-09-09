@@ -56,6 +56,20 @@
   </div>
 </DemoBlock>
 
+## 动态行高
+
+`dynamic-height` 开启后各行高度可不同：未测行按 `estimated-item-height`（缺省沿用 `item-height`）预估排布，窗口行由 `ResizeObserver` 实测回写并逐步修正总高与偏移；视口上方行高变化会自动补偿 scrollTop 保持视觉锚定（向上滚动不跳动）。`scrollToIndex` 在动态模式下同样可用（按高度表定位）。预估值取接近真实平均行高时修正幅度最小。
+
+<DemoBlock title="动态行高（不等高条目混排）">
+  <div style="width: 100%">
+    <div style="display: flex; gap: var(--oas-space-2); margin-bottom: var(--oas-space-3); align-items: center">
+      <oas-button id="vl-dyn-jump" size="small">scrollToIndex(40)</oas-button>
+      <span style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">总行高随实测逐步修正，滚动流畅不跳动</span>
+    </div>
+    <oas-virtual-list id="vl-dyn" height="280" dynamic-height estimated-item-height="56"></oas-virtual-list>
+  </div>
+</DemoBlock>
+
 ## 渲染缓冲
 
 `buffer` 控制上下超出可视区的预渲染项数（默认 `4`）：buffer 越大，滚动时越少出现空白（白屏），代价是渲染的 DOM 节点更多。
@@ -169,6 +183,37 @@ onMounted(() => {
     buf8.addEventListener('oas-scroll', refreshBufferCounts)
   }
   refreshBufferCounts()
+
+  // 动态行高：不等高卡片行混排（标题 + 行数不一的描述文本）
+  const dyn = document.querySelector('#vl-dyn')
+  if (dyn) {
+    const rows = Array.from({ length: 80 }, (_, i) => ({
+      title: `事项 ${i + 1}`,
+      lines: (i % 3) + 1,
+      tag: ['常规', '重点', '加急'][i % 3],
+    }))
+    dyn.items = rows
+    dyn.addEventListener('oas-item', (e) => {
+      const { item, element } = e.detail
+      element.style.padding = 'var(--oas-space-2) var(--oas-space-3)'
+      element.style.borderBottom = '1px solid var(--oas-color-border)'
+      element.style.boxSizing = 'border-box'
+      const head = document.createElement('div')
+      head.style.cssText = 'display:flex;justify-content:space-between;font-weight:500'
+      head.innerHTML = `<span></span><span style="color:var(--oas-color-primary);font-size:var(--oas-font-size-xs)"></span>`
+      head.children[0].textContent = item.title
+      head.children[1].textContent = item.tag
+      element.appendChild(head)
+      for (let k = 0; k < item.lines; k++) {
+        const p = document.createElement('div')
+        p.style.cssText = 'color:var(--oas-color-text-secondary);font-size:var(--oas-font-size-sm);line-height:1.5'
+        p.textContent = `描述第 ${k + 1} 行：高度随行数变化`
+        element.appendChild(p)
+      }
+    })
+    const jumpBtn = document.querySelector('#vl-dyn-jump')
+    jumpBtn?.addEventListener('click', () => dyn.scrollToIndex(40, { align: 'start' }))
+  }
 })
 </script>
 
@@ -179,6 +224,8 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `buffer` | 上下预渲染项数（超出可视区提前渲染，减少滚动白屏） | `string` | `4` |
+| `dynamic-height` | 动态行高：各行高度可不同（未测行按预估排布，窗口行实测回写逐步修正；视口上方行高变化自动补偿 scrollTop 防跳动） | `boolean` | — |
+| `estimated-item-height` | 动态行高的预估行高（px，缺省沿用 item-height；取接近真实平均行高修正幅度最小） | `string` | — |
 | `height` | 视口高度（px） | `string` | `320` |
 | `item-height` | 每项固定高度（px） | `string` | `36` |
 | `items` | 数据数组（property 通道，优先于 items 属性）；数据 JSON 字符串（属性通道） | `unknown[]` | `[]` |
