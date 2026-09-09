@@ -141,7 +141,7 @@ input[readonly] {
 [part='prefix'] {
   inset-inline-start: var(--oas-space-3);
 }
-:host([prefix]) input,
+:host([prefix-text]) input,
 :host([data-slot-prefix]) input {
   padding-inline-start: var(--oas-space-8, 40px);
 }
@@ -160,15 +160,15 @@ input[readonly] {
 :host(:not([clearable])) [part='suffix'] {
   inset-inline-end: calc(4px + 20px + var(--oas-space-1));
 }
-/* input 右侧按叠加元素集合让位（与 oas-input 的 [clearable]/[suffix] 让位协议同构） */
+/* input 右侧按叠加元素集合让位（与 oas-input 的 [clearable]/[suffix-text] 让位协议同构） */
 :host([clearable]) input {
   padding-inline-end: calc(var(--oas-input-number-controls-pad, 28px) + 16px + var(--oas-space-1));
 }
-:host([suffix]) input,
+:host([suffix-text]) input,
 :host([data-slot-suffix]) input {
   padding-inline-end: calc(var(--oas-input-number-controls-pad, 28px) + 24px + var(--oas-space-1));
 }
-:host([clearable][suffix]) input,
+:host([clearable][suffix-text]) input,
 :host([clearable][data-slot-suffix]) input {
   padding-inline-end: calc(
     var(--oas-input-number-controls-pad, 28px) + 16px + var(--oas-space-1) + 24px + var(--oas-space-1)
@@ -278,7 +278,7 @@ input[readonly] {
 :host([controls-position='both']) [part='prefix'] {
   inset-inline-start: calc(32px + var(--oas-space-2));
 }
-:host([controls-position='both'][prefix]) input,
+:host([controls-position='both'][prefix-text]) input,
 :host([controls-position='both'][data-slot-prefix]) input {
   padding-inline-start: calc(32px + var(--oas-space-2) + var(--oas-space-8, 40px));
 }
@@ -308,7 +308,7 @@ input[readonly] {
 :host([controls-position='both'][clearable]) input {
   padding-inline-end: calc(var(--oas-space-3) + 16px + var(--oas-space-1));
 }
-:host([controls-position='both'][clearable][suffix]) input,
+:host([controls-position='both'][clearable][suffix-text]) input,
 :host([controls-position='both'][clearable][data-slot-suffix]) input {
   padding-inline-end: calc(var(--oas-space-3) + 16px + var(--oas-space-1) + 24px + var(--oas-space-1));
 }
@@ -345,15 +345,15 @@ input[readonly] {
 :host([controls='false'][controls-position='both'][clearable]) input {
   padding-inline-end: calc(var(--oas-space-3) + 16px + var(--oas-space-1));
 }
-:host([controls='false'][clearable][suffix]) input,
-:host([controls='false'][controls-position='both'][clearable][suffix]) input,
+:host([controls='false'][clearable][suffix-text]) input,
+:host([controls='false'][controls-position='both'][clearable][suffix-text]) input,
 :host([controls='false'][clearable][data-slot-suffix]) input,
 :host([controls='false'][controls-position='both'][clearable][data-slot-suffix]) input {
   padding-inline-end: calc(var(--oas-space-3) + 16px + var(--oas-space-1) + 24px + var(--oas-space-1));
 }
-:host([controls='false']:not([clearable])[suffix]) input,
+:host([controls='false']:not([clearable])[suffix-text]) input,
 :host([controls='false']:not([clearable])[data-slot-suffix]) input,
-:host([controls='false'][controls-position='both']:not([clearable])[suffix]) input,
+:host([controls='false'][controls-position='both']:not([clearable])[suffix-text]) input,
 :host([controls='false'][controls-position='both']:not([clearable])[data-slot-suffix]) input {
   padding-inline-end: calc(var(--oas-space-3) + 24px + var(--oas-space-1));
 }
@@ -371,8 +371,8 @@ export class OASInputNumber extends OASElement {
       'label',
       'controls',
       'controls-position',
-      'prefix',
-      'suffix',
+      'prefix-text',
+      'suffix-text',
       'format',
       'grouping',
       'size',
@@ -383,14 +383,6 @@ export class OASInputNumber extends OASElement {
       'step-strictly',
       'clearable',
     ]
-  }
-
-  /** Element 内建只读 getter prefix 会让 Vue 走 property 赋值；访问器遮蔽并反射到 attribute */
-  override get prefix(): string {
-    return this.getAttr('prefix', '')
-  }
-  override set prefix(value: string) {
-    this.setAttribute('prefix', value)
   }
 
   /** 函数式格式化通道：优先于声明式 format/grouping/precision（attribute 传不了函数的等价能力） */
@@ -524,6 +516,8 @@ export class OASInputNumber extends OASElement {
   protected override update(): void {
     const i = this.input
     if (!i) return
+    this.normalizeLegacyAlias('prefix-text', 'prefix')
+    this.normalizeLegacyAlias('suffix-text', 'suffix')
     const disabled = this.injectDisabled()
     const readonly = this.hasAttr('readonly')
     const min = this.getAttr('min', '')
@@ -863,8 +857,8 @@ export class OASInputNumber extends OASElement {
         else this.removeAttribute(mark)
       }
     }
-    renderAffix('prefix', this.getAttr('prefix', ''))
-    renderAffix('suffix', this.getAttr('suffix', ''))
+    renderAffix('prefix', this.getAttr('prefix-text', ''))
+    renderAffix('suffix', this.getAttr('suffix-text', ''))
   }
 
   /** label 点击聚焦委托：把焦点交给 shadow 内主输入（配合 oas-form-item 的 label 点击代理） */

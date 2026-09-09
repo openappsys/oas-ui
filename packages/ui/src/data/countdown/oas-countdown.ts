@@ -69,7 +69,7 @@ const STYLE = `
 
 export class OASCountdown extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'format', 'active', 'title', 'prefix', 'suffix']
+    return ['value', 'format', 'active', 'title', 'prefix-text', 'suffix-text']
   }
 
   private timer: ReturnType<typeof setInterval> | null = null
@@ -150,6 +150,8 @@ export class OASCountdown extends OASElement {
   }
 
   protected override update(): void {
+    this.normalizeLegacyAlias('prefix-text', 'prefix')
+    this.normalizeLegacyAlias('suffix-text', 'suffix')
     const value = Math.max(0, Number(this.getAttr('value', '0')) || 0)
     if (value !== this.lastValue) {
       const wasPaused = this.paused
@@ -233,12 +235,15 @@ export class OASCountdown extends OASElement {
       titleFallback.hidden = this.slotHasContent(titleSlot)
       titleEl.hidden = !hasTitle
     }
-    for (const name of ['prefix', 'suffix'] as const) {
-      const affixEl = this.shadow.querySelector<HTMLElement>(`[part="${name}"]`)
-      const affixSlot = this.shadow.querySelector<HTMLSlotElement>(`slot[name="${name}"]`)
-      const affixFallback = this.shadow.querySelector<HTMLElement>(`[part="${name}"] [data-fallback]`)
+    for (const [part, attrName] of [
+      ['prefix', 'prefix-text'],
+      ['suffix', 'suffix-text'],
+    ] as const) {
+      const affixEl = this.shadow.querySelector<HTMLElement>(`[part="${part}"]`)
+      const affixSlot = this.shadow.querySelector<HTMLSlotElement>(`slot[name="${part}"]`)
+      const affixFallback = this.shadow.querySelector<HTMLElement>(`[part="${part}"] [data-fallback]`)
       if (!affixEl || !affixSlot || !affixFallback) continue
-      const attr = this.getAttr(name, '')
+      const attr = this.getAttr(attrName, '')
       affixFallback.textContent = attr
       const hasAffix = this.slotHasContent(affixSlot) || attr !== ''
       affixFallback.hidden = this.slotHasContent(affixSlot)

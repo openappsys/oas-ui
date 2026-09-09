@@ -42,10 +42,10 @@
 
 ## 前缀 / 后缀 / 标题
 
-`title` 属性（或 `slot="title"`）在上方渲染标题；`prefix` / `suffix` 夹在显示值两侧（属性文本或同名 slot 双通道）。
+`title` 属性（或 `slot="title"`）在上方渲染标题；`prefix-text` / `suffix-text` 夹在显示值两侧（属性文本或同名 slot 双通道；纯 HTML 场景旧的 `prefix` / `suffix` 仍可作为遗留别名使用）。
 
 <DemoBlock title="title + prefix / suffix">
-  <oas-countdown value="90000" title="距活动开始" prefix="还剩 " suffix=" 结束"></oas-countdown>
+  <oas-countdown value="90000" title="距活动开始" prefix-text="还剩 " suffix-text=" 结束"></oas-countdown>
   <oas-countdown value="300000">
     <span slot="title">验证码有效期</span>
     <span slot="suffix"> 后失效</span>
@@ -71,8 +71,8 @@
 | --- | --- | --- | --- |
 | `active` | 受控暂停：`"false"` 停帧且不计时已走过时长，恢复后续走（缺省走表） | `string` | — |
 | `format` | 模板：`DD`/`D` 天、`HH`/`H` 时、`mm`/`m` 分、`ss`/`s` 秒、`SSS` 毫秒（含 SSS 时内部 50ms 刷新） | `string` | `HH:mm:ss` |
-| `prefix` | 显示值前置文案 | — | — |
-| `suffix` | 显示值后置文案 | — | — |
+| `prefix-text` | 显示值前置文案 | — | — |
+| `suffix-text` | 显示值后置文案 | — | — |
 | `title` | 显示值上方标题（原生全局属性，渲染后吸收移除） | `string` | — |
 | `value` | 倒计时总时长（毫秒） | `string` | `0` |
 

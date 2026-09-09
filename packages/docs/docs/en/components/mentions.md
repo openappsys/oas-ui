@@ -26,18 +26,18 @@ Continue typing after `@` to filter: **by default it fuzzy-matches `label` OR `v
 
 **No whitespace is required before `@`**: the scan walks back from the caret until a space/newline, so `大家好@张` (Chinese text glued to `@`) triggers. A keyword segment containing a space or newline does not trigger. While an IME is composing (pinyin candidate not yet confirmed), `Enter`/`↑`/`↓` will not select suggestions or insert a newline; the panel re-scans after the composition commits.
 
-## Multiple Prefixes (@ for members / # for tasks)
+## Multiple Triggers (@ for members / # for tasks)
 
-<DemoBlock title="prefix array (@ / #)">
-  <oas-mentions prefix='["@","#"]' style="width: 320px" placeholder="@ members, # tasks — both trigger" options='[{"label":"Alice","value":"alice"},{"label":"Bob","value":"bob"},{"label":"Requirement review","value":"req-review"},{"label":"Implementation","value":"impl"},{"label":"QA","value":"qa"}]'></oas-mentions>
+<DemoBlock title="trigger array (@ / #)">
+  <oas-mentions trigger='["@","#"]' style="width: 320px" placeholder="@ members, # tasks — both trigger" options='[{"label":"Alice","value":"alice"},{"label":"Bob","value":"bob"},{"label":"Requirement review","value":"req-review"},{"label":"Implementation","value":"impl"},{"label":"QA","value":"qa"}]'></oas-mentions>
 </DemoBlock>
 
-`prefix` defaults to `@`; it accepts a single string or a JSON array like `["@","#"]`. The `oas-search`/`oas-select` details carry the matched `prefix`, letting the host route each trigger to its own data source.
+`trigger` defaults to `@`; it accepts a single string or a JSON array like `["@","#"]`. The `oas-search`/`oas-select` details carry the matched `prefix` field, letting the host route each trigger to its own data source. In plain HTML, the legacy `prefix` attribute still works as an alias.
 
 ## Async Suggestions (oas-search + loading)
 
 <DemoBlock title="Remote search (simulated)">
-  <oas-mentions id="mention-async" prefix='["@","#"]' style="width: 320px" placeholder="Type @ to find people / # to find tasks" options='[]'></oas-mentions>
+  <oas-mentions id="mention-async" trigger='["@","#"]' style="width: 320px" placeholder="Type @ to find people / # to find tasks" options='[]'></oas-mentions>
   <span id="mention-async-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 260px"></span>
 </DemoBlock>
 
@@ -274,13 +274,15 @@ onMounted(() => {
 | `options` | Options, JSON array `[{ label, value }]` | `Option[] \| string` | `[]` |
 | `placeholder` | Placeholder text | `string` | — |
 | `placement` | Panel direction: `auto` (default) / `top` / `bottom` | `string` | `auto` |
-| `prefix` | Trigger prefix | `string \| string[]` | `@` |
 | `readonly` | Read-only (focusable and readable, no suggestion panel) | `boolean` | — |
 | `size` | Size preset `small` / `medium` (default) / `large` | `string` | `medium` |
 | `split` | Separator between a mention and following text (default space; not doubled when already separated) | `string` | ` ` |
 | `status` | Validation status: `error` / `warning` / `success` | `string` | — |
+| `trigger` | Trigger: default @, accepts a single string or a JSON array like ["@","#"] for multiple triggers | `string \| string[]` | `@` |
+| `type` | Variant: 	extarea (default) / input (single-line lock, Enter does not break line) | `string` | `textarea` |
 | `value` | Value (controlled, full text) | `string` | — |
 | `variant` | Variant: `outlined` (default) / `filled` / `borderless` | `string` | `outlined` |
+| `whole` | Whole delete: when cursor is right after a mention, Backspace removes the whole prefix + label and fires oas-whole-remove | `boolean` | — |
 
 ### Events
 
@@ -293,7 +295,8 @@ onMounted(() => {
 | `oas-input` | Fires on input (not during IME composition), `detail: { value }` |
 | `oas-option-render` | Fires on option render (rich option channel), `detail: { index, option, element }` |
 | `oas-search` | Fires when the trigger scan finds pending text (remote search hook), `detail: { query, prefix }` |
-| `oas-select` | Suggestion selected, `detail: { value, label }` |
+| `oas-select` | Suggestion selected, detail: { value, label, option, prefix } (option is the full original option object) |
+| `oas-whole-remove` | Fires when a mention is whole-deleted, detail: { value, option, prefix } (option is the full original option object) |
 
 ### Slots
 

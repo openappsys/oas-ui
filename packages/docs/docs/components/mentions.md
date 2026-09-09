@@ -26,18 +26,18 @@
 
 **无需在 `@` 前加空格**：「大家好@张」在中文正文里紧贴即可触发（从光标倒走至空格/换行即断界）；但关键词段内含空格/换行会截断不触发。中文输入法组合期间（拼音候选未确认）`Enter`/`↑↓` 不会误选中或误换行，组合确认后再弹层。
 
-## prefix 多触发符（@/# 分流）
+## trigger 多触发符（@/# 分流）
 
-<DemoBlock title="prefix 数组（@ 成员 / # 任务）">
-  <oas-mentions prefix='["@","#"]' style="width: 320px" placeholder="@ 成员、# 任务可同时触发" options='[{"label":"张三","value":"zhangsan"},{"label":"李四","value":"lisi"},{"label":"需求评审","value":"req-review"},{"label":"编码实现","value":"impl"},{"label":"测试验收","value":"qa"}]'></oas-mentions>
+<DemoBlock title="trigger 数组（@ 成员 / # 任务）">
+  <oas-mentions trigger='["@","#"]' style="width: 320px" placeholder="@ 成员、# 任务可同时触发" options='[{"label":"张三","value":"zhangsan"},{"label":"李四","value":"lisi"},{"label":"需求评审","value":"req-review"},{"label":"编码实现","value":"impl"},{"label":"测试验收","value":"qa"}]'></oas-mentions>
 </DemoBlock>
 
-`prefix` 默认 `@`，支持单字符串或 JSON 数组 `["@","#"]` 并存。`oas-search`/`oas-select` 的 detail 带命中 `prefix`，宿主可据此把不同触发符分流到各自数据源。
+`trigger` 默认 `@`，支持单字符串或 JSON 数组 `["@","#"]` 并存。`oas-search`/`oas-select` 的 detail 带命中 `prefix` 字段，宿主可据此把不同触发符分流到各自数据源。纯 HTML 场景旧的 `prefix` 属性仍可作为遗留别名使用。
 
 ## 异步建议（oas-search + loading）
 
 <DemoBlock title="远端搜索（模拟请求）">
-  <oas-mentions id="mention-async" prefix='["@","#"]' style="width: 320px" placeholder="输入 @ 找人 / # 找任务" options='[]'></oas-mentions>
+  <oas-mentions id="mention-async" trigger='["@","#"]' style="width: 320px" placeholder="输入 @ 找人 / # 找任务" options='[]'></oas-mentions>
   <span id="mention-async-output" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); min-width: 260px"></span>
 </DemoBlock>
 
@@ -83,6 +83,23 @@ options 项带 `disabled: true` 时仍展示但置灰不可选：`↑↓`/Home/E
 </DemoBlock>
 
 `autosize` 下高度随内容在 `min-rows`（默认 1）与 `max-rows`（默认 6，显式 `"0"` 不封顶）间自适应，超出上限出滚动条。`min-rows="2"` 常配评论场景留出首行高度。
+
+## 整段删除（whole）
+
+<DemoBlock title="点击 Backspace 一次删除整段提及（whole）">
+  <oas-mentions id="mention-whole" whole value="你好 @张三 完成提测" style="width: 320px" options='[{"label":"张三","value":"zhangsan"},{"label":"张伟（组员）","value":"zhangwei"},{"label":"李四","value":"lisi"}]'></oas-mentions>
+  <span style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">光标停在被提及成员后方按 Backspace，一次删除整段「@张三」</span>
+</DemoBlock>
+
+`whole` 开启后，光标紧跟某个已插入的提及段（如「@张三」，含空格的长成员名如「@张伟（组员）」也一次删除）时按 `Backspace`，会整段移除「trigger + 成员名」并派发 `oas-whole-remove`（detail `{ value, option, prefix }`，`option` 为完整选项原对象）。未命中的关键位置仍逐字符删除；提及段与后文之间的分隔符（默认空格）不跟随删除，用户按需再删。未开启 `whole` 时按 `Backspace` 逐字符删除（长成员名可多按几次，或撤销恢复）。
+
+## 单行形态（type）
+
+<DemoBlock title="单行 @指派（type=input）">
+  <oas-mentions id="mention-single" type="input" placeholder="单行输入 @ 指派成员" style="width: 320px" options='[{"label":"张三","value":"zhangsan"},{"label":"李四","value":"lisi"}]'></oas-mentions>
+</DemoBlock>
+
+`type` 默认 `textarea`（多行），设为 `input` 时压缩为单行输入框（高度锁单行、`Enter` 不换行），适合「单行 @指派成员」等场景；仍可配 `autosize`/`clearable` 等。
 
 ## 尺寸 / 形态 / 校验态 / 只读
 
@@ -134,9 +151,9 @@ options 项带 `disabled: true` 时仍展示但置灰不可选：`↑↓`/Home/E
 
 `header` / `footer` 插槽渲染面板头尾（提示条/统计信息）；`empty` 插槽替换默认「无匹配提及」空态。`split` 属性（默认空格）控制扫描断界与插入补位所用的分隔符，需逗号等分隔时可换。
 
-## 触发后删除说明
+## 键盘与删除说明
 
-提及成员以纯文本写入，`Backspace` 逐字符删除（含空格的长成员名需多按几次，可用撤销恢复）；建议浮层开启时 `Home`/`End` 跳到建议首尾、`↑`/`↓` 循环移动（跳过禁用项）。
+提及成员以纯文本写入。开启 `whole` 时，光标紧跟提及段按 `Backspace` 一次删除整段；未开启 `whole` 时逐字符删除（含空格的长成员名需多按几次，可用撤销恢复）。建议浮层开启时 `Home`/`End` 跳到建议首尾、`↑`/`↓` 循环移动（跳过禁用项）；`type=input` 单行时浮层关闭的 `Enter` 拦截换行。
 
 ## 事件
 
@@ -174,7 +191,7 @@ onMounted(() => {
     out.textContent = `${name}: ${JSON.stringify(e.detail)}`
   }
   if (el) {
-    for (const name of ['input', 'change', 'select', 'clear', 'search', 'focus', 'blur']) {
+    for (const name of ['input', 'change', 'select', 'clear', 'search', 'focus', 'blur', 'whole-remove']) {
       el.addEventListener(`oas-${name}`, (e) => set(`oas-${name}`, e))
     }
   }
@@ -274,13 +291,15 @@ onMounted(() => {
 | `options` | 选项，JSON 数组 `[{ label, value }]` | `Option[] \| string` | `[]` |
 | `placeholder` | 占位提示 | `string` | — |
 | `placement` | 建议面板方向：`auto`（默认）/ `top` / `bottom` | `string` | `auto` |
-| `prefix` | 触发前缀 | `string \| string[]` | `@` |
 | `readonly` | 只读（可聚焦可读，不弹建议面板） | `boolean` | — |
 | `size` | 尺寸档位 `small` / `medium`（默认）/ `large` | `string` | `medium` |
 | `split` | 提及项与后文的分隔符（默认空格；后文已分隔则不重复补） | `string` | ` ` |
 | `status` | 校验态：`error` / `warning` / `success` | `string` | — |
+| `trigger` | 触发符：默认 @，支持单字符串或 JSON 数组 ["@","#"] 多触发符并存 | `string \| string[]` | `@` |
+| `type` | 形态：	extarea（默认）/ input（单行锁高，Enter 不换行） | `string` | `textarea` |
 | `value` | 值（受控，完整文本） | `string` | — |
 | `variant` | 形态：`outlined`（默认）/ `filled` / `borderless` | `string` | `outlined` |
+| `whole` | 整段删除：光标紧跟提及段按 Backspace 一次删除「prefix + 成员名」并派发 oas-whole-remove | `boolean` | — |
 
 ### 事件
 
@@ -293,7 +312,8 @@ onMounted(() => {
 | `oas-input` | 输入时派发（IME 组合期不派发），`detail: { value }` |
 | `oas-option-render` | 选项渲染时派发（富选项通道），`detail: { index, option, element }` |
 | `oas-search` | 触发符扫描到待选时派发（远程搜索钩子），`detail: { query, prefix }` |
-| `oas-select` | 选中建议项，`detail: { value, label }` |
+| `oas-select` | 选中建议项，detail: { value, label, option, prefix }（option 为完整选项原对象） |
+| `oas-whole-remove` | 整段删除提及项时派发，detail: { value, option, prefix }（option 为完整选项原对象） |
 
 ### 插槽
 

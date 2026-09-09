@@ -73,11 +73,11 @@ When there is content and `clearable` is set, a clear button is shown; clicking 
 ## Inline Affixes & Clear Together
 
 <DemoBlock title="prefix / suffix + clearable">
-  <oas-input prefix="$" suffix=".00" clearable value="1280" style="width: 240px"></oas-input>
+  <oas-input prefix-text="$" suffix-text=".00" clearable value="1280" style="width: 240px"></oas-input>
   <oas-input suffix-icon="chevron-down" clearable value="Clearable with icon" style="width: 240px"></oas-input>
 </DemoBlock>
 
-`prefix` / `suffix` are inline text inside the input and can coexist with `clearable`, icons, and addons without conflicts.
+`prefix-text` / `suffix-text` are inline text inside the input and can coexist with `clearable`, icons, and addons without conflicts.
 
 ## Character Count
 
@@ -186,10 +186,10 @@ onMounted(() => {
   <oas-input placeholder="Phone number" style="width: 240px">
     <span slot="suffix">📱</span>
   </oas-input>
-  <oas-input placeholder="Amount" value="1280" prefix="¥" suffix=".00" style="width: 240px"></oas-input>
+  <oas-input placeholder="Amount" value="1280" prefix-text="¥" suffix-text=".00" style="width: 240px"></oas-input>
 </DemoBlock>
 
-Use the `prefix` / `suffix` attributes for simple text; for complex content (icons/buttons/badges etc.) distribute via the same-named `slot="prefix"` / `slot="suffix"` slots — distributed content natively replaces the attribute text.
+Use the `prefix-text` / `suffix-text` attributes for simple text; for complex content (icons/buttons/badges etc.) distribute via the same-named `slot="prefix"` / `slot="suffix"` slots — distributed content natively replaces the attribute text. In plain HTML, the legacy `prefix` / `suffix` attributes still work as aliases.
 
 ## Sizes
 
@@ -342,16 +342,16 @@ A range input is just two `oas-input` elements plus a separator layout (the comp
 | `label` | Accessible name (`aria-label` source; falls back to `placeholder` → built-in "输入框" when unset) | — | — |
 | `maxlength` | Maximum input length (passed through to native maxlength) | `string` | — |
 | `placeholder` | Placeholder text | `string` | — |
-| `prefix` | Inline text before the input value | `string` | — |
 | `prefix-icon` | Icon name for the leading icon | `string` | — |
+| `prefix-text` | Inline text before the input value (plain HTML may use the legacy alias prefix) | `string` | — |
 | `readonly` | Readonly | `boolean` | — |
 | `show-clear-on` | Clear button visibility: `always` (default) / `hover` / `focus` | `string` | — |
 | `show-count` | Show character count (bottom-right; danger when over limit) | `boolean` | — |
 | `show-password` | Password visibility toggle (renders an eye button when `type="password"`) | `boolean` | — |
 | `size` | Size preset `small` / `medium` (default) / `large`: height and font scale | `string` | `medium` |
 | `status` | Validation status: `error` / `warning` / `success`; error mirrors aria-invalid on the inner input | `string` | — |
-| `suffix` | Inline text after the input value | `string` | — |
 | `suffix-icon` | Icon name for the trailing icon | `string` | — |
+| `suffix-text` | Inline text after the input value (plain HTML may use the legacy alias suffix) | `string` | — |
 | `type` | Native input type | `string` | `text` |
 | `value` | Value (controlled) | `string` | — |
 | `variant` | Variant: `outlined` (default) / `filled` / `borderless` | `string` | — |

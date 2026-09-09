@@ -53,16 +53,16 @@
 ## 前后缀
 
 <DemoBlock title="prefix / suffix">
-  <oas-input-number value="1280" prefix="¥" style="width: 160px"></oas-input-number>
-  <oas-input-number value="30" suffix="%" style="width: 160px"></oas-input-number>
-  <oas-input-number value="500" prefix="月销" suffix="件" style="width: 180px"></oas-input-number>
+  <oas-input-number value="1280" prefix-text="¥" style="width: 160px"></oas-input-number>
+  <oas-input-number value="30" suffix-text="%" style="width: 160px"></oas-input-number>
+  <oas-input-number value="500" prefix-text="月销" suffix-text="件" style="width: 180px"></oas-input-number>
 </DemoBlock>
 
-`prefix` / `suffix` 为输入框内嵌装饰文案（不参与数值解析）；也支持同名插槽分发任意内容：`<span slot="prefix">…</span>`。
+`prefix-text` / `suffix-text` 为输入框内嵌装饰文案（不参与数值解析）；也支持同名插槽分发任意内容：`<span slot="prefix">…</span>`。纯 HTML 场景旧的 `prefix` / `suffix` 仍可作为遗留别名使用。
 
 <DemoBlock title="clearable + 步进钮 + 后缀叠加">
-  <oas-input-number value="1280" clearable suffix="元" style="width: 200px"></oas-input-number>
-  <oas-input-number value="42" clearable prefix="¥" controls-position="both" style="width: 240px"></oas-input-number>
+  <oas-input-number value="1280" clearable suffix-text="元" style="width: 200px"></oas-input-number>
+  <oas-input-number value="42" clearable prefix-text="¥" controls-position="both" style="width: 240px"></oas-input-number>
 </DemoBlock>
 
 `clearable` / 步进钮 / 前后缀可任意叠加：右侧元素按「步进钮区 → 清除钮 → 后缀」自左向右排布，全部内嵌在输入框内，输入文字按叠加总宽自动让位（`controls-position="both"` 时清除钮/后缀在框内让开右侧 `+` 钮）。
@@ -228,13 +228,13 @@ onMounted(() => {
 | `min` | 范围，越界自动钳制 | `string` | — |
 | `placeholder` | 占位文本（参与 aria-label 回退链） | `string` | — |
 | `precision` | 小数位数 | `string` | — |
-| `prefix` | 内嵌前缀文案（slot="prefix" 可分发任意内容，不参与数值解析） | `string` | — |
+| `prefix-text` | 内嵌前缀文案（slot="prefix" 可分发任意内容，不参与数值解析） | `string` | — |
 | `readonly` | 只读：可聚焦可复制可提交，按钮禁用 + aria-readonly，键盘/滚轮不改值 | `boolean` | — |
 | `size` | 尺寸档位 `sm` / `md`（默认）/ `lg`：控高与字号联动 | — | — |
 | `status` | 校验态：`error` / `warning` / `success` 边框语义色 | — | — |
 | `step` | 步长 | `string` | `1` |
 | `step-strictly` | 严格步进：提交值吸附最近 step 倍数 | `boolean` | — |
-| `suffix` | 内嵌后缀文案（slot="suffix" 同上） | `string` | — |
+| `suffix-text` | 内嵌后缀文案（slot="suffix" 同上） | `string` | — |
 | `value` | 当前值（受控） | `string` | — |
 | `wheel` | 聚焦时滚轮步进（上增下减；默认关防误触） | `boolean` | — |
 
