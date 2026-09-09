@@ -32,12 +32,15 @@ const STYLE = `
   grid-row: 1;
   min-width: 0;
 }
-/* 连接线：自本行圆点下方延伸至行底（含条目间距），与下一行圆点衔接；末条目断线 */
+/* 连接线：自本行圆点下方延伸至行底（含条目间距），与下一行圆点衔接；末条目断线。
+   grid item 的 align stretch 只到 content-box（不含 .row 的 padding-bottom），
+   故 bottom 用负值穿过 padding 区域（space-5），线才真正接到下一 item 顶部的圆点。
+   此前 bottom:0 只画到内容底，点与点之间留下 padding 空隙无线（用户实测点线不连） */
 .axis::after {
   content: '';
   position: absolute;
   top: 14px;
-  bottom: 0;
+  bottom: calc(-1 * var(--oas-space-5));
   left: 4px;
   width: 2px;
   background: var(--oas-color-border);
@@ -218,7 +221,7 @@ const STYLE = `
 :host([data-direction='horizontal']) .axis::after {
   top: 4px;
   left: 14px;
-  right: 0;
+  right: calc(-1 * var(--oas-space-5)); /* 穿过 .row 的 padding-right，横线接到下一列圆点（对称纵向修复） */
   bottom: auto;
   width: auto;
   height: 2px;
