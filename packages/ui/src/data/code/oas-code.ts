@@ -302,10 +302,12 @@ pre.code {
   white-space: pre-wrap;
   word-break: break-all;
 }
-/* inline 行内代码：等宽+浅底小框，不块级不换行 */
+/* inline 行内代码：等宽+浅底小框，不块级不换行。
+   注意 display 用 inline-block 而非 inline-flex：flex 容器会把内容拆成 flex item，
+   文本节点间空格在 flex 布局下被折叠/忽略（实测 const a = 1 渲染成 consta=1）；
+   inline-block 保持正常文本流，token 高亮的 span 与相邻文本间的空格完整保留 */
 .inline {
-  display: inline-flex;
-  align-items: baseline;
+  display: inline-block;
   padding: 0.1em var(--oas-space-1);
   background: var(--oas-color-bg-hover);
   border-radius: var(--oas-radius-sm);
