@@ -64,7 +64,11 @@
   <oas-editable trigger="icon" value="点文本不进编辑，点右侧铅笔"></oas-editable>
 </DemoBlock>
 
-`trigger="text"`（默认）点文本即编辑；`trigger="icon"` 时文本纯展示，尾部铅笔按钮承载交互（可聚焦，Enter/空格/点击进入编辑）。适合文本可能与页面点击行为冲突的场景。
+`trigger="text"`（默认）点文本即编辑；`trigger="icon"` 时文本纯展示，尾部铅笔按钮承载交互（可聚焦，Enter/空格/点击进入编辑）；`trigger="dblclick"` 时双击进编辑（单击不触发，可选中文本不冲突，Enter/空格聚焦时进编辑为键盘逃生）。适合文本可能与页面点击行为冲突的场景。
+
+<DemoBlock title="trigger=dblclick（双击编辑）">
+  <oas-editable trigger="dblclick" value="双击我进编辑（单击仅选中文本不触发）"></oas-editable>
+</DemoBlock>
 
 ## 展示态自定义
 
@@ -201,7 +205,7 @@ onMounted(() => {
 - `submit-on-blur`：默认 `true`（失焦提交，现状行为），`false` 拼出四态提交方式
 - `editing` / `default-editing`：受控编辑态 / 初始编辑态（退出统一走提交/取消路径）
 - `multiline`：多行编辑，Ctrl/⌘+Enter 提交、Enter 换行、自适应高
-- `trigger`：`text | icon`（图标触发防误触；不做双击触发）
+- `trigger`：`text | icon | dblclick`（点文本 / 铅笔按钮 / 双击编辑，均可配）
 - `allow-empty`：允许空值提交为空串（默认非破坏还原）
 - `size` / `status` / `readonly`：三档尺寸、校验态、只读
 - 插槽：`template[slot="display"]`（`data-display-value` / `data-display-placeholder` 绑定）、`ok-icon` / `cancel-icon`
@@ -225,7 +229,7 @@ onMounted(() => {
 | `status` | 校验态：`error` / `warning` / `success` | `string` | — |
 | `submit-on-blur` | 失焦提交（默认 true；与 submit-on-enter 拼出 both/enter/blur/none 四态） | `string` | `true` |
 | `submit-on-enter` | 是否允许 Enter 提交 | `string` | `true` |
-| `trigger` | 触发方式：`text`（默认点文本）/ `icon`（铅笔按钮触发，防误触） | `string` | — |
+| `trigger` | 触发方式：`text`（默认点文本）/ `icon`（铅笔按钮触发，防误触）/ `dblclick`（双击编辑，单击不触发，Enter/空格聚焦时进编辑为键盘逃生） | `string` | — |
 | `value` | 当前值（受控） | `string` | — |
 
 ### 事件

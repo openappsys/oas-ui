@@ -515,3 +515,29 @@ describe('OASEditable oas-editing 事件（进入/退出各一次）', () => {
     expect(states).toEqual([{ editing: true }, { editing: false }])
   })
 })
+
+describe('OASEditable trigger=dblclick 双击触发', () => {
+  beforeEach(() => { document.body.innerHTML = '' })
+  afterEach(() => { document.body.innerHTML = '' })
+
+  it('dblclick 触发：单击不进编辑，双击进入', () => {
+    const el = mount({ value: 'a', trigger: 'dblclick' })
+    expect(display(el).getAttribute('role')).toBe('button')
+    display(el).click()
+    expect(display(el).hidden).toBe(false) // 单击不触发
+    display(el).dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(display(el).hidden).toBe(true) // 双击进入编辑
+  })
+
+  it('dblclick 触发：Enter/空格聚焦时进编辑（键盘逃生）', () => {
+    const el = mount({ value: 'a', trigger: 'dblclick' })
+    display(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(display(el).hidden).toBe(true)
+  })
+
+  it('dblclick 触发：icon 模式下双击不进编辑（铅笔承担）', () => {
+    const el = mount({ value: 'a', trigger: 'icon' })
+    display(el).dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(display(el).hidden).toBe(false)
+  })
+})
