@@ -981,7 +981,7 @@
       "status": "校验态：`error` / `warning` / `success`",
       "size": "尺寸档位 `small` / `medium`（默认）/ `large`",
       "multiline": "多行编辑（textarea；Enter 换行、Ctrl/⌘+Enter 提交、自适应高）",
-      "trigger": "触发方式：`text`（默认点文本）/ `icon`（铅笔按钮触发，防误触）",
+      "trigger": "触发方式：`text`（默认点文本）/ `icon`（铅笔按钮触发，防误触）/ `dblclick`（双击编辑，单击不触发，Enter/空格聚焦时进编辑为键盘逃生）",
       "allow-empty": "允许提交空值（默认非破坏不变；空值还原旧值）"
     },
     "events": {

@@ -981,7 +981,7 @@
       "status": "Validation status: `error` / `warning` / `success`",
       "size": "Size preset `small` / `medium` (default) / `large`",
       "multiline": "Multi-line editing (textarea; Enter for newline, Ctrl/⌘+Enter to commit, auto-grow)",
-      "trigger": "Trigger: `text` (default, click text) / `icon` (pencil button, prevents misclicks)",
+      "trigger": "Trigger: `text` (default, click text) / `icon` (pencil button, prevents misclicks) / `dblclick` (double-click to edit; single click doesn't trigger; Enter/Space while focused enters edit as keyboard fallback)",
       "allow-empty": "Allow committing an empty value (default unchanged/non-breaking; empty restores the old value)"
     },
     "events": {
