@@ -121,8 +121,8 @@ const user: User = { id: 1, name: "张三" }'></oas-code>
 `trim` 默认 true（去首尾空白），`trim="false"` 保留：
 
 <DemoBlock title="trim 对照">
-  <oas-code language="js" code='\n  const a = 1\n  '></oas-code>
-  <oas-code language="js" trim="false" code='\n  const a = 1\n  '></oas-code>
+  <oas-code language="js" code='&#10;  const a = 1&#10;  '></oas-code>
+  <oas-code language="js" trim="false" code='&#10;  const a = 1&#10;  '></oas-code>
 </DemoBlock>
 
 ## 行内尺寸（size）
