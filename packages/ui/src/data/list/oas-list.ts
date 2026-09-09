@@ -30,8 +30,29 @@ const STYLE = `
 .list[data-split='true'] .data-items oas-list-item {
   border-bottom: 1px solid var(--oas-color-border);
 }
-.list[data-split='true'] .data-items oas-list-item:last-child {
+/* 末行去分隔线：仅列表视觉末行——非组行（直挂 .data-items）末行，
+   或最后一个分组容器 .group 内的末行（组内行分隔线保留到下一组头前） */
+.list[data-split='true'] .data-items > oas-list-item:last-child,
+.list[data-split='true'] .data-items .group:last-child > oas-list-item:last-child {
   border-bottom: none;
+}
+/* 数据通道分组：同组连续项归入 .group 容器，组头是容器内第一个元素。
+   组头吸顶范围=本组容器——下一组到顶时把上一组头顶走（原生 sticky 语义，
+   组头不等高也不会叠条）；背景用 token 不透明盖住滚经行。组头不是行，
+   不参与行 hover/clickable/roving */
+.group-header {
+  padding: var(--oas-space-2) var(--oas-space-4);
+  font-size: var(--oas-font-size-sm);
+  font-weight: 500;
+  color: var(--oas-color-text-secondary);
+  background: var(--oas-color-bg);
+  border-bottom: 1px solid var(--oas-color-border);
+}
+.group-header[data-sticky] {
+  position: sticky;
+  top: 0;
+  /* 吸顶时同列表后续分组滚经行（非定位）会盖在组头上——抬高组头图层压住行 */
+  z-index: 1;
 }
 /* 滚动容器（max-height 设置时启用） */
 .body {
@@ -114,6 +135,11 @@ oas-virtual-list::part(item) {
  * - `header` / `footer` / `load-more` / `empty`：命名插槽
  * - `max-height` + `bottom-offset`：滚动容器 + 触底事件 oas-reach-bottom
  * - `height` + `row-height`：虚拟滚动（内嵌 oas-virtual-list，要求 data 通道 + 定高行）
+ * - 数据分组：数据项带 `group`（组名字符串，同组须连续）自动插入组头；可选
+ *   `groupLabel` 字段自定义组头文案（缺省回落 group 值）。组头不占用行索引。
+ *   普通渲染模式组头 `position: sticky` 吸顶（须在滚动容器内，配 max-height）；
+ *   虚拟模式（height）下本批不做虚拟吸顶——分组数据自动回退全量渲染，
+ *   组头以普通块呈现不吸顶。分组数据 + 超大行数不建议配 height 使用。
  *
  * 事件（bubbles + composed）：
  * - `oas-reach-bottom`：滚动触底（进入触底区派发一次，滚离后重新武装）
@@ -265,8 +291,12 @@ export class OASList extends OASElement {
 
     const loading = this.hasAttr('loading')
     const dataActive = this.dataChannelActive()
+    const grouped = dataActive && this.hasGroups()
+    const virtualRequested = this.getAttr('height', '') !== ''
+    // 分组 + 虚拟滚动：虚拟窗口下的吸顶与变高组头复杂，本批自动回退全量渲染
+    // （组头普通块、不吸顶），避免虚拟列表误吞组头破坏行索引契约
     const virtual =
-      !loading && dataActive && this.rows.length > 0 && this.getAttr('height', '') !== ''
+      !loading && dataActive && this.rows.length > 0 && virtualRequested && !grouped
 
     const hasDeclarative = Array.from(this.children).some(
       (c) => c.tagName.toLowerCase() === 'oas-list-item',
@@ -297,7 +327,7 @@ export class OASList extends OASElement {
     if (virtual) this.syncVirtual()
     else {
       this.restoreTemplate()
-      if (dataActive) this.renderDataRows(dataItems, size, stripe)
+      if (dataActive) this.renderDataRows(dataItems, size, stripe, !virtualRequested)
     }
 
     // 触底检测（挂载即查一次是否已触底）
@@ -330,11 +360,40 @@ export class OASList extends OASElement {
       .some((n) => n.nodeType === Node.ELEMENT_NODE || (n.textContent ?? '').trim() !== '')
   }
 
-  /** 数据通道行渲染：oas-list-item 承载模板克隆 + [data-index] 上下文绑定 */
-  private renderDataRows(box: HTMLElement, size: string, stripe: boolean): void {
+  /** 数据通道行渲染：oas-list-item 承载模板克隆 + [data-index] 上下文绑定。
+   *  连续同 `group` 的行归入一个 `.group` 容器（组头为首子元素）；组头带 data-sticky
+   *  时在该组容器内吸顶（下一组到顶顶走上一组）。`stickyHeaders` 为 false（height 在设
+   *  的分组回退）时组头普通渲染不吸顶。组头不计入行索引，行上下文/事件契约不变 */
+  private renderDataRows(box: HTMLElement, size: string, stripe: boolean, stickyHeaders: boolean): void {
     box.innerHTML = ''
     const tpl = this.itemTemplate()
+    let group: HTMLElement | null = null
+    let prevGroup = ''
     this.rows.forEach((item, i) => {
+      const meta =
+        item != null && typeof item === 'object' && !Array.isArray(item)
+          ? (item as { group?: unknown; groupLabel?: unknown })
+          : null
+      const groupName = meta && typeof meta.group === 'string' ? meta.group.trim() : ''
+      // 组起点：新建分组容器（组头 + 本组行都收进容器，吸顶范围=本组）
+      if (groupName !== '' && groupName !== prevGroup) {
+        const rawLabel = meta && typeof meta.groupLabel === 'string' ? meta.groupLabel.trim() : ''
+        const label = rawLabel !== '' ? rawLabel : groupName
+        group = document.createElement('div')
+        group.className = 'group'
+        const header = document.createElement('div')
+        header.className = 'group-header'
+        if (stickyHeaders) header.setAttribute('data-sticky', '')
+        // 语义：静态分隔/标题条，非可交互行——不进入行聚焦序列、不干扰行 roving
+        header.setAttribute('role', 'separator')
+        header.textContent = label
+        group.appendChild(header)
+        box.appendChild(group)
+      } else if (groupName === '') {
+        // 非组行重置分组段（直挂 data-items；其后同组字符串另起一组）
+        group = null
+      }
+      prevGroup = groupName
       const row = document.createElement('oas-list-item')
       row.setAttribute('data-index', String(i))
       row.setAttribute('data-size', size)
@@ -346,7 +405,16 @@ export class OASList extends OASElement {
       // 元数据兜底渲染（String(对象) 只会得到 "[object Object]"，用户实测缺陷）
       if (!tpl && !row.hasChildNodes() && (item == null || typeof item !== 'object'))
         row.textContent = String(item ?? '')
-      box.appendChild(row)
+      ;(group ?? box).appendChild(row)
+    })
+  }
+
+  /** 数据是否含分组字段（任一行的 group 为非空字符串即视为分组列表） */
+  private hasGroups(): boolean {
+    return this.rows.some((it) => {
+      if (it == null || typeof it !== 'object' || Array.isArray(it)) return false
+      const g = (it as { group?: unknown }).group
+      return typeof g === 'string' && g.trim() !== ''
     })
   }
 
