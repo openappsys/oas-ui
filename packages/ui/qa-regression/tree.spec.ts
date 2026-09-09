@@ -257,3 +257,80 @@ test('tree 自定义节点：#tree-custom 每行 .label 实际渲染宽度 > 0�
   }
   await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix-tree-custom-label.png' })
 })
+
+test('tree 内联重命名：双击 label 进编辑 + Enter 提交宿主回写（oas-node-rename）', async ({
+  page,
+}) => {
+  // 回归：双击进编辑在行重建架构下原生 dblclick 不可靠（首击选中重建行），
+  // 需手工判定（capture click 同 key 500ms 两击）；提交只派发事件、由宿主更新 data 显示新名。
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tree-rename')
+  await page.waitForTimeout(600)
+  const firstLabel = page.locator('#tree-rename [part="row"] .label').first()
+  const input = page.locator('#tree-rename input.rename-input')
+  await firstLabel.dblclick()
+  await page.waitForTimeout(150)
+  await expect(input).toBeVisible()
+  expect(await input.inputValue()).toContain('研发团队')
+  await input.fill('研发中心')
+  await input.press('Enter')
+  await page.waitForTimeout(200)
+  // 宿主监听 oas-node-rename 更新 data 后行内显示新 label
+  await expect(firstLabel).toHaveText('研发中心')
+  const status = await page.locator('#tree-rename-status').textContent()
+  expect(status).toContain('研发中心')
+})
+
+test('tree motion 开关：容器挂 motion 类、展开入场/收起离场行钩子', async ({ page }) => {
+  // 回归：motion 展开新增子行走高度过渡（非虚拟）、收起先离场再落库；
+  // 开关类名/行钩子类为可测样式信号（视觉动画需浏览器复核）。
+  await page.goto('/components/tree.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#tree-motion')
+  await page.waitForTimeout(600)
+  // 默认关：容器无 motion 类
+  let cls = await page.evaluate(() => {
+    const tree = document.querySelector('#tree-motion')!
+    return tree.shadowRoot!.querySelector('.tree')!.classList.contains('motion')
+  })
+  expect(cls).toBe(false)
+  // 开启
+  await page.locator('#tree-motion-toggle').click()
+  await page.waitForTimeout(200)
+  cls = await page.evaluate(() => {
+    const tree = document.querySelector('#tree-motion')!
+    return tree.shadowRoot!.querySelector('.tree')!.classList.contains('motion')
+  })
+  expect(cls).toBe(true)
+  // 展开分组 1：子行入场钩子（oas-row-enter）出现
+  const countEnter = () =>
+    page.evaluate(() => {
+      const tree = document.querySelector('#tree-motion')!
+      return [...tree.shadowRoot!.querySelectorAll('[part="row"]')].filter((r) =>
+        r.classList.contains('oas-row-enter'),
+      ).length
+    })
+  const countRows = () =>
+    page.evaluate(() => {
+      const tree = document.querySelector('#tree-motion')!
+      return tree.shadowRoot!.querySelectorAll('[part="row"]').length
+    })
+  const countLeave = () =>
+    page.evaluate(() => {
+      const tree = document.querySelector('#tree-motion')!
+      return [...tree.shadowRoot!.querySelectorAll('[part="row"]')].filter((r) =>
+        r.classList.contains('oas-row-leave'),
+      ).length
+    })
+  await page.locator('#tree-motion [part="toggle"]').first().click()
+  await page.waitForTimeout(60)
+  expect(await countEnter()).toBeGreaterThanOrEqual(2)
+  // g1 + 其直接子级 2 行 + g2 = 4 行（更深的 g1-1 子级默认收起）
+  expect(await countRows()).toBe(4)
+  // 收起分组 1：先离场（行仍在 + oas-row-leave），动画后再移除
+  await page.locator('#tree-motion [part="toggle"]').first().click()
+  await page.waitForTimeout(60)
+  expect(await countLeave()).toBeGreaterThanOrEqual(2)
+  await page.waitForTimeout(400)
+  expect(await countRows()).toBe(2)
+  expect(await countLeave()).toBe(0)
+})

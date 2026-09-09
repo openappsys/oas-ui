@@ -2931,7 +2931,7 @@
     "attrs": {
       "checkable": "是否显示复选框",
       "checked": "勾选节点 key 集合（逗号分隔）",
-      "data": "节点数据 `[{ key, label, children?, disabled?, isLeaf?, loaded? }]`，JSON 字符串",
+      "data": "节点数据 `[{ key, label, children?, disabled?, isLeaf?, loaded?, renamable? }]`，JSON 字符串",
       "directory": "目录模式：有 `children`（或懒加载下未加载）的节点显示文件夹图标，`isLeaf` / 无 `children` 的节点显示文件图标，文件夹按展开 / 收起切换图标",
       "draggable": "节点可拖拽换序 / 换父，落点显示插入线 / 高亮，松手派发 `oas-node-drop`",
       "expanded": "展开节点 key 集合（逗号分隔）",
@@ -2952,13 +2952,16 @@
       "field-names": "字段别名 JSON（如 `{\"label\":\"name\",\"value\":\"id\",\"children\":\"subs\"}`；原始数据不拷贝映射，node-render 拿到宿主原对象）",
       "tree-lines": "树线缩进引导线",
       "disabled": "整树禁用（点选/勾选/展开/拖拽全停，浏览保留）",
-      "empty": "空态文案（无数据时；无匹配时走 locale 无匹配文案）"
+      "empty": "空态文案（无数据时；无匹配时走 locale 无匹配文案）",
+      "can-rename": "节点重命名总开关：开启后双击节点 label 或按 F2 进入内联编辑，Enter 提交 / Esc 取消 / 失焦提交；提交派发 `oas-node-rename`（节点数据可加 `renamable: false` 细粒度禁单个节点）",
+      "motion": "展开/收起高度过渡动画（默认关）：非虚拟模式行容器 max-height 过渡展开/收起，虚拟滚动模式入场降级为淡入、收起即时；时长/缓动走 `--oas-transition-*`，`prefers-reduced-motion` 下停用"
     },
     "events": {
       "oas-check": "勾选变化，`detail: { key, checked }`",
       "oas-load": "懒加载触发，`detail: { key }`；宿主回填 `children` 后重设 `data` 属性",
       "oas-node-drop": "节点拖放，`detail: { dragKey, dropKey, position }`，`position` 为 `before` / `after` / `inner`；`dropKey` 为空字符串表示移入根",
       "oas-node-render": "每个渲染的节点行派发，`detail: { node, element }`（element 为节点 label 容器，宿主可改写为图标 / 富文本）",
+      "oas-node-rename": "内联重命名提交（Enter / 失焦），`detail: { key, label, oldLabel }`；数据由宿主受控——组件不改数据模型，宿主监听后更新 `data` 才生效（不更新则保持旧值；Esc 取消不派发）",
       "oas-select": "选中节点，`detail: { key, selected }`",
       "oas-load-error": "懒加载失败时派发，`detail: { key, error }`，`error` 为错误消息字符串（loading 消失可再点重试）"
     },
