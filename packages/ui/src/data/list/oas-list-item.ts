@@ -43,6 +43,11 @@ const STYLE = `
   background: var(--oas-color-primary);
   color: var(--oas-color-text-on-primary);
 }
+/* 选中行 hover：保持 primary 系底（置于 clickable hover 浅灰规则之后压盖——
+   否则 [data-clickable]:hover 的 bg-hover 浅灰会盖过选中蓝底，白字白底不可读） */
+:host([selected]:hover) {
+  background: var(--oas-color-primary-hover, var(--oas-color-primary));
+}
 :host([selected]) .desc {
   color: color-mix(in srgb, var(--oas-color-text-on-primary) 72%, transparent);
 }
