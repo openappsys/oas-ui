@@ -7,6 +7,8 @@
 ### 特性
 
 - **watermark 渲染引擎转 canvas**：SVG data-uri → canvas 绘制（特性检测，无 canvas 环境自动回退 SVG 路径），DPR 高清处理防模糊；文字多行/旋转/间隙/偏移/字体/尺寸全量迁移、错位排布/移动拖拽/防篡改机制无损；主题切换自动重绘；**新增 `grayscale` 图片灰阶滤镜**（跨域/加载失败回退原图）
+- **watermark 文字 tile 缺省按内容自适应**：`width`/`height` 未显式设置时按「文字旋转外接框 + 内边距」计算 tile 尺寸——修复固定 240×120 大 tile 在窄容器里文字残缺难辨的问题，默认密度下每个平铺单元完整容纳文字（显式设置时行为不变，图片水印缺省维持 240/120）
+- **watermark 空容器兜底**：无 slot 内容的宿主在 flex 容器内宽度塌缩为 0 导致水印不可见——空态默认撑满容器宽（`:host(:empty) { width: 100% }`），非空用法零影响
 - **watermark 全屏水印**：`fullscreen` 属性——fixed 铺满视口、不拦截交互、滚动不随，`z-index` 属性可覆盖默认最高层级
 - **log 搜索过滤**：`keyword` 属性非空时只显示命中行（大小写不敏感），命中片段高亮（warning 语义底色），派发 `oas-search`（detail `{ keyword, matched, total }`）；过滤不改宿主数据、行号与级别着色按原始索引不错位；空命中显示无匹配空态
 - **gradient-text 文字描边**：`stroke` 描边宽度 + `stroke-color` 描边颜色（缺省语义色亮暗自适应）——渐变与描边共存（渐变填充覆盖内圈、描边透出外圈），支持 `background-clip` 的浏览器生效、其余回退普通前景色+描边
