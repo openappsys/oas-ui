@@ -68,6 +68,19 @@ Provide data via the `lines` property (or the `lines` attribute as a JSON string
   </p>
 </DemoBlock>
 
+## Search Filter
+
+<DemoBlock title="Keyword search filter">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-3); margin-bottom: var(--oas-space-2); align-items: center">
+    <oas-input id="log-search-input" placeholder="Type a keyword to filter logs…" clearable style="width: 280px"></oas-input>
+    <span id="log-search-count" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </div>
+  <oas-log id="log-search" line-number style="height: 240px; width: 100%; background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-log>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    A non-empty <code>keyword</code> shows only matching lines (case-insensitive), with matched fragments wrapped in a mark highlight (same visual system as the <code>highlight</code> channel); line numbers still show the original indices. The component fires <code>oas-search</code> (detail <code>{ keyword, matched, total }</code>) so the host can display a match count. Clearing the input restores all lines; the host's <code>lines</code> data is never modified.
+  </p>
+</DemoBlock>
+
 ## Level Colors
 
 <DemoBlock title="levels semantic colors">
@@ -203,6 +216,39 @@ onMounted(() => {
       ]
     }
 
+    // Search filter: live filtering by keyword + mark highlight + oas-search match count
+    const searchLog = document.querySelector('#log-search')
+    const searchInput = document.querySelector('#log-search-input')
+    const searchCount = document.querySelector('#log-search-count')
+    if (searchLog) {
+      searchLog.lines = [
+        'INFO  service started, listening on :5175',
+        'INFO  GET /api/users 200 12ms',
+        'WARN  disk usage above 80%, please clean up',
+        'ERROR database connection timed out, retry 1',
+        'INFO  POST /api/orders 201 15ms',
+        'ERROR database connection timed out, retry 2',
+        'INFO  GET /api/products 200 21ms',
+        'WARN  slow query: SELECT * FROM orders took 500ms',
+        'INFO  scheduled gc finished',
+        'ERROR database connection timed out, retry 3',
+        'INFO  cache hit ratio 96.5%',
+        'WARN  disk usage above 90%, clean up now',
+      ]
+      searchLog.addEventListener('oas-search', (e) => {
+        if (!searchCount) return
+        const { keyword, matched, total } = e.detail
+        searchCount.textContent = keyword ? `${matched}/${total} lines matched` : `${total} lines`
+      })
+    }
+    if (searchInput && searchLog) {
+      searchInput.addEventListener('oas-input', (e) => {
+        const value = e.detail && e.detail.value
+        if (value) searchLog.setAttribute('keyword', value)
+        else searchLog.removeAttribute('keyword')
+      })
+    }
+
     // loading + scrollTo: simulate first fetch -> fill 50 lines -> external jump buttons
     const methods = document.querySelector('#log-methods')
     const fetchBtn = document.querySelector('#log-fetch-btn')
@@ -247,9 +293,10 @@ Font size follows the outer context (inherited) by default; override with the CS
 ## Events and Methods
 
 - `oas-require-more`: fired when scrolling into the top/bottom threshold zone (detail `{ from: 'top' | 'bottom' }`). Edge-triggered — no repeated firing while staying in the zone, reset after leaving; thresholds controlled by `offset-top` / `offset-bottom` (px).
+- `oas-search`: search filter report (detail `{ keyword, matched, total }`) — fired when the keyword or the data changes (deduped for identical state); `matched` is the current number of matching lines and `total` the total lines; the filter window is the currently loaded lines (compatible with paginated loading).
 - `scrollTo('top' | 'bottom' | number)`: scrolls the viewport to top / bottom / a pixel offset, for external "back to bottom" buttons.
 - `loading`: overlay mask on the viewport, syncs `aria-busy`; copy follows the locale (`loading.loading`).
-- `levels` / `highlight`: per-line level semantic colors / keyword·regex highlight channels (JSON attributes, see demos above).
+- `levels` / `highlight` / `keyword`: per-line level semantic colors / keyword·regex highlight / search filter channels (JSON attributes, see demos above). A non-empty `keyword` shows only matching lines (case-insensitive) and highlights matched fragments with a mark span; filtering never modifies the host's `lines`, line numbers and levels stay aligned to the original indices, and clearing restores everything.
 
 When history lines are prepended, the reconcile aligns rows by content key: existing row nodes are reused, line numbers re-flow, and the viewport reading position is compensated automatically.
 
@@ -262,6 +309,7 @@ When history lines are prepended, the reconcile aligns rows by content key: exis
 | `auto-scroll` | Auto-scroll to bottom on append (only when stuck to the bottom) | `string` | `true` |
 | `empty-text` | Empty state text (overrides the locale default) | — | — |
 | `highlight` | Line highlight rules (JSON array): string = literal keyword; `{ text }` / `{ pattern, flags }` = regex; matches are wrapped with a mark background (warning token) | `string` | — |
+| `keyword` | Search filter keyword: when non-empty, only matching lines are shown (case-insensitive) and matched fragments get a mark highlight (same visual system as highlight); line numbers / levels stay aligned to the original indices, clearing restores all lines without modifying the host's lines | `string` | — |
 | `levels` | Line levels (JSON array, index-aligned with lines): info/success/warning/error (aliases like warn/fatal normalized), mapped to semantic color tokens | `string` | — |
 | `line-number` | Show the left line number column | `boolean` | — |
 | `lines` | Log lines JSON string (attribute channel) | `string[]` | `[]` |
@@ -274,5 +322,6 @@ When history lines are prepended, the reconcile aligns rows by content key: exis
 | Event | Description |
 | --- | --- |
 | `oas-require-more` | Fired once when scrolling enters the top/bottom threshold edge (not repeatedly while staying, re-arms after leaving), `detail: { from: "top" \| "bottom" }`; for loading history/new entries |
+| `oas-search` | Search filter report: fired when the keyword or the data changes (deduped for identical state), `detail: { keyword, matched, total }` (matched = matching line count, total = total lines; the filter window is the currently loaded lines) |
 
 Parts: `::part(viewport)` scroll viewport, `::part(log)` log content, `::part(row)` a single row, `::part(line-number)` line number, `::part(line)` line text, `::part(empty)` empty state.
