@@ -6,6 +6,10 @@
 
 ### 特性
 
+- **watermark 渲染引擎转 canvas**：SVG data-uri → canvas 绘制（特性检测，无 canvas 环境自动回退 SVG 路径），DPR 高清处理防模糊；文字多行/旋转/间隙/偏移/字体/尺寸全量迁移、错位排布/移动拖拽/防篡改机制无损；主题切换自动重绘；**新增 `grayscale` 图片灰阶滤镜**（跨域/加载失败回退原图）
+- **watermark 全屏水印**：`fullscreen` 属性——fixed 铺满视口、不拦截交互、滚动不随，`z-index` 属性可覆盖默认最高层级
+- **log 搜索过滤**：`keyword` 属性非空时只显示命中行（大小写不敏感），命中片段高亮（warning 语义底色），派发 `oas-search`（detail `{ keyword, matched, total }`）；过滤不改宿主数据、行号与级别着色按原始索引不错位；空命中显示无匹配空态
+- **gradient-text 文字描边**：`stroke` 描边宽度 + `stroke-color` 描边颜色（缺省语义色亮暗自适应）——渐变与描边共存（渐变填充覆盖内圈、描边透出外圈），支持 `background-clip` 的浏览器生效、其余回退普通前景色+描边
 - **tree 节点重命名**：`can-rename` 总开关（节点数据可加 `renamable: false` 细粒度排除）；双击节点 label 或选中后按 F2 进入内联编辑，Enter/失焦提交、Esc 取消还原；提交派发 `oas-node-rename`（detail `{ key, label, oldLabel }`），宿主受控回写数据；编辑草稿跨树重建保持、虚拟滚动行内可编辑、编辑期方向键归输入框不干扰树键盘导航
 - **tree 展开/收起过渡动画**：`motion` 开关（默认关）——展开新增子行从 0 高平滑生长到自然行高、收起先收缩离场再移除；时长/缓动走 `--oas-transition-*` token；虚拟滚动模式降级淡入；`prefers-reduced-motion` 自动停用
 - **list 分组吸顶**：`data` 项支持 `group`（同组连续项归一段，自动插入组头）与 `groupLabel`（组头文案，缺省回落 `group`）；普通渲染模式下组头在列表滚动容器内吸顶（`position: sticky`，下一组头到顶顶走上一组头）；虚拟滚动模式自动回退全量渲染、组头不吸顶
