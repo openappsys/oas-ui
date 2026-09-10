@@ -2,6 +2,8 @@
 
 A container-level watermark layer that sits on top of the content without intercepting any interaction, suitable for preventing sensitive information from leaking.
 
+Rendering engine: text and grayscale image watermarks are drawn on a canvas (the tile is tiled via `toDataURL` as a background), scaled by devicePixelRatio so they stay sharp on high-DPI screens; SSR and canvas-less environments automatically fall back to an SVG data-uri (`fill=currentColor` follows the theme). Both paths render an identical structure, and true hydration takes over after validating it. Tiles are cached by paint parameters and repainted only when a relevant attribute or the theme color changes; window resize is handled natively by background tiling.
+
 ## Text Watermark
 
 <DemoBlock title="Basic text watermark">
@@ -39,6 +41,17 @@ A container-level watermark layer that sits on top of the content without interc
   </oas-watermark>
 </DemoBlock>
 
+## Image Grayscale
+
+<DemoBlock title="grayscale: grayscale image filter">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--oas-space-4); width: 100%">
+    <oas-watermark id="wm-img-color" image="https://picsum.photos/seed/isui-watermark/160/160" opacity="0.35" repeat style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
+    <oas-watermark id="wm-img-gray" image="https://picsum.photos/seed/isui-watermark/160/160" opacity="0.35" repeat grayscale style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
+  </div>
+</DemoBlock>
+
+With `grayscale`, the image watermark is converted to grayscale via canvas `filter: grayscale(1)` (cross-origin images require CORS headers from the origin, otherwise it falls back to the original image); canvas-less environments fall back to a layer CSS filter, so the capability is never lost.
+
 ## No Interaction Interception
 
 <DemoBlock title="Normal content interaction">
@@ -71,7 +84,7 @@ When the container has no slot content at all, the watermark layer still renders
   </div>
 </DemoBlock>
 
-`text` supports a JSON array (or `\n`) for multiple lines; `rotate` controls the angle (default -30); `font-size` / `font-weight` / `font-family` are applied to the SVG text; `color` accepts 11 preset names (resolved to `--oas-preset-*` tokens, dark-adaptive) or any CSS color value. By default the watermark follows the theme text color (visible in dark mode too).
+`text` supports a JSON array (or `\n`) for multiple lines; `rotate` controls the angle (default -30); `font-size` / `font-weight` / `font-family` are applied to the canvas text; `color` accepts 11 preset names (resolved to `--oas-preset-*` tokens, dark-adaptive) or any CSS color value. By default the watermark follows the theme text color (visible in dark mode too, and repainted automatically on theme switch).
 
 ## Gap and Offset
 
@@ -125,6 +138,17 @@ With `staggered`, a second background layer offset by half a tile staggers the o
 
 With `movable`, the watermark layer takes over pointer input (grab/grabbing cursor) and writes the drag displacement to the `offset` attribute — a controlled channel, so the position survives re-renders. Note that in this mode the watermark layer intercepts interactions over the area it covers.
 
+## Fullscreen Watermark
+
+<DemoBlock title="fullscreen: a watermark covering the whole viewport">
+  <oas-button id="wm-fullscreen-toggle" size="small">Enable fullscreen watermark</oas-button>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    Click the button to enable a fullscreen watermark: the host becomes fixed and covers the viewport, stays put while the page scrolls, and intercepts no interaction; click again to turn it off.
+  </p>
+</DemoBlock>
+
+With `fullscreen`, the component itself becomes `position: fixed; inset: 0` covering the viewport (`pointer-events: none`) — no wrapper needed; it defaults to the topmost z-index, adjustable via the `z-index` attribute or the `--oas-watermark-fullscreen-z-index` CSS variable. It composes with `repeat` / `staggered` / `movable` / `grayscale`; without `fullscreen`, container mode behaves exactly as before. Note: slotted content is not laid out or interactive in fullscreen mode.
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -151,6 +175,22 @@ onMounted(async () => {
     if (layer) layer.remove()
     log.textContent = 'tamper-proof="false": the layer is gone for good (reload the page to restore)'
   })
+  // Fullscreen watermark toggle (the demo element is appended to body so it never stretches the docs layout)
+  const full = document.createElement('oas-watermark')
+  full.id = 'wm-fullscreen-demo'
+  full.setAttribute('text', '全屏水印 · FULLSCREEN')
+  full.setAttribute('repeat', '')
+  document.body.appendChild(full)
+  const toggle = document.querySelector('#wm-fullscreen-toggle')
+  toggle?.addEventListener('click', () => {
+    if (full.hasAttribute('fullscreen')) {
+      full.removeAttribute('fullscreen')
+      toggle.textContent = 'Enable fullscreen watermark'
+    } else {
+      full.setAttribute('fullscreen', '')
+      toggle.textContent = 'Disable fullscreen watermark'
+    }
+  })
 })
 </script>
 
@@ -164,7 +204,9 @@ onMounted(async () => {
 | `font-family` | Font family (default sans-serif) | `string` | `sans-serif` |
 | `font-size` | Font size in px (default 16) | `string` | `16` |
 | `font-weight` | Font weight (default 400) | `string` | `400` |
+| `fullscreen` | Fullscreen watermark: the host becomes fixed inset:0 covering the viewport (pointer-events:none) at the topmost z-index by default (adjustable via the z-index attribute or --oas-watermark-fullscreen-z-index); stays put while scrolling | `boolean` | — |
 | `gap` | Tile gap in px or JSON `[x,y]` (single value applies to both) | `string` | — |
+| `grayscale` | Grayscale filter for image watermarks (canvas filter: grayscale(1)); falls back to a layer CSS filter without canvas | `boolean` | — |
 | `height` | Tile height in px (default 120) | `string` | `120` |
 | `image` | Image watermark URL (takes precedence over `text` when present) | `string` | — |
 | `movable` | Draggable watermark (drag delta writes back to the `offset` attribute) | `boolean` | — |
@@ -176,7 +218,7 @@ onMounted(async () => {
 | `tamper-proof` | Tamper protection (default true): a MutationObserver re-mounts the layer when it is removed/modified and fires `oas-remove`; `"false"` disables it | `string` | `true` |
 | `text` | Text watermark content (either `text` or `image`) | `string` | — |
 | `width` | Tile width in px (default 240) | `string` | `240` |
-| `z-index` | Watermark layer z-index (default 2) | `string` | `2` |
+| `z-index` | Watermark layer z-index (default 2); in fullscreen mode it is written to the host, overriding the default topmost level | `string` | — |
 
 ### Events
 

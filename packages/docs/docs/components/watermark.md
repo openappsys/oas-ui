@@ -2,6 +2,8 @@
 
 容器级水印层，铺在内容之上且不拦截任何交互，适合敏感信息防泄露。
 
+渲染引擎：文字/灰阶图片水印由 canvas 绘制平铺单元（`toDataURL` 作背景平铺），尺寸按 devicePixelRatio 放大，高分屏不模糊；SSR 与无 canvas 环境自动回退 SVG data-uri（`fill=currentColor` 跟随主题），两路径渲染结构一致，真水合校验后接管。tile 按绘制参数缓存，仅相关属性或主题色变化才重绘；窗口 resize 由背景平铺天然适配。
+
 ## 文字水印
 
 <DemoBlock title="基础文字水印">
@@ -39,6 +41,17 @@
   </oas-watermark>
 </DemoBlock>
 
+## 图片灰阶
+
+<DemoBlock title="grayscale：图片灰阶滤镜">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--oas-space-4); width: 100%">
+    <oas-watermark id="wm-img-color" image="https://picsum.photos/seed/isui-watermark/160/160" opacity="0.35" repeat style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
+    <oas-watermark id="wm-img-gray" image="https://picsum.photos/seed/isui-watermark/160/160" opacity="0.35" repeat grayscale style="height: 150px; border: 1px dashed var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-watermark>
+  </div>
+</DemoBlock>
+
+`grayscale` 存在时图片水印经 canvas `filter: grayscale(1)` 转为灰度（跨域图片需目标站放行 CORS，否则回退原图）；无 canvas 环境回退为图层 CSS filter，能力不丢。
+
 ## 不拦截交互
 
 <DemoBlock title="内容正常交互">
@@ -71,7 +84,7 @@
   </div>
 </DemoBlock>
 
-`text` 支持 JSON 数组（或 `\n`）多行；`rotate` 控制旋转角（默认 -30）；`width` / `height` 调单枚画布尺寸（默认 240×120）；`font-size` / `font-weight` / `font-family` 进 SVG 文字；`color` 支持 11 个预设色名（走 `--oas-preset-*` token，暗色自动适配）或任意 CSS 色值，缺省跟随主题文字色（暗色下同样可见）。
+`text` 支持 JSON 数组（或 `\n`）多行；`rotate` 控制旋转角（默认 -30）；`width` / `height` 调单枚画布尺寸（默认 240×120）；`font-size` / `font-weight` / `font-family` 进 canvas 文字；`color` 支持 11 个预设色名（走 `--oas-preset-*` token，暗色自动适配）或任意 CSS 色值，缺省跟随主题文字色（暗色下同样可见，主题切换自动重绘）。
 
 ## 间隙与偏移
 
@@ -125,6 +138,17 @@
 
 `movable` 存在时水印层接管指针（grab/grabbing 光标），拖拽把位移写入 `offset` 属性——受控通道更新，组件重绘后位置仍保留。注意：此时水印层会拦截其覆盖区域的交互。
 
+## 全屏水印
+
+<DemoBlock title="fullscreen：铺满视口的全屏水印">
+  <oas-button id="wm-fullscreen-toggle" size="small">开启全屏水印</oas-button>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    点击按钮开启全屏水印：宿主变为 fixed 铺满视口，页面滚动水印不动，不拦截任何交互；再次点击关闭。
+  </p>
+</DemoBlock>
+
+`fullscreen` 存在时组件自身 `position: fixed; inset: 0` 铺满视口（`pointer-events: none`），无需宿主包裹；默认最高层级，可用 `z-index` 属性或 `--oas-watermark-fullscreen-z-index` CSS 变量调整。与 `repeat` / `staggered` / `movable` / `grayscale` 均可组合；不设 `fullscreen` 时容器模式行为零变化。注意：全屏模式下 slot 内容不参与布局交互。
+
 <script setup>
 import { onMounted } from 'vue'
 onMounted(async () => {
@@ -150,6 +174,22 @@ onMounted(async () => {
     if (layer) layer.remove()
     log.textContent = 'tamper-proof="false"：水印层已删除且不会重挂（刷新页面恢复）'
   })
+  // 全屏水印开关（demo 元素挂在 body 末尾，避免撑开文档布局）
+  const full = document.createElement('oas-watermark')
+  full.id = 'wm-fullscreen-demo'
+  full.setAttribute('text', '全屏水印 · FULLSCREEN')
+  full.setAttribute('repeat', '')
+  document.body.appendChild(full)
+  const toggle = document.querySelector('#wm-fullscreen-toggle')
+  toggle?.addEventListener('click', () => {
+    if (full.hasAttribute('fullscreen')) {
+      full.removeAttribute('fullscreen')
+      toggle.textContent = '开启全屏水印'
+    } else {
+      full.setAttribute('fullscreen', '')
+      toggle.textContent = '关闭全屏水印'
+    }
+  })
 })
 </script>
 
@@ -163,7 +203,9 @@ onMounted(async () => {
 | `font-family` | 字体族（默认 sans-serif） | `string` | `sans-serif` |
 | `font-size` | 字号（px，默认 16） | `string` | `16` |
 | `font-weight` | 字重（默认 400） | `string` | `400` |
+| `fullscreen` | 全屏水印：宿主 fixed inset:0 铺满视口（pointer-events:none），默认最高层级（z-index 属性或 --oas-watermark-fullscreen-z-index 可调），页面滚动不动 | `boolean` | — |
 | `gap` | 平铺间隙（px 或 JSON `[x,y]`，单值双等） | `string` | — |
+| `grayscale` | 图片水印灰阶滤镜（canvas filter: grayscale(1)）；无 canvas 环境回退图层 CSS filter | `boolean` | — |
 | `height` | 单枚画布高度（px，默认 120） | `string` | `120` |
 | `image` | 图片水印 URL（存在时优先于 text） | `string` | — |
 | `movable` | 可拖拽移动水印（位移写回 `offset` 属性，受控保留） | `boolean` | — |
@@ -175,7 +217,7 @@ onMounted(async () => {
 | `tamper-proof` | 防篡改（默认 true）：MutationObserver 监测图层被删/被改自动重挂并派发 `oas-remove`；`"false"` 关闭 | `string` | `true` |
 | `text` | 文字水印内容（与 image 二选一） | `string` | — |
 | `width` | 单枚画布宽度（px，默认 240） | `string` | `240` |
-| `z-index` | 水印层叠层级（默认 2） | `string` | `2` |
+| `z-index` | 水印层叠层级（默认 2）；fullscreen 时写到宿主，覆盖默认最高层 | `string` | — |
 
 ### 事件
 
