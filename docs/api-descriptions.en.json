@@ -435,7 +435,9 @@
       "indicator-type": "Indicator type: `dot` (default) / `line` (widens when active)",
       "loop": "Loop around (default on; `\"false\"` stops at the edges and disables the corresponding arrow)",
       "pause-on-hover": "Pause autoplay on hover/focus (default true; `\"false\"` disables; always pauses when the page is hidden)",
-      "slides-per-view": "Slides per page (default 1; index is page-based, last page aligns to the track end)"
+      "pause-button": "Show an explicit pause/play button (default off; click toggles autoplay pause/resume and takes priority over hover pausing; clicking play while autoplay is off enables it)",
+      "slides-per-view": "Slides per page (default 1; index is page-based, last page aligns to the track end)",
+      "type": "Carousel layout type: `\"card\"` enables card mode — the current card is centered as the main body with neighboring cards peeking on both sides (scaled down, dimmed); clicking a neighbor card switches to it directly; mutually exclusive with `slides-per-view`/`effect`/`direction` (card mode wins); card width/gap/neighbor scale via `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale`"
     },
     "events": {
       "oas-change": "Current screen changed, `detail: { index }`"
