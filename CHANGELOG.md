@@ -6,6 +6,7 @@
 
 ### 特性
 
+- **image-group（新组件）**：容器收集式图集——把多个 `<oas-image>` 放进 `<oas-image-group>` 自动收集为共享图集，点击任一图片从该张起打开共享预览（prev/next 整组翻页、页码指示、缩放/旋转/翻转/下载全套）；子图动态增删自动同步；`current` 可选受控 + `oas-change`（detail `{ current, prev }`）
 - **carousel 卡片模式**：`type="card"`——当前卡居中占主体（卡宽/卡间距/邻卡缩放走 CSS 变量），左右邻卡部分露出并缩小降透明，点击任一邻卡直接切换；与 slides-per-view/fade/vertical 互斥（卡片模式优先），箭头/指示器/自动播放/拖拽/循环全组合；非循环模式首尾屏贴边不悬空
 - **carousel 显式暂停按钮**：`pause-button`——自动播放的显式 pause/play 控件（显式暂停优先级最高，暂停后移开鼠标也不自动继续；未开自动播放时点击即开启）；`aria-pressed` 与文案随暂停态同步
 - **countdown 正计时**：`type="countup"` + `start`（毫秒起点，默认 0）——从起点往上递增计时、无终止点；`active` 暂停/恢复（冻结真值、恢复续走不重置），`reset()` 归零重新开始；走时变化复用 `oas-change`（detail.value 为已计时毫秒）
