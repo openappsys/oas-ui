@@ -1216,12 +1216,24 @@
       "oas-preview": "打开预览浮层，`detail: { src }`；浮层关闭不派发事件",
       "oas-load": "图片加载成功，`detail: { src }`",
       "oas-error": "图片最终失败（回退链耗尽），`detail: { src }`",
-      "oas-preview-change": "预览开合变化，`detail: { open }`"
+      "oas-preview-change": "预览开合变化，`detail: { open }`",
+      "oas-preview-nav": "图集翻页/跳转，`detail: { index, src }`；供 oas-image-group 容器接管索引"
     },
     "slots": {
       "template[slot=\"placeholder\"]": "自定义加载占位内容（缺省为浅灰占位 + 文案）",
       "template[slot=\"error\"]": "自定义失败占位内容（主图与图集预览失败位复用）"
     }
+  },
+  "oas-image-group": {
+    "attrs": {
+      "current": "当前图集索引（可选受控）：属性在场时受控——点击按 current 起开、内部翻页反射回该属性、外部改属性驱动预览跳图；缺席时不造属性，仅派发 oas-change",
+      "infinite": "翻页首尾循环（透传共享预览宿主）"
+    },
+    "events": {
+      "oas-preview": "打开共享预览浮层，`detail: { src }`（src 为当前张地址）",
+      "oas-change": "图集切换，`detail: { current, prev }`"
+    },
+    "slots": {}
   },
   "oas-input": {
     "attrs": {
