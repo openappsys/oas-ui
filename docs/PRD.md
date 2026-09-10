@@ -1081,7 +1081,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **countdown**：SSS 毫秒 token/active 受控暂停/reset()/oas-change 节流/prefix·suffix·title 双通道
 - **number-animation**：from 起始值/active 受控 + play()/easing 五档/group-separator（Intl 缓存）
 - **qrcode**：纠错 L/M/Q/H 全实现（v1-40，修静默降级）/icon 中心 logo/color·bg-color·margin/status 状态机（expired/loading/scanned + oas-refresh + slot=status）/download() 离屏栅格化（SVG-only 渲染不变）
-- **ellipsis**：expand-text/collapse-text/受控 expanded（内部 toggle 反射 + oas-expand/oas-collapse）/oas-overflow/tooltip-placement/行内展开形态（shadow 镜像二分截断）
+- **ellipsis**：expand-text/collapse-text/受控 expanded（内部 toggle 反射 + oas-expand/oas-collapse）/oas-overflow/tooltip-placement/行内展开形态（shadow 镜像二分截断）/多行 direction（middle/start 镜像测量截断，无布局环境兜底全显）/suffix 保留后缀（tail 方向预留后缀宽度）/expand-trigger="click" 点文本展开（role=button + Enter/Space，无按钮形态）/lines（rows 同义别名，lines 优先）
 - **virtual-list**：scrollToIndex(index, {align, smooth}) 公共方法（start/center/end/auto）+ viewportFocusable property；tree 三处 shadow 内部耦合迁移到公共契约
 
 ### 验收标准（已达成）
