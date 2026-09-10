@@ -20,7 +20,7 @@
   </div>
 </DemoBlock>
 
-`rows="2"` 起走 `-webkit-line-clamp`，多行省略时 tooltip 展示全文。
+`rows="2"` 起走 `-webkit-line-clamp`，多行省略时 tooltip 展示全文。`lines` 与 `rows` 等价（同义别名，两者同时存在时 `lines` 优先），新代码建议用 `lines`。
 
 ## 展开 / 收起
 
@@ -109,7 +109,43 @@ onMounted(() => {
   哈希/交易 ID 场景：首尾保留可辨认，中部以省略号压缩；悬停可查看完整内容。
 </DemoBlock>
 
-`direction` 取值：`tail`（默认，尾部省略）/ `start`（头部省略）/ `middle`（中部省略，仅单行生效，`rows`≥2 时忽略）。
+`direction` 取值：`tail`（默认，尾部省略）/ `start`（头部省略）/ `middle`（中部省略，保留首尾）。多行（`rows`/`lines`≥2）下 `middle` / `start` 同样生效：组件在 shadow 内以同宽度镜像容器测量文本折行，按行数二分截断——首行保头、末行保尾（`middle`），或省略头部保留尾部（`start`）；测量不可用的环境自动回退为全显。
+
+## 多行省略方向
+
+<DemoBlock title="middle：多行保留首尾">
+  <div style="width: 100%; max-width: 520px">
+    <oas-ellipsis rows="3" direction="middle" text="这是一段用于演示多行中部省略的长文本：在限制三行高度的容器里，第一行保留开头、最后一行保留结尾，中间以省略号衔接，哈希值、长 ID 与文件路径在多行场景下也能首尾可辨认，悬停可查看完整内容；宽度变化时组件会通过 ResizeObserver 自动重新测量并校正截断位置，适用于交易流水号、日志追踪 ID 等必须首尾对照才能辨认的字符串。"></oas-ellipsis>
+  </div>
+  多行 middle：首行保头、末行保尾，中部省略号衔接。
+</DemoBlock>
+
+<DemoBlock title="start：多行省略头部，保留尾部">
+  <div style="width: 100%; max-width: 520px">
+    <oas-ellipsis rows="2" direction="start" text="/usr/local/lib/node_modules/@oas-ui/ui/dist/data/ellipsis/oas-ellipsis.d.ts.map 是一个用于长文本自动省略的组件实现文件路径示例，配合 direction=start 与 rows=2 展示多行场景下省略头部、完整保留末尾路径的效果，宽度变化时自动重新测量。"></oas-ellipsis>
+  </div>
+  多行 start：省略头部，末尾路径完整保留。
+</DemoBlock>
+
+## 保留后缀（suffix）
+
+<DemoBlock title="suffix：省略时保留扩展名">
+  <div style="width: 100%; max-width: 520px">
+    <oas-ellipsis suffix=".pdf" text="2026 年度组件库工程化实践报告——从 monorepo 治理、依赖升级、构建提速到发布回滚的完整路线图与复盘清单（最终修订版）.pdf"></oas-ellipsis>
+  </div>
+</DemoBlock>
+
+`suffix` 指定一个必须保留在省略结果末尾的后缀（如扩展名、邮箱域名）：tail 方向截断时预留后缀宽度，得到「正文…后缀」的效果。`middle` / `start` 方向自身已保留尾部，不叠加 suffix。
+
+## 点文本展开（expand-trigger）
+
+<DemoBlock title="expand-trigger=click：点击文本展开">
+  <div style="width: 100%; max-width: 520px">
+    <oas-ellipsis rows="2" expandable expand-trigger="click" text="这是一段点文本展开的演示：省略态下直接点击文本本体即可展开查看全文，展开后再次点击收起，没有独立的展开按钮；展开与收起都会同步 aria-expanded 状态并派发对应事件，供宿主框架做无障碍标注与状态回读。省略态文本带 role=button 与 tabindex，Enter / Space 键盘触发等价点击。"></oas-ellipsis>
+  </div>
+</DemoBlock>
+
+`expand-trigger="click"`（需配合 `expandable`）：省略态文本本体即展开入口（无独立按钮形态），展开后恢复完整文本、再点收起；省略态文本具备 `role="button"` / `tabindex="0"` / `aria-expanded` 同步，键盘 Enter / Space 等价点击。缺省为按钮 / 链接形态（不变）。
 
 ## tooltip 位置（tooltip-placement）
 
@@ -143,11 +179,14 @@ onMounted(() => {
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
 | `collapse-text` | 收起链接文案（行内形态，配合 expandable） | — | — |
-| `direction` | 省略方向：`end`（默认尾部）/ `start`（头部）/ `middle`（中部保留首尾，长路径/哈希场景） | `string` | `tail` |
+| `direction` | 省略方向：`tail`（默认尾部）/ `start`（头部省略保留尾部）/ `middle`（中部省略保留首尾，长路径/哈希场景）；多行（lines/rows≥2）下 middle/start 走镜像测量截断 | `string` | `tail` |
 | `expand-text` | 展开链接文案（行内形态，配合 expandable） | — | — |
+| `expand-trigger` | 展开触发形态：`click` 时省略态文本本体可点击展开/收起（配合 expandable，带 role=button 键盘可达）；缺省为按钮/链接形态 | — | — |
 | `expandable` | 溢出时显示「展开/收起」按钮 | `boolean` | — |
 | `expanded` | 受控展开态（属性在场受控；内部切换会反射回该属性） | `boolean` | — |
+| `lines` | 显示行数，与 `rows` 等价（同义别名，同时存在时 lines 优先；1 为单行，≥2 多行省略） | — | — |
 | `rows` | 显示行数（1 为单行省略，≥2 多行 `-webkit-line-clamp`） | `string` | `1` |
+| `suffix` | 省略时保留的尾后缀（如 `.pdf`），仅 tail 方向生效；middle/start 已保尾，不叠加 | — | — |
 | `text` | 文本内容 | `string` | — |
 | `tooltip` | 溢出时悬停展示全文 tooltip | `string` | `true` |
 | `tooltip-placement` | 省略提示浮层位置（透传定位引擎，默认 `top`） | `string` | `top` |
