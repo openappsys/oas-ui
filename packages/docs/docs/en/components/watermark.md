@@ -96,7 +96,7 @@ When the container has no slot content at all, the watermark layer still renders
   </div>
 </DemoBlock>
 
-`gap="[x,y]"` controls the tile spacing (defaults to the tile size 240×120) and `offset="[x,y]"` controls the starting offset (defaults to gap/2); `width` / `height` resize the text tile, and `z-index` raises the watermark layer (default 2).
+`gap="[x,y]"` controls the tile spacing (defaults to the tile size) and `offset="[x,y]"` controls the starting offset (defaults to gap/2); `width` / `height` resize the text tile (**auto-fit to content when unset**: rotated bounding box + padding, so every tile fully contains the text at default density), and `z-index` raises the watermark layer (default 2).
 
 ## Staggered Layout
 
@@ -205,9 +205,9 @@ onMounted(async () => {
 | `font-size` | Font size in px (default 16) | `string` | `16` |
 | `font-weight` | Font weight (default 400) | `string` | `400` |
 | `fullscreen` | Fullscreen watermark: the host becomes fixed inset:0 covering the viewport (pointer-events:none) at the topmost z-index by default (adjustable via the z-index attribute or --oas-watermark-fullscreen-z-index); stays put while scrolling | `boolean` | — |
-| `gap` | Tile gap in px or JSON `[x,y]` (single value applies to both) | `string` | — |
+| `gap` | Tiling gap JSON [x,y] (defaults to tile size) | `string` | — |
 | `grayscale` | Grayscale filter for image watermarks (canvas filter: grayscale(1)); falls back to a layer CSS filter without canvas | `boolean` | — |
-| `height` | Tile height in px (default 120) | `string` | `120` |
+| `height` | Text tile height (auto-fits content when unset; image default 120) | `string` | — |
 | `image` | Image watermark URL (takes precedence over `text` when present) | `string` | — |
 | `movable` | Draggable watermark (drag delta writes back to the `offset` attribute) | `boolean` | — |
 | `offset` | Tiling start offset in px or JSON `[x,y]` (default gap/2, visually identical to the old centered mode) | `string` | — |
@@ -217,7 +217,7 @@ onMounted(async () => {
 | `staggered` | Staggered layout (two-layer background, second layer offset by offset + gap/2; tiling mode only) | `boolean` | — |
 | `tamper-proof` | Tamper protection (default true): a MutationObserver re-mounts the layer when it is removed/modified and fires `oas-remove`; `"false"` disables it | `string` | `true` |
 | `text` | Text watermark content (either `text` or `image`) | `string` | — |
-| `width` | Tile width in px (default 240) | `string` | `240` |
+| `width` | Text tile width (auto-fits content when unset: rotated bounding box + padding; image default 240) | `string` | — |
 | `z-index` | Watermark layer z-index (default 2); in fullscreen mode it is written to the host, overriding the default topmost level | `string` | — |
 
 ### Events

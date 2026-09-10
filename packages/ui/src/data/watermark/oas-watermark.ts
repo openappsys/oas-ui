@@ -134,6 +134,45 @@ function normalizeNumber(raw: string, fallback: number, min?: number): number {
   return n
 }
 
+/** 文本行宽启发式估算（CJK/全角按 1em，其余按 0.55em）——SSR/无 canvas 环境的 tile 自适应用 */
+export function estimateLineWidth(line: string, fontSize: number): number {
+  // CJK 统一表意/兼容/全角/中文标点等宽字形按 1em；其余按 0.55em 近似
+  const wide = /[⺀-鿿豈-﫿＀-￼　-〿]/
+  let w = 0
+  for (const ch of line) {
+    w += wide.test(ch) ? fontSize : fontSize * 0.55
+  }
+  return w
+}
+
+/**
+ * tile 尺寸自适应（width/height 未显式设置时）：按文字旋转后的外接框 + 内边距计算，
+ * 使默认密度下每个 tile 完整容纳文字——固定 240×120 大 tile 在窄容器里会让文字中心
+ * 落到容器外（边缘 tile 只剩空白衬边，水印残缺不可辨）。
+ */
+export function resolveTileSize(
+  text: string,
+  options: { fontSize?: number; rotate?: number; width?: number; height?: number } = {},
+): { width: number; height: number } {
+  const fontSize = options.fontSize ?? 16
+  const rotate = options.rotate ?? -30
+  const lines = parseTextLines(text)
+  if (!lines.length) return { width: options.width ?? 240, height: options.height ?? 120 }
+  const lineHeight = fontSize * 1.4
+  const contentW = Math.max(...lines.map((l) => estimateLineWidth(l, fontSize)))
+  const contentH = lines.length * lineHeight
+  const rad = (Math.abs(rotate) * Math.PI) / 180
+  const rotW = contentW * Math.cos(rad) + contentH * Math.sin(rad)
+  const rotH = contentW * Math.sin(rad) + contentH * Math.cos(rad)
+  // 内边距即密度：padX/padY 决定相邻文字间距（越大越稀疏）
+  const padX = Math.max(fontSize * 2.5, 24)
+  const padY = Math.max(fontSize * 1.5, 16)
+  return {
+    width: options.width ?? Math.ceil(rotW + 2 * padX),
+    height: options.height ?? Math.ceil(rotH + 2 * padY),
+  }
+}
+
 /** color 属性解析（ui-spec §4.1）：预设名 → preset token；其余按 CSS 色值原样注入 */
 function resolveColor(raw: string): string {
   const value = raw.trim()
@@ -262,9 +301,11 @@ const TAMPER_OBSERVE: MutationObserverInit = {
  * - `opacity`：水印层透明度（0–1，夹取边界）
  * - `repeat`：布尔，存在时平铺；缺省单枚居中
  * - `rotate`：文字旋转角度（默认 -30）
- * - `gap`：平铺间隙 JSON `[x,y]`（默认 tile 尺寸 240×120）
+ * - `gap`：平铺间隙 JSON `[x,y]`（默认 tile 尺寸）
  * - `offset`：图案起始偏移 JSON `[x,y]`（默认 gap/2）
- * - `width` / `height`：文字 tile 尺寸（默认 240 / 120）
+ * - `width` / `height`：文字 tile 尺寸。未显式设置时按文字内容自适应
+ *   （旋转外接框 + 内边距，保证默认密度下 tile 完整容纳文字、边缘裁切后仍可读）；
+ *   图片水印缺省维持 240 / 120
  * - `font-size` / `font-weight` / `font-family`：文字水印字体
  * - `color`：水印颜色（11 预设名走 --oas-preset-* token 含 dark 变体，或任意 CSS 色值；
  *   缺省 currentColor → --oas-color-text-primary 跟随主题）
@@ -383,6 +424,22 @@ export class OASWatermark extends OASElement {
     })
   }
 
+  /** 生效 tile 尺寸（update 与 movable 起步计算共用）：显式 width/height 优先，文字水印未设置时按内容自适应 */
+  private effectiveTileSize(image: string, text: string): { width: number; height: number } {
+    const fontSize = normalizeNumber(this.getAttr('font-size', '16'), 16, 1)
+    const rotate = normalizeNumber(this.getAttr('rotate', '-30'), -30)
+    const widthAttr = this.getAttr('width', '')
+    const heightAttr = this.getAttr('height', '')
+    const autoSize =
+      !image && (!widthAttr || !heightAttr)
+        ? resolveTileSize(text, { fontSize, rotate })
+        : null
+    return {
+      width: widthAttr ? normalizeNumber(widthAttr, 240, 1) : (autoSize?.width ?? 240),
+      height: heightAttr ? normalizeNumber(heightAttr, 120, 1) : (autoSize?.height ?? 120),
+    }
+  }
+
   protected override update(): void {
     let layer = this.layer()
     if (!layer) {
@@ -400,8 +457,9 @@ export class OASWatermark extends OASElement {
     const grayscale = this.hasAttr('grayscale')
     const fullscreen = this.hasAttr('fullscreen')
     const zIndex = normalizeNumber(this.getAttr('z-index', '2'), 2)
-    const width = normalizeNumber(this.getAttr('width', '240'), 240, 1)
-    const height = normalizeNumber(this.getAttr('height', '120'), 120, 1)
+    const fontSize = normalizeNumber(this.getAttr('font-size', '16'), 16, 1)
+    const rotate = normalizeNumber(this.getAttr('rotate', '-30'), -30)
+    const { width, height } = this.effectiveTileSize(image, text)
     const color = resolveColor(this.getAttr('color', ''))
 
     layer.classList.toggle('single', !repeat)
@@ -429,8 +487,8 @@ export class OASWatermark extends OASElement {
       bg = this.textBackground(text, {
         width,
         height,
-        rotate: normalizeNumber(this.getAttr('rotate', '-30'), -30),
-        fontSize: normalizeNumber(this.getAttr('font-size', '16'), 16, 1),
+        rotate,
+        fontSize,
         fontWeight: this.getAttr('font-weight', '400'),
         fontFamily: this.getAttr('font-family', 'sans-serif'),
       }, color, layer)
@@ -607,8 +665,7 @@ export class OASWatermark extends OASElement {
     const layer = this.layer()
     if (!layer || !e.composedPath().includes(layer)) return
     e.preventDefault()
-    const width = normalizeNumber(this.getAttr('width', '240'), 240, 1)
-    const height = normalizeNumber(this.getAttr('height', '120'), 120, 1)
+    const { width, height } = this.effectiveTileSize(this.getAttr('image', ''), this.getAttr('text', ''))
     const gap = parseNumberPair(this.getAttr('gap', '')) ?? [width, height]
     const offset = parseNumberPair(this.getAttr('offset', '')) ?? [gap[0] / 2, gap[1] / 2]
     this.dragStart = { x: e.clientX, y: e.clientY, ox: offset[0], oy: offset[1] }
