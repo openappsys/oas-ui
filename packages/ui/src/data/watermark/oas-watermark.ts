@@ -10,6 +10,11 @@ const STYLE = `
 :host([hidden]) {
   display: none;
 }
+/* 空容器兜底：无 slot 内容时宿主在 flex 容器内宽度塌缩为 0（图层 inset:0 随之 0 宽、
+   水印不可见）——空态水印的语义即「空白区域满铺」，空宿主默认撑满容器宽 */
+:host(:empty) {
+  width: 100%;
+}
 /* fullscreen：宿主 fixed 铺满视口，不拦截任何交互；默认最高层级，可用
    z-index 属性或 --oas-watermark-fullscreen-z-index 变量调整 */
 :host([fullscreen]) {
