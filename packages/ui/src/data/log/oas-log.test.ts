@@ -275,4 +275,98 @@ describe('OASLog', () => {
     el.scrollTo('middle' as unknown as number)
     expect(vp.scrollTop).toBe(120)
   })
+
+  it('keyword 非空时只显示命中行（大小写不敏感），移除恢复全部', () => {
+    const el = mount(['ERROR 启动失败', 'INFO 一切正常', 'error 又失败了', 'DEBUG 忽略我'])
+    el.setAttribute('keyword', 'error')
+    expect(rows(el).length).toBe(2)
+    expect(rows(el)[0]!.textContent).toContain('ERROR 启动失败')
+    expect(rows(el)[1]!.textContent).toContain('error 又失败了')
+    // 纯空白 keyword 视为不过滤
+    el.setAttribute('keyword', '   ')
+    expect(rows(el).length).toBe(4)
+    el.setAttribute('keyword', 'error')
+    el.removeAttribute('keyword')
+    expect(rows(el).length).toBe(4)
+  })
+
+  it('keyword 命中片段包 mark，与 highlight 通道叠加、levels 按原始索引保留', () => {
+    const el = mount(['ERROR 连接 timeout', 'INFO 一切正常', 'WARN 再次 timeout'])
+    el.setAttribute('levels', '["error","info","warning"]')
+    el.setAttribute('highlight', '["ERROR"]')
+    el.setAttribute('keyword', 'timeout')
+    const rs = rows(el)
+    expect(rs.length).toBe(2)
+    // 命中行同时有 highlight 通道的 mark 与 keyword 的 mark
+    expect(rs[0]!.querySelectorAll('.mark').length).toBe(2)
+    expect(rs[0]!.querySelector('[part="line"]')!.textContent).toContain('ERROR 连接 timeout')
+    // levels 按原始 data 索引对齐：第 0 行 error、第 2 行 warning
+    expect(rs[0]!.getAttribute('data-level')).toBe('error')
+    expect(rs[1]!.getAttribute('data-level')).toBe('warning')
+    // 无 keyword 时 highlight/levels 行为不变
+    el.removeAttribute('keyword')
+    expect(rows(el).length).toBe(3)
+  })
+
+  it('keyword 过滤后行号显示原始 data 行号', () => {
+    const el = mount(['aaa', 'bbb keyword', 'ccc', 'ddd keyword'])
+    el.setAttribute('line-number', '')
+    el.setAttribute('keyword', 'keyword')
+    const gutters = Array.from(el.shadowRoot!.querySelectorAll('.gutter')).map(
+      (g) => g.textContent,
+    )
+    expect(gutters).toEqual(['2', '4'])
+  })
+
+  it('keyword 无命中显示「无匹配」空态（locale），数据本空仍显示空态文案', () => {
+    const el = mount(['INFO 一切正常'])
+    el.setAttribute('keyword', '不存在的关键字')
+    expect(el.shadowRoot!.querySelector('[part="empty"]')!.hasAttribute('hidden')).toBe(false)
+    expect(el.shadowRoot!.textContent).toContain('无匹配日志')
+    setLocale(en)
+    el.setAttribute('keyword', '另一个不存在')
+    expect(el.shadowRoot!.textContent).toContain('No matching logs')
+    setLocale('zh-CN')
+    // 数据本空 + keyword：仍显示常规空态文案
+    const empty = mount()
+    empty.setAttribute('keyword', 'x')
+    expect(empty.shadowRoot!.textContent).toContain('暂无日志')
+  })
+
+  it('oas-search：keyword 变化/数据变化时派发 detail { keyword, matched, total }', () => {
+    const el = mount(['ERROR a', 'INFO b', 'ERROR c'])
+    const spy = vi.fn()
+    el.addEventListener('oas-search', spy)
+    el.setAttribute('keyword', 'error')
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect((spy.mock.calls[0]![0] as CustomEvent).detail).toEqual({
+      keyword: 'error',
+      matched: 2,
+      total: 3,
+    })
+    // 数据变化重新派发（过滤范围 = 当前已加载行）
+    el.lines = ['ERROR a', 'INFO b', 'ERROR c', 'ERROR d']
+    expect(spy).toHaveBeenCalledTimes(2)
+    expect((spy.mock.calls[1]![0] as CustomEvent).detail).toEqual({
+      keyword: 'error',
+      matched: 3,
+      total: 4,
+    })
+    // 清空 keyword：matched 恢复为全部
+    el.removeAttribute('keyword')
+    expect(spy).toHaveBeenCalledTimes(3)
+    expect((spy.mock.calls[2]![0] as CustomEvent).detail).toEqual({
+      keyword: '',
+      matched: 4,
+      total: 4,
+    })
+  })
+
+  it('keyword 过滤不改动宿主数据（lines 只读快照不变）', () => {
+    const el = mount(['ERROR a', 'INFO b'])
+    el.setAttribute('keyword', 'error')
+    expect(el.lines).toEqual(['ERROR a', 'INFO b'])
+    el.removeAttribute('keyword')
+    expect(el.lines).toEqual(['ERROR a', 'INFO b'])
+  })
 })

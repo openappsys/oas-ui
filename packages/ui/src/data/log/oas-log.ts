@@ -165,10 +165,15 @@ function escapeRegExp(s: string): string {
  * - `levels`：JSON 字符串数组，与 lines 按索引对齐的行级别
  *   （info/success/warning/error，含 warn/fatal 等别名），映射 token 语义色
  * - `highlight`：JSON 高亮条目数组（字面关键词字符串，或 { text } / { pattern, flags } 对象）
+ * - `keyword`：搜索过滤关键字（大小写不敏感）。非空时只显示命中行，命中片段包 mark
+ *   （与 highlight 通道同一视觉体系）；清空/移除恢复全部行。过滤不改宿主数据，
+ *   行号与 levels 仍按原始 data 索引对齐
  *
  * 事件：
  * - `oas-require-more`：滚动进入顶部/底部阈值区时派发（detail `{ from: 'top' | 'bottom' }`），
  *   边缘触发——停留在区域内不连发，离开区域后复位
+ * - `oas-search`：keyword 或数据变化时派发（detail `{ keyword, matched, total }`，
+ *   matched=当前命中行数、total=总行数；过滤窗口为当前已加载行）
  *
  * 方法：
  * - `scrollTo('top' | 'bottom' | number)`：滚动视口到顶/底/指定像素位置
@@ -189,6 +194,7 @@ export class OASLog extends OASElement {
       'offset-bottom',
       'levels',
       'highlight',
+      'keyword',
     ]
   }
 
@@ -207,6 +213,12 @@ export class OASLog extends OASElement {
   private programmaticScroll = false
   /** 上次 reconcile 已应用的高亮/级别通道签名，变化时重刷已有行 */
   private contentSig = ''
+  /** 渲染窗口：keyword 非空时为命中行子集（过滤视图），否则与 data 一致 */
+  private view: string[] = []
+  /** 视口行索引 → data 索引映射：过滤后行号/levels 仍对齐原始数据 */
+  private viewMap: number[] = []
+  /** 上次 oas-search 派发的搜索签名（keyword + 数据内容）：变化才重复派发 */
+  private searchSig = ''
 
   get lines(): string[] {
     return this.data.slice()
@@ -289,11 +301,13 @@ export class OASLog extends OASElement {
 
   protected override update(): void {
     this.parseLines()
+    this.computeView()
     // 在改动 DOM 前记录停靠状态与高度：追加/插入后 scrollHeight 已变大，事后无法判断原状态
     const wasStuck = this.stickToBottom
     const prevHeight = this.viewport?.scrollHeight ?? 0
     const prepended = this.reconcileRows()
     this.syncEmpty()
+    this.syncSearch()
     this.syncLineNumber()
     this.syncLoading()
     const vp = this.viewport
@@ -332,17 +346,47 @@ export class OASLog extends OASElement {
     }
   }
 
+  /** 当前搜索关键字（trim 后；空串 = 不过滤） */
+  private keywordOf(): string {
+    return this.getAttr('keyword', '').trim()
+  }
+
+  /**
+   * 计算渲染窗口：keyword 非空时过滤为命中行子集（大小写不敏感），否则全量。
+   * 仅影响渲染，不改 this.data（宿主数据保持不变）；同时维护 viewMap 供
+   * 行号/levels 回溯原始索引。过滤窗口为当前已加载行，与分段加载兼容。
+   */
+  private computeView(): void {
+    const keyword = this.keywordOf()
+    this.view = []
+    this.viewMap = []
+    if (!keyword) {
+      this.view = this.data.slice()
+      this.viewMap = this.data.map((_, i) => i)
+      return
+    }
+    const re = new RegExp(escapeRegExp(keyword), 'i')
+    this.data.forEach((line, i) => {
+      if (re.test(line)) {
+        this.view.push(line)
+        this.viewMap.push(i)
+      }
+    })
+  }
+
   /**
    * key 对齐的增量 reconcile：以行内容为 key 求最长公共前缀/后缀，
    * 前缀行原样复用、中间差异行重建、后缀行复用并重排行号/级别/高亮。
    * 支持尾部追加（热路径零重建）、顶部插入历史行（审计上翻）、中间修改。
+   * reconcile 对象是过滤后的渲染窗口（this.view），keyword 变化等同一行内容
+   * 子序列的变化由公共前缀/后缀对齐天然复用节点。
    * @returns 是否发生了顶部插入（调用方据此补偿 scrollTop）
    */
   private reconcileRows(): boolean {
     const logEl = this.logEl
     if (!logEl) return false
-    const next = this.data
-    const rules = this.parseHighlight()
+    const next = this.view
+    const rules = this.contentRules()
     const rowEls = Array.from(logEl.children) as HTMLElement[]
     const prevCount = rowEls.length
     const oldTexts = rowEls.map((r) => r.querySelector('[part="line"]')?.textContent ?? '')
@@ -391,15 +435,16 @@ export class OASLog extends OASElement {
     return row
   }
 
-  /** 同步单行派生态：行号文本、级别语义色、高亮片段 */
+  /** 同步单行派生态：行号文本（原始 data 行号）、级别语义色、高亮片段 */
   private syncRowMeta(row: HTMLElement, index: number, rules: HighlightRule[]): void {
+    const dataIndex = this.viewMap[index] ?? index
     const gutter = row.querySelector<HTMLElement>('[part="line-number"]')
-    if (gutter) gutter.textContent = String(index + 1)
-    const level = this.levelOf(index)
+    if (gutter) gutter.textContent = String(dataIndex + 1)
+    const level = this.levelOf(dataIndex)
     if (level) row.setAttribute('data-level', level)
     else row.removeAttribute('data-level')
     const line = row.querySelector<HTMLElement>('[part="line"]')
-    if (line) this.fillLine(line, this.data[index] ?? '', rules)
+    if (line) this.fillLine(line, this.view[index] ?? '', rules)
   }
 
   /** 行内容填充：无高亮规则走 textContent；有规则拆分段落，命中片段包 mark（文本节点防注入） */
@@ -435,6 +480,14 @@ export class OASLog extends OASElement {
       cursor = end
     }
     if (cursor < text.length) lineEl.append(document.createTextNode(text.slice(cursor)))
+  }
+
+  /** 行内容规则：highlight 通道 + keyword 命中高亮（keyword 字面转义，大小写不敏感，同 mark 视觉体系） */
+  private contentRules(): HighlightRule[] {
+    const rules = this.parseHighlight()
+    const keyword = this.keywordOf()
+    if (keyword) rules.push(new RegExp(escapeRegExp(keyword), 'gi'))
+    return rules
   }
 
   /** 解析 highlight JSON：字符串条目按字面关键词，对象条目支持 text/pattern；非法条目/正则跳过 */
@@ -489,17 +542,32 @@ export class OASLog extends OASElement {
     }
   }
 
-  /** 高亮/级别通道签名：判定是否需要重刷已有行的派生态 */
+  /** 高亮/级别/搜索通道签名：判定是否需要重刷已有行的派生态 */
   private channelsSig(): string {
-    return `${this.getAttr('highlight', '')}|${this.getAttr('levels', '')}`
+    return `${this.getAttr('highlight', '')}|${this.getAttr('levels', '')}|${this.getAttr('keyword', '')}`
   }
 
   private syncEmpty(): void {
-    const isEmpty = this.data.length === 0
+    const keyword = this.keywordOf()
+    const isEmpty = this.view.length === 0
     if (this.logEl) this.logEl.hidden = isEmpty
     if (this.emptyEl) this.emptyEl.hidden = !isEmpty
     const text = this.shadow.querySelector<HTMLElement>('[part="empty-text"]')
-    if (text) text.textContent = this.getAttr('empty-text', this.t('log.empty'))
+    if (!text) return
+    // 数据非空但过滤无命中 → 「无匹配」空态；数据本空 → 常规空态文案
+    const noMatch = Boolean(keyword) && this.data.length > 0
+    text.textContent = noMatch
+      ? this.t('log.no-match')
+      : this.getAttr('empty-text', this.t('log.empty'))
+  }
+
+  /** 搜索过滤结果上报：keyword 或数据内容变化时派发（同状态去重，不连发） */
+  private syncSearch(): void {
+    const keyword = this.keywordOf()
+    const sig = `${keyword}\n${this.data.join('\n')}`
+    if (sig === this.searchSig) return
+    this.searchSig = sig
+    this.emit('search', { keyword, matched: this.view.length, total: this.data.length })
   }
 
   private syncLineNumber(): void {

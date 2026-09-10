@@ -1400,10 +1400,12 @@
       "levels": "行级别（JSON 数组，与 lines 索引对齐）：info/success/warning/error（warn/fatal 等别名归一），映射语义色 token",
       "loading": "加载态（视口浮层 + spinner + aria-busy）",
       "offset-bottom": "距底部多远视为触底（px，触发 `oas-require-more` 的 from=bottom，默认 0）",
-      "offset-top": "距顶部多远视为触顶（px，触发 `oas-require-more` 的 from=top，默认 0）"
+      "offset-top": "距顶部多远视为触顶（px，触发 `oas-require-more` 的 from=top，默认 0）",
+      "keyword": "搜索过滤关键字：非空时只显示命中行（大小写不敏感），命中片段包 mark 高亮（同 highlight 视觉体系）；行号/levels 按原始索引对齐，清空/移除恢复全部行，不改宿主 lines"
     },
     "events": {
-      "oas-require-more": "滚动进入顶部/底部阈值区边缘派发一次（停留不连发、离开复位），`detail: { from: \"top\" | \"bottom\" }`；宿主上翻拉历史/下拉拉新"
+      "oas-require-more": "滚动进入顶部/底部阈值区边缘派发一次（停留不连发、离开复位），`detail: { from: \"top\" | \"bottom\" }`；宿主上翻拉历史/下拉拉新",
+      "oas-search": "搜索过滤结果上报：keyword 或数据变化时派发（同状态去重），`detail: { keyword, matched, total }`（matched=命中行数、total=总行数，过滤窗口为当前已加载行）"
     },
     "slots": {}
   },
