@@ -1107,7 +1107,9 @@
       "direction": "渐变方向（linear-gradient 第一参数，如 `to right`、`135deg`）",
       "gradient": "JSON 色标数组，如 `[\"#f00\",\"#00f\"]`；单个色标渲染纯色；缺失/非法回退默认 token 渐变",
       "animated": "流动动画（回文色标无缝循环，周期走 `--oas-gradient-text-duration`；prefers-reduced-motion 静止）",
-      "type": "语义色渐变：`primary` / `success` / `warning` / `danger` / `info`（token 派生双 stop；显式 `gradient` 优先）"
+      "type": "语义色渐变：`primary` / `success` / `warning` / `danger` / `info`（token 派生双 stop；显式 `gradient` 优先）",
+      "stroke": "描边宽度（如 `1px` / `2px`，仅接受数字 + px/em/rem/pt；非法值不启用描边；双层叠字避开 background-clip:text 裁剪冲突）",
+      "stroke-color": "描边颜色（缺省走 `--oas-color-text-primary` token，随主题亮暗自适应；经白名单校验）"
     },
     "events": {},
     "slots": {}
