@@ -274,4 +274,108 @@ describe('OASCountdown', () => {
     expect(partEl(el, 'title').textContent).toContain('快照标题')
     expect(el.hasAttribute('title')).toBe(false)
   })
+
+  // ---- 正计时（type="countup"）：从 start 往上递增，无终止点 ----
+
+  it('countup 从 0 往上递增且无终止（不派发 oas-finish）', () => {
+    vi.useFakeTimers()
+    const el = mount({ type: 'countup' })
+    let finished = 0
+    el.addEventListener('oas-finish', () => finished++)
+    expect(display(el)).toBe('00:00:00')
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:01')
+    vi.advanceTimersByTime(12000)
+    expect(display(el)).toBe('00:00:13')
+    // 正计时无终止点：走过 13s 后仍不派发 finish
+    expect(finished).toBe(0)
+  })
+
+  it('countup start 属性指定起点（毫秒）', () => {
+    vi.useFakeTimers()
+    const el = mount({ type: 'countup', start: '5000' })
+    expect(display(el)).toBe('00:00:05')
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:06')
+  })
+
+  it('countup active=false 冻结，恢复后续走（不重置）', () => {
+    vi.useFakeTimers()
+    const el = mount({ type: 'countup' })
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:01')
+    el.setAttribute('active', 'false')
+    vi.advanceTimersByTime(3000)
+    expect(display(el)).toBe('00:00:01')
+    el.setAttribute('active', 'true')
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:02')
+  })
+
+  it('countup 暂停期间改 start 重置计时并保持暂停态', () => {
+    vi.useFakeTimers()
+    const el = mount({ type: 'countup' })
+    vi.advanceTimersByTime(1300)
+    el.setAttribute('active', 'false')
+    el.setAttribute('start', '10000')
+    expect(display(el)).toBe('00:00:10')
+    vi.advanceTimersByTime(2600)
+    expect(display(el)).toBe('00:00:10')
+    el.setAttribute('active', 'true')
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:11')
+  })
+
+  it('countup reset() 归位到 start 重新开始（active=false 时只归位不启动）', () => {
+    vi.useFakeTimers()
+    const el = mount({ type: 'countup', start: '5000' })
+    vi.advanceTimersByTime(2000)
+    expect(display(el)).toBe('00:00:07')
+    el.reset()
+    expect(display(el)).toBe('00:00:05')
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:06')
+
+    el.setAttribute('active', 'false')
+    vi.advanceTimersByTime(2000)
+    el.reset()
+    expect(display(el)).toBe('00:00:05')
+    vi.advanceTimersByTime(2000)
+    expect(display(el)).toBe('00:00:05')
+  })
+
+  it('countup 复用 oas-change 通道，detail.value 为已计时毫秒', () => {
+    vi.useFakeTimers()
+    const el = mount({ type: 'countup' })
+    const changes: number[] = []
+    el.addEventListener('oas-change', (e) => changes.push((e as CustomEvent).detail.value))
+    expect(changes).toHaveLength(0)
+    vi.advanceTimersByTime(2600) // 跨过 2 个秒边界
+    expect(changes.length).toBeGreaterThanOrEqual(2)
+    expect(changes[0]).toBeGreaterThanOrEqual(1000)
+    expect(changes[changes.length - 1]).toBeLessThanOrEqual(2600)
+  })
+
+  it('countup SSS 模板毫秒级递增（50ms tick）', () => {
+    vi.useFakeTimers()
+    const el = mount({ type: 'countup', format: 'ss.SSS' })
+    expect(display(el)).toBe('00.000')
+    vi.advanceTimersByTime(300)
+    expect(display(el)).toBe('00.300')
+    vi.advanceTimersByTime(300)
+    expect(display(el)).toBe('00.600')
+  })
+
+  it('countup 断开连接清理计时器，重连后继续累计已走过时长', () => {
+    vi.useFakeTimers()
+    const el = mount({ type: 'countup' })
+    vi.advanceTimersByTime(1300)
+    expect(display(el)).toBe('00:00:01')
+    el.remove()
+    vi.advanceTimersByTime(5000)
+    expect(display(el)).toBe('00:00:01')
+    document.body.appendChild(el)
+    // 正计时语义：断开期间真实时间已流逝，重连后一并累计（无截止点可过期）
+    expect(display(el)).toBe('00:00:06')
+  })
 })

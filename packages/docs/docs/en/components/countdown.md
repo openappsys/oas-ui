@@ -1,6 +1,6 @@
 # Countdown
 
-A countdown component that refreshes in real time, supports day/hour/minute/second formatting templates, emits `oas-finish` when reaching zero, and automatically cleans up its timer on disconnect.
+A countdown component that refreshes in real time, supports day/hour/minute/second formatting templates, emits `oas-finish` when reaching zero, and automatically cleans up its timer on disconnect. Set `type="countup"` to switch to count-up mode (increments from `start`, no end point).
 
 ## Basic Usage
 
@@ -36,8 +36,18 @@ Add the `SSS` token to output milliseconds (zero-padded to 3 digits); internal r
 <DemoBlock title="active pause/resume + reset()">
   <oas-countdown id="countdown-active" value="60000" title="Time left to pay"></oas-countdown>
   <oas-countdown value="90000" active="false" title="Paused (active=false, frozen at the start value)"></oas-countdown>
-  <oas-button id="countdown-toggle" size="sm">Pause</oas-button>
-  <oas-button id="countdown-reset" size="sm">Reset</oas-button>
+  <oas-button id="countdown-toggle" size="small">Pause</oas-button>
+  <oas-button id="countdown-reset" size="small">Reset</oas-button>
+</DemoBlock>
+
+## Count-Up (countup)
+
+`type="countup"` switches to count-up mode: it increments from `start` (milliseconds, default 0) with no end point (**no `oas-finish` is emitted**), ideal for pomodoro timers, work-time tracking, etc. `active` pauses/resumes and `reset()` returns to `start`, with the same semantics as countdown; `format` tokens and SSS millisecond precision apply as well; elapsed changes reuse the `oas-change` event (`detail.value` is the elapsed milliseconds). In this mode the `value` attribute is ignored.
+
+<DemoBlock title="Count-up: from 0 + pause/resume + reset()">
+  <oas-countdown id="countup-active" type="countup" title="Focus time"></oas-countdown>
+  <oas-button id="countup-toggle" size="small">Pause</oas-button>
+  <oas-button id="countup-reset" size="small">Reset</oas-button>
 </DemoBlock>
 
 ## Prefix / Suffix / Title
@@ -72,16 +82,18 @@ Font size is fixed at `--oas-font-size-lg` (16px) by default and does not follow
 | `active` | Controlled pause: `"false"` freezes the frame and stops counting elapsed time, resuming continues (absent = running) | `string` | — |
 | `format` | Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds, `SSS` milliseconds (50ms internal refresh when SSS present) | `string` | `HH:mm:ss` |
 | `prefix-text` | Leading text of the display value | — | — |
+| `start` | Count-up start offset (milliseconds), only effective with `type="countup"`; changing it restarts counting | `string` | `0` |
 | `suffix-text` | Trailing text of the display value | — | — |
 | `title` | Heading above the display value (native global attribute, absorbed after rendering) | `string` | — |
-| `value` | Total countdown duration (milliseconds) | `string` | `0` |
+| `type` | Timing mode: `"countup"` counts up from `start` with no end point (no `oas-finish`); absent = countdown | `string` | — |
+| `value` | Total countdown duration (milliseconds); ignored in count-up mode | `string` | `0` |
 
 ### Events
 
 | Event | Description |
 | --- | --- |
-| `oas-change` | Emitted on a throttled basis when the remaining displayed value changes, detail `{ value: remaining milliseconds }` |
-| `oas-finish` | Emitted once when the countdown reaches zero |
+| `oas-change` | Emitted on a throttled basis when the remaining displayed value changes, detail `{ value: remaining milliseconds }`; in count-up mode `{ value: elapsed milliseconds }` |
+| `oas-finish` | Emitted once when the countdown reaches zero (not emitted in count-up mode, which has no end point) |
 
 ### Slots
 
@@ -103,6 +115,9 @@ onMounted(() => {
     const reset = document.getElementById('countdown-reset')
     const eventEl = document.getElementById('countdown-event')
     const out = document.getElementById('countdown-output')
+    const upEl = document.getElementById('countup-active')
+    const upToggle = document.getElementById('countup-toggle')
+    const upReset = document.getElementById('countup-reset')
     eventEl?.addEventListener('oas-finish', () => {
       out.textContent = 'oas-finish: countdown finished'
     })
@@ -114,6 +129,15 @@ onMounted(() => {
     })
     reset?.addEventListener('click', () => {
       el?.reset()
+    })
+    upToggle?.addEventListener('click', () => {
+      if (!upEl) return
+      const paused = upEl.getAttribute('active') === 'false'
+      upEl.setAttribute('active', paused ? 'true' : 'false')
+      upToggle.textContent = paused ? 'Pause' : 'Resume'
+    })
+    upReset?.addEventListener('click', () => {
+      upEl?.reset()
     })
   })
 })

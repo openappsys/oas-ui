@@ -69,7 +69,7 @@ const STYLE = `
 
 export class OASCountdown extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['value', 'format', 'active', 'title', 'prefix-text', 'suffix-text']
+    return ['value', 'format', 'active', 'title', 'prefix-text', 'suffix-text', 'type', 'start']
   }
 
   private timer: ReturnType<typeof setInterval> | null = null
@@ -78,10 +78,20 @@ export class OASCountdown extends OASElement {
   private lastValue: number | null = null
   /** 刚重置后的完整值：首次 tick 前保持整值显示，避免 endAt-Date.now() 毫秒漂移少 1 秒 */
   private pendingStart: number | null = null
-  /** 暂停态：active 移除/置 "false" 时固化剩余时长，恢复时按固化值续走（真暂停语义） */
+  /** 暂停态：active 移除/置 "false" 时固化计时真值，恢复时按固化值续走（真暂停语义） */
   private paused = false
-  /** 暂停期间（与刚重置时）的剩余时长真值 */
+  /** 暂停期间（与刚重置时）的剩余时长真值（倒计时） */
   private remaining = 0
+
+  /** 正计时（type="countup"）状态：lastStart 跟踪 start 属性变化（变化即重置计时）；
+   *  startAt 为当前走时段起点时间戳，elapsed 为已累计毫秒（暂停时冻结），
+   *  pendingElapsed 为刚重置/起段的整值（首次 tick 前保持整值显示） */
+  private lastStart: number | null = null
+  private startAt = 0
+  private elapsed = 0
+  private pendingElapsed: number | null = null
+  /** 上次 update 的模式：type 切换时双模式计数状态各自重初始化，避免残留状态串扰 */
+  private lastMode: 'countdown' | 'countup' | '' = ''
 
   /** title 吸收缓存：宿主原生 title 被移除后的标题真值（null=无标题）。
    *  title 是原生全局属性——残留会让悬停弹出浏览器原生提示（与可见标题重复的视觉干扰），
@@ -144,6 +154,18 @@ export class OASCountdown extends OASElement {
     return !this.hasAttribute('active') || this.getAttr('active', '') !== 'false'
   }
 
+  /** 正计时模式：type="countup" 从 start（默认 0）往上递增，无终止点 */
+  private isCountup(): boolean {
+    return this.getAttr('type', '').trim().toLowerCase() === 'countup'
+  }
+
+  /** 正计时当前已计时真值（ms）：走表段按时间戳推算，暂停/待起段用固化值 */
+  private countupNow(): number {
+    return this.paused
+      ? this.elapsed
+      : (this.pendingElapsed ?? this.elapsed + (Date.now() - this.startAt))
+  }
+
   /** tick 粒度：模板含 SSS 毫秒 token 时按 50ms 刷新，否则 250ms（秒边界对齐） */
   private tickMs(): number {
     return this.getAttr('format', 'HH:mm:ss').includes('SSS') ? 50 : 250
@@ -152,6 +174,24 @@ export class OASCountdown extends OASElement {
   protected override update(): void {
     this.normalizeLegacyAlias('prefix-text', 'prefix')
     this.normalizeLegacyAlias('suffix-text', 'suffix')
+
+    const mode = this.isCountup() ? 'countup' : 'countdown'
+    if (mode !== this.lastMode) {
+      // 模式切换：进入的模式按初值重建计数状态（倒计时不残留 endAt，正计时反之）
+      this.lastMode = mode
+      if (mode === 'countdown') this.lastValue = null
+      else this.lastStart = null
+    }
+    if (mode === 'countup') this.updateCountup()
+    else this.updateCountdown()
+    this.syncActive()
+
+    this.renderDisplay()
+    this.schedule()
+  }
+
+  /** 倒计时状态推进：value 变化重置；断开期间已过截止点的重连即时收尾 */
+  private updateCountdown(): void {
     const value = Math.max(0, Number(this.getAttr('value', '0')) || 0)
     if (value !== this.lastValue) {
       const wasPaused = this.paused
@@ -168,37 +208,66 @@ export class OASCountdown extends OASElement {
       this.remaining = 0
       this.emit('finish')
     }
+  }
 
-    // active 受控暂停/恢复（时长派语义：暂停期间不计时已走过）
+  /** 正计时状态推进：start 变化即重置（保持暂停态）；无终止点，无需收尾分支 */
+  private updateCountup(): void {
+    const start = Math.max(0, Number(this.getAttr('start', '0')) || 0)
+    if (start !== this.lastStart) {
+      const wasPaused = this.paused
+      this.lastStart = start
+      this.elapsed = start
+      this.startAt = Date.now()
+      this.pendingElapsed = start
+      this.paused = wasPaused
+    }
+  }
+
+  /** active 受控暂停/恢复（两种模式同语义：暂停期间不计时已走过，恢复续走不重置） */
+  private syncActive(): void {
     if (!this.isActive() && !this.paused && !this.finished) {
       this.paused = true
-      this.remaining = this.pendingStart ?? Math.max(0, this.endAt - Date.now())
-      this.pendingStart = null
+      if (this.isCountup()) {
+        this.elapsed = this.pendingElapsed ?? this.elapsed + (Date.now() - this.startAt)
+        this.pendingElapsed = null
+      } else {
+        this.remaining = this.pendingStart ?? Math.max(0, this.endAt - Date.now())
+        this.pendingStart = null
+      }
       if (this.timer) {
         clearInterval(this.timer)
         this.timer = null
       }
     } else if (this.isActive() && this.paused) {
       this.paused = false
-      this.endAt = Date.now() + this.remaining
+      if (this.isCountup()) this.startAt = Date.now()
+      else this.endAt = Date.now() + this.remaining
     }
-
-    this.renderDisplay()
-    this.schedule()
   }
 
-  /** 命令式重置：回到 value 初值重新计时；active=false（暂停）时只归位不启动 */
+  /** 命令式重置：倒计时回到 value 初值、正计时回到 start 初值重新计时；
+   *  active=false（暂停）时只归位不启动 */
   reset(): void {
+    if (this.timer) {
+      clearInterval(this.timer)
+      this.timer = null
+    }
+    if (this.isCountup()) {
+      const start = Math.max(0, Number(this.getAttr('start', '0')) || 0)
+      this.lastStart = start
+      this.elapsed = start
+      this.startAt = Date.now()
+      this.pendingElapsed = start
+      this.renderDisplay()
+      this.schedule()
+      return
+    }
     const value = Math.max(0, Number(this.getAttr('value', '0')) || 0)
     this.lastValue = value
     this.remaining = value
     this.endAt = Date.now() + value
     this.finished = value <= 0
     this.pendingStart = value
-    if (this.timer) {
-      clearInterval(this.timer)
-      this.timer = null
-    }
     this.renderDisplay()
     this.schedule()
   }
@@ -207,12 +276,14 @@ export class OASCountdown extends OASElement {
   private renderDisplay(): boolean {
     const el = this.shadow.querySelector<HTMLElement>('[part="display"]')
     if (!el) return false
-    const remaining = this.finished
-      ? 0
-      : this.paused
-        ? this.remaining
-        : (this.pendingStart ?? Math.max(0, this.endAt - Date.now()))
-    const next = formatDuration(remaining, this.getAttr('format', 'HH:mm:ss'))
+    const current = this.isCountup()
+      ? this.countupNow()
+      : this.finished
+        ? 0
+        : this.paused
+          ? this.remaining
+          : (this.pendingStart ?? Math.max(0, this.endAt - Date.now()))
+    const next = formatDuration(current, this.getAttr('format', 'HH:mm:ss'))
     const changed = el.textContent !== next
     el.textContent = next
     this.syncHeader()
@@ -256,6 +327,14 @@ export class OASCountdown extends OASElement {
     this.timer = null
     if (this.finished || this.paused || !this.isActive()) return
     this.timer = setInterval(() => {
+      if (this.isCountup()) {
+        // 正计时：无终止点；显示文本变化时节流派发 oas-change（detail.value 为已计时 ms）
+        this.pendingElapsed = null
+        const current = this.elapsed + (Date.now() - this.startAt)
+        const changed = this.renderDisplay()
+        if (changed) this.emit('change', { value: current })
+        return
+      }
       this.pendingStart = null
       const remaining = Math.max(0, this.endAt - Date.now())
       const changed = this.renderDisplay()
