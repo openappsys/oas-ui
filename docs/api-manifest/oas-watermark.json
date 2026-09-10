@@ -82,7 +82,7 @@
     {
       "name": "z-index",
       "type": "string",
-      "default": "2",
+      "default": "",
       "observed": true
     },
     {
@@ -92,6 +92,16 @@
     },
     {
       "name": "movable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "grayscale",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "fullscreen",
       "type": "boolean",
       "observed": true
     },
