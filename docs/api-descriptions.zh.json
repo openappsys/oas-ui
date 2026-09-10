@@ -3107,7 +3107,9 @@
       "staggered": "错位排布（双层背景，第二层偏移 offset + gap/2；仅平铺模式）",
       "tamper-proof": "防篡改（默认 true）：MutationObserver 监测图层被删/被改自动重挂并派发 `oas-remove`；`\"false\"` 关闭",
       "width": "单枚画布宽度（px，默认 240）",
-      "z-index": "水印层叠层级（默认 2）"
+      "z-index": "水印层叠层级（默认 2）；fullscreen 时写到宿主，覆盖默认最高层",
+      "grayscale": "图片水印灰阶滤镜（canvas filter: grayscale(1)）；无 canvas 环境回退图层 CSS filter",
+      "fullscreen": "全屏水印：宿主 fixed inset:0 铺满视口（pointer-events:none），默认最高层级（z-index 属性或 --oas-watermark-fullscreen-z-index 可调），页面滚动不动"
     },
     "events": {
       "oas-remove": "防篡改监测到图层被移除/篡改时派发，`detail: { type: \"removed\" | \"modified\" }`"
