@@ -73,6 +73,10 @@
       "detail": "{ src: attempted }"
     },
     {
+      "name": "oas-preview-nav",
+      "detail": "{ index: i, src: this.currentPreviewSrc() }"
+    },
+    {
       "name": "oas-preview",
       "detail": "{ src }"
     },
