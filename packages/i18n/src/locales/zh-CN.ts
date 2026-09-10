@@ -166,6 +166,8 @@ export const zhCN = {
   'image.loading': '加载中…',
   'image.loadFailed': '图片加载失败',
   'image.defaultAlt': '图片',
+  // image-group（图集容器，共享预览组的 aria 可访问名称）
+  'imageGroup.group': '图集',
   // avatar（头像）
   'avatar.defaultAlt': '头像',
   'avatar.changeAvatar': '更换头像',
