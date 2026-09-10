@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { OASWatermark, textTileDataUri, textTileCanvas, canvasAvailable, parseTextLines } from './index.js'
+import { OASWatermark, textTileDataUri, textTileCanvas, canvasAvailable, parseTextLines, resolveTileSize } from './index.js'
 
 function mount(attrs: Record<string, string> = {}, content = ''): OASWatermark {
   const el = new OASWatermark()
@@ -62,6 +62,31 @@ describe('OASWatermark', () => {
     const el = mount({ text: '水印' })
     expect(el.querySelector('*')).toBeNull() // 无 slot 内容
     expect(styleOf(el)).toContain('data:image/svg+xml')
+  })
+
+  it('tile 自适应：未设 width/height 时按文字旋转外接框 + 内边距计算', () => {
+    // 长文字 tile 更宽；短文字 tile 更小（密度更高）
+    const short = resolveTileSize('水印')
+    const long = resolveTileSize('演示水印演示水印')
+    expect(long.width).toBeGreaterThan(short.width)
+    // 多行 tile 更高
+    const multi = resolveTileSize('第一行\n第二行')
+    const single = resolveTileSize('第一行')
+    expect(multi.height).toBeGreaterThan(single.height)
+    // 显式 width/height 优先于自适应
+    const fixed = resolveTileSize('水印', { width: 300, height: 150 })
+    expect(fixed).toEqual({ width: 300, height: 150 })
+    // 空文本回退 240/120
+    expect(resolveTileSize('')).toEqual({ width: 240, height: 120 })
+  })
+
+  it('组件未设 width/height 时 background-size 用自适应 tile（非固定 240×120）', () => {
+    const el = mount({ text: '水印', repeat: '' })
+    const style = styleOf(el)
+    expect(style).not.toContain('background-size: 240px 120px')
+    // 显式设置时不变（向后兼容）
+    const fixed = mount({ text: '水印', repeat: '', width: '240', height: '120' })
+    expect(styleOf(fixed)).toContain('background-size: 240px 120px')
   })
 
   it('空容器兜底：:host(:empty) 宽度 100% 规则存在（flex 容器内空宿主塌缩回归）', () => {
@@ -168,11 +193,12 @@ describe('OASWatermark', () => {
     expect(styleOf(single)).toContain('background-size: 200px 200px')
   })
 
-  it('offset 属性控制 background-position，缺省为 gap/2', () => {
+  it('offset 属性控制 background-position，缺省为 gap/2（tile 自适应尺寸）', () => {
     const el = mount({ text: 'x', repeat: '', offset: '[10, 20]' })
     expect(styleOf(el)).toContain('background-position: 10px 20px')
     const dft = mount({ text: 'x', repeat: '' })
-    expect(styleOf(dft)).toContain('background-position: 120px 60px')
+    // 自适应 tile（文字 'x' 旋转外接框 + 内边距 ≈ 99×72）→ 缺省 offset = gap/2
+    expect(styleOf(dft)).toContain('background-position: 49.5px 36px')
   })
 
   it('z-index 属性生效，默认 2', () => {
@@ -257,15 +283,15 @@ describe('OASWatermark', () => {
     )
     document.dispatchEvent(new PointerEvent('pointermove', { clientX: 140, clientY: 130 }))
     await new Promise((r) => setTimeout(r, 0))
-    // 起步 offset 120,60（gap 240×120 的一半）+ 位移 (40,30)
-    expect(el.getAttribute('offset')).toBe('[160,90]')
-    expect(styleOf(el)).toContain('background-position: 160px 90px')
+    // 起步 offset = 自适应 tile（约 99×72）/ 2 = [49.5,36]，+ 位移 (40,30) → [90,66]
+    expect(el.getAttribute('offset')).toBe('[90,66]')
+    expect(styleOf(el)).toContain('background-position: 90px 66px')
     document.dispatchEvent(new PointerEvent('pointerup', { clientX: 140, clientY: 130 }))
     await new Promise((r) => setTimeout(r, 0))
     // 松手后不再跟随
     document.dispatchEvent(new PointerEvent('pointermove', { clientX: 300, clientY: 300 }))
     await new Promise((r) => setTimeout(r, 0))
-    expect(el.getAttribute('offset')).toBe('[160,90]')
+    expect(el.getAttribute('offset')).toBe('[90,66]')
   })
 
   it('非 movable 时水印层 pointer-events 为 none（不拦截交互）', () => {
