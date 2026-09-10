@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { OASWatermark, textTileDataUri } from './index.js'
+import { OASWatermark, textTileDataUri, textTileCanvas, canvasAvailable, parseTextLines } from './index.js'
 
 function mount(attrs: Record<string, string> = {}, content = ''): OASWatermark {
   const el = new OASWatermark()
@@ -261,5 +261,73 @@ describe('OASWatermark', () => {
   it('非 movable 时水印层 pointer-events 为 none（不拦截交互）', () => {
     const el = mount({ text: 'x', repeat: '' })
     expect(styleOf(el)).toContain('pointer-events: none')
+  })
+
+  // —— canvas 引擎（任务①）：特性检测回退 / grayscale / 缓存约定 ——
+  // happy-dom 无 canvas 2d 上下文，组件须自动回退 SVG data-uri 路径（SSR 同此约定）
+
+  it('canvasAvailable 在 happy-dom 为 false，文字水印回退 SVG data-uri', () => {
+    expect(canvasAvailable()).toBe(false)
+    const el = mount({ text: 'canvas 回退' })
+    expect(styleOf(el)).toContain('data:image/svg+xml')
+  })
+
+  it('textTileCanvas 在环境无 2d 上下文时返回 null（SSR/测试环境优雅降级）', () => {
+    expect(textTileCanvas('x')).toBeNull()
+    expect(textTileCanvas('')).toBeNull()
+  })
+
+  it('grayscale 属性进 observedAttributes', () => {
+    expect(OASWatermark.observedAttributes).toContain('grayscale')
+    expect(OASWatermark.observedAttributes).toContain('fullscreen')
+  })
+
+  it('grayscale：无 canvas 环境回退为图层 CSS filter（不丢能力）', () => {
+    const el = mount({ image: '/wm.png', grayscale: '' })
+    expect(styleOf(el)).toContain('filter: grayscale(1)')
+    const plain = mount({ image: '/wm.png' })
+    expect(styleOf(plain)).not.toContain('grayscale')
+  })
+
+  it('grayscale 属性变化增量更新（不重建图层）', () => {
+    const el = mount({ image: '/wm.png' })
+    const layer = layerOf(el)
+    el.setAttribute('grayscale', '')
+    expect(layerOf(el)).toBe(layer)
+    expect(styleOf(el)).toContain('filter: grayscale(1)')
+  })
+
+  // —— fullscreen 全屏水印（任务②）——
+
+  it('fullscreen：shadow 样式表含 :host([fullscreen]) fixed 全屏规则', () => {
+    const el = mount({ text: 'x', fullscreen: '' })
+    const css = el.shadowRoot!.querySelector('style')!.textContent ?? ''
+    expect(css).toContain(':host([fullscreen])')
+    expect(css).toContain('position: fixed')
+    expect(css).toContain('inset: 0')
+    expect(css).toContain('pointer-events: none')
+  })
+
+  it('fullscreen + z-index 属性：宿主内联 z-index 写入（覆盖默认高层）', () => {
+    const el = mount({ text: 'x', fullscreen: '', 'z-index': '999' })
+    expect(el.style.zIndex).toBe('999')
+  })
+
+  it('fullscreen 缺省不写宿主 z-index（CSS 变量默认最高层兜底）', () => {
+    const el = mount({ text: 'x', fullscreen: '' })
+    expect(el.style.zIndex).toBe('')
+  })
+
+  it('非 fullscreen 不写宿主 z-index（容器模式宿主样式零干扰）', () => {
+    const el = mount({ text: 'x', 'z-index': '10' })
+    expect(el.style.zIndex).toBe('')
+    expect(layerOf(el).style.zIndex).toBe('10')
+  })
+
+  it('fullscreen 关闭后清除宿主内联 z-index', () => {
+    const el = mount({ text: 'x', fullscreen: '', 'z-index': '999' })
+    expect(el.style.zIndex).toBe('999')
+    el.removeAttribute('fullscreen')
+    expect(el.style.zIndex).toBe('')
   })
 })
