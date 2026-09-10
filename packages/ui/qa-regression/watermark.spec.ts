@@ -141,3 +141,28 @@ test('watermark demo 属性存活（Vue 不剥离）：grayscale / fullscreen �
   expect(await page.locator('oas-watermark[movable]').count()).toBeGreaterThan(0)
   expect(await page.locator('oas-watermark[staggered]').count()).toBeGreaterThan(0)
 })
+
+test('watermark 空容器：无 slot 内容时宿主不塌缩、水印图层有实际宽度（flex 容器空宿主 0 宽回归）', async ({
+  page,
+}) => {
+  await page.goto('/components/watermark.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-watermark')
+  const r = await page.evaluate(() => {
+    // 空容器 demo：text="水印" + style height:120px、无任何 slot 内容
+    const el = [...document.querySelectorAll('oas-watermark')].find(
+      (x) => x.childNodes.length === 0 && (x as HTMLElement).style.height === '120px',
+    )!
+    const layer = el.shadowRoot?.querySelector('[part="watermark"]')
+    const hostRect = el.getBoundingClientRect()
+    const layerRect = layer?.getBoundingClientRect()
+    return {
+      hostW: Math.round(hostRect.width),
+      layerW: layerRect ? Math.round(layerRect.width) : 0,
+      bgImage: (layer?.getAttribute('style') ?? '').includes('data:'),
+    }
+  })
+  // 宿主与图层都必须有实际宽度（空态满铺），且背景图存在
+  expect(r.hostW).toBeGreaterThan(0)
+  expect(r.layerW).toBeGreaterThan(0)
+  expect(r.bgImage).toBe(true)
+})
