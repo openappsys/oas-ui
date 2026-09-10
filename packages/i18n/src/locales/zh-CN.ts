@@ -160,6 +160,8 @@ export const zhCN = {
   'carousel.prev': '上一屏',
   'carousel.next': '下一屏',
   'carousel.dot': '第 {index} 张',
+  'carousel.pause': '暂停自动播放',
+  'carousel.play': '继续自动播放',
   // image（图片）
   'image.loading': '加载中…',
   'image.loadFailed': '图片加载失败',

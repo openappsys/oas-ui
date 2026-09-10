@@ -56,6 +56,12 @@
       "observed": true
     },
     {
+      "name": "type",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
       "name": "loop",
       "type": "string",
       "default": "",
@@ -65,6 +71,11 @@
       "name": "pause-on-hover",
       "type": "string",
       "default": "true",
+      "observed": true
+    },
+    {
+      "name": "pause-button",
+      "type": "boolean",
       "observed": true
     },
     {
