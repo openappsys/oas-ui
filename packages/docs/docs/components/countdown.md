@@ -1,6 +1,6 @@
 # Countdown 倒计时
 
-倒计时组件，实时刷新、支持天/时/分/秒格式化模板，到达终点派发 `oas-finish`，断开连接自动清理计时器。
+倒计时组件，实时刷新、支持天/时/分/秒格式化模板，到达终点派发 `oas-finish`，断开连接自动清理计时器。`type="countup"` 切换为正计时（从 `start` 起往上递增，无终止点）。
 
 ## 基础用法
 
@@ -36,8 +36,18 @@
 <DemoBlock title="active 暂停恢复 + reset()">
   <oas-countdown id="countdown-active" value="60000" title="支付剩余时间"></oas-countdown>
   <oas-countdown value="90000" active="false" title="已暂停（active=false，停帧在初值）"></oas-countdown>
-  <oas-button id="countdown-toggle" size="sm">暂停</oas-button>
-  <oas-button id="countdown-reset" size="sm">重置</oas-button>
+  <oas-button id="countdown-toggle" size="small">暂停</oas-button>
+  <oas-button id="countdown-reset" size="small">重置</oas-button>
+</DemoBlock>
+
+## 正计时（countup）
+
+`type="countup"` 切换为正计时：从 `start`（毫秒，默认 0）开始往上递增，无终止点（**不派发 `oas-finish`**），适合番茄钟、工时统计等场景。`active` 暂停/恢复、`reset()` 归位到 `start` 重新计时，语义与倒计时一致；`format` token 与 SSS 毫秒精度同样适用；走时变化复用 `oas-change` 事件（`detail.value` 为已计时毫秒）。此模式下 `value` 属性被忽略。
+
+<DemoBlock title="正计时：从 0 开始 + 暂停/继续 + reset()">
+  <oas-countdown id="countup-active" type="countup" title="本次专注时长"></oas-countdown>
+  <oas-button id="countup-toggle" size="small">暂停</oas-button>
+  <oas-button id="countup-reset" size="small">归零</oas-button>
 </DemoBlock>
 
 ## 前缀 / 后缀 / 标题
@@ -72,16 +82,18 @@
 | `active` | 受控暂停：`"false"` 停帧且不计时已走过时长，恢复后续走（缺省走表） | `string` | — |
 | `format` | 模板：`DD`/`D` 天、`HH`/`H` 时、`mm`/`m` 分、`ss`/`s` 秒、`SSS` 毫秒（含 SSS 时内部 50ms 刷新） | `string` | `HH:mm:ss` |
 | `prefix-text` | 显示值前置文案 | — | — |
+| `start` | 正计时起点（毫秒），仅 `type="countup"` 时生效；变化即重置计时 | `string` | `0` |
 | `suffix-text` | 显示值后置文案 | — | — |
 | `title` | 显示值上方标题（原生全局属性，渲染后吸收移除） | `string` | — |
-| `value` | 倒计时总时长（毫秒） | `string` | `0` |
+| `type` | 计时模式：`"countup"` 为正计时（从 `start` 往上递增，无终止点，不派发 `oas-finish`）；缺省为倒计时 | `string` | — |
+| `value` | 倒计时总时长（毫秒）；正计时模式下被忽略 | `string` | `0` |
 
 ### 事件
 
 | 事件 | 说明 |
 | --- | --- |
-| `oas-change` | 剩余显示值变化时节流派发，detail `{ value: 剩余毫秒 }` |
-| `oas-finish` | 倒计时归零时派发一次 |
+| `oas-change` | 剩余显示值变化时节流派发，detail `{ value: 剩余毫秒 }`；正计时模式为 `{ value: 已计时毫秒 }` |
+| `oas-finish` | 倒计时归零时派发一次（正计时无终止点，不派发） |
 
 ### 插槽
 
@@ -103,6 +115,9 @@ onMounted(() => {
     const reset = document.getElementById('countdown-reset')
     const eventEl = document.getElementById('countdown-event')
     const out = document.getElementById('countdown-output')
+    const upEl = document.getElementById('countup-active')
+    const upToggle = document.getElementById('countup-toggle')
+    const upReset = document.getElementById('countup-reset')
     eventEl?.addEventListener('oas-finish', () => {
       out.textContent = 'oas-finish: 倒计时结束'
     })
@@ -114,6 +129,15 @@ onMounted(() => {
     })
     reset?.addEventListener('click', () => {
       el?.reset()
+    })
+    upToggle?.addEventListener('click', () => {
+      if (!upEl) return
+      const paused = upEl.getAttribute('active') === 'false'
+      upEl.setAttribute('active', paused ? 'true' : 'false')
+      upToggle.textContent = paused ? '暂停' : '继续'
+    })
+    upReset?.addEventListener('click', () => {
+      upEl?.reset()
     })
   })
 })
