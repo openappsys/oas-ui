@@ -997,9 +997,12 @@
     "attrs": {
       "expandable": "Show an \"expand/collapse\" button when overflowing",
       "rows": "Number of lines to show (1 is single-line ellipsis, ≥2 multi-line `-webkit-line-clamp`)",
+      "lines": "Number of lines to show, equivalent to `rows` (synonym alias; `lines` wins when both are present; 1 is single-line, ≥2 multi-line)",
+      "suffix": "Tail suffix preserved when ellipsized (e.g. `.pdf`); only with the default `tail` direction (`middle`/`start` already keep the tail)",
+      "expand-trigger": "Expand trigger form: with `click` the ellipsized text body expands/collapses on click (with `expandable`; `role=button`, keyboard reachable); defaults to the button/link form",
       "text": "Text content",
       "tooltip": "Show a full-text tooltip on hover when overflowing",
-      "direction": "Ellipsis direction: `end` (default, tail) / `start` (head) / `middle` (keep both ends, for long paths/hashes)",
+      "direction": "Ellipsis direction: `tail` (default, tail) / `start` (head, keep tail) / `middle` (keep both ends, for long paths/hashes); with multiple lines (lines/rows ≥ 2), `middle`/`start` truncate via mirror measurement",
       "collapse-text": "Collapse link text (inline form, with expandable)",
       "expand-text": "Expand link text (inline form, with expandable)",
       "expanded": "Controlled expanded state (controlled when present; internal toggles reflect back)",
