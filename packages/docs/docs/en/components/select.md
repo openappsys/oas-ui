@@ -429,7 +429,12 @@ onMounted(() => {
   ]
   const mapJson = document.getElementById('select-map-json')
   if (mapJson) {
-    mapJson.options = MEMBERS.map((m) => ({ label: `${m.name} (${m.team})`, value: m.id }))
+    // Property assignment must wait for the element upgrade (assigning before upgrade
+    // installs an own property that shadows the prototype setter → attribute stays empty
+    // → dropdown shows "No data"; the oas-option children channel is timing-safe)
+    customElements.whenDefined('oas-select').then(() => {
+      mapJson.options = MEMBERS.map((m) => ({ label: `${m.name} (${m.team})`, value: m.id }))
+    })
   }
   const mapChild = document.getElementById('select-map-child')
   for (const o of MEMBERS.map((m) => ({ value: m.id, label: m.name }))) {

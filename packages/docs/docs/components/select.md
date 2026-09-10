@@ -429,7 +429,11 @@ onMounted(() => {
   ]
   const mapJson = document.getElementById('select-map-json')
   if (mapJson) {
-    mapJson.options = MEMBERS.map((m) => ({ label: `${m.name}（${m.team}）`, value: m.id }))
+    // property 赋值必须等组件 upgrade 完成（升级前赋值会在实例挂自有属性遮蔽原型
+    // setter → attribute 为空 → 下拉显示「暂无数据」；oas-option 子元素通道无时序问题）
+    customElements.whenDefined('oas-select').then(() => {
+      mapJson.options = MEMBERS.map((m) => ({ label: `${m.name}（${m.team}）`, value: m.id }))
+    })
   }
   const mapChild = document.getElementById('select-map-child')
   for (const o of MEMBERS.map((m) => ({ value: m.id, label: m.name }))) {

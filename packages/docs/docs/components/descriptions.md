@@ -181,6 +181,16 @@ item 的 `slot="label"` 可放图标加文字等富内容，与 `label` 属性�
   </div>
 </DemoBlock>
 
+## 数据驱动（宿主循环生成）
+
+子项由宿主数据循环生成——不内建 items 数据通道：Web Components 下宿主一行 `.map()` 拼 `oas-descriptions-item` 子元素即可，零 API 成本（与字段映射同一道理）：
+
+<DemoBlock title="数据驱动（.map() 生成子项）">
+  <div style="width: 100%">
+    <oas-descriptions id="desc-data-driven" title="服务信息" column="2" bordered></oas-descriptions>
+  </div>
+</DemoBlock>
+
 ## 窄屏降列（宿主媒体查询）
 
 未设置 `column` 属性时，列数取自 CSS 变量 `--oas-desc-columns`（默认 3），宿主可用媒体查询响应式降列（设置 `column` 属性则为固定列数，不受变量影响）：
@@ -255,6 +265,27 @@ onMounted(async () => {
         message.success('详情加载完成')
       }, 1200)
     })
+
+    // 数据驱动 demo：宿主 .map() 生成 oas-descriptions-item 子项（whenDefined 防升级前 DOM 时序问题）
+    const SERVICES = [
+      { label: '服务名', value: 'oas-ui-docs' },
+      { label: '运行状态', value: '运行中' },
+      { label: '部署环境', value: 'production / cn-east-1' },
+      { label: '最近发布', value: 'v2.4.1 · 2026-09-06' },
+      { label: '负责人', value: '前端基础设施组' },
+      { label: '健康度', value: '99.99%（近 30 天）' },
+    ]
+    const dd = document.getElementById('desc-data-driven')
+    if (dd) {
+      for (const item of SERVICES) {
+        const node = document.createElement('oas-descriptions-item')
+        node.setAttribute('label', item.label)
+        const span = document.createElement('span')
+        span.textContent = item.value
+        node.appendChild(span)
+        dd.appendChild(node)
+      }
+    }
   })
 })
 </script>
