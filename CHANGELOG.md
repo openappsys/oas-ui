@@ -4,6 +4,17 @@
 
 ## [Unreleased]
 
+### 特性
+
+- **tree 节点重命名**：`can-rename` 总开关（节点数据可加 `renamable: false` 细粒度排除）；双击节点 label 或选中后按 F2 进入内联编辑，Enter/失焦提交、Esc 取消还原；提交派发 `oas-node-rename`（detail `{ key, label, oldLabel }`），宿主受控回写数据；编辑草稿跨树重建保持、虚拟滚动行内可编辑、编辑期方向键归输入框不干扰树键盘导航
+- **tree 展开/收起过渡动画**：`motion` 开关（默认关）——展开新增子行从 0 高平滑生长到自然行高、收起先收缩离场再移除；时长/缓动走 `--oas-transition-*` token；虚拟滚动模式降级淡入；`prefers-reduced-motion` 自动停用
+- **list 分组吸顶**：`data` 项支持 `group`（同组连续项归一段，自动插入组头）与 `groupLabel`（组头文案，缺省回落 `group`）；普通渲染模式下组头在列表滚动容器内吸顶（`position: sticky`，下一组头到顶顶走上一组头）；虚拟滚动模式自动回退全量渲染、组头不吸顶
+- **virtual-list 动态行高**：`dynamic-height` 开启后各行高度可不同——未测行按 `estimated-item-height`（缺省沿用 `item-height`）预估排布，窗口行由 ResizeObserver 实测回写并逐步修正总高与偏移；视口上方行高变化自动补偿 scrollTop 保持视觉锚定（向上滚动不跳动）；`scrollToIndex` 动态模式按高度表定位
+
+### 修复
+
+- **list 选中行 hover 文字不可读**：`clickable` 行 hover 浅灰底压盖 `selected` 选中蓝底（白字白底不可读）——选中态 hover 保持 primary 系底色，文字保持可读
+
 ### 修复
 
 - **`prefix` / `suffix` 属性与 DOM 内建只读 `prefix` 冲突（Vue 下属性被吞 + 控制台告警）**：`prefix` 是 DOM Element 内建只读属性（XML 命名空间前缀），框架（如 Vue）在自定义元素 upgrade 前对其走 property 赋值会撞只读 getter 报错并丢失值。已将视觉前后缀属性迁移到不与内建冲突的 `prefix-text` / `suffix-text`（对齐主流 Web Components 库命名），`prefix` / `suffix` 保留为纯 HTML 使用的遗留别名（组件内自动迁移、文档注明）；触及组件：input / input-number / statistic / countdown / tree-select。**mentions 的触发符属性 `prefix` 改名 `trigger`**（触发符语义，`prefix` 保留为遗留别名），事件 detail 的 `prefix` 字段保持不变（对外契约稳定）。同时删除为对抗该冲突而存在的 `override get/set prefix` 访问器补丁（其既是冲突根源也是 vue-prop-hijack 门禁漏报的原因），`normalizeLegacyAlias` 归入 OASElement 基类统一处理。
