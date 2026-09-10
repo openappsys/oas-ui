@@ -68,6 +68,19 @@
   </p>
 </DemoBlock>
 
+## 搜索过滤
+
+<DemoBlock title="关键字搜索过滤">
+  <div style="width: 100%; display: flex; gap: var(--oas-space-3); margin-bottom: var(--oas-space-2); align-items: center">
+    <oas-input id="log-search-input" placeholder="输入关键字过滤日志…" clearable style="width: 280px"></oas-input>
+    <span id="log-search-count" style="color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)"></span>
+  </div>
+  <oas-log id="log-search" line-number style="height: 240px; width: 100%; background: var(--oas-color-bg); border: 1px solid var(--oas-color-border); border-radius: var(--oas-radius-md)"></oas-log>
+  <p style="width: 100%; margin: var(--oas-space-2) 0 0; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm)">
+    <code>keyword</code> 非空时只显示命中行（大小写不敏感），命中片段包 mark 高亮（与 <code>highlight</code> 通道同视觉体系），行号仍显示原始行号；组件派发 <code>oas-search</code>（detail <code>{ keyword, matched, total }</code>）供宿主展示命中计数。清空输入即恢复全部行，宿主 <code>lines</code> 数据不被修改。
+  </p>
+</DemoBlock>
+
 ## 级别着色
 
 <DemoBlock title="levels 级别语义色">
@@ -205,6 +218,39 @@ onMounted(() => {
       ]
     }
 
+    // 搜索过滤：输入关键字实时过滤 + 命中高亮 + oas-search 计数展示
+    const searchLog = document.querySelector('#log-search')
+    const searchInput = document.querySelector('#log-search-input')
+    const searchCount = document.querySelector('#log-search-count')
+    if (searchLog) {
+      searchLog.lines = [
+        'INFO  服务启动完成，监听 :5175',
+        'INFO  GET /api/users 200 12ms',
+        'WARN  磁盘占用超过 80%，请清理',
+        'ERROR 连接数据库超时，重试第 1 次',
+        'INFO  POST /api/orders 201 15ms',
+        'ERROR 连接数据库超时，重试第 2 次',
+        'INFO  GET /api/products 200 21ms',
+        'WARN  慢查询：SELECT * FROM orders 耗时 500ms',
+        'INFO  定时任务 gc 执行完成',
+        'ERROR 连接数据库超时，重试第 3 次',
+        'INFO  缓存命中率 96.5%',
+        'WARN  磁盘占用超过 90%，请立即清理',
+      ]
+      searchLog.addEventListener('oas-search', (e) => {
+        if (!searchCount) return
+        const { keyword, matched, total } = e.detail
+        searchCount.textContent = keyword ? `命中 ${matched}/${total} 行` : `共 ${total} 行`
+      })
+    }
+    if (searchInput && searchLog) {
+      searchInput.addEventListener('oas-input', (e) => {
+        const value = e.detail && e.detail.value
+        if (value) searchLog.setAttribute('keyword', value)
+        else searchLog.removeAttribute('keyword')
+      })
+    }
+
     // loading + scrollTo：模拟首屏拉取 → 填充 50 行 → 外部按钮跳转
     const methods = document.querySelector('#log-methods')
     const fetchBtn = document.querySelector('#log-fetch-btn')
@@ -249,9 +295,10 @@ onMounted(() => {
 ## 事件与方法
 
 - `oas-require-more`：滚动进入顶部/底部阈值区时派发（detail `{ from: 'top' | 'bottom' }`），边缘触发——停留不连发，离开区域后复位；阈值由 `offset-top` / `offset-bottom`（px）控制。
+- `oas-search`：搜索过滤结果上报（detail `{ keyword, matched, total }`）——keyword 变化或数据变化时派发（同状态去重）；`matched` 为当前命中行数、`total` 为总行数，过滤窗口为当前已加载行（与分段加载兼容）。
 - `scrollTo('top' | 'bottom' | number)`：滚动视口到顶/底/指定像素位置，供外部"回到底部"按钮调用。
 - `loading`：加载浮层遮罩视口，同步 `aria-busy`，文案走 locale（`loading.loading`）。
-- `levels` / `highlight`：行级别语义色 / 行级关键词·正则高亮通道（JSON 属性，语法见上方 demo）。
+- `levels` / `highlight` / `keyword`：行级别语义色 / 行级关键词·正则高亮 / 搜索过滤通道（JSON 属性，语法见上方 demo）。`keyword` 非空时只显示命中行（大小写不敏感），命中片段包 mark 高亮；过滤不改宿主 `lines`，行号与级别仍按原始索引对齐，清空即恢复。
 
 顶部插入历史行时 reconcile 按行内容 key 对齐：已有行节点复用、行号自动重排、视口阅读位置自动补偿。
 
@@ -264,6 +311,7 @@ onMounted(() => {
 | `auto-scroll` | 追加后自动滚动到底（仅贴底时滚动） | `string` | `true` |
 | `empty-text` | 空态文案（覆盖 locale 默认值） | — | — |
 | `highlight` | 行高亮规则（JSON 数组）：字符串=字面关键词；`{ text }` / `{ pattern, flags }` = 正则；命中片段包 mark 底色（warning token） | `string` | — |
+| `keyword` | 搜索过滤关键字：非空时只显示命中行（大小写不敏感），命中片段包 mark 高亮（同 highlight 视觉体系）；行号/levels 按原始索引对齐，清空/移除恢复全部行，不改宿主 lines | `string` | — |
 | `levels` | 行级别（JSON 数组，与 lines 索引对齐）：info/success/warning/error（warn/fatal 等别名归一），映射语义色 token | `string` | — |
 | `line-number` | 显示左侧行号栏 | `boolean` | — |
 | `lines` | 日志行 JSON 字符串（属性通道） | `string[]` | `[]` |
@@ -276,5 +324,6 @@ onMounted(() => {
 | 事件 | 说明 |
 | --- | --- |
 | `oas-require-more` | 滚动进入顶部/底部阈值区边缘派发一次（停留不连发、离开复位），`detail: { from: "top" \| "bottom" }`；宿主上翻拉历史/下拉拉新 |
+| `oas-search` | 搜索过滤结果上报：keyword 或数据变化时派发（同状态去重），`detail: { keyword, matched, total }`（matched=命中行数、total=总行数，过滤窗口为当前已加载行） |
 
 部件：`::part(viewport)` 滚动视口、`::part(log)` 日志内容、`::part(row)` 单行、`::part(line-number)` 行号、`::part(line)` 行文本、`::part(empty)` 空态。

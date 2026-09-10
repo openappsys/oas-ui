@@ -45,6 +45,12 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "keyword",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [
@@ -55,6 +61,10 @@
     }
   ],
   "events": [
+    {
+      "name": "oas-search",
+      "detail": "{ keyword, matched: this.view.length, total: this.data.length }"
+    },
     {
       "name": "oas-require-more",
       "detail": "{ from: 'top' } | { from: 'bottom' }"

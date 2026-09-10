@@ -322,6 +322,7 @@ export const zhCN = {
   'toolbar.item': '工具栏项',
   // log（日志流）
   'log.empty': '暂无日志',
+  'log.no-match': '无匹配日志',
   // theme-editor（主题编辑器）
   'themeEditor.label': '主题编辑器',
   'themeEditor.export': '导出主题 JSON',
