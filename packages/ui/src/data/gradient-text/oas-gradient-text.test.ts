@@ -154,4 +154,65 @@ describe('OASGradientText', () => {
     const el = mount()
     expect(el.textContent).toContain('渐变文字')
   })
+
+  it('stroke：合法宽度打 stroked 类 + 副层镜像槽文本 + 宽度/颜色变量落内联自定义属性', () => {
+    const el = mount({ stroke: '2px' })
+    expect(el.classList.contains('stroked')).toBe(true)
+    expect(el.style.getPropertyValue('--oas-gradient-text-stroke-w')).toBe('2px')
+    // 缺省描边色走 text-primary token（随主题亮暗自动切换）
+    expect(el.style.getPropertyValue('--oas-gradient-text-stroke-c')).toBe(
+      'var(--oas-color-text-primary)',
+    )
+    const layer = el.shadowRoot!.querySelector<HTMLElement>('[part="stroke"]')!
+    expect(layer).not.toBeNull()
+    expect(layer.textContent).toBe('渐变文字')
+    expect(layer.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('stroke 非法宽度被拦截（注入防护），不启用描边', () => {
+    const el = mount({ stroke: '2px;background:red' })
+    expect(el.classList.contains('stroked')).toBe(false)
+    expect(el.style.getPropertyValue('--oas-gradient-text-stroke-w')).toBe('')
+    const elUnit = mount({ stroke: '2' })
+    expect(elUnit.classList.contains('stroked')).toBe(false)
+  })
+
+  it('stroke-color：合法色落变量；非法/缺省回退 text-primary token', () => {
+    const el = mount({ stroke: '1px', 'stroke-color': '#123456' })
+    expect(el.style.getPropertyValue('--oas-gradient-text-stroke-c')).toBe('#123456')
+    const elBad = mount({ stroke: '1px', 'stroke-color': 'red;injected' })
+    expect(elBad.style.getPropertyValue('--oas-gradient-text-stroke-c')).toBe(
+      'var(--oas-color-text-primary)',
+    )
+  })
+
+  it('描边与渐变共存：stroked + clipped + 渐变内联背景三者并存（含 animated）', () => {
+    const el = mount({ stroke: '2px', gradient: '["#f00", "#00f"]', animated: '' })
+    const node = textEl(el)
+    expect(el.classList.contains('stroked')).toBe(true)
+    expect(node.classList.contains('clipped')).toBe(true)
+    expect(node.classList.contains('animated')).toBe(true)
+    expect(node.style.backgroundImage).toContain('#f00')
+    expect(el.shadowRoot!.querySelector('[part="stroke"]')!.textContent).toBe('渐变文字')
+  })
+
+  it('描边样式：-webkit-text-stroke 双层叠字 + @supports not 回退块（老浏览器主文字直描、副层隐藏）', () => {
+    const el = mount({ stroke: '2px' })
+    const style = styleText(el)
+    expect(style).toContain('-webkit-text-stroke')
+    expect(style).toContain('@supports not')
+    expect(style).toContain(':host(.stroked)')
+    expect(style).toContain('var(--oas-color-text-primary)')
+  })
+
+  it('stroke 属性运行时可增删：观察属性同步 stroked 类与变量', () => {
+    const el = mount()
+    expect(el.classList.contains('stroked')).toBe(false)
+    el.setAttribute('stroke', '3px')
+    expect(el.classList.contains('stroked')).toBe(true)
+    expect(el.style.getPropertyValue('--oas-gradient-text-stroke-w')).toBe('3px')
+    el.removeAttribute('stroke')
+    expect(el.classList.contains('stroked')).toBe(false)
+    expect(el.style.getPropertyValue('--oas-gradient-text-stroke-w')).toBe('')
+  })
 })

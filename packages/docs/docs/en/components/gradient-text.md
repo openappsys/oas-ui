@@ -54,10 +54,28 @@ A purely presentational component that fills text with a gradient color, impleme
 
 `animated` slides the background position along the gradient axis (palindrome stops + double-width background for a seamless loop); the duration is customizable via `--oas-gradient-text-duration`, and it stands still automatically under `prefers-reduced-motion`.
 
+## Text Stroke
+
+<DemoBlock title="Gradient + stroke (default token stroke color)">
+  <oas-gradient-text stroke="2px" style="font-size: var(--oas-font-size-xl); font-weight: 600;">Gradient with stroke</oas-gradient-text>
+</DemoBlock>
+
+<DemoBlock title="Gradient + custom stroke color">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-3); font-size: var(--oas-font-size-xl); font-weight: 600;">
+    <oas-gradient-text gradient='["#f00", "#00f"]' stroke="2px" stroke-color="#0b6cff">Red–blue gradient, blue stroke</oas-gradient-text>
+    <oas-gradient-text type="warning" stroke="1.5px">Semantic gradient, thin stroke</oas-gradient-text>
+    <oas-gradient-text animated gradient='["#0b6cff", "#16a34a", "#d97706"]' stroke="1px">Flowing gradient with stroke</oas-gradient-text>
+  </div>
+</DemoBlock>
+
+`stroke` sets the stroke width (only a number + `px`/`em`/`rem`/`pt` is accepted; invalid values disable the stroke), and `stroke-color` sets the stroke color. When omitted, the stroke color falls back to the `--oas-color-text-primary` token, which adapts to the light/dark theme and keeps the outline readable.
+
+The implementation uses double-layer stacking to avoid the compatibility conflict: a mirrored bottom layer paints only the stroke (`-webkit-text-stroke` + transparent fill) beneath the gradient layer, so the outline shows around the edges without being clipped by `background-clip: text`. It composes freely with `type`, `gradient`, and `animated`.
+
 ## Compatibility Notes
 
 - `background-clip: text` and the transparent color live inside an `@supports` block: browsers without clip support fall back to the normal text color — no invisible-text accident.
-- Text stroke (`-webkit-text-stroke`) conflicts with `background-clip: text` at the browser level; for stroked text use plain text with a stroke color instead.
+- Text stroke (`-webkit-text-stroke`) gets clipped when stacked directly with `background-clip: text`; the component solves this internally with double-layer stacking. Browsers without clip support fall back to stroking the main text directly (normal text color + stroke), so no double-text ghosting appears.
 - Multi-line truncation (ellipsis) behaves inconsistently across browsers when combined with `background-clip: text`; keep gradient text to a single line.
 
 ## Font Size
@@ -73,6 +91,8 @@ Font size follows the outer context (inherited) by default; override with the CS
 | `animated` | Flowing animation (palindrome stops, seamless loop, period via `--oas-gradient-text-duration`; static under prefers-reduced-motion) | `boolean` | — |
 | `direction` | Gradient direction (first argument of `linear-gradient`, e.g. `to right`, `135deg`) | `string` | — |
 | `gradient` | JSON color-stop array, e.g. `["#f00","#00f"]`; a single stop renders a solid color; missing / invalid values fall back to the default token gradient | `string` | — |
+| `stroke` | Stroke width (e.g. `1px` / `2px`; only a number + px/em/rem/pt is accepted; invalid values disable the stroke; double-layer stacking avoids the background-clip:text clipping conflict) | `string` | — |
+| `stroke-color` | Stroke color (falls back to the `--oas-color-text-primary` token, adapting to light/dark themes; whitelist-validated) | `string` | — |
 | `type` | Semantic color gradient: `primary` / `success` / `warning` / `danger` / `info` (token-derived two stops; explicit `gradient` wins) | `string` | — |
 
 ### Slots
