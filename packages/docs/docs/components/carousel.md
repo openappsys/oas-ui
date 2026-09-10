@@ -276,6 +276,36 @@ onMounted(() => {
   </div>
 </DemoBlock>
 
+## 卡片模式
+
+设置 `type="card"` 切换为卡片式轮播：当前卡居中为主体（默认占宽 60%），左右邻卡两侧部分露出并缩小降透明；点击任一邻卡直接切到该卡，焦点在轮播项内时也可用方向键切换。非循环模式（`loop="false"`）下首尾屏贴边展示——首屏贴左露出右邻卡、末屏贴右露出左邻卡，边界不悬空。卡宽、卡间距、邻卡缩放分别走 CSS 变量 `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale`。卡片模式仅水平方向生效，与 `slides-per-view` / `effect` / `direction` 互斥（同时设置时卡片模式优先），arrows / indicators / autoplay / 拖拽 / loop 均可组合使用。
+
+<DemoBlock title="卡片模式（type=card，点击邻卡切换）">
+  <div style="width: 100%">
+    <oas-carousel type="card" autoplay interval="3000">
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 200px; border-radius: var(--oas-radius-lg)">卡片 1</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 200px; border-radius: var(--oas-radius-lg)">卡片 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 200px; border-radius: var(--oas-radius-lg)">卡片 3</div>
+      <div style="background: var(--oas-color-danger); color: var(--oas-color-text-on-danger); height: 200px; border-radius: var(--oas-radius-lg)">卡片 4</div>
+      <div style="background: linear-gradient(135deg, var(--oas-color-primary), var(--oas-color-success)); color: var(--oas-color-text-on-primary); height: 200px; border-radius: var(--oas-radius-lg)">卡片 5</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+## 显式暂停按钮
+
+自动播放除悬停/聚焦自动暂停外，还可通过 `pause-button` 显示一个显式暂停/播放按钮（固定在右上角）。显式暂停优先级最高——暂停后即使移开鼠标也不会自动继续；未开启 `autoplay` 时点击「播放」会自动开启自动播放。按钮的 `aria-pressed` 与文案随暂停态同步。
+
+<DemoBlock title="显式暂停按钮（pause-button）">
+  <div style="width: 100%">
+    <oas-carousel autoplay interval="2000" pause-button>
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">点右上角按钮暂停 1</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">点右上角按钮暂停 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">点右上角按钮暂停 3</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### 属性
@@ -293,8 +323,10 @@ onMounted(() => {
 | `indicators` | 指示器开关（默认 true；`"false"` 隐藏） | `string` | `true` |
 | `interval` | 自动播放间隔（ms） | `string` | `3000` |
 | `loop` | 循环切换（默认开；`"false"` 时到边界停驻并禁用对应箭头） | `string` | — |
+| `pause-button` | 显示显式暂停/播放按钮（默认关；点击切换自动播放暂停/继续，优先级高于悬停暂停；未开启 autoplay 时点击播放即开启） | `boolean` | — |
 | `pause-on-hover` | 自动播放时悬停/聚焦暂停（默认 true；`"false"` 关闭；页面切后台恒停播） | `string` | `true` |
 | `slides-per-view` | 每屏展示屏数（默认 1；索引语义为页，末页对齐轨道末尾不露空白） | `string` | `1` |
+| `type` | 轮播形态：`"card"` 为卡片模式——当前卡居中为主体、左右邻卡露出缩小降透明，点击邻卡直接切换；与 `slides-per-view`/`effect`/`direction` 互斥（卡片模式优先），卡宽/卡间距/邻卡缩放走 `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale` | `string` | — |
 
 ### 事件
 
