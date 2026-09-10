@@ -46,13 +46,13 @@
     {
       "name": "width",
       "type": "string",
-      "default": "240",
+      "default": "",
       "observed": true
     },
     {
       "name": "height",
       "type": "string",
-      "default": "120",
+      "default": "",
       "observed": true
     },
     {

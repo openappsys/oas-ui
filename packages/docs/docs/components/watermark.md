@@ -84,7 +84,7 @@
   </div>
 </DemoBlock>
 
-`text` 支持 JSON 数组（或 `\n`）多行；`rotate` 控制旋转角（默认 -30）；`width` / `height` 调单枚画布尺寸（默认 240×120）；`font-size` / `font-weight` / `font-family` 进 canvas 文字；`color` 支持 11 个预设色名（走 `--oas-preset-*` token，暗色自动适配）或任意 CSS 色值，缺省跟随主题文字色（暗色下同样可见，主题切换自动重绘）。
+`text` 支持 JSON 数组（或 `\n`）多行；`rotate` 控制旋转角（默认 -30）；`width` / `height` 调单枚画布尺寸（**缺省按文字内容自适应**：旋转外接框 + 内边距，保证默认密度下每个平铺单元完整容纳文字）；`font-size` / `font-weight` / `font-family` 进 canvas 文字；`color` 支持 11 个预设色名（走 `--oas-preset-*` token，暗色自动适配）或任意 CSS 色值，缺省跟随主题文字色（暗色下同样可见，主题切换自动重绘）。
 
 ## 间隙与偏移
 
@@ -96,7 +96,7 @@
   </div>
 </DemoBlock>
 
-`gap="[x,y]"` 控制平铺单元间距（默认取 tile 尺寸 240×120），`offset="[x,y]"` 控制起始偏移（默认 gap/2）；`width` / `height` 可改文字 tile 尺寸，`z-index` 可抬升水印层（默认 2）。
+`gap="[x,y]"` 控制平铺单元间距（默认取 tile 尺寸），`offset="[x,y]"` 控制起始偏移（默认 gap/2）；`width` / `height` 可改文字 tile 尺寸，`z-index` 可抬升水印层（默认 2）。
 
 ## 错位排布
 
@@ -204,9 +204,9 @@ onMounted(async () => {
 | `font-size` | 字号（px，默认 16） | `string` | `16` |
 | `font-weight` | 字重（默认 400） | `string` | `400` |
 | `fullscreen` | 全屏水印：宿主 fixed inset:0 铺满视口（pointer-events:none），默认最高层级（z-index 属性或 --oas-watermark-fullscreen-z-index 可调），页面滚动不动 | `boolean` | — |
-| `gap` | 平铺间隙（px 或 JSON `[x,y]`，单值双等） | `string` | — |
+| `gap` | 平铺间隙 JSON [x,y]（默认 tile 尺寸） | `string` | — |
 | `grayscale` | 图片水印灰阶滤镜（canvas filter: grayscale(1)）；无 canvas 环境回退图层 CSS filter | `boolean` | — |
-| `height` | 单枚画布高度（px，默认 120） | `string` | `120` |
+| `height` | 文字 tile 高（未设置时按内容自适应；图片水印缺省 120） | `string` | — |
 | `image` | 图片水印 URL（存在时优先于 text） | `string` | — |
 | `movable` | 可拖拽移动水印（位移写回 `offset` 属性，受控保留） | `boolean` | — |
 | `offset` | 平铺起始偏移（px 或 JSON `[x,y]`；默认 gap/2，与旧居中视觉等价） | `string` | — |
@@ -216,7 +216,7 @@ onMounted(async () => {
 | `staggered` | 错位排布（双层背景，第二层偏移 offset + gap/2；仅平铺模式） | `boolean` | — |
 | `tamper-proof` | 防篡改（默认 true）：MutationObserver 监测图层被删/被改自动重挂并派发 `oas-remove`；`"false"` 关闭 | `string` | `true` |
 | `text` | 文字水印内容（与 image 二选一） | `string` | — |
-| `width` | 单枚画布宽度（px，默认 240） | `string` | `240` |
+| `width` | 文字 tile 宽（未设置时按内容自适应：旋转外接框 + 内边距；图片水印缺省 240） | `string` | — |
 | `z-index` | 水印层叠层级（默认 2）；fullscreen 时写到宿主，覆盖默认最高层 | `string` | — |
 
 ### 事件
