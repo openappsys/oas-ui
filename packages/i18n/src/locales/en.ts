@@ -121,6 +121,8 @@ export const en: LocaleMessages = {
   'carousel.prev': 'Previous slide',
   'carousel.next': 'Next slide',
   'carousel.dot': 'Slide {index}',
+  'carousel.pause': 'Pause autoplay',
+  'carousel.play': 'Resume autoplay',
   'image.loading': 'Loading…',
   'image.loadFailed': 'Image failed to load',
   'image.defaultAlt': 'Image',

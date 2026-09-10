@@ -276,6 +276,36 @@ Press and drag horizontally (vertically in vertical mode) past the threshold to 
   </div>
 </DemoBlock>
 
+## Card Mode
+
+Set `type="card"` for a card-style carousel: the current card is centered as the main body (60% of the width by default) while the neighboring cards peek out on both sides, scaled down and dimmed. Click any neighbor card to switch to it directly, or use the arrow keys while focus is inside a slide. In non-loop mode (`loop="false"`) the first/last cards sit flush against the edges — the first card sticks to the left showing the right neighbor, and the last card sticks to the right showing the left neighbor, so no edge is left hanging. Card width, card gap, and neighbor scale are controlled by the CSS variables `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale`. Card mode is horizontal-only and mutually exclusive with `slides-per-view` / `effect` / `direction` (card mode wins when both are set); arrows / indicators / autoplay / drag / loop all compose with it.
+
+<DemoBlock title="Card mode (type=card, click a side card to switch)">
+  <div style="width: 100%">
+    <oas-carousel type="card" autoplay interval="3000">
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 200px; border-radius: var(--oas-radius-lg)">Card 1</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 200px; border-radius: var(--oas-radius-lg)">Card 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 200px; border-radius: var(--oas-radius-lg)">Card 3</div>
+      <div style="background: var(--oas-color-danger); color: var(--oas-color-text-on-danger); height: 200px; border-radius: var(--oas-radius-lg)">Card 4</div>
+      <div style="background: linear-gradient(135deg, var(--oas-color-primary), var(--oas-color-success)); color: var(--oas-color-text-on-primary); height: 200px; border-radius: var(--oas-radius-lg)">Card 5</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
+## Explicit Pause Button
+
+Besides the automatic hover/focus pause, `pause-button` renders an explicit pause/play button (pinned to the top-right corner). The explicit pause takes priority: once paused, moving the mouse away will not resume autoplay; clicking play while `autoplay` is off enables autoplay. The button's `aria-pressed` and label follow the paused state.
+
+<DemoBlock title="Explicit pause button (pause-button)">
+  <div style="width: 100%">
+    <oas-carousel autoplay interval="2000" pause-button>
+      <div style="background: var(--oas-color-primary); color: var(--oas-color-text-on-primary); height: 160px">Click the corner button to pause 1</div>
+      <div style="background: var(--oas-color-success); color: var(--oas-color-text-on-success); height: 160px">Click the corner button to pause 2</div>
+      <div style="background: var(--oas-color-warning); color: var(--oas-color-text-on-warning); height: 160px">Click the corner button to pause 3</div>
+    </oas-carousel>
+  </div>
+</DemoBlock>
+
 ## API
 
 ### Attributes
@@ -293,8 +323,10 @@ Press and drag horizontally (vertically in vertical mode) past the threshold to 
 | `indicators` | Indicator switch (default true; `"false"` hides them) | `string` | `true` |
 | `interval` | Autoplay interval (ms) | `string` | `3000` |
 | `loop` | Loop around (default on; `"false"` stops at the edges and disables the corresponding arrow) | `string` | — |
+| `pause-button` | Show an explicit pause/play button (default off; click toggles autoplay pause/resume and takes priority over hover pausing; clicking play while autoplay is off enables it) | `boolean` | — |
 | `pause-on-hover` | Pause autoplay on hover/focus (default true; `"false"` disables; always pauses when the page is hidden) | `string` | `true` |
 | `slides-per-view` | Slides per page (default 1; index is page-based, last page aligns to the track end) | `string` | `1` |
+| `type` | Carousel layout type: `"card"` enables card mode — the current card is centered as the main body with neighboring cards peeking on both sides (scaled down, dimmed); clicking a neighbor card switches to it directly; mutually exclusive with `slides-per-view`/`effect`/`direction` (card mode wins); card width/gap/neighbor scale via `--oas-carousel-card-width` / `--oas-carousel-card-gap` / `--oas-carousel-card-scale` | `string` | — |
 
 ### Events
 

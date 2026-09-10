@@ -58,6 +58,76 @@ const STYLE = `
   grid-area: 1 / 1;
   transition: opacity var(--oas-transition-base) var(--oas-ease-out);
 }
+/* 卡片模式：当前卡居中为主体，左右邻卡部分露出并缩小降透明（仅水平方向生效） */
+:host([type='card']) .track {
+  gap: var(--oas-carousel-card-gap, var(--oas-space-3));
+}
+:host([type='card']) ::slotted(*) {
+  flex: 0 0 var(--oas-carousel-card-width, 60%);
+  width: var(--oas-carousel-card-width, 60%);
+  transition:
+    transform var(--oas-transition-base) var(--oas-ease-out),
+    opacity var(--oas-transition-base) var(--oas-ease-out);
+  cursor: pointer;
+}
+/* 显式暂停按钮：固定在右上角，图标随 aria-pressed 切换（内联原创 SVG） */
+.pause-btn {
+  position: absolute;
+  top: var(--oas-space-3);
+  right: var(--oas-space-3);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--oas-control-height-md);
+  height: var(--oas-control-height-md);
+  padding: 0;
+  border: 1px solid var(--oas-color-border);
+  border-radius: 50%;
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  font-family: inherit;
+  cursor: pointer;
+  opacity: 0.85;
+  transition:
+    opacity var(--oas-transition-base) var(--oas-ease-out),
+    color var(--oas-transition-base) var(--oas-ease-out),
+    border-color var(--oas-transition-base) var(--oas-ease-out),
+    background var(--oas-transition-base) var(--oas-ease-out);
+}
+.pause-btn[hidden] {
+  display: none;
+}
+.pause-btn:hover {
+  opacity: 1;
+  color: var(--oas-color-primary);
+  border-color: var(--oas-color-primary);
+  background: var(--oas-color-bg-hover);
+}
+.pause-btn:focus-visible {
+  outline: 2px solid var(--oas-color-primary);
+  outline-offset: 2px;
+}
+.pause-btn svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+.pause-btn .icon-play {
+  display: none;
+}
+.pause-btn[aria-pressed='true'] .icon-play {
+  display: block;
+}
+.pause-btn[aria-pressed='true'] .icon-pause {
+  display: none;
+}
+/* 垂直模式：暂停钮挪到左下角（右側让位给垂直指示器） */
+:host([direction='vertical']) .pause-btn {
+  right: auto;
+  left: var(--oas-space-3);
+}
 .dots {
   position: absolute;
   bottom: var(--oas-space-3);
@@ -221,8 +291,10 @@ export class OASCarousel extends OASElement {
       'indicator-type',
       'effect',
       'direction',
+      'type',
       'loop',
       'pause-on-hover',
+      'pause-button',
       'slides-per-view',
       'gap',
     ]
@@ -230,11 +302,13 @@ export class OASCarousel extends OASElement {
 
   private count = 0
   private timer: ReturnType<typeof setInterval> | null = null
-  /** 悬停/聚焦/页面不可见/拖拽 四种暂停源（WCAG 2.2.2：自动播放必须可暂停） */
+  /** 悬停/聚焦/页面不可见/拖拽/显式暂停 五种暂停源（WCAG 2.2.2：自动播放必须可暂停） */
   private hoverPaused = false
   private focusPaused = false
   private hiddenPaused = false
   private dragPaused = false
+  /** 显式暂停（pause-button 触发）：优先级最高，悬停移出不会自动恢复 */
+  private userPaused = false
   /** 拖拽进行中的手势状态（null=未拖拽） */
   private drag: { startX: number; startY: number; delta: number } | null = null
 
@@ -247,6 +321,10 @@ export class OASCarousel extends OASElement {
       </div>
       <button type="button" class="arrow arrow-prev" part="arrow-prev" aria-label="">‹</button>
       <button type="button" class="arrow arrow-next" part="arrow-next" aria-label="">›</button>
+      <button type="button" class="pause-btn" part="pause-button" aria-label="" hidden>
+        <svg class="icon-pause" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 3h2.4v10H4.5zM9.1 3h2.4v10H9.1z"/></svg>
+        <svg class="icon-play" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 3.2v9.6L12.4 8z"/></svg>
+      </button>
       <div class="dots" part="dots" role="tablist"></div>
     `
   }
@@ -280,6 +358,40 @@ export class OASCarousel extends OASElement {
     })
     this.shadow.querySelector('[part="arrow-next"]')?.addEventListener('click', () => {
       this.next()
+    })
+    // 显式暂停按钮：autoplay 未开启时点击=开启播放；已开启时切换暂停/继续
+    this.shadow.querySelector('[part="pause-button"]')?.addEventListener('click', () => {
+      if (!this.hasAttr('autoplay')) {
+        this.userPaused = false
+        // attributeChangedCallback 会同步 update/schedule
+        this.setAttribute('autoplay', '')
+        return
+      }
+      this.userPaused = !this.userPaused
+      this.update()
+      this.schedule()
+    })
+    // 卡片模式：点击任一邻卡直接切到该卡（等效多步 next/prev），点击当前卡 no-op
+    this.addEventListener('click', (e) => {
+      if (!this.isCard()) return
+      const path = e.composedPath()
+      const kids = Array.from(this.children)
+      const hit = kids.findIndex((k) => path.includes(k))
+      if (hit >= 0 && hit !== this.current()) this.goTo(hit)
+    })
+    // 卡片模式：宿主级方向键切换（焦点在轮播项内时可达；指示器区有独立导航，避免重复处理）
+    this.addEventListener('keydown', (e) => {
+      if (!this.isCard()) return
+      const ev = e as KeyboardEvent
+      const dots = this.shadow.querySelector('.dots')
+      if (dots && ev.composedPath().includes(dots)) return
+      if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') {
+        ev.preventDefault()
+        this.next()
+      } else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') {
+        ev.preventDefault()
+        this.prev()
+      }
     })
     // 动态增删轮播项：slotchange 重数数量、重建指示器、收敛 index
     this.shadow.querySelector('slot')?.addEventListener('slotchange', () => {
@@ -333,14 +445,14 @@ export class OASCarousel extends OASElement {
     viewport.addEventListener('pointermove', (e) => {
       if (!this.drag) return
       const ev = e as PointerEvent
-      const vertical = this.getAttr('direction', 'horizontal') === 'vertical'
+      const vertical = !this.isCard() && this.getAttr('direction', 'horizontal') === 'vertical'
       this.drag.delta = vertical ? ev.clientY - this.drag.startY : ev.clientX - this.drag.startX
       trackOf(this)?.style.setProperty('transform', this.trackTransform(this.drag.delta))
     })
     const finish = (e: Event) => {
       if (!this.drag) return
       const ev = e as PointerEvent
-      const vertical = this.getAttr('direction', 'horizontal') === 'vertical'
+      const vertical = !this.isCard() && this.getAttr('direction', 'horizontal') === 'vertical'
       const delta = vertical
         ? this.drag.delta
         : ev.clientX - this.drag.startX || this.drag.delta
@@ -377,11 +489,17 @@ export class OASCarousel extends OASElement {
     return Number(this.getAttr('index', '0')) || 0
   }
 
-  /** 每屏轮播项数（fade 模式为全屏叠层语义，恒为 1） */
+  /** 每屏轮播项数（fade 与卡片模式均为单卡全宽语义，恒为 1） */
   private perView(): number {
+    if (this.isCard()) return 1
     if (this.getAttr('effect', 'slide') === 'fade') return 1
     const n = Math.floor(Number(this.getAttr('slides-per-view', '1')))
     return Number.isFinite(n) && n > 0 ? n : 1
+  }
+
+  /** 卡片模式：type="card"，当前卡居中为主体、邻卡两侧露出（仅水平方向生效） */
+  private isCard(): boolean {
+    return this.getAttr('type', '') === 'card'
   }
 
   /** 页数 = 按屏步进的组数（指示器个数） */
@@ -401,6 +519,19 @@ export class OASCarousel extends OASElement {
    * deltaPx 为拖拽跟手偏移（px），非拖拽时为 0。
    */
   private trackTransform(deltaPx = 0): string {
+    // 卡片模式仅水平：第 i 卡中心对齐视口中心，左右邻卡自然露出。
+    // 非循环模式首尾屏贴边（首屏贴左露右邻卡、末屏贴右露左邻卡），边界不悬空。
+    if (this.isCard()) {
+      const w = 'var(--oas-carousel-card-width, 60%)'
+      const gap = 'var(--oas-carousel-card-gap, var(--oas-space-3))'
+      const i = Math.min(this.current(), Math.max(0, this.count - 1))
+      let center = `(100% - (${w})) / 2`
+      if (this.getAttr('loop', '') === 'false') {
+        if (i === 0) center = '0px'
+        else if (i === this.count - 1) center = `(100% - (${w}))`
+      }
+      return `translateX(calc(-1 * ${i} * ((${w}) + ${gap}) + ${center} + ${deltaPx}px))`
+    }
     const axis = this.getAttr('direction', 'horizontal') === 'vertical' ? 'Y' : 'X'
     const per = this.perView()
     const offsetSlides = Math.min(this.current() * per, Math.max(0, this.count - per))
@@ -430,15 +561,24 @@ export class OASCarousel extends OASElement {
     const track = trackOf(this)
     if (track) track.style.transform = this.trackTransform()
 
-    // fade 叠层：激活屏 opacity 1，其余 0（grid 堆叠，in-flow）；slide 模式清理内联态
-    const fade = this.getAttr('effect', 'slide') === 'fade'
+    // fade 叠层：激活屏 opacity 1，其余 0（grid 堆叠，in-flow）；卡片模式：当前卡原大，邻卡缩小降透明；
+    // slide 模式清理内联态
+    const fade = !this.isCard() && this.getAttr('effect', 'slide') === 'fade'
+    const card = this.isCard()
     Array.from(this.children).forEach((child, i) => {
       const h = child as HTMLElement
-      if (fade) {
+      if (card) {
+        const active = i === index
+        h.style.opacity = active ? '' : '0.45'
+        h.style.transform = active ? '' : 'scale(var(--oas-carousel-card-scale, 0.85))'
+        h.style.zIndex = active ? '2' : '1'
+      } else if (fade) {
         h.style.opacity = i === index ? '1' : '0'
         h.style.pointerEvents = i === index ? '' : 'none'
-      } else if (h.style.opacity !== '') {
+      } else if (h.style.opacity !== '' || h.style.transform !== '' || h.style.zIndex !== '') {
         h.style.opacity = ''
+        h.style.transform = ''
+        h.style.zIndex = ''
         h.style.pointerEvents = ''
       }
     })
@@ -462,6 +602,20 @@ export class OASCarousel extends OASElement {
     this.shadow
       .querySelector<HTMLElement>('[part="arrow-next"]')
       ?.setAttribute('aria-label', this.t('carousel.next'))
+
+    // 显式暂停按钮：pause-button 开启时显示；aria-pressed 与文案同步暂停态
+    const pauseBtn = this.shadow.querySelector<HTMLElement>('[part="pause-button"]')
+    if (pauseBtn) {
+      const show = this.hasAttr('pause-button')
+      pauseBtn.toggleAttribute('hidden', !show)
+      if (show) {
+        pauseBtn.setAttribute('aria-pressed', String(this.userPaused))
+        pauseBtn.setAttribute(
+          'aria-label',
+          this.t(this.userPaused ? 'carousel.play' : 'carousel.pause'),
+        )
+      }
+    }
 
     // 视口 aria-live 策略：自动播放时 off（读屏不逐屏播报），否则 polite
     this.shadow
@@ -522,8 +676,9 @@ export class OASCarousel extends OASElement {
     this.goto(index)
   }
 
-  /** 自动播放是否处于暂停（悬停/聚焦/不可见/拖拽任一命中即暂停） */
+  /** 自动播放是否处于暂停（显式暂停 > 悬停/聚焦/不可见/拖拽，任一命中即暂停） */
   private isPaused(): boolean {
+    if (this.userPaused) return true
     if (this.dragPaused || this.hiddenPaused) return true
     if (!this.hasAttr('autoplay')) return false
     if (this.getAttr('pause-on-hover', 'true') === 'false') return false

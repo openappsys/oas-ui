@@ -497,6 +497,179 @@ describe('OASCarousel', () => {
     })
   })
 
+  describe('卡片模式（type=card）', () => {
+    it('type=card 时忽略 slides-per-view，指示器按单卡渲染', () => {
+      const el = mount({ type: 'card', 'slides-per-view': '2' }, 4)
+      expect(el.shadowRoot!.querySelectorAll('[part="dot"]').length).toBe(4)
+    })
+
+    it('轨道位移按卡宽居中（引用 --oas-carousel-card-width token）', () => {
+      const el = mount({ type: 'card' }, 3)
+      expect(track(el).style.transform).toContain('translateX')
+      expect(track(el).style.transform).toContain('--oas-carousel-card-width')
+      el.goTo(1)
+      expect(track(el).style.transform).toContain('calc')
+    })
+
+    it('当前卡不缩不放，邻卡 scale + 降透明', () => {
+      const el = mount({ type: 'card' }, 3)
+      const slides = Array.from(el.children) as HTMLElement[]
+      expect(slides[0]!.style.transform).toBe('')
+      expect(slides[0]!.style.opacity).toBe('')
+      expect(slides[1]!.style.transform).toContain('scale')
+      expect(slides[1]!.style.opacity).toBe('0.45')
+      el.goTo(1)
+      expect(slides[1]!.style.transform).toBe('')
+      expect(slides[0]!.style.transform).toContain('scale')
+    })
+
+    it('点击邻卡直接切换到该卡并派发 oas-change', () => {
+      const el = mount({ type: 'card' }, 3)
+      let detail: unknown
+      el.addEventListener('oas-change', (e: Event) => (detail = (e as CustomEvent).detail))
+      ;(el.children[2] as HTMLElement).click()
+      expect(el.getAttribute('index')).toBe('2')
+      expect(detail).toEqual({ index: 2, prevIndex: 0 })
+    })
+
+    it('点击当前卡 no-op（不派发事件）', () => {
+      const el = mount({ type: 'card' }, 3)
+      const details: unknown[] = []
+      el.addEventListener('oas-change', (e: Event) => details.push((e as CustomEvent).detail))
+      ;(el.children[0] as HTMLElement).click()
+      expect(el.getAttribute('index')).toBe('0')
+      expect(details).toEqual([])
+    })
+
+    it('键盘 ArrowLeft/ArrowRight 在卡片模式切换', () => {
+      const el = mount({ type: 'card' }, 3)
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+      expect(el.getAttribute('index')).toBe('1')
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+      expect(el.getAttribute('index')).toBe('0')
+    })
+
+    it('卡片模式忽略 direction=vertical（仍走水平位移）', () => {
+      const el = mount({ type: 'card', direction: 'vertical' }, 3)
+      el.goTo(1)
+      expect(track(el).style.transform).toContain('translateX')
+    })
+
+    it('移除 type 后清理子项内联样式', () => {
+      const el = mount({ type: 'card' }, 3)
+      el.removeAttribute('type')
+      const slides = Array.from(el.children) as HTMLElement[]
+      expect(slides[1]!.style.opacity).toBe('')
+      expect(slides[1]!.style.transform).toBe('')
+    })
+
+    it('effect=fade 与 type=card 同设时卡片模式优先', () => {
+      const el = mount({ type: 'card', effect: 'fade' }, 3)
+      const slides = Array.from(el.children) as HTMLElement[]
+      expect(slides[0]!.style.opacity).toBe('')
+      expect(slides[1]!.style.opacity).toBe('0.45')
+      expect(slides[1]!.style.transform).toContain('scale')
+    })
+
+    it('卡片模式拖拽仍可切屏', () => {
+      const el = mount({ type: 'card' }, 3)
+      const viewport = el.shadowRoot!.querySelector<HTMLElement>('[part="viewport"]')!
+      viewport.dispatchEvent(pointer('pointerdown', 400))
+      viewport.dispatchEvent(pointer('pointermove', 280))
+      viewport.dispatchEvent(pointer('pointerup', 280))
+      expect(el.getAttribute('index')).toBe('1')
+    })
+
+    it('loop=false 时首尾屏贴边（首屏露右邻卡、末屏露左邻卡，不悬空）', () => {
+      const el = mount({ type: 'card', loop: 'false' }, 3)
+      // 首屏：无居中偏移
+      expect(track(el).style.transform).toContain('0px')
+      expect(track(el).style.transform).not.toContain('/ 2')
+      // 中间屏：居中
+      el.goTo(1)
+      expect(track(el).style.transform).toContain('/ 2')
+      // 末屏：偏移量含整段卡宽补偿（贴右）
+      el.goTo(2)
+      expect(track(el).style.transform).toContain('(100% - (var(--oas-carousel-card-width, 60%)))')
+    })
+
+    it('loop 模式（默认）首尾屏保持居中', () => {
+      const el = mount({ type: 'card' }, 3)
+      expect(track(el).style.transform).toContain('/ 2')
+    })
+
+    it('卡片样式规则引用 token 变量（卡宽/卡间距可调），邻卡缩放走 token', () => {      const el = mount({ type: 'card' }, 3)
+      const style = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(style).toContain('--oas-carousel-card-width')
+      expect(style).toContain('--oas-carousel-card-gap')
+      // 邻卡缩放经 --oas-carousel-card-scale（内联 transform 引用，宿主可覆盖）
+      const slides = Array.from(el.children) as HTMLElement[]
+      expect(slides[1]!.style.transform).toContain('--oas-carousel-card-scale')
+    })
+  })
+
+  describe('显式暂停按钮（pause-button）', () => {
+    it('pause-button 时渲染可见按钮，未设置时隐藏', () => {
+      const off = mount()
+      expect(off.shadowRoot!.querySelector('[part="pause-button"]')?.hasAttribute('hidden')).toBe(
+        true,
+      )
+      const el = mount({ autoplay: '', 'pause-button': '' })
+      const btn = el.shadowRoot!.querySelector<HTMLElement>('[part="pause-button"]')!
+      expect(btn.hasAttribute('hidden')).toBe(false)
+      expect(btn.getAttribute('aria-pressed')).toBe('false')
+      expect(btn.getAttribute('aria-label')).toBe('暂停自动播放')
+    })
+
+    it('点击切换暂停：aria-pressed 同步，autoplay 停走，再点恢复', () => {
+      vi.useFakeTimers()
+      const el = mount({ autoplay: '', interval: '1000', 'pause-button': '' })
+      const btn = el.shadowRoot!.querySelector<HTMLElement>('[part="pause-button"]')!
+      btn.click()
+      expect(btn.getAttribute('aria-pressed')).toBe('true')
+      expect(btn.getAttribute('aria-label')).toBe('继续自动播放')
+      vi.advanceTimersByTime(5000)
+      expect(el.getAttribute('index')).toBe('0')
+      btn.click()
+      expect(btn.getAttribute('aria-pressed')).toBe('false')
+      vi.advanceTimersByTime(2500)
+      expect(el.getAttribute('index')).toBe('2')
+      vi.useRealTimers()
+    })
+
+    it('显式暂停优先于悬停恢复：移出指针不自动继续', () => {
+      vi.useFakeTimers()
+      const el = mount({ autoplay: '', interval: '1000', 'pause-button': '' })
+      const btn = el.shadowRoot!.querySelector<HTMLElement>('[part="pause-button"]')!
+      btn.click()
+      el.dispatchEvent(new PointerEvent('pointerenter'))
+      el.dispatchEvent(new PointerEvent('pointerleave'))
+      vi.advanceTimersByTime(5000)
+      expect(el.getAttribute('index')).toBe('0')
+      vi.useRealTimers()
+    })
+
+    it('未开启 autoplay 时点击播放自动开启 autoplay', () => {
+      vi.useFakeTimers()
+      const el = mount({ interval: '1000', 'pause-button': '' })
+      const btn = el.shadowRoot!.querySelector<HTMLElement>('[part="pause-button"]')!
+      btn.click()
+      expect(el.hasAttribute('autoplay')).toBe(true)
+      vi.advanceTimersByTime(2500)
+      expect(el.getAttribute('index')).toBe('2')
+      vi.useRealTimers()
+    })
+
+    it('locale：暂停钮 aria-label 随 setLocale 切换', () => {
+      const el = mount({ autoplay: '', 'pause-button': '' })
+      const btn = el.shadowRoot!.querySelector<HTMLElement>('[part="pause-button"]')!
+      expect(btn.getAttribute('aria-label')).toBe('暂停自动播放')
+      setLocale(en)
+      expect(btn.getAttribute('aria-label')).toBe('Pause autoplay')
+      setLocale('zh-CN')
+    })
+  })
+
   describe('无障碍', () => {
     it('autoplay 时视口 aria-live=off，否则 polite', () => {
       const el = mount({ autoplay: '' })
