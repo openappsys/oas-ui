@@ -33,6 +33,18 @@
     {
       "name": "suffix-text",
       "observed": true
+    },
+    {
+      "name": "type",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "start",
+      "type": "string",
+      "default": "0",
+      "observed": true
     }
   ],
   "props": [],
@@ -42,7 +54,7 @@
     },
     {
       "name": "oas-change",
-      "detail": "{ value: remaining }"
+      "detail": "{ value: current } | { value: remaining }"
     }
   ],
   "slots": [
