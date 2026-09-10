@@ -126,6 +126,7 @@ export const en: LocaleMessages = {
   'image.loading': 'Loading…',
   'image.loadFailed': 'Image failed to load',
   'image.defaultAlt': 'Image',
+  'imageGroup.group': 'Image gallery',
   'avatar.defaultAlt': 'Avatar',
   'avatar.changeAvatar': 'Change avatar',
   'avatar.foldedMembers': 'All members',

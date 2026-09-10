@@ -62,6 +62,14 @@
   height: 110px;
   object-fit: cover;
 }
+.group-wall {
+  width: 100%;
+}
+.group-wall oas-image::part(image) {
+  width: 160px;
+  height: 100px;
+  object-fit: cover;
+}
 </style>
 
 ## 占位与兜底
@@ -213,6 +221,23 @@
   </div>
 </DemoBlock>
 
+## 图集容器（oas-image-group）
+
+<DemoBlock title="图集容器（声明式图片墙 → 共享预览）">
+  <p class="image-cap">把多个 <code>oas-image</code> 放进 <code>oas-image-group</code>，容器自动收集为共享图集：点击任一图片从该张起打开预览，两侧箭头 / 键盘 ←→ 在整组图间翻页（页码 n/total）。子图带 <code>preview</code> 时点击同样被容器接管为组图集，不再需要各自配置 <code>preview-src-list</code>。</p>
+  <oas-image-group id="image-group-demo" class="group-wall">
+    <oas-image src="https://picsum.photos/seed/isui-group-1/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="图集图片 1"></oas-image>
+    <oas-image src="https://picsum.photos/seed/isui-group-2/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="图集图片 2"></oas-image>
+    <oas-image src="https://picsum.photos/seed/isui-group-3/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="图集图片 3"></oas-image>
+    <oas-image src="https://picsum.photos/seed/isui-group-4/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="图集图片 4"></oas-image>
+  </oas-image-group>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    子图动态增删（或修改 <code>src</code>）图集自动同步；<code>current</code> 可选受控当前索引——属性在场时点击按 <code>current</code> 起开、内部翻页反射回该属性，缺席时不造属性、仅派发 <code>oas-change</code>（detail <code>{ current, prev }</code>，演示见上方消息反馈）；<code>infinite</code> 透传共享预览。
+  </p>
+</DemoBlock>
+
+与 `preview-src-list` 的关系：`preview-src-list` 适合「数据数组驱动」的单点图集入口（一张缩略图代表整组）；`oas-image-group` 适合「声明式图片墙」——每张子图天然是图集成员，DOM 里加图即入集。两者共享同一份预览浮层能力（缩放/旋转/翻转/下载/Esc/遮罩/焦点陷阱）；组内子图仍可用 `preview-src` 指定预览原图、用 `preview-src-list` 把单张子图展平为多张。组图默认 flex 换行排列，间距可经 CSS 变量 `--oas-image-group-gap` 覆盖。
+
 ### 预览缩放 CSS 变量
 
 | CSS 变量 | 默认值 | 说明 |
@@ -266,6 +291,11 @@ onMounted(async () => {
     message.success(`oas-preview-change: ${e.detail.open}`)
   })
 
+  // 图集容器：切图时给出可见反馈（oas-change 的 current/prev）
+  document.querySelector('#image-group-demo')?.addEventListener('oas-change', (e) => {
+    message.success(`oas-change：current=${e.detail.current}，prev=${e.detail.prev}`)
+  })
+
   // 加载事件演示
   document.querySelector('#image-events-ok')?.addEventListener('oas-load', (e) => {
     message.success(`oas-load：${e.detail.src}`)
@@ -300,7 +330,7 @@ onMounted(async () => {
 
 ## API
 
-### 属性
+### oas-image
 
 | 属性 | 说明 | 类型 | 默认值 |
 | --- | --- | --- | --- |
@@ -316,18 +346,31 @@ onMounted(async () => {
 | `preview-src-list` | 图集预览：URL JSON 数组，点开后 prev/next 翻页 + 页码 + 键盘 ←→ | `string` | — |
 | `src` | 图片地址 | `string` | — |
 
-### 事件
-
 | 事件 | 说明 |
 | --- | --- |
 | `oas-error` | 图片最终失败（回退链耗尽），`detail: { src }` |
 | `oas-load` | 图片加载成功，`detail: { src }` |
 | `oas-preview` | 打开预览浮层，`detail: { src }`；浮层关闭不派发事件 |
 | `oas-preview-change` | 预览开合变化，`detail: { open }` |
-
-### 插槽
+| `oas-preview-nav` | 图集翻页/跳转，`detail: { index, src }`；供 oas-image-group 容器接管索引 |
 
 | 名称 | 说明 |
 | --- | --- |
 | `template[slot="error"]` | 自定义失败占位内容（主图与图集预览失败位复用） |
 | `template[slot="placeholder"]` | 自定义加载占位内容（缺省为浅灰占位 + 文案） |
+
+### oas-image-group
+
+| 属性 | 说明 | 类型 | 默认值 |
+| --- | --- | --- | --- |
+| `current` | 当前图集索引（可选受控）：属性在场时受控——点击按 current 起开、内部翻页反射回该属性、外部改属性驱动预览跳图；缺席时不造属性，仅派发 oas-change | — | — |
+| `infinite` | 翻页首尾循环（透传共享预览宿主） | `boolean` | — |
+
+| 事件 | 说明 |
+| --- | --- |
+| `oas-change` | 图集切换，`detail: { current, prev }` |
+| `oas-preview` | 打开共享预览浮层，`detail: { src }`（src 为当前张地址） |
+
+| 名称 | 说明 |
+| --- | --- |
+| 默认 | — |

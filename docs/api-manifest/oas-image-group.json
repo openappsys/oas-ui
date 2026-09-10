@@ -1,0 +1,32 @@
+{
+  "className": "OASImageGroup",
+  "sourceFile": "packages/ui/src/data/image-group/oas-image-group.ts",
+  "attrs": [
+    {
+      "name": "current",
+      "observed": true
+    },
+    {
+      "name": "infinite",
+      "type": "boolean",
+      "observed": true
+    }
+  ],
+  "props": [],
+  "events": [
+    {
+      "name": "oas-preview",
+      "detail": "(e as CustomEvent).detail"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ current: index, prev }"
+    }
+  ],
+  "slots": [
+    {
+      "name": ""
+    }
+  ],
+  "unresolved": []
+}
