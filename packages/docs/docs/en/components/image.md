@@ -62,6 +62,14 @@ Set `object-fit` via `fit`, then fix the image container size with `::part(image
   height: 110px;
   object-fit: cover;
 }
+.group-wall {
+  width: 100%;
+}
+.group-wall oas-image::part(image) {
+  width: 160px;
+  height: 100px;
+  object-fit: cover;
+}
 </style>
 
 ## Placeholder and Fallback
@@ -213,6 +221,23 @@ When opened, the preview overlay is mounted to <code>document.body</code> (porta
   </div>
 </DemoBlock>
 
+## Image Group (oas-image-group)
+
+<DemoBlock title="Image group (declarative photo wall → shared preview)">
+  <p class="image-cap">Put multiple <code>oas-image</code> elements inside <code>oas-image-group</code> and the container collects them into a shared gallery: clicking any image opens the preview from that image, and the side arrows / keyboard ←→ page through the whole set (n/total counter). A child's own <code>preview</code> click is taken over by the container as the shared gallery — no per-image <code>preview-src-list</code> needed.</p>
+  <oas-image-group id="image-group-demo" class="group-wall">
+    <oas-image src="https://picsum.photos/seed/isui-group-1/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Gallery image 1"></oas-image>
+    <oas-image src="https://picsum.photos/seed/isui-group-2/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Gallery image 2"></oas-image>
+    <oas-image src="https://picsum.photos/seed/isui-group-3/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Gallery image 3"></oas-image>
+    <oas-image src="https://picsum.photos/seed/isui-group-4/480/300" fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYjRlYzUxJy8+PC9zdmc+" alt="Gallery image 4"></oas-image>
+  </oas-image-group>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    Dynamically adding/removing children (or changing their <code>src</code>) syncs the gallery automatically; <code>current</code> optionally controls the current index — when present, clicks open at <code>current</code> and internal paging reflects back to the attribute; when absent, the attribute is not created and only <code>oas-change</code> is emitted (<code>detail: { current, prev }</code>, see the message feedback above); <code>infinite</code> is passed through to the shared preview.
+  </p>
+</DemoBlock>
+
+Relation to `preview-src-list`: `preview-src-list` fits a data-array-driven single-entry gallery (one thumbnail representing the set); `oas-image-group` fits a declarative photo wall — every child image is naturally a gallery member, adding it to the DOM adds it to the set. Both share the same preview overlay capabilities (zoom/rotate/flip/download/Esc/mask/focus trap); children can still use `preview-src` for a dedicated preview URL, or `preview-src-list` to expand one child into multiple gallery entries. The group lays out as a wrapping flex row; the gap is customizable via the CSS variable <code>--oas-image-group-gap</code>.
+
 ### Preview Zoom CSS Variables
 
 | CSS Variable | Default | Description |
@@ -266,6 +291,11 @@ onMounted(async () => {
     message.success(`oas-preview-change: ${e.detail.open}`)
   })
 
+  // Image group: visible feedback on page change (oas-change current/prev)
+  document.querySelector('#image-group-demo')?.addEventListener('oas-change', (e) => {
+    message.success(`oas-change: current=${e.detail.current}, prev=${e.detail.prev}`)
+  })
+
   // Load event demos
   document.querySelector('#image-events-ok')?.addEventListener('oas-load', (e) => {
     message.success(`oas-load: ${e.detail.src}`)
@@ -301,7 +331,7 @@ onMounted(async () => {
 
 ## API
 
-### Attributes
+### oas-image
 
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
@@ -317,18 +347,31 @@ onMounted(async () => {
 | `preview-src-list` | Gallery preview: JSON array of URLs; prev/next paging + counter + keyboard ←→ after opening | `string` | — |
 | `src` | Image URL | `string` | — |
 
-### Events
-
 | Event | Description |
 | --- | --- |
 | `oas-error` | Image failed finally (fallback chain exhausted), `detail: { src }` |
 | `oas-load` | Image loaded successfully, `detail: { src }` |
 | `oas-preview` | Preview overlay opened, `detail: { src }`; closing the overlay does not emit an event |
 | `oas-preview-change` | Preview open state changed, `detail: { open }` |
-
-### Slots
+| `oas-preview-nav` | Gallery page change/jump, `detail: { index, src }`; lets the oas-image-group container take over the index |
 
 | Name | Description |
 | --- | --- |
 | `template[slot="error"]` | Custom error placeholder content (shared by the main image and gallery preview failures) |
 | `template[slot="placeholder"]` | Custom loading placeholder content (gray block + text by default) |
+
+### oas-image-group
+
+| Attribute | Description | Type | Default |
+| --- | --- | --- | --- |
+| `current` | Current gallery index (optional controlled): when present, clicks open at `current`, internal paging reflects back to the attribute, and external changes drive the preview jump; when absent the attribute is not created and only `oas-change` is emitted | — | — |
+| `infinite` | Loop paging around the first/last image (passed through to the shared preview host) | `boolean` | — |
+
+| Event | Description |
+| --- | --- |
+| `oas-change` | Gallery page changed, `detail: { current, prev }` |
+| `oas-preview` | Shared preview overlay opened, `detail: { src }` (src is the current image URL) |
+
+| Name | Description |
+| --- | --- |
+| default | — |
