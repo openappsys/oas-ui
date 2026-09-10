@@ -24,6 +24,18 @@
       "name": "animated",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "stroke",
+      "type": "string",
+      "default": "",
+      "observed": true
+    },
+    {
+      "name": "stroke-color",
+      "type": "string",
+      "default": "",
+      "observed": true
     }
   ],
   "props": [],
