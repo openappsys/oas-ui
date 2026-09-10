@@ -731,13 +731,15 @@
       "active": "Controlled pause: `\"false\"` freezes the frame and stops counting elapsed time, resuming continues (absent = running)",
       "format": "Template: `DD`/`D` days, `HH`/`H` hours, `mm`/`m` minutes, `ss`/`s` seconds, `SSS` milliseconds (50ms internal refresh when SSS present)",
       "title": "Heading above the display value (native global attribute, absorbed after rendering)",
-      "value": "Total countdown duration (milliseconds)",
+      "value": "Total countdown duration (milliseconds); ignored in count-up mode",
       "prefix-text": "Leading text of the display value",
-      "suffix-text": "Trailing text of the display value"
+      "suffix-text": "Trailing text of the display value",
+      "start": "Count-up start offset (milliseconds), only effective with `type=\"countup\"`; changing it restarts counting",
+      "type": "Timing mode: `\"countup\"` counts up from `start` with no end point (no `oas-finish`); absent = countdown"
     },
     "events": {
-      "oas-change": "Emitted on a throttled basis when the remaining displayed value changes, detail `{ value: remaining milliseconds }`",
-      "oas-finish": "Emitted once when the countdown reaches zero"
+      "oas-change": "Emitted on a throttled basis when the remaining displayed value changes, detail `{ value: remaining milliseconds }`; in count-up mode `{ value: elapsed milliseconds }`",
+      "oas-finish": "Emitted once when the countdown reaches zero (not emitted in count-up mode, which has no end point)"
     },
     "slots": {
       "prefix": "Leading content (distributed content takes precedence over the `prefix` attribute text)",
