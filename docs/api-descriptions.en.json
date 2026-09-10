@@ -1400,10 +1400,12 @@
       "levels": "Line levels (JSON array, index-aligned with lines): info/success/warning/error (aliases like warn/fatal normalized), mapped to semantic color tokens",
       "loading": "Loading state (viewport overlay + spinner + aria-busy)",
       "offset-bottom": "Distance from the bottom that counts as reaching it (px, fires `oas-require-more` with from=bottom, default 0)",
-      "offset-top": "Distance from the top that counts as reaching it (px, fires `oas-require-more` with from=top, default 0)"
+      "offset-top": "Distance from the top that counts as reaching it (px, fires `oas-require-more` with from=top, default 0)",
+      "keyword": "Search filter keyword: when non-empty, only matching lines are shown (case-insensitive) and matched fragments get a mark highlight (same visual system as highlight); line numbers / levels stay aligned to the original indices, clearing restores all lines without modifying the host's lines"
     },
     "events": {
-      "oas-require-more": "Fired once when scrolling enters the top/bottom threshold edge (not repeatedly while staying, re-arms after leaving), `detail: { from: \"top\" | \"bottom\" }`; for loading history/new entries"
+      "oas-require-more": "Fired once when scrolling enters the top/bottom threshold edge (not repeatedly while staying, re-arms after leaving), `detail: { from: \"top\" | \"bottom\" }`; for loading history/new entries",
+      "oas-search": "Search filter report: fired when the keyword or the data changes (deduped for identical state), `detail: { keyword, matched, total }` (matched = matching line count, total = total lines; the filter window is the currently loaded lines)"
     },
     "slots": {}
   },

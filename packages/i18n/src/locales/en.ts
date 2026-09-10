@@ -254,6 +254,7 @@ export const en: LocaleMessages = {
   'toolbar.input': 'Toolbar input',
   'toolbar.item': 'Toolbar item',
   'log.empty': 'No logs',
+  'log.no-match': 'No matching logs',
   'themeEditor.label': 'Theme editor',
   'themeEditor.export': 'Export theme JSON',
   'themeEditor.search': 'Search tokens',
