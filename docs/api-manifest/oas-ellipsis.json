@@ -15,6 +15,14 @@
       "observed": true
     },
     {
+      "name": "lines",
+      "observed": true
+    },
+    {
+      "name": "suffix",
+      "observed": true
+    },
+    {
       "name": "tooltip",
       "type": "string",
       "default": "true",
@@ -23,6 +31,10 @@
     {
       "name": "expandable",
       "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "expand-trigger",
       "observed": true
     },
     {
