@@ -628,6 +628,38 @@ describe('OASImage 图集预览', () => {
     expect(detail).toEqual({ src: '/b.png' })
   })
 
+  it('图集翻页派发 oas-preview-nav（detail {index, src}），供容器组件接管索引', () => {
+    const el = mountGallery()
+    openIt(el)
+    const navs: unknown[] = []
+    el.addEventListener('oas-preview-nav', (e: Event) => navs.push((e as CustomEvent).detail))
+    pq<HTMLElement>(el, '[part="preview-next"]').click()
+    expect(navs).toEqual([{ index: 1, src: '/b.png' }])
+    pq<HTMLElement>(el, '[part="preview-prev"]').click()
+    expect(navs).toEqual([
+      { index: 1, src: '/b.png' },
+      { index: 0, src: '/a.png' },
+    ])
+  })
+
+  it('previewGoTo(index)：预览打开时跳转到指定张并重置变换，越界收敛', () => {
+    const el = mountGallery()
+    openIt(el)
+    pq<HTMLElement>(el, '[part="preview-zoom-in"]').click()
+    el.previewGoTo(2)
+    expect(pq(el, '[part="preview-counter"]').textContent).toBe('3/3')
+    expect(previewImgAt(el).style.transform).toBe('translate(0px, 0px) rotate(0deg) scale(1)')
+    // 越界收敛到末张；同索引重复调用不做事
+    el.previewGoTo(99)
+    expect(pq(el, '[part="preview-counter"]').textContent).toBe('3/3')
+  })
+
+  it('previewGoTo(index)：预览未打开时不做事', () => {
+    const el = mountGallery()
+    el.previewGoTo(1)
+    expect(pq(el, '.preview-mask').hasAttribute('hidden')).toBe(true)
+  })
+
   it('图集模式下 prev/next 加入 Tab 焦点序列（含翻页按钮的工具栏焦点陷阱不报错）', () => {
     const el = mountGallery()
     openIt(el)

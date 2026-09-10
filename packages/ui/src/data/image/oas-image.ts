@@ -216,6 +216,9 @@ const round2 = (v: number): number => Math.round(v * 100) / 100
  *
  * 事件：`oas-preview`（打开时，detail `{ src }`，src 为当前预览地址）；
  * `oas-preview-change`（受控开合变化，detail `{ open }`，属性驱动不派发）；
+ * `oas-preview-nav`（图集翻页/跳转，detail `{ index, src }`，供 oas-image-group
+ * 容器接管索引）；`openPreview(index?)` 可指定图集起始索引，`previewGoTo(index)`
+ * 在预览打开时跳转到指定张（受控 current 驱动用，未打开不做事）；
  * `oas-load`/`oas-error`（主图加载成功/最终失败，detail `{ src }`；
  * fallback 重试期间不派发 oas-error，最终失败时 src 为兜底图地址）。
  *
@@ -614,6 +617,19 @@ export class OASImage extends OASElement {
     }
     this.syncPreviewChrome()
     this.syncPreviewError()
+    // 翻页通知（含跳转）：供 oas-image-group 等容器接管索引/派发 oas-change
+    this.emit('preview-nav', { index: i, src: this.currentPreviewSrc() })
+  }
+
+  /**
+   * 图集跳转到第 index 张（预览打开时生效；未打开/无图集不做事，越界收敛）。
+   * 供容器组件（oas-image-group）受控 `current` 属性驱动跳图。
+   */
+  previewGoTo(index: number): void {
+    if (!this.previewOpen || this.gallery.length === 0) return
+    const i = clamp(Math.trunc(index), 0, this.gallery.length - 1)
+    if (i === this.galleryIndex) return
+    this.showImage(i)
   }
 
   private handlePreviewLoad(): void {

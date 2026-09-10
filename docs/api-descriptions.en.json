@@ -1216,12 +1216,24 @@
       "oas-preview": "Preview overlay opened, `detail: { src }`; closing the overlay does not emit an event",
       "oas-load": "Image loaded successfully, `detail: { src }`",
       "oas-error": "Image failed finally (fallback chain exhausted), `detail: { src }`",
-      "oas-preview-change": "Preview open state changed, `detail: { open }`"
+      "oas-preview-change": "Preview open state changed, `detail: { open }`",
+      "oas-preview-nav": "Gallery page change/jump, `detail: { index, src }`; lets the oas-image-group container take over the index"
     },
     "slots": {
       "template[slot=\"placeholder\"]": "Custom loading placeholder content (gray block + text by default)",
       "template[slot=\"error\"]": "Custom error placeholder content (shared by the main image and gallery preview failures)"
     }
+  },
+  "oas-image-group": {
+    "attrs": {
+      "current": "Current gallery index (optional controlled): when present, clicks open at `current`, internal paging reflects back to the attribute, and external changes drive the preview jump; when absent the attribute is not created and only `oas-change` is emitted",
+      "infinite": "Loop paging around the first/last image (passed through to the shared preview host)"
+    },
+    "events": {
+      "oas-preview": "Shared preview overlay opened, `detail: { src }` (src is the current image URL)",
+      "oas-change": "Gallery page changed, `detail: { current, prev }`"
+    },
+    "slots": {}
   },
   "oas-input": {
     "attrs": {

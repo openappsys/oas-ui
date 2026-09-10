@@ -3,6 +3,99 @@
 import { test, expect } from '@playwright/test'
 import { up } from './helpers'
 
+test('image-group：容器收集子图为共享图集，点击打开共享预览、prev/next 切换 current、动态增删同步', async ({
+  page,
+}) => {
+  await page.goto('/components/image.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#image-group-demo')
+  // 收集：内部预览宿主 preview-src-list 展平子图数；容器 role=group 语义
+  const collected = await page.evaluate(() => {
+    const g = document.querySelector('#image-group-demo')!
+    const inner = g.shadowRoot!.querySelector('oas-image')!
+    return {
+      children: g.querySelectorAll('oas-image').length,
+      list: JSON.parse(inner.getAttribute('preview-src-list') || '[]').length,
+      role: g.shadowRoot!.querySelector('[part="group"]')!.getAttribute('role'),
+      ariaLabel: g.shadowRoot!.querySelector('[part="group"]')!.getAttribute('aria-label'),
+    }
+  })
+  expect(collected.children).toBeGreaterThanOrEqual(3)
+  expect(collected.list, '图集列表应收集全部子图').toBe(collected.children)
+  expect(collected.role).toBe('group')
+  expect(collected.ariaLabel).toBe('图集')
+
+  // 点击第 2 张 → 共享预览从 2/N 起开；子图自身预览被接管（自身遮罩保持关闭）
+  await page.locator('#image-group-demo oas-image').nth(1).click()
+  await page.waitForSelector('[data-oas-image-preview-portal]', { timeout: 15000 })
+  const opened = await page.evaluate(() => {
+    const portal = document.querySelector('[data-oas-image-preview-portal]')!
+    const mask = portal.shadowRoot!.querySelector('.preview-mask')!
+    const counter = portal.shadowRoot!.querySelector('[part="preview-counter"]')!
+    const g = document.querySelector('#image-group-demo')!
+    const childMask = g
+      .querySelectorAll('oas-image')[1]!
+      .shadowRoot!.querySelector('.preview-mask')!
+    return {
+      maskHidden: mask.hasAttribute('hidden'),
+      counter: counter.textContent,
+      childMaskHidden: childMask.hasAttribute('hidden'),
+      current: g.getAttribute('current'),
+    }
+  })
+  expect(opened.maskHidden).toBe(false)
+  expect(opened.counter).toBe(`2/${collected.children}`)
+  expect(opened.childMaskHidden, '子图自身预览应被容器接管').toBe(true)
+  // 非受控模式不反射 current（保持点击哪张从哪张开的直觉）
+  expect(opened.current).toBeNull()
+
+  // prev/next 在整组间切换：next → current 反射 2，页码 3/N
+  await page.evaluate(() => {
+    document
+      .querySelector('[data-oas-image-preview-portal]')!
+      .shadowRoot!.querySelector<HTMLElement>('[part="preview-next"]')!
+      .click()
+  })
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-oas-image-preview-portal]')!
+        .shadowRoot!.querySelector('[part="preview-counter"]')!
+        .textContent!.startsWith('3/'),
+    null,
+    { timeout: 15000 },
+  )
+  expect(await page.$eval('#image-group-demo', (el) => el.getAttribute('current'))).toBeNull()
+
+  // Esc 关闭共享预览：portal 拆除，无孤儿浮层
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(
+    () => document.querySelector('[data-oas-image-preview-portal]') === null,
+    null,
+    { timeout: 15000 },
+  )
+
+  // 动态增删子图：图集列表同步（+1 / 还原）
+  const synced = await page.evaluate(async () => {
+    const g = document.querySelector('#image-group-demo')!
+    const read = () =>
+      JSON.parse(
+        g.shadowRoot!.querySelector('oas-image')!.getAttribute('preview-src-list') || '[]',
+      ).length
+    const before = read()
+    const el = document.createElement('oas-image')
+    el.setAttribute('src', 'https://picsum.photos/seed/isui-group-added/480/300')
+    g.appendChild(el)
+    await new Promise((r) => setTimeout(r, 100))
+    const afterAdd = read()
+    el.remove()
+    await new Promise((r) => setTimeout(r, 100))
+    const afterRemove = read()
+    return { before, afterAdd, afterRemove }
+  })
+  expect(synced.afterAdd).toBe(synced.before + 1)
+  expect(synced.afterRemove).toBe(synced.before)
+})
+
 test('image 懒加载：视口外图片不加载（img 无 src、占位显示），滚动进入视口后逐图加载', async ({
   page,
 }) => {
