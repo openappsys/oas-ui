@@ -64,6 +64,16 @@ describe('OASWatermark', () => {
     expect(styleOf(el)).toContain('data:image/svg+xml')
   })
 
+  it('空容器兜底：:host(:empty) 宽度 100% 规则存在（flex 容器内空宿主塌缩回归）', () => {
+    const el = mount({ text: '水印' })
+    expect(el.childNodes.length).toBe(0)
+    const style = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(style).toMatch(/:host\(:empty\)\s*\{[^}]*width:\s*100%/)
+    // 非空容器不受该规则影响
+    const filled = mount({ text: '水印' }, '<span>x</span>')
+    expect(filled.childNodes.length).toBeGreaterThan(0)
+  })
+
   it('装饰水印层 aria-hidden，slot 内容正常保留', () => {
     const el = mount({ text: '水印' }, '<button id="btn">按钮</button>')
     expect(el.shadowRoot!.querySelector('slot')).not.toBeNull()
