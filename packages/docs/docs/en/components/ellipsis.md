@@ -20,7 +20,7 @@ Constraining the width on the container is enough to trigger the ellipsis; when 
   </div>
 </DemoBlock>
 
-From `rows="2"` on, `-webkit-line-clamp` is used; on multi-line ellipsis the tooltip shows the full text.
+From `rows="2"` on, `-webkit-line-clamp` is used; on multi-line ellipsis the tooltip shows the full text. `lines` is equivalent to `rows` (a synonym alias; `lines` wins when both are present) — `lines` is the recommended name for new code.
 
 ## Expand / Collapse
 
@@ -109,7 +109,43 @@ With the `expanded` attribute present the text is expanded (host-forced); when a
   For hashes / transaction IDs: both ends stay recognizable while the middle is compressed with an ellipsis; hover to see the full text.
 </DemoBlock>
 
-`direction` values: `tail` (default, tail ellipsis) / `start` (head ellipsis) / `middle` (middle ellipsis; single-line only, ignored when `rows` ≥ 2).
+`direction` values: `tail` (default, tail ellipsis) / `start` (head ellipsis) / `middle` (middle ellipsis, keeping both ends). Multi-line (`rows`/`lines` ≥ 2) works with `middle` / `start` too: the component measures text wrapping in a same-width mirror container inside the shadow root and binary-searches the cut per line count — the first line keeps the head and the last line keeps the tail (`middle`), or the head is ellipsized while the tail is kept (`start`). Environments without measurable layout safely fall back to showing the full text.
+
+## Multi-Line Direction
+
+<DemoBlock title="middle: keep head and tail across lines">
+  <div style="width: 100%; max-width: 520px">
+    <oas-ellipsis rows="3" direction="middle" text="这是一段用于演示多行中部省略的长文本：在限制三行高度的容器里，第一行保留开头、最后一行保留结尾，中间以省略号衔接，哈希值、长 ID 与文件路径在多行场景下也能首尾可辨认，悬停可查看完整内容；宽度变化时组件会通过 ResizeObserver 自动重新测量并校正截断位置，适用于交易流水号、日志追踪 ID 等必须首尾对照才能辨认的字符串。"></oas-ellipsis>
+  </div>
+  Multi-line middle: head on the first line, tail on the last line, joined by an ellipsis.
+</DemoBlock>
+
+<DemoBlock title="start: ellipsize head across lines, keep tail">
+  <div style="width: 100%; max-width: 520px">
+    <oas-ellipsis rows="2" direction="start" text="/usr/local/lib/node_modules/@oas-ui/ui/dist/data/ellipsis/oas-ellipsis.d.ts.map 是一个用于长文本自动省略的组件实现文件路径示例，配合 direction=start 与 rows=2 展示多行场景下省略头部、完整保留末尾路径的效果，宽度变化时自动重新测量。"></oas-ellipsis>
+  </div>
+  Multi-line start: the head is ellipsized while the trailing path stays fully visible.
+</DemoBlock>
+
+## Preserved Suffix (suffix)
+
+<DemoBlock title="suffix: keep the extension when ellipsized">
+  <div style="width: 100%; max-width: 520px">
+    <oas-ellipsis suffix=".pdf" text="2026 年度组件库工程化实践报告——从 monorepo 治理、依赖升级、构建提速到发布回滚的完整路线图与复盘清单（最终修订版）.pdf"></oas-ellipsis>
+  </div>
+</DemoBlock>
+
+`suffix` marks a tail that must survive truncation (e.g. a file extension or email domain): with the default `tail` direction the suffix width is reserved, producing a "body…suffix" result. `middle` / `start` already keep the tail, so `suffix` is not combined with them.
+
+## Click-to-Expand (expand-trigger)
+
+<DemoBlock title="expand-trigger=click: click the text to expand">
+  <div style="width: 100%; max-width: 520px">
+    <oas-ellipsis rows="2" expandable expand-trigger="click" text="这是一段点文本展开的演示：省略态下直接点击文本本体即可展开查看全文，展开后再次点击收起，没有独立的展开按钮；展开与收起都会同步 aria-expanded 状态并派发对应事件，供宿主框架做无障碍标注与状态回读。省略态文本带 role=button 与 tabindex，Enter / Space 键盘触发等价点击。"></oas-ellipsis>
+  </div>
+</DemoBlock>
+
+`expand-trigger="click"` (together with `expandable`): the ellipsized text body itself is the expand entry (no separate button). Once expanded the full text is restored; click again to collapse. The ellipsized text carries `role="button"` / `tabindex="0"` with `aria-expanded` kept in sync, and Enter / Space trigger the same action. The default remains the button / link form.
 
 ## Tooltip Placement (tooltip-placement)
 
@@ -143,11 +179,14 @@ The `tooltip-placement` attribute is passed through to the inner `oas-tooltip` (
 | Attribute | Description | Type | Default |
 | --- | --- | --- | --- |
 | `collapse-text` | Collapse link text (inline form, with expandable) | — | — |
-| `direction` | Ellipsis direction: `end` (default, tail) / `start` (head) / `middle` (keep both ends, for long paths/hashes) | `string` | `tail` |
+| `direction` | Ellipsis direction: `tail` (default, tail) / `start` (head, keep tail) / `middle` (keep both ends, for long paths/hashes); with multiple lines (lines/rows ≥ 2), `middle`/`start` truncate via mirror measurement | `string` | `tail` |
 | `expand-text` | Expand link text (inline form, with expandable) | — | — |
+| `expand-trigger` | Expand trigger form: with `click` the ellipsized text body expands/collapses on click (with `expandable`; `role=button`, keyboard reachable); defaults to the button/link form | — | — |
 | `expandable` | Show an "expand/collapse" button when overflowing | `boolean` | — |
 | `expanded` | Controlled expanded state (controlled when present; internal toggles reflect back) | `boolean` | — |
+| `lines` | Number of lines to show, equivalent to `rows` (synonym alias; `lines` wins when both are present; 1 is single-line, ≥2 multi-line) | — | — |
 | `rows` | Number of lines to show (1 is single-line ellipsis, ≥2 multi-line `-webkit-line-clamp`) | `string` | `1` |
+| `suffix` | Tail suffix preserved when ellipsized (e.g. `.pdf`); only with the default `tail` direction (`middle`/`start` already keep the tail) | — | — |
 | `text` | Text content | `string` | — |
 | `tooltip` | Show a full-text tooltip on hover when overflowing | `string` | `true` |
 | `tooltip-placement` | Overflow tooltip placement (default `top`) | `string` | `top` |

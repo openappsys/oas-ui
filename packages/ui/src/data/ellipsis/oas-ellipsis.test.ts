@@ -200,7 +200,7 @@ describe('OASEllipsis', () => {
       expect(t.classList.contains('start')).toBe(false)
       expect(t.textContent).toBe('长文本')
     })
-    it('rows>=2 时 direction 不生效（多行 line-clamp 保持，不截断）', () => {
+    it('rows>=2 + direction 无溢出不截断（多行 line-clamp 保持，纯 CSS 形态）', () => {
       const el = mount({ text: '多行文本', rows: '2', direction: 'middle' })
       const t = textEl(el)
       expect(t.classList.contains('multi')).toBe(true)
@@ -427,6 +427,207 @@ describe('OASEllipsis', () => {
       forceOverflow(el, true)
       expect(textEl(el).classList.contains('manual')).toBe(false)
       expect(toggleEl(el).classList.contains('inline')).toBe(false)
+    })
+  })
+
+  describe('lines 行数（rows 同义别名，lines 优先）', () => {
+    it('lines 进入 observedAttributes', () => {
+      expect(OASEllipsis.observedAttributes).toContain('lines')
+    })
+
+    it('lines=2 启用多行省略（multi 类 + line-clamp=2）', () => {
+      const el = mount({ text: '多行文本', lines: '2' })
+      const t = textEl(el)
+      expect(t.classList.contains('multi')).toBe(true)
+      expect(t.classList.contains('single')).toBe(false)
+      expect(t.style.getPropertyValue('-webkit-line-clamp')).toBe('2')
+    })
+
+    it('lines 与 rows 同时存在时 lines 优先', () => {
+      const el = mount({ text: '多行文本', rows: '3', lines: '2' })
+      expect(textEl(el).style.getPropertyValue('-webkit-line-clamp')).toBe('2')
+      el.setAttribute('lines', '4')
+      expect(textEl(el).style.getPropertyValue('-webkit-line-clamp')).toBe('4')
+    })
+
+    it('缺省 lines 时 rows 语义不变（单行零回归）', () => {
+      const el = mount({ text: '短文本' })
+      forceOverflow(el, true)
+      const t = textEl(el)
+      expect(t.classList.contains('single')).toBe(true)
+      expect(t.classList.contains('multi')).toBe(false)
+    })
+  })
+
+  describe('direction 多行省略（middle/start 镜像截断，rows≥2 生效）', () => {
+    const FULL = '这是一段很长很长的用于多行中部省略演示的文本内容，需要溢出两行容器才能触发截断效果'
+
+    function stubMulti(
+      el: OASEllipsis,
+      method: 'truncateMiddleMulti' | 'truncateStartMulti',
+      ret: string,
+    ): ReturnType<typeof vi.spyOn> {
+      return vi.spyOn(
+        el as unknown as Record<string, (f: string, r: number) => string>,
+        method,
+      ).mockReturnValue(ret)
+    }
+
+    it('rows≥2 + middle + 溢出：调用镜像截断并写入保首尾内容', () => {
+      const el = mount({ text: FULL, rows: '2', direction: 'middle' })
+      const spy = stubMulti(el, 'truncateMiddleMulti', '这是一段…截断效果')
+      forceOverflow(el, true)
+      expect(spy).toHaveBeenCalled()
+      expect(textEl(el).textContent).toBe('这是一段…截断效果')
+      expect(textEl(el).classList.contains('multi')).toBe(true)
+    })
+
+    it('多行 middle 截断态仍挂全文 tooltip', () => {
+      const el = mount({ text: FULL, rows: '2', direction: 'middle' })
+      stubMulti(el, 'truncateMiddleMulti', '这是一段…截断效果')
+      forceOverflow(el, true)
+      const tip = el.shadowRoot!.querySelector('oas-tooltip')
+      expect(tip).not.toBeNull()
+      expect(tip!.getAttribute('content')).toBe(FULL)
+    })
+
+    it('多行 middle 测量不可用（无布局环境）时安全兜底：不截断、全显', () => {
+      const el = mount({ text: FULL, rows: '2', direction: 'middle' })
+      forceOverflow(el, true)
+      expect(textEl(el).textContent).toBe(FULL)
+    })
+
+    it('rows≥2 + start + 溢出：头部省略保留尾部（调用 start 多行截断）', () => {
+      const el = mount({ text: FULL, rows: '2', direction: 'start' })
+      const spy = stubMulti(el, 'truncateStartMulti', '…截断效果')
+      forceOverflow(el, true)
+      expect(spy).toHaveBeenCalled()
+      expect(textEl(el).textContent).toBe('…截断效果')
+    })
+
+    it('多行 start 测量不可用时安全兜底：全显', () => {
+      const el = mount({ text: FULL, rows: '3', direction: 'start' })
+      forceOverflow(el, true)
+      expect(textEl(el).textContent).toBe(FULL)
+    })
+
+    it('expanded 时不截断（全文展示，aria 与展开态一致）', () => {
+      const el = mount({ text: FULL, rows: '2', direction: 'middle', expanded: '' })
+      const spy = stubMulti(el, 'truncateMiddleMulti', '这是一段…截断效果')
+      forceOverflow(el, true)
+      expect(spy).not.toHaveBeenCalled()
+      expect(textEl(el).textContent).toBe(FULL)
+    })
+  })
+
+  describe('suffix 保留后缀（tail 方向）', () => {
+    const FULL = '2026 年度组件库工程化实践报告——从 monorepo 到发布的完整路线图.pdf'
+
+    it('suffix 进入 observedAttributes', () => {
+      expect(OASEllipsis.observedAttributes).toContain('suffix')
+    })
+
+    it('tail + suffix + 溢出：截断为「正文…后缀」，suffix 不被裁掉', () => {
+      const el = mount({ text: FULL, suffix: '.pdf' })
+      const spy = vi.spyOn(
+        el as unknown as { truncateTailSuffix: (f: string, r: number, s: string) => string },
+        'truncateTailSuffix',
+      ).mockReturnValue('2026 年度….pdf')
+      forceOverflow(el, true)
+      expect(spy).toHaveBeenCalled()
+      expect(textEl(el).textContent).toBe('2026 年度….pdf')
+    })
+
+    it('suffix 测量不可用时安全兜底：全文原样（含后缀）', () => {
+      const el = mount({ text: FULL, suffix: '.pdf' })
+      forceOverflow(el, true)
+      expect(textEl(el).textContent).toBe(FULL)
+    })
+
+    it('middle/start 方向 suffix 不生效（不调用 tail 截断）', () => {
+      const el = mount({ text: FULL, direction: 'middle', suffix: '.pdf' })
+      const spy = vi.spyOn(
+        el as unknown as { truncateTailSuffix: (f: string, r: number, s: string) => string },
+        'truncateTailSuffix',
+      )
+      forceOverflow(el, true)
+      expect(spy).not.toHaveBeenCalled()
+    })
+
+    it('expandable + tail + suffix：手动截断内容保留后缀，展开链接在后', () => {
+      const el = mount({ text: FULL, expandable: '', suffix: '.pdf' })
+      vi.spyOn(el as unknown as { fitPrefixLength: () => number }, 'fitPrefixLength').mockReturnValue(
+        8,
+      )
+      forceOverflow(el, true)
+      expect(textEl(el).textContent).toBe(`${FULL.slice(0, 8)}….pdf`)
+      const btn = toggleEl(el)
+      expect(btn.hidden).toBe(false)
+      expect(btn.classList.contains('inline')).toBe(true)
+    })
+  })
+
+  describe('expand-trigger="click" 点文本展开', () => {
+    it('expand-trigger 进入 observedAttributes', () => {
+      expect(OASEllipsis.observedAttributes).toContain('expand-trigger')
+    })
+
+    it('click 模式：溢出时文本 role=button + tabindex=0 + aria-expanded=false，按钮隐藏', () => {
+      const el = mount({ text: '这是一段很长很长的文本用于点文本展开演示', expandable: '', 'expand-trigger': 'click' })
+      forceOverflow(el, true)
+      const t = textEl(el)
+      expect(t.getAttribute('role')).toBe('button')
+      expect(t.getAttribute('tabindex')).toBe('0')
+      expect(t.getAttribute('aria-expanded')).toBe('false')
+      expect(toggleEl(el).hidden).toBe(true)
+    })
+
+    it('点击文本展开：派 oas-expand、反射 expanded、aria-expanded=true、展示全文', () => {
+      const el = mount({ text: '这是一段很长很长的文本用于点文本展开演示', expandable: '', 'expand-trigger': 'click' })
+      forceOverflow(el, true)
+      let detail: unknown
+      el.addEventListener('oas-expand', (e: Event) => (detail = (e as CustomEvent).detail))
+      textEl(el).click()
+      expect(detail).toEqual({ expanded: true })
+      expect(el.hasAttribute('expanded')).toBe(true)
+      expect(textEl(el).getAttribute('aria-expanded')).toBe('true')
+      expect(textEl(el).textContent).toContain('点文本展开演示')
+    })
+
+    it('Enter / Space 键盘触发等价点击', () => {
+      const el = mount({ text: '这是一段很长很长的文本用于点文本展开演示', expandable: '', 'expand-trigger': 'click' })
+      forceOverflow(el, true)
+      textEl(el).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+      expect(el.hasAttribute('expanded')).toBe(true)
+      textEl(el).dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
+      expect(el.hasAttribute('expanded')).toBe(false)
+    })
+
+    it('展开后再次点击收起：派 oas-collapse、aria-expanded=false', () => {
+      const el = mount({ text: '这是一段很长很长的文本用于点文本展开演示', expandable: '', 'expand-trigger': 'click' })
+      forceOverflow(el, true)
+      textEl(el).click()
+      let detail: unknown
+      el.addEventListener('oas-collapse', (e: Event) => (detail = (e as CustomEvent).detail))
+      textEl(el).click()
+      expect(detail).toEqual({ expanded: false })
+      expect(el.hasAttribute('expanded')).toBe(false)
+      expect(textEl(el).getAttribute('aria-expanded')).toBe('false')
+    })
+
+    it('缺省形态（无 expand-trigger）：文本无 role/tabindex，按钮可见（零回归）', () => {
+      const el = mount({ text: '这是一段很长很长的文本用于点文本展开演示', expandable: '' })
+      forceOverflow(el, true)
+      expect(textEl(el).hasAttribute('role')).toBe(false)
+      expect(textEl(el).hasAttribute('tabindex')).toBe(false)
+      expect(toggleEl(el).hidden).toBe(false)
+    })
+
+    it('无 expandable 时 expand-trigger 不生效（文本无交互语义）', () => {
+      const el = mount({ text: '短文本', 'expand-trigger': 'click' })
+      forceOverflow(el, true)
+      expect(textEl(el).hasAttribute('role')).toBe(false)
+      expect(textEl(el).hasAttribute('tabindex')).toBe(false)
     })
   })
 })
