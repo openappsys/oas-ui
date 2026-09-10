@@ -6,6 +6,10 @@
 
 ### 特性
 
+- **carousel 卡片模式**：`type="card"`——当前卡居中占主体（卡宽/卡间距/邻卡缩放走 CSS 变量），左右邻卡部分露出并缩小降透明，点击任一邻卡直接切换；与 slides-per-view/fade/vertical 互斥（卡片模式优先），箭头/指示器/自动播放/拖拽/循环全组合；非循环模式首尾屏贴边不悬空
+- **carousel 显式暂停按钮**：`pause-button`——自动播放的显式 pause/play 控件（显式暂停优先级最高，暂停后移开鼠标也不自动继续；未开自动播放时点击即开启）；`aria-pressed` 与文案随暂停态同步
+- **countdown 正计时**：`type="countup"` + `start`（毫秒起点，默认 0）——从起点往上递增计时、无终止点；`active` 暂停/恢复（冻结真值、恢复续走不重置），`reset()` 归零重新开始；走时变化复用 `oas-change`（detail.value 为已计时毫秒）
+- **ellipsis 多行省略**：`lines`（行数，rows 同义别名）+ `direction="tail|start|middle"`——多行中部省略保留首尾（镜像测量截断，无布局环境兜底全显）；`suffix` 保留指定后缀不被裁掉（如 `.pdf`）；`expand-trigger="click"` 省略态点文本本体即展开（键盘可达）
 - **watermark 渲染引擎转 canvas**：SVG data-uri → canvas 绘制（特性检测，无 canvas 环境自动回退 SVG 路径），DPR 高清处理防模糊；文字多行/旋转/间隙/偏移/字体/尺寸全量迁移、错位排布/移动拖拽/防篡改机制无损；主题切换自动重绘；**新增 `grayscale` 图片灰阶滤镜**（跨域/加载失败回退原图）
 - **watermark 文字 tile 缺省按内容自适应**：`width`/`height` 未显式设置时按「文字旋转外接框 + 内边距」计算 tile 尺寸——修复固定 240×120 大 tile 在窄容器里文字残缺难辨的问题，默认密度下每个平铺单元完整容纳文字（显式设置时行为不变，图片水印缺省维持 240/120）
 - **watermark 空容器兜底**：无 slot 内容的宿主在 flex 容器内宽度塌缩为 0 导致水印不可见——空态默认撑满容器宽（`:host(:empty) { width: 100% }`），非空用法零影响
