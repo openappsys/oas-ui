@@ -54,10 +54,28 @@
 
 <code>animated</code> 让背景位置沿渐变轴流动（回文色标 + 双倍背景宽度无缝循环）；动画周期可用 <code>--oas-gradient-text-duration</code> 定制，<code>prefers-reduced-motion</code> 下自动静止。
 
+## 文字描边
+
+<DemoBlock title="渐变 + 描边（默认 token 描边色）">
+  <oas-gradient-text stroke="2px" style="font-size: var(--oas-font-size-xl); font-weight: 600;">渐变描边文字</oas-gradient-text>
+</DemoBlock>
+
+<DemoBlock title="渐变 + 自定义描边色">
+  <div style="width: 100%; display: flex; flex-direction: column; gap: var(--oas-space-3); font-size: var(--oas-font-size-xl); font-weight: 600;">
+    <oas-gradient-text gradient='["#f00", "#00f"]' stroke="2px" stroke-color="#0b6cff">红蓝渐变蓝描边</oas-gradient-text>
+    <oas-gradient-text type="warning" stroke="1.5px">语义渐变细描边</oas-gradient-text>
+    <oas-gradient-text animated gradient='["#0b6cff", "#16a34a", "#d97706"]' stroke="1px">流动渐变描边</oas-gradient-text>
+  </div>
+</DemoBlock>
+
+<code>stroke</code> 设置描边宽度（仅接受数字 + <code>px</code>/<code>em</code>/<code>rem</code>/<code>pt</code>，非法值不启用），<code>stroke-color</code> 设置描边颜色；缺省描边色走 <code>--oas-color-text-primary</code> token，随亮暗主题自动切换，保证对比度可读。
+
+实现上用双层叠字避开兼容冲突：底层为只画描边的镜像文字（<code>-webkit-text-stroke</code> + 透明填色），叠在渐变层之下，描边外沿透出、不被 <code>background-clip: text</code> 裁剪。与 <code>type</code>、<code>gradient</code>、<code>animated</code> 可任意组合。
+
 ## 兼容性说明
 
 - <code>background-clip: text</code> 与透明色只写在 <code>@supports</code> 块内：老浏览器不支持 clip 时文字回退为普通前景色，不会出现"隐形文字"。
-- 文字描边（<code>-webkit-text-stroke</code>）与 <code>background-clip: text</code> 叠加有浏览器级冲突，需要描边场景请用普通文字 + 描边色。
+- 文字描边（<code>-webkit-text-stroke</code>）与 <code>background-clip: text</code> 直接叠加会被裁剪，组件内部用双层叠字解决；不支持 clip 的老浏览器回退为主文字直接描边（普通前景色 + 描边），不会出现双重文字重影。
 - 多行截断（ellipsis）与 <code>background-clip: text</code> 叠加在各浏览器行为不一，渐变文字建议单行使用。
 
 ## 字号定制
@@ -73,6 +91,8 @@
 | `animated` | 流动动画（回文色标无缝循环，周期走 `--oas-gradient-text-duration`；prefers-reduced-motion 静止） | `boolean` | — |
 | `direction` | 渐变方向（linear-gradient 第一参数，如 `to right`、`135deg`） | `string` | — |
 | `gradient` | JSON 色标数组，如 `["#f00","#00f"]`；单个色标渲染纯色；缺失/非法回退默认 token 渐变 | `string` | — |
+| `stroke` | 描边宽度（如 `1px` / `2px`，仅接受数字 + px/em/rem/pt；非法值不启用描边；双层叠字避开 background-clip:text 裁剪冲突） | `string` | — |
+| `stroke-color` | 描边颜色（缺省走 `--oas-color-text-primary` token，随主题亮暗自适应；经白名单校验） | `string` | — |
 | `type` | 语义色渐变：`primary` / `success` / `warning` / `danger` / `info`（token 派生双 stop；显式 `gradient` 优先） | `string` | — |
 
 ### 插槽
