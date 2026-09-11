@@ -114,3 +114,26 @@ html.dark {
 .VPHome {
   margin-bottom: 0 !important;
 }
+
+/* ===== 宽屏利用（超宽显示器 3440×1440 等） =====
+   默认主题把整体限宽 1440px（--vp-layout-max-width）、正文限宽 688px
+   （.VPDoc.has-aside .content-container）——超宽屏两侧留白过大。组件页以 demo 为主，
+   宽屏下放宽布局与正文限宽（正文仍留可读行宽上限，非无限拉伸）。 */
+@media (min-width: 1600px) {
+  :root {
+    --vp-layout-max-width: min(94vw, 1800px);
+  }
+  /* vitepress 默认 .VPDoc.has-aside .content-container 带 scoped 属性选择器权重更高，
+     覆盖须 !important（同 .VPHome 那条的成因） */
+  .VPDoc.has-aside .content-container {
+    max-width: 960px !important;
+  }
+}
+@media (min-width: 2200px) {
+  :root {
+    --vp-layout-max-width: min(94vw, 2400px);
+  }
+  .VPDoc.has-aside .content-container {
+    max-width: 1440px !important;
+  }
+}
