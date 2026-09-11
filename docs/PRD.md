@@ -1075,6 +1075,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **card**：loading 骨架/size=small/variant=borderless/slot=footer/header-bordered/shadow 三态（hoverable 映射 hover）/Meta（slot=avatar + description 双通道）/href 链接卡
 - **avatar**：shape 三态/多字测量收缩字号（下限 + ellipsis 收口）/fallback 回退图/slot=icon/fit/color（对比色协议）/oas-error/size 枚举别名；avatar-group：spacing/overlap 变量 + ring 描边、+N hover 弹层（共享定位引擎）、slot=trigger 换头像入口
 - **image**：preview-src-list 图集（翻页+键盘+页码+infinite）/preview-src/preview-open 受控 + oas-preview-change + openPreview()/oas-load·oas-error/slot=placeholder·error/flipX·flipY/拖拽平移+滚轮缩放/缩放 CSS 变量/预览浮层 portal teleport（修 transform 祖先内 fixed 失效）
+- **image-group**（新组件）：容器收集式图集——light DOM 收集组内 oas-image 子图（preview-src-list 展平 > preview-src > src），点击共享预览浮层（从被点图起开，prev/next 整组切换，复用 image 预览全部能力）；子图 preview 被容器接管；MutationObserver 动态增删同步；current 可选受控 + oas-change{current,prev}；role=group + locale 可访问名称
 - **carousel**：indicators/indicator-position/indicator-type/effect=fade/next·prev·goTo 方法 + prevIndex/autoplay 悬停聚焦暂停 + 页面 hidden 停播（WCAG 2.2.2）/direction=vertical/slides-per-view+gap/拖拽切换（pointer 跟手+阈值+回弹）/loop/指示器 dot token 化 + slotchange 监听（机制债修复）
 - **marquee**：ResizeObserver 测量 + auto-fill 不足一屏克隆填充（份数封顶）/fade-edges 边缘渐隐（mask-image）/orientation=vertical/reverse/内容更新相位保持（getAnimations 记相位 + 负 delay 恢复）
 - **statistic**：title/extra 双通道/trend 涨跌（箭头 + token 涨跌色）/slot=value 组合动画
