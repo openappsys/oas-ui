@@ -2,7 +2,7 @@
 
 所有显著变更记录于此，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-## [Unreleased]
+## [2.5.0] - 2026-09-09
 
 ### 特性
 
@@ -27,10 +27,12 @@
 ### 修复
 
 - **list 选中行 hover 文字不可读**：`clickable` 行 hover 浅灰底压盖 `selected` 选中蓝底（白字白底不可读）——选中态 hover 保持 primary 系底色，文字保持可读
-
-### 修复
-
 - **`prefix` / `suffix` 属性与 DOM 内建只读 `prefix` 冲突（Vue 下属性被吞 + 控制台告警）**：`prefix` 是 DOM Element 内建只读属性（XML 命名空间前缀），框架（如 Vue）在自定义元素 upgrade 前对其走 property 赋值会撞只读 getter 报错并丢失值。已将视觉前后缀属性迁移到不与内建冲突的 `prefix-text` / `suffix-text`（对齐主流 Web Components 库命名），`prefix` / `suffix` 保留为纯 HTML 使用的遗留别名（组件内自动迁移、文档注明）；触及组件：input / input-number / statistic / countdown / tree-select。**mentions 的触发符属性 `prefix` 改名 `trigger`**（触发符语义，`prefix` 保留为遗留别名），事件 detail 的 `prefix` 字段保持不变（对外契约稳定）。同时删除为对抗该冲突而存在的 `override get/set prefix` 访问器补丁（其既是冲突根源也是 vue-prop-hijack 门禁漏报的原因），`normalizeLegacyAlias` 归入 OASElement 基类统一处理。
+- **L3 子路径语义修正（回归根治）**：v2.4.1 把 tabs/table/modal/color-picker/popover 的重型能力拆成 L3 能力包后，组件子路径入口变成 core-only、既有子路径消费者能力静默失效（dev 告警一次、生产无声）——五组件主路径 `index.ts` 恢复内置能力 import（同一组件任何主路径引入行为一致），各新增 `/core` 纯核路径作显式瘦身 opt-in，五处 dev 告警文案同步翻转；每组件新增入口语义测试对（主路径断言能力已激活 / 纯核断言静默失效 + 告警一次）
+
+### 变更
+
+- **`@oas-ui/react` 不作为独立交付物发布**：降级为仓库内可选工具包（包保留：`useOasEvent`/`useOasEvents` + README + 8 单测；不随版本发布、不写入发布清单）。依据：实测证实 React 19 原生「`on` + 全小写字面量」写法（`<oas-button onoas-submit={...}>`）即可监听 `oas-*`，多数场景零依赖即可；桥接 hooks 仅解决 camelCase 惯例、TS 类型、React 17/18 兼容三类场景。getting-started 中英改为「原生优先、hooks 可选（仓库内提供）」
 
 ## [2.4.1] - 2026-09-06
 

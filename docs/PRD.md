@@ -1016,11 +1016,24 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - 全量单测 5142 / typecheck 0 / build / api:check / trace 0 命中
 - 全量 e2e 1616 全过（chromium 全量 + firefox 抽样 + docs-site）
 
-## React 宿主桥接包 @oas-ui/react + L3 子路径语义修正（未发布）
+## v2.5.0 数据组+表单组能力收口 + prefix 冲突根治 ✅
 
-### 功能定义
+### 特性
 
-通用 React 自定义事件桥接包。背景：React 19 不会把 `onXxx` prop 桥接到 kebab-case 自定义事件（`onOasSubmit` 收不到组件派发的 `oas-submit`），而 `@oas-ui/nuxt` / `@oas-ui/next` 是 SSR 专用封装——缺一个纯客户端的通用 React 桥接层，把 `oas-*` CustomEvent 桥接为 hooks。
+- **表单组**：date-picker 全形态补齐（quarter/datetimerange/monthrange/yearrange/week）+ dynamic-tags 编辑/validate + editable icon/dblclick 触发 + calendar 键盘扩展（Home/End/PgUp/PgDn）+ decade 快速跳年 + min/max 翻页边界 + readonly/disabled；mentions 全量（trigger 多触发符/oas-search/loading/富选项/disabled 选项/status/size/readonly/variant/clearable/split/autosize/过滤自定义/IME 守卫/中文紧贴触发/整段删除 whole/type=input 单行）
+- **数据组**：tree 节点重命名 + motion 过渡；list 分组吸顶 + 行交互；virtual-list 动态行高（HeightCache + RO 实测 + scrollTop 补偿）；watermark 转 canvas 引擎 + grayscale 灰阶 + fullscreen 全屏 + tile 自适应 + 空容器兜底；log 搜索过滤；gradient-text 描边；carousel 卡片模式 + 显式暂停钮；countdown 正计时；ellipsis 多行省略 + suffix 保留 + 点文本展开；card selectable 可选中卡；image-group 图集容器（新组件）+ image 自定义工具栏
+- **prefix/suffix → prefix-text/suffix-text 改名**（DOM 内建只读 prefix 与 Vue property 赋值冲突根治；纯 HTML 遗留别名保留；mentions 触发符 prefix → trigger）
+
+### 修复
+
+- list 选中行 hover 文字不可读（clickable hover 浅灰压盖选中蓝底）；watermark 空容器 flex 宿主塌缩不可见；image trapFocus Tab 逃逸（焦点环绕不命中）；select 字段映射 demo 时序（whenDefined 守卫）
+
+### 验收
+
+- 全量单测 6731 / typecheck 0 / build 0 / api:check（WIP 0）/ trace 0 命中 / perf:size 全 PASS（预算重定档）/ perf:bench 全 PASS
+- 全量 e2e（chromium 全量 + firefox 抽样）；各新能力 demo light/dark 截图复核 + 真实交互验证 + console 零告警
+
+## L3 子路径语义修正（随 v2.5.0）+ 可选工具包 @oas-ui/react（不单独发布）
 
 ### L3 子路径语义修正（回归根治）
 
@@ -1037,7 +1050,15 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 **验收**：五组件各新增入口语义测试对（主路径 `entry.test.ts` 断言能力已激活 / `core-entry.test.ts` 断言纯核静默失效 + 告警一次）；既有 capability/latejoin 测试改引 `core` 后不回归；五组件目录 vitest 全绿 + typecheck 通过。
 
-### 详细需求
+### 可选工具包 @oas-ui/react（不单独发布）
+
+**决策（2026-09-09）**：不作为独立交付物单独发布，降级为仓库内可选工具包。
+
+- **依据**：实测证实 React 19 原生支持「`on` + 全小写字面量」写法（`<oas-button onoas-submit={...}>` 即收到 `oas-submit`），多数场景零依赖即可；桥接仅解决三类场景——React 惯例 camelCase（`onOasSubmit`）静默失效、小写横线属性名对 TS 类型不友好、React 17/18 不兼容
+- **定位**：包保留（`packages/react`：`useOasEvent` / `useOasEvents` + 8 单测 + README），供上述场景按需使用；**不随版本发布、不写入发布清单**（`packages/react/package.json` 已置 `private: true`，`pnpm -r publish` 自动跳过）
+- **文档**：getting-started 主推 React 19 原生 `onoas-*` 写法，桥接 hooks 作为可选替代说明
+
+#### 工具包规格（非发布门槛）
 
 - **包结构**照 `packages/next` 约定：`exports` map / `types` 指向 / `sideEffects: false` / `files` / `publishConfig` / `tsc -p tsconfig.build.json` 产物含 d.ts；LICENSE 双许可文件随包
 - **`useOasEvent<T>(ref, type, handler)`**：单事件绑定。handler 每次渲染写入 ref（最新化，事件触发走最新闭包、旧闭包不泄漏）；绑定 effect 仅依赖 `[ref, type]`，换 handler 不重复解绑/重绑；卸载自动清理监听
@@ -1047,15 +1068,15 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **测试**：vitest + happy-dom，用 react-dom/client 渲染宿主组件断言行为
 - **文档**：README 中英双语（照 next/nuxt 结构）；getting-started 补 React 事件小节（React 事件需桥接说明 + hook 用法）
 
-### 验收标准
+#### 验收标准（包内自洽，非发布门槛）
 
 - 8 单测全绿：detail 送达与泛型、重渲染后走最新 handler 且零重绑、事件名集合增删触发重绑/解绑、卸载后不再触发
 - `pnpm --filter @oas-ui/react build` 产物含 `.d.ts`；`pnpm typecheck`（根）全绿
-- React / Vue 对照在文档中写清（Vue `@oas-click` 语法可用 / React 需 hook 或手动 addEventListener）
+- React / Vue 对照在文档中写清（Vue `@oas-click` 语法可用 / React 19 原生 `onoas-*` 写法或可选 hooks）
 
 ---
 
-## 数据组能力扩展三批（tree/list/timeline + collapse/descriptions/card/avatar/image + carousel/marquee/statistic/countdown/number-animation/qrcode/ellipsis/virtual-list，未发布）
+## 数据组能力扩展三批（tree/list/timeline + collapse/descriptions/card/avatar/image + carousel/marquee/statistic/countdown/number-animation/qrcode/ellipsis/virtual-list，已随 v2.5.0 发布）
 
 ### 破坏性变更（发布说明须逐项列出迁移指引）
 

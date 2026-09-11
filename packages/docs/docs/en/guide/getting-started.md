@@ -86,7 +86,7 @@ import '@oas-ui/ui/basic/button'
 Use directly in React / Vue (rendering, attributes and slot content work in both; **event listening — see the section below**):
 
 ```tsx
-// React: events need bridging, see "React event bridging (@oas-ui/react)" below
+// React: event listening — see "React event listening" below (native onoas-* lowercase works)
 <oas-button type="primary" ref={btnRef}>Button</oas-button>
 ```
 
@@ -95,15 +95,20 @@ Use directly in React / Vue (rendering, attributes and slot content work in both
 <oas-button type="primary" @oas-click="onClick">Button</oas-button>
 ```
 
-Rendering and attribute passing need no wrappers in any of the three environments (React / Vue / vanilla). Events are dispatched as `oas-*` CustomEvents — **Vue can listen via `@oas-click` directly; React needs extra bridging** (below).
+Rendering and attribute passing need no wrappers in any of the three environments (React / Vue / vanilla). Events are dispatched as `oas-*` CustomEvents — **Vue can listen via `@oas-click` directly; React 19 works with the native `onoas-*` lowercase form, while the camelCase convention needs the optional bridge** (below).
 
-### React event bridging (`@oas-ui/react`)
+### React event listening
 
-**React 19's custom-element event bridging has a spelling trap**: only the "on + lowercase literal" form works — `<oas-button onoas-submit={...}>` does catch `oas-submit`, but the idiomatic camelCase form `<oas-button onOasSubmit={...}>` silently fails (the prop is never mapped to an `oas-submit` listener on custom elements), and lowercase dashed prop names are hostile to TS/JSX typing. On the React side the recommended path is the generic bridge package `@oas-ui/react` (client-only hooks, zero runtime dependencies, works on React 17/18 too):
+**React 19 listens natively**: only the "on + lowercase literal" form works — `<oas-button onoas-submit={...}>` does catch `oas-submit`; the idiomatic camelCase form `<oas-button onOasSubmit={...}>` silently fails (the prop is never mapped to an `oas-submit` listener on custom elements), lowercase dashed prop names are hostile to TS/JSX typing, and React 17/18 is not supported either.
 
-```bash
-pnpm add @oas-ui/react
+```tsx
+// React 19: native form, no extra dependency
+<oas-button type="primary" onoas-submit={(e) => console.log(e.detail.value)}>
+  Submit
+</oas-button>
 ```
+
+**Optional utility `@oas-ui/react` (in-repo, not released separately)**: when you need camelCase convention, type safety, or React 17/18 support, use the hooks — source lives in `packages/react` (reference it inside the monorepo); it is not published to npm.
 
 ```tsx
 import { useRef } from 'react'
@@ -123,7 +128,7 @@ function Demo() {
 }
 ```
 
-For a single event use `useOasEvent<Detail>(ref, 'oas-submit', handler)`. Both hooks always run the latest closure after re-renders and unbind automatically on unmount; event names must carry the `oas-` prefix. Full details live in `packages/react/README.md` or [@oas-ui/react on npm](https://www.npmjs.com/package/@oas-ui/react).
+For a single event use `useOasEvent<Detail>(ref, 'oas-submit', handler)`. Both hooks always run the latest closure after re-renders and unbind automatically on unmount; event names must carry the `oas-` prefix. Full details live in `packages/react/README.md`.
 
 **Capability sub-packages (heavy capabilities ship with the main entry)**: a few components split heavy optional capabilities into standalone sub-packages that are bundled into the component's **main entry** — importing `@oas-ui/ui/<group>/<component>` from any main path includes every capability by default (import registers it; no extra import needed):
 
