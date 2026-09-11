@@ -14,9 +14,9 @@ Constraining the width on the container is enough to trigger the ellipsis; when 
 
 ## Multi-Line Ellipsis
 
-<DemoBlock title="Multi-line ellipsis (rows)">
+<DemoBlock title="Multi-line ellipsis (lines / rows)">
   <div style="width: 100%">
-    <oas-ellipsis rows="2" text="这是一段用于演示多行省略的文本，最多显示两行，超出部分以省略号截断。悬停文字可以查看完整内容，调整 rows 可以改变显示行数。"></oas-ellipsis>
+    <oas-ellipsis lines="2" text="这是一段用于演示多行省略的文本，最多显示两行，超出部分以省略号截断。悬停文字可以查看完整内容，调整 lines 可以改变显示行数。"></oas-ellipsis>
   </div>
 </DemoBlock>
 
