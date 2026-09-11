@@ -96,6 +96,97 @@ test('image-group：容器收集子图为共享图集，点击打开共享预览
   expect(synced.afterRemove).toBe(synced.before)
 })
 
+// 回归：自定义工具栏——模板克隆替换默认按钮组 + oas-toolbar-render 命令通道实际生效。
+test('image 自定义工具栏：模板克隆替换默认按钮组，actions 命令接线后缩放/翻页实际生效', async ({
+  page,
+}) => {
+  await page.goto('/components/image.html', { waitUntil: 'domcontentloaded' })
+  await up(page, '#image-custom-toolbar')
+  await page.locator('#image-custom-toolbar').click()
+  await page.waitForSelector('[data-oas-image-preview-portal]', { timeout: 15000 })
+
+  // 模板克隆进工具栏区、默认按钮组被替换；图集页码 1/3
+  const toolbarState = await page.evaluate(() => {
+    const portal = document.querySelector('[data-oas-image-preview-portal]')!
+    const bar = portal.shadowRoot!.querySelector('[part="preview-toolbar"]')!
+    return {
+      customCount: bar.querySelectorAll('[data-cmd]').length,
+      hasDefaultTool: bar.querySelector('.tool') !== null,
+      counter: portal.shadowRoot!.querySelector('[part="preview-counter"]')!.textContent,
+    }
+  })
+  expect(toolbarState.customCount).toBe(8)
+  expect(toolbarState.hasDefaultTool).toBe(false)
+  expect(toolbarState.counter).toBe('1/3')
+
+  // 点击自定义「放大」→ 预览图 transform 实际变化（命令通道接线生效）
+  await page.evaluate(() => {
+    document
+      .querySelector('[data-oas-image-preview-portal]')!
+      .shadowRoot!.querySelector<HTMLElement>('[data-cmd="zoom-in"]')!
+      .click()
+  })
+  await page.waitForFunction(
+    () => {
+      const portal = document.querySelector('[data-oas-image-preview-portal]')!
+      const img = portal.shadowRoot!.querySelector<HTMLElement>('[part="preview-image"]')!
+      return img.style.transform.includes('scale(1.5)')
+    },
+    null,
+    { timeout: 15000 },
+  )
+
+  // 点击自定义「下一张」→ 页码 2/3
+  await page.evaluate(() => {
+    document
+      .querySelector('[data-oas-image-preview-portal]')!
+      .shadowRoot!.querySelector<HTMLElement>('[data-cmd="next"]')!
+      .click()
+  })
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector('[data-oas-image-preview-portal]')!
+        .shadowRoot!.querySelector('[part="preview-counter"]')!
+        .textContent === '2/3',
+    null,
+    { timeout: 15000 },
+  )
+
+  // 焦点陷阱（真实浏览器）：shadow 内聚焦在 document 层重定向到 host，
+  // 首尾环绕必须读 shadow activeElement——从最后按钮 Tab 不得逃逸出浮层
+  const focusWrap = await page.evaluate(() => {
+    const root = document.querySelector('[data-oas-image-preview-portal]')!.shadowRoot!
+    const last = root.querySelector<HTMLElement>('[data-cmd="close"]')!
+    const first = root.querySelector<HTMLElement>('[data-cmd="zoom-out"]')!
+    last.focus()
+    const seq: Array<string | null> = []
+    for (let i = 0; i < root.querySelectorAll('[data-cmd]').length + 2; i++) {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }))
+      seq.push(root.activeElement?.getAttribute('data-cmd') ?? root.activeElement?.getAttribute('part') ?? null)
+    }
+    // Shift+Tab 从首个按钮往回环绕
+    first.focus()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }))
+    const shiftWrap = root.activeElement?.getAttribute('data-cmd') ?? root.activeElement?.getAttribute('part') ?? null
+    return { seq, shiftWrap }
+  })
+  // Tab 循环始终落在浮层内（自定义按钮或翻页箭头上），不出现 null（逃逸到 body）；
+  // 当前为 2/3（prev 启用），首项为 DOM 顺序首个可聚焦元素（prev 翻页箭头或首个自定义按钮）
+  expect(focusWrap.seq.every((s) => s !== null)).toBe(true)
+  expect(['preview-prev', 'zoom-out']).toContain(focusWrap.seq[0])
+  // Shift+Tab 从首个按钮环绕到浮层内最后一项（关闭按钮或翻页箭头）
+  expect(focusWrap.shiftWrap).not.toBeNull()
+
+  // Esc 关闭：portal 拆除，无孤儿浮层
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(
+    () => document.querySelector('[data-oas-image-preview-portal]') === null,
+    null,
+    { timeout: 15000 },
+  )
+})
+
 test('image 懒加载：视口外图片不加载（img 无 src、占位显示），滚动进入视口后逐图加载', async ({
   page,
 }) => {
