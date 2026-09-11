@@ -102,7 +102,49 @@
   </div>
 </DemoBlock>
 
-## 加载态（loading）
+## 可选中卡（selectable）
+
+`selectable` 让整卡可点选切换选中态——适合图片/标题/描述/操作区俱全的大卡片做多选。选中态为 primary 描边 + 浅 primary 底 + 右上勾选角标；点击卡内的按钮/链接等交互元素不会触发选中；键盘 Space/Enter 同样生效。
+
+单卡语义为 `role="checkbox"`（`aria-checked` 同步）；**多卡组场景**宿主可在卡片上挂 `role="radio"`（组件不覆盖宿主显式角色）并自行管理互斥选中。
+
+宿主不设 `selected` 时组件内部切换并反射属性（非受控）；设了 `selected` 即受控——组件只派发 `oas-change`（detail 为 `{ selected }`，切换后的新状态），选中态由宿主监听回写。`loading` 骨架态不可选；与 `href` 同设时点选优先于跳转（卡内显式链接/按钮仍走各自操作）。
+
+<DemoBlock title="多选卡（非受控）">
+  <div style="width: 100%;">
+    <p id="card-select-count" style="margin: 0 0 var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">已选 0 项</p>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--oas-space-4);">
+      <oas-card selectable hoverable title="方案 A">
+        <p style="color: var(--oas-color-text-secondary); margin: 0;">轻量起步，适合小团队验证想法。</p>
+        <oas-button slot="actions" size="small">查看详情</oas-button>
+      </oas-card>
+      <oas-card selectable hoverable title="方案 B">
+        <p style="color: var(--oas-color-text-secondary); margin: 0;">标准协作套件，含自动化工作流。</p>
+        <oas-button slot="actions" size="small">查看详情</oas-button>
+      </oas-card>
+      <oas-card selectable hoverable title="方案 C">
+        <p style="color: var(--oas-color-text-secondary); margin: 0;">企业级管控，私有部署与审计。</p>
+        <oas-button slot="actions" size="small">查看详情</oas-button>
+      </oas-card>
+    </div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="受控单选卡组（宿主回写 oas-change）">
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--oas-space-4); width: 100%;">
+    <oas-card data-select-radio selectable role="radio" title="基础版" selected>
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">5 人以内 · 基础看板</p>
+    </oas-card>
+    <oas-card data-select-radio selectable role="radio" title="专业版">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">不限人数 · 自动化流程</p>
+    </oas-card>
+    <oas-card data-select-radio selectable role="radio" title="旗舰版">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">私有部署 · 审计日志</p>
+    </oas-card>
+  </div>
+</DemoBlock>
+
+
 
 `loading` 时内容区切换为骨架占位（微光动画），正文隐藏；宿主同步 `aria-busy`。
 
@@ -342,6 +384,34 @@ onMounted(async () => {
   loadingToggle?.addEventListener('oas-click', () => {
     loadingCard?.toggleAttribute('loading')
   })
+
+  // selectable 多选：oas-change 可见反馈 + 已选计数（反射发生在事件派发后，计数延迟一拍）
+  const selectCount = document.querySelector('#card-select-count')
+  const refreshSelectCount = () => {
+    if (!selectCount) return
+    const n = document.querySelectorAll('oas-card[selectable][selected]').length
+    selectCount.textContent = `已选 ${n} 项`
+  }
+  document.addEventListener('oas-change', (e) => {
+    if (!(e.target instanceof HTMLElement)) return
+    if (e.target.tagName !== 'OAS-CARD' || !e.target.hasAttribute('selectable')) return
+    if (e.target.hasAttribute('data-select-radio')) return
+    const selected = (e as CustomEvent).detail.selected as boolean
+    const title =
+      e.target.shadowRoot?.querySelector('[part="title"]')?.textContent || '卡片'
+    window.message?.[selected ? 'success' : 'info'](`${selected ? '已选中' : '已取消'}「${title}」`)
+    setTimeout(refreshSelectCount, 0)
+  })
+
+  // selectable 受控单选卡组：组件只派发事件，互斥选中由宿主回写（role=radio 语义）
+  const radioCards = document.querySelectorAll('[data-select-radio]')
+  radioCards.forEach((card) => {
+    card.addEventListener('oas-change', (e) => {
+      if (!(e as CustomEvent).detail.selected) return
+      radioCards.forEach((c) => c.removeAttribute('selected'))
+      card.setAttribute('selected', '')
+    })
+  })
 })
 </script>
 
@@ -359,6 +429,8 @@ onMounted(async () => {
 | `hoverable` | 是否开启悬浮阴影（阴影 + 上浮提升 + 指针） | `boolean` | — |
 | `href` | 链接卡：整卡语义为链接（内部锚点包装，键盘/中键原生可达） | `string` | — |
 | `loading` | 加载态：内容区切骨架占位（aria-busy 同步） | `boolean` | — |
+| `selectable` | 可选中卡：点击整卡（或 Enter/Space）切换选中态，派发 `oas-change`；卡内按钮/链接等交互元素不触发选中；与 `href` 同设时点选优先、不跳转；loading 骨架态不可选 | `boolean` | — |
+| `selected` | 选中态（配合 `selectable`）：宿主设置即为受控——组件只派发 `oas-change` 不自改属性，宿主监听回写；未设置时组件内部切换并反射该属性（非受控） | `boolean` | — |
 | `shadow` | 阴影三态：`none` / `hover`（悬停浮起）/ `always`（常显）；`hoverable` 映射 `hover`，显式 shadow 优先 | `string` | — |
 | `size` | 尺寸档位：`small`（紧凑 padding、标题降档）/ `medium`（默认） | — | — |
 | `target` | 链接卡打开目标（配合 href，如 `_blank`） | `string` | — |
@@ -369,6 +441,7 @@ onMounted(async () => {
 
 | 事件 | 说明 |
 | --- | --- |
+| `oas-change` | 选中态切换（`selectable` 时），detail 为 `{ selected }`（切换后的新状态） |
 | `oas-click` | 整卡点击（`clickable` 时），detail 含 originalEvent |
 
 ### 插槽

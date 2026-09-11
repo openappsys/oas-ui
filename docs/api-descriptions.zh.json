@@ -405,10 +405,13 @@
       "shadow": "阴影三态：`none` / `hover`（悬停浮起）/ `always`（常显）；`hoverable` 映射 `hover`，显式 shadow 优先",
       "description": "Meta 副文（title 下方弱化小字；与 description 插槽双通道，slot 优先）",
       "href": "链接卡：整卡语义为链接（内部锚点包装，键盘/中键原生可达）",
-      "target": "链接卡打开目标（配合 href，如 `_blank`）"
+      "target": "链接卡打开目标（配合 href，如 `_blank`）",
+      "selectable": "可选中卡：点击整卡（或 Enter/Space）切换选中态，派发 `oas-change`；卡内按钮/链接等交互元素不触发选中；与 `href` 同设时点选优先、不跳转；loading 骨架态不可选",
+      "selected": "选中态（配合 `selectable`）：宿主设置即为受控——组件只派发 `oas-change` 不自改属性，宿主监听回写；未设置时组件内部切换并反射该属性（非受控）"
     },
     "events": {
-      "oas-click": "整卡点击（`clickable` 时），detail 含 originalEvent"
+      "oas-click": "整卡点击（`clickable` 时），detail 含 originalEvent",
+      "oas-change": "选中态切换（`selectable` 时），detail 为 `{ selected }`（切换后的新状态）"
     },
     "slots": {
       "": "卡片内容",
