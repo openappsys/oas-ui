@@ -405,10 +405,13 @@
       "shadow": "Shadow: `none` / `hover` (lift on hover) / `always`; `hoverable` maps to `hover`, explicit shadow wins",
       "description": "Meta secondary text (muted line under the title; dual channel with the description slot, slot wins)",
       "href": "Link card: whole card acts as a link (wrapped in an internal anchor; keyboard/middle-click native)",
-      "target": "Link target (with href, e.g. `_blank`)"
+      "target": "Link target (with href, e.g. `_blank`)",
+      "selectable": "Selectable card: click the card body (or press Enter/Space) to toggle the selected state and dispatch `oas-change`; interactive elements inside the card (buttons/links) do not trigger selection; with `href`, selecting takes precedence over navigation; not selectable while `loading`",
+      "selected": "Selected state (with `selectable`): setting it from the host makes the card controlled — the component only dispatches `oas-change` and never mutates the attribute itself (the host writes it back); when unset, the component toggles internally and reflects this attribute (uncontrolled)"
     },
     "events": {
-      "oas-click": "Whole-card click (when `clickable`), detail contains originalEvent"
+      "oas-click": "Whole-card click (when `clickable`), detail contains originalEvent",
+      "oas-change": "Selected state toggled (when `selectable`), detail is `{ selected }` (the new state after the toggle)"
     },
     "slots": {
       "": "Card content",
