@@ -113,6 +113,10 @@ const EXEMPT_EVENTS = new Set([
   'oas-collapse-click',
   // 组件间协议信号（checkbox 子项→组的内部转发，组对外统一派 oas-exceed-limit），非宿主 API
   'oas-limit-blocked',
+  // 特殊交互才能触发（通用探针无法触达，均有 qa-regression 单独固化）：
+  'oas-whole-remove', // mentions：光标紧跟提及段按 Backspace 整段删（demo 有专门块）
+  'oas-preview-nav', // image：预览内 prev/next 翻页（image-group 共享预览转发）
+  'oas-node-rename', // tree：双击节点 label/F2 进内联编辑后 Enter 提交（demo 有专门块）
 ])
 
 // 容器托管的反射属性（由父组件按 active/受控集合写回，非宿主直驱 API）：豁免静态演示要求

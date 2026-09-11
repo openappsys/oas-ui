@@ -1,6 +1,6 @@
 {
   "name": "@oas-ui/ui",
-  "version": "2.4.1",
+  "version": "2.5.0",
   "description": "OAS-UI 框架无关 Web Components UI 组件库",
   "homepage": "https://oas-ui.dev/",
   "keywords": [
@@ -60,9 +60,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@oas-ui/core": "workspace:*",
-    "@oas-ui/i18n": "workspace:*",
-    "@oas-ui/icons": "workspace:*"
+    "@oas-ui/core": "2.5.0",
+    "@oas-ui/i18n": "2.5.0",
+    "@oas-ui/icons": "2.5.0"
   },
   "devDependencies": {
     "@oas-ui/ssr": "workspace:*"
