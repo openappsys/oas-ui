@@ -86,7 +86,7 @@ import '@oas-ui/ui/basic/button'
 React / Vue 中直接使用（渲染、属性、插槽内容两端均可；**事件监听见下方小节**）：
 
 ```tsx
-// React：事件要桥接，见下「React 事件桥接（@oas-ui/react）」
+// React：事件监听见下「React 事件监听」（原生 onoas-* 小写写法即可）
 <oas-button type="primary" ref={btnRef}>按钮</oas-button>
 ```
 
@@ -95,15 +95,20 @@ React / Vue 中直接使用（渲染、属性、插槽内容两端均可；**事
 <oas-button type="primary" @oas-click="onClick">按钮</oas-button>
 ```
 
-组件渲染与属性透传在 React / Vue / 原生三端均无需封装；事件统一由 `oas-*` CustomEvent 派发，**Vue 的 `@oas-click` 可直接监听，React 需额外桥接**（见下）。
+组件渲染与属性透传在 React / Vue / 原生三端均无需封装；事件统一由 `oas-*` CustomEvent 派发，**Vue 的 `@oas-click` 可直接监听；React 19 用原生 `onoas-*` 小写写法即可，camelCase 惯例需走可选桥接**（见下）。
 
-### React 事件桥接（`@oas-ui/react`）
+### React 事件监听
 
-**React 19 对自定义元素事件的桥接有写法陷阱**：只有「`on` + 全小写字面量」的写法才生效——`<oas-button onoas-submit={...}>` 能监听到 `oas-submit`，但符合 React 惯例的 camelCase 写法 `<oas-button onOasSubmit={...}>` 静默失效（自定义元素上该 prop 不会映射为 `oas-submit` 监听），且小写横线属性名对 TS/JSX 类型不友好。因此 React 侧推荐统一走通用桥接包 `@oas-ui/react`（纯客户端 hooks，运行时零依赖，兼容 React 17/18）：
+**React 19 原生即可监听**：只有「`on` + 全小写字面量」的写法生效——`<oas-button onoas-submit={...}>` 能收到 `oas-submit`；符合 React 惯例的 camelCase 写法 `<oas-button onOasSubmit={...}>` 静默失效（自定义元素上该 prop 不会映射为 `oas-submit` 监听），且小写横线属性名对 TS/JSX 类型不友好，React 17/18 亦不适用。
 
-```bash
-pnpm add @oas-ui/react
+```tsx
+// React 19：原生写法，无需额外依赖
+<oas-button type="primary" onoas-submit={(e) => console.log(e.detail.value)}>
+  提交
+</oas-button>
 ```
+
+**可选工具包 `@oas-ui/react`（仓库内提供，不单独发布）**：需要 camelCase 惯例、类型安全或兼容 React 17/18 时，可用 hooks 桥接——源码见 `packages/react`（monorepo 内引用），未发布到 npm。
 
 ```tsx
 import { useRef } from 'react'
@@ -123,7 +128,7 @@ function Demo() {
 }
 ```
 
-单事件场景用 `useOasEvent<Detail>(ref, 'oas-submit', handler)`。两个 hook 都会在重渲染后自动走最新闭包、在卸载时自动解绑；事件名必须带 `oas-` 前缀。完整说明见 `packages/react/README.md` 或 [npm 上的 @oas-ui/react](https://www.npmjs.com/package/@oas-ui/react)。
+单事件场景用 `useOasEvent<Detail>(ref, 'oas-submit', handler)`。两个 hook 都会在重渲染后自动走最新闭包、在卸载时自动解绑；事件名必须带 `oas-` 前缀。完整说明见 `packages/react/README.md`。
 
 **能力子包（重型能力主路径默认内含）**：部分组件的重型可选能力拆成了独立子包，并已并入组件**主路径入口**——经 `@oas-ui/ui/<组>/<组件>` 任意主路径引入即默认含全部能力（import 即注册，无需额外 import）：
 
