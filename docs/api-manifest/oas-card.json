@@ -70,6 +70,16 @@
       "type": "string",
       "default": "",
       "observed": true
+    },
+    {
+      "name": "selectable",
+      "type": "boolean",
+      "observed": true
+    },
+    {
+      "name": "selected",
+      "type": "boolean",
+      "observed": true
     }
   ],
   "props": [],
@@ -77,6 +87,10 @@
     {
       "name": "oas-click",
       "detail": "{ originalEvent: e } | { originalEvent: k }"
+    },
+    {
+      "name": "oas-change",
+      "detail": "{ selected: next }"
     }
   ],
   "slots": [

@@ -1072,7 +1072,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **timeline**：item 自包含行（克隆机制债根治）/type 语义色 + variant/任意色变量/mode+opposite 对侧/title 插槽/dot 自定义/pending/loading/reverse/横向/oas-click
 - **collapse**：disabled/borderless/icon-placement/自定义 toggle 图标/header·extra 富标题（extra 点击解耦）/default-active/heading-level（APG）/键盘 roving/destroy-on-collapse/force-render/no-collapse 强锁 + oas-before-collapse 可取消/expandAll·collapseAll/grid-rows 纯 CSS 展开动画（reduced-motion 停用）
 - **descriptions**：layout/bordered 网格表/span 跨列/colon/size 三档/slot=extra/slot=label；column 未设时不写内联变量（宿主媒体查询可响应降列）
-- **card**：loading 骨架/size=small/variant=borderless/slot=footer/header-bordered/shadow 三态（hoverable 映射 hover）/Meta（slot=avatar + description 双通道）/href 链接卡
+- **card**：loading 骨架/size=small/variant=borderless/slot=footer/header-bordered/shadow 三态（hoverable 映射 hover）/Meta（slot=avatar + description 双通道）/href 链接卡/selectable 可选中卡（整卡点选切换选中，primary 描边 + 浅底 + 勾选角标，role=checkbox + aria-checked，受控/非受控双模式 + oas-change；多卡组宿主可挂 role=radio；loading 不可选、href 同设时点选优先不跳转）
 - **avatar**：shape 三态/多字测量收缩字号（下限 + ellipsis 收口）/fallback 回退图/slot=icon/fit/color（对比色协议）/oas-error/size 枚举别名；avatar-group：spacing/overlap 变量 + ring 描边、+N hover 弹层（共享定位引擎）、slot=trigger 换头像入口
 - **image**：preview-src-list 图集（翻页+键盘+页码+infinite）/preview-src/preview-open 受控 + oas-preview-change + openPreview()/oas-load·oas-error/slot=placeholder·error/flipX·flipY/拖拽平移+滚轮缩放/缩放 CSS 变量/预览浮层 portal teleport（修 transform 祖先内 fixed 失效）
 - **image-group**（新组件）：容器收集式图集——light DOM 收集组内 oas-image 子图（preview-src-list 展平 > preview-src > src），点击共享预览浮层（从被点图起开，prev/next 整组切换，复用 image 预览全部能力）；子图 preview 被容器接管；MutationObserver 动态增删同步；current 可选受控 + oas-change{current,prev}；role=group + locale 可访问名称

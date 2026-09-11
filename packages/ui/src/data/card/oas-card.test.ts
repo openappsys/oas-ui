@@ -564,6 +564,150 @@ describe('OASCard', () => {
     })
   })
 
+  describe('selectable 可选中卡', () => {
+    it('selectable：role=checkbox + tabindex=0 + aria-checked 同步（默认未选中）', () => {
+      const el = mount({ selectable: '' })
+      expect(el.getAttribute('role')).toBe('checkbox')
+      expect(el.getAttribute('tabindex')).toBe('0')
+      expect(el.getAttribute('aria-checked')).toBe('false')
+    })
+
+    it('selected 初始在场：aria-checked=true', () => {
+      const el = mount({ selectable: '', selected: '' })
+      expect(el.getAttribute('aria-checked')).toBe('true')
+    })
+
+    it('点击整卡切换选中（非受控）：selected 属性反射 + 派发 oas-change（detail.selected 为新状态）', () => {
+      const el = mount({ selectable: '' })
+      const events: boolean[] = []
+      el.addEventListener('oas-change', (e: Event) => {
+        events.push((e as CustomEvent).detail.selected)
+        expect(e.bubbles).toBe(true)
+        expect((e as CustomEvent).composed).toBe(true)
+      })
+      el.click()
+      expect(events).toEqual([true])
+      expect(el.hasAttribute('selected')).toBe(true)
+      expect(el.getAttribute('aria-checked')).toBe('true')
+      el.click()
+      expect(events).toEqual([true, false])
+      expect(el.hasAttribute('selected')).toBe(false)
+      expect(el.getAttribute('aria-checked')).toBe('false')
+    })
+
+    it('键盘 Enter/Space 切换选中', () => {
+      const el = mount({ selectable: '' })
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      expect(el.hasAttribute('selected')).toBe(true)
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+      expect(el.hasAttribute('selected')).toBe(false)
+    })
+
+    it('点击卡内交互元素（按钮）不触发选中切换', () => {
+      const el = mount({ selectable: '' }, '<button slot="actions">删除</button><p>正文</p>')
+      let fired = 0
+      el.addEventListener('oas-change', () => fired++)
+      const evt = new MouseEvent('click', { bubbles: true, cancelable: true, composed: true })
+      el.querySelector('button')!.dispatchEvent(evt)
+      expect(fired).toBe(0)
+      expect(el.hasAttribute('selected')).toBe(false)
+    })
+
+    it('受控模式：selected 由宿主管理时，点击只派发 oas-change、不改属性', () => {
+      const el = mount({ selectable: '', selected: '' })
+      let fired = 0
+      el.addEventListener('oas-change', (e: Event) => {
+        fired++
+        // 受控语义：事件 detail 是新状态，但属性不被组件自改
+        expect((e as CustomEvent).detail.selected).toBe(false)
+      })
+      el.click()
+      expect(fired).toBe(1)
+      expect(el.hasAttribute('selected')).toBe(true)
+    })
+
+    it('受控回写：宿主监听 oas-change 回写属性 → aria-checked 跟随', () => {
+      const el = mount({ selectable: '' })
+      el.addEventListener('oas-change', (e: Event) => {
+        const { selected } = (e as CustomEvent).detail as { selected: boolean }
+        if (selected) el.setAttribute('selected', '')
+        else el.removeAttribute('selected')
+      })
+      el.click()
+      expect(el.getAttribute('aria-checked')).toBe('true')
+      el.click()
+      expect(el.getAttribute('aria-checked')).toBe('false')
+    })
+
+    it('loading 骨架态不可选：点击/键盘均不切换、无 checkbox 语义', () => {
+      const el = mount({ selectable: '', loading: '' })
+      let fired = 0
+      el.addEventListener('oas-change', () => fired++)
+      el.click()
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      expect(fired).toBe(0)
+      expect(el.hasAttribute('selected')).toBe(false)
+      expect(el.hasAttribute('role')).toBe(false)
+    })
+
+    it('selectable + clickable：role=checkbox 优先承载（aria-checked 语义）', () => {
+      const el = mount({ selectable: '', clickable: '' })
+      expect(el.getAttribute('role')).toBe('checkbox')
+      expect(el.getAttribute('aria-checked')).toBe('false')
+    })
+
+    it('href + selectable：点击正文选中并阻止锚点默认导航（选中优先，内部链接仍走各自）', () => {
+      const el = mount({ selectable: '', href: 'https://example.com' }, '<p id="t">正文</p>')
+      // href 在场：焦点交给内部锚点，宿主不叠加 role/tabindex（同 clickable 语义）
+      expect(el.hasAttribute('role')).toBe(false)
+      const evt = new MouseEvent('click', { bubbles: true, cancelable: true, composed: true })
+      el.querySelector('#t')!.dispatchEvent(evt)
+      expect(evt.defaultPrevented).toBe(true)
+      expect(el.hasAttribute('selected')).toBe(true)
+    })
+
+    it('宿主显式角色优先：role="radio" 不被覆盖，aria-checked 照常同步', () => {
+      const el = mount({ selectable: '', role: 'radio' })
+      expect(el.getAttribute('role')).toBe('radio')
+      expect(el.getAttribute('aria-checked')).toBe('false')
+      el.click()
+      expect(el.getAttribute('role')).toBe('radio')
+      expect(el.getAttribute('aria-checked')).toBe('true')
+    })
+
+    it('非 selectable：无 checkbox 语义、点击不派发 oas-change', () => {
+      const el = mount({})
+      let fired = 0
+      el.addEventListener('oas-change', () => fired++)
+      el.click()
+      expect(fired).toBe(0)
+      expect(el.hasAttribute('role')).toBe(false)
+      expect(el.getAttribute('aria-checked')).toBe(null)
+    })
+
+    it('选中态视觉钩子：勾选角标显隐跟随 selected（shadow 结构）', () => {
+      const el = mount({ selectable: '' })
+      const badge = el.shadowRoot!.querySelector<HTMLElement>('[part="check-badge"]')!
+      expect(badge.hasAttribute('hidden')).toBe(true)
+      el.click()
+      expect(badge.hasAttribute('hidden')).toBe(false)
+    })
+
+    it('选中态 CSS 契约：primary 描边（含 borderless 兼容的 inset 环）+ 浅 primary 底 + 角标 token', () => {
+      const el = mount({ selectable: '', selected: '' })
+      const css = el.shadowRoot!.querySelector('style')!.textContent!
+      expect(css).toMatch(
+        /:host\(\[selectable\]\[selected\]\)\s*\{[^}]*border-color:\s*var\(--oas-color-primary\)/,
+      )
+      expect(css).toMatch(
+        /:host\(\[selectable\]\[selected\]\)\s*\{[^}]*background:[^}]*var\(--oas-color-primary\)/,
+      )
+      expect(css).toMatch(/\.check-badge\s*\{[^}]*position:\s*absolute/)
+      expect(css).toMatch(/check-corner[^}]*var\(--oas-color-primary\)/)
+      expect(css).toMatch(/check-icon[^}]*var\(--oas-color-text-on-primary\)/)
+    })
+  })
+
   describe('真水合（hydrate 接管 SSR 快照）', () => {
     /** 用组件自身 template() 产快照内容（保证与客户端渲染结构严格一致），前置指纹 meta */
     function snapshotWith(el: OASCard, fingerprintTag: string): string {
