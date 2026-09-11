@@ -52,6 +52,10 @@ const STYLE = `
  * a11y：容器 `role="group"` + locale 可访问名称；预览浮层内部页码指示
  * （n/total + aria-label）沿用 oas-image 图集 chrome。
  *
+ * 自定义工具栏：宿主在组图 light DOM 提供的 `template[slot="toolbar"]` 透传进共享预览
+ * 宿主，共享浮层的自定义工具栏（克隆替换默认按钮组 + oas-toolbar-render 命令通道）
+ * 与单图 oas-image 完全一致。
+ *
  * 布局：默认 flex 换行 + gap token，间距可经 `--oas-image-group-gap` 覆盖。
  */
 export class OASImageGroup extends OASElement {
@@ -71,6 +75,8 @@ export class OASImageGroup extends OASElement {
   private inner: OASImage | null = null
   /** 子图增删/关键属性变化的观察器（断开连接时清理） */
   private observer: MutationObserver | null = null
+  /** 自定义工具栏模板已克隆进共享预览宿主（防重复克隆） */
+  private toolbarTplSynced = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -88,7 +94,7 @@ export class OASImageGroup extends OASElement {
     this.inner = this.shadow.querySelector<OASImage>('oas-image')
     this.shadow
       .querySelector('slot')
-      ?.addEventListener('slotchange', () => this.syncCollection())
+      ?.addEventListener('slotchange', () => this.syncAll())
 
     if (this.inner) {
       // 打开预览：原样转发 detail（src 为当前张地址）
@@ -112,8 +118,8 @@ export class OASImageGroup extends OASElement {
     // 捕获阶段拦截组内子图点击：子图自身 preview 被接管，点击走组图集
     this.addEventListener('click', this.onCaptureClick, true)
 
-    // 子图动态增删 + 收集相关属性变化 → 同步图集列表
-    this.observer = new MutationObserver(() => this.syncCollection())
+    // 子图动态增删 + 收集相关属性变化 → 模板透传 + 图集列表同步
+    this.observer = new MutationObserver(() => this.syncAll())
     this.observer.observe(this, {
       childList: true,
       subtree: true,
@@ -174,6 +180,30 @@ export class OASImageGroup extends OASElement {
     }
     const single = el.getAttribute('preview-src') || el.getAttribute('src') || ''
     return single ? [single] : []
+  }
+
+  /** 子图/模板变化统一入口：先透传工具栏模板，再收集图集（写回宿主属性触发其 update） */
+  private syncAll(): void {
+    this.syncToolbarTpl()
+    this.syncCollection()
+  }
+
+  /**
+   * 自定义工具栏模板透传：宿主在组图 light DOM 提供的 `template[slot="toolbar"]`
+   * 克隆进共享预览宿主——共享浮层的自定义工具栏通道与单图 oas-image 完全一致
+   * （克隆完成/打开时共享宿主派发 oas-toolbar-render，composed 事件经容器冒泡给宿主）。
+   */
+  private syncToolbarTpl(): void {
+    if (!this.inner) return
+    // 字面量选择器：API 扫描以 `template[slot="..."]` 字面量为插槽发现通道（动态插值不可静态解析）
+    const tpl = this.querySelector('template[slot="toolbar"]')
+    if (tpl && !this.toolbarTplSynced) {
+      this.toolbarTplSynced = true
+      this.inner.appendChild(tpl.cloneNode(true))
+    } else if (!tpl && this.toolbarTplSynced) {
+      this.toolbarTplSynced = false
+      this.inner.querySelector('template[slot="toolbar"]')?.remove()
+    }
   }
 
   /** 收集子图 → 展平图集列表 → 透传共享预览宿主；列表变短时收敛当前索引 */
@@ -239,6 +269,9 @@ export class OASImageGroup extends OASElement {
   protected override update(): void {
     const box = this.shadow.querySelector<HTMLElement>('[part="group"]')
     if (box) box.setAttribute('aria-label', this.t('imageGroup.group'))
+
+    // 自定义工具栏模板透传（首次挂载早于 slotchange/观察器微任务，先克隆进共享宿主）
+    this.syncToolbarTpl()
 
     // infinite 透传共享宿主
     if (this.inner) {

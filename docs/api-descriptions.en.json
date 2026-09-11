@@ -1217,11 +1217,13 @@
       "oas-load": "Image loaded successfully, `detail: { src }`",
       "oas-error": "Image failed finally (fallback chain exhausted), `detail: { src }`",
       "oas-preview-change": "Preview open state changed, `detail: { open }`",
-      "oas-preview-nav": "Gallery page change/jump, `detail: { index, src }`; lets the oas-image-group container take over the index"
+      "oas-preview-nav": "Gallery page change/jump, `detail: { index, src }`; lets the oas-image-group container take over the index",
+      "oas-toolbar-render": "Custom toolbar render notification (fired on clone and on every preview open; host re-binding is idempotent), detail { element, actions }: element is the cloned toolbar container, actions is the viewer command set"
     },
     "slots": {
       "template[slot=\"placeholder\"]": "Custom loading placeholder content (gray block + text by default)",
-      "template[slot=\"error\"]": "Custom error placeholder content (shared by the main image and gallery preview failures)"
+      "template[slot=\"error\"]": "Custom error placeholder content (shared by the main image and gallery preview failures)",
+      "template[slot=\"toolbar\"]": "Custom preview toolbar content: cloned into the overlay toolbar area, replacing the default button group (defaults remain when absent). Emits oas-toolbar-render on clone and on every open (detail { element, actions }); action commands: zoomIn/zoomOut/rotateLeft/rotateRight/flipX/flipY/download/close/prev/next (prev/next are no-ops in single-image mode)"
     }
   },
   "oas-image-group": {
@@ -1233,7 +1235,9 @@
       "oas-preview": "Shared preview overlay opened, `detail: { src }` (src is the current image URL)",
       "oas-change": "Gallery page changed, `detail: { current, prev }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"toolbar\"]": "Forwarded to the shared preview host: customizes the shared preview overlay toolbar (clone replaces the default button group + oas-toolbar-render command channel, same as oas-image)"
+    }
   },
   "oas-input": {
     "attrs": {
