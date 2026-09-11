@@ -83,6 +83,10 @@
     {
       "name": "oas-preview-change",
       "detail": "{ open }"
+    },
+    {
+      "name": "oas-toolbar-render",
+      "detail": "{ element: bar, actions: this.toolbarActions() }"
     }
   ],
   "slots": [
@@ -91,6 +95,9 @@
     },
     {
       "name": "template[slot=\"placeholder\"]"
+    },
+    {
+      "name": "template[slot=\"toolbar\"]"
     }
   ],
   "unresolved": []

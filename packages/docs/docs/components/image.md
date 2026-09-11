@@ -154,6 +154,48 @@
   </p>
 </DemoBlock>
 
+## 自定义工具栏
+
+<DemoBlock title="自定义工具栏（slot=toolbar + oas-toolbar-render）">
+  <oas-image id="image-custom-toolbar" preview src="https://picsum.photos/seed/isui-ct-1/600/300" preview-src-list='["https://picsum.photos/seed/isui-ct-1/1200/600","https://picsum.photos/seed/isui-ct-2/1200/600","https://picsum.photos/seed/isui-ct-3/1200/600"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTRjYWY4Jy8+PC9zdmc+" alt="自定义工具栏">
+    <template slot="toolbar">
+      <button type="button" data-cmd="zoom-out">缩小</button>
+      <button type="button" data-cmd="zoom-in">放大</button>
+      <button type="button" data-cmd="rotate-left">左旋</button>
+      <button type="button" data-cmd="rotate-right">右旋</button>
+      <button type="button" data-cmd="prev">上一张</button>
+      <button type="button" data-cmd="next">下一张</button>
+      <button type="button" data-cmd="download">下载</button>
+      <button type="button" data-cmd="close">关闭</button>
+    </template>
+  </oas-image>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    提供 <code>template[slot="toolbar"]</code> 后，模板内容被克隆进预览浮层工具栏区并替换默认按钮组（原模板保留在 light DOM；无模板时维持默认工具栏）。克隆完成与每次打开预览都会派发 <code>oas-toolbar-render</code>：在事件回调里用 detail 的 <code>element</code>（工具栏容器）与 <code>actions</code>（查看器命令）把自定义按钮接到预览命令即可，上图按钮均已接线可直接点击。
+  </p>
+</DemoBlock>
+
+`oas-toolbar-render` 的 detail 为 `{ element, actions }`：`element` 是克隆后的工具栏容器（宿主在其上绑定按钮事件，重复绑定幂等）；`actions` 命令集合如下（图集模式下 `prev`/`next` 有效，单图模式为 no-op）：
+
+| 命令 | 说明 |
+| --- | --- |
+| `zoomIn` / `zoomOut` | 放大 / 缩小一档（与滚轮、默认按钮同一份 transform 状态机） |
+| `rotateLeft` / `rotateRight` | 逆时针 / 顺时针旋转 90° |
+| `flipX` / `flipY` | 水平 / 垂直翻转 |
+| `download` | 触发当前预览图下载 |
+| `close` | 关闭预览浮层（等价 Esc / 点遮罩） |
+| `prev` / `next` | 图集上一张 / 下一张（受 `infinite` 边界约束，同默认翻页） |
+
+宿主接线示例：
+
+```js
+el.addEventListener('oas-toolbar-render', (e) => {
+  const { element, actions } = e.detail
+  element.querySelector('#my-zoom-in').onclick = actions.zoomIn
+})
+```
+
+`oas-image-group` 共享预览同样支持：把 `template[slot="toolbar"]` 直接放在组图内即可透传到共享浮层。自定义工具栏的按钮自动获得 token 化基础样式（light/dark 可读），并参与 Tab 焦点陷阱。
+
 ## 加载事件
 
 <DemoBlock title="加载事件（oas-load / oas-error）">
@@ -296,6 +338,25 @@ onMounted(async () => {
     message.success(`oas-change：current=${e.detail.current}，prev=${e.detail.prev}`)
   })
 
+  // 自定义工具栏：oas-toolbar-render 命令通道接线（克隆完成与每次打开均派发，幂等）
+  const customToolbar = document.querySelector('#image-custom-toolbar')
+  customToolbar?.addEventListener('oas-toolbar-render', (e) => {
+    const { element, actions } = e.detail
+    const CMD = {
+      'zoom-in': actions.zoomIn,
+      'zoom-out': actions.zoomOut,
+      'rotate-left': actions.rotateLeft,
+      'rotate-right': actions.rotateRight,
+      prev: actions.prev,
+      next: actions.next,
+      download: actions.download,
+      close: actions.close,
+    }
+    for (const btn of element.querySelectorAll('[data-cmd]')) {
+      btn.onclick = CMD[btn.getAttribute('data-cmd')]
+    }
+  })
+
   // 加载事件演示
   document.querySelector('#image-events-ok')?.addEventListener('oas-load', (e) => {
     message.success(`oas-load：${e.detail.src}`)
@@ -353,11 +414,13 @@ onMounted(async () => {
 | `oas-preview` | 打开预览浮层，`detail: { src }`；浮层关闭不派发事件 |
 | `oas-preview-change` | 预览开合变化，`detail: { open }` |
 | `oas-preview-nav` | 图集翻页/跳转，`detail: { index, src }`；供 oas-image-group 容器接管索引 |
+| `oas-toolbar-render` | 自定义工具栏渲染通知（克隆完成与每次打开预览均派发，宿主重复绑定幂等），detail { element, actions }：element 为克隆后的工具栏容器，actions 为查看器命令集合 |
 
 | 名称 | 说明 |
 | --- | --- |
 | `template[slot="error"]` | 自定义失败占位内容（主图与图集预览失败位复用） |
 | `template[slot="placeholder"]` | 自定义加载占位内容（缺省为浅灰占位 + 文案） |
+| `template[slot="toolbar"]` | 自定义预览工具栏内容：克隆进浮层工具栏区并替换默认按钮组（缺席维持默认）；克隆完成与每次打开预览派发 oas-toolbar-render（detail { element, actions }），actions 命令：zoomIn/zoomOut/rotateLeft/rotateRight/flipX/flipY/download/close/prev/next（单图模式 prev/next 无效） |
 
 ### oas-image-group
 
@@ -374,3 +437,4 @@ onMounted(async () => {
 | 名称 | 说明 |
 | --- | --- |
 | 默认 | — |
+| `template[slot="toolbar"]` | 透传共享预览宿主：自定义共享预览浮层的工具栏（克隆替换默认按钮组 + oas-toolbar-render 命令通道，同 oas-image） |
