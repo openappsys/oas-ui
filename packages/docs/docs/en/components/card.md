@@ -102,6 +102,48 @@ The bottom `actions` slot holds a button group, with a divider automatically add
   </div>
 </DemoBlock>
 
+## Selectable Card
+
+`selectable` makes the whole card toggle its selected state on click — the multi-select form for large rich cards with cover, title, description and actions. The selected state shows a primary border + light primary background + a check badge in the top corner; clicking interactive elements inside the card (buttons/links) does not trigger selection; Space/Enter work the same way.
+
+A standalone card has `role="checkbox"` semantics with `aria-checked` synced. **For card groups**, the host can put `role="radio"` on the cards (the component never overrides an explicit host role) and manage exclusive selection itself.
+
+If the host does not set `selected`, the card toggles internally and reflects the attribute (uncontrolled); once `selected` is set, the card becomes controlled — it only dispatches `oas-change` (detail `{ selected }`, the new state) and the host writes the state back. Not selectable while `loading`; with `href`, selecting takes precedence over navigation (explicit links/buttons inside still act on their own).
+
+<DemoBlock title="Multi-select cards (uncontrolled)">
+  <div style="width: 100%;">
+    <p id="card-select-count" style="margin: 0 0 var(--oas-space-3); color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm);">0 selected</p>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--oas-space-4);">
+      <oas-card selectable hoverable title="Plan A">
+        <p style="color: var(--oas-color-text-secondary); margin: 0;">Lightweight start for small teams.</p>
+        <oas-button slot="actions" size="small">Details</oas-button>
+      </oas-card>
+      <oas-card selectable hoverable title="Plan B">
+        <p style="color: var(--oas-color-text-secondary); margin: 0;">Standard collaboration suite with automation.</p>
+        <oas-button slot="actions" size="small">Details</oas-button>
+      </oas-card>
+      <oas-card selectable hoverable title="Plan C">
+        <p style="color: var(--oas-color-text-secondary); margin: 0;">Enterprise controls, on-prem and audit logs.</p>
+        <oas-button slot="actions" size="small">Details</oas-button>
+      </oas-card>
+    </div>
+  </div>
+</DemoBlock>
+
+<DemoBlock title="Controlled radio card group (host writes back oas-change)">
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--oas-space-4); width: 100%;">
+    <oas-card data-select-radio selectable role="radio" title="Basic" selected>
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Up to 5 members · basic boards</p>
+    </oas-card>
+    <oas-card data-select-radio selectable role="radio" title="Pro">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">Unlimited members · automation</p>
+    </oas-card>
+    <oas-card data-select-radio selectable role="radio" title="Enterprise">
+      <p style="color: var(--oas-color-text-secondary); margin: 0;">On-prem · audit logs</p>
+    </oas-card>
+  </div>
+</DemoBlock>
+
 ## Loading State
 
 With `loading`, the content area switches to a skeleton placeholder (sheen animation) and the body is hidden; the host syncs `aria-busy`.
@@ -341,6 +383,35 @@ onMounted(async () => {
   loadingToggle?.addEventListener('oas-click', () => {
     loadingCard?.toggleAttribute('loading')
   })
+
+  // selectable multi-select: visible feedback on oas-change + selected count
+  // (the attribute is reflected right after dispatch, so count one tick later)
+  const selectCount = document.querySelector('#card-select-count')
+  const refreshSelectCount = () => {
+    if (!selectCount) return
+    const n = document.querySelectorAll('oas-card[selectable][selected]').length
+    selectCount.textContent = `${n} selected`
+  }
+  document.addEventListener('oas-change', (e) => {
+    if (!(e.target instanceof HTMLElement)) return
+    if (e.target.tagName !== 'OAS-CARD' || !e.target.hasAttribute('selectable')) return
+    if (e.target.hasAttribute('data-select-radio')) return
+    const selected = (e as CustomEvent).detail.selected as boolean
+    const title = e.target.shadowRoot?.querySelector('[part="title"]')?.textContent || 'Card'
+    window.message?.[selected ? 'success' : 'info'](`${selected ? 'Selected' : 'Deselected'}: ${title}`)
+    setTimeout(refreshSelectCount, 0)
+  })
+
+  // selectable controlled radio group: cards only dispatch events; the host
+  // writes back exclusive selection (role=radio semantics)
+  const radioCards = document.querySelectorAll('[data-select-radio]')
+  radioCards.forEach((card) => {
+    card.addEventListener('oas-change', (e) => {
+      if (!(e as CustomEvent).detail.selected) return
+      radioCards.forEach((c) => c.removeAttribute('selected'))
+      card.setAttribute('selected', '')
+    })
+  })
 })
 </script>
 
@@ -358,6 +429,8 @@ onMounted(async () => {
 | `hoverable` | Whether to enable the hover shadow (shadow + lift + pointer) | `boolean` | — |
 | `href` | Link card: whole card acts as a link (wrapped in an internal anchor; keyboard/middle-click native) | `string` | — |
 | `loading` | Loading state: content area swaps to skeleton rows (aria-busy synced) | `boolean` | — |
+| `selectable` | Selectable card: click the card body (or press Enter/Space) to toggle the selected state and dispatch `oas-change`; interactive elements inside the card (buttons/links) do not trigger selection; with `href`, selecting takes precedence over navigation; not selectable while `loading` | `boolean` | — |
+| `selected` | Selected state (with `selectable`): setting it from the host makes the card controlled — the component only dispatches `oas-change` and never mutates the attribute itself (the host writes it back); when unset, the component toggles internally and reflects this attribute (uncontrolled) | `boolean` | — |
 | `shadow` | Shadow: `none` / `hover` (lift on hover) / `always`; `hoverable` maps to `hover`, explicit shadow wins | `string` | — |
 | `size` | Size: `small` (compact padding, smaller title) / `medium` (default) | — | — |
 | `target` | Link target (with href, e.g. `_blank`) | `string` | — |
@@ -368,6 +441,7 @@ onMounted(async () => {
 
 | Event | Description |
 | --- | --- |
+| `oas-change` | Selected state toggled (when `selectable`), detail is `{ selected }` (the new state after the toggle) |
 | `oas-click` | Whole-card click (when `clickable`), detail contains originalEvent |
 
 ### Slots
