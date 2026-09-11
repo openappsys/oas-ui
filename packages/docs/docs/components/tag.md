@@ -113,11 +113,17 @@ document.getElementById('async-close').addEventListener('oas-close', (e) => {
 onMounted(async () => {
   const { message } = await import('@oas-ui/ui')
   window.message = message
-  document.addEventListener('oas-close', () => {
-    window.message?.info('标签已关闭')
+  document.addEventListener('oas-close', (e) => {
+    // 只响应标签自身的关闭：oas-close 是全库通用事件名（message/notification/modal 等
+    // 也派发），不筛 target 会把 message 自身自动关闭的 oas-close 也捕获 → 弹新 message →
+    // 新 message 再关闭 → 无限自激循环（用户实测「点选项 A 不停弹标签已关闭」）
+    if (e.target instanceof Element && e.target.tagName === 'OAS-TAG') {
+      window.message?.info('标签已关闭')
+    }
   })
   document.addEventListener('oas-click', (e) => {
-    const text = (e.target?.textContent || '标签').trim()
+    if (!(e.target instanceof Element) || e.target.tagName !== 'OAS-TAG') return
+    const text = (e.target.textContent || '标签').trim()
     window.message?.info(`点击了「${text}」`)
   })
 
