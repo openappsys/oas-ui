@@ -895,6 +895,208 @@ describe('OASImage 自定义 placeholder / error 插槽', () => {
   })
 })
 
+describe('OASImage 自定义工具栏（slot=toolbar + oas-toolbar-render）', () => {
+  const TOOLBAR_TPL = `<template slot="toolbar">
+    <button type="button" data-cmd="zoom-in">放大</button>
+    <button type="button" data-cmd="zoom-out">缩小</button>
+    <button type="button" data-cmd="rotate-left">左旋</button>
+    <button type="button" data-cmd="rotate-right">右旋</button>
+    <button type="button" data-cmd="flip-x">水平翻转</button>
+    <button type="button" data-cmd="flip-y">垂直翻转</button>
+    <button type="button" data-cmd="prev">上一张</button>
+    <button type="button" data-cmd="next">下一张</button>
+    <button type="button" data-cmd="download">下载</button>
+    <button type="button" data-cmd="close">关闭</button>
+  </template>`
+
+  /** 挂监听 → 挂载（挂载与打开均会派发 oas-toolbar-render，先挂监听确保不丢） */
+  function mountToolbar(
+    extra: Record<string, string> = {},
+  ): { el: OASImage; details: Array<{ element: HTMLElement; actions: Record<string, () => void> }> } {
+    const el = new OASImage()
+    el.setAttribute('src', '/a.png')
+    el.setAttribute('preview', '')
+    for (const [k, v] of Object.entries(extra)) el.setAttribute(k, v)
+    el.innerHTML = TOOLBAR_TPL
+    const details: Array<{ element: HTMLElement; actions: Record<string, () => void> }> = []
+    el.addEventListener('oas-toolbar-render', (e: Event) =>
+      details.push((e as CustomEvent).detail as never),
+    )
+    document.body.appendChild(el)
+    return { el, details }
+  }
+
+  function pdoc(el: OASImage): ShadowRoot {
+    const portal = document.querySelector('[data-oas-image-preview-portal]')
+    if (portal?.shadowRoot?.querySelector('.preview-mask')) return portal.shadowRoot
+    return el.shadowRoot!
+  }
+
+  function openIt(el: OASImage): void {
+    ;(el.shadowRoot!.querySelector('.previewable') as HTMLElement).click()
+  }
+
+  function barOf(el: OASImage): HTMLElement {
+    return pdoc(el).querySelector('[part="preview-toolbar"]') as HTMLElement
+  }
+
+  function wire(el: OASImage, detail: { element: HTMLElement; actions: Record<string, () => void> }): void {
+    for (const btn of detail.element.querySelectorAll<HTMLElement>('[data-cmd]')) {
+      const cmd = btn.getAttribute('data-cmd')!.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+      btn.onclick = detail.actions[cmd]!
+    }
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    setLocale('zh-CN')
+  })
+
+  it('模板克隆进工具栏区并替换默认按钮组（原模板保留在 light DOM）', () => {
+    const { el } = mountToolbar()
+    openIt(el)
+    const bar = barOf(el)
+    expect(bar.querySelector('[data-cmd="zoom-in"]')).not.toBeNull()
+    expect(bar.querySelector('[data-cmd="close"]')).not.toBeNull()
+    // 默认按钮组被替换
+    expect(bar.querySelector('[part="preview-zoom-in"]')).toBeNull()
+    expect(bar.querySelector('[part="preview-close"]')).toBeNull()
+    // 原模板节点不被移动
+    expect(el.querySelector('template[slot="toolbar"]')).not.toBeNull()
+  })
+
+  it('oas-toolbar-render detail 携带 element 与 actions 命令全集（打开时再次派发）', () => {
+    const { el, details } = mountToolbar()
+    expect(details.length).toBeGreaterThanOrEqual(1)
+    const d = details[0]!
+    expect(d.element).toBe(el.shadowRoot!.querySelector('[part="preview-toolbar"]'))
+    for (const name of [
+      'zoomIn',
+      'zoomOut',
+      'rotateLeft',
+      'rotateRight',
+      'flipX',
+      'flipY',
+      'download',
+      'close',
+      'prev',
+      'next',
+    ]) {
+      expect(typeof d.actions[name], `actions.${name} 应为函数`).toBe('function')
+    }
+    // 打开预览时再次派发（宿主可重复绑定，幂等）
+    openIt(el)
+    expect(details.length).toBeGreaterThanOrEqual(2)
+    expect(details[details.length - 1]!.element).toBe(barOf(el))
+  })
+
+  it('自定义按钮经 actions 接线后实际生效：缩放/旋转/翻转/关闭', () => {
+    const { el, details } = mountToolbar()
+    openIt(el)
+    const d = details[details.length - 1]!
+    wire(el, d)
+    const img = pdoc(el).querySelector('[part="preview-image"]') as HTMLElement
+    const bar = barOf(el)
+    bar.querySelector<HTMLElement>('[data-cmd="zoom-in"]')!.click()
+    expect(img.style.transform).toContain('scale(1.5)')
+    bar.querySelector<HTMLElement>('[data-cmd="zoom-out"]')!.click()
+    expect(img.style.transform).toContain('scale(1)')
+    bar.querySelector<HTMLElement>('[data-cmd="rotate-right"]')!.click()
+    expect(img.style.transform).toContain('rotate(90deg)')
+    bar.querySelector<HTMLElement>('[data-cmd="rotate-left"]')!.click()
+    expect(img.style.transform).toContain('rotate(0deg)')
+    bar.querySelector<HTMLElement>('[data-cmd="zoom-in"]')!.click()
+    bar.querySelector<HTMLElement>('[data-cmd="flip-x"]')!.click()
+    expect(img.style.transform).toContain('scale(-1.5, 1.5)')
+    bar.querySelector<HTMLElement>('[data-cmd="flip-y"]')!.click()
+    expect(img.style.transform).toContain('scale(-1.5, -1.5)')
+    bar.querySelector<HTMLElement>('[data-cmd="close"]')!.click()
+    expect(pdoc(el).querySelector('.preview-mask')!.hasAttribute('hidden')).toBe(true)
+  })
+
+  it('actions.download 触发下载链接点击', () => {
+    const { el, details } = mountToolbar()
+    openIt(el)
+    const spy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    details[details.length - 1]!.actions.download!()
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
+  it('图集模式：prev/next 命令翻页生效（页码与预览图同步）', () => {
+    const GALLERY = JSON.stringify(['/a.png', '/b.png', '/c.png'])
+    const { el, details } = mountToolbar({ 'preview-src-list': GALLERY })
+    openIt(el)
+    wire(el, details[details.length - 1]!)
+    const bar = barOf(el)
+    bar.querySelector<HTMLElement>('[data-cmd="next"]')!.click()
+    expect(pdoc(el).querySelector('[part="preview-counter"]')!.textContent).toBe('2/3')
+    expect(pdoc(el).querySelector<HTMLImageElement>('[part="preview-image"]')!.getAttribute('src')).toBe(
+      '/b.png',
+    )
+    bar.querySelector<HTMLElement>('[data-cmd="prev"]')!.click()
+    expect(pdoc(el).querySelector('[part="preview-counter"]')!.textContent).toBe('1/3')
+  })
+
+  it('单图模式：prev/next 为 no-op（无副作用）', () => {
+    const { el, details } = mountToolbar()
+    openIt(el)
+    const d = details[details.length - 1]!
+    wire(el, d)
+    const img = pdoc(el).querySelector('[part="preview-image"]') as HTMLElement
+    barOf(el).querySelector<HTMLElement>('[data-cmd="prev"]')!.click()
+    barOf(el).querySelector<HTMLElement>('[data-cmd="next"]')!.click()
+    expect(img.style.transform).toBe('translate(0px, 0px) rotate(0deg) scale(1)')
+    expect(pdoc(el).querySelector('.preview-mask')!.hasAttribute('hidden')).toBe(false)
+  })
+
+  it('移除模板后恢复默认工具栏（零变化向后兼容）', () => {
+    const { el } = mountToolbar()
+    el.innerHTML = ''
+    el.setAttribute('alt', '触发 update')
+    openIt(el)
+    const bar = barOf(el)
+    expect(bar.querySelector('[data-cmd]')).toBeNull()
+    expect(bar.querySelector('[part="preview-zoom-in"]')).not.toBeNull()
+    expect(bar.querySelector('[part="preview-close"]')).not.toBeNull()
+    // 默认按钮仍可用
+    bar.querySelector<HTMLElement>('[part="preview-zoom-in"]')!.click()
+    expect(
+      pdoc(el).querySelector<HTMLElement>('[part="preview-image"]')!.style.transform,
+    ).toContain('scale(1.5)')
+  })
+
+  it('无模板时维持默认工具栏（oas-toolbar-render 不派发）', () => {
+    const el = new OASImage()
+    el.setAttribute('src', '/a.png')
+    el.setAttribute('preview', '')
+    let fired = 0
+    el.addEventListener('oas-toolbar-render', () => fired++)
+    document.body.appendChild(el)
+    openIt(el)
+    expect(fired).toBe(0)
+    expect(barOf(el).querySelector('.tool')).not.toBeNull()
+  })
+
+  it('自定义按钮参与 Tab 焦点陷阱（Tab/Shift+Tab 循环不逃逸、浮层保持打开）', () => {
+    const { el, details } = mountToolbar()
+    openIt(el)
+    wire(el, details[details.length - 1]!)
+    for (let i = 0; i < 12; i++) {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }),
+      )
+    }
+    expect(pdoc(el).querySelector('.preview-mask')!.hasAttribute('hidden')).toBe(false)
+  })
+})
+
 describe('OASImage flip 翻转', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

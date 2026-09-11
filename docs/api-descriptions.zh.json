@@ -1217,11 +1217,13 @@
       "oas-load": "图片加载成功，`detail: { src }`",
       "oas-error": "图片最终失败（回退链耗尽），`detail: { src }`",
       "oas-preview-change": "预览开合变化，`detail: { open }`",
-      "oas-preview-nav": "图集翻页/跳转，`detail: { index, src }`；供 oas-image-group 容器接管索引"
+      "oas-preview-nav": "图集翻页/跳转，`detail: { index, src }`；供 oas-image-group 容器接管索引",
+      "oas-toolbar-render": "自定义工具栏渲染通知（克隆完成与每次打开预览均派发，宿主重复绑定幂等），detail { element, actions }：element 为克隆后的工具栏容器，actions 为查看器命令集合"
     },
     "slots": {
       "template[slot=\"placeholder\"]": "自定义加载占位内容（缺省为浅灰占位 + 文案）",
-      "template[slot=\"error\"]": "自定义失败占位内容（主图与图集预览失败位复用）"
+      "template[slot=\"error\"]": "自定义失败占位内容（主图与图集预览失败位复用）",
+      "template[slot=\"toolbar\"]": "自定义预览工具栏内容：克隆进浮层工具栏区并替换默认按钮组（缺席维持默认）；克隆完成与每次打开预览派发 oas-toolbar-render（detail { element, actions }），actions 命令：zoomIn/zoomOut/rotateLeft/rotateRight/flipX/flipY/download/close/prev/next（单图模式 prev/next 无效）"
     }
   },
   "oas-image-group": {
@@ -1233,7 +1235,9 @@
       "oas-preview": "打开共享预览浮层，`detail: { src }`（src 为当前张地址）",
       "oas-change": "图集切换，`detail: { current, prev }`"
     },
-    "slots": {}
+    "slots": {
+      "template[slot=\"toolbar\"]": "透传共享预览宿主：自定义共享预览浮层的工具栏（克隆替换默认按钮组 + oas-toolbar-render 命令通道，同 oas-image）"
+    }
   },
   "oas-input": {
     "attrs": {
