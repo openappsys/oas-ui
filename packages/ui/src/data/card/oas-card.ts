@@ -215,6 +215,56 @@ const STYLE = `
 .footer slot[hidden] {
   display: none;
 }
+/* 卡体作为内部绝对定位（勾选角标）的包含块 */
+.card {
+  position: relative;
+}
+/* selectable：整卡点选切换选中态（大容器富内容的多选形态） */
+:host([selectable]) {
+  cursor: pointer;
+}
+:host([selectable][loading]) {
+  cursor: default;
+}
+/* 选中态：primary 描边 + 浅 primary 底（6% 混底，dark 下同样可读）；
+   描边用 inset 环——与既有 1px 边框重合不增厚，borderless 形态也能呈现 */
+:host([selectable][selected]) {
+  background: color-mix(in srgb, var(--oas-color-primary) 6%, var(--oas-color-bg));
+  border-color: var(--oas-color-primary);
+  box-shadow: inset 0 0 0 1px var(--oas-color-primary);
+}
+/* 焦点环与 clickable 同款（落在 .card 层，与 host 层的选中 inset 环不冲突） */
+:host([selectable]:focus-visible) .card {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+/* 右上勾选角标：直角三角（对角渐变裁出）+ 原创 ✓ SVG；逻辑属性 RTL 自动翻转 */
+.check-badge {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+  z-index: 1;
+}
+.check-badge[hidden] {
+  display: none;
+}
+.check-badge .check-corner {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom left, var(--oas-color-primary) 50%, transparent 50%);
+  border-start-end-radius: var(--oas-radius-lg);
+}
+.check-badge .check-icon {
+  position: absolute;
+  top: 3px;
+  inset-inline-end: 3px;
+  width: 11px;
+  height: 11px;
+  color: var(--oas-color-text-on-primary);
+}
 `
 
 /** 整卡点击的排除选择器：命中这些交互元素时不派发 oas-click（避免与内部按钮/链接冲突） */
@@ -238,6 +288,8 @@ export class OASCard extends OASElement {
       'href',
       'target',
       'description',
+      'selectable',
+      'selected',
     ]
   }
 
@@ -279,6 +331,10 @@ export class OASCard extends OASElement {
           <div class="footer" part="footer" hidden>
             <slot name="footer"></slot>
           </div>
+          <span class="check-badge" part="check-badge" hidden>
+            <span class="check-corner"></span>
+            <svg class="check-icon" viewBox="0 0 12 12" width="11" height="11" aria-hidden="true" focusable="false"><path d="M2.4 6.3 5 8.8 9.7 3.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
         </div>
       </a>
     `
@@ -293,22 +349,61 @@ export class OASCard extends OASElement {
         ?.addEventListener('slotchange', () => this.update())
     }
     // 整卡可点（clickable）：点击/Enter/Space 派发 oas-click；命中内部交互元素时跳过。
+    // selectable：点击/Enter/Space 切换选中（loading 骨架态不切换；命中内部交互元素时跳过）；
+    // href 链接卡同设时命中卡本体优先选中并阻止默认导航（内部按钮/链接仍走各自操作）。
     // href 链接卡：命中内部交互元素时额外阻止锚点默认导航（同一批排除元素）
     this.addEventListener('click', (e: Event) => {
       const interactive = this.hitsInteractive(e)
-      if (interactive && this.getAttr('href', '') !== '') e.preventDefault()
+      const href = this.getAttr('href', '')
+      if (interactive && href !== '') e.preventDefault()
+      if (this.hasAttr('selectable') && !this.hasAttr('loading') && !interactive) {
+        this.toggleSelected()
+        if (href !== '') e.preventDefault()
+      }
       if (!this.hasAttr('clickable')) return
       if (interactive) return
       this.emit('click', { originalEvent: e })
     })
     this.addEventListener('keydown', (e: Event) => {
       const k = e as KeyboardEvent
-      if (!this.hasAttr('clickable')) return
       if (k.key !== 'Enter' && k.key !== ' ') return
       if (this.hitsInteractive(e)) return
+      if (this.hasAttr('selectable') && !this.hasAttr('loading')) {
+        k.preventDefault()
+        this.toggleSelected()
+      }
+      if (!this.hasAttr('clickable')) return
       k.preventDefault()
       this.emit('click', { originalEvent: k })
     })
+  }
+
+  /** selectable 受控探测：selected 属性变化来自宿主（非自身反射）→ 进入受控模式，
+   *  此后只派发 oas-change、不再自改属性（宿主监听事件回写） */
+  private reflectingSelected = false
+  private selectedControlled = false
+
+  override attributeChangedCallback(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null,
+  ): void {
+    if (name === 'selected' && oldValue !== newValue && !this.reflectingSelected) {
+      this.selectedControlled = true
+    }
+    super.attributeChangedCallback(name, oldValue, newValue)
+  }
+
+  /** 切换选中态：派发 oas-change（detail 为切换后的新状态）；
+   *  非受控时反射 selected 属性（aria-checked / 视觉由 update() 增量同步） */
+  private toggleSelected(): void {
+    const next = !this.hasAttr('selected')
+    this.emit('change', { selected: next })
+    if (this.selectedControlled) return
+    this.reflectingSelected = true
+    if (next) this.setAttribute('selected', '')
+    else this.removeAttribute('selected')
+    this.reflectingSelected = false
   }
 
   /** 事件路径是否命中交互元素（composedPath 含 shadow 内部，排除内嵌按钮/链接；
@@ -427,15 +522,33 @@ export class OASCard extends OASElement {
       }
     }
 
-    // clickable：整卡承担按钮角色；聚焦后可 Enter/Space 触发。
-    // href 在场时例外：焦点已交给内部锚点，宿主保持普通容器语义
-    if (this.hasAttr('clickable') && href === '') {
-      this.setAttribute('role', 'button')
+    // clickable / selectable 的角色与焦点语义：
+    // href 在场时例外：焦点已交给内部锚点，宿主保持普通容器语义（避免嵌套交互语义）。
+    // selectable 优先于 clickable 的角色语义（aria-checked 需 checkbox 角色承载）；
+    // 宿主显式角色优先——多卡组可挂 role="radio" 做单选组合，组件不覆盖、仅同步 aria-checked；
+    // loading 骨架态不可选：不挂交互语义（点击/键盘拦截在事件层同样兜底）
+    const clickableActive = this.hasAttr('clickable') && href === ''
+    const selectableActive = this.hasAttr('selectable') && href === '' && !loading
+    const authorRole = this.getAttribute('role')
+    if (selectableActive) {
+      if (authorRole == null) this.setAttribute('role', 'checkbox')
       this.setAttribute('tabindex', '0')
+      this.setAttribute('aria-checked', this.hasAttr('selected') ? 'true' : 'false')
+    } else if (clickableActive) {
+      if (authorRole == null) this.setAttribute('role', 'button')
+      this.setAttribute('tabindex', '0')
+      this.removeAttribute('aria-checked')
     } else {
-      this.removeAttribute('role')
+      // 只清理组件自己挂的缺省角色；宿主显式角色（radio 等）不碰
+      const role = this.getAttribute('role')
+      if (role === 'checkbox' || role === 'button') this.removeAttribute('role')
       this.removeAttribute('tabindex')
+      this.removeAttribute('aria-checked')
     }
+
+    // 勾选角标：selectable 且选中时显示（CSS 层 :host([selectable][selected]) 配套呈现）
+    const badge = this.shadow.querySelector<HTMLElement>('[part="check-badge"]')
+    if (badge) badge.hidden = !(this.hasAttr('selectable') && this.hasAttr('selected'))
 
     // 标题区：title（属性或插槽）/extra/avatar/description 全空时隐藏（避免空条占位）
     const header = this.shadow.querySelector<HTMLElement>('[part="header"]')
