@@ -113,11 +113,17 @@ document.getElementById('async-close').addEventListener('oas-close', (e) => {
 onMounted(async () => {
   const { message } = await import('@oas-ui/ui')
   window.message = message
-  document.addEventListener('oas-close', () => {
-    window.message?.info('Tag closed')
+  document.addEventListener('oas-close', (e) => {
+    // Only react to tags themselves: oas-close is a generic event name (message/notification/modal
+    // also emit it) — without a target filter the listener catches the message's own auto-close,
+    // shows a new message, whose close fires again → infinite self-triggering loop
+    if (e.target instanceof Element && e.target.tagName === 'OAS-TAG') {
+      window.message?.info('Tag closed')
+    }
   })
   document.addEventListener('oas-click', (e) => {
-    const text = (e.target?.textContent || 'tag').trim()
+    if (!(e.target instanceof Element) || e.target.tagName !== 'OAS-TAG') return
+    const text = (e.target.textContent || 'tag').trim()
     window.message?.info(`Clicked "${text}"`)
   })
 
