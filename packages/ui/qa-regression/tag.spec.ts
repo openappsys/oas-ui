@@ -41,3 +41,20 @@ test('tag 插槽 svg 与文字同排（宿主全局 reset display:block 不顶�
   expect(r.sameRow, '插槽 svg 应与文字同一行').toBe(true)
   expect(r.leftOfText, '插槽 svg 应在文字左侧').toBe(true)
 })
+
+test('tag 页事件反馈不自激：点选项 A 后消息自动关闭不再触发「标签已关闭」循环', async ({ page }) => {
+  // 用户实测缺陷：tag 页 document 级 oas-close 监听未筛 target，捕获到 message 自身
+  // 自动关闭派发的 oas-close（全库通用事件名）→ 弹新 message → 再关闭 → 无限自激
+  await page.goto('/components/tag.html', { waitUntil: 'domcontentloaded' })
+  await up(page, 'oas-tag-group')
+  await page.locator('oas-tag-group oas-tag', { hasText: '选项 A' }).first().click()
+  // 等首条「选中：a」消息自动关闭（默认时长约 3s）+ 潜在自激链至少一轮
+  await page.waitForTimeout(5000)
+  const texts = await page.evaluate(() =>
+    [...document.querySelectorAll('oas-message')].map((m) => (m.textContent || '').trim()),
+  )
+  expect(
+    texts.filter((t) => t.includes('标签已关闭')),
+    '不应出现「标签已关闭」自激消息',
+  ).toEqual([])
+})
