@@ -1,6 +1,6 @@
 {
   "name": "@oas-ui/i18n",
-  "version": "2.4.1",
+  "version": "2.5.0",
   "description": "OAS-UI 国际化（locale registry + 语言包，组件内置文案统一入口）",
   "homepage": "https://oas-ui.dev/",
   "keywords": [
@@ -51,6 +51,6 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@oas-ui/core": "workspace:*"
+    "@oas-ui/core": "2.5.0"
   }
 }

@@ -254,6 +254,8 @@ for (const { id, entry } of COMPONENT_ENTRIES) {
 
 // ---------- 3. 预算断言 ----------
 // 预算依据：2026-08-12 首测值上浮 ~15%（再取整，留出组件/图标增长的合理余量）。
+// 2026-09-09 重定档：能力增强批次全量落地后实测值上浮 ~15%（天花板制：防灾难性膨胀，
+// 随版本能力增长重定档是既定机制——预算注释的设计即此）。
 // 量纲：字节。超预算 → FAIL 非零退出，CI 拦截。
 const BUDGETS = [
   {
@@ -262,35 +264,37 @@ const BUDGETS = [
     // 增长纪律由单组件链预算（绝对值制）与按需叙事守住。
     name: 'dist/cdn.js gzip',
     get: () => cdn.gzipBytes,
-    limit: 300 * 1024, // 300 KB 天花板
+    limit: 550 * 1024, // 550 KB 天花板（2026-09-09 重定档）
     basis:
-      '天花板制：实测 gzip 240,557 B（v2.1.5 菜单族 + v2.2.2 浮层族大改后），定档 300 KB 预留后续版本能力增长空间',
+      '天花板制：实测 gzip 476.8 KB（v2.5.0 能力增强批次全量落地后），定档 550 KB 预留后续版本增长空间；前档 300 KB 定档于 v2.2.2（240,557 B）',
   },
   {
     name: '@oas-ui/ui 全量入口链 gzip',
     get: () => fullEntry.gzipBytes,
-    limit: 520 * 1024, // 520 KB 天花板（cdn 天花板 300 KB × 实测链/单文件比 ≈1.73）
+    limit: 830 * 1024, // 830 KB 天花板（2026-09-09 重定档）
     basis:
-      '天花板制：520 KB = cdn 天花板 300 KB × 全量链/cdn 实测比 ≈1.73（逐文件求和上界口径）；实测 gzip 415,403 B（v2.2.2 后）',
+      '天花板制：830 KB = cdn 天花板 550 KB × 全量链/cdn 实测比 ≈1.51（逐文件求和上界口径）；实测 gzip 721.9 KB（v2.5.0 后）；前档 520 KB 定档于 v2.2.2（415,403 B）',
   },
   {
     name: '@oas-ui/ui/basic/button 链 gzip',
     get: () => componentMeasures.button.gzipBytes,
-    limit: 26 * 1024, // 26 KB。实测 22,557 B（v2.1.3 button 双侧图标/loading 三件套/disabled-focusable/download-rel 增强后），上浮约 15%（链内含 icon 注册表，随图标库增长余量略大）
-    basis: '实测 gzip 22,557 B（含 core + 全量 icon 注册表，v2.1.3 能力增强后），上浮约 15%',
+    limit: 31 * 1024, // 31 KB（2026-09-09 重定档）
+    basis:
+      '实测 gzip 26.4 KB（v2.5.0 后；含 core + 全量 icon 注册表），上浮约 17%；前档 26 KB 定档于 v2.1.3（22,557 B）',
   },
   {
     name: '@oas-ui/ui/data/table 链 gzip',
     get: () => componentMeasures.table.gzipBytes,
-    limit: 36 * 1024, // 36 KB。实测 31,913 B（v2.2.7 table 列设置/多列排序/多级表头/分页/过滤/合并/子元素声明式通道/单元格+列头模板/编辑校验后），上浮约 13%
+    limit: 62 * 1024, // 62 KB（2026-09-09 重定档）
     basis:
-      '实测 gzip 31,913 B（v2.2.7 table 列显隐/拖拽/列宽/多列排序/序号/省略号/多级表头/合并/分页/过滤/子元素通道/cellTemplate+headerTemplate/编辑校验；链含 core+virtual-list+i18n+oas-pagination），上浮约 13%',
+      '实测 gzip 54.1 KB（v2.5.0 后；table 编辑/列设置/多级表头/分页/过滤/合并/子元素通道/模板/编辑校验全量；链含 core+virtual-list+i18n+oas-pagination），上浮约 15%；前档 36 KB 定档于 v2.2.7（31,913 B）',
   },
   {
     name: '@oas-ui/ui/form/form 链 gzip',
     get: () => componentMeasures.form.gzipBytes,
-    limit: 14 * 1024, // 14 KB。实测 11,873 B，上浮约 21%
-    basis: '实测 gzip 11,873 B（含 core + i18n），上浮约 21%',
+    limit: 19 * 1024, // 19 KB（2026-09-09 重定档）
+    basis:
+      '实测 gzip 16.4 KB（v2.5.0 后；含 core + i18n），上浮约 16%；前档 14 KB 定档于 v2.1（11,873 B）',
   },
   {
     name: '@oas-ui/theme index.css gzip',

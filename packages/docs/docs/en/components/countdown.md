@@ -48,6 +48,7 @@ Add the `SSS` token to output milliseconds (zero-padded to 3 digits); internal r
   <oas-countdown id="countup-active" type="countup" title="Focus time"></oas-countdown>
   <oas-button id="countup-toggle" size="small">Pause</oas-button>
   <oas-button id="countup-reset" size="small">Reset</oas-button>
+  <oas-countdown type="countup" start="90000" title="From 90s start" style="margin-left: var(--oas-space-4)"></oas-countdown>
 </DemoBlock>
 
 ## Prefix / Suffix / Title

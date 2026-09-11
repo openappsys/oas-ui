@@ -50,8 +50,8 @@ test('input-number clearable+controls：步进钮完整内嵌（upOverflow ≤ 0
 
 test('input-number suffix+controls：后缀内嵌、与步进钮不重叠', async ({ page }) => {
   await page.goto('/components/input-number.html', { waitUntil: 'domcontentloaded' })
-  await up(page, 'oas-input-number[suffix]')
-  const r = await rightStack(page, 'oas-input-number[suffix]')
+  await up(page, 'oas-input-number[suffix-text]')
+  const r = await rightStack(page, 'oas-input-number[suffix-text]')
   expect(r.suffix!.right, '后缀右缘应在 input 内（历史渲染在框外）').toBeLessThanOrEqual(0)
   expect(
     r.suffix!.right,
@@ -64,8 +64,8 @@ test('input-number clearable+suffix+controls 叠加：序排列 步进钮→清�
   page,
 }) => {
   await page.goto('/components/input-number.html', { waitUntil: 'domcontentloaded' })
-  await up(page, 'oas-input-number[suffix="元"]')
-  const r = await rightStack(page, 'oas-input-number[suffix="元"]')
+  await up(page, 'oas-input-number[suffix-text="元"]')
+  const r = await rightStack(page, 'oas-input-number[suffix-text="元"]')
   expect(r.controls!.right).toBeLessThanOrEqual(0)
   expect(r.clear!.right).toBeLessThanOrEqual(r.controls!.left)
   expect(r.suffix!.right).toBeLessThanOrEqual(r.clear!.left)
@@ -84,8 +84,8 @@ test('input-number both 形态 + clearable：清除钮内嵌且让开右侧 + �
 
 test('input-number prefix：内嵌在输入框内（非框外贴边）', async ({ page }) => {
   await page.goto('/components/input-number.html', { waitUntil: 'domcontentloaded' })
-  await up(page, 'oas-input-number[prefix]')
-  const r = await rightStack(page, 'oas-input-number[prefix]')
+  await up(page, 'oas-input-number[prefix-text]')
+  const r = await rightStack(page, 'oas-input-number[prefix-text]')
   expect(r.prefix!.left, 'prefix 左缘应在 input 左缘之内').toBeGreaterThanOrEqual(0)
   expect(r.prefix!.right, 'prefix 右缘应在 input 内').toBeLessThanOrEqual(0)
 })

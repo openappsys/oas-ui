@@ -48,6 +48,7 @@
   <oas-countdown id="countup-active" type="countup" title="本次专注时长"></oas-countdown>
   <oas-button id="countup-toggle" size="small">暂停</oas-button>
   <oas-button id="countup-reset" size="small">归零</oas-button>
+  <oas-countdown type="countup" start="90000" title="从起点 90 秒开始" style="margin-left: var(--oas-space-4)"></oas-countdown>
 </DemoBlock>
 
 ## 前缀 / 后缀 / 标题
