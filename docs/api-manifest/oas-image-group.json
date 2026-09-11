@@ -26,6 +26,9 @@
   "slots": [
     {
       "name": ""
+    },
+    {
+      "name": "template[slot=\"toolbar\"]"
     }
   ],
   "unresolved": []

@@ -154,6 +154,48 @@ When opened, the preview overlay is mounted to <code>document.body</code> (porta
   </p>
 </DemoBlock>
 
+## Custom Toolbar
+
+<DemoBlock title="Custom toolbar (slot=toolbar + oas-toolbar-render)">
+  <oas-image id="image-custom-toolbar" preview src="https://picsum.photos/seed/isui-ct-1/600/300" preview-src-list='["https://picsum.photos/seed/isui-ct-1/1200/600","https://picsum.photos/seed/isui-ct-2/1200/600","https://picsum.photos/seed/isui-ct-3/1200/600"]' fallback="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2MDAnIGhlaWdodD0nMzAwJz48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWxsPScjYTRjYWY4Jy8+PC9zdmc+" alt="Custom toolbar">
+    <template slot="toolbar">
+      <button type="button" data-cmd="zoom-out">Zoom out</button>
+      <button type="button" data-cmd="zoom-in">Zoom in</button>
+      <button type="button" data-cmd="rotate-left">Rotate left</button>
+      <button type="button" data-cmd="rotate-right">Rotate right</button>
+      <button type="button" data-cmd="prev">Prev</button>
+      <button type="button" data-cmd="next">Next</button>
+      <button type="button" data-cmd="download">Download</button>
+      <button type="button" data-cmd="close">Close</button>
+    </template>
+  </oas-image>
+  <p style="width: 100%; color: var(--oas-color-text-secondary); font-size: var(--oas-font-size-sm); margin: var(--oas-space-3) 0 0">
+    With a <code>template[slot="toolbar"]</code>, the template content is cloned into the preview overlay toolbar area, replacing the default button group (the original template stays in the light DOM; without a template the default toolbar remains). <code>oas-toolbar-render</code> is emitted on clone and on every open: use <code>element</code> (the toolbar container) and <code>actions</code> (the viewer commands) from the detail to wire custom buttons to viewer commands. The buttons above are wired — try them.
+  </p>
+</DemoBlock>
+
+The detail of <code>oas-toolbar-render</code> is <code>{ element, actions }</code>: <code>element</code> is the cloned toolbar container (bind button events on it; re-binding is idempotent); the <code>actions</code> command set is listed below (<code>prev</code>/<code>next</code> work in gallery mode and are no-ops in single-image mode):
+
+| Command | Description |
+| --- | --- |
+| `zoomIn` / `zoomOut` | Zoom in / out one step (same transform state machine as the wheel and default buttons) |
+| `rotateLeft` / `rotateRight` | Rotate 90° counter-clockwise / clockwise |
+| `flipX` / `flipY` | Flip horizontally / vertically |
+| `download` | Trigger a download of the current preview image |
+| `close` | Close the preview overlay (equivalent to Esc / mask click) |
+| `prev` / `next` | Previous / next gallery image (respects the `infinite` boundary, same as default paging) |
+
+Host wiring example:
+
+```js
+el.addEventListener('oas-toolbar-render', (e) => {
+  const { element, actions } = e.detail
+  element.querySelector('#my-zoom-in').onclick = actions.zoomIn
+})
+```
+
+The shared preview of <code>oas-image-group</code> supports this as well: place a <code>template[slot="toolbar"]</code> directly inside the group and it is forwarded to the shared overlay. Custom toolbar buttons receive token-based base styles (readable in light/dark) and participate in the Tab focus trap.
+
 ## Load Events
 
 <DemoBlock title="Load events (oas-load / oas-error)">
@@ -296,6 +338,26 @@ onMounted(async () => {
     message.success(`oas-change: current=${e.detail.current}, prev=${e.detail.prev}`)
   })
 
+  // Custom toolbar: wire oas-toolbar-render command channel
+  // (fired on clone and on every open; re-binding is idempotent)
+  const customToolbar = document.querySelector('#image-custom-toolbar')
+  customToolbar?.addEventListener('oas-toolbar-render', (e) => {
+    const { element, actions } = e.detail
+    const CMD = {
+      'zoom-in': actions.zoomIn,
+      'zoom-out': actions.zoomOut,
+      'rotate-left': actions.rotateLeft,
+      'rotate-right': actions.rotateRight,
+      prev: actions.prev,
+      next: actions.next,
+      download: actions.download,
+      close: actions.close,
+    }
+    for (const btn of element.querySelectorAll('[data-cmd]')) {
+      btn.onclick = CMD[btn.getAttribute('data-cmd')]
+    }
+  })
+
   // Load event demos
   document.querySelector('#image-events-ok')?.addEventListener('oas-load', (e) => {
     message.success(`oas-load: ${e.detail.src}`)
@@ -354,11 +416,13 @@ onMounted(async () => {
 | `oas-preview` | Preview overlay opened, `detail: { src }`; closing the overlay does not emit an event |
 | `oas-preview-change` | Preview open state changed, `detail: { open }` |
 | `oas-preview-nav` | Gallery page change/jump, `detail: { index, src }`; lets the oas-image-group container take over the index |
+| `oas-toolbar-render` | Custom toolbar render notification (fired on clone and on every preview open; host re-binding is idempotent), detail { element, actions }: element is the cloned toolbar container, actions is the viewer command set |
 
 | Name | Description |
 | --- | --- |
 | `template[slot="error"]` | Custom error placeholder content (shared by the main image and gallery preview failures) |
 | `template[slot="placeholder"]` | Custom loading placeholder content (gray block + text by default) |
+| `template[slot="toolbar"]` | Custom preview toolbar content: cloned into the overlay toolbar area, replacing the default button group (defaults remain when absent). Emits oas-toolbar-render on clone and on every open (detail { element, actions }); action commands: zoomIn/zoomOut/rotateLeft/rotateRight/flipX/flipY/download/close/prev/next (prev/next are no-ops in single-image mode) |
 
 ### oas-image-group
 
@@ -375,3 +439,4 @@ onMounted(async () => {
 | Name | Description |
 | --- | --- |
 | default | — |
+| `template[slot="toolbar"]` | Forwarded to the shared preview host: customizes the shared preview overlay toolbar (clone replaces the default button group + oas-toolbar-render command channel, same as oas-image) |

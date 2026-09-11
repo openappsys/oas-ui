@@ -215,4 +215,37 @@ describe('OASImageGroup', () => {
     g.remove()
     expect(document.querySelector('[data-oas-image-preview-portal]')).toBeNull()
   })
+
+  it('template[slot="toolbar"] 透传共享预览宿主：自定义工具栏替换默认按钮组', async () => {
+    const g = mount(
+      wall(['/a.png', '/b.png', '/c.png']) +
+        '<template slot="toolbar"><button type="button" data-cmd="zoom-in">放大</button>' +
+        '<button type="button" data-cmd="next">下一张</button></template>',
+    )
+    // 宿主模板克隆进内部预览宿主（原模板保留在组图 light DOM）
+    expect(inner(g).querySelector('template[slot="toolbar"]')).not.toBeNull()
+    expect(g.querySelector('template[slot="toolbar"]')).not.toBeNull()
+
+    // oas-toolbar-render 经共享宿主冒泡到组图（composed 跨 shadow）
+    let detail: { element: HTMLElement; actions: Record<string, () => void> } | null = null
+    g.addEventListener('oas-toolbar-render', (e: Event) => {
+      detail = (e as CustomEvent).detail as never
+    })
+    clickChild(g, 0)
+    await new Promise((r) => setTimeout(r, 0))
+    expect(detail).not.toBeNull()
+
+    const bar = pq(g, '[part="preview-toolbar"]')
+    expect(bar.querySelector('[data-cmd="zoom-in"]')).not.toBeNull()
+    expect(bar.querySelector('[part="preview-zoom-in"]')).toBeNull()
+
+    // 命令接线实际生效：缩放 + 翻页
+    const d = detail!
+    d.element.querySelector<HTMLElement>('[data-cmd="zoom-in"]')!.onclick = d.actions.zoomIn!
+    d.element.querySelector<HTMLElement>('[data-cmd="next"]')!.onclick = d.actions.next!
+    d.element.querySelector<HTMLElement>('[data-cmd="zoom-in"]')!.click()
+    expect(pq<HTMLElement>(g, '[part="preview-image"]').style.transform).toContain('scale(1.5)')
+    d.element.querySelector<HTMLElement>('[data-cmd="next"]')!.click()
+    expect(pq(g, '[part="preview-counter"]').textContent).toBe('2/3')
+  })
 })

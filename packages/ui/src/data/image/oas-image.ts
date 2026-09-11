@@ -192,6 +192,42 @@ img {
   opacity: 0.4;
   cursor: default;
 }
+/* 自定义工具栏（slot="toolbar"）：宿主按钮给 token 化基础样式，light/dark 均可读 */
+.preview-toolbar.custom :is(button, a) {
+  min-width: 40px;
+  height: var(--oas-control-height-md);
+  padding: 0 var(--oas-space-2);
+  border: 1px solid var(--oas-color-border);
+  border-radius: var(--oas-radius-md);
+  background: var(--oas-color-bg);
+  color: var(--oas-color-text-primary);
+  font-size: var(--oas-font-size-sm);
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+.preview-toolbar.custom :is(button, a):hover {
+  background: var(--oas-color-bg-hover);
+}
+.preview-toolbar.custom :is(button, a):focus-visible {
+  outline: none;
+  box-shadow: var(--oas-focus-ring);
+}
+`
+
+/** 默认工具栏按钮组（模板渲染与自定义恢复共用，保证两份结构严格一致） */
+const DEFAULT_TOOLBAR = `
+  <button type="button" class="tool" part="preview-zoom-in"></button>
+  <button type="button" class="tool" part="preview-zoom-out"></button>
+  <button type="button" class="tool" part="preview-rotate"></button>
+  <button type="button" class="tool" part="preview-flip-x"></button>
+  <button type="button" class="tool" part="preview-flip-y"></button>
+  <a class="tool" part="preview-download" download></a>
+  <button type="button" class="tool" part="preview-close"></button>
 `
 
 /** 缩放参数默认值（CSS 变量 --oas-image-zoom-* 缺席时的回退） */
@@ -223,7 +259,14 @@ const round2 = (v: number): number => Math.round(v * 100) / 100
  * fallback 重试期间不派发 oas-error，最终失败时 src 为兜底图地址）。
  *
  * 插槽：`template[slot="placeholder"]` / 任意 `[slot="placeholder"]` 元素克隆进加载占位；
- * `template[slot="error"]` / 任意 `[slot="error"]` 元素克隆进失败占位（主图与图集预览复用）。
+ * `template[slot="error"]` / 任意 `[slot="error"]` 元素克隆进失败占位（主图与图集预览复用）；
+ * `template[slot="toolbar"]` / 任意 `[slot="toolbar"]` 元素克隆进预览浮层工具栏区，
+ * 替换默认按钮组（缺席维持默认，零变化向后兼容）。
+ *
+ * 自定义工具栏命令通道：克隆完成与每次打开预览时派发 `oas-toolbar-render`
+ * （detail `{ element, actions }`）——element 为克隆后的工具栏容器（宿主在此绑定
+ * 按钮事件），actions 为查看器命令集合 `{ zoomIn, zoomOut, rotateLeft, rotateRight,
+ * flipX, flipY, download, close, prev, next }`（单图模式 prev/next 为 no-op）。
  *
  * 缩放参数：步进/上下限由 CSS 变量 `--oas-image-zoom-step`（默认 0.5）/
  * `--oas-image-zoom-min`（默认 0.5）/`--oas-image-zoom-max`（默认 3）控制，
@@ -293,6 +336,8 @@ export class OASImage extends OASElement {
   private galleryIndex = 0
   /** 图集当前张加载失败 */
   private previewFailed = false
+  /** 自定义工具栏模式（template[slot="toolbar"] 在场且已克隆替换默认按钮组） */
+  private toolbarCustom = false
 
   /** 纯函数：SSR 快照与客户端渲染共用同一份模板，保证两路径结构严格一致 */
   private template(): string {
@@ -313,13 +358,7 @@ export class OASImage extends OASElement {
           </div>
           <div class="preview-counter" part="preview-counter" hidden></div>
           <div class="preview-toolbar" part="preview-toolbar">
-            <button type="button" class="tool" part="preview-zoom-in"></button>
-            <button type="button" class="tool" part="preview-zoom-out"></button>
-            <button type="button" class="tool" part="preview-rotate"></button>
-            <button type="button" class="tool" part="preview-flip-x"></button>
-            <button type="button" class="tool" part="preview-flip-y"></button>
-            <a class="tool" part="preview-download" download></a>
-            <button type="button" class="tool" part="preview-close"></button>
+            ${DEFAULT_TOOLBAR}
           </div>
         </div>
       </div>
@@ -336,21 +375,30 @@ export class OASImage extends OASElement {
     this.shadow.querySelector('.previewable')?.addEventListener('click', () => {
       if (this.hasAttr('preview')) this.openPreview()
     })
-    this.shadow
-      .querySelector<HTMLElement>('[part="preview-zoom-in"]')
-      ?.addEventListener('click', () => this.zoom(1))
-    this.shadow
-      .querySelector<HTMLElement>('[part="preview-zoom-out"]')
-      ?.addEventListener('click', () => this.zoom(-1))
-    this.shadow
-      .querySelector<HTMLElement>('[part="preview-rotate"]')
-      ?.addEventListener('click', () => this.rotate())
-    this.shadow
-      .querySelector<HTMLElement>('[part="preview-flip-x"]')
-      ?.addEventListener('click', () => this.flip('x'))
-    this.shadow
-      .querySelector<HTMLElement>('[part="preview-flip-y"]')
-      ?.addEventListener('click', () => this.flip('y'))
+    // 工具栏按钮走容器委托监听：自定义模板替换/恢复默认按钮组时无需重绑
+    this.shadow.querySelector('.preview-toolbar')?.addEventListener('click', (e) => {
+      const part = (e.target as HTMLElement | null)?.closest('[part]')?.getAttribute('part')
+      switch (part) {
+        case 'preview-zoom-in':
+          this.zoom(1)
+          break
+        case 'preview-zoom-out':
+          this.zoom(-1)
+          break
+        case 'preview-rotate':
+          this.rotate(1)
+          break
+        case 'preview-flip-x':
+          this.flip('x')
+          break
+        case 'preview-flip-y':
+          this.flip('y')
+          break
+        case 'preview-close':
+          this.closePreview()
+          break
+      }
+    })
     this.shadow
       .querySelector<HTMLElement>('[part="preview-prev"]')
       ?.addEventListener('click', () => this.stepImage(-1))
@@ -705,9 +753,12 @@ export class OASImage extends OASElement {
       // teleport 到 body：规避 transform/filter 祖先导致 fixed 失效
       this.ensurePortal()
       this.previousFocus = document.activeElement as HTMLElement | null
-      this.pquery<HTMLElement>('[part="preview-close"]')?.focus()
+      // 聚焦关闭按钮；自定义工具栏无关闭按钮时回落到首个可聚焦工具
+      ;(this.pquery<HTMLElement>('[part="preview-close"]') ?? this.firstToolbarFocusable())?.focus()
       document.addEventListener('keydown', this.onKey)
       this.emit('preview', { src })
+      // 自定义工具栏：打开时再次派发命令通道（宿主重复绑定幂等）
+      this.emitToolbarRender()
     } else {
       this.dragging = false
       this.maskEl()?.setAttribute('hidden', '')
@@ -742,14 +793,30 @@ export class OASImage extends OASElement {
   private trapFocus(e: KeyboardEvent): void {
     const mask = this.maskEl()
     if (!mask) return
-    const focusables = [...mask.querySelectorAll<HTMLElement>('.tool, .nav-arrow')].filter(
-      (el) => !el.hasAttribute('hidden') && !(el instanceof HTMLButtonElement && el.disabled),
+    const focusables = [
+      ...mask.querySelectorAll<HTMLElement>(
+        '.tool, .nav-arrow, .preview-toolbar button, .preview-toolbar a, .preview-toolbar [tabindex]',
+      ),
+    ].filter(
+      (el) =>
+        !el.hasAttribute('hidden') &&
+        !(el instanceof HTMLButtonElement && el.disabled) &&
+        el.getAttribute('tabindex') !== '-1',
     )
     if (focusables.length === 0) return
     const first = focusables[0]!
     const last = focusables[focusables.length - 1]!
-    const active = document.activeElement
-    // happy-dom/浏览器对 shadow 内聚焦会重定向到 host（组件宿主或 portal host）
+    // 浏览器对 shadow 内聚焦在 document 层重定向到 host（happy-dom 亦然），
+    // 真实焦点须从预览 shadow 的 activeElement 读取，否则首尾环绕比较永不命中、Tab 逃逸出浮层
+    const root = this.previewRoot()
+    // happy-dom 的 shadow activeElement 在无聚焦元素时可能抛异常，防护回落
+    let shadowActive: Element | null = null
+    try {
+      shadowActive = root.activeElement
+    } catch {
+      shadowActive = null
+    }
+    const active = (shadowActive ?? document.activeElement) as HTMLElement | null
     const inside =
       active != null && (active === this || active === this.portalHost || mask.contains(active))
     if (e.shiftKey) {
@@ -808,8 +875,8 @@ export class OASImage extends OASElement {
     this.applyTransform()
   }
 
-  private rotate(): void {
-    this.rotation = (this.rotation + 90) % 360
+  private rotate(dir: 1 | -1 = 1): void {
+    this.rotation = (this.rotation + dir * 90 + 360) % 360
     this.applyTransform()
   }
 
@@ -881,10 +948,93 @@ export class OASImage extends OASElement {
     this.applyTransform()
   }
 
+  /* ---------------- 预览浮层：自定义工具栏（slot=toolbar + oas-toolbar-render） ---------------- */
+
+  /**
+   * 自定义工具栏同步：template[slot="toolbar"]（或任意 `[slot="toolbar"]` 元素）在场时
+   * 克隆进工具栏区并替换默认按钮组；模板缺席时恢复默认按钮组（零变化向后兼容）。
+   * 克隆而非移动：原节点保留在 light DOM。状态翻转才重建，避免重复克隆丢宿主绑定。
+   */
+  private syncToolbar(): void {
+    const bar = this.pquery<HTMLElement>('[part="preview-toolbar"]')
+    if (!bar) return
+    // 字面量选择器：API 扫描以 `template[slot="..."]` 字面量为插槽发现通道（动态插值不可静态解析）
+    const tpl = this.querySelector('template[slot="toolbar"]')
+    const el = this.querySelector(':scope > [slot="toolbar"]:not(template)')
+    if (tpl instanceof HTMLTemplateElement || el) {
+      if (this.toolbarCustom) return
+      this.toolbarCustom = true
+      bar.classList.add('custom')
+      // template 克隆 content（克隆 template 外壳会得到惰性节点）；普通元素整节点克隆
+      bar.replaceChildren(
+        tpl instanceof HTMLTemplateElement ? tpl.content.cloneNode(true) : el!.cloneNode(true),
+      )
+      this.emitToolbarRender()
+    } else if (this.toolbarCustom) {
+      this.toolbarCustom = false
+      bar.classList.remove('custom')
+      bar.innerHTML = DEFAULT_TOOLBAR
+    }
+  }
+
+  /**
+   * 派发 oas-toolbar-render（detail `{ element, actions }`）：
+   * element 为克隆后的工具栏容器（宿主在此绑定按钮事件）；actions 为查看器命令集合，
+   * 单图模式 prev/next 为 no-op。挂载（首次克隆）与每次打开预览均派发，宿主重复绑定幂等。
+   */
+  private emitToolbarRender(): void {
+    const bar = this.pquery<HTMLElement>('[part="preview-toolbar"]')
+    if (!bar || !this.toolbarCustom) return
+    this.emit('toolbar-render', { element: bar, actions: this.toolbarActions() })
+  }
+
+  /** 查看器命令集合：自定义工具栏按钮经 oas-toolbar-render detail.actions 调用 */
+  private toolbarActions(): Record<string, () => void> {
+    return {
+      zoomIn: () => this.zoom(1),
+      zoomOut: () => this.zoom(-1),
+      rotateLeft: () => this.rotate(-1),
+      rotateRight: () => this.rotate(1),
+      flipX: () => this.flip('x'),
+      flipY: () => this.flip('y'),
+      download: () => this.downloadImage(),
+      close: () => this.closePreview(),
+      prev: () => this.stepImage(-1),
+      next: () => this.stepImage(1),
+    }
+  }
+
+  /** 命令通道下载：临时锚节点触发浏览器下载（等价默认工具栏下载链接） */
+  private downloadImage(): void {
+    const src = this.currentPreviewSrc()
+    if (!src) return
+    const a = document.createElement('a')
+    a.setAttribute('href', src)
+    a.setAttribute('download', '')
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
+
+  /** 自定义工具栏首个可聚焦元素（无关闭按钮时打开聚焦回落点） */
+  private firstToolbarFocusable(): HTMLElement | null {
+    const bar = this.pquery<HTMLElement>('[part="preview-toolbar"]')
+    if (!bar) return null
+    return (
+      [...bar.querySelectorAll<HTMLElement>('button, a, [tabindex]')].find(
+        (el) =>
+          !(el instanceof HTMLButtonElement && el.disabled) &&
+          el.getAttribute('tabindex') !== '-1',
+      ) ?? null
+    )
+  }
+
   /* ---------------- 预览浮层：chrome 同步 ---------------- */
 
   /** 浮层文案/页码/翻页按钮/下载地址同步（locale 感知，update 与翻页共用） */
   private syncPreviewChrome(): void {
+    // 自定义工具栏状态翻转（先于默认按钮文案同步，恢复默认后标签立即补齐）
+    this.syncToolbar()
     const root = this.previewRoot()
     const dialog = root.querySelector<HTMLElement>('[part="preview-dialog"]')
     if (dialog) dialog.setAttribute('aria-label', this.t('image.preview.alt'))
