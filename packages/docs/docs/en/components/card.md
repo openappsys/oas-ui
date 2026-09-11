@@ -389,14 +389,15 @@ onMounted(async () => {
   const selectCount = document.querySelector('#card-select-count')
   const refreshSelectCount = () => {
     if (!selectCount) return
-    const n = document.querySelectorAll('oas-card[selectable][selected]').length
+    // Count only the multi-select demo's cards (exclude the radio-group demo's data-select-radio cards — one starts selected)
+  const n = document.querySelectorAll('oas-card[selectable][selected]:not([data-select-radio])').length
     selectCount.textContent = `${n} selected`
   }
   document.addEventListener('oas-change', (e) => {
     if (!(e.target instanceof HTMLElement)) return
     if (e.target.tagName !== 'OAS-CARD' || !e.target.hasAttribute('selectable')) return
     if (e.target.hasAttribute('data-select-radio')) return
-    const selected = (e as CustomEvent).detail.selected as boolean
+    const selected = e.detail.selected
     const title = e.target.shadowRoot?.querySelector('[part="title"]')?.textContent || 'Card'
     window.message?.[selected ? 'success' : 'info'](`${selected ? 'Selected' : 'Deselected'}: ${title}`)
     setTimeout(refreshSelectCount, 0)
@@ -407,7 +408,7 @@ onMounted(async () => {
   const radioCards = document.querySelectorAll('[data-select-radio]')
   radioCards.forEach((card) => {
     card.addEventListener('oas-change', (e) => {
-      if (!(e as CustomEvent).detail.selected) return
+      if (!e.detail.selected) return
       radioCards.forEach((c) => c.removeAttribute('selected'))
       card.setAttribute('selected', '')
     })

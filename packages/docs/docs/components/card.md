@@ -387,16 +387,18 @@ onMounted(async () => {
 
   // selectable 多选：oas-change 可见反馈 + 已选计数（反射发生在事件派发后，计数延迟一拍）
   const selectCount = document.querySelector('#card-select-count')
-  const refreshSelectCount = () => {
-    if (!selectCount) return
-    const n = document.querySelectorAll('oas-card[selectable][selected]').length
+const refreshSelectCount = () => {
+  if (!selectCount) return
+  // 只统计多选 demo 的卡（排除下方受控单选卡组的 data-select-radio 卡——它初始带 selected）
+  const n = document.querySelectorAll('oas-card[selectable][selected]:not([data-select-radio])').length
     selectCount.textContent = `已选 ${n} 项`
   }
   document.addEventListener('oas-change', (e) => {
     if (!(e.target instanceof HTMLElement)) return
     if (e.target.tagName !== 'OAS-CARD' || !e.target.hasAttribute('selectable')) return
     if (e.target.hasAttribute('data-select-radio')) return
-    const selected = (e as CustomEvent).detail.selected as boolean
+    // md 的 script setup 按 JS 解析（非 TS），不能用 as 断言（构建期报错教训）
+    const selected = e.detail.selected
     const title =
       e.target.shadowRoot?.querySelector('[part="title"]')?.textContent || '卡片'
     window.message?.[selected ? 'success' : 'info'](`${selected ? '已选中' : '已取消'}「${title}」`)
@@ -407,7 +409,7 @@ onMounted(async () => {
   const radioCards = document.querySelectorAll('[data-select-radio]')
   radioCards.forEach((card) => {
     card.addEventListener('oas-change', (e) => {
-      if (!(e as CustomEvent).detail.selected) return
+      if (!e.detail.selected) return
       radioCards.forEach((c) => c.removeAttribute('selected'))
       card.setAttribute('selected', '')
     })
