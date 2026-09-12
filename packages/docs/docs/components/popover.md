@@ -86,6 +86,16 @@
   </oas-space>
 </DemoBlock>
 
+### 触屏降级（coarse pointer 自动生效）
+
+触屏设备（`pointer: coarse`，如手机 / 平板）没有稳定的 hover 语义：点按会同时合成 hover 与 click，若沿用桌面行为会出现「刚打开即关闭」。当 `trigger` 含 `hover` 时，触屏下 hover 通道自动停用、降级为**点按切换**——点按触发元素打开、再点按关闭、点按浮层外部关闭（外点关闭替代 hover-out）；fine pointer（桌面鼠标）行为完全不变。与受控 `open`、`long-press-delay` 触屏长按兼容：长按打开后抬手不会误关（800ms 收尾守卫），下一次点按才切换。
+
+<DemoBlock title="触屏点按切换（触屏设备自动生效）">
+  <oas-popover id="pop-coarse-tap" trigger="hover" title="点按切换" content="触屏下点按打开，再点按或点外部关闭；桌面仍为悬停打开。" placement="bottom">
+    <oas-button>触屏点我</oas-button>
+  </oas-popover>
+</DemoBlock>
+
 ## 禁用
 
 `disabled` 禁用整个 popover：点击 / 悬停 / 聚焦 / 右键 / 按键触发均不响应，宿主降饱和（opacity .6）并同步 `aria-disabled`。禁用触发元素（如原生 disabled button）不会派发鼠标事件，可在外层包一层 span 再挂 popover（兼容方案）。
@@ -815,7 +825,7 @@ onMounted(() => {
 | `sticky` | 关闭位粘滞（partial/always） | `string` | `partial` |
 | `title` | 标题文本（渲染进可见标题区；读取后即从宿主移除，不残留原生悬浮提示；清空传空串）；富内容用 slot="title" | `string` | — |
 | `trap-focus` | 焦点陷阱独立开关（与 modal 遮罩解耦，表单浮层 Tab 不逃逸） | `boolean` | — |
-| `trigger` | 触发方式：`click`（默认）/ `hover` / `focus` / `contextmenu` / `manual`，空格分隔可多选（如 `"click hover"`） | `string` | `click` |
+| `trigger` | 触发方式：`click`（默认）/ `hover` / `focus` / `contextmenu` / `manual`，空格分隔可多选（如 `"click hover"`）。含 `hover` 时触屏（coarse pointer）自动降级为点按切换：点按开、再点按/外点关，桌面 hover 行为不变 | `string` | `click` |
 | `trigger-keys` | 指定按键在触发元素聚焦时切换开合（空格分隔，如 `"Enter Space"`）；未设置无按键绑定 | `string` | `Enter Space` |
 | `virtual` | 虚拟触发模式（同 tooltip，不依赖锚点元素） | `boolean` | — |
 | `virtual-anchor` | 虚拟锚点元素选择器（virtual-x/virtual-y 未设置时生效） | — | — |

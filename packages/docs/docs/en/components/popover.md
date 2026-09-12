@@ -86,6 +86,16 @@ A click / hover / focus triggered popup panel that can hold a title, body text a
   </oas-space>
 </DemoBlock>
 
+### Touchscreen degradation (automatic on coarse pointers)
+
+Touch devices (`pointer: coarse`, e.g. phones and tablets) have no stable hover semantics: a tap synthesizes both hover and click events, which would open-then-immediately-close the panel with the desktop behavior. When `trigger` includes `hover`, the hover channel is automatically disabled on coarse pointers and degrades to **tap toggling** — tap the trigger to open, tap again to close, or tap outside the panel to dismiss (outside dismiss replaces hover-out). Fine-pointer (desktop mouse) behavior is unchanged. Compatible with controlled `open` and the `long-press-delay` touch long-press: lifting the finger after a long-press open does not close the panel (800ms gesture-tail guard); the next tap toggles it.
+
+<DemoBlock title="Tap toggling on touch (automatic on touch devices)">
+  <oas-popover id="pop-coarse-tap" trigger="hover" title="Tap to toggle" content="On touch: tap to open, tap again or tap outside to close; on desktop it still opens on hover." placement="bottom">
+    <oas-button>Tap me on touch</oas-button>
+  </oas-popover>
+</DemoBlock>
+
 ## Disabled
 
 `disabled` disables the whole popover: click / hover / focus / right-click / key triggers are all ignored; the host is desaturated (opacity .6) and `aria-disabled` is synced. Disabled trigger elements (such as native disabled buttons) do not dispatch mouse events — wrap them in a span before attaching a popover.
@@ -803,7 +813,7 @@ onMounted(() => {
 | `sticky` | Sticky against viewport edge (partial/always) | `string` | `partial` |
 | `title` | Title text (rendered into the visible title region; absorbed from the host on read so no native hover tooltip remains; pass an empty string to clear); use slot="title" for rich content | `string` | — |
 | `trap-focus` | Standalone focus-trap toggle (decoupled from modal mask; Tab stays inside form popovers) | `boolean` | — |
-| `trigger` | Trigger method: `click` (default) / `hover` / `focus` / `contextmenu` / `manual`, space separated for multiple (e.g. `"click hover"`) | `string` | `click` |
+| `trigger` | Trigger method: `click` (default) / `hover` / `focus` / `contextmenu` / `manual`, space separated for multiple (e.g. `"click hover"`). With `hover`, touch devices (coarse pointer) automatically degrade to tap toggling: tap to open, tap again or tap outside to close; desktop hover behavior unchanged | `string` | `click` |
 | `trigger-keys` | Toggle open when the listed keys are pressed while the trigger is focused (space separated, e.g. `"Enter Space"`); no key binding when unset | `string` | `Enter Space` |
 | `virtual` | Virtual trigger mode (same as tooltip; no anchor element) | `boolean` | — |
 | `virtual-anchor` | Virtual anchor element selector (used when virtual-x/virtual-y are unset) | — | — |
