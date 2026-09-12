@@ -137,12 +137,7 @@ format 支持 `yyyy`/`MM`/`dd`/`HH`/`mm`/`ss` token（week / quarter 为固定�
 ## 单元格渲染
 
 <DemoBlock title="日历标记（oas-cell-render / template[slot=cell]）">
-  <oas-date-picker id="date-picker-cell-render" value="2026-08-09">
-    <template slot="cell">
-      <span class="cell-dot"></span>
-      <span data-cell-date></span>
-    </template>
-  </oas-date-picker>
+  <oas-date-picker id="date-picker-cell-render" value="2026-08-09"></oas-date-picker>
 </DemoBlock>
 
 与 `oas-calendar` 同款双通道：`template[slot="cell"]` 克隆进每个日格（`[data-cell-date]` 自动绑定日期数字）；每个日格重建时派发 `oas-cell-render`，`detail: { date, element }`，宿主可追加徽标/价格等标记（监听须幂等）。
@@ -331,12 +326,24 @@ onMounted(() => {
     return d < t
   }
 
-  // 单元格渲染：给固定几天加标记点（oas-cell-render 通道，幂等）
+  // 单元格渲染：模板经 JS 注入（内联 <template slot="cell"> 会被 Vue 编译管线吞空，dev 下尤甚），
+  // 模板只提供日期数字骨架；标记点由 oas-cell-render 只给固定几天追加（幂等）
   const cr = document.getElementById('date-picker-cell-render')
+  if (cr && !cr.querySelector('template[slot="cell"]')) {
+    const tpl = document.createElement('template')
+    tpl.setAttribute('slot', 'cell')
+    tpl.innerHTML = '<span data-cell-date></span>'
+    cr.appendChild(tpl)
+  }
   const marks = new Set(['2026-08-10', '2026-08-20', '2026-08-28'])
   cr?.addEventListener('oas-cell-render', (e) => {
-    if (marks.has(e.detail.element.getAttribute('data-date'))) {
-      e.detail.element.querySelector('.cell-dot')?.style.setProperty('background', 'var(--oas-color-danger)')
+    const cell = e.detail.element
+    if (marks.has(cell.getAttribute('data-date')) && !cell.querySelector('.cell-dot')) {
+      const dot = document.createElement('span')
+      dot.className = 'cell-dot'
+      dot.setAttribute('role', 'img')
+      dot.setAttribute('aria-label', '标记')
+      cell.appendChild(dot)
     }
   })
 })

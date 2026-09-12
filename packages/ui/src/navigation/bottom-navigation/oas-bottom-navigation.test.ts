@@ -724,3 +724,53 @@ describe('OASBottomNavigation shift 选中动效', () => {
     expect(el.getAttribute('value')).toBe('mine')
   })
 })
+
+// ===== 胶囊形态（pill）：整条栏浮动胶囊 =====
+
+describe('OASBottomNavigation 胶囊形态（pill）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('pill 进入 observedAttributes', () => {
+    expect(OASBottomNavigation.observedAttributes).toContain('pill')
+  })
+
+  it('CSS：pill —— tablist 全圆角（--oas-radius-full 开口）+ 四周描边 + 轻投影', () => {
+    const stl = styleText(mount({ pill: '' }))
+    // 全圆角走 --oas-radius-full 开口（与 button/button-group 的胶囊同源）
+    expect(stl).toMatch(/:host\(\[pill\]\)\s+\.tablist\s*\{[^}]*border-radius:\s*var\(--oas-radius-full,\s*999px\)/)
+    // 四周描边（替代通栏顶边分隔线）
+    expect(stl).toMatch(/:host\(\[pill\]\)\s+\.tablist\s*\{[^}]*border:\s*1px solid var\(--oas-color-border\)/)
+    // 轻投影走变量开口（dark 自动走 token）
+    expect(stl).toMatch(/:host\(\[pill\]\)\s+\.tablist\s*\{[^}]*box-shadow:\s*var\(--oas-bottom-navigation-pill-shadow/)
+  })
+
+  it('CSS：pill 的浮动留白 —— host 左右内缩；fixed 下再加底部留白（四边悬浮）', () => {
+    const stl = styleText(mount())
+    expect(stl).toMatch(/:host\(\[pill\]\)\s*\{[^}]*padding:\s*0 var\(--oas-bottom-navigation-pill-inset,\s*12px\)/)
+    expect(stl).toMatch(
+      /:host\(\[pill\]\.oas-bottom-navigation--fixed\)\s*\{[^}]*bottom:\s*var\(--oas-bottom-navigation-pill-inset,\s*12px\)/,
+    )
+  })
+
+  it('pill 不改变语义与交互：tablist/tab 语义、选中切换、写回 value 照旧', () => {
+    const el = mount({ pill: '', value: 'home' })
+    expect(list(el).getAttribute('role')).toBe('tablist')
+    expect(tabs(el).length).toBe(3)
+    expect(tabs(el)[0]!.getAttribute('aria-selected')).toBe('true')
+    tabs(el)[1]!.click()
+    expect(tabs(el)[1]!.getAttribute('aria-selected')).toBe('true')
+    expect(el.getAttribute('value')).toBe('search')
+  })
+
+  it('pill 与 fixed 组合：宿主仍带 fixed 类（定位不冲突）', () => {
+    const el = mount({ pill: '', fixed: '' })
+    expect(el.classList.contains('oas-bottom-navigation--fixed')).toBe(true)
+    expect(el.hasAttribute('pill')).toBe(true)
+  })
+})

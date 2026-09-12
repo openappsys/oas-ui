@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { OASCombobox } from './index.js'
 
 const OPTIONS = JSON.stringify([
@@ -498,5 +498,86 @@ describe('OASCombobox 虚拟滚动（virtual）', () => {
     const rows = virtualRows(el)
     const sel = rows.find((r) => r.getAttribute('aria-selected') === 'true')
     expect(sel?.getAttribute('data-index')).toBe('40')
+  })
+})
+
+describe('OASCombobox 移动端底部抽屉（bottom-sheet 接入）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+  })
+
+  /** 可控 matchMedia stub：模拟触屏（coarse pointer）或桌面（fine pointer） */
+  function stubPointer(coarse: boolean): void {
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string) =>
+        ({
+          matches: coarse && query.includes('(pointer: coarse)'),
+          media: query,
+          onchange: null,
+          addEventListener() {},
+          removeEventListener() {},
+          addListener() {},
+          removeListener() {},
+          dispatchEvent: () => false,
+        }) as MediaQueryList,
+    )
+  }
+
+  function sheet(el: OASCombobox): HTMLElement {
+    return el.shadowRoot!.querySelector('oas-bottom-sheet')!
+  }
+
+  function dropdown(el: OASCombobox): HTMLElement {
+    return el.shadowRoot!.querySelector<HTMLElement>('.dropdown')!
+  }
+
+  it('模板恒包 oas-bottom-sheet（SSR/客户端结构一致），PC 默认 passive 透传', () => {
+    const el = mount()
+    expect(sheet(el)).toBeTruthy()
+    expect(sheet(el).getAttribute('part')).toBe('sheet')
+    expect(sheet(el).hasAttribute('passive')).toBe(true)
+    expect(sheet(el).contains(dropdown(el))).toBe(true)
+    expect(el.hasAttribute('data-mobile-sheet')).toBe(false)
+  })
+
+  it('触屏进入移动形态：去 passive + data-mobile-sheet，展开走 sheet 且跳过浮层定位，oas-close 同步收起', () => {
+    stubPointer(true)
+    const el = mount()
+    el.setAttribute('placeholder', 'x') // 触发 update → syncMobileMode
+    expect(el.hasAttribute('data-mobile-sheet')).toBe(true)
+    expect(sheet(el).hasAttribute('passive')).toBe(false)
+    open(el) // 聚焦 → setAttribute('open') → update
+    expect(input(el).getAttribute('aria-expanded')).toBe('true')
+    expect(sheet(el).hasAttribute('open')).toBe(true)
+    // 移动形态跳过 fixed 锚定（不写内联 top/left，由 bottom-sheet 容器承载）
+    expect(dropdown(el).style.top).toBe('')
+    expect(dropdown(el).style.left).toBe('')
+    // oas-close（下滑/backdrop/Esc 由 bottom-sheet 派发）→ 组件同步收起
+    sheet(el).dispatchEvent(new Event('oas-close'))
+    expect(input(el).getAttribute('aria-expanded')).toBe('false')
+    expect(el.hasAttribute('open')).toBe(false)
+    expect(sheet(el).hasAttribute('open')).toBe(false)
+  })
+
+  it('PC 恢复：data-mobile-sheet 移除、passive 恢复，展开回落 fixed 锚定', () => {
+    stubPointer(true)
+    const el = mount()
+    el.setAttribute('placeholder', 'x')
+    expect(el.hasAttribute('data-mobile-sheet')).toBe(true)
+    stubPointer(false)
+    el.setAttribute('placeholder', 'y')
+    expect(el.hasAttribute('data-mobile-sheet')).toBe(false)
+    expect(sheet(el).hasAttribute('passive')).toBe(true)
+    open(el)
+    expect(input(el).getAttribute('aria-expanded')).toBe('true')
+    expect(sheet(el).hasAttribute('open')).toBe(false)
+    // PC 形态写内联坐标（fixed 锚定）
+    expect(dropdown(el).style.top).toMatch(/^\d+px$/)
   })
 })

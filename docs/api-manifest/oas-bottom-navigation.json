@@ -43,6 +43,10 @@
       "name": "shift",
       "type": "boolean",
       "observed": true
+    },
+    {
+      "name": "pill",
+      "observed": true
     }
   ],
   "props": [],

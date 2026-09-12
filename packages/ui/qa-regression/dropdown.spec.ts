@@ -271,3 +271,74 @@ test('dropdown 关闭过程箭头与面板透明度逐帧同步（不慢一拍�
 })
 
 // —— 复核：tour 步骤推进流程（用户对「点下一步就消失」的反馈实测验证） ——
+
+// 移动端专项 P3 扩展回归：coarse pointer 下 trigger 含 hover 的 dropdown 降级为 tap 切换
+test.describe('触屏降级（P3 扩展，iPhone 仿真）：dropdown hover 回落 tap 切换', () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 3,
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+  })
+
+  test('coarse：hover 不展开，点按锚点 tap 切换开/关，外点关闭', async ({ page }) => {
+    await page.goto('/components/dropdown.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-dropdown')
+    await page.evaluate(() => {
+      const dd = document.createElement('oas-dropdown')
+      dd.setAttribute('trigger', 'hover')
+      dd.setAttribute(
+        'items',
+        JSON.stringify([
+          { label: '编辑', value: 'edit' },
+          { label: '删除', value: 'delete' },
+        ]),
+      )
+      dd.dataset.e2eCoarse = '1'
+      dd.innerHTML = '<button>触屏操作</button>'
+      dd.style.cssText = 'position: fixed; top: 300px; left: 20px; z-index: 9999'
+      document.body.appendChild(dd)
+    })
+    const dd = page.locator('oas-dropdown[data-e2e-coarse]')
+    const anchorHidden = () => dd.evaluate((e) => e.shadowRoot!.querySelector<HTMLElement>('.menu-anchor')!.hidden)
+    const btn = dd.locator(':scope > button')
+    await btn.scrollIntoViewIfNeeded()
+    // 指针悬停不展开（hover-delay 150ms，等待 400ms 足够判定）
+    const box = (await btn.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.waitForTimeout(400)
+    expect(await anchorHidden(), '触屏下 hover 不得展开 dropdown').toBe(true)
+    // 点按展开
+    await page.tap('oas-dropdown[data-e2e-coarse] > button')
+    await page.waitForFunction(
+      () =>
+        document.querySelector('oas-dropdown[data-e2e-coarse]')?.shadowRoot?.querySelector<HTMLElement>('.menu-anchor')
+          ?.hidden === false,
+      { timeout: 5000 },
+    )
+    // 菜单项真实渲染
+    expect(await page.locator('oas-dropdown[data-e2e-coarse] [part="item"]').count()).toBe(2)
+    // 再点按收起
+    await page.tap('oas-dropdown[data-e2e-coarse] > button')
+    await page.waitForFunction(
+      () => document.querySelector('oas-dropdown[data-e2e-coarse]')?.hasAttribute('open') === false,
+      { timeout: 5000 },
+    )
+    // 再次展开后外点关闭（light dismiss）
+    await page.tap('oas-dropdown[data-e2e-coarse] > button')
+    await page.waitForFunction(
+      () =>
+        document.querySelector('oas-dropdown[data-e2e-coarse]')?.shadowRoot?.querySelector<HTMLElement>('.menu-anchor')
+          ?.hidden === false,
+      { timeout: 5000 },
+    )
+    await page.touchscreen.tap(6, Math.floor(page.viewportSize()!.height / 2))
+    await page.waitForFunction(
+      () => document.querySelector('oas-dropdown[data-e2e-coarse]')?.hasAttribute('open') === false,
+      { timeout: 5000 },
+    )
+    await page.screenshot({ path: test.info().outputPath('fix-dropdown-coarse-tap.png') })
+  })
+})

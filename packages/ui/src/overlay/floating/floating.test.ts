@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computePosition } from './index.js'
+import { computePosition, getViewport } from './index.js'
 
 const viewport = { width: 800, height: 600 }
 
@@ -239,5 +239,53 @@ describe('computePosition 浮层定位', () => {
       const pos = computePosition(rect(100, 550, 200, 40), rect(0, 0, 100, 50), 'bottom', viewport)
       expect(pos.placement).toBe('top')
     })
+  })
+})
+
+describe('getViewport 碰撞边界视口', () => {
+  const savedVv = Object.getOwnPropertyDescriptor(window, 'visualViewport')
+  const savedW = window.innerWidth
+  const savedH = window.innerHeight
+
+  function stubVisualViewport(vv: VisualViewport | undefined): void {
+    Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true, writable: true })
+  }
+
+  function restoreVisualViewport(): void {
+    if (savedVv) Object.defineProperty(window, 'visualViewport', savedVv)
+    else delete (window as { visualViewport?: VisualViewport }).visualViewport
+    window.innerWidth = savedW
+    window.innerHeight = savedH
+  }
+
+  it('visualViewport 存在且 width/height > 0：返回其值（含浮点原值，不取整）', () => {
+    stubVisualViewport({ width: 375.5, height: 553.25 } as VisualViewport)
+    const vp = getViewport()
+    expect(vp).toEqual({ width: 375.5, height: 553.25 })
+    restoreVisualViewport()
+  })
+
+  it('visualViewport 缺失：回退 innerWidth/innerHeight', () => {
+    stubVisualViewport(undefined)
+    window.innerWidth = 1024
+    window.innerHeight = 768
+    expect(getViewport()).toEqual({ width: 1024, height: 768 })
+    restoreVisualViewport()
+  })
+
+  it('visualViewport 尺寸为 0：回退 innerWidth/innerHeight', () => {
+    stubVisualViewport({ width: 0, height: 0 } as VisualViewport)
+    window.innerWidth = 800
+    window.innerHeight = 600
+    expect(getViewport()).toEqual({ width: 800, height: 600 })
+    restoreVisualViewport()
+  })
+
+  it('缺省参数使用全局 window', () => {
+    stubVisualViewport(undefined)
+    window.innerWidth = 1280
+    window.innerHeight = 720
+    expect(getViewport()).toEqual({ width: 1280, height: 720 })
+    restoreVisualViewport()
   })
 })

@@ -164,6 +164,21 @@ const STYLE = `
 :host(.oas-bottom-navigation--fixed.oas-bottom-navigation--safe-area) .tablist {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+/* pill 胶囊：整条栏变浮动胶囊——宿主左右让出留白（box-sizing 防 width:100% 溢出），
+   fixed 下再加底部留白四边悬浮；tablist 全圆角 + 四周描边（替代通栏顶边分隔线）+ 轻投影。
+   留白/投影走变量开口，圆角走 --oas-radius-full（与 button/button-group 胶囊同源），dark 自动走 token */
+:host([pill]) {
+  box-sizing: border-box;
+  padding: 0 var(--oas-bottom-navigation-pill-inset, 12px);
+}
+:host([pill]) .tablist {
+  border-radius: var(--oas-radius-full, 999px);
+  border: 1px solid var(--oas-color-border);
+  box-shadow: var(--oas-bottom-navigation-pill-shadow, 0 2px 8px rgb(0 0 0 / 0.12));
+}
+:host([pill].oas-bottom-navigation--fixed) {
+  bottom: var(--oas-bottom-navigation-pill-inset, 12px);
+}
 /* hide-on-scroll：滚动滑动收起只动 transform（不碰 layout），transition 走 token */
 :host(.oas-bottom-navigation--fixed) {
   transition: transform var(--oas-transition-base) var(--oas-ease-out);
@@ -200,6 +215,9 @@ const STYLE = `
  * - `shift`：布尔，选中项上浮放大动效——选中 tab 的 icon 轻微上移（translateY(-2px)）并放大
  *   （scale 1.08），文字同步微放大，未选中项回落；纯 CSS transition（只动 transform，不碰布局），
  *   prefers-reduced-motion 下过渡停用
+ * - `pill`：布尔，胶囊形态——整条栏呈浮动胶囊（`tablist` 全圆角 + 四周描边替代通栏顶边分隔线 + 轻投影；
+ *   宿主左右让出留白，`fixed` 下再加底部留白四边悬浮）。形状/留白/投影走
+ *   `--oas-bottom-navigation-pill-inset` / `--oas-bottom-navigation-pill-shadow` 变量开口，dark 自动走 token
  *
  * 事件：`oas-change` detail `{ value }`
  *
@@ -209,7 +227,7 @@ const STYLE = `
  */
 export class OASBottomNavigation extends OASElement {
   static override get observedAttributes(): string[] {
-    return ['items', 'value', 'fixed', 'hide-on-scroll', 'safe-area', 'layout', 'show-label', 'shift']
+    return ['items', 'value', 'fixed', 'hide-on-scroll', 'safe-area', 'layout', 'show-label', 'shift', 'pill']
   }
 
   private itemsList: BottomNavItem[] = []

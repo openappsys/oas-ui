@@ -43,6 +43,16 @@ The `trigger` attribute controls how the menu opens: `click` (default) / `hover`
   </oas-space>
 </DemoBlock>
 
+### Touchscreen degradation (automatic on coarse pointers)
+
+Touch devices (`pointer: coarse`, e.g. phones and tablets) have no stable hover semantics: a tap synthesizes both hover and click events, which would open-then-immediately-close the menu with the desktop behavior. When `trigger` includes `hover`, the hover channel is automatically disabled on coarse pointers and degrades to **tap toggling** — tap the trigger to open, tap again to close, or tap outside the menu to dismiss (outside dismiss replaces hover-out). Fine-pointer (desktop mouse) behavior is unchanged; compatible with controlled `open`.
+
+<DemoBlock title="Tap toggling on touch (automatic on touch devices)">
+  <oas-dropdown id="dd-coarse-tap" trigger="hover" items='[{"label":"Edit","value":"edit"},{"label":"Copy","value":"copy"},{"label":"Delete","value":"delete"}]'>
+    <oas-button>Tap me on touch</oas-button>
+  </oas-dropdown>
+</DemoBlock>
+
 ## Placement
 
 <DemoBlock title="Four directions">
@@ -429,7 +439,7 @@ onMounted(() => {
 | `open` | Controlled display (boolean attribute; expands when present) | `boolean` | — |
 | `placement` | Popup placement | `string` | `bottom` |
 | `split` | Split button mode (boolean attribute): main button + arrow button; arrow opens the menu, main button fires oas-action | `boolean` | — |
-| `trigger` | Trigger: `click` (default) / `hover` / `focus`; space-separated for multiple (e.g. `"click hover"`) | `string` | `click` |
+| `trigger` | Trigger: `click` (default) / `hover` / `focus`; space-separated for multiple (e.g. `"click hover"`). With `hover`, touch devices (coarse pointer) automatically degrade to tap toggling: tap to open, tap again or tap outside to close; desktop hover behavior unchanged | `string` | `click` |
 | `value` | Current selected value | `string` | — |
 
 | Event | Description |

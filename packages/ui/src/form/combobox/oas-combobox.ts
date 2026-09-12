@@ -1,7 +1,10 @@
 // 注册 oas-virtual-list（OASVirtualList 仅作类型用，需裸 import 保住注册副作用）
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+// 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
+import '../../feedback/bottom-sheet/index.js'
+import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { OASElement } from '@oas-ui/core'
 
 interface Option {
@@ -186,6 +189,20 @@ input:disabled:hover {
 .dropdown.open {
   display: block;
 }
+/* 移动形态（data-mobile-sheet）：bottom-sheet 底部抽屉承载，dropdown 变静态内嵌内容
+   （容器/手势/安全区由 oas-bottom-sheet 统一承载，dropdown 不再 fixed 锚定；
+   选项列表在抽屉内容区内滚动） */
+:host([data-mobile-sheet]) .dropdown {
+  position: static;
+  z-index: auto;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  width: auto !important;
+  top: auto !important;
+  left: auto !important;
+}
 .listbox {
   max-height: 240px;
   overflow-y: auto;
@@ -231,6 +248,8 @@ export class OASCombobox extends OASElement {
   private listbox: HTMLElement | null = null
   private clearBtn: HTMLButtonElement | null = null
   private vlist: OASVirtualList | null = null
+  /** 移动端底部抽屉承载件（oas-bottom-sheet；PC 形态 passive 透传） */
+  private sheetEl: OASBottomSheet | null = null
   private _options: Option[] = []
   /** 上次 open 状态（null = 未初始化，首帧不派发 oas-open-change） */
   private prevOpen: boolean | null = null
@@ -270,10 +289,12 @@ export class OASCombobox extends OASElement {
             <path d="M4 4 L12 12 M12 4 L4 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
-        <div class="dropdown" part="dropdown">
-          <div class="listbox" part="listbox" role="listbox" id="combobox-list"></div>
-          <oas-virtual-list class="vlist" part="virtual-list" hidden></oas-virtual-list>
-        </div>
+        <oas-bottom-sheet part="sheet" passive>
+          <div class="dropdown" part="dropdown">
+            <div class="listbox" part="listbox" role="listbox" id="combobox-list"></div>
+            <oas-virtual-list class="vlist" part="virtual-list" hidden></oas-virtual-list>
+          </div>
+        </oas-bottom-sheet>
       </div>
     `
   }
@@ -285,6 +306,9 @@ export class OASCombobox extends OASElement {
     this.listbox = this.shadow.querySelector('.listbox')
     this.clearBtn = this.shadow.querySelector('.clear-btn')
     this.vlist = this.shadow.querySelector<OASVirtualList>('oas-virtual-list')
+    // 移动端底部抽屉承载件：oas-close（下滑/backdrop/Esc）→ 同步收起
+    this.sheetEl = this.shadow.querySelector<OASBottomSheet>('oas-bottom-sheet')
+    this.sheetEl?.addEventListener('oas-close', () => this.closePanel())
 
     this.input?.addEventListener('focus', () => this.openPanel())
     this.input?.addEventListener('blur', () => this.handleBlur())
@@ -315,16 +339,19 @@ export class OASCombobox extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（输入框/下拉/listbox 存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（输入框/下拉/listbox/bottom-sheet 存在）后直接接管，跳过 shadow 重建 */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('input')) return false
     if (!this.shadow.querySelector('.dropdown')) return false
     if (!this.shadow.querySelector('.listbox')) return false
+    if (!this.shadow.querySelector('oas-bottom-sheet')) return false
     this.bind()
     return true
   }
 
   protected override update(): void {
+    // 移动形态同步：coarse pointer（触屏）或窄视口（<768px）→ bottom-sheet 底部抽屉承载
+    this.syncMobileMode()
     this.parseOptions()
     const i = this.input
     if (!i) return
@@ -378,11 +405,32 @@ export class OASCombobox extends OASElement {
       this.renderListbox()
       if (opening) this.scrollActiveIntoView()
       document.addEventListener('click', this.handleOutsideClick, true)
-      this.positionDropdown()
+      // 移动形态：bottom-sheet 承载容器（设置 open 展开底部抽屉）；PC 形态：computePosition 锚定 input
+      if (this.isMobileSheet()) {
+        this.sheetEl?.setAttribute('open', '')
+      } else {
+        this.sheetEl?.removeAttribute('open')
+        this.positionDropdown()
+      }
     } else {
+      this.sheetEl?.removeAttribute('open')
       document.removeEventListener('click', this.handleOutsideClick, true)
       i.removeAttribute('aria-activedescendant')
     }
+  }
+
+  /** 移动形态判定：触屏（coarse pointer）或窄视口（<768px）→ 下拉由 bottom-sheet 底部抽屉承载 */
+  private isMobileSheet(): boolean {
+    if (typeof window === 'undefined') return false
+    if (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) return true
+    return window.innerWidth < 768
+  }
+
+  /** 移动形态同步：移动端 bottom-sheet 去 passive 变容器、宿主打 data-mobile-sheet（dropdown 静态化）；PC 恢复 passive */
+  private syncMobileMode(): void {
+    const mobile = this.isMobileSheet()
+    this.toggleAttribute('data-mobile-sheet', mobile)
+    this.sheetEl?.toggleAttribute('passive', !mobile)
   }
 
   /** 当前 value 对应的选项 label（无匹配项时回退原始 value，无值回空串） */
@@ -689,17 +737,16 @@ export class OASCombobox extends OASElement {
     }
   }
 
-  /** 复用浮层定位引擎：锚定输入框下方，空间不足自动翻转/避让，宽度对齐输入框 */
+  /** 复用浮层定位引擎：锚定输入框下方，空间不足自动翻转/避让，宽度对齐输入框、左缘对齐（bottom-start） */
   private positionDropdown(): void {
     if (!this.dropdown || !this.input) return
+    if (this.isMobileSheet()) return // 移动形态由 bottom-sheet 承载，跳过 fixed 锚定
     const anchorRect = this.input.getBoundingClientRect()
+    // 先撑宽再测量/定位：dropdown 为 auto 宽度，撑宽前测会按固有宽度算 left → 首次展开偏右。
+    this.dropdown.style.width = `${anchorRect.width}px`
     const panelRect = this.dropdown.getBoundingClientRect()
-    const { top, left } = computePosition(anchorRect, panelRect, 'bottom' as Placement, {
-      width: window.innerWidth,
-      height: window.innerHeight,
-    })
+    const { top, left } = computePosition(anchorRect, panelRect, 'bottom-start' as Placement, getViewport())
     this.dropdown.style.top = `${top}px`
     this.dropdown.style.left = `${left}px`
-    this.dropdown.style.width = `${anchorRect.width}px`
   }
 }

@@ -351,3 +351,42 @@ test.describe('触屏降级（P3，iPhone 仿真）', () => {
     )
   })
 })
+
+// 移动端专项 P4：碰撞边界按 visualViewport（软键盘/浏览器 UI 可视区）——锚点贴可视区底时向上翻转不裁切
+test('hover-card 移动端：浮层不越出 visualViewport（真实几何断言）', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true })
+  const page = await ctx.newPage()
+  try {
+    await page.goto('/components/hover-card.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-hover-card')
+    const host = page.locator('oas-hover-card').first()
+    // 把锚点滚到贴近可视区底部（下方空间不足 → 碰撞边界应据 visualViewport 向上翻转）
+    // 用 touchscreen.tap 按坐标点，避免 locator.tap 自动滚动把锚点移离底部
+    const pt = await host.evaluate((el) => {
+      const vh = window.visualViewport?.height ?? window.innerHeight
+      window.scrollBy(0, el.getBoundingClientRect().bottom - vh + 40)
+      const a = el.getBoundingClientRect()
+      return { x: a.left + a.width / 2, y: a.top + a.height / 2 }
+    })
+    await page.touchscreen.tap(pt.x, pt.y)
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('oas-hover-card')
+          ?.shadowRoot?.querySelector('[part="card"]')
+          ?.getAttribute('aria-hidden') === 'false',
+      null,
+      { timeout: 5000 },
+    )
+    const r = await host.evaluate((el) => {
+      const card = el.shadowRoot!.querySelector<HTMLElement>('[part="card"]')!
+      const b = card.getBoundingClientRect()
+      const vv = window.visualViewport
+      return { top: b.top, bottom: b.bottom, vh: vv ? vv.height : window.innerHeight }
+    })
+    expect(r.bottom, `浮层底缘 ${Math.round(r.bottom)} 越出可视区 ${Math.round(r.vh)}`).toBeLessThanOrEqual(r.vh + 1)
+    expect(r.top, `浮层顶缘 ${Math.round(r.top)} 越出可视区`).toBeGreaterThanOrEqual(-1)
+  } finally {
+    await ctx.close()
+  }
+})

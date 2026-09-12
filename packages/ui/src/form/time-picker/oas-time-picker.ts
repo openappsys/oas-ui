@@ -1,6 +1,9 @@
 import { OASElement, escapeHtml } from '@oas-ui/core'
 import { formatToken, resolveLocale } from '../calendar/date-grid.js'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+// 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
+import '../../feedback/bottom-sheet/index.js'
+import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 
 const STYLE = `
  :host {
@@ -151,6 +154,21 @@ const STYLE = `
 }
 [part='dropdown'].open {
   display: block;
+}
+/* 移动形态（data-mobile-sheet）：bottom-sheet 底部抽屉承载，dropdown 静态化内嵌
+   （容器/手势/安全区由 oas-bottom-sheet 统一承载，不再 fixed 锚定；
+   时分秒列在抽屉内容区内各自滚动） */
+:host([data-mobile-sheet]) [part='dropdown'] {
+  position: static;
+  z-index: auto;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: var(--oas-space-2);
+  top: auto !important;
+  left: auto !important;
+  width: auto !important;
+  max-height: none;
 }
 .presets {
   display: flex;
@@ -342,6 +360,8 @@ export class OASTimePicker extends OASElement {
   private triggerEl: HTMLInputElement | null = null
   private dropdown: HTMLElement | null = null
   private columnsEl: HTMLElement | null = null
+  /** 移动端底部抽屉承载件（oas-bottom-sheet；PC 形态 passive 透传） */
+  private sheetEl: OASBottomSheet | null = null
   private openState = false
   /** 展开态下面板是否已初始化（防 update 重入 boot） */
   private panelBooted = false
@@ -429,13 +449,15 @@ export class OASTimePicker extends OASElement {
         <svg class="chevron" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
           <path d="M4 6 L8 10 L12 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <div class="dropdown" part="dropdown">
-          <div class="presets" part="presets" hidden></div>
-          <div class="columns" part="columns"></div>
-          <div class="footer">
-            <button type="button" class="now" part="now"></button>
+        <oas-bottom-sheet part="sheet" passive>
+          <div class="dropdown" part="dropdown">
+            <div class="presets" part="presets" hidden></div>
+            <div class="columns" part="columns"></div>
+            <div class="footer">
+              <button type="button" class="now" part="now"></button>
+            </div>
           </div>
-        </div>
+        </oas-bottom-sheet>
       </div>
     `
   }
@@ -445,6 +467,9 @@ export class OASTimePicker extends OASElement {
     this.triggerEl = this.shadow.querySelector<HTMLInputElement>('[part="trigger"]')
     this.dropdown = this.shadow.querySelector<HTMLElement>('[part="dropdown"]')
     this.columnsEl = this.shadow.querySelector<HTMLElement>('[part="columns"]')
+    // 移动端底部抽屉承载件：oas-close（下滑/backdrop/Esc）→ 同步收起
+    this.sheetEl = this.shadow.querySelector<OASBottomSheet>('oas-bottom-sheet')
+    this.sheetEl?.addEventListener('oas-close', () => this.requestOpen(false))
     this.triggerEl?.addEventListener('click', () => this.toggle())
     this.triggerEl?.addEventListener('keydown', (e) => this.handleTriggerKey(e as KeyboardEvent))
     this.triggerEl?.addEventListener('input', () => {
@@ -502,16 +527,19 @@ export class OASTimePicker extends OASElement {
     this.update()
   }
 
-  /** 真水合：校验 SSR 快照结构（trigger/dropdown/columns 存在）后直接接管，跳过 shadow 重建 */
+  /** 真水合：校验 SSR 快照结构（trigger/dropdown/columns/bottom-sheet 存在）后直接接管，跳过 shadow 重建 */
   protected override hydrate(): boolean {
     if (!this.shadow.querySelector('[part="trigger"]')) return false
     if (!this.shadow.querySelector('[part="dropdown"]')) return false
     if (!this.shadow.querySelector('[part="columns"]')) return false
+    if (!this.shadow.querySelector('oas-bottom-sheet')) return false
     this.bind()
     return true
   }
 
   protected override update(): void {
+    // 移动形态同步：coarse pointer（触屏）或窄视口（<768px）→ bottom-sheet 底部抽屉承载
+    this.syncMobileMode()
     this.syncSizeStatus()
     this.syncTrigger()
     this.renderPresets()
@@ -609,10 +637,31 @@ export class OASTimePicker extends OASElement {
     this.triggerEl.setAttribute('aria-expanded', String(this.openState))
     if (this.openState) {
       document.addEventListener('click', this.handleOutsideClick, true)
-      this.positionDropdown()
+      // 移动形态：bottom-sheet 承载容器（设置 open 展开底部抽屉）；PC 形态：computePosition 锚定 trigger
+      if (this.isMobileSheet()) {
+        this.sheetEl?.setAttribute('open', '')
+      } else {
+        this.sheetEl?.removeAttribute('open')
+        this.positionDropdown()
+      }
     } else {
+      this.sheetEl?.removeAttribute('open')
       document.removeEventListener('click', this.handleOutsideClick, true)
     }
+  }
+
+  /** 移动形态判定：触屏（coarse pointer）或窄视口（<768px）→ 面板由 bottom-sheet 底部抽屉承载 */
+  private isMobileSheet(): boolean {
+    if (typeof window === 'undefined') return false
+    if (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) return true
+    return window.innerWidth < 768
+  }
+
+  /** 移动形态同步：移动端 bottom-sheet 去 passive 变容器、宿主打 data-mobile-sheet（dropdown 静态化）；PC 恢复 passive */
+  private syncMobileMode(): void {
+    const mobile = this.isMobileSheet()
+    this.toggleAttribute('data-mobile-sheet', mobile)
+    this.sheetEl?.toggleAttribute('passive', !mobile)
   }
 
   private handleOutsideClick = (e: MouseEvent): void => {
@@ -1160,9 +1209,10 @@ export class OASTimePicker extends OASElement {
 
   private positionDropdown(): void {
     if (!this.dropdown || !this.triggerEl) return
+    if (this.isMobileSheet()) return // 移动形态由 bottom-sheet 承载，跳过 fixed 锚定
     const anchorRect = this.triggerEl.getBoundingClientRect()
     const popupRect = this.dropdown.getBoundingClientRect()
-    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const viewport = getViewport()
     const {
       top,
       left,

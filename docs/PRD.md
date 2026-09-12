@@ -1114,6 +1114,43 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ---
 
+## v2.5.1 移动端专项（bottom-sheet 浮层协议 + 触摸/触屏适配）✅
+
+### 特性
+
+- **oas-bottom-sheet（新组件，feedback 族）**：移动端底部抽屉统一承载件——backdrop 点击关闭 / drag handle 下滑超阈值关闭 / Esc 关闭 / safe-area-inset-bottom 刘海屏手势区 / 焦点陷阱 / `max-height`（默认 85vh）/ `open` 受控 / `oas-close`（detail `{ reason: drag | backdrop | esc }`）/ **`passive` 被动透传模式**（浮层组件 PC 形态的结构占位，SSR/客户端结构严格一致防水合不一致）
+- **移动形态接入（select / date-picker / cascader / tree-select / time-picker / combobox）**：coarse pointer（触屏）或窄视口（<768px）自动把下拉切换为底部抽屉承载——模板恒包 `oas-bottom-sheet`（结构一致），移动端去 passive 变容器（dropdown 静态内嵌、不再 fixed 锚定），PC 恢复 passive + computePosition 锚定；各面板适配（date-picker 双月滚动 / cascader 多级横向滑动 / tree-select 搜索 + 树 / time-picker 时间列滚动 / combobox 输入框原位 + 列表滚动）
+- **触摸目标 ≥44px（P2）**：新 token `--oas-touch-target-min`（默认 44px）+ `@media (pointer: coarse)` 下浮层 option/item 最小高度抬升，桌面（fine pointer）不受影响
+- **触屏 hover 降级（P3）**：tooltip / hover-card / popover / dropdown 在 coarse pointer 下 hover 通道停用、改 tap 切换（外点关闭；popover 长按打开 800ms 内抬手跳过防误关）
+- **switch 块级整行热区（P5）**：块级拉伸时宿主整行可点（composedPath 防内部按钮双触发），对齐移动端设置项整行点击语义
+- **浮层视口适配（P4）**：新增共享 `getViewport()`——浮层碰撞边界优先 `visualViewport`（软键盘/浏览器工具栏/捏合缩放时用户真正能看到的区域），回退 `innerWidth/innerHeight`；17 处浮层边界构造统一消费（avatar-group/hover-card/popconfirm/popover/tooltip/auto-complete/cascader/combobox/color-picker/date-picker/mentions/select/time-picker/tree-select/dropdown/context-menu）+ popover constrainMaxHeight 同步
+
+### 修复
+
+- oas-bottom-sheet 归入 feedback 族（原置于 overlay/ 却在 feedback 族注册，触发族目录不变量断言；overlay/ 只留定位引擎基建）
+- tree-select「受控开合」demo 默认收起（原默认 `open`，移动端 bottom-sheet 一展开即全屏遮罩拦截整页交互）
+
+### 验收
+
+- 全量单测 6800 / typecheck 0 / build 0 / api:check（WIP 0）/ trace 0 命中
+- e2e：移动仿真 qa-regression（select/date-picker/cascader/tree-select/time-picker/combobox bottom-sheet 开合 + 触摸目标 + tap 切换 + switch 整行 + hover-card 不越出 visualViewport + popover/dropdown 触屏降级）+ 全量 smoke/dark/code/visual/console-sweep/vue-prop-hijack/a11y/interaction 全绿；light/dark 截图复核 + console 零告警
+
+---
+
+## 未发布：bottom-navigation 胶囊形态（pill）
+
+### 特性
+
+- **oas-bottom-navigation `pill`**：布尔属性，整条栏呈**浮动胶囊**——`tablist` 全圆角（`--oas-radius-full` 开口）+ 四周描边（替代通栏顶边分隔线）+ 轻投影；宿主左右自动让出留白，`fixed` 下再加底部留白四边悬浮。留白 / 投影走 `--oas-bottom-navigation-pill-inset` / `--oas-bottom-navigation-pill-shadow` 变量开口，dark 自动走 token。
+- 默认关闭（零破坏）；语义（`tablist`/`tab`/`aria-selected`）、受控 `value`、roving 键盘契约不变；`pill` 与 `fixed` / `hide-on-scroll` / `safe-area` / `layout` / `show-label` / `shift` 正交组合。
+
+### 验收
+
+- 单测：`pill` 入 observedAttributes + CSS 规则（全圆角 / 四周描边 / 轻投影 / 左右与底部留白）+ 语义与选中切换不受影响；`pnpm test` / typecheck / build / api:check 全绿
+- e2e：bottom-navigation 页 smoke / console-sweep / visual 全绿 + light/dark 截图复核
+
+---
+
 ## 后续 backlog：独立组件条目（按需立项）
 
 部分相邻形态与当前组件边界不同，拆分为独立组件域，按需立项：

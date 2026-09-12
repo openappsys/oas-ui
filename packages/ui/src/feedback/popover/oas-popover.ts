@@ -1,6 +1,6 @@
 import { OASElement } from '@oas-ui/core'
 import { iconRegistry } from '@oas-ui/icons'
-import { computePosition, type Placement } from '../../overlay/floating/index.js'
+import { computePosition, getViewport, type Placement } from '../../overlay/floating/index.js'
 import { registeredPopoverCapabilities, onPopoverCapabilityRegistered } from './oas-popover-capability.js'
 
 /** 面板与触发器的默认间距（offset 主轴缺省值，与 computePosition 的 GAP 一致） */
@@ -17,6 +17,9 @@ const HOVER_HIDE_DELAY = 100
 const COLLISION_PAD = 4
 /** mousedown 触发后同一次按压内合成 click 的吞没时间窗（ms，防双路径叠加切换） */
 const MOUSE_SUPPRESS_MS = 350
+/** 指针坐标打开（右键光标 / 触屏长按）后抬手合成 click 的收尾守卫窗口（ms）：
+ * 窗口内 click 视为手势收尾不参与 tap 切换，防「长按打开 → 抬手即关」 */
+const POINTER_OPEN_GUARD_MS = 800
 /** 面板 id 文档唯一计数器（aria-controls 跨树引用需要文档级唯一） */
 let panelUid = 0
 
@@ -671,6 +674,8 @@ export class OASPopover extends OASElement {
   private lastMousedownToggle = 0
   /** trigger-keys 切换的时间戳：同一次按键的合成 click 在时间窗内吞没（P2 幂等守卫） */
   private lastKeydownToggle = 0
+  /** 指针坐标打开（右键光标 / 触屏长按）时刻：tap 降级下抬手合成 click 在守卫窗口内跳过切换 */
+  private lastPointerOpenAt = 0
   /** 打开瞬间的页面 scrollY：滞留 scroll 事件（滚动发生在打开前、事件 task 异步派发晚于
    *  打开执行，scrollY 与打开时相同）不构成有效滚动，不重定位/不触发 close-on-scroll */
   private openScrollY = Number.NaN
@@ -768,7 +773,13 @@ export class OASPopover extends OASElement {
       if (now - this.lastMousedownToggle < MOUSE_SUPPRESS_MS) return
       if (now - this.lastKeydownToggle < MOUSE_SUPPRESS_MS) return
       if (this.hasAttr('virtual') || this.hasAttr('disabled')) return
-      if (!this.hasTrigger('click')) return
+      // 触屏降级（P3）：coarse pointer 且 trigger 含 hover 时，点击通道接管 tap 切换
+      // （hover 通道已停用；fine pointer 不含 click 时点击仍不响应，行为不变）
+      const tapToggle = this.tapToggleOnCoarse()
+      if (!this.hasTrigger('click') && !tapToggle) return
+      // 指针坐标打开（右键光标 / 触屏长按）后抬手的合成 click 是手势收尾，跳过本次切换，
+      // 避免「长按打开 → 抬手即被 tap 切换关掉」
+      if (tapToggle && this.hasAttr('open') && Date.now() - this.lastPointerOpenAt < POINTER_OPEN_GUARD_MS) return
       this.toggle()
     })
     // P24 mousedown 触发：按下即切换（无需抬起，比 click 快一拍）
@@ -920,6 +931,22 @@ export class OASPopover extends OASElement {
     return this.triggerList().includes(t)
   }
 
+  /** 触屏检测（pointer: coarse），与 tooltip / hover-card / select 的 isMobileSheet 同一模式 */
+  private isCoarsePointer(): boolean {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+    return window.matchMedia('(pointer: coarse)').matches
+  }
+
+  /**
+   * 触屏降级（P3）：coarse pointer 且 trigger 含 hover。触屏 tap 会合成 mouseenter/focusin
+   * 与 click 连发——hover/focus 打开通道在 coarse 下停用（停用即「tap 切换」语义：点按开、
+   * 再点按/外点关），点击通道接管切换；fine pointer 行为完全不变。manual 由 triggerList
+   * 天然排除（不含 hover）。
+   */
+  private tapToggleOnCoarse(): boolean {
+    return this.isCoarsePointer() && this.hasTrigger('hover')
+  }
+
   // —— contextmenu 能力宿主面（contextmenu 能力包 controller 经 PopoverContextmenuHost 接口访问宿主）——
 
   /** 触发元素（能力 controller 绑定 touch 手势的目标；bind 解析后固定，同 anchor）。
@@ -941,6 +968,8 @@ export class OASPopover extends OASElement {
    */
   public openAtPoint(x: number, y: number): void {
     this.cursorRect = { left: x, top: y, right: x, bottom: y, width: 0, height: 0 } as DOMRect
+    // 记录指针坐标打开时刻：触屏长按抬手的合成 click 在收尾守卫窗口内跳过 tap 切换
+    this.lastPointerOpenAt = Date.now()
     this.requestOpen()
   }
 
@@ -1051,11 +1080,14 @@ export class OASPopover extends OASElement {
   }
 
   private onHoverEnter = (): void => {
+    if (this.tapToggleOnCoarse()) return // 触屏降级：coarse 下 hover 打开停用（tap 切换接管）
     if (this.hasTrigger('hover')) this.requestOpen(true)
   }
 
   private onHoverLeave = (e: MouseEvent): void => {
     if (!this.hasTrigger('hover')) return
+    // 触屏降级：tap 合成的 mouseleave 不得关掉刚 tap 打开的面板（关闭走 tap/外点）
+    if (this.tapToggleOnCoarse()) return
     // 指针移到浮层面板（shadow 内）或宿主 light DOM 内不关：悬停区域 = 宿主 + 面板
     if (this.hoverTargetInside(e.relatedTarget)) return
     this.requestClose(true)
@@ -1063,11 +1095,14 @@ export class OASPopover extends OASElement {
 
   private onPanelEnter = (): void => {
     if (!this.hasTrigger('hover')) return
+    if (this.tapToggleOnCoarse()) return // 触屏降级：无 hover 语义
     this.clearCloseTimer()
   }
 
   private onPanelLeave = (e: MouseEvent): void => {
     if (!this.hasTrigger('hover')) return
+    // 触屏降级：tap 合成的 mouseleave 不得关掉刚 tap 打开的面板
+    if (this.tapToggleOnCoarse()) return
     if (this.hoverTargetInside(e.relatedTarget)) return
     this.requestClose(true)
   }
@@ -1078,11 +1113,14 @@ export class OASPopover extends OASElement {
   }
 
   private onFocusIn = (): void => {
+    if (this.tapToggleOnCoarse()) return // 触屏降级：tap 会 focusin+click 连发，打开统一走 tap 切换
     if (this.hasTrigger('focus')) this.requestOpen()
   }
 
   private onFocusOut = (e: FocusEvent): void => {
     if (!this.hasTrigger('focus')) return
+    // 触屏降级：焦点迁移不关闭（tap 打开的面板的关闭走 tap/外点）
+    if (this.tapToggleOnCoarse()) return
     if (this.hoverTargetInside(e.relatedTarget)) return
     this.requestClose()
   }
@@ -1223,7 +1261,7 @@ export class OASPopover extends OASElement {
     if (!this.panel) return
     let anchorRect = anchorOverride ?? this.anchorRect()
     if (!anchorRect) return
-    const viewport = { width: window.innerWidth, height: window.innerHeight }
+    const viewport = getViewport()
     const sticky = this.getAttr('sticky', 'partial')
     const detachedNow = this.detached(anchorRect, viewport)
     // hide-when-detached：锚点完全脱离视口 → 面板隐藏（打开语义保留，避免孤悬屏外）；
@@ -1292,7 +1330,7 @@ export class OASPopover extends OASElement {
     }
     const pad = this.collisionPadding()
     const { distance } = this.parseOffset()
-    const vh = window.innerHeight
+    const vh = getViewport().height
     let avail: number
     if (placement.startsWith('top')) avail = anchorRect.top - distance - pad
     else if (placement.startsWith('bottom')) avail = vh - anchorRect.bottom - distance - pad
