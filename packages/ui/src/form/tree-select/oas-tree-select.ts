@@ -3,8 +3,8 @@ import { OASElement } from '@oas-ui/core'
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
 // 注册 oas-bottom-sheet（移动端底部抽屉承载件，需裸 import 保住注册副作用）
-import '../../overlay/bottom-sheet/index.js'
-import type { OASBottomSheet } from '../../overlay/bottom-sheet/index.js'
+import '../../feedback/bottom-sheet/index.js'
+import type { OASBottomSheet } from '../../feedback/bottom-sheet/index.js'
 import { computePosition } from '../../overlay/floating/index.js'
 // 共享树内核：flatten/字段归一 + 勾选级联 + 懒加载状态机 + 模板克隆（与 oas-tree 同一实现）
 import {
