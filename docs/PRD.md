@@ -1121,7 +1121,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **oas-bottom-sheet（新组件，feedback 族）**：移动端底部抽屉统一承载件——backdrop 点击关闭 / drag handle 下滑超阈值关闭 / Esc 关闭 / safe-area-inset-bottom 刘海屏手势区 / 焦点陷阱 / `max-height`（默认 85vh）/ `open` 受控 / `oas-close`（detail `{ reason: drag | backdrop | esc }`）/ **`passive` 被动透传模式**（浮层组件 PC 形态的结构占位，SSR/客户端结构严格一致防水合不一致）
 - **移动形态接入（select / date-picker / cascader / tree-select）**：coarse pointer（触屏）或窄视口（<768px）自动把下拉切换为底部抽屉承载——模板恒包 `oas-bottom-sheet`（结构一致），移动端去 passive 变容器（dropdown 静态内嵌、不再 fixed 锚定），PC 恢复 passive + computePosition 锚定；各面板适配（date-picker 双月滚动 / cascader 多级横向滑动 / tree-select 搜索 + 树）
 - **触摸目标 ≥44px（P2）**：新 token `--oas-touch-target-min`（默认 44px）+ `@media (pointer: coarse)` 下浮层 option/item 最小高度抬升，桌面（fine pointer）不受影响
-- **触屏 hover 降级（P3）**：tooltip / hover-card 在 coarse pointer 下 hover 通道停用、改 tap 切换（外点关闭；长按打开 800ms 内抬手跳过防误关）
+- **触屏 hover 降级（P3）**：tooltip / hover-card / popover / dropdown 在 coarse pointer 下 hover 通道停用、改 tap 切换（外点关闭；popover 长按打开 800ms 内抬手跳过防误关）
 - **switch 块级整行热区（P5）**：块级拉伸时宿主整行可点（composedPath 防内部按钮双触发），对齐移动端设置项整行点击语义
 - **浮层视口适配（P4）**：新增共享 `getViewport()`——浮层碰撞边界优先 `visualViewport`（软键盘/浏览器工具栏/捏合缩放时用户真正能看到的区域），回退 `innerWidth/innerHeight`；17 处浮层边界构造统一消费（avatar-group/hover-card/popconfirm/popover/tooltip/auto-complete/cascader/combobox/color-picker/date-picker/mentions/select/time-picker/tree-select/dropdown/context-menu）+ popover constrainMaxHeight 同步
 
