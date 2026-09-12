@@ -37,7 +37,6 @@ test('rate 半选（allow-half）：半星为左半黄右半灰的垂直分割�
   expect(r.fillClipPath).toContain('50%') // 垂直分割：只保留左半
   expect(r.fillColor).toBe('rgb(217, 119, 6)') // --oas-color-warning（light）
   expect(r.baseColor).toBe('rgb(228, 228, 231)') // --oas-color-border（light）
-  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix9-rate-half-star.png' })
 })
 
 // —— upload P0 补缺：照片墙 + 拖拽 ——

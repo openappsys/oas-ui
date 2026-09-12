@@ -251,7 +251,6 @@ test('tree 自定义节点：#tree-custom 每行 .label 实际渲染宽度 > 0�
     expect(item.labelWidth, `第 ${i} 行 .label 渲染宽度为 0（被 flex 压没）`).toBeGreaterThan(24)
     expect(item.binderWidth, `第 ${i} 行 [data-node-label] 实际宽度为 0`).toBeGreaterThan(0)
   }
-  await page.screenshot({ path: 'C:\\WINDOWS\\TEMP\\opencode\\fix-tree-custom-label.png' })
 })
 
 test('tree 内联重命名：双击 label 进编辑 + Enter 提交宿主回写（oas-node-rename）', async ({ page }) => {
