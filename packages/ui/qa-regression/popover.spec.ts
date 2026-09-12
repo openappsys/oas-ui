@@ -908,3 +908,83 @@ test('popover P23 断点响应：placement="bottom md:right" 随视口宽度切�
   )
   await bp.evaluate((e) => e.removeAttribute('open'))
 })
+
+// 移动端专项 P3 扩展回归：coarse pointer 下 trigger 含 hover 的 popover 降级为 tap 切换
+test.describe('触屏降级（P3 扩展，iPhone 仿真）：popover hover 回落 tap 切换', () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 3,
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+  })
+
+  test('coarse：hover 不打开，点按锚点 tap 切换开/关，外点关闭', async ({ page }) => {
+    await page.goto('/components/popover.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-popover')
+    // 注入 trigger=hover 的独立实例（不依赖既有 demo 锚点）；固定定位避免被页面上其他浮层拦截指针
+    await page.evaluate(() => {
+      const pop = document.createElement('oas-popover')
+      pop.setAttribute('trigger', 'hover')
+      pop.setAttribute('title', '触屏降级')
+      pop.setAttribute('content', '点按切换，外点关闭')
+      pop.setAttribute('placement', 'bottom')
+      pop.dataset.e2eCoarse = '1'
+      pop.innerHTML = '<button>触屏触发</button>'
+      pop.style.cssText = 'position: fixed; top: 200px; left: 20px; z-index: 9999'
+      document.body.appendChild(pop)
+    })
+    const pop = page.locator('oas-popover[data-e2e-coarse]')
+    const panelAria = () =>
+      pop.evaluate((e) => e.shadowRoot!.querySelector('[part="panel"]')!.getAttribute('aria-hidden'))
+    // 注：popover shadow 内还有 close 按钮（close-btn），必须限定 light DOM 直接子元素
+    const btn = pop.locator(':scope > button')
+    await btn.scrollIntoViewIfNeeded()
+    // 指针悬停（触屏仿真下 tap 会合成 hover）不打开（hover-delay 150ms，等待 400ms 足够判定）
+    const box = (await btn.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.waitForTimeout(400)
+    expect(await panelAria(), '触屏下 hover 不得打开 popover').toBe('true')
+    // 点按打开
+    await page.tap('oas-popover[data-e2e-coarse] > button')
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('oas-popover[data-e2e-coarse]')
+          ?.shadowRoot?.querySelector('[part="panel"]')
+          ?.getAttribute('aria-hidden') === 'false',
+      { timeout: 5000 },
+    )
+    // 再点按关闭
+    await page.tap('oas-popover[data-e2e-coarse] > button')
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('oas-popover[data-e2e-coarse]')
+          ?.shadowRoot?.querySelector('[part="panel"]')
+          ?.getAttribute('aria-hidden') === 'true',
+      { timeout: 5000 },
+    )
+    // 再次打开后外点关闭（light dismiss，触屏无 hover-out 语义）
+    await page.tap('oas-popover[data-e2e-coarse] > button')
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('oas-popover[data-e2e-coarse]')
+          ?.shadowRoot?.querySelector('[part="panel"]')
+          ?.getAttribute('aria-hidden') === 'false',
+      { timeout: 5000 },
+    )
+    await page.touchscreen.tap(6, Math.floor(page.viewportSize()!.height / 2))
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('oas-popover[data-e2e-coarse]')
+          ?.shadowRoot?.querySelector('[part="panel"]')
+          ?.getAttribute('aria-hidden') === 'true',
+      { timeout: 5000 },
+    )
+    await page.screenshot({ path: test.info().outputPath('fix-popover-coarse-tap.png') })
+  })
+})
