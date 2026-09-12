@@ -31,7 +31,13 @@ The `label` attribute renders a text label next to the switch; clicking the labe
   </oas-space>
 </DemoBlock>
 
-Hit-area note: the host shrinks to the actual control width (`width: fit-content`), so it is never stretched to full row width inside vertical layout containers (like the `oas-space direction="vertical"` above) — visual width always matches the clickable area; use `label` for a larger text hit target. Without `label`, the host can set `aria-label` (mirrored onto the inner button as the accessible name).
+Hit-area note: the host shrinks to the actual control width (`width: fit-content`), so by default the visual width always matches the clickable area. When the host is explicitly stretched (e.g. `align-stretch` in a vertical `oas-space`, or `width: 100%`), **clicking anywhere on the row toggles it** — the iOS settings row semantics (the inner button and `label` areas still use their own channels, so no double toggling). Use `label` for a text hit target beside the switch. Without `label`, the host can set `aria-label` (mirrored onto the inner button as the accessible name).
+
+<DemoBlock title="Full-row click when stretched">
+  <oas-switch id="switch-block" label="Full row (click the empty right side)" style="width: 100%"></oas-switch>
+</DemoBlock>
+
+`disabled` / `loading` states block the whole row just like the thumb.
 
 ## Switch Labels
 

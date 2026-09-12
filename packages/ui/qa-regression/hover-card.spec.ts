@@ -280,3 +280,74 @@ test('hover-card 浮层可悬停：触发器 → 卡片跨间隙移动不闪关'
   }, sel)
   expect(stillOpen, '移入卡片后应保持打开（不闪关）').toBe(true)
 })
+
+// 移动端专项 P3 回归：coarse pointer 下 hover 降级为 tap 切换（iPhone 触屏仿真）
+test.describe('触屏降级（P3，iPhone 仿真）', () => {
+  // iPhone 13 触屏仿真（defaultBrowserType 不可在 describe 内 use，逐项展开）
+  test.use({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 3,
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+  })
+
+  test('coarse pointer：hover 不打开，点按锚点 tap 切换开/关，外点关闭', async ({ page }) => {
+    await page.goto('/components/hover-card.html', { waitUntil: 'domcontentloaded' })
+    await up(page, '#hc-coarse-tap')
+    const cardState = () =>
+      page.evaluate(() =>
+        document
+          .querySelector('#hc-coarse-tap')
+          ?.shadowRoot?.querySelector('[part="card"]')
+          ?.getAttribute('aria-hidden'),
+      )
+    // 悬停（触屏合成事件）不打开
+    const btn = page.locator('#hc-coarse-tap oas-button')
+    await btn.scrollIntoViewIfNeeded()
+    const box = (await btn.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.waitForTimeout(400)
+    expect(await cardState(), '触屏下 hover 不得打开 hover-card').toBe('true')
+    // 点按打开
+    await page.tap('#hc-coarse-tap oas-button')
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('#hc-coarse-tap')
+          ?.shadowRoot?.querySelector('[part="card"]')
+          ?.getAttribute('aria-hidden') === 'false',
+      { timeout: 5000 },
+    )
+    // 再点按关闭
+    await page.tap('#hc-coarse-tap oas-button')
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('#hc-coarse-tap')
+          ?.shadowRoot?.querySelector('[part="card"]')
+          ?.getAttribute('aria-hidden') === 'true',
+      { timeout: 5000 },
+    )
+    // 再次打开后外点关闭
+    await page.tap('#hc-coarse-tap oas-button')
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('#hc-coarse-tap')
+          ?.shadowRoot?.querySelector('[part="card"]')
+          ?.getAttribute('aria-hidden') === 'false',
+      { timeout: 5000 },
+    )
+    await page.touchscreen.tap(6, Math.floor(page.viewportSize()!.height / 2))
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('#hc-coarse-tap')
+          ?.shadowRoot?.querySelector('[part="card"]')
+          ?.getAttribute('aria-hidden') === 'true',
+      { timeout: 5000 },
+    )
+  })
+})

@@ -173,3 +173,33 @@ test('menu inline + close-on-select="true"（menu-inline-close demo）：点叶�
   expect(r.open, 'inline + close-on-select="true" 点叶子后应收起父级子菜单').toBe(false)
   expect(r.value, '选中值应写回 dash-overview').toBe('dash-overview')
 })
+
+// 移动端专项 P2 回归：coarse pointer 下浮层交互行触摸目标 ≥44px（iPhone 触屏仿真）
+test.describe('触摸目标（P2，iPhone 仿真）', () => {
+  // iPhone 13 触屏仿真（defaultBrowserType 不可在 describe 内 use，逐项展开）
+  test.use({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    deviceScaleFactor: 3,
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+  })
+
+  test('coarse pointer 下菜单项渲染高度 ≥44px（--oas-touch-target-min）', async ({ page }) => {
+    await page.goto('/components/menu.html', { waitUntil: 'domcontentloaded' })
+    await up(page, 'oas-menu')
+    const menu = page.locator('oas-menu').first()
+    await menu.scrollIntoViewIfNeeded()
+    const heights = await page.evaluate(() => {
+      const m = document.querySelector('oas-menu')!
+      return [...m.shadowRoot!.querySelectorAll<HTMLElement>('[part="item"]')]
+        .filter((el) => el.getBoundingClientRect().height > 0)
+        .map((el) => el.getBoundingClientRect().height)
+    })
+    expect(heights.length, '页面应渲染出可见菜单项').toBeGreaterThan(0)
+    for (const h of heights) {
+      expect(h, `触屏下菜单项高度 ${h}px 应 ≥44px`).toBeGreaterThanOrEqual(44)
+    }
+  })
+})
