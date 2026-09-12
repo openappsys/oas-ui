@@ -1114,7 +1114,7 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 
 ---
 
-## v2.6.0 移动端专项（bottom-sheet 浮层协议 + 触摸/触屏适配）🚧 进行中（P4 待收口）
+## v2.6.0 移动端专项（bottom-sheet 浮层协议 + 触摸/触屏适配）✅
 
 ### 特性
 
@@ -1123,20 +1123,17 @@ table 组件按能力补齐补齐（列设置/多列排序/多级表头/内置�
 - **触摸目标 ≥44px（P2）**：新 token `--oas-touch-target-min`（默认 44px）+ `@media (pointer: coarse)` 下浮层 option/item 最小高度抬升，桌面（fine pointer）不受影响
 - **触屏 hover 降级（P3）**：tooltip / hover-card 在 coarse pointer 下 hover 通道停用、改 tap 切换（外点关闭；长按打开 800ms 内抬手跳过防误关）
 - **switch 块级整行热区（P5）**：块级拉伸时宿主整行可点（composedPath 防内部按钮双触发），对齐移动端设置项整行点击语义
+- **浮层视口适配（P4）**：新增共享 `getViewport()`——浮层碰撞边界优先 `visualViewport`（软键盘/浏览器工具栏/捏合缩放时用户真正能看到的区域），回退 `innerWidth/innerHeight`；17 处浮层边界构造统一消费（avatar-group/hover-card/popconfirm/popover/tooltip/auto-complete/cascader/combobox/color-picker/date-picker/mentions/select/time-picker/tree-select/dropdown/context-menu）+ popover constrainMaxHeight 同步
 
 ### 修复
 
 - oas-bottom-sheet 归入 feedback 族（原置于 overlay/ 却在 feedback 族注册，触发族目录不变量断言；overlay/ 只留定位引擎基建）
 - tree-select「受控开合」demo 默认收起（原默认 `open`，移动端 bottom-sheet 一展开即全屏遮罩拦截整页交互）
 
-### 待办（P4 浮层视口适配）
-
-- 浮层碰撞检测现用 `window.innerWidth/innerHeight`（布局视口）；移动仿真下 visualViewport 小于布局视口时未见向上翻转（hover-card 底缘轻微裁切）。**真机影响面待确认**，统一改 `visualViewport` 作为 P4 收口（移动专项整体关闭前）
-
 ### 验收
 
-- 全量单测 6773 / typecheck 0 / build 0 / api:check（WIP 0）/ trace 0 命中
-- e2e：移动仿真 qa-regression（select/date-picker/cascader/tree-select bottom-sheet 开合 + 触摸目标 + tap 切换 + switch 整行）+ 全量 smoke/dark/code/visual/console-sweep/vue-prop-hijack/a11y/interaction 全绿；light/dark 截图复核 + console 零告警
+- 全量单测 6777 / typecheck 0 / build 0 / api:check（WIP 0）/ trace 0 命中
+- e2e：移动仿真 qa-regression（select/date-picker/cascader/tree-select bottom-sheet 开合 + 触摸目标 + tap 切换 + switch 整行 + hover-card 不越出 visualViewport）+ 全量 smoke/dark/code/visual/console-sweep/vue-prop-hijack/a11y/interaction 全绿；light/dark 截图复核 + console 零告警
 
 ---
 
