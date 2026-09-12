@@ -1255,3 +1255,16 @@ describe('子元素声明式通道', () => {
     expect(JSON.parse(el.getAttribute('value')!)).toEqual(['ruler'])
   })
 })
+
+describe('OASMenu 触摸目标（coarse pointer 抬升，dropdown item 同路径渲染）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('coarse pointer 媒体查询进样式表，item 最小高度走 --oas-touch-target-min（默认 44px）', () => {
+    const el = mount()
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+  })
+})

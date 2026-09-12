@@ -3,6 +3,7 @@ import { OASElement } from '@oas-ui/core'
 import '../../data/virtual-list/index.js'
 import type { OASVirtualList } from '../../data/virtual-list/index.js'
 import { computePosition } from '../../overlay/floating/index.js'
+import { TOUCH_TARGET_CSS } from '../../shared/touch-target.js'
 // 共享树内核：flatten/字段归一 + 勾选级联 + 懒加载状态机 + 模板克隆（与 oas-tree 同一实现）
 import {
   resolveFieldNames,
@@ -417,6 +418,9 @@ const STYLE = `
   display: none;
 }
 ${NODE_STYLE}
+/* 触摸目标抬升：coarse pointer 下树节点行最小高度 ≥44px（token 开口可调）。
+   只进 tree-select 自身 shadow——虚拟模式行高由 vlist 布局数学固定，不在 vlist 注入 */
+${TOUCH_TARGET_CSS}
 `
 
 /**

@@ -244,6 +244,16 @@ onMounted(() => {
 })
 </script>
 
+## 触屏点按切换
+
+触屏设备（`pointer: coarse`）上悬停不可靠：hover-card 自动降级为**点按切换**——点按触发元素打开、再点按关闭、点按卡片与触发元素之外的位置关闭。桌面悬停行为不变。
+
+<DemoBlock title="触屏点按切换（coarse pointer 自动生效）">
+  <oas-hover-card id="hc-coarse-tap" title="触屏卡片" content="点按切换：再点一次或点外部关闭" placement="bottom">
+    <oas-button>点按我（触屏）</oas-button>
+  </oas-hover-card>
+</DemoBlock>
+
 ## API
 
 ### 属性

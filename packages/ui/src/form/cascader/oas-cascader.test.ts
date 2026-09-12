@@ -725,3 +725,21 @@ describe('OASCascader focus 委托', () => {
     expect(el.shadowRoot!.activeElement).toBe(el.shadowRoot!.querySelector('button[part="trigger"]'))
   })
 })
+
+describe('OASCascader 触摸目标（coarse pointer 抬升）', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('coarse pointer 媒体查询进样式表，option 最小高度走 --oas-touch-target-min（默认 44px）', () => {
+    const el = new OASCascader()
+    el.setAttribute('options', OPTIONS)
+    document.body.appendChild(el)
+    const css = el.shadowRoot!.querySelector('style')!.textContent!
+    expect(css).toContain('@media (pointer: coarse)')
+    expect(css).toContain('var(--oas-touch-target-min, 44px)')
+  })
+})

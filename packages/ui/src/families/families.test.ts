@@ -32,6 +32,15 @@ const FAMILY_DIR: Record<string, string> = {
   framework: 'framework',
 }
 
+/**
+ * 跨目录挂靠例外：overlay/bottom-sheet 是浮层组共享的底部抽屉承载件（移动端专项 P1），
+ * 随 feedback 族注册——不属于任何独立族目录，在此显式登记，保持「族 import ⊆ 自有目录
+ * + 基座三件 + 登记例外」的封闭判定。
+ */
+const FAMILY_EXTRA: Record<string, string[]> = {
+  feedback: ['overlay/bottom-sheet'],
+}
+
 const FAMILY_FILES = Object.keys(FAMILY_DIR)
 
 describe('CDN 按需打包：七族注册文件覆盖全量注册表', () => {
@@ -42,7 +51,12 @@ describe('CDN 按需打包：七族注册文件覆盖全量注册表', () => {
   it('src/index.ts 全量清单可解析且按顶层目录对齐各族', () => {
     expect(all.length).toBeGreaterThan(0)
     const tops = new Set(all.map((p) => p.split('/')[0]))
-    expect(tops).toEqual(new Set(Object.values(FAMILY_DIR)))
+    const extraTops = new Set(
+      Object.values(FAMILY_EXTRA)
+        .flat()
+        .map((p) => p.split('/')[0]),
+    )
+    expect(tops).toEqual(new Set([...Object.values(FAMILY_DIR), ...extraTops]))
     // 每个顶层目录的全部组件都在 index.ts 全量清单里
     for (const dir of Object.values(FAMILY_DIR)) {
       const dirComps = all.filter((p) => p.startsWith(`${dir}/`))
@@ -59,23 +73,25 @@ describe('CDN 按需打包：七族注册文件覆盖全量注册表', () => {
   it('每个族文件 import 的组件与其源码顶层目录一一对应（framework 族即基座三件）', () => {
     for (const fam of FAMILY_FILES) {
       const dir = FAMILY_DIR[fam]!
+      const extras = FAMILY_EXTRA[fam] ?? []
       const text = readFileSync(resolve(here, `${fam}.ts`), 'utf8')
       const comps = parseComponentImports(text)
 
-      // 族文件只 import 自己目录的组件 + 基座三件（framework 目录的 config-provider/app/theme-editor）
+      // 族文件只 import 自己目录的组件 + 基座三件 + 登记例外（framework 目录的 config-provider/app/theme-editor）
       for (const p of comps) {
         const inOwnDir = p.startsWith(`${dir}/`)
         const isBase = BASE_MODULES.includes(p)
-        expect(inOwnDir || isBase, `${fam}.ts 误 import ${p}`).toBe(true)
+        const isExtra = extras.includes(p)
+        expect(inOwnDir || isBase || isExtra, `${fam}.ts 误 import ${p}`).toBe(true)
       }
-      // 该目录全量组件都在族文件里（framework 目录的三件是自身族内容，亦属基座）
+      // 该目录全量组件（含本族登记的跨目录例外）都在族文件里
       const allComps = parseComponentImports(readFileSync(resolve(srcRoot, 'index.ts'), 'utf8'))
-      const dirComps = allComps.filter((p) => p.startsWith(`${dir}/`))
+      const dirComps = allComps.filter((p) => p.startsWith(`${dir}/`) || extras.includes(p))
       for (const c of dirComps) {
         expect(comps.includes(c), `${fam}.ts 缺少 ${c}`).toBe(true)
       }
-      // 族文件不 import 别的目录组件（基座三件除外）
-      const extra = comps.filter((p) => !p.startsWith(`${dir}/`) && !BASE_MODULES.includes(p))
+      // 族文件不 import 别的目录组件（基座三件与登记例外除外）
+      const extra = comps.filter((p) => !p.startsWith(`${dir}/`) && !BASE_MODULES.includes(p) && !extras.includes(p))
       expect(extra, `${fam}.ts import 了目录外组件`).toEqual([])
     }
   })
